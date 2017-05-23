@@ -1,0 +1,16 @@
+/**
+@namespace Base
+
+@section Nebula3BaseSystem The Nebula3 Base Namespace
+
+The Base subsystem contains all base classes where platformspecific subclasses are derived from.
+Nebula3 uses a compile-time-approach for portable code whenever possible. Platform-specific
+classes are often derived from a common base class, and then derived into a platform-neutral
+class name. For instance, the CoreGraphics::RenderDevice class may be (conditionally) derived 
+from Xbox360::Xbox360RenderDevice or from Direct3D::D3D9RenderDevice, which in turn are
+derived from the class Base::RenderDeviceBase which contains common funtionality of all
+RenderDevice classes.
+
+The main reason why the Base namespace has been introduced is to not contanimate the
+autodocs and IntelliSense with unrelated information.
+*/

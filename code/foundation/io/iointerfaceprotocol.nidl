@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Nebula3>
+    <Protocol namespace="IO" name="IoInterfaceProtocol">
+
+        <!-- dependencies -->
+
+        <!-- copy file -->
+        <Message name="CopyFile" fourcc="cofi">
+            <InArg name="FromURI" type="IO::URI"/>
+            <InArg name="ToURI" type="IO::URI"/>
+            <InArg name="Result" type="bool" default="false"/>
+        </Message>
+
+        <!-- io message -->
+        <Message name="IOMessage" fourcc="iomg">
+            <InArg name="URI" type="IO::URI"/>
+            <InArg name="Result" type="bool" default="false"/>
+        </Message>
+
+        <!-- create directory -->
+        <Message name="CreateDirectory" fourcc="crdi" derivedFrom="IOMessage">
+        </Message>
+
+        <!-- delete directory -->
+        <Message name="DeleteDirectory" fourcc="dedi" derivedFrom="IOMessage">
+        </Message>
+
+        <!-- delete file -->
+        <Message name="DeleteFile" fourcc="defi" derivedFrom="IOMessage">
+        </Message>
+
+        <!-- mount archive -->
+        <Message name="MountArchive" fourcc="mozi" derivedFrom="IOMessage">
+        </Message>
+
+        <!-- read stream -->
+        <Message name="ReadStream" fourcc="rest" derivedFrom="IOMessage">
+            <InArg name="Stream" type="Ptr<IO::Stream>"/>
+        </Message>
+
+        <!-- write stream -->
+        <Message name="WriteStream" fourcc="wrst" derivedFrom="IOMessage">
+            <InArg name="Stream" type="Ptr<IO::Stream>"/>
+        </Message>
+        
+    </Protocol>
+    
+</Nebula3>    
+    

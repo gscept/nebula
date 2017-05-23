@@ -1,0 +1,10 @@
+/**
+@namespace System
+
+The Nebula3 System subsystem offers close-to-the-metal classes
+which expose information about or manipulate system-level 
+aspects of the host platform, for instance information about the 
+CPU, byte order or available hardware capabilities. Some classes
+offer access to platform-specific features, like the Windows
+registry.
+*/

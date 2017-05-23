@@ -1,0 +1,8 @@
+/**
+@namespace Legacy
+
+The Legacy namespace contains various classes which support Nebula2 backward 
+compatibility (mainly support for Nebula2 file formats). To compile
+Nebula3 without support for Nebula2 legacy support, set the __NEBULA_LEGACY_SUPPORT__
+define in in /foundation/core/config.h to (0).
+*/
