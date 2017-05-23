@@ -1,0 +1,7 @@
+/**
+@namespace Util
+
+@section Nebula3UtilSystem The Nebula3 Util Subsystem
+
+The Util namespace is a toolbox of general utility classes, mainly containers and a powerful string class.
+*/

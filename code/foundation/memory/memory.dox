@@ -1,0 +1,7 @@
+/**
+@namespace Memory
+
+The Nebula3 Memory subsystem implements custom memory allocation mechanisms which 
+provide higher performance and better debugging aids.
+
+*/

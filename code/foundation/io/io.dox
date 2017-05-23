@@ -1,0 +1,213 @@
+/**
+@namespace IO
+
+@section Nebula3IOSystem The Nebula3 IO Subsystem
+
+The Nebula3 IO subsystem is a huge step forward from the Nebula1 and Nebula2
+IO systems. The main design goals of the new IO subsystem are:
+
+- use more standard mechanisms, like URIs to identify resource locations, and
+MIME types to identify data formats
+- a flexible stream model, it shouldn't matter whether data comes from a file,
+from a memory buffer, an HTTP connection or somewhere else
+- reading and writing data from and to a stream in different data formats should
+be more orthogonal, for instance it shouldn't matter if XML-formatted data is
+read from memory, from a file, from a network connection or from anywhere else
+- extensibility, new stream and reader/writer classes can be registered
+with the IO subsystem at runtime
+- portability without performance compromises, the entire IO subsystem must be
+able to use platform-specific IO functions under the hood instead of relying
+to CLib functions like fopen() for portability, which may come with an additional 
+performance or memory overhead compared to the platform specific IO functions
+
+The main concepts of the Nebula3 IO subsystem are:
+
+- A central <b>IO::Console</b> object for <b>all</b> text input and output with attachable 
+console handlers. It is guaranteed that all Nebula3 text output goes through the
+console as the one centralized in/out channel. Specialized console handlers can
+be used to handle text output in a special way (for instance writing the output
+to stdout, an ingame console, a log file or a network connection).
+- <b>Assigns</b> as path aliases. The general functionality is the same as in Nebula1
+and Nebula2, or the original AmigaOS assigns which inspired Nebula's assign mechanism.
+A new feature of Nebula3 assigns is that they can be aliases for complete URI's. For instance,
+the assign "textures:" could be defined as "http://www.radonlabs.de/textures", so that the
+shortcut resource path "textures:mytexture.dds" would be resolve to the absolute location
+"http://www.radonlabs.de/textures/mytexture.dds"
+- <b>Streams</b> as basic in/out data channel. Streams are the replacement for Nebula2's nFile 
+objects. Streams offer the same basic API with Open()/Close()/Read()/Write(), but may
+hide completely different transport or storage channels behind their common interface. Examples
+of stream classes are IO::FileStream, IO::MemoryStream, or Net::HttpStream
+- <b>Stream readers and writers</b> are attached to streams and generally implement 
+easy-to-use interfaces to read and write different data formats. For instance one could
+attach an IO::XmlReader to a IO::FileStream to read XML-formatted data from a filesystem
+file, or attach it to an IO::HttpStream to read XML-formatted data from a HTTP connection.
+
+A good example to show the power of the Nebula3 in/out system is the following
+code fragment:
+
+@code
+    IO::FileServer::Instance()->CopyFile("http://www.radonlabs.de/index.html", "temp:index.html");
+@endcode
+
+This single line of code copies a file from a HTTP server into the current user's 
+temp directory. With only a few lines more you could create a stream object pointing
+to a HTML file on a HTTP server, attach an XML reader to the stream, and parse the
+content of the HTML file without any intermediate storage file.
+
+@subsection Nebula3Assigns Nebula3 Standard Assigns
+
+Nebula3 initializes the following standard assigns:
+
+- <b>home:</b> Points to the application directory, in a German Windows
+installation, this is usually somewhere under "C:/Programme". Nebula3 applications
+should treat the home: location as a read only directory so that the user doesn't
+need administrator rights to run the application.
+- <b>user:</b> This points to the currently logged in user directory for this
+Nebula3 application. In a German Windows installation, this is somewhere under
+"C:/Eigene Dateien/[username]". Nebula3 will automatically create a local directory in the
+user directory to prevent different applications to overwrite their data. It is generally
+safe to write data to the user directory. This is the place where configuration and
+save game data should be written, or any other data which should persist between
+application invokations.
+- <b>temp:</b> This assign points to the current user's temp directory. This directory
+is generally writable. It should not be assumed that data in temp: survives until the
+next application start.
+- <b>bin:</b> This points to the directory of the application's executable file. This
+may or may not be identical with the home: directory. The bin: assign should
+be treated as read-only.
+
+Custom assigns may be defined at runtime by the application. Often this is used
+to define abstract path to resources like textures, sound data, and so on. That
+way the locations of those resources can be easily changes by setting a single
+assign instead of fixing all the resource paths. A nice side effect of assigns is
+that a path with assigns is often much shorter then an "absolute" path resulting
+in a smaller memory footprint.
+
+
+@subsection Nebula3URI Nebula3 URIs
+
+Resource locations are generally defined through standard URIs in Nebula3. URIs
+may consist of the following parts, some of them optional:
+
+- a scheme, for instance "http:", "file:", etc... Nebula3 doesn't define any
+hardcoded schemes, instead, schemes are bound to stream classes by registering
+them with the IO::StreamServer singleton
+- an optional user info field, often this is a login name and a password to
+authenticate with a remote FTP or HTTP host
+- a hostname, like "www.radonlabs.de"
+- an optional portname following the hostname
+- a local path, pointing to a resource on the host
+- an optional fragment, which often points to a location inside the resource
+- an optional query part, which often contains arguments for a PHP script or some
+similar dynamic response mechamism
+
+The class IO::URI is used to pass URIs around and to crack URI strings into
+its various components. It should be noted however, that an URI object has a
+bigger memory footprint compared to storing the URI in a simple string. So sometimes
+it may be better keep URIs around in strings and only use the IO::URI class to 
+split the URI string into its parts.
+
+Here are some examples for URI's:
+
+@verbatim
+file:///c:/temp/bla.txt
+file://samba/temp/bla.txt
+http://www.radonlabs.de/index.html
+http://user:password@www.myserver.com:8080/index.html#main
+@endverbatim
+
+By using Nebula3 assigns you can simplify those complex pathnames a lot. To reference
+a file in the application directory you can write for instance <b>home:bla.txt</b> which
+would resolve to something like <b>file:///c:/programme/[myapp]/bla.txt</b>.
+
+@subsection Nebula3StreamsReadersWriters Nebula3 Streams, Readers and Writers
+
+Streams provide a common interface for storing or transporting raw data. They
+replace the nFile class of Nebula2 with a much more general approach for storing,
+retrieving and transporting data. A stream object provides the traditional 
+Open()/Close()/Read()/Write()/Seek() interface. Some stream classes provide
+memory mapping, so that data can be read or written by direct memory access.
+Stream objects use an IO::URI object to define their resource location. Usually,
+one URI scheme maps to a specific stream class. For instance the URI scheme
+"http:" usually maps to the Net::HttpStream class, while the scheme "file:" maps
+to the IO::FileStream class. This mapping is implemented by the StreamServer
+which constructs a matching stream object given an URI. A Nebula3 application
+is responsible to provide the mapping of URI scheme to stream classes using the
+StreamServer::Register() method. This is also the way how new stream classes
+and schemes are registered with Nebula3.
+
+Important stream classes in Nebula3 are for instance:
+
+- IO::FileStream: provides access to the host's filesystem
+- IO::MemoryStream: a dynamic memory buffer with a stream interface
+- IO::HttpStream: provides a stream interface to files on a HTTP server
+
+To read and write formatted stream data in a more flexible way then Nebula2, 
+stream reader and stream writer classes have been introduced in Nebula3. 
+Stream reader and writer classes provide a comfortable interface which is
+specialized on a specific data format. Here are some examples of stream
+readers and writers provided by Nebula3:
+
+- IO::BinaryReader/IO::BinaryWriter: read and write binary data
+- IO::TextReader/IO::TextWriter: read and write text and character data
+- IO::XmlReader/IO::XmlWriter: read and write XML formatted data
+- Messaging::MessageReader/Messaging::MessageWriter: Message serialization
+
+Here's a simple example how to access a file on a HTTP server with a XmlReader:
+
+@code
+    using namespace IO;
+    
+    Ptr<Stream> stream = StreamServer::Instance()->CreateStream("http://www.radonlabs.de/index.html");
+    Ptr<XmlReader> xmlReader = XmlReader::Create();
+    xmlReader->SetStream(stream);
+    if (xmlReader->Open())
+    {
+        // parse content here using the XmlReader interface
+    }
+@endcode
+
+
+@subsection Nebula3FileServer The Nebula3 File Server
+
+The Nebula3 IO::FileServer class provides a singleton which offers access to the
+hosts filesystem for global operations like defining assigns, copying, deleting and
+checking for existance of files and directories, listing directory contents, and so on.
+
+Here's some sample code fragments for some of the more useful FileServer methods:
+
+@code
+    
+    using namespace IO;
+    using namespace Util;
+    
+    FileServer* fs = FileServer::Instance();
+
+    // check if a file or directory exists
+    bool fileExists = fs->FileExists("home:bla.txt");
+    bool dirExists = fs->DirectoryExists("temp:bla/blub");
+    
+    // resolve a path with assigns into an absolute filesystem
+    // path, this is sometimes necessary to interface with 
+    // 3rd party libraries which don't understand Nebula3 paths directly
+    String absPath = fs->ResolveAssings("user:myapp/savegames");
+    
+    // create a directory, note that all missing subdirectories will
+    // be created as well
+    fs->CreateDirectory("user:myapp/savegames");
+    
+    // copy and delete files
+    fs->CopyFile("home:movie.mpg", "temp:movie.mpg");
+    fs->DeleteFile("temp:movie.mpg");
+    
+    // list files in a directory matching a pattern
+    Array<String> files = fs->ListFiles("temp:", "*.txt");
+    
+    // list all subdirectories in temp:
+    Array<String> dirs = fs->ListDirectories("temp:", "*");
+@endcode
+
+@subsection Nebula3Console The Nebula3 Console
+
+[TODO]
+*/

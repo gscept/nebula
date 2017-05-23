@@ -1,0 +1,7 @@
+/**
+@namespace Debug
+
+@section Nebula3DebugSystem The Nebula3 Debug Subsystem
+
+The Nebula3 Debug subsystem contains lowlevel classes which aid in runtime- and postmortem-debugging.
+*/

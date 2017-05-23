@@ -1,0 +1,26 @@
+/**
+@namespace Interface
+
+Interface objects offer asynchronous access to important Nebula3 subsystems,
+like IO, Audio and Rendering. They are the key mechanism in Nebula3
+to make efficient use of multicore CPUs.
+
+Interface objects are thread-global singletons which encapsulate an 
+entire Nebula3 subsystem. In fact each Interface object initializes a minimal
+Nebula3 runtime which runs in a separate thread. This works great because
+all Nebula3 singletons are thread-local (the only exception are Interface
+objects which are singletons across threads). So code running in
+a parallel thread will only see the Nebula3 server objects which have
+been created in this thread. This parallel approach simplifies the 
+implementation of Nebula3 classes, since only the code which handles
+communication across threads has to be thread safe.
+
+Communication with Interface objects happens through normal Message
+objects. To instruct an Interface object to execute a task in 
+parallel to the main thread, just create a Message object, initialize
+it and send it through to the Interface's Send() method. The Send()
+method will return immediately and the calling thread is free to
+do other stuff while the task is executing in the Interface object's
+worker thread. If a result is desired, the calling thread can
+either poll or wait for completion of the original message.
+*/

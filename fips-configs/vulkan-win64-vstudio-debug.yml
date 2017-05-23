@@ -1,0 +1,7 @@
+---
+platform: win64 
+generator-platform: x64
+build_tool: cmake
+build_type: Debug
+defines:
+    N_USE_VULKAN: ON

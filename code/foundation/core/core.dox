@@ -1,0 +1,333 @@
+/**
+@namespace Core
+
+@section Nebula3CoreSystem The Nebula3 Core Subsystem
+
+The Nebula3 Core subsystem (as the name implies) implements the core concepts
+of Nebula3 which are:
+
+- a RefCounted base class which implements a strong ref counting mechanism
+- a runtime type information system
+- a templated smart pointer class Ptr<> which manages the life time of RefCounted objects
+- a factory mechanism which allows to construct C++ objects from their string class name
+- a central Server object which setsup a basic Nebula3 runtime environment
+
+@subsection Nebula3ObjectModel The Nebula3 Object Model
+
+Nebula3 implements a basic object model which implements the following
+new features on top of the C++ object model:
+
+- lifetime management by refcounting and smart pointers
+- object creation by string or fourcc class identifier
+- a runtime type information system
+
+@subsection Nebula3ClassImplementation Implementing A New Nebula3 Class
+
+The first decision when implementing a new class should be whether the
+new class should be derived from the Core::RefCounted class or whether
+it should be a traditional C++ class. The following points should help
+to find the answer:
+
+- if the class wants to make use of the extended Nebula3 object model 
+features like refcounting, RTTI, and so forth, it must be derived from
+the Core::RefCounted class
+- if the class is a typical small helper or utility class, like a
+dynamic array class, a math vector class, or something similar, it
+often does not make sense to derive from Core::RefCounted.
+
+Deriving from the Core::RefCounted class implies some restrictions:
+
+- RefCounted-derived objects may never be created directly in the 
+local C++ context as stack objects, since stack objects are lifetime-
+managed by C++ (they are destroyed when the current C++ context is
+left, circumventing Nebula3's refcounted lifetime management completely)
+- RefCounted-derived classes only have a default constructor.
+- RefCounted-derived classes must have a virtual destructor.
+- RefCounted-derived classes must not be copied, since this
+would confuse the refcounting mechanism.
+
+To make use of the Nebula3 object model features, one needs to derive from
+the Core::RefCounted class and annotate the new class with some additional
+information in the class declaration and in the header file:
+
+A normal RefCounted-derived class declaration usually looks like this:
+
+@code
+namespace MyNamespace
+{
+class MyClass : public Core::RefCounted
+{
+    DeclareClass(MyClass);
+public:
+    /// constructor
+    MyClass();
+    /// destructor
+    virtual ~MyClass();
+    ...
+};
+RegisterClass(MyClass);
+@endcode
+
+Notice the DeclareClass() macro, the default constructor and the virtual destructor
+and the RegisterClass() macro outside of the class declaration. The DeclareClass() 
+macro adds some minimal Nebula3-specific information to the class declaration for 
+the RTTI and factory mechanism. The DeclareClass() macro generally hides the internals
+of the Nebula3 object model from the programmer, so that (hopefully), internals of the
+object model can be changed without affecting existing classes. The RegisterClass()
+macro is optional and registers the class with the central factory object. If you
+know that objects of this class will never be created by string class name or
+fourcc code, the RegisterClass() macro can be omitted.
+
+The .cc side of the class needs to contain the following Nebula3 specific 
+information:
+
+@code
+namespace MyNamespace
+{
+ImplementClass(MyNamespace::MyClass, 'MYCL', Core::RefCounted);
+
+}
+@endcode
+
+The ImplementClass() macro registers the class with the RTTI mechanism, the
+first parameter describes the C++ class name (note that the namespace
+must be present here. The second macro is the class fourcc code, which must be
+unique across all classes (you'll get a runtime error at application startup
+if 2 classes try to register with the same fourcc code). The third argument
+is the C++ class name of the parent class. This is used by the RTTI mechanism
+to reconstruct the class tree.
+
+@subsection RefCountingAndSmartPointers RefCounting And Smart Pointers
+
+Nebula3 uses traditional refcounting to manage the lifetime of its objects. A 
+templated smart pointer class Ptr<> exists to hide the refcounting details
+from the programmer. As a general rule of thumb, always use smart pointers
+to point to RefCounted-derived objects unless you can make sure that within
+a given code block, the refcount of an object will not change. 
+
+Smart pointers have a number of advantages over plain pointers:
+
+- accessing a 0-pointer will give you an easy to debug assertion instead of a 
+memory fault
+- you'll never have to call AddRef() or Release() on you refcounted objects (in fact
+if you have, there's something seriously wrong)
+- smart pointers work nicely in container classes, an array of smart pointers
+instead of plain pointers eliminates all the typical lifetime management problems,
+you never need to take care about releasing the objects behind the pointers, instead
+the array just behaves like it would contain real C++ objects
+- with smart pointers, you generally don't need to define "object ownership" as 
+is often the case when using plain pointers (who's responsible to delete objects,
+and so on...)
+
+There are also some disadvantages with smart pointers:
+
+- Performance: Copying and assigning smart pointers involves calling AddRef() and/or Release() on
+their objects, de-referencing a smart pointer involves an assertion-check that the 
+contained object pointer is valid. The resulting performance hit is usually neglibe, but
+you may have to be aware of it in inner loops.
+- Presumably dead objects still alive: Since objects managed by smart pointers are 
+only deleted when the last client gives up ownership, objects may exist longer then
+intended. Often this is points to a bug. Nebula3 will notify you about any refcounting
+leaks (that is, refcounting objects that still exist at application shutdown)
+
+@subsection CreatingNebula3Objects Creating Nebula3 Objects
+
+Nebula3 objects that are derived from Core::RefCounted can be created in 3 different
+ways:
+
+Directly through the static create method:
+@code
+    Ptr<MyClass> myObj = MyClass::Create();
+@endcode
+The static Create() method is added to the class through the DeclareClass() macro
+described before. This is basically just syntactic sugar for the C++ operator::new().
+In fact, the Create() method is nothing more then an inline method with a call to
+the new operator inside. Also note the correct use of a smart pointer to hold the new
+object.
+
+Another way to create a Nebula3 method is by class name:
+@code
+    using namespace Core;
+    Ptr<MyClass> myObj = (MyClass*) Factory::Instance()->Create("MyNamespace::MyClass");
+@endcode
+Creating an object by its string class name is useful if you don't know the object
+class at compile time, which is usually the case when serialized objects are restored,
+or when some sort of scripting interface is used. Note the type cast.
+This is necessary because the factory Create() method returns a generic pointer
+to a Core::RefCounted object.
+
+A variation of the create-by-class-name method is to create the object by its
+class fourcc code:
+@code
+    using namespace Core;
+    using namespace Util;
+    Ptr<MyClass> myObj = (MyClass*) Factory::Instance()->Create(FourCC('MYCL'));
+@endcode
+This method looks less intuitive, but it is often faster as create-by-name and
+the fourcc class identifier uses less space (4 bytes) then the string class name, 
+which may be of advantage when objects are encoded/decoded to and from binary 
+streams. 
+
+@subsection Nebula3RTTI The Nebula3 Runtime Type Information System
+
+The Nebula3 RTTI system gives you access to an objects class type at runtime
+and lets you check whether an object is the exact instance of a class, or
+an instance of a derived class. You can also get the class name or the class
+fourcc identifier directly from an object. All this functionality is implemented
+behind the scenes in the DeclareClass() and ImplementClass() macros. The RTTI
+mechanism is more efficient and easier to use then the RTTI mechanism in Nebula1
+and Nebula2. 
+
+Here's some example code:
+@code
+    using namespace Util;
+    using namespace Core;
+
+    // check whether an object is instance of a specific class
+    if (myObj->IsInstanceOf(MyClass::RTTI))
+    {
+        // it's a MyClass object
+    }
+    
+    // check whether an object is instance of a derived class
+    if (myObj->IsA(RefCounted::RTTI))
+    {
+        // it's a RefCounted instance or some RefCounted-derived instance
+    }
+    
+    // get the class name of my object, this yields "MyNamespace::MyClass"
+    const String& className = myObj->GetClassName();
+    
+    // get the fourcc class identifier of my object, this yields 'MYCL'
+    const FourCC& fourcc = myObj->GetClassFourCC();
+@endcode
+
+You can also query the central factory object whether a given class has been 
+registered:
+
+@code
+    using namespace Core;
+
+    // check if a class has been registered by class name
+    if (Factory::Instance()->ClassExists("MyNamespace::MyClass"))
+    {
+        // yep, the class exists
+    }
+    
+    // check if a class has been registered by class fourcc code
+    if (Factory::Instance()->ClassExists(FourCC('MYCL')))
+    {
+        // yep, the class exists
+    }
+@endcode
+
+@subsection Nebula3Singletons Nebula3 Singletons
+
+Many central Nebula3 objects are singletons, that is, an object which only
+exists once in the application and often is known to all other objects in the
+application. 
+
+Access to singleton objects can be gained through the static Instance() method,
+which returns a pointer to the single instance of the singleton class. The
+returned pointer is guaranteed to be valid. If the singleton object doesn't
+exist at the time the Instance() method is called, an assertion will be thrown:
+
+@code
+    // obtain a pointer to the Core::Server singleton
+    Ptr<Core::Server> coreServer = Core::Server::Instance();
+@endcode
+
+You can also check for the existance of a given singleton:
+@code
+    // does the Core::Server object exist?
+    if (Core::Server::HasInstance())
+    {
+        // yep, the core server exists
+    }
+@endcode
+
+Nebula3 provides some helper macros to implement a singleton class:
+
+@code
+// declare a singleton class
+class MySingletonClass : public Core::RefCounted
+{
+    DeclareClass(MySingletonClass);
+    DeclareSingleton(MySingletonClass);
+public:
+    /// constructor
+    MySingletonClass();
+    /// destructor
+    virtual ~MySingletonClass();
+    ...
+};
+
+// implement the singleton class
+ImplementClass(MyNamespace::MySingletonClass, 'MYSC', Core::RefCounted);
+ImplementSingleton(MyNamespace::MySingletonClass);
+
+//------------------------------------------------------------------------------
+/**
+    Implements the Singleton constructor.
+*/
+MySingletonClass::MySingletonClass()
+{
+    ConstructSingleton;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Implements the Singleton destructor.
+*/
+MySingletonClass:~MySingletonClass()
+{
+    DestructSingleton;
+}
+@endcode
+
+The DeclareSingleton() and ImplementSingleton() macros are similar to the
+DeclareClass() and ImplementClass() macros. They add some static methods to the
+class (namely the Instance() and HasInstance() methods). The constructor and
+destructor of the class must contain a <b>ConstructSingleton</b> and <b>DestructSingleton</b>
+macros. ConstructSingleton initializes a private static singleton pointer and makes sure
+that no other instance of the class exists (otherwise, an assertion will be thrown).
+DestructSingleton invalidates the static singleton pointer.
+
+Access to singletons is by default thread-local. This means that a singleton created
+in one thread of a Nebula3 application isn't accessible from another thread. This
+follows the "Parallel Nebulas" paradigm which simplifies multithreaded programming
+a lot. The idea behind "Parallel Nebulas" is, that a typical Nebula3 application contains
+of a few "fat threads" each running ideally on a separate CPU core. Fat threads implement
+for instance asynchronous IO, rendering, physics, and so on. Each of those fat threads
+initializes its own Nebula3 runtime, which just contains the minimal Nebula3 environment 
+needed to perform the Fat Threads specific task. This basically eliminates the need for 
+fine-grained synchronisation in almost all of the Nebula3 code and concentrates "thread-aware"
+code to a few well-defined code areas which deals with communication between fat threads.
+Another positive side effect of the "Parallel Nebulas" paradigm is, that a programmer
+typically doesn't have to care too much about running in a multithreaded environment.
+Most of the typical Nebula3 code looks just like normal singlethreaded code, yet can
+still run in its own fat thread.
+
+@subsection CorePerfAndMemConsideratins Performance And Memory Footprint Considerations
+
+One of the design goals of the Nebula3 Core Layer was to reduce the memory footprint of 
+low level code to make the system better suited for small host platforms like
+handheld consoles (and a small memory footprint doesn't hurt on bigger platforms either). 
+Here are some points how these goals are accomplished:
+
+- The RefCounted class just adds 4 bytes per-instance data for the reference count 
+member, Nebula2's nRoot class added >60 bytes overhead to each instance.
+- The RTTI mechanism adds somewhere between 30 and 60 bytes overhead, but this is
+per-class, not per instance.
+- A smart pointer is just 4 bytes, just like a raw pointer. The similar Nebula2 nRef
+class was 16 bytes per instance.
+- Several householding structures are only allocated in debug mode, most notably
+the RefCountedList, which is used to detect refcounting leaks.
+
+Here are some timings for creating a million RefCounted objects by the 3 different ways. 
+These timings are on a notebool with Intel Pentium M running at 800 MHz:
+
+- Create(): 0.29 seconds
+- by FourCC: 0.65 seconds
+- by class name: 1.45 seconds
+*/

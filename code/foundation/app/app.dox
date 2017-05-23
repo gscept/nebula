@@ -1,0 +1,60 @@
+/**
+@namespace App
+
+@section Nebula3AppSystem The Nebula3 App Subsystem
+
+The App namespace offers a set of Application classes which simplify setting up
+a proper Nebula3 application. The general idea is that an application derives
+a subclass from one of the specialized Application classes and adds its own
+functionality to the virtual Application::Open(), Application::Run() and
+Application::Close() methods.
+
+Here's an example of what a Nebula3's main source code should look like:
+
+@code
+//------------------------------------------------------------------------------
+//  nviewer3.cc
+//  (C) 2007 Radon Labs GmbH
+//------------------------------------------------------------------------------
+#include "stdneb.h"
+#include "apprender/viewerapplication.h"
+
+using namespace App;
+using namespace Util;
+
+ImplementNebulaApplication();
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+NebulaMain(const CmdLineArgs& args)
+{
+    ViewerApplication app;
+    app.SetCompanyName("Radon Labs GmbH");
+    app.SetAppName("nViewer3");
+    app.SetCmdLineArgs(args);
+    if (app.Open())
+    {
+        app.Run();
+        app.Close();
+    }
+    app.Exit();
+}
+@endcode
+
+The macro ImplementNebulaApplication() takes care about some platform-specifics (mainly
+how arguments are passed to a program) and then calls the NebulaMain() function, which
+receives a Util::CmdLineArgs object which contains the command line arguments. The
+ViewerApplication class is a user-derived class (in this case Nebula3's standard
+viewer). The application object needs to be setup with a company name, an application
+name (these two uniquely identify the application and are for used to create a
+data directory under "My Files" which will contain application specific files (likes
+configuration settings or save game files). The Open() method will setup the application
+for use. If something goes wrong the method will return false. Run() should implement
+the actual application features, it may run in a loop until the user wants to exit,
+or it may return immediately. Close() will shutdown the application. Finally Exit()
+must be called to properly cleanup Nebula3 before exiting the application. This
+will shutdown any static objects, perform a RefCounting leak and memory leak check
+and finally exit the application process.
+*/

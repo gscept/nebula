@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Nebula3>
+    <Protocol namespace="Http" name="HttpProtocol">
+
+        <!-- dependencies -->
+        <Dependency header="http/httprequesthandler.h"/>
+
+        <!-- attach a HttpRequestHandler -->
+        <Message name="AttachRequestHandler" fourcc="arqh">
+            <InArg name="RequestHandler" type="Ptr<Http::HttpRequestHandler>"/>                
+        </Message>
+
+        <!-- remove an HttpRequestHandler -->
+        <Message name="RemoveRequestHandler" fourcc="rrqh">
+            <InArg name="RequestHandler" type="Ptr<Http::HttpRequestHandler>"/>                
+        </Message>
+
+    </Protocol>
+    
+</Nebula3>    
+    

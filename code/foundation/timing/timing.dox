@@ -1,0 +1,21 @@
+/**
+@namespace Timing
+
+@section Nebula3TimingSystem The Nebula3 Timing Subsystem
+
+The Nebula3 Timing subsystem offers classes and servies for measuring 
+elapsed time, and working with the calendar time (days, weeks, month, years).
+
+@subsection Nebula3TimingBasics Timing Subsystem Basics
+
+- Timing::Time represents a double-precision floating point number and contains a time value in seconds.
+- Timing::Tick represent an integer number contains a time value in milli-seconds (1/1000sec).
+- To convert between the 2 data types, use the global Timing::TicksToSeconds() and Timing::SecondsToTicks()
+functions.
+- To let a thread sleep for a specific amount of time, use the Timing::Sleep() method. 
+- Use Timing::Sleep(0.0) to give up the current thread time slice.
+- Use the Timing::Timer class for measuring elapsed time. Timing::Timer is also "fast enough"
+to be used as a profiler around a block of code.
+- Use the Timing::CalendarTime class if you need to query the current wall-clock time and date.
+- The Timing::CalendarTime class also offers method to convert between calendar time and IO::FileTime.
+*/

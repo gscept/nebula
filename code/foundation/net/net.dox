@@ -1,0 +1,239 @@
+/**
+@namespace Net
+
+The Nebula3 Net subsystem offers simple client/server-style communication
+using the TCP protocol over LAN or internet connections. It is not intended
+for highlevel game-oriented communication with lobbies, session management
+and synchronisation of player data. This will be provided in higher level 
+Nebula3 networking subsystems.
+
+@section NetIPAddress Working with IP addresses
+
+An IpAddress object identifies a communication endpoint by host name or tcp/ip 
+address and a port number. IpAddress objects can be created in a number of ways:
+
+@code
+
+// from TCP/IP address and port number:
+IpAddress ipAddr("192.168.0.2", 1234);
+
+// from host name and port number:
+IpAddress ipAddr("www.radonlabs.de", 1234);
+
+// from the local host (127.0.0.1) and port number:
+IpAddress ipAddr("localhost", 1234);
+
+// from the "any" address (0.0.0.0) and a port number:
+IpAddress ipAddr("any", 1234);
+
+// from the broadcast address (255.255.255.255) and a port number:
+IpAddress ipAddr("broadcast", 1234);
+
+// from the host's first valid network adapter's address and a port number
+IpAddress ipAddr("self", 1234);
+
+// from the host's first valid network adapter connected to the internet and a port number:
+IpAddress ipAddr("insetself", 1234);
+
+// from an URI which defines a host name and a port number:
+IpAddress ipAddr(IO::URI("http://www.radonlabs.de:2100"));
+@endcode
+
+An IpAddress object can be used to lookup a TCP/IP address
+from a host name:
+
+@code
+IpAddress ipAddr("www.radonlabs.de", 0);
+String numericalAddr = ipAddr.GetHostAddr();
+@endcode
+
+
+@section NetTcpServerClient Setting Up A Client/Server System
+
+The Net subsystem provides an easy-to-use TCP-based client/server system
+implemented in the classes TcpServer and TcpClient using the TCP protocol.
+Any number of TcpClients can be served by a single TcpServer simultanously.
+
+Setting up a server is done like this:
+
+@code
+using namespace Net;
+
+Ptr<TcpServer> tcpServer = TcpServer::Create();
+tcpServer->SetAddress(IpAddress("any", 2352));
+if (tcpServer->Open())
+{
+    // TcpServer successfully opened
+}
+@endcode
+
+This will setup the server to listen on port 2352 for incoming client connection
+requests.
+
+To communicate with the TcpServer, a TcpClient object needs to be setup
+on the client side:
+
+@code
+
+using namespace Net;
+
+Ptr<TcpClient> tcpClient = TcpClient::Create();
+tcpClient->SetBlocking(false);
+tcpClient->SetAddress(IpAddress("localhost", 2352));
+TcpClient::Result res = tcpClient->Connect();
+@endcode
+
+This assumes that the server is running on the same machine as the client
+(since the client connects to "localhost").
+
+In a non-blocking scenario as above, the Connect() method will either
+return with TcpClient::Success (which means the connection is established),
+or more likely with TcpClient::Connecting, in this case the connection
+hasn't been established yet, and the application needs to continue
+calling the Connect() method. In the case of an connection error, the
+return code TcpClient::Error will be returned.
+
+In a blocking scenario the Connect() method will not return until
+either the connection has been established (result would be TcpClient::Success)
+or an error occured (TcpClient::Error).
+
+@note
+An interactive application should never block during network communication
+and instead should provide continouos feedback to the user what's going
+on. 
+@endnote
+
+Once a connection has been established, a TcpClientConnection object will
+be created on the server side for each connected client. The TcpClientConnection
+represents the client on the server and is used to receive data from the client
+and to send responses back to the client.
+
+For sending and receiving data, IO::Stream objects are used. By attaching
+IO::StreamReader and IO::StreamWriter objects to the communication
+streams it is very easy to encode and decode data from the stream. 
+
+@note
+Send-data is not sent immediately, instead the data will accumulate in the send 
+stream until the Send() method is called.
+@endnote
+
+To send some text data from a client to its server, obtain a pointer
+to the send stream, write data to it and call the Send() method:
+
+@code
+
+using namespace Net;
+using namespace IO;
+
+// obtain pointer to client's send stream and attach a TextWriter
+const Ptr<Stream>& sendStream = tcpClient->GetSendStream();
+Ptr<TextWriter> textWriter = TextWriter::Create();
+textWriter->SetStream(sendStream);
+textWriter->Open())
+textWriter->WriteString("Hello Server");
+textWriter->Close();
+
+// send off the data to the server
+if (this->tcpClient->Send())
+{
+    // data has been sent
+}
+@endcode
+
+To receive client data on the server side, the application needs to poll
+for TcpClientConnection which contain data from clients frequently (e.g.
+once per frame). More then one TcpClientConnection may be waiting
+for processing, thus the processing loop should look like this:
+
+@code
+
+using namespace Util;
+using namespace IO;
+using namespace Net;
+
+// get array of client connections which received data since the last time
+Array<Ptr<TcpClientConnection>> recvConns = tcpServer->Recv();
+IndexT i;
+for (i = 0; i < recvConns.Size(); i++)
+{
+    // get receive stream from current connection, attach a text reader and read content
+    Ptr<TextReader> textReader = TextReader::Create();
+    textReader->SetStream(recvConns[i]->GetRecvStream());
+    textReader->Open();
+    String str = textReader->ReadString();
+    textReader->Close();
+    
+    // process received string and send response back to client
+    // create a TextWriter and attach it to the send stream of the client connection
+    Ptr<TextWriter> textWriter = TextWriter::Create();
+    textWriter->SetStream(recvConns[i]->GetSendStream());
+    textWriter->Open();
+    textWriter->WriteString("Hello Client");
+    textWriter->Close();
+    
+    // finally send the response back to the client
+    recvConns[i]->Send();
+}
+@endcode
+
+To get server responses on the client side, call the TcpClient::Recv() method which
+will block until data arrives (in blocking mode), or come back immediately (in non-blocking mode)
+and return true when data from the server is available:
+
+@code
+
+using namespace Net;
+using namespace IO;
+
+// check if data is available from the server
+if (tcpClient->Recv())
+{
+    // yep, data is available, get the recv stream and read the data from it
+    const Ptr<Stream>& recvStream = tcpClient->GetRecvStream();
+    Ptr<TextReader> textReader = TextReader::Create();
+    textReader->SetStream(recvStream);
+    textReader->Open();
+    String responseString = textReader->ReadString();
+    n_printf("The server said: %s\n", responseString.AsCharPtr());
+    textReader->Close();
+}
+@endcode
+
+A client should also check whether the connection is still up by calling the IsConnected() method.
+If the connection has been dropped for some reason, this method will return false.
+
+@note
+TcpServer and TcpClient do not implement an underlying communication protocol which enables 
+them to work with "foreign" clients and servers (for instance, a TcpServer could work with standard 
+web browsers as client, and a TcpClient class could communicate with a standard HTTP server).
+@endnote
+
+For real world scenarios, an application should implement its own robust communication 
+protocol which at least encodes the length of the payload data. If the payload is bigger 
+then some maximum packet size, data may be sent in several packets, and thus may arrive 
+in several packets at the client. The client should decode the length of the payload
+from the message header to decide whether the received data represents a complete message,
+or whether more data needs to be received until message is complete.
+
+@section NetByteOrder Byte Order Issues
+
+Servers and clients may run on CPUs with different byte order. If binary data is sent
+over a network connection, the data must be converted into a "network byte order" which 
+both clients agree on. Nebula3 offers automatic byte order conversion in the
+IO::BinaryReader and IO::BinaryWriter classes. Simply call the following methods
+before reading from or writing to a network communication stream:
+
+@code
+
+binaryReader->SetStreamByteOrder(System::ByteOrder::Network);
+binaryWriter->SetStreamByteOrder(System::ByteOrder::Network);
+@endcode
+
+@section NetSocketClass The Socket Class
+
+The Net subsystem provides a Socket class which wraps the traditional socket 
+functions into a C++ interface. Usually an application doesn't use Socket
+class directly and instead uses higher level networking classes like
+TcpServer. But if that's not possible for some reason the Socket class
+is much more convenient then working directly with socket functions.
+*/

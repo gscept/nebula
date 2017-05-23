@@ -1,0 +1,7 @@
+---
+exports:
+    headers-dirs:
+        - .    
+        - code/foundation
+    modules:
+        foundation: code/foundation

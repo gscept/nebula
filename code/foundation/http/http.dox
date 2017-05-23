@@ -1,0 +1,26 @@
+/**
+@namespace Http
+
+@section Nebula3HttpSystem The Nebula3 Http Subsystem
+
+The Http subsystem offers a complete set of HTTP client- and server-classes. The HttpServer class 
+implements simple but complete builtin HTTP server which can communicate with web browsers.
+The HttpServer is mainly used to expose runtime debugging data, but it can also be used for
+general HTTP communication with the Nebula3 application. A HtmlPageWriter class exists to simplify
+writing HTML-formatted pages to an IO::Stream. HttpRequestReader is a IO::StreamReader which
+can decode an HTTP request from a web browser. The HttpResponseWriter is a IO::StreamWriter which
+encodes a HTTP response with attached content (usually a HTML page or an image) into an IO::Stream.
+
+HttpRequestHandler's process HTTP requests and create a content stream which is sent back
+to client web browsers. The HttpServer is extended with new functionality by deriving
+new subclasses from HttpRequestHandler and adding instances to the HttpServer.
+
+To connect to a running Nebula3 application on the same machine, open a web browser and
+navigate to the following address:
+
+http://127.0.0.1:2100
+
+This should open the applications main page with links to specialized pages implemented by
+custom HttpRequestHandlers.
+
+*/
