@@ -17,7 +17,6 @@ if(N_MATH_XNA)
 	add_definitions(-D__USE_XNA)
 else()	
 	add_definitions(-D__USE_VECMATH)
-	include_directories(${NROOT}/code/extlibs/bullet/bullet/src)
 	OPTION(N_USE_AVX "Use AVX instructionset" OFF)	
 endif()
 
