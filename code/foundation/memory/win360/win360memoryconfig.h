@@ -83,8 +83,8 @@ extern PoolArrayAllocator* ObjectPoolAllocator;  // Rtti::AllocInstanceMemory() 
 __forceinline unsigned char*
 __HeapAlignPointerAndWritePadding16(unsigned char* ptr)
 {
-    unsigned char paddingMask = DWORD(ptr) & 15;
-    ptr = (unsigned char*)(DWORD(ptr + 16) & ~15);
+    unsigned char paddingMask = size_t(ptr) & 15;
+    ptr = (unsigned char*)(size_t(ptr + 16) & ~15);
     ptr[-1] = paddingMask;
     return ptr;
 }
@@ -97,7 +97,7 @@ __HeapAlignPointerAndWritePadding16(unsigned char* ptr)
 __forceinline unsigned char*
 __HeapUnalignPointer16(unsigned char* ptr)
 {
-    return (unsigned char*)(DWORD(ptr - 16) | ptr[-1]);
+    return (unsigned char*)(size_t(ptr - 16) | ptr[-1]);
 }
 
 //------------------------------------------------------------------------------

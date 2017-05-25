@@ -1061,7 +1061,7 @@ int
 String::StrLen(const char* str)
 {
     n_assert(str);
-    return strlen(str);
+    return (int)strlen(str);
 }
 
 //------------------------------------------------------------------------------

@@ -914,7 +914,7 @@ __forceinline float4
 float4::normalizeapprox(const float4 &v)
 {
 	if (float4::equal3_all(v, float4(0,0,0,0))) return v;
-    return _mm_div_ps(v.vec.vec,_mm_rsqrt_ps(_mm_dp_ps(v.vec.vec, v.vec.vec, 0xFF)));
+    return _mm_mul_ps(v.vec.vec,_mm_rsqrt_ps(_mm_dp_ps(v.vec.vec, v.vec.vec, 0xFF)));
 }
 
 //------------------------------------------------------------------------------
@@ -934,7 +934,7 @@ __forceinline float4
 float4::normalizeapprox3(const float4 &v)
 {
 	if (float4::equal3_all(v, float4(0, 0, 0, 0))) return v;
-	return _mm_div_ps(v.vec.vec, _mm_rsqrt_ps(_mm_dp_ps(v.vec.vec, v.vec.vec, 0xF7)));
+	return _mm_mul_ps(v.vec.vec, _mm_rsqrt_ps(_mm_dp_ps(v.vec.vec, v.vec.vec, 0xF7)));
 }
 
 //------------------------------------------------------------------------------

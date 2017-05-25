@@ -179,7 +179,7 @@ Win360Heap::DumpHeapMemoryLeaks(const char* heapName, HANDLE hHeap)
                 ::OutputDebugString(strBuf);
                 heapMsgShown = true;
             }
-            _snprintf(strBuf, sizeof(strBuf), "addr(0x%0lx) size(%d)\n", (size_t) walkEntry.lpData, walkEntry.cbData);
+            _snprintf(strBuf, sizeof(strBuf), "addr(0x%0zx) size(%d)\n", (size_t) walkEntry.lpData, walkEntry.cbData);
             ::OutputDebugString(strBuf);
         }
     }

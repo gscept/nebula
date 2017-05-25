@@ -38,7 +38,7 @@ Win360MemoryPool::~Win360MemoryPool()
     if (this->allocCount != 0)
     {
         String str;
-        str.Format("Win360MemoryPool: %d memory leaks in pool '0x%08x'!\n", this->allocCount, (uint)this);
+        str.Format("Win360MemoryPool: %d memory leaks in pool '0x%08x'!\n", this->allocCount, (uintptr_t)this);
         Core::SysFunc::DebugOut(str.AsCharPtr());
     }
     #endif
