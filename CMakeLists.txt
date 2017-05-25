@@ -1,4 +1,5 @@
 # Nebula Trifid
+# main cmake file that sets up fips
 
 # 3.7.2 required for using FindVulkan
 cmake_minimum_required(VERSION 3.7.2)
