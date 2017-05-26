@@ -1,0 +1,17 @@
+# Nebula Tests
+
+# 3.7.2 required for using FindVulkan
+cmake_minimum_required(VERSION 3.7.2)
+
+get_filename_component(FIPS_ROOT_DIR "../fips" ABSOLUTE)
+include(${FIPS_ROOT_DIR}/cmake/fips.cmake)
+
+fips_setup(PROJECT Nebula-tests)
+fips_include_directories(.)
+
+fips_add_subdirectory(testbase)
+fips_add_subdirectory(testfoundation)
+fips_add_subdirectory(mathtest)
+fips_add_subdirectory(testwin32)
+
+fips_finish()
