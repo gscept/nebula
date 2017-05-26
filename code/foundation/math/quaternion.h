@@ -12,7 +12,7 @@
 
 */
 
-#if __USE_XNA
+#if __USE_MATH_DIRECTX
 #include "math/xnamath/xna_quaternion.h"
 #elif __USE_VECMATH
 #include "math/vecmath/vec_quaternion.h"

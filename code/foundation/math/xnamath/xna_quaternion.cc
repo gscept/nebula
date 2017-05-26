@@ -17,7 +17,7 @@ namespace Math
 quaternion
 quaternion::rotationmatrix(const matrix44& m)
 {
-    return XMQuaternionRotationMatrix(m.mx);
+    return DirectX::XMQuaternionRotationMatrix(m.mx);
 }
 
 

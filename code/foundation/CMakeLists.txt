@@ -525,7 +525,7 @@ fips_begin_module(foundation)
 	endif()
 
 
-	if(Nebula_XNA)
+	if(N_MATH_DIRECTX)
 		fips_dir(math/xnamath math)
 		fips_files(
 			xna_float4.cc

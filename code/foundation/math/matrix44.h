@@ -10,7 +10,7 @@
     (C) 2006 Radon Labs GmbH
     (C) 2013-2016 Individual contributors, see AUTHORS file
 */
-#if __USE_XNA
+#if __USE_MATH_DIRECTX
 #include "math/xnamath/xna_matrix44.h"
 #elif __USE_VECMATH
 #include "math/vecmath/vec_matrix44.h"
