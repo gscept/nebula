@@ -9,6 +9,9 @@ include(${FIPS_ROOT_DIR}/cmake/fips.cmake)
 
 fips_setup(PROJECT Nebula)
 
+fips_include_directories(code/foundation)
+fips_include_directories(extlibs/mixed)
+
 fips_ide_group(Core)
 fips_add_subdirectory(code/foundation)
 
