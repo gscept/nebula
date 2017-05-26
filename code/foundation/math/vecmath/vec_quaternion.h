@@ -582,7 +582,7 @@ quaternion::multiply(const quaternion& q0, const quaternion& q1)
 	__m128 tmp2 = _mm_hadd_ps(_mm_mul_ps(q0.vec.vec, hi), _mm_mul_ps(rev, lo));
 
 	__m128 tmp3 = _mm_addsub_ps(_mm_shuffle_ps(tmp2, tmp1, _MM_SHUFFLE(3, 2, 1, 0)),
-						_mm_shuffle_ps(tmp2, tmp3, _MM_SHUFFLE(2, 3, 0, 1)));
+						_mm_shuffle_ps(tmp1, tmp2, _MM_SHUFFLE(2, 3, 0, 1)));
 
 	return _mm_shuffle_ps(tmp3, tmp3, _MM_SHUFFLE(2, 1, 3, 0));
 }
