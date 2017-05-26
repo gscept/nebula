@@ -1,4 +1,5 @@
 fips_begin_module(corelibs)
+fips_deps(foundation)
 fips_files_ex(base64/ *.* GROUP base64)
 fips_files_ex(stackwalker/ *.* GROUP stackwalker)
 fips_files_ex(tinyxml/ *.* GROUP tinyxml)
