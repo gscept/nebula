@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Nebula3>
+    <Protocol namespace="Visibility" name="VisibilityProtocol">
+        <!-- dependencies -->
+        <Dependency header="util/array.h"/>
+        <Dependency header="math/matrix44.h"/>
+        <Dependency header="graphics/graphicsentity.h"/>
+                
+        <!-- create a new visibility cluster -->
+        <Message name="CreateVisibilityCluster" fourcc="cvic">
+          <InArg name="StageName" type="Util::String"/>
+          <InArg name="BoundingBoxes" type="Util::Array<Math::matrix44>"/>                    
+          <InArg name="Entities" type="Util::Array<Ptr<Graphics::GraphicsEntity> >"/>                    
+        </Message>
+      
+        <!-- create new visibility boxes -->
+        <Message name="CreateVisibilityBoxes" fourcc="cvib">
+          <InArg name="StageName" type="Util::String"/>
+          <InArg name="BoundingBoxes" type="Util::Array<Math::matrix44>"/>                              
+        </Message>
+
+        <!-- sets world box for visibility systems and restarts them -->
+        <Message name="ChangeVisibilityBounds" fourcc="CVBO">
+          <InArg name="StageName" type="Util::String"/>
+          <InArg name="WorldBoundingBox" type="Math::bbox"/>
+        </Message>
+      
+      </Protocol>    
+</Nebula3>

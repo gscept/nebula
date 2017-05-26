@@ -9,5 +9,6 @@ fips_setup(PROJECT Nebula)
 
 fips_ide_group(Core)
 fips_add_subdirectory(code/foundation)
+fips_add_subdirectory(code/render)
 
 fips_finish()

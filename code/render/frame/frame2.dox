@@ -1,0 +1,229 @@
+/**
+@namespace Frame2
+
+@section Frame2System The Nebula frame script system
+
+@subsection Declarations
+The Nebula frame script system allows rendering to be scripted, rather than it being hard-coded. Frame scripts allows us to create resources needed for rendering, them being:
+
+- Declare color-renderable textures used as targets for rendering.
+- Declare depth and stencil renderable textures used for Z-buffering.
+- Declare data-textures used for compute shader read/writes.
+- Declare data-buffers used for compute shader read/writes.
+- Declare shader states describing a shader and variables bound to it.
+- Declare events used to signal and wait for, ensuring synchronization for off-sync work.
+- Declare algorithms used for advanced rendering where the script needs to run custom code.
+
+A frame script then executes actions, and all actions are inherited from the class FrameOp. FrameOp provides a couple of default functions used to handle rendering.
+
+@code
+/// run frame operation for current frame
+virtual void Run(const IndexT frameIndex);
+/// handle the screen getting resized.
+virtual void DisplayResized(const SizeT width, const SizeT height);
+@endcode
+
+@subsection Operations
+The operations allowed in the 'global' scope of a frame script are:
+
+- Global state applies shader variables to be used during the execution of THIS frame script.
+- Blit copies a texture to another with a filtering and/or image conversion method, such as like RGB -> sRGB, BGR->RGB.
+- Copy performs a flat copy without any filtering or conversion.
+- Compute runs a compute kernel using a non-optional shader state.
+- ComputeAlgorithm performs an algorithm outside of a render pass.
+- Swapbuffers triggers a swap-buffer event on a window-backed texture.
+- Pass triggers a rendering pass, within which only subpasses and subpass-related operations are allowed.
+- Barrier blocks operations on the GPU so that B waits for A to finish if A comes before B.
+- Event either waits, resets or signals an event.
+
+@subsection Pass
+Within a pass, we must list some color-renderable textures and a single (or none) depth-stencil renderable texture. If a clear value is provided for any of these textures, the texture will be cleared with said value when the pass begins. We call color or depth-stencil renderable textures inside passes as attachments, since they are used for attaching to a fragment shader in order to receive color outputs. 
+
+Attachments are by default considered to NOT be stored when the pass ends, meaning that the implementation may decide that the result of an attachment is null and void after the pass is done. To avoid this, an attachment must be provided with a store flag, making sure the implementation knows this attachment will be needed after the render pass is done. Try avoid using store as much as possible, since it will greatly improve performance for high-resolution images if the implementation doesn't need to perform a write-back on every attachment.
+
+Likewise, if an attachment should be retained and loaded when the pass enters, the load flag must be provided. Otherwise every attachment is considered to be made up of invalid data, which the implementation may chose to reallocate, resulting in no guarantee the old data is retained.
+
+In order to do some actual rendering, we must provide yet another level, which is called a subpass.
+
+@subsection Subpass
+Subpasses use a subset of the color attachments, and optionally the depth-stencil attachment in the pass. Only within a subpass is it legal to perform rendering calls. The following list of operations are available in a subpass:
+
+- Attachments select a subset of attachments to use from the pass. They use the number of the attachment as they appear in the list.
+- Dependencies declare which other subpasses need to finish before this subpass may start working. Dependencies are indices to a subpass within the list of subpasses. Thus, a subpass can not depend on a subpass with a higher number, meaning subpass 3 can not depend on subpass 4, although vice versa is okay. 
+- Inputs is a list of textures which are passed from one subpass to another. They are used as a way to pass pixel shader results between subpasses without the need for actually buffering a texture. Use inputs if you only need to sample the same value at the same location (not to do blurs, etc). 
+- Depth is a flag, which when enabled will use the depth-stencil attachment in the pass.
+- Resolve is a flag, which when enabled will resolve any multi-sampled textures when the subpass ends.
+- Viewports and scissor rects can be provided so that the subpass can declare a subset of the screen to render to. They are declared as arrays of strings.
+- SubpassAlgorithm is an algorithm which may only run within a subpass, contrary to compute algorithms which may only run outside them.
+- Batch performs a batch-render, using materials and shaders to efficiently sort and draw objects so as to minimize unnecessary state switching.
+- SortedBatch performs a much slower batch rendering using a sorting method. Much akin to the batch rendering, it selects objects to render based on materials.
+- FullscreenEffect draws a full-screen quad using a shader to perform effects covering the entire screen.
+- Event is same here as it is outside.
+- Barrier is also the same as outside of a subpass.
+- System performs a hard-coded call, such as the one to the lighting server, shadow server, shape rendering subsystem etc. 
+- Plugins runs all plugins using a string to notify to the plugins whether or not they should actually render.
+
+@subsection Language
+Script must be wrapped with:
+@code
+{
+	"version": 2,
+	"engine": "NebulaTrifid",
+	"framescript": 
+	{
+		...
+	}
+}
+@endcode
+
+All values in CAPS_LOCK_WITH_UNDERSCORE are meant to be replaced with an appropriate value.
+All values inside << >> are meant to be optional.
+Values within paranthesis () is the default value if none is given.
+All frame operations and declarations will assume the field "name" is declared.
+
+
+Inside the "framescript" we define:
+@code
+"renderTextures":
+[
+	{ "name": "STRING", "format": "COLOR_FORMAT", "width": FLOAT, "height": FLOAT, << "layers": INTEGER (1), "relative": BOOL (false), "dynamic": BOOL (false), "msaa": BOOL (false)>> }
+],
+@endcode
+
+If the flag "relative" is set to true, then width and height is relative to the texture currently set in the FrameServer with SetWindowTexture(). Dynamic means that the width and height is relative to a value set in the RenderDevice, and is used to perform over or underdrawing. The MSAA flag declares if this texture should use multisampling. Values "relative", "dynamic" and "msaa" are false by default, "layers" is 1 by default. If the "name" parameter is "__WINDOW__", then no other value must be used. The __WINDOW__ parameter means the render texture is simply a reference to the render texture currently used by the FrameServer. 
+
+@code
+"depthStencils":
+[
+	{ "name": "STRING", "format": "DEPTH_STENCIL_FORMAT", "width": FLOAT, "height": FLOAT, << "layers": INTEGER, "relative": BOOL, "dynamic": BOOL, "msaa": BOOL >> }
+],
+@endcode
+"depthStencils" is exactly the same as "renderTextures", but needs special formats. Values "relative", "dynamic" and "msaa" are false by default, "layers" is 1 by default. "name", "format, "width", "height" must be declared.
+
+@code
+"globalState":
+{
+	"name":"DeferredTextures",
+	"variables":
+	[
+		{ "semantic":STRING, 	"value":STRING },
+		...
+	]
+},
+@endcode
+
+"globalState" implements a binding to certain global values when executed. The values declared in "semantic" corresponds to a shader variable name in shd:shared.fx. Value must be the name of a texture found in this script.
+
+@code
+"pass":
+{
+	"name": "DeferredPass",
+	...
+}
+@endcode
+"pass" opens a pass, within which we can put subpasses. 
+
+@code
+"attachments":
+[
+	{ "name": "NAME_OF_DECLARED_COLOR_TEXTURE",  << "clear":FLOAT4_STRING, "store": BOOL (false), "load": BOOL (false) >> },
+],
+@endcode
+If clear is declared, then load must not be true. If clear is not defined, then no clear operation will take place, thus the clear value doesn't have a default.
+
+@code
+"depthStencil": { "name": "NAME_OF_DECLARED_DEPTH_STENCIL_TEXTURE", << "clear": FLOAT, "clearStencil": INTEGER, "store": BOOL (false), "load": BOOL (false) >> },
+@endcode
+"clear" denotes the value used to clear the depth. "clearStencil" denotes the value used to clear the stencil bytes with.
+
+@code
+"shaderStates":
+[
+	{ "name": STRING, "shader": STRING", 
+	<< 
+		variables:
+		[
+			{ "semantic": STRING, "value": STRING }
+		],
+	>>
+],
+@endcode
+Shader states contains a list of shaders and their corresponding variable binds. "shader" must be a valid shader resource name, for example "shd:static". A shader state can be provided a list of variables, where "semantic" corresponds to a variable name and "value" corresponds to a value or a color texture declared in this script.
+
+For simplicity's sake, the "pass" doesn't contain an array of subpasses. Instead, subpasses are just listed after the "attachments" and optional "depthStencil" section. 
+
+@code
+"events":
+[
+	{ "name" }
+],
+@endcode
+Events are simple, you just list them by name and then later invoke on them using the "event" operation.
+
+@code
+"subpass":
+{
+	"name": STRING
+	"attachments": LIST_OF_INTEGERS
+	<< "dependencies": LIST_OF_INTEGERS (empty list) >>
+	<< "inputs": LIST_OF_INTEGERS (empty list) >>
+	<< "depth": BOOL (false), >>
+	<< "resolve": BOOL (false), >>
+	<< "viewports": LIST_OF_FLOAT4_STRINGS (viewports from attachments in pass), >>
+	<< "scissors": LIST_OF_FLOAT4_STRINGS (scissors from attachments in pass), >>
+	
+	SEQUENCE_OF_SUBPASS_OPS
+},
+@endcode
+
+SEQUENCE_OF_SUBPASS_OPS is a list of subpass operations.
+@code
+"batch": STRING
+@endcode
+Performs batch render using STRING as "batchGroup", defined in the material XML files.
+
+@code
+"system": STRING 
+@endcode
+Runs subsystem using STRING as identifier, can be either Lights, PointLightShadows, SpotLightShadows, GlobalShadows, Text or Shapes.
+
+@code
+"fullscreenEffect":
+{
+	"name": STRING,
+	"shaderState": STRING,
+	"sizeFromTexture": STRING
+}
+@endcode
+"shaderState" must be the name of a state declared earlier. "sizeFromTexture" must be a texture the fullscreen effect considers to be the screen.
+
+@code
+"plugins":
+{
+	"name": STRING,
+	"filter" STRING
+}
+@endcode
+"filter" is the name used to filter which plugins to run. For example, because Nebula has several UI implementations, running the plugins using the string UI will call both ImGUI and LibRocket.
+
+Outside of subpasses, as well as inside, we can use synchronization objects like barriers or events. 
+
+@code
+"event":
+{
+	"name": STRING,
+	"ops": LIST_OF_STRINGS
+}
+@endcode
+"ops" can contain the following values, "wait", "reset" and "signal". The order of the operations dictate the order in which they are executed, meaning an event can, for example, perform a wait and reset, or a signal and reset, as well as just waiting, signaling or resetting. "name" must be the name of an event declared earlier.
+
+@code
+"barrier":
+{
+	<< "textures": LIST_OF_STRINGS >>
+}
+@endcode
+Barriers are used for back-to-back synchronization of commands. For example, if we need an operation inside of a subpass to wait for another, we insert a barrier between them. 
+
+
+*/
