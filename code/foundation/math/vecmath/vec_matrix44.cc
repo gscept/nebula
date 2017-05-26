@@ -134,9 +134,10 @@ matrix44::affinetransformation(scalar scaling, float4 const &rotationCenter, con
 matrix44
 matrix44::rotationquaternion(const quaternion& q)
 {	
-	Vectormath::Aos::Matrix3 m(q.vec);
+	n_error("fixme not implemented");
+	//Vectormath::Aos::Matrix3 m(q.vec);
 	matrix44 ret;
-	float4 row = m.getCol0().get128();
+	/*float4 row = m.getCol0().get128();
 	row.set_w(0.0f);
 	ret.setrow0(row);
 
@@ -146,7 +147,7 @@ matrix44::rotationquaternion(const quaternion& q)
 
 	row = m.getCol2().get128();
 	row.set_w(0.0f);
-	ret.setrow2(row);
+	ret.setrow2(row);*/
 
 	return ret;
 }

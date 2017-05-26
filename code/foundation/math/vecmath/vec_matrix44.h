@@ -16,6 +16,8 @@
 
 //------------------------------------------------------------------------------
 
+#define mm_ror_ps(vec,i)	\
+	(((i)%4) ? (_mm_shuffle_ps(vec,vec, _MM_SHUFFLE((unsigned char)(i+3)%4,(unsigned char)(i+2)%4,(unsigned char)(i+1)%4,(unsigned char)(i+0)%4))) : (vec))
 
 namespace Math
 {
@@ -637,28 +639,28 @@ matrix44::determinant() const
     // Calculating the minterms for the first line.
 
     // _mm_ror_ps is just a macro using _mm_shuffle_ps().
-    tt = _L4; tt2 = _mm_ror_ps(_L3,1);
-    Vc = _mm_mul_ps(tt2,_mm_ror_ps(tt,0));					// V3' dot V4
-    Va = _mm_mul_ps(tt2,_mm_ror_ps(tt,2));					// V3' dot V4"
-    Vb = _mm_mul_ps(tt2,_mm_ror_ps(tt,3));					// V3' dot V4^
+    tt = _L4; tt2 = mm_ror_ps(_L3,1);
+    Vc = _mm_mul_ps(tt2, mm_ror_ps(tt,0));					// V3' dot V4
+    Va = _mm_mul_ps(tt2, mm_ror_ps(tt,2));					// V3' dot V4"
+    Vb = _mm_mul_ps(tt2, mm_ror_ps(tt,3));					// V3' dot V4^
 
-    r1 = _mm_sub_ps(_mm_ror_ps(Va,1),_mm_ror_ps(Vc,2));		// V3" dot V4^ - V3^ dot V4"
-    r2 = _mm_sub_ps(_mm_ror_ps(Vb,2),_mm_ror_ps(Vb,0));		// V3^ dot V4' - V3' dot V4^
-    r3 = _mm_sub_ps(_mm_ror_ps(Va,0),_mm_ror_ps(Vc,1));		// V3' dot V4" - V3" dot V4'
+    r1 = _mm_sub_ps(mm_ror_ps(Va,1), mm_ror_ps(Vc,2));		// V3" dot V4^ - V3^ dot V4"
+    r2 = _mm_sub_ps(mm_ror_ps(Vb,2), mm_ror_ps(Vb,0));		// V3^ dot V4' - V3' dot V4^
+    r3 = _mm_sub_ps(mm_ror_ps(Va,0), mm_ror_ps(Vc,1));		// V3' dot V4" - V3" dot V4'
 
     tt = _L2;
-    Va = _mm_ror_ps(tt,1);		sum = _mm_mul_ps(Va,r1);
-    Vb = _mm_ror_ps(tt,2);		sum = _mm_add_ps(sum,_mm_mul_ps(Vb,r2));
-    Vc = _mm_ror_ps(tt,3);		sum = _mm_add_ps(sum,_mm_mul_ps(Vc,r3));
+    Va = mm_ror_ps(tt,1);		sum = _mm_mul_ps(Va,r1);
+    Vb = mm_ror_ps(tt,2);		sum = _mm_add_ps(sum,_mm_mul_ps(Vb,r2));
+    Vc = mm_ror_ps(tt,3);		sum = _mm_add_ps(sum,_mm_mul_ps(Vc,r3));
 
     // Calculating the determinant.
     Det = _mm_mul_ps(sum,_L1);
     Det = _mm_add_ps(Det,_mm_movehl_ps(Det,Det));
 
     // Calculating the minterms of the second line (using previous results).
-    tt = _mm_ror_ps(_L1,1);		sum = _mm_mul_ps(tt,r1);
-    tt = _mm_ror_ps(tt,1);		sum = _mm_add_ps(sum,_mm_mul_ps(tt,r2));
-    tt = _mm_ror_ps(tt,1);		sum = _mm_add_ps(sum,_mm_mul_ps(tt,r3));
+    tt = mm_ror_ps(_L1,1);		sum = _mm_mul_ps(tt,r1);
+    tt = mm_ror_ps(tt,1);		sum = _mm_add_ps(sum,_mm_mul_ps(tt,r2));
+    tt = mm_ror_ps(tt,1);		sum = _mm_add_ps(sum,_mm_mul_ps(tt,r3));
 
     // Testing the determinant.
     Det = _mm_sub_ss(Det,_mm_shuffle_ps(Det,Det,1));
@@ -696,19 +698,19 @@ matrix44::inverse(const matrix44& m)
     // Calculating the minterms for the first line.
 
     // _mm_ror_ps is just a macro using _mm_shuffle_ps().
-    tt = _L4; tt2 = _mm_ror_ps(_L3,1);
-    Vc = _mm_mul_ps(tt2,_mm_ror_ps(tt,0));					// V3'dot V4
-    Va = _mm_mul_ps(tt2,_mm_ror_ps(tt,2));					// V3'dot V4"
-    Vb = _mm_mul_ps(tt2,_mm_ror_ps(tt,3));					// V3' dot V4^
+    tt = _L4; tt2 = mm_ror_ps(_L3,1);
+    Vc = _mm_mul_ps(tt2, mm_ror_ps(tt,0));					// V3'dot V4
+    Va = _mm_mul_ps(tt2, mm_ror_ps(tt,2));					// V3'dot V4"
+    Vb = _mm_mul_ps(tt2, mm_ror_ps(tt,3));					// V3' dot V4^
 
-    r1 = _mm_sub_ps(_mm_ror_ps(Va,1),_mm_ror_ps(Vc,2));		// V3" dot V4^ - V3^ dot V4"
-    r2 = _mm_sub_ps(_mm_ror_ps(Vb,2),_mm_ror_ps(Vb,0));		// V3^ dot V4' - V3' dot V4^
-    r3 = _mm_sub_ps(_mm_ror_ps(Va,0),_mm_ror_ps(Vc,1));		// V3' dot V4" - V3" dot V4'
+    r1 = _mm_sub_ps(mm_ror_ps(Va,1), mm_ror_ps(Vc,2));		// V3" dot V4^ - V3^ dot V4"
+    r2 = _mm_sub_ps(mm_ror_ps(Vb,2), mm_ror_ps(Vb,0));		// V3^ dot V4' - V3' dot V4^
+    r3 = _mm_sub_ps(mm_ror_ps(Va,0), mm_ror_ps(Vc,1));		// V3' dot V4" - V3" dot V4'
 
     tt = _L2;
-    Va = _mm_ror_ps(tt,1);		sum = _mm_mul_ps(Va,r1);
-    Vb = _mm_ror_ps(tt,2);		sum = _mm_add_ps(sum,_mm_mul_ps(Vb,r2));
-    Vc = _mm_ror_ps(tt,3);		sum = _mm_add_ps(sum,_mm_mul_ps(Vc,r3));
+    Va = mm_ror_ps(tt,1);		sum = _mm_mul_ps(Va,r1);
+    Vb = mm_ror_ps(tt,2);		sum = _mm_add_ps(sum,_mm_mul_ps(Vb,r2));
+    Vc = mm_ror_ps(tt,3);		sum = _mm_add_ps(sum,_mm_mul_ps(Vc,r3));
 
     // Calculating the determinant.
     Det = _mm_mul_ps(sum,_L1);
@@ -718,27 +720,27 @@ matrix44::inverse(const matrix44& m)
     __m128 mtL1 = _mm_xor_ps(sum,pnpn);
 
     // Calculating the minterms of the second line (using previous results).
-    tt = _mm_ror_ps(_L1,1);		sum = _mm_mul_ps(tt,r1);
-    tt = _mm_ror_ps(tt,1);		sum = _mm_add_ps(sum,_mm_mul_ps(tt,r2));
-    tt = _mm_ror_ps(tt,1);		sum = _mm_add_ps(sum,_mm_mul_ps(tt,r3));
+    tt = mm_ror_ps(_L1,1);		sum = _mm_mul_ps(tt,r1);
+    tt = mm_ror_ps(tt,1);		sum = _mm_add_ps(sum,_mm_mul_ps(tt,r2));
+    tt = mm_ror_ps(tt,1);		sum = _mm_add_ps(sum,_mm_mul_ps(tt,r3));
     __m128 mtL2 = _mm_xor_ps(sum,npnp);
 
     // Testing the determinant.
     Det = _mm_sub_ss(Det,_mm_shuffle_ps(Det,Det,1));
 
     // Calculating the minterms of the third line.
-    tt = _mm_ror_ps(_L1,1);
+    tt = mm_ror_ps(_L1,1);
     Va = _mm_mul_ps(tt,Vb);									// V1' dot V2"
     Vb = _mm_mul_ps(tt,Vc);									// V1' dot V2^
     Vc = _mm_mul_ps(tt,_L2);								// V1' dot V2
 
-    r1 = _mm_sub_ps(_mm_ror_ps(Va,1),_mm_ror_ps(Vc,2));		// V1" dot V2^ - V1^ dot V2"
-    r2 = _mm_sub_ps(_mm_ror_ps(Vb,2),_mm_ror_ps(Vb,0));		// V1^ dot V2' - V1' dot V2^
-    r3 = _mm_sub_ps(_mm_ror_ps(Va,0),_mm_ror_ps(Vc,1));		// V1' dot V2" - V1" dot V2'
+    r1 = _mm_sub_ps(mm_ror_ps(Va,1), mm_ror_ps(Vc,2));		// V1" dot V2^ - V1^ dot V2"
+    r2 = _mm_sub_ps(mm_ror_ps(Vb,2), mm_ror_ps(Vb,0));		// V1^ dot V2' - V1' dot V2^
+    r3 = _mm_sub_ps(mm_ror_ps(Va,0), mm_ror_ps(Vc,1));		// V1' dot V2" - V1" dot V2'
 
-    tt = _mm_ror_ps(_L4,1);		sum = _mm_mul_ps(tt,r1);
-    tt = _mm_ror_ps(tt,1);		sum = _mm_add_ps(sum,_mm_mul_ps(tt,r2));
-    tt = _mm_ror_ps(tt,1);		sum = _mm_add_ps(sum,_mm_mul_ps(tt,r3));
+    tt = mm_ror_ps(_L4,1);		sum = _mm_mul_ps(tt,r1);
+    tt = mm_ror_ps(tt,1);		sum = _mm_add_ps(sum,_mm_mul_ps(tt,r2));
+    tt = mm_ror_ps(tt,1);		sum = _mm_add_ps(sum,_mm_mul_ps(tt,r3));
     __m128 mtL3 = _mm_xor_ps(sum,pnpn);
 
     // Dividing is FASTER than rcp_nr! (Because rcp_nr causes many register-memory RWs).
@@ -751,9 +753,9 @@ matrix44::inverse(const matrix44& m)
     mtL3 = _mm_mul_ps(mtL3, RDet);
 
     // Calculate the minterms of the forth line and devide by the determinant.
-    tt = _mm_ror_ps(_L3,1);		sum = _mm_mul_ps(tt,r1);
-    tt = _mm_ror_ps(tt,1);		sum = _mm_add_ps(sum,_mm_mul_ps(tt,r2));
-    tt = _mm_ror_ps(tt,1);		sum = _mm_add_ps(sum,_mm_mul_ps(tt,r3));
+    tt = mm_ror_ps(_L3,1);		sum = _mm_mul_ps(tt,r1);
+    tt = mm_ror_ps(tt,1);		sum = _mm_add_ps(sum,_mm_mul_ps(tt,r2));
+    tt = mm_ror_ps(tt,1);		sum = _mm_add_ps(sum,_mm_mul_ps(tt,r3));
     __m128 mtL4 = _mm_xor_ps(sum,npnp);
     mtL4 = _mm_mul_ps(mtL4, RDet);
 

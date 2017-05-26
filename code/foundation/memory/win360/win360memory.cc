@@ -33,22 +33,11 @@ Alloc(HeapType heapType, size_t size)
     // need to make sure everything has been setup
     Core::SysFunc::Setup();
 
-    void* allocPtr = 0;
-    #if __XBOX360__
-    if (Xbox360GraphicsHeap == heapType)
-    {
-        allocPtr = Xbox360AllocPhysicalMemory(size, XALLOC_MEMPROTECT_WRITECOMBINE);
-    }
-    else if (Xbox360AudioHeap == heapType)
-    {
-        allocPtr = Xbox360AllocPhysicalMemory(size, 0);
-    }
-    else
-    #endif __XBOX360__
+    void* allocPtr = 0;    
     {
         n_assert(0 != Heaps[heapType]);
         allocPtr =  __HeapAlloc16(Heaps[heapType], 0, size);
-        n_assert(((uint)allocPtr & 15) == 0);
+        n_assert(((uintptr_t)allocPtr & 15) == 0);
         if (0 == allocPtr)
         {
             n_error("Alloc: Out of memory, allocating '%s' trying to allocate '%d' bytes\n",
@@ -57,13 +46,13 @@ Alloc(HeapType heapType, size_t size)
     }
     #if NEBULA3_MEMORY_STATS
         Threading::Interlocked::Increment(TotalAllocCount);
-        Threading::Interlocked::Add(TotalAllocSize, size + 16);
+        Threading::Interlocked::Add(TotalAllocSize, (long)size + 16);
         Threading::Interlocked::Increment(HeapTypeAllocCount[heapType]);
-		Threading::Interlocked::Add(HeapTypeAllocSize[heapType], size + 16);
+		Threading::Interlocked::Add(HeapTypeAllocSize[heapType], (long)size + 16);
         if (MemoryLoggingEnabled && (size >= MemoryLoggingThreshold) &&
             ((MemoryLoggingHeapType == InvalidHeapType) || (MemoryLoggingHeapType == heapType)))
         {
-            n_printf("Allocate(size=%d, heapType=%d): 0x%lx\n", size, heapType, (long unsigned int) allocPtr);
+            n_printf("Allocate(size=%d, heapType=%d): 0x%lx\n", size, heapType, (uintptr_t) allocPtr);
         }
     #endif
     return allocPtr;
@@ -82,7 +71,7 @@ Realloc(HeapType heapType, void* ptr, size_t size)
         SIZE_T oldSize = __HeapSize16(Heaps[heapType], 0, ptr);
     #endif
     void* allocPtr = __HeapReAlloc16(Heaps[heapType], 0, ptr, size);
-    n_assert(((uint)allocPtr & 15) == 0);
+    n_assert(((uintptr_t)allocPtr & 15) == 0);
     if (0 == allocPtr)
     {
         n_error("Realloc: Out of memory, allocating '%s' trying to allocate '%d' bytes\n",
@@ -95,7 +84,7 @@ Realloc(HeapType heapType, void* ptr, size_t size)
         if (MemoryLoggingEnabled && (size >= MemoryLoggingThreshold) &&
             ((MemoryLoggingHeapType == InvalidHeapType) || (MemoryLoggingHeapType == heapType)))
         {
-            n_printf("Reallocate(size=%d, heapType=%d): 0x%lx\n", size, heapType, (long unsigned int) allocPtr);
+            n_printf("Reallocate(size=%d, heapType=%d): 0x%lx\n", size, heapType, (uintptr_t) allocPtr);
         }
     #endif
     return allocPtr;
@@ -147,7 +136,7 @@ Free(HeapType heapType, void* ptr)
             if (MemoryLoggingEnabled && (size >= MemoryLoggingThreshold) &&
                 ((MemoryLoggingHeapType == InvalidHeapType) || (MemoryLoggingHeapType == heapType)))
             {
-                n_printf("Mem::Free(heapType=%d, ptr=0x%lx, allocSize=%d)\n", heapType, (long unsigned int) ptr, size);
+                n_printf("Mem::Free(heapType=%d, ptr=0x%lx, allocSize=%d)\n", heapType, (uintptr_t) ptr, size);
             }
         #endif
     }

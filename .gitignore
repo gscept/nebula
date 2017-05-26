@@ -1,0 +1,6 @@
+build/
+configs/.selected
+*.swp
+CMakeLists.txt.user*
+.fips-*
+

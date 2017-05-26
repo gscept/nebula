@@ -3,25 +3,19 @@
 /**
     @class Math::quaternion
 
-    A quaternion class on top of the VectorMath math functions.
+    A quaternion class using SSE
 
     (C) 2007 Radon Labs GmbH
-    (C) 2013 Individual contributors, see AUTHORS file
+    (C) 2013-2017 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 #include "math/scalar.h"
 #include "math/float4.h"
 
-#ifndef WIN32
-#define BT_USE_SSE
-#endif
-#include "vectormath/vmInclude.h"
 //------------------------------------------------------------------------------
 namespace Math
 {
 class quaternion;
-
-typedef Vectormath::Aos::Quat vmQuat;
 
 #if (defined(_XM_VMX128_INTRINSICS_) && !defined(_XM_NO_INTRINSICS_))
 typedef const quaternion  __QuaternionArg;
@@ -48,9 +42,7 @@ public:
     //quaternion(const quaternion& rhs);
     /// construct from __m128
     quaternion(const __m128 & rhs);
-	/// construct from a Quat
-	quaternion(const Vectormath::Aos::Quat & rhs);
-
+	
     /// assignment operator
     void operator=(const quaternion& rhs);
     /// assign __m128
@@ -149,7 +141,7 @@ public:
 private:
     friend class matrix44;
 
-    Vectormath::Aos::Quat vec;	
+    mm128_vec vec;
 
 };
 
@@ -168,7 +160,7 @@ quaternion::quaternion()
 __forceinline
 quaternion::quaternion(scalar x, scalar y, scalar z, scalar w)
 {
-    this->vec = Vectormath::Aos::Quat(x, y, z, w);
+	this->vec.vec = _mm_setr_ps(x, y, z, w);
 }
 
 //------------------------------------------------------------------------------
@@ -176,7 +168,7 @@ quaternion::quaternion(scalar x, scalar y, scalar z, scalar w)
 */
 __forceinline
 quaternion::quaternion(float4 const &rhs) :
-    vec(rhs.vec.vec)
+    vec(rhs.vec)
 {
     // empty
 }
@@ -185,20 +177,9 @@ quaternion::quaternion(float4 const &rhs) :
 /**
 */
 __forceinline
-quaternion::quaternion(const __m128 & rhs) :
-    vec(rhs)
+quaternion::quaternion(const __m128 & rhs)    
 {
-    // empty
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-__forceinline
-quaternion::quaternion(const Vectormath::Aos::Quat & rhs) :
-vec(rhs)
-{
-	// empty
+	this->vec.vec = rhs;
 }
 
 //------------------------------------------------------------------------------
@@ -216,7 +197,7 @@ quaternion::operator=(const quaternion& rhs)
 __forceinline void
 quaternion::operator=(const __m128 & rhs)
 {
-    this->vec = Vectormath::Aos::Quat(rhs);
+	this->vec.vec = rhs;
 }
 
 //------------------------------------------------------------------------------
@@ -225,7 +206,7 @@ quaternion::operator=(const __m128 & rhs)
 __forceinline bool
 quaternion::operator==(const quaternion& rhs) const
 {
-	return float4(rhs.vec.get128()) == float4(this->vec.get128());
+	return _mm_movemask_ps(_mm_cmpeq_ps(this->vec.vec, rhs.vec.vec)) == 0x0f;	
 }
 
 //------------------------------------------------------------------------------
@@ -234,49 +215,47 @@ quaternion::operator==(const quaternion& rhs) const
 __forceinline bool
 quaternion::operator!=(const quaternion& rhs) const
 {
-    return !(this->operator==(rhs));
+	return _mm_movemask_ps(_mm_cmpeq_ps(this->vec.vec, rhs.vec.vec)) != 0x0f;
 }
 
 //------------------------------------------------------------------------------
 /**
+	Load 4 floats from 16-byte-aligned memory.
 */
 __forceinline void
 quaternion::load(const scalar* ptr)
 {
-	float4 temp;
-	temp.load(ptr);
-    this->vec = Vectormath::Aos::Quat(temp.vec);
+	this->vec.vec = _mm_load_ps(ptr);
 }
 
 //------------------------------------------------------------------------------
 /**
+	Load 4 floats from unaligned memory.
 */
 __forceinline void
 quaternion::loadu(const scalar* ptr)
 {
-	float4 temp;
-	temp.loadu(ptr);
-	this->vec = Vectormath::Aos::Quat(temp.vec);
+	this->vec.vec = _mm_loadu_ps(ptr);
 }
 
 //------------------------------------------------------------------------------
 /**
+	Store to 16-byte-aligned float pointer.
 */
 __forceinline void
 quaternion::store(scalar* ptr) const
 {
-	float4 temp(vec.get128());
-	temp.store(ptr);
+	_mm_store_ps(ptr, this->vec.vec);
 }
 
 //------------------------------------------------------------------------------
 /**
+	Store to non-aligned float pointer.
 */
 __forceinline void
 quaternion::storeu(scalar* ptr) const
 {
-	float4 temp(vec.get128());
-	temp.storeu(ptr);
+	_mm_storeu_ps(ptr, this->vec.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -294,7 +273,7 @@ quaternion::stream(scalar* ptr) const
 __forceinline void
 quaternion::set(scalar x, scalar y, scalar z, scalar w)
 {
-    this->vec = Vectormath::Aos::Quat(x,y,z,w);
+	this->vec.vec = _mm_setr_ps(x, y, z, w);
 }
 
 //------------------------------------------------------------------------------
@@ -303,7 +282,8 @@ quaternion::set(scalar x, scalar y, scalar z, scalar w)
 inline void
 quaternion::set_x(scalar x)
 {
-    this->vec.setX(x);
+	__m128 temp = _mm_set_ss(x);
+	this->vec.vec = _mm_move_ss(this->vec.vec, temp);
 }
 
 //------------------------------------------------------------------------------
@@ -312,7 +292,8 @@ quaternion::set_x(scalar x)
 inline void
 quaternion::set_y(scalar y)
 {
-    this->vec.setY(y);
+	__m128 temp2 = _mm_load_ps1(&y);
+	this->vec.vec = _mm_blend_ps(this->vec.vec, temp2, 2);
 }
 
 //------------------------------------------------------------------------------
@@ -321,7 +302,8 @@ quaternion::set_y(scalar y)
 inline void
 quaternion::set_z(scalar z)
 {
-    this->vec.setZ(z);
+	__m128 temp2 = _mm_load_ps1(&z);
+	this->vec.vec = _mm_blend_ps(this->vec.vec, temp2, 4);
 }
 
 //------------------------------------------------------------------------------
@@ -330,7 +312,8 @@ quaternion::set_z(scalar z)
 inline void
 quaternion::set_w(scalar w)
 {
-    this->vec.setW(w);
+	__m128 temp2 = _mm_load_ps1(&w);
+	this->vec.vec = _mm_blend_ps(this->vec.vec, temp2, 8);
 }
 
 //------------------------------------------------------------------------------
@@ -339,7 +322,7 @@ quaternion::set_w(scalar w)
 __forceinline void
 quaternion::set(float4 const &f4)
 {
-    this->vec = Vectormath::Aos::Quat(f4.vec);
+	this->vec.vec = f4.vec.vec;
 }
 
 //------------------------------------------------------------------------------
@@ -348,7 +331,7 @@ quaternion::set(float4 const &f4)
 __forceinline scalar&
 quaternion::x()
 {
-	return ((mm128_vec&)(this->vec.get128Ref())).f[0];
+	return this->vec.f[0];
 }
 
 //------------------------------------------------------------------------------
@@ -357,7 +340,9 @@ quaternion::x()
 __forceinline scalar
 quaternion::x() const
 {
-    return this->vec.getX();
+	scalar temp;
+	_mm_store_ss(&temp, this->vec.vec);
+	return temp;
 }
 
 //------------------------------------------------------------------------------
@@ -366,7 +351,7 @@ quaternion::x() const
 __forceinline scalar&
 quaternion::y()
 {
-	return ((mm128_vec&)(this->vec.get128Ref())).f[1];
+	return this->vec.f[1];
 }
 
 //------------------------------------------------------------------------------
@@ -375,7 +360,10 @@ quaternion::y()
 __forceinline scalar
 quaternion::y() const
 {
-    return this->vec.getY();
+	scalar ret;
+	__m128 temp = _mm_shuffle_ps(this->vec.vec, this->vec.vec, _MM_SHUFFLE(1, 1, 1, 1));
+	_mm_store_ss(&ret, temp);
+	return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -384,7 +372,7 @@ quaternion::y() const
 __forceinline scalar&
 quaternion::z()
 {
-	return ((mm128_vec&)(this->vec.get128Ref())).f[2];
+	return this->vec.f[2];
 }
 
 //------------------------------------------------------------------------------
@@ -393,7 +381,10 @@ quaternion::z()
 __forceinline scalar
 quaternion::z() const
 {
-    return this->vec.getZ();
+	scalar ret;
+	__m128 temp = _mm_shuffle_ps(this->vec.vec, this->vec.vec, _MM_SHUFFLE(2, 2, 2, 2));
+	_mm_store_ss(&ret, temp);
+	return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -402,7 +393,7 @@ quaternion::z() const
 __forceinline scalar&
 quaternion::w()
 {
-	return ((mm128_vec&)(this->vec.get128Ref())).f[3];
+	return this->vec.f[3];
 }
 
 //------------------------------------------------------------------------------
@@ -411,7 +402,10 @@ quaternion::w()
 __forceinline scalar
 quaternion::w() const
 {
-    return this->vec.getW();
+	scalar ret;
+	__m128 temp = _mm_shuffle_ps(this->vec.vec, this->vec.vec, _MM_SHUFFLE(3, 3, 3, 3));
+	_mm_store_ss(&ret, temp);
+	return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -420,7 +414,7 @@ quaternion::w() const
 __forceinline __m128
 quaternion::m128() const
 {
-    return this->vec.get128();
+	return this->vec.vec;
 }
 
 //------------------------------------------------------------------------------
@@ -439,7 +433,7 @@ quaternion::isidentity() const
 __forceinline scalar
 quaternion::length() const
 {
-    return Vectormath::Aos::length(this->vec);
+    return _mm_cvtss_f32(_mm_sqrt_ss(_mm_dp_ps(this->vec.vec, this->vec.vec, 0xF1)));
 }
 
 //------------------------------------------------------------------------------
@@ -448,8 +442,7 @@ quaternion::length() const
 __forceinline scalar
 quaternion::lengthsq() const
 {
-	return Vectormath::floatInVec(_vmathVfDot4( this->vec.get128(), this->vec.get128()), 0 );
-	//return Vectormath::Aos::lengthSqr(this->vec);
+	return _mm_cvtss_f32(_mm_dp_ps(this->vec.vec, this->vec.vec, 0xF1));
 }
 
 //------------------------------------------------------------------------------
@@ -494,8 +487,8 @@ quaternion::barycentric(const quaternion& q0, const quaternion& q1, const quater
 __forceinline quaternion
 quaternion::conjugate(const quaternion& q)
 {
-	const NEBULA3_ALIGN16 mm128_vec con = {-1.0f, -1.0f, -1.0f, 1.0f};
-	quaternion qq(_mm_mul_ps(q.vec.get128(),con.vec));
+	const NEBULA3_ALIGN16 mm128_vec con = {-1.0f, -1.0f, -1.0f, 1.0f};	
+	quaternion qq(_mm_mul_ps(q.vec.vec,con.vec));
 	return qq;
 }
 
@@ -505,7 +498,7 @@ quaternion::conjugate(const quaternion& q)
 __forceinline scalar
 quaternion::dot(const quaternion& q0, const quaternion& q1)
 {
-	return Vectormath::Aos::dot(q0.vec,q1.vec);
+	return _mm_cvtss_f32(_mm_dp_ps(q0.vec.vec, q1.vec.vec, 0xF1));
 }
 
 //------------------------------------------------------------------------------
@@ -514,7 +507,7 @@ quaternion::dot(const quaternion& q0, const quaternion& q1)
 __forceinline quaternion
 quaternion::exp(const quaternion& q)
 {
-    float4 f(q.vec.get128());
+    float4 f(q.vec.vec);
 	scalar theta = f.length3();
 	scalar costheta = n_cos(theta);
 	scalar sintheta = n_sin(theta);
@@ -531,7 +524,7 @@ quaternion::exp(const quaternion& q)
 __forceinline quaternion
 quaternion::identity()
 {
-    return Vectormath::Aos::Quat::identity();
+	return quaternion(_mm_setr_ps(0.0f, 0.0f, 0.0f, 1.0f));
 }
 
 //------------------------------------------------------------------------------
@@ -544,7 +537,8 @@ quaternion::inverse(const quaternion& q)
 	if(len > 0.00001f)
 	{
 		quaternion con = quaternion::conjugate(q);
-		con.vec *= 1.0f / len;
+		__m128 temp = _mm_set1_ps(1.0f / len);
+		con.vec.vec = _mm_mul_ps(con.vec.vec, temp);		
 		return con;
 	}
 	return quaternion(0.0f,0.0f,0.0f,0.0f);
@@ -578,7 +572,19 @@ quaternion::ln(const quaternion& q)
 __forceinline quaternion
 quaternion::multiply(const quaternion& q0, const quaternion& q1)
 {
-    return q1.vec * q0.vec;
+	//FIXME untested
+	__m128 rev = _mm_shuffle_ps(q0.vec.vec, q0.vec.vec, _MM_SHUFFLE(0, 1, 2, 3));
+	__m128 lo = _mm_shuffle_ps(q1.vec.vec, q1.vec.vec, _MM_SHUFFLE(0, 1, 0, 1));
+	__m128 hi = _mm_shuffle_ps(q1.vec.vec, q1.vec.vec, _MM_SHUFFLE(2, 3, 2, 3));
+
+	__m128 tmp1  = _mm_hsub_ps(_mm_mul_ps(q0.vec.vec, lo), _mm_mul_ps(rev, hi));
+
+	__m128 tmp2 = _mm_hadd_ps(_mm_mul_ps(q0.vec.vec, hi), _mm_mul_ps(rev, lo));
+
+	__m128 tmp3 = _mm_addsub_ps(_mm_shuffle_ps(tmp2, tmp1, _MM_SHUFFLE(3, 2, 1, 0)),
+						_mm_shuffle_ps(tmp1, tmp2, _MM_SHUFFLE(2, 3, 0, 1)));
+
+	return _mm_shuffle_ps(tmp3, tmp3, _MM_SHUFFLE(2, 1, 3, 0));
 }
 
 //------------------------------------------------------------------------------
@@ -587,7 +593,7 @@ quaternion::multiply(const quaternion& q0, const quaternion& q1)
 __forceinline quaternion
 quaternion::normalize(const quaternion& q)
 {
-    return Vectormath::Aos::normalize(q.vec);
+	return quaternion(_mm_div_ps(q.vec.vec,_mm_sqrt_ps(_mm_dp_ps(q.vec.vec, q.vec.vec, 0xff))));
 }
 
 //------------------------------------------------------------------------------
@@ -596,7 +602,8 @@ quaternion::normalize(const quaternion& q)
 __forceinline quaternion
 quaternion::rotationaxis(const float4& axis, scalar angle)
 {
-	return Vectormath::Aos::Quat::rotation(angle, Vectormath::Aos::Vector3(axis.vec));
+	n_error("not implemented");
+	return quaternion();
 }
 
 //------------------------------------------------------------------------------
@@ -630,7 +637,8 @@ quaternion::rotationyawpitchroll(scalar yaw, scalar pitch, scalar roll)
 __forceinline quaternion
 quaternion::slerp(const quaternion& q1, const quaternion& q2, scalar t)
 {
-	return Vectormath::Aos::slerp(t,q1.vec,q2.vec);
+	n_error("not implemented");
+	return quaternion();	
 }
 
 //------------------------------------------------------------------------------
@@ -639,7 +647,7 @@ quaternion::slerp(const quaternion& q1, const quaternion& q2, scalar t)
 __forceinline void
 quaternion::squadsetup(const quaternion& q0, const quaternion& q1, const quaternion& q2, const quaternion& q3, quaternion& aOut, quaternion& bOut, quaternion& cOut)
 {
-	//n_error("not implemented");
+	n_error("not implemented");
     //XMQuaternionSquadSetup(&aOut.vec, &bOut.vec, &cOut.vec, q0.vec, q1.vec, q2.vec, q3.vec);
 }
 
@@ -649,7 +657,7 @@ quaternion::squadsetup(const quaternion& q0, const quaternion& q1, const quatern
 __forceinline quaternion
 quaternion::squad(const quaternion& q1, const quaternion& a, const quaternion& b, const quaternion& c, scalar t)
 {
-	return Vectormath::Aos::squad(t,q1.vec,a.vec,b.vec,c.vec);
+	return slerp(slerp(q1, c, t), slerp(a, b, t), 2.0f * t * (1.0f - t));	
 }
 
 //------------------------------------------------------------------------------
@@ -658,9 +666,9 @@ quaternion::squad(const quaternion& q1, const quaternion& a, const quaternion& b
 __forceinline void
 quaternion::to_axisangle(const quaternion& q, float4& outAxis, scalar& outAngle)
 {
-	outAxis = q.vec.get128();
+	outAxis = q.vec.vec;
 	outAxis.set_w(0);
-	outAngle = 2.0f * n_acos(q.vec.getW());
+	outAngle = 2.0f * n_acos(q.w());
     outAxis.set_w(0.0f);
 }
 
