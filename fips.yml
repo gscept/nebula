@@ -2,6 +2,8 @@
 imports:
      fips-zlib:
         git: https://github.com/floooh/fips-zlib.git
+     fips-directxmath:
+        git: http://x.ikplus.de/fips-directxmath.git
 
 exports:
     header-dirs : 
