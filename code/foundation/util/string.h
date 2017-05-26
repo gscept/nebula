@@ -169,6 +169,8 @@ public:
     void SetInt(int val);
     /// set as long value
     void SetLong(long val);
+	/// set as long value
+	void SetSizeT(size_t val);
 	/// set as long long value
 	void SetLongLong(long long val);
     /// set as float value
@@ -256,6 +258,8 @@ public:
     static String FromInt(int i);
     /// construct a string from a long
     static String FromLong(long i);
+	/// construct a string from a size_t
+	static String FromSize(size_t i);
 	/// construct a string from a long long
 	static String FromLongLong(long long i);
     /// construct a string from a float
@@ -499,6 +503,15 @@ inline void
 String::SetLong(long val)
 {
 	this->Format("%ld", val);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+String::SetSizeT(size_t val)
+{
+	this->Format("%zu", val);
 }
 
 //------------------------------------------------------------------------------
@@ -998,6 +1011,17 @@ String::FromLong(long i)
 {	
 	String str;
 	str.SetLong(i);
+	return str;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline String
+String::FromSize(size_t i)
+{
+	String str;
+	str.SetSizeT(i);
 	return str;
 }
 

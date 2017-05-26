@@ -51,11 +51,11 @@ StringAtomPageHandler::HandleRequest(const Ptr<HttpRequest>& request)
         GlobalStringAtomTable::DebugInfo debugInfo = GlobalStringAtomTable::Instance()->GetDebugInfo();
         htmlWriter->Element(HtmlElement::Heading3, "String Atom Table Info:");
         htmlWriter->Begin(HtmlElement::Table);
-            htmlWriter->TableRow2("Number of strings: ", String::FromInt(debugInfo.strings.Size()));
-            htmlWriter->TableRow2("Chunk Size: ", String::FromInt(debugInfo.chunkSize));
-            htmlWriter->TableRow2("Num chunks: ", String::FromInt(debugInfo.numChunks));
-            htmlWriter->TableRow2("Alloc size: ", String::FromInt(debugInfo.allocSize));
-            htmlWriter->TableRow2("Used size: ", String::FromInt(debugInfo.usedSize));
+            htmlWriter->TableRow2("Number of strings: ", String::FromSize(debugInfo.strings.Size()));
+            htmlWriter->TableRow2("Chunk Size: ", String::FromSize(debugInfo.chunkSize));
+            htmlWriter->TableRow2("Num chunks: ", String::FromSize(debugInfo.numChunks));
+            htmlWriter->TableRow2("Alloc size: ", String::FromSize(debugInfo.allocSize));
+            htmlWriter->TableRow2("Used size: ", String::FromSize(debugInfo.usedSize));
             htmlWriter->TableRow2("Growth enabled: ", debugInfo.growthEnabled ? "yes" : "no");
         htmlWriter->End(HtmlElement::Table);
 

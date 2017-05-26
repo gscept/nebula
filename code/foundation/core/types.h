@@ -59,15 +59,6 @@ typedef unsigned char byte;
 #if __WIN32__
 #define n_stricmp stricmp
 #define n_snprintf StringCchPrintf
-#elif __XBOX360__
-#define n_stricmp lstrcmpi
-#define n_snprintf StringCchPrintf
-#elif __WII__
-#define n_stricmp stricmp
-#define n_snprintf sprintf
-#elif __PS3__
-#define n_stricmp strcasecmp
-#define n_snprintf sprintf
 #elif (__OSX__ || __APPLE__ || linux )
 #define n_stricmp strcasecmp
 #define n_snprintf sprintf
@@ -79,12 +70,6 @@ typedef unsigned char byte;
 #define ThreadLocal
 #elif __WIN32__
 #define ThreadLocal __declspec(thread)
-#elif __XBOX360__
-#define ThreadLocal __declspec(thread)
-#elif __WII__
-#define ThreadLocal
-#elif __PS3__
-#define ThreadLocal __thread
 #elif linux
 #define ThreadLocal __thread
 #if (__OSX__ || __APPLE__)

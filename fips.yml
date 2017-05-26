@@ -1,7 +1,15 @@
 ---
+imports:
+     fips-zlib:
+        git: https://github.com/floooh/fips-zlib.git
+     fips-directxmath:
+        git: http://x.ikplus.de/fips-directxmath.git
+
 exports:
-    headers-dirs:
-        - .    
+    header-dirs : 
+        - .
         - code/foundation
+        - extlibs/mixed
     modules:
         foundation: code/foundation
+        corelibs: extlibs/mixed

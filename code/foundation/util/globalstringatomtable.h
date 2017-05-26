@@ -36,10 +36,10 @@ public:
     struct DebugInfo
     {
         Util::Array<const char*> strings;
-        SizeT chunkSize;
-        SizeT numChunks;
-        SizeT allocSize;
-        SizeT usedSize;
+        size_t chunkSize;
+		size_t numChunks;
+		size_t allocSize;
+		size_t usedSize;
         bool growthEnabled;
     };
     
