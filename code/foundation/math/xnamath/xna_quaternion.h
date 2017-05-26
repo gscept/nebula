@@ -27,7 +27,7 @@ typedef const quaternion& __QuaternionArg;
 #endif
 
 
-_DECLSPEC_ALIGN_16_ 
+NEBULA3_ALIGN16
 #if __XBOX360__
 __declspec(passinreg)
 #endif
@@ -45,12 +45,12 @@ public:
     /// !!!! via Registers doesnt work
     //quaternion(const quaternion& rhs);
     /// construct from XMVECTOR
-    quaternion(XMVECTOR rhs);
+    quaternion(DirectX::XMVECTOR rhs);
 
     /// assignment operator
     void operator=(const quaternion& rhs);
-    /// assign XMVECTOR
-    void operator=(XMVECTOR rhs);
+    /// assign DirectX::XMVECTOR
+    void operator=(DirectX::XMVECTOR rhs);
     /// equality operator
     bool operator==(const quaternion& rhs) const;
     /// inequality operator
@@ -142,7 +142,7 @@ public:
 private:
     friend class matrix44;
 
-    XMVECTOR vec;
+    DirectX::XMVECTOR vec;
 };
 
 //------------------------------------------------------------------------------
@@ -160,7 +160,7 @@ quaternion::quaternion()
 __forceinline
 quaternion::quaternion(scalar x, scalar y, scalar z, scalar w)
 {
-    this->vec = XMVectorSet(x, y, z, w);
+    this->vec = DirectX::XMVectorSet(x, y, z, w);
 }
 
 //------------------------------------------------------------------------------
@@ -177,7 +177,7 @@ quaternion::quaternion(float4 const &rhs) :
 /**
 */
 __forceinline 
-quaternion::quaternion(XMVECTOR rhs) :
+quaternion::quaternion(DirectX::XMVECTOR rhs) :
     vec(rhs)
 {
     // empty
@@ -196,7 +196,7 @@ quaternion::operator=(const quaternion& rhs)
 /**
 */
 __forceinline void
-quaternion::operator=(XMVECTOR rhs)
+quaternion::operator=(DirectX::XMVECTOR rhs)
 {
     this->vec = rhs;
 }
@@ -207,7 +207,7 @@ quaternion::operator=(XMVECTOR rhs)
 __forceinline bool
 quaternion::operator==(const quaternion& rhs) const
 {
-    return (0 != XMQuaternionEqual(this->vec, rhs.vec));
+    return (0 != DirectX::XMQuaternionEqual(this->vec, rhs.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -216,7 +216,7 @@ quaternion::operator==(const quaternion& rhs) const
 __forceinline bool
 quaternion::operator!=(const quaternion& rhs) const
 {
-    return (0 != XMQuaternionNotEqual(this->vec, rhs.vec));
+    return (0 != DirectX::XMQuaternionNotEqual(this->vec, rhs.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -225,7 +225,7 @@ quaternion::operator!=(const quaternion& rhs) const
 __forceinline void
 quaternion::load(const scalar* ptr)
 {
-    this->vec = XMLoadFloat4A((XMFLOAT4A*)ptr);
+    this->vec = DirectX::XMLoadFloat4A((DirectX::XMFLOAT4A*)ptr);
 }
 
 //------------------------------------------------------------------------------
@@ -234,7 +234,7 @@ quaternion::load(const scalar* ptr)
 __forceinline void
 quaternion::loadu(const scalar* ptr)
 {
-    this->vec = XMLoadFloat4((XMFLOAT4*)ptr);
+    this->vec = DirectX::XMLoadFloat4((DirectX::XMFLOAT4*)ptr);
 }
 
 //------------------------------------------------------------------------------
@@ -243,7 +243,7 @@ quaternion::loadu(const scalar* ptr)
 __forceinline void
 quaternion::store(scalar* ptr) const
 {
-    XMStoreFloat4A((XMFLOAT4A*)ptr, this->vec);
+    DirectX::XMStoreFloat4A((DirectX::XMFLOAT4A*)ptr, this->vec);
 }
 
 //------------------------------------------------------------------------------
@@ -252,7 +252,7 @@ quaternion::store(scalar* ptr) const
 __forceinline void
 quaternion::storeu(scalar* ptr) const
 {
-    XMStoreFloat4((XMFLOAT4*)ptr, this->vec);
+    DirectX::XMStoreFloat4((DirectX::XMFLOAT4*)ptr, this->vec);
 }
 
 //------------------------------------------------------------------------------
@@ -261,7 +261,7 @@ quaternion::storeu(scalar* ptr) const
 __forceinline void
 quaternion::stream(scalar* ptr) const
 {
-    XMStoreFloat4A((XMFLOAT4A*)ptr, this->vec);
+    DirectX::XMStoreFloat4A((DirectX::XMFLOAT4A*)ptr, this->vec);
 }
 
 //------------------------------------------------------------------------------
@@ -270,7 +270,7 @@ quaternion::stream(scalar* ptr) const
 __forceinline void
 quaternion::set(scalar x, scalar y, scalar z, scalar w)
 {
-    this->vec = XMVectorSet(x, y, z, w);
+    this->vec = DirectX::XMVectorSet(x, y, z, w);
 }
 
 //------------------------------------------------------------------------------
@@ -279,7 +279,7 @@ quaternion::set(scalar x, scalar y, scalar z, scalar w)
 inline void 
 quaternion::set_x(scalar x)
 {
-    this->vec = XMVectorSetXPtr(this->vec, &x);
+    this->vec = DirectX::XMVectorSetXPtr(this->vec, &x);
 }
 
 //------------------------------------------------------------------------------
@@ -288,7 +288,7 @@ quaternion::set_x(scalar x)
 inline void 
 quaternion::set_y(scalar y)
 {
-    this->vec = XMVectorSetYPtr(this->vec, &y);
+    this->vec = DirectX::XMVectorSetYPtr(this->vec, &y);
 }
 
 //------------------------------------------------------------------------------
@@ -297,7 +297,7 @@ quaternion::set_y(scalar y)
 inline void 
 quaternion::set_z(scalar z)
 {
-    this->vec = XMVectorSetZPtr(this->vec, &z);
+    this->vec = DirectX::XMVectorSetZPtr(this->vec, &z);
 }
 
 //------------------------------------------------------------------------------
@@ -306,7 +306,7 @@ quaternion::set_z(scalar z)
 inline void 
 quaternion::set_w(scalar w)
 {
-    this->vec = XMVectorSetWPtr(this->vec, &w);
+    this->vec = DirectX::XMVectorSetWPtr(this->vec, &w);
 }
 
 //------------------------------------------------------------------------------
@@ -412,7 +412,7 @@ quaternion::w() const
 __forceinline bool
 quaternion::isidentity() const
 {
-    return (0 != XMQuaternionIsIdentity(this->vec));
+    return (0 != DirectX::XMQuaternionIsIdentity(this->vec));
 }
 
 //------------------------------------------------------------------------------
@@ -421,7 +421,7 @@ quaternion::isidentity() const
 __forceinline scalar
 quaternion::length() const
 {
-    return float4::unpack_x(XMQuaternionLength(this->vec));
+    return float4::unpack_x(DirectX::XMQuaternionLength(this->vec));
 }
 
 //------------------------------------------------------------------------------
@@ -430,7 +430,7 @@ quaternion::length() const
 __forceinline scalar
 quaternion::lengthsq() const
 {
-    return float4::unpack_x(XMQuaternionLengthSq(this->vec));
+    return float4::unpack_x(DirectX::XMQuaternionLengthSq(this->vec));
 }
 
 //------------------------------------------------------------------------------
@@ -455,7 +455,7 @@ quaternion::undenormalize()
 __forceinline quaternion
 quaternion::barycentric(const quaternion& q0, const quaternion& q1, const quaternion& q2, scalar f, scalar g)
 {
-    return XMQuaternionBaryCentric(q0.vec, q1.vec, q2.vec, f, g);
+    return DirectX::XMQuaternionBaryCentric(q0.vec, q1.vec, q2.vec, f, g);
 }
 
 //------------------------------------------------------------------------------
@@ -464,7 +464,7 @@ quaternion::barycentric(const quaternion& q0, const quaternion& q1, const quater
 __forceinline quaternion
 quaternion::conjugate(const quaternion& q)
 {
-    return XMQuaternionConjugate(q.vec);
+    return DirectX::XMQuaternionConjugate(q.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -473,7 +473,7 @@ quaternion::conjugate(const quaternion& q)
 __forceinline scalar
 quaternion::dot(const quaternion& q0, const quaternion& q1)
 {
-    return float4::unpack_x(XMQuaternionDot(q0.vec, q1.vec));
+    return float4::unpack_x(DirectX::XMQuaternionDot(q0.vec, q1.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -482,7 +482,7 @@ quaternion::dot(const quaternion& q0, const quaternion& q1)
 __forceinline quaternion
 quaternion::exp(const quaternion& q)
 {
-    return XMQuaternionExp(q.vec);
+    return DirectX::XMQuaternionExp(q.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -491,7 +491,7 @@ quaternion::exp(const quaternion& q)
 __forceinline quaternion
 quaternion::identity()
 {
-    return XMQuaternionIdentity();
+    return DirectX::XMQuaternionIdentity();
 }
 
 //------------------------------------------------------------------------------
@@ -500,7 +500,7 @@ quaternion::identity()
 __forceinline quaternion
 quaternion::inverse(const quaternion& q)
 {
-    return XMQuaternionInverse(q.vec);
+    return DirectX::XMQuaternionInverse(q.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -509,7 +509,7 @@ quaternion::inverse(const quaternion& q)
 __forceinline quaternion
 quaternion::ln(const quaternion& q)
 {
-    return XMQuaternionLn(q.vec);
+    return DirectX::XMQuaternionLn(q.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -518,7 +518,7 @@ quaternion::ln(const quaternion& q)
 __forceinline quaternion
 quaternion::multiply(const quaternion& q0, const quaternion& q1)
 {
-    return XMQuaternionMultiply(q0.vec, q1.vec);
+    return DirectX::XMQuaternionMultiply(q0.vec, q1.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -527,7 +527,7 @@ quaternion::multiply(const quaternion& q0, const quaternion& q1)
 __forceinline quaternion
 quaternion::normalize(const quaternion& q)
 {
-    return XMQuaternionNormalize(q.vec);
+    return DirectX::XMQuaternionNormalize(q.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -536,7 +536,7 @@ quaternion::normalize(const quaternion& q)
 __forceinline quaternion
 quaternion::rotationaxis(const float4& axis, scalar angle)
 {
-    return XMQuaternionRotationAxis(axis.vec, angle);
+    return DirectX::XMQuaternionRotationAxis(axis.vec, angle);
 }
 
 //------------------------------------------------------------------------------
@@ -545,7 +545,7 @@ quaternion::rotationaxis(const float4& axis, scalar angle)
 __forceinline quaternion
 quaternion::rotationyawpitchroll(scalar yaw, scalar pitch, scalar roll)
 {
-    return XMQuaternionRotationRollPitchYaw(pitch, yaw, roll);
+    return DirectX::XMQuaternionRotationRollPitchYaw(pitch, yaw, roll);
 }
 
 //------------------------------------------------------------------------------
@@ -554,7 +554,7 @@ quaternion::rotationyawpitchroll(scalar yaw, scalar pitch, scalar roll)
 __forceinline quaternion
 quaternion::slerp(const quaternion& q1, const quaternion& q2, scalar t)
 {
-    return XMQuaternionSlerp(q1.vec, q2.vec, t);
+    return DirectX::XMQuaternionSlerp(q1.vec, q2.vec, t);
 }
 
 //------------------------------------------------------------------------------
@@ -563,7 +563,7 @@ quaternion::slerp(const quaternion& q1, const quaternion& q2, scalar t)
 __forceinline void
 quaternion::squadsetup(const quaternion& q0, const quaternion& q1, const quaternion& q2, const quaternion& q3, quaternion& aOut, quaternion& bOut, quaternion& cOut)
 {
-    XMQuaternionSquadSetup(&aOut.vec, &bOut.vec, &cOut.vec, q0.vec, q1.vec, q2.vec, q3.vec);
+    DirectX::XMQuaternionSquadSetup(&aOut.vec, &bOut.vec, &cOut.vec, q0.vec, q1.vec, q2.vec, q3.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -572,7 +572,7 @@ quaternion::squadsetup(const quaternion& q0, const quaternion& q1, const quatern
 __forceinline quaternion
 quaternion::squad(const quaternion& q1, const quaternion& a, const quaternion& b, const quaternion& c, scalar t)
 {
-    return XMQuaternionSquad(q1.vec, a.vec, b.vec, c.vec, t);
+    return DirectX::XMQuaternionSquad(q1.vec, a.vec, b.vec, c.vec, t);
 }
 
 //------------------------------------------------------------------------------
@@ -581,7 +581,7 @@ quaternion::squad(const quaternion& q1, const quaternion& a, const quaternion& b
 __forceinline void
 quaternion::to_axisangle(const quaternion& q, float4& outAxis, scalar& outAngle)
 {
-    XMQuaternionToAxisAngle(&outAxis.vec, &outAngle, q.vec);
+    DirectX::XMQuaternionToAxisAngle(&outAxis.vec, &outAngle, q.vec);
     outAxis.set_w(0.0f);
 }
 

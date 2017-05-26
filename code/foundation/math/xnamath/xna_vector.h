@@ -26,7 +26,7 @@ typedef const vector& __VectorArg;
 #endif
 
 
-_DECLSPEC_ALIGN_16_ 
+NEBULA3_ALIGN16
 #if __XBOX360__
 __declspec(passinreg)
 #endif
@@ -42,15 +42,15 @@ public:
     /// construct from float4
     vector(const float4& rhs);
     /// construct from XMVECTOR
-    vector(XMVECTOR rhs);
+    vector(DirectX::XMVECTOR rhs);
     /// return the null vector
     static vector nullvec();
     /// return the standard up vector (0, 1, 0)
     static vector upvec();
     /// assignment operator
     void operator=(const vector& rhs);
-    /// assign XMVECTOR
-    void operator=(XMVECTOR rhs);
+    /// assign DirectX::XMVECTOR
+    void operator=(DirectX::XMVECTOR rhs);
     /// flip sign
     vector operator-() const;
     /// add vector inplace
@@ -119,7 +119,7 @@ vector::vector(const float4& rhs) :
 /**
 */
 __forceinline
-vector::vector(XMVECTOR rhs) :
+vector::vector(DirectX::XMVECTOR rhs) :
     float4(rhs)
 {
     // empty
@@ -156,7 +156,7 @@ vector::operator=(const vector& rhs)
 /**
 */
 __forceinline void
-vector::operator=(XMVECTOR rhs)
+vector::operator=(DirectX::XMVECTOR rhs)
 {
     this->vec = rhs;
 }
@@ -167,7 +167,7 @@ vector::operator=(XMVECTOR rhs)
 __forceinline vector
 vector::operator-() const
 {
-    return XMVectorNegate(this->vec);
+    return DirectX::XMVectorNegate(this->vec);
 }
 
 //------------------------------------------------------------------------------
@@ -176,7 +176,7 @@ vector::operator-() const
 __forceinline void
 vector::operator+=(const vector& rhs)
 {
-    this->vec = XMVectorAdd(this->vec, rhs.vec);
+    this->vec = DirectX::XMVectorAdd(this->vec, rhs.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -185,7 +185,7 @@ vector::operator+=(const vector& rhs)
 __forceinline void
 vector::operator-=(const vector& rhs)
 {
-    this->vec = XMVectorSubtract(this->vec, rhs.vec);
+    this->vec = DirectX::XMVectorSubtract(this->vec, rhs.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -194,7 +194,7 @@ vector::operator-=(const vector& rhs)
 __forceinline void
 vector::operator*=(scalar s)
 {
-    this->vec = XMVectorScale(this->vec, s);
+    this->vec = DirectX::XMVectorScale(this->vec, s);
 }
 
 //------------------------------------------------------------------------------
@@ -203,7 +203,7 @@ vector::operator*=(scalar s)
 __forceinline vector
 vector::operator+(const vector& rhs) const
 {
-    return XMVectorAdd(this->vec, rhs.vec);
+    return DirectX::XMVectorAdd(this->vec, rhs.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -212,7 +212,7 @@ vector::operator+(const vector& rhs) const
 __forceinline vector
 vector::operator-(const vector& rhs) const
 {
-    return XMVectorSubtract(this->vec, rhs.vec);
+    return DirectX::XMVectorSubtract(this->vec, rhs.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -221,7 +221,7 @@ vector::operator-(const vector& rhs) const
 __forceinline vector
 vector::operator*(scalar s) const
 {
-    return XMVectorScale(this->vec, s);
+    return DirectX::XMVectorScale(this->vec, s);
 }
 
 //------------------------------------------------------------------------------
@@ -230,7 +230,7 @@ vector::operator*(scalar s) const
 __forceinline bool
 vector::operator==(const vector& rhs) const
 {
-    return (0 != XMVector4Equal(this->vec, rhs.vec));
+    return (0 != DirectX::XMVector4Equal(this->vec, rhs.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -239,7 +239,7 @@ vector::operator==(const vector& rhs) const
 __forceinline bool
 vector::operator!=(const vector& rhs) const
 {
-    return (0 != XMVector4NotEqual(this->vec, rhs.vec));
+    return (0 != DirectX::XMVector4NotEqual(this->vec, rhs.vec));
 }    
 
 //------------------------------------------------------------------------------
