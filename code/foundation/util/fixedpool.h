@@ -5,8 +5,7 @@
     
     Implements a fixed size pool, from which objects of a specific type can be
 	allocated and freed for reuse.
-    
-    (C) 2006 Radon Labs GmbH
+
     (C) 2013-2015 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
@@ -19,6 +18,8 @@ namespace Util
 template<class TYPE> class FixedPool
 {
 public:
+	/// define iterator
+	typedef TYPE* Iterator;
 
 	/// default constructor
 	FixedPool();
@@ -32,13 +33,21 @@ public:
 	TYPE& Alloc();
 	/// free element allocated from pool
 	void Free(const TYPE& elem);
+	/// free element using iterator
+	void Free(const Iterator iter);
 
 	/// get number of elements
 	SizeT Size() const;
+	/// get number of free elements
+	SizeT NumFree() const;
+	/// get number of used elements
+	SizeT NumUsed() const;
 	/// reset pool and resize pool
 	void Resize(SizeT newSize);
 	/// returns true if no more free values are available
 	bool IsFull() const;
+	/// returns true if the pool is empty
+	bool IsEmpty() const;
 	/// clear all pool values
 	void Clear();
 
@@ -47,6 +56,9 @@ public:
 
 	/// set optional setup value
 	void SetSetupFunc(const std::function<void(TYPE& val, IndexT idx)>& func);
+
+	/// get allocated values as array
+	const Util::Array<TYPE>& GetAllocated();
 
 private:
 	std::function<void(TYPE& val, IndexT idx)> setupFunc;
@@ -75,6 +87,7 @@ Util::FixedPool<TYPE>::FixedPool(SizeT s, std::function<void(TYPE& val, IndexT i
 	size(s)
 {
 	this->freeValues.Reserve(s);
+	this->usedValues.Reserve(s);
 	this->setupFunc = setupFunc;
 
 	IndexT i;
@@ -127,10 +140,41 @@ Util::FixedPool<TYPE>::Free(const TYPE& elem)
 /**
 */
 template<class TYPE>
-SizeT
+inline void
+Util::FixedPool<TYPE>::Free(const Iterator iter)
+{
+	this->usedValues.Erase(iter);
+	this->freeValues.Append(&iter);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+inline SizeT
 Util::FixedPool<TYPE>::Size() const
 {
 	return this->size;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+inline SizeT
+Util::FixedPool<TYPE>::NumFree() const
+{
+	return this->freeValues.Size();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+inline SizeT
+Util::FixedPool<TYPE>::NumUsed() const
+{
+	return this->usedValues.Size();
 }
 
 //------------------------------------------------------------------------------
@@ -167,6 +211,16 @@ Util::FixedPool<TYPE>::IsFull() const
 /**
 */
 template<class TYPE>
+inline bool
+Util::FixedPool<TYPE>::IsEmpty() const
+{
+	return this->usedValues.IsEmpty();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
 inline void
 Util::FixedPool<TYPE>::Clear()
 {
@@ -186,7 +240,7 @@ Util::FixedPool<TYPE>::Clear()
 /**
 */
 template<class TYPE>
-void
+inline void
 Util::FixedPool<TYPE>::Reset()
 {
 	IndexT i;
@@ -205,6 +259,16 @@ inline void
 Util::FixedPool<TYPE>::SetSetupFunc(const std::function<void(TYPE& val, IndexT idx)>& func)
 {
 	this->setupFunc = func;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+inline const Util<TYPE>&
+Util::FixedPool<TYPE>::GetAllocated()
+{
+	return this->usedValues;
 }
 
 }
