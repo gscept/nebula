@@ -6,5 +6,7 @@ exports:
     headers-dirs:
         - .    
         - code/foundation
+        - extlibs/mixed
     modules:
         foundation: code/foundation
+        corelibs: extlibs/mixed
