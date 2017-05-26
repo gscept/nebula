@@ -3,7 +3,7 @@
 #-------------------------------------------------------------------------------
 
 fips_begin_module(foundation)
-	fips_deps(corelibs)
+	fips_deps(corelibs zlib)
 	fips_vs_warning_level(3)
 	fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 		fips_files(stdneb.h stdneb.cc)
@@ -148,6 +148,10 @@ fips_begin_module(foundation)
 			historyconsolehandler.h
 			ioserver.cc
 			ioserver.h
+			iointerface.cc
+			iointerface.h
+			iointerfacehandler.cc
+			iointerfacehandler.h
 			logfileconsolehandler.cc
 			logfileconsolehandler.h
 			mediatype.h
@@ -198,6 +202,8 @@ fips_begin_module(foundation)
 			util/bxmlfilestructs.h
 			util/bxmlloaderutil.cc
 			util/bxmlloaderutil.h
+			#fixme. these have to be nidld
+			iointerfaceprotocol.cc
 		)
 		fips_dir(math)
 		fips_files(
