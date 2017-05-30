@@ -16,20 +16,23 @@
 //------------------------------------------------------------------------------
 namespace Math
 {
-class Transform
+// it appears that this is not required according to vs2015
+//NEBULA3_ALIGN16
+class transform
 {
+public:
     /// default constructor
-    Transform();
+    transform();
     /// copy constructor
-    Transform(const __m256 & other);
+    transform(const __m256 & other);
     /// constructor using quat&position
-    Transform(const quaternion & quat, const point & position);
+    transform(const quaternion & quat, const point & position);
     /// convert to matrix
-    void to_matrix44(matrix44 & target) const;
+    void to_matrix44(matrix44 & target) const;    
     /// assignment
-    void operator= (const Transform & other);
+    void operator= (const transform & other);
     /// update
-    void update(const quaternion &quat, const point & position);
+    void set(const quaternion &quat, const point & position);
     /// get position
     point get_position() const;
     /// get orientation
@@ -44,7 +47,7 @@ private:
 /**
 */
 __forceinline
-Transform::Transform()
+transform::transform()
 {
     __m128 quat = DirectX::XMQuaternionIdentity();
     __m128 zero = _mm_setzero_ps();
@@ -56,7 +59,7 @@ Transform::Transform()
 /**
 */
 __forceinline
-Transform::Transform(const __m256 & other):trans(other)
+transform::transform(const __m256 & other):trans(other)
 {
     // empty
 }
@@ -66,7 +69,7 @@ Transform::Transform(const __m256 & other):trans(other)
 /**
 */
 __forceinline
-Transform::Transform(const quaternion & quat, const point & position)
+transform::transform(const quaternion & quat, const point & position)
 {
     this->trans = _mm256_set_m128(quat.vec, position.vec);
 }
@@ -75,7 +78,7 @@ Transform::Transform(const quaternion & quat, const point & position)
 /**
 */
 __forceinline void
-Transform::to_matrix44(matrix44 & target) const
+transform::to_matrix44(matrix44 & target) const
 {
     __m256 loc = this->trans;
     DirectX::XMMATRIX mat = DirectX::XMMatrixRotationQuaternion(_mm256_extractf128_ps(loc, 1));
@@ -88,7 +91,7 @@ Transform::to_matrix44(matrix44 & target) const
 /**
 */
 __forceinline void
-Transform::update(const quaternion &quat, const point & position)
+transform::set(const quaternion &quat, const point & position)
 {
     this->trans = _mm256_set_m128(quat.vec, position.vec);
 }
@@ -98,7 +101,7 @@ Transform::update(const quaternion &quat, const point & position)
 /**
 */
 __forceinline Math::point
-Transform::get_position() const
+transform::get_position() const
 {
     return _mm256_extractf128_ps(this->trans, 0);
 }
@@ -108,7 +111,7 @@ Transform::get_position() const
 /**
 */
 __forceinline Math::quaternion
-Transform::get_orientation() const
+transform::get_orientation() const
 {
     return _mm256_extractf128_ps(this->trans, 1);
 }
@@ -117,7 +120,7 @@ Transform::get_orientation() const
 /**
 */
 __forceinline  void
-Transform::operator=(const Transform & other)
+transform::operator=(const transform & other)
 {
     this->trans = other.trans;
 }
