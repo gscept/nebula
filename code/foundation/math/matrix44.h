@@ -1,6 +1,4 @@
 #pragma once
-#ifndef MATH_MATRIX44_H
-#define MATH_MATRIX44_H
 //------------------------------------------------------------------------------
 /**
     @file math/matrix44.h
@@ -18,4 +16,3 @@
 #error "matrix44 class not implemented!"
 #endif
 //-------------------------------------------------------------------
-#endif
