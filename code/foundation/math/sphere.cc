@@ -4,7 +4,7 @@
 //  (C) 2013-2016 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
-#include "math/sphere_.h" // avoid confilct with ODE sphere.h
+#include "math/sphere.h"
 
 namespace Math
 {
