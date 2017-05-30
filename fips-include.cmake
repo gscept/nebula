@@ -8,6 +8,8 @@ if(FIPS_WINDOWS)
 	if(N_STATIC_BUILD)
 		add_definitions(-D__N_STATIC_BUILD)
 	endif()
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:AVX /fp:fast /GS-")
+	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /arch:AVX /fp:fast /GS-")
 endif()
 
 if(FIPS_WINDOWS)
