@@ -5,10 +5,10 @@
 #include "stdneb.h"
 #include "framecomputealgorithm.h"
 
-namespace Frame2
+namespace Frame
 {
 
-__ImplementClass(Frame2::FrameComputeAlgorithm, 'FRCA', Frame2::FrameOp);
+__ImplementClass(Frame::FrameComputeAlgorithm, 'FRCA', Frame::FrameOp);
 //------------------------------------------------------------------------------
 /**
 */

@@ -8,10 +8,10 @@
 #include "coregraphics/framebatchtype.h"
 
 using namespace CoreGraphics;
-namespace Frame2
+namespace Frame
 {
 
-__ImplementClass(Frame2::FrameSubpassPlugins, 'FSPL', Frame2::FrameOp);
+__ImplementClass(Frame::FrameSubpassPlugins, 'FSPL', Frame::FrameOp);
 //------------------------------------------------------------------------------
 /**
 */

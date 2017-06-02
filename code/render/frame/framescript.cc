@@ -8,10 +8,10 @@
 #include "coregraphics/displaydevice.h"
 
 
-namespace Frame2
+namespace Frame
 {
 
-__ImplementClass(Frame2::FrameScript, 'FRSC', Core::RefCounted);
+__ImplementClass(Frame::FrameScript, 'FRSC', Core::RefCounted);
 //------------------------------------------------------------------------------
 /**
 */
@@ -110,7 +110,7 @@ FrameScript::AddShaderState(const Util::StringAtom& name, const Ptr<CoreGraphics
 /**
 */
 void
-FrameScript::AddOp(const Ptr<Frame2::FrameOp>& op)
+FrameScript::AddOp(const Ptr<Frame::FrameOp>& op)
 {
 	this->ops.Append(op);
 }
@@ -166,7 +166,7 @@ FrameScript::RunSegment(const FrameOp::ExecutionMask mask, const IndexT frameInd
 /**
 	Create a mask to run a script between two operations.
 */
-Frame2::FrameOp::ExecutionMask
+Frame::FrameOp::ExecutionMask
 FrameScript::CreateMask(const Util::StringAtom& startOp, const Util::StringAtom& endOp)
 {
 	FrameOp::ExecutionMask mask = 0;
@@ -192,7 +192,7 @@ FrameScript::CreateMask(const Util::StringAtom& startOp, const Util::StringAtom&
 /**
 	Create a mask to run from one subpass to another, from within a pass.
 */
-Frame2::FrameOp::ExecutionMask
+Frame::FrameOp::ExecutionMask
 FrameScript::CreateSubpassMask(const Ptr<FramePass>& pass, const Util::StringAtom& startOp, const Util::StringAtom& endOp)
 {
 	FrameOp::ExecutionMask mask = 0;

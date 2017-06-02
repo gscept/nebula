@@ -14,10 +14,10 @@
 
 using namespace CoreGraphics;
 using namespace Lighting;
-namespace Frame2
+namespace Frame
 {
 
-__ImplementClass(Frame2::FrameSubpassSystem, 'FRSS', Frame2::FrameOp);
+__ImplementClass(Frame::FrameSubpassSystem, 'FRSS', Frame::FrameOp);
 //------------------------------------------------------------------------------
 /**
 */

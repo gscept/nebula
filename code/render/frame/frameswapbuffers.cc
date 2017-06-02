@@ -5,10 +5,10 @@
 #include "stdneb.h"
 #include "frameswapbuffers.h"
 
-namespace Frame2
+namespace Frame
 {
 
-__ImplementClass(Frame2::FrameSwapbuffers, 'FRSW', Frame2::FrameOp);
+__ImplementClass(Frame::FrameSwapbuffers, 'FRSW', Frame::FrameOp);
 //------------------------------------------------------------------------------
 /**
 */

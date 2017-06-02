@@ -1,24 +1,21 @@
 //------------------------------------------------------------------------------
-//  entityvisibility.cc
-//  (C) 2010 Radon Labs GmbH
-//  (C) 2013-2016 Individual contributors, see AUTHORS file
+// visibilitycontext.cc
+// (C) 2017 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
-#include "visibility/visibilitycontext.h"
+#include "visibilitycontext.h"
 
 namespace Visibility
 {
-__ImplementClass(Visibility::VisibilityContext, 'VICO', Core::RefCounted);
 
-using namespace Util;
-using namespace Math;
-
+__ImplementClass(Visibility::VisibilityContext, 'VICX', Graphics::GraphicsContext);
+__ImplementSingleton(Visibility::VisibilityContext);
 //------------------------------------------------------------------------------
 /**
 */
-VisibilityContext::VisibilityContext():
-    visibleFrameId(0)
+VisibilityContext::VisibilityContext()
 {
+	__ConstructSingleton;
 }
 
 //------------------------------------------------------------------------------
@@ -26,25 +23,25 @@ VisibilityContext::VisibilityContext():
 */
 VisibilityContext::~VisibilityContext()
 {
+	__DestructSingleton;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-void 
-VisibilityContext::Setup(const Ptr<Graphics::GraphicsEntity>& entity)
+int64_t
+VisibilityContext::RegisterEntity(const int64_t& entity)
 {
-    n_assert(entity.isvalid());
-    this->gfxEntity = entity;
-    this->boundingBox = entity->GetGlobalBoundingBox();
+	return GraphicsContext::RegisterEntity(entity);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-void 
-VisibilityContext::UpdateBoundingBox(const Math::bbox& box)
+void
+VisibilityContext::UnregisterEntity(const int64_t& entity)
 {
-    this->boundingBox = box;
+
 }
+
 } // namespace Visibility

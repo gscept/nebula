@@ -10,7 +10,7 @@
 #include "frameop.h"
 #include "framesubpass.h"
 #include "coregraphics/pass.h"
-namespace Frame2
+namespace Frame
 {
 class FramePass : public FrameOp
 {
@@ -63,7 +63,7 @@ FramePass::GetPass() const
 //------------------------------------------------------------------------------
 /**
 */
-inline const Util::Array<Ptr<Frame2::FrameSubpass>>&
+inline const Util::Array<Ptr<Frame::FrameSubpass>>&
 FramePass::GetSubpasses() const
 {
 	return this->subpasses;

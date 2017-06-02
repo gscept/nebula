@@ -9,7 +9,7 @@
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
 #include "util/stringatom.h"
-namespace Frame2
+namespace Frame
 {
 class FrameOp : public Core::RefCounted
 {

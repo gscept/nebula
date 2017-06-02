@@ -5,24 +5,10 @@
 #include "stdneb.h"
 #include "resourcecontainer.h"
 
-namespace Resource
+namespace Resources
 {
 
-__ImplementClass(Resource::ResourceContainer, 'RECO', Core::RefCounted);
-//------------------------------------------------------------------------------
-/**
-*/
-ResourceContainer::ResourceContainer()
-{
-	// empty
-}
 
-//------------------------------------------------------------------------------
-/**
-*/
-ResourceContainer::~ResourceContainer()
-{
-	// empty
-}
 
-} // namespace Resource
+
+} // namespace Resources

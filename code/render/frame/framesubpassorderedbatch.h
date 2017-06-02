@@ -9,7 +9,7 @@
 //------------------------------------------------------------------------------
 #include "frameop.h"
 #include "graphics/batchgroup.h"
-namespace Frame2
+namespace Frame
 {
 class FrameSubpassOrderedBatch : public FrameOp
 {

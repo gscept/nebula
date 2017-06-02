@@ -5,10 +5,10 @@
 #include "stdneb.h"
 #include "framesubpassorderedbatch.h"
 
-namespace Frame2
+namespace Frame
 {
 
-__ImplementClass(Frame2::FrameSubpassOrderedBatch, 'FSSB', Frame2::FrameOp);
+__ImplementClass(Frame::FrameSubpassOrderedBatch, 'FSSB', Frame::FrameOp);
 //------------------------------------------------------------------------------
 /**
 */

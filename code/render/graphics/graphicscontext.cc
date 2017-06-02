@@ -25,4 +25,13 @@ GraphicsContext::~GraphicsContext()
 	// empty
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GraphicsContext::Update(const IndexT frameIndex, const Timing::Time frameTime)
+{
+	// do nothing, override in subclass
+}
+
 } // namespace Graphics

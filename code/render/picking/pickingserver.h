@@ -22,7 +22,7 @@ namespace CoreGraphics
 {
 	class Texture;
 }
-namespace Frame2
+namespace Frame
 {
 	class FrameScript;
 }
@@ -60,7 +60,7 @@ public:
 private:
 	bool isOpen;
 	IndexT frameIndex;
-	Ptr<Frame2::FrameScript> frameShader;
+	Ptr<Frame::FrameScript> frameShader;
 	Ptr<CoreGraphics::Texture> pickingBuffer;
 	Ptr<CoreGraphics::Texture> depthBuffer;
 	Ptr<CoreGraphics::Texture> normalBuffer;

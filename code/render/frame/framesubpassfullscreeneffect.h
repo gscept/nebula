@@ -10,7 +10,7 @@
 #include "renderutil/drawfullscreenquad.h"
 #include "coregraphics/shaderstate.h"
 #include "coregraphics/rendertexture.h"
-namespace Frame2
+namespace Frame
 {
 class FrameSubpassFullscreenEffect : public FrameOp
 {

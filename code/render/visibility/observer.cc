@@ -1,18 +1,18 @@
 //------------------------------------------------------------------------------
-// view.cc
+// observer.cc
 // (C) 2017 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
-#include "view.h"
+#include "observer.h"
 
-namespace Graphics
+namespace Visibility
 {
 
-__ImplementClass(Graphics::View, 'VIEW', Core::RefCounted);
+__ImplementClass(Visibility::Observer, 'OBSE', Core::RefCounted);
 //------------------------------------------------------------------------------
 /**
 */
-View::View()
+Observer::Observer()
 {
 	// empty
 }
@@ -20,9 +20,9 @@ View::View()
 //------------------------------------------------------------------------------
 /**
 */
-View::~View()
+Observer::~Observer()
 {
 	// empty
 }
 
-} // namespace Graphics
+} // namespace Visibility

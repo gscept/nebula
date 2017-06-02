@@ -8,7 +8,7 @@
 //------------------------------------------------------------------------------
 #include "frameop.h"
 #include "rendermodules/rt/rtpluginregistry.h"
-namespace Frame2
+namespace Frame
 {
 class FrameSubpassPlugins : public FrameOp
 {

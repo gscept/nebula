@@ -8,10 +8,10 @@
 #include "coregraphics/shaderserver.h"
 
 using namespace CoreGraphics;
-namespace Frame2
+namespace Frame
 {
 
-__ImplementClass(Frame2::FrameSubpassFullscreenEffect, 'FFLE', Frame2::FrameOp);
+__ImplementClass(Frame::FrameSubpassFullscreenEffect, 'FFLE', Frame::FrameOp);
 //------------------------------------------------------------------------------
 /**
 */

@@ -31,6 +31,19 @@ public: \
     virtual Core::Rtti* GetRtti() const; \
 private:
 
+#define __DeclareTemplateClass(type, temp) \
+public: \
+    void* operator new(size_t size) \
+    { \
+        return Memory::Alloc(Memory::ObjectHeap, size); \
+    }; \
+    void operator delete(void* p) \
+    { \
+		Memory::Free(Memory::ObjectHeap, p); \
+    }; \
+    static type<temp>* Create(); \
+private:
+
 #define __DeclareAbstractClass(class_name) \
 public: \
     static Core::Rtti RTTI; \
@@ -71,6 +84,17 @@ private:
             Core::Factory::Instance()->Register(&type::RTTI, #type, fourcc); \
         } \
         return true; \
+    }
+#define __ImplementClassTemplate(type, baseType) \
+	template <class TEMP> \
+    inline type<TEMP>* type<TEMP>::Create() \
+    { \
+        RefCounted::criticalSection.Enter(); \
+        RefCounted::isInCreate = true; \
+        type<TEMP>* newObject = n_new(type<TEMP>); \
+        RefCounted::isInCreate = false; \
+        RefCounted::criticalSection.Leave(); \
+        return newObject; \
     }
 #else
 #define __ImplementClass(type, fourcc, baseType) \
