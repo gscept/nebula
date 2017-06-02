@@ -7,10 +7,10 @@
 #include "coregraphics/renderdevice.h"
 
 using namespace CoreGraphics;
-namespace Frame2
+namespace Frame
 {
 
-__ImplementClass(Frame2::FrameBlit, 'FRBL', Frame2::FrameOp);
+__ImplementClass(Frame::FrameBlit, 'FRBL', Frame::FrameOp);
 //------------------------------------------------------------------------------
 /**
 */

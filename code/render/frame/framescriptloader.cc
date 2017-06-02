@@ -34,13 +34,13 @@
 
 using namespace CoreGraphics;
 using namespace IO;
-namespace Frame2
+namespace Frame
 {
 
 //------------------------------------------------------------------------------
 /**
 */
-Ptr<Frame2::FrameScript>
+Ptr<Frame::FrameScript>
 FrameScriptLoader::LoadFrameScript(const IO::URI& path)
 {
 	Ptr<FrameScript> script = FrameScript::Create();
@@ -86,7 +86,7 @@ FrameScriptLoader::LoadFrameScript(const IO::URI& path)
 /**
 */
 void
-FrameScriptLoader::ParseFrameScript(const Ptr<Frame2::FrameScript>& script, JzonValue* node)
+FrameScriptLoader::ParseFrameScript(const Ptr<Frame::FrameScript>& script, JzonValue* node)
 {
 	uint i;
 	for (i = 0; i < node->size; i++)
@@ -122,7 +122,7 @@ FrameScriptLoader::ParseFrameScript(const Ptr<Frame2::FrameScript>& script, Jzon
 /**
 */
 void
-FrameScriptLoader::ParseColorTextureList(const Ptr<Frame2::FrameScript>& script, JzonValue* node)
+FrameScriptLoader::ParseColorTextureList(const Ptr<Frame::FrameScript>& script, JzonValue* node)
 {
 	uint i;
 	for (i = 0; i < node->size; i++)
@@ -192,7 +192,7 @@ FrameScriptLoader::ParseColorTextureList(const Ptr<Frame2::FrameScript>& script,
 /**
 */
 void
-FrameScriptLoader::ParseDepthStencilTextureList(const Ptr<Frame2::FrameScript>& script, JzonValue* node)
+FrameScriptLoader::ParseDepthStencilTextureList(const Ptr<Frame::FrameScript>& script, JzonValue* node)
 {
 	uint i;
 	for (i = 0; i < node->size; i++)
@@ -250,7 +250,7 @@ FrameScriptLoader::ParseDepthStencilTextureList(const Ptr<Frame2::FrameScript>& 
 /**
 */
 void
-FrameScriptLoader::ParseImageReadWriteTextureList(const Ptr<Frame2::FrameScript>& script, JzonValue* node)
+FrameScriptLoader::ParseImageReadWriteTextureList(const Ptr<Frame::FrameScript>& script, JzonValue* node)
 {
 	uint i;
 	for (i = 0; i < node->size; i++)
@@ -293,7 +293,7 @@ FrameScriptLoader::ParseImageReadWriteTextureList(const Ptr<Frame2::FrameScript>
 /**
 */
 void
-FrameScriptLoader::ParseImageReadWriteBufferList(const Ptr<Frame2::FrameScript>& script, JzonValue* node)
+FrameScriptLoader::ParseImageReadWriteBufferList(const Ptr<Frame::FrameScript>& script, JzonValue* node)
 {
 	uint i;
 	for (i = 0; i < node->size; i++)
@@ -323,7 +323,7 @@ FrameScriptLoader::ParseImageReadWriteBufferList(const Ptr<Frame2::FrameScript>&
 /**
 */
 void
-FrameScriptLoader::ParseAlgorithmList(const Ptr<Frame2::FrameScript>& script, JzonValue* node)
+FrameScriptLoader::ParseAlgorithmList(const Ptr<Frame::FrameScript>& script, JzonValue* node)
 {
 	uint i;
 	for (i = 0; i < node->size; i++)
@@ -382,7 +382,7 @@ FrameScriptLoader::ParseAlgorithmList(const Ptr<Frame2::FrameScript>& script, Jz
 /**
 */
 void
-FrameScriptLoader::ParseEventList(const Ptr<Frame2::FrameScript>& script, JzonValue* node)
+FrameScriptLoader::ParseEventList(const Ptr<Frame::FrameScript>& script, JzonValue* node)
 {
 	uint i;
 	for (i = 0; i < node->size; i++)
@@ -416,7 +416,7 @@ FrameScriptLoader::ParseEventList(const Ptr<Frame2::FrameScript>& script, JzonVa
 /**
 */
 void
-FrameScriptLoader::ParseShaderStateList(const Ptr<Frame2::FrameScript>& script, JzonValue* node)
+FrameScriptLoader::ParseShaderStateList(const Ptr<Frame::FrameScript>& script, JzonValue* node)
 {
 	uint i;
 	for (i = 0; i < node->size; i++)
@@ -445,7 +445,7 @@ FrameScriptLoader::ParseShaderStateList(const Ptr<Frame2::FrameScript>& script, 
 /**
 */
 void
-FrameScriptLoader::ParseGlobalState(const Ptr<Frame2::FrameScript>& script, JzonValue* node)
+FrameScriptLoader::ParseGlobalState(const Ptr<Frame::FrameScript>& script, JzonValue* node)
 {
 	Ptr<FrameGlobalState> op = FrameGlobalState::Create();
 
@@ -521,14 +521,14 @@ FrameScriptLoader::ParseGlobalState(const Ptr<Frame2::FrameScript>& script, Jzon
 		}
 	}
 
-	script->AddOp(op.upcast<Frame2::FrameOp>());
+	script->AddOp(op.upcast<Frame::FrameOp>());
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-FrameScriptLoader::ParseBlit(const Ptr<Frame2::FrameScript>& script, JzonValue* node)
+FrameScriptLoader::ParseBlit(const Ptr<Frame::FrameScript>& script, JzonValue* node)
 {
 	Ptr<FrameBlit> op = FrameBlit::Create();
 
@@ -548,16 +548,16 @@ FrameScriptLoader::ParseBlit(const Ptr<Frame2::FrameScript>& script, JzonValue* 
 	// setup blit operation
 	op->SetFromTexture(fromTex);
 	op->SetToTexture(toTex);
-	script->AddOp(op.upcast<Frame2::FrameOp>());
+	script->AddOp(op.upcast<Frame::FrameOp>());
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-FrameScriptLoader::ParseCopy(const Ptr<Frame2::FrameScript>& script, JzonValue* node)
+FrameScriptLoader::ParseCopy(const Ptr<Frame::FrameScript>& script, JzonValue* node)
 {
-	Ptr<Frame2::FrameCopy> op = Frame2::FrameCopy::Create();
+	Ptr<Frame::FrameCopy> op = Frame::FrameCopy::Create();
 
 	// get function and name
 	JzonValue* name = jzon_get(node, "name");
@@ -575,14 +575,14 @@ FrameScriptLoader::ParseCopy(const Ptr<Frame2::FrameScript>& script, JzonValue* 
 	// setup copy operation
 	op->SetFromTexture(fromTex);
 	op->SetToTexture(toTex);
-	script->AddOp(op.upcast<Frame2::FrameOp>());
+	script->AddOp(op.upcast<Frame::FrameOp>());
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-FrameScriptLoader::ParseCompute(const Ptr<Frame2::FrameScript>& script, JzonValue* node)
+FrameScriptLoader::ParseCompute(const Ptr<Frame::FrameScript>& script, JzonValue* node)
 {
 	Ptr<FrameCompute> op = FrameCompute::Create();
 
@@ -609,14 +609,14 @@ FrameScriptLoader::ParseCompute(const Ptr<Frame2::FrameScript>& script, JzonValu
 	op->SetInvocations(dims->array_values[0]->int_value, dims->array_values[1]->int_value, dims->array_values[2]->int_value);
 
 	// add op to script
-	script->AddOp(op.upcast<Frame2::FrameOp>());
+	script->AddOp(op.upcast<Frame::FrameOp>());
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-FrameScriptLoader::ParseComputeAlgorithm(const Ptr<Frame2::FrameScript>& script, JzonValue* node)
+FrameScriptLoader::ParseComputeAlgorithm(const Ptr<Frame::FrameScript>& script, JzonValue* node)
 {
 	Ptr<FrameComputeAlgorithm> op = FrameComputeAlgorithm::Create();
 
@@ -637,14 +637,14 @@ FrameScriptLoader::ParseComputeAlgorithm(const Ptr<Frame2::FrameScript>& script,
 
 	// add to script
 	op->Setup();
-	script->AddOp(op.upcast<Frame2::FrameOp>());
+	script->AddOp(op.upcast<Frame::FrameOp>());
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-FrameScriptLoader::ParseSwapbuffers(const Ptr<Frame2::FrameScript>& script, JzonValue* node)
+FrameScriptLoader::ParseSwapbuffers(const Ptr<Frame::FrameScript>& script, JzonValue* node)
 {
 	Ptr<FrameSwapbuffers> op = FrameSwapbuffers::Create();
 
@@ -659,14 +659,14 @@ FrameScriptLoader::ParseSwapbuffers(const Ptr<Frame2::FrameScript>& script, Jzon
 	op->SetTexture(tex);
 
 	// add operation
-	script->AddOp(op.upcast<Frame2::FrameOp>());
+	script->AddOp(op.upcast<Frame::FrameOp>());
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-FrameScriptLoader::ParseEvent(const Ptr<Frame2::FrameScript>& script, JzonValue* node)
+FrameScriptLoader::ParseEvent(const Ptr<Frame::FrameScript>& script, JzonValue* node)
 {
 	Ptr<FrameEvent> op = FrameEvent::Create();
 	JzonValue* name = jzon_get(node, "name");
@@ -695,14 +695,14 @@ FrameScriptLoader::ParseEvent(const Ptr<Frame2::FrameScript>& script, JzonValue*
 
 	// set event in op
 	op->SetEvent(event);
-	script->AddOp(op.upcast<Frame2::FrameOp>());
+	script->AddOp(op.upcast<Frame::FrameOp>());
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-FrameScriptLoader::ParseBarrier(const Ptr<Frame2::FrameScript>& script, JzonValue* node)
+FrameScriptLoader::ParseBarrier(const Ptr<Frame::FrameScript>& script, JzonValue* node)
 {
 	Ptr<FrameBarrier> op = FrameBarrier::Create();
 	JzonValue* name = jzon_get(node, "name");
@@ -724,7 +724,7 @@ FrameScriptLoader::ParseBarrier(const Ptr<Frame2::FrameScript>& script, JzonValu
 /**
 */
 void
-FrameScriptLoader::ParseBarrierInternal(const Ptr<Frame2::FrameScript>& script, JzonValue* node, const Ptr<CoreGraphics::Barrier>& barrier)
+FrameScriptLoader::ParseBarrierInternal(const Ptr<Frame::FrameScript>& script, JzonValue* node, const Ptr<CoreGraphics::Barrier>& barrier)
 {
 	Util::Array<Util::String> flags;
 	Barrier::Dependency dep;
@@ -856,7 +856,7 @@ FrameScriptLoader::ParseBarrierInternal(const Ptr<Frame2::FrameScript>& script, 
 /**
 */
 void
-FrameScriptLoader::ParsePass(const Ptr<Frame2::FrameScript>& script, JzonValue* node)
+FrameScriptLoader::ParsePass(const Ptr<Frame::FrameScript>& script, JzonValue* node)
 {
 	// create pass
 	Ptr<FramePass> op = FramePass::Create();
@@ -936,14 +936,14 @@ FrameScriptLoader::ParsePass(const Ptr<Frame2::FrameScript>& script, JzonValue* 
 
 	// setup framebuffer and bind to pass
 	pass->Setup();
-	script->AddOp(op.upcast<Frame2::FrameOp>());
+	script->AddOp(op.upcast<Frame::FrameOp>());
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-FrameScriptLoader::ParseAttachmentList(const Ptr<Frame2::FrameScript>& script, const Ptr<CoreGraphics::Pass>& pass, JzonValue* node)
+FrameScriptLoader::ParseAttachmentList(const Ptr<Frame::FrameScript>& script, const Ptr<CoreGraphics::Pass>& pass, JzonValue* node)
 {
 	uint i;
 	for (i = 0; i < node->size; i++)
@@ -994,9 +994,9 @@ FrameScriptLoader::ParseAttachmentList(const Ptr<Frame2::FrameScript>& script, c
 /**
 */
 void
-FrameScriptLoader::ParseSubpass(const Ptr<Frame2::FrameScript>& script, const Ptr<CoreGraphics::Pass>& pass, const Ptr<Frame2::FramePass>& framePass, JzonValue* node)
+FrameScriptLoader::ParseSubpass(const Ptr<Frame::FrameScript>& script, const Ptr<CoreGraphics::Pass>& pass, const Ptr<Frame::FramePass>& framePass, JzonValue* node)
 {
-	Ptr<Frame2::FrameSubpass> frameSubpass = Frame2::FrameSubpass::Create();
+	Ptr<Frame::FrameSubpass> frameSubpass = Frame::FrameSubpass::Create();
 	Pass::Subpass subpass;
 	subpass.resolve = false;
 	subpass.bindDepth = false;
@@ -1037,7 +1037,7 @@ FrameScriptLoader::ParseSubpass(const Ptr<Frame2::FrameScript>& script, const Pt
 	Extend to use subpass names
 */
 void
-FrameScriptLoader::ParseSubpassDependencies(const Ptr<Frame2::FramePass>& pass, CoreGraphics::Pass::Subpass& subpass, JzonValue* node)
+FrameScriptLoader::ParseSubpassDependencies(const Ptr<Frame::FramePass>& pass, CoreGraphics::Pass::Subpass& subpass, JzonValue* node)
 {
 	uint i;
 	for (i = 0; i < node->size; i++)
@@ -1047,7 +1047,7 @@ FrameScriptLoader::ParseSubpassDependencies(const Ptr<Frame2::FramePass>& pass, 
 		else if (cur->is_string)
 		{
 			Util::String id(cur->string_value);
-			const Util::Array<Ptr<Frame2::FrameSubpass>>& subpasses = pass->GetSubpasses();
+			const Util::Array<Ptr<Frame::FrameSubpass>>& subpasses = pass->GetSubpasses();
 			IndexT j;
 			for (j = 0; j < subpasses.Size(); j++)
 			{
@@ -1066,7 +1066,7 @@ FrameScriptLoader::ParseSubpassDependencies(const Ptr<Frame2::FramePass>& pass, 
 	Extend to use attachment names
 */
 void
-FrameScriptLoader::ParseSubpassAttachments(const Ptr<Frame2::FramePass>& pass, CoreGraphics::Pass::Subpass& subpass, JzonValue* node)
+FrameScriptLoader::ParseSubpassAttachments(const Ptr<Frame::FramePass>& pass, CoreGraphics::Pass::Subpass& subpass, JzonValue* node)
 {
 	uint i;
 	for (i = 0; i < node->size; i++)
@@ -1095,7 +1095,7 @@ FrameScriptLoader::ParseSubpassAttachments(const Ptr<Frame2::FramePass>& pass, C
 /**
 */
 void
-FrameScriptLoader::ParseSubpassInputs(const Ptr<Frame2::FramePass>& pass, CoreGraphics::Pass::Subpass& subpass, JzonValue* node)
+FrameScriptLoader::ParseSubpassInputs(const Ptr<Frame::FramePass>& pass, CoreGraphics::Pass::Subpass& subpass, JzonValue* node)
 {
 	uint i;
 	for (i = 0; i < node->size; i++)
@@ -1124,7 +1124,7 @@ FrameScriptLoader::ParseSubpassInputs(const Ptr<Frame2::FramePass>& pass, CoreGr
 /**
 */
 void
-FrameScriptLoader::ParseSubpassViewports(const Ptr<Frame2::FrameScript>& script, const Ptr<Frame2::FrameSubpass>& subpass, JzonValue* node)
+FrameScriptLoader::ParseSubpassViewports(const Ptr<Frame::FrameScript>& script, const Ptr<Frame::FrameSubpass>& subpass, JzonValue* node)
 {
 	uint i;
 	for (i = 0; i < node->size; i++)
@@ -1140,7 +1140,7 @@ FrameScriptLoader::ParseSubpassViewports(const Ptr<Frame2::FrameScript>& script,
 /**
 */
 void
-FrameScriptLoader::ParseSubpassScissors(const Ptr<Frame2::FrameScript>& script, const Ptr<Frame2::FrameSubpass>& subpass, JzonValue* node)
+FrameScriptLoader::ParseSubpassScissors(const Ptr<Frame::FrameScript>& script, const Ptr<Frame::FrameSubpass>& subpass, JzonValue* node)
 {
 	uint i;
 	for (i = 0; i < node->size; i++)
@@ -1156,9 +1156,9 @@ FrameScriptLoader::ParseSubpassScissors(const Ptr<Frame2::FrameScript>& script, 
 /**
 */
 void
-FrameScriptLoader::ParseSubpassAlgorithm(const Ptr<Frame2::FrameScript>& script, const Ptr<Frame2::FrameSubpass>& subpass, JzonValue* node)
+FrameScriptLoader::ParseSubpassAlgorithm(const Ptr<Frame::FrameScript>& script, const Ptr<Frame::FrameSubpass>& subpass, JzonValue* node)
 {
-	Ptr<Frame2::FrameSubpassAlgorithm> op = Frame2::FrameSubpassAlgorithm::Create();
+	Ptr<Frame::FrameSubpassAlgorithm> op = Frame::FrameSubpassAlgorithm::Create();
 
 	// get function and name
 	JzonValue* name = jzon_get(node, "name");
@@ -1177,40 +1177,40 @@ FrameScriptLoader::ParseSubpassAlgorithm(const Ptr<Frame2::FrameScript>& script,
 
 	// add to script
 	op->Setup();
-	subpass->AddOp(op.upcast<Frame2::FrameOp>());
+	subpass->AddOp(op.upcast<Frame::FrameOp>());
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-FrameScriptLoader::ParseSubpassBatch(const Ptr<Frame2::FrameScript>& script, const Ptr<Frame2::FrameSubpass>& subpass, JzonValue* node)
+FrameScriptLoader::ParseSubpassBatch(const Ptr<Frame::FrameScript>& script, const Ptr<Frame::FrameSubpass>& subpass, JzonValue* node)
 {
-	Ptr<Frame2::FrameSubpassBatch> op = Frame2::FrameSubpassBatch::Create();
+	Ptr<Frame::FrameSubpassBatch> op = Frame::FrameSubpassBatch::Create();
 	Graphics::BatchGroup::Code code = Graphics::BatchGroup::FromName(node->string_value);
 	op->SetBatchCode(code);
-	subpass->AddOp(op.upcast<Frame2::FrameOp>());
+	subpass->AddOp(op.upcast<Frame::FrameOp>());
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-FrameScriptLoader::ParseSubpassSortedBatch(const Ptr<Frame2::FrameScript>& script, const Ptr<Frame2::FrameSubpass>& subpass, JzonValue* node)
+FrameScriptLoader::ParseSubpassSortedBatch(const Ptr<Frame::FrameScript>& script, const Ptr<Frame::FrameSubpass>& subpass, JzonValue* node)
 {
-	Ptr<Frame2::FrameSubpassOrderedBatch> op = Frame2::FrameSubpassOrderedBatch::Create();
+	Ptr<Frame::FrameSubpassOrderedBatch> op = Frame::FrameSubpassOrderedBatch::Create();
 	Graphics::BatchGroup::Code code = Graphics::BatchGroup::FromName(node->string_value);
 	op->SetBatchCode(code);
-	subpass->AddOp(op.upcast<Frame2::FrameOp>());
+	subpass->AddOp(op.upcast<Frame::FrameOp>());
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-FrameScriptLoader::ParseSubpassFullscreenEffect(const Ptr<Frame2::FrameScript>& script, const Ptr<Frame2::FrameSubpass>& subpass, JzonValue* node)
+FrameScriptLoader::ParseSubpassFullscreenEffect(const Ptr<Frame::FrameScript>& script, const Ptr<Frame::FrameSubpass>& subpass, JzonValue* node)
 {
-	Ptr<Frame2::FrameSubpassFullscreenEffect> op = Frame2::FrameSubpassFullscreenEffect::Create();
+	Ptr<Frame::FrameSubpassFullscreenEffect> op = Frame::FrameSubpassFullscreenEffect::Create();
 
 	// get function and name
 	JzonValue* name = jzon_get(node, "name");
@@ -1231,14 +1231,14 @@ FrameScriptLoader::ParseSubpassFullscreenEffect(const Ptr<Frame2::FrameScript>& 
 	
 	// add op to subpass
 	op->Setup();
-	subpass->AddOp(op.upcast<Frame2::FrameOp>());
+	subpass->AddOp(op.upcast<Frame::FrameOp>());
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-FrameScriptLoader::ParseSubpassEvent(const Ptr<Frame2::FrameScript>& script, const Ptr<Frame2::FrameSubpass>& subpass, JzonValue* node)
+FrameScriptLoader::ParseSubpassEvent(const Ptr<Frame::FrameScript>& script, const Ptr<Frame::FrameSubpass>& subpass, JzonValue* node)
 {
 	Ptr<FrameEvent> op = FrameEvent::Create();
 	JzonValue* name = jzon_get(node, "name");
@@ -1267,14 +1267,14 @@ FrameScriptLoader::ParseSubpassEvent(const Ptr<Frame2::FrameScript>& script, con
 
 	// set event in op
 	op->SetEvent(event);
-	subpass->AddOp(op.upcast<Frame2::FrameOp>());
+	subpass->AddOp(op.upcast<Frame::FrameOp>());
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-FrameScriptLoader::ParseSubpassBarrier(const Ptr<Frame2::FrameScript>& script, const Ptr<Frame2::FrameSubpass>& subpass, JzonValue* node)
+FrameScriptLoader::ParseSubpassBarrier(const Ptr<Frame::FrameScript>& script, const Ptr<Frame::FrameSubpass>& subpass, JzonValue* node)
 {
 	Ptr<FrameBarrier> op = FrameBarrier::Create();
 	JzonValue* name = jzon_get(node, "name");
@@ -1289,16 +1289,16 @@ FrameScriptLoader::ParseSubpassBarrier(const Ptr<Frame2::FrameScript>& script, c
 	ParseBarrierInternal(script, node, barrier);
 
 	op->SetBarrier(barrier);
-	subpass->AddOp(op.upcast<Frame2::FrameOp>());
+	subpass->AddOp(op.upcast<Frame::FrameOp>());
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-FrameScriptLoader::ParseSubpassSystem(const Ptr<Frame2::FrameScript>& script, const Ptr<Frame2::FrameSubpass>& subpass, JzonValue* node)
+FrameScriptLoader::ParseSubpassSystem(const Ptr<Frame::FrameScript>& script, const Ptr<Frame::FrameSubpass>& subpass, JzonValue* node)
 {
-	Ptr<Frame2::FrameSubpassSystem> op = Frame2::FrameSubpassSystem::Create();
+	Ptr<Frame::FrameSubpassSystem> op = Frame::FrameSubpassSystem::Create();
 
 	Util::String subsystem(node->string_value);
 	if (subsystem == "Lights")					op->SetSubsystem(FrameSubpassSystem::Lights);
@@ -1313,16 +1313,16 @@ FrameScriptLoader::ParseSubpassSystem(const Ptr<Frame2::FrameScript>& script, co
 	{
 		n_error("No subsystem called '%s' exists", subsystem.AsCharPtr());
 	}
-	subpass->AddOp(op.upcast<Frame2::FrameOp>());
+	subpass->AddOp(op.upcast<Frame::FrameOp>());
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-FrameScriptLoader::ParseSubpassPlugins(const Ptr<Frame2::FrameScript>& script, const Ptr<Frame2::FrameSubpass>& subpass, JzonValue* node)
+FrameScriptLoader::ParseSubpassPlugins(const Ptr<Frame::FrameScript>& script, const Ptr<Frame::FrameSubpass>& subpass, JzonValue* node)
 {
-	Ptr<Frame2::FrameSubpassPlugins> op = Frame2::FrameSubpassPlugins::Create();
+	Ptr<Frame::FrameSubpassPlugins> op = Frame::FrameSubpassPlugins::Create();
 	JzonValue* name = jzon_get(node, "name");
 	n_assert(name != NULL);
 	op->SetName(name->string_value);
@@ -1331,14 +1331,14 @@ FrameScriptLoader::ParseSubpassPlugins(const Ptr<Frame2::FrameScript>& script, c
 	n_assert(filter != NULL);
 	op->SetPluginFilter(filter->string_value);
 	op->Setup();
-	subpass->AddOp(op.upcast<Frame2::FrameOp>());
+	subpass->AddOp(op.upcast<Frame::FrameOp>());
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-FrameScriptLoader::ParseShaderVariables(const Ptr<Frame2::FrameScript>& script, const Ptr<CoreGraphics::ShaderState>& state, JzonValue* node)
+FrameScriptLoader::ParseShaderVariables(const Ptr<Frame::FrameScript>& script, const Ptr<CoreGraphics::ShaderState>& state, JzonValue* node)
 {
 	uint i;
 	for (i = 0; i < node->size; i++)

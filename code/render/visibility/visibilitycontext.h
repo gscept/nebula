@@ -1,85 +1,33 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @class Visibility::VisibilityContext
-       
-    (C) 2010 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+	A VisibilityContext adds a module to a GraphicsEntity which makes it take part
+	in visibility resolution. Most graphics entities should use this, but some entities,
+	like the skybox, or UI elements, does not need to be checked for visibility. 
+
+	
+	(C) 2017 Individual contributors, see AUTHORS file
 */
+//------------------------------------------------------------------------------
 #include "core/refcounted.h"
-#include "graphics/graphicsentity.h"
-#include "math/bbox.h"
-              
-//------------------------------------------------------------------------------
+#include "core/singleton.h"
+#include "graphics/graphicscontext.h"
 namespace Visibility
-{   
-class VisibilityChecker;
-class VisibilitySystemBase;
-
-class VisibilityContext : public Core::RefCounted
 {
-    __DeclareClass(VisibilityContext);
+class VisibilityContext : public Graphics::GraphicsContext
+{
+	__DeclareClass(VisibilityContext);
+	__DeclareSingleton(VisibilityContext);
 public:
-    /// constructor
-    VisibilityContext();
-    /// destructor
-    virtual ~VisibilityContext();     
-    /// get GfxEntity	
-    const Ptr<Graphics::GraphicsEntity>& GetGfxEntity() const; 
-    /// get BoundingBox	
-    const Math::bbox& GetBoundingBox() const;  
-    /// get frameid visible	
-    IndexT GetVisibleFrameId() const;            
-    /// set Visible
-    void SetVisibleFrameId(IndexT frameId);
-              
-private:  
-    friend class VisibilityChecker;
-    /// setup
-    void Setup(const Ptr<Graphics::GraphicsEntity>& entity); 
-    /// update bounding box
-    void UpdateBoundingBox(const Math::bbox& box);
+	/// constructor
+	VisibilityContext();
+	/// destructor
+	virtual ~VisibilityContext();
 
-    Ptr<Graphics::GraphicsEntity> gfxEntity;
-    IndexT visibleFrameId;
-    Math::bbox boundingBox;    
+	/// register entity
+	int64_t RegisterEntity(const int64_t& entity);
+	/// unregister entity
+	void UnregisterEntity(const int64_t& entity);
+private:
 };
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline IndexT 
-VisibilityContext::GetVisibleFrameId() const
-{
-    return this->visibleFrameId;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void 
-VisibilityContext::SetVisibleFrameId(IndexT val)
-{
-    this->visibleFrameId = val;
-}  
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const Ptr<Graphics::GraphicsEntity>& 
-VisibilityContext::GetGfxEntity() const
-{
-    return this->gfxEntity;        
-}        
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const Math::bbox& 
-VisibilityContext::GetBoundingBox() const
-{
-    return this->boundingBox;        
-}
 } // namespace Visibility
-//------------------------------------------------------------------------------
-

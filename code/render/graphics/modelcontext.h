@@ -9,6 +9,8 @@
 #include "graphicscontext.h"
 #include "models/modelinstance.h"
 #include "core/singleton.h"
+#include "resource/resourceid.h"
+#include "resource/resourcecontainer.h"
 namespace Graphics
 {
 class GraphicsEntity;
@@ -22,10 +24,21 @@ public:
 	/// destructor
 	virtual ~ModelContext();
 
+	struct _ModelSetup
+	{
+		Resources::ResourceId res;
+		bool synced;
+	};
+
+	struct _ModelResult
+	{
+		Ptr<Models::ModelInstance> model;
+	};
+
 	/// register entity
-	int64_t RegisterEntity(const int64_t& entity);
+	_ModelResult* RegisterEntity(const Ptr<GraphicsEntity>& entity, _ModelSetup setup);
 	/// unregister entity
-	void UnregisterEntity(const int64_t& slice);
+	void UnregisterEntity(const Ptr<GraphicsEntity>& entity);
 
 	/// called from view to resolve visibility for entities
 	void OnResolveVisibility(IndexT frameIndex, bool updateLod = false);
@@ -42,19 +55,13 @@ public:
 	void OnRefreshStagingResources();
 private:
 
-
-	struct _Model
-	{
-		Ptr<Models::ModelInstance> model;
-	};
-
 	struct _Staging
 	{
-		/// resource id on this row
-		bool synced;
+		Ptr<Resources::ResourceContainer<Models::Model>> res;
 	};
 
-	GraphicsContext::BlockAllocator<_Model> modelData;
+	GraphicsContext::BlockAllocator<_ModelResult> modelData;
 	GraphicsContext::BlockAllocator<_Staging> stagingData;
+	GraphicsContext::BlockAllocator<_ModelSetup> setupData;
 };
 } // namespace Graphics

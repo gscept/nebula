@@ -1,28 +1,29 @@
 //------------------------------------------------------------------------------
-// view.cc
+// visibilityserver.cc
 // (C) 2017 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
-#include "view.h"
+#include "visibilityserver.h"
 
-namespace Graphics
+namespace Visibility
 {
 
-__ImplementClass(Graphics::View, 'VIEW', Core::RefCounted);
+__ImplementClass(Visibility::VisibilityServer, 'VISE', Core::RefCounted);
+__ImplementSingleton(Visibility::VisibilityServer);
 //------------------------------------------------------------------------------
 /**
 */
-View::View()
+VisibilityServer::VisibilityServer()
 {
-	// empty
+	__ConstructSingleton;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-View::~View()
+VisibilityServer::~VisibilityServer()
 {
-	// empty
+	__DestructSingleton;
 }
 
-} // namespace Graphics
+} // namespace Visibility

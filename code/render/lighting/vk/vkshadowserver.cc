@@ -65,7 +65,7 @@ VkShadowServer::Open()
 
 	// load the ShadowBuffer frame shader
 	const Ptr<MaterialServer> materialServer = MaterialServer::Instance();
-	this->script = Frame2::FrameServer::Instance()->LoadFrameScript("shadowmapping", "frame:vkshadowmapping.json");
+	this->script = Frame::FrameServer::Instance()->LoadFrameScript("shadowmapping", "frame:vkshadowmapping.json");
 	this->globalLightShadowBuffer = this->script->GetColorTexture("GlobalLightShadow")->GetTexture();
 	this->spotLightShadowBuffer = this->script->GetColorTexture("SpotLightInstance")->GetTexture();
 	this->spotLightShadowBufferAtlas = this->script->GetColorTexture("SpotLightShadowAtlas")->GetTexture();
@@ -80,11 +80,11 @@ VkShadowServer::Open()
 	this->lightIndexPool.SetSetupFunc([](IndexT& val, IndexT idx) { val = idx;  });
 	this->lightIndexPool.Resize(NumShadowCastingLights);
 
-	this->globalLightBatch = Frame2::FrameSubpassBatch::Create();
+	this->globalLightBatch = Frame::FrameSubpassBatch::Create();
 	this->globalLightBatch->SetBatchCode(Graphics::BatchGroup::FromName("GlobalShadow"));
-	this->spotLightBatch = Frame2::FrameSubpassBatch::Create();
+	this->spotLightBatch = Frame::FrameSubpassBatch::Create();
 	this->spotLightBatch->SetBatchCode(Graphics::BatchGroup::FromName("SpotLightShadow"));
-	this->pointLightBatch = Frame2::FrameSubpassBatch::Create();
+	this->pointLightBatch = Frame::FrameSubpassBatch::Create();
 	this->pointLightBatch->SetBatchCode(Graphics::BatchGroup::FromName("PointLightShadow"));
 
 	this->csmUtil.SetTextureWidth(this->globalLightShadowBuffer->GetWidth() / SplitsPerRow);

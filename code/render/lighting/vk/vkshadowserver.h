@@ -72,15 +72,15 @@ private:
 	Ptr<CoreGraphics::Texture> globalLightShadowBuffer;
 	Ptr<CoreGraphics::Texture> spotLightShadowBuffer;
 	Ptr<CoreGraphics::Texture> spotLightShadowBufferAtlas;
-	Ptr<Frame2::FrameSubpassBatch> globalLightBatch;
-	Ptr<Frame2::FrameSubpassBatch> spotLightBatch;
-	Ptr<Frame2::FrameSubpassBatch> pointLightBatch;
+	Ptr<Frame::FrameSubpassBatch> globalLightBatch;
+	Ptr<Frame::FrameSubpassBatch> spotLightBatch;
+	Ptr<Frame::FrameSubpassBatch> pointLightBatch;
 
 	Util::Dictionary<Ptr<Graphics::AbstractLightEntity>, IndexT> lightToIndexMap;
 	Util::FixedPool<IndexT> lightIndexPool;
 	
 
-	Ptr<Frame2::FrameScript> script;
+	Ptr<Frame::FrameScript> script;
 	CSMUtil csmUtil;
 
 	_declare_timer(globalShadow);

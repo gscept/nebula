@@ -24,11 +24,12 @@ public:
 	virtual ~GraphicsEntity();
 
 
+	int64_t id;
+
 private:
 
 	static int64_t UniqueIdCounter;
 	Util::Array<Ptr<GraphicsContext>> contexts;
-	int64_t id; 
 	Math::matrix44 transform;
 };
 } // namespace Graphics

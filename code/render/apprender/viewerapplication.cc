@@ -81,8 +81,8 @@ ViewerApplication::Open()
 													  0,
                                                       true);
 
-		Frame2::FrameServer::Instance()->SetWindowTexture(CoreGraphics::DisplayDevice::Instance()->GetCurrentWindow()->GetRenderTexture());
-		Ptr<Frame2::FrameScript> frameScript = Frame2::FrameServer::Instance()->LoadFrameScript("test", "frame:vkdebug.json");
+		Frame::FrameServer::Instance()->SetWindowTexture(CoreGraphics::DisplayDevice::Instance()->GetCurrentWindow()->GetRenderTexture());
+		Ptr<Frame::FrameScript> frameScript = Frame::FrameServer::Instance()->LoadFrameScript("test", "frame:vkdebug.json");
 
 		// set stage
 		this->view->SetStage(this->stage);

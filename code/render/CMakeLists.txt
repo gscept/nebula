@@ -769,16 +769,13 @@ fips_begin_module(render)
 				resourcecontainer.cc
 				resourcecontainer.h
 				resourceid.h
+				resourceloader.cc
+				resourceloader.h
 				resourcemanager.cc
 				resourcemanager.h
 			)
 		fips_dir(skinning)
-		fips_dir(visibility/handler GROUP "visibility/handler")
-			fips_files(
-				visibilityboxhandler.cc
-				visibilityclusterhandler.cc
-				visibilityhandler.cc
-			)
+		
 		fips_dir(visibility/visibilitysystems GROUP "visibility/visibilitysystems")
 			fips_files(
 				visibilitybox.cc
@@ -798,15 +795,13 @@ fips_begin_module(render)
 			)
 		fips_dir(visibility)
 			fips_files(
-				observercontext.cc
-				observercontext.h
-				visibilitychecker.cc
-				visibilitychecker.h
+				observer.cc
+				observer.h
 				visibilitycontainer.cc
 				visibilitycontainer.h
 				visibilitycontext.cc
 				visibilitycontext.h
-				visibilityquery.cc
-				visibilityquery.h
+				visibilityserver.cc
+				visibilityserver.h
 			)
 fips_end_module()

@@ -30,10 +30,10 @@ using namespace Util;
 #define FRAME_LOG(...)
 #endif
 
-namespace Frame2
+namespace Frame
 {
 
-__ImplementClass(Frame2::FrameSubpassBatch, 'FRSB', Frame2::FrameOp);
+__ImplementClass(Frame::FrameSubpassBatch, 'FRSB', Frame::FrameOp);
 //------------------------------------------------------------------------------
 /**
 */

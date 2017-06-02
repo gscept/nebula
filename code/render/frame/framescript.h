@@ -21,7 +21,7 @@ namespace Graphics
 {
 	class View;
 }
-namespace Frame2
+namespace Frame
 {
 class FrameScript : public Core::RefCounted
 {
@@ -38,7 +38,7 @@ public:
 	const Resources::ResourceId& GetResourceId() const;
 
 	/// add frame operation
-	void AddOp(const Ptr<Frame2::FrameOp>& op);
+	void AddOp(const Ptr<Frame::FrameOp>& op);
 	/// add color texture
 	void AddColorTexture(const Util::StringAtom& name, const Ptr<CoreGraphics::RenderTexture>& tex);
 	/// get color texture
@@ -107,7 +107,7 @@ private:
 	Util::Dictionary<Util::StringAtom, Ptr<CoreGraphics::ShaderReadWriteBuffer>> readWriteBuffersByName;
 	Util::Array<Ptr<CoreGraphics::Event>> events;
 	Util::Dictionary<Util::StringAtom, Ptr<CoreGraphics::Event>> eventsByName;
-	Util::Array<Ptr<Frame2::FrameOp>> ops;
+	Util::Array<Ptr<Frame::FrameOp>> ops;
 	Util::Array<Ptr<Algorithms::Algorithm>> algorithms;
 	Util::Dictionary<Util::StringAtom, Ptr<Algorithms::Algorithm>> algorithmsByName;
 	Util::Array<Ptr<CoreGraphics::ShaderState>> shaderStates;

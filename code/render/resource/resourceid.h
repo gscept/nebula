@@ -7,7 +7,7 @@
 */
 //------------------------------------------------------------------------------
 #include "util/stringatom.h"
-namespace Resource
+namespace Resources
 {
 typedef Util::StringAtom ResourceId;
 } // namespace Resource

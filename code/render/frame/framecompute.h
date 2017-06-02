@@ -8,7 +8,7 @@
 //------------------------------------------------------------------------------
 #include "frameop.h"
 #include "coregraphics/shaderstate.h"
-namespace Frame2
+namespace Frame
 {
 class FrameCompute : public FrameOp
 {

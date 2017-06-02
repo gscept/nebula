@@ -6,10 +6,10 @@
 #include "framescript.h"
 #include "frameop.h"
 
-namespace Frame2
+namespace Frame
 {
 
-__ImplementClass(Frame2::FrameOp, 'FROP', Core::RefCounted);
+__ImplementClass(Frame::FrameOp, 'FROP', Core::RefCounted);
 //------------------------------------------------------------------------------
 /**
 */

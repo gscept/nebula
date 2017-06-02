@@ -5,10 +5,10 @@
 #include "stdneb.h"
 #include "frameglobalstate.h"
 
-namespace Frame2
+namespace Frame
 {
 
-__ImplementClass(Frame2::FrameGlobalState, 'FRGS', Frame2::FrameOp);
+__ImplementClass(Frame::FrameGlobalState, 'FRGS', Frame::FrameOp);
 //------------------------------------------------------------------------------
 /**
 */

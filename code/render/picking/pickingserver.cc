@@ -16,7 +16,7 @@
 
 using namespace Base;
 using namespace CoreGraphics;
-using namespace Frame2;
+using namespace Frame;
 namespace Picking
 {
 __ImplementClass(Picking::PickingServer, 'PISR', Core::RefCounted);

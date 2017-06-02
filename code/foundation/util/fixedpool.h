@@ -28,6 +28,8 @@ public:
 
 	/// assignment operator
 	void operator=(const FixedArray<TYPE>& rhs);
+	/// access operator
+	TYPE& operator[](const IndexT elem);
 
 	/// allocate an element in the pool
 	TYPE& Alloc();
@@ -107,6 +109,19 @@ Util::FixedPool<TYPE>::operator=(const FixedArray<TYPE>& rhs)
 {
 	this->freeValues = rhs.freeValues;
 	this->usedValues = rhs.usedValues;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+TYPE&
+Util::FixedPool<TYPE>::operator[](const IndexT elem)
+{
+#if NEBULA3_BOUNDSCHECKS
+	n_assert(this->usedValues.Size() > elem);
+#endif
+	return this->usedValues[elem];
 }
 
 //------------------------------------------------------------------------------

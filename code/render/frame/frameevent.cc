@@ -5,10 +5,10 @@
 #include "stdneb.h"
 #include "frameevent.h"
 
-namespace Frame2
+namespace Frame
 {
 
-__ImplementClass(Frame2::FrameEvent, 'FREV', Frame2::FrameOp);
+__ImplementClass(Frame::FrameEvent, 'FREV', Frame::FrameOp);
 //------------------------------------------------------------------------------
 /**
 */

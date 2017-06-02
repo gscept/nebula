@@ -6,11 +6,11 @@
 #include "frameserver.h"
 #include "framescriptloader.h"
 
-namespace Frame2
+namespace Frame
 {
 
-__ImplementClass(Frame2::FrameServer, 'FRSR', Core::RefCounted);
-__ImplementSingleton(Frame2::FrameServer);
+__ImplementClass(Frame::FrameServer, 'FRSR', Core::RefCounted);
+__ImplementSingleton(Frame::FrameServer);
 //------------------------------------------------------------------------------
 /**
 */
@@ -51,11 +51,11 @@ FrameServer::Close()
 //------------------------------------------------------------------------------
 /**
 */
-Ptr<Frame2::FrameScript>
+Ptr<Frame::FrameScript>
 FrameServer::LoadFrameScript(const Resources::ResourceId& name, const IO::URI& path)
 {
 	n_assert(!this->frameScripts.Contains(name));
-	Ptr<Frame2::FrameScript> script = FrameScriptLoader::LoadFrameScript(path);
+	Ptr<Frame::FrameScript> script = FrameScriptLoader::LoadFrameScript(path);
 	script->SetResourceId(name);
 	this->frameScripts.Add(name, script);
 	return script;

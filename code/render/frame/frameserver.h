@@ -15,7 +15,7 @@
 #include "coregraphics/rendertexture.h"
 #include "framescript.h"
 #include "io/uri.h"
-namespace Frame2
+namespace Frame
 {
 class FrameServer : public Core::RefCounted
 {
@@ -72,7 +72,7 @@ FrameServer::GetWindowTexture() const
 //------------------------------------------------------------------------------
 /**
 */
-inline const Ptr<Frame2::FrameScript>&
+inline const Ptr<Frame::FrameScript>&
 FrameServer::GetFrameScript(const Util::StringAtom& name)
 {
 	return this->frameScripts[name];

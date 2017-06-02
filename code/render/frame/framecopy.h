@@ -8,7 +8,7 @@
 //------------------------------------------------------------------------------
 #include "frameop.h"
 #include "coregraphics/rendertexture.h"
-namespace Frame2
+namespace Frame
 {
 class FrameCopy : public FrameOp
 {

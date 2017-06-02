@@ -7,10 +7,10 @@
 #include "coregraphics/renderdevice.h"
 
 using namespace CoreGraphics;
-namespace Frame2
+namespace Frame
 {
 
-__ImplementClass(Frame2::FrameSubpass, 'FRSU', Frame2::FrameOp);
+__ImplementClass(Frame::FrameSubpass, 'FRSU', Frame::FrameOp);
 //------------------------------------------------------------------------------
 /**
 */
@@ -32,7 +32,7 @@ FrameSubpass::~FrameSubpass()
 /**
 */
 void
-FrameSubpass::AddOp(const Ptr<Frame2::FrameOp>& op)
+FrameSubpass::AddOp(const Ptr<Frame::FrameOp>& op)
 {
 	this->ops.Append(op);
 }

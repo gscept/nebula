@@ -7,9 +7,9 @@
 */
 //------------------------------------------------------------------------------
 #include "frameop.h"
-namespace Frame2
+namespace Frame
 {
-class FrameSubpassSystem : public Frame2::FrameOp
+class FrameSubpassSystem : public Frame::FrameOp
 {
 	__DeclareClass(FrameSubpassSystem);
 public:

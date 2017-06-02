@@ -5,10 +5,10 @@
 #include "stdneb.h"
 #include "framesubpassalgorithm.h"
 
-namespace Frame2
+namespace Frame
 {
 
-__ImplementClass(Frame2::FrameSubpassAlgorithm, 'FSUA', Frame2::FrameOp);
+__ImplementClass(Frame::FrameSubpassAlgorithm, 'FSUA', Frame::FrameOp);
 //------------------------------------------------------------------------------
 /**
 */

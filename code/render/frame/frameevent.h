@@ -9,7 +9,7 @@
 //------------------------------------------------------------------------------
 #include "frameop.h"
 #include "coregraphics/event.h"
-namespace Frame2
+namespace Frame
 {
 class FrameEvent : public FrameOp
 {

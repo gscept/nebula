@@ -7,10 +7,10 @@
 #include "coregraphics/renderdevice.h"
 
 using namespace CoreGraphics;
-namespace Frame2
+namespace Frame
 {
 
-__ImplementClass(Frame2::FramePass, 'FRPA', Frame2::FrameOp);
+__ImplementClass(Frame::FramePass, 'FRPA', Frame::FrameOp);
 //------------------------------------------------------------------------------
 /**
 */

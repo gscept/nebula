@@ -8,7 +8,7 @@
 //------------------------------------------------------------------------------
 #include "frameop.h"
 #include "coregraphics/barrier.h"
-namespace Frame2
+namespace Frame
 {
 class FrameBarrier : public FrameOp
 {

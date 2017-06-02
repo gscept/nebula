@@ -8,7 +8,7 @@
 //------------------------------------------------------------------------------
 #include "frameop.h"
 #include "algorithm/algorithm.h"
-namespace Frame2
+namespace Frame
 {
 class FrameSubpassAlgorithm : public FrameOp
 {
