@@ -475,6 +475,8 @@ fips_begin_module(render)
 			)
 		fips_dir(graphics)
 			fips_files(
+				camera.cc
+				camera.h
 				graphicscontext.cc
 				graphicscontext.h
 				graphicsentity.cc

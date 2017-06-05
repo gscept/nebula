@@ -55,16 +55,7 @@ ResourceLoader::Update(IndexT frameIndex)
 				element.success(res);
 				this->usage.Add(res->resourceId, 1);
 				this->loaded.Add(res->resourceId, res);
-
-				// if tag is valid, group it under tag
-				if (element.tag.IsValid())
-				{
-					IndexT idx = this->tagToIndexMap.FindIndex(element.tag);
-					if (idx == InvalidIndex) this->tagToIndexMap.Add(element.tag, Util::Array<int>());
-					
-					// add indexed key to loaded map so that tag removal can find them from the loaded list
-					this->tagToIndexMap.ValueAtIndex(idx).Append(this->loaded.FindIndex(res->resourceId));
-				}
+				this->tags.Add(element.res->resourceId, element.tag);
 			}
 			else if (status == Failed)	element.failed(res);
 			this->pending.EraseAtIndex(i--);
@@ -97,18 +88,18 @@ ResourceLoader::Unload(const Ptr<Resource>& res)
 void
 ResourceLoader::DiscardByTag(const Util::StringAtom& tag)
 {
-	const Util::Array<int>& indices = this->tagToIndexMap[tag];
 	IndexT i;
-	for (i = 0; i < indices.Size(); i++)
+	for (i = 0; i < loaded.Size(); i++)
 	{
-		const int& idx = indices[i];
-		this->Unload(this->loaded.ValueAtIndex(idx));
-		this->loaded.EraseAtIndex(idx);
-		this->usage.EraseAtIndex(idx);
+		const Util::StringAtom& tag = this->tags.ValueAtIndex(i);
+		if (tag == tag)
+		{
+			this->Unload(this->loaded.ValueAtIndex(i));
+			this->loaded.EraseAtIndex(i);
+			this->usage.EraseAtIndex(i);
+			this->tags.EraseAtIndex(i);
+		}		
 	}
-
-	// remove tag-index entry
-	this->tagToIndexMap.Erase(tag);
 }
 
 } // namespace Resources

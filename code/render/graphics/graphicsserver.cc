@@ -61,6 +61,9 @@ GraphicsServer::OnFrame()
 	const IndexT frameIndex = this->timer->GetFrameIndex();
 	const Timing::Time time = this->timer->GetFrameTime();
 
+	// enter visibility lockstep
+	this->visServer->EnterVisibilityLockstep();
+
 	// begin updating visibility
 	IndexT i;
 	for (i = 0; i < this->contexts.Size(); i++)
@@ -82,23 +85,30 @@ GraphicsServer::OnFrame()
 		}
 	}
 
-	// apply visibility result
-	this->visServer->ApplyVisibility();
-
 	for (i = 0; i < this->views.Size(); i++)
 	{
 		const Ptr<View>& view = this->views[i];
+
+		// apply visibility result for this view
+		this->visServer->ApplyVisibility(view);
+
 		IndexT j;
 		for (j = 0; j < this->contexts.Size(); j++)
 		{
-			this->contexts[j]->OnRenderView(view, frameIndex, time);
+			this->contexts[j]->OnVisibilityReady(frameIndex, time);
 		}
+
+		// render view
+		view->Render(frameIndex, time);
 
 		for (j = 0; j < this->contexts.Size(); j++)
 		{
 			this->contexts[j]->OnAfterView(view, frameIndex, time);
 		}
 	}
+
+	// leave visibility lockstep
+	this->visServer->LeaveVisibilityLockstep();
 }
 
 //------------------------------------------------------------------------------

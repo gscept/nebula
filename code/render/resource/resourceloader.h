@@ -92,7 +92,7 @@ protected:
 
 	Util::Dictionary<Util::StringAtom, _PendingResource> pending;
 	Util::Dictionary<Util::StringAtom, Ptr<Resource>> loaded;
-	Util::Dictionary<Util::StringAtom, Util::Array<int>> tagToIndexMap;
+	Util::Dictionary<Util::StringAtom, Util::StringAtom> tags;
 	Util::Dictionary<Util::StringAtom, int> usage;
 };
 
@@ -143,6 +143,7 @@ Resource::ResourceLoader::DiscardContainer(const Ptr<ResourceContainer<RESOURCE_
 		this->Unload(this->loaded.ValueAtIndex(i));
 		this->loaded.EraseAtIndex(i);
 		this->usage.EraseAtIndex(i);
+		this->tags.EraseAtIndex(i);
 	}
 }
 

@@ -45,6 +45,12 @@ public:
     void operator=(const Ptr<TYPE>& rhs);
     /// assignment operator
     void operator=(TYPE* rhs);
+	/// unassignment operator
+	void operator=(std::nullptr_t rhs);
+	/// implicit conversion of other Ptr
+	template<class OTHERTYPE> operator=(const Ptr<OTHERTYPE>& rhs);
+	/// implicit conversion of other pointer
+	template<class OTHERTYPE> operator=(OTHERTYPE* ptr);
     /// equality operator
     bool operator==(const Ptr<TYPE>& rhs) const;
     /// inequality operator
@@ -169,6 +175,67 @@ Ptr<TYPE>::operator=(TYPE* rhs)
             this->ptr->AddRef();
         }
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+void
+Ptr<TYPE>::operator=(std::nullptr_t rhs)
+{
+	if (this->ptr != rhs)
+	{
+		if (this->ptr)
+		{
+			this->ptr->Release();
+		}
+		this->ptr = rhs;
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+template<class OTHERTYPE>
+Ptr<TYPE>::operator=(const Ptr<OTHERTYPE>& rhs)
+{
+	static_assert(std::is_base_of(TYPE, OTHERTYPE) || std::is_base_of(OTHERTYPE, TYPE));
+	if (this->ptr != rhs.ptr)
+	{
+		if (this->ptr)
+		{
+			this->ptr->Release();
+		}
+		this->ptr = rhs.ptr;
+		if (this->ptr)
+		{
+			this->ptr->AddRef();
+		}
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+template<class OTHERTYPE>
+Ptr<TYPE>::operator=(OTHERTYPE* ptr)
+{
+	static_assert(std::is_base_of(TYPE, OTHERTYPE) || std::is_base_of(OTHERTYPE, TYPE));
+	if (this->ptr != rhs.ptr)
+	{
+		if (this->ptr)
+		{
+			this->ptr->Release();
+		}
+		this->ptr = rhs.ptr;
+		if (this->ptr)
+		{
+			this->ptr->AddRef();
+		}
+	}
 }
 
 //------------------------------------------------------------------------------
