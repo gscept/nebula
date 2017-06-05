@@ -29,7 +29,7 @@ typedef const float4& __Float4Arg;
 #endif
 
 
-_DECLSPEC_ALIGN_16_
+NEBULA3_ALIGN16
 #if __XBOX360__
 __declspec(passinreg)
 #endif
@@ -46,12 +46,12 @@ public:
     /// !!!! via Registers doesnt work
     //float4(const float4& rhs);
     /// construct from XMVECTOR
-    float4(XMVECTOR rhs);
+    float4(DirectX::XMVECTOR rhs);
 
     /// assignment operator
     void operator=(const float4 &rhs);
     /// assign an XMVECTOR
-    void operator=(XMVECTOR rhs);
+    void operator=(DirectX::XMVECTOR rhs);
     /// flip sign
     float4 operator-() const;
     /// inplace add
@@ -224,13 +224,13 @@ public:
     static float4 equal(const float4& v0, const float4& v1);
 
     /// unpack the first element from a XMVECTOR
-    static float unpack_x(XMVECTOR v);
+    static float unpack_x(DirectX::XMVECTOR v);
     /// unpack the second element from a XMVECTOR
-    static float unpack_y(XMVECTOR v);
+    static float unpack_y(DirectX::XMVECTOR v);
     /// unpack the third element from a XMVECTOR
-    static float unpack_z(XMVECTOR v);
+    static float unpack_z(DirectX::XMVECTOR v);
     /// unpack the fourth element from a XMVECTOR
-    static float unpack_w(XMVECTOR v);
+    static float unpack_w(DirectX::XMVECTOR v);
     /// splat scalar into each component of a vector
     static float4 splat(scalar s);
     /// return a vector with all elements set to element n of v. 0 <= element <= 3
@@ -250,7 +250,7 @@ public:
 	/// ceil
 	static float4 ceiling(const float4 &v);
 
-    XMVECTOR vec;
+	DirectX::XMVECTOR vec;
 };
 
 //------------------------------------------------------------------------------
@@ -268,7 +268,7 @@ float4::float4()
 __forceinline
 float4::float4(scalar x, scalar y, scalar z, scalar w)
 {
-    this->vec = XMVectorSet(x, y, z, w);
+    this->vec = DirectX::XMVectorSet(x, y, z, w);
 }
 
 //------------------------------------------------------------------------------
@@ -277,14 +277,14 @@ float4::float4(scalar x, scalar y, scalar z, scalar w)
 __forceinline
 float4::float4(scalar v)
 {
-    this->vec = XMVectorSet(v, v, v, v);
+    this->vec = DirectX::XMVectorSet(v, v, v, v);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 __forceinline
-float4::float4(XMVECTOR rhs) :
+float4::float4(DirectX::XMVECTOR rhs) :
     vec(rhs)
 {
     // empty
@@ -303,7 +303,7 @@ float4::operator=(const float4 &rhs)
 /**
 */
 __forceinline void
-float4::operator=(XMVECTOR rhs)
+float4::operator=(DirectX::XMVECTOR rhs)
 {
     this->vec = rhs;
 }
@@ -314,7 +314,7 @@ float4::operator=(XMVECTOR rhs)
 __forceinline bool
 float4::operator==(const float4 &rhs) const
 {
-    return (0 != XMVector4Equal(this->vec, rhs.vec));
+    return (0 != DirectX::XMVector4Equal(this->vec, rhs.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -323,7 +323,7 @@ float4::operator==(const float4 &rhs) const
 __forceinline bool
 float4::operator!=(const float4 &rhs) const
 {
-    return (0 != XMVector4NotEqual(this->vec, rhs.vec));
+    return (0 != DirectX::XMVector4NotEqual(this->vec, rhs.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -333,7 +333,7 @@ float4::operator!=(const float4 &rhs) const
 __forceinline void
 float4::load(const scalar* ptr)
 {
-    this->vec = XMLoadFloat4A((XMFLOAT4A*)ptr);
+    this->vec = DirectX::XMLoadFloat4A((DirectX::XMFLOAT4A*)ptr);
 }
 
 //------------------------------------------------------------------------------
@@ -343,7 +343,7 @@ float4::load(const scalar* ptr)
 __forceinline void
 float4::loadu(const scalar* ptr)
 {
-    this->vec = XMLoadFloat4((XMFLOAT4*)ptr);
+    this->vec = DirectX::XMLoadFloat4((DirectX::XMFLOAT4*)ptr);
 }
 
 //------------------------------------------------------------------------------
@@ -353,7 +353,7 @@ float4::loadu(const scalar* ptr)
 __forceinline void
 float4::store(scalar* ptr) const
 {
-    XMStoreFloat4A((XMFLOAT4A*)ptr, this->vec);
+	DirectX::XMStoreFloat4A((DirectX::XMFLOAT4A*)ptr, this->vec);
 }
 
 //------------------------------------------------------------------------------
@@ -363,7 +363,7 @@ float4::store(scalar* ptr) const
 __forceinline void
 float4::storeu(scalar* ptr) const
 {
-    XMStoreFloat4((XMFLOAT4*)ptr, this->vec);
+	DirectX::XMStoreFloat4((DirectX::XMFLOAT4*)ptr, this->vec);
 }
 
 //------------------------------------------------------------------------------
@@ -372,7 +372,7 @@ float4::storeu(scalar* ptr) const
 __forceinline void
 float4::stream(scalar* ptr) const
 {
-    XMStoreFloat4A((XMFLOAT4A*)ptr, this->vec);
+	DirectX::XMStoreFloat4A((DirectX::XMFLOAT4A*)ptr, this->vec);
 }
 
 //------------------------------------------------------------------------------
@@ -381,7 +381,7 @@ float4::stream(scalar* ptr) const
 __forceinline void
 float4::load_float3(const void* ptr, float w)
 {
-    this->vec = XMLoadFloat3((_XMFLOAT3*)ptr);
+    this->vec = DirectX::XMLoadFloat3((DirectX::XMFLOAT3*)ptr);
     this->set_w(w);
 }
 
@@ -391,7 +391,7 @@ float4::load_float3(const void* ptr, float w)
 __forceinline float4
 float4::operator-() const
 {
-    return XMVectorNegate(this->vec);
+    return DirectX::XMVectorNegate(this->vec);
 }
 
 //------------------------------------------------------------------------------
@@ -400,7 +400,7 @@ float4::operator-() const
 __forceinline float4
 float4::operator*(scalar t) const
 {
-    return XMVectorScale(this->vec, t);
+    return DirectX::XMVectorScale(this->vec, t);
 }
 
 //------------------------------------------------------------------------------
@@ -409,7 +409,7 @@ float4::operator*(scalar t) const
 __forceinline void
 float4::operator*=(const float4& rhs)
 {
-    this->vec = XMVectorMultiply(this->vec, rhs.vec);
+    this->vec = DirectX::XMVectorMultiply(this->vec, rhs.vec);
 }
 
 
@@ -419,7 +419,7 @@ float4::operator*=(const float4& rhs)
 __forceinline void 
 float4::operator/=( const float4& rhs )
 {
-    this->vec = XMVectorDivide(this->vec, rhs.vec);
+    this->vec = DirectX::XMVectorDivide(this->vec, rhs.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -428,7 +428,7 @@ float4::operator/=( const float4& rhs )
 __forceinline void
 float4::operator+=(const float4 &rhs)
 {
-    this->vec = XMVectorAdd(this->vec, rhs.vec);
+    this->vec = DirectX::XMVectorAdd(this->vec, rhs.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -437,7 +437,7 @@ float4::operator+=(const float4 &rhs)
 __forceinline void
 float4::operator-=(const float4 &rhs)
 {
-    this->vec = XMVectorSubtract(this->vec, rhs.vec);
+    this->vec = DirectX::XMVectorSubtract(this->vec, rhs.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -446,7 +446,7 @@ float4::operator-=(const float4 &rhs)
 __forceinline void
 float4::operator*=(scalar s)
 {
-    this->vec = XMVectorScale(this->vec, s);
+    this->vec = DirectX::XMVectorScale(this->vec, s);
 }
 
 //------------------------------------------------------------------------------
@@ -455,7 +455,7 @@ float4::operator*=(scalar s)
 __forceinline float4
 float4::operator+(const float4 &rhs) const
 {
-    return XMVectorAdd(this->vec, rhs.vec);
+    return DirectX::XMVectorAdd(this->vec, rhs.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -464,7 +464,7 @@ float4::operator+(const float4 &rhs) const
 __forceinline float4
 float4::operator-(const float4 &rhs) const
 {
-    return XMVectorSubtract(this->vec, rhs.vec);
+    return DirectX::XMVectorSubtract(this->vec, rhs.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -473,7 +473,7 @@ float4::operator-(const float4 &rhs) const
 __forceinline void
 float4::set(scalar x, scalar y, scalar z, scalar w)
 {
-    this->vec = XMVectorSet(x, y, z, w);
+    this->vec = DirectX::XMVectorSet(x, y, z, w);
 }
 
 //------------------------------------------------------------------------------
@@ -580,7 +580,7 @@ float4::operator[]( const int index )
 __forceinline void
 float4::set_x(scalar x)
 {
-    this->vec = XMVectorSetXPtr(this->vec, &x);
+    this->vec = DirectX::XMVectorSetXPtr(this->vec, &x);
 }
 
 //------------------------------------------------------------------------------
@@ -589,7 +589,7 @@ float4::set_x(scalar x)
 __forceinline void
 float4::set_y(scalar y)
 {
-    this->vec = XMVectorSetYPtr(this->vec, &y);
+    this->vec = DirectX::XMVectorSetYPtr(this->vec, &y);
 }
 
 //------------------------------------------------------------------------------
@@ -598,7 +598,7 @@ float4::set_y(scalar y)
 __forceinline void
 float4::set_z(scalar z)
 {
-    this->vec = XMVectorSetZPtr(this->vec, &z);
+    this->vec = DirectX::XMVectorSetZPtr(this->vec, &z);
 }
 
 //------------------------------------------------------------------------------
@@ -607,7 +607,7 @@ float4::set_z(scalar z)
 __forceinline void
 float4::set_w(scalar w)
 {
-    this->vec = XMVectorSetWPtr(this->vec, &w);
+    this->vec = DirectX::XMVectorSetWPtr(this->vec, &w);
 }
 
 //------------------------------------------------------------------------------
@@ -616,7 +616,7 @@ float4::set_w(scalar w)
 __forceinline scalar
 float4::length() const
 {
-    return float4::unpack_x(XMVector4Length(this->vec));
+    return float4::unpack_x(DirectX::XMVector4Length(this->vec));
 }
 //------------------------------------------------------------------------------
 /**
@@ -624,7 +624,7 @@ float4::length() const
 __forceinline scalar 
 float4::length3() const
 {
-	return float4::unpack_x(XMVector3Length(this->vec));
+	return float4::unpack_x(DirectX::XMVector3Length(this->vec));
 }
 
 
@@ -634,7 +634,7 @@ float4::length3() const
 __forceinline scalar
 float4::lengthsq() const
 {
-    return float4::unpack_x(XMVector4LengthSq(this->vec));
+    return float4::unpack_x(DirectX::XMVector4LengthSq(this->vec));
 }
 
 
@@ -644,7 +644,7 @@ float4::lengthsq() const
 __forceinline scalar 
 float4::lengthsq3() const
 {
-	return float4::unpack_x(XMVector3LengthSq(this->vec));
+	return float4::unpack_x(DirectX::XMVector3LengthSq(this->vec));
 }
 //------------------------------------------------------------------------------
 /**
@@ -652,7 +652,7 @@ float4::lengthsq3() const
 __forceinline float4
 float4::reciprocal(const float4 &v)
 {
-    return XMVectorReciprocal(v.vec);
+    return DirectX::XMVectorReciprocal(v.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -661,7 +661,7 @@ float4::reciprocal(const float4 &v)
 __forceinline float4
 float4::multiply(const float4 &v0, const float4 &v1)
 {
-    return XMVectorMultiply(v0.vec, v1.vec);
+    return DirectX::XMVectorMultiply(v0.vec, v1.vec);
 }
 
 
@@ -671,7 +671,7 @@ float4::multiply(const float4 &v0, const float4 &v1)
 __forceinline float4 
 float4::multiplyadd( const float4 &v0, const float4 &v1, const float4 &v2 )
 {
-	return XMVectorMultiplyAdd(v0.vec, v1.vec, v2.vec);
+	return DirectX::XMVectorMultiplyAdd(v0.vec, v1.vec, v2.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -680,7 +680,7 @@ float4::multiplyadd( const float4 &v0, const float4 &v1, const float4 &v2 )
 __forceinline float4 
 float4::divide(const float4& v0, const float4 &v1)
 {
-    return XMVectorDivide(v0.vec, v1.vec);    
+    return DirectX::XMVectorDivide(v0.vec, v1.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -689,7 +689,7 @@ float4::divide(const float4& v0, const float4 &v1)
 __forceinline float4
 float4::abs() const
 {
-    return XMVectorAbs(this->vec);
+    return DirectX::XMVectorAbs(this->vec);
 }
 
 //------------------------------------------------------------------------------
@@ -698,7 +698,7 @@ float4::abs() const
 __forceinline float4
 float4::cross3(const float4 &v0, const float4 &v1)
 {
-    return XMVector3Cross(v0.vec, v1.vec);
+    return DirectX::XMVector3Cross(v0.vec, v1.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -707,7 +707,7 @@ float4::cross3(const float4 &v0, const float4 &v1)
 __forceinline scalar
 float4::dot3(const float4 &v0, const float4 &v1)
 {
-    return float4::unpack_x(XMVector3Dot(v0.vec, v1.vec));
+    return float4::unpack_x(DirectX::XMVector3Dot(v0.vec, v1.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -716,7 +716,7 @@ float4::dot3(const float4 &v0, const float4 &v1)
 __forceinline float4
 float4::barycentric(const float4 &v0, const float4 &v1, const float4 &v2, scalar f, scalar g)
 {
-    return XMVectorBaryCentric(v0.vec, v1.vec, v2.vec, f, g);
+    return DirectX::XMVectorBaryCentric(v0.vec, v1.vec, v2.vec, f, g);
 }
 
 //------------------------------------------------------------------------------
@@ -725,7 +725,7 @@ float4::barycentric(const float4 &v0, const float4 &v1, const float4 &v2, scalar
 __forceinline float4
 float4::catmullrom(const float4 &v0, const float4 &v1, const float4 &v2, const float4 &v3, scalar s)
 {
-    return XMVectorCatmullRom(v0.vec, v1.vec, v2.vec, v3.vec, s);
+    return DirectX::XMVectorCatmullRom(v0.vec, v1.vec, v2.vec, v3.vec, s);
 }
 
 //------------------------------------------------------------------------------
@@ -734,7 +734,7 @@ float4::catmullrom(const float4 &v0, const float4 &v1, const float4 &v2, const f
 __forceinline float4
 float4::hermite(const float4 &v1, const float4 &t1, const float4 &v2, const float4 &t2, scalar s)
 {
-    return XMVectorHermite(v1.vec, t1.vec, v2.vec, t2.vec, s);
+    return DirectX::XMVectorHermite(v1.vec, t1.vec, v2.vec, t2.vec, s);
 }
 
 //------------------------------------------------------------------------------
@@ -743,7 +743,7 @@ float4::hermite(const float4 &v1, const float4 &t1, const float4 &v2, const floa
 __forceinline float4
 float4::lerp(const float4 &v0, const float4 &v1, scalar s)
 {
-    return XMVectorLerp(v0.vec, v1.vec, s);
+    return DirectX::XMVectorLerp(v0.vec, v1.vec, s);
 }
 
 //------------------------------------------------------------------------------
@@ -752,7 +752,7 @@ float4::lerp(const float4 &v0, const float4 &v1, scalar s)
 __forceinline float4
 float4::maximize(const float4 &v0, const float4 &v1)
 {
-    return XMVectorMax(v0.vec, v1.vec);
+    return DirectX::XMVectorMax(v0.vec, v1.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -761,7 +761,7 @@ float4::maximize(const float4 &v0, const float4 &v1)
 __forceinline float4
 float4::minimize(const float4 &v0, const float4 &v1)
 {
-    return XMVectorMin(v0.vec, v1.vec);
+    return DirectX::XMVectorMin(v0.vec, v1.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -771,7 +771,7 @@ __forceinline float4
 float4::normalize(const float4 &v)
 {
     if (float4::equal3_all(v, float4(0,0,0,0))) return v;
-    return XMVector4Normalize(v.vec);
+    return DirectX::XMVector4Normalize(v.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -780,7 +780,7 @@ float4::normalize(const float4 &v)
 __forceinline float4
 float4::reflect(const float4 &normal, const float4 &incident)
 {
-    return XMVector3Reflect(incident.vec, normal.vec);
+    return DirectX::XMVector3Reflect(incident.vec, normal.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -789,7 +789,7 @@ float4::reflect(const float4 &normal, const float4 &incident)
 __forceinline bool
 float4::less4_any(const float4 &v0, const float4 &v1)
 {
-    return XMComparisonAnyFalse(XMVector4GreaterOrEqualR(v0.vec, v1.vec));
+    return DirectX::XMComparisonAnyFalse(DirectX::XMVector4GreaterOrEqualR(v0.vec, v1.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -798,7 +798,7 @@ float4::less4_any(const float4 &v0, const float4 &v1)
 __forceinline bool
 float4::less4_all(const float4 &v0, const float4 &v1)
 {
-    return XMComparisonAllFalse(XMVector4GreaterOrEqualR(v0.vec, v1.vec));
+    return DirectX::XMComparisonAllFalse(DirectX::XMVector4GreaterOrEqualR(v0.vec, v1.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -807,7 +807,7 @@ float4::less4_all(const float4 &v0, const float4 &v1)
 __forceinline bool
 float4::lessequal4_any(const float4 &v0, const float4 &v1)
 {
-    return XMComparisonAnyFalse(XMVector4GreaterR(v0.vec, v1.vec));
+    return DirectX::XMComparisonAnyFalse(DirectX::XMVector4GreaterR(v0.vec, v1.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -816,7 +816,7 @@ float4::lessequal4_any(const float4 &v0, const float4 &v1)
 __forceinline bool
 float4::lessequal4_all(const float4 &v0, const float4 &v1)
 {
-    return XMComparisonAllFalse(XMVector4GreaterR(v0.vec, v1.vec));
+    return DirectX::XMComparisonAllFalse(DirectX::XMVector4GreaterR(v0.vec, v1.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -825,7 +825,7 @@ float4::lessequal4_all(const float4 &v0, const float4 &v1)
 __forceinline bool
 float4::greater4_any(const float4 &v0, const float4 &v1)
 {
-    return XMComparisonAnyTrue(XMVector4GreaterR(v0.vec, v1.vec));
+    return DirectX::XMComparisonAnyTrue(DirectX::XMVector4GreaterR(v0.vec, v1.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -834,7 +834,7 @@ float4::greater4_any(const float4 &v0, const float4 &v1)
 __forceinline bool
 float4::greater4_all(const float4 &v0, const float4 &v1)
 {
-    return XMComparisonAllTrue(XMVector4GreaterR(v0.vec, v1.vec));
+    return DirectX::XMComparisonAllTrue(DirectX::XMVector4GreaterR(v0.vec, v1.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -843,7 +843,7 @@ float4::greater4_all(const float4 &v0, const float4 &v1)
 __forceinline bool
 float4::greaterequal4_any(const float4 &v0, const float4 &v1)
 {
-    return XMComparisonAnyTrue(XMVector4GreaterOrEqualR(v0.vec, v1.vec));
+    return DirectX::XMComparisonAnyTrue(DirectX::XMVector4GreaterOrEqualR(v0.vec, v1.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -852,7 +852,7 @@ float4::greaterequal4_any(const float4 &v0, const float4 &v1)
 __forceinline bool
 float4::greaterequal4_all(const float4 &v0, const float4 &v1)
 {
-    return XMComparisonAllTrue(XMVector4GreaterOrEqualR(v0.vec, v1.vec));
+    return DirectX::XMComparisonAllTrue(DirectX::XMVector4GreaterOrEqualR(v0.vec, v1.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -861,7 +861,7 @@ float4::greaterequal4_all(const float4 &v0, const float4 &v1)
 __forceinline bool
 float4::equal4_any(const float4 &v0, const float4 &v1)
 {
-    return XMComparisonAnyTrue(XMVector4EqualR(v0.vec, v1.vec));
+    return DirectX::XMComparisonAnyTrue(DirectX::XMVector4EqualR(v0.vec, v1.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -870,7 +870,7 @@ float4::equal4_any(const float4 &v0, const float4 &v1)
 __forceinline bool
 float4::equal4_all(const float4 &v0, const float4 &v1)
 {
-    return XMComparisonAllTrue(XMVector4EqualR(v0.vec, v1.vec));
+    return DirectX::XMComparisonAllTrue(DirectX::XMVector4EqualR(v0.vec, v1.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -879,7 +879,7 @@ float4::equal4_all(const float4 &v0, const float4 &v1)
 __forceinline bool
 float4::nearequal4(const float4 &v0, const float4 &v1, const float4 &epsilon)
 {
-    return (0 != XMVector4NearEqual(v0.vec, v1.vec, epsilon.vec));
+    return (0 != DirectX::XMVector4NearEqual(v0.vec, v1.vec, epsilon.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -888,7 +888,7 @@ float4::nearequal4(const float4 &v0, const float4 &v1, const float4 &epsilon)
 __forceinline bool
 float4::less3_any(const float4 &v0, const float4 &v1)
 {
-    return XMComparisonAnyFalse(XMVector3GreaterOrEqualR(v0.vec, v1.vec));
+    return DirectX::XMComparisonAnyFalse(DirectX::XMVector3GreaterOrEqualR(v0.vec, v1.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -897,7 +897,7 @@ float4::less3_any(const float4 &v0, const float4 &v1)
 __forceinline bool
 float4::less3_all(const float4 &v0, const float4 &v1)
 {
-    return XMComparisonAllFalse(XMVector3GreaterOrEqualR(v0.vec, v1.vec));
+    return DirectX::XMComparisonAllFalse(DirectX::XMVector3GreaterOrEqualR(v0.vec, v1.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -906,7 +906,7 @@ float4::less3_all(const float4 &v0, const float4 &v1)
 __forceinline bool
 float4::lessequal3_any(const float4 &v0, const float4 &v1)
 {
-    return XMComparisonAnyFalse(XMVector3GreaterR(v0.vec, v1.vec));
+    return DirectX::XMComparisonAnyFalse(DirectX::XMVector3GreaterR(v0.vec, v1.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -915,7 +915,7 @@ float4::lessequal3_any(const float4 &v0, const float4 &v1)
 __forceinline bool
 float4::lessequal3_all(const float4 &v0, const float4 &v1)
 {
-    return XMComparisonAllFalse(XMVector3GreaterR(v0.vec, v1.vec));
+    return DirectX::XMComparisonAllFalse(DirectX::XMVector3GreaterR(v0.vec, v1.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -924,7 +924,7 @@ float4::lessequal3_all(const float4 &v0, const float4 &v1)
 __forceinline bool
 float4::greater3_any(const float4 &v0, const float4 &v1)
 {
-    return XMComparisonAnyTrue(XMVector3GreaterR(v0.vec, v1.vec));
+    return DirectX::XMComparisonAnyTrue(DirectX::XMVector3GreaterR(v0.vec, v1.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -933,7 +933,7 @@ float4::greater3_any(const float4 &v0, const float4 &v1)
 __forceinline bool
 float4::greater3_all(const float4 &v0, const float4 &v1)
 {
-    return XMComparisonAllTrue(XMVector3GreaterR(v0.vec, v1.vec));
+    return DirectX::XMComparisonAllTrue(DirectX::XMVector3GreaterR(v0.vec, v1.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -942,7 +942,7 @@ float4::greater3_all(const float4 &v0, const float4 &v1)
 __forceinline bool
 float4::greaterequal3_any(const float4 &v0, const float4 &v1)
 {
-    return XMComparisonAnyTrue(XMVector3GreaterOrEqualR(v0.vec, v1.vec));
+    return DirectX::XMComparisonAnyTrue(DirectX::XMVector3GreaterOrEqualR(v0.vec, v1.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -951,7 +951,7 @@ float4::greaterequal3_any(const float4 &v0, const float4 &v1)
 __forceinline bool
 float4::greaterequal3_all(const float4 &v0, const float4 &v1)
 {
-    return XMComparisonAllTrue(XMVector3GreaterOrEqualR(v0.vec, v1.vec));
+    return DirectX::XMComparisonAllTrue(DirectX::XMVector3GreaterOrEqualR(v0.vec, v1.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -960,7 +960,7 @@ float4::greaterequal3_all(const float4 &v0, const float4 &v1)
 __forceinline bool
 float4::equal3_any(const float4 &v0, const float4 &v1)
 {
-    return XMComparisonAnyTrue(XMVector3EqualR(v0.vec, v1.vec));
+    return DirectX::XMComparisonAnyTrue(DirectX::XMVector3EqualR(v0.vec, v1.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -969,7 +969,7 @@ float4::equal3_any(const float4 &v0, const float4 &v1)
 __forceinline bool
 float4::equal3_all(const float4 &v0, const float4 &v1)
 {
-    return XMComparisonAllTrue(XMVector3EqualR(v0.vec, v1.vec));
+    return DirectX::XMComparisonAllTrue(DirectX::XMVector3EqualR(v0.vec, v1.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -978,7 +978,7 @@ float4::equal3_all(const float4 &v0, const float4 &v1)
 __forceinline bool
 float4::nearequal3(const float4 &v0, const float4 &v1, const float4 &epsilon)
 {
-    return (0 != XMVector3NearEqual(v0.vec, v1.vec, epsilon.vec));
+    return (0 != DirectX::XMVector3NearEqual(v0.vec, v1.vec, epsilon.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -988,7 +988,7 @@ float4::nearequal3(const float4 &v0, const float4 &v1, const float4 &epsilon)
 __forceinline Math::float4 
 float4::less( const float4& v0, const float4& v1 )
 {
-    return XMVectorMin(XMVectorLess(v0.vec, v1.vec), XMVectorSplatOne());
+    return DirectX::XMVectorMin(DirectX::XMVectorLess(v0.vec, v1.vec), DirectX::XMVectorSplatOne());
 }
 
 //------------------------------------------------------------------------------
@@ -998,7 +998,7 @@ float4::less( const float4& v0, const float4& v1 )
 __forceinline Math::float4 
 float4::greater( const float4& v0, const float4& v1 )
 {
-    return XMVectorMin(XMVectorGreater(v0.vec, v1.vec), XMVectorSplatOne());
+    return DirectX::XMVectorMin(DirectX::XMVectorGreater(v0.vec, v1.vec), DirectX::XMVectorSplatOne());
 }
 
 //------------------------------------------------------------------------------
@@ -1008,17 +1008,17 @@ float4::greater( const float4& v0, const float4& v1 )
 __forceinline Math::float4 
 float4::equal( const float4& v0, const float4& v1 )
 {
-    return XMVectorMin(XMVectorEqual(v0.vec, v1.vec), XMVectorSplatOne());
+    return DirectX::XMVectorMin(DirectX::XMVectorEqual(v0.vec, v1.vec), DirectX::XMVectorSplatOne());
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 __forceinline float
-float4::unpack_x(XMVECTOR v)
+float4::unpack_x(DirectX::XMVECTOR v)
 {
     FLOAT x;
-    XMVectorGetXPtr(&x, v);
+	DirectX::XMVectorGetXPtr(&x, v);
     return x;
 }
 
@@ -1026,10 +1026,10 @@ float4::unpack_x(XMVECTOR v)
 /**
 */
 __forceinline float
-float4::unpack_y(XMVECTOR v)
+float4::unpack_y(DirectX::XMVECTOR v)
 {
     FLOAT y;
-    XMVectorGetYPtr(&y, v);
+	DirectX::XMVectorGetYPtr(&y, v);
     return y;
 }
 
@@ -1037,10 +1037,10 @@ float4::unpack_y(XMVECTOR v)
 /**
 */
 __forceinline float
-float4::unpack_z(XMVECTOR v)
+float4::unpack_z(DirectX::XMVECTOR v)
 {
     FLOAT z;
-    XMVectorGetZPtr(&z, v);
+	DirectX::XMVectorGetZPtr(&z, v);
     return z;
 }
 
@@ -1048,10 +1048,10 @@ float4::unpack_z(XMVECTOR v)
 /**
 */
 __forceinline float
-float4::unpack_w(XMVECTOR v)
+float4::unpack_w(DirectX::XMVECTOR v)
 {
     FLOAT w;
-    XMVectorGetWPtr(&w, v);
+	DirectX::XMVectorGetWPtr(&w, v);
     return w;
 }
 //------------------------------------------------------------------------------
@@ -1061,9 +1061,9 @@ __forceinline
 float4
 float4::splat(scalar s)
 {
-	XMVECTOR v;
-	v = XMVectorSetX(v, s);
-	return float4(XMVectorSplatX(v));
+	DirectX::XMVECTOR v;
+	v = DirectX::XMVectorSetX(v, s);
+	return float4(DirectX::XMVectorSplatX(v));
 }
 
 //------------------------------------------------------------------------------
@@ -1077,13 +1077,13 @@ float4::splat(const float4 &v, uint element)
     switch(element)
     {
     case 0:
-        return float4(XMVectorSplatX(v.vec));
+        return float4(DirectX::XMVectorSplatX(v.vec));
     case 1:
-        return float4(XMVectorSplatY(v.vec));
+        return float4(DirectX::XMVectorSplatY(v.vec));
     case 2:
-        return float4(XMVectorSplatZ(v.vec));
+        return float4(DirectX::XMVectorSplatZ(v.vec));
     }
-    return float4(XMVectorSplatW(v.vec));
+    return float4(DirectX::XMVectorSplatW(v.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -1093,7 +1093,7 @@ __forceinline
 float4
 float4::splat_x(const float4 &v)
 {
-    return float4(XMVectorSplatX(v.vec));
+    return float4(DirectX::XMVectorSplatX(v.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -1103,7 +1103,7 @@ __forceinline
 float4
 float4::splat_y(const float4 &v)
 {
-    return float4(XMVectorSplatY(v.vec));
+    return float4(DirectX::XMVectorSplatY(v.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -1113,7 +1113,7 @@ __forceinline
 float4
 float4::splat_z(const float4 &v)
 {
-    return float4(XMVectorSplatZ(v.vec));
+    return float4(DirectX::XMVectorSplatZ(v.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -1123,7 +1123,7 @@ __forceinline
 float4
 float4::splat_w(const float4 &v)
 {
-    return float4(XMVectorSplatW(v.vec));
+    return float4(DirectX::XMVectorSplatW(v.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -1132,7 +1132,8 @@ float4::splat_w(const float4 &v)
 __forceinline float4
 float4::permute(const float4& v0, const float4& v1, unsigned int i0, unsigned int i1, unsigned int i2, unsigned int i3)
 {
-    return float4(XMVectorPermute(v0.vec, v1.vec,XMVectorPermuteControl(i0, i1, i2, i3)));
+	return float4(DirectX::XMVectorPermute(v0.vec, v1.vec, i0, i1, i2, i3));
+    //return float4(DirectX::XMVectorSelect(v0.vec, v1.vec, DirectX::XMVectorSelectControl(i0, i1, i2, i3)));
 }
 
 //------------------------------------------------------------------------------
@@ -1141,7 +1142,7 @@ float4::permute(const float4& v0, const float4& v1, unsigned int i0, unsigned in
 __forceinline float4 
 float4::floor(const float4 &v)
 {
-	return float4(XMVectorFloor(v.vec));
+	return float4(DirectX::XMVectorFloor(v.vec));
 }
 //------------------------------------------------------------------------------
 /**
@@ -1149,7 +1150,7 @@ float4::floor(const float4 &v)
 __forceinline float4 
 float4::ceiling(const float4 &v)
 {
-	return float4(XMVectorCeiling(v.vec));
+	return float4(DirectX::XMVectorCeiling(v.vec));
 }
 
 //------------------------------------------------------------------------------

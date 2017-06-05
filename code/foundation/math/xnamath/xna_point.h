@@ -27,7 +27,7 @@ typedef const point& __PointArg;
 #endif
 
 
-_DECLSPEC_ALIGN_16_ 
+NEBULA3_ALIGN16
 #if __XBOX360__
 __declspec(passinreg)
 #endif
@@ -43,14 +43,14 @@ public:
     /// !!!! copy constructor forbidden, otherwise passing point's to a function
     /// !!!! via Registers doesnt work
     //point(const point& rhs);
-    /// construct from XMVECTOR
-    point(XMVECTOR rhs);
+    /// construct from DirectX::XMVECTOR
+    point(DirectX::XMVECTOR rhs);
     /// return a point at the origin (0, 0, 0)
     static point origin();
     /// assignment operator
     void operator=(const point& rhs);
-    /// assign XMVECTOR
-    void operator=(XMVECTOR rhs);
+    /// assign DirectX::XMVECTOR
+    void operator=(DirectX::XMVECTOR rhs);
     /// inplace add vector
     void operator+=(const vector& rhs);
     /// inplace subtract vector
@@ -103,7 +103,7 @@ point::point(const float4& rhs) :
 /**
 */
 __forceinline
-point::point(XMVECTOR rhs) :
+point::point(DirectX::XMVECTOR rhs) :
     float4(rhs)
 {
     // empty
@@ -133,7 +133,7 @@ point::operator=(const point& rhs)
 __forceinline void
 point::operator+=(const vector& rhs)
 {
-    this->vec = XMVectorAdd(this->vec, rhs.vec);
+    this->vec = DirectX::XMVectorAdd(this->vec, rhs.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -142,7 +142,7 @@ point::operator+=(const vector& rhs)
 __forceinline void
 point::operator-=(const vector& rhs)
 {
-    this->vec = XMVectorSubtract(this->vec, rhs.vec);
+    this->vec = DirectX::XMVectorSubtract(this->vec, rhs.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -151,7 +151,7 @@ point::operator-=(const vector& rhs)
 __forceinline point
 point::operator+(const vector& rhs) const
 {
-    return XMVectorAdd(this->vec, rhs.vec);
+    return DirectX::XMVectorAdd(this->vec, rhs.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -160,7 +160,7 @@ point::operator+(const vector& rhs) const
 __forceinline point
 point::operator-(const vector& rhs) const
 {
-    return XMVectorSubtract(this->vec, rhs.vec);
+    return DirectX::XMVectorSubtract(this->vec, rhs.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -169,7 +169,7 @@ point::operator-(const vector& rhs) const
 __forceinline vector
 point::operator-(const point& rhs) const
 {
-    return XMVectorSubtract(this->vec, rhs.vec);
+    return DirectX::XMVectorSubtract(this->vec, rhs.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -178,7 +178,7 @@ point::operator-(const point& rhs) const
 __forceinline bool
 point::operator==(const point& rhs) const
 {
-    return (0 != XMVector4Equal(this->vec, rhs.vec));
+    return (0 != DirectX::XMVector4Equal(this->vec, rhs.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -187,7 +187,7 @@ point::operator==(const point& rhs) const
 __forceinline bool
 point::operator!=(const point& rhs) const
 {
-    return (0 != XMVector4NotEqual(this->vec, rhs.vec));
+    return (0 != DirectX::XMVector4NotEqual(this->vec, rhs.vec));
 }    
 
 //------------------------------------------------------------------------------

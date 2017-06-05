@@ -8,6 +8,8 @@
 #include "math/plane.h"
 #include "math/quaternion.h"
 
+using namespace DirectX;
+
 namespace Math
 {
 
