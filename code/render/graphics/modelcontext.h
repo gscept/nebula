@@ -55,13 +55,12 @@ public:
 	void OnRefreshStagingResources();
 private:
 
-	struct _Staging
+	struct _Pending
 	{
 		Ptr<Resources::ResourceContainer<Models::Model>> res;
 	};
 
 	GraphicsContext::BlockAllocator<_ModelResult> modelData;
-	GraphicsContext::BlockAllocator<_Staging> stagingData;
-	GraphicsContext::BlockAllocator<_ModelSetup> setupData;
+	GraphicsContext::BlockAllocator<_Pending> pendingData;
 };
 } // namespace Graphics

@@ -1,1 +1,2 @@
 fips_add_subdirectory(foundation)
+fips_add_subdirectory(render)

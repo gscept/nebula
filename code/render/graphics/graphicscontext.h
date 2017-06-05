@@ -67,6 +67,12 @@ protected:
 	template<typename TYPE>
 	struct BlockAllocator
 	{
+		// default constructor just sets the fill function to nullptr
+		BlockAllocator()
+		{
+			fillFunc = nullptr;
+		}
+
 		std::function<void(TYPE&, IndexT idx)> fillFunc;
 		Util::Array<Util::FixedPool<TYPE>> pool;
 	};
@@ -81,8 +87,6 @@ protected:
 	void OnVisibilityReady(const IndexT frameIndex, const Timing::Time frameTime);
 	/// runs before a specific view
 	void OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime);
-	/// runs when a view is rendered
-	void OnRenderView(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime);
 	/// runs after view is rendered
 	void OnAfterView(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime);
 	/// runs after a frame is updated
@@ -121,6 +125,7 @@ template<class POOL_DATA_TYPE>
 inline POOL_DATA_TYPE*
 Graphics::GraphicsContext::AllocateSlice(const int64_t& entity, BlockAllocator<POOL_DATA_TYPE>& pool)
 {
+	n_assert(pool.fillFunc != nullptr);
 	int64_t index = -1;
 	POOL_DATA_TYPE* slice = nullptr;
 	IndexT i;

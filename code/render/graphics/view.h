@@ -9,9 +9,11 @@
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
 #include "frame/framescript.h"
+#include "timing/time.h"
 namespace Graphics
 {
 class Stage;
+class Camera;
 class View : public Core::RefCounted
 {
 	__DeclareClass(View);
@@ -20,10 +22,17 @@ public:
 	View();
 	/// destructor
 	virtual ~View();
-
-private:
+	
+	/// render through view
+	void Render(const IndexT frameIndex, const Timing::Time time);
 
 	Ptr<Frame::FrameScript> script;
+	Ptr<Camera> camera;
 	Ptr<Stage> stage;
+private:
+
+	
+
 };
+
 } // namespace Graphics

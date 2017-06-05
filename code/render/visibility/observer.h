@@ -24,8 +24,13 @@ public:
 	Observer();
 	/// destructor
 	virtual ~Observer();
+
+	/// notify that an entity has been added for visibility
+	void OnVisibilityDatabaseChanged();
 private:
 
+
 	Ptr<Graphics::GraphicsEntity> entity;
+	Ptr<VisibilityContainer> container;
 };
 } // namespace Visibility

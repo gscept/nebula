@@ -1,18 +1,18 @@
 //------------------------------------------------------------------------------
-// observer.cc
+// camera.cc
 // (C) 2017 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
-#include "observer.h"
+#include "camera.h"
 
-namespace Visibility
+namespace Graphics
 {
 
-__ImplementClass(Visibility::Observer, 'OBSE', Core::RefCounted);
+__ImplementClass(Graphics::Camera, 'CAME', Core::RefCounted);
 //------------------------------------------------------------------------------
 /**
 */
-Observer::Observer()
+Camera::Camera()
 {
 	// empty
 }
@@ -20,18 +20,9 @@ Observer::Observer()
 //------------------------------------------------------------------------------
 /**
 */
-Observer::~Observer()
+Camera::~Camera()
 {
 	// empty
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-void
-Observer::OnVisibilityDatabaseChanged()
-{
-
-}
-
-} // namespace Visibility
+} // namespace Graphics

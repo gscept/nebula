@@ -37,11 +37,13 @@ fips_begin_module(foundation)
 			)
 		fips_dir(memory)
 		fips_files(
+			chunkallocatorpool.h
 			heap.h
 			memory.h
 			memorypool.h
 			poolarrayallocator.cc
 			poolarrayallocator.h
+			sliceallocatorpool.h
 			win360/win360memorypool.h
 			debug/memorypagehandler.cc
 			debug/memorypagehandler.h

@@ -4,7 +4,10 @@
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "view.h"
+#include "coregraphics/renderdevice.h"
+#include "coregraphics/displaydevice.h"
 
+using namespace CoreGraphics;
 namespace Graphics
 {
 
@@ -12,7 +15,10 @@ __ImplementClass(Graphics::View, 'VIEW', Core::RefCounted);
 //------------------------------------------------------------------------------
 /**
 */
-View::View()
+View::View() :
+	script(nullptr),
+	camera(nullptr),
+	stage(nullptr)
 {
 	// empty
 }
@@ -23,6 +29,24 @@ View::View()
 View::~View()
 {
 	// empty
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+View::Render(const IndexT frameIndex, const Timing::Time time)
+{
+	RenderDevice* renderDevice = RenderDevice::Instance();
+	DisplayDevice* displayDevice = DisplayDevice::Instance();
+	
+	if (this->camera.isvalid() && renderDevice->BeginFrame(frameIndex))
+	{
+		n_assert(this->stage.isvalid());
+		n_assert(this->script.isvalid());
+		this->script->Run(frameIndex);
+		renderDevice->EndFrame(frameIndex);
+	}
 }
 
 } // namespace Graphics

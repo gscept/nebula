@@ -5,6 +5,7 @@
 	in visibility resolution. Most graphics entities should use this, but some entities,
 	like the skybox, or UI elements, does not need to be checked for visibility. 
 
+	The same goes for lights
 	
 	(C) 2017 Individual contributors, see AUTHORS file
 */
