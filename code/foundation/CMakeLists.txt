@@ -229,10 +229,11 @@ fips_begin_module(foundation)
 			quaternion.h
 			rectangle.h
 			scalar.h
-			sphere_.cc
-			sphere_.h
+			sphere.cc
+			sphere.h
 			transform44.h
 			vector.h
+			transform.h
 		)
 		fips_dir(messaging)
 		fips_files(
@@ -527,7 +528,7 @@ fips_begin_module(foundation)
 	endif()
 
 
-	if(Nebula_XNA)
+	if(N_MATH_DIRECTX)
 		fips_dir(math/xnamath math)
 		fips_files(
 			xna_float4.cc
@@ -541,6 +542,7 @@ fips_begin_module(foundation)
 			xna_quaternion.h
 			xna_scalar.h
 			xna_vector.h
+			xna_transform.h
 		)
 	else()
 		fips_dir(math/vecmath math)

@@ -24,7 +24,7 @@ class plane;
 // this is a reference so far
 typedef const matrix44& __Matrix44Arg;
 
-_DECLSPEC_ALIGN_16_ 
+NEBULA3_ALIGN16
 class matrix44
 {
 public:
@@ -34,13 +34,13 @@ public:
     matrix44(float4 const &row0, float4 const &row1, float4 const &row2, float4 const &row3);
     /// copy constructor
     //matrix44(const matrix44& rhs);
-    /// construct from XMMATRIX
-    matrix44(const XMMATRIX& rhs);
+    /// construct from DirectX::XMMATRIX
+    matrix44(const DirectX::XMMATRIX& rhs);
     
     /// assignment operator
     void operator=(const matrix44& rhs);
-    /// assign XMMATRIX
-    void operator=(const XMMATRIX& rhs);
+    /// assign DirectX::XMMATRIX
+    void operator=(const DirectX::XMMATRIX& rhs);
     /// equality operator
     bool operator==(const matrix44& rhs) const;
     /// inequality operator
@@ -188,7 +188,7 @@ private:
     friend class plane;
     friend class quaternion;
 
-    XMMATRIX mx;
+    DirectX::XMMATRIX mx;
 };
 
 //------------------------------------------------------------------------------
@@ -196,7 +196,7 @@ private:
 */
 __forceinline
 matrix44::matrix44():
-    mx(XMMatrixIdentity())
+    mx(DirectX::XMMatrixIdentity())
 {
     // empty
 }
@@ -229,7 +229,7 @@ matrix44::matrix44(const matrix44& rhs) :
 /**
 */
 __forceinline
-matrix44::matrix44(const XMMATRIX& rhs) :
+matrix44::matrix44(const DirectX::XMMATRIX& rhs) :
     mx(rhs)
 {
     // empty
@@ -248,7 +248,7 @@ matrix44::operator=(const matrix44& rhs)
 /**
 */
 __forceinline void
-matrix44::operator=(const XMMATRIX& rhs)
+matrix44::operator=(const DirectX::XMMATRIX& rhs)
 {
     this->mx = rhs;
 }
@@ -259,10 +259,10 @@ matrix44::operator=(const XMMATRIX& rhs)
 __forceinline bool
 matrix44::operator==(const matrix44& rhs) const
 {
-    return XMVector4Equal(this->mx.r[0], rhs.mx.r[0]) && 
-           XMVector4Equal(this->mx.r[1], rhs.mx.r[1]) && 
-           XMVector4Equal(this->mx.r[2], rhs.mx.r[2]) && 
-           XMVector4Equal(this->mx.r[3], rhs.mx.r[3]);
+    return DirectX::XMVector4Equal(this->mx.r[0], rhs.mx.r[0]) && 
+           DirectX::XMVector4Equal(this->mx.r[1], rhs.mx.r[1]) && 
+           DirectX::XMVector4Equal(this->mx.r[2], rhs.mx.r[2]) && 
+           DirectX::XMVector4Equal(this->mx.r[3], rhs.mx.r[3]);
 }
 
 //------------------------------------------------------------------------------
@@ -271,10 +271,10 @@ matrix44::operator==(const matrix44& rhs) const
 __forceinline bool
 matrix44::operator!=(const matrix44& rhs) const
 {
-    return XMVector4NotEqual(this->mx.r[0], rhs.mx.r[0]) ||
-           XMVector4NotEqual(this->mx.r[1], rhs.mx.r[1]) || 
-           XMVector4NotEqual(this->mx.r[2], rhs.mx.r[2]) || 
-           XMVector4NotEqual(this->mx.r[3], rhs.mx.r[3]);
+    return DirectX::XMVector4NotEqual(this->mx.r[0], rhs.mx.r[0]) ||
+           DirectX::XMVector4NotEqual(this->mx.r[1], rhs.mx.r[1]) || 
+           DirectX::XMVector4NotEqual(this->mx.r[2], rhs.mx.r[2]) || 
+           DirectX::XMVector4NotEqual(this->mx.r[3], rhs.mx.r[3]);
 }
 
 //------------------------------------------------------------------------------
@@ -283,10 +283,10 @@ matrix44::operator!=(const matrix44& rhs) const
 __forceinline void
 matrix44::load(const scalar* ptr)
 {
-    this->mx.r[0] = XMLoadFloat4A((XMFLOAT4A*)ptr);
-    this->mx.r[1] = XMLoadFloat4A((XMFLOAT4A*)(ptr + 4));
-    this->mx.r[2] = XMLoadFloat4A((XMFLOAT4A*)(ptr + 8));
-    this->mx.r[3] = XMLoadFloat4A((XMFLOAT4A*)(ptr + 12));
+    this->mx.r[0] = DirectX::XMLoadFloat4A((DirectX::XMFLOAT4A*)ptr);
+    this->mx.r[1] = DirectX::XMLoadFloat4A((DirectX::XMFLOAT4A*)(ptr + 4));
+    this->mx.r[2] = DirectX::XMLoadFloat4A((DirectX::XMFLOAT4A*)(ptr + 8));
+    this->mx.r[3] = DirectX::XMLoadFloat4A((DirectX::XMFLOAT4A*)(ptr + 12));
 }
 
 //------------------------------------------------------------------------------
@@ -295,10 +295,10 @@ matrix44::load(const scalar* ptr)
 __forceinline void
 matrix44::loadu(const scalar* ptr)
 {
-    this->mx.r[0] = XMLoadFloat4((XMFLOAT4*)ptr);
-    this->mx.r[1] = XMLoadFloat4((XMFLOAT4*)(ptr + 4));
-    this->mx.r[2] = XMLoadFloat4((XMFLOAT4*)(ptr + 8));
-    this->mx.r[3] = XMLoadFloat4((XMFLOAT4*)(ptr + 12));
+    this->mx.r[0] = DirectX::XMLoadFloat4((DirectX::XMFLOAT4*)ptr);
+    this->mx.r[1] = DirectX::XMLoadFloat4((DirectX::XMFLOAT4*)(ptr + 4));
+    this->mx.r[2] = DirectX::XMLoadFloat4((DirectX::XMFLOAT4*)(ptr + 8));
+    this->mx.r[3] = DirectX::XMLoadFloat4((DirectX::XMFLOAT4*)(ptr + 12));
 }
 
 //------------------------------------------------------------------------------
@@ -307,10 +307,10 @@ matrix44::loadu(const scalar* ptr)
 __forceinline void
 matrix44::store(scalar* ptr) const
 {
-    XMStoreFloat4A((XMFLOAT4A*)ptr, this->mx.r[0]);
-    XMStoreFloat4A((XMFLOAT4A*)(ptr + 4), this->mx.r[1]);
-    XMStoreFloat4A((XMFLOAT4A*)(ptr + 8), this->mx.r[2]);
-    XMStoreFloat4A((XMFLOAT4A*)(ptr + 12), this->mx.r[3]);
+    DirectX::XMStoreFloat4A((DirectX::XMFLOAT4A*)ptr, this->mx.r[0]);
+    DirectX::XMStoreFloat4A((DirectX::XMFLOAT4A*)(ptr + 4), this->mx.r[1]);
+    DirectX::XMStoreFloat4A((DirectX::XMFLOAT4A*)(ptr + 8), this->mx.r[2]);
+    DirectX::XMStoreFloat4A((DirectX::XMFLOAT4A*)(ptr + 12), this->mx.r[3]);
 }
 
 //------------------------------------------------------------------------------
@@ -319,10 +319,10 @@ matrix44::store(scalar* ptr) const
 __forceinline void
 matrix44::storeu(scalar* ptr) const
 {
-    XMStoreFloat4((XMFLOAT4*)ptr, this->mx.r[0]);
-    XMStoreFloat4((XMFLOAT4*)(ptr + 4), this->mx.r[1]);
-    XMStoreFloat4((XMFLOAT4*)(ptr + 8), this->mx.r[2]);
-    XMStoreFloat4((XMFLOAT4*)(ptr + 12), this->mx.r[3]);
+    DirectX::XMStoreFloat4((DirectX::XMFLOAT4*)ptr, this->mx.r[0]);
+    DirectX::XMStoreFloat4((DirectX::XMFLOAT4*)(ptr + 4), this->mx.r[1]);
+    DirectX::XMStoreFloat4((DirectX::XMFLOAT4*)(ptr + 8), this->mx.r[2]);
+    DirectX::XMStoreFloat4((DirectX::XMFLOAT4*)(ptr + 12), this->mx.r[3]);
 }
 
 //------------------------------------------------------------------------------
@@ -331,10 +331,10 @@ matrix44::storeu(scalar* ptr) const
 __forceinline void
 matrix44::stream(scalar* ptr) const
 {
-    XMStoreFloat4A((XMFLOAT4A*)ptr, this->mx.r[0]);
-    XMStoreFloat4A((XMFLOAT4A*)(ptr + 4), this->mx.r[1]);
-    XMStoreFloat4A((XMFLOAT4A*)(ptr + 8), this->mx.r[2]);
-    XMStoreFloat4A((XMFLOAT4A*)(ptr + 12), this->mx.r[3]);
+    DirectX::XMStoreFloat4A((DirectX::XMFLOAT4A*)ptr, this->mx.r[0]);
+    DirectX::XMStoreFloat4A((DirectX::XMFLOAT4A*)(ptr + 4), this->mx.r[1]);
+    DirectX::XMStoreFloat4A((DirectX::XMFLOAT4A*)(ptr + 8), this->mx.r[2]);
+    DirectX::XMStoreFloat4A((DirectX::XMFLOAT4A*)(ptr + 12), this->mx.r[3]);
 }
 
 //------------------------------------------------------------------------------
@@ -560,7 +560,7 @@ matrix44::translate(float4 const &t)
     #if _DEBUG
     n_assert2(t.w() == 0, "w component not 0, use vector for translation not a point!");
     #endif
-    this->mx.r[3] += t.vec;
+    this->mx.r[3] = DirectX::XMVectorAdd(this->mx.r[3], t.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -585,7 +585,7 @@ matrix44::scale(float4 const &s)
 __forceinline bool
 matrix44::isidentity() const
 {
-    return (0 != XMMatrixIsIdentity(this->mx));
+    return (0 != DirectX::XMMatrixIsIdentity(this->mx));
 }
 
 //------------------------------------------------------------------------------
@@ -594,7 +594,7 @@ matrix44::isidentity() const
 __forceinline scalar
 matrix44::determinant() const
 {
-    return float4::unpack_x(XMMatrixDeterminant(this->mx));
+    return float4::unpack_x(DirectX::XMMatrixDeterminant(this->mx));
 }
 
 //------------------------------------------------------------------------------
@@ -603,7 +603,7 @@ matrix44::determinant() const
 __forceinline matrix44
 matrix44::identity()
 {
-    return XMMatrixIdentity();
+    return DirectX::XMMatrixIdentity();
 }
 
 //------------------------------------------------------------------------------
@@ -612,8 +612,8 @@ matrix44::identity()
 __forceinline matrix44
 matrix44::inverse(const matrix44& m)
 {
-    XMVECTOR det;
-    return XMMatrixInverse(&det, m.mx);
+    DirectX::XMVECTOR det;
+    return DirectX::XMMatrixInverse(&det, m.mx);
 }
 
 //------------------------------------------------------------------------------
@@ -625,7 +625,7 @@ matrix44::lookatlh(const point& eye, const point& at, const vector& up)
 #if NEBULA3_DEBUG
     n_assert(up.length() > 0);
 #endif
-    // hmm the XM lookat functions are kinda pointless, because they
+    // hmm the DirectX::XM lookat functions are kinda pointless, because they
     // return a VIEW matrix, which is already inverse (so one would
     // need to reverse again!)
     const float4 zaxis = float4::normalize(at - eye);
@@ -651,7 +651,7 @@ matrix44::lookatrh(const point& eye, const point& at, const vector& up)
 #if NEBULA3_DEBUG
     n_assert(up.length() > 0);
 #endif
-    // hmm the XM lookat functions are kinda pointless, because they
+    // hmm the DirectX::XM lookat functions are kinda pointless, because they
     // return a VIEW matrix, which is already inverse (so one would
     // need to reverse again!)
     const float4 zaxis = float4::normalize(eye - at);
@@ -674,7 +674,7 @@ matrix44::lookatrh(const point& eye, const point& at, const vector& up)
 __forceinline matrix44
 matrix44::multiply(const matrix44& m0, const matrix44& m1)
 {
-    return XMMatrixMultiply(m0.mx, m1.mx);
+    return DirectX::XMMatrixMultiply(m0.mx, m1.mx);
 }
 
 //------------------------------------------------------------------------------
@@ -683,7 +683,7 @@ matrix44::multiply(const matrix44& m0, const matrix44& m1)
 __forceinline matrix44
 matrix44::ortholh(scalar w, scalar h, scalar zn, scalar zf)
 {
-    return XMMatrixOrthographicLH(w, h, zn, zf);
+    return DirectX::XMMatrixOrthographicLH(w, h, zn, zf);
 }
 
 //------------------------------------------------------------------------------
@@ -692,7 +692,7 @@ matrix44::ortholh(scalar w, scalar h, scalar zn, scalar zf)
 __forceinline matrix44
 matrix44::orthorh(scalar w, scalar h, scalar zn, scalar zf)
 {
-    return XMMatrixOrthographicRH(w, h, zn, zf);
+    return DirectX::XMMatrixOrthographicRH(w, h, zn, zf);
 }
 
 //------------------------------------------------------------------------------
@@ -701,7 +701,7 @@ matrix44::orthorh(scalar w, scalar h, scalar zn, scalar zf)
 __forceinline matrix44
 matrix44::orthooffcenterlh(scalar l, scalar r, scalar b, scalar t, scalar zn, scalar zf)
 {
-    return XMMatrixOrthographicOffCenterLH(l, r, b, t, zn, zf);
+    return DirectX::XMMatrixOrthographicOffCenterLH(l, r, b, t, zn, zf);
 }
 
 //------------------------------------------------------------------------------
@@ -710,7 +710,7 @@ matrix44::orthooffcenterlh(scalar l, scalar r, scalar b, scalar t, scalar zn, sc
 __forceinline matrix44
 matrix44::orthooffcenterrh(scalar l, scalar r, scalar b, scalar t, scalar zn, scalar zf)
 {
-    return XMMatrixOrthographicOffCenterRH(l, r, b, t, zn, zf);
+    return DirectX::XMMatrixOrthographicOffCenterRH(l, r, b, t, zn, zf);
 }
 
 //------------------------------------------------------------------------------
@@ -719,7 +719,7 @@ matrix44::orthooffcenterrh(scalar l, scalar r, scalar b, scalar t, scalar zn, sc
 __forceinline matrix44
 matrix44::perspfovlh(scalar fovy, scalar aspect, scalar zn, scalar zf)
 {
-    return XMMatrixPerspectiveFovLH(fovy, aspect, zn, zf);
+    return DirectX::XMMatrixPerspectiveFovLH(fovy, aspect, zn, zf);
 }
 
 //------------------------------------------------------------------------------
@@ -728,7 +728,7 @@ matrix44::perspfovlh(scalar fovy, scalar aspect, scalar zn, scalar zf)
 __forceinline matrix44
 matrix44::perspfovrh(scalar fovy, scalar aspect, scalar zn, scalar zf)
 {
-    return XMMatrixPerspectiveFovRH(fovy, aspect, zn, zf);
+    return DirectX::XMMatrixPerspectiveFovRH(fovy, aspect, zn, zf);
 }
 
 //------------------------------------------------------------------------------
@@ -737,7 +737,7 @@ matrix44::perspfovrh(scalar fovy, scalar aspect, scalar zn, scalar zf)
 __forceinline matrix44
 matrix44::persplh(scalar w, scalar h, scalar zn, scalar zf)
 {
-    return XMMatrixPerspectiveLH(w, h, zn, zf);
+    return DirectX::XMMatrixPerspectiveLH(w, h, zn, zf);
 }
 
 //------------------------------------------------------------------------------
@@ -746,7 +746,7 @@ matrix44::persplh(scalar w, scalar h, scalar zn, scalar zf)
 __forceinline matrix44
 matrix44::persprh(scalar w, scalar h, scalar zn, scalar zf)
 {
-    return XMMatrixPerspectiveRH(w, h, zn, zf);
+    return DirectX::XMMatrixPerspectiveRH(w, h, zn, zf);
 }
 
 //------------------------------------------------------------------------------
@@ -755,7 +755,7 @@ matrix44::persprh(scalar w, scalar h, scalar zn, scalar zf)
 __forceinline matrix44
 matrix44::perspoffcenterlh(scalar l, scalar r, scalar b, scalar t, scalar zn, scalar zf)
 {
-    return XMMatrixPerspectiveOffCenterLH(l, r, b, t, zn, zf);
+    return DirectX::XMMatrixPerspectiveOffCenterLH(l, r, b, t, zn, zf);
 }
 
 //------------------------------------------------------------------------------
@@ -764,7 +764,7 @@ matrix44::perspoffcenterlh(scalar l, scalar r, scalar b, scalar t, scalar zn, sc
 __forceinline matrix44
 matrix44::perspoffcenterrh(scalar l, scalar r, scalar b, scalar t, scalar zn, scalar zf)
 {
-    return XMMatrixPerspectiveOffCenterRH(l, r, b, t, zn, zf);
+    return DirectX::XMMatrixPerspectiveOffCenterRH(l, r, b, t, zn, zf);
 }
 
 //------------------------------------------------------------------------------
@@ -773,7 +773,7 @@ matrix44::perspoffcenterrh(scalar l, scalar r, scalar b, scalar t, scalar zn, sc
 __forceinline matrix44
 matrix44::rotationaxis(float4 const &axis, scalar angle)
 {
-    return XMMatrixRotationAxis(axis.vec, angle);
+    return DirectX::XMMatrixRotationAxis(axis.vec, angle);
 }
 
 //------------------------------------------------------------------------------
@@ -782,7 +782,7 @@ matrix44::rotationaxis(float4 const &axis, scalar angle)
 __forceinline matrix44
 matrix44::rotationx(scalar angle)
 {
-    return XMMatrixRotationX(angle);
+    return DirectX::XMMatrixRotationX(angle);
 }
 
 //------------------------------------------------------------------------------
@@ -791,7 +791,7 @@ matrix44::rotationx(scalar angle)
 __forceinline matrix44
 matrix44::rotationy(scalar angle)
 {
-    return XMMatrixRotationY(angle);
+    return DirectX::XMMatrixRotationY(angle);
 }
 
 //------------------------------------------------------------------------------
@@ -800,7 +800,7 @@ matrix44::rotationy(scalar angle)
 __forceinline matrix44
 matrix44::rotationz(scalar angle)
 {
-    return XMMatrixRotationZ(angle);
+    return DirectX::XMMatrixRotationZ(angle);
 }
 
 //------------------------------------------------------------------------------
@@ -809,7 +809,7 @@ matrix44::rotationz(scalar angle)
 __forceinline matrix44
 matrix44::rotationyawpitchroll(scalar yaw, scalar pitch, scalar roll)
 {
-    return XMMatrixRotationRollPitchYaw(pitch, yaw, roll);
+    return DirectX::XMMatrixRotationRollPitchYaw(pitch, yaw, roll);
 }
 
 //------------------------------------------------------------------------------
@@ -818,7 +818,7 @@ matrix44::rotationyawpitchroll(scalar yaw, scalar pitch, scalar roll)
 __forceinline matrix44
 matrix44::scaling(scalar sx, scalar sy, scalar sz)
 {
-    return XMMatrixScaling(sx, sy, sz);
+    return DirectX::XMMatrixScaling(sx, sy, sz);
 }
 
 //------------------------------------------------------------------------------
@@ -827,7 +827,7 @@ matrix44::scaling(scalar sx, scalar sy, scalar sz)
 __forceinline matrix44
 matrix44::scaling(float4 const &s)
 {
-    return XMMatrixScalingFromVector(s.vec);
+    return DirectX::XMMatrixScalingFromVector(s.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -836,7 +836,7 @@ matrix44::scaling(float4 const &s)
 __forceinline matrix44
 matrix44::translation(scalar x, scalar y, scalar z)
 {
-    return XMMatrixTranslation(x, y, z);
+    return DirectX::XMMatrixTranslation(x, y, z);
 }
 
 //------------------------------------------------------------------------------
@@ -845,7 +845,7 @@ matrix44::translation(scalar x, scalar y, scalar z)
 __forceinline matrix44
 matrix44::translation(float4 const &t)
 {
-    return XMMatrixTranslationFromVector(t.vec);
+    return DirectX::XMMatrixTranslationFromVector(t.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -854,7 +854,7 @@ matrix44::translation(float4 const &t)
 __forceinline matrix44
 matrix44::transpose(const matrix44& m)
 {
-    return XMMatrixTranspose(m.mx);
+    return DirectX::XMMatrixTranspose(m.mx);
 }
 
 //------------------------------------------------------------------------------
@@ -864,7 +864,7 @@ __forceinline
 float4
 matrix44::transform(const float4 &v, const matrix44 &m)
 {
-    return XMVector4Transform(v.vec, m.mx);
+    return DirectX::XMVector4Transform(v.vec, m.mx);
 }
 
 //------------------------------------------------------------------------------
@@ -874,7 +874,7 @@ __forceinline
 quaternion
 matrix44::rotationmatrix(const matrix44& m)
 {
-    return XMQuaternionRotationMatrix(m.mx);
+    return DirectX::XMQuaternionRotationMatrix(m.mx);
 }
 
 //------------------------------------------------------------------------------
@@ -884,7 +884,7 @@ __forceinline
 plane
 matrix44::transform(const plane &p, const matrix44& m)
 {
-    return XMPlaneTransform(p.vec, m.mx);
+    return DirectX::XMPlaneTransform(p.vec, m.mx);
 }
 
 } // namespace Math

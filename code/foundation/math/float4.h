@@ -10,7 +10,7 @@
     (C) 2013-2016 Individual contributors, see AUTHORS file
 */
 
-#if __USE_XNA
+#if __USE_MATH_DIRECTX
 #include "math/xnamath/xna_float4.h"
 #elif __USE_VECMATH
 #include "math/vecmath/vec_float4.h"

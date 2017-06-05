@@ -59,9 +59,9 @@ SysFunc::Setup()
             localStringAtomTable = n_new(Util::LocalStringAtomTable);
         #endif    
 
-#if __USE_XNA
+#if __USE_MATH_DIRECTX
         // check CPU for SSE/SSE2 support for XNA-Math
-        if (!XMVerifyCPUSupport())
+        if (!DirectX::XMVerifyCPUSupport())
         {
             n_error("no SSE/SSE2 support on this CPU. XNA-Math was compiled with SSE/SSE2 support\n");
         }

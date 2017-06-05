@@ -1,6 +1,4 @@
 #pragma once
-#ifndef MATH_SPHERE_H
-#define MATH_SPHERE_H
 //------------------------------------------------------------------------------
 /**
     @class Math::sphere
@@ -8,6 +6,7 @@
     A 3-dimensional sphere.
 
     (C) 2004 RadonLabs GmbH
+    (C) 2013-2016 Individual contributors, see AUTHORS file
 */
 #include "math/vector.h"
 #include "math/point.h"
@@ -156,4 +155,3 @@ sphere::clipstatus(const bbox& box) const
 
 } // namespace Math
 //------------------------------------------------------------------------------
-#endif

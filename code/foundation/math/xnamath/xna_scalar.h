@@ -52,7 +52,7 @@ n_rand(scalar min, scalar max)
 __forceinline scalar
 n_sin(scalar x)
 {
-    return XMScalarSin(x);
+    return DirectX::XMScalarSin(x);
 }
 
 //------------------------------------------------------------------------------
@@ -61,7 +61,7 @@ n_sin(scalar x)
 __forceinline scalar
 n_cos(scalar x)
 {
-    return XMScalarCos(x);
+    return DirectX::XMScalarCos(x);
 }
 
 //------------------------------------------------------------------------------
@@ -79,7 +79,7 @@ n_tan(scalar x)
 __forceinline scalar
 n_asin(scalar x)
 {
-    return XMScalarASin(x);
+    return DirectX::XMScalarASin(x);
 }
 
 //------------------------------------------------------------------------------
@@ -88,7 +88,7 @@ n_asin(scalar x)
 __forceinline scalar
 n_acos(scalar x)
 {
-    return XMScalarACos(x);
+    return DirectX::XMScalarACos(x);
 }
 
 //------------------------------------------------------------------------------
@@ -136,7 +136,7 @@ n_modangle(scalar a)
     //   win32 debug  : -3.141593 == XMScalarModAngle(N_PI)
     // so we have to map it on our own 
     static const scalar REVOLUTION = scalar(6.283185307179586476925286766559);
-    scalar ret = XMScalarModAngle(a);
+    scalar ret = DirectX::XMScalarModAngle(a);
     if(ret < scalar(-N_PI)) ret += REVOLUTION;
     if(ret >= scalar(N_PI)) ret -= REVOLUTION;
     return ret;

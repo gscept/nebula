@@ -51,11 +51,8 @@
 #endif
 #include <intrin.h>
 
-#if __USE_XNA
-// compile xna-math with sse/sse2 support for win32, to disable
-// it and run completely in floating point unit, uncomment the following line 
-// #define _XM_NO_INTRINSICS_ 
-#include <xnamath.h>
+#if __USE_MATH_DIRECTX
+#include <DirectXMath.h>
 #endif
 
 // crt headers

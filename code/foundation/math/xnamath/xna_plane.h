@@ -30,7 +30,7 @@ typedef const plane& __PlaneArg;
 #endif
 
 
-_DECLSPEC_ALIGN_16_ 
+NEBULA3_ALIGN16
 #if __XBOX360__
 __declspec(passinreg)
 #endif
@@ -48,8 +48,8 @@ public:
     plane(const float4& p0, const float4& p1, const float4& p2);
     /// construct from point and normal
     plane(const float4& p, const float4& n);
-    /// construct from XMVECTOR
-    plane(XMVECTOR rhs);
+    /// construct from DirectX::XMVECTOR
+    plane(DirectX::XMVECTOR rhs);
 
     /// setup from points
     void setup_from_points(const float4& p0, const float4& p1, const float4& p2);
@@ -103,7 +103,7 @@ public:
 private:
     friend class matrix44;
 
-    XMVECTOR vec;
+    DirectX::XMVECTOR vec;
 };
 
 //------------------------------------------------------------------------------
@@ -121,7 +121,7 @@ plane::plane()
 inline
 plane::plane(scalar a, scalar b, scalar c, scalar d)
 {
-    this->vec = XMVectorSet(a, b, c, d);
+    this->vec = DirectX::XMVectorSet(a, b, c, d);
 }
 
 //------------------------------------------------------------------------------
@@ -146,7 +146,7 @@ plane::plane(const float4& p0, const float4& n)
 /**
 */
 inline
-plane::plane(XMVECTOR rhs) :
+plane::plane(DirectX::XMVECTOR rhs) :
     vec(rhs)
 {
     // empty
@@ -158,7 +158,7 @@ plane::plane(XMVECTOR rhs) :
 inline void
 plane::setup_from_points(const float4& p0, const float4& p1, const float4& p2)
 {
-    this->vec = XMPlaneFromPoints(p0.vec, p1.vec, p2.vec);
+    this->vec = DirectX::XMPlaneFromPoints(p0.vec, p1.vec, p2.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -167,7 +167,7 @@ plane::setup_from_points(const float4& p0, const float4& p1, const float4& p2)
 inline void
 plane::setup_from_point_and_normal(const float4& p, const float4& n)
 {
-    this->vec = XMPlaneFromPointNormal(p.vec, n.vec);
+    this->vec = DirectX::XMPlaneFromPointNormal(p.vec, n.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -176,7 +176,7 @@ plane::setup_from_point_and_normal(const float4& p, const float4& n)
 inline void
 plane::set(scalar a, scalar b, scalar c, scalar d)
 {
-    this->vec = XMVectorSet(a, b, c, d);
+    this->vec = DirectX::XMVectorSet(a, b, c, d);
 }
 
 //------------------------------------------------------------------------------
@@ -273,7 +273,7 @@ plane::d() const
 inline scalar
 plane::dot(const float4& v) const
 {
-    return float4::unpack_x(XMPlaneDot(this->vec, v.vec));
+    return float4::unpack_x(DirectX::XMPlaneDot(this->vec, v.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -282,8 +282,8 @@ plane::dot(const float4& v) const
 inline bool
 plane::intersectline(const float4& startPoint, const float4& endPoint, float4& outIntersectPoint) const
 {
-    outIntersectPoint = XMPlaneIntersectLine(this->vec, startPoint.vec, endPoint.vec);
-    if (XMPlaneIsNaN(outIntersectPoint.vec))
+    outIntersectPoint = DirectX::XMPlaneIntersectLine(this->vec, startPoint.vec, endPoint.vec);
+    if (DirectX::XMPlaneIsNaN(outIntersectPoint.vec))
     {
         return false;
     }
@@ -299,7 +299,7 @@ plane::intersectline(const float4& startPoint, const float4& endPoint, float4& o
 inline plane
 plane::normalize(const plane& p)
 {
-    return XMPlaneNormalize(p.vec);
+    return DirectX::XMPlaneNormalize(p.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -308,7 +308,7 @@ plane::normalize(const plane& p)
 inline void 
 plane::set_a(scalar a)
 {
-    this->vec = XMVectorSetXPtr(this->vec, &a);
+    this->vec = DirectX::XMVectorSetXPtr(this->vec, &a);
 }
 
 //------------------------------------------------------------------------------
@@ -317,7 +317,7 @@ plane::set_a(scalar a)
 inline void 
 plane::set_b(scalar b)
 {
-    this->vec = XMVectorSetYPtr(this->vec, &b);
+    this->vec = DirectX::XMVectorSetYPtr(this->vec, &b);
 }
 
 //------------------------------------------------------------------------------
@@ -326,7 +326,7 @@ plane::set_b(scalar b)
 inline void 
 plane::set_c(scalar c)
 {
-    this->vec = XMVectorSetZPtr(this->vec, &c);
+    this->vec = DirectX::XMVectorSetZPtr(this->vec, &c);
 }
 
 //------------------------------------------------------------------------------
@@ -335,7 +335,7 @@ plane::set_c(scalar c)
 inline void 
 plane::set_d(scalar d)
 {
-    this->vec = XMVectorSetWPtr(this->vec, &d);
+    this->vec = DirectX::XMVectorSetWPtr(this->vec, &d);
 }
 
 //------------------------------------------------------------------------------
