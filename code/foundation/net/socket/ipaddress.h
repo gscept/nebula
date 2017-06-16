@@ -39,7 +39,7 @@ namespace Net
 {
 typedef PS3::PS3IpAddress IpAddress;
 }
-#elif linux
+#elif __linux__
 #include "net/posix/posixipaddress.h"
 namespace Net
 {

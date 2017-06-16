@@ -32,7 +32,7 @@ namespace Timing
 class CalendarTime : public PS3::PS3CalendarTime
 { };
 }
-#elif linux
+#elif __linux__
 #include "timing/posix/posixcalendartime.h"
 namespace Timing
 {

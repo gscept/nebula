@@ -27,7 +27,7 @@ class Job : public SerialJob
     __DeclareClass(Job);
 };
 } // namespace Jobs
-#elif (__WIN32__ || __XBOX360__ || linux)
+#elif (__WIN32__ || __XBOX360__ || __linux__)
 #include "jobs/tp/tpjob.h"
 namespace Jobs
 {

@@ -21,7 +21,7 @@
 #include "threading/wii/wiibarrier.h"
 #elif __PS3__
 #include "threading/ps3/ps3barrier.h"
-#elif ( __OSX__ || __APPLE__ || linux )
+#elif ( __OSX__ || __APPLE__ || __linux__ )
 #include "threading/posix/posixbarrier.h"
 #else
 #error "Barrier not implemented on this platform!"

@@ -32,7 +32,7 @@ namespace Threading
 class CriticalSection : public PS3::PS3CriticalSection
 { };
 }
-#elif linux
+#elif __linux__
 #include "threading/linux/linuxcriticalsection.h"
 namespace Threading
 {

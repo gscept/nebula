@@ -16,7 +16,7 @@
 #include "io/ps3/ps3consolehandler.h"
 #elif __OSX__
 #include "io/osx/osxconsolehandler.h"
-#elif linux
+#elif __linux__
 #include "io/posix/posixconsolehandler.h"
 #endif
 
@@ -73,7 +73,7 @@ Console::Open()
     Ptr<ConsoleHandler> consoleHandler = PS3::PS3ConsoleHandler::Create();
     #elif __OSX__
     Ptr<ConsoleHandler> consoleHandler = OSX::OSXConsoleHandler::Create();
-    #elif linux
+    #elif __linux__
     Ptr<ConsoleHandler> consoleHandler = Posix::PosixConsoleHandler::Create();
     #endif
     this->AttachHandler(consoleHandler);    

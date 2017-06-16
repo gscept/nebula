@@ -18,7 +18,7 @@
 #include "threading/ps3/ps3threadid.h"
 #elif __OSX__
 #include "threading/osx/osxthreadid.h"
-#elif linux
+#elif __linux__
 #include "threading/linux/linuxthreadid.h"
 #else
 #error "Threading::ThreadId not implemented on this platform!"

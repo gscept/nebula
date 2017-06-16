@@ -4,6 +4,9 @@
 
 fips_begin_module(foundation)
 	fips_deps(corelibs zlib)
+	if(FIPS_LINUX)
+		fips_libs(uuid)
+	endif()
 	fips_vs_warning_level(3)
 	fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 		fips_files(stdneb.h stdneb.cc)
@@ -558,6 +561,7 @@ fips_begin_module(foundation)
 			vec_vector.h
 		)
 	endif()
+	fips_dir(.)
 
 	if(FIPS_WINDOWS)
 		fips_dir(threading/win360 GROUP "threading/win32")

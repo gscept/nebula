@@ -16,7 +16,7 @@ __ImplementClass(Threading::Thread, 'TRED', Wii::WiiThread);
 __ImplementClass(Threading::Thread, 'TRED', PS3::PS3Thread);
 #elif __OSX__
 __ImplementClass(Threading::Thread, 'TRED', OSX::OSXThread);
-#elif linux
+#elif __linux__
 __ImplementClass(Threading::Thread, 'TRED', Linux::LinuxThread);
 #else
 #error "Thread class not implemented on this platform!"

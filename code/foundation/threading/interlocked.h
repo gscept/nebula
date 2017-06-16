@@ -37,7 +37,7 @@ namespace Threading
 class Interlocked : public Darwin::DarwinInterlocked
 { };
 }
-#elif linux
+#elif __linux__
 #include "threading/linux/linuxinterlocked.h"
 namespace Threading
 {

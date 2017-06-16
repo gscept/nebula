@@ -36,7 +36,7 @@ class Thread : public PS3::PS3Thread
     __DeclareClass(Thread);
 };
 }
-#elif linux 
+#elif __linux__ 
 #include "threading/linux/linuxthread.h"
 namespace Threading
 {

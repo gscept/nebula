@@ -32,7 +32,7 @@ namespace System
 {
 typedef PS3::PS3Cpu Cpu;
 }
-#elif ( __OSX__ || __APPLE__ || linux )
+#elif ( __OSX__ || __APPLE__ || __linux__ )
 #include "system/posix/posixcpu.h"
 namespace System
 {
