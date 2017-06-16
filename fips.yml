@@ -9,6 +9,7 @@ exports:
     header-dirs : 
         - .
         - code/foundation
+        - code/game
         - extlibs/mixed
     modules:
         foundation: code/foundation
