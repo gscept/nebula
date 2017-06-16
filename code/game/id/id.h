@@ -58,6 +58,8 @@ class IdSystem
     Id Allocate();
     /// remove an id
     void Deallocate(Id id);
+    /// check if valid
+    bool IsValid(Id id);
 
     private:
     /// array containing generation value for every index
@@ -93,7 +95,7 @@ Id::Create(uint32_t idx, generation_t gen)
 {
     Id id;
     id.id = (gen << GAME_ID_BITS) | idx;
-    n_assert2(idx < (1<<GAME_ID_BITS), "index out of range");
+    n_assert2(idx < (1<<GAME_ID_BITS), "index overflow");
     return id;
 }
 } // namespace Game

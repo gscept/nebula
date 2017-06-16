@@ -44,4 +44,24 @@ IdSystem::Allocate()
     }
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+void
+IdSystem::Deallocate(Id id)
+{
+    n_assert2(this->IsValid(id), "tried to delete Invalid/destroyed id");
+    this->freeIds.Enqueue(id.Index());
+    this->generations[id.Index()]++;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+IdSystem::IsValid(Id id)
+{
+    return id.Index() < this->generations.Size() && id.Generation() == this->generations[id.Index()];
+}
+
 }
