@@ -18,7 +18,7 @@
 #include "core/ps3/ps3singleton.h"
 #elif __OSX__
 #include "core/osx/osxsingleton.h"
-#elif linux
+#elif __linux__
 #include "core/posix/posixsingleton.h"
 #else
 #error "IMPLEMENT ME!"

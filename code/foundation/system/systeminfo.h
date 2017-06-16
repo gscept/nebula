@@ -32,7 +32,7 @@ namespace System
 {
 class SystemInfo : public PS3::PS3SystemInfo {};
 }
-#elif linux
+#elif __linux__
 #include "system/posix/posixsysteminfo.h"
 namespace System
 {

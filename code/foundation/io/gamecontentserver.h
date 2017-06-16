@@ -11,7 +11,7 @@
     (C) 2013-2016 Individual contributors, see AUTHORS file
 */
 #include "core/config.h"
-#if (__WIN32__ || __XBOX360__ || __WII__ || __OSX__ || linux)
+#if (__WIN32__ || __XBOX360__ || __WII__ || __OSX__ || __linux__)
 #include "io/base/gamecontentserverbase.h"
 namespace IO
 {

@@ -31,7 +31,7 @@ namespace Timing
 class Timer : public PS3::PS3Timer
 { };
 }
-#elif linux
+#elif __linux__
 #include "timing/posix/posixtimer.h"
 namespace Timing
 {

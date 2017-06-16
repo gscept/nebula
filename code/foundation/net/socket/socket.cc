@@ -14,7 +14,7 @@ __ImplementClass(Net::Socket, 'SOCK', Win360::Win360Socket);
 // there is no class on Wii
 #elif __PS3__
 __ImplementClass(Net::Socket, 'SOCK', PS3::PS3Socket);
-#elif linux
+#elif __linux__
 __ImplementClass(Net::Socket, 'SOCK', Posix::PosixSocket);
 #else
 #error "Socket class not implemented on this platform!"

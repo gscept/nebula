@@ -13,7 +13,7 @@ fips_include_directories(code/foundation)
 fips_include_directories(extlibs/mixed)
 
 fips_ide_group(Core)
-fips_add_subdirectory(code/foundation)
+fips_add_subdirectory(code)
 
 fips_ide_group(Extlibs)
 fips_add_subdirectory(extlibs)

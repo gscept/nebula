@@ -8,7 +8,7 @@
 
 namespace Net
 {
-#if (__WIN32__ || __XBOX360__ || __PS3__ || linux)
+#if (__WIN32__ || __XBOX360__ || __PS3__ || __linux__)
 __ImplementClass(Net::TcpClient, 'TCPC', Net::StdTcpClient);
 #elif __WII__
 __ImplementClass(Net::TcpClient, 'TCPC', Core::RefCounted);
