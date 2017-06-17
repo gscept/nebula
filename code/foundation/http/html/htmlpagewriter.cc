@@ -76,7 +76,7 @@ HtmlPageWriter::Close()
 
     // close XML writer
     this->xmlWriter->Close();
-    this->xmlWriter = 0;
+    this->xmlWriter = nullptr;
 
     // set MIME type on our stream
     this->stream->SetMediaType(MediaType("text/html"));    

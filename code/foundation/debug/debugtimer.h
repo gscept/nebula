@@ -23,7 +23,7 @@
 #define _setup_timer_singleton(timer) {timer = Debug::DebugTimer::CreateAsSingleton(Util::StringAtom(#timer));}
 #define _setup_timer_singleton_name(timer, timerName) {timer = Debug::DebugTimer::CreateAsSingleton(Util::StringAtom(#timerName));}
 #define _discard_timer_singleton(timer) {Debug::DebugTimer::DestroySingleton(Util::StringAtom(#timer));}
-#define _discard_timer(timer) timer->Discard(); timer = 0;
+#define _discard_timer(timer) timer->Discard(); timer = nullptr;
 #define _start_timer(timer) timer->Start();
 #define _pause_timer(timer) timer->Pause();
 #define _stop_timer(timer) timer->Stop();

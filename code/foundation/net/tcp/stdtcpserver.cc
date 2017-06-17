@@ -67,7 +67,7 @@ StdTcpServer::Close()
     
     // stop the listener thread
     this->listenerThread->Stop();
-    this->listenerThread = 0;
+    this->listenerThread = nullptr;
 
     // disconnect client connections
     this->connectionCritSect.Enter();

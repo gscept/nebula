@@ -71,8 +71,8 @@ LogFileConsoleHandler::Close()
     {
         this->textWriter->Close();
     }
-    this->textWriter = 0;
-    this->stream = 0;
+    this->textWriter = nullptr;
+    this->stream = nullptr;
     
     ConsoleHandler::Close();
 }

@@ -41,7 +41,7 @@ void
 TPJobPort::Discard()
 {
     n_assert(this->IsValid());
-    this->lastPushedJob = 0;
+    this->lastPushedJob = nullptr;
     JobPortBase::Discard();
 }
 

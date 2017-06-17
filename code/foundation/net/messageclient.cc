@@ -57,8 +57,8 @@ void
 MessageClient::Disconnect()
 {
     TcpClient::Disconnect();
-    this->sendMessageStream = 0;
-    this->recvMessageStream = 0;
+    this->sendMessageStream = nullptr;
+    this->recvMessageStream = nullptr;
 }
 
 //------------------------------------------------------------------------------

@@ -88,7 +88,7 @@ ArchiveFileSystemBase::Mount(const URI& uri)
     }
     else
     {
-        newArchive = 0;
+        newArchive = nullptr;
     }
     return newArchive;
 }

@@ -69,14 +69,14 @@ HttpServer::Close()
     this->pendingRequests.Clear();
 
     // destroy the default http request handler
-    this->defaultRequestHandler = 0;
+    this->defaultRequestHandler = nullptr;
 
     // remove request handlers
     this->requestHandlers.Clear();
 
     // shutdown TcpServer
     this->tcpServer->Close();
-    this->tcpServer = 0;
+    this->tcpServer = nullptr;
     this->isOpen = false;
 }
 

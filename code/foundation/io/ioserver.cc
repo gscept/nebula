@@ -86,9 +86,9 @@ IoServer::~IoServer()
     {
         this->UnmountStandardArchives();
     }
-    this->archiveFileSystem = 0;    
-    this->assignRegistry = 0;
-    this->schemeRegistry = 0;
+    this->archiveFileSystem = nullptr;
+    this->assignRegistry = nullptr;
+    this->schemeRegistry = nullptr;
 
     __DestructSingleton;
 }

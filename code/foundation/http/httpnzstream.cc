@@ -87,7 +87,7 @@ HttpNzStream::Open()
             this->Unmap();
             srcStream->Unmap();
             srcStream->Close();
-            srcStream = 0;
+            srcStream = nullptr;
 
             n_printf("ok!\n");
             retval = true;

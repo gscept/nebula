@@ -66,10 +66,10 @@ ConsoleApplication::Close()
     n_assert(this->IsOpen());
 
     // shutdown io subsystem
-    this->ioServer = 0;
+    this->ioServer = nullptr;
 
     // shutdown core subsystem
-    this->coreServer = 0;
+    this->coreServer = nullptr;
 
     Application::Close();
 }

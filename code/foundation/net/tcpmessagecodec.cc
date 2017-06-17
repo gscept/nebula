@@ -40,7 +40,7 @@ TcpMessageCodec::~TcpMessageCodec()
         {
             this->headerStream->Close();
         }
-        this->headerStream = 0;
+        this->headerStream = nullptr;
     }
     if (this->messageStream.isvalid())
     {
@@ -48,7 +48,7 @@ TcpMessageCodec::~TcpMessageCodec()
         {
             this->messageStream->Close();
         }
-        this->messageStream = 0;
+        this->messageStream = nullptr;
     }
 }
 
@@ -165,7 +165,7 @@ TcpMessageCodec::DecodeStream(const Ptr<IO::Stream> &stream)
                         // attach completely received mesage
                         this->messageStream->SetAccessMode(Stream::ReadAccess);
                         this->completedMessages.Append(this->messageStream);
-                        this->messageStream = 0;
+                        this->messageStream = nullptr;
                         this->messagePostition = 0;
                         this->receiveState = HeaderData;
                     }

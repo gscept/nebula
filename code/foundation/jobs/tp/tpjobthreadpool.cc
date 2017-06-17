@@ -69,7 +69,7 @@ TPJobThreadPool::Discard()
     for (i = 0; i < NumWorkerThreads; i++)
     {
         this->workerThreads[i]->Stop();
-        this->workerThreads[i] = 0;
+        this->workerThreads[i] = nullptr;
     }
 }
 

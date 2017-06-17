@@ -68,7 +68,7 @@ GraphicsServer::OnFrame()
 	IndexT i;
 	for (i = 0; i < this->contexts.Size(); i++)
 	{
-		this->contexts[i]->OnBeforeVisibility(frameIndex, time);
+		this->contexts[i]->OnBeforeFrame(frameIndex, time);
 	}
 
 	// begin updating visibility
@@ -105,6 +105,14 @@ GraphicsServer::OnFrame()
 		{
 			this->contexts[j]->OnAfterView(view, frameIndex, time);
 		}
+	}
+
+
+	// begin updating visibility
+	IndexT i;
+	for (i = 0; i < this->contexts.Size(); i++)
+	{
+		this->contexts[i]->OnAfterFrame(frameIndex, time);
 	}
 
 	// leave visibility lockstep

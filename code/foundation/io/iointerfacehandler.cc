@@ -58,9 +58,9 @@ IoInterfaceHandler::Close()
 {
     #if __NEBULA3_HTTP_FILESYSTEM__
     this->httpClientRegistry->Discard();
-    this->httpClientRegistry = 0;
+    this->httpClientRegistry = nullptr;
     #endif
-    this->ioServer = 0;
+    this->ioServer = nullptr;
     InterfaceHandlerBase::Close();
 }
 
