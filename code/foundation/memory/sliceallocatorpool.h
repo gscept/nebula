@@ -14,85 +14,148 @@
 
 namespace Memory
 {
-template <class TYPE, int POOLSIZE>
+template <class TYPE, unsigned int POOLSIZE, bool FREEPOOLS = false>
 class SliceAllocatorPool
 {
 public:
 	/// constructor
 	SliceAllocatorPool();
 	/// destructor
-	virtual ~SliceAllocatorPool();
+	~SliceAllocatorPool();
 
 	/// allocate a slice
 	TYPE* Alloc();
-	/// free a slice
+	/// allocate a slice
+	TYPE* Alloc(int64_t& identifier);
+	/// free a slice by pointer
 	void Free(TYPE* slice);
+	/// free a slice by identifier created by Alloc
+	void Free(int64_t identifier);
+
+	/// clear all pools
+	void Clear();
 
 private:
 
 	struct Pool
 	{
 		TYPE elems[POOLSIZE];
-		bool free[POOLSIZE];
-		SizeT numUsed;
+		Util::Array<int> free;
+		Util::Array<int> used;
 
-		Pool() : numUsed(0) 
+		Pool()
 		{
-			memset(this->free, 1, sizeof(this->free))
-		};
+			this->free.Reserve(POOLSIZE);
+			this->used.Reserve(POOLSIZE);
+
+			IndexT i;
+			for (i = POOLSIZE-1; i >= 0; i--) this->free.Append(i);
+		}
 	};
 
+	IndexT nextFreePool;
 	Util::Array<Pool> pools;
 };
 
 //------------------------------------------------------------------------------
 /**
 */
-template <class TYPE, int POOLSIZE>
-TYPE*
-Memory::SliceAllocatorPool<TYPE, POOLSIZE>::Alloc()
+template <class TYPE, unsigned int POOLSIZE, bool FREEPOOLS>
+inline
+Memory::SliceAllocatorPool<TYPE, POOLSIZE, FREEPOOLS>::SliceAllocatorPool() :
+	nextFreePool(InvalidIndex)
 {
-	TYPE* ret = nullptr;
-	IndexT i;
-	for (i = 0; i < this->pools.Size(); i++)
-	{
-		// if pool has space
-		if (this->pools[i].numUsed != POOLSIZE)
-		{
-			Pool& pool = this->pools[i];
-
-			// find free element in pool
-			IndexT j;
-			for (j = 0; j < POOLSIZE; j++)
-			{
-				if (pool.free[j])
-				{
-					ret = pool.elems[j];
-					pool.numUsed++;
-					pool.free[j] = false;
-					return ret;
-				}				
-			}
-		}
-	}
-
-	// if we failed to find a free pool, allocate a new one
-	if (ret == nullptr)
-	{
-		this->pools.Append(Pool);
-		Pool& pool = this->pools.Back();
-		ret = pool.elems[0];
-		pool.free[0] = false;
-		pool.numUsed++;
-	}
+	// empty
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-template <class TYPE, int POOLSIZE>
-void
-Memory::SliceAllocatorPool<TYPE, POOLSIZE>::Free(TYPE* slice)
+template <class TYPE, unsigned int POOLSIZE, bool FREEPOOLS>
+inline
+Memory::SliceAllocatorPool<TYPE, POOLSIZE, FREEPOOLS>::~SliceAllocatorPool()
+{
+	this->Clear();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <class TYPE, unsigned int POOLSIZE, bool FREEPOOLS>
+inline TYPE*
+Memory::SliceAllocatorPool<TYPE, POOLSIZE, FREEPOOLS>::Alloc()
+{
+	int64_t id;
+	return this->Alloc(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <class TYPE, unsigned int POOLSIZE, bool FREEPOOLS>
+inline TYPE*
+Memory::SliceAllocatorPool<TYPE, POOLSIZE, FREEPOOLS>::Alloc(int64_t& identifier)
+{
+	TYPE* ret = nullptr;
+
+	// if we know the next free pool, go for it!
+	if (this->nextFreePool != InvalidIndex)
+	{
+		Pool& pool = this->pools[this->nextFreePool];
+		const int id = pool.free[pool.free.Size() - 1];
+		pool.free.EraseIndex(pool.free.Size() - 1);
+		pool.used.Append(id);
+		ret = &pool.elems[id];
+		identifier = ((int64_t(this->nextFreePool) << 32) & 0xFFFFFFFF00000000) + (pool.used.Size() - 1 & 0x00000000FFFFFFFF);
+		if (pool.free.IsEmpty()) this->nextFreePool = InvalidIndex;
+		goto skip;
+	}
+	else
+	{
+		IndexT i;
+		for (i = 0; i < this->pools.Size(); i++)
+		{
+			// if pool has space
+			if (!this->pools[i].free.IsEmpty())
+			{
+				Pool& pool = this->pools[i];
+				const int id = pool.free[pool.free.Size() - 1];
+				pool.free.EraseIndex(pool.free.Size() - 1);
+				pool.used.Append(id);
+				ret = &pool.elems[id];
+				identifier = ((int64_t(i) << 32) & 0xFFFFFFFF00000000) + (pool.used.Size() - 1 & 0x00000000FFFFFFFF);
+				if (pool.free.IsEmpty()) this->nextFreePool = InvalidIndex;
+				else					 this->nextFreePool = i;
+				goto skip;
+			}
+		}
+	}
+	
+
+	// if we failed to find a free pool, allocate a new one
+	if (ret == nullptr)
+	{
+		this->pools.Append(Pool());
+		Pool& pool = this->pools.Back();
+		const int id = pool.free[pool.free.Size() - 1];
+		pool.free.EraseIndex(pool.free.Size() - 1);
+		pool.used.Append(id);
+		ret = &pool.elems[id];
+		identifier = ((int64_t(this->pools.Size() - 1) << 32) & 0xFFFFFFFF00000000) + (0 & 0x00000000FFFFFFFF);
+		this->nextFreePool = this->pools.Size() - 1;
+	}
+skip:
+
+	n_assert(ret != nullptr);
+	return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <class TYPE, unsigned int POOLSIZE, bool FREEPOOLS>
+inline void
+Memory::SliceAllocatorPool<TYPE, POOLSIZE, FREEPOOLS>::Free(TYPE* slice)
 {
 	IndexT i;
 	for (i = 0; i < this->pools.Size(); i++)
@@ -105,9 +168,58 @@ Memory::SliceAllocatorPool<TYPE, POOLSIZE>::Free(TYPE* slice)
 			// calculate actual index of pool, the offset should give us how many pointers in we are, divide by size of pointer to get actual index
 			ptrdiff_t diff = slice - &pool.elems[0];
 			IndexT idx = diff / sizeof(void*);
-			pool.free[idx] = true;
-			pool.numUsed--;
+			IndexT item = pool.used.FindIndex(idx);
+			int used = pool.used[item];
+			pool.used.EraseIndex(item);
+			pool.free.Append(used);
+			this->nextFreePool = i;
+			
+			// if pool is empty, erase it
+			if (pool.numUsed == 0 && FREEPOOLS) this->pools.EraseIndex(i);
 		}
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <class TYPE, unsigned int POOLSIZE, bool FREEPOOLS>
+inline void
+Memory::SliceAllocatorPool<TYPE, POOLSIZE, FREEPOOLS>::Free(int64_t identifier)
+{
+	IndexT poolId = IndexT((identifier >> 32) & 0x00000000FFFFFFFF);
+	IndexT slice = IndexT((identifier) & 0x00000000FFFFFFFF);
+	Pool& pool = this->pools[poolId];
+	int used = pool.used[slice];
+	pool.used.EraseIndex(slice);
+	pool.free.Append(used);
+	this->nextFreePool = poolId;
+
+	// if pool is empty, erase it
+	if (pool.numUsed == 0 && FREEPOOLS) this->pools.EraseIndex(poolId);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <class TYPE, unsigned int POOLSIZE, bool FREEPOOLS>
+void
+Memory::SliceAllocatorPool<TYPE, POOLSIZE, FREEPOOLS>::Clear()
+{
+	if (FREEPOOLS)	this->pools.Clear();
+	else
+	{
+		IndexT i;
+		for (i = 0; i < this->pools.Size(); i++)
+		{
+			Pool& pool = this->pools[i];
+			pool.free.Clear();
+			pool.used.Clear();
+
+			IndexT j;
+			for (j = POOLSIZE-1; j >= 0; j--) pool.free.Append(j);
+		}
+		this->nextFreePool = 0;
 	}
 }
 

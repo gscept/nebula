@@ -35,8 +35,8 @@ StdTcpClient::~StdTcpClient()
     {
         this->Disconnect();
     }
-    this->sendStream = 0;
-    this->recvStream = 0;
+    this->sendStream = nullptr;
+    this->recvStream = nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -78,7 +78,7 @@ StdTcpClient::Connect()
                 this->serverAddr.GetHostName().AsCharPtr(),
                 this->serverAddr.GetHostAddr().AsCharPtr(),
                 this->serverAddr.GetPort());
-            this->socket = 0;
+            this->socket = nullptr;
             return Error;
         }
         else if (Socket::Success == res)
@@ -94,7 +94,7 @@ StdTcpClient::Connect()
         }
     }
     n_printf("StdTcpClient: failed to open socket!\n");
-    this->socket = 0;
+    this->socket = nullptr;
     return Error;
 }
 
@@ -135,7 +135,7 @@ StdTcpClient::Disconnect()
     {
         n_assert(this->socket.isvalid());
         this->socket->Close();
-        this->socket = 0;
+        this->socket = nullptr;
     }
     this->inConnectionState = false;
 }

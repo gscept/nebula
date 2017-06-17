@@ -332,7 +332,7 @@ Win360Socket::Accept(Ptr<Net::Socket>& outSocket)
 	}
 
     this->ClearError();
-    outSocket = 0;
+    outSocket = nullptr;
     sockaddr_in sockAddr;
     int sockAddrSize = sizeof(sockAddr);
     SOCKET newSocket = accept(this->sock, (sockaddr*) &sockAddr, &sockAddrSize);

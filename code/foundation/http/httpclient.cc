@@ -38,7 +38,7 @@ HttpClient::~HttpClient()
     {
         this->Disconnect();
     }
-    this->tcpClient = 0;
+    this->tcpClient = nullptr;
 }
 
 //------------------------------------------------------------------------------

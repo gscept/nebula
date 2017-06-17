@@ -36,7 +36,7 @@ ConsolePageHandler::ConsolePageHandler()
 */
 ConsolePageHandler::~ConsolePageHandler()
 {
-    this->historyConsoleHandler = 0;
+    this->historyConsoleHandler = nullptr;
 }
 
 //------------------------------------------------------------------------------

@@ -80,10 +80,10 @@ StdTcpClientConnection::Shutdown()
     if (this->socket.isvalid())
     {
         this->socket->Close();
-        this->socket = 0;
+        this->socket = nullptr;
     }
-    this->sendStream = 0;
-    this->recvStream = 0;
+    this->sendStream = nullptr;
+    this->recvStream = nullptr;
 }
 
 //------------------------------------------------------------------------------

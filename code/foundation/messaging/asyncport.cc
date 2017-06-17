@@ -31,7 +31,7 @@ AsyncPort::~AsyncPort()
     {
         this->Close();
     }
-    this->thread = 0;
+    this->thread = nullptr;
 }
 
 //------------------------------------------------------------------------------

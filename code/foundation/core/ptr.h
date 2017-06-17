@@ -13,6 +13,7 @@
     (C) 2013-2014 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
+#include <type_traits>
 
 // platform secific stuff for handling/suppress "unused-argument"-warnings
 #if NEBULA3_DEBUG
@@ -39,18 +40,96 @@ public:
     Ptr(TYPE* p);
     /// construct from smart pointer
     Ptr(const Ptr<TYPE>& p);
+	/// implement move constructor
+	Ptr(Ptr<TYPE>&& p);
+
+	/// make other type Ptr classes friend
+	template <class OTHERTYPE>
+	friend class Ptr;
+
+	/// construct from C++ pointer of other type
+	template<class OTHERTYPE>
+	Ptr(OTHERTYPE* rhs)
+	{
+		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value || std::is_base_of<OTHERTYPE, TYPE>::value, "Incompatible types");
+		TYPE* p = static_cast<TYPE*>(rhs);
+		if (p != this->ptr)
+		{
+			this->ptr = static_cast<TYPE*>(rhs);
+			if (this->ptr) this->ptr->AddRef();
+		}
+	}
+	/// construct from smart pointer of other type
+	template <class OTHERTYPE>
+	Ptr(const Ptr<OTHERTYPE>& rhs)
+	{
+		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value || std::is_base_of<OTHERTYPE, TYPE>::value, "Incompatible types");
+		TYPE* p = static_cast<TYPE*>(rhs.ptr);
+		if (p != this->ptr)
+		{
+			this->ptr = p;
+			if (nullptr != this->ptr) this->ptr->AddRef();
+		}
+	}
+	/// construct from smart pointer of other type
+	template <class OTHERTYPE>
+	Ptr(Ptr<OTHERTYPE>&& rhs)
+	{
+		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value || std::is_base_of<OTHERTYPE, TYPE>::value, "Incompatible types");
+		TYPE* p = static_cast<TYPE*>(rhs.ptr);
+		this->ptr = p;
+		rhs.ptr = nullptr;
+	}
     /// destructor
     ~Ptr();
+	/// assignment operator
+	void operator=(TYPE* rhs);
     /// assignment operator
-    void operator=(const Ptr<TYPE>& rhs);
-    /// assignment operator
-    void operator=(TYPE* rhs);
+    void operator=(const Ptr<TYPE>& rhs);    
+	/// move operator
+	void operator=(Ptr<TYPE>&& rhs);
 	/// unassignment operator
 	void operator=(std::nullptr_t rhs);
-	/// implicit conversion of other Ptr
-	template<class OTHERTYPE> operator=(const Ptr<OTHERTYPE>& rhs);
-	/// implicit conversion of other pointer
-	template<class OTHERTYPE> operator=(OTHERTYPE* ptr);
+
+	/// assign operator to pointer of other type
+	template<class OTHERTYPE>
+	void operator=(OTHERTYPE* rhs)
+	{
+		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value || std::is_base_of<OTHERTYPE, TYPE>::value, "Incompatible types");
+		TYPE* p = static_cast<TYPE*>(rhs);
+		if (this->ptr != p)
+		{
+			if (this->ptr != nullptr) this->ptr->Release();
+			this->ptr = p;
+			if (this->ptr != nullptr) this->ptr->AddRef();
+		}
+	}
+	/// assign operator to Ptr of other type
+	template<class OTHERTYPE>
+	void operator=(const Ptr<OTHERTYPE>& rhs)
+	{
+		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value || std::is_base_of<OTHERTYPE, TYPE>::value, "Incompatible types");
+		TYPE* p = static_cast<TYPE*>(rhs.ptr);
+		if (this->ptr != p)
+		{
+			if (this->ptr != nullptr) this->ptr->Release();
+			this->ptr = p;
+			if (this->ptr != nullptr) this->ptr->AddRef();
+		}
+	}
+	/// move assignment to Ptr of other type
+	template<class OTHERTYPE>
+	void operator=(Ptr<OTHERTYPE>&& rhs)
+	{
+		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value || std::is_base_of<OTHERTYPE, TYPE>::value, "Incompatible types");
+		TYPE* p = static_cast<TYPE*>(rhs.ptr);
+		if (this->ptr != p)
+		{
+			this->ptr = p;
+			rhs.ptr = nullptr;
+		}
+	}
+
     /// equality operator
     bool operator==(const Ptr<TYPE>& rhs) const;
     /// inequality operator
@@ -126,6 +205,16 @@ Ptr<TYPE>::Ptr(const Ptr<TYPE>& p) :
 /**
 */
 template<class TYPE>
+Ptr<TYPE>::Ptr(Ptr<TYPE>&& p) :
+	ptr(p.ptr)
+{
+	p.ptr = nullptr;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
 Ptr<TYPE>::~Ptr()
 {
     if (0 != this->ptr)
@@ -140,19 +229,28 @@ Ptr<TYPE>::~Ptr()
 */
 template<class TYPE>
 void
+Ptr<TYPE>::operator=(TYPE* rhs)
+{
+	if (this->ptr != rhs)
+	{
+		if (this->ptr != nullptr) this->ptr->Release();
+		this->ptr = rhs;
+		if (this->ptr != nullptr) this->ptr->AddRef();
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+void
 Ptr<TYPE>::operator=(const Ptr<TYPE>& rhs)
 {
     if (this->ptr != rhs.ptr)
     {
-        if (this->ptr)
-        {
-            this->ptr->Release();
-        }
+        if (this->ptr != nullptr) this->ptr->Release();
         this->ptr = rhs.ptr;
-        if (this->ptr)
-        {
-            this->ptr->AddRef();
-        }
+        if (this->ptr != nullptr) this->ptr->AddRef();
     }
 }
 
@@ -161,80 +259,26 @@ Ptr<TYPE>::operator=(const Ptr<TYPE>& rhs)
 */
 template<class TYPE>
 void
-Ptr<TYPE>::operator=(TYPE* rhs)
+Ptr<TYPE>::operator=(Ptr<TYPE>&& rhs)
 {
-    if (this->ptr != rhs)
-    {
-        if (this->ptr)
-        {
-            this->ptr->Release();
-        }
-        this->ptr = rhs;
-        if (this->ptr)
-        {
-            this->ptr->AddRef();
-        }
-    }
+	if (this->ptr != rhs.ptr)
+	{
+		this->ptr = rhs.ptr;
+		rhs.ptr = nullptr;
+	}
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 template<class TYPE>
-void
+inline void
 Ptr<TYPE>::operator=(std::nullptr_t rhs)
 {
 	if (this->ptr != rhs)
 	{
-		if (this->ptr)
-		{
-			this->ptr->Release();
-		}
+		if (this->ptr != nullptr) this->ptr->Release();
 		this->ptr = rhs;
-	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-template<class TYPE>
-template<class OTHERTYPE>
-Ptr<TYPE>::operator=(const Ptr<OTHERTYPE>& rhs)
-{
-	static_assert(std::is_base_of(TYPE, OTHERTYPE) || std::is_base_of(OTHERTYPE, TYPE));
-	if (this->ptr != rhs.ptr)
-	{
-		if (this->ptr)
-		{
-			this->ptr->Release();
-		}
-		this->ptr = rhs.ptr;
-		if (this->ptr)
-		{
-			this->ptr->AddRef();
-		}
-	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-template<class TYPE>
-template<class OTHERTYPE>
-Ptr<TYPE>::operator=(OTHERTYPE* ptr)
-{
-	static_assert(std::is_base_of(TYPE, OTHERTYPE) || std::is_base_of(OTHERTYPE, TYPE));
-	if (this->ptr != rhs.ptr)
-	{
-		if (this->ptr)
-		{
-			this->ptr->Release();
-		}
-		this->ptr = rhs.ptr;
-		if (this->ptr)
-		{
-			this->ptr->AddRef();
-		}
 	}
 }
 
@@ -322,6 +366,7 @@ Ptr<TYPE>::downcast() const
     // compile-time inheritance-test
     NEBULA3_UNUSED_ATTR const DERIVED *derived = static_cast<const DERIVED*>(this->ptr);
 #endif
+	static_assert(std::is_base_of<DERIVED, TYPE>::value, "Incompatible types");
     return *reinterpret_cast<const Ptr<DERIVED>*>(this);
 }
 
@@ -337,6 +382,7 @@ Ptr<TYPE>::upcast() const
     // compile-time inheritance-test
     NEBULA3_UNUSED_ATTR const BASE *base = this->ptr;
 #endif
+	static_assert(std::is_base_of<TYPE, BASE>::value, "Incompatible types");
     return *reinterpret_cast<const Ptr<BASE>*>(this);
 }
 
@@ -358,7 +404,7 @@ template<class TYPE>
 bool
 Ptr<TYPE>::isvalid() const
 {
-    return (0 != this->ptr);
+    return (nullptr != this->ptr);
 }
 
 //------------------------------------------------------------------------------

@@ -86,7 +86,7 @@ StringBuffer::AddString(const char* str)
     n_assert(this->IsValid());
 
     // get string length, must be less then chunk size
-    size_t strLength = strlen(str) + 1;
+    SizeT strLength = SizeT(strlen(str) + 1);
     n_assert(strLength < this->chunkSize);
 
     // check if a new buffer must be allocated

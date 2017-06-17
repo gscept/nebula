@@ -61,10 +61,10 @@ DebugHandler::Close()
     n_assert(this->IsOpen());
 
     this->httpServerProxy->Close();
-    this->httpServerProxy = 0;
+    this->httpServerProxy = nullptr;
 
     this->debugServer->Close();
-    this->debugServer = 0;
+    this->debugServer = nullptr;
 
     InterfaceHandlerBase::Close();
 }

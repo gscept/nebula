@@ -60,7 +60,7 @@ CoreServer::Close()
     n_assert(this->IsOpen());
 
     // shutdown console
-    this->con = 0;
+    this->con = nullptr;
 
     this->isOpen = false;
 }

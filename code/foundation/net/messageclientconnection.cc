@@ -62,8 +62,8 @@ MessageClientConnection::Shutdown()
 {
     n_assert(this->msgQueue.IsEmpty());
     TcpClientConnection::Shutdown();
-    this->sendMessageStream = 0;
-    this->recvMessageStream = 0;
+    this->sendMessageStream = nullptr;
+    this->recvMessageStream = nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -158,7 +158,7 @@ MessageClientConnection::Recv()
     else
     {
         // no messages available
-        this->recvMessageStream = 0;
+        this->recvMessageStream = nullptr;
         if (Socket::Error != returnValue)
         {
             returnValue = Socket::WouldBlock;

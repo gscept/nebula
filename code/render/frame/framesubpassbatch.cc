@@ -138,7 +138,6 @@ FrameSubpassBatch::Run(const IndexT frameIndex)
 							{
 								const Ptr<ModelNodeInstance>& nodeInstance = nodeInstances[nodeInstIndex];
 								const Ptr<StateNodeInstance>& stateNode = nodeInstance.downcast<StateNodeInstance>();
-								const Ptr<SurfaceInstance>& surfaceInstance = stateNode->GetSurfaceInstance();
 #if NEBULA3_ENABLE_PROFILING
 								nodeInstance->StartDebugTimer();
 #endif  

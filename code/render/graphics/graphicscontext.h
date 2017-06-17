@@ -79,8 +79,6 @@ protected:
 
 	friend class GraphicsServer;
 
-	/// run before visibility is started
-	void OnBeforeVisibility(const IndexT frameIndex, const Timing::Time frameTime);
 	/// runs before frame is updated
 	void OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime);
 	/// runs when visibility has finished processing 
