@@ -128,7 +128,7 @@ ParticleSystemInstanceBase::Discard()
 {
     n_assert(this->IsValid());
     this->jobData.jobPort->Discard();
-    this->jobData.jobPort = 0;
+    this->jobData.jobPort = nullptr;
     if(this->jobData.sliceOutput)
     {
         n_delete_array(this->jobData.sliceOutput);
@@ -137,7 +137,7 @@ ParticleSystemInstanceBase::Discard()
     this->jobData.sliceCount = 0;
     this->jobData.sliceOutputCapacity = 0;
     this->jobData.running = false;
-    this->particleSystem = 0;
+    this->particleSystem = nullptr;
 }
 
 //------------------------------------------------------------------------------

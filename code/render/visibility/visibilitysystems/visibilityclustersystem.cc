@@ -91,7 +91,7 @@ VisibilityClusterSystem::UpdateVisibilityContext(const Ptr<VisibilityContext>& c
 /**
 */
 void 
-VisibilityClusterSystem::CheckVisibility(const Ptr<ObserverContext>& observer, Util::FixedArray<Ptr<VisibilityContext> >& outEntitiyArray, uint entityMask)
+VisibilityClusterSystem::CheckVisibility(const Ptr<Observer>& observer, Util::FixedArray<Ptr<VisibilityContext> >& outEntitiyArray, uint entityMask)
 {        
     // update visibility for this observer
     const point& cameraPos = observer->GetObserverEntity()->GetTransform().get_position();
@@ -250,7 +250,7 @@ VisibilityClusterSystem::OnRenderDebug()
 /**
 */
 Ptr<Jobs::Job> 
-VisibilityClusterSystem::CreateVisibilityJob(IndexT frameId, const Ptr<ObserverContext>& observer, Util::FixedArray<Ptr<VisibilityContext> >& outEntitiyArray, uint& entityMask)
+VisibilityClusterSystem::CreateVisibilityJob(IndexT frameId, const Ptr<Observer>& observer, Util::FixedArray<Ptr<VisibilityContext> >& outEntitiyArray, uint& entityMask)
 {
     // no multi threading yet
     this->CheckVisibility(observer, outEntitiyArray, entityMask);

@@ -11,6 +11,8 @@
 */
 //------------------------------------------------------------------------------
 #include "util/array.h"
+#include "util/queue.h"
+#include <tuple>
 
 namespace Memory
 {
@@ -34,6 +36,8 @@ public:
 
 	/// clear all pools
 	void Clear();
+	/// resets all pools to be available, but does not deallocate memory
+	void Reset();
 
 private:
 
@@ -43,18 +47,29 @@ private:
 		Util::Array<int> free;
 		Util::Array<int> used;
 
+
+		/// constructor
 		Pool()
 		{
 			this->free.Reserve(POOLSIZE);
 			this->used.Reserve(POOLSIZE);
 
+			this->Reset();
+		}
+
+		/// reset pool
+		void Reset()
+		{
+			this->used.Clear();
+			this->free.Clear();
 			IndexT i;
-			for (i = POOLSIZE-1; i >= 0; i--) this->free.Append(i);
+			for (i = POOLSIZE - 1; i >= 0; i--) this->free.Append(i);
 		}
 	};
 
 	IndexT nextFreePool;
-	Util::Array<Pool> pools;
+	Util::Queue<std::tuple<int64_t, Pool*>> freePools;
+	Util::Array<Pool*> pools;
 };
 
 //------------------------------------------------------------------------------
@@ -98,53 +113,30 @@ Memory::SliceAllocatorPool<TYPE, POOLSIZE, FREEPOOLS>::Alloc(int64_t& identifier
 {
 	TYPE* ret = nullptr;
 
-	// if we know the next free pool, go for it!
-	if (this->nextFreePool != InvalidIndex)
+	if (!this->freePools.IsEmpty())
 	{
-		Pool& pool = this->pools[this->nextFreePool];
-		const int id = pool.free[pool.free.Size() - 1];
-		pool.free.EraseIndex(pool.free.Size() - 1);
-		pool.used.Append(id);
-		ret = &pool.elems[id];
-		identifier = ((int64_t(this->nextFreePool) << 32) & 0xFFFFFFFF00000000) + (pool.used.Size() - 1 & 0x00000000FFFFFFFF);
-		if (pool.free.IsEmpty()) this->nextFreePool = InvalidIndex;
-		goto skip;
+		std::tuple<int64_t, Pool*>& elem = this->freePools.Peek();
+		Pool* pool = std::get<1>(elem);
+		int64_t poolId = std::get<0>(elem);
+		const int id = pool->free[pool->free.Size() - 1];
+		pool->free.EraseIndex(pool->free.Size() - 1);
+		pool->used.Append(id);
+		ret = &pool->elems[id];
+		identifier = ((poolId << 32) & 0xFFFFFFFF00000000) + (pool->used.Size() - 1 & 0x00000000FFFFFFFF);
+		if (pool->free.IsEmpty()) this->freePools.Dequeue();
 	}
 	else
 	{
-		IndexT i;
-		for (i = 0; i < this->pools.Size(); i++)
-		{
-			// if pool has space
-			if (!this->pools[i].free.IsEmpty())
-			{
-				Pool& pool = this->pools[i];
-				const int id = pool.free[pool.free.Size() - 1];
-				pool.free.EraseIndex(pool.free.Size() - 1);
-				pool.used.Append(id);
-				ret = &pool.elems[id];
-				identifier = ((int64_t(i) << 32) & 0xFFFFFFFF00000000) + (pool.used.Size() - 1 & 0x00000000FFFFFFFF);
-				if (pool.free.IsEmpty()) this->nextFreePool = InvalidIndex;
-				else					 this->nextFreePool = i;
-				goto skip;
-			}
-		}
+		Pool* pool = new Pool();
+		int64_t poolId = this->pools.Size();
+		this->pools.Append(pool);
+		this->freePools.Enqueue(std::make_tuple(poolId, pool));
+		const int id = pool->free[pool->free.Size() - 1];
+		pool->free.EraseIndex(pool->free.Size() - 1);
+		pool->used.Append(id);
+		ret = &pool->elems[id];
+		identifier = ((poolId << 32) & 0xFFFFFFFF00000000) + (0 & 0x00000000FFFFFFFF);
 	}
-	
-
-	// if we failed to find a free pool, allocate a new one
-	if (ret == nullptr)
-	{
-		this->pools.Append(Pool());
-		Pool& pool = this->pools.Back();
-		const int id = pool.free[pool.free.Size() - 1];
-		pool.free.EraseIndex(pool.free.Size() - 1);
-		pool.used.Append(id);
-		ret = &pool.elems[id];
-		identifier = ((int64_t(this->pools.Size() - 1) << 32) & 0xFFFFFFFF00000000) + (0 & 0x00000000FFFFFFFF);
-		this->nextFreePool = this->pools.Size() - 1;
-	}
-skip:
 
 	n_assert(ret != nullptr);
 	return ret;
@@ -160,22 +152,39 @@ Memory::SliceAllocatorPool<TYPE, POOLSIZE, FREEPOOLS>::Free(TYPE* slice)
 	IndexT i;
 	for (i = 0; i < this->pools.Size(); i++)
 	{
-		Pool& pool = this->pools[i];
+		std::tuple<int64_t, Pool*>& elem = this->pools[i];
+		Pool* pool = std::get<1>(elem);
 		
 		// find the pool, the slice pointer must be bigger or equal to element 0, and less than or equal to the last element
-		if (slice >= &pool.elems[0] && slice <= &pools.elems[POOLSIZE - 1])
+		if (slice >= &pool->elems[0] && slice <= &pools->elems[POOLSIZE - 1])
 		{
 			// calculate actual index of pool, the offset should give us how many pointers in we are, divide by size of pointer to get actual index
-			ptrdiff_t diff = slice - &pool.elems[0];
+			ptrdiff_t diff = slice - &pool->elems[0];
 			IndexT idx = diff / sizeof(void*);
-			IndexT item = pool.used.FindIndex(idx);
-			int used = pool.used[item];
-			pool.used.EraseIndex(item);
-			pool.free.Append(used);
-			this->nextFreePool = i;
+			IndexT item = pool->used.FindIndex(idx);
+			int used = pool->used[item];
+			pool->used.EraseIndex(item);
+			pool->free.Append(used);
+			this->freePools.Enqueue(std::make_tuple(i, pool));
 			
 			// if pool is empty, erase it
-			if (pool.numUsed == 0 && FREEPOOLS) this->pools.EraseIndex(i);
+			if (pool->numUsed == 0 && FREEPOOLS)
+			{
+				this->pools.EraseIndex(i);
+
+				IndexT j;
+				for (j = 0; j < this->freePools.Size(); j++)
+				{
+					int64_t id = std::get<0>(this->freePools[j]);
+					if (id == i)
+					{
+						this->freePools.EraseIndex(j);
+						break;
+					}
+				}
+
+				delete pool;
+			}
 		}
 	}
 }
@@ -189,14 +198,31 @@ Memory::SliceAllocatorPool<TYPE, POOLSIZE, FREEPOOLS>::Free(int64_t identifier)
 {
 	IndexT poolId = IndexT((identifier >> 32) & 0x00000000FFFFFFFF);
 	IndexT slice = IndexT((identifier) & 0x00000000FFFFFFFF);
-	Pool& pool = this->pools[poolId];
-	int used = pool.used[slice];
-	pool.used.EraseIndex(slice);
-	pool.free.Append(used);
-	this->nextFreePool = poolId;
+	std::tuple<int64_t, Pool*>& elem = this->pools[poolId];
+	Pool* pool = std::get<1>(elem);
+	int used = pool->used[slice];
+	pool->used.EraseIndex(slice);
+	pool->free.Append(used);
+	this->freePools.Enqueue(std::make_tuple(poolId, pool));
 
 	// if pool is empty, erase it
-	if (pool.numUsed == 0 && FREEPOOLS) this->pools.EraseIndex(poolId);
+	if (pool.numUsed == 0 && FREEPOOLS)
+	{
+		this->pools.EraseIndex(poolId);
+
+		IndexT j;
+		for (j = 0; j < this->freePools.Size(); j++)
+		{
+			int64_t id = std::get<0>(this->freePools[j]);
+			if (id == poolId)
+			{
+				this->freePools.EraseIndex(j);
+				break;
+			}
+		}
+
+		delete pool;
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -206,20 +232,30 @@ template <class TYPE, unsigned int POOLSIZE, bool FREEPOOLS>
 void
 Memory::SliceAllocatorPool<TYPE, POOLSIZE, FREEPOOLS>::Clear()
 {
-	if (FREEPOOLS)	this->pools.Clear();
-	else
+	IndexT i;
+	for (i = 0; i < this->pools.Size(); i++)
 	{
-		IndexT i;
-		for (i = 0; i < this->pools.Size(); i++)
-		{
-			Pool& pool = this->pools[i];
-			pool.free.Clear();
-			pool.used.Clear();
+		delete this->pools[i];
+	}
+	this->pools.Clear();
+	this->freePools.Clear();
+}
 
-			IndexT j;
-			for (j = POOLSIZE-1; j >= 0; j--) pool.free.Append(j);
-		}
-		this->nextFreePool = 0;
+//------------------------------------------------------------------------------
+/**
+*/
+template <class TYPE, unsigned int POOLSIZE, bool FREEPOOLS /*= false*/>
+void
+Memory::SliceAllocatorPool<TYPE, POOLSIZE, FREEPOOLS>::Reset()
+{
+	this->freePools.Clear();
+	IndexT i;
+	for (i = 0; i < this->pools.Size(); i++)
+	{
+		Pool* pool = this->pools[i];
+		pool->Reset();
+
+		this->freePools.Enqueue(std::make_tuple(i, pool));
 	}
 }
 

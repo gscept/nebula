@@ -18,6 +18,7 @@ class View;
 class GraphicsServer : public Core::RefCounted
 {
 	__DeclareClass(GraphicsServer);
+	__DeclareSingleton(GraphicsServer);
 public:
 	/// constructor
 	GraphicsServer();
@@ -40,7 +41,15 @@ public:
 	/// create and register context class with graphics server, this later allows for that context to be used with graphics entities
 	void RegisterGraphicsContext(const Core::Rtti& rtti);
 private:
+	friend class GraphicsEntity;
 
+	/// register graphics entity with server
+	void RegisterEntity(const Ptr<GraphicsEntity>& entity);
+	/// unregister graphics entity with server
+	void UnregisterEntity(const Ptr<GraphicsEntity>& entity);
+
+	Memory::SliceAllocatorPool<Math::matrix44, 256, false> transforms;
+	Util::Dictionary<int64_t, int64_t> entityTransformMap;
 	Ptr<FrameSync::FrameSyncTimer> timer;
 	Util::Array<Ptr<GraphicsContext>> contexts;
 	Ptr<Visibility::VisibilityServer> visServer;

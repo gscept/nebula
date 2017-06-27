@@ -8,7 +8,7 @@
 #include "math/matrix44.h"
 #include "math/bbox.h"
 #include "visibility/observercontext.h"
-#include "visibility/visibilitysystems/visibilityquadtree.h"
+#include "visibility/visibilitysystems/visibilityquadtreesystem.h"
 #include "util/quadtree.h"
 
 namespace Visibility
@@ -21,8 +21,8 @@ using namespace Graphics;
 /**
 */
 void  
-CheckCell(QuadTree<VisibilityQuadtree::CellInfo>::Node* node,
-          VisibilityQuadtree::EntityInfo* entityInfos,
+CheckCell(QuadTree<VisibilityQuadtreeSystem::CellInfo>::Node* node,
+          VisibilityQuadtreeSystem::EntityInfo* entityInfos,
           SizeT numEntityInfos,
           bbox* observerBox, 
           matrix44* observerFrustum, 
@@ -130,9 +130,9 @@ CheckCell(QuadTree<VisibilityQuadtree::CellInfo>::Node* node,
 void
 VisibilityQuadtreeJobFunc(const JobFuncContext& ctx)
 {
-    QuadTree<VisibilityQuadtree::CellInfo>::Node* rootNode = (QuadTree<VisibilityQuadtree::CellInfo>::Node*)ctx.uniforms[0];    
-    VisibilityQuadtree::EntityInfo* entityInfos = (VisibilityQuadtree::EntityInfo*)ctx.uniforms[1];
-    SizeT numEntityInfos = ctx.uniformSizes[1] / sizeof(VisibilityQuadtree::EntityInfo);
+    QuadTree<VisibilityQuadtreeSystem::CellInfo>::Node* rootNode = (QuadTree<VisibilityQuadtreeSystem::CellInfo>::Node*)ctx.uniforms[0];    
+    VisibilityQuadtreeSystem::EntityInfo* entityInfos = (VisibilityQuadtreeSystem::EntityInfo*)ctx.uniforms[1];
+    SizeT numEntityInfos = ctx.uniformSizes[1] / sizeof(VisibilityQuadtreeSystem::EntityInfo);
     // FIXME: array elements ptr points to extra memory address
     Ptr<VisibilityContext>* output = (Ptr<VisibilityContext>*)ctx.outputs[0];
     SizeT numEntitiesVisible = 0;

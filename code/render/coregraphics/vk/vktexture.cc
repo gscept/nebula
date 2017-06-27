@@ -347,7 +347,7 @@ VkTexture::SetupFromVkTexture(VkImage img, VkDeviceMemory mem, VkImageView imgVi
 	this->SetDepth(1);
 	this->SetNumMipLevels(Math::n_max(1, numMips));
 	this->SetPixelFormat(format);
-	this->access = ResourceBase::AccessRead;
+	this->access = GpuResourceBase::AccessRead;
 	this->isRenderTargetAttachment = isAttachment;
 	if (setLoaded)
 	{
@@ -374,7 +374,7 @@ VkTexture::SetupFromVkMultisampleTexture(VkImage img, VkDeviceMemory mem, VkImag
 	this->SetDepth(1);
 	this->SetNumMipLevels(Math::n_max(1, numMips));
 	this->SetPixelFormat(format);
-	this->access = ResourceBase::AccessRead;
+	this->access = GpuResourceBase::AccessRead;
 	this->isRenderTargetAttachment = isAttachment;
 	if (setLoaded)
 	{
@@ -401,7 +401,7 @@ VkTexture::SetupFromVkCubeTexture(VkImage img, VkDeviceMemory mem, VkImageView i
 	this->SetDepth(1);
 	this->SetNumMipLevels(Math::n_max(1, numMips));
 	this->SetPixelFormat(format);
-	this->access = ResourceBase::AccessRead;
+	this->access = GpuResourceBase::AccessRead;
 	this->isRenderTargetAttachment = isAttachment;
 	if (setLoaded)
 	{
@@ -428,7 +428,7 @@ VkTexture::SetupFromVkVolumeTexture(VkImage img, VkDeviceMemory mem, VkImageView
 	this->SetDepth(depth);
 	this->SetNumMipLevels(Math::n_max(1, numMips));
 	this->SetPixelFormat(format);
-	this->access = ResourceBase::AccessRead;
+	this->access = GpuResourceBase::AccessRead;
 	this->isRenderTargetAttachment = isAttachment;
 	if (setLoaded)
 	{
@@ -454,7 +454,7 @@ VkTexture::SetupFromVkBackbuffer(VkImage img, uint32_t width, uint32_t height, u
 	this->SetDepth(depth);
 	this->SetNumMipLevels(1);
 	this->SetPixelFormat(format);
-	this->access = ResourceBase::AccessRead;
+	this->access = GpuResourceBase::AccessRead;
 	this->isRenderTargetAttachment = true;
 	this->SetState(Resource::Loaded);
 }

@@ -18,8 +18,8 @@ using namespace Resources;
 /**
 */
 MemoryMeshLoader::MemoryMeshLoader() :
-    usage(Base::ResourceBase::UsageImmutable),
-    access(Base::ResourceBase::AccessNone)
+    usage(Base::GpuResourceBase::UsageImmutable),
+    access(Base::GpuResourceBase::AccessNone)
 {
     // empty
 }

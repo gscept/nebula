@@ -39,13 +39,13 @@ public:
     /// get raw mode flag
     bool IsRawMode() const;
     /// set the intended resource usage (default is UsageImmutable)
-    void SetUsage(Base::ResourceBase::Usage usage);
+    void SetUsage(Base::GpuResourceBase::Usage usage);
     /// get resource usage
-    Base::ResourceBase::Usage GetUsage() const;
+    Base::GpuResourceBase::Usage GetUsage() const;
     /// set the intended resource access (default is AccessNone)
-    void SetAccess(Base::ResourceBase::Access access);
+    void SetAccess(Base::GpuResourceBase::Access access);
     /// get the resource access
-    Base::ResourceBase::Access GetAccess() const;
+    Base::GpuResourceBase::Access GetAccess() const;
     /// begin reading from the stream, read entire data
     virtual bool Open();
     /// end reading from the stream, destroys loaded objects
@@ -122,8 +122,8 @@ private:
         N2AllComponents = ((1<<N2NumVertexComponents) - 1),
     };
 
-    Base::ResourceBase::Usage usage;
-    Base::ResourceBase::Access access;
+    Base::GpuResourceBase::Usage usage;
+    Base::GpuResourceBase::Access access;
 
     bool rawMode;
     Ptr<Base::VertexBufferBase> vertexBuffer;
@@ -282,7 +282,7 @@ Nvx2StreamReader::GetVertexComponents() const
 /**
 */
 inline void
-Nvx2StreamReader::SetUsage(Base::ResourceBase::Usage usage_)
+Nvx2StreamReader::SetUsage(Base::GpuResourceBase::Usage usage_)
 {
     this->usage = usage_;
 }
@@ -290,7 +290,7 @@ Nvx2StreamReader::SetUsage(Base::ResourceBase::Usage usage_)
 //------------------------------------------------------------------------------
 /**
 */
-inline Base::ResourceBase::Usage
+inline Base::GpuResourceBase::Usage
 Nvx2StreamReader::GetUsage() const
 {
     return this->usage;
@@ -300,7 +300,7 @@ Nvx2StreamReader::GetUsage() const
 /**
 */
 inline void
-Nvx2StreamReader::SetAccess(Base::ResourceBase::Access access_)
+Nvx2StreamReader::SetAccess(Base::GpuResourceBase::Access access_)
 {
     this->access = access_;
 }
@@ -308,7 +308,7 @@ Nvx2StreamReader::SetAccess(Base::ResourceBase::Access access_)
 //------------------------------------------------------------------------------
 /**
 */
-inline Base::ResourceBase::Access
+inline Base::GpuResourceBase::Access
 Nvx2StreamReader::GetAccess() const
 {
     return this->access;

@@ -34,4 +34,5 @@ Observer::OnVisibilityDatabaseChanged()
 
 }
 
+
 } // namespace Visibility

@@ -1,7 +1,8 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	The transform node contains just a hierarchical transform
+	A primitive node contains a mesh resource and a primitive group id.
+
 	
 	(C) 2017 Individual contributors, see AUTHORS file
 */
@@ -9,14 +10,14 @@
 #include "modelnode.h"
 namespace Models
 {
-class TransformNode : public ModelNode
+class PrimitiveNode : public ModelNode
 {
-	__DeclareClass(TransformNode);
+	__DeclareClass(PrimitiveNode);
 public:
 	/// constructor
-	TransformNode();
+	PrimitiveNode();
 	/// destructor
-	virtual ~TransformNode();
+	virtual ~PrimitiveNode();
 private:
 };
 } // namespace Models

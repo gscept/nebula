@@ -1,18 +1,18 @@
 //------------------------------------------------------------------------------
-// model.cc
+// primitivenode.cc
 // (C) 2017 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
-#include "model.h"
+#include "primitivenode.h"
 
 namespace Models
 {
 
-__ImplementClass(Models::Model, 'MODE', Resources::Resource);
+__ImplementClass(Models::PrimitiveNode, 'PRNO', Models::ModelNode);
 //------------------------------------------------------------------------------
 /**
 */
-Model::Model()
+PrimitiveNode::PrimitiveNode()
 {
 	// empty
 }
@@ -20,7 +20,7 @@ Model::Model()
 //------------------------------------------------------------------------------
 /**
 */
-Model::~Model()
+PrimitiveNode::~PrimitiveNode()
 {
 	// empty
 }

@@ -1,18 +1,18 @@
 //------------------------------------------------------------------------------
-// model.cc
+// shaderstatenode.cc
 // (C) 2017 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
-#include "model.h"
+#include "shaderstatenode.h"
 
 namespace Models
 {
 
-__ImplementClass(Models::Model, 'MODE', Resources::Resource);
+__ImplementClass(Models::ShaderStateNode, 'SHNO', Models::ModelNode);
 //------------------------------------------------------------------------------
 /**
 */
-Model::Model()
+ShaderStateNode::ShaderStateNode()
 {
 	// empty
 }
@@ -20,7 +20,7 @@ Model::Model()
 //------------------------------------------------------------------------------
 /**
 */
-Model::~Model()
+ShaderStateNode::~ShaderStateNode()
 {
 	// empty
 }

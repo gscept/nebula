@@ -8,7 +8,7 @@
 
 namespace Base
 {
-__ImplementClass(Base::VertexBufferBase, 'VXBB', Base::ResourceBase);
+__ImplementClass(Base::VertexBufferBase, 'VXBB', Base::GpuResourceBase);
 
 //------------------------------------------------------------------------------
 /**
@@ -38,7 +38,7 @@ VertexBufferBase::Unload()
 		this->vertexLayout->Discard();
 		this->vertexLayout = 0;
 	}
-    ResourceBase::Unload();
+    GpuResourceBase::Unload();
 }
 
 //------------------------------------------------------------------------------

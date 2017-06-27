@@ -25,6 +25,8 @@ public:
 	FixedPool();
 	/// constructor with fixed size
 	FixedPool(SizeT s, std::function<void(TYPE& val, IndexT idx)> setupFunc);
+	/// destructor
+	~FixedPool();
 
 	/// assignment operator
 	void operator=(const FixedArray<TYPE>& rhs);
@@ -78,6 +80,18 @@ Util::FixedPool<TYPE>::FixedPool() :
 	size(0)
 {
 	// empty
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+inline 
+Util::FixedPool<TYPE>::~FixedPool()
+{
+	this->freeValues.Clear();
+	this->usedValues.Clear();
+	this->setupFunc = nullptr;
 }
 
 //------------------------------------------------------------------------------

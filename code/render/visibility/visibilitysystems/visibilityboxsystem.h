@@ -47,7 +47,7 @@ public:
     virtual void EndAttachVisibilityContainer();  
 
     /// attach visibility job to port
-    virtual Ptr<Jobs::Job> CreateVisibilityJob(IndexT frameId, const Ptr<ObserverContext>& observer, Util::FixedArray<Ptr<VisibilityContext> >& outEntitiyArray, uint& entityMask);
+    virtual Ptr<Jobs::Job> CreateVisibilityJob(IndexT frameId, const Ptr<Observer>& observer, Util::FixedArray<Ptr<VisibilityContext> >& outEntitiyArray, uint& entityMask);
              
     /// render debug visualizations
     virtual void OnRenderDebug(); 
@@ -59,13 +59,13 @@ private:
     SizeT FindOverlappingVisibilityBoxes(const Math::bbox& boundingBox, Util::Array<Ptr<VisibilityBox>>& outBoxes) const;
 
     /// update visibility status of VisibilityBoxes
-    void UpdateVisibilityBoxes(const Ptr<ObserverContext>& observer);
+    void UpdateVisibilityBoxes(const Ptr<Observer>& observer);
     /// update the neighbours of a given visibility box
     void UpdateNeighbours(const Ptr<VisibilityBox>& visBox); 
     /// clear all visibility boxes (cannot remove one by one)
     void DiscardVisibilityBoxes();   
     /// generate visibility links
-    void CheckVisibility(const Ptr<ObserverContext>& observer, Util::Array<Ptr<VisibilityContext> >& outEntitiyArray, uint entityMask);
+    void CheckVisibility(const Ptr<Observer>& observer, Util::Array<Ptr<VisibilityContext> >& outEntitiyArray, uint entityMask);
     /// collect boxes for given visiblity contexts
     void CollectFlattenBoxMapping(IndexT bufferIndex);
                            
@@ -89,7 +89,7 @@ private:
 inline uint 
 VisibilityBoxSystem::GetObserverBitMask() const
 {
-    return (1 << Graphics::GraphicsEntityType::Camera);
+    return (1 << ObserverMask::Observers);
 }
 } // namespace Visibility
 //------------------------------------------------------------------------------

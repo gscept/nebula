@@ -364,9 +364,9 @@ Ptr<TYPE>::downcast() const
 #if (NEBULA3_DEBUG == 1)
     // if DERIVED is not a derived class of TYPE, compiler complains here
     // compile-time inheritance-test
-    NEBULA3_UNUSED_ATTR const DERIVED *derived = static_cast<const DERIVED*>(this->ptr);
+	static_assert(std::is_base_of<TYPE, DERIVED>::value, "Incompatible types");
 #endif
-	static_assert(std::is_base_of<DERIVED, TYPE>::value, "Incompatible types");
+	
     return *reinterpret_cast<const Ptr<DERIVED>*>(this);
 }
 
@@ -380,9 +380,9 @@ Ptr<TYPE>::upcast() const
 #if (NEBULA3_DEBUG == 1)
     // if BASE is not a base-class of TYPE, compiler complains here
     // compile-time inheritance-test
-    NEBULA3_UNUSED_ATTR const BASE *base = this->ptr;
+	static_assert(std::is_base_of<BASE, TYPE>::value, "Incompatible types");
 #endif
-	static_assert(std::is_base_of<TYPE, BASE>::value, "Incompatible types");
+	
     return *reinterpret_cast<const Ptr<BASE>*>(this);
 }
 

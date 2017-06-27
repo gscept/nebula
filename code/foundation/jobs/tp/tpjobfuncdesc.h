@@ -10,6 +10,7 @@
 */
 #include "jobs/base/jobfuncdescbase.h"
 #include "jobs/jobfunccontext.h"
+#include <functional>
 
 //------------------------------------------------------------------------------
 namespace Jobs
@@ -22,13 +23,15 @@ public:
 
     /// default constructor
     TPJobFuncDesc();
-    /// constructor
+    /// constructor from function pointer
     TPJobFuncDesc(FuncPtr funcPtr);
+	/// constructor from lambda function
+	TPJobFuncDesc(const std::function<void(const JobFuncContext&)>& func);
     /// get function pointer
-    FuncPtr GetFunctionPointer() const;
+    const std::function<void(const JobFuncContext&)>& GetFunctionPointer() const;
 
 private:
-    FuncPtr funcPtr;
+	std::function<void(const JobFuncContext&)> func;
 };
 
 //------------------------------------------------------------------------------
@@ -36,7 +39,7 @@ private:
 */
 inline
 TPJobFuncDesc::TPJobFuncDesc() :
-    funcPtr(0)
+	func(nullptr)
 {
     // empty
 }
@@ -46,7 +49,7 @@ TPJobFuncDesc::TPJobFuncDesc() :
 */
 inline
 TPJobFuncDesc::TPJobFuncDesc(FuncPtr funcPtr_) :
-    funcPtr(funcPtr_)
+	func(funcPtr_)
 {
     // empty
 }
@@ -54,10 +57,20 @@ TPJobFuncDesc::TPJobFuncDesc(FuncPtr funcPtr_) :
 //------------------------------------------------------------------------------
 /**
 */
-inline TPJobFuncDesc::FuncPtr
+inline 
+TPJobFuncDesc::TPJobFuncDesc(const std::function<void(const JobFuncContext&)>& func) :
+	func(func)
+{
+	// empty
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const std::function<void(const JobFuncContext&)>&
 TPJobFuncDesc::GetFunctionPointer() const
 {
-    return this->funcPtr;
+    return this->func;
 }
 
 } // namespace Jobs

@@ -11,6 +11,8 @@
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
+#include "memory/sliceallocatorpool.h"
+
 namespace Graphics
 {
 class GraphicsContext;
@@ -23,13 +25,13 @@ public:
 	/// destructor
 	virtual ~GraphicsEntity();
 
-
 	int64_t id;
-
+	Math::matrix44* transform;
 private:
+	friend class GraphicsServer;
 
 	static int64_t UniqueIdCounter;
 	Util::Array<Ptr<GraphicsContext>> contexts;
-	Math::matrix44 transform;
+	
 };
 } // namespace Graphics

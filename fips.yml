@@ -12,4 +12,6 @@ exports:
         - extlibs/mixed
     modules:
         foundation: code/foundation
+        render: code/render
+        resource: code/resource
         corelibs: extlibs/mixed

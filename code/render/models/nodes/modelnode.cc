@@ -1,18 +1,18 @@
 //------------------------------------------------------------------------------
-// model.cc
+// modelnode.cc
 // (C) 2017 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
-#include "model.h"
+#include "modelnode.h"
 
 namespace Models
 {
 
-__ImplementClass(Models::Model, 'MODE', Resources::Resource);
+__ImplementClass(Models::ModelNode, 'MONO', Core::RefCounted);
 //------------------------------------------------------------------------------
 /**
 */
-Model::Model()
+ModelNode::ModelNode()
 {
 	// empty
 }
@@ -20,7 +20,7 @@ Model::Model()
 //------------------------------------------------------------------------------
 /**
 */
-Model::~Model()
+ModelNode::~ModelNode()
 {
 	// empty
 }

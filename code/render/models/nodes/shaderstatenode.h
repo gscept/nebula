@@ -1,7 +1,8 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	The transform node contains just a hierarchical transform
+	The shader state node wraps the shader associated with a certain primitive node,
+	or group of primitive nodes.
 	
 	(C) 2017 Individual contributors, see AUTHORS file
 */
@@ -9,14 +10,14 @@
 #include "modelnode.h"
 namespace Models
 {
-class TransformNode : public ModelNode
+class ShaderStateNode : public ModelNode
 {
-	__DeclareClass(TransformNode);
+	__DeclareClass(ShaderStateNode);
 public:
 	/// constructor
-	TransformNode();
+	ShaderStateNode();
 	/// destructor
-	virtual ~TransformNode();
+	virtual ~ShaderStateNode();
 private:
 };
 } // namespace Models

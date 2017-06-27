@@ -6,11 +6,11 @@
 	(C) 2016 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "coregraphics/base/resourcebase.h"
+#include "coregraphics/base/gpuresourcebase.h"
 #include "coregraphics/bufferlock.h"
 namespace Base
 {
-class BufferBase : public ResourceBase
+class BufferBase : public GpuResourceBase
 {
 	__DeclareClass(BufferBase);
 public:

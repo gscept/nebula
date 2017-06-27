@@ -4,7 +4,7 @@
 
 fips_begin_module(render)
 	fips_vs_warning_level(3)
-	fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../foundation)
+	fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../foundation ${CMAKE_CURRENT_SOURCE_DIR}/../render)
 		fips_files(stdneb.h stdneb.cc)
 		fips_dir(algorithm)
 			fips_files(
@@ -103,8 +103,8 @@ fips_begin_module(render)
 				renderdevicebase.h
 				rendertexturebase.cc
 				rendertexturebase.h
-				resourcebase.cc
-				resourcebase.h
+				gpuresourcebase.cc
+				gpuresourcebase.h
 				shaderbase.cc
 				shaderbase.h
 				shaderreadwritebufferbase.cc
@@ -646,50 +646,27 @@ fips_begin_module(render)
 				surfacename.cc
 				surfacename.h
 			)
+			
 		fips_dir(models/nodes GROUP "models/nodes")
 			fips_files(
-				animkey.h
-				animkeyarray.h
-				animlooptype.h
-				lightnode.cc
-				lightnode.h
-				meshnode.cc
-				meshnode.h
-				meshnodeinstance.cc
-				meshnodeinstance.h
-				shapenode.cc
-				shapenode.h
-				shapenodeinstance.cc
-				shapenodeinstance.h
-				statenode.cc
-				statenode.h
-				statenodeinstance.cc
-				statenodeinstance.h
+				modelnode.cc
+				modelnode.h
+				primitivenode.cc
+				primitivenode.h
+				shaderstatenode.cc
+				shaderstatenode.h
 				transformnode.cc
 				transformnode.h
-				transformnodeinstance.cc
-				transformnodeinstance.h
 			)
 		fips_dir(models)
 			fips_files(
 				framebatchtype.cc
-				managedmodel.cc
-				managedmodel.h
 				model.cc
 				model.h
-				modelinstance.cc
-				modelinstance.h
-				modelnode.cc
-				modelnode.h
-				modelnodeinstance.cc
-				modelnodeinstance.h
+				modelloader.cc
+				modelloader.h
 				modelserver.cc
 				modelserver.h
-				streammodelloader.cc
-				streammodelloader.h
-				visresolvecontainer.h
-				visresolver.cc
-				visresolver.h
 			)
 		fips_dir(particles/base GROUP "particles/base")
 			fips_files(
@@ -764,18 +741,6 @@ fips_begin_module(render)
 				nodelookuputil.cc
 				nodelookuputil.h
 			)
-		fips_dir(resource)
-			fips_files(
-				resource.cc
-				resource.h
-				resourcecontainer.cc
-				resourcecontainer.h
-				resourceid.h
-				resourceloader.cc
-				resourceloader.h
-				resourcemanager.cc
-				resourcemanager.h
-			)
 		fips_dir(skinning)
 		
 		fips_dir(visibility/visibilitysystems GROUP "visibility/visibilitysystems")
@@ -784,14 +749,16 @@ fips_begin_module(render)
 				visibilitybox.h
 				visibilityboxsystem.cc
 				visibilityboxsystem.h
+				visibilitybruteforcesystem.cc
+				visibilitybruteforcesystem.h
 				visibilitycell.cc
 				visibilitycell.h
 				visibilitycluster.cc
 				visibilitycluster.h
 				visibilityclustersystem.cc
 				visibilityclustersystem.h
-				visibilityquadtree.cc
-				visibilityquadtree.h
+				visibilityquadtreesystem.cc
+				visibilityquadtreesystem.h
 				visibilitysystembase.cc
 				visibilitysystembase.h
 			)
@@ -799,6 +766,7 @@ fips_begin_module(render)
 			fips_files(
 				observer.cc
 				observer.h
+				visibility.h
 				visibilitycontainer.cc
 				visibilitycontainer.h
 				visibilitycontext.cc

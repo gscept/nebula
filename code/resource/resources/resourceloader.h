@@ -31,6 +31,8 @@
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
 #include "util/stringatom.h"
+#include "io/stream.h"
+#include "jobs/jobport.h"
 #include "resourcecontainer.h"
 #include "resource.h"
 #include <tuple>
@@ -49,9 +51,9 @@ public:
 	virtual ~ResourceLoader();
 
 	/// setup resource loader, initiates the placeholder and error resources if valid
-	void Setup();
-	/// update the resource loader, this is done every frame
-	void Update(IndexT frameIndex);
+	virtual void Setup();
+	/// discard resource loader
+	virtual void Discard();
 
 protected:
 	friend class ResourceManager;
@@ -60,7 +62,8 @@ protected:
 	{
 		Success,		/// resource is properly loaded
 		Failed,			/// resource loading failed
-		Delay			/// resource is loaded at some later point
+		Delay,			/// resource is loaded at some later point
+		Threaded		/// resource is loaded from a thread, which is like Delay, but is no longer pending
 	};
 
 	struct _PendingResource
@@ -77,10 +80,16 @@ protected:
 	template <class RESOURCE_TYPE> void DiscardContainer(const Ptr<ResourceContainer<RESOURCE_TYPE>>& res);
 	/// discard all resources associated with a tag
 	void DiscardByTag(const Util::StringAtom& tag);
-	/// perform actual loading of resource, this function is immediate
-	virtual LoadStatus Load(const Ptr<Resource>& res);
+	/// start loading
+	LoadStatus PrepareLoad(_PendingResource& res);
+
+	/// perform actual load, override in subclass
+	LoadStatus Load(const Ptr<Resource>& res, const Ptr<IO::Stream>& stream);
 	/// unload resource
 	virtual void Unload(const Ptr<Resource>& res);
+
+	/// update the resource loader, this is done every frame
+	void Update(IndexT frameIndex);
 
 	/// these types need to be properly initiated in a subclass Setup function
 	Util::StringAtom placeholderResourceId;
@@ -89,6 +98,9 @@ protected:
 
 	Ptr<Resource> placeholderResource;
 	Ptr<Resource> errorResource;
+
+	bool async;
+	Ptr<Jobs::JobPort> jobport;
 
 	Util::Dictionary<Util::StringAtom, _PendingResource> pending;
 	Util::Dictionary<Util::StringAtom, Ptr<Resource>> loaded;
@@ -103,6 +115,7 @@ template <class RESOURCE_TYPE>
 inline Ptr<ResourceContainer<RESOURCE_TYPE>>
 Resource::ResourceLoader::CreateContainer(const ResourceId& res, const Util::StringAtom& tag, std::function<void(const Ptr<Resource>&)> success, std::function<void(const Ptr<Resource>&)> failed)
 {
+	n_assert(this->resourceClass != RefCounted::RTTI);
 	static_assert(std::is_base_of(Resource, RESOURCE_TYPE));
 	static_assert(resourceClass->IsDerivedFrom(RESOURCE_TYPE::RTTI));
 	Ptr<ResourceContainer<RESOURCE_TYPE>> container = ResourceContainer<RESOURCE_TYPE>::Create();
@@ -112,11 +125,14 @@ Resource::ResourceLoader::CreateContainer(const ResourceId& res, const Util::Str
 	if (i != InvalidIndex)
 	{
 		container->resource = this->loaded.ValueAtIndex(i);
+
+		// run success callback immediately
+		success(container->resource);
 		this->usage.ValueAtIndex(i)++;
 	}
 	else
 	{
-		container->resource = Resource::Create();
+		container->resource = this->resourceClass.Create();
 		container->resource->resourceId = res;
 		container->resource->tag = tag;
 		this->pending.Add(res, { container->resource, success, failed, tag });
