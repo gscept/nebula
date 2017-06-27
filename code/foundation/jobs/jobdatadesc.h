@@ -15,6 +15,8 @@
 */
 
 //------------------------------------------------------------------------------
+#include <tuple>
+#include <initializer_list>
 namespace Jobs
 {
 class JobDataDesc
@@ -24,6 +26,10 @@ public:
 
     /// default constructor
     JobDataDesc();
+	/// construct from nullptr
+	JobDataDesc(nullptr_t);
+	/// constructor with array of pointers, but may not exceed MaxNumBuffers
+	JobDataDesc(const std::initializer_list<std::tuple<void*, SizeT, SizeT>> data);
     /// constructor with 1 data buffer
     JobDataDesc(void* ptr, SizeT bufSize, SizeT sliceSize);
     /// constructor with 2 data buffers
@@ -66,6 +72,39 @@ JobDataDesc::JobDataDesc() :
         this->bufferSize[i] = 0;
         this->sliceSize[i] = 0;
     }
+}
+//------------------------------------------------------------------------------
+/**
+*/
+inline 
+JobDataDesc::JobDataDesc(nullptr_t)
+{
+	IndexT i;
+	for (i = 0; i < MaxNumBuffers; i++)
+	{
+		this->ptr[i] = 0;
+		this->bufferSize[i] = 0;
+		this->sliceSize[i] = 0;
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline
+JobDataDesc::JobDataDesc(const std::initializer_list<std::tuple<void*, SizeT, SizeT>> data)
+{
+	n_assert(data.size() <= MaxNumBuffers, "Too many data points, refer to MaxNumBuffers");
+	this->numBuffers = data.size();
+
+	IndexT i;
+	for (i = 0; i < data.size(); i++)
+	{
+		const std::tuple<void*, SizeT, SizeT>& d = data.begin()[i];
+		this->ptr[i] = std::get<0>(d);
+		this->bufferSize[i] = std::get<1>(d);
+		this->sliceSize[i] = std::get<2>(d);
+	}
 }
 
 //------------------------------------------------------------------------------

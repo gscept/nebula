@@ -42,6 +42,8 @@ public:
     void Clear();
     /// return true if queue contains element
     bool Contains(const TYPE& e) const;
+	/// erase element at index
+	void EraseIndex(const IndexT i);
 
     /// add element to the back of the queue
     void Enqueue(const TYPE& e);
@@ -72,12 +74,11 @@ Queue<TYPE>::Queue(const Queue<TYPE>& rhs)
     this->queueArray = rhs.queueArray;
 }
 
-
 //------------------------------------------------------------------------------
 /**
 */
 template<class TYPE>
-Util::Queue<TYPE>::Queue( const Array<TYPE>& rhs )
+Util::Queue<TYPE>::Queue(const Array<TYPE>& rhs)
 {
 	this->queueArray = rhs;
 }
@@ -130,6 +131,17 @@ bool
 Queue<TYPE>::Contains(const TYPE& e) const
 {
     return (InvalidIndex != this->queueArray.FindIndex(e));
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+void
+Util::Queue<TYPE>::EraseIndex(const IndexT i)
+{
+	this->queueArray.EraseIndex(i);
 }
 
 //------------------------------------------------------------------------------

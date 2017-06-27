@@ -21,13 +21,13 @@ public:
 	virtual ~VkStreamMeshLoader();
 
 	/// set the intended resource usage (default is UsageImmutable)
-	void SetUsage(Base::ResourceBase::Usage usage);
+	void SetUsage(Base::GpuResourceBase::Usage usage);
 	/// get resource usage
-	Base::ResourceBase::Usage GetUsage() const;
+	Base::GpuResourceBase::Usage GetUsage() const;
 	/// set the intended resource access (default is AccessNone)
-	void SetAccess(Base::ResourceBase::Access access);
+	void SetAccess(Base::GpuResourceBase::Access access);
 	/// get the resource access
-	Base::ResourceBase::Access GetAccess() const;
+	Base::GpuResourceBase::Access GetAccess() const;
 
 private:
 	/// setup mesh from generic stream, branches to specialized loader methods
@@ -42,8 +42,8 @@ private:
 	bool SetupMeshFromN3d3(const Ptr<IO::Stream>& stream);
 
 protected:
-	Base::ResourceBase::Usage usage;
-	Base::ResourceBase::Access access;
+	Base::GpuResourceBase::Usage usage;
+	Base::GpuResourceBase::Access access;
 };
 
 
@@ -51,7 +51,7 @@ protected:
 /**
 */
 inline void
-VkStreamMeshLoader::SetUsage(Base::ResourceBase::Usage usage_)
+VkStreamMeshLoader::SetUsage(Base::GpuResourceBase::Usage usage_)
 {
 	this->usage = usage_;
 }
@@ -59,7 +59,7 @@ VkStreamMeshLoader::SetUsage(Base::ResourceBase::Usage usage_)
 //------------------------------------------------------------------------------
 /**
 */
-inline Base::ResourceBase::Usage
+inline Base::GpuResourceBase::Usage
 VkStreamMeshLoader::GetUsage() const
 {
 	return this->usage;
@@ -69,7 +69,7 @@ VkStreamMeshLoader::GetUsage() const
 /**
 */
 inline void
-VkStreamMeshLoader::SetAccess(Base::ResourceBase::Access access_)
+VkStreamMeshLoader::SetAccess(Base::GpuResourceBase::Access access_)
 {
 	this->access = access_;
 }
@@ -77,7 +77,7 @@ VkStreamMeshLoader::SetAccess(Base::ResourceBase::Access access_)
 //------------------------------------------------------------------------------
 /**
 */
-inline Base::ResourceBase::Access
+inline Base::GpuResourceBase::Access
 VkStreamMeshLoader::GetAccess() const
 {
 	return this->access;

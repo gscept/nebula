@@ -124,8 +124,8 @@ protected:
 	Util::Array<std::tuple<Access, Access>> readWriteBuffersAccess;
 };
 
-__ImplementEnumOperators(Base::BarrierBase::Dependency);
-__ImplementEnumOperators(Base::BarrierBase::Access);
+__ImplementEnumBitOperators(Base::BarrierBase::Dependency);
+__ImplementEnumBitOperators(Base::BarrierBase::Access);
 //------------------------------------------------------------------------------
 /**
 */

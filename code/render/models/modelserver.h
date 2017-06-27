@@ -1,99 +1,50 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @class Models::ModelServer
-  
-    The ModelServer loads and creates shared Model objects.
-    
-    (C) 2007 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+	The model server keeps track of all currently registered model resources, 
+	and their bindings with shaders
+	
+	(C) 2017 Individual contributors, see AUTHORS file
 */
+//------------------------------------------------------------------------------
 #include "core/refcounted.h"
 #include "core/singleton.h"
-#include "models/model.h"
-#include "resources/resourceid.h"
-#include "models/managedmodel.h"
-#include "resources/resourcemapper.h"
-#include "materials/materialtype.h"
-#include "io/uri.h"
-#include "models/visresolver.h"
+#include "materials/surfaceinstance.h"
+#include "memory/sliceallocatorpool.h"
 
-//------------------------------------------------------------------------------
 namespace Models
 {
 class ModelServer : public Core::RefCounted
 {
-    __DeclareClass(ModelServer);
-    __DeclareSingleton(ModelServer);
+	__DeclareClass(ModelServer);
+	__DeclareSingleton(ModelServer);
 public:
-    /// constructor
-    ModelServer();
-    /// destructor
-    virtual ~ModelServer();
+	/// constructor
+	ModelServer();
+	/// destructor
+	virtual ~ModelServer();
 
-    /// set resource mapper for creating models
-    void SetModelResourceMapper(const Ptr<Resources::ResourceMapper>& mapper);
-    /// get resource mapper
-    const Ptr<Resources::ResourceMapper>& GetModelResourceMapper() const;
+	typedef IndexT NodeInstanceId;
+	struct NodeInstance
+	{
+		NodeInstanceId id;
+		IndexT primitiveGroupId;
+		Ptr<Materials::SurfaceInstance> surface; 
+	};
 
-    /// open the model server
-    void Open();
-    /// close the model server
-    void Close();
-    /// return true if model server is open
-    bool IsOpen() const;
-
-    /// check if a managed model exists
-    bool HasManagedModel(const Resources::ResourceId& resId) const;
-    /// load a managed Model from URI
-    Ptr<ManagedModel> LoadManagedModel(const Resources::ResourceId& resId, bool sync = false);
-    /// lookup an existing model
-    const Ptr<ManagedModel>& LookupManagedModel(const Resources::ResourceId& resId) const;
-    /// discard a managed model
-    void DiscardManagedModel(const Ptr<ManagedModel>& managedModel) const;
-
-    /// get new model node instance index
-    IndexT ConsumeNewModelNodeInstanceIndex();
-    /// reset frame model node instance index 
-    void ResetModelNodeInstanceIndex();
+	/// allocate a new (empty) node instance
+	NodeInstance* CreateNodeInstance();
 
 private:
-    friend class Model;
-    friend class BatchGroup;
 
-    Ptr<VisResolver> visResolver;
-    Ptr<Resources::ResourceMapper> modelResourceMapper;
-    bool isOpen;
-    IndexT curModelNodeInstanceIndex;
-    SizeT maxModelNodeInstanceIndex;
+	/// the database is as such, surface name -> (mesh resource id -> primitive group)
+	using SurfaceMeshInstanceDatabase = Util::Dictionary<
+		Materials::SurfaceName::Code, Util::Dictionary<
+		Resources::ResourceId, Util::Dictionary<
+		NodeInstanceId, NodeInstance>
+		>>;
+
+	Memory::SliceAllocatorPool<NodeInstance, 256, false> nodeInstancePool;
+	SurfaceMeshInstanceDatabase database;
 };
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline bool
-ModelServer::IsOpen() const
-{
-    return this->isOpen;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-ModelServer::SetModelResourceMapper(const Ptr<Resources::ResourceMapper>& mapper)
-{
-    this->modelResourceMapper = mapper;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const Ptr<Resources::ResourceMapper>&
-ModelServer::GetModelResourceMapper() const
-{
-    return this->modelResourceMapper;
-}
-
 } // namespace Models
-//------------------------------------------------------------------------------

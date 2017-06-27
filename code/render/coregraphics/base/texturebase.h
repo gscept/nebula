@@ -20,7 +20,7 @@ namespace CoreGraphics
 
 namespace Base
 {
-class TextureBase : public Base::ResourceBase
+class TextureBase : public Base::GpuResourceBase
 {
     __DeclareClass(TextureBase);
 public:

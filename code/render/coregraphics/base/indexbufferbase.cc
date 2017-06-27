@@ -8,7 +8,7 @@
 
 namespace Base
 {
-__ImplementClass(Base::IndexBufferBase, 'IXBB', Base::ResourceBase);
+__ImplementClass(Base::IndexBufferBase, 'IXBB', Base::GpuResourceBase);
 
 using namespace CoreGraphics;
 

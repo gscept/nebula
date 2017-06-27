@@ -27,8 +27,8 @@
 #include "core/refcounted.h"
 #include "math/bbox.h"
 #include "visibility/visibilitycontext.h"
-#include "visibility/observercontext.h"
-#include "graphics/graphicsentitytype.h"
+#include "visibility/observer.h"
+#include "visibility/visibility.h"
 
 //------------------------------------------------------------------------------
 namespace Visibility
@@ -69,16 +69,16 @@ public:
     /// get all entities
     const Util::Array<Ptr<VisibilityContext> >& GetEntityContexts() const;
     /// get entities by entity type
-    const Util::Array<Ptr<VisibilityContext> >& GetEntitiesByType(Graphics::GraphicsEntityType::Code type) const;
+    const Util::Array<Ptr<VisibilityContext> >& GetEntitiesByType(ObserverMask type) const;
     /// get the number of entities in hierarchy
     SizeT GetNumEntitiesInHierarchy() const;
     /// get the number of entities in hierarchy by type
-    SizeT GetNumEntitiesInHierarchyByType(Graphics::GraphicsEntityType::Code t) const;
+    SizeT GetNumEntitiesInHierarchyByType(ObserverMask t) const;
     /// get the number of entities in hierarchy by entity type mask
     SizeT GetNumEntitiesInHierarchyByTypeMask(uint entityTypeMask) const;
 
     /// recursively collect all visible context
-    void CollectVisibleContexts(const Ptr<ObserverContext>& observerContext, Util::Array<Ptr<VisibilityContext> >& visibilityContexts, uint entityTypeMask);
+    void CollectVisibleContexts(const Ptr<Observer>& observerContext, Util::Array<Ptr<VisibilityContext> >& visibilityContexts, uint entityTypeMask);
     /// starting from this cell, find smallest containment cell in cell tree
     Ptr<VisibilityCell> FindEntityContainmentCell(const Ptr<VisibilityContext>& entity);
 
@@ -86,17 +86,17 @@ private:
     friend class VisibilityContext;
          
     /// create links between visible entities
-    void RecurseCollectVisibleContexts(const Ptr<ObserverContext>& observerContext, Util::Array<Ptr<VisibilityContext> >& visibilityContexts, uint entityTypeMask, Math::ClipStatus::Type clipStatus);
+    void RecurseCollectVisibleContexts(const Ptr<Observer>& observerContext, Util::Array<Ptr<VisibilityContext> >& visibilityContexts, uint entityTypeMask, Math::ClipStatus::Type clipStatus);
     /// increment/decrement the numEntitiesInHierarchy counter (including in all parent cells)
-    void UpdateNumEntitiesInHierarchy(Graphics::GraphicsEntityType::Code type, int num);
+    void UpdateNumEntitiesInHierarchy(ObserverMask type, int num);
 
     Ptr<VisibilityCell> parentCell;
     SizeT numEntitiesInHierarchyAllTypes;
-    SizeT numEntitiesInHierarchyByType[Graphics::GraphicsEntityType::NumTypes];
+    SizeT numEntitiesInHierarchyByType[ObserverMask::NumTypes];
     Math::bbox boundingBox;
     Util::Array<Ptr<VisibilityCell> > childCells;
     Util::Array<Ptr<VisibilityContext> > entities;
-    Util::Array<Ptr<VisibilityContext> > entitiesByType[Graphics::GraphicsEntityType::NumTypes];
+    Util::Array<Ptr<VisibilityContext> > entitiesByType[ObserverMask::NumTypes];
 };
 
 //------------------------------------------------------------------------------
@@ -148,9 +148,9 @@ VisibilityCell::GetEntityContexts() const
 /**
 */
 inline const Util::Array<Ptr<VisibilityContext> >&
-VisibilityCell::GetEntitiesByType(Graphics::GraphicsEntityType::Code type) const
+VisibilityCell::GetEntitiesByType(ObserverMask type) const
 {
-    n_assert((type >= 0) && (type < Graphics::GraphicsEntityType::NumTypes));
+    n_assert((type >= 0) && (type < ObserverMask::NumTypes));
     return this->entitiesByType[type];
 }
 
@@ -167,7 +167,7 @@ VisibilityCell::GetNumEntitiesInHierarchy() const
 /**
 */
 inline SizeT
-VisibilityCell::GetNumEntitiesInHierarchyByType(Graphics::GraphicsEntityType::Code type) const
+VisibilityCell::GetNumEntitiesInHierarchyByType(ObserverMask type) const
 {
     return this->numEntitiesInHierarchyByType[type];
 }
@@ -180,7 +180,7 @@ VisibilityCell::GetNumEntitiesInHierarchyByTypeMask(uint entityTypeMask) const
 {
     SizeT numEntities = 0;
     IndexT entityType;
-    for (entityType = 0; entityType < Graphics::GraphicsEntityType::NumTypes; entityType++)
+    for (entityType = 0; entityType < ObserverMask::NumTypes; entityType++)
     {
         if (0 != (entityTypeMask & (1<<entityType)))
         {

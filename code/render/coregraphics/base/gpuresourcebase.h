@@ -1,9 +1,9 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @class Base::ResourceBase
+    @class Base::GpuResourceBase
     
-    Base class for all CoreGraphics resource classes.
+	Base class for all GPU side resources.
 
     (C) 2007 Radon Labs GmbH
     (C) 2013-2016 Individual contributors, see AUTHORS file
@@ -13,9 +13,9 @@
 //------------------------------------------------------------------------------
 namespace Base
 {
-class ResourceBase : public Resources::Resource
+class GpuResourceBase : public Resources::Resource
 {
-    __DeclareClass(ResourceBase);
+    __DeclareClass(GpuResourceBase);
 public:
     /// resource usage flags
     enum Usage
@@ -53,9 +53,9 @@ public:
 	};
 
     /// constructor
-    ResourceBase();
+    GpuResourceBase();
     /// destructor
-    virtual ~ResourceBase();
+    virtual ~GpuResourceBase();
 
     /// set resource usage type
     void SetUsage(Usage usage);
@@ -82,7 +82,7 @@ protected:
 /**
 */
 inline void
-ResourceBase::SetUsage(Usage u)
+GpuResourceBase::SetUsage(Usage u)
 {
     this->usage = u;
 }
@@ -90,8 +90,8 @@ ResourceBase::SetUsage(Usage u)
 //------------------------------------------------------------------------------
 /**
 */
-inline ResourceBase::Usage
-ResourceBase::GetUsage() const
+inline GpuResourceBase::Usage
+GpuResourceBase::GetUsage() const
 {
     return this->usage;
 }
@@ -100,7 +100,7 @@ ResourceBase::GetUsage() const
 /**
 */
 inline void
-ResourceBase::SetAccess(Access a)
+GpuResourceBase::SetAccess(Access a)
 {
     this->access = a;
 }
@@ -108,8 +108,8 @@ ResourceBase::SetAccess(Access a)
 //------------------------------------------------------------------------------
 /**
 */
-inline ResourceBase::Access
-ResourceBase::GetAccess() const
+inline GpuResourceBase::Access
+GpuResourceBase::GetAccess() const
 {
     return this->access;
 }
@@ -118,7 +118,7 @@ ResourceBase::GetAccess() const
 /**
 */
 inline void
-ResourceBase::SetSyncing(Syncing s)
+GpuResourceBase::SetSyncing(Syncing s)
 {
 	this->syncing = s;
 }
@@ -126,8 +126,8 @@ ResourceBase::SetSyncing(Syncing s)
 //------------------------------------------------------------------------------
 /**
 */
-inline ResourceBase::Syncing
-ResourceBase::GetSyncing() const
+inline GpuResourceBase::Syncing
+GpuResourceBase::GetSyncing() const
 {
 	return this->syncing;
 }

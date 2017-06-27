@@ -29,7 +29,7 @@ public:
 	/// discard buffer
 	void Discard();
     /// map the vertices for CPU access
-    void* Map(ResourceBase::MapType mapType);
+    void* Map(GpuResourceBase::MapType mapType);
     /// unmap the resource
     void Unmap();
 

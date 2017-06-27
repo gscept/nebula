@@ -1,18 +1,18 @@
 //------------------------------------------------------------------------------
-// model.cc
+// visibilitybruteforcesystem.cc
 // (C) 2017 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
-#include "model.h"
+#include "visibilitybruteforcesystem.h"
 
-namespace Models
+namespace Visibility
 {
 
-__ImplementClass(Models::Model, 'MODE', Resources::Resource);
+__ImplementClass(Visibility::VisibilityBruteForceSystem, 'VBFS', Visibility::VisibilitySystemBase);
 //------------------------------------------------------------------------------
 /**
 */
-Model::Model()
+VisibilityBruteForceSystem::VisibilityBruteForceSystem()
 {
 	// empty
 }
@@ -20,9 +20,9 @@ Model::Model()
 //------------------------------------------------------------------------------
 /**
 */
-Model::~Model()
+VisibilityBruteForceSystem::~VisibilityBruteForceSystem()
 {
 	// empty
 }
 
-} // namespace Models
+} // namespace Visibility

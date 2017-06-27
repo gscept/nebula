@@ -5,6 +5,7 @@
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "visibility/visibilitysystems/visibilitysystembase.h"
+#include "math/bbox.h"
 
 namespace Visibility
 {
@@ -84,8 +85,8 @@ VisibilitySystemBase::UpdateVisibilityContext(const Ptr<VisibilityContext>& enti
 //------------------------------------------------------------------------------
 /**
 */
-void 
-VisibilitySystemBase::OnWorldChanged( const Math::bbox& box )
+void
+VisibilitySystemBase::OnWorldChanged(const Math::bbox& box)
 {
 	// empty
 }
@@ -134,7 +135,7 @@ VisibilitySystemBase::EndAttachVisibilityContainer()
 /**
 */
 Ptr<Jobs::Job>
-VisibilitySystemBase::CreateVisibilityJob(IndexT frameId, const Ptr<ObserverContext>& observer, Util::FixedArray<Ptr<VisibilityContext> >& outEntitiyArray, uint& entityMask)
+VisibilitySystemBase::CreateVisibilityJob(IndexT frameId, const Ptr<Observer>& observer, Util::FixedArray<Ptr<VisibilityContext> >& outEntitiyArray, uint& entityMask)
 {
     // implement in subclass
     n_error("VisibilitySystemBase::AttachVisibilityJob called: Implement in subclass! Do it!");

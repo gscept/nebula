@@ -123,7 +123,7 @@ VisibilityBoxSystem::UpdateVisibilityContext(const Ptr<VisibilityContext>& conte
 /**
 */
 void 
-VisibilityBoxSystem::CheckVisibility(const Ptr<ObserverContext>& observer, Util::Array<Ptr<VisibilityContext> >& outEntitiyArray, uint entityMask)
+VisibilityBoxSystem::CheckVisibility(const Ptr<Observer>& observer, Util::Array<Ptr<VisibilityContext> >& outEntitiyArray, uint entityMask)
 {        
     // update visibility boxes for this observer    
     this->UpdateVisibilityBoxes(observer);
@@ -205,9 +205,10 @@ VisibilityBoxSystem::UpdateNeighbours(const Ptr<VisibilityBox>& visBox)
     Update visibility status of visibility boxes.
 */
 void
-VisibilityBoxSystem::UpdateVisibilityBoxes(const Ptr<ObserverContext>& observer)
+VisibilityBoxSystem::UpdateVisibilityBoxes(const Ptr<Observer>& observer)
 {
-    const point& cameraPos = observer->GetObserverEntity()->GetTransform().get_position();
+    const point& cameraPos = observer->GetEntity()->transform->get_position();
+
     // reset stats member variables
     this->numVisibleBoxes = 0;
     this->numCameraBoxes = 0;
@@ -269,12 +270,12 @@ VisibilityBoxSystem::UpdateVisibilityBoxes(const Ptr<ObserverContext>& observer)
                     {
                         curNeighbour->SetProcessed(true);
                         bool visible = true;
-                        if (observer->GetType() == ObserverContext::ProjectionMatrix)
+                        if (observer->GetType() == ObserverType::Perspective)
                         {
                            frustum viewFrustum = frustum(observer->GetProjectionMatrix());
                            visible = curNeighbour->IsFrustumOverlapping(viewFrustum);
                         }
-                        else if(observer->GetType() == ObserverContext::BoundingBox)
+                        else if(observer->GetType() == ObserverType::BoundingBox)
                         {
                             frustum viewFrustum;
                             viewFrustum.set(observer->GetBoundingBox(), matrix44::identity());

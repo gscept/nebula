@@ -24,13 +24,13 @@ public:
     /// constructor
     MemoryMeshLoader();
     /// set the intended resource usage (default is UsageImmutable)
-    void SetUsage(Base::ResourceBase::Usage usage);
+    void SetUsage(Base::GpuResourceBase::Usage usage);
     /// get resource usage
-    Base::ResourceBase::Usage GetUsage() const;
+    Base::GpuResourceBase::Usage GetUsage() const;
     /// set the intended resource access (default is AccessNone)
-    void SetAccess(Base::ResourceBase::Access access);
+    void SetAccess(Base::GpuResourceBase::Access access);
     /// get the resource access
-    Base::ResourceBase::Access GetAccess() const;
+    Base::GpuResourceBase::Access GetAccess() const;
     /// set vertex buffer
     void SetVertexBuffer(const Ptr<CoreGraphics::VertexBuffer>& vBuffer);
     /// set index buffer
@@ -46,8 +46,8 @@ protected:
     bool SetupMeshFromMemory();
 
 private:    
-    Base::ResourceBase::Usage usage;
-    Base::ResourceBase::Access access;
+    Base::GpuResourceBase::Usage usage;
+    Base::GpuResourceBase::Access access;
     Ptr<CoreGraphics::VertexBuffer> vertexBuffer;
     Ptr<CoreGraphics::IndexBuffer> indexBuffer;
     Util::Array<CoreGraphics::PrimitiveGroup> primitiveGroups;
@@ -57,7 +57,7 @@ private:
 /**
 */
 inline void
-MemoryMeshLoader::SetUsage(Base::ResourceBase::Usage usage_)
+MemoryMeshLoader::SetUsage(Base::GpuResourceBase::Usage usage_)
 {
     this->usage = usage_;
 }
@@ -65,7 +65,7 @@ MemoryMeshLoader::SetUsage(Base::ResourceBase::Usage usage_)
 //------------------------------------------------------------------------------
 /**
 */
-inline Base::ResourceBase::Usage
+inline Base::GpuResourceBase::Usage
 MemoryMeshLoader::GetUsage() const
 {
     return this->usage;
@@ -75,7 +75,7 @@ MemoryMeshLoader::GetUsage() const
 /**
 */
 inline void
-MemoryMeshLoader::SetAccess(Base::ResourceBase::Access access_)
+MemoryMeshLoader::SetAccess(Base::GpuResourceBase::Access access_)
 {
     this->access = access_;
 }
@@ -83,7 +83,7 @@ MemoryMeshLoader::SetAccess(Base::ResourceBase::Access access_)
 //------------------------------------------------------------------------------
 /**
 */
-inline Base::ResourceBase::Access
+inline Base::GpuResourceBase::Access
 MemoryMeshLoader::GetAccess() const
 {
     return this->access;

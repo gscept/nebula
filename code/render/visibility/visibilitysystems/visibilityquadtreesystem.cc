@@ -4,7 +4,7 @@
 //  (C) 2013-2016 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
-#include "visibility/visibilitysystems/visibilityquadtree.h"
+#include "visibility/visibilitysystems/visibilityquadtreesystem.h"
 #include "coregraphics/shaperenderer.h"
 #include "threading/thread.h"
 #include "jobs/jobdatadesc.h"
@@ -12,7 +12,7 @@
 
 namespace Visibility
 {
-    __ImplementClass(Visibility::VisibilityQuadtree, 'VIQT', Visibility::VisibilitySystemBase);
+    __ImplementClass(Visibility::VisibilityQuadtreeSystem, 'VIQT', Visibility::VisibilitySystemBase);
 
 using namespace CoreGraphics;
 using namespace Jobs;
@@ -33,7 +33,7 @@ extern void VisibilityQuadtreeJobFunc(const JobFuncContext& ctx);
 //------------------------------------------------------------------------------
 /**
 */
-VisibilityQuadtree::VisibilityQuadtree():
+VisibilityQuadtreeSystem::VisibilityQuadtreeSystem():
     quadTreeDepth(0)
 {
 }
@@ -41,7 +41,7 @@ VisibilityQuadtree::VisibilityQuadtree():
 //------------------------------------------------------------------------------
 /**
 */
-VisibilityQuadtree::~VisibilityQuadtree()
+VisibilityQuadtreeSystem::~VisibilityQuadtreeSystem()
 {
 }
 
@@ -49,7 +49,7 @@ VisibilityQuadtree::~VisibilityQuadtree()
 /**
 */
 void
-VisibilityQuadtree::Open(IndexT orderIndex)
+VisibilityQuadtreeSystem::Open(IndexT orderIndex)
 {    
     // this visibility system have to come first, before any other
     n_assert2(orderIndex == 0, "VisibilityQuadtree have to come first, before any other!");
@@ -64,11 +64,11 @@ VisibilityQuadtree::Open(IndexT orderIndex)
 /**
 */
 void
-VisibilityQuadtree::Close()
+VisibilityQuadtreeSystem::Close()
 {           
     this->contextCellMapping.Clear();
     this->rootCell->OnRemove();
-    this->rootCell = 0;
+    this->rootCell = nullptr;
     VisibilitySystemBase::Close();        
 }
 
@@ -76,7 +76,7 @@ VisibilityQuadtree::Close()
 /**
 */
 void 
-VisibilityQuadtree::InsertVisibilityContext(const Ptr<VisibilityContext>& context)
+VisibilityQuadtreeSystem::InsertVisibilityContext(const Ptr<VisibilityContext>& context)
 {
     const Ptr<VisibilityCell>& cell = this->rootCell->InsertContext(context);
     this->contextCellMapping.Add(context, cell);
@@ -87,7 +87,7 @@ VisibilityQuadtree::InsertVisibilityContext(const Ptr<VisibilityContext>& contex
 /**
 */
 void 
-VisibilityQuadtree::RemoveVisibilityContext(const Ptr<VisibilityContext>& context)
+VisibilityQuadtreeSystem::RemoveVisibilityContext(const Ptr<VisibilityContext>& context)
 {
     this->contextCellMapping[context]->RemoveContext(context);    
     this->contextCellMapping.Erase(context);
@@ -98,7 +98,7 @@ VisibilityQuadtree::RemoveVisibilityContext(const Ptr<VisibilityContext>& contex
 /**
 */
 void 
-VisibilityQuadtree::UpdateVisibilityContext(const Ptr<VisibilityContext>& context)
+VisibilityQuadtreeSystem::UpdateVisibilityContext(const Ptr<VisibilityContext>& context)
 {       
     const Ptr<VisibilityCell>& oldCell = this->contextCellMapping[context];
     const Ptr<VisibilityCell>& newCell = oldCell->FindEntityContainmentCell(context);
@@ -116,7 +116,7 @@ VisibilityQuadtree::UpdateVisibilityContext(const Ptr<VisibilityContext>& contex
 /**
 */
 void
-VisibilityQuadtree::OnWorldChanged(const Math::bbox& box)
+VisibilityQuadtreeSystem::OnWorldChanged(const Math::bbox& box)
 {
 	this->quadTreeBox = box;
 	this->quadTree.Setup(this->quadTreeBox, this->quadTreeDepth);
@@ -127,7 +127,7 @@ VisibilityQuadtree::OnWorldChanged(const Math::bbox& box)
 /**
 */
 void
-VisibilityQuadtree::ResizeVisibilityCells(const Ptr<VisibilityCell>& cell, uchar curLevel, ushort curCol, ushort curRow)
+VisibilityQuadtreeSystem::ResizeVisibilityCells(const Ptr<VisibilityCell>& cell, uchar curLevel, ushort curCol, ushort curRow)
 {
 	int nodeIndex = this->quadTree.GetNodeIndex(curLevel, curCol, curRow);
 	const QuadTree<CellInfo>::Node& node = this->quadTree.GetNodeByIndex(nodeIndex);
@@ -152,7 +152,7 @@ VisibilityQuadtree::ResizeVisibilityCells(const Ptr<VisibilityCell>& cell, uchar
 /**
 */
 Ptr<VisibilityCell> 
-VisibilityQuadtree::CreateQuadTreeCell(VisibilityCell* parentCell, uchar curLevel, ushort curCol, ushort curRow)
+VisibilityQuadtreeSystem::CreateQuadTreeCell(VisibilityCell* parentCell, uchar curLevel, ushort curCol, ushort curRow)
 {
     // create a new cell
     Ptr<VisibilityCell> cell = VisibilityCell::Create();
@@ -181,7 +181,7 @@ VisibilityQuadtree::CreateQuadTreeCell(VisibilityCell* parentCell, uchar curLeve
 /**
 */
 void 
-VisibilityQuadtree::OnRenderDebug()
+VisibilityQuadtreeSystem::OnRenderDebug()
 {
     // render boxes for cells
     float alpha = 0.2f / this->quadTreeDepth;
@@ -193,7 +193,7 @@ VisibilityQuadtree::OnRenderDebug()
 /**
 */
 void 
-VisibilityQuadtree::RenderCell(const Ptr<VisibilityCell>& cell, const Math::float4& color)
+VisibilityQuadtreeSystem::RenderCell(const Ptr<VisibilityCell>& cell, const Math::float4& color)
 {
     // render    
     Math::float4 curColor(color);   
@@ -207,10 +207,10 @@ VisibilityQuadtree::RenderCell(const Ptr<VisibilityCell>& cell, const Math::floa
         {
         	switch (cell->GetEntityContexts()[i]->GetGfxEntity()->GetType())
             {
-            case GraphicsEntityType::Model:
+            case ObserverMask::Graphics:
                 u = 255;                
                 break;
-            case GraphicsEntityType::Camera:                               
+            case ObserverMask::Observers:
                 v = 255;
                 break;
             case GraphicsEntityType::Light:                
@@ -240,7 +240,7 @@ VisibilityQuadtree::RenderCell(const Ptr<VisibilityCell>& cell, const Math::floa
 /**
 */
 void 
-VisibilityQuadtree::PrepareTreeData(IndexT bufferIndex)
+VisibilityQuadtreeSystem::PrepareTreeData(IndexT bufferIndex)
 {   
     // allocate memory for entity infos
     SizeT numEntitiesInTree = this->rootCell->GetNumEntitiesInHierarchy();
@@ -260,7 +260,7 @@ VisibilityQuadtree::PrepareTreeData(IndexT bufferIndex)
 /**
 */
 void 
-VisibilityQuadtree::CollectContextPtr(const Ptr<VisibilityCell>& cell, Util::QuadTree<CellInfo>::Node* node, IndexT& curEntityIndex)
+VisibilityQuadtreeSystem::CollectContextPtr(const Ptr<VisibilityCell>& cell, Util::QuadTree<CellInfo>::Node* node, IndexT& curEntityIndex)
 {
     SizeT numEntitiesInCell = cell->GetEntityContexts().Size();
     n_assert(numEntitiesInCell < 65535);    
@@ -277,7 +277,7 @@ VisibilityQuadtree::CollectContextPtr(const Ptr<VisibilityCell>& cell, Util::Qua
     {
         this->entityInfos[curEntityIndex].entityPtr = cell->GetEntityContexts()[i].get();
         this->entityInfos[curEntityIndex].entityBox = cell->GetEntityContexts()[i]->GetBoundingBox();
-        this->entityInfos[curEntityIndex].entityType = cell->GetEntityContexts()[i]->GetGfxEntity()->GetType();        
+        this->entityInfos[curEntityIndex].entityType = cell->GetEntityContexts()[i]->GetType();        
         curEntityIndex++;
     }      
 
@@ -292,7 +292,7 @@ VisibilityQuadtree::CollectContextPtr(const Ptr<VisibilityCell>& cell, Util::Qua
 /**
 */
 Ptr<Jobs::Job> 
-VisibilityQuadtree::CreateVisibilityJob(IndexT frameId, const Ptr<ObserverContext>& observer, Util::FixedArray<Ptr<VisibilityContext> >& outEntityArray, uint& entityMask)
+VisibilityQuadtreeSystem::CreateVisibilityJob(IndexT frameId, const Ptr<Observer>& observer, Util::FixedArray<Ptr<VisibilityContext> >& outEntityArray, uint& entityMask)
 {   
     IndexT bufferIndex = frameId % 2;
     // first check if tree data is dirty
@@ -311,18 +311,21 @@ VisibilityQuadtree::CreateVisibilityJob(IndexT frameId, const Ptr<ObserverContex
     JobUniformDesc uniformData(workData[bufferIndex].workBuffer, workData[bufferIndex].quadtreeSize, (uchar*)workData[bufferIndex].workBuffer + workData[bufferIndex].quadtreeSize, workData[bufferIndex].entityInfosSize, 0);  
     uint dummy;
     // update observer data
-    JobDataDesc inputData(observer->GetTypeRef(), sizeof(void*), sizeof(void*), 
-                          &entityMask, sizeof(void*), sizeof(void*), 
-                          &dummy, 1, 1);    
+	JobDataDesc inputData({
+		std::make_tuple(observer->GetTypeRef(), sizeof(void*), sizeof(void*)),
+		std::make_tuple(&entityMask, sizeof(void*), sizeof(void*)),
+		std::make_tuple(&dummy, 1, 1)
+	});
     switch (observer->GetType())
     {
-    case ObserverContext::BoundingBox:      
+    case ObserverType::BoundingBox:      
         inputData.Update(2, &observer->GetBoundingBox(), sizeof(bbox), sizeof(bbox));
         break;
-    case ObserverContext::ProjectionMatrix:     
+	case ObserverType::Orthographic:
+    case ObserverType::Perspective:
         inputData.Update(2, &observer->GetProjectionMatrix(), sizeof(matrix44), sizeof(matrix44));
         break;
-    case ObserverContext::SeeAll:
+    case ObserverType::All:
         // nothing to do sees all
         break;
     }
@@ -340,7 +343,7 @@ VisibilityQuadtree::CreateVisibilityJob(IndexT frameId, const Ptr<ObserverContex
 /**
 */
 void 
-VisibilityQuadtree::SetDirty()
+VisibilityQuadtreeSystem::SetDirty()
 {
     this->workData[0].bufferDirty = true;
     this->workData[1].bufferDirty = true;

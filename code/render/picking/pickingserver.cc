@@ -139,7 +139,7 @@ PickingServer::FetchIndex(const Math::float2& position)
 #endif
 
 	TextureBase::MapInfo info;
-	bool status = tex->Map(0, ResourceBase::MapRead, info);
+	bool status = tex->Map(0, GpuResourceBase::MapRead, info);
 	n_assert(status);
 
 	// calculate pixel offset
@@ -192,7 +192,7 @@ PickingServer::FetchSquare(const Math::rectangle<float>& rect, Util::Array<Index
 #endif
 
 	TextureBase::MapInfo info;
-	bool status = tex->Map(0, ResourceBase::MapRead, info);
+	bool status = tex->Map(0, GpuResourceBase::MapRead, info);
 	n_assert(status);
 
 	// calculate pixel offset
@@ -262,7 +262,7 @@ PickingServer::FetchDepth(const Math::float2& position)
 #endif
 
 	TextureBase::MapInfo info;
-	bool status = tex->Map(0, ResourceBase::MapRead, info);
+	bool status = tex->Map(0, GpuResourceBase::MapRead, info);
 	n_assert(status);
 
 	// calculate pixel offset
@@ -311,7 +311,7 @@ PickingServer::FetchNormal(const Math::float2& position)
 #endif
 
 	TextureBase::MapInfo info;
-	bool status = tex->Map(0, ResourceBase::MapRead, info);
+	bool status = tex->Map(0, GpuResourceBase::MapRead, info);
 	n_assert(status);
 
 	// calculate pixel offset

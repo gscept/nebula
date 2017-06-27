@@ -70,7 +70,7 @@ FeedbackBufferBase::Discard()
     resource may currently be busy, or selected for rendering).
 */
 void*
-FeedbackBufferBase::Map(ResourceBase::MapType mapType)
+FeedbackBufferBase::Map(GpuResourceBase::MapType mapType)
 {
     n_error("VertexBufferBase::Map() called!");
     return 0;

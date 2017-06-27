@@ -20,6 +20,10 @@ public:
 
     /// default constructor
     JobUniformDesc();
+	/// construct from nullptr
+	JobUniformDesc(nullptr_t);
+	/// constructor with array of pointers, but may not exceed MaxNumBuffers
+	JobUniformDesc(std::initializer_list<std::tuple<void*, SizeT, SizeT>> data, SizeT scratchSize);
     /// constructor with 1 uniform buffer
     JobUniformDesc(void* ptr, SizeT bufSize, SizeT scratchSize);
     /// constructor with 2 uniform buffers
@@ -62,6 +66,39 @@ JobUniformDesc::JobUniformDesc() :
         this->ptr[i] = 0;
         this->bufferSize[i] = 0;
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline 
+JobUniformDesc::JobUniformDesc(nullptr_t)
+{
+	IndexT i;
+	for (i = 0; i < MaxNumBuffers; i++)
+	{
+		this->ptr[i] = 0;
+		this->bufferSize[i] = 0;
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline
+JobUniformDesc::JobUniformDesc(std::initializer_list<std::tuple<void*, SizeT, SizeT>> data, SizeT scratchSize)
+{
+	n_assert(data.size() <= MaxNumBuffers, "Too many data points, refer to MaxNumBuffers");
+	this->numBuffers = data.size();
+	this->scratchSize = scratchSize;
+
+	IndexT i;
+	for (i = 0; i < data.size(); i++)
+	{
+		const std::tuple<void*, SizeT, SizeT>& d = data.begin()[i];
+		this->ptr[i] = std::get<0>(d);
+		this->bufferSize[i] = std::get<1>(d);
+	}
 }
 
 //------------------------------------------------------------------------------

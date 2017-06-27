@@ -23,8 +23,8 @@ using namespace Resources;
 /**
 */
 Nvx2StreamReader::Nvx2StreamReader() :
-    usage(Base::ResourceBase::UsageImmutable),
-    access(Base::ResourceBase::AccessNone),
+    usage(Base::GpuResourceBase::UsageImmutable),
+    access(Base::GpuResourceBase::AccessNone),
     rawMode(false),
     mapPtr(0),
     groupDataPtr(0),

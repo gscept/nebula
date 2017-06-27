@@ -35,7 +35,7 @@ VisibilityCell::~VisibilityCell()
     n_assert(this->childCells.IsEmpty());
     n_assert(this->entities.IsEmpty());
     IndexT i;
-    for (i = 0; i < GraphicsEntityType::NumTypes; i++)
+    for (i = 0; i < ObserverMask::NumTypes; i++)
     {
         n_assert(this->entitiesByType[i].IsEmpty());
     }

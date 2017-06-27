@@ -40,7 +40,7 @@ public:
     /// insert visibility container, bunch of contextes with bunch infos
     virtual void InsertVisibilityContainer(const Ptr<VisibilityContainer>& container);      
     /// attach visibility job to port
-    virtual Ptr<Jobs::Job> CreateVisibilityJob(IndexT frameId, const Ptr<ObserverContext>& observer, Util::FixedArray<Ptr<VisibilityContext> >& outEntitiyArray, uint& entityMask);
+    virtual Ptr<Jobs::Job> CreateVisibilityJob(IndexT frameId, const Ptr<Observer>& observer, Util::FixedArray<Ptr<VisibilityContext> >& outEntitiyArray, uint& entityMask);
 
      /// render debug visualizations
     virtual void OnRenderDebug(); 
@@ -53,7 +53,7 @@ private:
     /// get the camera cluster bit mask (bits of all clusters where the camera is inside)
     const Util::BitField<64>& GetVisibilityClusterBitMask() const; 
     /// generate visibility links
-    void CheckVisibility(const Ptr<ObserverContext>& observer, Util::FixedArray<Ptr<VisibilityContext> >& outEntitiyArray, uint entityMask);
+    void CheckVisibility(const Ptr<Observer>& observer, Util::FixedArray<Ptr<VisibilityContext> >& outEntitiyArray, uint entityMask);
       
     /// update visibility status of VisibilityClusters
     void UpdateVisibilityClusters(const Math::point& cameraPos);
@@ -105,8 +105,9 @@ VisibilityClusterSystem::GetVisibilityClusterBitMask() const
 inline uint 
 VisibilityClusterSystem::GetObserverBitMask() const
 {
-    return (1 << Graphics::GraphicsEntityType::Camera);
+    return (1 << ObserverMask::Observers);
 }
+
 } // namespace Visibility
 //------------------------------------------------------------------------------
 

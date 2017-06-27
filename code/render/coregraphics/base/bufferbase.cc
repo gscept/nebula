@@ -8,7 +8,7 @@
 namespace Base
 {
 
-__ImplementClass(Base::BufferBase, 'BBAS', Base::ResourceBase);
+__ImplementClass(Base::BufferBase, 'BBAS', Base::GpuResourceBase);
 //------------------------------------------------------------------------------
 /**
 */

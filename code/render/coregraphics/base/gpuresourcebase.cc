@@ -8,12 +8,12 @@
 
 namespace Base
 {
-__ImplementClass(Base::ResourceBase, 'RSBS', Resources::Resource);
+__ImplementClass(Base::GpuResourceBase, 'RSBS', Resources::Resource);
 
 //------------------------------------------------------------------------------
 /**
 */
-ResourceBase::ResourceBase() :
+GpuResourceBase::GpuResourceBase() :
     usage(UsageImmutable),
     access(AccessNone),
 	syncing(SyncingFlush)
@@ -24,7 +24,7 @@ ResourceBase::ResourceBase() :
 //------------------------------------------------------------------------------
 /**
 */
-ResourceBase::~ResourceBase()
+GpuResourceBase::~GpuResourceBase()
 {
     // empty
 }

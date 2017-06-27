@@ -7,7 +7,7 @@
     (C) 2013-2016 Individual contributors, see AUTHORS file
 */
 #include "core/refcounted.h"
-#include "visibility/observercontext.h"
+#include "visibility/observer.h"
 #include "visibility/visibilitycontext.h"
 #include "jobs/jobport.h"
               
@@ -49,7 +49,7 @@ public:
     virtual void EndAttachVisibilityContainer();
 
     /// attach visibility job to port
-    virtual Ptr<Jobs::Job> CreateVisibilityJob(IndexT frameId, const Ptr<ObserverContext>& observer, Util::FixedArray<Ptr<VisibilityContext> >& outEntitiyArray, uint& entityMask);
+    virtual Ptr<Jobs::Job> CreateVisibilityJob(IndexT frameId, const Ptr<Observer>& observer, Util::FixedArray<Ptr<VisibilityContext> >& outEntitiyArray, uint& entityMask);
     /// render debug visualizations
     virtual void OnRenderDebug();    
     /// get observer type mask

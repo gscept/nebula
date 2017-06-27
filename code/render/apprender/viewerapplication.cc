@@ -5,7 +5,7 @@
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "apprender/viewerapplication.h"
-#include "visibility/visibilitysystems/visibilityquadtree.h"
+#include "visibility/visibilitysystems/visibilityquadtreesystem.h"
 #include "visibility/visibilitysystems/visibilityclustersystem.h"
 #include "visibility/visibilitysystems/visibilityboxsystem.h"
 #include "graphics/view.h"
@@ -63,7 +63,7 @@ ViewerApplication::Open()
 
         // create a default stage
         // attach visibility systems to checker
-        Ptr<Visibility::VisibilityQuadtree> visQuadtreeSystem = Visibility::VisibilityQuadtree::Create();
+        Ptr<Visibility::VisibilityQuadtreeSystem> visQuadtreeSystem = Visibility::VisibilityQuadtreeSystem::Create();
         visQuadtreeSystem->SetQuadTreeSettings(4, Math::bbox(Math::point(0,0,0), Math::vector(200.0f, 200.0f, 200.0f)));
         Ptr<Visibility::VisibilityClusterSystem> visClusterSystem = Visibility::VisibilityClusterSystem::Create();
         Ptr<Visibility::VisibilityBoxSystem> visBoxSystem = Visibility::VisibilityBoxSystem::Create();

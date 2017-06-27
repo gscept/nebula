@@ -11,13 +11,14 @@ namespace Graphics
 {
 
 __ImplementClass(Graphics::GraphicsServer, 'GFXS', Core::RefCounted);
+__ImplementSingleton(Graphics::GraphicsServer);
 //------------------------------------------------------------------------------
 /**
 */
 GraphicsServer::GraphicsServer() :
 	isOpen(false)
 {
-	// empty
+	__ConstructSingleton;
 }
 
 //------------------------------------------------------------------------------
@@ -25,7 +26,7 @@ GraphicsServer::GraphicsServer() :
 */
 GraphicsServer::~GraphicsServer()
 {
-	// empty
+	__DestructSingleton;
 }
 
 //------------------------------------------------------------------------------
@@ -50,6 +51,8 @@ GraphicsServer::Close()
 	this->visServer = nullptr;
 	this->timer = nullptr;
 	this->isOpen = false;
+
+	// clear transforms pool
 }
 
 //------------------------------------------------------------------------------
@@ -151,6 +154,29 @@ GraphicsServer::DiscardView(const Ptr<View>& view)
 	IndexT i = this->views.FindIndex(view);
 	n_assert(i != InvalidIndex);
 	this->views.EraseIndex(i);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GraphicsServer::RegisterEntity(const Ptr<GraphicsEntity>& entity)
+{
+	int64_t slice;
+	entity->transform = this->transforms.Alloc(slice);
+	this->entityTransformMap.Add(entity->id, slice);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GraphicsServer::UnregisterEntity(const Ptr<GraphicsEntity>& entity)
+{
+	IndexT i = this->entityTransformMap.FindIndex(entity->id);
+	int64_t slice = this->entityTransformMap.ValueAtIndex(i);
+	this->transforms.Free(slice);
+	this->entityTransformMap.EraseAtIndex(i);
 }
 
 } // namespace Graphics

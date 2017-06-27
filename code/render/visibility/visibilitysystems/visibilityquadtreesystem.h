@@ -17,9 +17,9 @@
 //------------------------------------------------------------------------------
 namespace Visibility
 {    
-class VisibilityQuadtree : public VisibilitySystemBase
+class VisibilityQuadtreeSystem : public VisibilitySystemBase
 {
-    __DeclareClass(VisibilityQuadtree);
+    __DeclareClass(VisibilityQuadtreeSystem);
 public:      
     struct CellInfo 
     {
@@ -35,9 +35,9 @@ public:
         uint entityType;
     };
     /// constructor
-    VisibilityQuadtree();
+    VisibilityQuadtreeSystem();
     /// destructor
-    virtual ~VisibilityQuadtree();
+    virtual ~VisibilityQuadtreeSystem();
                                                                        
     /// set quad tree depth and boudning box
     void SetQuadTreeSettings(uchar depth, const Math::bbox& worldBBox);
@@ -59,7 +59,7 @@ public:
 	virtual void ResizeVisibilityCells(const Ptr<VisibilityCell>& cell, uchar curLevel, ushort curCol, ushort curRow);
                 
     /// attach visibility job to port
-    virtual Ptr<Jobs::Job> CreateVisibilityJob(IndexT frameId, const Ptr<ObserverContext>& observer, Util::FixedArray<Ptr<VisibilityContext> >& outEntitiyArray, uint& entityMask);
+    virtual Ptr<Jobs::Job> CreateVisibilityJob(IndexT frameId, const Ptr<Observer>& observer, Util::FixedArray<Ptr<VisibilityContext> >& outEntitiyArray, uint& entityMask);
     /// render debug visualizations
     virtual void OnRenderDebug();
     /// get observer type mask
@@ -98,7 +98,7 @@ private:
 /**
 */
 inline void
-VisibilityQuadtree::SetQuadTreeSettings(uchar depth, const Math::bbox& worldBox)
+VisibilityQuadtreeSystem::SetQuadTreeSettings(uchar depth, const Math::bbox& worldBox)
 {
     this->quadTreeDepth = depth;
     this->quadTreeBox = worldBox;
@@ -107,7 +107,7 @@ VisibilityQuadtree::SetQuadTreeSettings(uchar depth, const Math::bbox& worldBox)
 /**
 */
 inline uint 
-VisibilityQuadtree::GetObserverBitMask() const
+VisibilityQuadtreeSystem::GetObserverBitMask() const
 {
     return (1 << Graphics::GraphicsEntityType::Camera) | (1 << Graphics::GraphicsEntityType::Light);
 }
