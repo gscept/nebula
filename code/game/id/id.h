@@ -1,7 +1,7 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @class Game::Id
+    @class Game::Id, @class Game::IdSystem
 
     Provides a system for creating array friendly id numbers with reuse and 
     generations. Loosely inspired by bitsquid's blog
@@ -45,6 +45,19 @@ struct Id
     /// actual id
     uint32_t id;    
 };
+
+inline bool operator <(const Id& a, const Id& b)
+{
+    return a.id < b.id;
+}
+inline bool operator >(const Id& a, const Id& b)
+{
+    return a.id > b.id;
+}
+inline bool operator !=(const Id& a, const Id& b)
+{
+    return a.id != b.id;
+}
 
 class IdSystem
 {
