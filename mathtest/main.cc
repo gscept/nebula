@@ -11,7 +11,9 @@
 #include "scalartest.h"
 #include "float4test.h"
 #include "matrix44test.h"
+#ifdef __USE_MATH_DIRECTX
 #include "transformtest.h"
+#endif
 #include "quaterniontest.h"
 #include "vectortest.h"
 #include "pointtest.h"
@@ -52,7 +54,9 @@ NebulaMain(const Util::CommandLineArgs& args)
     testRunner->AttachTestCase(ScalarTest::Create());
     testRunner->AttachTestCase(Float4Test::Create());
 	testRunner->AttachTestCase(Matrix44Test::Create());
+#ifdef __USE_MATH_DIRECTX
     testRunner->AttachTestCase(TransformTest::Create());
+#endif
 	testRunner->AttachTestCase(QuaternionTest::Create());
 	testRunner->AttachTestCase(VectorTest::Create());
 	testRunner->AttachTestCase(PointTest::Create());

@@ -1,3 +1,4 @@
+#ifdef __USE_MATH_DIRECTX
 //------------------------------------------------------------------------------
 //  transformtest.cc
 //  2017 Individual contributors, see AUTHORS file
@@ -41,3 +42,4 @@ TransformTest::Run()
 }
 
 }
+#endif
