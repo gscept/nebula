@@ -15,6 +15,8 @@ fips_begin_module(resource)
 				resourceid.h
 				resourceloader.cc
 				resourceloader.h
+				resourceloaderthread.cc
+				resourceloaderthread.h
 				resourcemanager.cc
 				resourcemanager.h
 			)

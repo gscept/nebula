@@ -33,6 +33,7 @@
 #include "util/stringatom.h"
 #include "io/stream.h"
 #include "jobs/jobport.h"
+#include "util/set.h"
 #include "resourcecontainer.h"
 #include "resource.h"
 #include <tuple>
@@ -43,7 +44,8 @@ namespace Resources
 class Resource;
 class ResourceLoader : public Core::RefCounted
 {
-	__DeclareClass(ResourceLoader);
+	__DeclareAbstractClass(ResourceLoader);
+
 public:
 	/// constructor
 	ResourceLoader();
@@ -72,10 +74,13 @@ protected:
 		std::function<void(const Ptr<Resource>&)> success;
 		std::function<void(const Ptr<Resource>&)> failed;
 		Util::StringAtom tag;
+		bool inflight;
+		std::function<void()> loadFunc;
+		bool immediate;
 	};
 
 	/// create a container with a tag associated with it, if no tag is provided, the resource will be untagged
-	template <class RESOURCE_TYPE> Ptr<ResourceContainer<RESOURCE_TYPE>> CreateContainer(const ResourceId& res, const Util::StringAtom& tag, std::function<void(const Ptr<Resource>&)> success, std::function<void(const Ptr<Resource>&)> failed);
+	template <class RESOURCE_TYPE> Ptr<ResourceContainer<RESOURCE_TYPE>> CreateContainer(const ResourceId& res, const Util::StringAtom& tag, std::function<void(const Ptr<Resource>&)> success, std::function<void(const Ptr<Resource>&)> failed, bool immediate);
 	/// discard container
 	template <class RESOURCE_TYPE> void DiscardContainer(const Ptr<ResourceContainer<RESOURCE_TYPE>>& res);
 	/// discard all resources associated with a tag
@@ -84,9 +89,9 @@ protected:
 	LoadStatus PrepareLoad(_PendingResource& res);
 
 	/// perform actual load, override in subclass
-	LoadStatus Load(const Ptr<Resource>& res, const Ptr<IO::Stream>& stream);
+	virtual LoadStatus Load(const Ptr<Resource>& res, const Ptr<IO::Stream>& stream) = 0;
 	/// unload resource
-	virtual void Unload(const Ptr<Resource>& res);
+	virtual void Unload(const Ptr<Resource>& res) = 0;
 
 	/// update the resource loader, this is done every frame
 	void Update(IndexT frameIndex);
@@ -94,7 +99,7 @@ protected:
 	/// these types need to be properly initiated in a subclass Setup function
 	Util::StringAtom placeholderResourceId;
 	Util::StringAtom errorResourceId;
-	Core::Rtti resourceClass;
+	Core::Rtti* resourceClass;
 
 	Ptr<Resource> placeholderResource;
 	Ptr<Resource> errorResource;
@@ -106,6 +111,8 @@ protected:
 	Util::Dictionary<Util::StringAtom, Ptr<Resource>> loaded;
 	Util::Dictionary<Util::StringAtom, Util::StringAtom> tags;
 	Util::Dictionary<Util::StringAtom, int> usage;
+
+	Threading::CriticalSection asyncSection;
 };
 
 //------------------------------------------------------------------------------
@@ -113,11 +120,11 @@ protected:
 */
 template <class RESOURCE_TYPE> 
 inline Ptr<ResourceContainer<RESOURCE_TYPE>>
-Resource::ResourceLoader::CreateContainer(const ResourceId& res, const Util::StringAtom& tag, std::function<void(const Ptr<Resource>&)> success, std::function<void(const Ptr<Resource>&)> failed)
+Resources::ResourceLoader::CreateContainer(const ResourceId& res, const Util::StringAtom& tag, std::function<void(const Ptr<Resource>&)> success, std::function<void(const Ptr<Resource>&)> failed, bool immediate)
 {
-	n_assert(this->resourceClass != RefCounted::RTTI);
-	static_assert(std::is_base_of(Resource, RESOURCE_TYPE));
-	static_assert(resourceClass->IsDerivedFrom(RESOURCE_TYPE::RTTI));
+	static_assert(std::is_base_of<Resource, RESOURCE_TYPE>::value, "Type is not a subclass of Resources::Resource");
+	n_assert(this->resourceClass != nullptr);	
+	n_assert(this->resourceClass->IsDerivedFrom(RESOURCE_TYPE::RTTI));
 	Ptr<ResourceContainer<RESOURCE_TYPE>> container = ResourceContainer<RESOURCE_TYPE>::Create();
 	container->error = this->errorResource;
 	container->placeholder = this->placeholderResource;
@@ -127,15 +134,33 @@ Resource::ResourceLoader::CreateContainer(const ResourceId& res, const Util::Str
 		container->resource = this->loaded.ValueAtIndex(i);
 
 		// run success callback immediately
-		success(container->resource);
+		if (success != nullptr) success(container->resource);
+
+		// we can guarantee usage is valid already
 		this->usage.ValueAtIndex(i)++;
 	}
 	else
 	{
-		container->resource = this->resourceClass.Create();
-		container->resource->resourceId = res;
-		container->resource->tag = tag;
-		this->pending.Add(res, { container->resource, success, failed, tag });
+		IndexT usage = this->usage.FindIndex(res);
+		if (usage == InvalidIndex) this->usage.Add(res, 1);
+		else					   this->usage.ValueAtIndex(usage)++;
+
+		// in case the resource is being loaded asynchronously, it should still be in pending
+		this->criticalSection.Enter();
+		IndexT i = this->pending.FindIndex(res);
+		if (i != InvalidIndex)
+		{
+			const _PendingResource& pres = this->pending.ValueAtIndex(i);
+			container->resource = pres.res;
+		}
+		else
+		{
+			container->resource = this->resourceClass->Create();
+			container->resource->resourceId = res;
+			container->resource->tag = tag;
+			this->pending.Add(res, { container->resource, success, failed, tag, false, nullptr, immediate });
+		}		
+		this->criticalSection.Leave();
 	}
 	return container;
 }
@@ -145,22 +170,53 @@ Resource::ResourceLoader::CreateContainer(const ResourceId& res, const Util::Str
 */
 template <class RESOURCE_TYPE>
 inline void
-Resource::ResourceLoader::DiscardContainer(const Ptr<ResourceContainer<RESOURCE_TYPE>>& res)
+Resources::ResourceLoader::DiscardContainer(const Ptr<ResourceContainer<RESOURCE_TYPE>>& res)
 {
-	static_assert(std::is_base_of(Resource, RESOURCE_TYPE));
-	static_assert(resourceClass->IsDerivedFrom(RESOURCE_TYPE::RTTI));
+	static_assert(std::is_base_of<Resource, RESOURCE_TYPE>::value, "Type is not a subclass of Resources::Resource");
+	n_assert(this->resourceClass != nullptr);
+	n_assert(this->resourceClass->IsDerivedFrom(RESOURCE_TYPE::RTTI));	
+	
 	IndexT i = this->loaded.FindIndex(res->resource->resourceId);
-	n_assert(i != InvalidIndex);
-	n_assert_fmt(!res->resource->tag.IsValid(), "Resource with tag can not be individually deleted");
-
-	// if usage is 1, and we are just about to discard it, unload resource and cleanup dictionaries
-	if (this->usage.ValueAtIndex(i) == 1)
+	if (i == InvalidIndex)
 	{
-		this->Unload(this->loaded.ValueAtIndex(i));
-		this->loaded.EraseAtIndex(i);
-		this->usage.EraseAtIndex(i);
-		this->tags.EraseAtIndex(i);
+		this->criticalSection.Enter();
+		IndexT j = this->pending.FindIndex(res->resource->resourceId);
+		n_assert(j != InvalidIndex);
+		const _PendingResource& res = this->pending.ValueAtIndex(j);
+
+		// hmm, resource is being loaded by a thread
+		if (res.inflight)
+		{
+			// wait for resource loader thread to finish, then delete it
+			// this is very unfortunate, but we cannot abort the thread job safely without a sync point
+			n_assert(res.loadFunc != nullptr);
+			ResourceManager::Instance()->loaderThread->Wait();
+		}
+		else
+		{
+			// call failed function to indicate the load was aborted
+			if (res.failed != nullptr) res.failed(res.res);
+
+			// just remove from pending, easy peasy
+
+			this->pending.EraseAtIndex(j);
+		}
+		this->criticalSection.Leave();
 	}
+	else
+	{
+		n_assert_fmt(!res->resource->tag.IsValid(), "Resource with tag can not be individually deleted");
+
+		// if usage is 1, and we are just about to discard it, unload resource and cleanup dictionaries
+		this->usage.ValueAtIndex(i)--;
+		if (this->usage.ValueAtIndex(i) == 0)
+		{
+			this->Unload(this->loaded.ValueAtIndex(i));
+			this->loaded.EraseAtIndex(i);
+			this->usage.EraseAtIndex(i);
+			this->tags.EraseAtIndex(i);
+		}
+	}	
 }
 
 } // namespace Resources

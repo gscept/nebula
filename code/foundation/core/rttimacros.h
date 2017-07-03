@@ -177,29 +177,29 @@ private:
 /**
 	Neat macro to make enums act as bit flags, be able to check if bits are set, and convert to integers
 */
-#define __ImplementEnumBitOperators(TYPE) \
-	inline TYPE operator|(TYPE a, TYPE b) { return static_cast<TYPE>(static_cast<unsigned>(a) | static_cast<unsigned>(b)); }\
-	inline TYPE operator&(TYPE a, TYPE b) { return static_cast<TYPE>(static_cast<unsigned>(a) & static_cast<unsigned>(b)); }\
-	inline TYPE& operator|=(TYPE& a, TYPE b) { a = static_cast<TYPE>(static_cast<unsigned>(a) | static_cast<unsigned>(b)); return a; }\
-	inline TYPE& operator&=(TYPE& a, TYPE b) { a = static_cast<TYPE>(static_cast<unsigned>(a) & static_cast<unsigned>(b)); return a; }\
-	inline TYPE operator|(TYPE a, unsigned b) { return static_cast<TYPE>(static_cast<unsigned>(a) | b); }\
-	inline TYPE operator&(TYPE a, unsigned b) { return static_cast<TYPE>(static_cast<unsigned>(a) & b); }\
-	inline TYPE& operator|=(TYPE& a, unsigned b) { a = static_cast<TYPE>(static_cast<unsigned>(a) | b); return a; }\
-	inline TYPE& operator&=(TYPE& a, unsigned b) { a = static_cast<TYPE>(static_cast<unsigned>(a) & b); return a; }\
-	inline unsigned operator|(unsigned a, TYPE b) { return a | static_cast<unsigned>(b); }\
-	inline unsigned operator&(unsigned a, TYPE b) { return a & static_cast<unsigned>(b); }\
-	inline unsigned& operator|=(unsigned& a, TYPE b) { a = a | static_cast<unsigned>(b); return a; }\
-	inline unsigned& operator&=(unsigned& a, TYPE b) { a = a & static_cast<unsigned>(b); return a; }
+#define __ImplementEnumBitOperators(type) \
+	inline TYPE operator|(type a, type b) { return static_cast<type>(static_cast<unsigned>(a) | static_cast<unsigned>(b)); }\
+	inline TYPE operator&(type a, type b) { return static_cast<type>(static_cast<unsigned>(a) & static_cast<unsigned>(b)); }\
+	inline TYPE& operator|=(type& a, type b) { a = static_cast<type>(static_cast<unsigned>(a) | static_cast<unsigned>(b)); return a; }\
+	inline TYPE& operator&=(type& a, type b) { a = static_cast<type>(static_cast<unsigned>(a) & static_cast<unsigned>(b)); return a; }\
+	inline TYPE operator|(type a, unsigned b) { return static_cast<type>(static_cast<unsigned>(a) | b); }\
+	inline TYPE operator&(type a, unsigned b) { return static_cast<type>(static_cast<unsigned>(a) & b); }\
+	inline TYPE& operator|=(type& a, unsigned b) { a = static_cast<type>(static_cast<unsigned>(a) | b); return a; }\
+	inline TYPE& operator&=(type& a, unsigned b) { a = static_cast<type>(static_cast<unsigned>(a) & b); return a; }\
+	inline unsigned operator|(unsigned a, type b) { return a | static_cast<unsigned>(b); }\
+	inline unsigned operator&(unsigned a, type b) { return a & static_cast<unsigned>(b); }\
+	inline unsigned& operator|=(unsigned& a, type b) { a = a | static_cast<unsigned>(b); return a; }\
+	inline unsigned& operator&=(unsigned& a, type b) { a = a & static_cast<unsigned>(b); return a; }
 
-#define __ImplementEnumComparisonOperators(TYPE) \ 
-	inline bool operator>(TYPE a, unsigned b) { return static_cast<unsigned>(a) > b; }\
-	inline bool operator>(unsigned a, TYPE b) { return a > static_cast<unsigned>(b); }\
-	inline bool operator<(TYPE a, unsigned b) { return static_cast<unsigned>(a) < b; }\
-	inline bool operator<(unsigned a, TYPE b) { return a < static_cast<unsigned>(b); }\
-	inline bool operator==(TYPE a, unsigned b) { return static_cast<unsigned>(a) == b; }\
-	inline bool operator==(unsigned a, TYPE b) { return a == static_cast<unsigned>(b); }\
-	inline bool operator!=(TYPE a, unsigned b) { return static_cast<unsigned>(a) != b; }\
-	inline bool operator!=(unsigned a, TYPE b) { return a != static_cast<unsigned>(b); }
+#define __ImplementEnumComparisonOperators(type) \
+	inline bool operator>(type a, unsigned b) { return static_cast<unsigned>(a) > b; }\
+	inline bool operator>(unsigned a, type b) { return a > static_cast<unsigned>(b); }\
+	inline bool operator<(type a, unsigned b) { return static_cast<unsigned>(a) < b; }\
+	inline bool operator<(unsigned a, type b) { return a < static_cast<unsigned>(b); }\
+	inline bool operator==(type a, unsigned b) { return static_cast<unsigned>(a) == b; }\
+	inline bool operator==(unsigned a, type b) { return a == static_cast<unsigned>(b); }\
+	inline bool operator!=(type a, unsigned b) { return static_cast<unsigned>(a) != b; }\
+	inline bool operator!=(unsigned a, type b) { return a != static_cast<unsigned>(b); }
 
 	/*
 namespace TYPE {\

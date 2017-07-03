@@ -32,9 +32,11 @@ public:
 
 private:
 	friend class ResourceLoader;
+	friend class ResourceManager;
 
 	State state;
 	ResourceId resourceId;
 	Util::StringAtom tag;
 };
+
 } // namespace Resources

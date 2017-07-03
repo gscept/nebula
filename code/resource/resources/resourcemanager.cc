@@ -31,10 +31,39 @@ ResourceManager::~ResourceManager()
 /**
 */
 void
+ResourceManager::Open()
+{
+	n_assert(!this->open);
+	this->loaderThread = ResourceLoaderThread::Create();
+	this->loaderThread->SetPriority(Threading::Thread::Normal);
+	this->loaderThread->SetCoreId(System::Cpu::IoThreadCore);
+	this->loaderThread->SetName("Resources::ResourceLoaderThread");
+	this->loaderThread->Start();
+	this->open = true;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ResourceManager::Close()
+{
+	n_assert(this->open);
+	this->loaderThread->Stop();
+	this->loaderThread = nullptr;
+	this->open = false;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 ResourceManager::RegisterLoader(const Util::StringAtom& ext, const Core::Rtti& loaderClass)
 {
+	n_assert(this->open);
 	Core::RefCounted* obj = loaderClass.Create();
 	Ptr<ResourceLoader> loader((ResourceLoader*)obj);
+	loader->Setup();
 	this->loaders.Add(ext, loader);
 }
 

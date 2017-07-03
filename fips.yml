@@ -9,6 +9,8 @@ exports:
     header-dirs : 
         - .
         - code/foundation
+        - code/render
+        - code/resource
         - extlibs/mixed
     modules:
         foundation: code/foundation

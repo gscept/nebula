@@ -68,7 +68,7 @@ JobDataDesc::JobDataDesc() :
     IndexT i;
     for (i = 0; i < MaxNumBuffers; i++)
     {
-        this->ptr[i] = 0;
+        this->ptr[i] = nullptr;
         this->bufferSize[i] = 0;
         this->sliceSize[i] = 0;
     }
@@ -77,12 +77,13 @@ JobDataDesc::JobDataDesc() :
 /**
 */
 inline 
-JobDataDesc::JobDataDesc(nullptr_t)
+JobDataDesc::JobDataDesc(nullptr_t) :
+	numBuffers(0)
 {
 	IndexT i;
 	for (i = 0; i < MaxNumBuffers; i++)
 	{
-		this->ptr[i] = 0;
+		this->ptr[i] = nullptr;
 		this->bufferSize[i] = 0;
 		this->sliceSize[i] = 0;
 	}
@@ -94,10 +95,10 @@ JobDataDesc::JobDataDesc(nullptr_t)
 inline
 JobDataDesc::JobDataDesc(const std::initializer_list<std::tuple<void*, SizeT, SizeT>> data)
 {
-	n_assert(data.size() <= MaxNumBuffers, "Too many data points, refer to MaxNumBuffers");
+	n_assert(data.size() <= MaxNumBuffers);
 	this->numBuffers = data.size();
 
-	IndexT i;
+	size_t i;
 	for (i = 0; i < data.size(); i++)
 	{
 		const std::tuple<void*, SizeT, SizeT>& d = data.begin()[i];

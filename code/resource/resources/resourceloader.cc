@@ -6,12 +6,14 @@
 #include "resourceloader.h"
 #include "io/ioserver.h"
 #include "jobs/job.h"
+#include "jobs/jobfunccontext.h"
+#include "resourcemanager.h"
 
 using namespace IO;
 namespace Resources
 {
 
-__ImplementClass(Resources::ResourceLoader, 'RELO', Core::RefCounted);
+__ImplementAbstractClass(Resources::ResourceLoader, 'RELO', Core::RefCounted);
 //------------------------------------------------------------------------------
 /**
 */
@@ -35,7 +37,7 @@ void
 ResourceLoader::Setup()
 {
 	// implement loader-specific setups, such as placeholder and error resource ids, as well as the acceptable resource class
-	this->resourceClass = RefCounted::RTTI;
+	this->resourceClass = nullptr;
 	this->placeholderResourceId = "";
 	this->errorResourceId = "";
 
@@ -64,22 +66,34 @@ ResourceLoader::Update(IndexT frameIndex)
 	for (i = 0; i < this->pending.Size(); i++)
 	{
 		_PendingResource& element = this->pending.ValueAtIndex(i);
+
+		// this means the pending resource is being loaded in a thread
+		if (element.inflight) continue;
 		const Ptr<Resources::Resource>& res = element.res;
 
 		// load resource, get status from load function
 		LoadStatus status = this->PrepareLoad(element);
 		if (status != Delay)
 		{
-			if (status == Success)
+			// enter critical section
+			this->criticalSection.Enter();
+			if (status == Threaded) continue;
+			else if (status == Success)
 			{
-				element.success(res);
+				if (element.success != nullptr) element.success(res);
+				res->state = Resource::Loaded;
+
 				this->usage.Add(res->resourceId, 1);
 				this->loaded.Add(res->resourceId, res);
 				this->tags.Add(res->resourceId, element.tag);
 			}
-			else if (status == Failed)	element.failed(res);
-			/// callback for threaded resources happens in the thread
+			else if (status == Failed)
+			{
+				if (element.failed != nullptr) element.failed(res);
+				res->state = Resource::Failed;
+			}
 			this->pending.EraseAtIndex(i--);
+			this->criticalSection.Leave();
 		}		
 	}
 }
@@ -90,39 +104,69 @@ ResourceLoader::Update(IndexT frameIndex)
 ResourceLoader::LoadStatus
 ResourceLoader::PrepareLoad(_PendingResource& res)
 {
-	// if threaded
-	if (this->async)
+	LoadStatus ret = Failed;
+
+	// if threaded, and resource is not requested to be immediate
+	if (this->async && !res.immediate)
 	{
 		// copy the reference
 		_PendingResource resCpy = res;
+		IoServer* ioserver = IoServer::Instance();
 
+		// add to set of asynchronously loading resources
+		this->asyncSection.Enter();
+		
 		// wrap the loading process as a lambda function and pass it to the thread
-		auto loadFunc = [this, resCpy]()
+		auto loadFunc = [this, resCpy, ioserver]()
 		{
 			// construct stream
-			Ptr<Stream> stream = IoServer::Instance()->CreateStream(resCpy.res->resourceId.Value());
+			const Ptr<Resources::Resource>& res = resCpy.res;
+			Ptr<Stream> stream = ioserver->CreateStream(resCpy.res->resourceId.Value());
+			stream->SetAccessMode(Stream::ReadAccess);
 			if (stream->Open())
 			{
+				// enter critical section, this is quite big
+				this->asyncSection.Enter();
 				LoadStatus stat = this->Load(resCpy.res, stream);
-				if (stat == Success)		resCpy.success(resCpy.res);
-				else if (stat == Failed)	resCpy.failed(resCpy.res);
+				if (stat == Success)
+				{
+					if (resCpy.success != nullptr) resCpy.success(res);
+					res->state = Resource::Loaded;
+
+					// enter async section, and update resource loader status
+					this->loaded.Add(res->resourceId, res);
+					this->tags.Add(res->resourceId, resCpy.tag);
+				}
+				else if (stat == Failed)
+				{
+					if (resCpy.failed != nullptr) resCpy.failed(resCpy.res);
+					res->state = Resource::Failed;
+				}
+
+				// no matter the result, we have to remove this resource from the pending list
+				this->pending.Erase(res->resourceId);
+				this->asyncSection.Leave();
+
+				// close stream
 				stream->Close();
 			}
 			else
 			{
 				// this constitutes a failure too!
-				resCpy.failed(resCpy.res);
+				if (resCpy.failed != nullptr) resCpy.failed(resCpy.res);
+				res->state = Resource::Failed;
 			}
 		};
 
-		// create job
-		Ptr<Jobs::Job> loaderJob = Jobs::Job::Create();
-		Jobs::JobFuncDesc func(loadFunc);
+		// flag resource as being in-flight
+		res.inflight = true;
+		res.loadFunc = loadFunc;
 
-		// setup job, no need for uniforms, inputs or outputs!
-		loaderJob->Setup(nullptr, nullptr, nullptr, func);
-		this->jobport->PushJob(loaderJob);
-		return Threaded;
+		// add job to resource manager
+		ResourceManager::Instance()->loaderThread->jobs.Enqueue(loadFunc);
+		this->asyncSection.Leave();
+
+		ret = Threaded;
 	}
 	else
 	{
@@ -130,29 +174,11 @@ ResourceLoader::PrepareLoad(_PendingResource& res)
 		Ptr<Stream> stream = IoServer::Instance()->CreateStream(res.res->resourceId.Value());
 		if (stream->Open())
 		{
-			return this->Load(res.res, stream);
+			ret = this->Load(res.res, stream);
 			stream->Close();
 		}
 	}	
-	return Failed;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-ResourceLoader::LoadStatus
-ResourceLoader::Load(const Ptr<Resource>& res, const Ptr<IO::Stream>& stream)
-{
-
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-ResourceLoader::Unload(const Ptr<Resource>& res)
-{
-	// override in subclass to perform actual resource unload
+	return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -169,7 +195,6 @@ ResourceLoader::DiscardByTag(const Util::StringAtom& tag)
 		{
 			this->Unload(this->loaded.ValueAtIndex(i));
 			this->loaded.EraseAtIndex(i);
-			this->usage.EraseAtIndex(i);
 			this->tags.EraseAtIndex(i);
 		}		
 	}

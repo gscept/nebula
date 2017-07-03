@@ -10,6 +10,16 @@
 
 #include <string.h>
 
+//------------------------------------------------------------------------------
+/**
+	Literal constructor form string, to use "foobar"_atm will automatically construct a StringAtom
+*/
+Util::StringAtom
+operator ""_atm(const char* c, std::size_t s)
+{
+	return Util::StringAtom(c);
+}
+
 namespace Util
 {
 
@@ -83,6 +93,11 @@ StringAtom::operator!=(const char* rhs) const
     {
         return (0 == strcmp(this->content, rhs));
     }
+}
+
+Util::StringAtom operator""_atm(const char * c)
+{
+	return Util::StringAtom();
 }
 
 } // namespace Util

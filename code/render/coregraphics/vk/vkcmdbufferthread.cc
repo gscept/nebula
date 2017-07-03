@@ -139,6 +139,7 @@ VkCmdBufferThread::DoWork()
 				break;
 			}
 		}
+
 		// reset commands, but don't destroy them
 		curCommands.Reset();
 		this->commands.Wait();

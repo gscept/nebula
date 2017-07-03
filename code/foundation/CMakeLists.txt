@@ -18,6 +18,7 @@ fips_begin_module(foundation)
 				exithandler.h
 				factory.cc
 				factory.h
+				id.h
 				ptr.h
 				refcounted.cc
 				refcounted.h

@@ -12,6 +12,7 @@
 #include "resourcecontainer.h"
 #include "resourceid.h"
 #include "resourceloader.h"
+#include "resourceloaderthread.h"
 namespace Resources
 {
 class ResourceManager : public Core::RefCounted
@@ -24,13 +25,18 @@ public:
 	/// destructor
 	virtual ~ResourceManager();
 
+	/// open manager
+	void Open();
+	/// close manager
+	void Close();
+
 	/// update resource manager, call each frame
 	void Update(IndexT frameIndex);
 
 	/// create a new resource, which will be loaded at some later point, if not already loaded
-	template <class RESOURCE_TYPE> Ptr<ResourceContainer<RESOURCE_TYPE>> CreateResource(const ResourceId& id, std::function<void(const Ptr<RESOURCE_TYPE>&)> success, std::function<void(const Ptr<RESOURCE_TYPE>&)> failed);
+	template <class RESOURCE_TYPE> Ptr<ResourceContainer<RESOURCE_TYPE>> CreateResource(const ResourceId& id, std::function<void(const Ptr<RESOURCE_TYPE>&)> success = nullptr, std::function<void(const Ptr<RESOURCE_TYPE>&)> failed = nullptr, bool immediate = false);
 	/// overload which also takes an identifying tag, which is used to group-discard resources
-	template <class RESOURCE_TYPE> Ptr<ResourceContainer<RESOURCE_TYPE>> CreateResource(const ResourceId& id, const Util::StringAtom& tag, std::function<void(const Ptr<RESOURCE_TYPE>&)> success, std::function<void(const Ptr<RESOURCE_TYPE>&)> failed);
+	template <class RESOURCE_TYPE> Ptr<ResourceContainer<RESOURCE_TYPE>> CreateResource(const ResourceId& id, const Util::StringAtom& tag, std::function<void(const Ptr<RESOURCE_TYPE>&)> success = nullptr, std::function<void(const Ptr<RESOURCE_TYPE>&)> failed = nullptr, bool immediate = false);
 	/// discard resource
 	template <class RESOURCE_TYPE> void DiscardResource(const Ptr<ResourceContainer<RESOURCE_TYPE>>& res);
 	/// discard all resources by tag
@@ -39,7 +45,10 @@ public:
 	/// register a resource loader by using RTTI, this function will also create the loader
 	void RegisterLoader(const Util::StringAtom& ext, const Core::Rtti& loaderClass);
 private:
+	friend class ResourceLoader;
 
+	bool open;
+	Ptr<ResourceLoaderThread> loaderThread;
 	Util::Dictionary<Util::StringAtom, Ptr<ResourceLoader>> loaders;
 };
 
@@ -48,9 +57,9 @@ private:
 */
 template <class RESOURCE_TYPE> 	
 inline Ptr<ResourceContainer<RESOURCE_TYPE>>
-Resource::ResourceManager::CreateResource(const ResourceId& id, std::function<void(const Ptr<RESOURCE_TYPE>&)> success, std::function<void(const Ptr<RESOURCE_TYPE>&)> failed)
+Resources::ResourceManager::CreateResource(const ResourceId& id, std::function<void(const Ptr<RESOURCE_TYPE>&)> success, std::function<void(const Ptr<RESOURCE_TYPE>&)> failed, bool immediate)
 {
-	return this->CreateResource(id, "", success, failed);
+	return this->CreateResource(id, "", success, failed, immediate);
 }
 
 //------------------------------------------------------------------------------
@@ -58,9 +67,9 @@ Resource::ResourceManager::CreateResource(const ResourceId& id, std::function<vo
 */
 template <class RESOURCE_TYPE> 
 inline Ptr<ResourceContainer<RESOURCE_TYPE>>
-Resource::ResourceManager::CreateResource(const ResourceId& id, const Util::StringAtom& tag, std::function<void(const Ptr<RESOURCE_TYPE>&)> success, std::function<void(const Ptr<RESOURCE_TYPE>&)> failed)
+Resources::ResourceManager::CreateResource(const ResourceId& id, const Util::StringAtom& tag, std::function<void(const Ptr<RESOURCE_TYPE>&)> success, std::function<void(const Ptr<RESOURCE_TYPE>&)> failed, bool immediate)
 {
-	static_assert(std::is_base_of(Resource, RESOURCE_TYPE));
+	static_assert(std::is_base_of<Resources::Resource, RESOURCE_TYPE>::value, "Type is not a subclass of Resources::Resource");
 
 	// get resource loader by extension
 	Util::String ext = id.AsString().GetFileExtension();
@@ -69,7 +78,7 @@ Resource::ResourceManager::CreateResource(const ResourceId& id, const Util::Stri
 	const Ptr<ResourceLoader>& loader = this->loaders.ValueAtIndex(i);
 
 	// create container and cast to actual resource type
-	Ptr<ResourceContainer<RESOURCE_TYPE>> container = loader->CreateContainer<RESOURCE_TYPE>(id, tag, success, failed);
+	Ptr<ResourceContainer<RESOURCE_TYPE>> container = loader->CreateContainer<RESOURCE_TYPE>(id, tag, success, failed, immediate);
 	return container;
 }
 
@@ -78,9 +87,9 @@ Resource::ResourceManager::CreateResource(const ResourceId& id, const Util::Stri
 */
 template <class RESOURCE_TYPE>
 inline void
-Resource::ResourceManager::DiscardResource(const Ptr<ResourceContainer<RESOURCE_TYPE>>& res)
+Resources::ResourceManager::DiscardResource(const Ptr<ResourceContainer<RESOURCE_TYPE>>& res)
 {
-	static_assert(std::is_base_of(Resource, RESOURCE_TYPE));
+	static_assert(std::is_base_of<Resource, RESOURCE_TYPE>::value, "Type is not a subclass of Resources::Resource");
 
 	// get resource loader by extension
 	Util::String ext = res->resource->resourceId.AsString().GetFileExtension();
