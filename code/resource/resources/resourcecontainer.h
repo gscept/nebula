@@ -29,13 +29,14 @@ public:
 	const Ptr<RESOURCE>& GetResource();
 private:
 	friend class ResourceLoader;
+	friend class ResourceManager;
 
 	Ptr<RESOURCE> resource;
 	Ptr<RESOURCE> placeholder;
 	Ptr<RESOURCE> error;
 };
 
-__ImplementClassTemplate(Resources::ResourceContainer, 'RECO', Core::RefCounted);
+__ImplementClassTemplate(Resources::ResourceContainer, Core::RefCounted);
 
 //------------------------------------------------------------------------------
 /**
@@ -62,7 +63,7 @@ ResourceContainer<RESOURCE>::~ResourceContainer()
 */
 template <class RESOURCE>
 const Ptr<RESOURCE>&
-Resource::ResourceContainer<RESOURCE>::GetResource()
+Resources::ResourceContainer<RESOURCE>::GetResource()
 {
 	switch (this->resource->state)
 	{

@@ -10,6 +10,17 @@
 #include <stdlib.h>
 #include "base64/base64.h"
 
+
+//------------------------------------------------------------------------------
+/**
+	Literal constructor form string, to use "foobar"_str will automatically construct a String
+*/
+Util::String
+operator ""_str(const char* c, std::size_t s)
+{
+	return Util::String(c);
+}
+
 namespace Util
 {
 

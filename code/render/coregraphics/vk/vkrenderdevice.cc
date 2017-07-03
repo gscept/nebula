@@ -661,7 +661,7 @@ VkRenderDevice::CloseVulkanDevice()
 	for (i = 0; i < NumDrawThreads; i++)
 	{
 		this->drawThreads[i]->Stop();
-		this->drawThreads[i] = 0;
+		this->drawThreads[i] = nullptr;
 		n_delete(this->drawCompletionEvents[i]);
 
 		vkDestroyCommandPool(this->dev, this->dispatchableCmdDrawBufferPool[i], NULL);
@@ -670,7 +670,7 @@ VkRenderDevice::CloseVulkanDevice()
 	for (i = 0; i < NumTransferThreads; i++)
 	{
 		this->transThreads[i]->Stop();
-		this->transThreads[i] = 0;
+		this->transThreads[i] = nullptr;
 		n_delete(this->transCompletionEvents[i]);
 
 		vkDestroyCommandPool(this->dev, this->dispatchableCmdTransBufferPool[i], NULL);
@@ -679,7 +679,7 @@ VkRenderDevice::CloseVulkanDevice()
 	for (i = 0; i < NumComputeThreads; i++)
 	{
 		this->compThreads[i]->Stop();
-		this->compThreads[i] = 0;
+		this->compThreads[i] = nullptr;
 		n_delete(this->compCompletionEvents[i]);
 
 		vkDestroyCommandPool(this->dev, this->dispatchableCmdCompBufferPool[i], NULL);

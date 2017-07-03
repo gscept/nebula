@@ -9,6 +9,7 @@
     (C) 2013-2016 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
+#include <tuple>
 
 //------------------------------------------------------------------------------
 namespace Jobs
@@ -72,7 +73,9 @@ JobUniformDesc::JobUniformDesc() :
 /**
 */
 inline 
-JobUniformDesc::JobUniformDesc(nullptr_t)
+JobUniformDesc::JobUniformDesc(nullptr_t) :
+	numBuffers(0),
+	scratchSize(0)
 {
 	IndexT i;
 	for (i = 0; i < MaxNumBuffers; i++)
@@ -88,11 +91,11 @@ JobUniformDesc::JobUniformDesc(nullptr_t)
 inline
 JobUniformDesc::JobUniformDesc(std::initializer_list<std::tuple<void*, SizeT, SizeT>> data, SizeT scratchSize)
 {
-	n_assert(data.size() <= MaxNumBuffers, "Too many data points, refer to MaxNumBuffers");
+	n_assert(data.size() <= MaxNumBuffers);
 	this->numBuffers = data.size();
 	this->scratchSize = scratchSize;
 
-	IndexT i;
+	size_t i;
 	for (i = 0; i < data.size(); i++)
 	{
 		const std::tuple<void*, SizeT, SizeT>& d = data.begin()[i];
