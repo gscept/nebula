@@ -13,6 +13,9 @@
 #include "resourceid.h"
 namespace Resources
 {
+class ResourceLoader;
+class ResourceManager;
+class ResourceContainer;
 class Resource : public Core::RefCounted
 {
 	__DeclareClass(Resource);
@@ -33,6 +36,7 @@ public:
 private:
 	friend class ResourceLoader;
 	friend class ResourceManager;
+	friend class ResourceContainer;
 
 	State state;
 	ResourceId resourceId;

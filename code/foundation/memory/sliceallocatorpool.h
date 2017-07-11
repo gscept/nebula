@@ -196,7 +196,7 @@ Memory::SliceAllocatorPool<TYPE, POOLSIZE, FREEPOOLS>::Free(TYPE* slice)
 */
 template <class TYPE, unsigned int POOLSIZE, bool FREEPOOLS>
 inline void
-Memory::SliceAllocatorPool<TYPE, POOLSIZE, FREEPOOLS>::Free(const Core::Id& identifier)
+Memory::SliceAllocatorPool<TYPE, POOLSIZE, FREEPOOLS>::Free(const Core::Id &identifier)
 {
 	IndexT poolId = IndexT((identifier >> 32) & 0x00000000FFFFFFFF);
 	IndexT slice = IndexT((identifier) & 0x00000000FFFFFFFF);

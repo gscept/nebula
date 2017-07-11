@@ -133,7 +133,6 @@ Queue<TYPE>::Contains(const TYPE& e) const
     return (InvalidIndex != this->queueArray.FindIndex(e));
 }
 
-
 //------------------------------------------------------------------------------
 /**
 */

@@ -40,7 +40,7 @@ public:
 	/// create new Id using both high and low bits
 	static Id MakeId(const uint32_t low, const uint32_t high);
 	/// set high bits in half Id, which returns an integer
-	static uint32_t MakeHalfId(const uint16_t low, const uint16_t high);
+	static uint32_t MakeHalfId(const uint16_t high, const uint16_t low);
 	/// set 24-8 bits in integer
 	static uint32_t MakeBigTiny(const uint32_t big, const uchar tiny);
 
@@ -51,7 +51,7 @@ public:
 //------------------------------------------------------------------------------
 /**
 */
-
+inline 
 Id::Id() :
 	id(InvalidId)
 {
@@ -139,7 +139,7 @@ Id::GetLow(const uint32_t bits)
 /**
 */
 inline Core::Id
-Id::MakeId(const uint32_t low, const uint32_t high)
+Id::MakeId(const uint32_t high, const uint32_t low)
 {
 	Core::Id ret;
 	ret.id = (((uint64_t)low) & 0x00000000FFFFFFFF) + ((((uint64_t)high) << 32) & 0xFFFFFFFF00000000);
@@ -151,7 +151,7 @@ Id::MakeId(const uint32_t low, const uint32_t high)
 /**
 */
 inline uint32_t
-Id::MakeHalfId(const uint16_t low, const uint16_t high)
+Id::MakeHalfId(const uint16_t high, const uint16_t low)
 {
 	uint32_t ret = (((uint32_t)low) & 0x0000FFFF) + ((((uint32_t)high) << 16) & 0xFFFF0000);
 	return ret;
