@@ -16,7 +16,7 @@
 #elif __XBOX360__
 #include "core/xbox360/precompiled.h"
 #include "jobs/jobfunccontext.h"
-#elif linux
+#elif __linux__
 #include "core/posix/precompiled.h"
 #include "jobs/jobfunccontext.h"
 #else

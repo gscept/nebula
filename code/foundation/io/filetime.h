@@ -35,7 +35,7 @@ namespace IO
 {
 typedef OSX::OSXFileTime FileTime;
 }
-#elif linux
+#elif __linux__
 #include "io/posix/posixfiletime.h"
 namespace IO
 {

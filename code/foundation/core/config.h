@@ -114,7 +114,7 @@ static const int JobMaxSliceSize = 0xFFFF;
 #endif
 
 // enable/disable the transparent web filesystem
-#if __WIN32__ || __linux
+#if __WIN32__ || __linux__
 #define __NEBULA3_HTTP_FILESYSTEM__ (1)
 #else
 #define __NEBULA3_HTTP_FILESYSTEM__ (0)

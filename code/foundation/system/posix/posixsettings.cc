@@ -6,14 +6,11 @@
 #include "core/ptr.h"
 #include "io/fswrapper.h"
 #include "system/posix/posixsettings.h"
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/xml_parser.hpp>
 
 namespace Posix
 {
 using namespace Core;
 using namespace Util;
-using namespace boost;
 
 //------------------------------------------------------------------------------
 /**
@@ -24,7 +21,7 @@ PosixSettings::Exists(const Util::String & vendor, const String& key, const Stri
 {       
     // build path to config
     Util::String path = GetUserDir() + "/.config/nebula/"+ vendor + ".cfg";
-     
+    /*
     if(IO::FSWrapper::FileExists(path))
     {
         property_tree::ptree pt;
@@ -42,6 +39,7 @@ PosixSettings::Exists(const Util::String & vendor, const String& key, const Stri
         }
         
     }
+    */
     return false;    
 }
 
@@ -60,7 +58,7 @@ PosixSettings::WriteString(const Util::String & vendor, const String& key, const
         IO::FSWrapper::CreateDirectory(home + "/.config/nebula/");
     }
     Util::String path = home + "/.config/nebula/"+ vendor + ".cfg";    
-    
+    /*
     property_tree::ptree pt;
     if(IO::FSWrapper::FileExists(path))
     {
@@ -94,6 +92,7 @@ PosixSettings::WriteString(const Util::String & vendor, const String& key, const
     {
         n_error("failed to parse settings file %s\n", path.AsCharPtr());
     }    
+    */
     return false;
 }
 
@@ -107,7 +106,7 @@ PosixSettings::ReadString(const Util::String & vendor, const String& key, const 
 {        
     // build path to config
     Util::String path = GetUserDir() + "/.config/nebula/"+ vendor + ".cfg";    
-    
+    /*
     if(IO::FSWrapper::FileExists(path))
     {
         property_tree::ptree pt;
@@ -126,6 +125,7 @@ PosixSettings::ReadString(const Util::String & vendor, const String& key, const 
         }
         return retString;        
     }
+    */
     n_error("failed to open settings file %s\n",path.AsCharPtr());
 }
 

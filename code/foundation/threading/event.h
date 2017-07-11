@@ -33,7 +33,7 @@ namespace Threading
 class Event : public PS3::PS3Event
 { };
 }
-#elif linux 
+#elif __linux__ 
 #include "threading/linux/linuxevent.h"
 namespace Threading
 {

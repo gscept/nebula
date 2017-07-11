@@ -8,7 +8,7 @@
 
 namespace IO
 {
-#if __WIN32__ || __XBOX360__ || linux
+#if __WIN32__ || __XBOX360__ || __linux__
 __ImplementClass(IO::ArchiveFileSystem, 'ARFS', IO::ZipFileSystem);
 __ImplementInterfaceSingleton(IO::ArchiveFileSystem);
 #elif __WII__
