@@ -8,7 +8,21 @@
 namespace Resources
 {
 
+//------------------------------------------------------------------------------
+/**
+*/
+ResourceContainer::ResourceContainer()
+{
+	// empty
+}
 
+//------------------------------------------------------------------------------
+/**
+*/
+ResourceContainer::~ResourceContainer()
+{
+	// empty
+}
 
 
 } // namespace Resources

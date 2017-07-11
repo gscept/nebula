@@ -13,12 +13,11 @@
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
+#include "resource.h"
 namespace Resources
 {
-template <class RESOURCE>
-class ResourceContainer : public Core::RefCounted
+class ResourceContainer
 {
-	__DeclareTemplateClass(ResourceContainer, RESOURCE);
 public:
 	/// constructor
 	ResourceContainer();
@@ -26,44 +25,21 @@ public:
 	virtual ~ResourceContainer();
 
 	/// get resource, may return placeholder if pending, or failed if load failed
-	const Ptr<RESOURCE>& GetResource();
+	const Ptr<Resource>& GetResource();
 private:
 	friend class ResourceLoader;
 	friend class ResourceManager;
 
-	Ptr<RESOURCE> resource;
-	Ptr<RESOURCE> placeholder;
-	Ptr<RESOURCE> error;
+	Ptr<Resource> resource;
+	Ptr<Resource> placeholder;
+	Ptr<Resource> error;
 };
 
-__ImplementClassTemplate(Resources::ResourceContainer, Core::RefCounted);
-
 //------------------------------------------------------------------------------
 /**
 */
-template <class RESOURCE>
-inline
-ResourceContainer<RESOURCE>::ResourceContainer()
-{
-	// empty
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-template <class RESOURCE>
-inline
-ResourceContainer<RESOURCE>::~ResourceContainer()
-{
-	// empty
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-template <class RESOURCE>
-const Ptr<RESOURCE>&
-Resources::ResourceContainer<RESOURCE>::GetResource()
+inline const Ptr<Resource>&
+Resources::ResourceContainer::GetResource()
 {
 	switch (this->resource->state)
 	{
@@ -77,6 +53,7 @@ Resources::ResourceContainer<RESOURCE>::GetResource()
 		return this->error;
 		break;
 	}
+	return this->error;
 }
 
 } // namespace Resources

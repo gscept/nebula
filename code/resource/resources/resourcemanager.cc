@@ -11,6 +11,7 @@ namespace Resources
 __ImplementClass(Resources::ResourceManager, 'RMGR', Core::RefCounted);
 __ImplementSingleton(Resources::ResourceManager);
 
+int32_t ResourceManager::UniqueLoaderCounter = 0;
 //------------------------------------------------------------------------------
 /**
 */
@@ -51,6 +52,8 @@ ResourceManager::Close()
 	n_assert(this->open);
 	this->loaderThread->Stop();
 	this->loaderThread = nullptr;
+	this->loaders.Clear();
+	this->extensionMap.Clear();
 	this->open = false;
 }
 
@@ -63,8 +66,10 @@ ResourceManager::RegisterLoader(const Util::StringAtom& ext, const Core::Rtti& l
 	n_assert(this->open);
 	Core::RefCounted* obj = loaderClass.Create();
 	Ptr<ResourceLoader> loader((ResourceLoader*)obj);
+	loader->uniqueId = UniqueLoaderCounter++;
 	loader->Setup();
-	this->loaders.Add(ext, loader);
+	this->loaders.Append(loader);
+	this->extensionMap.Add(ext, this->loaders.Size() - 1);
 }
 
 //------------------------------------------------------------------------------
@@ -76,7 +81,7 @@ ResourceManager::Update(IndexT frameIndex)
 	IndexT i;
 	for (i = 0; i < this->loaders.Size(); i++)
 	{
-		const Ptr<ResourceLoader>& loader = this->loaders.ValueAtIndex(i);
+		const Ptr<ResourceLoader>& loader = this->loaders[i];
 		loader->Update(frameIndex);
 	}
 }
@@ -90,9 +95,11 @@ ResourceManager::DiscardResources(const Util::StringAtom& tag)
 	IndexT i;
 	for (i = 0; i < this->loaders.Size(); i++)
 	{
-		const Ptr<ResourceLoader>& loader = this->loaders.ValueAtIndex(i);
+		const Ptr<ResourceLoader>& loader = this->loaders[i];
 		loader->DiscardByTag(tag);
 	}
 }
+
+
 
 } // namespace Resources

@@ -19,6 +19,7 @@ fips_begin_module(foundation)
 				factory.cc
 				factory.h
 				id.h
+				idpool.h
 				ptr.h
 				refcounted.cc
 				refcounted.h
