@@ -45,7 +45,7 @@ class SysFunc : public PS3::SysFunc
     // empty
 };
 } // namespace Core;
-#elif ( __OSX__ || __APPLE__ || linux )
+#elif ( __OSX__ || __APPLE__ || __linux__ )
 #include "core/posix/posixsysfunc.h"
 namespace Core
 {

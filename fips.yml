@@ -9,11 +9,12 @@ exports:
     header-dirs : 
         - .
         - code/foundation
-        - code/render
+        - code/render        
         - code/resource
+        - code/game
         - extlibs/mixed
     modules:
         foundation: code/foundation
         render: code/render
         resource: code/resource
-        corelibs: extlibs/mixed
+        game: code/game        corelibs: extlibs/mixed

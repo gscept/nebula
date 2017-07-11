@@ -28,7 +28,7 @@ class Socket : public PS3::PS3Socket
     __DeclareClass(Socket);
 };
 }
-#elif linux
+#elif __linux__
 #include "net/posix/posixsocket.h"
 namespace Net
 {

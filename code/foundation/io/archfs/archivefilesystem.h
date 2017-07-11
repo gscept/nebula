@@ -8,7 +8,7 @@
     (C) 2009 Radon Labs GmbH
     (C) 2013-2016 Individual contributors, see AUTHORS file
 */
-#if __WIN32__ || __XBOX360__ || linux
+#if __WIN32__ || __XBOX360__ || __linux__
 #include "io/zipfs/zipfilesystem.h"
 namespace IO
 {

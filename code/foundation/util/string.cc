@@ -55,7 +55,7 @@ String::Format(const char* fmtString, ...)
     #if __WIN32__
         // need to use non-CRT thread safe function under Win32
         StringCchVPrintf(buf, sizeof(buf), fmtString, argList);
-    #elif (__WII__ || __PS3__ || __OSX__ || linux)
+    #elif (__WII__ || __PS3__ || __OSX__ || __linux__)
 		vsnprintf(buf, sizeof(buf), fmtString, argList);
     #else
         _vsnprintf(buf, sizeof(buf), fmtString, argList);
@@ -74,7 +74,7 @@ String::FormatArgList(const char* fmtString, va_list argList)
     #if __WIN32__
         // need to use non-CRT thread safe function under Win32
         StringCchVPrintf(buf, sizeof(buf), fmtString, argList);
-    #elif (__WII__ || __PS3__ || __OSX__ || linux)
+    #elif (__WII__ || __PS3__ || __OSX__ || __linux__)
 		vsnprintf(buf, sizeof(buf), fmtString, argList);
     #else
         _vsnprintf(buf, sizeof(buf), fmtString, argList);

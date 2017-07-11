@@ -39,7 +39,7 @@ namespace Util
 {
 typedef OSX::OSXGuid Guid;
 }
-#elif ( __APPLE__ || linux )
+#elif ( __APPLE__ || __linux__ )
 #include "util/posix/posixguid.h"
 namespace Util
 {

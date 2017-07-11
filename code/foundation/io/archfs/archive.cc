@@ -8,7 +8,7 @@
 
 namespace IO
 {
-#if __WIN32__ || __XBOX360__ || linux
+#if __WIN32__ || __XBOX360__ || __linux__
 __ImplementClass(IO::Archive, 'ARCV', IO::ZipArchive);
 #elif __WII__
 __ImplementClass(IO::Archive, 'ARCV', Wii::WiiArchive);

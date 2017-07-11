@@ -21,7 +21,7 @@ namespace Jobs
 {
 typedef SerialJobFuncDesc JobFuncDesc;
 }
-#elif (__WIN32__ || __XBOX360__ || linux)
+#elif (__WIN32__ || __XBOX360__ || __linux__)
 #include "jobs/tp/tpjobfuncdesc.h"
 namespace Jobs
 {

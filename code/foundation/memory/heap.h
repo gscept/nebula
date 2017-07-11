@@ -27,7 +27,7 @@ namespace Memory
 {
 typedef PS3::PS3Heap Heap;
 }
-#elif ( __OSX__ || __APPLE__ || linux )
+#elif ( __OSX__ || __APPLE__ || __linux__ )
 #include "memory/posix/posixheap.h"
 namespace Memory
 {

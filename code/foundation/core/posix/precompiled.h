@@ -29,17 +29,5 @@
 #include <emmintrin.h>
 #include <immintrin.h>
 
-#ifdef __OGL4__
-#include <GL/glew.h>
-#include <GL/glu.h>
-#include "GLFW/glfw3.h"
-#define GLSUCCESS glGetError() == GL_NO_ERROR 
-#endif
-
-#ifdef __VULKAN__
-#include <vulkan/vulkan.h>
-#include <GLFW/glfw3.h>
-#endif
-
 //------------------------------------------------------------------------------
 #endif

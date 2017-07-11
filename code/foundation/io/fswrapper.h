@@ -32,7 +32,7 @@ namespace IO
 class FSWrapper : public PS3::PS3FSWrapper
 { };
 }
-#elif ( __OSX__ || __APPLE__ || linux )
+#elif ( __OSX__ || __APPLE__ || __linux__ )
 #include "io/posix/posixfswrapper.h"
 namespace IO
 {

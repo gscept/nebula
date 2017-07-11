@@ -147,7 +147,7 @@ AssignRegistry::SetupProjectAssigns()
         this->SetAssign(Assign("export", "root:export_ps3"));
     #elif __OSX__
         this->SetAssign(Assign("export", "root:export_osx"));
-    #elif linux
+    #elif __linux__
         this->SetAssign(Assign("export", "root:export_linux"));
     #else
     #error "PLATFORM FIXME: setup platform specific assigns!"
