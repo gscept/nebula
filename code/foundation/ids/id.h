@@ -1,9 +1,6 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	An Id is a 64-bit integer which is to be used as handles to internal systems,
-	like OpenGL. 
-
 	This class implements some static helper functions to set high and low 32-bit integers,
 	as well as a function to create a complete id from two of them. 
 	
@@ -12,76 +9,74 @@
 //------------------------------------------------------------------------------
 #include <cstdint>
 #include "core/types.h"
-namespace Core
+namespace Ids
 {
+
+
+typedef uint64_t Id64;
+typedef uint32_t Id32;
+typedef uint32_t Id24;
+typedef uint16_t Id16;
+typedef uint8_t Id8;
+static const uint64_t InvalidId64 = -1;
+static const uint32_t InvalidId32 = -1;
+static const uint16_t InvalidId16 = -1;
+static const uint32_t InvalidId24 = -1;
+static const uint8_t InvalidId8 = -1;
+
 struct Id
 {
 public:
 
-	/// constructor
-	Id();
-
 	/// set high (leftmost) 32 bits
-	static void SetHigh(Id& id, const uint32_t bits);
+	static void SetHigh(Id64& id, const uint32_t bits);
 	/// get high (leftmost) 32 bits
-	static uint32_t GetHigh(const Id& id);
+	static Id32 GetHigh(const Id64 id);
 	/// get high bits in integer
-	static uint16_t GetHigh(const uint32_t bits);
+	static Id16 GetHigh(const Id32 bits);
 	/// get big piece of 24-8 bit integer
-	static uint32_t GetBig(const uint32_t bits);
+	static Id24 GetBig(const Id32 bits);
 	/// get tiny piece of 24-8 bit integer
-	static char GetTiny(const uint32_t bits);
+	static Id8 GetTiny(const Id32 bits);
 	/// set low (rightmost) 32 bits
-	static void SetLow(Id& id, const uint32_t bits);
+	static void SetLow(Id64& id, const Id32 bits);
 	/// get low (rightmost) 32 bits
-	static uint32_t GetLow(const Id& id);
+	static Id32 GetLow(const Id64 id);
 	/// get low bits in integer
-	static uint16_t GetLow(const uint32_t bits);
+	static Id16 GetLow(const Id32 bits);
 	/// create new Id using both high and low bits
-	static Id MakeId(const uint32_t low, const uint32_t high);
+	static Id64 MakeId64(const Id32 low, const Id32 high);
 	/// set high bits in half Id, which returns an integer
-	static uint32_t MakeHalfId(const uint16_t high, const uint16_t low);
+	static Id32 MakeId32(const Id16 high, const Id16 low);
 	/// set 24-8 bits in integer
-	static uint32_t MakeBigTiny(const uint32_t big, const uchar tiny);
+	static Id32 MakeId24_8(const Id24 big, const Id8 tiny);
 
-	uint64_t id;
-	static const uint64_t InvalidId = -1;
 };
 
 //------------------------------------------------------------------------------
 /**
 */
-inline 
-Id::Id() :
-	id(InvalidId)
-{
-	// empty
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 inline void
-Id::SetHigh(Id& id, const uint32_t bits)
+Id::SetHigh(Id64& id, const Id32 bits)
 {
-	id.id = (((uint64_t)bits) << 32) & 0xFFFFFFFF00000000;
+	id = (((uint64_t)bits) << 32) & 0xFFFFFFFF00000000;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline uint32_t
-Id::GetHigh(const Id& id)
+inline Id32
+Id::GetHigh(const Id64 id)
 {
-	uint32_t bits = (uint32_t)((id.id >> 32) & 0x00000000FFFFFFFF);
+	uint32_t bits = (uint32_t)((id >> 32) & 0x00000000FFFFFFFF);
 	return bits;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline uint16_t
-Id::GetHigh(const uint32_t bits)
+inline Id16
+Id::GetHigh(const Id32 bits)
 {
 	uint16_t ret = (uint16_t)((bits >> 16) & 0x0000FFFF);
 	return ret;
@@ -90,8 +85,8 @@ Id::GetHigh(const uint32_t bits)
 //------------------------------------------------------------------------------
 /**
 */
-inline uint32_t
-Id::GetBig(const uint32_t bits)
+inline Id32
+Id::GetBig(const Id32 bits)
 {
 	return (bits & 0xFFFFFF00) >> 8;
 }
@@ -99,10 +94,10 @@ Id::GetBig(const uint32_t bits)
 //------------------------------------------------------------------------------
 /**
 */
-inline char
-Id::GetTiny(const uint32_t bits)
+inline Id8
+Id::GetTiny(const Id32 bits)
 {
-	char ret = (bits & 0x000000FF);
+	uint8_t ret = (bits & 0x000000FF);
 	return ret;
 }
 
@@ -110,26 +105,26 @@ Id::GetTiny(const uint32_t bits)
 /**
 */
 inline void
-Id::SetLow(Id& id, const uint32_t bits)
+Id::SetLow(Id64& id, const Id32 bits)
 {
-	id.id = ((uint64_t)bits) & 0x00000000FFFFFFFF;
+	id = ((uint64_t)bits) & 0x00000000FFFFFFFF;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline uint32_t
-Id::GetLow(const Id& id)
+inline Id32
+Id::GetLow(const Id64 id)
 {
-	uint32_t bits = (uint32_t)((id.id) & 0x00000000FFFFFFFF);
+	uint32_t bits = (uint32_t)((id) & 0x00000000FFFFFFFF);
 	return bits;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline uint16_t
-Id::GetLow(const uint32_t bits)
+inline Id16
+Id::GetLow(const Id32 bits)
 {
 	int16_t ret = (uint16_t)((bits) & 0x0000FFFF);
 	return ret;
@@ -138,20 +133,19 @@ Id::GetLow(const uint32_t bits)
 //------------------------------------------------------------------------------
 /**
 */
-inline Core::Id
-Id::MakeId(const uint32_t high, const uint32_t low)
+inline Ids::Id64
+Id::MakeId64(const Id32 high, const Id32 low)
 {
-	Core::Id ret;
-	ret.id = (((uint64_t)low) & 0x00000000FFFFFFFF) + ((((uint64_t)high) << 32) & 0xFFFFFFFF00000000);
+	Ids::Id64 ret;
+	ret = (((uint64_t)low) & 0x00000000FFFFFFFF) + ((((uint64_t)high) << 32) & 0xFFFFFFFF00000000);
 	return ret;
 }
-
 
 //------------------------------------------------------------------------------
 /**
 */
-inline uint32_t
-Id::MakeHalfId(const uint16_t high, const uint16_t low)
+inline Id32
+Id::MakeId32(const Id16 high, const Id16 low)
 {
 	uint32_t ret = (((uint32_t)low) & 0x0000FFFF) + ((((uint32_t)high) << 16) & 0xFFFF0000);
 	return ret;
@@ -161,11 +155,11 @@ Id::MakeHalfId(const uint16_t high, const uint16_t low)
 //------------------------------------------------------------------------------
 /**
 */
-inline uint32_t
-Id::MakeBigTiny(const uint32_t big, const uchar tiny)
+inline Id32
+Id::MakeId24_8(const Id24 big, const Id8 tiny)
 {
 	uint32_t ret = (((uint32_t)tiny) & 0x000000FF) + ((big << 8) & 0xFFFFFF00);
 	return ret;
 }
 
-} // namespace Core
+} // namespace Ids

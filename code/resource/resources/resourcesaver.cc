@@ -1,18 +1,18 @@
 //------------------------------------------------------------------------------
-// lightcontext.cc
+// resourcesaver.cc
 // (C) 2017 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
-#include "lightcontext.h"
+#include "resourcesaver.h"
 
-namespace Graphics
+namespace Resources
 {
 
-__ImplementClass(Graphics::LightContext, 'LICO', Graphics::GraphicsContext);
+__ImplementAbstractClass(Resources::ResourceSaver, 'RESA', Core::RefCounted);
 //------------------------------------------------------------------------------
 /**
 */
-LightContext::LightContext()
+ResourceSaver::ResourceSaver()
 {
 	// empty
 }
@@ -20,9 +20,9 @@ LightContext::LightContext()
 //------------------------------------------------------------------------------
 /**
 */
-LightContext::~LightContext()
+ResourceSaver::~ResourceSaver()
 {
 	// empty
 }
 
-} // namespace Graphics
+} // namespace Resources

@@ -4,6 +4,10 @@ imports:
         git: https://github.com/floooh/fips-zlib.git
      fips-directxmath:
         git: http://x.ikplus.de/fips-directxmath.git
+     fips-glfw:
+        git: https://github.com/gscept/fips-glfw.git
+     fips-anyfx:
+        git: https://github.com/Duttenheim/fips-anyfx.git
 
 exports:
     header-dirs : 
@@ -17,4 +21,5 @@ exports:
         foundation: code/foundation
         render: code/render
         resource: code/resource
-        game: code/game        corelibs: extlibs/mixed
+        game: code/game
+        corelibs: extlibs/mixed

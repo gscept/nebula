@@ -462,7 +462,7 @@ VkShapeRenderer::DrawBufferedIndexedPrimitives()
 void
 VkShapeRenderer::CreateBoxShape()
 {
-	Ptr<ManagedMesh> mesh = ResourceManager::Instance()->CreateManagedResource(Mesh::RTTI, "msh:system/box.nvx2", StreamMeshLoader::Create()).downcast<ManagedMesh>();
+	Ptr<ManagedMesh> mesh = ResourceManager::Instance()->CreateManagedResource(Mesh::RTTI, "msh:system/box.nvx2", MeshLoader::Create()).downcast<ManagedMesh>();
 	this->shapeMeshes[RenderShape::Box] = mesh;
 }
 
@@ -472,7 +472,7 @@ VkShapeRenderer::CreateBoxShape()
 void
 VkShapeRenderer::CreateSphereShape()
 {
-	Ptr<ManagedMesh> mesh = ResourceManager::Instance()->CreateManagedResource(Mesh::RTTI, "msh:system/sphere.nvx2", StreamMeshLoader::Create()).downcast<ManagedMesh>();
+	Ptr<ManagedMesh> mesh = ResourceManager::Instance()->CreateManagedResource(Mesh::RTTI, "msh:system/sphere.nvx2", MeshLoader::Create()).downcast<ManagedMesh>();
 	this->shapeMeshes[RenderShape::Sphere] = mesh;
 }
 
@@ -482,7 +482,7 @@ VkShapeRenderer::CreateSphereShape()
 void
 VkShapeRenderer::CreateCylinderShape()
 {
-	Ptr<ManagedMesh> mesh = ResourceManager::Instance()->CreateManagedResource(Mesh::RTTI, "msh:system/cylinder.nvx2", StreamMeshLoader::Create()).downcast<ManagedMesh>();
+	Ptr<ManagedMesh> mesh = ResourceManager::Instance()->CreateManagedResource(Mesh::RTTI, "msh:system/cylinder.nvx2", MeshLoader::Create()).downcast<ManagedMesh>();
 	this->shapeMeshes[RenderShape::Cylinder] = mesh;
 }
 
@@ -492,7 +492,7 @@ VkShapeRenderer::CreateCylinderShape()
 void
 VkShapeRenderer::CreateTorusShape()
 {
-	Ptr<ManagedMesh> mesh = ResourceManager::Instance()->CreateManagedResource(Mesh::RTTI, "msh:system/torus.nvx2", StreamMeshLoader::Create()).downcast<ManagedMesh>();
+	Ptr<ManagedMesh> mesh = ResourceManager::Instance()->CreateManagedResource(Mesh::RTTI, "msh:system/torus.nvx2", MeshLoader::Create()).downcast<ManagedMesh>();
 	this->shapeMeshes[RenderShape::Torus] = mesh;
 }
 
@@ -502,7 +502,7 @@ VkShapeRenderer::CreateTorusShape()
 void
 VkShapeRenderer::CreateConeShape()
 {
-	Ptr<ManagedMesh> mesh = ResourceManager::Instance()->CreateManagedResource(Mesh::RTTI, "msh:system/cone.nvx2", StreamMeshLoader::Create()).downcast<ManagedMesh>();
+	Ptr<ManagedMesh> mesh = ResourceManager::Instance()->CreateManagedResource(Mesh::RTTI, "msh:system/cone.nvx2", MeshLoader::Create()).downcast<ManagedMesh>();
 	this->shapeMeshes[RenderShape::Cone] = mesh;
 }
 

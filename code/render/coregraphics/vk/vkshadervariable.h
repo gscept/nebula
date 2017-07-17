@@ -27,7 +27,7 @@ class VkLightServer;
 
 namespace Vulkan
 {
-class VkStreamShaderLoader;
+class VkShaderLoader;
 class VkShaderState;
 class VkShader;
 class VkShaderServer;
@@ -87,7 +87,7 @@ public:
 
 private:
 
-	friend class Vulkan::VkStreamShaderLoader;
+	friend class Vulkan::VkShaderLoader;
 	friend class Vulkan::VkShaderState;
 	friend class Vulkan::VkShaderServer;
 	friend class Vulkan::VkUniformBuffer;

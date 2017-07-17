@@ -12,36 +12,36 @@
 #include "coregraphics/d3d11/d3d11streamshaderloader.h"
 namespace CoreGraphics
 {
-class StreamShaderLoader : public Direct3D11::D3D11StreamShaderLoader
+class ShaderLoader : public Direct3D11::D3D11StreamShaderLoader
 {
-	__DeclareClass(StreamShaderLoader);
+	__DeclareClass(ShaderLoader);
 };
 }
 #elif __OGL4__
 #include "coregraphics/ogl4/ogl4streamshaderloader.h"
 namespace CoreGraphics
 {
-class StreamShaderLoader : public OpenGL4::OGL4StreamShaderLoader
+class ShaderLoader : public OpenGL4::OGL4StreamShaderLoader
 {
-	__DeclareClass(StreamShaderLoader);
+	__DeclareClass(ShaderLoader);
 };
 }
 #elif __VULKAN__
-#include "coregraphics/vk/vkstreamshaderloader.h"
+#include "coregraphics/vk/vkshaderloader.h"
 namespace CoreGraphics
 {
-class StreamShaderLoader : public Vulkan::VkStreamShaderLoader
+class ShaderLoader : public Vulkan::VkShaderLoader
 {
-	__DeclareClass(StreamShaderLoader);
+	__DeclareClass(ShaderLoader);
 };
 }
 #elif __DX9__
 #include "coregraphics/d3d9/d3d9streamshaderloader.h"
 namespace CoreGraphics
 {
-class StreamShaderLoader : public Direct3D9::D3D9StreamShaderLoader
+class ShaderLoader : public Direct3D9::D3D9StreamShaderLoader
 {
-    __DeclareClass(StreamShaderLoader);
+    __DeclareClass(ShaderLoader);
 };
 }
 #else

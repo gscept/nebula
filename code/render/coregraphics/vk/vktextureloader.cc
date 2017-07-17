@@ -3,7 +3,7 @@
 // (C) 2016 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
-#include "vkstreamtextureloader.h"
+#include "vktextureloader.h"
 #include "coregraphics/texture.h"
 #include "coregraphics/renderdevice.h"
 #include "io/ioserver.h"
@@ -17,7 +17,7 @@
 namespace Vulkan
 {
 
-__ImplementClass(Vulkan::VkStreamTextureLoader, 'VKTL', Resources::StreamResourceLoader);
+__ImplementClass(Vulkan::VkTextureLoader, 'VKTL', Resources::ResourceLoader);
 
 using namespace CoreGraphics;
 using namespace Resources;
@@ -25,7 +25,7 @@ using namespace IO;
 //------------------------------------------------------------------------------
 /**
 */
-VkStreamTextureLoader::VkStreamTextureLoader()
+VkTextureLoader::VkTextureLoader()
 {
 	// empty
 }
@@ -33,7 +33,7 @@ VkStreamTextureLoader::VkStreamTextureLoader()
 //------------------------------------------------------------------------------
 /**
 */
-VkStreamTextureLoader::~VkStreamTextureLoader()
+VkTextureLoader::~VkTextureLoader()
 {
 	// empty
 }
@@ -43,7 +43,7 @@ VkStreamTextureLoader::~VkStreamTextureLoader()
 	FIXME: use transfer queue to update texture asynchronously.
 */
 bool
-VkStreamTextureLoader::SetupResourceFromStream(const Ptr<IO::Stream>& stream)
+VkTextureLoader::SetupResourceFromStream(const Ptr<IO::Stream>& stream)
 {
 	n_assert(stream.isvalid());
 	n_assert(stream->CanBeMapped());

@@ -4,7 +4,8 @@
 
 fips_begin_module(resource)
 	fips_vs_warning_level(3)
-	fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../foundation)
+	fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/foundation)
+	fips_deps(foundation)
 		fips_files(stdneb.h stdneb.cc)
 		fips_dir(resources)
 			fips_files(
@@ -19,5 +20,9 @@ fips_begin_module(resource)
 				resourceloaderthread.h
 				resourcemanager.cc
 				resourcemanager.h
+				resourcememoryloader.cc
+				resourcememoryloader.h
+				resourcesaver.cc
+				resourcesaver.h
 			)
 fips_end_module()

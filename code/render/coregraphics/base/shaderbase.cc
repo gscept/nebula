@@ -100,7 +100,7 @@ ShaderBase::SelectActiveVariation(CoreGraphics::ShaderFeature::Mask featureMask)
     {
         n_error("Unknown shader variation '%s' in shader '%s'\n",
             ShaderServer::Instance()->FeatureMaskToString(featureMask).AsCharPtr(),
-            this->GetResourceId().Value());
+            this->GetResourceName().Value());
     }
     return false;
 }

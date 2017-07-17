@@ -3,12 +3,12 @@
 #-------------------------------------------------------------------------------
 
 fips_begin_module(foundation)
-	fips_deps(corelibs zlib)
 	if(FIPS_LINUX)
 		fips_libs(uuid)
 	endif()
 	fips_vs_warning_level(3)
 	fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+	fips_deps(corelibs zlib)
 		fips_files(stdneb.h stdneb.cc)
 		fips_dir(core)
 			fips_files(
@@ -382,12 +382,12 @@ fips_begin_module(foundation)
 			svg/svgpagewriter.cc
 			svg/svgpagewriter.h
 		)
-		fips_dir(id)
+		fips_dir(ids)
 		fips_files(
 			id.h
 			idpool.h
-			idsystem.cc
-			idsystem.h
+			idgenerationpool.cc
+			idgenerationpool.h
 		)
 		fips_dir(jobs)
 		fips_files(

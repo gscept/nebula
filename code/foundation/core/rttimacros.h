@@ -178,14 +178,14 @@ private:
 	Neat macro to make enums act as bit flags, be able to check if bits are set, and convert to integers
 */
 #define __ImplementEnumBitOperators(type) \
-	inline TYPE operator|(type a, type b) { return static_cast<type>(static_cast<unsigned>(a) | static_cast<unsigned>(b)); }\
-	inline TYPE operator&(type a, type b) { return static_cast<type>(static_cast<unsigned>(a) & static_cast<unsigned>(b)); }\
-	inline TYPE& operator|=(type& a, type b) { a = static_cast<type>(static_cast<unsigned>(a) | static_cast<unsigned>(b)); return a; }\
-	inline TYPE& operator&=(type& a, type b) { a = static_cast<type>(static_cast<unsigned>(a) & static_cast<unsigned>(b)); return a; }\
-	inline TYPE operator|(type a, unsigned b) { return static_cast<type>(static_cast<unsigned>(a) | b); }\
-	inline TYPE operator&(type a, unsigned b) { return static_cast<type>(static_cast<unsigned>(a) & b); }\
-	inline TYPE& operator|=(type& a, unsigned b) { a = static_cast<type>(static_cast<unsigned>(a) | b); return a; }\
-	inline TYPE& operator&=(type& a, unsigned b) { a = static_cast<type>(static_cast<unsigned>(a) & b); return a; }\
+	inline type operator|(type a, type b) { return static_cast<type>(static_cast<unsigned>(a) | static_cast<unsigned>(b)); }\
+	inline type operator&(type a, type b) { return static_cast<type>(static_cast<unsigned>(a) & static_cast<unsigned>(b)); }\
+	inline type& operator|=(type& a, type b) { a = static_cast<type>(static_cast<unsigned>(a) | static_cast<unsigned>(b)); return a; }\
+	inline type& operator&=(type& a, type b) { a = static_cast<type>(static_cast<unsigned>(a) & static_cast<unsigned>(b)); return a; }\
+	inline type operator|(type a, unsigned b) { return static_cast<type>(static_cast<unsigned>(a) | b); }\
+	inline type operator&(type a, unsigned b) { return static_cast<type>(static_cast<unsigned>(a) & b); }\
+	inline type& operator|=(type& a, unsigned b) { a = static_cast<type>(static_cast<unsigned>(a) | b); return a; }\
+	inline type& operator&=(type& a, unsigned b) { a = static_cast<type>(static_cast<unsigned>(a) & b); return a; }\
 	inline unsigned operator|(unsigned a, type b) { return a | static_cast<unsigned>(b); }\
 	inline unsigned operator&(unsigned a, type b) { return a & static_cast<unsigned>(b); }\
 	inline unsigned& operator|=(unsigned& a, type b) { a = a | static_cast<unsigned>(b); return a; }\

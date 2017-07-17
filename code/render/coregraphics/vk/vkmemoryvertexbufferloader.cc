@@ -8,6 +8,7 @@
 #include "coregraphics/vertexbuffer.h"
 #include "vkrenderdevice.h"
 #include "vkutilities.h"
+#include "resources/resourcemanager.h"
 
 using namespace CoreGraphics;
 using namespace Resources;
@@ -19,12 +20,11 @@ __ImplementClass(Vulkan::VkMemoryVertexBufferLoader, 'VKVO', Base::MemoryVertexB
 //------------------------------------------------------------------------------
 /**
 */
-bool
-VkMemoryVertexBufferLoader::OnLoadRequested()
+Resources::ResourceMemoryLoader::LoadStatus
+VkMemoryVertexBufferLoader::Load(const Resources::ResourceId id)
 {
-	n_assert(this->GetState() == Resource::Initial);
-	n_assert(this->resource.isvalid());
-	n_assert(!this->resource->IsAsyncEnabled());
+	const Ptr<CoreGraphics::VertexBuffer>& vbo = Resources::GetResource<CoreGraphics::VertexBuffer>(id);
+	n_assert(vbo->GetState() == Resource::Pending);
 	n_assert(this->numVertices > 0);
 	if (VertexBuffer::UsageImmutable == this->usage)
 	{
@@ -32,7 +32,7 @@ VkMemoryVertexBufferLoader::OnLoadRequested()
 		n_assert(0 < this->vertexDataSize);
 	}
 	SizeT vertexSize = VertexLayoutServer::Instance()->CalculateVertexSize(this->vertexComponents);
-	
+
 	// start by creating buffer
 	VkBufferCreateInfo bufinfo =
 	{
@@ -81,25 +81,22 @@ VkMemoryVertexBufferLoader::OnLoadRequested()
 	}
 
 	// setup our resource object
-	const Ptr<VertexBuffer>& res = this->resource.downcast<VertexBuffer>();
-	n_assert(!res->IsLoaded());
-	res->SetUsage(this->usage);
-	res->SetAccess(this->access);
-	res->SetSyncing(this->syncing);
-	res->SetVertexLayout(vertexLayout);
-	res->SetNumVertices(this->numVertices);
-	res->SetByteSize(vertexSize * this->numVertices);
-	res->SetVkBuffer(buf, mem);
+	vbo->SetUsage(this->usage);
+	vbo->SetAccess(this->access);
+	vbo->SetSyncing(this->syncing);
+	vbo->SetVertexLayout(vertexLayout);
+	vbo->SetNumVertices(this->numVertices);
+	vbo->SetByteSize(vertexSize * this->numVertices);
+	vbo->SetVkBuffer(buf, mem);
 
 	// if requested, create lock
-	if (this->usage == VertexBuffer::UsageDynamic) res->CreateLock();
+	//if (this->usage == VertexBuffer::UsageDynamic) res->CreateLock();
 
 	// invalidate setup data (because we don't own our data)
 	this->vertexDataPtr = 0;
 	this->vertexDataSize = 0;
 
-	this->SetState(Resource::Loaded);
-	return true;
+	return ResourceMemoryLoader::Success;
 }
 
 } // namespace Vulkan

@@ -8,7 +8,6 @@
 //------------------------------------------------------------------------------
 #include "coregraphics/base/renderdevicebase.h"
 #include "vkcmdbufferthread.h"
-#include "vkcpugpuinterlockthread.h"
 #include "vkdeferredcommand.h"
 #include "vkpipelinedatabase.h"
 #include "vkscheduler.h"
@@ -130,7 +129,7 @@ private:
 	friend class VkVertexLayout;
 	friend class VkUniformBuffer;
 	friend class VkShaderStorageBuffer;
-	friend class VkStreamTextureLoader;
+	friend class VkTextureLoader;
 	friend class VkStreamTextureSaver;
 	friend class VkShaderState;
 	friend class VkShaderImage;

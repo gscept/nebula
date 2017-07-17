@@ -14,6 +14,9 @@ class VkMemoryVertexBufferLoader : public Base::MemoryVertexBufferLoaderBase
 {
 	__DeclareClass(VkMemoryVertexBufferLoader);
 public:
+
+	LoadStatus Load(const Resources::ResourceId id);
+
 	/// called by resource when a load is requested
 	virtual bool OnLoadRequested();
 };

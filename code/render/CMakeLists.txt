@@ -4,8 +4,16 @@
 
 fips_begin_module(render)
 	fips_vs_warning_level(3)
-	fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../foundation ${CMAKE_CURRENT_SOURCE_DIR}/../render)
-		fips_files(stdneb.h stdneb.cc)
+	fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/resource ${CODE_ROOT}/foundation)	
+	fips_deps(foundation resource anyfx)
+	if(N_USE_VULKAN)
+		#include(FindVulkan)
+		FIND_PACKAGE(Vulkan)
+		fips_include_directories(${Vulkan_INCLUDE_DIR})
+		fips_libs(${Vulkan_LIBRARY})
+	endif()
+		fips_files(precompiled.h stdneb.h stdneb.cc)
+IF(FALSE) # incrementally enable modules as they get written
 		fips_dir(algorithm)
 			fips_files(
 				algorithm.cc
@@ -69,6 +77,7 @@ fips_begin_module(render)
 				streamanimationloader.cc
 				streamanimationloader.h
 			)
+ENDIF()
 		fips_dir(coregraphics/base GROUP "coregraphics/base")
 			fips_files(
 				barrierbase.cc
@@ -93,10 +102,6 @@ fips_begin_module(render)
 				memoryindexbufferloaderbase.h
 				memoryvertexbufferloaderbase.cc
 				memoryvertexbufferloaderbase.h
-				meshbase.cc
-				meshbase.h
-				mouserenderdevicebase.cc
-				mouserenderdevicebase.h
 				passbase.cc
 				passbase.h
 				renderdevicebase.cc
@@ -222,12 +227,12 @@ fips_begin_module(render)
 				shadervariation.h
 				shaperenderer.cc
 				shaperenderer.h
-				streammeshloader.cc
-				streammeshloader.h
-				streamshaderloader.cc
-				streamshaderloader.h
-				streamtextureloader.cc
-				streamtextureloader.h
+				meshloader.cc
+				meshloader.h
+				shaderloader.cc
+				shaderloader.h
+				textureloader.cc
+				textureloader.h
 				streamtexturesaver.cc
 				streamtexturesaver.h
 				stretchybuffer.cc
@@ -274,7 +279,7 @@ fips_begin_module(render)
 				nvx2streamreader.cc
 				nvx2streamreader.h
 			)
-	if (N_RENDERER_D3D11)
+	if (N_USE_D3D11)
 		fips_dir(coregraphics/base GROUP "coregraphics/d3d11")
 			fips_files(
 				d3d11barrier.cc
@@ -301,8 +306,6 @@ fips_begin_module(render)
 				d3d11memoryvertexbufferloader.h
 				d3d11mesh.cc
 				d3d11mesh.h
-				d3d11mouserenderdevice.cc
-				d3d11mouserenderdevice.h
 				d3d11pass.cc
 				d3d11pass.h
 				d3d11renderdevice.cc
@@ -347,7 +350,7 @@ fips_begin_module(render)
 				d3d11window.cc
 				d3d11window.h
 			)
-	elseif (N_RENDERER_VULKAN)
+	elseif (N_USE_VULKAN)
 		fips_dir(coregraphics/vk GROUP "coregraphics/vk")
 			fips_files(
 				vkbarrier.cc
@@ -402,12 +405,12 @@ fips_begin_module(render)
 				vkshadervariableinstance.h
 				vkshaperenderer.cc
 				vkshaperenderer.h
-				vkstreammeshloader.cc
-				vkstreammeshloader.h
-				vkstreamshaderloader.cc
-				vkstreamshaderloader.h
-				vkstreamtextureloader.cc
-				vkstreamtextureloader.h
+				vkmeshloader.cc
+				vkmeshloader.h
+				vkshaderloader.cc
+				vkshaderloader.h
+				vktextureloader.cc
+				vktextureloader.h
 				vkstreamtexturesaver.cc
 				vkstreamtexturesaver.h
 				vktextrenderer.cc
@@ -430,6 +433,7 @@ fips_begin_module(render)
 				vkvertexlayoutserver.h				
 			)
 	endif()
+IF(false)
 		fips_dir(frame)
 			fips_files(
 				framebarrier.cc
@@ -473,13 +477,13 @@ fips_begin_module(render)
 				frameswapbuffers.cc
 				frameswapbuffers.h
 			)
+ENDIF()
 		fips_dir(graphics)
 			fips_files(
 				camera.cc
 				camera.h
 				graphicscontext.cc
 				graphicscontext.h
-				graphicsentity.cc
 				graphicsentity.h
 				graphicsserver.cc
 				graphicsserver.h
@@ -505,6 +509,7 @@ fips_begin_module(render)
 				mousebase.cc
 				mousebase.h
 			)
+IF(FALSE)
 		fips_dir(input/glfw GROUP "input/glfw")
 			fips_files(
 				glfwinputdisplayeventhandler.cc
@@ -546,7 +551,7 @@ fips_begin_module(render)
 				instanceserverbase.cc
 				instanceserverbase.h
 			)
-	if (N_RENDERER_VULKAN)
+	if (N_USE_VULKAN)
 		fips_dir(instancing/vk GROUP "instancing/vk")
 			fips_files(
 				vkinstancerenderer.cc
@@ -554,7 +559,7 @@ fips_begin_module(render)
 				vkinstanceserver.cc
 				vkinstanceserver.h
 			)
-	elseif (N_RENDERER_D3D11)
+	elseif (N_USE_D3D11)
 		fips_dir(instancing/d3d11 GROUP "instancing/d3d11")
 			fips_files(
 				d3d11instancerenderer.cc
@@ -580,7 +585,7 @@ fips_begin_module(render)
 				shadowserverbase.cc
 				shadowserverbase.h
 			)
-	if (N_RENDERER_VULKAN)
+	if (N_USE_VULKAN)
 		fips_dir(lighting/vk GROUP "lighting/vk")
 			fips_files(
 				vklightserver.cc
@@ -646,7 +651,7 @@ fips_begin_module(render)
 				surfacename.cc
 				surfacename.h
 			)
-			
+ENDIF()
 		fips_dir(models/nodes GROUP "models/nodes")
 			fips_files(
 				modelnode.cc
@@ -668,6 +673,8 @@ fips_begin_module(render)
 				modelserver.cc
 				modelserver.h
 			)
+			
+IF(FALSE)
 		fips_dir(particles/base GROUP "particles/base")
 			fips_files(
 					particlerendererbase.cc
@@ -676,7 +683,7 @@ fips_begin_module(render)
 					particlesysteminstancebase.cc
 					particlesysteminstancebase.h
 			)
-	if (N_RENDERER_VULKAN)
+	if (N_USE_VULKAN)
 		fips_dir(particles/vk GROUP "particles/vk")
 			fips_files(
 				vkparticlerenderer.cc
@@ -774,4 +781,5 @@ fips_begin_module(render)
 				visibilityserver.cc
 				visibilityserver.h
 			)
+ENDIF()
 fips_end_module()

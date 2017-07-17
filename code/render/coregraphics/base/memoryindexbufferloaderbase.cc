@@ -8,7 +8,7 @@
 
 namespace Base
 {
-__ImplementClass(Base::MemoryIndexBufferLoaderBase, 'MILB', Resources::ResourceLoader);
+__ImplementAbstractClass(Base::MemoryIndexBufferLoaderBase, 'MILB', Resources::ResourceLoader);
 
 using namespace CoreGraphics;
 
@@ -32,7 +32,7 @@ MemoryIndexBufferLoaderBase::MemoryIndexBufferLoaderBase() :
 /**
     Setup all information needed to initialize the IndexBuffer resource.
     The data must remain valid until OnLoadRequested() is called (which
-    will invaliate the data).
+    will invalidate the data).
 
 */
 void

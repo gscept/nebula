@@ -9,16 +9,16 @@
     (C) 2007 Radon Labs GmbH
     (C) 2013-2016 Individual contributors, see AUTHORS file
 */
-#include "resources/resourceloader.h"
+#include "resources/resourcememoryloader.h"
 #include "coregraphics/vertexcomponent.h"
 #include "coregraphics/vertexbuffer.h"
 
 //------------------------------------------------------------------------------
 namespace Base
 {
-class MemoryVertexBufferLoaderBase : public Resources::ResourceLoader
+class MemoryVertexBufferLoaderBase : public Resources::ResourceMemoryLoader
 {
-    __DeclareClass(MemoryVertexBufferLoaderBase);
+    __DeclareAbstractClass(MemoryVertexBufferLoaderBase);
 public:
     /// constructor
     MemoryVertexBufferLoaderBase();

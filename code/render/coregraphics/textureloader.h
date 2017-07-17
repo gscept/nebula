@@ -13,36 +13,36 @@
 #include "coregraphics/d3d11/d3d11streamtextureloader.h"
 namespace CoreGraphics
 {
-class StreamTextureLoader : public Direct3D11::D3D11StreamTextureLoader
+class TextureLoader : public Direct3D11::D3D11StreamTextureLoader
 {
-	__DeclareClass(StreamTextureLoader);
+	__DeclareClass(TextureLoader);
 };
 }
 #elif __OGL4__
 #include "coregraphics/ogl4/ogl4streamtextureloader.h"
 namespace CoreGraphics
 {
-class StreamTextureLoader : public OpenGL4::OGL4StreamTextureLoader
+class TextureLoader : public OpenGL4::OGL4StreamTextureLoader
 {
-	__DeclareClass(StreamTextureLoader);
+	__DeclareClass(TextureLoader);
 };
 }
 #elif __VULKAN__
-#include "coregraphics/vk/vkstreamtextureloader.h"
+#include "coregraphics/vk/vktextureloader.h"
 namespace CoreGraphics
 {
-class StreamTextureLoader : public Vulkan::VkStreamTextureLoader
+class TextureLoader : public Vulkan::VkTextureLoader
 {
-	__DeclareClass(StreamTextureLoader);
+	__DeclareClass(TextureLoader);
 };
 }
 #elif __DX9__
 #include "coregraphics/d3d9/d3d9streamtextureloader.h"
 namespace CoreGraphics
 {
-class StreamTextureLoader : public Direct3D9::D3D9StreamTextureLoader
+class TextureLoader : public Direct3D9::D3D9StreamTextureLoader
 {
-    __DeclareClass(StreamTextureLoader);
+    __DeclareClass(TextureLoader);
 };
 }
 #else

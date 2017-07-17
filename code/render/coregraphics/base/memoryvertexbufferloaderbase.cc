@@ -8,7 +8,7 @@
 
 namespace Base
 {
-__ImplementClass(Base::MemoryVertexBufferLoaderBase, 'MVLB', Resources::ResourceLoader);
+__ImplementAbstractClass(Base::MemoryVertexBufferLoaderBase, 'MVLB', Resources::ResourceLoader);
 
 using namespace CoreGraphics;
 

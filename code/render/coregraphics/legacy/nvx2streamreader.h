@@ -50,10 +50,10 @@ public:
     virtual bool Open();
     /// end reading from the stream, destroys loaded objects
     virtual void Close();
-    /// get vertex buffer (not valid in raw mode)
-    const Ptr<Base::VertexBufferBase>& GetVertexBuffer() const;
-    /// get index buffer (not valid in raw mode)
-    const Ptr<Base::IndexBufferBase>& GetIndexBuffer() const;
+	/// get vertex buffer
+	const Resources::ResourceId GetVertexBuffer() const;
+	/// get index buffer
+	const Resources::ResourceId GetIndexBuffer() const;
     /// get primitive groups
     const Util::Array<CoreGraphics::PrimitiveGroup>& GetPrimitiveGroups() const;
     /// get pointer to raw vertex data
@@ -126,8 +126,9 @@ private:
     Base::GpuResourceBase::Access access;
 
     bool rawMode;
-    Ptr<Base::VertexBufferBase> vertexBuffer;
-    Ptr<Base::IndexBufferBase> indexBuffer;
+	Util::StringAtom tag;
+	Resources::ResourceId vbo;
+	Resources::ResourceId ibo;
     Ptr<Base::MemoryVertexBufferLoaderBase> vertexBufferLoader;    
     Ptr<Base::MemoryIndexBufferLoaderBase> indexBufferLoader;
 
@@ -149,15 +150,6 @@ private:
     uint vertexComponentMask;
     Util::Array<CoreGraphics::VertexComponent> vertexComponents;   
 };
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-Nvx2StreamReader::SetVertexBuffer(const Ptr<Base::VertexBufferBase>& vBuf)
-{
-    this->vertexBuffer = vBuf;
-}
 
 //------------------------------------------------------------------------------
 /**
@@ -189,21 +181,19 @@ Nvx2StreamReader::IsRawMode() const
 //------------------------------------------------------------------------------
 /**
 */
-inline const Ptr<Base::VertexBufferBase>&
+inline const Resources::ResourceId
 Nvx2StreamReader::GetVertexBuffer() const
 {
-    n_assert(!this->rawMode && this->vertexBuffer.isvalid());
-    return this->vertexBuffer;
+	return this->vbo;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline const Ptr<Base::IndexBufferBase>&
+inline const Resources::ResourceId
 Nvx2StreamReader::GetIndexBuffer() const
 {
-    n_assert(!this->rawMode && this->indexBuffer.isvalid());
-    return this->indexBuffer;
+	return this->ibo;
 }
 
 //------------------------------------------------------------------------------

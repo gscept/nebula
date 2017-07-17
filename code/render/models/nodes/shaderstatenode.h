@@ -8,6 +8,7 @@
 */
 //------------------------------------------------------------------------------
 #include "modelnode.h"
+#include "resources/resourceid.h"
 namespace Models
 {
 class ShaderStateNode : public ModelNode
@@ -18,6 +19,13 @@ public:
 	ShaderStateNode();
 	/// destructor
 	virtual ~ShaderStateNode();
-private:
+
+protected:
+	friend class ModelLoader;
+
+	/// load shader state
+	bool Load(const Util::FourCC& tag, const Ptr<Models::ModelLoader>& loader, const Ptr<IO::BinaryReader>& reader);
+
+	Resources::ResourceName materialName;
 };
 } // namespace Models

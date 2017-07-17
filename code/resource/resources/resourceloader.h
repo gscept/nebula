@@ -1,7 +1,7 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	Base class for resource loaders.
+	Base class for resource loaders. Loads resources as streams.
 
 	Contains the names for the placeholder and failed-to-load resource names.
 	When inheriting from this class, make sure to provide proper resource ids for:
@@ -31,7 +31,7 @@
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
-#include "core/id.h"
+#include "ids/id.h"
 #include "util/stringatom.h"
 #include "io/stream.h"
 #include "jobs/jobport.h"
@@ -40,7 +40,7 @@
 #include "resource.h"
 #include <tuple>
 #include <functional>
-#include "core/idpool.h"
+#include "ids/idpool.h"
 
 namespace Resources
 {
@@ -71,34 +71,53 @@ protected:
 		Threaded		/// resource is loaded from a thread, which is like Delay, but is no longer pending
 	};
 
-	struct _PendingResource
+	/// struct for pending resources which are about to be loaded
+	struct _PendingResourceLoad
 	{
-		Core::Id id;
+		Ids::Id64 id;
+		Ids::Id32 pid;
 		Ptr<Resource> res;
-		std::function<void(const Core::Id&)> success;
-		std::function<void(const Core::Id&)> failed;
 		Util::StringAtom tag;
 		bool inflight;
-		std::function<void()> loadFunc;
 		bool immediate;
+		std::function<void()> loadFunc;
+
+		_PendingResourceLoad() : pid(Ids::InvalidId32) {};
+	};
+
+	struct _PendingResourceUnload
+	{
+		Ids::Id24 resourceId;
+	};
+
+	/// callback functions to run when an associated resource is loaded (can be stacked)
+	struct _Callbacks
+	{
+		Ids::Id32 id;
+		std::function<void(const Resources::ResourceId)> success;
+		std::function<void(const Resources::ResourceId)> failed;
 	};
 
 	/// create a container with a tag associated with it, if no tag is provided, the resource will be untagged
-	Core::Id CreateResource(const ResourceId& res, const Util::StringAtom& tag, std::function<void(const Core::Id&)> success, std::function<void(const Core::Id&)> failed, bool immediate);
+	Ids::Id64 CreateResource(const ResourceName& res, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed, bool immediate);
+	/// reserve resource (for self-managed resources)
+	Ids::Id64 ReserveResource(const ResourceName& res, const Util::StringAtom& tag);
 	/// discard container
-	void DiscardResource(const Core::Id& res);
+	void DiscardResource(const Resources::ResourceId id);
 	/// discard all resources associated with a tag
 	void DiscardByTag(const Util::StringAtom& tag);
 	/// start loading
-	LoadStatus PrepareLoad(_PendingResource& res);
+	LoadStatus PrepareLoad(_PendingResourceLoad& res);
 
 	/// perform actual load, override in subclass
-	virtual LoadStatus Load(const Ptr<Resource>& res, const Ptr<IO::Stream>& stream) = 0;
+	virtual LoadStatus Load(const Ptr<Resources::Resource>& res, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream) = 0;
 	/// unload resource
-	virtual void Unload(const Ptr<Resource>& res) = 0;
+	virtual void Unload(const Ptr<Resources::Resource>& res) = 0;
 
 	/// update the resource loader, this is done every frame
 	void Update(IndexT frameIndex);
+	/// run callbacks
+	void RunCallbacks(LoadStatus status, const Ids::Id64 id);
 
 	/// these types need to be properly initiated in a subclass Setup function
 	Util::StringAtom placeholderResourceId;
@@ -112,22 +131,26 @@ protected:
 	bool async;
 	Ptr<Jobs::JobPort> jobport;
 
-	// old way
-	Util::Dictionary<Util::StringAtom, _PendingResource> pending;
-	//Util::Dictionary<Util::StringAtom, Ptr<Resource>> loaded;
-	//Util::Dictionary<Util::StringAtom, Util::StringAtom> tags;
-	//Util::Dictionary<Util::StringAtom, int> usage;
+	//Util::Dictionary<Util::StringAtom, _PendingResource> pending;
+	//Util::FixedArray<Util::Array<_PendingResource>> 
+
+	Util::Dictionary<Resources::ResourceName, Ids::Id32> pendingLoadMap;
+	Util::FixedArray<_PendingResourceLoad> pendingLoads;
+	Ids::IdPool pendingLoadPool;
+	Util::Array<_PendingResourceUnload> pendingUnloads;
 
 	// 
-	Util::Dictionary<Resources::ResourceId, uint32_t> ids;
-	Core::IdPool resourceInstanceIndexPool;
-	Core::IdPool resourceIndexPool;
+	Util::Dictionary<Resources::ResourceName, Ids::Id24> ids;
+	Ids::IdPool resourceInstanceIndexPool;
+	Ids::IdPool resourceIndexPool;
 
-	Util::Array<Ptr<Resource>> loaded;
 	Util::FixedArray<ResourceContainer> containers;
 	Util::FixedArray<uint32_t> usage;
+	Util::FixedArray<Util::Array<_Callbacks>> callbacks;
+	Util::FixedArray<Resources::ResourceName> names;
 	uint32_t uniqueResourceId;
 
+	/// async section to sync callbacks and pending list with thread
 	Threading::CriticalSection asyncSection;
 };
 

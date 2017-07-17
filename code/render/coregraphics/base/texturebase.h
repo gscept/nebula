@@ -8,7 +8,7 @@
     (C) 2007 Radon Labs GmbH
     (C) 2013-2016 Individual contributors, see AUTHORS file
 */   
-#include "coregraphics/base/resourcebase.h"
+#include "coregraphics/base/gpuresourcebase.h"
 #include "coregraphics/pixelformat.h"
 #include "math/rectangle.h"
 

@@ -9,8 +9,10 @@
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
 #include "resources/resource.h"
+#include "math/bbox.h"
 namespace Models
 {
+class ModelLoader;
 class ModelNode;
 class Model : public Resources::Resource
 {
@@ -23,10 +25,16 @@ public:
 
 	/// finds node on name
 	Ptr<ModelNode> FindNode(const Util::StringAtom& name);
+	/// get model bounding box
+	const Math::bbox& GetBoundingBox() const;
 private:
+	/// the model loader is responsible for filling this class
+	friend class ModelLoader;
 
+	Math::bbox boundingBox;
 	Util::Dictionary<Util::StringAtom, Ptr<ModelNode>> nodes;
 	Ptr<ModelNode> root;
+	Util::Array<Resources::ResourceId> resources;
 };
 
 //------------------------------------------------------------------------------
@@ -36,6 +44,15 @@ inline Ptr<Models::ModelNode>
 Model::FindNode(const Util::StringAtom& name)
 {
 	return this->nodes[name];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const Math::bbox&
+Model::GetBoundingBox() const
+{
+	return this->boundingBox;
 }
 
 } // namespace Models

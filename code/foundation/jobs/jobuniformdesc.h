@@ -92,7 +92,7 @@ inline
 JobUniformDesc::JobUniformDesc(std::initializer_list<std::tuple<void*, SizeT, SizeT>> data, SizeT scratchSize)
 {
 	n_assert(data.size() <= MaxNumBuffers);
-	this->numBuffers = data.size();
+	this->numBuffers = (SizeT)data.size();
 	this->scratchSize = scratchSize;
 
 	size_t i;

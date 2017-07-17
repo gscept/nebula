@@ -97,7 +97,7 @@ ShaderStateBase::Cleanup()
 	}
 	this->variables.Clear();
 	this->variablesByName.Clear();
-	this->shader = 0;
+	this->shader = nullptr;
 }
 
 //------------------------------------------------------------------------------

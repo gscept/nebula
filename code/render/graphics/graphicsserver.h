@@ -12,8 +12,10 @@
 #include "framesync/framesynctimer.h"
 #include "visibility/visibilityserver.h"
 #include "util/stringatom.h"
+#include "ids/idgenerationpool.h"
 namespace Graphics
 {
+
 class View;
 class GraphicsServer : public Core::RefCounted
 {
@@ -30,10 +32,21 @@ public:
 	/// closes the graphics server
 	void Close();
 
+	/// create graphics entity
+	EntityId CreateGraphicsEntity();
+	/// discard graphics entity
+	void DiscardGraphicsEntity(const EntityId id);
+	/// check if graphics entity is valid
+	bool IsValidGraphicsEntity(const EntityId id);
+
 	/// create a new view
 	Ptr<View> CreateView(const Util::StringAtom& framescript);
 	/// discard view
 	void DiscardView(const Ptr<View>& view);
+	/// create a new stage
+	Ptr<Stage> CreateStage(const Util::StringAtom& name, bool main);
+	/// discard stage
+	void DiscardStage(const Ptr<Stage>& stage);	
 
 	/// call per-frame to update graphics subsystem
 	void OnFrame();
@@ -43,19 +56,33 @@ public:
 private:
 	friend class GraphicsEntity;
 
-	/// register graphics entity with server
-	void RegisterEntity(const Ptr<GraphicsEntity>& entity);
-	/// unregister graphics entity with server
-	void UnregisterEntity(const Ptr<GraphicsEntity>& entity);
+	Ids::IdGenerationPool entityPool;
+	Util::Array<GraphicsEntity> entities;
 
-	Memory::SliceAllocatorPool<Math::matrix44, 256, false> transforms;
-	Util::Dictionary<int64_t, int64_t> entityTransformMap;
 	Ptr<FrameSync::FrameSyncTimer> timer;
 	Util::Array<Ptr<GraphicsContext>> contexts;
 	Ptr<Visibility::VisibilityServer> visServer;
 
+	Util::Array<Ptr<Stage>> stages;
 	Util::Array<Ptr<View>> views;
 
 	bool isOpen;
 };
+
+//------------------------------------------------------------------------------
+/**
+*/
+static Ids::Id32 CreateEntity()
+{
+	return GraphicsServer::Instance()->CreateGraphicsEntity();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+static void DestroyEntity(const Ids::Id32 id)
+{
+	GraphicsServer::Instance()->DiscardGraphicsEntity(id);
+}
+
 } // namespace Graphics

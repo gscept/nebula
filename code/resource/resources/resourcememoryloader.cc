@@ -1,18 +1,18 @@
 //------------------------------------------------------------------------------
-// lightcontext.cc
+// resourcememoryloader.cc
 // (C) 2017 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
-#include "lightcontext.h"
+#include "resourcememoryloader.h"
 
-namespace Graphics
+namespace Resources
 {
 
-__ImplementClass(Graphics::LightContext, 'LICO', Graphics::GraphicsContext);
+__ImplementClass(Resources::ResourceMemoryLoader, 'RMLO', Core::RefCounted);
 //------------------------------------------------------------------------------
 /**
 */
-LightContext::LightContext()
+ResourceMemoryLoader::ResourceMemoryLoader()
 {
 	// empty
 }
@@ -20,9 +20,9 @@ LightContext::LightContext()
 //------------------------------------------------------------------------------
 /**
 */
-LightContext::~LightContext()
+ResourceMemoryLoader::~ResourceMemoryLoader()
 {
 	// empty
 }
 
-} // namespace Graphics
+} // namespace Resources

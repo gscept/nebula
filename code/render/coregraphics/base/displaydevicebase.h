@@ -19,7 +19,6 @@
 #include "coregraphics/displaymode.h"
 #include "coregraphics/adapterinfo.h"
 #include "util/blob.h"
-#include "events/event.h"
 #include "coregraphics/window.h"
 
 //------------------------------------------------------------------------------

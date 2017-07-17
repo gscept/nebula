@@ -7,18 +7,18 @@
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
-#include "resources/streamresourceloader.h"
-#include "coregraphics/base/resourcebase.h"
+#include "resources/resourceloader.h"
+#include "coregraphics/base/gpuresourcebase.h"
 namespace Vulkan
 {
-class VkStreamMeshLoader : public Resources::StreamResourceLoader
+class VkMeshLoader : public Resources::ResourceLoader
 {
-	__DeclareClass(VkStreamMeshLoader);
+	__DeclareClass(VkMeshLoader);
 public:
 	/// constructor
-	VkStreamMeshLoader();
+	VkMeshLoader();
 	/// destructor
-	virtual ~VkStreamMeshLoader();
+	virtual ~VkMeshLoader();
 
 	/// set the intended resource usage (default is UsageImmutable)
 	void SetUsage(Base::GpuResourceBase::Usage usage);
@@ -30,16 +30,18 @@ public:
 	Base::GpuResourceBase::Access GetAccess() const;
 
 private:
-	/// setup mesh from generic stream, branches to specialized loader methods
-	virtual bool SetupResourceFromStream(const Ptr<IO::Stream>& stream);
+	
+	/// perform load
+	LoadStatus Load(const Ptr<Resources::Resource>& res, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream);
+
 #if NEBULA3_LEGACY_SUPPORT
 	/// setup mesh from nvx2 file in memory
-	bool SetupMeshFromNvx2(const Ptr<IO::Stream>& stream);
+	bool SetupMeshFromNvx2(const Ptr<IO::Stream>& stream, const Ptr<Resources::Resource>& res);
 #endif
 	/// setup mesh from nvx3 file in memory
-	bool SetupMeshFromNvx3(const Ptr<IO::Stream>& stream);
+	bool SetupMeshFromNvx3(const Ptr<IO::Stream>& stream, const Ptr<Resources::Resource>& res);
 	/// setup mesh from n3d3 file in memory
-	bool SetupMeshFromN3d3(const Ptr<IO::Stream>& stream);
+	bool SetupMeshFromN3d3(const Ptr<IO::Stream>& stream, const Ptr<Resources::Resource>& res);
 
 protected:
 	Base::GpuResourceBase::Usage usage;
@@ -51,7 +53,7 @@ protected:
 /**
 */
 inline void
-VkStreamMeshLoader::SetUsage(Base::GpuResourceBase::Usage usage_)
+VkMeshLoader::SetUsage(Base::GpuResourceBase::Usage usage_)
 {
 	this->usage = usage_;
 }
@@ -60,7 +62,7 @@ VkStreamMeshLoader::SetUsage(Base::GpuResourceBase::Usage usage_)
 /**
 */
 inline Base::GpuResourceBase::Usage
-VkStreamMeshLoader::GetUsage() const
+VkMeshLoader::GetUsage() const
 {
 	return this->usage;
 }
@@ -69,7 +71,7 @@ VkStreamMeshLoader::GetUsage() const
 /**
 */
 inline void
-VkStreamMeshLoader::SetAccess(Base::GpuResourceBase::Access access_)
+VkMeshLoader::SetAccess(Base::GpuResourceBase::Access access_)
 {
 	this->access = access_;
 }
@@ -78,7 +80,7 @@ VkStreamMeshLoader::SetAccess(Base::GpuResourceBase::Access access_)
 /**
 */
 inline Base::GpuResourceBase::Access
-VkStreamMeshLoader::GetAccess() const
+VkMeshLoader::GetAccess() const
 {
 	return this->access;
 }

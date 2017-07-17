@@ -33,14 +33,37 @@ public:
 	/// destructor
 	virtual ~Resource();
 
-private:
+	/// get state
+	const State& GetState() const;
+	/// get name
+	const ResourceName& GetResourceName() const;
+
+protected:
 	friend class ResourceLoader;
 	friend class ResourceManager;
 	friend class ResourceContainer;
 
 	State state;
-	ResourceId resourceId;
+	ResourceName resourceName;
 	Util::StringAtom tag;
 };
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const Resource::State&
+Resource::GetState() const
+{
+	return this->state;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const Resources::ResourceName&
+Resource::GetResourceName() const
+{
+	return this->resourceName;
+}
 
 } // namespace Resources

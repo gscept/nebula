@@ -12,36 +12,36 @@
 #include "coregraphics/d3d11/d3d11streammeshloader.h"
 namespace CoreGraphics
 {
-class StreamMeshLoader : public Direct3D11::D3D11StreamMeshLoader
+class MeshLoader : public Direct3D11::D3D11StreamMeshLoader
 {
-	__DeclareClass(StreamMeshLoader);
+	__DeclareClass(MeshLoader);
 };
 }
 #elif __OGL4__
 #include "coregraphics/ogl4/ogl4streammeshloader.h"
 namespace CoreGraphics
 {
-class StreamMeshLoader : public OpenGL4::OGL4StreamMeshLoader
+class MeshLoader : public OpenGL4::OGL4StreamMeshLoader
 {
-	__DeclareClass(StreamMeshLoader);
+	__DeclareClass(MeshLoader);
 };
 }
 #elif __VULKAN__
-#include "coregraphics/vk/vkstreammeshloader.h"
+#include "coregraphics/vk/vkmeshloader.h"
 namespace CoreGraphics
 {
-class StreamMeshLoader : public Vulkan::VkStreamMeshLoader
+class MeshLoader : public Vulkan::VkMeshLoader
 {
-	__DeclareClass(StreamMeshLoader);
+	__DeclareClass(MeshLoader);
 };
 }
 #elif __DX9__
 #include "coregraphics/win360/d3d9streammeshloader.h"
 namespace CoreGraphics
 {
-class StreamMeshLoader : public Direct3D9::D3D9StreamMeshLoader
+class MeshLoader : public Direct3D9::D3D9StreamMeshLoader
 {
-    __DeclareClass(StreamMeshLoader);
+    __DeclareClass(MeshLoader);
 };
 }
 #else

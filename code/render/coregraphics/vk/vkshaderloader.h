@@ -1,25 +1,24 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	Implements a texture loader into a Vulkan texture.
+	Implements a shader loader from stream into a Vulkan shader.
 	
 	(C) 2016 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
-#include "resources/streamresourceloader.h"
+#include "resources/resourceloader.h"
 namespace Vulkan
 {
-class VkStreamTextureLoader : public Resources::StreamResourceLoader
+class VkShaderLoader : public Resources::ResourceLoader
 {
-	__DeclareClass(VkStreamTextureLoader);
+	__DeclareClass(VkShaderLoader);
 public:
-	/// constructor
-	VkStreamTextureLoader();
-	/// destructor
-	virtual ~VkStreamTextureLoader();
+	/// return true if asynchronous loading is supported
+	virtual bool CanLoadAsync() const;
+
 private:
-	/// setup the texture from a Nebula3 stream
+	/// setup the shader from a Nebula3 stream
 	virtual bool SetupResourceFromStream(const Ptr<IO::Stream>& stream);
 };
 } // namespace Vulkan

@@ -5,7 +5,7 @@
 #include "stdneb.h"
 #include "vkshaderserver.h"
 #include "effectfactory.h"
-#include "coregraphics/streamshaderloader.h"
+#include "coregraphics/shaderloader.h"
 #include "vkrenderdevice.h"
 
 using namespace Resources;
@@ -87,7 +87,7 @@ void
 VkShaderServer::ReloadShader(Ptr<CoreGraphics::Shader> shader)
 {
 	n_assert(0 != shader);
-	shader->SetLoader(StreamShaderLoader::Create());
+	shader->SetLoader(ShaderLoader::Create());
 	shader->SetAsyncEnabled(false);
 	shader->Load();
 	if (shader->IsLoaded())
@@ -109,7 +109,7 @@ VkShaderServer::LoadShader(const Resources::ResourceId& shdName)
 	n_assert(shdName.IsValid());
 	Ptr<Shader> shader = Shader::Create();
 	shader->SetResourceId(shdName);
-	shader->SetLoader(StreamShaderLoader::Create());
+	shader->SetLoader(ShaderLoader::Create());
 	shader->SetAsyncEnabled(false);
 	shader->Load();
 	if (shader->IsLoaded())

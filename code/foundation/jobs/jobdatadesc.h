@@ -96,7 +96,7 @@ inline
 JobDataDesc::JobDataDesc(const std::initializer_list<std::tuple<void*, SizeT, SizeT>> data)
 {
 	n_assert(data.size() <= MaxNumBuffers);
-	this->numBuffers = data.size();
+	this->numBuffers = (SizeT)data.size();
 
 	size_t i;
 	for (i = 0; i < data.size(); i++)

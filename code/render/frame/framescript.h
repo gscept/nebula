@@ -15,8 +15,8 @@
 #include "coregraphics/shaderreadwritebuffer.h"
 #include "coregraphics/event.h"
 #include "algorithm/algorithm.h"
-#include "frame2/frameop.h"
-#include "frame2/framepass.h"
+#include "frame/frameop.h"
+#include "frame/framepass.h"
 namespace Graphics
 {
 	class View;

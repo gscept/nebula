@@ -25,4 +25,22 @@ Stage::~Stage()
 	// empty
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Stage::AttachEntity(const EntityId entity)
+{
+	this->entities.Append(entity);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Stage::DetachEntity(const EntityId entity)
+{
+	this->entities.EraseIndex(this->entities.FindIndex(entity));
+}
+
 } // namespace Graphics

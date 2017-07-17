@@ -9,32 +9,32 @@
 #if __DX11__
 namespace CoreGraphics
 {
-__ImplementClass(CoreGraphics::StreamMeshLoader, 'SMLD', Direct3D11::D3D11StreamMeshLoader);
+__ImplementClass(CoreGraphics::MeshLoader, 'SMLD', Direct3D11::D3D11StreamMeshLoader);
 }
 #elif __DX9__
 namespace CoreGraphics
 {
-__ImplementClass(CoreGraphics::StreamMeshLoader, 'SMLD', Win360::D3D9StreamMeshLoader);
+__ImplementClass(CoreGraphics::MeshLoader, 'SMLD', Win360::D3D9StreamMeshLoader);
 }
 #elif __OGL4__
 namespace CoreGraphics
 {
-__ImplementClass(CoreGraphics::StreamMeshLoader, 'SMLD', OpenGL4::OGL4StreamMeshLoader);
+__ImplementClass(CoreGraphics::MeshLoader, 'SMLD', OpenGL4::OGL4StreamMeshLoader);
 }
 #elif __VULKAN__
 namespace CoreGraphics
 {
-__ImplementClass(CoreGraphics::StreamMeshLoader, 'SMLD', Vulkan::VkStreamMeshLoader);
+__ImplementClass(CoreGraphics::MeshLoader, 'SMLD', Vulkan::VkMeshLoader);
 }
 #elif __WII__
 namespace CoreGraphics
 {
-__ImplementClass(CoreGraphics::StreamMeshLoader, 'SMLD', Wii::WiiStreamMeshLoader);
+__ImplementClass(CoreGraphics::MeshLoader, 'SMLD', Wii::WiiStreamMeshLoader);
 }
 #elif __PS3__
 namespace CoreGraphics
 {
-__ImplementClass(CoreGraphics::StreamMeshLoader, 'SMLD', Resources::StreamResourceLoader);
+__ImplementClass(CoreGraphics::MeshLoader, 'SMLD', Resources::StreamResourceLoader);
 }
 #else
 #error "StreamMeshLoader class not implemented on this platform!"

@@ -16,8 +16,12 @@
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
 #include "util/stringatom.h"
+#include "io/binaryreader.h"
+#include "math/bbox.h"
 namespace Models
 {
+class ModelLoader;
+class Model;
 class ModelNode : public Core::RefCounted
 {
 	__DeclareClass(ModelNode);
@@ -30,9 +34,25 @@ public:
 	/// return constant reference to children
 	const Util::Array<Ptr<ModelNode>>& GetChildren() const;
 
-private:
+protected:
+	friend class ModelLoader;
+
+	/// load data
+	virtual bool Load(const Util::FourCC& tag, const Ptr<Models::ModelLoader>& loader, const Ptr<IO::BinaryReader>& reader);
 
 	Util::StringAtom name;
+	Ptr<ModelNode> parent;
 	Util::Array<Ptr<ModelNode>> children;
+	Math::bbox boundingBox;
 };
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const Util::Array<Ptr<Models::ModelNode>>&
+ModelNode::GetChildren() const
+{
+	return this->children;
+}
+
 } // namespace Models

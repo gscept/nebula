@@ -8,8 +8,10 @@
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
 #include "resources/resourceloader.h"
+#include "util/stack.h"
 namespace Models
 {
+class ModelNode;
 class ModelLoader : public Resources::ResourceLoader
 {
 	__DeclareClass(ModelLoader);
@@ -23,9 +25,12 @@ public:
 	void Setup();
 private:
 
-	/// load model
-	LoadStatus Load(const Ptr<Resources::Resource>& res);
-	/// unload model
+	/// perform actual load, override in subclass
+	LoadStatus Load(const Ptr<Resources::Resource>& res, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream);
+	/// unload resource
 	void Unload(const Ptr<Resources::Resource>& res);
+
+	Util::Array<Util::StringAtom> pendingResources;
+	Util::Stack<Ptr<ModelNode>> nodeStack;
 };
 } // namespace Models

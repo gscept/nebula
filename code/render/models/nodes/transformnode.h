@@ -7,6 +7,7 @@
 */
 //------------------------------------------------------------------------------
 #include "modelnode.h"
+#include "math/xnamath/xna_matrix44.h"
 namespace Models
 {
 class TransformNode : public ModelNode
@@ -17,6 +18,22 @@ public:
 	TransformNode();
 	/// destructor
 	virtual ~TransformNode();
-private:
+
+protected:
+	friend class ModelLoader;
+
+	/// load transform
+	virtual bool Load(const Util::FourCC& tag, const Ptr<Models::ModelLoader>& loader, const Ptr<IO::BinaryReader>& reader);
+
+	Math::point position;
+	Math::quaternion rotate;
+	Math::vector scale;
+	Math::point rotatePivot;
+	Math::point scalePivot;
+	bool isInViewSpace;
+	float minDistance;
+	float maxDistance;
+	bool useLodDistances;
+	bool lockedToViewer;
 };
 } // namespace Models

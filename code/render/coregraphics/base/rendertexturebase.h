@@ -73,7 +73,7 @@ public:
 	/// set if render texture will go to a window
 	void SetIsWindowTexture(const bool b);
 	/// set resource id
-	void SetResourceId(const Resources::ResourceId& resId);
+	void SetResourceName(const Resources::ResourceName& resId);
 	/// set if within pass
 	void SetInPass(const bool b);
 
@@ -99,10 +99,12 @@ public:
 	/// get texture
 	const Ptr<CoreGraphics::Texture>& GetTexture() const;
 	/// get texture resource id
-	const Resources::ResourceId& GetResourceId() const;
+	const Resources::ResourceName& GetResourceName() const;
 protected:
 	Ptr<CoreGraphics::Window> window;
+	Resources::ResourceId textureId;
 	Ptr<CoreGraphics::Texture> texture;
+	//Ptr<CoreGraphics::Texture> texture;
 	CoreGraphics::PixelFormat::Code format;
 	CoreGraphics::Texture::Type type;
 	Usage usage;
@@ -121,7 +123,7 @@ protected:
 	float heightScale;
 	float depthScale;
 
-	Resources::ResourceId resourceId;
+	Resources::ResourceName resourceName;
 };
 
 //------------------------------------------------------------------------------
@@ -268,9 +270,9 @@ RenderTextureBase::SetIsWindowTexture(const bool b)
 /**
 */
 inline void
-RenderTextureBase::SetResourceId(const Resources::ResourceId& resId)
+RenderTextureBase::SetResourceName(const Resources::ResourceName& resId)
 {
-	this->resourceId = resId;
+	this->resourceName = resId;
 }
 
 //------------------------------------------------------------------------------
@@ -294,10 +296,10 @@ RenderTextureBase::GetTexture() const
 //------------------------------------------------------------------------------
 /**
 */
-inline const Resources::ResourceId&
-RenderTextureBase::GetResourceId() const
+inline const Resources::ResourceName&
+RenderTextureBase::GetResourceName() const
 {
-	return this->resourceId;
+	return this->resourceName;
 }
 
 } // namespace Base
