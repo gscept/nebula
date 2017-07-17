@@ -3,7 +3,7 @@
 // (C) 2016 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
-#include "vkstreammeshloader.h"
+#include "vkmeshloader.h"
 #include "coregraphics/mesh.h"
 #include "coregraphics/legacy/nvx2streamreader.h"
 
@@ -12,11 +12,11 @@ namespace Vulkan
 using namespace IO;
 using namespace CoreGraphics;
 using namespace Util;
-__ImplementClass(Vulkan::VkStreamMeshLoader, 'VKML', Resources::StreamResourceLoader);
+__ImplementClass(Vulkan::VkMeshLoader, 'VKML', Resources::ResourceLoader);
 //------------------------------------------------------------------------------
 /**
 */
-VkStreamMeshLoader::VkStreamMeshLoader()
+VkMeshLoader::VkMeshLoader()
 {
 	// empty
 }
@@ -24,7 +24,7 @@ VkStreamMeshLoader::VkStreamMeshLoader()
 //------------------------------------------------------------------------------
 /**
 */
-VkStreamMeshLoader::~VkStreamMeshLoader()
+VkMeshLoader::~VkMeshLoader()
 {
 	// empty
 }
@@ -32,12 +32,13 @@ VkStreamMeshLoader::~VkStreamMeshLoader()
 //------------------------------------------------------------------------------
 /**
 */
-bool
-VkStreamMeshLoader::SetupResourceFromStream(const Ptr<Stream>& stream)
+ResourceLoader::LoadStatus
+VkMeshLoader::Load(const Ptr<Resources::Resource>& res, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream)
 {
 	n_assert(stream.isvalid());
-	n_assert(this->resource.isvalid());
-	String resIdExt = this->resource->GetResourceId().AsString().GetFileExtension();
+	n_assert(res.isvalid());
+	String resIdExt = res->GetResourceName().AsString().GetFileExtension();
+
 #if NEBULA3_LEGACY_SUPPORT
 	if (resIdExt == "nvx2")
 	{
@@ -45,6 +46,7 @@ VkStreamMeshLoader::SetupResourceFromStream(const Ptr<Stream>& stream)
 	}
 	else
 #endif
+
 		if (resIdExt == "nvx3")
 		{
 			return this->SetupMeshFromNvx3(stream);
@@ -66,7 +68,7 @@ VkStreamMeshLoader::SetupResourceFromStream(const Ptr<Stream>& stream)
 */
 #if NEBULA3_LEGACY_SUPPORT
 bool
-VkStreamMeshLoader::SetupMeshFromNvx2(const Ptr<Stream>& stream)
+VkMeshLoader::SetupMeshFromNvx2(const Ptr<Stream>& stream, const Ptr<Resources::Resource>& res)
 {
 	n_assert(stream.isvalid());
 	Ptr<Legacy::Nvx2StreamReader> nvx2Reader = Legacy::Nvx2StreamReader::Create();
@@ -75,7 +77,7 @@ VkStreamMeshLoader::SetupMeshFromNvx2(const Ptr<Stream>& stream)
 	nvx2Reader->SetAccess(this->access);
 	if (nvx2Reader->Open())
 	{
-		const Ptr<Mesh>& res = this->resource.downcast<Mesh>();
+		const Ptr<Mesh>& res = res.downcast<Mesh>();
 		n_assert(!res->IsLoaded());
 		res->SetVertexBuffer(nvx2Reader->GetVertexBuffer().downcast<CoreGraphics::VertexBuffer>());
 		res->SetIndexBuffer(nvx2Reader->GetIndexBuffer().downcast<CoreGraphics::IndexBuffer>());
@@ -94,7 +96,7 @@ VkStreamMeshLoader::SetupMeshFromNvx2(const Ptr<Stream>& stream)
 	native binary mesh file format).
 */
 bool
-VkStreamMeshLoader::SetupMeshFromNvx3(const Ptr<Stream>& stream)
+VkMeshLoader::SetupMeshFromNvx3(const Ptr<Stream>& stream, const Ptr<Resources::Resource>& res)
 {
 	// FIXME!
 	n_error("OGL4StreamMeshLoader::SetupMeshFromNvx3() not yet implemented");
@@ -107,7 +109,7 @@ Setup the mesh resource from a n3d3 file (Nebula3's
 native ascii mesh file format).
 */
 bool
-VkStreamMeshLoader::SetupMeshFromN3d3(const Ptr<Stream>& stream)
+VkMeshLoader::SetupMeshFromN3d3(const Ptr<Stream>& stream, const Ptr<Resources::Resource>& res)
 {
 	// FIXME!
 	n_error("OGL4StreamMeshLoader::SetupMeshFromN3d3() not yet implemented");

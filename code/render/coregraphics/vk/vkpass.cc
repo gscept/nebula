@@ -435,7 +435,7 @@ VkPass::Discard()
 {
 	// release shader state
 	this->shaderState->Discard();
-	this->shaderState = 0;
+	this->shaderState = nullptr;
 
 	// destroy pass and our descriptor set
 	vkFreeDescriptorSets(VkRenderDevice::dev, VkRenderDevice::descPool, 1, &this->passDescriptorSet);

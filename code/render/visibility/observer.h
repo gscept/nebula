@@ -37,11 +37,11 @@ public:
 	const ObserverType GetType() const;
 
 	/// get back original entity
-	const Ptr<Graphics::GraphicsEntity>& GetEntity() const;
+	const Graphics::EntityId GetEntity() const;
 private:
 
 	ObserverType type;
-	Ptr<Graphics::GraphicsEntity> entity;
+	Graphics::EntityId entity;
 	Ptr<VisibilityContainer> container;
 
 	union
@@ -54,7 +54,7 @@ private:
 //------------------------------------------------------------------------------
 /**
 */
-const Ptr<Graphics::GraphicsEntity>&
+const Graphics::EntityId
 Observer::GetEntity() const
 {
 	return this->entity;

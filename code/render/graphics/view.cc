@@ -43,8 +43,8 @@ View::Render(const IndexT frameIndex, const Timing::Time time)
 	if (this->camera.isvalid() && renderDevice->BeginFrame(frameIndex))
 	{
 		n_assert(this->stage.isvalid());
-		n_assert(this->script.isvalid());
-		this->script->Run(frameIndex);
+		//n_assert(this->script.isvalid());
+		//this->script->Run(frameIndex);
 		renderDevice->EndFrame(frameIndex);
 	}
 }

@@ -42,7 +42,7 @@ BufferBase::CreateLock()
 void
 BufferBase::DestroyLock()
 {
-	this->lock = 0;
+	this->lock = nullptr;
 }
 
 } // namespace Base

@@ -6,6 +6,7 @@
 #include "graphicsserver.h"
 #include "graphicscontext.h"
 #include "view.h"
+#include "stage.h"
 
 namespace Graphics
 {
@@ -137,6 +138,56 @@ GraphicsServer::RegisterGraphicsContext(const Core::Rtti& rtti)
 //------------------------------------------------------------------------------
 /**
 */
+EntityId
+GraphicsServer::CreateGraphicsEntity()
+{
+	EntityId id;
+	return this->entityPool.Allocate(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GraphicsServer::DiscardGraphicsEntity(const EntityId id)
+{
+	this->entityPool.Deallocate(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+GraphicsServer::IsValidGraphicsEntity(const EntityId id)
+{
+	return this->entityPool.IsValid(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Ptr<Graphics::Stage>
+GraphicsServer::CreateStage(const Util::StringAtom& name, bool main)
+{
+	Ptr<Stage> stage = Stage::Create();
+	this->stages.Append(stage);
+	return stage;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GraphicsServer::DiscardStage(const Ptr<Stage>& stage)
+{
+	IndexT i = this->stages.FindIndex(stage);
+	n_assert(i != InvalidIndex);
+	this->stages.EraseIndex(i);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 Ptr<Graphics::View>
 GraphicsServer::CreateView(const Util::StringAtom& framescript)
 {
@@ -154,29 +205,6 @@ GraphicsServer::DiscardView(const Ptr<View>& view)
 	IndexT i = this->views.FindIndex(view);
 	n_assert(i != InvalidIndex);
 	this->views.EraseIndex(i);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-GraphicsServer::RegisterEntity(const Ptr<GraphicsEntity>& entity)
-{
-	int64_t slice;
-	entity->transform = this->transforms.Alloc(slice);
-	this->entityTransformMap.Add(entity->id, slice);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-GraphicsServer::UnregisterEntity(const Ptr<GraphicsEntity>& entity)
-{
-	IndexT i = this->entityTransformMap.FindIndex(entity->id);
-	int64_t slice = this->entityTransformMap.ValueAtIndex(i);
-	this->transforms.Free(slice);
-	this->entityTransformMap.EraseAtIndex(i);
 }
 
 } // namespace Graphics

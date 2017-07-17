@@ -34,6 +34,8 @@ public:
 
 	/// allocate a new (empty) node instance
 	NodeInstance* CreateNodeInstance();
+	/// deallocate node instance
+	void DiscardNodeInstance(NodeInstance* node);
 
 private:
 

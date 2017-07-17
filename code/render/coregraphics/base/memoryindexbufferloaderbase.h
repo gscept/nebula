@@ -18,7 +18,7 @@ namespace Base
 {
 class MemoryIndexBufferLoaderBase : public Resources::ResourceLoader
 {
-    __DeclareClass(MemoryIndexBufferLoaderBase);
+    __DeclareAbstractClass(MemoryIndexBufferLoaderBase);
 public:
     /// constructor
     MemoryIndexBufferLoaderBase();

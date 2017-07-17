@@ -7,7 +7,9 @@
 */
 //------------------------------------------------------------------------------
 #include "util/stringatom.h"
+#include "ids/id.h"
 namespace Resources
 {
-typedef Util::StringAtom ResourceId;
+typedef Util::StringAtom ResourceName;
+typedef Ids::Id64 ResourceId;
 } // namespace Resource

@@ -8,7 +8,7 @@
 namespace Graphics
 {
 
-__ImplementClass(Graphics::GraphicsContext, 'GRCO', Core::RefCounted);
+__ImplementAbstractClass(Graphics::GraphicsContext, 'GRCO', Core::RefCounted);
 //------------------------------------------------------------------------------
 /**
 */
@@ -29,9 +29,45 @@ GraphicsContext::~GraphicsContext()
 /**
 */
 void
-GraphicsContext::Update(const IndexT frameIndex, const Timing::Time frameTime)
+GraphicsContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime)
 {
-	// do nothing, override in subclass
+	// implement in subclass
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GraphicsContext::OnVisibilityReady(const IndexT frameIndex, const Timing::Time frameTime)
+{
+	// implement in subclass
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GraphicsContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime)
+{
+	// implement in subclass
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GraphicsContext::OnAfterView(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime)
+{
+	// implement in subclass
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GraphicsContext::OnAfterFrame(const IndexT frameIndex, const Timing::Time frameTime)
+{
+	// implement in subclass
 }
 
 } // namespace Graphics

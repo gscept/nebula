@@ -33,9 +33,9 @@ public:
 	virtual ~ShaderReadWriteTextureBase();
 
 	/// setup texture with fixed size
-	virtual void Setup(const SizeT width, const SizeT height, const CoreGraphics::PixelFormat::Code& format, const Resources::ResourceId& id);
+	virtual void Setup(const SizeT width, const SizeT height, const CoreGraphics::PixelFormat::Code& format, const Resources::ResourceName& id);
 	/// setup texture with relative size
-	void SetupWithRelativeSize(const Math::scalar relWidth, const Math::scalar relHeight, const CoreGraphics::PixelFormat::Code& format, const Resources::ResourceId& id);
+	void SetupWithRelativeSize(const Math::scalar relWidth, const Math::scalar relHeight, const CoreGraphics::PixelFormat::Code& format, const Resources::ResourceName& id);
 	/// discard texture
 	void Discard();
 	/// set dimensions
@@ -63,6 +63,7 @@ protected:
 	uint lockSemaphore;
 	Math::scalar relWidth, relHeight;
 	Ptr<CoreGraphics::Texture> texture;
+	Resources::ResourceId textureId;
 	SizeT width, height, depth;	
 	CoreGraphics::PixelFormat pixelFormat;
 };

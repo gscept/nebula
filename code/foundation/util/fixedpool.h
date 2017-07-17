@@ -294,7 +294,7 @@ Util::FixedPool<TYPE>::SetSetupFunc(const std::function<void(TYPE& val, IndexT i
 /**
 */
 template<class TYPE>
-inline const Util<TYPE>&
+inline const Util::Array<TYPE>&
 Util::FixedPool<TYPE>::GetAllocated()
 {
 	return this->usedValues;

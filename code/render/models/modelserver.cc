@@ -32,12 +32,21 @@ ModelServer::~ModelServer()
 Models::ModelServer::NodeInstance*
 ModelServer::CreateNodeInstance()
 {
-	int64_t id;
+	Ids::Id64 id;
 	NodeInstance* inst = this->nodeInstancePool.Alloc(id);
 	inst->id = id;
 	inst->primitiveGroupId = 0;
 	inst->surface = nullptr;
 	return inst;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ModelServer::DiscardNodeInstance(NodeInstance* node)
+{
+	this->nodeInstancePool.Free(node->id);
 }
 
 } // namespace Models

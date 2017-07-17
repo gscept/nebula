@@ -25,14 +25,11 @@ public:
 	
 	/// render through view
 	void Render(const IndexT frameIndex, const Timing::Time time);
+private:	
 
-	Ptr<Frame::FrameScript> script;
+	//Ptr<Frame::FrameScript> script;
 	Ptr<Camera> camera;
 	Ptr<Stage> stage;
-private:
-
-	
-
 };
 
 } // namespace Graphics

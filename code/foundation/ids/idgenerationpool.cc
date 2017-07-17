@@ -1,18 +1,17 @@
 //------------------------------------------------------------------------------
-//  id.cc
+//  idgenerationpool.cc
 //  (C) 2017 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
-#include "id.h"
+#include "idgenerationpool.h"
 
-
-namespace Game
+namespace Ids
 {
 
 //------------------------------------------------------------------------------
 /**
 */
-IdSystem::IdSystem()
+IdGenerationPool::IdGenerationPool()
 {
     this->freeIds.Reserve(1024);
     this->generations.Reserve(1024);
@@ -21,7 +20,7 @@ IdSystem::IdSystem()
 //------------------------------------------------------------------------------
 /**
 */
-IdSystem::~IdSystem()
+IdGenerationPool::~IdGenerationPool()
 {
     // empty
 }
@@ -29,18 +28,20 @@ IdSystem::~IdSystem()
 //------------------------------------------------------------------------------
 /**
 */
-Id
-IdSystem::Allocate()
+bool
+IdGenerationPool::Allocate(Id32& id)
 {
-    if(this->freeIds.Size() < 1024)
+	if (this->freeIds.Size() < 1024)
     {
         this->generations.Append(0);
-        return Id::Create(this->generations.Size()-1,0);        
+		id = CreateId(this->generations.Size() - 1, 0);
+		return false;
     }
     else
     {
         uint32_t id = this->freeIds.Dequeue();
-        return Id::Create(id, this->generations[id]);
+        id = CreateId(id, this->generations[id]);
+		return true;
     }
 }
 
@@ -48,20 +49,21 @@ IdSystem::Allocate()
 /**
 */
 void
-IdSystem::Deallocate(Id id)
+IdGenerationPool::Deallocate(Id32 id)
 {
-    n_assert2(this->IsValid(id), "tried to delete Invalid/destroyed id");
-    this->freeIds.Enqueue(id.Index());
-    this->generations[id.Index()]++;
+    n_assert2(this->IsValid(id), "Tried to delete invalid/destroyed id");
+    this->freeIds.Enqueue(Index(id));
+    this->generations[Index(id)]++;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 bool
-IdSystem::IsValid(Id id)
+IdGenerationPool::IsValid(Id32 id)
 {
-    return id.Index() < this->generations.Size() && id.Generation() == this->generations[id.Index()];
+    return Index(id) < (uint32_t)this->generations.Size() && Generation(id) == this->generations[Index(id)];
 }
 
-}
+
+} // namespace Ids

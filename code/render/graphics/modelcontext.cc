@@ -5,7 +5,7 @@
 #include "stdneb.h"
 #include "modelcontext.h"
 #include "graphicsentity.h"
-#include "resource/resourcemanager.h"
+#include "resources/resourcemanager.h"
 
 using namespace Resources;
 namespace Graphics
@@ -19,15 +19,6 @@ __ImplementSingleton(Graphics::ModelContext);
 ModelContext::ModelContext()
 {
 	__ConstructSingleton;
-
-	this->pendingData.fillFunc = [](_Pending& data, IndexT idx)
-	{
-		data.res = nullptr;
-	};
-	this->modelData.fillFunc = [](_ModelResult& data, IndexT idx)
-	{
-		data.model = nullptr;
-	};
 }
 
 //------------------------------------------------------------------------------
@@ -41,44 +32,27 @@ ModelContext::~ModelContext()
 //------------------------------------------------------------------------------
 /**
 */
-ModelContext::_ModelResult*
-ModelContext::RegisterEntity(const Ptr<GraphicsEntity>& entity, _ModelSetup setup)
+Graphics::ContextId
+ModelContext::Register(const EntityId entity, const Resources::ResourceName& modelName)
 {
-	// allocate loader data
-	_Pending* pending = this->AllocateSlice<_Pending>(entity->id, this->pendingData);
-
-	// allocate result data
-	_ModelResult* res = this->AllocateSlice<_ModelResult>(entity->id, this->modelData);
-
-	// start loading the resource
-	Ptr<ResourceContainer<Models::Model>> model = ResourceManager::Instance()->CreateResource<Models::Model>(setup.res,
-		[res, entity, this](const Ptr<Models::Model>& mdl) // success
+	Graphics::ContextId id;
+	if (!this->contextIdPool.Allocate(id))
 	{
-		res->model = mdl->CreateInstance();
-	},
-		[entity, this](const Ptr<Models::Model>& mdl) // failed
-	{
-		// empty
-	});
+		this->modelResources.Append(Ids::InvalidId32);
+	}
 
-	// set the container in the return data
-	pending->res = model;
-	return res;
+	// create resource
+	this->modelResources[Ids::Index(id)] = Resources::ResourceManager::Instance()->CreateResource(modelName, ""_atm);
+	return id;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-ModelContext::UnregisterEntity(const Ptr<GraphicsEntity>& entity)
+ModelContext::Unregister(const EntityId entity)
 {
-	// make sure that the resource manager knows this entity is unregistered, so discard the resource
-	_Pending* pending = this->GetSlice(entity->id, this->pendingData);
-	ResourceManager::Instance()->DiscardResource<Models::Model>(pending->res);
-
-	// and free up any memory that we might have for this entity
-	this->FreeSlice(entity->id, this->pendingData);
-	this->FreeSlice(entity->id, this->modelData);
+	this->contextIdPool.Deallocate(entity);
 }
 
 } // namespace Graphics

@@ -55,7 +55,7 @@ public:
 		TYPE* p = static_cast<TYPE*>(rhs);
 		if (p != this->ptr)
 		{
-			this->ptr = static_cast<TYPE*>(rhs);
+			this->ptr = reinterpret_cast<TYPE*>(rhs);
 			if (this->ptr) this->ptr->AddRef();
 		}
 	}
@@ -64,7 +64,7 @@ public:
 	Ptr(const Ptr<OTHERTYPE>& rhs)
 	{
 		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value || std::is_base_of<OTHERTYPE, TYPE>::value, "Incompatible types");
-		TYPE* p = static_cast<TYPE*>(rhs.ptr);
+		TYPE* p = reinterpret_cast<TYPE*>(rhs.ptr);
 		if (p != this->ptr)
 		{
 			this->ptr = p;
@@ -76,7 +76,7 @@ public:
 	Ptr(Ptr<OTHERTYPE>&& rhs)
 	{
 		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value || std::is_base_of<OTHERTYPE, TYPE>::value, "Incompatible types");
-		TYPE* p = static_cast<TYPE*>(rhs.ptr);
+		TYPE* p = reinterpret_cast<TYPE*>(rhs.ptr);
 		this->ptr = p;
 		rhs.ptr = nullptr;
 	}
@@ -96,7 +96,7 @@ public:
 	void operator=(OTHERTYPE* rhs)
 	{
 		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value || std::is_base_of<OTHERTYPE, TYPE>::value, "Incompatible types");
-		TYPE* p = static_cast<TYPE*>(rhs);
+		TYPE* p = reinterpret_cast<TYPE*>(rhs);
 		if (this->ptr != p)
 		{
 			if (this->ptr != nullptr) this->ptr->Release();
@@ -109,7 +109,7 @@ public:
 	void operator=(const Ptr<OTHERTYPE>& rhs)
 	{
 		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value || std::is_base_of<OTHERTYPE, TYPE>::value, "Incompatible types");
-		TYPE* p = static_cast<TYPE*>(rhs.ptr);
+		TYPE* p = reinterpret_cast<TYPE*>(rhs.ptr);
 		if (this->ptr != p)
 		{
 			if (this->ptr != nullptr) this->ptr->Release();
@@ -122,7 +122,7 @@ public:
 	void operator=(Ptr<OTHERTYPE>&& rhs)
 	{
 		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value || std::is_base_of<OTHERTYPE, TYPE>::value, "Incompatible types");
-		TYPE* p = static_cast<TYPE*>(rhs.ptr);
+		TYPE* p = reinterpret_cast<TYPE*>(rhs.ptr);
 		if (this->ptr != p)
 		{
 			this->ptr = p;

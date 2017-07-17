@@ -12,7 +12,7 @@
 //------------------------------------------------------------------------------
 #include "util/array.h"
 #include "util/queue.h"
-#include "core/id.h"
+#include "ids/id.h"
 #include <tuple>
 
 namespace Memory
@@ -29,11 +29,11 @@ public:
 	/// allocate a slice
 	TYPE* Alloc();
 	/// allocate a slice
-	TYPE* Alloc(Core::Id& identifier);
+	TYPE* Alloc(Ids::Id64& identifier);
 	/// free a slice by pointer
 	void Free(TYPE* slice);
 	/// free a slice by identifier created by Alloc
-	void Free(const Core::Id& identifier);
+	void Free(const Ids::Id64& identifier);
 
 	/// clear all pools
 	void Clear();
@@ -110,7 +110,7 @@ Memory::SliceAllocatorPool<TYPE, POOLSIZE, FREEPOOLS>::Alloc()
 */
 template <class TYPE, unsigned int POOLSIZE, bool FREEPOOLS>
 inline TYPE*
-Memory::SliceAllocatorPool<TYPE, POOLSIZE, FREEPOOLS>::Alloc(Core::Id& identifier)
+Memory::SliceAllocatorPool<TYPE, POOLSIZE, FREEPOOLS>::Alloc(Ids::Id64& identifier)
 {
 	TYPE* ret = nullptr;
 
@@ -123,7 +123,7 @@ Memory::SliceAllocatorPool<TYPE, POOLSIZE, FREEPOOLS>::Alloc(Core::Id& identifie
 		pool->free.EraseIndex(pool->free.Size() - 1);
 		pool->used.Append(id);
 		ret = &pool->elems[id];
-		identifier.id = Core::Id::MakeId(poolId, pool->used.Size() - 1);// ((poolId << 32) & 0xFFFFFFFF00000000) + (pool->used.Size() - 1 & 0x00000000FFFFFFFF);
+		identifier.id = Core::Id::MakeId64(poolId, pool->used.Size() - 1);// ((poolId << 32) & 0xFFFFFFFF00000000) + (pool->used.Size() - 1 & 0x00000000FFFFFFFF);
 		if (pool->free.IsEmpty()) this->freePools.Dequeue();
 	}
 	else
@@ -136,7 +136,7 @@ Memory::SliceAllocatorPool<TYPE, POOLSIZE, FREEPOOLS>::Alloc(Core::Id& identifie
 		pool->free.EraseIndex(pool->free.Size() - 1);
 		pool->used.Append(id);
 		ret = &pool->elems[id];
-		identifier.id = Core::Id::MakeId(poolId, 0);
+		identifier.id = Core::Id::MakeId64(poolId, 0);
 		//identifier = ((poolId << 32) & 0xFFFFFFFF00000000) + (0 & 0x00000000FFFFFFFF);
 	}
 
@@ -196,7 +196,7 @@ Memory::SliceAllocatorPool<TYPE, POOLSIZE, FREEPOOLS>::Free(TYPE* slice)
 */
 template <class TYPE, unsigned int POOLSIZE, bool FREEPOOLS>
 inline void
-Memory::SliceAllocatorPool<TYPE, POOLSIZE, FREEPOOLS>::Free(const Core::Id &identifier)
+Memory::SliceAllocatorPool<TYPE, POOLSIZE, FREEPOOLS>::Free(const Ids::Id64& identifier)
 {
 	IndexT poolId = IndexT((identifier >> 32) & 0x00000000FFFFFFFF);
 	IndexT slice = IndexT((identifier) & 0x00000000FFFFFFFF);

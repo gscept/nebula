@@ -8,6 +8,7 @@
 #include "coregraphics/legacy/nvx2fileformatstructs.h"
 #include "coregraphics/memoryvertexbufferloader.h"
 #include "coregraphics/memoryindexbufferloader.h"
+#include "resources/resourcemanager.h"
 
 #if NEBULA3_LEGACY_SUPPORT
 namespace Legacy
@@ -27,9 +28,11 @@ Nvx2StreamReader::Nvx2StreamReader() :
     access(Base::GpuResourceBase::AccessNone),
     rawMode(false),
     mapPtr(0),
-    groupDataPtr(0),
-    vertexDataPtr(0),
-    indexDataPtr(0),
+	ibo(Ids::InvalidId32),
+	vbo(Ids::InvalidId32),
+    groupDataPtr(nullptr),
+    vertexDataPtr(nullptr),
+    indexDataPtr(nullptr),
     groupDataSize(0),
     vertexDataSize(0),
     indexDataSize(0),
@@ -92,11 +95,11 @@ void
 Nvx2StreamReader::Close()
 {
     this->mapPtr = 0;
-    this->groupDataPtr = 0;
-    this->vertexDataPtr = 0;
-    this->indexDataPtr = 0;
-    this->vertexBuffer = 0;
-    this->indexBuffer = 0;
+    this->groupDataPtr = nullptr;
+    this->vertexDataPtr = nullptr;
+    this->indexDataPtr = nullptr;
+	this->ibo = Ids::InvalidId32;
+	this->vbo = Ids::InvalidId32;
     this->primGroups.Clear();
     this->vertexComponents.Clear();
     stream->Unmap();
@@ -263,28 +266,22 @@ Nvx2StreamReader::UpdateGroupBoundingBoxes()
 void
 Nvx2StreamReader::SetupVertexBuffer()
 {
+	n_assert(this->vbo == Ids::InvalidId32);
     n_assert(!this->rawMode);
     n_assert(0 != this->vertexDataPtr);
     n_assert(this->vertexDataSize > 0);
     n_assert(this->numVertices > 0);    
     n_assert(this->vertexComponents.Size() > 0);
 
-    // setup new vertex buffer
-    if (!this->vertexBuffer.isvalid())
-    {
-        this->vertexBuffer = VertexBuffer::Create();
-    }
-    if (!this->vertexBufferLoader.isvalid())
-    {
-        this->vertexBufferLoader = MemoryVertexBufferLoader::Create();
-    }
+	// create index buffer
+	this->vbo = Resources::ReserveResource("", this->tag, VertexBuffer::RTTI);
+
+	this->vertexBufferLoader = MemoryVertexBufferLoader::Create();
     this->vertexBufferLoader->Setup(this->vertexComponents, this->numVertices, this->vertexDataPtr, 
                                     this->vertexDataSize, this->usage, this->access);
-    this->vertexBuffer->SetLoader(this->vertexBufferLoader.upcast<ResourceLoader>());
-    this->vertexBuffer->Load();
-    this->vertexBuffer->SetLoader(0);
-    this->vertexBufferLoader = 0;
-    n_assert(this->vertexBuffer->GetState() == VertexBuffer::Loaded);
+	
+	ResourceMemoryLoader::LoadStatus stat = this->vertexBufferLoader->Load(this->ibo);
+    n_assert(stat == VertexBuffer::Loaded);
 }
 
 //------------------------------------------------------------------------------
@@ -293,30 +290,22 @@ Nvx2StreamReader::SetupVertexBuffer()
 void
 Nvx2StreamReader::SetupIndexBuffer()
 {
+	n_assert(this->ibo == Ids::InvalidId32);
     n_assert(!this->rawMode);
     n_assert(0 != this->indexDataPtr);
     n_assert(this->indexDataSize > 0);
     n_assert(this->numIndices > 0);
     
-    // setup a new index buffer
-    if (!this->indexBuffer.isvalid())
-    {
-        this->indexBuffer = IndexBuffer::Create();
-    }
-    if (!this->indexBufferLoader.isvalid())
-    {
-        this->indexBufferLoader = MemoryIndexBufferLoader::Create();
-    }
+	// create index buffer
+	this->ibo = Resources::ReserveResource("", this->tag, IndexBuffer::RTTI);
 
+	// setup loader
+	this->indexBufferLoader = MemoryIndexBufferLoader::Create();
 	this->indexBufferLoader->Setup(IndexType::Index32, this->numIndices, this->indexDataPtr, 
 		this->indexDataSize, this->usage, this->access);
 
-    
-    this->indexBuffer->SetLoader(this->indexBufferLoader.upcast<ResourceLoader>());
-    this->indexBuffer->Load();
-    this->indexBuffer->SetLoader(0);
-    this->indexBufferLoader = 0;
-    n_assert(this->indexBuffer->GetState() == IndexBuffer::Loaded);
+	ResourceMemoryLoader::LoadStatus stat = this->indexBufferLoader->Load(this->ibo);
+    n_assert(stat == IndexBuffer::Loaded);
 }
 
 } // namespace Legacy

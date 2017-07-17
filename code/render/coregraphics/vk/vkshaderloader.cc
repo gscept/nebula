@@ -3,7 +3,7 @@
 // (C) 2016 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
-#include "vkstreamshaderloader.h"
+#include "vkshaderloader.h"
 #include "vkshader.h"
 #include "coregraphics/constantbuffer.h"
 #include "effectfactory.h"
@@ -15,7 +15,7 @@ using namespace IO;
 namespace Vulkan
 {
 
-__ImplementClass(Vulkan::VkStreamShaderLoader, 'VKSL', Resources::StreamResourceLoader);
+__ImplementClass(Vulkan::VkShaderLoader, 'VKSL', Resources::ResourceLoader);
 
 
 //------------------------------------------------------------------------------
@@ -23,7 +23,7 @@ __ImplementClass(Vulkan::VkStreamShaderLoader, 'VKSL', Resources::StreamResource
 	TODO: In Vulkan, we might be able to thread the shader creation process
 */
 bool
-VkStreamShaderLoader::CanLoadAsync() const
+VkShaderLoader::CanLoadAsync() const
 {
 	return false;
 }
@@ -32,7 +32,7 @@ VkStreamShaderLoader::CanLoadAsync() const
 /**
 */
 bool
-VkStreamShaderLoader::SetupResourceFromStream(const Ptr<IO::Stream>& stream)
+VkShaderLoader::SetupResourceFromStream(const Ptr<IO::Stream>& stream)
 {
 	n_assert(stream.isvalid());
 	n_assert(stream->CanBeMapped());

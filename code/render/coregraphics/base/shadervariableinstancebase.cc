@@ -70,7 +70,7 @@ void
 ShaderVariableInstanceBase::Cleanup()
 {
 	n_assert(this->shaderVariable.isvalid());
-	this->shaderVariable = 0;
+	this->shaderVariable = nullptr;
 
 	// clear value
 	this->value.Clear();

@@ -153,7 +153,7 @@ ShaderStateBase::GetVariableByName(const CoreGraphics::ShaderVariable::Name& n) 
 	if (!this->HasVariableByName(n))
 	{
 		n_error("Invalid shader variable name '%s' in shader '%s'",
-			n.Value(), this->shader->GetResourceId().Value());
+			n.Value(), this->shader->GetResourceName().Value());
 	}
 #endif
 	return this->variablesByName[n];

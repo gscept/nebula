@@ -52,6 +52,10 @@ RenderTextureBase::~RenderTextureBase()
 void
 RenderTextureBase::Setup()
 {
+	// reserve resource
+	this->textureId = Resources::ReserveResource(this->resourceName, "render_system", Texture::RTTI);
+	this->texture = Resources::GetResource<Texture>(this->textureId);
+
 	if (this->windowTexture)
 	{
 		this->window = DisplayDevice::Instance()->GetCurrentWindow();
@@ -65,7 +69,6 @@ RenderTextureBase::Setup()
 		this->usage = ColorAttachment;
 
 		// just create a texture natively without managing it
-		this->texture = CoreGraphics::Texture::Create();
 		this->texture->SetPixelFormat(this->window->GetDisplayMode().GetPixelFormat());
 		this->texture->SetWidth(this->width);
 		this->texture->SetHeight(this->height);
@@ -94,17 +97,6 @@ RenderTextureBase::Setup()
 
 		// multiply layers by 6 if cube, calculate amount of textures by dividing by 6
 		if (this->type == Texture::TextureCube || this->type == Texture::TextureCubeArray) this->layers *= 6;
-
-		// setup texture resource
-		if (this->resourceId.IsValid())
-		{
-			this->texture = ResourceManager::Instance()->CreateUnmanagedResource(this->resourceId, Texture::RTTI).downcast<Texture>();
-		}
-		else
-		{
-			// just create a texture natively without managing it
-			this->texture = CoreGraphics::Texture::Create();
-		}
 	}
 	
 }
@@ -115,17 +107,12 @@ RenderTextureBase::Setup()
 void
 RenderTextureBase::Discard()
 {
-	n_assert(this->texture.isvalid());
-	if (!this->windowTexture)
-	{
-		ResourceManager::Instance()->UnregisterUnmanagedResource(this->texture.upcast<Resource>());
-		this->texture = 0;
-	}	
-	else
-	{
-		this->texture->SetState(Resource::Initial);
-		this->texture = 0;
-	}
+	n_assert(this->textureId != Ids::InvalidId64);
+
+	// discard resource
+	Resources::DiscardResource(this->textureId);
+	this->textureId = Ids::InvalidId64;
+	this->texture = nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -154,6 +141,7 @@ RenderTextureBase::Resize()
 		this->depth = 1;
 	}
 
+	// set texture dimensions
 	this->texture->SetWidth(this->width);
 	this->texture->SetHeight(this->height);
 	this->texture->SetDepth(this->depth);

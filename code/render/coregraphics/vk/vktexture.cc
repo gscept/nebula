@@ -351,7 +351,7 @@ VkTexture::SetupFromVkTexture(VkImage img, VkDeviceMemory mem, VkImageView imgVi
 	this->isRenderTargetAttachment = isAttachment;
 	if (setLoaded)
 	{
-		this->SetState(Resource::Loaded);
+		this->state = Resource::Loaded;
 	}
 }
 
@@ -378,7 +378,7 @@ VkTexture::SetupFromVkMultisampleTexture(VkImage img, VkDeviceMemory mem, VkImag
 	this->isRenderTargetAttachment = isAttachment;
 	if (setLoaded)
 	{
-		this->SetState(Resource::Loaded);
+		this->state = Resource::Loaded;
 	}
 }
 
@@ -405,7 +405,7 @@ VkTexture::SetupFromVkCubeTexture(VkImage img, VkDeviceMemory mem, VkImageView i
 	this->isRenderTargetAttachment = isAttachment;
 	if (setLoaded)
 	{
-		this->SetState(Resource::Loaded);
+		this->state = Resource::Loaded;
 	}
 }
 
@@ -432,7 +432,7 @@ VkTexture::SetupFromVkVolumeTexture(VkImage img, VkDeviceMemory mem, VkImageView
 	this->isRenderTargetAttachment = isAttachment;
 	if (setLoaded)
 	{
-		this->SetState(Resource::Loaded);
+		this->state = Resource::Loaded;
 	}
 }
 
@@ -456,7 +456,7 @@ VkTexture::SetupFromVkBackbuffer(VkImage img, uint32_t width, uint32_t height, u
 	this->SetPixelFormat(format);
 	this->access = GpuResourceBase::AccessRead;
 	this->isRenderTargetAttachment = true;
-	this->SetState(Resource::Loaded);
+	this->state = Resource::Loaded;
 }
 
 //------------------------------------------------------------------------------

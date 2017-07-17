@@ -59,12 +59,8 @@ DepthStencilTargetBase::Discard()
 
 	if (this->resolveDepthTexture.isvalid())
 	{
-		const Ptr<ResourceManager>& resManager = ResourceManager::Instance();
-		if (resManager->HasResource(this->resolveDepthTexture->GetResourceId()))
-		{
-			resManager->UnregisterUnmanagedResource(this->resolveDepthTexture->GetResourceId());
-		}
-		this->resolveDepthTexture = 0;
+		Resources::DiscardResource(this->resolveTextureResId);
+		this->resolveDepthTexture = nullptr;
 	}
 }
 

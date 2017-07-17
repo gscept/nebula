@@ -9,23 +9,26 @@
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
+#include "graphicsentity.h"
 namespace Graphics
 {
 class Stage : public Core::RefCounted
 {
 	__DeclareClass(Stage);
 public:
+
+	/// attach entity to stage, this will cause it to render
+	void AttachEntity(const EntityId entity);
+	/// detach entity from stage
+	void DetachEntity(const EntityId entity);
+private:
+	friend class GraphicsServer;
+
 	/// constructor
 	Stage();
 	/// destructor
 	virtual ~Stage();
 
-	/// attach entity to stage, this will cause it to render
-	void AttachEntity(const Ptr<GraphicsEntity>& entity);
-	/// detach entity from stage
-	void DetachEntity(const Ptr<GraphicsEntity>& entity);
-private:
-
-	Util::Array<Ptr<GraphicsEntity>> entities;
+	Util::Array<EntityId> entities;
 };
 } // namespace Graphics

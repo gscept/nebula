@@ -23,7 +23,7 @@ enum ObserverType : uint8_t
 	Perspective		= 0, // observer uses a 4x4 projection and view matrix to resolve visibility
 	Orthographic	= 1, // observer uses a 4x4 orthogonal and view matrix to resolve visibility
 	BoundingBox		= 2, // observer uses a non-projective bounding box
-	All				= 3, // observer sees everything, without having to do any resolving
+	Omnipercipient	= 3, // observer sees everything, without having to do any resolving
 
 	NumTypes		= 4
 };

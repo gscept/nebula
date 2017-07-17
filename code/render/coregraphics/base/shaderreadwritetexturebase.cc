@@ -6,7 +6,7 @@
 #include "coregraphics/base/shaderreadwritetexturebase.h"
 #include "coregraphics/texture.h"
 #include "resources/resourcemanager.h"
-#include "../displaydevice.h"
+#include "coregraphics/displaydevice.h"
 
 namespace Base
 {
@@ -34,23 +34,22 @@ ShaderReadWriteTextureBase::~ShaderReadWriteTextureBase()
 /**
 */
 void
-ShaderReadWriteTextureBase::Setup(const SizeT width, const SizeT height, const CoreGraphics::PixelFormat::Code& format, const Resources::ResourceId& id)
+ShaderReadWriteTextureBase::Setup(const SizeT width, const SizeT height, const CoreGraphics::PixelFormat::Code& format, const Resources::ResourceName& id)
 {
 	n_assert(id.IsValid());
 	this->width = width;
 	this->height = height;
-	this->texture = CoreGraphics::Texture::Create();
-	this->texture->SetResourceId(id);
 
-	// register resource
-	Resources::ResourceManager::Instance()->RegisterUnmanagedResource(this->texture.upcast<Resources::Resource>());
+	// reserve resource
+	this->textureId = Resources::ReserveResource(id, "render_system", CoreGraphics::Texture::RTTI);
+	this->texture = Resources::GetResource<CoreGraphics::Texture>(this->textureId);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-ShaderReadWriteTextureBase::SetupWithRelativeSize(const Math::scalar relWidth, const Math::scalar relHeight, const CoreGraphics::PixelFormat::Code& format, const Resources::ResourceId& id)
+ShaderReadWriteTextureBase::SetupWithRelativeSize(const Math::scalar relWidth, const Math::scalar relHeight, const CoreGraphics::PixelFormat::Code& format, const Resources::ResourceName& id)
 {
 	n_assert(relWidth > 0);
 	n_assert(relHeight > 0);
@@ -74,8 +73,8 @@ void
 ShaderReadWriteTextureBase::Discard()
 {
 	n_assert(this->texture.isvalid());
-	Resources::ResourceManager::Instance()->UnregisterUnmanagedResource(this->texture.upcast<Resources::Resource>());
-	this->texture = 0;
+	Resources::DiscardResource(this->textureId);
+	this->texture = nullptr;
 }
 
 //------------------------------------------------------------------------------

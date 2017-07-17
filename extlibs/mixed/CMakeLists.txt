@@ -1,5 +1,6 @@
 fips_begin_module(corelibs)
 fips_deps(foundation)
+fips_include_directories(${CODE_ROOT}/foundation)
 fips_files_ex(base64/ *.* GROUP base64)
 if(FIPS_WINDOWS)
 fips_files_ex(stackwalker/ *.* GROUP stackwalker)

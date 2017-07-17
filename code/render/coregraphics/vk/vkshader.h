@@ -53,7 +53,7 @@ public:
 	void Reload();
 
 private:
-	friend class VkStreamShaderLoader;
+	friend class VkShaderLoader;
 	friend class VkShaderState;
 
 	/// create descriptor layout signature
