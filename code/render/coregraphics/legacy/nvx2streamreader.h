@@ -18,9 +18,9 @@
 #include "coregraphics/indexbuffer.h"
 #include "coregraphics/primitivegroup.h"
 #include "coregraphics/base/vertexbufferbase.h"
-#include "coregraphics/base/memoryvertexbufferloaderbase.h"
+#include "coregraphics/base/memoryvertexbufferpoolbase.h"
 #include "coregraphics/base/indexbufferbase.h"
-#include "coregraphics/base/memoryindexbufferloaderbase.h"
+#include "coregraphics/base/memoryindexbufferpoolbase.h"
 
 //------------------------------------------------------------------------------
 namespace Legacy
@@ -70,11 +70,6 @@ public:
     SizeT GetNumEdges() const;
     /// get vertex components
     const Util::Array<CoreGraphics::VertexComponent>& GetVertexComponents() const;
-
-    /// set the specialized vertex buffer
-    void SetVertexBuffer(const Ptr<Base::VertexBufferBase>& vBuf);
-    /// set the specialized vertex buffer reader
-    void SetVertexBufferLoader(const Ptr<Base::MemoryVertexBufferLoaderBase>& vBufLoader);
 
     /// helper method to convert vertex buffer endianess
     static void ConvertVertexBufferEndianess(void* vertexPtr, SizeT numVertices, const Util::Array<CoreGraphics::VertexComponent>& vertexComps);
@@ -129,8 +124,6 @@ private:
 	Util::StringAtom tag;
 	Resources::ResourceId vbo;
 	Resources::ResourceId ibo;
-    Ptr<Base::MemoryVertexBufferLoaderBase> vertexBufferLoader;    
-    Ptr<Base::MemoryIndexBufferLoaderBase> indexBufferLoader;
 
     Util::Array<CoreGraphics::PrimitiveGroup> primGroups;
     void* mapPtr;
@@ -150,15 +143,6 @@ private:
     uint vertexComponentMask;
     Util::Array<CoreGraphics::VertexComponent> vertexComponents;   
 };
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-Nvx2StreamReader::SetVertexBufferLoader(const Ptr<Base::MemoryVertexBufferLoaderBase>& vBufLoader)
-{
-    this->vertexBufferLoader = vBufLoader;
-}
 
 //------------------------------------------------------------------------------
 /**

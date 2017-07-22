@@ -2,7 +2,14 @@
 //------------------------------------------------------------------------------
 /**
 	The model server keeps track of all currently registered model resources, 
-	and their bindings with shaders
+	and their bindings with shaders.
+
+	TODO: 
+	Ideally, all nodes should be allocated in a flat hierarchy according to the model.
+	This way, updating all nodes with a root transform is a linear operation over all nodes.
+	However, it is also useful to have two structures, one for run-time updates of nodes,
+	and one for runtime modifications, like shader stuff. Also, move all of that work to
+	the ModelContext for christs sakes!
 	
 	(C) 2017 Individual contributors, see AUTHORS file
 */
@@ -11,9 +18,11 @@
 #include "core/singleton.h"
 #include "materials/surfaceinstance.h"
 #include "memory/sliceallocatorpool.h"
+#include "ids/idgenerationpool.h"
 
 namespace Models
 {
+
 class ModelServer : public Core::RefCounted
 {
 	__DeclareClass(ModelServer);
@@ -24,19 +33,6 @@ public:
 	/// destructor
 	virtual ~ModelServer();
 
-	typedef IndexT NodeInstanceId;
-	struct NodeInstance
-	{
-		NodeInstanceId id;
-		IndexT primitiveGroupId;
-		Ptr<Materials::SurfaceInstance> surface; 
-	};
-
-	/// allocate a new (empty) node instance
-	NodeInstance* CreateNodeInstance();
-	/// deallocate node instance
-	void DiscardNodeInstance(NodeInstance* node);
-
 private:
 
 	/// the database is as such, surface name -> (mesh resource id -> primitive group)
@@ -46,7 +42,7 @@ private:
 		NodeInstanceId, NodeInstance>
 		>>;
 
-	Memory::SliceAllocatorPool<NodeInstance, 256, false> nodeInstancePool;
 	SurfaceMeshInstanceDatabase database;
 };
+
 } // namespace Models

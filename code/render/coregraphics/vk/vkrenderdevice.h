@@ -118,9 +118,9 @@ private:
 	friend class VkCpuSyncFence;
 	friend class VkShader;
 	friend class VkShaderProgram;
-	friend class VkMemoryVertexBufferLoader;
-	friend class VkMemoryIndexBufferLoader;
-	friend class VkMemoryTextureLoader;
+	friend class VkMemoryVertexBufferPool;
+	friend class VkMemoryIndexBufferPool;
+	friend class VkMemoryTexturePool;
 	friend class VkShaderServer;
 	friend class VkRenderTarget;
 	friend class VkRenderTargetCube;
@@ -129,7 +129,7 @@ private:
 	friend class VkVertexLayout;
 	friend class VkUniformBuffer;
 	friend class VkShaderStorageBuffer;
-	friend class VkTextureLoader;
+	friend class VkTexturePool;
 	friend class VkStreamTextureSaver;
 	friend class VkShaderState;
 	friend class VkShaderImage;

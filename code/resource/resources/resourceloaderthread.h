@@ -25,7 +25,7 @@ public:
 	void Wait();
 
 private:
-	friend class ResourceLoader;
+	friend class ResourceStreamPool;
 
 	/// perform work
 	void DoWork();

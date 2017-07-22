@@ -13,7 +13,9 @@
 #include "resourceid.h"
 namespace Resources
 {
-class ResourceLoader;
+class ResourceStreamPool;
+class ResourceMemoryPool;
+class ResourcePool;
 class ResourceManager;
 class ResourceContainer;
 class Resource : public Core::RefCounted
@@ -39,7 +41,9 @@ public:
 	const ResourceName& GetResourceName() const;
 
 protected:
-	friend class ResourceLoader;
+	friend class ResourceStreamPool;
+	friend class ResourceMemoryPool;
+	friend class ResourcePool;
 	friend class ResourceManager;
 	friend class ResourceContainer;
 

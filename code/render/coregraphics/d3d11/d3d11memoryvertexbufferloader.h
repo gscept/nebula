@@ -11,7 +11,7 @@
     (C) 2013 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "coregraphics/base/memoryvertexbufferloaderbase.h"
+#include "coregraphics/base/memoryvertexbufferpoolbase.h"
 
 namespace Direct3D11
 {

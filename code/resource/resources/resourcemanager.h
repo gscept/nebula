@@ -1,7 +1,9 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	Description
+	The ResourceManager marks the central entry point into the Resource subsystem.
+	It contains a set of convenience functions (which is just a proxy for the Singleton),
+	and should be updated at least once per frame using Update().
 	
 	(C) 2017 Individual contributors, see AUTHORS file
 */
@@ -12,8 +14,9 @@
 #include "core/singleton.h"
 #include "resourcecontainer.h"
 #include "resourceid.h"
-#include "resourceloader.h"
+#include "resourcestreampool.h"
 #include "resourceloaderthread.h"
+#include "resourcememorypool.h"
 namespace Resources
 {
 class ResourceManager : public Core::RefCounted
@@ -38,38 +41,44 @@ public:
 	/// exit lock-step mode
 	void ExitLockstep();
 
-	/// Create a new resource, which will be loaded at some later point, if not already loaded
+	/// create a new resource (stream-managed), which will be loaded at some later point, if not already loaded
 	Resources::ResourceId CreateResource(const ResourceName& id, std::function<void(const Resources::ResourceId)> success = nullptr, std::function<void(const Resources::ResourceId)> failed = nullptr, bool immediate = false);
 	/// overload which also takes an identifying tag, which is used to group-discard resources
 	Resources::ResourceId CreateResource(const ResourceName& id, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success = nullptr, std::function<void(const Resources::ResourceId)> failed = nullptr, bool immediate = false);
-	/// discard resource
+	/// discard resource (stream-managed)
 	void DiscardResource(const Resources::ResourceId res);
-	/// discard all resources by tag
+	/// discard all resources by tag (stream-managed)
 	void DiscardResources(const Util::StringAtom& tag);
+
 	/// reserve resource (for self-managed resources)
-	Resources::ResourceId ReserveResource(const ResourceName& id, const Util::StringAtom& tag, const Core::Rtti& type);
+	Resources::ResourceId ReserveResource(const ResourceName& res, const Util::StringAtom& tag, const Core::Rtti& type);
+	/// update resource (for self-managed resources), info pointer is a struct specific to the loader
+	ResourcePool::LoadStatus UpdateResource(const Resources::ResourceId id, void* info);
 
 	/// get type of resource (i.e RTTI used by ResourceLoader)
 	Core::Rtti* GetType(const Resources::ResourceId id);
 	/// get internal resource 
-	template <class TYPE>
-	const Ptr<TYPE>& GetResource(const Resources::ResourceId id);
+	template <class TYPE> const Ptr<TYPE>& GetResource(const Resources::ResourceId id);
 
-	/// register a file loader, which takes an extension and the RTTI of the resource type to create
-	void RegisterFileLoader(const Util::StringAtom& ext, const Core::Rtti& loaderClass);
-	/// register a memory loader, which maps only a resource type (RTTI)
-	void RegisterLoader(const Core::Rtti& loaderClass);
+	/// register a stream pool, which takes an extension and the RTTI of the resource type to create
+	void RegisterStreamPool(const Util::StringAtom& ext, const Core::Rtti& loaderClass);
+	/// get stream pool for later use
+	template <class POOL_TYPE> POOL_TYPE* GetStreamPool() const;
+	/// register a memory pool, which maps only a resource type (RTTI)
+	void RegisterMemoryPool(const Core::Rtti& loaderClass);
+	/// get memory pool for later use
+	template <class POOL_TYPE> POOL_TYPE* GetMemoryPool() const;
 private:
-	friend class ResourceLoader;
+	friend class ResourceStreamPool;
 
 	bool open;
 	Ptr<ResourceLoaderThread> loaderThread;
 	Util::Dictionary<Util::StringAtom, IndexT> extensionMap;
 	Util::Dictionary<const Core::Rtti*, IndexT> typeMap;
-	Util::Array<Ptr<ResourceLoader>> loaders;
+	Util::Array<Ptr<ResourcePool>> pools;
 	//Util::Dictionary<Util::StringAtom, Ptr<ResourceLoader>> loaders;
 
-	static int32_t UniqueLoaderCounter;
+	static int32_t UniquePoolCounter;
 };
 
 //------------------------------------------------------------------------------
@@ -95,7 +104,7 @@ Resources::ResourceManager::CreateResource(const ResourceName& res, const Util::
 	Util::String ext = res.AsString().GetFileExtension();
 	IndexT i = this->extensionMap.FindIndex(ext);
 	n_assert_fmt(i != InvalidIndex, "No resource loader is associated with file extension '%s'", ext.AsCharPtr());
-	const Ptr<ResourceLoader>& loader = this->loaders[this->extensionMap.ValueAtIndex(i)];
+	const Ptr<ResourceStreamPool>& loader = this->pools[this->extensionMap.ValueAtIndex(i)].downcast<ResourceStreamPool>();
 
 	// create container and cast to actual resource type
 	Resources::ResourceId id = loader->CreateResource(res, tag, success, failed, immediate);
@@ -113,8 +122,8 @@ Resources::ResourceManager::DiscardResource(const Resources::ResourceId id)
 	const Ids::Id8 loaderid = Ids::Id::GetTiny(Ids::Id::GetLow(id));
 
 	// get resource loader by extension
-	n_assert(this->loaders.Size() > loaderid);
-	const Ptr<ResourceLoader>& loader = this->loaders[loaderid];
+	n_assert(this->pools.Size() > loaderid);
+	const Ptr<ResourceStreamPool>& loader = this->pools[loaderid].downcast<ResourceStreamPool>();
 
 	// discard container
 	loader->DiscardResource(id);
@@ -124,10 +133,77 @@ Resources::ResourceManager::DiscardResource(const Resources::ResourceId id)
 /**
 */
 inline Resources::ResourceId
-ResourceManager::ReserveResource(const ResourceName& id, const Util::StringAtom& tag, const Core::Rtti& type)
+ResourceManager::ReserveResource(const ResourceName& res, const Util::StringAtom& tag, const Core::Rtti& type)
 {
-	const Ptr<ResourceLoader>& loader = this->loaders[this->typeMap[&type]];
-	return loader->ReserveResource(id, tag);
+	n_assert(type.IsDerivedFrom(ResourceMemoryPool::RTTI));
+	const Ptr<ResourceMemoryPool>& loader = this->pools[this->typeMap[&type]].downcast<ResourceMemoryPool>();
+	return loader->ReserveResource(res, tag);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline Resources::ResourcePool::LoadStatus
+ResourceManager::UpdateResource(const Resources::ResourceId id, void* info)
+{
+	const Ptr<ResourceMemoryPool>& loader = this->pools[Ids::Id::GetTiny(Ids::Id::GetLow(id))].downcast<ResourceMemoryPool>();
+	return loader->UpdateResource(id, info);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <class TYPE>
+inline const Ptr<TYPE>&
+ResourceManager::GetResource(const Resources::ResourceId id)
+{
+	static_assert(std::is_base_of<Resource, TYPE>::value, "Template argument is not a Resource type!");
+
+	// get id of loader
+	const Ids::Id32 lower = Ids::Id::GetLow(id);
+	const Ids::Id8 loaderid = Ids::Id::GetTiny(lower);
+	const Ids::Id24 resourceId = Ids::Id::GetBig(lower);
+
+	// get resource loader by extension
+	n_assert(this->pools.Size() > loaderid);
+	const Ptr<ResourcePool>& loader = this->pools[loaderid];
+	return loader->containers[resourceId].GetResource().cast<TYPE>();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <class POOL_TYPE>
+inline POOL_TYPE*
+Resources::ResourceManager::GetStreamPool() const
+{
+	static_assert(std::is_base_of<ResourceStreamPool, POOL_TYPE>::value, "Type requested is not a stream pool");
+	IndexT i;
+	for (i = 0; i < this->pools.Size(); i++)
+	{
+		if (this->pools[i]->GetRtti()->IsDerivedFrom(POOL_TYPE::RTTI)) return static_cast<POOL_TYPE*>(this->pools[i].get());
+	}
+
+	n_error("No loader registered for this type");
+	return nullptr;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <class POOL_TYPE>
+inline POOL_TYPE*
+Resources::ResourceManager::GetMemoryPool() const
+{
+	static_assert(std::is_base_of<ResourceMemoryPool, POOL_TYPE>::value, "Type requested is not a memory pool");
+	IndexT i;
+	for (i = 0; i < this->pools.Size(); i++)
+	{
+		if (this->pools[i]->GetRtti()->IsDerivedFrom(POOL_TYPE::RTTI)) return static_cast<POOL_TYPE*>(this->pools[i].get());
+	}
+
+	n_error("No loader registered for this type");
+	return nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -155,6 +231,15 @@ inline Resources::ResourceId
 ReserveResource(const ResourceName& res, const Util::StringAtom& tag, const Core::Rtti& type)
 {
 	return ResourceManager::Instance()->ReserveResource(res, tag, type);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline ResourcePool::LoadStatus
+UpdateResource(const Resources::ResourceId id, void* info)
+{
+	return ResourceManager::Instance()->UpdateResource(id, info);
 }
 
 //------------------------------------------------------------------------------

@@ -5,7 +5,7 @@
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "coregraphics/base/shaderserverbase.h"
-#include "coregraphics/shaderloader.h"
+#include "coregraphics/shaderpool.h"
 #include "io/ioserver.h"
 #include "io/textreader.h"
 #include "coregraphics/shadersemantics.h"
@@ -66,7 +66,7 @@ ShaderServerBase::Open()
             ResourceId resId = shaderPaths[i];
             Ptr<Shader> newShader = Shader::Create();
             newShader->SetResourceId(resId);
-            newShader->SetLoader(ShaderLoader::Create());
+            newShader->SetLoader(ShaderPool::Create());
             newShader->SetAsyncEnabled(false);
             newShader->Load();
             if (newShader->IsLoaded())
@@ -212,7 +212,7 @@ void
 ShaderServerBase::ReloadShader(Ptr<CoreGraphics::Shader> shader)
 {
 	n_assert(0 != shader);
-	shader->SetLoader(ShaderLoader::Create());
+	shader->SetLoader(ShaderPool::Create());
 	shader->SetAsyncEnabled(false);
 	shader->Load();
 	if (shader->IsLoaded())
@@ -234,7 +234,7 @@ ShaderServerBase::LoadShader(const Resources::ResourceId& shdName)
 	n_assert(shdName.IsValid());
 	Ptr<Shader> shader = Shader::Create();
 	shader->SetResourceId(shdName);
-	shader->SetLoader(ShaderLoader::Create());
+	shader->SetLoader(ShaderPool::Create());
 	shader->SetAsyncEnabled(false);
 	shader->Load();
 	if (shader->IsLoaded())

@@ -13,7 +13,7 @@ namespace Resources
 {
 class ResourceSaver : public Core::RefCounted
 {
-	__DeclareClass(ResourceSaver);
+	__DeclareAbstractClass(ResourceSaver);
 public:
 	/// constructor
 	ResourceSaver();

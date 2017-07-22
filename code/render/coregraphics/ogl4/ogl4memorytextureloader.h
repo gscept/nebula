@@ -8,7 +8,7 @@
     (C) 2013-2016 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "resources/resourceloader.h"
+#include "resources/resourcestreampool.h"
 #include "coregraphics/pixelformat.h"
 
 namespace OpenGL4

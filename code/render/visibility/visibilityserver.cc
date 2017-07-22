@@ -80,7 +80,7 @@ VisibilityServer::EnterVisibilityLockstep()
 /**
 */
 void
-VisibilityServer::RegisterGraphicsEntity(const Ptr<Graphics::GraphicsEntity>& entity, Graphics::ModelContext::_ModelResult* data)
+VisibilityServer::RegisterGraphicsEntity(const Ptr<Graphics::GraphicsEntity>& entity, Graphics::ContextId modelId)
 {
 	n_assert(!this->locked);
 	n_assert(this->entities.FindIndex(entity) == InvalidIndex);
@@ -88,15 +88,14 @@ VisibilityServer::RegisterGraphicsEntity(const Ptr<Graphics::GraphicsEntity>& en
 	this->models.Append(data);
 	this->visibilityDirty = true;
 
-	const Util::Array<Ptr<Models::ModelNodeInstance>>& nodes = data->model->GetNodeInstances();
+	const Util::Array<ModelServer::NodeInstance>& nodes = ModelServer::Instance()->GetNodes(modelId);
 	IndexT i;
 	for (i = 0; i < nodes.Size(); i++)
 	{
-		const Ptr<Models::ModelNodeInstance>& node = nodes[i];
-		if (node->IsA(Models::ShapeNodeInstance::RTTI))
+		const Ptr<ModelServer::NodeInstance>& node = nodes[i];
+		if (node->surface.isvalid())
 		{
-			const Ptr<Models::ShapeNodeInstance>& stateNode = node;
-			const Ptr<Materials::SurfaceInstance>& surface = stateNode->GetSurfaceInstance();
+			const Ptr<Materials::SurfaceInstance>& surface = node->surface;
 
 			// check to see if material is registered, if not, do it
 			if (!this->visibilityDatabase.Contains(surface->GetCode()))
@@ -107,10 +106,9 @@ VisibilityServer::RegisterGraphicsEntity(const Ptr<Graphics::GraphicsEntity>& en
 			{
 				// next level, check to see if mesh is registered
 				Util::Dictionary<Resources::ResourceId, IndexT>& meshLevel = this->visibilityDatabase[surface->GetCode()];
-				const Ptr<Models::ShapeNode>& parentNode = stateNode->GetModelNode();
-				if (!meshLevel.Contains(parentNode->GetMeshResourceId()))
+				if (!meshLevel.Contains(node->mesh))
 				{
-					meshLevel.Add(parentNode->GetMeshResourceId())
+					meshLevel.Add(node->mesh, node->primitiveGroupId);
 				}
 			}
 		}

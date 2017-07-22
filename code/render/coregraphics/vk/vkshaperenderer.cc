@@ -10,7 +10,7 @@
 #include "coregraphics/renderdevice.h"
 #include "coregraphics/vertexbuffer.h"
 #include "coregraphics/indexbuffer.h"
-#include "coregraphics/streammeshloader.h"
+#include "coregraphics/meshpool.h"
 #include "coregraphics/mesh.h"
 #include "coregraphics/vertexlayoutserver.h"
 #include "coregraphics/vertexcomponent.h"
@@ -20,8 +20,8 @@
 #include "resources/resourcemanager.h"
 #include "models/modelinstance.h"
 #include "coregraphics/shadersemantics.h"
-#include "coregraphics/memoryvertexbufferloader.h"
-#include "coregraphics/memoryindexbufferloader.h"
+#include "coregraphics/memoryvertexbufferpool.h"
+#include "coregraphics/memoryindexbufferpool.h"
 
 using namespace Base;
 using namespace Threading;
@@ -90,7 +90,7 @@ VkShapeRenderer::Open()
 	Util::Array<VertexComponent> comps;
 	comps.Append(VertexComponent(VertexComponent::Position, 0, VertexComponent::Float4, 0));
 	comps.Append(VertexComponent(VertexComponent::Color, 0, VertexComponent::Float4, 0));
-	Ptr<MemoryVertexBufferLoader> vboLoader = MemoryVertexBufferLoader::Create();
+	Ptr<MemoryVertexBufferPool> vboLoader = MemoryVertexBufferPool::Create();
 	vboLoader->Setup(comps, MaxNumVertices, NULL, 0, VertexBuffer::UsageDynamic, VertexBuffer::AccessWrite, VertexBuffer::SyncingCoherent);
 
 	// create vbo
@@ -102,7 +102,7 @@ VkShapeRenderer::Open()
 	this->vbo->SetLoader(NULL);
 
 	// setup ibo
-	Ptr<MemoryIndexBufferLoader> iboLoader = MemoryIndexBufferLoader::Create();
+	Ptr<MemoryIndexBufferPool> iboLoader = MemoryIndexBufferPool::Create();
 	iboLoader->Setup(IndexType::Index32, MaxNumIndices, NULL, 0, IndexBuffer::UsageDynamic, IndexBuffer::AccessWrite, IndexBuffer::SyncingCoherent);
 
 	// create ibo
@@ -462,7 +462,7 @@ VkShapeRenderer::DrawBufferedIndexedPrimitives()
 void
 VkShapeRenderer::CreateBoxShape()
 {
-	Ptr<ManagedMesh> mesh = ResourceManager::Instance()->CreateManagedResource(Mesh::RTTI, "msh:system/box.nvx2", MeshLoader::Create()).downcast<ManagedMesh>();
+	Ptr<ManagedMesh> mesh = ResourceManager::Instance()->CreateManagedResource(Mesh::RTTI, "msh:system/box.nvx2", MeshPool::Create()).downcast<ManagedMesh>();
 	this->shapeMeshes[RenderShape::Box] = mesh;
 }
 
@@ -472,7 +472,7 @@ VkShapeRenderer::CreateBoxShape()
 void
 VkShapeRenderer::CreateSphereShape()
 {
-	Ptr<ManagedMesh> mesh = ResourceManager::Instance()->CreateManagedResource(Mesh::RTTI, "msh:system/sphere.nvx2", MeshLoader::Create()).downcast<ManagedMesh>();
+	Ptr<ManagedMesh> mesh = ResourceManager::Instance()->CreateManagedResource(Mesh::RTTI, "msh:system/sphere.nvx2", MeshPool::Create()).downcast<ManagedMesh>();
 	this->shapeMeshes[RenderShape::Sphere] = mesh;
 }
 
@@ -482,7 +482,7 @@ VkShapeRenderer::CreateSphereShape()
 void
 VkShapeRenderer::CreateCylinderShape()
 {
-	Ptr<ManagedMesh> mesh = ResourceManager::Instance()->CreateManagedResource(Mesh::RTTI, "msh:system/cylinder.nvx2", MeshLoader::Create()).downcast<ManagedMesh>();
+	Ptr<ManagedMesh> mesh = ResourceManager::Instance()->CreateManagedResource(Mesh::RTTI, "msh:system/cylinder.nvx2", MeshPool::Create()).downcast<ManagedMesh>();
 	this->shapeMeshes[RenderShape::Cylinder] = mesh;
 }
 
@@ -492,7 +492,7 @@ VkShapeRenderer::CreateCylinderShape()
 void
 VkShapeRenderer::CreateTorusShape()
 {
-	Ptr<ManagedMesh> mesh = ResourceManager::Instance()->CreateManagedResource(Mesh::RTTI, "msh:system/torus.nvx2", MeshLoader::Create()).downcast<ManagedMesh>();
+	Ptr<ManagedMesh> mesh = ResourceManager::Instance()->CreateManagedResource(Mesh::RTTI, "msh:system/torus.nvx2", MeshPool::Create()).downcast<ManagedMesh>();
 	this->shapeMeshes[RenderShape::Torus] = mesh;
 }
 
@@ -502,7 +502,7 @@ VkShapeRenderer::CreateTorusShape()
 void
 VkShapeRenderer::CreateConeShape()
 {
-	Ptr<ManagedMesh> mesh = ResourceManager::Instance()->CreateManagedResource(Mesh::RTTI, "msh:system/cone.nvx2", MeshLoader::Create()).downcast<ManagedMesh>();
+	Ptr<ManagedMesh> mesh = ResourceManager::Instance()->CreateManagedResource(Mesh::RTTI, "msh:system/cone.nvx2", MeshPool::Create()).downcast<ManagedMesh>();
 	this->shapeMeshes[RenderShape::Cone] = mesh;
 }
 
