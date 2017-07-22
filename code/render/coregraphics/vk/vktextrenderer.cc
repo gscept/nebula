@@ -11,9 +11,9 @@
 #define STB_TRUETYPE_IMPLEMENTATION 
 #include "stb/stb_truetype.h"
 #include "coregraphics/shaderserver.h"
-#include "coregraphics/memorytextureloader.h"
+#include "coregraphics/memorytexturepool.h"
 #include "resources/resourcemanager.h"
-#include "coregraphics/memoryvertexbufferloader.h"
+#include "coregraphics/memoryvertexbufferpool.h"
 
 #define FONT_SIZE 32.0f
 #define ONEOVERFONTSIZE 1/32.0f
@@ -69,7 +69,7 @@ VkTextRenderer::Open()
 	comps.Append(VertexComponent((VertexComponent::SemanticName)0, 0, VertexComponent::Float2, 0));
 	comps.Append(VertexComponent((VertexComponent::SemanticName)1, 0, VertexComponent::Float2, 0));
 	comps.Append(VertexComponent((VertexComponent::SemanticName)2, 0, VertexComponent::Float4, 0));
-	Ptr<MemoryVertexBufferLoader> vboLoader = MemoryVertexBufferLoader::Create();
+	Ptr<MemoryVertexBufferPool> vboLoader = MemoryVertexBufferPool::Create();
 	vboLoader->Setup(comps, MaxNumChars * 6, NULL, 0, VertexBuffer::UsageDynamic, VertexBuffer::AccessWrite, VertexBuffer::SyncingCoherent);
 
 	// create vbo and load
@@ -117,7 +117,7 @@ VkTextRenderer::Open()
 
 	// setup random texture
 	this->glyphTexture = ResourceManager::Instance()->CreateUnmanagedResource("GlyphTexture", Texture::RTTI).downcast<Texture>();
-	Ptr<MemoryTextureLoader> loader = MemoryTextureLoader::Create();
+	Ptr<MemoryTexturePool> loader = MemoryTexturePool::Create();
 	loader->SetImageBuffer(this->bitmap, GLYPH_TEXTURE_SIZE, GLYPH_TEXTURE_SIZE, PixelFormat::R8);
 	this->glyphTexture->SetLoader(loader.upcast<ResourceLoader>());
 	this->glyphTexture->SetResourceId("GlyphTexture");

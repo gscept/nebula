@@ -5,7 +5,7 @@
 #include "stdneb.h"
 #include "vkshaderserver.h"
 #include "effectfactory.h"
-#include "coregraphics/shaderloader.h"
+#include "coregraphics/shaderpool.h"
 #include "vkrenderdevice.h"
 
 using namespace Resources;
@@ -76,7 +76,7 @@ VkShaderServer::Close()
 	n_assert(this->IsOpen());
 	n_delete(this->factory);
 	this->textureShaderState->Discard();
-	this->textureShaderState = 0;
+	this->textureShaderState = nullptr;
 	ShaderServerBase::Close();
 }
 
@@ -87,7 +87,7 @@ void
 VkShaderServer::ReloadShader(Ptr<CoreGraphics::Shader> shader)
 {
 	n_assert(0 != shader);
-	shader->SetLoader(ShaderLoader::Create());
+	shader->SetLoader(ShaderPool::Create());
 	shader->SetAsyncEnabled(false);
 	shader->Load();
 	if (shader->IsLoaded())
@@ -109,7 +109,7 @@ VkShaderServer::LoadShader(const Resources::ResourceId& shdName)
 	n_assert(shdName.IsValid());
 	Ptr<Shader> shader = Shader::Create();
 	shader->SetResourceId(shdName);
-	shader->SetLoader(ShaderLoader::Create());
+	shader->SetLoader(ShaderPool::Create());
 	shader->SetAsyncEnabled(false);
 	shader->Load();
 	if (shader->IsLoaded())

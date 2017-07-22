@@ -18,6 +18,7 @@
 #include "visibility.h"
 namespace Visibility
 {
+class VisibilityContainer;
 class Observer : public Core::RefCounted
 {
 	__DeclareClass(Observer);

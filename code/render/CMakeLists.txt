@@ -98,10 +98,8 @@ ENDIF()
 				feedbackbufferbase.h
 				indexbufferbase.cc
 				indexbufferbase.h
-				memoryindexbufferloaderbase.cc
-				memoryindexbufferloaderbase.h
-				memoryvertexbufferloaderbase.cc
-				memoryvertexbufferloaderbase.h
+				memoryindexbufferpoolbase.h
+				memoryvertexbufferpoolbase.h
 				passbase.cc
 				passbase.h
 				renderdevicebase.cc
@@ -178,14 +176,14 @@ ENDIF()
 				indexbuffer.cc
 				indexbuffer.h
 				indextype.h
-				memoryindexbufferloader.cc
-				memoryindexbufferloader.h
-				memorymeshloader.cc
-				memorymeshloader.h
-				memorytextureloader.cc
-				memorytextureloader.h
-				memoryvertexbufferloader.cc
-				memoryvertexbufferloader.h
+				memoryindexbufferpool.cc
+				memoryindexbufferpool.h
+				memorymeshpool.cc
+				memorymeshpool.h
+				memorytexturepool.cc
+				memorytexturepool.h
+				memoryvertexbufferpool.cc
+				memoryvertexbufferpool.h
 				mesh.cc
 				mesh.h
 				pass.cc
@@ -227,12 +225,12 @@ ENDIF()
 				shadervariation.h
 				shaperenderer.cc
 				shaperenderer.h
-				meshloader.cc
-				meshloader.h
-				shaderloader.cc
-				shaderloader.h
-				textureloader.cc
-				textureloader.h
+				meshpool.cc
+				meshpool.h
+				shaderpool.cc
+				shaderpool.h
+				texturepool.cc
+				texturepool.h
 				streamtexturesaver.cc
 				streamtexturesaver.h
 				stretchybuffer.cc
@@ -371,12 +369,12 @@ ENDIF()
 				vkfeedbackbuffer.h
 				vkindexbuffer.cc
 				vkindexbuffer.h
-				vkmemoryindexbufferloader.cc
-				vkmemoryindexbufferloader.h
-				vkmemorytextureloader.cc
-				vkmemorytextureloader.h
-				vkmemoryvertexbufferloader.cc
-				vkmemoryvertexbufferloader.h
+				vkmemoryindexbufferpool.cc
+				vkmemoryindexbufferpool.h
+				vkmemorytexturepool.cc
+				vkmemorytexturepool.h
+				vkmemoryvertexbufferpool.cc
+				vkmemoryvertexbufferpool.h
 				vkpass.cc
 				vkpass.h
 				vkpipelinedatabase.cc
@@ -405,12 +403,10 @@ ENDIF()
 				vkshadervariableinstance.h
 				vkshaperenderer.cc
 				vkshaperenderer.h
-				vkmeshloader.cc
-				vkmeshloader.h
-				vkshaderloader.cc
-				vkshaderloader.h
-				vktextureloader.cc
-				vktextureloader.h
+				vkshaderpool.cc
+				vkshaderpool.h
+				vktexturepool.cc
+				vktexturepool.h
 				vkstreamtexturesaver.cc
 				vkstreamtexturesaver.h
 				vktextrenderer.cc
@@ -491,8 +487,6 @@ ENDIF()
 				lightcontext.h
 				lightprobecontext.cc
 				lightprobecontext.h
-				modelcontext.cc
-				modelcontext.h
 				stage.cc
 				stage.h
 				view.cc
@@ -668,6 +662,8 @@ ENDIF()
 				framebatchtype.cc
 				model.cc
 				model.h
+				modelcontext.cc
+				modelcontext.h
 				modelloader.cc
 				modelloader.h
 				modelserver.cc

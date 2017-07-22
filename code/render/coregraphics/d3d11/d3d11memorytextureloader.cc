@@ -3,7 +3,7 @@
 #include "coregraphics/streamtextureloader.h"
 #include "coregraphics/texture.h"
 #include "coregraphics/renderdevice.h"
-#include "coregraphics/memorytextureloader.h"
+#include "coregraphics/memorytexturepool.h"
 
 #include "D3D11.h"
 #include "coregraphics/d3d11/d3d11types.h"
@@ -14,7 +14,7 @@ using namespace CoreGraphics;
 
 namespace Direct3D11
 {
-__ImplementClass(Direct3D11::D3D11MemoryTextureLoader, 'D1MT', Resources::ResourceLoader);
+__ImplementClass(Direct3D11::D3D11MemoryTextureLoader, 'D1MT', Resources::ResourceMemoryPool);
 
 //------------------------------------------------------------------------------
 /**

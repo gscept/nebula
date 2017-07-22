@@ -13,6 +13,7 @@
 namespace Models
 {
 class ModelLoader;
+class ModelServer;
 class ModelNode;
 class Model : public Resources::Resource
 {
@@ -30,6 +31,7 @@ public:
 private:
 	/// the model loader is responsible for filling this class
 	friend class ModelLoader;
+	friend class ModelContext;
 
 	Math::bbox boundingBox;
 	Util::Dictionary<Util::StringAtom, Ptr<ModelNode>> nodes;

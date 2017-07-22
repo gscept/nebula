@@ -10,7 +10,7 @@
     (C) 2007 Radon Labs GmbH
 	(C) 2013-2016 Individual contributors, see AUTHORS file
 */
-#include "coregraphics/base/memoryindexbufferloaderbase.h"
+#include "coregraphics/base/memoryindexbufferpoolbase.h"
 
 //------------------------------------------------------------------------------
 namespace OpenGL4

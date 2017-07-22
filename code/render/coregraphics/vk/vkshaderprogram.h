@@ -52,7 +52,7 @@ public:
 private:
 
 	friend class VkShader;
-	friend class VkShaderLoader;
+	friend class VkShaderPool;
 	friend class VkPipelineDatabase;
 
 	/// setup from AnyFX program

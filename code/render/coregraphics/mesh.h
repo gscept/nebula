@@ -33,15 +33,15 @@ public:
     /// return true if the mesh has a vertex buffer
     bool HasVertexBuffer() const;
     /// set the vertex buffer object
-    void SetVertexBuffer(const Ptr<CoreGraphics::VertexBuffer>& vb);
+    void SetVertexBuffer(const Resources::ResourceId vb);
     /// get the vertex buffer object
-    const Ptr<CoreGraphics::VertexBuffer>& GetVertexBuffer() const;
+    const Resources::ResourceId GetVertexBuffer() const;
     /// return true if the mesh has an index buffer
     bool HasIndexBuffer() const;
     /// set the index buffer object
-    void SetIndexBuffer(const Ptr<CoreGraphics::IndexBuffer>& ib);
+    void SetIndexBuffer(const Resources::ResourceId ib);
     /// get the index buffer object
-    const Ptr<CoreGraphics::IndexBuffer>& GetIndexBuffer() const;
+    const Resources::ResourceId GetIndexBuffer() const;
 	/// set mesh topology
 	void SetTopology(const CoreGraphics::PrimitiveTopology::Code& topo);
 	/// get mesh topology
@@ -61,8 +61,8 @@ public:
 	void ApplyPrimitiveGroup(IndexT primGroupIndex);
  
 protected:   
-    Ptr<CoreGraphics::VertexBuffer> vertexBuffer;
-    Ptr<CoreGraphics::IndexBuffer> indexBuffer;
+    Resources::ResourceId vertexBuffer;
+    Resources::ResourceId indexBuffer;
 	CoreGraphics::PrimitiveTopology::Code topology;
     Util::Array<CoreGraphics::PrimitiveGroup> primitiveGroups;
 };
@@ -73,14 +73,14 @@ protected:
 inline bool
 Mesh::HasVertexBuffer() const
 {
-    return this->vertexBuffer.isvalid();
+	return this->vertexBuffer != Ids::InvalidId64;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 inline void
-Mesh::SetVertexBuffer(const Ptr<CoreGraphics::VertexBuffer>& vb)
+Mesh::SetVertexBuffer(const Resources::ResourceId vb)
 {
     this->vertexBuffer = vb;
 }
@@ -88,7 +88,7 @@ Mesh::SetVertexBuffer(const Ptr<CoreGraphics::VertexBuffer>& vb)
 //------------------------------------------------------------------------------
 /**
 */
-inline const Ptr<CoreGraphics::VertexBuffer>&
+inline const Resources::ResourceId
 Mesh::GetVertexBuffer() const
 {
     return this->vertexBuffer;
@@ -107,7 +107,7 @@ Mesh::HasIndexBuffer() const
 /**
 */
 inline void
-Mesh::SetIndexBuffer(const Ptr<CoreGraphics::IndexBuffer>& ib)
+Mesh::SetIndexBuffer(const Resources::ResourceId ib)
 {
     this->indexBuffer = ib;
 }
@@ -115,7 +115,7 @@ Mesh::SetIndexBuffer(const Ptr<CoreGraphics::IndexBuffer>& ib)
 //------------------------------------------------------------------------------
 /**
 */
-inline const Ptr<CoreGraphics::IndexBuffer>&
+inline const Resources::ResourceId
 Mesh::GetIndexBuffer() const
 {
     return this->indexBuffer;

@@ -21,6 +21,7 @@
 namespace Models
 {
 class ModelLoader;
+class ModelServer;
 class Model;
 class ModelNode : public Core::RefCounted
 {
@@ -36,6 +37,7 @@ public:
 
 protected:
 	friend class ModelLoader;
+	friend class ModelContext;
 
 	/// load data
 	virtual bool Load(const Util::FourCC& tag, const Ptr<Models::ModelLoader>& loader, const Ptr<IO::BinaryReader>& reader);

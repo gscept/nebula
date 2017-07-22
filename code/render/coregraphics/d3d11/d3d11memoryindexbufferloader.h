@@ -11,7 +11,7 @@
     (C) 2013 Individual contributors, see AUTHORS file
 */
 //-----------------------------------------------------------------------------
-#include "coregraphics/base/memoryindexbufferloaderbase.h"
+#include "coregraphics/base/memoryindexbufferpoolbase.h"
 
 namespace Direct3D11
 {

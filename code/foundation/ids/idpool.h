@@ -35,6 +35,8 @@ public:
 	Id32 Alloc();
 	/// free id
 	void Dealloc(Id32 id);
+	/// get grow
+	const uint32_t GetGrow() const;
 private:
 
 	Util::Array<uint32_t> free;
@@ -111,6 +113,15 @@ inline void
 IdPool::Dealloc(uint32_t id)
 {
 	this->free.Append(this->maxId - id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const uint32_t
+IdPool::GetGrow() const
+{
+	return this->grow;
 }
 
 } // namespace Ids

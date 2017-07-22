@@ -16,6 +16,10 @@
 #include "resource.h"
 namespace Resources
 {
+class ResourceStreamPool;
+class ResourceMemoryPool;
+class ResourcePool;
+class ResourceManager;
 class ResourceContainer
 {
 public:
@@ -27,7 +31,9 @@ public:
 	/// get resource, may return placeholder if pending, or failed if load failed
 	const Ptr<Resource>& GetResource();
 private:
-	friend class ResourceLoader;
+	friend class ResourceStreamPool;
+	friend class ResourceMemoryPool;
+	friend class ResourcePool;
 	friend class ResourceManager;
 
 	Ptr<Resource> resource;

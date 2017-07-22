@@ -51,7 +51,7 @@ public:
 	template<class OTHERTYPE>
 	Ptr(OTHERTYPE* rhs)
 	{
-		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value || std::is_base_of<OTHERTYPE, TYPE>::value, "Incompatible types");
+		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value, "Left hand side must be base of right");
 		TYPE* p = static_cast<TYPE*>(rhs);
 		if (p != this->ptr)
 		{
@@ -63,7 +63,7 @@ public:
 	template <class OTHERTYPE>
 	Ptr(const Ptr<OTHERTYPE>& rhs)
 	{
-		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value || std::is_base_of<OTHERTYPE, TYPE>::value, "Incompatible types");
+		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value, "Left hand side must be base of right");
 		TYPE* p = reinterpret_cast<TYPE*>(rhs.ptr);
 		if (p != this->ptr)
 		{
@@ -75,7 +75,7 @@ public:
 	template <class OTHERTYPE>
 	Ptr(Ptr<OTHERTYPE>&& rhs)
 	{
-		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value || std::is_base_of<OTHERTYPE, TYPE>::value, "Incompatible types");
+		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value, "Left hand side must be base of right");
 		TYPE* p = reinterpret_cast<TYPE*>(rhs.ptr);
 		this->ptr = p;
 		rhs.ptr = nullptr;
@@ -95,7 +95,7 @@ public:
 	template<class OTHERTYPE>
 	void operator=(OTHERTYPE* rhs)
 	{
-		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value || std::is_base_of<OTHERTYPE, TYPE>::value, "Incompatible types");
+		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value, "Left hand side must be base of right");
 		TYPE* p = reinterpret_cast<TYPE*>(rhs);
 		if (this->ptr != p)
 		{
@@ -108,7 +108,7 @@ public:
 	template<class OTHERTYPE>
 	void operator=(const Ptr<OTHERTYPE>& rhs)
 	{
-		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value || std::is_base_of<OTHERTYPE, TYPE>::value, "Incompatible types");
+		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value, "Left hand side must be base of right");
 		TYPE* p = reinterpret_cast<TYPE*>(rhs.ptr);
 		if (this->ptr != p)
 		{
@@ -121,7 +121,7 @@ public:
 	template<class OTHERTYPE>
 	void operator=(Ptr<OTHERTYPE>&& rhs)
 	{
-		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value || std::is_base_of<OTHERTYPE, TYPE>::value, "Incompatible types");
+		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value, "Left hand side must be base of right");
 		TYPE* p = reinterpret_cast<TYPE*>(rhs.ptr);
 		if (this->ptr != p)
 		{

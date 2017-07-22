@@ -1,6 +1,6 @@
 #pragma once
 
-#include "resources/resourceloader.h"
+#include "resources/resourcestreampool.h"
 #include "coregraphics/pixelformat.h"
 
 namespace Direct3D11

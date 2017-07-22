@@ -4,6 +4,9 @@
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "modelserver.h"
+#include "resources/resourcemanager.h"
+#include "model.h"
+#include "nodes/modelnode.h"
 
 namespace Models
 {
@@ -29,24 +32,10 @@ ModelServer::~ModelServer()
 //------------------------------------------------------------------------------
 /**
 */
-Models::ModelServer::NodeInstance*
-ModelServer::CreateNodeInstance()
+Models::ModelInstanceId
+ModelServer::CreateModelInstance(const Resources::ResourceId id)
 {
-	Ids::Id64 id;
-	NodeInstance* inst = this->nodeInstancePool.Alloc(id);
-	inst->id = id;
-	inst->primitiveGroupId = 0;
-	inst->surface = nullptr;
-	return inst;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-ModelServer::DiscardNodeInstance(NodeInstance* node)
-{
-	this->nodeInstancePool.Free(node->id);
+	
 }
 
 } // namespace Models

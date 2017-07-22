@@ -7,7 +7,7 @@
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
-#include "resources/resourceloader.h"
+#include "resources/resourcestreampool.h"
 #include "util/stack.h"
 namespace Models
 {

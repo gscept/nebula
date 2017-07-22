@@ -14,15 +14,17 @@ fips_begin_module(resource)
 				resourcecontainer.cc
 				resourcecontainer.h
 				resourceid.h
-				resourceloader.cc
-				resourceloader.h
+				resourcepool.cc
+				resourcepool.h
 				resourceloaderthread.cc
 				resourceloaderthread.h
 				resourcemanager.cc
 				resourcemanager.h
-				resourcememoryloader.cc
-				resourcememoryloader.h
+				resourcememorypool.cc
+				resourcememorypool.h
 				resourcesaver.cc
 				resourcesaver.h
+				resourcestreampool.cc
+				resourcestreampool.h
 			)
 fips_end_module()
