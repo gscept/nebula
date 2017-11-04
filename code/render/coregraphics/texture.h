@@ -14,7 +14,6 @@ namespace CoreGraphics
 {
 class Texture : public Direct3D11::D3D11Texture
 {
-	__DeclareClass(Texture);
 };
 }
 #elif __OGL4__
@@ -23,7 +22,6 @@ namespace CoreGraphics
 {
 class Texture : public OpenGL4::OGL4Texture
 {
-	__DeclareClass(Texture);
 };
 }
 #elif __VULKAN__
@@ -32,7 +30,6 @@ namespace CoreGraphics
 {
 class Texture : public Vulkan::VkTexture
 {
-	__DeclareClass(Texture);
 };
 }
 #elif __DX9__
@@ -41,7 +38,6 @@ namespace CoreGraphics
 {
 class Texture : public Direct3D9::D3D9Texture
 {
-    __DeclareClass(Texture);
 };
 }
 #else

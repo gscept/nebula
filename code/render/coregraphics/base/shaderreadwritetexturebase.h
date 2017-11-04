@@ -52,7 +52,7 @@ public:
 	void Unlock();
 
 	/// get underlying texture
-	const Ptr<CoreGraphics::Texture>& GetTexture() const;
+	const Resources::ResourceId GetTexture() const;
 	/// get width
 	const SizeT GetWidth() const;
 	/// get height
@@ -62,7 +62,6 @@ protected:
 	bool useRelativeSize;
 	uint lockSemaphore;
 	Math::scalar relWidth, relHeight;
-	Ptr<CoreGraphics::Texture> texture;
 	Resources::ResourceId textureId;
 	SizeT width, height, depth;	
 	CoreGraphics::PixelFormat pixelFormat;
@@ -71,10 +70,10 @@ protected:
 //------------------------------------------------------------------------------
 /**
 */
-inline const Ptr<CoreGraphics::Texture>&
+inline const Resources::ResourceId
 ShaderReadWriteTextureBase::GetTexture() const
 {
-	return this->texture;
+	return this->textureId;
 }
 
 //------------------------------------------------------------------------------

@@ -132,7 +132,7 @@ RenderDeviceBase::IsOpen() const
 /**
 */
 void
-RenderDeviceBase::SetStreamVertexBuffer(IndexT streamIndex, const Ptr<VertexBuffer>& vb, IndexT offsetVertexIndex)
+RenderDeviceBase::SetStreamVertexBuffer(IndexT streamIndex, VertexBuffer* vb, IndexT offsetVertexIndex)
 {
     n_assert((streamIndex >= 0) && (streamIndex < VertexLayoutBase::MaxNumVertexStreams));
     this->streamVertexBuffers[streamIndex] = vb;
@@ -142,7 +142,7 @@ RenderDeviceBase::SetStreamVertexBuffer(IndexT streamIndex, const Ptr<VertexBuff
 //------------------------------------------------------------------------------
 /**
 */
-const Ptr<VertexBuffer>&
+VertexBuffer*
 RenderDeviceBase::GetStreamVertexBuffer(IndexT streamIndex) const
 {
 	n_assert((streamIndex >= 0) && (streamIndex < VertexLayoutBase::MaxNumVertexStreams));
@@ -177,29 +177,12 @@ RenderDeviceBase::GetVertexLayout() const
     return this->vertexLayout;
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-void
-RenderDeviceBase::SetIndexBuffer(const Ptr<IndexBuffer>& ib)
-{
-    this->indexBuffer = ib;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const Ptr<IndexBuffer>&
-RenderDeviceBase::GetIndexBuffer() const
-{
-    return this->indexBuffer;
-}
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-RenderDeviceBase::SetPrimitiveTopology(const CoreGraphics::PrimitiveTopology::Code& topo)
+RenderDeviceBase::SetPrimitiveTopology(const PrimitiveTopology::Code& topo)
 {
 	this->primitiveTopology = topo;
 }
@@ -207,7 +190,7 @@ RenderDeviceBase::SetPrimitiveTopology(const CoreGraphics::PrimitiveTopology::Co
 //------------------------------------------------------------------------------
 /**
 */
-const CoreGraphics::PrimitiveTopology::Code&
+const PrimitiveTopology::Code&
 RenderDeviceBase::GetPrimitiveTopology() const
 {
 	return this->primitiveTopology;

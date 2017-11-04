@@ -8,7 +8,6 @@
 namespace Resources
 {
 
-__ImplementClass(Resources::Resource, 'RESO', Core::RefCounted);
 //------------------------------------------------------------------------------
 /**
 */

@@ -47,9 +47,9 @@ public:
     /// get class rtti object by fourcc code
     const Rtti* GetClassRtti(const Util::FourCC& classFourCC) const;
     /// create an object by class name
-    RefCounted* Create(const Util::String& className) const;
+	void* Create(const Util::String& className) const;
     /// create an object by FourCC code
-    RefCounted* Create(const Util::FourCC classFourCC) const;
+	void* Create(const Util::FourCC classFourCC) const;
 
 private:
     /// constructor is private

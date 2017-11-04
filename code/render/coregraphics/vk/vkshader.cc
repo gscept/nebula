@@ -14,7 +14,6 @@
 namespace Vulkan
 {
 
-__ImplementClass(Vulkan::VkShader, 'VKSH', Base::ShaderBase);
 
 Util::Dictionary<Util::StringAtom, VkDescriptorSetLayout> VkShader::LayoutCache;
 Util::Dictionary<Util::StringAtom, VkPipelineLayout> VkShader::ShaderPipelineCache;
@@ -58,22 +57,26 @@ VkShader::Reload()
 /**
 */
 void
-VkShader::Cleanup()
+VkShader::Cleanup(
+	Util::Array<VkSampler>& immutableSamplers,
+	Util::FixedArray<VkDescriptorSetLayout>& setLayouts,
+	VkPipelineLayout& pipelineLayout
+	)
 {
 	IndexT i;
-	for (i = 0; i < this->immutableSamplers.Size(); i++)
+	for (i = 0; i < immutableSamplers.Size(); i++)
 	{
-		vkDestroySampler(VkRenderDevice::dev, this->immutableSamplers[i], nullptr);
+		vkDestroySampler(VkRenderDevice::dev, immutableSamplers[i], nullptr);
 	}
-	this->immutableSamplers.Clear();
+	immutableSamplers.Clear();
 
-	for (i = 0; i < this->setLayouts.Size(); i++)
+	for (i = 0; i < setLayouts.Size(); i++)
 	{
-		vkDestroyDescriptorSetLayout(VkRenderDevice::dev, this->setLayouts[i], nullptr);
+		vkDestroyDescriptorSetLayout(VkRenderDevice::dev, setLayouts[i], nullptr);
 	}
-	this->setLayouts.Clear();
+	setLayouts.Clear();
 
-	vkDestroyPipelineLayout(VkRenderDevice::dev, this->pipelineLayout, nullptr);
+	vkDestroyPipelineLayout(VkRenderDevice::dev, pipelineLayout, nullptr);
 }
 
 //------------------------------------------------------------------------------
@@ -98,7 +101,17 @@ VkShader::OnResetDevice()
 /**
 */
 void
-VkShader::Setup(AnyFX::ShaderEffect* effect)
+VkShader::Setup(
+	AnyFX::ShaderEffect* effect,
+	VkPushConstantRange& constantRange,
+	Util::Dictionary<uint32_t, Util::Array<VkDescriptorSetLayoutBinding>>& setBindings,
+	Util::Array<VkSampler>& immutableSamplers,
+	Util::FixedArray<VkDescriptorSetLayout>& setLayouts,
+	VkPipelineLayout& pipelineLayout,
+	Util::FixedArray<VkDescriptorSet>& sets,
+	Util::Dictionary<Util::StringAtom, Ptr<CoreGraphics::ConstantBuffer>>& buffers,
+	Util::Dictionary<uint32_t, Util::Array<Ptr<CoreGraphics::ConstantBuffer>>>& buffersByGroup
+	)
 {
 	const eastl::vector<AnyFX::VarblockBase*>& varblocks = effect->GetVarblocks();
 	const eastl::vector<AnyFX::VarbufferBase*>& varbuffers = effect->GetVarbuffers();
@@ -144,9 +157,9 @@ VkShader::Setup(AnyFX::ShaderEffect* effect)
     uint32_t remainingTextures = maxTextures;
 
 	// always create push constant range in layout, making all shaders using push constants compatible
-	this->constantRange.size = VkRenderDevice::Instance()->deviceProps.limits.maxPushConstantsSize;
-	this->constantRange.offset = 0;
-	this->constantRange.stageFlags = VK_SHADER_STAGE_ALL;
+	constantRange.size = VkRenderDevice::Instance()->deviceProps.limits.maxPushConstantsSize;
+	constantRange.offset = 0;
+	constantRange.stageFlags = VK_SHADER_STAGE_ALL;
 	bool usePushConstants = false;
 	uint32_t numsets = 0;
 
@@ -171,7 +184,7 @@ VkShader::Setup(AnyFX::ShaderEffect* effect)
 		{
 			// can only have one push constant block
 			n_assert(usePushConstants == false);
-			n_assert(block->alignedSize <= this->constantRange.size);
+			n_assert(block->alignedSize <= constantRange.size);
 			// don't really do anything here...
 		}
 		else
@@ -181,8 +194,8 @@ VkShader::Setup(AnyFX::ShaderEffect* effect)
 			{
 				Util::Array<VkDescriptorSetLayoutBinding> arr;
 				arr.Append(binding);
-				this->setBindings.Add(block->set, arr);
-				signatures.Add(block->set, CreateSignature(binding));
+				setBindings.Add(block->set, arr);
+				signatures.Add(block->set, VkShader::CreateSignature(binding));
 #if AMD_DESC_SETS
 				numsets = uint_max(numsets, block->set + 1);
 #else
@@ -192,8 +205,8 @@ VkShader::Setup(AnyFX::ShaderEffect* effect)
 			}
 			else
 			{
-				this->setBindings.ValueAtIndex(index).Append(binding);
-				signatures.ValueAtIndex(index).Append(CreateSignature(binding));
+				setBindings.ValueAtIndex(index).Append(binding);
+				signatures.ValueAtIndex(index).Append(VkShader::CreateSignature(binding));
 			}
 		}
 	}
@@ -205,13 +218,13 @@ VkShader::Setup(AnyFX::ShaderEffect* effect)
 		VkDescriptorSetLayoutBinding binding = buffer->bindingLayout;
 		if (buffer->Flag("DynamicOffset")) binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
 		else							   binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		IndexT index = this->setBindings.FindIndex(buffer->set);
+		IndexT index = setBindings.FindIndex(buffer->set);
 		if (index == InvalidIndex)
 		{
 			Util::Array<VkDescriptorSetLayoutBinding> arr;
 			arr.Append(binding);
-			this->setBindings.Add(buffer->set, arr);
-			signatures.Add(buffer->set, CreateSignature(binding));
+			setBindings.Add(buffer->set, arr);
+			signatures.Add(buffer->set, VkShader::CreateSignature(binding));
 #if AMD_DESC_SETS
 			numsets = uint_max(numsets, buffer->set + 1);
 #else
@@ -220,13 +233,13 @@ VkShader::Setup(AnyFX::ShaderEffect* effect)
 		}
 		else
 		{
-			this->setBindings.ValueAtIndex(index).Append(binding);
-			signatures.ValueAtIndex(index).Append(CreateSignature(binding));
+			setBindings.ValueAtIndex(index).Append(binding);
+			signatures.ValueAtIndex(index).Append(VkShader::CreateSignature(binding));
 		}
 	}
 
 	// setup samplers as immutable coupled with the texture input, before we setup the variables so that it's part of their layout
-	this->immutableSamplers.Reserve(samplers.size() + 1);
+	immutableSamplers.Reserve(samplers.size() + 1);
 	for (i = 0; i < samplers.size(); i++)
 	{
 		AnyFX::VkSampler* sampler = static_cast<AnyFX::VkSampler*>(samplers[i]);
@@ -237,14 +250,14 @@ VkShader::Setup(AnyFX::ShaderEffect* effect)
 			n_assert(res == VK_SUCCESS);
 
 			// add to list so we can remove it later
-			this->immutableSamplers.Append(vkSampler);
+			immutableSamplers.Append(vkSampler);
 
 			uint j;
 			for (j = 0; j < sampler->textureVariables.size(); j++)
 			{
 				AnyFX::VkVariable* var = static_cast<AnyFX::VkVariable*>(sampler->textureVariables[j]);
 				n_assert(var->type >= AnyFX::Sampler1D && var->type <= AnyFX::SamplerCubeArray);
-				var->bindingLayout.pImmutableSamplers = &this->immutableSamplers.Back();
+				var->bindingLayout.pImmutableSamplers = &immutableSamplers.Back();
 			}
 		}
 		else
@@ -253,17 +266,17 @@ VkShader::Setup(AnyFX::ShaderEffect* effect)
 			VkSampler vkSampler;
 			VkResult res = vkCreateSampler(VkRenderDevice::dev, &sampler->samplerInfo, NULL, &vkSampler);
 			n_assert(res == VK_SUCCESS);
-			this->immutableSamplers.Append(vkSampler);
+			immutableSamplers.Append(vkSampler);
 
-			sampler->bindingLayout.pImmutableSamplers = &this->immutableSamplers.Back();
+			sampler->bindingLayout.pImmutableSamplers = &immutableSamplers.Back();
 			boundSamplers.Append(sampler);
-			IndexT index = this->setBindings.FindIndex(sampler->set);
+			IndexT index = setBindings.FindIndex(sampler->set);
 			if (index == InvalidIndex)
 			{
 				Util::Array<VkDescriptorSetLayoutBinding> arr;
 				arr.Append(sampler->bindingLayout);
-				this->setBindings.Add(sampler->set, arr);
-				signatures.Add(sampler->set, CreateSignature(sampler->bindingLayout));
+				setBindings.Add(sampler->set, arr);
+				signatures.Add(sampler->set, VkShader::CreateSignature(sampler->bindingLayout));
 #if AMD_DESC_SETS
 				numsets = uint_max(numsets, sampler->set + 1);
 #else
@@ -272,8 +285,8 @@ VkShader::Setup(AnyFX::ShaderEffect* effect)
 			}
 			else
 			{
-				this->setBindings.ValueAtIndex(index).Append(sampler->bindingLayout);
-				signatures.ValueAtIndex(index).Append(CreateSignature(sampler->bindingLayout));
+				setBindings.ValueAtIndex(index).Append(sampler->bindingLayout);
+				signatures.ValueAtIndex(index).Append(VkShader::CreateSignature(sampler->bindingLayout));
 			}
 		}
 	}
@@ -304,7 +317,7 @@ VkShader::Setup(AnyFX::ShaderEffect* effect)
 	VkSampler placeholderSampler;
 	VkResult res = vkCreateSampler(VkRenderDevice::dev, &placeholderSamplerInfo, NULL, &placeholderSampler);
 	n_assert(res == VK_SUCCESS);
-	this->immutableSamplers.Append(placeholderSampler);
+	immutableSamplers.Append(placeholderSampler);
 
 	// setup variables
 	for (i = 0; i < variables.size(); i++)
@@ -324,12 +337,12 @@ VkShader::Setup(AnyFX::ShaderEffect* effect)
 			{
 				variable->bindingLayout.pImmutableSamplers = &placeholderSampler;
 			}
-			IndexT index = this->setBindings.FindIndex(variable->set);
+			IndexT index = setBindings.FindIndex(variable->set);
 			if (index == InvalidIndex)
 			{
 				Util::Array<VkDescriptorSetLayoutBinding> arr;
 				arr.Append(variable->bindingLayout);
-				this->setBindings.Add(variable->set, arr);
+				setBindings.Add(variable->set, arr);
 				signatures.Add(variable->set, CreateSignature(variable->bindingLayout));
 #if AMD_DESC_SETS
 				numsets = uint_max(numsets, variable->set + 1);
@@ -339,18 +352,18 @@ VkShader::Setup(AnyFX::ShaderEffect* effect)
 			}
 			else
 			{
-				this->setBindings.ValueAtIndex(index).Append(variable->bindingLayout);
+				setBindings.ValueAtIndex(index).Append(variable->bindingLayout);
 				signatures.ValueAtIndex(index).Append(CreateSignature(variable->bindingLayout));
 			}
 		}
 		else if (variable->type >= AnyFX::InputAttachment && variable->type <= AnyFX::InputAttachmentUIntegerMS)
 		{
-			IndexT index = this->setBindings.FindIndex(variable->set);
+			IndexT index = setBindings.FindIndex(variable->set);
 			if (index == InvalidIndex)
 			{
 				Util::Array<VkDescriptorSetLayoutBinding> arr;
 				arr.Append(variable->bindingLayout);
-				this->setBindings.Add(variable->set, arr);
+				setBindings.Add(variable->set, arr);
 				signatures.Add(variable->set, CreateSignature(variable->bindingLayout));
 #if AMD_DESC_SETS
 				numsets = uint_max(numsets, variable->set + 1);
@@ -360,7 +373,7 @@ VkShader::Setup(AnyFX::ShaderEffect* effect)
 			}
 			else
 			{
-				this->setBindings.ValueAtIndex(index).Append(variable->bindingLayout);
+				setBindings.ValueAtIndex(index).Append(variable->bindingLayout);
 				signatures.ValueAtIndex(index).Append(CreateSignature(variable->bindingLayout));
 			}
 		}
@@ -372,8 +385,8 @@ VkShader::Setup(AnyFX::ShaderEffect* effect)
 	// skip the rest if we don't have any descriptor sets
 	if (!setBindings.IsEmpty())
 	{
-		this->setLayouts.Resize(numsets);
-		for (IndexT i = 0; i < this->setLayouts.Size(); i++)
+		setLayouts.Resize(numsets);
+		for (IndexT i = 0; i < setLayouts.Size(); i++)
 		{
 			// if signature is defined in this shader, retrieve it
 			IndexT layoutIndex = InvalidIndex;
@@ -392,13 +405,13 @@ VkShader::Setup(AnyFX::ShaderEffect* effect)
 				info.pNext = NULL;
 				info.flags = 0;
 
-				IndexT bindingIndex = this->setBindings.FindIndex(i);
+				IndexT bindingIndex = setBindings.FindIndex(i);
 #if AMD_DESC_SETS
 				info.bindingCount = 0;
 				info.pBindings = VK_NULL_HANDLE;
 				if (bindingIndex != InvalidIndex)
 				{
-					const Util::Array<VkDescriptorSetLayoutBinding>& binds = this->setBindings.ValueAtIndex(bindingIndex);
+					const Util::Array<VkDescriptorSetLayoutBinding>& binds = setBindings.ValueAtIndex(bindingIndex);
 					info.bindingCount = binds.Size();
 					info.pBindings = binds.Size() > 0 ? &binds[0] : VK_NULL_HANDLE;
 				}
@@ -410,11 +423,11 @@ VkShader::Setup(AnyFX::ShaderEffect* effect)
 #endif
 
 				// create layout
-				VkResult res = vkCreateDescriptorSetLayout(VkRenderDevice::dev, &info, NULL, &this->setLayouts[i]);
+				VkResult res = vkCreateDescriptorSetLayout(VkRenderDevice::dev, &info, NULL, &setLayouts[i]);
 				assert(res == VK_SUCCESS);
 
 				// add to cache if this shader defined the signature
-				if (bindingIndex != InvalidIndex) VkShader::LayoutCache.Add(signature, this->setLayouts[i]);
+				if (bindingIndex != InvalidIndex) VkShader::LayoutCache.Add(signature, setLayouts[i]);
 			}
 			else
 			{
@@ -423,7 +436,7 @@ VkShader::Setup(AnyFX::ShaderEffect* effect)
 			}
 
 			// construct pipeline signature
-			pipelineSignature.Append(Util::String::FromLongLong(this->setLayouts[i]) + ";");
+			pipelineSignature.Append(Util::String::FromLongLong(setLayouts[i]) + ";");
 		}
 	}
 
@@ -436,28 +449,28 @@ VkShader::Setup(AnyFX::ShaderEffect* effect)
 			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
 			NULL,
 			0,
-			this->setLayouts.Size(),
-			this->setLayouts.Size() > 0 ? this->setLayouts.Begin() : NULL,
+			setLayouts.Size(),
+			setLayouts.Size() > 0 ? setLayouts.Begin() : NULL,
 			1,
-			&this->constantRange
+			&constantRange
 		};
 
 		// create pipeline layout, every program should inherit this one
-		res = vkCreatePipelineLayout(VkRenderDevice::dev, &layoutInfo, NULL, &this->pipelineLayout);
+		res = vkCreatePipelineLayout(VkRenderDevice::dev, &layoutInfo, NULL, &pipelineLayout);
 		assert(res == VK_SUCCESS);
 
 		// add to cache
-		VkShader::ShaderPipelineCache.Add(pipelineSignature, this->pipelineLayout);
+		VkShader::ShaderPipelineCache.Add(pipelineSignature, pipelineLayout);
 	}
 	else
 	{
 		// fetch from cache
-		this->pipelineLayout = VkShader::ShaderPipelineCache.ValueAtIndex(idx);
+		pipelineLayout = VkShader::ShaderPipelineCache.ValueAtIndex(idx);
 	}
 
-    this->sets.Resize(this->setLayouts.Size());
-    this->sets.Fill(VK_NULL_HANDLE);
-    for (IndexT i = 0; i < this->setLayouts.Size(); i++)
+    sets.Resize(setLayouts.Size());
+    sets.Fill(VK_NULL_HANDLE);
+    for (IndexT i = 0; i < setLayouts.Size(); i++)
     {
         // if signature is defined in this shader, retrieve it
         IndexT layoutIndex = InvalidIndex;
@@ -476,20 +489,20 @@ VkShader::Setup(AnyFX::ShaderEffect* effect)
 					NULL,
 					VkRenderDevice::descPool,
 					1,
-					&this->setLayouts[i]
+					&setLayouts[i]
 				};
 				VkDescriptorSet set;
 				res = vkAllocateDescriptorSets(VkRenderDevice::dev, &info, &set);
 				n_assert(res == VK_SUCCESS);
 
 				// add to cache
-				this->sets[i] = set;
+				sets[i] = set;
 				VkShader::DescriptorSetCache.Add(pipelineSignature, set);
         	}
 		}
 		else
 		{
-			this->sets[i] = VkShader::DescriptorSetCache[pipelineSignature];
+			sets[i] = VkShader::DescriptorSetCache[pipelineSignature];
 		}
     }
 
@@ -514,7 +527,7 @@ VkShader::Setup(AnyFX::ShaderEffect* effect)
 
 			// generate a name which we know will be unique
 			Util::String name = block->name.c_str();
-			n_assert(!this->buffers.Contains(name));
+			n_assert(!buffers.Contains(name));
 
 			VkDescriptorBufferInfo buf;
 			buf.buffer = uniformBuffer->GetVkBuffer();
@@ -527,9 +540,9 @@ VkShader::Setup(AnyFX::ShaderEffect* effect)
 			write.pNext = NULL;
 			write.dstBinding = block->binding;
 #if AMD_DESC_SETS
-			write.dstSet = this->sets[block->set];
+			write.dstSet = sets[block->set];
 #else
-			write.dstSet = this->sets[this->setToIndexMap[block->set]];
+			write.dstSet = sets[this->setToIndexMap[block->set]];
 #endif
 			write.descriptorCount = 1;
 			if (block->Flag("DynamicOffset")) write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
@@ -541,13 +554,13 @@ VkShader::Setup(AnyFX::ShaderEffect* effect)
 			writes.Append(write);			
 
 			// add buffer to list
-			this->buffers.Add(name, uniformBuffer);
+			buffers.Add(name, uniformBuffer);
 		}
 
 		if (!AnyFX::HasFlags(block->qualifiers, AnyFX::Qualifiers::Push))
 		{
-			if (!this->buffersByGroup.Contains(block->set)) this->buffersByGroup.Add(block->set, Util::Array<Ptr<CoreGraphics::ConstantBuffer>>());
-			this->buffersByGroup[block->set].Append(uniformBuffer);
+			if (!buffersByGroup.Contains(block->set)) buffersByGroup.Add(block->set, Util::Array<Ptr<CoreGraphics::ConstantBuffer>>());
+			buffersByGroup[block->set].Append(uniformBuffer);
 		}		
 	}
 

@@ -28,6 +28,8 @@
 #include "coregraphics/shadervariable.h"
 #include "coregraphics/shaderstate.h"
 #include "coregraphics/shaderidentifier.h"
+#include "coregraphics/coregraphics.h"
+#include "coregraphics/shaderpool.h"
 
 namespace CoreGraphics
 {
@@ -55,19 +57,19 @@ public:
     bool IsOpen() const;
 
     /// return true if a shader exists
-    bool HasShader(const Resources::ResourceId& resId) const;
+    bool HasShader(const Resources::ResourceName& resId) const;
 	/// create a new shader state only for a set of groups
-	Ptr<CoreGraphics::ShaderState> CreateShaderState(const Resources::ResourceId& resId, const Util::Array<IndexT>& groups, bool createResourceSet = false);
+	Resources::ResourceId CreateShaderState(const Resources::ResourceName& resId, const Util::Array<IndexT>& groups, bool createResourceSet = false);
 	/// create a shared state, will only create a new shader state if one doesn't already exist with the given set of variable groups
-	Ptr<CoreGraphics::ShaderState> CreateSharedShaderState(const Resources::ResourceId& resId, const Util::Array<IndexT>& groups);
+	Resources::ResourceId CreateSharedShaderState(const Resources::ResourceName& resId, const Util::Array<IndexT>& groups);
     /// get all loaded shaders
-    const Util::Dictionary<Resources::ResourceId, Ptr<CoreGraphics::Shader> >& GetAllShaders() const;
+    const Util::Dictionary<Resources::ResourceName, Resources::ResourceId>& GetAllShaders() const;
 	/// get shader by name
-	const Ptr<CoreGraphics::Shader>& GetShader(Resources::ResourceId resId) const;
+	const Resources::ResourceId GetShader(Resources::ResourceName resId) const;
     /// set currently active shader instance
-    void SetActiveShader(const Ptr<CoreGraphics::Shader>& shader);
+    void SetActiveShader(const Resources::ResourceId shader);
     /// get currently active shader instance
-    const Ptr<CoreGraphics::Shader>& GetActiveShader() const;
+    const Resources::ResourceId GetActiveShader() const;
 
     /// reset the current feature bits
     void ResetFeatureBits();
@@ -88,14 +90,14 @@ public:
     /// get number of shared variables
     SizeT GetNumSharedVariables() const;
     /// get a shared variable by index
-    const Ptr<CoreGraphics::ShaderVariable>& GetSharedVariableByIndex(IndexT i) const;
+    const CoreGraphics::ShaderVariableId GetSharedVariableByIndex(IndexT i) const;
     /// get the shared shader
-	const Ptr<CoreGraphics::ShaderState>& GetSharedShader();
+	const CoreGraphics::ShaderStateId GetSharedShader();
 
 	/// reloads a shader
-	void ReloadShader(Ptr<CoreGraphics::Shader> shader);
+	void ReloadShader(const Resources::ResourceId shader);
 	/// explicitly loads a shader by resource id
-	void LoadShader(const Resources::ResourceId& shdName);
+	void LoadShader(const Resources::ResourceName& shdName);
 
 protected:
     friend class CoreGraphics::ShaderIdentifier;
@@ -104,11 +106,11 @@ protected:
     CoreGraphics::ShaderIdentifier shaderIdentifierRegistry;
     CoreGraphics::ShaderFeature shaderFeature;
     CoreGraphics::ShaderFeature::Mask curShaderFeatureBits;
-	Util::Dictionary<Resources::ResourceId, Ptr<CoreGraphics::Shader>> shaders;
-	Util::Dictionary<Util::StringAtom, Ptr<CoreGraphics::ShaderState>> sharedShaderStates;
-	Ptr<CoreGraphics::ShaderState> sharedVariableShader;
-    Ptr<CoreGraphics::ShaderVariable> objectIdShaderVar;
-    Ptr<CoreGraphics::Shader> activeShader;
+	Util::Dictionary<Resources::ResourceName, Resources::ResourceId> shaders;
+	Util::Dictionary<Util::StringAtom, Resources::ResourceId> sharedShaderStates;
+	CoreGraphics::ShaderStateId sharedVariableShader;
+    Ids::Id32 objectIdShaderVar;
+	Resources::ResourceId activeShader;
     bool isOpen;
 };
 
@@ -125,7 +127,7 @@ ShaderServerBase::IsOpen() const
 /**
 */
 inline bool
-ShaderServerBase::HasShader(const Resources::ResourceId& resId) const
+ShaderServerBase::HasShader(const Resources::ResourceName& resId) const
 {
     return this->shaders.Contains(resId);
 }
@@ -133,7 +135,7 @@ ShaderServerBase::HasShader(const Resources::ResourceId& resId) const
 //------------------------------------------------------------------------------
 /**
 */
-inline const Util::Dictionary<Resources::ResourceId, Ptr<CoreGraphics::Shader> >&
+inline const Util::Dictionary<Resources::ResourceName, Resources::ResourceId>&
 ShaderServerBase::GetAllShaders() const
 {
     return this->shaders;
@@ -142,8 +144,8 @@ ShaderServerBase::GetAllShaders() const
 //------------------------------------------------------------------------------
 /**
 */
-inline const Ptr<CoreGraphics::Shader>&
-ShaderServerBase::GetShader(Resources::ResourceId resId) const
+inline const Resources::ResourceId
+ShaderServerBase::GetShader(Resources::ResourceName resId) const
 {
 	return this->shaders[resId];
 }
@@ -206,7 +208,7 @@ ShaderServerBase::GetFeatureBits() const
 /**
 */
 inline void
-ShaderServerBase::SetActiveShader(const Ptr<CoreGraphics::Shader>& shader)
+ShaderServerBase::SetActiveShader(const Resources::ResourceId shader)
 {
     this->activeShader = shader;
 }
@@ -214,7 +216,7 @@ ShaderServerBase::SetActiveShader(const Ptr<CoreGraphics::Shader>& shader)
 //------------------------------------------------------------------------------
 /**
 */
-inline const Ptr<CoreGraphics::Shader>&
+inline const Resources::ResourceId
 ShaderServerBase::GetActiveShader() const
 {
     return this->activeShader;
@@ -226,9 +228,9 @@ ShaderServerBase::GetActiveShader() const
 inline SizeT
 ShaderServerBase::GetNumSharedVariables() const
 {
-    if (this->sharedVariableShader.isvalid())
+    if (this->sharedVariableShader != Ids::InvalidId64)
     {        
-        return this->sharedVariableShader->GetNumVariables();
+		return CoreGraphics::shaderPool->GetVariableCount(Shaders::GetShaderId(this->sharedVariableShader));
     }
     else
     {
@@ -239,17 +241,17 @@ ShaderServerBase::GetNumSharedVariables() const
 //------------------------------------------------------------------------------
 /**
 */
-inline const Ptr<CoreGraphics::ShaderVariable>&
+inline const CoreGraphics::ShaderVariableId
 ShaderServerBase::GetSharedVariableByIndex(IndexT i) const
 {
-    n_assert(this->sharedVariableShader.isvalid());
-    return this->sharedVariableShader->GetVariableByIndex(i);
+    n_assert(this->sharedVariableShader != Ids::InvalidId64);
+	return CoreGraphics::shaderPool->GetShaderVariable(Shaders::GetShaderId(this->sharedVariableShader), i);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline const Ptr<CoreGraphics::ShaderState>&
+inline const CoreGraphics::ShaderStateId
 ShaderServerBase::GetSharedShader()
 {
     return this->sharedVariableShader;

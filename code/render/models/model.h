@@ -12,7 +12,7 @@
 #include "math/bbox.h"
 namespace Models
 {
-class ModelLoader;
+class ModelPool;
 class ModelServer;
 class ModelNode;
 class Model : public Resources::Resource
@@ -30,7 +30,7 @@ public:
 	const Math::bbox& GetBoundingBox() const;
 private:
 	/// the model loader is responsible for filling this class
-	friend class ModelLoader;
+	friend class ModelPool;
 	friend class ModelContext;
 
 	Math::bbox boundingBox;

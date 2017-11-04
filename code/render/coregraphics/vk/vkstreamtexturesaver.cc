@@ -9,67 +9,69 @@
 #include <IL/il.h>
 #include <IL/ilu.h>
 #include "vktypes.h"
+#include "resources/resourcemanager.h"
+#include "io/ioserver.h"
+#include "coregraphics//streamtexturesaver.h"
 
+using namespace IO;
 using namespace CoreGraphics;
-namespace Vulkan
-{
-__ImplementClass(Vulkan::VkStreamTextureSaver, 'VKTS', Base::StreamTextureSaverBase);
-//------------------------------------------------------------------------------
-/**
-*/
-VkStreamTextureSaver::VkStreamTextureSaver()
-{
-	// empty
-}
 
-//------------------------------------------------------------------------------
-/**
-*/
-VkStreamTextureSaver::~VkStreamTextureSaver()
+namespace CoreGraphics
 {
-	// empty
-}
 
 //------------------------------------------------------------------------------
 /**
 */
 bool
-VkStreamTextureSaver::OnSave()
+SaveTexture(const Resources::ResourceId& id, const IO::URI& path, IndexT mip, CoreGraphics::ImageFileFormat::Code code)
 {
-	n_assert(this->stream.isvalid());
-	const Ptr<Texture>& tex = this->resource.downcast<Texture>();
+	Ptr<Stream> stream = IoServer::Instance()->CreateStream(path);
+	stream->SetAccessMode(Stream::WriteAccess);
+	if (stream->Open())
+	{
+		Texture* tex = Resources::GetResource<Texture>(id);
 
-	// solve result format depending on format
-	ILenum imageFormat;
-	if (this->format == ImageFileFormat::DDS) imageFormat = IL_DDS;
-	else if (this->format == ImageFileFormat::JPG) imageFormat = IL_JPG;
-	else if (this->format == ImageFileFormat::PNG) imageFormat = IL_PNG;
-	else if (this->format == ImageFileFormat::TGA) imageFormat = IL_TGA;
-	else if (this->format == ImageFileFormat::BMP) imageFormat = IL_BMP;
-	else return false;
+		// solve result format depending on format
+		ILenum imageFormat;
+		if (code == ImageFileFormat::DDS) imageFormat = IL_DDS;
+		else if (code == ImageFileFormat::JPG) imageFormat = IL_JPG;
+		else if (code == ImageFileFormat::PNG) imageFormat = IL_PNG;
+		else if (code == ImageFileFormat::TGA) imageFormat = IL_TGA;
+		else if (code == ImageFileFormat::BMP) imageFormat = IL_BMP;
+		else return false;
 
-	// treat texture
-	if (tex->GetType() == Texture::Texture2D)			return this->SaveTexture2D(tex, imageFormat);
-	else if (tex->GetType() == Texture::Texture3D)		return this->SaveTexture3D(tex, imageFormat);
-	else if (tex->GetType() == Texture::TextureCube)	return this->SaveCubemap(tex, imageFormat);
+		// treat texture
+		if (tex->GetType() == Texture::Texture2D)			return Vulkan::VkStreamTextureSaver::SaveTexture2D(tex, stream, mip, imageFormat);
+		else if (tex->GetType() == Texture::Texture3D)		return Vulkan::VkStreamTextureSaver::SaveTexture3D(tex, stream, mip, imageFormat);
+		else if (tex->GetType() == Texture::TextureCube)	return Vulkan::VkStreamTextureSaver::SaveCubemap(tex, stream, mip, imageFormat);
+		else
+		{
+			n_error("OGL4StreamTextureSaver::OnSave() : Unknown texture type!");
+			return false;
+		}
+	}
 	else
 	{
-		n_error("OGL4StreamTextureSaver::OnSave() : Unknown texture type!");
 		return false;
 	}
 }
 
+} // namespace CoreGraphics
+
+namespace Vulkan
+{
+
 //------------------------------------------------------------------------------
 /**
 */
 bool
-VkStreamTextureSaver::SaveTexture2D(const Ptr<CoreGraphics::Texture>& tex, ILenum imageFileType)
+VkStreamTextureSaver::SaveTexture2D(CoreGraphics::Texture* tex, const Ptr<IO::Stream>& stream, IndexT mip, ILenum imageFileType)
 {
 	n_assert(tex->GetType() == Texture::Texture2D);
 	bool retval = false;
 
 	SizeT maxLevels = tex->GetNumMipLevels();
-	SizeT mipLevelToSave = this->mipLevel;
+	SizeT mipLevelToSave = mip;
 	if (mipLevelToSave >= maxLevels)
 	{
 		mipLevelToSave = maxLevels - 1;
@@ -109,7 +111,6 @@ VkStreamTextureSaver::SaveTexture2D(const Ptr<CoreGraphics::Texture>& tex, ILenu
 		result = ilTexImage(mapInfo.mipWidth, mapInfo.mipHeight, 1, channels, format, type, (ILubyte*)mapInfo.data);
 	}
 	
-	
 	n_assert(result == IL_TRUE);
 
 	// now save as PNG (will support proper alpha)
@@ -120,14 +121,14 @@ VkStreamTextureSaver::SaveTexture2D(const Ptr<CoreGraphics::Texture>& tex, ILenu
 	tex->Unmap(mipLevelToSave);
 
 	// write result to stream
-	this->stream->SetAccessMode(IO::Stream::WriteAccess);
-	if (this->stream->Open())
+	stream->SetAccessMode(IO::Stream::WriteAccess);
+	if (stream->Open())
 	{
 		// write raw pointer to stream
-		this->stream->Write(data, size);
+		stream->Write(data, size);
 
-		this->stream->Close();
-		this->stream->SetMediaType(ImageFileFormat::ToMediaType(this->format));
+		stream->Close();
+		stream->SetMediaType(ImageFileFormat::ToMediaType(code));
 
 		retval = true;
 	}
@@ -141,14 +142,14 @@ VkStreamTextureSaver::SaveTexture2D(const Ptr<CoreGraphics::Texture>& tex, ILenu
 /**
 */
 bool
-VkStreamTextureSaver::SaveCubemap(const Ptr<CoreGraphics::Texture>& tex, ILenum imageFileType)
+VkStreamTextureSaver::SaveCubemap(CoreGraphics::Texture* tex, const Ptr<IO::Stream>& stream, IndexT mip, ILenum imageFileType)
 {
 	n_assert(tex->GetType() == Texture::TextureCube);
 	bool retval = false;
 	bool isCompressed = true;
 
 	SizeT maxLevels = tex->GetNumMipLevels();
-	SizeT mipLevelToSave = this->mipLevel;
+	SizeT mipLevelToSave = mip;
 	if (mipLevelToSave >= maxLevels)
 	{
 		mipLevelToSave = maxLevels - 1;
@@ -165,8 +166,8 @@ VkStreamTextureSaver::SaveCubemap(const Ptr<CoreGraphics::Texture>& tex, ILenum 
 	type = PixelFormat::ToILType(pfmt);
 	uint32_t pixelSize = PixelFormat::ToSize(pfmt);
 
-	int32_t mipWidth = (int32_t)Math::n_max(1.0f, Math::n_floor(tex->GetWidth() / Math::n_pow(2, (float)mipLevel)));
-	int32_t mipHeight = (int32_t)Math::n_max(1.0f, Math::n_floor(tex->GetHeight() / Math::n_pow(2, (float)mipLevel)));
+	int32_t mipWidth = (int32_t)Math::n_max(1.0f, Math::n_floor(tex->GetWidth() / Math::n_pow(2, (float)mip)));
+	int32_t mipHeight = (int32_t)Math::n_max(1.0f, Math::n_floor(tex->GetHeight() / Math::n_pow(2, (float)mip)));
 	uint32_t totalWidth = mipWidth * 3;
 	uint32_t totalHeight = mipHeight * 4;
 
@@ -196,11 +197,11 @@ VkStreamTextureSaver::SaveCubemap(const Ptr<CoreGraphics::Texture>& tex, ILenum 
 		// flip image if necessary
 		if (cubeFace == Texture::NegZ || cubeFace == Texture::PosX || cubeFace == Texture::NegX)
 		{
-			mapInfo.data = this->FlipImageDataVerticalBlockWise(mipWidth, mipHeight, pixelSize, mapInfo.data);
+			mapInfo.data = VkStreamTextureSaver::FlipImageDataVerticalBlockWise(mipWidth, mipHeight, pixelSize, mapInfo.data);
 		}
 		else if (cubeFace == Texture::PosZ || cubeFace == Texture::PosY)
 		{
-			mapInfo.data = this->FlipImageDataHorizontalBlockWise(mipWidth, mipHeight, pixelSize, mapInfo.data);
+			mapInfo.data = VkStreamTextureSaver::FlipImageDataHorizontalBlockWise(mipWidth, mipHeight, pixelSize, mapInfo.data);
 		}
 
 		// set pixels
@@ -217,14 +218,14 @@ VkStreamTextureSaver::SaveCubemap(const Ptr<CoreGraphics::Texture>& tex, ILenum 
 	ilSaveL(imageFileType, data, size);
 
 	// write result to stream
-	this->stream->SetAccessMode(IO::Stream::WriteAccess);
-	if (this->stream->Open())
+	stream->SetAccessMode(IO::Stream::WriteAccess);
+	if (stream->Open())
 	{
 		// write raw pointer to stream
-		this->stream->Write(data, size);
+		stream->Write(data, size);
 
-		this->stream->Close();
-		this->stream->SetMediaType(ImageFileFormat::ToMediaType(this->format));
+		stream->Close();
+		stream->SetMediaType(ImageFileFormat::ToMediaType(code));
 
 		retval = true;
 	}
@@ -238,7 +239,7 @@ VkStreamTextureSaver::SaveCubemap(const Ptr<CoreGraphics::Texture>& tex, ILenum 
 /**
 */
 bool
-VkStreamTextureSaver::SaveTexture3D(const Ptr<CoreGraphics::Texture>& tex, ILenum imageFileType)
+VkStreamTextureSaver::SaveTexture3D(CoreGraphics::Texture* tex, const Ptr<IO::Stream>& stream, IndexT mip, ILenum imageFileType)
 {
 	return false;
 }

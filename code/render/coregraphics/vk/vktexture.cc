@@ -15,106 +15,77 @@
 namespace Vulkan
 {
 
-__ImplementClass(Vulkan::VkTexture, 'VKTX', Base::TextureBase);
-//------------------------------------------------------------------------------
-/**
-*/
-VkTexture::VkTexture() :
-	mapCount(0),
-	mappedImg(VK_NULL_HANDLE),
-	mappedMem(VK_NULL_HANDLE),
-	id(NULL)
-{
-	// empty
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-VkTexture::~VkTexture()
-{
-	// empty
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-VkTexture::Unload()
-{
-	n_assert(this->mapCount == 0);
-	vkDestroyImage(VkRenderDevice::dev, this->img, NULL);
-	vkDestroyImageView(VkRenderDevice::dev, this->imgView, NULL);
-	vkFreeMemory(VkRenderDevice::dev, this->mem, NULL);
-	TextureBase::Unload();
-}
+VkTexture::VkTextureAllocator VkTexture::textureAllocator(0x00FFFFFF);
 
 //------------------------------------------------------------------------------
 /**
 */
 bool
-VkTexture::Map(IndexT mipLevel, MapType mapType, MapInfo& outMapInfo)
+VkTexture::Map(const Resources::ResourceId id, IndexT mipLevel, Base::GpuResourceBase::MapType mapType, Base::TextureBase::MapInfo& outMapInfo)
 {
+	Ids::Id24 resId = Ids::Id::GetBig(Ids::Id::GetLow(id));
+	VkTexture::textureAllocator.EnterGet();
+	VkTexture::RuntimeInfo& runtime = VkTexture::textureAllocator.Get<0>(resId);
+	VkTexture::LoadInfo& load = VkTexture::textureAllocator.Get<1>(resId);
+	VkTexture::MappingInfo& map = VkTexture::textureAllocator.Get<2>(resId);	
+
 	bool retval = false;
-	if (Texture2D == this->type)
-	{		
-		VkFormat format = VkTypes::AsVkFormat(this->pixelFormat);
-		VkTypes::VkBlockDimensions blockSize = VkTypes::AsVkBlockSize(this->pixelFormat);
-		uint32_t size = CoreGraphics::PixelFormat::ToSize(this->pixelFormat);
+	if (Texture2D == runtime.type)
+	{
+		VkFormat vkformat = VkTypes::AsVkFormat(load.format);
+		VkTypes::VkBlockDimensions blockSize = VkTypes::AsVkBlockSize(vkformat);
+		uint32_t size = CoreGraphics::PixelFormat::ToSize(load.format);
 
-		uint32_t mipWidth = (uint32_t)Math::n_max(1.0f, Math::n_ceil(this->width / Math::n_pow(2, (float)mipLevel)));
-		uint32_t mipHeight = (uint32_t)Math::n_max(1.0f, Math::n_ceil(this->height / Math::n_pow(2, (float)mipLevel)));
+		uint32_t mipWidth = (uint32_t)Math::n_max(1.0f, Math::n_ceil(load.dims.width / Math::n_pow(2, (float)mipLevel)));
+		uint32_t mipHeight = (uint32_t)Math::n_max(1.0f, Math::n_ceil(load.dims.height / Math::n_pow(2, (float)mipLevel)));
 
-		this->mappedBufferLayout.dstSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
-		this->mappedBufferLayout.dstOffset = { 0, 0, 0 };
-		this->mappedBufferLayout.srcSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, (uint32_t)mipLevel, 0, 1 };
-		this->mappedBufferLayout.srcOffset = { 0, 0, 0 };
-		this->mappedBufferLayout.extent = { mipWidth, mipHeight, 1 };
+		map.region.dstSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
+		map.region.dstOffset = { 0, 0, 0 };
+		map.region.srcSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, (uint32_t)mipLevel, 0, 1 };
+		map.region.srcOffset = { 0, 0, 0 };
+		map.region.extent = { mipWidth, mipHeight, 1 };
 		uint32_t memSize;
-		VkUtilities::ReadImage(this, this->mappedBufferLayout, memSize, this->mappedMem, this->mappedImg);
+		VkUtilities::ReadImage(load.img, load.format, load.dims, runtime.type, map.region, memSize, map.mem, map.buf);
 
 		// the row pitch must be the size of one pixel times the number of pixels in width
 		outMapInfo.mipWidth = mipWidth;
 		outMapInfo.mipHeight = mipHeight;
 		outMapInfo.rowPitch = (int32_t)memSize / mipHeight;
 		outMapInfo.depthPitch = (int32_t)memSize;
-		VkResult res = vkMapMemory(VkRenderDevice::dev, this->mappedMem, 0, (int32_t)memSize, 0, &this->mappedData);
+		VkResult res = vkMapMemory(VkRenderDevice::dev, map.mem, 0, (int32_t)memSize, 0, &outMapInfo.data);
 		n_assert(res == VK_SUCCESS);
-
-		outMapInfo.data = this->mappedData;
 		retval = res == VK_SUCCESS;
-		this->mapCount++;
+		map.mapCount++;
 	}
-	else if (Texture3D == this->type)
+	else if (Texture3D == runtime.type)
 	{
-		VkFormat format = VkTypes::AsVkFormat(this->pixelFormat);
-		VkTypes::VkBlockDimensions blockSize = VkTypes::AsVkBlockSize(this->pixelFormat);
-		uint32_t size = CoreGraphics::PixelFormat::ToSize(this->pixelFormat);
+		VkFormat vkformat = VkTypes::AsVkFormat(load.format);
+		VkTypes::VkBlockDimensions blockSize = VkTypes::AsVkBlockSize(vkformat);
+		uint32_t size = CoreGraphics::PixelFormat::ToSize(load.format);
 
-		uint32_t mipWidth = (uint32_t)Math::n_max(1.0f, Math::n_ceil(this->width / Math::n_pow(2, (float)mipLevel)));
-		uint32_t mipHeight = (uint32_t)Math::n_max(1.0f, Math::n_ceil(this->height / Math::n_pow(2, (float)mipLevel)));
-		uint32_t mipDepth = (uint32_t)Math::n_max(1.0f, Math::n_ceil(this->depth / Math::n_pow(2, (float)mipLevel)));
+		uint32_t mipWidth = (uint32_t)Math::n_max(1.0f, Math::n_ceil(load.dims.width / Math::n_pow(2, (float)mipLevel)));
+		uint32_t mipHeight = (uint32_t)Math::n_max(1.0f, Math::n_ceil(load.dims.height / Math::n_pow(2, (float)mipLevel)));
+		uint32_t mipDepth = (uint32_t)Math::n_max(1.0f, Math::n_ceil(load.dims.depth / Math::n_pow(2, (float)mipLevel)));
 
-		this->mappedBufferLayout.dstSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
-		this->mappedBufferLayout.dstOffset = { 0, 0, 0 };
-		this->mappedBufferLayout.srcSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, (uint32_t)mipLevel, 1, 1 };
-		this->mappedBufferLayout.srcOffset = { 0, 0, 0 };
-		this->mappedBufferLayout.extent = { mipWidth, mipHeight, mipDepth };
+		map.region.dstSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
+		map.region.dstOffset = { 0, 0, 0 };
+		map.region.srcSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, (uint32_t)mipLevel, 1, 1 };
+		map.region.srcOffset = { 0, 0, 0 };
+		map.region.extent = { mipWidth, mipHeight, mipDepth };
 		uint32_t memSize;
-		VkUtilities::ReadImage(this, this->mappedBufferLayout, memSize, this->mappedMem, this->mappedImg);
+		VkUtilities::ReadImage(load.img, load.format, load.dims, runtime.type, map.region, memSize, map.mem, map.buf);
 
 		// the row pitch must be the size of one pixel times the number of pixels in width
 		outMapInfo.mipWidth = mipWidth;
 		outMapInfo.mipHeight = mipHeight;
 		outMapInfo.rowPitch = (int32_t)memSize / mipWidth;
 		outMapInfo.depthPitch = (int32_t)memSize;
-		VkResult res = vkMapMemory(VkRenderDevice::dev, this->mappedMem, 0, (int32_t)memSize, 0, &this->mappedData);
+		VkResult res = vkMapMemory(VkRenderDevice::dev, map.mem, 0, (int32_t)memSize, 0, &outMapInfo.data);
 		n_assert(res == VK_SUCCESS);
-
-		outMapInfo.data = this->mappedData;
 		retval = res == VK_SUCCESS;
-		this->mapCount++;
+		map.mapCount++;
 	}
+	VkTexture::textureAllocator.LeaveGet();
 	return retval;
 }
 
@@ -122,61 +93,67 @@ VkTexture::Map(IndexT mipLevel, MapType mapType, MapInfo& outMapInfo)
 /**
 */
 void
-VkTexture::Unmap(IndexT mipLevel)
+VkTexture::Unmap(const Resources::ResourceId id, IndexT mipLevel)
 {
-	n_assert(this->mapCount > 0);
+	Ids::Id24 resId = Ids::Id::GetBig(Ids::Id::GetLow(id));
+	VkTexture::textureAllocator.EnterGet();
+	VkTexture::RuntimeInfo& runtime = VkTexture::textureAllocator.Get<0>(resId);
+	VkTexture::LoadInfo& load = VkTexture::textureAllocator.Get<1>(resId);
+	VkTexture::MappingInfo& map = VkTexture::textureAllocator.Get<2>(resId);
 
 	// unmap and dealloc
-	vkUnmapMemory(VkRenderDevice::dev, this->mappedMem);
-	VkUtilities::WriteImage(this->mappedImg, this->img, this->mappedBufferLayout);
-	this->mapCount--;
-
-	if (this->mapCount == 0)
+	vkUnmapMemory(VkRenderDevice::dev, load.mem);
+	VkUtilities::WriteImage(map.buf, load.img, map.region);
+	map.mapCount--;
+	if (map.mapCount == 0)
 	{
-		vkFreeMemory(VkRenderDevice::dev, this->mappedMem, NULL);
-		vkDestroyBuffer(VkRenderDevice::dev, this->mappedImg, NULL);
-
-		this->mappedData = 0;
-		this->mappedImg = VK_NULL_HANDLE;
-		this->mappedMem = VK_NULL_HANDLE;
-		this->mappedBufferLayout = VkImageCopy();
+		vkFreeMemory(VkRenderDevice::dev, map.mem, nullptr);
+		vkDestroyBuffer(VkRenderDevice::dev, map.buf, nullptr);
 	}
+
+	VkTexture::textureAllocator.LeaveGet();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 bool
-VkTexture::MapCubeFace(CubeFace face, IndexT mipLevel, MapType mapType, MapInfo& outMapInfo)
+VkTexture::MapCubeFace(const Resources::ResourceId id, Base::TextureBase::CubeFace face, IndexT mipLevel, Base::GpuResourceBase::MapType mapType, Base::TextureBase::MapInfo& outMapInfo)
 {
+	Ids::Id24 resId = Ids::Id::GetBig(Ids::Id::GetLow(id));
+	VkTexture::textureAllocator.EnterGet();
+	VkTexture::RuntimeInfo& runtime = VkTexture::textureAllocator.Get<0>(resId);
+	VkTexture::LoadInfo& load = VkTexture::textureAllocator.Get<1>(resId);
+	VkTexture::MappingInfo& map = VkTexture::textureAllocator.Get<2>(resId);
+
 	bool retval = false;
-	
-	VkFormat format = VkTypes::AsVkFormat(this->pixelFormat);
-	VkTypes::VkBlockDimensions blockSize = VkTypes::AsVkBlockSize(this->pixelFormat);
-	uint32_t size = CoreGraphics::PixelFormat::ToSize(this->pixelFormat);
 
-	uint32_t mipWidth = (uint32_t)Math::n_max(1.0f, Math::n_ceil(this->width / Math::n_pow(2, (float)mipLevel)));
-	uint32_t mipHeight = (uint32_t)Math::n_max(1.0f, Math::n_ceil(this->height / Math::n_pow(2, (float)mipLevel)));
+	VkFormat vkformat = VkTypes::AsVkFormat(load.format);
+	VkTypes::VkBlockDimensions blockSize = VkTypes::AsVkBlockSize(vkformat);
+	uint32_t size = CoreGraphics::PixelFormat::ToSize(load.format);
 
-	this->mappedBufferLayout.dstSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
-	this->mappedBufferLayout.dstOffset = { 0, 0, 0 };
-	this->mappedBufferLayout.srcSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, (uint32_t)mipLevel, (uint32_t)face, 1 };
-	this->mappedBufferLayout.srcOffset = { 0, 0, 0 };
-	this->mappedBufferLayout.extent = { mipWidth, mipHeight, 1 };
+	uint32_t mipWidth = (uint32_t)Math::n_max(1.0f, Math::n_ceil(load.dims.width / Math::n_pow(2, (float)mipLevel)));
+	uint32_t mipHeight = (uint32_t)Math::n_max(1.0f, Math::n_ceil(load.dims.height / Math::n_pow(2, (float)mipLevel)));
+
+	map.region.dstSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
+	map.region.dstOffset = { 0, 0, 0 };
+	map.region.srcSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, (uint32_t)mipLevel, (uint32_t)face, 1 };
+	map.region.srcOffset = { 0, 0, 0 };
+	map.region.extent = { mipWidth, mipHeight, 1 };
 	uint32_t memSize;
-	VkUtilities::ReadImage(this, this->mappedBufferLayout, memSize, this->mappedMem, this->mappedImg);
+	VkUtilities::ReadImage(load.img, load.format, load.dims, runtime.type, map.region, memSize, map.mem, map.buf);
 
 	// the row pitch must be the size of one pixel times the number of pixels in width
 	outMapInfo.mipWidth = mipWidth;
 	outMapInfo.mipHeight = mipHeight;
 	outMapInfo.rowPitch = (int32_t)memSize / mipWidth;
 	outMapInfo.depthPitch = (int32_t)memSize;
-	VkResult res = vkMapMemory(VkRenderDevice::dev, this->mappedMem, 0, (int32_t)memSize, 0, &this->mappedData);
+	VkResult res = vkMapMemory(VkRenderDevice::dev, map.mem, 0, (int32_t)memSize, 0, &outMapInfo.data);
 	n_assert(res == VK_SUCCESS);
-
-	outMapInfo.data = this->mappedData;
 	retval = res == VK_SUCCESS;
-	this->mapCount++;
+	map.mapCount++;
+	
+	VkTexture::textureAllocator.LeaveGet();
 
 	return retval;
 }
@@ -185,24 +162,25 @@ VkTexture::MapCubeFace(CubeFace face, IndexT mipLevel, MapType mapType, MapInfo&
 /**
 */
 void
-VkTexture::UnmapCubeFace(CubeFace face, IndexT mipLevel)
+VkTexture::UnmapCubeFace(const Resources::ResourceId id, Base::TextureBase::CubeFace face, IndexT mipLevel)
 {
-	n_assert(this->mapCount > 0);
+	Ids::Id24 resId = Ids::Id::GetBig(Ids::Id::GetLow(id));
+	VkTexture::textureAllocator.EnterGet();
+	VkTexture::RuntimeInfo& runtime = VkTexture::textureAllocator.Get<0>(resId);
+	VkTexture::LoadInfo& load = VkTexture::textureAllocator.Get<1>(resId);
+	VkTexture::MappingInfo& map = VkTexture::textureAllocator.Get<2>(resId);
+
 	// unmap and dealloc
-	vkUnmapMemory(VkRenderDevice::dev, this->mappedMem);
-	VkUtilities::WriteImage(this->mappedImg, this->img, this->mappedBufferLayout);
-	this->mapCount--;
-
-	if (this->mapCount == 0)
+	vkUnmapMemory(VkRenderDevice::dev, load.mem);
+	VkUtilities::WriteImage(map.buf, load.img, map.region);
+	map.mapCount--;
+	if (map.mapCount == 0)
 	{
-		vkFreeMemory(VkRenderDevice::dev, this->mappedMem, NULL);
-		vkDestroyBuffer(VkRenderDevice::dev, this->mappedImg, NULL);
+		vkFreeMemory(VkRenderDevice::dev, map.mem, nullptr);
+		vkDestroyBuffer(VkRenderDevice::dev, map.buf, nullptr);
+	}
 
-		this->mappedData = 0;
-		this->mappedImg = VK_NULL_HANDLE;
-		this->mappedMem = VK_NULL_HANDLE;
-		this->mappedBufferLayout = VkImageCopy();
-	}	
+	VkTexture::textureAllocator.LeaveGet();
 }
 
 //------------------------------------------------------------------------------
@@ -219,11 +197,8 @@ VkTexture::GenerateMipmaps()
 /**
 */
 void
-VkTexture::Update(void* data, SizeT dataSize, SizeT width, SizeT height, IndexT left, IndexT top, IndexT mip)
+VkTexture::Update(VkImage img, void* data, SizeT dataSize, SizeT width, SizeT height, IndexT left, IndexT top, IndexT mip)
 {
-	n_assert(this->img != VK_NULL_HANDLE);
-	n_assert(this->mem != VK_NULL_HANDLE);
-
 	VkBufferImageCopy copy;
 	copy.imageExtent.width = width;
 	copy.imageExtent.height = height;
@@ -240,21 +215,18 @@ VkTexture::Update(void* data, SizeT dataSize, SizeT width, SizeT height, IndexT 
 	copy.bufferImageHeight = height;
 
 	// push update
-	//VkRenderDevice::Instance()->PushImageUpdate(this->img, copy, dataSize, (uint32_t*)data);
+	//VkRenderDevice::Instance()->PushImageUpdate(img, copy, dataSize, (uint32_t*)data);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkTexture::Update(void* data, SizeT dataSize, IndexT mip)
+VkTexture::Update(VkImage img, TextureBase::Dimensions dims, void* data, SizeT dataSize, IndexT mip)
 {
-	n_assert(this->img != VK_NULL_HANDLE);
-	n_assert(this->mem != VK_NULL_HANDLE);
-
 	VkBufferImageCopy copy;
-	copy.imageExtent.width = this->width;
-	copy.imageExtent.height = this->height;
+	copy.imageExtent.width = dims.width;
+	copy.imageExtent.height = dims.height;
 	copy.imageExtent.depth = 1;			// hmm, might want this for cube maps and volume textures too
 	copy.imageOffset.x = 0;
 	copy.imageOffset.y = 0;
@@ -264,8 +236,8 @@ VkTexture::Update(void* data, SizeT dataSize, IndexT mip)
 	copy.imageSubresource.baseArrayLayer = 0;
 	copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 	copy.bufferOffset = 0;
-	copy.bufferRowLength = dataSize / this->width;
-	copy.bufferImageHeight = this->height;
+	copy.bufferRowLength = dataSize / dims.width;
+	copy.bufferImageHeight = dims.height;
 
 	// push update
 	//VkRenderDevice::Instance()->PushImageUpdate(this->img, copy, dataSize, (uint32_t*)data);
@@ -275,11 +247,8 @@ VkTexture::Update(void* data, SizeT dataSize, IndexT mip)
 /**
 */
 void
-VkTexture::UpdateArray(void* data, SizeT dataSize, SizeT width, SizeT height, IndexT left, IndexT top, IndexT mip, IndexT layer)
+VkTexture::UpdateArray(VkImage img, void* data, SizeT dataSize, SizeT width, SizeT height, IndexT left, IndexT top, IndexT mip, IndexT layer)
 {
-	n_assert(this->img != VK_NULL_HANDLE);
-	n_assert(this->mem != VK_NULL_HANDLE);
-
 	VkBufferImageCopy copy;
 	copy.imageExtent.width = width;
 	copy.imageExtent.height = height;
@@ -303,14 +272,11 @@ VkTexture::UpdateArray(void* data, SizeT dataSize, SizeT width, SizeT height, In
 /**
 */
 void
-VkTexture::UpdateArray(void* data, SizeT dataSize, IndexT mip, IndexT layer)
+VkTexture::UpdateArray(VkImage img, TextureBase::Dimensions dims, void* data, SizeT dataSize, IndexT mip, IndexT layer)
 {
-	n_assert(this->img != VK_NULL_HANDLE);
-	n_assert(this->mem != VK_NULL_HANDLE);
-
 	VkBufferImageCopy copy;
-	copy.imageExtent.width = this->width;
-	copy.imageExtent.height = this->height;
+	copy.imageExtent.width = dims.width;
+	copy.imageExtent.height = dims.height;
 	copy.imageExtent.depth = 1;			// hmm, might want this for cube maps and volume textures too
 	copy.imageOffset.x = 0;
 	copy.imageOffset.y = 0;
@@ -320,8 +286,8 @@ VkTexture::UpdateArray(void* data, SizeT dataSize, IndexT mip, IndexT layer)
 	copy.imageSubresource.baseArrayLayer = layer;
 	copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 	copy.bufferOffset = 0;
-	copy.bufferRowLength = dataSize / this->width;
-	copy.bufferImageHeight = this->height;
+	copy.bufferRowLength = dataSize / dims.width;
+	copy.bufferImageHeight = dims.height;
 
 	// push update
 	//VkRenderDevice::Instance()->PushImageUpdate(this->img, copy, dataSize, (uint32_t*)data);
@@ -331,139 +297,7 @@ VkTexture::UpdateArray(void* data, SizeT dataSize, IndexT mip, IndexT layer)
 /**
 */
 void
-VkTexture::SetupFromVkTexture(VkImage img, VkDeviceMemory mem, VkImageView imgView, uint32_t width, uint32_t height, CoreGraphics::PixelFormat::Code format, uint32_t numMips /*= 0*/, const bool setLoaded /*= true*/, const bool isAttachment /*= false*/)
-{
-	this->type = Texture2D;
-	this->pixelFormat = format;
-	this->img = img;
-	this->numMipLevels = numMips;
-	this->mem = mem;
-	this->imgView = imgView;
-	this->id = VkShaderServer::Instance()->RegisterTexture(this);
-
-	this->SetType(VkTexture::Texture2D);
-	this->SetWidth(width);
-	this->SetHeight(height);
-	this->SetDepth(1);
-	this->SetNumMipLevels(Math::n_max(1, numMips));
-	this->SetPixelFormat(format);
-	this->access = GpuResourceBase::AccessRead;
-	this->isRenderTargetAttachment = isAttachment;
-	if (setLoaded)
-	{
-		this->state = Resource::Loaded;
-	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-VkTexture::SetupFromVkMultisampleTexture(VkImage img, VkDeviceMemory mem, VkImageView imgView, uint32_t width, uint32_t height, CoreGraphics::PixelFormat::Code format, uint32_t numMips /*= 0*/, const bool setLoaded /*= true*/, const bool isAttachment /*= false*/)
-{
-	this->type = Texture2D;
-	this->pixelFormat = format;
-	this->img = img;
-	this->numMipLevels = numMips;
-	this->mem = mem;
-	this->imgView = imgView;
-	this->id = VkShaderServer::Instance()->RegisterTexture(this);
-
-	this->SetWidth(width);
-	this->SetHeight(height);
-	this->SetDepth(1);
-	this->SetNumMipLevels(Math::n_max(1, numMips));
-	this->SetPixelFormat(format);
-	this->access = GpuResourceBase::AccessRead;
-	this->isRenderTargetAttachment = isAttachment;
-	if (setLoaded)
-	{
-		this->state = Resource::Loaded;
-	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-VkTexture::SetupFromVkCubeTexture(VkImage img, VkDeviceMemory mem, VkImageView imgView, uint32_t width, uint32_t height, CoreGraphics::PixelFormat::Code format, uint32_t numMips /*= 0*/, const bool setLoaded /*= true*/, const bool isAttachment /*= false*/)
-{
-	this->type = TextureCube;
-	this->pixelFormat = format;
-	this->img = img;
-	this->numMipLevels = numMips;
-	this->mem = mem;
-	this->imgView = imgView;
-	this->id = VkShaderServer::Instance()->RegisterTexture(this);
-
-	this->SetWidth(width);
-	this->SetHeight(height);
-	this->SetDepth(1);
-	this->SetNumMipLevels(Math::n_max(1, numMips));
-	this->SetPixelFormat(format);
-	this->access = GpuResourceBase::AccessRead;
-	this->isRenderTargetAttachment = isAttachment;
-	if (setLoaded)
-	{
-		this->state = Resource::Loaded;
-	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-VkTexture::SetupFromVkVolumeTexture(VkImage img, VkDeviceMemory mem, VkImageView imgView, uint32_t width, uint32_t height, uint32_t depth, CoreGraphics::PixelFormat::Code format, uint32_t numMips /*= 0*/, const bool setLoaded /*= true*/, const bool isAttachment /*= false*/)
-{
-	this->type = Texture3D;
-	this->pixelFormat = format;
-	this->img = img;
-	this->numMipLevels = numMips;
-	this->mem = mem;
-	this->imgView = imgView;
-	this->id = VkShaderServer::Instance()->RegisterTexture(this);
-
-	this->SetWidth(width);
-	this->SetHeight(height);
-	this->SetDepth(depth);
-	this->SetNumMipLevels(Math::n_max(1, numMips));
-	this->SetPixelFormat(format);
-	this->access = GpuResourceBase::AccessRead;
-	this->isRenderTargetAttachment = isAttachment;
-	if (setLoaded)
-	{
-		this->state = Resource::Loaded;
-	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-VkTexture::SetupFromVkBackbuffer(VkImage img, uint32_t width, uint32_t height, uint32_t depth, CoreGraphics::PixelFormat::Code format)
-{
-	this->type = Texture2D;
-	this->pixelFormat = format;
-	this->img = img;
-	this->numMipLevels = 1;
-	this->mem = VK_NULL_HANDLE;
-	this->imgView = VK_NULL_HANDLE;
-
-	this->SetWidth(width);
-	this->SetHeight(height);
-	this->SetDepth(depth);
-	this->SetNumMipLevels(1);
-	this->SetPixelFormat(format);
-	this->access = GpuResourceBase::AccessRead;
-	this->isRenderTargetAttachment = true;
-	this->state = Resource::Loaded;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-VkTexture::Copy(const Ptr<CoreGraphics::Texture>& from, const Ptr<CoreGraphics::Texture>& to, uint32_t width, uint32_t height, uint32_t depth,
+VkTexture::Copy(const VkImage from, const VkImage to, uint32_t width, uint32_t height, uint32_t depth,
 	uint32_t srcMip, uint32_t srcLayer, int32_t srcXOffset, int32_t srcYOffset, int32_t srcZOffset,
 	uint32_t dstMip, uint32_t dstLayer, int32_t dstXOffset, int32_t dstYOffset, int32_t dstZOffset)
 {
@@ -484,8 +318,19 @@ VkTexture::Copy(const Ptr<CoreGraphics::Texture>& from, const Ptr<CoreGraphics::
 
 	// begin immediate action, this might actually be delayed but we can't really know from here
 	VkCommandBuffer cmdBuf = VkUtilities::BeginImmediateTransfer();
-	vkCmdCopyImage(cmdBuf, from->GetVkImage(), VK_IMAGE_LAYOUT_GENERAL, to->GetVkImage(), VK_IMAGE_LAYOUT_GENERAL, 1, &copy);
+	vkCmdCopyImage(cmdBuf, from, VK_IMAGE_LAYOUT_GENERAL, to, VK_IMAGE_LAYOUT_GENERAL, 1, &copy);
 	VkUtilities::EndImmediateTransfer(cmdBuf);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+VkTexture::Unload(const VkDeviceMemory mem, const VkImage img, const VkImageView view)
+{
+	vkFreeMemory(VkRenderDevice::dev, mem, nullptr);
+	vkDestroyImage(VkRenderDevice::dev, img, nullptr);
+	vkDestroyImageView(VkRenderDevice::dev, img, nullptr);
 }
 
 } // namespace Vulkan

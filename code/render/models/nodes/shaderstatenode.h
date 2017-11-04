@@ -9,11 +9,11 @@
 //------------------------------------------------------------------------------
 #include "modelnode.h"
 #include "resources/resourceid.h"
+#include "transformnode.h"
 namespace Models
 {
-class ShaderStateNode : public ModelNode
+class ShaderStateNode : public TransformNode
 {
-	__DeclareClass(ShaderStateNode);
 public:
 	/// constructor
 	ShaderStateNode();
@@ -21,10 +21,21 @@ public:
 	virtual ~ShaderStateNode();
 
 protected:
-	friend class ModelLoader;
+	friend class ModelPool;
 
 	/// load shader state
-	bool Load(const Util::FourCC& tag, const Ptr<Models::ModelLoader>& loader, const Ptr<IO::BinaryReader>& reader);
+	bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader);
+
+	struct Instance : public TransformNode::Instance
+	{
+		CoreGraphics::ShaderId sharedShader;
+		CoreGraphics::ShaderVariableId modelVar;
+		CoreGraphics::ShaderVariableId invModelVar;
+		CoreGraphics::ShaderVariableId modelViewProjVar;
+		CoreGraphics::ShaderVariableId modelViewVar;
+		CoreGraphics::ShaderVariableId objectIdVar;
+		IndexT bufferIndex;
+	};
 
 	Resources::ResourceName materialName;
 };

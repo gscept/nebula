@@ -56,9 +56,9 @@ public:
 	virtual void Clear(uint flags);
 
 	/// set resolve texture resource id
-	void SetResolveTextureResourceId(const Resources::ResourceId& resId);
+	void SetResolveTextureResourceId(const Resources::ResourceName& resId);
 	/// get resolve texture resource id
-	const Resources::ResourceId& GetResolveTextureResourceId() const;
+	const Resources::ResourceName& GetResolveTextureResourceId() const;
 
 	/// set render target width
 	void SetWidth(SizeT w);
@@ -97,8 +97,8 @@ protected:
 	float relWidth;
 	float relHeight;
 	CoreGraphics::PixelFormat::Code format;
-	Resources::ResourceId resolveTextureResId;
-	Ptr<CoreGraphics::Texture> resolveDepthTexture;
+	Resources::ResourceId resolveDepthTexture;
+	Resources::ResourceName resolveTextureResId;
 }; 
 
 //------------------------------------------------------------------------------
@@ -122,8 +122,8 @@ DepthStencilTargetBase::GetWidth() const
 //------------------------------------------------------------------------------
 /**
 */
-inline void 
-DepthStencilTargetBase::SetHeight( SizeT h )
+inline void
+DepthStencilTargetBase::SetHeight(SizeT h)
 {
 	this->height = h;
 }
@@ -233,7 +233,7 @@ DepthStencilTargetBase::GetRelativeHeight() const
 /**
 */
 inline void
-DepthStencilTargetBase::SetResolveTextureResourceId(const Resources::ResourceId& resId)
+DepthStencilTargetBase::SetResolveTextureResourceId(const Resources::ResourceName& resId)
 {
 	this->resolveTextureResId = resId;
 }
@@ -241,7 +241,7 @@ DepthStencilTargetBase::SetResolveTextureResourceId(const Resources::ResourceId&
 //------------------------------------------------------------------------------
 /**
 */
-inline const Resources::ResourceId&
+inline const Resources::ResourceName&
 DepthStencilTargetBase::GetResolveTextureResourceId() const
 {
 	return this->resolveTextureResId;

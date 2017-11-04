@@ -7,32 +7,28 @@
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
-#include "coregraphics/base/streamtexturesaverbase.h"
+#include "coregraphics/streamtexturesaver.h"
+#include "io/stream.h"
 #include <IL/il.h>
 namespace CoreGraphics
 {
 	class Texture;
 }
+
 namespace Vulkan
 {
-class VkStreamTextureSaver : public Base::StreamTextureSaverBase
-{
-	__DeclareClass(VkStreamTextureSaver);
-public:
-	/// constructor
-	VkStreamTextureSaver();
-	/// destructor
-	virtual ~VkStreamTextureSaver();
 
-	/// called by resource when a save is requested
-	bool OnSave();
+class VkStreamTextureSaver
+{
 private:
+	friend bool CoreGraphics::SaveTexture(const Resources::ResourceId& id, const IO::URI& path, IndexT mip, CoreGraphics::ImageFileFormat::Code code);
+
 	/// saves a standard 2D texture
-	bool SaveTexture2D(const Ptr<CoreGraphics::Texture>& tex, ILenum imageFileType);
+	static bool SaveTexture2D(CoreGraphics::Texture* tex, const Ptr<IO::Stream>& stream, IndexT mip, ILenum imageFileType);
 	/// saves a cube map
-	bool SaveCubemap(const Ptr<CoreGraphics::Texture>& tex, ILenum imageFileType);
+	static bool SaveCubemap(CoreGraphics::Texture* tex, const Ptr<IO::Stream>& stream, IndexT mip, ILenum imageFileType);
 	/// saves a 3D texture
-	bool SaveTexture3D(const Ptr<CoreGraphics::Texture>& tex, ILenum imageFileType);
+	static bool SaveTexture3D(CoreGraphics::Texture* tex, const Ptr<IO::Stream>& stream, IndexT mip, ILenum imageFileType);
 
 	/// helper function to flip image data horizontally
 	template<typename T> void* FlipImageDataHorizontal(SizeT width, SizeT height, void* buf);
@@ -40,9 +36,9 @@ private:
 	template<typename T> void* FlipImageDataVertical(SizeT width, SizeT height, void* buf);
 
 	/// helper function to flip image data vertically based on block size
-	void* FlipImageDataVerticalBlockWise(SizeT width, SizeT height, SizeT pixelSize, void* buf);
+	static void* FlipImageDataVerticalBlockWise(SizeT width, SizeT height, SizeT pixelSize, void* buf);
 	/// helper function to flip image data horizontally based on block size
-	void* FlipImageDataHorizontalBlockWise(SizeT width, SizeT height, SizeT pixelSize, void* buf);
+	static void* FlipImageDataHorizontalBlockWise(SizeT width, SizeT height, SizeT pixelSize, void* buf);
 };
 
 	//------------------------------------------------------------------------------

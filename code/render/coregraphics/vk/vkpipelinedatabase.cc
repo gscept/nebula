@@ -74,10 +74,10 @@ VkPipelineDatabase::SetSubpass(uint32_t subpass)
 /**
 */
 void
-VkPipelineDatabase::SetShader(const Ptr<VkShaderProgram>& program)
+VkPipelineDatabase::SetShader(const uint32_t program)
 {
 	this->currentShaderProgram = program;
-	IndexT index = this->ct2->children.FindIndex(program->GetUniqueId());
+	IndexT index = this->ct2->children.FindIndex(program);
 	if (index != InvalidIndex)
 	{
 		this->ct3 = this->ct2->children.ValueAtIndex(index);
@@ -86,7 +86,7 @@ VkPipelineDatabase::SetShader(const Ptr<VkShaderProgram>& program)
 	else
 	{
 		this->ct3 = n_new(Tier3Node);
-		this->ct2->children.Add(program->GetUniqueId(), this->ct3);
+		this->ct2->children.Add(program, this->ct3);
 		this->SetVertexLayout(this->currentVertexLayout);
 	}
 }

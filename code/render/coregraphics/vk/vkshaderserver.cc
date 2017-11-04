@@ -7,6 +7,8 @@
 #include "effectfactory.h"
 #include "coregraphics/shaderpool.h"
 #include "vkrenderdevice.h"
+#include "vkshaderpool.h"
+#include "coregraphics/coregraphics.h"
 
 using namespace Resources;
 using namespace CoreGraphics;
@@ -58,11 +60,11 @@ VkShaderServer::Open()
 	this->textureCubePool.Resize(MAX_CUBE_TEXTURES);
 
 	// create shader state for textures, and fetch variables
-	this->textureShaderState = this->CreateSharedShaderState("shd:shared", { NEBULAT_TICK_GROUP });
-	this->texture2DTextureVar = this->textureShaderState->GetVariableByName("Textures2D");
-	this->texture2DMSTextureVar = this->textureShaderState->GetVariableByName("Textures2DMS");
-	this->textureCubeTextureVar = this->textureShaderState->GetVariableByName("TexturesCube");
-	this->texture3DTextureVar = this->textureShaderState->GetVariableByName("Textures3D");
+	this->textureShaderState = CoreGraphics::shaderPool->CreateState("shd:shared", { NEBULAT_TICK_GROUP });
+	this->texture2DTextureVar = CoreGraphics::shaderPool->GetShaderVariable(this->textureShaderState, "Textures2D");
+	this->texture2DMSTextureVar = CoreGraphics::shaderPool->GetShaderVariable(this->textureShaderState, "Textures2DMS");
+	this->textureCubeTextureVar = CoreGraphics::shaderPool->GetShaderVariable(this->textureShaderState, "TexturesCube");
+	this->texture3DTextureVar = CoreGraphics::shaderPool->GetShaderVariable(this->textureShaderState, "Textures3D");
 
 	return true;
 }
@@ -75,8 +77,7 @@ VkShaderServer::Close()
 {
 	n_assert(this->IsOpen());
 	n_delete(this->factory);
-	this->textureShaderState->Discard();
-	this->textureShaderState = nullptr;
+	CoreGraphics::shaderPool->DestroyState(this->textureShaderState);
 	ShaderServerBase::Close();
 }
 
@@ -128,12 +129,12 @@ VkShaderServer::LoadShader(const Resources::ResourceId& shdName)
 /**
 */
 uint32_t
-VkShaderServer::RegisterTexture(const Ptr<Vulkan::VkTexture>& tex)
+VkShaderServer::RegisterTexture(const VkImageView tex, Base::TextureBase::Type type)
 {
 	uint32_t idx;
 	Ptr<VkShaderVariable> var;
 	VkDescriptorImageInfo* img;
-	switch (tex->GetType())
+	switch (type)
 	{
 	case Texture::Texture2D:
 		n_assert(!this->texture2DPool.IsFull());
@@ -168,7 +169,7 @@ VkShaderServer::RegisterTexture(const Ptr<Vulkan::VkTexture>& tex)
 	write.pBufferInfo = NULL;
 
 	img->imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	img->imageView = tex->GetVkImageView();
+	img->imageView = tex;
 	img->sampler = VK_NULL_HANDLE;
 	write.pImageInfo = img;
 	this->textureShaderState->AddDescriptorWrite(write);
@@ -179,19 +180,18 @@ VkShaderServer::RegisterTexture(const Ptr<Vulkan::VkTexture>& tex)
 /**
 */
 void
-VkShaderServer::UnregisterTexture(const Ptr<Vulkan::VkTexture>& tex)
+VkShaderServer::UnregisterTexture(const uint32_t id, const Base::TextureBase::Type type)
 {
-	uint32_t idx = tex->GetVkId();
-	switch (tex->GetType())
+	switch (type)
 	{
 	case Texture::Texture2D:
-		this->texture2DPool.Free(idx);
+		this->texture2DPool.Free(id);
 		break;
 	case Texture::Texture3D:
-		this->texture3DPool.Free(idx);
+		this->texture3DPool.Free(id);
 		break;
 	case Texture::TextureCube:
-		this->textureCubePool.Free(idx);
+		this->textureCubePool.Free(id);
 		break;
 	}
 }

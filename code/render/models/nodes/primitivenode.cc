@@ -4,13 +4,15 @@
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "primitivenode.h"
-#include "models/modelloader.h"
+#include "models/modelpool.h"
+#include "resources/resourcemanager.h"
+#include "coregraphics/coregraphics.h"
+#include "coregraphics/meshpool.h"
 
 using namespace Util;
 namespace Models
 {
 
-__ImplementClass(Models::PrimitiveNode, 'SPND', Models::ShaderStateNode);
 //------------------------------------------------------------------------------
 /**
 */
@@ -31,25 +33,25 @@ PrimitiveNode::~PrimitiveNode()
 /**
 */
 bool
-PrimitiveNode::Load(const Util::FourCC& tag, const Ptr<Models::ModelLoader>& loader, const Ptr<IO::BinaryReader>& reader)
+PrimitiveNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader)
 {
 	bool retval = true;
-	if (FourCC('MESH') == tag)
+	if (FourCC('MESH') == fourcc)
 	{
 		// get mesh resource
 		this->meshName = reader->ReadString();
 
 		// add as pending resource in loader
-		loader->pendingResources.Append(this->meshName);
+		this->res = CoreGraphics::meshPool->CreateResource(this->meshName, tag, nullptr, nullptr, false);
 	}
-	else if (FourCC('PGRI') == tag)
+	else if (FourCC('PGRI') == fourcc)
 	{
 		// primitive group index
 		this->primitiveGroupIndex = reader->ReadUInt();
 	}
 	else
 	{
-		retval = ShaderStateNode::Load(tag, reader);
+		retval = ShaderStateNode::Load(fourcc, tag, reader);
 	}
 	return retval;
 }

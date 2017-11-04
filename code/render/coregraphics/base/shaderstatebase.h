@@ -152,8 +152,8 @@ ShaderStateBase::GetVariableByName(const CoreGraphics::ShaderVariable::Name& n) 
 #if NEBULA3_DEBUG
 	if (!this->HasVariableByName(n))
 	{
-		n_error("Invalid shader variable name '%s' in shader '%s'",
-			n.Value(), this->shader->GetResourceName().Value());
+		//n_error("Invalid shader variable name '%s' in shader '%s'",
+			//n.Value(), CoreGraphics::shaderPool->GetResource().Value());
 	}
 #endif
 	return this->variablesByName[n];

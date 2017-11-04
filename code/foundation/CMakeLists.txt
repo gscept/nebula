@@ -385,6 +385,7 @@ fips_begin_module(foundation)
 		fips_dir(ids)
 		fips_files(
 			id.h
+			idallocator.h
 			idpool.h
 			idgenerationpool.cc
 			idgenerationpool.h

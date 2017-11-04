@@ -29,9 +29,9 @@
 #include "core/singleton.h"
 #include "observer.h"
 #include "graphics/graphicsentity.h"
-#include "graphics/modelcontext.h"
+#include "models/modelcontext.h"
 #include "visibility.h"
-#include "../graphics/graphicscontext.h"
+#include "graphics/graphicscontext.h"
 
 namespace CoreGraphics
 {

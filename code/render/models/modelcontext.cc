@@ -67,10 +67,12 @@ ModelContext::Unregister(const EntityId entity)
 
 //------------------------------------------------------------------------------
 /**
+	IMPLEMENT ME!
 */
 Models::ModelInstanceId
 ModelContext::CreateModelInstance(const Resources::ResourceId id)
 {
+	/*
 	Ptr<Model> model = Resources::GetResource<Model>(id);
 	Ids::Id32 instanceId;
 	if (!this->modelInstancePool.Allocate(instanceId))
@@ -89,13 +91,12 @@ ModelContext::CreateModelInstance(const Resources::ResourceId id)
 		const Ptr<ModelNode>& node = model->nodes.ValueAtIndex(i);
 		const Ptr<ModelNode>& parent = node->parent;
 
-		/* TODO: IMPLEMENT ME!
 		if (node->IsA(PrimitiveNode::RTTI))
 		{
 
 		}
-		*/
 	}
+	*/
 }
 
 } // namespace Models

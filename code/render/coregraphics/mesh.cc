@@ -9,7 +9,6 @@
 
 namespace CoreGraphics
 {
-__ImplementClass(CoreGraphics::Mesh, 'MSHB', Resources::Resource);
 
 using namespace CoreGraphics;
 

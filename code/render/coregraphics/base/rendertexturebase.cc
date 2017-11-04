@@ -6,6 +6,7 @@
 #include "rendertexturebase.h"
 #include "coregraphics/displaydevice.h"
 #include "resources/resourcemanager.h"
+#include "coregraphics/memorytexturepool.h"
 
 using namespace Resources;
 using namespace CoreGraphics;
@@ -18,7 +19,7 @@ __ImplementClass(Base::RenderTextureBase, 'RTEB', Core::RefCounted);
 */
 RenderTextureBase::RenderTextureBase() :
 	window(nullptr),
-	texture(nullptr),
+	textureId(Ids::InvalidId64),
 	format(PixelFormat::InvalidPixelFormat),
 	type(Texture::InvalidType),
 	usage(InvalidAttachment),
@@ -53,8 +54,8 @@ void
 RenderTextureBase::Setup()
 {
 	// reserve resource
-	this->textureId = Resources::ReserveResource(this->resourceName, "render_system", Texture::RTTI);
-	this->texture = Resources::GetResource<Texture>(this->textureId);
+	this->textureId = Resources::ReserveResource(this->resourceName, "render_system", MemoryTexturePool::RTTI);
+	Texture* tex = Resources::GetResource<Texture>(this->textureId);
 
 	if (this->windowTexture)
 	{
@@ -69,9 +70,9 @@ RenderTextureBase::Setup()
 		this->usage = ColorAttachment;
 
 		// just create a texture natively without managing it
-		this->texture->SetPixelFormat(this->window->GetDisplayMode().GetPixelFormat());
-		this->texture->SetWidth(this->width);
-		this->texture->SetHeight(this->height);
+		tex->SetPixelFormat(this->window->GetDisplayMode().GetPixelFormat());
+		tex->SetWidth(this->width);
+		tex->SetHeight(this->height);
 	}
 	else
 	{
@@ -108,11 +109,8 @@ void
 RenderTextureBase::Discard()
 {
 	n_assert(this->textureId != Ids::InvalidId64);
-
-	// discard resource
 	Resources::DiscardResource(this->textureId);
 	this->textureId = Ids::InvalidId64;
-	this->texture = nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -125,6 +123,7 @@ RenderTextureBase::Resize()
 	n_assert(this->type == Texture::Texture2D || this->type == Texture::TextureCube);
 	n_assert(this->usage != InvalidAttachment);
 	Ptr<CoreGraphics::Window> wnd = DisplayDevice::Instance()->GetCurrentWindow();
+	Texture* tex = Resources::GetResource<Texture>(this->textureId);
 	if (this->relativeSize)
 	{
 		const DisplayMode& mode = wnd->GetDisplayMode();
@@ -142,9 +141,9 @@ RenderTextureBase::Resize()
 	}
 
 	// set texture dimensions
-	this->texture->SetWidth(this->width);
-	this->texture->SetHeight(this->height);
-	this->texture->SetDepth(this->depth);
+	tex->SetWidth(this->width);
+	tex->SetHeight(this->height);
+	tex->SetDepth(this->depth);
 }
 
 //------------------------------------------------------------------------------
@@ -162,7 +161,7 @@ RenderTextureBase::GenerateMipChain()
 void
 RenderTextureBase::GenerateMipChain(IndexT from)
 {
-	n_assert(this->texture->numMipLevels > from);
+	n_assert(this->mips > from);
 	// empty, implement in subclass
 }
 
@@ -172,7 +171,7 @@ RenderTextureBase::GenerateMipChain(IndexT from)
 void
 RenderTextureBase::GenerateMipChain(IndexT from, IndexT to)
 {
-	n_assert(this->texture->numMipLevels > from && this->texture->numMipLevels > to);
+	n_assert(this->mips > from && this->mips > to);
 	// empty, implement in subclass
 }
 
@@ -182,7 +181,7 @@ RenderTextureBase::GenerateMipChain(IndexT from, IndexT to)
 void
 RenderTextureBase::Blit(IndexT from, IndexT to, const Ptr<CoreGraphics::RenderTexture>& target)
 {
-	n_assert(this->texture->numMipLevels > from && this->texture->numMipLevels > to);
+	n_assert(this->mips > from && this->mips > to);
 	// empty, implement in subclass
 }
 

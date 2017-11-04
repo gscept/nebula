@@ -8,12 +8,12 @@
 	(C) 2015-2016 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "resources/resourceloader.h"
+#include "resources/resourcestreampool.h"
 #include "io/stream.h"
 #include "io/iointerfaceprotocol.h"
 namespace Materials
 {
-class StreamSurfaceLoader : public Resources::ResourceLoader
+class StreamSurfaceLoader : public Resources::ResourceStreamPool
 {
 	__DeclareClass(StreamSurfaceLoader);
 public:
@@ -21,6 +21,9 @@ public:
 	StreamSurfaceLoader();
 	/// destructor
 	virtual ~StreamSurfaceLoader();
+
+	/// setup loader
+	void Setup();
 
     /// return true if asynchronous loading is supported
     virtual bool CanLoadAsync() const;
@@ -34,6 +37,11 @@ public:
 private:
     /// setup material from stream
     bool SetupMaterialFromStream(const Ptr<IO::Stream>& stream);
+
+	/// load shader
+	LoadStatus Load(const Ids::Id24 res, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream);
+	/// unload shader
+	void Unload(const Ids::Id24 id);
 
     Ptr<IO::ReadStream> readStreamMsg;
 };

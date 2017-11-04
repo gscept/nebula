@@ -41,11 +41,11 @@ public:
 	/// begin complete frame
 	bool BeginFrame(IndexT frameIndex);
 	/// set the current vertex stream source
-	void SetStreamVertexBuffer(IndexT streamIndex, const Ptr<CoreGraphics::VertexBuffer>& vb, IndexT offsetVertexIndex);
+	void SetStreamVertexBuffer(IndexT streamIndex, const VkBuffer vb, IndexT offsetVertexIndex);
 	/// set current vertex layout
 	void SetVertexLayout(const Ptr<CoreGraphics::VertexLayout>& vl);
 	/// set current index buffer
-	void SetIndexBuffer(const Ptr<CoreGraphics::IndexBuffer>& ib);
+	void SetIndexBuffer(const VkBuffer ib, const IndexType::Code type);
 	/// set the type of topology to be used
 	void SetPrimitiveTopology(const CoreGraphics::PrimitiveTopology::Code& topo);
 	/// perform computation
@@ -181,7 +181,7 @@ private:
 	void SyncGPU();
 
 	/// sets the current shader pipeline information
-	void BindGraphicsPipelineInfo(const VkGraphicsPipelineCreateInfo& shader, const Ptr<VkShaderProgram>& program);
+	void BindGraphicsPipelineInfo(const VkGraphicsPipelineCreateInfo& shader, const uint32_t programId);
 	/// sets the current vertex layout information
 	void SetVertexLayoutPipelineInfo(VkPipelineVertexInputStateCreateInfo* vertexLayout);
 	/// sets the current framebuffer layout information
@@ -358,7 +358,7 @@ private:
 	bool viewportsDirty[NumDrawThreads];
 	bool scissorsDirty[NumDrawThreads];
 	
-	Ptr<VkShaderProgram> currentProgram;
+	uint32_t currentProgram;
 
 	_declare_counter(NumImageBytesAllocated);
 	_declare_counter(NumBufferBytesAllocated);

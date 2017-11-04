@@ -82,8 +82,6 @@ ENDIF()
 			fips_files(
 				barrierbase.cc
 				barrierbase.h
-				bufferbase.cc
-				bufferbase.h
 				bufferlockbase.cc
 				bufferlockbase.h
 				constantbufferbase.cc
@@ -120,14 +118,10 @@ ENDIF()
 				shaderstatebase.h
 				shadervariablebase.cc
 				shadervariablebase.h
-				shadervariableinstancebase.cc
-				shadervariableinstancebase.h
 				shadervariationbase.cc
 				shadervariationbase.h
 				shaperendererbase.cc
 				shaperendererbase.h
-				streamtexturesaverbase.cc
-				streamtexturesaverbase.h
 				textrendererbase.cc
 				textrendererbase.h
 				texturebase.cc
@@ -158,6 +152,8 @@ ENDIF()
 				config.h
 				constantbuffer.cc
 				constantbuffer.h
+				coregraphics.cc
+				coregraphics.h
 				depthstenciltarget.cc
 				depthstenciltarget.h
 				displaydevice.cc
@@ -219,8 +215,6 @@ ENDIF()
 				shaderstate.h
 				shadervariable.cc
 				shadervariable.h
-				shadervariableinstance.cc
-				shadervariableinstance.h
 				shadervariation.cc
 				shadervariation.h
 				shaperenderer.cc
@@ -231,7 +225,6 @@ ENDIF()
 				shaderpool.h
 				texturepool.cc
 				texturepool.h
-				streamtexturesaver.cc
 				streamtexturesaver.h
 				stretchybuffer.cc
 				stretchybuffer.h
@@ -250,6 +243,8 @@ ENDIF()
 				vertexlayout.h
 				vertexlayoutserver.cc
 				vertexlayoutserver.h
+				vertexsignaturepool.cc
+				vertexsignaturepool.h
 				window.cc
 				window.h
 			)
@@ -324,8 +319,6 @@ ENDIF()
 				d3d11shaderstate.h
 				d3d11shadervariable.cc
 				d3d11shadervariable.h
-				d3d11shadervariableinstance.cc
-				d3d11shadervariableinstance.h
 				d3d11shadervariation.cc
 				d3d11shadervariation.h
 				d3d11shaperenderer.cc
@@ -399,8 +392,6 @@ ENDIF()
 				vkshaderstoragebuffer.h
 				vkshadervariable.cc
 				vkshadervariable.h
-				vkshadervariableinstance.cc
-				vkshadervariableinstance.h
 				vkshaperenderer.cc
 				vkshaperenderer.h
 				vkshaderpool.cc
@@ -426,10 +417,12 @@ ENDIF()
 				vkvertexlayout.cc
 				vkvertexlayout.h
 				vkvertexlayoutserver.cc
-				vkvertexlayoutserver.h				
+				vkvertexlayoutserver.h
+				vkvertexsignaturepool.cc
+				vkvertexsignaturepool.h
 			)
 	endif()
-IF(false)
+
 		fips_dir(frame)
 			fips_files(
 				framebarrier.cc
@@ -473,9 +466,11 @@ IF(false)
 				frameswapbuffers.cc
 				frameswapbuffers.h
 			)
-ENDIF()
+			
 		fips_dir(graphics)
 			fips_files(
+				batchgroup.cc
+				batchgroup.h
 				camera.cc
 				camera.h
 				graphicscontext.cc
@@ -608,6 +603,7 @@ IF(FALSE)
 				shadowserver.cc
 				shadowserver.h
 			)
+ENDIF()
 		fips_dir(materials)
 			fips_files(
 				managedsurface.cc
@@ -645,11 +641,17 @@ IF(FALSE)
 				surfacename.cc
 				surfacename.h
 			)
-ENDIF()
+			
 		fips_dir(models/nodes GROUP "models/nodes")
 			fips_files(
+				characternode.cc
+				characternode.h
+				characterskinnode.cc
+				characterskinnode.h
 				modelnode.cc
 				modelnode.h
+				particlesystemnode.cc
+				particlesystemnode.h
 				primitivenode.cc
 				primitivenode.h
 				shaderstatenode.cc
@@ -664,8 +666,8 @@ ENDIF()
 				model.h
 				modelcontext.cc
 				modelcontext.h
-				modelloader.cc
-				modelloader.h
+				modelpool.cc
+				modelpool.h
 				modelserver.cc
 				modelserver.h
 			)

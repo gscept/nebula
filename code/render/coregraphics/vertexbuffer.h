@@ -14,7 +14,6 @@ namespace CoreGraphics
 {
 class VertexBuffer : public Direct3D11::D3D11VertexBuffer
 {
-	__DeclareClass(VertexBuffer);
 };
 }
 #elif __OGL4__
@@ -23,7 +22,6 @@ namespace CoreGraphics
 {
 class VertexBuffer : public OpenGL4::OGL4VertexBuffer
 {
-	__DeclareClass(VertexBuffer);
 };
 }
 #elif __VULKAN__
@@ -32,7 +30,6 @@ namespace CoreGraphics
 {
 class VertexBuffer : public Vulkan::VkVertexBuffer
 {
-	__DeclareClass(VertexBuffer);
 };
 }
 #elif __DX9__
@@ -41,7 +38,6 @@ namespace CoreGraphics
 {
 class VertexBuffer : public Direct3D9::D3D9VertexBuffer
 {
-    __DeclareClass(VertexBuffer);
 };
 }
 #else

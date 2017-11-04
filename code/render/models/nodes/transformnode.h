@@ -7,12 +7,13 @@
 */
 //------------------------------------------------------------------------------
 #include "modelnode.h"
-#include "math/xnamath/xna_matrix44.h"
+#include "math/matrix44.h"
+#include "math/transform44.h"
+#include "math/quaternion.h"
 namespace Models
 {
 class TransformNode : public ModelNode
 {
-	__DeclareClass(TransformNode);
 public:
 	/// constructor
 	TransformNode();
@@ -20,10 +21,18 @@ public:
 	virtual ~TransformNode();
 
 protected:
-	friend class ModelLoader;
+	friend class ModelPool;
 
 	/// load transform
-	virtual bool Load(const Util::FourCC& tag, const Ptr<Models::ModelLoader>& loader, const Ptr<IO::BinaryReader>& reader);
+	virtual bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader);
+
+	struct Instance : public ModelNode::Instance
+	{
+		Math::transform44 transform;
+		Math::matrix44 modelTransform;
+		bool isInViewSpace;
+		bool lockedToViewer;
+	};
 
 	Math::point position;
 	Math::quaternion rotate;

@@ -18,10 +18,7 @@ __ImplementClass(Vulkan::VkShaderState::VkDerivativeState, 'VKDE', Core::RefCoun
 //------------------------------------------------------------------------------
 /**
 */
-VkShaderState::VkShaderState() :
-	pushData(NULL),
-	pushSize(0),
-	setsDirty(false)
+VkShaderState::VkShaderState()
 {
 	// empty
 }
@@ -38,47 +35,52 @@ VkShaderState::~VkShaderState()
 /**
 */
 void
-VkShaderState::Setup(const Ptr<CoreGraphics::Shader>& origShader, const Util::Array<IndexT>& groups, bool createResourceSet)
+VkShaderState::Setup(
+	const Ids::Id24 id, 
+	AnyFX::ShaderEffect* effect, 
+	const Util::Array<IndexT>& groups, 
+	ShaderStateAllocator& allocator, 
+	Util::FixedArray<VkDescriptorSet>& sets,
+	Util::FixedArray<VkDescriptorSetLayout>& setLayouts,
+	bool createUniqueSet)
 {
-	n_assert(origShader.isvalid());
-	const Ptr<VkShader>& vkShader = origShader.upcast<VkShader>();
-
-	// call parent class
-	ShaderStateBase::Setup(origShader);
-
 	// copy effect pointer
-	this->effect = vkShader->GetVkEffect();
+	allocator.Get<0>(id) = effect;
+	SetupInfo& setup = allocator.Get<1>(id);
+	RuntimeInfo& runtime = allocator.Get<2>(id);
+	VkShaderVariable::ShaderVariableAllocator& varAllocator = allocator.Get<3>(id);
 
 	// copy sets from shader
-	this->sets.Resize(groups.Size());
-	this->setBindnings.Resize(groups.Size());
-	this->setOffsets.Resize(groups.Size());
-	this->setBufferMapping.Resize(groups.Size());
+	setup.sets.Resize(groups.Size());
+	setup.setBufferMapping.Resize(groups.Size());
+	runtime.setBindings.Resize(groups.Size());
+	runtime.setOffsets.Resize(groups.Size());
+	runtime.setsDirty = true;
 	Util::FixedArray<bool> isActive(groups.Size());
 	IndexT i;
 	for (i = 0; i < groups.Size(); i++)
 	{
-		bool hasSet = this->shader->sets.Size() > groups[i];
+		bool hasSet = sets.Size() > groups[i];
 		if (hasSet)
 		{
-			this->sets[i] = this->shader->sets[groups[i]];
+			setup.sets[i] = sets[groups[i]];
 			isActive[i] = true;
 		}	
 		else
 		{
 			isActive[i] = false;
-			this->sets[i] = VK_NULL_HANDLE;
+			setup.sets[i] = VK_NULL_HANDLE;
 		}
 	}
 
 	// if we want to create our own resource set
-	if (createResourceSet)
+	if (createUniqueSet)
 	{
 		for (i = 0; i < groups.Size(); i++)
 		{	
 			if (isActive[i])
 			{
-				VkDescriptorSetLayout layout = this->shader->setLayouts[groups[i]];
+				VkDescriptorSetLayout layout = setLayouts[groups[i]];
 
 				// allocate descriptor sets
 				VkDescriptorSetAllocateInfo info =
@@ -89,7 +91,7 @@ VkShaderState::Setup(const Ptr<CoreGraphics::Shader>& origShader, const Util::Ar
 					1,
 					&layout
 				};
-				VkResult res = vkAllocateDescriptorSets(VkRenderDevice::dev, &info, &this->sets[i]);
+				VkResult res = vkAllocateDescriptorSets(VkRenderDevice::dev, &info, &sets[i]);
 				n_assert(res == VK_SUCCESS);
 			}			
 		}
@@ -97,10 +99,10 @@ VkShaderState::Setup(const Ptr<CoreGraphics::Shader>& origShader, const Util::Ar
 
 
 	// setup variables if we have any layouts
-	if (!origShader->setLayouts.IsEmpty())
+	if (!setLayouts.IsEmpty())
 	{
-		this->SetupVariables(groups);
-		this->SetupUniformBuffers(groups);
+		VkShaderState::SetupVariables(effect, runtime, setup, varAllocator, groups);
+		VkShaderState::SetupUniformBuffers(effect, runtime, setup, varAllocator, groups);
 	}	
 }
 
@@ -145,16 +147,15 @@ VkShaderState::Apply()
 /**
 */
 void
-VkShaderState::Commit()
+VkShaderState::Commit(Ids::Id24 currentProgram, Util::Array<VkWriteDescriptorSet>& writes, bool& setsDirty, RuntimeInfo& info)
 {
-	if (this->setsDirty)
-		this->UpdateDescriptorSets();
+	if (setsDirty) VkShaderState::UpdateDescriptorSets(writes, setsDirty);
 
 	// get render device to apply state
 	VkRenderDevice* dev = VkRenderDevice::Instance();
 
 	// now go through and make sure the shader can bind the sets updated
-	if (this->shader->activeVariation.isvalid() && dev->currentBindPoint != VkShaderProgram::InvalidType)
+	if (currentProgram != Ids::InvalidId24 && dev->currentBindPoint != VkShaderProgram::InvalidType)
 	{
 		const VkShaderProgram::PipelineType type = dev->currentBindPoint;
 		n_assert(type != VkShaderProgram::InvalidType);
@@ -162,34 +163,34 @@ VkShaderState::Commit()
 		{
 			// if no variation is being used, bind descriptors for both graphics and compute
 			IndexT i;
-			for (i = 0; i < this->setBindnings.Size(); i++)
+			for (i = 0; i < info.setBindings.Size(); i++)
 			{
-				const DescriptorSetBinding& binding = this->setBindnings[i];
-				const Util::Array<uint32_t>& offsets = this->setOffsets[i];
-				dev->BindDescriptorsGraphics(&binding.set, binding.layout, binding.slot, 1, offsets.Begin(), offsets.Size(), this->applyShared);
+				const DescriptorSetBinding& binding = info.setBindings[i];
+				const Util::Array<uint32_t>& offsets = info.setOffsets[i];
+				dev->BindDescriptorsGraphics(&binding.set, binding.layout, binding.slot, 1, offsets.Begin(), offsets.Size(), info.shared);
 			}
 
 			// update push ranges
-			if (this->pushSize > 0)
+			if (info.pushDataSize > 0)
 			{
-				dev->UpdatePushRanges(VK_SHADER_STAGE_ALL_GRAPHICS, this->pushLayout, 0, this->pushSize, this->pushData);
+				dev->UpdatePushRanges(VK_SHADER_STAGE_ALL_GRAPHICS, info.pushLayout, 0, info.pushDataSize, info.pushData);
 			}
 		}
 		else
 		{
 			// if no variation is being used, bind descriptors for both graphics and compute
 			IndexT i;
-			for (i = 0; i < this->setBindnings.Size(); i++)
+			for (i = 0; i < info.setBindings.Size(); i++)
 			{
-				const DescriptorSetBinding& binding = this->setBindnings[i];
-				const Util::Array<uint32_t>& offsets = this->setOffsets[i];
+				const DescriptorSetBinding& binding = info.setBindings[i];
+				const Util::Array<uint32_t>& offsets = info.setOffsets[i];
 				dev->BindDescriptorsCompute(&binding.set, binding.layout, binding.slot, 1, offsets.Begin(), offsets.Size());
 			}
 
 			// update push ranges
-			if (this->pushSize > 0)
+			if (info.pushDataSize > 0)
 			{
-				dev->UpdatePushRanges(VK_SHADER_STAGE_COMPUTE_BIT, this->pushLayout, 0, this->pushSize, this->pushData);
+				dev->UpdatePushRanges(VK_SHADER_STAGE_COMPUTE_BIT, info.pushLayout, 0, info.pushDataSize, info.pushData);
 			}
 		}
 	}
@@ -197,18 +198,18 @@ VkShaderState::Commit()
 	{
 		// if no variation is being used, bind descriptors for both graphics and compute
 		IndexT i;
-		for (i = 0; i < this->setBindnings.Size(); i++)
+		for (i = 0; i < info.setBindings.Size(); i++)
 		{
-			const DescriptorSetBinding& binding = this->setBindnings[i];
-			const Util::Array<uint32_t>& offsets = this->setOffsets[i];
-			dev->BindDescriptorsGraphics(&binding.set, binding.layout, binding.slot, 1, offsets.Begin(), offsets.Size(), this->applyShared);
+			const DescriptorSetBinding& binding = info.setBindings[i];
+			const Util::Array<uint32_t>& offsets = info.setOffsets[i];
+			dev->BindDescriptorsGraphics(&binding.set, binding.layout, binding.slot, 1, offsets.Begin(), offsets.Size(), info.shared);
 			dev->BindDescriptorsCompute(&binding.set, binding.layout, binding.slot, 1, offsets.Begin(), offsets.Size());
 		}
 
 		// push to both compute and graphics
-		if (this->pushSize > 0)
+		if (info.pushDataSize > 0)
 		{
-			dev->UpdatePushRanges(VK_SHADER_STAGE_ALL, this->pushLayout, 0, this->pushSize, this->pushData);
+			dev->UpdatePushRanges(VK_SHADER_STAGE_ALL, info.pushLayout, 0, info.pushDataSize, info.pushData);
 		}
 	}
 }
@@ -217,17 +218,7 @@ VkShaderState::Commit()
 /**
 */
 void
-VkShaderState::AddDescriptorWrite(const VkWriteDescriptorSet& write)
-{
-	this->pendingSetWrites.Append(write);
-	this->setsDirty = true;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-VkShaderState::SetupVariables(const Util::Array<IndexT>& groups)
+VkShaderState::SetupVariables(AnyFX::ShaderEffect* effect, RuntimeInfo& runtime, SetupInfo& setup, VkShaderVariable::ShaderVariableAllocator& varAllocator, const Util::Array<IndexT>& groups)
 {
 	// get layouts associated with group and setup descriptor sets for them
 	Util::FixedArray<VkDescriptorSetLayout> setLayouts;
@@ -238,27 +229,27 @@ VkShaderState::SetupVariables(const Util::Array<IndexT>& groups)
 	for (i = 0; i < groups.Size(); i++)
 	{
 		DescriptorSetBinding binding;
-		this->groupIndexMap.Add(groups[i], i);
+		setup.groupIndexMap.Add(groups[i], i);
 #if AMD_DESC_SETS
-		binding.set = this->sets[i];
+		binding.set = setup.sets[i];
 #else
-		binding.set = this->sets[this->shader->setToIndexMap[i]];
+		binding.set = setup.sets[this->shader->setToIndexMap[i]];
 #endif
 		binding.slot = groups[i];
 		//binding.layout = this->shader->pipelineSetLayouts[groups[i]];
-		binding.layout = this->shader->pipelineLayout;
-		this->setBindnings[i] = binding;
+		binding.layout = setup.pipelineLayout;
+		runtime.setBindings[i] = binding;
 	}
 
 	/// setup variables for the groups this shader should modify
 	for (i = 0; i < groups.Size(); i++)
 	{
-		const AnyFX::ProgramBase* program = this->effect->GetPrograms()[0];
+		const AnyFX::ProgramBase* program = effect->GetPrograms()[0];
 
 		// get handles related to groups
-		const eastl::vector<AnyFX::VariableBase*>& variables = this->effect->GetVariables(groups[i]);
-		const eastl::vector<AnyFX::VarblockBase*>& varblocks = this->effect->GetVarblocks(groups[i]);
-		const eastl::vector<AnyFX::VarbufferBase*>& varbuffers = this->effect->GetVarbuffers(groups[i]);
+		const eastl::vector<AnyFX::VariableBase*>& variables = effect->GetVariables(groups[i]);
+		const eastl::vector<AnyFX::VarblockBase*>& varblocks = effect->GetVarblocks(groups[i]);
+		const eastl::vector<AnyFX::VarbufferBase*>& varbuffers = effect->GetVarbuffers(groups[i]);
 
 		// load uniforms
 		uint j;
@@ -267,13 +258,9 @@ VkShaderState::SetupVariables(const Util::Array<IndexT>& groups)
 			// get AnyFX variable
 			AnyFX::VkVariable* variable = static_cast<AnyFX::VkVariable*>(variables[j]);
 
-			// create new variable
-			Ptr<ShaderVariable> var = ShaderVariable::Create();
-
-			// setup variable from AnyFX variable
-			var->Setup(variable, this, this->sets[i]);
-			this->variables.Append(var);
-			this->variablesByName.Add(variable->name.c_str(), var);
+			Ids::Id24 varId = varAllocator.AllocResource();
+			VkShaderVariable::Setup(variable, varId, varAllocator, setup.sets[i]);
+			setup.variableMap.Add(variable->name.c_str(), varId);
 		}
 
 		// load shader storage buffer variables
@@ -283,13 +270,9 @@ VkShaderState::SetupVariables(const Util::Array<IndexT>& groups)
 			AnyFX::VkVarblock* block = static_cast<AnyFX::VkVarblock*>(varblocks[j]);
 			if (block->variables.empty() || AnyFX::HasFlags(block->qualifiers, AnyFX::Qualifiers::Push)) continue;
 
-			// create new variable
-			Ptr<ShaderVariable> var = ShaderVariable::Create();
-
-			// setup variable from AnyFX varblock
-			var->Setup(block, this, this->sets[i]);
-			this->variables.Append(var);
-			this->variablesByName.Add(block->name.c_str(), var);
+			Ids::Id24 varId = varAllocator.AllocResource();
+			VkShaderVariable::Setup(block, varId, varAllocator, setup.sets[i]);
+			setup.variableMap.Add(block->name.c_str(), varId);
 		}
 
 		// load uniform block variables
@@ -298,13 +281,9 @@ VkShaderState::SetupVariables(const Util::Array<IndexT>& groups)
 			// get varblock
 			AnyFX::VkVarbuffer* buffer = static_cast<AnyFX::VkVarbuffer*>(varbuffers[j]);
 
-			// create a new variable
-			Ptr<ShaderVariable> var = ShaderVariable::Create();
-
-			// setup variable from AnyFX varbuffer
-			var->Setup(buffer, this, this->sets[i]);
-			this->variables.Append(var);
-			this->variablesByName.Add(buffer->name.c_str(), var);
+			Ids::Id24 varId = varAllocator.AllocResource();
+			VkShaderVariable::Setup(buffer, varId, varAllocator, setup.sets[i]);
+			setup.variableMap.Add(buffer->name.c_str(), varId);
 		}
 	}	
 }
@@ -313,13 +292,13 @@ VkShaderState::SetupVariables(const Util::Array<IndexT>& groups)
 /**
 */
 void
-VkShaderState::SetupUniformBuffers(const Util::Array<IndexT>& groups)
+VkShaderState::SetupUniformBuffers(AnyFX::ShaderEffect* effect, RuntimeInfo& runtime, SetupInfo& setup, VkShaderVariable::ShaderVariableAllocator& varAllocator, const Util::Array<IndexT>& groups)
 {
 	IndexT i;
 	for (i = 0; i < groups.Size(); i++)
 	{
 		// get varblocks by group
-		const eastl::vector<AnyFX::VarblockBase*>& varblocks = this->effect->GetVarblocks(groups[i]);
+		const eastl::vector<AnyFX::VarblockBase*>& varblocks = effect->GetVarblocks(groups[i]);
 		Util::Array<uint32_t> offsets;
 		Util::Dictionary<uint32_t, BufferMapping> bufferMappings;
 		uint32_t dynindex = 0;
@@ -409,13 +388,13 @@ VkShaderState::SetupUniformBuffers(const Util::Array<IndexT>& groups)
 /**
 */
 void
-VkShaderState::UpdateDescriptorSets()
+VkShaderState::UpdateDescriptorSets(Util::Array<VkWriteDescriptorSet>& writes, bool& dirty)
 {
 	// first ensure descriptor sets are up to date with whatever the variable values has been set to
 	// this can be destructive, because it changes the base shader state
-	vkUpdateDescriptorSets(VkRenderDevice::dev, this->pendingSetWrites.Size(), this->pendingSetWrites.Begin(), 0, NULL);
-	this->pendingSetWrites.Clear();
-	this->setsDirty = false;
+	vkUpdateDescriptorSets(VkRenderDevice::dev, writes.Size(), writes.Begin(), 0, NULL);
+	writes.Clear();
+	dirty = false;
 }
 
 //------------------------------------------------------------------------------

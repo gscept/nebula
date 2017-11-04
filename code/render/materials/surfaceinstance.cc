@@ -124,10 +124,11 @@ SurfaceInstance::Setup(const Ptr<Surface>& surface)
         // specially handle default values which are strings
         if (val.value.GetType() == Util::Variant::String)
         {
-            Ptr<Resources::ManagedTexture> tex = Resources::ResourceManager::Instance()->CreateManagedResource(CoreGraphics::Texture::RTTI, val.value.GetString() + NEBULA3_TEXTURE_EXTENSION, NULL, true).downcast<Resources::ManagedTexture>();
+			Resources::ResourceId tex = Resources::CreateResource(val.value.GetString() + NEBULA3_TEXTURE_EXTENSION);
+            //Ptr<Resources::ManagedTexture> tex = Resources::ResourceManager::Instance()->CreateManagedResource(CoreGraphics::Texture::RTTI, val.value.GetString() + NEBULA3_TEXTURE_EXTENSION, NULL, true).downcast<Resources::ManagedTexture>();
             //this->SetTexture(paramName, tex);
-            val.value.SetType(Util::Variant::Object);
-            val.value.SetObject(tex->GetTexture());
+            val.value.SetType(Util::Variant::UInt64);
+			val.value.SetUInt64(tex);
 			this->allocatedTextures.Append(tex);
         }
 
@@ -151,11 +152,11 @@ SurfaceInstance::Discard()
 	IndexT i;
 	for (i = 0; i < this->allocatedTextures.Size(); i++)
 	{
-		Resources::ResourceManager::Instance()->DiscardManagedResource(this->allocatedTextures[i].upcast<Resources::ManagedResource>());
+		Resources::DiscardResource(this->allocatedTextures[i]);
 	}
 	this->allocatedTextures.Clear();
     this->originalSurface->DiscardInstance(this);
-    this->originalSurface = 0;
+    this->originalSurface = nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -180,7 +181,7 @@ SurfaceInstance::Cleanup()
     this->constants.Clear();
     this->constantsByName.Clear();
 	this->managedTextures.Clear();
-	this->originalSurface = 0;
+	this->originalSurface = nullptr;
 
 	this->code = Materials::SurfaceName::InvalidSurfaceName;
 }
@@ -220,7 +221,7 @@ SurfaceInstance::SetTexture(const Util::StringAtom& param, const Ptr<CoreGraphic
 /**
 */
 void
-SurfaceInstance::SetTexture(const Util::StringAtom& param, const Ptr<Resources::ManagedTexture>& tex)
+SurfaceInstance::SetTexture(const Util::StringAtom& param, const Resources::ResourceId tex)
 {
     n_assert(param.IsValid());
     DeferredTextureBinding obj;

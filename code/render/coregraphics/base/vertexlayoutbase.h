@@ -11,7 +11,7 @@
     (C) 2007 Radon Labs GmbH
     (C) 2013-2016 Individual contributors, see AUTHORS file
 */
-#include "core/refcounted.h"
+#include "resources/resource.h"
 #include "coregraphics/vertexcomponent.h"
 #include "coregraphics/indexbuffer.h"
 
@@ -24,10 +24,11 @@ class VertexBuffer;
 //------------------------------------------------------------------------------
 namespace Base
 {
-class VertexLayoutBase : public Core::RefCounted
+class VertexLayoutBase : public Resources::Resource
 {
-    __DeclareClass(VertexLayoutBase);
 public:
+	struct VertexLayoutBaseInfo;
+
 	/// max number of vertex streams
 	static const IndexT MaxNumVertexStreams = 2;
 
@@ -37,9 +38,9 @@ public:
     virtual ~VertexLayoutBase();
     
     /// setup the vertex layout
-    void Setup(const Util::Array<CoreGraphics::VertexComponent>& c);
+    static void Setup(const Util::Array<CoreGraphics::VertexComponent>& c, VertexLayoutBaseInfo& baseInfo);
 	/// discard the vertex layout object
-	void Discard();
+	static void Discard();
     /// return true if valid has been setup
     bool IsValid() const;
 
@@ -61,11 +62,19 @@ public:
         
 	/// calculate byte size from component list
 	static SizeT CalculateByteSize(const Util::Array<CoreGraphics::VertexComponent>& c);
+	/// get sharing signature for a set of vertex components
+	static Util::String BuildSignature(const Util::Array<CoreGraphics::VertexComponent>& c);
+
+	struct VertexLayoutBaseInfo
+	{
+		Util::Array<CoreGraphics::VertexComponent> components;
+		SizeT vertexByteSize;
+		SizeT numUsedStreams;
+		bool usedStreams[MaxNumVertexStreams];
+	};
+
 protected:
     friend class VertexLayoutServerBase;
-
-    /// get sharing signature for a set of vertex components
-    static Util::String BuildSignature(const Util::Array<CoreGraphics::VertexComponent>& c);
 
 	Ptr<CoreGraphics::VertexBuffer> vertexStreams[2];
     Util::Array<CoreGraphics::VertexComponent> components;

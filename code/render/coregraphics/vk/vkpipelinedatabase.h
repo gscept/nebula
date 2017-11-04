@@ -52,7 +52,7 @@ public:
 	/// set subpass
 	void SetSubpass(uint32_t subpass);
 	/// set shader
-	void SetShader(const Ptr<VkShaderProgram>& program);
+	void SetShader(const uint32_t program);
 	/// set vertex layout
 	void SetVertexLayout(VkPipelineVertexInputStateCreateInfo* layout);
 	/// set input layout
@@ -65,7 +65,7 @@ private:
 	
 	Ptr<VkPass> currentPass;
 	uint32_t currentSubpass;
-	Ptr<VkShaderProgram> currentShaderProgram;
+	Resources::ResourceId currentShaderProgram;
 	VkPipelineVertexInputStateCreateInfo* currentVertexLayout;
 	VkPipelineInputAssemblyStateCreateInfo* currentInputAssemblyInfo;
 	StateLevel currentLevel;
@@ -84,7 +84,6 @@ private:
 	};
 	struct Tier1Node : public BaseNode
 	{
-		//Util::Dictionary<
 		Util::Dictionary<IndexT, Tier2Node*> children;
 	};
 	struct Tier2Node : public BaseNode
@@ -113,15 +112,5 @@ private:
 	Tier4Node* ct4;
 	Tier5Node* ct5;
 	VkPipeline currentPipeline;
-	//Util::Dictionary<Ptr<VkPass>, PassNode*> rootNodes;
-	/*Util::Dictionary<Ptr<VkPass>, IndexT> tier1;
-	Util::Dictionary<IndexT, Ptr<VkShaderProgram>> tier2;
-	Util::Dictionary<Ptr<VkShaderProgram>, VkPipelineVertexInputStateCreateInfo*> tier3;
-	IndexT tier3Iterator;
-	Util::Dictionary<VkPipelineVertexInputStateCreateInfo*, VkPipelineInputAssemblyStateCreateInfo*> tier4;
-	IndexT tier4Iterator;
-	Util::Dictionary<VkPipelineInputAssemblyStateCreateInfo*, VkPipeline> tier5;
-	IndexT tier5Iterator;
-	*/
 };
 } // namespace Vulkan

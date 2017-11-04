@@ -21,6 +21,8 @@ DepthStencilTargetBase::DepthStencilTargetBase() :
 	height(0),
 	isValid(false),    
 	inBeginPass(false),
+	resolveDepthTexture(Ids::InvalidId64),
+	resolveTextureResId(""),
 	clearDepth(1),
 	clearStencil(0),
 	clearFlags(0),
@@ -57,10 +59,10 @@ DepthStencilTargetBase::Discard()
 	n_assert(!this->inBeginPass);
 	this->isValid = false;
 
-	if (this->resolveDepthTexture.isvalid())
+	if (this->resolveDepthTexture != Ids::InvalidId64)
 	{
-		Resources::DiscardResource(this->resolveTextureResId);
-		this->resolveDepthTexture = nullptr;
+		Resources::DiscardResource(this->resolveDepthTexture);
+		this->resolveDepthTexture = Ids::InvalidId64;
 	}
 }
 

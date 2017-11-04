@@ -7,6 +7,15 @@
 #include "graphicscontext.h"
 #include "view.h"
 #include "stage.h"
+#include "coregraphics/memoryvertexbufferpool.h"
+#include "coregraphics/memoryindexbufferpool.h"
+#include "resources/resourcemanager.h"
+#include "coregraphics/coregraphics.h"
+#include "coregraphics/vertexsignaturepool.h"
+#include "coregraphics/texturepool.h"
+#include "coregraphics/shaderpool.h"
+#include "coregraphics/meshpool.h"
+#include "models/modelpool.h"
 
 namespace Graphics
 {
@@ -40,6 +49,25 @@ GraphicsServer::Open()
 	this->visServer = Visibility::VisibilityServer::Create();
 	this->timer = FrameSync::FrameSyncTimer::Create();
 	this->isOpen = true;
+
+	// register index and vertex buffer pools
+	Resources::ResourceManager::Instance()->RegisterMemoryPool(CoreGraphics::MemoryVertexBufferPool::RTTI);
+	Resources::ResourceManager::Instance()->RegisterMemoryPool(CoreGraphics::MemoryIndexBufferPool::RTTI);
+	Resources::ResourceManager::Instance()->RegisterMemoryPool(CoreGraphics::VertexSignaturePool::RTTI);
+	Resources::ResourceManager::Instance()->RegisterStreamPool("dds", CoreGraphics::TexturePool::RTTI);
+	Resources::ResourceManager::Instance()->RegisterStreamPool("shd", CoreGraphics::ShaderPool::RTTI);
+	Resources::ResourceManager::Instance()->RegisterStreamPool("n3", Models::ModelPool::RTTI);
+	Resources::ResourceManager::Instance()->RegisterStreamPool("nvx", CoreGraphics::MeshPool::RTTI);
+
+	// setup internal pool pointers for convenient access (note, will also assert if texture, shader, model or mesh pools is not registered yet!)
+	CoreGraphics::vboPool = Resources::GetMemoryPool<CoreGraphics::MemoryVertexBufferPool>();
+	CoreGraphics::iboPool = Resources::GetMemoryPool<CoreGraphics::MemoryIndexBufferPool>();
+	CoreGraphics::layoutPool = Resources::GetMemoryPool<CoreGraphics::VertexSignaturePool>();
+
+	CoreGraphics::texturePool = Resources::GetStreamPool<CoreGraphics::TexturePool>();
+	CoreGraphics::shaderPool = Resources::GetStreamPool<CoreGraphics::ShaderPool>();
+	CoreGraphics::modelPool = Resources::GetStreamPool<CoreGraphics::ModelPool>();
+	CoreGraphics::meshPool = Resources::GetStreamPool<CoreGraphics::MeshPool>();
 }
 
 //------------------------------------------------------------------------------

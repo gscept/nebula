@@ -32,6 +32,8 @@ public:
         Void,
         Int,
         UInt,
+		Int64,
+		UInt64,
         Float,
         Bool,
         Float2,
@@ -60,6 +62,10 @@ public:
     Variant(int rhs);
 	/// uint constructor
 	Variant(uint rhs);
+	/// int64 constructor
+	Variant(int64_t rhs);
+	/// uint64 constructor
+	Variant(uint64_t rhs);
     /// float constructor
     Variant(float rhs);
     /// bool constructor
@@ -120,6 +126,10 @@ public:
     void operator=(int val);
 	/// uint assignment operator
 	void operator=(uint val);
+	/// int assignment operator
+	void operator=(int64_t val);
+	/// uint assignment operator
+	void operator=(uint64_t val);
     /// float assignment operator
     void operator=(float val);
     /// bool assigment operator
@@ -169,6 +179,10 @@ public:
     bool operator==(int rhs) const;
 	/// uint equality operator
 	bool operator==(uint rhs) const;
+	/// int equality operator
+	bool operator==(int64_t rhs) const;
+	/// uint equality operator
+	bool operator==(uint64_t rhs) const;
     /// float equality operator
     bool operator==(float rhs) const;
     /// bool equality operator
@@ -194,6 +208,10 @@ public:
     bool operator!=(int rhs) const;
 	/// uint inequality operator
 	bool operator!=(uint rhs) const;
+	/// int inequality operator
+	bool operator!=(int64_t rhs) const;
+	/// uint inequality operator
+	bool operator!=(uint64_t rhs) const;
     /// float inequality operator
     bool operator!=(float rhs) const;
     /// bool inequality operator
@@ -229,7 +247,15 @@ public:
 	/// set unsigned integer content
 	void SetUInt(uint val);
 	/// get unsigned integer content
-	int GetUInt() const;
+	uint GetUInt() const;
+	/// set integer content
+	void SetInt64(int64_t val);
+	/// get integer content
+	int64_t GetInt64() const;
+	/// set unsigned integer content
+	void SetUInt64(uint64_t val);
+	/// get unsigned integer content
+	uint64_t GetUInt64() const;
     /// set float content
     void SetFloat(float val);
     /// get float content
@@ -334,6 +360,8 @@ private:
     {
         int i;
 		uint u;
+		int64_t i64;
+		uint64_t u64;
         bool b;
         float f[4];
         Math::matrix44* m;
@@ -593,6 +621,28 @@ inline
 Variant::Variant(uint rhs) :
 type(UInt),
 	u(rhs)
+{
+	// empty
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline
+Variant::Variant(int64_t rhs) :
+	type(Int64),
+	i64(rhs)
+{
+	// empty
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline
+Variant::Variant(uint64_t rhs) :
+	type(UInt64),
+	u64(rhs)
 {
 	// empty
 }
@@ -924,6 +974,28 @@ Variant::operator=(uint val)
 	this->Delete();
 	this->type = UInt;
 	this->u = val;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+Variant::operator=(int64_t val)
+{
+	this->Delete();
+	this->type = Int;
+	this->i64 = val;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+Variant::operator=(uint64_t val)
+{
+	this->Delete();
+	this->type = UInt;
+	this->u64 = val;
 }
 
 //------------------------------------------------------------------------------
@@ -1274,6 +1346,10 @@ Variant::operator==(const Variant& rhs) const
                 return (this->i == rhs.i);
 			case UInt:
 				return (this->u == rhs.u);
+			case Int64:
+				return (this->i64 == rhs.i64);
+			case UInt64:
+				return (this->u64 == rhs.u64);
             case Bool:
                 return (this->b == rhs.b);
             case Float:
@@ -1323,6 +1399,10 @@ Variant::operator>(const Variant& rhs) const
             return (this->i > rhs.i);
 		case UInt:
 			return (this->u > rhs.u);
+		case Int64:
+			return (this->i64 > rhs.i64);
+		case UInt64:
+			return (this->u64 > rhs.u64);
         case Bool:
             return (this->b > rhs.b);
         case Float:
@@ -1368,6 +1448,10 @@ Variant::operator<(const Variant& rhs) const
             return (this->i < rhs.i);
 		case UInt:
 			return (this->u < rhs.u);
+		case Int64:
+			return (this->i64 < rhs.i64);
+		case UInt64:
+			return (this->u64 < rhs.u64);
         case Bool:
             return (this->b < rhs.b);
         case Float:
@@ -1516,6 +1600,26 @@ Variant::operator==(uint rhs) const
 	n_assert(UInt == this->type);
 	return (this->u == rhs);
 }
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline bool
+Variant::operator==(int64_t rhs) const
+{
+	n_assert(Int == this->type);
+	return (this->i64 == rhs);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline bool
+Variant::operator==(uint64_t rhs) const
+{
+	n_assert(UInt == this->type);
+	return (this->u64 == rhs);
+}
 //------------------------------------------------------------------------------
 /**
 */
@@ -1629,6 +1733,25 @@ Variant::operator!=(uint rhs) const
 	return (this->u != rhs);
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+inline bool
+Variant::operator!=(int64_t rhs) const
+{
+	n_assert(Int == this->type);
+	return (this->i64 != rhs);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline bool
+Variant::operator!=(uint64_t rhs) const
+{
+	n_assert(UInt == this->type);
+	return (this->u64 != rhs);
+}
 //------------------------------------------------------------------------------
 /**
 */
@@ -1753,7 +1876,7 @@ Variant::GetInt() const
 //------------------------------------------------------------------------------
 /**
 */
-inline int
+inline uint
 Variant::GetUInt() const
 {
 	n_assert(UInt == this->type);
@@ -1820,8 +1943,8 @@ Variant::GetString() const
 //------------------------------------------------------------------------------
 /**
 */
-inline void 
-Variant::SetFloat2( const Math::float2& val )
+inline void
+Variant::SetFloat2(const Math::float2& val)
 {
 	*this = val;
 }

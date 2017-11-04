@@ -10,7 +10,6 @@
 
 namespace Base
 {
-__ImplementClass(Base::VertexLayoutBase, 'VXLB', Core::RefCounted);
 
 using namespace CoreGraphics;
 using namespace Util;
@@ -68,19 +67,19 @@ VertexLayoutBase::CalculateByteSize(const Util::Array<CoreGraphics::VertexCompon
 /**
 */
 void
-VertexLayoutBase::Setup(const Array<VertexComponent>& comps)
+VertexLayoutBase::Setup(const Array<VertexComponent>& comps, VertexLayoutBaseInfo& baseInfo)
 {
     n_assert(comps.Size() > 0);
     n_assert(!this->IsValid());
-    n_assert(0 == this->vertexByteSize);
-    this->components = comps;
+    n_assert(0 == baseInfo.vertexByteSize);
+	baseInfo.components = comps;
     IndexT i;
-    for (i = 0; i < comps.Size(); i++)
+    for (i = 0; i < baseInfo.components.Size(); i++)
     {
         // update the components byte offset while we're at it
-        this->components[i].SetByteOffset(this->vertexByteSize);
-        this->vertexByteSize += comps[i].GetByteSize();
-		this->usedStreams[this->components[i].streamIndex] = true;
+		baseInfo.components[i].SetByteOffset(baseInfo.vertexByteSize);
+		baseInfo.vertexByteSize += comps[i].GetByteSize();
+		baseInfo.usedStreams[baseInfo.components[i].streamIndex] = true;
     }
 }
 

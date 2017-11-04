@@ -21,8 +21,8 @@ MaterialFeature::MaterialFeature() :
 //------------------------------------------------------------------------------
 /**
 */
-MaterialFeature::Mask 
-MaterialFeature::StringToMask( const Util::String& str )
+MaterialFeature::Mask
+MaterialFeature::StringToMask(const Util::String& str)
 {
 	Mask mask = 0;
 
@@ -59,8 +59,8 @@ MaterialFeature::StringToMask( const Util::String& str )
 //------------------------------------------------------------------------------
 /**
 */
-Util::String 
-MaterialFeature::MaskToString( Mask mask )
+Util::String
+MaterialFeature::MaskToString(Mask mask)
 {
 	String str;
 	IndexT bitIndex;

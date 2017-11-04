@@ -97,13 +97,12 @@ public:
 	void SwapBuffers();
 
 	/// get texture
-	const Ptr<CoreGraphics::Texture>& GetTexture() const;
+	const Resources::ResourceId GetTexture() const;
 	/// get texture resource id
 	const Resources::ResourceName& GetResourceName() const;
 protected:
 	Ptr<CoreGraphics::Window> window;
 	Resources::ResourceId textureId;
-	Ptr<CoreGraphics::Texture> texture;
 	//Ptr<CoreGraphics::Texture> texture;
 	CoreGraphics::PixelFormat::Code format;
 	CoreGraphics::Texture::Type type;
@@ -119,6 +118,7 @@ protected:
 	SizeT height;
 	SizeT depth;
 	SizeT layers;
+	SizeT mips;
 	float widthScale;
 	float heightScale;
 	float depthScale;
@@ -287,10 +287,10 @@ RenderTextureBase::SetInPass(const bool b)
 //------------------------------------------------------------------------------
 /**
 */
-inline const Ptr<CoreGraphics::Texture>&
+inline const Resources::ResourceId
 RenderTextureBase::GetTexture() const
 {
-	return this->texture;
+	return this->textureId;
 }
 
 //------------------------------------------------------------------------------

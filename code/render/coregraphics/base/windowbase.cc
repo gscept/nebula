@@ -68,7 +68,7 @@ WindowBase::Close()
 	{
 		this->defaultRenderTexture->Discard();
 	}
-	this->defaultRenderTexture = 0;
+	this->defaultRenderTexture = nullptr;
 }
 
 //------------------------------------------------------------------------------

@@ -78,9 +78,9 @@ public:
 	virtual ~Material();
 
 	/// sets the name for the material
-	void SetName(const Util::StringAtom& name);
+	void SetName(const Resources::ResourceName& name);
 	/// gets the name for the material
-	const Util::StringAtom& GetName() const;
+	const Resources::ResourceName& GetName() const;
 	/// set the group this material belongs to
 	void SetGroup(const Util::StringAtom& group);
 	/// get the group this material belongs to
@@ -146,7 +146,7 @@ private:
 
 	bool isVirtual;
 	Util::Array<Ptr<Material>> inheritedMaterials;
-	Util::StringAtom name;
+	Resources::ResourceName name;
 	Util::StringAtom group;
 	Util::String description;
 	MaterialFeature::Mask type;
@@ -162,7 +162,7 @@ private:
 /**
 */
 inline void
-Material::SetName(const Util::StringAtom& name)
+Material::SetName(const Resources::ResourceName& name)
 {
 	this->name = name;
 }
@@ -170,7 +170,7 @@ Material::SetName(const Util::StringAtom& name)
 //------------------------------------------------------------------------------
 /**
 */
-inline const Util::StringAtom& 
+inline const Resources::ResourceName&
 Material::GetName() const
 {
 	return this->name;

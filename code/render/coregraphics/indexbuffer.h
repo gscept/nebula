@@ -12,10 +12,9 @@
 #include "coregraphics/d3d11/d3d11indexbuffer.h"
 namespace CoreGraphics
 {
-	class IndexBuffer : public Direct3D11::D3D11IndexBuffer
-	{
-		__DeclareClass(IndexBuffer);
-	};
+class IndexBuffer : public Direct3D11::D3D11IndexBuffer
+{
+};
 }
 #elif __OGL4__
 #include "coregraphics/ogl4/ogl4indexbuffer.h"
@@ -23,7 +22,6 @@ namespace CoreGraphics
 {
 class IndexBuffer : public OpenGL4::OGL4IndexBuffer
 {
-	__DeclareClass(IndexBuffer);
 };
 }
 #elif __VULKAN__
@@ -32,7 +30,6 @@ namespace CoreGraphics
 {
 class IndexBuffer : public Vulkan::VkIndexBuffer
 {
-	__DeclareClass(IndexBuffer);
 };
 }
 #elif __DX9__
@@ -41,7 +38,6 @@ namespace CoreGraphics
 {
 class IndexBuffer : public Direct3D9::D3D9IndexBuffer
 {
-    __DeclareClass(IndexBuffer);
 };
 }
 #else

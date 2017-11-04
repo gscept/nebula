@@ -14,6 +14,8 @@
 #include "vkrenderdevice.h"
 #include "vkutilities.h"
 #include "vkscheduler.h"
+#include "math/scalar.h"
+#include "vkshaderserver.h"
 namespace Vulkan
 {
 
@@ -40,16 +42,30 @@ VkTexturePool::~VkTexturePool()
 
 //------------------------------------------------------------------------------
 /**
-	FIXME: use transfer queue to update texture asynchronously.
 */
-bool
-VkTexturePool::SetupResourceFromStream(const Ptr<IO::Stream>& stream)
+void
+VkTexturePool::Setup()
+{
+	ResourceStreamPool::Setup();
+	this->placeholderResourceId = "mdl:system/placeholder.dds";
+	this->errorResourceId = "mdl:system/error.dds";
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+ResourcePool::LoadStatus
+VkTexturePool::Load(const Ids::Id24 res, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream)
 {
 	n_assert(stream.isvalid());
 	n_assert(stream->CanBeMapped());
-	n_assert(this->resource->IsA(Texture::RTTI));
-	const Ptr<Texture>& res = this->resource.downcast<Texture>();
-	n_assert(!res->IsLoaded());
+	n_assert(!this->GetState(res) == Resources::Resource::Pending);
+
+	/// during the load-phase, we can safetly get the structs
+	this->EnterGet();
+	VkTexture::RuntimeInfo& runtimeInfo = this->Get<0>(res);
+	VkTexture::LoadInfo& loadInfo = this->Get<1>(res);
+	this->LeaveGet();
 
 	stream->SetAccessMode(Stream::ReadAccess);
 	if (stream->Open())
@@ -110,15 +126,13 @@ VkTexturePool::SetupResourceFromStream(const Ptr<IO::Stream>& stream)
 			NULL,
 			VK_IMAGE_LAYOUT_UNDEFINED
 		};
-		VkImage img;
-		VkResult stat = vkCreateImage(VkRenderDevice::dev, &info, NULL, &img);
+		VkResult stat = vkCreateImage(VkRenderDevice::dev, &info, NULL, &loadInfo.img);
 		n_assert(stat == VK_SUCCESS);
 
 		// allocate memory backing
-		VkDeviceMemory mem;
 		uint32_t alignedSize;
-		VkUtilities::AllocateImageMemory(img, mem, VkMemoryPropertyFlagBits(0), alignedSize);
-		vkBindImageMemory(VkRenderDevice::dev, img, mem, 0);
+		VkUtilities::AllocateImageMemory(loadInfo.img, loadInfo.mem, VkMemoryPropertyFlagBits(0), alignedSize);
+		vkBindImageMemory(VkRenderDevice::dev, loadInfo.img, loadInfo.mem, 0);
 
 		VkScheduler* scheduler = VkScheduler::Instance();
 
@@ -129,9 +143,9 @@ VkTexturePool::SetupResourceFromStream(const Ptr<IO::Stream>& stream)
 		subres.baseMipLevel = 0;
 		subres.layerCount = info.arrayLayers;
 		subres.levelCount = info.mipLevels;
-		scheduler->PushImageLayoutTransition(VkDeferredCommand::Transfer, VkUtilities::ImageMemoryBarrier(img, subres, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
+		scheduler->PushImageLayoutTransition(VkDeferredCommand::Transfer, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
 		uint32_t remainingBytes = alignedSize;
-		
+
 		// now load texture by walking through all images and mips
 		ILuint i;
 		ILuint j;
@@ -168,7 +182,7 @@ VkTexturePool::SetupResourceFromStream(const Ptr<IO::Stream>& stream)
 					info.extent.depth = 1;
 
 					// push a deferred image update, since we may not be within a frame
-					scheduler->PushImageUpdate(img, info, j, i, size, (uint32_t*)buf);
+					scheduler->PushImageUpdate(loadInfo.img, info, j, i, size, (uint32_t*)buf);
 				}
 			}
 		}
@@ -195,14 +209,14 @@ VkTexturePool::SetupResourceFromStream(const Ptr<IO::Stream>& stream)
 				info.extent.depth = 1;
 
 				// push a deferred image update, since we may not be within a frame
-				scheduler->PushImageUpdate(img, info, j, 0, size, (uint32_t*)buf);
+				scheduler->PushImageUpdate(loadInfo.img, info, j, 0, size, (uint32_t*)buf);
 			}
-		}	
+		}
 
 		// transition to something readable by shaders
 		VkClearColorValue val = { 1, 0, 0, 1 };
-		scheduler->PushImageLayoutTransition(VkDeferredCommand::Transfer, VkUtilities::ImageMemoryBarrier(img, subres, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
-		scheduler->PushImageOwnershipChange(VkDeferredCommand::Transfer, VkUtilities::ImageMemoryBarrier(img, subres, VkDeferredCommand::Transfer, VkDeferredCommand::Graphics, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+		scheduler->PushImageLayoutTransition(VkDeferredCommand::Transfer, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+		scheduler->PushImageOwnershipChange(VkDeferredCommand::Transfer, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VkDeferredCommand::Transfer, VkDeferredCommand::Graphics, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
 
 		ilDeleteImage(image);
 
@@ -226,40 +240,33 @@ VkTexturePool::SetupResourceFromStream(const Ptr<IO::Stream>& stream)
 		VkImageViewCreateInfo viewCreate =
 		{
 			VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-			NULL,
+			nullptr,
 			0,
-			img,
+			loadInfo.img,
 			viewType,
 			vkformat,
 			//VK_FORMAT_R8G8B8A8_UNORM,
 			VkTypes::AsVkMapping(format),
 			subres
 		};
-		VkImageView view;
-		stat = vkCreateImageView(VkRenderDevice::dev, &viewCreate, NULL, &view);
+		stat = vkCreateImageView(VkRenderDevice::dev, &viewCreate, NULL, &runtimeInfo.view);
 		n_assert(stat == VK_SUCCESS);
 
-		// setup texture
-		if (cube)
-		{
-			res->SetupFromVkCubeTexture(img, mem, view, width, height, VkTypes::AsNebulaPixelFormat(vkformat), mips);
-		}
-		else if (depth > 1)
-		{
-			res->SetupFromVkVolumeTexture(img, mem, view, width, height, depth, VkTypes::AsNebulaPixelFormat(vkformat), mips);
-		}
-		else
-		{
-			res->SetupFromVkTexture(img, mem, view, width, height, VkTypes::AsNebulaPixelFormat(vkformat), mips);
-		}
+		loadInfo.dims.width = width;
+		loadInfo.dims.height = height;
+		loadInfo.dims.depth = depth;
+		loadInfo.mips = Math::n_max(mips, 1u);
+		loadInfo.format = VkTypes::AsNebulaPixelFormat(vkformat);
+		runtimeInfo.type = cube ? Texture::TextureCube : depth > 1 ? Texture::Texture3D : Texture::Texture2D;
+		runtimeInfo.bind = VkShaderServer::Instance()->RegisterTexture(runtimeInfo.view, runtimeInfo.type);
 
 		stream->Unmap();
 		stream->Close();
-		return true;
-
+		return ResourcePool::Success;
 	}
 
-	return false;
+	return ResourcePool::Failed;
 }
+
 
 } // namespace Vulkan

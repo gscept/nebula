@@ -568,7 +568,7 @@ float4::w() const
 /**
 */
 __forceinline scalar&
-float4::operator[]( const int index )
+float4::operator[](const int index)
 {
 	n_assert(index < 4);
 	return this->vec.m128_f32[index];
@@ -627,7 +627,6 @@ float4::length3() const
 	return float4::unpack_x(DirectX::XMVector3Length(this->vec));
 }
 
-
 //------------------------------------------------------------------------------
 /**
 */
@@ -637,7 +636,6 @@ float4::lengthsq() const
     return float4::unpack_x(DirectX::XMVector4LengthSq(this->vec));
 }
 
-
 //------------------------------------------------------------------------------
 /**
 */
@@ -646,6 +644,7 @@ float4::lengthsq3() const
 {
 	return float4::unpack_x(DirectX::XMVector3LengthSq(this->vec));
 }
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -663,7 +662,6 @@ float4::multiply(const float4 &v0, const float4 &v1)
 {
     return DirectX::XMVectorMultiply(v0.vec, v1.vec);
 }
-
 
 //------------------------------------------------------------------------------
 /**
@@ -1054,6 +1052,7 @@ float4::unpack_w(DirectX::XMVECTOR v)
 	DirectX::XMVectorGetWPtr(&w, v);
     return w;
 }
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -1144,6 +1143,7 @@ float4::floor(const float4 &v)
 {
 	return float4(DirectX::XMVectorFloor(v.vec));
 }
+
 //------------------------------------------------------------------------------
 /**
 */

@@ -38,8 +38,7 @@ private:
 	/// the database is as such, surface name -> (mesh resource id -> primitive group)
 	using SurfaceMeshInstanceDatabase = Util::Dictionary<
 		Materials::SurfaceName::Code, Util::Dictionary<
-		Resources::ResourceId, Util::Dictionary<
-		NodeInstanceId, NodeInstance>
+		Resources::ResourceId, Util::Array<NodeInstance>
 		>>;
 
 	SurfaceMeshInstanceDatabase database;

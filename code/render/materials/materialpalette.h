@@ -28,31 +28,31 @@ public:
 	void Discard();
 
 	/// set the name of the frame shader
-	void SetName(const Resources::ResourceId& id);
+	void SetName(const Resources::ResourceName& id);
 	/// get the name of the frame shader
-	const Resources::ResourceId& GetName() const;
+	const Resources::ResourceName& GetName() const;
 	/// add material
 	void AddMaterial(const Ptr<Material>& material);
 	/// get material by index
 	const Ptr<Material>& GetMaterialByIndex(const IndexT index) const;
 	/// get material by name
-	Ptr<Material> GetMaterialByName(const Resources::ResourceId& resource) const;
+	Ptr<Material> GetMaterialByName(const Resources::ResourceName& resource) const;
 	/// returns true if palette contains material
-	bool HasMaterial(const Resources::ResourceId& resource) const;
+	bool HasMaterial(const Resources::ResourceName& resource) const;
 	/// get the list of materials
 	const Util::Array<Ptr<Material> >& GetMaterials() const;
 private:
 	Util::Array<Ptr<Material> > materials;
-	Util::Dictionary<Resources::ResourceId, Ptr<Material> > materialsByName;
+	Util::Dictionary<Resources::ResourceName, Ptr<Material> > materialsByName;
 
-	Resources::ResourceId name;
+	Resources::ResourceName name;
 };
 
 //------------------------------------------------------------------------------
 /**
 */
 inline void
-MaterialPalette::SetName(const Resources::ResourceId& resId)
+MaterialPalette::SetName(const Resources::ResourceName& resId)
 {
 	this->name = resId;
 }
@@ -60,7 +60,7 @@ MaterialPalette::SetName(const Resources::ResourceId& resId)
 //------------------------------------------------------------------------------
 /**
 */
-inline const Resources::ResourceId&
+inline const Resources::ResourceName&
 MaterialPalette::GetName() const
 {
 	return this->name;
@@ -88,7 +88,7 @@ MaterialPalette::GetMaterialByIndex(const IndexT index) const
 /**
 */
 inline Ptr<Material>
-MaterialPalette::GetMaterialByName(const Resources::ResourceId& resource) const
+MaterialPalette::GetMaterialByName(const Resources::ResourceName& resource) const
 {
 	for (int i = 0; i < this->materials.Size(); i++)
 	{
@@ -103,7 +103,7 @@ MaterialPalette::GetMaterialByName(const Resources::ResourceId& resource) const
 /**
 */
 inline bool
-MaterialPalette::HasMaterial(const Resources::ResourceId& resource) const
+MaterialPalette::HasMaterial(const Resources::ResourceName& resource) const
 {
 	for (int i = 0; i < this->materials.Size(); i++)
 	{

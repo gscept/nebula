@@ -29,7 +29,7 @@ Util::Stack<IO::URI> MaterialLoader::LoadingStack;
 /**
 */
 Ptr<MaterialPalette>
-MaterialLoader::LoadMaterialPalette(const Resources::ResourceId& name, const IO::URI& uri, bool optional)
+MaterialLoader::LoadMaterialPalette(const Resources::ResourceName& name, const IO::URI& uri, bool optional)
 {
 	Ptr<MaterialPalette> palette;
 	Ptr<Stream> stream = IoServer::Instance()->CreateStream(uri);
