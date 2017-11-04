@@ -90,9 +90,9 @@ public:
     /// begin rendering a batch
     void BeginBatch(CoreGraphics::FrameBatchType::Code batchType);
     /// set the current vertex stream source
-    void SetStreamVertexBuffer(IndexT streamIndex, const Ptr<CoreGraphics::VertexBuffer>& vb, IndexT offsetVertexIndex);
+    void SetStreamVertexBuffer(IndexT streamIndex, CoreGraphics::VertexBuffer* vb, IndexT offsetVertexIndex);
     /// get currently set vertex buffer
-    const Ptr<CoreGraphics::VertexBuffer>& GetStreamVertexBuffer(IndexT streamIndex) const;
+    CoreGraphics::VertexBuffer* GetStreamVertexBuffer(IndexT streamIndex) const;
     /// get currently set vertex stream offset
     IndexT GetStreamVertexOffset(IndexT streamIndex) const;
     /// set current vertex layout
@@ -100,9 +100,9 @@ public:
     /// get current vertex layout
     const Ptr<CoreGraphics::VertexLayout>& GetVertexLayout() const;
     /// set current index buffer
-    void SetIndexBuffer(const Ptr<CoreGraphics::IndexBuffer>& ib);
+    void SetIndexBuffer(CoreGraphics::IndexBuffer* ib);
     /// get current index buffer
-    const Ptr<CoreGraphics::IndexBuffer>& GetIndexBuffer() const;
+    CoreGraphics::IndexBuffer* GetIndexBuffer() const;
 	/// set the type of topology to be used
 	void SetPrimitiveTopology(const CoreGraphics::PrimitiveTopology::Code& topo);
 	/// get the type of topology used
@@ -201,10 +201,10 @@ protected:
     
 	static Util::Queue<__BufferLockData> bufferLockQueue;
     Util::Array<Ptr<CoreGraphics::RenderEventHandler> > eventHandlers;
-    Ptr<CoreGraphics::VertexBuffer> streamVertexBuffers[VertexLayoutBase::MaxNumVertexStreams];
+    CoreGraphics::VertexBuffer* streamVertexBuffers[VertexLayoutBase::MaxNumVertexStreams];
 	IndexT streamVertexOffsets[VertexLayoutBase::MaxNumVertexStreams];
     Ptr<CoreGraphics::VertexLayout> vertexLayout;
-    Ptr<CoreGraphics::IndexBuffer> indexBuffer;
+    CoreGraphics::IndexBuffer* indexBuffer;
 	CoreGraphics::PrimitiveTopology::Code primitiveTopology;
     CoreGraphics::PrimitiveGroup primitiveGroup;
 	Ptr<CoreGraphics::Pass> pass;
@@ -225,6 +225,24 @@ protected:
     _declare_counter(RenderDeviceNumPrimitives);
 	_declare_counter(RenderDeviceNumDrawCalls);
 };
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+RenderDeviceBase::SetIndexBuffer(IndexBuffer* ib)
+{
+	this->indexBuffer = ib;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline IndexBuffer*
+RenderDeviceBase::GetIndexBuffer() const
+{
+	return this->indexBuffer;
+}
 
 //------------------------------------------------------------------------------
 /**

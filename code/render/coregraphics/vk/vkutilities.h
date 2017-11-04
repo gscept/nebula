@@ -53,7 +53,7 @@ public:
 	static void ImageUpdate(const VkImage& img, const VkImageCreateInfo& info, uint32_t mip, uint32_t face, VkDeviceSize size, uint32_t* data);
 
 	/// perform image read-back, and saves to buffer (SLOW!)
-	static void ReadImage(const Ptr<VkTexture>& tex, VkImageCopy copy, uint32_t& outMemSize, VkDeviceMemory& outMem, VkBuffer& outBuffer);
+	static void ReadImage(const VkImage tex, CoreGraphics::PixelFormat::Code format, Base::TextureBase::Dimensions dims, Base::TextureBase::Type type, VkImageCopy copy, uint32_t& outMemSize, VkDeviceMemory& outMem, VkBuffer& outBuffer);
 	/// perform image write-back, transitions data from buffer to image (SLOW!)
 	static void WriteImage(const VkBuffer& srcImg, const VkImage& dstImg, VkImageCopy copy);
 	/// helper to begin immediate transfer

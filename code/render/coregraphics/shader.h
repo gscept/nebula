@@ -15,7 +15,6 @@ namespace CoreGraphics
 {
 class Shader : public Direct3D11::D3D11Shader
 {
-	__DeclareClass(Shader);
 };
 }
 #elif __OGL4__
@@ -24,7 +23,6 @@ namespace CoreGraphics
 {
 class Shader : public OpenGL4::OGL4Shader
 {
-	__DeclareClass(Shader);
 };
 }
 #elif __VULKAN__
@@ -33,7 +31,6 @@ namespace CoreGraphics
 {
 class Shader : public Vulkan::VkShader
 {
-	__DeclareClass(Shader);
 };
 }
 #elif __DX9__
@@ -42,7 +39,6 @@ namespace CoreGraphics
 {
 class Shader : public Direct3D9::D3D9Shader
 {
-    __DeclareClass(Shader);
 };
 }
 #else

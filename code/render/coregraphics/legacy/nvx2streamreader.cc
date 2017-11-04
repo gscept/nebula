@@ -170,6 +170,8 @@ Nvx2StreamReader::ReadPrimitiveGroups()
         primGroup.SetNumIndices(group->numTriangles * 3);
         this->primGroups.Append(primGroup);
 
+
+
         // set top next group
         group++;
     }
@@ -275,7 +277,7 @@ Nvx2StreamReader::SetupVertexBuffer()
     n_assert(this->vertexComponents.Size() > 0);
 
 	// create vertex buffer
-	this->vbo = Resources::ReserveResource("", this->tag, VertexBuffer::RTTI);
+	this->vbo = Resources::ReserveResource("", this->tag, MemoryVertexBufferPool::RTTI);
 
 	Base::MemoryVertexBufferPoolBase::VertexBufferLoadInfo vboInfo;
 	vboInfo.access = this->access;
@@ -301,7 +303,7 @@ Nvx2StreamReader::SetupIndexBuffer()
     n_assert(this->numIndices > 0);
     
 	// create index buffer
-	this->ibo = Resources::ReserveResource("", this->tag, IndexBuffer::RTTI);
+	this->ibo = Resources::ReserveResource("", this->tag, MemoryIndexBufferPool::RTTI);
 
 	Base::MemoryIndexBufferPoolBase::IndexBufferLoadInfo iboInfo;
 	iboInfo.access = this->access;

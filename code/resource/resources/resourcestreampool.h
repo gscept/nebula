@@ -58,17 +58,22 @@ public:
 	/// discard resource loader
 	virtual void Discard();
 
+	/// create a container with a tag associated with it, if no tag is provided, the resource will be untagged
+	Resources::ResourceId CreateResource(const ResourceName& res, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed, bool immediate);
+	/// discard container
+	void DiscardResource(const Resources::ResourceId id);
+	/// discard all resources associated with a tag
+	void DiscardByTag(const Util::StringAtom& tag);
+
 protected:
 	friend class ResourceManager;
-
-
 
 	/// struct for pending resources which are about to be loaded
 	struct _PendingResourceLoad
 	{
 		Ids::Id64 id;
 		Ids::Id32 pid;
-		Ptr<Resource> res;
+		Ids::Id24 res;
 		Util::StringAtom tag;
 		bool inflight;
 		bool immediate;
@@ -90,17 +95,8 @@ protected:
 		std::function<void(const Resources::ResourceId)> failed;
 	};
 
-	/// create a container with a tag associated with it, if no tag is provided, the resource will be untagged
-	Resources::ResourceId CreateResource(const ResourceName& res, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed, bool immediate);
-	/// discard container
-	void DiscardResource(const Resources::ResourceId id);
-	/// discard all resources associated with a tag
-	void DiscardByTag(const Util::StringAtom& tag);
-
 	/// perform actual load, override in subclass
-	virtual LoadStatus Load(const Ptr<Resources::Resource>& res, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream) = 0;
-	/// unload resource
-	virtual void Unload(const Ptr<Resources::Resource>& res) = 0;
+	virtual LoadStatus Load(const Ids::Id24 id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream) = 0;
 
 	/// update the resource loader, this is done every frame
 	void Update(IndexT frameIndex);
@@ -114,8 +110,8 @@ protected:
 	Util::StringAtom placeholderResourceId;
 	Util::StringAtom errorResourceId;
 
-	Ptr<Resource> placeholderResource;
-	Ptr<Resource> errorResource;
+	Ids::Id32 placeholderResource;
+	Ids::Id32 errorResource;
 
 	bool async;
 
@@ -127,9 +123,6 @@ protected:
 	Ids::IdPool pendingLoadPool;
 	Util::Array<_PendingResourceUnload> pendingUnloads;
 	Util::FixedArray<Util::Array<_Callbacks>> callbacks;
-
-	// 
-
 
 	/// async section to sync callbacks and pending list with thread
 	Threading::CriticalSection asyncSection;

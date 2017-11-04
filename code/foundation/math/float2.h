@@ -62,7 +62,7 @@ public:
     scalar length() const;
     /// return squared length of vector
     scalar lengthsq() const;
-    /// return compononent-wise absolute
+    /// return component-wise absolute
     float2 abs() const;    
     /// return true if any components are non-zero
     bool any() const;

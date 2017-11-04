@@ -18,14 +18,15 @@
 #include "util/stringatom.h"
 #include "io/binaryreader.h"
 #include "math/bbox.h"
+#include "ids/id.h"
+#include "coregraphics/coregraphics.h"
 namespace Models
 {
-class ModelLoader;
+class ModelPool;
 class ModelServer;
 class Model;
-class ModelNode : public Core::RefCounted
+class ModelNode
 {
-	__DeclareClass(ModelNode);
 public:
 	/// constructor
 	ModelNode();
@@ -33,25 +34,44 @@ public:
 	virtual ~ModelNode();
 
 	/// return constant reference to children
-	const Util::Array<Ptr<ModelNode>>& GetChildren() const;
+	const Util::Array<Ids::Id32>& GetChildren() const;
+	/// create an instance of a node, override in the leaf classes
+	virtual Ids::Id32 CreateInstance() const;
 
 protected:
-	friend class ModelLoader;
+	friend class ModelPool;
 	friend class ModelContext;
 
 	/// load data
-	virtual bool Load(const Util::FourCC& tag, const Ptr<Models::ModelLoader>& loader, const Ptr<IO::BinaryReader>& reader);
+	virtual bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader);
+	/// unload data
+	virtual void Unload();
+	/// call when model node data is finished loading (not accounting for secondary resources)
+	void OnFinishedLoading();
+
+	// base class for instances
+	struct Instance
+	{
+		Ids::Id32 parent;	// id of parent
+		Ids::Id32 node;			// id of resource-level node
+	};
+
+	/// setup node
+	virtual void Setup();
+	/// discard node
+	virtual void Discard();
 
 	Util::StringAtom name;
-	Ptr<ModelNode> parent;
-	Util::Array<Ptr<ModelNode>> children;
+	Ids::Id32 parent;
+	Ids::Id32 model;
+	Util::Array<Ids::Id32> children;
 	Math::bbox boundingBox;
 };
 
 //------------------------------------------------------------------------------
 /**
 */
-inline const Util::Array<Ptr<Models::ModelNode>>&
+inline const Util::Array<Ids::Id24>&
 ModelNode::GetChildren() const
 {
 	return this->children;

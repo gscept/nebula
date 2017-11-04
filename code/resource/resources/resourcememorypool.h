@@ -43,9 +43,8 @@ public:
 	void DiscardByTag(const Util::StringAtom& tag);
 
 	/// update reserved resource, the info struct is loader dependent (overload to implement resource deallocation)
-	virtual LoadStatus UpdateResource(const Resources::ResourceId id, void* info) = 0;
-	/// unload resource (overload to implement resource deallocation)
-	virtual void Unload(const Ptr<Resources::Resource>& res) = 0;
+	virtual LoadStatus UpdateResource(const Ids::Id24 id, void* info) = 0;
+
 
 private:
 	friend class ResourceManager;

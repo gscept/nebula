@@ -23,8 +23,6 @@
 #include "util/stringatom.h"
 #include "util/variant.h"
 #include "coregraphics/texture.h"
-#include "resources/managedtexture.h"
-#include "graphics/batchgroup.h"
 #include "material.h"
 
 namespace CoreGraphics

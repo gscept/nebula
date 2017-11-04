@@ -32,8 +32,11 @@ namespace Vulkan
 class VkShaderState : public Base::ShaderStateBase
 {
 	__DeclareClass(VkShaderState);
+	struct SetupInfo;
+	struct RuntimeInfo;
 public:
 	class VkDerivativeState;
+
 
 	/// constructor
 	VkShaderState();
@@ -41,31 +44,21 @@ public:
 	virtual ~VkShaderState();
 
 	/// discard the shader instance, must be called when instance no longer needed
-	void Discard();
+	static void Discard();
 
 	/// begin all uniform buffers for a synchronous update
-	void BeginUpdateSync();
+	static void BeginUpdateSync();
 	/// end buffer updates for all uniform buffers
-	void EndUpdateSync();
+	static void EndUpdateSync();
 	/// apply shader from which this state was created
-	void Apply();
+	static void Apply();
 	/// commit changes before rendering
-	void Commit();
-
-	/// add descriptor set write, which will be performed on the next begin
-	void AddDescriptorWrite(const VkWriteDescriptorSet& write);
-
-	/// get uniform buffer by index
-	const Ptr<CoreGraphics::ConstantBuffer>& GetConstantBuffer(IndexT i) const;
-	/// get uniform buffer by name
-	const Ptr<CoreGraphics::ConstantBuffer>& GetConstantBuffer(const Util::StringAtom& name) const;
-	/// get number of uniform buffers
-	const SizeT GetNumConstantBuffers() const;
+	static void Commit(Ids::Id24 currentProgram, Util::Array<VkWriteDescriptorSet>& writes, bool& setsDirty, VkShaderState::RuntimeInfo& stateInfo);
 
 	/// use this if some system want to allocate and use their own descriptor sets
-	void SetDescriptorSet(const VkDescriptorSet& set, const IndexT slot);
+	static void SetDescriptorSet(const VkDescriptorSet& set, const IndexT slot);
 	/// create new derivative state using group
-	Ptr<VkDerivativeState> CreateDerivative(const IndexT group);
+	static Ptr<VkDerivativeState> CreateDerivative(const IndexT group);
 
 	class VkDerivativeState : public Core::RefCounted
 	{
@@ -96,35 +89,16 @@ private:
 	friend class VkShader;
 	friend class Lighting::VkLightServer;
 	friend class VkRenderDevice;
+	friend class VkShaderPool;
 	struct BufferMapping;
 
-	/// setup the shader instance from its original shader object
-	void Setup(const Ptr<CoreGraphics::Shader>& origShader, const Util::Array<IndexT>& groups, bool createResourceSet);
-
-	/// sets up variables
-	void SetupVariables(const Util::Array<IndexT>& groups);
-	/// setup uniform buffers for shader state
-	void SetupUniformBuffers(const Util::Array<IndexT>& groups);
-
 	/// update descriptor sets
-	void UpdateDescriptorSets();
+	static void UpdateDescriptorSets(Util::Array<VkWriteDescriptorSet>& writes, bool& dirty);
 
 	/// create array of offsets
-	void CreateOffsetArray(Util::Array<uint32_t>& outOffsets, const IndexT group);
+	static void CreateOffsetArray(Util::Array<uint32_t>& outOffsets, const IndexT group);
 	/// get index in offset array based on binding
-	BufferMapping GetBufferMapping(const IndexT& group, const IndexT& binding);
-
-	struct DeferredVariableToBufferBind
-	{
-		unsigned offset;
-		unsigned size;
-		unsigned arraySize;
-	};
-	typedef Util::KeyValuePair<DeferredVariableToBufferBind, Ptr<CoreGraphics::ConstantBuffer>> VariableBufferBinding;
-	Util::Dictionary<Util::StringAtom, VariableBufferBinding> uniformVariableBinds;
-
-	typedef Util::KeyValuePair<Ptr<CoreGraphics::ShaderVariable>, Ptr<CoreGraphics::ConstantBuffer>> BlockBufferBinding;
-	Util::Array<BlockBufferBinding> blockToBufferBindings;
+	static BufferMapping GetBufferMapping(const IndexT& group, const IndexT& binding);
 
 #pragma pack(push, 16)
 	struct DescriptorSetBinding
@@ -140,51 +114,51 @@ private:
 		uint32_t offset;
 	};
 #pragma pack(pop)
-	Util::FixedArray<VkDescriptorSet> sets;
-	Util::FixedArray<DescriptorSetBinding> setBindnings;
-	Util::FixedArray<Util::Array<uint32_t>> setOffsets;
-	Util::FixedArray<Util::Dictionary<uint32_t, BufferMapping>> setBufferMapping;
 
-	Util::Array<VkWriteDescriptorSet> pendingSetWrites;
-	Util::Dictionary<uint32_t, uint32_t> groupIndexMap;
+	struct RuntimeInfo
+	{
+		Util::FixedArray<DescriptorSetBinding> setBindings;
+		Util::FixedArray<Util::Array<uint32_t>> setOffsets;
+		bool shared;
+		VkPipelineLayout pushLayout;
+		uint8_t* pushData;
+		uint32_t pushDataSize;
+		bool setsDirty;
+	};
+	struct SetupInfo
+	{
+		Util::FixedArray<VkDescriptorSet> sets;
+		Util::FixedArray<Util::Dictionary<uint32_t, BufferMapping>> setBufferMapping;
+		Util::Dictionary<uint32_t, uint32_t> groupIndexMap;
+		Util::Array<uint32_t> offsets;
+		Util::Dictionary<Util::String, uint32_t> offsetsByName;
+		Util::Dictionary<Ptr<CoreGraphics::ConstantBuffer>, uint32_t> instances;
+		Util::Dictionary<Util::StringAtom, Ids::Id24> variableMap;
+		VkPipelineLayout pipelineLayout;
+	};
 
-	Util::Array<uint32_t> offsets;
-	Util::Dictionary<Util::String, uint32_t> offsetsByName;
-	Util::Dictionary<Ptr<CoreGraphics::ConstantBuffer>, uint32_t> instances;
+	typedef Ids::IdAllocator<
+		AnyFX::ShaderEffect*,												//0 effect
+		SetupInfo,															//1 setup info
+		RuntimeInfo,														//2 runtime info
+		VkShaderVariable::ShaderVariableAllocator,							//3 variable allocator
+		Util::Array<VkWriteDescriptorSet>									//4 descriptor set writes
+	> ShaderStateAllocator;
 
-	bool setsDirty;
-	uint8_t* pushData;
-	uint32_t pushSize;
-	VkPipelineLayout pushLayout;
+	/// setup the shader instance from its original shader object
+	static void Setup(
+		const Ids::Id24 id, 
+		AnyFX::ShaderEffect* effect, 
+		const Util::Array<IndexT>& groups,
+		ShaderStateAllocator& allocator, 
+		Util::FixedArray<VkDescriptorSet>& sets,
+		Util::FixedArray<VkDescriptorSetLayout>& setLayouts,
+		bool createUniqueSet);
 
-	AnyFX::ShaderEffect* effect;
+	/// sets up variables
+	static void SetupVariables(AnyFX::ShaderEffect* effect, RuntimeInfo& runtime, SetupInfo& setup, VkShaderVariable::ShaderVariableAllocator& varAllocator, const Util::Array<IndexT>& groups);
+	/// setup uniform buffers for shader state
+	static void SetupUniformBuffers(AnyFX::ShaderEffect* effect, RuntimeInfo& runtime, SetupInfo& setup, VkShaderVariable::ShaderVariableAllocator& varAllocator, const Util::Array<IndexT>& groups);
 };
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const Ptr<CoreGraphics::ConstantBuffer>&
-VkShaderState::GetConstantBuffer(IndexT i) const
-{
-	return this->shader->buffers.ValueAtIndex(i);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const Ptr<CoreGraphics::ConstantBuffer>&
-VkShaderState::GetConstantBuffer(const Util::StringAtom& name) const
-{
-	return this->shader->buffers[name];
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const SizeT
-VkShaderState::GetNumConstantBuffers() const
-{
-	return this->shader->buffers.Size();
-}
 
 } // namespace Vulkan

@@ -18,9 +18,8 @@ class ResourceMemoryPool;
 class ResourcePool;
 class ResourceManager;
 class ResourceContainer;
-class Resource : public Core::RefCounted
+class Resource
 {
-	__DeclareClass(Resource);
 public:
 
 	enum State
@@ -35,39 +34,12 @@ public:
 	/// destructor
 	virtual ~Resource();
 
-	/// get state
-	const State& GetState() const;
-	/// get name
-	const ResourceName& GetResourceName() const;
-
 protected:
 	friend class ResourceStreamPool;
 	friend class ResourceMemoryPool;
 	friend class ResourcePool;
 	friend class ResourceManager;
 	friend class ResourceContainer;
-
-	State state;
-	ResourceName resourceName;
-	Util::StringAtom tag;
 };
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const Resource::State&
-Resource::GetState() const
-{
-	return this->state;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const Resources::ResourceName&
-Resource::GetResourceName() const
-{
-	return this->resourceName;
-}
 
 } // namespace Resources

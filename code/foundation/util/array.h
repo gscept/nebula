@@ -141,6 +141,7 @@ private:
     SizeT capacity;                         // number of elements allocated
     SizeT size;                             // number of elements in array
     TYPE* elements;                         // pointer to element array
+	using type = typename TYPE;
 };
 
 //------------------------------------------------------------------------------
@@ -211,7 +212,7 @@ Array<TYPE>::Array(SizeT initialSize, SizeT _grow, const TYPE& initialValue) :
 /**
 */
 template<class TYPE>
-Util::Array<TYPE>::Array(std::initializer_list<TYPE> list) :
+Array<TYPE>::Array(std::initializer_list<TYPE> list) :
 	grow(16),
 	capacity(list.size()),
 	size(list.size())

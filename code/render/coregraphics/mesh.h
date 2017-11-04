@@ -20,7 +20,6 @@ namespace CoreGraphics
 {
 class Mesh : public Resources::Resource
 {
-    __DeclareClass(Mesh);
 public:
     /// constructor
 	Mesh();
@@ -63,6 +62,7 @@ public:
 protected:   
     Resources::ResourceId vertexBuffer;
     Resources::ResourceId indexBuffer;
+	Resources::ResourceId vertexLayout;
 	CoreGraphics::PrimitiveTopology::Code topology;
     Util::Array<CoreGraphics::PrimitiveGroup> primitiveGroups;
 };

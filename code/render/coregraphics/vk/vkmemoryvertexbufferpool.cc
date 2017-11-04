@@ -1,4 +1,4 @@
-//------------------------------------------------------------------------------
+﻿//------------------------------------------------------------------------------
 // vkmemoryvertexbufferloader.cc
 // (C) 2016 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
@@ -9,6 +9,9 @@
 #include "vkrenderdevice.h"
 #include "vkutilities.h"
 #include "resources/resourcemanager.h"
+#include "coregraphics/vertexsignaturepool.h"
+#include "coregraphics/coregraphics.h"
+#include "../base/gpuresourcebase.h"
 
 using namespace CoreGraphics;
 using namespace Resources;
@@ -21,18 +24,21 @@ __ImplementClass(Vulkan::VkMemoryVertexBufferPool, 'VKVO', Base::MemoryVertexBuf
 /**
 */
 Resources::ResourcePool::LoadStatus
-VkMemoryVertexBufferPool::UpdateResource(const Resources::ResourceId id, void* info)
+VkMemoryVertexBufferPool::UpdateResource(const Ids::Id24 id, void* info)
 {
 	VertexBufferLoadInfo* vboInfo = static_cast<VertexBufferLoadInfo*>(info);
-	const Ptr<CoreGraphics::VertexBuffer>& vbo = Resources::GetResource<CoreGraphics::VertexBuffer>(id);
-	n_assert(vbo->GetState() == Resource::Pending);
+	n_assert(this->GetState(id) == Resource::Pending);
 	n_assert(vboInfo->numVertices > 0);
-	if (VertexBuffer::UsageImmutable == vboInfo->usage)
+	if (Base::GpuResourceBase::UsageImmutable == vboInfo->usage)
 	{
 		n_assert(0 != vboInfo->vertexDataPtr);
 		n_assert(0 < vboInfo->vertexDataSize);
 	}
 	SizeT vertexSize = VertexLayoutServer::Instance()->CalculateVertexSize(vboInfo->vertexComponents);
+
+	VkVertexBuffer::LoadInfo& loadInfo = this->Get<0>(id);
+	VkVertexBuffer::RuntimeInfo& runtimeInfo = this->Get<1>(id);
+	Base::GpuResourceBase::GpuResourceMapInfo& mapInfo = this->Get<2>(id);
 
 	// start by creating buffer
 	VkBufferCreateInfo bufinfo =
@@ -47,48 +53,45 @@ VkMemoryVertexBufferPool::UpdateResource(const Resources::ResourceId id, void* i
 		&VkRenderDevice::Instance()->drawQueueFamily	// array of queues belonging to family
 	};
 
-	VkBuffer buf;
-	VkResult err = vkCreateBuffer(VkRenderDevice::dev, &bufinfo, NULL, &buf);
+	VkResult err = vkCreateBuffer(VkRenderDevice::dev, &bufinfo, NULL, &runtimeInfo.buf);
 	n_assert(err == VK_SUCCESS);
 
 	// allocate a device memory backing for this
 	VkDeviceMemory mem;
 	uint32_t alignedSize;
 	uint32_t flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
-	flags |= vboInfo->syncing == VertexBuffer::SyncingCoherent ? VK_MEMORY_PROPERTY_HOST_COHERENT_BIT : 0;
-	VkUtilities::AllocateBufferMemory(buf, mem, VkMemoryPropertyFlagBits(flags), alignedSize);
+	flags |= vboInfo->syncing == Base::GpuResourceBase::SyncingCoherent ? VK_MEMORY_PROPERTY_HOST_COHERENT_BIT : 0;
+	VkUtilities::AllocateBufferMemory(runtimeInfo.buf, loadInfo.mem, VkMemoryPropertyFlagBits(flags), alignedSize);
 
 	// now bind memory to buffer
-	err = vkBindBufferMemory(VkRenderDevice::dev, buf, mem, 0);
+	err = vkBindBufferMemory(VkRenderDevice::dev, runtimeInfo.buf, loadInfo.mem, 0);
 	n_assert(err == VK_SUCCESS);
 
 	if (vboInfo->vertexDataPtr != 0)
 	{
 		// map memory so we can initialize it
 		void* data;
-		err = vkMapMemory(VkRenderDevice::dev, mem, 0, alignedSize, 0, &data);
+		err = vkMapMemory(VkRenderDevice::dev, loadInfo.mem, 0, alignedSize, 0, &data);
 		n_assert(err == VK_SUCCESS);
 		n_assert(vboInfo->vertexDataSize <= (int32_t)alignedSize);
 		memcpy(data, vboInfo->vertexDataPtr, vboInfo->vertexDataSize);
-		vkUnmapMemory(VkRenderDevice::dev, mem);
+		vkUnmapMemory(VkRenderDevice::dev, loadInfo.mem);
 	}
 
-	Ptr<VertexLayout> vertexLayout = VkVertexLayoutServer::Instance()->CreateSharedVertexLayout(vboInfo->vertexComponents);
-	//Ptr<VertexLayout> vertexLayout = VertexLayout::Create();
-	//vertexLayout->Setup(this->vertexComponents);
+	// create signature and resource
+	Util::StringAtom vertexSignature = VertexLayout::BuildSignature(vboInfo->vertexComponents);
+	Resources::ResourceId layout = CoreGraphics::layoutPool->ReserveResource(vertexSignature, "system");
+	CoreGraphics::layoutPool->UpdateResource(layout, &vboInfo->vertexComponents);
 	if (0 != vboInfo->vertexDataPtr)
 	{
-		n_assert((vboInfo->numVertices * vertexLayout->GetVertexByteSize()) == vboInfo->vertexDataSize);
+		n_assert((vboInfo->numVertices * vertexSize) == vboInfo->vertexDataSize);
 	}
 
-	// setup our resource object
-	vbo->SetUsage(vboInfo->usage);
-	vbo->SetAccess(vboInfo->access);
-	vbo->SetSyncing(vboInfo->syncing);
-	vbo->SetVertexLayout(vertexLayout);
-	vbo->SetNumVertices(vboInfo->numVertices);
-	vbo->SetByteSize(vertexSize * vboInfo->numVertices);
-	vbo->SetVkBuffer(buf, mem);
+	// setup resource
+	loadInfo.gpuResInfo = { vboInfo->usage, vboInfo->access, vboInfo->syncing };
+	runtimeInfo.layout = layout;
+	loadInfo.vboInfo = { vboInfo->numVertices, vertexSize };
+	mapInfo.mapCount = 0;
 
 	return ResourcePool::Success;
 }
@@ -97,9 +100,55 @@ VkMemoryVertexBufferPool::UpdateResource(const Resources::ResourceId id, void* i
 /**
 */
 void
-VkMemoryVertexBufferPool::Unload(const Ptr<Resources::Resource>& res)
+VkMemoryVertexBufferPool::Unload(const Ids::Id24 id)
 {
+	VkVertexBuffer::LoadInfo& loadInfo = this->Get<0>(id);
+	VkVertexBuffer::RuntimeInfo& runtimeInfo = this->Get<1>(id);
+	Base::GpuResourceBase::GpuResourceMapInfo& mapInfo = this->Get<2>(id);
 
+	n_assert(mapInfo.mapCount == 0);
+	vkFreeMemory(VkRenderDevice::dev, loadInfo.mem, nullptr);
+	vkDestroyBuffer(VkRenderDevice::dev, runtimeInfo.buf, nullptr);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+VkMemoryVertexBufferPool::BindVertexBuffer(const Resources::ResourceId id, const IndexT slot, const IndexT offset)
+{
+	const Ids::Id24 resId = Ids::Id::GetBig(Ids::Id::GetLow(id));
+	VkVertexBuffer::RuntimeInfo& runtimeInfo = this->Get<1>(resId);
+	VkRenderDevice::Instance()->SetStreamVertexBuffer(slot, runtimeInfo.buf, offset);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void*
+VkMemoryVertexBufferPool::Map(const Resources::ResourceId id, Base::GpuResourceBase::MapType mapType)
+{
+	const Ids::Id24 resId = Ids::Id::GetBig(Ids::Id::GetLow(id));
+	void* buf;
+	VkVertexBuffer::LoadInfo& loadInfo = this->Get<0>(resId);
+	Base::GpuResourceBase::GpuResourceMapInfo& mapInfo = this->Get<2>(resId);
+	VkResult res = vkMapMemory(VkRenderDevice::dev, loadInfo.mem, 0, VK_WHOLE_SIZE, 0, &buf);
+	n_assert(res == VK_SUCCESS);
+	mapInfo.mapCount++;
+	return buf;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+VkMemoryVertexBufferPool::Unmap(const Resources::ResourceId id)
+{
+	const Ids::Id24 resId = Ids::Id::GetBig(Ids::Id::GetLow(id));
+	VkVertexBuffer::LoadInfo& loadInfo = this->Get<0>(resId);
+	Base::GpuResourceBase::GpuResourceMapInfo& mapInfo = this->Get<2>(resId);
+	vkUnmapMemory(VkRenderDevice::dev, loadInfo.mem);
+	mapInfo.mapCount--;
 }
 
 } // namespace Vulkan

@@ -10,12 +10,10 @@
 namespace Vulkan
 {
 
-__ImplementClass(Vulkan::VkVertexLayout, 'VKVL', Base::VertexLayoutBase);
 //------------------------------------------------------------------------------
 /**
 */
-VkVertexLayout::VkVertexLayout() :
-	derivatives(128)
+VkVertexLayout::VkVertexLayout()
 {
 	// empty
 }
@@ -32,14 +30,14 @@ VkVertexLayout::~VkVertexLayout()
 /**
 */
 void
-VkVertexLayout::Setup(const Util::Array<CoreGraphics::VertexComponent>& c)
+VkVertexLayout::Setup(BindInfo& info, VertexLayoutBaseInfo& baseInfo, VkPipelineVertexInputStateCreateInfo& vertexInfo, const Util::Array<CoreGraphics::VertexComponent>& c)
 {
 	// call parent class
-	Base::VertexLayoutBase::Setup(c);
+	Base::VertexLayoutBase::Setup(c, baseInfo);
 
 	// create binds
-	this->binds.Resize(MaxNumVertexStreams);
-	this->attrs.Resize(this->components.Size());
+	info.binds.Resize(MaxNumVertexStreams);
+	info.attrs.Resize(c.Size());
 
 	SizeT strides[MaxNumVertexStreams] = { 0 };
 
@@ -47,43 +45,40 @@ VkVertexLayout::Setup(const Util::Array<CoreGraphics::VertexComponent>& c)
 	IndexT streamIndex;
 	for (streamIndex = 0; streamIndex < MaxNumVertexStreams; streamIndex++)
 	{
-		if (this->usedStreams[streamIndex])
+		if (baseInfo.usedStreams[streamIndex])
 		{
-			this->binds[numUsedStreams].binding = numUsedStreams;
-			this->binds[numUsedStreams].inputRate = numUsedStreams > 0 ? VK_VERTEX_INPUT_RATE_INSTANCE : VK_VERTEX_INPUT_RATE_VERTEX;
-			this->binds[numUsedStreams].stride = 0;
+			info.binds[numUsedStreams].binding = numUsedStreams;
+			info.binds[numUsedStreams].inputRate = numUsedStreams > 0 ? VK_VERTEX_INPUT_RATE_INSTANCE : VK_VERTEX_INPUT_RATE_VERTEX;
+			info.binds[numUsedStreams].stride = 0;
 			numUsedStreams++;
 		}		
 	}
 	IndexT curOffset[MaxNumVertexStreams] = { 0 };
 
 	IndexT compIndex;
-	for (compIndex = 0; compIndex < this->components.Size(); compIndex++)
+	for (compIndex = 0; compIndex < baseInfo.components.Size(); compIndex++)
 	{
-		const CoreGraphics::VertexComponent& component = this->components[compIndex];
-		VkVertexInputAttributeDescription* attr = &this->attrs[compIndex];
+		const CoreGraphics::VertexComponent& component = baseInfo.components[compIndex];
+		VkVertexInputAttributeDescription* attr = &info.attrs[compIndex];
 
 		attr->location = component.GetSemanticName();
 		attr->binding = component.GetStreamIndex();
 		attr->format = VkTypes::AsVkVertexType(component.GetFormat());
 		attr->offset = curOffset[component.GetStreamIndex()];
 		curOffset[component.GetStreamIndex()] += component.GetByteSize();
-		this->binds[attr->binding].stride += component.GetByteSize();
+		info.binds[attr->binding].stride += component.GetByteSize();
 	}
 
-	this->vertexInfo =
+	vertexInfo =
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
 		NULL,
 		0,
 		numUsedStreams,
-		this->binds.Begin(),
-		(uint32_t)this->attrs.Size(),
-		this->attrs.Begin()
+		info.binds.Begin(),
+		(uint32_t)info.attrs.Size(),
+		info.attrs.Begin()
 	};
-
-	// finish up the info struct
-	this->info.pVertexInputState = &this->vertexInfo;
 }
 
 //------------------------------------------------------------------------------
@@ -115,21 +110,27 @@ VkVertexLayout::Apply()
 /**
 */
 VkPipelineVertexInputStateCreateInfo*
-VkVertexLayout::CreateDerivative(const Ptr<VkShaderProgram>& program)
+VkVertexLayout::CreateDerivative(
+	const AnyFX::VkProgram* program, 
+	const Ids::Id64 id,
+	Util::HashTable<Ids::Id64, VkVertexLayout::DerivativeLayout*>& derivativeHashMap,
+	Util::Array<VkVertexLayout::DerivativeLayout>& derivatives,
+	VkVertexLayout::BindInfo& bindInfo, 
+	VkPipelineVertexInputStateCreateInfo& pipelineInfo
+	)
 {
-	const AnyFX::VkProgram* prog = program->GetVkProgram();
-
-	DerivativeLayout* derivative = n_new(DerivativeLayout);
-	derivative->info = this->vertexInfo;
+	derivatives.Append(DerivativeLayout());
+	DerivativeLayout* derivative = derivatives.End();
+	derivative->info = pipelineInfo;
 
 	uint32_t i;
 	IndexT j;
-	for (i = 0; i < prog->vsInputSlots.size(); i++)
+	for (i = 0; i < program->vsInputSlots.size(); i++)
 	{
-		uint32_t slot = prog->vsInputSlots[i];
-		for (j = 0; j < this->attrs.Size(); j++)
+		uint32_t slot = program->vsInputSlots[i];
+		for (j = 0; j < bindInfo.attrs.Size(); j++)
 		{
-			VkVertexInputAttributeDescription attr = this->attrs[j];
+			VkVertexInputAttributeDescription attr = bindInfo.attrs[j];
 			if (attr.location == slot)
 			{
 				derivative->attrs.Append(attr);
@@ -140,7 +141,7 @@ VkVertexLayout::CreateDerivative(const Ptr<VkShaderProgram>& program)
 	}
 	derivative->info.vertexAttributeDescriptionCount = derivative->attrs.Size();
 	derivative->info.pVertexAttributeDescriptions = derivative->attrs.Begin();
-	this->derivatives.Add(program, derivative);
+	derivativeHashMap.Add(id, derivative);
 	return &derivative->info;
 }
 
@@ -148,12 +149,19 @@ VkVertexLayout::CreateDerivative(const Ptr<VkShaderProgram>& program)
 /**
 */
 VkPipelineVertexInputStateCreateInfo*
-VkVertexLayout::GetDerivative(const Ptr<VkShaderProgram>& program)
+VkVertexLayout::GetDerivative(
+	const AnyFX::VkProgram* program,
+	const Ids::Id64 id,
+	Util::HashTable<Ids::Id64, VkVertexLayout::DerivativeLayout*>& derivativeHashMap,
+	Util::Array<VkVertexLayout::DerivativeLayout>& derivatives,
+	VkVertexLayout::BindInfo& bindInfo,
+	VkPipelineVertexInputStateCreateInfo& pipelineInfo
+	)
 {
-	if (this->derivatives.Contains(program)) return &this->derivatives[program]->info;
+	if (derivativeHashMap.Contains(id)) return &derivativeHashMap[id]->info;
 	else
 	{
-		return this->CreateDerivative(program);
+		return VkVertexLayout::CreateDerivative(program, id, derivativeHashMap, derivatives, bindInfo, pipelineInfo);
 	}
 }
 

@@ -69,15 +69,7 @@ MaterialServer::Open()
         this->LoadMaterialPalette(files[i]);
     }
 
-    // create resource mapper for surfaces, we must do this after our materials are loaded since the placeholder will need a template
-    Ptr<Resources::SimpleResourceMapper> surfaceMapper = Resources::SimpleResourceMapper::Create();
-    surfaceMapper->SetResourceClass(Surface::RTTI);
-    surfaceMapper->SetResourceLoaderClass(StreamSurfaceLoader::RTTI);
-    surfaceMapper->SetManagedResourceClass(ManagedSurface::RTTI);
-    surfaceMapper->SetPlaceholderResourceId("sur:system/placeholder.sur");
-    surfaceMapper->SetAsyncEnabled(false);
-    Resources::ResourceManager::Instance()->AttachMapper(surfaceMapper.cast<Resources::ResourceMapper>());
-
+	Resources::ResourceManager::Instance()->RegisterStreamPool("sur", StreamSurfaceLoader::RTTI);
 	return true;
 }
 
@@ -137,7 +129,7 @@ MaterialServer::AddMaterial(const Ptr<Material>& material)
 /**
 */
 const Ptr<MaterialPalette>&
-MaterialServer::LookupMaterialPalette(const Resources::ResourceId& name)
+MaterialServer::LookupMaterialPalette(const Resources::ResourceName& name)
 {
 	if (!this->materialPalettes.Contains(name))
 	{
@@ -150,7 +142,7 @@ MaterialServer::LookupMaterialPalette(const Resources::ResourceId& name)
 /**
 */
 void
-MaterialServer::LoadMaterialPalette(const Resources::ResourceId& name)
+MaterialServer::LoadMaterialPalette(const Resources::ResourceName& name)
 {
 	n_assert(!this->materialPalettes.Contains(name));
 	Util::String path("mat:");
@@ -171,8 +163,8 @@ MaterialServer::FeatureStringToMask(const Util::String& str)
 //------------------------------------------------------------------------------
 /**
 */
-Util::String 
-MaterialServer::FeatureMaskToString( Materials::MaterialFeature::Mask mask )
+Util::String
+MaterialServer::FeatureMaskToString(Materials::MaterialFeature::Mask mask)
 {
 	return this->materialFeature.MaskToString(mask);
 }

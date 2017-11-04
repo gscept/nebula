@@ -16,7 +16,6 @@ namespace Models
 {
 class PrimitiveNode : public ShaderStateNode
 {
-	__DeclareClass(PrimitiveNode);
 public:
 	/// constructor
 	PrimitiveNode();
@@ -24,12 +23,18 @@ public:
 	virtual ~PrimitiveNode();
 
 protected:
-	friend class ModelLoader;
+	friend class ModelPool;
 
 	/// load primitive
-	virtual bool Load(const Util::FourCC& tag, const Ptr<Models::ModelLoader>& loader, const Ptr<IO::BinaryReader>& reader);
+	virtual bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader);
+
+	struct Instance : public ShaderStateNode::Instance
+	{
+		// empty
+	};
 
 	Resources::ResourceName meshName;
+	Resources::ResourceId res;
 	uint32_t primitiveGroupIndex;
 };
 } // namespace Models

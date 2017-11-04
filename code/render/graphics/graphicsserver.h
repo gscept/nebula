@@ -16,6 +16,7 @@
 namespace Graphics
 {
 
+class GraphicsContext;
 class View;
 class GraphicsServer : public Core::RefCounted
 {

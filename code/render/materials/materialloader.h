@@ -22,7 +22,7 @@ class MaterialLoader
 {
 public:
 	/// load materials from an XML file
-	static Ptr<MaterialPalette> LoadMaterialPalette(const Resources::ResourceId& name, const IO::URI& uri, bool optional = false);
+	static Ptr<MaterialPalette> LoadMaterialPalette(const Resources::ResourceName& name, const IO::URI& uri, bool optional = false);
 private:
 	/// parse palette from XML
 	static void ParsePalette(const Ptr<IO::BXmlReader>& xmlReader, const Ptr<MaterialPalette>& materialPalette);

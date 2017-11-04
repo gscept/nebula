@@ -9,38 +9,41 @@
 #include "core/refcounted.h"
 #include "coregraphics/base/vertexlayoutbase.h"
 #include "vkrenderdevice.h"
+#include <array>
+
 namespace Vulkan
 {
 class VkVertexLayout : public Base::VertexLayoutBase
 {
-	__DeclareClass(VkVertexLayout);
 public:
+	struct BindInfo;
+	struct DerivativeLayout;
+
 	/// constructor
 	VkVertexLayout();
 	/// destructor
 	virtual ~VkVertexLayout();
 
 	/// setup the vertex layout
-	void Setup(const Util::Array<CoreGraphics::VertexComponent>& c);
+	static void Setup(BindInfo& info, VertexLayoutBaseInfo& baseInfo, VkPipelineVertexInputStateCreateInfo& vertexInfo, const Util::Array<CoreGraphics::VertexComponent>& c);
 	/// discard the vertex layout object
-	void Discard();
+	static void Discard();
 	
 	/// get derivative, and create if needed
-	VkPipelineVertexInputStateCreateInfo* GetDerivative(const Ptr<VkShaderProgram>& program);
+	static VkPipelineVertexInputStateCreateInfo* GetDerivative(
+		const AnyFX::VkProgram* program,
+		const Ids::Id64 id,
+		Util::HashTable<Ids::Id64, VkVertexLayout::DerivativeLayout*>& derivativeHashMap,
+		Util::Array<VkVertexLayout::DerivativeLayout>& derivatives,
+		VkVertexLayout::BindInfo& bindInfo,
+		VkPipelineVertexInputStateCreateInfo& pipelineInfo
+		);
 
 	/// applies layout before rendering
-	void Apply();
+	static void Apply();
 private:
 	friend class VkPipelineDatabase;
-
-	/// create derivative info from shader
-	VkPipelineVertexInputStateCreateInfo* CreateDerivative(const Ptr<VkShaderProgram>& program);
-
-	VkGraphicsPipelineCreateInfo info;
-	VkPipelineVertexInputStateCreateInfo vertexInfo;
-
-	Util::FixedArray<VkVertexInputBindingDescription> binds;
-	Util::FixedArray<VkVertexInputAttributeDescription> attrs;
+	friend class VkVertexSignaturePool;
 
 	struct DerivativeLayout
 	{
@@ -48,7 +51,21 @@ private:
 		Util::Array<VkVertexInputAttributeDescription> attrs;
 	};
 
-	Util::HashTable<Ptr<VkShaderProgram>, DerivativeLayout*> derivatives;
+	struct BindInfo
+	{
+		Util::FixedArray<VkVertexInputBindingDescription> binds;
+		Util::FixedArray<VkVertexInputAttributeDescription> attrs;
+	};
+
+	/// create derivative info from shader
+	static VkPipelineVertexInputStateCreateInfo* CreateDerivative(
+		const AnyFX::VkProgram* program, 
+		const Ids::Id64 id,
+		Util::HashTable<Ids::Id64, VkVertexLayout::DerivativeLayout*>& derivativeHashMap,
+		Util::Array<VkVertexLayout::DerivativeLayout>& derivatives,
+		VkVertexLayout::BindInfo& bindInfo, 
+		VkPipelineVertexInputStateCreateInfo& pipelineInfo
+		);
 };
 
 } // namespace Vulkan

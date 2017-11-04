@@ -190,7 +190,7 @@ Factory::GetClassRtti(const FourCC& classFourCC) const
 /**
     Create an object by class name.
 */
-RefCounted*
+void*
 Factory::Create(const String& className) const
 {
     n_assert(className.IsValid());
@@ -207,7 +207,7 @@ Factory::Create(const String& className) const
     // lookup RTTI object of class through hash table and create new object
     const Rtti* rtti = this->nameTable[className];
     n_assert(0 != rtti);
-    RefCounted* newObject = rtti->Create();
+    void* newObject = rtti->Create();
     return newObject;
 }
 
@@ -215,7 +215,7 @@ Factory::Create(const String& className) const
 /**
     Create an object by FourCC code.
 */
-RefCounted*
+void*
 Factory::Create(const FourCC classFourCC) const
 {
     n_assert(classFourCC.IsValid());
@@ -232,7 +232,7 @@ Factory::Create(const FourCC classFourCC) const
     // lookup RTTI object of class through hash table and create new object
     const Rtti* rtti = this->fourccTable[classFourCC];
     n_assert(0 != rtti);
-    RefCounted* newObject = rtti->Create();
+	void* newObject = rtti->Create();
     return newObject;
 }
 

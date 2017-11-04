@@ -16,7 +16,6 @@
 #include "materials/surfacename.h"
 #include "util/dictionary.h"
 #include "util/array.h"
-#include "resources/simpleresourcemapper.h"
 
 //------------------------------------------------------------------------------
 namespace Materials
@@ -40,9 +39,9 @@ public:
 	bool IsOpen() const;
 
     /// returns true if material exists
-    bool HasMaterial(const Resources::ResourceId& name);
+    bool HasMaterial(const Resources::ResourceName& name);
 	/// get material by name
-	const Ptr<Material>& GetMaterialByName(const Resources::ResourceId& name);
+	const Ptr<Material>& GetMaterialByName(const Resources::ResourceName& name);
     /// get all materials, creates new array with materials
     Util::Array<Ptr<Material>> GetMaterials() const;
 	/// get material codes by type
@@ -58,21 +57,21 @@ public:
 	Util::String FeatureMaskToString(Materials::MaterialFeature::Mask mask);
 
 	/// gain access to a material palette by name, will be loaded if it isn't already
-	const Ptr<MaterialPalette>& LookupMaterialPalette(const Resources::ResourceId& name);
+	const Ptr<MaterialPalette>& LookupMaterialPalette(const Resources::ResourceName& name);
 	
 private:
     friend class MaterialType;
     friend class SurfaceName;
 
 	/// load material palette
-	void LoadMaterialPalette(const Resources::ResourceId& name);
+	void LoadMaterialPalette(const Resources::ResourceName& name);
 
     MaterialType materialTypeRegistry;
     SurfaceName surfaceNameRegistry;
 	MaterialFeature materialFeature;
-	Util::Dictionary<Resources::ResourceId, Ptr<Material>> materials;
+	Util::Dictionary<Resources::ResourceName, Ptr<Material>> materials;
 	Util::Dictionary<Graphics::BatchGroup::Code, Util::Array<Ptr<Material>>> materialsByBatchGroup;
-	Util::Dictionary<Resources::ResourceId, Ptr<MaterialPalette>> materialPalettes;
+	Util::Dictionary<Resources::ResourceName, Ptr<MaterialPalette>> materialPalettes;
 	bool isOpen;
 };
 
@@ -80,7 +79,7 @@ private:
 /**
 */
 inline bool 
-MaterialServer::HasMaterial( const Resources::ResourceId& name )
+MaterialServer::HasMaterial( const Resources::ResourceName& name )
 {
     return this->materials.Contains(name);
 }
@@ -89,7 +88,7 @@ MaterialServer::HasMaterial( const Resources::ResourceId& name )
 /**
 */
 inline const Ptr<Material>&
-MaterialServer::GetMaterialByName(const Resources::ResourceId& name)
+MaterialServer::GetMaterialByName(const Resources::ResourceName& name)
 {
     n_assert(this->materials.Contains(name));
     return this->materials[name];

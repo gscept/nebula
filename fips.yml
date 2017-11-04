@@ -8,6 +8,8 @@ imports:
         git: https://github.com/gscept/fips-glfw.git
      fips-anyfx:
         git: https://github.com/Duttenheim/fips-anyfx.git
+     fips-devil:
+        git: https://github.com/gscept/fips-devil.git
 
 exports:
     header-dirs : 

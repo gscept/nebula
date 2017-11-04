@@ -13,9 +13,8 @@
 //------------------------------------------------------------------------------
 namespace Base
 {
-class GpuResourceBase : public Resources::Resource
+class GpuResourceBase
 {
-    __DeclareClass(GpuResourceBase);
 public:
     /// resource usage flags
     enum Usage
@@ -52,85 +51,18 @@ public:
 		SyncingCoherent				// resource is coherent on GPU and CPU when mapped
 	};
 
-    /// constructor
-    GpuResourceBase();
-    /// destructor
-    virtual ~GpuResourceBase();
+	struct GpuResourceBaseInfo
+	{
+		Base::GpuResourceBase::Usage usage;
+		Base::GpuResourceBase::Access access;
+		Base::GpuResourceBase::Syncing syncing;
+	};
 
-    /// set resource usage type
-    void SetUsage(Usage usage);
-    /// get resource usage type
-    Usage GetUsage() const;
-    /// set resource cpu access type
-    void SetAccess(Access access);
-    /// get cpu access type
-    Access GetAccess() const;
-
-	/// set streaming method
-	void SetSyncing(Syncing method);
-	/// get streaming method
-	Syncing GetSyncing() const;
-
-protected:
-    Usage usage;
-    Access access;
-	Syncing syncing;
-
+	struct GpuResourceMapInfo
+	{
+		int mapCount;
+	};
 };
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-GpuResourceBase::SetUsage(Usage u)
-{
-    this->usage = u;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline GpuResourceBase::Usage
-GpuResourceBase::GetUsage() const
-{
-    return this->usage;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-GpuResourceBase::SetAccess(Access a)
-{
-    this->access = a;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline GpuResourceBase::Access
-GpuResourceBase::GetAccess() const
-{
-    return this->access;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-GpuResourceBase::SetSyncing(Syncing s)
-{
-	this->syncing = s;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline GpuResourceBase::Syncing
-GpuResourceBase::GetSyncing() const
-{
-	return this->syncing;
-}
 
 } // namespace Base
 //------------------------------------------------------------------------------

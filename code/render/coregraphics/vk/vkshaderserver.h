@@ -11,6 +11,7 @@
 #include "coregraphics/base/shaderserverbase.h"
 #include "coregraphics/config.h"
 #include "effectfactory.h"
+#include "vkshaderpool.h"
 
 namespace Vulkan
 {
@@ -30,9 +31,9 @@ public:
 	void Close();
 	
 	/// register new texture
-	uint32_t RegisterTexture(const Ptr<Vulkan::VkTexture>& tex);
+	uint32_t RegisterTexture(const VkImageView tex, Base::TextureBase::Type type);
 	/// unregister texture
-	void UnregisterTexture(const Ptr<Vulkan::VkTexture>& tex);
+	void UnregisterTexture(const uint32_t id, const Base::TextureBase::Type type);
 	/// commit texture library to shader
 	void BindTextureDescriptorSets();
 
@@ -60,24 +61,24 @@ private:
 	Util::FixedPool<uint32_t> image3DPool;
 	Util::FixedPool<uint32_t> imageCubePool;
 
-	Ptr<VkShaderState> textureShaderState;
-	Ptr<VkShaderVariable> texture2DTextureVar;
-	Ptr<VkShaderVariable> texture2DMSTextureVar;
-	Ptr<VkShaderVariable> texture3DTextureVar;
-	Ptr<VkShaderVariable> textureCubeTextureVar;
-	Ptr<VkShaderVariable> image2DTextureVar;
-	Ptr<VkShaderVariable> image2DMSTextureVar;
-	Ptr<VkShaderVariable> image3DTextureVar;
-	Ptr<VkShaderVariable> imageCubeTextureVar;
+	CoreGraphics::ShaderStateId textureShaderState;
+	CoreGraphics::ShaderVariableId texture2DTextureVar;
+	CoreGraphics::ShaderVariableId texture2DMSTextureVar;
+	CoreGraphics::ShaderVariableId texture3DTextureVar;
+	CoreGraphics::ShaderVariableId textureCubeTextureVar;
+	CoreGraphics::ShaderVariableId image2DTextureVar;
+	CoreGraphics::ShaderVariableId image2DMSTextureVar;
+	CoreGraphics::ShaderVariableId image3DTextureVar;
+	CoreGraphics::ShaderVariableId imageCubeTextureVar;
 
-	Ptr<VkShaderVariable> depthBufferTextureVar;
-	Ptr<VkShaderVariable> normalBufferTextureVar;
-	Ptr<VkShaderVariable> albedoBufferTextureVar;
-	Ptr<VkShaderVariable> specularBufferTextureVar;
-	Ptr<VkShaderVariable> lightBufferTextureVar;
+	CoreGraphics::ShaderVariableId depthBufferTextureVar;
+	CoreGraphics::ShaderVariableId normalBufferTextureVar;
+	CoreGraphics::ShaderVariableId albedoBufferTextureVar;
+	CoreGraphics::ShaderVariableId specularBufferTextureVar;
+	CoreGraphics::ShaderVariableId lightBufferTextureVar;
 
-	Ptr<VkShaderVariable> csmBufferTextureVar;
-	Ptr<VkShaderVariable> spotlightAtlasShadowBufferTextureVar;
+	CoreGraphics::ShaderVariableId csmBufferTextureVar;
+	CoreGraphics::ShaderVariableId spotlightAtlasShadowBufferTextureVar;
 
 	AnyFX::EffectFactory* factory;
 };
@@ -88,7 +89,7 @@ private:
 inline void
 VkShaderServer::BindTextureDescriptorSets()
 {
-	this->textureShaderState->Commit();
+	CoreGraphics::shaderPool->ApplyState(this->textureShaderState);
 }
 
 } // namespace Vulkan

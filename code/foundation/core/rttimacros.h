@@ -20,13 +20,19 @@ public: \
     { \
         return RTTI.AllocInstanceMemory(); \
     }; \
+    void* operator new[](size_t num) \
+    { \
+        return RTTI.AllocInstanceMemoryArray(num); \
+    }; \
     void operator delete(void* p) \
     { \
         RTTI.FreeInstanceMemory(p); \
     }; \
     static Core::Rtti RTTI; \
-    static Core::RefCounted* FactoryCreator(); \
+    static void* FactoryCreator(); \
+	static void* FactoryArrayCreator(SizeT num); \
     static type* Create(); \
+	static type* CreateArray(SizeT num); \
     static bool RegisterWithFactory(); \
     virtual Core::Rtti* GetRtti() const; \
 private:
@@ -42,6 +48,7 @@ public: \
 		Memory::Free(Memory::ObjectHeap, p); \
     }; \
     static type<temp>* Create(); \
+	static type<temp>* CreateArray(SizeT num); \
 private:
 
 #define __DeclareAbstractClass(class_name) \
@@ -60,18 +67,33 @@ private:
 
 //------------------------------------------------------------------------------
 /**
-    Implementation macro for default memory pool sizes. Put this into the source file.
+    Implementation macros for RTTI managed classes.
+	__ImplementClass			constructs a class which relies on reference counting. Use __DeclareClass in header.
+	__ImplementWeakClass		constructs a class which does not support reference counting (no garbage collection). Use __DeclareClass in header.
+	__ImplementTemplateClass	constructs a class with template arguments but without FourCC or RTTI. Use __DeclareTemplateClass in header.
 */
 #if NEBULA3_DEBUG
 #define __ImplementClass(type, fourcc, baseType) \
-    Core::Rtti type::RTTI(#type, fourcc, type::FactoryCreator, &baseType::RTTI, sizeof(type)); \
+    Core::Rtti type::RTTI(#type, fourcc, type::FactoryCreator, type::FactoryArrayCreator, &baseType::RTTI, sizeof(type)); \
     Core::Rtti* type::GetRtti() const { return &this->RTTI; } \
-    Core::RefCounted* type::FactoryCreator() { return type::Create(); } \
+    void* type::FactoryCreator() { return type::Create(); } \
+	void* type::FactoryArrayCreator(SizeT num) { return type::CreateArray(num); } \
     type* type::Create() \
     { \
+		static_assert(std::is_base_of<Core::RefCounted, type>::value, "Class must inherit from Core::RefCounted"); \
         RefCounted::criticalSection.Enter(); \
         RefCounted::isInCreate = true; \
         type* newObject = n_new(type); \
+        RefCounted::isInCreate = false; \
+        RefCounted::criticalSection.Leave(); \
+        return newObject; \
+    }\
+    type* type::CreateArray(SizeT num) \
+    { \
+		static_assert(std::is_base_of<Core::RefCounted, type>::value, "Class must inherit from Core::RefCounted"); \
+        RefCounted::criticalSection.Enter(); \
+        RefCounted::isInCreate = true; \
+        type* newObject = n_new_array(type, num); \
         RefCounted::isInCreate = false; \
         RefCounted::criticalSection.Leave(); \
         return newObject; \
@@ -85,6 +107,10 @@ private:
         } \
         return true; \
     }
+
+//------------------------------------------------------------------------------
+/**
+*/
 #define __ImplementClassTemplate(type, baseType) \
 	template <class TEMP> \
     inline type<TEMP>* type<TEMP>::Create() \
@@ -95,15 +121,35 @@ private:
         RefCounted::isInCreate = false; \
         RefCounted::criticalSection.Leave(); \
         return newObject; \
+    } \
+	template <class TEMP> \
+    inline type<TEMP>* type<TEMP>::CreateArray(SizeT num) \
+    { \
+        RefCounted::criticalSection.Enter(); \
+        RefCounted::isInCreate = true; \
+        type<TEMP>* newObject = n_new_array(type<TEMP>, num); \
+        RefCounted::isInCreate = false; \
+        RefCounted::criticalSection.Leave(); \
+        return newObject; \
     }
 #else
+//------------------------------------------------------------------------------
+/**
+*/
 #define __ImplementClass(type, fourcc, baseType) \
-    Core::Rtti type::RTTI(#type, fourcc, type::FactoryCreator, &baseType::RTTI, sizeof(type)); \
+    Core::Rtti type::RTTI(#type, fourcc, type::FactoryCreator, type::FactorArrayCreator, &baseType::RTTI, sizeof(type)); \
     Core::Rtti* type::GetRtti() const { return &this->RTTI; } \
     Core::RefCounted* type::FactoryCreator() { return type::Create(); } \
+	Core::RefCounted* type::FactoryArrayCreator(SizeT num) { return type::CreateArray(num); } \
     type* type::Create() \
     { \
+		static_assert(std::is_base_of<Core::RefCounted, type>::value, "Class must inherit from Core::RefCounted"); \
         return n_new(type); \
+    }\
+    type* type::CreateArray(SizeT num) \
+    { \
+		static_assert(std::is_base_of<Core::RefCounted, type>::value, "Class must inherit from Core::RefCounted"); \
+        return n_new_array(type, num); \
     }\
     bool type::RegisterWithFactory() \
     { \
@@ -114,13 +160,86 @@ private:
         } \
         return true; \
     }
+
+//------------------------------------------------------------------------------
+/**
+*/
+#define __ImplementClassTemplate(type, baseType) \
+	template <class TEMP> \
+    inline type<TEMP>* type<TEMP>::Create() \
+    { \
+        type<TEMP>* newObject = n_new(type<TEMP>); \
+        return newObject; \
+    } \
+	template <class TEMP> \
+    inline type<TEMP>* type<TEMP>::CreateArray(SizeT num) \
+    { \
+        type<TEMP>* newObject = n_new_array(type<TEMP>, num); \
+        return newObject; \
+    }
 #endif
 
 //------------------------------------------------------------------------------
 /**
 */
+#define __ImplementWeakClass(type, fourcc, baseType) \
+    Core::Rtti type::RTTI(#type, fourcc, type::FactoryCreator, type::FactoryArrayCreator, &baseType::RTTI, sizeof(type)); \
+    Core::Rtti* type::GetRtti() const { return &this->RTTI; } \
+    void* type::FactoryCreator() { return type::Create(); } \
+	void* type::FactoryArrayCreator(SizeT num) { return type::CreateArray(num); } \
+    type* type::Create() \
+    { \
+        type* newObject = n_new(type); \
+        return newObject; \
+    }\
+    type* type::CreateArray(SizeT num) \
+    { \
+        type* newObject = n_new_array(type, num); \
+        return newObject; \
+    }\
+    bool type::RegisterWithFactory() \
+    { \
+        Core::SysFunc::Setup(); \
+        if (!Core::Factory::Instance()->ClassExists(#type)) \
+        { \
+            Core::Factory::Instance()->Register(&type::RTTI, #type, fourcc); \
+        } \
+        return true; \
+    }
+
+//------------------------------------------------------------------------------
+/**
+*/
+#define __ImplementWeakRootClass(type, fourcc) \
+    Core::Rtti type::RTTI(#type, fourcc, type::FactoryCreator, type::FactoryArrayCreator, nullptr, sizeof(type)); \
+    Core::Rtti* type::GetRtti() const { return &this->RTTI; } \
+    void* type::FactoryCreator() { return type::Create(); } \
+	void* type::FactoryArrayCreator(SizeT num) { return type::CreateArray(num); } \
+    type* type::Create() \
+    { \
+        type* newObject = n_new(type); \
+        return newObject; \
+    }\
+    type* type::CreateArray(SizeT num) \
+    { \
+        type* newObject = n_new_array(type, num); \
+        return newObject; \
+    }\
+    bool type::RegisterWithFactory() \
+    { \
+        Core::SysFunc::Setup(); \
+        if (!Core::Factory::Instance()->ClassExists(#type)) \
+        { \
+            Core::Factory::Instance()->Register(&type::RTTI, #type, fourcc); \
+        } \
+        return true; \
+    }
+
+//------------------------------------------------------------------------------
+/**
+*/
 #define __ImplementAbstractClass(type, fourcc, baseType) \
-    Core::Rtti type::RTTI(#type, fourcc, 0, &baseType::RTTI, 0); \
+    Core::Rtti type::RTTI(#type, fourcc, nullptr, nullptr, &baseType::RTTI, 0); \
     Core::Rtti* type::GetRtti() const { return &this->RTTI; }
 
 //------------------------------------------------------------------------------
@@ -129,14 +248,26 @@ private:
 */
 #if NEBULA3_DEBUG
 #define __ImplementRootClass(type, fourcc) \
-    Core::Rtti type::RTTI(#type, fourcc, type::FactoryCreator, 0, sizeof(type)); \
+    Core::Rtti type::RTTI(#type, fourcc, type::FactoryCreator, type::FactoryArrayCreator, nullptr, sizeof(type)); \
     Core::Rtti* type::GetRtti() const { return &this->RTTI; } \
-    Core::RefCounted* type::FactoryCreator() { return type::Create(); } \
+    void* type::FactoryCreator() { return type::Create(); } \
+	void* type::FactoryArrayCreator(SizeT num) { return type::CreateArray(num); } \
     type* type::Create() \
     { \
+		static_assert(std::is_base_of<Core::RefCounted, type>::value, "Class must inherit from Core::RefCounted"); \
         RefCounted::criticalSection.Enter(); \
         RefCounted::isInCreate = true; \
         type* newObject = n_new(type); \
+        RefCounted::isInCreate = false; \
+        RefCounted::criticalSection.Leave(); \
+        return newObject; \
+    }\
+   type* type::CreateArray(SizeT num) \
+    { \
+		static_assert(std::is_base_of<Core::RefCounted, type>::value, "Class must inherit from Core::RefCounted"); \
+        RefCounted::criticalSection.Enter(); \
+        RefCounted::isInCreate = true; \
+        type* newObject = n_new_array(type, num); \
         RefCounted::isInCreate = false; \
         RefCounted::criticalSection.Leave(); \
         return newObject; \
@@ -151,12 +282,19 @@ private:
     }
 #else
 #define __ImplementRootClass(type, fourcc) \
-    Core::Rtti type::RTTI(#type, fourcc, type::FactoryCreator, 0, sizeof(type)); \
+    Core::Rtti type::RTTI(#type, fourcc, type::FactoryCreator, type::FactorArrayCreator, nullptr, sizeof(type)); \
     Core::Rtti* type::GetRtti() const { return &this->RTTI; } \
-    Core::RefCounted* type::FactoryCreator() { return type::Create(); } \
+    void* type::FactoryCreator() { return type::Create(); } \
+	void* type::FactoryArrayCreator(SizeT num) { return type::CreateArray(num); } \
     type* type::Create() \
     { \
+		static_assert(std::is_base_of<Core::RefCounted, type>::value, "Class must inherit from Core::RefCounted"); \
         return n_new(type); \
+    }\
+    type* type::CreateArray(SizeT num) \
+    { \
+		static_assert(std::is_base_of<Core::RefCounted, type>::value, "Class must inherit from Core::RefCounted"); \
+        return n_new_array(type, num); \
     }\
     bool type::RegisterWithFactory() \
     { \

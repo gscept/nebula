@@ -7,7 +7,9 @@
 #include "coregraphics/texture.h"
 #include "resources/resourcemanager.h"
 #include "coregraphics/displaydevice.h"
+#include "coregraphics/memorytexturepool.h"
 
+using namespace CoreGraphics;
 namespace Base
 {
 
@@ -41,8 +43,7 @@ ShaderReadWriteTextureBase::Setup(const SizeT width, const SizeT height, const C
 	this->height = height;
 
 	// reserve resource
-	this->textureId = Resources::ReserveResource(id, "render_system", CoreGraphics::Texture::RTTI);
-	this->texture = Resources::GetResource<CoreGraphics::Texture>(this->textureId);
+	this->textureId = Resources::ReserveResource(id, "system", MemoryTexturePool::RTTI);
 }
 
 //------------------------------------------------------------------------------
@@ -60,7 +61,7 @@ ShaderReadWriteTextureBase::SetupWithRelativeSize(const Math::scalar relWidth, c
 	this->useRelativeSize = true;
 
 	// setup texture with relative size
-	CoreGraphics::DisplayMode mode = CoreGraphics::DisplayDevice::Instance()->GetCurrentWindow()->GetDisplayMode();
+	DisplayMode mode = DisplayDevice::Instance()->GetCurrentWindow()->GetDisplayMode();
 	SizeT width = SizeT(mode.GetWidth() * this->relWidth);
 	SizeT height = SizeT(mode.GetHeight() * this->relHeight);
 	this->Setup(width, height, format, id);
@@ -72,9 +73,9 @@ ShaderReadWriteTextureBase::SetupWithRelativeSize(const Math::scalar relWidth, c
 void
 ShaderReadWriteTextureBase::Discard()
 {
-	n_assert(this->texture.isvalid());
+	n_assert(this->textureId != Ids::InvalidId64);
 	Resources::DiscardResource(this->textureId);
-	this->texture = nullptr;
+	this->textureId = Ids::InvalidId64;
 }
 
 //------------------------------------------------------------------------------

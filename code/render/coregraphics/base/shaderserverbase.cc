@@ -10,6 +10,8 @@
 #include "io/textreader.h"
 #include "coregraphics/shadersemantics.h"
 #include "coregraphics/config.h"
+#include "resources/resourcemanager.h"
+#include "../coregraphics.h"
 
 namespace Base
 {
@@ -25,6 +27,8 @@ using namespace Resources;
 /**
 */
 ShaderServerBase::ShaderServerBase() :
+	sharedVariableShader(Ids::InvalidId64),
+	objectIdShaderVar(Ids::InvalidId32),
     curShaderFeatureBits(0),        
     activeShader(NULL),
     isOpen(false)
@@ -58,26 +62,16 @@ ShaderServerBase::Open()
     {
         Array<String> shaderPaths = textReader->ReadAllLines();
         textReader->Close();
-        textReader = 0;
+        textReader = nullptr;
         
         IndexT i;
         for (i = 0; i < shaderPaths.Size(); i++)
         {
-            ResourceId resId = shaderPaths[i];
-            Ptr<Shader> newShader = Shader::Create();
-            newShader->SetResourceId(resId);
-            newShader->SetLoader(ShaderPool::Create());
-            newShader->SetAsyncEnabled(false);
-            newShader->Load();
-            if (newShader->IsLoaded())
-            {
-                newShader->SetLoader(0);
-                this->shaders.Add(resId, newShader);
-            }
-            else
-            {
-                n_error("Failed to load shader '%s'!", shaderPaths[i].AsCharPtr());
-            }
+			const Util::String& path = shaderPaths[i];
+            ResourceName resId = shaderPaths[i];
+
+			// load
+			this->LoadShader(resId);
         }
     }
     else
@@ -86,10 +80,10 @@ ShaderServerBase::Open()
     }
 
     // create standard shader for access to shared variables
-    if (this->HasShader(ResourceId("shd:shared")))
+    if (this->shaders.Contains(ResourceName("shd:shared")))
     {
-		this->sharedVariableShader = this->GetShader("shd:shared")->CreateState({NEBULAT_DEFAULT_GROUP});
-        n_assert(this->sharedVariableShader.isvalid());
+		this->sharedVariableShader = CoreGraphics::shaderPool->CreateState("shd:shared", { NEBULAT_DEFAULT_GROUP });
+        n_assert(this->sharedVariableShader != Ids::InvalidId64);
 
         // get shared object id shader variable
 #if !__WII__ && !__PS3__
@@ -111,17 +105,16 @@ ShaderServerBase::Close()
     n_assert(this->isOpen);
 
     // release shared instance shader
-    if (this->sharedVariableShader.isvalid())
+    if (this->sharedVariableShader != Ids::InvalidId64)
     {        
-		this->sharedVariableShader->Discard();
-        this->sharedVariableShader = 0;
+		CoreGraphics::shaderPool->DestroyState(this->sharedVariableShader);
     } 
 
     // unload all currently loaded shaders
     IndexT i;
     for (i = 0; i < this->shaders.Size(); i++)
     {
-        this->shaders.ValueAtIndex(i)->Unload();
+		CoreGraphics::shaderPool->DiscardResource(this->shaders.ValueAtIndex(i));
     }
     this->shaders.Clear();
 
@@ -130,14 +123,15 @@ ShaderServerBase::Close()
 
 //------------------------------------------------------------------------------
 /**
-	Creates 
+	Create a shared state (that is, it can be split between many shaders, and have the same global variables)
 */
-Ptr<CoreGraphics::ShaderState>
-ShaderServerBase::CreateShaderState(const Resources::ResourceId& resId, const Util::Array<IndexT>& groups, bool createResourceSet)
+Resources::ResourceId
+ShaderServerBase::CreateShaderState(const Resources::ResourceName& resId, const Util::Array<IndexT>& groups, bool createResourceSet)
 {
 	n_assert(resId.IsValid());
 
-	Ptr<ShaderState> shaderInstance;
+	Resources::ResourceId state;
+
 	// first check if the shader is already loaded
 	if (!this->shaders.Contains(resId))
 	{
@@ -145,23 +139,22 @@ ShaderServerBase::CreateShaderState(const Resources::ResourceId& resId, const Ut
 	}
 	else
 	{
-		shaderInstance = this->shaders[resId]->CreateState(groups, createResourceSet);
+		state = CoreGraphics::shaderPool->CreateState(this->shaders[resId], groups, createResourceSet);
 	}
 
 	// create a shader instance object from the shader
-
-	return shaderInstance;
+	return state;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-Ptr<CoreGraphics::ShaderState>
-ShaderServerBase::CreateSharedShaderState(const Resources::ResourceId& resId, const Util::Array<IndexT>& groups)
+Resources::ResourceId
+ShaderServerBase::CreateSharedShaderState(const Resources::ResourceName& resId, const Util::Array<IndexT>& groups)
 {
 	n_assert(resId.IsValid());
 
-	Ptr<ShaderState> shaderInstance;
+	Resources::ResourceId state;
 
 	// format a signature
 	Util::String signature = resId.Value();
@@ -173,15 +166,15 @@ ShaderServerBase::CreateSharedShaderState(const Resources::ResourceId& resId, co
 	// if we don't have the shared state, create it, otherwise just return it
 	if (this->sharedShaderStates.Contains(signature))
 	{
-		shaderInstance = this->sharedShaderStates[signature];
+		state = this->sharedShaderStates[signature];
 	}
 	else
 	{
-		shaderInstance = this->shaders[resId]->CreateState(groups);
-		this->sharedShaderStates.Add(signature, shaderInstance);
+		state = CoreGraphics::shaderPool->CreateState(this->shaders[resId], groups, false);
+		this->sharedShaderStates.Add(signature, state);
 	}
 
-	return shaderInstance;
+	return state;
 }
 
 //------------------------------------------------------------------------------
@@ -198,54 +191,37 @@ ShaderServerBase::ApplyObjectId(IndexT i)
         this->objectIdShaderVar = this->GetActiveShader()->GetVariableBySemantic(NEBULA3_SEMANTIC_OBJECTID);
     }       
 #endif
-    if (this->objectIdShaderVar.isvalid())
+    if (this->objectIdShaderVar != Ids::InvalidId32)
     {
-        this->objectIdShaderVar->SetFloat(((float)i) / 255.0f);  
+		CoreGraphics::shaderPool->SetShaderVariable(this->objectIdShaderVar, this->sharedVariableShader, ((float)i) / 255.0f));
     }       
 }
 
 //------------------------------------------------------------------------------
 /**
-Must be called from within Shader
+	IMPLEMENT ME!
 */
 void
-ShaderServerBase::ReloadShader(Ptr<CoreGraphics::Shader> shader)
+ShaderServerBase::ReloadShader(const Resources::ResourceId shader)
 {
-	n_assert(0 != shader);
-	shader->SetLoader(ShaderPool::Create());
-	shader->SetAsyncEnabled(false);
-	shader->Load();
-	if (shader->IsLoaded())
-	{
-		shader->SetLoader(0);
-	}
-	else
-	{
-		n_error("Failed to load shader '%s'!", shader->GetResourceId().Value());
-	}
+	n_assert(shader != Ids::InvalidId64);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-ShaderServerBase::LoadShader(const Resources::ResourceId& shdName)
+ShaderServerBase::LoadShader(const Resources::ResourceName& shdName)
 {
 	n_assert(shdName.IsValid());
-	Ptr<Shader> shader = Shader::Create();
-	shader->SetResourceId(shdName);
-	shader->SetLoader(ShaderPool::Create());
-	shader->SetAsyncEnabled(false);
-	shader->Load();
-	if (shader->IsLoaded())
+	CoreGraphics::shaderPool->CreateResource(shdName, "shaders"_atm,
+		[this, shdName](ResourceId id)
 	{
-		shader->SetLoader(0);
-		this->shaders.Add(shdName, shader);
-	}
-	else
+		this->shaders.Add(shdName, id);
+	},
+		[shdName](ResourceId id)
 	{
-		n_warning("Failed to explicitly load shader '%s'!", shdName.Value());
-		shader->Unload();
-	}
+		n_error("Failed to load shader '%s'!", shdName.Value());
+	}, true);
 }
 } // namespace Base

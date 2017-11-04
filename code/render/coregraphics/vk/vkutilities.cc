@@ -457,17 +457,17 @@ VkUtilities::ImageUpdate(const VkImage& img, const VkImageCreateInfo& info, uint
 /**
 */
 void
-VkUtilities::ReadImage(const Ptr<VkTexture>& tex, VkImageCopy copy, uint32_t& outMemSize, VkDeviceMemory& outMem, VkBuffer& outBuffer)
+VkUtilities::ReadImage(const VkImage tex, CoreGraphics::PixelFormat::Code format, Base::TextureBase::Dimensions dims, Base::TextureBase::Type type, VkImageCopy copy, uint32_t& outMemSize, VkDeviceMemory& outMem, VkBuffer& outBuffer)
 {
 	VkCommandBuffer cmdBuf = VkUtilities::BeginImmediateTransfer();
 
 	// find format of equal size so that we can decompress later
-	VkFormat fmt = VkTypes::AsVkFormat(tex->GetPixelFormat());
+	VkFormat fmt = VkTypes::AsVkFormat(format);
 	bool isCompressed = VkTypes::IsCompressedFormat(fmt);
-	VkTypes::VkBlockDimensions dims = VkTypes::AsVkBlockSize(tex->GetPixelFormat());
+	VkTypes::VkBlockDimensions dims = VkTypes::AsVkBlockSize(format);
 	VkExtent3D dstExtent;
 	dstExtent = copy.extent;
-	CoreGraphics::Texture::Type type = tex->GetType();
+	CoreGraphics::Texture::Type type = type;
 	VkImageCreateInfo info =
 	{
 		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -479,7 +479,7 @@ VkUtilities::ReadImage(const Ptr<VkTexture>& tex, VkImageCopy copy, uint32_t& ou
 		fmt,
 		dstExtent,
 		1,
-		type == CoreGraphics::Texture::TextureCube ? 6u : type == CoreGraphics::Texture::Texture3D ? (uint32_t)tex->GetDepth() : 1u,
+		type == CoreGraphics::Texture::TextureCube ? 6u : type == CoreGraphics::Texture::Texture3D ? (uint32_t)dims.depth : 1u,
 		VK_SAMPLE_COUNT_1_BIT,
 		VK_IMAGE_TILING_OPTIMAL,
 		VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
@@ -522,9 +522,9 @@ VkUtilities::ReadImage(const Ptr<VkTexture>& tex, VkImageCopy copy, uint32_t& ou
 
 	// perform update of buffer, and stage a copy of buffer data to image
 	VkUtilities::ImageLayoutTransition(cmdBuf, VkUtilities::ImageMemoryBarrier(img, dstSubres, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
-	VkUtilities::ImageLayoutTransition(cmdBuf, VkUtilities::ImageMemoryBarrier(tex->GetVkImage(), srcSubres, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL));
-	vkCmdCopyImage(cmdBuf, tex->GetVkImage(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
-	VkUtilities::ImageLayoutTransition(cmdBuf, VkUtilities::ImageMemoryBarrier(tex->GetVkImage(), srcSubres, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+	VkUtilities::ImageLayoutTransition(cmdBuf, VkUtilities::ImageMemoryBarrier(tex, srcSubres, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL));
+	vkCmdCopyImage(cmdBuf, tex, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
+	VkUtilities::ImageLayoutTransition(cmdBuf, VkUtilities::ImageMemoryBarrier(tex, srcSubres, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
 	VkUtilities::ImageLayoutTransition(cmdBuf, VkUtilities::ImageMemoryBarrier(img, dstSubres, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL));
 
 	VkBufferCreateInfo bufInfo =

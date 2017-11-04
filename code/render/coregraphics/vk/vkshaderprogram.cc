@@ -18,15 +18,7 @@ __ImplementClass(Vulkan::VkShaderProgram, 'VKSP', Base::ShaderVariationBase);
 //------------------------------------------------------------------------------
 /**
 */
-VkShaderProgram::VkShaderProgram() :
-	vs(VK_NULL_HANDLE),
-	hs(VK_NULL_HANDLE),
-	ds(VK_NULL_HANDLE),
-	gs(VK_NULL_HANDLE),
-	ps(VK_NULL_HANDLE),
-	cs(VK_NULL_HANDLE),
-	pipelineType(InvalidType),
-	computePipeline(VK_NULL_HANDLE)
+VkShaderProgram::VkShaderProgram()
 {
 	// empty
 }
@@ -43,53 +35,42 @@ VkShaderProgram::~VkShaderProgram()
 /**
 */
 void
-VkShaderProgram::Apply()
+VkShaderProgram::Apply(RuntimeInfo& info)
 {
-	n_assert(this->program);
-
 	// if we are compute, we can set the pipeline straight away, otherwise we have to accumulate the infos
-	if (this->pipelineType == Compute)			VkRenderDevice::Instance()->BindComputePipeline(this->computePipeline, this->pipelineLayout);
-	else if (this->pipelineType == Graphics)	VkRenderDevice::Instance()->BindGraphicsPipelineInfo(this->shaderPipelineInfo, this);
-	else										VkRenderDevice::Instance()->UnbindPipeline();
+	if (info.type == Compute)		VkRenderDevice::Instance()->BindComputePipeline(info.pipeline, info.layout);
+	else if (info.type == Graphics)	VkRenderDevice::Instance()->BindGraphicsPipelineInfo(info.info, info.id);
+	else							VkRenderDevice::Instance()->UnbindPipeline();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkShaderProgram::Commit()
+VkShaderProgram::Setup(const Ids::Id24 id, AnyFX::VkProgram* program, VkPipelineLayout& pipelineLayout, ProgramAllocator& allocator)
 {
-	n_assert(this->program);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-VkShaderProgram::Setup(AnyFX::VkProgram* program, const VkPipelineLayout& layout)
-{
-	this->program = program;
+	allocator.Get<1>(id) = program;
 	String mask = program->GetAnnotationString("Mask").c_str();
 	String name = program->name.c_str();
-	this->pipelineLayout = layout;
-	this->uniqueId = VkShaderProgram::uniqueIdCounter++;
-
-	this->CreateShader(&this->vs, program->shaderBlock.vsBinarySize, program->shaderBlock.vsBinary);
-	this->CreateShader(&this->hs, program->shaderBlock.hsBinarySize, program->shaderBlock.hsBinary);
-	this->CreateShader(&this->ds, program->shaderBlock.dsBinarySize, program->shaderBlock.dsBinary);
-	this->CreateShader(&this->gs, program->shaderBlock.gsBinarySize, program->shaderBlock.gsBinary);
-	this->CreateShader(&this->ps, program->shaderBlock.psBinarySize, program->shaderBlock.psBinary);
-	this->CreateShader(&this->cs, program->shaderBlock.csBinarySize, program->shaderBlock.csBinary);
+	
+	SetupInfo& setup = allocator.Get<0>(id);
+	RuntimeInfo& runtime = allocator.Get<2>(id);
+	runtime.layout = pipelineLayout;
+	runtime.id = VkShaderProgram::uniqueIdCounter++;
+	runtime.pipeline = VK_NULL_HANDLE;
+	setup.mask = CoreGraphics::ShaderServer::Instance()->FeatureStringToMask(mask);
+	setup.name = name;
+	VkShaderProgram::CreateShader(&setup.vs, program->shaderBlock.vsBinarySize, program->shaderBlock.vsBinary);
+	VkShaderProgram::CreateShader(&setup.hs, program->shaderBlock.hsBinarySize, program->shaderBlock.hsBinary);
+	VkShaderProgram::CreateShader(&setup.ds, program->shaderBlock.dsBinarySize, program->shaderBlock.dsBinary);
+	VkShaderProgram::CreateShader(&setup.gs, program->shaderBlock.gsBinarySize, program->shaderBlock.gsBinary);
+	VkShaderProgram::CreateShader(&setup.ps, program->shaderBlock.psBinarySize, program->shaderBlock.psBinary);
+	VkShaderProgram::CreateShader(&setup.cs, program->shaderBlock.csBinarySize, program->shaderBlock.csBinary);
 
 	// if we have a compute shader, it will be the one we use, otherwise use the graphics one
-	if (this->cs)		this->SetupAsCompute();
-	else if (this->vs)	this->SetupAsGraphics();
-	else				this->SetupAsEmpty();
-
-	// setup feature mask and name
-	this->SetFeatureMask(CoreGraphics::ShaderServer::Instance()->FeatureStringToMask(mask));
-	this->SetName(name);
-	this->SetNumPasses(1);
+	if (setup.cs)		VkShaderProgram::SetupAsCompute(setup, runtime);
+	else if (setup.vs)	VkShaderProgram::SetupAsGraphics(program, setup, runtime);
+	else				runtime.type = PipelineType::InvalidType;
 }
 
 //------------------------------------------------------------------------------
@@ -119,131 +100,131 @@ VkShaderProgram::CreateShader(VkShaderModule* shader, unsigned binarySize, char*
 /**
 */
 void
-VkShaderProgram::SetupAsGraphics()
+VkShaderProgram::SetupAsGraphics(AnyFX::VkProgram* program, SetupInfo& setup, RuntimeInfo& runtime)
 {
-	// we have to keep track of how MANY shaders we are using too
+	// we have to keep track of how MANY shaders we are using, AnyFX makes every function 'main'
 	unsigned shaderIdx = 0;
 	static const char* name = "main";
-	memset(this->shaderInfos, 0, sizeof(this->shaderInfos));
+	memset(setup.shaderInfos, 0, sizeof(setup.shaderInfos));
 
 	// attach vertex shader
-	if (0 != this->vs)
+	if (0 != setup.vs)
 	{
-		this->shaderInfos[shaderIdx].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		this->shaderInfos[shaderIdx].pNext = NULL;
-		this->shaderInfos[shaderIdx].flags = 0;
-		this->shaderInfos[shaderIdx].stage = VK_SHADER_STAGE_VERTEX_BIT;
-		this->shaderInfos[shaderIdx].module = this->vs;
-		this->shaderInfos[shaderIdx].pName = name;
-		this->shaderInfos[shaderIdx].pSpecializationInfo = NULL;
+		setup.shaderInfos[shaderIdx].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		setup.shaderInfos[shaderIdx].pNext = NULL;
+		setup.shaderInfos[shaderIdx].flags = 0;
+		setup.shaderInfos[shaderIdx].stage = VK_SHADER_STAGE_VERTEX_BIT;
+		setup.shaderInfos[shaderIdx].module = setup.vs;
+		setup.shaderInfos[shaderIdx].pName = name;
+		setup.shaderInfos[shaderIdx].pSpecializationInfo = NULL;
 		shaderIdx++;
 	}
 
-	if (0 != this->hs)
+	if (0 != setup.hs)
 	{
-		this->shaderInfos[shaderIdx].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		this->shaderInfos[shaderIdx].pNext = NULL;
-		this->shaderInfos[shaderIdx].flags = 0;
-		this->shaderInfos[shaderIdx].stage = VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
-		this->shaderInfos[shaderIdx].module = this->hs;
-		this->shaderInfos[shaderIdx].pName = name;
-		this->shaderInfos[shaderIdx].pSpecializationInfo = NULL;
+		setup.shaderInfos[shaderIdx].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		setup.shaderInfos[shaderIdx].pNext = NULL;
+		setup.shaderInfos[shaderIdx].flags = 0;
+		setup.shaderInfos[shaderIdx].stage = VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+		setup.shaderInfos[shaderIdx].module = setup.hs;
+		setup.shaderInfos[shaderIdx].pName = name;
+		setup.shaderInfos[shaderIdx].pSpecializationInfo = NULL;
 		shaderIdx++;
 	}
 
-	if (0 != this->ds)
+	if (0 != setup.ds)
 	{
-		this->shaderInfos[shaderIdx].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		this->shaderInfos[shaderIdx].pNext = NULL;
-		this->shaderInfos[shaderIdx].flags = 0;
-		this->shaderInfos[shaderIdx].stage = VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
-		this->shaderInfos[shaderIdx].module = this->ds;
-		this->shaderInfos[shaderIdx].pName = name;
-		this->shaderInfos[shaderIdx].pSpecializationInfo = NULL;
+		setup.shaderInfos[shaderIdx].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		setup.shaderInfos[shaderIdx].pNext = NULL;
+		setup.shaderInfos[shaderIdx].flags = 0;
+		setup.shaderInfos[shaderIdx].stage = VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+		setup.shaderInfos[shaderIdx].module = setup.ds;
+		setup.shaderInfos[shaderIdx].pName = name;
+		setup.shaderInfos[shaderIdx].pSpecializationInfo = NULL;
 		shaderIdx++;
 	}
 
-	if (0 != this->gs)
+	if (0 != setup.gs)
 	{
-		this->shaderInfos[shaderIdx].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		this->shaderInfos[shaderIdx].pNext = NULL;
-		this->shaderInfos[shaderIdx].flags = 0;
-		this->shaderInfos[shaderIdx].stage = VK_SHADER_STAGE_GEOMETRY_BIT;
-		this->shaderInfos[shaderIdx].module = this->gs;
-		this->shaderInfos[shaderIdx].pName = name;
-		this->shaderInfos[shaderIdx].pSpecializationInfo = NULL;
+		setup.shaderInfos[shaderIdx].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		setup.shaderInfos[shaderIdx].pNext = NULL;
+		setup.shaderInfos[shaderIdx].flags = 0;
+		setup.shaderInfos[shaderIdx].stage = VK_SHADER_STAGE_GEOMETRY_BIT;
+		setup.shaderInfos[shaderIdx].module = setup.gs;
+		setup.shaderInfos[shaderIdx].pName = name;
+		setup.shaderInfos[shaderIdx].pSpecializationInfo = NULL;
 		shaderIdx++;
 	}
 
-	if (0 != this->ps)
+	if (0 != setup.ps)
 	{
-		this->shaderInfos[shaderIdx].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		this->shaderInfos[shaderIdx].pNext = NULL;
-		this->shaderInfos[shaderIdx].flags = 0;
-		this->shaderInfos[shaderIdx].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		this->shaderInfos[shaderIdx].module = this->ps;
-		this->shaderInfos[shaderIdx].pName = name;
-		this->shaderInfos[shaderIdx].pSpecializationInfo = NULL;
+		setup.shaderInfos[shaderIdx].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		setup.shaderInfos[shaderIdx].pNext = NULL;
+		setup.shaderInfos[shaderIdx].flags = 0;
+		setup.shaderInfos[shaderIdx].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+		setup.shaderInfos[shaderIdx].module = setup.ps;
+		setup.shaderInfos[shaderIdx].pName = name;
+		setup.shaderInfos[shaderIdx].pSpecializationInfo = NULL;
 		shaderIdx++;
 	}
 
 	// retrieve implementation specific state
-	AnyFX::VkRenderState* vkRenderState = static_cast<AnyFX::VkRenderState*>(this->program->renderState);
+	AnyFX::VkRenderState* vkRenderState = static_cast<AnyFX::VkRenderState*>(program->renderState);
 
-	this->rasterizerInfo =
+	setup.rasterizerInfo =
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
 		NULL,
 		0
 	};
-	vkRenderState->SetupRasterization(&this->rasterizerInfo);
+	vkRenderState->SetupRasterization(&setup.rasterizerInfo);
 
-	this->multisampleInfo =
+	setup.multisampleInfo =
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
 		NULL,
 		0
 	};
-	vkRenderState->SetupMultisample(&this->multisampleInfo);
+	vkRenderState->SetupMultisample(&setup.multisampleInfo);
 
-	this->depthStencilInfo =
+	setup.depthStencilInfo =
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
 		NULL,
 		0
 	};
-	vkRenderState->SetupDepthStencil(&this->depthStencilInfo);
+	vkRenderState->SetupDepthStencil(&setup.depthStencilInfo);
 
-	this->colorBlendInfo =
+	setup.colorBlendInfo =
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
 		NULL,
 		0
 	};
-	vkRenderState->SetupBlend(&this->colorBlendInfo);
+	vkRenderState->SetupBlend(&setup.colorBlendInfo);
 
-	this->tessInfo =
+	setup.tessInfo =
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO,
 		NULL,
 		0,
-		this->program->patchSize
+		program->patchSize
 	};
 
-	this->vertexInfo = 
+	setup.vertexInfo =
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
 		NULL,
 		0,
 		0,
 		NULL,
-		this->program->numVsInputs,
+		program->numVsInputs,
 		NULL
 	};
 
 	// setup dynamic state, we only support dynamic viewports and scissor rects
 	static const VkDynamicState dynamicStates[] = { VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_VIEWPORT };
-	this->dynamicInfo = 
+	setup.dynamicInfo =
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
 		NULL,
@@ -253,40 +234,40 @@ VkShaderProgram::SetupAsGraphics()
 	};
 
 	// setup pipeline information regarding the shader state
-	this->shaderPipelineInfo =
+	runtime.info =
 	{
 		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
 		NULL,
 		VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT,
 		shaderIdx,
-		this->shaderInfos,
-		&this->vertexInfo,			// we only save how many vs inputs we allow here
+		setup.shaderInfos,
+		&setup.vertexInfo,			// we only save how many vs inputs we allow here
 		NULL,						// this is input type related (triangles, patches etc)
-		program->supportsTessellation ? &this->tessInfo : VK_NULL_HANDLE,
+		program->supportsTessellation ? &setup.tessInfo : VK_NULL_HANDLE,
 		NULL,						// this is our viewport and is setup by the framebuffer
-		&this->rasterizerInfo,
-		&this->multisampleInfo,
-		&this->depthStencilInfo,
-		&this->colorBlendInfo,
-		&this->dynamicInfo,					
-		this->pipelineLayout,
+		&setup.rasterizerInfo,
+		&setup.multisampleInfo,
+		&setup.depthStencilInfo,
+		&setup.colorBlendInfo,
+		&setup.dynamicInfo,
+		runtime.layout,
 		NULL,							// pass specific stuff, keep as NULL, handled by the framebuffer
 		0,
 		VK_NULL_HANDLE, 0				// base pipeline is kept as NULL too, because this is the base for all derivatives
 	};
 
 	// be sure to flag compute shader as null
-	this->pipelineType = Graphics;
+	runtime.type = Graphics;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkShaderProgram::SetupAsCompute()
+VkShaderProgram::SetupAsCompute(SetupInfo& setup, RuntimeInfo& runtime)
 {
 	// create 6 shader info stages for each shader type
-	n_assert(0 != this->cs);
+	n_assert(0 != setup.cs);
 
 	VkPipelineShaderStageCreateInfo shader =
 	{
@@ -294,69 +275,59 @@ VkShaderProgram::SetupAsCompute()
 		NULL,
 		0,
 		VK_SHADER_STAGE_COMPUTE_BIT,
-		this->cs,
+		setup.cs,
 		"main",
 		VK_NULL_HANDLE,
 	};
 
-	VkComputePipelineCreateInfo info =
+	VkComputePipelineCreateInfo pInfo =
 	{
 		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
 		NULL,
 		0,
 		shader,
-		this->pipelineLayout,
+		runtime.layout,
 		VK_NULL_HANDLE, 
 		0
 	};
 
 	// create pipeline
-	VkResult res = vkCreateComputePipelines(VkRenderDevice::dev, VkRenderDevice::cache, 1, &info, NULL, &this->computePipeline);
+	VkResult res = vkCreateComputePipelines(VkRenderDevice::dev, VkRenderDevice::cache, 1, &pInfo, NULL, &runtime.pipeline);
 	n_assert(res == VK_SUCCESS);
-	this->pipelineType = Compute;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-VkShaderProgram::SetupAsEmpty()
-{
-	this->pipelineType = InvalidType;
+	runtime.type = Compute;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 const uint32_t
-VkShaderProgram::GetNumVertexInputs() const
+VkShaderProgram::GetNumVertexInputs(AnyFX::VkProgram* program)
 {
-	return this->program->numVsInputs;
+	return program->numVsInputs;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 const uint32_t
-VkShaderProgram::GetNumPixelOutputs() const
+VkShaderProgram::GetNumPixelOutputs(AnyFX::VkProgram* program)
 {
-	return this->program->numPsOutputs;
+	return program->numPsOutputs;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkShaderProgram::Discard()
+VkShaderProgram::Discard(SetupInfo& info, VkPipeline& computePipeline)
 {
-	ShaderVariationBase::Discard();
-	if (this->vs != VK_NULL_HANDLE)					vkDestroyShaderModule(VkRenderDevice::dev, this->vs, NULL);
-	if (this->hs != VK_NULL_HANDLE)					vkDestroyShaderModule(VkRenderDevice::dev, this->hs, NULL);
-	if (this->ds != VK_NULL_HANDLE)					vkDestroyShaderModule(VkRenderDevice::dev, this->ds, NULL);
-	if (this->gs != VK_NULL_HANDLE)					vkDestroyShaderModule(VkRenderDevice::dev, this->gs, NULL);
-	if (this->ps != VK_NULL_HANDLE)					vkDestroyShaderModule(VkRenderDevice::dev, this->ps, NULL);
-	if (this->cs != VK_NULL_HANDLE)					vkDestroyShaderModule(VkRenderDevice::dev, this->cs, NULL);
-	if (this->computePipeline != VK_NULL_HANDLE)	vkDestroyPipeline(VkRenderDevice::dev, this->computePipeline, NULL);
+	if (info.vs != VK_NULL_HANDLE)					vkDestroyShaderModule(VkRenderDevice::dev, info.vs, NULL);
+	if (info.hs != VK_NULL_HANDLE)					vkDestroyShaderModule(VkRenderDevice::dev, info.hs, NULL);
+	if (info.ds != VK_NULL_HANDLE)					vkDestroyShaderModule(VkRenderDevice::dev, info.ds, NULL);
+	if (info.gs != VK_NULL_HANDLE)					vkDestroyShaderModule(VkRenderDevice::dev, info.gs, NULL);
+	if (info.ps != VK_NULL_HANDLE)					vkDestroyShaderModule(VkRenderDevice::dev, info.ps, NULL);
+	if (info.cs != VK_NULL_HANDLE)					vkDestroyShaderModule(VkRenderDevice::dev, info.cs, NULL);
+	if (computePipeline != VK_NULL_HANDLE)			vkDestroyPipeline(VkRenderDevice::dev, computePipeline, NULL);
 }
 
 } // namespace Vulkan

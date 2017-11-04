@@ -40,6 +40,7 @@ ResourceManager::Open()
 	this->loaderThread->SetCoreId(System::Cpu::IoThreadCore);
 	this->loaderThread->SetName("Resources::ResourceLoaderThread");
 	this->loaderThread->Start();
+	this->pools.Reserve(256); // lower 8 bits of resource id can only get to 256
 	this->open = true;
 	UniquePoolCounter = 0;
 }
@@ -66,7 +67,7 @@ ResourceManager::RegisterStreamPool(const Util::StringAtom& ext, const Core::Rtt
 {
 	n_assert(this->open);
 	n_assert(loaderClass.IsDerivedFrom(ResourceStreamPool::RTTI));
-	Core::RefCounted* obj = loaderClass.Create();
+	void* obj = loaderClass.Create();
 	Ptr<ResourceStreamPool> loader((ResourceStreamPool*)obj);
 	loader->uniqueId = UniquePoolCounter++;
 	loader->Setup();
@@ -83,7 +84,7 @@ ResourceManager::RegisterMemoryPool(const Core::Rtti& loaderClass)
 {
 	n_assert(this->open);
 	n_assert(loaderClass.IsDerivedFrom(ResourceMemoryPool::RTTI));
-	Core::RefCounted* obj = loaderClass.Create();
+	void* obj = loaderClass.Create();
 	Ptr<ResourceMemoryPool> loader((ResourceMemoryPool*)obj);
 	loader->uniqueId = UniquePoolCounter++;
 	loader->Setup();
@@ -131,7 +132,7 @@ ResourceManager::GetType(const Resources::ResourceId id)
 	// get resource loader by extension
 	n_assert(this->pools.Size() > loaderid);
 	const Ptr<ResourcePool>& loader = this->pools[loaderid];
-	return loader->resourceClass;
+	return loader->GetRtti();
 }
 
 } // namespace Resources

@@ -39,7 +39,6 @@ void
 ResourceStreamPool::Setup()
 {
 	// implement loader-specific setups, such as placeholder and error resource ids, as well as the acceptable resource class
-	this->resourceClass = nullptr;
 	this->placeholderResourceId = "";
 	this->errorResourceId = "";
 	this->uniqueResourceId = 0;
@@ -77,7 +76,7 @@ ResourceStreamPool::Update(IndexT frameIndex)
 			// callbacks are called from the thread, we only have to clear them
 			this->callbacks[resourceId].Clear();
 			this->pendingLoadPool.Dealloc(element.pid);
-			this->pendingLoadMap.Erase(element.res->resourceName);
+			this->pendingLoadMap.Erase(this->names[element.res]);
 			element.pid = Ids::InvalidId32;
 			continue;
 		}
@@ -96,7 +95,7 @@ ResourceStreamPool::Update(IndexT frameIndex)
 				this->RunCallbacks(status, element.id);
 				this->callbacks[resourceId].Clear();
 				this->pendingLoadPool.Dealloc(element.pid);
-				this->pendingLoadMap.Erase(element.res->resourceName);
+				this->pendingLoadMap.Erase(this->names[element.res]);
 				element.pid = Ids::InvalidId32;
 			}
 		}		
@@ -106,18 +105,17 @@ ResourceStreamPool::Update(IndexT frameIndex)
 	for (i = 0; i < this->pendingUnloads.Size(); i++)
 	{
 		const _PendingResourceUnload& unload = this->pendingUnloads[i];
-		const ResourceContainer& container = this->containers[unload.resourceId];
-		if (container.resource->state != Resource::Pending)
+		if (this->states[unload.resourceId] != Resource::Pending)
 		{
-			if (container.resource->state == Resource::Loaded)
+			if (this->states[unload.resourceId] == Resource::Loaded)
 			{
 				// unload if loaded
-				this->Unload(container.resource);
-				container.resource->state = Resource::Unloaded;
+				this->Unload(unload.resourceId);
+				this->states[unload.resourceId] = Resource::Unloaded;
 			}
 
 			// give up the resource id
-			this->resourceIndexPool.Dealloc(unload.resourceId);
+			this->DeallocResource(unload.resourceId);
 			
 			// remove pending unload if not Pending or Loaded (so explicitly Unloaded or Failed)
 			this->pendingUnloads.EraseIndex(i--);
@@ -151,7 +149,7 @@ ResourceStreamPool::PrepareLoad(_PendingResourceLoad& res)
 	LoadStatus ret = Failed;
 
 	// in case this resource has been loaded previously
-	if (res.res->state == Resource::Loaded) return Success;
+	if (this->states[res.res] == Resource::Loaded) return Success;
 
 	// if threaded, and resource is not requested to be immediate
 	if (this->async && !res.immediate)
@@ -163,8 +161,7 @@ ResourceStreamPool::PrepareLoad(_PendingResourceLoad& res)
 		auto loadFunc = [this, &res, ioserver]()
 		{
 			// construct stream
-			const Ptr<Resources::Resource>& resource = res.res;
-			Ptr<Stream> stream = ioserver->CreateStream(res.res->resourceName.Value());
+			Ptr<Stream> stream = ioserver->CreateStream(this->names[res.res].Value());
 			stream->SetAccessMode(Stream::ReadAccess);
 
 			// enter critical section
@@ -173,8 +170,8 @@ ResourceStreamPool::PrepareLoad(_PendingResourceLoad& res)
 				LoadStatus stat = this->Load(res.res, res.tag, stream);
 				this->asyncSection.Enter();
 				this->RunCallbacks(stat, res.id);
-				if (stat == Success)		resource->state = Resource::Loaded;
-				else if (stat == Failed)	resource->state = Resource::Failed;
+				if (stat == Success)		this->states[res.res] = Resource::Loaded;
+				else if (stat == Failed)	this->states[res.res] = Resource::Failed;
 				this->asyncSection.Leave();
 
 				// close stream
@@ -186,7 +183,7 @@ ResourceStreamPool::PrepareLoad(_PendingResourceLoad& res)
 				this->asyncSection.Enter();
 				this->RunCallbacks(Failed, res.id);
 				this->asyncSection.Leave();
-				resource->state = Resource::Failed;
+				this->states[res.res] = Resource::Failed;
 			}
 
 			// mark that we are done with this resource so it may be cleared later
@@ -205,7 +202,7 @@ ResourceStreamPool::PrepareLoad(_PendingResourceLoad& res)
 	else
 	{
 		// construct stream
-		Ptr<Stream> stream = IoServer::Instance()->CreateStream(res.res->resourceName.Value());
+		Ptr<Stream> stream = IoServer::Instance()->CreateStream(this->names[res.res].Value());
 		if (stream->Open())
 		{
 			ret = this->Load(res.res, res.tag, stream);
@@ -225,9 +222,6 @@ ResourceStreamPool::PrepareLoad(_PendingResourceLoad& res)
 Ids::Id64
 Resources::ResourceStreamPool::CreateResource(const ResourceName& res, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed, bool immediate)
 {
-	n_assert(this->resourceClass != nullptr);
-	n_assert(this->resourceClass->IsDerivedFrom(Resource::RTTI));
-
 	Ids::Id64 ret;
 	Ids::Id32 instanceId = this->resourceInstanceIndexPool.Alloc(); // this is the ID of the container
 	Ids::Id24 resourceId; // this is the id of the resource	
@@ -235,28 +229,25 @@ Resources::ResourceStreamPool::CreateResource(const ResourceName& res, const Uti
 
 	if (i == InvalidIndex)
 	{
-		// create new resource id, if need be, grow the container list
-		resourceId = this->resourceIndexPool.Alloc();
-		if (resourceId >= (uint32_t)this->containers.Size() )
-		{
-			this->containers.Resize(this->containers.Size() + this->resourceIndexPool.GetGrow());
-			this->usage.Resize(this->usage.Size() + this->resourceIndexPool.GetGrow());
-			this->callbacks.Resize(this->callbacks.Size() + this->resourceIndexPool.GetGrow());
-			this->names.Resize(this->names.Size() + this->resourceIndexPool.GetGrow());
-		}
+		// allocate new resource
+		resourceId = this->AllocResource();
 
-		// grab container
-		ResourceContainer& container = this->containers[resourceId];
-		container.error = this->errorResource;
-		container.placeholder = this->placeholderResource;
-		container.resource = (Resource*)this->resourceClass->Create();
-		container.resource->resourceName = res;
-		container.resource->tag = tag;
+		// create new resource id, if need be, grow the container list
+		if (resourceId >= (uint32_t)this->names.Size())
+		{
+			this->usage.Resize(this->usage.Size() + ResourceIndexGrow);
+			this->callbacks.Resize(this->callbacks.Size() + ResourceIndexGrow);
+			this->names.Resize(this->names.Size() + ResourceIndexGrow);
+			this->tags.Resize(this->tags.Size() + ResourceIndexGrow);
+			this->states.Resize(this->states.Size() + ResourceIndexGrow);
+		}
 
 		// add the resource name to the resource id
 		this->ids.Add(res, resourceId);
 		this->names[resourceId] = res;
 		this->usage[resourceId] = 1;
+		this->tags[resourceId] = tag;
+		this->states[resourceId] = Resource::Pending;
 
 		if (success != nullptr || failed != nullptr)
 		{
@@ -270,7 +261,7 @@ Resources::ResourceStreamPool::CreateResource(const ResourceName& res, const Uti
 		_PendingResourceLoad& pending = this->pendingLoads[pendingId];
 		pending.id = ret;
 		pending.pid = pendingId;
-		pending.res = container.resource;
+		pending.res = resourceId;
 		pending.tag = tag;
 		pending.inflight = false;
 		pending.immediate = immediate;
@@ -285,7 +276,6 @@ Resources::ResourceStreamPool::CreateResource(const ResourceName& res, const Uti
 
 		// bump usage
 		this->usage[resourceId]++;
-		ResourceContainer& container = this->containers[resourceId];
 
 		// only do this part if we have callbacks
 		if (success != nullptr || failed != nullptr)
@@ -294,15 +284,16 @@ Resources::ResourceStreamPool::CreateResource(const ResourceName& res, const Uti
 			this->asyncSection.Enter();
 		
 			// if the resource has been loaded (through a previous Update), just call the success callback
-			if (container.resource->state == Resource::Loaded)
+			const Resource::State state = this->states[resourceId];
+			if (state == Resource::Loaded)
 			{
 				if (success != nullptr) success(ret);
 			}
-			else if (container.resource->state == Resource::Failed)
+			else if (state == Resource::Failed)
 			{
 				if (failed != nullptr) failed(ret);
 			}
-			else if (container.resource->state == Resource::Pending)
+			else if (state == Resource::Pending)
 			{
 				// this resource should now be in the pending list
 				IndexT i = this->pendingLoadMap.FindIndex(res);
@@ -352,16 +343,13 @@ void
 ResourceStreamPool::DiscardByTag(const Util::StringAtom& tag)
 {
 	IndexT i;
-	for (i = 0; i < containers.Size(); i++)
+	for (i = 0; i < tags.Size(); i++)
 	{
-		ResourceContainer& container = containers[i];
-		if (container.resource->tag == tag)
+		if (tags[i] == tag)
 		{
-			// recycle the resource id
-			const Ids::Id24 resourceId = this->ids[container.resource->resourceName];
-
 			// add pending unload, it will be unloaded once loaded
-			this->pendingUnloads.Append({ resourceId });
+			this->pendingUnloads.Append({ (Ids::Id24)i });
+			this->tags[i] = "";
 		}
 	}
 }

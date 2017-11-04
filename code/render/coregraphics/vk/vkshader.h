@@ -21,7 +21,6 @@ namespace Vulkan
 {
 class VkShader : public Base::ShaderBase
 {
-	__DeclareClass(VkShader);
 public:
 	/// constructor
 	VkShader();
@@ -34,7 +33,17 @@ public:
 	AnyFX::ShaderEffect* GetVkEffect() const;
 
 	/// create descriptor set layout
-	void Setup(AnyFX::ShaderEffect* effect);
+	static void Setup(
+		AnyFX::ShaderEffect* effect, 
+		VkPushConstantRange& constantRange, 
+		Util::Dictionary<uint32_t, Util::Array<VkDescriptorSetLayoutBinding>>& setBindings,
+		Util::Array<VkSampler>& immutableSamplers,
+		Util::FixedArray<VkDescriptorSetLayout>& setLayouts,
+		VkPipelineLayout& pipelineLayout,
+		Util::FixedArray<VkDescriptorSet>& sets,
+		Util::Dictionary<Util::StringAtom, Ptr<CoreGraphics::ConstantBuffer>>& buffers,
+		Util::Dictionary<uint32_t, Util::Array<Ptr<CoreGraphics::ConstantBuffer>>>& buffersByGroup
+		);
 	/// get variable offset (within its constant buffer) by name
 	static const uint32_t& GetVariableOffset(const Util::String& name);
 	/// get variable offset by index
@@ -57,10 +66,14 @@ private:
 	friend class VkShaderState;
 
 	/// create descriptor layout signature
-	Util::String CreateSignature(const VkDescriptorSetLayoutBinding& bind);
+	static Util::String CreateSignature(const VkDescriptorSetLayoutBinding& bind);
 
 	/// cleans up the shader
-	void Cleanup();
+	void Cleanup(
+		Util::Array<VkSampler>& immutableSamplers,
+		Util::FixedArray<VkDescriptorSetLayout>& setLayouts,
+		VkPipelineLayout& pipelineLayout
+		);
 
 	/// called by ogl4 shader server when ogl4 device is lost
 	void OnLostDevice();

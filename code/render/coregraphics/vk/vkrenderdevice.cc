@@ -593,10 +593,10 @@ VkRenderDevice::OpenVulkanContext()
 
 	// reset state
 	this->inputInfo.topology = VK_PRIMITIVE_TOPOLOGY_MAX_ENUM;
-	this->vertexLayout = NULL;
-	this->currentProgram = NULL;
-	this->currentPipelineInfo.pVertexInputState = NULL;
-	this->currentPipelineInfo.pInputAssemblyState = NULL;
+	this->vertexLayout = nullptr;
+	this->currentProgram = nullptr;
+	this->currentPipelineInfo.pVertexInputState = nullptr;
+	this->currentPipelineInfo.pInputAssemblyState = nullptr;
 
 	// create pipeline database
 	this->database = VkPipelineDatabase::Create();
@@ -634,7 +634,7 @@ VkRenderDevice::CloseVulkanDevice()
 	_end_counter(NumPipelinesBuilt);
 	_discard_counter(NumPipelinesBuilt);
 
-	this->database = 0;
+	this->database = nullptr;
 
 	size_t size;
 	vkGetPipelineCacheData(this->dev, this->cache, &size, NULL);
@@ -697,7 +697,6 @@ VkRenderDevice::CloseVulkanDevice()
 	vkDestroyFence(this->dev, this->mainCmdDrawFence, NULL);
 	vkDestroyFence(this->dev, this->mainCmdCmpFence, NULL);
 	vkDestroyFence(this->dev, this->mainCmdTransFence, NULL);
-
 
 	vkDestroyDevice(this->dev, NULL);
 	vkDestroyInstance(this->instance, NULL);
@@ -789,15 +788,15 @@ VkRenderDevice::BeginFrame(IndexT frameIndex)
 /**
 */
 void
-VkRenderDevice::SetStreamVertexBuffer(IndexT streamIndex, const Ptr<CoreGraphics::VertexBuffer>& vb, IndexT offsetVertexIndex)
+VkRenderDevice::SetStreamVertexBuffer(IndexT streamIndex, const VkBuffer vb, IndexT offsetVertexIndex)
 {
 	// hmm, build pipeline before we start setting this stuff
 	this->BuildRenderPipeline();
 
-	RenderDeviceBase::SetStreamVertexBuffer(streamIndex, vb, offsetVertexIndex);
+	//RenderDeviceBase::SetStreamVertexBuffer(streamIndex, vb, offsetVertexIndex);
 	VkCmdBufferThread::Command cmd;
 	cmd.type = VkCmdBufferThread::InputAssemblyVertex;
-	cmd.vbo.buffer = vb->GetVkBuffer();
+	cmd.vbo.buffer = vb;
 	cmd.vbo.index = streamIndex;
 	cmd.vbo.offset = offsetVertexIndex;
 	this->PushToThread(cmd, this->currentDrawThread);
@@ -818,15 +817,15 @@ VkRenderDevice::SetVertexLayout(const Ptr<CoreGraphics::VertexLayout>& vl)
 /**
 */
 void
-VkRenderDevice::SetIndexBuffer(const Ptr<CoreGraphics::IndexBuffer>& ib)
+VkRenderDevice::SetIndexBuffer(const VkBuffer ib, const IndexType::Code type)
 {
 	// hmm, build pipeline before we start setting this stuff
 	this->BuildRenderPipeline();
 
 	VkCmdBufferThread::Command cmd;
 	cmd.type = VkCmdBufferThread::InputAssemblyIndex;
-	cmd.ibo.buffer = ib->GetVkBuffer();
-	cmd.ibo.indexType = ib->GetIndexType() == IndexType::Index16 ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32;
+	cmd.ibo.buffer = ib;
+	cmd.ibo.indexType = type == IndexType::Index16 ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32;
 	cmd.ibo.offset = 0;
 	this->PushToThread(cmd, this->currentDrawThread);
 }
@@ -1114,10 +1113,10 @@ VkRenderDevice::EndFrame(IndexT frameIndex)
 
 	// reset state
 	this->inputInfo.topology = VK_PRIMITIVE_TOPOLOGY_MAX_ENUM;
-	this->vertexLayout = NULL;
-	this->currentProgram = NULL;
-	this->currentPipelineInfo.pVertexInputState = NULL;
-	this->currentPipelineInfo.pInputAssemblyState = NULL;
+	this->vertexLayout = nullptr;
+	this->currentProgram = nullptr;
+	this->currentPipelineInfo.pVertexInputState = nullptr;
+	this->currentPipelineInfo.pInputAssemblyState = nullptr;
 	//vkEndCommandBuffer(this->mainCmdGfxBuffer);
 	//vkEndCommandBuffer(this->mainCmdCmpBuffer);
 	//vkEndCommandBuffer(this->mainCmdTransBuffer);
@@ -1262,11 +1261,11 @@ VkRenderDevice::DisplayResized(SizeT width, SizeT height)
 /**
 */
 void
-VkRenderDevice::BindGraphicsPipelineInfo(const VkGraphicsPipelineCreateInfo& shader, const Ptr<VkShaderProgram>& program)
+VkRenderDevice::BindGraphicsPipelineInfo(const VkGraphicsPipelineCreateInfo& shader, const uint32_t programId)
 {
-	if (this->currentProgram != program || !(this->currentPipelineBits & ShaderInfoSet))
+	if (this->currentProgram != programId || !(this->currentPipelineBits & ShaderInfoSet))
 	{
-		this->database->SetShader(program);
+		this->database->SetShader(programId);
 		this->currentPipelineBits |= ShaderInfoSet;
 
 		this->blendInfo.pAttachments = shader.pColorBlendState->pAttachments;
@@ -1283,7 +1282,7 @@ VkRenderDevice::BindGraphicsPipelineInfo(const VkGraphicsPipelineCreateInfo& sha
 		this->currentPipelineInfo.pStages = shader.pStages;
 		this->currentPipelineInfo.layout = shader.layout;
 		this->currentPipelineBits &= ~PipelineBuilt;
-		this->currentProgram = program;
+		this->currentProgram = programId;
 	}
 }
 

@@ -18,7 +18,7 @@
 #define _declare_counter(counter) Ptr<Debug::DebugCounter> counter;
 #define _setup_counter(counter) counter = Debug::DebugCounter::Create(); counter->Setup(Util::StringAtom(#counter));
 #define _setup_grouped_counter(counter, group) counter = Debug::DebugCounter::Create(); counter->Setup(Util::StringAtom(#counter), group);
-#define _discard_counter(counter) counter->Discard(); counter = 0;
+#define _discard_counter(counter) counter->Discard(); counter = nullptr;
 #define _begin_counter(counter) counter->Begin();
 #define _begin_counter_noreset(counter) counter->Begin(false);
 #define _reset_counter(counter) counter->Reset();

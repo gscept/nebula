@@ -10,6 +10,7 @@
 #include "coregraphics/renderdevice.h"
 #include "vkutilities.h"
 #include "resources/resourcemanager.h"
+#include "vkshaderserver.h"
 
 using namespace CoreGraphics;
 using namespace Resources;
@@ -17,26 +18,32 @@ namespace Vulkan
 {
 
 __ImplementClass(Vulkan::VkMemoryTexturePool, 'VKTO', Resources::ResourceMemoryPool);
+
 //------------------------------------------------------------------------------
 /**
 */
-void
-VkMemoryTexturePool::SetImageBuffer(const void* buffer, SizeT width, SizeT height, CoreGraphics::PixelFormat::Code format)
+ResourcePool::LoadStatus
+VkMemoryTexturePool::UpdateResource(const Ids::Id24 id, void* info)
 {
-	this->width = width;
-	this->height = height;
-	this->format = format;
-	VkFormat vkformat = VkTypes::AsVkFormat(format);
-	uint32_t size = PixelFormat::ToSize(format);
+	VkMemoryTextureInfo* data = (VkMemoryTextureInfo*)info;
+
+	/// during the load-phase, we can safetly get the structs
+	this->EnterGet();
+	VkTexture::RuntimeInfo& runtimeInfo = this->Get<0>(res);
+	VkTexture::LoadInfo& loadInfo = this->Get<1>(res);
+	this->LeaveGet();
+
+	VkFormat vkformat = VkTypes::AsVkFormat(data->format);
+	uint32_t size = PixelFormat::ToSize(data->format);
 
 	VkFormatProperties formatProps;
 	vkGetPhysicalDeviceFormatProperties(VkRenderDevice::physicalDev, vkformat, &formatProps);
 	VkExtent3D extents;
-	extents.width = width;
-	extents.height = height;
+	extents.width = data->width;
+	extents.height = data->height;
 	extents.depth = 1;
-	
-	VkImageCreateInfo info =
+
+	VkImageCreateInfo imgInfo =
 	{
 		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
 		NULL,
@@ -54,14 +61,14 @@ VkMemoryTexturePool::SetImageBuffer(const void* buffer, SizeT width, SizeT heigh
 		NULL,
 		VK_IMAGE_LAYOUT_UNDEFINED
 	};
-	
-	VkResult stat = vkCreateImage(VkRenderDevice::dev, &info, NULL, &this->image);
+
+	VkResult stat = vkCreateImage(VkRenderDevice::dev, &imgInfo, NULL, &loadInfo.img);
 	n_assert(stat == VK_SUCCESS);
 
 	// allocate memory backing
 	uint32_t alignedSize;
-	VkUtilities::AllocateImageMemory(this->image, this->mem, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, alignedSize);
-	vkBindImageMemory(VkRenderDevice::dev, this->image, this->mem, 0);
+	VkUtilities::AllocateImageMemory(loadInfo.img, loadInfo.mem, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, alignedSize);
+	vkBindImageMemory(VkRenderDevice::dev, loadInfo.img, loadInfo.mem, 0);
 
 	VkScheduler* scheduler = VkScheduler::Instance();
 
@@ -72,14 +79,14 @@ VkMemoryTexturePool::SetImageBuffer(const void* buffer, SizeT width, SizeT heigh
 	subres.baseMipLevel = 0;
 	subres.layerCount = 1;
 	subres.levelCount = 1;
-	scheduler->PushImageLayoutTransition(VkDeferredCommand::Transfer, VkUtilities::ImageMemoryBarrier(this->image, subres, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
+	scheduler->PushImageLayoutTransition(VkDeferredCommand::Transfer, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
 
 	VkBufferImageCopy copy;
 	copy.bufferOffset = 0;
-	copy.bufferImageHeight = height;
-	copy.bufferRowLength = width * size;
-	copy.imageExtent.width = width;
-	copy.imageExtent.height = height;
+	copy.bufferImageHeight = data->height;
+	copy.bufferRowLength = data->width * size;
+	copy.imageExtent.width = data->width;
+	copy.imageExtent.height = data->height;
 	copy.imageExtent.depth = 1;
 	copy.imageOffset = { 0, 0, 0 };
 	copy.imageSubresource.baseArrayLayer = 0;
@@ -88,11 +95,11 @@ VkMemoryTexturePool::SetImageBuffer(const void* buffer, SizeT width, SizeT heigh
 	copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 
 	// update image while in transfer optimal
-	scheduler->PushImageUpdate(this->image, info, 0, 0, width * height * size, (uint32_t*)buffer);
+	scheduler->PushImageUpdate(this->alloc.allocator.Get<0>(id), imgInfo, 0, 0, data->width * data->height * size, (uint32_t*)data->buffer);
 
 	// transition image to shader variable
-	scheduler->PushImageLayoutTransition(VkDeferredCommand::Transfer, VkUtilities::ImageMemoryBarrier(this->image, subres, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
-	scheduler->PushImageOwnershipChange(VkDeferredCommand::Transfer, VkUtilities::ImageMemoryBarrier(this->image, subres, VkDeferredCommand::Transfer, VkDeferredCommand::Graphics, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+	scheduler->PushImageLayoutTransition(VkDeferredCommand::Transfer, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+	scheduler->PushImageOwnershipChange(VkDeferredCommand::Transfer, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VkDeferredCommand::Transfer, VkDeferredCommand::Graphics, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
 
 	// create view
 	VkImageViewType viewType = VK_IMAGE_VIEW_TYPE_2D;
@@ -107,27 +114,28 @@ VkMemoryTexturePool::SetImageBuffer(const void* buffer, SizeT width, SizeT heigh
 		VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
 		NULL,
 		0,
-		this->image,
+		loadInfo.img,
 		viewType,
 		vkformat,
-		VkTypes::AsVkMapping(format),
+		VkTypes::AsVkMapping(data->format),
 		viewRange
 	};
-	stat = vkCreateImageView(VkRenderDevice::dev, &viewCreate, NULL, &this->view);
+	stat = vkCreateImageView(VkRenderDevice::dev, &viewCreate, NULL, &runtimeInfo.view);
 	n_assert(stat == VK_SUCCESS);
+
+	loadInfo.dims.width = data->width;
+	loadInfo.dims.height = data->height;
+	loadInfo.dims.depth = 1;
+	loadInfo.mips = 1;
+	loadInfo.format = data->format;
+	runtimeInfo.type = Texture::Texture2D;
+	runtimeInfo.bind = VkShaderServer::Instance()->RegisterTexture(runtimeInfo.view, Texture::Texture2D);
+
+	n_assert(this->GetState(id) == Resource::Pending);
+	n_assert(loadInfo.img!= VK_NULL_HANDLE);
+
+	return ResourcePool::Success;
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-Resources::ResourceMemoryLoader::LoadStatus
-VkMemoryTexturePool::Load(const Resources::ResourceId id)
-{
-	const Ptr<CoreGraphics::Texture>& tex = Resources::GetResource<CoreGraphics::Texture>(id);
-	n_assert(tex->GetState() == Resource::Pending);
-	n_assert(this->image != 0);
-	tex->SetupFromVkTexture(this->image, this->mem, this->view, this->width, this->height, this->format);
-	return ResourceMemoryLoader::Success;
-}
 
 } // namespace Vulkan

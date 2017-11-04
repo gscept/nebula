@@ -18,7 +18,7 @@ using namespace Messaging;
 using namespace Util;
 namespace Materials
 {
-__ImplementClass(Materials::StreamSurfaceLoader, 'SSML', Resources::ResourceLoader);
+__ImplementClass(Materials::StreamSurfaceLoader, 'SSML', Resources::ResourceStreamPool);
 
 //------------------------------------------------------------------------------
 /**
@@ -34,6 +34,18 @@ StreamSurfaceLoader::StreamSurfaceLoader()
 StreamSurfaceLoader::~StreamSurfaceLoader()
 {
 	// empty
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+StreamSurfaceLoader::Setup()
+{
+	ResourceStreamPool::Setup();
+	this->async = true;
+	this->placeholderResourceId = "mdl:system/placeholder.sur";
+	this->errorResourceId = "mdl:system/error.sur";
 }
 
 //------------------------------------------------------------------------------
@@ -225,6 +237,24 @@ StreamSurfaceLoader::SetupMaterialFromStream(const Ptr<IO::Stream>& stream)
 
     // everything went fine!
     return true;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Resources::ResourcePool::LoadStatus
+StreamSurfaceLoader::Load(const Ids::Id24 res, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream)
+{
+
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+StreamSurfaceLoader::Unload(const Ids::Id24 id)
+{
+
 }
 
 } // namespace Materials

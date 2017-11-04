@@ -11,12 +11,15 @@
 #include "lowlevel/vk/vkprogram.h"
 #include "lowlevel/vk/vkrenderstate.h"
 #include "lowlevel/afxapi.h"
+#include "resources/resourcepool.h"
 
 namespace Vulkan
 {
 class VkShaderProgram : public Base::ShaderVariationBase
 {
 	__DeclareClass(VkShaderProgram);
+	struct SetupInfo;
+	struct RuntimeInfo;
 public:
 
 	enum PipelineType
@@ -32,91 +35,62 @@ public:
 	virtual ~VkShaderProgram();
 
 	/// applies program
-	void Apply();
-	/// performs a variable commit to the current program
-	void Commit();
+	static void Apply(RuntimeInfo& info);
 
 	/// discard variation
-	void Discard();
+	static void Discard(SetupInfo& info, VkPipeline& computePipeline);
 
 	/// get the number of vertex shader inputs
-	const uint32_t GetNumVertexInputs() const;
+	static const uint32_t GetNumVertexInputs(AnyFX::VkProgram* program);
 	/// get the number of pixel shader outputs
-	const uint32_t GetNumPixelOutputs() const;
-	/// get AnyFX program backend
-	const AnyFX::VkProgram* GetVkProgram() const;
-	/// get unique id
-	const uint32_t GetUniqueId() const;
-	/// get type of shader program
-	const PipelineType& GetPipelineType() const;
+	static const uint32_t GetNumPixelOutputs(AnyFX::VkProgram* program);
 private:
 
 	friend class VkShader;
 	friend class VkShaderPool;
 	friend class VkPipelineDatabase;
 
-	/// setup from AnyFX program
-	void Setup(AnyFX::VkProgram* program, const VkPipelineLayout& layout);
+	struct SetupInfo
+	{
+		VkPipelineVertexInputStateCreateInfo vertexInfo;
+		VkPipelineRasterizationStateCreateInfo rasterizerInfo;
+		VkPipelineMultisampleStateCreateInfo multisampleInfo;
+		VkPipelineDepthStencilStateCreateInfo depthStencilInfo;
+		VkPipelineColorBlendStateCreateInfo colorBlendInfo;
+		VkPipelineDynamicStateCreateInfo dynamicInfo;
+		VkPipelineTessellationStateCreateInfo tessInfo;
+		VkPipelineShaderStageCreateInfo shaderInfos[5];
+		VkShaderModule vs, hs, ds, gs, ps, cs;
+		Util::String name;
+		CoreGraphics::ShaderFeature::Mask mask;
+	};
 
-	/// create shader object
-	void CreateShader(VkShaderModule* shader, unsigned binarySize, char* binary);
-	/// create this program as a graphics program
-	void SetupAsGraphics();
-	/// create this program as a compute program (can be done immediately)
-	void SetupAsCompute();
-	/// create this program as empty
-	void SetupAsEmpty();
-
-	AnyFX::VkProgram* program;
-	uint32_t uniqueId;
+	struct RuntimeInfo
+	{
+		VkGraphicsPipelineCreateInfo info;
+		VkPipeline pipeline;
+		VkPipelineLayout layout;
+		PipelineType type;
+		uint32_t id;
+	};
 
 	static uint32_t uniqueIdCounter;
+	typedef Ids::IdAllocator<
+		SetupInfo,						//0 used for setup
+		AnyFX::VkProgram*,				//1 program object
+		RuntimeInfo						//2 used for runtime
+	> ProgramAllocator;
 
-	Util::Array<VkSampler> immutableSamplers;
-	VkPushConstantRange constantRange;
+	/// setup from AnyFX program
+	static void Setup(const Ids::Id24 id, AnyFX::VkProgram* program, VkPipelineLayout& pipelineLayout, ProgramAllocator& allocator);
 
-	VkShaderModule vs, hs, ds, gs, ps, cs;
-
-	VkPipeline computePipeline;
-	VkPipelineLayout pipelineLayout;
-
-	VkPipelineVertexInputStateCreateInfo vertexInfo;
-	VkPipelineRasterizationStateCreateInfo rasterizerInfo;
-	VkPipelineMultisampleStateCreateInfo multisampleInfo;
-	VkPipelineDepthStencilStateCreateInfo depthStencilInfo;
-	VkPipelineColorBlendStateCreateInfo colorBlendInfo;
-	VkPipelineDynamicStateCreateInfo dynamicInfo;
-	VkPipelineTessellationStateCreateInfo tessInfo;
-	VkPipelineShaderStageCreateInfo shaderInfos[5];
-	VkGraphicsPipelineCreateInfo shaderPipelineInfo;
-	PipelineType pipelineType;
+	/// create shader object
+	static void CreateShader(VkShaderModule* shader, unsigned binarySize, char* binary);
+	/// create this program as a graphics program
+	static void SetupAsGraphics(AnyFX::VkProgram* program, SetupInfo& setup, RuntimeInfo& runtime);
+	/// create this program as a compute program (can be done immediately)
+	static void SetupAsCompute(SetupInfo& setup, RuntimeInfo& runtime);
 };
 
-//------------------------------------------------------------------------------
-/**
-*/
-inline const AnyFX::VkProgram*
-VkShaderProgram::GetVkProgram() const
-{
-	return this->program;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const uint32_t
-VkShaderProgram::GetUniqueId() const
-{
-	return this->uniqueId;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const VkShaderProgram::PipelineType&
-VkShaderProgram::GetPipelineType() const
-{
-	return this->pipelineType;
-}
 
 } // namespace Vulkan

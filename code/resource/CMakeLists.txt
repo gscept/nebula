@@ -11,8 +11,6 @@ fips_begin_module(resource)
 			fips_files(
 				resource.cc
 				resource.h
-				resourcecontainer.cc
-				resourcecontainer.h
 				resourceid.h
 				resourcepool.cc
 				resourcepool.h
@@ -26,5 +24,6 @@ fips_begin_module(resource)
 				resourcesaver.h
 				resourcestreampool.cc
 				resourcestreampool.h
+				rttiarray.h
 			)
 fips_end_module()

@@ -45,7 +45,7 @@ public:
     /// set texture directly, shorthand for setvalue with a texture
     void SetTexture(const Util::StringAtom& param, const Ptr<CoreGraphics::Texture>& tex);
     /// set a managed texture (which may load asynchronously), which is then retrieved each frame
-    void SetTexture(const Util::StringAtom& param, const Ptr<Resources::ManagedTexture>& tex);
+    void SetTexture(const Util::StringAtom& param, const Resources::ResourceId tex);
 
     /// returns true if surface has a constant with the given name
     bool HasConstant(const Util::StringAtom& name) const;
@@ -68,11 +68,11 @@ protected:
     Util::Dictionary<Util::StringAtom, Ptr<SurfaceConstant>> constantsByName;
     Util::Array<Ptr<CoreGraphics::ShaderState>> shaderInstances;
 	Util::Dictionary<Ptr<CoreGraphics::Shader>, Ptr<CoreGraphics::ShaderState>> shaderInstancesByShader;
-	Util::Array<Ptr<Resources::ManagedTexture>> allocatedTextures;
+	Util::Array<Resources::ResourceId> allocatedTextures;
     struct DeferredTextureBinding
     {
     public:
-        Ptr<Resources::ManagedTexture> tex;
+		Resources::ResourceId tex;
         Util::StringAtom var;
     };
 

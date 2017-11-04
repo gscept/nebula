@@ -9,10 +9,10 @@
 #include "vkutilities.h"
 #include "vkscheduler.h"
 
+using namespace CoreGraphics;
 namespace Vulkan
 {
 
-using namespace CoreGraphics;
 __ImplementClass(Vulkan::VkDepthStencilTarget, 'VKDS', Base::DepthStencilTargetBase);
 //------------------------------------------------------------------------------
 /**
