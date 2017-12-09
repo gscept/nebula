@@ -25,11 +25,11 @@
 
 //------------------------------------------------------------------------------
 /**
-    Nebula3 configuration.
+    NebulaT configuration.
 */
 
 #ifdef _DEBUG
-#define NEBULA3_DEBUG (1)
+#define NEBULA_DEBUG (1)
 #endif
 
 /// max size of a data slice is 16 kByte - 1 byte
@@ -47,7 +47,7 @@ static const int JobMaxSliceSize = 0xFFFF;
 #define NEBULA3_NATIVE_ARCHIVE_SUPPORT (0)
 
 // enable/disable Nebula3 memory stats
-#if NEBULA3_DEBUG
+#if NEBULA_DEBUG
 #if __WIN32__
 #define NEBULA3_MEMORY_STATS (1)
 #else
@@ -100,7 +100,7 @@ static const int JobMaxSliceSize = 0xFFFF;
 #endif
 
 // enable/disable bounds checking in the container util classes
-#if NEBULA3_DEBUG
+#if NEBULA_DEBUG
 #define NEBULA3_BOUNDSCHECKS (1)
 #else
 #define NEBULA3_BOUNDSCHECKS (0)

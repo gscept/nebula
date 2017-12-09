@@ -1,13 +1,13 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @class CoreGraphics::ShaderVariation
+	@class CoreGraphics::ShaderVariation
   
-    A variation of a shader implements a specific feature set identified
-    by a feature mask.
-    
-    (C) 2007 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+	A variation of a shader implements a specific feature set identified
+	by a feature mask.
+	
+	(C) 2007 Radon Labs GmbH
+	(C) 2013-2016 Individual contributors, see AUTHORS file
 */
 #if __DX11__
 #include "coregraphics/d3d11/d3d11shadervariation.h"
@@ -42,7 +42,7 @@ namespace CoreGraphics
 {
 class ShaderVariation : public Direct3D9::D3D9ShaderVariation
 {
-    __DeclareClass(ShaderVariation);
+	__DeclareClass(ShaderVariation);
 };
 }
 #else

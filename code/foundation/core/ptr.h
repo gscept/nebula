@@ -16,7 +16,7 @@
 #include <type_traits>
 
 // platform secific stuff for handling/suppress "unused-argument"-warnings
-#if NEBULA3_DEBUG
+#if NEBULA_DEBUG
 #if (__XBOX360__ || __WIN32__)
 #pragma warning( push )
 // warning unused param
@@ -27,7 +27,7 @@
 #else
 #define NEBULA3_UNUSED_ATTR
 #endif
-#endif // NEBULA3_DEBUG
+#endif // NEBULA_DEBUG
 
 //------------------------------------------------------------------------------
 template<class TYPE>
@@ -51,7 +51,7 @@ public:
 	template<class OTHERTYPE>
 	Ptr(OTHERTYPE* rhs)
 	{
-		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value, "Left hand side must be base of right");
+		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value, "Implicit cast assumes left hand side must be base of right");
 		TYPE* p = static_cast<TYPE*>(rhs);
 		if (p != this->ptr)
 		{
@@ -63,7 +63,7 @@ public:
 	template <class OTHERTYPE>
 	Ptr(const Ptr<OTHERTYPE>& rhs)
 	{
-		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value, "Left hand side must be base of right");
+		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value, "Implicit cast assumes left hand side must be base of right");
 		TYPE* p = reinterpret_cast<TYPE*>(rhs.ptr);
 		if (p != this->ptr)
 		{
@@ -75,7 +75,7 @@ public:
 	template <class OTHERTYPE>
 	Ptr(Ptr<OTHERTYPE>&& rhs)
 	{
-		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value, "Left hand side must be base of right");
+		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value, "Implicit cast assumes left hand side must be base of right");
 		TYPE* p = reinterpret_cast<TYPE*>(rhs.ptr);
 		this->ptr = p;
 		rhs.ptr = nullptr;
@@ -95,7 +95,7 @@ public:
 	template<class OTHERTYPE>
 	void operator=(OTHERTYPE* rhs)
 	{
-		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value, "Left hand side must be base of right");
+		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value, "Implicit assignment assumes left hand side must be base of right");
 		TYPE* p = reinterpret_cast<TYPE*>(rhs);
 		if (this->ptr != p)
 		{
@@ -108,7 +108,7 @@ public:
 	template<class OTHERTYPE>
 	void operator=(const Ptr<OTHERTYPE>& rhs)
 	{
-		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value, "Left hand side must be base of right");
+		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value, "Implicit assignment assumes left hand side must be base of right");
 		TYPE* p = reinterpret_cast<TYPE*>(rhs.ptr);
 		if (this->ptr != p)
 		{
@@ -121,7 +121,7 @@ public:
 	template<class OTHERTYPE>
 	void operator=(Ptr<OTHERTYPE>&& rhs)
 	{
-		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value, "Left hand side must be base of right");
+		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value, "Implicit assignment assumes left hand side must be base of right");
 		TYPE* p = reinterpret_cast<TYPE*>(rhs.ptr);
 		if (this->ptr != p)
 		{
@@ -361,7 +361,7 @@ template<class TYPE>
 template<class DERIVED> const Ptr<DERIVED>&
 Ptr<TYPE>::downcast() const
 {
-#if (NEBULA3_DEBUG == 1)
+#if (NEBULA_DEBUG == 1)
     // if DERIVED is not a derived class of TYPE, compiler complains here
     // compile-time inheritance-test
 	static_assert(std::is_base_of<TYPE, DERIVED>::value, "Incompatible types");
@@ -377,7 +377,7 @@ template<class TYPE>
 template<class BASE> const Ptr<BASE>&
 Ptr<TYPE>::upcast() const
 {
-#if (NEBULA3_DEBUG == 1)
+#if (NEBULA_DEBUG == 1)
     // if BASE is not a base-class of TYPE, compiler complains here
     // compile-time inheritance-test
 	static_assert(std::is_base_of<BASE, TYPE>::value, "Incompatible types");
@@ -441,7 +441,7 @@ Ptr<TYPE>::HashCode() const
 
 //------------------------------------------------------------------------------
 
-#if (__XBOX360__ || __WIN32__) && NEBULA3_DEBUG
+#if (__XBOX360__ || __WIN32__) && NEBULA_DEBUG
 #pragma warning( pop )
 #endif
 #ifdef NEBULA3_UNUSED_ATTR

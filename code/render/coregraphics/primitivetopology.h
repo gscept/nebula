@@ -37,7 +37,7 @@ public:
         // PS3 specific
         QuadStrip,
 
-		// DX11 specific
+		// SM5.0+ for tessellation
 		PatchList
     };
 

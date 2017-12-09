@@ -10,6 +10,24 @@
 */
 #include "core/types.h"
 
+enum CoreGraphicsIdType
+{
+	VertexBufferIdType,
+	IndexBufferIdType,
+	ConstantBufferIdType,
+	ShaderRWBufferIdType,
+	ShaderRWTextureIdType,
+	ShaderStorageBufferIdType,
+	ShaderIdType,
+	ShaderInstanceIdType,
+	ShaderVariableIdType,
+	CommandBufferIdType,
+	RenderTextureIdType,
+	MeshIdType,
+	EventIdType,
+	WindowIdType
+};
+
 //------------------------------------------------------------------------------
 #if __DX11__ || __DX9__
     #if __DX11__

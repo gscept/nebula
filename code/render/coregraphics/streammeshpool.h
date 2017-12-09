@@ -8,26 +8,27 @@
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
 #include "resources/resourcestreampool.h"
-#include "coregraphics/base/gpuresourcebase.h"
+#include "coregraphics/gpubuffertypes.h"
+#include "coregraphics/mesh.h"
 namespace CoreGraphics
 {
-class MeshPool : public Resources::ResourceStreamPool
+class StreamMeshPool : public Resources::ResourceStreamPool
 {
-	__DeclareClass(MeshPool);
+	__DeclareClass(StreamMeshPool);
 public:
 	/// constructor
-	MeshPool();
+	StreamMeshPool();
 	/// destructor
-	virtual ~MeshPool();
+	virtual ~StreamMeshPool();
 
 	/// set the intended resource usage (default is UsageImmutable)
-	void SetUsage(Base::GpuResourceBase::Usage usage);
+	void SetUsage(GpuBufferTypes::Usage usage);
 	/// get resource usage
-	Base::GpuResourceBase::Usage GetUsage() const;
+	GpuBufferTypes::Usage GetUsage() const;
 	/// set the intended resource access (default is AccessNone)
-	void SetAccess(Base::GpuResourceBase::Access access);
+	void SetAccess(GpuBufferTypes::Access access);
 	/// get the resource access
-	Base::GpuResourceBase::Access GetAccess() const;
+	GpuBufferTypes::Access GetAccess() const;
 
 	/// bind mesh
 	void BindMesh(const Resources::ResourceId id);
@@ -37,9 +38,14 @@ public:
 private:
 	
 	/// perform load
-	LoadStatus Load(const Ids::Id24 id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream);
+	LoadStatus LoadFromStream(const Ids::Id24 id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream) override;
 	/// unload resource (overload to implement resource deallocation)
-	void Unload(const Ids::Id24 id);
+	void Unload(const Ids::Id24 id) override;
+
+	/// allocate object
+	Ids::Id32 AllocObject() override;
+	/// deallocate object
+	void DeallocObject(const Ids::Id32 id) override;
 
 #if NEBULA3_LEGACY_SUPPORT
 	/// setup mesh from nvx2 file in memory
@@ -51,21 +57,11 @@ private:
 	LoadStatus SetupMeshFromN3d3(const Ptr<IO::Stream>& stream, const Ids::Id24 res);
 
 protected:
-	Base::GpuResourceBase::Usage usage;
-	Base::GpuResourceBase::Access access;
+	GpuBufferTypes::Usage usage;
+	GpuBufferTypes::Access access;
 
-	struct Mesh
-	{
-		Resources::ResourceId vertexBuffer;
-		Resources::ResourceId indexBuffer;
-		Resources::ResourceId vertexLayout;
-		CoreGraphics::PrimitiveTopology::Code topology;
-		Util::Array<CoreGraphics::PrimitiveGroup> primitiveGroups;
-	};
 	Ids::Id24 activeMesh;
 
-	Ids::IdAllocator<Mesh> allocator;
-	__ImplementResourceAllocator(allocator);
 };
 
 
@@ -73,7 +69,7 @@ protected:
 /**
 */
 inline void
-MeshPool::SetUsage(Base::GpuResourceBase::Usage usage_)
+StreamMeshPool::SetUsage(GpuBufferTypes::Usage usage_)
 {
 	this->usage = usage_;
 }
@@ -81,8 +77,8 @@ MeshPool::SetUsage(Base::GpuResourceBase::Usage usage_)
 //------------------------------------------------------------------------------
 /**
 */
-inline Base::GpuResourceBase::Usage
-MeshPool::GetUsage() const
+inline GpuBufferTypes::Usage
+StreamMeshPool::GetUsage() const
 {
 	return this->usage;
 }
@@ -91,7 +87,7 @@ MeshPool::GetUsage() const
 /**
 */
 inline void
-MeshPool::SetAccess(Base::GpuResourceBase::Access access_)
+StreamMeshPool::SetAccess(GpuBufferTypes::Access access_)
 {
 	this->access = access_;
 }
@@ -99,8 +95,8 @@ MeshPool::SetAccess(Base::GpuResourceBase::Access access_)
 //------------------------------------------------------------------------------
 /**
 */
-inline Base::GpuResourceBase::Access
-MeshPool::GetAccess() const
+inline GpuBufferTypes::Access
+StreamMeshPool::GetAccess() const
 {
 	return this->access;
 }

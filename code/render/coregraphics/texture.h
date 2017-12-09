@@ -1,47 +1,95 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @class CoreGraphics::Texture
-    
-    Front-end class for texture objects.
-    
-    (C) 2007 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
-*/
-#if __DX11__
-#include "coregraphics/d3d11/d3d11texture.h"
-namespace CoreGraphics
-{
-class Texture : public Direct3D11::D3D11Texture
-{
-};
-}
-#elif __OGL4__
-#include "coregraphics/ogl4/ogl4texture.h"
-namespace CoreGraphics
-{
-class Texture : public OpenGL4::OGL4Texture
-{
-};
-}
-#elif __VULKAN__
-#include "coregraphics/vk/vktexture.h"
-namespace CoreGraphics
-{
-class Texture : public Vulkan::VkTexture
-{
-};
-}
-#elif __DX9__
-#include "coregraphics/d3d9/d3d9texture.h"
-namespace CoreGraphics
-{
-class Texture : public Direct3D9::D3D9Texture
-{
-};
-}
-#else
-#error "Texture class not implemented on this platform!"
-#endif
-//------------------------------------------------------------------------------
+	Texture related functions
 
+	(C) 2017 Individual contributors, see AUTHORS file
+*/
+//------------------------------------------------------------------------------
+#include "coregraphics/gpubuffertypes.h"
+#include "coregraphics/pixelformat.h"
+
+namespace CoreGraphics
+{
+
+ID_32_24_8_TYPE(TextureId);
+
+/// texture types
+enum TextureType
+{
+	InvalidType,
+
+	Texture1D,		//> a 1-dimensional texture
+	Texture2D,      //> a 2-dimensional texture
+	Texture3D,      //> a 3-dimensional texture
+	TextureCube,    //> a cube texture
+	TextureBuffer,	//> a texture buffer (1d, no mips)
+
+	Texture1DArray,		//> a 1-dimensional texture array, depth represents array size
+	Texture2DArray,		//> a 2-dimensional texture array, depth represents array size
+	Texture3DArray,		//> a 3-dimensional texture array, depth represents array size * size of layers in array
+	TextureCubeArray,	//> a cube texture array, depth represents array size * 6
+	TextureBufferArray,	//> a texture buffer (1d, no mips)
+};
+
+/// cube map face
+enum TextureCubeFace
+{
+	PosX = 0,
+	NegX,
+	PosY,
+	NegY,
+	PosZ,
+	NegZ,
+};
+
+/// type of texture usage
+enum TextureUsage
+{
+	Ordinary,		// texture is a shader sampleable 1D, 2D, 3D or Cube texture
+	ReadWrite,		// texture is an RWTexture (DX) or Image (GL/Vulkan)
+	Buffer			// texture is a Texture Buffer type
+};
+
+/// access info filled by Map methods
+struct TextureMapInfo
+{
+	/// constructor
+	TextureMapInfo() : data(0), rowPitch(0), depthPitch(0) {};
+
+	void* data;
+	SizeT rowPitch;
+	SizeT depthPitch;
+	SizeT mipWidth;
+	SizeT mipHeight;
+};
+
+struct TextureDimensions
+{
+	SizeT width, height, depth;
+};
+
+struct TextureCreateInfo
+{
+	Resources::ResourceName name;
+	Util::StringAtom tag;
+	const void* buffer;
+	CoreGraphics::PixelFormat::Code format;
+	SizeT width, height, depth;
+};
+
+class MemoryTexturePool;
+extern MemoryTexturePool* texturePool;
+
+/// create new vertex buffer with intended usage, access and CPU syncing parameters, together with size of buffer
+const TextureId CreateTexture(TextureCreateInfo info);
+/// destroy vertex buffer
+void DestroyTexture(const TextureId id);
+/// directly update texture
+
+/// map GPU memory
+TextureMapInfo MapTexture(const TextureId id, IndexT mip, const CoreGraphics::GpuBufferTypes::MapType type);
+/// unmap GPU memory
+void UnmapTexture(const TextureId id, IndexT mip);
+
+} // CoreGraphics

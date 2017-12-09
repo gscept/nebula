@@ -11,6 +11,9 @@
 #include "vkdeferredcommand.h"
 #include "vkpipelinedatabase.h"
 #include "vkscheduler.h"
+#include "vksubcontexthandler.h"
+#include "vkcmdbuffer.h"
+
 
 namespace Lighting
 {
@@ -34,28 +37,26 @@ public:
 	virtual ~VkRenderDevice();
 
 	/// open the device
-	bool Open();
+	bool Open() override;
 	/// close the device
-	void Close();
+	void Close() override;
 
 	/// begin complete frame
-	bool BeginFrame(IndexT frameIndex);
+	bool BeginFrame(IndexT frameIndex) override;
 	/// set the current vertex stream source
-	void SetStreamVertexBuffer(IndexT streamIndex, const VkBuffer vb, IndexT offsetVertexIndex);
+	void SetStreamVertexBuffer(IndexT streamIndex, const VkBuffer vb, IndexT offsetVertexIndex) override;
 	/// set current vertex layout
-	void SetVertexLayout(const Ptr<CoreGraphics::VertexLayout>& vl);
+	void SetVertexLayout(const Ptr<CoreGraphics::VertexLayout>& vl) override;
 	/// set current index buffer
-	void SetIndexBuffer(const VkBuffer ib, const IndexType::Code type);
+	void SetIndexBuffer(const VkBuffer ib, IndexT offsetIndex, const IndexType::Code type) override;
 	/// set the type of topology to be used
-	void SetPrimitiveTopology(const CoreGraphics::PrimitiveTopology::Code& topo);
+	void SetPrimitiveTopology(const CoreGraphics::PrimitiveTopology::Code& topo) override;
 	/// perform computation
 	void Compute(int dimX, int dimY, int dimZ, uint flag = NoBarrierBit); // use MemoryBarrierFlag
 	/// begin a rendering pass
 	void BeginPass(const Ptr<CoreGraphics::Pass>& pass);
 	/// progress to next subpass
 	void SetToNextSubpass();
-	/// begin rendering a transform feedback with a vertex buffer as target
-	void BeginFeedback(const Ptr<CoreGraphics::FeedbackBuffer>& fb, CoreGraphics::PrimitiveTopology::Code primType);
 	/// begin batch
 	void BeginBatch(CoreGraphics::FrameBatchType::Code batchType);
 	/// bake the current state of the render device (only used on DX12 and Vulkan renderers where pipeline creation is required)
@@ -66,16 +67,10 @@ public:
 	void Draw();
 	/// draw indexed, instanced primitives (see method header for details)
 	void DrawIndexedInstanced(SizeT numInstances, IndexT baseInstance);
-	/// draw from stream output/transform feedback buffer
-	void DrawFeedback(const Ptr<CoreGraphics::FeedbackBuffer>& fb);
-	/// draw from stream output/transform feedback buffer, instanced
-	void DrawFeedbackInstanced(const Ptr<CoreGraphics::FeedbackBuffer>& fb, SizeT numInstances);
 	/// end batch
 	void EndBatch();
 	/// end current pass
 	void EndPass();
-	/// end current feedback
-	void EndFeedback();
 	/// end complete frame
 	void EndFrame(IndexT frameIndex);
 	/// present the rendered scene
@@ -86,11 +81,11 @@ public:
 	void SetViewport(const Math::rectangle<int>& rect, int index);
 
 	/// copy data between textures
-	void Copy(const Ptr<CoreGraphics::Texture>& from, Math::rectangle<SizeT> fromRegion, const Ptr<CoreGraphics::Texture>& to, Math::rectangle<SizeT> toRegion);
+	void Copy(const CoreGraphics::TextureId from, Math::rectangle<SizeT> fromRegion, const CoreGraphics::TextureId to, Math::rectangle<SizeT> toRegion) override;
 	/// blit between render textures
-	void Blit(const Ptr<CoreGraphics::RenderTexture>& from, Math::rectangle<SizeT> fromRegion, IndexT fromMip, const Ptr<CoreGraphics::RenderTexture>& to, Math::rectangle<SizeT> toRegion, IndexT toMip);
+	void Blit(const CoreGraphics::RenderTextureId from, Math::rectangle<SizeT> fromRegion, IndexT fromMip, const CoreGraphics::RenderTextureId to, Math::rectangle<SizeT> toRegion, IndexT toMip);
 	/// blit between textures
-	void Blit(const Ptr<CoreGraphics::Texture>& from, Math::rectangle<SizeT> fromRegion, IndexT fromMip, const Ptr<CoreGraphics::Texture>& to, Math::rectangle<SizeT> toRegion, IndexT toMip);
+	void Blit(const CoreGraphics::TextureId from, Math::rectangle<SizeT> fromRegion, IndexT fromMip, const CoreGraphics::TextureId to, Math::rectangle<SizeT> toRegion, IndexT toMip);
 
 	/// save a screenshot to the provided stream
 	CoreGraphics::ImageFileFormat::Code SaveScreenshot(CoreGraphics::ImageFileFormat::Code fmt, const Ptr<IO::Stream>& outStream);
@@ -129,7 +124,7 @@ private:
 	friend class VkVertexLayout;
 	friend class VkUniformBuffer;
 	friend class VkShaderStorageBuffer;
-	friend class VkTexturePool;
+	friend class VkStreamTexturePool;
 	friend class VkStreamTextureSaver;
 	friend class VkShaderState;
 	friend class VkShaderImage;
@@ -271,32 +266,35 @@ private:
 	uint32_t drawQueueFamily;
 	uint32_t computeQueueFamily;
 	uint32_t transferQueueFamily;
+	uint32_t sparseQueueFamily;
 	uint32_t drawQueueIdx;
 	uint32_t computeQueueIdx;
 	uint32_t transferQueueIdx;
+	uint32_t sparseQueueIdx;
 
-	// scheduler used to execute commands indirectly
-	Ptr<VkScheduler> scheduler;
+	// setup management classes
+	VkScheduler scheduler;
+	VkSubContextHandler subcontextHandler;
+	VkPipelineDatabase database;
 
 	static VkDevice dev;
-	static VkDescriptorPool descPool;
-	static VkQueue drawQueue;
-	static VkQueue computeQueue;
-	static VkQueue transferQueue;
-	static Util::FixedArray<VkQueue> queues;
+	static VkDescriptorPool descPool;	
+
+	static CmdBufferId mainCmdDrawBuffer;
+	static CmdBufferId mainCmdComputeBuffer;
+	static CmdBufferId mainCmdTransferBuffer;
+	static CmdBufferId mainCmdSparseBuffer;
+
 	static VkInstance instance;
 	static VkPhysicalDevice physicalDev;
 	static VkPipelineCache cache;
-	static VkCommandBuffer mainCmdDrawBuffer;
-	static VkCommandBuffer mainCmdCmpBuffer;
-	static VkCommandBuffer mainCmdTransBuffer;
 	VkFence mainCmdDrawFence;
 	VkFence mainCmdCmpFence;
 	VkFence mainCmdTransFence;
 	VkEvent mainCmdDrawEvent;
 	VkEvent mainCmdCmpEvent;
 	VkEvent mainCmdTransEvent;
-	Ptr<VkPipelineDatabase> database;
+	
 	VkShaderProgram::PipelineType currentBindPoint;
 
 	StateMode currentCommandState;
@@ -337,15 +335,7 @@ private:
 	VkViewport* passViewports;
 	uint32_t numVsInputs;
 
-	// first pool is for persistent buffers, second is for transient
-	static VkCommandPool mainCmdDrawPool;
-	static VkCommandPool mainCmdCmpPool;
-	static VkCommandPool mainCmdTransPool;
-
 	static VkAllocationCallbacks alloc;
-	
-	static VkCommandPool immediateCmdDrawPool;
-	static VkCommandPool immediateCmdTransPool;
 
 	VkGraphicsPipelineCreateInfo currentPipelineInfo;
 	VkPipelineLayout currentPipelineLayout;

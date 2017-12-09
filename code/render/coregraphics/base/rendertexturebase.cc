@@ -66,7 +66,7 @@ RenderTextureBase::Setup()
 		this->depth = 1;
 
 		// setup type and usage
-		this->type = Texture::Texture2D;
+		this->type = CoreGraphics::Texture2D;
 		this->usage = ColorAttachment;
 
 		// just create a texture natively without managing it
@@ -77,7 +77,7 @@ RenderTextureBase::Setup()
 	else
 	{
 		n_assert(this->width > 0 && this->height > 0 && this->depth > 0);
-		n_assert(this->type == Texture::Texture2D || this->type == Texture::TextureCube || this->type == Texture::Texture2DArray || this->type == Texture::TextureCubeArray);
+		n_assert(this->type == Texture::Texture2D || this->type == CoreGraphics::TextureCube || this->type == CoreGraphics::Texture2DArray || this->type == CoreGraphics::TextureCubeArray);
 		n_assert(this->usage != InvalidAttachment);
 		Ptr<CoreGraphics::Window> wnd = DisplayDevice::Instance()->GetCurrentWindow();
 		if (this->relativeSize)
@@ -97,7 +97,7 @@ RenderTextureBase::Setup()
 		}
 
 		// multiply layers by 6 if cube, calculate amount of textures by dividing by 6
-		if (this->type == Texture::TextureCube || this->type == Texture::TextureCubeArray) this->layers *= 6;
+		if (this->type == CoreGraphics::TextureCube || this->type == CoreGraphics::TextureCubeArray) this->layers *= 6;
 	}
 	
 }
@@ -120,7 +120,7 @@ void
 RenderTextureBase::Resize()
 {
 	n_assert(this->width > 0 && this->height > 0 && this->depth > 0);
-	n_assert(this->type == Texture::Texture2D || this->type == Texture::TextureCube);
+	n_assert(this->type == CoreGraphics::Texture2D || this->type == CoreGraphics::TextureCube);
 	n_assert(this->usage != InvalidAttachment);
 	Ptr<CoreGraphics::Window> wnd = DisplayDevice::Instance()->GetCurrentWindow();
 	Texture* tex = Resources::GetResource<Texture>(this->textureId);

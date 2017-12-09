@@ -70,7 +70,7 @@ CorePageHandler::HandleRequest(const Ptr<HttpRequest>& request)
         htmlWriter->End(HtmlElement::Table);
             
         // if not compiled with NEBULA_DEBUG, display a message
-        #if (NEBULA3_DEBUG == 0)
+        #if (NEBULA_DEBUG == 0)
         htmlWriter->LineBreak();
         htmlWriter->LineBreak();
         htmlWriter->Text("RefCounted stats not available because application was not compiled with debug information!");

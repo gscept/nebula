@@ -1,6 +1,4 @@
 #pragma once
-#ifndef COREGRAPHICS_INDEXTYPE_H
-#define COREGRAPHICS_INDEXTYPE_H
 //------------------------------------------------------------------------------
 /**
     @class CoreGraphics::IndexType
@@ -84,4 +82,3 @@ IndexType::FromString(const Util::String& str)
 
 }
 //------------------------------------------------------------------------------
-#endif

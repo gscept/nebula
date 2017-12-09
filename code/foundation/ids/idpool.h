@@ -10,6 +10,8 @@
 	the indices for later. Unlike the IdGenerationPool, this one does not
 	keep track of how many times an id has been reused, so use this with
 	caution!
+
+	Maximum amount of bits produced by this system is 32.
 	
 	(C) 2017 Individual contributors, see AUTHORS file
 */
@@ -88,7 +90,7 @@ IdPool::Alloc()
 		uint32_t remainder = Math::n_min(this->maxId - this->free.Size(), this->grow);
 
 		// make sure we don't allocate too many indices
-		n_assert(this->free.Size() + remainder < this->maxId);
+		n_assert2(this->free.Size() + remainder < this->maxId, "Pool is full! Be careful with how much you allocate!\n");
 
 		// reserve more space for new Ids
 		this->free.Reserve(this->free.Size() + remainder);

@@ -68,10 +68,10 @@ ResourceStreamPool::Update(IndexT frameIndex)
 		// skip unused elements
 		if (element.pid == Ids::InvalidId32) continue;
 
-		Ids::Id24 resourceId = Ids::Id::GetBig(Ids::Id::GetLow(element.id));
+		Ids::Id24 resourceId = element.id.id24;
 
 		// if the element has an invalid id, it means a thread has eaten it
-		if (element.id == Ids::InvalidId32)
+		if (element.id.id8 == Ids::InvalidId8)
 		{
 			// callbacks are called from the thread, we only have to clear them
 			this->callbacks[resourceId].Clear();
@@ -115,7 +115,7 @@ ResourceStreamPool::Update(IndexT frameIndex)
 			}
 
 			// give up the resource id
-			this->DeallocResource(unload.resourceId);
+			this->DeallocObject(unload.resourceId);
 			
 			// remove pending unload if not Pending or Loaded (so explicitly Unloaded or Failed)
 			this->pendingUnloads.EraseIndex(i--);
@@ -128,9 +128,9 @@ ResourceStreamPool::Update(IndexT frameIndex)
 	Run all callbacks pending on a resource, must be within the critical section!
 */
 void
-ResourceStreamPool::RunCallbacks(LoadStatus status, const Ids::Id64 id)
+ResourceStreamPool::RunCallbacks(LoadStatus status, const Resources::ResourceId id)
 {
-	Util::Array<_Callbacks>& cbls = this->callbacks[Ids::Id::GetBig(Ids::Id::GetLow(id))];
+	Util::Array<_Callbacks>& cbls = this->callbacks[id.id24];
 	IndexT i;
 	for (i = 0; i < cbls.Size(); i++)
 	{
@@ -167,7 +167,7 @@ ResourceStreamPool::PrepareLoad(_PendingResourceLoad& res)
 			// enter critical section
 			if (stream->Open())
 			{
-				LoadStatus stat = this->Load(res.res, res.tag, stream);
+				LoadStatus stat = this->LoadFromStream(res.res, res.tag, stream);
 				this->asyncSection.Enter();
 				this->RunCallbacks(stat, res.id);
 				if (stat == Success)		this->states[res.res] = Resource::Loaded;
@@ -187,7 +187,7 @@ ResourceStreamPool::PrepareLoad(_PendingResourceLoad& res)
 			}
 
 			// mark that we are done with this resource so it may be cleared later
-			res.id = Ids::InvalidId32;
+			res.id.id8 = Ids::InvalidId8;
 		};
 
 		// flag resource as being in-flight
@@ -205,13 +205,16 @@ ResourceStreamPool::PrepareLoad(_PendingResourceLoad& res)
 		Ptr<Stream> stream = IoServer::Instance()->CreateStream(this->names[res.res].Value());
 		if (stream->Open())
 		{
-			ret = this->Load(res.res, res.tag, stream);
+			ret = this->LoadFromStream(res.res, res.tag, stream);
 			stream->Close();
 		}
 		else
 		{
 			ret = Failed;
 		}
+
+		// mark that we are done with this resource so it may be cleared later
+		res.id.id8 = Ids::InvalidId8;
 	}	
 	return ret;
 }
@@ -219,10 +222,10 @@ ResourceStreamPool::PrepareLoad(_PendingResourceLoad& res)
 //------------------------------------------------------------------------------
 /**
 */
-Ids::Id64
+Resources::ResourceId
 Resources::ResourceStreamPool::CreateResource(const ResourceName& res, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed, bool immediate)
 {
-	Ids::Id64 ret;
+	Resources::ResourceId ret;
 	Ids::Id32 instanceId = this->resourceInstanceIndexPool.Alloc(); // this is the ID of the container
 	Ids::Id24 resourceId; // this is the id of the resource	
 	IndexT i = this->ids.FindIndex(res);
@@ -230,7 +233,7 @@ Resources::ResourceStreamPool::CreateResource(const ResourceName& res, const Uti
 	if (i == InvalidIndex)
 	{
 		// allocate new resource
-		resourceId = this->AllocResource();
+		resourceId = this->AllocObject();
 
 		// create new resource id, if need be, grow the container list
 		if (resourceId >= (uint32_t)this->names.Size())
@@ -256,7 +259,10 @@ Resources::ResourceStreamPool::CreateResource(const ResourceName& res, const Uti
 		}		
 
 		// also add as pending resource
-		ret = Ids::Id::MakeId64(instanceId, Ids::Id::MakeId24_8(resourceId, this->uniqueId));
+		ret.id32 = instanceId;
+		ret.id24 = resourceId;
+		ret.id8 = this->uniqueId;
+
 		Ids::Id32 pendingId = this->pendingLoadPool.Alloc();
 		_PendingResourceLoad& pending = this->pendingLoads[pendingId];
 		pending.id = ret;
@@ -272,7 +278,9 @@ Resources::ResourceStreamPool::CreateResource(const ResourceName& res, const Uti
 	{
 		// get id of resource
 		resourceId = this->ids.ValueAtIndex(i);
-		ret = Ids::Id::MakeId64(instanceId, Ids::Id::MakeId24_8(resourceId, this->uniqueId));
+		ret.id32 = instanceId;
+		ret.id24 = resourceId;
+		ret.id8 = this->uniqueId;
 
 		// bump usage
 		this->usage[resourceId]++;
@@ -326,13 +334,12 @@ void
 Resources::ResourceStreamPool::DiscardResource(const Resources::ResourceId id)
 {
 	ResourcePool::DiscardResource(id);
-	Ids::Id24 resourceId = Ids::Id::GetBig(Ids::Id::GetLow(id));
 
 	// if usage reaches 0, add it to the list of pending unloads
-	if (this->usage[resourceId] == 0)
+	if (this->usage[id.id24] == 0)
 	{
 		// add pending unload, it will be unloaded once loaded
-		this->pendingUnloads.Append({ resourceId });
+		this->pendingUnloads.Append({ id.id24 });
 	}
 }
 

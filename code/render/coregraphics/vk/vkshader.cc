@@ -110,7 +110,7 @@ VkShader::Setup(
 	VkPipelineLayout& pipelineLayout,
 	Util::FixedArray<VkDescriptorSet>& sets,
 	Util::Dictionary<Util::StringAtom, Ptr<CoreGraphics::ConstantBuffer>>& buffers,
-	Util::Dictionary<uint32_t, Util::Array<Ptr<CoreGraphics::ConstantBuffer>>>& buffersByGroup
+	Util::Dictionary<uint32_t, Util::Array<CoreGraphics::ConstantBufferId>>& buffersByGroup
 	)
 {
 	const eastl::vector<AnyFX::VarblockBase*>& varblocks = effect->GetVarblocks();
@@ -516,14 +516,13 @@ VkShader::Setup(
 		bool usedBySystem = false;
 		if (block->HasAnnotation("System")) usedBySystem = block->GetAnnotationBool("System");
 
-		Ptr<CoreGraphics::ConstantBuffer> uniformBuffer = NULL;
+		CoreGraphics::ConstantBufferId uniformBuffer = Ids::InvalidId64;
 		// only create buffer if block is not handled by system
 		if (!usedBySystem && block->alignedSize > 0 && !AnyFX::HasFlags(block->qualifiers, AnyFX::Qualifiers::Push))
 		{
 			// create uniform buffer, with single backing
-			uniformBuffer = CoreGraphics::ConstantBuffer::Create();
-			uniformBuffer->SetSize(block->alignedSize);
-			uniformBuffer->Setup(1);
+			ConstantBufferCreateInfo cbInfo = {false, Ids::InvalidId64, block->name.c_str(), block->alignedSize};
+			uniformBuffer = CreateConstantBuffer(cbInfo);
 
 			// generate a name which we know will be unique
 			Util::String name = block->name.c_str();

@@ -52,7 +52,7 @@ public:
 	const std::function<void(IndexT)> GetFunction(const Util::StringAtom& str);
 
 	/// add texture
-	void AddRenderTexture(const Ptr<CoreGraphics::RenderTexture>& tex);
+	void AddRenderTexture(const CoreGraphics::RenderTextureId tex);
 	/// add buffer
 	void AddReadWriteBuffer(const Ptr<CoreGraphics::ShaderReadWriteBuffer>& buf);
 	/// add read-write texture (image)
@@ -62,7 +62,7 @@ protected:
 	/// add algorithm
 	void AddFunction(const Util::StringAtom& name, const FunctionType type, const std::function<void(IndexT)>& func);
 
-	Util::Array<Ptr<CoreGraphics::RenderTexture>> renderTextures;
+	Util::Array<CoreGraphics::RenderTextureId> renderTextures;
 	Util::Array<Ptr<CoreGraphics::ShaderReadWriteBuffer>> readWriteBuffers;
 	Util::Array<Ptr<CoreGraphics::ShaderReadWriteTexture>> readWriteTextures;
 	Util::Dictionary<Util::StringAtom, std::function<void(IndexT)>> functions;
@@ -82,7 +82,7 @@ Algorithm::GetFunctionType(const Util::StringAtom& str)
 /**
 */
 inline void
-Algorithm::AddRenderTexture(const Ptr<CoreGraphics::RenderTexture>& tex)
+Algorithm::AddRenderTexture(const CoreGraphics::RenderTextureId tex)
 {
 	this->renderTextures.Append(tex);
 }

@@ -1,48 +1,58 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @class CoreGraphics::Shader
-  
-    A shader object manages the entire render state required to render
-    a mesh.
-    
-    (C) 2007 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
-*/
-#if __DX11__
-#include "coregraphics/d3d11/d3d11shader.h"
-namespace CoreGraphics
-{
-class Shader : public Direct3D11::D3D11Shader
-{
-};
-}
-#elif __OGL4__
-#include "coregraphics/ogl4/ogl4shader.h"
-namespace CoreGraphics
-{
-class Shader : public OpenGL4::OGL4Shader
-{
-};
-}
-#elif __VULKAN__
-#include "coregraphics/vk/vkshader.h"
-namespace CoreGraphics
-{
-class Shader : public Vulkan::VkShader
-{
-};
-}
-#elif __DX9__
-#include "coregraphics/d3d9/d3d9shader.h"
-namespace CoreGraphics
-{
-class Shader : public Direct3D9::D3D9Shader
-{
-};
-}
-#else
-#error "Shader class not implemented on this platform!"
-#endif
-//------------------------------------------------------------------------------
+	A shader represents an entire shader resource, containing several stages and programs
 
+	(C) 2017 Individual contributors, see AUTHORS file
+*/
+//------------------------------------------------------------------------------
+#include "ids/id.h"
+#include "ids/idpool.h"
+#include "resources/resourceid.h"
+#include "coregraphics/shaderfeature.h"
+namespace CoreGraphics
+{
+
+ID_32_24_8_TYPE(ShaderId);				// resource id, 24 rightmost bits are the actual shader id
+ID_32_32_TYPE(ShaderStateId);			// shader + state
+ID_32_32_TYPE(ShaderProgramId);			// shader + program
+ID_32_TYPE(ShaderVariableId);			// variable id within state, must keep track of state since state id is 64 bit
+ID_32_TYPE(ProgramId);
+
+struct ShaderCreateInfo
+{
+	const Resources::ResourceName name;
+};
+
+/// create new shader
+const ShaderId CreateShader(const ShaderCreateInfo& info);
+/// destroy shader
+void DestroyShader(const ShaderId id);
+
+/// create new shader state from shader
+const ShaderStateId CreateShaderState(const ShaderId id);
+/// create a new shared shader state
+const ShaderStateId CreateSharedShaderState(const ShaderId id);
+/// destroy shader state
+void DestroyShaderState(const ShaderStateId id);
+/// apply shader state
+void ApplyShaderState(const ShaderStateId id);
+
+/// get the number of constants from shader
+SizeT GetConstantCount(const CoreGraphics::ShaderId id);
+/// get the number of constant buffers from shader
+SizeT GetConstantBufferCount(const CoreGraphics::ShaderId id);
+/// get the shader variable using name
+ShaderVariableId GetShaderVariable(const ShaderStateId id, const Util::StringAtom& name);
+/// get the shader variable using index
+ShaderVariableId GetShaderVariable(const ShaderStateId id, const IndexT index);
+
+/// bind shader
+void BindShader(const ShaderId id, const CoreGraphics::ShaderFeature::Mask& program);
+/// bind shader and program all in one package
+void BindShaderProgram(const ShaderProgramId id);
+
+class ShaderPool;
+extern ShaderPool* shaderPool;
+
+} // CoreGraphics

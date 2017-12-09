@@ -7,11 +7,12 @@
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
-#include "coregraphics/base/memoryvertexbufferpoolbase.h"
-#include "vkvertexbuffer.h"
+#include "resources/resourcememorypool.h"
+#include "coregraphics/gpubuffertypes.h"
+#include "coregraphics/vertexlayout.h"
 namespace Vulkan
 {
-class VkMemoryVertexBufferPool : public Base::MemoryVertexBufferPoolBase
+class VkMemoryVertexBufferPool : public Resources::ResourceMemoryPool
 {
 	__DeclareClass(VkMemoryVertexBufferPool);
 
@@ -20,20 +21,34 @@ public:
 	/// bind vertex buffer
 	void BindVertexBuffer(const Resources::ResourceId id, const IndexT slot, const IndexT offset);
 	/// map the vertices for CPU access
-	void* Map(const Resources::ResourceId id, Base::GpuResourceBase::MapType mapType);
+	void* Map(const Resources::ResourceId id, CoreGraphics::GpuBufferTypes::MapType mapType);
 	/// unmap the resource
 	void Unmap(const Resources::ResourceId id);
 
 	/// update resource
-	LoadStatus UpdateResource(const Ids::Id24 id, void* info);
+	LoadStatus LoadFromMemory(const Ids::Id24 id, void* info);
 	/// unload resource
 	void Unload(const Ids::Id24 id);
 private:
 
+	struct LoadInfo
+	{
+		VkDeviceMemory mem;
+		CoreGraphics::GpuBufferTypes::SetupFlags gpuResInfo;
+		uint32_t vertexCount;
+		uint32_t vertexByteSize;
+	};
+
+	struct RuntimeInfo
+	{
+		VkBuffer buf;
+		CoreGraphics::VertexLayoutId layout;
+	};
+
 	Ids::IdAllocator<
-		VkVertexBuffer::LoadInfo,					//0 loading stage info
-		VkVertexBuffer::RuntimeInfo,				//1 runtime stage info
-		Base::GpuResourceBase::GpuResourceMapInfo	//2 mapping stage info
+		LoadInfo,			//0 loading stage info
+		RuntimeInfo,		//1 runtime stage info
+		uint32_t			//2 mapping stage info
 	> allocator;
 	__ImplementResourceAllocator(allocator);
 };

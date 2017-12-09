@@ -13,14 +13,12 @@
 */
 //------------------------------------------------------------------------------
 #include "vkdeferredcommand.h"
-#include "core/refcounted.h"
 #include "core/singleton.h"
 
 namespace Vulkan
 {
-class VkScheduler : public Core::RefCounted
+class VkScheduler
 {
-	__DeclareClass(VkScheduler);
 	__DeclareSingleton(VkScheduler);
 public:
 

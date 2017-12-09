@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>  
+<CodeSnippets  
+    xmlns="http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet">  
+
+
+<!-- header  -->
+    <CodeSnippet Format="1.0.0">  
+        <Header>  
+            <Title>Nebula Namespace Header</Title> 
+            <Shortcut>nheader</Shortcut>
+        </Header>  
+        <Snippet>  
+            <Declarations>
+                <Object>
+                    <ID>description</ID>  
+                    <Type>String of text</Type>  
+                    <ToolTip>Write a description of this header file.</ToolTip>  
+                    <Default>WRITE ME OR ELSE!</Default> 
+                </Object>
+                <Object>
+                    <ID>namespace</ID>  
+                    <Type>Namespace</Type>  
+                    <ToolTip>Select a namespace.</ToolTip>  
+                    <Default>Base</Default> 
+                </Object>
+                <Object>
+                    <ID>year</ID>  
+                    <Type>Current year</Type>  
+                    <ToolTip>Please insert this year, and not some other year...</ToolTip>  
+                    <Default>2017</Default> 
+                </Object>
+            </Declarations>
+            <Code Language="cpp">  
+                <![CDATA[#pragma once
+//------------------------------------------------------------------------------
+/**
+    $description$
+    
+    (C) $year$ Individual contributors, see AUTHORS file
+*/
+//------------------------------------------------------------------------------
+namespace $namespace$
+{
+
+} // namespace $namespace$
+                ]]>  
+            </Code>  
+        </Snippet>  
+    </CodeSnippet>  
+
+
+
+<!-- source  -->
+    <CodeSnippet Format="1.0.0">  
+        <Header>  
+            <Title>Nebula Namespace Source</Title> 
+            <Shortcut>nsource</Shortcut>
+        </Header>  
+        <Snippet>  
+            <Declarations>
+                <Object>
+                    <ID>filename</ID>  
+                    <Type>String of text</Type>  
+                    <ToolTip>Write a description of this header file.</ToolTip>  
+                    <Default>WRITE ME OR ELSE!</Default> 
+                </Object>
+                <Object>
+                    <ID>namespace</ID>  
+                    <Type>Namespace</Type>  
+                    <ToolTip>Select a namespace.</ToolTip>  
+                    <Default>Base</Default> 
+                </Object>
+                <Object>
+                    <ID>year</ID>  
+                    <Type>Current year</Type>  
+                    <ToolTip>Please insert this year, and not some other year...</ToolTip>  
+                    <Default>2017</Default> 
+                </Object>
+            </Declarations>
+            <Code Language="cpp">  
+                <![CDATA[//------------------------------------------------------------------------------
+//  $filename$.cc
+//  (C) $year$ Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+#include "stdneb.h"
+#include "$filename$.h"
+namespace $namespace$
+{
+
+} // namespace $namespace$
+                ]]>  
+            </Code>  
+        </Snippet>  
+    </CodeSnippet>  
+
+
+
+<!-- def header  -->
+    <CodeSnippet Format="1.0.0">  
+        <Header>  
+            <Title>Nebula function comment</Title> 
+            <Shortcut>ncomment</Shortcut>
+        </Header>  
+        <Snippet>  
+
+            <Code Language="cpp">  
+                <![CDATA[//------------------------------------------------------------------------------
+/**
+*/]]>  
+            </Code>  
+        </Snippet>  
+    </CodeSnippet>  
+</CodeSnippets>  

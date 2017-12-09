@@ -32,10 +32,12 @@ typedef unsigned char  ubyte;
 
 
 typedef uintptr_t uintptr;
+typedef ptrdiff_t ptrdiff;
 
-typedef int IndexT;     // the index type
-typedef int SizeT;      // the size type
-typedef uintptr PtrT;   // the ptr type
+typedef int IndexT;			// the index type
+typedef int SizeT;			// the size type
+typedef uintptr PtrT;		// the ptr type
+typedef ptrdiff PtrDiff;
 static const int InvalidIndex = -1;
 
 #define N_ARGB(a,r,g,b) ((uint)((((a)&0xff)<<24)|(((r)&0xff)<<16)|(((g)&0xff)<<8)|((b)&0xff)))

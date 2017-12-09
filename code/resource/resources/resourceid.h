@@ -11,5 +11,6 @@
 namespace Resources
 {
 typedef Util::StringAtom ResourceName;
-typedef Ids::Id64 ResourceId;
+ID_32_24_8_TYPE(ResourceId);			// 32 first bits are the loaders container id, 24 next bits is the shared resource, and last 8 bits is the type of loader
+
 } // namespace Resource

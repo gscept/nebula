@@ -99,7 +99,7 @@ SetupHeaps()
     #if NEBULA3_OBJECTS_USE_MEMORYPOOL        
     // setup the RefCounted pool allocator
     // HMM THESE NUMBERS ARE SO HIGH BECAUSE OF GODSEND...
-    #if NEBULA3_DEBUG
+    #if NEBULA_DEBUG
     uint objectPoolSizes[PoolArrayAllocator::NumPools] = {
         128 * kiloByte,     // 28 byte blocks
         4196 * kiloByte,    // 60 byte blocks

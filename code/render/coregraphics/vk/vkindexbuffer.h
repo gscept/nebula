@@ -9,24 +9,14 @@
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
 #include "coregraphics/base/indexbufferbase.h"
-#include "coregraphics/base/gpuresourcebase.h"
+#include "coregraphics/gpubuffertypes.h"
 namespace Vulkan
 {
 class VkIndexBuffer
 {
 public:
 
-	struct LoadInfo
-	{
-		VkDeviceMemory mem;
-		Base::GpuResourceBase::GpuResourceBaseInfo gpuResInfo;
-		Base::IndexBufferBase::IndexBufferBaseInfo iboInfo;
-	};
-	struct RuntimeInfo
-	{
-		VkBuffer buf;
-		CoreGraphics::IndexType::Code type;
-	};
+
 };
 
 } // namespace Vulkan

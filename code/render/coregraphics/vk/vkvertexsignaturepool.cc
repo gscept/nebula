@@ -40,7 +40,7 @@ VkVertexSignaturePool::BindVertexLayout(const Resources::ResourceId id)
 /**
 */
 Resources::ResourcePool::LoadStatus
-VkVertexSignaturePool::UpdateResource(const Resources::ResourceId id, void* info)
+VkVertexSignaturePool::LoadFromMemory(const Resources::ResourceId id, void* info)
 {
 	Util::Array<CoreGraphics::VertexComponent>* components = static_cast<Util::Array<CoreGraphics::VertexComponent>*>(info);
 	VkVertexLayout* layout = this->GetResource(id);

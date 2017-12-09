@@ -20,31 +20,31 @@ RefCountedList::DumpLeaks()
 {
     if (!this->IsEmpty())
     {
-        SysFunc::DebugOut("\n\n\n******** NEBULA T REFCOUNTING LEAKS DETECTED:\n\n");
+        SysFunc::DebugOut("\n\n\n******** NEBULA T REFCOUNTING LEAKS DETECTED ********\n\n");
         RefCountedList::Iterator iter;
         for (iter = this->Begin(); iter != this->End(); iter++)
         {
 			if (this->refcountedDebugNames.Contains(*iter))
 			{
 				String msg;
-				msg.Format("*** NEBULA T REFCOUNT LEAK: Object of class '%s' with debug identifier '%s' at address '0x%08lx', refcount is '%d'\n",
+				msg.Format("REFCOUNT LEAK: Object of class '%s' with debug identifier '%s' at address '0x%p', refcount is '%d'\n",
 					(*iter)->GetClassName().AsCharPtr(),
 					this->refcountedDebugNames[*iter].AsCharPtr(),
-					(*iter),
+					(void*)(*iter),
 					(*iter)->GetRefCount());
 				SysFunc::DebugOut(msg.AsCharPtr());
 			}
 			else
 			{
 				String msg;
-				msg.Format("*** NEBULA T REFCOUNT LEAK: Object of class '%s' at address '0x%08lx', refcount is '%d'\n",
+				msg.Format("REFCOUNT LEAK: Object of class '%s' at address '0x%p', refcount is '%d'\n",
 					(*iter)->GetClassName().AsCharPtr(),
-					(*iter),
+					(void*)(*iter),
 					(*iter)->GetRefCount());
 				SysFunc::DebugOut(msg.AsCharPtr());
 			}            
         }
-        SysFunc::DebugOut("\n******** END OF NEBULA T REFCOUNT LEAK REPORT\n\n\n");
+        SysFunc::DebugOut("\n******** END OF NEBULA T REFCOUNT LEAK REPORT ********\n\n\n");
 		this->refcountedDebugNames.Clear();
     }
     else

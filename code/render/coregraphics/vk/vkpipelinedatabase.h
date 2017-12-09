@@ -18,7 +18,6 @@
 	(C) 2016 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "core/refcounted.h"
 #include "core/singleton.h"
 
 namespace Vulkan
@@ -26,9 +25,8 @@ namespace Vulkan
 class VkVertexLayout;
 class VkShaderProgram;
 class VkPass;
-class VkPipelineDatabase : public Core::RefCounted
+class VkPipelineDatabase
 {
-	__DeclareClass(VkPipelineDatabase);
 	__DeclareSingleton(VkPipelineDatabase);
 public:
 

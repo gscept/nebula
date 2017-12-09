@@ -50,15 +50,11 @@ ResourcePool::Discard()
 void
 ResourcePool::DiscardResource(const Resources::ResourceId id)
 {
-	// the id of the usage and container respectively is in the big part of the low bits
-	Ids::Id32 instanceId = Ids::Id::GetHigh(id);
-	Ids::Id24 resourceId = Ids::Id::GetBig(Ids::Id::GetLow(id));
-
-	n_assert_fmt(!this->tags[resourceId].IsValid(), "Resource with tag can not be individually deleted");
+	n_assert_fmt(!this->tags[id.id24].IsValid(), "Resource with tag can not be individually deleted");
 
 	// dealloc instance id and reduce usage
-	this->resourceInstanceIndexPool.Dealloc(instanceId);
-	this->usage[resourceId]--;
+	this->resourceInstanceIndexPool.Dealloc(id.id32);
+	this->usage[id.id24]--;
 }
 
 //------------------------------------------------------------------------------

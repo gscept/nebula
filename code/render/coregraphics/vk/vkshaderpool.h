@@ -11,12 +11,8 @@
 #include "util/dictionary.h"
 #include "coregraphics/shaderfeature.h"
 #include "lowlevel/vk/vkprogram.h"
-#include "coregraphics/coregraphics.h"
+#include "coregraphics/shader.h"
 
-namespace CoreGraphics
-{
-class ConstantBuffer;
-}
 namespace Vulkan
 {
 
@@ -47,13 +43,13 @@ public:
 	void ApplyState(const CoreGraphics::ShaderStateId state);
 
 	/// get number of variables for shader
-	uint32_t GetVariableCount(const CoreGraphics::ShaderId id);
+	const SizeT GetVariableCount(const CoreGraphics::ShaderId id) const;
 	/// get number of variable blocks
-	uint32_t GetVariableBlockCount(const CoreGraphics::ShaderId id);
+	const SizeT GetVariableBlockCount(const CoreGraphics::ShaderId id) const;
 	/// get shader variable id
-	CoreGraphics::ShaderVariableId GetShaderVariable(const CoreGraphics::ShaderStateId state, const Util::StringAtom& name);
+	const CoreGraphics::ShaderVariableId GetShaderVariable(const CoreGraphics::ShaderStateId state, const Util::StringAtom& name) const;
 	/// get shader variable by index
-	CoreGraphics::ShaderVariableId GetShaderVariable(const CoreGraphics::ShaderStateId state, const IndexT index);
+	const CoreGraphics::ShaderVariableId GetShaderVariable(const CoreGraphics::ShaderStateId state, const IndexT index) const;
 	/// set shader variable
 	template <class TYPE> void SetShaderVariable(const CoreGraphics::ShaderVariableId var, const CoreGraphics::ShaderStateId state, const TYPE& value);
 	/// set shader variable array
@@ -72,13 +68,13 @@ private:
 	/// get shader program
 	AnyFX::VkProgram* GetProgram(const Ids::Id24 shaderId, const Ids::Id24 programId);
 	/// load shader
-	LoadStatus Load(const Ids::Id24 id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream);
+	LoadStatus LoadFromStream(const Ids::Id24 id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream) override;
 	/// unload shader
-	void Unload(const Ids::Id24 id);
+	void Unload(const Ids::Id24 id) override;
 
 	typedef Util::Dictionary<uint32_t, Util::Array<VkDescriptorSetLayoutBinding>> SetBinding;
-	typedef Util::Dictionary<Util::StringAtom, Ptr<CoreGraphics::ConstantBuffer>> UniformBufferMap;
-	typedef Util::Dictionary<uint32_t, Util::Array<Ptr<CoreGraphics::ConstantBuffer>>> UniformBufferGroupMap;
+	typedef Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBufferId> UniformBufferMap;
+	typedef Util::Dictionary<uint32_t, Util::Array<CoreGraphics::ConstantBufferId>> UniformBufferGroupMap;
 	typedef Util::Dictionary<CoreGraphics::ShaderFeature::Mask, Ids::Id64> ProgramMap;
 
 #pragma pack(push, 16)
@@ -100,14 +96,15 @@ private:
 	{
 		Resources::ResourceName name;
 		CoreGraphics::ShaderIdentifier::Code id;
+		UniformBufferMap uniformBufferMap;
+		UniformBufferGroupMap uniformBufferGroupMap;
+
 		VkPipelineLayout pipelineLayout;
 		VkPushConstantRange constantRangeLayout;
 		Util::Array<VkSampler> immutableSamplers;
 		Util::FixedArray<VkDescriptorSetLayout> descriptorSetLayouts;
 		SetBinding setBindings;
 		Util::FixedArray<VkDescriptorSet> sets;
-		UniformBufferMap uniformBufferMap;
-		UniformBufferGroupMap uniformBufferGroupMap;
 	};
 
 	struct RuntimeInfo
@@ -303,9 +300,9 @@ VkShaderPool::SetShaderVariableConstantBuffer(const CoreGraphics::ShaderVariable
 inline void
 VkShaderPool::SetShaderVariableReadWriteTexture(const CoreGraphics::ShaderVariableId var, const CoreGraphics::ShaderStateId state, const Resources::ResourceId image)
 {
-	VkTexture::textureAllocator.EnterGet();
-	VkTexture::RuntimeInfo& info = VkTexture::textureAllocator.Get<0>(var);
-	VkTexture::textureAllocator.LeaveGet();
+	textureAllocator.EnterGet();
+	TextureRuntimeInfo& info = textureAllocator.Get<0>(var);
+	textureAllocator.LeaveGet();
 }
 
 //------------------------------------------------------------------------------

@@ -46,7 +46,7 @@ ThreadPageHandler::HandleRequest(const Ptr<HttpRequest>& request)
         htmlWriter->Element(HtmlElement::Anchor, "Home");
 
         // if not compiled with NEBULA_DEBUG, display a message
-        #if (NEBULA3_DEBUG == 0)
+        #if (NEBULA_DEBUG == 0)
         htmlWriter->LineBreak();
         htmlWriter->LineBreak();
         htmlWriter->Text("Thread list not available because application was not compiled with debug information!");

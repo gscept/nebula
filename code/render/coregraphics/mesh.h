@@ -1,172 +1,39 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @class Base::Mesh
-  
-    A mesh maintains a vertex buffer, an optional index buffer
-    and a number of PrimitiveGroup objects. Meshes can be loaded directly 
-    from a mesh resource file.
-    
-    (C) 2007 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
-*/    
-#include "resources/resource.h"
+	Mesh collects vertex and index buffers with primitive groups which can be used to render with
+
+	(C) 2017 Individual contributors, see AUTHORS file
+*/
+//------------------------------------------------------------------------------
+#include "ids/id.h"
+#include "ids/idallocator.h"
 #include "coregraphics/vertexbuffer.h"
 #include "coregraphics/indexbuffer.h"
+#include "coregraphics/vertexlayout.h"
+#include "coregraphics/primitivetopology.h"
 #include "coregraphics/primitivegroup.h"
-
-//------------------------------------------------------------------------------
 namespace CoreGraphics
 {
-class Mesh : public Resources::Resource
+ID_24_8_TYPE(MeshId);
+
+struct MeshCreateInfo
 {
-public:
-    /// constructor
-	Mesh();
-    /// destructor
-    virtual ~Mesh();
-
-    /// unload mesh resource
-    virtual void Unload();
-    
-    /// return true if the mesh has a vertex buffer
-    bool HasVertexBuffer() const;
-    /// set the vertex buffer object
-    void SetVertexBuffer(const Resources::ResourceId vb);
-    /// get the vertex buffer object
-    const Resources::ResourceId GetVertexBuffer() const;
-    /// return true if the mesh has an index buffer
-    bool HasIndexBuffer() const;
-    /// set the index buffer object
-    void SetIndexBuffer(const Resources::ResourceId ib);
-    /// get the index buffer object
-    const Resources::ResourceId GetIndexBuffer() const;
-	/// set mesh topology
-	void SetTopology(const CoreGraphics::PrimitiveTopology::Code& topo);
-	/// get mesh topology
-	const CoreGraphics::PrimitiveTopology::Code& GetTopology() const;
-    /// set primitive groups
-    void SetPrimitiveGroups(const Util::Array<CoreGraphics::PrimitiveGroup>& groups);
-    /// get the number of primitive groups in the mesh
-    SizeT GetNumPrimitiveGroups() const;
-    /// get primitive group at index
-    const CoreGraphics::PrimitiveGroup& GetPrimitiveGroupAtIndex(IndexT i) const;    
-
-    /// apply mesh data for rendering in renderdevice
-    void ApplyPrimitives(IndexT primGroupIndex);
-	/// apply mesh resources and topology
-	void ApplySharedMesh();
-	/// apply primitive group
-	void ApplyPrimitiveGroup(IndexT primGroupIndex);
- 
-protected:   
-    Resources::ResourceId vertexBuffer;
-    Resources::ResourceId indexBuffer;
-	Resources::ResourceId vertexLayout;
+	VertexBufferId vertexBuffer;
+	IndexBufferId indexBuffer;
+	VertexLayoutId vertexLayout;
 	CoreGraphics::PrimitiveTopology::Code topology;
-    Util::Array<CoreGraphics::PrimitiveGroup> primitiveGroups;
+	Util::Array<CoreGraphics::PrimitiveGroup> primitiveGroups;
 };
 
-//------------------------------------------------------------------------------
-/**
-*/
-inline bool
-Mesh::HasVertexBuffer() const
-{
-	return this->vertexBuffer != Ids::InvalidId64;
-}
+/// create new mesh
+const MeshId CreateMesh(const MeshCreateInfo& info);
+/// destroy mesh
+void DestroyMesh(const MeshId id);
 
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-Mesh::SetVertexBuffer(const Resources::ResourceId vb)
-{
-    this->vertexBuffer = vb;
-}
+/// bind mesh and primitive group
+void BindMesh(const MeshId id, const IndexT prim);
 
-//------------------------------------------------------------------------------
-/**
-*/
-inline const Resources::ResourceId
-Mesh::GetVertexBuffer() const
-{
-    return this->vertexBuffer;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline bool
-Mesh::HasIndexBuffer() const
-{
-    return this->indexBuffer.isvalid();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-Mesh::SetIndexBuffer(const Resources::ResourceId ib)
-{
-    this->indexBuffer = ib;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const Resources::ResourceId
-Mesh::GetIndexBuffer() const
-{
-    return this->indexBuffer;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-Mesh::SetTopology(const CoreGraphics::PrimitiveTopology::Code& topo)
-{
-	this->topology = topo;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const CoreGraphics::PrimitiveTopology::Code&
-Mesh::GetTopology() const
-{
-	return this->topology;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-Mesh::SetPrimitiveGroups(const Util::Array<CoreGraphics::PrimitiveGroup>& groups)
-{
-    this->primitiveGroups = groups;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline SizeT
-Mesh::GetNumPrimitiveGroups() const
-{
-    return this->primitiveGroups.Size();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const CoreGraphics::PrimitiveGroup&
-Mesh::GetPrimitiveGroupAtIndex(IndexT i) const
-{
-    return this->primitiveGroups[i];
-}
-    
-} // namespace CoreGraphics
-//------------------------------------------------------------------------------
-
-
+class MemoryMeshPool;
+extern MemoryMeshPool* meshPool;
+} // CoreGraphics

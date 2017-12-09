@@ -46,17 +46,17 @@ public:
 	virtual ~PassBase();
 
 	/// set depth-stencil attachment
-	void SetDepthStencilAttachment(const Ptr<CoreGraphics::RenderTexture>& depthStencilAttachment);
+	void SetDepthStencilAttachment(const CoreGraphics::RenderTextureId depthStencilAttachment);
 	/// set depth-stencil clear
 	void SetDepthStencilClear(float depth, uint stencil);
 	/// set depth-stencil flags
 	void SetDepthStencilFlags(const AttachmentFlagBits& flags);
 	/// add color attachment
-	void AddColorAttachment(const Ptr<CoreGraphics::RenderTexture>& colorAttachment); 
+	void AddColorAttachment(const CoreGraphics::RenderTextureId colorAttachment);
 	/// get number of color attachments
 	const SizeT GetNumColorAttachments() const;
 	/// get color attachment
-	const Ptr<CoreGraphics::RenderTexture>& GetColorAttachment(const IndexT index);
+	const CoreGraphics::RenderTextureId GetColorAttachment(const IndexT index);
 	/// set color attachment clear
 	void SetColorAttachmentClear(const IndexT index, const Math::float4& clearValue);
 	/// set color attachment flags
@@ -98,13 +98,13 @@ public:
 	};
 
 protected:
-	Util::Array<Ptr<CoreGraphics::RenderTexture>> colorAttachments;
+	Util::Array<CoreGraphics::RenderTextureId> colorAttachments;
 	Util::Array<Math::float4> colorAttachmentClears;
 	Util::Array<AttachmentFlagBits> colorAttachmentFlags;
 	Util::Array<Subpass> subpasses;
 	CoreGraphics::FrameBatchType::Code batchType;
 
-	Ptr<CoreGraphics::RenderTexture> depthStencilAttachment;
+	CoreGraphics::RenderTextureId depthStencilAttachment;
 	float clearDepth;
 	uint clearStencil;
 	AttachmentFlagBits depthStencilFlags;
@@ -118,7 +118,7 @@ protected:
 /**
 */
 inline void
-PassBase::SetDepthStencilAttachment(const Ptr<CoreGraphics::RenderTexture>& depthStencilAttachment)
+PassBase::SetDepthStencilAttachment(const CoreGraphics::RenderTextureId depthStencilAttachment)
 {
 	this->depthStencilAttachment = depthStencilAttachment;
 }
@@ -146,7 +146,7 @@ PassBase::SetDepthStencilFlags(const AttachmentFlagBits& flags)
 /**
 */
 inline void
-PassBase::AddColorAttachment(const Ptr<CoreGraphics::RenderTexture>& colorAttachment)
+PassBase::AddColorAttachment(const CoreGraphics::RenderTextureId colorAttachment)
 {
 	this->colorAttachments.Append(colorAttachment);
 	this->colorAttachmentClears.Append(Math::float4(0));
@@ -165,7 +165,7 @@ PassBase::GetNumColorAttachments() const
 //------------------------------------------------------------------------------
 /**
 */
-inline const Ptr<CoreGraphics::RenderTexture>&
+inline const CoreGraphics::RenderTextureId
 PassBase::GetColorAttachment(const IndexT index)
 {
 	return this->colorAttachments[index];

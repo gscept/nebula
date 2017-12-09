@@ -119,20 +119,21 @@ private:
 	{
 		Util::FixedArray<DescriptorSetBinding> setBindings;
 		Util::FixedArray<Util::Array<uint32_t>> setOffsets;
-		bool shared;
 		VkPipelineLayout pushLayout;
 		uint8_t* pushData;
 		uint32_t pushDataSize;
 		bool setsDirty;
+		bool shared;
 	};
+
 	struct SetupInfo
 	{
 		Util::FixedArray<VkDescriptorSet> sets;
 		Util::FixedArray<Util::Dictionary<uint32_t, BufferMapping>> setBufferMapping;
 		Util::Dictionary<uint32_t, uint32_t> groupIndexMap;
 		Util::Array<uint32_t> offsets;
-		Util::Dictionary<Util::String, uint32_t> offsetsByName;
-		Util::Dictionary<Ptr<CoreGraphics::ConstantBuffer>, uint32_t> instances;
+		Util::Dictionary<Util::StringAtom, uint32_t> offsetsByName;
+		Util::Dictionary<CoreGraphics::ConstantBufferId, uint32_t> instances;
 		Util::Dictionary<Util::StringAtom, Ids::Id24> variableMap;
 		VkPipelineLayout pipelineLayout;
 	};

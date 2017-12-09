@@ -68,7 +68,7 @@ public:
     /// get the current actual thread-priority of this thread (platform specific!)
     static int GetMyThreadPriority();
 
-    #if NEBULA3_DEBUG
+    #if NEBULA_DEBUG
     struct ThreadDebugInfo
     {
         Util::String threadName;
@@ -113,7 +113,7 @@ private:
     LinuxEvent threadStartedEvent;
     LinuxEvent stopRequestEvent;
 
-#if NEBULA3_DEBUG
+#if NEBULA_DEBUG
     static Threading::CriticalSection criticalSection;
     static Util::List<LinuxThread*> ThreadList;
     Util::List<LinuxThread*>::Iterator threadListIterator;

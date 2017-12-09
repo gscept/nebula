@@ -92,7 +92,7 @@ private:
 __forceinline void*
 Blob::operator new(size_t size)
 {
-    #if NEBULA3_DEBUG
+    #if NEBULA_DEBUG
     n_assert(size == sizeof(Blob));
     #endif
 

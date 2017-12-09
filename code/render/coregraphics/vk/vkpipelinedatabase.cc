@@ -11,7 +11,6 @@
 namespace Vulkan
 {
 
-__ImplementClass(VkPipelineDatabase, 'VKPD', Core::RefCounted);
 __ImplementSingleton(VkPipelineDatabase);
 //------------------------------------------------------------------------------
 /**

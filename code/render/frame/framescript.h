@@ -40,13 +40,13 @@ public:
 	/// add frame operation
 	void AddOp(const Ptr<Frame::FrameOp>& op);
 	/// add color texture
-	void AddColorTexture(const Util::StringAtom& name, const Ptr<CoreGraphics::RenderTexture>& tex);
+	void AddColorTexture(const Util::StringAtom& name, const CoreGraphics::RenderTextureId tex);
 	/// get color texture
-	const Ptr<CoreGraphics::RenderTexture>& GetColorTexture(const Util::StringAtom& name);
+	const CoreGraphics::RenderTextureId GetColorTexture(const Util::StringAtom& name);
 	/// add depth-stencil texture
-	void AddDepthStencilTexture(const Util::StringAtom& name, const Ptr<CoreGraphics::RenderTexture>& tex);
+	void AddDepthStencilTexture(const Util::StringAtom& name, const CoreGraphics::RenderTextureId tex);
 	/// get depth-stencil texture
-	const Ptr<CoreGraphics::RenderTexture>& GetDepthStencilTexture(const Util::StringAtom& name);
+	const CoreGraphics::RenderTextureId GetDepthStencilTexture(const Util::StringAtom& name);
 	/// add read-write texture
 	void AddReadWriteTexture(const Util::StringAtom& name, const Ptr<CoreGraphics::ShaderReadWriteTexture>& tex);
 	/// get read-write texture
@@ -94,13 +94,13 @@ private:
 	/// handle resizing
 	void OnWindowResized();
 
-	Ptr<CoreGraphics::Window> window;
+	CoreGraphics::WindowId window;
 
 	Resources::ResourceId resId;
-	Util::Array<Ptr<CoreGraphics::RenderTexture>> colorTextures;
-	Util::Dictionary<Util::StringAtom, Ptr<CoreGraphics::RenderTexture>> colorTexturesByName;
-	Util::Array<Ptr<CoreGraphics::RenderTexture>> depthStencilTextures;
-	Util::Dictionary<Util::StringAtom, Ptr<CoreGraphics::RenderTexture>> depthStencilTexturesByName;
+	Util::Array<CoreGraphics::RenderTextureId> colorTextures;
+	Util::Dictionary<Util::StringAtom, CoreGraphics::RenderTextureId> colorTexturesByName;
+	Util::Array<CoreGraphics::RenderTextureId> depthStencilTextures;
+	Util::Dictionary<Util::StringAtom, CoreGraphics::RenderTextureId> depthStencilTexturesByName;
 	Util::Array<Ptr<CoreGraphics::ShaderReadWriteTexture>> readWriteTextures;
 	Util::Dictionary<Util::StringAtom, Ptr<CoreGraphics::ShaderReadWriteTexture>> readWriteTexturesByName;
 	Util::Array<Ptr<CoreGraphics::ShaderReadWriteBuffer>> readWriteBuffers;
@@ -135,7 +135,7 @@ FrameScript::GetResourceId() const
 //------------------------------------------------------------------------------
 /**
 */
-inline const Ptr<CoreGraphics::RenderTexture>&
+inline const CoreGraphics::RenderTextureId
 FrameScript::GetColorTexture(const Util::StringAtom& name)
 {
 	return this->colorTexturesByName[name];
@@ -144,7 +144,7 @@ FrameScript::GetColorTexture(const Util::StringAtom& name)
 //------------------------------------------------------------------------------
 /**
 */
-inline const Ptr<CoreGraphics::RenderTexture>&
+inline const CoreGraphics::RenderTextureId
 FrameScript::GetDepthStencilTexture(const Util::StringAtom& name)
 {
 	return this->depthStencilTexturesByName[name];

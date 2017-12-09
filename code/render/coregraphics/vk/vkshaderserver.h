@@ -31,9 +31,9 @@ public:
 	void Close();
 	
 	/// register new texture
-	uint32_t RegisterTexture(const VkImageView tex, Base::TextureBase::Type type);
+	uint32_t RegisterTexture(const VkImageView tex, CoreGraphics::TextureType type);
 	/// unregister texture
-	void UnregisterTexture(const uint32_t id, const Base::TextureBase::Type type);
+	void UnregisterTexture(const uint32_t id, const CoreGraphics::TextureType type);
 	/// commit texture library to shader
 	void BindTextureDescriptorSets();
 

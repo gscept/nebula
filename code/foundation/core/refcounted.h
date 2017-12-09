@@ -25,7 +25,7 @@
 #include "threading/interlocked.h"
 #include "core/refcountedlist.h"
 
-#if NEBULA3_DEBUG
+#if NEBULA_DEBUG
 #include "threading/criticalsection.h"
 #include "util/dictionary.h"
 #endif
@@ -61,10 +61,10 @@ public:
     const Util::String& GetClassName() const;
     /// get the class FourCC code
     Util::FourCC GetClassFourCC() const;
-    /// dump refcounting leaks, call at end of application (NEBULA3_DEBUG builds only!)
+    /// dump refcounting leaks, call at end of application (NEBULA_DEBUG builds only!)
     static void DumpRefCountingLeaks();
 
-    #if NEBULA3_DEBUG
+    #if NEBULA_DEBUG
     struct Stats
     {
         Util::String className;
@@ -84,7 +84,7 @@ protected:
 private:
     volatile int refCount;
 
-    #if NEBULA3_DEBUG
+    #if NEBULA_DEBUG
 protected:
         static ThreadLocal bool isInCreate;
         static Threading::CriticalSection criticalSection;
@@ -106,7 +106,7 @@ inline
 RefCounted::RefCounted() : 
     refCount(0)
 {
-    #if NEBULA3_DEBUG
+    #if NEBULA_DEBUG
     n_assert2(this->isInCreate, "RefCounted objects must be created with Create()!");
     this->listIterator = list.AddBack(this);
     this->destroyed = false;
@@ -220,7 +220,7 @@ RefCounted::GetClassFourCC() const
     return this->GetRtti()->GetFourCC();
 }
 
-#if NEBULA3_DEBUG
+#if NEBULA_DEBUG
 //------------------------------------------------------------------------------
 /**
 */

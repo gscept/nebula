@@ -5,6 +5,9 @@
 #include "stdneb.h"
 #include "resourcemanager.h"
 
+#if NEBULA_DEBUG
+#include "core/sysfunc.h"
+#endif
 namespace Resources
 {
 
@@ -26,6 +29,7 @@ ResourceManager::ResourceManager()
 ResourceManager::~ResourceManager()
 {
 	__DestructSingleton;
+	n_assert(!this->open); // make sure to call close before destroying the object
 }
 
 //------------------------------------------------------------------------------
@@ -52,8 +56,35 @@ void
 ResourceManager::Close()
 {
 	n_assert(this->open);
+
 	this->loaderThread->Stop();
 	this->loaderThread = nullptr;
+
+#if NEBULA_DEBUG
+	// report any resources which have not been unloaded
+	bool hasLeaks = false;
+	for (IndexT i = 0; i < this->pools.Size(); i++)
+	{
+		ResourcePool* pool = this->pools[i];
+		for (IndexT j = 0; j < pool->usage.Size(); j++)
+		{
+			if (pool->usage[j] != 0)
+			{
+				const Resources::ResourceName& name = pool->names[j];
+				Util::String msg = Util::String::Sprintf("\n\n******** NEBULA T RESOURCE MANAGER ********\n Resource <%s> (id %d) from pool %d is not unloaded, usage is %d!\n\n", name.Value(), j, pool->uniqueId, pool->usage[j]);
+				Core::SysFunc::DebugOut(msg.AsCharPtr());
+				hasLeaks = true;
+			}
+		}
+	}
+
+	if (!hasLeaks)
+	{
+		Util::String msg = Util::String::Sprintf("\n\n******** NEBULA T RESOURCE MANAGER ********\n All resources are properly freed!\n\n");
+		Core::SysFunc::DebugOut(msg.AsCharPtr());
+	}
+
+#endif
 	this->pools.Clear();
 	this->extensionMap.Clear();
 	this->open = false;
@@ -123,11 +154,31 @@ ResourceManager::DiscardResources(const Util::StringAtom& tag)
 //------------------------------------------------------------------------------
 /**
 */
+bool
+ResourceManager::HasPendingResources()
+{
+	IndexT i;
+	for (i = 0; i < this->pools.Size(); i++)
+	{
+		const Ptr<ResourcePool>& loader = this->pools[i];
+		if (loader->IsA(ResourceStreamPool::RTTI))
+		{
+			const Ptr<ResourceStreamPool>& pool = loader.cast<ResourceStreamPool>();
+			if (!pool->pendingLoadMap.IsEmpty())
+				return true;
+		}
+	}
+	return false;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 Core::Rtti*
 ResourceManager::GetType(const Resources::ResourceId id)
 {
 	// get id of loader
-	const Ids::Id8 loaderid = Ids::Id::GetTiny(Ids::Id::GetLow(id));
+	const Ids::Id8 loaderid = id.id8;
 
 	// get resource loader by extension
 	n_assert(this->pools.Size() > loaderid);

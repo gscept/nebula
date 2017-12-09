@@ -160,7 +160,7 @@ MaterialInstance::IsValid() const
 const Ptr<MaterialVariable>&
 MaterialInstance::GetVariableByName(const MaterialVariable::Name& n) const
 {
-#if NEBULA3_DEBUG
+#if NEBULA_DEBUG
 	if (!this->HasVariableByName(n))
 	{
 		n_error("Invalid shader variable name '%s' in shader '%s'",

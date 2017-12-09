@@ -86,26 +86,18 @@ ENDIF()
 				bufferlockbase.h
 				constantbufferbase.cc
 				constantbufferbase.h
-				depthstenciltargetbase.cc
-				depthstenciltargetbase.h
 				displaydevicebase.cc
 				displaydevicebase.h
 				eventbase.cc
 				eventbase.h
-				feedbackbufferbase.cc
-				feedbackbufferbase.h
 				indexbufferbase.cc
 				indexbufferbase.h
-				memoryindexbufferpoolbase.h
-				memoryvertexbufferpoolbase.h
 				passbase.cc
 				passbase.h
 				renderdevicebase.cc
 				renderdevicebase.h
 				rendertexturebase.cc
 				rendertexturebase.h
-				gpuresourcebase.cc
-				gpuresourcebase.h
 				shaderbase.cc
 				shaderbase.h
 				shaderreadwritebufferbase.cc
@@ -124,12 +116,8 @@ ENDIF()
 				shaperendererbase.h
 				textrendererbase.cc
 				textrendererbase.h
-				texturebase.cc
-				texturebase.h
 				transformdevicebase.cc
 				transformdevicebase.h
-				vertexbufferbase.cc
-				vertexbufferbase.h
 				vertexcomponentbase.h
 				vertexlayoutbase.cc
 				vertexlayoutbase.h
@@ -145,27 +133,21 @@ ENDIF()
 				adapterinfo.h
 				antialiasquality.cc
 				antialiasquality.h
-				barrier.cc
 				barrier.h
 				bufferlock.cc
 				bufferlock.h
+				gpubuffertypes.h
+				cmdbuffer.h
 				config.h
 				constantbuffer.cc
 				constantbuffer.h
-				coregraphics.cc
-				coregraphics.h
-				depthstenciltarget.cc
-				depthstenciltarget.h
 				displaydevice.cc
 				displaydevice.h
 				displayevent.h
 				displayeventhandler.cc
 				displayeventhandler.h
 				displaymode.h
-				event.cc
 				event.h
-				feedbackbuffer.cc
-				feedbackbuffer.h
 				framebatchtype.h
 				imagefileformat.cc
 				imagefileformat.h
@@ -198,15 +180,12 @@ ENDIF()
 				rendershape.h
 				rendertexture.cc
 				rendertexture.h
-				shader.cc
 				shader.h
 				shaderfeature.cc
 				shaderfeature.h
 				shaderidentifier.cc
 				shaderidentifier.h
-				shaderreadwritebuffer.cc
 				shaderreadwritebuffer.h
-				shaderreadwritetexture.cc
 				shaderreadwritetexture.h
 				shadersemantics.h
 				shaderserver.cc
@@ -219,14 +198,13 @@ ENDIF()
 				shadervariation.h
 				shaperenderer.cc
 				shaperenderer.h
-				meshpool.cc
-				meshpool.h
+				streammeshpool.cc
+				streammeshpool.h
 				shaderpool.cc
 				shaderpool.h
-				texturepool.cc
-				texturepool.h
+				streamtexturepool.cc
+				streamtexturepool.h
 				streamtexturesaver.h
-				stretchybuffer.cc
 				stretchybuffer.h
 				textelement.cc
 				textelement.h
@@ -245,7 +223,6 @@ ENDIF()
 				vertexlayoutserver.h
 				vertexsignaturepool.cc
 				vertexsignaturepool.h
-				window.cc
 				window.h
 			)
 		fips_dir(coregraphics/debug GROUP "coregraphics/debug")
@@ -283,8 +260,6 @@ ENDIF()
 				d3d11bufferlock.h
 				d3d11constantbuffer.cc
 				d3d11constantbuffer.h
-				d3d11depthstenciltarget.cc
-				d3d11depthstenciltarget.h
 				d3d11displaydevice.cc
 				d3d11displaydevice.h
 				d3d11event.cc
@@ -346,6 +321,8 @@ ENDIF()
 			fips_files(
 				vkbarrier.cc
 				vkbarrier.h
+				vkcmdbuffer.cc
+				vkcmdbuffer.h
 				vkcmdbufferthread.cc
 				vkcmdbufferthread.h
 				vkcmdevent.cc
@@ -354,12 +331,8 @@ ENDIF()
 				vkcpusyncfence.h
 				vkdeferredcommand.cc
 				vkdeferredcommand.h
-				vkdepthstenciltarget.cc
-				vkdepthstenciltarget.h
 				vkdisplaydevice.cc
 				vkdisplaydevice.h
-				vkfeedbackbuffer.cc
-				vkfeedbackbuffer.h
 				vkindexbuffer.cc
 				vkindexbuffer.h
 				vkmemoryindexbufferpool.cc
@@ -396,10 +369,12 @@ ENDIF()
 				vkshaperenderer.h
 				vkshaderpool.cc
 				vkshaderpool.h
-				vktexturepool.cc
-				vktexturepool.h
+				vkstreamtexturepool.cc
+				vkstreamtexturepool.h
 				vkstreamtexturesaver.cc
 				vkstreamtexturesaver.h
+				vksubcontexthandler.cc
+				vksubcontexthandler.h
 				vktextrenderer.cc
 				vktextrenderer.h
 				vktexture.cc
@@ -412,8 +387,6 @@ ENDIF()
 				vkuniformbuffer.h
 				vkutilities.cc
 				vkutilities.h
-				vkvertexbuffer.cc
-				vkvertexbuffer.h
 				vkvertexlayout.cc
 				vkvertexlayout.h
 				vkvertexlayoutserver.cc

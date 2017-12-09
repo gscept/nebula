@@ -1,46 +1,55 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @class CoreGraphics::VertexBuffer
-  
-    A resource which holds an array of vertices.
-    
-    (C) 2007 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
-*/    
-#if __DX11__
-#include "coregraphics/d3d11/d3d11vertexbuffer.h"
-namespace CoreGraphics
-{
-class VertexBuffer : public Direct3D11::D3D11VertexBuffer
-{
-};
-}
-#elif __OGL4__
-#include "coregraphics/ogl4/ogl4vertexbuffer.h"
-namespace CoreGraphics
-{
-class VertexBuffer : public OpenGL4::OGL4VertexBuffer
-{
-};
-}
-#elif __VULKAN__
-#include "coregraphics/vk/vkvertexbuffer.h"
-namespace CoreGraphics
-{
-class VertexBuffer : public Vulkan::VkVertexBuffer
-{
-};
-}
-#elif __DX9__
-#include "coregraphics/d3d9/d3d9vertexbuffer.h"
-namespace CoreGraphics
-{
-class VertexBuffer : public Direct3D9::D3D9VertexBuffer
-{
-};
-}
-#else
-#error "VertexBuffer class not implemented on this platform!"
-#endif
+	Vertex buffer related functions.
+
+	The actual allocation is handled by the MemoryVertexBufferPool
+
+	(C) 2017 Individual contributors, see AUTHORS file
+*/
 //------------------------------------------------------------------------------
+#include "ids/id.h"
+#include "ids/idpool.h"
+#include "resources/resourceid.h"
+#include "gpubuffertypes.h"
+#include "coregraphics/vertexcomponent.h"
+namespace CoreGraphics
+{
+
+ID_32_24_8_TYPE(VertexBufferId);
+
+struct VertexBufferCreateInfo
+{
+	Resources::ResourceName name;
+	Util::StringAtom tag;
+	CoreGraphics::GpuBufferTypes::Access access;
+	CoreGraphics::GpuBufferTypes::Usage usage;
+	CoreGraphics::GpuBufferTypes::Syncing sync;
+	SizeT numVerts;
+	Util::Array<VertexComponent> comps;
+	void* data;
+	PtrDiff dataSize;
+};
+
+/// create new vertex buffer with intended usage, access and CPU syncing parameters, together with size of buffer
+const VertexBufferId CreateVertexBuffer(VertexBufferCreateInfo info);
+/// destroy vertex buffer
+void DestroyVertexBuffer(const VertexBufferId id);
+/// bind vertex buffer resource individually
+void BindVertexBuffer(const VertexBufferId id, const IndexT slot, const IndexT vertexOffset);
+/// update vertex buffer
+void UpdateVertexBuffer(const VertexBufferId id, void* data, PtrDiff size, PtrDiff offset);
+/// request lock for vertex buffer, such that it can be updated
+void LockVertexBuffer(const VertexBufferId id, const PtrDiff offset, const PtrDiff range);
+/// request unlock for vertex buffer
+void UnlockVertexBuffer(const VertexBufferId id, const PtrDiff offset, const PtrDiff range);
+/// map GPU memory
+void* MapVertexBuffer(const VertexBufferId id, const CoreGraphics::GpuBufferTypes::MapType type);
+/// unmap GPU memory
+void UnmapVertexBuffer(const VertexBufferId id);
+
+class MemoryVertexBufferPool;
+extern MemoryVertexBufferPool* vboPool;
+
+
+} // CoreGraphics

@@ -9,7 +9,7 @@ namespace Core
 {
 __ImplementRootClass(Core::RefCounted, 'REFC');
 
-#if NEBULA3_DEBUG
+#if NEBULA_DEBUG
 using namespace Util;
 
 Threading::CriticalSection RefCounted::criticalSection;
@@ -24,7 +24,7 @@ RefCountedList RefCounted::list;
 RefCounted::~RefCounted()
 {
     n_assert(0 == this->refCount);
-    #if NEBULA3_DEBUG
+    #if NEBULA_DEBUG
         n_assert(!this->destroyed);
         n_assert(0 != this->listIterator);
         criticalSection.Enter();
@@ -43,7 +43,7 @@ RefCounted::~RefCounted()
 void
 RefCounted::DumpRefCountingLeaks()
 {
-    #if NEBULA3_DEBUG
+    #if NEBULA_DEBUG
     list.DumpLeaks();    
     #endif
 }
@@ -52,7 +52,7 @@ RefCounted::DumpRefCountingLeaks()
 /**
     Gather per-class stats.
 */
-#if NEBULA3_DEBUG
+#if NEBULA_DEBUG
 Dictionary<String,RefCounted::Stats>
 RefCounted::GetOverallStats()
 {

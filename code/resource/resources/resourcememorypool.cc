@@ -31,15 +31,15 @@ ResourceMemoryPool::~ResourceMemoryPool()
 Resources::ResourceId
 ResourceMemoryPool::ReserveResource(const ResourceName& res, const Util::StringAtom& tag)
 {
-	Ids::Id64 ret;
-	Ids::Id32 instanceId = this->resourceInstanceIndexPool.Alloc(); // this is the ID of the container
-	Ids::Id24 resourceId; // this is the id of the resource	
+	ResourceId ret;
+	Ids::Id32 instanceId = this->resourceInstanceIndexPool.Alloc(); // this is the ID of the instance
+	Ids::Id24 resourceId; // this is the id of the shared resource	
 	IndexT i = this->ids.FindIndex(res);
 
 	if (i == InvalidIndex || !res.IsValid())
 	{
 		// allocate new resource
-		resourceId = this->AllocResource();
+		resourceId = this->AllocObject();
 
 		// create new resource id, if need be, grow the container list
 		if (resourceId >= (uint32_t)this->names.Size())
@@ -56,13 +56,17 @@ ResourceMemoryPool::ReserveResource(const ResourceName& res, const Util::StringA
 		this->usage[resourceId] = 1;
 		this->tags[resourceId] = tag;
 		this->states[resourceId] = Resource::Loaded;
-		ret = Ids::Id::MakeId64(instanceId, Ids::Id::MakeId24_8(resourceId, this->uniqueId));
+		ret.id32 = instanceId;
+		ret.id24 = resourceId;
+		ret.id8 = this->uniqueId;
 	}
 	else
 	{
 		// get id of resource
 		resourceId = this->ids.ValueAtIndex(i);
-		ret = Ids::Id::MakeId64(instanceId, Ids::Id::MakeId24_8(resourceId, this->uniqueId));
+		ret.id32 = instanceId;
+		ret.id24 = resourceId;
+		ret.id8 = this->uniqueId;
 
 		// bump usage
 		this->usage[resourceId]++;
@@ -78,15 +82,13 @@ void
 ResourceMemoryPool::DiscardResource(const Resources::ResourceId id)
 {
 	ResourcePool::DiscardResource(id);
-	Ids::Id24 resourceId = Ids::Id::GetBig(Ids::Id::GetLow(id));
 
 	// if usage reaches 0, add it to the list of pending unloads
-	if (this->usage[resourceId] == 0)
+	if (this->usage[id.id24] == 0)
 	{
 		// unload immediately
-		const Ids::Id24 resId = Ids::Id::GetBig(Ids::Id::GetLow(id));
-		this->Unload(resId);
-		this->DeallocResource(resourceId);
+		this->Unload(id.id24);
+		this->DeallocObject(id.id24);
 	}
 }
 
@@ -103,7 +105,7 @@ ResourceMemoryPool::DiscardByTag(const Util::StringAtom& tag)
 		{
 			// unload
 			this->Unload(i);
-			this->DeallocResource(i);
+			this->DeallocObject(i);
 			this->tags[i] = "";
 		}
 	}

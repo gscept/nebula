@@ -48,11 +48,13 @@ public:
 	void DiscardResource(const Resources::ResourceId res);
 	/// discard all resources by tag (stream-managed)
 	void DiscardResources(const Util::StringAtom& tag);
+	/// returns true if there are pending resources in-flight
+	bool HasPendingResources();
 
 	/// reserve resource (for self-managed resources)
 	Resources::ResourceId ReserveResource(const ResourceName& res, const Util::StringAtom& tag, const Core::Rtti& type);
 	/// update resource (for self-managed resources), info pointer is a struct specific to the loader
-	ResourcePool::LoadStatus UpdateResource(const Resources::ResourceId id, void* info);
+	ResourcePool::LoadStatus LoadResource(const Resources::ResourceId id, void* info);
 
 	/// get type of resource pool this resource was allocated with
 	Core::Rtti* GetType(const Resources::ResourceId id);
@@ -123,7 +125,7 @@ inline void
 Resources::ResourceManager::DiscardResource(const Resources::ResourceId id)
 {
 	// get id of loader
-	const Ids::Id8 loaderid = Ids::Id::GetTiny(Ids::Id::GetLow(id));
+	const Ids::Id8 loaderid = id.id8;
 
 	// get resource loader by extension
 	n_assert(this->pools.Size() > loaderid);
@@ -152,12 +154,10 @@ ResourceManager::ReserveResource(const ResourceName& res, const Util::StringAtom
 	The info pointer is a struct containing pool specific information.
 */
 inline Resources::ResourcePool::LoadStatus
-ResourceManager::UpdateResource(const Resources::ResourceId id, void* info)
+ResourceManager::LoadResource(const Resources::ResourceId id, void* info)
 {
-	const Ptr<ResourceMemoryPool>& loader = this->pools[Ids::Id::GetTiny(Ids::Id::GetLow(id))].downcast<ResourceMemoryPool>();
-	const Ids::Id32 lower = Ids::Id::GetLow(id);
-	const Ids::Id24 resourceId = Ids::Id::GetBig(lower);
-	return loader->UpdateResource(resourceId, info);
+	const Ptr<ResourceMemoryPool>& loader = this->pools[id.id8].downcast<ResourceMemoryPool>();
+	return loader->LoadFromMemory(id.id24, info);
 }
 
 //------------------------------------------------------------------------------
@@ -166,13 +166,9 @@ ResourceManager::UpdateResource(const Resources::ResourceId id, void* info)
 inline const Resources::ResourceName
 ResourceManager::GetName(const Resources::ResourceId id)
 {
-	// get id of loader
-	const Ids::Id32 lower = Ids::Id::GetLow(id);
-	const Ids::Id8 loaderid = Ids::Id::GetTiny(lower);
-
 	// get resource loader by extension
-	n_assert(this->pools.Size() > loaderid);
-	const Ptr<ResourcePool>& loader = this->pools[loaderid];
+	n_assert(this->pools.Size() > id.id8);
+	const Ptr<ResourcePool>& loader = this->pools[id.id8];
 	return loader->GetName(id);
 }
 
@@ -182,13 +178,9 @@ ResourceManager::GetName(const Resources::ResourceId id)
 inline const Util::StringAtom
 ResourceManager::GetTag(const Resources::ResourceId id)
 {
-	// get id of loader
-	const Ids::Id32 lower = Ids::Id::GetLow(id);
-	const Ids::Id8 loaderid = Ids::Id::GetTiny(lower);
-
 	// get resource loader by extension
-	n_assert(this->pools.Size() > loaderid);
-	const Ptr<ResourcePool>& loader = this->pools[loaderid];
+	n_assert(this->pools.Size() > id.id8);
+	const Ptr<ResourcePool>& loader = this->pools[id.id8];
 	return loader->GetTag(id);
 }
 
@@ -198,13 +190,9 @@ ResourceManager::GetTag(const Resources::ResourceId id)
 inline const Resources::Resource::State
 ResourceManager::GetState(const Resources::ResourceId id)
 {
-	// get id of loader
-	const Ids::Id32 lower = Ids::Id::GetLow(id);
-	const Ids::Id8 loaderid = Ids::Id::GetTiny(lower);
-
 	// get resource loader by extension
-	n_assert(this->pools.Size() > loaderid);
-	const Ptr<ResourcePool>& loader = this->pools[loaderid];
+	n_assert(this->pools.Size() > id.id8);
+	const Ptr<ResourcePool>& loader = this->pools[id.id8];
 	return loader->GetState(id);
 }
 
@@ -279,9 +267,9 @@ ReserveResource(const ResourceName& res, const Util::StringAtom& tag, const Core
 	The info pointer is a struct containing pool specific information.
 */
 inline ResourcePool::LoadStatus
-UpdateResource(const Resources::ResourceId id, void* info)
+LoadResource(const Resources::ResourceId id, void* info)
 {
-	return ResourceManager::Instance()->UpdateResource(id, info);
+	return ResourceManager::Instance()->LoadResource(id, info);
 }
 
 //------------------------------------------------------------------------------

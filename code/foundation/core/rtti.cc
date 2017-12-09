@@ -43,7 +43,7 @@ Rtti::Construct(const char* className, FourCC fcc, Creator creatorFunc, ArrayCre
             Factory::Instance()->Register(this, this->name, fcc);        
         }
         // make a debug check that no name/fcc collission occured, but only in debug mode
-        #if NEBULA3_DEBUG
+        #if NEBULA_DEBUG
         else
         {
             const Rtti* checkRtti = Factory::Instance()->GetClassRtti(fcc);
@@ -65,7 +65,7 @@ Rtti::Construct(const char* className, FourCC fcc, Creator creatorFunc, ArrayCre
             Factory::Instance()->Register(this, this->name);
         }
         // make a debug check that no name/fcc collission occured, but only in debug mode
-        #if NEBULA3_DEBUG
+        #if NEBULA_DEBUG
         else
         {
             const Rtti* checkRtti = Factory::Instance()->GetClassRtti(this->name);
