@@ -33,7 +33,7 @@ FrameScript::~FrameScript()
 /**
 */
 void
-FrameScript::AddColorTexture(const Util::StringAtom& name, const Ptr<CoreGraphics::RenderTexture>& tex)
+FrameScript::AddColorTexture(const Util::StringAtom& name, const CoreGraphics::RenderTextureId tex)
 {
 	n_assert(!this->colorTexturesByName.Contains(name));
 	this->colorTexturesByName.Add(name, tex);
@@ -44,7 +44,7 @@ FrameScript::AddColorTexture(const Util::StringAtom& name, const Ptr<CoreGraphic
 /**
 */
 void
-FrameScript::AddDepthStencilTexture(const Util::StringAtom& name, const Ptr<CoreGraphics::RenderTexture>& tex)
+FrameScript::AddDepthStencilTexture(const Util::StringAtom& name, const CoreGraphics::RenderTextureId tex)
 {
 	n_assert(!this->depthStencilTexturesByName.Contains(name));
 	this->depthStencilTexturesByName.Add(name, tex);

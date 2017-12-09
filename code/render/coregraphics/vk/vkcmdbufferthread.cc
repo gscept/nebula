@@ -60,6 +60,9 @@ VkCmdBufferThread::DoWork()
 				this->commandBuffer = cmd.bgCmd.buf;
 				n_assert(vkBeginCommandBuffer(this->commandBuffer, &cmd.bgCmd.info) == VK_SUCCESS);
 				break;
+			case ResetCommands:
+				n_assert(vkResetCommandBuffer(this->commandBuffer, 0) == VK_SUCCESS);
+				break;
 			case EndCommand:
 				n_assert(vkEndCommandBuffer(this->commandBuffer) == VK_SUCCESS);
 				this->commandBuffer = VK_NULL_HANDLE;

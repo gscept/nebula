@@ -373,7 +373,7 @@ void
 VkShaderVariable::SetTexture(VariableBinding& bind, ResourceBinding& res, Util::Array<VkWriteDescriptorSet>& writes, const Resources::ResourceId tex)
 {
 	Ids::Id24 resId = Ids::Id::GetBig(Ids::Id::GetLow(tex));
-	VkTexture::RuntimeInfo& info = VkTexture::textureAllocator.GetSafe<0>(resId);
+	TextureRuntimeInfo& info = textureAllocator.GetSafe<0>(resId);
 
 	// only change if there is a difference
 	if (info.view != res.write.img.imageView)

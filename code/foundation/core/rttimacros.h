@@ -72,7 +72,7 @@ private:
 	__ImplementWeakClass		constructs a class which does not support reference counting (no garbage collection). Use __DeclareClass in header.
 	__ImplementTemplateClass	constructs a class with template arguments but without FourCC or RTTI. Use __DeclareTemplateClass in header.
 */
-#if NEBULA3_DEBUG
+#if NEBULA_DEBUG
 #define __ImplementClass(type, fourcc, baseType) \
     Core::Rtti type::RTTI(#type, fourcc, type::FactoryCreator, type::FactoryArrayCreator, &baseType::RTTI, sizeof(type)); \
     Core::Rtti* type::GetRtti() const { return &this->RTTI; } \
@@ -246,7 +246,7 @@ private:
 /**
     Type implementation of topmost type in inheritance hierarchy (source file).
 */
-#if NEBULA3_DEBUG
+#if NEBULA_DEBUG
 #define __ImplementRootClass(type, fourcc) \
     Core::Rtti type::RTTI(#type, fourcc, type::FactoryCreator, type::FactoryArrayCreator, nullptr, sizeof(type)); \
     Core::Rtti* type::GetRtti() const { return &this->RTTI; } \

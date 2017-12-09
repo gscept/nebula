@@ -105,7 +105,7 @@ Win360MemoryPool::Alloc()
     void* ptr = (void*) (((ubyte*)entry) + sizeof(SLIST_ENTRY));
 
     // fill with debug pattern
-    #if NEBULA3_DEBUG
+    #if NEBULA_DEBUG
     Memory::Fill(ptr, this->blockSize, NewBlockPattern);
     #endif
 
@@ -127,7 +127,7 @@ Win360MemoryPool::Free(void* ptr)
     InterlockedPushEntrySList(&this->listHead, entry);
 
     // fill free'd block with debug pattern
-    #if NEBULA3_DEBUG
+    #if NEBULA_DEBUG
     Memory::Fill(ptr, this->blockSize, FreeBlockPattern);
     #endif
 }

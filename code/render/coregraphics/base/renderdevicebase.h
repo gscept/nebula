@@ -85,8 +85,6 @@ public:
 	void BeginPass(const Ptr<CoreGraphics::Pass>& pass);
 	/// progress to next subpass
 	void SetToNextSubpass();
-	/// begin rendering a transform feedback with a vertex buffer as target, updateFeedback checks if the feedback buffer should be used for updating, or for rendering
-    void BeginFeedback(const Ptr<CoreGraphics::FeedbackBuffer>& fb, CoreGraphics::PrimitiveTopology::Code primType);
     /// begin rendering a batch
     void BeginBatch(CoreGraphics::FrameBatchType::Code batchType);
     /// set the current vertex stream source
@@ -100,7 +98,7 @@ public:
     /// get current vertex layout
     const Ptr<CoreGraphics::VertexLayout>& GetVertexLayout() const;
     /// set current index buffer
-    void SetIndexBuffer(CoreGraphics::IndexBuffer* ib);
+    void SetIndexBuffer(CoreGraphics::IndexBuffer* ib, IndexT offsetIndex);
     /// get current index buffer
     CoreGraphics::IndexBuffer* GetIndexBuffer() const;
 	/// set the type of topology to be used
@@ -119,10 +117,6 @@ public:
     void Draw();
     /// draw indexed, instanced primitives
     void DrawIndexedInstanced(SizeT numInstances, IndexT baseInstance);
-	/// draw from stream output/transform feedback buffer
-	void DrawFeedback(const Ptr<CoreGraphics::FeedbackBuffer>& fb);
-	/// draw from stream output/transform feedback buffer, instanced
-	void DrawFeedbackInstanced(const Ptr<CoreGraphics::FeedbackBuffer>& fb, SizeT numInstances);
 	/// begin computation, if asyncAllowed is true, then implementation may perform a compute in parallel with graphics
 	void BeginCompute(bool asyncAllowed, const Util::Array<Ptr<CoreGraphics::ShaderReadWriteTexture>>& textureDependencies, const Util::Array<Ptr<CoreGraphics::ShaderReadWriteBuffer>>& bufferDependencies);
     /// perform computation
@@ -133,8 +127,6 @@ public:
     void EndBatch();
     /// end current pass
     void EndPass();
-	/// end current feedback
-	void EndFeedback();
     /// end current frame
 	void EndFrame(IndexT frameIndex);
     /// check if inside BeginFrame
@@ -155,11 +147,11 @@ public:
 	bool GetRenderWireframe() const;
 
 	/// copy data between textures
-	void Copy(const Ptr<CoreGraphics::Texture>& from, Math::rectangle<SizeT> fromRegion, const Ptr<CoreGraphics::Texture>& to, Math::rectangle<SizeT> toRegion);
+	void Copy(const CoreGraphics::TextureId from, Math::rectangle<SizeT> fromRegion, const CoreGraphics::TextureId to, Math::rectangle<SizeT> toRegion);
 	/// blit between render textures
-	void Blit(const Ptr<CoreGraphics::RenderTexture>& from, Math::rectangle<SizeT> fromRegion, IndexT fromMip, const Ptr<CoreGraphics::RenderTexture>& to, Math::rectangle<SizeT> toRegion, IndexT toMip);
+	void Blit(const CoreGraphics::RenderTextureId from, Math::rectangle<SizeT> fromRegion, IndexT fromMip, const CoreGraphics::RenderTextureId to, Math::rectangle<SizeT> toRegion, IndexT toMip);
 	/// blit between textures
-	void Blit(const Ptr<CoreGraphics::Texture>& from, Math::rectangle<SizeT> fromRegion, IndexT fromMip, const Ptr<CoreGraphics::Texture>& to, Math::rectangle<SizeT> toRegion, IndexT toMip);
+	void Blit(const CoreGraphics::TextureId from, Math::rectangle<SizeT> fromRegion, IndexT fromMip, const CoreGraphics::TextureId to, Math::rectangle<SizeT> toRegion, IndexT toMip);
 
 	/// enqueue a buffer lock which will cause the render device to lock a buffer index whenever the next draw command gets executed
 	static void EnqueueBufferLockIndex(const Ptr<CoreGraphics::BufferLock>& lock, IndexT buffer);
@@ -230,7 +222,7 @@ protected:
 /**
 */
 inline void
-RenderDeviceBase::SetIndexBuffer(IndexBuffer* ib)
+RenderDeviceBase::SetIndexBuffer(IndexBuffer* ib, IndexT offsetIndex)
 {
 	this->indexBuffer = ib;
 }

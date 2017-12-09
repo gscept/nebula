@@ -129,26 +129,26 @@ VkShaderServer::LoadShader(const Resources::ResourceId& shdName)
 /**
 */
 uint32_t
-VkShaderServer::RegisterTexture(const VkImageView tex, Base::TextureBase::Type type)
+VkShaderServer::RegisterTexture(const VkImageView tex, CoreGraphics::TextureType type)
 {
 	uint32_t idx;
 	Ptr<VkShaderVariable> var;
 	VkDescriptorImageInfo* img;
 	switch (type)
 	{
-	case Texture::Texture2D:
+	case Texture2D:
 		n_assert(!this->texture2DPool.IsFull());
 		idx = this->texture2DPool.Alloc();
 		var = this->texture2DTextureVar;
 		img = &this->texture2DDescriptors[idx];
 		break;
-	case Texture::Texture3D:
+	case Texture3D:
 		n_assert(!this->texture3DPool.IsFull());
 		idx = this->texture3DPool.Alloc();
 		var = this->texture3DTextureVar;
 		img = &this->texture3DDescriptors[idx];
 		break;
-	case Texture::TextureCube:
+	case TextureCube:
 		n_assert(!this->textureCubePool.IsFull());
 		idx = this->textureCubePool.Alloc();
 		var = this->textureCubeTextureVar;
@@ -180,17 +180,17 @@ VkShaderServer::RegisterTexture(const VkImageView tex, Base::TextureBase::Type t
 /**
 */
 void
-VkShaderServer::UnregisterTexture(const uint32_t id, const Base::TextureBase::Type type)
+VkShaderServer::UnregisterTexture(const uint32_t id, const CoreGraphics::TextureType type)
 {
 	switch (type)
 	{
-	case Texture::Texture2D:
+	case Texture2D:
 		this->texture2DPool.Free(id);
 		break;
-	case Texture::Texture3D:
+	case Texture3D:
 		this->texture3DPool.Free(id);
 		break;
-	case Texture::TextureCube:
+	case TextureCube:
 		this->textureCubePool.Free(id);
 		break;
 	}

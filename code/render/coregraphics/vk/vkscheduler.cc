@@ -9,7 +9,6 @@
 
 namespace Vulkan
 {
-__ImplementClass(Vulkan::VkScheduler, 'VKSC', Core::RefCounted);
 __ImplementSingleton(Vulkan::VkScheduler);
 //------------------------------------------------------------------------------
 /**

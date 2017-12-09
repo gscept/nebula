@@ -778,7 +778,7 @@ matrix44::inverse(const matrix44& m)
 __forceinline matrix44
 matrix44::lookatlh(const point& eye, const point& at, const vector& up)
 {
-#if NEBULA3_DEBUG
+#if NEBULA_DEBUG
     n_assert(up.length() > 0);
 #endif
     // hmm the XM lookat functions are kinda pointless, because they
@@ -804,7 +804,7 @@ matrix44::lookatlh(const point& eye, const point& at, const vector& up)
 __forceinline matrix44
 matrix44::lookatrh(const point& eye, const point& at, const vector& up)
 {
-#if NEBULA3_DEBUG
+#if NEBULA_DEBUG
     n_assert(up.length() > 0);
 #endif
     // hmm the XM lookat functions are kinda pointless, because they

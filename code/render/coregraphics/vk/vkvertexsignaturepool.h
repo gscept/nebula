@@ -22,23 +22,24 @@ public:
 	/// destructor
 	virtual ~VkVertexSignaturePool();
 
+	/// update resource
+	LoadStatus LoadFromMemory(const Resources::ResourceId id, void* info);
+	/// unload resource
+	void Unload(const Ids::Id24 id);
+
 	/// bind layout
 	void BindVertexLayout(const Resources::ResourceId id);
 	/// get derivative
 	VkPipelineVertexInputStateCreateInfo* GetDerivativeLayout(const Resources::ResourceId layout);
 private:
 	friend class VkMemoryVertexBufferPool;
-
-	/// update resource
-	LoadStatus UpdateResource(const Resources::ResourceId id, void* info);
-	/// unload resource
-	void Unload(const Ids::Id24 id);
+	friend class VertexLayout;
 
 	Ids::IdAllocator<
 		Util::Array<VkPipelineVertexInputStateCreateInfo>,							//0 pipeline setup info
 		Util::HashTable<Resources::ResourceId, VkVertexLayout::DerivativeLayout*>,	//1 program-to-derivative layout binding
 		VkVertexLayout::BindInfo,													//2 setup info
-		VertexLayoutBase::VertexLayoutBaseInfo										//3 base info
+		VertexLayoutInfo															//3 base info
 	> allocator;
 	__ImplementResourceAllocator(allocator);
 };

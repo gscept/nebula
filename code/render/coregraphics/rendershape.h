@@ -94,7 +94,7 @@ public:
         RenderFlag depthFlag);
 
 	/// setup mesh
-	void SetupMesh(Threading::ThreadId threadId, const Math::matrix44& modelTransform, const Ptr<Mesh>& mesh, const IndexT groupIndex, const Math::float4& color, RenderFlag depthFlag);
+	void SetupMesh(Threading::ThreadId threadId, const Math::matrix44& modelTransform, const MeshId mesh, const IndexT groupIndex, const Math::float4& color, RenderFlag depthFlag);
 
     /// get the thread id of this shape
     Threading::ThreadId GetThreadId() const;
@@ -121,9 +121,9 @@ public:
     /// get shape color
     const Math::float4& GetColor() const;
     /// get vertex layout, returns NULL if none exist
-    const Ptr<VertexLayout>& GetVertexLayout() const;
+    const VertexLayoutId GetVertexLayout() const;
 	/// get mesh
-	const Ptr<Mesh>& GetMesh() const;
+	const MeshId GetMesh() const;
 	/// get primitive group
 	const IndexT& GetPrimitiveGroupIndex() const;
 
@@ -141,8 +141,8 @@ private:
     IndexT vertexDataOffset;
 
 	IndexT groupIndex;
-	Ptr<Mesh> mesh;
-    Ptr<VertexLayout> vertexLayout;
+	MeshId mesh;
+    VertexLayoutId vertexLayout;
     Ptr<IO::MemoryStream> dataStream;       // contains vertex/index data
 };
 
@@ -275,7 +275,7 @@ RenderShape::GetColor() const
 //------------------------------------------------------------------------------
 /**
 */
-inline const Ptr<VertexLayout>&
+inline const VertexLayoutId
 RenderShape::GetVertexLayout() const
 {
     return this->vertexLayout;
@@ -284,7 +284,7 @@ RenderShape::GetVertexLayout() const
 //------------------------------------------------------------------------------
 /**
 */
-inline const Ptr<Mesh>& 
+inline const MeshId
 RenderShape::GetMesh() const
 {
 	return this->mesh;

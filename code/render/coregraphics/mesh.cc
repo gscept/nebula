@@ -1,99 +1,60 @@
 //------------------------------------------------------------------------------
 //  mesh.cc
-//  (C) 2007 Radon Labs GmbH
-//  (C) 2013-2016 Individual contributors, see AUTHORS file
+//  (C) 2017 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
-#include "coregraphics/mesh.h"
+#include "config.h"
+#include "mesh.h"
 #include "coregraphics/renderdevice.h"
 
 namespace CoreGraphics
 {
 
-using namespace CoreGraphics;
+Ids::IdAllocator<MeshCreateInfo> meshAllocator(0x00FFFFFF);
+MemoryMeshPool* meshPool = nullptr;
 
+using namespace Ids;
 //------------------------------------------------------------------------------
 /**
 */
-Mesh::Mesh()
+const MeshId
+CreateMesh(const MeshCreateInfo& info)
 {
-    // empty
-}
+	Id32 pid = meshAllocator.AllocObject();
 
-//------------------------------------------------------------------------------
-/**
-*/
-Mesh::~Mesh()
-{
-    // empty
-}
+	// simply copy the create info...
+	MeshCreateInfo& inf = meshAllocator.Get<0>(pid);
+	inf = info;
 
-//------------------------------------------------------------------------------
-/**
-*/
-void
-Mesh::Unload()
-{
-    if (this->vertexBuffer.isvalid())
-    {
-        this->vertexBuffer->Unload();
-        this->vertexBuffer = 0;
-    }
-    if (this->indexBuffer.isvalid())
-    {
-        this->indexBuffer->Unload();
-        this->indexBuffer = 0;
-    }
-    Resource::Unload();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-Mesh::ApplyPrimitives(IndexT primGroupIndex)
-{
-    RenderDevice* renderDevice = RenderDevice::Instance();
-    if (this->vertexBuffer.isvalid())
-    {
-		renderDevice->SetVertexLayout(this->vertexBuffer->GetVertexLayout());
-		renderDevice->SetPrimitiveTopology(this->topology);
-		renderDevice->SetPrimitiveGroup(this->GetPrimitiveGroupAtIndex(primGroupIndex));
-        renderDevice->SetStreamVertexBuffer(0, this->vertexBuffer, 0);        
-    }
-    if (this->indexBuffer.isvalid())
-    {
-        renderDevice->SetIndexBuffer(this->indexBuffer);
-    }
+	MeshId id;
+	id.id24 = pid;
+	id.id8 = MeshIdType;
+	return id;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-Mesh::ApplySharedMesh()
+DestroyMesh(const MeshId id)
+{
+	meshAllocator.DeallocObject(id.id24);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+BindMesh(const MeshId id, const IndexT prim)
 {
 	RenderDevice* renderDevice = RenderDevice::Instance();
-	if (this->vertexBuffer.isvalid())
-	{
-		renderDevice->SetVertexLayout(this->vertexBuffer->GetVertexLayout());
-		renderDevice->SetPrimitiveTopology(this->topology);
-		renderDevice->SetStreamVertexBuffer(0, this->vertexBuffer, 0);
-	}
-	if (this->indexBuffer.isvalid())
-	{
-		renderDevice->SetIndexBuffer(this->indexBuffer);
-	}
+#if _DEBUG
+	n_assert(id.id8 == MeshIdType);
+#endif
+	MeshCreateInfo& inf = meshAllocator.Get<0>(id.id24);
+	BindVertexBuffer(inf.vertexBuffer, 0, inf.primitiveGroups[prim].GetBaseVertex());
+	if (inf.indexBuffer != Ids::InvalidId64)
+		BindIndexBuffer(inf.indexBuffer, inf.primitiveGroups[prim].GetBaseIndex());
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-void
-Mesh::ApplyPrimitiveGroup(IndexT primGroupIndex)
-{
-	RenderDevice* renderDevice = RenderDevice::Instance();
-	renderDevice->SetPrimitiveGroup(this->GetPrimitiveGroupAtIndex(primGroupIndex));
-}
-
-} // namespace Base
+} // Base

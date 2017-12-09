@@ -3,7 +3,7 @@
 // (C) 2016 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
-#include "vktexturepool.h"
+#include "vkstreamtexturepool.h"
 #include "coregraphics/texture.h"
 #include "coregraphics/renderdevice.h"
 #include "io/ioserver.h"
@@ -16,10 +16,11 @@
 #include "vkscheduler.h"
 #include "math/scalar.h"
 #include "vkshaderserver.h"
+#include "coregraphics/memorytexturepool.h"
 namespace Vulkan
 {
 
-__ImplementClass(Vulkan::VkTexturePool, 'VKTL', Resources::ResourceStreamPool);
+__ImplementClass(Vulkan::VkStreamTexturePool, 'VKTL', Resources::ResourceStreamPool);
 
 using namespace CoreGraphics;
 using namespace Resources;
@@ -27,7 +28,7 @@ using namespace IO;
 //------------------------------------------------------------------------------
 /**
 */
-VkTexturePool::VkTexturePool()
+VkStreamTexturePool::VkStreamTexturePool()
 {
 	// empty
 }
@@ -35,7 +36,7 @@ VkTexturePool::VkTexturePool()
 //------------------------------------------------------------------------------
 /**
 */
-VkTexturePool::~VkTexturePool()
+VkStreamTexturePool::~VkStreamTexturePool()
 {
 	// empty
 }
@@ -44,7 +45,7 @@ VkTexturePool::~VkTexturePool()
 /**
 */
 void
-VkTexturePool::Setup()
+VkStreamTexturePool::Setup()
 {
 	ResourceStreamPool::Setup();
 	this->placeholderResourceId = "mdl:system/placeholder.dds";
@@ -54,18 +55,36 @@ VkTexturePool::Setup()
 //------------------------------------------------------------------------------
 /**
 */
+inline Ids::Id32
+VkStreamTexturePool::AllocObject()
+{
+	return texturePool->AllocObject();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+VkStreamTexturePool::DeallocObject(const Ids::Id32 id)
+{
+	texturePool->DeallocObject(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 ResourcePool::LoadStatus
-VkTexturePool::Load(const Ids::Id24 res, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream)
+VkStreamTexturePool::LoadFromStream(const Ids::Id24 res, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream)
 {
 	n_assert(stream.isvalid());
 	n_assert(stream->CanBeMapped());
 	n_assert(!this->GetState(res) == Resources::Resource::Pending);
 
 	/// during the load-phase, we can safetly get the structs
-	this->EnterGet();
-	VkTexture::RuntimeInfo& runtimeInfo = this->Get<0>(res);
-	VkTexture::LoadInfo& loadInfo = this->Get<1>(res);
-	this->LeaveGet();
+	texturePool->EnterGet();
+	TextureRuntimeInfo& runtimeInfo = texturePool->Get<0>(res);
+	TextureLoadInfo& loadInfo = texturePool->Get<1>(res);
+	texturePool->LeaveGet();
 
 	stream->SetAccessMode(Stream::ReadAccess);
 	if (stream->Open())
@@ -257,7 +276,7 @@ VkTexturePool::Load(const Ids::Id24 res, const Util::StringAtom& tag, const Ptr<
 		loadInfo.dims.depth = depth;
 		loadInfo.mips = Math::n_max(mips, 1u);
 		loadInfo.format = VkTypes::AsNebulaPixelFormat(vkformat);
-		runtimeInfo.type = cube ? Texture::TextureCube : depth > 1 ? Texture::Texture3D : Texture::Texture2D;
+		runtimeInfo.type = cube ? CoreGraphics::TextureCube : depth > 1 ? CoreGraphics::Texture3D : CoreGraphics::Texture2D;
 		runtimeInfo.bind = VkShaderServer::Instance()->RegisterTexture(runtimeInfo.view, runtimeInfo.type);
 
 		stream->Unmap();
@@ -268,5 +287,13 @@ VkTexturePool::Load(const Ids::Id24 res, const Util::StringAtom& tag, const Ptr<
 	return ResourcePool::Failed;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+VkStreamTexturePool::Unload(const Ids::Id24 id)
+{
+	texturePool->Unload(id);
+}
 
 } // namespace Vulkan

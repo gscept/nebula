@@ -47,7 +47,7 @@ public:
 	/// get pixel format
 	const CoreGraphics::PixelFormat::Code& GetPixelFormat() const;
 	/// set texture type, only 2D and Cube textures are allowed
-	void SetTextureType(const CoreGraphics::Texture::Type& type);
+	void SetTextureType(const CoreGraphics::TextureType type);
 	/// set how render texture is to be used
 	void SetUsage(const Usage& usage);
 	/// set dimensions
@@ -148,7 +148,7 @@ RenderTextureBase::GetPixelFormat() const
 /**
 */
 inline void
-RenderTextureBase::SetTextureType(const CoreGraphics::Texture::Type& type)
+RenderTextureBase::SetTextureType(const CoreGraphics::TextureType type)
 {
 	this->type = type;
 }

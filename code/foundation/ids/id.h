@@ -12,22 +12,47 @@
 namespace Ids
 {
 
-
 typedef uint64_t Id64;
 typedef uint32_t Id32;
 typedef uint32_t Id24;
 typedef uint16_t Id16;
 typedef uint8_t Id8;
-static const uint64_t InvalidId64 = -1;
-static const uint32_t InvalidId32 = -1;
-static const uint16_t InvalidId16 = -1;
-static const uint32_t InvalidId24 = -1;
-static const uint8_t InvalidId8 = -1;
+static const uint64_t InvalidId64 = 0xFFFFFFFFFFFFFFFF;
+static const uint32_t InvalidId32 = 0xFFFFFFFF;
+static const uint32_t InvalidId24 = 0x00FFFFFF;
+static const uint16_t InvalidId16 = 0xFFFF;
+static const uint8_t InvalidId8 = 0xFF;
+
+#define ID_64_TYPE(x) struct x { Ids::Id64 id; x::x() : id(0) {}; x::x(const Ids::Id64 id) : id(id) {}; };
+#define ID_32_TYPE(x) struct x { Ids::Id32 id;  x::x() : id(0) {}; x::x(const Ids::Id32 id) : id(id) {};};
+#define ID_24_TYPE(x) struct x { Ids::Id32 id : 24;  x::x() : id(0) {}; x::x(const Ids::Id32 id) : id(id) {};};
+#define ID_16_TYPE(x) struct x { Ids::Id16 id;  x::x() : id(0) {}; x::x(const Ids::Id16 id) : id(id) {};};
+#define ID_8_TYPE(x) struct x { Ids::Id8 id;  x::x() : id(0) {}; x::x(const Ids::Id8 id) : id(id) {};};
+
+#define ID_24_8_TYPE(x) struct x { \
+	Ids::Id32 id24 : 24; \
+	Ids::Id8 id8: 8; \
+	x::x() : id24(0), id8(0) {}  \
+	x::x(const Ids::Id32 id) { id24 = Ids::Id::GetBig(id); id8 = Ids::Id::GetTiny(id); }\
+	};
+
+#define ID_32_24_8_TYPE(x) struct x { \
+	Ids::Id32 id32 : 32; \
+	Ids::Id24 id24 : 24; \
+	Ids::Id8 id8: 8; \
+	x::x() : id32(0), id24(0), id8(0) {}  \
+	x::x(const Ids::Id64 id) { id32 = Ids::Id::GetHigh(id); id24 = Ids::Id::GetBig(Ids::Id::GetLow(id)); id8 = Ids::Id::GetTiny(Ids::Id::GetLow(id)); }\
+	};
+
+#define ID_32_32_TYPE(x) struct x { \
+	Ids::Id32 id32_0; \
+	Ids::Id32 id32_1; \
+	x::x() : id32_0(0), id32_1(0) {} \
+	x::x(const Ids::Id64 id) { id32_0 = Ids::Id::GetHigh(id); id32_1 = Ids::Id::GetLow(id); }\
+	};
 
 struct Id
 {
-public:
-
 	/// set high (leftmost) 32 bits
 	static void SetHigh(Id64& id, const uint32_t bits);
 	/// get high (leftmost) 32 bits
@@ -50,7 +75,14 @@ public:
 	static Id32 MakeId32(const Id16 high, const Id16 low);
 	/// set 24-8 bits in integer
 	static Id32 MakeId24_8(const Id24 big, const Id8 tiny);
-
+	/// set 32-24-8 bits 64 bit integer
+	static Id64 MakeId32_24_8(const Id32 upper, const Id24 big, const Id8 tiny);
+	/// split 64 bit integer into 2 32 bit integers
+	static void Split64(Id64 split, Id32& upper, Id32& lower);
+	/// split 32 bit integer into 2 16 bit integers
+	static void Split32(Id32 split, Id16& upper, Id16& lower);
+	/// split 32 bit integer into 24-8 bit integer
+	static void Split24_8(Id32 split, Id24& big, Id8& tiny);
 };
 
 //------------------------------------------------------------------------------
@@ -160,6 +192,46 @@ Id::MakeId24_8(const Id24 big, const Id8 tiny)
 {
 	uint32_t ret = (((uint32_t)tiny) & 0x000000FF) + ((big << 8) & 0xFFFFFF00);
 	return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline Id64
+Id::MakeId32_24_8(const Id32 upper, const Id24 big, const Id8 tiny)
+{
+	uint64_t ret = (((uint64_t)upper << 32) & 0xFFFFFFFF00000000) + (((uint64_t)tiny) & 0x00000000000000FF) + (((uint64_t)big << 8) & 0x00000000FFFFFF00);
+	return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void 
+Id::Split64(Id64 split, Id32& upper, Id32& lower)
+{
+	upper = GetHigh(split);
+	lower = GetLow(split);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void 
+Id::Split32(Id32 split, Id16& upper, Id16& lower)
+{
+	upper = GetHigh(split);
+	lower = GetLow(split);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void 
+Id::Split24_8(Id32 split, Id24& big, Id8& tiny)
+{
+	big = GetBig(split);
+	tiny = GetTiny(split);
 }
 
 } // namespace Ids

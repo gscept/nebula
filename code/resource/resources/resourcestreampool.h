@@ -71,7 +71,7 @@ protected:
 	/// struct for pending resources which are about to be loaded
 	struct _PendingResourceLoad
 	{
-		Ids::Id64 id;
+		Resources::ResourceId id;
 		Ids::Id32 pid;
 		Ids::Id24 res;
 		Util::StringAtom tag;
@@ -96,7 +96,7 @@ protected:
 	};
 
 	/// perform actual load, override in subclass
-	virtual LoadStatus Load(const Ids::Id24 id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream) = 0;
+	virtual LoadStatus LoadFromStream(const Ids::Id24 id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream) = 0;
 
 	/// update the resource loader, this is done every frame
 	void Update(IndexT frameIndex);
@@ -104,7 +104,7 @@ protected:
 	/// start loading
 	LoadStatus PrepareLoad(_PendingResourceLoad& res);
 	/// run callbacks
-	void RunCallbacks(LoadStatus status, const Ids::Id64 id);
+	void RunCallbacks(LoadStatus status, const Resources::ResourceId id);
 
 	/// these types need to be properly initiated in a subclass Setup function
 	Util::StringAtom placeholderResourceId;

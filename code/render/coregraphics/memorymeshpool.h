@@ -8,7 +8,7 @@
     (C) 2008 Radon Labs GmbH
     (C) 2013-2016 Individual contributors, see AUTHORS file
 */
-#include "resources/resourcestreampool.h"
+#include "resources/resourcememorypool.h"
 #include "coregraphics/vertexbuffer.h"
 #include "coregraphics/indexbuffer.h"
 #include "coregraphics/primitivegroup.h"
@@ -22,98 +22,20 @@ class MemoryMeshPool : public Resources::ResourceMemoryPool
 public:
     /// constructor
     MemoryMeshPool();
-    /// set the intended resource usage (default is UsageImmutable)
-    void SetUsage(Base::GpuResourceBase::Usage usage);
-    /// get resource usage
-    Base::GpuResourceBase::Usage GetUsage() const;
-    /// set the intended resource access (default is AccessNone)
-    void SetAccess(Base::GpuResourceBase::Access access);
-    /// get the resource access
-    Base::GpuResourceBase::Access GetAccess() const;
-    /// set vertex buffer
-    void SetVertexBuffer(const Ptr<CoreGraphics::VertexBuffer>& vBuffer);
-    /// set index buffer
-    void SetIndexBuffer(const Ptr<CoreGraphics::IndexBuffer>& iBuffer);
-    /// set primitive group
-    void SetPrimitiveGroups(const Util::Array<CoreGraphics::PrimitiveGroup>& pGroup);
+	/// destructor
+	virtual ~MemoryMeshPool();
 
-    /// called by resource when a load is requested
-    virtual bool OnLoadRequested();
+private:
+	friend class StreamMeshPool;
 
-protected:
-    /// setup mesh resource from given memory data
-    bool SetupMeshFromMemory();
+	/// update resource
+	LoadStatus LoadFromMemory(const Ids::Id24 id, void* info);
+	/// unload resource
+	void Unload(const Ids::Id24 id);
 
-private:    
-    Base::GpuResourceBase::Usage usage;
-    Base::GpuResourceBase::Access access;
-    Ptr<CoreGraphics::VertexBuffer> vertexBuffer;
-    Ptr<CoreGraphics::IndexBuffer> indexBuffer;
-    Util::Array<CoreGraphics::PrimitiveGroup> primitiveGroups;
+	Ids::IdAllocatorSafe<MeshCreateInfo> allocator;
+	__ImplementResourceAllocatorSafe(allocator);
 };
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-MemoryMeshPool::SetUsage(Base::GpuResourceBase::Usage usage_)
-{
-    this->usage = usage_;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline Base::GpuResourceBase::Usage
-MemoryMeshPool::GetUsage() const
-{
-    return this->usage;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-MemoryMeshPool::SetAccess(Base::GpuResourceBase::Access access_)
-{
-    this->access = access_;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline Base::GpuResourceBase::Access
-MemoryMeshPool::GetAccess() const
-{
-    return this->access;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void 
-MemoryMeshPool::SetVertexBuffer(const Ptr<CoreGraphics::VertexBuffer>& vBuffer)
-{
-    this->vertexBuffer = vBuffer;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void 
-MemoryMeshPool::SetIndexBuffer(const Ptr<CoreGraphics::IndexBuffer>& iBuffer)
-{
-    this->indexBuffer = iBuffer;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void 
-MemoryMeshPool::SetPrimitiveGroups(const Util::Array<CoreGraphics::PrimitiveGroup>& pGroup)
-{
-    this->primitiveGroups = pGroup;
-}
 
 } // namespace CoreGraphics
 //------------------------------------------------------------------------------

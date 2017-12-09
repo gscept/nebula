@@ -8,11 +8,11 @@
 	and ResourceMemoryPool for memory loading.
 
 	For ResourceStreamPool, Load and Unload must be implemented.
-	For ResourceMemoryPool, UpdateResource and Unload must be implemented.
+	For ResourceMemoryPool, LoadFromMemory and Unload must be implemented.
 
 	For both, the following functions must be implemented:
-		AllocResource
-		DeallocResource
+		AllocObject
+		DeallocObject
 
 	The ResourceAllocator class lets you implement an efficient resource allocator
 	straight away, by simply putting the __ResourceAllocator macro in your class,
@@ -39,14 +39,14 @@
 
 
 #define __ImplementResourceAllocator(name) \
-	inline Ids::Id32 AllocResource() { return name.AllocResource(); } \
-	inline void DeallocResource(const Ids::Id32 id) { name.DeallocResource(id); } \
+	inline Ids::Id32 AllocObject() { return name.AllocObject(); } \
+	inline void DeallocObject(const Ids::Id32 id) { name.DeallocObject(id); } \
 	template<int MEMBER> inline auto& Get(const Ids::Id24 id) { return name.Get<MEMBER>(id); } \
 	template<int MEMBER> inline auto& Get(const Resources::ResourceId id) { return name.Get<MEMBER>(id); }
 
 #define __ImplementResourceAllocatorSafe(name) \
-	inline Ids::Id32 AllocResource() { return name.AllocResource(); } \
-	inline void DeallocResource(const Ids::Id32 id) { name.DeallocResource(id); } \
+	inline Ids::Id32 AllocObject() { return name.AllocObject(); } \
+	inline void DeallocObject(const Ids::Id32 id) { name.DeallocObject(id); } \
 	inline void EnterGet() { name.EnterGet(); } \
 	inline void LeaveGet() { name.LeaveGet(); } \
 	template<int MEMBER> inline auto& Get(const Ids::Id24 id) { return name.Get<MEMBER>(id); } \
@@ -105,9 +105,9 @@ protected:
 	friend class ResourceManager;
 
 	/// request new resource and generate id for it, implement in subclass
-	virtual Ids::Id32 AllocResource() = 0;
+	virtual Ids::Id32 AllocObject() = 0;
 	/// deallocate resource
-	virtual void DeallocResource(const Ids::Id32 id) = 0;
+	virtual void DeallocObject(const Ids::Id32 id) = 0;
 	/// unload resource (overload to implement resource deallocation)
 	virtual void Unload(const Ids::Id24 id) = 0;
 
@@ -131,8 +131,7 @@ protected:
 inline const Resources::ResourceName
 ResourcePool::GetName(const Resources::ResourceId id)
 {
-	const Ids::Id24 resId = Ids::Id::GetBig(Ids::Id::GetLow(id));
-	return this->names[resId];
+	return this->names[id.id24];
 }
 
 //------------------------------------------------------------------------------
@@ -150,8 +149,7 @@ ResourcePool::GetName(const Ids::Id24 id)
 inline const Util::StringAtom
 ResourcePool::GetTag(const Resources::ResourceId id)
 {
-	const Ids::Id24 resId = Ids::Id::GetBig(Ids::Id::GetLow(id));
-	return this->tags[resId];
+	return this->tags[id.id24];
 }
 
 //------------------------------------------------------------------------------
@@ -169,8 +167,7 @@ ResourcePool::GetTag(const Ids::Id24 id)
 inline const Resources::Resource::State
 ResourcePool::GetState(const Resources::ResourceId id)
 {
-	const Ids::Id24 resId = Ids::Id::GetBig(Ids::Id::GetLow(id));
-	return this->states[resId];
+	return this->states[id.id24];
 }
 
 //------------------------------------------------------------------------------

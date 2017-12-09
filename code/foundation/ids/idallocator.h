@@ -71,7 +71,7 @@ public:
 	~IdAllocator() {};
 
 	/// allocate a new resource, and generate new entries if required
-	Ids::Id32 AllocResource()
+	Ids::Id32 AllocObject()
 	{
 		Ids::Id32 id = this->pool.Alloc();
 		if (id >= this->size)
@@ -83,7 +83,7 @@ public:
 	}
 
 	/// recycle id
-	void DeallocResource(const Ids::Id32 id) { this->pool.Dealloc(id); }
+	void DeallocObject(const Ids::Id32 id) { this->pool.Dealloc(id); }
 
 	/// get single item from resource, template expansion might give you cancer
 	template <int MEMBER>
@@ -93,10 +93,27 @@ public:
 		return std::get<MEMBER>(this->objects)[index];
 	}
 
-	/// get single item from resource, template expansion might give you cancer
+	/// same as 32 bit get, but const
+	template <int MEMBER>
+	const inline tuple_array_t<MEMBER, TYPES...>&
+	Get(const Ids::Id32 index) const
+	{
+		return std::get<MEMBER>(this->objects)[index];
+	}
+
+	/// get using 64 bit id
 	template <int MEMBER>
 	inline tuple_array_t<MEMBER, TYPES...>&
 	Get(const Ids::Id64 index)
+	{
+		Ids::Id24 resId = Ids::Id::GetLow(Ids::Id::GetBig(index));
+		return std::get<MEMBER>(this->objects)[resId];
+	}
+
+	/// same as 64 bit get, but const
+	template <int MEMBER>
+	const inline tuple_array_t<MEMBER, TYPES...>&
+	Get(const Ids::Id64 index) const
 	{
 		Ids::Id24 resId = Ids::Id::GetLow(Ids::Id::GetBig(index));
 		return std::get<MEMBER>(this->objects)[resId];
@@ -118,21 +135,21 @@ public:
 	~IdAllocatorSafe() {};
 
 	/// allocate a new resource, and generate new entries if required
-	Ids::Id32 AllocResource()
+	Ids::Id32 AllocObject()
 	{
 		this->sect.Enter();
 		Ids::Id32 id = this->pool.Alloc();
-		this->sect.Leave();
 		if (id >= this->size)
 		{
 			alloc_for_each_in_tuple(this->objects);
 			this->size++;
 		}
+		this->sect.Leave();
 		return id;
 	}
 
 	/// recycle id
-	void DeallocResource(const Ids::Id32 id) 
+	void DeallocObject(const Ids::Id32 id) 
 	{ 
 		this->sect.Enter();
 		this->pool.Dealloc(id);
@@ -156,16 +173,34 @@ public:
 		return std::get<MEMBER>(this->objects)[index];
 	}
 
+	/// get const
+	template <int MEMBER>
+	const inline tuple_array_t<MEMBER, TYPES...>&
+	Get(const Ids::Id32 index) const
+	{
+		n_assert(this->inBeginGet);
+		return std::get<MEMBER>(this->objects)[index];
+	}
+
 	/// get single item from within Enter/Leave phase
 	template <int MEMBER>
 	inline tuple_array_t<MEMBER, TYPES...>&
 	Get(const Ids::Id64 index)
 	{
 		n_assert(this->inBeginGet);
-		Ids::Id24 resId = Ids::Id::GetLow(Ids::Id::GetBig(index));
+		Ids::Id24 resId = Ids::Id::GetBig(Ids::Id::GetLow(index));
 		return std::get<MEMBER>(this->objects)[resId];
 	}
 
+	/// 64 bit get const
+	template <int MEMBER>
+	const inline tuple_array_t<MEMBER, TYPES...>&
+	Get(const Ids::Id64 index) const
+	{
+		n_assert(this->inBeginGet);
+		Ids::Id24 resId = Ids::Id::GetBig(Ids::Id::GetLow(index));
+		return std::get<MEMBER>(this->objects)[resId];
+	}
 
 	/// leave thread safe get-mode
 	void LeaveGet()
@@ -174,7 +209,6 @@ public:
 		this->sect.Leave();
 		this->inBeginGet = false;
 	}
-
 
 	/// get single item safely 
 	template <int MEMBER>
@@ -192,7 +226,7 @@ public:
 	inline tuple_array_t<MEMBER, TYPES...>&
 	GetSafe(const Ids::Id64 index)
 	{
-		Ids::Id24 resId = Ids::Id::GetLow(Ids::Id::GetBig(index));
+		Ids::Id24 resId = Ids::Id::GetBig(Ids::Id::GetLow(index));
 		this->sect.Enter();
 		tuple_array_t<MEMBER, TYPES...>& res = std::get<MEMBER>(this->objects)[resId];
 		this->sect.Leave();
@@ -212,10 +246,9 @@ public:
 	inline tuple_array_t<MEMBER, TYPES...>&
 	GetUnsafe(const Ids::Id64 index)
 	{
-		Ids::Id24 resId = Ids::Id::GetLow(Ids::Id::GetBig(index));
+		Ids::Id24 resId = Ids::Id::GetBig(Ids::Id::GetLow(index));
 		return std::get<MEMBER>(this->objects)[resId];
 	}
-
 
 private:
 

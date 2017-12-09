@@ -304,17 +304,6 @@ RenderDeviceBase::SetToNextSubpass()
 /**
 */
 void
-RenderDeviceBase::BeginFeedback(const Ptr<CoreGraphics::FeedbackBuffer>& fb, CoreGraphics::PrimitiveTopology::Code primType)
-{
-	n_assert(this->inBeginFrame);
-	n_assert(!this->inBeginPass);
-	this->inBeginPass = true;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
 RenderDeviceBase::BeginBatch(FrameBatchType::Code batchType)
 {
     n_assert(this->inBeginPass);
@@ -350,17 +339,6 @@ RenderDeviceBase::EndPass()
 	this->pass->End();
 	this->pass = 0;
     this->inBeginPass = false;
-}
-
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-RenderDeviceBase::EndFeedback()
-{
-	n_assert(this->inBeginPass);
-	this->inBeginPass = false;
 }
 
 //------------------------------------------------------------------------------
@@ -434,26 +412,6 @@ RenderDeviceBase::DrawIndexedInstanced(SizeT numInstances, IndexT baseInstance)
 {
     n_assert(this->inBeginPass);
     // override in subclass!
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-RenderDeviceBase::DrawFeedback(const Ptr<CoreGraphics::FeedbackBuffer>& fb)
-{
-	n_assert(this->inBeginPass);
-	// override in subclass!
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-RenderDeviceBase::DrawFeedbackInstanced(const Ptr<CoreGraphics::FeedbackBuffer>& fb, SizeT numInstances)
-{
-	n_assert(this->inBeginPass);
-	// override in subclass!
 }
 
 //------------------------------------------------------------------------------
@@ -564,7 +522,7 @@ RenderDeviceBase::DequeueBufferLocks()
 /**
 */
 void
-RenderDeviceBase::Copy(const Ptr<CoreGraphics::Texture>& from, Math::rectangle<SizeT> fromRegion, const Ptr<CoreGraphics::Texture>& to, Math::rectangle<SizeT> toRegion)
+RenderDeviceBase::Copy(const CoreGraphics::TextureId from, Math::rectangle<SizeT> fromRegion, const CoreGraphics::TextureId to, Math::rectangle<SizeT> toRegion)
 {
 	n_assert(from.isvalid() && to.isvalid());
 	n_assert(from->GetWidth() == to->GetWidth());
@@ -577,7 +535,7 @@ RenderDeviceBase::Copy(const Ptr<CoreGraphics::Texture>& from, Math::rectangle<S
 /**
 */
 void
-RenderDeviceBase::Blit(const Ptr<CoreGraphics::RenderTexture>& from, Math::rectangle<SizeT> fromRegion, IndexT fromMip, const Ptr<CoreGraphics::RenderTexture>& to, Math::rectangle<SizeT> toRegion, IndexT toMip)
+RenderDeviceBase::Blit(const CoreGraphics::RenderTextureId from, Math::rectangle<SizeT> fromRegion, IndexT fromMip, const CoreGraphics::RenderTextureId to, Math::rectangle<SizeT> toRegion, IndexT toMip)
 {
 	n_assert(from.isvalid() && to.isvalid());
 	
@@ -588,7 +546,7 @@ RenderDeviceBase::Blit(const Ptr<CoreGraphics::RenderTexture>& from, Math::recta
 /**
 */
 void
-RenderDeviceBase::Blit(const Ptr<CoreGraphics::Texture>& from, Math::rectangle<SizeT> fromRegion, IndexT fromMip, const Ptr<CoreGraphics::Texture>& to, Math::rectangle<SizeT> toRegion, IndexT toMip)
+RenderDeviceBase::Blit(const CoreGraphics::TextureId from, Math::rectangle<SizeT> fromRegion, IndexT fromMip, const CoreGraphics::TextureId to, Math::rectangle<SizeT> toRegion, IndexT toMip)
 {
 	n_assert(from.isvalid() && to.isvalid());
 

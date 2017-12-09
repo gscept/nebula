@@ -17,10 +17,6 @@
 #include "resourceid.h"
 #include "resource.h"
 
-// meh, for WinBase defines...
-#ifdef UpdateResource
-#undef UpdateResource
-#endif
 
 namespace Resources
 {
@@ -35,7 +31,7 @@ public:
 	/// destructor
 	virtual ~ResourceMemoryPool();
 
-	/// reserve resource 
+	/// reserve resource, which then allows you to modify it 
 	Resources::ResourceId ReserveResource(const ResourceName& res, const Util::StringAtom& tag);
 	/// discard resource instance
 	void DiscardResource(const Resources::ResourceId id);
@@ -43,7 +39,7 @@ public:
 	void DiscardByTag(const Util::StringAtom& tag);
 
 	/// update reserved resource, the info struct is loader dependent (overload to implement resource deallocation)
-	virtual LoadStatus UpdateResource(const Ids::Id24 id, void* info) = 0;
+	virtual LoadStatus LoadFromMemory(const Ids::Id24 id, void* info) = 0;
 
 
 private:

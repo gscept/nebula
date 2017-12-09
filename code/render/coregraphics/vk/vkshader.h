@@ -42,7 +42,7 @@ public:
 		VkPipelineLayout& pipelineLayout,
 		Util::FixedArray<VkDescriptorSet>& sets,
 		Util::Dictionary<Util::StringAtom, Ptr<CoreGraphics::ConstantBuffer>>& buffers,
-		Util::Dictionary<uint32_t, Util::Array<Ptr<CoreGraphics::ConstantBuffer>>>& buffersByGroup
+		Util::Dictionary<uint32_t, Util::Array<CoreGraphics::ConstantBufferId>>& buffersByGroup
 		);
 	/// get variable offset (within its constant buffer) by name
 	static const uint32_t& GetVariableOffset(const Util::String& name);
@@ -92,8 +92,8 @@ private:
 #endif
 
 	Util::FixedArray<VkDescriptorSet> sets;
-	Util::Dictionary<Util::StringAtom, Ptr<CoreGraphics::ConstantBuffer>> buffers;
-	Util::Dictionary<uint32_t, Util::Array<Ptr<CoreGraphics::ConstantBuffer>>> buffersByGroup;
+	Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBufferId> buffers;
+	Util::Dictionary<uint32_t, Util::Array<CoreGraphics::ConstantBufferId>> buffersByGroup;
 
 	static Util::Dictionary<Util::StringAtom, VkDescriptorSetLayout> LayoutCache;
 	static Util::Dictionary<Util::StringAtom, VkPipelineLayout> ShaderPipelineCache;

@@ -66,7 +66,7 @@ public:
     /// get the thread ID of this thread
     static Threading::ThreadId GetMyThreadId();
     
-    #if NEBULA3_DEBUG
+    #if NEBULA_DEBUG
     struct ThreadDebugInfo
     {
         Util::String threadName;
@@ -99,7 +99,7 @@ private:
     System::Cpu::CoreId coreId;
     ThreadLocal static const char* ThreadName;
  
-    #if NEBULA3_DEBUG
+    #if NEBULA_DEBUG
     static Threading::CriticalSection criticalSection;
     static Util::List<Win360Thread*> ThreadList;
     Util::List<Win360Thread*>::Iterator threadListIterator;

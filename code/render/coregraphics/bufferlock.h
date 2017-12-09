@@ -1,8 +1,8 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @class CoreGraphics::BufferLock
-    
+	@class CoreGraphics::BufferLock
+	
 	Defines different buffer locks for different platforms.
 	
 	(C) 2012-2016 Individual contributors, see AUTHORS file

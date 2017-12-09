@@ -59,7 +59,7 @@ DisplayDeviceBase::Close()
 	IndexT i;
 	for (i = 0; i < this->windows.Size(); i++)
 	{
-		this->windows[i]->Close();
+		CoreGraphics::CloseWindow(this->windows[i]);
 	}
 	this->windows.Clear();
 }
@@ -190,39 +190,39 @@ DisplayDeviceBase::GetAdapterInfo(Adapter::Code adapter)
 //------------------------------------------------------------------------------
 /**
 */
-Ptr<CoreGraphics::Window>
+CoreGraphics::WindowId
 DisplayDeviceBase::SetupWindow(const Util::String& title, const Util::String& icon, const CoreGraphics::DisplayMode& displayMode, const CoreGraphics::AntiAliasQuality::Code aa)
 {
-	Ptr<CoreGraphics::Window> wnd = CoreGraphics::Window::Create();
-	wnd->SetDisplayMode(displayMode);
-	wnd->SetAntiAliasQuality(aa);
+	WindowCreateInfo info;
+	info.aa = aa;
+	info.mode = displayMode;
+	info.title = title;
+	info.icon = icon;
+	CoreGraphics::WindowId wnd = CoreGraphics::CreateWindow(info);
 
 	// add to list, and set to current if this is the first
 	if (this->windows.IsEmpty()) this->currentWindow = wnd;
 	this->windows.Append(wnd);
 
 	// finally open window
-	wnd->Open();
-    wnd->SetTitle(title);
-    wnd->SetIconName(icon);
+	CoreGraphics::OpenWindow(wnd);
 	return wnd;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-Ptr<CoreGraphics::Window>
+CoreGraphics::WindowId
 DisplayDeviceBase::EmbedWindow(const Util::Blob& windowData)
 {
-	Ptr<CoreGraphics::Window> wnd = CoreGraphics::Window::Create();
-	wnd->SetWindowData(windowData);
+	CoreGraphics::WindowId wnd = CoreGraphics::EmbedWindow(windowData);
 
 	// add to list, and set to current if this is the first
 	if (this->windows.IsEmpty()) this->currentWindow = wnd;
 	this->windows.Append(wnd);
 
 	// finally open window
-	wnd->Open();
+	CoreGraphics::OpenWindow(wnd);
 	return wnd;
 }
 
@@ -230,14 +230,10 @@ DisplayDeviceBase::EmbedWindow(const Util::Blob& windowData)
 /**
 */
 void
-DisplayDeviceBase::MakeWindowCurrent(const IndexT index)
+DisplayDeviceBase::MakeWindowCurrent(const CoreGraphics::WindowId id)
 {
-	n_assert(this->windows.Size() > index && index != InvalidIndex);
-	if (this->currentWindow != this->windows[index])
-	{
-		this->currentWindow = this->windows[index];
-		this->currentWindow->MakeCurrent();
-	}	
+	CoreGraphics::MakeWindowCurrent(id);
+	this->currentWindow = id;
 }
 
 } // namespace DisplayDevice

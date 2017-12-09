@@ -258,7 +258,7 @@ VkShaderState::SetupVariables(AnyFX::ShaderEffect* effect, RuntimeInfo& runtime,
 			// get AnyFX variable
 			AnyFX::VkVariable* variable = static_cast<AnyFX::VkVariable*>(variables[j]);
 
-			Ids::Id24 varId = varAllocator.AllocResource();
+			Ids::Id24 varId = varAllocator.AllocObject();
 			VkShaderVariable::Setup(variable, varId, varAllocator, setup.sets[i]);
 			setup.variableMap.Add(variable->name.c_str(), varId);
 		}
@@ -270,7 +270,7 @@ VkShaderState::SetupVariables(AnyFX::ShaderEffect* effect, RuntimeInfo& runtime,
 			AnyFX::VkVarblock* block = static_cast<AnyFX::VkVarblock*>(varblocks[j]);
 			if (block->variables.empty() || AnyFX::HasFlags(block->qualifiers, AnyFX::Qualifiers::Push)) continue;
 
-			Ids::Id24 varId = varAllocator.AllocResource();
+			Ids::Id24 varId = varAllocator.AllocObject();
 			VkShaderVariable::Setup(block, varId, varAllocator, setup.sets[i]);
 			setup.variableMap.Add(block->name.c_str(), varId);
 		}
@@ -281,7 +281,7 @@ VkShaderState::SetupVariables(AnyFX::ShaderEffect* effect, RuntimeInfo& runtime,
 			// get varblock
 			AnyFX::VkVarbuffer* buffer = static_cast<AnyFX::VkVarbuffer*>(varbuffers[j]);
 
-			Ids::Id24 varId = varAllocator.AllocResource();
+			Ids::Id24 varId = varAllocator.AllocObject();
 			VkShaderVariable::Setup(buffer, varId, varAllocator, setup.sets[i]);
 			setup.variableMap.Add(buffer->name.c_str(), varId);
 		}

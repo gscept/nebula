@@ -42,7 +42,7 @@ VkShaderPool::~VkShaderPool()
 /**
 */
 Resources::ResourcePool::LoadStatus
-VkShaderPool::Load(const Ids::Id24 id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream)
+VkShaderPool::LoadFromStream(const Ids::Id24 id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream)
 {
 	n_assert(stream.isvalid());
 	n_assert(stream->CanBeMapped());
@@ -91,7 +91,7 @@ VkShaderPool::Load(const Ids::Id24 id, const Util::StringAtom& tag, const Ptr<IO
 			// get program object from shader subsystem
 			VkShaderProgram::ProgramAllocator& programAllocator = this->shaderAlloc.Get<3>(id);
 			AnyFX::VkProgram* program = static_cast<AnyFX::VkProgram*>(programs[i]);
-			Ids::Id32 programId = programAllocator.AllocResource();
+			Ids::Id32 programId = programAllocator.AllocObject();
 			VkShaderProgram::Setup(programId, program, setupInfo.pipelineLayout, this->shaderAlloc.Get<3>(id));
 			Ids::Id64 shaderProgramId = Ids::Id::MakeId64(id, programId);
 			runtimeInfo.programMap.Add(programAllocator.Get<0>(programId).mask, shaderProgramId);
@@ -126,7 +126,7 @@ VkShaderPool::Unload(const Ids::Id24 res)
 void
 VkShaderPool::BindShader(const CoreGraphics::ShaderId shaderId, const CoreGraphics::ShaderFeature::Mask mask)
 {
-	Ids::Id24 shaderId = Ids::Id::GetLow(Ids::Id::GetBig(shaderId));
+	Ids::Id24 shaderId = Ids::Id::GetBig(Ids::Id::GetLow(shaderId));
 	RuntimeInfo& runtime = this->shaderAlloc.Get<2>(shaderId);
 	Ids::Id64& programId = runtime.activeShaderProgram;
 	VkShaderProgram::ProgramAllocator& programs = this->shaderAlloc.Get<3>(shaderId);
@@ -160,7 +160,7 @@ VkShaderPool::BindShader(const CoreGraphics::ShaderProgramId shaderProgramId)
 CoreGraphics::ShaderProgramId
 VkShaderPool::GetShaderProgram(const CoreGraphics::ShaderId shaderId, const CoreGraphics::ShaderFeature::Mask mask)
 {
-	Ids::Id24 shaderId = Ids::Id::GetLow(Ids::Id::GetBig(shaderId));
+	Ids::Id24 shaderId = Ids::Id::GetBig(Ids::Id::GetLow(shaderId));
 	RuntimeInfo& runtime = this->shaderAlloc.Get<2>(shaderId);
 	return runtime.programMap[mask];
 }
@@ -172,9 +172,9 @@ CoreGraphics::ShaderStateId
 VkShaderPool::CreateState(const CoreGraphics::ShaderId shader, const Util::Array<IndexT>& groups, bool createUniqueSet)
 {
 	// allocate a slice and create an id which is the shader id, and the state id
-	const Ids::Id24 shaderId = Ids::Id::GetLow(Ids::Id::GetBig(shader));
+	Ids::Id24 shaderId = Ids::Id::GetBig(Ids::Id::GetLow(shaderId));
 	VkShaderState::ShaderStateAllocator& stateAllocator = this->shaderAlloc.Get<4>(shaderId);
-	Ids::Id32 stateId = stateAllocator.AllocResource();
+	Ids::Id32 stateId = stateAllocator.AllocObject();
 	SetupInfo& info = this->shaderAlloc.Get<1>(shaderId);
 	VkShaderState::Setup(
 		stateId,
@@ -198,13 +198,13 @@ CoreGraphics::ShaderStateId
 VkShaderPool::CreateSharedState(const CoreGraphics::ShaderId shader, const Util::Array<IndexT>& groups)
 {
 	// allocate a slice and create an id which is the shader id, and the state id
-	const Ids::Id24 shaderId = Ids::Id::GetLow(Ids::Id::GetBig(shader));
+	Ids::Id24 shaderId = Ids::Id::GetBig(Ids::Id::GetLow(shaderId));
 	Ids::Id32 stateId = -1;
 	if (this->sharedStateMap.Contains(shaderId)) stateId = this->sharedStateMap[shaderId];
 	else
 	{
 		VkShaderState::ShaderStateAllocator& stateAllocator = this->shaderAlloc.Get<4>(shaderId);
-		stateId = stateAllocator.AllocResource();
+		stateId = stateAllocator.AllocObject();
 		SetupInfo& info = this->shaderAlloc.Get<1>(shaderId);
 		VkShaderState::Setup(
 			stateId,
@@ -232,14 +232,14 @@ VkShaderPool::DestroyState(const CoreGraphics::ShaderStateId state)
 {
 	Ids::Id32 shaderId = Ids::Id::GetHigh(state);
 	Ids::Id32 stateId = Ids::Id::GetLow(state);
-	this->shaderAlloc.Get<4>(shaderId).DeallocResource(stateId);
+	this->shaderAlloc.Get<4>(shaderId).DeallocObject(stateId);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-CoreGraphics::ShaderVariableId
-VkShaderPool::GetShaderVariable(const CoreGraphics::ShaderStateId state, const Util::StringAtom& name)
+const CoreGraphics::ShaderVariableId
+VkShaderPool::GetShaderVariable(const CoreGraphics::ShaderStateId state, const Util::StringAtom& name) const
 {
 	Ids::Id32 shaderId = Ids::Id::GetHigh(state);
 	Ids::Id32 stateId = Ids::Id::GetLow(state);
@@ -249,8 +249,8 @@ VkShaderPool::GetShaderVariable(const CoreGraphics::ShaderStateId state, const U
 //------------------------------------------------------------------------------
 /**
 */
-CoreGraphics::ShaderVariableId
-VkShaderPool::GetShaderVariable(const CoreGraphics::ShaderStateId state, const IndexT index)
+const CoreGraphics::ShaderVariableId
+VkShaderPool::GetShaderVariable(const CoreGraphics::ShaderStateId state, const IndexT index) const
 {
 	Ids::Id32 shaderId = Ids::Id::GetHigh(state);
 	Ids::Id32 stateId = Ids::Id::GetLow(state);
@@ -270,20 +270,20 @@ VkShaderPool::GetProgram(const Ids::Id24 shaderId, const Ids::Id24 programId)
 //------------------------------------------------------------------------------
 /**
 */
-uint32_t
-VkShaderPool::GetVariableCount(const CoreGraphics::ShaderId id)
+const SizeT
+VkShaderPool::GetVariableCount(const CoreGraphics::ShaderId id) const
 {
-	const Ids::Id24 shaderId = Ids::Id::GetLow(Ids::Id::GetBig(id));
+	const Ids::Id24 shaderId = Ids::Id::GetBig(Ids::Id::GetLow(id));
 	return this->shaderAlloc.Get<0>(shaderId)->GetNumVariables();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-uint32_t
-VkShaderPool::GetVariableBlockCount(const CoreGraphics::ShaderId id)
+const SizeT
+VkShaderPool::GetVariableBlockCount(const CoreGraphics::ShaderId id) const
 {
-	const Ids::Id24 shaderId = Ids::Id::GetLow(Ids::Id::GetBig(id));
+	const Ids::Id24 shaderId = Ids::Id::GetBig(Ids::Id::GetLow(id));
 	return this->shaderAlloc.Get<0>(shaderId)->GetNumVarblocks();
 }
 

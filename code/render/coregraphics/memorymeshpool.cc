@@ -17,9 +17,7 @@ using namespace Resources;
 //------------------------------------------------------------------------------
 /**
 */
-MemoryMeshPool::MemoryMeshPool() :
-    usage(Base::GpuResourceBase::UsageImmutable),
-    access(Base::GpuResourceBase::AccessNone)
+MemoryMeshPool::MemoryMeshPool()
 {
     // empty
 }
@@ -27,43 +25,26 @@ MemoryMeshPool::MemoryMeshPool() :
 //------------------------------------------------------------------------------
 /**
 */
-bool 
-MemoryMeshPool::OnLoadRequested()
+MemoryMeshPool::~MemoryMeshPool()
 {
-    n_assert(this->GetState() == Resource::Initial);
-    n_assert(this->resource.isvalid());
-    
-    // perform direct load    
-    if (this->SetupMeshFromMemory())
-    {
-        this->SetState(Resource::Loaded);
-        return true;
-    }
-    // fallthrough: synchronous loading failed
-    this->SetState(Resource::Failed);
-    return false;    
+	// empty
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-bool 
-MemoryMeshPool::SetupMeshFromMemory()
-{   
-    n_assert(this->vertexBuffer.isvalid());
+ResourcePool::LoadStatus
+MemoryMeshPool::LoadFromMemory(const Ids::Id24 id, void* info)
+{
+	MeshCreateInfo* data = (MeshCreateInfo*)info;
+}
 
-    const Ptr<Mesh>& res = this->resource.downcast<Mesh>();
-    res->SetVertexBuffer(this->vertexBuffer);
-    if (this->indexBuffer.isvalid())
-    {
-        res->SetIndexBuffer(this->indexBuffer);    
-    }
-    if (this->primitiveGroups.Size() > 0)
-    {
-        res->SetPrimitiveGroups(this->primitiveGroups);
-    }   
-
-    return true;
+//------------------------------------------------------------------------------
+/**
+*/
+void
+MemoryMeshPool::Unload(const Ids::Id24 id)
+{
 }
 
 } // namespace CoreGraphics

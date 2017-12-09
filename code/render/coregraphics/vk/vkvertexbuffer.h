@@ -18,14 +18,10 @@ public:
 	struct LoadInfo
 	{
 		VkDeviceMemory mem;
-		Base::GpuResourceBase::GpuResourceBaseInfo gpuResInfo;
+		CoreGraphics::GpuBufferTypes::SetupFlags gpuResInfo;
 		Base::VertexBufferBase::VertexBufferBaseInfo vboInfo;
 	};
-	struct RuntimeInfo
-	{
-		VkBuffer buf;
-		Base::VertexBufferBase::VertexLayoutId layout;
-	};
+
 };
 
 } // namespace Vulkan

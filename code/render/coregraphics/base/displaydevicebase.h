@@ -75,19 +75,19 @@ public:
     void RemoveEventHandler(const Ptr<CoreGraphics::DisplayEventHandler>& h);
 
 	/// create a new window
-	Ptr<CoreGraphics::Window> SetupWindow(const Util::String& title, const Util::String& icon, const CoreGraphics::DisplayMode& displayMode, const CoreGraphics::AntiAliasQuality::Code aa = CoreGraphics::AntiAliasQuality::None);
+	CoreGraphics::WindowId SetupWindow(const Util::String& title, const Util::String& icon, const CoreGraphics::DisplayMode& displayMode, const CoreGraphics::AntiAliasQuality::Code aa = CoreGraphics::AntiAliasQuality::None);
 	/// create a window from one created by another window system
-	Ptr<CoreGraphics::Window> EmbedWindow(const Util::Blob& windowData);
+	CoreGraphics::WindowId EmbedWindow(const Util::Blob& windowData);
 	/// get the 'main' window, if none exists, returns NULL
-	Ptr<CoreGraphics::Window> GetMainWindow() const;
+	CoreGraphics::WindowId GetMainWindow() const;
 	/// get the current window
-	const Ptr<CoreGraphics::Window>& GetCurrentWindow() const;
+	const CoreGraphics::WindowId GetCurrentWindow() const;
 	/// get window using index, where 0 is the default window
-	const Ptr<CoreGraphics::Window>& GetWindow(IndexT index) const;
+	const CoreGraphics::WindowId GetWindow(IndexT index) const;
 	/// get all windows as an array
-	const Util::Array<Ptr<CoreGraphics::Window>>& GetWindows() const;
+	const Util::Array<CoreGraphics::WindowId>& GetWindows() const;
 	/// make ID the current one
-	void MakeWindowCurrent(const IndexT index);
+	void MakeWindowCurrent(const CoreGraphics::WindowId id);
         
 protected:
     /// notify event handlers about an event
@@ -100,8 +100,8 @@ protected:
 	bool isFullscreen;
 
     Util::Array<Ptr<CoreGraphics::DisplayEventHandler> > eventHandlers;
-	Ptr<CoreGraphics::Window> currentWindow;
-	Util::Array<Ptr<CoreGraphics::Window>> windows;
+	CoreGraphics::WindowId currentWindow;
+	Util::Array<CoreGraphics::WindowId> windows;
 };
 
 //------------------------------------------------------------------------------
@@ -161,7 +161,7 @@ DisplayDeviceBase::IsFullscreen() const
 //------------------------------------------------------------------------------
 /**
 */
-inline Ptr<CoreGraphics::Window>
+inline CoreGraphics::WindowId
 DisplayDeviceBase::GetMainWindow() const
 {
 	if (this->windows.Size() >= 1) return this->windows[0];
@@ -171,7 +171,7 @@ DisplayDeviceBase::GetMainWindow() const
 //------------------------------------------------------------------------------
 /**
 */
-inline const Ptr<CoreGraphics::Window>&
+inline const CoreGraphics::WindowId
 DisplayDeviceBase::GetCurrentWindow() const
 {
 	return this->currentWindow;
@@ -180,7 +180,7 @@ DisplayDeviceBase::GetCurrentWindow() const
 //------------------------------------------------------------------------------
 /**
 */
-inline const Ptr<CoreGraphics::Window>&
+inline const CoreGraphics::WindowId
 DisplayDeviceBase::GetWindow(IndexT index) const
 {
 	n_assert(this->windows.Size() > index && index != InvalidIndex);
@@ -190,7 +190,7 @@ DisplayDeviceBase::GetWindow(IndexT index) const
 //------------------------------------------------------------------------------
 /**
 */
-inline const Util::Array<Ptr<CoreGraphics::Window>>&
+inline const Util::Array<CoreGraphics::WindowId>&
 DisplayDeviceBase::GetWindows() const
 {
 	return this->windows;

@@ -87,7 +87,7 @@ SysFunc::Exit(int exitCode)
     #endif
 
     // first produce a RefCount leak report
-    #if NEBULA3_DEBUG
+    #if NEBULA_DEBUG
     Core::RefCounted::DumpRefCountingLeaks();
     #endif
 

@@ -9,7 +9,6 @@
 #include "coregraphics/memoryvertexbufferpool.h"
 #include "coregraphics/memoryindexbufferpool.h"
 #include "resources/resourcemanager.h"
-#include "coregraphics/base/memoryvertexbufferpoolbase.h"
 
 #if NEBULA3_LEGACY_SUPPORT
 namespace Legacy
@@ -25,8 +24,8 @@ using namespace Resources;
 /**
 */
 Nvx2StreamReader::Nvx2StreamReader() :
-    usage(Base::GpuResourceBase::UsageImmutable),
-    access(Base::GpuResourceBase::AccessNone),
+    usage(CoreGraphics::GpuBufferTypes::UsageImmutable),
+    access(CoreGraphics::GpuBufferTypes::AccessNone),
     rawMode(false),
     mapPtr(0),
 	ibo(Ids::InvalidId64),
@@ -62,7 +61,7 @@ Nvx2StreamReader::~Nvx2StreamReader()
 /**
 */
 bool
-Nvx2StreamReader::Open()
+Nvx2StreamReader::Open(const Resources::ResourceName& name)
 {
     n_assert(0 == this->primGroups.Size());
     n_assert(this->stream->CanBeMapped());
@@ -80,8 +79,8 @@ Nvx2StreamReader::Open()
         this->SetupVertexComponents();
         if (!this->rawMode)
         {
-            this->SetupVertexBuffer();
-            this->SetupIndexBuffer();
+            this->SetupVertexBuffer(name);
+            this->SetupIndexBuffer(name);
             this->UpdateGroupBoundingBoxes();
         }
         return true;
@@ -169,8 +168,6 @@ Nvx2StreamReader::ReadPrimitiveGroups()
         primGroup.SetBaseIndex(group->firstTriangle * 3);
         primGroup.SetNumIndices(group->numTriangles * 3);
         this->primGroups.Append(primGroup);
-
-
 
         // set top next group
         group++;
@@ -267,7 +264,7 @@ Nvx2StreamReader::UpdateGroupBoundingBoxes()
 /**
 */
 void
-Nvx2StreamReader::SetupVertexBuffer()
+Nvx2StreamReader::SetupVertexBuffer(const Resources::ResourceName& name)
 {
 	n_assert(this->vbo == Ids::InvalidId32);
     n_assert(!this->rawMode);
@@ -277,16 +274,16 @@ Nvx2StreamReader::SetupVertexBuffer()
     n_assert(this->vertexComponents.Size() > 0);
 
 	// create vertex buffer
-	this->vbo = Resources::ReserveResource("", this->tag, MemoryVertexBufferPool::RTTI);
+	this->vbo = Resources::ReserveResource(name, this->tag, MemoryVertexBufferPool::RTTI);
 
-	Base::MemoryVertexBufferPoolBase::VertexBufferLoadInfo vboInfo;
+	VertexBufferCreateInfo vboInfo;
 	vboInfo.access = this->access;
-	vboInfo.numVertices = this->numVertices;
+	vboInfo.numVerts = this->numVertices;
 	vboInfo.usage = this->usage;
-	vboInfo.vertexComponents = this->vertexComponents;
-	vboInfo.vertexDataPtr = this->vertexDataPtr;
-	vboInfo.vertexDataSize = this->vertexDataSize;
-	ResourcePool::LoadStatus stat = Resources::UpdateResource(this->vbo, &vboInfo);
+	vboInfo.comps = this->vertexComponents;
+	vboInfo.data = this->vertexDataPtr;
+	vboInfo.dataSize = this->vertexDataSize;
+	ResourcePool::LoadStatus stat = Resources::LoadFromMemory(this->vbo, &vboInfo);
     n_assert(stat == ResourcePool::Success);
 }
 
@@ -294,7 +291,7 @@ Nvx2StreamReader::SetupVertexBuffer()
 /**
 */
 void
-Nvx2StreamReader::SetupIndexBuffer()
+Nvx2StreamReader::SetupIndexBuffer(const Resources::ResourceName& name)
 {
 	n_assert(this->ibo == Ids::InvalidId32);
     n_assert(!this->rawMode);
@@ -303,16 +300,16 @@ Nvx2StreamReader::SetupIndexBuffer()
     n_assert(this->numIndices > 0);
     
 	// create index buffer
-	this->ibo = Resources::ReserveResource("", this->tag, MemoryIndexBufferPool::RTTI);
+	this->ibo = Resources::ReserveResource(name, this->tag, MemoryIndexBufferPool::RTTI);
 
-	Base::MemoryIndexBufferPoolBase::IndexBufferLoadInfo iboInfo;
+	IndexBufferCreateInfo iboInfo;
 	iboInfo.access = this->access;
 	iboInfo.numIndices = this->numIndices;
 	iboInfo.usage = this->usage;
-	iboInfo.indexType = IndexType::Index32;
-	iboInfo.indexDataPtr = this->indexDataPtr;
-	iboInfo.indexDataSize = this->indexDataSize;
-	ResourcePool::LoadStatus stat = Resources::UpdateResource(this->ibo, &iboInfo);
+	iboInfo.type = IndexType::Index32;
+	iboInfo.data = this->indexDataPtr;
+	iboInfo.dataSize = this->indexDataSize;
+	ResourcePool::LoadStatus stat = Resources::LoadFromMemory(this->ibo, &iboInfo);
 	n_assert(stat == ResourcePool::Success);
 }
 

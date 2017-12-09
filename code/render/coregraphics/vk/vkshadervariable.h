@@ -12,6 +12,7 @@
 #include "lowlevel/vk/vkvarbuffer.h"
 #include "lowlevel/vk/vkvariable.h"
 #include "resources/resourcepool.h"
+#include "coregraphics/constantbuffer.h"
 
 namespace CoreGraphics
 {
@@ -104,7 +105,7 @@ private:
 #pragma pack(push, 16)
 	struct BufferBinding
 	{
-		Ptr<CoreGraphics::ConstantBuffer> uniformBuffer;
+		ConstantBufferId uniformBuffer;
 		uint32_t offset;
 		uint32_t size;
 		bool isvalid;

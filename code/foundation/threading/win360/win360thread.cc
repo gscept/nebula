@@ -19,7 +19,7 @@ using namespace System;
 
 ThreadLocal const char* Win360Thread::ThreadName = 0;
 
-#if NEBULA3_DEBUG
+#if NEBULA_DEBUG
 Threading::CriticalSection Win360Thread::criticalSection;
 List<Win360Thread*> Win360Thread::ThreadList;
 #endif
@@ -34,7 +34,7 @@ Win360Thread::Win360Thread() :
     coreId(Cpu::InvalidCoreId)
 {
     // register with thread list
-    #if NEBULA3_DEBUG
+    #if NEBULA_DEBUG
         Win360Thread::criticalSection.Enter();
         this->threadListIterator = ThreadList.AddBack(this);
         Win360Thread::criticalSection.Leave();
@@ -52,7 +52,7 @@ Win360Thread::~Win360Thread()
     }
 
     // unregister from thread list
-    #if NEBULA3_DEBUG
+    #if NEBULA_DEBUG
         n_assert(0 != this->threadListIterator);
         Win360Thread::criticalSection.Enter();
         ThreadList.Remove(this->threadListIterator);
@@ -293,7 +293,7 @@ Win360Thread::YieldThread()
 /**
     Returns an array with infos about all currently existing thread objects.
 */
-#if NEBULA3_DEBUG
+#if NEBULA_DEBUG
 Array<Win360Thread::ThreadDebugInfo>
 Win360Thread::GetRunningThreadDebugInfos()
 {

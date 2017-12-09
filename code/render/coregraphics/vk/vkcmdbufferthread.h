@@ -39,6 +39,7 @@ private:
 	enum CommandType
 	{
 		BeginCommand,
+		ResetCommands,
 		EndCommand,
 		GraphicsPipeline,
 		ComputePipeline,

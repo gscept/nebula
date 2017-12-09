@@ -39,15 +39,15 @@ public:
     /// get raw mode flag
     bool IsRawMode() const;
     /// set the intended resource usage (default is UsageImmutable)
-    void SetUsage(Base::GpuResourceBase::Usage usage);
+    void SetUsage(CoreGraphics::GpuBufferTypes::Usage usage);
     /// get resource usage
-    Base::GpuResourceBase::Usage GetUsage() const;
+	CoreGraphics::GpuBufferTypes::Usage GetUsage() const;
     /// set the intended resource access (default is AccessNone)
-    void SetAccess(Base::GpuResourceBase::Access access);
+    void SetAccess(CoreGraphics::GpuBufferTypes::Access access);
     /// get the resource access
-    Base::GpuResourceBase::Access GetAccess() const;
+	CoreGraphics::GpuBufferTypes::Access GetAccess() const;
     /// begin reading from the stream, read entire data
-    virtual bool Open();
+    virtual bool Open(const Resources::ResourceName& name);
     /// end reading from the stream, destroys loaded objects
     virtual void Close();
 	/// get vertex buffer
@@ -84,9 +84,9 @@ private:
     /// update primitive group bounding boxes
     void UpdateGroupBoundingBoxes();
     /// setup the vertex buffer object (not called in raw mode)
-    void SetupVertexBuffer();
+    void SetupVertexBuffer(const Resources::ResourceName& name);
     /// setup the index buffer object (not called in raw mode)
-    void SetupIndexBuffer();
+    void SetupIndexBuffer(const Resources::ResourceName& name);
 
     /// Nebula2 vertex components, see Nebula2's nMesh2 class for details
     enum N2VertexComponent
@@ -117,11 +117,12 @@ private:
         N2AllComponents = ((1<<N2NumVertexComponents) - 1),
     };
 
-    Base::GpuResourceBase::Usage usage;
-    Base::GpuResourceBase::Access access;
+	CoreGraphics::GpuBufferTypes::Usage usage;
+	CoreGraphics::GpuBufferTypes::Access access;
 
     bool rawMode;
 	Util::StringAtom tag;
+	Resources::ResourceName name;
 	Resources::ResourceId vbo;
 	Resources::ResourceId ibo;
 
@@ -256,7 +257,7 @@ Nvx2StreamReader::GetVertexComponents() const
 /**
 */
 inline void
-Nvx2StreamReader::SetUsage(Base::GpuResourceBase::Usage usage_)
+Nvx2StreamReader::SetUsage(CoreGraphics::GpuBufferTypes::Usage usage_)
 {
     this->usage = usage_;
 }
@@ -264,7 +265,7 @@ Nvx2StreamReader::SetUsage(Base::GpuResourceBase::Usage usage_)
 //------------------------------------------------------------------------------
 /**
 */
-inline Base::GpuResourceBase::Usage
+inline CoreGraphics::GpuBufferTypes::Usage
 Nvx2StreamReader::GetUsage() const
 {
     return this->usage;
@@ -274,7 +275,7 @@ Nvx2StreamReader::GetUsage() const
 /**
 */
 inline void
-Nvx2StreamReader::SetAccess(Base::GpuResourceBase::Access access_)
+Nvx2StreamReader::SetAccess(CoreGraphics::GpuBufferTypes::Access access_)
 {
     this->access = access_;
 }
@@ -282,7 +283,7 @@ Nvx2StreamReader::SetAccess(Base::GpuResourceBase::Access access_)
 //------------------------------------------------------------------------------
 /**
 */
-inline Base::GpuResourceBase::Access
+inline CoreGraphics::GpuBufferTypes::Access
 Nvx2StreamReader::GetAccess() const
 {
     return this->access;
