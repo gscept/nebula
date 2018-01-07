@@ -1,30 +1,29 @@
 //------------------------------------------------------------------------------
-//  texturepool.cc
-//  (C) 2007 Radon Labs GmbH
-//  (C) 2013-2016 Individual contributors, see AUTHORS file
+//  streamtexturepool.cc
+//  (C) 2017 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
-#include "coregraphics/texturepool.h"
+#include "coregraphics/streamtexturepool.h"
 
 #if __DX11__
 namespace CoreGraphics
 {
-__ImplementClass(CoreGraphics::StreamTexturePool, 'STXL', Direct3D11::D3D11StreamTextureLoader);
+__ImplementClass(CoreGraphics::StreamTexturePool, 'STXP', Direct3D11::D3D11StreamTextureLoader);
 }
 #elif __OGL4__
 namespace CoreGraphics
 {
-__ImplementClass(CoreGraphics::StreamTexturePool, 'STXL', OpenGL4::OGL4StreamTextureLoader);
+__ImplementClass(CoreGraphics::StreamTexturePool, 'STXP', OpenGL4::OGL4StreamTextureLoader);
 }
 #elif __VULKAN__
 namespace CoreGraphics
 {
-__ImplementClass(CoreGraphics::StreamTexturePool, 'STXL', Vulkan::VkStreamTexturePool);
+__ImplementClass(CoreGraphics::StreamTexturePool, 'STXP', Vulkan::VkStreamTexturePool);
 }
 #elif __DX9__
 namespace CoreGraphics
 {
-__ImplementClass(CoreGraphics::StreamTexturePool, 'STXL', Direct3D9::D3D9StreamTextureLoader);
+__ImplementClass(CoreGraphics::StreamTexturePool, 'STXP', Direct3D9::D3D9StreamTextureLoader);
 }
 #else
 #error "StreamTextureLoader class not implemented on this platform!"

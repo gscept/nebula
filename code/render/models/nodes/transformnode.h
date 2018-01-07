@@ -21,7 +21,7 @@ public:
 	virtual ~TransformNode();
 
 protected:
-	friend class ModelPool;
+	friend class StreamModelPool;
 
 	/// load transform
 	virtual bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader);

@@ -63,7 +63,7 @@ StreamMeshPool::LoadFromStream(const Ids::Id24 id, const Util::StringAtom& tag, 
 		}
 		else
 		{
-			n_error("StreamMeshPool::SetupMeshFromStream(): unrecognized file extension in '%s'\n", name.Value());
+			n_error("StreamMeshPool::SetupMeshFromStream(): unrecognized file extension in '%s'\n", resIdExt.AsCharPtr());
 			return Resources::ResourcePool::Failed;
 		}
 }
@@ -77,8 +77,8 @@ StreamMeshPool::Unload(const Ids::Id24 id)
 	n_assert(id != Ids::InvalidId24);
 	const MeshCreateInfo& msh = meshPool->GetSafe<0>(id);
 
-	if (msh.indexBuffer != Ids::InvalidId64) CoreGraphics::iboPool->DiscardResource(msh.indexBuffer);
-	if (msh.vertexBuffer != Ids::InvalidId64) CoreGraphics::vboPool->DiscardResource(msh.vertexBuffer);
+	if (msh.indexBuffer != Ids::InvalidId64) CoreGraphics::iboPool->Unload(msh.indexBuffer.id24);
+	if (msh.vertexBuffer != Ids::InvalidId64) CoreGraphics::vboPool->Unload(msh.vertexBuffer.id24);
 }
 
 //------------------------------------------------------------------------------
@@ -163,7 +163,7 @@ StreamMeshPool::SetupMeshFromN3d3(const Ptr<Stream>& stream, const Ids::Id24 res
 /**
 */
 void
-StreamMeshPool::BindMesh(const Resources::ResourceId id)
+StreamMeshPool::MeshBind(const Resources::ResourceId id)
 {
 	const Ids::Id24 resId = Ids::Id::GetBig(Ids::Id::GetLow(id));
 	meshPool->EnterGet();
@@ -171,10 +171,10 @@ StreamMeshPool::BindMesh(const Resources::ResourceId id)
 
 	// bind vbo, and optional ibo
 	CoreGraphics::RenderDevice::Instance()->SetPrimitiveTopology(msh.topology);
-	CoreGraphics::BindVertexLayout(msh.vertexLayout);
-	CoreGraphics::BindVertexBuffer(msh.vertexBuffer, 0, 0);
+	CoreGraphics::VertexLayoutBind(msh.vertexLayout);
+	CoreGraphics::VertexBufferBind(msh.vertexBuffer, 0, 0);
 	if (msh.indexBuffer != Ids::InvalidId64)
-		CoreGraphics::BindIndexBuffer(msh.indexBuffer, 0);
+		CoreGraphics::IndexBufferBind(msh.indexBuffer, 0);
 
 	meshPool->LeaveGet();
 	this->activeMesh = id;

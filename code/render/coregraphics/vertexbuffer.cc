@@ -38,16 +38,16 @@ DestroyVertexBuffer(const VertexBufferId id)
 /**
 */
 inline void
-BindVertexBuffer(const VertexBufferId id, const IndexT slot, const IndexT vertexOffset)
+VertexBufferBind(const VertexBufferId id, const IndexT slot, const IndexT vertexOffset)
 {
-	vboPool->BindVertexBuffer(id.id24, slot, vertexOffset);
+	vboPool->VertexBufferBind(id.id24, slot, vertexOffset);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 inline void
-UpdateVertexBuffer(const VertexBufferId id, void* data, PtrDiff size, PtrDiff offset)
+VertexBufferUpdate(const VertexBufferId id, void* data, PtrDiff size, PtrDiff offset)
 {
 	//vboPool->LoadFromMemory(Resources::SharedId(id), 
 }
@@ -56,7 +56,7 @@ UpdateVertexBuffer(const VertexBufferId id, void* data, PtrDiff size, PtrDiff of
 /**
 */
 inline void
-LockVertexBuffer(const VertexBufferId id, const PtrDiff offset, const PtrDiff range)
+VertexBufferLock(const VertexBufferId id, const PtrDiff offset, const PtrDiff range)
 {
 	// implement me?	
 }
@@ -65,7 +65,7 @@ LockVertexBuffer(const VertexBufferId id, const PtrDiff offset, const PtrDiff ra
 /**
 */
 inline void
-UnlockVertexBuffer(const VertexBufferId id, const PtrDiff offset, const PtrDiff range)
+VertexBufferUnlock(const VertexBufferId id, const PtrDiff offset, const PtrDiff range)
 {
 	// implement me?
 }
@@ -74,7 +74,7 @@ UnlockVertexBuffer(const VertexBufferId id, const PtrDiff offset, const PtrDiff 
 /**
 */
 inline void*
-MapVertexBuffer(const VertexBufferId id, const CoreGraphics::GpuBufferTypes::MapType type)
+VertexBufferMap(const VertexBufferId id, const CoreGraphics::GpuBufferTypes::MapType type)
 {
 	return vboPool->Map(id.id24, type);
 }
@@ -83,7 +83,7 @@ MapVertexBuffer(const VertexBufferId id, const CoreGraphics::GpuBufferTypes::Map
 /**
 */
 inline void
-UnmapVertexBuffer(const VertexBufferId id)
+VertexBufferUnmap(const VertexBufferId id)
 {
 	vboPool->Unmap(id.id24);
 }

@@ -78,7 +78,7 @@ public:
 	/// begin preparing for the scene to change, this phase should encompass the entirety of the void outside of the render loop
 	void EnterVisibilityLockstep();
 	/// register a renderable entity
-	void RegisterGraphicsEntity(const Ptr<Graphics::GraphicsEntity>& entity, Graphics:ContextIdlContext::_ModelResult* data);
+	void RegisterGraphicsEntity(const Ptr<Graphics::GraphicsEntity>& entity, Graphics::ContextIdlContext::_ModelResult* data);
 	/// deregister renderable entity
 	void UnregisterGraphicsEntity(const Ptr<Graphics::GraphicsEntity>& entity);
 	/// finish up scene changes, this will cause all observers to reconstruct their visibility list

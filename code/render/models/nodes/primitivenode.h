@@ -23,7 +23,7 @@ public:
 	virtual ~PrimitiveNode();
 
 protected:
-	friend class ModelPool;
+	friend class StreamModelPool;
 
 	/// load primitive
 	virtual bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader);

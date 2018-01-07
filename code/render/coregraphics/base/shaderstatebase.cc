@@ -235,7 +235,7 @@ ShaderStateBase::DiscardVariableInstance(const Ptr<CoreGraphics::ShaderVariableI
 	IndexT i = this->variableInstances.FindIndex(var);
 	n_assert(i != InvalidIndex);
 	this->variableInstances.EraseIndex(i);
-	this->variableInstancesByName.Erase(var->GetShaderVariable()->GetName());
+	this->variableInstancesByName.Erase(var->ShaderStateGetVariable()->GetName());
 	var->Discard();	
 }
 

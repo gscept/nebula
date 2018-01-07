@@ -89,6 +89,8 @@ public:
 	const Resource::State GetState(const Resources::ResourceId id);
 	/// get resource state directly
 	const Resource::State GetState(const Ids::Id24 id);
+	/// get resource id by name, use with care
+	const Ids::Id24 GetId(const Resources::ResourceName& name);
 
 	/// update the resource loader, this is done every frame
 	virtual void Update(IndexT frameIndex);
@@ -177,6 +179,15 @@ inline const Resources::Resource::State
 ResourcePool::GetState(const Ids::Id24 id)
 {
 	return this->states[id];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const Ids::Id24
+ResourcePool::GetId(const Resources::ResourceName& name)
+{
+	return this->ids[name];
 }
 
 } // namespace Resources

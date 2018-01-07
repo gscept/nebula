@@ -25,15 +25,15 @@ struct CommandBufferPools
 	VkDevice dev;
 };
 
-extern Ids::IdAllocator<VkCommandBuffer, VkCommandPool> commandBuffers;
-extern CommandBufferPools pools;
-
 /// setup pools for a certain device
 void SetupVkPools(VkDevice dev, uint32_t drawQueue, uint32_t computeQueue, uint32_t transferQueue, uint32_t sparseQueue);
 /// destroy pools
 void DestroyVkPools(VkDevice dev);
 
 /// get vk command buffer
-const VkCommandBuffer CommandBufferGetVk(CmdBufferId id);
+const VkCommandBuffer CommandBufferGetVk(const CoreGraphics::CmdBufferId id);
+
+typedef Ids::IdAllocator<VkCommandBuffer, VkCommandPool> VkCommandBufferAllocator;
+extern CommandBufferPools pools;
 
 } // Vulkan

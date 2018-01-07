@@ -55,7 +55,7 @@ ResourceMemoryPool::ReserveResource(const ResourceName& res, const Util::StringA
 		this->names[resourceId] = res;
 		this->usage[resourceId] = 1;
 		this->tags[resourceId] = tag;
-		this->states[resourceId] = Resource::Loaded;
+		this->states[resourceId] = Resource::Pending;
 		ret.id32 = instanceId;
 		ret.id24 = resourceId;
 		ret.id8 = this->uniqueId;

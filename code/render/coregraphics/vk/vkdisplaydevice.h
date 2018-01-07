@@ -23,7 +23,7 @@ private:
 	friend class VkRenderDevice;
 
 	/// open window
-	bool OpenWindow();
+	bool WindowOpen();
 	/// open embedded window
 	bool EmbedWindow();
 

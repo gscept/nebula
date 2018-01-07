@@ -20,7 +20,8 @@
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
-#include "coregraphics/base/shaderstatebase.h"
+#include "coregraphics/constantbuffer.h"
+#include "vkshadervariable.h"
 #include "lowlevel/afxapi.h"
 namespace Lighting
 {
@@ -29,76 +30,21 @@ namespace Lighting
 namespace Vulkan
 {
 
-class VkShaderState : public Base::ShaderStateBase
+class VkShaderState
 {
-	__DeclareClass(VkShaderState);
-	struct SetupInfo;
-	struct RuntimeInfo;
-public:
-	class VkDerivativeState;
+	struct VkShaderStateRuntimeInfo;
 
-
-	/// constructor
-	VkShaderState();
-	/// destructor
-	virtual ~VkShaderState();
-
-	/// discard the shader instance, must be called when instance no longer needed
-	static void Discard();
-
-	/// begin all uniform buffers for a synchronous update
-	static void BeginUpdateSync();
-	/// end buffer updates for all uniform buffers
-	static void EndUpdateSync();
-	/// apply shader from which this state was created
-	static void Apply();
-	/// commit changes before rendering
-	static void Commit(Ids::Id24 currentProgram, Util::Array<VkWriteDescriptorSet>& writes, bool& setsDirty, VkShaderState::RuntimeInfo& stateInfo);
-
-	/// use this if some system want to allocate and use their own descriptor sets
-	static void SetDescriptorSet(const VkDescriptorSet& set, const IndexT slot);
-	/// create new derivative state using group
-	static Ptr<VkDerivativeState> CreateDerivative(const IndexT group);
-
-	class VkDerivativeState : public Core::RefCounted
-	{
-		__DeclareClass(VkDerivativeState);
-	
-		friend class VkShaderState;
-		VkDescriptorSet set;
-		uint32_t group;
-		VkPipelineLayout layout;
-		VkShaderState* parent;
-
-	public:
-		Util::Array<Ptr<CoreGraphics::ConstantBuffer>> buffers;
-		VkPipelineBindPoint bindPoint;
-		uint32_t offsetCount;
-		uint32_t* offsets;
-		bool bindShared;
-
-		/// applies derivative, all shader state variable changes will be using said derivative
-		void Apply();
-		/// commit derivative 
-		void Commit();
-		/// resets derivative set, effectively counteracting Apply
-		void Reset();
-	};
 private:
-	friend class Base::ShaderBase;
 	friend class VkShader;
 	friend class Lighting::VkLightServer;
 	friend class VkRenderDevice;
 	friend class VkShaderPool;
+	friend class VkShaderVariable;
 	struct BufferMapping;
 
 	/// update descriptor sets
-	static void UpdateDescriptorSets(Util::Array<VkWriteDescriptorSet>& writes, bool& dirty);
+	static void UpdateDescriptorSets(VkDevice dev, Util::Array<VkWriteDescriptorSet>& writes, bool& dirty);
 
-	/// create array of offsets
-	static void CreateOffsetArray(Util::Array<uint32_t>& outOffsets, const IndexT group);
-	/// get index in offset array based on binding
-	static BufferMapping GetBufferMapping(const IndexT& group, const IndexT& binding);
 
 #pragma pack(push, 16)
 	struct DescriptorSetBinding
@@ -115,8 +61,9 @@ private:
 	};
 #pragma pack(pop)
 
-	struct RuntimeInfo
+	struct VkShaderStateRuntimeInfo
 	{
+		VkDevice dev;
 		Util::FixedArray<DescriptorSetBinding> setBindings;
 		Util::FixedArray<Util::Array<uint32_t>> setOffsets;
 		VkPipelineLayout pushLayout;
@@ -126,7 +73,7 @@ private:
 		bool shared;
 	};
 
-	struct SetupInfo
+	struct VkShaderStateSetupInfo
 	{
 		Util::FixedArray<VkDescriptorSet> sets;
 		Util::FixedArray<Util::Dictionary<uint32_t, BufferMapping>> setBufferMapping;
@@ -134,32 +81,102 @@ private:
 		Util::Array<uint32_t> offsets;
 		Util::Dictionary<Util::StringAtom, uint32_t> offsetsByName;
 		Util::Dictionary<CoreGraphics::ConstantBufferId, uint32_t> instances;
-		Util::Dictionary<Util::StringAtom, Ids::Id24> variableMap;
+		Util::Dictionary<Util::StringAtom, CoreGraphics::ShaderVariableId> variableMap;
 		VkPipelineLayout pipelineLayout;
 	};
 
+	struct VkDerivativeShaderStateRuntimeInfo
+	{
+		VkPipelineBindPoint bindPoint;
+		uint32_t offsetCount;
+		uint32_t* offsets;
+		Util::Array<CoreGraphics::ConstantBufferId> buffers;
+		uint32_t group;
+		VkDescriptorSet set;
+		VkPipelineLayout layout;
+		bool bindShared;
+		VkShaderStateRuntimeInfo* parentRuntime;
+		VkShaderStateSetupInfo* parentSetup;
+	};
+
+	typedef Ids::IdAllocator<VkDerivativeShaderStateRuntimeInfo> VkDerivativeStateAllocator;
+
 	typedef Ids::IdAllocator<
 		AnyFX::ShaderEffect*,												//0 effect
-		SetupInfo,															//1 setup info
-		RuntimeInfo,														//2 runtime info
-		VkShaderVariable::ShaderVariableAllocator,							//3 variable allocator
-		Util::Array<VkWriteDescriptorSet>									//4 descriptor set writes
-	> ShaderStateAllocator;
+		VkShaderStateRuntimeInfo,											//1 setup info
+		VkShaderStateSetupInfo,												//2 runtime info
+		VkShaderVariable::VkShaderVariableAllocator,						//3 variable allocator
+		Util::Array<VkWriteDescriptorSet>,									//4 descriptor set writes
+		VkDerivativeStateAllocator											//5 derivative states
+	> VkShaderStateAllocator;
 
 	/// setup the shader instance from its original shader object
 	static void Setup(
 		const Ids::Id24 id, 
 		AnyFX::ShaderEffect* effect, 
 		const Util::Array<IndexT>& groups,
-		ShaderStateAllocator& allocator, 
+		VkShaderStateAllocator& allocator, 
 		Util::FixedArray<VkDescriptorSet>& sets,
 		Util::FixedArray<VkDescriptorSetLayout>& setLayouts,
+		const Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBufferId>& buffers,
 		bool createUniqueSet);
 
+	/// setup derivative
+	static void SetupDerivative(
+		const Ids::Id32 id,
+		const AnyFX::ShaderEffect* effect,
+		VkShaderState::VkDerivativeStateAllocator& allocator,
+		VkShaderState::VkShaderStateRuntimeInfo& parentRuntime,
+		VkShaderState::VkShaderStateSetupInfo& parentSetup,
+		const Util::Dictionary<uint32_t, Util::Array<CoreGraphics::ConstantBufferId>>& buffersByGroup,
+		const IndexT group
+	);
+
 	/// sets up variables
-	static void SetupVariables(AnyFX::ShaderEffect* effect, RuntimeInfo& runtime, SetupInfo& setup, VkShaderVariable::ShaderVariableAllocator& varAllocator, const Util::Array<IndexT>& groups);
+	static void SetupVariables(
+		const Ids::Id24 id,
+		AnyFX::ShaderEffect* effect, 
+		VkShaderStateRuntimeInfo& runtime, 
+		VkShaderStateSetupInfo& setup, 
+		VkShaderVariable::VkShaderVariableAllocator& varAllocator, 
+		const Util::Array<IndexT>& groups);
+
 	/// setup uniform buffers for shader state
-	static void SetupUniformBuffers(AnyFX::ShaderEffect* effect, RuntimeInfo& runtime, SetupInfo& setup, VkShaderVariable::ShaderVariableAllocator& varAllocator, const Util::Array<IndexT>& groups);
+	static void SetupConstantBuffers(
+		const Ids::Id24 id,
+		AnyFX::ShaderEffect* effect, 
+		VkShaderStateRuntimeInfo& runtime, 
+		VkShaderStateSetupInfo& setup, 
+		VkShaderVariable::VkShaderVariableAllocator& varAllocator, 
+		Util::Array<VkWriteDescriptorSet>& setWrites,
+		const Util::Array<IndexT>& groups,
+		const Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBufferId>& buffers);
+
+	/// discard state
+	static void Discard(
+		const Ids::Id24 id,
+		VkShaderStateRuntimeInfo& runtime,
+		VkShaderStateSetupInfo& setup,
+		VkShaderVariable::VkShaderVariableAllocator& varAllocator
+	);
+
+	/// commit changes before rendering
+	static void Commit(Ids::Id24 currentProgram, Util::Array<VkWriteDescriptorSet>& writes, VkShaderStateRuntimeInfo& stateInfo);
+
+	/// use this if some system want to allocate and use their own descriptor sets
+	static void SetDescriptorSet(VkShaderStateRuntimeInfo& runtime, VkShaderStateSetupInfo& setup, const VkDescriptorSet& set, const IndexT slot);
+	/// create array of offsets
+	static void CreateOffsetArray(VkShaderStateRuntimeInfo& runtime, VkShaderStateSetupInfo& setup, Util::Array<uint32_t>& outOffsets, const IndexT group);
+	/// get index in offset array based on binding
+	static BufferMapping GetBufferMapping(VkShaderStateRuntimeInfo& runtime, VkShaderStateSetupInfo& setup, const IndexT& group, const IndexT& binding);
+
+	/// apply a derivative state to its buffers
+	static void DerivativeStateApply(const VkDerivativeShaderStateRuntimeInfo& info);
+	/// commit derivative state to the graphics context
+	static void DerivativeStateCommit(const VkDerivativeShaderStateRuntimeInfo& info);
+	/// reset derivative state
+	static void DerivativeStateReset(VkDerivativeShaderStateRuntimeInfo& info);
+
 };
 
 } // namespace Vulkan

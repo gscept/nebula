@@ -43,7 +43,7 @@ protected:
 	/// the WinProc
 	static LRESULT CALLBACK WinProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
     /// open the application window
-    virtual bool OpenWindow();
+    virtual bool WindowOpen();
     /// close the application window
     virtual void CloseWindow();
 	/// opens the window embedded

@@ -88,8 +88,8 @@ void DestroyTexture(const TextureId id);
 /// directly update texture
 
 /// map GPU memory
-TextureMapInfo MapTexture(const TextureId id, IndexT mip, const CoreGraphics::GpuBufferTypes::MapType type);
+TextureMapInfo TextureMap(const TextureId id, IndexT mip, const CoreGraphics::GpuBufferTypes::MapType type);
 /// unmap GPU memory
-void UnmapTexture(const TextureId id, IndexT mip);
+void TextureUnmap(const TextureId id, IndexT mip);
 
 } // CoreGraphics

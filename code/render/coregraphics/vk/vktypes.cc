@@ -6,7 +6,7 @@
 #include "vktypes.h"
 #include <vulkan/vulkan.h>
 #include "coregraphics/pixelformat.h"
-#include "include/il_dds.h"
+#include "il_dds.h"
 
 namespace Vulkan
 {
@@ -515,54 +515,54 @@ VkTypes::AsVkMapping(ILenum p)
 /**
 */
 VkPipelineStageFlags
-VkTypes::AsVkPipelineFlags(const CoreGraphics::Barrier::Dependency dep)
+VkTypes::AsVkPipelineFlags(const CoreGraphics::BarrierDependency dep)
 {
 	VkPipelineStageFlags flags = 0;
 	uint32_t bit;
 	for (bit = 1; dep > bit; bit *= 2)
 	{
-		if ((dep & bit) == bit) switch ((CoreGraphics::Barrier::Dependency)bit)
+		if ((dep & bit) == bit) switch ((CoreGraphics::BarrierDependency)bit)
 		{
-		case Barrier::Dependency::VertexShader:
+		case CoreGraphics::BarrierDependency::VertexShader:
 			flags |= VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
 			break;
-		case Barrier::Dependency::HullShader:
+		case CoreGraphics::BarrierDependency::HullShader:
 			flags |= VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT;
 			break;
-		case Barrier::Dependency::DomainShader:
+		case CoreGraphics::BarrierDependency::DomainShader:
 			flags |= VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT;
 			break;
-		case Barrier::Dependency::GeometryShader:
+		case CoreGraphics::BarrierDependency::GeometryShader:
 			flags |= VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT;
 			break;
-		case Barrier::Dependency::PixelShader:
+		case CoreGraphics::BarrierDependency::PixelShader:
 			flags |= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 			break;
-		case Barrier::Dependency::ComputeShader:
+		case CoreGraphics::BarrierDependency::ComputeShader:
 			flags |= VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
 			break;
-		case Barrier::Dependency::VertexInput:
+		case CoreGraphics::BarrierDependency::VertexInput:
 			flags |= VK_PIPELINE_STAGE_VERTEX_INPUT_BIT;
 			break;
-		case Barrier::Dependency::EarlyDepth:
+		case CoreGraphics::BarrierDependency::EarlyDepth:
 			flags |= VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
 			break;
-		case Barrier::Dependency::LateDepth:
+		case CoreGraphics::BarrierDependency::LateDepth:
 			flags |= VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
 			break;
-		case Barrier::Dependency::Transfer:
+		case CoreGraphics::BarrierDependency::Transfer:
 			flags |= VK_PIPELINE_STAGE_TRANSFER_BIT;
 			break;
-		case Barrier::Dependency::Host:
+		case CoreGraphics::BarrierDependency::Host:
 			flags |= VK_PIPELINE_STAGE_HOST_BIT;
 			break;
-		case Barrier::Dependency::PassOutput:
+		case CoreGraphics::BarrierDependency::PassOutput:
 			flags |= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 			break;
-		case Barrier::Dependency::Top:
+		case CoreGraphics::BarrierDependency::Top:
 			flags |= VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 			break;
-		case Barrier::Dependency::Bottom:
+		case CoreGraphics::BarrierDependency::Bottom:
 			flags |= VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
 			break;
 		}
@@ -574,63 +574,63 @@ VkTypes::AsVkPipelineFlags(const CoreGraphics::Barrier::Dependency dep)
 /**
 */
 VkAccessFlags
-VkTypes::AsVkResourceAccessFlags(const CoreGraphics::Barrier::Access access)
+VkTypes::AsVkResourceAccessFlags(const CoreGraphics::BarrierAccess access)
 {
 	VkAccessFlags flags = 0;
 	uint32_t bit;
 	for (bit = 1; access > bit; bit *= 2)
 	{
-		if ((access & bit) == bit) switch ((CoreGraphics::Barrier::Access)bit)
+		if ((access & bit) == bit) switch ((CoreGraphics::BarrierAccess)bit)
 		{
-		case Barrier::Access::IndirectRead:
+		case CoreGraphics::BarrierAccess::IndirectRead:
 			flags |= VK_ACCESS_INDIRECT_COMMAND_READ_BIT;
 			break;
-		case Barrier::Access::IndexRead:
+		case CoreGraphics::BarrierAccess::IndexRead:
 			flags |= VK_ACCESS_INDEX_READ_BIT;
 			break;
-		case Barrier::Access::VertexRead:
+		case CoreGraphics::BarrierAccess::VertexRead:
 			flags |= VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
 			break;
-		case Barrier::Access::UniformRead:
+		case CoreGraphics::BarrierAccess::UniformRead:
 			flags |= VK_ACCESS_UNIFORM_READ_BIT;
 			break;
-		case Barrier::Access::InputAttachmentRead:
+		case CoreGraphics::BarrierAccess::InputAttachmentRead:
 			flags |= VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
 			break;
-		case Barrier::Access::ShaderRead:
+		case CoreGraphics::BarrierAccess::ShaderRead:
 			flags |= VK_ACCESS_SHADER_READ_BIT;
 			break;
-		case Barrier::Access::ShaderWrite:
+		case CoreGraphics::BarrierAccess::ShaderWrite:
 			flags |= VK_ACCESS_SHADER_WRITE_BIT;
 			break;
-		case Barrier::Access::ColorAttachmentRead:
+		case CoreGraphics::BarrierAccess::ColorAttachmentRead:
 			flags |= VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
 			break;
-		case Barrier::Access::ColorAttachmentWrite:
+		case CoreGraphics::BarrierAccess::ColorAttachmentWrite:
 			flags |= VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 			break;
-		case Barrier::Access::DepthRead:
+		case CoreGraphics::BarrierAccess::DepthRead:
 			flags |= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
 			break;
-		case Barrier::Access::DepthWrite:
+		case CoreGraphics::BarrierAccess::DepthWrite:
 			flags |= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 			break;
-		case Barrier::Access::TransferRead:
+		case CoreGraphics::BarrierAccess::TransferRead:
 			flags |= VK_ACCESS_TRANSFER_READ_BIT;
 			break;
-		case Barrier::Access::TransferWrite:
+		case CoreGraphics::BarrierAccess::TransferWrite:
 			flags |= VK_ACCESS_TRANSFER_WRITE_BIT;
 			break;
-		case Barrier::Access::HostRead:
+		case CoreGraphics::BarrierAccess::HostRead:
 			flags |= VK_ACCESS_HOST_READ_BIT;
 			break;
-		case Barrier::Access::HostWrite:
+		case CoreGraphics::BarrierAccess::HostWrite:
 			flags |= VK_ACCESS_HOST_WRITE_BIT;
 			break;
-		case Barrier::Access::MemoryRead:
+		case CoreGraphics::BarrierAccess::MemoryRead:
 			flags |= VK_ACCESS_MEMORY_READ_BIT;
 			break;
-		case Barrier::Access::MemoryWrite:
+		case CoreGraphics::BarrierAccess::MemoryWrite:
 			flags |= VK_ACCESS_MEMORY_WRITE_BIT;
 			break;
 		}

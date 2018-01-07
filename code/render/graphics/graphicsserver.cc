@@ -10,11 +10,12 @@
 #include "coregraphics/memoryvertexbufferpool.h"
 #include "coregraphics/memoryindexbufferpool.h"
 #include "resources/resourcemanager.h"
-#include "coregraphics/coregraphics.h"
 #include "coregraphics/vertexsignaturepool.h"
-#include "coregraphics/texturepool.h"
+#include "coregraphics/streamtexturepool.h"
+#include "coregraphics/memorytexturepool.h"
+#include "coregraphics/memorymeshpool.h"
 #include "coregraphics/shaderpool.h"
-#include "coregraphics/meshpool.h"
+#include "coregraphics/streammeshpool.h"
 #include "models/modelpool.h"
 
 namespace Graphics
@@ -46,28 +47,31 @@ void
 GraphicsServer::Open()
 {
 	n_assert(!this->isOpen);
-	this->visServer = Visibility::VisibilityServer::Create();
+	//this->visServer = Visibility::VisibilityServer::Create();
 	this->timer = FrameSync::FrameSyncTimer::Create();
 	this->isOpen = true;
 
-	// register index and vertex buffer pools
+	// register graphics context pools
 	Resources::ResourceManager::Instance()->RegisterMemoryPool(CoreGraphics::MemoryVertexBufferPool::RTTI);
 	Resources::ResourceManager::Instance()->RegisterMemoryPool(CoreGraphics::MemoryIndexBufferPool::RTTI);
 	Resources::ResourceManager::Instance()->RegisterMemoryPool(CoreGraphics::VertexSignaturePool::RTTI);
+	Resources::ResourceManager::Instance()->RegisterMemoryPool(CoreGraphics::MemoryTexturePool::RTTI);
+	Resources::ResourceManager::Instance()->RegisterMemoryPool(CoreGraphics::MemoryMeshPool::RTTI);
+
 	Resources::ResourceManager::Instance()->RegisterStreamPool("dds", CoreGraphics::StreamTexturePool::RTTI);
 	Resources::ResourceManager::Instance()->RegisterStreamPool("shd", CoreGraphics::ShaderPool::RTTI);
-	Resources::ResourceManager::Instance()->RegisterStreamPool("n3", Models::ModelPool::RTTI);
+	Resources::ResourceManager::Instance()->RegisterStreamPool("n3", Models::StreamModelPool::RTTI);
 	Resources::ResourceManager::Instance()->RegisterStreamPool("nvx", CoreGraphics::StreamMeshPool::RTTI);
 
 	// setup internal pool pointers for convenient access (note, will also assert if texture, shader, model or mesh pools is not registered yet!)
 	CoreGraphics::vboPool = Resources::GetMemoryPool<CoreGraphics::MemoryVertexBufferPool>();
 	CoreGraphics::iboPool = Resources::GetMemoryPool<CoreGraphics::MemoryIndexBufferPool>();
 	CoreGraphics::layoutPool = Resources::GetMemoryPool<CoreGraphics::VertexSignaturePool>();
+	CoreGraphics::texturePool = Resources::GetMemoryPool<CoreGraphics::MemoryTexturePool>();
+	CoreGraphics::meshPool = Resources::GetMemoryPool<CoreGraphics::MemoryMeshPool>();
 
-	CoreGraphics::texturePool = Resources::GetStreamPool<CoreGraphics::StreamTexturePool>();
 	CoreGraphics::shaderPool = Resources::GetStreamPool<CoreGraphics::ShaderPool>();
-	CoreGraphics::modelPool = Resources::GetStreamPool<CoreGraphics::ModelPool>();
-	CoreGraphics::meshPool = Resources::GetStreamPool<CoreGraphics::StreamMeshPool>();
+	Models::modelPool = Resources::GetStreamPool<Models::StreamModelPool>();
 }
 
 //------------------------------------------------------------------------------
@@ -77,7 +81,7 @@ void
 GraphicsServer::Close()
 {
 	n_assert(this->isOpen);
-	this->visServer = nullptr;
+	//this->visServer = nullptr;
 	this->timer = nullptr;
 	this->isOpen = false;
 
@@ -94,7 +98,7 @@ GraphicsServer::OnFrame()
 	const Timing::Time time = this->timer->GetFrameTime();
 
 	// enter visibility lockstep
-	this->visServer->EnterVisibilityLockstep();
+	//this->visServer->EnterVisibilityLockstep();
 
 	// begin updating visibility
 	IndexT i;
@@ -104,7 +108,7 @@ GraphicsServer::OnFrame()
 	}
 
 	// begin updating visibility
-	this->visServer->BeginVisibility();
+	//this->visServer->BeginVisibility();
 
 	// go through views and call before view
 	for (i = 0; i < this->views.Size(); i++)
@@ -122,7 +126,7 @@ GraphicsServer::OnFrame()
 		const Ptr<View>& view = this->views[i];
 
 		// apply visibility result for this view
-		this->visServer->ApplyVisibility(view);
+		//this->visServer->ApplyVisibility(view);
 
 		IndexT j;
 		for (j = 0; j < this->contexts.Size(); j++)
@@ -148,7 +152,7 @@ GraphicsServer::OnFrame()
 	}
 
 	// leave visibility lockstep
-	this->visServer->LeaveVisibilityLockstep();
+	//this->visServer->LeaveVisibilityLockstep();
 }
 
 //------------------------------------------------------------------------------
@@ -166,27 +170,28 @@ GraphicsServer::RegisterGraphicsContext(const Core::Rtti& rtti)
 //------------------------------------------------------------------------------
 /**
 */
-EntityId
+GraphicsEntityId
 GraphicsServer::CreateGraphicsEntity()
 {
-	EntityId id;
-	return this->entityPool.Allocate(id);
+	GraphicsEntityId id;
+	this->entityPool.Allocate(id.id);
+	return id;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-GraphicsServer::DiscardGraphicsEntity(const EntityId id)
+GraphicsServer::DiscardGraphicsEntity(const GraphicsEntityId id)
 {
-	this->entityPool.Deallocate(id);
+	this->entityPool.Deallocate(id.id);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 bool
-GraphicsServer::IsValidGraphicsEntity(const EntityId id)
+GraphicsServer::IsValidGraphicsEntity(const GraphicsEntityId id)
 {
 	return this->entityPool.IsValid(id);
 }

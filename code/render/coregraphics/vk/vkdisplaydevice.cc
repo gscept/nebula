@@ -33,11 +33,11 @@ VkDisplayDevice::~VkDisplayDevice()
 /**
 */
 bool
-VkDisplayDevice::OpenWindow()
+VkDisplayDevice::WindowOpen()
 {
 	bool res = false;
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	res |= OpenGL4::GLFWDisplayDevice::OpenWindow();
+	res |= OpenGL4::GLFWDisplayDevice::WindowOpen();
 	return res;
 }
 

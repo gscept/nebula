@@ -21,7 +21,7 @@ public:
 	virtual ~ShaderStateNode();
 
 protected:
-	friend class ModelPool;
+	friend class StreamModelPool;
 
 	/// load shader state
 	bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader);

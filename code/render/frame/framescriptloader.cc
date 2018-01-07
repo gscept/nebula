@@ -431,7 +431,7 @@ FrameScriptLoader::ParseShaderStateList(const Ptr<Frame::FrameScript>& script, J
 
 		JzonValue* shader = jzon_get(cur, "shader");
 		n_assert(shader != NULL);
-		Ptr<CoreGraphics::ShaderState> state = ShaderServer::Instance()->CreateShaderState(shader->string_value, { NEBULAT_DEFAULT_GROUP }, createResources);
+		Ptr<CoreGraphics::ShaderState> state = ShaderServer::Instance()->ShaderCreateState(shader->string_value, { NEBULAT_DEFAULT_GROUP }, createResources);
 
 		JzonValue* vars = jzon_get(cur, "variables");
 		if (vars != NULL) ParseShaderVariables(script, state, vars);
@@ -455,7 +455,7 @@ FrameScriptLoader::ParseGlobalState(const Ptr<Frame::FrameScript>& script, JzonV
 	op->SetName(name->string_value);
 
 	// create shared state, this will be set while running the script and update the shared state
-	Ptr<CoreGraphics::ShaderState> state = ShaderServer::Instance()->CreateSharedShaderState("shd:shared", { NEBULAT_FRAME_GROUP });
+	Ptr<CoreGraphics::ShaderState> state = ShaderServer::Instance()->ShaderCreateSharedState("shd:shared", { NEBULAT_FRAME_GROUP });
 	state->SetApplyShared(true);
 	op->SetShaderState(state);
 
@@ -477,7 +477,7 @@ FrameScriptLoader::ParseGlobalState(const Ptr<Frame::FrameScript>& script, JzonV
 
 			// get variable
 			const Ptr<ShaderVariableInstance>& variable = state->GetVariableByName(sem->string_value)->CreateInstance();
-			switch (variable->GetShaderVariable()->GetType())
+			switch (variable->ShaderStateGetVariable()->GetType())
 			{
 			case ShaderVariable::IntType:
 				variable->SetInt(valStr.AsInt());

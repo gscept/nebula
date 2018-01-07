@@ -42,6 +42,7 @@ public:
 		OnHandleTransferFences,
 		OnHandleDrawFences,
 		OnHandleComputeFences,
+		OnHandleSparseFences,
 		OnHandleFences,
 
 		OnBindGraphicsPipeline,
@@ -88,11 +89,14 @@ private:
 	friend class VkUtilities;
 
 	bool putTransferFenceThisFrame;
-	bool putDrawFenceThisFrame;
+	bool putSparseFenceThisFrame;
 	bool putComputeFenceThisFrame;
+	bool putDrawFenceThisFrame;
+	VkDevice dev;
 	Util::FixedArray<Util::Array<VkDeferredCommand>> commands;
 	Util::Dictionary<VkFence, Util::Array<VkDeferredCommand>> transferFenceCommands;
 	Util::Dictionary<VkFence, Util::Array<VkDeferredCommand>> drawFenceCommands;
 	Util::Dictionary<VkFence, Util::Array<VkDeferredCommand>> computeFenceCommands;
+	Util::Dictionary<VkFence, Util::Array<VkDeferredCommand>> sparseFenceCommands;
 };
 } // namespace Vulkan

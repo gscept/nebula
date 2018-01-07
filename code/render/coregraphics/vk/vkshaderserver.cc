@@ -8,7 +8,6 @@
 #include "coregraphics/shaderpool.h"
 #include "vkrenderdevice.h"
 #include "vkshaderpool.h"
-#include "coregraphics/coregraphics.h"
 
 using namespace Resources;
 using namespace CoreGraphics;
@@ -61,10 +60,10 @@ VkShaderServer::Open()
 
 	// create shader state for textures, and fetch variables
 	this->textureShaderState = CoreGraphics::shaderPool->CreateState("shd:shared", { NEBULAT_TICK_GROUP });
-	this->texture2DTextureVar = CoreGraphics::shaderPool->GetShaderVariable(this->textureShaderState, "Textures2D");
-	this->texture2DMSTextureVar = CoreGraphics::shaderPool->GetShaderVariable(this->textureShaderState, "Textures2DMS");
-	this->textureCubeTextureVar = CoreGraphics::shaderPool->GetShaderVariable(this->textureShaderState, "TexturesCube");
-	this->texture3DTextureVar = CoreGraphics::shaderPool->GetShaderVariable(this->textureShaderState, "Textures3D");
+	this->texture2DTextureVar = CoreGraphics::shaderPool->ShaderStateGetVariable(this->textureShaderState, "Textures2D");
+	this->texture2DMSTextureVar = CoreGraphics::shaderPool->ShaderStateGetVariable(this->textureShaderState, "Textures2DMS");
+	this->textureCubeTextureVar = CoreGraphics::shaderPool->ShaderStateGetVariable(this->textureShaderState, "TexturesCube");
+	this->texture3DTextureVar = CoreGraphics::shaderPool->ShaderStateGetVariable(this->textureShaderState, "Textures3D");
 
 	return true;
 }
@@ -200,7 +199,7 @@ VkShaderServer::UnregisterTexture(const uint32_t id, const CoreGraphics::Texture
 /**
 */
 void
-VkShaderServer::SetRenderTarget(const Util::StringAtom& name, const Ptr<Vulkan::VkTexture>& tex)
+VkShaderServer::SetRenderTarget(const Util::StringAtom& name, const CoreGraphics::TextureId tex)
 {
 	n_assert(this->textureShaderState->HasVariableByName(name));
 	this->textureShaderState->GetVariableByName(name)->SetTexture(tex.downcast<CoreGraphics::Texture>());

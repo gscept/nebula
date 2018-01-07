@@ -7,7 +7,6 @@
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
-#include "coregraphics/base/shadervariationbase.h"
 #include "lowlevel/vk/vkprogram.h"
 #include "lowlevel/vk/vkrenderstate.h"
 #include "lowlevel/afxapi.h"
@@ -15,11 +14,10 @@
 
 namespace Vulkan
 {
-class VkShaderProgram : public Base::ShaderVariationBase
+class VkShaderProgram
 {
-	__DeclareClass(VkShaderProgram);
-	struct SetupInfo;
-	struct RuntimeInfo;
+	struct VkShaderProgramRuntimeInfo;
+	struct VkShaderProgramSetupInfo;
 public:
 
 	enum PipelineType
@@ -29,16 +27,11 @@ public:
 		Graphics
 	};
 
-	/// constructor
-	VkShaderProgram();
-	/// destructor
-	virtual ~VkShaderProgram();
-
 	/// applies program
-	static void Apply(RuntimeInfo& info);
+	static void Apply(VkShaderProgramRuntimeInfo& info);
 
 	/// discard variation
-	static void Discard(SetupInfo& info, VkPipeline& computePipeline);
+	static void Discard(VkShaderProgramSetupInfo& info, VkPipeline& computePipeline);
 
 	/// get the number of vertex shader inputs
 	static const uint32_t GetNumVertexInputs(AnyFX::VkProgram* program);
@@ -50,8 +43,9 @@ private:
 	friend class VkShaderPool;
 	friend class VkPipelineDatabase;
 
-	struct SetupInfo
+	struct VkShaderProgramSetupInfo
 	{
+		VkDevice dev;
 		VkPipelineVertexInputStateCreateInfo vertexInfo;
 		VkPipelineRasterizationStateCreateInfo rasterizerInfo;
 		VkPipelineMultisampleStateCreateInfo multisampleInfo;
@@ -65,7 +59,7 @@ private:
 		CoreGraphics::ShaderFeature::Mask mask;
 	};
 
-	struct RuntimeInfo
+	struct VkShaderProgramRuntimeInfo
 	{
 		VkGraphicsPipelineCreateInfo info;
 		VkPipeline pipeline;
@@ -76,20 +70,21 @@ private:
 
 	static uint32_t uniqueIdCounter;
 	typedef Ids::IdAllocator<
-		SetupInfo,						//0 used for setup
+		VkShaderProgramSetupInfo,		//0 used for setup
 		AnyFX::VkProgram*,				//1 program object
-		RuntimeInfo						//2 used for runtime
+		VkShaderProgramRuntimeInfo		//2 used for runtime
 	> ProgramAllocator;
 
 	/// setup from AnyFX program
 	static void Setup(const Ids::Id24 id, AnyFX::VkProgram* program, VkPipelineLayout& pipelineLayout, ProgramAllocator& allocator);
 
 	/// create shader object
-	static void CreateShader(VkShaderModule* shader, unsigned binarySize, char* binary);
+	static void CreateShader(const VkDevice dev, VkShaderModule* shader, unsigned binarySize, char* binary);
 	/// create this program as a graphics program
-	static void SetupAsGraphics(AnyFX::VkProgram* program, SetupInfo& setup, RuntimeInfo& runtime);
+	static void SetupAsGraphics(AnyFX::VkProgram* program, VkShaderProgramSetupInfo& setup, VkShaderProgramRuntimeInfo& runtime);
 	/// create this program as a compute program (can be done immediately)
-	static void SetupAsCompute(SetupInfo& setup, RuntimeInfo& runtime);
+	static void SetupAsCompute(VkShaderProgramSetupInfo& setup, VkShaderProgramRuntimeInfo& runtime);
+
 };
 
 

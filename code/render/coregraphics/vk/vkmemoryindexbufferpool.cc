@@ -37,6 +37,8 @@ VkMemoryIndexBufferPool::LoadFromMemory(const Ids::Id24 id, void* info)
 	RuntimeInfo& runtimeInfo = this->Get<1>(id);
 	uint32_t& mapCount = this->Get<2>(id);
 
+	loadInfo.dev = VkRenderDevice::Instance()->GetCurrentDevice();
+
 	// start by creating buffer
 	VkBufferCreateInfo bufinfo =
 	{
@@ -50,28 +52,28 @@ VkMemoryIndexBufferPool::LoadFromMemory(const Ids::Id24 id, void* info)
 		&VkRenderDevice::Instance()->drawQueueFamily	// array of queues belonging to family
 	};
 
-	VkResult err = vkCreateBuffer(VkRenderDevice::dev, &bufinfo, NULL, &runtimeInfo.buf);
+	VkResult err = vkCreateBuffer(loadInfo.dev, &bufinfo, NULL, &runtimeInfo.buf);
 	n_assert(err == VK_SUCCESS);
 
 	// allocate a device memory backing for this
 	uint32_t alignedSize;
 	uint32_t flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
 	flags |= iboInfo->sync == CoreGraphics::GpuBufferTypes::SyncingCoherent ? VK_MEMORY_PROPERTY_HOST_COHERENT_BIT : 0;
-	VkUtilities::AllocateBufferMemory(runtimeInfo.buf, loadInfo.mem, VkMemoryPropertyFlagBits(flags), alignedSize);
+	VkUtilities::AllocateBufferMemory(loadInfo.dev, runtimeInfo.buf, loadInfo.mem, VkMemoryPropertyFlagBits(flags), alignedSize);
 
 	// now bind memory to buffer
-	err = vkBindBufferMemory(VkRenderDevice::dev, runtimeInfo.buf, loadInfo.mem, 0);
+	err = vkBindBufferMemory(loadInfo.dev, runtimeInfo.buf, loadInfo.mem, 0);
 	n_assert(err == VK_SUCCESS);
 
 	if (iboInfo->data != 0)
 	{
 		// map memory so we can initialize it
 		void* data;
-		err = vkMapMemory(VkRenderDevice::dev, loadInfo.mem, 0, alignedSize, 0, &data);
+		err = vkMapMemory(loadInfo.dev, loadInfo.mem, 0, alignedSize, 0, &data);
 		n_assert(err == VK_SUCCESS);
 		n_assert(iboInfo->dataSize <= (int32_t)alignedSize);
 		memcpy(data, iboInfo->data, iboInfo->dataSize);
-		vkUnmapMemory(VkRenderDevice::dev, loadInfo.mem);
+		vkUnmapMemory(loadInfo.dev, loadInfo.mem);
 	}
 
 	// setup resource
@@ -79,6 +81,9 @@ VkMemoryIndexBufferPool::LoadFromMemory(const Ids::Id24 id, void* info)
 	loadInfo.indexCount =  iboInfo->numIndices;
 	runtimeInfo.type = iboInfo->type;
 	mapCount = 0;
+
+	// set loaded flag
+	this->states[id] = Resources::Resource::Loaded;
 
 	return ResourcePool::Success;
 }
@@ -94,19 +99,18 @@ VkMemoryIndexBufferPool::Unload(const Ids::Id24 id)
 	uint32_t& mapCount = this->Get<2>(id);
 
 	n_assert(mapCount == 0);
-	vkFreeMemory(VkRenderDevice::dev, loadInfo.mem, nullptr);
-	vkDestroyBuffer(VkRenderDevice::dev, runtimeInfo.buf, nullptr);
+	vkFreeMemory(loadInfo.dev, loadInfo.mem, nullptr);
+	vkDestroyBuffer(loadInfo.dev, runtimeInfo.buf, nullptr);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkMemoryIndexBufferPool::BindIndexBuffer(const Resources::ResourceId id)
+VkMemoryIndexBufferPool::IndexBufferBind(const Resources::ResourceId id, const IndexT offset)
 {
-	const Ids::Id24 resId = Ids::Id::GetBig(Ids::Id::GetLow(id));
-	RuntimeInfo& runtimeInfo = this->Get<1>(resId);
-	VkRenderDevice::Instance()->SetIndexBuffer(runtimeInfo.buf, runtimeInfo.type);
+	RuntimeInfo& runtimeInfo = this->Get<1>(id.id24);
+	VkRenderDevice::Instance()->SetIndexBuffer(runtimeInfo.buf, offset, runtimeInfo.type);
 }
 
 //------------------------------------------------------------------------------
@@ -115,11 +119,10 @@ VkMemoryIndexBufferPool::BindIndexBuffer(const Resources::ResourceId id)
 void*
 VkMemoryIndexBufferPool::Map(const Resources::ResourceId id, CoreGraphics::GpuBufferTypes::MapType mapType)
 {
-	const Ids::Id24 resId = Ids::Id::GetBig(Ids::Id::GetLow(id));
 	void* buf;
-	LoadInfo& loadInfo = this->Get<0>(resId);
-	uint32_t& mapCount = this->Get<2>(resId);
-	VkResult res = vkMapMemory(VkRenderDevice::dev, loadInfo.mem, 0, VK_WHOLE_SIZE, 0, &buf);
+	LoadInfo& loadInfo = this->Get<0>(id.id24);
+	uint32_t& mapCount = this->Get<2>(id.id24);
+	VkResult res = vkMapMemory(loadInfo.dev, loadInfo.mem, 0, VK_WHOLE_SIZE, 0, &buf);
 	n_assert(res == VK_SUCCESS);
 	mapCount++;
 	return buf;
@@ -131,10 +134,9 @@ VkMemoryIndexBufferPool::Map(const Resources::ResourceId id, CoreGraphics::GpuBu
 void
 VkMemoryIndexBufferPool::Unmap(const Resources::ResourceId id)
 {
-	const Ids::Id24 resId = Ids::Id::GetBig(Ids::Id::GetLow(id));
-	LoadInfo& loadInfo = this->Get<0>(resId);
-	uint32_t& mapCount = this->Get<2>(resId);
-	vkUnmapMemory(VkRenderDevice::dev, loadInfo.mem);
+	LoadInfo& loadInfo = this->Get<0>(id.id24);
+	uint32_t& mapCount = this->Get<2>(id.id24);
+	vkUnmapMemory(loadInfo.dev, loadInfo.mem);
 	mapCount--;
 }
 

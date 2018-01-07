@@ -6,6 +6,7 @@
 #include "materials/material.h"
 #include "materials/materialinstance.h"
 #include "surface.h"
+#include "coregraphics/shaderpool.h"
 
 namespace Materials
 {
@@ -54,7 +55,7 @@ Material::LoadInherited(const Ptr<Material>& material)
 		const MaterialPass& pass = material->passesByIndex[i];
 		MaterialPass newPass{ pass.code, pass.shader, pass.featureMask };
 		const Graphics::BatchGroup::Code& key = pass.code;
-		const Ptr<CoreGraphics::Shader>& value = pass.shader;
+		const CoreGraphics::ShaderId value = pass.shader;
 		IndexT i = this->passesByIndex.FindIndex(newPass);
 		if (i == InvalidIndex)
 		{
@@ -108,9 +109,9 @@ Material::Discard()
 /**
 */
 void 
-Material::AddPass(const Graphics::BatchGroup::Code& code, const Ptr<CoreGraphics::Shader>& shader, const CoreGraphics::ShaderFeature::Mask& mask)
+Material::AddPass(const Graphics::BatchGroup::Code& code, const CoreGraphics::ShaderId shader, const CoreGraphics::ShaderFeature::Mask& mask)
 {
-	n_assert(shader.isvalid());
+	n_assert(shader != Ids::InvalidId64);
 
 	// create pass
 	MaterialPass pass{ code, shader, mask, this->passesByIndex.Size() };
@@ -226,13 +227,15 @@ Material::Reload()
 /**
 */
 void
-Material::Reload(const Ptr<CoreGraphics::Shader>& shader)
+Material::Reload(const CoreGraphics::ShaderId shader)
 {
 	IndexT i;
 	for (i = 0; i < this->passesByIndex.Size(); i++)
 	{
 		MaterialPass& pass = this->passesByIndex[i];
-		if (pass.shader->GetResourceId() == shader->GetResourceId())
+		const Util::StringAtom& lhs = CoreGraphics::shaderPool->GetName(pass.shader.id24);
+		const Util::StringAtom& rhs = CoreGraphics::shaderPool->GetName(shader.id24);
+		if (lhs == rhs)
 		{
 			pass.shader = shader;
 		}

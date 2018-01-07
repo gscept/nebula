@@ -45,16 +45,16 @@ DestroyMesh(const MeshId id)
 /**
 */
 void
-BindMesh(const MeshId id, const IndexT prim)
+MeshBind(const MeshId id, const IndexT prim)
 {
 	RenderDevice* renderDevice = RenderDevice::Instance();
 #if _DEBUG
 	n_assert(id.id8 == MeshIdType);
 #endif
 	MeshCreateInfo& inf = meshAllocator.Get<0>(id.id24);
-	BindVertexBuffer(inf.vertexBuffer, 0, inf.primitiveGroups[prim].GetBaseVertex());
+	VertexBufferBind(inf.vertexBuffer, 0, inf.primitiveGroups[prim].GetBaseVertex());
 	if (inf.indexBuffer != Ids::InvalidId64)
-		BindIndexBuffer(inf.indexBuffer, inf.primitiveGroups[prim].GetBaseIndex());
+		IndexBufferBind(inf.indexBuffer, inf.primitiveGroups[prim].GetBaseIndex());
 }
 
 } // Base

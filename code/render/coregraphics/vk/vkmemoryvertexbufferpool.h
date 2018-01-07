@@ -19,7 +19,7 @@ class VkMemoryVertexBufferPool : public Resources::ResourceMemoryPool
 public:
 
 	/// bind vertex buffer
-	void BindVertexBuffer(const Resources::ResourceId id, const IndexT slot, const IndexT offset);
+	void VertexBufferBind(const Resources::ResourceId id, const IndexT slot, const IndexT offset);
 	/// map the vertices for CPU access
 	void* Map(const Resources::ResourceId id, CoreGraphics::GpuBufferTypes::MapType mapType);
 	/// unmap the resource
@@ -31,24 +31,25 @@ public:
 	void Unload(const Ids::Id24 id);
 private:
 
-	struct LoadInfo
+	struct VkVertexBufferLoadInfo
 	{
+		VkDevice dev;
 		VkDeviceMemory mem;
 		CoreGraphics::GpuBufferTypes::SetupFlags gpuResInfo;
 		uint32_t vertexCount;
 		uint32_t vertexByteSize;
 	};
 
-	struct RuntimeInfo
+	struct VkVertexBufferRuntimeInfo
 	{
 		VkBuffer buf;
 		CoreGraphics::VertexLayoutId layout;
 	};
 
 	Ids::IdAllocator<
-		LoadInfo,			//0 loading stage info
-		RuntimeInfo,		//1 runtime stage info
-		uint32_t			//2 mapping stage info
+		VkVertexBufferLoadInfo,			//0 loading stage info
+		VkVertexBufferRuntimeInfo,		//1 runtime stage info
+		uint32_t						//2 mapping stage info
 	> allocator;
 	__ImplementResourceAllocator(allocator);
 };

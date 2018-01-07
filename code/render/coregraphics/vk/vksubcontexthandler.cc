@@ -243,7 +243,7 @@ VkSubContextHandler::WaitIdle(const SubContextType type)
 		list = &this->sparseQueues;
 		break;
 	}
-	for (uint i = 0; i < list->Size(); i++)
+	for (IndexT i = 0; i < list->Size(); i++)
 	{
 		VkResult res = vkQueueWaitIdle((*list)[i]);
 		n_assert(res == VK_SUCCESS);

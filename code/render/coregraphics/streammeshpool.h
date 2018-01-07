@@ -31,7 +31,7 @@ public:
 	GpuBufferTypes::Access GetAccess() const;
 
 	/// bind mesh
-	void BindMesh(const Resources::ResourceId id);
+	void MeshBind(const Resources::ResourceId id);
 	/// bind primitive group for currently bound mesh
 	void BindPrimitiveGroup(const IndexT primgroup);
 

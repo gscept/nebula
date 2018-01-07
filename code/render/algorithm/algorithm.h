@@ -52,19 +52,19 @@ public:
 	const std::function<void(IndexT)> GetFunction(const Util::StringAtom& str);
 
 	/// add texture
-	void AddRenderTexture(const CoreGraphics::RenderTextureId tex);
+	void AddRenderTexture(const CoreGraphics::RenderTextureId& tex);
 	/// add buffer
-	void AddReadWriteBuffer(const Ptr<CoreGraphics::ShaderReadWriteBuffer>& buf);
+	void AddReadWriteBuffer(const CoreGraphics::ShaderRWBufferId& buf);
 	/// add read-write texture (image)
-	void AddReadWriteImage(const Ptr<CoreGraphics::ShaderReadWriteTexture>& img);
+	void AddReadWriteImage(const CoreGraphics::ShaderRWTextureId& img);
 
 protected:
 	/// add algorithm
 	void AddFunction(const Util::StringAtom& name, const FunctionType type, const std::function<void(IndexT)>& func);
 
 	Util::Array<CoreGraphics::RenderTextureId> renderTextures;
-	Util::Array<Ptr<CoreGraphics::ShaderReadWriteBuffer>> readWriteBuffers;
-	Util::Array<Ptr<CoreGraphics::ShaderReadWriteTexture>> readWriteTextures;
+	Util::Array<CoreGraphics::ShaderRWBufferId> readWriteBuffers;
+	Util::Array<CoreGraphics::ShaderRWTextureId> readWriteTextures;
 	Util::Dictionary<Util::StringAtom, std::function<void(IndexT)>> functions;
 	Util::Dictionary<Util::StringAtom, FunctionType> nameToType;
 };
@@ -82,7 +82,7 @@ Algorithm::GetFunctionType(const Util::StringAtom& str)
 /**
 */
 inline void
-Algorithm::AddRenderTexture(const CoreGraphics::RenderTextureId tex)
+Algorithm::AddRenderTexture(const CoreGraphics::RenderTextureId& tex)
 {
 	this->renderTextures.Append(tex);
 }
@@ -91,7 +91,7 @@ Algorithm::AddRenderTexture(const CoreGraphics::RenderTextureId tex)
 /**
 */
 inline void
-Algorithm::AddReadWriteBuffer(const Ptr<CoreGraphics::ShaderReadWriteBuffer>& buf)
+Algorithm::AddReadWriteBuffer(const CoreGraphics::ShaderRWBufferId& buf)
 {
 	this->readWriteBuffers.Append(buf);
 }
@@ -100,7 +100,7 @@ Algorithm::AddReadWriteBuffer(const Ptr<CoreGraphics::ShaderReadWriteBuffer>& bu
 /**
 */
 inline void
-Algorithm::AddReadWriteImage(const Ptr<CoreGraphics::ShaderReadWriteTexture>& img)
+Algorithm::AddReadWriteImage(const CoreGraphics::ShaderRWTextureId& img)
 {
 	this->readWriteTextures.Append(img);
 }

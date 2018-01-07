@@ -6,9 +6,10 @@
 	(C) 2017 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "math/matrix44.h"
+#include "ids/id.h"
 namespace Graphics
 {
-typedef Ids::Id32 EntityId;
+
+ID_32_TYPE(GraphicsEntityId);
 
 } // namespace Graphics

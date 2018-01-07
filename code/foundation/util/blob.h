@@ -30,6 +30,8 @@ public:
 
     /// default constructor
     Blob();
+	/// nullptr constructor
+	Blob(nullptr_t t);
     /// constructor
     Blob(const void* ptr, SizeT size);
     /// reserve N bytes
@@ -152,6 +154,57 @@ Blob::Blob() :
 //------------------------------------------------------------------------------
 /**
 */
+inline
+Blob::Blob(nullptr_t t) :
+	ptr(0),
+	size(0),
+	allocSize(0)
+{
+	// empty
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline
+Blob::Blob(const void* fromPtr, SizeT fromSize) :
+	ptr(0),
+	size(0),
+	allocSize(0)
+{
+	this->Copy(fromPtr, fromSize);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline
+Blob::Blob(const Blob& rhs) :
+	ptr(0),
+	size(0),
+	allocSize(0)
+{
+	if (rhs.IsValid())
+	{
+		this->Copy(rhs.ptr, rhs.size);
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline
+Blob::Blob(SizeT s) :
+	ptr(0),
+	size(0),
+	allocSize(0)
+{
+	this->Allocate(s);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 inline bool
 Blob::IsValid() const
 {
@@ -212,45 +265,6 @@ Blob::Copy(const void* fromPtr, SizeT fromSize)
     }
     this->size = fromSize;
     Memory::Copy(fromPtr, (void*) this->ptr, fromSize);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline
-Blob::Blob(const void* fromPtr, SizeT fromSize) :
-    ptr(0),
-    size(0),
-    allocSize(0)
-{    
-    this->Copy(fromPtr, fromSize);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline
-Blob::Blob(const Blob& rhs) :
-    ptr(0),
-    size(0),
-    allocSize(0)
-{
-    if (rhs.IsValid())
-    {
-        this->Copy(rhs.ptr, rhs.size);
-    }
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline
-Blob::Blob(SizeT s) :
-    ptr(0),
-    size(0),
-    allocSize(0)
-{
-    this->Allocate(s);
 }
 
 //------------------------------------------------------------------------------

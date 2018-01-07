@@ -48,25 +48,25 @@ public:
 	/// get depth-stencil texture
 	const CoreGraphics::RenderTextureId GetDepthStencilTexture(const Util::StringAtom& name);
 	/// add read-write texture
-	void AddReadWriteTexture(const Util::StringAtom& name, const Ptr<CoreGraphics::ShaderReadWriteTexture>& tex);
+	void AddReadWriteTexture(const Util::StringAtom& name, const CoreGraphics::ShaderRWTextureId tex);
 	/// get read-write texture
-	const Ptr<CoreGraphics::ShaderReadWriteTexture>& GetReadWriteTexture(const Util::StringAtom& name);
+	const CoreGraphics::ShaderRWTextureId GetReadWriteTexture(const Util::StringAtom& name);
 	/// add read-write buffer
-	void AddReadWriteBuffer(const Util::StringAtom& name, const Ptr<CoreGraphics::ShaderReadWriteBuffer>& buf);
+	void AddReadWriteBuffer(const Util::StringAtom& name, const CoreGraphics::ShaderRWBufferId buf);
 	/// get read-write buffer
-	const Ptr<CoreGraphics::ShaderReadWriteBuffer>& GetReadWriteBuffer(const Util::StringAtom& name);
+	const CoreGraphics::ShaderRWBufferId GetReadWriteBuffer(const Util::StringAtom& name);
 	/// add event
-	void AddEvent(const Util::StringAtom& name, const Ptr<CoreGraphics::Event>& event);
+	void AddEvent(const Util::StringAtom& name, const CoreGraphics::EventId event);
 	/// get event
-	const Ptr<CoreGraphics::Event>& GetEvent(const Util::StringAtom& name);
+	const CoreGraphics::EventId GetEvent(const Util::StringAtom& name);
 	/// add algorithm
 	void AddAlgorithm(const Util::StringAtom& name, const Ptr<Algorithms::Algorithm>& alg);
 	/// get algorithm
 	const Ptr<Algorithms::Algorithm>& GetAlgorithm(const Util::StringAtom& name);
 	/// add shader state
-	void AddShaderState(const Util::StringAtom& name, const Ptr<CoreGraphics::ShaderState>& state);
+	void AddShaderState(const Util::StringAtom& name, const CoreGraphics::ShaderStateId state);
 	/// get shader state
-	const Ptr<CoreGraphics::ShaderState>& GetShaderState(const Util::StringAtom& name);
+	const CoreGraphics::ShaderStateId GetShaderState(const Util::StringAtom& name);
 
 	/// setup script
 	void Setup();
@@ -101,17 +101,17 @@ private:
 	Util::Dictionary<Util::StringAtom, CoreGraphics::RenderTextureId> colorTexturesByName;
 	Util::Array<CoreGraphics::RenderTextureId> depthStencilTextures;
 	Util::Dictionary<Util::StringAtom, CoreGraphics::RenderTextureId> depthStencilTexturesByName;
-	Util::Array<Ptr<CoreGraphics::ShaderReadWriteTexture>> readWriteTextures;
-	Util::Dictionary<Util::StringAtom, Ptr<CoreGraphics::ShaderReadWriteTexture>> readWriteTexturesByName;
-	Util::Array<Ptr<CoreGraphics::ShaderReadWriteBuffer>> readWriteBuffers;
-	Util::Dictionary<Util::StringAtom, Ptr<CoreGraphics::ShaderReadWriteBuffer>> readWriteBuffersByName;
-	Util::Array<Ptr<CoreGraphics::Event>> events;
-	Util::Dictionary<Util::StringAtom, Ptr<CoreGraphics::Event>> eventsByName;
+	Util::Array<CoreGraphics::ShaderRWTextureId> readWriteTextures;
+	Util::Dictionary<Util::StringAtom, CoreGraphics::ShaderRWTextureId> readWriteTexturesByName;
+	Util::Array<CoreGraphics::ShaderRWBufferId> readWriteBuffers;
+	Util::Dictionary<Util::StringAtom, CoreGraphics::ShaderRWBufferId> readWriteBuffersByName;
+	Util::Array<CoreGraphics::EventId> events;
+	Util::Dictionary<Util::StringAtom, CoreGraphics::EventId> eventsByName;
 	Util::Array<Ptr<Frame::FrameOp>> ops;
 	Util::Array<Ptr<Algorithms::Algorithm>> algorithms;
 	Util::Dictionary<Util::StringAtom, Ptr<Algorithms::Algorithm>> algorithmsByName;
-	Util::Array<Ptr<CoreGraphics::ShaderState>> shaderStates;
-	Util::Dictionary<Util::StringAtom, Ptr<CoreGraphics::ShaderState>> shaderStatesByName;
+	Util::Array<CoreGraphics::ShaderStateId> shaderStates;
+	Util::Dictionary<Util::StringAtom, CoreGraphics::ShaderStateId> shaderStatesByName;
 };
 
 //------------------------------------------------------------------------------
@@ -153,7 +153,7 @@ FrameScript::GetDepthStencilTexture(const Util::StringAtom& name)
 //------------------------------------------------------------------------------
 /**
 */
-inline const Ptr<CoreGraphics::ShaderReadWriteTexture>&
+inline const CoreGraphics::ShaderRWTextureId
 FrameScript::GetReadWriteTexture(const Util::StringAtom& name)
 {
 	return this->readWriteTexturesByName[name];
@@ -162,7 +162,7 @@ FrameScript::GetReadWriteTexture(const Util::StringAtom& name)
 //------------------------------------------------------------------------------
 /**
 */
-inline const Ptr<CoreGraphics::ShaderReadWriteBuffer>&
+inline const CoreGraphics::ShaderRWBufferId
 FrameScript::GetReadWriteBuffer(const Util::StringAtom& name)
 {
 	return this->readWriteBuffersByName[name];
@@ -171,7 +171,7 @@ FrameScript::GetReadWriteBuffer(const Util::StringAtom& name)
 //------------------------------------------------------------------------------
 /**
 */
-inline const Ptr<CoreGraphics::Event>&
+inline const CoreGraphics::EventId
 FrameScript::GetEvent(const Util::StringAtom& name)
 {
 	return this->eventsByName[name];
@@ -189,7 +189,7 @@ FrameScript::GetAlgorithm(const Util::StringAtom& name)
 //------------------------------------------------------------------------------
 /**
 */
-inline const Ptr<CoreGraphics::ShaderState>&
+inline const CoreGraphics::ShaderStateId
 FrameScript::GetShaderState(const Util::StringAtom& name)
 {
 	return this->shaderStatesByName[name];

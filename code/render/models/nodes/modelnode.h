@@ -19,10 +19,13 @@
 #include "io/binaryreader.h"
 #include "math/bbox.h"
 #include "ids/id.h"
-#include "coregraphics/coregraphics.h"
+
 namespace Models
 {
-class ModelPool;
+
+ID_32_TYPE(ModelNodeId);
+
+class StreamModelPool;
 class ModelServer;
 class Model;
 class ModelNode
@@ -34,13 +37,14 @@ public:
 	virtual ~ModelNode();
 
 	/// return constant reference to children
-	const Util::Array<Ids::Id32>& GetChildren() const;
+	const Util::Array<ModelNodeId>& GetChildren() const;
 	/// create an instance of a node, override in the leaf classes
-	virtual Ids::Id32 CreateInstance() const;
+	virtual ModelNodeId CreateInstance() const;
 
 protected:
-	friend class ModelPool;
+	friend class StreamModelPool;
 	friend class ModelContext;
+	friend class ModelServer;
 
 	/// load data
 	virtual bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader);
@@ -52,8 +56,8 @@ protected:
 	// base class for instances
 	struct Instance
 	{
-		Ids::Id32 parent;	// id of parent
-		Ids::Id32 node;			// id of resource-level node
+		ModelNodeId parent;	// id of parent
+		ModelNodeId node;		// id of resource-level node
 	};
 
 	/// setup node
@@ -62,16 +66,16 @@ protected:
 	virtual void Discard();
 
 	Util::StringAtom name;
-	Ids::Id32 parent;
-	Ids::Id32 model;
-	Util::Array<Ids::Id32> children;
+	ModelNodeId parent;
+	ModelNodeId model;
+	Util::Array<ModelNodeId> children;
 	Math::bbox boundingBox;
 };
 
 //------------------------------------------------------------------------------
 /**
 */
-inline const Util::Array<Ids::Id24>&
+inline const Util::Array<ModelNodeId>&
 ModelNode::GetChildren() const
 {
 	return this->children;

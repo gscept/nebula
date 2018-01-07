@@ -37,7 +37,7 @@ DestroyTexture(const TextureId id)
 /*
 */
 inline TextureMapInfo 
-MapTexture(const TextureId id, IndexT mip, const CoreGraphics::GpuBufferTypes::MapType type)
+TextureMap(const TextureId id, IndexT mip, const CoreGraphics::GpuBufferTypes::MapType type)
 {
 	TextureMapInfo info;
 	n_assert(texturePool->Map(id, mip, type, info));
@@ -48,7 +48,7 @@ MapTexture(const TextureId id, IndexT mip, const CoreGraphics::GpuBufferTypes::M
 /*
 */
 inline void
-UnmapTexture(const TextureId id, IndexT mip)
+TextureUnmap(const TextureId id, IndexT mip)
 {
 	texturePool->Unmap(id, mip);
 }

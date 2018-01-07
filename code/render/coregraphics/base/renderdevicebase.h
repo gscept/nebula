@@ -27,19 +27,11 @@
 #include "util/queue.h"
 #include "vertexlayoutbase.h"
 #include "coregraphics/barrier.h"
+#include "coregraphics/texture.h"
+#include "coregraphics/rendertexture.h"
 
 namespace CoreGraphics
 {
-class Texture;
-class RenderTexture;
-class VertexBuffer;
-class IndexBuffer;
-class FeedbackBuffer;
-class VertexLayout;
-class ShaderState;
-class RenderTarget;
-class MultipleRenderTarget;
-class BufferLock;
 class Pass;
 };
 
@@ -51,15 +43,6 @@ class RenderDeviceBase : public Core::RefCounted
     __DeclareClass(RenderDeviceBase);
     __DeclareSingleton(RenderDeviceBase);
 public:
-
-	enum MemoryBarrierBits
-	{
-		NoBarrierBit = 0,
-		ImageAccessBarrierBits			= 1 << 0,	// subsequent images will see data done written before barrier
-		BufferAccessBarrierBits			= 1 << 1,	// subsequent buffers will see data done written before barrier
-		SamplerAccessBarrierBits		= 1 << 2,	// subsequent texture samplers will see data done written before barrier
-		RenderTargetAccessBarrierBits	= 1 << 3	// subsequent samples from render targets will be visible
-	};
 
     /// constructor
     RenderDeviceBase();
@@ -87,22 +70,8 @@ public:
 	void SetToNextSubpass();
     /// begin rendering a batch
     void BeginBatch(CoreGraphics::FrameBatchType::Code batchType);
-    /// set the current vertex stream source
-    void SetStreamVertexBuffer(IndexT streamIndex, CoreGraphics::VertexBuffer* vb, IndexT offsetVertexIndex);
-    /// get currently set vertex buffer
-    CoreGraphics::VertexBuffer* GetStreamVertexBuffer(IndexT streamIndex) const;
-    /// get currently set vertex stream offset
-    IndexT GetStreamVertexOffset(IndexT streamIndex) const;
-    /// set current vertex layout
-    void SetVertexLayout(const Ptr<CoreGraphics::VertexLayout>& vl);
-    /// get current vertex layout
-    const Ptr<CoreGraphics::VertexLayout>& GetVertexLayout() const;
-    /// set current index buffer
-    void SetIndexBuffer(CoreGraphics::IndexBuffer* ib, IndexT offsetIndex);
-    /// get current index buffer
-    CoreGraphics::IndexBuffer* GetIndexBuffer() const;
-	/// set the type of topology to be used
-	void SetPrimitiveTopology(const CoreGraphics::PrimitiveTopology::Code& topo);
+	/// set the type of topology used
+	void SetPrimitiveTopology(const CoreGraphics::PrimitiveTopology::Code topo);
 	/// get the type of topology used
 	const CoreGraphics::PrimitiveTopology::Code& GetPrimitiveTopology() const;
     /// set current primitive group
@@ -112,17 +81,13 @@ public:
 	/// bake the current state of the render device (only used on DX12 and Vulkan renderers where pipeline creation is required)
 	void BuildRenderPipeline();
 	/// insert execution barrier
-	void InsertBarrier(const Ptr<CoreGraphics::Barrier>& barrier);
+	void InsertBarrier(const CoreGraphics::BarrierId barrier);
     /// draw current primitives
     void Draw();
     /// draw indexed, instanced primitives
     void DrawIndexedInstanced(SizeT numInstances, IndexT baseInstance);
-	/// begin computation, if asyncAllowed is true, then implementation may perform a compute in parallel with graphics
-	void BeginCompute(bool asyncAllowed, const Util::Array<Ptr<CoreGraphics::ShaderReadWriteTexture>>& textureDependencies, const Util::Array<Ptr<CoreGraphics::ShaderReadWriteBuffer>>& bufferDependencies);
     /// perform computation
 	void Compute(int dimX, int dimY, int dimZ);
-	/// end computation
-	void EndCompute(const Util::Array<Ptr<CoreGraphics::ShaderReadWriteTexture>>& textureDependencies, const Util::Array<Ptr<CoreGraphics::ShaderReadWriteBuffer>>& bufferDependencies);
     /// end current batch
     void EndBatch();
     /// end current pass
@@ -153,13 +118,6 @@ public:
 	/// blit between textures
 	void Blit(const CoreGraphics::TextureId from, Math::rectangle<SizeT> fromRegion, IndexT fromMip, const CoreGraphics::TextureId to, Math::rectangle<SizeT> toRegion, IndexT toMip);
 
-	/// enqueue a buffer lock which will cause the render device to lock a buffer index whenever the next draw command gets executed
-	static void EnqueueBufferLockIndex(const Ptr<CoreGraphics::BufferLock>& lock, IndexT buffer);
-	/// enqueue a buffer lock which will cause the render device to lock a buffer range whenever the next draw command gets executed
-	static void EnqueueBufferLockRange(const Ptr<CoreGraphics::BufferLock>& lock, IndexT start, SizeT range);
-	/// empty queues and lock buffers
-	static void DequeueBufferLocks();
-
 	/// sets whether or not the render device should tessellate
 	void SetUsePatches(bool state);
 	/// gets whether or not the render device should tessellate
@@ -177,26 +135,14 @@ protected:
     /// notify event handlers about an event
     bool NotifyEventHandlers(const CoreGraphics::RenderEvent& e);
 
-	enum __BufferLockMode
-	{
-		BufferRing = 0,
-		BufferRange = 1
-	};
-	struct __BufferLockData
-	{
-		Ptr<CoreGraphics::BufferLock> lock;
-		__BufferLockMode mode;
-		IndexT start;
-		SizeT range;
-		IndexT i;
-	};
     
-	static Util::Queue<__BufferLockData> bufferLockQueue;
     Util::Array<Ptr<CoreGraphics::RenderEventHandler> > eventHandlers;
+	/*
     CoreGraphics::VertexBuffer* streamVertexBuffers[VertexLayoutBase::MaxNumVertexStreams];
 	IndexT streamVertexOffsets[VertexLayoutBase::MaxNumVertexStreams];
     Ptr<CoreGraphics::VertexLayout> vertexLayout;
     CoreGraphics::IndexBuffer* indexBuffer;
+	*/
 	CoreGraphics::PrimitiveTopology::Code primitiveTopology;
     CoreGraphics::PrimitiveGroup primitiveGroup;
 	Ptr<CoreGraphics::Pass> pass;
@@ -217,24 +163,6 @@ protected:
     _declare_counter(RenderDeviceNumPrimitives);
 	_declare_counter(RenderDeviceNumDrawCalls);
 };
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-RenderDeviceBase::SetIndexBuffer(IndexBuffer* ib, IndexT offsetIndex)
-{
-	this->indexBuffer = ib;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline IndexBuffer*
-RenderDeviceBase::GetIndexBuffer() const
-{
-	return this->indexBuffer;
-}
 
 //------------------------------------------------------------------------------
 /**

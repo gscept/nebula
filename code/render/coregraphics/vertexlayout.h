@@ -7,7 +7,6 @@
 */
 //------------------------------------------------------------------------------
 #include "ids/id.h"
-#include "coregraphics/coregraphics.h"
 #include "coregraphics/vertexcomponent.h"
 #include "coregraphics/shader.h"
 namespace CoreGraphics
@@ -21,7 +20,6 @@ static const IndexT MaxNumVertexStreams = 2;
 struct VertexLayoutCreateInfo
 {
 	Util::Array<VertexComponent> comps;
-	ShaderProgramId shader;
 };
 
 struct VertexLayoutInfo
@@ -37,6 +35,15 @@ struct VertexLayoutInfo
 const VertexLayoutId CreateVertexLayout(VertexLayoutCreateInfo& info);
 /// destroy vertex layout
 void DestroyVertexLayout(const VertexLayoutId id);
+
+/// bind vertex layout
+void VertexLayoutBind(const VertexLayoutId id);
+
+/// get byte size
+const SizeT VertexLayoutGetSize(const VertexLayoutId id);
+
+/// either create or returned a cached version of a vertex layout baesd on shader
+const VertexLayoutId CreateCachedVertexLayout(const VertexLayoutId id, const ShaderProgramId shader);
 
 class VertexSignaturePool;
 extern VertexSignaturePool* layoutPool;

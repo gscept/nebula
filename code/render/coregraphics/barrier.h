@@ -12,6 +12,8 @@
 #include "coregraphics/rendertexture.h"
 #include "coregraphics/shaderreadwritetexture.h"
 #include "coregraphics/shaderreadwritebuffer.h"
+#include "coregraphics/cmdbuffer.h"
+#include <tuple>
 namespace CoreGraphics
 {
 
@@ -66,7 +68,9 @@ enum class BarrierAccess
 };
 
 __ImplementEnumBitOperators(BarrierDependency);
+__ImplementEnumComparisonOperators(BarrierDependency);
 __ImplementEnumBitOperators(BarrierAccess);
+__ImplementEnumComparisonOperators(BarrierAccess);
 
 ID_24_8_TYPE(BarrierId);
 
@@ -84,4 +88,7 @@ struct BarrierCreateInfo
 BarrierId CreateBarrier(const BarrierCreateInfo& info);
 /// destroy barrier object
 void DestroyBarrier(const BarrierId id);
+
+/// insert barrier into command buffer
+void InsertBarrier(const BarrierId id, const CmdBufferId cmd);
 } // namespace CoreGraphics

@@ -10,7 +10,7 @@
 
 namespace CoreGraphics
 {
-__ImplementClass(CoreGraphics::MemoryMeshPool, 'DMML', Resources::ResourceMemoryPool);
+__ImplementClass(CoreGraphics::MemoryMeshPool, 'DMMP', Resources::ResourceMemoryPool);
 
 using namespace Resources;
 
@@ -37,6 +37,12 @@ ResourcePool::LoadStatus
 MemoryMeshPool::LoadFromMemory(const Ids::Id24 id, void* info)
 {
 	MeshCreateInfo* data = (MeshCreateInfo*)info;
+	MeshCreateInfo& mesh = this->Get<0>(id);
+	mesh = *data;
+
+	this->states[id] = Resource::Loaded;
+
+	return ResourcePool::Success;
 }
 
 //------------------------------------------------------------------------------

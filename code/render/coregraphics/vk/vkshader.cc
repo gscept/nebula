@@ -4,11 +4,9 @@
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "vkshader.h"
-#include "coregraphics/constantbuffer.h"
-#include "coregraphics/shaderstate.h"
+#include "vkconstantbuffer.h"
 #include "coregraphics/renderdevice.h"
 #include "coregraphics/shaderserver.h"
-#include "coregraphics/shadervariation.h"
 #include "lowlevel/vk/vksampler.h"
 
 namespace Vulkan
@@ -18,46 +16,13 @@ namespace Vulkan
 Util::Dictionary<Util::StringAtom, VkDescriptorSetLayout> VkShader::LayoutCache;
 Util::Dictionary<Util::StringAtom, VkPipelineLayout> VkShader::ShaderPipelineCache;
 Util::Dictionary<Util::StringAtom, VkDescriptorSet> VkShader::DescriptorSetCache;
-//------------------------------------------------------------------------------
-/**
-*/
-VkShader::VkShader()
-{
-	// empty
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-VkShader::~VkShader()
-{
-	// empty
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-VkShader::Unload()
-{
-	ShaderBase::Unload();
-	this->Cleanup();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-VkShader::Reload()
-{
-
-}
 
 //------------------------------------------------------------------------------
 /**
 */
 void
 VkShader::Cleanup(
+	VkDevice dev,
 	Util::Array<VkSampler>& immutableSamplers,
 	Util::FixedArray<VkDescriptorSetLayout>& setLayouts,
 	VkPipelineLayout& pipelineLayout
@@ -66,35 +31,17 @@ VkShader::Cleanup(
 	IndexT i;
 	for (i = 0; i < immutableSamplers.Size(); i++)
 	{
-		vkDestroySampler(VkRenderDevice::dev, immutableSamplers[i], nullptr);
+		vkDestroySampler(dev, immutableSamplers[i], nullptr);
 	}
 	immutableSamplers.Clear();
 
 	for (i = 0; i < setLayouts.Size(); i++)
 	{
-		vkDestroyDescriptorSetLayout(VkRenderDevice::dev, setLayouts[i], nullptr);
+		vkDestroyDescriptorSetLayout(dev, setLayouts[i], nullptr);
 	}
 	setLayouts.Clear();
 
-	vkDestroyPipelineLayout(VkRenderDevice::dev, pipelineLayout, nullptr);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-VkShader::OnLostDevice()
-{
-
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-VkShader::OnResetDevice()
-{
-
+	vkDestroyPipelineLayout(dev, pipelineLayout, nullptr);
 }
 
 //------------------------------------------------------------------------------
@@ -102,6 +49,8 @@ VkShader::OnResetDevice()
 */
 void
 VkShader::Setup(
+	VkDevice dev,
+	const VkPhysicalDeviceProperties props,
 	AnyFX::ShaderEffect* effect,
 	VkPushConstantRange& constantRange,
 	Util::Dictionary<uint32_t, Util::Array<VkDescriptorSetLayoutBinding>>& setBindings,
@@ -109,7 +58,7 @@ VkShader::Setup(
 	Util::FixedArray<VkDescriptorSetLayout>& setLayouts,
 	VkPipelineLayout& pipelineLayout,
 	Util::FixedArray<VkDescriptorSet>& sets,
-	Util::Dictionary<Util::StringAtom, Ptr<CoreGraphics::ConstantBuffer>>& buffers,
+	Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBufferId>& buffers,
 	Util::Dictionary<uint32_t, Util::Array<CoreGraphics::ConstantBufferId>>& buffersByGroup
 	)
 {
@@ -119,9 +68,9 @@ VkShader::Setup(
 	const eastl::vector<AnyFX::SamplerBase*>& samplers = effect->GetSamplers();
 
     // assert we are not over-stepping any uniform buffer limit we are using, perStage is used for ALL_STAGES
-	uint32_t maxUniformBufferRange = VkRenderDevice::Instance()->deviceProps.limits.maxUniformBufferRange;
-    uint32_t maxUniformBuffersDyn = VkRenderDevice::Instance()->deviceProps.limits.maxDescriptorSetUniformBuffersDynamic;
-	uint32_t maxUniformBuffers = VkRenderDevice::Instance()->deviceProps.limits.maxDescriptorSetUniformBuffers;
+	uint32_t maxUniformBufferRange = props.limits.maxUniformBufferRange;
+    uint32_t maxUniformBuffersDyn = props.limits.maxDescriptorSetUniformBuffersDynamic;
+	uint32_t maxUniformBuffers = props.limits.maxDescriptorSetUniformBuffers;
 	uint32_t numUniformDyn = 0;
 	uint32_t numUniform = 0;
 	uint i;
@@ -133,13 +82,13 @@ VkShader::Setup(
 	}
     n_assert(maxUniformBuffersDyn >= numUniformDyn);
 	n_assert(maxUniformBuffers >= numUniform);
-    uint32_t maxPerStageUniformBuffers = VkRenderDevice::Instance()->deviceProps.limits.maxPerStageDescriptorUniformBuffers;
+    uint32_t maxPerStageUniformBuffers = props.limits.maxPerStageDescriptorUniformBuffers;
     n_assert(maxPerStageUniformBuffers >= varblocks.size());
 
 	// do the same for storage buffers
-	uint32_t maxStorageBufferRange = VkRenderDevice::Instance()->deviceProps.limits.maxStorageBufferRange;
-	uint32_t maxStorageBuffersDyn = VkRenderDevice::Instance()->deviceProps.limits.maxDescriptorSetStorageBuffersDynamic;
-	uint32_t maxStorageBuffers = VkRenderDevice::Instance()->deviceProps.limits.maxDescriptorSetStorageBuffers;
+	uint32_t maxStorageBufferRange = props.limits.maxStorageBufferRange;
+	uint32_t maxStorageBuffersDyn = props.limits.maxDescriptorSetStorageBuffersDynamic;
+	uint32_t maxStorageBuffers = props.limits.maxDescriptorSetStorageBuffers;
 	uint32_t numStorageDyn = 0;
 	uint32_t numStorage = 0;
 	for (i = 0; i < varbuffers.size(); i++)
@@ -150,14 +99,14 @@ VkShader::Setup(
 	}
 	n_assert(maxStorageBuffersDyn >= maxStorageBuffersDyn);
 	n_assert(maxStorageBuffers >= maxStorageBuffers);
-	uint32_t maxPerStageStorageBuffers = VkRenderDevice::Instance()->deviceProps.limits.maxPerStageDescriptorStorageBuffers;
+	uint32_t maxPerStageStorageBuffers = props.limits.maxPerStageDescriptorStorageBuffers;
 	n_assert(maxPerStageStorageBuffers >= varbuffers.size());
 
-    uint32_t maxTextures = VkRenderDevice::Instance()->deviceProps.limits.maxDescriptorSetSampledImages;
+    uint32_t maxTextures = props.limits.maxDescriptorSetSampledImages;
     uint32_t remainingTextures = maxTextures;
 
 	// always create push constant range in layout, making all shaders using push constants compatible
-	constantRange.size = VkRenderDevice::Instance()->deviceProps.limits.maxPushConstantsSize;
+	constantRange.size = props.limits.maxPushConstantsSize;
 	constantRange.offset = 0;
 	constantRange.stageFlags = VK_SHADER_STAGE_ALL;
 	bool usePushConstants = false;
@@ -196,11 +145,7 @@ VkShader::Setup(
 				arr.Append(binding);
 				setBindings.Add(block->set, arr);
 				signatures.Add(block->set, VkShader::CreateSignature(binding));
-#if AMD_DESC_SETS
 				numsets = uint_max(numsets, block->set + 1);
-#else
-				numsets++;
-#endif
 
 			}
 			else
@@ -225,11 +170,7 @@ VkShader::Setup(
 			arr.Append(binding);
 			setBindings.Add(buffer->set, arr);
 			signatures.Add(buffer->set, VkShader::CreateSignature(binding));
-#if AMD_DESC_SETS
 			numsets = uint_max(numsets, buffer->set + 1);
-#else
-			numsets++;
-#endif
 		}
 		else
 		{
@@ -246,7 +187,7 @@ VkShader::Setup(
 		if (!sampler->textureVariables.empty())
 		{
 			VkSampler vkSampler;
-			VkResult res = vkCreateSampler(VkRenderDevice::dev, &sampler->samplerInfo, NULL, &vkSampler);
+			VkResult res = vkCreateSampler(dev, &sampler->samplerInfo, NULL, &vkSampler);
 			n_assert(res == VK_SUCCESS);
 
 			// add to list so we can remove it later
@@ -264,7 +205,7 @@ VkShader::Setup(
 		{
 			// create separate sampler
 			VkSampler vkSampler;
-			VkResult res = vkCreateSampler(VkRenderDevice::dev, &sampler->samplerInfo, NULL, &vkSampler);
+			VkResult res = vkCreateSampler(dev, &sampler->samplerInfo, NULL, &vkSampler);
 			n_assert(res == VK_SUCCESS);
 			immutableSamplers.Append(vkSampler);
 
@@ -277,11 +218,7 @@ VkShader::Setup(
 				arr.Append(sampler->bindingLayout);
 				setBindings.Add(sampler->set, arr);
 				signatures.Add(sampler->set, VkShader::CreateSignature(sampler->bindingLayout));
-#if AMD_DESC_SETS
 				numsets = uint_max(numsets, sampler->set + 1);
-#else
-				numsets++;
-#endif
 			}
 			else
 			{
@@ -315,7 +252,7 @@ VkShader::Setup(
 
 	// create placeholder sampler
 	VkSampler placeholderSampler;
-	VkResult res = vkCreateSampler(VkRenderDevice::dev, &placeholderSamplerInfo, NULL, &placeholderSampler);
+	VkResult res = vkCreateSampler(dev, &placeholderSamplerInfo, NULL, &placeholderSampler);
 	n_assert(res == VK_SUCCESS);
 	immutableSamplers.Append(placeholderSampler);
 
@@ -344,11 +281,7 @@ VkShader::Setup(
 				arr.Append(variable->bindingLayout);
 				setBindings.Add(variable->set, arr);
 				signatures.Add(variable->set, CreateSignature(variable->bindingLayout));
-#if AMD_DESC_SETS
 				numsets = uint_max(numsets, variable->set + 1);
-#else
-				numsets++;
-#endif
 			}
 			else
 			{
@@ -365,11 +298,7 @@ VkShader::Setup(
 				arr.Append(variable->bindingLayout);
 				setBindings.Add(variable->set, arr);
 				signatures.Add(variable->set, CreateSignature(variable->bindingLayout));
-#if AMD_DESC_SETS
 				numsets = uint_max(numsets, variable->set + 1);
-#else
-				numsets++;
-#endif
 			}
 			else
 			{
@@ -406,7 +335,6 @@ VkShader::Setup(
 				info.flags = 0;
 
 				IndexT bindingIndex = setBindings.FindIndex(i);
-#if AMD_DESC_SETS
 				info.bindingCount = 0;
 				info.pBindings = VK_NULL_HANDLE;
 				if (bindingIndex != InvalidIndex)
@@ -415,15 +343,9 @@ VkShader::Setup(
 					info.bindingCount = binds.Size();
 					info.pBindings = binds.Size() > 0 ? &binds[0] : VK_NULL_HANDLE;
 				}
-#else
-				const Util::Array<VkDescriptorSetLayoutBinding>& binds = this->setBindings.ValueAtIndex(i);
-				info.bindingCount = binds.Size();
-				info.pBindings = binds.Size() > 0 ? &binds[0] : VK_NULL_HANDLE;
-				this->setToIndexMap.Add(this->setBindings.KeyAtIndex(i), i);
-#endif
 
 				// create layout
-				VkResult res = vkCreateDescriptorSetLayout(VkRenderDevice::dev, &info, NULL, &setLayouts[i]);
+				VkResult res = vkCreateDescriptorSetLayout(dev, &info, NULL, &setLayouts[i]);
 				assert(res == VK_SUCCESS);
 
 				// add to cache if this shader defined the signature
@@ -432,11 +354,11 @@ VkShader::Setup(
 			else
 			{
 				// if this layout has been created before, fetch it from the global cache
-				this->setLayouts[i] = VkShader::LayoutCache.ValueAtIndex(layoutIndex);
+				setLayouts[i] = VkShader::LayoutCache.ValueAtIndex(layoutIndex);
 			}
 
 			// construct pipeline signature
-			pipelineSignature.Append(Util::String::FromLongLong(setLayouts[i]) + ";");
+			pipelineSignature.Append(Util::String::Sprintf("%p", setLayouts[i]) + ";");
 		}
 	}
 
@@ -456,7 +378,7 @@ VkShader::Setup(
 		};
 
 		// create pipeline layout, every program should inherit this one
-		res = vkCreatePipelineLayout(VkRenderDevice::dev, &layoutInfo, NULL, &pipelineLayout);
+		res = vkCreatePipelineLayout(dev, &layoutInfo, NULL, &pipelineLayout);
 		assert(res == VK_SUCCESS);
 
 		// add to cache
@@ -492,7 +414,7 @@ VkShader::Setup(
 					&setLayouts[i]
 				};
 				VkDescriptorSet set;
-				res = vkAllocateDescriptorSets(VkRenderDevice::dev, &info, &set);
+				res = vkAllocateDescriptorSets(dev, &info, &set);
 				n_assert(res == VK_SUCCESS);
 
 				// add to cache
@@ -506,7 +428,7 @@ VkShader::Setup(
 		}
     }
 
-	// setup varblock backing
+	// setup varblock backing (this is for the shader default state)
 	bufs.Reserve(varblocks.size());
 	for (i = 0; i < varblocks.size(); i++)
 	{
@@ -521,7 +443,7 @@ VkShader::Setup(
 		if (!usedBySystem && block->alignedSize > 0 && !AnyFX::HasFlags(block->qualifiers, AnyFX::Qualifiers::Push))
 		{
 			// create uniform buffer, with single backing
-			ConstantBufferCreateInfo cbInfo = {false, Ids::InvalidId64, block->name.c_str(), block->alignedSize};
+			CoreGraphics::ConstantBufferCreateInfo cbInfo = {false, Ids::InvalidId64, block->name.c_str(), block->alignedSize};
 			uniformBuffer = CreateConstantBuffer(cbInfo);
 
 			// generate a name which we know will be unique
@@ -529,7 +451,7 @@ VkShader::Setup(
 			n_assert(!buffers.Contains(name));
 
 			VkDescriptorBufferInfo buf;
-			buf.buffer = uniformBuffer->GetVkBuffer();
+			buf.buffer = ConstantBufferGetVk(uniformBuffer);
 			buf.offset = 0;
 			buf.range = VK_WHOLE_SIZE;
 			bufs.Append(buf);
@@ -538,11 +460,7 @@ VkShader::Setup(
 			write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			write.pNext = NULL;
 			write.dstBinding = block->binding;
-#if AMD_DESC_SETS
 			write.dstSet = sets[block->set];
-#else
-			write.dstSet = sets[this->setToIndexMap[block->set]];
-#endif
 			write.descriptorCount = 1;
 			if (block->Flag("DynamicOffset")) write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
 			else							  write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -558,7 +476,7 @@ VkShader::Setup(
 
 		if (!AnyFX::HasFlags(block->qualifiers, AnyFX::Qualifiers::Push))
 		{
-			if (!buffersByGroup.Contains(block->set)) buffersByGroup.Add(block->set, Util::Array<Ptr<CoreGraphics::ConstantBuffer>>());
+			if (!buffersByGroup.Contains(block->set)) buffersByGroup.Add(block->set, Util::Array<CoreGraphics::ConstantBufferId>());
 			buffersByGroup[block->set].Append(uniformBuffer);
 		}		
 	}
@@ -566,8 +484,17 @@ VkShader::Setup(
 	// update descriptors
 	if (writes.Size() > 0)
 	{
-		vkUpdateDescriptorSets(VkRenderDevice::dev, writes.Size(), &writes[0], 0, NULL);
+		vkUpdateDescriptorSets(dev, writes.Size(), &writes[0], 0, NULL);
 	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint32_t
+VkShader::ShaderGetVkVariableBinding(const CoreGraphics::ShaderStateId shader, const CoreGraphics::ShaderVariableId var)
+{
+	return CoreGraphics::shaderPool->shaderAlloc.Get<4>(shader.id24).Get<3>(shader.id32).Get<1>(var.id).setBinding;
 }
 
 //------------------------------------------------------------------------------

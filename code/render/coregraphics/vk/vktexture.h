@@ -1,23 +1,23 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	Vulkan texture interface.
+	Vulkan texture abstraction types.
 
-	Container class for shared Vulkan texture resources. Both the
-	streaming and the memory texture loader needs these, which is why this
-	is here...
+	For the actual loader code, see VkStreamTextureLoader and VkMemoryTextureLoader.
 	
 	(C) 2017 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
+#include "coregraphics/texture.h"
 #include "coregraphics/pixelformat.h"
 #include "resources/resourcepool.h"
 #include "ids/idallocator.h"
 namespace Vulkan
 {
-struct TextureLoadInfo
+struct VkTextureLoadInfo
 {
+	VkDevice dev;
 	VkImage img;
 	VkDeviceMemory mem;
 	CoreGraphics::TextureDimensions dims;
@@ -28,14 +28,14 @@ struct TextureLoadInfo
 	CoreGraphics::GpuBufferTypes::Syncing syncing;
 };
 
-struct TextureRuntimeInfo
+struct VkTextureRuntimeInfo
 {
 	VkImageView view;
 	CoreGraphics::TextureType type;
 	uint32_t bind;
 };
 
-struct TextureMappingInfo
+struct VkTextureMappingInfo
 {
 	VkBuffer buf;
 	VkDeviceMemory mem;
@@ -45,9 +45,9 @@ struct TextureMappingInfo
 
 /// we need a thread-safe allocator since it will be used by both the memory and stream pool
 typedef Ids::IdAllocatorSafe<
-	TextureRuntimeInfo,						// 0 runtime info (for binding)
-	TextureLoadInfo,						// 1 loading info (mostly used during the load/unload phase)
-	TextureMappingInfo						// 2 used when image is mapped to memory
+	VkTextureRuntimeInfo,					// 0 runtime info (for binding)
+	VkTextureLoadInfo,						// 1 loading info (mostly used during the load/unload phase)
+	VkTextureMappingInfo					// 2 used when image is mapped to memory
 > VkTextureAllocator;
 extern VkTextureAllocator textureAllocator;
 

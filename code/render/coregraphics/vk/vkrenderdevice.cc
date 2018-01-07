@@ -46,16 +46,14 @@ namespace Vulkan
 __ImplementClass(Vulkan::VkRenderDevice, 'VURD', Base::RenderDeviceBase);
 __ImplementSingleton(Vulkan::VkRenderDevice);
 
-VkDevice VkRenderDevice::dev;
 VkDescriptorPool VkRenderDevice::descPool;
 VkInstance VkRenderDevice::instance;
-VkPhysicalDevice VkRenderDevice::physicalDev;
 VkPipelineCache VkRenderDevice::cache;
 
-CmdBufferId VkRenderDevice::mainCmdDrawBuffer;
-CmdBufferId VkRenderDevice::mainCmdComputeBuffer;
-CmdBufferId VkRenderDevice::mainCmdTransferBuffer;
-CmdBufferId VkRenderDevice::mainCmdSparseBuffer;
+CoreGraphics::CmdBufferId VkRenderDevice::mainCmdDrawBuffer;
+CoreGraphics::CmdBufferId VkRenderDevice::mainCmdComputeBuffer;
+CoreGraphics::CmdBufferId VkRenderDevice::mainCmdTransferBuffer;
+CoreGraphics::CmdBufferId VkRenderDevice::mainCmdSparseBuffer;
 
 //------------------------------------------------------------------------------
 /**
@@ -194,17 +192,15 @@ VkRenderDevice::OpenVulkanContext()
 	n_assert(res == VK_SUCCESS);
 #endif
 
-	// get device props and features
-	vkGetPhysicalDeviceProperties(this->physicalDev, &this->deviceProps);
-	vkGetPhysicalDeviceFeatures(this->physicalDev, &this->deviceFeatures);
+
 
 	// get number of queues
-	vkGetPhysicalDeviceQueueFamilyProperties(this->physicalDev, &this->numQueues, NULL);
+	vkGetPhysicalDeviceQueueFamilyProperties(this->physicalDevices[0], &this->numQueues, NULL);
 	n_assert(this->numQueues > 0);
 
 	// now get queues from device
-	vkGetPhysicalDeviceQueueFamilyProperties(this->physicalDev, &this->numQueues, this->queuesProps);
-	vkGetPhysicalDeviceMemoryProperties(this->physicalDev, &this->memoryProps);
+	vkGetPhysicalDeviceQueueFamilyProperties(this->physicalDevices[0], &this->numQueues, this->queuesProps);
+	vkGetPhysicalDeviceMemoryProperties(this->physicalDevices[0], &this->memoryProps);
 
 	this->drawQueueIdx = UINT32_MAX;
 	this->computeQueueIdx = UINT32_MAX;
@@ -299,10 +295,10 @@ VkRenderDevice::OpenVulkanContext()
 
 	// get physical device features
 	VkPhysicalDeviceFeatures features;
-	vkGetPhysicalDeviceFeatures(this->physicalDev, &features);
+	vkGetPhysicalDeviceFeatures(this->physicalDevices[0], &features);
 
 	VkPhysicalDeviceProperties props;
-	vkGetPhysicalDeviceProperties(this->physicalDev, &props);
+	vkGetPhysicalDeviceProperties(this->physicalDevices[0], &props);
 	
 	VkDeviceCreateInfo deviceInfo =
 	{
@@ -319,7 +315,7 @@ VkRenderDevice::OpenVulkanContext()
 	};
 
 	// create device
-	res = vkCreateDevice(this->physicalDev, &deviceInfo, NULL, &this->dev);
+	res = vkCreateDevice(this->physicalDevices[0], &deviceInfo, NULL, &this->devices[0]);
 	n_assert(res == VK_SUCCESS);
 
 	// setup queue handler
@@ -328,8 +324,7 @@ VkRenderDevice::OpenVulkanContext()
 	families[VkSubContextHandler::ComputeContextType] = this->computeQueueFamily;
 	families[VkSubContextHandler::TransferContextType] = this->transferQueueFamily;
 	families[VkSubContextHandler::SparseContextType] = this->sparseQueueFamily;
-	this->subcontextHandler.Setup(this->dev, indexMap, families);
-
+	this->subcontextHandler.Setup(this->devices[0], indexMap, families);
 
 	VkPipelineCacheCreateInfo cacheInfo =
 	{
@@ -341,8 +336,11 @@ VkRenderDevice::OpenVulkanContext()
 	};
 
 	// create cache
-	res = vkCreatePipelineCache(this->dev, &cacheInfo, NULL, &this->cache);
+	res = vkCreatePipelineCache(this->devices[0], &cacheInfo, NULL, &this->cache);
 	n_assert(res == VK_SUCCESS);
+
+	// setup our own pipeline database
+	this->database.Setup(this->devices[0], this->cache);
 
 	VkDescriptorPoolSize sizes[11];
 	uint32_t descCounts[] =
@@ -381,7 +379,7 @@ VkRenderDevice::OpenVulkanContext()
 	}
 
 	// setup pools (from VkCmdBuffer.h)
-	SetupVkPools(this->dev, this->drawQueueFamily, this->computeQueueFamily, this->transferQueueFamily, this->sparseQueueFamily);
+	SetupVkPools(this->devices[0], this->drawQueueFamily, this->computeQueueFamily, this->transferQueueFamily, this->sparseQueueFamily);
 
 	CmdBufferCreateInfo cmdCreateInfo =
 	{
@@ -449,11 +447,11 @@ VkRenderDevice::OpenVulkanContext()
 		0
 	};
 
-	res = vkCreateFence(this->dev, &fenceInfo, NULL, &this->mainCmdDrawFence);
+	res = vkCreateFence(this->devices[0], &fenceInfo, NULL, &this->mainCmdDrawFence);
 	n_assert(res == VK_SUCCESS);
-	res = vkCreateFence(this->dev, &fenceInfo, NULL, &this->mainCmdCmpFence);
+	res = vkCreateFence(this->devices[0], &fenceInfo, NULL, &this->mainCmdCmpFence);
 	n_assert(res == VK_SUCCESS);
-	res = vkCreateFence(this->dev, &fenceInfo, NULL, &this->mainCmdTransFence);
+	res = vkCreateFence(this->devices[0], &fenceInfo, NULL, &this->mainCmdTransFence);
 	n_assert(res == VK_SUCCESS);
 
 	VkEventCreateInfo eventInfo = 
@@ -462,11 +460,11 @@ VkRenderDevice::OpenVulkanContext()
 		NULL,
 		0
 	};
-	res = vkCreateEvent(this->dev, &eventInfo, NULL, &this->mainCmdDrawEvent);
+	res = vkCreateEvent(this->devices[0], &eventInfo, NULL, &this->mainCmdDrawEvent);
 	n_assert(res == VK_SUCCESS);
-	res = vkCreateEvent(this->dev, &eventInfo, NULL, &this->mainCmdCmpEvent);
+	res = vkCreateEvent(this->devices[0], &eventInfo, NULL, &this->mainCmdCmpEvent);
 	n_assert(res == VK_SUCCESS);
-	res = vkCreateEvent(this->dev, &eventInfo, NULL, &this->mainCmdTransEvent);
+	res = vkCreateEvent(this->devices[0], &eventInfo, NULL, &this->mainCmdTransEvent);
 	n_assert(res == VK_SUCCESS);
 
 	this->passInfo = 
@@ -530,9 +528,9 @@ VkRenderDevice::CloseVulkanDevice()
 	_discard_counter(NumPipelinesBuilt);
 
 	size_t size;
-	vkGetPipelineCacheData(this->dev, this->cache, &size, NULL);
+	vkGetPipelineCacheData(this->devices[0], this->cache, &size, NULL);
 	uint8_t* data = (uint8_t*)Memory::Alloc(Memory::ScratchHeap, size);
-	vkGetPipelineCacheData(this->dev, this->cache, &size, data);
+	vkGetPipelineCacheData(this->devices[0], this->cache, &size, data);
 	Util::String path = Util::String::Sprintf("bin:%s_vkpipelinecache", App::Application::Instance()->GetAppTitle().AsCharPtr());
 	Ptr<IO::Stream> cachedData = IO::IoServer::Instance()->CreateStream(path);
 	cachedData->SetAccessMode(IO::Stream::WriteAccess);
@@ -555,7 +553,7 @@ VkRenderDevice::CloseVulkanDevice()
 		this->drawThreads[i] = nullptr;
 		n_delete(this->drawCompletionEvents[i]);
 
-		vkDestroyCommandPool(this->dev, this->dispatchableCmdDrawBufferPool[i], NULL);
+		vkDestroyCommandPool(this->devices[0], this->dispatchableCmdDrawBufferPool[i], NULL);
 	}
 
 	for (i = 0; i < NumTransferThreads; i++)
@@ -564,7 +562,7 @@ VkRenderDevice::CloseVulkanDevice()
 		this->transThreads[i] = nullptr;
 		n_delete(this->transCompletionEvents[i]);
 
-		vkDestroyCommandPool(this->dev, this->dispatchableCmdTransBufferPool[i], NULL);
+		vkDestroyCommandPool(this->devices[0], this->dispatchableCmdTransBufferPool[i], NULL);
 	}
 
 	for (i = 0; i < NumComputeThreads; i++)
@@ -573,7 +571,7 @@ VkRenderDevice::CloseVulkanDevice()
 		this->compThreads[i] = nullptr;
 		n_delete(this->compCompletionEvents[i]);
 
-		vkDestroyCommandPool(this->dev, this->dispatchableCmdCompBufferPool[i], NULL);
+		vkDestroyCommandPool(this->devices[0], this->dispatchableCmdCompBufferPool[i], NULL);
 	}
 
 	// free our main buffers, our secondary buffers should be fine so the pools should be free to destroy
@@ -581,13 +579,13 @@ VkRenderDevice::CloseVulkanDevice()
 	DestroyCmdBuffer(this->mainCmdComputeBuffer);
 	DestroyCmdBuffer(this->mainCmdTransferBuffer);
 	DestroyCmdBuffer(this->mainCmdSparseBuffer);
-	DestroyVkPools(this->dev);
+	DestroyVkPools(this->devices[0]);
 
-	vkDestroyFence(this->dev, this->mainCmdDrawFence, NULL);
-	vkDestroyFence(this->dev, this->mainCmdCmpFence, NULL);
-	vkDestroyFence(this->dev, this->mainCmdTransFence, NULL);
+	vkDestroyFence(this->devices[0], this->mainCmdDrawFence, NULL);
+	vkDestroyFence(this->devices[0], this->mainCmdCmpFence, NULL);
+	vkDestroyFence(this->devices[0], this->mainCmdTransFence, NULL);
 
-	vkDestroyDevice(this->dev, NULL);
+	vkDestroyDevice(this->devices[0], NULL);
 	vkDestroyInstance(this->instance, NULL);
 }
 
@@ -603,44 +601,43 @@ VkRenderDevice::SetupAdapter()
 	res = vkEnumeratePhysicalDevices(this->instance, &gpuCount, NULL);
 	n_assert(res == VK_SUCCESS);
 
+	this->devices.Resize(gpuCount);
+	this->physicalDevices.Resize(gpuCount);
+	this->numCaps.Resize(gpuCount);
+	this->caps.Resize(gpuCount);
+	this->deviceProps.Resize(gpuCount);
+	this->deviceFeatures.Resize(gpuCount);
+
 	if (gpuCount > 0)
 	{
-		res = vkEnumeratePhysicalDevices(this->instance, &gpuCount, this->devices);
+		res = vkEnumeratePhysicalDevices(this->instance, &gpuCount, this->physicalDevices.Begin());
 		n_assert(res == VK_SUCCESS);
 
-		// hmm, this is ugly, perhaps implement a way to get a proper device
-		this->physicalDev = devices[0];
-
 		if (gpuCount > 1)
-			n_message("Found %d GPUs, which is more than 1! Perhaps the Render Device should be able to use it?\n");
+			n_message("Found %d GPUs, which is more than 1! Perhaps the Render Device should be able to use it?\n", gpuCount);
+
+		IndexT i;
+		for (i = 0; i < gpuCount; i++)
+		{
+			res = vkEnumerateDeviceExtensionProperties(physicalDevices[i], nullptr, &this->numCaps[i], nullptr);
+			n_assert(res == VK_SUCCESS);
+
+			if (this->numCaps[i] > 0)
+			{
+				this->caps[i].Resize(this->numCaps[i]);
+				res = vkEnumerateDeviceExtensionProperties(physicalDevices[i], NULL, &this->usedPhysicalExtensions, this->caps[i].Begin());
+				n_assert(res == VK_SUCCESS);
+			}
+
+			// get device props and features
+			vkGetPhysicalDeviceProperties(this->physicalDevices[0], &this->deviceProps[i]);
+			vkGetPhysicalDeviceFeatures(this->physicalDevices[0], &this->deviceFeatures[i]);
+		}
 	}
 	else
 	{
 		n_error("VkRenderDevice::SetupAdapter(): No GPU available.\n");
 	}
-
-	res = vkEnumerateDeviceExtensionProperties(this->physicalDev, NULL, &this->usedPhysicalExtensions, NULL);
-	n_assert(res == VK_SUCCESS);
-
-	if (this->usedPhysicalExtensions > 0)
-	{
-		res = vkEnumerateDeviceExtensionProperties(this->physicalDev, NULL, &this->usedPhysicalExtensions, this->physicalExtensions);
-
-		uint32_t i;
-		for (i = 0; i < this->usedPhysicalExtensions; i++)
-		{
-			this->deviceExtensionStrings[i] = this->physicalExtensions[i].extensionName;
-		}
-	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-VkRenderDevice::SetupBufferFormats()
-{
-	
 }
 
 //------------------------------------------------------------------------------
@@ -696,11 +693,10 @@ VkRenderDevice::SetStreamVertexBuffer(IndexT streamIndex, const VkBuffer vb, Ind
 /**
 */
 void
-VkRenderDevice::SetVertexLayout(const Ptr<CoreGraphics::VertexLayout>& vl)
+VkRenderDevice::SetVertexLayout(const VkPipelineVertexInputStateCreateInfo* vl)
 {
 	n_assert(this->currentProgram != 0);
-	RenderDeviceBase::SetVertexLayout(vl);
-	this->SetVertexLayoutPipelineInfo(vl->GetDerivative(this->currentProgram));
+	this->SetVertexLayoutPipelineInfo(vl);
 }
 
 //------------------------------------------------------------------------------
@@ -739,7 +735,7 @@ VkRenderDevice::SetPrimitiveTopology(const CoreGraphics::PrimitiveTopology::Code
 /**
 */
 void
-VkRenderDevice::Compute(int dimX, int dimY, int dimZ, uint flag /*= NoBarrier*/)
+VkRenderDevice::Compute(int dimX, int dimY, int dimZ)
 {
 	RenderDeviceBase::Compute(dimX, dimY, dimZ);
 	vkCmdDispatch(CommandBufferGetVk(this->mainCmdDrawBuffer), dimX, dimY, dimZ);
@@ -773,7 +769,7 @@ VkRenderDevice::BeginPass(const Ptr<CoreGraphics::Pass>& pass)
 	vkCmdBeginRenderPass(CommandBufferGetVk(this->mainCmdDrawBuffer), &info, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
 	// run this phase for scheduler
-	this->scheduler->ExecuteCommandPass(VkScheduler::OnBeginPass);
+	this->scheduler.ExecuteCommandPass(VkScheduler::OnBeginPass);
 
 	this->passInfo.framebuffer = pass->GetVkFramebuffer();
 	this->passInfo.renderPass = pass->GetVkRenderPass();
@@ -910,7 +906,7 @@ VkRenderDevice::EndPass()
 	this->scheduler.ExecuteCommandPass(VkScheduler::OnEndPass);
 
 	// end render pass
-	vkCmdEndRenderPass(CommandBufferGetVk((this->mainCmdDrawBuffer));
+	vkCmdEndRenderPass(CommandBufferGetVk(this->mainCmdDrawBuffer));
 	RenderDeviceBase::EndPass();
 }
 
@@ -925,13 +921,6 @@ VkRenderDevice::EndFrame(IndexT frameIndex)
 
 	// set back to the main state
 	this->currentCommandState = MainState;
-
-	VkFenceCreateInfo info =
-	{
-		VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-		0,
-		0
-	};
 
 	// kick transfer commands
 	this->subcontextHandler.InsertCommandBuffer(VkSubContextHandler::TransferContextType, CommandBufferGetVk(this->mainCmdTransferBuffer));
@@ -957,9 +946,14 @@ VkRenderDevice::EndFrame(IndexT frameIndex)
 	static VkFence fences[] = { this->mainCmdDrawFence, this->mainCmdTransFence, this->mainCmdCmpFence };
 	this->WaitForFences(fences, 3, true);
 
-	CmdBufferClear(this->mainCmdTransferBuffer);
-	CmdBufferClear(this->mainCmdComputeBuffer);
-	CmdBufferClear(this->mainCmdDrawBuffer);
+	CmdBufferClearInfo clearInfo =
+	{
+		false
+	};
+	CmdBufferClear(this->mainCmdTransferBuffer, clearInfo);
+	CmdBufferClear(this->mainCmdComputeBuffer, clearInfo);
+	CmdBufferClear(this->mainCmdDrawBuffer, clearInfo);
+	CmdBufferClear(this->mainCmdSparseBuffer, clearInfo);
 
 	// run end-of-frame commands
 	this->scheduler.ExecuteCommandPass(VkScheduler::OnEndFrame);
@@ -1101,6 +1095,29 @@ VkRenderDevice::SaveScreenshot(CoreGraphics::ImageFileFormat::Code fmt, const Pt
 //------------------------------------------------------------------------------
 /**
 */
+const VkQueue
+VkRenderDevice::GetQueue(const VkSubContextHandler::SubContextType type, const IndexT index)
+{
+	switch (type)
+	{
+	case VkSubContextHandler::DrawContextType:
+		return this->subcontextHandler.drawQueues[index];
+		break;
+	case VkSubContextHandler::ComputeContextType:
+		return this->subcontextHandler.computeQueues[index];
+		break;
+	case VkSubContextHandler::TransferContextType:
+		return this->subcontextHandler.transferQueues[index];
+		break;
+	case VkSubContextHandler::SparseContextType:
+		return this->subcontextHandler.sparseQueues[index];
+		break;
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 VkRenderDevice::DisplayResized(SizeT width, SizeT height)
 {
@@ -1115,7 +1132,7 @@ VkRenderDevice::BindGraphicsPipelineInfo(const VkGraphicsPipelineCreateInfo& sha
 {
 	if (this->currentProgram != programId || !(this->currentPipelineBits & ShaderInfoSet))
 	{
-		this->database->SetShader(programId);
+		this->database.SetShader(programId);
 		this->currentPipelineBits |= ShaderInfoSet;
 
 		this->blendInfo.pAttachments = shader.pColorBlendState->pAttachments;
@@ -1140,7 +1157,7 @@ VkRenderDevice::BindGraphicsPipelineInfo(const VkGraphicsPipelineCreateInfo& sha
 /**
 */
 void
-VkRenderDevice::SetVertexLayoutPipelineInfo(VkPipelineVertexInputStateCreateInfo* vertexLayout)
+VkRenderDevice::SetVertexLayoutPipelineInfo(const VkPipelineVertexInputStateCreateInfo* vertexLayout)
 {
 	if (this->currentPipelineInfo.pVertexInputState != vertexLayout || !(this->currentPipelineBits & VertexLayoutInfoSet))
 	{
@@ -1420,7 +1437,7 @@ VkRenderDevice::BuildRenderPipeline()
 /**
 */
 void
-VkRenderDevice::InsertBarrier(const Ptr<CoreGraphics::Barrier>& barrier)
+VkRenderDevice::InsertBarrier(const BarrierId barrier)
 {
 	if (this->numActiveThreads > 0)
 	{

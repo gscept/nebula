@@ -5,13 +5,8 @@
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "coregraphics/base/renderdevicebase.h"
-#include "coregraphics/rendertarget.h"
-#include "coregraphics/multiplerendertarget.h"
 #include "coregraphics/vertexbuffer.h"
 #include "coregraphics/indexbuffer.h"
-#include "coregraphics/feedbackbuffer.h"
-#include "coregraphics/shaderstate.h"
-#include "coregraphics/bufferlock.h"
 #include "coregraphics/pass.h"
 #include "coregraphics/displaydevice.h"
 #include "math/scalar.h"
@@ -26,7 +21,6 @@ using namespace Util;
 using namespace CoreGraphics;
 using namespace Graphics;
 
-Util::Queue<RenderDeviceBase::__BufferLockData> RenderDeviceBase::bufferLockQueue;
 //------------------------------------------------------------------------------
 /**
 */
@@ -47,7 +41,6 @@ RenderDeviceBase::RenderDeviceBase() :
     _setup_grouped_counter(RenderDeviceNumPrimitives, "Render");
 	_setup_grouped_counter(RenderDeviceNumDrawCalls, "Render");
 	_setup_grouped_counter(RenderDeviceNumComputes, "Render");
-    Memory::Clear(this->streamVertexOffsets, sizeof(this->streamVertexOffsets));
 }
 
 //------------------------------------------------------------------------------
@@ -109,9 +102,6 @@ RenderDeviceBase::Close()
     n_assert(!this->inBeginPass);
     n_assert(!this->inBeginBatch);
 
-	// clear buffer locks
-	this->bufferLockQueue.Clear();
-
     // notify event handlers
     RenderEvent closeEvent(RenderEvent::DeviceClose);
     this->NotifyEventHandlers(closeEvent);
@@ -132,57 +122,7 @@ RenderDeviceBase::IsOpen() const
 /**
 */
 void
-RenderDeviceBase::SetStreamVertexBuffer(IndexT streamIndex, VertexBuffer* vb, IndexT offsetVertexIndex)
-{
-    n_assert((streamIndex >= 0) && (streamIndex < VertexLayoutBase::MaxNumVertexStreams));
-    this->streamVertexBuffers[streamIndex] = vb;
-    this->streamVertexOffsets[streamIndex] = offsetVertexIndex;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-VertexBuffer*
-RenderDeviceBase::GetStreamVertexBuffer(IndexT streamIndex) const
-{
-	n_assert((streamIndex >= 0) && (streamIndex < VertexLayoutBase::MaxNumVertexStreams));
-    return this->streamVertexBuffers[streamIndex];
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-IndexT
-RenderDeviceBase::GetStreamVertexOffset(IndexT streamIndex) const
-{
-	n_assert((streamIndex >= 0) && (streamIndex < VertexLayoutBase::MaxNumVertexStreams));
-    return this->streamVertexOffsets[streamIndex];
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-RenderDeviceBase::SetVertexLayout(const Ptr<VertexLayout>& vl)
-{
-    this->vertexLayout = vl;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const Ptr<VertexLayout>&
-RenderDeviceBase::GetVertexLayout() const
-{
-    return this->vertexLayout;
-}
-
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-RenderDeviceBase::SetPrimitiveTopology(const PrimitiveTopology::Code& topo)
+RenderDeviceBase::SetPrimitiveTopology(const PrimitiveTopology::Code topo)
 {
 	this->primitiveTopology = topo;
 }
@@ -253,13 +193,6 @@ RenderDeviceBase::BeginFrame(IndexT frameIndex)
     n_assert(!this->inBeginFrame);
     n_assert(!this->inBeginPass);
     n_assert(!this->inBeginBatch);
-    n_assert(!this->indexBuffer.isvalid());
-    n_assert(!this->vertexLayout.isvalid());
-    IndexT i;
-	for (i = 0; i < VertexLayoutBase::MaxNumVertexStreams; i++)
-    {
-        n_assert(!this->streamVertexBuffers[i].isvalid());
-    }
 
 	if (frameIndex != this->currentFrameIndex)
 	{
@@ -337,7 +270,7 @@ RenderDeviceBase::EndPass()
     n_assert(this->pass.isvalid());
 
 	this->pass->End();
-	this->pass = 0;
+	this->pass = nullptr;
     this->inBeginPass = false;
 }
 
@@ -358,13 +291,6 @@ RenderDeviceBase::EndFrame(IndexT frameIndex)
 	}	
     
     this->inBeginFrame = false;
-    IndexT i;
-	for (i = 0; i < VertexLayoutBase::MaxNumVertexStreams; i++)
-    {
-        this->streamVertexBuffers[i] = 0;
-    }
-    this->vertexLayout = 0;
-    this->indexBuffer = 0;
 }
 
 //------------------------------------------------------------------------------
@@ -381,15 +307,6 @@ RenderDeviceBase::Present()
 */
 void
 RenderDeviceBase::BuildRenderPipeline()
-{
-	// empty, override in subclass
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-RenderDeviceBase::InsertBarrier(const Ptr<CoreGraphics::Barrier>& barrier)
 {
 	// empty, override in subclass
 }
@@ -417,35 +334,11 @@ RenderDeviceBase::DrawIndexedInstanced(SizeT numInstances, IndexT baseInstance)
 //------------------------------------------------------------------------------
 /**
 */
-void
-RenderDeviceBase::BeginCompute(bool asyncAllowed, const Util::Array<Ptr<CoreGraphics::ShaderReadWriteTexture>>& textureDependencies, const Util::Array<Ptr<CoreGraphics::ShaderReadWriteBuffer>>& bufferDependencies)
-{
-	n_assert(!this->inBeginCompute);
-	this->inBeginCompute = true;
-	this->inBeginAsyncCompute = asyncAllowed;
-	// override and implement memory barriers for buffers and textures
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 void 
 RenderDeviceBase::Compute(int dimX, int dimY, int dimZ)
 {
     n_assert(!this->inBeginPass);
     // override in subclass!
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-RenderDeviceBase::EndCompute(const Util::Array<Ptr<CoreGraphics::ShaderReadWriteTexture>>& textureDependencies, const Util::Array<Ptr<CoreGraphics::ShaderReadWriteBuffer>>& bufferDependencies)
-{
-	n_assert(this->inBeginCompute);
-	this->inBeginCompute = false;
-	this->inBeginAsyncCompute = false;
-	// override and implement memory barriers needed for the textures and buffers
 }
 
 //------------------------------------------------------------------------------
@@ -472,62 +365,9 @@ RenderDeviceBase::SaveScreenshot(CoreGraphics::ImageFileFormat::Code fmt, const 
 /**
 */
 void
-RenderDeviceBase::EnqueueBufferLockIndex(const Ptr<CoreGraphics::BufferLock>& lock, IndexT buffer)
-{
-	__BufferLockData data;
-	data.mode = __BufferLockMode::BufferRing;
-	data.i = buffer;
-	data.lock = lock;
-	RenderDeviceBase::bufferLockQueue.Enqueue(data);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-RenderDeviceBase::EnqueueBufferLockRange(const Ptr<CoreGraphics::BufferLock>& lock, IndexT start, SizeT range)
-{
-	__BufferLockData data;
-	data.mode = __BufferLockMode::BufferRing;
-	data.start = start;
-	data.range = range;
-	data.lock = lock;
-	RenderDeviceBase::bufferLockQueue.Enqueue(data);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-RenderDeviceBase::DequeueBufferLocks()
-{
-	IndexT i;
-	for (i = 0; i < RenderDeviceBase::bufferLockQueue.Size(); i++)
-	{
-		const __BufferLockData& data = RenderDeviceBase::bufferLockQueue[i];
-		switch (data.mode)
-		{
-		case __BufferLockMode::BufferRing:
-			data.lock->LockBuffer(data.i);
-			break;
-		case __BufferLockMode::BufferRange:
-			data.lock->LockRange(data.start, data.range);
-			break;
-		}
-	}
-	RenderDeviceBase::bufferLockQueue.Clear();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
 RenderDeviceBase::Copy(const CoreGraphics::TextureId from, Math::rectangle<SizeT> fromRegion, const CoreGraphics::TextureId to, Math::rectangle<SizeT> toRegion)
 {
-	n_assert(from.isvalid() && to.isvalid());
-	n_assert(from->GetWidth() == to->GetWidth());
-	n_assert(from->GetHeight() == to->GetHeight());
-	n_assert(from->GetDepth() == to->GetDepth());
+	n_assert(from == Ids::InvalidId32 && to == Ids::InvalidId32);
 	// implement in subclass
 }
 
@@ -537,7 +377,7 @@ RenderDeviceBase::Copy(const CoreGraphics::TextureId from, Math::rectangle<SizeT
 void
 RenderDeviceBase::Blit(const CoreGraphics::RenderTextureId from, Math::rectangle<SizeT> fromRegion, IndexT fromMip, const CoreGraphics::RenderTextureId to, Math::rectangle<SizeT> toRegion, IndexT toMip)
 {
-	n_assert(from.isvalid() && to.isvalid());
+	n_assert(from == Ids::InvalidId32 && to == Ids::InvalidId32);
 	
 	// implement in subclass
 }
@@ -548,7 +388,7 @@ RenderDeviceBase::Blit(const CoreGraphics::RenderTextureId from, Math::rectangle
 void
 RenderDeviceBase::Blit(const CoreGraphics::TextureId from, Math::rectangle<SizeT> fromRegion, IndexT fromMip, const CoreGraphics::TextureId to, Math::rectangle<SizeT> toRegion, IndexT toMip)
 {
-	n_assert(from.isvalid() && to.isvalid());
+	n_assert(from == Ids::InvalidId32 && to == Ids::InvalidId32);
 
 	// implement in subclass
 }

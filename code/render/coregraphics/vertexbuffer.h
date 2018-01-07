@@ -35,18 +35,19 @@ struct VertexBufferCreateInfo
 const VertexBufferId CreateVertexBuffer(VertexBufferCreateInfo info);
 /// destroy vertex buffer
 void DestroyVertexBuffer(const VertexBufferId id);
+
 /// bind vertex buffer resource individually
-void BindVertexBuffer(const VertexBufferId id, const IndexT slot, const IndexT vertexOffset);
+void VertexBufferBind(const VertexBufferId id, const IndexT slot, const IndexT vertexOffset);
 /// update vertex buffer
-void UpdateVertexBuffer(const VertexBufferId id, void* data, PtrDiff size, PtrDiff offset);
+void VertexBufferUpdate(const VertexBufferId id, void* data, PtrDiff size, PtrDiff offset);
 /// request lock for vertex buffer, such that it can be updated
-void LockVertexBuffer(const VertexBufferId id, const PtrDiff offset, const PtrDiff range);
+void VertexBufferLock(const VertexBufferId id, const PtrDiff offset, const PtrDiff range);
 /// request unlock for vertex buffer
-void UnlockVertexBuffer(const VertexBufferId id, const PtrDiff offset, const PtrDiff range);
+void VertexBufferUnlock(const VertexBufferId id, const PtrDiff offset, const PtrDiff range);
 /// map GPU memory
-void* MapVertexBuffer(const VertexBufferId id, const CoreGraphics::GpuBufferTypes::MapType type);
+void* VertexBufferMap(const VertexBufferId id, const CoreGraphics::GpuBufferTypes::MapType type);
 /// unmap GPU memory
-void UnmapVertexBuffer(const VertexBufferId id);
+void VertexBufferUnmap(const VertexBufferId id);
 
 class MemoryVertexBufferPool;
 extern MemoryVertexBufferPool* vboPool;

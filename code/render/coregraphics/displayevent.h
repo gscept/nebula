@@ -14,6 +14,7 @@
 #include "input/char.h"
 #include "input/mousebutton.h"
 #include "math/float2.h"
+#include "coregraphics/window.h"
 
 //------------------------------------------------------------------------------
 namespace CoreGraphics
@@ -53,7 +54,7 @@ public:
     /// constructor with event code
     DisplayEvent(Code c);
 	/// constructor with event code and window id
-	DisplayEvent(Code c, IndexT wnd);
+	DisplayEvent(Code c, CoreGraphics::WindowId wnd);
     /// constructor with event code and mouse pos
     DisplayEvent(Code c, const Math::float2& absPos, const Math::float2& normPos);
     /// constructor with key code
@@ -79,7 +80,7 @@ public:
     Input::MouseButton::Code GetMouseButton() const;
 
 private:
-	IndexT windowId;
+	CoreGraphics::WindowId windowId;
     Code code;
     Math::float2 absMousePos;
     Math::float2 normMousePos;
@@ -94,6 +95,7 @@ private:
 inline
 DisplayEvent::DisplayEvent() :
     code(InvalidCode),
+	windowId(Ids::InvalidId32),
     absMousePos(0.0f, 0.0f),
     normMousePos(0.0f, 0.0f),
     keyCode(Input::Key::InvalidKey),
@@ -109,7 +111,7 @@ DisplayEvent::DisplayEvent() :
 inline
 DisplayEvent::DisplayEvent(Code c) :
     code(c),
-	windowId(InvalidIndex),
+	windowId(Ids::InvalidId32),
     absMousePos(0.0f, 0.0f),
     normMousePos(0.0f, 0.0f),
     keyCode(Input::Key::InvalidKey),
@@ -124,7 +126,7 @@ DisplayEvent::DisplayEvent(Code c) :
 /**
 */
 inline
-DisplayEvent::DisplayEvent(Code c, IndexT wnd) :
+DisplayEvent::DisplayEvent(Code c, CoreGraphics::WindowId wnd) :
 	code(c),
 	windowId(wnd),
 	absMousePos(0.0f, 0.0f),
@@ -142,7 +144,7 @@ DisplayEvent::DisplayEvent(Code c, IndexT wnd) :
 inline
 DisplayEvent::DisplayEvent(Code c, const Math::float2& absPos, const Math::float2& normPos) :
     code(c),
-	windowId(InvalidIndex),
+	windowId(Ids::InvalidId32),
     absMousePos(absPos),
     normMousePos(normPos),
     keyCode(Input::Key::InvalidKey),
@@ -158,7 +160,7 @@ DisplayEvent::DisplayEvent(Code c, const Math::float2& absPos, const Math::float
 inline
 DisplayEvent::DisplayEvent(Code c, Input::Key::Code k) :
     code(c),
-	windowId(InvalidIndex),
+	windowId(Ids::InvalidId32),
     absMousePos(0.0f, 0.0f),
     normMousePos(0.0f, 0.0f),
     keyCode(k),
@@ -174,7 +176,7 @@ DisplayEvent::DisplayEvent(Code c, Input::Key::Code k) :
 inline
 DisplayEvent::DisplayEvent(Code c, Input::Char chr) :
     code(c),
-	windowId(InvalidIndex),
+	windowId(Ids::InvalidId32),
     absMousePos(0.0f, 0.0f),
     normMousePos(0.0f, 0.0f),
     keyCode(Input::Key::InvalidKey),
@@ -190,7 +192,7 @@ DisplayEvent::DisplayEvent(Code c, Input::Char chr) :
 inline
 DisplayEvent::DisplayEvent(Code c, Input::MouseButton::Code b, const Math::float2& absPos, const Math::float2& normPos) :
     code(c),
-	windowId(InvalidIndex),
+	windowId(Ids::InvalidId32),
     absMousePos(absPos),
     normMousePos(normPos),
     keyCode(Input::Key::InvalidKey),

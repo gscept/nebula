@@ -14,7 +14,7 @@
 #include "coregraphics/imagefileformat.h"
 #include "coregraphics/indextype.h"
 #include "coregraphics/barrier.h"
-#include "coregraphics/base/resourcebase.h"
+#include "coregraphics/gpubuffertypes.h"
 #include "IL/il.h"
 
 namespace Vulkan
@@ -55,9 +55,9 @@ public:
 	/// convert pixel format to Vulkan component mapping
 	static VkComponentMapping AsVkMapping(CoreGraphics::PixelFormat::Code p);
 	/// convert dependency flags to vulkan
-	static VkPipelineStageFlags AsVkPipelineFlags(const CoreGraphics::Barrier::Dependency dep);
+	static VkPipelineStageFlags AsVkPipelineFlags(const CoreGraphics::BarrierDependency dep);
 	/// convert dependency flags to vulkan
-	static VkPipelineStageFlags AsVkResourceAccessFlags(const CoreGraphics::Barrier::Access access);
+	static VkPipelineStageFlags AsVkResourceAccessFlags(const CoreGraphics::BarrierAccess access);
 
 #pragma endregion
 
@@ -77,11 +77,11 @@ public:
 	/// convert antialias quality to D3D multisample type
 	static GLuint AsOGL4MultiSampleType(CoreGraphics::AntiAliasQuality::Code c);
 	/// convert Nebula3 access to OGL4 access
-	static GLuint AsOGL4Access(Base::GpuResourceBase::Access access);
+	static GLuint AsOGL4Access(CoreGraphics::GpuBufferTypes::Access access);
 	/// convert Nebula3 usage to OGL4 usage
-	static GLuint AsOGL4Usage(Base::GpuResourceBase::Usage usage, Base::GpuResourceBase::Access access);
+	static GLuint AsOGL4Usage(CoreGraphics::GpuBufferTypes::Usage usage, CoreGraphics::GpuBufferTypes::Access access);
 	/// convert Nebula3 syncing to OGL4 syncing
-	static GLuint AsOGL4Syncing(Base::GpuResourceBase::Syncing syncing);
+	static GLuint AsOGL4Syncing(CoreGraphics::GpuBufferTypes::Syncing syncing);
 	/// convert index type to DXGI format
 	static GLenum IndexTypeAsOGL4Format(CoreGraphics::IndexType::Code indexType);
 };
