@@ -55,7 +55,11 @@ public:
 	void Submit(const SubContextType type, VkFence fence, bool waitImmediately);
 	/// wait for a queue to finish working
 	void WaitIdle(const SubContextType type);
+	/// get semaphore related to present buffer
+
 private:
+	friend class VkRenderDevice;
+
 	VkDevice device;
 	Util::FixedArray<VkQueue> drawQueues;
 	Util::FixedArray<VkQueue> computeQueues;

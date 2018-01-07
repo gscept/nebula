@@ -8,21 +8,48 @@
 namespace Models
 {
 
-__ImplementClass(Models::Model, 'MODE', Resources::Resource);
+StreamModelPool* modelPool;
+ModelAllocatorType modelAllocator;
+
+
 //------------------------------------------------------------------------------
 /**
 */
-Model::Model()
+const ModelId
+CreateModel()
 {
-	// empty
+	Ids::Id32 id = modelAllocator.AllocObject();
+	return ModelId(id);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-Model::~Model()
+void
+DestroyModel(const ModelId id)
 {
-	// empty
+	modelAllocator.Get<1>(id.id).Clear();
+	modelAllocator.Get<3>(id.id).Clear();
+	modelAllocator.DeallocObject(id.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const ModelId
+FindNode(const ModelId model, const Util::StringAtom& name)
+{
+	const Util::Dictionary<Util::StringAtom, ModelNodeId>& dict = modelAllocator.Get<1>(model.id);
+	return dict[name];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Math::bbox&
+GetBoundingBox(const ModelId model)
+{
+	return modelAllocator.Get<0>(model.id);
 }
 
 } // namespace Models

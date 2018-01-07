@@ -54,7 +54,7 @@ public:
 	/// reserve resource (for self-managed resources)
 	Resources::ResourceId ReserveResource(const ResourceName& res, const Util::StringAtom& tag, const Core::Rtti& type);
 	/// update resource (for self-managed resources), info pointer is a struct specific to the loader
-	ResourcePool::LoadStatus LoadResource(const Resources::ResourceId id, void* info);
+	ResourcePool::LoadStatus LoadFromMemory(const Resources::ResourceId id, void* info);
 
 	/// get type of resource pool this resource was allocated with
 	Core::Rtti* GetType(const Resources::ResourceId id);
@@ -154,7 +154,7 @@ ResourceManager::ReserveResource(const ResourceName& res, const Util::StringAtom
 	The info pointer is a struct containing pool specific information.
 */
 inline Resources::ResourcePool::LoadStatus
-ResourceManager::LoadResource(const Resources::ResourceId id, void* info)
+ResourceManager::LoadFromMemory(const Resources::ResourceId id, void* info)
 {
 	const Ptr<ResourceMemoryPool>& loader = this->pools[id.id8].downcast<ResourceMemoryPool>();
 	return loader->LoadFromMemory(id.id24, info);
@@ -267,9 +267,9 @@ ReserveResource(const ResourceName& res, const Util::StringAtom& tag, const Core
 	The info pointer is a struct containing pool specific information.
 */
 inline ResourcePool::LoadStatus
-LoadResource(const Resources::ResourceId id, void* info)
+LoadFromMemory(const Resources::ResourceId id, void* info)
 {
-	return ResourceManager::Instance()->LoadResource(id, info);
+	return ResourceManager::Instance()->LoadFromMemory(id, info);
 }
 
 //------------------------------------------------------------------------------

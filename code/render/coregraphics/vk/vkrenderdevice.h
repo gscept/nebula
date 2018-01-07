@@ -13,6 +13,9 @@
 #include "vkscheduler.h"
 #include "vksubcontexthandler.h"
 #include "vkcmdbuffer.h"
+#include "vkshaderprogram.h"
+#include "coregraphics/glfw/glfwwindow.h"
+#include <array>
 
 
 namespace Lighting
@@ -37,22 +40,22 @@ public:
 	virtual ~VkRenderDevice();
 
 	/// open the device
-	bool Open() override;
+	bool Open();
 	/// close the device
-	void Close() override;
+	void Close();
 
 	/// begin complete frame
-	bool BeginFrame(IndexT frameIndex) override;
+	bool BeginFrame(IndexT frameIndex);
 	/// set the current vertex stream source
-	void SetStreamVertexBuffer(IndexT streamIndex, const VkBuffer vb, IndexT offsetVertexIndex) override;
+	void SetStreamVertexBuffer(IndexT streamIndex, const VkBuffer vb, IndexT offsetVertexIndex);
 	/// set current vertex layout
-	void SetVertexLayout(const Ptr<CoreGraphics::VertexLayout>& vl) override;
+	void SetVertexLayout(const VkPipelineVertexInputStateCreateInfo* vl);
 	/// set current index buffer
-	void SetIndexBuffer(const VkBuffer ib, IndexT offsetIndex, const IndexType::Code type) override;
+	void SetIndexBuffer(const VkBuffer ib, IndexT offsetIndex, const CoreGraphics::IndexType::Code type);
 	/// set the type of topology to be used
-	void SetPrimitiveTopology(const CoreGraphics::PrimitiveTopology::Code& topo) override;
+	void SetPrimitiveTopology(const CoreGraphics::PrimitiveTopology::Code& topo);
 	/// perform computation
-	void Compute(int dimX, int dimY, int dimZ, uint flag = NoBarrierBit); // use MemoryBarrierFlag
+	void Compute(int dimX, int dimY, int dimZ);
 	/// begin a rendering pass
 	void BeginPass(const Ptr<CoreGraphics::Pass>& pass);
 	/// progress to next subpass
@@ -62,7 +65,7 @@ public:
 	/// bake the current state of the render device (only used on DX12 and Vulkan renderers where pipeline creation is required)
 	void BuildRenderPipeline();
 	/// insert execution barrier
-	void InsertBarrier(const Ptr<CoreGraphics::Barrier>& barrier);
+	void InsertBarrier(const CoreGraphics::BarrierId barrier);
 	/// draw current primitives
 	void Draw();
 	/// draw indexed, instanced primitives (see method header for details)
@@ -81,7 +84,7 @@ public:
 	void SetViewport(const Math::rectangle<int>& rect, int index);
 
 	/// copy data between textures
-	void Copy(const CoreGraphics::TextureId from, Math::rectangle<SizeT> fromRegion, const CoreGraphics::TextureId to, Math::rectangle<SizeT> toRegion) override;
+	void Copy(const CoreGraphics::TextureId from, Math::rectangle<SizeT> fromRegion, const CoreGraphics::TextureId to, Math::rectangle<SizeT> toRegion);
 	/// blit between render textures
 	void Blit(const CoreGraphics::RenderTextureId from, Math::rectangle<SizeT> fromRegion, IndexT fromMip, const CoreGraphics::RenderTextureId to, Math::rectangle<SizeT> toRegion, IndexT toMip);
 	/// blit between textures
@@ -91,6 +94,19 @@ public:
 	CoreGraphics::ImageFileFormat::Code SaveScreenshot(CoreGraphics::ImageFileFormat::Code fmt, const Ptr<IO::Stream>& outStream);
 	/// save a region of the screen to the provided stream
 	CoreGraphics::ImageFileFormat::Code SaveScreenshot(CoreGraphics::ImageFileFormat::Code fmt, const Ptr<IO::Stream>& outStream, const Math::rectangle<int>& rect, int x, int y);
+
+	/// get the currently activated device
+	VkDevice GetCurrentDevice() { return this->devices[this->currentDevice];  }
+	/// get the currently activated physical device
+	VkPhysicalDevice GetCurrentPhysicalDevice() { return this->physicalDevices[this->currentDevice]; }
+	/// get the current device properties
+	VkPhysicalDeviceProperties GetCurrentProperties() { return this->deviceProps[this->currentDevice]; }
+	/// get the current device features
+	VkPhysicalDeviceFeatures GetCurrentFeatures() { return this->deviceFeatures[this->currentDevice]; }
+	/// get queue families
+	const std::array<uint32_t, 4> GetQueueFamilies() { return std::array<uint32_t, 4>{ this->drawQueueFamily, this->computeQueueFamily, this->transferQueueFamily, this->sparseQueueFamily }; }
+	/// get queue from index and family
+	const VkQueue GetQueue(const VkSubContextHandler::SubContextType type, const IndexT index);
 
 	/// call when window gets resized
 	void DisplayResized(SizeT width, SizeT height);
@@ -138,6 +154,8 @@ private:
 	friend class GLFW::GLFWWindow;
 	friend struct VkDeferredCommand;
 
+	friend const CoreGraphics::WindowId GLFW::InternalSetupFunction(const CoreGraphics::WindowCreateInfo& info, const Util::Blob& windowData, bool embed);
+
 	friend VKAPI_ATTR void VKAPI_CALL NebulaVkAllocCallback(void* userData, uint32_t size, VkInternalAllocationType type, VkSystemAllocationScope scope);
 	friend VKAPI_ATTR void VKAPI_CALL NebulaVkFreeCallback(void* userData, uint32_t size, VkInternalAllocationType type, VkSystemAllocationScope scope);
 
@@ -166,8 +184,6 @@ private:
 	void CloseVulkanDevice();
 	/// setup the requested adapter for the Vulkan device
 	void SetupAdapter();
-	/// select the requested buffer formats for the Vulkan device
-	void SetupBufferFormats();
 	/// setup the remaining presentation parameters
 	void SetupPresentParams();
 	/// set the initial Vulkan device state
@@ -182,7 +198,7 @@ private:
 	/// sets the current framebuffer layout information
 	void SetFramebufferLayoutInfo(const VkGraphicsPipelineCreateInfo& framebufferLayout);
 	/// sets the current primitive layout information
-	void SetInputLayoutInfo(VkPipelineInputAssemblyStateCreateInfo* inputLayout);
+	void SetInputLayoutInfo(const VkPipelineInputAssemblyStateCreateInfo* inputLayout);
 	/// create a new pipeline (or fetch from cache) and bind to command queue
 	void CreateAndBindGraphicsPipeline();
 	/// bind compute pipeline
@@ -251,7 +267,6 @@ private:
 	const uint32_t VkPoolMaxSets = 65536;
 	const uint32_t VkPoolSetSize = 65536;
 
-	VkPhysicalDevice devices[64];
 	VkExtensionProperties physicalExtensions[64];
 
 	uint32_t usedPhysicalExtensions;
@@ -277,16 +292,24 @@ private:
 	VkSubContextHandler subcontextHandler;
 	VkPipelineDatabase database;
 
-	static VkDevice dev;
+	// device handling (multi GPU?!?!)
+	Util::FixedArray<VkDevice> devices;
+	Util::FixedArray<VkPhysicalDevice> physicalDevices;
+	Util::FixedArray<VkPhysicalDeviceProperties> deviceProps;
+	Util::FixedArray<VkPhysicalDeviceFeatures> deviceFeatures;
+	Util::FixedArray<uint32_t> numCaps;
+	Util::FixedArray<Util::FixedArray<VkExtensionProperties>> caps;
+	IndexT currentDevice;
+	
+	static VkInstance instance;
+
 	static VkDescriptorPool descPool;	
 
-	static CmdBufferId mainCmdDrawBuffer;
-	static CmdBufferId mainCmdComputeBuffer;
-	static CmdBufferId mainCmdTransferBuffer;
-	static CmdBufferId mainCmdSparseBuffer;
+	static CoreGraphics::CmdBufferId mainCmdDrawBuffer;
+	static CoreGraphics::CmdBufferId mainCmdComputeBuffer;
+	static CoreGraphics::CmdBufferId mainCmdTransferBuffer;
+	static CoreGraphics::CmdBufferId mainCmdSparseBuffer;
 
-	static VkInstance instance;
-	static VkPhysicalDevice physicalDev;
 	static VkPipelineCache cache;
 	VkFence mainCmdDrawFence;
 	VkFence mainCmdCmpFence;
@@ -299,8 +322,6 @@ private:
 
 	StateMode currentCommandState;
 
-	VkPhysicalDeviceProperties deviceProps;
-	VkPhysicalDeviceFeatures deviceFeatures;
 
 	static const SizeT NumDrawThreads = 8;
 	IndexT currentDrawThread;

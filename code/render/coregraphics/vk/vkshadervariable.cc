@@ -9,76 +9,66 @@
 #include "coregraphics/shaderreadwritetexture.h"
 #include "coregraphics/shaderreadwritebuffer.h"
 #include "coregraphics/texture.h"
+#include "vktexture.h"
+#include "vkconstantbuffer.h"
+#include "vkshaderreadwritetexture.h"
+#include "vkshaderreadwritebuffer.h"
+#include "vkshaderstate.h"
 
+
+using namespace CoreGraphics;
 namespace Vulkan
 {
 
-__ImplementClass(Vulkan::VkShaderVariable, 'VKSV', Base::ShaderVariableBase);
-//------------------------------------------------------------------------------
-/**
-*/
-VkShaderVariable::VkShaderVariable() :
-	bufferBinding({nullptr, 0, 0, false, nullptr}),
-    pushRangeBinding({ nullptr, 0, 0, false, nullptr }),
-	dynamicOffset(false),
-	textureHandle(false)
-{
-	// empty
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-VkShaderVariable::~VkShaderVariable()
-{
-	// empty
-}
-
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkShaderVariable::BindToUniformBuffer(const Ptr<CoreGraphics::ConstantBuffer>& buffer, uint32_t offset, uint32_t size, int8_t* defaultValue)
+VkShaderVariable::BindToUniformBuffer(const CoreGraphics::ShaderVariableId var, CoreGraphics::ConstantBufferId buffer, VkShaderVariableAllocator& allocator, uint32_t offset, uint32_t size, int8_t* defaultValue)
 {
-	this->bufferBinding.uniformBuffer = buffer;
-	this->bufferBinding.offset = offset;
-	this->bufferBinding.size = size;
-	this->bufferBinding.defaultValue = defaultValue;
-	this->bufferBinding.isvalid = true;
+	VkShaderVariableVariableBinding& binding = allocator.Get<0>(var.id);
+	binding.backing.uniformBuffer = buffer.id24;
+	binding.offset = offset;
+	binding.size = size;
+	binding.defaultValue = defaultValue;
+	binding.isvalid = true;
+	binding.isbuffer = true;
 
 	// make sure that the buffer is updated (data is array since we have a char*)
-	buffer->UpdateArray(defaultValue, offset, size, 1);
+	ConstantBufferUpdate(buffer, defaultValue, offset, size);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkShaderVariable::BindToPushConstantRange(uint8_t* buffer, uint32_t offset, uint32_t size, int8_t* defaultValue)
+VkShaderVariable::BindToPushConstantRange(const CoreGraphics::ShaderVariableId var, uint8_t* buffer, VkShaderVariableAllocator& allocator, uint32_t offset, uint32_t size, int8_t* defaultValue)
 {
-	this->pushRangeBinding.buffer = buffer;
-	this->pushRangeBinding.offset = offset;
-	this->pushRangeBinding.size = size;
-	this->pushRangeBinding.defaultValue = defaultValue;
-	this->pushRangeBinding.isvalid = true;
+	VkShaderVariableVariableBinding& binding = allocator.Get<0>(var.id);
+	binding.backing.push = buffer;
+	binding.offset = offset;
+	binding.size = size;
+	binding.defaultValue = defaultValue;
+	binding.isvalid = true;
+	binding.isbuffer = false;
 	
 	// copy data to buffer
-	memcpy(buffer + offset, defaultValue, size);
+	VkShaderVariable::UpdatePushRange(buffer + offset, size, defaultValue);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkShaderVariable::Setup(AnyFX::VkVariable* var, Ids::Id24 id, ShaderVariableAllocator& allocator, VkDescriptorSet& set)
+VkShaderVariable::Setup(AnyFX::VkVariable* var, Ids::Id24 id, VkShaderVariableAllocator& allocator, VkDescriptorSet& set)
 {
 	n_assert(0 != var);
 
 	Util::String name = var->name.c_str();
 
-	VariableBinding& varBind = allocator.Get<0>(id);
-	ResourceBinding& resBind = allocator.Get<1>(id);
-	SetupInfo& setupInfo = allocator.Get<2>(id);
+	VkShaderVariableVariableBinding& varBind = allocator.Get<0>(id);
+	VkShaderVariableResourceBinding& resBind = allocator.Get<1>(id);
+	VkShaderVariableSetupInfo& setupInfo = allocator.Get<2>(id);
 	
 	setupInfo.name = name;
 	resBind.set = set;
@@ -86,15 +76,15 @@ VkShaderVariable::Setup(AnyFX::VkVariable* var, Ids::Id24 id, ShaderVariableAllo
 	{
 	case AnyFX::Double:
 	case AnyFX::Float:
-		setupInfo.type = FloatType;
+		setupInfo.type = FloatVariableType;
 		break;
 	case AnyFX::Short:
 	case AnyFX::Integer:
 	case AnyFX::UInteger:
-		setupInfo.type = IntType;
+		setupInfo.type = IntVariableType;
 		break;
 	case AnyFX::Bool:
-		setupInfo.type = BoolType;
+		setupInfo.type = BoolVariableType;
 		break;
 	case AnyFX::Float3:
 	case AnyFX::Float4:
@@ -108,7 +98,7 @@ VkShaderVariable::Setup(AnyFX::VkVariable* var, Ids::Id24 id, ShaderVariableAllo
 	case AnyFX::Short4:
 	case AnyFX::Bool3:
 	case AnyFX::Bool4:
-		setupInfo.type = VectorType;
+		setupInfo.type = VectorVariableType;
 		break;
 	case AnyFX::Float2:
 	case AnyFX::Double2:
@@ -116,7 +106,7 @@ VkShaderVariable::Setup(AnyFX::VkVariable* var, Ids::Id24 id, ShaderVariableAllo
 	case AnyFX::UInteger2:
 	case AnyFX::Short2:
 	case AnyFX::Bool2:
-		setupInfo.type = Vector2Type;
+		setupInfo.type = Vector2VariableType;
 		break;
 	case AnyFX::Matrix2x2:
 	case AnyFX::Matrix2x3:
@@ -127,7 +117,7 @@ VkShaderVariable::Setup(AnyFX::VkVariable* var, Ids::Id24 id, ShaderVariableAllo
 	case AnyFX::Matrix4x2:
 	case AnyFX::Matrix4x3:
 	case AnyFX::Matrix4x4:
-		setupInfo.type = MatrixType;
+		setupInfo.type = MatrixVariableType;
 		break;
 	case AnyFX::Image1D:
 	case AnyFX::Image1DArray:
@@ -138,7 +128,7 @@ VkShaderVariable::Setup(AnyFX::VkVariable* var, Ids::Id24 id, ShaderVariableAllo
 	case AnyFX::Image3D:
 	case AnyFX::ImageCube:
 	case AnyFX::ImageCubeArray:
-		setupInfo.type = ImageReadWriteType;
+		setupInfo.type = ImageReadWriteVariableType;
 		resBind.setBinding = var->bindingLayout.binding;
 		break;
 	case AnyFX::Sampler1D:
@@ -150,7 +140,7 @@ VkShaderVariable::Setup(AnyFX::VkVariable* var, Ids::Id24 id, ShaderVariableAllo
 	case AnyFX::Sampler3D:
 	case AnyFX::SamplerCube:
 	case AnyFX::SamplerCubeArray:
-		setupInfo.type = SamplerType;
+		setupInfo.type = SamplerVariableType;
 		resBind.setBinding = var->bindingLayout.binding;
 		break;
 	case AnyFX::Texture1D:
@@ -162,22 +152,22 @@ VkShaderVariable::Setup(AnyFX::VkVariable* var, Ids::Id24 id, ShaderVariableAllo
 	case AnyFX::Texture3D:
 	case AnyFX::TextureCube:
 	case AnyFX::TextureCubeArray:
-		setupInfo.type = TextureType;
+		setupInfo.type = TextureVariableType;
 		resBind.setBinding = var->bindingLayout.binding;
 		break;
 	case AnyFX::TextureHandle:
-		setupInfo.type = TextureType;
+		setupInfo.type = TextureVariableType;
 		resBind.textureIsHandle = true;
 		break;
 	case AnyFX::ImageHandle:
-		setupInfo.type = ImageReadWriteType;
+		setupInfo.type = ImageReadWriteVariableType;
 		break;
 	case AnyFX::SamplerHandle:
-		setupInfo.type = SamplerType;
+		setupInfo.type = SamplerVariableType;
 		resBind.textureIsHandle = true;
 		break;
 	default:
-		setupInfo.type = ConstantBufferType;
+		setupInfo.type = ConstantBufferVariableType;
 		resBind.setBinding = var->bindingLayout.binding;
 		break;
 	}
@@ -188,16 +178,16 @@ VkShaderVariable::Setup(AnyFX::VkVariable* var, Ids::Id24 id, ShaderVariableAllo
 /**
 */
 void
-VkShaderVariable::Setup(AnyFX::VkVarbuffer* var, Ids::Id24 id, ShaderVariableAllocator& allocator, VkDescriptorSet& set)
+VkShaderVariable::Setup(AnyFX::VkVarbuffer* var, Ids::Id24 id, VkShaderVariableAllocator& allocator, VkDescriptorSet& set)
 {
 	n_assert(0 != var);
 	Util::String name = var->name.c_str();
-	VariableBinding& varBind = allocator.Get<0>(id);
-	ResourceBinding& resBind = allocator.Get<1>(id);
-	SetupInfo& setupInfo = allocator.Get<2>(id);
+	VkShaderVariableVariableBinding& varBind = allocator.Get<0>(id);
+	VkShaderVariableResourceBinding& resBind = allocator.Get<1>(id);
+	VkShaderVariableSetupInfo& setupInfo = allocator.Get<2>(id);
 
 	setupInfo.name = name;
-	setupInfo.type = BufferReadWriteType;
+	setupInfo.type = BufferReadWriteVariableType;
 	resBind.dynamicOffset = var->Flag("DynamicOffset");
 	resBind.setBinding = var->bindingLayout.binding;
 	resBind.set = set;
@@ -207,16 +197,16 @@ VkShaderVariable::Setup(AnyFX::VkVarbuffer* var, Ids::Id24 id, ShaderVariableAll
 /**
 */
 void
-VkShaderVariable::Setup(AnyFX::VkVarblock* var, Ids::Id24 id, ShaderVariableAllocator& allocator, VkDescriptorSet& set)
+VkShaderVariable::Setup(AnyFX::VkVarblock* var, Ids::Id24 id, VkShaderVariableAllocator& allocator, VkDescriptorSet& set)
 {
 	n_assert(0 != var);
 	Util::String name = var->name.c_str();
-	VariableBinding& varBind = allocator.Get<0>(id);
-	ResourceBinding& resBind = allocator.Get<1>(id);
-	SetupInfo& setupInfo = allocator.Get<2>(id);
+	VkShaderVariableVariableBinding& varBind = allocator.Get<0>(id);
+	VkShaderVariableResourceBinding& resBind = allocator.Get<1>(id);
+	VkShaderVariableSetupInfo& setupInfo = allocator.Get<2>(id);
 	
 	setupInfo.name = name;
-	setupInfo.type = BufferReadWriteType;
+	setupInfo.type = BufferReadWriteVariableType;
 	resBind.dynamicOffset = var->Flag("DynamicOffset");
 	resBind.setBinding = var->bindingLayout.binding;
 	resBind.set = set;
@@ -226,154 +216,153 @@ VkShaderVariable::Setup(AnyFX::VkVarblock* var, Ids::Id24 id, ShaderVariableAllo
 /**
 */
 void
-VkShaderVariable::SetInt(VariableBinding& bind, int value)
+VkShaderVariable::SetInt(VkShaderVariableVariableBinding& bind, int value)
 {
 	if (bind.isbuffer)
-		bind.buf.uniformBuffer->Update(value, bind.buf.offset, sizeof(int));
+		ConstantBufferUpdate(bind.backing.uniformBuffer, &value, bind.offset, sizeof(int));
 	else
-		VkShaderVariable::UpdatePushRange(bind.push, sizeof(int), value);
+		VkShaderVariable::UpdatePushRange(bind.backing.push, sizeof(int), value);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkShaderVariable::SetIntArray(VariableBinding& bind, const int* values, SizeT count)
+VkShaderVariable::SetIntArray(VkShaderVariableVariableBinding& bind, const int* values, SizeT count)
 {
 	if (bind.isbuffer)
-		bind.buf.uniformBuffer->UpdateArray(values, bind.buf.offset, sizeof(int), count);
+		ConstantBufferArrayUpdate(bind.backing.uniformBuffer, values, bind.offset, sizeof(int), count);
 	else
-		VkShaderVariable::UpdatePushRange(bind.push, sizeof(int) * count, values);
+		VkShaderVariable::UpdatePushRange(bind.backing.push, sizeof(int) * count, values);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkShaderVariable::SetFloat(VariableBinding& bind, float value)
+VkShaderVariable::SetFloat(VkShaderVariableVariableBinding& bind, float value)
 {
 	if (bind.isbuffer)
-		bind.buf.uniformBuffer->Update(value, bind.buf.offset, sizeof(float));
+		ConstantBufferUpdate(bind.backing.uniformBuffer, &value, bind.offset, sizeof(float));
 	else
-		VkShaderVariable::UpdatePushRange(bind.push, sizeof(float), value);
+		VkShaderVariable::UpdatePushRange(bind.backing.push, sizeof(float), value);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkShaderVariable::SetFloatArray(VariableBinding& bind, const float* values, SizeT count)
+VkShaderVariable::SetFloatArray(VkShaderVariableVariableBinding& bind, const float* values, SizeT count)
 {
 	if (bind.isbuffer)
-		bind.buf.uniformBuffer->UpdateArray(values, bind.buf.offset, sizeof(float), count);
+		ConstantBufferArrayUpdate(bind.backing.uniformBuffer, values, bind.offset, sizeof(float), count);
 	else
-		VkShaderVariable::UpdatePushRange(bind.push, sizeof(float) * count, values);
+		VkShaderVariable::UpdatePushRange(bind.backing.push, sizeof(float) * count, values);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkShaderVariable::SetFloat2(VariableBinding& bind, const Math::float2& value)
+VkShaderVariable::SetFloat2(VkShaderVariableVariableBinding& bind, const Math::float2& value)
 {
 	if (bind.isbuffer)
-		bind.buf.uniformBuffer->Update(value, bind.buf.offset, sizeof(Math::float2));
+		ConstantBufferUpdate(bind.backing.uniformBuffer, &value, bind.offset, sizeof(Math::float2));
 	else
-		VkShaderVariable::UpdatePushRange(bind.push, sizeof(Math::float2), value);
+		VkShaderVariable::UpdatePushRange(bind.backing.push, sizeof(Math::float2), value);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkShaderVariable::SetFloat2Array(VariableBinding& bind, const Math::float2* values, SizeT count)
+VkShaderVariable::SetFloat2Array(VkShaderVariableVariableBinding& bind, const Math::float2* values, SizeT count)
 {
 	if (bind.isbuffer)
-		bind.buf.uniformBuffer->UpdateArray(values, bind.buf.offset, sizeof(Math::float2), count);
+		ConstantBufferArrayUpdate(bind.backing.uniformBuffer, values, bind.offset, sizeof(Math::float2), count);
 	else
-		VkShaderVariable::UpdatePushRange(bind.push, sizeof(Math::float2) * count, values);
+		VkShaderVariable::UpdatePushRange(bind.backing.push, sizeof(Math::float2) * count, values);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkShaderVariable::SetFloat4(VariableBinding& bind, const Math::float4& value)
+VkShaderVariable::SetFloat4(VkShaderVariableVariableBinding& bind, const Math::float4& value)
 {
 	if (bind.isbuffer)
-		bind.buf.uniformBuffer->Update(value, bind.buf.offset, sizeof(Math::float4));
+		ConstantBufferUpdate(bind.backing.uniformBuffer, &value, bind.offset, sizeof(Math::float4));
 	else
-		VkShaderVariable::UpdatePushRange(bind.push, sizeof(Math::float4), value);
+		VkShaderVariable::UpdatePushRange(bind.backing.push, sizeof(Math::float4), value);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkShaderVariable::SetFloat4Array(VariableBinding& bind, const Math::float4* values, SizeT count)
+VkShaderVariable::SetFloat4Array(VkShaderVariableVariableBinding& bind, const Math::float4* values, SizeT count)
 {
 	if (bind.isbuffer)
-		bind.buf.uniformBuffer->UpdateArray(values, bind.buf.offset, sizeof(Math::float4), count);
+		ConstantBufferArrayUpdate(bind.backing.uniformBuffer, values, bind.offset, sizeof(Math::float4), count);
 	else
-		VkShaderVariable::UpdatePushRange(bind.push, sizeof(Math::float4) * count, values);
+		VkShaderVariable::UpdatePushRange(bind.backing.push, sizeof(Math::float4) * count, values);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkShaderVariable::SetMatrix(VariableBinding& bind, const Math::matrix44& value)
+VkShaderVariable::SetMatrix(VkShaderVariableVariableBinding& bind, const Math::matrix44& value)
 {
 	if (bind.isbuffer)
-		bind.buf.uniformBuffer->Update(value, bind.buf.offset, sizeof(Math::matrix44));
+		ConstantBufferUpdate(bind.backing.uniformBuffer, &value, bind.offset, sizeof(Math::matrix44));
 	else
-		VkShaderVariable::UpdatePushRange(bind.push, sizeof(Math::matrix44), value);
+		VkShaderVariable::UpdatePushRange(bind.backing.push, sizeof(Math::matrix44), value);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkShaderVariable::SetMatrixArray(VariableBinding& bind, const Math::matrix44* values, SizeT count)
+VkShaderVariable::SetMatrixArray(VkShaderVariableVariableBinding& bind, const Math::matrix44* values, SizeT count)
 {
 	if (bind.isbuffer)
-		bind.buf.uniformBuffer->UpdateArray(values, bind.buf.offset, sizeof(Math::matrix44), count);
+		ConstantBufferArrayUpdate(bind.backing.uniformBuffer, values, bind.offset, sizeof(Math::matrix44), count);
 	else
-		VkShaderVariable::UpdatePushRange(bind.push, sizeof(Math::matrix44) * count, values);
+		VkShaderVariable::UpdatePushRange(bind.backing.push, sizeof(Math::matrix44) * count, values);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkShaderVariable::SetBool(VariableBinding& bind, bool value)
+VkShaderVariable::SetBool(VkShaderVariableVariableBinding& bind, bool value)
 {
 	if (bind.isbuffer)
-		bind.buf.uniformBuffer->Update(value, bind.buf.offset, sizeof(bool));
+		ConstantBufferUpdate(bind.backing.uniformBuffer, &value, bind.offset, sizeof(bool));
 	else
-		VkShaderVariable::UpdatePushRange(bind.push, sizeof(bool), value);
+		VkShaderVariable::UpdatePushRange(bind.backing.push, sizeof(bool), value);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkShaderVariable::SetBoolArray(VariableBinding& bind, const bool* values, SizeT count)
+VkShaderVariable::SetBoolArray(VkShaderVariableVariableBinding& bind, const bool* values, SizeT count)
 {
 	if (bind.isbuffer)
-		bind.buf.uniformBuffer->UpdateArray(values, bind.buf.offset, sizeof(bool), count);
+		ConstantBufferArrayUpdate(bind.backing.uniformBuffer, values, bind.offset, sizeof(bool), count);
 	else
-		VkShaderVariable::UpdatePushRange(bind.push, sizeof(bool) * count, values);
+		VkShaderVariable::UpdatePushRange(bind.backing.push, sizeof(bool) * count, values);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkShaderVariable::SetTexture(VariableBinding& bind, ResourceBinding& res, Util::Array<VkWriteDescriptorSet>& writes, const Resources::ResourceId tex)
+VkShaderVariable::SetTexture(VkShaderVariableVariableBinding& bind, VkShaderVariableResourceBinding& res, Util::Array<VkWriteDescriptorSet>& writes, const CoreGraphics::TextureId tex)
 {
-	Ids::Id24 resId = Ids::Id::GetBig(Ids::Id::GetLow(tex));
-	TextureRuntimeInfo& info = textureAllocator.GetSafe<0>(resId);
+	VkTextureRuntimeInfo& info = textureAllocator.GetSafe<0>(tex.id24);
 
 	// only change if there is a difference
 	if (info.view != res.write.img.imageView)
@@ -385,17 +374,17 @@ VkShaderVariable::SetTexture(VariableBinding& bind, ResourceBinding& res, Util::
 		{
 			// update texture id
 			if (bind.isbuffer)
-				bind.buf.uniformBuffer->Update(info.bind, bind.buf.offset, sizeof(uint32_t));
+				ConstantBufferUpdate(bind.backing.uniformBuffer, &info.bind, bind.offset, sizeof(uint32_t));
 			else
-				VkShaderVariable::UpdatePushRange(bind.push, sizeof(uint32_t), info.bind);
+				VkShaderVariable::UpdatePushRange(bind.backing.push, sizeof(uint32_t), info.bind);
 		}
 		else
 		{
 			// dependent on type of variable, select if sampler should be coupled with sampler or if it will be assembled in-shader
 			const VkImageView& view = info.view;
 			VkDescriptorType type;
-			if (info.type == TextureType)		type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-			else if (info.type == SamplerType)	type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			if (info.type == TextureVariableType)		type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+			else if (info.type == SamplerVariableType)	type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 			else
 			{
 				n_error("Variable '%d' is must be either Texture or Integer to be assigned a texture!\n", res.setBinding);
@@ -414,6 +403,7 @@ VkShaderVariable::SetTexture(VariableBinding& bind, ResourceBinding& res, Util::
 			set.pImageInfo = &res.write.img;
 			res.write.img.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 			res.write.img.sampler = VK_NULL_HANDLE;
+			res.write.img.imageView = info.view;
 
 			// add to shader to update on next update
 			writes.Append(set);
@@ -425,27 +415,26 @@ VkShaderVariable::SetTexture(VariableBinding& bind, ResourceBinding& res, Util::
 /**
 */
 void
-VkShaderVariable::SetConstantBuffer(ResourceBinding& bind, Util::Array<VkWriteDescriptorSet>& writes, const Ptr<CoreGraphics::ConstantBuffer>& buf)
+VkShaderVariable::SetConstantBuffer(VkShaderVariableResourceBinding& bind, Util::Array<VkWriteDescriptorSet>& writes, const CoreGraphics::ConstantBufferId buf)
 {
-	n_assert(this->type == ConstantBufferType);
-	if (!buf.isvalid()) return;
-	if (buf->GetVkBuffer() != this->buf.buffer)
+	VkConstantBufferRuntimeInfo& info = constantBufferAllocator.Get<0>(buf.id24);
+	if (info.buf != bind.write.buf.buffer)
 	{
 		VkWriteDescriptorSet set;
 		set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		set.pNext = NULL;
 		set.descriptorCount = 1;
-		if (this->dynamicOffset)	set.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+		if (bind.dynamicOffset)		set.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
 		else						set.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		set.dstArrayElement = 0;
 		set.dstBinding = bind.setBinding;
 		set.dstSet = bind.set;
-		set.pBufferInfo = &this->buf;
+		set.pBufferInfo = &bind.write.buf;
 		set.pTexelBufferView = NULL;
 		set.pImageInfo = NULL;
-		this->buf.buffer = buf->GetVkBuffer();
-		this->buf.offset = 0;
-		this->buf.range = VK_WHOLE_SIZE;
+		bind.write.buf.buffer = info.buf;
+		bind.write.buf.offset = 0;
+		bind.write.buf.range = VK_WHOLE_SIZE;
 
 		// add to shader to update on next update
 		writes.Append(set);
@@ -456,11 +445,10 @@ VkShaderVariable::SetConstantBuffer(ResourceBinding& bind, Util::Array<VkWriteDe
 /**
 */
 void
-VkShaderVariable::SetShaderReadWriteTexture(ResourceBinding& bind, Util::Array<VkWriteDescriptorSet>& writes, const Ptr<CoreGraphics::ShaderReadWriteTexture>& tex)
+VkShaderVariable::SetShaderReadWriteTexture(VkShaderVariableResourceBinding& bind, Util::Array<VkWriteDescriptorSet>& writes, const CoreGraphics::ShaderRWTextureId tex)
 {
-	n_assert(this->type == ImageReadWriteType);
-	if (!tex.isvalid()) return;
-	if (tex->GetVkImageView() != this->img.imageView)
+	VkShaderRWTextureRuntimeInfo& info = shaderRWTextureAllocator.Get<1>(tex.id24);
+	if (info.view != bind.write.img.imageView)
 	{
 		VkWriteDescriptorSet set;
 		set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -473,10 +461,10 @@ VkShaderVariable::SetShaderReadWriteTexture(ResourceBinding& bind, Util::Array<V
 		set.dstSet = bind.set;
 		set.pBufferInfo = NULL;
 		set.pTexelBufferView = NULL;
-		set.pImageInfo = &this->img;
-		this->img.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-		this->img.imageView = tex->GetVkImageView();
-		this->img.sampler = VK_NULL_HANDLE;
+		set.pImageInfo = &bind.write.img;
+		bind.write.img.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+		bind.write.img.imageView = info.view;
+		bind.write.img.sampler = VK_NULL_HANDLE;
 
 		// add to shader to update on next update
 		writes.Append(set);
@@ -487,11 +475,10 @@ VkShaderVariable::SetShaderReadWriteTexture(ResourceBinding& bind, Util::Array<V
 /**
 */
 void
-VkShaderVariable::SetShaderReadWriteTexture(ResourceBinding& bind, Util::Array<VkWriteDescriptorSet>& writes, const Ptr<CoreGraphics::Texture>& tex)
+VkShaderVariable::SetShaderReadWriteTexture(VkShaderVariableResourceBinding& bind, Util::Array<VkWriteDescriptorSet>& writes, const CoreGraphics::TextureId tex)
 {
-	n_assert(this->type == ImageReadWriteType);
-	if (!tex.isvalid()) return;
-	if (tex->GetVkImageView() != this->img.imageView)
+	VkTextureRuntimeInfo& info = textureAllocator.GetSafe<0>(tex.id24);
+	if (info.view != bind.write.img.imageView)
 	{
 		VkWriteDescriptorSet set;
 		set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -504,10 +491,10 @@ VkShaderVariable::SetShaderReadWriteTexture(ResourceBinding& bind, Util::Array<V
 		set.dstSet = bind.set;
 		set.pBufferInfo = NULL;
 		set.pTexelBufferView = NULL;
-		set.pImageInfo = &this->img;
-		this->img.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-		this->img.imageView = tex->GetVkImageView();
-		this->img.sampler = VK_NULL_HANDLE;
+		set.pImageInfo = &bind.write.img;
+		bind.write.img.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+		bind.write.img.imageView = info.view;
+		bind.write.img.sampler = VK_NULL_HANDLE;
 
 		// add to shader to update on next update
 		writes.Append(set);
@@ -518,44 +505,32 @@ VkShaderVariable::SetShaderReadWriteTexture(ResourceBinding& bind, Util::Array<V
 /**
 */
 void
-VkShaderVariable::SetShaderReadWriteBuffer(ResourceBinding& bind, const Ptr<CoreGraphics::ShaderReadWriteBuffer>& buf)
+VkShaderVariable::SetShaderReadWriteBuffer(VkShaderVariableResourceBinding& bind, Util::Array<VkWriteDescriptorSet>& writes, const CoreGraphics::ShaderRWBufferId buf)
 {
-	n_assert(this->type == BufferReadWriteType);
-	if (!buf.isvalid()) return;
-	if (buf->GetVkBuffer() != this->buf.buffer)
+	VkShaderRWBufferRuntimeInfo& info = shaderRWBufferAllocator.Get<1>(buf.id24);
+	if (info.buf != bind.write.buf.buffer)
 	{
 		VkWriteDescriptorSet set;
 		set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		set.pNext = NULL;
 
 		set.descriptorCount = 1;
-		if (this->dynamicOffset) set.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
-		else									 set.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		if (bind.dynamicOffset)		set.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
+		else						set.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		set.dstArrayElement = 0;
 		set.dstBinding = bind.setBinding;
 		set.dstSet = bind.set;
-		set.pBufferInfo = &this->buf;
+		set.pBufferInfo = &bind.write.buf;
 		set.pTexelBufferView = NULL;
 		set.pImageInfo = NULL;
 
-		this->buf.buffer = buf->GetVkBuffer();
-		this->buf.offset = 0;
-		this->buf.range = VK_WHOLE_SIZE;
+		bind.write.buf.buffer = info.buf;
+		bind.write.buf.offset = 0;
+		bind.write.buf.range = VK_WHOLE_SIZE;
 
 		// add to shader to update on next update
-		this->shader->AddDescriptorWrite(set);
+		writes.Append(set);
 	}
 }
-
-//------------------------------------------------------------------------------
-/**
-*/
-const bool
-VkShaderVariable::IsActive() const
-{
-	if (this->type >= TextureType && this->type <= BufferReadWriteType) return true;
-	else																return this->bufferBinding.isvalid;
-}
-
 
 } // namespace Vulkan

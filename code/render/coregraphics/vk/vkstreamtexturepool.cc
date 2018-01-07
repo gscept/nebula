@@ -80,17 +80,20 @@ VkStreamTexturePool::LoadFromStream(const Ids::Id24 res, const Util::StringAtom&
 	n_assert(stream->CanBeMapped());
 	n_assert(!this->GetState(res) == Resources::Resource::Pending);
 
-	/// during the load-phase, we can safetly get the structs
-	texturePool->EnterGet();
-	TextureRuntimeInfo& runtimeInfo = texturePool->Get<0>(res);
-	TextureLoadInfo& loadInfo = texturePool->Get<1>(res);
-	texturePool->LeaveGet();
-
 	stream->SetAccessMode(Stream::ReadAccess);
 	if (stream->Open())
 	{
 		void* srcData = stream->Map();
 		uint srcDataSize = stream->GetSize();
+
+		/// during the load-phase, we can safetly get the structs
+		texturePool->EnterGet();
+		VkTextureRuntimeInfo& runtimeInfo = texturePool->Get<0>(res);
+		VkTextureLoadInfo& loadInfo = texturePool->Get<1>(res);
+		texturePool->LeaveGet();
+
+		VkPhysicalDevice physicalDev = VkRenderDevice::Instance()->GetCurrentPhysicalDevice();
+		VkDevice dev = VkRenderDevice::Instance()->GetCurrentDevice();
 
 		// load using IL
 		ILuint image = ilGenImage();
@@ -114,7 +117,7 @@ VkStreamTexturePool::LoadFromStream(const Ids::Id24 res, const Util::StringAtom&
 
 		// use linear if we really have to
 		VkFormatProperties formatProps;
-		vkGetPhysicalDeviceFormatProperties(VkRenderDevice::physicalDev, vkformat, &formatProps);
+		vkGetPhysicalDeviceFormatProperties(physicalDev, vkformat, &formatProps);
 		bool forceLinear = false;
 		if (!(formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT))
 		{
@@ -126,7 +129,6 @@ VkStreamTexturePool::LoadFromStream(const Ids::Id24 res, const Util::StringAtom&
 		extents.width = width;
 		extents.height = height;
 		extents.depth = 1;
-		uint32_t queues[] = { VkRenderDevice::Instance()->drawQueueFamily, VkRenderDevice::Instance()->transferQueueFamily };
 		VkImageCreateInfo info =
 		{
 			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -145,13 +147,13 @@ VkStreamTexturePool::LoadFromStream(const Ids::Id24 res, const Util::StringAtom&
 			NULL,
 			VK_IMAGE_LAYOUT_UNDEFINED
 		};
-		VkResult stat = vkCreateImage(VkRenderDevice::dev, &info, NULL, &loadInfo.img);
+		VkResult stat = vkCreateImage(dev, &info, NULL, &loadInfo.img);
 		n_assert(stat == VK_SUCCESS);
 
 		// allocate memory backing
 		uint32_t alignedSize;
 		VkUtilities::AllocateImageMemory(loadInfo.img, loadInfo.mem, VkMemoryPropertyFlagBits(0), alignedSize);
-		vkBindImageMemory(VkRenderDevice::dev, loadInfo.img, loadInfo.mem, 0);
+		vkBindImageMemory(dev, loadInfo.img, loadInfo.mem, 0);
 
 		VkScheduler* scheduler = VkScheduler::Instance();
 
@@ -191,11 +193,6 @@ VkStreamTexturePool::LoadFromStream(const Ids::Id24 res, const Util::StringAtom&
 					int32_t mipHeight = (int32_t)Math::n_max(1.0f, Math::n_floor(height / Math::n_pow(2, (float)j)));
 					int32_t mipDepth = (int32_t)Math::n_max(1.0f, Math::n_floor(depth / Math::n_pow(2, (float)j)));
 
-					//VkImageSubresource subres = { VK_IMAGE_ASPECT_COLOR_BIT, j, 0 };
-					//VkSubresourceLayout layout;
-					//vkGetImageSubresourceLayout(VkRenderDevice::dev, img, &subres, &layout);
-
-					//memcpy((uint8_t*)mappedData + layout.offset, buf, size);
 					info.extent.width = mipWidth;
 					info.extent.height = mipHeight;
 					info.extent.depth = 1;
@@ -268,7 +265,7 @@ VkStreamTexturePool::LoadFromStream(const Ids::Id24 res, const Util::StringAtom&
 			VkTypes::AsVkMapping(format),
 			subres
 		};
-		stat = vkCreateImageView(VkRenderDevice::dev, &viewCreate, NULL, &runtimeInfo.view);
+		stat = vkCreateImageView(dev, &viewCreate, NULL, &runtimeInfo.view);
 		n_assert(stat == VK_SUCCESS);
 
 		loadInfo.dims.width = width;
@@ -276,6 +273,7 @@ VkStreamTexturePool::LoadFromStream(const Ids::Id24 res, const Util::StringAtom&
 		loadInfo.dims.depth = depth;
 		loadInfo.mips = Math::n_max(mips, 1u);
 		loadInfo.format = VkTypes::AsNebulaPixelFormat(vkformat);
+		loadInfo.dev = dev;
 		runtimeInfo.type = cube ? CoreGraphics::TextureCube : depth > 1 ? CoreGraphics::Texture3D : CoreGraphics::Texture2D;
 		runtimeInfo.bind = VkShaderServer::Instance()->RegisterTexture(runtimeInfo.view, runtimeInfo.type);
 

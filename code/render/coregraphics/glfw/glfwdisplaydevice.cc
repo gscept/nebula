@@ -92,7 +92,7 @@ GLFWDisplayDevice::Close()
 {
 	n_assert(this->IsOpen());
 	this->RemoveEventHandler(this->eventHandler.upcast<DisplayEventHandler>());
-	this->eventHandler = 0;
+	this->eventHandler = nullptr;
 	DisplayDeviceBase::Close();
 }
 

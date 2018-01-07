@@ -45,7 +45,7 @@ public:
 	void Discard();
 
     /// get the associated shader variable 
-    const Ptr<CoreGraphics::ShaderVariable>& GetShaderVariable() const;
+    const Ptr<CoreGraphics::ShaderVariable>& ShaderStateGetVariable() const;
     /// apply local value to shader variable
     void Apply();
 	/// apply local value to specific shader variable
@@ -124,7 +124,7 @@ protected:
 /**
 */
 inline const Ptr<CoreGraphics::ShaderVariable>&
-ShaderVariableInstanceBase::GetShaderVariable() const
+ShaderVariableInstanceBase::ShaderStateGetVariable() const
 {
     return this->shaderVariable;
 }

@@ -15,6 +15,9 @@
 */
 //------------------------------------------------------------------------------
 #include "id.h"
+#include "idpool.h"
+#include "util/array.h"
+#include "threading/criticalsection.h"
 namespace Ids
 {
 template <typename C>

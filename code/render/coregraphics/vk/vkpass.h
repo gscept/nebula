@@ -7,7 +7,9 @@
 */
 //------------------------------------------------------------------------------
 #include "coregraphics/base/passbase.h"
-#include "coregraphics/shaderstate.h"
+#include "coregraphics/shader.h"
+#include "coregraphics/constantbuffer.h"
+
 namespace Vulkan
 {
 class VkPass : public Base::PassBase
@@ -57,10 +59,11 @@ public:
 private:
 	friend class VkPipelineDatabase;
 
-	Ptr<CoreGraphics::ShaderState> shaderState;
-	Ptr<CoreGraphics::ConstantBuffer> passBlockBuffer;
-	Ptr<CoreGraphics::ShaderVariable> passBlockVar;
-	Ptr<CoreGraphics::ShaderVariable> renderTargetDimensionsVar;
+	VkDevice dev;
+	CoreGraphics::ShaderStateId shaderState;
+	CoreGraphics::ConstantBufferId passBlockBuffer;
+	CoreGraphics::ShaderVariableId passBlockVar;
+	CoreGraphics::ShaderVariableId renderTargetDimensionsVar;
 	VkDescriptorSet passDescriptorSet;
 	VkPipelineLayout passPipelineLayout;
 	Util::FixedArray<VkClearValue> clearValues;

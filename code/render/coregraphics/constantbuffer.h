@@ -17,6 +17,7 @@
 #include "ids/idpool.h"
 #include "util/stringatom.h"
 #include "coregraphics/shader.h"
+
 namespace CoreGraphics
 {
 
@@ -27,9 +28,10 @@ struct ConstantBufferCreateInfo
 {
 	bool setupFromReflection;
 
-	CoreGraphics::ShaderStateId state;	// the shader state to bind to
+	ShaderStateId state;				// the shader state to bind to
 	Util::StringAtom name;				// name in shader state for the block
 	SizeT size;							// if setupFromReflection is true, this is the number of backing buffers, otherwise, it is the byte size
+	SizeT numBuffers;					// declare the amount of buffer rings (double, triple, quadruple buffering...)
 };
 
 struct ConstantBufferInfo
@@ -42,7 +44,19 @@ const ConstantBufferId CreateConstantBuffer(const ConstantBufferCreateInfo& info
 /// destroy constant buffer
 void DestroyConstantBuffer(const ConstantBufferId id);
 /// allocate an instance of this buffer
-ConstantBufferSliceId AllocateInstance(const ConstantBufferId id);
+ConstantBufferSliceId ConstantBufferAllocateInstance(const ConstantBufferId id);
 /// free an instance
-void FreeInstance(ConstantBufferId id, ConstantBufferSliceId slice);
+void ConstantBufferFreeInstance(const ConstantBufferId id, ConstantBufferSliceId slice);
+/// reset instances in constant buffer
+void ConstantBufferReset(const ConstantBufferId id);
+
+/// update constant buffer
+void ConstantBufferUpdate(const ConstantBufferId id, const void* data, const uint offset, const uint size);
+/// update constant buffer using array of objects
+void ConstantBufferArrayUpdate(const ConstantBufferId id, const void* data, const uint offset, const uint size, const uint count);
+/// set base offset for constant buffer
+void ConstantBufferSetBaseOffset(const ConstantBufferId id, const uint offset);
+
+
+
 } // CoreGraphics

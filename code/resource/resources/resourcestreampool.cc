@@ -232,7 +232,7 @@ Resources::ResourceStreamPool::CreateResource(const ResourceName& res, const Uti
 
 	if (i == InvalidIndex)
 	{
-		// allocate new resource
+		// allocate new object (AllocObject is implemented using the __ImplementResourceAllocator macro)
 		resourceId = this->AllocObject();
 
 		// create new resource id, if need be, grow the container list

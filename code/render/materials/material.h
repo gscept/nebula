@@ -62,7 +62,7 @@ public:
 	struct MaterialPass
 	{
 		Graphics::BatchGroup::Code code;
-		Ptr<CoreGraphics::Shader> shader;
+		CoreGraphics::ShaderId shader;
 		CoreGraphics::ShaderFeature::Mask featureMask;
 		IndexT index;
 
@@ -111,10 +111,10 @@ public:
 	/// reloads entire material
 	void Reload();
 	/// reloads material passes related to shader
-	void Reload(const Ptr<CoreGraphics::Shader>& shader);
+	void Reload(const CoreGraphics::ShaderId shader);
 
 	/// add a shader to the material
-	void AddPass(const Graphics::BatchGroup::Code& code, const Ptr<CoreGraphics::Shader>& shader, const CoreGraphics::ShaderFeature::Mask& mask);
+	void AddPass(const Graphics::BatchGroup::Code& code, const CoreGraphics::ShaderId shader, const CoreGraphics::ShaderFeature::Mask& mask);
 	/// get pass by index
 	const MaterialPass& GetPassByIndex(const IndexT index) const;
 	/// get pass list by code

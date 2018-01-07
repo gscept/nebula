@@ -1,7 +1,7 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	Implements a command buffer thread which incrementally writes to Vulkan command buffers.
+	This thread records commands to a Vulkan Command Buffer in its own thread.
 	
 	(C) 2016 Individual contributors, see AUTHORS file
 */

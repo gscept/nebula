@@ -29,13 +29,4 @@ ModelServer::~ModelServer()
 	__DestructSingleton;
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-Models::ModelInstanceId
-ModelServer::CreateModelInstance(const Resources::ResourceId id)
-{
-	
-}
-
 } // namespace Models

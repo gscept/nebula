@@ -9,7 +9,7 @@
 namespace Vulkan
 {
 
-Ids::IdAllocator<VkCommandBuffer, VkCommandPool> commandBuffers(0x00FFFFFF);
+VkCommandBufferAllocator commandBuffers(0x00FFFFFF);
 CommandBufferPools pools;
 
 //------------------------------------------------------------------------------
@@ -154,9 +154,9 @@ DestroyVkPools(VkDevice dev)
 /**
 */
 inline const VkCommandBuffer
-CommandBufferGetVk(CmdBufferId id)
+CommandBufferGetVk(const CoreGraphics::CmdBufferId id)
 {
-#if _DEBUG
+#if NEBULA_DEBUG
 	n_assert(id.id8 == CommandBufferIdType);
 #endif
 	return commandBuffers.Get<0>(id.id24);
@@ -210,7 +210,10 @@ CreateCmdBuffer(const CmdBufferCreateInfo& info)
 	Ids::Id32 id = commandBuffers.AllocObject();
 	vkAllocateCommandBuffers(pools.dev, &vkInfo, &commandBuffers.Get<0>(id));
 	commandBuffers.Get<1>(id) = pool;
-	return CmdBufferId{ id, CommandBufferIdType };
+	CmdBufferId ret;
+	ret.id24 = id;
+	ret.id8 = CommandBufferIdType;
+	return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -222,7 +225,7 @@ DestroyCmdBuffer(const CmdBufferId id)
 #if _DEBUG
 	n_assert(id.id8 == CommandBufferIdType);
 #endif
-	vkFreeCommandBuffers(pools.dev, commandBuffers.Get<1>(id.id24), 1, commandBuffers.Get<0>(id.id24));
+	vkFreeCommandBuffers(pools.dev, commandBuffers.Get<1>(id.id24), 1, &commandBuffers.Get<0>(id.id24));
 }
 
 //------------------------------------------------------------------------------
@@ -270,7 +273,7 @@ CmdBufferClear(const CmdBufferId id, const CmdBufferClearInfo& info)
 	n_assert(id.id8 == CommandBufferIdType);
 #endif
 	VkCommandBufferResetFlags flags = 0;
-	flags |= info.allowRelease ? VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT;
+	flags |= info.allowRelease ? VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT : 0;
 	vkResetCommandBuffer(commandBuffers.Get<0>(id.id24), flags);
 }
 

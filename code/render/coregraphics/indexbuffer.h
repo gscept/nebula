@@ -34,17 +34,17 @@ const IndexBufferId CreateIndexBuffer(IndexBufferCreateInfo info);
 /// destroy Index buffer
 void DestroyIndexBuffer(const IndexBufferId id);
 /// bind Index buffer resource individually
-void BindIndexBuffer(const IndexBufferId id, const IndexT IndexOffset);
+void IndexBufferBind(const IndexBufferId id, const IndexT offset);
 /// update Index buffer
-void UpdateIndexBuffer(const IndexBufferId id, void* data, PtrDiff size, PtrDiff offset);
+void IndexBufferUpdate(const IndexBufferId id, void* data, PtrDiff size, PtrDiff offset);
 /// request lock for Index buffer, such that it can be updated
-void LockIndexBuffer(const IndexBufferId id, const PtrDiff offset, const PtrDiff range);
+void IndexBufferLock(const IndexBufferId id, const PtrDiff offset, const PtrDiff range);
 /// request unlock for Index buffer
-void UnlockIndexBuffer(const IndexBufferId id, const PtrDiff offset, const PtrDiff range);
+void IndexBufferUnlock(const IndexBufferId id, const PtrDiff offset, const PtrDiff range);
 /// map GPU memory
-void* MapIndexBuffer(const IndexBufferId id, const CoreGraphics::GpuBufferTypes::MapType type);
+void* IndexBufferMap(const IndexBufferId id, const CoreGraphics::GpuBufferTypes::MapType type);
 /// unmap GPU memory
-void UnmapIndexBuffer(const IndexBufferId id);
+void IndexBufferUnmap(const IndexBufferId id);
 
 
 class MemoryIndexBufferPool;

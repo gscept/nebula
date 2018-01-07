@@ -31,11 +31,13 @@ CreateVertexLayout(VertexLayoutCreateInfo& info)
 	
 	loadInfo.signature = Util::StringAtom(sig);
 	loadInfo.vertexByteSize = size;
-	loadInfo.shader = info.shader;
+	loadInfo.shader = Ids::InvalidId64;
 	loadInfo.comps = info.comps;
-	
+
+	// reserve resource using signature as name, don't load again unless needed
 	VertexLayoutId id = layoutPool->ReserveResource(atom, "render_system");
-	layoutPool->LoadFromMemory(id.id24, &loadInfo);
+	if (layoutPool->GetState(id.id24) == Resources::Resource::Pending)
+		layoutPool->LoadFromMemory(id.id24, &loadInfo);
 
 	return id;
 }
@@ -47,6 +49,33 @@ void
 DestroyVertexLayout(const VertexLayoutId id)
 {
 	layoutPool->Unload(id.id24);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+VertexLayoutBind(const VertexLayoutId id)
+{
+	layoutPool->VertexLayoutBind(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const SizeT
+VertexLayoutGetSize(const VertexLayoutId id)
+{
+	return layoutPool->VertexLayoutGetSize(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const VertexLayoutId
+CreateCachedVertexLayout(const VertexLayoutId id, const ShaderProgramId shader)
+{
+	return VertexLayoutId();
 }
 
 } // CoreGraphics

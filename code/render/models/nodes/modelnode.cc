@@ -29,7 +29,7 @@ ModelNode::~ModelNode()
 //------------------------------------------------------------------------------
 /**
 */
-Ids::Id32
+ModelNodeId
 ModelNode::CreateInstance() const
 {
 	return Ids::InvalidId32;

@@ -98,8 +98,8 @@ Nvx2StreamReader::Close()
     this->groupDataPtr = nullptr;
     this->vertexDataPtr = nullptr;
     this->indexDataPtr = nullptr;
-	this->ibo = Ids::InvalidId32;
-	this->vbo = Ids::InvalidId32;
+	this->ibo = Ids::InvalidId64;
+	this->vbo = Ids::InvalidId64;
     this->primGroups.Clear();
     this->vertexComponents.Clear();
     stream->Unmap();
@@ -266,7 +266,7 @@ Nvx2StreamReader::UpdateGroupBoundingBoxes()
 void
 Nvx2StreamReader::SetupVertexBuffer(const Resources::ResourceName& name)
 {
-	n_assert(this->vbo == Ids::InvalidId32);
+	n_assert(this->vbo == Ids::InvalidId64);
     n_assert(!this->rawMode);
     n_assert(0 != this->vertexDataPtr);
     n_assert(this->vertexDataSize > 0);
@@ -274,7 +274,7 @@ Nvx2StreamReader::SetupVertexBuffer(const Resources::ResourceName& name)
     n_assert(this->vertexComponents.Size() > 0);
 
 	// create vertex buffer
-	this->vbo = Resources::ReserveResource(name, this->tag, MemoryVertexBufferPool::RTTI);
+	Resources::ResourceId id = vboPool->ReserveResource(name, this->tag);
 
 	VertexBufferCreateInfo vboInfo;
 	vboInfo.access = this->access;
@@ -283,7 +283,8 @@ Nvx2StreamReader::SetupVertexBuffer(const Resources::ResourceName& name)
 	vboInfo.comps = this->vertexComponents;
 	vboInfo.data = this->vertexDataPtr;
 	vboInfo.dataSize = this->vertexDataSize;
-	ResourcePool::LoadStatus stat = Resources::LoadFromMemory(this->vbo, &vboInfo);
+	this->vbo = Ids::Id64(id);
+	ResourcePool::LoadStatus stat = vboPool->LoadFromMemory(id, &vboInfo);
     n_assert(stat == ResourcePool::Success);
 }
 
@@ -293,14 +294,14 @@ Nvx2StreamReader::SetupVertexBuffer(const Resources::ResourceName& name)
 void
 Nvx2StreamReader::SetupIndexBuffer(const Resources::ResourceName& name)
 {
-	n_assert(this->ibo == Ids::InvalidId32);
+	n_assert(this->ibo == Ids::InvalidId64);
     n_assert(!this->rawMode);
     n_assert(0 != this->indexDataPtr);
     n_assert(this->indexDataSize > 0);
     n_assert(this->numIndices > 0);
     
 	// create index buffer
-	this->ibo = Resources::ReserveResource(name, this->tag, MemoryIndexBufferPool::RTTI);
+	Resources::ResourceId id = iboPool->ReserveResource(name, this->tag);
 
 	IndexBufferCreateInfo iboInfo;
 	iboInfo.access = this->access;
@@ -309,7 +310,8 @@ Nvx2StreamReader::SetupIndexBuffer(const Resources::ResourceName& name)
 	iboInfo.type = IndexType::Index32;
 	iboInfo.data = this->indexDataPtr;
 	iboInfo.dataSize = this->indexDataSize;
-	ResourcePool::LoadStatus stat = Resources::LoadFromMemory(this->ibo, &iboInfo);
+	this->ibo = Ids::Id64(id);
+	ResourcePool::LoadStatus stat = iboPool->LoadFromMemory(this->ibo, &iboInfo);
 	n_assert(stat == ResourcePool::Success);
 }
 

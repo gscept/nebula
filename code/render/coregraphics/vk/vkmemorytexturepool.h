@@ -24,11 +24,11 @@
 #include "core/refcounted.h"
 #include "resources/resourcememorypool.h"
 #include "coregraphics/pixelformat.h"
-#include <array>
 #include "vktexture.h"
 #include "vkshaderserver.h"
 #include "coregraphics/texture.h"
 #include "coregraphics/gpubuffertypes.h"
+#include <array>
 
 namespace Vulkan
 {
@@ -78,7 +78,7 @@ public:
 		IndexT dstMip, IndexT dstLayer, SizeT dstXOffset, SizeT dstYOffset, SizeT dstZOffset);
 private:
 	friend class VkStreamTexturePool;
-	__ImplementResourceAllocatorSafe(VkTexture::textureAllocator);
+	__ImplementResourceAllocatorSafe(textureAllocator);
 };
 
 //------------------------------------------------------------------------------
@@ -88,11 +88,11 @@ inline void
 VkMemoryTexturePool::Unload(const Ids::Id24 id)
 {
 	this->EnterGet();
-	TextureLoadInfo& loadInfo = this->Get<1>(id);
-	TextureRuntimeInfo& runtimeInfo = this->Get<0>(id);
-	vkFreeMemory(VkRenderDevice::dev, loadInfo.mem, nullptr);
-	vkDestroyImage(VkRenderDevice::dev, loadInfo.img, nullptr);
-	vkDestroyImageView(VkRenderDevice::dev, runtimeInfo.view, nullptr);
+	VkTextureLoadInfo& loadInfo = this->Get<1>(id);
+	VkTextureRuntimeInfo& runtimeInfo = this->Get<0>(id);
+	vkFreeMemory(loadInfo.dev, loadInfo.mem, nullptr);
+	vkDestroyImage(loadInfo.dev, loadInfo.img, nullptr);
+	vkDestroyImageView(loadInfo.dev, runtimeInfo.view, nullptr);
 	VkShaderServer::Instance()->UnregisterTexture(runtimeInfo.bind, runtimeInfo.type);
 	this->LeaveGet();
 }

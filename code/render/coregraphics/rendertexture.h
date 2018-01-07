@@ -16,7 +16,7 @@
 namespace CoreGraphics
 {
 
-ID_24_8_TYPE(RenderTextureId);
+ID_24_8_TYPE(RenderTextureId); 
 
 enum RenderTextureUsage
 {
@@ -67,13 +67,23 @@ struct RenderTextureResizeInfo
 RenderTextureId CreateRenderTexture(const RenderTextureCreateInfo& info);
 /// destroy render texture
 void DestroyRenderTexture(const RenderTextureId id);
+
 /// resize the render texture
-void ResizeRenderTexture(const RenderTextureId id, const RenderTextureResizeInfo& info);
+void RenderTextureResize(const RenderTextureId id, const RenderTextureResizeInfo& info);
+/// trigger a window change callback
+void RenderTextureWindowResized(const RenderTextureId id);
+
+/// get texture dimensions
+const CoreGraphics::TextureDimensions RenderTextureGetDimensions(const RenderTextureId id);
+/// get pixel format
+const CoreGraphics::PixelFormat::Code RenderTextureGetPixelFormat(const RenderTextureId id);
+/// get msaa
+const bool RenderTextureGetMSAA(const RenderTextureId id);
 
 /// helper function to setup RenderTextureInfo, already implemented
-RenderTextureInfo InfoSetupHelper(const RenderTextureCreateInfo& info);
+RenderTextureInfo RenderTextureInfoSetupHelper(const RenderTextureCreateInfo& info);
 /// helper function to setup RenderTextureInfo, already implemented
-RenderTextureInfo InfoResizeHelper(const RenderTextureResizeInfo& info);
+RenderTextureInfo RenderTextureInfoResizeHelper(const RenderTextureResizeInfo& info);
 
 
 } // CoreGraphics

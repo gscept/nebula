@@ -263,11 +263,11 @@ VkUtilities::ImageDepthStencilClear(const VkImage& image, const VkDeferredComman
 /**
 */
 void
-VkUtilities::AllocateBufferMemory(const VkBuffer& buf, VkDeviceMemory& bufmem, VkMemoryPropertyFlagBits flags, uint32_t& bufsize)
+VkUtilities::AllocateBufferMemory(const VkDevice dev, const VkBuffer& buf, VkDeviceMemory& bufmem, VkMemoryPropertyFlagBits flags, uint32_t& bufsize)
 {
 	// now attain memory requirements so we get a properly aligned memory storage
 	VkMemoryRequirements req;
-	vkGetBufferMemoryRequirements(VkRenderDevice::dev, buf, &req);
+	vkGetBufferMemoryRequirements(dev, buf, &req);
 
 	uint32_t memtype;
 	VkResult err = VkUtilities::GetMemoryType(req.memoryTypeBits, flags, memtype);
@@ -281,7 +281,7 @@ VkUtilities::AllocateBufferMemory(const VkBuffer& buf, VkDeviceMemory& bufmem, V
 	};
 
 	// now allocate memory
-	err = vkAllocateMemory(VkRenderDevice::dev, &meminfo, NULL, &bufmem);
+	err = vkAllocateMemory(dev, &meminfo, NULL, &bufmem);
 	if (err == VK_ERROR_OUT_OF_DEVICE_MEMORY || err == VK_ERROR_OUT_OF_HOST_MEMORY)
 	{
 		#if __X64__
@@ -298,11 +298,11 @@ VkUtilities::AllocateBufferMemory(const VkBuffer& buf, VkDeviceMemory& bufmem, V
 /**
 */
 void
-VkUtilities::AllocateImageMemory(const VkImage& img, VkDeviceMemory& imgmem, VkMemoryPropertyFlagBits flags, uint32_t& imgsize)
+VkUtilities::AllocateImageMemory(const VkDevice dev, const VkImage& img, VkDeviceMemory& imgmem, VkMemoryPropertyFlagBits flags, uint32_t& imgsize)
 {
 	// now attain memory requirements so we get a properly aligned memory storage
 	VkMemoryRequirements req;
-	vkGetImageMemoryRequirements(VkRenderDevice::dev, img, &req);
+	vkGetImageMemoryRequirements(dev, img, &req);
 
 	uint32_t memtype;
 	VkResult err = VkUtilities::GetMemoryType(req.memoryTypeBits, flags, memtype);
@@ -316,7 +316,7 @@ VkUtilities::AllocateImageMemory(const VkImage& img, VkDeviceMemory& imgmem, VkM
 	};
 
 	// now allocate memory
-	err = vkAllocateMemory(VkRenderDevice::dev, &meminfo, NULL, &imgmem);
+	err = vkAllocateMemory(dev, &meminfo, NULL, &imgmem);
 	if (err == VK_ERROR_OUT_OF_DEVICE_MEMORY || err == VK_ERROR_OUT_OF_HOST_MEMORY)
 	{
 		#if __X64__
@@ -457,7 +457,7 @@ VkUtilities::ImageUpdate(const VkImage& img, const VkImageCreateInfo& info, uint
 /**
 */
 void
-VkUtilities::ReadImage(const VkImage tex, CoreGraphics::PixelFormat::Code format, Base::TextureBase::Dimensions dims, Base::TextureBase::Type type, VkImageCopy copy, uint32_t& outMemSize, VkDeviceMemory& outMem, VkBuffer& outBuffer)
+VkUtilities::ReadImage(const VkImage tex, CoreGraphics::PixelFormat::Code format, CoreGraphics::TextureDimensions dims, CoreGraphics::TextureType type, VkImageCopy copy, uint32_t& outMemSize, VkDeviceMemory& outMem, VkBuffer& outBuffer)
 {
 	VkCommandBuffer cmdBuf = VkUtilities::BeginImmediateTransfer();
 

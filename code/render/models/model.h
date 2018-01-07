@@ -8,53 +8,35 @@
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
-#include "resources/resource.h"
+#include "ids/id.h"
+#include "ids/idallocator.h"
+#include "models/nodes/modelnode.h"
 #include "math/bbox.h"
 namespace Models
 {
-class ModelPool;
-class ModelServer;
-class ModelNode;
-class Model : public Resources::Resource
-{
-	__DeclareClass(Model);
-public:
-	/// constructor
-	Model();
-	/// destructor
-	virtual ~Model();
 
-	/// finds node on name
-	Ptr<ModelNode> FindNode(const Util::StringAtom& name);
-	/// get model bounding box
-	const Math::bbox& GetBoundingBox() const;
-private:
-	/// the model loader is responsible for filling this class
-	friend class ModelPool;
-	friend class ModelContext;
+class StreamModelPool;
+extern StreamModelPool* modelPool;
 
-	Math::bbox boundingBox;
-	Util::Dictionary<Util::StringAtom, Ptr<ModelNode>> nodes;
-	Ptr<ModelNode> root;
-	Util::Array<Resources::ResourceId> resources;
-};
+ID_32_TYPE(ModelId);
 
-//------------------------------------------------------------------------------
-/**
-*/
-inline Ptr<Models::ModelNode>
-Model::FindNode(const Util::StringAtom& name)
-{
-	return this->nodes[name];
-}
+/// create model
+const ModelId CreateModel();
+/// destroy model
+void DestroyModel(const ModelId id);
 
-//------------------------------------------------------------------------------
-/**
-*/
-inline const Math::bbox&
-Model::GetBoundingBox() const
-{
-	return this->boundingBox;
-}
+/// find model hierarchically
+const ModelId FindNode(const ModelId model, const Util::StringAtom& name);
+/// get bounding box
+const Math::bbox& GetBoundingBox(const ModelId model);
+
+typedef Ids::IdAllocator<
+	Math::bbox,											// bounding box of entire model
+	Util::Dictionary<Util::StringAtom, ModelNodeId>,	// nodes sorted by name
+	ModelNodeId,										// root node
+	Util::Array<Resources::ResourceId>					// resources loaded and contained in this model
+> ModelAllocatorType;
+
+extern ModelAllocatorType modelAllocator;
 
 } // namespace Models

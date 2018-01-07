@@ -29,7 +29,7 @@ Stage::~Stage()
 /**
 */
 void
-Stage::AttachEntity(const EntityId entity)
+Stage::AttachEntity(const GraphicsEntityId entity)
 {
 	this->entities.Append(entity);
 }
@@ -38,7 +38,7 @@ Stage::AttachEntity(const EntityId entity)
 /**
 */
 void
-Stage::DetachEntity(const EntityId entity)
+Stage::DetachEntity(const GraphicsEntityId entity)
 {
 	this->entities.EraseIndex(this->entities.FindIndex(entity));
 }

@@ -19,12 +19,15 @@ enum CoreGraphicsIdType
 	ShaderRWTextureIdType,
 	ShaderStorageBufferIdType,
 	ShaderIdType,
+	ShaderProgramIdType,
+	ShaderStateIdType,
 	ShaderInstanceIdType,
 	ShaderVariableIdType,
 	CommandBufferIdType,
 	RenderTextureIdType,
 	MeshIdType,
 	EventIdType,
+	BarrierIdType,
 	WindowIdType
 };
 

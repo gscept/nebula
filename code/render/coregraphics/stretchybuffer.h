@@ -23,12 +23,17 @@ class StretchyBuffer
 {
 public:
 	/// constructor
-	StretchyBuffer(T* target, SizeT stride, SizeT alignment);
+	StretchyBuffer();
 	/// destructor
 	~StretchyBuffer();
 
+	/// setup stretchy buffer on a target
+	void Setup(T* target, SizeT stride, SizeT alignment);
+
 	/// set all free indices to be considered used up
 	void SetFull();
+	/// set all indices to be free
+	void SetEmpty();
 	/// set range of values to be considered free
 	void SetFree(uint start, SizeT num);
 	/// allocates instance memory, and returns offset into buffer at new instance
@@ -49,10 +54,10 @@ protected:
 /**
 */
 template <class T> inline
-StretchyBuffer<T>::StretchyBuffer(T* target, SizeT stride, SizeT alignment) :
-	target(target),
-	stride(stride),
-	byteAlignment(alignment)
+StretchyBuffer<T>::StretchyBuffer() :
+	target(nullptr),
+	stride(0),
+	byteAlignment(0)
 {
 	// empty
 }
@@ -64,6 +69,17 @@ template <class T> inline
 StretchyBuffer<T>::~StretchyBuffer()
 {
 	// empty
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class T> inline 
+void StretchyBuffer<T>::Setup(T * target, SizeT stride, SizeT alignment)
+{
+	this->target = target;
+	this->stride = stride;
+	this->byteAlignment = alignment;
 }
 
 #define ROUND_TO_POW(n, p) ((n + p - 1) & ~(p - 1))
@@ -80,6 +96,7 @@ inline SizeT
 StretchyBuffer<T>::AllocateInstance(SizeT numInstances)
 {
 	n_assert(numInstances > 0);
+	n_assert(this->target != nullptr);
 	SizeT offset;
 
 	// pool is exhausted, allocate new elements
@@ -89,8 +106,10 @@ StretchyBuffer<T>::AllocateInstance(SizeT numInstances)
 		SizeT capacity = this->usedIndices.Size();
 
 		// calculate current offset
+		SizeT newCapacity;
 		offset = ROUND_TO_POW(capacity * this->stride, this->byteAlignment);
-		uint32_t alignedSize = this->target->Grow(capacity, numInstances);
+		uint32_t alignedSize = this->target->Grow(capacity, numInstances, newCapacity);
+		this->SetFree(capacity + numInstances, newCapacity - capacity - numInstances);
 
 		// add instance to used indices
 		IndexT i;
@@ -143,8 +162,10 @@ StretchyBuffer<T>::AllocateInstance(SizeT numInstances)
 				SizeT capacity = this->usedIndices.Size() + this->freeIndices.Size();
 
 				// calculate offset
+				SizeT newCapacity;
 				offset = ROUND_TO_POW(capacity * this->stride, this->byteAlignment);
-				uint32_t alignedSize = this->target->Grow(capacity, numInstances);
+				uint32_t alignedSize = this->target->Grow(capacity, numInstances, newCapacity);
+				this->SetFree(capacity + numInstances, newCapacity - capacity - numInstances);
 
 				// add instance to used indices
 				IndexT i;
@@ -159,8 +180,10 @@ StretchyBuffer<T>::AllocateInstance(SizeT numInstances)
 			SizeT capacity = this->usedIndices.Size() + this->freeIndices.Size();
 
 			// calculate offset
+			SizeT newCapacity;
 			offset = ROUND_TO_POW(capacity * this->stride, this->byteAlignment);
-			uint32_t alignedSize = this->target->Grow(capacity, numInstances);
+			uint32_t alignedSize = this->target->Grow(capacity, numInstances, newCapacity);
+			this->SetFree(capacity + numInstances, newCapacity - capacity - numInstances);
 
 			// add instance to used indices
 			IndexT i;
@@ -218,6 +241,21 @@ StretchyBuffer<T>::SetFull()
 		this->usedIndices.Append(i);
 	}
 	this->freeIndices.Clear();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class T>
+inline void StretchyBuffer<T>::SetEmpty()
+{
+	// move free indices to used indices
+	IndexT i;
+	for (i = 0; i < this->usedIndices.Size(); i++)
+	{
+		this->freeIndices.Append(this->usedIndices[i]);
+	}
+	this->usedIndices.Clear();
 }
 
 } // namespace CoreGraphics

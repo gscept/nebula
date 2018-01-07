@@ -4,13 +4,7 @@
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "vktexture.h"
-#include "vkrenderdevice.h"
-#include "coregraphics/pixelformat.h"
-#include "vktypes.h"
-#include "coregraphics/renderdevice.h"
-#include "coregraphics/config.h"
-#include "vkshaderserver.h"
-#include "vkutilities.h"
+#include "vulkan/vulkan.h"
 
 namespace Vulkan
 {

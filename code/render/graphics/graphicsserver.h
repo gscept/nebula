@@ -10,9 +10,9 @@
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
 #include "framesync/framesynctimer.h"
-#include "visibility/visibilityserver.h"
 #include "util/stringatom.h"
 #include "ids/idgenerationpool.h"
+#include "graphicsentity.h"
 namespace Graphics
 {
 
@@ -34,11 +34,11 @@ public:
 	void Close();
 
 	/// create graphics entity
-	EntityId CreateGraphicsEntity();
+	GraphicsEntityId CreateGraphicsEntity();
 	/// discard graphics entity
-	void DiscardGraphicsEntity(const EntityId id);
+	void DiscardGraphicsEntity(const GraphicsEntityId id);
 	/// check if graphics entity is valid
-	bool IsValidGraphicsEntity(const EntityId id);
+	bool IsValidGraphicsEntity(const GraphicsEntityId id);
 
 	/// create a new view
 	Ptr<View> CreateView(const Util::StringAtom& framescript);
@@ -62,7 +62,7 @@ private:
 
 	Ptr<FrameSync::FrameSyncTimer> timer;
 	Util::Array<Ptr<GraphicsContext>> contexts;
-	Ptr<Visibility::VisibilityServer> visServer;
+	//Ptr<Visibility::VisibilityServer> visServer;
 
 	Util::Array<Ptr<Stage>> stages;
 	Util::Array<Ptr<View>> views;
@@ -73,7 +73,8 @@ private:
 //------------------------------------------------------------------------------
 /**
 */
-static Ids::Id32 CreateEntity()
+static GraphicsEntityId
+CreateEntity()
 {
 	return GraphicsServer::Instance()->CreateGraphicsEntity();
 }
@@ -81,7 +82,7 @@ static Ids::Id32 CreateEntity()
 //------------------------------------------------------------------------------
 /**
 */
-static void DestroyEntity(const Ids::Id32 id)
+static void DestroyEntity(const GraphicsEntityId id)
 {
 	GraphicsServer::Instance()->DiscardGraphicsEntity(id);
 }

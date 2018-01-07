@@ -17,11 +17,11 @@ using namespace IO;
 namespace Models
 {
 
-__ImplementClass(Models::ModelPool, 'MOLO', Resources::ResourceStreamPool);
+__ImplementClass(Models::StreamModelPool, 'MOLO', Resources::ResourceStreamPool);
 //------------------------------------------------------------------------------
 /**
 */
-ModelPool::ModelPool()
+StreamModelPool::StreamModelPool()
 {
 	// empty
 }
@@ -29,7 +29,7 @@ ModelPool::ModelPool()
 //------------------------------------------------------------------------------
 /**
 */
-ModelPool::~ModelPool()
+StreamModelPool::~StreamModelPool()
 {
 	// empty
 }
@@ -38,14 +38,14 @@ ModelPool::~ModelPool()
 /**
 */
 void
-ModelPool::Setup()
+StreamModelPool::Setup()
 {
 	this->placeholderResourceId = "mdl:system/placeholder.n3";
 	this->errorResourceId = "mdl:system/error.n3";
 
 	// add table for nodes, add new nodes here if required
 	this->constructors.Add('TRFN', [this]() -> Ids::Id32 { this->transformNodes.Append(TransformNode()); return this->transformNodes.Size() - 1; });
-	this->accessors.Add('TRFN', [this](Ids::Id32 id) -> Models::ModelNode* { return &this->transformNodes[id] });
+	this->accessors.Add('TRFN', [this](Ids::Id32 id) -> Models::ModelNode* { return &this->transformNodes[id]; });
 
 	this->constructors.Add('SPND', [this]() -> Ids::Id32 { this->primitiveNodes.Append(PrimitiveNode()); return this->primitiveNodes.Size() - 1; });
 	this->accessors.Add('SPND', [this](Ids::Id32 id) -> Models::ModelNode* { return &this->primitiveNodes[id]; });
@@ -75,7 +75,7 @@ ModelPool::Setup()
 /**
 */
 Resources::ResourceStreamPool::LoadStatus
-ModelPool::Load(const Ids::Id24 id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream)
+StreamModelPool::Load(const Ids::Id24 id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream)
 {
 	// a model is a list of resources, a bounding box, and a dictionary of nodes
 	Math::bbox& boundingBox = this->Get<0>(id);
@@ -181,7 +181,7 @@ ModelPool::Load(const Ids::Id24 id, const Util::StringAtom& tag, const Ptr<IO::S
 /**
 */
 void
-ModelPool::Unload(const Ids::Id24 id)
+StreamModelPool::Unload(const Ids::Id24 id)
 {
 	Util::Dictionary<Util::StringAtom, Util::KeyValuePair<Util::FourCC, Ids::Id32>>& nodes = this->Get<1>(id);
 	IndexT i;

@@ -15,6 +15,7 @@ ID_24_8_TYPE(ShaderRWBufferId);
 struct ShaderRWBufferCreateInfo
 {
 	SizeT size;
+	SizeT numBackingBuffers;
 	bool screenRelative : 1; // when set, size is bytes per pixel
 };
 

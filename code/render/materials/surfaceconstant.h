@@ -41,8 +41,8 @@ public:
 	struct ConstantBinding
 	{
 		bool active;
-		Ptr<CoreGraphics::ShaderVariable> var;
-		Ptr<CoreGraphics::ShaderState> shd;
+		CoreGraphics::ShaderVariableId var;
+		CoreGraphics::ShaderStateId shd;
 	};
 	/// constructor
 	SurfaceConstant();
@@ -52,7 +52,7 @@ public:
     /// set value of constant, the actual shader value will only be applied whenever explicitly called with the Apply function (which should happen when rendering)
     void SetValue(const Util::Variant& value);
     /// set value shorthand for textures
-    void SetTexture(const Ptr<CoreGraphics::Texture>& tex);
+    void SetTexture(const CoreGraphics::TextureId tex);
     /// get value
     const Util::Variant& GetValue() const;
 	/// returns true if constant is supposed to be system managed
@@ -67,12 +67,12 @@ protected:
     friend class Surface;
 
     /// setup constant, which initializes its name and bindings to its implementing shaders
-	void Setup(const Util::StringAtom& name, const Util::Array<Material::MaterialPass>& passes, const Util::Array<Ptr<CoreGraphics::ShaderState>>& shaders);
+	void Setup(const Util::StringAtom& name, const Util::Array<Material::MaterialPass>& passes, const Util::Array<CoreGraphics::ShaderStateId>& shaders);
     /// discard constant
     void Discard();
 
 	/// set shader variable using variant
-	void ApplyToShaderVariable(const Util::Variant& value, const Ptr<CoreGraphics::ShaderVariable>& var);
+	void ApplyToShaderVariable(const Util::Variant& value, const CoreGraphics::ShaderVariableId var);
 
     bool system;
     Util::StringAtom name;

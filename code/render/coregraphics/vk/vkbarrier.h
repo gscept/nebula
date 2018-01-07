@@ -1,38 +1,32 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	Implements a Vulkan pipeline barrier
-	
+	The Vulkan implementation of a GPU command barrier
+
 	(C) 2017 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "coregraphics/base/barrierbase.h"
+#include "ids/idallocator.h"
+#include "coregraphics/barrier.h"
+
 namespace Vulkan
 {
-class VkBarrier : public Base::BarrierBase
-{
-	__DeclareClass(VkBarrier);
-public:
-	/// constructor
-	VkBarrier();
-	/// destructor
-	virtual ~VkBarrier();
 
-	/// setup
-	void Setup();
-	/// discard
-	void Discard();
-private:
-	friend class VkRenderDevice;
-	friend class VkCmdEvent;
-	VkPipelineStageFlags vkSrcFlags;
-	VkPipelineStageFlags vkDstFlags;
-	VkDependencyFlags vkDep;
-	uint32_t vkNumMemoryBarriers;
-	VkMemoryBarrier vkMemoryBarriers[32];
-	uint32_t vkNumBufferBarriers;
-	VkBufferMemoryBarrier vkBufferBarriers[32];
-	uint32_t vkNumImageBarriers;
-	VkImageMemoryBarrier vkImageBarriers[32];
+static const SizeT MaxNumBarriers = 16;
+
+struct VkBarrierInfo
+{
+	VkPipelineStageFlags srcFlags;
+	VkPipelineStageFlags dstFlags;
+	VkDependencyFlags dep;
+	uint32_t numMemoryBarriers;
+	VkMemoryBarrier memoryBarriers[MaxNumBarriers];
+	uint32_t numBufferBarriers;
+	VkBufferMemoryBarrier bufferBarriers[MaxNumBarriers];
+	uint32_t numImageBarriers;
+	VkImageMemoryBarrier imageBarriers[MaxNumBarriers];
 };
+
+typedef Ids::IdAllocator<VkBarrierInfo> VkBarrierAllocator;
+extern VkBarrierAllocator barrierAllocator;
 } // namespace Vulkan

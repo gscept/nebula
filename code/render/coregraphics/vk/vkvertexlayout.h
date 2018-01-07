@@ -16,13 +16,18 @@ namespace Vulkan
 class VkVertexLayout : public Base::VertexLayoutBase
 {
 public:
-	struct BindInfo;
-	struct DerivativeLayout;
 
-	/// constructor
-	VkVertexLayout();
-	/// destructor
-	virtual ~VkVertexLayout();
+	struct DerivativeLayout
+	{
+		VkPipelineVertexInputStateCreateInfo info;
+		Util::Array<VkVertexInputAttributeDescription> attrs;
+	};
+
+	struct BindInfo
+	{
+		Util::FixedArray<VkVertexInputBindingDescription> binds;
+		Util::FixedArray<VkVertexInputAttributeDescription> attrs;
+	};
 
 	/// setup the vertex layout
 	static void Setup(BindInfo& info, VertexLayoutBaseInfo& baseInfo, VkPipelineVertexInputStateCreateInfo& vertexInfo, const Util::Array<CoreGraphics::VertexComponent>& c);
@@ -45,25 +50,13 @@ private:
 	friend class VkPipelineDatabase;
 	friend class VkVertexSignaturePool;
 
-	struct DerivativeLayout
-	{
-		VkPipelineVertexInputStateCreateInfo info;
-		Util::Array<VkVertexInputAttributeDescription> attrs;
-	};
-
-	struct BindInfo
-	{
-		Util::FixedArray<VkVertexInputBindingDescription> binds;
-		Util::FixedArray<VkVertexInputAttributeDescription> attrs;
-	};
-
 	/// create derivative info from shader
 	static VkPipelineVertexInputStateCreateInfo* CreateDerivative(
 		const AnyFX::VkProgram* program, 
 		const Ids::Id64 id,
 		Util::HashTable<Ids::Id64, VkVertexLayout::DerivativeLayout*>& derivativeHashMap,
 		Util::Array<VkVertexLayout::DerivativeLayout>& derivatives,
-		VkVertexLayout::BindInfo& bindInfo, 
+		VkVertexLayout::BindInfo& bindInfo,
 		VkPipelineVertexInputStateCreateInfo& pipelineInfo
 		);
 };

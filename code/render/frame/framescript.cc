@@ -16,7 +16,7 @@ __ImplementClass(Frame::FrameScript, 'FRSC', Core::RefCounted);
 /**
 */
 FrameScript::FrameScript() :
-	window(nullptr)
+	window(Ids::InvalidId32)
 {
 	// empty
 }
@@ -55,7 +55,7 @@ FrameScript::AddDepthStencilTexture(const Util::StringAtom& name, const CoreGrap
 /**
 */
 void
-FrameScript::AddReadWriteTexture(const Util::StringAtom& name, const Ptr<CoreGraphics::ShaderReadWriteTexture>& tex)
+FrameScript::AddReadWriteTexture(const Util::StringAtom& name, const CoreGraphics::ShaderRWTextureId tex)
 {
 	n_assert(!this->readWriteTexturesByName.Contains(name));
 	this->readWriteTexturesByName.Add(name, tex);
@@ -66,7 +66,7 @@ FrameScript::AddReadWriteTexture(const Util::StringAtom& name, const Ptr<CoreGra
 /**
 */
 void
-FrameScript::AddReadWriteBuffer(const Util::StringAtom& name, const Ptr<CoreGraphics::ShaderReadWriteBuffer>& buf)
+FrameScript::AddReadWriteBuffer(const Util::StringAtom& name, const CoreGraphics::ShaderRWBUfferId buf)
 {
 	n_assert(!this->readWriteBuffersByName.Contains(name));
 	this->readWriteBuffersByName.Add(name, buf);
@@ -77,7 +77,7 @@ FrameScript::AddReadWriteBuffer(const Util::StringAtom& name, const Ptr<CoreGrap
 /**
 */
 void
-FrameScript::AddEvent(const Util::StringAtom& name, const Ptr<CoreGraphics::Event>& event)
+FrameScript::AddEvent(const Util::StringAtom& name, const CoreGraphics::EventId event)
 {
 	n_assert(!this->eventsByName.Contains(name));
 	this->eventsByName.Add(name, event);
@@ -99,7 +99,7 @@ FrameScript::AddAlgorithm(const Util::StringAtom& name, const Ptr<Algorithms::Al
 /**
 */
 void
-FrameScript::AddShaderState(const Util::StringAtom& name, const Ptr<CoreGraphics::ShaderState>& state)
+FrameScript::AddShaderState(const Util::StringAtom& name, const CoreGraphics::ShaderStateId state)
 {
 	n_assert(!this->shaderStatesByName.Contains(name));
 	this->shaderStatesByName.Add(name, state);
@@ -236,27 +236,27 @@ void
 FrameScript::Cleanup()
 {
 	IndexT i;
-	for (i = 0; i < this->colorTextures.Size(); i++) this->colorTextures[i]->Discard();
+	for (i = 0; i < this->colorTextures.Size(); i++) DestroyRenderTexture(this->colorTextures[i]);
 	this->colorTextures.Clear();
 	this->colorTexturesByName.Clear();
 
-	for (i = 0; i < this->depthStencilTextures.Size(); i++) this->depthStencilTextures[i]->Discard();
+	for (i = 0; i < this->depthStencilTextures.Size(); i++) DestroyRenderTexture(this->depthStencilTextures[i]);
 	this->depthStencilTextures.Clear();
 	this->depthStencilTexturesByName.Clear();
 
-	for (i = 0; i < this->readWriteTextures.Size(); i++) this->readWriteTextures[i]->Discard();
+	for (i = 0; i < this->readWriteTextures.Size(); i++) DestroyShaderRWTexture(this->readWriteTextures[i]);
 	this->readWriteTextures.Clear();
 	this->readWriteTexturesByName.Clear();
 
-	for (i = 0; i < this->readWriteBuffers.Size(); i++) this->readWriteBuffers[i]->Discard();
+	for (i = 0; i < this->readWriteBuffers.Size(); i++) DestroyShaderRWBuffer(this->readWriteBuffers[i]);
 	this->readWriteBuffers.Clear();
 	this->readWriteBuffersByName.Clear();
 
-	for (i = 0; i < this->events.Size(); i++) this->events[i]->Discard();
+	for (i = 0; i < this->events.Size(); i++) DestroyEvent(this->events[i]);
 	this->events.Clear();
 	this->eventsByName.Clear();
 
-	for (i = 0; i < this->shaderStates.Size(); i++) this->shaderStates[i]->Discard();
+	for (i = 0; i < this->shaderStates.Size(); i++) ShaderDestroyState(this->shaderStates[i]);
 	this->shaderStates.Clear();
 	this->shaderStatesByName.Clear();
 
@@ -275,21 +275,21 @@ void
 FrameScript::OnWindowResized()
 {
 	// only do this if we actually use the window
-	if (this->window.isvalid())
+	if (this->window != Ids::InvalidId32)
 	{
-		Ptr<CoreGraphics::Window> prev = CoreGraphics::DisplayDevice::Instance()->GetCurrentWindow();
+		CoreGraphics::WindowId prev = CoreGraphics::DisplayDevice::Instance()->GetCurrentWindow();
 
-		// make this window the current one
-		this->window->MakeCurrent();
+		// make this window current
+		WindowMakeCurrent(this->window);
 
 		IndexT i;
-		for (i = 0; i < this->colorTextures.Size(); i++)		this->colorTextures[i]->Resize();
-		for (i = 0; i < this->readWriteTextures.Size(); i++)	this->readWriteTextures[i]->Resize();
+		for (i = 0; i < this->colorTextures.Size(); i++)		RenderTextureWindowResized(this->colorTextures[i]);
+		for (i = 0; i < this->readWriteTextures.Size(); i++)	RenderTextureWindowResized(this->readWriteTextures[i]);
 		for (i = 0; i < this->algorithms.Size(); i++)			this->algorithms[i]->Resize();
 		for (i = 0; i < this->ops.Size(); i++)					this->ops[i]->OnWindowResized();
 
 		// reset old window
-		prev->MakeCurrent();
+		WindowMakeCurrent(prev);
 	}
 
 }

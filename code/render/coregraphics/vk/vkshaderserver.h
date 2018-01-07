@@ -38,7 +38,7 @@ public:
 	void BindTextureDescriptorSets();
 
 	/// update global shader variable
-	void SetRenderTarget(const Util::StringAtom& name, const Ptr<Vulkan::VkTexture>& tex);
+	void SetRenderTarget(const Util::StringAtom& name, const CoreGraphics::TextureId tex);
 
 	/// reloads a shader
 	void ReloadShader(Ptr<CoreGraphics::Shader> shader);

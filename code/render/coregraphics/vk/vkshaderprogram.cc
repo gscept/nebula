@@ -14,28 +14,12 @@ namespace Vulkan
 {
 
 uint32_t VkShaderProgram::uniqueIdCounter = 0;
-__ImplementClass(Vulkan::VkShaderProgram, 'VKSP', Base::ShaderVariationBase);
-//------------------------------------------------------------------------------
-/**
-*/
-VkShaderProgram::VkShaderProgram()
-{
-	// empty
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-VkShaderProgram::~VkShaderProgram()
-{
-	// empty
-}
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkShaderProgram::Apply(RuntimeInfo& info)
+VkShaderProgram::Apply(VkShaderProgramRuntimeInfo& info)
 {
 	// if we are compute, we can set the pipeline straight away, otherwise we have to accumulate the infos
 	if (info.type == Compute)		VkRenderDevice::Instance()->BindComputePipeline(info.pipeline, info.layout);
@@ -53,19 +37,20 @@ VkShaderProgram::Setup(const Ids::Id24 id, AnyFX::VkProgram* program, VkPipeline
 	String mask = program->GetAnnotationString("Mask").c_str();
 	String name = program->name.c_str();
 	
-	SetupInfo& setup = allocator.Get<0>(id);
-	RuntimeInfo& runtime = allocator.Get<2>(id);
+	VkShaderProgramSetupInfo& setup = allocator.Get<0>(id);
+	VkShaderProgramRuntimeInfo& runtime = allocator.Get<2>(id);
 	runtime.layout = pipelineLayout;
 	runtime.id = VkShaderProgram::uniqueIdCounter++;
 	runtime.pipeline = VK_NULL_HANDLE;
 	setup.mask = CoreGraphics::ShaderServer::Instance()->FeatureStringToMask(mask);
 	setup.name = name;
-	VkShaderProgram::CreateShader(&setup.vs, program->shaderBlock.vsBinarySize, program->shaderBlock.vsBinary);
-	VkShaderProgram::CreateShader(&setup.hs, program->shaderBlock.hsBinarySize, program->shaderBlock.hsBinary);
-	VkShaderProgram::CreateShader(&setup.ds, program->shaderBlock.dsBinarySize, program->shaderBlock.dsBinary);
-	VkShaderProgram::CreateShader(&setup.gs, program->shaderBlock.gsBinarySize, program->shaderBlock.gsBinary);
-	VkShaderProgram::CreateShader(&setup.ps, program->shaderBlock.psBinarySize, program->shaderBlock.psBinary);
-	VkShaderProgram::CreateShader(&setup.cs, program->shaderBlock.csBinarySize, program->shaderBlock.csBinary);
+	setup.dev = VkRenderDevice::Instance()->GetCurrentDevice();
+	VkShaderProgram::CreateShader(setup.dev, &setup.vs, program->shaderBlock.vsBinarySize, program->shaderBlock.vsBinary);
+	VkShaderProgram::CreateShader(setup.dev, &setup.hs, program->shaderBlock.hsBinarySize, program->shaderBlock.hsBinary);
+	VkShaderProgram::CreateShader(setup.dev, &setup.ds, program->shaderBlock.dsBinarySize, program->shaderBlock.dsBinary);
+	VkShaderProgram::CreateShader(setup.dev, &setup.gs, program->shaderBlock.gsBinarySize, program->shaderBlock.gsBinary);
+	VkShaderProgram::CreateShader(setup.dev, &setup.ps, program->shaderBlock.psBinarySize, program->shaderBlock.psBinary);
+	VkShaderProgram::CreateShader(setup.dev, &setup.cs, program->shaderBlock.csBinarySize, program->shaderBlock.csBinary);
 
 	// if we have a compute shader, it will be the one we use, otherwise use the graphics one
 	if (setup.cs)		VkShaderProgram::SetupAsCompute(setup, runtime);
@@ -77,7 +62,7 @@ VkShaderProgram::Setup(const Ids::Id24 id, AnyFX::VkProgram* program, VkPipeline
 /**
 */
 void
-VkShaderProgram::CreateShader(VkShaderModule* shader, unsigned binarySize, char* binary)
+VkShaderProgram::CreateShader(const VkDevice dev, VkShaderModule* shader, unsigned binarySize, char* binary)
 {
 	if (binarySize > 0)
 	{
@@ -91,7 +76,7 @@ VkShaderProgram::CreateShader(VkShaderModule* shader, unsigned binarySize, char*
 		};
 
 		// create shader
-		VkResult res = vkCreateShaderModule(VkRenderDevice::dev, &info, NULL, shader);
+		VkResult res = vkCreateShaderModule(dev, &info, NULL, shader);
 		assert(res == VK_SUCCESS);
 	}
 }
@@ -100,7 +85,7 @@ VkShaderProgram::CreateShader(VkShaderModule* shader, unsigned binarySize, char*
 /**
 */
 void
-VkShaderProgram::SetupAsGraphics(AnyFX::VkProgram* program, SetupInfo& setup, RuntimeInfo& runtime)
+VkShaderProgram::SetupAsGraphics(AnyFX::VkProgram* program, VkShaderProgramSetupInfo& setup, VkShaderProgramRuntimeInfo& runtime)
 {
 	// we have to keep track of how MANY shaders we are using, AnyFX makes every function 'main'
 	unsigned shaderIdx = 0;
@@ -264,7 +249,7 @@ VkShaderProgram::SetupAsGraphics(AnyFX::VkProgram* program, SetupInfo& setup, Ru
 /**
 */
 void
-VkShaderProgram::SetupAsCompute(SetupInfo& setup, RuntimeInfo& runtime)
+VkShaderProgram::SetupAsCompute(VkShaderProgramSetupInfo& setup, VkShaderProgramRuntimeInfo& runtime)
 {
 	// create 6 shader info stages for each shader type
 	n_assert(0 != setup.cs);
@@ -292,7 +277,7 @@ VkShaderProgram::SetupAsCompute(SetupInfo& setup, RuntimeInfo& runtime)
 	};
 
 	// create pipeline
-	VkResult res = vkCreateComputePipelines(VkRenderDevice::dev, VkRenderDevice::cache, 1, &pInfo, NULL, &runtime.pipeline);
+	VkResult res = vkCreateComputePipelines(setup.dev, VkRenderDevice::cache, 1, &pInfo, NULL, &runtime.pipeline);
 	n_assert(res == VK_SUCCESS);
 	runtime.type = Compute;
 }
@@ -319,15 +304,15 @@ VkShaderProgram::GetNumPixelOutputs(AnyFX::VkProgram* program)
 /**
 */
 void
-VkShaderProgram::Discard(SetupInfo& info, VkPipeline& computePipeline)
+VkShaderProgram::Discard(VkShaderProgramSetupInfo& info, VkPipeline& computePipeline)
 {
-	if (info.vs != VK_NULL_HANDLE)					vkDestroyShaderModule(VkRenderDevice::dev, info.vs, NULL);
-	if (info.hs != VK_NULL_HANDLE)					vkDestroyShaderModule(VkRenderDevice::dev, info.hs, NULL);
-	if (info.ds != VK_NULL_HANDLE)					vkDestroyShaderModule(VkRenderDevice::dev, info.ds, NULL);
-	if (info.gs != VK_NULL_HANDLE)					vkDestroyShaderModule(VkRenderDevice::dev, info.gs, NULL);
-	if (info.ps != VK_NULL_HANDLE)					vkDestroyShaderModule(VkRenderDevice::dev, info.ps, NULL);
-	if (info.cs != VK_NULL_HANDLE)					vkDestroyShaderModule(VkRenderDevice::dev, info.cs, NULL);
-	if (computePipeline != VK_NULL_HANDLE)			vkDestroyPipeline(VkRenderDevice::dev, computePipeline, NULL);
+	if (info.vs != VK_NULL_HANDLE)					vkDestroyShaderModule(info.dev, info.vs, NULL);
+	if (info.hs != VK_NULL_HANDLE)					vkDestroyShaderModule(info.dev, info.hs, NULL);
+	if (info.ds != VK_NULL_HANDLE)					vkDestroyShaderModule(info.dev, info.ds, NULL);
+	if (info.gs != VK_NULL_HANDLE)					vkDestroyShaderModule(info.dev, info.gs, NULL);
+	if (info.ps != VK_NULL_HANDLE)					vkDestroyShaderModule(info.dev, info.ps, NULL);
+	if (info.cs != VK_NULL_HANDLE)					vkDestroyShaderModule(info.dev, info.cs, NULL);
+	if (computePipeline != VK_NULL_HANDLE)			vkDestroyPipeline(info.dev, computePipeline, NULL);
 }
 
 } // namespace Vulkan

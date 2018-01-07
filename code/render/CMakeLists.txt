@@ -79,52 +79,23 @@ IF(FALSE) # incrementally enable modules as they get written
 			)
 ENDIF()
 		fips_dir(coregraphics/base GROUP "coregraphics/base")
-			fips_files(
-				barrierbase.cc
-				barrierbase.h
-				bufferlockbase.cc
-				bufferlockbase.h
-				constantbufferbase.cc
-				constantbufferbase.h
+			fips_files(				
 				displaydevicebase.cc
 				displaydevicebase.h
-				eventbase.cc
-				eventbase.h
-				indexbufferbase.cc
-				indexbufferbase.h
 				passbase.cc
 				passbase.h
 				renderdevicebase.cc
 				renderdevicebase.h
-				rendertexturebase.cc
-				rendertexturebase.h
-				shaderbase.cc
-				shaderbase.h
-				shaderreadwritebufferbase.cc
-				shaderreadwritebufferbase.h
-				shaderreadwritetexturebase.cc
-				shaderreadwritetexturebase.h
 				shaderserverbase.cc
 				shaderserverbase.h
-				shaderstatebase.cc
-				shaderstatebase.h
-				shadervariablebase.cc
-				shadervariablebase.h
-				shadervariationbase.cc
-				shadervariationbase.h
 				shaperendererbase.cc
 				shaperendererbase.h
 				textrendererbase.cc
 				textrendererbase.h
 				transformdevicebase.cc
 				transformdevicebase.h
-				vertexcomponentbase.h
-				vertexlayoutbase.cc
-				vertexlayoutbase.h
 				vertexlayoutserverbase.cc
 				vertexlayoutserverbase.h
-				windowbase.cc
-				windowbase.h
 			)
 		fips_dir(coregraphics)
 			fips_files(
@@ -134,12 +105,9 @@ ENDIF()
 				antialiasquality.cc
 				antialiasquality.h
 				barrier.h
-				bufferlock.cc
-				bufferlock.h
 				gpubuffertypes.h
 				cmdbuffer.h
 				config.h
-				constantbuffer.cc
 				constantbuffer.h
 				displaydevice.cc
 				displaydevice.h
@@ -180,6 +148,7 @@ ENDIF()
 				rendershape.h
 				rendertexture.cc
 				rendertexture.h
+				shader.cc
 				shader.h
 				shaderfeature.cc
 				shaderfeature.h
@@ -190,12 +159,6 @@ ENDIF()
 				shadersemantics.h
 				shaderserver.cc
 				shaderserver.h
-				shaderstate.cc
-				shaderstate.h
-				shadervariable.cc
-				shadervariable.h
-				shadervariation.cc
-				shadervariation.h
 				shaperenderer.cc
 				shaperenderer.h
 				streammeshpool.cc
@@ -325,16 +288,10 @@ ENDIF()
 				vkcmdbuffer.h
 				vkcmdbufferthread.cc
 				vkcmdbufferthread.h
-				vkcmdevent.cc
-				vkcmdevent.h
-				vkcpusyncfence.cc
-				vkcpusyncfence.h
+				vkevent.cc
+				vkevent.h
 				vkdeferredcommand.cc
 				vkdeferredcommand.h
-				vkdisplaydevice.cc
-				vkdisplaydevice.h
-				vkindexbuffer.cc
-				vkindexbuffer.h
 				vkmemoryindexbufferpool.cc
 				vkmemoryindexbufferpool.h
 				vkmemorytexturepool.cc
@@ -353,16 +310,16 @@ ENDIF()
 				vkscheduler.h
 				vkshader.cc
 				vkshader.h
-				vkshaderimage.cc
-				vkshaderimage.h
+				vkshaderreadwritebuffer.cc
+				vkshaderreadwritebuffer.h
+				vkshaderreadwritetexture.cc
+				vkshaderreadwritetexture.h
 				vkshaderprogram.cc
 				vkshaderprogram.h
 				vkshaderserver.cc
 				vkshaderserver.h
 				vkshaderstate.cc
 				vkshaderstate.h
-				vkshaderstoragebuffer.cc
-				vkshaderstoragebuffer.h
 				vkshadervariable.cc
 				vkshadervariable.h
 				vkshaperenderer.cc
@@ -383,14 +340,10 @@ ENDIF()
 				vktransformdevice.h
 				vktypes.cc
 				vktypes.h
-				vkuniformbuffer.cc
-				vkuniformbuffer.h
+				vkconstantbuffer.cc
+				vkconstantbuffer.h
 				vkutilities.cc
 				vkutilities.h
-				vkvertexlayout.cc
-				vkvertexlayout.h
-				vkvertexlayoutserver.cc
-				vkvertexlayoutserver.h
 				vkvertexsignaturepool.cc
 				vkvertexsignaturepool.h
 			)
@@ -639,8 +592,8 @@ ENDIF()
 				model.h
 				modelcontext.cc
 				modelcontext.h
-				modelpool.cc
-				modelpool.h
+				streammodelpool.cc
+				streammodelpool.h
 				modelserver.cc
 				modelserver.h
 			)

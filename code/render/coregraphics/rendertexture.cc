@@ -14,14 +14,14 @@ namespace CoreGraphics
 /**
 */
 RenderTextureInfo
-InfoSetupHelper(const RenderTextureCreateInfo & info)
+RenderTextureInfoSetupHelper(const RenderTextureCreateInfo& info)
 {
 	RenderTextureInfo rt;
 	if (info.window)
 	{
 		rt.isWindow = true;
 		rt.window = DisplayDevice::Instance()->GetCurrentWindow();
-		const CoreGraphics::DisplayMode mode = CoreGraphics::GetWindowDisplayMode(rt.window);
+		const CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(rt.window);
 		rt.width = mode.GetWidth();
 		rt.height = mode.GetHeight();
 		rt.depth = 1;
@@ -60,7 +60,7 @@ InfoSetupHelper(const RenderTextureCreateInfo & info)
 		if (rt.relativeSize)
 		{
 			CoreGraphics::WindowId wnd = DisplayDevice::Instance()->GetCurrentWindow();
-			const CoreGraphics::DisplayMode mode = CoreGraphics::GetWindowDisplayMode(rt.window);
+			const CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(rt.window);
 			rt.width = SizeT(mode.GetWidth() * rt.widthScale);
 			rt.height = SizeT(mode.GetHeight() * rt.heightScale);
 			rt.depth = 1;
@@ -85,7 +85,7 @@ InfoSetupHelper(const RenderTextureCreateInfo & info)
 /**
 */
 RenderTextureInfo
-InfoResizeHelper(const RenderTextureResizeInfo & info)
+RenderTextureInfoResizeHelper(const RenderTextureResizeInfo& info)
 {
 	RenderTextureInfo rt;
 	n_assert(info.width > 0 && info.height > 0 && info.depth > 0);
@@ -94,7 +94,7 @@ InfoResizeHelper(const RenderTextureResizeInfo & info)
 	CoreGraphics::WindowId wnd = DisplayDevice::Instance()->GetCurrentWindow();
 	if (rt.relativeSize)
 	{
-		const CoreGraphics::DisplayMode mode = CoreGraphics::GetWindowDisplayMode(rt.window);
+		const CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(rt.window);
 		rt.width = SizeT(mode.GetWidth() * info.widthScale);
 		rt.height = SizeT(mode.GetHeight() * info.heightScale);
 		rt.depth = 1;
@@ -108,5 +108,6 @@ InfoResizeHelper(const RenderTextureResizeInfo & info)
 	}
 	return rt;
 }
+
 
 } // CoreGraphics

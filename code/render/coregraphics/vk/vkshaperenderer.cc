@@ -62,7 +62,7 @@ VkShapeRenderer::Open()
 	ShapeRendererBase::Open();
 
 	// create shape shader instance
-	this->shapeShader = ShaderServer::Instance()->CreateShaderState("shd:simple", { NEBULAT_SYSTEM_GROUP });
+	this->shapeShader = ShaderServer::Instance()->ShaderCreateState("shd:simple", { NEBULAT_SYSTEM_GROUP });
 	this->shapeMeshes.SetSize(CoreGraphics::RenderShape::NumShapeTypes);
 
 	// create default shapes (basically load them from the models)

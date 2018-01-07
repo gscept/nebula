@@ -18,9 +18,9 @@ class Stage : public Core::RefCounted
 public:
 
 	/// attach entity to stage, this will cause it to render
-	void AttachEntity(const EntityId entity);
+	void AttachEntity(const GraphicsEntityId entity);
 	/// detach entity from stage
-	void DetachEntity(const EntityId entity);
+	void DetachEntity(const GraphicsEntityId entity);
 private:
 	friend class GraphicsServer;
 
@@ -29,6 +29,6 @@ private:
 	/// destructor
 	virtual ~Stage();
 
-	Util::Array<EntityId> entities;
+	Util::Array<GraphicsEntityId> entities;
 };
 } // namespace Graphics

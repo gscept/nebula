@@ -4,119 +4,109 @@
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "vkbarrier.h"
+#include "coregraphics/config.h"
+#include "vkcmdbuffer.h"
 #include "vktypes.h"
-#include "coregraphics/rendertexture.h"
-#include "coregraphics/shaderreadwritetexture.h"
-#include "coregraphics/shaderreadwritebuffer.h"
-#include <tuple>
 
-namespace Vulkan
+namespace CoreGraphics
 {
-
-__ImplementClass(Vulkan::VkBarrier, 'VKBA', Base::BarrierBase);
-//------------------------------------------------------------------------------
-/**
-*/
-VkBarrier::VkBarrier()
-{
-	// empty
-}
+using namespace Vulkan;
+VkBarrierAllocator barrierAllocator(0x00FFFFFF);
 
 //------------------------------------------------------------------------------
 /**
 */
-VkBarrier::~VkBarrier()
+BarrierId
+CreateBarrier(const BarrierCreateInfo& info)
 {
-	// empty
-}
+	Ids::Id32 id = barrierAllocator.AllocObject();
+	VkBarrierInfo& vkInfo = barrierAllocator.Get<0>(id);
+	vkInfo.numImageBarriers = 0;
+	vkInfo.numBufferBarriers = 0;
+	vkInfo.numMemoryBarriers = 0;
+	vkInfo.srcFlags = VkTypes::AsVkPipelineFlags(info.leftDependency);
+	vkInfo.dstFlags = VkTypes::AsVkPipelineFlags(info.rightDependency);
 
-//------------------------------------------------------------------------------
-/**
-*/
-void
-VkBarrier::Setup()
-{
-	// setup base
-	BarrierBase::Setup();
+	if (info.domain == BarrierDomain::Pass)
+		vkInfo.dep = VK_DEPENDENCY_BY_REGION_BIT;
 
-	// get flags
-	this->vkSrcFlags = VkTypes::AsVkPipelineFlags(this->leftDependency);
-	this->vkDstFlags = VkTypes::AsVkPipelineFlags(this->rightDependency);
+	n_assert(info.renderTextureBarriers.Size() < MaxNumBarriers);
+	n_assert(info.shaderRWTextures.Size() < MaxNumBarriers);
+	n_assert(info.shaderRWBuffers.Size() < MaxNumBarriers);
 
-	switch (this->domain)
-	{
-	case BarrierBase::Domain::Pass: this->vkDep = VK_DEPENDENCY_BY_REGION_BIT;
-	}
-
-	// hmm, a memory barrier is truly a memory block, not a resource!
-	this->vkNumMemoryBarriers = 0;
-	memset(this->vkMemoryBarriers, 0, sizeof(this->vkMemoryBarriers));
-
-	// clear up buffers
-	this->vkNumImageBarriers = this->renderTextures.Size() + this->readWriteTextures.Size();
-	memset(this->vkImageBarriers, 0, sizeof(this->vkImageBarriers));
-	this->vkNumBufferBarriers = this->readWriteBuffers.Size();
-	memset(this->vkBufferBarriers, 0, sizeof(this->vkBufferBarriers));
-
-	uint32_t imageBarrierIndex = 0;
 	IndexT i;
-	for (i = 0; i < this->renderTextures.Size(); i++)
+	for (i = 0; i < info.renderTextureBarriers.Size(); i++)
 	{
-		// to be entirely fair, we might not actually want to have to wait for all levels...
-		VkImageSubresourceRange range = { VK_IMAGE_ASPECT_COLOR_BIT, 0, VK_REMAINING_MIP_LEVELS, 0, VK_REMAINING_ARRAY_LAYERS };
-		this->vkImageBarriers[imageBarrierIndex].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-		this->vkImageBarriers[imageBarrierIndex].pNext = nullptr;
+		vkInfo.imageBarriers[i].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		vkInfo.imageBarriers[i].pNext = nullptr;
 
-		this->vkImageBarriers[imageBarrierIndex].srcAccessMask = VkTypes::AsVkResourceAccessFlags(std::get<0>(this->renderTexturesAccess[i]));
-		this->vkImageBarriers[imageBarrierIndex].dstAccessMask = VkTypes::AsVkResourceAccessFlags(std::get<1>(this->renderTexturesAccess[i]));
-		this->vkImageBarriers[imageBarrierIndex].subresourceRange = range;
-		this->vkImageBarriers[imageBarrierIndex].image = this->renderTextures[i]->GetVkImage();
-		this->vkImageBarriers[imageBarrierIndex].oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		this->vkImageBarriers[imageBarrierIndex].newLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		this->vkImageBarriers[imageBarrierIndex].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		this->vkImageBarriers[imageBarrierIndex].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		imageBarrierIndex++;
+		vkInfo.imageBarriers[i].srcAccessMask = VkTypes::AsVkResourceAccessFlags(std::get<1>(info.renderTextureBarriers[i]));
+		vkInfo.imageBarriers[i].dstAccessMask = VkTypes::AsVkResourceAccessFlags(std::get<2>(info.renderTextureBarriers[i]));
+
+		n_error("Implement RenderTexture method for getting Vk image");
+		vkInfo.imageBarriers[i].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		vkInfo.imageBarriers[i].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		vkInfo.imageBarriers[i].oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		vkInfo.imageBarriers[i].newLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		vkInfo.numImageBarriers++;
 	}
 
-	for (i = 0; i < this->readWriteTextures.Size(); i++)
+	// make sure we have room...
+	n_assert(info.shaderRWTextures.Size() < MaxNumBarriers - i);
+	for (; i < info.shaderRWTextures.Size(); i++)
 	{
-		// to be entirely fair, we might not actually want to have to wait for all levels...
-		VkImageSubresourceRange range = { VK_IMAGE_ASPECT_COLOR_BIT, 0, VK_REMAINING_MIP_LEVELS, 0, VK_REMAINING_ARRAY_LAYERS };
-		this->vkImageBarriers[imageBarrierIndex].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-		this->vkImageBarriers[imageBarrierIndex].pNext = nullptr;
+		vkInfo.imageBarriers[i].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		vkInfo.imageBarriers[i].pNext = nullptr;
 
-		this->vkImageBarriers[imageBarrierIndex].srcAccessMask = VkTypes::AsVkResourceAccessFlags(std::get<0>(this->readWriteTexturesAccess[i]));
-		this->vkImageBarriers[imageBarrierIndex].dstAccessMask = VkTypes::AsVkResourceAccessFlags(std::get<1>(this->readWriteTexturesAccess[i]));
-		this->vkImageBarriers[imageBarrierIndex].subresourceRange = range;
-		this->vkImageBarriers[imageBarrierIndex].image = this->readWriteTextures[i]->GetVkImage();		
-		this->vkImageBarriers[imageBarrierIndex].oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		this->vkImageBarriers[imageBarrierIndex].newLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		this->vkImageBarriers[imageBarrierIndex].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		this->vkImageBarriers[imageBarrierIndex].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		imageBarrierIndex++;
+		vkInfo.imageBarriers[i].srcAccessMask = VkTypes::AsVkResourceAccessFlags(std::get<1>(info.shaderRWTextures[i]));
+		vkInfo.imageBarriers[i].dstAccessMask = VkTypes::AsVkResourceAccessFlags(std::get<2>(info.shaderRWTextures[i]));
+
+		n_error("Implement RenderTexture method for getting Vk image");
+		vkInfo.imageBarriers[i].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		vkInfo.imageBarriers[i].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		vkInfo.imageBarriers[i].oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		vkInfo.imageBarriers[i].newLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		vkInfo.numImageBarriers++;
 	}
 
-	for (i = 0; i < this->readWriteBuffers.Size(); i++)
+	for (i = 0; i < info.shaderRWBuffers.Size(); i++)
 	{
-		this->vkBufferBarriers[imageBarrierIndex].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-		this->vkBufferBarriers[imageBarrierIndex].pNext = nullptr;
+		vkInfo.bufferBarriers[i].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		vkInfo.bufferBarriers[i].pNext = nullptr;
 
-		this->vkBufferBarriers[imageBarrierIndex].srcAccessMask = VkTypes::AsVkResourceAccessFlags(std::get<0>(this->readWriteBuffersAccess[i]));
-		this->vkBufferBarriers[imageBarrierIndex].dstAccessMask = VkTypes::AsVkResourceAccessFlags(std::get<1>(this->readWriteBuffersAccess[i]));
-		this->vkBufferBarriers[imageBarrierIndex].buffer = this->readWriteBuffers[i]->GetVkBuffer();
-		this->vkBufferBarriers[imageBarrierIndex].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		this->vkBufferBarriers[imageBarrierIndex].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		imageBarrierIndex++;
+		vkInfo.bufferBarriers[i].srcAccessMask = VkTypes::AsVkResourceAccessFlags(std::get<1>(info.shaderRWBuffers[i]));
+		vkInfo.bufferBarriers[i].dstAccessMask = VkTypes::AsVkResourceAccessFlags(std::get<2>(info.shaderRWBuffers[i]));
+
+		n_error("Implement RenderTexture method for getting Vk buffer");
+		vkInfo.bufferBarriers[i].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		vkInfo.bufferBarriers[i].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		vkInfo.bufferBarriers[i].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		vkInfo.bufferBarriers[i].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		vkInfo.numBufferBarriers;
 	}
+
+	BarrierId eventId;
+	eventId.id24 = id;
+	eventId.id8 = BarrierIdType;
+	return eventId;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkBarrier::Discard()
+DestroyBarrier(const BarrierId id)
 {
-
+	barrierAllocator.DeallocObject(id.id24);
 }
 
-} // namespace Vulkan
+//------------------------------------------------------------------------------
+/**
+*/
+void
+InsertBarrier(const BarrierId id, const CmdBufferId cmd)
+{
+	const VkBarrierInfo& vkInfo = barrierAllocator.Get<0>(id.id24);
+	vkCmdPipelineBarrier(CommandBufferGetVk(cmd), vkInfo.srcFlags, vkInfo.dstFlags, vkInfo.dep, vkInfo.numMemoryBarriers, vkInfo.memoryBarriers, vkInfo.numBufferBarriers, vkInfo.bufferBarriers, vkInfo.numImageBarriers, vkInfo.imageBarriers);
+}
+} // namespace CoreGraphics

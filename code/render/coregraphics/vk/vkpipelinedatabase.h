@@ -19,6 +19,7 @@
 */
 //------------------------------------------------------------------------------
 #include "core/singleton.h"
+#include "shader.h"
 
 namespace Vulkan
 {
@@ -45,12 +46,15 @@ public:
 	/// destructor
 	virtual ~VkPipelineDatabase();
 
+	/// setup database
+	void Setup(const VkDevice dev, const VkPipelineCache cache);
+
 	/// set pass
 	void SetPass(const Ptr<VkPass>& pass);
 	/// set subpass
 	void SetSubpass(uint32_t subpass);
 	/// set shader
-	void SetShader(const uint32_t program);
+	void SetShader(const CoreGraphics::ShaderProgramId program);
 	/// set vertex layout
 	void SetVertexLayout(VkPipelineVertexInputStateCreateInfo* layout);
 	/// set input layout
@@ -61,9 +65,11 @@ public:
 	void Reset();
 private:
 	
+	VkDevice dev;
+	VkPipelineCache cache;
 	Ptr<VkPass> currentPass;
 	uint32_t currentSubpass;
-	Resources::ResourceId currentShaderProgram;
+	CoreGraphics::ShaderProgramId currentShaderProgram;
 	VkPipelineVertexInputStateCreateInfo* currentVertexLayout;
 	VkPipelineInputAssemblyStateCreateInfo* currentInputAssemblyInfo;
 	StateLevel currentLevel;

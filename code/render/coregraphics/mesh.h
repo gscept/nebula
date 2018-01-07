@@ -32,7 +32,7 @@ const MeshId CreateMesh(const MeshCreateInfo& info);
 void DestroyMesh(const MeshId id);
 
 /// bind mesh and primitive group
-void BindMesh(const MeshId id, const IndexT prim);
+void MeshBind(const MeshId id, const IndexT prim);
 
 class MemoryMeshPool;
 extern MemoryMeshPool* meshPool;

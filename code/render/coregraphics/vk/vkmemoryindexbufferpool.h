@@ -9,6 +9,8 @@
 #include "core/refcounted.h"
 #include "resources/resourcememorypool.h"
 #include "coregraphics/gpubuffertypes.h"
+#include "coregraphics/indextype.h"
+#include "vulkan/vulkan.h"
 namespace Vulkan
 {
 class VkMemoryIndexBufferPool : public Resources::ResourceMemoryPool
@@ -17,7 +19,7 @@ class VkMemoryIndexBufferPool : public Resources::ResourceMemoryPool
 public:
 
 	/// bind index buffer
-	void BindIndexBuffer(const Resources::ResourceId id);
+	void IndexBufferBind(const Resources::ResourceId id, const IndexT offset);
 	/// map the vertices for CPU access
 	void* Map(const Resources::ResourceId id, CoreGraphics::GpuBufferTypes::MapType mapType);
 	/// unmap the resource
@@ -31,6 +33,7 @@ private:
 
 	struct LoadInfo
 	{
+		VkDevice dev;
 		VkDeviceMemory mem;
 		CoreGraphics::GpuBufferTypes::SetupFlags gpuResInfo;
 		uint32_t indexCount;

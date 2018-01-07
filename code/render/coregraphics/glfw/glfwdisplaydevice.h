@@ -32,9 +32,6 @@ public:
 	/// process window system messages, call this method once per frame
 	static void ProcessWindowMessages();
 
-	/// swap buffers
-	void SwapBuffers();
-
 	/// set if vertical sync should be used
 	void SetVerticalSyncEnabled(bool b);
 
@@ -49,6 +46,9 @@ public:
 	/// get general info about display adapter
 	CoreGraphics::AdapterInfo GetAdapterInfo(CoreGraphics::Adapter::Code adapter);
 
+	/// translate glfw keycodes to nebula ones
+	static Input::Key::Code TranslateKeyCode(int inkey);
+
 protected:
 	Ptr<GLFWInputDisplayEventHandler> eventHandler;
 	friend class GLFWWindow;
@@ -56,10 +56,20 @@ protected:
 	friend class OGL4RenderDevice;
     friend class GLFWInputServer;
 
+	friend void CoreGraphics::DestroyWindow(const WindowId id);
+	friend void KeyFunc(const CoreGraphics::WindowId& id, int key, int scancode, int action, int mods);
+	friend void CharFunc(const CoreGraphics::WindowId& id, unsigned int key);
+	friend void MouseButtonFunc(const CoreGraphics::WindowId& id, int button, int action, int mods);
+	friend void MouseFunc(const CoreGraphics::WindowId& id, double xpos, double ypos);
+	friend void ScrollFunc(const CoreGraphics::WindowId& id, double xs, double ys);
+	friend void CloseFunc(const CoreGraphics::WindowId& id);
+	friend void FocusFunc(const CoreGraphics::WindowId& id, int focus);
+	friend void ResizeFunc(const CoreGraphics::WindowId& id, int width, int height);
+	friend const CoreGraphics::WindowId InternalSetupFunction(const CoreGraphics::WindowCreateInfo& info, const Util::Blob& windowData, bool embed);
+
 	/// retrieve monitor from adapter. can be NULL
 	GLFWmonitor* GetMonitor(int index);
-	/// translate glfw keycodes to nebula ones
-	static Input::Key::Code TranslateKeyCode(int inkey);
+
 };
 
 } // namespace GLFW

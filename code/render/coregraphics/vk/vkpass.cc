@@ -9,6 +9,9 @@
 #include "coregraphics/rendertexture.h"
 #include "coregraphics/config.h"
 #include "coregraphics/shaderserver.h"
+#include "vkconstantbuffer.h"
+#include "vkrendertexture.h"
+#include "vkshader.h"
 
 using namespace CoreGraphics;
 namespace Vulkan
@@ -40,21 +43,23 @@ VkPass::Setup()
 	// setup base class
 	PassBase::Setup();
 
-	// create shader state for input attachments and render target dimensions
-	this->shaderState = ShaderServer::Instance()->CreateShaderState("shd:shared", { NEBULAT_PASS_GROUP });
-	VkDescriptorSetLayout layout = this->shaderState->GetShader()->GetDescriptorLayout(NEBULAT_PASS_GROUP);
-	this->passPipelineLayout = this->shaderState->GetShader()->GetPipelineLayout();
+	ShaderId id = ShaderServer::Instance()->GetShader("shd:shared"_atm);
+	this->shaderState = ShaderCreateState(id, { NEBULAT_PASS_GROUP }, false);
+	VkDescriptorSetLayout layout = shaderPool->GetDescriptorSetLayout(id, NEBULAT_PASS_GROUP);
+	this->passPipelineLayout = shaderPool->GetPipelineLayout(id);
+
+	this->dev = VkRenderDevice::Instance()->GetCurrentDevice();
 
 	// create descriptor set used by our pass
 	VkDescriptorSetAllocateInfo descInfo =
 	{
 		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-		NULL,
+		nullptr,
 		VkRenderDevice::descPool,
 		1,
 		&layout
 	};
-	VkResult res = vkAllocateDescriptorSets(VkRenderDevice::dev, &descInfo, &this->passDescriptorSet);
+	VkResult res = vkAllocateDescriptorSets(this->dev, &descInfo, &this->passDescriptorSet);
 	n_assert(res == VK_SUCCESS);
 
 	// gather image views
@@ -62,7 +67,7 @@ VkPass::Setup()
 	uint32_t height = 0;
 	uint32_t layers = 0;
 	Util::FixedArray<VkImageView> images;
-	images.Resize(this->colorAttachments.Size() + (this->depthStencilAttachment.isvalid() ? 1 : 0));
+	images.Resize(this->colorAttachments.Size() + (this->depthStencilAttachment != RenderTextureId::Invalid() ? 1 : 0));
 	this->clearValues.Resize(images.Size());
 	this->scissorRects.Resize(images.Size());
 	this->viewports.Resize(images.Size());
@@ -70,19 +75,20 @@ VkPass::Setup()
 	IndexT i;
 	for (i = 0; i < this->colorAttachments.Size(); i++)
 	{
-		images[i] = this->colorAttachments[i]->GetVkImageView();
-		width = Math::n_max(width, this->colorAttachments[i]->GetWidth());
-		height = Math::n_max(height, this->colorAttachments[i]->GetHeight());
-		layers = Math::n_max(layers, this->colorAttachments[i]->GetLayers());
+		images[i] = RenderTextureGetVkImageView(this->colorAttachments[i]);
+		const CoreGraphics::TextureDimensions dims = RenderTextureGetDimensions(this->colorAttachments[i]);
+		width = Math::n_max(width, (uint32_t)dims.width);
+		height = Math::n_max(height, (uint32_t)dims.height);
+		layers = Math::n_max(layers, (uint32_t)dims.depth);
 
 		VkRect2D& rect = scissorRects[i];
 		rect.offset.x = 0;
 		rect.offset.y = 0;
-		rect.extent.width = this->colorAttachments[i]->GetWidth();
-		rect.extent.height = this->colorAttachments[i]->GetHeight();
+		rect.extent.width = dims.width;
+		rect.extent.height = dims.height;
 		VkViewport& viewport = viewports[i];
-		viewport.width = (float)this->colorAttachments[i]->GetWidth();
-		viewport.height = (float)this->colorAttachments[i]->GetHeight();
+		viewport.width = (float)dims.width;
+		viewport.height = (float)dims.height;
 		viewport.minDepth = 0;
 		viewport.maxDepth = 1;
 		viewport.x = 0;
@@ -121,11 +127,11 @@ VkPass::Setup()
 		VkSubpassDescription& vksubpass = subpassDescs[i];
 		vksubpass.flags = 0;
 		vksubpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		vksubpass.pColorAttachments = NULL;
-		vksubpass.pDepthStencilAttachment = NULL;
-		vksubpass.pPreserveAttachments = NULL;
-		vksubpass.pResolveAttachments = NULL;
-		vksubpass.pInputAttachments = NULL;
+		vksubpass.pColorAttachments = nullptr;
+		vksubpass.pDepthStencilAttachment = nullptr;
+		vksubpass.pPreserveAttachments = nullptr;
+		vksubpass.pResolveAttachments = nullptr;
+		vksubpass.pInputAttachments = nullptr;
 
 		// resize rects
 		this->subpassViewports[i].Resize(subpass.attachments.Size());
@@ -218,7 +224,7 @@ VkPass::Setup()
 		if (inputs.Size() > 0)
 		{
 			vksubpass.inputAttachmentCount = inputs.Size();
-			vksubpass.pInputAttachments = inputs.IsEmpty() ? NULL : inputs.Begin();
+			vksubpass.pInputAttachments = inputs.IsEmpty() ? nullptr : inputs.Begin();
 		}
 		else
 		{
@@ -229,7 +235,7 @@ VkPass::Setup()
 		if (preserves.Size() > 0)
 		{ 
 			vksubpass.preserveAttachmentCount = preserves.Size();
-			vksubpass.pPreserveAttachments = preserves.IsEmpty() ? NULL : preserves.Begin();
+			vksubpass.pPreserveAttachments = preserves.IsEmpty() ? nullptr : preserves.Begin();
 		}
 		else
 		{
@@ -255,7 +261,7 @@ VkPass::Setup()
 	attachments.Resize(this->colorAttachments.Size() + 1);
 	for (i = 0; i < this->colorAttachments.Size(); i++)
 	{
-		VkFormat fmt = VkTypes::AsVkFormat(this->colorAttachments[i]->GetPixelFormat());
+		VkFormat fmt = VkTypes::AsVkFormat(RenderTextureGetPixelFormat(this->colorAttachments[i]));
 		VkAttachmentDescription& attachment = attachments[i];
 		IndexT loadIdx = this->colorAttachmentFlags[i] & Load ? 2 : this->colorAttachmentFlags[i] & Clear ? 1 : 0;
 		IndexT storeIdx = this->colorAttachmentFlags[i] & Store ? 1 : 0;
@@ -267,11 +273,11 @@ VkPass::Setup()
 		attachment.storeOp = storeOps[storeIdx];
 		attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		attachment.samples = this->colorAttachments[i]->GetEnableMSAA() ? VK_SAMPLE_COUNT_16_BIT : VK_SAMPLE_COUNT_1_BIT;
+		attachment.samples = RenderTextureGetMSAA(this->colorAttachments[i]) ? VK_SAMPLE_COUNT_16_BIT : VK_SAMPLE_COUNT_1_BIT;
 	}
 
 	// use depth stencil attachments if pointer is not null
-	if (this->depthStencilAttachment.isvalid())
+	if (this->depthStencilAttachment != Ids::InvalidId32)
 	{
 		VkAttachmentDescription& attachment = attachments[i];
 		IndexT loadIdx = this->depthStencilFlags & Load ? 2 : this->depthStencilFlags & Clear ? 1 : 0;
@@ -281,12 +287,12 @@ VkPass::Setup()
 		attachment.flags = 0;
 		attachment.initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
 		attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-		attachment.format = VkTypes::AsVkFormat(this->depthStencilAttachment->GetPixelFormat());
+		attachment.format = VkTypes::AsVkFormat(RenderTextureGetPixelFormat(this->depthStencilAttachment));
 		attachment.loadOp = loadOps[loadIdx];
 		attachment.storeOp = storeOps[storeIdx];
 		attachment.stencilLoadOp = loadOps[stencilLoadIdx];
 		attachment.stencilStoreOp = storeOps[stencilStoreIdx];
-		attachment.samples = this->depthStencilAttachment->GetEnableMSAA() ? VK_SAMPLE_COUNT_16_BIT : VK_SAMPLE_COUNT_1_BIT;
+		attachment.samples = RenderTextureGetMSAA(this->depthStencilAttachment) ? VK_SAMPLE_COUNT_16_BIT : VK_SAMPLE_COUNT_1_BIT;
 		numUsedAttachments++;
 	}
 	
@@ -294,30 +300,30 @@ VkPass::Setup()
 	VkRenderPassCreateInfo info =
 	{
 		VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-		NULL,
+		nullptr,
 		0,
 		numUsedAttachments,
-		numUsedAttachments == 0 ? NULL : attachments.Begin(),
+		numUsedAttachments == 0 ? nullptr : attachments.Begin(),
 		(uint32_t)subpassDescs.Size(),
-		subpassDescs.IsEmpty() ? NULL : subpassDescs.Begin(),
+		subpassDescs.IsEmpty() ? nullptr : subpassDescs.Begin(),
 		(uint32_t)subpassDeps.Size(),
-		subpassDeps.IsEmpty() ? NULL : subpassDeps.Begin()
+		subpassDeps.IsEmpty() ? nullptr : subpassDeps.Begin()
 	};
-	res = vkCreateRenderPass(VkRenderDevice::dev, &info, NULL, &this->pass);
+	res = vkCreateRenderPass(this->dev, &info, nullptr, &this->pass);
 	n_assert(res == VK_SUCCESS);
 
-
-	if (this->depthStencilAttachment.isvalid())
+	if (this->depthStencilAttachment != Ids::InvalidId32)
 	{
-		images[i] = this->depthStencilAttachment->GetVkImageView();
+		images[i] = RenderTextureGetVkImageView(this->depthStencilAttachment);
+		const CoreGraphics::TextureDimensions dims = RenderTextureGetDimensions(this->depthStencilAttachment);
 		VkRect2D& rect = scissorRects[i];
 		rect.offset.x = 0;
 		rect.offset.y = 0;
-		rect.extent.width = this->depthStencilAttachment->GetWidth();
-		rect.extent.height = this->depthStencilAttachment->GetHeight();
+		rect.extent.width = dims.width;
+		rect.extent.height = dims.height;
 		VkViewport& viewport = viewports[i];
-		viewport.width = (float)this->depthStencilAttachment->GetWidth();
-		viewport.height = (float)this->depthStencilAttachment->GetHeight();
+		viewport.width = (float)dims.width;
+		viewport.height = (float)dims.height;
 		viewport.minDepth = 0;
 		viewport.maxDepth = 1;
 		viewport.x = 0;
@@ -335,7 +341,7 @@ VkPass::Setup()
 	this->renderArea.extent.height = height;
 
 	// setup viewport info
-	this->viewportInfo.pNext = NULL;
+	this->viewportInfo.pNext = nullptr;
 	this->viewportInfo.flags = 0;
 	this->viewportInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
 	this->viewportInfo.scissorCount = this->scissorRects.Size();
@@ -344,33 +350,33 @@ VkPass::Setup()
 	this->viewportInfo.pViewports = this->viewports.Begin();
 
 	// setup uniform buffer for render target information
-	this->passBlockBuffer = ConstantBuffer::Create();
-	this->passBlockBuffer->SetupFromBlockInShader(this->shaderState, "PassBlock", 1);
-	this->passBlockVar = this->shaderState->GetVariableByName("PassBlock");
+	ConstantBufferCreateInfo cbinfo = { true, this->shaderState, "PassBlock", 0, 1 };
+	this->passBlockBuffer = CreateConstantBuffer(cbinfo);
+	this->passBlockVar = ShaderStateGetVariable(this->shaderState, "PassBlock");
 	this->renderTargetDimensionsVar = this->passBlockBuffer->GetVariableByName("RenderTargetDimensions");
 
 	VkWriteDescriptorSet write;
 	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	write.pNext = NULL;
+	write.pNext = nullptr;
 	write.descriptorCount = 1;
 	write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	write.dstBinding = this->passBlockVar->binding;
+	write.dstBinding = VkShader::ShaderGetVkVariableBinding(this->shaderState, this->passBlockVar);
 	write.dstArrayElement = 0;
 	write.dstSet = this->passDescriptorSet;
 
 	VkDescriptorBufferInfo buf;
-	buf.buffer = this->passBlockBuffer->GetVkBuffer();
+	buf.buffer = ConstantBufferGetVk(this->passBlockBuffer);
 	buf.offset = 0;
 	buf.range = VK_WHOLE_SIZE;
 	write.pBufferInfo = &buf;
-	write.pImageInfo = NULL;
-	write.pTexelBufferView = NULL;
+	write.pImageInfo = nullptr;
+	write.pTexelBufferView = nullptr;
 
 	// update descriptor set with attachment
-	vkUpdateDescriptorSets(VkRenderDevice::dev, 1, &write, 0, NULL);
+	vkUpdateDescriptorSets(this->dev, 1, &write, 0, nullptr);
 
 	// update descriptor set based on images attachments
-	const Ptr<CoreGraphics::ShaderVariable>& inputAttachmentsVar = this->shaderState->GetVariableByName("InputAttachments");
+	const CoreGraphics::ShaderVariableId inputAttachmentsVar = ShaderStateGetVariable(this->shaderState, "InputAttachments");
 	
 	// setup input attachments
 	Util::FixedArray<Math::float4> dimensions(this->colorAttachments.Size());
@@ -381,27 +387,28 @@ VkPass::Setup()
 		write.pNext = NULL;
 		write.descriptorCount = 1;
 		write.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-		write.dstBinding = inputAttachmentsVar->binding;
+		write.dstBinding = VkShader::ShaderGetVkVariableBinding(this->shaderState, inputAttachmentsVar);
 		write.dstArrayElement = i;
 		write.dstSet = this->passDescriptorSet;
 
 		VkDescriptorImageInfo img;
 		img.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-		img.imageView = this->colorAttachments[i]->GetVkImageView();
+		img.imageView = RenderTextureGetVkImageView(this->colorAttachments[i]);
 		img.sampler = VK_NULL_HANDLE;
 		write.pImageInfo = &img;
 
 		// update descriptor set with attachment
-		vkUpdateDescriptorSets(VkRenderDevice::dev, 1, &write, 0, NULL);
+		vkUpdateDescriptorSets(this->dev, 1, &write, 0, NULL);
 
 		// create dimensions float4
+		const CoreGraphics::TextureDimensions rtdims = RenderTextureGetDimensions(this->depthStencilAttachment);
 		Math::float4& dims = dimensions[i];
-		dims.x() = (Math::scalar)this->colorAttachments[i]->GetWidth();
-		dims.y() = (Math::scalar)this->colorAttachments[i]->GetHeight();
+		dims.x() = (Math::scalar)rtdims.width;
+		dims.y() = (Math::scalar)rtdims.height;
 		dims.z() = 1 / dims.x();
 		dims.w() = 1 / dims.y();
 	}
-	this->renderTargetDimensionsVar->SetFloat4Array(dimensions.Begin(), dimensions.Size());
+	ShaderVariableSetArray(this->renderTargetDimensionsVar, this->shaderState, dimensions.Begin(), dimensions.Size());
 	this->shaderState->SetDescriptorSet(this->passDescriptorSet, NEBULAT_PASS_GROUP);
 	this->shaderState->SetApplyShared(true);
 
@@ -418,7 +425,7 @@ VkPass::Setup()
 		height,
 		layers
 	};
-	res = vkCreateFramebuffer(VkRenderDevice::dev, &fbInfo, NULL, &this->framebuffer);
+	res = vkCreateFramebuffer(this->dev, &fbInfo, NULL, &this->framebuffer);
 	n_assert(res == VK_SUCCESS);
 
 	// setup info
@@ -434,13 +441,13 @@ void
 VkPass::Discard()
 {
 	// release shader state
-	this->shaderState->Discard();
-	this->shaderState = nullptr;
+	ShaderDestroyState(this->shaderState);
+	this->shaderState = Ids::InvalidId64;
 
 	// destroy pass and our descriptor set
-	vkFreeDescriptorSets(VkRenderDevice::dev, VkRenderDevice::descPool, 1, &this->passDescriptorSet);
-	vkDestroyRenderPass(VkRenderDevice::dev, this->pass, NULL);
-	vkDestroyFramebuffer(VkRenderDevice::dev, this->framebuffer, NULL);
+	vkFreeDescriptorSets(this->dev, VkRenderDevice::descPool, 1, &this->passDescriptorSet);
+	vkDestroyRenderPass(this->dev, this->pass, NULL);
+	vkDestroyFramebuffer(this->dev, this->framebuffer, NULL);
 
 	// run base class discard
 	PassBase::Discard();
@@ -488,31 +495,32 @@ VkPass::End()
 void
 VkPass::OnWindowResized()
 {
-	n_assert(this->renderTargetDimensionsVar.isvalid());
+	n_assert(this->renderTargetDimensionsVar == Ids::InvalidId32);
 
 	// gather image views
 	uint32_t width = 0;
 	uint32_t height = 0;
 	uint32_t layers = 0;
 	Util::FixedArray<VkImageView> images;
-	images.Resize(this->colorAttachments.Size() + (this->depthStencilAttachment.isvalid() ? 1 : 0));
+	images.Resize(this->colorAttachments.Size() + (this->depthStencilAttachment == Ids::InvalidId32 ? 1 : 0));
 
 	IndexT i;
 	for (i = 0; i < this->colorAttachments.Size(); i++)
 	{
-		images[i] = this->colorAttachments[i]->GetVkImageView();
-		width = Math::n_max(width, this->colorAttachments[i]->GetWidth());
-		height = Math::n_max(height, this->colorAttachments[i]->GetHeight());
-		layers = Math::n_max(layers, this->colorAttachments[i]->GetLayers());
+		const CoreGraphics::TextureDimensions dims = RenderTextureGetDimensions(this->colorAttachments[i]);
+		images[i] = RenderTextureGetVkImageView(this->colorAttachments[i]);
+		width = Math::n_max(width, (uint32_t)dims.width);
+		height = Math::n_max(height, (uint32_t)dims.height);
+		layers = Math::n_max(layers, (uint32_t)dims.depth);
 
 		VkRect2D& rect = scissorRects[i];
 		rect.offset.x = 0;
 		rect.offset.y = 0;
-		rect.extent.width = this->colorAttachments[i]->GetWidth();
-		rect.extent.height = this->colorAttachments[i]->GetHeight();
+		rect.extent.width = dims.width;
+		rect.extent.height = dims.height;
 		VkViewport& viewport = viewports[i];
-		viewport.width = (float)this->colorAttachments[i]->GetWidth();
-		viewport.height = (float)this->colorAttachments[i]->GetHeight();
+		viewport.width = (float)dims.width;
+		viewport.height = (float)dims.height;
 		viewport.minDepth = 0;
 		viewport.maxDepth = 1;
 		viewport.x = 0;
@@ -527,7 +535,7 @@ VkPass::OnWindowResized()
 	}
 
 	// destroy old framebuffer
-	vkDestroyFramebuffer(VkRenderDevice::dev, this->framebuffer, nullptr);
+	vkDestroyFramebuffer(this->dev, this->framebuffer, nullptr);
 
 	// create framebuffer
 	VkFramebufferCreateInfo fbInfo =
@@ -545,7 +553,7 @@ VkPass::OnWindowResized()
 
 	// we need to recreate the framebuffer object because the image handles might have changed, and the dimensions to render to is different
 	VkResult res;
-	res = vkCreateFramebuffer(VkRenderDevice::dev, &fbInfo, nullptr, &this->framebuffer);
+	res = vkCreateFramebuffer(this->dev, &fbInfo, nullptr, &this->framebuffer);
 	n_assert(res == VK_SUCCESS);
 
 	// setup input attachments
@@ -553,13 +561,14 @@ VkPass::OnWindowResized()
 	for (i = 0; i < this->colorAttachments.Size(); i++)
 	{
 		// create dimensions float4
+		const CoreGraphics::TextureDimensions rtdims = RenderTextureGetDimensions(this->colorAttachments[i]);
 		Math::float4& dims = dimensions[i];
-		dims.x() = (Math::scalar)this->colorAttachments[i]->GetWidth();
-		dims.y() = (Math::scalar)this->colorAttachments[i]->GetHeight();
+		dims.x() = (Math::scalar)rtdims.width;
+		dims.y() = (Math::scalar)rtdims.height;
 		dims.z() = 1 / dims.x();
 		dims.w() = 1 / dims.y();
 	}
-	this->renderTargetDimensionsVar->SetFloat4Array(dimensions.Begin(), dimensions.Size());
+	ShaderVariableSetArray(this->renderTargetDimensionsVar, this->shaderState, dimensions.Begin(), dimensions.Size());
 }
 
 } // namespace Vulkan

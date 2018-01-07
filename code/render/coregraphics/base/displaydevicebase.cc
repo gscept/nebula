@@ -205,7 +205,7 @@ DisplayDeviceBase::SetupWindow(const Util::String& title, const Util::String& ic
 	this->windows.Append(wnd);
 
 	// finally open window
-	CoreGraphics::OpenWindow(wnd);
+	CoreGraphics::WindowOpen(wnd);
 	return wnd;
 }
 
@@ -222,7 +222,7 @@ DisplayDeviceBase::EmbedWindow(const Util::Blob& windowData)
 	this->windows.Append(wnd);
 
 	// finally open window
-	CoreGraphics::OpenWindow(wnd);
+	CoreGraphics::WindowOpen(wnd);
 	return wnd;
 }
 

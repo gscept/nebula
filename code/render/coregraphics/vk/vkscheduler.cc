@@ -14,6 +14,10 @@ __ImplementSingleton(Vulkan::VkScheduler);
 /**
 */
 VkScheduler::VkScheduler() :
+	putTransferFenceThisFrame(false),
+	putSparseFenceThisFrame(false),
+	putComputeFenceThisFrame(false),
+	putDrawFenceThisFrame(false),
 	commands(NumCommandPasses)
 {
 	__ConstructSingleton;
@@ -37,7 +41,7 @@ VkScheduler::PushImageLayoutTransition(VkDeferredCommand::CommandQueueType queue
 	del.del.type = VkDeferredCommand::ImageLayoutTransition;
 	del.del.imgBarrier.barrier = barrier;
 	del.del.queue = queue;
-	del.dev = VkRenderDevice::dev;
+	del.dev = this->dev;
 	this->PushCommand(del, OnBeginFrame);
 }
 
@@ -51,7 +55,7 @@ VkScheduler::PushImageOwnershipChange(VkDeferredCommand::CommandQueueType queue,
 	del.del.type = VkDeferredCommand::ImageOwnershipChange;
 	del.del.imgOwnerChange.barrier = barrier;
 	del.del.queue = queue;
-	del.dev = VkRenderDevice::dev;
+	del.dev = this->dev;
 	this->PushCommand(del, OnBeginFrame);
 }
 
@@ -68,7 +72,7 @@ VkScheduler::PushImageColorClear(const VkImage& image, const VkDeferredCommand::
 	del.del.imgColorClear.layout = layout;
 	del.del.imgColorClear.region = subres;
 	del.del.queue = queue;
-	del.dev = VkRenderDevice::dev;
+	del.dev = this->dev;
 	this->PushCommand(del, OnBeginFrame);
 }
 
@@ -85,7 +89,7 @@ VkScheduler::PushImageDepthStencilClear(const VkImage& image, const VkDeferredCo
 	del.del.imgDepthStencilClear.layout = layout;
 	del.del.imgDepthStencilClear.region = subres;
 	del.del.queue = queue;
-	del.dev = VkRenderDevice::dev;
+	del.dev = this->dev;
 	this->PushCommand(del, OnBeginFrame);
 }
 
@@ -107,7 +111,7 @@ VkScheduler::PushImageUpdate(const VkImage& img, const VkImageCreateInfo& info, 
 	del.del.imageUpd.size = size;
 	del.del.imageUpd.data = imgCopy;
 	del.del.queue = VkDeferredCommand::Transfer;
-	del.dev = VkRenderDevice::dev;
+	del.dev = this->dev;
 	this->PushCommand(del, OnBeginFrame);
 }
 
@@ -117,23 +121,43 @@ VkScheduler::PushImageUpdate(const VkImage& img, const VkImageCreateInfo& info, 
 void
 VkScheduler::ExecuteCommandPass(const CommandPass& pass)
 {
-	if (pass == OnHandleDrawFences)
+	if (pass == OnHandleTransferFences)
 	{
 		IndexT i;
-		for (i = 0; i < this->drawFenceCommands.Size(); i++)
+		for (i = 0; i < this->transferFenceCommands.Size(); i++)
 		{
-			const VkFence& fence = this->drawFenceCommands.KeyAtIndex(i);
-			VkResult res = vkGetFenceStatus(VkRenderDevice::dev, fence);
+			const VkFence& fence = this->transferFenceCommands.KeyAtIndex(i);
+			VkResult res = vkGetFenceStatus(this->dev, fence);
 			if (res == VK_SUCCESS)
 			{
-				const Util::Array<VkDeferredCommand>& cmds = this->drawFenceCommands.ValueAtIndex(i);
+				const Util::Array<VkDeferredCommand>& cmds = this->transferFenceCommands.ValueAtIndex(i);
 				IndexT j;
 				for (j = 0; j < cmds.Size(); j++)
 				{
 					cmds[j].RunDelegate();
 				}
-				vkDestroyFence(VkRenderDevice::dev, fence, NULL);
-				this->drawFenceCommands.EraseAtIndex(i--);
+				vkDestroyFence(this->dev, fence, NULL);
+				this->transferFenceCommands.EraseAtIndex(i--);
+			}
+		}
+	}
+	else if (pass == OnHandleSparseFences)
+	{
+		IndexT i;
+		for (i = 0; i < this->sparseFenceCommands.Size(); i++)
+		{
+			const VkFence& fence = this->sparseFenceCommands.KeyAtIndex(i);
+			VkResult res = vkGetFenceStatus(this->dev, fence);
+			if (res == VK_SUCCESS)
+			{
+				const Util::Array<VkDeferredCommand>& cmds = this->sparseFenceCommands.ValueAtIndex(i);
+				IndexT j;
+				for (j = 0; j < cmds.Size(); j++)
+				{
+					cmds[j].RunDelegate();
+				}
+				vkDestroyFence(this->dev, fence, NULL);
+				this->sparseFenceCommands.EraseAtIndex(i--);
 			}
 		}
 	}
@@ -143,7 +167,7 @@ VkScheduler::ExecuteCommandPass(const CommandPass& pass)
 		for (i = 0; i < this->computeFenceCommands.Size(); i++)
 		{
 			const VkFence& fence = this->computeFenceCommands.KeyAtIndex(i);
-			VkResult res = vkGetFenceStatus(VkRenderDevice::dev, fence);
+			VkResult res = vkGetFenceStatus(this->dev, fence);
 			if (res == VK_SUCCESS)
 			{
 				const Util::Array<VkDeferredCommand>& cmds = this->computeFenceCommands.ValueAtIndex(i);
@@ -152,28 +176,28 @@ VkScheduler::ExecuteCommandPass(const CommandPass& pass)
 				{
 					cmds[j].RunDelegate();
 				}
-				vkDestroyFence(VkRenderDevice::dev, fence, NULL);
+				vkDestroyFence(this->dev, fence, NULL);
 				this->computeFenceCommands.EraseAtIndex(i--);
 			}
 		}
 	}
-	else if (pass == OnHandleTransferFences)
+	else if (pass == OnHandleDrawFences)
 	{
 		IndexT i;
-		for (i = 0; i < this->transferFenceCommands.Size(); i++)
+		for (i = 0; i < this->drawFenceCommands.Size(); i++)
 		{
-			const VkFence& fence = this->transferFenceCommands.KeyAtIndex(i);
-			VkResult res = vkGetFenceStatus(VkRenderDevice::dev, fence);
+			const VkFence& fence = this->drawFenceCommands.KeyAtIndex(i);
+			VkResult res = vkGetFenceStatus(this->dev, fence);
 			if (res == VK_SUCCESS)
 			{
-				const Util::Array<VkDeferredCommand>& cmds = this->transferFenceCommands.ValueAtIndex(i);
+				const Util::Array<VkDeferredCommand>& cmds = this->drawFenceCommands.ValueAtIndex(i);
 				IndexT j;
 				for (j = 0; j < cmds.Size(); j++)
 				{
 					cmds[j].RunDelegate();
 				}
-				vkDestroyFence(VkRenderDevice::dev, fence, NULL);
-				this->transferFenceCommands.EraseAtIndex(i--);
+				vkDestroyFence(this->dev, fence, NULL);
+				this->drawFenceCommands.EraseAtIndex(i--);
 			}
 		}
 	}
@@ -195,9 +219,10 @@ VkScheduler::ExecuteCommandPass(const CommandPass& pass)
 void
 VkScheduler::PushCommand(const VkDeferredCommand& cmd, const CommandPass& pass)
 {
-	if (pass == OnHandleDrawFences)				this->putDrawFenceThisFrame = true;
+	if (pass == OnHandleTransferFences)			this->putTransferFenceThisFrame = true;
+	else if (pass == OnHandleSparseFences)		this->putTransferFenceThisFrame = true;
+	else if (pass == OnHandleDrawFences)		this->putDrawFenceThisFrame = true;
 	else if (pass == OnHandleComputeFences)		this->putComputeFenceThisFrame = true;
-	else if (pass == OnHandleTransferFences)	this->putTransferFenceThisFrame = true;
 	this->commands[pass].Append(cmd);
 }
 
@@ -207,9 +232,10 @@ VkScheduler::PushCommand(const VkDeferredCommand& cmd, const CommandPass& pass)
 void
 VkScheduler::Begin()
 {
+	this->putTransferFenceThisFrame = false;
+	this->putSparseFenceThisFrame = false;
 	this->putDrawFenceThisFrame = false;
 	this->putComputeFenceThisFrame = false;
-	this->putTransferFenceThisFrame = false;
 }
 
 //------------------------------------------------------------------------------
@@ -227,7 +253,7 @@ VkScheduler::EndTransfers()
 	if (this->putTransferFenceThisFrame)
 	{
 		VkFence fence;
-		VkResult res = vkCreateFence(VkRenderDevice::dev, &info, NULL, &fence);
+		VkResult res = vkCreateFence(this->dev, &info, NULL, &fence);
 		n_assert(res == VK_SUCCESS);
 		this->transferFenceCommands.Add(fence, this->commands[OnHandleTransferFences]);
 		this->commands[OnHandleTransferFences].Clear();
@@ -254,7 +280,7 @@ VkScheduler::EndDraws()
 	if (this->putDrawFenceThisFrame)
 	{
 		VkFence fence;
-		VkResult res = vkCreateFence(VkRenderDevice::dev, &info, NULL, &fence);
+		VkResult res = vkCreateFence(this->dev, &info, NULL, &fence);
 		n_assert(res == VK_SUCCESS);
 		this->drawFenceCommands.Add(fence, this->commands[OnHandleDrawFences]);
 		this->commands[OnHandleDrawFences].Clear();
@@ -279,7 +305,7 @@ VkScheduler::EndComputes()
 	if (this->putComputeFenceThisFrame)
 	{
 		VkFence fence;
-		VkResult res = vkCreateFence(VkRenderDevice::dev, &info, NULL, &fence);
+		VkResult res = vkCreateFence(this->dev, &info, NULL, &fence);
 		n_assert(res == VK_SUCCESS);
 		this->computeFenceCommands.Add(fence, this->commands[OnHandleComputeFences]);
 		this->commands[OnHandleComputeFences].Clear();

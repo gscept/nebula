@@ -7,6 +7,7 @@
 #include "vkshaderprogram.h"
 #include "vkvertexlayout.h"
 #include "vkpass.h"
+#include "coregraphics/shaderpool.h"
 
 namespace Vulkan
 {
@@ -15,7 +16,9 @@ __ImplementSingleton(VkPipelineDatabase);
 //------------------------------------------------------------------------------
 /**
 */
-VkPipelineDatabase::VkPipelineDatabase()
+VkPipelineDatabase::VkPipelineDatabase() :
+	dev(VK_NULL_HANDLE),
+	cache(VK_NULL_HANDLE)
 {
 	__ConstructSingleton;
 	this->Reset();
@@ -27,6 +30,16 @@ VkPipelineDatabase::VkPipelineDatabase()
 VkPipelineDatabase::~VkPipelineDatabase()
 {
 	__DestructSingleton;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+VkPipelineDatabase::Setup(const VkDevice dev, const VkPipelineCache cache)
+{
+	this->dev = dev;
+	this->cache = cache;
 }
 
 //------------------------------------------------------------------------------
@@ -73,7 +86,7 @@ VkPipelineDatabase::SetSubpass(uint32_t subpass)
 /**
 */
 void
-VkPipelineDatabase::SetShader(const uint32_t program)
+VkPipelineDatabase::SetShader(const CoreGraphics::ShaderProgramId program)
 {
 	this->currentShaderProgram = program;
 	IndexT index = this->ct2->children.FindIndex(program);
@@ -136,16 +149,24 @@ VkPipelineDatabase::SetInputLayout(VkPipelineInputAssemblyStateCreateInfo* input
 VkPipeline
 VkPipelineDatabase::GetCompiledPipeline()
 {
+	n_assert(this->dev != VK_NULL_HANDLE);
+	n_assert(this->cache != VK_NULL_HANDLE);
 	if (this->ct1->initial ||
 		this->ct2->initial ||
 		this->ct3->initial ||
 		this->ct4->initial ||
 		this->ct5->initial)
 	{
-		VkGraphicsPipelineCreateInfo shaderInfo = this->currentShaderProgram->shaderPipelineInfo;
+		// get fragment of graphics pipeline residing in shader
+		const VkShaderProgram::VkShaderProgramRuntimeInfo& rtInfo = CoreGraphics::shaderPool->Get<3>(this->currentShaderProgram.id24).Get<2>(this->currentShaderProgram.id32);
+		VkGraphicsPipelineCreateInfo shaderInfo = rtInfo.info;
+
+		// get other fragment from framebuffer
 		VkGraphicsPipelineCreateInfo passInfo = this->currentPass->framebufferPipelineInfo;
 		VkPipelineColorBlendStateCreateInfo colorBlendInfo = *shaderInfo.pColorBlendState;
 		colorBlendInfo.attachmentCount = this->currentPass->GetSubpasses()[this->currentSubpass].attachments.Size();
+
+		// use shader, framebuffer, vertex input and layout, input assembly and pass info to construct a complete pipeline
 		VkGraphicsPipelineCreateInfo info =
 		{
 			VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
@@ -168,7 +189,7 @@ VkPipelineDatabase::GetCompiledPipeline()
 			VK_NULL_HANDLE,
 			-1
 		};
-		VkResult res = vkCreateGraphicsPipelines(VkRenderDevice::dev, VkRenderDevice::cache, 1, &info, NULL, &this->currentPipeline);
+		VkResult res = vkCreateGraphicsPipelines(this->dev, this->cache, 1, &info, NULL, &this->currentPipeline);
 		n_assert(res == VK_SUCCESS);
 		this->ct5->pipeline = this->currentPipeline;
 
@@ -189,9 +210,9 @@ VkPipelineDatabase::GetCompiledPipeline()
 void
 VkPipelineDatabase::Reset()
 {
-	this->currentPass = 0;
+	this->currentPass = nullptr;
 	this->currentSubpass = -1;
-	this->currentShaderProgram = 0;
+	this->currentShaderProgram = Ids::InvalidId64;
 	this->currentVertexLayout = 0;
 	this->currentInputAssemblyInfo = 0;
 	this->currentPipeline = VK_NULL_HANDLE;
