@@ -5,9 +5,9 @@ stages:
 build:
    stage: build
    script:
-    - ./fips set config vulkan-win64-vstudio-debug
-    - ./fips gen
-    - ./fips build
+    - call ./fips set config vulkan-win64-vstudio-debug
+    - call ./fips gen
+    - call ./fips build
     
 pre:
     stage: pre
