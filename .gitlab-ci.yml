@@ -1,7 +1,16 @@
+stages:
+    - build
+    - pre
+
 build:
    stage: build
    script:
-    - ./fips fetch
     - ./fips set config vulkan-win64-vstudio-debug
     - ./fips gen
     - ./fips build
+    
+pre:
+    stage: pre
+    script:
+     - ./fips fetch
+    
