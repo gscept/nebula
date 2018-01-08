@@ -2,6 +2,7 @@
 //  rendertexture.cc
 //  (C) 2017 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
+#include "stdneb.h"
 #include "config.h"
 #include "rendertexture.h"
 #include "coregraphics/displaydevice.h"
@@ -43,7 +44,7 @@ RenderTextureInfoSetupHelper(const RenderTextureCreateInfo& info)
 		n_assert(info.usage != InvalidAttachment);
 		n_assert(!(info.relativeSize & info.dynamicSize));
 
-		rt.window = Ids::InvalidId64;
+		rt.window = Ids::InvalidId32;
 		rt.name = info.name;
 		rt.relativeSize = info.relativeSize;
 		rt.dynamicSize = info.dynamicSize;
