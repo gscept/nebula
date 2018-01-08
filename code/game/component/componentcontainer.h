@@ -9,9 +9,8 @@
     (C) 2017 Individual contributors, see AUTHORS file
 */
 
-#include "stdneb.h"
 #include "util/dictionary.h"
-#include "id/id.h"
+#include "ids/id.h"
 
 
 //-----------------------------------------------------------------------------
