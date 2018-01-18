@@ -18,9 +18,7 @@
 #include "coregraphics/indexbuffer.h"
 #include "coregraphics/primitivegroup.h"
 #include "coregraphics/base/vertexbufferbase.h"
-#include "coregraphics/base/memoryvertexbufferpoolbase.h"
 #include "coregraphics/base/indexbufferbase.h"
-#include "coregraphics/base/memoryindexbufferpoolbase.h"
 
 //------------------------------------------------------------------------------
 namespace Legacy
@@ -53,7 +51,7 @@ public:
 	/// get vertex buffer
 	const CoreGraphics::VertexBufferId GetVertexBuffer() const;
 	/// get index buffer
-	const CoreGraphics::IndexBufferLock GetIndexBuffer() const;
+	const CoreGraphics::IndexBufferId GetIndexBuffer() const;
     /// get primitive groups
     const Util::Array<CoreGraphics::PrimitiveGroup>& GetPrimitiveGroups() const;
     /// get pointer to raw vertex data

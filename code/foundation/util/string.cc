@@ -978,6 +978,18 @@ String::AsInt() const
 
 //------------------------------------------------------------------------------
 /**
+Returns content as integer. Note: this method doesn't check whether the
+contents is actually a valid integer. Use the IsValidInteger() method
+for this!
+*/
+long long
+String::AsLongLong() const
+{
+	return atoll(this->AsCharPtr());
+}
+
+//------------------------------------------------------------------------------
+/**
     Returns content as float. Note: this method doesn't check whether the
     contents is actually a valid float. Use the IsValidInt() method
     for this!

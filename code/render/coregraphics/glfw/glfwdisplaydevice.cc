@@ -14,13 +14,11 @@
 #include <GLFW/glfw3.h>
 
 #if __WIN32__
-#include "events/win32/win32event.h"
 
 // Forward-declare GLFW windowProc
 static LRESULT CALLBACK windowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 #endif
-#include "graphics/display.h"
 
 
 #if NEBULA3_OPENGL4_DEBUG

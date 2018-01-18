@@ -65,7 +65,7 @@ public:
     /// begin complete frame
     bool BeginFrame(IndexT frameIndex);
 	/// begin a rendering pass
-	void BeginPass(const Ptr<CoreGraphics::Pass>& pass);
+	void BeginPass(const CoreGraphics::PassId pass);
 	/// progress to next subpass
 	void SetToNextSubpass();
     /// begin rendering a batch
@@ -145,7 +145,7 @@ protected:
 	*/
 	CoreGraphics::PrimitiveTopology::Code primitiveTopology;
     CoreGraphics::PrimitiveGroup primitiveGroup;
-	Ptr<CoreGraphics::Pass> pass;
+	CoreGraphics::PassId pass;
     bool isOpen;
     bool inNotifyEventHandlers;
     bool inBeginFrame;

@@ -443,7 +443,7 @@ VkShader::Setup(
 		if (!usedBySystem && block->alignedSize > 0 && !AnyFX::HasFlags(block->qualifiers, AnyFX::Qualifiers::Push))
 		{
 			// create uniform buffer, with single backing
-			CoreGraphics::ConstantBufferCreateInfo cbInfo = {false, Ids::InvalidId64, block->name.c_str(), block->alignedSize};
+			CoreGraphics::ConstantBufferCreateInfo cbInfo = { false, Ids::InvalidId64, block->name.c_str(), block->alignedSize };
 			uniformBuffer = CreateConstantBuffer(cbInfo);
 
 			// generate a name which we know will be unique

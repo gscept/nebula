@@ -59,7 +59,7 @@ DisplayDeviceBase::Close()
 	IndexT i;
 	for (i = 0; i < this->windows.Size(); i++)
 	{
-		CoreGraphics::CloseWindow(this->windows[i]);
+		CoreGraphics::DestroyWindow(this->windows[i]);
 	}
 	this->windows.Clear();
 }
@@ -204,8 +204,6 @@ DisplayDeviceBase::SetupWindow(const Util::String& title, const Util::String& ic
 	if (this->windows.IsEmpty()) this->currentWindow = wnd;
 	this->windows.Append(wnd);
 
-	// finally open window
-	CoreGraphics::WindowOpen(wnd);
 	return wnd;
 }
 
@@ -220,9 +218,6 @@ DisplayDeviceBase::EmbedWindow(const Util::Blob& windowData)
 	// add to list, and set to current if this is the first
 	if (this->windows.IsEmpty()) this->currentWindow = wnd;
 	this->windows.Append(wnd);
-
-	// finally open window
-	CoreGraphics::WindowOpen(wnd);
 	return wnd;
 }
 
@@ -232,7 +227,7 @@ DisplayDeviceBase::EmbedWindow(const Util::Blob& windowData)
 void
 DisplayDeviceBase::MakeWindowCurrent(const CoreGraphics::WindowId id)
 {
-	CoreGraphics::MakeWindowCurrent(id);
+	CoreGraphics::WindowMakeCurrent(id);
 	this->currentWindow = id;
 }
 

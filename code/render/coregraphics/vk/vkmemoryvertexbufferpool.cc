@@ -21,7 +21,7 @@ __ImplementClass(Vulkan::VkMemoryVertexBufferPool, 'VKVO', Resources::ResourceMe
 /**
 */
 Resources::ResourcePool::LoadStatus
-VkMemoryVertexBufferPool::LoadFromMemory(const Ids::Id24 id, void* info)
+VkMemoryVertexBufferPool::LoadFromMemory(const Ids::Id24 id, const void* info)
 {
 	VertexBufferCreateInfo* vboInfo = static_cast<VertexBufferCreateInfo*>(info);
 	n_assert(this->GetState(id) == Resource::Pending);

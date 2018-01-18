@@ -257,13 +257,13 @@ VkShaderPool::CreateDerivativeState(const CoreGraphics::ShaderStateId id, const 
 {
 	const AnyFX::ShaderEffect* effect = this->shaderAlloc.Get<0>(id.id24);
 	const UniformBufferGroupMap& uniformBuffersByGroup = this->shaderAlloc.Get<1>(id.id24).uniformBufferGroupMap;
-	VkShaderState::VkDerivativeStateAllocator& derivAlloc = this->shaderAlloc.Get<4>(id.id24).Get<5>(id.id32);
-	VkShaderState::VkShaderStateRuntimeInfo& parentRuntime = this->shaderAlloc.Get<4>(id.id24).Get<1>(id.id32);
-	VkShaderState::VkShaderStateSetupInfo& parentSetup = this->shaderAlloc.Get<4>(id.id24).Get<2>(id.id32);
+	VkDerivativeStateAllocator& derivAlloc = this->shaderAlloc.Get<4>(id.id24).Get<5>(id.id32);
+	VkShaderStateRuntimeInfo& parentRuntime = this->shaderAlloc.Get<4>(id.id24).Get<1>(id.id32);
+	VkShaderStateSetupInfo& parentSetup = this->shaderAlloc.Get<4>(id.id24).Get<2>(id.id32);
 	Ids::Id32 derivId = derivAlloc.AllocObject();
 
-	VkShaderState::VkDerivativeShaderStateRuntimeInfo& info = derivAlloc.Get<0>(derivId);
-	VkShaderState::SetupDerivative(derivId, effect, derivAlloc, parentRuntime, parentSetup, uniformBuffersByGroup, group);
+	VkDerivativeShaderStateRuntimeInfo& info = derivAlloc.Get<0>(derivId);
+	VkShaderStateSetupDerivative(derivId, effect, derivAlloc, parentRuntime, parentSetup, uniformBuffersByGroup, group);
 
 	DerivativeStateId ret;
 	ret.id = derivId;
@@ -276,8 +276,8 @@ VkShaderPool::CreateDerivativeState(const CoreGraphics::ShaderStateId id, const 
 void
 VkShaderPool::DestroyDerivativeState(const CoreGraphics::ShaderStateId id, const CoreGraphics::DerivativeStateId& deriv)
 {
-	VkShaderState::VkDerivativeStateAllocator& derivAlloc = this->shaderAlloc.Get<4>(id.id24).Get<5>(id.id32);
-	VkShaderState::VkDerivativeShaderStateRuntimeInfo& info = derivAlloc.Get<0>(deriv.id);
+	VkDerivativeStateAllocator& derivAlloc = this->shaderAlloc.Get<4>(id.id24).Get<5>(id.id32);
+	VkDerivativeShaderStateRuntimeInfo& info = derivAlloc.Get<0>(deriv.id);
 	derivAlloc.DeallocObject(deriv.id);
 }
 
@@ -287,8 +287,8 @@ VkShaderPool::DestroyDerivativeState(const CoreGraphics::ShaderStateId id, const
 void
 VkShaderPool::DerivativeStateApply(const CoreGraphics::ShaderStateId id, const CoreGraphics::DerivativeStateId& deriv)
 {
-	VkShaderState::VkDerivativeShaderStateRuntimeInfo& info = this->shaderAlloc.Get<4>(id.id24).Get<5>(id.id32).Get<0>(deriv.id);
-	VkShaderState::DerivativeStateApply(info);
+	VkDerivativeShaderStateRuntimeInfo& info = this->shaderAlloc.Get<4>(id.id24).Get<5>(id.id32).Get<0>(deriv.id);
+	VkShaderStateDerivativeStateApply(info);
 }
 
 //------------------------------------------------------------------------------
@@ -297,18 +297,18 @@ VkShaderPool::DerivativeStateApply(const CoreGraphics::ShaderStateId id, const C
 void
 VkShaderPool::DerivativeStateCommit(const CoreGraphics::ShaderStateId id, const CoreGraphics::DerivativeStateId & deriv)
 {
-	VkShaderState::VkDerivativeShaderStateRuntimeInfo& info = this->shaderAlloc.Get<4>(id.id24).Get<5>(id.id32).Get<0>(deriv.id);
-	VkShaderState::DerivativeStateCommit(info);
+	VkDerivativeShaderStateRuntimeInfo& info = this->shaderAlloc.Get<4>(id.id24).Get<5>(id.id32).Get<0>(deriv.id);
+	VkShaderStateDerivativeStateCommit(info);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkShaderPool::DerivativeStateReset(const CoreGraphics::ShaderStateId id, const CoreGraphics::DerivativeStateId & deriv)
+VkShaderPool::DerivativeStateReset(const CoreGraphics::ShaderStateId id, const CoreGraphics::DerivativeStateId& deriv)
 {
-	VkShaderState::VkDerivativeShaderStateRuntimeInfo& info = this->shaderAlloc.Get<4>(id.id24).Get<5>(id.id32).Get<0>(deriv.id);
-	VkShaderState::DerivativeStateReset(info);
+	VkDerivativeShaderStateRuntimeInfo& info = this->shaderAlloc.Get<4>(id.id24).Get<5>(id.id32).Get<0>(deriv.id);
+	VkShaderStateDerivativeStateReset(info);
 }
 
 //------------------------------------------------------------------------------

@@ -32,8 +32,7 @@ Resources::ResourceId
 ResourceMemoryPool::ReserveResource(const ResourceName& res, const Util::StringAtom& tag)
 {
 	ResourceId ret;
-	Ids::Id32 instanceId = this->resourceInstanceIndexPool.Alloc(); // this is the ID of the instance
-	Ids::Id24 resourceId; // this is the id of the shared resource	
+	ResourceUnknownId resourceId; // this is the id of the shared resource	
 	IndexT i = this->ids.FindIndex(res);
 
 	if (i == InvalidIndex || !res.IsValid())
@@ -41,8 +40,11 @@ ResourceMemoryPool::ReserveResource(const ResourceName& res, const Util::StringA
 		// allocate new resource
 		resourceId = this->AllocObject();
 
+		// allocate new object in pool
+		Ids::Id32 instanceId = this->resourceInstanceIndexPool.Alloc(); // this is the ID of the instance
+
 		// create new resource id, if need be, grow the container list
-		if (resourceId >= (uint32_t)this->names.Size())
+		if (instanceId >= (uint)this->names.Size())
 		{
 			this->usage.Resize(this->usage.Size() + ResourceIndexGrow);
 			this->names.Resize(this->names.Size() + ResourceIndexGrow);
@@ -51,25 +53,25 @@ ResourceMemoryPool::ReserveResource(const ResourceName& res, const Util::StringA
 		}
 
 		// add the resource name to the resource id (if valid)
-		if (res.IsValid()) this->ids.Add(res, resourceId);
-		this->names[resourceId] = res;
-		this->usage[resourceId] = 1;
-		this->tags[resourceId] = tag;
-		this->states[resourceId] = Resource::Pending;
-		ret.id32 = instanceId;
-		ret.id24 = resourceId;
-		ret.id8 = this->uniqueId;
+		this->names[instanceId] = res;
+		this->usage[instanceId] = 1;
+		this->tags[instanceId] = tag;
+		this->states[instanceId] = Resource::Pending;
+
+		ret.id24_0 = instanceId;
+		ret.id8_0 = this->uniqueId;
+		ret.id24_1 = resourceId.id24;
+		ret.id8_1 = resourceId.id8;
+		
+		if (res.IsValid()) this->ids.Add(res, ret);
 	}
 	else
 	{
 		// get id of resource
-		resourceId = this->ids.ValueAtIndex(i);
-		ret.id32 = instanceId;
-		ret.id24 = resourceId;
-		ret.id8 = this->uniqueId;
+		ret = this->ids.ValueAtIndex(i);
 
 		// bump usage
-		this->usage[resourceId]++;
+		this->usage[ret.id24_0]++;
 	}
 	return ret;
 }
@@ -84,11 +86,12 @@ ResourceMemoryPool::DiscardResource(const Resources::ResourceId id)
 	ResourcePool::DiscardResource(id);
 
 	// if usage reaches 0, add it to the list of pending unloads
-	if (this->usage[id.id24] == 0)
+	if (this->usage[id.id24_0] == 0)
 	{
 		// unload immediately
-		this->Unload(id.id24);
-		this->DeallocObject(id.id24);
+		this->Unload(id.id24_1);
+		this->DeallocObject(id.id24_1);
+		this->resourceInstanceIndexPool.Dealloc(id.id24_0);
 	}
 }
 
@@ -99,13 +102,16 @@ void
 ResourceMemoryPool::DiscardByTag(const Util::StringAtom& tag)
 {
 	IndexT i;
-	for (i = 0; i < tags.Size(); i++)
+	for (i = 0; i < this->tags.Size(); i++)
 	{
-		if (tags[i] == tag)
+		if (this->tags[i] == tag)
 		{
+			const ResourceId& id = this->ids[this->names[i]];
+
 			// unload
-			this->Unload(i);
-			this->DeallocObject(i);
+			this->Unload(id.id24_1);
+			this->DeallocObject(id.id24_1);
+			this->resourceInstanceIndexPool.Dealloc(id.id24_0);
 			this->tags[i] = "";
 		}
 	}

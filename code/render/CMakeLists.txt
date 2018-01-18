@@ -82,8 +82,6 @@ ENDIF()
 			fips_files(				
 				displaydevicebase.cc
 				displaydevicebase.h
-				passbase.cc
-				passbase.h
 				renderdevicebase.cc
 				renderdevicebase.h
 				shaderserverbase.cc
@@ -94,8 +92,6 @@ ENDIF()
 				textrendererbase.h
 				transformdevicebase.cc
 				transformdevicebase.h
-				vertexlayoutserverbase.cc
-				vertexlayoutserverbase.h
 			)
 		fips_dir(coregraphics)
 			fips_files(
@@ -132,7 +128,6 @@ ENDIF()
 				memoryvertexbufferpool.h
 				mesh.cc
 				mesh.h
-				pass.cc
 				pass.h
 				pixelformat.cc
 				pixelformat.h
@@ -182,8 +177,6 @@ ENDIF()
 				vertexcomponent.h
 				vertexlayout.cc
 				vertexlayout.h
-				vertexlayoutserver.cc
-				vertexlayoutserver.h
 				vertexsignaturepool.cc
 				vertexsignaturepool.h
 				window.h

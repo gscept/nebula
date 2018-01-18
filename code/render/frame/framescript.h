@@ -14,6 +14,7 @@
 #include "coregraphics/shaderreadwritetexture.h"
 #include "coregraphics/shaderreadwritebuffer.h"
 #include "coregraphics/event.h"
+#include "coregraphics/shader.h"
 #include "algorithm/algorithm.h"
 #include "frame/frameop.h"
 #include "frame/framepass.h"

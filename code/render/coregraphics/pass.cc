@@ -5,6 +5,10 @@
 #include "stdneb.h"
 #include "coregraphics/pass.h"
 
+namespace CoreGraphics
+{
+}
+
 #if __OGL4__
 namespace CoreGraphics
 {

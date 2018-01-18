@@ -26,7 +26,7 @@ CreateVertexLayout(VertexLayoutCreateInfo& info)
 		sig.Append(info.comps[i].GetSignature());
 		loadInfo.usedStreams[info.comps[i].GetStreamIndex()] = true;
 	}
-	Util::String::Sprintf("%s-%lld", sig.AsCharPtr(), info.shader);
+	sig = Util::String::Sprintf("%s", sig.AsCharPtr());
 	Util::StringAtom atom(sig);
 	
 	loadInfo.signature = Util::StringAtom(sig);

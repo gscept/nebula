@@ -23,7 +23,7 @@ __ImplementClass(Vulkan::VkMemoryTexturePool, 'VKTO', Resources::ResourceMemoryP
 /**
 */
 ResourcePool::LoadStatus
-VkMemoryTexturePool::LoadFromMemory(const Ids::Id24 id, void* info)
+VkMemoryTexturePool::LoadFromMemory(const Ids::Id24 id, const void* info)
 {
 	VkMemoryTextureInfo* data = (VkMemoryTextureInfo*)info;
 

@@ -19,7 +19,8 @@
 */
 //------------------------------------------------------------------------------
 #include "core/singleton.h"
-#include "shader.h"
+#include "coregraphics/shader.h"
+#include "coregraphics/pass.h"
 
 namespace Vulkan
 {
@@ -50,7 +51,7 @@ public:
 	void Setup(const VkDevice dev, const VkPipelineCache cache);
 
 	/// set pass
-	void SetPass(const Ptr<VkPass>& pass);
+	void SetPass(const CoreGraphics::PassId pass);
 	/// set subpass
 	void SetSubpass(uint32_t subpass);
 	/// set shader
@@ -67,7 +68,7 @@ private:
 	
 	VkDevice dev;
 	VkPipelineCache cache;
-	Ptr<VkPass> currentPass;
+	CoreGraphics::PassId currentPass;
 	uint32_t currentSubpass;
 	CoreGraphics::ShaderProgramId currentShaderProgram;
 	VkPipelineVertexInputStateCreateInfo* currentVertexLayout;
@@ -107,7 +108,7 @@ private:
 		VkPipeline pipeline;
 	};
 
-	Util::Dictionary<Ptr<VkPass>, Tier1Node*> tier1;	
+	Util::Dictionary<CoreGraphics::PassId, Tier1Node*> tier1;
 	IndexT tier1Iterator;
 
 	Tier1Node* ct1;

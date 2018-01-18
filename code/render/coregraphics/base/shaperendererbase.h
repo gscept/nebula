@@ -16,7 +16,7 @@
 #include "math/bbox.h"
 #include "coregraphics/primitivetopology.h"
 #include "coregraphics/indextype.h"
-#include "coregraphics/shaderstate.h"
+#include "coregraphics/shader.h"
 #include "coregraphics/rendershape.h"
 #include "threading/threadid.h"
 

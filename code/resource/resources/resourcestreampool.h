@@ -72,25 +72,23 @@ protected:
 	struct _PendingResourceLoad
 	{
 		Resources::ResourceId id;
-		Ids::Id32 pid;
-		Ids::Id24 res;
 		Util::StringAtom tag;
 		bool inflight;
 		bool immediate;
 		std::function<void()> loadFunc;
 
-		_PendingResourceLoad() : pid(Ids::InvalidId32) {};
+		_PendingResourceLoad() : id(ResourceId::Invalid()) {};
 	};
 
 	struct _PendingResourceUnload
 	{
-		Ids::Id24 resourceId;
+		Resources::ResourceId resourceId;
 	};
 
 	/// callback functions to run when an associated resource is loaded (can be stacked)
 	struct _Callbacks
 	{
-		Ids::Id32 id;
+		Resources::ResourceId id;
 		std::function<void(const Resources::ResourceId)> success;
 		std::function<void(const Resources::ResourceId)> failed;
 	};

@@ -17,6 +17,7 @@
 #include "core/refcounted.h"
 #include "coregraphics/constantbuffer.h"
 #include "coregraphics/stretchybuffer.h"
+#include "vkshadervariable.h"
 namespace Vulkan
 {
 
@@ -35,6 +36,7 @@ struct VkConstantBufferSetupInfo
 	SizeT stride;
 	SizeT numBuffers;
 	SizeT grow;
+	AnyFX::VarblockBase* reflection;
 };
 
 struct VkConstantBufferMapInfo
@@ -54,7 +56,8 @@ typedef Ids::IdAllocator<
 	VkConstantBufferRuntimeInfo,
 	VkConstantBufferSetupInfo,
 	VkConstantBufferMapInfo,
-	ConstantBufferStretchInterface
+	ConstantBufferStretchInterface,
+	VkShaderVariableAllocator
 > VkConstantBufferAllocator;
 extern VkConstantBufferAllocator constantBufferAllocator;
 

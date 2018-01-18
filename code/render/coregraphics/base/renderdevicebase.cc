@@ -209,15 +209,16 @@ RenderDeviceBase::BeginFrame(IndexT frameIndex)
 /**
 */
 void
-RenderDeviceBase::BeginPass(const Ptr<CoreGraphics::Pass>& pass)
+RenderDeviceBase::BeginPass(const CoreGraphics::PassId pass)
 {
 	n_assert(this->inBeginFrame);
 	n_assert(!this->inBeginPass);
 	n_assert(!this->inBeginBatch);
+	n_assert(this->pass == PassId::Invalid());
 	this->inBeginPass = true;
 
 	this->pass = pass;
-	this->pass->Begin();
+	PassBegin(pass);
 }
 
 //------------------------------------------------------------------------------
@@ -228,9 +229,9 @@ RenderDeviceBase::SetToNextSubpass()
 {
 	n_assert(this->inBeginFrame);
 	n_assert(this->inBeginPass);
-	n_assert(this->pass.isvalid());
+	n_assert(this->pass != PassId::Invalid());
 
-	this->pass->NextSubpass();
+	PassNextSubpass(this->pass);
 }
 
 //------------------------------------------------------------------------------
@@ -241,10 +242,11 @@ RenderDeviceBase::BeginBatch(FrameBatchType::Code batchType)
 {
     n_assert(this->inBeginPass);
     n_assert(!this->inBeginBatch);
-    n_assert(this->pass.isvalid());
+	n_assert(this->pass != PassId::Invalid());
 
 	this->inBeginBatch = true;
-	this->pass->BeginBatch(batchType);
+	PassBeginBatch(this->pass, batchType);
+	//this->pass->BeginBatch(batchType);
 }
 
 //------------------------------------------------------------------------------
@@ -254,10 +256,10 @@ void
 RenderDeviceBase::EndBatch()
 {
     n_assert(this->inBeginBatch);
-	n_assert(this->pass.isvalid());
+	n_assert(this->pass != PassId::Invalid());
 
     this->inBeginBatch = false;
-	this->pass->EndBatch();
+	PassEndBatch(this->pass);
 }
 
 //------------------------------------------------------------------------------
@@ -267,10 +269,10 @@ void
 RenderDeviceBase::EndPass()
 {
     n_assert(this->inBeginPass);
-    n_assert(this->pass.isvalid());
+	n_assert(this->pass != PassId::Invalid());
 
-	this->pass->End();
-	this->pass = nullptr;
+	PassEnd(this->pass);
+	this->pass = PassId::Invalid();
     this->inBeginPass = false;
 }
 

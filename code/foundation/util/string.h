@@ -214,6 +214,8 @@ public:
     const char* Get() const;
     /// return contents as integer
     int AsInt() const;
+	/// return contents as long long
+	long long AsLongLong() const;
     /// return contents as float
     float AsFloat() const;
     /// return contents as bool

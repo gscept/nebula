@@ -168,7 +168,6 @@ ShaderStateGetVariable(const ShaderStateId id, const IndexT index)
 	return shaderPool->ShaderStateGetVariable(id, index);
 }
 
-
 //------------------------------------------------------------------------------
 /**
 */
@@ -221,6 +220,15 @@ inline void
 ShaderBind(const ShaderId id, const CoreGraphics::ShaderFeature::Mask& program)
 {
 	shaderPool->ShaderBind(id, program);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const ShaderProgramId
+ShaderGetProgram(const ShaderId id, const CoreGraphics::ShaderFeature::Mask& program)
+{
+	return shaderPool->GetShaderProgram(id, program);
 }
 
 //------------------------------------------------------------------------------

@@ -65,6 +65,10 @@ public:
 	const Util::StringAtom GetTag(const Resources::ResourceId id);
 	/// get resource state
 	const Resource::State GetState(const Resources::ResourceId id);
+	/// check if resource id is valid
+	bool HasResource(const Resources::ResourceId id);
+	/// get id from name
+	const Resources::ResourceId GetId(const Resources::ResourceName& name);
 
 	/// register a stream pool, which takes an extension and the RTTI of the resource type to create
 	void RegisterStreamPool(const Util::StringAtom& ext, const Core::Rtti& loaderClass);
@@ -82,7 +86,6 @@ private:
 	Util::Dictionary<Util::StringAtom, IndexT> extensionMap;
 	Util::Dictionary<const Core::Rtti*, IndexT> typeMap;
 	Util::Array<Ptr<ResourcePool>> pools;
-	//Util::Dictionary<Util::StringAtom, Ptr<ResourceLoader>> loaders;
 
 	static int32_t UniquePoolCounter;
 };
@@ -125,7 +128,7 @@ inline void
 Resources::ResourceManager::DiscardResource(const Resources::ResourceId id)
 {
 	// get id of loader
-	const Ids::Id8 loaderid = id.id8;
+	const Ids::Id8 loaderid = id.id8_0;
 
 	// get resource loader by extension
 	n_assert(this->pools.Size() > loaderid);
@@ -156,8 +159,8 @@ ResourceManager::ReserveResource(const ResourceName& res, const Util::StringAtom
 inline Resources::ResourcePool::LoadStatus
 ResourceManager::LoadFromMemory(const Resources::ResourceId id, void* info)
 {
-	const Ptr<ResourceMemoryPool>& loader = this->pools[id.id8].downcast<ResourceMemoryPool>();
-	return loader->LoadFromMemory(id.id24, info);
+	const Ptr<ResourceMemoryPool>& loader = this->pools[id.id8_0].downcast<ResourceMemoryPool>();
+	return loader->LoadFromMemory(id.id24_1, info);
 }
 
 //------------------------------------------------------------------------------
@@ -167,8 +170,8 @@ inline const Resources::ResourceName
 ResourceManager::GetName(const Resources::ResourceId id)
 {
 	// get resource loader by extension
-	n_assert(this->pools.Size() > id.id8);
-	const Ptr<ResourcePool>& loader = this->pools[id.id8];
+	n_assert(this->pools.Size() > id.id8_0);
+	const Ptr<ResourcePool>& loader = this->pools[id.id8_0];
 	return loader->GetName(id);
 }
 
@@ -179,8 +182,8 @@ inline const Util::StringAtom
 ResourceManager::GetTag(const Resources::ResourceId id)
 {
 	// get resource loader by extension
-	n_assert(this->pools.Size() > id.id8);
-	const Ptr<ResourcePool>& loader = this->pools[id.id8];
+	n_assert(this->pools.Size() > id.id8_0);
+	const Ptr<ResourcePool>& loader = this->pools[id.id8_0];
 	return loader->GetTag(id);
 }
 
@@ -191,9 +194,32 @@ inline const Resources::Resource::State
 ResourceManager::GetState(const Resources::ResourceId id)
 {
 	// get resource loader by extension
-	n_assert(this->pools.Size() > id.id8);
-	const Ptr<ResourcePool>& loader = this->pools[id.id8];
+	n_assert(this->pools.Size() > id.id8_0);
+	const Ptr<ResourcePool>& loader = this->pools[id.id8_0];
 	return loader->GetState(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline bool
+ResourceManager::HasResource(const Resources::ResourceId id)
+{
+	if (this->pools.Size() <= id.id8_0) return false;
+	{
+		const Ptr<ResourcePool>& loader = this->pools[id.id8_0];
+		if (loader->HasResource(id)) return true;
+		return false;		
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const Resources::ResourceId
+ResourceManager::GetId(const Resources::ResourceName& name)
+{
+	return Resources::ResourceId();
 }
 
 //------------------------------------------------------------------------------

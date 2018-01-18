@@ -14,6 +14,7 @@
 #include "vktransformdevice.h"
 #include "vkshaderserver.h"
 #include "coregraphics/pass.h"
+#include "vkpass.h"
 #include "io/ioserver.h"
 
 using namespace CoreGraphics;
@@ -179,6 +180,7 @@ VkRenderDevice::OpenVulkanContext()
 
 	// setup adapter
 	this->SetupAdapter();
+	this->currentDevice = 0;
 
 #if NEBULAT_VULKAN_DEBUG
 	this->debugCallbackPtr = (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(this->instance, "vkCreateDebugReportCallbackEXT");
@@ -192,15 +194,12 @@ VkRenderDevice::OpenVulkanContext()
 	n_assert(res == VK_SUCCESS);
 #endif
 
-
-
-	// get number of queues
-	vkGetPhysicalDeviceQueueFamilyProperties(this->physicalDevices[0], &this->numQueues, NULL);
+	vkGetPhysicalDeviceQueueFamilyProperties(this->physicalDevices[this->currentDevice], &this->numQueues, NULL);
 	n_assert(this->numQueues > 0);
 
 	// now get queues from device
-	vkGetPhysicalDeviceQueueFamilyProperties(this->physicalDevices[0], &this->numQueues, this->queuesProps);
-	vkGetPhysicalDeviceMemoryProperties(this->physicalDevices[0], &this->memoryProps);
+	vkGetPhysicalDeviceQueueFamilyProperties(this->physicalDevices[this->currentDevice], &this->numQueues, this->queuesProps);
+	vkGetPhysicalDeviceMemoryProperties(this->physicalDevices[this->currentDevice], &this->memoryProps);
 
 	this->drawQueueIdx = UINT32_MAX;
 	this->computeQueueIdx = UINT32_MAX;
@@ -250,8 +249,6 @@ VkRenderDevice::OpenVulkanContext()
 			this->sparseQueueFamily = i;
 			this->sparseQueueIdx = indexMap[i]++;
 		}
-
-
 	}
 
 	if (this->transferQueueIdx == UINT32_MAX)
@@ -295,10 +292,10 @@ VkRenderDevice::OpenVulkanContext()
 
 	// get physical device features
 	VkPhysicalDeviceFeatures features;
-	vkGetPhysicalDeviceFeatures(this->physicalDevices[0], &features);
+	vkGetPhysicalDeviceFeatures(this->physicalDevices[this->currentDevice], &features);
 
 	VkPhysicalDeviceProperties props;
-	vkGetPhysicalDeviceProperties(this->physicalDevices[0], &props);
+	vkGetPhysicalDeviceProperties(this->physicalDevices[this->currentDevice], &props);
 	
 	VkDeviceCreateInfo deviceInfo =
 	{
@@ -315,7 +312,7 @@ VkRenderDevice::OpenVulkanContext()
 	};
 
 	// create device
-	res = vkCreateDevice(this->physicalDevices[0], &deviceInfo, NULL, &this->devices[0]);
+	res = vkCreateDevice(this->physicalDevices[this->currentDevice], &deviceInfo, NULL, &this->devices[0]);
 	n_assert(res == VK_SUCCESS);
 
 	// setup queue handler
@@ -324,7 +321,7 @@ VkRenderDevice::OpenVulkanContext()
 	families[VkSubContextHandler::ComputeContextType] = this->computeQueueFamily;
 	families[VkSubContextHandler::TransferContextType] = this->transferQueueFamily;
 	families[VkSubContextHandler::SparseContextType] = this->sparseQueueFamily;
-	this->subcontextHandler.Setup(this->devices[0], indexMap, families);
+	this->subcontextHandler.Setup(this->devices[this->currentDevice], indexMap, families);
 
 	VkPipelineCacheCreateInfo cacheInfo =
 	{
@@ -336,13 +333,12 @@ VkRenderDevice::OpenVulkanContext()
 	};
 
 	// create cache
-	res = vkCreatePipelineCache(this->devices[0], &cacheInfo, NULL, &this->cache);
+	res = vkCreatePipelineCache(this->devices[this->currentDevice], &cacheInfo, NULL, &this->cache);
 	n_assert(res == VK_SUCCESS);
 
 	// setup our own pipeline database
-	this->database.Setup(this->devices[0], this->cache);
+	this->database.Setup(this->devices[this->currentDevice], this->cache);
 
-	VkDescriptorPoolSize sizes[11];
 	uint32_t descCounts[] =
 	{
 		256,
@@ -357,6 +353,7 @@ VkRenderDevice::OpenVulkanContext()
 		256,
 		2048
 	};
+
 	VkDescriptorType types[] =
 	{
 		VK_DESCRIPTOR_TYPE_SAMPLER,
@@ -374,12 +371,15 @@ VkRenderDevice::OpenVulkanContext()
 
 	for (i = 0; i < 11; i++)
 	{
-		sizes[i].descriptorCount = descCounts[i];
-		sizes[i].type = types[i];
+		this->poolSizes[i].descriptorCount = descCounts[i];
+		this->poolSizes[i].type = types[i];
 	}
 
+	this->RequestPool();
+	this->currentPool = 0;
+
 	// setup pools (from VkCmdBuffer.h)
-	SetupVkPools(this->devices[0], this->drawQueueFamily, this->computeQueueFamily, this->transferQueueFamily, this->sparseQueueFamily);
+	SetupVkPools(this->devices[this->currentDevice], this->drawQueueFamily, this->computeQueueFamily, this->transferQueueFamily, this->sparseQueueFamily);
 
 	CmdBufferCreateInfo cmdCreateInfo =
 	{
@@ -447,11 +447,11 @@ VkRenderDevice::OpenVulkanContext()
 		0
 	};
 
-	res = vkCreateFence(this->devices[0], &fenceInfo, NULL, &this->mainCmdDrawFence);
+	res = vkCreateFence(this->devices[this->currentDevice], &fenceInfo, NULL, &this->mainCmdDrawFence);
 	n_assert(res == VK_SUCCESS);
-	res = vkCreateFence(this->devices[0], &fenceInfo, NULL, &this->mainCmdCmpFence);
+	res = vkCreateFence(this->devices[this->currentDevice], &fenceInfo, NULL, &this->mainCmdCmpFence);
 	n_assert(res == VK_SUCCESS);
-	res = vkCreateFence(this->devices[0], &fenceInfo, NULL, &this->mainCmdTransFence);
+	res = vkCreateFence(this->devices[this->currentDevice], &fenceInfo, NULL, &this->mainCmdTransFence);
 	n_assert(res == VK_SUCCESS);
 
 	VkEventCreateInfo eventInfo = 
@@ -460,11 +460,11 @@ VkRenderDevice::OpenVulkanContext()
 		NULL,
 		0
 	};
-	res = vkCreateEvent(this->devices[0], &eventInfo, NULL, &this->mainCmdDrawEvent);
+	res = vkCreateEvent(this->devices[this->currentDevice], &eventInfo, NULL, &this->mainCmdDrawEvent);
 	n_assert(res == VK_SUCCESS);
-	res = vkCreateEvent(this->devices[0], &eventInfo, NULL, &this->mainCmdCmpEvent);
+	res = vkCreateEvent(this->devices[this->currentDevice], &eventInfo, NULL, &this->mainCmdCmpEvent);
 	n_assert(res == VK_SUCCESS);
-	res = vkCreateEvent(this->devices[0], &eventInfo, NULL, &this->mainCmdTransEvent);
+	res = vkCreateEvent(this->devices[this->currentDevice], &eventInfo, NULL, &this->mainCmdTransEvent);
 	n_assert(res == VK_SUCCESS);
 
 	this->passInfo = 
@@ -492,7 +492,6 @@ VkRenderDevice::OpenVulkanContext()
 
 	// reset state
 	this->inputInfo.topology = VK_PRIMITIVE_TOPOLOGY_MAX_ENUM;
-	this->vertexLayout = nullptr;
 	this->currentProgram = 0;
 	this->currentPipelineInfo.pVertexInputState = nullptr;
 	this->currentPipelineInfo.pInputAssemblyState = nullptr;
@@ -745,43 +744,33 @@ VkRenderDevice::Compute(int dimX, int dimY, int dimZ)
 /**
 */
 void
-VkRenderDevice::BeginPass(const Ptr<CoreGraphics::Pass>& pass)
+VkRenderDevice::BeginPass(const CoreGraphics::PassId pass)
 {
 	RenderDeviceBase::BeginPass(pass);
 	this->currentCommandState = SharedState;
 
 	// set info
-	this->SetFramebufferLayoutInfo(pass->GetVkFramebufferPipelineInfo());
-	this->database.SetPass(pass.downcast<VkPass>());
+	this->SetFramebufferLayoutInfo(PassGetVkFramebufferInfo(pass));
+	this->database.SetPass(pass);
 	this->database.SetSubpass(0);
 
-	const Util::FixedArray<VkClearValue>& clearValues = pass->GetVkClearValues();
-	VkRenderPassBeginInfo info =
-	{
-		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-		NULL,
-		pass->GetVkRenderPass(),
-		pass->GetVkFramebuffer(),
-		pass->GetVkRenderArea(),
-		(uint32_t)clearValues.Size(),
-		clearValues.Size() > 0 ? clearValues.Begin() : NULL
-	};
+	const VkRenderPassBeginInfo& info = PassGetVkRenderPassBeginInfo(pass);
 	vkCmdBeginRenderPass(CommandBufferGetVk(this->mainCmdDrawBuffer), &info, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
 	// run this phase for scheduler
 	this->scheduler.ExecuteCommandPass(VkScheduler::OnBeginPass);
 
-	this->passInfo.framebuffer = pass->GetVkFramebuffer();
-	this->passInfo.renderPass = pass->GetVkRenderPass();
+	this->passInfo.framebuffer = info.framebuffer;
+	this->passInfo.renderPass = info.renderPass;
 	this->passInfo.subpass = 0;
 	this->passInfo.pipelineStatistics = 0;
 	this->passInfo.queryFlags = 0;
 	this->passInfo.occlusionQueryEnable = VK_FALSE;
 
-	const Util::FixedArray<VkRect2D>& scissors = pass->GetVkScissorRects(0);
+	const Util::FixedArray<VkRect2D>& scissors = PassGetVkRects(pass);
 	this->numScissors = scissors.Size();
 	this->scissors = scissors.Begin();
-	const Util::FixedArray<VkViewport>& viewports = pass->GetVkViewports(0);
+	const Util::FixedArray<VkViewport>& viewports = PassGetVkViewports(pass);
 	this->numViewports = viewports.Size();
 	this->viewports = viewports.Begin();
 }
@@ -807,11 +796,10 @@ VkRenderDevice::SetToNextSubpass()
 	this->database.SetSubpass(this->passInfo.subpass);
 	vkCmdNextSubpass(CommandBufferGetVk(this->mainCmdDrawBuffer), VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
-	// get viewports and rectangles for this subpass
-	const Util::FixedArray<VkRect2D>& scissors = pass->GetVkScissorRects(this->passInfo.subpass);
+	const Util::FixedArray<VkRect2D>& scissors = PassGetVkRects(this->pass);
 	this->numScissors = scissors.Size();
 	this->scissors = scissors.Begin();
-	const Util::FixedArray<VkViewport>& viewports = pass->GetVkViewports(this->passInfo.subpass);
+	const Util::FixedArray<VkViewport>& viewports = PassGetVkViewports(this->pass);
 	this->numViewports = viewports.Size();
 	this->viewports = viewports.Begin();
 }
@@ -1090,6 +1078,27 @@ CoreGraphics::ImageFileFormat::Code
 VkRenderDevice::SaveScreenshot(CoreGraphics::ImageFileFormat::Code fmt, const Ptr<IO::Stream>& outStream, const Math::rectangle<int>& rect, int x, int y)
 {
 	return CoreGraphics::ImageFileFormat::InvalidImageFileFormat;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+VkRenderDevice::RequestPool()
+{
+	VkDescriptorPoolCreateInfo poolInfo =
+	{
+		VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+		nullptr,
+		VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
+		INT_MAX,
+		11,
+		this->poolSizes
+	};
+
+	VkDescriptorPool pool;
+	vkCreateDescriptorPool(this->devices[this->currentDevice], &poolInfo, nullptr, &pool);
+	this->descriptorPools.Append(pool);
 }
 
 //------------------------------------------------------------------------------

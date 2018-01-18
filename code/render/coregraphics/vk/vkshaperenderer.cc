@@ -10,7 +10,6 @@
 #include "coregraphics/renderdevice.h"
 #include "coregraphics/vertexbuffer.h"
 #include "coregraphics/indexbuffer.h"
-#include "coregraphics/meshpool.h"
 #include "coregraphics/mesh.h"
 #include "coregraphics/vertexlayoutserver.h"
 #include "coregraphics/vertexcomponent.h"
@@ -18,7 +17,6 @@
 #include "coregraphics/shaderserver.h"
 #include "resources/resourceid.h"
 #include "resources/resourcemanager.h"
-#include "models/modelinstance.h"
 #include "coregraphics/shadersemantics.h"
 #include "coregraphics/memoryvertexbufferpool.h"
 #include "coregraphics/memoryindexbufferpool.h"
@@ -29,7 +27,6 @@ using namespace Math;
 using namespace CoreGraphics;
 using namespace Threading;
 using namespace Resources;
-using namespace Models;
 namespace Vulkan
 {
 
@@ -57,12 +54,14 @@ void
 VkShapeRenderer::Open()
 {
 	n_assert(!this->IsOpen());
-	n_assert(!this->shapeShader.isvalid());
+	n_assert(this->shapeShaderState == ShaderStateId::Invalid());
 
 	ShapeRendererBase::Open();
 
 	// create shape shader instance
-	this->shapeShader = ShaderServer::Instance()->ShaderCreateState("shd:simple", { NEBULAT_SYSTEM_GROUP });
+	this->shapeShader = ShaderServer::Instance()->GetShader("shd:simple"_atm);
+	this->shapeShaderState = ShaderCreateState(this->shapeShader, { NEBULAT_SYSTEM_GROUP }, false);
+	this->shapeMeshResources.SetSize(CoreGraphics::RenderShape::NumShapeTypes);
 	this->shapeMeshes.SetSize(CoreGraphics::RenderShape::NumShapeTypes);
 
 	// create default shapes (basically load them from the models)
@@ -73,58 +72,55 @@ VkShapeRenderer::Open()
 	this->CreateConeShape();
 
 	// lookup ModelViewProjection shader variable
-	this->model = this->shapeShader->GetVariableByName("ShapeModel");
-	this->diffuseColor = this->shapeShader->GetVariableByName("MatDiffuse");
+	this->model = ShaderStateGetVariable(this->shapeShaderState, "ShapeModel");
+	this->diffuseColor = ShaderStateGetVariable(this->shapeShaderState, "MatDiffuse");
 
-	// create feature masks
-	this->featureBits[RenderShape::AlwaysOnTop] = ShaderServer::Instance()->FeatureStringToMask("Colored");
-	this->featureBits[RenderShape::CheckDepth] = ShaderServer::Instance()->FeatureStringToMask("Colored|Alt0");
-	this->featureBits[RenderShape::Wireframe] = ShaderServer::Instance()->FeatureStringToMask("Colored|Alt1");
+	this->programs[RenderShape::AlwaysOnTop] = ShaderGetProgram(this->shapeShader, ShaderServer::Instance()->FeatureStringToMask("Colored"));
+	this->programs[RenderShape::CheckDepth] = ShaderGetProgram(this->shapeShader, ShaderServer::Instance()->FeatureStringToMask("Colored|Alt0"));
+	this->programs[RenderShape::Wireframe] = ShaderGetProgram(this->shapeShader, ShaderServer::Instance()->FeatureStringToMask("Colored|Alt1"));
+	this->programs[RenderShape::AlwaysOnTop + RenderShape::NumDepthFlags] = ShaderGetProgram(this->shapeShader, ShaderServer::Instance()->FeatureStringToMask("Static"));
+	this->programs[RenderShape::CheckDepth + RenderShape::NumDepthFlags] = ShaderGetProgram(this->shapeShader, ShaderServer::Instance()->FeatureStringToMask("Static|Alt0"));
+	this->programs[RenderShape::Wireframe + RenderShape::NumDepthFlags] = ShaderGetProgram(this->shapeShader, ShaderServer::Instance()->FeatureStringToMask("Static|Alt1"));
 
-	// use these for primitives
-	this->featureBits[RenderShape::AlwaysOnTop + RenderShape::NumDepthFlags] = ShaderServer::Instance()->FeatureStringToMask("Static");
-	this->featureBits[RenderShape::CheckDepth + RenderShape::NumDepthFlags] = ShaderServer::Instance()->FeatureStringToMask("Static|Alt0");
-	this->featureBits[RenderShape::Wireframe + RenderShape::NumDepthFlags] = ShaderServer::Instance()->FeatureStringToMask("Static|Alt1");
-
-	// setup vbo
 	Util::Array<VertexComponent> comps;
 	comps.Append(VertexComponent(VertexComponent::Position, 0, VertexComponent::Float4, 0));
 	comps.Append(VertexComponent(VertexComponent::Color, 0, VertexComponent::Float4, 0));
-	Ptr<MemoryVertexBufferPool> vboLoader = MemoryVertexBufferPool::Create();
-	vboLoader->Setup(comps, MaxNumVertices, NULL, 0, VertexBuffer::UsageDynamic, VertexBuffer::AccessWrite, VertexBuffer::SyncingCoherent);
+	VertexBufferCreateInfo vboInfo = 
+	{
+		"shape_renderer_vbo",
+		"render_system"_atm,
+		CoreGraphics::GpuBufferTypes::AccessWrite,
+		CoreGraphics::GpuBufferTypes::UsageDynamic,
+		CoreGraphics::GpuBufferTypes::SyncingCoherent,
+		MaxNumVertices,
+		comps, 
+		nullptr,
+		0
+	};
+	this->vbo = CreateVertexBuffer(vboInfo);
 
-	// create vbo
-	this->vbo = VertexBuffer::Create();
-	this->vbo->SetLoader(vboLoader.upcast<ResourceLoader>());
-	this->vbo->SetAsyncEnabled(false);
-	this->vbo->Load();
-	n_assert(this->vbo->IsLoaded());
-	this->vbo->SetLoader(NULL);
-
-	// setup ibo
-	Ptr<MemoryIndexBufferPool> iboLoader = MemoryIndexBufferPool::Create();
-	iboLoader->Setup(IndexType::Index32, MaxNumIndices, NULL, 0, IndexBuffer::UsageDynamic, IndexBuffer::AccessWrite, IndexBuffer::SyncingCoherent);
-
-	// create ibo
-	this->ibo = IndexBuffer::Create();
-	this->ibo->SetLoader(iboLoader.upcast<ResourceLoader>());
-	this->ibo->SetAsyncEnabled(false);
-	this->ibo->Load();
-	n_assert(this->ibo->IsLoaded());
-	this->ibo->SetLoader(NULL);
-
-	// create buffer locks
-	this->vboLock = BufferLock::Create();
-	this->iboLock = BufferLock::Create();
+	IndexBufferCreateInfo iboInfo =
+	{
+		"shape_renderer_ibo",
+		"render_system"_atm,
+		CoreGraphics::GpuBufferTypes::AccessWrite,
+		CoreGraphics::GpuBufferTypes::UsageDynamic,
+		CoreGraphics::GpuBufferTypes::SyncingCoherent,
+		IndexType::Index32,
+		MaxNumIndices,
+		nullptr,
+		0
+	};
+	this->ibo = CreateIndexBuffer(iboInfo);
 
 	// map buffers
-	this->vertexBufferPtr = (byte*)this->vbo->Map(VertexBuffer::MapWrite);
-	this->indexBufferPtr = (byte*)this->ibo->Map(IndexBuffer::MapWrite);
+	this->vertexBufferPtr = (byte*)VertexBufferMap(this->vbo, CoreGraphics::GpuBufferTypes::MapWrite);
+	this->indexBufferPtr = (byte*)IndexBufferMap(this->ibo, CoreGraphics::GpuBufferTypes::MapWrite);
 	n_assert(0 != this->vertexBufferPtr);
 	n_assert(0 != this->indexBufferPtr);
 
-	// bind index buffer to vertex layout
-	this->vertexLayout = this->vbo->GetVertexLayout();
+	// also create an extra vertex layout, in case we get a mesh which doesn't fit with our special layout
+	this->vertexLayout = CreateVertexLayout(VertexLayoutCreateInfo{ comps });
 
 	// setup primitive group
 	this->primGroup.SetBaseIndex(0);
@@ -138,31 +134,29 @@ void
 VkShapeRenderer::Close()
 {
 	n_assert(this->IsOpen());
-	n_assert(this->shapeShader.isvalid());
+	n_assert(this->shapeShaderState != ShaderId::Invalid());
 
 	this->diffuseColor = 0;
 	this->model = 0;
 
 	// unload shape meshes
-	ResourceManager::Instance()->DiscardManagedResource(this->shapeMeshes[RenderShape::Box].upcast<ManagedResource>());
-	ResourceManager::Instance()->DiscardManagedResource(this->shapeMeshes[RenderShape::Sphere].upcast<ManagedResource>());
-	ResourceManager::Instance()->DiscardManagedResource(this->shapeMeshes[RenderShape::Cylinder].upcast<ManagedResource>());
-	ResourceManager::Instance()->DiscardManagedResource(this->shapeMeshes[RenderShape::Torus].upcast<ManagedResource>());
-	ResourceManager::Instance()->DiscardManagedResource(this->shapeMeshes[RenderShape::Cone].upcast<ManagedResource>());
-	this->shapeMeshes.Clear();
+	DiscardResource(this->shapeMeshResources[RenderShape::Box]);
+	DiscardResource(this->shapeMeshResources[RenderShape::Sphere]);
+	DiscardResource(this->shapeMeshResources[RenderShape::Cylinder]);
+	DiscardResource(this->shapeMeshResources[RenderShape::Torus]);
+	DiscardResource(this->shapeMeshResources[RenderShape::Cone]);
+	this->shapeMeshResources.Clear();
 
 	// discard shape shader
-	this->shapeShader->Discard();
-	this->shapeShader = 0;
+	ShaderDestroyState(this->shapeShaderState);
 
 	// unload dynamic buffers
-	this->vbo->Unmap();
-	this->ibo->Unmap();
-	this->vbo->Unload();
-	this->vbo = 0;
-	this->ibo->Unload();
-	this->ibo = 0;
-	this->vertexBufferPtr = this->indexBufferPtr = 0;
+	VertexBufferUnmap(this->vbo);
+	IndexBufferUnmap(this->ibo);
+
+	DestroyVertexBuffer(this->vbo);
+	DestroyIndexBuffer(this->ibo);
+	this->vertexBufferPtr = this->indexBufferPtr = nullptr;
 
 	// call parent class
 	ShapeRendererBase::Close();
@@ -178,8 +172,7 @@ VkShapeRenderer::DrawShapes()
 
 	for (int depthType = 0; depthType < RenderShape::NumDepthFlags; depthType++)
 	{
-		this->shapeShader->SelectActiveVariation(featureBits[depthType]);
-		this->shapeShader->Apply();
+		ShaderProgramBind(this->programs[depthType]);
 
 		IndexT i;
 		for (i = 0; i < this->primitives[depthType].Size(); i++)
@@ -216,8 +209,7 @@ VkShapeRenderer::DrawShapes()
 
 	for (int depthType = 0; depthType < RenderShape::NumDepthFlags; depthType++)
 	{
-		this->shapeShader->SelectActiveVariation(featureBits[depthType + RenderShape::NumDepthFlags]);
-		this->shapeShader->Apply();
+		ShaderProgramBind(this->programs[depthType + RenderShape::NumDepthFlags]);
 
 		IndexT i;
 		for (i = 0; i < this->shapes[depthType].Size(); i++)
@@ -239,29 +231,21 @@ VkShapeRenderer::DrawShapes()
 void
 VkShapeRenderer::DrawSimpleShape(const Math::matrix44& modelTransform, CoreGraphics::RenderShape::Type shapeType, const Math::float4& color)
 {
-	n_assert(this->shapeMeshes[shapeType].isvalid());
+	n_assert(this->shapeMeshes[shapeType] != ResourceId::Invalid());
 	n_assert(shapeType < RenderShape::NumShapeTypes);
 
 	Ptr<RenderDevice> renderDevice = RenderDevice::Instance();
 
 	// resolve model-view-projection matrix and update shader
-	this->model->SetMatrix(modelTransform);
-	this->diffuseColor->SetFloat4(color);
+	ShaderVariableSet(this->model, this->shapeShaderState, modelTransform);
+	ShaderVariableSet(this->diffuseColor, this->shapeShaderState, color);
 
-	Ptr<Mesh> mesh = this->shapeMeshes[shapeType]->GetMesh();
-	Ptr<VertexBuffer> vb = mesh->GetVertexBuffer();
-	Ptr<IndexBuffer> ib = mesh->GetIndexBuffer();
-
-	// assume all primitive groups in the mesh are identical
-	mesh->ApplySharedMesh();
-
+	const SizeT numgroups = MeshGetPrimitiveGroups(this->shapeMeshes[shapeType]);
 	IndexT i;
-	for (i = 0; i < mesh->GetNumPrimitiveGroups(); i++)
+	for (i = 0; i < numgroups; i++)
 	{
-		// setup render device
-		PrimitiveGroup group = mesh->GetPrimitiveGroupAtIndex(i);
-		renderDevice->SetPrimitiveGroup(group);
-		this->shapeShader->Commit();
+		MeshBind(this->shapeMeshes[shapeType], i);
+		ShaderStateApply(this->shapeShaderState);
 
 		// draw
 		renderDevice->Draw();
@@ -272,33 +256,29 @@ VkShapeRenderer::DrawSimpleShape(const Math::matrix44& modelTransform, CoreGraph
 /**
 */
 void
-VkShapeRenderer::DrawMesh(const Math::matrix44& modelTransform, const Ptr<CoreGraphics::Mesh>& mesh, const Math::float4& color)
+VkShapeRenderer::DrawMesh(const Math::matrix44& modelTransform, const CoreGraphics::MeshId mesh, const Math::float4& color)
 {
-	n_assert(mesh.isvalid());
+	n_assert(mesh != MeshId::Invalid());
 	Ptr<RenderDevice> renderDevice = RenderDevice::Instance();
 
 	// resolve model-view-projection matrix and update shader
 	TransformDevice* transDev = TransformDevice::Instance();
-	this->model->SetMatrix(modelTransform);
-	this->diffuseColor->SetFloat4(color);
+
+	// resolve model-view-projection matrix and update shader
+	ShaderVariableSet(this->model, this->shapeShaderState, modelTransform);
+	ShaderVariableSet(this->diffuseColor, this->shapeShaderState, color);
 
 	n_assert(RenderDevice::Instance()->IsInBeginFrame());
-
-	Ptr<CoreGraphics::VertexBuffer> vb = mesh->GetVertexBuffer();
-	Ptr<CoreGraphics::IndexBuffer> ib = mesh->GetIndexBuffer();
-
-	// assume all primitives share the same topology
-	mesh->ApplySharedMesh();
+	const SizeT numgroups = MeshGetPrimitiveGroups(mesh);
 
 	// draw primitives in shape
 	IndexT i;
-	for (i = 0; i < mesh->GetNumPrimitiveGroups(); i++)
+	for (i = 0; i < numgroups; i++)
 	{
-		// setup render device
-		PrimitiveGroup group = mesh->GetPrimitiveGroupAtIndex(i);
-		renderDevice->SetPrimitiveGroup(group);
-		this->shapeShader->Commit();
+		MeshBind(mesh, i);
+		ShaderStateApply(this->shapeShaderState);
 
+		// draw
 		renderDevice->Draw();
 	}
 }
@@ -400,15 +380,15 @@ VkShapeRenderer::DrawBufferedPrimitives()
 		const Math::matrix44& modelTransform = this->unindexed.transforms[i];
 		const Math::float4& color = this->unindexed.colors[i];
 
-		this->diffuseColor->SetFloat4(color);
-		this->model->SetMatrix(modelTransform);
+		ShaderVariableSet(this->model, this->shapeShaderState, modelTransform);
+		ShaderVariableSet(this->diffuseColor, this->shapeShaderState, color);
 
 		renderDevice->SetPrimitiveTopology(topo);
-		renderDevice->SetVertexLayout(this->vertexLayout);
-		renderDevice->SetStreamVertexBuffer(0, this->vbo, 0);
+		VertexLayoutBind(this->vertexLayout);
+		VertexBufferBind(this->vbo, 0, 0);
 		renderDevice->SetPrimitiveGroup(group);
 
-		this->shapeShader->Commit();
+		ShaderStateApply(this->shapeShaderState);
 
 		renderDevice->Draw();
 	}
@@ -436,16 +416,16 @@ VkShapeRenderer::DrawBufferedIndexedPrimitives()
 		const Math::matrix44& modelTransform = this->indexed.transforms[i];
 		const Math::float4& color = this->indexed.colors[i];
 
-		this->diffuseColor->SetFloat4(color);
-		this->model->SetMatrix(modelTransform);
+		ShaderVariableSet(this->model, this->shapeShaderState, modelTransform);
+		ShaderVariableSet(this->diffuseColor, this->shapeShaderState, color);
 		
 		renderDevice->SetPrimitiveTopology(topo);
-		renderDevice->SetVertexLayout(this->vertexLayout);
-		renderDevice->SetIndexBuffer(this->ibo);
-		renderDevice->SetStreamVertexBuffer(0, this->vbo, 0);
+		VertexLayoutBind(this->vertexLayout);
+		IndexBufferBind(this->ibo);
+		VertexBufferBind(this->vbo, 0, 0);
 		renderDevice->SetPrimitiveGroup(group);
-		//renderDevice->BuildRenderPipeline();
-		this->shapeShader->Commit();
+
+		ShaderStateApply(this->shapeShaderState);
 
 		renderDevice->Draw();
 	}
@@ -462,8 +442,8 @@ VkShapeRenderer::DrawBufferedIndexedPrimitives()
 void
 VkShapeRenderer::CreateBoxShape()
 {
-	Ptr<ManagedMesh> mesh = ResourceManager::Instance()->CreateManagedResource(Mesh::RTTI, "msh:system/box.nvx2", StreamMeshPool::Create()).downcast<ManagedMesh>();
-	this->shapeMeshes[RenderShape::Box] = mesh;
+	this->shapeMeshResources[RenderShape::Box] = CreateResource("msh:system/box.nvx2", "render_system", nullptr, nullptr, true);
+	this->shapeMeshes[RenderShape::Box] = MeshId(this->shapeMeshResources[RenderShape::Box].id24);
 }
 
 //------------------------------------------------------------------------------
@@ -472,8 +452,8 @@ VkShapeRenderer::CreateBoxShape()
 void
 VkShapeRenderer::CreateSphereShape()
 {
-	Ptr<ManagedMesh> mesh = ResourceManager::Instance()->CreateManagedResource(Mesh::RTTI, "msh:system/sphere.nvx2", StreamMeshPool::Create()).downcast<ManagedMesh>();
-	this->shapeMeshes[RenderShape::Sphere] = mesh;
+	this->shapeMeshResources[RenderShape::Sphere] = CreateResource("msh:system/sphere.nvx2", "render_system", nullptr, nullptr, true);
+	this->shapeMeshes[RenderShape::Sphere] = MeshId(this->shapeMeshResources[RenderShape::Sphere].id24);
 }
 
 //------------------------------------------------------------------------------
@@ -482,8 +462,8 @@ VkShapeRenderer::CreateSphereShape()
 void
 VkShapeRenderer::CreateCylinderShape()
 {
-	Ptr<ManagedMesh> mesh = ResourceManager::Instance()->CreateManagedResource(Mesh::RTTI, "msh:system/cylinder.nvx2", StreamMeshPool::Create()).downcast<ManagedMesh>();
-	this->shapeMeshes[RenderShape::Cylinder] = mesh;
+	this->shapeMeshResources[RenderShape::Cylinder] = CreateResource("msh:system/cylinder.nvx2", "render_system", nullptr, nullptr, true);
+	this->shapeMeshes[RenderShape::Cylinder] = MeshId(this->shapeMeshResources[RenderShape::Cylinder].id24);
 }
 
 //------------------------------------------------------------------------------
@@ -492,8 +472,8 @@ VkShapeRenderer::CreateCylinderShape()
 void
 VkShapeRenderer::CreateTorusShape()
 {
-	Ptr<ManagedMesh> mesh = ResourceManager::Instance()->CreateManagedResource(Mesh::RTTI, "msh:system/torus.nvx2", StreamMeshPool::Create()).downcast<ManagedMesh>();
-	this->shapeMeshes[RenderShape::Torus] = mesh;
+	this->shapeMeshResources[RenderShape::Torus] = CreateResource("msh:system/torus.nvx2", "render_system", nullptr, nullptr, true);
+	this->shapeMeshes[RenderShape::Torus] = MeshId(this->shapeMeshResources[RenderShape::Torus].id24);
 }
 
 //------------------------------------------------------------------------------
@@ -502,8 +482,8 @@ VkShapeRenderer::CreateTorusShape()
 void
 VkShapeRenderer::CreateConeShape()
 {
-	Ptr<ManagedMesh> mesh = ResourceManager::Instance()->CreateManagedResource(Mesh::RTTI, "msh:system/cone.nvx2", StreamMeshPool::Create()).downcast<ManagedMesh>();
-	this->shapeMeshes[RenderShape::Cone] = mesh;
+	this->shapeMeshResources[RenderShape::Cone] = CreateResource("msh:system/cone.nvx2", "render_system", nullptr, nullptr, true);
+	this->shapeMeshes[RenderShape::Cone] = MeshId(this->shapeMeshResources[RenderShape::Cone].id24);
 }
 
 } // namespace Vulkan

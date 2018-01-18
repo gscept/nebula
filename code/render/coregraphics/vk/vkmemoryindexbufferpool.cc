@@ -20,7 +20,7 @@ __ImplementClass(Vulkan::VkMemoryIndexBufferPool, 'VKMI', Resources::ResourceMem
 /**
 */
 Resources::ResourcePool::LoadStatus
-VkMemoryIndexBufferPool::LoadFromMemory(const Ids::Id24 id, void* info)
+VkMemoryIndexBufferPool::LoadFromMemory(const Ids::Id24 id, const void* info)
 {
 	IndexBufferCreateInfo* iboInfo = static_cast<IndexBufferCreateInfo*>(info);
 	n_assert(this->GetState(id) == Resource::Pending);
@@ -109,7 +109,7 @@ VkMemoryIndexBufferPool::Unload(const Ids::Id24 id)
 void
 VkMemoryIndexBufferPool::IndexBufferBind(const Resources::ResourceId id, const IndexT offset)
 {
-	RuntimeInfo& runtimeInfo = this->Get<1>(id.id24);
+	RuntimeInfo& runtimeInfo = this->Get<1>(id.id24_1);
 	VkRenderDevice::Instance()->SetIndexBuffer(runtimeInfo.buf, offset, runtimeInfo.type);
 }
 
@@ -120,8 +120,8 @@ void*
 VkMemoryIndexBufferPool::Map(const Resources::ResourceId id, CoreGraphics::GpuBufferTypes::MapType mapType)
 {
 	void* buf;
-	LoadInfo& loadInfo = this->Get<0>(id.id24);
-	uint32_t& mapCount = this->Get<2>(id.id24);
+	LoadInfo& loadInfo = this->Get<0>(id.id24_1);
+	uint32_t& mapCount = this->Get<2>(id.id24_1);
 	VkResult res = vkMapMemory(loadInfo.dev, loadInfo.mem, 0, VK_WHOLE_SIZE, 0, &buf);
 	n_assert(res == VK_SUCCESS);
 	mapCount++;
@@ -134,8 +134,8 @@ VkMemoryIndexBufferPool::Map(const Resources::ResourceId id, CoreGraphics::GpuBu
 void
 VkMemoryIndexBufferPool::Unmap(const Resources::ResourceId id)
 {
-	LoadInfo& loadInfo = this->Get<0>(id.id24);
-	uint32_t& mapCount = this->Get<2>(id.id24);
+	LoadInfo& loadInfo = this->Get<0>(id.id24_1);
+	uint32_t& mapCount = this->Get<2>(id.id24_1);
 	vkUnmapMemory(loadInfo.dev, loadInfo.mem);
 	mapCount--;
 }

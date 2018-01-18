@@ -26,7 +26,7 @@ public:
 	void Unmap(const Resources::ResourceId id);
 
 	/// update resource
-	LoadStatus LoadFromMemory(const Ids::Id24 id, void* info);
+	LoadStatus LoadFromMemory(const Ids::Id24 id, const void* info);
 	/// unload resource
 	void Unload(const Ids::Id24 id);
 private:

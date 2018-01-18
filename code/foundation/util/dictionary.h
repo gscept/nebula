@@ -58,6 +58,8 @@ public:
     void Add(const KEYTYPE& key, const VALUETYPE& value);
     /// end a bulk insert (this will sort the internal array)
     void EndBulkAdd();
+	/// merge two dictionaries
+	void Merge(const Dictionary<KEYTYPE, VALUETYPE>& rhs);
     /// erase a key and its associated value
     void Erase(const KEYTYPE& key);
     /// erase a key at index
@@ -205,6 +207,21 @@ Dictionary<KEYTYPE, VALUETYPE>::EndBulkAdd()
     #endif
     this->keyValuePairs.Sort();
     this->inBulkInsert = false;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class KEYTYPE, class VALUETYPE> inline void
+Dictionary<KEYTYPE, VALUETYPE>::Merge(const Dictionary<KEYTYPE, VALUETYPE>& rhs)
+{
+	this->BeginBulkAdd();
+	IndexT i;
+	for (i = 0; i < rhs.keyValuePairs.Size(); i++)
+	{
+		this->keyValuePairs.Append(rhs.keyValuePairs[i]);
+	}
+	this->EndBulkAdd();
 }
 
 //------------------------------------------------------------------------------
