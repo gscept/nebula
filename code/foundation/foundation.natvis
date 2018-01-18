@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?> 
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+  <Type Name="Util::String">
+    <DisplayString Condition="heapBuffer == 0">{localBuffer}</DisplayString>
+    <DisplayString Condition="heapBuffer != 0">{heapBuffer}</DisplayString>
+    <StringView Condition="heapBuffer == 0">localBuffer</StringView>    
+    <StringView Condition="heapBuffer != 0">heapBuffer</StringView>    
+  </Type>
+  <Type Name="Util::Array&lt;*&gt;">    
+    <DisplayString>Size={size}, Capacity={capacity}</DisplayString>
+    <Expand>
+      <Item Name="[Size]">size</Item>
+      <Item Name="[Capacity]">capacity</Item>
+      <ArrayItems>
+        <Size>size</Size>
+        <ValuePointer>elements</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+  <Type Name="Util::Array&lt;Util::KeyValuePair&lt;*,*&gt;&gt;">
+    <DisplayString>Size={size}, Capacity={capacity}</DisplayString>
+    <Expand>
+      <Item Name="[Size]">size</Item>
+      <Item Name="[Capacity]">capacity</Item>
+      <CustomListItems>
+        <Variable Name="j" InitialValue="0" />
+        <Size>size</Size>
+        <Loop>
+          <Item Name="{elements[j].keyData}">elements[j].valueData</Item>
+          <Exec>j++</Exec>
+        </Loop>
+      </CustomListItems>
+    </Expand>
+  </Type>
+  <Type Name="Util::Dictionary&lt;*,*&gt;">
+    <DisplayString>Values={keyValuePairs.size}</DisplayString>
+    <Expand>
+      <CustomListItems>
+        <Variable Name="j" InitialValue="0" />
+        <Size>keyValuePairs.size</Size>        
+        <Loop>
+          <Item Name="{keyValuePairs.elements[j].keyData}">keyValuePairs.elements[j].valueData</Item>
+          <Exec>j++</Exec>
+        </Loop>
+      </CustomListItems>
+    </Expand>
+  </Type>
+  <Type Name="Util::FixedArray&lt;*&gt;">
+    <DisplayString>Values={size}</DisplayString>
+    <Expand>
+      <ArrayItems>
+        <Size>size</Size>
+        <ValuePointer>elements</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+  
+</AutoVisualizer>

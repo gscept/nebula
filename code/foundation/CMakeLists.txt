@@ -432,6 +432,7 @@ fips_begin_module(foundation)
 		)	
 	fips_dir(.)
 	if (FIPS_WINDOWS)
+		fips_files(foundation.natvis)
 		fips_dir(core GROUP "core/win32")
 			fips_files(
 				win32/precompiled.h
