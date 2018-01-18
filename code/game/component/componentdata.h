@@ -9,9 +9,9 @@
     (C) 2017 Individual contributors, see AUTHORS file
 */
 
-#include "stdneb.h"
 #include "util/dictionary.h"
-#include "id/id.h"
+#include "util/queue.h"
+#include "ids/id.h"
 #include "componentcontainer.h"
 
 
@@ -27,18 +27,18 @@ class ComponentData
     ~ComponentData();
 
     /// register an Id. Will create new mapping and allocate instance data
-    void RegisterId(Id id);
+    void RegisterId(Ids::Id32 id);
     /// deregister an Id. will only remove the id and zero the block
-    void DeregisterId(Id id);
+    void DeregisterId(Ids::Id32 id);
     /// perform garbage collection
     void Optimize();
     /// retrieve the instance id of an external id for faster lookup
     /// will be made invalid by Optimize()
-    uint32_t GetInstance(Id id) const;    
+    uint32_t GetInstance(Ids::Id32 id) const;
     protected:
     
     /// mapping of id index to array entry in ComponentData
-    Util::Dictionary<Id, uint32_t> idMap;
+    Util::Dictionary<Ids::Id32, uint32_t> idMap;
     Util::Queue<uint32_t> freeIds;
 };
 
@@ -65,7 +65,7 @@ ComponentData::~ComponentData()
 /**
 */
 void
-ComponentData::RegisterId(Id id)
+ComponentData::RegisterId(Ids::Id32 id)
 {
     if(this->freeIds.IsEmpty())
     {
@@ -85,7 +85,7 @@ ComponentData::RegisterId(Id id)
 /**
 */
 void
-ComponentData::DeregisterId(Id id)
+ComponentData::DeregisterId(Ids::Id32 id)
 {
     n_assert(this->idMap.Contains(id));
     uint32_t idx = this->idMap[id];    
@@ -97,7 +97,7 @@ ComponentData::DeregisterId(Id id)
 /**
 */
 uint32_t
-ComponentData::GetInstance(Id id) const
+ComponentData::GetInstance(Ids::Id32 id) const
 {
     n_assert(this->idMap.Contains(id));
     return this->idMap[id];
