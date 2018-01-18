@@ -3,7 +3,7 @@
 #-------------------------------------------------------------------------------
 
 fips_begin_module(game)
-	fips_include_directories(.)
+	fips_include_directories(. ${CODE_ROOT}/foundation)
 	fips_deps(foundation)
 	fips_dir(.)
 	fips_dir(component)
