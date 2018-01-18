@@ -6,7 +6,6 @@
 #include "streammeshpool.h"
 #include "coregraphics/mesh.h"
 #include "coregraphics/legacy/nvx2streamreader.h"
-#include "coregraphics.h"
 #include "coregraphics/memoryindexbufferpool.h"
 #include "coregraphics/memoryvertexbufferpool.h"
 #include "coregraphics/memorymeshpool.h"

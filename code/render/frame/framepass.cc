@@ -27,7 +27,6 @@ FramePass::~FramePass()
 	// empty
 }
 
-
 //------------------------------------------------------------------------------
 /**
 */
@@ -37,7 +36,6 @@ FramePass::AddSubpass(const Ptr<FrameSubpass>& subpass)
 	this->subpasses.Append(subpass);
 }
 
-
 //------------------------------------------------------------------------------
 /**
 */
@@ -46,7 +44,7 @@ FramePass::Discard()
 {
 	FrameOp::Discard();
 
-	this->pass->Discard();
+	DiscardPass(this->pass);
 	this->pass = 0;
 	IndexT i;
 	for (i = 0; i < this->subpasses.Size(); i++) this->subpasses[i]->Discard();
@@ -79,7 +77,6 @@ FramePass::Run(const IndexT frameIndex)
 	renderDev->EndPass();
 }
 
-
 //------------------------------------------------------------------------------
 /**
 */
@@ -87,7 +84,7 @@ void
 FramePass::OnWindowResized()
 {
 	// resize pass
-	this->pass->OnWindowResized();
+	PassWindowResizeCallback(this->pass);
 }
 
 } // namespace Frame2

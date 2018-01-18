@@ -23,11 +23,11 @@ static const uint32_t InvalidId24 = 0x00FFFFFF;
 static const uint16_t InvalidId16 = 0xFFFF;
 static const uint8_t InvalidId8 = 0xFF;
 
-#define ID_64_TYPE(x) struct x { Ids::Id64 id; constexpr x() : id(0) {}; constexpr x(const Ids::Id64 id) : id(id) {}; operator Ids::Id64() const  { return id; } static constexpr x Invalid() { return Ids::InvalidId64; } constexpr IndexT HashCode() const { return (IndexT)(id & 0x00000000FFFFFFFF); } };
-#define ID_32_TYPE(x) struct x { Ids::Id32 id; constexpr x() : id(0) {}; constexpr x(const Ids::Id32 id) : id(id) {}; operator Ids::Id32() const  { return id; } static constexpr x Invalid() { return Ids::InvalidId32; } constexpr IndexT HashCode() const { return id; } };
-#define ID_24_TYPE(x) struct x { Ids::Id24 id : 24;  constexpr x() : id(0) {}; constexpr x(const Ids::Id32 id) : id(id) {}; operator Ids::Id24() const  { return id; } static constexpr x Invalid() { return Ids::InvalidId24; } constexpr IndexT HashCode() const { return (IndexT)(id); } };
-#define ID_16_TYPE(x) struct x { Ids::Id16 id; constexpr x() : id(0) {}; constexpr x(const Ids::Id16 id) : id(id) {}; operator Ids::Id16() const  { return id; } static constexpr x Invalid() { return Ids::InvalidId16; } constexpr IndexT HashCode() const { return (IndexT)(id); } };
-#define ID_8_TYPE(x) struct x { Ids::Id8 id;  constexpr x() : id(0) {}; constexpr x(const Ids::Id8 id) : id(id) {}; operator Ids::Id8() const  { return id; } static constexpr x Invalid() { return Ids::InvalidId8; } constexpr IndexT HashCode() const { return (IndexT)(id); } };
+#define ID_64_TYPE(x) struct x { Ids::Id64 id; constexpr x() : id(0) {}; constexpr x(const Ids::Id64 id) : id(id) {}; constexpr operator Ids::Id64() const  { return id; } static constexpr x Invalid() { return Ids::InvalidId64; } constexpr IndexT HashCode() const { return (IndexT)(id & 0x00000000FFFFFFFF); } };
+#define ID_32_TYPE(x) struct x { Ids::Id32 id; constexpr x() : id(0) {}; constexpr x(const Ids::Id32 id) : id(id) {}; constexpr operator Ids::Id32() const  { return id; } static constexpr x Invalid() { return Ids::InvalidId32; } constexpr IndexT HashCode() const { return id; } };
+#define ID_24_TYPE(x) struct x { Ids::Id24 id : 24;  constexpr x() : id(0) {}; constexpr x(const Ids::Id32 id) : id(id) {}; constexpr operator Ids::Id24() const  { return id; } static constexpr x Invalid() { return Ids::InvalidId24; } constexpr IndexT HashCode() const { return (IndexT)(id); } };
+#define ID_16_TYPE(x) struct x { Ids::Id16 id; constexpr x() : id(0) {}; constexpr x(const Ids::Id16 id) : id(id) {}; constexpr operator Ids::Id16() const  { return id; } static constexpr x Invalid() { return Ids::InvalidId16; } constexpr IndexT HashCode() const { return (IndexT)(id); } };
+#define ID_8_TYPE(x) struct x { Ids::Id8 id;  constexpr x() : id(0) {}; constexpr x(const Ids::Id8 id) : id(id) {}; constexpr operator Ids::Id8() const  { return id; } static constexpr x Invalid() { return Ids::InvalidId8; } constexpr IndexT HashCode() const { return (IndexT)(id); } };
 
 
 #define ID_32_24_8_TYPE(x) struct x { \
@@ -36,9 +36,23 @@ static const uint8_t InvalidId8 = 0xFF;
 	Ids::Id8 id8: 8;\
 	constexpr x() : id32(0), id24(0), id8(0) {};\
 	constexpr x(const Ids::Id64 id) : id32(Ids::Id::GetHigh(id)), id24(Ids::Id::GetBig(Ids::Id::GetLow(id))), id8(Ids::Id::GetTiny(Ids::Id::GetLow(id))) {};\
-	operator Ids::Id64() const { return Ids::Id::MakeId32_24_8(id32, id24, id8); }\
+	constexpr operator Ids::Id64() const { return Ids::Id::MakeId32_24_8(id32, id24, id8); }\
 	static constexpr x Invalid() { return Ids::Id::MakeId32_24_8(Ids::InvalidId32, Ids::InvalidId24, Ids::InvalidId8); }\
 	constexpr IndexT HashCode() const { return (IndexT)(id24 & 0xFFFFFF00 | id8); }\
+	constexpr Ids::Id64 HashCode64() const { return Ids::Id::MakeId32_24_8(id32, id24, id8); }\
+	};
+
+#define ID_24_8_24_8_TYPE(x) struct x { \
+	Ids::Id24 id24_0 : 24;\
+	Ids::Id8 id8_0 : 8;\
+	Ids::Id24 id24_1 : 24;\
+	Ids::Id8 id8_1 : 8;\
+	constexpr x() : id24_0(0), id8_0(0), id24_1(0), id8_1(0) {};\
+	constexpr x(const Ids::Id64 id) : id24_0(Ids::Id::GetBig(Ids::Id::GetHigh(id))), id8_0(Ids::Id::GetTiny(Ids::Id::GetHigh(id))), id24_1(Ids::Id::GetBig(Ids::Id::GetLow(id))), id8_1(Ids::Id::GetTiny(Ids::Id::GetLow(id))) {};\
+	constexpr operator Ids::Id64() const { return Ids::Id::MakeId24_8_24_8(id24_0, id8_0, id24_1, id8_1); }\
+	static constexpr x Invalid() { return Ids::Id::MakeId24_8_24_8(Ids::InvalidId24, Ids::InvalidId8, Ids::InvalidId24, Ids::InvalidId8); }\
+	constexpr IndexT HashCode() const { return (IndexT)(id24_0 & 0xFFFFFF00 | id8_0); }\
+	constexpr Ids::Id64 HashCode64() const { return Ids::Id::MakeId24_8_24_8(id24_0, id8_0, id24_1, id8_1); }\
 	};
 
 #define ID_32_32_TYPE(x) struct x { \
@@ -46,7 +60,7 @@ static const uint8_t InvalidId8 = 0xFF;
 	Ids::Id32 id32_1; \
 	constexpr x() : id32_0(0), id32_1(0) {} \
 	constexpr x(const Ids::Id64 id) : id32_0(Ids::Id::GetHigh(id)), id32_1(Ids::Id::GetLow(id)) {};\
-	operator Ids::Id64() const  { return Ids::Id::MakeId64(id32_0, id32_1); }\
+	constexpr operator Ids::Id64() const  { return Ids::Id::MakeId64(id32_0, id32_1); }\
 	static constexpr x Invalid() { return Ids::Id::MakeId64(Ids::InvalidId32, Ids::InvalidId32); }\
 	constexpr IndexT HashCode() const { return (IndexT)(id32_1); }\
 	};
@@ -56,7 +70,7 @@ static const uint8_t InvalidId8 = 0xFF;
 	Ids::Id8 id8: 8; \
 	constexpr x() : id24(0), id8(0) {}  \
 	constexpr x(const Ids::Id32 id) : id24(Ids::Id::GetBig(id)), id8(Ids::Id::GetTiny(id)) {};\
-	operator Ids::Id32() const { return Ids::Id::MakeId24_8(id24, id8); }\
+	constexpr operator Ids::Id32() const { return Ids::Id::MakeId24_8(id24, id8); }\
 	static constexpr x Invalid() { return Ids::Id::MakeId24_8(Ids::InvalidId24, Ids::InvalidId8); }\
 	constexpr IndexT HashCode() const { return (IndexT)(id24 & 0xFFFFFF00 | id8); }\
 	};
@@ -87,7 +101,9 @@ struct Id
 	static constexpr Id32 MakeId24_8(const Id24 big, const Id8 tiny);
 	/// set 32-24-8 bits 64 bit integer
 	static constexpr Id64 MakeId32_24_8(const Id32 upper, const Id24 big, const Id8 tiny);
-	/// split 64 bit integer into 2 32 bit integers
+	/// set 24-8-24-8 bits 64 bit integer
+	static constexpr Id64 MakeId24_8_24_8(const Id24 big0, const Id8 tiny0, const Id24 big1, const Id8 tiny1);
+	/// split 64 bit integer into 2 32 0bit integers
 	static void Split64(Id64 split, Id32& upper, Id32& lower);
 	/// split 32 bit integer into 2 16 bit integers
 	static void Split32(Id32 split, Id16& upper, Id16& lower);
@@ -201,6 +217,15 @@ inline constexpr Id64
 Id::MakeId32_24_8(const Id32 upper, const Id24 big, const Id8 tiny)
 {
 	return (((uint64_t)upper << 32) & 0xFFFFFFFF00000000) + (((uint64_t)tiny) & 0x00000000000000FF) + (((uint64_t)big << 8) & 0x00000000FFFFFF00);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline constexpr Id64
+Id::MakeId24_8_24_8(const Id24 big0, const Id8 tiny0, const Id24 big1, const Id8 tiny1)
+{
+	return (((uint64_t)big0 << 32) & 0xFFFFFF0000000000) + (((uint64_t)tiny0 << 32) & 0x000000FF00000000) + (((uint64_t)big1 << 8) & 0x00000000FFFFFF00) + (((uint64_t)tiny1) & 0x00000000000000FF);
 }
 
 //------------------------------------------------------------------------------

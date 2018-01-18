@@ -85,7 +85,15 @@ extern MemoryTexturePool* texturePool;
 const TextureId CreateTexture(TextureCreateInfo info);
 /// destroy vertex buffer
 void DestroyTexture(const TextureId id);
-/// directly update texture
+
+/// get texture dimensions
+TextureDimensions TextureGetDimensions(const TextureId id);
+/// get texture pixel format
+CoreGraphics::PixelFormat::Code TextureGetPixelFormat(const TextureId id);
+/// get texture type
+TextureType TextureGetType(const TextureId id);
+/// get number of mips
+uint TextureGetNumMips(const TextureId id);
 
 /// map GPU memory
 TextureMapInfo TextureMap(const TextureId id, IndexT mip, const CoreGraphics::GpuBufferTypes::MapType type);

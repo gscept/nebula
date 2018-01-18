@@ -111,6 +111,7 @@ CreateConstantBuffer(const ConstantBufferCreateInfo& info)
 	VkDevice dev = VkRenderDevice::Instance()->GetCurrentDevice();
 	VkPhysicalDeviceProperties props = VkRenderDevice::Instance()->GetCurrentProperties();
 
+	setup.reflection = nullptr;
 	setup.dev = dev;
 	setup.numBuffers = info.numBuffers;
 	SizeT size = info.size;
@@ -122,6 +123,7 @@ CreateConstantBuffer(const ConstantBufferCreateInfo& info)
 		AnyFX::VkVarblock* varblock = static_cast<AnyFX::VkVarblock*>(effect->GetVarblock(info.name.Value()));
 
 		// setup buffer from other buffer
+		setup.reflection = varblock;
 		size = varblock->alignedSize;
 	}
 	
@@ -250,6 +252,38 @@ ConstantBufferSetBaseOffset(const ConstantBufferId id, const uint offset)
 {
 	VkConstantBufferMapInfo& map = constantBufferAllocator.Get<2>(id.id24);
 	map.baseOffset = offset;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const ShaderVariableId
+ConstantBufferCreateShaderVariable(const ConstantBufferId id, const ConstantBufferSliceId slice, const Util::StringAtom& name)
+{
+	VkConstantBufferSetupInfo& setup = constantBufferAllocator.Get<1>(id);
+	VkShaderVariableAllocator& alloc = constantBufferAllocator.Get<4>(id);
+
+	Ids::Id24 var = alloc.AllocObject();
+	auto it = setup.reflection->variablesByName.find(name.Value());
+	n_assert(it != setup.reflection->variablesByName.end());
+
+	// step one, setup variable
+	VkShaderVariableSetup((AnyFX::VkVariable*)it->second, var, alloc);
+
+	// step two, bind to uniform buffer
+	VkShaderVariableBindToUniformBuffer(var, id, alloc, setup.reflection->offsetsByName[name.Value()], it->second->byteSize, (int8_t*)it->second->currentValue);
+	
+	return var;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ConstantBufferDestroyShaderVariable(const ConstantBufferId id, const ShaderVariableId var)
+{
+	VkShaderVariableAllocator& alloc = constantBufferAllocator.Get<4>(id);
+	alloc.DeallocObject(var.id);
 }
 
 } // namespace CoreGraphics

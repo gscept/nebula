@@ -139,7 +139,7 @@ void
 RenderShape::SetupMesh(Threading::ThreadId threadId, const Math::matrix44& modelTransform, const MeshId mesh, const IndexT groupIndex, const Math::float4& color, RenderFlag depthFlag)
 {
 	n_assert(!this->IsValid());
-	n_assert(mesh.isvalid());
+	n_assert(mesh != MeshId::Invalid());
 
 	this->threadId       = threadId;
 	this->shapeType      = RenderMesh;

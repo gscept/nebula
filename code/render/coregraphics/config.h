@@ -28,7 +28,8 @@ enum CoreGraphicsIdType
 	MeshIdType,
 	EventIdType,
 	BarrierIdType,
-	WindowIdType
+	WindowIdType,
+	PassIdType
 };
 
 //------------------------------------------------------------------------------

@@ -38,23 +38,43 @@
 #include <tuple>
 
 
+// these macros implement different styles for the resource allocators, the resource-versions of get is just for convenience
+
 #define __ImplementResourceAllocator(name) \
-	inline Ids::Id32 AllocObject() { return name.AllocObject(); } \
-	inline void DeallocObject(const Ids::Id32 id) { name.DeallocObject(id); } \
+	inline Resources::ResourceUnknownId AllocObject() { return name.AllocObject(); } \
+	inline void DeallocObject(const Resources::ResourceUnknownId id) { name.DeallocObject(id); } \
 	template<int MEMBER> inline auto& Get(const Ids::Id24 id) { return name.Get<MEMBER>(id); } \
-	template<int MEMBER> inline auto& Get(const Resources::ResourceId id) { return name.Get<MEMBER>(id); }
+	template<int MEMBER> inline auto& Get(const Resources::ResourceId id) { return name.Get<MEMBER>(id.id24_1); }
 
 #define __ImplementResourceAllocatorSafe(name) \
-	inline Ids::Id32 AllocObject() { return name.AllocObject(); } \
-	inline void DeallocObject(const Ids::Id32 id) { name.DeallocObject(id); } \
+	inline Resources::ResourceUnknownId AllocObject() { return name.AllocObject(); } \
+	inline void DeallocObject(const Resources::ResourceUnknownId id) { name.DeallocObject(id); } \
 	inline void EnterGet() { name.EnterGet(); } \
 	inline void LeaveGet() { name.LeaveGet(); } \
 	template<int MEMBER> inline auto& Get(const Ids::Id24 id) { return name.Get<MEMBER>(id); } \
-	template<int MEMBER> inline auto& Get(const Resources::ResourceId id) { return name.Get<MEMBER>(id); } \
+	template<int MEMBER> inline auto& Get(const Resources::ResourceId id) { return name.Get<MEMBER>(id.id24_1); } \
 	template<int MEMBER> inline auto& GetUnsafe(const Ids::Id24 id) { return name.GetUnsafe<MEMBER>(id); } \
-	template<int MEMBER> inline auto& GetUnsafe(const Resources::ResourceId id) { return name.GetUnsafe<MEMBER>(id); } \
+	template<int MEMBER> inline auto& GetUnsafe(const Resources::ResourceId id) { return name.GetUnsafe<MEMBER>(id.id24_1); } \
 	template<int MEMBER> inline auto& GetSafe(const Ids::Id24 id) { return name.GetSafe<MEMBER>(id); } \
-	template<int MEMBER> inline auto& GetSafe(const Resources::ResourceId id) { return name.GetSafe<MEMBER>(id); }
+	template<int MEMBER> inline auto& GetSafe(const Resources::ResourceId id) { return name.GetSafe<MEMBER>(id.id24_1); }
+
+#define __ImplementResourceAllocatorTyped(name, idtype) \
+	inline Resources::ResourceUnknownId AllocObject() { return idtype(name.AllocObject()); } \
+	inline void DeallocObject(const Resources::ResourceUnknownId id) { name.DeallocObject(id.id24); } \
+	template<int MEMBER> inline auto& Get(const idtype id) { return name.Get<MEMBER>(id.id24); } \
+	template<int MEMBER> inline auto& Get(const Resources::ResourceId id) { return name.Get<MEMBER>(id); }
+
+#define __ImplementResourceAllocatorTypedSafe(name, idtype) \
+	inline Resources::ResourceUnknownId AllocObject() { return idtype(name.AllocObject()); } \
+	inline void DeallocObject(const Resources::ResourceUnknownId id) { name.DeallocObject(id.id24); } \
+	inline void EnterGet() { name.EnterGet(); } \
+	inline void LeaveGet() { name.LeaveGet(); } \
+	template<int MEMBER> inline auto& Get(const idtype id) { return name.Get<MEMBER>(id.id24); } \
+	template<int MEMBER> inline auto& Get(const Resources::ResourceId id) { return name.Get<MEMBER>(id.id24_1); } \
+	template<int MEMBER> inline auto& GetUnsafe(const idtype id) { return name.GetUnsafe<MEMBER>(id.id24); } \
+	template<int MEMBER> inline auto& GetUnsafe(const Resources::ResourceId id) { return name.GetUnsafe<MEMBER>(id.id24_1); } \
+	template<int MEMBER> inline auto& GetSafe(const idtype id) { return name.GetSafe<MEMBER>(id.id24); } \
+	template<int MEMBER> inline auto& GetSafe(const Resources::ResourceId id) { return name.GetSafe<MEMBER>(id.id24_1); }
 
 namespace Resources
 {
@@ -79,18 +99,18 @@ public:
 
 	/// get resource name
 	const Resources::ResourceName GetName(const Resources::ResourceId id);
-	/// get resource name directly
-	const Resources::ResourceName GetName(const Ids::Id24 id);
+	/// get resource usage from resource id
+	const uint32_t GetUsage(const Resources::ResourceId id);
 	/// get resource tag was first registered with
 	const Util::StringAtom GetTag(const Resources::ResourceId id);
-	/// get resource tag directly
-	const Util::StringAtom GetTag(const Ids::Id24 id);
 	/// get resource state
 	const Resource::State GetState(const Resources::ResourceId id);
-	/// get resource state directly
-	const Resource::State GetState(const Ids::Id24 id);
 	/// get resource id by name, use with care
-	const Ids::Id24 GetId(const Resources::ResourceName& name);
+	const Resources::ResourceId GetId(const Resources::ResourceName& name);
+	/// get the dictionary of all resource-id pairs
+	const Util::Dictionary<Resources::ResourceName, Resources::ResourceId>& GetResources() const;
+	/// returns true if pool has resource
+	const bool HasResource(const Resources::ResourceId id);
 
 	/// update the resource loader, this is done every frame
 	virtual void Update(IndexT frameIndex);
@@ -107,25 +127,24 @@ protected:
 	friend class ResourceManager;
 
 	/// request new resource and generate id for it, implement in subclass
-	virtual Ids::Id32 AllocObject() = 0;
+	virtual ResourceUnknownId AllocObject() = 0;
 	/// deallocate resource
-	virtual void DeallocObject(const Ids::Id32 id) = 0;
+	virtual void DeallocObject(const ResourceUnknownId id) = 0;
 	/// unload resource (overload to implement resource deallocation)
 	virtual void Unload(const Ids::Id24 id) = 0;
 
 	/// id in resource manager
 	int32_t uniqueId;
 
-	Util::Dictionary<Resources::ResourceName, Ids::Id24> ids;
+	Util::Dictionary<Resources::ResourceName, Resources::ResourceId> ids;
 	Ids::IdPool resourceInstanceIndexPool;
 
-	Util::FixedArray<uint32_t> usage;
 	Util::FixedArray<Resources::ResourceName> names;
+	Util::FixedArray<uint32_t> usage;
 	Util::FixedArray<Util::StringAtom> tags;
 	Util::FixedArray<Resource::State> states;
 	uint32_t uniqueResourceId;
 };
-
 
 //------------------------------------------------------------------------------
 /**
@@ -133,16 +152,16 @@ protected:
 inline const Resources::ResourceName
 ResourcePool::GetName(const Resources::ResourceId id)
 {
-	return this->names[id.id24];
+	return this->names[id.id24_0];
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline const Resources::ResourceName
-ResourcePool::GetName(const Ids::Id24 id)
+inline const uint32_t
+ResourcePool::GetUsage(const Resources::ResourceId id)
 {
-	return this->names[id];
+	return this->usage[id.id24_0];
 }
 
 //------------------------------------------------------------------------------
@@ -151,16 +170,7 @@ ResourcePool::GetName(const Ids::Id24 id)
 inline const Util::StringAtom
 ResourcePool::GetTag(const Resources::ResourceId id)
 {
-	return this->tags[id.id24];
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const Util::StringAtom
-ResourcePool::GetTag(const Ids::Id24 id)
-{
-	return this->tags[id];
+	return this->tags[id.id24_0];
 }
 
 //------------------------------------------------------------------------------
@@ -169,25 +179,33 @@ ResourcePool::GetTag(const Ids::Id24 id)
 inline const Resources::Resource::State
 ResourcePool::GetState(const Resources::ResourceId id)
 {
-	return this->states[id.id24];
+	return this->states[id.id24_0];
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline const Resources::Resource::State
-ResourcePool::GetState(const Ids::Id24 id)
-{
-	return this->states[id];
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const Ids::Id24
+inline const Resources::ResourceId
 ResourcePool::GetId(const Resources::ResourceName& name)
 {
 	return this->ids[name];
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+inline const Util::Dictionary<Resources::ResourceName, Resources::ResourceId>&
+ResourcePool::GetResources() const
+{
+	return this->ids;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const bool
+ResourcePool::HasResource(const Resources::ResourceId id)
+{
+	return this->names.Size() > (SizeT)id.id24_0;
+}
 } // namespace Resources

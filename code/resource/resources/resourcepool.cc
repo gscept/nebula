@@ -50,11 +50,10 @@ ResourcePool::Discard()
 void
 ResourcePool::DiscardResource(const Resources::ResourceId id)
 {
-	n_assert_fmt(!this->tags[id.id24].IsValid(), "Resource with tag can not be individually deleted");
+	n_assert_fmt(!this->tags[id.id24_0].IsValid(), "Resource with tag can not be individually deleted");
 
-	// dealloc instance id and reduce usage
-	this->resourceInstanceIndexPool.Dealloc(id.id32);
-	this->usage[id.id24]--;
+	// reduce usage
+	this->usage[id.id24_0]--;
 }
 
 //------------------------------------------------------------------------------

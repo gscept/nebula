@@ -12,6 +12,9 @@
 #include "io/ioserver.h"
 #include "coregraphics/imagefileformat.h"
 
+#include "coregraphics/streamtexturepool.h"
+#include "coregraphics/memorytexturepool.h"
+
 namespace Debug
 {
 __ImplementClass(Debug::TexturePageHandler, 'DTXH', Http::HttpRequestHandler);
@@ -49,7 +52,7 @@ TexturePageHandler::HandleRequest(const Ptr<HttpRequest>& request)
     }
     else if (query.Contains("texinfo"))
     {
-        request->SetStatus(this->HandleTextureInfoRequest(ResourceId(query["texinfo"]), request->GetResponseContentStream()));
+        request->SetStatus(this->HandleTextureInfoRequest(ResourceId(query["texinfo"].AsInt()), request->GetResponseContentStream()));
         return;
     }
 
@@ -59,86 +62,182 @@ TexturePageHandler::HandleRequest(const Ptr<HttpRequest>& request)
     htmlWriter->SetTitle("NebulaT Textures");
     if (htmlWriter->Open())
     {
-        htmlWriter->Element(HtmlElement::Heading1, "Texture Resources");
+        htmlWriter->Element(HtmlElement::Heading1, "Texture Resources (stream loaded)");
         htmlWriter->AddAttr("href", "/index.html");
         htmlWriter->Element(HtmlElement::Anchor, "Home");
         htmlWriter->LineBreak();
         htmlWriter->LineBreak();
 
-        // get all texture resources
-        Array<Ptr<Resource> > texResources = ResourceManager::Instance()->GetResourcesByType(Texture::RTTI);
+		const Ptr<StreamTexturePool>& streamPool = ResourceManager::Instance()->GetStreamPool<StreamTexturePool>();
+		const Util::Dictionary<Resources::ResourceName, Ids::Id24>& streamResources = streamPool->GetResources();
 
-        // create a table of all existing textures
-        htmlWriter->AddAttr("border", "1");
-        htmlWriter->AddAttr("rules", "cols");
-        htmlWriter->Begin(HtmlElement::Table);
-            htmlWriter->AddAttr("bgcolor", "lightsteelblue");
-            htmlWriter->Begin(HtmlElement::TableRow);
-                htmlWriter->Element(HtmlElement::TableHeader, "ResId");
-                htmlWriter->Element(HtmlElement::TableHeader, "State");
-                htmlWriter->Element(HtmlElement::TableHeader, "UseCount");
-                htmlWriter->Element(HtmlElement::TableHeader, "Type");
-                htmlWriter->Element(HtmlElement::TableHeader, "Width");
-                htmlWriter->Element(HtmlElement::TableHeader, "Height");
-                htmlWriter->Element(HtmlElement::TableHeader, "Depth");
-                htmlWriter->Element(HtmlElement::TableHeader, "Mips");
-                htmlWriter->Element(HtmlElement::TableHeader, "Format");
-            htmlWriter->End(HtmlElement::TableRow);
+		// create a table of all existing textures
+		htmlWriter->AddAttr("border", "1");
+		htmlWriter->AddAttr("rules", "cols");
+		htmlWriter->Begin(HtmlElement::Table);
+		htmlWriter->AddAttr("bgcolor", "lightsteelblue");
+		htmlWriter->Begin(HtmlElement::TableRow);
+		htmlWriter->Element(HtmlElement::TableHeader, "ResId");
+		htmlWriter->Element(HtmlElement::TableHeader, "State");
+		htmlWriter->Element(HtmlElement::TableHeader, "UseCount");
+		htmlWriter->Element(HtmlElement::TableHeader, "Type");
+		htmlWriter->Element(HtmlElement::TableHeader, "Width");
+		htmlWriter->Element(HtmlElement::TableHeader, "Height");
+		htmlWriter->Element(HtmlElement::TableHeader, "Depth");
+		htmlWriter->Element(HtmlElement::TableHeader, "Mips");
+		htmlWriter->Element(HtmlElement::TableHeader, "Format");
+		htmlWriter->End(HtmlElement::TableRow);
 
-            // iterate over shared resources
-            IndexT i;
-            for (i = 0; i < texResources.Size(); i++)
-            {
-                const Ptr<Texture>& tex = texResources[i].downcast<Texture>();
-                htmlWriter->Begin(HtmlElement::TableRow);
-					if (tex->GetState() == Resource::Loaded)
-                    {
-                        // only loaded texture can be inspected
-                        htmlWriter->Begin(HtmlElement::TableData);
-                            htmlWriter->AddAttr("href", "/texture?texinfo=" + tex->GetResourceId().AsString());
-                            htmlWriter->Element(HtmlElement::Anchor, tex->GetResourceId().Value());
-                        htmlWriter->End(HtmlElement::TableData);
-                    }
-                    else
-                    {
-                        htmlWriter->Element(HtmlElement::TableData, tex->GetResourceId().Value());
-                    }
+		// iterate over shared resources
+		IndexT i;
+		for (i = 0; i < streamResources.Size(); i++)
+		{
+			const Ids::Id24& res = streamResources.ValueAtIndex(i);
+			const ResourceName& resName = streamResources.KeyAtIndex(i);
+			Resource::State state = streamPool->GetState(res);
+			htmlWriter->Begin(HtmlElement::TableRow);
+			if (state == Resource::Loaded)
+			{
+				// only loaded texture can be inspected
+				htmlWriter->Begin(HtmlElement::TableData);
+				htmlWriter->AddAttr("href", "/texture?texinfo=" + resName.AsString());
+				htmlWriter->Element(HtmlElement::Anchor, resName.Value());
+				htmlWriter->End(HtmlElement::TableData);
+			}
+			else
+			{
+				htmlWriter->Element(HtmlElement::TableData, resName.Value());
+			}
 
-                    String resState;
-                    switch (tex->GetState())
-                    {
-                        case Resource::Initial:     resState = "Initial"; break;
-                        case Resource::Loaded:      resState = "Loaded"; break;
-                        case Resource::Pending:     resState = "Pending"; break;
-                        case Resource::Failed:      resState = "FAILED"; break;
-                        case Resource::Cancelled:   resState = "Cancelled"; break;
-                        default:                    resState = "CANT HAPPEN"; break;
-                    }
-                    htmlWriter->Element(HtmlElement::TableData, resState);
-                    if (tex->GetState() == Resource::Loaded)
-                    {
-                        htmlWriter->Element(HtmlElement::TableData, String::FromInt(tex->GetUseCount()));
-                        switch (tex->GetType())
-                        {
-							case Texture::Texture1D:    htmlWriter->Element(HtmlElement::TableData, "1D"); break;
-                            case Texture::Texture2D:    htmlWriter->Element(HtmlElement::TableData, "2D"); break;
-                            case Texture::Texture3D:    htmlWriter->Element(HtmlElement::TableData, "3D"); break;
-                            case Texture::TextureCube:  htmlWriter->Element(HtmlElement::TableData, "CUBE"); break;
-                            default:                    htmlWriter->Element(HtmlElement::TableData, "ERROR"); break;
-                        }
-                        htmlWriter->Element(HtmlElement::TableData, String::FromInt(tex->GetWidth()));
-                        htmlWriter->Element(HtmlElement::TableData, String::FromInt(tex->GetHeight()));
-                        htmlWriter->Element(HtmlElement::TableData, String::FromInt(tex->GetDepth()));
-                        htmlWriter->Element(HtmlElement::TableData, String::FromInt(tex->GetNumMipLevels()));
-                        htmlWriter->Element(HtmlElement::TableData, PixelFormat::ToString(tex->GetPixelFormat()));
-                    }
-                    else
-                    {
-                        // texture not currently loaded
-                    }
-                htmlWriter->End(HtmlElement::TableRow);
-            }
-        htmlWriter->End(HtmlElement::Table);
+			String resState;
+
+			switch (state)
+			{
+			case Resource::Loaded:      resState = "Loaded"; break;
+			case Resource::Pending:     resState = "Pending"; break;
+			case Resource::Failed:      resState = "FAILED"; break;
+			case Resource::Unloaded:	resState = "Unloaded"; break;
+			default:                    resState = "CANT HAPPEN"; break;
+			}
+			htmlWriter->Element(HtmlElement::TableData, resState);
+			if (state == Resource::Loaded)
+			{
+				const uint usage = streamPool->GetUsage(res);
+				htmlWriter->Element(HtmlElement::TableData, String::FromInt(usage));
+				TextureType type = TextureGetType(res);
+				switch (type)
+				{
+				case Texture1D:    htmlWriter->Element(HtmlElement::TableData, "1D"); break;
+				case Texture2D:    htmlWriter->Element(HtmlElement::TableData, "2D"); break;
+				case Texture3D:    htmlWriter->Element(HtmlElement::TableData, "3D"); break;
+				case TextureCube:  htmlWriter->Element(HtmlElement::TableData, "CUBE"); break;
+				default:           htmlWriter->Element(HtmlElement::TableData, "ERROR"); break;
+				}
+				TextureDimensions dims = TextureGetDimensions(res);
+				CoreGraphics::PixelFormat::Code fmt = TextureGetPixelFormat(res);
+				uint mips = TextureGetNumMips(res);
+				htmlWriter->Element(HtmlElement::TableData, String::FromInt(dims.width));
+				htmlWriter->Element(HtmlElement::TableData, String::FromInt(dims.height));
+				htmlWriter->Element(HtmlElement::TableData, String::FromInt(dims.depth));
+				htmlWriter->Element(HtmlElement::TableData, String::FromInt(mips));
+				htmlWriter->Element(HtmlElement::TableData, PixelFormat::ToString(fmt));
+			}
+			else
+			{
+				// texture not currently loaded
+			}
+			htmlWriter->End(HtmlElement::TableRow);
+		}
+		htmlWriter->End(HtmlElement::Table);
+
+		const Ptr<MemoryTexturePool>& memPool = ResourceManager::Instance()->GetMemoryPool<MemoryTexturePool>();
+		const Util::Dictionary<Resources::ResourceName, Ids::Id24>& memResources = memPool->GetResources();
+
+		htmlWriter->Element(HtmlElement::Heading1, "Texture Resources (memory loaded)");
+		htmlWriter->AddAttr("href", "/index.html");
+		htmlWriter->Element(HtmlElement::Anchor, "Home");
+		htmlWriter->LineBreak();
+		htmlWriter->LineBreak();
+
+		// create a table of all existing textures
+		htmlWriter->AddAttr("border", "1");
+		htmlWriter->AddAttr("rules", "cols");
+		htmlWriter->Begin(HtmlElement::Table);
+		htmlWriter->AddAttr("bgcolor", "lightsteelblue");
+		htmlWriter->Begin(HtmlElement::TableRow);
+		htmlWriter->Element(HtmlElement::TableHeader, "ResId");
+		htmlWriter->Element(HtmlElement::TableHeader, "State");
+		htmlWriter->Element(HtmlElement::TableHeader, "UseCount");
+		htmlWriter->Element(HtmlElement::TableHeader, "Type");
+		htmlWriter->Element(HtmlElement::TableHeader, "Width");
+		htmlWriter->Element(HtmlElement::TableHeader, "Height");
+		htmlWriter->Element(HtmlElement::TableHeader, "Depth");
+		htmlWriter->Element(HtmlElement::TableHeader, "Mips");
+		htmlWriter->Element(HtmlElement::TableHeader, "Format");
+		htmlWriter->End(HtmlElement::TableRow);
+
+		// iterate over shared resources
+		IndexT i;
+		for (i = 0; i < memResources.Size(); i++)
+		{
+			const Ids::Id24& res = memResources.ValueAtIndex(i);
+			const ResourceName& resName = memResources.KeyAtIndex(i);
+			Resource::State state = streamPool->GetState(res);
+			htmlWriter->Begin(HtmlElement::TableRow);
+			if (state == Resource::Loaded)
+			{
+				// only loaded texture can be inspected
+				htmlWriter->Begin(HtmlElement::TableData);
+				htmlWriter->AddAttr("href", "/texture?texinfo=" + resName.AsString());
+				htmlWriter->Element(HtmlElement::Anchor, resName.Value());
+				htmlWriter->End(HtmlElement::TableData);
+			}
+			else
+			{
+				htmlWriter->Element(HtmlElement::TableData, resName.Value());
+			}
+
+			String resState;
+
+			switch (state)
+			{
+			case Resource::Loaded:      resState = "Loaded"; break;
+			case Resource::Pending:     resState = "Pending"; break;
+			case Resource::Failed:      resState = "FAILED"; break;
+			case Resource::Unloaded:	resState = "Unloaded"; break;
+			default:                    resState = "CANT HAPPEN"; break;
+			}
+			htmlWriter->Element(HtmlElement::TableData, resState);
+			if (state == Resource::Loaded)
+			{
+				const uint usage = memPool->GetUsage(res);
+				htmlWriter->Element(HtmlElement::TableData, String::FromInt(usage));
+				TextureType type = TextureGetType(res);
+				switch (type)
+				{
+				case Texture1D:    htmlWriter->Element(HtmlElement::TableData, "1D"); break;
+				case Texture2D:    htmlWriter->Element(HtmlElement::TableData, "2D"); break;
+				case Texture3D:    htmlWriter->Element(HtmlElement::TableData, "3D"); break;
+				case TextureCube:  htmlWriter->Element(HtmlElement::TableData, "CUBE"); break;
+				default:           htmlWriter->Element(HtmlElement::TableData, "ERROR"); break;
+				}
+				TextureDimensions dims = TextureGetDimensions(res);
+				CoreGraphics::PixelFormat::Code fmt = TextureGetPixelFormat(res);
+				uint mips = TextureGetNumMips(res);
+				htmlWriter->Element(HtmlElement::TableData, String::FromInt(dims.width));
+				htmlWriter->Element(HtmlElement::TableData, String::FromInt(dims.height));
+				htmlWriter->Element(HtmlElement::TableData, String::FromInt(dims.depth));
+				htmlWriter->Element(HtmlElement::TableData, String::FromInt(mips));
+				htmlWriter->Element(HtmlElement::TableData, PixelFormat::ToString(fmt));
+			}
+			else
+			{
+				// texture not currently loaded
+			}
+			htmlWriter->End(HtmlElement::TableRow);
+		}
+		htmlWriter->End(HtmlElement::Table);
+      
         htmlWriter->Close();
         request->SetStatus(HttpStatus::OK);
     }
@@ -159,7 +258,7 @@ TexturePageHandler::HandleImageRequest(const Dictionary<String,String>& query, c
     const Ptr<ResourceManager>& resManager = ResourceManager::Instance();
     
     // get input args
-    ResourceId resId = ResourceId(query["img"]);
+	ResourceName resId = ResourceName(query["img"]);
     ImageFileFormat::Code format = ImageFileFormat::InvalidImageFileFormat;
     if (query.Contains("fmt"))
     {
@@ -213,6 +312,7 @@ TexturePageHandler::HandleTextureInfoRequest(const ResourceId& resId, const Ptr<
 {
     // lookup the texture in the ResourceManager
     const Ptr<ResourceManager>& resManager = ResourceManager::Instance();
+	resManager->GetId
     if (!resManager->HasResource(resId))
     {
         return HttpStatus::NotFound;

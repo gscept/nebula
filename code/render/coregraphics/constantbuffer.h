@@ -57,6 +57,9 @@ void ConstantBufferArrayUpdate(const ConstantBufferId id, const void* data, cons
 /// set base offset for constant buffer
 void ConstantBufferSetBaseOffset(const ConstantBufferId id, const uint offset);
 
-
+/// create variable directly on this constant buffer
+const ShaderVariableId ConstantBufferCreateShaderVariable(const ConstantBufferId id, const ConstantBufferSliceId slice, const Util::StringAtom& name);
+/// destroy variable on this constant buffer
+void ConstantBufferDestroyShaderVariable(const ConstantBufferId id, const ShaderVariableId var);
 
 } // CoreGraphics

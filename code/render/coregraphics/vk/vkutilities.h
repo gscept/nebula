@@ -7,7 +7,9 @@
 */
 //------------------------------------------------------------------------------
 #include "vkdeferredcommand.h"
-#include "core/refcounted.h"
+#include "coregraphics/gpubuffertypes.h"
+#include "coregraphics/pixelformat.h"
+#include "coregraphics/texture.h"
 namespace Vulkan
 {
 class VkTexture;
@@ -57,8 +59,8 @@ public:
 	/// perform image write-back, transitions data from buffer to image (SLOW!)
 	static void WriteImage(const VkBuffer& srcImg, const VkImage& dstImg, VkImageCopy copy);
 	/// helper to begin immediate transfer
-	static VkCommandBuffer BeginImmediateTransfer();
+	static CoreGraphics::CmdBufferId BeginImmediateTransfer();
 	/// helper to end immediate transfer
-	static void EndImmediateTransfer(VkCommandBuffer cmdBuf);
+	static void EndImmediateTransfer(CoreGraphics::CmdBufferId cmdBuf);
 };
 } // namespace Vulkan

@@ -17,49 +17,84 @@ using namespace CoreGraphics;
 namespace Vulkan
 {
 
-__ImplementClass(Vulkan::VkPass, 'VKFR', Base::PassBase);
+VkPassAllocator passAllocator(0x00FFFFFF);
+
 //------------------------------------------------------------------------------
 /**
 */
-VkPass::VkPass()
+const VkRenderPassBeginInfo&
+PassGetVkRenderPassBeginInfo(const CoreGraphics::PassId& id)
 {
-	// empty
+	return passAllocator.Get<2>(id);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-VkPass::~VkPass()
+const VkGraphicsPipelineCreateInfo&
+PassGetVkFramebufferInfo(const CoreGraphics::PassId& id)
 {
-	// empty
+	return passAllocator.Get<1>(id).framebufferPipelineInfo;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-void
-VkPass::Setup()
+const Util::FixedArray<VkRect2D>&
+PassGetVkRects(const CoreGraphics::PassId& id)
 {
-	// setup base class
-	PassBase::Setup();
+	const VkPassRuntimeInfo& info = passAllocator.Get<1>(id);
+	return info.subpassRects[info.currentSubpassIndex];
+}
 
-	ShaderId id = ShaderServer::Instance()->GetShader("shd:shared"_atm);
-	this->shaderState = ShaderCreateState(id, { NEBULAT_PASS_GROUP }, false);
-	VkDescriptorSetLayout layout = shaderPool->GetDescriptorSetLayout(id, NEBULAT_PASS_GROUP);
-	this->passPipelineLayout = shaderPool->GetPipelineLayout(id);
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::FixedArray<VkViewport>&
+PassGetVkViewports(const CoreGraphics::PassId& id)
+{
+	const VkPassRuntimeInfo& info = passAllocator.Get<1>(id);
+	return info.subpassViewports[info.currentSubpassIndex];
+}
 
-	this->dev = VkRenderDevice::Instance()->GetCurrentDevice();
+} // namespace Vulkan
+
+namespace CoreGraphics
+{
+
+using namespace Vulkan;
+//------------------------------------------------------------------------------
+/**
+*/
+const PassId
+CreatePass(const PassCreateInfo& info)
+{
+	Ids::Id32 id = passAllocator.AllocObject();
+	VkPassLoadInfo& loadInfo = passAllocator.Get<0>(id);
+	VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<1>(id);
+	VkRenderPassBeginInfo& beginInfo = passAllocator.Get<2>(id);
+
+	ShaderId sid = ShaderServer::Instance()->GetShader("shd:shared"_atm);
+	loadInfo.shaderState = ShaderCreateState(sid, { NEBULAT_PASS_GROUP }, false);
+	VkDescriptorSetLayout layout = shaderPool->GetDescriptorSetLayout(sid, NEBULAT_PASS_GROUP);
+	runtimeInfo.passPipelineLayout = shaderPool->GetPipelineLayout(sid);
+
+	loadInfo.colorAttachments = info.colorAttachments;
+	loadInfo.colorAttachmentClears = info.colorAttachmentClears;
+	loadInfo.depthStencilAttachment = info.depthStencilAttachment;
+	loadInfo.dev = VkRenderDevice::Instance()->GetCurrentDevice();
+	loadInfo.pool = VkRenderDevice::Instance()->GetCurrentPool();
 
 	// create descriptor set used by our pass
 	VkDescriptorSetAllocateInfo descInfo =
 	{
 		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
 		nullptr,
-		VkRenderDevice::descPool,
+		loadInfo.pool,
 		1,
 		&layout
 	};
-	VkResult res = vkAllocateDescriptorSets(this->dev, &descInfo, &this->passDescriptorSet);
+	VkResult res = vkAllocateDescriptorSets(loadInfo.dev, &descInfo, &runtimeInfo.passDescriptorSet);
 	n_assert(res == VK_SUCCESS);
 
 	// gather image views
@@ -67,26 +102,26 @@ VkPass::Setup()
 	uint32_t height = 0;
 	uint32_t layers = 0;
 	Util::FixedArray<VkImageView> images;
-	images.Resize(this->colorAttachments.Size() + (this->depthStencilAttachment != RenderTextureId::Invalid() ? 1 : 0));
-	this->clearValues.Resize(images.Size());
-	this->scissorRects.Resize(images.Size());
-	this->viewports.Resize(images.Size());
+	images.Resize(info.colorAttachments.Size() + (info.depthStencilAttachment != RenderTextureId::Invalid() ? 1 : 0));
+	loadInfo.clearValues.Resize(images.Size());
+	loadInfo.rects.Resize(images.Size());
+	loadInfo.viewports.Resize(images.Size());
 
 	IndexT i;
-	for (i = 0; i < this->colorAttachments.Size(); i++)
+	for (i = 0; i < info.colorAttachments.Size(); i++)
 	{
-		images[i] = RenderTextureGetVkImageView(this->colorAttachments[i]);
-		const CoreGraphics::TextureDimensions dims = RenderTextureGetDimensions(this->colorAttachments[i]);
+		images[i] = RenderTextureGetVkImageView(info.colorAttachments[i]);
+		const CoreGraphics::TextureDimensions dims = RenderTextureGetDimensions(info.colorAttachments[i]);
 		width = Math::n_max(width, (uint32_t)dims.width);
 		height = Math::n_max(height, (uint32_t)dims.height);
 		layers = Math::n_max(layers, (uint32_t)dims.depth);
 
-		VkRect2D& rect = scissorRects[i];
+		VkRect2D& rect = loadInfo.rects[i];
 		rect.offset.x = 0;
 		rect.offset.y = 0;
 		rect.extent.width = dims.width;
 		rect.extent.height = dims.height;
-		VkViewport& viewport = viewports[i];
+		VkViewport& viewport = loadInfo.viewports[i];
 		viewport.width = (float)dims.width;
 		viewport.height = (float)dims.height;
 		viewport.minDepth = 0;
@@ -94,8 +129,8 @@ VkPass::Setup()
 		viewport.x = 0;
 		viewport.y = 0;
 
-		const Math::float4& value = this->colorAttachmentClears[i];
-		VkClearValue& clear = this->clearValues[i];
+		const Math::float4& value = info.colorAttachmentClears[i];
+		VkClearValue& clear = loadInfo.clearValues[i];
 		clear.color.float32[0] = value.x();
 		clear.color.float32[1] = value.y();
 		clear.color.float32[2] = value.z();
@@ -111,18 +146,18 @@ VkPass::Setup()
 	Util::Array<VkSubpassDependency> subpassDeps;
 
 	// resize subpass contents
-	subpassDescs.Resize(this->subpasses.Size());
-	subpassReferences.Resize(this->subpasses.Size());
-	subpassInputs.Resize(this->subpasses.Size());
-	subpassPreserves.Resize(this->subpasses.Size());
-	subpassResolves.Resize(this->subpasses.Size());
-	subpassDepthStencils.Resize(this->subpasses.Size());
-	this->subpassViewports.Resize(this->subpasses.Size());
-	this->subpassRects.Resize(this->subpasses.Size());
+	subpassDescs.Resize(info.subpasses.Size());
+	subpassReferences.Resize(info.subpasses.Size());
+	subpassInputs.Resize(info.subpasses.Size());
+	subpassPreserves.Resize(info.subpasses.Size());
+	subpassResolves.Resize(info.subpasses.Size());
+	subpassDepthStencils.Resize(info.subpasses.Size());
+	runtimeInfo.subpassViewports.Resize(info.subpasses.Size());
+	runtimeInfo.subpassRects.Resize(info.subpasses.Size());
 
-	for (i = 0; i < this->subpasses.Size(); i++)
+	for (i = 0; i < info.subpasses.Size(); i++)
 	{
-		const PassBase::Subpass& subpass = this->subpasses[i];
+		const CoreGraphics::Subpass& subpass = info.subpasses[i];
 
 		VkSubpassDescription& vksubpass = subpassDescs[i];
 		vksubpass.flags = 0;
@@ -134,8 +169,8 @@ VkPass::Setup()
 		vksubpass.pInputAttachments = nullptr;
 
 		// resize rects
-		this->subpassViewports[i].Resize(subpass.attachments.Size());
-		this->subpassRects[i].Resize(subpass.attachments.Size());
+		runtimeInfo.subpassViewports[i].Resize(subpass.attachments.Size());
+		runtimeInfo.subpassRects[i].Resize(subpass.attachments.Size());
 
 		// get references to fixed arrays
 		Util::FixedArray<VkAttachmentReference>& references = subpassReferences[i];
@@ -144,9 +179,9 @@ VkPass::Setup()
 		Util::FixedArray<VkAttachmentReference>& resolves = subpassResolves[i];
 
 		// resize arrays straight away since we already know the size
-		references.Resize(this->colorAttachments.Size());
+		references.Resize(info.colorAttachments.Size());
 		inputs.Resize(subpass.inputs.Size());
-		preserves.Resize(this->colorAttachments.Size() - subpass.attachments.Size());
+		preserves.Resize(info.colorAttachments.Size() - subpass.attachments.Size());
 		if (subpass.resolve) resolves.Resize(subpass.attachments.Size());
 
 		// if subpass binds depth, the slot for the depth-stencil buffer is color attachments + 1
@@ -154,7 +189,7 @@ VkPass::Setup()
 		{
 			VkAttachmentReference& ds = subpassDepthStencils[i];
 			ds.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-			ds.attachment = this->colorAttachments.Size();
+			ds.attachment = info.colorAttachments.Size();
 			vksubpass.pDepthStencilAttachment = &ds;
 		}
 		else
@@ -168,7 +203,7 @@ VkPass::Setup()
 		// fill list of all attachments, will be removed per subpass attachment
 		IndexT j;
 		Util::Array<IndexT> allAttachments;
-		for (j = 0; j < this->colorAttachments.Size(); j++) allAttachments.Append(j);
+		for (j = 0; j < info.colorAttachments.Size(); j++) allAttachments.Append(j);
 
 		IndexT idx = 0;
 		SizeT preserveAttachments = 0;
@@ -178,16 +213,16 @@ VkPass::Setup()
 			VkAttachmentReference& ref = references[j];
 			ref.attachment = subpass.attachments[j];
 			ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-			subpassViewports[i][j] = this->viewports[ref.attachment];
-			subpassRects[i][j] = this->scissorRects[ref.attachment];
+			runtimeInfo.subpassViewports[i][j] = loadInfo.viewports[ref.attachment];
+			runtimeInfo.subpassRects[i][j] = loadInfo.rects[ref.attachment];
 			usedAttachments++;
 
 			// remove from all attachments list
 			allAttachments.EraseIndex(allAttachments.FindIndex(ref.attachment));
 			if (subpass.resolve) resolves[j] = ref;
 		}
-	
-		for (; j < this->colorAttachments.Size(); j++)
+
+		for (; j < info.colorAttachments.Size(); j++)
 		{
 			VkAttachmentReference& ref = references[j];
 			ref.attachment = VK_ATTACHMENT_UNUSED;
@@ -211,11 +246,11 @@ VkPass::Setup()
 			dep.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 			dep.dstSubpass = i;
 			dep.dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-			dep.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;			
+			dep.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
 			dep.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 			subpassDeps.Append(dep);
 		}
-		
+
 		// set color attachments
 		vksubpass.colorAttachmentCount = usedAttachments;
 		vksubpass.pColorAttachments = references.Begin();
@@ -230,10 +265,10 @@ VkPass::Setup()
 		{
 			vksubpass.inputAttachmentCount = 0;
 		}
-		
+
 		// the rest are automatically preserve
 		if (preserves.Size() > 0)
-		{ 
+		{
 			vksubpass.preserveAttachmentCount = preserves.Size();
 			vksubpass.pPreserveAttachments = preserves.IsEmpty() ? nullptr : preserves.Begin();
 		}
@@ -256,15 +291,15 @@ VkPass::Setup()
 		VK_ATTACHMENT_STORE_OP_STORE,
 	};
 
-	uint32_t numUsedAttachments = (uint32_t)this->colorAttachments.Size();
+	uint32_t numUsedAttachments = (uint32_t)info.colorAttachments.Size();
 	Util::FixedArray<VkAttachmentDescription> attachments;
-	attachments.Resize(this->colorAttachments.Size() + 1);
-	for (i = 0; i < this->colorAttachments.Size(); i++)
+	attachments.Resize(info.colorAttachments.Size() + 1);
+	for (i = 0; i < info.colorAttachments.Size(); i++)
 	{
-		VkFormat fmt = VkTypes::AsVkFormat(RenderTextureGetPixelFormat(this->colorAttachments[i]));
+		VkFormat fmt = VkTypes::AsVkFormat(RenderTextureGetPixelFormat(info.colorAttachments[i]));
 		VkAttachmentDescription& attachment = attachments[i];
-		IndexT loadIdx = this->colorAttachmentFlags[i] & Load ? 2 : this->colorAttachmentFlags[i] & Clear ? 1 : 0;
-		IndexT storeIdx = this->colorAttachmentFlags[i] & Store ? 1 : 0;
+		IndexT loadIdx = info.colorAttachmentFlags[i] & Load ? 2 : info.colorAttachmentFlags[i] & Clear ? 1 : 0;
+		IndexT storeIdx = info.colorAttachmentFlags[i] & Store ? 1 : 0;
 		attachment.flags = 0;
 		attachment.initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		attachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -273,31 +308,31 @@ VkPass::Setup()
 		attachment.storeOp = storeOps[storeIdx];
 		attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		attachment.samples = RenderTextureGetMSAA(this->colorAttachments[i]) ? VK_SAMPLE_COUNT_16_BIT : VK_SAMPLE_COUNT_1_BIT;
+		attachment.samples = RenderTextureGetMSAA(info.colorAttachments[i]) ? VK_SAMPLE_COUNT_16_BIT : VK_SAMPLE_COUNT_1_BIT;
 	}
 
 	// use depth stencil attachments if pointer is not null
-	if (this->depthStencilAttachment != Ids::InvalidId32)
+	if (info.depthStencilAttachment != Ids::InvalidId32)
 	{
 		VkAttachmentDescription& attachment = attachments[i];
-		IndexT loadIdx = this->depthStencilFlags & Load ? 2 : this->depthStencilFlags & Clear ? 1 : 0;
-		IndexT storeIdx = this->depthStencilFlags & Store ? 1 : 0;
-		IndexT stencilLoadIdx = this->depthStencilFlags & LoadStencil ? 2 : this->depthStencilFlags & ClearStencil ? 1 : 0;
-		IndexT stencilStoreIdx = this->depthStencilFlags & StoreStencil ? 1 : 0;
+		IndexT loadIdx = info.depthStencilFlags & Load ? 2 : info.depthStencilFlags & Clear ? 1 : 0;
+		IndexT storeIdx = info.depthStencilFlags & Store ? 1 : 0;
+		IndexT stencilLoadIdx = info.depthStencilFlags & LoadStencil ? 2 : info.depthStencilFlags & ClearStencil ? 1 : 0;
+		IndexT stencilStoreIdx = info.depthStencilFlags & StoreStencil ? 1 : 0;
 		attachment.flags = 0;
 		attachment.initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
 		attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-		attachment.format = VkTypes::AsVkFormat(RenderTextureGetPixelFormat(this->depthStencilAttachment));
+		attachment.format = VkTypes::AsVkFormat(RenderTextureGetPixelFormat(info.depthStencilAttachment));
 		attachment.loadOp = loadOps[loadIdx];
 		attachment.storeOp = storeOps[storeIdx];
 		attachment.stencilLoadOp = loadOps[stencilLoadIdx];
 		attachment.stencilStoreOp = storeOps[stencilStoreIdx];
-		attachment.samples = RenderTextureGetMSAA(this->depthStencilAttachment) ? VK_SAMPLE_COUNT_16_BIT : VK_SAMPLE_COUNT_1_BIT;
+		attachment.samples = RenderTextureGetMSAA(info.depthStencilAttachment) ? VK_SAMPLE_COUNT_16_BIT : VK_SAMPLE_COUNT_1_BIT;
 		numUsedAttachments++;
 	}
-	
+
 	// create render pass
-	VkRenderPassCreateInfo info =
+	VkRenderPassCreateInfo rpinfo =
 	{
 		VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
 		nullptr,
@@ -309,19 +344,19 @@ VkPass::Setup()
 		(uint32_t)subpassDeps.Size(),
 		subpassDeps.IsEmpty() ? nullptr : subpassDeps.Begin()
 	};
-	res = vkCreateRenderPass(this->dev, &info, nullptr, &this->pass);
+	res = vkCreateRenderPass(loadInfo.dev, &rpinfo, nullptr, &loadInfo.pass);
 	n_assert(res == VK_SUCCESS);
 
-	if (this->depthStencilAttachment != Ids::InvalidId32)
+	if (info.depthStencilAttachment != Ids::InvalidId32)
 	{
-		images[i] = RenderTextureGetVkImageView(this->depthStencilAttachment);
-		const CoreGraphics::TextureDimensions dims = RenderTextureGetDimensions(this->depthStencilAttachment);
-		VkRect2D& rect = scissorRects[i];
+		images[i] = RenderTextureGetVkImageView(info.depthStencilAttachment);
+		const CoreGraphics::TextureDimensions dims = RenderTextureGetDimensions(info.depthStencilAttachment);
+		VkRect2D& rect = loadInfo.rects[i];
 		rect.offset.x = 0;
 		rect.offset.y = 0;
 		rect.extent.width = dims.width;
 		rect.extent.height = dims.height;
-		VkViewport& viewport = viewports[i];
+		VkViewport& viewport = loadInfo.viewports[i];
 		viewport.width = (float)dims.width;
 		viewport.height = (float)dims.height;
 		viewport.minDepth = 0;
@@ -329,43 +364,44 @@ VkPass::Setup()
 		viewport.x = 0;
 		viewport.y = 0;
 
-		VkClearValue& clear = this->clearValues[i];
-		clear.depthStencil.depth = this->clearDepth;
-		clear.depthStencil.stencil = this->clearStencil;
+		VkClearValue& clear = loadInfo.clearValues[i];
+		clear.depthStencil.depth = info.clearDepth;
+		clear.depthStencil.stencil = info.clearStencil;
 	}
 
 	// setup render area
-	this->renderArea.offset.x = 0;
-	this->renderArea.offset.y = 0;
-	this->renderArea.extent.width = width;
-	this->renderArea.extent.height = height;
+	loadInfo.renderArea.offset.x = 0;
+	loadInfo.renderArea.offset.y = 0;
+	loadInfo.renderArea.extent.width = width;
+	loadInfo.renderArea.extent.height = height;
 
 	// setup viewport info
-	this->viewportInfo.pNext = nullptr;
-	this->viewportInfo.flags = 0;
-	this->viewportInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-	this->viewportInfo.scissorCount = this->scissorRects.Size();
-	this->viewportInfo.pScissors = this->scissorRects.Begin();
-	this->viewportInfo.viewportCount = this->viewports.Size();
-	this->viewportInfo.pViewports = this->viewports.Begin();
+	runtimeInfo.viewportInfo.pNext = nullptr;
+	runtimeInfo.viewportInfo.flags = 0;
+	runtimeInfo.viewportInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+	runtimeInfo.viewportInfo.scissorCount = loadInfo.rects.Size();
+	runtimeInfo.viewportInfo.pScissors = loadInfo.rects.Size() > 0 ? loadInfo.rects.Begin() : 0;
+	runtimeInfo.viewportInfo.viewportCount = loadInfo.viewports.Size();
+	runtimeInfo.viewportInfo.pViewports = loadInfo.viewports.Size() > 0 ? loadInfo.viewports.Begin() : 0;
 
 	// setup uniform buffer for render target information
-	ConstantBufferCreateInfo cbinfo = { true, this->shaderState, "PassBlock", 0, 1 };
-	this->passBlockBuffer = CreateConstantBuffer(cbinfo);
-	this->passBlockVar = ShaderStateGetVariable(this->shaderState, "PassBlock");
-	this->renderTargetDimensionsVar = this->passBlockBuffer->GetVariableByName("RenderTargetDimensions");
+	ConstantBufferCreateInfo cbinfo = { true, loadInfo.shaderState, "PassBlock", 0, 1 };
+	loadInfo.passBlockBuffer = CreateConstantBuffer(cbinfo);
+	loadInfo.passBlockVar = ShaderStateGetVariable(loadInfo.shaderState, "PassBlock");
+	loadInfo.renderTargetDimensionsVar = ConstantBufferCreateShaderVariable(loadInfo.passBlockBuffer, 0, "RenderTargetDimensions");
+		//loadInfo.passBlockBuffer->GetVariableByName("RenderTargetDimensions");
 
 	VkWriteDescriptorSet write;
 	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 	write.pNext = nullptr;
 	write.descriptorCount = 1;
 	write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	write.dstBinding = VkShader::ShaderGetVkVariableBinding(this->shaderState, this->passBlockVar);
+	write.dstBinding = VkShader::ShaderGetVkVariableBinding(loadInfo.shaderState, loadInfo.passBlockVar);
 	write.dstArrayElement = 0;
-	write.dstSet = this->passDescriptorSet;
+	write.dstSet = runtimeInfo.passDescriptorSet;
 
 	VkDescriptorBufferInfo buf;
-	buf.buffer = ConstantBufferGetVk(this->passBlockBuffer);
+	buf.buffer = ConstantBufferGetVk(loadInfo.passBlockBuffer);
 	buf.offset = 0;
 	buf.range = VK_WHOLE_SIZE;
 	write.pBufferInfo = &buf;
@@ -373,44 +409,44 @@ VkPass::Setup()
 	write.pTexelBufferView = nullptr;
 
 	// update descriptor set with attachment
-	vkUpdateDescriptorSets(this->dev, 1, &write, 0, nullptr);
+	vkUpdateDescriptorSets(loadInfo.dev, 1, &write, 0, nullptr);
 
 	// update descriptor set based on images attachments
-	const CoreGraphics::ShaderVariableId inputAttachmentsVar = ShaderStateGetVariable(this->shaderState, "InputAttachments");
-	
+	const CoreGraphics::ShaderVariableId inputAttachmentsVar = ShaderStateGetVariable(loadInfo.shaderState, "InputAttachments");
+
 	// setup input attachments
-	Util::FixedArray<Math::float4> dimensions(this->colorAttachments.Size());
-	for (i = 0; i < this->colorAttachments.Size(); i++)
+	Util::FixedArray<Math::float4> dimensions(info.colorAttachments.Size());
+	for (i = 0; i < info.colorAttachments.Size(); i++)
 	{
 		VkWriteDescriptorSet write;
 		write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		write.pNext = NULL;
 		write.descriptorCount = 1;
 		write.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-		write.dstBinding = VkShader::ShaderGetVkVariableBinding(this->shaderState, inputAttachmentsVar);
+		write.dstBinding = VkShader::ShaderGetVkVariableBinding(loadInfo.shaderState, inputAttachmentsVar);
 		write.dstArrayElement = i;
-		write.dstSet = this->passDescriptorSet;
+		write.dstSet = runtimeInfo.passDescriptorSet;
 
 		VkDescriptorImageInfo img;
 		img.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-		img.imageView = RenderTextureGetVkImageView(this->colorAttachments[i]);
+		img.imageView = RenderTextureGetVkImageView(info.colorAttachments[i]);
 		img.sampler = VK_NULL_HANDLE;
 		write.pImageInfo = &img;
 
 		// update descriptor set with attachment
-		vkUpdateDescriptorSets(this->dev, 1, &write, 0, NULL);
+		vkUpdateDescriptorSets(loadInfo.dev, 1, &write, 0, NULL);
 
 		// create dimensions float4
-		const CoreGraphics::TextureDimensions rtdims = RenderTextureGetDimensions(this->depthStencilAttachment);
+		const CoreGraphics::TextureDimensions rtdims = RenderTextureGetDimensions(info.depthStencilAttachment);
 		Math::float4& dims = dimensions[i];
 		dims.x() = (Math::scalar)rtdims.width;
 		dims.y() = (Math::scalar)rtdims.height;
 		dims.z() = 1 / dims.x();
 		dims.w() = 1 / dims.y();
 	}
-	ShaderVariableSetArray(this->renderTargetDimensionsVar, this->shaderState, dimensions.Begin(), dimensions.Size());
-	this->shaderState->SetDescriptorSet(this->passDescriptorSet, NEBULAT_PASS_GROUP);
-	this->shaderState->SetApplyShared(true);
+	ShaderVariableSetArray(loadInfo.renderTargetDimensionsVar, loadInfo.shaderState, dimensions.Begin(), dimensions.Size());
+	VkShaderStateSetDescriptorSet(loadInfo.shaderState, runtimeInfo.passDescriptorSet, NEBULAT_PASS_GROUP);
+	VkShaderStateSetShared(loadInfo.shaderState, true);
 
 	// create framebuffer
 	VkFramebufferCreateInfo fbInfo =
@@ -418,107 +454,139 @@ VkPass::Setup()
 		VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
 		NULL,
 		0,
-		this->pass,
+		loadInfo.pass,
 		(uint32_t)images.Size(),
 		images.Begin(),
 		width,
 		height,
 		layers
 	};
-	res = vkCreateFramebuffer(this->dev, &fbInfo, NULL, &this->framebuffer);
+	res = vkCreateFramebuffer(loadInfo.dev, &fbInfo, NULL, &loadInfo.framebuffer);
 	n_assert(res == VK_SUCCESS);
 
 	// setup info
-	this->framebufferPipelineInfo.renderPass = this->pass;
-	this->framebufferPipelineInfo.subpass = 0;
-	this->framebufferPipelineInfo.pViewportState = &this->viewportInfo;	
+	runtimeInfo.framebufferPipelineInfo.renderPass = loadInfo.pass;
+	runtimeInfo.framebufferPipelineInfo.subpass = 0;
+	runtimeInfo.framebufferPipelineInfo.pViewportState = &runtimeInfo.viewportInfo;
+
+	beginInfo = 
+	{
+		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+		NULL,
+		loadInfo.pass,
+		loadInfo.framebuffer,
+		loadInfo.renderArea,
+		(uint32_t)loadInfo.clearValues.Size(),
+		loadInfo.clearValues.Size() > 0 ? loadInfo.clearValues.Begin() : NULL
+	};
+
+	PassId ret;
+	ret.id24 = id;
+	ret.id8 = PassIdType;
+	return ret;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkPass::Discard()
+DiscardPass(const PassId& id)
 {
-	// release shader state
-	ShaderDestroyState(this->shaderState);
-	this->shaderState = Ids::InvalidId64;
+	VkPassLoadInfo& loadInfo = passAllocator.Get<0>(id);
+	VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<1>(id);
+	VkRenderPassBeginInfo& beginInfo = passAllocator.Get<2>(id);
 
 	// destroy pass and our descriptor set
-	vkFreeDescriptorSets(this->dev, VkRenderDevice::descPool, 1, &this->passDescriptorSet);
-	vkDestroyRenderPass(this->dev, this->pass, NULL);
-	vkDestroyFramebuffer(this->dev, this->framebuffer, NULL);
-
-	// run base class discard
-	PassBase::Discard();
+	vkFreeDescriptorSets(loadInfo.dev, loadInfo.pool, 1, &runtimeInfo.passDescriptorSet);
+	vkDestroyRenderPass(loadInfo.dev, loadInfo.pass, NULL);
+	vkDestroyFramebuffer(loadInfo.dev, loadInfo.framebuffer, NULL);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkPass::Begin()
+PassBegin(const PassId& id)
 {
-	PassBase::Begin();
+	VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<1>(id);
 	VkRenderDevice* dev = VkRenderDevice::Instance();
 
 	// bind descriptor set
 	static const uint32_t offset = 0;
-	dev->BindDescriptorsGraphics(&this->passDescriptorSet, this->passPipelineLayout, NEBULAT_PASS_GROUP, 1, &offset, 1, true);
+	dev->BindDescriptorsGraphics(&runtimeInfo.passDescriptorSet, runtimeInfo.passPipelineLayout, NEBULAT_PASS_GROUP, 1, &offset, 1, true);
 
 	// update framebuffer pipeline info to next subpass
-	this->framebufferPipelineInfo.subpass = this->currentSubpass;
+	runtimeInfo.currentSubpassIndex = 0;
+	runtimeInfo.framebufferPipelineInfo.subpass = runtimeInfo.currentSubpassIndex;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkPass::NextSubpass()
+PassBeginBatch(const PassId& id, FrameBatchType::Code batch)
 {
-	PassBase::NextSubpass();
-	this->framebufferPipelineInfo.subpass = this->currentSubpass;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkPass::End()
+PassNextSubpass(const PassId& id)
 {
-	PassBase::End();
+	VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<1>(id);
+	runtimeInfo.currentSubpassIndex++;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkPass::OnWindowResized()
+PassEndBatch(const PassId& id)
 {
-	n_assert(this->renderTargetDimensionsVar == Ids::InvalidId32);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+PassEnd(const PassId& id)
+{
+
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+PassWindowResizeCallback(const PassId& id)
+{
+	VkPassLoadInfo& loadInfo = passAllocator.Get<0>(id);
+	VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<1>(id);
+	VkRenderPassBeginInfo& beginInfo = passAllocator.Get<2>(id);
 
 	// gather image views
 	uint32_t width = 0;
 	uint32_t height = 0;
 	uint32_t layers = 0;
 	Util::FixedArray<VkImageView> images;
-	images.Resize(this->colorAttachments.Size() + (this->depthStencilAttachment == Ids::InvalidId32 ? 1 : 0));
+	images.Resize(loadInfo.colorAttachments.Size() + (loadInfo.depthStencilAttachment == Ids::InvalidId32 ? 1 : 0));
 
 	IndexT i;
-	for (i = 0; i < this->colorAttachments.Size(); i++)
+	for (i = 0; i < loadInfo.colorAttachments.Size(); i++)
 	{
-		const CoreGraphics::TextureDimensions dims = RenderTextureGetDimensions(this->colorAttachments[i]);
-		images[i] = RenderTextureGetVkImageView(this->colorAttachments[i]);
+		const CoreGraphics::TextureDimensions dims = RenderTextureGetDimensions(loadInfo.colorAttachments[i]);
+		images[i] = RenderTextureGetVkImageView(loadInfo.colorAttachments[i]);
 		width = Math::n_max(width, (uint32_t)dims.width);
 		height = Math::n_max(height, (uint32_t)dims.height);
 		layers = Math::n_max(layers, (uint32_t)dims.depth);
 
-		VkRect2D& rect = scissorRects[i];
+		VkRect2D& rect = loadInfo.rects[i];
 		rect.offset.x = 0;
 		rect.offset.y = 0;
 		rect.extent.width = dims.width;
 		rect.extent.height = dims.height;
-		VkViewport& viewport = viewports[i];
+		VkViewport& viewport = loadInfo.viewports[i];
 		viewport.width = (float)dims.width;
 		viewport.height = (float)dims.height;
 		viewport.minDepth = 0;
@@ -526,8 +594,8 @@ VkPass::OnWindowResized()
 		viewport.x = 0;
 		viewport.y = 0;
 
-		const Math::float4& value = this->colorAttachmentClears[i];
-		VkClearValue& clear = this->clearValues[i];
+		const Math::float4& value = loadInfo.colorAttachmentClears[i];
+		VkClearValue& clear = loadInfo.clearValues[i];
 		clear.color.float32[0] = value.x();
 		clear.color.float32[1] = value.y();
 		clear.color.float32[2] = value.z();
@@ -535,7 +603,7 @@ VkPass::OnWindowResized()
 	}
 
 	// destroy old framebuffer
-	vkDestroyFramebuffer(this->dev, this->framebuffer, nullptr);
+	vkDestroyFramebuffer(loadInfo.dev, loadInfo.framebuffer, nullptr);
 
 	// create framebuffer
 	VkFramebufferCreateInfo fbInfo =
@@ -543,7 +611,7 @@ VkPass::OnWindowResized()
 		VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
 		NULL,
 		0,
-		this->pass,
+		loadInfo.pass,
 		(uint32_t)images.Size(),
 		images.Begin(),
 		width,
@@ -553,22 +621,22 @@ VkPass::OnWindowResized()
 
 	// we need to recreate the framebuffer object because the image handles might have changed, and the dimensions to render to is different
 	VkResult res;
-	res = vkCreateFramebuffer(this->dev, &fbInfo, nullptr, &this->framebuffer);
+	res = vkCreateFramebuffer(loadInfo.dev, &fbInfo, nullptr, &loadInfo.framebuffer);
 	n_assert(res == VK_SUCCESS);
 
 	// setup input attachments
-	Util::FixedArray<Math::float4> dimensions(this->colorAttachments.Size());
-	for (i = 0; i < this->colorAttachments.Size(); i++)
+	Util::FixedArray<Math::float4> dimensions(loadInfo.colorAttachments.Size());
+	for (i = 0; i < loadInfo.colorAttachments.Size(); i++)
 	{
 		// create dimensions float4
-		const CoreGraphics::TextureDimensions rtdims = RenderTextureGetDimensions(this->colorAttachments[i]);
+		const CoreGraphics::TextureDimensions rtdims = RenderTextureGetDimensions(loadInfo.colorAttachments[i]);
 		Math::float4& dims = dimensions[i];
 		dims.x() = (Math::scalar)rtdims.width;
 		dims.y() = (Math::scalar)rtdims.height;
 		dims.z() = 1 / dims.x();
 		dims.w() = 1 / dims.y();
 	}
-	ShaderVariableSetArray(this->renderTargetDimensionsVar, this->shaderState, dimensions.Begin(), dimensions.Size());
+	ShaderVariableSetArray(loadInfo.renderTargetDimensionsVar, loadInfo.shaderState, dimensions.Begin(), dimensions.Size());
 }
 
 } // namespace Vulkan

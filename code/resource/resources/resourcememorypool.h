@@ -39,7 +39,7 @@ public:
 	void DiscardByTag(const Util::StringAtom& tag);
 
 	/// update reserved resource, the info struct is loader dependent (overload to implement resource deallocation, remember to set resource state!)
-	virtual LoadStatus LoadFromMemory(const Ids::Id24 id, void* info) = 0;
+	virtual LoadStatus LoadFromMemory(const Ids::Id24 id, const void* info) = 0;
 
 
 private:

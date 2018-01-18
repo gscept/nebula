@@ -57,7 +57,7 @@ public:
 	/// perform computation
 	void Compute(int dimX, int dimY, int dimZ);
 	/// begin a rendering pass
-	void BeginPass(const Ptr<CoreGraphics::Pass>& pass);
+	void BeginPass(const CoreGraphics::PassId pass);
 	/// progress to next subpass
 	void SetToNextSubpass();
 	/// begin batch
@@ -103,6 +103,10 @@ public:
 	VkPhysicalDeviceProperties GetCurrentProperties() { return this->deviceProps[this->currentDevice]; }
 	/// get the current device features
 	VkPhysicalDeviceFeatures GetCurrentFeatures() { return this->deviceFeatures[this->currentDevice]; }
+	/// get the currently free pool
+	VkDescriptorPool GetCurrentPool() { return this->descriptorPools[this->currentPool]; }
+	/// request a new pool, but only use this is if the previous pool is full
+	void RequestPool();
 	/// get queue families
 	const std::array<uint32_t, 4> GetQueueFamilies() { return std::array<uint32_t, 4>{ this->drawQueueFamily, this->computeQueueFamily, this->transferQueueFamily, this->sparseQueueFamily }; }
 	/// get queue from index and family
@@ -115,38 +119,27 @@ public:
 	/// returns true if we support parallel computes
 	static bool AsyncComputeSupported();
 
+	/// update descriptors
+	void BindDescriptorsGraphics(const VkDescriptorSet* descriptors, const VkPipelineLayout& layout, uint32_t baseSet, uint32_t setCount, const uint32_t* offsets, uint32_t offsetCount, bool shared = false);
+	/// update descriptors
+	void BindDescriptorsCompute(const VkDescriptorSet* descriptors, const VkPipelineLayout& layout, uint32_t baseSet, uint32_t setCount, const uint32_t* offsets, uint32_t offsetCount);
+	/// update push ranges
+	void UpdatePushRanges(const VkShaderStageFlags& stages, const VkPipelineLayout& layout, uint32_t offset, uint32_t size, void* data);
+
 	static const short MaxNumRenderTargets = 8;
 	static const short MaxNumViewports = 16;
 
 private:
-	friend class VkTexture;
 	friend class VkShapeRenderer;
 	friend class VkTextRenderer;
 	friend class VkTransformDevice;
 	friend class VkDisplayDevice;
-	friend class VkVertexBuffer;
-	friend class VkIndexBuffer;
-	friend class VkCpuSyncFence;
-	friend class VkShader;
-	friend class VkShaderProgram;
 	friend class VkMemoryVertexBufferPool;
 	friend class VkMemoryIndexBufferPool;
 	friend class VkMemoryTexturePool;
 	friend class VkShaderServer;
-	friend class VkRenderTarget;
-	friend class VkRenderTargetCube;
-	friend class VkMultipleRenderTarget;
-	friend class VkDepthStencilTarget;
-	friend class VkVertexLayout;
-	friend class VkUniformBuffer;
-	friend class VkShaderStorageBuffer;
 	friend class VkStreamTexturePool;
 	friend class VkStreamTextureSaver;
-	friend class VkShaderState;
-	friend class VkShaderImage;
-	friend class VkCmdEvent;
-	friend class VkPass;
-	friend class VkRenderTexture;
 	friend class VkPipelineDatabase;
 	friend class Lighting::VkLightServer;
 	friend class VkScheduler;
@@ -205,13 +198,6 @@ private:
 	void BindComputePipeline(const VkPipeline& pipeline, const VkPipelineLayout& layout);
 	/// bind no pipeline (effectively making all descriptor binds happen on both graphics and compute)
 	void UnbindPipeline();
-
-	/// update descriptors
-	void BindDescriptorsGraphics(const VkDescriptorSet* descriptors, const VkPipelineLayout& layout, uint32_t baseSet, uint32_t setCount, const uint32_t* offsets, uint32_t offsetCount, bool shared = false);
-	/// update descriptors
-	void BindDescriptorsCompute(const VkDescriptorSet* descriptors, const VkPipelineLayout& layout, uint32_t baseSet, uint32_t setCount, const uint32_t* offsets, uint32_t offsetCount);
-	/// update push ranges
-	void UpdatePushRanges(const VkShaderStageFlags& stages, const VkPipelineLayout& layout, uint32_t offset, uint32_t size, void* data);
 
 	/// setup queue from display
 	void SetupQueue(uint32_t queueFamily, uint32_t queueIndex);
@@ -300,6 +286,10 @@ private:
 	Util::FixedArray<uint32_t> numCaps;
 	Util::FixedArray<Util::FixedArray<VkExtensionProperties>> caps;
 	IndexT currentDevice;
+
+	VkDescriptorPoolSize poolSizes[11];
+	Util::Array<VkDescriptorPool> descriptorPools;
+	IndexT currentPool;
 	
 	static VkInstance instance;
 
@@ -319,9 +309,7 @@ private:
 	VkEvent mainCmdTransEvent;
 	
 	VkShaderProgram::PipelineType currentBindPoint;
-
 	StateMode currentCommandState;
-
 
 	static const SizeT NumDrawThreads = 8;
 	IndexT currentDrawThread;

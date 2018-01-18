@@ -12,6 +12,7 @@
 #include "coregraphics/vertexbuffer.h"
 #include "coregraphics/indexbuffer.h"
 #include "coregraphics/primitivegroup.h"
+#include "coregraphics/mesh.h"
 
 //------------------------------------------------------------------------------
 namespace CoreGraphics
@@ -25,13 +26,18 @@ public:
 	/// destructor
 	virtual ~MemoryMeshPool();
 
+	/// update resource
+	LoadStatus LoadFromMemory(const Ids::Id24 id, const void* info);
+	/// unload resource
+	void Unload(const Ids::Id24 id);
+
+	/// bind mesh
+	void BindMesh(const MeshId id, const IndexT prim);
+	/// get primitive groups from mesh
+	const SizeT	GetPrimitiveGroups(const MeshId id);
 private:
 	friend class StreamMeshPool;
 
-	/// update resource
-	LoadStatus LoadFromMemory(const Ids::Id24 id, void* info);
-	/// unload resource
-	void Unload(const Ids::Id24 id);
 
 	Ids::IdAllocatorSafe<MeshCreateInfo> allocator;
 	__ImplementResourceAllocatorSafe(allocator);

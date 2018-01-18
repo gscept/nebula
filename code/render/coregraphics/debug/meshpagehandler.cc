@@ -42,12 +42,12 @@ MeshPageHandler::HandleRequest(const Ptr<HttpRequest>& request)
     Dictionary<String,String> query = request->GetURI().ParseQuery();
     if (query.Contains("meshinfo"))
     {
-        request->SetStatus(this->HandleMeshInfoRequest(ResourceId(query["meshinfo"]), request->GetResponseContentStream()));
+        request->SetStatus(this->HandleMeshInfoRequest((query["meshinfo"]), request->GetResponseContentStream()));
         return;
     }
     else if (query.Contains("vertexdump"))
     {
-        ResourceId resId = query["vertexdump"];
+        Util::String resId = query["vertexdump"];
         IndexT minIndex = query["min"].AsInt();
         IndexT maxIndex = query["max"].AsInt();
         request->SetStatus(this->HandleVertexDumpRequest(resId, minIndex, maxIndex, request->GetResponseContentStream()));
@@ -113,11 +113,13 @@ MeshPageHandler::HandleRequest(const Ptr<HttpRequest>& request)
 /**
 */
 HttpStatus::Code
-MeshPageHandler::HandleMeshInfoRequest(const ResourceId& resId, const Ptr<Stream>& responseContentStream)
+MeshPageHandler::HandleMeshInfoRequest(const Util::String& resId, const Ptr<Stream>& responseContentStream)
 {
     // lookup the mesh in the ResourceManager
     const Ptr<ResourceManager>& resManager = ResourceManager::Instance();
-    if (!resManager->HasResource(resId))
+	Resources::ResourceId id = resId.AsLongLong();
+
+    if (!resManager->HasResource(id))
     {
         return HttpStatus::NotFound;
     }
@@ -269,10 +271,11 @@ MeshPageHandler::HandleMeshInfoRequest(const ResourceId& resId, const Ptr<Stream
     Handle a mesh dump request.
 */
 HttpStatus::Code
-MeshPageHandler::HandleVertexDumpRequest(const ResourceId& resId, IndexT minVertexIndex, IndexT maxVertexIndex, const Ptr<Stream>& responseContentStream)
+MeshPageHandler::HandleVertexDumpRequest(const Util::String& resId, IndexT minVertexIndex, IndexT maxVertexIndex, const Ptr<Stream>& responseContentStream)
 {
     // lookup the mesh in the ResourceManager
     const Ptr<ResourceManager>& resManager = ResourceManager::Instance();
+	ResourceId id = resId.AsLongLong();
     if (!resManager->HasResource(resId))
     {
         return HttpStatus::NotFound;

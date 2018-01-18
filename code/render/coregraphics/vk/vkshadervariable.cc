@@ -24,7 +24,7 @@ namespace Vulkan
 /**
 */
 void
-VkShaderVariable::BindToUniformBuffer(const CoreGraphics::ShaderVariableId var, CoreGraphics::ConstantBufferId buffer, VkShaderVariableAllocator& allocator, uint32_t offset, uint32_t size, int8_t* defaultValue)
+VkShaderVariableBindToUniformBuffer(const CoreGraphics::ShaderVariableId var, CoreGraphics::ConstantBufferId buffer, VkShaderVariableAllocator& allocator, uint32_t offset, uint32_t size, int8_t* defaultValue)
 {
 	VkShaderVariableVariableBinding& binding = allocator.Get<0>(var.id);
 	binding.backing.uniformBuffer = buffer.id24;
@@ -42,7 +42,7 @@ VkShaderVariable::BindToUniformBuffer(const CoreGraphics::ShaderVariableId var, 
 /**
 */
 void
-VkShaderVariable::BindToPushConstantRange(const CoreGraphics::ShaderVariableId var, uint8_t* buffer, VkShaderVariableAllocator& allocator, uint32_t offset, uint32_t size, int8_t* defaultValue)
+VkShaderVariableBindToPushConstantRange(const CoreGraphics::ShaderVariableId var, uint8_t* buffer, VkShaderVariableAllocator& allocator, uint32_t offset, uint32_t size, int8_t* defaultValue)
 {
 	VkShaderVariableVariableBinding& binding = allocator.Get<0>(var.id);
 	binding.backing.push = buffer;
@@ -53,14 +53,14 @@ VkShaderVariable::BindToPushConstantRange(const CoreGraphics::ShaderVariableId v
 	binding.isbuffer = false;
 	
 	// copy data to buffer
-	VkShaderVariable::UpdatePushRange(buffer + offset, size, defaultValue);
+	VkShaderVariableUpdatePushRange(buffer + offset, size, defaultValue);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkShaderVariable::Setup(AnyFX::VkVariable* var, Ids::Id24 id, VkShaderVariableAllocator& allocator, VkDescriptorSet& set)
+VkShaderVariableSetup(AnyFX::VkVariable* var, Ids::Id24 id, VkShaderVariableAllocator& allocator, const VkDescriptorSet set)
 {
 	n_assert(0 != var);
 
@@ -129,6 +129,7 @@ VkShaderVariable::Setup(AnyFX::VkVariable* var, Ids::Id24 id, VkShaderVariableAl
 	case AnyFX::ImageCube:
 	case AnyFX::ImageCubeArray:
 		setupInfo.type = ImageReadWriteVariableType;
+		n_assert(set != VK_NULL_HANDLE);
 		resBind.setBinding = var->bindingLayout.binding;
 		break;
 	case AnyFX::Sampler1D:
@@ -141,6 +142,7 @@ VkShaderVariable::Setup(AnyFX::VkVariable* var, Ids::Id24 id, VkShaderVariableAl
 	case AnyFX::SamplerCube:
 	case AnyFX::SamplerCubeArray:
 		setupInfo.type = SamplerVariableType;
+		n_assert(set != VK_NULL_HANDLE);
 		resBind.setBinding = var->bindingLayout.binding;
 		break;
 	case AnyFX::Texture1D:
@@ -153,6 +155,7 @@ VkShaderVariable::Setup(AnyFX::VkVariable* var, Ids::Id24 id, VkShaderVariableAl
 	case AnyFX::TextureCube:
 	case AnyFX::TextureCubeArray:
 		setupInfo.type = TextureVariableType;
+		n_assert(set != VK_NULL_HANDLE);
 		resBind.setBinding = var->bindingLayout.binding;
 		break;
 	case AnyFX::TextureHandle:
@@ -168,17 +171,17 @@ VkShaderVariable::Setup(AnyFX::VkVariable* var, Ids::Id24 id, VkShaderVariableAl
 		break;
 	default:
 		setupInfo.type = ConstantBufferVariableType;
+		n_assert(set != VK_NULL_HANDLE);
 		resBind.setBinding = var->bindingLayout.binding;
 		break;
 	}
-
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkShaderVariable::Setup(AnyFX::VkVarbuffer* var, Ids::Id24 id, VkShaderVariableAllocator& allocator, VkDescriptorSet& set)
+VkShaderVariableSetup(AnyFX::VkVarbuffer* var, Ids::Id24 id, VkShaderVariableAllocator& allocator, const VkDescriptorSet set)
 {
 	n_assert(0 != var);
 	Util::String name = var->name.c_str();
@@ -197,7 +200,7 @@ VkShaderVariable::Setup(AnyFX::VkVarbuffer* var, Ids::Id24 id, VkShaderVariableA
 /**
 */
 void
-VkShaderVariable::Setup(AnyFX::VkVarblock* var, Ids::Id24 id, VkShaderVariableAllocator& allocator, VkDescriptorSet& set)
+VkShaderVariableSetup(AnyFX::VkVarblock* var, Ids::Id24 id, VkShaderVariableAllocator& allocator, const VkDescriptorSet set)
 {
 	n_assert(0 != var);
 	Util::String name = var->name.c_str();
@@ -206,7 +209,7 @@ VkShaderVariable::Setup(AnyFX::VkVarblock* var, Ids::Id24 id, VkShaderVariableAl
 	VkShaderVariableSetupInfo& setupInfo = allocator.Get<2>(id);
 	
 	setupInfo.name = name;
-	setupInfo.type = BufferReadWriteVariableType;
+	setupInfo.type = ConstantBufferVariableType;
 	resBind.dynamicOffset = var->Flag("DynamicOffset");
 	resBind.setBinding = var->bindingLayout.binding;
 	resBind.set = set;
@@ -216,151 +219,151 @@ VkShaderVariable::Setup(AnyFX::VkVarblock* var, Ids::Id24 id, VkShaderVariableAl
 /**
 */
 void
-VkShaderVariable::SetInt(VkShaderVariableVariableBinding& bind, int value)
+SetInt(VkShaderVariableVariableBinding& bind, int value)
 {
 	if (bind.isbuffer)
 		ConstantBufferUpdate(bind.backing.uniformBuffer, &value, bind.offset, sizeof(int));
 	else
-		VkShaderVariable::UpdatePushRange(bind.backing.push, sizeof(int), value);
+		VkShaderVariableUpdatePushRange(bind.backing.push, sizeof(int), value);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkShaderVariable::SetIntArray(VkShaderVariableVariableBinding& bind, const int* values, SizeT count)
+SetIntArray(VkShaderVariableVariableBinding& bind, const int* values, SizeT count)
 {
 	if (bind.isbuffer)
 		ConstantBufferArrayUpdate(bind.backing.uniformBuffer, values, bind.offset, sizeof(int), count);
 	else
-		VkShaderVariable::UpdatePushRange(bind.backing.push, sizeof(int) * count, values);
+		VkShaderVariableUpdatePushRange(bind.backing.push, sizeof(int) * count, values);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkShaderVariable::SetFloat(VkShaderVariableVariableBinding& bind, float value)
+SetFloat(VkShaderVariableVariableBinding& bind, float value)
 {
 	if (bind.isbuffer)
 		ConstantBufferUpdate(bind.backing.uniformBuffer, &value, bind.offset, sizeof(float));
 	else
-		VkShaderVariable::UpdatePushRange(bind.backing.push, sizeof(float), value);
+		VkShaderVariableUpdatePushRange(bind.backing.push, sizeof(float), value);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkShaderVariable::SetFloatArray(VkShaderVariableVariableBinding& bind, const float* values, SizeT count)
+SetFloatArray(VkShaderVariableVariableBinding& bind, const float* values, SizeT count)
 {
 	if (bind.isbuffer)
 		ConstantBufferArrayUpdate(bind.backing.uniformBuffer, values, bind.offset, sizeof(float), count);
 	else
-		VkShaderVariable::UpdatePushRange(bind.backing.push, sizeof(float) * count, values);
+		VkShaderVariableUpdatePushRange(bind.backing.push, sizeof(float) * count, values);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkShaderVariable::SetFloat2(VkShaderVariableVariableBinding& bind, const Math::float2& value)
+SetFloat2(VkShaderVariableVariableBinding& bind, const Math::float2& value)
 {
 	if (bind.isbuffer)
 		ConstantBufferUpdate(bind.backing.uniformBuffer, &value, bind.offset, sizeof(Math::float2));
 	else
-		VkShaderVariable::UpdatePushRange(bind.backing.push, sizeof(Math::float2), value);
+		VkShaderVariableUpdatePushRange(bind.backing.push, sizeof(Math::float2), value);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkShaderVariable::SetFloat2Array(VkShaderVariableVariableBinding& bind, const Math::float2* values, SizeT count)
+SetFloat2Array(VkShaderVariableVariableBinding& bind, const Math::float2* values, SizeT count)
 {
 	if (bind.isbuffer)
 		ConstantBufferArrayUpdate(bind.backing.uniformBuffer, values, bind.offset, sizeof(Math::float2), count);
 	else
-		VkShaderVariable::UpdatePushRange(bind.backing.push, sizeof(Math::float2) * count, values);
+		VkShaderVariableUpdatePushRange(bind.backing.push, sizeof(Math::float2) * count, values);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkShaderVariable::SetFloat4(VkShaderVariableVariableBinding& bind, const Math::float4& value)
+SetFloat4(VkShaderVariableVariableBinding& bind, const Math::float4& value)
 {
 	if (bind.isbuffer)
 		ConstantBufferUpdate(bind.backing.uniformBuffer, &value, bind.offset, sizeof(Math::float4));
 	else
-		VkShaderVariable::UpdatePushRange(bind.backing.push, sizeof(Math::float4), value);
+		VkShaderVariableUpdatePushRange(bind.backing.push, sizeof(Math::float4), value);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkShaderVariable::SetFloat4Array(VkShaderVariableVariableBinding& bind, const Math::float4* values, SizeT count)
+SetFloat4Array(VkShaderVariableVariableBinding& bind, const Math::float4* values, SizeT count)
 {
 	if (bind.isbuffer)
 		ConstantBufferArrayUpdate(bind.backing.uniformBuffer, values, bind.offset, sizeof(Math::float4), count);
 	else
-		VkShaderVariable::UpdatePushRange(bind.backing.push, sizeof(Math::float4) * count, values);
+		VkShaderVariableUpdatePushRange(bind.backing.push, sizeof(Math::float4) * count, values);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkShaderVariable::SetMatrix(VkShaderVariableVariableBinding& bind, const Math::matrix44& value)
+SetMatrix(VkShaderVariableVariableBinding& bind, const Math::matrix44& value)
 {
 	if (bind.isbuffer)
 		ConstantBufferUpdate(bind.backing.uniformBuffer, &value, bind.offset, sizeof(Math::matrix44));
 	else
-		VkShaderVariable::UpdatePushRange(bind.backing.push, sizeof(Math::matrix44), value);
+		VkShaderVariableUpdatePushRange(bind.backing.push, sizeof(Math::matrix44), value);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkShaderVariable::SetMatrixArray(VkShaderVariableVariableBinding& bind, const Math::matrix44* values, SizeT count)
+SetMatrixArray(VkShaderVariableVariableBinding& bind, const Math::matrix44* values, SizeT count)
 {
 	if (bind.isbuffer)
 		ConstantBufferArrayUpdate(bind.backing.uniformBuffer, values, bind.offset, sizeof(Math::matrix44), count);
 	else
-		VkShaderVariable::UpdatePushRange(bind.backing.push, sizeof(Math::matrix44) * count, values);
+		VkShaderVariableUpdatePushRange(bind.backing.push, sizeof(Math::matrix44) * count, values);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkShaderVariable::SetBool(VkShaderVariableVariableBinding& bind, bool value)
+SetBool(VkShaderVariableVariableBinding& bind, bool value)
 {
 	if (bind.isbuffer)
 		ConstantBufferUpdate(bind.backing.uniformBuffer, &value, bind.offset, sizeof(bool));
 	else
-		VkShaderVariable::UpdatePushRange(bind.backing.push, sizeof(bool), value);
+		VkShaderVariableUpdatePushRange(bind.backing.push, sizeof(bool), value);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkShaderVariable::SetBoolArray(VkShaderVariableVariableBinding& bind, const bool* values, SizeT count)
+SetBoolArray(VkShaderVariableVariableBinding& bind, const bool* values, SizeT count)
 {
 	if (bind.isbuffer)
 		ConstantBufferArrayUpdate(bind.backing.uniformBuffer, values, bind.offset, sizeof(bool), count);
 	else
-		VkShaderVariable::UpdatePushRange(bind.backing.push, sizeof(bool) * count, values);
+		VkShaderVariableUpdatePushRange(bind.backing.push, sizeof(bool) * count, values);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkShaderVariable::SetTexture(VkShaderVariableVariableBinding& bind, VkShaderVariableResourceBinding& res, Util::Array<VkWriteDescriptorSet>& writes, const CoreGraphics::TextureId tex)
+SetTexture(VkShaderVariableVariableBinding& bind, VkShaderVariableResourceBinding& res, Util::Array<VkWriteDescriptorSet>& writes, const CoreGraphics::TextureId tex)
 {
 	VkTextureRuntimeInfo& info = textureAllocator.GetSafe<0>(tex.id24);
 
@@ -376,7 +379,7 @@ VkShaderVariable::SetTexture(VkShaderVariableVariableBinding& bind, VkShaderVari
 			if (bind.isbuffer)
 				ConstantBufferUpdate(bind.backing.uniformBuffer, &info.bind, bind.offset, sizeof(uint32_t));
 			else
-				VkShaderVariable::UpdatePushRange(bind.backing.push, sizeof(uint32_t), info.bind);
+				VkShaderVariableUpdatePushRange(bind.backing.push, sizeof(uint32_t), info.bind);
 		}
 		else
 		{
@@ -415,7 +418,7 @@ VkShaderVariable::SetTexture(VkShaderVariableVariableBinding& bind, VkShaderVari
 /**
 */
 void
-VkShaderVariable::SetConstantBuffer(VkShaderVariableResourceBinding& bind, Util::Array<VkWriteDescriptorSet>& writes, const CoreGraphics::ConstantBufferId buf)
+SetConstantBuffer(VkShaderVariableResourceBinding& bind, Util::Array<VkWriteDescriptorSet>& writes, const CoreGraphics::ConstantBufferId buf)
 {
 	VkConstantBufferRuntimeInfo& info = constantBufferAllocator.Get<0>(buf.id24);
 	if (info.buf != bind.write.buf.buffer)
@@ -445,7 +448,7 @@ VkShaderVariable::SetConstantBuffer(VkShaderVariableResourceBinding& bind, Util:
 /**
 */
 void
-VkShaderVariable::SetShaderReadWriteTexture(VkShaderVariableResourceBinding& bind, Util::Array<VkWriteDescriptorSet>& writes, const CoreGraphics::ShaderRWTextureId tex)
+SetShaderReadWriteTexture(VkShaderVariableResourceBinding& bind, Util::Array<VkWriteDescriptorSet>& writes, const CoreGraphics::ShaderRWTextureId tex)
 {
 	VkShaderRWTextureRuntimeInfo& info = shaderRWTextureAllocator.Get<1>(tex.id24);
 	if (info.view != bind.write.img.imageView)
@@ -475,7 +478,7 @@ VkShaderVariable::SetShaderReadWriteTexture(VkShaderVariableResourceBinding& bin
 /**
 */
 void
-VkShaderVariable::SetShaderReadWriteTexture(VkShaderVariableResourceBinding& bind, Util::Array<VkWriteDescriptorSet>& writes, const CoreGraphics::TextureId tex)
+SetShaderReadWriteTexture(VkShaderVariableResourceBinding& bind, Util::Array<VkWriteDescriptorSet>& writes, const CoreGraphics::TextureId tex)
 {
 	VkTextureRuntimeInfo& info = textureAllocator.GetSafe<0>(tex.id24);
 	if (info.view != bind.write.img.imageView)
@@ -505,7 +508,7 @@ VkShaderVariable::SetShaderReadWriteTexture(VkShaderVariableResourceBinding& bin
 /**
 */
 void
-VkShaderVariable::SetShaderReadWriteBuffer(VkShaderVariableResourceBinding& bind, Util::Array<VkWriteDescriptorSet>& writes, const CoreGraphics::ShaderRWBufferId buf)
+SetShaderReadWriteBuffer(VkShaderVariableResourceBinding& bind, Util::Array<VkWriteDescriptorSet>& writes, const CoreGraphics::ShaderRWBufferId buf)
 {
 	VkShaderRWBufferRuntimeInfo& info = shaderRWBufferAllocator.Get<1>(buf.id24);
 	if (info.buf != bind.write.buf.buffer)

@@ -6,159 +6,65 @@
 	(C) 2016 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "coregraphics/base/passbase.h"
 #include "coregraphics/shader.h"
+#include "coregraphics/pass.h"
 #include "coregraphics/constantbuffer.h"
 
 namespace Vulkan
 {
-class VkPass : public Base::PassBase
+
+struct VkPassLoadInfo
 {
-	__DeclareClass(VkPass);
-public:
-	/// constructor
-	VkPass();
-	/// destructor
-	virtual ~VkPass();
-
-	/// setup pass
-	void Setup();
-	/// discard pass
-	void Discard();
-
-	/// starts pass
-	void Begin();
-	/// progress to next subpass
-	void NextSubpass();
-	/// ends pass
-	void End();
-
-	/// get render pass
-	const VkRenderPass GetVkRenderPass() const;
-	/// get render area
-	const VkRect2D& GetVkRenderArea() const;
-	/// get framebuffer
-	const VkFramebuffer GetVkFramebuffer() const;
-	/// get graphics pipeline info for pass
-	const VkGraphicsPipelineCreateInfo& GetVkFramebufferPipelineInfo();
-	/// get list of clear values
-	const Util::FixedArray<VkClearValue>& GetVkClearValues() const;
-
-	/// get scissor rects
-	const Util::FixedArray<VkRect2D>& GetVkScissorRects() const;
-	/// get viewports
-	const Util::FixedArray<VkViewport>& GetVkViewports() const;
-	/// get scissor rects for subpass
-	const Util::FixedArray<VkRect2D>& GetVkScissorRects(IndexT i) const;
-	/// get viewports for subpass
-	const Util::FixedArray<VkViewport>& GetVkViewports(IndexT i) const;
-
-	/// handle window resizing
-	void OnWindowResized();
-
-private:
-	friend class VkPipelineDatabase;
-
 	VkDevice dev;
+	VkDescriptorPool pool;
+
+	// these hold the per-pass shader state
 	CoreGraphics::ShaderStateId shaderState;
 	CoreGraphics::ConstantBufferId passBlockBuffer;
 	CoreGraphics::ShaderVariableId passBlockVar;
 	CoreGraphics::ShaderVariableId renderTargetDimensionsVar;
-	VkDescriptorSet passDescriptorSet;
-	VkPipelineLayout passPipelineLayout;
+
+	// we need these stored for resizing
+	Util::Array<CoreGraphics::RenderTextureId> colorAttachments;
+	Util::Array<Math::float4> colorAttachmentClears;
+	CoreGraphics::RenderTextureId depthStencilAttachment;
+
+	// we store these so we retain the data for when we need to bind it
+	VkRect2D renderArea;
+	VkFramebuffer framebuffer;
+	VkRenderPass pass;
+	Util::FixedArray<VkRect2D> rects;
+	Util::FixedArray<VkViewport> viewports;
 	Util::FixedArray<VkClearValue> clearValues;
+};
+
+struct VkPassRuntimeInfo
+{
 	VkGraphicsPipelineCreateInfo framebufferPipelineInfo;
 	VkPipelineViewportStateCreateInfo viewportInfo;
-	VkRect2D renderArea;
-	VkRenderPass pass;
-	VkFramebuffer framebuffer;
 
-	Util::FixedArray<VkRect2D> scissorRects;
-	Util::FixedArray<VkViewport> viewports;
+	uint32_t currentSubpassIndex;
+	VkDescriptorSet passDescriptorSet;
+	VkPipelineLayout passPipelineLayout;
 
 	Util::FixedArray<Util::FixedArray<VkRect2D>> subpassRects;
 	Util::FixedArray<Util::FixedArray<VkViewport>> subpassViewports;
 };
 
-//------------------------------------------------------------------------------
-/**
-*/
-inline const VkRenderPass
-VkPass::GetVkRenderPass() const
-{
-	return this->pass;
-}
+typedef Ids::IdAllocator<
+	VkPassLoadInfo,
+	VkPassRuntimeInfo,
+	VkRenderPassBeginInfo
+> VkPassAllocator;
+extern VkPassAllocator passAllocator;
 
-//------------------------------------------------------------------------------
-/**
-*/
-inline const VkRect2D&
-VkPass::GetVkRenderArea() const
-{
-	return this->renderArea;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const VkFramebuffer
-VkPass::GetVkFramebuffer() const
-{
-	return this->framebuffer;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const VkGraphicsPipelineCreateInfo&
-VkPass::GetVkFramebufferPipelineInfo()
-{
-	return this->framebufferPipelineInfo;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const Util::FixedArray<VkClearValue>&
-VkPass::GetVkClearValues() const
-{
-	return this->clearValues;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const Util::FixedArray<VkRect2D>&
-VkPass::GetVkScissorRects() const
-{
-	return this->scissorRects;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const Util::FixedArray<VkViewport>&
-VkPass::GetVkViewports() const
-{
-	return this->viewports;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const Util::FixedArray<VkRect2D>&
-VkPass::GetVkScissorRects(IndexT i) const
-{
-	return this->subpassRects[i];
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const Util::FixedArray<VkViewport>&
-VkPass::GetVkViewports(IndexT i) const
-{
-	return this->subpassViewports[i];
-}
+/// get vk render pass
+const VkRenderPassBeginInfo& PassGetVkRenderPassBeginInfo(const CoreGraphics::PassId& id);
+/// get vk framebuffer info
+const VkGraphicsPipelineCreateInfo& PassGetVkFramebufferInfo(const CoreGraphics::PassId& id);
+/// get scissor rects for current subpass
+const Util::FixedArray<VkRect2D>& PassGetVkRects(const CoreGraphics::PassId& id);
+/// get viewports for current subpass
+const Util::FixedArray<VkViewport>& PassGetVkViewports(const CoreGraphics::PassId& id);
 
 } // namespace Vulkan

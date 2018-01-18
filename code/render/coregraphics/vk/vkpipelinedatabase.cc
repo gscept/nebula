@@ -46,7 +46,7 @@ VkPipelineDatabase::Setup(const VkDevice dev, const VkPipelineCache cache)
 /**
 */
 void
-VkPipelineDatabase::SetPass(const Ptr<VkPass>& pass)
+VkPipelineDatabase::SetPass(const CoreGraphics::PassId pass)
 {
 	this->currentPass = pass;
 	IndexT index = this->tier1.FindIndex(pass);

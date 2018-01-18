@@ -138,7 +138,7 @@ VkVertexSignaturePool::GetDerivativeLayout(const CoreGraphics::VertexLayoutId la
 	Util::HashTable<DerivativeId, DerivativeLayout>& hashTable = this->Get<0>(layout.id24);
 	const BindInfo& bindInfo = this->Get<2>(layout.id24);
 	const VkPipelineVertexInputStateCreateInfo& baseInfo = this->Get<1>(layout.id24);
-	const Ids::Id64 shaderHash = Ids::Id64(shader);
+	const Ids::Id64 shaderHash = shader.HashCode64();
 	if (hashTable.Contains(shaderHash))
 	{
 		return &hashTable[shaderHash].info;
@@ -154,11 +154,14 @@ VkVertexSignaturePool::GetDerivativeLayout(const CoreGraphics::VertexLayoutId la
 		for (i = 0; i < program->vsInputSlots.size(); i++)
 		{
 			uint32_t slot = program->vsInputSlots[i];
-			VkVertexInputAttributeDescription attr = bindInfo.attrs[j];
-			if (attr.location == slot)
+			for (j = 0; j < bindInfo.attrs.Size(); j++)
 			{
-				layout.attrs.Append(attr);
-				break;
+				VkVertexInputAttributeDescription attr = bindInfo.attrs[j];
+				if (attr.location == slot)
+				{
+					layout.attrs.Append(attr);
+					break;
+				}
 			}
 		}
 

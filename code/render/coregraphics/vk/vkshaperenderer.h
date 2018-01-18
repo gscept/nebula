@@ -10,8 +10,6 @@
 #include "coregraphics/vertexlayout.h"
 #include "coregraphics/vertexbuffer.h"
 #include "coregraphics/indexbuffer.h"
-#include "coregraphics/bufferlock.h"
-#include "resources/managedmesh.h"
 #include "util/fixedarray.h"
 namespace Vulkan
 {
@@ -51,7 +49,7 @@ private:
 	/// draw a shape
 	void DrawSimpleShape(const Math::matrix44& modelTransform, CoreGraphics::RenderShape::Type shapeType, const Math::float4& color);
 	/// draw debug mesh
-	void DrawMesh(const Math::matrix44& modelTransform, const Ptr<CoreGraphics::Mesh>& mesh, const Math::float4& color);
+	void DrawMesh(const Math::matrix44& modelTransform, const CoreGraphics::MeshId mesh, const Math::float4& color);
 	/// draw primitives
 	void DrawPrimitives(const Math::matrix44& modelTransform, CoreGraphics::PrimitiveTopology::Code topology, SizeT numPrimitives, const void* vertices, SizeT vertexWidth, const Math::float4& color);
 	/// draw indexed primitives
@@ -68,20 +66,20 @@ private:
 	/// create a cone shape
 	void CreateConeShape();
 
-	uint featureBits[CoreGraphics::RenderShape::NumDepthFlags * 2];
+	CoreGraphics::ShaderProgramId programs[CoreGraphics::RenderShape::NumDepthFlags * 2];
 
-	Util::FixedArray<Ptr<Resources::ManagedMesh> > shapeMeshes;
-	Ptr<CoreGraphics::ShaderState> shapeShader;
+	Util::FixedArray<Resources::ResourceId> shapeMeshResources;
+	Util::FixedArray<CoreGraphics::MeshId> shapeMeshes;
+	CoreGraphics::ShaderId shapeShader;
+	CoreGraphics::ShaderStateId shapeShaderState;
 	CoreGraphics::PrimitiveGroup primGroup;
 
-	Ptr<CoreGraphics::VertexBuffer> vbo;
-	Ptr<CoreGraphics::IndexBuffer> ibo;
-	Ptr<CoreGraphics::VertexLayout> vertexLayout;
-	Ptr<CoreGraphics::BufferLock> vboLock;
-	Ptr<CoreGraphics::BufferLock> iboLock;
-	Ptr<CoreGraphics::ShaderVariable> model;
-	Ptr<CoreGraphics::ShaderVariable> viewProjection;
-	Ptr<CoreGraphics::ShaderVariable> diffuseColor;
+	CoreGraphics::VertexBufferId vbo;
+	CoreGraphics::IndexBufferId ibo;
+	CoreGraphics::VertexLayoutId vertexLayout;
+	CoreGraphics::ShaderVariableId model;
+	CoreGraphics::ShaderVariableId viewProjection;
+	CoreGraphics::ShaderVariableId diffuseColor;
 
 	SizeT numPrimitives;
 	SizeT numIndices;

@@ -101,6 +101,8 @@ void ShaderVariableSetReadWriteBuffer(const CoreGraphics::ShaderVariableId var, 
 
 /// bind shader
 void ShaderBind(const ShaderId id, const CoreGraphics::ShaderFeature::Mask& program);
+/// get shader program id from masks, this allows us to apply a shader program directly in the future
+const ShaderProgramId ShaderGetProgram(const ShaderId id, const CoreGraphics::ShaderFeature::Mask& program);
 /// bind shader and program all in one package
 void ShaderProgramBind(const ShaderProgramId id);
 

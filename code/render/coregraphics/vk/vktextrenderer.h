@@ -7,9 +7,8 @@
 */
 //------------------------------------------------------------------------------
 #include "coregraphics/base/textrendererbase.h"
-#include "coregraphics/shaderstate.h"
+#include "coregraphics/shader.h"
 #include "coregraphics/vertexbuffer.h"
-#include "coregraphics/bufferlock.h"
 #include "stb/stb_truetype.h"
 namespace Vulkan
 {

@@ -31,9 +31,9 @@ public:
 
 private:
     /// display information about specific mesh
-    Http::HttpStatus::Code HandleMeshInfoRequest(const Resources::ResourceId& resId, const Ptr<IO::Stream>& responseContentStream);
+    Http::HttpStatus::Code HandleMeshInfoRequest(const Util::String& resId, const Ptr<IO::Stream>& responseContentStream);
     /// dump mesh vertices
-    Http::HttpStatus::Code HandleVertexDumpRequest(const Resources::ResourceId& resId, IndexT minIndex, IndexT maxIndex, const Ptr<IO::Stream>& responseContentStream);
+    Http::HttpStatus::Code HandleVertexDumpRequest(const Util::String& resId, IndexT minIndex, IndexT maxIndex, const Ptr<IO::Stream>& responseContentStream);
 };
 
 } // namespace Debug

@@ -214,8 +214,8 @@ Array<TYPE>::Array(SizeT initialSize, SizeT _grow, const TYPE& initialValue) :
 template<class TYPE>
 Array<TYPE>::Array(std::initializer_list<TYPE> list) :
 	grow(16),
-	capacity(list.size()),
-	size(list.size())
+	capacity((SizeT)list.size()),
+	size((SizeT)list.size())
 {
 	if (this->capacity > 0)
 	{

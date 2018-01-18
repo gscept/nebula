@@ -3,58 +3,53 @@
 //  (C) 2017 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
-#include "config.h"
 #include "mesh.h"
 #include "coregraphics/renderdevice.h"
+#include "memorymeshpool.h"
 
 namespace CoreGraphics
 {
 
-Ids::IdAllocator<MeshCreateInfo> meshAllocator(0x00FFFFFF);
 MemoryMeshPool* meshPool = nullptr;
 
 using namespace Ids;
 //------------------------------------------------------------------------------
 /**
 */
-const MeshId
+inline const MeshId
 CreateMesh(const MeshCreateInfo& info)
 {
-	Id32 pid = meshAllocator.AllocObject();
-
-	// simply copy the create info...
-	MeshCreateInfo& inf = meshAllocator.Get<0>(pid);
-	inf = info;
-
-	MeshId id;
-	id.id24 = pid;
-	id.id8 = MeshIdType;
-	return id;
+	Resources::ResourceId pid = meshPool->ReserveResource(info.name, info.tag);
+	meshPool->LoadFromMemory(pid, &info);
+	
+	return pid;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-void
+inline void
 DestroyMesh(const MeshId id)
 {
-	meshAllocator.DeallocObject(id.id24);
+	meshPool->DiscardResource(id.id24);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-void
+inline void
 MeshBind(const MeshId id, const IndexT prim)
 {
-	RenderDevice* renderDevice = RenderDevice::Instance();
-#if _DEBUG
-	n_assert(id.id8 == MeshIdType);
-#endif
-	MeshCreateInfo& inf = meshAllocator.Get<0>(id.id24);
-	VertexBufferBind(inf.vertexBuffer, 0, inf.primitiveGroups[prim].GetBaseVertex());
-	if (inf.indexBuffer != Ids::InvalidId64)
-		IndexBufferBind(inf.indexBuffer, inf.primitiveGroups[prim].GetBaseIndex());
+	meshPool->BindMesh(id, prim);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const SizeT
+MeshGetPrimitiveGroups(const MeshId id)
+{
+	return meshPool->GetPrimitiveGroups(id);
 }
 
 } // Base
