@@ -136,8 +136,8 @@ CreateShaderRWBuffer(const ShaderRWBufferCreateInfo& info)
 void
 DestroyShaderRWBuffer(const ShaderRWBufferId id)
 {
-	VkShaderRWBufferLoadInfo& setupInfo = shaderRWBufferAllocator.Get<0>(id);
-	VkShaderRWBufferRuntimeInfo& runtimeInfo = shaderRWBufferAllocator.Get<1>(id);
+	VkShaderRWBufferLoadInfo& setupInfo = shaderRWBufferAllocator.Get<0>(id.id24);
+	VkShaderRWBufferRuntimeInfo& runtimeInfo = shaderRWBufferAllocator.Get<1>(id.id24);
 
 	vkUnmapMemory(setupInfo.dev, setupInfo.mem);
 	vkDestroyBuffer(setupInfo.dev, runtimeInfo.buf, nullptr);

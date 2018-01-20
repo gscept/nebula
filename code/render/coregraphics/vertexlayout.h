@@ -12,7 +12,7 @@
 namespace CoreGraphics
 {
 
-ID_32_24_8_TYPE(VertexLayoutId);
+RESOURCE_ID_TYPE(VertexLayoutId);
 
 /// max number of vertex streams
 static const IndexT MaxNumVertexStreams = 2;

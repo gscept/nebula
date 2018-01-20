@@ -93,7 +93,7 @@ private:
 	};
 	struct Tier2Node : public BaseNode
 	{
-		Util::Dictionary<uint32_t, Tier3Node*> children;
+		Util::Dictionary<CoreGraphics::ShaderProgramId, Tier3Node*> children;
 	};
 	struct Tier3Node : public BaseNode
 	{

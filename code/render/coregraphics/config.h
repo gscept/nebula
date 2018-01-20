@@ -14,6 +14,8 @@ enum CoreGraphicsIdType
 {
 	VertexBufferIdType,
 	IndexBufferIdType,
+	TextureIdType,
+	VertexLayoutIdType,
 	ConstantBufferIdType,
 	ShaderRWBufferIdType,
 	ShaderRWTextureIdType,

@@ -25,7 +25,7 @@ __ImplementClass(Vulkan::VkMemoryTexturePool, 'VKTO', Resources::ResourceMemoryP
 ResourcePool::LoadStatus
 VkMemoryTexturePool::LoadFromMemory(const Ids::Id24 id, const void* info)
 {
-	VkMemoryTextureInfo* data = (VkMemoryTextureInfo*)info;
+	const VkMemoryTextureInfo* data = (const VkMemoryTextureInfo*)info;
 
 	/// during the load-phase, we can safetly get the structs
 	this->EnterGet();
@@ -159,9 +159,9 @@ inline bool
 VkMemoryTexturePool::Map(const CoreGraphics::TextureId id, IndexT mipLevel, CoreGraphics::GpuBufferTypes::MapType mapType, CoreGraphics::TextureMapInfo & outMapInfo)
 {
 	textureAllocator.EnterGet();
-	VkTextureRuntimeInfo& runtime = textureAllocator.Get<0>(id.id24);
-	VkTextureLoadInfo& load = textureAllocator.Get<1>(id.id24);
-	VkTextureMappingInfo& map = textureAllocator.Get<2>(id.id24);
+	VkTextureRuntimeInfo& runtime = textureAllocator.Get<0>(id.allocId);
+	VkTextureLoadInfo& load = textureAllocator.Get<1>(id.allocId);
+	VkTextureMappingInfo& map = textureAllocator.Get<2>(id.allocId);
 
 	bool retval = false;
 	if (Texture2D == runtime.type)
@@ -230,9 +230,9 @@ inline void
 VkMemoryTexturePool::Unmap(const CoreGraphics::TextureId id, IndexT mipLevel)
 {
 	textureAllocator.EnterGet();
-	VkTextureRuntimeInfo& runtime = textureAllocator.Get<0>(id.id24);
-	VkTextureLoadInfo& load = textureAllocator.Get<1>(id.id24);
-	VkTextureMappingInfo& map = textureAllocator.Get<2>(id.id24);
+	VkTextureRuntimeInfo& runtime = textureAllocator.Get<0>(id.allocId);
+	VkTextureLoadInfo& load = textureAllocator.Get<1>(id.allocId);
+	VkTextureMappingInfo& map = textureAllocator.Get<2>(id.allocId);
 
 	// unmap and dealloc
 	vkUnmapMemory(load.dev, load.mem);
@@ -254,9 +254,9 @@ inline bool
 VkMemoryTexturePool::MapCubeFace(const CoreGraphics::TextureId id, CoreGraphics::TextureCubeFace face, IndexT mipLevel, CoreGraphics::GpuBufferTypes::MapType mapType, CoreGraphics::TextureMapInfo & outMapInfo)
 {
 	textureAllocator.EnterGet();
-	VkTextureRuntimeInfo& runtime = textureAllocator.Get<0>(id.id24);
-	VkTextureLoadInfo& load = textureAllocator.Get<1>(id.id24);
-	VkTextureMappingInfo& map = textureAllocator.Get<2>(id.id24);
+	VkTextureRuntimeInfo& runtime = textureAllocator.Get<0>(id.allocId);
+	VkTextureLoadInfo& load = textureAllocator.Get<1>(id.allocId);
+	VkTextureMappingInfo& map = textureAllocator.Get<2>(id.allocId);
 
 	bool retval = false;
 
@@ -297,9 +297,9 @@ inline void
 VkMemoryTexturePool::UnmapCubeFace(const CoreGraphics::TextureId id, CoreGraphics::TextureCubeFace face, IndexT mipLevel)
 {
 	textureAllocator.EnterGet();
-	VkTextureRuntimeInfo& runtime = textureAllocator.Get<0>(id.id24);
-	VkTextureLoadInfo& load = textureAllocator.Get<1>(id.id24);
-	VkTextureMappingInfo& map = textureAllocator.Get<2>(id.id24);
+	VkTextureRuntimeInfo& runtime = textureAllocator.Get<0>(id.allocId);
+	VkTextureLoadInfo& load = textureAllocator.Get<1>(id.allocId);
+	VkTextureMappingInfo& map = textureAllocator.Get<2>(id.allocId);
 
 	// unmap and dealloc
 	vkUnmapMemory(load.dev, load.mem);
@@ -423,12 +423,12 @@ VkMemoryTexturePool::Copy(const CoreGraphics::TextureId from, const CoreGraphics
 
 	copy.extent = { (uint32_t)width, (uint32_t)height, (uint32_t)depth };
 
-	VkTextureLoadInfo& fromLoad = textureAllocator.Get<1>(from.id24);
-	VkTextureLoadInfo& toLoad = textureAllocator.Get<1>(to.id24);
+	VkTextureLoadInfo& fromLoad = textureAllocator.Get<1>(from.allocId);
+	VkTextureLoadInfo& toLoad = textureAllocator.Get<1>(to.allocId);
 
 	// begin immediate action, this might actually be delayed but we can't really know from here
-	VkCommandBuffer cmdBuf = VkUtilities::BeginImmediateTransfer();
-	vkCmdCopyImage(cmdBuf, fromLoad.img, VK_IMAGE_LAYOUT_GENERAL, toLoad.img, VK_IMAGE_LAYOUT_GENERAL, 1, &copy);
+	CoreGraphics::CmdBufferId cmdBuf = VkUtilities::BeginImmediateTransfer();
+	vkCmdCopyImage(CommandBufferGetVk(cmdBuf), fromLoad.img, VK_IMAGE_LAYOUT_GENERAL, toLoad.img, VK_IMAGE_LAYOUT_GENERAL, 1, &copy);
 	VkUtilities::EndImmediateTransfer(cmdBuf);
 }
 

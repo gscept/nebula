@@ -16,11 +16,8 @@ ShaderPool* shaderPool;
 inline const ShaderId
 CreateShader(const ShaderCreateInfo& info)
 {
-	ShaderId ret;
-	shaderPool->CreateResource(info.name, "render_system", [&ret](Resources::ResourceId id)
-	{
-		ret = Ids::Id64(id);
-	}, nullptr, true);
+	ShaderId ret = shaderPool->CreateResource(info.name, "render_system", nullptr, nullptr, true);
+	ret.allocType = ShaderIdType;
 	return ret;
 }
 
@@ -30,7 +27,7 @@ CreateShader(const ShaderCreateInfo& info)
 inline void
 DestroyShader(const ShaderId id)
 {
-	shaderPool->DiscardResource(Ids::Id64(id));
+	shaderPool->DiscardResource(id);
 }
 
 //------------------------------------------------------------------------------

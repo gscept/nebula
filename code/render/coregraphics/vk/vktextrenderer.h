@@ -54,12 +54,13 @@ private:
 	unsigned char* bitmap;
 
 	TextElementVertex vertices[MaxNumChars * 6];
-	Ptr<CoreGraphics::ShaderState> shader;
-	Ptr<CoreGraphics::ShaderVariable> texVar;
-	Ptr<CoreGraphics::ShaderVariable> modelVar;
-	Ptr<CoreGraphics::Texture> glyphTexture;
+	CoreGraphics::ShaderStateId shader;
+	CoreGraphics::ShaderProgramId program;
+	CoreGraphics::ShaderVariableId texVar;
+	CoreGraphics::ShaderVariableId modelVar;
+	CoreGraphics::TextureId glyphTexture;
 	CoreGraphics::PrimitiveGroup group;
-	Ptr<CoreGraphics::VertexBuffer> vbo;
+	CoreGraphics::VertexBufferId vbo;
 	byte* vertexPtr;
 };
 } // namespace Vulkan

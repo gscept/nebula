@@ -107,7 +107,8 @@ protected:
 	Util::Dictionary<Resources::ResourceName, Resources::ResourceId> shaders;
 	Util::Dictionary<Resources::ResourceName, CoreGraphics::ShaderId> shaderIds;
 	Util::Dictionary<Util::StringAtom, CoreGraphics::ShaderStateId> sharedShaderStates;
-	CoreGraphics::ShaderStateId sharedVariableShader;
+	CoreGraphics::ShaderId sharedVariableShader;
+	CoreGraphics::ShaderStateId sharedVariableShaderState;
     Ids::Id32 objectIdShaderVar;
 	CoreGraphics::ShaderId activeShader;
     bool isOpen;
@@ -227,8 +228,8 @@ ShaderServerBase::GetActiveShader() const
 inline SizeT
 ShaderServerBase::GetNumSharedVariables() const
 {
-    if (this->sharedVariableShader != Ids::InvalidId64)
-		return CoreGraphics::ShaderGetConstantCount(this->sharedVariableShader.id24);
+    if (this->sharedVariableShaderState != Ids::InvalidId64)
+		return CoreGraphics::ShaderGetConstantCount(this->sharedVariableShader);
     else
         return 0;
 }
@@ -239,8 +240,8 @@ ShaderServerBase::GetNumSharedVariables() const
 inline const CoreGraphics::ShaderVariableId
 ShaderServerBase::GetSharedVariableByIndex(IndexT i) const
 {
-    n_assert(this->sharedVariableShader != Ids::InvalidId64);
-	return CoreGraphics::ShaderStateGetVariable(this->sharedVariableShader, i);
+    n_assert(this->sharedVariableShaderState != CoreGraphics::ShaderStateId::Invalid());
+	return CoreGraphics::ShaderStateGetVariable(this->sharedVariableShaderState, i);
 }
 
 //------------------------------------------------------------------------------
@@ -249,7 +250,7 @@ ShaderServerBase::GetSharedVariableByIndex(IndexT i) const
 inline const CoreGraphics::ShaderStateId
 ShaderServerBase::GetSharedShader()
 {
-    return this->sharedVariableShader;
+    return this->sharedVariableShaderState;
 }
 
 } // namespace Base

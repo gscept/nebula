@@ -13,17 +13,16 @@ using namespace Util;
 namespace Vulkan
 {
 
-uint32_t VkShaderProgram::uniqueIdCounter = 0;
-
+uint32_t UniqueIdCounter = 0;
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkShaderProgram::Apply(VkShaderProgramRuntimeInfo& info)
+VkShaderProgramApply(VkShaderProgramRuntimeInfo& info)
 {
 	// if we are compute, we can set the pipeline straight away, otherwise we have to accumulate the infos
 	if (info.type == Compute)		VkRenderDevice::Instance()->BindComputePipeline(info.pipeline, info.layout);
-	else if (info.type == Graphics)	VkRenderDevice::Instance()->BindGraphicsPipelineInfo(info.info, info.id);
+	else if (info.type == Graphics)	VkRenderDevice::Instance()->BindGraphicsPipelineInfo(info.info, info.uniqueId);
 	else							VkRenderDevice::Instance()->UnbindPipeline();
 }
 
@@ -31,7 +30,7 @@ VkShaderProgram::Apply(VkShaderProgramRuntimeInfo& info)
 /**
 */
 void
-VkShaderProgram::Setup(const Ids::Id24 id, AnyFX::VkProgram* program, VkPipelineLayout& pipelineLayout, ProgramAllocator& allocator)
+VkShaderProgramSetup(const Ids::Id24 id, AnyFX::VkProgram* program, VkPipelineLayout& pipelineLayout, VkShaderProgramAllocator& allocator)
 {
 	allocator.Get<1>(id) = program;
 	String mask = program->GetAnnotationString("Mask").c_str();
@@ -40,29 +39,29 @@ VkShaderProgram::Setup(const Ids::Id24 id, AnyFX::VkProgram* program, VkPipeline
 	VkShaderProgramSetupInfo& setup = allocator.Get<0>(id);
 	VkShaderProgramRuntimeInfo& runtime = allocator.Get<2>(id);
 	runtime.layout = pipelineLayout;
-	runtime.id = VkShaderProgram::uniqueIdCounter++;
 	runtime.pipeline = VK_NULL_HANDLE;
+	runtime.uniqueId = UniqueIdCounter++;
 	setup.mask = CoreGraphics::ShaderServer::Instance()->FeatureStringToMask(mask);
 	setup.name = name;
 	setup.dev = VkRenderDevice::Instance()->GetCurrentDevice();
-	VkShaderProgram::CreateShader(setup.dev, &setup.vs, program->shaderBlock.vsBinarySize, program->shaderBlock.vsBinary);
-	VkShaderProgram::CreateShader(setup.dev, &setup.hs, program->shaderBlock.hsBinarySize, program->shaderBlock.hsBinary);
-	VkShaderProgram::CreateShader(setup.dev, &setup.ds, program->shaderBlock.dsBinarySize, program->shaderBlock.dsBinary);
-	VkShaderProgram::CreateShader(setup.dev, &setup.gs, program->shaderBlock.gsBinarySize, program->shaderBlock.gsBinary);
-	VkShaderProgram::CreateShader(setup.dev, &setup.ps, program->shaderBlock.psBinarySize, program->shaderBlock.psBinary);
-	VkShaderProgram::CreateShader(setup.dev, &setup.cs, program->shaderBlock.csBinarySize, program->shaderBlock.csBinary);
+	VkShaderProgramCreateShader(setup.dev, &setup.vs, program->shaderBlock.vsBinarySize, program->shaderBlock.vsBinary);
+	VkShaderProgramCreateShader(setup.dev, &setup.hs, program->shaderBlock.hsBinarySize, program->shaderBlock.hsBinary);
+	VkShaderProgramCreateShader(setup.dev, &setup.ds, program->shaderBlock.dsBinarySize, program->shaderBlock.dsBinary);
+	VkShaderProgramCreateShader(setup.dev, &setup.gs, program->shaderBlock.gsBinarySize, program->shaderBlock.gsBinary);
+	VkShaderProgramCreateShader(setup.dev, &setup.ps, program->shaderBlock.psBinarySize, program->shaderBlock.psBinary);
+	VkShaderProgramCreateShader(setup.dev, &setup.cs, program->shaderBlock.csBinarySize, program->shaderBlock.csBinary);
 
 	// if we have a compute shader, it will be the one we use, otherwise use the graphics one
-	if (setup.cs)		VkShaderProgram::SetupAsCompute(setup, runtime);
-	else if (setup.vs)	VkShaderProgram::SetupAsGraphics(program, setup, runtime);
-	else				runtime.type = PipelineType::InvalidType;
+	if (setup.cs)		VkShaderProgramSetupAsCompute(setup, runtime);
+	else if (setup.vs)	VkShaderProgramSetupAsGraphics(program, setup, runtime);
+	else				runtime.type = VkShaderProgramPipelineType::InvalidType;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkShaderProgram::CreateShader(const VkDevice dev, VkShaderModule* shader, unsigned binarySize, char* binary)
+VkShaderProgramCreateShader(const VkDevice dev, VkShaderModule* shader, unsigned binarySize, char* binary)
 {
 	if (binarySize > 0)
 	{
@@ -85,7 +84,7 @@ VkShaderProgram::CreateShader(const VkDevice dev, VkShaderModule* shader, unsign
 /**
 */
 void
-VkShaderProgram::SetupAsGraphics(AnyFX::VkProgram* program, VkShaderProgramSetupInfo& setup, VkShaderProgramRuntimeInfo& runtime)
+VkShaderProgramSetupAsGraphics(AnyFX::VkProgram* program, VkShaderProgramSetupInfo& setup, VkShaderProgramRuntimeInfo& runtime)
 {
 	// we have to keep track of how MANY shaders we are using, AnyFX makes every function 'main'
 	unsigned shaderIdx = 0;
@@ -249,7 +248,7 @@ VkShaderProgram::SetupAsGraphics(AnyFX::VkProgram* program, VkShaderProgramSetup
 /**
 */
 void
-VkShaderProgram::SetupAsCompute(VkShaderProgramSetupInfo& setup, VkShaderProgramRuntimeInfo& runtime)
+VkShaderProgramSetupAsCompute(VkShaderProgramSetupInfo& setup, VkShaderProgramRuntimeInfo& runtime)
 {
 	// create 6 shader info stages for each shader type
 	n_assert(0 != setup.cs);
@@ -285,26 +284,8 @@ VkShaderProgram::SetupAsCompute(VkShaderProgramSetupInfo& setup, VkShaderProgram
 //------------------------------------------------------------------------------
 /**
 */
-const uint32_t
-VkShaderProgram::GetNumVertexInputs(AnyFX::VkProgram* program)
-{
-	return program->numVsInputs;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const uint32_t
-VkShaderProgram::GetNumPixelOutputs(AnyFX::VkProgram* program)
-{
-	return program->numPsOutputs;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 void
-VkShaderProgram::Discard(VkShaderProgramSetupInfo& info, VkPipeline& computePipeline)
+VkShaderProgramDiscard(VkShaderProgramSetupInfo& info, VkPipeline& computePipeline)
 {
 	if (info.vs != VK_NULL_HANDLE)					vkDestroyShaderModule(info.dev, info.vs, NULL);
 	if (info.hs != VK_NULL_HANDLE)					vkDestroyShaderModule(info.dev, info.hs, NULL);

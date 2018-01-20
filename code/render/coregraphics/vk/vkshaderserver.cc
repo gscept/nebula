@@ -8,6 +8,7 @@
 #include "coregraphics/shaderpool.h"
 #include "vkrenderdevice.h"
 #include "vkshaderpool.h"
+#include "vkshader.h"
 
 using namespace Resources;
 using namespace CoreGraphics;
@@ -59,7 +60,8 @@ VkShaderServer::Open()
 	this->textureCubePool.Resize(MAX_CUBE_TEXTURES);
 
 	// create shader state for textures, and fetch variables
-	this->textureShaderState = CoreGraphics::shaderPool->CreateState("shd:shared", { NEBULAT_TICK_GROUP });
+	ShaderId shader = VkShaderServer::Instance()->GetShader("shd:shared"_atm);
+	this->textureShaderState = CoreGraphics::shaderPool->CreateState(shader, { NEBULAT_TICK_GROUP }, false);
 	this->texture2DTextureVar = CoreGraphics::shaderPool->ShaderStateGetVariable(this->textureShaderState, "Textures2D");
 	this->texture2DMSTextureVar = CoreGraphics::shaderPool->ShaderStateGetVariable(this->textureShaderState, "Textures2DMS");
 	this->textureCubeTextureVar = CoreGraphics::shaderPool->ShaderStateGetVariable(this->textureShaderState, "TexturesCube");
@@ -83,55 +85,11 @@ VkShaderServer::Close()
 //------------------------------------------------------------------------------
 /**
 */
-void
-VkShaderServer::ReloadShader(Ptr<CoreGraphics::Shader> shader)
-{
-	n_assert(0 != shader);
-	shader->SetLoader(ShaderPool::Create());
-	shader->SetAsyncEnabled(false);
-	shader->Load();
-	if (shader->IsLoaded())
-	{
-		shader->SetLoader(0);
-	}
-	else
-	{
-		n_error("Failed to load shader '%s'!", shader->GetResourceId().Value());
-	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-VkShaderServer::LoadShader(const Resources::ResourceId& shdName)
-{
-	n_assert(shdName.IsValid());
-	Ptr<Shader> shader = Shader::Create();
-	shader->SetResourceId(shdName);
-	shader->SetLoader(ShaderPool::Create());
-	shader->SetAsyncEnabled(false);
-	shader->Load();
-	if (shader->IsLoaded())
-	{
-		shader->SetLoader(0);
-		this->shaders.Add(shdName, shader);
-	}
-	else
-	{
-		n_warning("Failed to explicitly load shader '%s'!", shdName.Value());
-		shader->Unload();
-	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 uint32_t
 VkShaderServer::RegisterTexture(const VkImageView tex, CoreGraphics::TextureType type)
 {
 	uint32_t idx;
-	Ptr<VkShaderVariable> var;
+	ShaderVariableId var;
 	VkDescriptorImageInfo* img;
 	switch (type)
 	{
@@ -162,8 +120,8 @@ VkShaderServer::RegisterTexture(const VkImageView tex, CoreGraphics::TextureType
 	write.descriptorCount = 1;
 	write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
 	write.dstArrayElement = idx;							// insert image into array index, use this index in shader to fetch texture back
-	write.dstBinding = var->binding;
-	write.dstSet = var->set;	
+	write.dstBinding = VkShaderGetVkShaderVariableBinding(this->textureShaderState, var);
+	write.dstSet = VkShaderGetVkShaderVariableDescriptorSet(this->textureShaderState, var);	
 	write.pTexelBufferView = NULL;
 	write.pBufferInfo = NULL;
 
@@ -171,7 +129,8 @@ VkShaderServer::RegisterTexture(const VkImageView tex, CoreGraphics::TextureType
 	img->imageView = tex;
 	img->sampler = VK_NULL_HANDLE;
 	write.pImageInfo = img;
-	this->textureShaderState->AddDescriptorWrite(write);
+
+	VkShaderStateAddDescriptorSetWrite(this->textureShaderState, write);
 	return idx;
 }
 
@@ -193,16 +152,6 @@ VkShaderServer::UnregisterTexture(const uint32_t id, const CoreGraphics::Texture
 		this->textureCubePool.Free(id);
 		break;
 	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-VkShaderServer::SetRenderTarget(const Util::StringAtom& name, const CoreGraphics::TextureId tex)
-{
-	n_assert(this->textureShaderState->HasVariableByName(name));
-	this->textureShaderState->GetVariableByName(name)->SetTexture(tex.downcast<CoreGraphics::Texture>());
 }
 
 } // namespace Vulkan

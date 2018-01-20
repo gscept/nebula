@@ -16,6 +16,8 @@
 #include "coregraphics/pass.h"
 #include "vkpass.h"
 #include "io/ioserver.h"
+#include "vkbarrier.h"
+#include "vkrendertexture.h"
 
 using namespace CoreGraphics;
 //------------------------------------------------------------------------------
@@ -375,7 +377,7 @@ VkRenderDevice::OpenVulkanContext()
 		this->poolSizes[i].type = types[i];
 	}
 
-	this->RequestPool();
+	this->RequestDescriptorPool();
 	this->currentPool = 0;
 
 	// setup pools (from VkCmdBuffer.h)
@@ -535,7 +537,7 @@ VkRenderDevice::CloseVulkanDevice()
 	cachedData->SetAccessMode(IO::Stream::WriteAccess);
 	if (cachedData->Open())
 	{
-		cachedData->Write(data, size);
+		cachedData->Write(data, (IO::Stream::Size)size);
 		cachedData->Close();
 	}
 
@@ -616,7 +618,7 @@ VkRenderDevice::SetupAdapter()
 			n_message("Found %d GPUs, which is more than 1! Perhaps the Render Device should be able to use it?\n", gpuCount);
 
 		IndexT i;
-		for (i = 0; i < gpuCount; i++)
+		for (i = 0; i < (IndexT)gpuCount; i++)
 		{
 			res = vkEnumerateDeviceExtensionProperties(physicalDevices[i], nullptr, &this->numCaps[i], nullptr);
 			n_assert(res == VK_SUCCESS);
@@ -692,7 +694,7 @@ VkRenderDevice::SetStreamVertexBuffer(IndexT streamIndex, const VkBuffer vb, Ind
 /**
 */
 void
-VkRenderDevice::SetVertexLayout(const VkPipelineVertexInputStateCreateInfo* vl)
+VkRenderDevice::SetVertexLayout(VkPipelineVertexInputStateCreateInfo* vl)
 {
 	n_assert(this->currentProgram != 0);
 	this->SetVertexLayoutPipelineInfo(vl);
@@ -948,7 +950,6 @@ VkRenderDevice::EndFrame(IndexT frameIndex)
 
 	// reset state
 	this->inputInfo.topology = VK_PRIMITIVE_TOPOLOGY_MAX_ENUM;
-	this->vertexLayout = nullptr;
 	this->currentProgram = 0;
 	this->currentPipelineInfo.pVertexInputState = nullptr;
 	this->currentPipelineInfo.pInputAssemblyState = nullptr;
@@ -1084,7 +1085,7 @@ VkRenderDevice::SaveScreenshot(CoreGraphics::ImageFileFormat::Code fmt, const Pt
 /**
 */
 void
-VkRenderDevice::RequestPool()
+VkRenderDevice::RequestDescriptorPool()
 {
 	VkDescriptorPoolCreateInfo poolInfo =
 	{
@@ -1122,6 +1123,16 @@ VkRenderDevice::GetQueue(const VkSubContextHandler::SubContextType type, const I
 		return this->subcontextHandler.sparseQueues[index];
 		break;
 	}
+	return VK_NULL_HANDLE;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const VkQueue
+VkRenderDevice::GetQueue(const VkSubContextHandler::SubContextType type)
+{
+	return this->subcontextHandler.GetQueue(type);
 }
 
 //------------------------------------------------------------------------------
@@ -1166,7 +1177,7 @@ VkRenderDevice::BindGraphicsPipelineInfo(const VkGraphicsPipelineCreateInfo& sha
 /**
 */
 void
-VkRenderDevice::SetVertexLayoutPipelineInfo(const VkPipelineVertexInputStateCreateInfo* vertexLayout)
+VkRenderDevice::SetVertexLayoutPipelineInfo(VkPipelineVertexInputStateCreateInfo* vertexLayout)
 {
 	if (this->currentPipelineInfo.pVertexInputState != vertexLayout || !(this->currentPipelineBits & VertexLayoutInfoSet))
 	{
@@ -1254,7 +1265,7 @@ VkRenderDevice::BindDescriptorsGraphics(const VkDescriptorSet* descriptors, cons
 			cmd.del.descSetBind.numOffsets = offsetCount;
 			cmd.del.descSetBind.offsets = offsets;
 			cmd.del.descSetBind.type = VK_PIPELINE_BIND_POINT_GRAPHICS;
-			cmd.dev = this->dev;
+			cmd.dev = this->devices[this->currentDevice];
 			this->scheduler.PushCommand(cmd, VkScheduler::OnBindGraphicsPipeline);
 		}
 	}
@@ -1281,7 +1292,7 @@ VkRenderDevice::BindDescriptorsCompute(const VkDescriptorSet* descriptors, const
 		cmd.del.descSetBind.numSets = setCount;
 		cmd.del.descSetBind.sets = descriptors;
 		cmd.del.descSetBind.type = VK_PIPELINE_BIND_POINT_COMPUTE;
-		cmd.dev = this->dev;
+		cmd.dev = this->devices[this->currentDevice];
 		this->scheduler.PushCommand(cmd, VkScheduler::OnBindComputePipeline);
 	}
 }
@@ -1355,7 +1366,7 @@ void
 VkRenderDevice::BindComputePipeline(const VkPipeline& pipeline, const VkPipelineLayout& layout)
 {
 	// bind compute pipeline
-	this->currentBindPoint = VkShaderProgram::Compute;
+	this->currentBindPoint = VkShaderProgramPipelineType::Compute;
 
 	// bind shared descriptors
 	VkShaderServer::Instance()->BindTextureDescriptorSets();
@@ -1374,7 +1385,7 @@ VkRenderDevice::BindComputePipeline(const VkPipeline& pipeline, const VkPipeline
 void
 VkRenderDevice::UnbindPipeline()
 {
-	this->currentBindPoint = VkShaderProgram::InvalidType;
+	this->currentBindPoint = VkShaderProgramPipelineType::InvalidType;
 	this->currentPipelineBits &= ~ShaderInfoSet;
 }
 
@@ -1434,7 +1445,7 @@ VkRenderDevice::BuildRenderPipeline()
 {
 	n_assert((this->currentPipelineBits & AllInfoSet) != 0);
 	n_assert(this->inBeginBatch);
-	this->currentBindPoint = VkShaderProgram::Graphics;
+	this->currentBindPoint = VkShaderProgramPipelineType::Graphics;
 	if ((this->currentPipelineBits & PipelineBuilt) == 0)
 	{
 		this->CreateAndBindGraphicsPipeline();
@@ -1452,26 +1463,28 @@ VkRenderDevice::InsertBarrier(const BarrierId barrier)
 	{
 		VkCmdBufferThread::Command cmd;
 		cmd.type = VkCmdBufferThread::Barrier;
-		cmd.barrier.dep = barrier->vkDep;
-		cmd.barrier.srcMask = barrier->vkSrcFlags;
-		cmd.barrier.dstMask = barrier->vkDstFlags;
-		cmd.barrier.memoryBarrierCount = barrier->vkNumMemoryBarriers;
-		cmd.barrier.memoryBarriers = barrier->vkMemoryBarriers;
-		cmd.barrier.bufferBarrierCount = barrier->vkNumBufferBarriers;
-		cmd.barrier.bufferBarriers = barrier->vkBufferBarriers;
-		cmd.barrier.imageBarrierCount = barrier->vkNumImageBarriers;
-		cmd.barrier.imageBarriers = barrier->vkImageBarriers;
+		VkBarrierInfo& info = barrierAllocator.Get<0>(barrier.id24);
+		cmd.barrier.dep = info.dep;
+		cmd.barrier.srcMask = info.srcFlags;
+		cmd.barrier.dstMask = info.dstFlags;
+		cmd.barrier.memoryBarrierCount = info.numMemoryBarriers;
+		cmd.barrier.memoryBarriers = info.memoryBarriers;
+		cmd.barrier.bufferBarrierCount = info.numBufferBarriers;
+		cmd.barrier.bufferBarriers = info.bufferBarriers;
+		cmd.barrier.imageBarrierCount = info.numImageBarriers;
+		cmd.barrier.imageBarriers = info.imageBarriers;
 		this->PushToThread(cmd, currentDrawThread);
 	}
 	else
 	{
+		VkBarrierInfo& info = barrierAllocator.Get<0>(barrier.id24);
 		vkCmdPipelineBarrier(CommandBufferGetVk(this->mainCmdDrawBuffer),
-			barrier->vkSrcFlags, 
-			barrier->vkDstFlags, 
-			barrier->vkDep,
-			barrier->vkNumMemoryBarriers, barrier->vkMemoryBarriers,
-			barrier->vkNumBufferBarriers, barrier->vkBufferBarriers,
-			barrier->vkNumImageBarriers, barrier->vkImageBarriers);
+			info.srcFlags,
+			info.dstFlags,
+			info.dep,
+			info.numMemoryBarriers, info.memoryBarriers,
+			info.numBufferBarriers, info.bufferBarriers,
+			info.numImageBarriers,  info.imageBarriers);
 	}
 }
 
@@ -1481,9 +1494,9 @@ VkRenderDevice::InsertBarrier(const BarrierId barrier)
 void
 VkRenderDevice::WaitForFences(VkFence* fences, uint32_t numFences, bool waitAll)
 {
-	VkResult res = vkWaitForFences(this->dev, numFences, fences, waitAll, UINT_MAX);
+	VkResult res = vkWaitForFences(this->devices[this->currentDevice], numFences, fences, waitAll, UINT_MAX);
 	n_assert(res == VK_SUCCESS);
-	res = vkResetFences(this->dev, numFences, fences);
+	res = vkResetFences(this->devices[this->currentDevice], numFences, fences);
 	n_assert(res == VK_SUCCESS);
 }
 
@@ -1520,7 +1533,7 @@ VkRenderDevice::BeginDrawThread()
 		VK_COMMAND_BUFFER_LEVEL_SECONDARY,
 		1
 	};
-	vkAllocateCommandBuffers(this->dev, &info, &this->dispatchableDrawCmdBuffers[this->currentDrawThread]);
+	vkAllocateCommandBuffers(this->devices[this->currentDevice], &info, &this->dispatchableDrawCmdBuffers[this->currentDrawThread]);
 
 	// tell thread to begin command buffer recording
 	VkCommandBufferBeginInfo begin =
@@ -1582,7 +1595,7 @@ VkRenderDevice::EndDrawThreads()
 			cmd.del.cmdbufferfree.buffers[0] = this->dispatchableDrawCmdBuffers[i];
 			cmd.del.cmdbufferfree.numBuffers = 1;
 			cmd.del.cmdbufferfree.pool = this->dispatchableCmdDrawBufferPool[i];
-			cmd.dev = this->dev;
+			cmd.dev = this->devices[this->currentDevice];
 			this->scheduler.PushCommand(cmd, VkScheduler::OnHandleDrawFences);
 		}
 		this->currentDrawThread = NumDrawThreads-1;
@@ -1641,7 +1654,7 @@ VkRenderDevice::FlushToThread(const IndexT& index)
 bool
 VkRenderDevice::AsyncTransferSupported()
 {
-	return VkRenderDevice::transferQueue != VkRenderDevice::drawQueue;
+	return this->drawQueueFamily != this->transferQueueFamily;
 }
 
 //------------------------------------------------------------------------------
@@ -1650,7 +1663,7 @@ VkRenderDevice::AsyncTransferSupported()
 bool
 VkRenderDevice::AsyncComputeSupported()
 {
-	return VkRenderDevice::computeQueue != VkRenderDevice::drawQueue;
+	return this->computeQueueFamily != this->transferQueueFamily;
 }
 
 //------------------------------------------------------------------------------
@@ -1676,15 +1689,23 @@ VkRenderDevice::Copy(const CoreGraphics::TextureId from, Math::rectangle<SizeT> 
 void
 VkRenderDevice::Blit(const CoreGraphics::RenderTextureId from, Math::rectangle<SizeT> fromRegion, IndexT fromMip, const CoreGraphics::RenderTextureId to, Math::rectangle<SizeT> toRegion, IndexT toMip)
 {
-	
-	this->Blit(TextureGetVk(from), fromRegion, fromMip, to->GetTexture(), toRegion, toMip);
+	this->Blit(RenderTextureGetVkImage(from), fromRegion, fromMip, RenderTextureGetVkImage(to), toRegion, toMip);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkRenderDevice::Blit(const Ptr<CoreGraphics::Texture>& from, Math::rectangle<SizeT> fromRegion, IndexT fromMip, const Ptr<CoreGraphics::Texture>& to, Math::rectangle<SizeT> toRegion, IndexT toMip)
+VkRenderDevice::Blit(const CoreGraphics::TextureId from, Math::rectangle<SizeT> fromRegion, IndexT fromMip, const CoreGraphics::TextureId to, Math::rectangle<SizeT> toRegion, IndexT toMip)
+{
+	this->Blit(TextureGetVk(from), fromRegion, fromMip, TextureGetVk(to), toRegion, toMip);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+VkRenderDevice::Blit(const VkImage from, Math::rectangle<SizeT> fromRegion, IndexT fromMip, const VkImage to, Math::rectangle<SizeT> toRegion, IndexT toMip)
 {
 	n_assert(!this->inBeginPass);
 	VkImageBlit blit;
@@ -1694,7 +1715,7 @@ VkRenderDevice::Blit(const Ptr<CoreGraphics::Texture>& from, Math::rectangle<Siz
 	blit.dstOffsets[0] = { toRegion.left, toRegion.top, 0 };
 	blit.dstOffsets[1] = { toRegion.right, toRegion.bottom, 1 };
 	blit.dstSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, (uint32_t)toMip, 0, 1 };
-	vkCmdBlitImage(CommandBufferGetVk(this->mainCmdDrawBuffer), from->GetVkImage(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, to->GetVkImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit, VK_FILTER_LINEAR);
+	vkCmdBlitImage(CommandBufferGetVk(this->mainCmdDrawBuffer), from, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, to, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit, VK_FILTER_LINEAR);
 }
 
 } // namespace Vulkan

@@ -158,13 +158,13 @@ VkPipelineDatabase::GetCompiledPipeline()
 		this->ct5->initial)
 	{
 		// get fragment of graphics pipeline residing in shader
-		const VkShaderProgram::VkShaderProgramRuntimeInfo& rtInfo = CoreGraphics::shaderPool->Get<3>(this->currentShaderProgram.id24).Get<2>(this->currentShaderProgram.id32);
+		const VkShaderProgramRuntimeInfo& rtInfo = CoreGraphics::shaderPool->Get<3>(this->currentShaderProgram.shaderId).Get<2>(this->currentShaderProgram.programId);
 		VkGraphicsPipelineCreateInfo shaderInfo = rtInfo.info;
 
 		// get other fragment from framebuffer
-		VkGraphicsPipelineCreateInfo passInfo = this->currentPass->framebufferPipelineInfo;
+		VkGraphicsPipelineCreateInfo passInfo = PassGetVkFramebufferInfo(this->currentPass);
 		VkPipelineColorBlendStateCreateInfo colorBlendInfo = *shaderInfo.pColorBlendState;
-		colorBlendInfo.attachmentCount = this->currentPass->GetSubpasses()[this->currentSubpass].attachments.Size();
+		colorBlendInfo.attachmentCount = PassGetAttachments(this->currentPass, this->currentSubpass).Size();
 
 		// use shader, framebuffer, vertex input and layout, input assembly and pass info to construct a complete pipeline
 		VkGraphicsPipelineCreateInfo info =
@@ -184,7 +184,7 @@ VkPipelineDatabase::GetCompiledPipeline()
 			&colorBlendInfo,
 			shaderInfo.pDynamicState,
 			shaderInfo.layout,
-			this->currentPass->GetVkRenderPass(),
+			PassGetVkRenderPassBeginInfo(this->currentPass).renderPass,
 			this->currentSubpass,
 			VK_NULL_HANDLE,
 			-1
@@ -210,9 +210,9 @@ VkPipelineDatabase::GetCompiledPipeline()
 void
 VkPipelineDatabase::Reset()
 {
-	this->currentPass = nullptr;
+	this->currentPass = CoreGraphics::PassId::Invalid();
 	this->currentSubpass = -1;
-	this->currentShaderProgram = Ids::InvalidId64;
+	this->currentShaderProgram = CoreGraphics::ShaderProgramId::Invalid();
 	this->currentVertexLayout = 0;
 	this->currentInputAssemblyInfo = 0;
 	this->currentPipeline = VK_NULL_HANDLE;

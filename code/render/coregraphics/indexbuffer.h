@@ -14,7 +14,7 @@
 namespace CoreGraphics
 {
 
-ID_32_24_8_TYPE(IndexBufferId);
+RESOURCE_ID_TYPE(IndexBufferId);
 
 struct IndexBufferCreateInfo
 {

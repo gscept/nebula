@@ -58,10 +58,10 @@ ResourceMemoryPool::ReserveResource(const ResourceName& res, const Util::StringA
 		this->tags[instanceId] = tag;
 		this->states[instanceId] = Resource::Pending;
 
-		ret.id24_0 = instanceId;
-		ret.id8_0 = this->uniqueId;
-		ret.id24_1 = resourceId.id24;
-		ret.id8_1 = resourceId.id8;
+		ret.poolId = instanceId;
+		ret.poolIndex = this->uniqueId;
+		ret.allocId = resourceId.id24;
+		ret.allocType = resourceId.id8;
 		
 		if (res.IsValid()) this->ids.Add(res, ret);
 	}
@@ -71,7 +71,7 @@ ResourceMemoryPool::ReserveResource(const ResourceName& res, const Util::StringA
 		ret = this->ids.ValueAtIndex(i);
 
 		// bump usage
-		this->usage[ret.id24_0]++;
+		this->usage[ret.poolId]++;
 	}
 	return ret;
 }
@@ -86,12 +86,12 @@ ResourceMemoryPool::DiscardResource(const Resources::ResourceId id)
 	ResourcePool::DiscardResource(id);
 
 	// if usage reaches 0, add it to the list of pending unloads
-	if (this->usage[id.id24_0] == 0)
+	if (this->usage[id.poolId] == 0)
 	{
 		// unload immediately
-		this->Unload(id.id24_1);
-		this->DeallocObject(id.id24_1);
-		this->resourceInstanceIndexPool.Dealloc(id.id24_0);
+		this->Unload(id.allocId);
+		this->DeallocObject(id.allocId);
+		this->resourceInstanceIndexPool.Dealloc(id.poolId);
 	}
 }
 
@@ -109,9 +109,9 @@ ResourceMemoryPool::DiscardByTag(const Util::StringAtom& tag)
 			const ResourceId& id = this->ids[this->names[i]];
 
 			// unload
-			this->Unload(id.id24_1);
-			this->DeallocObject(id.id24_1);
-			this->resourceInstanceIndexPool.Dealloc(id.id24_0);
+			this->Unload(id.allocId);
+			this->DeallocObject(id.allocId);
+			this->resourceInstanceIndexPool.Dealloc(id.poolId);
 			this->tags[i] = "";
 		}
 	}

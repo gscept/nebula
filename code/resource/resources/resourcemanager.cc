@@ -178,7 +178,7 @@ Core::Rtti*
 ResourceManager::GetType(const Resources::ResourceId id)
 {
 	// get id of loader
-	const Ids::Id8 loaderid = id.id8;
+	const Ids::Id8 loaderid = id.poolIndex;
 
 	// get resource loader by extension
 	n_assert(this->pools.Size() > loaderid);

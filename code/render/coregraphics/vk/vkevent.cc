@@ -106,8 +106,8 @@ CreateEvent(const EventCreateInfo& info)
 void
 DestroyEvent(const EventId id)
 {
-	VkEventInfo& vkInfo = eventAllocator.Get<1>(id);
-	const VkDevice& dev = eventAllocator.Get<0>(id);
+	VkEventInfo& vkInfo = eventAllocator.Get<1>(id.id24);
+	const VkDevice& dev = eventAllocator.Get<0>(id.id24);
 	vkDestroyEvent(dev, vkInfo.event, nullptr);
 	eventAllocator.DeallocObject(id.id24);
 }

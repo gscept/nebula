@@ -12,7 +12,7 @@
 namespace CoreGraphics
 {
 
-ID_32_24_8_TYPE(TextureId);
+RESOURCE_ID_TYPE(TextureId);
 
 /// texture types
 enum TextureType

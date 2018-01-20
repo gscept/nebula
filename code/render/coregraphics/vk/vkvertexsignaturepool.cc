@@ -46,16 +46,16 @@ VkVertexSignaturePool::VertexLayoutBind(const CoreGraphics::VertexLayoutId id)
 const SizeT
 VkVertexSignaturePool::VertexLayoutGetSize(const CoreGraphics::VertexLayoutId id)
 {
-	return this->Get<3>(id.id24).vertexByteSize;
+	return this->Get<3>(id.allocId).vertexByteSize;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 Resources::ResourcePool::LoadStatus
-VkVertexSignaturePool::LoadFromMemory(const Ids::Id24 id, void* info)
+VkVertexSignaturePool::LoadFromMemory(const Ids::Id24 id, const void* info)
 {
-	CoreGraphics::VertexLayoutInfo* vertexLayoutInfo = (CoreGraphics::VertexLayoutInfo*)info;
+	const CoreGraphics::VertexLayoutInfo* vertexLayoutInfo = static_cast<const CoreGraphics::VertexLayoutInfo*>(info);
 	Util::HashTable<DerivativeId, DerivativeLayout>& hashTable = this->Get<0>(id);
 	VkPipelineVertexInputStateCreateInfo& vertexInfo = this->Get<1>(id);
 	BindInfo& bindInfo = this->Get<2>(id);
@@ -135,9 +135,9 @@ VkVertexSignaturePool::Unload(const Ids::Id24 id)
 VkPipelineVertexInputStateCreateInfo*
 VkVertexSignaturePool::GetDerivativeLayout(const CoreGraphics::VertexLayoutId layout, const CoreGraphics::ShaderProgramId shader)
 {
-	Util::HashTable<DerivativeId, DerivativeLayout>& hashTable = this->Get<0>(layout.id24);
-	const BindInfo& bindInfo = this->Get<2>(layout.id24);
-	const VkPipelineVertexInputStateCreateInfo& baseInfo = this->Get<1>(layout.id24);
+	Util::HashTable<DerivativeId, DerivativeLayout>& hashTable = this->Get<0>(layout.allocId);
+	const BindInfo& bindInfo = this->Get<2>(layout.allocId);
+	const VkPipelineVertexInputStateCreateInfo& baseInfo = this->Get<1>(layout.allocId);
 	const Ids::Id64 shaderHash = shader.HashCode64();
 	if (hashTable.Contains(shaderHash))
 	{

@@ -11,7 +11,6 @@
 #include "coregraphics/shadersemantics.h"
 #include "coregraphics/config.h"
 #include "resources/resourcemanager.h"
-#include "../coregraphics.h"
 
 namespace Base
 {
@@ -27,7 +26,7 @@ using namespace Resources;
 /**
 */
 ShaderServerBase::ShaderServerBase() :
-	sharedVariableShader(Ids::InvalidId64),
+	sharedVariableShaderState(Ids::InvalidId64),
 	objectIdShaderVar(Ids::InvalidId32),
     curShaderFeatureBits(0),        
     activeShader(NULL),
@@ -82,8 +81,10 @@ ShaderServerBase::Open()
     // create standard shader for access to shared variables
     if (this->shaders.Contains(ResourceName("shd:shared")))
     {
-		this->sharedVariableShader = CoreGraphics::shaderPool->CreateState("shd:shared", { NEBULAT_DEFAULT_GROUP });
-        n_assert(this->sharedVariableShader != Ids::InvalidId64);
+		this->sharedVariableShader = this->GetShader("shd:shared");
+		n_assert(this->sharedVariableShader != ShaderId::Invalid());
+		this->sharedVariableShaderState = CoreGraphics::shaderPool->CreateState(this->sharedVariableShader, { NEBULAT_DEFAULT_GROUP }, false);
+        n_assert(this->sharedVariableShaderState != ShaderStateId::Invalid());
 
         // get shared object id shader variable
 #if !__WII__ && !__PS3__
@@ -105,9 +106,9 @@ ShaderServerBase::Close()
     n_assert(this->isOpen);
 
     // release shared instance shader
-    if (this->sharedVariableShader != Ids::InvalidId64)
+    if (this->sharedVariableShaderState != ShaderStateId::Invalid())
     {        
-		CoreGraphics::shaderPool->DestroyState(this->sharedVariableShader);
+		CoreGraphics::shaderPool->DestroyState(this->sharedVariableShaderState);
     } 
 
     // unload all currently loaded shaders
@@ -193,7 +194,7 @@ ShaderServerBase::ApplyObjectId(IndexT i)
 #endif
     if (this->objectIdShaderVar != Ids::InvalidId32)
     {
-		CoreGraphics::shaderPool->ShaderVariableSet(this->objectIdShaderVar, this->sharedVariableShader, ((float)i) / 255.0f);
+		CoreGraphics::shaderPool->ShaderVariableSet(this->objectIdShaderVar, this->sharedVariableShaderState, ((float)i) / 255.0f);
     }       
 }
 
@@ -215,16 +216,14 @@ ShaderServerBase::LoadShader(const Resources::ResourceName& shdName)
 {
 	n_assert(shdName.IsValid());
 	CoreGraphics::shaderPool->CreateResource(shdName, "shaders"_atm,
-		[this, shdName](ResourceId id)
+		[this, shdName](const ResourceId id)
 	{
-		CoreGraphics::ShaderId sid;
-		sid.id32 = id.id32;
-		sid.id24 = id.id24;
-		sid.id8 = ShaderIdType;
+		CoreGraphics::ShaderId sid = id;
+		sid.allocType = ShaderIdType;
 		this->shaders.Add(shdName, id);
 		this->shaderIds.Add(shdName, sid);
 	},
-		[shdName](ResourceId id)
+		[shdName](const ResourceId id)
 	{
 		n_error("Failed to load shader '%s'!", shdName.Value());
 	}, true);

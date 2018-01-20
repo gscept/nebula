@@ -10,6 +10,7 @@
 #include "resources/resourcememorypool.h"
 #include "coregraphics/gpubuffertypes.h"
 #include "coregraphics/indextype.h"
+#include "coregraphics/indexbuffer.h"
 #include "vulkan/vulkan.h"
 namespace Vulkan
 {
@@ -19,11 +20,11 @@ class VkMemoryIndexBufferPool : public Resources::ResourceMemoryPool
 public:
 
 	/// bind index buffer
-	void IndexBufferBind(const Resources::ResourceId id, const IndexT offset);
+	void IndexBufferBind(const CoreGraphics::IndexBufferId id, const IndexT offset);
 	/// map the vertices for CPU access
-	void* Map(const Resources::ResourceId id, CoreGraphics::GpuBufferTypes::MapType mapType);
+	void* Map(const CoreGraphics::IndexBufferId id, CoreGraphics::GpuBufferTypes::MapType mapType);
 	/// unmap the resource
-	void Unmap(const Resources::ResourceId id);
+	void Unmap(const CoreGraphics::IndexBufferId id);
 
 	/// update resource
 	LoadStatus LoadFromMemory(const Ids::Id24 id, const void* info);

@@ -11,7 +11,7 @@
 #include "coregraphics/vertexbuffer.h"
 #include "coregraphics/indexbuffer.h"
 #include "coregraphics/mesh.h"
-#include "coregraphics/vertexlayoutserver.h"
+#include "coregraphics/vertexsignaturepool.h"
 #include "coregraphics/vertexcomponent.h"
 #include "threading/thread.h"
 #include "coregraphics/shaderserver.h"
@@ -134,7 +134,7 @@ void
 VkShapeRenderer::Close()
 {
 	n_assert(this->IsOpen());
-	n_assert(this->shapeShaderState != ShaderId::Invalid());
+	n_assert(this->shapeShaderState != ShaderStateId::Invalid());
 
 	this->diffuseColor = 0;
 	this->model = 0;
@@ -421,7 +421,7 @@ VkShapeRenderer::DrawBufferedIndexedPrimitives()
 		
 		renderDevice->SetPrimitiveTopology(topo);
 		VertexLayoutBind(this->vertexLayout);
-		IndexBufferBind(this->ibo);
+		IndexBufferBind(this->ibo, 0);
 		VertexBufferBind(this->vbo, 0, 0);
 		renderDevice->SetPrimitiveGroup(group);
 
@@ -443,7 +443,7 @@ void
 VkShapeRenderer::CreateBoxShape()
 {
 	this->shapeMeshResources[RenderShape::Box] = CreateResource("msh:system/box.nvx2", "render_system", nullptr, nullptr, true);
-	this->shapeMeshes[RenderShape::Box] = MeshId(this->shapeMeshResources[RenderShape::Box].id24);
+	this->shapeMeshes[RenderShape::Box] = MeshId(this->shapeMeshResources[RenderShape::Box].allocId);
 }
 
 //------------------------------------------------------------------------------
@@ -453,7 +453,7 @@ void
 VkShapeRenderer::CreateSphereShape()
 {
 	this->shapeMeshResources[RenderShape::Sphere] = CreateResource("msh:system/sphere.nvx2", "render_system", nullptr, nullptr, true);
-	this->shapeMeshes[RenderShape::Sphere] = MeshId(this->shapeMeshResources[RenderShape::Sphere].id24);
+	this->shapeMeshes[RenderShape::Sphere] = MeshId(this->shapeMeshResources[RenderShape::Sphere].allocId);
 }
 
 //------------------------------------------------------------------------------
@@ -463,7 +463,7 @@ void
 VkShapeRenderer::CreateCylinderShape()
 {
 	this->shapeMeshResources[RenderShape::Cylinder] = CreateResource("msh:system/cylinder.nvx2", "render_system", nullptr, nullptr, true);
-	this->shapeMeshes[RenderShape::Cylinder] = MeshId(this->shapeMeshResources[RenderShape::Cylinder].id24);
+	this->shapeMeshes[RenderShape::Cylinder] = MeshId(this->shapeMeshResources[RenderShape::Cylinder].allocId);
 }
 
 //------------------------------------------------------------------------------
@@ -473,7 +473,7 @@ void
 VkShapeRenderer::CreateTorusShape()
 {
 	this->shapeMeshResources[RenderShape::Torus] = CreateResource("msh:system/torus.nvx2", "render_system", nullptr, nullptr, true);
-	this->shapeMeshes[RenderShape::Torus] = MeshId(this->shapeMeshResources[RenderShape::Torus].id24);
+	this->shapeMeshes[RenderShape::Torus] = MeshId(this->shapeMeshResources[RenderShape::Torus].allocId);
 }
 
 //------------------------------------------------------------------------------
@@ -483,7 +483,7 @@ void
 VkShapeRenderer::CreateConeShape()
 {
 	this->shapeMeshResources[RenderShape::Cone] = CreateResource("msh:system/cone.nvx2", "render_system", nullptr, nullptr, true);
-	this->shapeMeshes[RenderShape::Cone] = MeshId(this->shapeMeshResources[RenderShape::Cone].id24);
+	this->shapeMeshes[RenderShape::Cone] = MeshId(this->shapeMeshResources[RenderShape::Cone].allocId);
 }
 
 } // namespace Vulkan

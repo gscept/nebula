@@ -16,7 +16,7 @@
 namespace CoreGraphics
 {
 
-ID_32_24_8_TYPE(VertexBufferId);
+RESOURCE_ID_TYPE(VertexBufferId);
 
 struct VertexBufferCreateInfo
 {

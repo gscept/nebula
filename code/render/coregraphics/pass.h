@@ -77,5 +77,8 @@ void PassEnd(const PassId& id);
 /// called when window is resized
 void PassWindowResizeCallback(const PassId& id);
 
+/// get number of color attachments for pass and subpass
+const Util::Array<CoreGraphics::RenderTextureId>& PassGetAttachments(const CoreGraphics::PassId& id, const IndexT subpass);
+
 } // namespace CoreGraphics
 

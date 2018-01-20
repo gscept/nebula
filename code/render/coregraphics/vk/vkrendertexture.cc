@@ -446,7 +446,7 @@ RenderTextureBlit(const CoreGraphics::RenderTextureId id, IndexT fromMip, IndexT
 {
 	const VkRenderTextureLoadInfo& loadInfo = renderTextureAllocator.Get<0>(id.id24);
 	n_assert(loadInfo.mips > (uint32_t)fromMip && loadInfo.mips > (uint32_t)toMip);
-	RenderTextureGenerateMipHelper(id, fromMip, target == Ids::InvalidId64 ? id : target, toMip);
+	RenderTextureGenerateMipHelper(id, fromMip, target == CoreGraphics::RenderTextureId::Invalid() ? id : target, toMip);
 }
 
 //------------------------------------------------------------------------------

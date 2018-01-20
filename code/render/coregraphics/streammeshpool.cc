@@ -76,14 +76,14 @@ StreamMeshPool::Unload(const Ids::Id24 id)
 	n_assert(id != Ids::InvalidId24);
 	const MeshCreateInfo& msh = meshPool->GetSafe<0>(id);
 
-	if (msh.indexBuffer != Ids::InvalidId64) CoreGraphics::iboPool->Unload(msh.indexBuffer.id24);
-	if (msh.vertexBuffer != Ids::InvalidId64) CoreGraphics::vboPool->Unload(msh.vertexBuffer.id24);
+	if (msh.indexBuffer != IndexBufferId::Invalid()) CoreGraphics::iboPool->Unload(msh.indexBuffer.allocId);
+	if (msh.vertexBuffer != VertexBufferId::Invalid()) CoreGraphics::vboPool->Unload(msh.vertexBuffer.allocId);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-Ids::Id32
+Resources::ResourceUnknownId
 StreamMeshPool::AllocObject()
 {
 	return meshPool->AllocObject();
@@ -93,7 +93,7 @@ StreamMeshPool::AllocObject()
 /**
 */
 void
-StreamMeshPool::DeallocObject(const Ids::Id32 id)
+StreamMeshPool::DeallocObject(const Resources::ResourceUnknownId id)
 {
 	meshPool->DeallocObject(id);
 }
@@ -164,7 +164,6 @@ StreamMeshPool::SetupMeshFromN3d3(const Ptr<Stream>& stream, const Ids::Id24 res
 void
 StreamMeshPool::MeshBind(const Resources::ResourceId id)
 {
-	const Ids::Id24 resId = Ids::Id::GetBig(Ids::Id::GetLow(id));
 	meshPool->EnterGet();
 	const MeshCreateInfo& msh = meshPool->Get<0>(id);
 

@@ -59,6 +59,26 @@ VkShaderVariableBindToPushConstantRange(const CoreGraphics::ShaderVariableId var
 //------------------------------------------------------------------------------
 /**
 */
+uint32_t
+VkShaderVariableGetBinding(const CoreGraphics::ShaderVariableId var, VkShaderVariableAllocator& allocator)
+{
+	const VkShaderVariableResourceBinding& binding = allocator.Get<1>(var.id);
+	return binding.setBinding;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+VkDescriptorSet
+VkShaderVariableGetDescriptorSet(const CoreGraphics::ShaderVariableId var, VkShaderVariableAllocator& allocator)
+{
+	const VkShaderVariableResourceBinding& binding = allocator.Get<1>(var.id);
+	return binding.set;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 VkShaderVariableSetup(AnyFX::VkVariable* var, Ids::Id24 id, VkShaderVariableAllocator& allocator, const VkDescriptorSet set)
 {
@@ -365,7 +385,7 @@ SetBoolArray(VkShaderVariableVariableBinding& bind, const bool* values, SizeT co
 void
 SetTexture(VkShaderVariableVariableBinding& bind, VkShaderVariableResourceBinding& res, Util::Array<VkWriteDescriptorSet>& writes, const CoreGraphics::TextureId tex)
 {
-	VkTextureRuntimeInfo& info = textureAllocator.GetSafe<0>(tex.id24);
+	VkTextureRuntimeInfo& info = textureAllocator.GetSafe<0>(tex.allocId);
 
 	// only change if there is a difference
 	if (info.view != res.write.img.imageView)
@@ -480,7 +500,7 @@ SetShaderReadWriteTexture(VkShaderVariableResourceBinding& bind, Util::Array<VkW
 void
 SetShaderReadWriteTexture(VkShaderVariableResourceBinding& bind, Util::Array<VkWriteDescriptorSet>& writes, const CoreGraphics::TextureId tex)
 {
-	VkTextureRuntimeInfo& info = textureAllocator.GetSafe<0>(tex.id24);
+	VkTextureRuntimeInfo& info = textureAllocator.GetSafe<0>(tex.allocId);
 	if (info.view != bind.write.img.imageView)
 	{
 		VkWriteDescriptorSet set;

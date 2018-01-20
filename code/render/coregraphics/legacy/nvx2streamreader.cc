@@ -9,6 +9,7 @@
 #include "coregraphics/memoryvertexbufferpool.h"
 #include "coregraphics/memoryindexbufferpool.h"
 #include "resources/resourcemanager.h"
+#include "coregraphics/config.h"
 
 #if NEBULA3_LEGACY_SUPPORT
 namespace Legacy
@@ -98,8 +99,8 @@ Nvx2StreamReader::Close()
     this->groupDataPtr = nullptr;
     this->vertexDataPtr = nullptr;
     this->indexDataPtr = nullptr;
-	this->ibo = Ids::InvalidId64;
-	this->vbo = Ids::InvalidId64;
+	this->ibo = IndexBufferId::Invalid();
+	this->vbo = VertexBufferId::Invalid();
     this->primGroups.Clear();
     this->vertexComponents.Clear();
     stream->Unmap();
@@ -283,8 +284,9 @@ Nvx2StreamReader::SetupVertexBuffer(const Resources::ResourceName& name)
 	vboInfo.comps = this->vertexComponents;
 	vboInfo.data = this->vertexDataPtr;
 	vboInfo.dataSize = this->vertexDataSize;
-	this->vbo = Ids::Id64(id);
-	ResourcePool::LoadStatus stat = vboPool->LoadFromMemory(this->vbo.id24, &vboInfo);
+	this->vbo = id;
+	this->vbo.allocType = VertexBufferIdType;
+	ResourcePool::LoadStatus stat = vboPool->LoadFromMemory(this->vbo.allocId, &vboInfo);
     n_assert(stat == ResourcePool::Success);
 }
 
@@ -310,8 +312,9 @@ Nvx2StreamReader::SetupIndexBuffer(const Resources::ResourceName& name)
 	iboInfo.type = IndexType::Index32;
 	iboInfo.data = this->indexDataPtr;
 	iboInfo.dataSize = this->indexDataSize;
-	this->ibo = Ids::Id64(id);
-	ResourcePool::LoadStatus stat = iboPool->LoadFromMemory(this->ibo.id24, &iboInfo);
+	this->ibo = id;
+	this->ibo.allocType = IndexBufferIdType;
+	ResourcePool::LoadStatus stat = iboPool->LoadFromMemory(this->ibo.allocId, &iboInfo);
 	n_assert(stat == ResourcePool::Success);
 }
 

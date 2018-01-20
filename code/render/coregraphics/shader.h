@@ -18,9 +18,9 @@ struct TextureId;
 struct ShaderRWTextureId;
 struct ShaderRWBufferId;
 
-ID_32_24_8_TYPE(ShaderId);				// 32 bits container, 24 bits resource, 8 bits type
-ID_32_24_8_TYPE(ShaderStateId);			// 32 bits state, 24 bits shader, 8 bits type
-ID_32_24_8_TYPE(ShaderProgramId);		// 32 bits program, 24 bits shader, 8 bits type
+RESOURCE_ID_TYPE(ShaderId);				// 32 bits container, 24 bits resource, 8 bits type
+ID_24_8_24_8_NAMED_TYPE(ShaderStateId, shaderId, shaderType, stateId, stateType);		// 32 bits state, 24 bits shader, 8 bits type
+ID_24_8_24_8_NAMED_TYPE(ShaderProgramId, shaderId, shaderType, programId, programType);		// 32 bits program, 24 bits shader, 8 bits type
 ID_32_TYPE(ShaderVariableId);			// variable id within state, must keep track of state since state id is 64 bit
 ID_32_TYPE(ProgramId);
 
