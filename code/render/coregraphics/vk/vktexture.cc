@@ -17,7 +17,7 @@ VkTextureAllocator textureAllocator(0x00FFFFFF);
 const VkImage
 TextureGetVk(const CoreGraphics::TextureId id)
 {
-	return textureAllocator.GetSafe<1>(id.id24).img;
+	return textureAllocator.GetSafe<1>(id.allocId).img;
 }
 
 } // namespace Vulkan

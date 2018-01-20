@@ -21,7 +21,8 @@ const VertexBufferId
 CreateVertexBuffer(VertexBufferCreateInfo info)
 {
 	VertexBufferId id = vboPool->ReserveResource(info.name, info.tag);
-	vboPool->LoadFromMemory(id.id24, &info);
+	id.allocType = VertexBufferIdType;
+	vboPool->LoadFromMemory(id.allocId, &info);
 	return id;
 }
 
@@ -31,7 +32,7 @@ CreateVertexBuffer(VertexBufferCreateInfo info)
 void
 DestroyVertexBuffer(const VertexBufferId id)
 {
-	vboPool->DiscardResource(id.id24);
+	vboPool->DiscardResource(id);
 }
 
 //------------------------------------------------------------------------------
@@ -40,7 +41,7 @@ DestroyVertexBuffer(const VertexBufferId id)
 inline void
 VertexBufferBind(const VertexBufferId id, const IndexT slot, const IndexT vertexOffset)
 {
-	vboPool->VertexBufferBind(id.id24, slot, vertexOffset);
+	vboPool->VertexBufferBind(id, slot, vertexOffset);
 }
 
 //------------------------------------------------------------------------------
@@ -76,7 +77,7 @@ VertexBufferUnlock(const VertexBufferId id, const PtrDiff offset, const PtrDiff 
 inline void*
 VertexBufferMap(const VertexBufferId id, const CoreGraphics::GpuBufferTypes::MapType type)
 {
-	return vboPool->Map(id.id24, type);
+	return vboPool->Map(id, type);
 }
 
 //------------------------------------------------------------------------------
@@ -85,7 +86,7 @@ VertexBufferMap(const VertexBufferId id, const CoreGraphics::GpuBufferTypes::Map
 inline void
 VertexBufferUnmap(const VertexBufferId id)
 {
-	vboPool->Unmap(id.id24);
+	vboPool->Unmap(id);
 }
 
 }

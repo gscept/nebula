@@ -55,7 +55,7 @@ VkStreamTexturePool::Setup()
 //------------------------------------------------------------------------------
 /**
 */
-inline Ids::Id32
+inline Resources::ResourceUnknownId
 VkStreamTexturePool::AllocObject()
 {
 	return texturePool->AllocObject();
@@ -65,7 +65,7 @@ VkStreamTexturePool::AllocObject()
 /**
 */
 inline void
-VkStreamTexturePool::DeallocObject(const Ids::Id32 id)
+VkStreamTexturePool::DeallocObject(const Resources::ResourceUnknownId id)
 {
 	texturePool->DeallocObject(id);
 }
@@ -90,6 +90,7 @@ VkStreamTexturePool::LoadFromStream(const Ids::Id24 res, const Util::StringAtom&
 		texturePool->EnterGet();
 		VkTextureRuntimeInfo& runtimeInfo = texturePool->Get<0>(res);
 		VkTextureLoadInfo& loadInfo = texturePool->Get<1>(res);
+		loadInfo.dev = VkRenderDevice::Instance()->GetCurrentDevice();
 		texturePool->LeaveGet();
 
 		VkPhysicalDevice physicalDev = VkRenderDevice::Instance()->GetCurrentPhysicalDevice();
@@ -152,7 +153,7 @@ VkStreamTexturePool::LoadFromStream(const Ids::Id24 res, const Util::StringAtom&
 
 		// allocate memory backing
 		uint32_t alignedSize;
-		VkUtilities::AllocateImageMemory(loadInfo.img, loadInfo.mem, VkMemoryPropertyFlagBits(0), alignedSize);
+		VkUtilities::AllocateImageMemory(loadInfo.dev, loadInfo.img, loadInfo.mem, VkMemoryPropertyFlagBits(0), alignedSize);
 		vkBindImageMemory(dev, loadInfo.img, loadInfo.mem, 0);
 
 		VkScheduler* scheduler = VkScheduler::Instance();

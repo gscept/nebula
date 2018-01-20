@@ -3,6 +3,7 @@
 //  (C) 2017 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
+#include "config.h"
 #include "indexbuffer.h"
 #include "coregraphics/memoryindexbufferpool.h"
 namespace CoreGraphics
@@ -17,7 +18,8 @@ const IndexBufferId
 CreateIndexBuffer(IndexBufferCreateInfo info)
 {
 	IndexBufferId id = iboPool->ReserveResource(info.name, info.tag);
-	iboPool->LoadFromMemory(id.id24, &info);
+	id.allocType = IndexBufferIdType;
+	iboPool->LoadFromMemory(id.allocId, &info);
 	return id;
 }
 
@@ -27,7 +29,7 @@ CreateIndexBuffer(IndexBufferCreateInfo info)
 inline void
 DestroyIndexBuffer(const IndexBufferId id)
 {
-	iboPool->DiscardResource(id.id24);
+	iboPool->DiscardResource(id);
 }
 
 //------------------------------------------------------------------------------
@@ -36,7 +38,7 @@ DestroyIndexBuffer(const IndexBufferId id)
 inline void
 IndexBufferBind(const IndexBufferId id, const IndexT offset)
 {
-	iboPool->IndexBufferBind(id.id24, offset);
+	iboPool->IndexBufferBind(id, offset);
 }
 
 //------------------------------------------------------------------------------
@@ -71,7 +73,7 @@ IndexBufferUnlock(const IndexBufferId id, const PtrDiff offset, const PtrDiff ra
 inline void*
 IndexBufferMap(const IndexBufferId id, const CoreGraphics::GpuBufferTypes::MapType type)
 {
-	return iboPool->Map(id.id24, type);
+	return iboPool->Map(id, type);
 }
 
 //------------------------------------------------------------------------------
@@ -80,7 +82,7 @@ IndexBufferMap(const IndexBufferId id, const CoreGraphics::GpuBufferTypes::MapTy
 inline void
 IndexBufferUnmap(const IndexBufferId id)
 {
-	iboPool->Unmap(id.id24);
+	iboPool->Unmap(id);
 }
 
 } // CoreGraphics

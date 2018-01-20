@@ -43,9 +43,9 @@ private:
 	void Unload(const Ids::Id24 id) override;
 
 	/// allocate object
-	Ids::Id32 AllocObject() override;
+	Resources::ResourceUnknownId AllocObject() override;
 	/// deallocate object
-	void DeallocObject(const Ids::Id32 id) override;
+	void DeallocObject(const Resources::ResourceUnknownId id) override;
 
 #if NEBULA3_LEGACY_SUPPORT
 	/// setup mesh from nvx2 file in memory
@@ -60,10 +60,8 @@ protected:
 	GpuBufferTypes::Usage usage;
 	GpuBufferTypes::Access access;
 
-	Ids::Id24 activeMesh;
-
+	Resources::ResourceId activeMesh;
 };
-
 
 //------------------------------------------------------------------------------
 /**

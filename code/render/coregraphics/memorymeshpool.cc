@@ -62,9 +62,9 @@ MemoryMeshPool::BindMesh(const MeshId id, const IndexT prim)
 {
 	RenderDevice* renderDevice = RenderDevice::Instance();
 #if _DEBUG
-	n_assert(id.id8 == MeshIdType);
+	n_assert(id.allocType == MeshIdType);
 #endif
-	MeshCreateInfo& inf = this->allocator.Get<0>(id.id24);
+	MeshCreateInfo& inf = this->allocator.Get<0>(id.allocId);
 	VertexBufferBind(inf.vertexBuffer, 0, inf.primitiveGroups[prim].GetBaseVertex());
 	if (inf.indexBuffer != Ids::InvalidId64)
 		IndexBufferBind(inf.indexBuffer, inf.primitiveGroups[prim].GetBaseIndex());
@@ -76,7 +76,7 @@ MemoryMeshPool::BindMesh(const MeshId id, const IndexT prim)
 const SizeT
 MemoryMeshPool::GetPrimitiveGroups(const MeshId id)
 {
-	MeshCreateInfo& inf = this->allocator.Get<0>(id.id24);
+	MeshCreateInfo& inf = this->allocator.Get<0>(id.allocId);
 	return inf.primitiveGroups.Size();
 }
 

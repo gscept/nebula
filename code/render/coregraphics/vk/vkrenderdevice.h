@@ -14,6 +14,7 @@
 #include "vksubcontexthandler.h"
 #include "vkcmdbuffer.h"
 #include "vkshaderprogram.h"
+#include "vkshaderstate.h"
 #include "coregraphics/glfw/glfwwindow.h"
 #include <array>
 
@@ -49,7 +50,7 @@ public:
 	/// set the current vertex stream source
 	void SetStreamVertexBuffer(IndexT streamIndex, const VkBuffer vb, IndexT offsetVertexIndex);
 	/// set current vertex layout
-	void SetVertexLayout(const VkPipelineVertexInputStateCreateInfo* vl);
+	void SetVertexLayout(VkPipelineVertexInputStateCreateInfo* vl);
 	/// set current index buffer
 	void SetIndexBuffer(const VkBuffer ib, IndexT offsetIndex, const CoreGraphics::IndexType::Code type);
 	/// set the type of topology to be used
@@ -89,6 +90,8 @@ public:
 	void Blit(const CoreGraphics::RenderTextureId from, Math::rectangle<SizeT> fromRegion, IndexT fromMip, const CoreGraphics::RenderTextureId to, Math::rectangle<SizeT> toRegion, IndexT toMip);
 	/// blit between textures
 	void Blit(const CoreGraphics::TextureId from, Math::rectangle<SizeT> fromRegion, IndexT fromMip, const CoreGraphics::TextureId to, Math::rectangle<SizeT> toRegion, IndexT toMip);
+	/// perform actual blit
+	void Blit(const VkImage from, Math::rectangle<SizeT> fromRegion, IndexT fromMip, const VkImage to, Math::rectangle<SizeT> toRegion, IndexT toMip);
 
 	/// save a screenshot to the provided stream
 	CoreGraphics::ImageFileFormat::Code SaveScreenshot(CoreGraphics::ImageFileFormat::Code fmt, const Ptr<IO::Stream>& outStream);
@@ -104,20 +107,22 @@ public:
 	/// get the current device features
 	VkPhysicalDeviceFeatures GetCurrentFeatures() { return this->deviceFeatures[this->currentDevice]; }
 	/// get the currently free pool
-	VkDescriptorPool GetCurrentPool() { return this->descriptorPools[this->currentPool]; }
+	VkDescriptorPool GetCurrentDescriptorPool() { return this->descriptorPools[this->currentPool]; }
 	/// request a new pool, but only use this is if the previous pool is full
-	void RequestPool();
+	void RequestDescriptorPool();
 	/// get queue families
 	const std::array<uint32_t, 4> GetQueueFamilies() { return std::array<uint32_t, 4>{ this->drawQueueFamily, this->computeQueueFamily, this->transferQueueFamily, this->sparseQueueFamily }; }
 	/// get queue from index and family
 	const VkQueue GetQueue(const VkSubContextHandler::SubContextType type, const IndexT index);
+	/// get currently active queue of type
+	const VkQueue GetQueue(const VkSubContextHandler::SubContextType type);
 
 	/// call when window gets resized
 	void DisplayResized(SizeT width, SizeT height);
 	/// returns true if we support parallel transfers
-	static bool AsyncTransferSupported();
+	bool AsyncTransferSupported();
 	/// returns true if we support parallel computes
-	static bool AsyncComputeSupported();
+	bool AsyncComputeSupported();
 
 	/// update descriptors
 	void BindDescriptorsGraphics(const VkDescriptorSet* descriptors, const VkPipelineLayout& layout, uint32_t baseSet, uint32_t setCount, const uint32_t* offsets, uint32_t offsetCount, bool shared = false);
@@ -148,6 +153,9 @@ private:
 	friend struct VkDeferredCommand;
 
 	friend const CoreGraphics::WindowId GLFW::InternalSetupFunction(const CoreGraphics::WindowCreateInfo& info, const Util::Blob& windowData, bool embed);
+	friend void VkShaderProgramApply(VkShaderProgramRuntimeInfo& info);
+	friend void	VkShaderProgramSetupAsCompute(VkShaderProgramSetupInfo& setup, VkShaderProgramRuntimeInfo& runtime);
+	friend void	VkShaderStateCommit(Ids::Id24 currentProgram, Util::Array<VkWriteDescriptorSet>& writes, VkShaderStateRuntimeInfo& stateInfo);
 
 	friend VKAPI_ATTR void VKAPI_CALL NebulaVkAllocCallback(void* userData, uint32_t size, VkInternalAllocationType type, VkSystemAllocationScope scope);
 	friend VKAPI_ATTR void VKAPI_CALL NebulaVkFreeCallback(void* userData, uint32_t size, VkInternalAllocationType type, VkSystemAllocationScope scope);
@@ -164,7 +172,7 @@ private:
 		PipelineBuilt = 16
 	};
 
-	enum StateMode
+	enum VkRenderDeviceStateMode
 	{
 		MainState,			// commands go to the main command buffer
 		SharedState,		// commands are put on all threads, and are immediately sent when a new thread is started
@@ -191,7 +199,7 @@ private:
 	/// sets the current framebuffer layout information
 	void SetFramebufferLayoutInfo(const VkGraphicsPipelineCreateInfo& framebufferLayout);
 	/// sets the current primitive layout information
-	void SetInputLayoutInfo(const VkPipelineInputAssemblyStateCreateInfo* inputLayout);
+	void SetInputLayoutInfo(VkPipelineInputAssemblyStateCreateInfo* inputLayout);
 	/// create a new pipeline (or fetch from cache) and bind to command queue
 	void CreateAndBindGraphicsPipeline();
 	/// bind compute pipeline
@@ -308,8 +316,8 @@ private:
 	VkEvent mainCmdCmpEvent;
 	VkEvent mainCmdTransEvent;
 	
-	VkShaderProgram::PipelineType currentBindPoint;
-	StateMode currentCommandState;
+	VkShaderProgramPipelineType currentBindPoint;
+	VkRenderDeviceStateMode currentCommandState;
 
 	static const SizeT NumDrawThreads = 8;
 	IndexT currentDrawThread;

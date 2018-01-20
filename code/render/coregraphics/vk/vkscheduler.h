@@ -14,6 +14,7 @@
 //------------------------------------------------------------------------------
 #include "vkdeferredcommand.h"
 #include "core/singleton.h"
+#include "util/dictionary.h"
 
 namespace Vulkan
 {

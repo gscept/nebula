@@ -4,6 +4,7 @@
 //  (C) 2013-2016 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
+#include "config.h"
 #include "coregraphics/texture.h"
 #include "coregraphics/memorytexturepool.h"
 
@@ -18,10 +19,10 @@ MemoryTexturePool* texturePool = nullptr;
 inline const TextureId
 CreateTexture(TextureCreateInfo info)
 {
-	Resources::ResourceId id = texturePool->ReserveResource(info.name, info.tag);
-	TextureId ret = id;
-	texturePool->LoadFromMemory(ret.id24, &info);
-	return ret;
+	TextureId id = texturePool->ReserveResource(info.name, info.tag);
+	id.allocType = TextureIdType;
+	texturePool->LoadFromMemory(id.allocId, &info);
+	return id;
 }
 
 //------------------------------------------------------------------------------
@@ -30,7 +31,7 @@ CreateTexture(TextureCreateInfo info)
 inline void
 DestroyTexture(const TextureId id)
 {
-	texturePool->DiscardResource(id.id24);
+	texturePool->DiscardResource(id.allocId);
 }
 
 //------------------------------------------------------------------------------
@@ -53,4 +54,4 @@ TextureUnmap(const TextureId id, IndexT mip)
 	texturePool->Unmap(id, mip);
 }
 
-}
+} // namespace CoreGraphics

@@ -250,4 +250,26 @@ VkSubContextHandler::WaitIdle(const SubContextType type)
 	}
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+VkQueue
+VkSubContextHandler::GetQueue(const SubContextType type)
+{
+	switch (type)
+	{
+	case DrawContextType:
+		return this->drawQueues[this->currentDrawQueue];
+	case ComputeContextType:
+		return this->computeQueues[this->currentComputeQueue];
+	case TransferContextType:
+		return this->transferQueues[this->currentTransferQueue];
+	case SparseContextType:
+		return this->sparseQueues[this->currentSparseQueue];
+	default:
+		n_error("Invalid queue type %d", type);
+		return VK_NULL_HANDLE;
+	}
+}
+
 } // namespace Vulkan

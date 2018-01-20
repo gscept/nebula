@@ -32,9 +32,9 @@ private:
 	void Unload(const Ids::Id24 id);
 
 	/// allocate object
-	Ids::Id32 AllocObject() override;
+	Resources::ResourceUnknownId AllocObject() override;
 	/// deallocate object
-	void DeallocObject(const Ids::Id32 id) override;
+	void DeallocObject(const Resources::ResourceUnknownId id) override;
 };
 
 

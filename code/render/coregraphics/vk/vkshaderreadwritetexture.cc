@@ -108,8 +108,8 @@ CreateShaderRWTexture(const ShaderRWTextureCreateInfo& info)
 void
 DestroyShaderRWTexture(const ShaderRWTextureId id)
 {
-	VkShaderRWTextureLoadInfo& loadInfo = shaderRWTextureAllocator.Get<0>(id);
-	VkShaderRWTextureRuntimeInfo& runtimeInfo = shaderRWTextureAllocator.Get<1>(id);
+	VkShaderRWTextureLoadInfo& loadInfo = shaderRWTextureAllocator.Get<0>(id.id24);
+	VkShaderRWTextureRuntimeInfo& runtimeInfo = shaderRWTextureAllocator.Get<1>(id.id24);
 
 	vkDestroyImageView(loadInfo.dev, runtimeInfo.view, nullptr);
 	vkDestroyImage(loadInfo.dev, loadInfo.img, nullptr);
@@ -142,7 +142,7 @@ RenderTextureWindowResized(const ShaderRWTextureId id)
 void
 ShaderRWTextureClear(const ShaderRWTextureId id, const Math::float4& color)
 {
-	VkShaderRWTextureLoadInfo& loadInfo = shaderRWTextureAllocator.Get<0>(id);
+	VkShaderRWTextureLoadInfo& loadInfo = shaderRWTextureAllocator.Get<0>(id.id24);
 	VkClearColorValue clear;
 	clear.float32[0] = color.x();
 	clear.float32[1] = color.y();

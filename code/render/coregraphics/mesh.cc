@@ -19,10 +19,11 @@ using namespace Ids;
 inline const MeshId
 CreateMesh(const MeshCreateInfo& info)
 {
-	Resources::ResourceId pid = meshPool->ReserveResource(info.name, info.tag);
-	meshPool->LoadFromMemory(pid, &info);
+	MeshId id = meshPool->ReserveResource(info.name, info.tag);
+	id.allocType = MeshIdType;
+	meshPool->LoadFromMemory(id.allocId, &info);
 	
-	return pid;
+	return id;
 }
 
 //------------------------------------------------------------------------------
@@ -31,7 +32,7 @@ CreateMesh(const MeshCreateInfo& info)
 inline void
 DestroyMesh(const MeshId id)
 {
-	meshPool->DiscardResource(id.id24);
+	meshPool->DiscardResource(id.allocId);
 }
 
 //------------------------------------------------------------------------------

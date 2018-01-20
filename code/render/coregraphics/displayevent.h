@@ -67,7 +67,7 @@ public:
     /// get event code
     Code GetEventCode() const;
 	/// get window id
-	IndexT GetWindowId() const;
+	CoreGraphics::WindowId GetWindowId() const;
     /// get absolute mouse pos (in pixels)
     const Math::float2& GetAbsMousePos() const;
     /// get normalized mouse pos (from 0.0 to 1.0)
@@ -214,7 +214,7 @@ DisplayEvent::GetEventCode() const
 //------------------------------------------------------------------------------
 /**
 */
-inline IndexT
+inline CoreGraphics::WindowId
 DisplayEvent::GetWindowId() const
 {
 	return this->windowId;

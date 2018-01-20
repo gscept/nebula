@@ -59,12 +59,14 @@ struct VkShaderStateRuntimeInfo
 
 struct VkShaderStateSetupInfo
 {
+	VkDescriptorPool descPool;
+	bool freeSet;
 	Util::FixedArray<VkDescriptorSet> sets;
 	Util::FixedArray<Util::Dictionary<uint32_t, VkShaderStateBufferMapping>> setBufferMapping;
 	Util::Dictionary<uint32_t, uint32_t> groupIndexMap;
 	Util::Array<uint32_t> offsets;
 	Util::Dictionary<Util::StringAtom, uint32_t> offsetsByName;
-	Util::Dictionary<CoreGraphics::ConstantBufferId, uint32_t> instances;
+	Util::Dictionary<CoreGraphics::ConstantBufferId, CoreGraphics::ConstantBufferSliceId> instances;
 	Util::Dictionary<Util::StringAtom, CoreGraphics::ShaderVariableId> variableMap;
 	VkPipelineLayout pipelineLayout;
 };
@@ -160,12 +162,14 @@ void VkShaderStateDerivativeStateApply(const VkDerivativeShaderStateRuntimeInfo&
 void VkShaderStateDerivativeStateCommit(const VkDerivativeShaderStateRuntimeInfo& info);
 /// reset derivative state
 void VkShaderStateDerivativeStateReset(VkDerivativeShaderStateRuntimeInfo& info);
-
+/// tell device to update a set of descriptor sets
 void VkShaderStateUpdateDescriptorSets(VkDevice dev, Util::Array<VkWriteDescriptorSet>& writes, bool& dirty);
 
 /// set the descriptor set
 void VkShaderStateSetDescriptorSet(CoreGraphics::ShaderStateId id, VkDescriptorSet set, const IndexT group);
 /// set the state to be applied shared (as in shared across several shaders)
 void VkShaderStateSetShared(CoreGraphics::ShaderStateId id, bool b);
+/// add a descriptor set write to be executed the next time this state is used
+void VkShaderStateAddDescriptorSetWrite(CoreGraphics::ShaderStateId id, VkWriteDescriptorSet write);
 
 } // namespace Vulkan

@@ -37,14 +37,6 @@ public:
 	/// commit texture library to shader
 	void BindTextureDescriptorSets();
 
-	/// update global shader variable
-	void SetRenderTarget(const Util::StringAtom& name, const CoreGraphics::TextureId tex);
-
-	/// reloads a shader
-	void ReloadShader(Ptr<CoreGraphics::Shader> shader);
-	/// explicitly loads a shader by resource id
-	void LoadShader(const Resources::ResourceId& shdName);
-
 private:
 
 	Util::FixedPool<uint32_t> texture2DPool;

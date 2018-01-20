@@ -35,7 +35,6 @@ struct VkShaderRWBufferMapInfo
 	SizeT baseOffset;
 };
 
-
 struct ShaderRWBufferStretchInterface
 {
 	CoreGraphics::StretchyBuffer<ShaderRWBufferStretchInterface> resizer;

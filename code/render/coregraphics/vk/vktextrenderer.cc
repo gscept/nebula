@@ -69,19 +69,16 @@ VkTextRenderer::Open()
 	comps.Append(VertexComponent((VertexComponent::SemanticName)0, 0, VertexComponent::Float2, 0));
 	comps.Append(VertexComponent((VertexComponent::SemanticName)1, 0, VertexComponent::Float2, 0));
 	comps.Append(VertexComponent((VertexComponent::SemanticName)2, 0, VertexComponent::Float4, 0));
-	Ptr<MemoryVertexBufferPool> vboLoader = MemoryVertexBufferPool::Create();
-	vboLoader->Setup(comps, MaxNumChars * 6, NULL, 0, VertexBuffer::UsageDynamic, VertexBuffer::AccessWrite, VertexBuffer::SyncingCoherent);
 
-	// create vbo and load
-	this->vbo = VertexBuffer::Create();
-	this->vbo->SetLoader(vboLoader.upcast<ResourceLoader>());
-	this->vbo->SetAsyncEnabled(false);
-	this->vbo->Load();
-	n_assert(this->vbo->IsLoaded());
-	this->vbo->SetLoader(NULL);
-
-	// map buffer
-	this->vertexPtr = (byte*)this->vbo->Map(VertexBuffer::MapWrite);
+	VertexBufferCreateInfo vboInfo = 
+	{
+		"text_vbo", "render_system", 
+		GpuBufferTypes::AccessWrite, GpuBufferTypes::UsageDynamic, GpuBufferTypes::SyncingCoherent,
+		MaxNumChars * 6, comps,
+		nullptr, 0
+	};
+	this->vbo = CreateVertexBuffer(vboInfo);
+	this->vertexPtr = (byte*)VertexBufferMap(this->vbo, GpuBufferTypes::MapWrite);
 
 	// setup primitive group
 	this->group.SetNumIndices(0);
@@ -116,23 +113,20 @@ VkTextRenderer::Open()
 	//stbtt_BakeFontBitmap(this->ttf_buffer, stbtt_GetFontOffsetForIndex(this->ttf_buffer, 0), 48.0f, bitmap, GLYPH_TEXTURE_SIZE, GLYPH_TEXTURE_SIZE, 32, 96, cdata);
 
 	// setup random texture
-	this->glyphTexture = ResourceManager::Instance()->CreateUnmanagedResource("GlyphTexture", Texture::RTTI).downcast<Texture>();
-	Ptr<MemoryTexturePool> loader = MemoryTexturePool::Create();
-	loader->SetImageBuffer(this->bitmap, GLYPH_TEXTURE_SIZE, GLYPH_TEXTURE_SIZE, PixelFormat::R8);
-	this->glyphTexture->SetLoader(loader.upcast<ResourceLoader>());
-	this->glyphTexture->SetResourceId("GlyphTexture");
-	this->glyphTexture->SetAsyncEnabled(false);
-	this->glyphTexture->Load();
-	n_assert(this->glyphTexture->IsLoaded());
-	this->glyphTexture->SetLoader(0);
+	TextureCreateInfo texInfo =
+	{
+		"GlyphTexture", "render_system", this->bitmap, PixelFormat::R8, GLYPH_TEXTURE_SIZE, GLYPH_TEXTURE_SIZE, 1
+	};
+	this->glyphTexture = CreateTexture(texInfo);
 
 	// create shader instance
-	this->shader = ShaderServer::Instance()->ShaderCreateState("shd:text", { NEBULAT_SYSTEM_GROUP });
-	this->shader->SelectActiveVariation(ShaderServer::Instance()->FeatureStringToMask("Static"));
+	const ShaderId shd = ShaderServer::Instance()->GetShader("shd:text");
+	this->shader = ShaderServer::Instance()->ShaderCreateState("shd:text", { NEBULAT_SYSTEM_GROUP }, false);
+	this->program = ShaderGetProgram(shd, ShaderServer::Instance()->FeatureStringToMask("Static"));
 
 	// get variable
-	this->texVar = this->shader->GetVariableByName("Texture");
-	this->modelVar = this->shader->GetVariableByName("TextProjectionModel");
+	this->texVar = ShaderStateGetVariable(this->shader, "Texture");
+	this->modelVar = ShaderStateGetVariable(this->shader, "TextProjectionModel");
 
 	n_delete_array(bitmap);
 }
@@ -149,20 +143,12 @@ VkTextRenderer::Close()
 	Base::TextRendererBase::Close();
 
 	// discard shader
-	this->shader->Discard();
-	this->shader = 0;
+	ShaderDestroyState(this->shader);
+	VertexBufferUnmap(this->vbo);
+	this->vertexPtr = nullptr;
 
-	// unmap buffer
-	this->vbo->Unmap();
-	this->vertexPtr = 0;
-
-	// discard vbo
-	this->vbo->Unload();
-	this->vbo = 0;
-
-	// unload texture
-	ResourceManager::Instance()->UnregisterUnmanagedResource(this->glyphTexture.upcast<Resource>());
-	this->glyphTexture = 0;
+	DestroyVertexBuffer(this->vbo);
+	DestroyTexture(this->glyphTexture);
 
 	n_delete_array(ttf_buffer);
 }
@@ -176,18 +162,16 @@ VkTextRenderer::DrawTextElements()
 	n_assert(this->IsOpen());
 
 	// get display mode
-	Ptr<CoreGraphics::Window> wnd = DisplayDevice::Instance()->GetCurrentWindow();
-	const DisplayMode& displayMode = wnd->GetDisplayMode();
+	CoreGraphics::WindowId wnd = DisplayDevice::Instance()->GetCurrentWindow();
+	const DisplayMode& displayMode = WindowGetDisplayMode(wnd);
 
 	// calculate projection matrix
 	matrix44 proj = matrix44::orthooffcenterrh(0, (float)displayMode.GetWidth(), (float)displayMode.GetHeight(), 0, -1.0f, +1.0f);
 
-	// apply shader
-	this->shader->Apply();
-
-	// update shader state
-	this->texVar->SetTexture(this->glyphTexture);
-	this->modelVar->SetMatrix(proj);
+	// apply shader and apply state
+	ShaderProgramBind(this->program);
+	ShaderVariableSetTexture(this->texVar, this->shader, this->glyphTexture);
+	ShaderVariableSet(this->modelVar, this->shader, proj);
 
 	uint screenWidth, screenHeight;
 	screenWidth = displayMode.GetWidth();
@@ -324,13 +308,12 @@ VkTextRenderer::Draw(TextElementVertex* buffer, SizeT numChars)
 
 	// get render device and set it up
 	dev->SetPrimitiveTopology(CoreGraphics::PrimitiveTopology::TriangleList);
-	dev->SetVertexLayout(this->vbo->GetVertexLayout());
-	dev->SetStreamVertexBuffer(0, this->vbo, 0);	
+	VertexBufferBind(this->vbo, 0, 0);
 	dev->SetPrimitiveGroup(this->group);
 
 	// set viewport
-	Ptr<CoreGraphics::Window> wnd = DisplayDevice::Instance()->GetCurrentWindow();
-	const DisplayMode& displayMode = wnd->GetDisplayMode();
+	CoreGraphics::WindowId wnd = DisplayDevice::Instance()->GetCurrentWindow();
+	const DisplayMode& displayMode = WindowGetDisplayMode(wnd);
 	uint screenWidth, screenHeight;
 	screenWidth = displayMode.GetWidth();
 	screenHeight = displayMode.GetHeight();
@@ -338,7 +321,7 @@ VkTextRenderer::Draw(TextElementVertex* buffer, SizeT numChars)
 	//dev->SetScissorRect(Math::rectangle<int>(0, 0, screenWidth, screenHeight), 0);
 
 	// commit changes
-	this->shader->Commit();
+	ShaderStateApply(this->shader);
 
 	// setup device
 	dev->Draw();

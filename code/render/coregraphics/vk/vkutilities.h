@@ -10,6 +10,7 @@
 #include "coregraphics/gpubuffertypes.h"
 #include "coregraphics/pixelformat.h"
 #include "coregraphics/texture.h"
+#include "coregraphics/cmdbuffer.h"
 namespace Vulkan
 {
 class VkTexture;

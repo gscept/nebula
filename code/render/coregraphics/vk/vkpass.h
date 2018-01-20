@@ -67,4 +67,5 @@ const Util::FixedArray<VkRect2D>& PassGetVkRects(const CoreGraphics::PassId& id)
 /// get viewports for current subpass
 const Util::FixedArray<VkViewport>& PassGetVkViewports(const CoreGraphics::PassId& id);
 
+
 } // namespace Vulkan

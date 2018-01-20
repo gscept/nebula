@@ -23,7 +23,7 @@ __ImplementClass(Vulkan::VkMemoryVertexBufferPool, 'VKVO', Resources::ResourceMe
 Resources::ResourcePool::LoadStatus
 VkMemoryVertexBufferPool::LoadFromMemory(const Ids::Id24 id, const void* info)
 {
-	VertexBufferCreateInfo* vboInfo = static_cast<VertexBufferCreateInfo*>(info);
+	const VertexBufferCreateInfo* vboInfo = static_cast<const VertexBufferCreateInfo*>(info);
 	n_assert(this->GetState(id) == Resource::Pending);
 	n_assert(vboInfo->numVerts > 0);
 	if (CoreGraphics::GpuBufferTypes::UsageImmutable == vboInfo->usage)
@@ -120,9 +120,9 @@ VkMemoryVertexBufferPool::Unload(const Ids::Id24 id)
 /**
 */
 void
-VkMemoryVertexBufferPool::VertexBufferBind(const Resources::ResourceId id, const IndexT slot, const IndexT offset)
+VkMemoryVertexBufferPool::VertexBufferBind(const CoreGraphics::VertexBufferId id, const IndexT slot, const IndexT offset)
 {
-	VkVertexBufferRuntimeInfo& runtimeInfo = this->Get<1>(id.id24);
+	VkVertexBufferRuntimeInfo& runtimeInfo = this->Get<1>(id.allocId);
 	VkRenderDevice::Instance()->SetStreamVertexBuffer(slot, runtimeInfo.buf, offset);
 }
 
@@ -130,11 +130,11 @@ VkMemoryVertexBufferPool::VertexBufferBind(const Resources::ResourceId id, const
 /**
 */
 void*
-VkMemoryVertexBufferPool::Map(const Resources::ResourceId id, CoreGraphics::GpuBufferTypes::MapType mapType)
+VkMemoryVertexBufferPool::Map(const CoreGraphics::VertexBufferId id, CoreGraphics::GpuBufferTypes::MapType mapType)
 {
 	void* buf;
-	VkVertexBufferLoadInfo& loadInfo = this->Get<0>(id.id24);
-	uint32_t& mapCount = this->Get<2>(id.id24);
+	VkVertexBufferLoadInfo& loadInfo = this->Get<0>(id.allocId);
+	uint32_t& mapCount = this->Get<2>(id.allocId);
 	VkResult res = vkMapMemory(loadInfo.dev, loadInfo.mem, 0, VK_WHOLE_SIZE, 0, &buf);
 	n_assert(res == VK_SUCCESS);
 	mapCount++;
@@ -145,10 +145,10 @@ VkMemoryVertexBufferPool::Map(const Resources::ResourceId id, CoreGraphics::GpuB
 /**
 */
 void
-VkMemoryVertexBufferPool::Unmap(const Resources::ResourceId id)
+VkMemoryVertexBufferPool::Unmap(const CoreGraphics::VertexBufferId id)
 {
-	VkVertexBufferLoadInfo& loadInfo = this->Get<0>(id.id24);
-	uint32_t& mapCount = this->Get<2>(id.id24);
+	VkVertexBufferLoadInfo& loadInfo = this->Get<0>(id.allocId);
+	uint32_t& mapCount = this->Get<2>(id.allocId);
 	vkUnmapMemory(loadInfo.dev, loadInfo.mem);
 	mapCount--;
 }

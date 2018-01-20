@@ -3,6 +3,7 @@
 //  (C) 2017 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
+#include "config.h"
 #include "vertexlayout.h"
 #include "vertexsignaturepool.h"
 namespace CoreGraphics
@@ -36,8 +37,9 @@ CreateVertexLayout(VertexLayoutCreateInfo& info)
 
 	// reserve resource using signature as name, don't load again unless needed
 	VertexLayoutId id = layoutPool->ReserveResource(atom, "render_system");
-	if (layoutPool->GetState(id.id24) == Resources::Resource::Pending)
-		layoutPool->LoadFromMemory(id.id24, &loadInfo);
+	id.allocType = VertexLayoutIdType;
+	if (layoutPool->GetState(id.allocId) == Resources::Resource::Pending)
+		layoutPool->LoadFromMemory(id.allocId, &loadInfo);
 
 	return id;
 }
@@ -48,7 +50,7 @@ CreateVertexLayout(VertexLayoutCreateInfo& info)
 void
 DestroyVertexLayout(const VertexLayoutId id)
 {
-	layoutPool->Unload(id.id24);
+	layoutPool->Unload(id.allocId);
 }
 
 //------------------------------------------------------------------------------

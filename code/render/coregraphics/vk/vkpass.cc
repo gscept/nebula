@@ -25,7 +25,7 @@ VkPassAllocator passAllocator(0x00FFFFFF);
 const VkRenderPassBeginInfo&
 PassGetVkRenderPassBeginInfo(const CoreGraphics::PassId& id)
 {
-	return passAllocator.Get<2>(id);
+	return passAllocator.Get<2>(id.id24);
 }
 
 //------------------------------------------------------------------------------
@@ -34,7 +34,7 @@ PassGetVkRenderPassBeginInfo(const CoreGraphics::PassId& id)
 const VkGraphicsPipelineCreateInfo&
 PassGetVkFramebufferInfo(const CoreGraphics::PassId& id)
 {
-	return passAllocator.Get<1>(id).framebufferPipelineInfo;
+	return passAllocator.Get<1>(id.id24).framebufferPipelineInfo;
 }
 
 //------------------------------------------------------------------------------
@@ -43,7 +43,7 @@ PassGetVkFramebufferInfo(const CoreGraphics::PassId& id)
 const Util::FixedArray<VkRect2D>&
 PassGetVkRects(const CoreGraphics::PassId& id)
 {
-	const VkPassRuntimeInfo& info = passAllocator.Get<1>(id);
+	const VkPassRuntimeInfo& info = passAllocator.Get<1>(id.id24);
 	return info.subpassRects[info.currentSubpassIndex];
 }
 
@@ -53,7 +53,7 @@ PassGetVkRects(const CoreGraphics::PassId& id)
 const Util::FixedArray<VkViewport>&
 PassGetVkViewports(const CoreGraphics::PassId& id)
 {
-	const VkPassRuntimeInfo& info = passAllocator.Get<1>(id);
+	const VkPassRuntimeInfo& info = passAllocator.Get<1>(id.id24);
 	return info.subpassViewports[info.currentSubpassIndex];
 }
 
@@ -83,7 +83,7 @@ CreatePass(const PassCreateInfo& info)
 	loadInfo.colorAttachmentClears = info.colorAttachmentClears;
 	loadInfo.depthStencilAttachment = info.depthStencilAttachment;
 	loadInfo.dev = VkRenderDevice::Instance()->GetCurrentDevice();
-	loadInfo.pool = VkRenderDevice::Instance()->GetCurrentPool();
+	loadInfo.pool = VkRenderDevice::Instance()->GetCurrentDescriptorPool();
 
 	// create descriptor set used by our pass
 	VkDescriptorSetAllocateInfo descInfo =
@@ -396,7 +396,7 @@ CreatePass(const PassCreateInfo& info)
 	write.pNext = nullptr;
 	write.descriptorCount = 1;
 	write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	write.dstBinding = VkShader::ShaderGetVkVariableBinding(loadInfo.shaderState, loadInfo.passBlockVar);
+	write.dstBinding = VkShaderGetVkShaderVariableBinding(loadInfo.shaderState, loadInfo.passBlockVar);
 	write.dstArrayElement = 0;
 	write.dstSet = runtimeInfo.passDescriptorSet;
 
@@ -423,7 +423,7 @@ CreatePass(const PassCreateInfo& info)
 		write.pNext = NULL;
 		write.descriptorCount = 1;
 		write.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-		write.dstBinding = VkShader::ShaderGetVkVariableBinding(loadInfo.shaderState, inputAttachmentsVar);
+		write.dstBinding = VkShaderGetVkShaderVariableBinding(loadInfo.shaderState, inputAttachmentsVar);
 		write.dstArrayElement = i;
 		write.dstSet = runtimeInfo.passDescriptorSet;
 
@@ -492,9 +492,9 @@ CreatePass(const PassCreateInfo& info)
 void
 DiscardPass(const PassId& id)
 {
-	VkPassLoadInfo& loadInfo = passAllocator.Get<0>(id);
-	VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<1>(id);
-	VkRenderPassBeginInfo& beginInfo = passAllocator.Get<2>(id);
+	VkPassLoadInfo& loadInfo = passAllocator.Get<0>(id.id24);
+	VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<1>(id.id24);
+	VkRenderPassBeginInfo& beginInfo = passAllocator.Get<2>(id.id24);
 
 	// destroy pass and our descriptor set
 	vkFreeDescriptorSets(loadInfo.dev, loadInfo.pool, 1, &runtimeInfo.passDescriptorSet);
@@ -508,7 +508,7 @@ DiscardPass(const PassId& id)
 void
 PassBegin(const PassId& id)
 {
-	VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<1>(id);
+	VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<1>(id.id24);
 	VkRenderDevice* dev = VkRenderDevice::Instance();
 
 	// bind descriptor set
@@ -534,7 +534,7 @@ PassBeginBatch(const PassId& id, FrameBatchType::Code batch)
 void
 PassNextSubpass(const PassId& id)
 {
-	VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<1>(id);
+	VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<1>(id.id24);
 	runtimeInfo.currentSubpassIndex++;
 }
 
@@ -561,9 +561,9 @@ PassEnd(const PassId& id)
 void
 PassWindowResizeCallback(const PassId& id)
 {
-	VkPassLoadInfo& loadInfo = passAllocator.Get<0>(id);
-	VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<1>(id);
-	VkRenderPassBeginInfo& beginInfo = passAllocator.Get<2>(id);
+	VkPassLoadInfo& loadInfo = passAllocator.Get<0>(id.id24);
+	VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<1>(id.id24);
+	VkRenderPassBeginInfo& beginInfo = passAllocator.Get<2>(id.id24);
 
 	// gather image views
 	uint32_t width = 0;
@@ -637,6 +637,15 @@ PassWindowResizeCallback(const PassId& id)
 		dims.w() = 1 / dims.y();
 	}
 	ShaderVariableSetArray(loadInfo.renderTargetDimensionsVar, loadInfo.shaderState, dimensions.Begin(), dimensions.Size());
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::Array<CoreGraphics::RenderTextureId>&
+PassGetAttachments(const CoreGraphics::PassId& id, const IndexT subpass)
+{
+	return passAllocator.Get<0>(id.id24).colorAttachments;
 }
 
 } // namespace Vulkan

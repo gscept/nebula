@@ -119,7 +119,7 @@ CreateConstantBuffer(const ConstantBufferCreateInfo& info)
 	// if we setup from reflection, then fetch the size from the shader
 	if (info.setupFromReflection)
 	{
-		AnyFX::ShaderEffect* effect = shaderPool->shaderAlloc.Get<0>(info.state.id24);
+		AnyFX::ShaderEffect* effect = shaderPool->shaderAlloc.Get<0>(info.state.shaderId);
 		AnyFX::VkVarblock* varblock = static_cast<AnyFX::VkVarblock*>(effect->GetVarblock(info.name.Value()));
 
 		// setup buffer from other buffer
@@ -260,8 +260,8 @@ ConstantBufferSetBaseOffset(const ConstantBufferId id, const uint offset)
 const ShaderVariableId
 ConstantBufferCreateShaderVariable(const ConstantBufferId id, const ConstantBufferSliceId slice, const Util::StringAtom& name)
 {
-	VkConstantBufferSetupInfo& setup = constantBufferAllocator.Get<1>(id);
-	VkShaderVariableAllocator& alloc = constantBufferAllocator.Get<4>(id);
+	VkConstantBufferSetupInfo& setup = constantBufferAllocator.Get<1>(id.id24);
+	VkShaderVariableAllocator& alloc = constantBufferAllocator.Get<4>(id.id24);
 
 	Ids::Id24 var = alloc.AllocObject();
 	auto it = setup.reflection->variablesByName.find(name.Value());
@@ -282,7 +282,7 @@ ConstantBufferCreateShaderVariable(const ConstantBufferId id, const ConstantBuff
 void
 ConstantBufferDestroyShaderVariable(const ConstantBufferId id, const ShaderVariableId var)
 {
-	VkShaderVariableAllocator& alloc = constantBufferAllocator.Get<4>(id);
+	VkShaderVariableAllocator& alloc = constantBufferAllocator.Get<4>(id.id24);
 	alloc.DeallocObject(var.id);
 }
 

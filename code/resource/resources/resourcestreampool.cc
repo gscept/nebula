@@ -66,16 +66,16 @@ ResourceStreamPool::Update(IndexT frameIndex)
 		_PendingResourceLoad& element = this->pendingLoads[i];
 
 		// skip unused elements
-		if (element.id.id24_0 == Ids::InvalidId32) continue;
+		if (element.id.poolId == Ids::InvalidId32) continue;
 
 		// if the element has an invalid id, it means a thread has eaten it
-		if (element.id.id8_0 == Ids::InvalidId8)
+		if (element.id.poolIndex == Ids::InvalidId8)
 		{
 			// callbacks are called from the thread, we only have to clear them
-			this->callbacks[element.id.id24_0].Clear();
-			this->pendingLoadPool.Dealloc(element.id.id24_0);
-			this->pendingLoadMap.Erase(this->names[element.id.id24_0]);
-			element.id.id24_0 = Ids::InvalidId32;
+			this->callbacks[element.id.poolId].Clear();
+			this->pendingLoadPool.Dealloc(element.id.poolId);
+			this->pendingLoadMap.Erase(this->names[element.id.poolId]);
+			element.id.poolId = Ids::InvalidId32;
 			continue;
 		}
 
@@ -91,10 +91,10 @@ ResourceStreamPool::Update(IndexT frameIndex)
 			{
 				// immediate load, run callbacks on status, erase callbacks, and return id of pending element
 				this->RunCallbacks(status, element.id);
-				this->callbacks[element.id.id24_0].Clear();
-				this->pendingLoadPool.Dealloc(element.id.id24_0);
-				this->pendingLoadMap.Erase(this->names[element.id.id24_0]);
-				element.id.id24_0 = Ids::InvalidId32;
+				this->callbacks[element.id.poolId].Clear();
+				this->pendingLoadPool.Dealloc(element.id.poolId);
+				this->pendingLoadMap.Erase(this->names[element.id.poolId]);
+				element.id.poolId = Ids::InvalidId32;
 			}
 		}		
 	}
@@ -103,18 +103,18 @@ ResourceStreamPool::Update(IndexT frameIndex)
 	for (i = 0; i < this->pendingUnloads.Size(); i++)
 	{
 		const _PendingResourceUnload& unload = this->pendingUnloads[i];
-		if (this->states[unload.resourceId.id24_0] != Resource::Pending)
+		if (this->states[unload.resourceId.poolId] != Resource::Pending)
 		{
-			if (this->states[unload.resourceId.id24_0] == Resource::Loaded)
+			if (this->states[unload.resourceId.poolId] == Resource::Loaded)
 			{
 				// unload if loaded
-				this->Unload(unload.resourceId.id24_1);
-				this->states[unload.resourceId.id24_0] = Resource::Unloaded;
+				this->Unload(unload.resourceId.allocId);
+				this->states[unload.resourceId.poolId] = Resource::Unloaded;
 			}
 
 			// give up the resource id
-			this->DeallocObject(unload.resourceId.id24_1);
-			this->resourceInstanceIndexPool.Dealloc(unload.resourceId.id24_0);
+			this->DeallocObject(unload.resourceId.allocId);
+			this->resourceInstanceIndexPool.Dealloc(unload.resourceId.poolId);
 			
 			// remove pending unload if not Pending or Loaded (so explicitly Unloaded or Failed)
 			this->pendingUnloads.EraseIndex(i--);
@@ -129,7 +129,7 @@ ResourceStreamPool::Update(IndexT frameIndex)
 void
 ResourceStreamPool::RunCallbacks(LoadStatus status, const Resources::ResourceId id)
 {
-	Util::Array<_Callbacks>& cbls = this->callbacks[id.id24_0];
+	Util::Array<_Callbacks>& cbls = this->callbacks[id.poolId];
 	IndexT i;
 	for (i = 0; i < cbls.Size(); i++)
 	{
@@ -148,7 +148,7 @@ ResourceStreamPool::PrepareLoad(_PendingResourceLoad& res)
 	LoadStatus ret = Failed;
 
 	// in case this resource has been loaded previously
-	if (this->states[res.id.id24_0] == Resource::Loaded) return Success;
+	if (this->states[res.id.poolId] == Resource::Loaded) return Success;
 
 	// if threaded, and resource is not requested to be immediate
 	if (this->async && !res.immediate)
@@ -160,17 +160,17 @@ ResourceStreamPool::PrepareLoad(_PendingResourceLoad& res)
 		auto loadFunc = [this, &res, ioserver]()
 		{
 			// construct stream
-			Ptr<Stream> stream = ioserver->CreateStream(this->names[res.id.id24_0].Value());
+			Ptr<Stream> stream = ioserver->CreateStream(this->names[res.id.poolId].Value());
 			stream->SetAccessMode(Stream::ReadAccess);
 
 			// enter critical section
 			if (stream->Open())
 			{
-				LoadStatus stat = this->LoadFromStream(res.id.id24_1, res.tag, stream);
+				LoadStatus stat = this->LoadFromStream(res.id.allocId, res.tag, stream);
 				this->asyncSection.Enter();
 				this->RunCallbacks(stat, res.id);
-				if (stat == Success)		this->states[res.id.id24_0] = Resource::Loaded;
-				else if (stat == Failed)	this->states[res.id.id24_0] = Resource::Failed;
+				if (stat == Success)		this->states[res.id.poolId] = Resource::Loaded;
+				else if (stat == Failed)	this->states[res.id.poolId] = Resource::Failed;
 				this->asyncSection.Leave();
 
 				// close stream
@@ -182,11 +182,11 @@ ResourceStreamPool::PrepareLoad(_PendingResourceLoad& res)
 				this->asyncSection.Enter();
 				this->RunCallbacks(Failed, res.id);
 				this->asyncSection.Leave();
-				this->states[res.id.id24_0] = Resource::Failed;
+				this->states[res.id.poolId] = Resource::Failed;
 			}
 
 			// mark that we are done with this resource so it may be cleared later
-			res.id.id8_0 = Ids::InvalidId8;
+			res.id.poolIndex = Ids::InvalidId8;
 		};
 
 		// flag resource as being in-flight
@@ -201,10 +201,10 @@ ResourceStreamPool::PrepareLoad(_PendingResourceLoad& res)
 	else
 	{
 		// construct stream
-		Ptr<Stream> stream = IoServer::Instance()->CreateStream(this->names[res.id.id24_0].Value());
+		Ptr<Stream> stream = IoServer::Instance()->CreateStream(this->names[res.id.poolId].Value());
 		if (stream->Open())
 		{
-			ret = this->LoadFromStream(res.id.id24_1, res.tag, stream);
+			ret = this->LoadFromStream(res.id.allocId, res.tag, stream);
 			stream->Close();
 		}
 		else
@@ -213,7 +213,7 @@ ResourceStreamPool::PrepareLoad(_PendingResourceLoad& res)
 		}
 
 		// mark that we are done with this resource so it may be cleared later
-		res.id.id8_0 = Ids::InvalidId8;
+		res.id.poolIndex = Ids::InvalidId8;
 	}	
 	return ret;
 }
@@ -253,10 +253,10 @@ Resources::ResourceStreamPool::CreateResource(const ResourceName& res, const Uti
 		this->states[instanceId] = Resource::Pending;
 
 		// also add as pending resource
-		ret.id24_0 = instanceId;
-		ret.id8_0 = this->uniqueId;
-		ret.id24_1 = resourceId.id24;
-		ret.id8_1 = resourceId.id8;
+		ret.poolId = instanceId;
+		ret.poolIndex = this->uniqueId;
+		ret.allocId = resourceId.id24;
+		ret.allocType = resourceId.id8;
 		
 		this->ids.Add(res, ret);
 
@@ -281,7 +281,7 @@ Resources::ResourceStreamPool::CreateResource(const ResourceName& res, const Uti
 		ret = this->ids.ValueAtIndex(i);
 
 		// bump usage
-		this->usage[ret.id24_0]++;
+		this->usage[ret.poolId]++;
 
 		// only do this part if we have callbacks
 		if (success != nullptr || failed != nullptr)
@@ -290,7 +290,7 @@ Resources::ResourceStreamPool::CreateResource(const ResourceName& res, const Uti
 			this->asyncSection.Enter();
 		
 			// if the resource has been loaded (through a previous Update), just call the success callback
-			const Resource::State state = this->states[ret.id24_0];
+			const Resource::State state = this->states[ret.poolId];
 			if (state == Resource::Loaded)
 			{
 				if (success != nullptr) success(ret);
@@ -314,7 +314,7 @@ Resources::ResourceStreamPool::CreateResource(const ResourceName& res, const Uti
 				}
 
 				// since we are pending and inside the async section, it means the resource is not loaded yet, which means its safe to add the callback
-				this->callbacks[ret.id24_0].Append({ ret, success, failed });
+				this->callbacks[ret.poolId].Append({ ret, success, failed });
 			}
 
 			// leave async section
@@ -334,11 +334,11 @@ Resources::ResourceStreamPool::DiscardResource(const Resources::ResourceId id)
 	ResourcePool::DiscardResource(id);
 
 	// if usage reaches 0, add it to the list of pending unloads
-	if (this->usage[id.id24_0] == 0)
+	if (this->usage[id.poolId] == 0)
 	{
 		// add pending unload, it will be unloaded once loaded
 		this->pendingUnloads.Append({ id });
-		this->resourceInstanceIndexPool.Dealloc(id.id24_0);
+		this->resourceInstanceIndexPool.Dealloc(id.poolId);
 	}
 }
 

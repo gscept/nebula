@@ -259,7 +259,7 @@ VkScheduler::EndTransfers()
 		this->commands[OnHandleTransferFences].Clear();
 
 		// submit to queue
-		res = vkQueueSubmit(VkRenderDevice::transferQueue, 0, VK_NULL_HANDLE, fence);
+		res = vkQueueSubmit(VkRenderDevice::Instance()->GetQueue(VkSubContextHandler::TransferContextType), 0, VK_NULL_HANDLE, fence);
 		n_assert(res == VK_SUCCESS);
 		this->putTransferFenceThisFrame = false;
 	}
@@ -284,7 +284,7 @@ VkScheduler::EndDraws()
 		n_assert(res == VK_SUCCESS);
 		this->drawFenceCommands.Add(fence, this->commands[OnHandleDrawFences]);
 		this->commands[OnHandleDrawFences].Clear();
-		res = vkQueueSubmit(VkRenderDevice::drawQueue, 0, VK_NULL_HANDLE, fence);
+		res = vkQueueSubmit(VkRenderDevice::Instance()->GetQueue(VkSubContextHandler::DrawContextType), 0, VK_NULL_HANDLE, fence);
 		n_assert(res == VK_SUCCESS);
 		this->putDrawFenceThisFrame = false;
 	}
@@ -309,7 +309,7 @@ VkScheduler::EndComputes()
 		n_assert(res == VK_SUCCESS);
 		this->computeFenceCommands.Add(fence, this->commands[OnHandleComputeFences]);
 		this->commands[OnHandleComputeFences].Clear();
-		res = vkQueueSubmit(VkRenderDevice::computeQueue, 0, VK_NULL_HANDLE, fence);
+		res = vkQueueSubmit(VkRenderDevice::Instance()->GetQueue(VkSubContextHandler::ComputeContextType), 0, VK_NULL_HANDLE, fence);
 		n_assert(res == VK_SUCCESS);
 		this->putComputeFenceThisFrame = false;
 	}

@@ -17,7 +17,8 @@
 #include "coregraphics/primitivegroup.h"
 namespace CoreGraphics
 {
-RESOURCE_ID_TYPE(MeshId, MeshIdType);
+
+RESOURCE_ID_TYPE(MeshId);
 
 struct MeshCreateInfo
 {

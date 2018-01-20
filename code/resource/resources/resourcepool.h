@@ -41,40 +41,40 @@
 // these macros implement different styles for the resource allocators, the resource-versions of get is just for convenience
 
 #define __ImplementResourceAllocator(name) \
-	inline Resources::ResourceUnknownId AllocObject() { return name.AllocObject(); } \
-	inline void DeallocObject(const Resources::ResourceUnknownId id) { name.DeallocObject(id); } \
+	inline Resources::ResourceUnknownId AllocObject() { return Ids::Id::MakeId24_8(name.AllocObject(), 0xFF); } \
+	inline void DeallocObject(const Resources::ResourceUnknownId id) { name.DeallocObject(id.id24); } \
 	template<int MEMBER> inline auto& Get(const Ids::Id24 id) { return name.Get<MEMBER>(id); } \
-	template<int MEMBER> inline auto& Get(const Resources::ResourceId id) { return name.Get<MEMBER>(id.id24_1); }
+	template<int MEMBER> inline auto& Get(const Resources::ResourceId id) { return name.Get<MEMBER>(id.allocId); }
 
 #define __ImplementResourceAllocatorSafe(name) \
-	inline Resources::ResourceUnknownId AllocObject() { return name.AllocObject(); } \
-	inline void DeallocObject(const Resources::ResourceUnknownId id) { name.DeallocObject(id); } \
+	inline Resources::ResourceUnknownId AllocObject() { return Ids::Id::MakeId24_8(name.AllocObject(), 0xFF); } \
+	inline void DeallocObject(const Resources::ResourceUnknownId id) { name.DeallocObject(id.id24); } \
 	inline void EnterGet() { name.EnterGet(); } \
 	inline void LeaveGet() { name.LeaveGet(); } \
 	template<int MEMBER> inline auto& Get(const Ids::Id24 id) { return name.Get<MEMBER>(id); } \
-	template<int MEMBER> inline auto& Get(const Resources::ResourceId id) { return name.Get<MEMBER>(id.id24_1); } \
+	template<int MEMBER> inline auto& Get(const Resources::ResourceId id) { return name.Get<MEMBER>(id.allocId); } \
 	template<int MEMBER> inline auto& GetUnsafe(const Ids::Id24 id) { return name.GetUnsafe<MEMBER>(id); } \
-	template<int MEMBER> inline auto& GetUnsafe(const Resources::ResourceId id) { return name.GetUnsafe<MEMBER>(id.id24_1); } \
+	template<int MEMBER> inline auto& GetUnsafe(const Resources::ResourceId id) { return name.GetUnsafe<MEMBER>(id.allocId); } \
 	template<int MEMBER> inline auto& GetSafe(const Ids::Id24 id) { return name.GetSafe<MEMBER>(id); } \
-	template<int MEMBER> inline auto& GetSafe(const Resources::ResourceId id) { return name.GetSafe<MEMBER>(id.id24_1); }
+	template<int MEMBER> inline auto& GetSafe(const Resources::ResourceId id) { return name.GetSafe<MEMBER>(id.allocId); }
 
 #define __ImplementResourceAllocatorTyped(name, idtype) \
-	inline Resources::ResourceUnknownId AllocObject() { return idtype(name.AllocObject()); } \
+	inline Resources::ResourceUnknownId AllocObject() { return idtype(Ids::Id::MakeId24_8(name.AllocObject(), 0xFF)); } \
 	inline void DeallocObject(const Resources::ResourceUnknownId id) { name.DeallocObject(id.id24); } \
 	template<int MEMBER> inline auto& Get(const idtype id) { return name.Get<MEMBER>(id.id24); } \
-	template<int MEMBER> inline auto& Get(const Resources::ResourceId id) { return name.Get<MEMBER>(id); }
+	template<int MEMBER> inline auto& Get(const Resources::ResourceId id) { return name.Get<MEMBER>(id.allocId); }
 
 #define __ImplementResourceAllocatorTypedSafe(name, idtype) \
-	inline Resources::ResourceUnknownId AllocObject() { return idtype(name.AllocObject()); } \
+	inline Resources::ResourceUnknownId AllocObject() { return idtype(Ids::Id::MakeId24_8(name.AllocObject(), 0xFF)); } \
 	inline void DeallocObject(const Resources::ResourceUnknownId id) { name.DeallocObject(id.id24); } \
 	inline void EnterGet() { name.EnterGet(); } \
 	inline void LeaveGet() { name.LeaveGet(); } \
 	template<int MEMBER> inline auto& Get(const idtype id) { return name.Get<MEMBER>(id.id24); } \
-	template<int MEMBER> inline auto& Get(const Resources::ResourceId id) { return name.Get<MEMBER>(id.id24_1); } \
+	template<int MEMBER> inline auto& Get(const Resources::ResourceId id) { return name.Get<MEMBER>(id.allocId); } \
 	template<int MEMBER> inline auto& GetUnsafe(const idtype id) { return name.GetUnsafe<MEMBER>(id.id24); } \
-	template<int MEMBER> inline auto& GetUnsafe(const Resources::ResourceId id) { return name.GetUnsafe<MEMBER>(id.id24_1); } \
+	template<int MEMBER> inline auto& GetUnsafe(const Resources::ResourceId id) { return name.GetUnsafe<MEMBER>(id.allocId); } \
 	template<int MEMBER> inline auto& GetSafe(const idtype id) { return name.GetSafe<MEMBER>(id.id24); } \
-	template<int MEMBER> inline auto& GetSafe(const Resources::ResourceId id) { return name.GetSafe<MEMBER>(id.id24_1); }
+	template<int MEMBER> inline auto& GetSafe(const Resources::ResourceId id) { return name.GetSafe<MEMBER>(id.allocId); }
 
 namespace Resources
 {
@@ -152,7 +152,7 @@ protected:
 inline const Resources::ResourceName
 ResourcePool::GetName(const Resources::ResourceId id)
 {
-	return this->names[id.id24_0];
+	return this->names[id.poolId];
 }
 
 //------------------------------------------------------------------------------
@@ -161,7 +161,7 @@ ResourcePool::GetName(const Resources::ResourceId id)
 inline const uint32_t
 ResourcePool::GetUsage(const Resources::ResourceId id)
 {
-	return this->usage[id.id24_0];
+	return this->usage[id.poolId];
 }
 
 //------------------------------------------------------------------------------
@@ -170,7 +170,7 @@ ResourcePool::GetUsage(const Resources::ResourceId id)
 inline const Util::StringAtom
 ResourcePool::GetTag(const Resources::ResourceId id)
 {
-	return this->tags[id.id24_0];
+	return this->tags[id.poolId];
 }
 
 //------------------------------------------------------------------------------
@@ -179,7 +179,7 @@ ResourcePool::GetTag(const Resources::ResourceId id)
 inline const Resources::Resource::State
 ResourcePool::GetState(const Resources::ResourceId id)
 {
-	return this->states[id.id24_0];
+	return this->states[id.poolId];
 }
 
 //------------------------------------------------------------------------------
@@ -206,6 +206,6 @@ ResourcePool::GetResources() const
 inline const bool
 ResourcePool::HasResource(const Resources::ResourceId id)
 {
-	return this->names.Size() > (SizeT)id.id24_0;
+	return this->names.Size() > (SizeT)id.poolId;
 }
 } // namespace Resources
