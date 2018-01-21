@@ -112,7 +112,6 @@ ENDIF()
 				displayeventhandler.h
 				displaymode.h
 				event.h
-				framebatchtype.h
 				imagefileformat.cc
 				imagefileformat.h
 				indexbuffer.cc
@@ -580,6 +579,7 @@ ENDIF()
 			)
 		fips_dir(models)
 			fips_files(
+				framebatchtype.h
 				framebatchtype.cc
 				model.cc
 				model.h

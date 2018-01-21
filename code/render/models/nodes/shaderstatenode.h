@@ -9,6 +9,7 @@
 //------------------------------------------------------------------------------
 #include "modelnode.h"
 #include "resources/resourceid.h"
+#include "coregraphics/shader.h"
 #include "transformnode.h"
 namespace Models
 {

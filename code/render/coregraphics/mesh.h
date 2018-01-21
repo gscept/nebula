@@ -39,7 +39,15 @@ void DestroyMesh(const MeshId id);
 /// bind mesh and primitive group
 void MeshBind(const MeshId id, const IndexT prim);
 /// get number of primitive groups
-const SizeT MeshGetPrimitiveGroups(const MeshId id);
+const Util::Array<CoreGraphics::PrimitiveGroup>& MeshGetPrimitiveGroups(const MeshId id);
+/// get vertex buffer
+const VertexBufferId MeshGetVertexBuffer(const MeshId id);
+/// get vertex layout
+const VertexLayoutId MeshGetVertexLayout(const MeshId id);
+/// get index buffer
+const IndexBufferId MeshGetIndexBuffer(const MeshId id);
+/// get topology
+const CoreGraphics::PrimitiveTopology::Code MeshGetTopology(const MeshId id);
 
 class MemoryMeshPool;
 extern MemoryMeshPool* meshPool;

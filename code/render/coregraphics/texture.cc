@@ -20,7 +20,7 @@ inline const TextureId
 CreateTexture(TextureCreateInfo info)
 {
 	TextureId id = texturePool->ReserveResource(info.name, info.tag);
-	id.allocType = TextureIdType;
+	n_assert(id.allocType == TextureIdType);
 	texturePool->LoadFromMemory(id.allocId, &info);
 	return id;
 }

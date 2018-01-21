@@ -7,10 +7,13 @@
 	(C) 2017 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "core/refcounted.h"
 #include "ids/id.h"
 #include "ids/idallocator.h"
+#include "util/stringatom.h"
+#include "util/array.h"
+#include "util/dictionary.h"
 #include "models/nodes/modelnode.h"
+#include "resources/resourceid.h"
 #include "math/bbox.h"
 namespace Models
 {
@@ -26,9 +29,9 @@ const ModelId CreateModel();
 void DestroyModel(const ModelId id);
 
 /// find model hierarchically
-const ModelId FindNode(const ModelId model, const Util::StringAtom& name);
+const ModelNodeId ModelFindNode(const ModelId model, const Util::StringAtom& name);
 /// get bounding box
-const Math::bbox& GetBoundingBox(const ModelId model);
+const Math::bbox& ModelGetBoundingBox(const ModelId model);
 
 typedef Ids::IdAllocator<
 	Math::bbox,											// bounding box of entire model

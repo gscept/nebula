@@ -7,6 +7,7 @@
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
+#include "coregraphics/config.h"
 #include "resources/resourcememorypool.h"
 #include "coregraphics/gpubuffertypes.h"
 #include "coregraphics/indextype.h"
@@ -20,7 +21,7 @@ class VkMemoryIndexBufferPool : public Resources::ResourceMemoryPool
 public:
 
 	/// bind index buffer
-	void IndexBufferBind(const CoreGraphics::IndexBufferId id, const IndexT offset);
+	void Bind(const CoreGraphics::IndexBufferId id, const IndexT offset);
 	/// map the vertices for CPU access
 	void* Map(const CoreGraphics::IndexBufferId id, CoreGraphics::GpuBufferTypes::MapType mapType);
 	/// unmap the resource
@@ -30,26 +31,31 @@ public:
 	LoadStatus LoadFromMemory(const Ids::Id24 id, const void* info);
 	/// unload resource
 	void Unload(const Ids::Id24 id);
+
+	/// get index type for buffer
+	CoreGraphics::IndexType::Code GetIndexType(const CoreGraphics::IndexBufferId id);
+	/// get number of indices for buffer
+	const SizeT GetNumIndices(const CoreGraphics::IndexBufferId id);
 private:
 
-	struct LoadInfo
+	struct VkIndexBufferLoadInfo
 	{
 		VkDevice dev;
 		VkDeviceMemory mem;
 		CoreGraphics::GpuBufferTypes::SetupFlags gpuResInfo;
 		uint32_t indexCount;
 	};
-	struct RuntimeInfo
+	struct VkIndexBufferRuntimeInfo
 	{
 		VkBuffer buf;
 		CoreGraphics::IndexType::Code type;
 	};
 
 	Ids::IdAllocator<
-		LoadInfo,			//0 loading stage info
-		RuntimeInfo,		//1 runtime stage info
-		uint32_t			//2 mapping stage info
+		VkIndexBufferLoadInfo,			//0 loading stage info
+		VkIndexBufferRuntimeInfo,		//1 runtime stage info
+		uint32_t						//2 mapping stage info
 	> allocator;
-	__ImplementResourceAllocator(allocator);
+	__ImplementResourceAllocatorTyped(allocator, IndexBufferIdType);
 };
 } // namespace Vulkan

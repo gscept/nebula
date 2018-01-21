@@ -66,7 +66,7 @@ ResourceStreamPool::Update(IndexT frameIndex)
 		_PendingResourceLoad& element = this->pendingLoads[i];
 
 		// skip unused elements
-		if (element.id.poolId == Ids::InvalidId32) continue;
+		if (element.id.poolId == Ids::InvalidId24) continue;
 
 		// if the element has an invalid id, it means a thread has eaten it
 		if (element.id.poolIndex == Ids::InvalidId8)
@@ -75,7 +75,7 @@ ResourceStreamPool::Update(IndexT frameIndex)
 			this->callbacks[element.id.poolId].Clear();
 			this->pendingLoadPool.Dealloc(element.id.poolId);
 			this->pendingLoadMap.Erase(this->names[element.id.poolId]);
-			element.id.poolId = Ids::InvalidId32;
+			element.id.poolId = Ids::InvalidId24;
 			continue;
 		}
 
@@ -94,7 +94,7 @@ ResourceStreamPool::Update(IndexT frameIndex)
 				this->callbacks[element.id.poolId].Clear();
 				this->pendingLoadPool.Dealloc(element.id.poolId);
 				this->pendingLoadMap.Erase(this->names[element.id.poolId]);
-				element.id.poolId = Ids::InvalidId32;
+				element.id.poolId = Ids::InvalidId24;
 			}
 		}		
 	}

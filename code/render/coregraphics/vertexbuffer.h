@@ -49,6 +49,9 @@ void* VertexBufferMap(const VertexBufferId id, const CoreGraphics::GpuBufferType
 /// unmap GPU memory
 void VertexBufferUnmap(const VertexBufferId id);
 
+/// get number of vertices
+const SizeT VertexBufferGetNumVertices(const VertexBufferId id);
+
 class MemoryVertexBufferPool;
 extern MemoryVertexBufferPool* vboPool;
 

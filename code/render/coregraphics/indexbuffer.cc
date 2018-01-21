@@ -18,7 +18,7 @@ const IndexBufferId
 CreateIndexBuffer(IndexBufferCreateInfo info)
 {
 	IndexBufferId id = iboPool->ReserveResource(info.name, info.tag);
-	id.allocType = IndexBufferIdType;
+	n_assert(id.allocType == IndexBufferIdType);
 	iboPool->LoadFromMemory(id.allocId, &info);
 	return id;
 }
@@ -38,7 +38,7 @@ DestroyIndexBuffer(const IndexBufferId id)
 inline void
 IndexBufferBind(const IndexBufferId id, const IndexT offset)
 {
-	iboPool->IndexBufferBind(id, offset);
+	iboPool->Bind(id, offset);
 }
 
 //------------------------------------------------------------------------------
@@ -83,6 +83,24 @@ inline void
 IndexBufferUnmap(const IndexBufferId id)
 {
 	iboPool->Unmap(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const CoreGraphics::IndexType::Code
+IndexBufferGetType(const IndexBufferId id)
+{
+	return iboPool->GetIndexType(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const SizeT
+IndexBufferGetNumIndices(const IndexBufferId id)
+{
+	return iboPool->GetNumIndices(id);
 }
 
 } // CoreGraphics

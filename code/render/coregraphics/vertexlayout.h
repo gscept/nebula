@@ -41,6 +41,8 @@ void VertexLayoutBind(const VertexLayoutId id);
 
 /// get byte size
 const SizeT VertexLayoutGetSize(const VertexLayoutId id);
+/// get components
+const Util::Array<VertexComponent>& VertexLayoutGetComponents(const VertexLayoutId id);
 
 /// either create or returned a cached version of a vertex layout baesd on shader
 const VertexLayoutId CreateCachedVertexLayout(const VertexLayoutId id, const ShaderProgramId shader);

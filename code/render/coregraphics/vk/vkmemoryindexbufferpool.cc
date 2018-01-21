@@ -33,8 +33,8 @@ VkMemoryIndexBufferPool::LoadFromMemory(const Ids::Id24 id, const void* info)
 		n_assert(0 < iboInfo->dataSize);
 	}
 
-	LoadInfo& loadInfo = this->Get<0>(id);
-	RuntimeInfo& runtimeInfo = this->Get<1>(id);
+	VkIndexBufferLoadInfo& loadInfo = this->Get<0>(id);
+	VkIndexBufferRuntimeInfo& runtimeInfo = this->Get<1>(id);
 	uint32_t& mapCount = this->Get<2>(id);
 
 	loadInfo.dev = VkRenderDevice::Instance()->GetCurrentDevice();
@@ -94,8 +94,8 @@ VkMemoryIndexBufferPool::LoadFromMemory(const Ids::Id24 id, const void* info)
 void
 VkMemoryIndexBufferPool::Unload(const Ids::Id24 id)
 {
-	LoadInfo& loadInfo = this->Get<0>(id);
-	RuntimeInfo& runtimeInfo = this->Get<1>(id);
+	VkIndexBufferLoadInfo& loadInfo = this->Get<0>(id);
+	VkIndexBufferRuntimeInfo& runtimeInfo = this->Get<1>(id);
 	uint32_t& mapCount = this->Get<2>(id);
 
 	n_assert(mapCount == 0);
@@ -106,10 +106,30 @@ VkMemoryIndexBufferPool::Unload(const Ids::Id24 id)
 //------------------------------------------------------------------------------
 /**
 */
-void
-VkMemoryIndexBufferPool::IndexBufferBind(const CoreGraphics::IndexBufferId id, const IndexT offset)
+CoreGraphics::IndexType::Code
+VkMemoryIndexBufferPool::GetIndexType(const CoreGraphics::IndexBufferId id)
 {
-	RuntimeInfo& runtimeInfo = this->Get<1>(id.allocId);
+	VkIndexBufferRuntimeInfo& runtimeInfo = this->Get<1>(id.allocId);
+	return runtimeInfo.type
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const SizeT
+VkMemoryIndexBufferPool::GetNumIndices(const CoreGraphics::IndexBufferId id)
+{
+	VkIndexBufferLoadInfo& loadInfo = this->Get<0>(id.allocId);
+	return loadInfo.indexCount;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+VkMemoryIndexBufferPool::Bind(const CoreGraphics::IndexBufferId id, const IndexT offset)
+{
+	VkIndexBufferRuntimeInfo& runtimeInfo = this->Get<1>(id.allocId);
 	VkRenderDevice::Instance()->SetIndexBuffer(runtimeInfo.buf, offset, runtimeInfo.type);
 }
 
@@ -120,7 +140,7 @@ void*
 VkMemoryIndexBufferPool::Map(const CoreGraphics::IndexBufferId id, CoreGraphics::GpuBufferTypes::MapType mapType)
 {
 	void* buf;
-	LoadInfo& loadInfo = this->Get<0>(id.allocId);
+	VkIndexBufferLoadInfo& loadInfo = this->Get<0>(id.allocId);
 	uint32_t& mapCount = this->Get<2>(id.allocId);
 	VkResult res = vkMapMemory(loadInfo.dev, loadInfo.mem, 0, VK_WHOLE_SIZE, 0, &buf);
 	n_assert(res == VK_SUCCESS);
@@ -134,7 +154,7 @@ VkMemoryIndexBufferPool::Map(const CoreGraphics::IndexBufferId id, CoreGraphics:
 void
 VkMemoryIndexBufferPool::Unmap(const CoreGraphics::IndexBufferId id)
 {
-	LoadInfo& loadInfo = this->Get<0>(id.allocId);
+	VkIndexBufferLoadInfo& loadInfo = this->Get<0>(id.allocId);
 	uint32_t& mapCount = this->Get<2>(id.allocId);
 	vkUnmapMemory(loadInfo.dev, loadInfo.mem);
 	mapCount--;

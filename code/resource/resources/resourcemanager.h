@@ -60,15 +60,17 @@ public:
 	Core::Rtti* GetType(const Resources::ResourceId id);
 
 	/// get resource name
-	const Resources::ResourceName GetName(const Resources::ResourceId id);
+	const Resources::ResourceName GetName(const Resources::ResourceId id) const;
 	/// get tag resource was first registered with
-	const Util::StringAtom GetTag(const Resources::ResourceId id);
+	const Util::StringAtom GetTag(const Resources::ResourceId id) const;
 	/// get resource state
-	const Resource::State GetState(const Resources::ResourceId id);
+	const Resource::State GetState(const Resources::ResourceId id) const;
+	/// get usage 
+	const SizeT GetUsage(const Resources::ResourceId id) const;
 	/// check if resource id is valid
-	bool HasResource(const Resources::ResourceId id);
+	bool HasResource(const Resources::ResourceId id) const;
 	/// get id from name
-	const Resources::ResourceId GetId(const Resources::ResourceName& name);
+	const Resources::ResourceId GetId(const Resources::ResourceName& name) const;
 
 	/// register a stream pool, which takes an extension and the RTTI of the resource type to create
 	void RegisterStreamPool(const Util::StringAtom& ext, const Core::Rtti& loaderClass);
@@ -167,7 +169,7 @@ ResourceManager::LoadFromMemory(const Resources::ResourceId id, void* info)
 /**
 */
 inline const Resources::ResourceName
-ResourceManager::GetName(const Resources::ResourceId id)
+ResourceManager::GetName(const Resources::ResourceId id) const
 {
 	// get resource loader by extension
 	n_assert(this->pools.Size() > id.poolIndex);
@@ -179,7 +181,7 @@ ResourceManager::GetName(const Resources::ResourceId id)
 /**
 */
 inline const Util::StringAtom
-ResourceManager::GetTag(const Resources::ResourceId id)
+ResourceManager::GetTag(const Resources::ResourceId id) const
 {
 	// get resource loader by extension
 	n_assert(this->pools.Size() > id.poolIndex);
@@ -191,7 +193,7 @@ ResourceManager::GetTag(const Resources::ResourceId id)
 /**
 */
 inline const Resources::Resource::State
-ResourceManager::GetState(const Resources::ResourceId id)
+ResourceManager::GetState(const Resources::ResourceId id) const
 {
 	// get resource loader by extension
 	n_assert(this->pools.Size() > id.poolIndex);
@@ -202,8 +204,20 @@ ResourceManager::GetState(const Resources::ResourceId id)
 //------------------------------------------------------------------------------
 /**
 */
+inline const SizeT
+ResourceManager::GetUsage(const Resources::ResourceId id) const
+{
+	// get resource loader by extension
+	n_assert(this->pools.Size() > id.poolIndex);
+	const Ptr<ResourcePool>& loader = this->pools[id.poolIndex];
+	return loader->GetUsage(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 inline bool
-ResourceManager::HasResource(const Resources::ResourceId id)
+ResourceManager::HasResource(const Resources::ResourceId id) const
 {
 	if (this->pools.Size() <= id.poolIndex) return false;
 	{
@@ -217,7 +231,7 @@ ResourceManager::HasResource(const Resources::ResourceId id)
 /**
 */
 inline const Resources::ResourceId
-ResourceManager::GetId(const Resources::ResourceName& name)
+ResourceManager::GetId(const Resources::ResourceName& name) const
 {
 	return Resources::ResourceId();
 }
@@ -300,22 +314,12 @@ LoadFromMemory(const Resources::ResourceId id, void* info)
 
 //------------------------------------------------------------------------------
 /**
-	Get the type of pool used to create the resource.
-*/
-inline Core::Rtti*
-GetType(const Resources::ResourceId id)
-{
-	ResourceManager::Instance()->GetType(id);
-}
-
-//------------------------------------------------------------------------------
-/**
 */
 template <class POOL_TYPE>
 inline POOL_TYPE*
 GetMemoryPool()
 {
-	static_assert(std::is_base_of<ResourcePool, TYPE>::value, "Template argument is not a Resource pool type!");
+	static_assert(std::is_base_of<ResourcePool, TYPE>::value, "Template argument is not a ResourcePool type!");
 	return ResourceManager::Instance()->GetMemoryPool<POOL_TYPE>();
 }
 
@@ -326,7 +330,7 @@ template <class POOL_TYPE>
 inline POOL_TYPE*
 GetStreamPool()
 {
-	static_assert(std::is_base_of<ResourcePool, TYPE>::value, "Template argument is not a Resource pool type!");
+	static_assert(std::is_base_of<ResourcePool, TYPE>::value, "Template argument is not a ResourcePool type!");
 	return ResourceManager::Instance()->GetStreamPool<POOL_TYPE>();
 }
 

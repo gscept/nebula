@@ -41,7 +41,6 @@ public:
 	/// update reserved resource, the info struct is loader dependent (overload to implement resource deallocation, remember to set resource state!)
 	virtual LoadStatus LoadFromMemory(const Ids::Id24 id, const void* info) = 0;
 
-
 private:
 	friend class ResourceManager;
 };

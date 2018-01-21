@@ -46,6 +46,10 @@ void* IndexBufferMap(const IndexBufferId id, const CoreGraphics::GpuBufferTypes:
 /// unmap GPU memory
 void IndexBufferUnmap(const IndexBufferId id);
 
+/// get index type of index buffer
+const CoreGraphics::IndexType::Code IndexBufferGetType(const IndexBufferId id);
+/// get number of indices
+const SizeT IndexBufferGetNumIndices(const IndexBufferId id);
 
 class MemoryIndexBufferPool;
 extern MemoryIndexBufferPool* iboPool;

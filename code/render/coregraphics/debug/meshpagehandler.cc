@@ -8,6 +8,7 @@
 #include "coregraphics/mesh.h"
 #include "http/html/htmlpagewriter.h"
 #include "resources/resourcemanager.h"
+#include "coregraphics/streammeshpool.h"
 #include "io/ioserver.h"
 
 namespace Debug
@@ -66,8 +67,9 @@ MeshPageHandler::HandleRequest(const Ptr<HttpRequest>& request)
         htmlWriter->LineBreak();
         htmlWriter->LineBreak();
 
-        // get all mesh resources
-        Array<Ptr<Resource> > meshResources = ResourceManager::Instance()->GetResourcesByType(Mesh::RTTI);
+        // get all stream-loaded mesh resources
+		const StreamMeshPool* meshPool = ResourceManager::Instance()->GetStreamPool<StreamMeshPool>();
+		const Util::Dictionary<Resources::ResourceName, Resources::ResourceId>& meshes = meshPool->GetResources();
     
         // create a table of all existing meshes
         htmlWriter->AddAttr("border", "1");
@@ -82,18 +84,20 @@ MeshPageHandler::HandleRequest(const Ptr<HttpRequest>& request)
             
             // iterate over shared resources
             IndexT i;
-            for (i = 0; i < meshResources.Size(); i++)
+            for (i = 0; i < meshes.Size(); i++)
             {
-                const Ptr<Mesh>& mesh = meshResources[i].downcast<Mesh>();
+				const Resources::ResourceName& name = meshes.KeyAtIndex(i);
+				const Resources::ResourceId& id = meshes.ValueAtIndex(i);
+				const SizeT usage = meshPool->GetUsage(id);
                 htmlWriter->Begin(HtmlElement::TableRow);
                     htmlWriter->Begin(HtmlElement::TableData);
-                        htmlWriter->AddAttr("href", "/mesh?meshinfo=" + mesh->GetResourceId().AsString());
-                        htmlWriter->Element(HtmlElement::Anchor, mesh->GetResourceId().Value());
+                        htmlWriter->AddAttr("href", "/mesh?meshinfo=" + Util::String::FromLongLong(id.HashCode64()));
+                        htmlWriter->Element(HtmlElement::Anchor, name.Value());
                     htmlWriter->End(HtmlElement::TableData);
-                    htmlWriter->Element(HtmlElement::TableData, String::FromInt(mesh->GetUseCount()));
+                    htmlWriter->Element(HtmlElement::TableData, String::FromInt(usage));
                     htmlWriter->Begin(HtmlElement::TableData);
                         String str;
-                        str.Format("/mesh?vertexdump=%s&min=0&max=100", mesh->GetResourceId().Value());
+                        str.Format("/mesh?vertexdump=%s&min=0&max=100", name.Value());
                         htmlWriter->AddAttr("href", str);
                         htmlWriter->Element(HtmlElement::Anchor, "dump");
                     htmlWriter->End(HtmlElement::TableData);
@@ -123,20 +127,21 @@ MeshPageHandler::HandleMeshInfoRequest(const Util::String& resId, const Ptr<Stre
     {
         return HttpStatus::NotFound;
     }
-    const Ptr<Resource>& res = resManager->LookupResource(resId);
-    if (!res->IsA(Mesh::RTTI))
+
+    if (id.allocType != MeshIdType)
     {
         // resource exists but is not a mesh
         return HttpStatus::NotFound;
     }
-    const Ptr<Mesh>& mesh = res.downcast<Mesh>();
 
     Ptr<HtmlPageWriter> htmlWriter = HtmlPageWriter::Create();
     htmlWriter->SetStream(responseContentStream);
     htmlWriter->SetTitle("NebulaT Mesh Info");
     if (htmlWriter->Open())
     {
-        htmlWriter->Element(HtmlElement::Heading1, resId.Value());
+		const Resources::ResourceName& name = resManager->GetName(id);
+		const SizeT usage = resManager->GetUsage(id);
+        htmlWriter->Element(HtmlElement::Heading1, name.Value());
         htmlWriter->AddAttr("href", "/index.html");
         htmlWriter->Element(HtmlElement::Anchor, "Home");
         htmlWriter->LineBreak();
@@ -149,33 +154,33 @@ MeshPageHandler::HandleMeshInfoRequest(const Util::String& resId, const Ptr<Stre
         htmlWriter->Element(HtmlElement::Heading3, "Resource Info");
         htmlWriter->Begin(HtmlElement::Table);
             htmlWriter->Begin(HtmlElement::TableRow);
-                htmlWriter->Element(HtmlElement::TableData, "Resource Id: ");
-                htmlWriter->Element(HtmlElement::TableData, resId.Value());
+                htmlWriter->Element(HtmlElement::TableData, "Resource Name: ");
+                htmlWriter->Element(HtmlElement::TableData, name.Value());
             htmlWriter->End(HtmlElement::TableRow);
             htmlWriter->Begin(HtmlElement::TableRow);
                 htmlWriter->Element(HtmlElement::TableData, "Resolved Path: ");
-                htmlWriter->Element(HtmlElement::TableData, AssignRegistry::Instance()->ResolveAssigns(resId.Value()).AsString());
+                htmlWriter->Element(HtmlElement::TableData, AssignRegistry::Instance()->ResolveAssigns(name.Value()).AsString());
             htmlWriter->End(HtmlElement::TableRow);
             htmlWriter->Begin(HtmlElement::TableRow);
                 htmlWriter->Element(HtmlElement::TableData, "Use Count: ");
-                htmlWriter->Element(HtmlElement::TableData, String::FromInt(mesh->GetUseCount()));
+                htmlWriter->Element(HtmlElement::TableData, String::FromInt(usage));
             htmlWriter->End(HtmlElement::TableRow);
         htmlWriter->End(HtmlElement::Table);
 
         // write vertex buffer info
         htmlWriter->Element(HtmlElement::Heading3, "Vertices");
-        if (mesh->HasVertexBuffer())
+		VertexBufferId vbo = MeshGetVertexBuffer(id);
+        if (vbo != VertexBufferId::Invalid())
         {
-            const Ptr<VertexBuffer>& vb = mesh->GetVertexBuffer();
-            const Ptr<VertexLayout>& vertexLayout = vb->GetVertexLayout();
+			VertexLayoutId vlo = MeshGetVertexLayout(id);
             htmlWriter->Begin(HtmlElement::Table);
                 htmlWriter->Begin(HtmlElement::TableRow);
                     htmlWriter->Element(HtmlElement::TableData, "Num Vertices: ");
-                    htmlWriter->Element(HtmlElement::TableData, String::FromInt(vb->GetNumVertices()));
+                    htmlWriter->Element(HtmlElement::TableData, String::FromInt(VertexBufferGetNumVertices(vbo)));
                 htmlWriter->End(HtmlElement::TableRow);
                 htmlWriter->Begin(HtmlElement::TableRow);
                     htmlWriter->Element(HtmlElement::TableData, "Vertex Stride: ");
-                    htmlWriter->Element(HtmlElement::TableData, String::FromInt(vertexLayout->GetVertexByteSize()) + " bytes");                
+                    htmlWriter->Element(HtmlElement::TableData, String::FromInt(VertexLayoutGetSize(vlo)) + " bytes");                
                 htmlWriter->End(HtmlElement::TableRow);
             htmlWriter->End(HtmlElement::Table);
             htmlWriter->Element(HtmlElement::Heading3, "Vertex Components");
@@ -191,10 +196,11 @@ MeshPageHandler::HandleMeshInfoRequest(const Util::String& resId, const Ptr<Stre
                     htmlWriter->Element(HtmlElement::TableHeader, "Size");
                 htmlWriter->End(HtmlElement::TableRow);
                 IndexT i;
-                for (i = 0; i < vertexLayout->GetNumComponents(); i++)
+				const Util::Array<VertexComponent>& comps = VertexLayoutGetComponents(vlo);
+                for (i = 0; i < comps.Size(); i++)
                 {
                     htmlWriter->Begin(HtmlElement::TableRow);
-                        const VertexComponent& comp = vertexLayout->GetComponentAt(i);
+                        const VertexComponent& comp = comps[i];
                         htmlWriter->Element(HtmlElement::TableData, VertexComponent::SemanticNameToString(comp.GetSemanticName()));
                         htmlWriter->Element(HtmlElement::TableData, String::FromInt(comp.GetSemanticIndex()));
                         htmlWriter->Element(HtmlElement::TableData, VertexComponent::FormatToString(comp.GetFormat()));
@@ -212,17 +218,17 @@ MeshPageHandler::HandleMeshInfoRequest(const Util::String& resId, const Ptr<Stre
 
         // write index buffer info
         htmlWriter->Element(HtmlElement::Heading3, "Indices");
-        if (mesh->HasIndexBuffer())
+		IndexBufferId ibo = MeshGetIndexBuffer(id);
+        if (ibo != IndexBufferId::Invalid())
         {
-            const Ptr<IndexBuffer>& ib = mesh->GetIndexBuffer();
             htmlWriter->Begin(HtmlElement::Table);
                 htmlWriter->Begin(HtmlElement::TableRow);
                     htmlWriter->Element(HtmlElement::TableData, "Num Indices: ");
-                    htmlWriter->Element(HtmlElement::TableData, String::FromInt(ib->GetNumIndices()));
+                    htmlWriter->Element(HtmlElement::TableData, String::FromInt(IndexBufferGetNumIndices(ibo)));
                 htmlWriter->End(HtmlElement::TableRow);
                 htmlWriter->Begin(HtmlElement::TableRow);
                     htmlWriter->Element(HtmlElement::TableData, "Index Type: ");
-                    htmlWriter->Element(HtmlElement::TableData, IndexType::ToString(ib->GetIndexType()));
+                    htmlWriter->Element(HtmlElement::TableData, IndexType::ToString(IndexBufferGetType(ibo)));
                 htmlWriter->End(HtmlElement::TableRow);
             htmlWriter->End(HtmlElement::Table);
         }
@@ -246,17 +252,20 @@ MeshPageHandler::HandleMeshInfoRequest(const Util::String& resId, const Ptr<Stre
                 htmlWriter->Element(HtmlElement::TableHeader, "Num Indices");
                 htmlWriter->Element(HtmlElement::TableHeader, "Topology");
             htmlWriter->End(HtmlElement::TableRow);
+
+			const Util::Array<CoreGraphics::PrimitiveGroup>& primGroups = MeshGetPrimitiveGroups(id);
             IndexT i;
-            for (i = 0; i < mesh->GetNumPrimitiveGroups(); i++)
+            for (i = 0; i < primGroups.Size(); i++)
             {
-                const PrimitiveGroup& primGroup = mesh->GetPrimitiveGroupAtIndex(i);
+                const PrimitiveGroup& primGroup = primGroups[i];
+				const PrimitiveTopology::Code& topo = MeshGetTopology(id);
                 htmlWriter->Begin(HtmlElement::TableRow);
-                    htmlWriter->Element(HtmlElement::TableData, String::FromInt(primGroup.GetNumPrimitives(mesh->GetTopology())));
+                    htmlWriter->Element(HtmlElement::TableData, String::FromInt(primGroup.GetNumPrimitives(topo)));
                     htmlWriter->Element(HtmlElement::TableData, String::FromInt(primGroup.GetBaseVertex()));
                     htmlWriter->Element(HtmlElement::TableData, String::FromInt(primGroup.GetNumVertices()));
                     htmlWriter->Element(HtmlElement::TableData, String::FromInt(primGroup.GetBaseIndex()));
                     htmlWriter->Element(HtmlElement::TableData, String::FromInt(primGroup.GetNumIndices()));
-                    htmlWriter->Element(HtmlElement::TableData, PrimitiveTopology::ToString(mesh->GetTopology()));
+                    htmlWriter->Element(HtmlElement::TableData, PrimitiveTopology::ToString(topo));
                 htmlWriter->End(HtmlElement::TableRow);
             }
         htmlWriter->End(HtmlElement::Table);
@@ -276,29 +285,28 @@ MeshPageHandler::HandleVertexDumpRequest(const Util::String& resId, IndexT minVe
     // lookup the mesh in the ResourceManager
     const Ptr<ResourceManager>& resManager = ResourceManager::Instance();
 	ResourceId id = resId.AsLongLong();
-    if (!resManager->HasResource(resId))
+    if (!resManager->HasResource(id))
     {
         return HttpStatus::NotFound;
     }
-    const Ptr<Resource>& res = resManager->LookupResource(resId);
-    if (!res->IsA(Mesh::RTTI))
+    if (id.allocType != MeshIdType)
     {
         // resource exists but is not a mesh
         return HttpStatus::NotFound;
     }
     
-    const Ptr<Mesh>& mesh = res.downcast<Mesh>();
-    const Ptr<VertexBuffer>& vb = mesh->GetVertexBuffer();
-    const Ptr<VertexLayout>& vl = vb->GetVertexLayout();
+    const VertexBufferId vb = MeshGetVertexBuffer(id);
+    const VertexLayoutId vl = MeshGetVertexLayout(id);
 
     // clip to valid range
-    if (minVertexIndex > vb->GetNumVertices())
+	SizeT numverts = VertexBufferGetNumVertices(vb);
+    if (minVertexIndex > numverts)
     {
-        minVertexIndex = vb->GetNumVertices();
+        minVertexIndex = numverts;
     }
-    if (maxVertexIndex > vb->GetNumVertices())
+    if (maxVertexIndex > numverts)
     {
-        maxVertexIndex = vb->GetNumVertices();
+        maxVertexIndex = numverts;
     }
     
     Ptr<HtmlPageWriter> htmlWriter = HtmlPageWriter::Create();
@@ -307,7 +315,7 @@ MeshPageHandler::HandleVertexDumpRequest(const Util::String& resId, IndexT minVe
     if (htmlWriter->Open())
     {
         // write header
-        htmlWriter->Element(HtmlElement::Heading1, resId.Value());
+        htmlWriter->Element(HtmlElement::Heading1, resId.AsCharPtr());
         htmlWriter->AddAttr("href", "/index.html");
         htmlWriter->Element(HtmlElement::Anchor, "Home");
         htmlWriter->LineBreak();
@@ -323,16 +331,16 @@ MeshPageHandler::HandleVertexDumpRequest(const Util::String& resId, IndexT minVe
         htmlWriter->Begin(HtmlElement::Table);
         IndexT rangeIndex;
         const SizeT rangeSize = 100;        
-        for (rangeIndex = 0; rangeIndex < vb->GetNumVertices(); rangeIndex += rangeSize)
+        for (rangeIndex = 0; rangeIndex < numverts; rangeIndex += rangeSize)
         {
             IndexT maxRangeIndex = rangeIndex + rangeSize;
-            if (maxRangeIndex > vb->GetNumVertices())
+            if (maxRangeIndex > numverts)
             {
-                maxRangeIndex = vb->GetNumVertices();
+                maxRangeIndex = numverts;
             }
         
             String link;
-            link.Format("/mesh?vertexdump=%s&min=%d&max=%d", mesh->GetResourceId().Value(), rangeIndex, maxRangeIndex);
+            link.Format("/mesh?vertexdump=%s&min=%d&max=%d", resId.AsCharPtr(), rangeIndex, maxRangeIndex);
             String str;
             str.Format("%d .. %d", rangeIndex, maxRangeIndex);
             htmlWriter->Begin(HtmlElement::TableRow);
@@ -351,12 +359,12 @@ MeshPageHandler::HandleVertexDumpRequest(const Util::String& resId, IndexT minVe
         htmlWriter->Begin(HtmlElement::Table);
             htmlWriter->AddAttr("bgcolor", "lightsteelblue");
             htmlWriter->Begin(HtmlElement::TableRow);
-                htmlWriter->Element(HtmlElement::TableHeader, "Index");            
-                SizeT numComps = vl->GetNumComponents();
+                htmlWriter->Element(HtmlElement::TableHeader, "Index");
+				const Util::Array<VertexComponent>& comps = VertexLayoutGetComponents(vl);
                 IndexT compIndex;
-                for (compIndex = 0; compIndex < numComps; compIndex++)
+                for (compIndex = 0; compIndex < comps.Size(); compIndex++)
                 {
-                    const VertexComponent& c = vl->GetComponentAt(compIndex);
+                    const VertexComponent& c = comps[compIndex];
                     String n;
                     n.Format("%s%d (%s)", 
                         VertexComponent::SemanticNameToString(c.GetSemanticName()).AsCharPtr(),
@@ -367,8 +375,8 @@ MeshPageHandler::HandleVertexDumpRequest(const Util::String& resId, IndexT minVe
             htmlWriter->End(HtmlElement::TableRow);
             
             // for each vertex...
-            SizeT vertexStride = vl->GetVertexByteSize();
-            ubyte* ptr = (ubyte*) vb->Map(VertexBuffer::MapRead);
+            SizeT vertexStride = VertexLayoutGetSize(vl);
+            ubyte* ptr = (ubyte*)VertexBufferMap(vb, GpuBufferTypes::MapRead);
             IndexT vertexIndex;
             for (vertexIndex = minVertexIndex; vertexIndex < maxVertexIndex; vertexIndex++)
             {
@@ -379,9 +387,9 @@ MeshPageHandler::HandleVertexDumpRequest(const Util::String& resId, IndexT minVe
                 // for each vertex component...
                 String str;
                 ubyte* vertexPtr = ptr + (vertexIndex * vertexStride);
-                for (compIndex = 0; compIndex < numComps; compIndex++)
+                for (compIndex = 0; compIndex < comps.Size(); compIndex++)
                 {
-                    const VertexComponent& c = vl->GetComponentAt(compIndex);
+                    const VertexComponent& c = comps[compIndex];
                     ubyte* cPtr = vertexPtr + c.GetByteOffset();
                     float* fltPtr = (float*) cPtr;
                     ubyte* ubPtr  = (ubyte*) cPtr;
@@ -428,7 +436,7 @@ MeshPageHandler::HandleVertexDumpRequest(const Util::String& resId, IndexT minVe
                 } // for compIndex
                 htmlWriter->End(HtmlElement::TableRow);                    
             } // for vertexIndex
-            vb->Unmap();
+			VertexBufferUnmap(vb);
             
         htmlWriter->End(HtmlElement::Table);
         htmlWriter->Close();

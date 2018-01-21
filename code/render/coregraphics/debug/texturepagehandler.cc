@@ -68,8 +68,8 @@ TexturePageHandler::HandleRequest(const Ptr<HttpRequest>& request)
         htmlWriter->LineBreak();
         htmlWriter->LineBreak();
 
-		const Ptr<StreamTexturePool>& streamPool = ResourceManager::Instance()->GetStreamPool<StreamTexturePool>();
-		const Util::Dictionary<Resources::ResourceName, Ids::Id24>& streamResources = streamPool->GetResources();
+		const StreamTexturePool* streamPool = ResourceManager::Instance()->GetStreamPool<StreamTexturePool>();
+		const Util::Dictionary<Resources::ResourceName, Resources::ResourceId>& streamResources = streamPool->GetResources();
 
 		// create a table of all existing textures
 		htmlWriter->AddAttr("border", "1");
@@ -92,7 +92,7 @@ TexturePageHandler::HandleRequest(const Ptr<HttpRequest>& request)
 		IndexT i;
 		for (i = 0; i < streamResources.Size(); i++)
 		{
-			const Ids::Id24& res = streamResources.ValueAtIndex(i);
+			const Resources::ResourceId res = streamResources.ValueAtIndex(i);
 			const ResourceName& resName = streamResources.KeyAtIndex(i);
 			Resource::State state = streamPool->GetState(res);
 			htmlWriter->Begin(HtmlElement::TableRow);
@@ -150,8 +150,8 @@ TexturePageHandler::HandleRequest(const Ptr<HttpRequest>& request)
 		}
 		htmlWriter->End(HtmlElement::Table);
 
-		const Ptr<MemoryTexturePool>& memPool = ResourceManager::Instance()->GetMemoryPool<MemoryTexturePool>();
-		const Util::Dictionary<Resources::ResourceName, Ids::Id24>& memResources = memPool->GetResources();
+		const MemoryTexturePool* memPool = ResourceManager::Instance()->GetMemoryPool<MemoryTexturePool>();
+		const Util::Dictionary<Resources::ResourceName, Resources::ResourceId>& memResources = memPool->GetResources();
 
 		htmlWriter->Element(HtmlElement::Heading1, "Texture Resources (memory loaded)");
 		htmlWriter->AddAttr("href", "/index.html");
@@ -180,9 +180,9 @@ TexturePageHandler::HandleRequest(const Ptr<HttpRequest>& request)
 		IndexT i;
 		for (i = 0; i < memResources.Size(); i++)
 		{
-			const Ids::Id24& res = memResources.ValueAtIndex(i);
+			const Resources::ResourceId res = memResources.ValueAtIndex(i);
 			const ResourceName& resName = memResources.KeyAtIndex(i);
-			Resource::State state = streamPool->GetState(res);
+			Resource::State state = memPool->GetState(res);
 			htmlWriter->Begin(HtmlElement::TableRow);
 			if (state == Resource::Loaded)
 			{
@@ -210,7 +210,7 @@ TexturePageHandler::HandleRequest(const Ptr<HttpRequest>& request)
 			htmlWriter->Element(HtmlElement::TableData, resState);
 			if (state == Resource::Loaded)
 			{
-				const uint usage = memPool->GetUsage(res);
+				const SizeT usage = memPool->GetUsage(res);
 				htmlWriter->Element(HtmlElement::TableData, String::FromInt(usage));
 				TextureType type = TextureGetType(res);
 				switch (type)
