@@ -240,7 +240,7 @@ VkShapeRenderer::DrawSimpleShape(const Math::matrix44& modelTransform, CoreGraph
 	ShaderVariableSet(this->model, this->shapeShaderState, modelTransform);
 	ShaderVariableSet(this->diffuseColor, this->shapeShaderState, color);
 
-	const SizeT numgroups = MeshGetPrimitiveGroups(this->shapeMeshes[shapeType]);
+	const SizeT numgroups = MeshGetPrimitiveGroups(this->shapeMeshes[shapeType]).Size();
 	IndexT i;
 	for (i = 0; i < numgroups; i++)
 	{
@@ -269,7 +269,7 @@ VkShapeRenderer::DrawMesh(const Math::matrix44& modelTransform, const CoreGraphi
 	ShaderVariableSet(this->diffuseColor, this->shapeShaderState, color);
 
 	n_assert(RenderDevice::Instance()->IsInBeginFrame());
-	const SizeT numgroups = MeshGetPrimitiveGroups(mesh);
+	const SizeT numgroups = MeshGetPrimitiveGroups(mesh).Size();
 
 	// draw primitives in shape
 	IndexT i;
