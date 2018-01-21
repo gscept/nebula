@@ -68,7 +68,16 @@ VertexLayoutBind(const VertexLayoutId id)
 const SizeT
 VertexLayoutGetSize(const VertexLayoutId id)
 {
-	return layoutPool->VertexLayoutGetSize(id);
+	return layoutPool->GetVertexLayoutSize(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::Array<VertexComponent>&
+VertexLayoutGetComponents(const VertexLayoutId id)
+{
+	return layoutPool->GetVertexComponents(id);
 }
 
 //------------------------------------------------------------------------------

@@ -36,8 +36,8 @@ DestroyModel(const ModelId id)
 //------------------------------------------------------------------------------
 /**
 */
-const ModelId
-FindNode(const ModelId model, const Util::StringAtom& name)
+const ModelNodeId
+ModelFindNode(const ModelId model, const Util::StringAtom& name)
 {
 	const Util::Dictionary<Util::StringAtom, ModelNodeId>& dict = modelAllocator.Get<1>(model.id);
 	return dict[name];
@@ -47,7 +47,7 @@ FindNode(const ModelId model, const Util::StringAtom& name)
 /**
 */
 const Math::bbox&
-GetBoundingBox(const ModelId model)
+ModelGetBoundingBox(const ModelId model)
 {
 	return modelAllocator.Get<0>(model.id);
 }

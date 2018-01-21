@@ -73,11 +73,50 @@ MemoryMeshPool::BindMesh(const MeshId id, const IndexT prim)
 //------------------------------------------------------------------------------
 /**
 */
-const SizeT
-MemoryMeshPool::GetPrimitiveGroups(const MeshId id)
+const Util::Array<CoreGraphics::PrimitiveGroup>&
+MemoryMeshPool::GetPrimitiveGroups(const MeshId id) const
 {
-	MeshCreateInfo& inf = this->allocator.Get<0>(id.allocId);
-	return inf.primitiveGroups.Size();
+	const MeshCreateInfo& inf = this->allocator.Get<0>(id.allocId);
+	return inf.primitiveGroups;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const VertexBufferId
+MemoryMeshPool::GetVertexBuffer(const MeshId id) const
+{
+	const MeshCreateInfo& inf = this->allocator.Get<0>(id.allocId);
+	return inf.vertexBuffer;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const VertexLayoutId
+MemoryMeshPool::GetVertexLayout(const MeshId id) const
+{
+	const MeshCreateInfo& inf = this->allocator.Get<0>(id.allocId);
+	return inf.vertexLayout;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const IndexBufferId
+MemoryMeshPool::GetIndexBuffer(const MeshId id) const
+{
+	const MeshCreateInfo& inf = this->allocator.Get<0>(id.allocId);
+	return inf.indexBuffer;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const CoreGraphics::PrimitiveTopology::Code MemoryMeshPool::GetPrimitiveTopology(const MeshId id) const
+{
+	const MeshCreateInfo& inf = this->allocator.Get<0>(id.allocId);
+	return inf.topology;
 }
 
 } // namespace CoreGraphics

@@ -35,7 +35,7 @@ ModelContext::~ModelContext()
 /**
 */
 Graphics::ContextId
-ModelContext::Register(const Graphics::EntityId entity, const Resources::ResourceName& modelName)
+ModelContext::Register(const GraphicsEntityId entity, const Resources::ResourceName& modelName)
 {
 	Graphics::ContextId id;
 	if (!this->contextIdPool.Allocate(id))
@@ -60,7 +60,7 @@ ModelContext::Register(const Graphics::EntityId entity, const Resources::Resourc
 /**
 */
 void
-ModelContext::Unregister(const EntityId entity)
+ModelContext::Unregister(const GraphicsEntityId entity)
 {
 	this->contextIdPool.Deallocate(entity);
 }
@@ -97,6 +97,7 @@ ModelContext::CreateModelInstance(const Resources::ResourceId id)
 		}
 	}
 	*/
+	return Models::ModelInstanceId();
 }
 
 } // namespace Models

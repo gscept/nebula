@@ -78,7 +78,7 @@ public:
 		IndexT dstMip, IndexT dstLayer, SizeT dstXOffset, SizeT dstYOffset, SizeT dstZOffset);
 private:
 	friend class VkStreamTexturePool;
-	__ImplementResourceAllocatorSafe(textureAllocator);
+	__ImplementResourceAllocatorTypedSafe(textureAllocator, TextureIdType);
 };
 
 //------------------------------------------------------------------------------

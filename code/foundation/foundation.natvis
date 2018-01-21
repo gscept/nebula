@@ -1,10 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?> 
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+  <Type Name="Core::Rtti">
+    <DisplayString>{name} ({fourCC})</DisplayString>
+    <Expand>
+      <Item Name="[Name]">name</Item>
+      <Item Name="[FourCC]">fourCC</Item>
+      <Item Name="[Parent]">*parent</Item>
+    </Expand>
+  </Type>
+  <Type Name="Ptr&lt;*&gt;">
+    <DisplayString Condition="ptr == nullptr">Null Pointer</DisplayString>
+    <DisplayString Condition="ptr != nullptr">{ptr, na}</DisplayString>
+    <Expand>
+      <Item Name="[Pointer]">ptr, na</Item>
+      <Item Name="[Reference Count]">ptr->refCount</Item>
+      <Item Name="[Valid]">ptr != nullptr</Item>
+    </Expand>
+  </Type>
   <Type Name="Util::String">
-    <DisplayString Condition="heapBuffer == 0">{localBuffer}</DisplayString>
-    <DisplayString Condition="heapBuffer != 0">{heapBuffer}</DisplayString>
-    <StringView Condition="heapBuffer == 0">localBuffer</StringView>    
-    <StringView Condition="heapBuffer != 0">heapBuffer</StringView>    
+    <DisplayString Condition="heapBuffer == 0">{localBuffer, na}</DisplayString>
+    <DisplayString Condition="heapBuffer != 0">{heapBuffer, na}</DisplayString>
+    <StringView Condition="heapBuffer == 0">localBuffer, na</StringView>    
+    <StringView Condition="heapBuffer != 0">heapBuffer, na</StringView>    
+  </Type>
+  <Type Name="Util::StringAtom">
+    <DisplayString>{content, sb}</DisplayString>
+    <StringView>content, sb</StringView>
+    <Expand>
+      <Item Name="[Value]">content, sb</Item>
+      <Item Name="[Ptr]">(void*)content</Item>
+    </Expand>
+  </Type>
+  <Type Name="Util::FourCC">
+    <DisplayString>{(const char*)&amp;fourCC, 4sb}</DisplayString>
+    <Expand>
+      <Item Name="[Name]">(const char*)&amp;fourCC, 4sb</Item>
+      <Item Name="[Code]">fourCC</Item>
+    </Expand>
   </Type>
   <Type Name="Util::Array&lt;*&gt;">    
     <DisplayString>Size={size}, Capacity={capacity}</DisplayString>
@@ -17,6 +49,14 @@
       </ArrayItems>
     </Expand>
   </Type>
+  <Type Name="Util::KeyValuePair&lt;*,*&gt;">
+    <DisplayString>Key={keyData}, Value={valueData}</DisplayString>
+    <Expand>
+      <CustomListItems>
+        <Item Name="{keyData, na}">valueData</Item>
+      </CustomListItems>
+    </Expand>
+  </Type>
   <Type Name="Util::Array&lt;Util::KeyValuePair&lt;*,*&gt;&gt;">
     <DisplayString>Size={size}, Capacity={capacity}</DisplayString>
     <Expand>
@@ -26,7 +66,7 @@
         <Variable Name="j" InitialValue="0" />
         <Size>size</Size>
         <Loop>
-          <Item Name="{elements[j].keyData}">elements[j].valueData</Item>
+          <Item Name="{elements[j].keyData, na}">elements[j].valueData</Item>
           <Exec>j++</Exec>
         </Loop>
       </CustomListItems>
@@ -39,7 +79,7 @@
         <Variable Name="j" InitialValue="0" />
         <Size>keyValuePairs.size</Size>        
         <Loop>
-          <Item Name="{keyValuePairs.elements[j].keyData}">keyValuePairs.elements[j].valueData</Item>
+          <Item Name="{keyValuePairs.elements[j].keyData, na}">keyValuePairs.elements[j].valueData</Item>
           <Exec>j++</Exec>
         </Loop>
       </CustomListItems>
@@ -54,5 +94,6 @@
       </ArrayItems>
     </Expand>
   </Type>
+
   
 </AutoVisualizer>

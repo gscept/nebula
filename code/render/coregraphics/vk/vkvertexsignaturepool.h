@@ -45,7 +45,9 @@ public:
 	/// bind layout
 	void VertexLayoutBind(const CoreGraphics::VertexLayoutId id);
 	/// get byte size
-	const SizeT VertexLayoutGetSize(const CoreGraphics::VertexLayoutId id);
+	const SizeT GetVertexLayoutSize(const CoreGraphics::VertexLayoutId id);
+	/// get components
+	const Util::Array<CoreGraphics::VertexComponent>& GetVertexComponents(const CoreGraphics::VertexLayoutId id);
 	/// get derivative
 	VkPipelineVertexInputStateCreateInfo* GetDerivativeLayout(const CoreGraphics::VertexLayoutId layout, const CoreGraphics::ShaderProgramId shader);
 private:

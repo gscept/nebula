@@ -7,6 +7,7 @@
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
+#include "coregraphics/config.h"
 #include "resources/resourcememorypool.h"
 #include "coregraphics/gpubuffertypes.h"
 #include "coregraphics/vertexlayout.h"
@@ -20,7 +21,7 @@ class VkMemoryVertexBufferPool : public Resources::ResourceMemoryPool
 public:
 
 	/// bind vertex buffer
-	void VertexBufferBind(const CoreGraphics::VertexBufferId id, const IndexT slot, const IndexT offset);
+	void Bind(const CoreGraphics::VertexBufferId id, const IndexT slot, const IndexT offset);
 	/// map the vertices for CPU access
 	void* Map(const CoreGraphics::VertexBufferId id, CoreGraphics::GpuBufferTypes::MapType mapType);
 	/// unmap the resource
@@ -30,6 +31,9 @@ public:
 	LoadStatus LoadFromMemory(const Ids::Id24 id, const void* info);
 	/// unload resource
 	void Unload(const Ids::Id24 id);
+
+	/// get number of vertices
+	const SizeT GetNumVertices(const CoreGraphics::VertexBufferId id);
 private:
 
 	struct VkVertexBufferLoadInfo
@@ -52,6 +56,6 @@ private:
 		VkVertexBufferRuntimeInfo,		//1 runtime stage info
 		uint32_t						//2 mapping stage info
 	> allocator;
-	__ImplementResourceAllocator(allocator);
+	__ImplementResourceAllocatorTyped(allocator, VertexBufferIdType);
 };
 } // namespace Vulkan

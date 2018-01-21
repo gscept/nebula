@@ -20,9 +20,8 @@ inline const MeshId
 CreateMesh(const MeshCreateInfo& info)
 {
 	MeshId id = meshPool->ReserveResource(info.name, info.tag);
-	id.allocType = MeshIdType;
+	n_assert(id.allocType == MeshIdType);
 	meshPool->LoadFromMemory(id.allocId, &info);
-	
 	return id;
 }
 
@@ -47,10 +46,46 @@ MeshBind(const MeshId id, const IndexT prim)
 //------------------------------------------------------------------------------
 /**
 */
-inline const SizeT
+inline const Util::Array<CoreGraphics::PrimitiveGroup>&
 MeshGetPrimitiveGroups(const MeshId id)
 {
 	return meshPool->GetPrimitiveGroups(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const VertexBufferId
+MeshGetVertexBuffer(const MeshId id)
+{
+	return meshPool->GetVertexBuffer(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const VertexLayoutId
+MeshGetVertexLayout(const MeshId id)
+{
+	return meshPool->GetVertexLayout(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const IndexBufferId
+MeshGetIndexBuffer(const MeshId id)
+{
+	return meshPool->GetIndexBuffer(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const CoreGraphics::PrimitiveTopology::Code
+MeshGetTopology(const MeshId id)
+{
+	return meshPool->GetPrimitiveTopology(id);
 }
 
 } // Base

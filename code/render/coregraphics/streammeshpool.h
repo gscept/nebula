@@ -21,15 +21,6 @@ public:
 	/// destructor
 	virtual ~StreamMeshPool();
 
-	/// set the intended resource usage (default is UsageImmutable)
-	void SetUsage(GpuBufferTypes::Usage usage);
-	/// get resource usage
-	GpuBufferTypes::Usage GetUsage() const;
-	/// set the intended resource access (default is AccessNone)
-	void SetAccess(GpuBufferTypes::Access access);
-	/// get the resource access
-	GpuBufferTypes::Access GetAccess() const;
-
 	/// bind mesh
 	void MeshBind(const Resources::ResourceId id);
 	/// bind primitive group for currently bound mesh
@@ -63,39 +54,4 @@ protected:
 	Resources::ResourceId activeMesh;
 };
 
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-StreamMeshPool::SetUsage(GpuBufferTypes::Usage usage_)
-{
-	this->usage = usage_;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline GpuBufferTypes::Usage
-StreamMeshPool::GetUsage() const
-{
-	return this->usage;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-StreamMeshPool::SetAccess(GpuBufferTypes::Access access_)
-{
-	this->access = access_;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline GpuBufferTypes::Access
-StreamMeshPool::GetAccess() const
-{
-	return this->access;
-}
 } // namespace CoreGraphics

@@ -59,21 +59,21 @@
 	template<int MEMBER> inline auto& GetSafe(const Resources::ResourceId id) { return name.GetSafe<MEMBER>(id.allocId); }
 
 #define __ImplementResourceAllocatorTyped(name, idtype) \
-	inline Resources::ResourceUnknownId AllocObject() { return idtype(Ids::Id::MakeId24_8(name.AllocObject(), 0xFF)); } \
+	inline Resources::ResourceUnknownId AllocObject() { return Ids::Id::MakeId24_8(name.AllocObject(), idtype); } \
 	inline void DeallocObject(const Resources::ResourceUnknownId id) { name.DeallocObject(id.id24); } \
-	template<int MEMBER> inline auto& Get(const idtype id) { return name.Get<MEMBER>(id.id24); } \
+	template<int MEMBER> inline auto& Get(const Ids::Id24 id) { return name.Get<MEMBER>(id); } \
 	template<int MEMBER> inline auto& Get(const Resources::ResourceId id) { return name.Get<MEMBER>(id.allocId); }
 
 #define __ImplementResourceAllocatorTypedSafe(name, idtype) \
-	inline Resources::ResourceUnknownId AllocObject() { return idtype(Ids::Id::MakeId24_8(name.AllocObject(), 0xFF)); } \
+	inline Resources::ResourceUnknownId AllocObject() { return Ids::Id::MakeId24_8(name.AllocObject(), idtype); } \
 	inline void DeallocObject(const Resources::ResourceUnknownId id) { name.DeallocObject(id.id24); } \
 	inline void EnterGet() { name.EnterGet(); } \
 	inline void LeaveGet() { name.LeaveGet(); } \
-	template<int MEMBER> inline auto& Get(const idtype id) { return name.Get<MEMBER>(id.id24); } \
+	template<int MEMBER> inline auto& Get(const Ids::Id24 id) { return name.Get<MEMBER>(id); } \
 	template<int MEMBER> inline auto& Get(const Resources::ResourceId id) { return name.Get<MEMBER>(id.allocId); } \
-	template<int MEMBER> inline auto& GetUnsafe(const idtype id) { return name.GetUnsafe<MEMBER>(id.id24); } \
+	template<int MEMBER> inline auto& GetUnsafe(const Ids::Id24 id) { return name.GetUnsafe<MEMBER>(id); } \
 	template<int MEMBER> inline auto& GetUnsafe(const Resources::ResourceId id) { return name.GetUnsafe<MEMBER>(id.allocId); } \
-	template<int MEMBER> inline auto& GetSafe(const idtype id) { return name.GetSafe<MEMBER>(id.id24); } \
+	template<int MEMBER> inline auto& GetSafe(const Ids::Id24 id) { return name.GetSafe<MEMBER>(id); } \
 	template<int MEMBER> inline auto& GetSafe(const Resources::ResourceId id) { return name.GetSafe<MEMBER>(id.allocId); }
 
 namespace Resources
@@ -98,19 +98,19 @@ public:
 	virtual void DiscardByTag(const Util::StringAtom& tag);
 
 	/// get resource name
-	const Resources::ResourceName GetName(const Resources::ResourceId id);
+	const Resources::ResourceName GetName(const Resources::ResourceId id) const;
 	/// get resource usage from resource id
-	const uint32_t GetUsage(const Resources::ResourceId id);
+	const uint32_t GetUsage(const Resources::ResourceId id) const;
 	/// get resource tag was first registered with
-	const Util::StringAtom GetTag(const Resources::ResourceId id);
+	const Util::StringAtom GetTag(const Resources::ResourceId id) const;
 	/// get resource state
-	const Resource::State GetState(const Resources::ResourceId id);
+	const Resource::State GetState(const Resources::ResourceId id) const;
 	/// get resource id by name, use with care
-	const Resources::ResourceId GetId(const Resources::ResourceName& name);
+	const Resources::ResourceId GetId(const Resources::ResourceName& name) const;
 	/// get the dictionary of all resource-id pairs
 	const Util::Dictionary<Resources::ResourceName, Resources::ResourceId>& GetResources() const;
 	/// returns true if pool has resource
-	const bool HasResource(const Resources::ResourceId id);
+	const bool HasResource(const Resources::ResourceId id) const;
 
 	/// update the resource loader, this is done every frame
 	virtual void Update(IndexT frameIndex);
@@ -150,7 +150,7 @@ protected:
 /**
 */
 inline const Resources::ResourceName
-ResourcePool::GetName(const Resources::ResourceId id)
+ResourcePool::GetName(const Resources::ResourceId id) const
 {
 	return this->names[id.poolId];
 }
@@ -159,7 +159,7 @@ ResourcePool::GetName(const Resources::ResourceId id)
 /**
 */
 inline const uint32_t
-ResourcePool::GetUsage(const Resources::ResourceId id)
+ResourcePool::GetUsage(const Resources::ResourceId id) const
 {
 	return this->usage[id.poolId];
 }
@@ -168,7 +168,7 @@ ResourcePool::GetUsage(const Resources::ResourceId id)
 /**
 */
 inline const Util::StringAtom
-ResourcePool::GetTag(const Resources::ResourceId id)
+ResourcePool::GetTag(const Resources::ResourceId id) const
 {
 	return this->tags[id.poolId];
 }
@@ -177,7 +177,7 @@ ResourcePool::GetTag(const Resources::ResourceId id)
 /**
 */
 inline const Resources::Resource::State
-ResourcePool::GetState(const Resources::ResourceId id)
+ResourcePool::GetState(const Resources::ResourceId id) const
 {
 	return this->states[id.poolId];
 }
@@ -186,7 +186,7 @@ ResourcePool::GetState(const Resources::ResourceId id)
 /**
 */
 inline const Resources::ResourceId
-ResourcePool::GetId(const Resources::ResourceName& name)
+ResourcePool::GetId(const Resources::ResourceName& name) const
 {
 	return this->ids[name];
 }
@@ -204,7 +204,7 @@ ResourcePool::GetResources() const
 /**
 */
 inline const bool
-ResourcePool::HasResource(const Resources::ResourceId id)
+ResourcePool::HasResource(const Resources::ResourceId id) const
 {
 	return this->names.Size() > (SizeT)id.poolId;
 }

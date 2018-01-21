@@ -44,9 +44,18 @@ VkVertexSignaturePool::VertexLayoutBind(const CoreGraphics::VertexLayoutId id)
 /**
 */
 const SizeT
-VkVertexSignaturePool::VertexLayoutGetSize(const CoreGraphics::VertexLayoutId id)
+VkVertexSignaturePool::GetVertexLayoutSize(const CoreGraphics::VertexLayoutId id)
 {
 	return this->Get<3>(id.allocId).vertexByteSize;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::Array<CoreGraphics::VertexComponent>&
+VkVertexSignaturePool::GetVertexComponents(const CoreGraphics::VertexLayoutId id)
+{
+	return this->Get<3>(id.allocId).comps;
 }
 
 //------------------------------------------------------------------------------

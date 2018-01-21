@@ -21,7 +21,7 @@ const VertexBufferId
 CreateVertexBuffer(VertexBufferCreateInfo info)
 {
 	VertexBufferId id = vboPool->ReserveResource(info.name, info.tag);
-	id.allocType = VertexBufferIdType;
+	n_assert(id.allocType == VertexBufferIdType);
 	vboPool->LoadFromMemory(id.allocId, &info);
 	return id;
 }
@@ -41,7 +41,7 @@ DestroyVertexBuffer(const VertexBufferId id)
 inline void
 VertexBufferBind(const VertexBufferId id, const IndexT slot, const IndexT vertexOffset)
 {
-	vboPool->VertexBufferBind(id, slot, vertexOffset);
+	vboPool->Bind(id, slot, vertexOffset);
 }
 
 //------------------------------------------------------------------------------
@@ -87,6 +87,15 @@ inline void
 VertexBufferUnmap(const VertexBufferId id)
 {
 	vboPool->Unmap(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const SizeT
+VertexBufferGetNumVertices(const VertexBufferId id)
+{
+	return vboPool->GetNumVertices(id);
 }
 
 }

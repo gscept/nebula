@@ -119,8 +119,18 @@ VkMemoryVertexBufferPool::Unload(const Ids::Id24 id)
 //------------------------------------------------------------------------------
 /**
 */
+const SizeT
+VkMemoryVertexBufferPool::GetNumVertices(const CoreGraphics::VertexBufferId id)
+{
+	VkVertexBufferLoadInfo& loadInfo = this->Get<0>(id.allocId);
+	return loadInfo.vertexCount;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
-VkMemoryVertexBufferPool::VertexBufferBind(const CoreGraphics::VertexBufferId id, const IndexT slot, const IndexT offset)
+VkMemoryVertexBufferPool::Bind(const CoreGraphics::VertexBufferId id, const IndexT slot, const IndexT offset)
 {
 	VkVertexBufferRuntimeInfo& runtimeInfo = this->Get<1>(id.allocId);
 	VkRenderDevice::Instance()->SetStreamVertexBuffer(slot, runtimeInfo.buf, offset);

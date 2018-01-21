@@ -24,9 +24,9 @@ public:
 	virtual ~ModelContext();
 
 	/// register entity
-	Graphics::ContextId Register(const Graphics::EntityId entity, const Resources::ResourceName& modelName);
+	Graphics::ContextId Register(const Graphics::GraphicsEntityId entity, const Resources::ResourceName& modelName);
 	/// unregister entity
-	void Unregister(const Graphics::EntityId entity);
+	void Unregister(const Graphics::GraphicsEntityId entity);
 
 	/// change model for existing entity
 	void ChangeModel(const Graphics::ContextId id, const Resources::ResourceName& modelName);
@@ -36,7 +36,7 @@ public:
 	/// called before culling takes place
 	void OnCullBefore(Timing::Time time, Timing::Time globalTimeFactor, IndexT frameIndex);
 	/// called when culling notifies entities are visible
-	void OnNotifyCullingVisible(const Graphics::EntityId observer, IndexT frameIndex);
+	void OnNotifyCullingVisible(const Graphics::GraphicsEntityId observer, IndexT frameIndex);
 	/// called just before rendering
 	void OnRenderBefore(IndexT frameIndex);
 	/// called to render debug visualizations
@@ -87,7 +87,7 @@ ModelContext::GetNodes(const ModelInstanceId id)
 	Shorthand for adding a model to a graphics entity, Models::Attach
 */
 inline Graphics::ContextId
-Attach(const Graphics::EntityId entity, const Resources::ResourceName& res)
+Attach(const Graphics::GraphicsEntityId entity, const Resources::ResourceName& res)
 {
 	ModelContext::Instance()->Register(entity, res);
 }
@@ -96,7 +96,7 @@ Attach(const Graphics::EntityId entity, const Resources::ResourceName& res)
 /**
 */
 inline void
-Detach(const Graphics::EntityId entity)
+Detach(const Graphics::GraphicsEntityId entity)
 {
 	ModelContext::Instance()->Unregister(entity);
 }

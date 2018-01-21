@@ -12,8 +12,6 @@
 #include "models/nodes/transformnode.h"
 //#include "characters/character.h"
 #include "models/model.h"
-#include "coreanimation/animresource.h"
-#include "coreanimation/managedanimresource.h"
 
 //------------------------------------------------------------------------------
 namespace Models

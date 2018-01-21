@@ -34,13 +34,21 @@ public:
 	/// bind mesh
 	void BindMesh(const MeshId id, const IndexT prim);
 	/// get primitive groups from mesh
-	const SizeT	GetPrimitiveGroups(const MeshId id);
+	const Util::Array<CoreGraphics::PrimitiveGroup>& GetPrimitiveGroups(const MeshId id) const;
+	/// get vertex buffer
+	const VertexBufferId GetVertexBuffer(const MeshId id) const;
+	/// get vertex layout
+	const VertexLayoutId GetVertexLayout(const MeshId id) const;
+	/// get index buffer
+	const IndexBufferId GetIndexBuffer(const MeshId id) const;
+	/// get topology
+	const CoreGraphics::PrimitiveTopology::Code GetPrimitiveTopology(const MeshId id) const;
 private:
 	friend class StreamMeshPool;
 
 
 	Ids::IdAllocatorSafe<MeshCreateInfo> allocator;
-	__ImplementResourceAllocatorSafe(allocator);
+	__ImplementResourceAllocatorTypedSafe(allocator, MeshIdType);
 };
 
 } // namespace CoreGraphics
