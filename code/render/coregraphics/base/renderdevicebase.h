@@ -15,7 +15,7 @@
 #include "core/singleton.h"
 #include "coregraphics/rendereventhandler.h"
 #include "coregraphics/primitivegroup.h"
-#include "coregraphics/framebatchtype.h"
+#include "models/framebatchtype.h"
 #include "coregraphics/imagefileformat.h"
 #include "io/stream.h"
 #include "debug/debugcounter.h"
@@ -69,7 +69,7 @@ public:
 	/// progress to next subpass
 	void SetToNextSubpass();
     /// begin rendering a batch
-    void BeginBatch(CoreGraphics::FrameBatchType::Code batchType);
+    void BeginBatch(Models::FrameBatchType::Code batchType);
 	/// set the type of topology used
 	void SetPrimitiveTopology(const CoreGraphics::PrimitiveTopology::Code topo);
 	/// get the type of topology used

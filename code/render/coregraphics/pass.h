@@ -12,7 +12,7 @@
 #include "ids/idpool.h"
 #include "ids/idallocator.h"
 #include "rendertexture.h"
-#include "framebatchtype.h"
+#include "models/framebatchtype.h"
 
 namespace CoreGraphics
 {
@@ -51,7 +51,7 @@ struct PassCreateInfo
 	CoreGraphics::RenderTextureId depthStencilAttachment;	
 	
 	Util::Array<Subpass> subpasses;
-	CoreGraphics::FrameBatchType::Code batchType;
+	Models::FrameBatchType::Code batchType;
 
 	float clearDepth;
 	uint clearStencil;
@@ -66,7 +66,7 @@ void DiscardPass(const PassId& id);
 /// begin using a pass
 void PassBegin(const PassId& id);
 /// begin batch within pass
-void PassBeginBatch(const PassId& id, FrameBatchType::Code batch);
+void PassBeginBatch(const PassId& id, Models::FrameBatchType::Code batch);
 /// set currently bound pass to next subpass (asserts a valid pass is bound)
 void PassNextSubpass(const PassId& id);
 /// end batch within pass

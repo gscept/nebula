@@ -7,7 +7,7 @@
 */
 //------------------------------------------------------------------------------
 #include "frameop.h"
-#include "graphics/batchgroup.h"
+#include "frame/framebatchtype.h"
 namespace Frame
 {
 class FrameSubpassBatch : public FrameOp
@@ -20,20 +20,20 @@ public:
 	virtual ~FrameSubpassBatch();
 
 	/// set batch
-	void SetBatchCode(const Graphics::BatchGroup::Code& code);
+	void SetBatchCode(const FrameBatchType::Code& code);
 
 	/// run operation
 	void Run(const IndexT frameIndex);
 
 private:
-	Graphics::BatchGroup::Code batch;
+	FrameBatchType::Code batch;
 };
 
 //------------------------------------------------------------------------------
 /**
 */
 inline void
-FrameSubpassBatch::SetBatchCode(const Graphics::BatchGroup::Code& code)
+FrameSubpassBatch::SetBatchCode(const FrameBatchType::Code& code)
 {
 	this->batch = code;
 }

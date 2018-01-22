@@ -1,10 +1,16 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	The chunk allocator allocates a chunk of memory and performs in-place new on it,
-	up until the chunk runs out of memory. When that happens, the chunk is retired,
-	and another one is created. It ensures that all objects created from the 
-	allocator appear local in memory, however only if it can fit within a chunk. 
+	This allocator creates memory in user-specified (default 65535) byte chunks.
+	Each time an object is requested, the current chunk is checked for storage,
+	and if the object fits, an iterator is progressed with the size of the object,
+	after which a pointer to the allocated space is returned. If the object does not
+	fit, the allocator creates a new chunk, and retires the old, without
+	considering the potential space lost in the process.
+
+	This type of allocator allows for several objects of different types to be
+	allocated linearly in memory, thus providing a cache-friendly access pattern
+	for places where memory allocation is somewhat deterministic. 
 
 	(C) 2017 Individual contributors, see AUTHORS file
 */

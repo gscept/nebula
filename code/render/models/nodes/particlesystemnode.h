@@ -31,9 +31,9 @@ public:
 	virtual void ApplySharedState(IndexT frameIndex);
 
 	/// change a mesh during runtime
-	virtual void UpdateMeshResource(const Resources::ResourceName& resId);
+	virtual void UpdateMeshResource(const Resources::ResourceName& msh);
     /// get emitter mesh resource id
-    const Resources::ResourceId& GetEmitterMeshResourceId() const;
+    const CoreGraphics::MeshId& GetEmitterMeshResourceId() const;
     /// get the primitive group index in the emitter mesh
     IndexT GetPrimitiveGroupIndex() const;
     /// set emitter attributes
@@ -41,7 +41,7 @@ public:
     /// get emitter attributes
     const Particles::EmitterAttrs& GetEmitterAttrs() const;
 	/// get emitter mesh
-	const Resources::ResourceId GetEmitterMesh() const;
+	const CoreGraphics::MeshId GetEmitterMesh() const;
 
 private:
     /// helper function to parse an EnvelopeCurve from a data stream
@@ -66,16 +66,16 @@ protected:
     Resources::ResourceName meshResId;
 	Util::StringAtom tag;
     IndexT primGroupIndex;
-    Resources::ResourceId managedMesh;
+	CoreGraphics::MeshId mesh;
 };
 
 //------------------------------------------------------------------------------
 /**
 */
-inline const Resources::ResourceId
+inline const CoreGraphics::MeshId
 ParticleSystemNode::GetEmitterMesh() const
 {
-	return this->managedMesh;
+	return this->mesh;
 }
 
 //------------------------------------------------------------------------------

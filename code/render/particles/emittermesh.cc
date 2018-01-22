@@ -39,16 +39,16 @@ EmitterMesh::~EmitterMesh()
 /**
 */
 void
-EmitterMesh::Setup(const Ptr<Mesh>& mesh, IndexT primGroupIndex)
+EmitterMesh::Setup(const CoreGraphics::MeshId mesh, IndexT primGroupIndex)
 {
     n_assert(!this->IsValid());
 
     // we need to extract mesh vertices from the primitive group
     // without duplicate vertices
-    const PrimitiveGroup& primGroup = mesh->GetPrimitiveGroupAtIndex(primGroupIndex);
-    const Ptr<IndexBuffer>& indexBuffer = mesh->GetIndexBuffer();    
+	const PrimitiveGroup& primGroup = MeshGetPrimitive;// mesh->GetPrimitiveGroupAtIndex(primGroupIndex);
+    const IndexBufferId indexBuffer = mesh->GetIndexBuffer();    
     n_assert(indexBuffer->GetIndexType() == IndexType::Index32);
-    const Ptr<VertexBuffer>& vertexBuffer = mesh->GetVertexBuffer();
+    const VertexBufferId vertexBuffer = mesh->GetVertexBuffer();
     SizeT numVBufferVertices = vertexBuffer->GetNumVertices();
 
     IndexT baseIndex = primGroup.GetBaseIndex();

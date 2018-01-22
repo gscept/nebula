@@ -8,7 +8,7 @@
     (C) 2011-2016 Individual contributors, see AUTHORS file
 */
 #include "core/refcounted.h"
-#include "coregraphics/shadervariable.h"
+#include "coregraphics/shader.h"
 #include "util/array.h"
 #include "util/variant.h"
 #include "coregraphics/texture.h"
@@ -140,7 +140,7 @@ private:
 	Name name;
 	Util::Variant value;
 
-	Util::Array<Ptr<CoreGraphics::ShaderVariable> > variables;
+	Util::Array<CoreGraphics::ShaderVariableId > variables;
 	Util::Array<Ptr<MaterialVariableInstance> > instances;
 }; 
 

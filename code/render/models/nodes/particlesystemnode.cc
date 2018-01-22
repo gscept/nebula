@@ -8,8 +8,7 @@
 #include "models/model.h"
 #include "particles/particlerenderer.h"
 #include "models/modelpool.h"
-#include "coregraphics/meshpool.h"
-#include "coregraphics/coregraphics.h"
+#include "coregraphics/mesh.h"
 
 namespace Models
 {
@@ -25,7 +24,7 @@ using namespace IO;
 */
 ParticleSystemNode::ParticleSystemNode() :
     primGroupIndex(InvalidIndex),
-	managedMesh(Ids::InvalidId64)
+	mesh(Ids::InvalidId64)
 {
     // empty
 }
@@ -35,7 +34,7 @@ ParticleSystemNode::ParticleSystemNode() :
 */
 ParticleSystemNode::~ParticleSystemNode()
 {
-    n_assert(this->managedMesh == Ids::InvalidId64);
+    n_assert(this->mesh == CoreGraphics::MeshId::Invalid());
 }
 
 //------------------------------------------------------------------------------
@@ -47,11 +46,11 @@ ParticleSystemNode::UpdateMeshResource(const Resources::ResourceName& resName)
 	n_assert(resName != this->meshResId);
 
 	// discard old mesh
-	if (this->managedMesh != Ids::InvalidId64) Resources::DiscardResource(this->managedMesh);
+	if (this->mesh != CoreGraphics::MeshId::Invalid()) Resources::DiscardResource(this->mesh);
 	
 	// load new mesh
 	this->meshResId = resName;
-	this->managedMesh = CoreGraphics::meshPool->CreateResource(this->meshResId, this->tag, nullptr, nullptr, false);
+	this->mesh = Resources::CreateResource(this->meshResId, this->tag, [this](const Resources::ResourceId) { this->OnFinishedLoading(); }, nullptr, false);
 }
 
 //------------------------------------------------------------------------------
@@ -64,7 +63,7 @@ ParticleSystemNode::OnFinishedLoading()
 	this->boundingBox.set(Math::point(0), Math::vector(0));
 
     // calculate bounding box using activity distance
-	Math::bbox& box = CoreGraphics::modelPool->Get<0>(this->model);
+	Math::bbox& box = ModelGetBoundingBox(this->model);
     this->boundingBox.set(box.center(), Math::point(activityDist, activityDist, activityDist));
 	box.extend(this->boundingBox);
 }
@@ -252,7 +251,7 @@ ParticleSystemNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag
     {
 		this->meshResId = reader->ReadString();
 		this->tag = tag;
-		this->managedMesh = CoreGraphics::meshPool->CreateResource(this->meshResId, this->tag, nullptr, nullptr, false);
+		this->UpdateMeshResource(this->meshResId);
     }
     else if (FourCC('PGRI') == fourcc)
     {

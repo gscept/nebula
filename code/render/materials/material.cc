@@ -109,7 +109,7 @@ Material::Discard()
 /**
 */
 void 
-Material::AddPass(const Graphics::BatchGroup::Code& code, const CoreGraphics::ShaderId shader, const CoreGraphics::ShaderFeature::Mask& mask)
+Material::AddPass(const CoreGraphics::BatchGroup::Code& code, const CoreGraphics::ShaderId shader, const CoreGraphics::ShaderFeature::Mask& mask)
 {
 	n_assert(shader != Ids::InvalidId64);
 
@@ -209,7 +209,7 @@ Material::GetPassByIndex(const IndexT index) const
 /**
 */
 const Util::Array<Material::MaterialPass>&
-Material::GetPassesByCode(const Graphics::BatchGroup::Code& code)
+Material::GetPassesByCode(const CoreGraphics::BatchGroup::Code& code)
 {
 	return this->passesByBatchGroup[code];
 }
@@ -233,8 +233,8 @@ Material::Reload(const CoreGraphics::ShaderId shader)
 	for (i = 0; i < this->passesByIndex.Size(); i++)
 	{
 		MaterialPass& pass = this->passesByIndex[i];
-		const Util::StringAtom& lhs = CoreGraphics::shaderPool->GetName(pass.shader.id24);
-		const Util::StringAtom& rhs = CoreGraphics::shaderPool->GetName(shader.id24);
+		const Util::StringAtom& lhs = CoreGraphics::shaderPool->GetName(pass.shader.allocId);
+		const Util::StringAtom& rhs = CoreGraphics::shaderPool->GetName(shader.allocId);
 		if (lhs == rhs)
 		{
 			pass.shader = shader;

@@ -19,15 +19,14 @@
 #include "io/binaryreader.h"
 #include "math/bbox.h"
 #include "ids/id.h"
+#include "models/modelserver.h"
 
 namespace Models
 {
 
-ID_32_TYPE(ModelNodeId);
-
 class StreamModelPool;
 class ModelServer;
-class Model;
+struct ModelId;
 class ModelNode
 {
 public:
@@ -67,7 +66,7 @@ protected:
 
 	Util::StringAtom name;
 	ModelNodeId parent;
-	ModelNodeId model;
+	ModelId model;
 	Util::Array<ModelNodeId> children;
 	Math::bbox boundingBox;
 };

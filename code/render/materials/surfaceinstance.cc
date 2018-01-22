@@ -6,6 +6,7 @@
 #include "surfaceinstance.h"
 #include "material.h"
 #include "surface.h"
+#include "coregraphics/batchgroup.h"
 #include "resources/resourcemanager.h"
 #include "coregraphics/shaderstate.h"
 #include "coregraphics/config.h"
@@ -46,7 +47,7 @@ SurfaceInstance::Setup(const Ptr<Surface>& surface)
 
     // create temporary dictionary mapping between shaders and their variables
     Util::Dictionary<Util::StringAtom, Util::Array<Ptr<CoreGraphics::ShaderState>>> variableToShaderMap;
-    Util::Dictionary<Util::StringAtom, Util::Array<Graphics::BatchGroup::Code>> variableToCodeMap;
+    Util::Dictionary<Util::StringAtom, Util::Array<CoreGraphics::BatchGroup::Code>> variableToCodeMap;
 	Util::Dictionary<Util::StringAtom, Util::Array<Material::MaterialPass>> variableToPassMap;
     const Ptr<Material>& materialTemplate = this->originalSurface->materialTemplate;
 
@@ -60,7 +61,7 @@ SurfaceInstance::Setup(const Ptr<Surface>& surface)
     {
         // get indexed data from material
 		const Material::MaterialPass& pass = materialTemplate->GetPassByIndex(passIndex);
-        const Graphics::BatchGroup::Code& code = pass.code;
+        const CoreGraphics::BatchGroup::Code& code = pass.code;
         const Ptr<Shader>& shader = pass.shader;
 
 		// only add instance once for a shader

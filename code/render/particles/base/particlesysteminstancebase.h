@@ -37,7 +37,7 @@ public:
     virtual ~ParticleSystemInstanceBase();
 
     /// setup the particle system instance
-    virtual void Setup(const Ptr<CoreGraphics::Mesh>& emitterMesh, IndexT primGroupIndex, const EmitterAttrs& emitterAttrs);
+    virtual void Setup(const CoreGraphics::MeshId emitterMesh, IndexT primGroupIndex, const EmitterAttrs& emitterAttrs);
     /// discard the particle system instance
     virtual void Discard();
     /// return true if the object has been setup
@@ -122,7 +122,7 @@ private:
 protected:
 	ParticleSystemState::Mask stateMask;
 	ParticleSystemState::Mask stateChangeMask;
-	Ptr<CoreGraphics::Mesh> emitterMesh;
+	CoreGraphics::MeshId emitterMesh;
 	IndexT primGroupIndex;
 	EmitterAttrs emitterAttrs;
 

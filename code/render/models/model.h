@@ -9,19 +9,11 @@
 //------------------------------------------------------------------------------
 #include "ids/id.h"
 #include "ids/idallocator.h"
-#include "util/stringatom.h"
-#include "util/array.h"
-#include "util/dictionary.h"
 #include "models/nodes/modelnode.h"
 #include "resources/resourceid.h"
-#include "math/bbox.h"
+#include "models/modelserver.h"
 namespace Models
 {
-
-class StreamModelPool;
-extern StreamModelPool* modelPool;
-
-ID_32_TYPE(ModelId);
 
 /// create model
 const ModelId CreateModel();
@@ -31,7 +23,7 @@ void DestroyModel(const ModelId id);
 /// find model hierarchically
 const ModelNodeId ModelFindNode(const ModelId model, const Util::StringAtom& name);
 /// get bounding box
-const Math::bbox& ModelGetBoundingBox(const ModelId model);
+Math::bbox& ModelGetBoundingBox(const ModelId model);
 
 typedef Ids::IdAllocator<
 	Math::bbox,											// bounding box of entire model
@@ -39,7 +31,8 @@ typedef Ids::IdAllocator<
 	ModelNodeId,										// root node
 	Util::Array<Resources::ResourceId>					// resources loaded and contained in this model
 > ModelAllocatorType;
-
 extern ModelAllocatorType modelAllocator;
 
+class StreamModelPool;
+extern StreamModelPool* modelPool;
 } // namespace Models

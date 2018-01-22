@@ -318,7 +318,7 @@ VkShaderPool::ShaderVariableSetReadWriteTexture(const CoreGraphics::ShaderVariab
 {
 	VkShaderVariableAllocator& alloc = this->shaderAlloc.Get<4>(state.shaderId).Get<3>(state.stateId);
 	textureAllocator.EnterGet();
-	VkTextureRuntimeInfo& info = textureAllocator.Get<0>(var);
+	VkTextureRuntimeInfo& info = textureAllocator.Get<0>(var.id);
 	textureAllocator.LeaveGet();
 }
 
@@ -330,7 +330,7 @@ VkShaderPool::ShaderVariableSetReadWriteTexture(const CoreGraphics::ShaderVariab
 {
 	VkShaderStateAllocator& stateAlloc = this->shaderAlloc.Get<4>(state.shaderId);
 	VkShaderVariableAllocator& varAlloc = stateAlloc.Get<3>(state.stateId);
-	SetShaderReadWriteTexture(varAlloc.Get<1>(var), stateAlloc.Get<4>(state.stateId), tex);
+	SetShaderReadWriteTexture(varAlloc.Get<1>(var.id), stateAlloc.Get<4>(state.stateId), tex);
 }
 
 //------------------------------------------------------------------------------
@@ -341,7 +341,7 @@ VkShaderPool::ShaderVariableSetReadWriteBuffer(const CoreGraphics::ShaderVariabl
 {
 	VkShaderStateAllocator& stateAlloc = this->shaderAlloc.Get<4>(state.shaderId);
 	VkShaderVariableAllocator& varAlloc = stateAlloc.Get<3>(state.stateId);
-	SetShaderReadWriteBuffer(varAlloc.Get<1>(var), stateAlloc.Get<4>(state.stateId), buf);
+	SetShaderReadWriteBuffer(varAlloc.Get<1>(var.id), stateAlloc.Get<4>(state.stateId), buf);
 }
 
 //------------------------------------------------------------------------------

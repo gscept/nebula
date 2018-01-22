@@ -1,7 +1,7 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	@class CoreGraphics::BatchType
+	@class Frame::FrameBatchType
 	
 	Frame batch type hints for the render device and render targets. Indicates
 	the type of objects that are rendered in a frame batch.
@@ -13,7 +13,7 @@
 #include "core/types.h"
 #include "util/string.h"
 
-namespace CoreGraphics
+namespace Frame
 {
 class FrameBatchType
 {
@@ -107,7 +107,7 @@ FrameBatchType::ToString(FrameBatchType::Code c)
 	}
 }
 
-} // namespace CoreGraphics
+} // namespace Frame
 //------------------------------------------------------------------------------
 
 	

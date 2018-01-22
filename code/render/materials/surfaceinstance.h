@@ -16,7 +16,6 @@
 #include "surfaceconstant.h"
 #include "util/stringatom.h"
 #include "surfacename.h"
-#include "graphics/batchgroup.h"
 namespace Materials
 {
 class Surface;
@@ -86,7 +85,6 @@ inline bool
 SurfaceInstance::HasConstant(const Util::StringAtom& name) const
 {
     return this->constantsByName.Contains(name);
-
 }
 
 //------------------------------------------------------------------------------

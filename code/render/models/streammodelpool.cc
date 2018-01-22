@@ -1,9 +1,9 @@
 //------------------------------------------------------------------------------
-// modelloader.cc
+// streammodelpool.cc
 // (C) 2017 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
-#include "modelpool.h"
+#include "streammodelpool.h"
 #include "model.h"
 #include "core/refcounted.h"
 #include "io/binaryreader.h"
@@ -75,7 +75,7 @@ StreamModelPool::Setup()
 /**
 */
 Resources::ResourceStreamPool::LoadStatus
-StreamModelPool::Load(const Ids::Id24 id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream)
+StreamModelPool::LoadFromStream(const Ids::Id24 id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream)
 {
 	// a model is a list of resources, a bounding box, and a dictionary of nodes
 	Math::bbox& boundingBox = this->Get<0>(id);
@@ -183,11 +183,11 @@ StreamModelPool::Load(const Ids::Id24 id, const Util::StringAtom& tag, const Ptr
 void
 StreamModelPool::Unload(const Ids::Id24 id)
 {
-	Util::Dictionary<Util::StringAtom, Util::KeyValuePair<Util::FourCC, Ids::Id32>>& nodes = this->Get<1>(id);
+	Util::Dictionary<Util::StringAtom, NodeTypeId>& nodes = this->Get<1>(id);
 	IndexT i;
 	for (i = 0; i < nodes.Size(); i++)
 	{
-		const NodeTypeId& pair = nodes[i];
+		const NodeTypeId& pair = nodes.ValueAtIndex(i);
 		ModelNode* node = this->accessors[pair.Key()](pair.Value());
 		node->Discard();
 	}

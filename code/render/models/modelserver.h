@@ -19,10 +19,12 @@
 #include "materials/surfaceinstance.h"
 #include "memory/sliceallocatorpool.h"
 #include "ids/idgenerationpool.h"
-#include "models/nodes/modelnode.h"
 
 namespace Models
 {
+
+ID_32_TYPE(ModelId);
+ID_32_TYPE(ModelNodeId);
 
 class ModelServer : public Core::RefCounted
 {
@@ -39,7 +41,7 @@ private:
 	/// the database is as such, surface name -> (mesh resource id -> primitive group)
 	using SurfaceMeshInstanceDatabase = Util::Dictionary<
 		Materials::SurfaceName::Code, Util::Dictionary<
-		Resources::ResourceId, Util::Array<ModelNode::Instance>
+		Resources::ResourceId, Util::Array<ModelNodeId>
 		>>;
 
 	SurfaceMeshInstanceDatabase database;

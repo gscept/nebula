@@ -12,6 +12,7 @@
 #include "coregraphics/primitivegroup.h"
 #include "resources/resourceid.h"
 #include "shaderstatenode.h"
+#include "coregraphics/mesh.h"
 namespace Models
 {
 class PrimitiveNode : public ShaderStateNode
@@ -34,7 +35,7 @@ protected:
 	};
 
 	Resources::ResourceName meshName;
-	Resources::ResourceId res;
+	CoreGraphics::MeshId res;
 	uint32_t primitiveGroupIndex;
 };
 } // namespace Models
