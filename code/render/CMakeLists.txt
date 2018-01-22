@@ -101,6 +101,8 @@ ENDIF()
 				antialiasquality.cc
 				antialiasquality.h
 				barrier.h
+				batchgroup.cc
+				batchgroup.h
 				gpubuffertypes.h
 				cmdbuffer.h
 				config.h
@@ -345,6 +347,7 @@ ENDIF()
 			fips_files(
 				framebarrier.cc
 				framebarrier.h
+				framebatchtype.h
 				frameblit.cc
 				frameblit.h
 				framecompute.cc
@@ -387,8 +390,6 @@ ENDIF()
 			
 		fips_dir(graphics)
 			fips_files(
-				batchgroup.cc
-				batchgroup.h
 				camera.cc
 				camera.h
 				graphicscontext.cc
@@ -579,8 +580,6 @@ ENDIF()
 			)
 		fips_dir(models)
 			fips_files(
-				framebatchtype.h
-				framebatchtype.cc
 				model.cc
 				model.h
 				modelcontext.cc

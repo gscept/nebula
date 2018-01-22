@@ -41,7 +41,7 @@ ParticleSystem::~ParticleSystem()
 /**
 */
 void
-ParticleSystem::Setup(const Ptr<Mesh>& mesh, IndexT primGrpIndex, const EmitterAttrs& attrs)
+ParticleSystem::Setup(const CoreGraphics::MeshId mesh, IndexT primGrpIndex, const EmitterAttrs& attrs)
 {
     n_assert(!this->IsValid());
 

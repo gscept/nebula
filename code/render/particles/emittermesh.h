@@ -28,7 +28,7 @@ public:
     ~EmitterMesh();
     
     /// setup the emitter mesh
-    void Setup(const Ptr<CoreGraphics::Mesh>& mesh, IndexT primGroupIndex);
+    void Setup(const CoreGraphics::MeshId mesh, IndexT primGroupIndex);
     /// discard the emitter mesh
     void Discard();
     /// return true if object has been setup

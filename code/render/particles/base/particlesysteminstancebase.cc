@@ -77,7 +77,7 @@ ParticleSystemInstanceBase::~ParticleSystemInstanceBase()
 /**
 */
 void
-ParticleSystemInstanceBase::Setup(const Ptr<CoreGraphics::Mesh>& iemitterMesh, IndexT iprimGroupIndex, const EmitterAttrs& iemitterAttrs)
+ParticleSystemInstanceBase::Setup(const CoreGraphics::MeshId iemitterMesh, IndexT iprimGroupIndex, const EmitterAttrs& iemitterAttrs)
 {
     n_assert(!this->IsValid());
 

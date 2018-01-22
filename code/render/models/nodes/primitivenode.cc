@@ -6,8 +6,7 @@
 #include "primitivenode.h"
 #include "models/modelpool.h"
 #include "resources/resourcemanager.h"
-#include "coregraphics/coregraphics.h"
-#include "coregraphics/meshpool.h"
+#include "coregraphics/mesh.h"
 
 using namespace Util;
 namespace Models
@@ -42,7 +41,7 @@ PrimitiveNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, con
 		this->meshName = reader->ReadString();
 
 		// add as pending resource in loader
-		this->res = CoreGraphics::meshPool->CreateResource(this->meshName, tag, nullptr, nullptr, false);
+		this->res = Resources::CreateResource(this->meshName, tag, nullptr, nullptr, false);
 	}
 	else if (FourCC('PGRI') == fourcc)
 	{

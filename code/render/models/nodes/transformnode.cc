@@ -61,7 +61,7 @@ TransformNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, con
 	}
 	else if (FourCC('SLKV') == fourcc)
 	{
-		this->lockedToViewer = reader->ReadBool());
+		this->lockedToViewer = reader->ReadBool();
 	}
 	else if (FourCC('SMID') == fourcc)
 	{

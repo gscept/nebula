@@ -36,7 +36,7 @@ public:
     static void ModulateStepTime(float val);
 
     /// setup the particle system object
-    void Setup(const Ptr<CoreGraphics::Mesh>& emitterMesh, IndexT primGroupIndex, const EmitterAttrs& emitterAttrs);
+    void Setup(const CoreGraphics::MeshId emitterMesh, IndexT primGroupIndex, const EmitterAttrs& emitterAttrs);
     /// discard the particle system object
     void Discard();
     /// return true if object has been setup

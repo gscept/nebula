@@ -21,7 +21,7 @@
 #include "util/variant.h"
 #include "util/stringatom.h"
 #include "materials/materialtype.h"
-#include "graphics/batchgroup.h"
+#include "coregraphics/batchgroup.h"
 #include "materialfeature.h"
 
 namespace Materials
@@ -61,7 +61,7 @@ public:
 
 	struct MaterialPass
 	{
-		Graphics::BatchGroup::Code code;
+		CoreGraphics::BatchGroup::Code code;
 		CoreGraphics::ShaderId shader;
 		CoreGraphics::ShaderFeature::Mask featureMask;
 		IndexT index;
@@ -114,11 +114,11 @@ public:
 	void Reload(const CoreGraphics::ShaderId shader);
 
 	/// add a shader to the material
-	void AddPass(const Graphics::BatchGroup::Code& code, const CoreGraphics::ShaderId shader, const CoreGraphics::ShaderFeature::Mask& mask);
+	void AddPass(const CoreGraphics::BatchGroup::Code& code, const CoreGraphics::ShaderId shader, const CoreGraphics::ShaderFeature::Mask& mask);
 	/// get pass by index
 	const MaterialPass& GetPassByIndex(const IndexT index) const;
 	/// get pass list by code
-	const Util::Array<MaterialPass>& GetPassesByCode(const Graphics::BatchGroup::Code& code);
+	const Util::Array<MaterialPass>& GetPassesByCode(const CoreGraphics::BatchGroup::Code& code);
 	/// get the amount of passes used by this material
 	SizeT GetNumPasses();
 
@@ -153,7 +153,7 @@ private:
     Materials::MaterialType::Code code;
 	Util::Dictionary<Util::StringAtom, MaterialParameter> parametersByName;
 	Util::Array<MaterialPass> passesByIndex;
-	Util::Dictionary<Graphics::BatchGroup::Code, Util::Array<MaterialPass>> passesByBatchGroup;
+	Util::Dictionary<CoreGraphics::BatchGroup::Code, Util::Array<MaterialPass>> passesByBatchGroup;
     Util::Array<Ptr<Surface>> surfaces;
 	Util::Dictionary<Util::StringAtom, Ptr<Surface>> surfacesByName;
 }; 

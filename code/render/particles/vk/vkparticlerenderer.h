@@ -8,7 +8,6 @@
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
 #include "particles/base/particlerendererbase.h"
-#include "coregraphics/bufferlock.h"
 namespace Vulkan
 {
 class VkParticleRenderer : public Base::ParticleRendererBase

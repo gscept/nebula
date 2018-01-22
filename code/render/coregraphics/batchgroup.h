@@ -1,7 +1,7 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @class Graphics::BatchGroup
+    @class CoreGraphics::BatchGroup
   
     BatchGroup denotes a zero indexed name registry which corresponds to the 
     type of materials being batched during a FrameBatch. The name from the 
@@ -22,7 +22,7 @@
 #include "util/dictionary.h"
 
 //------------------------------------------------------------------------------
-namespace Graphics
+namespace CoreGraphics
 {
 class BatchGroup
 {
@@ -51,6 +51,6 @@ private:
     Util::Array<Name> codeToName;
 };
 
-} // namespace Graphics
+} // namespace CoreGraphics
 //------------------------------------------------------------------------------
 

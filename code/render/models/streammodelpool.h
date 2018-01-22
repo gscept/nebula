@@ -51,7 +51,7 @@ private:
 	friend class ParticleSystemNode;
 
 	/// perform actual load, override in subclass
-	LoadStatus Load(const Ids::Id24 id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream);
+	LoadStatus LoadFromStream(const Ids::Id24 id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream);
 	/// unload resource
 	void Unload(const Ids::Id24 id);
 
@@ -72,7 +72,7 @@ private:
 	Ids::IdAllocator<
 		Math::bbox,
 		Util::Dictionary<Util::StringAtom, NodeTypeId>
-	> modelAllocator;
-	__ImplementResourceAllocator(modelAllocator);
+	> modelNodeAllocator;
+	__ImplementResourceAllocator(modelNodeAllocator);
 };
 } // namespace Models

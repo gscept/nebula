@@ -7,7 +7,7 @@
 #include "frame2/frameserver.h"
 #include "graphicsserver.h"
 
-namespace Graphics
+namespace CoreGraphics
 {
 
 using namespace Util;

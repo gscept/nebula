@@ -62,7 +62,7 @@ ModelContext::Register(const GraphicsEntityId entity, const Resources::ResourceN
 void
 ModelContext::Unregister(const GraphicsEntityId entity)
 {
-	this->contextIdPool.Deallocate(entity);
+	this->contextIdPool.Deallocate(entity.id);
 }
 
 //------------------------------------------------------------------------------

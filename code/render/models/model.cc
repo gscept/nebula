@@ -11,7 +11,6 @@ namespace Models
 StreamModelPool* modelPool;
 ModelAllocatorType modelAllocator;
 
-
 //------------------------------------------------------------------------------
 /**
 */
@@ -46,7 +45,7 @@ ModelFindNode(const ModelId model, const Util::StringAtom& name)
 //------------------------------------------------------------------------------
 /**
 */
-const Math::bbox&
+Math::bbox&
 ModelGetBoundingBox(const ModelId model)
 {
 	return modelAllocator.Get<0>(model.id);

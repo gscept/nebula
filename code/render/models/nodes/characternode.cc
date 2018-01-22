@@ -15,7 +15,7 @@ namespace Models
 using namespace Models;
 using namespace Util;
 using namespace IO;
-using namespace CoreAnimation;
+//using namespace CoreAnimation;
 using namespace Resources;
 using namespace Math;
 
@@ -93,7 +93,7 @@ CharacterNode::OnFinishedLoading()
 	this->managedAnimResource = Resources::CreateResource(this->animResId, this->tag, [this](Resources::ResourceId) { this->OnResourcesLoaded(); }, nullptr, false);
 
 	//	ResourceManager::Instance()->CreateManagedResource(AnimResource::RTTI, this->animResId, 0, sync).downcast<ManagedAnimResource>();
-	n_assert(this->managedAnimResource != InvalidId64);
+	n_assert(this->managedAnimResource != Resources::ResourceId::Invalid());
 
 	// setup the character's skin library from our children
 	// (every child node represents one character skin)
