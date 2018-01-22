@@ -18,6 +18,7 @@
 #include "idpool.h"
 #include "util/array.h"
 #include "threading/criticalsection.h"
+#include <tuple>
 namespace Ids
 {
 template <typename C>

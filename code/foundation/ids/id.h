@@ -23,11 +23,11 @@ static const uint32_t InvalidId24 = 0x00FFFFFF;
 static const uint16_t InvalidId16 = 0xFFFF;
 static const uint8_t InvalidId8 = 0xFF;
 
-#define ID_64_TYPE(x) struct x { Ids::Id64 id; constexpr x() : id(0) {}; constexpr x(const Ids::Id64 id) : id(id) {}; constexpr operator Ids::Id64() const  { return id; } static constexpr x Invalid() { return Ids::InvalidId64; } constexpr IndexT HashCode() const { return (IndexT)(id & 0x00000000FFFFFFFF); } };
-#define ID_32_TYPE(x) struct x { Ids::Id32 id; constexpr x() : id(0) {}; constexpr x(const Ids::Id32 id) : id(id) {}; constexpr operator Ids::Id32() const  { return id; } static constexpr x Invalid() { return Ids::InvalidId32; } constexpr IndexT HashCode() const { return id; } };
-#define ID_24_TYPE(x) struct x { Ids::Id24 id : 24;  constexpr x() : id(0) {}; constexpr x(const Ids::Id32 id) : id(id) {}; constexpr operator Ids::Id24() const  { return id; } static constexpr x Invalid() { return Ids::InvalidId24; } constexpr IndexT HashCode() const { return (IndexT)(id); } };
-#define ID_16_TYPE(x) struct x { Ids::Id16 id; constexpr x() : id(0) {}; constexpr x(const Ids::Id16 id) : id(id) {}; constexpr operator Ids::Id16() const  { return id; } static constexpr x Invalid() { return Ids::InvalidId16; } constexpr IndexT HashCode() const { return (IndexT)(id); } };
-#define ID_8_TYPE(x) struct x { Ids::Id8 id;  constexpr x() : id(0) {}; constexpr x(const Ids::Id8 id) : id(id) {}; constexpr operator Ids::Id8() const  { return id; } static constexpr x Invalid() { return Ids::InvalidId8; } constexpr IndexT HashCode() const { return (IndexT)(id); } };
+#define ID_64_TYPE(x) struct x { Ids::Id64 id; constexpr x() : id(Ids::InvalidId64) {}; constexpr x(const Ids::Id64 id) : id(id) {}; constexpr explicit operator Ids::Id64() const  { return id; } static constexpr x Invalid() { return Ids::InvalidId64; } constexpr IndexT HashCode() const { return (IndexT)(id & 0x00000000FFFFFFFF); }  constexpr Ids::Id64 HashCode64() const { return id; } };
+#define ID_32_TYPE(x) struct x { Ids::Id32 id; constexpr x() : id(Ids::InvalidId32) {}; constexpr x(const Ids::Id32 id) : id(id) {}; constexpr explicit operator Ids::Id32() const  { return id; } static constexpr x Invalid() { return Ids::InvalidId32; } constexpr IndexT HashCode() const { return id; } };
+#define ID_24_TYPE(x) struct x { Ids::Id24 id : 24;  constexpr x() : id(Ids::InvalidId24) {}; constexpr x(const Ids::Id24 id) : id(id) {}; constexpr explicit operator Ids::Id24() const  { return id; } static constexpr x Invalid() { return Ids::InvalidId24; } constexpr IndexT HashCode() const { return (IndexT)(id); } };
+#define ID_16_TYPE(x) struct x { Ids::Id16 id; constexpr x() : id(Ids::InvalidId16) {}; constexpr x(const Ids::Id16 id) : id(id) {}; constexpr explicit operator Ids::Id16() const  { return id; } static constexpr x Invalid() { return Ids::InvalidId16; } constexpr IndexT HashCode() const { return (IndexT)(id); } };
+#define ID_8_TYPE(x) struct x { Ids::Id8 id;  constexpr x() : id(Ids::InvalidId8) {}; constexpr x(const Ids::Id8 id) : id(id) {}; constexpr explicit operator Ids::Id8() const  { return id; } static constexpr x Invalid() { return Ids::InvalidId8; } constexpr IndexT HashCode() const { return (IndexT)(id); } };
 
 #define ID_32_24_8_NAMED_TYPE(x, id32_name, id24_name, id8_name) struct x { \
 	Ids::Id32 id32_name : 32;\
