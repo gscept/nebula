@@ -31,6 +31,7 @@
 #include "util/fixedarray.h"
 #include "util/array.h"
 #include "util/keyvaluepair.h"
+#include <type_traits>
 
 //------------------------------------------------------------------------------
 namespace Util
@@ -73,6 +74,11 @@ public:
 private:
     FixedArray<Array<KeyValuePair<KEYTYPE, VALUETYPE> > > hashArray;
     int size;
+
+	/// if type is integral, just use that value directly
+	template <typename KEYTYPE> const IndexT GetHashCode(const typename std::enable_if_t<std::is_integral<KEYTYPE>::value, KEYTYPE>& key) const { return IndexT(key % this->hashArray.Size()); };
+	/// if not, call the function on HashCode on KEYTPYE
+	template <typename KEYTYPE> const IndexT GetHashCode(const KEYTYPE& key) const { return key.HashCode() % this->hashArray.Size();  };
 };
 
 //------------------------------------------------------------------------------
@@ -165,7 +171,7 @@ VALUETYPE&
 HashTable<KEYTYPE, VALUETYPE>::operator[](const KEYTYPE& key) const
 {
     // get hash code from key, trim to capacity
-    IndexT hashIndex = key.HashCode() % this->hashArray.Size();
+    IndexT hashIndex = GetHashCode<KEYTYPE>(key);
     const Array<KeyValuePair<KEYTYPE, VALUETYPE> >& hashElements = this->hashArray[hashIndex];
     int numHashElements = hashElements.Size();
     #if NEBULA3_BOUNDSCHECKS    
@@ -244,7 +250,7 @@ HashTable<KEYTYPE, VALUETYPE>::Add(const KeyValuePair<KEYTYPE, VALUETYPE>& kvp)
     #if NEBULA3_BOUNDSCHECKS
     n_assert(!this->Contains(kvp.Key()));
     #endif
-    IndexT hashIndex = kvp.Key().HashCode() % this->hashArray.Size();
+    IndexT hashIndex = GetHashCode<KEYTYPE>(kvp.Key());
     this->hashArray[hashIndex].InsertSorted(kvp);
     this->size++;
 }
@@ -270,7 +276,7 @@ HashTable<KEYTYPE, VALUETYPE>::Erase(const KEYTYPE& key)
     #if NEBULA3_BOUNDSCHECKS
     n_assert(this->size > 0);
     #endif
-    IndexT hashIndex = key.HashCode() % this->hashArray.Size();
+    IndexT hashIndex = GetHashCode<KEYTYPE>(key);
     Array<KeyValuePair<KEYTYPE, VALUETYPE> >& hashElements = this->hashArray[hashIndex];
     IndexT hashElementIndex = hashElements.BinarySearchIndex(key);
     #if NEBULA3_BOUNDSCHECKS
@@ -289,7 +295,7 @@ HashTable<KEYTYPE, VALUETYPE>::Contains(const KEYTYPE& key) const
 {
     if (this->size > 0)
     {
-        IndexT hashIndex = key.HashCode() % this->hashArray.Size();
+        IndexT hashIndex = GetHashCode<KEYTYPE>(key);
         Array<KeyValuePair<KEYTYPE, VALUETYPE> >& hashElements = this->hashArray[hashIndex];
         IndexT hashElementIndex = hashElements.BinarySearchIndex(key);
         return (InvalidIndex != hashElementIndex);
