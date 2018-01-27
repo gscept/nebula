@@ -110,7 +110,7 @@ CoreGraphics::IndexType::Code
 VkMemoryIndexBufferPool::GetIndexType(const CoreGraphics::IndexBufferId id)
 {
 	VkIndexBufferRuntimeInfo& runtimeInfo = this->Get<1>(id.allocId);
-	return runtimeInfo.type
+	return runtimeInfo.type;
 }
 
 //------------------------------------------------------------------------------

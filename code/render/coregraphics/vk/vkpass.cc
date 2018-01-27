@@ -524,7 +524,7 @@ PassBegin(const PassId& id)
 /**
 */
 void
-PassBeginBatch(const PassId& id, Models::FrameBatchType::Code batch)
+PassBeginBatch(const PassId& id, Frame::FrameBatchType::Code batch)
 {
 }
 

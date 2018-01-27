@@ -9,6 +9,8 @@
 #include "coregraphics/base/textrendererbase.h"
 #include "coregraphics/shader.h"
 #include "coregraphics/vertexbuffer.h"
+#include "coregraphics/texture.h"
+#include "coregraphics/primitivegroup.h"
 #include "stb/stb_truetype.h"
 namespace Vulkan
 {

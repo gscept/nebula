@@ -296,7 +296,7 @@ VkShaderStateSetupConstantBuffers(const Ids::Id24 id, AnyFX::ShaderEffect* effec
 					{
 						// allocate single instance within uniform buffer and get offset
 						instanceOffset = ConstantBufferAllocateInstance(uniformBuffer);
-						offsets.Append(instanceOffset);
+						offsets.Append(instanceOffset.id);
 						bufferMappings.Add(block->binding, VkShaderStateBufferMapping{j, dynindex++});
 
 						// add to dictionary so we can dealloc later
@@ -315,7 +315,7 @@ VkShaderStateSetupConstantBuffers(const Ids::Id24 id, AnyFX::ShaderEffect* effec
 					}
 
 					// we apply the constant buffer again, in case we have to grow the buffer and reallocate it
-					VkShaderVariableResourceBinding& resource = varAllocator.Get<1>(bufferVar);
+					VkShaderVariableResourceBinding& resource = varAllocator.Get<1>(bufferVar.id);
 					SetConstantBuffer(resource, setWrites, uniformBuffer);
 				}
 				else

@@ -99,5 +99,9 @@ uint TextureGetNumMips(const TextureId id);
 TextureMapInfo TextureMap(const TextureId id, IndexT mip, const CoreGraphics::GpuBufferTypes::MapType type);
 /// unmap GPU memory
 void TextureUnmap(const TextureId id, IndexT mip);
+/// map texture face GPU memory
+TextureMapInfo TextureMapFace(const TextureId id, IndexT mip, TextureCubeFace face, const CoreGraphics::GpuBufferTypes::MapType type);
+/// unmap texture face
+void TextureUnmapFace(const TextureId id, IndexT mip, TextureCubeFace face);
 
 } // CoreGraphics

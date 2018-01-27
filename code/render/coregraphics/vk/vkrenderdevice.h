@@ -62,7 +62,7 @@ public:
 	/// progress to next subpass
 	void SetToNextSubpass();
 	/// begin batch
-	void BeginBatch(Models::FrameBatchType::Code batchType);
+	void BeginBatch(Frame::FrameBatchType::Code batchType);
 	/// bake the current state of the render device (only used on DX12 and Vulkan renderers where pipeline creation is required)
 	void BuildRenderPipeline();
 	/// insert execution barrier

@@ -810,7 +810,7 @@ VkRenderDevice::SetToNextSubpass()
 /**
 */
 void
-VkRenderDevice::BeginBatch(Models::FrameBatchType::Code batchType)
+VkRenderDevice::BeginBatch(Frame::FrameBatchType::Code batchType)
 {
 	RenderDeviceBase::BeginBatch(batchType);
 

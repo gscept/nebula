@@ -238,7 +238,7 @@ RenderDeviceBase::SetToNextSubpass()
 /**
 */
 void
-RenderDeviceBase::BeginBatch(FrameBatchType::Code batchType)
+RenderDeviceBase::BeginBatch(Frame::FrameBatchType::Code batchType)
 {
     n_assert(this->inBeginPass);
     n_assert(!this->inBeginBatch);

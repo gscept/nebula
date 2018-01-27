@@ -57,7 +57,7 @@ private:
 	ID_64_TYPE(DerivativeId);
 
 	Ids::IdAllocator<
-		Util::HashTable<DerivativeId, DerivativeLayout>,		//0 program-to-derivative layout binding
+		Util::HashTable<uint64_t, DerivativeLayout>,		//0 program-to-derivative layout binding
 		VkPipelineVertexInputStateCreateInfo,				//1 base vertex input state
 		BindInfo,											//2 setup info
 		CoreGraphics::VertexLayoutInfo						//3 base info
