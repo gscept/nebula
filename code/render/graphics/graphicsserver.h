@@ -12,6 +12,8 @@
 #include "framesync/framesynctimer.h"
 #include "util/stringatom.h"
 #include "ids/idgenerationpool.h"
+#include "coregraphics/batchgroup.h"
+#include "stage.h"
 #include "graphicsentity.h"
 namespace Graphics
 {
@@ -66,6 +68,7 @@ private:
 
 	Util::Array<Ptr<Stage>> stages;
 	Util::Array<Ptr<View>> views;
+	CoreGraphics::BatchGroup batchGroupRegistry;
 
 	bool isOpen;
 };

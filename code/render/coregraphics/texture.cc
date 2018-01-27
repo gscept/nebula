@@ -14,7 +14,7 @@ namespace CoreGraphics
 MemoryTexturePool* texturePool = nullptr;
 
 //------------------------------------------------------------------------------
-/*
+/**
 */
 inline const TextureId
 CreateTexture(TextureCreateInfo info)
@@ -26,7 +26,7 @@ CreateTexture(TextureCreateInfo info)
 }
 
 //------------------------------------------------------------------------------
-/*
+/**
 */
 inline void
 DestroyTexture(const TextureId id)
@@ -35,7 +35,7 @@ DestroyTexture(const TextureId id)
 }
 
 //------------------------------------------------------------------------------
-/*
+/**
 */
 inline TextureMapInfo 
 TextureMap(const TextureId id, IndexT mip, const CoreGraphics::GpuBufferTypes::MapType type)
@@ -46,12 +46,32 @@ TextureMap(const TextureId id, IndexT mip, const CoreGraphics::GpuBufferTypes::M
 }
 
 //------------------------------------------------------------------------------
-/*
+/**
 */
 inline void
 TextureUnmap(const TextureId id, IndexT mip)
 {
 	texturePool->Unmap(id, mip);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline TextureMapInfo
+TextureMapFace(const TextureId id, IndexT mip, TextureCubeFace face, const CoreGraphics::GpuBufferTypes::MapType type)
+{
+	TextureMapInfo info;
+	n_assert(texturePool->MapCubeFace(id, face, mip, type, info));
+	return info;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+TextureUnmapFace(const TextureId id, IndexT mip, TextureCubeFace face)
+{
+	texturePool->UnmapCubeFace(id, face, mip);
 }
 
 } // namespace CoreGraphics

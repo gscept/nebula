@@ -3,9 +3,9 @@
 //  (C) 2013-2016 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
-#include "graphics/batchgroup.h"
-#include "frame2/frameserver.h"
-#include "graphicsserver.h"
+#include "coregraphics/batchgroup.h"
+#include "frame/frameserver.h"
+#include "graphics/graphicsserver.h"
 
 namespace CoreGraphics
 {
@@ -29,7 +29,7 @@ BatchGroup::BatchGroup()
 BatchGroup::Code
 BatchGroup::FromName(const Name& name)
 {
-    BatchGroup& registry = GraphicsServer::Instance()->batchGroupRegistry;
+    BatchGroup& registry = Graphics::GraphicsServer::Instance()->batchGroupRegistry;
     IndexT index = registry.nameToCode.FindIndex(name);
     if (InvalidIndex != index)
     {
