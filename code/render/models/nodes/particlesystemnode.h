@@ -43,24 +43,24 @@ public:
 	/// get emitter mesh
 	const CoreGraphics::MeshId GetEmitterMesh() const;
 
+	struct Instance : public ShaderStateNode::Instance
+	{
+		Ids::Id32 particleSystemId;
+		CoreGraphics::ShaderId particleShader;
+		CoreGraphics::ShaderConstantId emitterOrientationVar;
+		CoreGraphics::ShaderConstantId billBoardVar;
+		CoreGraphics::ShaderConstantId bboxCenterVar;
+		CoreGraphics::ShaderConstantId bboxSizeVar;
+		CoreGraphics::ShaderConstantId animPhasesVar;
+		CoreGraphics::ShaderConstantId animsPerSecVar;
+		IndexT bufferIndex;
+	};
+
 private:
     /// helper function to parse an EnvelopeCurve from a data stream
     Particles::EnvelopeCurve ParseEnvelopeCurveData(const Ptr<IO::BinaryReader>& reader) const;
 
 protected:    
-
-	struct Instance : public ShaderStateNode::Instance
-	{
-		Ids::Id32 particleSystemId;
-		CoreGraphics::ShaderId particleShader;
-		CoreGraphics::ShaderVariableId emitterOrientationVar;
-		CoreGraphics::ShaderVariableId billBoardVar;
-		CoreGraphics::ShaderVariableId bboxCenterVar;
-		CoreGraphics::ShaderVariableId bboxSizeVar;
-		CoreGraphics::ShaderVariableId animPhasesVar;
-		CoreGraphics::ShaderVariableId animsPerSecVar;
-		IndexT bufferIndex;
-	};
 
 	Particles::EmitterAttrs emitterAttrs;
     Resources::ResourceName meshResId;

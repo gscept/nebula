@@ -34,35 +34,29 @@ ModelContext::~ModelContext()
 //------------------------------------------------------------------------------
 /**
 */
-Graphics::ContextId
-ModelContext::Register(const GraphicsEntityId entity, const Resources::ResourceName& modelName)
+void
+ModelContext::Setup(const Graphics::GraphicsEntityId id, const Resources::ResourceName& name)
 {
-	Graphics::ContextId id;
-	if (!this->contextIdPool.Allocate(id))
-	{
-		this->modelResources.Append(Ids::InvalidId32);
-		this->modelInstanceIds.Append(Ids::InvalidId32);
-		this->modelInstances.Append(Util::Array<NodeInstance>());
-	}
+	const Ids::Id32 cid = this->entitySliceMap[id.id];
+	Resources::ResourceId& rid = this->modelContextAllocator.Get<0>(cid);
+	ModelInstanceId& mdl = this->modelContextAllocator.Get<1>(cid);
 
 	// create resource
-	Ids::Id24 index = Ids::Index(id);
-	this->modelResources[index] = Resources::CreateResource(modelName, ""_atm, [this, index](Resources::ResourceId id)
+	rid = Resources::CreateResource(name, ""_atm, [&mdl, rid, this](Resources::ResourceId id)
 	{
 		// create instance of resource once done
-		this->modelInstanceIds[index] = this->CreateModelInstance(index);
+		mdl = this->CreateModelInstance(rid);
 	});
-	
-	return id;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-void
-ModelContext::Unregister(const GraphicsEntityId entity)
+const Models::ModelInstanceId
+ModelContext::GetModel(const Graphics::GraphicsEntityId id)
 {
-	this->contextIdPool.Deallocate(entity.id);
+	const Ids::Id32 cid = this->entitySliceMap[id.id];
+	return this->modelContextAllocator.Get<1>(cid);
 }
 
 //------------------------------------------------------------------------------
@@ -72,6 +66,20 @@ ModelContext::Unregister(const GraphicsEntityId entity)
 Models::ModelInstanceId
 ModelContext::CreateModelInstance(const Resources::ResourceId id)
 {
+	Models::ModelInstanceId id;
+	Ids::Id32 miid = this->modelInstanceAllocator.AllocObject();
+
+	// this should be a model
+	Models::ModelId mid;
+	mid.id = id.allocId;
+
+	// get nodes
+	const Util::Dictionary<Util::StringAtom, ModelNodeId>& nodes = ModelGetNodes(mid);
+
+	this->modelInstanceAllocator.Get<0>(miid) = mid;
+	this->modelInstanceAllocator.Get<1>(miid) = Math::matrix44::identity();
+	this->modelInstanceAllocator.Get<2>(miid)
+
 	/*
 	Ptr<Model> model = Resources::GetResource<Model>(id);
 	Ids::Id32 instanceId;

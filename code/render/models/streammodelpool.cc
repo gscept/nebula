@@ -17,6 +17,7 @@ using namespace IO;
 namespace Models
 {
 
+Ids::Id8 StreamModelPool::NodeInstanceCounter = 0;
 __ImplementClass(Models::StreamModelPool, 'MOLO', Resources::ResourceStreamPool);
 //------------------------------------------------------------------------------
 /**
@@ -43,32 +44,61 @@ StreamModelPool::Setup()
 	this->placeholderResourceId = "mdl:system/placeholder.n3";
 	this->errorResourceId = "mdl:system/error.n3";
 
-	// add table for nodes, add new nodes here if required
-	this->constructors.Add('TRFN', [this]() -> Ids::Id32 { this->transformNodes.Append(TransformNode()); return this->transformNodes.Size() - 1; });
-	this->accessors.Add('TRFN', [this](Ids::Id32 id) -> Models::ModelNode* { return &this->transformNodes[id]; });
+	IMPLEMENT_NODE_ALLOCATOR('TRFN', TransformNode, this->transformNodes, this->transformNodeInstances);
+	IMPLEMENT_NODE_ALLOCATOR('SPND', PrimitiveNode, this->primitiveNodes, this->primitiveNodeInstances);
+	IMPLEMENT_NODE_ALLOCATOR('SHSN', ShaderStateNode, this->shaderStateNodes, this->shaderStateNodeInstances);
+	IMPLEMENT_NODE_ALLOCATOR('CHSN', CharacterSkinNode, this->characterSkinNodes, this->characterSkinNodeInstances);
+	IMPLEMENT_NODE_ALLOCATOR('CHRN', CharacterNode, this->characterNodes, this->characterNodeInstances);
+	IMPLEMENT_NODE_ALLOCATOR('PSND', ParticleSystemNode, this->particleSystemNodes, this->particleSystemNodeInstances);
+}
 
-	this->constructors.Add('SPND', [this]() -> Ids::Id32 { this->primitiveNodes.Append(PrimitiveNode()); return this->primitiveNodes.Size() - 1; });
-	this->accessors.Add('SPND', [this](Ids::Id32 id) -> Models::ModelNode* { return &this->primitiveNodes[id]; });
+//------------------------------------------------------------------------------
+/**
+*/
+ModelInstanceId
+StreamModelPool::CreateModelInstance(const ModelId id)
+{
+	ModelInstanceId miid;
+	const Util::Dictionary<Util::StringAtom, ModelNodeId>& nodes = this->modelAllocator.Get<1>(id.allocId);
 
-	this->constructors.Add('SHSN', [this]() -> Ids::Id32 { this->shaderStatenodes.Append(ShaderStateNode()); return this->shaderStatenodes.Size() - 1; });
-	this->accessors.Add('SHSN', [this](Ids::Id32 id) -> Models::ModelNode* { return &this->shaderStatenodes[id]; });
+	// alloc a new instance of this model
+	Ids::Id32 mnid = this->modelInstanceAllocator.AllocObject();
+	miid.model = id.allocId;
+	miid.instance = mnid;
 
-	this->constructors.Add('CHSN', [this]() -> Ids::Id32 { this->characterSkinNodes.Append(CharacterSkinNode()); return this->characterSkinNodes.Size() - 1; });
-	this->accessors.Add('CHSN', [this](Ids::Id32 id) -> Models::ModelNode* { return &this->characterSkinNodes[id]; });
+	// get all template nodes
+	Util::Array<ModelNodeInstanceId>& nodeInstances = this->modelInstanceAllocator.Get<0>(mnid);
+	SizeT i;
+	for (i = 0; i < nodes.Size(); i++)
+	{
+		// get model node and allocate new instance
+		const ModelNodeId& nid = nodes.ValueAtIndex(i);
+		Ids::Id32 iid = this->nodeInstanceConstructors[nid.fourcc]();
 
-	this->constructors.Add('CHRN', [this]() -> Ids::Id32 { this->characterNodes.Append(CharacterNode()); return this->characterNodes.Size() - 1; });
-	this->accessors.Add('CHRN', [this](Ids::Id32 id) -> Models::ModelNode* { return &this->characterNodes[id]; });
+		ModelNode* node = this->nodeAccessors[nid.fourcc](nid.node);
 
-	this->constructors.Add('PSND', [this]() -> Ids::Id32 { this->particleSystemNode.Append(ParticleSystemNode()); return this->particleSystemNode.Size() - 1; });
-	this->accessors.Add('PSND', [this](Ids::Id32 id) -> Models::ModelNode* { return &this->particleSystemNode[id]; });
+		// setup new id
+		ModelNodeInstanceId instanceId;
+		instanceId.node = nid.node;
+		instanceId.instance = iid;
+		instanceId.fourcc = nid.fourcc;
+		nodeInstances.Append(instanceId);
+	}
 
-	// setup type-to-index table
-	this->nodeTypeIndices[TransformNodeType] = this->accessors.FindIndex('TRFN');
-	this->nodeTypeIndices[PrimtiveNodeType] = this->accessors.FindIndex('SPND');
-	this->nodeTypeIndices[ShaderStateNodeType] = this->accessors.FindIndex('SHSN');
-	this->nodeTypeIndices[CharacterSkinNodeType] = this->accessors.FindIndex('CHSN');
-	this->nodeTypeIndices[CharacterNodeType] = this->accessors.FindIndex('CHRN');
-	this->nodeTypeIndices[ParticleSystemNodeType] = this->accessors.FindIndex('PSND');
+	// ok, all allocated, now parent
+	for (i = 0; i < nodeInstances.Size(); i++)
+	{
+		const ModelNodeInstanceId& iid = nodeInstances[i];
+		Models::ModelNode::Instance* node = this->nodeInstanceAccessors[iid.fourcc](iid.instance);
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+StreamModelPool::DestroyModelInstance(const ModelId id)
+{
 }
 
 //------------------------------------------------------------------------------
@@ -80,7 +110,7 @@ StreamModelPool::LoadFromStream(const Ids::Id24 id, const Util::StringAtom& tag,
 	// a model is a list of resources, a bounding box, and a dictionary of nodes
 	Math::bbox& boundingBox = this->Get<0>(id);
 	boundingBox.set(Math::point(0), Math::vector(0));
-	Util::Dictionary<Util::StringAtom, Util::KeyValuePair<Util::FourCC, Ids::Id32>>& nodes = this->Get<1>(id);
+	Util::Dictionary<Util::StringAtom, ModelNodeId>& nodes = this->Get<1>(id);
 	Ptr<BinaryReader> reader = BinaryReader::Create();
 	reader->SetStream(stream);
 	if (reader->Open())
@@ -123,8 +153,8 @@ StreamModelPool::LoadFromStream(const Ids::Id24 id, const Util::StringAtom& tag,
 				IndexT i;
 				for (i = 0; i < nodes.Size(); i++)
 				{
-					const NodeTypeId& pair = nodes.ValueAtIndex(i);
-					const ModelNode* node = this->accessors[pair.Key()](pair.Value());
+					const ModelNodeId& pair = nodes.ValueAtIndex(i);
+					const ModelNode* node = this->nodeAccessors[pair.fourcc](pair.node);
 					boundingBox.extend(node->boundingBox);
 				}
 				boundingBox.end_extend();
@@ -135,34 +165,37 @@ StreamModelPool::LoadFromStream(const Ids::Id24 id, const Util::StringAtom& tag,
 				// start of a ModelNode
 				FourCC classFourCC = reader->ReadUInt();
 				String name = reader->ReadString();
-				Ids::Id32 nodeId = this->constructors[classFourCC]();
-				ModelNode* node = this->accessors[classFourCC](nodeId);
+				Ids::Id8 mapping = this->nodeFourCCMapping[classFourCC];
+				Ids::Id32 nodeId = this->nodeConstructors[mapping]();
+				ModelNode* node = this->nodeAccessors[mapping](nodeId);
 				node->model = id;
 				node->name = name;
 				if (!this->nodeStack.IsEmpty())
 				{
-					const NodeTypeId& pair = this->nodeStack.Peek();
-					node->parent = pair.Value();
-					ModelNode* parent = this->accessors[pair.Key()](pair.Value());
+					const ModelNodeId& pair = this->nodeStack.Peek();
+					node->parent = pair.node;
+					ModelNode* parent = this->nodeAccessors[pair.fourcc](pair.node);
 					parent->children.Append(nodeId);
 				}
-				NodeTypeId id(classFourCC, nodeId);
-				this->nodeStack.Push(id);
-				nodes.Add(name, id);
+				ModelNodeId nid;
+				nid.fourcc = mapping;
+				nid.node = nodeId;
+				this->nodeStack.Push(nid);
+				nodes.Add(name, nid);
 			}
 			else if (fourCC == FourCC('<MND'))
 			{
 				// end of current ModelNode
 				n_assert(!this->nodeStack.IsEmpty());
-				const NodeTypeId& pair = this->nodeStack.Pop();
-				ModelNode* node = this->accessors[pair.Key()](pair.Value());
+				const ModelNodeId& pair = this->nodeStack.Pop();
+				ModelNode* node = this->nodeAccessors[pair.fourcc](pair.node);
 				node->Setup();
 			}
 			else
 			{
 				// if not opening or closing a node, assume it's a data tag
-				NodeTypeId& top = this->nodeStack.Peek();
-				ModelNode* node = this->accessors[top.Key()](top.Value());
+				ModelNodeId& top = this->nodeStack.Peek();
+				ModelNode* node = this->nodeAccessors[top.fourcc](top.node);
 				if (!node->Load(fourCC, tag, reader))
 				{
 					break;
@@ -183,12 +216,12 @@ StreamModelPool::LoadFromStream(const Ids::Id24 id, const Util::StringAtom& tag,
 void
 StreamModelPool::Unload(const Ids::Id24 id)
 {
-	Util::Dictionary<Util::StringAtom, NodeTypeId>& nodes = this->Get<1>(id);
+	Util::Dictionary<Util::StringAtom, ModelNodeId>& nodes = this->Get<1>(id);
 	IndexT i;
 	for (i = 0; i < nodes.Size(); i++)
 	{
-		const NodeTypeId& pair = nodes.ValueAtIndex(i);
-		ModelNode* node = this->accessors[pair.Key()](pair.Value());
+		const ModelNodeId& pair = nodes.ValueAtIndex(i);
+		ModelNode* node = this->nodeAccessors[pair.fourcc](pair.node);
 		node->Discard();
 	}
 	nodes.Clear();

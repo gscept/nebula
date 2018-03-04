@@ -31,6 +31,11 @@ enum NodeType
 	NumNodeTypes
 };
 
+RESOURCE_ID_TYPE(ModelId);
+ID_32_32_NAMED_TYPE(ModelInstanceId, model, instance);
+ID_24_8_NAMED_TYPE(ModelNodeId, fourcc, node);
+ID_32_24_8_NAMED_TYPE(ModelNodeInstanceId, node, instance, fourcc);
+
 class ModelNode;
 class StreamModelPool : public Resources::ResourceStreamPool
 {
@@ -44,6 +49,11 @@ public:
 	/// setup resource loader, initiates the placeholder and error resources if valid
 	void Setup();
 
+	/// create an instance of a model
+	ModelInstanceId CreateModelInstance(const ModelId id);
+	/// destroy an instance of a model
+	void DestroyModelInstance(const ModelId id);
+
 private:
 	friend class PrimitiveNode;
 	friend class CharacterNode;
@@ -55,24 +65,45 @@ private:
 	/// unload resource
 	void Unload(const Ids::Id24 id);
 
-	typedef Util::KeyValuePair<Util::FourCC, Ids::Id32> NodeTypeId;
-	Util::Stack<NodeTypeId> nodeStack;
+	Util::Stack<ModelNodeId> nodeStack;
 
-	Util::Dictionary<Util::FourCC, std::function<Ids::Id32()>> constructors;
-	Util::Dictionary<Util::FourCC, std::function<ModelNode*(Ids::Id32)>> accessors;
+	Util::Array<std::function<Ids::Id32()>> nodeConstructors;
+	Util::Array<std::function<ModelNode*(Ids::Id32)>> nodeAccessors;
 	Util::Array<TransformNode> transformNodes;
 	Util::Array<PrimitiveNode> primitiveNodes;
-	Util::Array<ShaderStateNode> shaderStatenodes;
+	Util::Array<ShaderStateNode> shaderStateNodes;
 	Util::Array<CharacterSkinNode> characterSkinNodes;
 	Util::Array<CharacterNode> characterNodes;
-	Util::Array<ParticleSystemNode> particleSystemNode;
+	Util::Array<ParticleSystemNode> particleSystemNodes;
 
-	Ids::Id8 nodeTypeIndices[NumNodeTypes];
+	Util::Dictionary<Util::FourCC, Ids::Id8> nodeFourCCMapping;
 
 	Ids::IdAllocator<
 		Math::bbox,
-		Util::Dictionary<Util::StringAtom, NodeTypeId>
-	> modelNodeAllocator;
-	__ImplementResourceAllocator(modelNodeAllocator);
+		Util::Dictionary<Util::StringAtom, ModelNodeId>
+	> modelAllocator;
+	__ImplementResourceAllocator(modelAllocator);
+
+	Util::Array<std::function<Ids::Id32()>> nodeInstanceConstructors;
+	Util::Array<std::function<ModelNode::Instance*(Ids::Id32)>> nodeInstanceAccessors;
+	Util::Array<TransformNode::Instance> transformNodeInstances;
+	Util::Array<PrimitiveNode::Instance> primitiveNodeInstances;
+	Util::Array<ShaderStateNode::Instance> shaderStateNodeInstances;
+	Util::Array<CharacterSkinNode::Instance> characterSkinNodeInstances;
+	Util::Array<CharacterNode::Instance> characterNodeInstances;
+	Util::Array<ParticleSystemNode::Instance> particleSystemNodeInstances;
+
+	Ids::IdAllocator<
+		Util::Array<ModelNodeInstanceId>
+	> modelInstanceAllocator;
+
+	static Ids::Id8 NodeInstanceCounter;
+
+#define IMPLEMENT_NODE_ALLOCATOR(FourCC, NodeType, NodeList, NodeInstanceList) \
+	nodeConstructors.Append([this]() -> Ids::Id32 { NodeList.Append(NodeType()); return NodeList.Size() - 1; }); \
+	nodeAccessors.Append([this](Ids::Id32 id) -> Models::ModelNode* { return &NodeList[id]; }); \
+	nodeInstanceConstructors.Append([this]() -> Ids::Id32 { NodeInstanceList.Append(NodeType::Instance()); return NodeInstanceList.Size() - 1; }); \
+	nodeInstanceAccessors.Append([this](Ids::Id32 id) -> Models::ModelNode::Instance* { return &NodeInstanceList[id]; }); \
+	this->nodeFourCCMapping.Add(FourCC, NodeInstanceCounter++);
 };
 } // namespace Models

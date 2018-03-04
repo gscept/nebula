@@ -21,22 +21,23 @@ public:
 	/// destructor
 	virtual ~ShaderStateNode();
 
+	struct Instance : public TransformNode::Instance
+	{
+		CoreGraphics::ShaderId sharedShader;
+		CoreGraphics::ShaderConstantId modelVar;
+		CoreGraphics::ShaderConstantId invModelVar;
+		CoreGraphics::ShaderConstantId modelViewProjVar;
+		CoreGraphics::ShaderConstantId modelViewVar;
+		CoreGraphics::ShaderConstantId objectIdVar;
+		IndexT bufferIndex;
+	};
+
 protected:
 	friend class StreamModelPool;
 
 	/// load shader state
 	bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader);
 
-	struct Instance : public TransformNode::Instance
-	{
-		CoreGraphics::ShaderId sharedShader;
-		CoreGraphics::ShaderVariableId modelVar;
-		CoreGraphics::ShaderVariableId invModelVar;
-		CoreGraphics::ShaderVariableId modelViewProjVar;
-		CoreGraphics::ShaderVariableId modelViewVar;
-		CoreGraphics::ShaderVariableId objectIdVar;
-		IndexT bufferIndex;
-	};
 
 	Resources::ResourceName materialName;
 };

@@ -20,12 +20,6 @@ public:
 	/// destructor
 	virtual ~TransformNode();
 
-protected:
-	friend class StreamModelPool;
-
-	/// load transform
-	virtual bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader);
-
 	struct Instance : public ModelNode::Instance
 	{
 		Math::transform44 transform;
@@ -33,6 +27,12 @@ protected:
 		bool isInViewSpace;
 		bool lockedToViewer;
 	};
+
+protected:
+	friend class StreamModelPool;
+
+	/// load transform
+	virtual bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader);
 
 	Math::point position;
 	Math::quaternion rotate;

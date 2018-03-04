@@ -23,16 +23,16 @@ public:
 	/// destructor
 	virtual ~PrimitiveNode();
 
+	struct Instance : public ShaderStateNode::Instance
+	{
+		// empty
+	};
+
 protected:
 	friend class StreamModelPool;
 
 	/// load primitive
 	virtual bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader);
-
-	struct Instance : public ShaderStateNode::Instance
-	{
-		// empty
-	};
 
 	Resources::ResourceName meshName;
 	CoreGraphics::MeshId res;
