@@ -44,17 +44,18 @@ public:
     /// get the character's animation resource
     const Resources::ResourceId GetAnimationResourceId() const;
 
-private:
-    /// recursively create model node instance and child model node instances
-    //virtual Ptr<Models::ModelNodeInstance> RecurseCreateNodeInstanceHierarchy(const Ptr<Models::ModelInstance>& modelInst, const Ptr<Models::ModelNodeInstance>& parentNodeInst=0);
-
-protected:
 	struct Instance : public TransformNode::Instance
 	{
 		Ids::Id32 characterId;
 		IndexT updateFrame;
 		bool updateThisFrame;
 	};
+
+private:
+    /// recursively create model node instance and child model node instances
+    //virtual Ptr<Models::ModelNodeInstance> RecurseCreateNodeInstanceHierarchy(const Ptr<Models::ModelInstance>& modelInst, const Ptr<Models::ModelNodeInstance>& parentNodeInst=0);
+
+protected:
 
     Resources::ResourceName animResId;
     Resources::ResourceName variationResId;

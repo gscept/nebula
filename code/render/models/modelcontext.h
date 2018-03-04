@@ -10,6 +10,7 @@
 #include "core/singleton.h"
 #include "resources/resourceid.h"
 #include "models/modelserver.h"
+#include "materials/materialserver.h"
 namespace Models
 {
 typedef Ids::Id32 ModelInstanceId;
@@ -23,13 +24,13 @@ public:
 	/// destructor
 	virtual ~ModelContext();
 
-	/// register entity
-	Graphics::ContextId Register(const Graphics::GraphicsEntityId entity, const Resources::ResourceName& modelName);
-	/// unregister entity
-	void Unregister(const Graphics::GraphicsEntityId entity);
+	/// setup
+	void Setup(const Graphics::GraphicsEntityId id, const Resources::ResourceName& name);
 
 	/// change model for existing entity
-	void ChangeModel(const Graphics::ContextId id, const Resources::ResourceName& modelName);
+	void ChangeModel(const Graphics::GraphicsEntityId id, const Resources::ResourceName& modelName);
+	/// get model
+	const Models::ModelInstanceId GetModel(const Graphics::GraphicsEntityId id);
 
 	/// called from view to resolve visibility for entities
 	void OnResolveVisibility(IndexT frameIndex, bool updateLod = false);
@@ -55,7 +56,7 @@ public:
 		Math::matrix44 transform;
 		Resources::ResourceId mesh;
 		IndexT primitiveGroupId;
-		Ptr<Materials::SurfaceInstance> surface;
+		Materials::MaterialId material;
 	};
 private:
 
@@ -64,41 +65,61 @@ private:
 	/// get model instance as list of nodes
 	const Util::Array<NodeInstance>& GetNodes(const ModelInstanceId id);
 
-	Ids::IdGenerationPool modelInstancePool;
-	Ids::IdGenerationPool nodeInstancePool;
-	Util::Array<Util::Array<NodeInstance>> modelInstances;
+	Ids::IdAllocator<
+		Resources::ResourceId,
+		ModelInstanceId,
+		Util::Array<NodeInstance>
+	> modelContextAllocator;
 
-	Util::Array<Resources::ResourceId> modelResources;
-	Util::Array<ModelInstanceId> modelInstanceIds;
+	Ids::IdAllocator<
+		Models::ModelId,			// parent
+		Math::matrix44,				// transform
+		Util::Array<NodeInstance>
+	> modelInstanceAllocator;
+
+	/// allocate a new slice for this context
+	Ids::Id32 Alloc();
+	/// deallocate a slice
+	void Dealloc(Ids::Id32 id);
+
 };
 
 //------------------------------------------------------------------------------
 /**
 */
-inline const Util::Array<ModelContext::NodeInstance>&
-ModelContext::GetNodes(const ModelInstanceId id)
+inline Ids::Id32
+ModelContext::Alloc()
 {
-	n_assert(this->modelInstancePool.IsValid(id));
-	return this->modelInstances[Ids::Index(id)];
-}
-
-//------------------------------------------------------------------------------
-/**
-	Shorthand for adding a model to a graphics entity, Models::Attach
-*/
-inline Graphics::ContextId
-Attach(const Graphics::GraphicsEntityId entity, const Resources::ResourceName& res)
-{
-	ModelContext::Instance()->Register(entity, res);
+	return this->modelContextAllocator.AllocObject();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 inline void
-Detach(const Graphics::GraphicsEntityId entity)
+ModelContext::Dealloc(Ids::Id32 id)
 {
-	ModelContext::Instance()->Unregister(entity);
+	this->modelContextAllocator.DeallocObject(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+	Shorthand for adding a model to a graphics entity, Models::Attach
+*/
+inline void
+ModelContextAttach(const Graphics::GraphicsEntityId entity, const Resources::ResourceName& res)
+{
+	ModelContext::Instance()->RegisterEntity(entity);
+	ModelContext::Instance()->Setup(entity, res);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+ModelContextDetach(const Graphics::GraphicsEntityId entity)
+{
+	ModelContext::Instance()->DeregisterEntity(entity);
 }
 
 } // namespace Models

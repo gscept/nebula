@@ -24,6 +24,8 @@ void DestroyModel(const ModelId id);
 const ModelNodeId ModelFindNode(const ModelId model, const Util::StringAtom& name);
 /// get bounding box
 Math::bbox& ModelGetBoundingBox(const ModelId model);
+/// get list of model nodes
+const Util::Dictionary<Util::StringAtom, ModelNodeId>& ModelGetNodes(const ModelId model);
 
 typedef Ids::IdAllocator<
 	Math::bbox,											// bounding box of entire model

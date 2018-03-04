@@ -36,6 +36,12 @@ public:
     /// get joint palette of a fragment
     const Util::Array<IndexT>& GetFragmentJointPalette(IndexT fragmentIndex) const;
 
+	struct Instance : public PrimitiveNode::Instance
+	{
+		CoreGraphics::ShaderId skinShader;
+		CoreGraphics::ShaderConstantId jointPaletteVar;
+		Ids::Id32 characterId;
+	};
 private:
     /// a skin fragment
     class Fragment
@@ -49,12 +55,7 @@ private:
     };
 
 protected:
-	struct Instance : public PrimitiveNode::Instance
-	{
-		CoreGraphics::ShaderId skinShader;
-		CoreGraphics::ShaderVariableId jointPaletteVar;
-		Ids::Id32 characterId;
-	};
+
 
     CoreGraphics::ShaderFeature::Mask skinnedShaderFeatureBits;
     Util::Array<Fragment> skinFragments;

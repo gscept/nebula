@@ -51,4 +51,13 @@ ModelGetBoundingBox(const ModelId model)
 	return modelAllocator.Get<0>(model.id);
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::Dictionary<Util::StringAtom, ModelNodeId>&
+ModelGetNodes(const ModelId model)
+{
+	return modelAllocator.Get<1>(model.id);
+}
+
 } // namespace Models

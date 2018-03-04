@@ -40,6 +40,13 @@ public:
 	/// create an instance of a node, override in the leaf classes
 	virtual ModelNodeId CreateInstance() const;
 
+	// base class for instances
+	struct Instance
+	{
+		ModelNodeId parent;	// id of parent
+		ModelNodeId node;	// id of resource-level node
+	};
+
 protected:
 	friend class StreamModelPool;
 	friend class ModelContext;
@@ -51,13 +58,6 @@ protected:
 	virtual void Unload();
 	/// call when model node data is finished loading (not accounting for secondary resources)
 	void OnFinishedLoading();
-
-	// base class for instances
-	struct Instance
-	{
-		ModelNodeId parent;	// id of parent
-		ModelNodeId node;		// id of resource-level node
-	};
 
 	/// setup node
 	virtual void Setup();

@@ -16,7 +16,7 @@
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
 #include "core/singleton.h"
-#include "materials/surfaceinstance.h"
+#include "materials/materialtype.h"
 #include "memory/sliceallocatorpool.h"
 #include "ids/idgenerationpool.h"
 
@@ -40,7 +40,7 @@ private:
 
 	/// the database is as such, surface name -> (mesh resource id -> primitive group)
 	using SurfaceMeshInstanceDatabase = Util::Dictionary<
-		Materials::SurfaceName::Code, Util::Dictionary<
+		Materials::MaterialTypeId, Util::Dictionary<
 		Resources::ResourceId, Util::Array<ModelNodeId>
 		>>;
 
