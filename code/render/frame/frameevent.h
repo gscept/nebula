@@ -28,27 +28,16 @@ public:
 	/// destructor
 	virtual ~FrameEvent();
 
-	/// add action to execute on the event
-	void AddAction(const Action a);
-	/// set event to use
-	void SetEvent(const Ptr<CoreGraphics::Event>& event);
-
 	/// discard operation
 	void Discard();
 	/// run operation
 	void Run(const IndexT frameIndex);
-private:
-	Util::Array<Action> actions;
-	Ptr<CoreGraphics::Event> event;
-};
 
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-FrameEvent::SetEvent(const Ptr<CoreGraphics::Event>& event)
-{
-	this->event = event;
-}
+	Util::Array<Action> actions;
+	CoreGraphics::EventId event;
+	CoreGraphics::BarrierDependency dependency;
+	CoreGraphicsQueueType queueType; 
+	CoreGraphics::CmdBufferUsage commandBufferType;
+};
 
 } // namespace Frame2

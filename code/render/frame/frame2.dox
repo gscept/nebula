@@ -155,10 +155,32 @@ For simplicity's sake, the "pass" doesn't contain an array of subpasses. Instead
 @code
 "events":
 [
-	{ "name" }
+	{
+		name: STRING, signaled: false,
+	}
 ],
 @endcode
-Events are simple, you just list them by name and then later invoke on them using the "event" operation.
+Events are simple, you just list them by name and then later invoke on them using the "event" operation. Events are created using a left-right dependency setup, which is only used for the wait event. This is because when you wait for an event, there is an implicit condition which relies on both what was executed before, and after the event is supposed to be used. To define the dependency setup when creating the event, add a barrier as a sub-object to the event:
+
+@code
+"events":
+[
+	{
+		name: STRING, signaled: false,
+		barrier: 
+		{ 
+			leftDependency: STRING_BARRIER_DEPENDENCY, 
+			rightDependency: STRING_BARRIER_DEPENDENCY,
+			readWriteTextures: 
+			[
+				{ name: STRING, leftAccess: STRING_RESOURCE_ACCESS, rightAccess: STRING_RESOURCE_ACCESS }
+			],
+		}
+	}
+],
+@endcode
+
+This will make sure that when the event is executed, it will wait for the compute shader to finish before it allows the pixel shader to perform work. Optimizing the timing of these events is useful for optimizing the rendering process for the GPU. Without a left-right dependency, an event is technically useless, so if these fields are left out, left will just assumed to be the 'Bottom' bit, and right the 'Top' bit, meaning it will block everything in the pipeline when waited on. 
 
 @code
 "subpass":
@@ -183,7 +205,7 @@ SEQUENCE_OF_SUBPASS_OPS is a list of subpass operations.
 Performs batch render using STRING as "batchGroup", defined in the material XML files.
 
 @code
-"system": STRING 
+"system": STRING
 @endcode
 Runs subsystem using STRING as identifier, can be either Lights, PointLightShadows, SpotLightShadows, GlobalShadows, Text or Shapes.
 
@@ -195,13 +217,13 @@ Runs subsystem using STRING as identifier, can be either Lights, PointLightShado
 	"sizeFromTexture": STRING
 }
 @endcode
-"shaderState" must be the name of a state declared earlier. "sizeFromTexture" must be a texture the fullscreen effect considers to be the screen.
+"shaderState" must be the name of a state declared earlier. "sizeFromTexture" must be a texture the fullscreen effect considers to be the screen dimensions.
 
 @code
 "plugins":
 {
 	"name": STRING,
-	"filter" STRING
+	"filter": STRING
 }
 @endcode
 "filter" is the name used to filter which plugins to run. For example, because Nebula has several UI implementations, running the plugins using the string UI will call both ImGUI and LibRocket.
@@ -209,21 +231,76 @@ Runs subsystem using STRING as identifier, can be either Lights, PointLightShado
 Outside of subpasses, as well as inside, we can use synchronization objects like barriers or events. 
 
 @code
-"event":
+event: 
 {
-	"name": STRING,
-	"ops": LIST_OF_STRINGS
-}
+	name: STRING (name of event from events),
+	dependency: STRING_BARRIER_DEPENDENCY (Top),
+	actions: STRING_LIST
+},
 @endcode
-"ops" can contain the following values, "wait", "reset" and "signal". The order of the operations dictate the order in which they are executed, meaning an event can, for example, perform a wait and reset, or a signal and reset, as well as just waiting, signaling or resetting. "name" must be the name of an event declared earlier.
+
+Wait for an event in the events list. We list the actions used for this event, and we can either chose to wait, reset or signal the event. For the signal and reset actions, the dependency flag is used. It shares the same flags as the leftDependency and rightDependency seen in barrier. Actions can contain a list or a single operation to execute, and will execute them in the order they appear in the list. In the above example, we first wait for the event to be signaled (from somewhere else during the frame), and reset it directly afterwards. The acceptable values for the actions list are:
+
+@code
+wait			- Waits for an event, and uses the left-right dependency from the event referenced by 'name', declared in the 'events' list.
+reset			- Resets the event, and waits for the dependency using the dependency flag.
+signal			- Signals the event, which unlocks any waits pending on it, and uses the same dependency as for reset. 
+@endcode
 
 @code
 "barrier":
-{
-	<< "textures": LIST_OF_STRINGS >>
+{ 
+	leftDependency: STRING_BARRIER_DEPENDENCY (Bottom), 
+	rightDependency: STRING_BARRIER_DEPENDENCY (Top),
+	readWriteTextures: 
+	[
+		{ name: STRING, leftAccess: STRING_RESOURCE_ACCESS, rightAccess: STRING_RESOURCE_ACCESS }
+	],	
 }
 @endcode
-Barriers are used for back-to-back synchronization of commands. For example, if we need an operation inside of a subpass to wait for another, we insert a barrier between them. 
+Barriers are used for back-to-back synchronization of commands. For example, if we need an operation inside of a subpass to wait for another, we insert a barrier between them. The barrier also has a left-right dependency setup, declaring when the GPU has to start waiting and when it is allowed to continue. We can also declare explicit resources which should be waited for in the barrier. The different left-right dependency flags are the following:
+
+@code
+-- STRING_BARRIER_DEPENDENCY --
+VertexShader 		- Vertex shader finished
+HullShader			- Hull shader finished
+DomainShader		- Domain shader finished
+GeometryShader		- Geometry shader finished
+PixelShader			- Pixel shader finished
+ComputeShader		- Compute shader finished
+VertexInput			- Vertex fetching finished
+EarlyDepth			- Early-Z test finished
+LateDepth			- Late-Z test finished
+Transfer			- Transfer process finished
+Host				- Host-to-GPU process finished
+PassOutput			- Subpass outputs finished
+Top					- None of the above finished
+Bottom				- Everything above finished
+@endcode
+
+Barriers also provide a certain access phase trigger for resources, as declared by @code readWriteTextures, readWriteBuffers, renderTextures @endcode declare how the barrier should treat the different resources. ReadWriteBuffers and ReadWriteTextures are mainly used for compute shaders, but in principle they can be used in both pixel and compute shaders. RenderTextures are a different thing, and should only be used if the render texture dependency is not within a subpass (which is extremely rare).
+For the resource access parameters, the following arguments are valid:
+
+@code
+-- STRING_RESOURCE_ACCESS --
+IndirectRead			- Indirect draw buffer ead finished
+IndexRead				- Index buffer read finished
+VertexRead				- Vertex buffer read finished
+UniformRead				- Uniform buffer read finished
+InputAttachmentRead		- Reading from an input attachment finished
+ShaderRead				- The entire shader is done reading (all of the above)
+ShaderWrite				- The outputs from the shader is done (compute)
+ColorAttachmentRead		- Reading from a previous color attachment (alpha blending) is done
+ColorAttachmentWrite	- Writing to color attachments have finished
+DepthRead				- Reading from Z is done
+DepthWrite				- Writing to Z is done
+TransferRead			- Transfering from the GPU to the host finished 
+TransferWrite			- Transfering from the host to the GPU has finished
+HostRead				- The host has finished reading the data (driver side)
+HostWrite				- The host has finished writing the data (driver side)
+MemoryRead				- All memory reads are done
+MemoryWrite				- All memory writes are done
+@endcode
 
 
 */

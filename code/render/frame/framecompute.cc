@@ -36,7 +36,8 @@ void
 FrameCompute::Discard()
 {
 	FrameOp::Discard();
-	this->state = 0;
+	this->program = ShaderProgramId::Invalid();
+	this->state = ShaderStateId::Invalid();
 }
 
 //------------------------------------------------------------------------------
@@ -45,14 +46,13 @@ FrameCompute::Discard()
 void
 FrameCompute::Run(const IndexT frameIndex)
 {
-	n_assert(this->state.isvalid());
+	n_assert(this->program != ShaderProgramId::Invalid());
+	n_assert(this->state != ShaderStateId::Invalid());
 
 	RenderDevice* dev = RenderDevice::Instance();
 
-	// apply state
-	this->state->SelectActiveVariation(this->mask);
-	this->state->Apply();
-	this->state->Commit();
+	ShaderProgramBind(this->program);
+	ShaderStateApply(this->state);
 
 	// compute
 	dev->Compute(this->x, this->y, this->z);

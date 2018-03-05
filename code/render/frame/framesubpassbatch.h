@@ -19,23 +19,10 @@ public:
 	/// destructor
 	virtual ~FrameSubpassBatch();
 
-	/// set batch
-	void SetBatchCode(const FrameBatchType::Code& code);
-
 	/// run operation
 	void Run(const IndexT frameIndex);
 
-private:
 	FrameBatchType::Code batch;
 };
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-FrameSubpassBatch::SetBatchCode(const FrameBatchType::Code& code)
-{
-	this->batch = code;
-}
 
 } // namespace Frame2

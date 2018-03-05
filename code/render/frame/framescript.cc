@@ -32,6 +32,15 @@ FrameScript::~FrameScript()
 //------------------------------------------------------------------------------
 /**
 */
+Memory::ChunkAllocator&
+FrameScript::GetAllocator()
+{
+	return this->allocator;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 FrameScript::AddColorTexture(const Util::StringAtom& name, const CoreGraphics::RenderTextureId tex)
 {
@@ -66,7 +75,7 @@ FrameScript::AddReadWriteTexture(const Util::StringAtom& name, const CoreGraphic
 /**
 */
 void
-FrameScript::AddReadWriteBuffer(const Util::StringAtom& name, const CoreGraphics::ShaderRWBUfferId buf)
+FrameScript::AddReadWriteBuffer(const Util::StringAtom& name, const CoreGraphics::ShaderRWBufferId buf)
 {
 	n_assert(!this->readWriteBuffersByName.Contains(name));
 	this->readWriteBuffersByName.Add(name, buf);

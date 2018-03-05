@@ -40,7 +40,7 @@ FrameSubpassSystem::~FrameSubpassSystem()
 void
 FrameSubpassSystem::Setup()
 {
-
+	FrameOp::Setup();
 }
 
 //------------------------------------------------------------------------------

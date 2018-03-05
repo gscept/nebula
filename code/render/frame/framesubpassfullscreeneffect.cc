@@ -34,7 +34,9 @@ FrameSubpassFullscreenEffect::~FrameSubpassFullscreenEffect()
 void
 FrameSubpassFullscreenEffect::Setup()
 {
-	this->fsq.Setup(this->tex->GetWidth(), this->tex->GetHeight());
+	n_assert(this->tex != RenderTextureId::Invalid());
+	TextureDimensions dims = RenderTextureGetDimensions(this->tex);
+	this->fsq.Setup(dims.width, dims.height);
 }
 
 //------------------------------------------------------------------------------
@@ -46,8 +48,8 @@ FrameSubpassFullscreenEffect::Discard()
 	FrameOp::Discard();
 
 	this->fsq.Discard();
-	this->tex = 0;
-	this->shaderState = 0;
+	this->tex = RenderTextureId::Invalid();
+	this->shaderState = ShaderStateId::Invalid();
 }
 
 //------------------------------------------------------------------------------

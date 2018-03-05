@@ -12,11 +12,8 @@
 #include "resources/resourceid.h"
 #include "io/uri.h"
 #include "jzon-c/jzon.h"
-#include "coregraphics/shaderstate.h"
-namespace CoreGraphics
-{
-	class Barrier;
-}
+#include "coregraphics/shader.h"
+
 namespace Frame
 {
 class FrameScriptLoader
@@ -57,20 +54,20 @@ private:
 	/// parse barrier in global scope
 	static void ParseBarrier(const Ptr<Frame::FrameScript>& script, JzonValue* node);
 	/// parse core of barrier
-	static void ParseBarrierInternal(const Ptr<Frame::FrameScript>& script, JzonValue* node, const Ptr<CoreGraphics::Barrier>& barrier);
+	static void ParseBarrierInternal(const Ptr<Frame::FrameScript>& script, JzonValue* node, CoreGraphics::BarrierCreateInfo& barrier);
 
 	/// parse pass
 	static void ParsePass(const Ptr<Frame::FrameScript>& script, JzonValue* node);
 	/// parse attachment list
-	static void ParseAttachmentList(const Ptr<Frame::FrameScript>& script, const Ptr<CoreGraphics::Pass>& pass, JzonValue* node);
+	static void ParseAttachmentList(const Ptr<Frame::FrameScript>& script, CoreGraphics::PassCreateInfo& pass, Util::Array<Resources::ResourceName>& attachmentNames, JzonValue* node);
 	/// parse subpass
-	static void ParseSubpass(const Ptr<Frame::FrameScript>& script, const Ptr<CoreGraphics::Pass>& pass, const Ptr<Frame::FramePass>& framePass, JzonValue* node);
+	static void ParseSubpass(const Ptr<Frame::FrameScript>& script, CoreGraphics::PassCreateInfo& pass, const Ptr<Frame::FramePass>& framePass, Util::Array<Resources::ResourceName>& attachmentNames, JzonValue* node);
 	/// parse subpass dependencies
-	static void ParseSubpassDependencies(const Ptr<Frame::FramePass>& pass, CoreGraphics::Pass::Subpass& subpass, JzonValue* node);
+	static void ParseSubpassDependencies(const Ptr<Frame::FramePass>& pass, CoreGraphics::Subpass& subpass, JzonValue* node);
 	/// parse subpass dependencies
-	static void ParseSubpassAttachments(const Ptr<Frame::FramePass>& pass, CoreGraphics::Pass::Subpass& subpass, JzonValue* node);
+	static void ParseSubpassAttachments(const Ptr<Frame::FramePass>& pass, CoreGraphics::Subpass& subpass, Util::Array<Resources::ResourceName>& attachmentNames, JzonValue* node);
 	/// parse subpass inputs
-	static void ParseSubpassInputs(const Ptr<Frame::FramePass>& pass, CoreGraphics::Pass::Subpass& subpass, JzonValue* node);
+	static void ParseSubpassInputs(const Ptr<Frame::FramePass>& pass, CoreGraphics::Subpass& subpass, Util::Array<Resources::ResourceName>& attachmentNames, JzonValue* node);
 	/// parse subpass viewports
 	static void ParseSubpassViewports(const Ptr<Frame::FrameScript>& script, const Ptr<Frame::FrameSubpass>& subpass, JzonValue* node);
 	/// parse subpass scissors
@@ -93,6 +90,6 @@ private:
 	static void ParseSubpassPlugins(const Ptr<Frame::FrameScript>& script, const Ptr<Frame::FrameSubpass>& subpass, JzonValue* node);
 
 	/// helper to parse shader variables
-	static void ParseShaderVariables(const Ptr<Frame::FrameScript>& script, const Ptr<CoreGraphics::ShaderState>& state, JzonValue* node);
+	static void ParseShaderVariables(const Ptr<Frame::FrameScript>& script, const CoreGraphics::ShaderStateId& state, JzonValue* node);
 };
 } // namespace Frame2

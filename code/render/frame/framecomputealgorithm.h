@@ -19,41 +19,18 @@ public:
 	/// destructor
 	virtual ~FrameComputeAlgorithm();
 
-	/// set algorithm
-	void SetAlgorithm(const Ptr<Algorithms::Algorithm>& alg);
-	/// add function to run
-	void SetFunction(const Util::StringAtom& func);
-
 	/// setup operation
 	void Setup();
 	/// discard operation
 	void Discard();
 	/// run operation
 	void Run(const IndexT frameIndex);
-private:
+
 	Util::StringAtom funcName;
 	Ptr<Algorithms::Algorithm> alg;
+private:
+	
 	std::function<void(IndexT)> func;
 };
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-FrameComputeAlgorithm::SetAlgorithm(const Ptr<Algorithms::Algorithm>& alg)
-{
-	this->alg = alg;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-FrameComputeAlgorithm::SetFunction(const Util::StringAtom& func)
-{
-	n_assert(this->alg.isvalid());
-	n_assert(this->alg->GetFunctionType(func) == Algorithms::Algorithm::Compute);
-	this->funcName = func;
-}
 
 } // namespace Frame2
