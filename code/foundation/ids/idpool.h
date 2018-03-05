@@ -34,9 +34,11 @@ public:
 	~IdPool();
 
 	/// get new id
-	Id32 Alloc();
+	uint32_t Alloc();
 	/// free id
-	void Dealloc(Id32 id);
+	void Dealloc(uint32_t id);
+	/// get number of active ids
+	uint32_t GetNumUsed() const;
 	/// get grow
 	const uint32_t GetGrow() const;
 private:
@@ -115,6 +117,15 @@ inline void
 IdPool::Dealloc(uint32_t id)
 {
 	this->free.Append(this->maxId - id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline uint32_t
+IdPool::GetNumUsed() const
+{
+	return this->maxId - this->free.Size();
 }
 
 //------------------------------------------------------------------------------

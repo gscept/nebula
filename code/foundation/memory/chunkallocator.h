@@ -20,20 +20,25 @@
 namespace Memory
 {
 
+template <int ChunkSize>
 class ChunkAllocator
 {
 public:
 	/// constructor
-	ChunkAllocator(const SizeT size = 0xFFFF); // 65535 byte
+	ChunkAllocator();
 	/// destructor
 	~ChunkAllocator();
 	
 	/// allocate new object
 	template <typename T> T* Alloc();
+	/// allocate new chunk of size
+	void* Alloc(SizeT size);
 	/// retires a chunk and creates a new one (might waste memory)
 	void NewChunk();
+	/// release all memory
+	void Release();
+
 private:
-	const SizeT chunkSize;
 	byte* currentChunk;
 	byte* iterator;
 	Util::Array<byte*> retiredChunks;
@@ -42,55 +47,97 @@ private:
 //------------------------------------------------------------------------------
 /**
 */
+template <int ChunkSize>
 inline
-ChunkAllocator::ChunkAllocator(const SizeT size) :
-	chunkSize(size),
+ChunkAllocator<ChunkSize>::ChunkAllocator() :
 	iterator(nullptr)
 {
-	n_assert(size > 0);
-	this->currentChunk = new byte[chunkSize];
+	// constructor
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <int ChunkSize>
+inline
+ChunkAllocator<ChunkSize>::~ChunkAllocator()
+{
+	this->Release();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <int ChunkSize>
+inline void
+ChunkAllocator<ChunkSize>::NewChunk()
+{
+	this->retiredChunks.Append(this->currentChunk);
+	this->currentChunk = new byte[ChunkSize];
 	this->iterator = this->currentChunk;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline
-ChunkAllocator::~ChunkAllocator()
+template<int ChunkSize>
+inline void ChunkAllocator<ChunkSize>::Release()
 {
 	IndexT i;
 	for (i = 0; i < this->retiredChunks.Size(); i++)
 	{
 		delete[] this->retiredChunks[i];
 	}
-	delete[] this->currentChunk;
+	if (this->currentChunk) delete[] this->currentChunk;
+	this->retiredChunks.Clear();
+	this->currentChunk = nullptr;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline void
-ChunkAllocator::NewChunk()
-{
-	this->retiredChunks.Append(this->currentChunk);
-	this->currentChunk = new byte[this->chunkSize];
-	this->iterator = this->currentChunk;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
+template <int ChunkSize>
 template<typename T>
 inline T*
-ChunkAllocator::Alloc()
+ChunkAllocator<ChunkSize>::Alloc()
 {
-	n_assert(sizeof(T) <= this->chunkSize);
-	ptrdiff remainder = this->currentChunk + this->chunkSize - this->iterator;
-	if (remainder < sizeof(T))
+	n_assert(sizeof(T) <= ChunkSize);
+	if (this->iterator == nullptr)
+	{
 		this->NewChunk();
+	}
+	else
+	{
+		PtrDiff remainder = this->currentChunk + ChunkSize - this->iterator;
+		if (remainder < sizeof(T))
+			this->NewChunk();
+	}
 
 	T* ret = new (this->iterator) T();
 	this->iterator += sizeof(T);
+	return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <int ChunkSize>
+inline void*
+ChunkAllocator<ChunkSize>::Alloc(SizeT size)
+{
+	n_assert(size <= ChunkSize);
+	if (this->iterator == nullptr)
+	{
+		this->NewChunk();
+	}
+	else
+	{
+		PtrDiff remainder = this->currentChunk + ChunkSize - this->iterator;
+		if (remainder < size)
+			this->NewChunk();
+	}
+	void* ret = this->iterator;
+	this->iterator += size;
 	return ret;
 }
 

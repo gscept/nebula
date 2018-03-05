@@ -12,22 +12,82 @@
 namespace Ids
 {
 
-typedef uint64_t Id64;
-typedef uint32_t Id32;
-typedef uint32_t Id24;
-typedef uint16_t Id16;
-typedef uint8_t Id8;
-static const uint64_t InvalidId64 = 0xFFFFFFFFFFFFFFFF;
-static const uint32_t InvalidId32 = 0xFFFFFFFF;
-static const uint32_t InvalidId24 = 0x00FFFFFF;
-static const uint16_t InvalidId16 = 0xFFFF;
-static const uint8_t InvalidId8 = 0xFF;
+	typedef uint64_t Id64;
+	typedef uint32_t Id32;
+	typedef uint32_t Id24;
+	typedef uint16_t Id16;
+	typedef uint8_t Id8;
+	static const uint64_t InvalidId64 = 0xFFFFFFFFFFFFFFFF;
+	static const uint32_t InvalidId32 = 0xFFFFFFFF;
+	static const uint32_t InvalidId24 = 0x00FFFFFF;
+	static const uint16_t InvalidId16 = 0xFFFF;
+	static const uint8_t InvalidId8 = 0xFF;
 
-#define ID_64_TYPE(x) struct x { Ids::Id64 id; constexpr x() : id(Ids::InvalidId64) {}; constexpr x(const Ids::Id64 id) : id(id) {}; constexpr explicit operator Ids::Id64() const  { return id; } static constexpr x Invalid() { return Ids::InvalidId64; } constexpr IndexT HashCode() const { return (IndexT)(id & 0x00000000FFFFFFFF); }  constexpr Ids::Id64 HashCode64() const { return id; } };
-#define ID_32_TYPE(x) struct x { Ids::Id32 id; constexpr x() : id(Ids::InvalidId32) {}; constexpr x(const Ids::Id32 id) : id(id) {}; constexpr explicit operator Ids::Id32() const  { return id; } static constexpr x Invalid() { return Ids::InvalidId32; } constexpr IndexT HashCode() const { return id; } };
-#define ID_24_TYPE(x) struct x { Ids::Id24 id : 24;  constexpr x() : id(Ids::InvalidId24) {}; constexpr x(const Ids::Id24 id) : id(id) {}; constexpr explicit operator Ids::Id24() const  { return id; } static constexpr x Invalid() { return Ids::InvalidId24; } constexpr IndexT HashCode() const { return (IndexT)(id); } };
-#define ID_16_TYPE(x) struct x { Ids::Id16 id; constexpr x() : id(Ids::InvalidId16) {}; constexpr x(const Ids::Id16 id) : id(id) {}; constexpr explicit operator Ids::Id16() const  { return id; } static constexpr x Invalid() { return Ids::InvalidId16; } constexpr IndexT HashCode() const { return (IndexT)(id); } };
-#define ID_8_TYPE(x) struct x { Ids::Id8 id;  constexpr x() : id(Ids::InvalidId8) {}; constexpr x(const Ids::Id8 id) : id(id) {}; constexpr explicit operator Ids::Id8() const  { return id; } static constexpr x Invalid() { return Ids::InvalidId8; } constexpr IndexT HashCode() const { return (IndexT)(id); } };
+#define ID_64_TYPE(x) struct x { \
+	Ids::Id64 id; \
+	constexpr x() : id(Ids::InvalidId64) {}; \
+	constexpr x(const Ids::Id64 id) : id(id) {}; \
+	constexpr explicit operator Ids::Id64() const { return id; } \
+	static constexpr x Invalid() { return Ids::InvalidId64; } \
+	constexpr IndexT HashCode() const { return (IndexT)(id & 0x00000000FFFFFFFF); } \
+	constexpr Ids::Id64 HashCode64() const { return id; } \
+	const bool operator==(const x& rhs) const { return id == rhs.id; } \
+	const bool operator!=(const x& rhs) const { return id != rhs.id; } \
+	const bool operator<(const x& rhs) const { return HashCode64() < rhs.HashCode64(); } \
+	const bool operator>(const x& rhs) const { return HashCode64() > rhs.HashCode64(); } \
+	};
+
+#define ID_32_TYPE(x) struct x { \
+	Ids::Id32 id; \
+	constexpr x() : id(Ids::InvalidId32) {}; \
+	constexpr x(const Ids::Id32 id) : id(id) {}; \
+	constexpr explicit operator Ids::Id32() const { return id; } \
+	static constexpr x Invalid() { return Ids::InvalidId32; } \
+	constexpr IndexT HashCode() const { return id; } \
+	const bool operator==(const x& rhs) const { return id == rhs.id; } \
+	const bool operator!=(const x& rhs) const { return id != rhs.id; } \
+	const bool operator<(const x& rhs) const { return HashCode() < rhs.HashCode(); } \
+	const bool operator>(const x& rhs) const { return HashCode() > rhs.HashCode(); } \
+	};
+
+#define ID_24_TYPE(x) struct x { \
+	Ids::Id24 id : 24; \
+	constexpr x() : id(Ids::InvalidId24) {}; \
+	constexpr x(const Ids::Id24 id) : id(id) {}; \
+	constexpr explicit operator Ids::Id24() const { return id; } \
+	static constexpr x Invalid() { return Ids::InvalidId24; } \
+	constexpr IndexT HashCode() const { return (IndexT)(id); } \
+	const bool operator==(const x& rhs) const { return id == rhs.id; } \
+	const bool operator!=(const x& rhs) const { return id != rhs.id; } \
+	const bool operator<(const x& rhs) const { return HashCode() < rhs.HashCode(); } \
+	const bool operator>(const x& rhs) const { return HashCode() > rhs.HashCode(); } \
+	};
+
+#define ID_16_TYPE(x) struct x { \
+	Ids::Id16 id; \
+	constexpr x() : id(Ids::InvalidId16) {}; \
+	constexpr x(const Ids::Id16 id) : id(id) {}; \
+	constexpr explicit operator Ids::Id16() const { return id; } \
+	static constexpr x Invalid() { return Ids::InvalidId16; } \
+	constexpr IndexT HashCode() const { return (IndexT)(id); } }; \
+	const bool operator==(const x& rhs) const { return id == rhs.id; } \
+	const bool operator!=(const x& rhs) const { return id != rhs.id; } \
+	const bool operator<(const x& rhs) const { return HashCode() < rhs.HashCode(); } \
+	const bool operator>(const x& rhs) const { return HashCode() > rhs.HashCode(); } \
+	};
+
+#define ID_8_TYPE(x) struct x { \
+	Ids::Id8 id; \
+	constexpr x() : id(Ids::InvalidId8) {}; \
+	constexpr x(const Ids::Id8 id) : id(id) {}; \
+	constexpr explicit operator Ids::Id8() const { return id; } \
+	static constexpr x Invalid() { return Ids::InvalidId8; } \
+	constexpr IndexT HashCode() const { return (IndexT)(id); } \
+	const bool operator==(const x& rhs) const { return id == rhs.id; } \
+	const bool operator!=(const x& rhs) const { return id != rhs.id; } \
+	const bool operator<(const x& rhs) const { return HashCode() < rhs.HashCode(); } \
+	const bool operator>(const x& rhs) const { return HashCode() > rhs.HashCode(); } \
+	};
 
 #define ID_32_24_8_NAMED_TYPE(x, id32_name, id24_name, id8_name) struct x { \
 	Ids::Id32 id32_name : 32;\
@@ -72,15 +132,15 @@ static const uint8_t InvalidId8 = 0xFF;
 	explicit constexpr operator Ids::Id64() const  { return Ids::Id::MakeId64(id32_0_name, id32_1_name); }\
 	static constexpr x Invalid() { return Ids::Id::MakeId64(Ids::InvalidId32, Ids::InvalidId32); }\
 	constexpr IndexT HashCode() const { return (IndexT)(id32_1_name); }\
-	constexpr Ids::Id64 HashCode64() const { return Ids::Id::MakeId32_32(id24_0_name, id32_1_name); }\
+	constexpr Ids::Id64 HashCode64() const { return Ids::Id::MakeId64(id32_0_name, id32_1_name); }\
 	const bool operator==(const x& rhs) const { return id32_0_name == rhs.id32_0_name && id32_1_name == rhs.id32_1_name; }\
 	const bool operator!=(const x& rhs) const { return id32_0_name != rhs.id32_0_name || id32_1_name != rhs.id32_1_name; }\
 	const bool operator<(const x& rhs) const { return HashCode64() < rhs.HashCode64(); }\
 	const bool operator>(const x& rhs) const { return HashCode64() > rhs.HashCode64(); }\
 	};
-#define ID_32_32_TYPE(x, id32_0, id32_1)
+#define ID_32_32_TYPE(x) ID_32_32_NAMED_TYPE(x, id32_0, id32_1)
 
-#define ID_24_8_NAME_TYPE(x, id24_name, id8_name) struct x { \
+#define ID_24_8_NAMED_TYPE(x, id24_name, id8_name) struct x { \
 	Ids::Id24 id24_name : 24; \
 	Ids::Id8 id8_name: 8; \
 	constexpr x() : id24_name(Ids::InvalidId24), id8_name(Ids::InvalidId8) {}  \
@@ -93,7 +153,7 @@ static const uint8_t InvalidId8 = 0xFF;
 	const bool operator<(const x& rhs) const { return HashCode() < rhs.HashCode(); }\
 	const bool operator>(const x& rhs) const { return HashCode() > rhs.HashCode(); }\
 	};
-#define ID_24_8_TYPE(x) ID_24_8_NAME_TYPE(x, id24, id8)
+#define ID_24_8_TYPE(x) ID_24_8_NAMED_TYPE(x, id24, id8)
 
 
 struct Id

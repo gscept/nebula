@@ -130,6 +130,10 @@ public:
     IndexT FindStringIndex(const String& s, IndexT startIndex = 0) const;
     /// return index of character in string, or InvalidIndex if not found
     IndexT FindCharIndex(char c, IndexT startIndex = 0) const;
+	/// returns true if string begins with string
+	bool BeginsWithString(const String& s) const;
+	/// returns true if string ends with string
+	bool EndsWithString(const String& s) const;
     /// terminate string at given index
     void TerminateAtIndex(IndexT index);
     /// returns true if string contains any character from set
