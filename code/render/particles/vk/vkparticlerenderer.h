@@ -42,25 +42,22 @@ public:
 	/// set the current vertex pointer
 	void SetCurVertexPtr(void *ptr);
 	/// get particle vertex buffer
-	const Ptr<CoreGraphics::VertexBuffer>& GetParticleVertexBuffer() const;
+	const CoreGraphics::VertexBufferId& GetParticleVertexBuffer() const;
 	/// get the corner vertex buffer
-	const Ptr<CoreGraphics::VertexBuffer>& GetCornerVertexBuffer() const;
+	const CoreGraphics::VertexBufferId& GetCornerVertexBuffer() const;
 	/// get the corner index buffer
-	const Ptr<CoreGraphics::IndexBuffer>& GetCornerIndexBuffer() const;
+	const CoreGraphics::IndexBufferId& GetCornerIndexBuffer() const;
 	/// get the primitive group
 	CoreGraphics::PrimitiveGroup& GetPrimitiveGroup();
 	/// get the vertex layout
-	const Ptr<CoreGraphics::VertexLayout>& GetVertexLayout() const;
-	/// get buffer lock
-	const Ptr<CoreGraphics::BufferLock>& GetParticleBufferLock() const;
+	const CoreGraphics::VertexLayoutId& GetVertexLayout() const;
 private:
 
-	Ptr<CoreGraphics::BufferLock> particleBufferLock;
-	Ptr<CoreGraphics::VertexBuffer> particleVertexBuffer;
-	Ptr<CoreGraphics::VertexBuffer> cornerVertexBuffer;
-	Ptr<CoreGraphics::IndexBuffer> cornerIndexBuffer;
+	CoreGraphics::VertexBufferId particleVertexBuffer;
+	CoreGraphics::VertexBufferId cornerVertexBuffer;
+	CoreGraphics::IndexBufferId cornerIndexBuffer;
 	CoreGraphics::PrimitiveGroup primGroup;
-	Ptr<CoreGraphics::VertexLayout> vertexLayout;
+	CoreGraphics::VertexLayoutId vertexLayout;
 	IndexT curParticleIndex;
 	void* mappedVertices;
 	void* curVertexPtr;
@@ -107,7 +104,7 @@ VkParticleRenderer::SetCurVertexPtr(void *ptr)
 //------------------------------------------------------------------------------
 /**
 */
-inline const Ptr<CoreGraphics::VertexBuffer>&
+inline const CoreGraphics::VertexBufferId&
 VkParticleRenderer::GetParticleVertexBuffer() const
 {
 	return this->particleVertexBuffer;
@@ -116,7 +113,7 @@ VkParticleRenderer::GetParticleVertexBuffer() const
 //------------------------------------------------------------------------------
 /**
 */
-inline const Ptr<CoreGraphics::VertexBuffer>&
+inline const CoreGraphics::VertexBufferId&
 VkParticleRenderer::GetCornerVertexBuffer() const
 {
 	return this->cornerVertexBuffer;
@@ -125,7 +122,7 @@ VkParticleRenderer::GetCornerVertexBuffer() const
 //------------------------------------------------------------------------------
 /**
 */
-inline const Ptr<CoreGraphics::IndexBuffer>&
+inline const CoreGraphics::IndexBufferId&
 VkParticleRenderer::GetCornerIndexBuffer() const
 {
 	return this->cornerIndexBuffer;
@@ -143,19 +140,10 @@ VkParticleRenderer::GetPrimitiveGroup()
 //------------------------------------------------------------------------------
 /**
 */
-inline const Ptr<CoreGraphics::VertexLayout>&
+inline const CoreGraphics::VertexLayoutId&
 VkParticleRenderer::GetVertexLayout() const
 {
 	return this->vertexLayout;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const Ptr<CoreGraphics::BufferLock>&
-VkParticleRenderer::GetParticleBufferLock() const
-{
-	return this->particleBufferLock;
 }
 
 } // namespace Vulkan

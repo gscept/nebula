@@ -5,11 +5,11 @@
 #include "stdneb.h"
 #include "vkparticlerenderer.h"
 #include "coregraphics/vertexcomponent.h"
-#include "coregraphics/memoryvertexbufferloader.h"
-#include "coregraphics/memoryindexbufferloader.h"
 #include "coregraphics/renderdevice.h"
-#include "coregraphics/vertexlayoutserver.h"
+#include "coregraphics/vertexsignaturepool.h"
 #include "particles/particle.h"
+#include "coregraphics/vertexbuffer.h"
+#include "coregraphics/indexbuffer.h"
 
 using namespace Util;
 using namespace Resources;
@@ -50,9 +50,9 @@ void
 VkParticleRenderer::Setup()
 {
 	n_assert(!this->IsValid());
-	n_assert(!this->particleVertexBuffer.isvalid());
-	n_assert(!this->cornerVertexBuffer.isvalid());
-	n_assert(!this->cornerIndexBuffer.isvalid());
+	n_assert(this->particleVertexBuffer == VertexBufferId::Invalid());
+	n_assert(this->cornerVertexBuffer == VertexBufferId::Invalid());
+	n_assert(this->cornerIndexBuffer == IndexBufferId::Invalid());
 
 	ParticleRendererBase::Setup();
 	this->mappedVertices = 0;
@@ -67,33 +67,22 @@ VkParticleRenderer::Setup()
 	Array<VertexComponent> cornerComponents;
 	cornerComponents.Append(VertexComponent((VertexComponent::SemanticName)0, 0, VertexComponent::Float2, 0));
 	float cornerVertexData[] = { 0, 0, 1, 0, 1, 1, 0, 1 };
-	Ptr<MemoryVertexBufferLoader> cornerVBLoader = MemoryVertexBufferLoader::Create();
-	cornerVBLoader->Setup(cornerComponents, 4, cornerVertexData, sizeof(cornerVertexData), VertexBuffer::UsageImmutable, VertexBuffer::AccessNone);
-
-	this->cornerVertexBuffer = VertexBuffer::Create();
-	this->cornerVertexBuffer->SetLoader(cornerVBLoader.upcast<ResourceLoader>());
-	this->cornerVertexBuffer->SetAsyncEnabled(false);
-	this->cornerVertexBuffer->Load();
-	if (!this->cornerVertexBuffer->IsLoaded())
+	VertexBufferCreateInfo vboInfo =
 	{
-		n_error("OGL4ParticleRenderer: Failed to setup corner vertex buffer!");
-	}
-	this->cornerVertexBuffer->SetLoader(0);
+		"corner_particle_vbo", "render_system", GpuBufferTypes::AccessNone, GpuBufferTypes::UsageImmutable, GpuBufferTypes::SyncingFlush,
+		4, cornerComponents, cornerVertexData, sizeof(cornerVertexData)
+	};
+	this->cornerVertexBuffer = CreateVertexBuffer(vboInfo);
 
 	// setup the corner index buffer
 	ushort cornerIndexData[] = { 0, 1, 2, 2, 3, 0 };
-	Ptr<MemoryIndexBufferLoader> cornerIBLoader = MemoryIndexBufferLoader::Create();
-	cornerIBLoader->Setup(IndexType::Index16, 6, cornerIndexData, sizeof(cornerIndexData), IndexBuffer::UsageImmutable, IndexBuffer::AccessNone);
 
-	this->cornerIndexBuffer = IndexBuffer::Create();
-	this->cornerIndexBuffer->SetLoader(cornerIBLoader.upcast<ResourceLoader>());
-	this->cornerIndexBuffer->SetAsyncEnabled(false);
-	this->cornerIndexBuffer->Load();
-	if (!this->cornerIndexBuffer->IsLoaded())
+	IndexBufferCreateInfo iboInfo =
 	{
-		n_error("OGL4ParticleRenderer: Failed to setup corner index buffer!");
-	}
-	this->cornerIndexBuffer->SetLoader(0);
+		"corner_particle_ibo", "render_system", GpuBufferTypes::AccessNone, GpuBufferTypes::UsageImmutable, GpuBufferTypes::SyncingFlush,
+		IndexType::Index16, 6, cornerIndexData, sizeof(cornerIndexData)
+	};
+	this->cornerIndexBuffer = CreateIndexBuffer(iboInfo);
 
 	// setup the cornerPrimitiveGroup which describes one particle instance
 	this->primGroup.SetBaseVertex(0);
@@ -109,29 +98,24 @@ VkParticleRenderer::Setup()
 	particleComponents.Append(VertexComponent((VertexComponent::SemanticName)4, 0, VertexComponent::Float4, 1, VertexComponent::PerInstance, 1));   // Particle::uvMinMax
 	particleComponents.Append(VertexComponent((VertexComponent::SemanticName)5, 0, VertexComponent::Float4, 1, VertexComponent::PerInstance, 1));   // x: Particle::rotation, y: Particle::size
 
-	Ptr<MemoryVertexBufferLoader> particleVBLoader = MemoryVertexBufferLoader::Create();
-	particleVBLoader->Setup(particleComponents, MaxNumRenderedParticles, NULL, 0, VertexBuffer::UsageDynamic, VertexBuffer::AccessWrite, VertexBuffer::SyncingCoherent);
-
-	this->particleVertexBuffer = VertexBuffer::Create();
-	this->particleVertexBuffer->SetLoader(particleVBLoader.upcast<ResourceLoader>());
-	this->particleVertexBuffer->SetAsyncEnabled(false);
-	this->particleVertexBuffer->Load();
-	if (!this->particleVertexBuffer->IsLoaded())
+	VertexBufferCreateInfo vboPInfo =
 	{
-		n_error("OGL4ParticleRenderer: Failed to setup particle vertex buffer!");
-	}
-	this->particleVertexBuffer->SetLoader(0);
+		"corner_particle_particle_vbo", "render_system", GpuBufferTypes::AccessWrite, GpuBufferTypes::UsageDynamic, GpuBufferTypes::SyncingCoherent,
+		MaxNumRenderedParticles, particleComponents, nullptr, 0
+	};
+	this->particleVertexBuffer = CreateVertexBuffer(vboPInfo);
 
 	// map buffer
-	this->mappedVertices = this->particleVertexBuffer->Map(VertexBuffer::MapWrite);
+	this->mappedVertices = VertexBufferMap(this->particleVertexBuffer, GpuBufferTypes::MapWrite);
 
-	// create buffer lock
-	this->particleBufferLock = BufferLock::Create();
 
 	Array<VertexComponent> components = cornerComponents;
 	components.AppendArray(particleComponents);
-	this->vertexLayout = VertexLayout::Create();
-	this->vertexLayout->Setup(components);
+	VertexLayoutCreateInfo vloInfo = 
+	{
+		components
+	};
+	this->vertexLayout = CreateVertexLayout(vloInfo);
 }
 
 //------------------------------------------------------------------------------
@@ -142,20 +126,11 @@ VkParticleRenderer::Discard()
 {
 	n_assert(this->IsValid());
 
-	this->cornerVertexBuffer->Unload();
-	this->cornerVertexBuffer = 0;
-
-	this->cornerIndexBuffer->Unload();
-	this->cornerIndexBuffer->SetLoader(0);
-	this->cornerIndexBuffer = 0;
-
-	this->particleVertexBuffer->Unmap();
-	this->mappedVertices = 0;
-	this->particleVertexBuffer->Unload();
-	this->particleVertexBuffer = 0;
-
-	this->vertexLayout->Discard();
-	this->vertexLayout = 0;
+	DestroyVertexBuffer(this->cornerVertexBuffer);
+	DestroyIndexBuffer(this->cornerIndexBuffer);
+	VertexBufferUnmap(this->particleVertexBuffer);
+	DestroyVertexBuffer(this->particleVertexBuffer);
+	DestroyVertexLayout(this->vertexLayout);
 
 	ParticleRendererBase::Discard();
 }
@@ -194,10 +169,10 @@ VkParticleRenderer::ApplyParticleMesh()
 	n_assert(!this->IsInAttach());
 	RenderDevice* renderDevice = RenderDevice::Instance();
 	renderDevice->SetPrimitiveTopology(PrimitiveTopology::TriangleList);
-	renderDevice->SetVertexLayout(this->GetVertexLayout());
-	renderDevice->SetStreamVertexBuffer(0, this->GetCornerVertexBuffer(), 0);
-	renderDevice->SetStreamVertexBuffer(1, this->GetParticleVertexBuffer(), 0);
-	renderDevice->SetIndexBuffer(this->GetCornerIndexBuffer());
+	VertexLayoutBind(this->vertexLayout);
+	VertexBufferBind(this->cornerVertexBuffer, 0, 0);
+	VertexBufferBind(this->particleVertexBuffer, 1, 0);
+	IndexBufferBind(this->cornerIndexBuffer, 0);
 	renderDevice->SetPrimitiveGroup(this->GetPrimitiveGroup());
 }
 
