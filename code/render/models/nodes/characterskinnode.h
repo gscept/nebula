@@ -42,6 +42,9 @@ public:
 		CoreGraphics::ShaderConstantId jointPaletteVar;
 		Ids::Id32 characterId;
 	};
+
+	/// create instance
+	virtual ModelNode::Instance* CreateInstance(Memory::ChunkAllocator<0xFFF>& alloc) const;
 private:
     /// a skin fragment
     class Fragment
@@ -86,6 +89,15 @@ inline const Util::Array<IndexT>&
 CharacterSkinNode::GetFragmentJointPalette(IndexT fragmentIndex) const
 {
     return this->skinFragments[fragmentIndex].jointPalette;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline ModelNode::Instance*
+CharacterSkinNode::CreateInstance(Memory::ChunkAllocator<0xFFF>& alloc) const
+{
+	return alloc.Alloc<CharacterSkinNode::Instance>();
 }
 
 } // namespace Characters

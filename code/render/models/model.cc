@@ -4,21 +4,20 @@
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "model.h"
+#include "streammodelpool.h"
 
 namespace Models
 {
 
 StreamModelPool* modelPool;
-ModelAllocatorType modelAllocator;
 
 //------------------------------------------------------------------------------
 /**
 */
 const ModelId
-CreateModel()
+CreateModel(const ModelCreateInfo& info)
 {
-	Ids::Id32 id = modelAllocator.AllocObject();
-	return ModelId(id);
+	return modelPool->CreateResource(info.resource, info.tag, info.successCallback, info.failCallback, !info.async);
 }
 
 //------------------------------------------------------------------------------
@@ -27,37 +26,25 @@ CreateModel()
 void
 DestroyModel(const ModelId id)
 {
-	modelAllocator.Get<1>(id.id).Clear();
-	modelAllocator.Get<3>(id.id).Clear();
-	modelAllocator.DeallocObject(id.id);
+	modelPool->DiscardResource(id);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-const ModelNodeId
-ModelFindNode(const ModelId model, const Util::StringAtom& name)
+const ModelInstanceId
+CreateModelInstance(const ModelId mdl)
 {
-	const Util::Dictionary<Util::StringAtom, ModelNodeId>& dict = modelAllocator.Get<1>(model.id);
-	return dict[name];
+	return modelPool->CreateModelInstance(mdl);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-Math::bbox&
-ModelGetBoundingBox(const ModelId model)
+void
+DestroyModelInstance(const ModelInstanceId id)
 {
-	return modelAllocator.Get<0>(model.id);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const Util::Dictionary<Util::StringAtom, ModelNodeId>&
-ModelGetNodes(const ModelId model)
-{
-	return modelAllocator.Get<1>(model.id);
+	modelPool->DestroyModelInstance(id);
 }
 
 } // namespace Models

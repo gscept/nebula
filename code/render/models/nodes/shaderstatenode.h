@@ -32,6 +32,9 @@ public:
 		IndexT bufferIndex;
 	};
 
+	/// create instance
+	virtual ModelNode::Instance* CreateInstance(Memory::ChunkAllocator<0xFFF>& alloc) const;
+
 protected:
 	friend class StreamModelPool;
 
@@ -41,4 +44,13 @@ protected:
 
 	Resources::ResourceName materialName;
 };
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline ModelNode::Instance*
+ShaderStateNode::CreateInstance(Memory::ChunkAllocator<0xFFF>& alloc) const
+{
+	return alloc.Alloc<ShaderStateNode::Instance>();
+}
 } // namespace Models

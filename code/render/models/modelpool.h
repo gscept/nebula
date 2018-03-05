@@ -58,14 +58,14 @@ private:
 	typedef Util::KeyValuePair<Util::FourCC, Ids::Id32> NodeTypeId;
 	Util::Stack<NodeTypeId> nodeStack;
 
-	Util::Dictionary<Util::FourCC, std::function<Ids::Id32()>> constructors;
-	Util::Dictionary<Util::FourCC, std::function<ModelNode*(Ids::Id32)>> accessors;
+	Util::Dictionary<Util::FourCC, std::function<Ids::Id32()>> nodeConstructors;
+	Util::Dictionary<Util::FourCC, std::function<ModelNode*(Ids::Id32)>> nodeAccessors;
 	Util::Array<TransformNode> transformNodes;
 	Util::Array<PrimitiveNode> primitiveNodes;
-	Util::Array<ShaderStateNode> shaderStatenodes;
+	Util::Array<ShaderStateNode> shaderStateNodes;
 	Util::Array<CharacterSkinNode> characterSkinNodes;
 	Util::Array<CharacterNode> characterNodes;
-	Util::Array<ParticleSystemNode> particleSystemNode;
+	Util::Array<ParticleSystemNode> particleSystemNodes;
 
 	Ids::Id8 nodeTypeIndices[NumNodeTypes];
 

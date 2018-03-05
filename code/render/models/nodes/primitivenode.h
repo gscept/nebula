@@ -28,6 +28,9 @@ public:
 		// empty
 	};
 
+	/// create instance
+	virtual ModelNode::Instance* CreateInstance(Memory::ChunkAllocator<0xFFF>& alloc) const;
+
 protected:
 	friend class StreamModelPool;
 
@@ -38,4 +41,14 @@ protected:
 	CoreGraphics::MeshId res;
 	uint32_t primitiveGroupIndex;
 };
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline ModelNode::Instance*
+PrimitiveNode::CreateInstance(Memory::ChunkAllocator<0xFFF>& alloc) const
+{
+	return alloc.Alloc<PrimitiveNode::Instance>();
+}
+
 } // namespace Models

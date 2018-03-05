@@ -44,12 +44,15 @@ public:
     /// get the character's animation resource
     const Resources::ResourceId GetAnimationResourceId() const;
 
-	struct Instance : public TransformNode::Instance
+	struct Instance : public ModelNode::Instance
 	{
 		Ids::Id32 characterId;
 		IndexT updateFrame;
 		bool updateThisFrame;
 	};
+
+	/// create instance
+	virtual ModelNode::Instance* CreateInstance(Memory::ChunkAllocator<0xFFF>& alloc) const;
 
 private:
     /// recursively create model node instance and child model node instances
@@ -90,6 +93,15 @@ inline const Resources::ResourceId
 CharacterNode::GetAnimationResourceId() const
 {
     return this->managedAnimResource;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline ModelNode::Instance*
+CharacterNode::CreateInstance(Memory::ChunkAllocator<0xFFF>& alloc) const
+{
+	return alloc.Alloc<CharacterNode::Instance>();
 }
 
 } // namespace Characters

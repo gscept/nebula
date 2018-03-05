@@ -9,31 +9,46 @@
 //------------------------------------------------------------------------------
 #include "ids/id.h"
 #include "ids/idallocator.h"
-#include "models/nodes/modelnode.h"
 #include "resources/resourceid.h"
-#include "models/modelserver.h"
+#include <functional>
 namespace Models
 {
 
-/// create model
-const ModelId CreateModel();
-/// destroy model
+RESOURCE_ID_TYPE(ModelId);
+ID_32_32_NAMED_TYPE(ModelInstanceId, model, instance);
+
+enum NodeType
+{
+	CharacterNodeType,
+	NodeHasTransform = CharacterNodeType + 1, // all nodes above inherit from TransformNode
+	TransformNodeType,
+	ShaderStateNodeType,
+	NodeHasShaderState = ShaderStateNodeType + 1, // all nodes above inherit from ShaderStateNode
+	PrimtiveNodeType,
+	ParticleSystemNodeType,
+	CharacterSkinNodeType,
+
+	NumNodeTypes
+};
+
+struct ModelCreateInfo
+{
+	Resources::ResourceName resource;
+	Util::StringAtom tag;
+	std::function<void(const Resources::ResourceId)> successCallback;
+	std::function<void(const Resources::ResourceId)> failCallback;
+	bool async;
+};
+
+/// create model (resource)
+const ModelId CreateModel(const ModelCreateInfo& info);
+/// discard model (resource)
 void DestroyModel(const ModelId id);
 
-/// find model hierarchically
-const ModelNodeId ModelFindNode(const ModelId model, const Util::StringAtom& name);
-/// get bounding box
-Math::bbox& ModelGetBoundingBox(const ModelId model);
-/// get list of model nodes
-const Util::Dictionary<Util::StringAtom, ModelNodeId>& ModelGetNodes(const ModelId model);
-
-typedef Ids::IdAllocator<
-	Math::bbox,											// bounding box of entire model
-	Util::Dictionary<Util::StringAtom, ModelNodeId>,	// nodes sorted by name
-	ModelNodeId,										// root node
-	Util::Array<Resources::ResourceId>					// resources loaded and contained in this model
-> ModelAllocatorType;
-extern ModelAllocatorType modelAllocator;
+/// create model instance
+const ModelInstanceId CreateModelInstance(const ModelId mdl);
+/// destroy model instance
+void DestroyModelInstance(const ModelInstanceId id);
 
 class StreamModelPool;
 extern StreamModelPool* modelPool;
