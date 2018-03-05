@@ -44,7 +44,7 @@ FrameComputeAlgorithm::Discard()
 	FrameOp::Discard();
 
 	this->func = nullptr;
-	this->alg = 0;
+	this->alg = nullptr;
 }
 
 //------------------------------------------------------------------------------

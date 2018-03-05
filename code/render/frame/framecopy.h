@@ -19,36 +19,12 @@ public:
 	/// destructor
 	virtual ~FrameCopy();
 
-	/// set texture to copy from
-	void SetFromTexture(const Ptr<CoreGraphics::RenderTexture>& from);
-	/// set texture to copy to
-	void SetToTexture(const Ptr<CoreGraphics::RenderTexture>& to);
-
 	/// discard operation
 	void Discard();
 	/// run operation
 	void Run(const IndexT frameIndex);
-private:
-	Ptr<CoreGraphics::RenderTexture> from;
-	Ptr<CoreGraphics::RenderTexture> to;
+
+	CoreGraphics::RenderTextureId from, to;
 };
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-FrameCopy::SetFromTexture(const Ptr<CoreGraphics::RenderTexture>& from)
-{
-	this->from = from;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-FrameCopy::SetToTexture(const Ptr<CoreGraphics::RenderTexture>& to)
-{
-	this->to = to;
-}
 
 } // namespace Frame2

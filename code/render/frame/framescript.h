@@ -18,6 +18,7 @@
 #include "algorithm/algorithm.h"
 #include "frame/frameop.h"
 #include "frame/framepass.h"
+#include "memory/chunkallocator.h"
 namespace Graphics
 {
 	class View;
@@ -33,10 +34,13 @@ public:
 	/// destructor
 	virtual ~FrameScript();
 
+	/// get allocator
+	Memory::ChunkAllocator<0xFFFF>& GetAllocator();
+
 	/// set name
-	void SetResourceId(const Resources::ResourceId& name);
+	void SetResourceName(const Resources::ResourceName& name);
 	/// get name
-	const Resources::ResourceId& GetResourceId() const;
+	const Resources::ResourceName& GetResourceName() const;
 
 	/// add frame operation
 	void AddOp(const Ptr<Frame::FrameOp>& op);
@@ -96,8 +100,9 @@ private:
 	void OnWindowResized();
 
 	CoreGraphics::WindowId window;
+	Memory::ChunkAllocator<0xFFFF> allocator;
 
-	Resources::ResourceId resId;
+	Resources::ResourceName resId;
 	Util::Array<CoreGraphics::RenderTextureId> colorTextures;
 	Util::Dictionary<Util::StringAtom, CoreGraphics::RenderTextureId> colorTexturesByName;
 	Util::Array<CoreGraphics::RenderTextureId> depthStencilTextures;
@@ -119,7 +124,7 @@ private:
 /**
 */
 inline void
-FrameScript::SetResourceId(const Resources::ResourceId& name)
+FrameScript::SetResourceName(const Resources::ResourceName& name)
 {
 	this->resId = name;
 }
@@ -127,8 +132,8 @@ FrameScript::SetResourceId(const Resources::ResourceId& name)
 //------------------------------------------------------------------------------
 /**
 */
-inline const Resources::ResourceId&
-FrameScript::GetResourceId() const
+inline const Resources::ResourceName&
+FrameScript::GetResourceName() const
 {
 	return this->resId;
 }

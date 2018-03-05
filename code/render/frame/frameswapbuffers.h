@@ -19,24 +19,12 @@ public:
 	/// destructor
 	virtual ~FrameSwapbuffers();
 
-	/// set texture
-	void SetTexture(const Ptr<CoreGraphics::RenderTexture>& tex);
-
 	/// discard operation
 	void Discard();
 	/// run operation
 	void Run(const IndexT frameIndex);
-private:
-	Ptr<CoreGraphics::RenderTexture> tex;
-};
 
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-FrameSwapbuffers::SetTexture(const Ptr<CoreGraphics::RenderTexture>& tex)
-{
-	this->tex = tex;
-}
+	CoreGraphics::RenderTextureId tex;
+};
 
 } // namespace Frame2

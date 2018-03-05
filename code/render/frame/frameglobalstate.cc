@@ -4,6 +4,7 @@
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "frameglobalstate.h"
+#include "coregraphics/shader.h"
 
 namespace Frame
 {
@@ -29,24 +30,13 @@ FrameGlobalState::~FrameGlobalState()
 /**
 */
 void
-FrameGlobalState::AddVariableInstance(const Ptr<CoreGraphics::ShaderVariableInstance>& var)
-{
-	this->variableInstances.Append(var);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
 FrameGlobalState::Discard()
 {
 	FrameOp::Discard();
 
 	IndexT i;
-	for (i = 0; i < this->variableInstances.Size(); i++) this->variableInstances[i]->Discard();
-	this->variableInstances.Clear();
-	this->state->Discard();
-	this->state = 0;
+	for (i = 0; i < this->constants.Size(); i++) CoreGraphics::ShaderDestroyState(this->state);
+	this->constants.Clear();
 }
 
 //------------------------------------------------------------------------------
@@ -55,16 +45,8 @@ FrameGlobalState::Discard()
 void
 FrameGlobalState::Run(const IndexT frameIndex)
 {
-	// apply variable instances
-	IndexT i;
-	for (i = 0; i < this->variableInstances.Size(); i++)
-	{
-		this->variableInstances[i]->Apply();
-	}
-
-	// then commit
-	this->state->Apply();
-	this->state->Commit();
+	// commit
+	CoreGraphics::ShaderStateApply(this->state);
 }
 
 } // namespace Frame2

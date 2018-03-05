@@ -35,8 +35,8 @@ void
 FrameCopy::Discard()
 {
 	FrameOp::Discard();
-	this->from = 0;
-	this->to = 0;
+	this->from = CoreGraphics::RenderTextureId::Invalid();
+	this->to = CoreGraphics::RenderTextureId::Invalid();
 }
 
 //------------------------------------------------------------------------------
@@ -47,18 +47,22 @@ FrameCopy::Run(const IndexT frameIndex)
 {
 	RenderDevice* renderDev = RenderDevice::Instance();
 
+	// get dimensions
+	CoreGraphics::TextureDimensions fromDims = RenderTextureGetDimensions(this->from);
+	CoreGraphics::TextureDimensions toDims = RenderTextureGetDimensions(this->to);
+
 	// setup regions
 	Math::rectangle<SizeT> fromRegion;
 	fromRegion.left = 0;
 	fromRegion.top = 0;
-	fromRegion.right = this->from->GetWidth();
-	fromRegion.bottom = this->from->GetHeight();
+	fromRegion.right = fromDims.width;
+	fromRegion.bottom = fromDims.height;
 	Math::rectangle<SizeT> toRegion;
 	toRegion.left = 0;
 	toRegion.top = 0;
-	toRegion.right = this->to->GetWidth();
-	toRegion.bottom = this->to->GetHeight();
-	renderDev->Copy(this->from->GetTexture(), fromRegion, this->to->GetTexture(), toRegion);
+	toRegion.right = toDims.width;
+	toRegion.bottom = toDims.height;
+	renderDev->Copy(this->from, fromRegion, this->to, toRegion);
 }
 
 } // namespace Frame2

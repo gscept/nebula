@@ -21,10 +21,6 @@ public:
 	/// destructor
 	virtual ~FramePass();
 
-	/// set pass
-	void SetPass(const CoreGraphics::PassId pass);
-	/// get pass
-	const CoreGraphics::PassId GetPass() const;
 	/// add subpass
 	void AddSubpass(const Ptr<FrameSubpass>& subpass);
 
@@ -37,28 +33,12 @@ public:
 	void Run(const IndexT frameIndex);
 	/// handle display resizing
 	void OnWindowResized();
-private:
+
 	CoreGraphics::PassId pass;
+
+private:
 	Util::Array<Ptr<FrameSubpass>> subpasses;
 };
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-FramePass::SetPass(const CoreGraphics::PassId pass)
-{
-	this->pass = pass;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const CoreGraphics::PassId
-FramePass::GetPass() const
-{
-	return this->pass;
-}
 
 //------------------------------------------------------------------------------
 /**

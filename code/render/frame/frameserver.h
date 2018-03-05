@@ -35,19 +35,19 @@ public:
 	void Close();
 
 	/// load frame script and save with name
-	Ptr<FrameScript> LoadFrameScript(const Resources::ResourceId& name, const IO::URI& path);
+	Ptr<FrameScript> LoadFrameScript(const Resources::ResourceName& name, const IO::URI& path);
 	/// get script by name
-	const Ptr<FrameScript>& GetFrameScript(const Util::StringAtom& name);
+	const Ptr<FrameScript>& GetFrameScript(const Resources::ResourceName& name);
 	/// unload frame script
-	void UnloadFrameScript(const Resources::ResourceId& name);
+	void UnloadFrameScript(const Resources::ResourceName& name);
 
 	/// set texture to be used for future loads of frame scripts
-	void SetWindowTexture(const Ptr<CoreGraphics::RenderTexture>& tex);
+	void SetWindowTexture(const CoreGraphics::RenderTextureId& tex);
 	/// get window texture
-	const Ptr<CoreGraphics::RenderTexture>& GetWindowTexture() const;
+	const CoreGraphics::RenderTextureId& GetWindowTexture() const;
 private:
-	Util::Dictionary<Util::StringAtom, Ptr<FrameScript>> frameScripts;
-	Ptr<CoreGraphics::RenderTexture> windowTexture;
+	Util::Dictionary<Resources::ResourceName, Ptr<FrameScript>> frameScripts;
+	CoreGraphics::RenderTextureId windowTexture;
 	bool isOpen;
 };
 
@@ -55,7 +55,7 @@ private:
 /**
 */
 inline void
-FrameServer::SetWindowTexture(const Ptr<CoreGraphics::RenderTexture>& tex)
+FrameServer::SetWindowTexture(const CoreGraphics::RenderTextureId& tex)
 {
 	this->windowTexture = tex;
 }
@@ -63,7 +63,7 @@ FrameServer::SetWindowTexture(const Ptr<CoreGraphics::RenderTexture>& tex)
 //------------------------------------------------------------------------------
 /**
 */
-inline const Ptr<CoreGraphics::RenderTexture>&
+inline const CoreGraphics::RenderTextureId&
 FrameServer::GetWindowTexture() const
 {
 	return this->windowTexture;

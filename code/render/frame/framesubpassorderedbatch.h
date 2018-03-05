@@ -8,7 +8,7 @@
 */
 //------------------------------------------------------------------------------
 #include "frameop.h"
-#include "graphics/batchgroup.h"
+#include "coregraphics/batchgroup.h"
 namespace Frame
 {
 class FrameSubpassOrderedBatch : public FrameOp
@@ -20,22 +20,10 @@ public:
 	/// destructor
 	virtual ~FrameSubpassOrderedBatch();
 
-	/// set batch
-	void SetBatchCode(const Graphics::BatchGroup::Code& code);
-
 	/// run operation
 	void Run(const IndexT frameIndex);
 
-private:
-	Graphics::BatchGroup::Code batch;
+	CoreGraphics::BatchGroup::Code batch;
 };
 
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-FrameSubpassOrderedBatch::SetBatchCode(const Graphics::BatchGroup::Code& code)
-{
-	this->batch = code;
-}
 } // namespace Frame2

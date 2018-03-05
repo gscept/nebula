@@ -52,11 +52,11 @@ FrameServer::Close()
 /**
 */
 Ptr<Frame::FrameScript>
-FrameServer::LoadFrameScript(const Resources::ResourceId& name, const IO::URI& path)
+FrameServer::LoadFrameScript(const Resources::ResourceName& name, const IO::URI& path)
 {
 	n_assert(!this->frameScripts.Contains(name));
 	Ptr<Frame::FrameScript> script = FrameScriptLoader::LoadFrameScript(path);
-	script->SetResourceId(name);
+	script->SetResourceName(name);
 	this->frameScripts.Add(name, script);
 	return script;
 }
@@ -65,7 +65,7 @@ FrameServer::LoadFrameScript(const Resources::ResourceId& name, const IO::URI& p
 /**
 */
 void
-FrameServer::UnloadFrameScript(const Resources::ResourceId& name)
+FrameServer::UnloadFrameScript(const Resources::ResourceName& name)
 {
 	n_assert(this->frameScripts.Contains(name));
 	this->frameScripts[name]->Cleanup();

@@ -33,7 +33,7 @@ FrameSwapbuffers::Discard()
 {
 	FrameOp::Discard();
 
-	this->tex = 0;
+	this->tex = CoreGraphics::RenderTextureId::Invalid();
 }
 
 //------------------------------------------------------------------------------
@@ -42,7 +42,7 @@ FrameSwapbuffers::Discard()
 void
 FrameSwapbuffers::Run(const IndexT frameIndex)
 {
-	this->tex->SwapBuffers();
+	CoreGraphics::RenderTextureSwapBuffers(this->tex);
 }
 
 } // namespace Frame2

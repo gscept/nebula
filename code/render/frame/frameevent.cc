@@ -29,18 +29,9 @@ FrameEvent::~FrameEvent()
 /**
 */
 void
-FrameEvent::AddAction(const Action a)
-{
-	this->actions.Append(a);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
 FrameEvent::Discard()
 {
-	this->event = 0;
+	this->event = CoreGraphics::EventId::Invalid();
 }
 
 //------------------------------------------------------------------------------
@@ -55,13 +46,13 @@ FrameEvent::Run(const IndexT frameIndex)
 		switch (this->actions[i])
 		{
 		case Set:
-			this->event->Signal();
+			CoreGraphics::EventSignal(this->event, this->queueType, this->dependency);
 			break;
 		case Reset:
-			this->event->Reset();
+			CoreGraphics::EventReset(this->event, this->queueType, this->dependency);
 			break;
 		case Wait:
-			this->event->Wait();
+			CoreGraphics::EventWait(this->event, this->queueType);
 			break;
 		}
 	}

@@ -19,22 +19,10 @@ public:
 	/// destructor
 	virtual ~FrameBarrier();
 
-	/// set barrier
-	void SetBarrier(const Ptr<CoreGraphics::Barrier>& barrier);
 	/// run operation
 	void Run(const IndexT frameIndex);
-private:
 
-	Ptr<CoreGraphics::Barrier> barrier;
+	CoreGraphics::BarrierId barrier;
 };
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-FrameBarrier::SetBarrier(const Ptr<CoreGraphics::Barrier>& barrier)
-{
-	this->barrier = barrier;
-}
 
 } // namespace Frame2
