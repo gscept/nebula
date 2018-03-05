@@ -230,7 +230,7 @@ Resources::ResourceStreamPool::CreateResource(const ResourceName& res, const Uti
 
 	if (i == InvalidIndex)
 	{
-		// allocate new object (AllocObject is implemented using the __ImplementResourceAllocator macro)
+		// allocate new object (AllocObject is implemented using the __ImplementResourceAllocator macro, or in a specialized allocator)
 		resourceId = this->AllocObject();
 
 		// allocate new index for the allocator

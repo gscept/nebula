@@ -233,7 +233,12 @@ ResourceManager::HasResource(const Resources::ResourceId id) const
 inline const Resources::ResourceId
 ResourceManager::GetId(const Resources::ResourceName& name) const
 {
-	return Resources::ResourceId();
+	IndexT i;
+	for (i = 0; i < this->pools.Size(); i++)
+	{
+		Resources::ResourceId id = this->pools[i]->GetId(name);
+		if (id != Resources::ResourceId::Invalid()) return id;
+	}
 }
 
 //------------------------------------------------------------------------------
