@@ -1,57 +1,199 @@
 //------------------------------------------------------------------------------
-//  modelnodematerial.cc
-//  (C) 2015-2016 Individual contributors, see AUTHORS file
+//  materialtype.cc
+//  (C) 2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-
 #include "stdneb.h"
-#include "materials/materialtype.h"
-#include "materialserver.h"
-
+#include "materialtype.h"
+#include "coregraphics/shader.h"
+#include "coregraphics/config.h"
 namespace Materials
 {
-using namespace Util;
 
 //------------------------------------------------------------------------------
 /**
-	Private constructor, only the ModelServer may create the central 
-	ModelNodeMaterial registry.
 */
-MaterialType::MaterialType()
+MaterialType::MaterialType() :
+	currentAllocator(nullptr)
 {
-	this->nameToCode.Reserve(MaxNumMaterialTypes);
-	this->codeToName.Reserve(MaxNumMaterialTypes);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-MaterialType::Code
-MaterialType::FromName(const Name& name)
+MaterialType::~MaterialType()
 {
-	MaterialType& registry = MaterialServer::Instance()->materialTypeRegistry;
-	IndexT index = registry.nameToCode.FindIndex(name);
-	if (InvalidIndex != index)
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Ids::Id32
+MaterialType::CreateMaterial()
+{
+	Ids::Id32 mat = this->materialAllocator.AllocObject();
+	Util::Array<Ids::Id32>& indices = this->materialAllocator.Get<0>(mat);
+	Util::Array<Util::HashTable<Util::StringAtom, CoreGraphics::ShaderConstantId>>& matConstants = this->materialAllocator.Get<1>(mat);
+	Util::Array<Util::HashTable<Util::StringAtom, CoreGraphics::ShaderConstantId>>& matTextures = this->materialAllocator.Get<2>(mat);
+	SizeT i;
+	for (i = 0; i < batches.Size(); i++)
 	{
-		return registry.nameToCode.ValueAtIndex(index);
+		const CoreGraphics::BatchGroup::Code batch = batches[i];
+		CoreGraphics::ShaderId shid;
+		shid.allocId = programs[batch].shaderId;
+		CoreGraphics::ShaderStateId state = CoreGraphics::ShaderCreateState(shid, { NEBULAT_BATCH_GROUP }, false);
+		indices.Append(this->states[batch].Size());
+
+		matConstants.Append(Util::HashTable<Util::StringAtom, CoreGraphics::ShaderConstantId>());
+		Util::HashTable<Util::StringAtom, CoreGraphics::ShaderConstantId>& matConstantDict = matConstants.Back();
+
+		matTextures.Append(Util::HashTable<Util::StringAtom, CoreGraphics::ShaderConstantId>());
+		Util::HashTable<Util::StringAtom, CoreGraphics::ShaderConstantId>& matTextureDict = matTextures.Back();
+		SizeT j;
+		for (j = 0; j < this->constants.Size(); j++)
+		{
+			CoreGraphics::ShaderConstantId cid = CoreGraphics::ShaderStateGetConstant(state, this->constants.KeyAtIndex(j));
+			matConstantDict.Add(this->constants.KeyAtIndex(j), cid);
+			CoreGraphics::ShaderConstantSet(cid, state, this->constants.ValueAtIndex(j).default);
+		}
+		for (j = 0; j < this->textures.Size(); j++)
+		{
+			CoreGraphics::ShaderConstantId cid = CoreGraphics::ShaderStateGetConstant(state, this->textures.KeyAtIndex(j));
+			matTextureDict.Add(this->textures.KeyAtIndex(j), cid);
+			CoreGraphics::ShaderConstantSet(cid, state, this->textures.ValueAtIndex(j).default);
+		}
+		this->states[batch].Append(state);
 	}
-	else
+	return mat;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+MaterialType::DestroyMaterial(Ids::Id32 mat)
+{
+	SizeT i;
+	for (i = 0; i < this->batches.Size(); i++)
 	{
-		// material hasn't been registered yet
-		registry.codeToName.Append(name);
-		Code code = registry.codeToName.Size() - 1;
-		registry.nameToCode.Add(name, code);
-		return code;
+		const CoreGraphics::BatchGroup::Code batch = this->batches[i];
+		const Util::Array<CoreGraphics::ShaderStateId>& stateIds = this->states[batch];
+		const Util::Array<Ids::Id32>& indices = this->materialAllocator.Get<0>(mat);
+		SizeT j;
+		for (j = 0; j < indices.Size(); j++)
+		{
+			CoreGraphics::ShaderDestroyState(stateIds[indices[j]]);
+		}
+	}
+	this->materialAllocator.DeallocObject(mat);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+MaterialType::SetupMaterial(Ids::Id32 mat, MaterialSetup setup)
+{
+	const Util::Array<Ids::Id32>& indices = this->materialAllocator.Get<0>(mat);
+	const Util::Array<Util::HashTable<Util::StringAtom, CoreGraphics::ShaderConstantId>>& matConstants = this->materialAllocator.Get<1>(mat);
+	const Util::Array<Util::HashTable<Util::StringAtom, CoreGraphics::ShaderConstantId>>& matTextures = this->materialAllocator.Get<2>(mat);
+
+	SizeT i;
+	for (i = 0; i < this->batches.Size(); i++)
+	{
+		const CoreGraphics::BatchGroup::Code batch = this->batches[i];
+		const Util::Array<CoreGraphics::ShaderStateId>& stateIds = this->states[batch];
+		SizeT j;
+		for (j = 0; j < indices.Size(); j++)
+		{
+			const CoreGraphics::ShaderStateId state = stateIds[indices[j]];
+			SizeT k;
+			for (k = 0; k < setup.constants.Size(); k++)
+			{
+				CoreGraphics::ShaderConstantSet(matConstants[j][setup.constantNames[k]], state, setup.constants[k].default);
+			}
+			for (k = 0; k < setup.textures.Size(); k++)
+			{
+				CoreGraphics::ShaderConstantSet(matConstants[j][setup.textureNames[k]], state, setup.textures[k].default);
+			}
+		}
 	}
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-MaterialType::Name
-MaterialType::ToName(Code c)
+void
+MaterialType::MaterialSetConstant(Ids::Id32 mat, Util::StringAtom name, const Util::Variant& constant)
 {
-    MaterialType& registry = MaterialServer::Instance()->materialTypeRegistry;
-	return registry.codeToName[c];	
+	const Util::Array<Ids::Id32>& indices = this->materialAllocator.Get<0>(mat);
+	const Util::Array<Util::HashTable<Util::StringAtom, CoreGraphics::ShaderConstantId>>& matConstants = this->materialAllocator.Get<1>(mat);
+
+	SizeT i;
+	for (i = 0; i < this->batches.Size(); i++)
+	{
+		const CoreGraphics::BatchGroup::Code batch = this->batches[i];
+		const Util::Array<CoreGraphics::ShaderStateId>& stateIds = this->states[batch];
+		SizeT j;
+		for (j = 0; j < indices.Size(); j++)
+		{
+			const CoreGraphics::ShaderStateId state = stateIds[indices[j]];
+			CoreGraphics::ShaderConstantSet(matConstants[i][name], state, constant);
+		}
+	}
 }
 
-} // namespace Models
+//------------------------------------------------------------------------------
+/**
+*/
+void
+MaterialType::MaterialSetTexture(Ids::Id32 mat, Util::StringAtom name, const CoreGraphics::TextureId tex)
+{
+	const Util::Array<Ids::Id32>& indices = this->materialAllocator.Get<0>(mat);
+	const Util::Array<Util::HashTable<Util::StringAtom, CoreGraphics::ShaderConstantId>>& matTextures = this->materialAllocator.Get<2>(mat);
+
+	SizeT i;
+	for (i = 0; i < this->batches.Size(); i++)
+	{
+		const CoreGraphics::BatchGroup::Code batch = this->batches[i];
+		const Util::Array<CoreGraphics::ShaderStateId>& stateIds = this->states[batch];
+		SizeT j;
+		for (j = 0; j < indices.Size(); j++)
+		{
+			const CoreGraphics::ShaderStateId state = stateIds[indices[j]];
+			CoreGraphics::ShaderConstantSet(matTextures[i][name], state, tex);
+		}
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+MaterialType::BeginBatch(CoreGraphics::BatchGroup::Code batch)
+{
+	n_assert(this->currentAllocator == nullptr);
+	this->currentAllocator = &states[batch];
+	CoreGraphics::ShaderProgramBind(this->programs[batch]);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+MaterialType::EndBatch()
+{
+	n_assert(this->currentAllocator != nullptr);
+	this->currentAllocator = nullptr;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+MaterialType::ApplyMaterial(Ids::Id32 mat)
+{
+	n_assert(this->currentAllocator != nullptr);
+	const Util::Array<Ids::Id32>& indices = this->materialAllocator.Get<0>(mat);
+	CoreGraphics::ShaderStateApply((*this->currentAllocator)[indices[mat]]);
+}
+} // namespace Materials
