@@ -236,4 +236,104 @@ Factory::Create(const FourCC classFourCC) const
     return newObject;
 }
 
+//------------------------------------------------------------------------------
+/**
+	Create an object by string name.
+*/
+void*
+Factory::CreateArray(const Util::String& className, SizeT num) const
+{
+	n_assert(className.IsValid());
+
+	// check if class exists, otherwise give a meaningful error
+	if (!this->ClassExists(className))
+	{
+		String errorMsg;
+		errorMsg.Format("Factory::Create('%s'): unknown class name!", className.AsCharPtr());
+		SysFunc::Error(errorMsg.AsCharPtr());
+		return 0;
+	}
+
+	// lookup RTTI object of class through hash table and create new object
+	const Rtti* rtti = this->nameTable[className];
+	n_assert(0 != rtti);
+	void* newObject = rtti->CreateArray(num);
+	return newObject;
+}
+
+//------------------------------------------------------------------------------
+/**
+	Create an object by FourCC code.
+*/
+void*
+Factory::CreateArray(const Util::FourCC classFourCC, SizeT num) const
+{
+	n_assert(classFourCC.IsValid());
+
+	// check if class exists, otherwise give meaningful error
+	if (!this->ClassExists(classFourCC))
+	{
+		String errorMsg;
+		errorMsg.Format("Factory::Create('%s'): unknown class FourCC code!", classFourCC.AsString().AsCharPtr());
+		SysFunc::Error(errorMsg.AsCharPtr());
+		return 0;
+	}
+
+	// lookup RTTI object of class through hash table and create new object
+	const Rtti* rtti = this->fourccTable[classFourCC];
+	n_assert(0 != rtti);
+	void* newObject = rtti->CreateArray(num);
+	return newObject;
+}
+
+//------------------------------------------------------------------------------
+/**
+	Create an object by string name.
+*/
+void*
+Factory::CreateInplace(const Util::String& className, void* mem) const
+{
+	n_assert(className.IsValid());
+
+	// check if class exists, otherwise give a meaningful error
+	if (!this->ClassExists(className))
+	{
+		String errorMsg;
+		errorMsg.Format("Factory::Create('%s'): unknown class name!", className.AsCharPtr());
+		SysFunc::Error(errorMsg.AsCharPtr());
+		return 0;
+	}
+
+	// lookup RTTI object of class through hash table and create new object
+	const Rtti* rtti = this->nameTable[className];
+	n_assert(0 != rtti);
+	void* newObject = rtti->CreateInplace(mem);
+	return newObject;
+}
+
+//------------------------------------------------------------------------------
+/**
+	Create an object by FourCC code.
+*/
+void*
+Factory::CreateInplace(const Util::FourCC classFourCC, void* mem) const
+{
+	n_assert(classFourCC.IsValid());
+
+	// check if class exists, otherwise give meaningful error
+	if (!this->ClassExists(classFourCC))
+	{
+		String errorMsg;
+		errorMsg.Format("Factory::Create('%s'): unknown class FourCC code!", classFourCC.AsString().AsCharPtr());
+		SysFunc::Error(errorMsg.AsCharPtr());
+		return 0;
+	}
+
+	// lookup RTTI object of class through hash table and create new object
+	const Rtti* rtti = this->fourccTable[classFourCC];
+	n_assert(0 != rtti);
+	void* newObject = rtti->CreateInplace(mem);
+	return newObject;
+}
+
 } // namespace Core

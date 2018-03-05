@@ -367,6 +367,24 @@ String::FindCharIndex(char c, IndexT startIndex) const
 
 //------------------------------------------------------------------------------
 /**
+*/
+bool
+String::BeginsWithString(const String& s) const
+{
+	return FindStringIndex(s) != InvalidIndex;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+String::EndsWithString(const String& s) const
+{
+	return FindStringIndex(s, s.Length()) != InvalidIndex;
+}
+
+//------------------------------------------------------------------------------
+/**
     Removes all characters in charSet from the left side of the string.
 */
 void

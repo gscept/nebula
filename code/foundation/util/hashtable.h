@@ -61,6 +61,8 @@ public:
     void Add(const KeyValuePair<KEYTYPE, VALUETYPE>& kvp);
     /// add a key and associated value
     void Add(const KEYTYPE& key, const VALUETYPE& value);
+	/// merge two dictionaries
+	void Merge(const HashTable<KEYTYPE, VALUETYPE>& rhs);
     /// erase an entry
     void Erase(const KEYTYPE& key);
     /// return true if key exists in the array
@@ -116,6 +118,7 @@ Util::HashTable<KEYTYPE, VALUETYPE>::ValuesAsArray() const
 	}
 	return vals;
 }
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -264,6 +267,20 @@ HashTable<KEYTYPE, VALUETYPE>::Add(const KEYTYPE& key, const VALUETYPE& value)
 {
     KeyValuePair<KEYTYPE, VALUETYPE> kvp(key, value);
     this->Add(kvp);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class KEYTYPE, class VALUETYPE>
+void
+HashTable<KEYTYPE, VALUETYPE>::Merge(const HashTable<KEYTYPE, VALUETYPE>& rhs)
+{
+	this->hashArray.Resize(n_max(rhs.size, this->size));
+	IndexT i;
+	for (i = 0; i < rhs.size; i++)
+		this->Add(rhs.hashArray[i]);
+
 }
 
 //------------------------------------------------------------------------------

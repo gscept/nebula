@@ -122,6 +122,29 @@ public:
 		Ids::Id24 resId = Ids::Id::GetLow(Ids::Id::GetBig(index));
 		return std::get<MEMBER>(this->objects)[resId];
 	}
+
+	/// get array const reference
+	template <int MEMBER>
+	const inline Util::Array<tuple_array_t<MEMBER, TYPES...>>&
+	GetArray() const
+	{
+		return std::get<MEMBER>(this->objects);
+	}
+
+	/// get array
+	template <int MEMBER>
+	inline Util::Array<tuple_array_t<MEMBER, TYPES...>>&
+	GetArray()
+	{
+		return std::get<MEMBER>(this->objects);
+	}
+
+	/// get number of used indices
+	const inline uint32_t
+	GetNumUsed() const
+	{
+		return pool.GetNumUsed();
+	}
 private:
 
 	Ids::IdPool pool;
@@ -206,6 +229,24 @@ public:
 		return std::get<MEMBER>(this->objects)[resId];
 	}
 
+	/// get array const
+	template <int MEMBER>
+	const inline Util::Array<tuple_array_t<MEMBER, TYPES...>>&
+	GetArray() const
+	{
+		n_assert(this->inBeginGet);
+		return std::get<MEMBER>(this->objects);
+	}
+
+	/// get array
+	template <int MEMBER>
+	inline Util::Array<tuple_array_t<MEMBER, TYPES...>>&
+	GetArray()
+	{
+		n_assert(this->inBeginGet);
+		return std::get<MEMBER>(this->objects);
+	}
+
 	/// leave thread safe get-mode
 	void LeaveGet()
 	{
@@ -252,6 +293,13 @@ public:
 	{
 		Ids::Id24 resId = Ids::Id::GetBig(Ids::Id::GetLow(index));
 		return std::get<MEMBER>(this->objects)[resId];
+	}
+
+	/// get number of used indices
+	const inline uint32_t
+	GetNumUsed() const
+	{
+		return pool.GetNumUsed();
 	}
 
 private:
