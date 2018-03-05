@@ -5,9 +5,9 @@
 	This class is abstract, but any class inheriting it has to be a singleton.
 
 	The idea is that every rendering module should implement its own GraphicsContext. The data
-	for each graphics entity is then saved in a BlockAllocator as defined in this class, and
+	for each graphics entity is then saved in an allocator as defined in this class, and
 	that data is sliced into whatever is important. This way, we can simply loop over all
-	slices in the BlockAllocator once per update, and simply ignore all the crud in between.
+	slices in the allocator once per update, and simply ignore all the crud in between.
 
 	Example:
 
@@ -42,6 +42,8 @@
 	This base class implements a block allocator which creates chunks of FixedPool objects.
 	Whenever an entity is registered, a slice ID is calculated using the pool index, and the index within the pool as a 64 bit integer.
 	The entity id is then paired with that slice id, so that the slice and pool can be obtained and free'd. 
+
+	The graphics context only implements allocating a new slice, but it doesn't provide a generic setup function.
 	
 	(C) 2017 Individual contributors, see AUTHORS file
 */
@@ -49,23 +51,30 @@
 #include "core/refcounted.h"
 #include "timing/time.h"
 #include "ids/id.h"
+#include "ids/idallocator.h"			// include this here since it will be used by all contexts
 #include "ids/idgenerationpool.h"
 #include "graphicsentity.h"
 namespace Graphics
 {
-typedef Ids::Id32 ContextId;
 class View;
 class GraphicsContext : public Core::RefCounted
 {
 	__DeclareAbstractClass(GraphicsContext);
 
-protected:
+public:
 	/// constructor
 	GraphicsContext();
 	/// destructor
 	virtual ~GraphicsContext();
 
 	friend class GraphicsServer;
+
+	/// register a new entity with the context
+	virtual void RegisterEntity(const GraphicsEntityId id);
+	/// deregister entity from context
+	virtual void DeregisterEntity(const GraphicsEntityId id);
+	/// returns true if entity is registered for context
+	bool IsEntityRegistered(const GraphicsEntityId id);
 
 	/// runs before frame is updated
 	void OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime);
@@ -79,8 +88,13 @@ protected:
 	void OnAfterFrame(const IndexT frameIndex, const Timing::Time frameTime);
 
 protected:
-	Util::Dictionary<int64_t, int64_t> entitySliceMap;
-	Ids::IdGenerationPool contextIdPool;
+	
+	/// allocate a new slice for this context
+	virtual uint Alloc() = 0;
+	/// deallocate a slice
+	virtual void Dealloc(uint id) = 0;
+
+	Util::Dictionary<uint, uint> entitySliceMap;
 };
 
 } // namespace Graphics

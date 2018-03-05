@@ -58,13 +58,14 @@ public:
 	void RegisterGraphicsContext(const Core::Rtti& rtti);
 private:
 	friend class GraphicsEntity;
+	friend class CoreGraphics::BatchGroup;
 
 	Ids::IdGenerationPool entityPool;
 	Util::Array<GraphicsEntity> entities;
 
 	Ptr<FrameSync::FrameSyncTimer> timer;
 	Util::Array<Ptr<GraphicsContext>> contexts;
-	//Ptr<Visibility::VisibilityServer> visServer;
+	Ptr<Visibility::VisibilityServer> visServer;
 
 	Util::Array<Ptr<Stage>> stages;
 	Util::Array<Ptr<View>> views;

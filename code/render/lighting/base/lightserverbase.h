@@ -12,8 +12,8 @@
 */
 #include "core/refcounted.h"
 #include "core/singleton.h"
-#include "coregraphics/shadervariableinstance.h"
-#include "graphics/cameraentity.h"
+#include "coregraphics/shader.h"
+#include "graphics/camera.h"
 #include "graphics/modelentity.h"
 #include "graphics/globallightentity.h"
 #include "graphics/lightprobeentity.h"

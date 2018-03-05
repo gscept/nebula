@@ -47,7 +47,7 @@ void
 GraphicsServer::Open()
 {
 	n_assert(!this->isOpen);
-	//this->visServer = Visibility::VisibilityServer::Create();
+	this->visServer = Visibility::VisibilityServer::Create();
 	this->timer = FrameSync::FrameSyncTimer::Create();
 	this->isOpen = true;
 
@@ -81,7 +81,7 @@ void
 GraphicsServer::Close()
 {
 	n_assert(this->isOpen);
-	//this->visServer = nullptr;
+	this->visServer = nullptr;
 	this->timer = nullptr;
 	this->isOpen = false;
 
@@ -98,7 +98,7 @@ GraphicsServer::OnFrame()
 	const Timing::Time time = this->timer->GetFrameTime();
 
 	// enter visibility lockstep
-	//this->visServer->EnterVisibilityLockstep();
+	this->visServer->EnterVisibilityLockstep();
 
 	// begin updating visibility
 	IndexT i;
@@ -108,7 +108,7 @@ GraphicsServer::OnFrame()
 	}
 
 	// begin updating visibility
-	//this->visServer->BeginVisibility();
+	this->visServer->BeginVisibility();
 
 	// go through views and call before view
 	for (i = 0; i < this->views.Size(); i++)
@@ -126,7 +126,7 @@ GraphicsServer::OnFrame()
 		const Ptr<View>& view = this->views[i];
 
 		// apply visibility result for this view
-		//this->visServer->ApplyVisibility(view);
+		this->visServer->ApplyVisibility(view);
 
 		IndexT j;
 		for (j = 0; j < this->contexts.Size(); j++)
@@ -144,7 +144,7 @@ GraphicsServer::OnFrame()
 	}
 
 
-	// begin updating visibility
+	// finish frame and prepare for the next one
 	IndexT i;
 	for (i = 0; i < this->contexts.Size(); i++)
 	{
@@ -152,7 +152,7 @@ GraphicsServer::OnFrame()
 	}
 
 	// leave visibility lockstep
-	//this->visServer->LeaveVisibilityLockstep();
+	this->visServer->LeaveVisibilityLockstep();
 }
 
 //------------------------------------------------------------------------------
@@ -162,7 +162,7 @@ void
 GraphicsServer::RegisterGraphicsContext(const Core::Rtti& rtti)
 {
 	n_assert(rtti.IsDerivedFrom(GraphicsContext::RTTI));
-	Core::RefCounted* obj = rtti.Create();
+	void* obj = rtti.Create();
 	Ptr<GraphicsContext> ptr((GraphicsContext*)obj);
 	this->contexts.Append(ptr);
 }
@@ -193,7 +193,7 @@ GraphicsServer::DiscardGraphicsEntity(const GraphicsEntityId id)
 bool
 GraphicsServer::IsValidGraphicsEntity(const GraphicsEntityId id)
 {
-	return this->entityPool.IsValid(id);
+	return this->entityPool.IsValid(id.id);
 }
 
 //------------------------------------------------------------------------------
