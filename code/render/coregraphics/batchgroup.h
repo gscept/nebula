@@ -21,6 +21,8 @@
 #include "util/array.h"
 #include "util/dictionary.h"
 
+namespace Graphics { class GraphicsServer; }
+
 //------------------------------------------------------------------------------
 namespace CoreGraphics
 {
@@ -42,7 +44,7 @@ public:
     static const IndexT InvalidBatchGroup = InvalidIndex;
 
 private:
-    friend class GraphicsServer;
+    friend class Graphics::GraphicsServer;
 
     /// constructor
     BatchGroup();

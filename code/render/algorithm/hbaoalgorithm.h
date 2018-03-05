@@ -8,7 +8,7 @@
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
 #include "algorithm.h"
-#include "coregraphics/shaderstate.h"
+#include "coregraphics/shader.h"
 #include "coregraphics/barrier.h"
 namespace Algorithms
 {

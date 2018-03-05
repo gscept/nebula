@@ -3,18 +3,18 @@
 /**
     @class RenderUtil::DrawFullScreenQuad
     
-    Util class for rendering a full screen quad. Does not care about 
-    shader setup!
+    Actually draws one big triangle which covers the entire screen, which
+	is more efficient than drawing a quad using two triangles.
     
     (C) 2009 Radon Labs GmbH
     (C) 2013-2016 Individual contributors, see AUTHORS file
 */
-#include "coregraphics/shaderstate.h"
-#include "coregraphics/shadervariable.h"
+//------------------------------------------------------------------------------
+#include "coregraphics/shader.h"
 #include "coregraphics/vertexbuffer.h"
+#include "coregraphics/vertexlayout.h"
 #include "coregraphics/primitivegroup.h"
 
-//------------------------------------------------------------------------------
 namespace RenderUtil
 {
 class DrawFullScreenQuad
@@ -38,7 +38,8 @@ public:
     void Draw();
 
 private:
-    Ptr<CoreGraphics::VertexBuffer> vertexBuffer;
+    CoreGraphics::VertexBufferId vertexBuffer;
+	CoreGraphics::VertexLayoutId vertexLayout;
     CoreGraphics::PrimitiveGroup primGroup;
     bool isValid;
 };

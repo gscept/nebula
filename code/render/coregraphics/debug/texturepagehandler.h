@@ -35,7 +35,7 @@ private:
     /// handle a "raw" texture image request
     Http::HttpStatus::Code HandleImageRequest(const Util::Dictionary<Util::String,Util::String>& query, const Ptr<IO::Stream>& responseStream);
     /// handle a texture info request (returns an info page about a single texture)
-    Http::HttpStatus::Code HandleTextureInfoRequest(const Resources::ResourceId& resId, const Ptr<IO::Stream>& responseContentStream);
+    Http::HttpStatus::Code HandleTextureInfoRequest(const Util::String& resId, const Ptr<IO::Stream>& responseContentStream);
 };
 
 } // namespace Debug

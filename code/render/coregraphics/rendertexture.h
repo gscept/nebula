@@ -68,6 +68,9 @@ RenderTextureId CreateRenderTexture(const RenderTextureCreateInfo& info);
 /// destroy render texture
 void DestroyRenderTexture(const RenderTextureId id);
 
+/// swap buffers, only valid if this is a window texture
+void RenderTextureSwapBuffers(const CoreGraphics::RenderTextureId id);
+
 /// resize the render texture
 void RenderTextureResize(const RenderTextureId id, const RenderTextureResizeInfo& info);
 /// trigger a window change callback

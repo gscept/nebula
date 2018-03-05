@@ -314,8 +314,8 @@ ENDIF()
 				vkshaderserver.h
 				vkshaderstate.cc
 				vkshaderstate.h
-				vkshadervariable.cc
-				vkshadervariable.h
+				vkshaderconstant.cc
+				vkshaderconstant.h
 				vkshaperenderer.cc
 				vkshaperenderer.h
 				vkshaderpool.cc
@@ -522,11 +522,9 @@ IF(FALSE)
 				shadowserver.cc
 				shadowserver.h
 			)
-ENDIF()
+
 		fips_dir(materials)
 			fips_files(
-				managedsurface.cc
-				managedsurface.h
 				material.cc
 				material.h
 				materialfeature.cc
@@ -560,7 +558,16 @@ ENDIF()
 				surfacename.cc
 				surfacename.h
 			)
-			
+ENDIF()
+		fips_dir(materials)
+			fips_files(
+				materialpool.cc
+				materialpool.h
+				materialserver.cc
+				materialserver.h
+				materialtype.cc
+				materialtype.h
+			)
 		fips_dir(models/nodes GROUP "models/nodes")
 			fips_files(
 				characternode.cc
@@ -586,11 +593,8 @@ ENDIF()
 				modelcontext.h
 				streammodelpool.cc
 				streammodelpool.h
-				modelserver.cc
-				modelserver.h
 			)
-			
-IF(FALSE)
+
 		fips_dir(particles/base GROUP "particles/base")
 			fips_files(
 					particlerendererbase.cc
@@ -608,6 +612,21 @@ IF(FALSE)
 				vkparticlesysteminstance.h
 			)
 	endif()
+
+	fips_dir(renderutil)
+	fips_files(
+		drawfullscreenquad.cc
+		drawfullscreenquad.h
+		freecamerautil.cc
+		freecamerautil.h
+		mayacamerautil.cc
+		mayacamerautil.h
+		mouserayutil.cc
+		mouserayutil.h
+		nodelookuputil.cc
+		nodelookuputil.h
+	)
+IF(FALSE)
 		fips_dir(particles)
 			fips_files(
 				emitterattrs.cc
@@ -634,6 +653,7 @@ IF(FALSE)
 				particlesystemnodeinstance.h
 				particlesystemstate.h
 			)
+
 		fips_dir(picking)
 			fips_files(
 				pickingserver.cc
@@ -651,19 +671,7 @@ IF(FALSE)
 				rendermodule.cc
 				rendermodule.h
 			)
-		fips_dir(renderutil)
-			fips_files(
-				drawfullscreenquad.cc
-				drawfullscreenquad.h
-				freecamerautil.cc
-				freecamerautil.h
-				mayacamerautil.cc
-				mayacamerautil.h
-				mouserayutil.cc
-				mouserayutil.h
-				nodelookuputil.cc
-				nodelookuputil.h
-			)
+
 		fips_dir(skinning)
 		
 		fips_dir(visibility/visibilitysystems GROUP "visibility/visibilitysystems")
@@ -685,6 +693,7 @@ IF(FALSE)
 				visibilitysystembase.cc
 				visibilitysystembase.h
 			)
+ENDIF()
 		fips_dir(visibility)
 			fips_files(
 				observer.cc
@@ -697,5 +706,5 @@ IF(FALSE)
 				visibilityserver.cc
 				visibilityserver.h
 			)
-ENDIF()
+
 fips_end_module()

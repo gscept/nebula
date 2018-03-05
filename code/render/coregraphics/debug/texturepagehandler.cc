@@ -52,7 +52,7 @@ TexturePageHandler::HandleRequest(const Ptr<HttpRequest>& request)
     }
     else if (query.Contains("texinfo"))
     {
-        request->SetStatus(this->HandleTextureInfoRequest(ResourceId(query["texinfo"].AsInt()), request->GetResponseContentStream()));
+        request->SetStatus(this->HandleTextureInfoRequest(query["texinfo"], request->GetResponseContentStream()));
         return;
     }
 
@@ -177,7 +177,6 @@ TexturePageHandler::HandleRequest(const Ptr<HttpRequest>& request)
 		htmlWriter->End(HtmlElement::TableRow);
 
 		// iterate over shared resources
-		IndexT i;
 		for (i = 0; i < memResources.Size(); i++)
 		{
 			const Resources::ResourceId res = memResources.ValueAtIndex(i);
@@ -258,7 +257,8 @@ TexturePageHandler::HandleImageRequest(const Dictionary<String,String>& query, c
     const Ptr<ResourceManager>& resManager = ResourceManager::Instance();
     
     // get input args
-	ResourceName resId = ResourceName(query["img"]);
+	ResourceName name = ResourceName(query["img"]);
+	ResourceId id = name.AsString().AsLongLong();
     ImageFileFormat::Code format = ImageFileFormat::InvalidImageFileFormat;
     if (query.Contains("fmt"))
     {
@@ -275,31 +275,25 @@ TexturePageHandler::HandleImageRequest(const Dictionary<String,String>& query, c
     }
 
     // check if the request resource exists and is a texture
-    if (!resManager->HasResource(resId))
+    if (!resManager->HasResource(id))
     {
         return HttpStatus::NotFound;
     }
-    const Ptr<Resource>& res = resManager->LookupResource(resId);
-    if (!res->IsA(Texture::RTTI))
+
+    if (id.allocType != TextureIdType)
     {
         // resource exists but is not a texture
         return HttpStatus::NotFound;
     }
-    const Ptr<Texture>& tex = res.downcast<Texture>();
 
     // attach a StreamTextureSaver to the texture
     // NOTE: the StreamSaver is expected to set the media type on the stream!
     HttpStatus::Code httpStatus = HttpStatus::InternalServerError;
-    Ptr<StreamTextureSaver> saver = StreamTextureSaver::Create();
-    saver->SetStream(responseStream);
-    saver->SetFormat(format);
-    saver->SetMipLevel(mipLevel);
-    tex->SetSaver(saver.upcast<ResourceSaver>());
-    if (tex->Save())
+	bool res = CoreGraphics::SaveTexture(id, responseStream, mipLevel, format);
+    if (res)
     {
         httpStatus = HttpStatus::OK;
     }
-    tex->SetSaver(0);
     return httpStatus;
 }
 
@@ -308,29 +302,35 @@ TexturePageHandler::HandleImageRequest(const Dictionary<String,String>& query, c
     Handle a texture info request.
 */
 HttpStatus::Code
-TexturePageHandler::HandleTextureInfoRequest(const ResourceId& resId, const Ptr<Stream>& responseContentStream)
+TexturePageHandler::HandleTextureInfoRequest(const Util::String& resId, const Ptr<Stream>& responseContentStream)
 {
     // lookup the texture in the ResourceManager
     const Ptr<ResourceManager>& resManager = ResourceManager::Instance();
-	resManager->GetId
-    if (!resManager->HasResource(resId))
+	Resources::ResourceId id = resId.AsLongLong();
+
+    if (!resManager->HasResource(id))
     {
         return HttpStatus::NotFound;
     }
-    const Ptr<Resource>& res = resManager->LookupResource(resId);
-    if (!res->IsA(Texture::RTTI))
-    {
-        // resource exists but is not a texture
-        return HttpStatus::NotFound;
-    }
-    const Ptr<Texture>& tex = res.downcast<Texture>();
+
+	if (id.allocType != TextureIdType)
+	{
+		// resource exists but is not a texture
+		return HttpStatus::NotFound;
+	}
 
     Ptr<HtmlPageWriter> htmlWriter = HtmlPageWriter::Create();
     htmlWriter->SetStream(responseContentStream);
     htmlWriter->SetTitle("NebulaT Texture Info");
     if (htmlWriter->Open())
     {
-        htmlWriter->Element(HtmlElement::Heading1, resId.Value());
+		const Resources::ResourceName& name = resManager->GetName(id);
+		const SizeT usage = resManager->GetUsage(id);
+		CoreGraphics::TextureType type = TextureGetType(id);
+		CoreGraphics::TextureDimensions dims = TextureGetDimensions(id);
+		SizeT mips = TextureGetNumMips(id);
+		CoreGraphics::PixelFormat::Code fmt = TextureGetPixelFormat(id);
+        htmlWriter->Element(HtmlElement::Heading1, name.Value());
         htmlWriter->AddAttr("href", "/index.html");
         htmlWriter->Element(HtmlElement::Anchor, "Home");
         htmlWriter->LineBreak();
@@ -342,56 +342,56 @@ TexturePageHandler::HandleTextureInfoRequest(const ResourceId& resId, const Ptr<
         // display some info about the texture
         htmlWriter->Begin(HtmlElement::Table);
             htmlWriter->Begin(HtmlElement::TableRow);
-                htmlWriter->Element(HtmlElement::TableData, "Resource Id: ");
-                htmlWriter->Element(HtmlElement::TableData, resId.Value());
+                htmlWriter->Element(HtmlElement::TableData, "Resource Name: ");
+                htmlWriter->Element(HtmlElement::TableData, name.Value());
             htmlWriter->End(HtmlElement::TableRow);
             htmlWriter->Begin(HtmlElement::TableRow);
                 htmlWriter->Element(HtmlElement::TableData, "Resolved Path: ");
-                htmlWriter->Element(HtmlElement::TableData, AssignRegistry::Instance()->ResolveAssigns(resId.Value()).AsString());
+                htmlWriter->Element(HtmlElement::TableData, AssignRegistry::Instance()->ResolveAssigns(name.Value()).AsString());
             htmlWriter->End(HtmlElement::TableRow);
             htmlWriter->Begin(HtmlElement::TableRow);
                 htmlWriter->Element(HtmlElement::TableData, "Use Count: ");
-                htmlWriter->Element(HtmlElement::TableData, String::FromInt(tex->GetUseCount()));
+                htmlWriter->Element(HtmlElement::TableData, String::FromInt(usage));
             htmlWriter->End(HtmlElement::TableRow);
             htmlWriter->Begin(HtmlElement::TableRow);
                 htmlWriter->Element(HtmlElement::TableData, "Type: ");
-                switch (tex->GetType())
+                switch (type)
                 {
-                    case Texture::Texture2D:    htmlWriter->Element(HtmlElement::TableData, "2D"); break;
-                    case Texture::Texture3D:    htmlWriter->Element(HtmlElement::TableData, "3D"); break;
-                    case Texture::TextureCube:  htmlWriter->Element(HtmlElement::TableData, "CUBE"); break;
-                    default:                    htmlWriter->Element(HtmlElement::TableData, "ERROR"); break;
+                    case Texture2D:    htmlWriter->Element(HtmlElement::TableData, "2D"); break;
+                    case Texture3D:    htmlWriter->Element(HtmlElement::TableData, "3D"); break;
+                    case TextureCube:  htmlWriter->Element(HtmlElement::TableData, "CUBE"); break;
+                    default:           htmlWriter->Element(HtmlElement::TableData, "ERROR"); break;
                 }
             htmlWriter->End(HtmlElement::TableRow);
             htmlWriter->Begin(HtmlElement::TableRow);
                 htmlWriter->Element(HtmlElement::TableData, "Width: ");
-                htmlWriter->Element(HtmlElement::TableData, String::FromInt(tex->GetWidth()));
+                htmlWriter->Element(HtmlElement::TableData, String::FromInt(dims.width));
             htmlWriter->End(HtmlElement::TableRow);
             htmlWriter->Begin(HtmlElement::TableRow);
                 htmlWriter->Element(HtmlElement::TableData, "Height: ");
-                htmlWriter->Element(HtmlElement::TableData, String::FromInt(tex->GetHeight()));
+                htmlWriter->Element(HtmlElement::TableData, String::FromInt(dims.height));
             htmlWriter->End(HtmlElement::TableRow);
             htmlWriter->Begin(HtmlElement::TableRow);
                 htmlWriter->Element(HtmlElement::TableData, "Depth: ");
-                htmlWriter->Element(HtmlElement::TableData, String::FromInt(tex->GetDepth()));
+                htmlWriter->Element(HtmlElement::TableData, String::FromInt(dims.depth));
             htmlWriter->End(HtmlElement::TableRow);
             htmlWriter->Begin(HtmlElement::TableRow);
                 htmlWriter->Element(HtmlElement::TableData, "Mip Levels: ");
-                htmlWriter->Element(HtmlElement::TableData, String::FromInt(tex->GetNumMipLevels()));
+                htmlWriter->Element(HtmlElement::TableData, String::FromInt(mips));
             htmlWriter->End(HtmlElement::TableRow);
             htmlWriter->Begin(HtmlElement::TableRow);
                 htmlWriter->Element(HtmlElement::TableData, "Pixel Format: ");
-                htmlWriter->Element(HtmlElement::TableData, PixelFormat::ToString(tex->GetPixelFormat()));
+                htmlWriter->Element(HtmlElement::TableData, PixelFormat::ToString(fmt));
             htmlWriter->End(HtmlElement::TableRow);
         htmlWriter->End(HtmlElement::Table);
         htmlWriter->LineBreak();
 
         // display the texture image data
         IndexT mipLevel;
-        for (mipLevel = 0; mipLevel < tex->GetNumMipLevels(); mipLevel++)
+        for (mipLevel = 0; mipLevel < mips; mipLevel++)
         {
             String fmt;
-            fmt.Format("/texture?img=%s&mip=%d", resId.Value(), mipLevel);
+            fmt.Format("/texture?img=%s&mip=%d", name.Value(), mipLevel);
             htmlWriter->AddAttr("src", fmt);
             htmlWriter->Element(HtmlElement::Image, "");
         }

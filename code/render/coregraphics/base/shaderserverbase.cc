@@ -140,7 +140,7 @@ ShaderServerBase::ShaderCreateState(const Resources::ResourceName& resId, const 
 	}
 	else
 	{
-		state = CoreGraphics::shaderPool->CreateState(this->shaderIds[resId], groups, createResourceSet);
+		state = CoreGraphics::shaderPool->CreateState(this->shaders[resId], groups, createResourceSet);
 	}
 
 	// create a shader instance object from the shader
@@ -171,7 +171,7 @@ ShaderServerBase::ShaderCreateSharedState(const Resources::ResourceName& resId, 
 	}
 	else
 	{
-		state = CoreGraphics::shaderPool->CreateState(this->shaderIds[resId], groups, false);
+		state = CoreGraphics::shaderPool->CreateState(this->shaders[resId], groups, false);
 		this->sharedShaderStates.Add(signature, state);
 	}
 
@@ -194,7 +194,7 @@ ShaderServerBase::ApplyObjectId(IndexT i)
 #endif
     if (this->objectIdShaderVar != Ids::InvalidId32)
     {
-		CoreGraphics::shaderPool->ShaderVariableSet(this->objectIdShaderVar, this->sharedVariableShaderState, ((float)i) / 255.0f);
+		CoreGraphics::shaderPool->ShaderConstantSet(this->objectIdShaderVar, this->sharedVariableShaderState, ((float)i) / 255.0f);
     }       
 }
 
@@ -220,8 +220,7 @@ ShaderServerBase::LoadShader(const Resources::ResourceName& shdName)
 	{
 		CoreGraphics::ShaderId sid = id;
 		sid.allocType = ShaderIdType;
-		this->shaders.Add(shdName, id);
-		this->shaderIds.Add(shdName, sid);
+		this->shaders.Add(shdName, sid);
 	},
 		[shdName](const ResourceId id)
 	{
