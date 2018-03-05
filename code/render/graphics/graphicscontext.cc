@@ -25,6 +25,39 @@ GraphicsContext::~GraphicsContext()
 	// empty
 }
 
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GraphicsContext::RegisterEntity(const GraphicsEntityId id)
+{
+	n_assert(!this->entitySliceMap.Contains(id.id));
+	uint allocId = this->Alloc();
+	this->entitySliceMap.Add(id.id, allocId);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GraphicsContext::DeregisterEntity(const GraphicsEntityId id)
+{
+	IndexT i = this->entitySliceMap.FindIndex(id.id);
+	n_assert(i != InvalidIndex);
+	this->Dealloc(this->entitySliceMap.ValueAtIndex(i));
+	this->entitySliceMap.Erase(i);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+GraphicsContext::IsEntityRegistered(const GraphicsEntityId id)
+{
+	return this->entitySliceMap.Contains(id.id);
+}
+
 //------------------------------------------------------------------------------
 /**
 */
