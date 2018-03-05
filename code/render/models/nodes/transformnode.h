@@ -28,8 +28,12 @@ public:
 		bool lockedToViewer;
 	};
 
+	/// create instance
+	virtual ModelNode::Instance* CreateInstance(Memory::ChunkAllocator<0xFFF>& alloc) const;
+
 protected:
 	friend class StreamModelPool;
+	friend class ModelContext;
 
 	/// load transform
 	virtual bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader);
@@ -45,4 +49,21 @@ protected:
 	bool useLodDistances;
 	bool lockedToViewer;
 };
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline ModelNode::Instance*
+TransformNode::CreateInstance(Memory::ChunkAllocator<0xFFF>& alloc) const
+{
+	TransformNode::Instance* tnode = alloc.Alloc<TransformNode::Instance>();
+	tnode->transform.setposition(this->position);
+	tnode->transform.setrotate(this->rotate);
+	tnode->transform.setscale(this->scale);
+	tnode->transform.setrotatepivot(this->rotatePivot);
+	tnode->transform.setscalepivot(this->scalePivot);
+	return tnode;
+}
+
 } // namespace Models

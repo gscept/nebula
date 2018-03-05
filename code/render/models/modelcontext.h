@@ -9,11 +9,10 @@
 #include "graphics/graphicscontext.h"
 #include "core/singleton.h"
 #include "resources/resourceid.h"
-#include "models/modelserver.h"
 #include "materials/materialserver.h"
+#include "model.h"
 namespace Models
 {
-typedef Ids::Id32 ModelInstanceId;
 class ModelContext : public Graphics::GraphicsContext
 {
 	__DeclareClass(ModelContext);
@@ -25,57 +24,33 @@ public:
 	virtual ~ModelContext();
 
 	/// setup
-	void Setup(const Graphics::GraphicsEntityId id, const Resources::ResourceName& name);
+	void Setup(const Graphics::GraphicsEntityId id, const Resources::ResourceName& name, const Util::StringAtom& tag);
 
 	/// change model for existing entity
-	void ChangeModel(const Graphics::GraphicsEntityId id, const Resources::ResourceName& modelName);
+	void ChangeModel(const Graphics::GraphicsEntityId id, const Resources::ResourceName& name, const Util::StringAtom& tag);
 	/// get model
 	const Models::ModelInstanceId GetModel(const Graphics::GraphicsEntityId id);
 
-	/// called from view to resolve visibility for entities
-	void OnResolveVisibility(IndexT frameIndex, bool updateLod = false);
-	/// called before culling takes place
-	void OnCullBefore(Timing::Time time, Timing::Time globalTimeFactor, IndexT frameIndex);
-	/// called when culling notifies entities are visible
-	void OnNotifyCullingVisible(const Graphics::GraphicsEntityId observer, IndexT frameIndex);
-	/// called just before rendering
-	void OnRenderBefore(IndexT frameIndex);
-	/// called to render debug visualizations
-	void OnRenderDebug();
+	/// set the transform for a model
+	void SetTransform(const Graphics::GraphicsEntityId id, const Math::matrix44 transform);
 
-	/// called each frame to update the staging resources, when model is properly loaded, obtains actual ModelInstance
-	void OnRefreshStagingResources();
+	/// runs before frame is updated
+	void OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime);
+	/// runs when visibility has finished processing 
+	void OnVisibilityReady(const IndexT frameIndex, const Timing::Time frameTime);
+	/// runs before a specific view
+	void OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime);
+	/// runs after view is rendered
+	void OnAfterView(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime);
+	/// runs after a frame is updated
+	void OnAfterFrame(const IndexT frameIndex, const Timing::Time frameTime);
 
-	typedef IndexT NodeInstanceId;
-
-	/// this structure is really only used for modifying
-	struct NodeInstance
-	{
-		NodeInstanceId id;
-		Math::matrix44* parent;
-		Math::matrix44 transform;
-		Resources::ResourceId mesh;
-		IndexT primitiveGroupId;
-		Materials::MaterialId material;
-	};
 private:
 
-	/// create model instance, which is essentially a list of instances of the nodes it consists of
-	ModelInstanceId CreateModelInstance(const Resources::ResourceId id);
-	/// get model instance as list of nodes
-	const Util::Array<NodeInstance>& GetNodes(const ModelInstanceId id);
-
 	Ids::IdAllocator<
-		Resources::ResourceId,
+		ModelId,
 		ModelInstanceId,
-		Util::Array<NodeInstance>
 	> modelContextAllocator;
-
-	Ids::IdAllocator<
-		Models::ModelId,			// parent
-		Math::matrix44,				// transform
-		Util::Array<NodeInstance>
-	> modelInstanceAllocator;
 
 	/// allocate a new slice for this context
 	Ids::Id32 Alloc();
@@ -107,10 +82,10 @@ ModelContext::Dealloc(Ids::Id32 id)
 	Shorthand for adding a model to a graphics entity, Models::Attach
 */
 inline void
-ModelContextAttach(const Graphics::GraphicsEntityId entity, const Resources::ResourceName& res)
+ModelContextAttach(const Graphics::GraphicsEntityId entity, const Resources::ResourceName& res, const Util::StringAtom& tag)
 {
 	ModelContext::Instance()->RegisterEntity(entity);
-	ModelContext::Instance()->Setup(entity, res);
+	ModelContext::Instance()->Setup(entity, res, tag);
 }
 
 //------------------------------------------------------------------------------

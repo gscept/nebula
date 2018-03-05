@@ -19,33 +19,35 @@
 #include "io/binaryreader.h"
 #include "math/bbox.h"
 #include "ids/id.h"
-#include "models/modelserver.h"
+#include "memory/chunkallocator.h"
+#include "models/model.h"
 
 namespace Models
 {
 
 class StreamModelPool;
-class ModelServer;
-struct ModelId;
 class ModelNode
 {
 public:
+	struct Instance
+	{
+		ModelNode::Instance* parent;	// pointer to parent
+		ModelNode* node;				// pointer to resource-level node
+		NodeType type;
+		Math::bbox boundingBox;
+	};
+
 	/// constructor
 	ModelNode();
 	/// destructor
 	virtual ~ModelNode();
 
 	/// return constant reference to children
-	const Util::Array<ModelNodeId>& GetChildren() const;
+	const Util::Array<ModelNode*>& GetChildren() const;
 	/// create an instance of a node, override in the leaf classes
-	virtual ModelNodeId CreateInstance() const;
+	virtual ModelNode::Instance* CreateInstance(Memory::ChunkAllocator<0xFFF>& alloc) const;
 
 	// base class for instances
-	struct Instance
-	{
-		ModelNodeId parent;	// id of parent
-		ModelNodeId node;	// id of resource-level node
-	};
 
 protected:
 	friend class StreamModelPool;
@@ -65,16 +67,16 @@ protected:
 	virtual void Discard();
 
 	Util::StringAtom name;
-	ModelNodeId parent;
-	ModelId model;
-	Util::Array<ModelNodeId> children;
+	Models::ModelNode* parent;
+	Ids::Id24 model;
+	Util::Array<Models::ModelNode*> children;
 	Math::bbox boundingBox;
 };
 
 //------------------------------------------------------------------------------
 /**
 */
-inline const Util::Array<ModelNodeId>&
+inline const Util::Array<ModelNode*>&
 ModelNode::GetChildren() const
 {
 	return this->children;

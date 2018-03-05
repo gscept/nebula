@@ -29,10 +29,10 @@ ModelNode::~ModelNode()
 //------------------------------------------------------------------------------
 /**
 */
-ModelNodeId
-ModelNode::CreateInstance() const
+ModelNode::Instance*
+ModelNode::CreateInstance(Memory::ChunkAllocator<0xFFF>& alloc) const
 {
-	return Ids::InvalidId32;
+	return nullptr;
 }
 
 //------------------------------------------------------------------------------

@@ -56,6 +56,8 @@ public:
 		IndexT bufferIndex;
 	};
 
+	/// create instance
+	virtual ModelNode::Instance* CreateInstance(Memory::ChunkAllocator<0xFFF>& alloc) const;
 private:
     /// helper function to parse an EnvelopeCurve from a data stream
     Particles::EnvelopeCurve ParseEnvelopeCurveData(const Ptr<IO::BinaryReader>& reader) const;
@@ -103,6 +105,15 @@ inline const Particles::EmitterAttrs&
 ParticleSystemNode::GetEmitterAttrs() const
 {
     return this->emitterAttrs;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline ModelNode::Instance*
+ParticleSystemNode::CreateInstance(Memory::ChunkAllocator<0xFFF>& alloc) const
+{
+	return alloc.Alloc<ParticleSystemNode::Instance>();
 }
 
 } // namespace Particles
