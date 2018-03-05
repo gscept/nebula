@@ -98,7 +98,7 @@ public:
 	virtual void DiscardByTag(const Util::StringAtom& tag);
 
 	/// get resource name
-	const Resources::ResourceName GetName(const Resources::ResourceId id) const;
+	const Resources::ResourceName& GetName(const Resources::ResourceId id) const;
 	/// get resource usage from resource id
 	const uint32_t GetUsage(const Resources::ResourceId id) const;
 	/// get resource tag was first registered with
@@ -149,7 +149,7 @@ protected:
 //------------------------------------------------------------------------------
 /**
 */
-inline const Resources::ResourceName
+inline const Resources::ResourceName&
 ResourcePool::GetName(const Resources::ResourceId id) const
 {
 	return this->names[id.poolId];
@@ -188,7 +188,9 @@ ResourcePool::GetState(const Resources::ResourceId id) const
 inline const Resources::ResourceId
 ResourcePool::GetId(const Resources::ResourceName& name) const
 {
-	return this->ids[name];
+	IndexT i = this->ids.FindIndex(name);
+	if (i == InvalidIndex)	return Resources::ResourceId::Invalid();
+	else					return this->ids.ValueAtIndex(i);
 }
 
 //------------------------------------------------------------------------------
