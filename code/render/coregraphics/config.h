@@ -34,6 +34,14 @@ enum CoreGraphicsIdType
 	PassIdType
 };
 
+enum CoreGraphicsQueueType
+{
+	GraphicsQueueType,
+	ComputeQueueType,
+	TransferQueueType,
+	SparseQueueType
+};
+
 //------------------------------------------------------------------------------
 #if __DX11__ || __DX9__
     #if __DX11__
@@ -64,12 +72,12 @@ enum CoreGraphicsIdType
 #elif __VULKAN__
 	#define COREGRAPHICS_TRIANGLE_FRONT_FACE_CCW (1)
 	// define the same descriptor set slots as we do in the shaders
-	#define NEBULAT_TICK_GROUP 0
-	#define NEBULAT_FRAME_GROUP 1
-	#define NEBULAT_PASS_GROUP 2
-	#define NEBULAT_OBJECT_GROUP 3
-	#define NEBULAT_SYSTEM_GROUP 4
-	#define NEBULAT_DEFAULT_GROUP 5
+	#define NEBULAT_TICK_GROUP 0				// set per tick (once for all views) by the system
+	#define NEBULAT_FRAME_GROUP 1				// set per frame (once per view) by the system
+	#define NEBULAT_PASS_GROUP 2				// set per pass by the system
+	#define NEBULAT_BATCH_GROUP 3				// set per batch (material settings or system stuff)
+	#define NEBULAT_INSTANCE_GROUP 4			// set a batch-internal copy of some specific settings
+	#define NEBULAT_OBJECT_TRANSFORM_GROUP 5	// set for all objects before rendering
 
 	#define MAX_INPUT_ATTACHMENTS 32
 

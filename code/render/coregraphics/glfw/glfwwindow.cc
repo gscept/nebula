@@ -356,11 +356,16 @@ InternalSetupFunction(const WindowCreateInfo& info, const Util::Blob& windowData
 	glfwWindowHint(GLFW_GREEN_BITS, 8);
 	glfwWindowHint(GLFW_BLUE_BITS, 8);
 	glfwWindowHint(GLFW_SRGB_CAPABLE, GL_TRUE);
+	glfwWindowHint(GLFW_SAMPLES, info.aa == AntiAliasQuality::Low ? 2:
+								 info.aa == AntiAliasQuality::Medium ? 4:
+								info.aa == AntiAliasQuality::High ? 8 : 0);
+
 
 	Ids::Id32 windowId = glfwWindowAllocator.AllocObject();
 	WindowId id;
 	id.id24 = windowId;
 	id.id8 = WindowIdType;
+	glfwWindowAllocator.Get<GLFWSetupInfoField>(windowId) = info;
 
 	// get original window, if this is the first window, then the parent window will simply be nullptr
 	GLFWwindow* wnd = nullptr;
@@ -598,6 +603,60 @@ const CoreGraphics::DisplayMode
 WindowGetDisplayMode(const WindowId id)
 {
 	return glfwWindowAllocator.Get<GLFWDisplayModeField>(id.id24);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const CoreGraphics::AntiAliasQuality::Code
+WindowGetAAQuality(const WindowId id)
+{
+	return glfwWindowAllocator.Get<GLFWSetupInfoField>(id.id24).aa;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const bool
+WindowIsFullscreen(const WindowId id)
+{
+	return glfwWindowAllocator.Get<GLFWSetupInfoField>(id.id24).fullscreen;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const bool
+WindowIsDecorated(const WindowId id)
+{
+	return glfwWindowAllocator.Get<GLFWSetupInfoField>(id.id24).decorated;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const bool
+WindowIsResizable(const WindowId id)
+{
+	return glfwWindowAllocator.Get<GLFWSetupInfoField>(id.id24).resizable;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::StringAtom&
+WindowGetTitle(const WindowId id)
+{
+	return glfwWindowAllocator.Get<GLFWSetupInfoField>(id.id24).title;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::StringAtom&
+WindowGetIcon(const WindowId id)
+{
+	return glfwWindowAllocator.Get<GLFWSetupInfoField>(id.id24).icon;
 }
 
 } // namespace CoreGraphics

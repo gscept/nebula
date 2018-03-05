@@ -55,8 +55,21 @@ void WindowApplyFullscreen(const WindowId id, Adapter::Code monitor, bool b);
 void WindowSetCursorVisible(const WindowId id, bool b);
 /// set if the cursor should be locked to the window
 void WindowSetCursorLocked(const WindowId id, bool b);
+
 /// get display mode from window
 const CoreGraphics::DisplayMode WindowGetDisplayMode(const WindowId id);
+/// get display antialias quality
+const CoreGraphics::AntiAliasQuality::Code WindowGetAAQuality(const WindowId id);
+/// get if fullscreen
+const bool WindowIsFullscreen(const WindowId id);
+/// get if window is modal
+const bool WindowIsDecorated(const WindowId id);
+/// get if we are allowed to switch the display mode
+const bool WindowIsResizable(const WindowId id);
+/// get window title
+const Util::StringAtom& WindowGetTitle(const WindowId id);
+/// get window icon
+const Util::StringAtom& WindowGetIcon(const WindowId id);
 
 extern Ids::IdPool windowIdPool;
 

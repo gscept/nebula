@@ -10,10 +10,6 @@
 #include "http/html/htmlpagewriter.h"
 #include "io/ioserver.h"
 #include "graphics/graphicsserver.h"
-#include "graphics/modelentity.h"
-#include "models/modelnodeinstance.h"
-#include "models/nodes/statenode.h"
-#include "models/nodes/statenodeinstance.h"
 
 namespace Debug
 {
@@ -49,7 +45,7 @@ ShaderPageHandler::HandleRequest(const Ptr<HttpRequest>& request)
     Dictionary<String,String> query = request->GetURI().ParseQuery();
     if (query.Contains("shaderinfo"))
     {
-        request->SetStatus(this->HandleShaderInfoRequest(ResourceId(query["shaderinfo"]), request->GetResponseContentStream()));
+        request->SetStatus(this->HandleShaderInfoRequest(query["shaderinfo"], request->GetResponseContentStream()));
         return;
     }
 
@@ -69,7 +65,7 @@ ShaderPageHandler::HandleRequest(const Ptr<HttpRequest>& request)
 
         // create a table of all existing shaders
         htmlWriter->Element(HtmlElement::Heading3, "Shaders");
-        const Dictionary<ResourceId, Ptr<Shader> >& shaders = shdServer->GetAllShaders();
+        const Dictionary<ResourceName, ShaderId>& shaders = shdServer->GetAllShaders();
         htmlWriter->AddAttr("border", "1");
         htmlWriter->AddAttr("rules", "cols");
         htmlWriter->Begin(HtmlElement::Table);
@@ -82,25 +78,22 @@ ShaderPageHandler::HandleRequest(const Ptr<HttpRequest>& request)
             IndexT i;
             for (i = 0; i < shaders.Size(); i++)
             {
-                const Ptr<Shader>& shd = shaders.ValueAtIndex(i);
+                const ShaderId shd = shaders.ValueAtIndex(i);
+				const ResourceName name = shaders.KeyAtIndex(i);
                 htmlWriter->Begin(HtmlElement::TableRow);
                     htmlWriter->Begin(HtmlElement::TableData);
-                        htmlWriter->AddAttr("href", "/shader?shaderinfo=" + shd->GetResourceId().AsString());
-                        htmlWriter->Element(HtmlElement::Anchor, shd->GetResourceId().Value());
+                        htmlWriter->AddAttr("href", "/shader?shaderinfo=" + name.AsString());
+                        htmlWriter->Element(HtmlElement::Anchor, name.Value());
                     htmlWriter->End(HtmlElement::TableData);
-                    htmlWriter->Element(HtmlElement::TableData, String::FromInt(shd->GetAllShaderStates().Size()));
+                    htmlWriter->Element(HtmlElement::TableData, String::FromInt(ShaderGetNumActiveStates(shd)));
                 htmlWriter->End(HtmlElement::TableRow);
             }
         htmlWriter->End(HtmlElement::Table);
 
         // create a table of globally shared variables
         htmlWriter->Element(HtmlElement::Heading3, "Shared Shader Variables");
-        Array<Ptr<ShaderVariable> > sharedVars;
-        for (i = 0; i < shdServer->GetNumSharedVariables(); i++)
-        {
-            sharedVars.Append(shdServer->GetSharedVariableByIndex(i));
-        }
-        this->WriteShaderVariableTable(htmlWriter, sharedVars);
+        
+        this->WriteShaderVariableTable(htmlWriter, shdServer->GetSharedShader());
 
         htmlWriter->Close();
         request->SetStatus(HttpStatus::OK);
@@ -115,9 +108,11 @@ ShaderPageHandler::HandleRequest(const Ptr<HttpRequest>& request)
 /**
 */
 HttpStatus::Code
-ShaderPageHandler::HandleShaderInfoRequest(const ResourceId& resId, const Ptr<Stream>& responseContentStream)
+ShaderPageHandler::HandleShaderInfoRequest(const Util::String& resId, const Ptr<Stream>& responseContentStream)
 {
     ShaderServer* shdServer = ShaderServer::Instance();
+	Resources::ResourceId id = resId.AsLongLong();
+	Resources::ResourceName name = shdServer->GetName(id);
 
     // check if shader actually exists
     if (!shdServer->HasShader(resId))
@@ -125,15 +120,21 @@ ShaderPageHandler::HandleShaderInfoRequest(const ResourceId& resId, const Ptr<St
         return HttpStatus::NotFound;
     }
 
+	if (id.allocType != ShaderIdType)
+	{
+		// id is not a shader type!
+		return HttpStatus::NotFound;
+	}
+
     Ptr<HtmlPageWriter> htmlWriter = HtmlPageWriter::Create();
     htmlWriter->SetStream(responseContentStream);
     htmlWriter->SetTitle("NebulaT Shader Info");
     if (htmlWriter->Open())
     {
         // we need to create a temp shader instance to get reflection info
-        const Ptr<Shader>& shd = shdServer->GetShader(resId);
-
-        htmlWriter->Element(HtmlElement::Heading1, resId.Value());
+        const ShaderId& shd = id;
+		SizeT numVars = ShaderGetConstantCount(shd);
+        htmlWriter->Element(HtmlElement::Heading1, name.Value());
         htmlWriter->AddAttr("href", "/index.html");
         htmlWriter->Element(HtmlElement::Anchor, "Home");
         htmlWriter->LineBreak();
@@ -147,31 +148,24 @@ ShaderPageHandler::HandleShaderInfoRequest(const ResourceId& resId, const Ptr<St
         htmlWriter->Begin(HtmlElement::Table);
             htmlWriter->Begin(HtmlElement::TableRow);
                 htmlWriter->Element(HtmlElement::TableData, "Resource Id: ");
-                htmlWriter->Element(HtmlElement::TableData, resId.Value());
+                htmlWriter->Element(HtmlElement::TableData, name.Value());
             htmlWriter->End(HtmlElement::TableRow);
             htmlWriter->Begin(HtmlElement::TableRow);
                 htmlWriter->Element(HtmlElement::TableData, "Resolved Path: ");
-                htmlWriter->Element(HtmlElement::TableData, AssignRegistry::Instance()->ResolveAssigns(resId.Value()).AsString());
+                htmlWriter->Element(HtmlElement::TableData, AssignRegistry::Instance()->ResolveAssigns(name.Value()).AsString());
             htmlWriter->End(HtmlElement::TableRow);
             htmlWriter->Begin(HtmlElement::TableRow);
-                htmlWriter->Element(HtmlElement::TableData, "Instance Count: ");
-                htmlWriter->Element(HtmlElement::TableData, String::FromInt(shd->GetAllShaderStates().Size()));
+                htmlWriter->Element(HtmlElement::TableData, "Number of active states: ");
+                htmlWriter->Element(HtmlElement::TableData, String::FromInt(ShaderGetNumActiveStates(shd)));
             htmlWriter->End(HtmlElement::TableRow);
         htmlWriter->End(HtmlElement::Table);
 
         // display shader variables
         htmlWriter->Element(HtmlElement::Heading3, "Shader Variables");
 #if __NEBULA3_HTTP__
-		const Ptr<CoreGraphics::ShaderState>& state = shd->GetDebugState();
-		if (state->GetNumVariables() > 0)
+		if (numVars > 0)
         {
-            IndexT i;
-            Array<Ptr<ShaderVariable> > variables;
-			for (i = 0; i < state->GetNumVariables(); i++)
-            {
-				variables.Append(state->GetVariableByIndex(i));
-            }
-            this->WriteShaderVariableTable(htmlWriter, variables);
+            this->WriteShaderVariableTable(htmlWriter, shd);
         }
         else
 #endif
@@ -180,9 +174,11 @@ ShaderPageHandler::HandleShaderInfoRequest(const ResourceId& resId, const Ptr<St
             htmlWriter->LineBreak();
         }
 
+		const Util::Dictionary<CoreGraphics::ShaderFeature::Mask, CoreGraphics::ShaderProgramId>& programs = ShaderGetPrograms(id);
+
         // display shader variations
         htmlWriter->Element(HtmlElement::Heading3, "Shader Variations");
-        if (shd->GetNumVariations() > 0)
+        if (programs.Size() > 0)
         {
             htmlWriter->AddAttr("border", "1");
             htmlWriter->AddAttr("rules", "cols");
@@ -191,16 +187,15 @@ ShaderPageHandler::HandleShaderInfoRequest(const ResourceId& resId, const Ptr<St
                 htmlWriter->Begin(HtmlElement::TableRow);    
                     htmlWriter->Element(HtmlElement::TableHeader, "Name");
                     htmlWriter->Element(HtmlElement::TableHeader, "FeatureBits");
-                    htmlWriter->Element(HtmlElement::TableHeader, "NumPasses");
                 htmlWriter->End(HtmlElement::TableRow);
                 IndexT i;
-                for (i = 0; i < shd->GetNumVariations(); i++)
+                for (i = 0; i < programs.Size(); i++)
                 {
-                    const Ptr<ShaderVariation>& variation = shd->GetVariationByIndex(i);
+					const CoreGraphics::ShaderProgramId& id = programs.ValueAtIndex(i);
+					const CoreGraphics::ShaderFeature::Mask& mask = programs.KeyAtIndex(i);
                     htmlWriter->Begin(HtmlElement::TableRow);
-                        htmlWriter->Element(HtmlElement::TableData, variation->GetName().Value());
-                        htmlWriter->Element(HtmlElement::TableData, shdServer->FeatureMaskToString(variation->GetFeatureMask()));
-                        htmlWriter->Element(HtmlElement::TableData, String::FromInt(variation->GetNumPasses()));
+                        htmlWriter->Element(HtmlElement::TableData, ShaderProgramGetName(id));
+                        htmlWriter->Element(HtmlElement::TableData, shdServer->FeatureMaskToString(mask));
                     htmlWriter->End(HtmlElement::TableRow);
                 }
             htmlWriter->End(HtmlElement::Table);
@@ -211,45 +206,20 @@ ShaderPageHandler::HandleShaderInfoRequest(const ResourceId& resId, const Ptr<St
             htmlWriter->LineBreak();
         }
 
-        htmlWriter->Element(HtmlElement::Heading3, "Entities uses this shader:"); 
-        htmlWriter->AddAttr("border", "1");
-        htmlWriter->AddAttr("rules", "cols");
-        htmlWriter->Begin(HtmlElement::Table);
-        htmlWriter->AddAttr("bgcolor", "lightsteelblue");
-        htmlWriter->Begin(HtmlElement::TableRow);    
-        htmlWriter->Element(HtmlElement::TableHeader, "Id");
-        htmlWriter->Element(HtmlElement::TableHeader, "Name"); 
-        htmlWriter->End(HtmlElement::TableRow); 
+		htmlWriter->Element(HtmlElement::Heading3, "Materials using this shader:");
+		htmlWriter->AddAttr("border", "1");
+		htmlWriter->AddAttr("rules", "cols");
+		htmlWriter->Begin(HtmlElement::Table);
+		htmlWriter->AddAttr("bgcolor", "lightsteelblue");
+		htmlWriter->Begin(HtmlElement::TableRow);
+		htmlWriter->Element(HtmlElement::TableHeader, "Id");
+		htmlWriter->Element(HtmlElement::TableHeader, "Name");
+		htmlWriter->End(HtmlElement::TableRow);
+			htmlWriter->Begin(HtmlElement::TableRow);
+				htmlWriter->Element(HtmlElement::TableData, "IMPLEMENT ME!");
+			htmlWriter->End(HtmlElement::TableRow);
+		htmlWriter->End(HtmlElement::Table);
 
-        GraphicsServer* server = GraphicsServer::Instance();
-        const Util::Array<Ptr<GraphicsEntity> >& internalEntities = server->GetEntities();
-        IndexT i;
-        for (i = 0; i < internalEntities.Size(); ++i)
-        {
-            if (internalEntities[i].isvalid() && internalEntities[i]->IsA(Graphics::ModelEntity::RTTI))
-            {  
-                const Ptr<Models::ModelInstance>& modelInst = internalEntities[i].cast<Graphics::ModelEntity>()->GetModelInstance();
-                if (modelInst.isvalid())
-                {
-                    const Ptr<Models::ModelNodeInstance>& root = modelInst->GetRootNodeInstance();
-                    if (this->HasShaderInstance(root, resId))
-                    {
-                        htmlWriter->Begin(HtmlElement::TableRow);
-                            htmlWriter->Begin(HtmlElement::TableData); 
-                            htmlWriter->AddAttr("href", "/graphics?entity=" + String::FromInt(internalEntities[i]->GetId()));
-                            htmlWriter->Element(HtmlElement::Anchor, String::FromInt(internalEntities[i]->GetId()));
-                            htmlWriter->End(HtmlElement::TableData); 
-
-                            htmlWriter->Begin(HtmlElement::TableData); 
-                            htmlWriter->AddAttr("href", "/graphics?entity=" + String::FromInt(internalEntities[i]->GetId()));
-                            htmlWriter->Element(HtmlElement::Anchor, internalEntities[i].cast<Graphics::ModelEntity>()->GetResourceId().Value());
-                            htmlWriter->End(HtmlElement::TableData); 
-                        htmlWriter->End(HtmlElement::TableRow);                    
-                    }
-                }   
-            }
-        }       
-        htmlWriter->End(HtmlElement::Table);        
 
         htmlWriter->Close();
         return HttpStatus::OK;
@@ -261,7 +231,7 @@ ShaderPageHandler::HandleShaderInfoRequest(const ResourceId& resId, const Ptr<St
 /**
 */
 void
-ShaderPageHandler::WriteShaderVariableTable(const Ptr<HtmlPageWriter>& htmlWriter, const Array<Ptr<ShaderVariable> >& vars)
+ShaderPageHandler::WriteShaderVariableTable(const Ptr<HtmlPageWriter>& htmlWriter, const CoreGraphics::ShaderId shader)
 {
     htmlWriter->AddAttr("border", "1");
     htmlWriter->AddAttr("rules", "cols");
@@ -274,45 +244,18 @@ ShaderPageHandler::WriteShaderVariableTable(const Ptr<HtmlPageWriter>& htmlWrite
             htmlWriter->Element(HtmlElement::TableHeader, "ArraySize");
         htmlWriter->End(HtmlElement::TableRow);
 
+	SizeT numVars = ShaderGetConstantCount(shader);
     IndexT i;
-    for (i = 0; i < vars.Size(); i++)
+    for (i = 0; i < numVars; i++)
     {
-        const Ptr<ShaderVariable>& var = vars[i];
+		const Util::String& name = ShaderGetConstantName(shader, i);
+		const ShaderConstantType& type = ShaderGetConstantType(shader, i);
         htmlWriter->Begin(HtmlElement::TableRow);
-            htmlWriter->Element(HtmlElement::TableData, var->GetName().Value());
-            htmlWriter->Element(HtmlElement::TableData, ShaderVariable::TypeToString(var->GetType()));
+            htmlWriter->Element(HtmlElement::TableData, name);
+            htmlWriter->Element(HtmlElement::TableData, ConstantTypeToString(type));
         htmlWriter->End(HtmlElement::TableRow);
     }
     htmlWriter->End(HtmlElement::Table);
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-bool 
-ShaderPageHandler::HasShaderInstance(const Ptr<Models::ModelNodeInstance>& node, const ResourceId& resId)
-{
-    bool shaderFound = false;
-    if (node->IsA(StateNodeInstance::RTTI))
-    {
-         const Ptr<StateNode>& stateNode = node.cast<StateNodeInstance>()->GetModelNode().cast<StateNode>();
-		 const Ptr<Materials::Surface>& instance = stateNode->GetMaterial();
-         const Ptr<Materials::Material>& mat = instance->GetMaterialTemplate();
-
-		 // go through shader instances and tag the shader as found if it's in the material
-		 IndexT i;
-		 for (i = 0; i < mat->GetNumPasses(); i++)
-		 {
-            shaderFound = mat->GetPassByIndex(i).shader->GetResourceId() == resId;
-		    break;
-		 }
-    }
-    const Util::Array<Ptr<ModelNodeInstance> > children = node->GetChildren();
-    IndexT index;
-    for (index = 0; index < children.Size(); ++index)
-    {
-        shaderFound |= this->HasShaderInstance(children[index], resId);
-    }
-    return shaderFound;
-}
 } // namespace Debug

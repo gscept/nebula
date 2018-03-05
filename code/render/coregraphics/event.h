@@ -10,6 +10,7 @@
 #include "ids/idpool.h"
 #include "coregraphics/barrier.h"
 #include "coregraphics/cmdbuffer.h"
+#include "coregraphics/config.h"
 
 #ifdef CreateEvent
 #pragma push_macro("CreateEvent")
@@ -37,11 +38,11 @@ EventId CreateEvent(const EventCreateInfo& info);
 void DestroyEvent(const EventId id);
 
 /// insert event in command buffer to be signaled
-void Signal(const EventId id, const CmdBufferId cmd, const BarrierDependency when);
+void EventSignal(const EventId id, const CoreGraphicsQueueType queue, const BarrierDependency when);
 /// insert wait event in command buffer to wait for
-void Wait(const EventId id, const CmdBufferId cmd);
+void EventWait(const EventId id, const CoreGraphicsQueueType queue);
 /// insert reset event
-void Reset(const EventId id, const CmdBufferId cmd, const BarrierDependency when);
+void EventReset(const EventId id, const CoreGraphicsQueueType queue, const BarrierDependency when);
 
 } // CoreGraphics
 

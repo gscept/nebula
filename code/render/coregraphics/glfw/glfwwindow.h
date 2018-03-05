@@ -64,6 +64,7 @@ enum
 	GLFWWindowField,
 	GLFWDisplayModeField,
 	GLFWSwapFrameField,
+	GLFWSetupInfoField,
 #if __VULKAN__
 	GLFWWindowSwapInfoField,
 	GLFWSwapChainField,
@@ -73,13 +74,14 @@ enum
 
 
 typedef Ids::IdAllocator<
-	  GLFWwindow*					//0
-	, CoreGraphics::DisplayMode		//1
-	, IndexT						//2
+	  GLFWwindow*					
+	, CoreGraphics::DisplayMode		
+	, IndexT						
+	, WindowCreateInfo				
 #if __VULKAN__
-	, Vulkan::VkWindowSwapInfo		//3
-	, Vulkan::VkSwapchainInfo		//4
-	, Vulkan::VkBackbufferInfo		//5
+	, Vulkan::VkWindowSwapInfo		
+	, Vulkan::VkSwapchainInfo		
+	, Vulkan::VkBackbufferInfo		
 #endif
 > GLFWWindowAllocatorType;
 extern GLFWWindowAllocatorType glfwWindowAllocator;

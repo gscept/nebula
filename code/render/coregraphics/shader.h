@@ -1,7 +1,23 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	A shader represents an entire shader resource, containing several stages and programs
+	A shader represents an entire shader resource, containing several stages and programs.
+
+	ShaderId - A shader resource handle. It cannot be used for anything other than quering
+	the shader file (usually suffixed with .fx) for reflection information.
+
+	ShaderStateId - An instantiation of either all or a subset of the variables in that shader.
+	The state contains the, well, state of all resources (constant buffers, textures, read/write buffers)
+	as well as the constant values.
+
+	ShaderProgramId - The shader will most likely have a set of shader permutations, and those permutations
+	are called programs. The ShaderProgramId binds both the shader, and an associated permutation in one
+	call.
+
+	ShaderConstantId - The resources applied with the ShaderStateId are more atomically defined 
+	as constants, and serves both as individual shader constants (variables in CPU time, constant in GPU time)
+	as well as the resource binds to that state. They are bound to a inherently bound to a state, and such
+	modifying a constant requires both the state and constant id for that state. 
 
 	(C) 2017 Individual contributors, see AUTHORS file
 */
@@ -10,6 +26,8 @@
 #include "ids/idpool.h"
 #include "resources/resourceid.h"
 #include "coregraphics/shaderfeature.h"
+#include "util/variant.h"
+
 namespace CoreGraphics
 {
 
@@ -21,8 +39,7 @@ struct ShaderRWBufferId;
 RESOURCE_ID_TYPE(ShaderId);				// 32 bits container, 24 bits resource, 8 bits type
 ID_24_8_24_8_NAMED_TYPE(ShaderStateId, shaderId, shaderType, stateId, stateType);		// 32 bits shader, 24 bits state, 8 bits type
 ID_24_8_24_8_NAMED_TYPE(ShaderProgramId, shaderId, shaderType, programId, programType);		// 32 bits shader, 24 bits program, 8 bits type
-ID_32_TYPE(ShaderVariableId);			// variable id within state, must keep track of state since state id is 64 bit
-ID_32_TYPE(ProgramId);
+ID_32_TYPE(ShaderConstantId);			// variable id within state, must keep track of state since state id is 64 bit
 
 ID_32_TYPE(DerivativeStateId);			// 32 bits derivative state (already created from an ordinary state)
 
@@ -31,7 +48,7 @@ struct ShaderCreateInfo
 	const Resources::ResourceName name;
 };
 
-enum ShaderVariableType
+enum ShaderConstantType
 {
 	UnknownVariableType,
 	IntVariableType,
@@ -46,6 +63,8 @@ enum ShaderVariableType
 	ImageReadWriteVariableType,
 	BufferReadWriteVariableType
 };
+/// get constant type as string
+Util::String ConstantTypeToString(const ShaderConstantType& type);
 
 /// create new shader
 const ShaderId CreateShader(const ShaderCreateInfo& info);
@@ -64,6 +83,8 @@ const ShaderStateId ShaderCreateSharedState(const Resources::ResourceName name, 
 void ShaderDestroyState(const ShaderStateId id);
 /// apply shader state
 void ShaderStateApply(const ShaderStateId id);
+/// get number of active states
+SizeT ShaderGetNumActiveStates(const ShaderId id);
 
 /// create derivative
 DerivativeStateId CreateDerivativeState(const ShaderStateId id, const IndexT group);
@@ -77,46 +98,67 @@ void DerivativeStateCommit(const ShaderStateId id, const DerivativeStateId& deri
 void DerivativeStateReset(const ShaderStateId id, const DerivativeStateId& deriv);
 
 /// get the number of constants from shader
-SizeT ShaderGetConstantCount(const CoreGraphics::ShaderId id);
+SizeT ShaderGetConstantCount(const ShaderId id);
+/// get type of variable by index
+ShaderConstantType ShaderGetConstantType(const ShaderId id, const IndexT i);
+/// get name of variable by index
+Util::String ShaderGetConstantName(const ShaderId id, const IndexT i);
+
 /// get the number of constant buffers from shader
-SizeT ShaderGetConstantBufferCount(const CoreGraphics::ShaderId id);
+SizeT ShaderGetConstantBufferCount(const ShaderId id);
+/// get size of constant buffer
+SizeT ShaderGetConstantBufferSize(const ShaderId id, const IndexT i);
+/// get name of constnat buffer
+Util::String ShaderGetConstantBufferName(const ShaderId id, const IndexT i);
+
+/// get programs
+const Util::Dictionary<ShaderFeature::Mask, ShaderProgramId>& ShaderGetPrograms(const ShaderId id);
+/// get name of program
+Util::String ShaderProgramGetName(const ShaderProgramId id);
+
 /// get the shader variable using name
-ShaderVariableId ShaderStateGetVariable(const ShaderStateId id, const Util::StringAtom& name);
+ShaderConstantId ShaderStateGetConstant(const ShaderStateId id, const Util::StringAtom& name);
 /// get the shader variable using index
-ShaderVariableId ShaderStateGetVariable(const ShaderStateId id, const IndexT index);
+ShaderConstantId ShaderStateGetConstant(const ShaderStateId id, const IndexT index);
+/// get the type of constant in state (is identical to ShaderGetConstantType if you are using the shader directly)
+ShaderConstantType ShaderConstantGetType(const ShaderConstantId var, const ShaderStateId state);
+
 /// set shader variable
-template <class TYPE> void ShaderVariableSet(const CoreGraphics::ShaderVariableId var, const CoreGraphics::ShaderStateId state, const TYPE& value);
+void ShaderConstantSet(const ShaderConstantId var, const ShaderStateId state, const Util::Variant& value);
+/// set shader variable
+template <class TYPE> void ShaderConstantSet(const ShaderConstantId var, const ShaderStateId state, const TYPE& value);
 /// set shader variable array
-template <class TYPE> void ShaderVariableSetArray(const CoreGraphics::ShaderVariableId var, const CoreGraphics::ShaderStateId state, const TYPE* value, uint32_t count);
+template <class TYPE> void ShaderConstantSetArray(const ShaderConstantId var, const ShaderStateId state, const TYPE* value, uint32_t count);
 /// set variable as texture
-void ShaderVariableSetTexture(const CoreGraphics::ShaderVariableId var, const CoreGraphics::ShaderStateId state, const CoreGraphics::TextureId texture);
+void ShaderResourceSetTexture(const ShaderConstantId var, const ShaderStateId state, const TextureId texture);
 /// set variable as texture
-void ShaderVariableSetConstantBuffer(const CoreGraphics::ShaderVariableId var, const CoreGraphics::ShaderStateId state, const CoreGraphics::ConstantBufferId buffer);
+void ShaderResourceSetConstantBuffer(const ShaderConstantId var, const ShaderStateId state, const ConstantBufferId buffer);
+/// set variable as 
+void ShaderResourceSetReadWriteTexture(const ShaderConstantId var, const ShaderStateId state, const TextureId image);
 /// set variable as texture
-void ShaderVariableSetReadWriteTexture(const CoreGraphics::ShaderVariableId var, const CoreGraphics::ShaderStateId state, const CoreGraphics::TextureId image);
+void ShaderResourceSetReadWriteTexture(const ShaderConstantId var, const ShaderStateId state, const ShaderRWTextureId tex);
 /// set variable as texture
-void ShaderVariableSetReadWriteTexture(const CoreGraphics::ShaderVariableId var, const CoreGraphics::ShaderStateId state, const CoreGraphics::ShaderRWTextureId tex);
-/// set variable as texture
-void ShaderVariableSetReadWriteBuffer(const CoreGraphics::ShaderVariableId var, const CoreGraphics::ShaderStateId state, const CoreGraphics::ShaderRWBufferId buf);
+void ShaderResourceSetReadWriteBuffer(const ShaderConstantId var, const ShaderStateId state, const ShaderRWBufferId buf);
 
 /// bind shader
-void ShaderBind(const ShaderId id, const CoreGraphics::ShaderFeature::Mask& program);
+void ShaderBind(const ShaderId id, const ShaderFeature::Mask& program);
 /// get shader program id from masks, this allows us to apply a shader program directly in the future
-const ShaderProgramId ShaderGetProgram(const ShaderId id, const CoreGraphics::ShaderFeature::Mask& program);
+const ShaderProgramId ShaderGetProgram(const ShaderId id, const ShaderFeature::Mask& program);
 /// bind shader and program all in one package
 void ShaderProgramBind(const ShaderProgramId id);
 
 class ShaderPool;
 extern ShaderPool* shaderPool;
 
+
 //------------------------------------------------------------------------------
 /**
 */
 template<class TYPE>
 void
-ShaderVariableSet(const CoreGraphics::ShaderVariableId var, const CoreGraphics::ShaderStateId state, const TYPE& value)
+ShaderConstantSet(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ShaderStateId state, const TYPE& value)
 {
-	shaderPool->ShaderVariableSet<TYPE>(var, state, value);
+	shaderPool->ShaderConstantSet<TYPE>(var, state, value);
 }
 
 //------------------------------------------------------------------------------
@@ -124,9 +166,9 @@ ShaderVariableSet(const CoreGraphics::ShaderVariableId var, const CoreGraphics::
 */
 template<class TYPE>
 void
-ShaderVariableSetArray(const CoreGraphics::ShaderVariableId var, const CoreGraphics::ShaderStateId state, const TYPE* value, uint32_t count)
+ShaderConstantSetArray(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ShaderStateId state, const TYPE* value, uint32_t count)
 {
-	shaderPool->ShaderVariableSetArray<TYPE>(var, state, value, count);
+	shaderPool->ShaderConstantSetArray<TYPE>(var, state, value, count);
 }
 
 } // namespace CoreGraphics

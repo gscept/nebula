@@ -18,7 +18,7 @@
 #include "resources/resourceid.h"
 #include "http/html/htmlpagewriter.h"
 #include "coregraphics/shader.h"
-#include "models/modelnodeinstance.h"
+#include "models/nodes/modelnode.h"
 
 //------------------------------------------------------------------------------
 namespace Debug
@@ -34,11 +34,9 @@ public:
 
 private:
     /// display information about specific shader
-    Http::HttpStatus::Code HandleShaderInfoRequest(const Resources::ResourceId& resId, const Ptr<IO::Stream>& responseContentStream);
+    Http::HttpStatus::Code HandleShaderInfoRequest(const Util::String& resId, const Ptr<IO::Stream>& responseContentStream);
     /// write a shader variable table to the HTML stream
-    void WriteShaderVariableTable(const Ptr<Http::HtmlPageWriter>& htmlWriter, const Util::Array<Ptr<CoreGraphics::ShaderVariable> >& vars);
-    /// check if any modelnodeinstance has given shader resid
-    bool HasShaderInstance(const Ptr<Models::ModelNodeInstance>& node, const Resources::ResourceId& resId);
+    void WriteShaderVariableTable(const Ptr<Http::HtmlPageWriter>& htmlWriter, const CoreGraphics::ShaderId shader);
 };
 
 } // namespace Debug

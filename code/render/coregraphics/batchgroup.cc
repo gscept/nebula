@@ -51,7 +51,7 @@ BatchGroup::FromName(const Name& name)
 BatchGroup::Name
 BatchGroup::ToName(Code c)
 {
-    BatchGroup& registry = GraphicsServer::Instance()->batchGroupRegistry;
+    BatchGroup& registry = Graphics::GraphicsServer::Instance()->batchGroupRegistry;
     return registry.codeToName[c];
 }
 

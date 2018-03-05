@@ -61,9 +61,11 @@ public:
 	/// create a shared state, will only create a new shader state if one doesn't already exist with the given set of variable groups
 	CoreGraphics::ShaderStateId ShaderCreateSharedState(const Resources::ResourceName& resId, const Util::Array<IndexT>& groups);
     /// get all loaded shaders
-    const Util::Dictionary<Resources::ResourceName, Resources::ResourceId>& GetAllShaders() const;
+    const Util::Dictionary<Resources::ResourceName, CoreGraphics::ShaderId>& GetAllShaders() const;
 	/// get shader by name
 	const CoreGraphics::ShaderId GetShader(Resources::ResourceName resId) const;
+	/// get name by shader id
+	const Resources::ResourceName& GetName(const CoreGraphics::ShaderId& id) const;
     /// set currently active shader instance
     void SetActiveShader(const CoreGraphics::ShaderId shader);
     /// get currently active shader instance
@@ -88,9 +90,11 @@ public:
     /// get number of shared variables
     SizeT GetNumSharedVariables() const;
     /// get a shared variable by index
-    const CoreGraphics::ShaderVariableId GetSharedVariableByIndex(IndexT i) const;
-    /// get the shared shader
-	const CoreGraphics::ShaderStateId GetSharedShader();
+    const CoreGraphics::ShaderConstantId GetSharedVariableByIndex(IndexT i) const;
+	/// get the shared shader
+	const CoreGraphics::ShaderId GetSharedShader();
+    /// get the shared shader state
+	const CoreGraphics::ShaderStateId GetSharedShaderState();
 
 	/// reloads a shader
 	void ReloadShader(const Resources::ResourceId shader);
@@ -104,8 +108,7 @@ protected:
     CoreGraphics::ShaderIdentifier shaderIdentifierRegistry;
     CoreGraphics::ShaderFeature shaderFeature;
     CoreGraphics::ShaderFeature::Mask curShaderFeatureBits;
-	Util::Dictionary<Resources::ResourceName, Resources::ResourceId> shaders;
-	Util::Dictionary<Resources::ResourceName, CoreGraphics::ShaderId> shaderIds;
+	Util::Dictionary<Resources::ResourceName, CoreGraphics::ShaderId> shaders;
 	Util::Dictionary<Util::StringAtom, CoreGraphics::ShaderStateId> sharedShaderStates;
 	CoreGraphics::ShaderId sharedVariableShader;
 	CoreGraphics::ShaderStateId sharedVariableShaderState;
@@ -135,7 +138,7 @@ ShaderServerBase::HasShader(const Resources::ResourceName& resId) const
 //------------------------------------------------------------------------------
 /**
 */
-inline const Util::Dictionary<Resources::ResourceName, Resources::ResourceId>&
+inline const Util::Dictionary<Resources::ResourceName, CoreGraphics::ShaderId>&
 ShaderServerBase::GetAllShaders() const
 {
     return this->shaders;
@@ -147,7 +150,16 @@ ShaderServerBase::GetAllShaders() const
 inline const CoreGraphics::ShaderId
 ShaderServerBase::GetShader(Resources::ResourceName resId) const
 {
-	return this->shaderIds[resId];
+	return this->shaders[resId];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const Resources::ResourceName&
+ShaderServerBase::GetName(const CoreGraphics::ShaderId& id) const
+{
+	return CoreGraphics::shaderPool->GetName(id);
 }
 
 //------------------------------------------------------------------------------
@@ -237,18 +249,27 @@ ShaderServerBase::GetNumSharedVariables() const
 //------------------------------------------------------------------------------
 /**
 */
-inline const CoreGraphics::ShaderVariableId
+inline const CoreGraphics::ShaderConstantId
 ShaderServerBase::GetSharedVariableByIndex(IndexT i) const
 {
     n_assert(this->sharedVariableShaderState != CoreGraphics::ShaderStateId::Invalid());
-	return CoreGraphics::ShaderStateGetVariable(this->sharedVariableShaderState, i);
+	return CoreGraphics::ShaderStateGetConstant(this->sharedVariableShaderState, i);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const CoreGraphics::ShaderId
+ShaderServerBase::GetSharedShader()
+{
+	return this->sharedVariableShader;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 inline const CoreGraphics::ShaderStateId
-ShaderServerBase::GetSharedShader()
+ShaderServerBase::GetSharedShaderState()
 {
     return this->sharedVariableShaderState;
 }
