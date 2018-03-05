@@ -29,4 +29,10 @@ enum ObserverType : uint8_t
 };
 __ImplementEnumBitOperators(ObserverType);
 
+enum VisibilityEntityType : uint8_t
+{
+	Observer			= 0, // entity is an observer
+	Observee			= 1, // entity is to be observed
+	ObserverAndObservee	= 2  // entity can be seen, and see others (light sources, for example)
+}
 } // namespace Visibility

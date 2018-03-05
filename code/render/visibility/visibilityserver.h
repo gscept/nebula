@@ -71,16 +71,16 @@ public:
 	void ApplyVisibility(const Ptr<Graphics::View>& view);
 
 	/// register graphics entity as an observer
-	void RegisterObserver(const Ptr<Graphics::GraphicsEntity>& obs, ObserverMask mask);
+	void RegisterObserver(const Graphics::GraphicsEntityId obs, ObserverMask mask);
 	/// unregister graphics entity 
-	void UnregisterObserver(const Ptr<Graphics::GraphicsEntity>& obs, ObserverMask mask);
+	void UnregisterObserver(const Graphics::GraphicsEntityId obs, ObserverMask mask);
 
 	/// begin preparing for the scene to change, this phase should encompass the entirety of the void outside of the render loop
 	void EnterVisibilityLockstep();
 	/// register a renderable entity
-	void RegisterGraphicsEntity(const Ptr<Graphics::GraphicsEntity>& entity, Graphics::ContextIdlContext::_ModelResult* data);
+	void RegisterGraphicsEntity(const Graphics::GraphicsEntityId entity);
 	/// deregister renderable entity
-	void UnregisterGraphicsEntity(const Ptr<Graphics::GraphicsEntity>& entity);
+	void UnregisterGraphicsEntity(const Graphics::GraphicsEntityId entity);
 	/// finish up scene changes, this will cause all observers to reconstruct their visibility list
 	void LeaveVisibilityLockstep();
 
@@ -89,11 +89,9 @@ private:
 
 	bool locked;
 	bool visibilityDirty;
-	Util::Array<Ptr<Observer>> observers;
+	Util::Array<Graphics::GraphicsEntityId> observers;
 	Util::Array<Ptr<VisibilitySystemBase>> systems;
-	Util::Array<Ptr<Graphics::GraphicsEntity>> entities;
-	Util::Array<Graphics::ModelContext::_ModelResult*> models;
-	SurfaceMeshNodeDatabase visibilityDatabase;
+	Util::Array<Graphics::GraphicsEntityId> entities;
 	Ptr<VisibilityContainer> activeVisibility;
 };
 } // namespace Visibility

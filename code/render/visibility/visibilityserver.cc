@@ -80,7 +80,7 @@ VisibilityServer::EnterVisibilityLockstep()
 /**
 */
 void
-VisibilityServer::RegisterGraphicsEntity(const Ptr<Graphics::GraphicsEntity>& entity, Graphics::ContextId modelId)
+VisibilityServer::RegisterGraphicsEntity(const Graphics::GraphicsEntityId entity)
 {
 	n_assert(!this->locked);
 	n_assert(this->entities.FindIndex(entity) == InvalidIndex);
@@ -119,7 +119,7 @@ VisibilityServer::RegisterGraphicsEntity(const Ptr<Graphics::GraphicsEntity>& en
 /**
 */
 void
-VisibilityServer::UnregisterGraphicsEntity(const Ptr<Graphics::GraphicsEntity>& entity)
+VisibilityServer::UnregisterGraphicsEntity(const Graphics::GraphicsEntityId entity)
 {
 	n_assert(!this->locked);
 	IndexT i = this->entities.FindIndex(entity);
@@ -137,6 +137,7 @@ VisibilityServer::LeaveVisibilityLockstep()
 {
 	n_assert(this->locked);
 	this->locked = false;
-	this->visibilityDatabase.BeginBulkAdd();}
+	this->visibilityDatabase.BeginBulkAdd();
+}
 
 } // namespace Visibility
