@@ -102,19 +102,19 @@ SizeT ShaderGetConstantCount(const ShaderId id);
 /// get type of variable by index
 ShaderConstantType ShaderGetConstantType(const ShaderId id, const IndexT i);
 /// get name of variable by index
-Util::String ShaderGetConstantName(const ShaderId id, const IndexT i);
+Util::StringAtom ShaderGetConstantName(const ShaderId id, const IndexT i);
 
 /// get the number of constant buffers from shader
 SizeT ShaderGetConstantBufferCount(const ShaderId id);
 /// get size of constant buffer
 SizeT ShaderGetConstantBufferSize(const ShaderId id, const IndexT i);
 /// get name of constnat buffer
-Util::String ShaderGetConstantBufferName(const ShaderId id, const IndexT i);
+Util::StringAtom ShaderGetConstantBufferName(const ShaderId id, const IndexT i);
 
 /// get programs
 const Util::Dictionary<ShaderFeature::Mask, ShaderProgramId>& ShaderGetPrograms(const ShaderId id);
 /// get name of program
-Util::String ShaderProgramGetName(const ShaderProgramId id);
+Util::StringAtom ShaderProgramGetName(const ShaderProgramId id);
 
 /// get the shader variable using name
 ShaderConstantId ShaderStateGetConstant(const ShaderStateId id, const Util::StringAtom& name);

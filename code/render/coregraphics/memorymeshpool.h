@@ -27,9 +27,9 @@ public:
 	virtual ~MemoryMeshPool();
 
 	/// update resource
-	LoadStatus LoadFromMemory(const Ids::Id24 id, const void* info);
+	LoadStatus LoadFromMemory(const Resources::ResourceId id, const void* info);
 	/// unload resource
-	void Unload(const Ids::Id24 id);
+	void Unload(const Resources::ResourceId id);
 
 	/// bind mesh
 	void BindMesh(const MeshId id, const IndexT prim);

@@ -145,7 +145,6 @@ GraphicsServer::OnFrame()
 
 
 	// finish frame and prepare for the next one
-	IndexT i;
 	for (i = 0; i < this->contexts.Size(); i++)
 	{
 		this->contexts[i]->OnAfterFrame(frameIndex, time);

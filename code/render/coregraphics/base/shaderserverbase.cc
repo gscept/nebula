@@ -83,7 +83,7 @@ ShaderServerBase::Open()
     {
 		this->sharedVariableShader = this->GetShader("shd:shared");
 		n_assert(this->sharedVariableShader != ShaderId::Invalid());
-		this->sharedVariableShaderState = CoreGraphics::shaderPool->CreateState(this->sharedVariableShader, { NEBULAT_DEFAULT_GROUP }, false);
+		this->sharedVariableShaderState = CoreGraphics::shaderPool->CreateState(this->sharedVariableShader, { NEBULAT_BATCH_GROUP }, false);
         n_assert(this->sharedVariableShaderState != ShaderStateId::Invalid());
 
         // get shared object id shader variable

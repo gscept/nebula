@@ -94,7 +94,7 @@ protected:
 	};
 
 	/// perform actual load, override in subclass
-	virtual LoadStatus LoadFromStream(const Ids::Id24 id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream) = 0;
+	virtual LoadStatus LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream) = 0;
 
 	/// update the resource loader, this is done every frame
 	void Update(IndexT frameIndex);

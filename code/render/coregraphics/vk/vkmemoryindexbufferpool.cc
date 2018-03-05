@@ -20,10 +20,10 @@ __ImplementClass(Vulkan::VkMemoryIndexBufferPool, 'VKMI', Resources::ResourceMem
 /**
 */
 Resources::ResourcePool::LoadStatus
-VkMemoryIndexBufferPool::LoadFromMemory(const Ids::Id24 id, const void* info)
+VkMemoryIndexBufferPool::LoadFromMemory(const Resources::ResourceId id, const void* info)
 {
 	const IndexBufferCreateInfo* iboInfo = static_cast<const IndexBufferCreateInfo*>(info);
-	n_assert(this->GetState(id) == Resource::Pending);
+	n_assert(this->GetState(id.poolId) == Resource::Pending);
 	n_assert(iboInfo->type != IndexType::None);
 	n_assert(iboInfo->numIndices > 0);
 	if (CoreGraphics::GpuBufferTypes::UsageImmutable == iboInfo->usage)
@@ -92,11 +92,11 @@ VkMemoryIndexBufferPool::LoadFromMemory(const Ids::Id24 id, const void* info)
 /**
 */
 void
-VkMemoryIndexBufferPool::Unload(const Ids::Id24 id)
+VkMemoryIndexBufferPool::Unload(const Resources::ResourceId id)
 {
-	VkIndexBufferLoadInfo& loadInfo = this->Get<0>(id);
-	VkIndexBufferRuntimeInfo& runtimeInfo = this->Get<1>(id);
-	uint32_t& mapCount = this->Get<2>(id);
+	VkIndexBufferLoadInfo& loadInfo = this->Get<0>(id.allocId);
+	VkIndexBufferRuntimeInfo& runtimeInfo = this->Get<1>(id.allocId);
+	uint32_t& mapCount = this->Get<2>(id.allocId);
 
 	n_assert(mapCount == 0);
 	vkFreeMemory(loadInfo.dev, loadInfo.mem, nullptr);

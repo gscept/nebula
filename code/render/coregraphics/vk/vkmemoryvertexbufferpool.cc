@@ -21,7 +21,7 @@ __ImplementClass(Vulkan::VkMemoryVertexBufferPool, 'VKVO', Resources::ResourceMe
 /**
 */
 Resources::ResourcePool::LoadStatus
-VkMemoryVertexBufferPool::LoadFromMemory(const Ids::Id24 id, const void* info)
+VkMemoryVertexBufferPool::LoadFromMemory(const Resources::ResourceId id, const void* info)
 {
 	const VertexBufferCreateInfo* vboInfo = static_cast<const VertexBufferCreateInfo*>(info);
 	n_assert(this->GetState(id) == Resource::Pending);
@@ -32,9 +32,9 @@ VkMemoryVertexBufferPool::LoadFromMemory(const Ids::Id24 id, const void* info)
 		n_assert(0 < vboInfo->dataSize);
 	}
 
-	VkVertexBufferLoadInfo& loadInfo = this->Get<0>(id);
-	VkVertexBufferRuntimeInfo& runtimeInfo = this->Get<1>(id);
-	uint32_t& mapCount = this->Get<2>(id);
+	VkVertexBufferLoadInfo& loadInfo = this->Get<0>(id.allocId);
+	VkVertexBufferRuntimeInfo& runtimeInfo = this->Get<1>(id.allocId);
+	uint32_t& mapCount = this->Get<2>(id.allocId);
 
 	loadInfo.dev = VkRenderDevice::Instance()->GetCurrentDevice();
 
@@ -105,11 +105,11 @@ VkMemoryVertexBufferPool::LoadFromMemory(const Ids::Id24 id, const void* info)
 /**
 */
 void
-VkMemoryVertexBufferPool::Unload(const Ids::Id24 id)
+VkMemoryVertexBufferPool::Unload(const Resources::ResourceId id)
 {
-	VkVertexBufferLoadInfo& loadInfo = this->Get<0>(id);
-	VkVertexBufferRuntimeInfo& runtimeInfo = this->Get<1>(id);
-	uint32_t& mapCount = this->Get<2>(id);
+	VkVertexBufferLoadInfo& loadInfo = this->Get<0>(id.allocId);
+	VkVertexBufferRuntimeInfo& runtimeInfo = this->Get<1>(id.allocId);
+	uint32_t& mapCount = this->Get<2>(id.allocId);
 
 	n_assert(mapCount == 0);
 	vkFreeMemory(loadInfo.dev, loadInfo.mem, nullptr);

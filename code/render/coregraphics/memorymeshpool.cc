@@ -35,13 +35,13 @@ MemoryMeshPool::~MemoryMeshPool()
 /**
 */
 ResourcePool::LoadStatus
-MemoryMeshPool::LoadFromMemory(const Ids::Id24 id, const void* info)
+MemoryMeshPool::LoadFromMemory(const Resources::ResourceId id, const void* info)
 {
 	MeshCreateInfo* data = (MeshCreateInfo*)info;
-	MeshCreateInfo& mesh = this->Get<0>(id);
+	MeshCreateInfo& mesh = this->Get<0>(id.allocId);
 	mesh = *data;
 
-	this->states[id] = Resource::Loaded;
+	this->states[id.poolId] = Resource::Loaded;
 
 	return ResourcePool::Success;
 }
@@ -50,7 +50,7 @@ MemoryMeshPool::LoadFromMemory(const Ids::Id24 id, const void* info)
 /**
 */
 void
-MemoryMeshPool::Unload(const Ids::Id24 id)
+MemoryMeshPool::Unload(const Resources::ResourceId id)
 {
 }
 

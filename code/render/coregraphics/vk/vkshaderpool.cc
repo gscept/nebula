@@ -44,11 +44,11 @@ VkShaderPool::~VkShaderPool()
 /**
 */
 Resources::ResourcePool::LoadStatus
-VkShaderPool::LoadFromStream(const Ids::Id24 id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream)
+VkShaderPool::LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream)
 {
 	n_assert(stream.isvalid());
 	n_assert(stream->CanBeMapped());
-	n_assert(!this->GetState(id) == Resources::Resource::Pending);
+	n_assert(!this->GetState(id.poolId) == Resources::Resource::Pending);
 
 	// map stream to memory
 	stream->SetAccessMode(Stream::ReadAccess);
@@ -64,16 +64,16 @@ VkShaderPool::LoadFromStream(const Ids::Id24 id, const Util::StringAtom& tag, co
 		if (!effect)
 		{
 			n_error("VkStreamShaderLoader::SetupResourceFromStream(): failed to load shader '%s'!",
-				this->GetName(id).Value());
+				this->GetName(id.poolId).Value());
 			return ResourcePool::Failed;
 		}
 
-		VkShaderSetupInfo& setupInfo = this->shaderAlloc.Get<1>(id);
-		VkShaderRuntimeInfo& runtimeInfo = this->shaderAlloc.Get<2>(id);
+		VkShaderSetupInfo& setupInfo = this->shaderAlloc.Get<1>(id.allocId);
+		VkShaderRuntimeInfo& runtimeInfo = this->shaderAlloc.Get<2>(id.allocId);
 
-		this->shaderAlloc.Get<0>(id) = effect;
-		setupInfo.id = ShaderIdentifier::FromName(this->GetName(id));
-		setupInfo.name = this->GetName(id);
+		this->shaderAlloc.Get<0>(id.allocId) = effect;
+		setupInfo.id = ShaderIdentifier::FromName(this->GetName(id.poolId));
+		setupInfo.name = this->GetName(id.poolId);
 
 		// the setup code is massive, so just let it be in VkShader...
 		VkShaderSetup(
@@ -124,7 +124,7 @@ VkShaderPool::LoadFromStream(const Ids::Id24 id, const Util::StringAtom& tag, co
 /**
 */
 void
-VkShaderPool::Unload(const Ids::Id24 res)
+VkShaderPool::Unload(const Resources::ResourceId res)
 {
 	//VkShader::Unload();
 	//VkShader* shd = (VkShader*)res;

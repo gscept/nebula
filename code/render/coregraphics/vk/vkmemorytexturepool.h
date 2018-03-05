@@ -45,9 +45,9 @@ public:
 	};
 
 	/// update resource
-	LoadStatus LoadFromMemory(const Ids::Id24 id, const void* info);
+	LoadStatus LoadFromMemory(const Resources::ResourceId id, const void* info) override;
 	/// unload resource
-	void Unload(const Ids::Id24 id);
+	void Unload(const Resources::ResourceId id) override;
 
 	/// generates mipmaps
 	void GenerateMipmaps(const CoreGraphics::TextureId id);
@@ -85,7 +85,7 @@ private:
 /**
 */
 inline void
-VkMemoryTexturePool::Unload(const Ids::Id24 id)
+VkMemoryTexturePool::Unload(const Resources::ResourceId id)
 {
 	this->EnterGet();
 	VkTextureLoadInfo& loadInfo = this->Get<1>(id);

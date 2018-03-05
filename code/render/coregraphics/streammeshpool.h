@@ -29,9 +29,9 @@ public:
 private:
 	
 	/// perform load
-	LoadStatus LoadFromStream(const Ids::Id24 id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream) override;
+	LoadStatus LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream) override;
 	/// unload resource (overload to implement resource deallocation)
-	void Unload(const Ids::Id24 id) override;
+	void Unload(const Resources::ResourceId id) override;
 
 	/// allocate object
 	Resources::ResourceUnknownId AllocObject() override;

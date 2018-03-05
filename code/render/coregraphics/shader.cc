@@ -159,7 +159,7 @@ ShaderGetConstantType(const CoreGraphics::ShaderId id, const IndexT i)
 //------------------------------------------------------------------------------
 /**
 */
-inline Util::String
+inline Util::StringAtom
 ShaderGetConstantName(const CoreGraphics::ShaderId id, const IndexT i)
 {
 	return shaderPool->GetConstantName(id, i);
@@ -212,7 +212,7 @@ ShaderGetConstantBufferSize(const CoreGraphics::ShaderId id, const IndexT i)
 //------------------------------------------------------------------------------
 /**
 */
-inline Util::String
+inline Util::StringAtom
 ShaderGetConstantBufferName(const CoreGraphics::ShaderId id, const IndexT i)
 {
 	return shaderPool->GetConstantBufferName(id, i);
@@ -230,7 +230,7 @@ ShaderGetPrograms(const CoreGraphics::ShaderId id)
 //------------------------------------------------------------------------------
 /**
 */
-inline Util::String
+inline Util::StringAtom
 ShaderProgramGetName(const CoreGraphics::ShaderProgramId id)
 {
 	return shaderPool->GetProgramName(id);

@@ -62,12 +62,12 @@ VkVertexSignaturePool::GetVertexComponents(const CoreGraphics::VertexLayoutId id
 /**
 */
 Resources::ResourcePool::LoadStatus
-VkVertexSignaturePool::LoadFromMemory(const Ids::Id24 id, const void* info)
+VkVertexSignaturePool::LoadFromMemory(const Resources::ResourceId id, const void* info)
 {
 	const CoreGraphics::VertexLayoutInfo* vertexLayoutInfo = static_cast<const CoreGraphics::VertexLayoutInfo*>(info);
-	Util::HashTable<uint64_t, DerivativeLayout>& hashTable = this->Get<0>(id);
-	VkPipelineVertexInputStateCreateInfo& vertexInfo = this->Get<1>(id);
-	BindInfo& bindInfo = this->Get<2>(id);
+	Util::HashTable<uint64_t, DerivativeLayout>& hashTable = this->Get<0>(id.allocId);
+	VkPipelineVertexInputStateCreateInfo& vertexInfo = this->Get<1>(id.allocId);
+	BindInfo& bindInfo = this->Get<2>(id.allocId);
 
 	// create binds
 	bindInfo.binds.Resize(CoreGraphics::MaxNumVertexStreams);
@@ -124,14 +124,14 @@ VkVertexSignaturePool::LoadFromMemory(const Ids::Id24 id, const void* info)
 /**
 */
 void
-VkVertexSignaturePool::Unload(const Ids::Id24 id)
+VkVertexSignaturePool::Unload(const Resources::ResourceId id)
 {
 	// clear the table as it may not be reused by the next layout
-	Util::HashTable<uint64_t, DerivativeLayout>& hashTable = this->Get<0>(id);
+	Util::HashTable<uint64_t, DerivativeLayout>& hashTable = this->Get<0>(id.allocId);
 	hashTable.Clear();
 
 	// also clear bind info
-	BindInfo& bindInfo = this->Get<2>(id);
+	BindInfo& bindInfo = this->Get<2>(id.allocId);
 	bindInfo.binds.Clear();
 	bindInfo.attrs.Clear();
 }

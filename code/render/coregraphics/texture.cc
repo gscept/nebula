@@ -21,7 +21,7 @@ CreateTexture(TextureCreateInfo info)
 {
 	TextureId id = texturePool->ReserveResource(info.name, info.tag);
 	n_assert(id.allocType == TextureIdType);
-	texturePool->LoadFromMemory(id.allocId, &info);
+	texturePool->LoadFromMemory(id, &info);
 	return id;
 }
 
@@ -31,7 +31,7 @@ CreateTexture(TextureCreateInfo info)
 inline void
 DestroyTexture(const TextureId id)
 {
-	texturePool->DiscardResource(id.allocId);
+	texturePool->DiscardResource(id);
 }
 
 //------------------------------------------------------------------------------
