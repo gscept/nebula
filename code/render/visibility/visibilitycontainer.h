@@ -6,7 +6,7 @@
 	The idea is to map the list of graphics entities registered with the GraphicsServer against a list of 
 	visibility results.
 
-	TODO: But how does this map to any kind of sorting? If models are grouped by <shader, material, mesh> for example,
+	TODO: But how does this map do any kind of sorting? If models are grouped by <shader, material, mesh> for example,
 	how does an ordinary array account for that?
 
 	SOLUTION: The array contains results for ALL entities, independent of observer mask, and the visibility status

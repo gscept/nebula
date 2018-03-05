@@ -4,7 +4,8 @@
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "visibilitycontext.h"
-
+#include "models/modelcontext.h"
+#include "models/model.h"
 namespace Visibility
 {
 
@@ -29,9 +30,22 @@ VisibilityContext::~VisibilityContext()
 //------------------------------------------------------------------------------
 /**
 */
-int64_t
-VisibilityContext::RegisterEntity(const int64_t& entity)
+void
+VisibilityContext::Setup(const Graphics::GraphicsEntityId id, VisibilityEntityType type)
 {
+	const Ids::Id32 cid = this->entitySliceMap[id.id];
+	this->visibilityContextAllocator.Get<2>(cid) = type;
+
+	Models::ModelInstanceId mdl = Models::ModelContext::Instance()->GetModel(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+VisibilityContext::RegisterEntity(const Graphics::GraphicsEntityId entity)
+{
+	n_assert(Models::ModelContext::Instance()->IsEntityRegistered(entity));
 	return GraphicsContext::RegisterEntity(entity);
 }
 
@@ -39,9 +53,9 @@ VisibilityContext::RegisterEntity(const int64_t& entity)
 /**
 */
 void
-VisibilityContext::UnregisterEntity(const int64_t& entity)
+VisibilityContext::DeregisterEntity(const Graphics::GraphicsEntityId entity)
 {
-
+	GraphicsContext::DeregisterEntity(entity);
 }
 
 } // namespace Visibility
