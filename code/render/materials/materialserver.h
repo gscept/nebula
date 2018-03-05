@@ -1,25 +1,22 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	@class Material::MaterialServer
-    
-	Server object for the material subsystem. Factory for Materials.
-    
-    (C) 2007 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+	The material server is the central hub for the material types
+
+	(C) 2018 Individual contributors, see AUTHORS file
 */
+//------------------------------------------------------------------------------
 #include "core/refcounted.h"
 #include "core/singleton.h"
 #include "resources/resourceid.h"
-#include "materials/materialpalette.h"
-#include "materials/material.h"
-#include "materials/surfacename.h"
-#include "util/dictionary.h"
-#include "util/array.h"
-
-//------------------------------------------------------------------------------
+#include "materialtype.h"
+#include "materialpool.h"
+#include "ids/id.h"
+#include "io/uri.h"
 namespace Materials
 {
+
+ID_32_32_NAMED_TYPE(MaterialId, typeId, instanceId);
 
 class MaterialServer : public Core::RefCounted
 {
@@ -30,97 +27,65 @@ public:
 	/// constructor
 	MaterialServer();
 	/// destructor
-	virtual ~MaterialServer();
-	/// open the material server (loads all materials)
-	bool Open();
-	/// close the material server
+	~MaterialServer();
+
+	/// open server
+	void Open();
+	/// close server (frees all materials and types)
 	void Close();
-	/// return if server is open
-	bool IsOpen() const;
 
-    /// returns true if material exists
-    bool HasMaterial(const Resources::ResourceName& name);
-	/// get material by name
-	const Ptr<Material>& GetMaterialByName(const Resources::ResourceName& name);
-    /// get all materials, creates new array with materials
-    Util::Array<Ptr<Material>> GetMaterials() const;
-	/// get material codes by type
-	const Util::Array<Ptr<Material> >& GetMaterialsByBatchGroup(const Graphics::BatchGroup::Code& type);
-	/// returns true if we have any materials by type
-    const bool HasMaterialsByBatchGroup(const Graphics::BatchGroup::Code& type);
-	/// add a material to the server
-	void AddMaterial(const Ptr<Material>& material);
+	/// load material types from file
+	bool LoadMaterialTypes(const IO::URI& file);
 
-	/// convert a shader feature string into a feature bit mask
-	Materials::MaterialFeature::Mask FeatureStringToMask(const Util::String& str);
-	/// convert shader feature bit mask into string
-	Util::String FeatureMaskToString(Materials::MaterialFeature::Mask mask);
+	/// allocate an instance of a material
+	MaterialId AllocateMaterial(const Resources::ResourceName& type);
+	/// deallocate material instance
+	void DeallocateMaterial(const MaterialId id);
+	/// set material constant
+	void SetMaterialConstant(const MaterialId id, const Util::StringAtom& name, const Util::Variant& val);
+	/// set material texture
+	void SetMaterialTexture(const MaterialId id, const Util::StringAtom& name, const CoreGraphics::TextureId val);
 
-	/// gain access to a material palette by name, will be loaded if it isn't already
-	const Ptr<MaterialPalette>& LookupMaterialPalette(const Resources::ResourceName& name);
-	
 private:
-    friend class MaterialType;
-    friend class SurfaceName;
-
-	/// load material palette
-	void LoadMaterialPalette(const Resources::ResourceName& name);
-
-    MaterialType materialTypeRegistry;
-    SurfaceName surfaceNameRegistry;
-	MaterialFeature materialFeature;
-	Util::Dictionary<Resources::ResourceName, Ptr<Material>> materials;
-	Util::Dictionary<Graphics::BatchGroup::Code, Util::Array<Ptr<Material>>> materialsByBatchGroup;
-	Util::Dictionary<Resources::ResourceName, Ptr<MaterialPalette>> materialPalettes;
+	Util::Dictionary<Resources::ResourceName, MaterialType*> materialTypesByName;
+	Util::Array<MaterialType> materialTypes;
+	Ptr<MaterialPool> materialPool;
 	bool isOpen;
 };
 
 //------------------------------------------------------------------------------
 /**
 */
-inline bool 
-MaterialServer::HasMaterial( const Resources::ResourceName& name )
+inline MaterialId
+CreateMaterial(const Resources::ResourceName& type)
 {
-    return this->materials.Contains(name);
+	return MaterialServer::Instance()->AllocateMaterial(type);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline const Ptr<Material>&
-MaterialServer::GetMaterialByName(const Resources::ResourceName& name)
+inline void
+DeallocateMaterial(const MaterialId id)
 {
-    n_assert(this->materials.Contains(name));
-    return this->materials[name];
+	MaterialServer::Instance()->DeallocateMaterial(id);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline Util::Array<Ptr<Material>>
-MaterialServer::GetMaterials() const
+inline void
+MaterialSetConstant(const MaterialId id, const Util::StringAtom& name, const Util::Variant& val)
 {
-    return this->materials.ValuesAsArray();
+	MaterialServer::Instance()->SetMaterialConstant(id, name, val);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline const Util::Array<Ptr<Material> >& 
-MaterialServer::GetMaterialsByBatchGroup(const Graphics::BatchGroup::Code& type)
+inline void
+MaterialSetTexture(const MaterialId id, const Util::StringAtom& name, const CoreGraphics::TextureId val)
 {
-	n_assert(this->materialsByBatchGroup.Contains(type));
-	return this->materialsByBatchGroup[type];
+	MaterialServer::Instance()->SetMaterialTexture(id, name, val);
 }
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const bool 
-MaterialServer::HasMaterialsByBatchGroup(const Graphics::BatchGroup::Code& type)
-{
-	return this->materialsByBatchGroup.Contains(type);
-}
-
-}
-
+} // namespace Materials
