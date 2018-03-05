@@ -47,28 +47,28 @@ MaterialPool::LoadFromStream(const Ids::Id24 id, const Util::StringAtom & tag, c
 			const Material::MaterialParameter& param = parameters[paramName];
 
 			// set variant value which we will use in the surface constants
-			Variant var = param.defaultVal;
+			Util::Variant var = param.defaultVal;
 			switch (param.defaultVal.GetType())
 			{
-			case Variant::Float:
+			case Util::Variant::Float:
 				var.SetFloat(reader->GetOptFloat("value", 0.0f));
 				break;
-			case Variant::Int:
+			case Util::Variant::Int:
 				var.SetInt(reader->GetOptInt("value", 0));
 				break;
-			case Variant::Bool:
+			case Util::Variant::Bool:
 				var.SetBool(reader->GetOptBool("value", false));
 				break;
-			case Variant::Float4:
+			case Util::Variant::Float4:
 				var.SetFloat4(reader->GetOptFloat4("value", Math::float4(0)));
 				break;
-			case Variant::Float2:
+			case Util::Variant::Float2:
 				var.SetFloat2(reader->GetOptFloat2("value", Math::float2(0)));
 				break;
-			case Variant::Matrix44:
+			case Util::Variant::Matrix44:
 				var.SetMatrix44(reader->GetOptMatrix44("value", Math::matrix44()));
 				break;
-			case Variant::String:
+			case Util::Variant::String:
 			{
 				var.SetString(reader->GetString("value"));
 				break;

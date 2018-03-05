@@ -39,26 +39,26 @@ StreamMeshPool::~StreamMeshPool()
 /**
 */
 Resources::ResourcePool::LoadStatus
-StreamMeshPool::LoadFromStream(const Ids::Id24 id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream)
+StreamMeshPool::LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream)
 {
 	n_assert(stream.isvalid());
 	n_assert(id != Ids::InvalidId24);
-	String resIdExt = this->GetName(id).AsString().GetFileExtension();
+	String resIdExt = this->GetName(id.poolId).AsString().GetFileExtension();
 
 #if NEBULA3_LEGACY_SUPPORT
 	if (resIdExt == "nvx2")
 	{
-		return this->SetupMeshFromNvx2(stream, id);
+		return this->SetupMeshFromNvx2(stream, id.allocId);
 	}
 	else
 #endif
 		if (resIdExt == "nvx3")
 		{
-			return this->SetupMeshFromNvx3(stream, id);
+			return this->SetupMeshFromNvx3(stream, id.allocId);
 		}
 		else if (resIdExt == "n3d3")
 		{
-			return this->SetupMeshFromN3d3(stream, id);
+			return this->SetupMeshFromN3d3(stream, id.allocId);
 		}
 		else
 		{
@@ -71,10 +71,10 @@ StreamMeshPool::LoadFromStream(const Ids::Id24 id, const Util::StringAtom& tag, 
 /**
 */
 void
-StreamMeshPool::Unload(const Ids::Id24 id)
+StreamMeshPool::Unload(const Resources::ResourceId id)
 {
 	n_assert(id != Ids::InvalidId24);
-	const MeshCreateInfo& msh = meshPool->GetSafe<0>(id);
+	const MeshCreateInfo& msh = meshPool->GetSafe<0>(id.allocId);
 
 	if (msh.indexBuffer != IndexBufferId::Invalid()) CoreGraphics::iboPool->Unload(msh.indexBuffer.allocId);
 	if (msh.vertexBuffer != VertexBufferId::Invalid()) CoreGraphics::vboPool->Unload(msh.vertexBuffer.allocId);

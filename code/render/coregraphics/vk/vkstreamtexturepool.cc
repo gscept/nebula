@@ -74,7 +74,7 @@ VkStreamTexturePool::DeallocObject(const Resources::ResourceUnknownId id)
 /**
 */
 ResourcePool::LoadStatus
-VkStreamTexturePool::LoadFromStream(const Ids::Id24 res, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream)
+VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream)
 {
 	n_assert(stream.isvalid());
 	n_assert(stream->CanBeMapped());
@@ -88,8 +88,8 @@ VkStreamTexturePool::LoadFromStream(const Ids::Id24 res, const Util::StringAtom&
 
 		/// during the load-phase, we can safetly get the structs
 		texturePool->EnterGet();
-		VkTextureRuntimeInfo& runtimeInfo = texturePool->Get<0>(res);
-		VkTextureLoadInfo& loadInfo = texturePool->Get<1>(res);
+		VkTextureRuntimeInfo& runtimeInfo = texturePool->Get<0>(res.allocId);
+		VkTextureLoadInfo& loadInfo = texturePool->Get<1>(res.allocId);
 		loadInfo.dev = VkRenderDevice::Instance()->GetCurrentDevice();
 		texturePool->LeaveGet();
 
@@ -290,7 +290,7 @@ VkStreamTexturePool::LoadFromStream(const Ids::Id24 res, const Util::StringAtom&
 /**
 */
 inline void
-VkStreamTexturePool::Unload(const Ids::Id24 id)
+VkStreamTexturePool::Unload(const Resources::ResourceId id)
 {
 	texturePool->Unload(id);
 }

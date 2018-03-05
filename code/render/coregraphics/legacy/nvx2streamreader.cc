@@ -286,7 +286,7 @@ Nvx2StreamReader::SetupVertexBuffer(const Resources::ResourceName& name)
 	vboInfo.data = this->vertexDataPtr;
 	vboInfo.dataSize = this->vertexDataSize;
 	this->vbo = id;
-	ResourcePool::LoadStatus stat = vboPool->LoadFromMemory(this->vbo.allocId, &vboInfo);
+	ResourcePool::LoadStatus stat = vboPool->LoadFromMemory(this->vbo, &vboInfo);
     n_assert(stat == ResourcePool::Success);
 }
 
@@ -314,7 +314,7 @@ Nvx2StreamReader::SetupIndexBuffer(const Resources::ResourceName& name)
 	iboInfo.data = this->indexDataPtr;
 	iboInfo.dataSize = this->indexDataSize;
 	this->ibo = id;
-	ResourcePool::LoadStatus stat = iboPool->LoadFromMemory(this->ibo.allocId, &iboInfo);
+	ResourcePool::LoadStatus stat = iboPool->LoadFromMemory(this->ibo, &iboInfo);
 	n_assert(stat == ResourcePool::Success);
 }
 

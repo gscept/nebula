@@ -28,9 +28,9 @@ public:
 	void Unmap(const CoreGraphics::VertexBufferId id);
 
 	/// update resource
-	LoadStatus LoadFromMemory(const Ids::Id24 id, const void* info);
+	LoadStatus LoadFromMemory(const Resources::ResourceId id, const void* info) override;
 	/// unload resource
-	void Unload(const Ids::Id24 id);
+	void Unload(const Resources::ResourceId id) override;
 
 	/// get number of vertices
 	const SizeT GetNumVertices(const CoreGraphics::VertexBufferId id);

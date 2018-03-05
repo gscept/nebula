@@ -131,7 +131,7 @@ protected:
 	/// deallocate resource
 	virtual void DeallocObject(const ResourceUnknownId id) = 0;
 	/// unload resource (overload to implement resource deallocation)
-	virtual void Unload(const Ids::Id24 id) = 0;
+	virtual void Unload(const Resources::ResourceId id) = 0;
 
 	/// id in resource manager
 	int32_t uniqueId;

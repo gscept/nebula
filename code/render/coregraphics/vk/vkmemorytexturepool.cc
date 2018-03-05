@@ -23,14 +23,14 @@ __ImplementClass(Vulkan::VkMemoryTexturePool, 'VKTO', Resources::ResourceMemoryP
 /**
 */
 ResourcePool::LoadStatus
-VkMemoryTexturePool::LoadFromMemory(const Ids::Id24 id, const void* info)
+VkMemoryTexturePool::LoadFromMemory(const Resources::ResourceId id, const void* info)
 {
 	const VkMemoryTextureInfo* data = (const VkMemoryTextureInfo*)info;
 
 	/// during the load-phase, we can safetly get the structs
 	this->EnterGet();
-	VkTextureRuntimeInfo& runtimeInfo = this->Get<0>(id);
-	VkTextureLoadInfo& loadInfo = this->Get<1>(id);
+	VkTextureRuntimeInfo& runtimeInfo = this->Get<0>(id.allocId);
+	VkTextureLoadInfo& loadInfo = this->Get<1>(id.allocId);
 	this->LeaveGet();
 
 	VkFormat vkformat = VkTypes::AsVkFormat(data->format);

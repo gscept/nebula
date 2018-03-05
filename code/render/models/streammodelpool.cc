@@ -125,7 +125,7 @@ StreamModelPool::CreateModelInstanceRecursive(Models::ModelNode* parent, Models:
 /**
 */
 Resources::ResourceStreamPool::LoadStatus
-StreamModelPool::LoadFromStream(const Ids::Id24 id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream)
+StreamModelPool::LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream)
 {
 	// a model is a list of resources, a bounding box, and a dictionary of nodes
 	Math::bbox& boundingBox = this->Get<0>(id);
@@ -230,11 +230,11 @@ StreamModelPool::LoadFromStream(const Ids::Id24 id, const Util::StringAtom& tag,
 /**
 */
 void
-StreamModelPool::Unload(const Ids::Id24 id)
+StreamModelPool::Unload(const Resources::ResourceId id)
 {
 	const SizeT& instances = this->Get<4>(id);
 	if (instances > 0)
-		n_error("Model '%s' still has active instances!", this->names[id].Value());
+		n_error("Model '%s' still has active instances!", this->names[id.poolId].Value());
 	Util::Dictionary<Util::StringAtom, Models::ModelNode*>& nodes = this->Get<2>(id);
 	nodes.Clear();
 	this->Get<1>(id).Release();

@@ -15,6 +15,7 @@
 #include "coregraphics/batchgroup.h"
 #include "stage.h"
 #include "graphicsentity.h"
+#include "visibility/visibilityserver.h"
 namespace Graphics
 {
 

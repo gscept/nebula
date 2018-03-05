@@ -21,7 +21,7 @@ CreateMesh(const MeshCreateInfo& info)
 {
 	MeshId id = meshPool->ReserveResource(info.name, info.tag);
 	n_assert(id.allocType == MeshIdType);
-	meshPool->LoadFromMemory(id.allocId, &info);
+	meshPool->LoadFromMemory(id, &info);
 	return id;
 }
 
@@ -31,7 +31,7 @@ CreateMesh(const MeshCreateInfo& info)
 inline void
 DestroyMesh(const MeshId id)
 {
-	meshPool->DiscardResource(id.allocId);
+	meshPool->DiscardResource(id);
 }
 
 //------------------------------------------------------------------------------

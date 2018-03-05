@@ -28,9 +28,9 @@ public:
 	void Unmap(const CoreGraphics::IndexBufferId id);
 
 	/// update resource
-	LoadStatus LoadFromMemory(const Ids::Id24 id, const void* info);
+	LoadStatus LoadFromMemory(const Resources::ResourceId id, const void* info);
 	/// unload resource
-	void Unload(const Ids::Id24 id);
+	void Unload(const Resources::ResourceId id);
 
 	/// get index type for buffer
 	CoreGraphics::IndexType::Code GetIndexType(const CoreGraphics::IndexBufferId id);

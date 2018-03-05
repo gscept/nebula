@@ -19,7 +19,7 @@ CreateIndexBuffer(IndexBufferCreateInfo info)
 {
 	IndexBufferId id = iboPool->ReserveResource(info.name, info.tag);
 	n_assert(id.allocType == IndexBufferIdType);
-	iboPool->LoadFromMemory(id.allocId, &info);
+	iboPool->LoadFromMemory(id, &info);
 	return id;
 }
 

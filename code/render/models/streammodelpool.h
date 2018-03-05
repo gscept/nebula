@@ -44,14 +44,15 @@ private:
 	friend class CharacterSkinNode;
 	friend class ParticleSystemNode;
 	friend class ModelContext;
+	friend class VisibilityContext;
 
 	/// create an instance of a model recursively
 	void CreateModelInstanceRecursive(Models::ModelNode* parent, Models::ModelNode::Instance* parentInstance, Memory::ChunkAllocator<0xFFF>& allocator, Util::Array<Models::ModelNode::Instance*>& instances);
 
 	/// perform actual load, override in subclass
-	LoadStatus LoadFromStream(const Ids::Id24 id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream);
+	LoadStatus LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream);
 	/// unload resource
-	void Unload(const Ids::Id24 id);
+	void Unload(const Resources::ResourceId id);
 
 	///
 	Util::Stack<Models::ModelNode*> nodeStack;

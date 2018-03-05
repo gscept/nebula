@@ -22,7 +22,7 @@ CreateVertexBuffer(VertexBufferCreateInfo info)
 {
 	VertexBufferId id = vboPool->ReserveResource(info.name, info.tag);
 	n_assert(id.allocType == VertexBufferIdType);
-	vboPool->LoadFromMemory(id.allocId, &info);
+	vboPool->LoadFromMemory(id, &info);
 	return id;
 }
 

@@ -49,7 +49,7 @@ private:
 
 	Ids::IdAllocator<
 		ModelId,
-		ModelInstanceId,
+		ModelInstanceId
 	> modelContextAllocator;
 
 	/// allocate a new slice for this context
