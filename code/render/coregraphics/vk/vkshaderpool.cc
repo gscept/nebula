@@ -253,6 +253,15 @@ VkShaderPool::ApplyState(const CoreGraphics::ShaderStateId state)
 //------------------------------------------------------------------------------
 /**
 */
+SizeT
+VkShaderPool::GetNumActiveStates(const CoreGraphics::ShaderId shaderId)
+{
+	return this->shaderAlloc.Get<4>(shaderId.allocId).GetNumUsed();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 CoreGraphics::DerivativeStateId
 VkShaderPool::CreateDerivativeState(const CoreGraphics::ShaderStateId id, const IndexT group)
 {
@@ -315,8 +324,8 @@ VkShaderPool::DerivativeStateReset(const CoreGraphics::ShaderStateId id, const C
 //------------------------------------------------------------------------------
 /**
 */
-const CoreGraphics::ShaderVariableId
-VkShaderPool::ShaderStateGetVariable(const CoreGraphics::ShaderStateId state, const Util::StringAtom& name) const
+const CoreGraphics::ShaderConstantId
+VkShaderPool::ShaderStateGetConstant(const CoreGraphics::ShaderStateId state, const Util::StringAtom& name) const
 {
 	return this->shaderAlloc.Get<4>(state.shaderId).Get<2>(state.stateId).variableMap[name];
 }
@@ -324,10 +333,19 @@ VkShaderPool::ShaderStateGetVariable(const CoreGraphics::ShaderStateId state, co
 //------------------------------------------------------------------------------
 /**
 */
-const CoreGraphics::ShaderVariableId
-VkShaderPool::ShaderStateGetVariable(const CoreGraphics::ShaderStateId state, const IndexT index) const
+const CoreGraphics::ShaderConstantId
+VkShaderPool::ShaderStateGetConstant(const CoreGraphics::ShaderStateId state, const IndexT index) const
 {
 	return this->shaderAlloc.Get<4>(state.shaderId).Get<2>(state.stateId).variableMap.ValueAtIndex(index);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const CoreGraphics::ShaderConstantType
+VkShaderPool::ShaderConstantGetType(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ShaderStateId state) const
+{
+	return this->shaderAlloc.Get<4>(state.shaderId).Get<3>(state.stateId).Get<2>(var.id).type;
 }
 
 //------------------------------------------------------------------------------
@@ -344,7 +362,7 @@ VkShaderPool::GetProgram(const CoreGraphics::ShaderProgramId shaderProgramId)
 /**
 */
 const SizeT
-VkShaderPool::GetVariableCount(const CoreGraphics::ShaderId id) const
+VkShaderPool::GetConstantCount(const CoreGraphics::ShaderId id) const
 {
 	return this->shaderAlloc.Get<0>(id.allocId)->GetNumVariables();
 }
@@ -352,10 +370,149 @@ VkShaderPool::GetVariableCount(const CoreGraphics::ShaderId id) const
 //------------------------------------------------------------------------------
 /**
 */
+const  CoreGraphics::ShaderConstantType
+VkShaderPool::GetConstantType(const CoreGraphics::ShaderId id, const IndexT i) const
+{
+	AnyFX::VariableBase* var = this->shaderAlloc.Get<0>(id.allocId)->GetVariable(i);
+	switch (var->type)
+	{
+	case AnyFX::Double:
+	case AnyFX::Float:
+		return FloatVariableType;
+	case AnyFX::Short:
+	case AnyFX::Integer:
+	case AnyFX::UInteger:
+		return IntVariableType;
+	case AnyFX::Bool:
+		return BoolVariableType;
+	case AnyFX::Float3:
+	case AnyFX::Float4:
+	case AnyFX::Double3:
+	case AnyFX::Double4:
+	case AnyFX::Integer3:
+	case AnyFX::Integer4:
+	case AnyFX::UInteger3:
+	case AnyFX::UInteger4:
+	case AnyFX::Short3:
+	case AnyFX::Short4:
+	case AnyFX::Bool3:
+	case AnyFX::Bool4:
+		return VectorVariableType;
+	case AnyFX::Float2:
+	case AnyFX::Double2:
+	case AnyFX::Integer2:
+	case AnyFX::UInteger2:
+	case AnyFX::Short2:
+	case AnyFX::Bool2:
+		return Vector2VariableType;
+	case AnyFX::Matrix2x2:
+	case AnyFX::Matrix2x3:
+	case AnyFX::Matrix2x4:
+	case AnyFX::Matrix3x2:
+	case AnyFX::Matrix3x3:
+	case AnyFX::Matrix3x4:
+	case AnyFX::Matrix4x2:
+	case AnyFX::Matrix4x3:
+	case AnyFX::Matrix4x4:
+		return MatrixVariableType;
+		break;
+	case AnyFX::Image1D:
+	case AnyFX::Image1DArray:
+	case AnyFX::Image2D:
+	case AnyFX::Image2DArray:
+	case AnyFX::Image2DMS:
+	case AnyFX::Image2DMSArray:
+	case AnyFX::Image3D:
+	case AnyFX::ImageCube:
+	case AnyFX::ImageCubeArray:
+		return ImageReadWriteVariableType;
+	case AnyFX::Sampler1D:
+	case AnyFX::Sampler1DArray:
+	case AnyFX::Sampler2D:
+	case AnyFX::Sampler2DArray:
+	case AnyFX::Sampler2DMS:
+	case AnyFX::Sampler2DMSArray:
+	case AnyFX::Sampler3D:
+	case AnyFX::SamplerCube:
+	case AnyFX::SamplerCubeArray:
+		return SamplerVariableType;
+	case AnyFX::Texture1D:
+	case AnyFX::Texture1DArray:
+	case AnyFX::Texture2D:
+	case AnyFX::Texture2DArray:
+	case AnyFX::Texture2DMS:
+	case AnyFX::Texture2DMSArray:
+	case AnyFX::Texture3D:
+	case AnyFX::TextureCube:
+	case AnyFX::TextureCubeArray:
+		return TextureVariableType;
+	case AnyFX::TextureHandle:
+		return TextureVariableType;
+	case AnyFX::ImageHandle:
+		return ImageReadWriteVariableType;
+		break;
+	case AnyFX::SamplerHandle:
+		return SamplerVariableType;
+	default:
+		return ConstantBufferVariableType;
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::StringAtom
+VkShaderPool::GetConstantName(const CoreGraphics::ShaderId id, const IndexT i) const
+{
+	AnyFX::VariableBase* var = this->shaderAlloc.Get<0>(id.allocId)->GetVariable(i);
+	return var->name.c_str();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 const SizeT
-VkShaderPool::GetVariableBlockCount(const CoreGraphics::ShaderId id) const
+VkShaderPool::GetConstantBufferCount(const CoreGraphics::ShaderId id) const
 {
 	return this->shaderAlloc.Get<0>(id.allocId)->GetNumVarblocks();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const SizeT
+VkShaderPool::GetConstantBufferSize(const CoreGraphics::ShaderId id, const IndexT i) const
+{
+	AnyFX::VarblockBase* var = this->shaderAlloc.Get<0>(id.allocId)->GetVarblock(i);
+	return var->byteSize;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::StringAtom
+VkShaderPool::GetConstantBufferName(const CoreGraphics::ShaderId id, const IndexT i) const
+{
+	AnyFX::VarblockBase* var = this->shaderAlloc.Get<0>(id.allocId)->GetVarblock(i);
+	return var->name.c_str();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::Dictionary<CoreGraphics::ShaderFeature::Mask, CoreGraphics::ShaderProgramId>&
+VkShaderPool::GetPrograms(const CoreGraphics::ShaderId id)
+{
+	return this->shaderAlloc.Get<2>(id.allocId).programMap;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Util::String 
+VkShaderPool::GetProgramName(CoreGraphics::ShaderProgramId id)
+{
+	return this->shaderAlloc.Get<3>(id.shaderId).Get<0>(id.programId).name;
 }
 
 } // namespace Vulkan

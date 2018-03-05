@@ -19,8 +19,8 @@ namespace Vulkan
 enum VkShaderProgramPipelineType
 {
 	InvalidType,
-	Compute,
-	Graphics
+	ComputePipeline,
+	GraphicsPipeline
 };
 
 struct VkShaderProgramSetupInfo

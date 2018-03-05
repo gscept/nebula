@@ -125,8 +125,8 @@ VkTextRenderer::Open()
 	this->program = ShaderGetProgram(shd, ShaderServer::Instance()->FeatureStringToMask("Static"));
 
 	// get variable
-	this->texVar = ShaderStateGetVariable(this->shader, "Texture");
-	this->modelVar = ShaderStateGetVariable(this->shader, "TextProjectionModel");
+	this->texVar = ShaderStateGetConstant(this->shader, "Texture");
+	this->modelVar = ShaderStateGetConstant(this->shader, "TextProjectionModel");
 
 	n_delete_array(bitmap);
 }
@@ -170,8 +170,8 @@ VkTextRenderer::DrawTextElements()
 
 	// apply shader and apply state
 	ShaderProgramBind(this->program);
-	ShaderVariableSetTexture(this->texVar, this->shader, this->glyphTexture);
-	ShaderVariableSet(this->modelVar, this->shader, proj);
+	ShaderResourceSetTexture(this->texVar, this->shader, this->glyphTexture);
+	ShaderConstantSet(this->modelVar, this->shader, proj);
 
 	uint screenWidth, screenHeight;
 	screenWidth = displayMode.GetWidth();

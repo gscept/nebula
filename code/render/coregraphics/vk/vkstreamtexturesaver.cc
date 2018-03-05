@@ -30,31 +30,39 @@ SaveTexture(const Resources::ResourceId& id, const IO::URI& path, IndexT mip, Co
 	stream->SetAccessMode(Stream::WriteAccess);
 	if (stream->Open())
 	{
-		n_assert(id.allocType == TextureIdType);
-		TextureId tid = id;
-		const TextureType type = TextureGetType(tid);
-
-		// solve result format depending on format
-		ILenum imageFormat;
-		if (code == ImageFileFormat::DDS) imageFormat = IL_DDS;
-		else if (code == ImageFileFormat::JPG) imageFormat = IL_JPG;
-		else if (code == ImageFileFormat::PNG) imageFormat = IL_PNG;
-		else if (code == ImageFileFormat::TGA) imageFormat = IL_TGA;
-		else if (code == ImageFileFormat::BMP) imageFormat = IL_BMP;
-		else return false;
-
-		// treat texture
-		if (type == Texture2D)			return Vulkan::VkStreamTextureSaver::SaveTexture2D(tid, stream, mip, imageFormat, code);
-		else if (type == Texture3D)		return Vulkan::VkStreamTextureSaver::SaveTexture3D(tid, stream, mip, imageFormat, code);
-		else if (type == TextureCube)	return Vulkan::VkStreamTextureSaver::SaveCubemap(tid, stream, mip, imageFormat, code);
-		else
-		{
-			n_error("OGL4StreamTextureSaver::OnSave() : Unknown texture type!");
-			return false;
-		}
+		return SaveTexture(id, stream, mip, code);
 	}
 	else
 	{
+		return false;
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool SaveTexture(const Resources::ResourceId& id, const Ptr<IO::Stream>& stream, IndexT mip, CoreGraphics::ImageFileFormat::Code code)
+{
+	n_assert(id.allocType == TextureIdType);
+	TextureId tid = id;
+	const TextureType type = TextureGetType(tid);
+
+	// solve result format depending on format
+	ILenum imageFormat;
+	if (code == ImageFileFormat::DDS) imageFormat = IL_DDS;
+	else if (code == ImageFileFormat::JPG) imageFormat = IL_JPG;
+	else if (code == ImageFileFormat::PNG) imageFormat = IL_PNG;
+	else if (code == ImageFileFormat::TGA) imageFormat = IL_TGA;
+	else if (code == ImageFileFormat::BMP) imageFormat = IL_BMP;
+	else return false;
+
+	// treat texture
+	if (type == Texture2D)			return Vulkan::VkStreamTextureSaver::SaveTexture2D(tid, stream, mip, imageFormat, code);
+	else if (type == Texture3D)		return Vulkan::VkStreamTextureSaver::SaveTexture3D(tid, stream, mip, imageFormat, code);
+	else if (type == TextureCube)	return Vulkan::VkStreamTextureSaver::SaveCubemap(tid, stream, mip, imageFormat, code);
+	else
+	{
+		n_error("OGL4StreamTextureSaver::OnSave() : Unknown texture type!");
 		return false;
 	}
 }

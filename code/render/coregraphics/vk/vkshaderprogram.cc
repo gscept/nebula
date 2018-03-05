@@ -21,8 +21,8 @@ void
 VkShaderProgramApply(VkShaderProgramRuntimeInfo& info)
 {
 	// if we are compute, we can set the pipeline straight away, otherwise we have to accumulate the infos
-	if (info.type == Compute)		VkRenderDevice::Instance()->BindComputePipeline(info.pipeline, info.layout);
-	else if (info.type == Graphics)	VkRenderDevice::Instance()->BindGraphicsPipelineInfo(info.info, info.uniqueId);
+	if (info.type == ComputePipeline)		VkRenderDevice::Instance()->BindComputePipeline(info.pipeline, info.layout);
+	else if (info.type == GraphicsPipeline)	VkRenderDevice::Instance()->BindGraphicsPipelineInfo(info.info, info.uniqueId);
 	else							VkRenderDevice::Instance()->UnbindPipeline();
 }
 
@@ -241,7 +241,7 @@ VkShaderProgramSetupAsGraphics(AnyFX::VkProgram* program, VkShaderProgramSetupIn
 	};
 
 	// be sure to flag compute shader as null
-	runtime.type = Graphics;
+	runtime.type = GraphicsPipeline;
 }
 
 //------------------------------------------------------------------------------
@@ -278,7 +278,7 @@ VkShaderProgramSetupAsCompute(VkShaderProgramSetupInfo& setup, VkShaderProgramRu
 	// create pipeline
 	VkResult res = vkCreateComputePipelines(setup.dev, VkRenderDevice::cache, 1, &pInfo, NULL, &runtime.pipeline);
 	n_assert(res == VK_SUCCESS);
-	runtime.type = Compute;
+	runtime.type = ComputePipeline;
 }
 
 //------------------------------------------------------------------------------

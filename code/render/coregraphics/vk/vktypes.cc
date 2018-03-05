@@ -452,6 +452,7 @@ VkTypes::AsVkMapping(CoreGraphics::PixelFormat::Code p)
 	case CoreGraphics::PixelFormat::R16G16B16A16:
 	case CoreGraphics::PixelFormat::R16G16B16A16F:
 	case CoreGraphics::PixelFormat::R32G32B32A32F:
+	case CoreGraphics::PixelFormat::R11G11B10F:
 	case CoreGraphics::PixelFormat::A8B8G8R8:
 		mapping.r = VK_COMPONENT_SWIZZLE_R;
 		mapping.b = VK_COMPONENT_SWIZZLE_B;

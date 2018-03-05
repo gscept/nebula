@@ -82,7 +82,7 @@ VkMemoryTexturePool::LoadFromMemory(const Ids::Id24 id, const void* info)
 	subres.baseMipLevel = 0;
 	subres.layerCount = 1;
 	subres.levelCount = 1;
-	scheduler->PushImageLayoutTransition(VkDeferredCommand::Transfer, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
+	scheduler->PushImageLayoutTransition(TransferQueueType, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
 
 	VkBufferImageCopy copy;
 	copy.bufferOffset = 0;
@@ -101,8 +101,8 @@ VkMemoryTexturePool::LoadFromMemory(const Ids::Id24 id, const void* info)
 	scheduler->PushImageUpdate(this->Get<1>(id).img, imgInfo, 0, 0, data->width * data->height * size, (uint32_t*)data->buffer);
 
 	// transition image to shader variable
-	scheduler->PushImageLayoutTransition(VkDeferredCommand::Transfer, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
-	scheduler->PushImageOwnershipChange(VkDeferredCommand::Transfer, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VkDeferredCommand::Transfer, VkDeferredCommand::Graphics, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+	scheduler->PushImageLayoutTransition(TransferQueueType, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+	scheduler->PushImageOwnershipChange(TransferQueueType, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, TransferQueueType, GraphicsQueueType, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
 
 	// create view
 	VkImageViewType viewType = VK_IMAGE_VIEW_TYPE_2D;

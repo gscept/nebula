@@ -21,8 +21,8 @@ struct VkPassLoadInfo
 	// these hold the per-pass shader state
 	CoreGraphics::ShaderStateId shaderState;
 	CoreGraphics::ConstantBufferId passBlockBuffer;
-	CoreGraphics::ShaderVariableId passBlockVar;
-	CoreGraphics::ShaderVariableId renderTargetDimensionsVar;
+	CoreGraphics::ShaderConstantId passBlockVar;
+	CoreGraphics::ShaderConstantId renderTargetDimensionsVar;
 
 	// we need these stored for resizing
 	Util::Array<CoreGraphics::RenderTextureId> colorAttachments;
@@ -54,7 +54,8 @@ struct VkPassRuntimeInfo
 typedef Ids::IdAllocator<
 	VkPassLoadInfo,
 	VkPassRuntimeInfo,
-	VkRenderPassBeginInfo
+	VkRenderPassBeginInfo,
+	Util::Array<uint32_t>			// number of subpass attachments
 > VkPassAllocator;
 extern VkPassAllocator passAllocator;
 

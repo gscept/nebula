@@ -116,30 +116,54 @@ DestroyEvent(const EventId id)
 /**
 */
 void 
-Signal(const EventId id, const CmdBufferId cmd, const BarrierDependency when)
+EventSignal(const EventId id, const CoreGraphicsQueueType queue, const BarrierDependency when)
 {
 	const VkEventInfo& vkInfo = eventAllocator.Get<1>(id.id24);
-	vkCmdSetEvent(CommandBufferGetVk(cmd), vkInfo.event, VkTypes::AsVkPipelineFlags(when));
+	VkCommandBuffer buf;
+	switch (queue)
+	{
+	case GraphicsQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdDrawBuffer); break;
+	case TransferQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdTransferBuffer); break;
+	case ComputeQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdComputeBuffer); break;
+	case SparseQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdSparseBuffer); break;
+	}
+	vkCmdSetEvent(buf, vkInfo.event, VkTypes::AsVkPipelineFlags(when));
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-Wait(const EventId id, const CmdBufferId cmd)
+EventWait(const EventId id, const CoreGraphicsQueueType queue)
 {
 	const VkEventInfo& vkInfo = eventAllocator.Get<1>(id.id24);
-	vkCmdWaitEvents(CommandBufferGetVk(cmd), 1, &vkInfo.event, vkInfo.leftDependency, vkInfo.rightDependency, vkInfo.numMemoryBarriers, vkInfo.memoryBarriers, vkInfo.numBufferBarriers, vkInfo.bufferBarriers, vkInfo.numImageBarriers, vkInfo.imageBarriers);
+	VkCommandBuffer buf;
+	switch (queue)
+	{
+	case GraphicsQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdDrawBuffer); break;
+	case TransferQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdTransferBuffer); break;
+	case ComputeQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdComputeBuffer); break;
+	case SparseQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdSparseBuffer); break;
+	}
+	vkCmdWaitEvents(buf, 1, &vkInfo.event, vkInfo.leftDependency, vkInfo.rightDependency, vkInfo.numMemoryBarriers, vkInfo.memoryBarriers, vkInfo.numBufferBarriers, vkInfo.bufferBarriers, vkInfo.numImageBarriers, vkInfo.imageBarriers);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-Reset(const EventId id, const CmdBufferId cmd, const BarrierDependency when)
+EventReset(const EventId id, const CoreGraphicsQueueType queue, const BarrierDependency when)
 {
 	const VkEventInfo& vkInfo = eventAllocator.Get<1>(id.id24);
-	vkCmdResetEvent(CommandBufferGetVk(cmd), vkInfo.event, VkTypes::AsVkPipelineFlags(when));
+	VkCommandBuffer buf;
+	switch (queue)
+	{
+	case GraphicsQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdDrawBuffer); break;
+	case TransferQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdTransferBuffer); break;
+	case ComputeQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdComputeBuffer); break;
+	case SparseQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdSparseBuffer); break;
+	}
+	vkCmdResetEvent(buf, vkInfo.event, VkTypes::AsVkPipelineFlags(when));
 }
 
 } // namespace CoreGraphics

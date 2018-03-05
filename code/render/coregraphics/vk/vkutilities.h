@@ -23,23 +23,23 @@ public:
 	virtual ~VkUtilities();
 
 	/// perform image layout transition immediately
-	static void ImageLayoutTransition(VkDeferredCommand::CommandQueueType queue, VkImageMemoryBarrier barrier);
+	static void ImageLayoutTransition(CoreGraphicsQueueType queue, VkImageMemoryBarrier barrier);
 	/// perform image layout transition immediately
 	static void ImageLayoutTransition(VkCommandBuffer buf, VkImageMemoryBarrier barrier);
 	/// create image memory barrier
 	static VkImageMemoryBarrier ImageMemoryBarrier(const VkImage& img, VkImageSubresourceRange subres, VkImageLayout oldLayout, VkImageLayout newLayout);
 	/// create image ownership change
-	static VkImageMemoryBarrier ImageMemoryBarrier(const VkImage& img, VkImageSubresourceRange subres, VkDeferredCommand::CommandQueueType fromQueue, VkDeferredCommand::CommandQueueType toQueue, VkImageLayout layout);
+	static VkImageMemoryBarrier ImageMemoryBarrier(const VkImage& img, VkImageSubresourceRange subres, CoreGraphicsQueueType fromQueue, CoreGraphicsQueueType toQueue, VkImageLayout layout);
 	/// create buffer memory barrier
 	static VkBufferMemoryBarrier BufferMemoryBarrier(const VkBuffer& buf, VkDeviceSize offset, VkDeviceSize size, VkAccessFlags srcAccess, VkAccessFlags dstAccess);
 	/// transition image between layouts
-	static void ChangeImageLayout(const VkImageMemoryBarrier& barrier, const VkDeferredCommand::CommandQueueType& type);
+	static void ChangeImageLayout(const VkImageMemoryBarrier& barrier, const CoreGraphicsQueueType type);
 	/// transition image ownership
-	static void ImageOwnershipChange(VkDeferredCommand::CommandQueueType queue, VkImageMemoryBarrier barrier);
+	static void ImageOwnershipChange(CoreGraphicsQueueType queue, VkImageMemoryBarrier barrier);
 	/// perform image color clear
-	static void ImageColorClear(const VkImage& image, const VkDeferredCommand::CommandQueueType& queue, VkImageLayout layout, VkClearColorValue clearValue, VkImageSubresourceRange subres);
+	static void ImageColorClear(const VkImage& image, const CoreGraphicsQueueType queue, VkImageLayout layout, VkClearColorValue clearValue, VkImageSubresourceRange subres);
 	/// perform image depth stencil clear
-	static void ImageDepthStencilClear(const VkImage& image, const VkDeferredCommand::CommandQueueType& queue, VkImageLayout layout, VkClearDepthStencilValue clearValue, VkImageSubresourceRange subres);
+	static void ImageDepthStencilClear(const VkImage& image, const CoreGraphicsQueueType queue, VkImageLayout layout, VkClearDepthStencilValue clearValue, VkImageSubresourceRange subres);
 
 	/// allocate a buffer memory storage, num is a multiplier for how many times the size needs to be duplicated
 	static void AllocateBufferMemory(const VkDevice dev, const VkBuffer& buf, VkDeviceMemory& bufmem, VkMemoryPropertyFlagBits flags, uint32_t& bufsize);

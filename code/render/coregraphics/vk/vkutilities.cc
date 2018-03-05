@@ -32,16 +32,16 @@ VkUtilities::~VkUtilities()
 /**
 */
 void
-VkUtilities::ImageLayoutTransition(VkDeferredCommand::CommandQueueType queue, VkImageMemoryBarrier barrier)
+VkUtilities::ImageLayoutTransition(CoreGraphicsQueueType queue, VkImageMemoryBarrier barrier)
 {
 	VkCommandBuffer buf;
 	VkPipelineStageFlags flags;
 	switch (queue)
 	{
-	case VkDeferredCommand::Graphics: buf = CommandBufferGetVk(VkRenderDevice::mainCmdDrawBuffer); flags = VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT; break;
-	case VkDeferredCommand::Transfer: buf = CommandBufferGetVk(VkRenderDevice::mainCmdTransferBuffer); flags = VK_PIPELINE_STAGE_TRANSFER_BIT; break;
-	case VkDeferredCommand::Compute: buf = CommandBufferGetVk(VkRenderDevice::mainCmdComputeBuffer); flags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT; break;
-	case VkDeferredCommand::Sparse: buf = CommandBufferGetVk(VkRenderDevice::mainCmdSparseBuffer); flags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT; break;
+	case GraphicsQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdDrawBuffer); flags = VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT; break;
+	case TransferQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdTransferBuffer); flags = VK_PIPELINE_STAGE_TRANSFER_BIT; break;
+	case ComputeQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdComputeBuffer); flags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT; break;
+	case SparseQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdSparseBuffer); flags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT; break;
 	}
 
 	// execute command
@@ -143,22 +143,22 @@ VkUtilities::ImageMemoryBarrier(const VkImage& img, VkImageSubresourceRange subr
 /**
 */
 VkImageMemoryBarrier
-VkUtilities::ImageMemoryBarrier(const VkImage& img, VkImageSubresourceRange subres, VkDeferredCommand::CommandQueueType fromQueue, VkDeferredCommand::CommandQueueType toQueue, VkImageLayout layout)
+VkUtilities::ImageMemoryBarrier(const VkImage& img, VkImageSubresourceRange subres, CoreGraphicsQueueType fromQueue, CoreGraphicsQueueType toQueue, VkImageLayout layout)
 {
 	uint32_t from;
 	switch (fromQueue)
 	{
-	case VkDeferredCommand::Graphics: from = VkRenderDevice::Instance()->drawQueueFamily; break;
-	case VkDeferredCommand::Compute: from = VkRenderDevice::Instance()->computeQueueFamily; break;
-	case VkDeferredCommand::Transfer: from = VkRenderDevice::Instance()->transferQueueFamily; break;
+	case GraphicsQueueType: from = VkRenderDevice::Instance()->drawQueueFamily; break;
+	case ComputeQueueType: from = VkRenderDevice::Instance()->computeQueueFamily; break;
+	case TransferQueueType: from = VkRenderDevice::Instance()->transferQueueFamily; break;
 	}
 
 	uint32_t to;
 	switch (toQueue)
 	{
-	case VkDeferredCommand::Graphics: to = VkRenderDevice::Instance()->drawQueueFamily; break;
-	case VkDeferredCommand::Compute: to = VkRenderDevice::Instance()->computeQueueFamily; break;
-	case VkDeferredCommand::Transfer: to = VkRenderDevice::Instance()->transferQueueFamily; break;
+	case GraphicsQueueType: to = VkRenderDevice::Instance()->drawQueueFamily; break;
+	case ComputeQueueType: to = VkRenderDevice::Instance()->computeQueueFamily; break;
+	case TransferQueueType: to = VkRenderDevice::Instance()->transferQueueFamily; break;
 	}
 
 	VkImageMemoryBarrier barrier;
@@ -198,7 +198,7 @@ VkUtilities::BufferMemoryBarrier(const VkBuffer& buf, VkDeviceSize offset, VkDev
 /**
 */
 void
-VkUtilities::ChangeImageLayout(const VkImageMemoryBarrier& barrier, const VkDeferredCommand::CommandQueueType& type)
+VkUtilities::ChangeImageLayout(const VkImageMemoryBarrier& barrier, const CoreGraphicsQueueType type)
 {
 
 }
@@ -207,16 +207,16 @@ VkUtilities::ChangeImageLayout(const VkImageMemoryBarrier& barrier, const VkDefe
 /**
 */
 void
-VkUtilities::ImageOwnershipChange(VkDeferredCommand::CommandQueueType queue, VkImageMemoryBarrier barrier)
+VkUtilities::ImageOwnershipChange(CoreGraphicsQueueType queue, VkImageMemoryBarrier barrier)
 {
 	VkCommandBuffer buf;
 	VkPipelineStageFlags flags;
 	switch (queue)
 	{
-	case VkDeferredCommand::Graphics: buf = CommandBufferGetVk(VkRenderDevice::mainCmdDrawBuffer); flags = VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT; break;
-	case VkDeferredCommand::Transfer: buf = CommandBufferGetVk(VkRenderDevice::mainCmdTransferBuffer); flags = VK_PIPELINE_STAGE_TRANSFER_BIT; break;
-	case VkDeferredCommand::Compute: buf = CommandBufferGetVk(VkRenderDevice::mainCmdComputeBuffer); flags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT; break;
-	case VkDeferredCommand::Sparse: buf = CommandBufferGetVk(VkRenderDevice::mainCmdSparseBuffer); flags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT; break;
+	case GraphicsQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdDrawBuffer); flags = VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT; break;
+	case TransferQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdTransferBuffer); flags = VK_PIPELINE_STAGE_TRANSFER_BIT; break;
+	case ComputeQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdComputeBuffer); flags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT; break;
+	case SparseQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdSparseBuffer); flags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT; break;
 	}
 
 	// execute command
@@ -232,15 +232,15 @@ VkUtilities::ImageOwnershipChange(VkDeferredCommand::CommandQueueType queue, VkI
 /**
 */
 void
-VkUtilities::ImageColorClear(const VkImage& image, const VkDeferredCommand::CommandQueueType& queue, VkImageLayout layout, VkClearColorValue clearValue, VkImageSubresourceRange subres)
+VkUtilities::ImageColorClear(const VkImage& image, const CoreGraphicsQueueType queue, VkImageLayout layout, VkClearColorValue clearValue, VkImageSubresourceRange subres)
 {
 	VkCommandBuffer buf;
 	switch (queue)
 	{
-	case VkDeferredCommand::Graphics: buf = CommandBufferGetVk(VkRenderDevice::mainCmdDrawBuffer); break;
-	case VkDeferredCommand::Transfer: buf = CommandBufferGetVk(VkRenderDevice::mainCmdTransferBuffer); break;
-	case VkDeferredCommand::Compute: buf = CommandBufferGetVk(VkRenderDevice::mainCmdComputeBuffer); break;
-	case VkDeferredCommand::Sparse: buf = CommandBufferGetVk(VkRenderDevice::mainCmdSparseBuffer); break;
+	case GraphicsQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdDrawBuffer); break;
+	case TransferQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdTransferBuffer); break;
+	case ComputeQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdComputeBuffer); break;
+	case SparseQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdSparseBuffer); break;
 	}
 	vkCmdClearColorImage(buf, image, layout, &clearValue, 1, &subres);
 }
@@ -249,15 +249,15 @@ VkUtilities::ImageColorClear(const VkImage& image, const VkDeferredCommand::Comm
 /**
 */
 void
-VkUtilities::ImageDepthStencilClear(const VkImage& image, const VkDeferredCommand::CommandQueueType& queue, VkImageLayout layout, VkClearDepthStencilValue clearValue, VkImageSubresourceRange subres)
+VkUtilities::ImageDepthStencilClear(const VkImage& image, const CoreGraphicsQueueType queue, VkImageLayout layout, VkClearDepthStencilValue clearValue, VkImageSubresourceRange subres)
 {
 	VkCommandBuffer buf;
 	switch (queue)
 	{
-	case VkDeferredCommand::Graphics: buf = CommandBufferGetVk(VkRenderDevice::mainCmdDrawBuffer); break;
-	case VkDeferredCommand::Transfer: buf = CommandBufferGetVk(VkRenderDevice::mainCmdTransferBuffer); break;
-	case VkDeferredCommand::Compute: buf = CommandBufferGetVk(VkRenderDevice::mainCmdComputeBuffer); break;
-	case VkDeferredCommand::Sparse: buf = CommandBufferGetVk(VkRenderDevice::mainCmdSparseBuffer); break;
+	case GraphicsQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdDrawBuffer); break;
+	case TransferQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdTransferBuffer); break;
+	case ComputeQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdComputeBuffer); break;
+	case SparseQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdSparseBuffer); break;
 	}
 	vkCmdClearDepthStencilImage(buf, image, layout, &clearValue, 1, &subres);
 }
@@ -445,7 +445,7 @@ VkUtilities::ImageUpdate(const VkImage& img, const VkImageCreateInfo& info, uint
 	del.del.type = VkDeferredCommand::FreeBuffer;
 	del.del.buffer.buf = buf;
 	del.del.buffer.mem = bufMem;
-	del.del.queue = VkDeferredCommand::Transfer;
+	del.del.queue = TransferQueueType;
 	del.dev = dev;
 	scheduler->PushCommand(del, VkScheduler::OnHandleTransferFences);
 
@@ -453,7 +453,7 @@ VkUtilities::ImageUpdate(const VkImage& img, const VkImageCreateInfo& info, uint
 	VkDeferredCommand del2;
 	del2.del.type = VkDeferredCommand::FreeMemory;
 	del2.del.memory.data = data;
-	del2.del.queue = VkDeferredCommand::Transfer;
+	del2.del.queue = TransferQueueType;
 	del2.dev = dev;
 	scheduler->PushCommand(del2, VkScheduler::OnHandleTransferFences);
 }

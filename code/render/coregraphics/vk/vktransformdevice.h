@@ -36,18 +36,18 @@ private:
 
 	Math::matrix44 viewMatrixArray[6];
 
-	CoreGraphics::ShaderVariableId viewVar;
-	CoreGraphics::ShaderVariableId invViewVar;
-	CoreGraphics::ShaderVariableId viewProjVar;
-	CoreGraphics::ShaderVariableId invViewProjVar;
-	CoreGraphics::ShaderVariableId projVar;
-	CoreGraphics::ShaderVariableId invProjVar;
-	CoreGraphics::ShaderVariableId eyePosVar;
-	CoreGraphics::ShaderVariableId focalLengthVar;
-	CoreGraphics::ShaderVariableId viewMatricesVar;
-	CoreGraphics::ShaderVariableId timeAndRandomVar;
+	CoreGraphics::ShaderConstantId viewVar;
+	CoreGraphics::ShaderConstantId invViewVar;
+	CoreGraphics::ShaderConstantId viewProjVar;
+	CoreGraphics::ShaderConstantId invViewProjVar;
+	CoreGraphics::ShaderConstantId projVar;
+	CoreGraphics::ShaderConstantId invProjVar;
+	CoreGraphics::ShaderConstantId eyePosVar;
+	CoreGraphics::ShaderConstantId focalLengthVar;
+	CoreGraphics::ShaderConstantId viewMatricesVar;
+	CoreGraphics::ShaderConstantId timeAndRandomVar;
 
-	CoreGraphics::ShaderVariableId shadowCameraBlockVar;
+	CoreGraphics::ShaderConstantId shadowCameraBlockVar;
 	CoreGraphics::ShaderStateId sharedShader;
 };
 

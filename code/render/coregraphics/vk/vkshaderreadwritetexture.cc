@@ -17,6 +17,24 @@ namespace Vulkan
 
 ShaderRWTextureAllocator shaderRWTextureAllocator(0x00FFFFFF);
 
+//------------------------------------------------------------------------------
+/**
+*/
+const VkImageView
+ShaderRWTextureGetVkImageView(const CoreGraphics::ShaderRWTextureId id)
+{
+	return shaderRWTextureAllocator.Get<1>(id.id24).view;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const VkImage
+ShaderRWTextureGetVkImage(const CoreGraphics::ShaderRWTextureId id)
+{
+	return shaderRWTextureAllocator.Get<0>(id.id24).img;
+}
+
 } // namespace Vulkan
 
 namespace CoreGraphics
@@ -94,7 +112,7 @@ CreateShaderRWTexture(const ShaderRWTextureCreateInfo& info)
 	n_assert(stat == VK_SUCCESS);
 
 	// transition to a useable state
-	VkScheduler::Instance()->PushImageLayoutTransition(VkDeferredCommand::Graphics, VkUtilities::ImageMemoryBarrier(loadInfo.img, viewRange, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL));
+	VkScheduler::Instance()->PushImageLayoutTransition(GraphicsQueueType, VkUtilities::ImageMemoryBarrier(loadInfo.img, viewRange, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL));
 
 	ShaderRWTextureId ret;
 	ret.id24 = id;
@@ -155,7 +173,7 @@ ShaderRWTextureClear(const ShaderRWTextureId id, const Math::float4& color)
 	viewRange.levelCount = 1;
 	viewRange.baseArrayLayer = 0;
 	viewRange.layerCount = 1;
-	VkUtilities::ImageColorClear(loadInfo.img, VkDeferredCommand::Graphics, VK_IMAGE_LAYOUT_GENERAL, clear, viewRange);
+	VkUtilities::ImageColorClear(loadInfo.img, GraphicsQueueType, VK_IMAGE_LAYOUT_GENERAL, clear, viewRange);
 }
 
 } // namespace CoreGraphics

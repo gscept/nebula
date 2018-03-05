@@ -1366,7 +1366,7 @@ void
 VkRenderDevice::BindComputePipeline(const VkPipeline& pipeline, const VkPipelineLayout& layout)
 {
 	// bind compute pipeline
-	this->currentBindPoint = VkShaderProgramPipelineType::Compute;
+	this->currentBindPoint = VkShaderProgramPipelineType::ComputePipeline;
 
 	// bind shared descriptors
 	VkShaderServer::Instance()->BindTextureDescriptorSets();
@@ -1445,7 +1445,7 @@ VkRenderDevice::BuildRenderPipeline()
 {
 	n_assert((this->currentPipelineBits & AllInfoSet) != 0);
 	n_assert(this->inBeginBatch);
-	this->currentBindPoint = VkShaderProgramPipelineType::Graphics;
+	this->currentBindPoint = VkShaderProgramPipelineType::GraphicsPipeline;
 	if ((this->currentPipelineBits & PipelineBuilt) == 0)
 	{
 		this->CreateAndBindGraphicsPipeline();
@@ -1672,7 +1672,26 @@ VkRenderDevice::AsyncComputeSupported()
 void
 VkRenderDevice::Copy(const CoreGraphics::TextureId from, Math::rectangle<SizeT> fromRegion, const CoreGraphics::TextureId to, Math::rectangle<SizeT> toRegion)
 {
-	RenderDeviceBase::Copy(from, fromRegion, to, toRegion);
+	n_assert(!this->inBeginPass);
+	this->Copy(TextureGetVk(from), fromRegion, TextureGetVk(to), toRegion);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+VkRenderDevice::Copy(const CoreGraphics::RenderTextureId from, Math::rectangle<SizeT> fromRegion, const CoreGraphics::RenderTextureId to, Math::rectangle<SizeT> toRegion)
+{
+	n_assert(!this->inBeginPass);
+	this->Copy(RenderTextureGetVkImage(from), fromRegion, RenderTextureGetVkImage(to), toRegion);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+VkRenderDevice::Copy(const VkImage from, Math::rectangle<SizeT> fromRegion, const VkImage to, Math::rectangle<SizeT> toRegion)
+{
 	n_assert(!this->inBeginPass);
 	VkImageCopy region;
 	region.dstOffset = { fromRegion.left, fromRegion.top, 0 };
@@ -1680,7 +1699,7 @@ VkRenderDevice::Copy(const CoreGraphics::TextureId from, Math::rectangle<SizeT> 
 	region.extent = { (uint32_t)toRegion.width(), (uint32_t)toRegion.height(), 1 };
 	region.srcOffset = { toRegion.left, toRegion.top, 0 };
 	region.srcSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
-	vkCmdCopyImage(CommandBufferGetVk(this->mainCmdDrawBuffer), TextureGetVk(from), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, TextureGetVk(to), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+	vkCmdCopyImage(CommandBufferGetVk(this->mainCmdDrawBuffer), from, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, to, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 }
 
 //------------------------------------------------------------------------------

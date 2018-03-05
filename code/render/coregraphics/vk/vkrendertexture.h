@@ -22,8 +22,6 @@ void RenderTextureGenerateMipChain(const CoreGraphics::RenderTextureId id, Index
 void RenderTextureGenerateMipHelper(const CoreGraphics::RenderTextureId id, IndexT from, const CoreGraphics::RenderTextureId target, IndexT to);
 /// generate mip from one mip level to another
 void RenderTextureBlit(const CoreGraphics::RenderTextureId id, IndexT from, IndexT to, const CoreGraphics::RenderTextureId target = CoreGraphics::RenderTextureId::Invalid());
-/// swap buffers, only valid if this is a window texture
-void RenderTextureSwapBuffers(const CoreGraphics::RenderTextureId id);
 
 /// get vk image view
 const VkImageView RenderTextureGetVkImageView(const CoreGraphics::RenderTextureId id);

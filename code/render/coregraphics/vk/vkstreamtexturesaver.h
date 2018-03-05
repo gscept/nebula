@@ -18,7 +18,7 @@ namespace Vulkan
 class VkStreamTextureSaver
 {
 private:
-	friend bool CoreGraphics::SaveTexture(const Resources::ResourceId& id, const IO::URI& path, IndexT mip, CoreGraphics::ImageFileFormat::Code code);
+	friend bool CoreGraphics::SaveTexture(const Resources::ResourceId& id, const Ptr<IO::Stream>& stream, IndexT mip, CoreGraphics::ImageFileFormat::Code code);
 
 	/// saves a standard 2D texture
 	static bool SaveTexture2D(CoreGraphics::TextureId tex, const Ptr<IO::Stream>& stream, IndexT mip, ILenum imageFileType, CoreGraphics::ImageFileFormat::Code code);

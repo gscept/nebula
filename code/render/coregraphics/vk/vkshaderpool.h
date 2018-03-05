@@ -20,7 +20,7 @@
 #include "vkshaderprogram.h"
 #include "vkshaderstate.h"
 #include "vktexture.h"
-#include "vkshadervariable.h"
+#include "vkshaderconstant.h"
 #include "vkshader.h"
 
 
@@ -52,6 +52,8 @@ public:
 	void DestroyState(const CoreGraphics::ShaderStateId state);
 	/// apply state
 	void ApplyState(const CoreGraphics::ShaderStateId state);
+	/// get number of used states
+	SizeT GetNumActiveStates(const CoreGraphics::ShaderId shaderId);
 
 	/// create derivative
 	CoreGraphics::DerivativeStateId CreateDerivativeState(const CoreGraphics::ShaderStateId id, const IndexT group);
@@ -65,27 +67,45 @@ public:
 	void DerivativeStateReset(const CoreGraphics::ShaderStateId id, const CoreGraphics::DerivativeStateId& deriv);
 
 	/// get number of variables for shader
-	const SizeT GetVariableCount(const CoreGraphics::ShaderId id) const;
-	/// get number of variable blocks
-	const SizeT GetVariableBlockCount(const CoreGraphics::ShaderId id) const;
-	/// get shader variable id
-	const CoreGraphics::ShaderVariableId ShaderStateGetVariable(const CoreGraphics::ShaderStateId state, const Util::StringAtom& name) const;
-	/// get shader variable by index
-	const CoreGraphics::ShaderVariableId ShaderStateGetVariable(const CoreGraphics::ShaderStateId state, const IndexT index) const;
-	/// set shader variable
-	template <class TYPE> void ShaderVariableSet(const CoreGraphics::ShaderVariableId var, const CoreGraphics::ShaderStateId state, const TYPE& value);
-	/// set shader variable array
-	template <class TYPE> void ShaderVariableSetArray(const CoreGraphics::ShaderVariableId var, const CoreGraphics::ShaderStateId state, const TYPE* value, uint32_t count);
-	/// set variable as texture
-	void ShaderVariableSetTexture(const CoreGraphics::ShaderVariableId var, const CoreGraphics::ShaderStateId state, const CoreGraphics::TextureId texture);
-	/// set variable as texture
-	void ShaderVariableSetConstantBuffer(const CoreGraphics::ShaderVariableId var, const CoreGraphics::ShaderStateId state, const CoreGraphics::ConstantBufferId buffer);
-	/// set variable as texture
-	void ShaderVariableSetReadWriteTexture(const CoreGraphics::ShaderVariableId var, const CoreGraphics::ShaderStateId state, const CoreGraphics::TextureId image);
-	/// set variable as texture
-	void ShaderVariableSetReadWriteTexture(const CoreGraphics::ShaderVariableId var, const CoreGraphics::ShaderStateId state, const CoreGraphics::ShaderRWTextureId tex);
-	/// set variable as texture
-	void ShaderVariableSetReadWriteBuffer(const CoreGraphics::ShaderVariableId var, const CoreGraphics::ShaderStateId state, const CoreGraphics::ShaderRWBufferId buf);
+	const SizeT GetConstantCount(const CoreGraphics::ShaderId id) const;
+	/// get type of constant by index
+	const CoreGraphics::ShaderConstantType GetConstantType(const CoreGraphics::ShaderId id, const IndexT i) const;
+	/// get name of constant by index
+	const Util::StringAtom GetConstantName(const CoreGraphics::ShaderId id, const IndexT i) const;
+
+	/// get number of constant blocks
+	const SizeT GetConstantBufferCount(const CoreGraphics::ShaderId id) const;
+	/// get size of constant buffer
+	const SizeT GetConstantBufferSize(const CoreGraphics::ShaderId id, const IndexT i) const;
+	/// get name of constnat buffer
+	const Util::StringAtom GetConstantBufferName(const CoreGraphics::ShaderId id, const IndexT i) const;
+
+	/// get list all mask-program pairs
+	const Util::Dictionary<CoreGraphics::ShaderFeature::Mask, CoreGraphics::ShaderProgramId>& GetPrograms(const CoreGraphics::ShaderId id);
+	/// get name of program
+	Util::String GetProgramName(CoreGraphics::ShaderProgramId id);
+
+	/// get shader constant id
+	const CoreGraphics::ShaderConstantId ShaderStateGetConstant(const CoreGraphics::ShaderStateId state, const Util::StringAtom& name) const;
+	/// get shader constant by index
+	const CoreGraphics::ShaderConstantId ShaderStateGetConstant(const CoreGraphics::ShaderStateId state, const IndexT index) const;
+	/// get the constant type
+	const CoreGraphics::ShaderConstantType ShaderConstantGetType(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ShaderStateId state) const;
+
+	/// set shader constant
+	template <class TYPE> void ShaderConstantSet(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ShaderStateId state, const TYPE& value);
+	/// set shader constant array
+	template <class TYPE> void ShaderConstantSetArray(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ShaderStateId state, const TYPE* value, uint32_t count);
+	/// set constant as texture
+	void ShaderResourceSetTexture(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ShaderStateId state, const CoreGraphics::TextureId texture);
+	/// set constant as texture
+	void ShaderResourceSetConstantBuffer(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ShaderStateId state, const CoreGraphics::ConstantBufferId buffer);
+	/// set constant as texture
+	void ShaderResourceSetReadWriteTexture(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ShaderStateId state, const CoreGraphics::TextureId image);
+	/// set constant as texture
+	void ShaderResourceSetReadWriteTexture(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ShaderStateId state, const CoreGraphics::ShaderRWTextureId tex);
+	/// set constant as texture
+	void ShaderResourceSetReadWriteBuffer(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ShaderStateId state, const CoreGraphics::ShaderRWBufferId buf);
 
 	/// get pipeline layout for shader
 	const VkPipelineLayout GetPipelineLayout(const CoreGraphics::ShaderId id) const;
@@ -99,8 +119,8 @@ private:
 	friend class VkVertexSignaturePool;
 	friend class VkPipelineDatabase;
 	friend const CoreGraphics::ConstantBufferId CoreGraphics::CreateConstantBuffer(const CoreGraphics::ConstantBufferCreateInfo& info);
-	friend uint32_t	VkShaderGetVkShaderVariableBinding(const CoreGraphics::ShaderStateId shader, const CoreGraphics::ShaderVariableId var);
-	friend VkDescriptorSet VkShaderGetVkShaderVariableDescriptorSet(const CoreGraphics::ShaderStateId shader, const CoreGraphics::ShaderVariableId var);
+	friend uint32_t	VkShaderGetVkShaderVariableBinding(const CoreGraphics::ShaderStateId shader, const CoreGraphics::ShaderConstantId var);
+	friend VkDescriptorSet VkShaderGetVkShaderVariableDescriptorSet(const CoreGraphics::ShaderStateId shader, const CoreGraphics::ShaderConstantId var);
 
 	/// get shader program
 	AnyFX::VkProgram* GetProgram(const CoreGraphics::ShaderProgramId shaderProgramId);
@@ -152,6 +172,11 @@ private:
 		ProgramMap programMap;
 	};
 
+	struct VkShaderConstantReflection
+	{
+
+	};																
+
 	/// this member allocates shaders
 	Ids::IdAllocator<
 		AnyFX::ShaderEffect*,						//0 effect
@@ -172,9 +197,9 @@ private:
 /**
 */
 template <> void
-VkShaderPool::ShaderVariableSet(const CoreGraphics::ShaderVariableId var, const CoreGraphics::ShaderStateId state, const int& value)
+VkShaderPool::ShaderConstantSet(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ShaderStateId state, const int& value)
 {
-	VkShaderVariableAllocator& alloc = this->shaderAlloc.Get<4>(state.shaderId).Get<3>(state.stateId);
+	VkShaderConstantAllocator& alloc = this->shaderAlloc.Get<4>(state.shaderId).Get<3>(state.stateId);
 	SetInt(alloc.Get<0>(var.id), value);
 }
 
@@ -182,9 +207,9 @@ VkShaderPool::ShaderVariableSet(const CoreGraphics::ShaderVariableId var, const 
 /**
 */
 template <> void
-VkShaderPool::ShaderVariableSetArray(const CoreGraphics::ShaderVariableId var, const CoreGraphics::ShaderStateId state, const int* value, uint32_t count)
+VkShaderPool::ShaderConstantSetArray(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ShaderStateId state, const int* value, uint32_t count)
 {
-	VkShaderVariableAllocator& alloc = this->shaderAlloc.Get<4>(state.shaderId).Get<3>(state.stateId);
+	VkShaderConstantAllocator& alloc = this->shaderAlloc.Get<4>(state.shaderId).Get<3>(state.stateId);
 	SetIntArray(alloc.Get<0>(var.id), value, count);
 }
 
@@ -192,9 +217,9 @@ VkShaderPool::ShaderVariableSetArray(const CoreGraphics::ShaderVariableId var, c
 /**
 */
 template <> void
-VkShaderPool::ShaderVariableSet(const CoreGraphics::ShaderVariableId var, const CoreGraphics::ShaderStateId state, const float& value)
+VkShaderPool::ShaderConstantSet(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ShaderStateId state, const float& value)
 {
-	VkShaderVariableAllocator& alloc = this->shaderAlloc.Get<4>(state.shaderId).Get<3>(state.stateId);
+	VkShaderConstantAllocator& alloc = this->shaderAlloc.Get<4>(state.shaderId).Get<3>(state.stateId);
 	SetFloat(alloc.Get<0>(var.id), value);
 }
 
@@ -202,9 +227,9 @@ VkShaderPool::ShaderVariableSet(const CoreGraphics::ShaderVariableId var, const 
 /**
 */
 template <> void
-VkShaderPool::ShaderVariableSetArray(const CoreGraphics::ShaderVariableId var, const CoreGraphics::ShaderStateId state, const float* value, uint32_t count)
+VkShaderPool::ShaderConstantSetArray(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ShaderStateId state, const float* value, uint32_t count)
 {
-	VkShaderVariableAllocator& alloc = this->shaderAlloc.Get<4>(state.shaderId).Get<3>(state.stateId);
+	VkShaderConstantAllocator& alloc = this->shaderAlloc.Get<4>(state.shaderId).Get<3>(state.stateId);
 	SetFloatArray(alloc.Get<0>(var.id), value, count);
 }
 
@@ -212,9 +237,9 @@ VkShaderPool::ShaderVariableSetArray(const CoreGraphics::ShaderVariableId var, c
 /**
 */
 template <> void
-VkShaderPool::ShaderVariableSet(const CoreGraphics::ShaderVariableId var, const CoreGraphics::ShaderStateId state, const Math::float2& value)
+VkShaderPool::ShaderConstantSet(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ShaderStateId state, const Math::float2& value)
 {
-	VkShaderVariableAllocator& alloc = this->shaderAlloc.Get<4>(state.shaderId).Get<3>(state.stateId);
+	VkShaderConstantAllocator& alloc = this->shaderAlloc.Get<4>(state.shaderId).Get<3>(state.stateId);
 	SetFloat2(alloc.Get<0>(var.id), value);
 }
 
@@ -222,9 +247,9 @@ VkShaderPool::ShaderVariableSet(const CoreGraphics::ShaderVariableId var, const 
 /**
 */
 template <> void
-VkShaderPool::ShaderVariableSetArray(const CoreGraphics::ShaderVariableId var, const CoreGraphics::ShaderStateId state, const Math::float2* value, uint32_t count)
+VkShaderPool::ShaderConstantSetArray(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ShaderStateId state, const Math::float2* value, uint32_t count)
 {
-	VkShaderVariableAllocator& alloc = this->shaderAlloc.Get<4>(state.shaderId).Get<3>(state.stateId);
+	VkShaderConstantAllocator& alloc = this->shaderAlloc.Get<4>(state.shaderId).Get<3>(state.stateId);
 	SetFloat2Array(alloc.Get<0>(var.id), value, count);
 }
 
@@ -232,9 +257,9 @@ VkShaderPool::ShaderVariableSetArray(const CoreGraphics::ShaderVariableId var, c
 /**
 */
 template <> void
-VkShaderPool::ShaderVariableSet(const CoreGraphics::ShaderVariableId var, const CoreGraphics::ShaderStateId state, const Math::float4& value)
+VkShaderPool::ShaderConstantSet(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ShaderStateId state, const Math::float4& value)
 {
-	VkShaderVariableAllocator& alloc = this->shaderAlloc.Get<4>(state.shaderId).Get<3>(state.stateId);
+	VkShaderConstantAllocator& alloc = this->shaderAlloc.Get<4>(state.shaderId).Get<3>(state.stateId);
 	SetFloat4(alloc.Get<0>(var.id), value);
 }
 
@@ -242,9 +267,9 @@ VkShaderPool::ShaderVariableSet(const CoreGraphics::ShaderVariableId var, const 
 /**
 */
 template <> void
-VkShaderPool::ShaderVariableSetArray(const CoreGraphics::ShaderVariableId var, const CoreGraphics::ShaderStateId state, const Math::float4* value, uint32_t count)
+VkShaderPool::ShaderConstantSetArray(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ShaderStateId state, const Math::float4* value, uint32_t count)
 {
-	VkShaderVariableAllocator& alloc = this->shaderAlloc.Get<4>(state.shaderId).Get<3>(state.stateId);
+	VkShaderConstantAllocator& alloc = this->shaderAlloc.Get<4>(state.shaderId).Get<3>(state.stateId);
 	SetFloat4Array(alloc.Get<0>(var.id), value, count);
 }
 
@@ -252,9 +277,9 @@ VkShaderPool::ShaderVariableSetArray(const CoreGraphics::ShaderVariableId var, c
 /**
 */
 template <> void
-VkShaderPool::ShaderVariableSet(const CoreGraphics::ShaderVariableId var, const CoreGraphics::ShaderStateId state, const Math::matrix44& value)
+VkShaderPool::ShaderConstantSet(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ShaderStateId state, const Math::matrix44& value)
 {
-	VkShaderVariableAllocator& alloc = this->shaderAlloc.Get<4>(state.shaderId).Get<3>(state.stateId);
+	VkShaderConstantAllocator& alloc = this->shaderAlloc.Get<4>(state.shaderId).Get<3>(state.stateId);
 	SetMatrix(alloc.Get<0>(var.id), value);
 }
 
@@ -262,9 +287,9 @@ VkShaderPool::ShaderVariableSet(const CoreGraphics::ShaderVariableId var, const 
 /**
 */
 template <> void
-VkShaderPool::ShaderVariableSetArray(const CoreGraphics::ShaderVariableId var, const CoreGraphics::ShaderStateId state, const Math::matrix44* value, uint32_t count)
+VkShaderPool::ShaderConstantSetArray(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ShaderStateId state, const Math::matrix44* value, uint32_t count)
 {
-	VkShaderVariableAllocator& alloc = this->shaderAlloc.Get<4>(state.shaderId).Get<3>(state.stateId);
+	VkShaderConstantAllocator& alloc = this->shaderAlloc.Get<4>(state.shaderId).Get<3>(state.stateId);
 	SetMatrixArray(alloc.Get<0>(var.id), value, count);
 }
 
@@ -272,9 +297,9 @@ VkShaderPool::ShaderVariableSetArray(const CoreGraphics::ShaderVariableId var, c
 /**
 */
 template <> void
-VkShaderPool::ShaderVariableSet(const CoreGraphics::ShaderVariableId var, const CoreGraphics::ShaderStateId state, const bool& value)
+VkShaderPool::ShaderConstantSet(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ShaderStateId state, const bool& value)
 {
-	VkShaderVariableAllocator& alloc = this->shaderAlloc.Get<4>(state.shaderId).Get<3>(state.stateId);
+	VkShaderConstantAllocator& alloc = this->shaderAlloc.Get<4>(state.shaderId).Get<3>(state.stateId);
 	SetBool(alloc.Get<0>(var.id), value);
 }
 
@@ -282,9 +307,9 @@ VkShaderPool::ShaderVariableSet(const CoreGraphics::ShaderVariableId var, const 
 /**
 */
 template <> void
-VkShaderPool::ShaderVariableSetArray(const CoreGraphics::ShaderVariableId var, const CoreGraphics::ShaderStateId state, const bool* value, uint32_t count)
+VkShaderPool::ShaderConstantSetArray(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ShaderStateId state, const bool* value, uint32_t count)
 {
-	VkShaderVariableAllocator& alloc = this->shaderAlloc.Get<4>(state.shaderId).Get<3>(state.stateId);
+	VkShaderConstantAllocator& alloc = this->shaderAlloc.Get<4>(state.shaderId).Get<3>(state.stateId);
 	SetBoolArray(alloc.Get<0>(var.id), value, count);
 }
 
@@ -292,10 +317,10 @@ VkShaderPool::ShaderVariableSetArray(const CoreGraphics::ShaderVariableId var, c
 /**
 */
 inline void
-VkShaderPool::ShaderVariableSetTexture(const CoreGraphics::ShaderVariableId var, const CoreGraphics::ShaderStateId state, const CoreGraphics::TextureId texture)
+VkShaderPool::ShaderResourceSetTexture(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ShaderStateId state, const CoreGraphics::TextureId texture)
 {
 	VkShaderStateAllocator& stateAlloc = this->shaderAlloc.Get<4>(state.shaderId);
-	VkShaderVariableAllocator& alloc = stateAlloc.Get<3>(state.stateId);
+	VkShaderConstantAllocator& alloc = stateAlloc.Get<3>(state.stateId);
 	SetTexture(alloc.Get<0>(var.id), alloc.Get<1>(var.id), stateAlloc.Get<4>(state.stateId), texture);
 }
 
@@ -303,10 +328,10 @@ VkShaderPool::ShaderVariableSetTexture(const CoreGraphics::ShaderVariableId var,
 /**
 */
 inline void
-VkShaderPool::ShaderVariableSetConstantBuffer(const CoreGraphics::ShaderVariableId var, const CoreGraphics::ShaderStateId state, const CoreGraphics::ConstantBufferId buffer)
+VkShaderPool::ShaderResourceSetConstantBuffer(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ShaderStateId state, const CoreGraphics::ConstantBufferId buffer)
 {
 	VkShaderStateAllocator& stateAlloc = this->shaderAlloc.Get<4>(state.shaderId);
-	VkShaderVariableAllocator& alloc = stateAlloc.Get<3>(state.stateId);
+	VkShaderConstantAllocator& alloc = stateAlloc.Get<3>(state.stateId);
 	SetConstantBuffer(alloc.Get<1>(var.id), stateAlloc.Get<4>(state.stateId), buffer);
 }
 
@@ -314,9 +339,9 @@ VkShaderPool::ShaderVariableSetConstantBuffer(const CoreGraphics::ShaderVariable
 /**
 */
 inline void
-VkShaderPool::ShaderVariableSetReadWriteTexture(const CoreGraphics::ShaderVariableId var, const CoreGraphics::ShaderStateId state, const CoreGraphics::TextureId image)
+VkShaderPool::ShaderResourceSetReadWriteTexture(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ShaderStateId state, const CoreGraphics::TextureId image)
 {
-	VkShaderVariableAllocator& alloc = this->shaderAlloc.Get<4>(state.shaderId).Get<3>(state.stateId);
+	VkShaderConstantAllocator& alloc = this->shaderAlloc.Get<4>(state.shaderId).Get<3>(state.stateId);
 	textureAllocator.EnterGet();
 	VkTextureRuntimeInfo& info = textureAllocator.Get<0>(var.id);
 	textureAllocator.LeaveGet();
@@ -326,10 +351,10 @@ VkShaderPool::ShaderVariableSetReadWriteTexture(const CoreGraphics::ShaderVariab
 /**
 */
 inline void
-VkShaderPool::ShaderVariableSetReadWriteTexture(const CoreGraphics::ShaderVariableId var, const CoreGraphics::ShaderStateId state, const CoreGraphics::ShaderRWTextureId tex)
+VkShaderPool::ShaderResourceSetReadWriteTexture(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ShaderStateId state, const CoreGraphics::ShaderRWTextureId tex)
 {
 	VkShaderStateAllocator& stateAlloc = this->shaderAlloc.Get<4>(state.shaderId);
-	VkShaderVariableAllocator& varAlloc = stateAlloc.Get<3>(state.stateId);
+	VkShaderConstantAllocator& varAlloc = stateAlloc.Get<3>(state.stateId);
 	SetShaderReadWriteTexture(varAlloc.Get<1>(var.id), stateAlloc.Get<4>(state.stateId), tex);
 }
 
@@ -337,10 +362,10 @@ VkShaderPool::ShaderVariableSetReadWriteTexture(const CoreGraphics::ShaderVariab
 /**
 */
 inline void
-VkShaderPool::ShaderVariableSetReadWriteBuffer(const CoreGraphics::ShaderVariableId var, const CoreGraphics::ShaderStateId state, const CoreGraphics::ShaderRWBufferId buf)
+VkShaderPool::ShaderResourceSetReadWriteBuffer(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ShaderStateId state, const CoreGraphics::ShaderRWBufferId buf)
 {
 	VkShaderStateAllocator& stateAlloc = this->shaderAlloc.Get<4>(state.shaderId);
-	VkShaderVariableAllocator& varAlloc = stateAlloc.Get<3>(state.stateId);
+	VkShaderConstantAllocator& varAlloc = stateAlloc.Get<3>(state.stateId);
 	SetShaderReadWriteBuffer(varAlloc.Get<1>(var.id), stateAlloc.Get<4>(state.stateId), buf);
 }
 

@@ -35,7 +35,7 @@ VkScheduler::~VkScheduler()
 /**
 */
 void
-VkScheduler::PushImageLayoutTransition(VkDeferredCommand::CommandQueueType queue, VkImageMemoryBarrier barrier)
+VkScheduler::PushImageLayoutTransition(CoreGraphicsQueueType queue, VkImageMemoryBarrier barrier)
 {
 	VkDeferredCommand del;
 	del.del.type = VkDeferredCommand::ImageLayoutTransition;
@@ -49,7 +49,7 @@ VkScheduler::PushImageLayoutTransition(VkDeferredCommand::CommandQueueType queue
 /**
 */
 void
-VkScheduler::PushImageOwnershipChange(VkDeferredCommand::CommandQueueType queue, VkImageMemoryBarrier barrier)
+VkScheduler::PushImageOwnershipChange(CoreGraphicsQueueType queue, VkImageMemoryBarrier barrier)
 {
 	VkDeferredCommand del;
 	del.del.type = VkDeferredCommand::ImageOwnershipChange;
@@ -63,7 +63,7 @@ VkScheduler::PushImageOwnershipChange(VkDeferredCommand::CommandQueueType queue,
 /**
 */
 void
-VkScheduler::PushImageColorClear(const VkImage& image, const VkDeferredCommand::CommandQueueType& queue, VkImageLayout layout, VkClearColorValue clearValue, VkImageSubresourceRange subres)
+VkScheduler::PushImageColorClear(const VkImage& image, const CoreGraphicsQueueType queue, VkImageLayout layout, VkClearColorValue clearValue, VkImageSubresourceRange subres)
 {
 	VkDeferredCommand del;
 	del.del.type = VkDeferredCommand::ClearColorImage;
@@ -80,7 +80,7 @@ VkScheduler::PushImageColorClear(const VkImage& image, const VkDeferredCommand::
 /**
 */
 void
-VkScheduler::PushImageDepthStencilClear(const VkImage& image, const VkDeferredCommand::CommandQueueType& queue, VkImageLayout layout, VkClearDepthStencilValue clearValue, VkImageSubresourceRange subres)
+VkScheduler::PushImageDepthStencilClear(const VkImage& image, const CoreGraphicsQueueType queue, VkImageLayout layout, VkClearDepthStencilValue clearValue, VkImageSubresourceRange subres)
 {
 	VkDeferredCommand del;
 	del.del.type = VkDeferredCommand::ClearDepthStencilImage;
@@ -110,7 +110,7 @@ VkScheduler::PushImageUpdate(const VkImage& img, const VkImageCreateInfo& info, 
 	del.del.imageUpd.face = face;
 	del.del.imageUpd.size = size;
 	del.del.imageUpd.data = imgCopy;
-	del.del.queue = VkDeferredCommand::Transfer;
+	del.del.queue = TransferQueueType;
 	del.dev = this->dev;
 	this->PushCommand(del, OnBeginFrame);
 }
