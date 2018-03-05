@@ -49,4 +49,7 @@ typedef Ids::IdAllocator<
 	ShaderRWBufferStretchInterface
 > ShaderRWBufferAllocator;
 extern ShaderRWBufferAllocator shaderRWBufferAllocator;
+
+/// get vk image
+const VkBuffer ShaderRWBufferGetVkBuffer(const CoreGraphics::ShaderRWBufferId id);
 } // namespace Vulkan

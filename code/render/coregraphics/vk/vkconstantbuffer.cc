@@ -257,21 +257,21 @@ ConstantBufferSetBaseOffset(const ConstantBufferId id, const uint offset)
 //------------------------------------------------------------------------------
 /**
 */
-const ShaderVariableId
+const ShaderConstantId
 ConstantBufferCreateShaderVariable(const ConstantBufferId id, const ConstantBufferSliceId slice, const Util::StringAtom& name)
 {
 	VkConstantBufferSetupInfo& setup = constantBufferAllocator.Get<1>(id.id24);
-	VkShaderVariableAllocator& alloc = constantBufferAllocator.Get<4>(id.id24);
+	VkShaderConstantAllocator& alloc = constantBufferAllocator.Get<4>(id.id24);
 
 	Ids::Id24 var = alloc.AllocObject();
 	auto it = setup.reflection->variablesByName.find(name.Value());
 	n_assert(it != setup.reflection->variablesByName.end());
 
 	// step one, setup variable
-	VkShaderVariableSetup((AnyFX::VkVariable*)it->second, var, alloc);
+	VkShaderConstantSetup((AnyFX::VkVariable*)it->second, var, alloc);
 
 	// step two, bind to uniform buffer
-	VkShaderVariableBindToUniformBuffer(var, id, alloc, setup.reflection->offsetsByName[name.Value()], it->second->byteSize, (int8_t*)it->second->currentValue);
+	VkShaderConstantBindToUniformBuffer(var, id, alloc, setup.reflection->offsetsByName[name.Value()], it->second->byteSize, (int8_t*)it->second->currentValue);
 	
 	return var;
 }
@@ -280,9 +280,9 @@ ConstantBufferCreateShaderVariable(const ConstantBufferId id, const ConstantBuff
 /**
 */
 void
-ConstantBufferDestroyShaderVariable(const ConstantBufferId id, const ShaderVariableId var)
+ConstantBufferDestroyShaderVariable(const ConstantBufferId id, const ShaderConstantId var)
 {
-	VkShaderVariableAllocator& alloc = constantBufferAllocator.Get<4>(id.id24);
+	VkShaderConstantAllocator& alloc = constantBufferAllocator.Get<4>(id.id24);
 	alloc.DeallocObject(var.id);
 }
 

@@ -46,9 +46,9 @@ IndexT VkShaderFindVariableOffset(const Util::String& name);
 const Util::Dictionary<Util::StringAtom, uint32_t>& VkShaderGetConstantOffsetTable(const Util::StringAtom& signature);
 
 /// returns the binding of a resource variable using shader state
-uint32_t VkShaderGetVkShaderVariableBinding(const CoreGraphics::ShaderStateId shader, const CoreGraphics::ShaderVariableId var);
+uint32_t VkShaderGetVkShaderVariableBinding(const CoreGraphics::ShaderStateId shader, const CoreGraphics::ShaderConstantId var);
 /// return the descriptor set which a resource variable is bound to
-VkDescriptorSet VkShaderGetVkShaderVariableDescriptorSet(const CoreGraphics::ShaderStateId shader, const CoreGraphics::ShaderVariableId var);
+VkDescriptorSet VkShaderGetVkShaderVariableDescriptorSet(const CoreGraphics::ShaderStateId shader, const CoreGraphics::ShaderConstantId var);
 
 /// create descriptor layout signature
 static Util::String VkShaderCreateSignature(const VkDescriptorSetLayoutBinding& bind);

@@ -58,13 +58,13 @@ public:
 	virtual ~VkScheduler();
 
 	/// push image layout change
-	void PushImageLayoutTransition(VkDeferredCommand::CommandQueueType queue, VkImageMemoryBarrier barrier);
+	void PushImageLayoutTransition(CoreGraphicsQueueType queue, VkImageMemoryBarrier barrier);
 	/// push transition image ownership transition
-	void PushImageOwnershipChange(VkDeferredCommand::CommandQueueType queue, VkImageMemoryBarrier barrier);
+	void PushImageOwnershipChange(CoreGraphicsQueueType queue, VkImageMemoryBarrier barrier);
 	/// push image color clear
-	void PushImageColorClear(const VkImage& image, const VkDeferredCommand::CommandQueueType& queue, VkImageLayout layout, VkClearColorValue clearValue, VkImageSubresourceRange subres);
+	void PushImageColorClear(const VkImage& image, const CoreGraphicsQueueType queue, VkImageLayout layout, VkClearColorValue clearValue, VkImageSubresourceRange subres);
 	/// push image depth stencil clear
-	void PushImageDepthStencilClear(const VkImage& image, const VkDeferredCommand::CommandQueueType& queue, VkImageLayout layout, VkClearDepthStencilValue clearValue, VkImageSubresourceRange subres);
+	void PushImageDepthStencilClear(const VkImage& image, const CoreGraphicsQueueType queue, VkImageLayout layout, VkClearDepthStencilValue clearValue, VkImageSubresourceRange subres);
 	/// setup staging image update for later execution
 	void PushImageUpdate(const VkImage& img, const VkImageCreateInfo& info, uint32_t mip, uint32_t face, VkDeviceSize size, uint32_t* data);
 

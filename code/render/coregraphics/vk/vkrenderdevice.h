@@ -86,6 +86,10 @@ public:
 
 	/// copy data between textures
 	void Copy(const CoreGraphics::TextureId from, Math::rectangle<SizeT> fromRegion, const CoreGraphics::TextureId to, Math::rectangle<SizeT> toRegion);
+	/// copy data between render textures
+	void Copy(const CoreGraphics::RenderTextureId from, Math::rectangle<SizeT> fromRegion, const CoreGraphics::RenderTextureId to, Math::rectangle<SizeT> toRegion);
+	/// do actual copy
+	void Copy(const VkImage from, Math::rectangle<SizeT> fromRegion, const VkImage to, Math::rectangle<SizeT> toRegion);
 	/// blit between render textures
 	void Blit(const CoreGraphics::RenderTextureId from, Math::rectangle<SizeT> fromRegion, IndexT fromMip, const CoreGraphics::RenderTextureId to, Math::rectangle<SizeT> toRegion, IndexT toMip);
 	/// blit between textures
@@ -156,6 +160,10 @@ private:
 	friend void VkShaderProgramApply(VkShaderProgramRuntimeInfo& info);
 	friend void	VkShaderProgramSetupAsCompute(VkShaderProgramSetupInfo& setup, VkShaderProgramRuntimeInfo& runtime);
 	friend void	VkShaderStateCommit(Ids::Id24 currentProgram, Util::Array<VkWriteDescriptorSet>& writes, VkShaderStateRuntimeInfo& stateInfo);
+
+	friend void	CoreGraphics::EventSignal(const CoreGraphics::EventId id, const CoreGraphicsQueueType queue, const CoreGraphics::BarrierDependency when);
+	friend void	CoreGraphics::EventWait(const CoreGraphics::EventId id, const CoreGraphicsQueueType queue);
+	friend void	CoreGraphics::EventReset(const CoreGraphics::EventId id, const CoreGraphicsQueueType queue, const CoreGraphics::BarrierDependency when);
 
 	friend VKAPI_ATTR void VKAPI_CALL NebulaVkAllocCallback(void* userData, uint32_t size, VkInternalAllocationType type, VkSystemAllocationScope scope);
 	friend VKAPI_ATTR void VKAPI_CALL NebulaVkFreeCallback(void* userData, uint32_t size, VkInternalAllocationType type, VkSystemAllocationScope scope);

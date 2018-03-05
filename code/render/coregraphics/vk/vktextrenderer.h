@@ -58,8 +58,8 @@ private:
 	TextElementVertex vertices[MaxNumChars * 6];
 	CoreGraphics::ShaderStateId shader;
 	CoreGraphics::ShaderProgramId program;
-	CoreGraphics::ShaderVariableId texVar;
-	CoreGraphics::ShaderVariableId modelVar;
+	CoreGraphics::ShaderConstantId texVar;
+	CoreGraphics::ShaderConstantId modelVar;
 	CoreGraphics::TextureId glyphTexture;
 	CoreGraphics::PrimitiveGroup group;
 	CoreGraphics::VertexBufferId vbo;

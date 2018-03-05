@@ -48,15 +48,15 @@ VkTransformDevice::Open()
 	this->sharedShader = ShaderCreateSharedState("shd:shared"_atm, { NEBULAT_FRAME_GROUP });
 
 	// setup camera block, update once per frame - no need to sync
-	this->viewVar = ShaderStateGetVariable(this->sharedShader, NEBULA3_SEMANTIC_VIEW);
-	this->invViewVar = ShaderStateGetVariable(this->sharedShader, NEBULA3_SEMANTIC_INVVIEW);
-	this->viewProjVar = ShaderStateGetVariable(this->sharedShader, NEBULA3_SEMANTIC_VIEWPROJECTION);
-	this->invViewProjVar = ShaderStateGetVariable(this->sharedShader, NEBULA3_SEMANTIC_INVVIEWPROJECTION);
-	this->projVar = ShaderStateGetVariable(this->sharedShader, NEBULA3_SEMANTIC_PROJECTION);
-	this->invProjVar = ShaderStateGetVariable(this->sharedShader, NEBULA3_SEMANTIC_INVPROJECTION);
-	this->eyePosVar = ShaderStateGetVariable(this->sharedShader, NEBULA3_SEMANTIC_EYEPOS);
-	this->focalLengthVar = ShaderStateGetVariable(this->sharedShader, NEBULA3_SEMANTIC_FOCALLENGTH);
-	this->timeAndRandomVar = ShaderStateGetVariable(this->sharedShader, NEBULA3_SEMANTIC_TIMEANDRANDOM);
+	this->viewVar = ShaderStateGetConstant(this->sharedShader, NEBULA3_SEMANTIC_VIEW);
+	this->invViewVar = ShaderStateGetConstant(this->sharedShader, NEBULA3_SEMANTIC_INVVIEW);
+	this->viewProjVar = ShaderStateGetConstant(this->sharedShader, NEBULA3_SEMANTIC_VIEWPROJECTION);
+	this->invViewProjVar = ShaderStateGetConstant(this->sharedShader, NEBULA3_SEMANTIC_INVVIEWPROJECTION);
+	this->projVar = ShaderStateGetConstant(this->sharedShader, NEBULA3_SEMANTIC_PROJECTION);
+	this->invProjVar = ShaderStateGetConstant(this->sharedShader, NEBULA3_SEMANTIC_INVPROJECTION);
+	this->eyePosVar = ShaderStateGetConstant(this->sharedShader, NEBULA3_SEMANTIC_EYEPOS);
+	this->focalLengthVar = ShaderStateGetConstant(this->sharedShader, NEBULA3_SEMANTIC_FOCALLENGTH);
+	this->timeAndRandomVar = ShaderStateGetConstant(this->sharedShader, NEBULA3_SEMANTIC_TIMEANDRANDOM);
 
 	return TransformDeviceBase::Open();
 }
@@ -79,15 +79,15 @@ VkTransformDevice::ApplyViewSettings()
 {
 	TransformDeviceBase::ApplyViewSettings();
 
-	ShaderVariableSet(this->viewProjVar, this->sharedShader, this->GetViewProjTransform());
-	ShaderVariableSet(this->invViewProjVar, this->sharedShader, this->GetInvViewTransform());
-	ShaderVariableSet(this->viewVar, this->sharedShader, this->GetViewTransform());
-	ShaderVariableSet(this->invViewVar, this->sharedShader, this->GetInvViewTransform());
-	ShaderVariableSet(this->projVar, this->sharedShader, this->GetProjTransform());
-	ShaderVariableSet(this->invProjVar, this->sharedShader, this->GetInvProjTransform());
-	ShaderVariableSet(this->eyePosVar, this->sharedShader, this->GetInvViewTransform().getrow3());
-	ShaderVariableSet(this->focalLengthVar, this->sharedShader, float4(this->GetFocalLength().x(), this->GetFocalLength().y(), 0, 0));
-	ShaderVariableSet(this->timeAndRandomVar, this->sharedShader, float4((float)FrameSync::FrameSyncTimer::Instance()->GetTime(), Math::n_rand(0, 1), 0, 0));
+	ShaderConstantSet(this->viewProjVar, this->sharedShader, this->GetViewProjTransform());
+	ShaderConstantSet(this->invViewProjVar, this->sharedShader, this->GetInvViewTransform());
+	ShaderConstantSet(this->viewVar, this->sharedShader, this->GetViewTransform());
+	ShaderConstantSet(this->invViewVar, this->sharedShader, this->GetInvViewTransform());
+	ShaderConstantSet(this->projVar, this->sharedShader, this->GetProjTransform());
+	ShaderConstantSet(this->invProjVar, this->sharedShader, this->GetInvProjTransform());
+	ShaderConstantSet(this->eyePosVar, this->sharedShader, this->GetInvViewTransform().getrow3());
+	ShaderConstantSet(this->focalLengthVar, this->sharedShader, float4(this->GetFocalLength().x(), this->GetFocalLength().y(), 0, 0));
+	ShaderConstantSet(this->timeAndRandomVar, this->sharedShader, float4((float)FrameSync::FrameSyncTimer::Instance()->GetTime(), Math::n_rand(0, 1), 0, 0));
 }
 
 } // namespace Vulkan

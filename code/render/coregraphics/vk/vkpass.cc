@@ -73,6 +73,7 @@ CreatePass(const PassCreateInfo& info)
 	VkPassLoadInfo& loadInfo = passAllocator.Get<0>(id);
 	VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<1>(id);
 	VkRenderPassBeginInfo& beginInfo = passAllocator.Get<2>(id);
+	Util::Array<uint32_t>& subpassAttachmentCounts = passAllocator.Get<3>(id);
 
 	ShaderId sid = ShaderServer::Instance()->GetShader("shd:shared"_atm);
 	loadInfo.shaderState = ShaderCreateState(sid, { NEBULAT_PASS_GROUP }, false);
@@ -276,6 +277,8 @@ CreatePass(const PassCreateInfo& info)
 		{
 			vksubpass.preserveAttachmentCount = 0;
 		}
+
+		subpassAttachmentCounts.Append(vksubpass.inputAttachmentCount);
 	}
 
 	VkAttachmentLoadOp loadOps[] =
@@ -387,7 +390,7 @@ CreatePass(const PassCreateInfo& info)
 	// setup uniform buffer for render target information
 	ConstantBufferCreateInfo cbinfo = { true, loadInfo.shaderState, "PassBlock", 0, 1 };
 	loadInfo.passBlockBuffer = CreateConstantBuffer(cbinfo);
-	loadInfo.passBlockVar = ShaderStateGetVariable(loadInfo.shaderState, "PassBlock");
+	loadInfo.passBlockVar = ShaderStateGetConstant(loadInfo.shaderState, "PassBlock");
 	loadInfo.renderTargetDimensionsVar = ConstantBufferCreateShaderVariable(loadInfo.passBlockBuffer, 0, "RenderTargetDimensions");
 		//loadInfo.passBlockBuffer->GetVariableByName("RenderTargetDimensions");
 
@@ -412,7 +415,7 @@ CreatePass(const PassCreateInfo& info)
 	vkUpdateDescriptorSets(loadInfo.dev, 1, &write, 0, nullptr);
 
 	// update descriptor set based on images attachments
-	const CoreGraphics::ShaderVariableId inputAttachmentsVar = ShaderStateGetVariable(loadInfo.shaderState, "InputAttachments");
+	const CoreGraphics::ShaderConstantId inputAttachmentsVar = ShaderStateGetConstant(loadInfo.shaderState, "InputAttachments");
 
 	// setup input attachments
 	Util::FixedArray<Math::float4> dimensions(info.colorAttachments.Size());
@@ -444,7 +447,7 @@ CreatePass(const PassCreateInfo& info)
 		dims.z() = 1 / dims.x();
 		dims.w() = 1 / dims.y();
 	}
-	ShaderVariableSetArray(loadInfo.renderTargetDimensionsVar, loadInfo.shaderState, dimensions.Begin(), dimensions.Size());
+	ShaderConstantSetArray(loadInfo.renderTargetDimensionsVar, loadInfo.shaderState, dimensions.Begin(), dimensions.Size());
 	VkShaderStateSetDescriptorSet(loadInfo.shaderState, runtimeInfo.passDescriptorSet, NEBULAT_PASS_GROUP);
 	VkShaderStateSetShared(loadInfo.shaderState, true);
 
@@ -636,16 +639,25 @@ PassWindowResizeCallback(const PassId& id)
 		dims.z() = 1 / dims.x();
 		dims.w() = 1 / dims.y();
 	}
-	ShaderVariableSetArray(loadInfo.renderTargetDimensionsVar, loadInfo.shaderState, dimensions.Begin(), dimensions.Size());
+	ShaderConstantSetArray(loadInfo.renderTargetDimensionsVar, loadInfo.shaderState, dimensions.Begin(), dimensions.Size());
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 const Util::Array<CoreGraphics::RenderTextureId>&
-PassGetAttachments(const CoreGraphics::PassId& id, const IndexT subpass)
+PassGetAttachments(const CoreGraphics::PassId& id)
 {
 	return passAllocator.Get<0>(id.id24).colorAttachments;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const uint32_t
+PassGetNumSubpassAttachments(const CoreGraphics::PassId & id, const IndexT subpass)
+{
+	return passAllocator.Get<3>(id.id24)[subpass];
 }
 
 } // namespace Vulkan

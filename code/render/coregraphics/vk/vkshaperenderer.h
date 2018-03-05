@@ -77,9 +77,9 @@ private:
 	CoreGraphics::VertexBufferId vbo;
 	CoreGraphics::IndexBufferId ibo;
 	CoreGraphics::VertexLayoutId vertexLayout;
-	CoreGraphics::ShaderVariableId model;
-	CoreGraphics::ShaderVariableId viewProjection;
-	CoreGraphics::ShaderVariableId diffuseColor;
+	CoreGraphics::ShaderConstantId model;
+	CoreGraphics::ShaderConstantId viewProjection;
+	CoreGraphics::ShaderConstantId diffuseColor;
 
 	SizeT numPrimitives;
 	SizeT numIndices;

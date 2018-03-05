@@ -62,10 +62,10 @@ VkShaderServer::Open()
 	// create shader state for textures, and fetch variables
 	ShaderId shader = VkShaderServer::Instance()->GetShader("shd:shared"_atm);
 	this->textureShaderState = CoreGraphics::shaderPool->CreateState(shader, { NEBULAT_TICK_GROUP }, false);
-	this->texture2DTextureVar = CoreGraphics::shaderPool->ShaderStateGetVariable(this->textureShaderState, "Textures2D");
-	this->texture2DMSTextureVar = CoreGraphics::shaderPool->ShaderStateGetVariable(this->textureShaderState, "Textures2DMS");
-	this->textureCubeTextureVar = CoreGraphics::shaderPool->ShaderStateGetVariable(this->textureShaderState, "TexturesCube");
-	this->texture3DTextureVar = CoreGraphics::shaderPool->ShaderStateGetVariable(this->textureShaderState, "Textures3D");
+	this->texture2DTextureVar = CoreGraphics::shaderPool->ShaderStateGetConstant(this->textureShaderState, "Textures2D");
+	this->texture2DMSTextureVar = CoreGraphics::shaderPool->ShaderStateGetConstant(this->textureShaderState, "Textures2DMS");
+	this->textureCubeTextureVar = CoreGraphics::shaderPool->ShaderStateGetConstant(this->textureShaderState, "TexturesCube");
+	this->texture3DTextureVar = CoreGraphics::shaderPool->ShaderStateGetConstant(this->textureShaderState, "Textures3D");
 
 	return true;
 }
@@ -89,7 +89,7 @@ uint32_t
 VkShaderServer::RegisterTexture(const VkImageView tex, CoreGraphics::TextureType type)
 {
 	uint32_t idx;
-	ShaderVariableId var;
+	ShaderConstantId var;
 	VkDescriptorImageInfo* img;
 	switch (type)
 	{

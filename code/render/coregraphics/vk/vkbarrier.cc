@@ -7,6 +7,9 @@
 #include "coregraphics/config.h"
 #include "vkcmdbuffer.h"
 #include "vktypes.h"
+#include "vkrendertexture.h"
+#include "vkshaderreadwritetexture.h"
+#include "vkshaderreadwritebuffer.h"
 
 namespace CoreGraphics
 {
@@ -43,7 +46,7 @@ CreateBarrier(const BarrierCreateInfo& info)
 		vkInfo.imageBarriers[i].srcAccessMask = VkTypes::AsVkResourceAccessFlags(std::get<1>(info.renderTextureBarriers[i]));
 		vkInfo.imageBarriers[i].dstAccessMask = VkTypes::AsVkResourceAccessFlags(std::get<2>(info.renderTextureBarriers[i]));
 
-		n_error("Implement RenderTexture method for getting Vk image");
+		vkInfo.imageBarriers[i].image = RenderTextureGetVkImage(std::get<0>(info.renderTextureBarriers[i]));
 		vkInfo.imageBarriers[i].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		vkInfo.imageBarriers[i].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		vkInfo.imageBarriers[i].oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -61,7 +64,7 @@ CreateBarrier(const BarrierCreateInfo& info)
 		vkInfo.imageBarriers[i].srcAccessMask = VkTypes::AsVkResourceAccessFlags(std::get<1>(info.shaderRWTextures[i]));
 		vkInfo.imageBarriers[i].dstAccessMask = VkTypes::AsVkResourceAccessFlags(std::get<2>(info.shaderRWTextures[i]));
 
-		n_error("Implement RenderTexture method for getting Vk image");
+		vkInfo.imageBarriers[i].image = ShaderRWTextureGetVkImage(std::get<0>(info.shaderRWTextures[i]));
 		vkInfo.imageBarriers[i].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		vkInfo.imageBarriers[i].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		vkInfo.imageBarriers[i].oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -71,18 +74,18 @@ CreateBarrier(const BarrierCreateInfo& info)
 
 	for (i = 0; i < info.shaderRWBuffers.Size(); i++)
 	{
-		vkInfo.bufferBarriers[i].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		vkInfo.bufferBarriers[i].sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
 		vkInfo.bufferBarriers[i].pNext = nullptr;
 
 		vkInfo.bufferBarriers[i].srcAccessMask = VkTypes::AsVkResourceAccessFlags(std::get<1>(info.shaderRWBuffers[i]));
 		vkInfo.bufferBarriers[i].dstAccessMask = VkTypes::AsVkResourceAccessFlags(std::get<2>(info.shaderRWBuffers[i]));
 
-		n_error("Implement RenderTexture method for getting Vk buffer");
+		vkInfo.bufferBarriers[i].buffer = ShaderRWBufferGetVkBuffer(std::get<0>(info.shaderRWBuffers[i]));
 		vkInfo.bufferBarriers[i].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		vkInfo.bufferBarriers[i].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		vkInfo.bufferBarriers[i].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		vkInfo.bufferBarriers[i].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		vkInfo.numBufferBarriers;
+		vkInfo.numBufferBarriers++;
 	}
 
 	BarrierId eventId;

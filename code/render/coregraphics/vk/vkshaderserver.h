@@ -54,23 +54,23 @@ private:
 	Util::FixedPool<uint32_t> imageCubePool;
 
 	CoreGraphics::ShaderStateId textureShaderState;
-	CoreGraphics::ShaderVariableId texture2DTextureVar;
-	CoreGraphics::ShaderVariableId texture2DMSTextureVar;
-	CoreGraphics::ShaderVariableId texture3DTextureVar;
-	CoreGraphics::ShaderVariableId textureCubeTextureVar;
-	CoreGraphics::ShaderVariableId image2DTextureVar;
-	CoreGraphics::ShaderVariableId image2DMSTextureVar;
-	CoreGraphics::ShaderVariableId image3DTextureVar;
-	CoreGraphics::ShaderVariableId imageCubeTextureVar;
+	CoreGraphics::ShaderConstantId texture2DTextureVar;
+	CoreGraphics::ShaderConstantId texture2DMSTextureVar;
+	CoreGraphics::ShaderConstantId texture3DTextureVar;
+	CoreGraphics::ShaderConstantId textureCubeTextureVar;
+	CoreGraphics::ShaderConstantId image2DTextureVar;
+	CoreGraphics::ShaderConstantId image2DMSTextureVar;
+	CoreGraphics::ShaderConstantId image3DTextureVar;
+	CoreGraphics::ShaderConstantId imageCubeTextureVar;
 
-	CoreGraphics::ShaderVariableId depthBufferTextureVar;
-	CoreGraphics::ShaderVariableId normalBufferTextureVar;
-	CoreGraphics::ShaderVariableId albedoBufferTextureVar;
-	CoreGraphics::ShaderVariableId specularBufferTextureVar;
-	CoreGraphics::ShaderVariableId lightBufferTextureVar;
+	CoreGraphics::ShaderConstantId depthBufferTextureVar;
+	CoreGraphics::ShaderConstantId normalBufferTextureVar;
+	CoreGraphics::ShaderConstantId albedoBufferTextureVar;
+	CoreGraphics::ShaderConstantId specularBufferTextureVar;
+	CoreGraphics::ShaderConstantId lightBufferTextureVar;
 
-	CoreGraphics::ShaderVariableId csmBufferTextureVar;
-	CoreGraphics::ShaderVariableId spotlightAtlasShadowBufferTextureVar;
+	CoreGraphics::ShaderConstantId csmBufferTextureVar;
+	CoreGraphics::ShaderConstantId spotlightAtlasShadowBufferTextureVar;
 
 	AnyFX::EffectFactory* factory;
 };

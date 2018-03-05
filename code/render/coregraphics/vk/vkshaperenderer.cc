@@ -72,8 +72,8 @@ VkShapeRenderer::Open()
 	this->CreateConeShape();
 
 	// lookup ModelViewProjection shader variable
-	this->model = ShaderStateGetVariable(this->shapeShaderState, "ShapeModel");
-	this->diffuseColor = ShaderStateGetVariable(this->shapeShaderState, "MatDiffuse");
+	this->model = ShaderStateGetConstant(this->shapeShaderState, "ShapeModel");
+	this->diffuseColor = ShaderStateGetConstant(this->shapeShaderState, "MatDiffuse");
 
 	this->programs[RenderShape::AlwaysOnTop] = ShaderGetProgram(this->shapeShader, ShaderServer::Instance()->FeatureStringToMask("Colored"));
 	this->programs[RenderShape::CheckDepth] = ShaderGetProgram(this->shapeShader, ShaderServer::Instance()->FeatureStringToMask("Colored|Alt0"));
@@ -237,8 +237,8 @@ VkShapeRenderer::DrawSimpleShape(const Math::matrix44& modelTransform, CoreGraph
 	Ptr<RenderDevice> renderDevice = RenderDevice::Instance();
 
 	// resolve model-view-projection matrix and update shader
-	ShaderVariableSet(this->model, this->shapeShaderState, modelTransform);
-	ShaderVariableSet(this->diffuseColor, this->shapeShaderState, color);
+	ShaderConstantSet(this->model, this->shapeShaderState, modelTransform);
+	ShaderConstantSet(this->diffuseColor, this->shapeShaderState, color);
 
 	const SizeT numgroups = MeshGetPrimitiveGroups(this->shapeMeshes[shapeType]).Size();
 	IndexT i;
@@ -265,8 +265,8 @@ VkShapeRenderer::DrawMesh(const Math::matrix44& modelTransform, const CoreGraphi
 	TransformDevice* transDev = TransformDevice::Instance();
 
 	// resolve model-view-projection matrix and update shader
-	ShaderVariableSet(this->model, this->shapeShaderState, modelTransform);
-	ShaderVariableSet(this->diffuseColor, this->shapeShaderState, color);
+	ShaderConstantSet(this->model, this->shapeShaderState, modelTransform);
+	ShaderConstantSet(this->diffuseColor, this->shapeShaderState, color);
 
 	n_assert(RenderDevice::Instance()->IsInBeginFrame());
 	const SizeT numgroups = MeshGetPrimitiveGroups(mesh).Size();
@@ -380,8 +380,8 @@ VkShapeRenderer::DrawBufferedPrimitives()
 		const Math::matrix44& modelTransform = this->unindexed.transforms[i];
 		const Math::float4& color = this->unindexed.colors[i];
 
-		ShaderVariableSet(this->model, this->shapeShaderState, modelTransform);
-		ShaderVariableSet(this->diffuseColor, this->shapeShaderState, color);
+		ShaderConstantSet(this->model, this->shapeShaderState, modelTransform);
+		ShaderConstantSet(this->diffuseColor, this->shapeShaderState, color);
 
 		renderDevice->SetPrimitiveTopology(topo);
 		VertexLayoutBind(this->vertexLayout);
@@ -416,8 +416,8 @@ VkShapeRenderer::DrawBufferedIndexedPrimitives()
 		const Math::matrix44& modelTransform = this->indexed.transforms[i];
 		const Math::float4& color = this->indexed.colors[i];
 
-		ShaderVariableSet(this->model, this->shapeShaderState, modelTransform);
-		ShaderVariableSet(this->diffuseColor, this->shapeShaderState, color);
+		ShaderConstantSet(this->model, this->shapeShaderState, modelTransform);
+		ShaderConstantSet(this->diffuseColor, this->shapeShaderState, color);
 		
 		renderDevice->SetPrimitiveTopology(topo);
 		VertexLayoutBind(this->vertexLayout);

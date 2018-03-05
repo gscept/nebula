@@ -7,6 +7,7 @@
 */
 //------------------------------------------------------------------------------
 #include "util/fixedarray.h"
+#include "coregraphics/config.h"
 #include <vulkan/vulkan.h>
 namespace Vulkan
 {
@@ -38,18 +39,10 @@ struct VkDeferredCommand
 		ImageLayoutTransition
 	};
 
-	enum CommandQueueType
-	{
-		Graphics,
-		Compute,
-		Transfer,
-		Sparse
-	};
-
 	struct Delegate
 	{
 		DelegateType type;
-		CommandQueueType queue;
+		CoreGraphicsQueueType queue;
 		VkFence fence;
 		union
 		{

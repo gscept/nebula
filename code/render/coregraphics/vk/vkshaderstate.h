@@ -21,7 +21,7 @@
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
 #include "coregraphics/constantbuffer.h"
-#include "vkshadervariable.h"
+#include "vkshaderconstant.h"
 #include "lowlevel/afxapi.h"
 namespace Lighting
 {
@@ -67,7 +67,7 @@ struct VkShaderStateSetupInfo
 	Util::Array<uint32_t> offsets;
 	Util::Dictionary<Util::StringAtom, uint32_t> offsetsByName;
 	Util::Dictionary<CoreGraphics::ConstantBufferId, CoreGraphics::ConstantBufferSliceId> instances;
-	Util::Dictionary<Util::StringAtom, CoreGraphics::ShaderVariableId> variableMap;
+	Util::Dictionary<Util::StringAtom, CoreGraphics::ShaderConstantId> variableMap;
 	VkPipelineLayout pipelineLayout;
 };
 
@@ -91,7 +91,7 @@ typedef Ids::IdAllocator<
 	AnyFX::ShaderEffect*,												//0 effect
 	VkShaderStateRuntimeInfo,											//1 setup info
 	VkShaderStateSetupInfo,												//2 runtime info
-	VkShaderVariableAllocator,											//3 variable allocator
+	VkShaderConstantAllocator,											//3 variable allocator
 	Util::Array<VkWriteDescriptorSet>,									//4 descriptor set writes
 	VkDerivativeStateAllocator											//5 derivative states
 > VkShaderStateAllocator;
@@ -119,12 +119,12 @@ void VkShaderStateSetupDerivative(
 );
 
 /// sets up variables
-void VkShaderStateSetupVariables(
+void VkShaderStateSetupConstants(
 	const Ids::Id24 id,
 	AnyFX::ShaderEffect* effect,
 	VkShaderStateRuntimeInfo& runtime,
 	VkShaderStateSetupInfo& setup,
-	VkShaderVariableAllocator& varAllocator,
+	VkShaderConstantAllocator& varAllocator,
 	const Util::Array<IndexT>& groups);
 
 /// setup uniform buffers for shader state
@@ -133,7 +133,7 @@ void VkShaderStateSetupConstantBuffers(
 	AnyFX::ShaderEffect* effect,
 	VkShaderStateRuntimeInfo& runtime,
 	VkShaderStateSetupInfo& setup,
-	VkShaderVariableAllocator& varAllocator,
+	VkShaderConstantAllocator& varAllocator,
 	Util::Array<VkWriteDescriptorSet>& setWrites,
 	const Util::Array<IndexT>& groups,
 	const Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBufferId>& buffers);
@@ -143,7 +143,7 @@ void VkShaderStateDiscard(
 	const Ids::Id24 id,
 	VkShaderStateRuntimeInfo& runtime,
 	VkShaderStateSetupInfo& setup,
-	VkShaderVariableAllocator& varAllocator
+	VkShaderConstantAllocator& varAllocator
 );
 
 /// commit changes before rendering

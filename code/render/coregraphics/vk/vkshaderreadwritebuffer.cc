@@ -67,6 +67,15 @@ SizeT ShaderRWBufferStretchInterface::Grow(const SizeT capacity, const SizeT num
 	return alignedSize;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+const VkBuffer
+ShaderRWBufferGetVkBuffer(const CoreGraphics::ShaderRWBufferId id)
+{
+	return shaderRWBufferAllocator.Get<1>(id.id24).buf;
+}
+
 } // namespace Vulkan
 
 namespace CoreGraphics

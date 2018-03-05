@@ -165,7 +165,7 @@ VkStreamTexturePool::LoadFromStream(const Ids::Id24 res, const Util::StringAtom&
 		subres.baseMipLevel = 0;
 		subres.layerCount = info.arrayLayers;
 		subres.levelCount = info.mipLevels;
-		scheduler->PushImageLayoutTransition(VkDeferredCommand::Transfer, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
+		scheduler->PushImageLayoutTransition(TransferQueueType, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
 		uint32_t remainingBytes = alignedSize;
 
 		// now load texture by walking through all images and mips
@@ -232,8 +232,8 @@ VkStreamTexturePool::LoadFromStream(const Ids::Id24 res, const Util::StringAtom&
 
 		// transition to something readable by shaders
 		VkClearColorValue val = { 1, 0, 0, 1 };
-		scheduler->PushImageLayoutTransition(VkDeferredCommand::Transfer, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
-		scheduler->PushImageOwnershipChange(VkDeferredCommand::Transfer, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VkDeferredCommand::Transfer, VkDeferredCommand::Graphics, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+		scheduler->PushImageLayoutTransition(TransferQueueType, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+		scheduler->PushImageOwnershipChange(TransferQueueType, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, TransferQueueType, GraphicsQueueType, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
 
 		ilDeleteImage(image);
 

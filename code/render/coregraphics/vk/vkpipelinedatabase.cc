@@ -164,7 +164,7 @@ VkPipelineDatabase::GetCompiledPipeline()
 		// get other fragment from framebuffer
 		VkGraphicsPipelineCreateInfo passInfo = PassGetVkFramebufferInfo(this->currentPass);
 		VkPipelineColorBlendStateCreateInfo colorBlendInfo = *shaderInfo.pColorBlendState;
-		colorBlendInfo.attachmentCount = PassGetAttachments(this->currentPass, this->currentSubpass).Size();
+		colorBlendInfo.attachmentCount = PassGetNumSubpassAttachments(this->currentPass, this->currentSubpass);
 
 		// use shader, framebuffer, vertex input and layout, input assembly and pass info to construct a complete pipeline
 		VkGraphicsPipelineCreateInfo info =
