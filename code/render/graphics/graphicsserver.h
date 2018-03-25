@@ -47,6 +47,9 @@ public:
 	Ptr<View> CreateView(const Util::StringAtom& framescript);
 	/// discard view
 	void DiscardView(const Ptr<View>& view);
+	/// get current view
+	const Ptr<View>& GetCurrentView() const;
+
 	/// create a new stage
 	Ptr<Stage> CreateStage(const Util::StringAtom& name, bool main);
 	/// discard stage
@@ -62,7 +65,6 @@ private:
 	friend class CoreGraphics::BatchGroup;
 
 	Ids::IdGenerationPool entityPool;
-	Util::Array<GraphicsEntity> entities;
 
 	Ptr<FrameSync::FrameSyncTimer> timer;
 	Util::Array<Ptr<GraphicsContext>> contexts;
@@ -71,6 +73,8 @@ private:
 	Util::Array<Ptr<Stage>> stages;
 	Util::Array<Ptr<View>> views;
 	CoreGraphics::BatchGroup batchGroupRegistry;
+
+	Ptr<View> currentView;
 
 	bool isOpen;
 };
@@ -92,4 +96,12 @@ static void DestroyEntity(const GraphicsEntityId id)
 	GraphicsServer::Instance()->DiscardGraphicsEntity(id);
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+inline const Ptr<View>&
+GraphicsServer::GetCurrentView() const
+{
+	return this->currentView;
+}
 } // namespace Graphics

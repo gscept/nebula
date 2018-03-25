@@ -49,9 +49,9 @@ struct VkRenderTextureLoadInfo
 struct VkRenderTextureRuntimeInfo
 {
 	VkImageView view;
-	CoreGraphics::TextureType type;
+	uint32_t bind;
+	CoreGraphics::TextureType type : 3;
 	bool inpass : 1;
-	uint32_t bind : 31; // just for alignment
 };
 
 struct VkRenderTextureMappingInfo

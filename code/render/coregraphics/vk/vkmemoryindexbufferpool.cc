@@ -23,7 +23,7 @@ Resources::ResourcePool::LoadStatus
 VkMemoryIndexBufferPool::LoadFromMemory(const Resources::ResourceId id, const void* info)
 {
 	const IndexBufferCreateInfo* iboInfo = static_cast<const IndexBufferCreateInfo*>(info);
-	n_assert(this->GetState(id.poolId) == Resource::Pending);
+	n_assert(this->GetState(id) == Resource::Pending);
 	n_assert(iboInfo->type != IndexType::None);
 	n_assert(iboInfo->numIndices > 0);
 	if (CoreGraphics::GpuBufferTypes::UsageImmutable == iboInfo->usage)
@@ -83,7 +83,7 @@ VkMemoryIndexBufferPool::LoadFromMemory(const Resources::ResourceId id, const vo
 	mapCount = 0;
 
 	// set loaded flag
-	this->states[id] = Resources::Resource::Loaded;
+	this->states[id.poolId] = Resources::Resource::Loaded;
 
 	return ResourcePool::Success;
 }

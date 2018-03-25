@@ -11,7 +11,6 @@ namespace Frame
 {
 class FrameSubpassSystem : public Frame::FrameOp
 {
-	__DeclareClass(FrameSubpassSystem);
 public:
 	enum Subsystem
 	{

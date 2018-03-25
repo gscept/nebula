@@ -37,6 +37,42 @@ DestroyTexture(const TextureId id)
 //------------------------------------------------------------------------------
 /**
 */
+TextureDimensions
+TextureGetDimensions(const TextureId id)
+{
+	return texturePool->GetDimensions(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CoreGraphics::PixelFormat::Code
+TextureGetPixelFormat(const TextureId id)
+{
+	return texturePool->GetPixelFormat(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+TextureType
+TextureGetType(const TextureId id)
+{
+	return texturePool->GetType(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint
+TextureGetNumMips(const TextureId id)
+{
+	return texturePool->GetNumMips(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 inline TextureMapInfo 
 TextureMap(const TextureId id, IndexT mip, const CoreGraphics::GpuBufferTypes::MapType type)
 {

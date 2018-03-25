@@ -24,10 +24,6 @@ public: \
     { \
         return RTTI.AllocInstanceMemoryArray(num); \
     }; \
-	void* operator new(size_t size, void* mem) \
-	{ \
-		return RTTI.AllocInstanceMemoryInplace(mem); \
-	}; \
     void operator delete(void* p) \
     { \
         RTTI.FreeInstanceMemory(p); \
@@ -42,10 +38,8 @@ public: \
     static Core::Rtti RTTI; \
     static void* FactoryCreator(); \
 	static void* FactoryArrayCreator(SizeT num); \
-	static void* FactoryInplaceCreator(void* mem); \
     static type* Create(); \
 	static type* CreateArray(SizeT num); \
-	static type* CreateInplace(void* mem); \
     static bool RegisterWithFactory(); \
     virtual Core::Rtti* GetRtti() const; \
 private:
@@ -87,11 +81,10 @@ private:
 */
 #if NEBULA_DEBUG
 #define __ImplementClass(type, fourcc, baseType) \
-    Core::Rtti type::RTTI(#type, fourcc, type::FactoryCreator, type::FactoryArrayCreator, type::FactoryInplaceCreator, &baseType::RTTI, sizeof(type)); \
+    Core::Rtti type::RTTI(#type, fourcc, type::FactoryCreator, type::FactoryArrayCreator, &baseType::RTTI, sizeof(type)); \
     Core::Rtti* type::GetRtti() const { return &this->RTTI; } \
     void* type::FactoryCreator() { return type::Create(); } \
 	void* type::FactoryArrayCreator(SizeT num) { return type::CreateArray(num); } \
-	void* type::FactoryInplaceCreator(void* mem) { return type::CreateInplace(mem); }\
     type* type::Create() \
     { \
 		static_assert(std::is_base_of<Core::RefCounted, type>::value, "Class must inherit from Core::RefCounted"); \
@@ -108,16 +101,6 @@ private:
         RefCounted::criticalSection.Enter(); \
         RefCounted::isInCreate = true; \
         type* newObject = n_new_array(type, num); \
-        RefCounted::isInCreate = false; \
-        RefCounted::criticalSection.Leave(); \
-        return newObject; \
-    }\
-	type* type::CreateInplace(void* mem) \
-	{ \
-		static_assert(std::is_base_of<Core::RefCounted, type>::value, "Class must inherit from Core::RefCounted"); \
-        RefCounted::criticalSection.Enter(); \
-        RefCounted::isInCreate = true; \
-        type* newObject = n_new_inplace(type, mem); \
         RefCounted::isInCreate = false; \
         RefCounted::criticalSection.Leave(); \
         return newObject; \
@@ -207,11 +190,10 @@ private:
 /**
 */
 #define __ImplementWeakClass(type, fourcc, baseType) \
-    Core::Rtti type::RTTI(#type, fourcc, type::FactoryCreator, type::FactoryArrayCreator, type::FactoryInplaceCreator, &baseType::RTTI, sizeof(type)); \
+    Core::Rtti type::RTTI(#type, fourcc, type::FactoryCreator, type::FactoryArrayCreator, &baseType::RTTI, sizeof(type)); \
     Core::Rtti* type::GetRtti() const { return &this->RTTI; } \
     void* type::FactoryCreator() { return type::Create(); } \
 	void* type::FactoryArrayCreator(SizeT num) { return type::CreateArray(num); } \
-	void* type::FactoryInplaceCreator(void* mem) { return type::CreateInplace(mem); }\
     type* type::Create() \
     { \
         type* newObject = n_new(type); \
@@ -220,11 +202,6 @@ private:
     type* type::CreateArray(SizeT num) \
     { \
         type* newObject = n_new_array(type, num); \
-        return newObject; \
-    }\
-	type* type::CreateInplace(void* mem) \
-	{ \
-        type* newObject = n_new_inplace(type, mem); \
         return newObject; \
     }\
     bool type::RegisterWithFactory() \
@@ -241,11 +218,10 @@ private:
 /**
 */
 #define __ImplementWeakRootClass(type, fourcc) \
-    Core::Rtti type::RTTI(#type, fourcc, type::FactoryCreator, type::FactoryArrayCreator, type::FactoryInplaceCreator, nullptr, sizeof(type)); \
+    Core::Rtti type::RTTI(#type, fourcc, type::FactoryCreator, type::FactoryArrayCreator, nullptr, sizeof(type)); \
     Core::Rtti* type::GetRtti() const { return &this->RTTI; } \
     void* type::FactoryCreator() { return type::Create(); } \
 	void* type::FactoryArrayCreator(SizeT num) { return type::CreateArray(num); } \
-	void* type::FactoryInplaceCreator(void* mem) { return type::CreateInplace(mem); }\
     type* type::Create() \
     { \
         type* newObject = n_new(type); \
@@ -254,11 +230,6 @@ private:
     type* type::CreateArray(SizeT num) \
     { \
         type* newObject = n_new_array(type, num); \
-        return newObject; \
-    }\
-	type* type::CreateInplace(void* mem) \
-	{ \
-        type* newObject = n_new_inplace(type, mem); \
         return newObject; \
     }\
     bool type::RegisterWithFactory() \
@@ -275,7 +246,7 @@ private:
 /**
 */
 #define __ImplementAbstractClass(type, fourcc, baseType) \
-    Core::Rtti type::RTTI(#type, fourcc, nullptr, nullptr, nullptr, &baseType::RTTI, 0); \
+    Core::Rtti type::RTTI(#type, fourcc, nullptr, nullptr, &baseType::RTTI, 0); \
     Core::Rtti* type::GetRtti() const { return &this->RTTI; }
 
 //------------------------------------------------------------------------------
@@ -284,11 +255,10 @@ private:
 */
 #if NEBULA_DEBUG
 #define __ImplementRootClass(type, fourcc) \
-    Core::Rtti type::RTTI(#type, fourcc, type::FactoryCreator, type::FactoryArrayCreator, type::FactoryInplaceCreator, nullptr, sizeof(type)); \
+    Core::Rtti type::RTTI(#type, fourcc, type::FactoryCreator, type::FactoryArrayCreator, nullptr, sizeof(type)); \
     Core::Rtti* type::GetRtti() const { return &this->RTTI; } \
     void* type::FactoryCreator() { return type::Create(); } \
 	void* type::FactoryArrayCreator(SizeT num) { return type::CreateArray(num); } \
-	void* type::FactoryInplaceCreator(void* mem) { return type::CreateInplace(mem); }\
     type* type::Create() \
     { \
 		static_assert(std::is_base_of<Core::RefCounted, type>::value, "Class must inherit from Core::RefCounted"); \
@@ -309,16 +279,6 @@ private:
         RefCounted::criticalSection.Leave(); \
         return newObject; \
     }\
-	type* type::CreateInplace(void* mem) \
-	{ \
-		static_assert(std::is_base_of<Core::RefCounted, type>::value, "Class must inherit from Core::RefCounted"); \
-        RefCounted::criticalSection.Enter(); \
-        RefCounted::isInCreate = true; \
-        type* newObject = n_new_inplace(type, mem); \
-        RefCounted::isInCreate = false; \
-        RefCounted::criticalSection.Leave(); \
-        return newObject; \
-    }\
     bool type::RegisterWithFactory() \
     { \
         if (!Core::Factory::Instance()->ClassExists(#type)) \
@@ -329,7 +289,7 @@ private:
     }
 #else
 #define __ImplementRootClass(type, fourcc) \
-    Core::Rtti type::RTTI(#type, fourcc, type::FactoryCreator, type::FactorArrayCreator, nullptr, sizeof(type)); \
+    Core::Rtti type::RTTI(#type, fourcc, type::FactoryCreator, type::FactorArrayCreator, sizeof(type)); \
     Core::Rtti* type::GetRtti() const { return &this->RTTI; } \
     void* type::FactoryCreator() { return type::Create(); } \
 	void* type::FactoryArrayCreator(SizeT num) { return type::CreateArray(num); } \

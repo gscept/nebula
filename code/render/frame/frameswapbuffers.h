@@ -12,7 +12,6 @@ namespace Frame
 {
 class FrameSwapbuffers : public Frame::FrameOp
 {
-	__DeclareClass(FrameSwapbuffers);
 public:
 	/// constructor
 	FrameSwapbuffers();

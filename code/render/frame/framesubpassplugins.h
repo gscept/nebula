@@ -12,7 +12,6 @@ namespace Frame
 {
 class FrameSubpassPlugins : public FrameOp
 {
-	__DeclareClass(FrameSubpassPlugins);
 public:
 	/// constructor
 	FrameSubpassPlugins();

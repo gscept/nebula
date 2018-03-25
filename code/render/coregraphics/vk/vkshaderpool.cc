@@ -48,7 +48,7 @@ VkShaderPool::LoadFromStream(const Resources::ResourceId id, const Util::StringA
 {
 	n_assert(stream.isvalid());
 	n_assert(stream->CanBeMapped());
-	n_assert(!this->GetState(id.poolId) == Resources::Resource::Pending);
+	n_assert(!this->GetState(id) == Resources::Resource::Pending);
 
 	// map stream to memory
 	stream->SetAccessMode(Stream::ReadAccess);
@@ -64,7 +64,7 @@ VkShaderPool::LoadFromStream(const Resources::ResourceId id, const Util::StringA
 		if (!effect)
 		{
 			n_error("VkStreamShaderLoader::SetupResourceFromStream(): failed to load shader '%s'!",
-				this->GetName(id.poolId).Value());
+				this->GetName(id).Value());
 			return ResourcePool::Failed;
 		}
 
@@ -72,8 +72,8 @@ VkShaderPool::LoadFromStream(const Resources::ResourceId id, const Util::StringA
 		VkShaderRuntimeInfo& runtimeInfo = this->shaderAlloc.Get<2>(id.allocId);
 
 		this->shaderAlloc.Get<0>(id.allocId) = effect;
-		setupInfo.id = ShaderIdentifier::FromName(this->GetName(id.poolId));
-		setupInfo.name = this->GetName(id.poolId);
+		setupInfo.id = ShaderIdentifier::FromName(this->GetName(id));
+		setupInfo.name = this->GetName(id);
 
 		// the setup code is massive, so just let it be in VkShader...
 		VkShaderSetup(
@@ -96,15 +96,15 @@ VkShaderPool::LoadFromStream(const Resources::ResourceId id, const Util::StringA
 		for (uint i = 0; i < programs.size(); i++)
 		{
 			// get program object from shader subsystem
-			VkShaderProgramAllocator& programAllocator = this->shaderAlloc.Get<3>(id);
+			VkShaderProgramAllocator& programAllocator = this->shaderAlloc.Get<3>(id.allocId);
 			AnyFX::VkProgram* program = static_cast<AnyFX::VkProgram*>(programs[i]);
 
 			// allocate new program object and set it up
 			Ids::Id32 programId = programAllocator.AllocObject();
-			VkShaderProgramSetup(programId, program, setupInfo.pipelineLayout, this->shaderAlloc.Get<3>(id));
+			VkShaderProgramSetup(programId, program, setupInfo.pipelineLayout, this->shaderAlloc.Get<3>(id.allocId));
 
 			// make an ID which is the shader id and program id
-			ShaderProgramId shaderProgramId = Ids::Id::MakeId32_24_8(programId, id, ShaderProgramIdType);
+			ShaderProgramId shaderProgramId = Ids::Id::MakeId32_24_8(programId, id.allocId, ShaderProgramIdType);
 			runtimeInfo.programMap.Add(programAllocator.Get<0>(programId).mask, shaderProgramId);
 		}
 

@@ -7,12 +7,11 @@
 */
 //------------------------------------------------------------------------------
 #include "frameop.h"
-#include "frame/framebatchtype.h"
+#include "coregraphics/batchgroup.h"
 namespace Frame
 {
 class FrameSubpassBatch : public FrameOp
 {
-	__DeclareClass(FrameSubpassBatch);
 public:
 	/// constructor
 	FrameSubpassBatch();
@@ -22,7 +21,7 @@ public:
 	/// run operation
 	void Run(const IndexT frameIndex);
 
-	FrameBatchType::Code batch;
+	CoreGraphics::BatchGroup::Code batch;
 };
 
 } // namespace Frame2

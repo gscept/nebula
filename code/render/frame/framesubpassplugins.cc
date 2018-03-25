@@ -5,13 +5,12 @@
 #include "stdneb.h"
 #include "framesubpassplugins.h"
 #include "coregraphics/renderdevice.h"
-#include "coregraphics/framebatchtype.h"
+#include "frame/framebatchtype.h"
 
 using namespace CoreGraphics;
 namespace Frame
 {
 
-__ImplementClass(Frame::FrameSubpassPlugins, 'FSPL', Frame::FrameOp);
 //------------------------------------------------------------------------------
 /**
 */
@@ -37,7 +36,7 @@ FrameSubpassPlugins::Discard()
 {
 	FrameOp::Discard();
 
-	this->pluginRegistry = 0;
+	this->pluginRegistry = nullptr;
 }
 
 //------------------------------------------------------------------------------

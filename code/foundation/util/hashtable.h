@@ -31,6 +31,7 @@
 #include "util/fixedarray.h"
 #include "util/array.h"
 #include "util/keyvaluepair.h"
+#include "math/scalar.h"
 #include <type_traits>
 
 //------------------------------------------------------------------------------
@@ -276,10 +277,10 @@ template<class KEYTYPE, class VALUETYPE>
 void
 HashTable<KEYTYPE, VALUETYPE>::Merge(const HashTable<KEYTYPE, VALUETYPE>& rhs)
 {
-	this->hashArray.Resize(n_max(rhs.size, this->size));
+	n_assert(this->size == rhs.size);
 	IndexT i;
 	for (i = 0; i < rhs.size; i++)
-		this->Add(rhs.hashArray[i]);
+		this->hashArray[i].AppendArray(rhs.hashArray[i]);
 
 }
 

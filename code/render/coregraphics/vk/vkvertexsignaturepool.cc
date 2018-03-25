@@ -115,7 +115,7 @@ VkVertexSignaturePool::LoadFromMemory(const Resources::ResourceId id, const void
 	};
 
 	// pepperidge farms remember
-	this->states[id] = Resources::Resource::Loaded;
+	this->states[id.poolId] = Resources::Resource::Loaded;
 
 	return ResourcePool::Success;
 }

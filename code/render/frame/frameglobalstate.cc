@@ -9,7 +9,6 @@
 namespace Frame
 {
 
-__ImplementClass(Frame::FrameGlobalState, 'FRGS', Frame::FrameOp);
 //------------------------------------------------------------------------------
 /**
 */

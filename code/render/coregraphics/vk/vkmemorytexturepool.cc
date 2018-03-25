@@ -139,7 +139,7 @@ VkMemoryTexturePool::LoadFromMemory(const Resources::ResourceId id, const void* 
 	n_assert(loadInfo.img!= VK_NULL_HANDLE);
 
 	// set loaded flag
-	this->states[id] = Resources::Resource::Loaded;
+	this->states[id.poolId] = Resources::Resource::Loaded;
 
 	return ResourcePool::Success;
 }
@@ -430,6 +430,42 @@ VkMemoryTexturePool::Copy(const CoreGraphics::TextureId from, const CoreGraphics
 	CoreGraphics::CmdBufferId cmdBuf = VkUtilities::BeginImmediateTransfer();
 	vkCmdCopyImage(CommandBufferGetVk(cmdBuf), fromLoad.img, VK_IMAGE_LAYOUT_GENERAL, toLoad.img, VK_IMAGE_LAYOUT_GENERAL, 1, &copy);
 	VkUtilities::EndImmediateTransfer(cmdBuf);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CoreGraphics::TextureDimensions
+VkMemoryTexturePool::GetDimensions(const CoreGraphics::TextureId id)
+{
+	return textureAllocator.Get<1>(id.allocId).dims;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CoreGraphics::PixelFormat::Code
+VkMemoryTexturePool::GetPixelFormat(const CoreGraphics::TextureId id)
+{
+	return textureAllocator.Get<1>(id.allocId).format;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CoreGraphics::TextureType
+VkMemoryTexturePool::GetType(const CoreGraphics::TextureId id)
+{
+	return textureAllocator.Get<0>(id.allocId).type;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint
+VkMemoryTexturePool::GetNumMips(const CoreGraphics::TextureId id)
+{
+	return textureAllocator.Get<1>(id.allocId).mips;
 }
 
 } // namespace Vulkan

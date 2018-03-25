@@ -41,6 +41,7 @@ struct RenderTextureCreateInfo
 	bool relativeSize : 1;
 };
 
+// much like the above, but for adjusted infos
 struct RenderTextureInfo
 {
 	Resources::ResourceName name;

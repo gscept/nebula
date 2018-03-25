@@ -10,6 +10,7 @@
 #include "core/refcounted.h"
 #include "frame/framescript.h"
 #include "timing/time.h"
+#include "camera.h"
 namespace Graphics
 {
 class Stage;
@@ -25,11 +26,23 @@ public:
 	
 	/// render through view
 	void Render(const IndexT frameIndex, const Timing::Time time);
+
+	/// get camera
+	const CameraId& GetCamera();
 private:	
 
-	//Ptr<Frame::FrameScript> script;
-	Ptr<Camera> camera;
+	Ptr<Frame::FrameScript> script;
+	CameraId camera;
 	Ptr<Stage> stage;
 };
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const CameraId&
+Graphics::View::GetCamera()
+{
+	return this->camera;
+}
 
 } // namespace Graphics

@@ -8,13 +8,12 @@
 //------------------------------------------------------------------------------
 #include "algorithm.h"
 #include "coregraphics/rendertexture.h"
-#include "coregraphics/shaderstate.h"
+#include "coregraphics/shader.h"
 #include "renderutil/drawfullscreenquad.h"
 namespace Algorithms
 {
 class TonemapAlgorithm : public Algorithm
 {
-	__DeclareClass(TonemapAlgorithm);
 public:
 	/// constructor
 	TonemapAlgorithm();
@@ -28,14 +27,17 @@ public:
 
 private:
 
-	Ptr<CoreGraphics::RenderTexture> downsample2x2;
-	Ptr<CoreGraphics::RenderTexture> copy;
-	Ptr<CoreGraphics::ShaderState> shader;
-	Ptr<CoreGraphics::ShaderVariable> timevar;
-	Ptr<CoreGraphics::ShaderVariable> colorvar;
-	Ptr<CoreGraphics::ShaderVariable> prevvar;
+	CoreGraphics::RenderTextureId downsample2x2;
+	CoreGraphics::RenderTextureId copy;
+
+	CoreGraphics::ShaderId shader;
+	CoreGraphics::ShaderStateId tonemapShader;
+	CoreGraphics::ShaderProgramId program;
+
+	CoreGraphics::ShaderConstantId timevar;
+	CoreGraphics::ShaderConstantId colorvar;
+	CoreGraphics::ShaderConstantId prevvar;
 	RenderUtil::DrawFullScreenQuad fsq;
 };
-__RegisterClass(TonemapAlgorithm);
 
 } // namespace Algorithms

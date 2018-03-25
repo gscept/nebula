@@ -56,6 +56,8 @@
 #include "graphicsentity.h"
 namespace Graphics
 {
+
+ID_32_TYPE(ContextEntityId)
 class View;
 class GraphicsContext : public Core::RefCounted
 {
@@ -90,11 +92,11 @@ public:
 protected:
 	
 	/// allocate a new slice for this context
-	virtual uint Alloc() = 0;
+	virtual ContextEntityId Alloc() = 0;
 	/// deallocate a slice
-	virtual void Dealloc(uint id) = 0;
+	virtual void Dealloc(ContextEntityId id) = 0;
 
-	Util::Dictionary<uint, uint> entitySliceMap;
+	Util::Dictionary<GraphicsEntityId, ContextEntityId> entitySliceMap;
 };
 
 } // namespace Graphics

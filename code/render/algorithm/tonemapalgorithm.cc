@@ -8,10 +8,10 @@
 #include "coregraphics/renderdevice.h"
 #include "framesync/framesynctimer.h"
 
+using namespace CoreGraphics;
 namespace Algorithms
 {
 
-__ImplementClass(Algorithms::TonemapAlgorithm, 'TONE', Algorithms::Algorithm);
 //------------------------------------------------------------------------------
 /**
 */
@@ -28,7 +28,6 @@ TonemapAlgorithm::~TonemapAlgorithm()
 	// empty
 }
 
-
 //------------------------------------------------------------------------------
 /**
 */
@@ -38,61 +37,55 @@ TonemapAlgorithm::Setup()
 	Algorithm::Setup();
 	n_assert(this->renderTextures.Size() == 2);
 
-	// setup downsample target
-	this->downsample2x2 = CoreGraphics::RenderTexture::Create();
-	this->downsample2x2->SetResourceId("Tonemapping-Downsample2x2");
-	this->downsample2x2->SetIsWindowTexture(false);
-	this->downsample2x2->SetIsScreenRelative(false);
-	this->downsample2x2->SetIsDynamicScaled(false);
-	this->downsample2x2->SetLayers(1);
-	this->downsample2x2->SetDimensions(2, 2);
-	this->downsample2x2->SetEnableMSAA(false);
-	this->downsample2x2->SetPixelFormat(this->renderTextures[0]->GetPixelFormat());
-	this->downsample2x2->SetTextureType(CoreGraphics::Texture::Texture2D);
-	this->downsample2x2->SetUsage(CoreGraphics::RenderTexture::ColorAttachment);
-	this->downsample2x2->Setup();
+	RenderTextureCreateInfo rtinfo = 
+	{
+		"Tonemapping-Downsample2x2",
+		Texture2D,
+		RenderTextureGetPixelFormat(this->renderTextures[0]),
+		ColorAttachment,
+		2, 2, 1,
+		1, 1,
+		0.0f, 0.0f, 0.0f, 
+		false, false, false, false
+	};
+	this->downsample2x2 = CreateRenderTexture(rtinfo);
 
-	// setup copy target
-	this->copy = CoreGraphics::RenderTexture::Create();
-	this->copy->SetResourceId("Tonemapping-Copy");
-	this->copy->SetIsWindowTexture(false);
-	this->copy->SetIsScreenRelative(false);
-	this->copy->SetIsDynamicScaled(false);
-	this->copy->SetLayers(1);
-	this->copy->SetDimensions(1, 1);
-	this->copy->SetEnableMSAA(false);
-	this->copy->SetPixelFormat(this->renderTextures[1]->GetPixelFormat());
-	this->copy->SetTextureType(CoreGraphics::Texture::Texture2D);
-	this->copy->SetUsage(CoreGraphics::RenderTexture::ColorAttachment);
-	this->copy->Setup();
+	rtinfo.name = "Tonemapping-Copy";
+	rtinfo.width = 1;
+	rtinfo.height = 1;
+	rtinfo.format = RenderTextureGetPixelFormat(this->renderTextures[1]);
+	this->copy = CreateRenderTexture(rtinfo);
 
 	// get render device
 	CoreGraphics::RenderDevice* dev = CoreGraphics::RenderDevice::Instance();
 
 	// create shader
-	this->shader = CoreGraphics::ShaderServer::Instance()->CreateShaderState("shd:averagelum", { NEBULAT_DEFAULT_GROUP });
-	this->timevar = this->shader->GetVariableByName("TimeDiff");
-	this->colorvar = this->shader->GetVariableByName("ColorSource");
-	this->prevvar = this->shader->GetVariableByName("PreviousLum");
-	this->prevvar->SetTexture(this->copy->GetTexture());
-	this->colorvar->SetTexture(this->downsample2x2->GetTexture());
+	this->shader = ShaderGet("shd:averagelum");
+	this->tonemapShader = ShaderCreateState(this->shader, { NEBULAT_BATCH_GROUP }, false);
+	this->timevar = ShaderStateGetConstant(this->tonemapShader, "TimeDiff");
+	this->colorvar = ShaderStateGetConstant(this->tonemapShader, "ColorSource");
+	this->prevvar = ShaderStateGetConstant(this->tonemapShader, "PreviousLum");
+	this->program = ShaderGetProgram(this->shader, ShaderFeatureFromString("Alt0"));
+	ShaderResourceSetRenderTexture(this->prevvar, this->tonemapShader, this->copy);
+	ShaderResourceSetRenderTexture(this->colorvar, this->tonemapShader, this->downsample2x2);
 	this->fsq.Setup(2, 2);
+
 
 	// begin by copying and mipping down to a 2x2 texture
 	this->AddFunction("Downsample", Algorithm::Compute, [this](IndexT)
 	{
-		this->renderTextures[0]->Blit(0, 0, this->downsample2x2);
+		RenderDevice::Instance()->Blit(this->renderTextures[0], Math::rectangle<int>(0, 0, 512, 512), 0, this->downsample2x2, Math::rectangle<int>(0, 0, 2, 2), 0);
 	});
 
 	// this pass calculates tonemapping from 2x2 cluster down to single pixel, called from the script
 	this->AddFunction("AverageLum", Algorithm::Graphics, [this, dev](IndexT)
 	{
 		Timing::Time time = FrameSync::FrameSyncTimer::Instance()->GetFrameTime();
-		this->shader->Apply();
-		dev->BeginBatch(CoreGraphics::FrameBatchType::System);
+		ShaderProgramBind(this->program);
+		dev->BeginBatch(Frame::FrameBatchType::System);
 		this->fsq.ApplyMesh();
-		this->timevar->SetFloat((float)time);
-		this->shader->Commit();
+		ShaderConstantSet(this->timevar, this->tonemapShader, (float)time);
+		ShaderStateApply(this->tonemapShader);
 		this->fsq.Draw();
 		dev->EndBatch();
 	});
@@ -100,7 +93,7 @@ TonemapAlgorithm::Setup()
 	// last pass, copy from render target to copy
 	this->AddFunction("Copy", Algorithm::Compute, [this](IndexT)
 	{
-		this->renderTextures[1]->Blit(0, 0, this->copy);
+		RenderDevice::Instance()->Copy(this->renderTextures[1], Math::rectangle<int>(0, 0, 1, 1), this->copy, Math::rectangle<int>(0, 0, 1, 1));
 	});
 }
 
@@ -111,12 +104,9 @@ void
 TonemapAlgorithm::Discard()
 {
 	Algorithm::Discard();
-	this->downsample2x2->Discard();
-	this->copy->Discard();
-	this->shader->Discard();
-	this->prevvar = nullptr;
-	this->colorvar = nullptr;
-	this->timevar = nullptr;
+	DestroyRenderTexture(this->downsample2x2);
+	DestroyRenderTexture(this->copy);
+	ShaderDestroyState(this->tonemapShader);
 	this->fsq.Discard();
 }
 

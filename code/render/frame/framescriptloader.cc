@@ -341,12 +341,13 @@ FrameScriptLoader::ParseAlgorithmList(const Ptr<Frame::FrameScript>& script, Jzo
 		JzonValue* clazz = jzon_get(cur, "class");
 		n_assert(clazz != NULL);
 
-		// get type size so we can preallocate the algorithm type
-		const Core::Rtti* rtti = Core::Factory::Instance()->GetClassRtti(clazz->string_value);
-		void* mem = script->GetAllocator().Alloc(rtti->GetInstanceSize());
+		Util::HashTable<uint, uint> algorithmTable;
+		algorithmTable.Add(("HBAOAlgorithm"_str).HashCode(), sizeof(Algorithms::HBAOAlgorithm));
+		algorithmTable.Add(("BloomAlgorithm"_str).HashCode(), sizeof(Algorithms::BloomAlgorithm));
+		algorithmTable.Add(("TonemapAlgorithm"_str).HashCode(), sizeof(Algorithms::TonemapAlgorithm));	
 
 		// create algorithm
-		Ptr<Algorithms::Algorithm> alg = (Algorithms::Algorithm*)Core::Factory::Instance()->CreateInplace(clazz->string_value, mem);
+		Algorithms::Algorithm* alg = (Algorithms::Algorithm*)script->GetAllocator().Alloc(algorithmTable[Util::String(clazz->string_value).HashCode()]);
 
 		JzonValue* textures = jzon_get(cur, "renderTextures");
 		if (textures != NULL)
@@ -451,7 +452,7 @@ FrameScriptLoader::ParseShaderStateList(const Ptr<Frame::FrameScript>& script, J
 
 		JzonValue* shader = jzon_get(cur, "shader");
 		n_assert(shader != NULL);
-		CoreGraphics::ShaderStateId state = ShaderServer::Instance()->ShaderCreateState(shader->string_value, { NEBULAT_DEFAULT_GROUP }, createResources);
+		CoreGraphics::ShaderStateId state = ShaderServer::Instance()->ShaderCreateState(shader->string_value, { NEBULAT_BATCH_GROUP }, createResources);
 
 		JzonValue* vars = jzon_get(cur, "variables");
 		if (vars != NULL) ParseShaderVariables(script, state, vars);
@@ -467,8 +468,7 @@ FrameScriptLoader::ParseShaderStateList(const Ptr<Frame::FrameScript>& script, J
 void
 FrameScriptLoader::ParseGlobalState(const Ptr<Frame::FrameScript>& script, JzonValue* node)
 {
-	void* mem = script->GetAllocator().Alloc<FrameGlobalState>();
-	Ptr<FrameGlobalState> op = FrameGlobalState::CreateInplace(mem);
+	FrameGlobalState* op = script->GetAllocator().Alloc<FrameGlobalState>();
 
 	// set name of op
 	JzonValue* name = jzon_get(node, "name");
@@ -477,8 +477,6 @@ FrameScriptLoader::ParseGlobalState(const Ptr<Frame::FrameScript>& script, JzonV
 
 	// create shared state, this will be set while running the script and update the shared state
 	CoreGraphics::ShaderStateId state = ShaderServer::Instance()->ShaderCreateSharedState("shd:shared", { NEBULAT_FRAME_GROUP });
-	
-	state->SetApplyShared(true);
 	op->state = state;
 
 	// setup variables
@@ -545,7 +543,7 @@ FrameScriptLoader::ParseGlobalState(const Ptr<Frame::FrameScript>& script, JzonV
 		}
 	}
 
-	script->AddOp(op.upcast<Frame::FrameOp>());
+	script->AddOp(op);
 }
 
 //------------------------------------------------------------------------------
@@ -554,8 +552,7 @@ FrameScriptLoader::ParseGlobalState(const Ptr<Frame::FrameScript>& script, JzonV
 void
 FrameScriptLoader::ParseBlit(const Ptr<Frame::FrameScript>& script, JzonValue* node)
 {
-	void* mem = script->GetAllocator().Alloc<FrameBlit>();
-	Ptr<FrameBlit> op = FrameBlit::CreateInplace(mem);
+	FrameBlit* op = script->GetAllocator().Alloc<FrameBlit>();
 
 	// set name of op
 	JzonValue* name = jzon_get(node, "name");
@@ -573,7 +570,7 @@ FrameScriptLoader::ParseBlit(const Ptr<Frame::FrameScript>& script, JzonValue* n
 	// setup blit operation
 	op->from = fromTex;
 	op->to = toTex;
-	script->AddOp(op.upcast<Frame::FrameOp>());
+	script->AddOp(op);
 }
 
 //------------------------------------------------------------------------------
@@ -582,8 +579,7 @@ FrameScriptLoader::ParseBlit(const Ptr<Frame::FrameScript>& script, JzonValue* n
 void
 FrameScriptLoader::ParseCopy(const Ptr<Frame::FrameScript>& script, JzonValue* node)
 {
-	void* mem = script->GetAllocator().Alloc<FrameCopy>();
-	Ptr<Frame::FrameCopy> op = Frame::FrameCopy::CreateInplace(mem);
+	FrameCopy* op = script->GetAllocator().Alloc<FrameCopy>();
 
 	// get function and name
 	JzonValue* name = jzon_get(node, "name");
@@ -601,7 +597,7 @@ FrameScriptLoader::ParseCopy(const Ptr<Frame::FrameScript>& script, JzonValue* n
 	// setup copy operation
 	op->from = fromTex;
 	op->to = toTex;
-	script->AddOp(op.upcast<Frame::FrameOp>());
+	script->AddOp(op);
 }
 
 //------------------------------------------------------------------------------
@@ -609,9 +605,8 @@ FrameScriptLoader::ParseCopy(const Ptr<Frame::FrameScript>& script, JzonValue* n
 */
 void
 FrameScriptLoader::ParseCompute(const Ptr<Frame::FrameScript>& script, JzonValue* node)
-{
-	void* mem = script->GetAllocator().Alloc<FrameCompute>();
-	Ptr<FrameCompute> op = FrameCompute::CreateInplace(mem);
+{	
+	FrameCompute* op = script->GetAllocator().Alloc<FrameCompute>();
 
 	// get name of compute sequence
 	JzonValue* name = jzon_get(node, "name");
@@ -640,7 +635,7 @@ FrameScriptLoader::ParseCompute(const Ptr<Frame::FrameScript>& script, JzonValue
 	op->z = dims->array_values[2]->int_value;
 
 	// add op to script
-	script->AddOp(op.upcast<Frame::FrameOp>());
+	script->AddOp(op);
 }
 
 //------------------------------------------------------------------------------
@@ -649,8 +644,7 @@ FrameScriptLoader::ParseCompute(const Ptr<Frame::FrameScript>& script, JzonValue
 void
 FrameScriptLoader::ParseComputeAlgorithm(const Ptr<Frame::FrameScript>& script, JzonValue* node)
 {
-	void* mem = script->GetAllocator().Alloc<FrameComputeAlgorithm>();
-	Ptr<FrameComputeAlgorithm> op = FrameComputeAlgorithm::CreateInplace(mem);
+	FrameComputeAlgorithm* op = script->GetAllocator().Alloc<FrameComputeAlgorithm>();
 
 	// get function and name
 	JzonValue* name = jzon_get(node, "name");
@@ -663,13 +657,13 @@ FrameScriptLoader::ParseComputeAlgorithm(const Ptr<Frame::FrameScript>& script, 
 	n_assert(function != NULL);
 
 	// get algorithm
-	const Ptr<Algorithms::Algorithm>& algorithm = script->GetAlgorithm(alg->string_value);
+	Algorithms::Algorithm* algorithm = script->GetAlgorithm(alg->string_value);
 	op->alg = algorithm;
 	op->funcName = function->string_value;
 
 	// add to script
 	op->Setup();
-	script->AddOp(op.upcast<Frame::FrameOp>());
+	script->AddOp(op);
 }
 
 //------------------------------------------------------------------------------
@@ -678,8 +672,7 @@ FrameScriptLoader::ParseComputeAlgorithm(const Ptr<Frame::FrameScript>& script, 
 void
 FrameScriptLoader::ParseSwapbuffers(const Ptr<Frame::FrameScript>& script, JzonValue* node)
 {
-	void* mem = script->GetAllocator().Alloc<FrameSwapbuffers>();
-	Ptr<FrameSwapbuffers> op = FrameSwapbuffers::CreateInplace(mem);
+	FrameSwapbuffers* op = script->GetAllocator().Alloc<FrameSwapbuffers>();
 
 	// get function and name
 	JzonValue* name = jzon_get(node, "name");
@@ -692,7 +685,7 @@ FrameScriptLoader::ParseSwapbuffers(const Ptr<Frame::FrameScript>& script, JzonV
 	op->tex = tex;
 
 	// add operation
-	script->AddOp(op.upcast<Frame::FrameOp>());
+	script->AddOp(op);
 }
 
 //------------------------------------------------------------------------------
@@ -701,8 +694,8 @@ FrameScriptLoader::ParseSwapbuffers(const Ptr<Frame::FrameScript>& script, JzonV
 void
 FrameScriptLoader::ParseEvent(const Ptr<Frame::FrameScript>& script, JzonValue* node)
 {
-	void* mem = script->GetAllocator().Alloc<FrameEvent>();
-	Ptr<FrameEvent> op = FrameEvent::CreateInplace(mem);
+	FrameEvent* op = script->GetAllocator().Alloc<FrameEvent>();
+
 	JzonValue* name = jzon_get(node, "name");
 	n_assert(name != NULL);
 	const CoreGraphics::EventId& event = script->GetEvent(name->string_value);
@@ -733,7 +726,7 @@ FrameScriptLoader::ParseEvent(const Ptr<Frame::FrameScript>& script, JzonValue* 
 
 	// set event in op
 	op->event = event;
-	script->AddOp(op.upcast<Frame::FrameOp>());
+	script->AddOp(op);
 }
 
 //------------------------------------------------------------------------------
@@ -742,8 +735,8 @@ FrameScriptLoader::ParseEvent(const Ptr<Frame::FrameScript>& script, JzonValue* 
 void
 FrameScriptLoader::ParseBarrier(const Ptr<Frame::FrameScript>& script, JzonValue* node)
 {
-	void* mem = script->GetAllocator().Alloc<FrameBarrier>();
-	Ptr<FrameBarrier> op = FrameBarrier::CreateInplace(mem);
+	FrameBarrier* op = script->GetAllocator().Alloc<FrameBarrier>();
+
 	JzonValue* name = jzon_get(node, "name");
 	n_assert(name != NULL);
 	op->SetName(name->string_value);
@@ -756,7 +749,7 @@ FrameScriptLoader::ParseBarrier(const Ptr<Frame::FrameScript>& script, JzonValue
 
 	BarrierId barrier = CreateBarrier(info);
 	op->barrier = barrier;
-	script->AddOp(op.upcast<FrameOp>());
+	script->AddOp(op);
 }
 
 //------------------------------------------------------------------------------
@@ -898,8 +891,8 @@ void
 FrameScriptLoader::ParsePass(const Ptr<Frame::FrameScript>& script, JzonValue* node)
 {
 	// create pass
-	void* mem = script->GetAllocator().Alloc<FramePass>();
-	Ptr<FramePass> op = FramePass::CreateInplace(mem);
+	FramePass* op = script->GetAllocator().Alloc<FramePass>();
+
 	PassCreateInfo info;
 
 	// get name of pass
@@ -980,7 +973,7 @@ FrameScriptLoader::ParsePass(const Ptr<Frame::FrameScript>& script, JzonValue* n
 
 	// setup framebuffer and bind to pass
 	op->pass = CreatePass(info);
-	script->AddOp(op.upcast<Frame::FrameOp>());
+	script->AddOp(op);
 }
 
 //------------------------------------------------------------------------------
@@ -1036,10 +1029,10 @@ FrameScriptLoader::ParseAttachmentList(const Ptr<Frame::FrameScript>& script, Co
 /**
 */
 void
-FrameScriptLoader::ParseSubpass(const Ptr<Frame::FrameScript>& script, CoreGraphics::PassCreateInfo& pass, const Ptr<Frame::FramePass>& framePass, Util::Array<Resources::ResourceName>& attachmentNames, JzonValue* node)
+FrameScriptLoader::ParseSubpass(const Ptr<Frame::FrameScript>& script, CoreGraphics::PassCreateInfo& pass, Frame::FramePass* framePass, Util::Array<Resources::ResourceName>& attachmentNames, JzonValue* node)
 {
-	void* mem = script->GetAllocator().Alloc<FrameSubpass>();
-	Ptr<FrameSubpass> frameSubpass = FrameSubpass::CreateInplace(mem);
+	FrameSubpass* frameSubpass = script->GetAllocator().Alloc<FrameSubpass>();
+
 	Subpass subpass;
 	subpass.resolve = false;
 	subpass.bindDepth = false;
@@ -1080,7 +1073,7 @@ FrameScriptLoader::ParseSubpass(const Ptr<Frame::FrameScript>& script, CoreGraph
 	Extend to use subpass names
 */
 void
-FrameScriptLoader::ParseSubpassDependencies(const Ptr<Frame::FramePass>& pass, CoreGraphics::Subpass& subpass, JzonValue* node)
+FrameScriptLoader::ParseSubpassDependencies(Frame::FramePass* pass, CoreGraphics::Subpass& subpass, JzonValue* node)
 {
 	uint i;
 	for (i = 0; i < node->size; i++)
@@ -1090,7 +1083,7 @@ FrameScriptLoader::ParseSubpassDependencies(const Ptr<Frame::FramePass>& pass, C
 		else if (cur->is_string)
 		{
 			Util::String id(cur->string_value);
-			const Util::Array<Ptr<FrameSubpass>>& subpasses = pass->GetSubpasses();
+			const Util::Array<FrameSubpass*>& subpasses = pass->GetSubpasses();
 			IndexT j;
 			for (j = 0; j < subpasses.Size(); j++)
 			{
@@ -1109,7 +1102,7 @@ FrameScriptLoader::ParseSubpassDependencies(const Ptr<Frame::FramePass>& pass, C
 	Extend to use attachment names
 */
 void
-FrameScriptLoader::ParseSubpassAttachments(const Ptr<Frame::FramePass>& pass, CoreGraphics::Subpass& subpass, Util::Array<Resources::ResourceName>& attachmentNames, JzonValue* node)
+FrameScriptLoader::ParseSubpassAttachments(Frame::FramePass* pass, CoreGraphics::Subpass& subpass, Util::Array<Resources::ResourceName>& attachmentNames, JzonValue* node)
 {
 	uint i;
 	for (i = 0; i < node->size; i++)
@@ -1136,7 +1129,7 @@ FrameScriptLoader::ParseSubpassAttachments(const Ptr<Frame::FramePass>& pass, Co
 /**
 */
 void
-FrameScriptLoader::ParseSubpassInputs(const Ptr<Frame::FramePass>& pass, CoreGraphics::Subpass& subpass, Util::Array<Resources::ResourceName>& attachmentNames, JzonValue* node)
+FrameScriptLoader::ParseSubpassInputs(Frame::FramePass* pass, CoreGraphics::Subpass& subpass, Util::Array<Resources::ResourceName>& attachmentNames, JzonValue* node)
 {
 	uint i;
 	for (i = 0; i < node->size; i++)
@@ -1164,7 +1157,7 @@ FrameScriptLoader::ParseSubpassInputs(const Ptr<Frame::FramePass>& pass, CoreGra
 /**
 */
 void
-FrameScriptLoader::ParseSubpassViewports(const Ptr<Frame::FrameScript>& script, const Ptr<Frame::FrameSubpass>& subpass, JzonValue* node)
+FrameScriptLoader::ParseSubpassViewports(const Ptr<Frame::FrameScript>& script, Frame::FrameSubpass* subpass, JzonValue* node)
 {
 	uint i;
 	for (i = 0; i < node->size; i++)
@@ -1180,7 +1173,7 @@ FrameScriptLoader::ParseSubpassViewports(const Ptr<Frame::FrameScript>& script, 
 /**
 */
 void
-FrameScriptLoader::ParseSubpassScissors(const Ptr<Frame::FrameScript>& script, const Ptr<Frame::FrameSubpass>& subpass, JzonValue* node)
+FrameScriptLoader::ParseSubpassScissors(const Ptr<Frame::FrameScript>& script, Frame::FrameSubpass* subpass, JzonValue* node)
 {
 	uint i;
 	for (i = 0; i < node->size; i++)
@@ -1196,10 +1189,9 @@ FrameScriptLoader::ParseSubpassScissors(const Ptr<Frame::FrameScript>& script, c
 /**
 */
 void
-FrameScriptLoader::ParseSubpassAlgorithm(const Ptr<Frame::FrameScript>& script, const Ptr<Frame::FrameSubpass>& subpass, JzonValue* node)
+FrameScriptLoader::ParseSubpassAlgorithm(const Ptr<Frame::FrameScript>& script, Frame::FrameSubpass* subpass, JzonValue* node)
 {
-	void* mem = script->GetAllocator().Alloc<FrameSubpassAlgorithm>();
-	Ptr<FrameSubpassAlgorithm> op = FrameSubpassAlgorithm::CreateInplace(mem);
+	FrameSubpassAlgorithm* op = script->GetAllocator().Alloc<FrameSubpassAlgorithm>();
 
 	// get function and name
 	JzonValue* name = jzon_get(node, "name");
@@ -1212,47 +1204,45 @@ FrameScriptLoader::ParseSubpassAlgorithm(const Ptr<Frame::FrameScript>& script, 
 	n_assert(function != NULL);
 
 	// get algorithm
-	const Ptr<Algorithms::Algorithm>& algorithm = script->GetAlgorithm(alg->string_value);
+	Algorithms::Algorithm* algorithm = script->GetAlgorithm(alg->string_value);
 	op->alg = algorithm;
 	op->funcName = function->string_value;
 
 	// add to script
 	op->Setup();
-	subpass->AddOp(op.upcast<Frame::FrameOp>());
+	subpass->AddOp(op);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-FrameScriptLoader::ParseSubpassBatch(const Ptr<Frame::FrameScript>& script, const Ptr<Frame::FrameSubpass>& subpass, JzonValue* node)
+FrameScriptLoader::ParseSubpassBatch(const Ptr<Frame::FrameScript>& script, Frame::FrameSubpass* subpass, JzonValue* node)
 {
-	void* mem = script->GetAllocator().Alloc<FrameSubpassBatch>();
-	Ptr<FrameSubpassBatch> op = FrameSubpassBatch::CreateInplace(mem);
+	FrameSubpassBatch* op = script->GetAllocator().Alloc<FrameSubpassBatch>();
+
 	op->batch = CoreGraphics::BatchGroup::FromName(node->string_value);
-	subpass->AddOp(op.upcast<Frame::FrameOp>());
+	subpass->AddOp(op);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-FrameScriptLoader::ParseSubpassSortedBatch(const Ptr<Frame::FrameScript>& script, const Ptr<Frame::FrameSubpass>& subpass, JzonValue* node)
+FrameScriptLoader::ParseSubpassSortedBatch(const Ptr<Frame::FrameScript>& script, Frame::FrameSubpass* subpass, JzonValue* node)
 {
-	void* mem = script->GetAllocator().Alloc<FrameSubpassOrderedBatch>();
-	Ptr<FrameSubpassOrderedBatch> op = FrameSubpassOrderedBatch::CreateInplace(mem);
+	FrameSubpassOrderedBatch* op = script->GetAllocator().Alloc<FrameSubpassOrderedBatch>();
 	op->batch = CoreGraphics::BatchGroup::FromName(node->string_value);
-	subpass->AddOp(op.upcast<Frame::FrameOp>());
+	subpass->AddOp(op);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-FrameScriptLoader::ParseSubpassFullscreenEffect(const Ptr<Frame::FrameScript>& script, const Ptr<Frame::FrameSubpass>& subpass, JzonValue* node)
+FrameScriptLoader::ParseSubpassFullscreenEffect(const Ptr<Frame::FrameScript>& script, Frame::FrameSubpass* subpass, JzonValue* node)
 {
-	void* mem = script->GetAllocator().Alloc<FrameSubpassFullscreenEffect>();
-	Ptr<FrameSubpassFullscreenEffect> op = FrameSubpassFullscreenEffect::CreateInplace(mem);
+	FrameSubpassFullscreenEffect* op = script->GetAllocator().Alloc<FrameSubpassFullscreenEffect>();
 
 	// get function and name
 	JzonValue* name = jzon_get(node, "name");
@@ -1271,17 +1261,17 @@ FrameScriptLoader::ParseSubpassFullscreenEffect(const Ptr<Frame::FrameScript>& s
 	
 	// add op to subpass
 	op->Setup();
-	subpass->AddOp(op.upcast<Frame::FrameOp>());
+	subpass->AddOp(op);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-FrameScriptLoader::ParseSubpassEvent(const Ptr<Frame::FrameScript>& script, const Ptr<Frame::FrameSubpass>& subpass, JzonValue* node)
+FrameScriptLoader::ParseSubpassEvent(const Ptr<Frame::FrameScript>& script, Frame::FrameSubpass* subpass, JzonValue* node)
 {
-	void* mem = script->GetAllocator().Alloc<FrameEvent>();
-	Ptr<FrameEvent> op = FrameEvent::CreateInplace(mem);
+	FrameEvent* op = script->GetAllocator().Alloc<FrameEvent>();
+
 	JzonValue* name = jzon_get(node, "name");
 	n_assert(name != nullptr);
 	CoreGraphics::EventId event = script->GetEvent(name->string_value);
@@ -1312,17 +1302,16 @@ FrameScriptLoader::ParseSubpassEvent(const Ptr<Frame::FrameScript>& script, cons
 
 	// set event in op
 	op->event = event;
-	subpass->AddOp(op.upcast<Frame::FrameOp>());
+	subpass->AddOp(op);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-FrameScriptLoader::ParseSubpassBarrier(const Ptr<Frame::FrameScript>& script, const Ptr<Frame::FrameSubpass>& subpass, JzonValue* node)
+FrameScriptLoader::ParseSubpassBarrier(const Ptr<Frame::FrameScript>& script, Frame::FrameSubpass* subpass, JzonValue* node)
 {
-	void* mem = script->GetAllocator().Alloc<FrameBarrier>();
-	Ptr<FrameBarrier> op = FrameBarrier::CreateInplace(mem);
+	FrameBarrier* op = script->GetAllocator().Alloc<FrameBarrier>();
 	JzonValue* name = jzon_get(node, "name");
 	n_assert(name != NULL);
 	op->SetName(name->string_value);
@@ -1335,17 +1324,16 @@ FrameScriptLoader::ParseSubpassBarrier(const Ptr<Frame::FrameScript>& script, co
 	ParseBarrierInternal(script, node, info);
 
 	op->barrier = CreateBarrier(info);
-	subpass->AddOp(op.upcast<Frame::FrameOp>());
+	subpass->AddOp(op);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-FrameScriptLoader::ParseSubpassSystem(const Ptr<Frame::FrameScript>& script, const Ptr<Frame::FrameSubpass>& subpass, JzonValue* node)
+FrameScriptLoader::ParseSubpassSystem(const Ptr<Frame::FrameScript>& script, Frame::FrameSubpass* subpass, JzonValue* node)
 {
-	void* mem = script->GetAllocator().Alloc<FrameSubpassSystem>();
-	Ptr<FrameSubpassSystem> op = FrameSubpassSystem::CreateInplace(mem);
+	FrameSubpassSystem* op = script->GetAllocator().Alloc<FrameSubpassSystem>();
 
 	Util::String subsystem(node->string_value);
 	if (subsystem == "Lights")					op->SetSubsystem(FrameSubpassSystem::Lights);
@@ -1360,17 +1348,17 @@ FrameScriptLoader::ParseSubpassSystem(const Ptr<Frame::FrameScript>& script, con
 	{
 		n_error("No subsystem called '%s' exists", subsystem.AsCharPtr());
 	}
-	subpass->AddOp(op.upcast<Frame::FrameOp>());
+	subpass->AddOp(op);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-FrameScriptLoader::ParseSubpassPlugins(const Ptr<Frame::FrameScript>& script, const Ptr<Frame::FrameSubpass>& subpass, JzonValue* node)
-{
-	void* mem = script->GetAllocator().Alloc<FrameSubpassPlugins>();
-	Ptr<FrameSubpassPlugins> op = FrameSubpassPlugins::CreateInplace(mem);
+FrameScriptLoader::ParseSubpassPlugins(const Ptr<Frame::FrameScript>& script, Frame::FrameSubpass* subpass, JzonValue* node)
+{	
+	FrameSubpassPlugins* op = script->GetAllocator().Alloc<FrameSubpassPlugins>();
+
 	JzonValue* name = jzon_get(node, "name");
 	n_assert(name != NULL);
 	op->SetName(name->string_value);
@@ -1379,7 +1367,7 @@ FrameScriptLoader::ParseSubpassPlugins(const Ptr<Frame::FrameScript>& script, co
 	n_assert(filter != NULL);
 	op->SetPluginFilter(filter->string_value);
 	op->Setup();
-	subpass->AddOp(op.upcast<Frame::FrameOp>());
+	subpass->AddOp(op);
 }
 
 //------------------------------------------------------------------------------

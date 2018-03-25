@@ -11,11 +11,7 @@
 */
 #include "core/refcounted.h"
 #include "core/singleton.h"
-#include "graphics/cameraentity.h"
-#include "graphics/abstractlightentity.h"
-#include "graphics/globallightentity.h"
-#include "graphics/pointlightentity.h"
-#include "graphics/spotlightentity.h"
+
     
 //------------------------------------------------------------------------------
 namespace Lighting

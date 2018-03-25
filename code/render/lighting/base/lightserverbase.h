@@ -14,7 +14,7 @@
 #include "core/singleton.h"
 #include "coregraphics/shader.h"
 #include "graphics/camera.h"
-#include "graphics/modelentity.h"
+#include "models/modelcontext.h"
 #include "graphics/globallightentity.h"
 #include "graphics/lightprobeentity.h"
 

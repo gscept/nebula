@@ -38,9 +38,9 @@ ModelContext::~ModelContext()
 void
 ModelContext::Setup(const Graphics::GraphicsEntityId id, const Resources::ResourceName& name, const Util::StringAtom& tag)
 {
-	const Ids::Id32 cid = this->entitySliceMap[id.id];
-	ModelId& rid = this->modelContextAllocator.Get<0>(cid);
-	ModelInstanceId& mdl = this->modelContextAllocator.Get<1>(cid);
+	const ContextEntityId cid = this->entitySliceMap[id.id];
+	ModelId& rid = this->modelContextAllocator.Get<0>(cid.id);
+	ModelInstanceId& mdl = this->modelContextAllocator.Get<1>(cid.id);
 	mdl = ModelInstanceId::Invalid();
 
 	ModelCreateInfo info;
@@ -62,11 +62,11 @@ ModelContext::Setup(const Graphics::GraphicsEntityId id, const Resources::Resour
 void
 ModelContext::ChangeModel(const Graphics::GraphicsEntityId id, const Resources::ResourceName& name, const Util::StringAtom& tag)
 {
-	const Ids::Id32 cid = this->entitySliceMap[id.id];
+	const ContextEntityId cid = this->entitySliceMap[id.id];
 
 	// clean up old stuff, but don't deallocate entity
-	ModelId& rid = this->modelContextAllocator.Get<0>(cid);
-	ModelInstanceId& mdl = this->modelContextAllocator.Get<1>(cid);
+	ModelId& rid = this->modelContextAllocator.Get<0>(cid.id);
+	ModelInstanceId& mdl = this->modelContextAllocator.Get<1>(cid.id);
 
 	if (rid != ModelId::Invalid())
 		Models::DestroyModel(rid);
@@ -92,8 +92,8 @@ ModelContext::ChangeModel(const Graphics::GraphicsEntityId id, const Resources::
 const Models::ModelInstanceId
 ModelContext::GetModel(const Graphics::GraphicsEntityId id)
 {
-	const Ids::Id32 cid = this->entitySliceMap[id.id];
-	return this->modelContextAllocator.Get<1>(cid);
+	const ContextEntityId cid = this->entitySliceMap[id.id];
+	return this->modelContextAllocator.Get<1>(cid.id);
 }
 
 //------------------------------------------------------------------------------
@@ -102,8 +102,8 @@ ModelContext::GetModel(const Graphics::GraphicsEntityId id)
 void
 ModelContext::SetTransform(const Graphics::GraphicsEntityId id, const Math::matrix44 transform)
 {
-	const Ids::Id32 cid = this->entitySliceMap[id.id];
-	Models::modelPool->modelInstanceAllocator.Get<3>(cid) = transform;
+	const ContextEntityId cid = this->entitySliceMap[id.id];
+	Models::modelPool->modelInstanceAllocator.Get<3>(cid.id) = transform;
 }
 
 //------------------------------------------------------------------------------

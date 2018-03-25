@@ -9,7 +9,6 @@
 namespace Frame
 {
 
-__ImplementClass(Frame::FrameOp, 'FROP', Core::RefCounted);
 //------------------------------------------------------------------------------
 /**
 */

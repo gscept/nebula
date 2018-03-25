@@ -8,7 +8,6 @@
 namespace Frame
 {
 
-__ImplementClass(Frame::FrameComputeAlgorithm, 'FRCA', Frame::FrameOp);
 //------------------------------------------------------------------------------
 /**
 */
@@ -24,7 +23,6 @@ FrameComputeAlgorithm::~FrameComputeAlgorithm()
 {
 	// empty
 }
-
 
 //------------------------------------------------------------------------------
 /**

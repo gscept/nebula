@@ -226,9 +226,12 @@ VkShaderStateSetupConstants(const Ids::Id24 id, AnyFX::ShaderEffect* effect, VkS
 			// get AnyFX variable
 			AnyFX::VkVariable* variable = static_cast<AnyFX::VkVariable*>(variables[j]);
 
+			
 			Ids::Id24 varId = varAllocator.AllocObject();
 			VkShaderConstantSetup(variable, varId, varAllocator, setup.sets[i]);
-			setup.variableMap.Add(variable->name.c_str(), varId);
+			ShaderConstantId cid;
+			cid.id = varId;
+			setup.variableMap.Add(variable->name.c_str(), cid);
 		}
 
 		// load shader storage buffer variables
@@ -240,7 +243,9 @@ VkShaderStateSetupConstants(const Ids::Id24 id, AnyFX::ShaderEffect* effect, VkS
 
 			Ids::Id24 varId = varAllocator.AllocObject();
 			VkShaderConstantSetup(block, varId, varAllocator, setup.sets[i]);
-			setup.variableMap.Add(block->name.c_str(), varId);
+			ShaderConstantId cid;
+			cid.id = varId;
+			setup.variableMap.Add(block->name.c_str(), cid);
 		}
 
 		// load uniform block variables
@@ -251,7 +256,9 @@ VkShaderStateSetupConstants(const Ids::Id24 id, AnyFX::ShaderEffect* effect, VkS
 
 			Ids::Id24 varId = varAllocator.AllocObject();
 			VkShaderConstantSetup(buffer, varId, varAllocator, setup.sets[i]);
-			setup.variableMap.Add(buffer->name.c_str(), varId);
+			ShaderConstantId cid;
+			cid.id = varId;
+			setup.variableMap.Add(buffer->name.c_str(), cid);
 		}
 	}	
 }

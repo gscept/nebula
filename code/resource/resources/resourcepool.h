@@ -112,6 +112,9 @@ public:
 	/// returns true if pool has resource
 	const bool HasResource(const Resources::ResourceId id) const;
 
+	/// get the global identifier for this pool
+	const int32_t& GetUniqueId() const;
+
 	/// update the resource loader, this is done every frame
 	virtual void Update(IndexT frameIndex);
 
@@ -209,5 +212,14 @@ inline const bool
 ResourcePool::HasResource(const Resources::ResourceId id) const
 {
 	return this->names.Size() > (SizeT)id.poolId;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const int32_t&
+ResourcePool::GetUniqueId() const
+{
+	return this->uniqueId;
 }
 } // namespace Resources

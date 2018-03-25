@@ -33,6 +33,30 @@ DestroyShader(const ShaderId id)
 //------------------------------------------------------------------------------
 /**
 */
+const ShaderId
+ShaderGet(const Resources::ResourceName& name)
+{
+	return CoreGraphics::ShaderServer::Instance()->GetShader(name);
+}
+
+//------------------------------------------------------------------------------
+/**
+	Create fake shader id, this should work since shaders are unique resources
+*/
+const ShaderId
+ShaderGet(const ShaderStateId state)
+{
+	ShaderId ret;
+	ret.allocId = state.shaderId;
+	ret.allocType = state.shaderType;
+	ret.poolId = -1;
+	ret.poolIndex = shaderPool->GetUniqueId();
+	return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 inline const ShaderStateId
 ShaderCreateState(const ShaderId id, const Util::Array<IndexT>& groups, bool requiresUniqueResourceTable)
 {
@@ -296,7 +320,16 @@ ShaderConstantSet(const ShaderConstantId var, const ShaderStateId state, const U
 /**
 */
 inline void
-ShaderResourceSetTexture(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ShaderStateId state, const CoreGraphics::TextureId texture)
+ShaderResourceSetRenderTexture(const ShaderConstantId var, const ShaderStateId state, const RenderTextureId texture)
+{
+	shaderPool->ShaderResourceSetRenderTexture(var, state, texture);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+ShaderResourceSetTexture(const CoreGraphics::ShaderConstantId var, const ShaderStateId state, const CoreGraphics::TextureId texture)
 {
 	shaderPool->ShaderResourceSetTexture(var, state, texture);
 }
@@ -305,7 +338,7 @@ ShaderResourceSetTexture(const CoreGraphics::ShaderConstantId var, const CoreGra
 /**
 */
 inline void
-ShaderResourceSetConstantBuffer(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ShaderStateId state, const CoreGraphics::ConstantBufferId buffer)
+ShaderResourceSetConstantBuffer(const CoreGraphics::ShaderConstantId var, const ShaderStateId state, const CoreGraphics::ConstantBufferId buffer)
 {
 	shaderPool->ShaderResourceSetConstantBuffer(var, state, buffer);
 }
@@ -314,7 +347,7 @@ ShaderResourceSetConstantBuffer(const CoreGraphics::ShaderConstantId var, const 
 /**
 */
 inline void
-ShaderResourceSetReadWriteTexture(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ShaderStateId state, const CoreGraphics::TextureId image)
+ShaderResourceSetReadWriteTexture(const CoreGraphics::ShaderConstantId var, const ShaderStateId state, const CoreGraphics::TextureId image)
 {
 	shaderPool->ShaderResourceSetReadWriteTexture(var, state, image);
 }
@@ -323,7 +356,7 @@ ShaderResourceSetReadWriteTexture(const CoreGraphics::ShaderConstantId var, cons
 /**
 */
 inline void
-ShaderResourceSetReadWriteTexture(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ShaderStateId state, const CoreGraphics::ShaderRWTextureId tex)
+ShaderResourceSetReadWriteTexture(const CoreGraphics::ShaderConstantId var, const ShaderStateId state, const CoreGraphics::ShaderRWTextureId tex)
 {
 	shaderPool->ShaderResourceSetReadWriteTexture(var, state, tex);
 }
@@ -332,9 +365,18 @@ ShaderResourceSetReadWriteTexture(const CoreGraphics::ShaderConstantId var, cons
 /**
 */
 inline void
-ShaderResourceSetReadWriteBuffer(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ShaderStateId state, const CoreGraphics::ShaderRWBufferId buf)
+ShaderResourceSetReadWriteBuffer(const CoreGraphics::ShaderConstantId var, const ShaderStateId state, const CoreGraphics::ShaderRWBufferId buf)
 {
 	shaderPool->ShaderResourceSetReadWriteBuffer(var, state, buf);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+ShaderFeature::Mask
+ShaderFeatureFromString(const Util::String& str)
+{
+	return ShaderServer::Instance()->FeatureStringToMask(str);
 }
 
 //------------------------------------------------------------------------------

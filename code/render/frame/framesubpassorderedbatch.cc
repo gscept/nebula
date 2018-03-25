@@ -8,7 +8,6 @@
 namespace Frame
 {
 
-__ImplementClass(Frame::FrameSubpassOrderedBatch, 'FSSB', Frame::FrameOp);
 //------------------------------------------------------------------------------
 /**
 */
@@ -24,7 +23,6 @@ FrameSubpassOrderedBatch::~FrameSubpassOrderedBatch()
 {
 	// empty
 }
-
 
 //------------------------------------------------------------------------------
 /**

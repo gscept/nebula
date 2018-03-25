@@ -4,9 +4,9 @@
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "visibilityserver.h"
-#include "models\nodes\statenodeinstance.h"
-#include "models\nodes\shapenodeinstance.h"
-#include "models\nodes\shapenode.h"
+#include "models/nodes/shaderstatenode.h"
+#include "models/nodes/primitivenode.h"
+#include "models/modelcontext.h"
 
 namespace Visibility
 {
@@ -30,6 +30,17 @@ VisibilityServer::~VisibilityServer()
 {
 	__DestructSingleton;
 }
+
+//------------------------------------------------------------------------------
+/**
+void
+VisibilityServer::RegisterVisibilitySystem(const Ptr<VisibilitySystemBase>& system)
+{
+	n_assert(this->systems.FindIndex(system) == InvalidIndex);
+	this->systems.Append(system);
+}
+*/
+
 
 //------------------------------------------------------------------------------
 /**
@@ -58,22 +69,35 @@ VisibilityServer::ApplyVisibility(const Ptr<Graphics::View>& view)
 /**
 */
 void
+VisibilityServer::RegisterObserver(const Graphics::GraphicsEntityId obs, ObserverMask mask)
+{
+	n_assert(this->observers.FindIndex(obs) == InvalidIndex);
+	n_assert(!this->locked);
+	this->observers.Append(obs);
+	this->observerMasks.Append(mask);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+VisibilityServer::UnregisterObserver(const Graphics::GraphicsEntityId obs, ObserverMask mask)
+{
+	IndexT i = this->observers.FindIndex(obs);
+	n_assert(i != InvalidIndex);
+	n_assert(!this->locked);
+	this->observers.EraseIndex(i);
+	this->observerMasks.EraseIndex(i);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 VisibilityServer::EnterVisibilityLockstep()
 {
 	n_assert(!this->locked);
 	this->locked = true;
-	this->visibilityDatabase.EndBulkAdd();
-
-	// when we are leaving the visibility lockstep, we must notify our observers that the scene has changed
-	if (this->visibilityDirty)
-	{
-		IndexT i;
-		for (i = 0; i < this->observers.Size(); i++)
-		{
-			this->observers[i]->OnVisibilityDatabaseChanged();
-		}
-		this->visibilityDirty = false;
-	}
 }
 
 //------------------------------------------------------------------------------
@@ -83,36 +107,11 @@ void
 VisibilityServer::RegisterGraphicsEntity(const Graphics::GraphicsEntityId entity)
 {
 	n_assert(!this->locked);
-	n_assert(this->entities.FindIndex(entity) == InvalidIndex);
+	Models::ModelContext* mdlContext = Models::ModelContext::Instance();
+	const Models::ModelInstanceId mdl = mdlContext->GetModel(entity);
+	n_assert(mdl != Models::ModelInstanceId::Invalid());
+	this->models.Append(mdl);
 	this->entities.Append(entity);
-	this->models.Append(data);
-	this->visibilityDirty = true;
-
-	const Util::Array<ModelServer::NodeInstance>& nodes = ModelServer::Instance()->GetNodes(modelId);
-	IndexT i;
-	for (i = 0; i < nodes.Size(); i++)
-	{
-		const Ptr<ModelServer::NodeInstance>& node = nodes[i];
-		if (node->surface.isvalid())
-		{
-			const Ptr<Materials::SurfaceInstance>& surface = node->surface;
-
-			// check to see if material is registered, if not, do it
-			if (!this->visibilityDatabase.Contains(surface->GetCode()))
-			{
-				this->visibilityDatabase.Add(surface->GetCode(), Util::Dictionary<Resources::ResourceId, IndexT>());
-			}
-			else
-			{
-				// next level, check to see if mesh is registered
-				Util::Dictionary<Resources::ResourceId, IndexT>& meshLevel = this->visibilityDatabase[surface->GetCode()];
-				if (!meshLevel.Contains(node->mesh))
-				{
-					meshLevel.Add(node->mesh, node->primitiveGroupId);
-				}
-			}
-		}
-	}
 }
 
 //------------------------------------------------------------------------------
@@ -126,7 +125,6 @@ VisibilityServer::UnregisterGraphicsEntity(const Graphics::GraphicsEntityId enti
 	n_assert(i != InvalidIndex);
 	this->entities.EraseIndex(i);
 	this->models.EraseIndex(i);
-	this->visibilityDirty = true;
 }
 
 //------------------------------------------------------------------------------
@@ -137,7 +135,6 @@ VisibilityServer::LeaveVisibilityLockstep()
 {
 	n_assert(this->locked);
 	this->locked = false;
-	this->visibilityDatabase.BeginBulkAdd();
 }
 
 } // namespace Visibility

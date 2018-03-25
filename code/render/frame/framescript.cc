@@ -29,14 +29,6 @@ FrameScript::~FrameScript()
 	// empty
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-Memory::ChunkAllocator&
-FrameScript::GetAllocator()
-{
-	return this->allocator;
-}
 
 //------------------------------------------------------------------------------
 /**
@@ -97,7 +89,7 @@ FrameScript::AddEvent(const Util::StringAtom& name, const CoreGraphics::EventId 
 /**
 */
 void
-FrameScript::AddAlgorithm(const Util::StringAtom& name, const Ptr<Algorithms::Algorithm>& alg)
+FrameScript::AddAlgorithm(const Util::StringAtom& name, Algorithms::Algorithm* alg)
 {
 	n_assert(!this->algorithmsByName.Contains(name));
 	this->algorithmsByName.Add(name, alg);
@@ -119,7 +111,7 @@ FrameScript::AddShaderState(const Util::StringAtom& name, const CoreGraphics::Sh
 /**
 */
 void
-FrameScript::AddOp(const Ptr<Frame::FrameOp>& op)
+FrameScript::AddOp(Frame::FrameOp* op)
 {
 	this->ops.Append(op);
 }
@@ -183,7 +175,7 @@ FrameScript::CreateMask(const Util::StringAtom& startOp, const Util::StringAtom&
 	n_assert(this->ops.Size() < 256);
 	for (i = 0; i < this->ops.Size(); i++)
 	{
-		const Ptr<FrameOp>& op = this->ops[i];
+		FrameOp* op = this->ops[i];
 		if (op->GetName() == startOp)
 		{
 			mask |= i & 0x000000FF;
@@ -205,12 +197,12 @@ Frame::FrameOp::ExecutionMask
 FrameScript::CreateSubpassMask(const Ptr<FramePass>& pass, const Util::StringAtom& startOp, const Util::StringAtom& endOp)
 {
 	FrameOp::ExecutionMask mask = 0;
-	const Util::Array<Ptr<FrameSubpass>>& subpasses = pass->GetSubpasses();
+	const Util::Array<FrameSubpass*>& subpasses = pass->GetSubpasses();
 	n_assert(subpasses.Size() < 256);
 	IndexT i;
 	for (i = 0; i < subpasses.Size(); i++)
 	{
-		const Ptr<FrameSubpass>& subpass = subpasses[i];
+		FrameSubpass* subpass = subpasses[i];
 		if (subpass->GetName() == startOp)
 		{
 			mask |= (i << 12) & 0x00FF0000;
@@ -230,7 +222,7 @@ FrameScript::CreateSubpassMask(const Ptr<FramePass>& pass, const Util::StringAto
 	Get operation start and end points from within script.
 */
 void
-FrameScript::GetOps(const FrameOp::ExecutionMask mask, Ptr<FrameOp>& startOp, Ptr<FrameOp>& endOp)
+FrameScript::GetOps(const FrameOp::ExecutionMask mask, FrameOp* startOp, FrameOp* endOp)
 {
 	IndexT start = mask & 0x000000FF;
 	IndexT end = (mask & 0x0000FF00) >> 8;
@@ -293,7 +285,7 @@ FrameScript::OnWindowResized()
 
 		IndexT i;
 		for (i = 0; i < this->colorTextures.Size(); i++)		RenderTextureWindowResized(this->colorTextures[i]);
-		for (i = 0; i < this->readWriteTextures.Size(); i++)	RenderTextureWindowResized(this->readWriteTextures[i]);
+		for (i = 0; i < this->readWriteTextures.Size(); i++)	ShaderRWTextureWindowResized(this->readWriteTextures[i]);
 		for (i = 0; i < this->algorithms.Size(); i++)			this->algorithms[i]->Resize();
 		for (i = 0; i < this->ops.Size(); i++)					this->ops[i]->OnWindowResized();
 

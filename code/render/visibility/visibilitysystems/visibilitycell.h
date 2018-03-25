@@ -78,7 +78,7 @@ public:
     SizeT GetNumEntitiesInHierarchyByTypeMask(uint entityTypeMask) const;
 
     /// recursively collect all visible context
-    void CollectVisibleContexts(const Ptr<Observer>& observerContext, Util::Array<Ptr<VisibilityContext> >& visibilityContexts, uint entityTypeMask);
+    void CollectVisibleContexts(const Graphics::GraphicsEntityId observerContext, Util::Array<Ptr<VisibilityContext> >& visibilityContexts, uint entityTypeMask);
     /// starting from this cell, find smallest containment cell in cell tree
     Ptr<VisibilityCell> FindEntityContainmentCell(const Ptr<VisibilityContext>& entity);
 
@@ -86,7 +86,7 @@ private:
     friend class VisibilityContext;
          
     /// create links between visible entities
-    void RecurseCollectVisibleContexts(const Ptr<Observer>& observerContext, Util::Array<Ptr<VisibilityContext> >& visibilityContexts, uint entityTypeMask, Math::ClipStatus::Type clipStatus);
+    void RecurseCollectVisibleContexts(const Graphics::GraphicsEntityId observerContext, Util::Array<Ptr<VisibilityContext> >& visibilityContexts, uint entityTypeMask, Math::ClipStatus::Type clipStatus);
     /// increment/decrement the numEntitiesInHierarchy counter (including in all parent cells)
     void UpdateNumEntitiesInHierarchy(ObserverMask type, int num);
 

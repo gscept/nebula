@@ -17,7 +17,7 @@ using namespace Util;
 /**
 */
 void
-Rtti::Construct(const char* className, FourCC fcc, Creator creatorFunc, ArrayCreator arrayCreatorFunc, InplaceCreator inplaceCreatorFunc, const Rtti* parentClass, SizeT instSize)
+Rtti::Construct(const char* className, FourCC fcc, Creator creatorFunc, ArrayCreator arrayCreatorFunc, const Rtti* parentClass, SizeT instSize)
 {
     // make sure String, etc... is working correctly
     Core::SysFunc::Setup();
@@ -31,7 +31,6 @@ Rtti::Construct(const char* className, FourCC fcc, Creator creatorFunc, ArrayCre
     this->fourCC = fcc;     // NOTE: may be 0
     this->creator = creatorFunc;
 	this->arrayCreator = arrayCreatorFunc;
-	this->inplaceCreator = inplaceCreatorFunc;
     this->instanceSize = instSize;
 
     // register class with factory
@@ -84,17 +83,17 @@ Rtti::Construct(const char* className, FourCC fcc, Creator creatorFunc, ArrayCre
 //------------------------------------------------------------------------------
 /**
 */
-Rtti::Rtti(const char* className, FourCC fcc, Creator creatorFunc, ArrayCreator arrayCreatorFunc, InplaceCreator inplaceCreatorFunc, const Rtti* parentClass, SizeT instSize)
+Rtti::Rtti(const char* className, FourCC fcc, Creator creatorFunc, ArrayCreator arrayCreatorFunc, const Rtti* parentClass, SizeT instSize)
 {
-    this->Construct(className, fcc, creatorFunc, arrayCreatorFunc, inplaceCreatorFunc, parentClass, instSize);
+    this->Construct(className, fcc, creatorFunc, arrayCreatorFunc, parentClass, instSize);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-Rtti::Rtti(const char* className, Creator creatorFunc, ArrayCreator arrayCreatorFunc, InplaceCreator inplaceCreatorFunc, const Rtti* parentClass, SizeT instSize)
+Rtti::Rtti(const char* className, Creator creatorFunc, ArrayCreator arrayCreatorFunc, const Rtti* parentClass, SizeT instSize)
 {
-    this->Construct(className, 0, creatorFunc, arrayCreatorFunc, inplaceCreatorFunc, parentClass, instSize);
+    this->Construct(className, 0, creatorFunc, arrayCreatorFunc, parentClass, instSize);
 }
 
 //------------------------------------------------------------------------------
@@ -128,23 +127,6 @@ Rtti::CreateArray(SizeT num) const
 	else
 	{
 		return this->arrayCreator(num);
-	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void*
-Rtti::CreateInplace(void* mem) const
-{
-	if (0 == this->inplaceCreator)
-	{
-		n_error("Rtti::Create(): Trying to create instance of abstract class '%s'!", this->name.AsCharPtr());
-		return 0;
-	}
-	else
-	{
-		return this->inplaceCreator(mem);
 	}
 }
 
@@ -211,15 +193,6 @@ Rtti::AllocInstanceMemory()
     void* ptr = Memory::Alloc(Memory::ObjectHeap, this->instanceSize);
  #endif
     return ptr;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void*
-Rtti::AllocInstanceMemoryInplace(void* mem)
-{
-	return mem;
 }
 
 //------------------------------------------------------------------------------

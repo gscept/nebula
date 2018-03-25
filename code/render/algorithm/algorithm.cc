@@ -8,7 +8,6 @@
 namespace Algorithms
 {
 
-__ImplementClass(Algorithms::Algorithm, 'ALBA', Core::RefCounted);
 //------------------------------------------------------------------------------
 /**
 */
@@ -67,13 +66,14 @@ Algorithm::AddFunction(const Util::StringAtom& name, const FunctionType type, co
 
 //------------------------------------------------------------------------------
 /**
+	FIXME: implement resize
 */
 void
 Algorithm::Resize()
 {
 	IndexT i;
-	for (i = 0; i < this->renderTextures.Size(); i++)		this->renderTextures[i]->Resize();
-	for (i = 0; i < this->readWriteTextures.Size(); i++)	this->readWriteTextures[i]->Resize();
+	for (i = 0; i < this->renderTextures.Size(); i++)		RenderTextureWindowResized(this->renderTextures[i]);
+	for (i = 0; i < this->readWriteTextures.Size(); i++)	ShaderRWTextureWindowResized(this->readWriteTextures[i]);
 }
 
 } // namespace Base

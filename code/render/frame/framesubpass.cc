@@ -10,7 +10,6 @@ using namespace CoreGraphics;
 namespace Frame
 {
 
-__ImplementClass(Frame::FrameSubpass, 'FRSU', Frame::FrameOp);
 //------------------------------------------------------------------------------
 /**
 */
@@ -31,7 +30,7 @@ FrameSubpass::~FrameSubpass()
 /**
 */
 void
-FrameSubpass::AddOp(const Ptr<Frame::FrameOp>& op)
+FrameSubpass::AddOp(Frame::FrameOp* op)
 {
 	this->ops.Append(op);
 }

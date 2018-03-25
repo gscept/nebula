@@ -63,7 +63,7 @@ public:
 	virtual ~VisibilityServer();
 
 	/// register visibility system
-	void RegisterVisibilitySystem(const Ptr<VisibilitySystemBase>& system);
+	//void RegisterVisibilitySystem(const Ptr<VisibilitySystemBase>& system);
 
 	/// update visibility server - once per frame - walks through all observers and builds a visibility list
 	void BeginVisibility();
@@ -90,8 +90,33 @@ private:
 	bool locked;
 	bool visibilityDirty;
 	Util::Array<Graphics::GraphicsEntityId> observers;
-	Util::Array<Ptr<VisibilitySystemBase>> systems;
+	Util::Array<ObserverMask> observerMasks;
+	//Util::Array<Ptr<VisibilitySystemBase>> systems;
+
 	Util::Array<Graphics::GraphicsEntityId> entities;
-	Ptr<VisibilityContainer> activeVisibility;
+	Util::Array<Models::ModelInstanceId> models;
+
+	typedef Ids::Id32 MaterialTypeId;
+	typedef CoreGraphics::BatchGroup::Code MaterialBatchId;
+	typedef Ids::Id32 MaterialInstanceId;
+	typedef Ids::Id32 ModelResourceId;
+	typedef Ids::Id32 ModelNodeResourceId;
+	typedef Ids::Id32 ModelNodeInstanceId;
+
+	template <class KEY, class VALUE>
+	struct VisibilityLevel
+	{
+		bool anyVisible;
+		Util::HashTable<KEY, VALUE> level;
+	};
+
+	/// the visibility data structure, the entity id is the observer list
+	typedef Util::HashTable<Graphics::GraphicsEntityId,
+		VisibilityLevel<MaterialTypeId,
+		VisibilityLevel<MaterialBatchId,
+		VisibilityLevel<MaterialInstanceId,
+		VisibilityLevel<ModelResourceId,
+		VisibilityLevel<ModelNodeResourceId, Util::Array<ModelNodeInstanceId>
+		>>>>>> VisibilityMatrix;
 };
 } // namespace Visibility

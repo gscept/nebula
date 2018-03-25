@@ -87,12 +87,12 @@ InputServerBase::Close()
         this->inputHandlers[i].Value()->OnRemove();
     }
     this->inputHandlers.Clear();
-    this->keyboardCaptureHandler = 0;
-    this->mouseCaptureHandler = 0;
+    this->keyboardCaptureHandler = nullptr;
+    this->mouseCaptureHandler = nullptr;
 
     // release default input handlers
-    this->defaultKeyboard = 0;
-    this->defaultMouse = 0;
+    this->defaultKeyboard = nullptr;
+    this->defaultMouse = nullptr;
     this->defaultGamePad.Fill(0);
 
     this->isOpen = false;
@@ -324,7 +324,7 @@ InputServerBase::ObtainMouseCapture(const Ptr<InputHandler>& inputHandler)
     if (this->mouseCaptureHandler.isvalid())
     {
         this->mouseCaptureHandler->OnReleaseCapture();
-        this->mouseCaptureHandler = 0;
+        this->mouseCaptureHandler = nullptr;
     }
     this->mouseCaptureHandler = inputHandler;
     this->mouseCaptureHandler->OnObtainCapture();
@@ -341,7 +341,7 @@ InputServerBase::ReleaseMouseCapture(const Ptr<InputHandler>& inputHandler)
     if (this->mouseCaptureHandler.isvalid() && (this->mouseCaptureHandler == inputHandler))
     {
         this->mouseCaptureHandler->OnReleaseCapture();
-        this->mouseCaptureHandler = 0;
+        this->mouseCaptureHandler = nullptr;
     }
 }
 
@@ -364,7 +364,7 @@ InputServerBase::ClearMouseCapture()
     if (this->mouseCaptureHandler.isvalid())
     {
         this->mouseCaptureHandler->OnReleaseCapture();
-        this->mouseCaptureHandler = 0;
+        this->mouseCaptureHandler = nullptr;
     }
 }
 
@@ -378,7 +378,7 @@ InputServerBase::ClearKeyboardCapture()
     if (this->keyboardCaptureHandler.isvalid())
     {
         this->keyboardCaptureHandler->OnReleaseCapture();
-        this->keyboardCaptureHandler = 0;
+        this->keyboardCaptureHandler = nullptr;
     }
 }
 
@@ -404,7 +404,7 @@ InputServerBase::ObtainKeyboardCapture(const Ptr<InputHandler>& inputHandler)
     if (this->keyboardCaptureHandler.isvalid())
     {
         this->keyboardCaptureHandler->OnReleaseCapture();
-        this->keyboardCaptureHandler = 0;
+        this->keyboardCaptureHandler = nullptr;
     }
     this->keyboardCaptureHandler = inputHandler;
     this->keyboardCaptureHandler->OnObtainCapture();
@@ -421,7 +421,7 @@ InputServerBase::ReleaseKeyboardCapture(const Ptr<InputHandler>& inputHandler)
     if (this->keyboardCaptureHandler.isvalid() && (this->keyboardCaptureHandler == inputHandler))
     {
         this->keyboardCaptureHandler->OnReleaseCapture();
-        this->keyboardCaptureHandler = 0;
+        this->keyboardCaptureHandler = nullptr;
     }
 }
 

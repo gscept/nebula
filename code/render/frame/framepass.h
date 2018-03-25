@@ -14,7 +14,6 @@ namespace Frame
 {
 class FramePass : public FrameOp
 {
-	__DeclareClass(FramePass);
 public:
 	/// constructor
 	FramePass();
@@ -22,10 +21,10 @@ public:
 	virtual ~FramePass();
 
 	/// add subpass
-	void AddSubpass(const Ptr<FrameSubpass>& subpass);
+	void AddSubpass(FrameSubpass* subpass);
 
 	/// get list of subpasses
-	const Util::Array<Ptr<FrameSubpass>>& GetSubpasses() const;
+	const Util::Array<FrameSubpass*>& GetSubpasses() const;
 
 	/// discard operation
 	void Discard();
@@ -37,13 +36,13 @@ public:
 	CoreGraphics::PassId pass;
 
 private:
-	Util::Array<Ptr<FrameSubpass>> subpasses;
+	Util::Array<FrameSubpass*> subpasses;
 };
 
 //------------------------------------------------------------------------------
 /**
 */
-inline const Util::Array<Ptr<Frame::FrameSubpass>>&
+inline const Util::Array<Frame::FrameSubpass*>&
 FramePass::GetSubpasses() const
 {
 	return this->subpasses;

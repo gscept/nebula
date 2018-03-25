@@ -19,14 +19,13 @@
 #include "core/refcounted.h"
 #include "util/stringatom.h"
 #include "coregraphics/rendertexture.h"
-#include "coregraphics/shaderreadwritebuffer.h"
-#include "coregraphics/shaderreadwritetexture.h"
+#include "coregraphics/shaderrwbuffer.h"
+#include "coregraphics/shaderrwtexture.h"
 #include <functional>
 namespace Algorithms
 {
-class Algorithm : public Core::RefCounted
+class Algorithm
 {
-	__DeclareClass(Algorithm);
 public:
 	enum FunctionType
 	{

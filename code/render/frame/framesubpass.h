@@ -15,7 +15,6 @@ namespace Frame
 {
 class FrameSubpass : public FrameOp
 {
-	__DeclareClass(FrameSubpass);
 public:
 	/// constructor
 	FrameSubpass();
@@ -23,7 +22,7 @@ public:
 	virtual ~FrameSubpass();
 
 	/// add frame operation
-	void AddOp(const Ptr<Frame::FrameOp>& op);
+	void AddOp(Frame::FrameOp* op);
 
 	/// discard operation
 	void Discard();
@@ -35,7 +34,7 @@ public:
 	/// add viewport
 	void AddScissor(const Math::rectangle<int>& rect);
 private:
-	Util::Array<Ptr<Frame::FrameOp>> ops;
+	Util::Array<Frame::FrameOp*> ops;
 	Util::Array<Math::rectangle<int>> viewports;
 	Util::Array<Math::rectangle<int>> scissors;
 };

@@ -98,5 +98,5 @@ VertexBufferGetNumVertices(const VertexBufferId id)
 	return vboPool->GetNumVertices(id);
 }
 
-}
+} // namespace CoreGraphics
 

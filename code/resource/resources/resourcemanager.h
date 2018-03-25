@@ -239,6 +239,7 @@ ResourceManager::GetId(const Resources::ResourceName& name) const
 		Resources::ResourceId id = this->pools[i]->GetId(name);
 		if (id != Resources::ResourceId::Invalid()) return id;
 	}
+	return Resources::ResourceId::Invalid();
 }
 
 //------------------------------------------------------------------------------
@@ -324,7 +325,7 @@ template <class POOL_TYPE>
 inline POOL_TYPE*
 GetMemoryPool()
 {
-	static_assert(std::is_base_of<ResourcePool, TYPE>::value, "Template argument is not a ResourcePool type!");
+	static_assert(std::is_base_of<ResourcePool, POOL_TYPE>::value, "Template argument is not a ResourcePool type!");
 	return ResourceManager::Instance()->GetMemoryPool<POOL_TYPE>();
 }
 
@@ -335,7 +336,7 @@ template <class POOL_TYPE>
 inline POOL_TYPE*
 GetStreamPool()
 {
-	static_assert(std::is_base_of<ResourcePool, TYPE>::value, "Template argument is not a ResourcePool type!");
+	static_assert(std::is_base_of<ResourcePool, POOL_TYPE>::value, "Template argument is not a ResourcePool type!");
 	return ResourceManager::Instance()->GetStreamPool<POOL_TYPE>();
 }
 

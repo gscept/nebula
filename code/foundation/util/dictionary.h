@@ -68,6 +68,8 @@ public:
     IndexT FindIndex(const KEYTYPE& key) const;
     /// return true if key exists in the array
     bool Contains(const KEYTYPE& key) const;
+	/// return true if key exists in the array, and saves index
+	bool Contains(const KEYTYPE& key, IndexT& index) const;
     /// get a key at given index
     const KEYTYPE& KeyAtIndex(IndexT index) const;
     /// access to value at given index
@@ -119,7 +121,8 @@ Dictionary<KEYTYPE, VALUETYPE>::Dictionary(const Dictionary<KEYTYPE, VALUETYPE>&
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE> void
+template<class KEYTYPE, class VALUETYPE>
+inline void
 Dictionary<KEYTYPE, VALUETYPE>::operator=(const Dictionary<KEYTYPE, VALUETYPE>& rhs)
 {
     #if NEBULA3_BOUNDSCHECKS
@@ -132,7 +135,8 @@ Dictionary<KEYTYPE, VALUETYPE>::operator=(const Dictionary<KEYTYPE, VALUETYPE>& 
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE> void
+template<class KEYTYPE, class VALUETYPE>
+inline void
 Dictionary<KEYTYPE, VALUETYPE>::Clear()
 {
     #if NEBULA3_BOUNDSCHECKS
@@ -144,7 +148,8 @@ Dictionary<KEYTYPE, VALUETYPE>::Clear()
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE> SizeT
+template<class KEYTYPE, class VALUETYPE>
+inline SizeT
 Dictionary<KEYTYPE, VALUETYPE>::Size() const
 {
     return this->keyValuePairs.Size();
@@ -153,7 +158,8 @@ Dictionary<KEYTYPE, VALUETYPE>::Size() const
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE> bool
+template<class KEYTYPE, class VALUETYPE> 
+inline bool
 Dictionary<KEYTYPE, VALUETYPE>::IsEmpty() const
 {
     return (0 == this->keyValuePairs.Size());
@@ -162,7 +168,8 @@ Dictionary<KEYTYPE, VALUETYPE>::IsEmpty() const
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE> void
+template<class KEYTYPE, class VALUETYPE> 
+inline void
 Dictionary<KEYTYPE, VALUETYPE>::Add(const KeyValuePair<KEYTYPE, VALUETYPE>& kvp)
 {
     if (this->inBulkInsert)
@@ -178,7 +185,8 @@ Dictionary<KEYTYPE, VALUETYPE>::Add(const KeyValuePair<KEYTYPE, VALUETYPE>& kvp)
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE> void
+template<class KEYTYPE, class VALUETYPE>
+inline void
 Dictionary<KEYTYPE, VALUETYPE>::Reserve(SizeT numElements)
 {
     this->keyValuePairs.Reserve(numElements);
@@ -187,7 +195,8 @@ Dictionary<KEYTYPE, VALUETYPE>::Reserve(SizeT numElements)
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE> void
+template<class KEYTYPE, class VALUETYPE>
+inline void
 Dictionary<KEYTYPE, VALUETYPE>::BeginBulkAdd()
 {
     #if NEBULA3_BOUNDSCHECKS
@@ -199,7 +208,8 @@ Dictionary<KEYTYPE, VALUETYPE>::BeginBulkAdd()
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE> void
+template<class KEYTYPE, class VALUETYPE>
+inline void
 Dictionary<KEYTYPE, VALUETYPE>::EndBulkAdd()
 {
     #if NEBULA3_BOUNDSCHECKS
@@ -212,7 +222,8 @@ Dictionary<KEYTYPE, VALUETYPE>::EndBulkAdd()
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE> inline void
+template<class KEYTYPE, class VALUETYPE>
+inline void
 Dictionary<KEYTYPE, VALUETYPE>::Merge(const Dictionary<KEYTYPE, VALUETYPE>& rhs)
 {
 	this->BeginBulkAdd();
@@ -227,7 +238,8 @@ Dictionary<KEYTYPE, VALUETYPE>::Merge(const Dictionary<KEYTYPE, VALUETYPE>& rhs)
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE> void
+template<class KEYTYPE, class VALUETYPE>
+inline void
 Dictionary<KEYTYPE, VALUETYPE>::Add(const KEYTYPE& key, const VALUETYPE& value)
 {
     //n_assert(!this->Contains(key));
@@ -245,7 +257,8 @@ Dictionary<KEYTYPE, VALUETYPE>::Add(const KEYTYPE& key, const VALUETYPE& value)
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE> void
+template<class KEYTYPE, class VALUETYPE>
+inline void
 Dictionary<KEYTYPE, VALUETYPE>::Erase(const KEYTYPE& key)
 {
     #if NEBULA3_BOUNDSCHECKS
@@ -261,7 +274,8 @@ Dictionary<KEYTYPE, VALUETYPE>::Erase(const KEYTYPE& key)
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE> void
+template<class KEYTYPE, class VALUETYPE>
+inline void
 Dictionary<KEYTYPE, VALUETYPE>::EraseAtIndex(IndexT index)
 {
     #if NEBULA3_BOUNDSCHECKS
@@ -273,7 +287,8 @@ Dictionary<KEYTYPE, VALUETYPE>::EraseAtIndex(IndexT index)
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE> IndexT
+template<class KEYTYPE, class VALUETYPE> 
+inline IndexT
 Dictionary<KEYTYPE, VALUETYPE>::FindIndex(const KEYTYPE& key) const
 {
     #if NEBULA3_BOUNDSCHECKS
@@ -285,19 +300,35 @@ Dictionary<KEYTYPE, VALUETYPE>::FindIndex(const KEYTYPE& key) const
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE> bool
+template<class KEYTYPE, class VALUETYPE>
+inline bool
 Dictionary<KEYTYPE, VALUETYPE>::Contains(const KEYTYPE& key) const
 {
-    #if NEBULA3_BOUNDSCHECKS
-    n_assert(!this->inBulkInsert);
-    #endif
+	#if NEBULA3_BOUNDSCHECKS
+	n_assert(!this->inBulkInsert);
+	#endif
     return (InvalidIndex != this->keyValuePairs.BinarySearchIndex(key));
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE> const KEYTYPE&
+template<class KEYTYPE, class VALUETYPE>
+inline bool
+Dictionary<KEYTYPE, VALUETYPE>::Contains(const KEYTYPE& key, IndexT& index) const
+{
+#if NEBULA3_BOUNDSCHECKS
+	n_assert(!this->inBulkInsert);
+#endif
+	index = this->keyValuePairs.BinarySearchIndex(key);
+	return (InvalidIndex != index);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class KEYTYPE, class VALUETYPE> 
+inline const KEYTYPE&
 Dictionary<KEYTYPE, VALUETYPE>::KeyAtIndex(IndexT index) const
 {
     #if NEBULA3_BOUNDSCHECKS
@@ -309,7 +340,8 @@ Dictionary<KEYTYPE, VALUETYPE>::KeyAtIndex(IndexT index) const
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE> VALUETYPE&
+template<class KEYTYPE, class VALUETYPE> 
+inline VALUETYPE&
 Dictionary<KEYTYPE, VALUETYPE>::ValueAtIndex(IndexT index)
 {
     #if NEBULA3_BOUNDSCHECKS
@@ -321,7 +353,8 @@ Dictionary<KEYTYPE, VALUETYPE>::ValueAtIndex(IndexT index)
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE> const VALUETYPE&
+template<class KEYTYPE, class VALUETYPE> 
+inline const VALUETYPE&
 Dictionary<KEYTYPE, VALUETYPE>::ValueAtIndex(IndexT index) const
 {
     #if NEBULA3_BOUNDSCHECKS
@@ -333,7 +366,8 @@ Dictionary<KEYTYPE, VALUETYPE>::ValueAtIndex(IndexT index) const
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE> KeyValuePair<KEYTYPE, VALUETYPE>&
+template<class KEYTYPE, class VALUETYPE> 
+inline KeyValuePair<KEYTYPE, VALUETYPE>&
 Dictionary<KEYTYPE, VALUETYPE>::KeyValuePairAtIndex(IndexT index) const
 {
     #if NEBULA3_BOUNDSCHECKS
@@ -345,7 +379,8 @@ Dictionary<KEYTYPE, VALUETYPE>::KeyValuePairAtIndex(IndexT index) const
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE> VALUETYPE&
+template<class KEYTYPE, class VALUETYPE> 
+inline VALUETYPE&
 Dictionary<KEYTYPE, VALUETYPE>::operator[](const KEYTYPE& key)
 {
     int keyValuePairIndex = this->FindIndex(key);
@@ -358,7 +393,8 @@ Dictionary<KEYTYPE, VALUETYPE>::operator[](const KEYTYPE& key)
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE> const VALUETYPE&
+template<class KEYTYPE, class VALUETYPE> 
+inline const VALUETYPE&
 Dictionary<KEYTYPE, VALUETYPE>::operator[](const KEYTYPE& key) const
 {
     int keyValuePairIndex = this->FindIndex(key);
@@ -392,7 +428,7 @@ Dictionary<KEYTYPE, VALUETYPE>::ValuesAs() const
 /**
 */
 template<class KEYTYPE, class VALUETYPE>
-Array<VALUETYPE>
+inline Array<VALUETYPE>
 Dictionary<KEYTYPE, VALUETYPE>::ValuesAsArray() const
 {
     return this->ValuesAs<Array<VALUETYPE> >();
@@ -403,7 +439,7 @@ Dictionary<KEYTYPE, VALUETYPE>::ValuesAsArray() const
 */
 template<class KEYTYPE, class VALUETYPE> 
 template<class RETURNTYPE>
-RETURNTYPE
+inline RETURNTYPE
 Dictionary<KEYTYPE, VALUETYPE>::KeysAs() const
 {
     #if NEBULA3_BOUNDSCHECKS    
@@ -422,7 +458,7 @@ Dictionary<KEYTYPE, VALUETYPE>::KeysAs() const
 /**
 */
 template<class KEYTYPE, class VALUETYPE>
-Array<KEYTYPE>
+inline Array<KEYTYPE>
 Dictionary<KEYTYPE, VALUETYPE>::KeysAsArray() const
 {
     return this->KeysAs<Array<KEYTYPE> >();

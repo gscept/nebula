@@ -135,7 +135,7 @@ VisibilitySystemBase::EndAttachVisibilityContainer()
 /**
 */
 Ptr<Jobs::Job>
-VisibilitySystemBase::CreateVisibilityJob(IndexT frameId, const Ptr<Observer>& observer, Util::FixedArray<Ptr<VisibilityContext> >& outEntitiyArray, uint& entityMask)
+VisibilitySystemBase::CreateVisibilityJob(IndexT frameId, const Graphics::GraphicsEntityId observer, Util::FixedArray<Ptr<VisibilityContext> >& outEntitiyArray, uint& entityMask)
 {
     // implement in subclass
     n_error("VisibilitySystemBase::AttachVisibilityJob called: Implement in subclass! Do it!");

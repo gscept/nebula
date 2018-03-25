@@ -5,7 +5,7 @@
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "coreanimation/animsamplebuffer.h"
-
+#include "animresource.h"
 namespace CoreAnimation
 {
 __ImplementClass(CoreAnimation::AnimSampleBuffer, 'ASBF', Core::RefCounted);
@@ -40,7 +40,7 @@ AnimSampleBuffer::~AnimSampleBuffer()
 /**
 */
 void
-AnimSampleBuffer::Setup(const Ptr<AnimResource>& animRes)
+AnimSampleBuffer::Setup(const AnimResourceId& animRes)
 {
     n_assert(!this->IsValid());
     n_assert(0 == this->samples);
@@ -49,7 +49,8 @@ AnimSampleBuffer::Setup(const Ptr<AnimResource>& animRes)
     n_assert(!this->sampleCountsMapped);
 
     this->animResource = animRes;
-	if (this->animResource->GetNumClips() > 0) this->numSamples = this->animResource->GetClipByIndex(0).GetNumCurves();
+	const Util::FixedArray<AnimClip>& clips = AnimGetClips(this->animResource);
+	if (clips.Size() > 0) this->numSamples = clips[0].GetNumCurves();
     this->samples      = (float4*) Memory::Alloc(Memory::ResourceHeap, this->numSamples * sizeof(float4));
 
     // NOTE: sample count size must be aligned to 16 bytes, this allocate some more bytes in the buffer
@@ -68,7 +69,7 @@ AnimSampleBuffer::Discard()
     n_assert(!this->samplesMapped);
     n_assert(!this->sampleCountsMapped);
 
-    this->animResource = 0;
+    this->animResource = AnimResourceId::Invalid();
     Memory::Free(Memory::ResourceHeap, this->samples);
     Memory::Free(Memory::ResourceHeap, this->sampleCounts);
     this->samples = 0;

@@ -24,14 +24,15 @@ enum CoreGraphicsIdType
 	ShaderProgramIdType,
 	ShaderStateIdType,
 	ShaderInstanceIdType,
-	ShaderVariableIdType,
+	ShaderConstantIdType,
 	CommandBufferIdType,
 	RenderTextureIdType,
 	MeshIdType,
 	EventIdType,
 	BarrierIdType,
 	WindowIdType,
-	PassIdType
+	PassIdType,
+	AnimResourceIdType
 };
 
 enum CoreGraphicsQueueType
@@ -41,6 +42,8 @@ enum CoreGraphicsQueueType
 	TransferQueueType,
 	SparseQueueType
 };
+
+#define SHADER_POSTEFFECT_DEFAULT_FEATURE_MASK "Alt0"
 
 //------------------------------------------------------------------------------
 #if __DX11__ || __DX9__

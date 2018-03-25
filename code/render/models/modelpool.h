@@ -19,18 +19,6 @@
 namespace Models
 {
 
-enum NodeType
-{
-	TransformNodeType,
-	PrimtiveNodeType,
-	ShaderStateNodeType,
-	CharacterSkinNodeType,
-	CharacterNodeType,
-	ParticleSystemNodeType,
-
-	NumNodeTypes
-};
-
 class ModelNode;
 class StreamModelPool : public Resources::ResourceStreamPool
 {

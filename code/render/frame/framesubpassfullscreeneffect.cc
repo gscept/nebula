@@ -11,7 +11,6 @@ using namespace CoreGraphics;
 namespace Frame
 {
 
-__ImplementClass(Frame::FrameSubpassFullscreenEffect, 'FFLE', Frame::FrameOp);
 //------------------------------------------------------------------------------
 /**
 */
@@ -37,6 +36,9 @@ FrameSubpassFullscreenEffect::Setup()
 	n_assert(this->tex != RenderTextureId::Invalid());
 	TextureDimensions dims = RenderTextureGetDimensions(this->tex);
 	this->fsq.Setup(dims.width, dims.height);
+
+	this->shader = ShaderGet(this->shaderState);
+	this->program = ShaderGetProgram(this->shader, ShaderFeatureFromString(SHADER_POSTEFFECT_DEFAULT_FEATURE_MASK));
 }
 
 //------------------------------------------------------------------------------
@@ -62,13 +64,12 @@ FrameSubpassFullscreenEffect::Run(const IndexT frameIndex)
 	ShaderServer* shaderServer = ShaderServer::Instance();
 
 	// activate shader
-	shaderServer->SetActiveShader(this->shaderState->GetShader());
-	this->shaderState->Apply();
+	ShaderProgramBind(this->program);
 
 	// draw
 	renderDevice->BeginBatch(FrameBatchType::System);
 	this->fsq.ApplyMesh();
-	this->shaderState->Commit();
+	ShaderStateApply(this->shaderState);
 	this->fsq.Draw();
 	renderDevice->EndBatch();
 }

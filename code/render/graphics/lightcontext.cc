@@ -25,4 +25,21 @@ LightContext::~LightContext()
 	// empty
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+ContextEntityId
+LightContext::Alloc()
+{
+	return ContextEntityId();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+LightContext::Dealloc(ContextEntityId id)
+{
+}
+
 } // namespace Graphics

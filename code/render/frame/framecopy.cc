@@ -10,7 +10,6 @@ using namespace CoreGraphics;
 namespace Frame
 {
 
-__ImplementClass(Frame::FrameCopy, 'FRCO', Frame::FrameOp);
 //------------------------------------------------------------------------------
 /**
 */
@@ -26,7 +25,6 @@ FrameCopy::~FrameCopy()
 {
 	// empty
 }
-
 
 //------------------------------------------------------------------------------
 /**

@@ -35,11 +35,12 @@ struct ConstantBufferId;
 struct TextureId;
 struct ShaderRWTextureId;
 struct ShaderRWBufferId;
+struct RenderTextureId;
 
 RESOURCE_ID_TYPE(ShaderId);				// 32 bits container, 24 bits resource, 8 bits type
 ID_24_8_24_8_NAMED_TYPE(ShaderStateId, shaderId, shaderType, stateId, stateType);		// 32 bits shader, 24 bits state, 8 bits type
 ID_24_8_24_8_NAMED_TYPE(ShaderProgramId, shaderId, shaderType, programId, programType);		// 32 bits shader, 24 bits program, 8 bits type
-ID_32_TYPE(ShaderConstantId);			// variable id within state, must keep track of state since state id is 64 bit
+ID_32_TYPE(ShaderConstantId);			// variable id within state, must provide state when setting
 
 ID_32_TYPE(DerivativeStateId);			// 32 bits derivative state (already created from an ordinary state)
 
@@ -70,6 +71,11 @@ Util::String ConstantTypeToString(const ShaderConstantType& type);
 const ShaderId CreateShader(const ShaderCreateInfo& info);
 /// destroy shader
 void DestroyShader(const ShaderId id);
+
+/// get shader by name
+const ShaderId ShaderGet(const Resources::ResourceName& name);
+/// get shader by state
+const ShaderId ShaderGet(const ShaderStateId state);
 
 /// create new shader state from shader
 const ShaderStateId ShaderCreateState(const ShaderId id, const Util::Array<IndexT>& groups, bool requiresUniqueResourceTable);
@@ -129,16 +135,21 @@ void ShaderConstantSet(const ShaderConstantId var, const ShaderStateId state, co
 template <class TYPE> void ShaderConstantSet(const ShaderConstantId var, const ShaderStateId state, const TYPE& value);
 /// set shader variable array
 template <class TYPE> void ShaderConstantSetArray(const ShaderConstantId var, const ShaderStateId state, const TYPE* value, uint32_t count);
-/// set variable as texture
+/// set constant as render texture in texture sampler slot
+void ShaderResourceSetRenderTexture(const ShaderConstantId var, const ShaderStateId state, const RenderTextureId texture);
+/// set constant as texture
 void ShaderResourceSetTexture(const ShaderConstantId var, const ShaderStateId state, const TextureId texture);
-/// set variable as texture
+/// set constant as constant buffer
 void ShaderResourceSetConstantBuffer(const ShaderConstantId var, const ShaderStateId state, const ConstantBufferId buffer);
-/// set variable as 
+/// set constant as texture in read-write slot
 void ShaderResourceSetReadWriteTexture(const ShaderConstantId var, const ShaderStateId state, const TextureId image);
-/// set variable as texture
+/// set constant as texture
 void ShaderResourceSetReadWriteTexture(const ShaderConstantId var, const ShaderStateId state, const ShaderRWTextureId tex);
-/// set variable as texture
+/// set constant as texture
 void ShaderResourceSetReadWriteBuffer(const ShaderConstantId var, const ShaderStateId state, const ShaderRWBufferId buf);
+
+/// convert shader feature from string to mask
+ShaderFeature::Mask ShaderFeatureFromString(const Util::String& str);
 
 /// bind shader
 void ShaderBind(const ShaderId id, const ShaderFeature::Mask& program);
@@ -149,7 +160,6 @@ void ShaderProgramBind(const ShaderProgramId id);
 
 class ShaderPool;
 extern ShaderPool* shaderPool;
-
 
 //------------------------------------------------------------------------------
 /**

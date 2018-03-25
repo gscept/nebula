@@ -57,21 +57,21 @@ DrawFullScreenQuad::Setup(SizeT rtWidth, SizeT rtHeight)
 #endif
 
     float left   = -1.0f - halfPixelSize.x();
-    float right  = +2.0f - halfPixelSize.x();
-    float top    = +2.0f + halfPixelSize.y();
+    float right  = +3.0f - halfPixelSize.x();
+    float top    = +3.0f + halfPixelSize.y();
     float bottom = -1.0f + halfPixelSize.y();
 
 
     // compute uv coordinates, for GL and Vulkan, the Y coordinate is reversed
 #if (__VULKAN__ || __OGL4__)
-	float u0 = 0.0f;
+	float u0 = 1.0f;
 	float u1 = 3.0f;
 	float v0 = 3.0f;
-	float v1 = 0.0f;
+	float v1 = 1.0f;
 #else
-    float u0 = 0.0f;
+    float u0 = 1.0f;
     float u1 = 3.0f;
-    float v0 = 0.0f;
+    float v0 = 1.0f;
     float v1 = 3.0f;
 #endif
 

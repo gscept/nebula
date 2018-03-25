@@ -8,7 +8,6 @@
 namespace Frame
 {
 
-__ImplementClass(Frame::FrameEvent, 'FREV', Frame::FrameOp);
 //------------------------------------------------------------------------------
 /**
 */
