@@ -61,8 +61,8 @@ NebulaMain(const Util::CommandLineArgs& args)
     testRunner->Run(); 
 
     coreServer->Close();
-    testRunner = 0;
-    coreServer = 0;
+    testRunner = nullptr;
+    coreServer = nullptr;
     
     Core::SysFunc::Exit(0);
 }

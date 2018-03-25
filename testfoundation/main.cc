@@ -107,10 +107,10 @@ __cdecl main()
     testRunner->Run(); 
 
     gameContentServer->Discard();
-    gameContentServer = 0;
+    gameContentServer = nullptr;
     coreServer->Close();
-    testRunner = 0;
-    coreServer = 0;
+    testRunner = nullptr;
+    coreServer = nullptr;
     
     Core::SysFunc::Exit(0);
 }

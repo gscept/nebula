@@ -11,7 +11,10 @@ fips_include_directories(.)
 
 fips_add_subdirectory(testbase)
 fips_add_subdirectory(testfoundation)
+fips_add_subdirectory(testrender)
 fips_add_subdirectory(mathtest)
+fips_add_subdirectory(testmem)
 fips_add_subdirectory(testwin32)
+fips_add_subdirectory(testresources)
 
 fips_finish()
