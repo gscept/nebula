@@ -27,7 +27,6 @@
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
 #include "core/singleton.h"
-#include "observer.h"
 #include "graphics/graphicsentity.h"
 #include "models/modelcontext.h"
 #include "visibility.h"
