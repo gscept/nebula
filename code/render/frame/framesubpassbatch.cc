@@ -5,20 +5,14 @@
 #include "stdneb.h"
 #include "framesubpassbatch.h"
 #include "coregraphics/shaderserver.h"
-#include "models/visresolver.h"
-#include "lighting/lightserver.h"
 #include "coregraphics/renderdevice.h"
-#include "instancing/instanceserver.h"
 #include "materials/materialserver.h"
-#include "materials/surface.h"
-#include "models/nodes/statenodeinstance.h"
-#include "graphics/modelentity.h"
+#include "models/model.h"
 
 using namespace Graphics;
 using namespace CoreGraphics;
 using namespace Lighting;
 using namespace Materials;
-using namespace Instancing;
 using namespace Visibility;
 using namespace Models;
 using namespace Util;
@@ -33,7 +27,6 @@ using namespace Util;
 namespace Frame
 {
 
-__ImplementClass(Frame::FrameSubpassBatch, 'FRSB', Frame::FrameOp);
 //------------------------------------------------------------------------------
 /**
 */
@@ -58,14 +51,13 @@ FrameSubpassBatch::Run(const IndexT frameIndex)
 {
 	// now do usual render stuff
 	ShaderServer* shaderServer = ShaderServer::Instance();
-	VisResolver* visResolver = VisResolver::Instance();
-	LightServer* lightServer = LightServer::Instance();
 	RenderDevice* renderDevice = RenderDevice::Instance();
-	InstanceServer* instanceServer = InstanceServer::Instance();
 	MaterialServer* matServer = MaterialServer::Instance();
 
 	// start batch
 	renderDevice->BeginBatch(FrameBatchType::Geometry);
+
+	/*
 
 	if (matServer->HasMaterialsByBatchGroup(this->batch))
 	{
@@ -161,6 +153,7 @@ FrameSubpassBatch::Run(const IndexT frameIndex)
 			}
 		}
 	}
+	*/
 
 	// end batch
 	renderDevice->EndBatch();

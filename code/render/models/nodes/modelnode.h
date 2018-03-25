@@ -68,7 +68,7 @@ protected:
 
 	Util::StringAtom name;
 	Models::ModelNode* parent;
-	Ids::Id24 model;
+	ModelId model;
 	Util::Array<Models::ModelNode*> children;
 	Math::bbox boundingBox;
 };

@@ -8,8 +8,8 @@
 #include "vkcmdbuffer.h"
 #include "vktypes.h"
 #include "vkrendertexture.h"
-#include "vkshaderreadwritetexture.h"
-#include "vkshaderreadwritebuffer.h"
+#include "vkshaderrwtexture.h"
+#include "vkshaderrwbuffer.h"
 
 namespace CoreGraphics
 {

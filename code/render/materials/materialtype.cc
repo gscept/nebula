@@ -59,7 +59,7 @@ MaterialType::CreateMaterial()
 		{
 			CoreGraphics::ShaderConstantId cid = CoreGraphics::ShaderStateGetConstant(state, this->textures.KeyAtIndex(j));
 			matTextureDict.Add(this->textures.KeyAtIndex(j), cid);
-			CoreGraphics::ShaderConstantSet(cid, state, this->textures.ValueAtIndex(j).default);
+			CoreGraphics::ShaderResourceSetTexture(cid, state, this->textures.ValueAtIndex(j).default);
 		}
 		this->states[batch].Append(state);
 	}
@@ -113,7 +113,7 @@ MaterialType::SetupMaterial(Ids::Id32 mat, MaterialSetup setup)
 			}
 			for (k = 0; k < setup.textures.Size(); k++)
 			{
-				CoreGraphics::ShaderConstantSet(matConstants[j][setup.textureNames[k]], state, setup.textures[k].default);
+				CoreGraphics::ShaderResourceSetTexture(matConstants[j][setup.textureNames[k]], state, setup.textures[k].default);
 			}
 		}
 	}
@@ -160,7 +160,7 @@ MaterialType::MaterialSetTexture(Ids::Id32 mat, Util::StringAtom name, const Cor
 		for (j = 0; j < indices.Size(); j++)
 		{
 			const CoreGraphics::ShaderStateId state = stateIds[indices[j]];
-			CoreGraphics::ShaderConstantSet(matTextures[i][name], state, tex);
+			CoreGraphics::ShaderResourceSetTexture(matTextures[i][name], state, tex);
 		}
 	}
 }

@@ -8,7 +8,6 @@
 namespace Frame
 {
 
-__ImplementClass(Frame::FrameSubpassAlgorithm, 'FSUA', Frame::FrameOp);
 //------------------------------------------------------------------------------
 /**
 */
@@ -24,7 +23,6 @@ FrameSubpassAlgorithm::~FrameSubpassAlgorithm()
 {
 	// empty
 }
-
 
 //------------------------------------------------------------------------------
 /**

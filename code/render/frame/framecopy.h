@@ -12,7 +12,6 @@ namespace Frame
 {
 class FrameCopy : public FrameOp
 {
-	__DeclareClass(FrameCopy);
 public:
 	/// constructor
 	FrameCopy();

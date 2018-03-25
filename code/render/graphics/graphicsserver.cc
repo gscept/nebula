@@ -114,21 +114,16 @@ GraphicsServer::OnFrame()
 	for (i = 0; i < this->views.Size(); i++)
 	{
 		const Ptr<View>& view = this->views[i];
+		this->currentView = view;
 		IndexT j;
 		for (j = 0; j < this->contexts.Size(); j++)
 		{
 			this->contexts[j]->OnBeforeView(view, frameIndex, time);
 		}
-	}
-
-	for (i = 0; i < this->views.Size(); i++)
-	{
-		const Ptr<View>& view = this->views[i];
 
 		// apply visibility result for this view
 		this->visServer->ApplyVisibility(view);
 
-		IndexT j;
 		for (j = 0; j < this->contexts.Size(); j++)
 		{
 			this->contexts[j]->OnVisibilityReady(frameIndex, time);
@@ -142,7 +137,6 @@ GraphicsServer::OnFrame()
 			this->contexts[j]->OnAfterView(view, frameIndex, time);
 		}
 	}
-
 
 	// finish frame and prepare for the next one
 	for (i = 0; i < this->contexts.Size(); i++)
@@ -238,5 +232,6 @@ GraphicsServer::DiscardView(const Ptr<View>& view)
 	n_assert(i != InvalidIndex);
 	this->views.EraseIndex(i);
 }
+
 
 } // namespace Graphics

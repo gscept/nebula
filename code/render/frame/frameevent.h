@@ -13,7 +13,6 @@ namespace Frame
 {
 class FrameEvent : public FrameOp
 {
-	__DeclareClass(FrameEvent);
 public:
 
 	enum Action

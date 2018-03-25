@@ -114,7 +114,7 @@ AnimUtil::InbetweenTicks(Timing::Tick sampleTime, const AnimClip& clip)
     TODO: seperate delta computation from default sampling, set curveindex from jointname in characterinstance !!!
 */
 void
-AnimUtil::Sample(const Ptr<AnimResource>& animResource, 
+AnimUtil::Sample(const AnimResourceId& animResource,
                  IndexT clipIndex, 
                  SampleType::Code sampleType, 
                  Tick time, 
@@ -220,7 +220,7 @@ AnimUtil::Sample(const Ptr<AnimResource>& animResource,
     Create a job object which is setup to perform simple animation sampling.
 */
 Ptr<Job>
-AnimUtil::CreateSampleJob(const Ptr<AnimResource>& animResource, 
+AnimUtil::CreateSampleJob(const AnimResourceId& animResource,
                           IndexT clipIndex, 
                           SampleType::Code sampleType, 
                           Timing::Tick time, 
@@ -284,7 +284,7 @@ AnimUtil::CreateSampleJob(const Ptr<AnimResource>& animResource,
     Create a job which performs both sampling and mixing.
 */
 Ptr<Job>
-AnimUtil::CreateSampleAndMixJob(const Ptr<AnimResource>& animResource, 
+AnimUtil::CreateSampleAndMixJob(const AnimResourceId& animResource,
                                 IndexT clipIndex, 
                                 SampleType::Code sampleType, 
                                 Timing::Tick time, 

@@ -222,7 +222,10 @@ MaterialServer::LoadMaterialTypes(const IO::URI& file)
 			Util::HashTable<CoreGraphics::BatchGroup::Code, Util::Set<IndexT>> uniqueGroups;
 
 		} while (reader->SetToNextChild("Material"));
+
+		return true;
 	}
+	return false;
 }
 
 //------------------------------------------------------------------------------
@@ -235,7 +238,7 @@ MaterialServer::AllocateMaterial(const Resources::ResourceName& type)
 	Ids::Id32 matId = mat->CreateMaterial();
 	MaterialId ret;
 	ret.instanceId = matId;
-	ret.typeId = mat->id;
+	ret.typeId = mat->id.id;
 	return ret;
 }
 

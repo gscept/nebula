@@ -11,9 +11,8 @@
 #include "util/stringatom.h"
 namespace Frame
 {
-class FrameOp : public Core::RefCounted
+class FrameOp
 {
-	__DeclareClass(FrameOp);
 public:
 	typedef uint ExecutionMask;
 

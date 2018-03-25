@@ -18,5 +18,10 @@ public:
 	/// destructor
 	virtual ~LightContext();
 private:
+
+	/// allocate a new slice for this context
+	ContextEntityId Alloc();
+	/// deallocate a slice
+	void Dealloc(ContextEntityId id);
 };
 } // namespace Graphics

@@ -24,7 +24,7 @@ public:
 		Depth,
 		Solid,
 		Alpha,
-		Geometry,
+		Geometry,			// most models and stuff in here
 		SolidAutoZ,         // Xbox360 specific
 		BeginSolidAutoZ,    // Xbox360 begin automatic z pass
 		EndSolidAutoZ,      // Xbox360 end automatic z pass

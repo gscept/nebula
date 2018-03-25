@@ -76,6 +76,15 @@ public:
 	void Copy(const CoreGraphics::TextureId from, const CoreGraphics::TextureId to, SizeT width, SizeT height, SizeT depth,
 		IndexT srcMip, IndexT srcLayer, SizeT srcXOffset, SizeT srcYOffset, SizeT srcZOffset,
 		IndexT dstMip, IndexT dstLayer, SizeT dstXOffset, SizeT dstYOffset, SizeT dstZOffset);
+
+	/// get texture dimensions
+	CoreGraphics::TextureDimensions GetDimensions(const CoreGraphics::TextureId id);
+	/// get texture pixel format
+	CoreGraphics::PixelFormat::Code GetPixelFormat(const CoreGraphics::TextureId id);
+	/// get texture type
+	CoreGraphics::TextureType GetType(const CoreGraphics::TextureId id);
+	/// get number of mips
+	uint GetNumMips(const CoreGraphics::TextureId id);
 private:
 	friend class VkStreamTexturePool;
 	__ImplementResourceAllocatorTypedSafe(textureAllocator, TextureIdType);

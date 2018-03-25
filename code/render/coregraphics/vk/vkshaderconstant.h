@@ -86,6 +86,8 @@ void SetBool(VkShaderConstantMemoryBinding& bind, bool value);
 void SetBoolArray(VkShaderConstantMemoryBinding& bind, const bool* values, SizeT count);
 /// set texture value
 void SetTexture(VkShaderConstantMemoryBinding& bind, VkShaderConstantDescriptorBinding& res, Util::Array<VkWriteDescriptorSet>& writes, const CoreGraphics::TextureId tex);
+/// set render texture value
+void SetRenderTexture(VkShaderConstantMemoryBinding& bind, VkShaderConstantDescriptorBinding& res, Util::Array<VkWriteDescriptorSet>& writes, const CoreGraphics::RenderTextureId tex);
 /// set constant buffer
 void SetConstantBuffer(VkShaderConstantDescriptorBinding& bind, Util::Array<VkWriteDescriptorSet>& writes, const CoreGraphics::ConstantBufferId buf);
 /// set shader read-write image

@@ -6,14 +6,16 @@
 #include "vkshaderconstant.h"
 #include "vkshaderstate.h"
 #include "coregraphics/constantbuffer.h"
-#include "coregraphics/shaderreadwritetexture.h"
-#include "coregraphics/shaderreadwritebuffer.h"
+#include "coregraphics/shaderrwtexture.h"
+#include "coregraphics/shaderrwbuffer.h"
 #include "coregraphics/texture.h"
+#include "coregraphics/rendertexture.h"
 #include "vktexture.h"
 #include "vkconstantbuffer.h"
-#include "vkshaderreadwritetexture.h"
-#include "vkshaderreadwritebuffer.h"
+#include "vkshaderrwtexture.h"
+#include "vkshaderrwbuffer.h"
 #include "vkshaderstate.h"
+#include "vkrendertexture.h"
 
 
 using namespace CoreGraphics;
@@ -432,6 +434,61 @@ SetTexture(VkShaderConstantMemoryBinding& bind, VkShaderConstantDescriptorBindin
 			writes.Append(set);
 		}
 	}	
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+SetRenderTexture(VkShaderConstantMemoryBinding& bind, VkShaderConstantDescriptorBinding& res, Util::Array<VkWriteDescriptorSet>& writes, const CoreGraphics::RenderTextureId tex)
+{
+	VkRenderTextureRuntimeInfo& info = renderTextureAllocator.Get<1>(tex.id24);
+
+	// only change if there is a difference
+	if (info.view != res.write.img.imageView)
+	{
+		res.write.img.imageView = info.view;
+
+		// if image can be set as an integer, do it
+		if (res.textureIsHandle)
+		{
+			// update texture id
+			if (bind.isbuffer)
+				ConstantBufferUpdate(bind.backing.uniformBuffer, &info.bind, bind.offset, sizeof(uint32_t));
+			else
+				VkShaderVariableUpdatePushRange(bind.backing.push, sizeof(uint32_t), info.bind);
+		}
+		else
+		{
+			// dependent on type of variable, select if sampler should be coupled with sampler or if it will be assembled in-shader
+			const VkImageView& view = info.view;
+			VkDescriptorType type;
+			if (info.type == TextureVariableType)		type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+			else if (info.type == SamplerVariableType)	type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			else
+			{
+				n_error("Variable '%d' is must be either Texture or Integer to be assigned a texture!\n", res.setBinding);
+			}
+
+			VkWriteDescriptorSet set;
+			set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			set.pNext = NULL;
+			set.descriptorCount = 1;
+			set.descriptorType = type;
+			set.dstArrayElement = 0;
+			set.dstBinding = res.setBinding;
+			set.dstSet = res.set;
+			set.pBufferInfo = NULL;
+			set.pTexelBufferView = NULL;
+			set.pImageInfo = &res.write.img;
+			res.write.img.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			res.write.img.sampler = VK_NULL_HANDLE;
+			res.write.img.imageView = info.view;
+
+			// add to shader to update on next update
+			writes.Append(set);
+		}
+	}
 }
 
 //------------------------------------------------------------------------------

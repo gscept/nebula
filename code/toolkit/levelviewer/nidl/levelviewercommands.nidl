@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Nebula3 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="D:\nebula3\schemas\interface.xsd">
+  <Library name="LevelviewerCommands">
+    <Dependency header="scriptingfeature/scriptingfeature.h"/>
+    <Dependency header="gamestates/viewergamestate.h"/>
+    <Dependency header="levelviewerapplication.h"/>
+
+    <Command name="reload" fourcc="rela" desc="Reloads current level">
+      <InArg name="keeptransform" type="bool"/>
+      <Code>
+        ((Tools::LevelViewerGameStateApplication*)(Tools::LevelViewerGameStateApplication::Instance()))->GetViewerState()->ReloadLevel(keeptransform);
+      </Code>
+    </Command>
+    <Command name="loadlevel" fourcc="lola" desc="load a level">
+      <InArg name="levelname" type="string"/>
+      <Code>
+        ((Tools::LevelViewerGameStateApplication*)(Tools::LevelViewerGameStateApplication::Instance()))->GetViewerState()->LoadLevel(levelname);
+      </Code>
+    </Command>
+  </Library>
+</Nebula3>

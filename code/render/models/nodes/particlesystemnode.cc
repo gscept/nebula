@@ -7,7 +7,7 @@
 #include "resources/resourcemanager.h"
 #include "models/model.h"
 #include "particles/particlerenderer.h"
-#include "models/modelpool.h"
+#include "models/streammodelpool.h"
 #include "coregraphics/mesh.h"
 
 namespace Models
@@ -63,7 +63,7 @@ ParticleSystemNode::OnFinishedLoading()
 	this->boundingBox.set(Math::point(0), Math::vector(0));
 
     // calculate bounding box using activity distance
-	Math::bbox& box = ModelGetBoundingBox(this->model);
+	Math::bbox& box = modelPool->GetModelBoundingBox(this->model);
     this->boundingBox.set(box.center(), Math::point(activityDist, activityDist, activityDist));
 	box.extend(this->boundingBox);
 }

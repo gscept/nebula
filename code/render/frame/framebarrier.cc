@@ -10,7 +10,6 @@ using namespace CoreGraphics;
 namespace Frame
 {
 
-__ImplementClass(Frame::FrameBarrier, 'FMBR', Frame::FrameOp);
 //------------------------------------------------------------------------------
 /**
 */

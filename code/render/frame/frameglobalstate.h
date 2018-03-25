@@ -12,7 +12,6 @@ namespace Frame
 {
 class FrameGlobalState : public FrameOp
 {
-	__DeclareClass(FrameGlobalState);
 public:
 	/// constructor
 	FrameGlobalState();

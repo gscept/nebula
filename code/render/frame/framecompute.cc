@@ -10,7 +10,6 @@ using namespace CoreGraphics;
 namespace Frame
 {
 
-__ImplementClass(Frame::FrameCompute, 'FRCM', Frame::FrameOp);
 //------------------------------------------------------------------------------
 /**
 */
@@ -27,7 +26,6 @@ FrameCompute::~FrameCompute()
 {
 	// empty
 }
-
 
 //------------------------------------------------------------------------------
 /**

@@ -6,32 +6,39 @@
 	(C) 2017 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "core/refcounted.h"
+#include "ids/idallocator.h"
+#include "camerasettings.h"
 namespace Graphics
 {
-class Camera : public Core::RefCounted
-{
-	__DeclareClass(Camera);
-public:
-	/// constructor
-	Camera();
-	/// destructor
-	virtual ~Camera();
 
-	/// set camera projection using field-of-view and aspect
-	void SetProjectionFov(float aspect, float fov, float znear, float zfar);
-	/// set camera projection off-center
-	void SetProjection(float left, float right, float top, float bottom, float znear, float zfar);
-	/// set camera as orthogonal projection
-	void SetOrthogonal(float width, float height);
-	/// set camera as orthogonal projection off-center
-	void SetOrthogonal(float left, float right, float top, float bottom);
+ID_32_TYPE(CameraId);
 
-	/// set transform (moves camera but doesn't affect projection)
-	void SetTransform(const Math::matrix44& transform);
+/// create new camera
+CameraId CreateCamera();
+/// destroy camera
+void DestroyCamera(CameraId id);
 
-private:
-	Math::matrix44 view;
-	Math::matrix44 projection;
-};
+/// set as projection using FoV
+void CameraSetProjectionFov(CameraId id, float aspect, float fov, float znear, float zfar);
+/// set orthogonal
+void CameraSetOrthogonal(CameraId id, float width, float height, float znear, float zfar);
+
+/// set transform of camera
+void CameraSetTransform(CameraId id, const Math::matrix44& transform);
+
+/// get settings
+const CameraSettings& CameraGetSettings(CameraId id);
+/// get transform
+const Math::matrix44& CameraGetTransform(CameraId id);
+/// get projection
+const Math::matrix44& CameraGetProjection(CameraId id);
+
+typedef Ids::IdAllocator<
+	Graphics::CameraSettings,
+	Math::matrix44,				// projection
+	Math::matrix44				// view-transform
+> CameraAllocator;
+
+extern CameraAllocator cameraAllocator;
+
 } // namespace Graphics

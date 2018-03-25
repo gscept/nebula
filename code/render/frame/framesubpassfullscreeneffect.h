@@ -14,7 +14,6 @@ namespace Frame
 {
 class FrameSubpassFullscreenEffect : public FrameOp
 {
-	__DeclareClass(FrameSubpassFullscreenEffect);
 public:
 	/// constructor
 	FrameSubpassFullscreenEffect();
@@ -29,6 +28,8 @@ public:
 	void Run(const IndexT frameIndex);
 	
 	RenderUtil::DrawFullScreenQuad fsq;
+	CoreGraphics::ShaderId shader;
+	CoreGraphics::ShaderProgramId program;
 	CoreGraphics::ShaderStateId shaderState;
 	CoreGraphics::RenderTextureId tex;
 	

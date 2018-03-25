@@ -25,4 +25,21 @@ LightProbeContext::~LightProbeContext()
 	// empty
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+ContextEntityId
+LightProbeContext::Alloc()
+{
+	return ContextEntityId();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+LightProbeContext::Dealloc(ContextEntityId id)
+{
+}
+
 } // namespace Graphics

@@ -12,7 +12,6 @@ namespace Frame
 {
 class FrameSubpassAlgorithm : public FrameOp
 {
-	__DeclareClass(FrameSubpassAlgorithm);
 public:
 	/// constructor
 	FrameSubpassAlgorithm();
@@ -27,7 +26,7 @@ public:
 	void Run(const IndexT frameIndex);
 
 	Util::StringAtom funcName;
-	Ptr<Algorithms::Algorithm> alg;
+	Algorithms::Algorithm* alg;
 private:
 	
 	std::function<void(IndexT)> func;

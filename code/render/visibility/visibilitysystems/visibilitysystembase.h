@@ -49,7 +49,7 @@ public:
     virtual void EndAttachVisibilityContainer();
 
     /// attach visibility job to port
-    virtual Ptr<Jobs::Job> CreateVisibilityJob(IndexT frameId, const Ptr<Observer>& observer, Util::FixedArray<Ptr<VisibilityContext> >& outEntitiyArray, uint& entityMask);
+    virtual Ptr<Jobs::Job> CreateVisibilityJob(IndexT frameId, const Graphics::GraphicsEntityId observer, Util::FixedArray<Ptr<VisibilityContext> >& outEntitiyArray, uint& entityMask);
     /// render debug visualizations
     virtual void OnRenderDebug();    
     /// get observer type mask

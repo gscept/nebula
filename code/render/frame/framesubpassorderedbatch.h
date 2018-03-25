@@ -13,7 +13,6 @@ namespace Frame
 {
 class FrameSubpassOrderedBatch : public FrameOp
 {
-	__DeclareClass(FrameSubpassOrderedBatch);
 public:
 	/// constructor
 	FrameSubpassOrderedBatch();

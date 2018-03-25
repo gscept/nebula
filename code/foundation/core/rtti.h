@@ -27,12 +27,11 @@ public:
     /// define a creation callback function prototype
     typedef void* (*Creator)();
 	typedef void* (*ArrayCreator)(SizeT);
-	typedef void* (*InplaceCreator)(void*);
 
     /// constructor
-    Rtti(const char* className, Util::FourCC fcc, Creator creatorFunc, ArrayCreator arrayCreatorFunc, InplaceCreator inplaceCreatorFunc, const Core::Rtti* parentClass, SizeT instSize);
+    Rtti(const char* className, Util::FourCC fcc, Creator creatorFunc, ArrayCreator arrayCreatorFunc, const Core::Rtti* parentClass, SizeT instSize);
     /// legacy constructor without FourCC for Mangalore compatibility
-    Rtti(const char* className, Creator creatorFunc, ArrayCreator arrayCreatorFunc, InplaceCreator inplaceCreatorFunc, const Core::Rtti* parentClass, SizeT instSize);
+    Rtti(const char* className, Creator creatorFunc, ArrayCreator arrayCreatorFunc, const Core::Rtti* parentClass, SizeT instSize);
     /// equality operator
     bool operator==(const Rtti& rhs) const;
     /// inequality operator
@@ -59,8 +58,6 @@ public:
     bool IsDerivedFrom(const Util::FourCC& otherClassFourCC) const;
     /// allocate instance memory block (called by class new operator)
     void* AllocInstanceMemory();
-	/// allocate instance memory inplace
-	void* AllocInstanceMemoryInplace(void* mem);
 	/// allocate instance memory array block (called by class new operator)
 	void* AllocInstanceMemoryArray(size_t num);
     /// free instance memory block (called by class delete operator)
@@ -68,14 +65,13 @@ public:
 
 private:
     /// constructor method, called from the various constructors
-    void Construct(const char* className, Util::FourCC fcc, Creator creatorFunc, ArrayCreator arrayCreatorFunc, InplaceCreator inplaceCreatorFunc, const Core::Rtti* parentClass, SizeT instSize);
+    void Construct(const char* className, Util::FourCC fcc, Creator creatorFunc, ArrayCreator arrayCreatorFunc, const Core::Rtti* parentClass, SizeT instSize);
 
     Util::String name;
     const Core::Rtti* parent;
     Util::FourCC fourCC;
     Creator creator;
 	ArrayCreator arrayCreator;
-	InplaceCreator inplaceCreator;
     SizeT instanceSize;
 };
 

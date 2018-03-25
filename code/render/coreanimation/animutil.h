@@ -23,11 +23,11 @@ class AnimUtil
 {
 public:
     /// OBSOLETE: sample an animation clip at some point in time into an AnimSampleBuffer
-    static void Sample(const Ptr<AnimResource>& animResource, IndexT clipIndex, SampleType::Code sampleType, Timing::Tick time, float timeFactor, const Ptr<AnimSampleBuffer>& result);
+    static void Sample(const AnimResourceId& animResource, IndexT clipIndex, SampleType::Code sampleType, Timing::Tick time, float timeFactor, const Ptr<AnimSampleBuffer>& result);
     /// setup a job object which performs sampling
-    static Ptr<Jobs::Job> CreateSampleJob(const Ptr<AnimResource>& animResource, IndexT clipIndex, SampleType::Code sampleType, Timing::Tick time, float timeFactor, const Characters::CharacterJointMask* mask, const Ptr<AnimSampleBuffer>& result);    
+    static Ptr<Jobs::Job> CreateSampleJob(const AnimResourceId& animResource, IndexT clipIndex, SampleType::Code sampleType, Timing::Tick time, float timeFactor, const Characters::CharacterJointMask* mask, const Ptr<AnimSampleBuffer>& result);
     /// setup a job which performs both sampling and mixing
-	static Ptr<Jobs::Job> CreateSampleAndMixJob(const Ptr<AnimResource>& animResource, IndexT clipIndex, SampleType::Code sampleType, Timing::Tick time, float timeFactor, const Characters::CharacterJointMask* mask, float mixWeight, const Ptr<AnimSampleBuffer>& mixIn, const Ptr<AnimSampleBuffer>& result);
+	static Ptr<Jobs::Job> CreateSampleAndMixJob(const AnimResourceId& animResource, IndexT clipIndex, SampleType::Code sampleType, Timing::Tick time, float timeFactor, const Characters::CharacterJointMask* mask, float mixWeight, const Ptr<AnimSampleBuffer>& mixIn, const Ptr<AnimSampleBuffer>& result);
     /// clamp key index into valid range
     static IndexT ClampKeyIndex(IndexT keyIndex, const AnimClip& clip);
     /// compute inbetween ticks for a given sample time

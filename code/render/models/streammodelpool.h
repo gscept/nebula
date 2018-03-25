@@ -17,6 +17,10 @@
 #include "nodes/characterskinnode.h"
 #include "nodes/particlesystemnode.h"
 
+namespace Visibility
+{
+class VisibilityContext;
+}
 namespace Models
 {
 
@@ -38,13 +42,22 @@ public:
 	/// destroy an instance of a model
 	void DestroyModelInstance(const ModelInstanceId id);
 
+	/// get bounding box of model
+	const Math::bbox& GetModelBoundingBox(const ModelId id) const;
+	/// get bounding box of model
+	Math::bbox& GetModelBoundingBox(const ModelId id);
+	/// get bounding box of model
+	const Math::bbox& GetModelBoundingBox(const ModelInstanceId id);
+	/// get bounding box of model instance
+	const Math::bbox& GetModelInstanceBoundingBox(const ModelInstanceId id);
+
 private:
 	friend class PrimitiveNode;
 	friend class CharacterNode;
 	friend class CharacterSkinNode;
 	friend class ParticleSystemNode;
 	friend class ModelContext;
-	friend class VisibilityContext;
+	friend class Visibility::VisibilityContext;
 
 	/// create an instance of a model recursively
 	void CreateModelInstanceRecursive(Models::ModelNode* parent, Models::ModelNode::Instance* parentInstance, Memory::ChunkAllocator<0xFFF>& allocator, Util::Array<Models::ModelNode::Instance*>& instances);

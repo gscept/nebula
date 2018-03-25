@@ -14,7 +14,6 @@ namespace Algorithms
 {
 class HBAOAlgorithm : public Algorithm
 {
-	__DeclareClass(HBAOAlgorithm);
 public:
 	/// constructor
 	HBAOAlgorithm();
@@ -28,22 +27,23 @@ public:
 
 private:
 
-	Ptr<CoreGraphics::ShaderState> hbao, blur;
-	CoreGraphics::ShaderFeature::Mask xDirection, yDirection;
+	CoreGraphics::ShaderStateId hbao, blur;
+	CoreGraphics::ShaderId hbaoShader, blurShader;
+	CoreGraphics::ShaderProgramId xDirectionHBAO, yDirectionHBAO, xDirectionBlur, yDirectionBlur;
 
 	// texture variables
-	Ptr<CoreGraphics::ShaderVariable> hbao0Var, hbao1Var, hbaoX, hbaoY, hbaoBlurRGVar, hbaoBlurRVar;
+	CoreGraphics::ShaderConstantId hbao0Var, hbao1Var, hbaoX, hbaoY, hbaoBlurRGVar, hbaoBlurRVar;
 
 	// ao variables
-	Ptr<CoreGraphics::ShaderVariable> 
+	CoreGraphics::ShaderConstantId
 		uvToViewAVar, uvToViewBVar, r2Var, 
 		aoResolutionVar, invAOResolutionVar, strengthVar, tanAngleBiasVar, 
 		powerExponentVar, blurFalloff, blurDepthThreshold;
 
 	// read-write textures
-	Ptr<CoreGraphics::ShaderReadWriteTexture> internalTargets[2];
+	CoreGraphics::ShaderRWTextureId internalTargets[2];
 
-	Ptr<CoreGraphics::Barrier> barriers[3];
+	CoreGraphics::BarrierId barriers[3];
 
 	struct AOVariables
 	{
@@ -66,5 +66,4 @@ private:
 		float blurFalloff;
 	} vars;
 };
-__RegisterClass(HBAOAlgorithm);
 } // namespace Algorithms

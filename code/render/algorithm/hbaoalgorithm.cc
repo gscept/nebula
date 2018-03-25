@@ -7,14 +7,15 @@
 #include "coregraphics/shaderserver.h"
 #include "coregraphics/shadersemantics.h"
 #include "coregraphics/renderdevice.h"
-#include "graphics/camerasettings.h"
+#include "coregraphics/shaderrwtexture.h"
+#include "coregraphics/shaderrwbuffer.h"
+//#include "graphics/camerasettings.h"
 
 using namespace CoreGraphics;
 using namespace Graphics;
 namespace Algorithms
 {
 
-__ImplementClass(Algorithms::HBAOAlgorithm, 'HBAO', Algorithms::Algorithm);
 //------------------------------------------------------------------------------
 /**
 */
@@ -43,59 +44,69 @@ HBAOAlgorithm::Setup()
 	n_assert(this->renderTextures.Size() == 1);
 	n_assert(this->readWriteTextures.Size() == 1);
 
-	this->internalTargets[0] = ShaderReadWriteTexture::Create();
-	this->internalTargets[0]->SetupWithRelativeSize(1.0f, 1.0f, PixelFormat::R16G16F, "HBAO-Internal0");
+	CoreGraphics::ShaderRWTextureCreateInfo tinfo =
+	{
+		"HBAO-Internal0",
+		Texture2D,
+		PixelFormat::R16G16F,
+		0, 0, 0,			// hard dimensions
+		1, 1,				// layers and mips
+		1.0f, 1.0f, 1.0f,	// scaling
+		false, false, true
+	};
 
-	this->internalTargets[1] = ShaderReadWriteTexture::Create();
-	this->internalTargets[1]->SetupWithRelativeSize(1.0f, 1.0f, PixelFormat::R16G16F, "HBAO-Internal1");
+	this->internalTargets[0] = CreateShaderRWTexture(tinfo);
+	tinfo.name = "HBAO-Internal1";
+	this->internalTargets[1] = CreateShaderRWTexture(tinfo);
 
-	this->barriers[0] = Barrier::Create();
-	this->barriers[0]->SetLeftDependency(Barrier::Dependency::ComputeShader);
-	this->barriers[0]->SetRightDependency(Barrier::Dependency::ComputeShader);
-	this->barriers[0]->SetDomain(Barrier::Domain::Global);
-	this->barriers[0]->AddReadWriteTexture(this->internalTargets[0], Barrier::Access::ShaderWrite, Barrier::Access::ShaderRead);
-	this->barriers[0]->Setup();
+	CoreGraphics::BarrierCreateInfo binfo =
+	{
+		BarrierDomain::Global,
+		BarrierDependency::ComputeShader,
+		BarrierDependency::ComputeShader
+	};
+	binfo.shaderRWTextures.Append(std::make_tuple(this->internalTargets[0], BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead));
+	this->barriers[0] = CreateBarrier(binfo);
 
-	this->barriers[1] = Barrier::Create();
-	this->barriers[1]->SetLeftDependency(Barrier::Dependency::ComputeShader);
-	this->barriers[1]->SetRightDependency(Barrier::Dependency::ComputeShader);
-	this->barriers[1]->SetDomain(Barrier::Domain::Global);
-	this->barriers[1]->AddReadWriteTexture(this->internalTargets[1], Barrier::Access::ShaderWrite, Barrier::Access::ShaderRead);
-	this->barriers[1]->Setup();
+	binfo.shaderRWTextures.Clear();
+	binfo.shaderRWTextures.Append(std::make_tuple(this->internalTargets[1], BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead));
+	this->barriers[1] = CreateBarrier(binfo);
 
-	this->barriers[2] = Barrier::Create();
-	this->barriers[2]->SetLeftDependency(Barrier::Dependency::ComputeShader);
-	this->barriers[2]->SetRightDependency(Barrier::Dependency::ComputeShader);
-	this->barriers[2]->SetDomain(Barrier::Domain::Global);
-	this->barriers[2]->AddReadWriteTexture(this->readWriteTextures[0], Barrier::Access::ShaderWrite, Barrier::Access::ShaderRead);
-	this->barriers[2]->Setup();
+	binfo.shaderRWTextures.Clear();
+	binfo.shaderRWTextures.Append(std::make_tuple(this->readWriteTextures[0], BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead));
+	this->barriers[2] = CreateBarrier(binfo);
 
 	// setup shaders
-	this->hbao = CoreGraphics::ShaderServer::Instance()->CreateShaderState("shd:hbao_cs", { NEBULAT_DEFAULT_GROUP });
-	this->blur = CoreGraphics::ShaderServer::Instance()->CreateShaderState("shd:hbaoblur_cs", { NEBULAT_DEFAULT_GROUP });
+	this->hbaoShader = ShaderGet("shd:hbao_cs");
+	this->blurShader = ShaderGet("shd:hbaoblur_cs");
+	this->hbao = ShaderCreateState(this->hbaoShader, { NEBULAT_BATCH_GROUP }, false);
+	this->blur = ShaderCreateState(this->blurShader, { NEBULAT_BATCH_GROUP }, false);
 
-	this->xDirection = CoreGraphics::ShaderServer::Instance()->FeatureStringToMask("Alt0");
-	this->yDirection = CoreGraphics::ShaderServer::Instance()->FeatureStringToMask("Alt1");
+	this->xDirectionHBAO = ShaderGetProgram(this->hbaoShader, ShaderFeatureFromString("Alt0"));
+	this->yDirectionHBAO = ShaderGetProgram(this->hbaoShader, ShaderFeatureFromString("Alt1"));
+	this->xDirectionBlur = ShaderGetProgram(this->blurShader, ShaderFeatureFromString("Alt0"));
+	this->yDirectionBlur = ShaderGetProgram(this->blurShader, ShaderFeatureFromString("Alt1"));
 
-	this->hbao0Var = this->hbao->GetVariableByName("HBAO0");
-	this->hbao1Var = this->hbao->GetVariableByName("HBAO1");
-	this->hbaoX = this->blur->GetVariableByName("HBAOX");
-	this->hbaoY = this->blur->GetVariableByName("HBAOY");
+	this->hbao0Var = ShaderStateGetConstant(this->hbao, "HBAO0");
+	this->hbao1Var = ShaderStateGetConstant(this->hbao, "HBAO1");
+	this->hbaoX = ShaderStateGetConstant(this->blur, "HBAOX");
+	this->hbaoY = ShaderStateGetConstant(this->blur, "HBAOY");
 	
-	this->hbaoBlurRGVar = this->blur->GetVariableByName("HBAORG");
-	this->hbaoBlurRVar = this->blur->GetVariableByName("HBAOR");
-
-	this->hbaoX->SetTexture(this->internalTargets[1]->GetTexture());
-	this->hbaoY->SetTexture(this->internalTargets[0]->GetTexture());
+	this->hbaoBlurRGVar = ShaderStateGetConstant(this->blur, "HBAORG");
+	this->hbaoBlurRVar = ShaderStateGetConstant(this->blur, "HBAOR");
+	
+	ShaderResourceSetReadWriteTexture(this->hbaoX, this->blur, this->internalTargets[1]);
+	ShaderResourceSetReadWriteTexture(this->hbaoY, this->blur, this->internalTargets[0]);
 
 	// assign variables, HBAO0 is read-write
-	this->hbao0Var->SetShaderReadWriteTexture(this->internalTargets[0]->GetTexture());
-	this->hbao1Var->SetShaderReadWriteTexture(this->internalTargets[1]->GetTexture());
-	this->hbaoBlurRGVar->SetShaderReadWriteTexture(this->internalTargets[0]->GetTexture());
-	this->hbaoBlurRVar->SetShaderReadWriteTexture(this->readWriteTextures[0]->GetTexture());
+	ShaderResourceSetReadWriteTexture(this->hbao0Var, this->hbao, this->internalTargets[0]);
+	ShaderResourceSetReadWriteTexture(this->hbao1Var, this->hbao, this->internalTargets[1]);
+	ShaderResourceSetReadWriteTexture(this->hbaoBlurRGVar, this->blur, this->internalTargets[0]);
+	ShaderResourceSetReadWriteTexture(this->hbaoBlurRVar, this->blur, this->readWriteTextures[0]);
 
-	this->vars.fullWidth = (float)this->renderTextures[0]->GetTexture()->GetWidth();
-	this->vars.fullHeight = (float)this->renderTextures[0]->GetTexture()->GetHeight();
+	TextureDimensions dims = RenderTextureGetDimensions(this->renderTextures[0]);
+	this->vars.fullWidth = (float)dims.width;
+	this->vars.fullHeight = (float)dims.height;
 	this->vars.radius = 12.0f;
 	this->vars.downsample = 1.0f;
 	this->vars.sceneScale = 1.0f;
@@ -104,23 +115,25 @@ HBAOAlgorithm::Setup()
 	this->vars.tanAngleBias = tanf(Math::n_deg2rad(10.0));
 	this->vars.strength = 2.0f;
 
-	//this->depthTextureVar = this->hbao->GetVariableByName("DepthBuffer");
-	this->uvToViewAVar = this->hbao->GetVariableByName(NEBULA3_SEMANTIC_UVTOVIEWA);
-	this->uvToViewBVar = this->hbao->GetVariableByName(NEBULA3_SEMANTIC_UVTOVIEWB);
-	this->r2Var = this->hbao->GetVariableByName(NEBULA3_SEMANTIC_R2);
-	this->aoResolutionVar = this->hbao->GetVariableByName(NEBULA3_SEMANTIC_AORESOLUTION);
-	this->invAOResolutionVar = this->hbao->GetVariableByName(NEBULA3_SEMANTIC_INVAORESOLUTION);
-	this->strengthVar = this->hbao->GetVariableByName(NEBULA3_SEMANTIC_STRENGHT);
-	this->tanAngleBiasVar = this->hbao->GetVariableByName(NEBULA3_SEMANTIC_TANANGLEBIAS);
-	this->powerExponentVar = this->blur->GetVariableByName(NEBULA3_SEMANTIC_POWEREXPONENT);
-	this->blurFalloff = this->blur->GetVariableByName(NEBULA3_SEMANTIC_FALLOFF);
-	this->blurDepthThreshold = this->blur->GetVariableByName(NEBULA3_SEMANTIC_DEPTHTHRESHOLD);
+	// setup hbao params
+	this->uvToViewAVar = ShaderStateGetConstant(this->hbao, NEBULA3_SEMANTIC_UVTOVIEWA);
+	this->uvToViewBVar = ShaderStateGetConstant(this->hbao, NEBULA3_SEMANTIC_UVTOVIEWB);
+	this->r2Var = ShaderStateGetConstant(this->hbao, NEBULA3_SEMANTIC_R2);
+	this->aoResolutionVar = ShaderStateGetConstant(this->hbao, NEBULA3_SEMANTIC_AORESOLUTION);
+	this->invAOResolutionVar = ShaderStateGetConstant(this->hbao, NEBULA3_SEMANTIC_INVAORESOLUTION);
+	this->strengthVar = ShaderStateGetConstant(this->hbao, NEBULA3_SEMANTIC_STRENGHT);
+	this->tanAngleBiasVar = ShaderStateGetConstant(this->hbao, NEBULA3_SEMANTIC_TANANGLEBIAS);
+
+	// setup blur params
+	this->powerExponentVar = ShaderStateGetConstant(this->blur, NEBULA3_SEMANTIC_POWEREXPONENT);
+	this->blurFalloff = ShaderStateGetConstant(this->blur, NEBULA3_SEMANTIC_FALLOFF);
+	this->blurDepthThreshold = ShaderStateGetConstant(this->blur, NEBULA3_SEMANTIC_DEPTHTHRESHOLD);
 
 	// calculate relevant stuff for AO
 	this->AddFunction("Prepare", Algorithm::Compute, [this](IndexT)
 	{
 		// get camera settings
-		const CameraSettings& cameraSettings = Graphics::GraphicsServer::Instance()->GetCurrentView()->GetCameraEntity()->GetCameraSettings();
+		const CameraSettings& cameraSettings = CameraGetSettings(Graphics::GraphicsServer::Instance()->GetCurrentView()->GetCamera());
 
 		this->vars.width = this->vars.fullWidth / this->vars.downsample;
 		this->vars.height = this->vars.fullHeight / this->vars.downsample;
@@ -166,13 +179,13 @@ HBAOAlgorithm::Setup()
 		vars.blurThreshold = 2.0f * SQRT_LN2 * (this->vars.sceneScale / BLUR_SHARPNESS);
 
 		// actually set variables
-		this->uvToViewAVar->SetFloat2(this->vars.uvToViewA);
-		this->uvToViewBVar->SetFloat2(this->vars.uvToViewB);
+		ShaderConstantSet(this->uvToViewAVar, this->hbao, this->vars.uvToViewA);
+		ShaderConstantSet(this->uvToViewBVar, this->hbao, this->vars.uvToViewB);
 
-		this->r2Var->SetFloat(this->vars.r2);
-		this->aoResolutionVar->SetFloat2(this->vars.aoResolution);
-		this->invAOResolutionVar->SetFloat2(this->vars.invAOResolution);
-		this->strengthVar->SetFloat(this->vars.strength);
+		ShaderConstantSet(this->r2Var, this->hbao, this->vars.r2);
+		ShaderConstantSet(this->aoResolutionVar, this->hbao, this->vars.aoResolution);
+		ShaderConstantSet(this->invAOResolutionVar, this->hbao, this->vars.invAOResolution);
+		ShaderConstantSet(this->strengthVar, this->hbao, this->vars.strength);
 	});
 
 	// calculate HBAO and blur
@@ -194,28 +207,26 @@ HBAOAlgorithm::Setup()
 		uint numGroupsY2 = height;
 
 		// render AO in X
-		this->hbao->SelectActiveVariation(this->xDirection);
-		this->hbao->Apply();
-		this->hbao->Commit();
+		ShaderProgramBind(this->xDirectionHBAO);
+		ShaderStateApply(this->hbao);
 		renderDevice->Compute(numGroupsX1, numGroupsY2, 1);
 
-		//renderDevice->InsertBarrier(this->barriers[0]);
+		renderDevice->InsertBarrier(this->barriers[0]);
 
-		this->hbao->SelectActiveVariation(this->yDirection);
-		this->hbao->Apply();
+		ShaderProgramBind(this->yDirectionHBAO);
+		ShaderStateApply(this->hbao);
 		renderDevice->Compute(numGroupsY1, numGroupsX2, 1);
 
-		//renderDevice->InsertBarrier(this->barriers[1]);
+		renderDevice->InsertBarrier(this->barriers[1]);
 
-		this->blur->SelectActiveVariation(this->xDirection);
-		this->blur->Apply();
-		this->blur->Commit();
+		ShaderProgramBind(this->xDirectionBlur);
+		ShaderStateApply(this->blur);
 		renderDevice->Compute(numGroupsX1, numGroupsY2, 1);
 
-		//renderDevice->InsertBarrier(this->barriers[0]);
+		renderDevice->InsertBarrier(this->barriers[0]);
 
-		this->blur->SelectActiveVariation(this->yDirection);
-		this->blur->Apply();
+		ShaderProgramBind(this->yDirectionBlur);
+		ShaderStateApply(this->blur);
 		renderDevice->Compute(numGroupsY1, numGroupsX2, 1);
 
 		//renderDevice->InsertBarrier(this->barriers[2]);
@@ -229,23 +240,8 @@ void
 HBAOAlgorithm::Discard()
 {
 	Algorithm::Discard();
-	this->hbao->Discard();
-	this->blur->Discard();
-	this->hbao0Var = nullptr;
-	this->hbao1Var = nullptr;
-	this->hbaoBlurRGVar = nullptr;
-	this->hbaoBlurRVar = nullptr;
-	this->hbaoX = nullptr;
-	this->hbaoY = nullptr;
-	this->uvToViewAVar = nullptr;
-	this->uvToViewBVar = nullptr;
-	this->aoResolutionVar = nullptr;
-	this->invAOResolutionVar = nullptr;
-	this->strengthVar = nullptr;
-	this->tanAngleBiasVar = nullptr;
-	this->powerExponentVar = nullptr;
-	this->blurFalloff = nullptr;
-	this->blurDepthThreshold = nullptr;
+	ShaderDestroyState(this->hbao);
+	ShaderDestroyState(this->blur);
 }
 
 } // namespace Algorithms

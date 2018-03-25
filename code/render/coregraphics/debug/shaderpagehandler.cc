@@ -194,7 +194,7 @@ ShaderPageHandler::HandleShaderInfoRequest(const Util::String& resId, const Ptr<
 					const CoreGraphics::ShaderProgramId& id = programs.ValueAtIndex(i);
 					const CoreGraphics::ShaderFeature::Mask& mask = programs.KeyAtIndex(i);
                     htmlWriter->Begin(HtmlElement::TableRow);
-                        htmlWriter->Element(HtmlElement::TableData, ShaderProgramGetName(id));
+                        htmlWriter->Element(HtmlElement::TableData, ShaderProgramGetName(id).AsString());
                         htmlWriter->Element(HtmlElement::TableData, shdServer->FeatureMaskToString(mask));
                     htmlWriter->End(HtmlElement::TableRow);
                 }
@@ -248,10 +248,10 @@ ShaderPageHandler::WriteShaderVariableTable(const Ptr<HtmlPageWriter>& htmlWrite
     IndexT i;
     for (i = 0; i < numVars; i++)
     {
-		const Util::String& name = ShaderGetConstantName(shader, i);
+		const Util::StringAtom& name = ShaderGetConstantName(shader, i);
 		const ShaderConstantType& type = ShaderGetConstantType(shader, i);
         htmlWriter->Begin(HtmlElement::TableRow);
-            htmlWriter->Element(HtmlElement::TableData, name);
+            htmlWriter->Element(HtmlElement::TableData, name.AsString());
             htmlWriter->Element(HtmlElement::TableData, ConstantTypeToString(type));
         htmlWriter->End(HtmlElement::TableRow);
     }

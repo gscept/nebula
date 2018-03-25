@@ -66,6 +66,7 @@ public:
 	void ApplyMaterial(Ids::Id32 mat);
 private:
 	friend class MaterialServer;
+	friend class MaterialPool;
 
 
 	Util::Array<CoreGraphics::BatchGroup::Code> batches;

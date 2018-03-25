@@ -53,16 +53,16 @@ private:
 	> modelContextAllocator;
 
 	/// allocate a new slice for this context
-	Ids::Id32 Alloc();
+	Graphics::ContextEntityId Alloc();
 	/// deallocate a slice
-	void Dealloc(Ids::Id32 id);
+	void Dealloc(Graphics::ContextEntityId id);
 
 };
 
 //------------------------------------------------------------------------------
 /**
 */
-inline Ids::Id32
+inline Graphics::ContextEntityId
 ModelContext::Alloc()
 {
 	return this->modelContextAllocator.AllocObject();
@@ -72,9 +72,9 @@ ModelContext::Alloc()
 /**
 */
 inline void
-ModelContext::Dealloc(Ids::Id32 id)
+ModelContext::Dealloc(Graphics::ContextEntityId id)
 {
-	this->modelContextAllocator.DeallocObject(id);
+	this->modelContextAllocator.DeallocObject(id.id);
 }
 
 //------------------------------------------------------------------------------

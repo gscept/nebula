@@ -47,6 +47,8 @@ public:
 	void SetMaterialTexture(const MaterialId id, const Util::StringAtom& name, const CoreGraphics::TextureId val);
 
 private:
+	friend class MaterialPool;
+
 	Util::Dictionary<Resources::ResourceName, MaterialType*> materialTypesByName;
 	Util::Array<MaterialType> materialTypes;
 	Ptr<MaterialPool> materialPool;

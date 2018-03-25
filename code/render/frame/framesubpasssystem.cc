@@ -4,20 +4,17 @@
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "framesubpasssystem.h"
-#include "lighting/lightserver.h"
 #include "rendermodules/rt/rtpluginregistry.h"
 #include "coregraphics/textrenderer.h"
 #include "coregraphics/shaperenderer.h"
-#include "lighting/shadowserver.h"
 #include "coregraphics/renderdevice.h"
-#include "coregraphics/framebatchtype.h"
+#include "frame/framebatchtype.h"
 
 using namespace CoreGraphics;
 using namespace Lighting;
 namespace Frame
 {
 
-__ImplementClass(Frame::FrameSubpassSystem, 'FRSS', Frame::FrameOp);
 //------------------------------------------------------------------------------
 /**
 */
@@ -56,22 +53,22 @@ FrameSubpassSystem::Run(const IndexT frameIndex)
 	{
 	case Lights:
 		renderDev->BeginBatch(FrameBatchType::System);
-		LightServer::Instance()->RenderLights();
+		//LightServer::Instance()->RenderLights();
 		renderDev->EndBatch();
 		break;
 	case LightProbes:
 		renderDev->BeginBatch(FrameBatchType::System);
-		LightServer::Instance()->RenderLightProbes();
+		//LightServer::Instance()->RenderLightProbes();
 		renderDev->EndBatch();
 		break;
 	case LocalShadowsSpot:	// shadows implement their own batching
-		ShadowServer::Instance()->UpdateSpotLightShadowBuffers();
+		//ShadowServer::Instance()->UpdateSpotLightShadowBuffers();
 		break;
 	case LocalShadowsPoint:
-		ShadowServer::Instance()->UpdatePointLightShadowBuffers();
+		//ShadowServer::Instance()->UpdatePointLightShadowBuffers();
 		break;
 	case GlobalShadows:
-		ShadowServer::Instance()->UpdateGlobalLightShadowBuffers();
+		//ShadowServer::Instance()->UpdateGlobalLightShadowBuffers();
 		break;
 	case UI:
 		//RenderModules::RTPluginRegistry::Instance()->OnRender(FrameBatchType::UI);

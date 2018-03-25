@@ -14,9 +14,10 @@
 #include "coregraphics/shader.h"
 #include "vulkan/vulkan.h"
 #include "coregraphics/constantbuffer.h"
-#include "coregraphics/shaderreadwritetexture.h"
-#include "coregraphics/shaderreadwritebuffer.h"
+#include "coregraphics/shaderrwtexture.h"
+#include "coregraphics/shaderrwbuffer.h"
 #include "coregraphics/shaderidentifier.h"
+#include "coregraphics/rendertexture.h"
 #include "vkshaderprogram.h"
 #include "vkshaderstate.h"
 #include "vktexture.h"
@@ -96,9 +97,11 @@ public:
 	template <class TYPE> void ShaderConstantSet(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ShaderStateId state, const TYPE& value);
 	/// set shader constant array
 	template <class TYPE> void ShaderConstantSetArray(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ShaderStateId state, const TYPE* value, uint32_t count);
+	/// set constant as render texture in texture slot
+	void ShaderResourceSetRenderTexture(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ShaderStateId state, const CoreGraphics::RenderTextureId texture);
 	/// set constant as texture
 	void ShaderResourceSetTexture(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ShaderStateId state, const CoreGraphics::TextureId texture);
-	/// set constant as texture
+	/// set constant as constant buffer
 	void ShaderResourceSetConstantBuffer(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ShaderStateId state, const CoreGraphics::ConstantBufferId buffer);
 	/// set constant as texture
 	void ShaderResourceSetReadWriteTexture(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ShaderStateId state, const CoreGraphics::TextureId image);
@@ -311,6 +314,17 @@ VkShaderPool::ShaderConstantSetArray(const CoreGraphics::ShaderConstantId var, c
 {
 	VkShaderConstantAllocator& alloc = this->shaderAlloc.Get<4>(state.shaderId).Get<3>(state.stateId);
 	SetBoolArray(alloc.Get<0>(var.id), value, count);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+VkShaderPool::ShaderResourceSetRenderTexture(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ShaderStateId state, const CoreGraphics::RenderTextureId texture)
+{
+	VkShaderStateAllocator& stateAlloc = this->shaderAlloc.Get<4>(state.shaderId);
+	VkShaderConstantAllocator& alloc = stateAlloc.Get<3>(state.stateId);
+	SetRenderTexture(alloc.Get<0>(var.id), alloc.Get<1>(var.id), stateAlloc.Get<4>(state.stateId), texture);
 }
 
 //------------------------------------------------------------------------------

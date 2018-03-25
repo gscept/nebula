@@ -12,7 +12,6 @@ namespace Frame
 {
 class FrameBarrier : public FrameOp
 {
-	__DeclareClass(FrameBarrier);
 public:
 	/// constructor
 	FrameBarrier();

@@ -12,7 +12,7 @@
     (C) 2013-2016 Individual contributors, see AUTHORS file
 */    
 #include "core/refcounted.h"
-#include "coreanimation/animresource.h"
+#include "streamanimationpool.h"
 
 //------------------------------------------------------------------------------
 namespace CoreAnimation
@@ -27,7 +27,7 @@ public:
     virtual ~AnimSampleBuffer();
     
     /// setup the object from an animation resource
-    void Setup(const Ptr<AnimResource>& animResource);
+    void Setup(const AnimResourceId& animResource);
     /// discard the object
     void Discard();
     /// return true if the object has been setup
@@ -50,7 +50,7 @@ public:
     uchar* GetSampleCountsPointer() const;
 
 private:
-    Ptr<AnimResource> animResource;
+    AnimResourceId animResource;
     SizeT numSamples;
     Math::float4* samples;
     uchar* sampleCounts;
@@ -64,7 +64,7 @@ private:
 inline bool
 AnimSampleBuffer::IsValid() const
 {
-    return this->animResource.isvalid();
+    return this->animResource != AnimResourceId::Invalid();
 }
 
 //------------------------------------------------------------------------------

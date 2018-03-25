@@ -10,8 +10,8 @@
 #include "ids/id.h"
 #include "util/array.h"
 #include "coregraphics/rendertexture.h"
-#include "coregraphics/shaderreadwritetexture.h"
-#include "coregraphics/shaderreadwritebuffer.h"
+#include "coregraphics/shaderrwtexture.h"
+#include "coregraphics/shaderrwbuffer.h"
 #include "coregraphics/cmdbuffer.h"
 #include <tuple>
 namespace CoreGraphics

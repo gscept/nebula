@@ -96,7 +96,7 @@ VkMemoryVertexBufferPool::LoadFromMemory(const Resources::ResourceId id, const v
 	mapCount = 0;
 
 	// set loaded flag
-	this->states[id] = Resources::Resource::Loaded;
+	this->states[id.poolId] = Resources::Resource::Loaded;
 
 	return ResourcePool::Success;
 }

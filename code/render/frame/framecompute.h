@@ -12,7 +12,6 @@ namespace Frame
 {
 class FrameCompute : public FrameOp
 {
-	__DeclareClass(FrameCompute);
 public:
 	/// constructor
 	FrameCompute();

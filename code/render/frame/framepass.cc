@@ -10,7 +10,6 @@ using namespace CoreGraphics;
 namespace Frame
 {
 
-__ImplementClass(Frame::FramePass, 'FRPA', Frame::FrameOp);
 //------------------------------------------------------------------------------
 /**
 */
@@ -31,7 +30,7 @@ FramePass::~FramePass()
 /**
 */
 void
-FramePass::AddSubpass(const Ptr<FrameSubpass>& subpass)
+FramePass::AddSubpass(FrameSubpass* subpass)
 {
 	this->subpasses.Append(subpass);
 }

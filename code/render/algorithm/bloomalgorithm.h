@@ -7,13 +7,13 @@
 */
 //------------------------------------------------------------------------------
 #include "algorithm.h"
-#include "coregraphics/shaderstate.h"
+#include "coregraphics/shader.h"
 #include "renderutil/drawfullscreenquad.h"
+#include "coregraphics/barrier.h"
 namespace Algorithms
 {
 class BloomAlgorithm : public Algorithm
 {
-	__DeclareClass(BloomAlgorithm);
 public:
 	/// constructor
 	BloomAlgorithm ();
@@ -26,13 +26,14 @@ public:
 	void Discard();
 private:
 
-	Ptr<CoreGraphics::Barrier> barriers[1];
-	Ptr<CoreGraphics::ShaderReadWriteTexture> internalTargets[1];
-	Ptr<CoreGraphics::ShaderVariable> brightPassColor, brightPassLuminance, blurInputX, blurInputY, blurOutputX, blurOutputY;
-	CoreGraphics::ShaderFeature::Mask blurX, blurY;
-	Ptr<CoreGraphics::ShaderState> brightPassShader;
-	Ptr<CoreGraphics::ShaderState> blurShader;
+	CoreGraphics::BarrierId barriers[1];
+	CoreGraphics::ShaderRWTextureId internalTargets[1];
+	CoreGraphics::ShaderConstantId brightPassColor, brightPassLuminance, blurInputX, blurInputY, blurOutputX, blurOutputY;
+	CoreGraphics::ShaderProgramId brightPassProgram;
+	CoreGraphics::ShaderProgramId blurX, blurY;
+	CoreGraphics::ShaderId brightPassShader, blurShader;
+	CoreGraphics::ShaderStateId brightPass, blur;
+	
 	RenderUtil::DrawFullScreenQuad fsq;
 };
-__RegisterClass(BloomAlgorithm);
 } // namespace Algorithm

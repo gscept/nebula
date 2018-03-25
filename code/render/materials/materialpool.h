@@ -7,6 +7,7 @@
 */
 //------------------------------------------------------------------------------
 #include "resources/resourcestreampool.h"
+
 namespace Materials
 {
 
@@ -15,13 +16,15 @@ struct MaterialInfo
 	Resources::ResourceName materialType;
 };
 
+struct MaterialId;
+
 class MaterialPool : public Resources::ResourceStreamPool
 {
 	__DeclareClass(MaterialPool);
 public:
 
 	/// update reserved resource, the info struct is loader dependent (overload to implement resource deallocation, remember to set resource state!)
-	Resources::ResourcePool::LoadStatus LoadFromStream(const Ids::Id24 id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream);
+	Resources::ResourcePool::LoadStatus LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream);
 
 private:
 
@@ -30,7 +33,9 @@ private:
 	/// deallocate resource
 	void DeallocObject(const Resources::ResourceUnknownId id);
 	/// unload resource (overload to implement resource deallocation)
-	void Unload(const Ids::Id24 id);
+	void Unload(const Resources::ResourceId id);
+
+	Util::Dictionary<Resources::ResourceId, MaterialId> materialTable;
 };
 
 } // namespace Materials

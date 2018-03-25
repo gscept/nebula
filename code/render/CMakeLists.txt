@@ -13,7 +13,6 @@ fips_begin_module(render)
 		fips_libs(${Vulkan_LIBRARY})
 	endif()
 		fips_files(precompiled.h stdneb.h stdneb.cc)
-IF(FALSE) # incrementally enable modules as they get written
 		fips_dir(algorithm)
 			fips_files(
 				algorithm.cc
@@ -26,6 +25,7 @@ IF(FALSE) # incrementally enable modules as they get written
 				tonemapalgorithm.cc
 				tonemapalgorithm.h
 			)
+IF(FALSE) # incrementally enable modules as they get written
 		fips_dir(animation)
 			fips_files(
 				animeventhandlerbase.cc
@@ -48,6 +48,8 @@ IF(FALSE) # incrementally enable modules as they get written
 				viewerapplication.cc
 				viewerapplication.h
 			)
+ENDIF()
+
 		fips_dir(coreanimation)
 			fips_files(
 				animclip.cc
@@ -63,21 +65,18 @@ IF(FALSE) # incrementally enable modules as they get written
 				animsamplebuffer.cc
 				animsamplebuffer.h
 				animsamplemixinfo.h
-				animutil.cc
-				animutil.h
+				#animutil.cc
+				#animutil.h
 				curvetype.cc
 				curvetype.h
 				infinitytype.cc
 				infinitytype.h
-				managedanimresource.cc
-				managedanimresource.h
 				naxfileformatstructs.h
 				sampletype.cc
 				sampletype.h
-				streamanimationloader.cc
-				streamanimationloader.h
+				streamanimationpool.cc
+				streamanimationpool.h
 			)
-ENDIF()
 		fips_dir(coregraphics/base GROUP "coregraphics/base")
 			fips_files(				
 				displaydevicebase.cc
@@ -150,8 +149,10 @@ ENDIF()
 				shaderfeature.h
 				shaderidentifier.cc
 				shaderidentifier.h
-				shaderreadwritebuffer.h
-				shaderreadwritetexture.h
+				shaderrwbuffer.cc
+				shaderrwbuffer.h
+				shaderrwtexture.cc
+				shaderrwtexture.h
 				shadersemantics.h
 				shaderserver.cc
 				shaderserver.h
@@ -241,10 +242,10 @@ ENDIF()
 				d3d11resource.h
 				d3d11shader.cc
 				d3d11shader.h
-				d3d11shaderreadwritebuffer.cc
-				d3d11shaderreadwritebuffer.h
-				d3d11shaderreadwritetexture.cc
-				d3d11shaderreadwritetexture.h
+				d3d11shaderrwbuffer.cc
+				d3d11shaderrwbuffer.h
+				d3d11shaderrwtexture.cc
+				d3d11shaderrwtexture.h
 				d3d11shaderserver.cc
 				d3d11shaderserver.h
 				d3d11shaderstate.cc
@@ -304,10 +305,10 @@ ENDIF()
 				vkscheduler.h
 				vkshader.cc
 				vkshader.h
-				vkshaderreadwritebuffer.cc
-				vkshaderreadwritebuffer.h
-				vkshaderreadwritetexture.cc
-				vkshaderreadwritetexture.h
+				vkshaderrwbuffer.cc
+				vkshaderrwbuffer.h
+				vkshaderrwtexture.cc
+				vkshaderrwtexture.h
 				vkshaderprogram.cc
 				vkshaderprogram.h
 				vkshaderserver.cc
@@ -392,6 +393,8 @@ ENDIF()
 			fips_files(
 				camera.cc
 				camera.h
+				camerasettings.cc
+				camerasettings.h
 				graphicscontext.cc
 				graphicscontext.h
 				graphicsentity.h
@@ -623,8 +626,6 @@ ENDIF()
 		mayacamerautil.h
 		mouserayutil.cc
 		mouserayutil.h
-		nodelookuputil.cc
-		nodelookuputil.h
 	)
 IF(FALSE)
 		fips_dir(particles)
@@ -696,11 +697,7 @@ IF(FALSE)
 ENDIF()
 		fips_dir(visibility)
 			fips_files(
-				observer.cc
-				observer.h
 				visibility.h
-				visibilitycontainer.cc
-				visibilitycontainer.h
 				visibilitycontext.cc
 				visibilitycontext.h
 				visibilityserver.cc

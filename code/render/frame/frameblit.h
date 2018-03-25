@@ -12,7 +12,6 @@ namespace Frame
 {
 class FrameBlit : public FrameOp
 {
-	__DeclareClass(FrameBlit);
 public:
 	/// constructor
 	FrameBlit();

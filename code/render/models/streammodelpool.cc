@@ -101,6 +101,42 @@ StreamModelPool::DestroyModelInstance(const ModelInstanceId id)
 
 //------------------------------------------------------------------------------
 /**
+*/
+const Math::bbox&
+StreamModelPool::GetModelBoundingBox(const ModelId id) const
+{
+	return this->modelAllocator.Get<0>(id.allocId);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::bbox&
+StreamModelPool::GetModelBoundingBox(const ModelId id)
+{
+	return this->modelAllocator.Get<0>(id.allocId);
+} 
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Math::bbox&
+StreamModelPool::GetModelBoundingBox(const ModelInstanceId id)
+{
+	return this->modelInstanceAllocator.Get<3>(id.model);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Math::bbox&
+StreamModelPool::GetModelInstanceBoundingBox(const ModelInstanceId id)
+{
+	return this->modelInstanceAllocator.Get<3>(id.instance);
+}
+
+//------------------------------------------------------------------------------
+/**
 	Create model instance breadth first
 */
 void

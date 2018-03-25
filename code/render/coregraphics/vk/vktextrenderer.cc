@@ -121,7 +121,7 @@ VkTextRenderer::Open()
 
 	// create shader instance
 	const ShaderId shd = ShaderServer::Instance()->GetShader("shd:text");
-	this->shader = ShaderServer::Instance()->ShaderCreateState("shd:text", { NEBULAT_SYSTEM_GROUP }, false);
+	this->shader = ShaderServer::Instance()->ShaderCreateState("shd:text", { NEBULAT_BATCH_GROUP }, false);
 	this->program = ShaderGetProgram(shd, ShaderServer::Instance()->FeatureStringToMask("Static"));
 
 	// get variable

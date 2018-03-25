@@ -33,8 +33,8 @@ void
 GraphicsContext::RegisterEntity(const GraphicsEntityId id)
 {
 	n_assert(!this->entitySliceMap.Contains(id.id));
-	uint allocId = this->Alloc();
-	this->entitySliceMap.Add(id.id, allocId);
+	ContextEntityId allocId = this->Alloc();
+	this->entitySliceMap.Add(id, allocId);
 }
 
 //------------------------------------------------------------------------------
