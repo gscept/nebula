@@ -48,8 +48,6 @@ public:
 	void* Create() const;
 	/// create an array of objects of this class
 	void* CreateArray(SizeT num) const;
-	/// create an object of this class using an allocator
-	void* CreateInplace(void* mem) const;
     /// return true if this rtti is equal or derived from to other rtti
     bool IsDerivedFrom(const Rtti& other) const;
     /// return true if this rtti is equal or derived from to other rtti, by string
