@@ -54,10 +54,6 @@ public:
 	void* CreateArray(const Util::String& className, SizeT num) const;
 	/// create an array object by FourCC code
 	void* CreateArray(const Util::FourCC classFourCC, SizeT num) const;
-	/// create an object in-place of preallocated memory
-	void* CreateInplace(const Util::String& className, void* mem) const;
-	/// create an array object by FourCC code
-	void* CreateInplace(const Util::FourCC classFourCC, void* mem) const;
 
 private:
     /// constructor is private
