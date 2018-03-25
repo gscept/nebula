@@ -9,7 +9,7 @@ fips_begin_module(foundation)
 	fips_vs_warning_level(3)
 	fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 	fips_deps(corelibs zlib)
-		fips_files(stdneb.h stdneb.cc)
+		fips_files(foundation/stdneb.h foundation/stdneb.cc)
 		fips_dir(core)
 			fips_files(
 				config.h

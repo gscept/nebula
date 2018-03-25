@@ -2,7 +2,7 @@
 // lightcontext.cc
 // (C) 2017 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "render/stdneb.h"
 #include "lightcontext.h"
 
 namespace Graphics

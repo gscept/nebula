@@ -2,7 +2,7 @@
 // framesubpasssystem.cc
 // (C) 2016 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "render/stdneb.h"
 #include "framesubpasssystem.h"
 #include "rendermodules/rt/rtpluginregistry.h"
 #include "coregraphics/textrenderer.h"

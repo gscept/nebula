@@ -2,7 +2,7 @@
 // vkvertexsignaturepool.cc
 // (C) 2017 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "render/stdneb.h"
 #include "vkvertexsignaturepool.h"
 #include "coregraphics/vertexcomponent.h"
 #include "coregraphics/vertexlayout.h"

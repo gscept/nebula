@@ -2,7 +2,7 @@
 //  idgenerationpool.cc
 //  (C) 2017 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "foundation/stdneb.h"
 #include "idgenerationpool.h"
 
 namespace Ids

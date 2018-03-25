@@ -2,7 +2,7 @@
 // visibilityserver.cc
 // (C) 2017 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "render/stdneb.h"
 #include "visibilityserver.h"
 #include "models/nodes/shaderstatenode.h"
 #include "models/nodes/primitivenode.h"

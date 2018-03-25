@@ -2,7 +2,7 @@
 //  particlesystemmaterialnode.cc
 //  (C) 2011-2016 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "render/stdneb.h"
 #include "particlesystemnode.h"
 #include "resources/resourcemanager.h"
 #include "models/model.h"

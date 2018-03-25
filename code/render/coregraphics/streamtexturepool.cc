@@ -2,7 +2,7 @@
 //  streamtexturepool.cc
 //  (C) 2017 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "render/stdneb.h"
 #include "coregraphics/streamtexturepool.h"
 
 #if __DX11__

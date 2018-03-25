@@ -2,7 +2,7 @@
 // vkshaderrwtexture.cc
 // (C) 2016 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "render/stdneb.h"
 #include "vkshaderrwtexture.h"
 #include "vkrenderdevice.h"
 #include "vktypes.h"

@@ -2,7 +2,7 @@
 //  vkcmdbuffer.cc
 //  (C) 2017 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "render/stdneb.h"
 #include "vkcmdbuffer.h"
 #include "vkrenderdevice.h"
 #include "coregraphics/config.h"

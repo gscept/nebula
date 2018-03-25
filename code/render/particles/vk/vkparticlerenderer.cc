@@ -2,7 +2,7 @@
 // vkparticlerenderer.cc
 // (C) 2016 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "render/stdneb.h"
 #include "vkparticlerenderer.h"
 #include "coregraphics/vertexcomponent.h"
 #include "coregraphics/renderdevice.h"

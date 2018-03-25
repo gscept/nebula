@@ -12,7 +12,7 @@ fips_begin_module(render)
 		fips_include_directories(${Vulkan_INCLUDE_DIR})
 		fips_libs(${Vulkan_LIBRARY})
 	endif()
-		fips_files(precompiled.h stdneb.h stdneb.cc)
+		fips_files(render/precompiled.h render/stdneb.h render/stdneb.cc)
 		fips_dir(algorithm)
 			fips_files(
 				algorithm.cc

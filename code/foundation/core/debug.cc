@@ -2,7 +2,7 @@
 //  debug.cc
 //  (C) 2002 RadonLabs GmbH
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "foundation/stdneb.h"
 #include "core/types.h"
 #include "core/sysfunc.h"
 #include "io/console.h"

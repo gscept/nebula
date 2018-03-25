@@ -2,7 +2,7 @@
 //  win32stacktrace.cc
 //  (C) 2015-2016 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "foundation/stdneb.h"
 #include "debug/win32/win32stacktrace.h"
 #include "stackwalker/StackWalker.h"
 

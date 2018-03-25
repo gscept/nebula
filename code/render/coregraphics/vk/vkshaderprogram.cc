@@ -2,7 +2,7 @@
 // vkshaderprogram.cc
 // (C) 2016 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "render/stdneb.h"
 #include "vkshaderprogram.h"
 #include "vkrenderdevice.h"
 #include "coregraphics/shaderserver.h"

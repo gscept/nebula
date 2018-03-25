@@ -14,7 +14,7 @@
     (C) 2017 Individual contributors, see AUTHORS file
 */
 
-#include "stdneb.h"
+#include "foundation/stdneb.h"
 #include "util/array.h"
 #include "util/queue.h"
 #include "id.h"

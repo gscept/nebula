@@ -2,7 +2,7 @@
 //  rendertexture.cc
 //  (C) 2017 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "render/stdneb.h"
 #include "config.h"
 #include "rendertexture.h"
 #include "coregraphics/displaydevice.h"

@@ -14,7 +14,10 @@ imports:
 exports:
     header-dirs : 
         - .
-        - code        
+        - code/foundation
+        - code/render        
+        - code/resource
+        - code/game
         - extlibs/mixed
     modules:
         foundation: code/foundation
