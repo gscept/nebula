@@ -2,7 +2,7 @@
 // modelcontext.cc
 // (C) 2017 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "render/stdneb.h"
 #include "modelcontext.h"
 #include "resources/resourcemanager.h"
 #include "models/model.h"

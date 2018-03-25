@@ -3,7 +3,7 @@
 //  (C) 2007 Radon Labs GmbH
 //  (C) 2013-2016 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "render/stdneb.h"
 #include "coregraphics/debug/shaderpagehandler.h"
 #include "coregraphics/shaderserver.h"
 #include "coregraphics/shader.h"

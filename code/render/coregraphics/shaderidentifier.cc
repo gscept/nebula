@@ -2,7 +2,7 @@
 //  shaderidentifier.cc
 //  (C) 2015 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "render/stdneb.h"
 #include "coregraphics/shaderidentifier.h"
 #include "shaderserver.h"
 

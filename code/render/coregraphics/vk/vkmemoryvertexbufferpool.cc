@@ -2,7 +2,7 @@
 // vkmemoryvertexbufferloader.cc
 // (C) 2016 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "render/stdneb.h"
 #include "vkmemoryvertexbufferpool.h"
 #include "coregraphics/vertexbuffer.h"
 #include "vkrenderdevice.h"

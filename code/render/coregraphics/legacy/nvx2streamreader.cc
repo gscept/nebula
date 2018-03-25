@@ -3,7 +3,7 @@
 //  (C) 2007 Radon Labs GmbH
 //  (C) 2013-2016 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "render/stdneb.h"
 #include "coregraphics/legacy/nvx2streamreader.h"
 #include "coregraphics/legacy/nvx2fileformatstructs.h"
 #include "coregraphics/memoryvertexbufferpool.h"

@@ -2,7 +2,7 @@
 //  refcounted.cc
 //  (C) 2006 RadonLabs GmbH
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "foundation/stdneb.h"
 #include "core/refcounted.h"
 
 namespace Core

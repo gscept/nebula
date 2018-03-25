@@ -2,7 +2,7 @@
 // vktransformdevice.cc
 // (C) 2016 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "render/stdneb.h"
 #include "vktransformdevice.h"
 #include "coregraphics/shaderserver.h"
 #include "coregraphics/constantbuffer.h"

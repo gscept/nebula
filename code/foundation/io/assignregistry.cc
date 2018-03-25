@@ -3,7 +3,7 @@
 //  (C) 2008 Radon Labs GmbH
 //  (C) 2013-2016 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "foundation/stdneb.h"
 #include "io/assignregistry.h"
 #include "io/fswrapper.h"
 #include "core/coreserver.h"

@@ -65,3 +65,4 @@ elseif(N_RENDERER_METAL)
 endif()
 
 option(N_BUILD_NVTT "use NVTT" ON)
+

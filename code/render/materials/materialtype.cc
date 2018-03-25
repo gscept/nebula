@@ -2,7 +2,7 @@
 //  materialtype.cc
 //  (C) 2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "render/stdneb.h"
 #include "materialtype.h"
 #include "coregraphics/shader.h"
 #include "coregraphics/config.h"

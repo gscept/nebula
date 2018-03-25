@@ -2,7 +2,7 @@
 // vktypes.cc
 // (C) 2016 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "render/stdneb.h"
 #include "vktypes.h"
 #include <vulkan/vulkan.h>
 #include "coregraphics/pixelformat.h"

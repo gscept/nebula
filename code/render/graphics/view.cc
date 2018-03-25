@@ -2,7 +2,7 @@
 // view.cc
 // (C) 2017 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "render/stdneb.h"
 #include "view.h"
 #include "coregraphics/renderdevice.h"
 #include "coregraphics/displaydevice.h"

@@ -3,7 +3,7 @@
 //  (C) 2007 Radon Labs GmbH
 //  (C) 2013-2014 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "foundation/stdneb.h"
 #include "math/float4.h"
 #include "math/matrix44.h"
 #include "system/byteorder.h"

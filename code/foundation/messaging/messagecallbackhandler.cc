@@ -2,7 +2,7 @@
 //  messagecallbackhandler.cc
 //  (C) 2013 Gustav Sterbrant
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "foundation/stdneb.h"
 #include "messagecallbackhandler.h"
 
 namespace Messaging

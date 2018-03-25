@@ -3,7 +3,7 @@
 //  (C) 2009 Radon Labs GmbH
 //  (C) 2013-2016 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "foundation/stdneb.h"
 #include "http/httpstream.h"
 #include "http/httpclientregistry.h"
 

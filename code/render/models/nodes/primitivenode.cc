@@ -2,7 +2,7 @@
 // primitivenode.cc
 // (C) 2017 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "render/stdneb.h"
 #include "primitivenode.h"
 #include "models/modelpool.h"
 #include "resources/resourcemanager.h"

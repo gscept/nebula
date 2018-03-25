@@ -3,7 +3,7 @@
 //  (C) 2010 Radon Labs GmbH
 //  (C) 2013-2016 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "foundation/stdneb.h"
 #include "win32consolehandler.h"
 #include "core/coreserver.h"
 #include "core/sysfunc.h"

@@ -2,7 +2,7 @@
 //  mesh.cc
 //  (C) 2017 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "render/stdneb.h"
 #include "mesh.h"
 #include "coregraphics/renderdevice.h"
 #include "memorymeshpool.h"
