@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.7.2)
 get_filename_component(FIPS_ROOT_DIR "../fips" ABSOLUTE)
 include(${FIPS_ROOT_DIR}/cmake/fips.cmake)
 
-fips_setup(PROJECT Nebula-tests)
+fips_setup(PROJECT nebula-tests)
 fips_include_directories(.)
 
 fips_add_subdirectory(testbase)
@@ -15,6 +15,6 @@ fips_add_subdirectory(testrender)
 fips_add_subdirectory(mathtest)
 fips_add_subdirectory(testmem)
 fips_add_subdirectory(testwin32)
-fips_add_subdirectory(testresources)
+fips_add_subdirectory(testgame)
 
 fips_finish()
