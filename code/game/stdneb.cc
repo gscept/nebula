@@ -1,14 +1,8 @@
 //------------------------------------------------------------------------------
-//  basecomponent.cc
-//  (C) 2017 Individual contributors, see AUTHORS file
+//  stdneb.cc
+//  (C) 2007 Radon Labs GmbH
+//  (C) 2013-2016 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
-#include "componentdata.h"
 
-namespace Game
-{
-
-
-
-
-} // namespace Game
+    
