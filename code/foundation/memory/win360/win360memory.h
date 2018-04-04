@@ -14,6 +14,7 @@
 #include "memory/win360/win360memoryconfig.h"
 #if __WIN32__
 #include "memory/win32/win32memory.h"
+#include <new>
 #elif __XBOX360__
 #include "memory/xbox360/xbox360memory.h"
 #endif
