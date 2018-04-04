@@ -95,6 +95,8 @@ fips_begin_module(foundation)
 			priorityarray.h
 			quadtree.h
 			queue.h
+			random.h
+			random.cc
 			randomnumbertable.cc
 			randomnumbertable.h
 			ringbuffer.h
