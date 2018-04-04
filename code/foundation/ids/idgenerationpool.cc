@@ -60,7 +60,7 @@ IdGenerationPool::Deallocate(Id32 id)
 /**
 */
 bool
-IdGenerationPool::IsValid(Id32 id)
+IdGenerationPool::IsValid(Id32 id) const
 {
     return Index(id) < (uint32_t)this->generations.Size() && Generation(id) == this->generations[Index(id)];
 }
