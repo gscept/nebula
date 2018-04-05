@@ -13,7 +13,6 @@ using namespace Graphics;
 using namespace CoreGraphics;
 using namespace Lighting;
 using namespace Materials;
-using namespace Visibility;
 using namespace Models;
 using namespace Util;
 
