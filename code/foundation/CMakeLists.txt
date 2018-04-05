@@ -382,6 +382,8 @@ fips_begin_module(foundation)
 			svg/svglinechartwriter.h
 			svg/svgpagewriter.cc
 			svg/svgpagewriter.h
+			httpprotocol.cc
+			httpprotocol.h
 		)
 		fips_dir(ids)
 		fips_files(
