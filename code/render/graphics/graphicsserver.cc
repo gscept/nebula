@@ -51,27 +51,39 @@ GraphicsServer::Open()
 	this->timer = FrameSync::FrameSyncTimer::Create();
 	this->isOpen = true;
 
-	// register graphics context pools
-	Resources::ResourceManager::Instance()->RegisterMemoryPool(CoreGraphics::MemoryVertexBufferPool::RTTI);
-	Resources::ResourceManager::Instance()->RegisterMemoryPool(CoreGraphics::MemoryIndexBufferPool::RTTI);
-	Resources::ResourceManager::Instance()->RegisterMemoryPool(CoreGraphics::VertexSignaturePool::RTTI);
-	Resources::ResourceManager::Instance()->RegisterMemoryPool(CoreGraphics::MemoryTexturePool::RTTI);
-	Resources::ResourceManager::Instance()->RegisterMemoryPool(CoreGraphics::MemoryMeshPool::RTTI);
+	this->debugHandler = Debug::DebugHandler::Create();
+	this->debugHandler->Open();
 
-	Resources::ResourceManager::Instance()->RegisterStreamPool("dds", CoreGraphics::StreamTexturePool::RTTI);
-	Resources::ResourceManager::Instance()->RegisterStreamPool("shd", CoreGraphics::ShaderPool::RTTI);
-	Resources::ResourceManager::Instance()->RegisterStreamPool("n3", Models::StreamModelPool::RTTI);
-	Resources::ResourceManager::Instance()->RegisterStreamPool("nvx", CoreGraphics::StreamMeshPool::RTTI);
+	this->renderDevice = CoreGraphics::RenderDevice::Create();
+	if (this->renderDevice->Open())
+	{
 
-	// setup internal pool pointers for convenient access (note, will also assert if texture, shader, model or mesh pools is not registered yet!)
-	CoreGraphics::vboPool = Resources::GetMemoryPool<CoreGraphics::MemoryVertexBufferPool>();
-	CoreGraphics::iboPool = Resources::GetMemoryPool<CoreGraphics::MemoryIndexBufferPool>();
-	CoreGraphics::layoutPool = Resources::GetMemoryPool<CoreGraphics::VertexSignaturePool>();
-	CoreGraphics::texturePool = Resources::GetMemoryPool<CoreGraphics::MemoryTexturePool>();
-	CoreGraphics::meshPool = Resources::GetMemoryPool<CoreGraphics::MemoryMeshPool>();
+		// register graphics context pools
+		Resources::ResourceManager::Instance()->RegisterMemoryPool(CoreGraphics::MemoryVertexBufferPool::RTTI);
+		Resources::ResourceManager::Instance()->RegisterMemoryPool(CoreGraphics::MemoryIndexBufferPool::RTTI);
+		Resources::ResourceManager::Instance()->RegisterMemoryPool(CoreGraphics::VertexSignaturePool::RTTI);
+		Resources::ResourceManager::Instance()->RegisterMemoryPool(CoreGraphics::MemoryTexturePool::RTTI);
+		Resources::ResourceManager::Instance()->RegisterMemoryPool(CoreGraphics::MemoryMeshPool::RTTI);
 
-	CoreGraphics::shaderPool = Resources::GetStreamPool<CoreGraphics::ShaderPool>();
-	Models::modelPool = Resources::GetStreamPool<Models::StreamModelPool>();
+		Resources::ResourceManager::Instance()->RegisterStreamPool("dds", CoreGraphics::StreamTexturePool::RTTI);
+		Resources::ResourceManager::Instance()->RegisterStreamPool("shd", CoreGraphics::ShaderPool::RTTI);
+		Resources::ResourceManager::Instance()->RegisterStreamPool("n3", Models::StreamModelPool::RTTI);
+		Resources::ResourceManager::Instance()->RegisterStreamPool("nvx", CoreGraphics::StreamMeshPool::RTTI);
+
+		// setup internal pool pointers for convenient access (note, will also assert if texture, shader, model or mesh pools is not registered yet!)
+		CoreGraphics::vboPool = Resources::GetMemoryPool<CoreGraphics::MemoryVertexBufferPool>();
+		CoreGraphics::iboPool = Resources::GetMemoryPool<CoreGraphics::MemoryIndexBufferPool>();
+		CoreGraphics::layoutPool = Resources::GetMemoryPool<CoreGraphics::VertexSignaturePool>();
+		CoreGraphics::texturePool = Resources::GetMemoryPool<CoreGraphics::MemoryTexturePool>();
+		CoreGraphics::meshPool = Resources::GetMemoryPool<CoreGraphics::MemoryMeshPool>();
+
+		CoreGraphics::shaderPool = Resources::GetStreamPool<CoreGraphics::ShaderPool>();
+		Models::modelPool = Resources::GetStreamPool<Models::StreamModelPool>();
+	}
+	else
+	{
+		n_error("Failed to create render device");
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -85,6 +97,11 @@ GraphicsServer::Close()
 	this->timer = nullptr;
 	this->isOpen = false;
 
+	this->debugHandler->Close();
+	this->debugHandler = nullptr;
+
+	this->renderDevice->Close();
+	this->renderDevice = nullptr;
 	// clear transforms pool
 }
 

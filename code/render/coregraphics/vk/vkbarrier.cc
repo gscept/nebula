@@ -11,10 +11,14 @@
 #include "vkshaderrwtexture.h"
 #include "vkshaderrwbuffer.h"
 
+namespace Vulkan
+{
+VkBarrierAllocator barrierAllocator(0x00FFFFFF);
+
+}
 namespace CoreGraphics
 {
 using namespace Vulkan;
-VkBarrierAllocator barrierAllocator(0x00FFFFFF);
 
 //------------------------------------------------------------------------------
 /**

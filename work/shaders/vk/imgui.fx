@@ -12,13 +12,13 @@
 #include "lib/defaultsamplers.fxh"
 
 // put variables in push-constant block
-group(SYSTEM_GROUP) push varblock ImGUI
+group(BATCH_GROUP) push varblock ImGUI
 {
 	textureHandle Texture; 
 	mat4 TextProjectionModel;
 };
 
-group(SYSTEM_GROUP) samplerstate TextureSampler
+group(BATCH_GROUP) samplerstate TextureSampler
 {
 	Filter = Point;
 };

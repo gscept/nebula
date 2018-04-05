@@ -15,7 +15,7 @@ const float rimLighting = float(0.2f);
 const float exaggerateSpec = float(1.8f);
 const vec3 luminanceValue = vec3(0.299f, 0.587f, 0.114f); 
 
-group(SYSTEM_GROUP) shared varblock LocalLightBlock [ bool System = true; bool DynamicOffset = true; ]
+group(BATCH_GROUP) shared varblock LocalLightBlock [ bool System = true; bool DynamicOffset = true; ]
 {
 	vec4 LightColor;
 	vec4 LightPosRange;	

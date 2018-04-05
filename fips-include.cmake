@@ -26,6 +26,8 @@ else()
 	OPTION(N_USE_AVX "Use AVX instructionset" OFF)	
 endif()
 
+add_definitions(-DIL_STATIC_LIB=1)
+
 set(N_QT4 OFF)
 set(N_QT5 OFF)
 set(DEFQT "N_QT4")

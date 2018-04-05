@@ -37,10 +37,10 @@ VkShaderSetup(
 	Util::Dictionary<uint32_t, Util::Array<CoreGraphics::ConstantBufferId>>& buffersByGroup
 	)
 {
-	const eastl::vector<AnyFX::VarblockBase*>& varblocks = effect->GetVarblocks();
-	const eastl::vector<AnyFX::VarbufferBase*>& varbuffers = effect->GetVarbuffers();
-	const eastl::vector<AnyFX::VariableBase*>& variables = effect->GetVariables();
-	const eastl::vector<AnyFX::SamplerBase*>& samplers = effect->GetSamplers();
+	const std::vector<AnyFX::VarblockBase*>& varblocks = effect->GetVarblocks();
+	const std::vector<AnyFX::VarbufferBase*>& varbuffers = effect->GetVarbuffers();
+	const std::vector<AnyFX::VariableBase*>& variables = effect->GetVariables();
+	const std::vector<AnyFX::SamplerBase*>& samplers = effect->GetSamplers();
 
     // assert we are not over-stepping any uniform buffer limit we are using, perStage is used for ALL_STAGES
 	uint32_t maxUniformBufferRange = props.limits.maxUniformBufferRange;
@@ -155,7 +155,7 @@ VkShaderSetup(
 	}
 
 	// setup samplers as immutable coupled with the texture input, before we setup the variables so that it's part of their layout
-	immutableSamplers.Reserve(samplers.size() + 1);
+	immutableSamplers.Reserve((SizeT)samplers.size() + 1);
 	for (i = 0; i < samplers.size(); i++)
 	{
 		AnyFX::VkSampler* sampler = static_cast<AnyFX::VkSampler*>(samplers[i]);
@@ -418,7 +418,7 @@ VkShaderSetup(
     }
 
 	// setup varblock backing (this is for the shader default state)
-	bufs.Reserve(varblocks.size());
+	bufs.Reserve((SizeT)varblocks.size());
 	for (i = 0; i < varblocks.size(); i++)
 	{
 		// get block

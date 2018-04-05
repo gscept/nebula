@@ -14,8 +14,8 @@ namespace Frame
 //------------------------------------------------------------------------------
 /**
 */
-FrameSubpassPlugins::FrameSubpassPlugins() :
-	pluginRegistry(NULL)
+FrameSubpassPlugins::FrameSubpassPlugins()// :
+	//pluginRegistry(NULL)
 {
 	// empty
 }
@@ -36,7 +36,7 @@ FrameSubpassPlugins::Discard()
 {
 	FrameOp::Discard();
 
-	this->pluginRegistry = nullptr;
+	//this->pluginRegistry = nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -45,8 +45,8 @@ FrameSubpassPlugins::Discard()
 void
 FrameSubpassPlugins::Setup()
 {
-	n_assert(!this->pluginRegistry.isvalid());
-	this->pluginRegistry = RenderModules::RTPluginRegistry::Instance();
+	//n_assert(!this->pluginRegistry.isvalid());
+	//this->pluginRegistry = RenderModules::RTPluginRegistry::Instance();
 }
 
 //------------------------------------------------------------------------------
@@ -57,7 +57,7 @@ FrameSubpassPlugins::Run(const IndexT frameIndex)
 {
 	RenderDevice* renderDev = RenderDevice::Instance();
 	renderDev->BeginBatch(FrameBatchType::System);
-	this->pluginRegistry->OnRender(this->pluginFilter);
+	//this->pluginRegistry->OnRender(this->pluginFilter);
 	renderDev->EndBatch();
 }
 
