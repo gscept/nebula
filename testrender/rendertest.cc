@@ -11,7 +11,7 @@
 #include "graphics/graphicsserver.h"
 #include "resources/resourcemanager.h"
 #include "coregraphics/window.h"
-
+#include "app/application.h"
 
 using namespace Timing;
 using namespace Graphics;
@@ -28,6 +28,10 @@ RenderTest::Run()
 {
 	GraphicsServer* gfxServer = GraphicsServer::Create();
 	Resources::ResourceManager* resMgr = Resources::ResourceManager::Create();
+
+	App::Application app;
+	app.SetAppTitle("RenderTest!");
+	app.SetCompanyName("gscept");
 	resMgr->Open();
 	gfxServer->Open();
 
