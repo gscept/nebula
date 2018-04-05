@@ -6,6 +6,7 @@
 #include "view.h"
 #include "coregraphics/renderdevice.h"
 #include "coregraphics/displaydevice.h"
+#include "stage.h"
 
 using namespace CoreGraphics;
 namespace Graphics

@@ -54,6 +54,9 @@ GraphicsServer::Open()
 	this->debugHandler = Debug::DebugHandler::Create();
 	this->debugHandler->Open();
 
+	this->displayDevice = CoreGraphics::DisplayDevice::Create();
+	this->displayDevice->Open();
+
 	this->renderDevice = CoreGraphics::RenderDevice::Create();
 	if (this->renderDevice->Open())
 	{
@@ -102,6 +105,9 @@ GraphicsServer::Close()
 
 	this->renderDevice->Close();
 	this->renderDevice = nullptr;
+
+	this->displayDevice->Close();
+	this->displayDevice = nullptr;
 	// clear transforms pool
 }
 

@@ -17,6 +17,7 @@
 #include "graphicsentity.h"
 #include "visibility/visibilityserver.h"
 #include "coregraphics/renderdevice.h"
+#include "coregraphics/displaydevice.h"
 #include "debug/debughandler.h"
 
 namespace Graphics
@@ -80,6 +81,7 @@ private:
 
 	Ptr<View> currentView;
 
+	Ptr<CoreGraphics::DisplayDevice> displayDevice;
 	Ptr<CoreGraphics::RenderDevice> renderDevice;
 	Ptr<Debug::DebugHandler> debugHandler;
 
