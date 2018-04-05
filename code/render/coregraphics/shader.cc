@@ -13,7 +13,7 @@ ShaderPool* shaderPool;
 //------------------------------------------------------------------------------
 /**
 */
-inline const ShaderId
+const ShaderId
 CreateShader(const ShaderCreateInfo& info)
 {
 	ShaderId ret = shaderPool->CreateResource(info.name, "render_system", nullptr, nullptr, true);
@@ -24,7 +24,7 @@ CreateShader(const ShaderCreateInfo& info)
 //------------------------------------------------------------------------------
 /**
 */
-inline void
+void
 DestroyShader(const ShaderId id)
 {
 	shaderPool->DiscardResource(id);
@@ -57,7 +57,7 @@ ShaderGet(const ShaderStateId state)
 //------------------------------------------------------------------------------
 /**
 */
-inline const ShaderStateId
+const ShaderStateId
 ShaderCreateState(const ShaderId id, const Util::Array<IndexT>& groups, bool requiresUniqueResourceTable)
 {
 	return shaderPool->CreateState(id, groups, requiresUniqueResourceTable);
@@ -66,7 +66,7 @@ ShaderCreateState(const ShaderId id, const Util::Array<IndexT>& groups, bool req
 //------------------------------------------------------------------------------
 /**
 */
-inline const ShaderStateId
+const ShaderStateId
 ShaderCreateState(const Resources::ResourceName name, const Util::Array<IndexT>& groups, bool requiresUniqueResourceTable)
 {
 	return CoreGraphics::ShaderServer::Instance()->ShaderCreateState(name, groups, requiresUniqueResourceTable);
@@ -75,7 +75,7 @@ ShaderCreateState(const Resources::ResourceName name, const Util::Array<IndexT>&
 //------------------------------------------------------------------------------
 /**
 */
-inline const ShaderStateId
+const ShaderStateId
 ShaderCreateSharedState(const ShaderId id, const Util::Array<IndexT>& groups)
 {
 	return shaderPool->CreateSharedState(id, groups);
@@ -84,7 +84,7 @@ ShaderCreateSharedState(const ShaderId id, const Util::Array<IndexT>& groups)
 //------------------------------------------------------------------------------
 /**
 */
-inline const ShaderStateId
+const ShaderStateId
 ShaderCreateSharedState(const Resources::ResourceName name, const Util::Array<IndexT>& groups)
 {
 	return CoreGraphics::ShaderServer::Instance()->ShaderCreateSharedState(name, groups);
@@ -93,7 +93,7 @@ ShaderCreateSharedState(const Resources::ResourceName name, const Util::Array<In
 //------------------------------------------------------------------------------
 /**
 */
-inline void
+void
 ShaderDestroyState(const ShaderStateId id)
 {
 	shaderPool->DestroyState(id);
@@ -102,7 +102,7 @@ ShaderDestroyState(const ShaderStateId id)
 //------------------------------------------------------------------------------
 /**
 */
-inline void
+void
 ShaderStateApply(const ShaderStateId id)
 {
 	shaderPool->ApplyState(id);
@@ -111,16 +111,16 @@ ShaderStateApply(const ShaderStateId id)
 //------------------------------------------------------------------------------
 /**
 */
-inline SizeT
+SizeT
 ShaderGetNumActiveStates(const ShaderId id)
 {
-	shaderPool->GetNumActiveStates(id);
+	return shaderPool->GetNumActiveStates(id);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline DerivativeStateId
+DerivativeStateId
 CreateDerivativeState(const ShaderStateId id, const IndexT group)
 {
 	return shaderPool->CreateDerivativeState(id, group);
@@ -129,7 +129,7 @@ CreateDerivativeState(const ShaderStateId id, const IndexT group)
 //------------------------------------------------------------------------------
 /**
 */
-inline void
+void
 DestroyDerivativeState(const ShaderStateId id, const DerivativeStateId& deriv)
 {
 	shaderPool->DestroyDerivativeState(id, deriv);
@@ -138,7 +138,7 @@ DestroyDerivativeState(const ShaderStateId id, const DerivativeStateId& deriv)
 //------------------------------------------------------------------------------
 /**
 */
-inline void
+void
 DerivativeStateApply(const ShaderStateId id, const DerivativeStateId& deriv)
 {
 	shaderPool->DerivativeStateApply(id, deriv);
@@ -147,7 +147,7 @@ DerivativeStateApply(const ShaderStateId id, const DerivativeStateId& deriv)
 //------------------------------------------------------------------------------
 /**
 */
-inline void
+void
 DerivativeStateCommit(const ShaderStateId id, const DerivativeStateId& deriv)
 {
 	shaderPool->DerivativeStateCommit(id, deriv);
@@ -156,7 +156,7 @@ DerivativeStateCommit(const ShaderStateId id, const DerivativeStateId& deriv)
 //------------------------------------------------------------------------------
 /**
 */
-inline void
+void
 DerivativeStateReset(const ShaderStateId id, const DerivativeStateId& deriv)
 {
 	shaderPool->DerivativeStateReset(id, deriv);
@@ -165,7 +165,7 @@ DerivativeStateReset(const ShaderStateId id, const DerivativeStateId& deriv)
 //------------------------------------------------------------------------------
 /**
 */
-inline SizeT
+SizeT
 ShaderGetConstantCount(const CoreGraphics::ShaderId id)
 {
 	return shaderPool->GetConstantCount(id);
@@ -174,7 +174,7 @@ ShaderGetConstantCount(const CoreGraphics::ShaderId id)
 //------------------------------------------------------------------------------
 /**
 */
-inline ShaderConstantType
+ShaderConstantType
 ShaderGetConstantType(const CoreGraphics::ShaderId id, const IndexT i)
 {
 	return shaderPool->GetConstantType(id, i);
@@ -183,7 +183,7 @@ ShaderGetConstantType(const CoreGraphics::ShaderId id, const IndexT i)
 //------------------------------------------------------------------------------
 /**
 */
-inline Util::StringAtom
+Util::StringAtom
 ShaderGetConstantName(const CoreGraphics::ShaderId id, const IndexT i)
 {
 	return shaderPool->GetConstantName(id, i);
@@ -192,7 +192,7 @@ ShaderGetConstantName(const CoreGraphics::ShaderId id, const IndexT i)
 //------------------------------------------------------------------------------
 /**
 */
-inline Util::String
+Util::String
 ConstantTypeToString(const ShaderConstantType& type)
 {
 	switch (type)
@@ -218,7 +218,7 @@ ConstantTypeToString(const ShaderConstantType& type)
 //------------------------------------------------------------------------------
 /**
 */
-inline SizeT
+SizeT
 ShaderGetConstantBufferCount(const CoreGraphics::ShaderId id)
 {
 	return shaderPool->GetConstantBufferCount(id);
@@ -227,7 +227,7 @@ ShaderGetConstantBufferCount(const CoreGraphics::ShaderId id)
 //------------------------------------------------------------------------------
 /**
 */
-inline SizeT
+SizeT
 ShaderGetConstantBufferSize(const CoreGraphics::ShaderId id, const IndexT i)
 {
 	return shaderPool->GetConstantBufferSize(id, i);
@@ -236,7 +236,7 @@ ShaderGetConstantBufferSize(const CoreGraphics::ShaderId id, const IndexT i)
 //------------------------------------------------------------------------------
 /**
 */
-inline Util::StringAtom
+Util::StringAtom
 ShaderGetConstantBufferName(const CoreGraphics::ShaderId id, const IndexT i)
 {
 	return shaderPool->GetConstantBufferName(id, i);
@@ -245,7 +245,7 @@ ShaderGetConstantBufferName(const CoreGraphics::ShaderId id, const IndexT i)
 //------------------------------------------------------------------------------
 /**
 */
-inline const Util::Dictionary<CoreGraphics::ShaderFeature::Mask, CoreGraphics::ShaderProgramId>&
+const Util::Dictionary<CoreGraphics::ShaderFeature::Mask, CoreGraphics::ShaderProgramId>&
 ShaderGetPrograms(const CoreGraphics::ShaderId id)
 {
 	return shaderPool->GetPrograms(id);
@@ -254,7 +254,7 @@ ShaderGetPrograms(const CoreGraphics::ShaderId id)
 //------------------------------------------------------------------------------
 /**
 */
-inline Util::StringAtom
+Util::StringAtom
 ShaderProgramGetName(const CoreGraphics::ShaderProgramId id)
 {
 	return shaderPool->GetProgramName(id);
@@ -263,7 +263,7 @@ ShaderProgramGetName(const CoreGraphics::ShaderProgramId id)
 //------------------------------------------------------------------------------
 /**
 */
-inline ShaderConstantId
+ShaderConstantId
 ShaderStateGetConstant(const ShaderStateId id, const Util::StringAtom& name)
 {
 	return shaderPool->ShaderStateGetConstant(id, name);
@@ -272,7 +272,7 @@ ShaderStateGetConstant(const ShaderStateId id, const Util::StringAtom& name)
 //------------------------------------------------------------------------------
 /**
 */
-inline ShaderConstantId
+ShaderConstantId
 ShaderStateGetConstant(const ShaderStateId id, const IndexT index)
 {
 	return shaderPool->ShaderStateGetConstant(id, index);
@@ -290,7 +290,7 @@ ShaderConstantGetType(const ShaderConstantId var, const ShaderStateId state)
 //------------------------------------------------------------------------------
 /**
 */
-inline void
+void
 ShaderConstantSet(const ShaderConstantId var, const ShaderStateId state, const Util::Variant& value)
 {
 	switch (value.GetType())
@@ -319,7 +319,7 @@ ShaderConstantSet(const ShaderConstantId var, const ShaderStateId state, const U
 //------------------------------------------------------------------------------
 /**
 */
-inline void
+void
 ShaderResourceSetRenderTexture(const ShaderConstantId var, const ShaderStateId state, const RenderTextureId texture)
 {
 	shaderPool->ShaderResourceSetRenderTexture(var, state, texture);
@@ -328,7 +328,7 @@ ShaderResourceSetRenderTexture(const ShaderConstantId var, const ShaderStateId s
 //------------------------------------------------------------------------------
 /**
 */
-inline void
+void
 ShaderResourceSetTexture(const CoreGraphics::ShaderConstantId var, const ShaderStateId state, const CoreGraphics::TextureId texture)
 {
 	shaderPool->ShaderResourceSetTexture(var, state, texture);
@@ -337,7 +337,7 @@ ShaderResourceSetTexture(const CoreGraphics::ShaderConstantId var, const ShaderS
 //------------------------------------------------------------------------------
 /**
 */
-inline void
+void
 ShaderResourceSetConstantBuffer(const CoreGraphics::ShaderConstantId var, const ShaderStateId state, const CoreGraphics::ConstantBufferId buffer)
 {
 	shaderPool->ShaderResourceSetConstantBuffer(var, state, buffer);
@@ -346,7 +346,7 @@ ShaderResourceSetConstantBuffer(const CoreGraphics::ShaderConstantId var, const 
 //------------------------------------------------------------------------------
 /**
 */
-inline void
+void
 ShaderResourceSetReadWriteTexture(const CoreGraphics::ShaderConstantId var, const ShaderStateId state, const CoreGraphics::TextureId image)
 {
 	shaderPool->ShaderResourceSetReadWriteTexture(var, state, image);
@@ -355,7 +355,7 @@ ShaderResourceSetReadWriteTexture(const CoreGraphics::ShaderConstantId var, cons
 //------------------------------------------------------------------------------
 /**
 */
-inline void
+void
 ShaderResourceSetReadWriteTexture(const CoreGraphics::ShaderConstantId var, const ShaderStateId state, const CoreGraphics::ShaderRWTextureId tex)
 {
 	shaderPool->ShaderResourceSetReadWriteTexture(var, state, tex);
@@ -364,7 +364,7 @@ ShaderResourceSetReadWriteTexture(const CoreGraphics::ShaderConstantId var, cons
 //------------------------------------------------------------------------------
 /**
 */
-inline void
+void
 ShaderResourceSetReadWriteBuffer(const CoreGraphics::ShaderConstantId var, const ShaderStateId state, const CoreGraphics::ShaderRWBufferId buf)
 {
 	shaderPool->ShaderResourceSetReadWriteBuffer(var, state, buf);
@@ -382,7 +382,7 @@ ShaderFeatureFromString(const Util::String& str)
 //------------------------------------------------------------------------------
 /**
 */
-inline void
+void
 ShaderBind(const ShaderId id, const CoreGraphics::ShaderFeature::Mask& program)
 {
 	shaderPool->ShaderBind(id, program);
@@ -391,7 +391,7 @@ ShaderBind(const ShaderId id, const CoreGraphics::ShaderFeature::Mask& program)
 //------------------------------------------------------------------------------
 /**
 */
-inline const ShaderProgramId
+const ShaderProgramId
 ShaderGetProgram(const ShaderId id, const CoreGraphics::ShaderFeature::Mask& program)
 {
 	return shaderPool->GetShaderProgram(id, program);
@@ -400,7 +400,7 @@ ShaderGetProgram(const ShaderId id, const CoreGraphics::ShaderFeature::Mask& pro
 //------------------------------------------------------------------------------
 /**
 */
-inline void
+void
 ShaderProgramBind(const ShaderProgramId id)
 {
 	shaderPool->ShaderBind(id);

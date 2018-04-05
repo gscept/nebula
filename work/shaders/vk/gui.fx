@@ -11,7 +11,7 @@
 #include "lib/shared.fxh"
 
 /// Declaring used textures
-group(SYSTEM_GROUP) push varblock GUI
+group(BATCH_GROUP) push varblock GUI
 {
 	textureHandle Texture;
 	mat4 Transform;

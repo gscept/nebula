@@ -45,16 +45,16 @@ EmitterMesh::Setup(const CoreGraphics::MeshId mesh, IndexT primGroupIndex)
 
     // we need to extract mesh vertices from the primitive group
     // without duplicate vertices
-	const PrimitiveGroup& primGroup = MeshGetPrimitive;// mesh->GetPrimitiveGroupAtIndex(primGroupIndex);
-    const IndexBufferId indexBuffer = mesh->GetIndexBuffer();    
-    n_assert(indexBuffer->GetIndexType() == IndexType::Index32);
-    const VertexBufferId vertexBuffer = mesh->GetVertexBuffer();
-    SizeT numVBufferVertices = vertexBuffer->GetNumVertices();
+	const PrimitiveGroup& primGroup = MeshGetPrimitiveGroups(mesh)[primGroupIndex];// mesh->GetPrimitiveGroupAtIndex(primGroupIndex);
+    const IndexBufferId indexBuffer = MeshGetIndexBuffer(mesh);    
+    n_assert(IndexBufferGetType(indexBuffer) == IndexType::Index32);
+    const VertexBufferId vertexBuffer = MeshGetVertexBuffer(mesh);
+    SizeT numVBufferVertices = VertexBufferGetNumVertices(vertexBuffer);
 
     IndexT baseIndex = primGroup.GetBaseIndex();
     SizeT numIndices = primGroup.GetNumIndices();
 
-    int* indices = (int*) indexBuffer->Map(IndexBuffer::MapRead);
+    int* indices = (int*) IndexBufferMap(indexBuffer, GpuBufferTypes::MapRead);
 	//int indices[] = { 0 };
 
     // allocate a "flag array" which holds a 0 at a
@@ -80,7 +80,7 @@ EmitterMesh::Setup(const CoreGraphics::MeshId mesh, IndexT primGroupIndex)
     }
     Memory::Free(Memory::ScratchHeap, flagArray);
     flagArray = 0;
-    indexBuffer->Unmap();
+	IndexBufferUnmap(indexBuffer);
 
     // the emitterIndices array now contains the indices of all vertices
     // we need to copy
@@ -88,32 +88,29 @@ EmitterMesh::Setup(const CoreGraphics::MeshId mesh, IndexT primGroupIndex)
     this->points = n_new_array(EmitterPoint, this->numPoints);
 
     // make sure the emitter mesh actually has the components we need
-    const Ptr<VertexLayout>& vertexLayout = vertexBuffer->GetVertexLayout();
+	const VertexLayoutId& vertexLayout = MeshGetVertexLayout(mesh);
 
-    IndexT posCompIndex = vertexLayout->FindComponent(VertexComponent::Position, 0);
-    n_assert(InvalidIndex != posCompIndex);
-    n_assert(vertexLayout->GetComponentAt(posCompIndex).GetFormat() == VertexComponent::Float3);
+	const Util::Array<VertexComponent>& comps = VertexLayoutGetComponents(vertexLayout);
+	bool posValid = false, normValid = false, tanValid = false;
+	IndexT posByteOffset = 0, normByteOffset = 0, tanByteOffset = 0;
+	for (i = 0; i < comps.Size(); i++)
+	{
+		const VertexComponent& comp = comps[i];
+		const VertexComponent::SemanticName name = comp.GetSemanticName();
+		const VertexComponent::Format fmt = comp.GetFormat();
+		if (name == VertexComponent::Position && fmt == VertexComponent::Float3)
+			posValid = true, posByteOffset = comp.GetByteOffset();
+		else if (name == VertexComponent::Normal && fmt == VertexComponent::Byte4N)
+			normValid = true, normByteOffset = comp.GetByteOffset();
+		else if (name == VertexComponent::Tangent && fmt == VertexComponent::Byte4N)
+			tanValid = true, tanByteOffset = comp.GetByteOffset();
+	}
+	n_assert(posValid && normValid && tanValid);
 
-    IndexT normCompIndex = vertexLayout->FindComponent(VertexComponent::Normal, 0);
-    n_assert(InvalidIndex != normCompIndex);
-    n_assert(vertexLayout->GetComponentAt(normCompIndex).GetFormat() == VertexComponent::Byte4N);
-
-#ifndef __WII__
-    IndexT tanCompIndex = vertexLayout->FindComponent(VertexComponent::Tangent, 0);
-    n_assert(InvalidIndex != tanCompIndex);
-	n_assert(vertexLayout->GetComponentAt(tanCompIndex).GetFormat() == VertexComponent::Byte4N);
-#endif
-
-    // get the byte offset from the start of the vertex
-    IndexT posByteOffset = vertexLayout->GetComponentAt(posCompIndex).GetByteOffset();
-    IndexT normByteOffset = vertexLayout->GetComponentAt(normCompIndex).GetByteOffset();
-#ifndef __WII__
-    IndexT tanByteOffset = vertexLayout->GetComponentAt(tanCompIndex).GetByteOffset();
-#endif
 
     // gain access to vertices and transfer vertex info
-    const uchar* verts = (uchar*) vertexBuffer->Map(VertexBuffer::MapRead);
-    const SizeT vertexByteSize = vertexLayout->GetVertexByteSize();
+    const uchar* verts = (uchar*) VertexBufferMap(vertexBuffer, GpuBufferTypes::MapRead);
+    const SizeT vertexByteSize = VertexLayoutGetSize(vertexLayout);
     for (i = 0; i < this->numPoints; i++)
     {
         const uchar* src = verts + vertexByteSize * emitterIndices[i];
@@ -140,7 +137,7 @@ EmitterMesh::Setup(const CoreGraphics::MeshId mesh, IndexT primGroupIndex)
         dst.tangent = Math::float4::normalize(dst.tangent);
 #endif
     }
-    vertexBuffer->Unmap();
+	VertexBufferUnmap(vertexBuffer);
 }
 
 //------------------------------------------------------------------------------

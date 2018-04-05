@@ -364,6 +364,8 @@ fips_begin_module(foundation)
 			httpresponsewriter.h
 			httpserver.cc
 			httpserver.h
+			httpserverproxy.cc
+			httpserverproxy.h
 			httpstatus.cc
 			httpstatus.h
 			httpstream.cc

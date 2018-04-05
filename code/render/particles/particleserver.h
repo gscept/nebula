@@ -33,12 +33,12 @@ public:
     bool IsOpen() const;
 
 	/// gets the default emitter mesh
-	const Ptr<CoreGraphics::Mesh>& GetDefaultEmitterMesh();
+	const CoreGraphics::MeshId& GetDefaultEmitterMesh();
 
 private:
     bool isOpen;
     Ptr<ParticleRenderer> particleRenderer;
-	Ptr<CoreGraphics::Mesh> defaultEmitterMesh;
+	CoreGraphics::MeshId defaultEmitterMesh;
 };
 
 //------------------------------------------------------------------------------
@@ -53,7 +53,7 @@ ParticleServer::IsOpen() const
 //------------------------------------------------------------------------------
 /**
 */
-inline const Ptr<CoreGraphics::Mesh>& 
+inline const CoreGraphics::MeshId&
 ParticleServer::GetDefaultEmitterMesh()
 {
 	return this->defaultEmitterMesh;

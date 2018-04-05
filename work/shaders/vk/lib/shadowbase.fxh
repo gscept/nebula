@@ -9,7 +9,7 @@
 
 #include "lib/defaultsamplers.fxh"
 
-group(SYSTEM_GROUP) shared varblock ShadowMatrixBlock [ bool DynamicOffset = true; ]
+group(BATCH_GROUP) shared varblock ShadowMatrixBlock [ bool DynamicOffset = true; ]
 {
 	mat4 ViewMatrixArray[6];
 };

@@ -5,9 +5,8 @@
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "particles/particleserver.h"
-#include "coregraphics/memoryvertexbufferloader.h"
-#include "coregraphics/memoryindexbufferloader.h"
-#include "resources/resourceloader.h"
+#include "coregraphics/vertexbuffer.h"
+#include "coregraphics/indexbuffer.h"
 
 namespace Particles
 {
@@ -46,15 +45,13 @@ ParticleServer::Open()
     this->particleRenderer = ParticleRenderer::Create();
     this->particleRenderer->Setup();
 
-	// setup mesh
-	this->defaultEmitterMesh = Mesh::Create();
 
-	// setup default emitter vertex buffer and index buffer
-	Ptr<MemoryVertexBufferLoader> emitterLoader = MemoryVertexBufferLoader::Create();
+	// setup mesh
 	Util::Array<VertexComponent> emitterComponents;
 	emitterComponents.Append(VertexComponent(VertexComponent::Position, 0, VertexComponent::Float3, 0));
 	emitterComponents.Append(VertexComponent(VertexComponent::Normal, 0, VertexComponent::Byte4N, 0));
 	emitterComponents.Append(VertexComponent(VertexComponent::Tangent, 0, VertexComponent::Byte4N, 0));
+
 
 	float x = 0 * 0.5f * 255.0f;
 	float y = 1 * 0.5f * 255.0f;
@@ -79,29 +76,34 @@ ParticleServer::Open()
 	float vertex[] = {0, 0, 0, 0, 0};
 	*(int*)&vertex[3] = normPacked;
 	*(int*)&vertex[4] = tangentPacked;
-	emitterLoader->Setup(emitterComponents, 1, vertex, sizeof(vertex), VertexBuffer::UsageImmutable, VertexBuffer::AccessRead);
-	Ptr<VertexBuffer> vb = VertexBuffer::Create();
-	vb->SetLoader(emitterLoader.upcast<Resources::ResourceLoader>());
-	vb->SetAsyncEnabled(false);
-	vb->Load();
-	if (!vb->IsLoaded())
-	{
-		n_error("ParticleServer::Open: Failed to setup default emitter mesh");
-	}
-	vb->SetLoader(0);
 
-	Ptr<MemoryIndexBufferLoader> indexLoader = MemoryIndexBufferLoader::Create();
-	uint indices[] = {0};
-	indexLoader->Setup(IndexType::Index32, 1, indices, sizeof(indices), IndexBuffer::UsageImmutable, IndexBuffer::AccessRead);
-	Ptr<IndexBuffer> ib = IndexBuffer::Create();
-	ib->SetLoader(indexLoader.upcast<Resources::ResourceLoader>());
-	ib->SetAsyncEnabled(false);
-	ib->Load();
-	if (!ib->IsLoaded())
+	VertexBufferCreateInfo vboInfo =
+	{
+		"Default_Emitter_Mesh_VBO",
+		"rendersystem",
+		GpuBufferTypes::AccessRead, GpuBufferTypes::UsageImmutable, GpuBufferTypes::SyncingFlush,
+		1, emitterComponents,
+		vertex, sizeof(vertex)
+	};
+	VertexBufferId vbo = CreateVertexBuffer(vboInfo);
+	if (vbo != VertexBufferId::Invalid())
 	{
 		n_error("ParticleServer::Open: Failed to setup default emitter mesh");
 	}
-	ib->SetLoader(0);
+
+	uint indices[] = { 0 };
+	IndexBufferCreateInfo iboInfo = 
+	{
+		"Default_Emitter_Mesh_IBO",
+		"rendersystem",
+		GpuBufferTypes::AccessRead, GpuBufferTypes::UsageImmutable, GpuBufferTypes::SyncingFlush,
+		IndexType::Index32,	1, indices, sizeof(indices)
+	};
+	IndexBufferId ibo = CreateIndexBuffer(iboInfo);
+	if (ibo != IndexBufferId::Invalid())
+	{
+		n_error("ParticleServer::Open: Failed to setup default emitter mesh");
+	}
 
 	PrimitiveGroup group;
 	group.SetBaseIndex(0);
@@ -111,11 +113,15 @@ ParticleServer::Open()
 	Util::Array<PrimitiveGroup> groups;
 	groups.Append(group);
 
-	// setup mesh
-	this->defaultEmitterMesh->SetTopology(PrimitiveTopology::PointList);
-	this->defaultEmitterMesh->SetVertexBuffer(vb);
-	this->defaultEmitterMesh->SetIndexBuffer(ib);
-	this->defaultEmitterMesh->SetPrimitiveGroups(groups);
+	VertexLayoutId vlo = VertexBufferGetLayout(vbo);
+
+	MeshCreateInfo info =
+	{
+		"Default_Emitter_Mesh",
+		"rendersystem",
+		vbo, ibo, vlo, CoreGraphics::PrimitiveTopology::PointList, groups
+	};
+	this->defaultEmitterMesh = CreateMesh(info);
 }
 
 //------------------------------------------------------------------------------
@@ -128,11 +134,9 @@ ParticleServer::Close()
 
     // destroy the particle renderer singleton
     this->particleRenderer->Discard();
-    this->particleRenderer = 0;
+    this->particleRenderer = nullptr;
 
-	// destroy mesh
-	this->defaultEmitterMesh->Unload();
-	this->defaultEmitterMesh = 0;
+	DestroyMesh(this->defaultEmitterMesh);
 
     this->isOpen = false;
 }

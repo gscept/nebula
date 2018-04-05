@@ -38,7 +38,7 @@ DestroyVertexBuffer(const VertexBufferId id)
 //------------------------------------------------------------------------------
 /**
 */
-inline void
+void
 VertexBufferBind(const VertexBufferId id, const IndexT slot, const IndexT vertexOffset)
 {
 	vboPool->Bind(id, slot, vertexOffset);
@@ -47,7 +47,7 @@ VertexBufferBind(const VertexBufferId id, const IndexT slot, const IndexT vertex
 //------------------------------------------------------------------------------
 /**
 */
-inline void
+void
 VertexBufferUpdate(const VertexBufferId id, void* data, PtrDiff size, PtrDiff offset)
 {
 	//vboPool->LoadFromMemory(Resources::SharedId(id), 
@@ -56,7 +56,7 @@ VertexBufferUpdate(const VertexBufferId id, void* data, PtrDiff size, PtrDiff of
 //------------------------------------------------------------------------------
 /**
 */
-inline void
+void
 VertexBufferLock(const VertexBufferId id, const PtrDiff offset, const PtrDiff range)
 {
 	// implement me?	
@@ -65,7 +65,7 @@ VertexBufferLock(const VertexBufferId id, const PtrDiff offset, const PtrDiff ra
 //------------------------------------------------------------------------------
 /**
 */
-inline void
+void
 VertexBufferUnlock(const VertexBufferId id, const PtrDiff offset, const PtrDiff range)
 {
 	// implement me?
@@ -74,7 +74,7 @@ VertexBufferUnlock(const VertexBufferId id, const PtrDiff offset, const PtrDiff 
 //------------------------------------------------------------------------------
 /**
 */
-inline void*
+void*
 VertexBufferMap(const VertexBufferId id, const CoreGraphics::GpuBufferTypes::MapType type)
 {
 	return vboPool->Map(id, type);
@@ -83,7 +83,7 @@ VertexBufferMap(const VertexBufferId id, const CoreGraphics::GpuBufferTypes::Map
 //------------------------------------------------------------------------------
 /**
 */
-inline void
+void
 VertexBufferUnmap(const VertexBufferId id)
 {
 	vboPool->Unmap(id);
@@ -96,6 +96,15 @@ const SizeT
 VertexBufferGetNumVertices(const VertexBufferId id)
 {
 	return vboPool->GetNumVertices(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const VertexLayoutId
+VertexBufferGetLayout(const VertexBufferId id)
+{
+	return vboPool->GetLayout(id);
 }
 
 } // namespace CoreGraphics
