@@ -66,5 +66,5 @@ elseif(N_RENDERER_METAL)
 	add_definitions(-DGRAPHICS_IMPLEMENTATION_NAMESPACE=Metal)
 endif()
 
-option(N_BUILD_NVTT "use NVTT" ON)
+option(N_BUILD_NVTT "use NVTT" OFF)
 
