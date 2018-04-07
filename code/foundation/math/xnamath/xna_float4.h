@@ -90,6 +90,8 @@ public:
     void load_float3(const void* ptr, float w);
     /// load from UByte4N packed vector, move range to -1..+1
     void load_ubyte4n_signed(const void* ptr, float w);
+	/// load from Byte4N packed vector
+	void load_byte4n(const void* ptr, float w);
 
     /// set content
     void set(scalar x, scalar y, scalar z, scalar w);

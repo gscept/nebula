@@ -34,6 +34,8 @@ public:
 
 	/// get number of vertices
 	const SizeT GetNumVertices(const CoreGraphics::VertexBufferId id);
+	/// get layout
+	const CoreGraphics::VertexLayoutId GetLayout(const CoreGraphics::VertexBufferId id);
 private:
 
 	struct VkVertexBufferLoadInfo

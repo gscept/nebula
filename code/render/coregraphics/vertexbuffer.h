@@ -13,6 +13,7 @@
 #include "resources/resourceid.h"
 #include "gpubuffertypes.h"
 #include "coregraphics/vertexcomponent.h"
+#include "vertexlayout.h"
 namespace CoreGraphics
 {
 
@@ -51,6 +52,8 @@ void VertexBufferUnmap(const VertexBufferId id);
 
 /// get number of vertices
 const SizeT VertexBufferGetNumVertices(const VertexBufferId id);
+/// get vertex layout
+const VertexLayoutId VertexBufferGetLayout(const VertexBufferId id);
 
 class MemoryVertexBufferPool;
 extern MemoryVertexBufferPool* vboPool;

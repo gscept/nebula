@@ -8,7 +8,7 @@
 #include "lib/util.fxh"
 #include "lib/techniques.fxh"
 
-group(SYSTEM_GROUP) push varblock Simple
+group(BATCH_GROUP) push varblock Simple
 {
 	mat4 ShapeModel;
 	vec4 MatDiffuse;

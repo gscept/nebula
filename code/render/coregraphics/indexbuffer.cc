@@ -26,7 +26,7 @@ CreateIndexBuffer(IndexBufferCreateInfo info)
 //------------------------------------------------------------------------------
 /**
 */
-inline void
+void
 DestroyIndexBuffer(const IndexBufferId id)
 {
 	iboPool->DiscardResource(id);
@@ -35,7 +35,7 @@ DestroyIndexBuffer(const IndexBufferId id)
 //------------------------------------------------------------------------------
 /**
 */
-inline void
+void
 IndexBufferBind(const IndexBufferId id, const IndexT offset)
 {
 	iboPool->Bind(id, offset);
@@ -44,7 +44,7 @@ IndexBufferBind(const IndexBufferId id, const IndexT offset)
 //------------------------------------------------------------------------------
 /**
 */
-inline void
+void
 IndexBufferUpdate(const IndexBufferId id, void* data, PtrDiff size, PtrDiff offset)
 {
 }
@@ -52,7 +52,7 @@ IndexBufferUpdate(const IndexBufferId id, void* data, PtrDiff size, PtrDiff offs
 //------------------------------------------------------------------------------
 /**
 */
-inline void
+void
 IndexBufferLock(const IndexBufferId id, const PtrDiff offset, const PtrDiff range)
 {
 	// implement me?
@@ -61,7 +61,7 @@ IndexBufferLock(const IndexBufferId id, const PtrDiff offset, const PtrDiff rang
 //------------------------------------------------------------------------------
 /**
 */
-inline void
+void
 IndexBufferUnlock(const IndexBufferId id, const PtrDiff offset, const PtrDiff range)
 {
 	// implement me?
@@ -70,7 +70,7 @@ IndexBufferUnlock(const IndexBufferId id, const PtrDiff offset, const PtrDiff ra
 //------------------------------------------------------------------------------
 /**
 */
-inline void*
+void*
 IndexBufferMap(const IndexBufferId id, const CoreGraphics::GpuBufferTypes::MapType type)
 {
 	return iboPool->Map(id, type);
@@ -79,7 +79,7 @@ IndexBufferMap(const IndexBufferId id, const CoreGraphics::GpuBufferTypes::MapTy
 //------------------------------------------------------------------------------
 /**
 */
-inline void
+void
 IndexBufferUnmap(const IndexBufferId id)
 {
 	iboPool->Unmap(id);

@@ -16,7 +16,7 @@ using namespace Ids;
 //------------------------------------------------------------------------------
 /**
 */
-inline const MeshId
+const MeshId
 CreateMesh(const MeshCreateInfo& info)
 {
 	MeshId id = meshPool->ReserveResource(info.name, info.tag);
@@ -28,7 +28,7 @@ CreateMesh(const MeshCreateInfo& info)
 //------------------------------------------------------------------------------
 /**
 */
-inline void
+void
 DestroyMesh(const MeshId id)
 {
 	meshPool->DiscardResource(id);
@@ -37,7 +37,7 @@ DestroyMesh(const MeshId id)
 //------------------------------------------------------------------------------
 /**
 */
-inline void
+void
 MeshBind(const MeshId id, const IndexT prim)
 {
 	meshPool->BindMesh(id, prim);
@@ -46,7 +46,7 @@ MeshBind(const MeshId id, const IndexT prim)
 //------------------------------------------------------------------------------
 /**
 */
-inline const Util::Array<CoreGraphics::PrimitiveGroup>&
+const Util::Array<CoreGraphics::PrimitiveGroup>&
 MeshGetPrimitiveGroups(const MeshId id)
 {
 	return meshPool->GetPrimitiveGroups(id);
@@ -55,7 +55,7 @@ MeshGetPrimitiveGroups(const MeshId id)
 //------------------------------------------------------------------------------
 /**
 */
-inline const VertexBufferId
+const VertexBufferId
 MeshGetVertexBuffer(const MeshId id)
 {
 	return meshPool->GetVertexBuffer(id);
@@ -64,7 +64,7 @@ MeshGetVertexBuffer(const MeshId id)
 //------------------------------------------------------------------------------
 /**
 */
-inline const VertexLayoutId
+const VertexLayoutId
 MeshGetVertexLayout(const MeshId id)
 {
 	return meshPool->GetVertexLayout(id);
@@ -73,7 +73,7 @@ MeshGetVertexLayout(const MeshId id)
 //------------------------------------------------------------------------------
 /**
 */
-inline const IndexBufferId
+const IndexBufferId
 MeshGetIndexBuffer(const MeshId id)
 {
 	return meshPool->GetIndexBuffer(id);

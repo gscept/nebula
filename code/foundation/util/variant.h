@@ -1887,6 +1887,46 @@ Variant::GetUInt() const
 /**
 */
 inline void
+Variant::SetInt64(int64_t val)
+{
+	n_assert(Int64 == this->type);
+	this->i64 = val;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline int64_t
+Variant::GetInt64() const
+{
+	n_assert(Int64 == this->type);
+	return this->i64;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+Variant::SetUInt64(uint64_t val)
+{
+	n_assert(UInt64 == this->type);
+	this->u64 = val;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline uint64_t
+Variant::GetUInt64() const
+{
+	n_assert(UInt64 == this->type);
+	return this->u64;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
 Variant::SetFloat(float val)
 {
     *this = val;

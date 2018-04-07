@@ -366,6 +366,8 @@ fips_begin_module(foundation)
 			httpresponsewriter.h
 			httpserver.cc
 			httpserver.h
+			httpserverproxy.cc
+			httpserverproxy.h
 			httpstatus.cc
 			httpstatus.h
 			httpstream.cc
@@ -382,6 +384,8 @@ fips_begin_module(foundation)
 			svg/svglinechartwriter.h
 			svg/svgpagewriter.cc
 			svg/svgpagewriter.h
+			httpprotocol.cc
+			httpprotocol.h
 		)
 		fips_dir(ids)
 		fips_files(

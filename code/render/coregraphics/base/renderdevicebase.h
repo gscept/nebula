@@ -22,7 +22,6 @@
 #include "math/float4.h"
 #include "math/rectangle.h"
 #include "graphics/view.h"
-#include "graphics/graphicsserver.h"
 #include "coregraphics/shader.h"
 #include "util/queue.h"
 #include "vertexlayoutbase.h"

@@ -22,8 +22,6 @@ public:
     
     /// parse data tag (called by loader code)
     virtual bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader);
-    /// apply state shared by all my ModelNodeInstances
-    virtual void ApplySharedState(IndexT frameIndex);
 
     /// reserve fragments (call before adding fragments)
     void ReserveFragments(SizeT numFragments);

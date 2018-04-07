@@ -129,6 +129,15 @@ VkMemoryVertexBufferPool::GetNumVertices(const CoreGraphics::VertexBufferId id)
 //------------------------------------------------------------------------------
 /**
 */
+const CoreGraphics::VertexLayoutId
+VkMemoryVertexBufferPool::GetLayout(const CoreGraphics::VertexBufferId id)
+{
+	return this->Get<1>(id.allocId).layout;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 VkMemoryVertexBufferPool::Bind(const CoreGraphics::VertexBufferId id, const IndexT slot, const IndexT offset)
 {

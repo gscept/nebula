@@ -9,7 +9,7 @@
 #include "coregraphics/renderdevice.h"
 #include "coregraphics/shaderrwtexture.h"
 #include "coregraphics/shaderrwbuffer.h"
-//#include "graphics/camerasettings.h"
+#include "graphics/graphicsserver.h"
 
 using namespace CoreGraphics;
 using namespace Graphics;

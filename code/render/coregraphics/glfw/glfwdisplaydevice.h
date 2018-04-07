@@ -7,12 +7,13 @@
 
     (C) 2013-2016 Individual contributors, see AUTHORS file
 */
+//------------------------------------------------------------------------------
+#include "GLFW/glfw3.h"
 #include "coregraphics/base/displaydevicebase.h"
 #include "util/array.h"
 #include "threading/thread.h"
 #include "input/glfw/glfwinputdisplayeventhandler.h"
 
-//------------------------------------------------------------------------------
 namespace GLFW
 {
 class GLFWDisplayDevice : public Base::DisplayDeviceBase

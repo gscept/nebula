@@ -153,7 +153,7 @@ DestroyVkPools(VkDevice dev)
 //------------------------------------------------------------------------------
 /**
 */
-inline const VkCommandBuffer
+const VkCommandBuffer
 CommandBufferGetVk(const CoreGraphics::CmdBufferId id)
 {
 #if NEBULA_DEBUG
