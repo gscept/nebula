@@ -27,13 +27,9 @@ public:
     virtual void OnFinishedLoading();
     /// parse data tag (called by loader code)
     virtual bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader);
-	/// apply state shared by all my ModelNodeInstances
-	virtual void ApplySharedState(IndexT frameIndex);
 
 	/// change a mesh during runtime
 	virtual void UpdateMeshResource(const Resources::ResourceName& msh);
-    /// get emitter mesh resource id
-    const CoreGraphics::MeshId& GetEmitterMeshResourceId() const;
     /// get the primitive group index in the emitter mesh
     IndexT GetPrimitiveGroupIndex() const;
     /// set emitter attributes

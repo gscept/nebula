@@ -16,6 +16,10 @@
 #include "stage.h"
 #include "graphicsentity.h"
 #include "visibility/visibilityserver.h"
+#include "coregraphics/renderdevice.h"
+#include "coregraphics/displaydevice.h"
+#include "debug/debughandler.h"
+
 namespace Graphics
 {
 
@@ -70,11 +74,16 @@ private:
 	Util::Array<Ptr<GraphicsContext>> contexts;
 	Ptr<Visibility::VisibilityServer> visServer;
 
+
 	Util::Array<Ptr<Stage>> stages;
 	Util::Array<Ptr<View>> views;
 	CoreGraphics::BatchGroup batchGroupRegistry;
 
 	Ptr<View> currentView;
+
+	Ptr<CoreGraphics::DisplayDevice> displayDevice;
+	Ptr<CoreGraphics::RenderDevice> renderDevice;
+	Ptr<Debug::DebugHandler> debugHandler;
 
 	bool isOpen;
 };

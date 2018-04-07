@@ -111,7 +111,7 @@ VkShaderStateSetupDerivative(const Ids::Id32 id, const AnyFX::ShaderEffect* effe
 	info.parentSetup = &parentSetup;
 
 	// get varblocks by group, only add dynamically offset buffers
-	const eastl::vector<AnyFX::VarblockBase*>& varblocks = effect->GetVarblocks((const unsigned)group);
+	const std::vector<AnyFX::VarblockBase*>& varblocks = effect->GetVarblocks((const unsigned)group);
 	for (uint32_t i = 0; i < varblocks.size(); i++)
 	{
 		const AnyFX::VarblockBase* block = varblocks[i];
@@ -215,9 +215,9 @@ VkShaderStateSetupConstants(const Ids::Id24 id, AnyFX::ShaderEffect* effect, VkS
 		const AnyFX::ProgramBase* program = effect->GetPrograms()[0];
 
 		// get handles related to groups
-		const eastl::vector<AnyFX::VariableBase*>& variables = effect->GetVariables(groups[i]);
-		const eastl::vector<AnyFX::VarblockBase*>& varblocks = effect->GetVarblocks(groups[i]);
-		const eastl::vector<AnyFX::VarbufferBase*>& varbuffers = effect->GetVarbuffers(groups[i]);
+		const std::vector<AnyFX::VariableBase*>& variables = effect->GetVariables(groups[i]);
+		const std::vector<AnyFX::VarblockBase*>& varblocks = effect->GetVarblocks(groups[i]);
+		const std::vector<AnyFX::VarbufferBase*>& varbuffers = effect->GetVarbuffers(groups[i]);
 
 		// load uniforms
 		uint j;
@@ -273,7 +273,7 @@ VkShaderStateSetupConstantBuffers(const Ids::Id24 id, AnyFX::ShaderEffect* effec
 	for (i = 0; i < groups.Size(); i++)
 	{
 		// get varblocks by group
-		const eastl::vector<AnyFX::VarblockBase*>& varblocks = effect->GetVarblocks(groups[i]);
+		const std::vector<AnyFX::VarblockBase*>& varblocks = effect->GetVarblocks(groups[i]);
 		Util::Array<uint32_t> offsets;
 		Util::Dictionary<uint32_t, VkShaderStateBufferMapping> bufferMappings;
 		uint32_t dynindex = 0;

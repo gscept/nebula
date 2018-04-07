@@ -10,7 +10,6 @@
 #include "coregraphics/pass.h"
 #include "coregraphics/displaydevice.h"
 #include "math/scalar.h"
-#include "graphics/graphicsserver.h"
 
 namespace Base
 {

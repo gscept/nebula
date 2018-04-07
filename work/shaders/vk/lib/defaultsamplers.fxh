@@ -7,7 +7,7 @@
 #define DEFAULTSAMPLERS_FXH
 
 
-group(DEFAULT_GROUP) shared varblock DefaultSamplers [ bool DynamicOffset = true; ]
+group(BATCH_GROUP) shared varblock DefaultSamplers [ bool DynamicOffset = true; ]
 {
 	textureHandle AlbedoMap;
 	textureHandle DisplacementMap;

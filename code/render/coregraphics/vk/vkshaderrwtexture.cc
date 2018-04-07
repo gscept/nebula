@@ -146,7 +146,16 @@ DestroyShaderRWTexture(const ShaderRWTextureId id)
 void
 ShaderRWTextureResize(const ShaderRWTextureId id, const ShaderRWTextureResizeInfo& info)
 {
+	n_error("Implement me!");
+}
 
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ShaderRWTextureWindowResized(const ShaderRWTextureId id)
+{
+	n_error("Implement me!");
 }
 
 //------------------------------------------------------------------------------
@@ -155,7 +164,7 @@ ShaderRWTextureResize(const ShaderRWTextureId id, const ShaderRWTextureResizeInf
 void
 ShaderRWWindowResized(const ShaderRWTextureId id)
 {
-
+	n_error("Implement me!");
 }
 
 //------------------------------------------------------------------------------

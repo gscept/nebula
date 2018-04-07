@@ -5,7 +5,7 @@
 fips_begin_module(render)
 	fips_vs_warning_level(3)
 	fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/resource ${CODE_ROOT}/foundation)	
-	fips_deps(foundation resource anyfx DevIL)
+	fips_deps(foundation resource anyfx libpng libjpeg DevIL)
 	if(N_USE_VULKAN)
 		#include(FindVulkan)
 		FIND_PACKAGE(Vulkan)
@@ -420,7 +420,6 @@ ENDIF()
 				mousebase.cc
 				mousebase.h
 			)
-IF(FALSE)
 		fips_dir(input/glfw GROUP "input/glfw")
 			fips_files(
 				glfwinputdisplayeventhandler.cc
@@ -428,6 +427,7 @@ IF(FALSE)
 				glfwinputserver.cc
 				glfwinputserver.h
 			)
+
 		fips_dir(input)
 			fips_files(
 				char.h
@@ -448,6 +448,8 @@ IF(FALSE)
 				mousebutton.cc
 				mousebutton.h
 			)
+IF(FALSE)
+
 		fips_dir(instancing)
 			fips_files(
 				instancerenderer.cc
@@ -627,7 +629,6 @@ ENDIF()
 		mouserayutil.cc
 		mouserayutil.h
 	)
-IF(FALSE)
 		fips_dir(particles)
 			fips_files(
 				emitterattrs.cc
@@ -648,12 +649,9 @@ IF(FALSE)
 				particlesystem.h
 				particlesysteminstance.cc
 				particlesysteminstance.h
-				particlesystemnode.cc
-				particlesystemnode.h
-				particlesystemnodeinstance.cc
-				particlesystemnodeinstance.h
 				particlesystemstate.h
 			)
+IF(FALSE)
 
 		fips_dir(picking)
 			fips_files(

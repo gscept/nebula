@@ -60,4 +60,16 @@ float4::load_ubyte4n_signed(const void* ptr, float w)
     this->set_w(w);
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+void
+float4::load_byte4n(const void* ptr, float w)
+{
+	// need to endian-convert the source...
+	DirectX::PackedVector::XMUBYTEN4 ub4nValue(System::ByteOrder::Convert<uint>(System::ByteOrder::Host, System::ByteOrder::LittleEndian, *(uint*)ptr));
+	this->vec = DirectX::PackedVector::XMLoadUByteN4(&ub4nValue);
+	this->set_w(w);
+}
+
 } // namespace Math

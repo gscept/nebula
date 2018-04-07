@@ -92,7 +92,7 @@ VkShaderPool::LoadFromStream(const Resources::ResourceId id, const Util::StringA
 			);
 
 		// setup shader variations
-		const eastl::vector<AnyFX::ProgramBase*> programs = effect->GetPrograms();
+		const std::vector<AnyFX::ProgramBase*> programs = effect->GetPrograms();
 		for (uint i = 0; i < programs.size(); i++)
 		{
 			// get program object from shader subsystem

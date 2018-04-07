@@ -16,7 +16,7 @@ MemoryTexturePool* texturePool = nullptr;
 //------------------------------------------------------------------------------
 /**
 */
-inline const TextureId
+const TextureId
 CreateTexture(TextureCreateInfo info)
 {
 	TextureId id = texturePool->ReserveResource(info.name, info.tag);
@@ -28,7 +28,7 @@ CreateTexture(TextureCreateInfo info)
 //------------------------------------------------------------------------------
 /**
 */
-inline void
+void
 DestroyTexture(const TextureId id)
 {
 	texturePool->DiscardResource(id);
@@ -73,7 +73,7 @@ TextureGetNumMips(const TextureId id)
 //------------------------------------------------------------------------------
 /**
 */
-inline TextureMapInfo 
+TextureMapInfo 
 TextureMap(const TextureId id, IndexT mip, const CoreGraphics::GpuBufferTypes::MapType type)
 {
 	TextureMapInfo info;
@@ -84,7 +84,7 @@ TextureMap(const TextureId id, IndexT mip, const CoreGraphics::GpuBufferTypes::M
 //------------------------------------------------------------------------------
 /**
 */
-inline void
+void
 TextureUnmap(const TextureId id, IndexT mip)
 {
 	texturePool->Unmap(id, mip);
@@ -93,7 +93,7 @@ TextureUnmap(const TextureId id, IndexT mip)
 //------------------------------------------------------------------------------
 /**
 */
-inline TextureMapInfo
+TextureMapInfo
 TextureMapFace(const TextureId id, IndexT mip, TextureCubeFace face, const CoreGraphics::GpuBufferTypes::MapType type)
 {
 	TextureMapInfo info;
@@ -104,7 +104,7 @@ TextureMapFace(const TextureId id, IndexT mip, TextureCubeFace face, const CoreG
 //------------------------------------------------------------------------------
 /**
 */
-inline void
+void
 TextureUnmapFace(const TextureId id, IndexT mip, TextureCubeFace face)
 {
 	texturePool->UnmapCubeFace(id, face, mip);

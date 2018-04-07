@@ -8,7 +8,6 @@
 #include "input/keyboard.h"
 #include "input/mouse.h"
 #include "input/gamepad.h"
-#include "graphics/display.h"
 
 namespace GLFW
 {

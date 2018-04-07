@@ -147,15 +147,16 @@ VkMemoryTexturePool::LoadFromMemory(const Resources::ResourceId id, const void* 
 //------------------------------------------------------------------------------
 /**
 */
-inline void
+void
 VkMemoryTexturePool::GenerateMipmaps(const CoreGraphics::TextureId id)
 {
+	n_error("IMPLEMENT ME!");
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline bool
+bool
 VkMemoryTexturePool::Map(const CoreGraphics::TextureId id, IndexT mipLevel, CoreGraphics::GpuBufferTypes::MapType mapType, CoreGraphics::TextureMapInfo & outMapInfo)
 {
 	textureAllocator.EnterGet();
@@ -226,7 +227,7 @@ VkMemoryTexturePool::Map(const CoreGraphics::TextureId id, IndexT mipLevel, Core
 //------------------------------------------------------------------------------
 /**
 */
-inline void
+void
 VkMemoryTexturePool::Unmap(const CoreGraphics::TextureId id, IndexT mipLevel)
 {
 	textureAllocator.EnterGet();
@@ -250,7 +251,7 @@ VkMemoryTexturePool::Unmap(const CoreGraphics::TextureId id, IndexT mipLevel)
 //------------------------------------------------------------------------------
 /**
 */
-inline bool
+bool
 VkMemoryTexturePool::MapCubeFace(const CoreGraphics::TextureId id, CoreGraphics::TextureCubeFace face, IndexT mipLevel, CoreGraphics::GpuBufferTypes::MapType mapType, CoreGraphics::TextureMapInfo & outMapInfo)
 {
 	textureAllocator.EnterGet();
@@ -293,7 +294,7 @@ VkMemoryTexturePool::MapCubeFace(const CoreGraphics::TextureId id, CoreGraphics:
 //------------------------------------------------------------------------------
 /**
 */
-inline void
+void
 VkMemoryTexturePool::UnmapCubeFace(const CoreGraphics::TextureId id, CoreGraphics::TextureCubeFace face, IndexT mipLevel)
 {
 	textureAllocator.EnterGet();
@@ -317,7 +318,7 @@ VkMemoryTexturePool::UnmapCubeFace(const CoreGraphics::TextureId id, CoreGraphic
 //------------------------------------------------------------------------------
 /**
 */
-inline void
+void
 VkMemoryTexturePool::Update(const CoreGraphics::TextureId id, void* data, SizeT dataSize, SizeT width, SizeT height, IndexT left, IndexT top, IndexT mip)
 {
 	VkBufferImageCopy copy;
@@ -339,7 +340,7 @@ VkMemoryTexturePool::Update(const CoreGraphics::TextureId id, void* data, SizeT 
 //------------------------------------------------------------------------------
 /**
 */
-inline void
+void
 VkMemoryTexturePool::Update(const CoreGraphics::TextureId id, CoreGraphics::TextureDimensions dims, void* data, SizeT dataSize, IndexT mip)
 {
 	VkBufferImageCopy copy;
@@ -361,7 +362,7 @@ VkMemoryTexturePool::Update(const CoreGraphics::TextureId id, CoreGraphics::Text
 //------------------------------------------------------------------------------
 /**
 */
-inline void
+void
 VkMemoryTexturePool::UpdateArray(const CoreGraphics::TextureId id, void* data, SizeT dataSize, SizeT width, SizeT height, IndexT left, IndexT top, IndexT mip, IndexT layer)
 {
 	VkBufferImageCopy copy;
@@ -383,7 +384,7 @@ VkMemoryTexturePool::UpdateArray(const CoreGraphics::TextureId id, void* data, S
 //------------------------------------------------------------------------------
 /**
 */
-inline void
+void
 VkMemoryTexturePool::UpdateArray(const CoreGraphics::TextureId id, CoreGraphics::TextureDimensions dims, void* data, SizeT dataSize, IndexT mip, IndexT layer)
 {
 	VkBufferImageCopy copy;
@@ -405,7 +406,7 @@ VkMemoryTexturePool::UpdateArray(const CoreGraphics::TextureId id, CoreGraphics:
 //------------------------------------------------------------------------------
 /**
 */
-inline void
+void
 VkMemoryTexturePool::Copy(const CoreGraphics::TextureId from, const CoreGraphics::TextureId to, SizeT width, SizeT height, SizeT depth, IndexT srcMip, IndexT srcLayer, SizeT srcXOffset, SizeT srcYOffset, SizeT srcZOffset, IndexT dstMip, IndexT dstLayer, SizeT dstXOffset, SizeT dstYOffset, SizeT dstZOffset)
 {
 	VkImageCopy copy;

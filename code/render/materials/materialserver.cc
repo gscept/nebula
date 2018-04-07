@@ -14,6 +14,8 @@
 
 namespace Materials
 {
+__ImplementClass(Materials::MaterialServer, 'MASV', Core::RefCounted)
+__ImplementSingleton(Materials::MaterialServer)
 //------------------------------------------------------------------------------
 /**
 */

@@ -13,7 +13,7 @@
 	PASS_GROUP is updated once per frame by a pass
 	BATCH_GROUP is updated once per batch, which is either a material batch or the system
 	INSTANCE_GROUP is updated for every instance of a material
-	OBJECT_GROUP is updated for every object transforms
+	OBJECT_TRANSFORM_GROUP is updated for every object transforms
 */
 #define TICK_GROUP 0
 #define FRAME_GROUP 1

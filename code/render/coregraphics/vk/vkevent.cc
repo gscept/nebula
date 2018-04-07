@@ -9,6 +9,11 @@
 #include "coregraphics/config.h"
 #include "vktypes.h"
 
+#ifdef CreateEvent
+#pragma push_macro("CreateEvent")
+#undef CreateEvent
+#endif
+
 namespace CoreGraphics
 {
 
@@ -167,3 +172,5 @@ EventReset(const EventId id, const CoreGraphicsQueueType queue, const BarrierDep
 }
 
 } // namespace CoreGraphics
+
+#pragma pop_macro("CreateEvent")

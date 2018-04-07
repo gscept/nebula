@@ -3,10 +3,13 @@
 //  (C) 2008 Radon Labs GmbH
 //  (C) 2013-2016 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "foundation/stdneb.h"
 #include "http/httpserverproxy.h"
+
+#if __NEBULA3_HTTP__
 #include "http/httpprotocol.h"
 #include "http/httpinterface.h"
+#endif
 
 namespace Http
 {
@@ -67,10 +70,12 @@ HttpServerProxy::AttachRequestHandler(const Ptr<HttpRequestHandler>& requestHand
     n_assert(this->isOpen);
     this->requestHandlers.Append(requestHandler);
 
+#if __NEBULA3_HTTP__
     // register request handler with HttpServer thread 
     Ptr<Http::AttachRequestHandler> msg = Http::AttachRequestHandler::Create();
     msg->SetRequestHandler(requestHandler);
     HttpInterface::Instance()->Send(msg.cast<Messaging::Message>());
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -83,10 +88,12 @@ HttpServerProxy::RemoveRequestHandler(const Ptr<HttpRequestHandler>& requestHand
     IndexT index = this->requestHandlers.FindIndex(requestHandler);
     n_assert(InvalidIndex != index);
     
+#if __NEBULA3_HTTP__
     // unregister request handler from HttpServer thread
     Ptr<Http::RemoveRequestHandler> msg = Http::RemoveRequestHandler::Create();
     msg->SetRequestHandler(requestHandler);
     HttpInterface::Instance()->Send(msg.cast<Messaging::Message>());
+#endif
 
     // delete from local array
     this->requestHandlers.EraseIndex(index);
