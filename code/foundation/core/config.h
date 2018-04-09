@@ -4,8 +4,8 @@
     @file core/config.h
 
     Nebula3 compiler specific defines and configuration.
-    
-    (C) 2006 Radon Labs GmbH	
+
+    (C) 2006 Radon Labs GmbH
     (C) 2013-2016 Individual contributors, see AUTHORS file
 */
 
@@ -13,7 +13,7 @@
 #ifdef __WIN32__
 #undef __WIN32__
 #endif
-#ifdef WIN32
+#if (WIN32 || _WIN32)
 #define __WIN32__ (1)
 #endif
 
@@ -105,7 +105,7 @@ static const int JobMaxSliceSize = 0xFFFF;
 #else
 #define NEBULA3_BOUNDSCHECKS (0)
 #endif
-         
+
 // enable/disable the builtin HTTP server
 #if PUBLIC_BUILD
 #define __NEBULA3_HTTP__ (0)
@@ -126,7 +126,7 @@ static const int JobMaxSliceSize = 0xFFFF;
 #elif __NEBULA3_HTTP__
 // profiling needs http
     #define NEBULA3_ENABLE_PROFILING (1)
-#else 
+#else
     #define NEBULA3_ENABLE_PROFILING (0)
 #endif
 
@@ -199,7 +199,7 @@ static const int JobMaxSliceSize = 0xFFFF;
 #endif
 #ifdef __VC__
 #pragma warning( disable : 4251 )       // class XX needs DLL interface to be used...
-#pragma warning( disable : 4355 )       // initialization list uses 'this' 
+#pragma warning( disable : 4355 )       // initialization list uses 'this'
 #pragma warning( disable : 4275 )       // base class has not dll interface...
 #pragma warning( disable : 4786 )       // symbol truncated to 255 characters
 #pragma warning( disable : 4530 )       // C++ exception handler used, but unwind semantics not enabled
@@ -239,6 +239,6 @@ static const int JobMaxSliceSize = 0xFFFF;
 // enable render thread (deprecated)
 // #define NEBULA_RENDER_THREAD (1)
 
-#define NEBULA3_THREAD_DEFAULTSTACKSIZE 65536 
+#define NEBULA3_THREAD_DEFAULTSTACKSIZE 65536
 
 //------------------------------------------------------------------------------
