@@ -5,9 +5,6 @@
 #include "stdneb.h"
 #include "component.h"
 
-#define CR_HOST CR_UNSAFE // try to best manage static states
-#include "crh/cr.h"
-
 // #define ASSURE_VALIDITY
 
 namespace Game {
@@ -17,7 +14,7 @@ namespace Game {
 */
 ComponentContainer::ComponentContainer()
 {
-	this->pluginContext = new cr_plugin();
+	// empty
 }
 
 //------------------------------------------------------------------------------
@@ -25,27 +22,7 @@ ComponentContainer::ComponentContainer()
 */
 ComponentContainer::~ComponentContainer()
 {
-	delete this->pluginContext;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-bool ComponentContainer::LoadPlugin()
-{
-	// the full path to the live-reloadable application
-	bool result = cr_plugin_load(*this->pluginContext, "E:\\Programming\\nebula\\fips-deploy\\nebula-tests\\win64-vstudio-debug\\testcomponent.dll");
-
-	return result;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-bool ComponentContainer::UnloadPlugin()
-{
-	cr_plugin_close(*this->pluginContext);
-	return true;
+	// empty	
 }
 
 //------------------------------------------------------------------------------
@@ -105,6 +82,15 @@ ComponentContainer::IsActive(const uint32_t& instance) const
 //------------------------------------------------------------------------------
 /**
 */
+ComponentPlugin*
+ComponentContainer::Plugin()
+{
+	return static_cast<ComponentPlugin*>(&this->plugin);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 ComponentContainer::OnBeginFrame()
 {
@@ -133,11 +119,7 @@ ComponentContainer::OnBeginFrame()
 			continue;
 		}
 #endif
-		this->pluginContext->userdata = instance;
-
-		// DLL OnBeginFrameFunction.
-		cr_plugin_update(*this->pluginContext);
-
+		this->plugin.OnBeginFrame(static_cast<void*>(instance));
 		// Go to next instance
 		i++;
 	}

@@ -3,6 +3,9 @@
 /**
 	Component
 
+	This is an example component.
+	Components that use reloadable shared libraries be automatically generated later.
+
 	(C) 2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
@@ -12,10 +15,8 @@
 #include "math/float4.h"
 #include "math/scalar.h"
 #include "component/componentdata.h"
+#include "component/plugins/cplugin.h"
 #include "game/entity.h"
-
-// Forward declare cr.h
-struct cr_plugin;
 
 namespace Game
 {
@@ -38,9 +39,6 @@ public:
 	ComponentContainer();
 	~ComponentContainer();
 
-	bool LoadPlugin();
-	bool UnloadPlugin();
-
 	/// Registers an entity to this component. Will try to reuse old datablocks (clearing them first) 
 	/// within componentData and create new data if no free id is available.
 	void RegisterEntity(const Entity& entity);
@@ -55,29 +53,11 @@ public:
 	/// return true if property is currently active
 	bool IsActive(const uint32_t& instance) const;
 
+	/// Access to component plugin interface.
+	ComponentPlugin* Plugin();
+
 	/// called on begin of frame
 	void OnBeginFrame();
-	/*
-	/// called when an instance is activated.
-	void OnActivate();
-	/// called when an instance is deactivated.
-	void OnDeactivate();
-	/// called after attributes are loaded
-	void OnLoad();
-	/// called after OnLoad when the complete world exist
-	void OnStart();
-	/// called before attributes are saved back to database
-	void OnSave();
-
-	/// called before rendering happens
-	void OnRender();
-	/// called when game debug visualization is on
-	void OnRenderDebug();
-	/// called when entity looses activity
-	void OnLoseActivity();
-	/// called when entity gains activity
-	void OnGainActivity();
-	*/
 
 	//-----------------------------------------------------
 	// Specific attributes getters and setters.
@@ -95,8 +75,7 @@ private:
 
 	ComponentData<Component> componentData;
 
-	// the host application should initalize a plugin with a context, a plugin
-	cr_plugin* pluginContext;
+	CPlugin plugin;
 };
 
 } // namespace Game
