@@ -36,6 +36,9 @@ public:
 	void RegisterEntity(const Entity& e);
 	/// deregister an Id. will only remove the id and zero the block
 	void DeregisterEntity(const Entity& e);
+	/// deregister an Id immediately. This will swap the last entity instance with this entitys' assuring a packed array.
+	void DeregisterEntityImmediate(const Entity& e);
+	void DeregisterEntityImmediate(const Entity& e, const uint32_t& index);
 	/// perform garbage collection
 	void Optimize();
 	/// Destroys all instances and sets all memory used free.
@@ -45,6 +48,9 @@ public:
 	/// will be made invalid by Optimize()
 	uint32_t GetInstance(const Entity& e) const;
 	void SetInstanceData(const Entity& e, const InstanceData& data);
+
+	/// Contains all data for all instances of this component.
+	Util::Array<InstanceData> data;
 protected:
 
 	/// contains free id's that we reuse as soon as possible.
@@ -52,9 +58,6 @@ protected:
 
 	/// Contains the link between InstanceData and Id
 	Util::Dictionary<Ids::Id32, uint32_t> idMap;
-
-	/// Contains all data for all instances of this component.
-	Util::Array<InstanceData> data;
 };
 
 
@@ -127,16 +130,41 @@ ComponentData<InstanceData>::DeregisterEntity(const Entity& e)
 /**
 */
 template <class InstanceData> void
+ComponentData<InstanceData>::DeregisterEntityImmediate(const Entity& e)
+{
+	n_assert2(this->idMap.Contains(e.id), "Tried to remove an ID that had not been registered.");
+
+	SizeT index = this->idMap[e.id];
+	this->DeregisterEntityImmediate(e, index);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <class InstanceData> void
+ComponentData<InstanceData>::DeregisterEntityImmediate(const Entity& e, const uint32_t& index)
+{
+	auto id = e.id;
+	n_assert2(this->idMap.Contains(id), "Tried to remove an ID that had not been registered.");
+	auto lastId = this->data.Back().owner.id;
+	this->data.EraseIndexSwap(index);
+	this->idMap[lastId] = index;
+	this->idMap.Erase(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <class InstanceData> void
 ComponentData<InstanceData>::Optimize()
 {
 	Ptr<EntityManager> entityManager = EntityManager::Instance();
 	uint numAlive = 0;
-	SizeT size;
 	Ids::Id32 lastId;
 	uint32_t index;
 	
 	// Pack array
-	size = this->freeIds.Size();
+	SizeT size = this->freeIds.Size();
 	for (SizeT i = 0; i < size; ++i)
 	{
 		index = this->freeIds.Pop();
@@ -158,12 +186,7 @@ ComponentData<InstanceData>::Optimize()
 		numAlive = 0;
 		// Deregister entity and make sure it's removed from the list
 		// so that we don't accidentally try to delete it again.
-		auto id = this->data[index].owner.id;
-		n_assert2(this->idMap.Contains(id), "Garbage collection tried to remove an ID that had not been registered.");
-		lastId = this->data.Back().owner.id;
-		this->data.EraseIndexSwap(index);
-		this->idMap[lastId] = index;
-		this->idMap.Erase(id);
+		this->DeregisterEntityImmediate(this->data[index].owner, index);
 	}
 }
 

@@ -14,6 +14,9 @@
 #include "component/componentdata.h"
 #include "game/entity.h"
 
+// Forward declare cr.h
+struct cr_plugin;
+
 namespace Game
 {
 
@@ -32,8 +35,11 @@ typedef struct
 class ComponentContainer
 {
 public:
-	ComponentContainer() {}
-	~ComponentContainer() {}
+	ComponentContainer();
+	~ComponentContainer();
+
+	bool LoadPlugin();
+	bool UnloadPlugin();
 
 	/// Registers an entity to this component. Will try to reuse old datablocks (clearing them first) 
 	/// within componentData and create new data if no free id is available.
@@ -63,10 +69,6 @@ public:
 	/// called before attributes are saved back to database
 	void OnSave();
 
-	/// called before movement happens
-	void OnMoveBefore();
-	/// called after movement has happened
-	void OnMoveAfter();
 	/// called before rendering happens
 	void OnRender();
 	/// called when game debug visualization is on
@@ -92,6 +94,9 @@ private:
 	Component* GetInstanceData(const uint32_t& instance);
 
 	ComponentData<Component> componentData;
+
+	// the host application should initalize a plugin with a context, a plugin
+	cr_plugin* pluginContext;
 };
 
 } // namespace Game
