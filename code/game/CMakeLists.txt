@@ -20,6 +20,16 @@ fips_begin_module(game)
 			entitymanager.cc
 		)
 	fips_dir(component)
-		fips_files(componentdata.h componentdata.cc)
+		fips_files(
+			componentdata.h
+			componentdata.cc
+			componentplugin.h
+			componentplugin.cc
+		)
+	fips_dir(component/plugins)
+		fips_files(
+			cplugin.h
+			cplugin.cc
+		)
 	fips_dir(.)	
 fips_end_module()
