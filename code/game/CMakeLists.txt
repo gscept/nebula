@@ -9,8 +9,6 @@ fips_begin_module(game)
 		fips_files(
 			stdneb.h
 			stdneb.cc
-			component.h
-			component.cc
 		)
 	fips_dir(game)
 		fips_files(
@@ -21,15 +19,25 @@ fips_begin_module(game)
 		)
 	fips_dir(component)
 		fips_files(
+			basecomponent.h
+			basecomponent.cc
 			componentdata.h
 			componentdata.cc
 			componentplugin.h
 			componentplugin.cc
+			componentmacros.h
+			componentmanager.h
+			componentmanager.cc
 		)
 	fips_dir(component/plugins)
 		fips_files(
 			cplugin.h
 			cplugin.cc
+		)
+	fips_dir(component/components)
+		fips_files(
+			transformcomponent.h
+			transformcomponent.cc
 		)
 	fips_dir(.)	
 fips_end_module()

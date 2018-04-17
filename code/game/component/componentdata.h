@@ -28,30 +28,39 @@ public:
 	///
 	~ComponentData();
 
-
 	/// access to a single instance data block by index
 	InstanceData& operator[](uint32_t instance) const;
 
+	SizeT Size() const;
+
 	/// register an Id. Will create new mapping and allocate instance data
 	void RegisterEntity(const Entity& e);
+
 	/// deregister an Id. will only remove the id and zero the block
 	void DeregisterEntity(const Entity& e);
+
 	/// deregister an Id immediately. This will swap the last entity instance with this entitys' assuring a packed array.
 	void DeregisterEntityImmediate(const Entity& e);
+
+	/// deregister an Id immediately. This will swap the last entity instance with this entitys' assuring a packed array.
 	void DeregisterEntityImmediate(const Entity& e, const uint32_t& index);
-	/// perform garbage collection
-	void Optimize();
+
+	/// perform garbage collection. Returns number of erased instances.
+	SizeT Optimize();
+
 	/// Destroys all instances and sets all memory used free.
 	void DestroyAll();
 
-	/// retrieve the instance id of an external id for faster lookup
-	/// will be made invalid by Optimize()
+	/// retrieve the instance id of an external id for faster lookup. Will be made invalid by Optimize()
 	uint32_t GetInstance(const Entity& e) const;
+
+	/// Set instance data directly.
 	void SetInstanceData(const Entity& e, const InstanceData& data);
 
 	/// Contains all data for all instances of this component.
 	Util::Array<InstanceData> data;
-protected:
+
+private:
 
 	/// contains free id's that we reuse as soon as possible.
 	Util::Stack<uint32_t> freeIds;
@@ -87,6 +96,15 @@ template <class InstanceData> InstanceData&
 ComponentData<InstanceData>::operator[](uint32_t instance) const
 {
 	return this->data[instance];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class InstanceData> SizeT
+ComponentData<InstanceData>::Size() const
+{
+	return this->data.Size();
 }
 
 //------------------------------------------------------------------------------
@@ -155,11 +173,12 @@ ComponentData<InstanceData>::DeregisterEntityImmediate(const Entity& e, const ui
 //------------------------------------------------------------------------------
 /**
 */
-template <class InstanceData> void
+template <class InstanceData> SizeT
 ComponentData<InstanceData>::Optimize()
 {
 	Ptr<EntityManager> entityManager = EntityManager::Instance();
 	uint numAlive = 0;
+	SizeT numErased = 0;
 	Ids::Id32 lastId;
 	uint32_t index;
 	
@@ -171,6 +190,7 @@ ComponentData<InstanceData>::Optimize()
 		lastId = this->data.Back().owner.id;
 		this->idMap[lastId] = index;
 		this->data.EraseIndexSwap(index);
+		++numErased;
 	}
 
 	// garbage collection
@@ -187,7 +207,10 @@ ComponentData<InstanceData>::Optimize()
 		// Deregister entity and make sure it's removed from the list
 		// so that we don't accidentally try to delete it again.
 		this->DeregisterEntityImmediate(this->data[index].owner, index);
+		++numErased;
 	}
+
+	return numErased;
 }
 
 //------------------------------------------------------------------------------
@@ -207,8 +230,14 @@ ComponentData<InstanceData>::DestroyAll()
 template <class InstanceData> uint32_t
 ComponentData<InstanceData>::GetInstance(const Entity& e) const
 {
-	n_assert(this->idMap.Contains(e.id));
-	return this->idMap[e.id];
+	auto i = this->idMap.FindIndex(e.id);
+	if (i != InvalidIndex)
+	{
+		return this->idMap.ValueAtIndex(i);
+	}
+
+	// Entity is not registered.
+	return InvalidIndex;	
 }
 
 //------------------------------------------------------------------------------
