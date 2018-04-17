@@ -17,17 +17,17 @@
 //------------------------------------------------------------------------------
 namespace Util
 {
-template<class ARGTYPE> class Delegate
+template<class ... ARGTYPES> class Delegate
 {
 public:
     /// constructor
     Delegate();
-    /// invokation operator
-    void operator()(ARGTYPE arg) const;
+	/// invokation operator
+    void operator()(ARGTYPES ... args) const;
     /// setup a new delegate from a method call
-    template<class CLASS, void (CLASS::*METHOD)(ARGTYPE)> static Delegate<ARGTYPE> FromMethod(CLASS* objPtr);
+    template<class CLASS, void (CLASS::*METHOD)(ARGTYPES ...)> static Delegate<ARGTYPES ...> FromMethod(CLASS* objPtr);
     /// setup a new delegate from a function call
-    template<void(*FUNCTION)(ARGTYPE)> static Delegate<ARGTYPE> FromFunction();
+    template<void(*FUNCTION)(ARGTYPES ...)> static Delegate<ARGTYPES ...> FromFunction();
 	/// get object pointer
 	template<class CLASS> const CLASS* GetObject() const;
 
@@ -36,11 +36,11 @@ public:
 
 private:
     /// method pointer typedef
-    typedef void (*StubType)(void*, ARGTYPE);
+    typedef void (*StubType)(void*, ARGTYPES ...);
     /// static method-call stub 
-    template<class CLASS, void(CLASS::*METHOD)(ARGTYPE)> static void MethodStub(void* objPtr, ARGTYPE arg);
+    template<class CLASS, void(CLASS::*METHOD)(ARGTYPES ...)> static void MethodStub(void* objPtr, ARGTYPES ... args);
     /// static function-call stub
-    template<void(*FUNCTION)(ARGTYPE)> static void FunctionStub(void* dummyPtr, ARGTYPE arg);
+    template<void(*FUNCTION)(ARGTYPES ... )> static void FunctionStub(void* dummyPtr, ARGTYPES ... args);
 
     void* objPtr;
     StubType stubPtr;
@@ -49,8 +49,8 @@ private:
 //------------------------------------------------------------------------------
 /**
 */
-template<class ARGTYPE>
-Delegate<ARGTYPE>::Delegate() :
+template<class ... ARGTYPES>
+Delegate<ARGTYPES ...>::Delegate() :
     objPtr(0),
     stubPtr(0)
 {
@@ -60,21 +60,21 @@ Delegate<ARGTYPE>::Delegate() :
 //------------------------------------------------------------------------------
 /**
 */
-template<class ARGTYPE> void
-Delegate<ARGTYPE>::operator()(ARGTYPE arg) const
+template<class ... ARGTYPES> void
+Delegate<ARGTYPES ...>::operator()(ARGTYPES ... args) const
 {
-    (*this->stubPtr)(this->objPtr, arg);
+    (*this->stubPtr)(this->objPtr, args...);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-template<class ARGTYPE>
-template<class CLASS, void (CLASS::*METHOD)(ARGTYPE)>
-Delegate<ARGTYPE>
-Delegate<ARGTYPE>::FromMethod(CLASS* objPtr_)
+template<class ... ARGTYPES>
+template<class CLASS, void (CLASS::*METHOD)(ARGTYPES ...)>
+Delegate<ARGTYPES ...>
+Delegate<ARGTYPES ...>::FromMethod(CLASS* objPtr_)
 {
-    Delegate<ARGTYPE> del;
+    Delegate<ARGTYPES ...> del;
     del.objPtr = objPtr_;
     del.stubPtr = &MethodStub<CLASS,METHOD>;
     return del;
@@ -83,12 +83,12 @@ Delegate<ARGTYPE>::FromMethod(CLASS* objPtr_)
 //------------------------------------------------------------------------------
 /**
 */
-template<class ARGTYPE>
-template<void(*FUNCTION)(ARGTYPE)>
-Delegate<ARGTYPE>
-Delegate<ARGTYPE>::FromFunction()
+template<class ... ARGTYPES>
+template<void(*FUNCTION)(ARGTYPES ...)>
+Delegate<ARGTYPES ...>
+Delegate<ARGTYPES ...>::FromFunction()
 {
-    Delegate<ARGTYPE> del;
+    Delegate<ARGTYPES ...> del;
     del.objPtr = 0;
     del.stubPtr = &FunctionStub<FUNCTION>;
     return del;
@@ -97,33 +97,33 @@ Delegate<ARGTYPE>::FromFunction()
 //------------------------------------------------------------------------------
 /**
 */
-template<class ARGTYPE>
-template<class CLASS, void (CLASS::*METHOD)(ARGTYPE)>
+template<class ... ARGTYPES>
+template<class CLASS, void (CLASS::*METHOD)(ARGTYPES ...)>
 void
-Delegate<ARGTYPE>::MethodStub(void* objPtr_, ARGTYPE arg_)
+Delegate<ARGTYPES ...>::MethodStub(void* objPtr_, ARGTYPES ... arg_)
 {
     CLASS* obj = static_cast<CLASS*>(objPtr_);
-    (obj->*METHOD)(arg_);
+    (obj->*METHOD)(arg_...);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-template<class ARGTYPE>
-template<void(*FUNCTION)(ARGTYPE)>
+template<class ... ARGTYPES>
+template<void(*FUNCTION)(ARGTYPES ...)>
 void
-Delegate<ARGTYPE>::FunctionStub(void* dummyPtr, ARGTYPE arg_)
+Delegate<ARGTYPES ...>::FunctionStub(void* dummyPtr, ARGTYPES ... arg_)
 {
-    (*FUNCTION)(arg_);
+    (*FUNCTION)(arg_...);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-template<class ARGTYPE>
+template<class ... ARGTYPES>
 template<class CLASS>
 inline const CLASS* 
-Delegate<ARGTYPE>::GetObject() const
+Delegate<ARGTYPES ...>::GetObject() const
 {
 	return (CLASS*)this->objPtr;
 }
@@ -131,9 +131,9 @@ Delegate<ARGTYPE>::GetObject() const
 //------------------------------------------------------------------------------
 /**
 */
-template<class ARGTYPE>
+template<class ... ARGTYPES>
 bool 
-Util::Delegate<ARGTYPE>::IsValid()
+Util::Delegate<ARGTYPES ...>::IsValid()
 {
 	return (0 != this->stubPtr);
 }
