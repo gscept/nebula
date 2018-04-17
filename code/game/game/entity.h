@@ -8,6 +8,8 @@
 	(C) 2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
+#include "ids/id.h"
+
 namespace Game
 {
 
