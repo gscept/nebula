@@ -8,7 +8,6 @@
 namespace Game
 {
 
-
 __ImplementClass(Game::EntityManager, 'EnMr', Core::RefCounted);
 __ImplementSingleton(EntityManager)
 

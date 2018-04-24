@@ -44,7 +44,6 @@ private:
 	Util::Array<Util::Delegate<>> delegates_OnBeginFrame;
 	Util::Array<Util::Delegate<>> delegates_OnRender;
 	Util::Array<Util::Delegate<>> delegates_OnRenderDebug;
-
 };
 
 } // namespace Game

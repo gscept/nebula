@@ -17,7 +17,6 @@ namespace Game {
 
 class EntityManager : public Core::RefCounted
 {
-	
 	__DeclareClass(EntityManager)
 	__DeclareSingleton(EntityManager)
 public:
@@ -26,11 +25,14 @@ public:
 	/// destructor
 	~EntityManager();
 
+	/// Generate a new entity.
 	Entity NewEntity();
 	
+	/// Delete an entity.
 	void DeleteEntity(const Entity& e);
 	
-	bool IsAlive(const Entity& e) const;	
+	/// Check if an entity ID is still valid.
+	bool IsAlive(const Entity& e) const;
 
 private:
 	Ids::IdGenerationPool pool;
