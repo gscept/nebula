@@ -26,14 +26,22 @@ TransformComponent::~TransformComponent()
 	// empty
 }
 
-void m(TransformComponentInstance* i)
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TestBeginFrame(TransformComponentInstance* i)
 {
 	i->localTransform = Math::matrix44::transpose(i->localTransform);
 }
 
-void TransformComponent::OnBeginFrame()
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TransformComponent::OnBeginFrame()
 {
-	__PerInstance(TransformComponentInstance, m);
+	__PerInstance(TransformComponentInstance, TestBeginFrame);
 }
 
 //------------------------------------------------------------------------------
@@ -80,6 +88,7 @@ TransformComponent::GetLocalTransform(const uint32_t& instance) const
 
 //------------------------------------------------------------------------------
 /**
+	@todo	Implement me!
 */
 void
 TransformComponent::SetWorldTransform(const uint32_t& instance, const Math::matrix44& val)

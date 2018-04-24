@@ -65,6 +65,13 @@ ComponentManager::RegisterComponent(const Ptr<BaseComponent>& component)
 void
 ComponentManager::OnBeginFrame()
 {
+	// We need to clean up any erased components, no matter if they're registered to this event.
+	for (SizeT i = 0; i < this->registry.Size(); ++i)
+	{
+		this->registry[i]->Optimize();
+	}
+
+	// Run all event delegates
 	for (SizeT i = 0; i < this->delegates_OnBeginFrame.Size(); ++i)
 	{
 		this->delegates_OnBeginFrame[i]();
@@ -77,6 +84,10 @@ ComponentManager::OnBeginFrame()
 void
 ComponentManager::OnRender()
 {
+	for (SizeT i = 0; i < this->delegates_OnRender.Size(); ++i)
+	{
+		this->delegates_OnRender[i]();
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -85,6 +96,10 @@ ComponentManager::OnRender()
 void
 ComponentManager::OnRenderDebug()
 {
+	for (SizeT i = 0; i < this->delegates_OnRenderDebug.Size(); ++i)
+	{
+		this->delegates_OnRenderDebug[i]();
+	}
 }
 
 } // namespace Game

@@ -17,10 +17,10 @@ namespace Game
 
 enum ComponentEvent
 {
-	OnBeginFrame	= 1,
-	OnRender		= 2,
-	OnRenderDebug	= 3,
-	NumEvents		= 4
+	OnBeginFrame	= 0,
+	OnRender		= 1,
+	OnRenderDebug	= 2,
+	NumEvents		= 3
 };
 
 class BaseComponent : public Core::RefCounted
