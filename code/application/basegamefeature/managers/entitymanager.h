@@ -11,11 +11,12 @@
 #include "core/refcounted.h"
 #include "core/singleton.h"
 #include "ids/idgenerationpool.h"
-#include "entity.h"
+#include "game/entity.h"
+#include "game/manager.h"
 
 namespace Game {
 
-class EntityManager : public Core::RefCounted
+class EntityManager : public Game::Manager
 {
 	__DeclareClass(EntityManager)
 	__DeclareSingleton(EntityManager)

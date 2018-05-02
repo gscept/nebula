@@ -2,7 +2,7 @@
 # Game
 #-------------------------------------------------------------------------------
 
-fips_begin_module(game)
+fips_begin_module(application)
 	fips_include_directories(. ${CODE_ROOT}/foundation)
 	fips_deps(foundation)
 	fips_dir(.)
@@ -14,10 +14,14 @@ fips_begin_module(game)
 		fips_files(
 			entity.h
 			entity.cc
-			entitymanager.h
-			entitymanager.cc
+			featureunit.h
+			featureunit.cc
+			gameserver.h
+			gameserver.cc
+			manager.h
+			manager.cc
 		)
-	fips_dir(component)
+	fips_dir(game/component)
 		fips_files(
 			basecomponent.h
 			basecomponent.cc
@@ -26,18 +30,28 @@ fips_begin_module(game)
 			componentplugin.h
 			componentplugin.cc
 			componentmacros.h
+		)
+	fips_dir(basegamefeature)
+		fips_files(
+			basegamefeatureunit.h
+			basegamefeatureunit.cc
+		)
+	fips_dir(basegamefeature/managers)
+		fips_files(
+			entitymanager.h
+			entitymanager.cc
 			componentmanager.h
 			componentmanager.cc
 		)
-	fips_dir(component/plugins)
-		fips_files(
-			cplugin.h
-			cplugin.cc
-		)
-	fips_dir(component/components)
+	fips_dir(basegamefeature/components)
 		fips_files(
 			transformcomponent.h
 			transformcomponent.cc
+		)
+	fips_dir(appgame)
+		fips_files(
+			gameapplication.h
+			gameapplication.cc
 		)
 	fips_dir(.)	
 fips_end_module()

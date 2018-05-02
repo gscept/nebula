@@ -13,7 +13,7 @@
 #include "util/stack.h"
 #include "ids/id.h"
 #include "util/random.h"
-#include "game/entitymanager.h"
+#include "basegamefeature/managers/entitymanager.h"
 
 //-----------------------------------------------------------------------------
 namespace Game

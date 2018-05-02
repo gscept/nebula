@@ -14,7 +14,7 @@
 #include "util/hashtable.h"
 #include "math/float4.h"
 #include "math/scalar.h"
-#include "component/basecomponent.h"
+#include "game/component/basecomponent.h"
 #include "game/entity.h"
 
 namespace Game

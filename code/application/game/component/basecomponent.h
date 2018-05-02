@@ -9,6 +9,7 @@
 */
 //------------------------------------------------------------------------------
 #include "game/entity.h"
+#include "core/refcounted.h"
 #include "componentmacros.h"
 #include "util/bitfield.h"
 
@@ -19,8 +20,9 @@ enum ComponentEvent
 {
 	OnBeginFrame	= 0,
 	OnRender		= 1,
-	OnRenderDebug	= 2,
-	NumEvents		= 3
+	OnEndFrame		= 2,
+	OnRenderDebug	= 3,
+	NumEvents		= 4
 };
 
 class BaseComponent : public Core::RefCounted

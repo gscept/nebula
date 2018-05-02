@@ -8,8 +8,8 @@
 	(C) 2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "game/entitymanager.h"
-#include "component/componentdata.h"
+#include "basegamefeature/managers/componentmanager.h"
+#include "game/component/componentdata.h"
 
 namespace Game
 {
