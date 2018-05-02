@@ -3,16 +3,21 @@
 //  (C) 2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
+#include "game/component/basecomponent.h"
 #include "componentmanager.h"
 
 namespace Game
 {
+
+__ImplementClass(Game::ComponentManager, 'COMA', Game::Manager);
+__ImplementSingleton(Game::ComponentManager);
 
 //------------------------------------------------------------------------------
 /**
 */
 ComponentManager::ComponentManager()
 {
+	__ConstructSingleton;
 }
 
 //------------------------------------------------------------------------------
@@ -20,6 +25,7 @@ ComponentManager::ComponentManager()
 */
 ComponentManager::~ComponentManager()
 {
+	__DestructSingleton;
 }
 
 //------------------------------------------------------------------------------
@@ -66,6 +72,7 @@ void
 ComponentManager::OnBeginFrame()
 {
 	// We need to clean up any erased components, no matter if they're registered to this event.
+	// TODO: Can we do this in a better way?
 	for (SizeT i = 0; i < this->registry.Size(); ++i)
 	{
 		this->registry[i]->Optimize();
@@ -82,11 +89,23 @@ ComponentManager::OnBeginFrame()
 /**
 */
 void
-ComponentManager::OnRender()
+ComponentManager::OnFrame()
 {
-	for (SizeT i = 0; i < this->delegates_OnRender.Size(); ++i)
+	for (SizeT i = 0; i < this->delegates_OnFrame.Size(); ++i)
 	{
-		this->delegates_OnRender[i]();
+		this->delegates_OnFrame[i]();
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ComponentManager::OnEndFrame()
+{
+	for (SizeT i = 0; i < this->delegates_OnEndFrame.Size(); ++i)
+	{
+		this->delegates_OnEndFrame[i]();
 	}
 }
 

@@ -8,7 +8,8 @@
 	(C) 2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "basecomponent.h"
+#include "core/singleton.h"
+#include "game/manager.h"
 #include "util/delegate.h"
 #include "util/bitfield.h"
 #include "util/dictionary.h"
@@ -16,8 +17,12 @@
 namespace Game
 {
 
-class ComponentManager
+class BaseComponent;
+
+class ComponentManager : public Game::Manager
 {
+	__DeclareClass(ComponentManager)
+	__DeclareSingleton(ComponentManager)
 public:
 	ComponentManager();
 	~ComponentManager();
@@ -31,8 +36,11 @@ public:
 	/// Execute all OnBeginFrame events
 	void OnBeginFrame();
 
-	/// Execute all OnRender events
-	void OnRender();
+	/// Execute all OnFrame events
+	void OnFrame();
+
+	/// Execute all OnEndFrame events
+	void OnEndFrame();
 
 	/// Execute all OnRenderDebug events
 	void OnRenderDebug();
@@ -42,7 +50,8 @@ private:
 
 	/// All arrays containing the delegates for different events
 	Util::Array<Util::Delegate<>> delegates_OnBeginFrame;
-	Util::Array<Util::Delegate<>> delegates_OnRender;
+	Util::Array<Util::Delegate<>> delegates_OnFrame;
+	Util::Array<Util::Delegate<>> delegates_OnEndFrame;
 	Util::Array<Util::Delegate<>> delegates_OnRenderDebug;
 };
 
