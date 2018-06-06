@@ -12,6 +12,8 @@
 #include "core/refcounted.h"
 #include "componentmacros.h"
 #include "util/bitfield.h"
+#include "game/attr/attrid.h"
+#include "game/attr/attributedefinition.h"
 
 namespace Game
 {
@@ -52,6 +54,18 @@ public:
 	/// perform garbage collection. Returns number of erased instances.
 	virtual SizeT Optimize();
 
+	/// Returns an attribute value as a variant from index. Needs to be overloaded in subclass.
+	virtual Util::Variant GetAttributeValue(uint32_t instance, IndexT attributeIndex) const;
+	
+	/// Returns an attribute value as a variant from attribute id. Needs to be overloaded in subclass.
+	virtual Util::Variant GetAttributeValue(uint32_t instance, Attr::AttrId attributeId) const;
+	
+	/// Returns attribute definition at index.
+	const Attr::AttributeDefinitionBase& GetAttributeDefinition(IndexT index) const;
+
+	/// Returns an array with all attribute definitions for this component
+	const Util::FixedArray<Attr::AttributeDefinitionBase>& GetAttributeDefinitions() const;
+
 	/// called at beginning of frame
 	virtual void OnBeginFrame();
 
@@ -64,8 +78,7 @@ public:
 protected:
 	Util::BitField<ComponentEvent::NumEvents> events;
 
-	// ComponentData<ComponentDataInstance> componentData;
-	// ComponentData<TransformComponentInstance> inactiveComponents;
+	Util::FixedArray<Attr::AttributeDefinitionBase> attributeDefinitions;
 };
 
 } // namespace Game

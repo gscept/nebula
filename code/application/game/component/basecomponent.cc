@@ -90,6 +90,46 @@ BaseComponent::Optimize()
 //------------------------------------------------------------------------------
 /**
 */
+Util::Variant
+BaseComponent::GetAttributeValue(uint32_t instance, IndexT attributeIndex) const
+{
+	// Override in subclass
+	n_error("Not implemented!");
+	return Util::Variant();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Util::Variant
+BaseComponent::GetAttributeValue(uint32_t instance, Attr::AttrId attributeId) const
+{
+	// Override in subclass
+	n_error("NOT IMPLEMENTED\n");
+	return Util::Variant();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Attr::AttributeDefinitionBase&
+BaseComponent::GetAttributeDefinition(IndexT index) const
+{
+	return this->attributeDefinitions[index];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::FixedArray<Attr::AttributeDefinitionBase>&
+BaseComponent::GetAttributeDefinitions() const
+{
+	return this->attributeDefinitions;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 BaseComponent::OnBeginFrame()
 {

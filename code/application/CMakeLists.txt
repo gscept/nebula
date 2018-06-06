@@ -31,6 +31,27 @@ fips_begin_module(application)
 			componentplugin.cc
 			componentmacros.h
 		)
+	fips_dir(game/attr)
+		fips_files(
+			accessmode.h
+			attrexithandler.h
+			attrexithandler.cc
+			attributedefinition.h
+			attributedefinitionbase.h
+			attributedefinitionbase.cc
+			attrid.h
+			attrid.cc
+			blobattrid.h
+			boolattrid.h
+			float4attrid.h
+			floatattrid.h
+			guidattrid.h
+			intattrid.h
+			matrix44attrid.h
+			stringattrid.h
+			transform44attrid.h
+			valuetype.h
+		)
 	fips_dir(basegamefeature)
 		fips_files(
 			basegamefeatureunit.h
@@ -47,6 +68,13 @@ fips_begin_module(application)
 		fips_files(
 			transformcomponent.h
 			transformcomponent.cc
+			transformcomponentbase.h
+			transformcomponentbase.cc
+		)
+	fips_dir(basegamefeature/components/attributes)
+		fips_files(
+			transformattr.h
+			transformattr.cc
 		)
 	fips_dir(appgame)
 		fips_files(
