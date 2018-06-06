@@ -49,6 +49,12 @@ MessageReader::ReadMessage()
     FourCC classFourCC = this->binaryReader->ReadUInt();
     Message* msg = (Message*) Factory::Instance()->Create(classFourCC);
 
+	if (msg == nullptr)
+	{
+		// object couldn't be created.
+		return nullptr;
+	}
+
     // let message initialize itself from the rest of the stream
     msg->Decode(this->binaryReader);
     return msg;
