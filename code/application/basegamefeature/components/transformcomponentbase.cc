@@ -17,14 +17,14 @@ TransformComponentBase::TransformComponentBase()
 {
 	this->events.SetBit(ComponentEvent::OnBeginFrame);
 
-	this->attributeDefinitions.SetSize(7);
-	this->attributeDefinitions[0] = Attr::Owner;
-	this->attributeDefinitions[1] = Attr::LocalTransform;
-	this->attributeDefinitions[2] = Attr::WorldTransform;
-	this->attributeDefinitions[3] = Attr::Parent;
-	this->attributeDefinitions[4] = Attr::FirstChild;
-	this->attributeDefinitions[5] = Attr::NextSibling;
-	this->attributeDefinitions[6] = Attr::PreviousSibling;
+	this->attributes.SetSize(7);
+	this->attributes[0] = Attr::Owner;
+	this->attributes[1] = Attr::LocalTransform;
+	this->attributes[2] = Attr::WorldTransform;
+	this->attributes[3] = Attr::Parent;
+	this->attributes[4] = Attr::FirstChild;
+	this->attributes[5] = Attr::NextSibling;
+	this->attributes[6] = Attr::PreviousSibling;
 }
 
 //------------------------------------------------------------------------------
@@ -115,7 +115,8 @@ TransformComponentBase::GetAttributeValue(uint32_t instance, IndexT attributeInd
 	case 6:
 		return Util::Variant(this->data.data[instance].prevSibling);
 	default:
-		break;
+		n_assert2(false, "Component doesn't contain this attribute!\n");
+		return Util::Variant();
 	}
 }
 

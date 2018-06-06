@@ -112,19 +112,19 @@ BaseComponent::GetAttributeValue(uint32_t instance, Attr::AttrId attributeId) co
 //------------------------------------------------------------------------------
 /**
 */
-const Attr::AttributeDefinitionBase&
-BaseComponent::GetAttributeDefinition(IndexT index) const
+const Attr::AttrId&
+BaseComponent::GetAttributeId(IndexT index) const
 {
-	return this->attributeDefinitions[index];
+	return this->attributes[index];
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-const Util::FixedArray<Attr::AttributeDefinitionBase>&
-BaseComponent::GetAttributeDefinitions() const
+const Util::FixedArray<Attr::AttrId>&
+BaseComponent::GetAttributeIds() const
 {
-	return this->attributeDefinitions;
+	return this->attributes;
 }
 
 //------------------------------------------------------------------------------
