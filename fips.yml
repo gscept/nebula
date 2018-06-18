@@ -10,6 +10,8 @@ imports:
         git: https://github.com/Duttenheim/fips-anyfx.git
      fips-devil:
         git: https://github.com/gscept/fips-devil.git
+     fips-flatbuffers:
+        git: ssh://git@git.ikplus.de:4715/nebula/fips-flatbuffers.git
 
 exports:
     header-dirs : 
