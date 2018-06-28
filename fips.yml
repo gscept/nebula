@@ -3,7 +3,7 @@ imports:
      fips-zlib:
         git: https://github.com/floooh/fips-zlib.git
      fips-directxmath:
-        git: http://x.ikplus.de/fips-directxmath.git
+        git: ssh://git@git.ikplus.de:4715/nebula/fips-directxmath.git
      fips-glfw:
         git: https://github.com/gscept/fips-glfw.git
      fips-anyfx:
