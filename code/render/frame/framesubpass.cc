@@ -4,7 +4,7 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "framesubpass.h"
-#include "coregraphics/renderdevice.h"
+#include "coregraphics/graphicsdevice.h"
 
 using namespace CoreGraphics;
 namespace Frame
@@ -54,20 +54,67 @@ FrameSubpass::Discard()
 /**
 */
 void
-FrameSubpass::Run(const IndexT frameIndex)
+FrameSubpass::CompiledImpl::Run(const IndexT frameIndex)
 {
-	RenderDevice* renderDev = RenderDevice::Instance();
 	IndexT i;
 
 	// bind scissors and viewports, if any
-	for (i = 0; i < this->viewports.Size(); i++) renderDev->SetViewport(this->viewports[i], i);
-	for (i = 0; i < this->scissors.Size(); i++) renderDev->SetScissorRect(this->scissors[i], i);
+	for (i = 0; i < this->viewports.Size(); i++) CoreGraphics::SetViewport(this->viewports[i], i);
+	for (i = 0; i < this->scissors.Size(); i++) CoreGraphics::SetScissorRect(this->scissors[i], i);
 
 	// run ops
 	for (i = 0; i < this->ops.Size(); i++)
 	{
 		this->ops[i]->Run(frameIndex);
 	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+FrameSubpass::CompiledImpl::Discard()
+{
+	for (IndexT i = 0; i < this->ops.Size(); i++)
+		this->ops[i]->Discard();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+FrameOp::Compiled*
+FrameSubpass::AllocCompiled(Memory::ChunkAllocator<0xFFFF>& allocator)
+{
+	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
+	ret->viewports = this->viewports;
+	ret->scissors = this->scissors;
+	// don't set ops here, we have to do it when we build
+	return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+FrameSubpass::Build(
+	Memory::ChunkAllocator<0xFFFF>& allocator, 
+	Util::Array<FrameOp::Compiled*>& compiledOps, 
+	Util::Array<CoreGraphics::EventId>& events,
+	Util::Array<CoreGraphics::BarrierId>& barriers,
+	Util::Array<CoreGraphics::SemaphoreId>& semaphores,
+	Util::Dictionary<CoreGraphics::ShaderRWTextureId, Util::Array<std::tuple<CoreGraphics::ImageSubresourceInfo, TextureDependency>>>& rwTextures,
+	Util::Dictionary<CoreGraphics::ShaderRWBufferId, BufferDependency>& rwBuffers,
+	Util::Dictionary<CoreGraphics::RenderTextureId, Util::Array<std::tuple<CoreGraphics::ImageSubresourceInfo, TextureDependency>>>& renderTextures)
+{
+	CompiledImpl* myCompiled = (CompiledImpl*)this->AllocCompiled(allocator);
+	
+	Util::Array<FrameOp::Compiled*> subpassOps;
+	for (IndexT i = 0; i < this->ops.Size(); i++)
+	{
+		this->ops[i]->Build(allocator, subpassOps, events, barriers, semaphores, rwTextures, rwBuffers, renderTextures);
+	}
+	myCompiled->ops = subpassOps;
+	compiledOps.AppendArray(subpassOps);
 }
 
 } // namespace Frame2

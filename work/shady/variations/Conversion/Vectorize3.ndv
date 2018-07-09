@@ -1,0 +1,11 @@
+<Shady>
+	<Variation desc="Converts single float to 3 component vector of that value." simulationCommand="copy">
+		<Input type="float" name="Value"/>
+		<Output type="vec3" name="output"/>
+		<Source type="GLSL">
+			<Code output="output">
+				[output] = vec3(Value, Value, Value);
+			</Code>
+		</Source>
+	</Variation>
+</Shady>

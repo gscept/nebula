@@ -3,7 +3,7 @@
 // (C) 2016 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
-#include "vkrenderdevice.h"
+#include "vkgraphicsdevice.h"
 #include "vkconstantbuffer.h"
 #include "coregraphics/constantbuffer.h"
 #include "coregraphics/config.h"
@@ -43,9 +43,9 @@ ConstantBufferStretchInterface::Grow(const SizeT capacity, const SizeT numInstan
 	newCapacity = capacity + increment;
 
 	// create new buffer
-	const std::array<uint32_t, 4> queues = VkRenderDevice::Instance()->GetQueueFamilies();
-	setupInfo.info.pQueueFamilyIndices = queues.data();
-	setupInfo.info.queueFamilyIndexCount = (uint32_t)queues.size();
+	const Util::Set<uint32_t>& queues = Vulkan::GetQueueFamilies();
+	setupInfo.info.pQueueFamilyIndices = queues.KeysAsArray().Begin();
+	setupInfo.info.queueFamilyIndexCount = (uint32_t)queues.Size();
 	setupInfo.info.size = newCapacity * setupInfo.stride;
 
 	VkBuffer newBuf;
@@ -71,8 +71,8 @@ ConstantBufferStretchInterface::Grow(const SizeT capacity, const SizeT numInstan
 	vkUnmapMemory(setupInfo.dev, setupInfo.mem);
 
 	// clean up old data	
-	vkDestroyBuffer(setupInfo.dev, runtimeInfo.buf, NULL);
-	vkFreeMemory(setupInfo.dev, setupInfo.mem, NULL);
+	vkDestroyBuffer(setupInfo.dev, runtimeInfo.buf, nullptr);
+	vkFreeMemory(setupInfo.dev, setupInfo.mem, nullptr);
 
 	// replace old device memory and size
 	setupInfo.size = alignedSize;
@@ -108,26 +108,27 @@ CreateConstantBuffer(const ConstantBufferCreateInfo& info)
 	VkConstantBufferMapInfo& map = constantBufferAllocator.Get<2>(id);
 	ConstantBufferStretchInterface& stretch = constantBufferAllocator.Get<3>(id);
 
-	VkDevice dev = VkRenderDevice::Instance()->GetCurrentDevice();
-	VkPhysicalDeviceProperties props = VkRenderDevice::Instance()->GetCurrentProperties();
+	VkDevice dev = Vulkan::GetCurrentDevice();
+	VkPhysicalDeviceProperties props = Vulkan::GetCurrentProperties();
 
 	setup.reflection = nullptr;
 	setup.dev = dev;
 	setup.numBuffers = info.numBuffers;
+	setup.reflection = nullptr;
 	SizeT size = info.size;
 
 	// if we setup from reflection, then fetch the size from the shader
 	if (info.setupFromReflection)
 	{
-		AnyFX::ShaderEffect* effect = shaderPool->shaderAlloc.Get<0>(info.state.shaderId);
+		AnyFX::ShaderEffect* effect = shaderPool->shaderAlloc.Get<0>(info.shader.allocId);
 		AnyFX::VkVarblock* varblock = static_cast<AnyFX::VkVarblock*>(effect->GetVarblock(info.name.Value()));
 
 		// setup buffer from other buffer
 		setup.reflection = varblock;
 		size = varblock->alignedSize;
 	}
-	
-	const std::array<uint32_t, 4> queues = VkRenderDevice::Instance()->GetQueueFamilies();
+
+	const Util::Set<uint32_t>& queues = Vulkan::GetQueueFamilies();
 	setup.info =
 	{
 		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
@@ -136,8 +137,8 @@ CreateConstantBuffer(const ConstantBufferCreateInfo& info)
 		(VkDeviceSize)(size * setup.numBuffers),
 		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 		VK_SHARING_MODE_CONCURRENT,
-		(uint32_t)queues.size(),
-		queues.data()
+		(uint32_t)queues.Size(),
+		queues.KeysAsArray().Begin()
 	};
 	VkResult res = vkCreateBuffer(setup.dev, &setup.info, NULL, &runtime.buf);
 	n_assert(res == VK_SUCCESS);
@@ -163,7 +164,7 @@ CreateConstantBuffer(const ConstantBufferCreateInfo& info)
 
 	// setup stretch callback interface
 	stretch.obj = ret;
-	stretch.resizer.Setup(&stretch, setup.stride, props.limits.minUniformBufferOffsetAlignment);
+	stretch.resizer.Setup(&stretch, setup.stride, props.limits.minUniformBufferOffsetAlignment, setup.numBuffers);
 
 	return ret;
 }
@@ -208,10 +209,21 @@ ConstantBufferFreeInstance(ConstantBufferId id, ConstantBufferSliceId slice)
 /**
 */
 void
-ConstantBufferReset(const ConstantBufferId id)
+ConstantBufferResetInstances(const ConstantBufferId id)
 {
 	ConstantBufferStretchInterface& stretch = constantBufferAllocator.Get<3>(id.id24);
 	stretch.resizer.SetEmpty();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+IndexT
+ConstantBufferGetSlot(const ConstantBufferId id)
+{
+	VkConstantBufferSetupInfo& setup = constantBufferAllocator.Get<1>(id.id24);
+	n_assert(setup.reflection != nullptr);
+	return setup.reflection->binding;
 }
 
 //------------------------------------------------------------------------------
@@ -248,6 +260,28 @@ ConstantBufferArrayUpdate(const ConstantBufferId id, const void* data, const uin
 /**
 */
 void
+ConstantBufferUpdate(const ConstantBufferId id, const ShaderConstantId cid, const uint size, const void* data)
+{
+	VkShaderConstantAllocator& alloc = constantBufferAllocator.Get<4>(id.id24);
+	VkShaderConstantMemoryBinding& bind = alloc.Get<0>(cid.id);
+	ConstantBufferUpdate(id, data, bind.offset, size);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ConstantBufferArrayUpdate(const ConstantBufferId id, const ShaderConstantId cid, const void* data, const uint size, const uint count)
+{
+	VkShaderConstantAllocator& alloc = constantBufferAllocator.Get<4>(id.id24);
+	VkShaderConstantMemoryBinding& bind = alloc.Get<0>(cid.id);
+	ConstantBufferArrayUpdate(id, data, bind.offset, size, count);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 ConstantBufferSetBaseOffset(const ConstantBufferId id, const uint offset)
 {
 	VkConstantBufferMapInfo& map = constantBufferAllocator.Get<2>(id.id24);
@@ -268,7 +302,7 @@ ConstantBufferCreateShaderVariable(const ConstantBufferId id, const ConstantBuff
 	n_assert(it != setup.reflection->variablesByName.end());
 
 	// step one, setup variable
-	VkShaderConstantSetup((AnyFX::VkVariable*)it->second, var, alloc);
+	VkShaderConstantSetup((AnyFX::VkVariable*)it->second, var, alloc, CoreGraphics::ResourceTableId::Invalid());
 
 	// step two, bind to uniform buffer
 	VkShaderConstantBindToUniformBuffer(var, id, alloc, setup.reflection->offsetsByName[name.Value()], it->second->byteSize, (int8_t*)it->second->currentValue);

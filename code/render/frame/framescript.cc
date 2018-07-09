@@ -7,7 +7,6 @@
 #include "frameserver.h"
 #include "coregraphics/displaydevice.h"
 
-
 namespace Frame
 {
 
@@ -16,7 +15,9 @@ __ImplementClass(Frame::FrameScript, 'FRSC', Core::RefCounted);
 /**
 */
 FrameScript::FrameScript() :
-	window(Ids::InvalidId32)
+	window(Ids::InvalidId32),
+	endOfFrameBarrier(CoreGraphics::BarrierId::Invalid()),
+	frameOpCounter(0)
 {
 	// empty
 }
@@ -28,7 +29,6 @@ FrameScript::~FrameScript()
 {
 	// empty
 }
-
 
 //------------------------------------------------------------------------------
 /**
@@ -78,17 +78,6 @@ FrameScript::AddReadWriteBuffer(const Util::StringAtom& name, const CoreGraphics
 /**
 */
 void
-FrameScript::AddEvent(const Util::StringAtom& name, const CoreGraphics::EventId event)
-{
-	n_assert(!this->eventsByName.Contains(name));
-	this->eventsByName.Add(name, event);
-	this->events.Append(event);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
 FrameScript::AddAlgorithm(const Util::StringAtom& name, Algorithms::Algorithm* alg)
 {
 	n_assert(!this->algorithmsByName.Contains(name));
@@ -100,19 +89,10 @@ FrameScript::AddAlgorithm(const Util::StringAtom& name, Algorithms::Algorithm* a
 /**
 */
 void
-FrameScript::AddShaderState(const Util::StringAtom& name, const CoreGraphics::ShaderStateId state)
-{
-	n_assert(!this->shaderStatesByName.Contains(name));
-	this->shaderStatesByName.Add(name, state);
-	this->shaderStates.Append(state);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
 FrameScript::AddOp(Frame::FrameOp* op)
 {
+	op->index = this->frameOpCounter;
+	this->frameOpCounter++;
 	this->ops.Append(op);
 }
 
@@ -133,6 +113,12 @@ FrameScript::Discard()
 {
 	// unload ourselves, this is only for convenience
 	FrameServer::Instance()->UnloadFrameScript(this->resId);
+
+	IndexT i;
+	for (i = 0; i < this->ops.Size(); i++)
+	{
+		this->ops[i]->Discard();
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -141,93 +127,101 @@ FrameScript::Discard()
 void
 FrameScript::Run(const IndexT frameIndex)
 {
+	
 	IndexT i;
-	for (i = 0; i < this->ops.Size(); i++)
+	for (i = 0; i < this->compiled.Size(); i++)
 	{
-		this->ops[i]->Run(frameIndex);
+		this->compiled[i]->InsertBarriers();
+		this->compiled[i]->WaitAndResetEvents();
+		this->compiled[i]->Run(frameIndex);
+		this->compiled[i]->SignalEvents();
 	}
+
+	// make sure to transition resources back to their original state in preparation for the next frame
+	CoreGraphics::BarrierReset(this->endOfFrameBarrier);
+	CoreGraphics::BarrierInsert(this->endOfFrameBarrier, CoreGraphicsQueueType::GraphicsQueueType);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-FrameScript::RunSegment(const FrameOp::ExecutionMask mask, const IndexT frameIndex)
+FrameScript::Build()
 {
-	IndexT start = mask & 0x000000FF;
-	IndexT end = (mask & 0x0000FF00) >> 8;
+	// go through and discard all compiled (dunno if needed)
 	IndexT i;
-	for (i = start; i < end; i++)
+	for (i = 0; i < this->compiled.Size(); i++)
 	{
-		this->ops[i]->Run(frameIndex);
+		this->compiled[i]->Discard();
 	}
-}
 
-//------------------------------------------------------------------------------
-/**
-	Create a mask to run a script between two operations.
-*/
-Frame::FrameOp::ExecutionMask
-FrameScript::CreateMask(const Util::StringAtom& startOp, const Util::StringAtom& endOp)
-{
-	FrameOp::ExecutionMask mask = 0;
-	IndexT i;
-	n_assert(this->ops.Size() < 256);
+	for (i = 0; i < this->events.Size(); i++)
+		DestroyEvent(this->events[i]);
+	for (i = 0; i < this->barriers.Size(); i++)
+		DestroyBarrier(this->barriers[i]);
+	for (i = 0; i < this->semaphores.Size(); i++)
+		DestroySemaphore(this->semaphores[i]);
+
+	// clear old compiled result
+	this->buildAllocator.Release();
+	 
+	Util::Dictionary<CoreGraphics::ShaderRWTextureId, Util::Array<std::tuple<CoreGraphics::ImageSubresourceInfo, FrameOp::TextureDependency>>> rwTextures;
+	Util::Dictionary<CoreGraphics::ShaderRWBufferId, FrameOp::BufferDependency> rwBuffers;
+	Util::Dictionary<CoreGraphics::RenderTextureId, Util::Array<std::tuple<CoreGraphics::ImageSubresourceInfo, FrameOp::TextureDependency>>> renderTextures;
+
 	for (i = 0; i < this->ops.Size(); i++)
 	{
-		FrameOp* op = this->ops[i];
-		if (op->GetName() == startOp)
-		{
-			mask |= i & 0x000000FF;
-		}
-		else if (op->GetName() == endOp)
-		{
-			mask |= (i << 8) & 0x0000FF00;
-		}
+		this->ops[i]->Build(this->buildAllocator, this->compiled, this->events, this->barriers, this->semaphores, rwTextures, rwBuffers, renderTextures);
 	}
-	n_assert((mask & 0x000000FF) < ((mask & 0x0000FF00) >> 8));
-	return mask;
-}
 
-//------------------------------------------------------------------------------
-/**
-	Create a mask to run from one subpass to another, from within a pass.
-*/
-Frame::FrameOp::ExecutionMask
-FrameScript::CreateSubpassMask(const Ptr<FramePass>& pass, const Util::StringAtom& startOp, const Util::StringAtom& endOp)
-{
-	FrameOp::ExecutionMask mask = 0;
-	const Util::Array<FrameSubpass*>& subpasses = pass->GetSubpasses();
-	n_assert(subpasses.Size() < 256);
-	IndexT i;
-	for (i = 0; i < subpasses.Size(); i++)
+	// setup a post-frame barrier to reset the resource state of all resources back to their created original (ShaderRead for RenderTexture, General for RWTexture
+	Util::Array<std::tuple<CoreGraphics::RenderTextureId, CoreGraphics::ImageSubresourceInfo, ImageLayout, ImageLayout, CoreGraphics::BarrierAccess, CoreGraphics::BarrierAccess>> renderTexturesBarr;
+	Util::Array<std::tuple<CoreGraphics::ShaderRWTextureId, CoreGraphics::ImageSubresourceInfo, ImageLayout, ImageLayout, CoreGraphics::BarrierAccess, CoreGraphics::BarrierAccess>> shaderRWTexturesBarr;
+
+	for (i = 0; i < rwTextures.Size(); i++)
 	{
-		FrameSubpass* subpass = subpasses[i];
-		if (subpass->GetName() == startOp)
+		const CoreGraphics::ShaderRWTextureId& res = rwTextures.KeyAtIndex(i);
+		ImageLayout layout = CoreGraphics::ShaderRWTextureGetLayout(res);
+		const Util::Array<std::tuple<CoreGraphics::ImageSubresourceInfo, FrameOp::TextureDependency>>& deps = rwTextures.ValueAtIndex(i);
+		for (IndexT j = 0; j < deps.Size(); j++)
 		{
-			mask |= (i << 12) & 0x00FF0000;
-		}
-		else if (subpass->GetName() == endOp)
-		{
-			mask |= (i << 16) & 0xFF000000;
-		}
-		
-	}
-	n_assert(((mask & 0x00FF0000) >> 12) < ((mask & 0xFF000000) >> 16));
-	return mask;
-}
+			const CoreGraphics::ImageSubresourceInfo& info = std::get<0>(deps[j]);
+			const FrameOp::TextureDependency& dep = std::get<1>(deps[j]);
 
-//------------------------------------------------------------------------------
-/**
-	Get operation start and end points from within script.
-*/
-void
-FrameScript::GetOps(const FrameOp::ExecutionMask mask, FrameOp* startOp, FrameOp* endOp)
-{
-	IndexT start = mask & 0x000000FF;
-	IndexT end = (mask & 0x0000FF00) >> 8;
-	startOp = this->ops[start];
-	endOp = this->ops[end];
+			// rw textures are created with general
+			if (dep.layout != layout)
+				shaderRWTexturesBarr.Append(std::make_tuple(res, info, dep.layout, layout, CoreGraphics::BarrierAccess::NoAccess, CoreGraphics::BarrierAccess::NoAccess));
+		}
+	}
+
+	for (i = 0; i < renderTextures.Size(); i++)
+	{
+		const CoreGraphics::RenderTextureId& res = renderTextures.KeyAtIndex(i);
+		ImageLayout layout = CoreGraphics::RenderTextureGetLayout(res);
+		const Util::Array<std::tuple<CoreGraphics::ImageSubresourceInfo, FrameOp::TextureDependency>>& deps = renderTextures.ValueAtIndex(i);
+		for (IndexT j = 0; j < deps.Size(); j++)
+		{
+			const CoreGraphics::ImageSubresourceInfo& info = std::get<0>(deps[j]);
+			const FrameOp::TextureDependency& dep = std::get<1>(deps[j]);
+
+			// render textures are created as shader read
+			if (dep.layout != layout)
+				renderTexturesBarr.Append(std::make_tuple(res, info, dep.layout, layout, CoreGraphics::BarrierAccess::NoAccess, CoreGraphics::BarrierAccess::NoAccess));
+		}
+	}
+
+	// buffers need not be transitioned
+	Util::Array<std::tuple<CoreGraphics::ShaderRWBufferId, CoreGraphics::BarrierAccess, CoreGraphics::BarrierAccess>> shaderRWBuffersBarr;
+	CoreGraphics::BarrierCreateInfo info =
+	{
+		CoreGraphics::BarrierDomain::Global,
+		CoreGraphics::BarrierDependency::Bottom,
+		CoreGraphics::BarrierDependency::Bottom,
+		renderTexturesBarr, shaderRWBuffersBarr, shaderRWTexturesBarr
+	};
+	if (this->endOfFrameBarrier != CoreGraphics::BarrierId::Invalid())
+		CoreGraphics::DestroyBarrier(this->endOfFrameBarrier);
+	this->endOfFrameBarrier = CoreGraphics::CreateBarrier(info);
 }
 
 //------------------------------------------------------------------------------
@@ -255,11 +249,6 @@ FrameScript::Cleanup()
 
 	for (i = 0; i < this->events.Size(); i++) DestroyEvent(this->events[i]);
 	this->events.Clear();
-	this->eventsByName.Clear();
-
-	for (i = 0; i < this->shaderStates.Size(); i++) ShaderDestroyState(this->shaderStates[i]);
-	this->shaderStates.Clear();
-	this->shaderStatesByName.Clear();
 
 	for (i = 0; i < this->algorithms.Size(); i++) this->algorithms[i]->Discard();
 	this->algorithms.Clear();

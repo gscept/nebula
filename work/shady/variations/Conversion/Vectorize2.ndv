@@ -1,0 +1,11 @@
+<Shady>
+	<Variation desc="Converts single float to 2 component vector of that value." simulationCommand="copy">
+		<Input type="float" name="Value"/>
+		<Output type="vec2" name="output"/>
+		<Source type="GLSL">
+			<Code output="output">
+				[output] = vec2(Value, Value);
+			</Code>
+		</Source>
+	</Variation>
+</Shady>

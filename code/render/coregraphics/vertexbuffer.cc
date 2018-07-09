@@ -22,7 +22,8 @@ CreateVertexBuffer(VertexBufferCreateInfo info)
 {
 	VertexBufferId id = vboPool->ReserveResource(info.name, info.tag);
 	n_assert(id.allocType == VertexBufferIdType);
-	vboPool->LoadFromMemory(id, &info);
+	if (vboPool->GetState(id) == Resources::Resource::Pending)
+		vboPool->LoadFromMemory(id, &info);
 	return id;
 }
 
@@ -39,18 +40,9 @@ DestroyVertexBuffer(const VertexBufferId id)
 /**
 */
 void
-VertexBufferBind(const VertexBufferId id, const IndexT slot, const IndexT vertexOffset)
-{
-	vboPool->Bind(id, slot, vertexOffset);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
 VertexBufferUpdate(const VertexBufferId id, void* data, PtrDiff size, PtrDiff offset)
 {
-	//vboPool->LoadFromMemory(Resources::SharedId(id), 
+	n_error("Not implemented");
 }
 
 //------------------------------------------------------------------------------
@@ -59,7 +51,7 @@ VertexBufferUpdate(const VertexBufferId id, void* data, PtrDiff size, PtrDiff of
 void
 VertexBufferLock(const VertexBufferId id, const PtrDiff offset, const PtrDiff range)
 {
-	// implement me?	
+	n_error("Not implemented");
 }
 
 //------------------------------------------------------------------------------
@@ -68,7 +60,7 @@ VertexBufferLock(const VertexBufferId id, const PtrDiff offset, const PtrDiff ra
 void
 VertexBufferUnlock(const VertexBufferId id, const PtrDiff offset, const PtrDiff range)
 {
-	// implement me?
+	n_error("Not implemented");
 }
 
 //------------------------------------------------------------------------------

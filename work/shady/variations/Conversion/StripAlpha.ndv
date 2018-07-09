@@ -1,0 +1,11 @@
+<Shady>
+	<Variation desc="Takes RGBA and outputs RGB" simulationCommand="copy">
+		<Input type="vec4" name="input"/>
+		<Output type="vec3" name="RGB"/>
+		<Source type="GLSL">
+			<Code output="RGB">
+				[output] = input.xyz;
+			</Code>
+		</Source>
+	</Variation>
+</Shady>

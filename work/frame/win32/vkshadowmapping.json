@@ -1,0 +1,121 @@
+
+version: 2,
+engine: "NebulaTrifid",
+framescript: 
+{
+	renderTextures:
+	[
+		{ name: "SpotLightShadowAtlas", 		format: "R32G32F", width: 2048, height: 2048 },
+		{ name: "SpotLightShadowAtlasBlur", 	format: "R32G32F", width: 2048, height: 2048 },
+		{ name: "SpotLightInstance", 			format: "R32G32F", width: 512, 	height: 512 },
+		{ name: "SpotLightInstanceBlur", 		format: "R32G32F", width: 512, 	height: 512 },
+		{ name: "GlobalLightShadow",			format: "R32G32F", width: 2048, height: 2048 }
+	],
+	
+	readWriteTextures:
+	[
+		{ name: "GlobalLightShadowFiltered", 	format: "R32G32F", width: 2048, height: 2048 },
+		{ name: "SpotLightShadowFiltered", 		format: "R32G32F", width: 2048, height: 2048 }
+	],
+	
+	depthStencils:
+	[
+		{ name: "GlobalLightDepth", 			format:"D32S8", width: 2048, height: 2048 }
+	],
+	
+	shaderStates:
+	[
+		{ 
+			name: "CSMComputeState", shader:"shd:blur_2d_rg32f_cs", createResourceSet: true, variables: 
+			[
+				{ semantic: "InputImageX", 	value: "GlobalLightShadow" },
+				{ semantic: "InputImageY", 	value: "GlobalLightShadow" },
+				{ semantic: "BlurImageX", 	value: "GlobalLightShadowFiltered" }
+				{ semantic: "BlurImageY", 	value: "GlobalLightShadowFiltered" }
+			]
+		},
+		{ 
+			name: "SpotlightComputeState", shader: "shd:blur_2d_rg32f_cs", createResourceSet: true, variables:
+			[
+				{ semantic: "InputImageX", 	value: "SpotLightShadowAtlas" },
+				{ semantic: "InputImageY", 	value: "SpotLightShadowAtlas" },
+				{ semantic: "BlurImageX", 	value: "SpotLightShadowFiltered" }
+				{ semantic: "BlurImageY", 	value: "SpotLightShadowFiltered" }
+			]
+		}
+	],
+	
+	pass:
+	{
+		name: "ShadowMapping",
+		attachments:
+		[
+			{ name: "SpotLightInstance", clear: [1000, 1000, 0, 0] },
+			{ name: "SpotLightInstanceBlur" },
+			{ name: "SpotLightShadowAtlas", clear: [1000, 1000, 0, 0], store: true },
+			{ name: "SpotLightShadowAtlasBlur" },
+			{ name: "GlobalLightShadow", clear: [1000, 1000, 0, 0], store: true }
+		],
+		
+		depthStencil: { name: "GlobalLightDepth", clear: 1, clearStencil: 0 },
+		
+		subpass:
+		{
+			name: "SpotLightPass",
+			dependencies: [],
+			attachments: [2],
+			depth: true,
+			system: "LocalShadowsSpot"
+		},
+		subpass:
+		{
+			name: "GlobalLightPass",
+			viewports:
+			[
+				[0, 0, 1024, 1024],
+				[1024, 0, 2048, 1024],
+				[0, 1024, 1024, 2048],
+				[1024, 1024, 2048, 2048]
+			],
+			scissors:
+			[
+				[0, 0, 1024, 1024],
+				[1024, 0, 2048, 1024],
+				[0, 1024, 1024, 2048],
+				[1024, 1024, 2048, 2048]
+			],
+			dependencies: [],
+			attachments: [4],
+			depth: true,
+			system: "GlobalShadows"
+		}
+	},
+	compute:
+	{
+		name: "CSMHori",
+		shaderState: "CSMComputeState",
+		variation: "Alt0",
+		dimensions: [6, 2048, 1]
+	},
+	compute:
+	{
+		name: "CSMVert",
+		shaderState: "CSMComputeState",
+		variation: "Alt1",
+		dimensions: [6, 2048, 1]
+	},
+	compute:
+	{
+		name: "SpotHori",
+		shaderState: "SpotlightComputeState",
+		variation: "Alt0",
+		dimensions: [6, 2048, 1]
+	},
+	compute:
+	{
+		name: "SpotVert",
+		shaderState: "SpotlightComputeState",
+		variation: "Alt1",
+		dimensions: [6, 2048, 1]
+	}
+}

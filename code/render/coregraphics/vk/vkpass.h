@@ -9,6 +9,7 @@
 #include "coregraphics/shader.h"
 #include "coregraphics/pass.h"
 #include "coregraphics/constantbuffer.h"
+#include "coregraphics/resourcetable.h"
 
 namespace Vulkan
 {
@@ -19,9 +20,7 @@ struct VkPassLoadInfo
 	VkDescriptorPool pool;
 
 	// these hold the per-pass shader state
-	CoreGraphics::ShaderStateId shaderState;
 	CoreGraphics::ConstantBufferId passBlockBuffer;
-	CoreGraphics::ShaderConstantId passBlockVar;
 	CoreGraphics::ShaderConstantId renderTargetDimensionsVar;
 
 	// we need these stored for resizing
@@ -44,11 +43,12 @@ struct VkPassRuntimeInfo
 	VkPipelineViewportStateCreateInfo viewportInfo;
 
 	uint32_t currentSubpassIndex;
-	VkDescriptorSet passDescriptorSet;
-	VkPipelineLayout passPipelineLayout;
+	CoreGraphics::ResourceTableId passDescriptorSet;
+	CoreGraphics::ResourcePipelineId passPipelineLayout;
 
 	Util::FixedArray<Util::FixedArray<VkRect2D>> subpassRects;
 	Util::FixedArray<Util::FixedArray<VkViewport>> subpassViewports;
+	Util::FixedArray<VkPipelineViewportStateCreateInfo> subpassPipelineInfo;
 };
 
 typedef Ids::IdAllocator<

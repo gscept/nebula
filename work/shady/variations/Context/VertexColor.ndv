@@ -1,0 +1,10 @@
+<Shady>
+	<Variation desc="Retreives the vertex colors." simulationCommand="vertexcolor">
+		<Output type="vec4" name="Color" defines="VERTEX_COLOR"/>
+		<Source type="GLSL">
+			<Code output="Color">
+				[output] = params.color;
+			</Code>
+		</Source>
+	</Variation>
+</Shady>

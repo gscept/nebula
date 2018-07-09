@@ -9,7 +9,7 @@
 #if __OGL4__
 #include "coregraphics/ogl4/ogl4types.h"
 #endif
-#include "coregraphics/renderdevice.h"
+#include "coregraphics/graphicsdevice.h"
 #include "GLFW/glfw3native.h"
 #include <GLFW/glfw3.h>
 

@@ -13,11 +13,6 @@
 #include "lib/defaultsamplers.fxh"
 
 //#define PN_TRIANGLES
-
-
-
-
-
 state StandardState
 {
 };

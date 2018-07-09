@@ -31,11 +31,15 @@ public:
 
 	/// set call type
 	void SetSubsystem(const Subsystem s);
+	
+	struct CompiledImpl : public FrameOp::Compiled
+	{
+		void Run(const IndexT frameIndex);
 
-	/// setup operation
-	void Setup();
-	/// run operation
-	void Run(const IndexT frameIndex);
+		Subsystem call;
+	};
+
+	FrameOp::Compiled* AllocCompiled(Memory::ChunkAllocator<0xFFFF>& allocator);
 private:
 	Subsystem call;
 };

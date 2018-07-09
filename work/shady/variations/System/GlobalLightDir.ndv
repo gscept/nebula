@@ -1,0 +1,5 @@
+<Shady>
+	<Variation desc="Direction of directional light.">
+		<Output type="vec3" name="GlobalLightDir" static="true" param="true"/>
+	</Variation>
+</Shady>

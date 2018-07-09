@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //  shared.fxh
-//  (C) 2011 LTU Skellefte�
+//  (C) 2018 gscept
 //------------------------------------------------------------------------------
 
 #ifndef SHARED_FXH
@@ -19,7 +19,7 @@
 #define MAX_CUBE_IMAGES 64
 #define MAX_3D_IMAGES 64
 
-
+// the texture list can be updated once per tick (frame)
 group(TICK_GROUP) texture2D			Textures2D[MAX_2D_TEXTURES];
 group(TICK_GROUP) texture2DMS		Textures2DMS[MAX_2D_MS_TEXTURES];
 group(TICK_GROUP) textureCube		TexturesCube[MAX_CUBE_TEXTURES];
@@ -27,6 +27,25 @@ group(TICK_GROUP) texture3D			Textures3D[MAX_3D_TEXTURES];
 group(TICK_GROUP) texture2DArray	Textures2DArray[MAX_2D_ARRAY_TEXTURES];
 group(TICK_GROUP) samplerstate		Basic2DSampler {};
 group(TICK_GROUP) samplerstate		PosteffectSampler { Filter = Point; };
+
+#define sample2D(handle, sampler, uv)				texture(sampler2D(Textures2D[handle], sampler), uv)
+#define sample2DLod(handle, sampler, uv, lod)		textureLod(sampler2D(Textures2D[handle], sampler), uv, lod)
+#define sample2DMS(handle, sampler, uv)				texture(sampler2DMS(Textures2DMS[handle], sampler), uv)
+#define sample2DMSLod(handle, sampler, uv, lod)		textureLod(sampler2DMS(Textures2DMS[handle], sampler), uv, lod)
+#define sampleCube(handle, sampler, uvw)			texture(samplerCube(TexturesCube[handle], sampler), uvw)
+#define sampleCubeLod(handle, sampler, uvw, lod)	textureLod(samplerCube(TexturesCube[handle], sampler), uvw, lod)
+#define sample3D(handle, sampler, uvw)				texture(sampler3D(Textures3D[handle], sampler), uvw)
+#define sample3DLod(handle, sampler, uvw, lod)		textureLod(sampler3D(Textures3D[handle], sampler), uvw, lod)
+
+#define fetch2D(handle, sampler, uv, lod)			texelFetch(sampler2D(Textures2D[handle], sampler), uv, lod)
+#define fetch2DMS(handle, sampler, uv, lod)			texelFetch(sampler2DMS(Textures2DMS[handle], sampler), uv, lod)
+#define fetchCube(handle, sampler, uvw, lod)		texelFetch(sampler2DArray(Textures2DArray[handle], sampler), uvw, lod)
+#define fetch3D(handle, sampler, uvw, lod)			texelFetch(sampler3D(Textures3D[handle], sampler), uvw, lod)
+
+#define basic2D(handle)								Textures2D[handle]
+#define basic2DMS(handle)							Textures2DMS[handle]
+#define basicCube(handle)							TexturesCube[handle]
+#define basic3D(handle)								Textures3D[handle]
 
 #define MAX_NUM_LIGHTS 16
 
@@ -97,25 +116,6 @@ group(TICK_GROUP) shared varblock PerTickParams
 	float GlobalLightShadowBias = 0.0f;
 };
 
-#define sample2D(handle, sampler, uv)				texture(sampler2D(Textures2D[handle], sampler), uv)
-#define sample2DLod(handle, sampler, uv, lod)		textureLod(sampler2D(Textures2D[handle], sampler), uv, lod)
-#define sample2DMS(handle, sampler, uv)				texture(sampler2DMS(Textures2DMS[handle], sampler), uv)
-#define sample2DMSLod(handle, sampler, uv, lod)		textureLod(sampler2DMS(Textures2DMS[handle], sampler), uv, lod)
-#define sampleCube(handle, sampler, uvw)			texture(samplerCube(TexturesCube[handle], sampler), uvw)
-#define sampleCubeLod(handle, sampler, uvw, lod)	textureLod(samplerCube(TexturesCube[handle], sampler), uvw, lod)
-#define sample3D(handle, sampler, uvw)				texture(sampler3D(Textures3D[handle], sampler), uvw)
-#define sample3DLod(handle, sampler, uvw, lod)		textureLod(sampler3D(Textures3D[handle], sampler), uvw, lod)
-
-#define fetch2D(handle, sampler, uv, lod)			texelFetch(sampler2D(Textures2D[handle], sampler), uv, lod)
-#define fetch2DMS(handle, sampler, uv, lod)			texelFetch(sampler2DMS(Textures2DMS[handle], sampler), uv, lod)
-#define fetchCube(handle, sampler, uvw, lod)		texelFetch(sampler2DArray(Textures2DArray[handle], sampler), uvw, lod)
-#define fetch3D(handle, sampler, uvw, lod)			texelFetch(sampler3D(Textures3D[handle], sampler), uvw, lod)
-
-#define basic2D(handle)								Textures2D[handle]
-#define basic2DMS(handle)							Textures2DMS[handle]
-#define basicCube(handle)							TexturesCube[handle]
-#define basic3D(handle)								Textures3D[handle]
-
 // contains the state of the camera (and time)
 group(FRAME_GROUP) shared varblock FrameBlock
 {
@@ -142,7 +142,7 @@ group(FRAME_GROUP) shared varblock FrameBlock
 
          
 // contains variables which are guaranteed to be unique per object.
-group(OBJECT_TRANSFORM_GROUP) shared varblock ObjectBlock [ bool DynamicOffset = true; ]
+group(DYNAMIC_OFFSET_GROUP) shared varblock ObjectBlock [ string Visibility = "VS"; ]
 {
 	mat4 Model;
 	mat4 InvModel;
@@ -153,7 +153,7 @@ group(OBJECT_TRANSFORM_GROUP) shared varblock ObjectBlock [ bool DynamicOffset =
 
 // define how many objects we can render simultaneously 
 #define MAX_BATCH_SIZE 256
-group(OBJECT_TRANSFORM_GROUP) shared varblock InstancingBlock [ bool System = true; ]
+group(DYNAMIC_OFFSET_GROUP) shared varblock InstancingBlock [ bool System = true; ]
 {
 	mat4 ModelArray[MAX_BATCH_SIZE];
 	mat4 ModelViewArray[MAX_BATCH_SIZE];

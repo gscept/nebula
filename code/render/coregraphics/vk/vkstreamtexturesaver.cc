@@ -5,7 +5,6 @@
 #include "render/stdneb.h"
 #include "vkstreamtexturesaver.h"
 #include "coregraphics/texture.h"
-#include "coregraphics/renderdevice.h"
 #include "coregraphics/config.h"
 #include "vktypes.h"
 #include "resources/resourcemanager.h"

@@ -4,7 +4,7 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "framesubpassplugins.h"
-#include "coregraphics/renderdevice.h"
+#include "coregraphics/graphicsdevice.h"
 #include "frame/framebatchtype.h"
 
 using namespace CoreGraphics;
@@ -42,6 +42,17 @@ FrameSubpassPlugins::Discard()
 //------------------------------------------------------------------------------
 /**
 */
+FrameOp::Compiled*
+FrameSubpassPlugins::AllocCompiled(Memory::ChunkAllocator<0xFFFF>& allocator)
+{
+	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
+	ret->pluginFilter = this->pluginFilter;
+	return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 FrameSubpassPlugins::Setup()
 {
@@ -53,12 +64,11 @@ FrameSubpassPlugins::Setup()
 /**
 */
 void
-FrameSubpassPlugins::Run(const IndexT frameIndex)
+FrameSubpassPlugins::CompiledImpl::Run(const IndexT frameIndex)
 {
-	RenderDevice* renderDev = RenderDevice::Instance();
-	renderDev->BeginBatch(FrameBatchType::System);
+	CoreGraphics::BeginBatch(FrameBatchType::System);
 	//this->pluginRegistry->OnRender(this->pluginFilter);
-	renderDev->EndBatch();
+	CoreGraphics::EndBatch();
 }
 
 } // namespace Frame2

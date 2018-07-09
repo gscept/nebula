@@ -5,7 +5,7 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "coregraphics/base/displaydevicebase.h"
-#include "coregraphics/renderdevice.h"
+#include "frame/frameserver.h"
 
 namespace Base
 {
@@ -228,6 +228,7 @@ void
 DisplayDeviceBase::MakeWindowCurrent(const CoreGraphics::WindowId id)
 {
 	CoreGraphics::WindowMakeCurrent(id);
+	Frame::FrameServer::Instance()->SetWindowTexture(WindowGetRenderTexture(id));
 	this->currentWindow = id;
 }
 

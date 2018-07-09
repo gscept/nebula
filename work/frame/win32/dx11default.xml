@@ -1,0 +1,240 @@
+<!DOCTYPE dx11default>
+<Nebula3>
+ <FrameShader>
+  
+  <!-- depth-stencil buffers -->
+  <DeclareDepthStencilTarget format="D24S8" relHeight="1" relWidth="1" name="DefaultDepthBuffer"/>
+  
+  <!-- deferred geometry for opaque geometry -->
+  <DeclareRenderTarget format="A8R8G8B8" relHeight="1" msaa="false" relWidth="1" name="NormalBuffer"/>
+  <DeclareRenderTarget format="R32F" relHeight="1" msaa="false" relWidth="1" name="DepthBuffer"/>  
+  <DeclareRenderTarget format="A16B16G16R16F" relHeight="1" msaa="true" relWidth="1" name="AlbedoBuffer" depthTarget="DefaultDepthBuffer"/>
+  <DeclareRenderTarget format="A8R8G8B8" relHeight="1" msaa="false" relWidth="1" name="SpecularBuffer"/>
+  <DeclareRenderTarget format="A8R8G8B8" relHeight="1" msaa="false" relWidth="1" name="EmissiveBuffer"/>
+  <DeclareRenderTarget format="A16B16G16R16F" relHeight="1" msaa="false" relWidth="1" name="LightBuffer" depthTarget="DefaultDepthBuffer" />  
+  
+  <!-- buffer used for god ray projection -->
+  <DeclareRenderTarget format="A8R8G8B8" relHeight="1" msaa="false" relWidth="1" name="UnshadedBuffer"/>
+  
+  <!-- deferred geometry for alpha geometry -->
+  <DeclareRenderTarget format="A8R8G8B8" relHeight="1" msaa="false" relWidth="1" name="AlphaNormalBuffer"/>
+  <DeclareRenderTarget format="R32F" relHeight="1" msaa="false" relWidth="1" name="AlphaDepthBuffer"/>  
+  <DeclareRenderTarget format="A16B16G16R16F" relHeight="1" msaa="false" relWidth="1" name="AlphaAlbedoBuffer"/>
+  <DeclareRenderTarget format="A8R8G8B8" relHeight="1" msaa="false" relWidth="1" name="AlphaSpecularBuffer"/>  
+  <DeclareRenderTarget format="A8R8G8B8" relHeight="1" msaa="false" relWidth="1" name="AlphaEmissiveBuffer"/>
+  <DeclareRenderTarget format="A16B16G16R16F" relHeight="1" msaa="false" relWidth="1" name="AlphaLightBuffer"/>
+  
+  <!-- SSS textures, maybe move to its own server? -->
+  <DeclareRenderTarget format="A16B16G16R16F" relHeight="1" msaa="false" relWidth="1" name="SSSBuffer1"/>  
+  <DeclareRenderTarget format="A16B16G16R16F" relHeight="1" msaa="false" relWidth="1" name="SSSBuffer"/>  
+  <DeclareRenderTarget format="A16B16G16R16F" relHeight="1" msaa="false" relWidth="1" name="SSSAbsorptionBuffer"/>
+  <DeclareRenderTarget format="A16B16G16R16F" relHeight="1" msaa="false" relWidth="1" name="SSSScatterBuffer"/>
+  <DeclareRenderTarget format="A16B16G16R16F" relHeight="1" msaa="false" relWidth="1" name="SSSMask"/>
+  
+  <!-- special buffers, background for skybox, color buffer for composed color, shape buffer for depth-checked shapes -->
+  <DeclareRenderTarget format="A16B16G16R16F" relHeight="1" msaa="false" relWidth="1" name="ColorBuffer" depthTarget="DefaultDepthBuffer"/>
+  <DeclareRenderTarget format="A16B16G16R16F" relHeight="1" msaa="false" relWidth="1" name="ColorBufferCopy"/>
+  
+  <!-- HDR buffers -->
+  <DeclareRenderTarget format="A16B16G16R16F" relHeight="0.5" msaa="false" relWidth="0.5" name="BrightBuffer"/>
+  <DeclareRenderTarget format="A16B16G16R16F" relHeight="0.25" msaa="false" relWidth="0.25" name="BloomBuffer0"/>
+  <DeclareRenderTarget format="A16B16G16R16F" relHeight="0.25" msaa="false" relWidth="0.25" name="BloomBuffer1"/>
+  
+  <!-- MRT for opaque geometry -->
+  <DeclareMRT name="GeometryBuffer">
+	<DepthStencilTarget name="DefaultDepthBuffer"/>
+	<RenderTarget name="AlbedoBuffer"/>
+	<RenderTarget name="NormalBuffer" clearColor="0.5,0.5,0,0"/>
+	<RenderTarget name="DepthBuffer" clearColor="-1,0,0,0"/>   
+	<RenderTarget name="SpecularBuffer" clearColor="0,0,0,0"/>
+	<RenderTarget name="EmissiveBuffer" clearColor="0,0,0,0"/>
+	<RenderTarget name="UnshadedBuffer"/>
+  </DeclareMRT>
+    
+  <!-- MRT for alpha geometry -->
+  <DeclareMRT name="AlphaGeometryBuffer">
+	<DepthStencilTarget name="DefaultDepthBuffer"/>
+	<RenderTarget name="AlphaAlbedoBuffer" clearColor="0.5,0.5,0.63,0"/>
+	<RenderTarget name="AlphaNormalBuffer" clearColor="0.5,0.5,0,0"/>
+	<RenderTarget name="AlphaDepthBuffer" clearColor="-1,0,0,0"/>
+	<RenderTarget name="AlphaSpecularBuffer" clearColor="0,0,0,0"/>
+	<RenderTarget name="AlphaEmissiveBuffer" clearColor="0,0,0,0"/>
+	<RenderTarget name="UnshadedBuffer"/>
+  </DeclareMRT>
+
+  <!-- MRT for SSSS geometry -->
+  <DeclareMRT name="SubsurfaceBuffer">
+	<DepthStencilTarget name="DefaultDepthBuffer"/>
+	<RenderTarget name="SSSAbsorptionBuffer" clearColor="1,1,1,1"/>
+	<RenderTarget name="SSSScatterBuffer" clearColor="1,1,1,1"/>
+	<RenderTarget name="SSSMask" clearColor="0,0,0,0"/>
+  </DeclareMRT>  
+  
+  <!-- MRT for unlit rendering -->
+  <DeclareMRT name="UnlitBuffer">
+	<DepthStencilTarget name="DefaultDepthBuffer"/>
+	<RenderTarget name="ColorBuffer"/>
+	<RenderTarget name="UnshadedBuffer"/>
+  </DeclareMRT>
+  
+  <!-- render skybox -->
+  <Pass renderTarget="AlbedoBuffer" name="Skybox" clearColor="0.5,0.5,0.55,0" clearDepth="1" clearStencil="0">
+	<Batch batchGroup="Background" sorting="None" lighting="None" type="Geometry"/>
+  </Pass>
+  
+  <!-- render sun -->
+  <Pass renderTarget="UnshadedBuffer" name="Sun" clearColor="0,0,0,1">
+	<Batch batchGroup="Godrays" sorting="None" lighting="None" type="Geometry"/>
+  </Pass>
+   
+  <!-- render opaque geometry -->
+  <Pass multipleRenderTarget="GeometryBuffer" name="Geometry" >
+	<Batch batchGroup="FlatGeometryLit" sorting="None" lighting="None" type="Geometry"/>
+	<Batch batchGroup="TessellatedGeometryLit" sorting="None" lighting="None" type="Geometry"/>
+	<Batch batchGroup="ParticleLit" sorting="None" lighting="None" type="Geometry"/>
+  </Pass>
+    
+  <!-- perform SSSS -->
+  <Pass multipleRenderTarget="SubsurfaceBuffer" name="SubsurfaceScattering" >
+	<Batch batchGroup="Subsurface" sorting="None" lighting="None" type="Geometry"/>
+  </Pass>
+   
+  <!-- renders screen-space lighting for opaque geometry -->
+  <Pass renderTarget="LightBuffer" name="LightPass" clearColor="0.5,0.5,0.5,1" shader="lights" >
+	<ApplyShaderVariable sem="NormalBuffer" value="NormalBuffer"/>
+	<ApplyShaderVariable sem="DepthBuffer" value="DepthBuffer"/>
+	<ApplyShaderVariable sem="ShadowProjMap" value="ShadowBuffer"/>
+	<Batch type="Lights"/>
+  </Pass>
+  
+  <!-- renders SSAO using specialized frame shader -->
+  <!--<External name="horizonambientocclusion"/>-->
+  
+  <!-- render HBAO -->
+  <Algorithm className="Algorithm::AOAlgorithm">
+	<Input name="DepthBuffer"/>
+	<Output name="SSAOTexture"/>
+  </Algorithm>
+  
+  <!-- SSSS blur pass 1 -->
+  <PostEffect shader="subsurfacevertical" clear="true" renderTarget="SSSBuffer1" clearColor="0,0,0,0" name="SubsurfaceScatteringVertical">
+	<ApplyShaderVariable sem="DepthTexture" value="DepthBuffer"/>
+	<ApplyShaderVariable sem="LightTexture" value="LightBuffer"/>
+	<ApplyShaderVariable sem="AbsorptionTexture" value="SSSAbsorptionBuffer"/>
+	<ApplyShaderVariable sem="ScatterTexture" value="SSSScatterBuffer"/>
+	<ApplyShaderVariable sem="Mask" value="SSSMask"/>
+  </PostEffect>  
+  
+  <!-- SSSS blur pass 2 -->
+  <PostEffect shader="subsurfacehorizontal" clear="true" renderTarget="SSSBuffer" clearColor="0,0,0,0" name="SubsurfaceScatteringHorizontal">
+	<ApplyShaderVariable sem="DepthTexture" value="DepthBuffer"/>
+	<ApplyShaderVariable sem="LightTexture" value="SSSBuffer1"/>
+	<ApplyShaderVariable sem="AbsorptionTexture" value="SSSAbsorptionBuffer"/>
+	<ApplyShaderVariable sem="ScatterTexture" value="SSSScatterBuffer"/>
+	<ApplyShaderVariable sem="Mask" value="SSSMask"/>
+  </PostEffect>
+  
+  <!-- render alpha geometry -->
+  <Pass multipleRenderTarget="AlphaGeometryBuffer" name="AlphaGeometry" >
+	<Batch batchGroup="FlatGeometryAlphaLit" sorting="None" lighting="None" type="Geometry"/>
+  </Pass>
+  
+  <!-- render screen-space lighting for alpha geometry -->
+  <Pass renderTarget="AlphaLightBuffer" name="LightPassAlpha" clearColor="0.5,0.5,0.5,1" shader="lights" >
+	<ApplyShaderVariable sem="NormalBuffer" value="AlphaNormalBuffer"/>
+	<ApplyShaderVariable sem="DepthBuffer" value="AlphaDepthBuffer"/>
+	<ApplyShaderVariable sem="ShadowProjMap" value="ShadowBuffer"/>
+	<Batch type="Lights"/>
+  </Pass>
+  
+  <!-- merge lights and color in screen space, apply specularity and AO -->
+  <PostEffect renderTarget="ColorBuffer" shader="gather" name="Gather" clearColor="0,0,0,0">
+   <ApplyShaderVariable sem="EmissiveTexture" value="EmissiveBuffer"/>
+   <ApplyShaderVariable sem="SpecularTexture" value="SpecularBuffer"/>
+   <ApplyShaderVariable sem="AlbedoTexture" value="AlbedoBuffer"/>
+   <ApplyShaderVariable sem="LightTexture" value="LightBuffer"/>
+   <ApplyShaderVariable sem="SSSTexture" value="SSSBuffer"/>
+   <ApplyShaderVariable sem="SSAOTexture" value="SSAOTexture"/>
+  </PostEffect>
+  
+    <!-- same as the one above but for the alpha buffers -->
+  <PostEffect renderTarget="ColorBuffer" shader="gatheralpha" name="GatherAlpha">
+   <ApplyShaderVariable sem="AlphaEmissiveTexture" value="AlphaEmissiveBuffer"/>
+   <ApplyShaderVariable sem="AlphaSpecularTexture" value="AlphaSpecularBuffer"/>
+   <ApplyShaderVariable sem="AlphaAlbedoTexture" value="AlphaAlbedoBuffer"/>
+   <ApplyShaderVariable sem="AlphaLightTexture" value="AlphaLightBuffer"/>
+  </PostEffect>
+  
+  <!-- render unlit objects -->
+  <Pass multipleRenderTarget="UnlitBuffer" name="Unlit" >
+	<Batch batchGroup="Unlit" sorting="None" lighting="None" type="Geometry"/>
+	<Batch batchGroup="ParticleUnlit" sorting="None" lighting="None" type="Geometry"/>
+  </Pass>
+    
+  <!-- a bit nasty, but since we actually need the current color result, and render to it at the same time, we need to do this -->
+  <PostEffect renderTarget="ColorBufferCopy" shader="copy" name="ColorBufferCopy" clearColor="0,0,0,0">
+	<ApplyShaderVariable sem="CopyBuffer" value="ColorBuffer"/>
+  </PostEffect>
+  
+  <!-- render atmospheric stuff like water and volume fog -->
+  <Pass multipleRenderTarget="UnlitBuffer" name="Atmosphere" >
+	<Batch batchGroup="Fog" sorting="None" lighting="None" type="Geometry">
+		<ApplyShaderVariable sem="DiffuseMap" value="ColorBufferCopy"/>
+		<ApplyShaderVariable sem="DepthMap" value="DepthBuffer"/>
+	</Batch>
+	<Batch batchGroup="Water" sorting="None" lighting="None" type="Geometry">
+		<ApplyShaderVariable sem="DepthMap" value="DepthBuffer"/>
+		<ApplyShaderVariable sem="ColorMap" value="ColorBufferCopy"/>
+	</Batch>
+  </Pass>
+  
+  <!-- all geometry has been rendered, now render godrays -->
+  <!--<External name="godrays"/>-->
+  
+  <!-- calculate screen-wide luminance used for tone-mapping -->
+  <Algorithm className="Algorithm::GodrayAlgorithm">
+	<Input name="UnshadedBuffer"/>
+	<Output name="GodrayBuffer"/>
+  </Algorithm>
+  
+  <!-- calculate screen-wide luminance used for tone-mapping -->
+  <Algorithm className="Algorithm::ToneMappingAlgorithm">
+	<Input name="ColorBuffer"/>
+	<Output name="AverageLum"/>
+  </Algorithm>
+    
+  <!-- perform HDR bloom -->
+  <PostEffect renderTarget="BrightBuffer" shader="brightpass" name="BrightPass">
+   <ApplyShaderVariable sem="ColorSource" value="ColorBuffer"/>
+   <ApplyShaderVariable sem="LuminanceTexture" value="AverageLum"/>
+  </PostEffect>
+  <PostEffect renderTarget="BloomBuffer0" shader="gaussianblur" name="BrightBlur">
+   <ApplyShaderVariable sem="SourceMap" value="BrightBuffer"/>
+  </PostEffect>
+  <PostEffect renderTarget="BloomBuffer1" shader="verticalbloom" name="VerticalBloomBlur">
+   <ApplyShaderVariable sem="SourceTexture" value="BloomBuffer0"/>
+  </PostEffect>
+  <PostEffect renderTarget="BloomBuffer0" shader="horizontalbloom" name="HorizontalBloomBlur">
+   <ApplyShaderVariable sem="SourceTexture" value="BloomBuffer1"/>
+  </PostEffect>
+  
+  <!-- batch render shapes before we finalize, we do this to avoid stuff like fogging and DoF for debug shapes -->
+  <Pass renderTarget="ColorBuffer" name="Shape">
+	<Batch type="Shapes"/>
+  </Pass>
+    
+  <!-- apply last touches before presenting frame -->
+  <PostEffect shader="finalize" name="Finalize">
+   <ApplyShaderVariable sem="LuminanceTexture" value="AverageLum"/>
+   <ApplyShaderVariable sem="BloomTexture" value="BloomBuffer0"/>
+   <ApplyShaderVariable sem="ColorTexture" value="ColorBuffer"/>
+   <ApplyShaderVariable sem="DepthTexture" value="DepthBuffer"/>
+   <ApplyShaderVariable sem="GodrayTexture" value="GodrayBuffer"/>
+      
+   <!-- render stuff which will always appear on top -->
+   <Batch type="UI"/>
+   <Batch type="Text"/>   
+   
+  </PostEffect>  
+ </FrameShader>
+</Nebula3>

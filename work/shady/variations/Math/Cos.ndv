@@ -1,0 +1,11 @@
+<Shady>
+	<Variation desc="Calculates the cosine for input." simulationCommand="cos">
+		<Input type="float" name="input"/>
+		<Output type="float" name="cos"/>
+		<Source type="GLSL">
+			<Code output="cos">
+				[output] = cos(input);
+			</Code>
+		</Source>
+	</Variation>
+</Shady>

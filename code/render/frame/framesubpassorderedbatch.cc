@@ -27,8 +27,19 @@ FrameSubpassOrderedBatch::~FrameSubpassOrderedBatch()
 //------------------------------------------------------------------------------
 /**
 */
+FrameOp::Compiled*
+FrameSubpassOrderedBatch::AllocCompiled(Memory::ChunkAllocator<0xFFFF>& allocator)
+{
+	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
+	ret->batch = this->batch;
+	return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
-FrameSubpassOrderedBatch::Run(const IndexT frameIndex)
+FrameSubpassOrderedBatch::CompiledImpl::Run(const IndexT frameIndex)
 {
 
 }

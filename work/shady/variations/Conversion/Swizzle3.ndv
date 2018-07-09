@@ -1,0 +1,21 @@
+<Shady>
+	<Variation desc="Extract two components from 3 component float vector." simulationCommand="copy">
+		<Input type="vec3" name="input"/>
+		<Output type="float" name="Red"/>
+		<Output type="float" name="Green"/>
+		<Output type="float" name="Blue"/>
+		<Source type="GLSL">
+			<Code output="Red">
+				[output] = input.x;
+			</Code>
+			
+			<Code output="Green">
+				[output] = input.y;
+			</Code>
+			
+			<Code output="Blue">
+				[output] = input.z;
+			</Code>
+		</Source>
+	</Variation>
+</Shady>

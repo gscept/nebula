@@ -5,9 +5,12 @@
 #include "render/stdneb.h"
 #include "vkshader.h"
 #include "vkconstantbuffer.h"
-#include "coregraphics/renderdevice.h"
 #include "coregraphics/shaderserver.h"
 #include "lowlevel/vk/vksampler.h"
+#include "coregraphics/sampler.h"
+#include "coregraphics/resourcetable.h"
+#include "vktypes.h"
+#include "vksampler.h"
 
 namespace Vulkan
 {
@@ -27,20 +30,34 @@ VkShaderSetup(
 	const VkPhysicalDeviceProperties props,
 	AnyFX::ShaderEffect* effect,
 	VkPushConstantRange& constantRange,
-	Util::Dictionary<uint32_t, Util::Array<VkDescriptorSetLayoutBinding>>& setBindings,
-	Util::Array<VkSampler>& immutableSamplers,
-	Util::FixedArray<VkDescriptorSetLayout>& setLayouts,
-	VkPipelineLayout& pipelineLayout,
-	Util::FixedArray<VkDescriptorSet>& sets,
-	Util::FixedArray<VkDescriptorPool>& setPools,
-	Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBufferId>& buffers,
-	Util::Dictionary<uint32_t, Util::Array<CoreGraphics::ConstantBufferId>>& buffersByGroup
+	Util::Array<CoreGraphics::SamplerId>& immutableSamplers,
+	Util::FixedArray<std::pair<uint32_t, CoreGraphics::ResourceTableLayoutId>>& setLayouts,
+	CoreGraphics::ResourcePipelineId& pipelineLayout,
+	Util::FixedArray<CoreGraphics::ResourceTableId>& tables,
+	Util::Dictionary<Util::StringAtom, uint32_t>& resourceSlotMap,
+	Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBufferId>& sharedBuffers,
+	Util::Dictionary<uint32_t, Util::Array<CoreGraphics::ConstantBufferId>>& sharedBuffersByGroup
 	)
 {
 	const std::vector<AnyFX::VarblockBase*>& varblocks = effect->GetVarblocks();
 	const std::vector<AnyFX::VarbufferBase*>& varbuffers = effect->GetVarbuffers();
 	const std::vector<AnyFX::VariableBase*>& variables = effect->GetVariables();
 	const std::vector<AnyFX::SamplerBase*>& samplers = effect->GetSamplers();
+
+	using namespace CoreGraphics;
+
+	// construct layout create info
+	ResourceTableLayoutCreateInfo layoutInfo;
+	Util::Dictionary<uint32_t, ResourceTableLayoutCreateInfo> layoutCreateInfos;
+	uint32_t numsets = 0;
+
+	// always create push constant range in layout, making all shaders using push constants compatible
+	constantRange.size = props.limits.maxPushConstantsSize;
+	constantRange.offset = 0;
+	constantRange.stageFlags = VK_SHADER_STAGE_ALL;
+	bool usePushConstants = false;
+
+#define uint_max(a, b) (a > b ? a : b)
 
     // assert we are not over-stepping any uniform buffer limit we are using, perStage is used for ALL_STAGES
 	uint32_t maxUniformBufferRange = props.limits.maxUniformBufferRange;
@@ -51,9 +68,36 @@ VkShaderSetup(
 	uint i;
 	for (i = 0; i < varblocks.size(); i++) 
 	{ 
-		if (varblocks[i]->Flag("DynamicOffset")) numUniformDyn++;
-		else									 numUniform++;
-		n_assert(varblocks[i]->alignedSize < maxUniformBufferRange);
+		AnyFX::VkVarblock* block = static_cast<AnyFX::VkVarblock*>(varblocks[i]);
+		resourceSlotMap.Add(block->name.c_str(), block->binding);
+		VkDescriptorSetLayoutBinding& binding = block->bindingLayout;
+		ResourceTableLayoutConstantBuffer cbo;
+		cbo.slot = binding.binding;
+		cbo.num = binding.descriptorCount;
+		cbo.visibility = AllVisibility;
+		uint32_t slotsUsed = 0;
+
+		if (block->variables.empty()) continue;
+		if (AnyFX::HasFlags(block->qualifiers, AnyFX::Qualifiers::Push)) continue;
+		ResourceTableLayoutCreateInfo& rinfo = layoutCreateInfos.AddUnique(block->set);
+		numsets = uint_max(numsets, block->set + 1);
+
+		if (block->HasAnnotation("Visibility"))
+		{
+			CoreGraphicsShaderVisibility vis = ShaderVisibilityFromString(block->GetAnnotationString("Visibility").c_str());
+			cbo.visibility = vis;
+			if ((vis & VertexShaderVisibility) == VertexShaderVisibility)		slotsUsed++;
+			if ((vis & HullShaderVisibility) == HullShaderVisibility)			slotsUsed++;
+			if ((vis & DomainShaderVisibility) == DomainShaderVisibility)		slotsUsed++;
+			if ((vis & GeometryShaderVisibility) == GeometryShaderVisibility)	slotsUsed++;
+			if ((vis & PixelShaderVisibility) == PixelShaderVisibility)			slotsUsed++;
+			if ((vis & ComputeShaderVisibility) == ComputeShaderVisibility)		slotsUsed++;
+		}
+		if (block->set == NEBULAT_DYNAMIC_OFFSET_GROUP) { cbo.dynamicOffset = true; numUniformDyn += slotsUsed; }
+		else											{ cbo.dynamicOffset = false; numUniform += slotsUsed; }
+
+		rinfo.constantBuffers.Append(cbo);
+		n_assert(block->alignedSize < maxUniformBufferRange);
 	}
     n_assert(maxUniformBuffersDyn >= numUniformDyn);
 	n_assert(maxUniformBuffers >= numUniform);
@@ -68,167 +112,114 @@ VkShaderSetup(
 	uint32_t numStorage = 0;
 	for (i = 0; i < varbuffers.size(); i++)
 	{
-		if (varbuffers[i]->Flag("DynamicOffset")) maxStorageBuffersDyn++;
-		else									  maxStorageBuffers++;
-		n_assert(varbuffers[i]->alignedSize < maxStorageBufferRange);
+		AnyFX::VkVarbuffer* buffer = static_cast<AnyFX::VkVarbuffer*>(varbuffers[i]);
+		resourceSlotMap.Add(buffer->name.c_str(), buffer->binding);
+		VkDescriptorSetLayoutBinding& binding = buffer->bindingLayout;
+		ResourceTableLayoutShaderRWBuffer rwbo;
+		rwbo.slot = binding.binding;
+		rwbo.num = binding.descriptorCount;
+		rwbo.visibility = AllVisibility;
+		uint32_t slotsUsed = 0;
+
+		if (buffer->size == 0) continue;
+		ResourceTableLayoutCreateInfo& rinfo = layoutCreateInfos.AddUnique(buffer->set);
+		numsets = uint_max(numsets, buffer->set + 1);
+
+		if (buffer->HasAnnotation("Visibility"))
+		{
+			CoreGraphicsShaderVisibility vis = ShaderVisibilityFromString(buffer->GetAnnotationString("Visibility").c_str());
+			rwbo.visibility = vis;
+			if ((vis & VertexShaderVisibility) == VertexShaderVisibility)		slotsUsed++;
+			if ((vis & HullShaderVisibility) == HullShaderVisibility)			slotsUsed++;
+			if ((vis & DomainShaderVisibility) == DomainShaderVisibility)		slotsUsed++;
+			if ((vis & GeometryShaderVisibility) == GeometryShaderVisibility)	slotsUsed++;
+			if ((vis & PixelShaderVisibility) == PixelShaderVisibility)			slotsUsed++;
+			if ((vis & ComputeShaderVisibility) == ComputeShaderVisibility)		slotsUsed++;
+		}
+
+		if (buffer->set == NEBULAT_DYNAMIC_OFFSET_GROUP) { rwbo.dynamicOffset = true; numStorageDyn += slotsUsed; }
+		else											 { rwbo.dynamicOffset = false; numStorage += slotsUsed; }
+
+		rinfo.rwBuffers.Append(rwbo);
+		n_assert(buffer->alignedSize < maxStorageBufferRange);
 	}
-	n_assert(maxStorageBuffersDyn >= maxStorageBuffersDyn);
-	n_assert(maxStorageBuffers >= maxStorageBuffers);
+	n_assert(maxStorageBuffersDyn >= numStorageDyn);
+	n_assert(maxStorageBuffers >= numStorage);
 	uint32_t maxPerStageStorageBuffers = props.limits.maxPerStageDescriptorStorageBuffers;
 	n_assert(maxPerStageStorageBuffers >= varbuffers.size());
 
     uint32_t maxTextures = props.limits.maxDescriptorSetSampledImages;
     uint32_t remainingTextures = maxTextures;
 
-	// always create push constant range in layout, making all shaders using push constants compatible
-	constantRange.size = props.limits.maxPushConstantsSize;
-	constantRange.offset = 0;
-	constantRange.stageFlags = VK_SHADER_STAGE_ALL;
-	bool usePushConstants = false;
-	uint32_t numsets = 0;
-
-	Util::Dictionary<IndexT, Util::String> signatures;
-
-	Util::Array<VkDescriptorBufferInfo> bufs;
-	Util::Array<VkDescriptorImageInfo> imgs;
-	Util::Array<VkWriteDescriptorSet> writes;
-	Util::Array<AnyFX::VkSampler*> boundSamplers;
-
-#define uint_max(a, b) (a > b ? a : b)
-
-	// setup varblocks
-	for (i = 0; i < varblocks.size(); i++)
-	{
-		AnyFX::VkVarblock* block = static_cast<AnyFX::VkVarblock*>(varblocks[i]);
-		VkDescriptorSetLayoutBinding& binding = block->bindingLayout;
-		if (block->Flag("DynamicOffset")) binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-		else							  binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		if (block->variables.empty()) continue;
-		if (AnyFX::HasFlags(block->qualifiers, AnyFX::Qualifiers::Push))
-		{
-			// can only have one push constant block
-			n_assert(usePushConstants == false);
-			n_assert(block->alignedSize <= constantRange.size);
-			// don't really do anything here...
-		}
-		else
-		{
-			IndexT index = setBindings.FindIndex(block->set);
-			if (index == InvalidIndex)
-			{
-				Util::Array<VkDescriptorSetLayoutBinding> arr;
-				arr.Append(binding);
-				setBindings.Add(block->set, arr);
-				signatures.Add(block->set, VkShaderCreateSignature(binding));
-				numsets = uint_max(numsets, block->set + 1);
-
-			}
-			else
-			{
-				setBindings.ValueAtIndex(index).Append(binding);
-				signatures.ValueAtIndex(index).Append(VkShaderCreateSignature(binding));
-			}
-		}
-	}
-
-	// setup varbuffers
-	for (i = 0; i < varbuffers.size(); i++)
-	{
-		AnyFX::VkVarbuffer* buffer = static_cast<AnyFX::VkVarbuffer*>(varbuffers[i]);
-		VkDescriptorSetLayoutBinding binding = buffer->bindingLayout;
-		if (buffer->Flag("DynamicOffset")) binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
-		else							   binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		IndexT index = setBindings.FindIndex(buffer->set);
-		if (index == InvalidIndex)
-		{
-			Util::Array<VkDescriptorSetLayoutBinding> arr;
-			arr.Append(binding);
-			setBindings.Add(buffer->set, arr);
-			signatures.Add(buffer->set, VkShaderCreateSignature(binding));
-			numsets = uint_max(numsets, buffer->set + 1);
-		}
-		else
-		{
-			setBindings.ValueAtIndex(index).Append(binding);
-			signatures.ValueAtIndex(index).Append(VkShaderCreateSignature(binding));
-		}
-	}
-
 	// setup samplers as immutable coupled with the texture input, before we setup the variables so that it's part of their layout
 	immutableSamplers.Reserve((SizeT)samplers.size() + 1);
+	Util::Dictionary<Util::StringAtom, SamplerId> samplerLookup;
 	for (i = 0; i < samplers.size(); i++)
 	{
 		AnyFX::VkSampler* sampler = static_cast<AnyFX::VkSampler*>(samplers[i]);
 		if (!sampler->textureVariables.empty())
-		{
-			VkSampler vkSampler;
-			VkResult res = vkCreateSampler(dev, &sampler->samplerInfo, NULL, &vkSampler);
-			n_assert(res == VK_SUCCESS);
+		{		
+			// okay, a bit ugly since we actually just need a Vulkan sampler...
+			const VkSamplerCreateInfo& inf = sampler->samplerInfo;
+			SamplerCreateInfo info = ToNebulaSamplerCreateInfo(inf);
+			SamplerId samp = CreateSampler(info);
 
 			// add to list so we can remove it later
-			immutableSamplers.Append(vkSampler);
+			immutableSamplers.Append(samp);
 
 			uint j;
 			for (j = 0; j < sampler->textureVariables.size(); j++)
 			{
 				AnyFX::VkVariable* var = static_cast<AnyFX::VkVariable*>(sampler->textureVariables[j]);
 				n_assert(var->type >= AnyFX::Sampler1D && var->type <= AnyFX::SamplerCubeArray);
-				var->bindingLayout.pImmutableSamplers = &immutableSamplers.Back();
+				n_assert(!samplerLookup.Contains(sampler->textureVariables[j]->name.c_str()));
+				samplerLookup.Add(sampler->textureVariables[j]->name.c_str(), samp);
 			}
 		}
 		else
 		{
-			// create separate sampler
-			VkSampler vkSampler;
-			VkResult res = vkCreateSampler(dev, &sampler->samplerInfo, NULL, &vkSampler);
-			n_assert(res == VK_SUCCESS);
-			immutableSamplers.Append(vkSampler);
+			// okay, a bit ugly since we actually just need a Vulkan sampler...
+			const VkSamplerCreateInfo& inf = sampler->samplerInfo;
+			SamplerCreateInfo info = ToNebulaSamplerCreateInfo(inf);
+			SamplerId samp = CreateSampler(info);
 
-			sampler->bindingLayout.pImmutableSamplers = &immutableSamplers.Back();
-			boundSamplers.Append(sampler);
-			IndexT index = setBindings.FindIndex(sampler->set);
-			if (index == InvalidIndex)
+			ResourceTableLayoutSampler smla;
+			smla.visibility = AllVisibility;
+
+			// add to list so we can remove it later
+			immutableSamplers.Append(samp);
+
+			if (sampler->HasAnnotation("Visibility"))
 			{
-				Util::Array<VkDescriptorSetLayoutBinding> arr;
-				arr.Append(sampler->bindingLayout);
-				setBindings.Add(sampler->set, arr);
-				signatures.Add(sampler->set, VkShaderCreateSignature(sampler->bindingLayout));
-				numsets = uint_max(numsets, sampler->set + 1);
+				CoreGraphicsShaderVisibility vis = ShaderVisibilityFromString(sampler->GetAnnotationString("Visibility").c_str());
+				smla.visibility = vis;
 			}
-			else
-			{
-				setBindings.ValueAtIndex(index).Append(sampler->bindingLayout);
-				signatures.ValueAtIndex(index).Append(VkShaderCreateSignature(sampler->bindingLayout));
-			}
+			smla.slot = sampler->bindingLayout.binding;
+			smla.sampler = samp;
+
+			ResourceTableLayoutCreateInfo& rinfo = layoutCreateInfos.AddUnique(sampler->set);
+			rinfo.samplers.Append(smla);
+
+			numsets = uint_max(numsets, sampler->set + 1);
 		}
 	}
 
-	VkSamplerCreateInfo placeholderSamplerInfo =
+	SamplerCreateInfo placeholderSamplerInfo =
 	{
-		VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-		NULL,
-		0,
-		VK_FILTER_LINEAR,
-		VK_FILTER_LINEAR,
-		VK_SAMPLER_MIPMAP_MODE_LINEAR,
-		VK_SAMPLER_ADDRESS_MODE_REPEAT,
-		VK_SAMPLER_ADDRESS_MODE_REPEAT,
-		VK_SAMPLER_ADDRESS_MODE_REPEAT,
+		LinearFilter, LinearFilter,
+		LinearMipMode,
+		RepeatAddressMode, RepeatAddressMode, RepeatAddressMode,
 		0,
 		false,
 		16,
 		0,
-		VK_COMPARE_OP_NEVER,
+		NeverCompare,
 		-FLT_MAX,
 		FLT_MAX,
-		VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK,
-		VK_FALSE							
+		FloatOpaqueBlackBorder,
+		false
 	};
-
-	// create placeholder sampler
-	VkSampler placeholderSampler;
-	VkResult res = vkCreateSampler(dev, &placeholderSamplerInfo, NULL, &placeholderSampler);
-	n_assert(res == VK_SUCCESS);
+	SamplerId placeholderSampler = CreateSampler(placeholderSamplerInfo);
 	immutableSamplers.Append(placeholderSampler);
 
 	// setup variables
@@ -239,47 +230,57 @@ VkShaderSetup(
 		// handle samplers, images and textures
 		if (variable->type >= AnyFX::Sampler1D && variable->type <= AnyFX::TextureCubeArray)
 		{
+			// only add if variable is not a texture handle
+			if (variable->type <= AnyFX::ImageCubeArray)
+				resourceSlotMap.Add(variable->name.c_str(), variable->binding);
+
+			ResourceTableLayoutTexture tex;
+			tex.slot = variable->bindingLayout.binding;
+			tex.num = variable->bindingLayout.descriptorCount;
+			tex.immutableSampler = SamplerId::Invalid();
+			tex.visibility = AllVisibility;
+			
+			if (variable->HasAnnotation("Visibility"))
+			{
+				CoreGraphicsShaderVisibility vis = ShaderVisibilityFromString(variable->GetAnnotationString("Visibility").c_str());
+				tex.visibility = vis;
+			}
+
             if (remainingTextures < (uint32_t)variable->arraySize) n_error("Too many textures in shader!");
             else
             {
                 remainingTextures -= variable->arraySize;
             }
-			if (variable->bindingLayout.pImmutableSamplers == NULL && 
-				variable->bindingLayout.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+			if (variable->bindingLayout.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
 			{
-				variable->bindingLayout.pImmutableSamplers = &placeholderSampler;
+				// if we have a combined image sampler, we must find a sampler
+				IndexT i = samplerLookup.FindIndex(variable->name.c_str());
+				if (i != InvalidIndex)
+					tex.immutableSampler = samplerLookup.ValueAtIndex(i);
+				else
+					tex.immutableSampler = placeholderSampler;
 			}
-			IndexT index = setBindings.FindIndex(variable->set);
-			if (index == InvalidIndex)
-			{
-				Util::Array<VkDescriptorSetLayoutBinding> arr;
-				arr.Append(variable->bindingLayout);
-				setBindings.Add(variable->set, arr);
-				signatures.Add(variable->set, VkShaderCreateSignature(variable->bindingLayout));
-				numsets = uint_max(numsets, variable->set + 1);
-			}
-			else
-			{
-				setBindings.ValueAtIndex(index).Append(variable->bindingLayout);
-				signatures.ValueAtIndex(index).Append(VkShaderCreateSignature(variable->bindingLayout));
-			}
+
+			ResourceTableLayoutCreateInfo& info = layoutCreateInfos.AddUnique(variable->set);
+
+			// if storage, store in rwTextures, otherwise use ordinary textures and figure out if we are to use sampler
+			if (variable->bindingLayout.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)	info.rwTextures.Append(tex);
+			else																			info.textures.Append(tex);
+
+			numsets = uint_max(numsets, variable->set + 1);
 		}
 		else if (variable->type >= AnyFX::InputAttachment && variable->type <= AnyFX::InputAttachmentUIntegerMS)
 		{
-			IndexT index = setBindings.FindIndex(variable->set);
-			if (index == InvalidIndex)
-			{
-				Util::Array<VkDescriptorSetLayoutBinding> arr;
-				arr.Append(variable->bindingLayout);
-				setBindings.Add(variable->set, arr);
-				signatures.Add(variable->set, VkShaderCreateSignature(variable->bindingLayout));
-				numsets = uint_max(numsets, variable->set + 1);
-			}
-			else
-			{
-				setBindings.ValueAtIndex(index).Append(variable->bindingLayout);
-				signatures.ValueAtIndex(index).Append(VkShaderCreateSignature(variable->bindingLayout));
-			}
+			resourceSlotMap.Add(variable->name.c_str(), variable->binding);
+			ResourceTableLayoutInputAttachment ia;
+			ia.slot = variable->bindingLayout.binding;
+			ia.num = variable->bindingLayout.descriptorCount;
+			ia.visibility = PixelShaderVisibility;				// only visible from pixel shaders anyways...
+
+			ResourceTableLayoutCreateInfo& info = layoutCreateInfos.AddUnique(variable->set);
+			info.inputAttachments.Append(ia);
+
+			numsets = uint_max(numsets, variable->set + 1);
 		}
 	}
 
@@ -287,194 +288,87 @@ VkShaderSetup(
 	Util::String pipelineSignature;
 
 	// skip the rest if we don't have any descriptor sets
-	if (!setBindings.IsEmpty())
+	if (!layoutCreateInfos.IsEmpty())
 	{
 		setLayouts.Resize(numsets);
-		for (IndexT i = 0; i < setLayouts.Size(); i++)
+		for (IndexT i = 0; i < layoutCreateInfos.Size(); i++)
 		{
-			// if signature is defined in this shader, retrieve it
-			IndexT layoutIndex = InvalidIndex;
-			Util::String signature;
-			if (signatures.Contains(i))
-			{
-				signature = signatures[i];
-				layoutIndex = VkShaderLayoutCache.FindIndex(signature);
-			}
-
-			// setup layout if this is the first time (during the program) we encounter it
-			if (layoutIndex == InvalidIndex)
-			{
-				VkDescriptorSetLayoutCreateInfo info;
-				info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-				info.pNext = NULL;
-				info.flags = 0;
-
-				IndexT bindingIndex = setBindings.FindIndex(i);
-				info.bindingCount = 0;
-				info.pBindings = VK_NULL_HANDLE;
-				if (bindingIndex != InvalidIndex)
-				{
-					const Util::Array<VkDescriptorSetLayoutBinding>& binds = setBindings.ValueAtIndex(bindingIndex);
-					info.bindingCount = binds.Size();
-					info.pBindings = binds.Size() > 0 ? &binds[0] : VK_NULL_HANDLE;
-				}
-
-				// create layout
-				VkResult res = vkCreateDescriptorSetLayout(dev, &info, NULL, &setLayouts[i]);
-				assert(res == VK_SUCCESS);
-
-				// add to cache if this shader defined the signature
-				if (bindingIndex != InvalidIndex) VkShaderLayoutCache.Add(signature, setLayouts[i]);
-			}
-			else
-			{
-				// if this layout has been created before, fetch it from the global cache
-				setLayouts[i] = VkShaderLayoutCache.ValueAtIndex(layoutIndex);
-			}
-
-			// construct pipeline signature
-			pipelineSignature.Append(Util::String::Sprintf("%p", setLayouts[i]) + ";");
+			const ResourceTableLayoutCreateInfo& info = layoutCreateInfos.ValueAtIndex(i);
+			ResourceTableLayoutId layout = CreateResourceTableLayout(info);
+			setLayouts[i] = std::make_pair(layoutCreateInfos.KeyAtIndex(i), layout);
 		}
 	}
 
-	IndexT idx = VkShaderPipelineCache.FindIndex(pipelineSignature);
-	if (idx == InvalidIndex)
+	Util::Array<ResourceTableLayoutId> layoutList;
+	for (IndexT i = 0; i < setLayouts.Size(); i++)
 	{
-		// create one pipeline layout for each descriptor set, and one for the entire shader object
-		VkPipelineLayoutCreateInfo layoutInfo =
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-			NULL,
-			0,
-			setLayouts.Size(),
-			setLayouts.Size() > 0 ? setLayouts.Begin() : NULL,
-			1,
-			&constantRange
-		};
-
-		// create pipeline layout, every program should inherit this one
-		res = vkCreatePipelineLayout(dev, &layoutInfo, NULL, &pipelineLayout);
-		assert(res == VK_SUCCESS);
-
-		// add to cache
-		VkShaderPipelineCache.Add(pipelineSignature, pipelineLayout);
+		const ResourceTableLayoutId& a = std::get<1>(setLayouts[i]);
+		if (a != ResourceTableLayoutId::Invalid())
+			layoutList.Append(a);
 	}
-	else
+	ResourcePipelinePushConstantRange push;
+	push.size = props.limits.maxPushConstantsSize;
+	push.offset = 0;
+	push.vis = AllVisibility;
+	ResourcePipelineCreateInfo piInfo =
 	{
-		// fetch from cache
-		pipelineLayout = VkShaderPipelineCache.ValueAtIndex(idx);
-	}
+		layoutList, push
+	};
+	pipelineLayout = CreateResourcePipeline(piInfo);
 
-    sets.Resize(setLayouts.Size());
-    sets.Fill(VK_NULL_HANDLE);
-	setPools.Resize(setLayouts.Size());
-	setPools.Fill(VK_NULL_HANDLE);
-    for (IndexT i = 0; i < setLayouts.Size(); i++)
-    {
-        // if signature is defined in this shader, retrieve it
-        IndexT layoutIndex = InvalidIndex;
-        Util::String signature;
-        if (signatures.Contains(i))
-        {
-            signature = signatures[i];
-            layoutIndex = VkShaderLayoutCache.FindIndex(signature);
-			IndexT idx = VkShaderDescriptorSetCache.FindIndex(signature);
-			if (idx == InvalidIndex)
-			{
-
-			createset:
-				// get current pool
-				VkDescriptorPool pool = VkRenderDevice::Instance()->GetCurrentDescriptorPool();
-
-				// allocate descriptor sets
-				VkDescriptorSetAllocateInfo info =
-				{
-					VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-					NULL,
-					pool,
-					1,
-					&setLayouts[i]
-				};
-				VkDescriptorSet set;
-				res = vkAllocateDescriptorSets(dev, &info, &set);
-				if (res == VK_ERROR_OUT_OF_POOL_MEMORY_KHR)
-				{
-					// if we are out of pool memory, create a new pool!
-					VkRenderDevice::Instance()->RequestDescriptorPool();
-					goto createset;
-				}
-				n_assert(res == VK_SUCCESS);				
-
-				// add to cache
-				sets[i] = set;
-				setPools[i] = pool;
-				VkShaderDescriptorSetCache.Add(pipelineSignature, set);
-        	}
-		}
-		else
+	// create a resource table for the batch group
+	for (IndexT i = 0; i < setLayouts.Size(); i++)
+	{
+		// only allocate implicit resource tables for the batch group
+		if (std::get<0>(setLayouts[i]) == NEBULAT_BATCH_GROUP)
 		{
-			sets[i] = VkShaderDescriptorSetCache[pipelineSignature];
+			const ResourceTableLayoutId& layout = std::get<1>(setLayouts[i]);
+			n_assert(layout != ResourceTableLayoutId::Invalid());
+			tables.Resize(1);
+			ResourceTableCreateInfo tinfo = 
+			{
+				layout
+			};
+			ResourceTableId table = CreateResourceTable(tinfo);
+			tables[0] = table;
 		}
-    }
+	}
 
 	// setup varblock backing (this is for the shader default state)
-	bufs.Reserve((SizeT)varblocks.size());
-	for (i = 0; i < varblocks.size(); i++)
+	if (tables.Size() > 0)
 	{
-		// get block
-		AnyFX::VarblockBase* block = varblocks[i];
-
-		bool usedBySystem = false;
-		if (block->HasAnnotation("System")) usedBySystem = block->GetAnnotationBool("System");
-
-		CoreGraphics::ConstantBufferId uniformBuffer = CoreGraphics::ConstantBufferId::Invalid();
-
-		// only create buffer if block is not handled by system
-		if (!usedBySystem && block->alignedSize > 0 && !AnyFX::HasFlags(block->qualifiers, AnyFX::Qualifiers::Push))
+		for (i = 0; i < varblocks.size(); i++)
 		{
-			// create uniform buffer, with single backing
-			CoreGraphics::ConstantBufferCreateInfo cbInfo = { false, CoreGraphics::ShaderStateId::Invalid(), block->name.c_str(), block->alignedSize };
-			uniformBuffer = CreateConstantBuffer(cbInfo);
+			// get block
+			AnyFX::VarblockBase* block = varblocks[i];
+			bool isPush = AnyFX::HasFlags(block->qualifiers, AnyFX::Qualifiers::Push);
+			if (block->set == NEBULAT_BATCH_GROUP && block->alignedSize > 0 && !isPush)
+			{
+				CoreGraphics::ConstantBufferCreateInfo cbInfo = { false, CoreGraphics::ShaderId::Invalid(), block->name.c_str(), block->alignedSize, 1 };
+				CoreGraphics::ConstantBufferId uniformBuffer = CreateConstantBuffer(cbInfo);
 
-			// generate a name which we know will be unique
-			Util::String name = block->name.c_str();
-			n_assert(!buffers.Contains(name));
+				// generate a name which we know will be unique
+				Util::String name = block->name.c_str();
+				n_assert(!sharedBuffers.Contains(name));
 
-			VkDescriptorBufferInfo buf;
-			buf.buffer = ConstantBufferGetVk(uniformBuffer);
-			buf.offset = 0;
-			buf.range = VK_WHOLE_SIZE;
-			bufs.Append(buf);
+				ResourceTableConstantBuffer cboUpdate;
+				cboUpdate.buf = uniformBuffer;
+				cboUpdate.dynamicOffset = block->set == NEBULAT_DYNAMIC_OFFSET_GROUP;
+				cboUpdate.offset = 0;
+				cboUpdate.size = -1;
+				cboUpdate.index = 0;
+				cboUpdate.texelBuffer = false;
+				cboUpdate.slot = block->binding;
+				ResourceTableSetConstantBuffer(tables[0], cboUpdate);
 
-			VkWriteDescriptorSet write;
-			write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			write.pNext = NULL;
-			write.dstBinding = block->binding;
-			write.dstSet = sets[block->set];
-			write.descriptorCount = 1;
-			if (block->Flag("DynamicOffset")) write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-			else							  write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			write.dstArrayElement = 0;
-			write.pTexelBufferView = NULL;
-			write.pImageInfo = NULL;
-			write.pBufferInfo = &bufs.Back();
-			writes.Append(write);			
-
-			// add buffer to list
-			buffers.Add(name, uniformBuffer);
+				Util::Array<ConstantBufferId>& buffers = sharedBuffersByGroup.AddUnique(block->set);
+				buffers.Append(uniformBuffer);
+				sharedBuffers.Add(name, uniformBuffer);
+			}
 		}
 
-		if (!AnyFX::HasFlags(block->qualifiers, AnyFX::Qualifiers::Push))
-		{
-			if (!buffersByGroup.Contains(block->set)) buffersByGroup.Add(block->set, Util::Array<CoreGraphics::ConstantBufferId>());
-			buffersByGroup[block->set].Append(uniformBuffer);
-		}		
-	}
-
-	// update descriptors
-	if (writes.Size() > 0)
-	{
-		vkUpdateDescriptorSets(dev, writes.Size(), &writes[0], 0, NULL);
+		// commit all changes
+		ResourceTableCommitChanges(tables[0]);
 	}
 }
 
@@ -484,25 +378,33 @@ VkShaderSetup(
 void
 VkShaderCleanup(
 	VkDevice dev,
-	Util::Array<VkSampler>& immutableSamplers,
-	Util::FixedArray<VkDescriptorSetLayout>& setLayouts,
-	VkPipelineLayout& pipelineLayout
+	Util::Array<CoreGraphics::SamplerId>& immutableSamplers,
+	Util::FixedArray<std::pair<uint32_t, CoreGraphics::ResourceTableLayoutId>>& setLayouts,
+	Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBufferId>& buffers,
+	CoreGraphics::ResourcePipelineId& pipelineLayout
 )
 {
 	IndexT i;
 	for (i = 0; i < immutableSamplers.Size(); i++)
 	{
-		vkDestroySampler(dev, immutableSamplers[i], nullptr);
+		CoreGraphics::DestroySampler(immutableSamplers[i]);
 	}
 	immutableSamplers.Clear();
 
 	for (i = 0; i < setLayouts.Size(); i++)
 	{
-		vkDestroyDescriptorSetLayout(dev, setLayouts[i], nullptr);
+		if (std::get<1>(setLayouts[i]) != CoreGraphics::ResourceTableLayoutId::Invalid())
+			CoreGraphics::DestroyResourceTableLayout(std::get<1>(setLayouts[i]));
 	}
 	setLayouts.Clear();
 
-	vkDestroyPipelineLayout(dev, pipelineLayout, nullptr);
+	for (i = 0; i < buffers.Size(); i++)
+	{
+		CoreGraphics::DestroyConstantBuffer(buffers.ValueAtIndex(i));
+	}
+	buffers.Clear();
+
+	CoreGraphics::DestroyResourcePipeline(pipelineLayout);
 }
 
 //------------------------------------------------------------------------------
@@ -512,15 +414,6 @@ uint32_t
 VkShaderGetVkShaderVariableBinding(const CoreGraphics::ShaderStateId shader, const CoreGraphics::ShaderConstantId var)
 {
 	return CoreGraphics::shaderPool->shaderAlloc.Get<4>(shader.shaderId).Get<3>(shader.stateId).Get<1>(var.id).setBinding;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-VkDescriptorSet
-VkShaderGetVkShaderVariableDescriptorSet(const CoreGraphics::ShaderStateId shader, const CoreGraphics::ShaderConstantId var)
-{
-	return CoreGraphics::shaderPool->shaderAlloc.Get<4>(shader.shaderId).Get<3>(shader.stateId).Get<1>(var.id).set;
 }
 
 //------------------------------------------------------------------------------

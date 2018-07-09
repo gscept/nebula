@@ -4,7 +4,7 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "vkshaderrwbuffer.h"
-#include "vkrenderdevice.h"
+#include "vkgraphicsdevice.h"
 #include "coregraphics/config.h"
 #include "vkutilities.h"
 
@@ -28,13 +28,13 @@ SizeT ShaderRWBufferStretchInterface::Grow(const SizeT capacity, const SizeT num
 	newCapacity = capacity + increment;
 
 	// create new buffer
-	const std::array<uint32_t, 4> queues = VkRenderDevice::Instance()->GetQueueFamilies();
-	setupInfo.info.pQueueFamilyIndices = queues.data();
-	setupInfo.info.queueFamilyIndexCount = (uint32_t)queues.size();
+	const Util::Set<uint32_t>& queues = Vulkan::GetQueueFamilies();
+	setupInfo.info.pQueueFamilyIndices = queues.KeysAsArray().Begin();
+	setupInfo.info.queueFamilyIndexCount = (uint32_t)queues.Size();
 	setupInfo.info.size = newCapacity * setupInfo.stride;
 
 	VkBuffer newBuf;
-	VkResult res = vkCreateBuffer(setupInfo.dev, &setupInfo.info, NULL, &newBuf);
+	VkResult res = vkCreateBuffer(setupInfo.dev, &setupInfo.info, nullptr, &newBuf);
 	n_assert(res == VK_SUCCESS);
 
 	// allocate new instance memory, alignedSize is the aligned size of a single buffer
@@ -56,8 +56,8 @@ SizeT ShaderRWBufferStretchInterface::Grow(const SizeT capacity, const SizeT num
 	vkUnmapMemory(setupInfo.dev, setupInfo.mem);
 
 	// clean up old data	
-	vkDestroyBuffer(setupInfo.dev, runtimeInfo.buf, NULL);
-	vkFreeMemory(setupInfo.dev, setupInfo.mem, NULL);
+	vkDestroyBuffer(setupInfo.dev, runtimeInfo.buf, nullptr);
+	vkFreeMemory(setupInfo.dev, setupInfo.mem, nullptr);
 
 	// replace old device memory and size
 	setupInfo.size = alignedSize;
@@ -95,24 +95,24 @@ CreateShaderRWBuffer(const ShaderRWBufferCreateInfo& info)
 	VkShaderRWBufferMapInfo& mapInfo = shaderRWBufferAllocator.Get<2>(id);
 	ShaderRWBufferStretchInterface& stretch = shaderRWBufferAllocator.Get<3>(id);
 
-	VkPhysicalDeviceProperties props = VkRenderDevice::Instance()->GetCurrentProperties();
-	setupInfo.dev = VkRenderDevice::Instance()->GetCurrentDevice();
+	VkPhysicalDeviceProperties props = Vulkan::GetCurrentProperties();
+	setupInfo.dev = Vulkan::GetCurrentDevice();
 	setupInfo.numBuffers = info.numBackingBuffers;
 	SizeT size = info.size;
 
-	const std::array<uint32_t, 4> queues = VkRenderDevice::Instance()->GetQueueFamilies();
+	const Util::Set<uint32_t>& queues = Vulkan::GetQueueFamilies();
 	setupInfo.info =
 	{
 		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-		NULL,
+		nullptr,
 		0,
 		(VkDeviceSize)(size * setupInfo.numBuffers),
 		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
 		VK_SHARING_MODE_CONCURRENT,
-		(uint32_t)queues.size(),
-		queues.data()
+		(uint32_t)queues.Size(),
+		queues.KeysAsArray().Begin()
 	};
-	VkResult res = vkCreateBuffer(setupInfo.dev, &setupInfo.info, NULL, &runtimeInfo.buf);
+	VkResult res = vkCreateBuffer(setupInfo.dev, &setupInfo.info, nullptr, &runtimeInfo.buf);
 	n_assert(res == VK_SUCCESS);
 
 	uint32_t alignedSize;
@@ -130,7 +130,7 @@ CreateShaderRWBuffer(const ShaderRWBufferCreateInfo& info)
 	ret.id24 = id;
 	ret.id8 = ShaderRWBufferIdType;
 	stretch.obj = ret;
-	stretch.resizer.Setup(&stretch, setupInfo.stride, props.limits.minStorageBufferOffsetAlignment);
+	stretch.resizer.Setup(&stretch, setupInfo.stride, (SizeT)props.limits.minStorageBufferOffsetAlignment, setupInfo.numBuffers);
 
 	// map memory so we can use it later
 	res = vkMapMemory(setupInfo.dev, setupInfo.mem, 0, alignedSize, 0, &mapInfo.data);

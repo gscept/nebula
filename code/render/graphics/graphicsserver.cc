@@ -57,8 +57,9 @@ GraphicsServer::Open()
 	this->displayDevice = CoreGraphics::DisplayDevice::Create();
 	this->displayDevice->Open();
 
-	this->renderDevice = CoreGraphics::RenderDevice::Create();
-	if (this->renderDevice->Open())
+	CoreGraphics::GraphicsDeviceCreateInfo gfxInfo;
+	this->graphicsDevice = CoreGraphics::CreateGraphicsDevice(gfxInfo);
+	if (this->graphicsDevice)
 	{
 
 		// register graphics context pools
@@ -71,7 +72,7 @@ GraphicsServer::Open()
 		Resources::ResourceManager::Instance()->RegisterStreamPool("dds", CoreGraphics::StreamTexturePool::RTTI);
 		Resources::ResourceManager::Instance()->RegisterStreamPool("shd", CoreGraphics::ShaderPool::RTTI);
 		Resources::ResourceManager::Instance()->RegisterStreamPool("n3", Models::StreamModelPool::RTTI);
-		Resources::ResourceManager::Instance()->RegisterStreamPool("nvx", CoreGraphics::StreamMeshPool::RTTI);
+		Resources::ResourceManager::Instance()->RegisterStreamPool("nvx2", CoreGraphics::StreamMeshPool::RTTI);
 
 		// setup internal pool pointers for convenient access (note, will also assert if texture, shader, model or mesh pools is not registered yet!)
 		CoreGraphics::vboPool = Resources::GetMemoryPool<CoreGraphics::MemoryVertexBufferPool>();
@@ -82,6 +83,24 @@ GraphicsServer::Open()
 
 		CoreGraphics::shaderPool = Resources::GetStreamPool<CoreGraphics::ShaderPool>();
 		Models::modelPool = Resources::GetStreamPool<Models::StreamModelPool>();
+
+		this->shaderServer = CoreGraphics::ShaderServer::Create();
+		this->shaderServer->Open();
+
+		this->frameServer = Frame::FrameServer::Create();
+		this->frameServer->Open();
+
+		this->materialServer = Materials::MaterialServer::Create();
+		this->materialServer->Open();
+
+		this->transformDevice = CoreGraphics::TransformDevice::Create();
+		this->transformDevice->Open();
+
+		this->shapeRenderer = CoreGraphics::ShapeRenderer::Create();
+		this->shapeRenderer->Open();
+		
+		this->textRenderer = CoreGraphics::TextRenderer::Create();
+		this->textRenderer->Open();
 	}
 	else
 	{
@@ -103,11 +122,29 @@ GraphicsServer::Close()
 	this->debugHandler->Close();
 	this->debugHandler = nullptr;
 
-	this->renderDevice->Close();
-	this->renderDevice = nullptr;
+	this->textRenderer->Close();
+	this->textRenderer = nullptr;
+
+	this->shapeRenderer->Close();
+	this->shapeRenderer = nullptr;
+
+	this->transformDevice->Close();
+	this->transformDevice = nullptr;
+
+	this->materialServer->Close();
+	this->materialServer = nullptr;
+
+	this->frameServer->Close();
+	this->frameServer = nullptr;
+
+	this->shaderServer->Close();
+	this->shaderServer = nullptr;
 
 	this->displayDevice->Close();
 	this->displayDevice = nullptr;
+
+	if (this->graphicsDevice) CoreGraphics::DestroyGraphicsDevice();
+
 	// clear transforms pool
 }
 
@@ -238,9 +275,12 @@ GraphicsServer::DiscardStage(const Ptr<Stage>& stage)
 /**
 */
 Ptr<Graphics::View>
-GraphicsServer::CreateView(const Util::StringAtom& framescript)
+GraphicsServer::CreateView(const Util::StringAtom& name, const IO::URI& framescript)
 {
 	Ptr<View> view = View::Create();
+	Ptr<Frame::FrameScript> frameScript = Frame::FrameServer::Instance()->LoadFrameScript(name.AsString() + "_framescript", framescript);
+	frameScript->Build();
+	view->script = frameScript;
 	this->views.Append(view);
 	return view;
 }
@@ -254,6 +294,7 @@ GraphicsServer::DiscardView(const Ptr<View>& view)
 	IndexT i = this->views.FindIndex(view);
 	n_assert(i != InvalidIndex);
 	this->views.EraseIndex(i);
+	view->script->Discard();
 }
 
 

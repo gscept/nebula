@@ -36,9 +36,6 @@ const VertexLayoutId CreateVertexLayout(VertexLayoutCreateInfo& info);
 /// destroy vertex layout
 void DestroyVertexLayout(const VertexLayoutId id);
 
-/// bind vertex layout
-void VertexLayoutBind(const VertexLayoutId id);
-
 /// get byte size
 const SizeT VertexLayoutGetSize(const VertexLayoutId id);
 /// get components

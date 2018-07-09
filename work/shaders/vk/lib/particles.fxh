@@ -18,7 +18,7 @@ struct CornerVertex
 	vec2 UV;
 };
 
-group(BATCH_GROUP) shared varblock ParticleObjectBlock [ bool DynamicOffset = true; ]
+group(DYNAMIC_OFFSET_GROUP) shared varblock ParticleObjectBlock [ string Visibility = "VS"; ]
 {
 	mat4	EmitterTransform;
 	vec4	BBoxCenter;

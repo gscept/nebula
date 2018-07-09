@@ -1,0 +1,33 @@
+<?  xml version="1.0" encoding="UTF-8"?>
+<Nebula3 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../schemas/frame.xsd">
+
+<!-- 
+--> 
+<FrameShader>
+    
+    <!-- declare render targets -->
+    <DeclareRenderTarget name="GrassColorMapRT"  format="X8R8G8B8" depth="true"  width="256"  height="256" />
+    <DeclareRenderTarget name="GrassLightMapRT"  format="X8R8G8B8" depth="false" width="256"  height="256" />
+    <DeclareRenderTarget name="GrassNormalMapRT" format="A8R8G8B8" depth="false" width="256"  height="256" />
+    <DeclareRenderTarget name="GrassWeightMapRT" format="A8R8G8B8" depth="false" width="256"  height="256" cpuAccess="true" />
+    <DeclareRenderTarget name="GrassPatchMapRT"  format="A8R8G8B8" depth="true"  width="9"    height="9"   cpuAccess="true" />
+       
+    <DeclareMRT name="GrassMRT0">
+        <RenderTarget name="GrassColorMapRT" clearColor="0.0,0.0,0.0,1.0" clearDepth="1.0"/> 
+        <RenderTarget name="GrassLightMapRT" clearColor="0.0,0.0,0.0,0.0" /> 
+        <RenderTarget name="GrassNormalMapRT" clearColor="0.0,1.0,0.0,1.0" /> 
+        <RenderTarget name="GrassWeightMapRT" clearColor="0.0,0.0,0.0,0.0" /> 
+    </DeclareMRT>
+    
+    <!-- render color, lightmap, normal and weight of ground to 4 rendertargets -->
+    <Pass name="GrassColorLightNormalWeightMapPass" multipleRenderTarget="GrassMRT0" shader="p_grass" >            
+        <Batch shader="b_empty" type="Solid" shdFeatures="GrassColorLightmapNormalWeight" nodeFilter="Solid" sorting="None" lighting="None"/>
+    </Pass>        
+          
+    <!-- render weight of ground to 1 rendertarget -->
+    <Pass name="GrassPatchMapPass" renderTarget="GrassPatchMapRT" shader="p_grass" clearColor="0.0,0.0,0.0,0.0" clearDepth="1.0" clearStencil="0">            
+        <Batch shader="b_empty" type="Solid" shdFeatures="GrassPatchmap" nodeFilter="Solid"      sorting="None"         lighting="None"/>
+    </Pass>
+    
+</FrameShader>
+</Nebula3>

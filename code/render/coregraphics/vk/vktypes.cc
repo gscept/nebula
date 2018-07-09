@@ -399,6 +399,7 @@ VkTypes::AsNebulaPixelFormat(VkFormat f)
 	case VK_FORMAT_R8G8B8_UNORM:					return PixelFormat::R8G8B8;
 	case VK_FORMAT_R5G6B5_UNORM_PACK16:				return PixelFormat::R5G6B5;
 	case VK_FORMAT_R8G8B8A8_SRGB:					return PixelFormat::SRGBA8;
+	case VK_FORMAT_B8G8R8A8_SRGB:					return PixelFormat::SRGBA8;
 	case VK_FORMAT_R5G5B5A1_UNORM_PACK16:			return PixelFormat::R5G5B5A1;
 	case VK_FORMAT_R4G4B4A4_UNORM_PACK16:			return PixelFormat::R4G4B4A4;
 	case VK_FORMAT_BC1_RGB_UNORM_BLOCK:				return PixelFormat::DXT1;
@@ -520,7 +521,7 @@ VkTypes::AsVkPipelineFlags(const CoreGraphics::BarrierDependency dep)
 {
 	VkPipelineStageFlags flags = 0;
 	uint32_t bit;
-	for (bit = 1; dep > bit; bit *= 2)
+	for (bit = 1; dep >= bit; bit *= 2)
 	{
 		if ((dep & bit) == bit) switch ((CoreGraphics::BarrierDependency)bit)
 		{
@@ -579,7 +580,7 @@ VkTypes::AsVkResourceAccessFlags(const CoreGraphics::BarrierAccess access)
 {
 	VkAccessFlags flags = 0;
 	uint32_t bit;
-	for (bit = 1; access > bit; bit *= 2)
+	for (bit = 1; access >= bit; bit *= 2)
 	{
 		if ((access & bit) == bit) switch ((CoreGraphics::BarrierAccess)bit)
 		{
@@ -637,6 +638,83 @@ VkTypes::AsVkResourceAccessFlags(const CoreGraphics::BarrierAccess access)
 		}
 	}
 	return flags;
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+VkImageAspectFlags
+VkTypes::AsVkImageAspectFlags(const ImageAspect aspect)
+{
+	VkImageAspectFlags flags = 0;
+	uint32_t bit;
+	for (bit = 1; aspect >= bit; bit *= 2)
+	{
+		if ((aspect & bit) == bit) switch ((ImageAspect)bit)
+		{
+		case ImageAspect::ColorBits:
+			flags |= VK_IMAGE_ASPECT_COLOR_BIT;
+			break;
+		case ImageAspect::DepthBits:
+			flags |= VK_IMAGE_ASPECT_DEPTH_BIT;
+			break;
+		case ImageAspect::StencilBits:
+			flags |= VK_IMAGE_ASPECT_STENCIL_BIT;
+			break;
+		case ImageAspect::MetaBits:
+			flags |= VK_IMAGE_ASPECT_METADATA_BIT;
+			break;
+		case ImageAspect::Plane0Bits:
+			flags |= VK_IMAGE_ASPECT_PLANE_0_BIT;
+			break;
+		case ImageAspect::Plane1Bits:
+			flags |= VK_IMAGE_ASPECT_PLANE_1_BIT;
+			break;
+		case ImageAspect::Plane2Bits:
+			flags |= VK_IMAGE_ASPECT_PLANE_2_BIT;
+			break;
+		}
+	}
+	return flags;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+VkShaderStageFlags
+VkTypes::AsVkShaderVisibility(const CoreGraphicsShaderVisibility vis)
+{
+	VkShaderStageFlags ret = 0;
+	if ((vis & VertexShaderVisibility) == VertexShaderVisibility)		ret |= VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
+	if ((vis & HullShaderVisibility) == HullShaderVisibility)			ret |= VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT;
+	if ((vis & DomainShaderVisibility) == DomainShaderVisibility)		ret |= VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT;
+	if ((vis & GeometryShaderVisibility) == GeometryShaderVisibility)	ret |= VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT;
+	if ((vis & PixelShaderVisibility) == PixelShaderVisibility)			ret |= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+	if ((vis & ComputeShaderVisibility) == ComputeShaderVisibility)		ret |= VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+	return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+VkImageLayout
+VkTypes::AsVkImageLayout(const ImageLayout layout)
+{
+	switch (layout)
+	{
+		case ImageLayout::Undefined:					return VK_IMAGE_LAYOUT_UNDEFINED;
+		case ImageLayout::General:						return VK_IMAGE_LAYOUT_GENERAL;
+		case ImageLayout::ColorRenderTexture:			return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		case ImageLayout::DepthStencilRenderTexture:	return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		case ImageLayout::DepthStencilRead:				return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+		case ImageLayout::ShaderRead:					return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		case ImageLayout::TransferSource:				return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		case ImageLayout::TransferDestination:			return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		case ImageLayout::Preinitialized:				return VK_IMAGE_LAYOUT_PREINITIALIZED;
+		case ImageLayout::Present:						return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+	}
+	return VK_IMAGE_LAYOUT_UNDEFINED;
 }
 
 //------------------------------------------------------------------------------

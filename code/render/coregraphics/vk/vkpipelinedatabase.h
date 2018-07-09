@@ -55,7 +55,7 @@ public:
 	/// set subpass
 	void SetSubpass(uint32_t subpass);
 	/// set shader
-	void SetShader(const CoreGraphics::ShaderProgramId program);
+	void SetShader(const CoreGraphics::ShaderProgramId program, const VkGraphicsPipelineCreateInfo& gfxPipe);
 	/// set vertex layout
 	void SetVertexLayout(VkPipelineVertexInputStateCreateInfo* layout);
 	/// set input layout
@@ -71,6 +71,7 @@ private:
 	CoreGraphics::PassId currentPass;
 	uint32_t currentSubpass;
 	CoreGraphics::ShaderProgramId currentShaderProgram;
+	VkGraphicsPipelineCreateInfo currentShaderInfo;
 	VkPipelineVertexInputStateCreateInfo* currentVertexLayout;
 	VkPipelineInputAssemblyStateCreateInfo* currentInputAssemblyInfo;
 	StateLevel currentLevel;

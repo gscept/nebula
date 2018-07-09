@@ -13,7 +13,7 @@ shared buffers=1024 varblock Joints
 	mat4 JointPalette[96];
 };
 */
-group(BATCH_GROUP) shared varblock JointBlock [ bool DynamicOffset = true; ]
+group(INSTANCE_GROUP) shared varblock JointBlock [ bool DynamicOffset = true; string Visibility = "VS"; ]
 {
 	mat4 JointPalette[256];
 };

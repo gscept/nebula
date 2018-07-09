@@ -5,20 +5,27 @@
 #include "render/stdneb.h"
 #include "vkevent.h"
 #include "coregraphics/event.h"
-#include "vkrenderdevice.h"
+#include "vkgraphicsdevice.h"
 #include "coregraphics/config.h"
 #include "vktypes.h"
+#include "vkshaderrwtexture.h"
+#include "vkshaderrwbuffer.h"
+#include "vkrendertexture.h"
 
 #ifdef CreateEvent
 #pragma push_macro("CreateEvent")
 #undef CreateEvent
 #endif
 
+namespace Vulkan
+{
+VkEventAllocator eventAllocator(0x00FFFFFF);
+}
+
 namespace CoreGraphics
 {
 
 using namespace Vulkan;
-VkEventAllocator eventAllocator(0x00FFFFFF);
 //------------------------------------------------------------------------------
 /**
 */
@@ -34,7 +41,7 @@ CreateEvent(const EventCreateInfo& info)
 	Ids::Id32 id = eventAllocator.AllocObject();
 	VkEventInfo& vkInfo = eventAllocator.Get<1>(id);
 
-	VkDevice dev = VkRenderDevice::Instance()->GetCurrentDevice();
+	VkDevice dev = Vulkan::GetCurrentDevice();
 	vkCreateEvent(dev, &createInfo, nullptr, &vkInfo.event);
 
 	vkInfo.numImageBarriers = 0;
@@ -44,42 +51,54 @@ CreateEvent(const EventCreateInfo& info)
 	vkInfo.rightDependency = VkTypes::AsVkPipelineFlags(info.rightDependency);
 	eventAllocator.Get<0>(id) = dev;
 
-	n_assert(info.renderTextureBarriers.Size() < MaxNumBarriers);
-	n_assert(info.shaderRWTextures.Size() < MaxNumBarriers);
-	n_assert(info.shaderRWBuffers.Size() < MaxNumBarriers);
+	n_assert(info.renderTextures.Size() < EventMaxNumBarriers);
+	n_assert(info.shaderRWTextures.Size() < EventMaxNumBarriers);
+	n_assert(info.shaderRWBuffers.Size() < EventMaxNumBarriers);
 
 	SizeT i;
-	for (i = 0; i < info.renderTextureBarriers.Size(); i++)
+	for (i = 0; i < info.renderTextures.Size(); i++)
 	{
 		vkInfo.imageBarriers[i].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
 		vkInfo.imageBarriers[i].pNext = nullptr;
 
-		vkInfo.imageBarriers[i].srcAccessMask = VkTypes::AsVkResourceAccessFlags(std::get<1>(info.renderTextureBarriers[i]));
-		vkInfo.imageBarriers[i].dstAccessMask = VkTypes::AsVkResourceAccessFlags(std::get<2>(info.renderTextureBarriers[i]));
+		vkInfo.imageBarriers[i].srcAccessMask = VkTypes::AsVkResourceAccessFlags(std::get<4>(info.renderTextures[i]));
+		vkInfo.imageBarriers[i].dstAccessMask = VkTypes::AsVkResourceAccessFlags(std::get<5>(info.renderTextures[i]));
 
-		n_error("Implement RenderTexture method for getting Vk image");
+		const ImageSubresourceInfo& subres = std::get<1>(info.renderTextures[i]);
+		vkInfo.imageBarriers[i].subresourceRange.aspectMask = VkTypes::AsVkImageAspectFlags(subres.aspect);
+		vkInfo.imageBarriers[i].subresourceRange.baseMipLevel = subres.mip;
+		vkInfo.imageBarriers[i].subresourceRange.levelCount = subres.mipCount;
+		vkInfo.imageBarriers[i].subresourceRange.baseArrayLayer = subres.layer;
+		vkInfo.imageBarriers[i].subresourceRange.layerCount = subres.layerCount;
+		vkInfo.imageBarriers[i].image = RenderTextureGetVkImage(std::get<0>(info.renderTextures[i]));
 		vkInfo.imageBarriers[i].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		vkInfo.imageBarriers[i].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		vkInfo.imageBarriers[i].oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		vkInfo.imageBarriers[i].newLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		vkInfo.imageBarriers[i].oldLayout = VkTypes::AsVkImageLayout(std::get<2>(info.renderTextures[i]));
+		vkInfo.imageBarriers[i].newLayout = VkTypes::AsVkImageLayout(std::get<3>(info.renderTextures[i]));
 		vkInfo.numImageBarriers++;
 	}
 
 	// make sure we have room...
-	n_assert(info.shaderRWTextures.Size() < MaxNumBarriers - i);
+	n_assert(info.shaderRWTextures.Size() < EventMaxNumBarriers - i);
 	for (; i < info.shaderRWTextures.Size(); i++)
 	{
 		vkInfo.imageBarriers[i].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
 		vkInfo.imageBarriers[i].pNext = nullptr;
 
-		vkInfo.imageBarriers[i].srcAccessMask = VkTypes::AsVkResourceAccessFlags(std::get<1>(info.shaderRWTextures[i]));
-		vkInfo.imageBarriers[i].dstAccessMask = VkTypes::AsVkResourceAccessFlags(std::get<2>(info.shaderRWTextures[i]));
+		vkInfo.imageBarriers[i].srcAccessMask = VkTypes::AsVkResourceAccessFlags(std::get<4>(info.shaderRWTextures[i]));
+		vkInfo.imageBarriers[i].dstAccessMask = VkTypes::AsVkResourceAccessFlags(std::get<5>(info.shaderRWTextures[i]));
 
-		n_error("Implement RenderTexture method for getting Vk image");
+		const ImageSubresourceInfo& subres = std::get<1>(info.shaderRWTextures[i]);
+		vkInfo.imageBarriers[i].subresourceRange.aspectMask = VkTypes::AsVkImageAspectFlags(subres.aspect);
+		vkInfo.imageBarriers[i].subresourceRange.baseMipLevel = subres.mip;
+		vkInfo.imageBarriers[i].subresourceRange.levelCount = subres.mipCount;
+		vkInfo.imageBarriers[i].subresourceRange.baseArrayLayer = subres.layer;
+		vkInfo.imageBarriers[i].subresourceRange.layerCount = subres.layerCount;
+		vkInfo.imageBarriers[i].image = ShaderRWTextureGetVkImage(std::get<0>(info.shaderRWTextures[i]));
 		vkInfo.imageBarriers[i].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		vkInfo.imageBarriers[i].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		vkInfo.imageBarriers[i].oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		vkInfo.imageBarriers[i].newLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		vkInfo.imageBarriers[i].oldLayout = VkTypes::AsVkImageLayout(std::get<2>(info.shaderRWTextures[i]));
+		vkInfo.imageBarriers[i].newLayout = VkTypes::AsVkImageLayout(std::get<3>(info.shaderRWTextures[i]));
 		vkInfo.numImageBarriers++;
 	}
 
@@ -91,12 +110,12 @@ CreateEvent(const EventCreateInfo& info)
 		vkInfo.bufferBarriers[i].srcAccessMask = VkTypes::AsVkResourceAccessFlags(std::get<1>(info.shaderRWBuffers[i]));
 		vkInfo.bufferBarriers[i].dstAccessMask = VkTypes::AsVkResourceAccessFlags(std::get<2>(info.shaderRWBuffers[i]));
 
-		n_error("Implement RenderTexture method for getting Vk buffer");
+		vkInfo.bufferBarriers[i].buffer = ShaderRWBufferGetVkBuffer(std::get<0>(info.shaderRWBuffers[i]));
 		vkInfo.bufferBarriers[i].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		vkInfo.bufferBarriers[i].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		vkInfo.bufferBarriers[i].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		vkInfo.bufferBarriers[i].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		vkInfo.numBufferBarriers;
+		vkInfo.numBufferBarriers++;
 	}
 
 	EventId eventId;
@@ -121,18 +140,9 @@ DestroyEvent(const EventId id)
 /**
 */
 void 
-EventSignal(const EventId id, const CoreGraphicsQueueType queue, const BarrierDependency when)
+EventSignal(const EventId id, const CoreGraphicsQueueType queue)
 {
-	const VkEventInfo& vkInfo = eventAllocator.Get<1>(id.id24);
-	VkCommandBuffer buf;
-	switch (queue)
-	{
-	case GraphicsQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdDrawBuffer); break;
-	case TransferQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdTransferBuffer); break;
-	case ComputeQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdComputeBuffer); break;
-	case SparseQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdSparseBuffer); break;
-	}
-	vkCmdSetEvent(buf, vkInfo.event, VkTypes::AsVkPipelineFlags(when));
+	CoreGraphics::SignalEvent(id, queue);
 }
 
 //------------------------------------------------------------------------------
@@ -141,34 +151,26 @@ EventSignal(const EventId id, const CoreGraphicsQueueType queue, const BarrierDe
 void
 EventWait(const EventId id, const CoreGraphicsQueueType queue)
 {
-	const VkEventInfo& vkInfo = eventAllocator.Get<1>(id.id24);
-	VkCommandBuffer buf;
-	switch (queue)
-	{
-	case GraphicsQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdDrawBuffer); break;
-	case TransferQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdTransferBuffer); break;
-	case ComputeQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdComputeBuffer); break;
-	case SparseQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdSparseBuffer); break;
-	}
-	vkCmdWaitEvents(buf, 1, &vkInfo.event, vkInfo.leftDependency, vkInfo.rightDependency, vkInfo.numMemoryBarriers, vkInfo.memoryBarriers, vkInfo.numBufferBarriers, vkInfo.bufferBarriers, vkInfo.numImageBarriers, vkInfo.imageBarriers);
+	CoreGraphics::WaitEvent(id, queue);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-EventReset(const EventId id, const CoreGraphicsQueueType queue, const BarrierDependency when)
+EventReset(const EventId id, const CoreGraphicsQueueType queue)
 {
-	const VkEventInfo& vkInfo = eventAllocator.Get<1>(id.id24);
-	VkCommandBuffer buf;
-	switch (queue)
-	{
-	case GraphicsQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdDrawBuffer); break;
-	case TransferQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdTransferBuffer); break;
-	case ComputeQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdComputeBuffer); break;
-	case SparseQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdSparseBuffer); break;
-	}
-	vkCmdResetEvent(buf, vkInfo.event, VkTypes::AsVkPipelineFlags(when));
+	CoreGraphics::ResetEvent(id, queue);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+EventWaitAndReset(const EventId id, const CoreGraphicsQueueType queue)
+{
+	CoreGraphics::WaitEvent(id, queue);
+	CoreGraphics::ResetEvent(id, queue);
 }
 
 } // namespace CoreGraphics

@@ -5,7 +5,7 @@
 #include "render/stdneb.h"
 #include "framesubpassbatch.h"
 #include "coregraphics/shaderserver.h"
-#include "coregraphics/renderdevice.h"
+#include "coregraphics/graphicsdevice.h"
 #include "materials/materialserver.h"
 #include "models/model.h"
 
@@ -45,16 +45,26 @@ FrameSubpassBatch::~FrameSubpassBatch()
 //------------------------------------------------------------------------------
 /**
 */
+FrameOp::Compiled* 
+FrameSubpassBatch::AllocCompiled(Memory::ChunkAllocator<0xFFFF>& allocator)
+{
+	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
+	ret->batch = this->batch;
+	return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
-FrameSubpassBatch::Run(const IndexT frameIndex)
+FrameSubpassBatch::CompiledImpl::Run(const IndexT frameIndex)
 {
 	// now do usual render stuff
 	ShaderServer* shaderServer = ShaderServer::Instance();
-	RenderDevice* renderDevice = RenderDevice::Instance();
 	MaterialServer* matServer = MaterialServer::Instance();
 
 	// start batch
-	renderDevice->BeginBatch(FrameBatchType::Geometry);
+	CoreGraphics::BeginBatch(FrameBatchType::Geometry);
 
 	/*
 
@@ -155,7 +165,7 @@ FrameSubpassBatch::Run(const IndexT frameIndex)
 	*/
 
 	// end batch
-	renderDevice->EndBatch();
+	CoreGraphics::EndBatch();
 }
 
 } // namespace Frame2

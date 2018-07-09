@@ -10,7 +10,6 @@
 #include "coregraphics/config.h"
 #include "coregraphics/shadersemantics.h"
 #include "framesync/framesynctimer.h"
-#include "coregraphics/renderdevice.h"
 
 
 using namespace Util;
@@ -88,6 +87,7 @@ VkTransformDevice::ApplyViewSettings()
 	ShaderConstantSet(this->eyePosVar, this->sharedShader, this->GetInvViewTransform().getrow3());
 	ShaderConstantSet(this->focalLengthVar, this->sharedShader, float4(this->GetFocalLength().x(), this->GetFocalLength().y(), 0, 0));
 	ShaderConstantSet(this->timeAndRandomVar, this->sharedShader, float4((float)FrameSync::FrameSyncTimer::Instance()->GetTime(), Math::n_rand(0, 1), 0, 0));
+	ShaderStateCommit(this->sharedShader);
 }
 
 } // namespace Vulkan

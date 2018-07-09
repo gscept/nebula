@@ -48,8 +48,19 @@ FrameSubpassAlgorithm::Discard()
 //------------------------------------------------------------------------------
 /**
 */
+FrameOp::Compiled* 
+FrameSubpassAlgorithm::AllocCompiled(Memory::ChunkAllocator<0xFFFF>& allocator)
+{
+	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
+	ret->func = this->alg->GetFunction(this->funcName);
+	return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
-FrameSubpassAlgorithm::Run(const IndexT frameIndex)
+FrameSubpassAlgorithm::CompiledImpl::Run(const IndexT frameIndex)
 {
 	this->func(frameIndex);
 }

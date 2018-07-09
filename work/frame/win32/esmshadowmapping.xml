@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Nebula3 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../schemas/frame.xsd">
+
+<!--
+    Renders shadow buffers for exponential  shadow mapping.
+-->
+<FrameShader>
+
+    <!-- declare render targets -->
+    <DeclareRenderTarget name="ESMRenderBuffer" width="512" height="512"   depth="true" format="R32F" msaa="false"/>
+    <DeclareRenderTarget name="ESMDownscale"    width="512"  height="512"  depth="false" format="R32F" msaa="false"/>
+  
+    <!-- render shadow casters to render buffer -->
+    <Pass name="ESMDepth" renderTarget="ESMRenderBuffer" shader="p_exponentialshadowmap" clearDepth="1.0" clearStencil="0" clearColor="0.0,0.0,0.0,0.0">
+        <Batch shader="b_empty" type="Solid" shdFeatures="ESMDepth" nodeFilter="Solid"          sorting="FrontToBack" lighting="None"/>
+        <Batch shader="b_empty" type="Solid" shdFeatures="ESMDepthATest" nodeFilter="BlendAlphaTest" sorting="FrontToBack" lighting="None"/>
+    </Pass>
+    
+    <!-- blur -->
+    <PostEffect name="Filter1" renderTarget="ESMDownscale" shader="pe_esm_hori3tapboxfilter">
+        <ApplyShaderVariable sem="SourceBuffer" value="ESMRenderBuffer"/>
+    </PostEffect>
+    <PostEffect name="Final" renderTarget="ESMRenderBuffer" shader="pe_esm_vert3tapboxfilter">
+        <ApplyShaderVariable sem="SourceBuffer" value="ESMDownscale"/>
+    </PostEffect>
+       
+</FrameShader>
+</Nebula3>

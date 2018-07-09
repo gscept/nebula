@@ -13,11 +13,12 @@
 #include "lowlevel/vk/vkvariable.h"
 #include "resources/resourcepool.h"
 #include "coregraphics/constantbuffer.h"
+#include "coregraphics/resourcetable.h"
 
 namespace Vulkan
 {
 
-union VkShaderConstantMemoryBinding
+struct VkShaderConstantMemoryBinding
 {
 	bool isbuffer;
 	uint32_t offset;
@@ -27,7 +28,7 @@ union VkShaderConstantMemoryBinding
 	union
 	{
 		uint8_t* push;									// push range backing
-		Ids::Id24 uniformBuffer : 24;					// uniform buffer backing
+		Ids::Id32 uniformBuffer;						// uniform buffer backing
 														//CoreGraphics::ConstantBufferId uniformBuffer;	// uniform buffer backing
 	} backing;
 };
@@ -42,7 +43,7 @@ union DescriptorWrite
 struct VkShaderConstantDescriptorBinding
 {
 	bool dynamicOffset;
-	VkDescriptorSet set;
+	CoreGraphics::ResourceTableId set;
 	uint32_t setBinding;
 	bool textureIsHandle;
 	DescriptorWrite write;
@@ -85,24 +86,24 @@ void SetBool(VkShaderConstantMemoryBinding& bind, bool value);
 /// set bool array values
 void SetBoolArray(VkShaderConstantMemoryBinding& bind, const bool* values, SizeT count);
 /// set texture value
-void SetTexture(VkShaderConstantMemoryBinding& bind, VkShaderConstantDescriptorBinding& res, Util::Array<VkWriteDescriptorSet>& writes, const CoreGraphics::TextureId tex);
+void SetTexture(VkShaderConstantMemoryBinding& bind, VkShaderConstantDescriptorBinding& res, const CoreGraphics::TextureId tex);
 /// set render texture value
-void SetRenderTexture(VkShaderConstantMemoryBinding& bind, VkShaderConstantDescriptorBinding& res, Util::Array<VkWriteDescriptorSet>& writes, const CoreGraphics::RenderTextureId tex);
+void SetRenderTexture(VkShaderConstantMemoryBinding& bind, VkShaderConstantDescriptorBinding& res, const CoreGraphics::RenderTextureId tex);
 /// set constant buffer
-void SetConstantBuffer(VkShaderConstantDescriptorBinding& bind, Util::Array<VkWriteDescriptorSet>& writes, const CoreGraphics::ConstantBufferId buf);
+void SetConstantBuffer(VkShaderConstantDescriptorBinding& bind, const CoreGraphics::ConstantBufferId buf);
 /// set shader read-write image
-void SetShaderReadWriteTexture(VkShaderConstantDescriptorBinding& bind, Util::Array<VkWriteDescriptorSet>& writes, const CoreGraphics::ShaderRWTextureId tex);
+void SetShaderReadWriteTexture(VkShaderConstantMemoryBinding& bind, VkShaderConstantDescriptorBinding& res, const CoreGraphics::ShaderRWTextureId tex);
 /// set shader read-write as texture
-void SetShaderReadWriteTexture(VkShaderConstantDescriptorBinding& bind, Util::Array<VkWriteDescriptorSet>& writes, const CoreGraphics::TextureId tex);
+void SetShaderReadWriteTexture(VkShaderConstantDescriptorBinding& bind, const CoreGraphics::TextureId tex);
 /// set shader read-write buffer
-void SetShaderReadWriteBuffer(VkShaderConstantDescriptorBinding& bind, Util::Array<VkWriteDescriptorSet>& writes, const CoreGraphics::ShaderRWBufferId buf);
+void SetShaderReadWriteBuffer(VkShaderConstantDescriptorBinding& bind, const CoreGraphics::ShaderRWBufferId buf);
 
 /// setup from AnyFX variable
-void VkShaderConstantSetup(AnyFX::VkVariable* var, Ids::Id24 id, VkShaderConstantAllocator& allocator, const VkDescriptorSet set = VK_NULL_HANDLE);
+void VkShaderConstantSetup(AnyFX::VkVariable* var, Ids::Id24 id, VkShaderConstantAllocator& allocator, const CoreGraphics::ResourceTableId& tid);
 /// setup from AnyFX varbuffer
-void VkShaderConstantSetup(AnyFX::VkVarbuffer* var, Ids::Id24 id, VkShaderConstantAllocator& allocator, const VkDescriptorSet set);
+void VkShaderConstantSetup(AnyFX::VkVarbuffer* var, Ids::Id24 id, VkShaderConstantAllocator& allocator, const CoreGraphics::ResourceTableId& tid);
 /// setup from AnyFX varblock
-void VkShaderConstantSetup(AnyFX::VkVarblock* var, Ids::Id24 id, VkShaderConstantAllocator& allocator, const VkDescriptorSet set);
+void VkShaderConstantSetup(AnyFX::VkVarblock* var, Ids::Id24 id, VkShaderConstantAllocator& allocator, const CoreGraphics::ResourceTableId& tid);
 
 /// bind variable to uniform buffer
 void VkShaderConstantBindToUniformBuffer(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ConstantBufferId buffer, VkShaderConstantAllocator& allocator, uint32_t offset, uint32_t size, int8_t* defaultValue);

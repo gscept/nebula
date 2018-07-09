@@ -1,0 +1,5 @@
+<Shady>
+	<Variation desc="Current time." simulationCommand="time" simulationInteractive="true">
+		<Output type="float" name="Time" static="true" param="true"/>
+	</Variation>
+</Shady>

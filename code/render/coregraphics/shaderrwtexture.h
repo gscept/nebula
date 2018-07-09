@@ -13,6 +13,7 @@
 #include "coregraphics/pixelformat.h"
 #include "coregraphics/texture.h"
 #include "coregraphics/window.h"
+#include "coregraphics/config.h"
 namespace CoreGraphics
 {
 ID_24_8_TYPE(ShaderRWTextureId);
@@ -22,11 +23,9 @@ struct ShaderRWTextureCreateInfo
 	Resources::ResourceName name;
 	CoreGraphics::TextureType type;
 	CoreGraphics::PixelFormat::Code format;
-	SizeT width, height, depth;
+	float width, height, depth;
 	SizeT layers, mips;
-	float widthScale, heightScale, depthScale;
 	bool window : 1;
-	bool dynamicSize : 1;
 	bool relativeSize : 1;
 };
 
@@ -40,7 +39,6 @@ struct ShaderRWTextureInfo
 	float widthScale, heightScale, depthScale;
 	CoreGraphics::WindowId window;
 	bool isWindow : 1;
-	bool dynamicSize : 1;
 	bool relativeSize : 1;
 };
 
@@ -67,5 +65,7 @@ ShaderRWTextureInfo ShaderRWTextureInfoSetupHelper(const ShaderRWTextureCreateIn
 
 /// get size
 const TextureDimensions ShaderRWTextureGetDimensions(const ShaderRWTextureId id);
+/// get layout
+const ImageLayout ShaderRWTextureGetLayout(const ShaderRWTextureId id);
 
 } // CoreGraphics

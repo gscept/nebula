@@ -11,6 +11,7 @@
 #include "ids/idallocator.h"
 #include "coregraphics/texture.h"
 #include "coregraphics/pixelformat.h"
+#include "coregraphics/config.h"
 #include "resources/resourcepool.h"
 #include "coregraphics/window.h"
 namespace CoreGraphics
@@ -32,12 +33,10 @@ struct RenderTextureCreateInfo
 	CoreGraphics::TextureType type;
 	CoreGraphics::PixelFormat::Code format;
 	RenderTextureUsage usage;
-	SizeT width, height, depth;
+	float width, height, depth;
 	SizeT layers, mips;
-	float widthScale, heightScale, depthScale;
 	bool msaa : 1;
 	bool window : 1;
-	bool dynamicSize : 1;
 	bool relativeSize : 1;
 };
 
@@ -54,7 +53,6 @@ struct RenderTextureInfo
 	CoreGraphics::WindowId window;
 	bool msaa : 1;
 	bool isWindow : 1;
-	bool dynamicSize : 1;
 	bool relativeSize : 1;
 };
 
@@ -83,6 +81,8 @@ const CoreGraphics::TextureDimensions RenderTextureGetDimensions(const RenderTex
 const CoreGraphics::PixelFormat::Code RenderTextureGetPixelFormat(const RenderTextureId id);
 /// get msaa
 const bool RenderTextureGetMSAA(const RenderTextureId id);
+/// get layout
+const ImageLayout RenderTextureGetLayout(const RenderTextureId id);
 
 /// helper function to setup RenderTextureInfo, already implemented
 RenderTextureInfo RenderTextureInfoSetupHelper(const RenderTextureCreateInfo& info);

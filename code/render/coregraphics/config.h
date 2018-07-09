@@ -9,6 +9,8 @@
     (C) 2013-2016 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
+#include "util/string.h"
+#include "core/rttimacros.h"
 
 enum CoreGraphicsIdType
 {
@@ -30,9 +32,15 @@ enum CoreGraphicsIdType
 	MeshIdType,
 	EventIdType,
 	BarrierIdType,
+	SemaphoreIdType,
+	FenceIdType,
 	WindowIdType,
 	PassIdType,
-	AnimResourceIdType
+	AnimResourceIdType,
+	ResourceTableIdType,
+	ResourceTableLayoutIdType,
+	ResourcePipelineIdType,
+	SamplerIdType
 };
 
 enum CoreGraphicsQueueType
@@ -40,8 +48,88 @@ enum CoreGraphicsQueueType
 	GraphicsQueueType,
 	ComputeQueueType,
 	TransferQueueType,
-	SparseQueueType
+	SparseQueueType,
+
+	NumQueueTypes
 };
+
+enum CoreGraphicsShaderVisibility
+{
+	InvalidVisibility			= 0,
+	VertexShaderVisibility		= 1 << 0,
+	HullShaderVisibility		= 1 << 2,
+	DomainShaderVisibility		= 1 << 3,
+	GeometryShaderVisibility	= 1 << 4,
+	PixelShaderVisibility		= 1 << 5,
+	ComputeShaderVisibility		= 1 << 6,
+	AllVisibility				= VertexShaderVisibility | HullShaderVisibility | DomainShaderVisibility | GeometryShaderVisibility | PixelShaderVisibility | ComputeShaderVisibility
+};
+__ImplementEnumBitOperators(CoreGraphicsShaderVisibility);
+
+enum class ImageAspect
+{
+	ColorBits = (1 << 0),
+	DepthBits = (1 << 1),
+	StencilBits = (1 << 2),
+	MetaBits = (1 << 3),
+	Plane0Bits = (1 << 4),
+	Plane1Bits = (1 << 5),
+	Plane2Bits = (1 << 6)
+};
+
+enum class ImageLayout
+{
+	Undefined,
+	General,
+	ColorRenderTexture,
+	DepthStencilRenderTexture,
+	DepthStencilRead,
+	ShaderRead,
+	TransferSource,
+	TransferDestination,
+	Preinitialized,
+	Present
+};
+__ImplementEnumBitOperators(ImageAspect);
+__ImplementEnumComparisonOperators(ImageAspect);
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline CoreGraphicsShaderVisibility
+ShaderVisibilityFromString(const Util::String& str)
+{
+	Util::Array<Util::String> components = str.Tokenize("|");
+	CoreGraphicsShaderVisibility ret = InvalidVisibility;
+	IndexT i;
+	for (i = 0; i < components.Size(); i++)
+	{
+		const Util::String& component = components[i];
+		if (component == "VS")		ret |= VertexShaderVisibility;
+		else if (component == "HS") ret |= HullShaderVisibility;
+		else if (component == "DS") ret |= DomainShaderVisibility;
+		else if (component == "GS") ret |= GeometryShaderVisibility;
+		else if (component == "PS") ret |= PixelShaderVisibility;
+		else if (component == "CS") ret |= ComputeShaderVisibility;
+	}
+
+	return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline CoreGraphicsQueueType
+CoreGraphicsQueueTypeFromString(const Util::String& str)
+{
+	if (str == "Graphics")		return GraphicsQueueType;
+	else if (str == "Compute")	return ComputeQueueType;
+	else if (str == "Transfer") return TransferQueueType;
+	else if (str == "Sparse")	return SparseQueueType;
+	return GraphicsQueueType;
+}
+
+
 
 #define SHADER_POSTEFFECT_DEFAULT_FEATURE_MASK "Alt0"
 
@@ -80,7 +168,7 @@ enum CoreGraphicsQueueType
 	#define NEBULAT_PASS_GROUP 2				// set per pass by the system
 	#define NEBULAT_BATCH_GROUP 3				// set per batch (material settings or system stuff)
 	#define NEBULAT_INSTANCE_GROUP 4			// set a batch-internal copy of some specific settings
-	#define NEBULAT_OBJECT_TRANSFORM_GROUP 5	// set for all objects before rendering
+	#define NEBULAT_DYNAMIC_OFFSET_GROUP 5		// set once per shader and is offset for each instance
 
 	#define MAX_INPUT_ATTACHMENTS 32
 

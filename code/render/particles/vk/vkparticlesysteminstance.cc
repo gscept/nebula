@@ -4,8 +4,8 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "vkparticlesysteminstance.h"
-#include "../particlerenderer.h"
-#include "coregraphics/renderdevice.h"
+#include "particles/particlerenderer.h"
+#include "coregraphics/graphicsdevice.h"
 
 using namespace CoreGraphics;
 using namespace Particles;
@@ -77,14 +77,13 @@ VkParticleSystemInstance::Render()
 {
 	ParticleRenderer* particleRenderer = ParticleRenderer::Instance();
 	n_assert(!particleRenderer->IsInAttach());
-	RenderDevice* renderDevice = RenderDevice::Instance();
 	SizeT numParticles = this->renderInfo.GetNumVertices();
 
 	if (numParticles > 0)
 	{
 		// setup vertex buffers and index buffers for rendering
 		IndexT baseVertexIndex = this->renderInfo.GetBaseVertexIndex();
-		renderDevice->DrawIndexedInstanced(numParticles, baseVertexIndex);
+		CoreGraphics::DrawIndexedInstanced(numParticles, baseVertexIndex);
 	}
 }
 

@@ -6,10 +6,12 @@
 #include "hbaoalgorithm.h"
 #include "coregraphics/shaderserver.h"
 #include "coregraphics/shadersemantics.h"
-#include "coregraphics/renderdevice.h"
+#include "coregraphics/graphicsdevice.h"
 #include "coregraphics/shaderrwtexture.h"
 #include "coregraphics/shaderrwbuffer.h"
 #include "graphics/graphicsserver.h"
+#include "graphics/camera.h"
+#include "graphics/view.h"
 
 using namespace CoreGraphics;
 using namespace Graphics;
@@ -49,10 +51,9 @@ HBAOAlgorithm::Setup()
 		"HBAO-Internal0",
 		Texture2D,
 		PixelFormat::R16G16F,
-		0, 0, 0,			// hard dimensions
+		1.0f, 1.0f, 1.0f,
 		1, 1,				// layers and mips
-		1.0f, 1.0f, 1.0f,	// scaling
-		false, false, true
+		false, true
 	};
 
 	this->internalTargets[0] = CreateShaderRWTexture(tinfo);
@@ -65,15 +66,18 @@ HBAOAlgorithm::Setup()
 		BarrierDependency::ComputeShader,
 		BarrierDependency::ComputeShader
 	};
-	binfo.shaderRWTextures.Append(std::make_tuple(this->internalTargets[0], BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead));
+	ImageSubresourceInfo subres;
+	subres.aspect = ImageAspect::ColorBits;
+
+	binfo.shaderRWTextures.Append(std::make_tuple(this->internalTargets[0], subres, ImageLayout::General, ImageLayout::General, BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead));
 	this->barriers[0] = CreateBarrier(binfo);
 
 	binfo.shaderRWTextures.Clear();
-	binfo.shaderRWTextures.Append(std::make_tuple(this->internalTargets[1], BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead));
+	binfo.shaderRWTextures.Append(std::make_tuple(this->internalTargets[1], subres, ImageLayout::General, ImageLayout::General, BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead));
 	this->barriers[1] = CreateBarrier(binfo);
 
 	binfo.shaderRWTextures.Clear();
-	binfo.shaderRWTextures.Append(std::make_tuple(this->readWriteTextures[0], BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead));
+	binfo.shaderRWTextures.Append(std::make_tuple(this->readWriteTextures[0], subres, ImageLayout::General, ImageLayout::General, BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead));
 	this->barriers[2] = CreateBarrier(binfo);
 
 	// setup shaders
@@ -191,7 +195,6 @@ HBAOAlgorithm::Setup()
 	// calculate HBAO and blur
 	this->AddFunction("HBAOAndBlur", Algorithm::Compute, [this](IndexT)
 	{
-		RenderDevice* renderDevice = RenderDevice::Instance();
 		ShaderServer* shaderServer = ShaderServer::Instance();
 
 #define TILE_WIDTH 320
@@ -207,27 +210,27 @@ HBAOAlgorithm::Setup()
 		uint numGroupsY2 = height;
 
 		// render AO in X
-		ShaderProgramBind(this->xDirectionHBAO);
-		ShaderStateApply(this->hbao);
-		renderDevice->Compute(numGroupsX1, numGroupsY2, 1);
+		CoreGraphics::SetShaderProgram(this->xDirectionHBAO);
+		CoreGraphics::SetShaderState(this->hbao);
+		CoreGraphics::Compute(numGroupsX1, numGroupsY2, 1);
 
-		renderDevice->InsertBarrier(this->barriers[0]);
+		CoreGraphics::InsertBarrier(this->barriers[0], ComputeQueueType);
 
-		ShaderProgramBind(this->yDirectionHBAO);
-		ShaderStateApply(this->hbao);
-		renderDevice->Compute(numGroupsY1, numGroupsX2, 1);
+		CoreGraphics::SetShaderProgram(this->yDirectionHBAO);
+		CoreGraphics::SetShaderState(this->hbao);
+		CoreGraphics::Compute(numGroupsY1, numGroupsX2, 1);
 
-		renderDevice->InsertBarrier(this->barriers[1]);
+		CoreGraphics::InsertBarrier(this->barriers[1], ComputeQueueType);
 
-		ShaderProgramBind(this->xDirectionBlur);
-		ShaderStateApply(this->blur);
-		renderDevice->Compute(numGroupsX1, numGroupsY2, 1);
+		CoreGraphics::SetShaderProgram(this->xDirectionBlur);
+		CoreGraphics::SetShaderState(this->blur);
+		CoreGraphics::Compute(numGroupsX1, numGroupsY2, 1);
 
-		renderDevice->InsertBarrier(this->barriers[0]);
+		CoreGraphics::InsertBarrier(this->barriers[0], ComputeQueueType);
 
-		ShaderProgramBind(this->yDirectionBlur);
-		ShaderStateApply(this->blur);
-		renderDevice->Compute(numGroupsY1, numGroupsX2, 1);
+		CoreGraphics::SetShaderProgram(this->yDirectionBlur);
+		CoreGraphics::SetShaderState(this->blur);
+		CoreGraphics::Compute(numGroupsY1, numGroupsX2, 1);
 
 		//renderDevice->InsertBarrier(this->barriers[2]);
 	});
@@ -240,6 +243,8 @@ void
 HBAOAlgorithm::Discard()
 {
 	Algorithm::Discard();
+	CoreGraphics::DestroyShaderRWTexture(internalTargets[0]);
+	CoreGraphics::DestroyShaderRWTexture(internalTargets[1]);
 	ShaderDestroyState(this->hbao);
 	ShaderDestroyState(this->blur);
 }

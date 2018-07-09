@@ -4,6 +4,7 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "materialtype.h"
+#include "coregraphics/graphicsdevice.h"
 #include "coregraphics/shader.h"
 #include "coregraphics/config.h"
 namespace Materials
@@ -173,7 +174,7 @@ MaterialType::BeginBatch(CoreGraphics::BatchGroup::Code batch)
 {
 	n_assert(this->currentAllocator == nullptr);
 	this->currentAllocator = &states[batch];
-	CoreGraphics::ShaderProgramBind(this->programs[batch]);
+	CoreGraphics::SetShaderProgram(this->programs[batch]);
 }
 
 //------------------------------------------------------------------------------
@@ -194,6 +195,6 @@ MaterialType::ApplyMaterial(Ids::Id32 mat)
 {
 	n_assert(this->currentAllocator != nullptr);
 	const Util::Array<Ids::Id32>& indices = this->materialAllocator.Get<0>(mat);
-	CoreGraphics::ShaderStateApply((*this->currentAllocator)[indices[mat]]);
+	CoreGraphics::SetShaderState((*this->currentAllocator)[indices[mat]]);
 }
 } // namespace Materials

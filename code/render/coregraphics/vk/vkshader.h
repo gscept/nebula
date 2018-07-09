@@ -10,6 +10,8 @@
 #include "lowlevel/afxapi.h"
 #include "util/set.h"
 #include "coregraphics/shader.h"
+#include "coregraphics/sampler.h"
+#include "coregraphics/resourcetable.h"
 
 namespace Vulkan
 {
@@ -20,38 +22,30 @@ void VkShaderSetup(
 	const VkPhysicalDeviceProperties props,
 	AnyFX::ShaderEffect* effect,
 	VkPushConstantRange& constantRange,
-	Util::Dictionary<uint32_t, Util::Array<VkDescriptorSetLayoutBinding>>& setBindings,
-	Util::Array<VkSampler>& immutableSamplers,
-	Util::FixedArray<VkDescriptorSetLayout>& setLayouts,
-	VkPipelineLayout& pipelineLayout,
-	Util::FixedArray<VkDescriptorSet>& sets,
-	Util::FixedArray<VkDescriptorPool>& setPools,
-	Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBufferId>& buffers,
-	Util::Dictionary<uint32_t, Util::Array<CoreGraphics::ConstantBufferId>>& buffersByGroup
+	Util::Array<CoreGraphics::SamplerId>& immutableSamplers,
+	Util::FixedArray<std::pair<uint32_t, CoreGraphics::ResourceTableLayoutId>>& setLayouts,
+	CoreGraphics::ResourcePipelineId& pipelineLayout,
+	Util::FixedArray<CoreGraphics::ResourceTableId>& sets,
+	Util::Dictionary<Util::StringAtom, uint32_t>& resourceSlotMap,
+	Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBufferId>& sharedBuffers,
+	Util::Dictionary<uint32_t, Util::Array<CoreGraphics::ConstantBufferId>>& sharedBuffersByGroup
 );
 /// cleanup shader
 void VkShaderCleanup(
 	VkDevice dev,
-	Util::Array<VkSampler>& immutableSamplers,
-	Util::FixedArray<VkDescriptorSetLayout>& setLayouts,
-	VkPipelineLayout& pipelineLayout
+	Util::Array<CoreGraphics::SamplerId>& immutableSamplers,
+	Util::FixedArray<std::pair<uint32_t, CoreGraphics::ResourceTableLayoutId>>& setLayouts,
+	Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBufferId>& buffers,
+	CoreGraphics::ResourcePipelineId& pipelineLayout
 );
-/// get variable offset (within its constant buffer) by name
-const uint32_t& VkShaderGetVariableOffset(const Util::String& name);
-/// get variable offset by index
-const uint32_t& VkShaderGetVariableOffset(const IndexT& i);
-/// returns variable offset index
-IndexT VkShaderFindVariableOffset(const Util::String& name);
-/// returns constant offset table using varblock signature
-const Util::Dictionary<Util::StringAtom, uint32_t>& VkShaderGetConstantOffsetTable(const Util::StringAtom& signature);
 
 /// returns the binding of a resource variable using shader state
 uint32_t VkShaderGetVkShaderVariableBinding(const CoreGraphics::ShaderStateId shader, const CoreGraphics::ShaderConstantId var);
-/// return the descriptor set which a resource variable is bound to
-VkDescriptorSet VkShaderGetVkShaderVariableDescriptorSet(const CoreGraphics::ShaderStateId shader, const CoreGraphics::ShaderConstantId var);
 
 /// create descriptor layout signature
 static Util::String VkShaderCreateSignature(const VkDescriptorSetLayoutBinding& bind);
+
+
 
 extern Util::Dictionary<Util::StringAtom, VkDescriptorSetLayout> VkShaderLayoutCache;
 extern Util::Dictionary<Util::StringAtom, VkPipelineLayout> VkShaderPipelineCache;

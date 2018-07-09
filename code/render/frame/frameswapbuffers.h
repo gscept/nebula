@@ -20,8 +20,14 @@ public:
 
 	/// discard operation
 	void Discard();
-	/// run operation
-	void Run(const IndexT frameIndex);
+	struct CompiledImpl : public FrameOp::Compiled
+	{
+		void Run(const IndexT frameIndex);
+
+		CoreGraphics::RenderTextureId tex;
+	};
+
+	FrameOp::Compiled* AllocCompiled(Memory::ChunkAllocator<0xFFFF>& allocator);
 
 	CoreGraphics::RenderTextureId tex;
 };

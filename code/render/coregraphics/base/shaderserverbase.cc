@@ -215,16 +215,12 @@ void
 ShaderServerBase::LoadShader(const Resources::ResourceName& shdName)
 {
 	n_assert(shdName.IsValid());
-	CoreGraphics::shaderPool->CreateResource(shdName, "shaders"_atm,
-		[this, shdName](const ResourceId id)
-	{
-		CoreGraphics::ShaderId sid = id;
-		sid.allocType = ShaderIdType;
-		this->shaders.Add(shdName, sid);
-	},
+	CoreGraphics::ShaderId sid = CoreGraphics::shaderPool->CreateResource(shdName, "shaders"_atm, nullptr,
 		[shdName](const ResourceId id)
 	{
 		n_error("Failed to load shader '%s'!", shdName.Value());
 	}, true);
+	
+	this->shaders.Add(shdName, sid);
 }
 } // namespace Base

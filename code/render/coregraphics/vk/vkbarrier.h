@@ -27,6 +27,10 @@ struct VkBarrierInfo
 	VkImageMemoryBarrier imageBarriers[MaxNumBarriers];
 };
 
-typedef Ids::IdAllocator<VkBarrierInfo> VkBarrierAllocator;
+typedef Ids::IdAllocator<
+	VkBarrierInfo,
+	Util::Array<CoreGraphics::RenderTextureId>,
+	Util::Array<CoreGraphics::ShaderRWTextureId>
+> VkBarrierAllocator;
 extern VkBarrierAllocator barrierAllocator;
 } // namespace Vulkan

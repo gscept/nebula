@@ -4,7 +4,7 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "frameblit.h"
-#include "coregraphics/renderdevice.h"
+#include "coregraphics/graphicsdevice.h"
 
 using namespace CoreGraphics;
 namespace Frame
@@ -26,26 +26,24 @@ FrameBlit::~FrameBlit()
 	// empty
 }
 
-
 //------------------------------------------------------------------------------
 /**
 */
-void
-FrameBlit::Discard()
+FrameOp::Compiled*
+FrameBlit::AllocCompiled(Memory::ChunkAllocator<0xFFFF>& allocator)
 {
-	FrameOp::Discard();
-	this->from = RenderTextureId::Invalid();
-	this->to = RenderTextureId::Invalid();
+	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
+	ret->from = this->from;
+	ret->to = this->to;
+	return ret;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-FrameBlit::Run(const IndexT frameIndex)
+FrameBlit::CompiledImpl::Run(const IndexT frameIndex)
 {
-	RenderDevice* renderDev = RenderDevice::Instance();
-
 	// get dimensions
 	CoreGraphics::TextureDimensions fromDims = RenderTextureGetDimensions(this->from);
 	CoreGraphics::TextureDimensions toDims = RenderTextureGetDimensions(this->to);
@@ -61,7 +59,17 @@ FrameBlit::Run(const IndexT frameIndex)
 	toRegion.top = 0;
 	toRegion.right = toDims.width;
 	toRegion.bottom = toDims.height;
-	renderDev->Blit(this->from, fromRegion, 0, this->to, toRegion, 0);
+	CoreGraphics::Blit(this->from, fromRegion, 0, this->to, toRegion, 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+FrameBlit::CompiledImpl::Discard()
+{
+	this->from = RenderTextureId::Invalid();
+	this->to = RenderTextureId::Invalid();
 }
 
 } // namespace Frame2

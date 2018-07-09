@@ -6,7 +6,7 @@
 #include "vkshaderserver.h"
 #include "effectfactory.h"
 #include "coregraphics/shaderpool.h"
-#include "vkrenderdevice.h"
+#include "vkgraphicsdevice.h"
 #include "vkshaderpool.h"
 #include "vkshader.h"
 
@@ -61,11 +61,23 @@ VkShaderServer::Open()
 
 	// create shader state for textures, and fetch variables
 	ShaderId shader = VkShaderServer::Instance()->GetShader("shd:shared"_atm);
+
 	this->textureShaderState = CoreGraphics::shaderPool->CreateState(shader, { NEBULAT_TICK_GROUP }, false);
 	this->texture2DTextureVar = CoreGraphics::shaderPool->ShaderStateGetConstant(this->textureShaderState, "Textures2D");
 	this->texture2DMSTextureVar = CoreGraphics::shaderPool->ShaderStateGetConstant(this->textureShaderState, "Textures2DMS");
+	this->texture2DArrayTextureVar = CoreGraphics::shaderPool->ShaderStateGetConstant(this->textureShaderState, "Textures2DArray");
 	this->textureCubeTextureVar = CoreGraphics::shaderPool->ShaderStateGetConstant(this->textureShaderState, "TexturesCube");
 	this->texture3DTextureVar = CoreGraphics::shaderPool->ShaderStateGetConstant(this->textureShaderState, "Textures3D");
+	this->resourceTable = VkShaderStateGetResourceTable(this->textureShaderState, NEBULAT_TICK_GROUP);
+
+	/*
+	ResourceTableSetTexture(this->resourceTable, ResourceTableTexture{CoreGraphics::TextureId::Invalid(), VkShaderGetVkShaderVariableBinding(this->textureShaderState, this->texture2DTextureVar), 0, CoreGraphics::SamplerId::Invalid(), false});
+	ResourceTableSetTexture(this->resourceTable, ResourceTableTexture{CoreGraphics::TextureId::Invalid(), VkShaderGetVkShaderVariableBinding(this->textureShaderState, this->texture2DMSTextureVar), 0, CoreGraphics::SamplerId::Invalid(), false});
+	ResourceTableSetTexture(this->resourceTable, ResourceTableTexture{CoreGraphics::TextureId::Invalid(), VkShaderGetVkShaderVariableBinding(this->textureShaderState, this->texture2DArrayTextureVar), 0, CoreGraphics::SamplerId::Invalid(), false});
+	ResourceTableSetTexture(this->resourceTable, ResourceTableTexture{CoreGraphics::TextureId::Invalid(), VkShaderGetVkShaderVariableBinding(this->textureShaderState, this->textureCubeTextureVar), 0, CoreGraphics::SamplerId::Invalid(), false});
+	ResourceTableSetTexture(this->resourceTable, ResourceTableTexture{CoreGraphics::TextureId::Invalid(), VkShaderGetVkShaderVariableBinding(this->textureShaderState, this->texture3DTextureVar), 0, CoreGraphics::SamplerId::Invalid(), false});
+	ResourceTableCommitChanges(this->resourceTable);
+	*/
 
 	return true;
 }
@@ -86,7 +98,7 @@ VkShaderServer::Close()
 /**
 */
 uint32_t
-VkShaderServer::RegisterTexture(const VkImageView tex, CoreGraphics::TextureType type)
+VkShaderServer::RegisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics::TextureType type)
 {
 	uint32_t idx;
 	ShaderConstantId var;
@@ -112,25 +124,98 @@ VkShaderServer::RegisterTexture(const VkImageView tex, CoreGraphics::TextureType
 		img = &this->textureCubeDescriptors[idx];
 		break;
 	}
-	
-	// do the magic where we update the descriptor
-	VkWriteDescriptorSet write;
-	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	write.pNext = NULL;
-	write.descriptorCount = 1;
-	write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-	write.dstArrayElement = idx;							// insert image into array index, use this index in shader to fetch texture back
-	write.dstBinding = VkShaderGetVkShaderVariableBinding(this->textureShaderState, var);
-	write.dstSet = VkShaderGetVkShaderVariableDescriptorSet(this->textureShaderState, var);	
-	write.pTexelBufferView = NULL;
-	write.pBufferInfo = NULL;
 
-	img->imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	img->imageView = tex;
-	img->sampler = VK_NULL_HANDLE;
-	write.pImageInfo = img;
+	ResourceTableTexture info;
+	info.tex = tex;
+	info.index = idx;
+	info.sampler = SamplerId::Invalid();
+	info.isDepth = false;
+	info.slot = VkShaderGetVkShaderVariableBinding(this->textureShaderState, var);
+	ResourceTableSetTexture(this->resourceTable, info);
 
-	VkShaderStateAddDescriptorSetWrite(this->textureShaderState, write);
+	return idx;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint32_t
+VkShaderServer::RegisterTexture(const CoreGraphics::RenderTextureId& tex, bool depth, CoreGraphics::TextureType type)
+{
+	uint32_t idx;
+	ShaderConstantId var;
+	VkDescriptorImageInfo* img;
+	switch (type)
+	{
+	case Texture2D:
+		n_assert(!this->texture2DPool.IsFull());
+		idx = this->texture2DPool.Alloc();
+		var = this->texture2DTextureVar;
+		img = &this->texture2DDescriptors[idx];
+		break;
+	case Texture3D:
+		n_assert(!this->texture3DPool.IsFull());
+		idx = this->texture3DPool.Alloc();
+		var = this->texture3DTextureVar;
+		img = &this->texture3DDescriptors[idx];
+		break;
+	case TextureCube:
+		n_assert(!this->textureCubePool.IsFull());
+		idx = this->textureCubePool.Alloc();
+		var = this->textureCubeTextureVar;
+		img = &this->textureCubeDescriptors[idx];
+		break;
+	}
+
+	ResourceTableRenderTexture info;
+	info.tex = tex;
+	info.index = idx;
+	info.sampler = SamplerId::Invalid();
+	info.isDepth = depth;
+	info.slot = VkShaderGetVkShaderVariableBinding(this->textureShaderState, var);
+	ResourceTableSetRenderTexture(this->resourceTable, info);
+
+	return idx;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint32_t
+VkShaderServer::RegisterTexture(const CoreGraphics::ShaderRWTextureId& tex, CoreGraphics::TextureType type)
+{
+	uint32_t idx;
+	ShaderConstantId var;
+	VkDescriptorImageInfo* img;
+	switch (type)
+	{
+	case Texture2D:
+		n_assert(!this->texture2DPool.IsFull());
+		idx = this->texture2DPool.Alloc();
+		var = this->texture2DTextureVar;
+		img = &this->texture2DDescriptors[idx];
+		break;
+	case Texture3D:
+		n_assert(!this->texture3DPool.IsFull());
+		idx = this->texture3DPool.Alloc();
+		var = this->texture3DTextureVar;
+		img = &this->texture3DDescriptors[idx];
+		break;
+	case TextureCube:
+		n_assert(!this->textureCubePool.IsFull());
+		idx = this->textureCubePool.Alloc();
+		var = this->textureCubeTextureVar;
+		img = &this->textureCubeDescriptors[idx];
+		break;
+	}
+
+	ResourceTableShaderRWTexture info;
+	info.tex = tex;
+	info.index = idx;
+	info.sampler = SamplerId::Invalid();
+	info.slot = VkShaderGetVkShaderVariableBinding(this->textureShaderState, var);
+	ResourceTableSetTexture(this->resourceTable, info);
+
 	return idx;
 }
 

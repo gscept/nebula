@@ -144,10 +144,10 @@ private:
 /**
 */
 #define __ImplementClass(type, fourcc, baseType) \
-    Core::Rtti type::RTTI(#type, fourcc, type::FactoryCreator, type::FactorArrayCreator, &baseType::RTTI, sizeof(type)); \
+    Core::Rtti type::RTTI(#type, fourcc, type::FactoryCreator, type::FactoryArrayCreator, &baseType::RTTI, sizeof(type)); \
     Core::Rtti* type::GetRtti() const { return &this->RTTI; } \
-    Core::RefCounted* type::FactoryCreator() { return type::Create(); } \
-	Core::RefCounted* type::FactoryArrayCreator(SizeT num) { return type::CreateArray(num); } \
+    void* type::FactoryCreator() { return type::Create(); } \
+	void* type::FactoryArrayCreator(SizeT num) { return type::CreateArray(num); } \
     type* type::Create() \
     { \
 		static_assert(std::is_base_of<Core::RefCounted, type>::value, "Class must inherit from Core::RefCounted"); \
@@ -289,7 +289,7 @@ private:
     }
 #else
 #define __ImplementRootClass(type, fourcc) \
-    Core::Rtti type::RTTI(#type, fourcc, type::FactoryCreator, type::FactorArrayCreator, sizeof(type)); \
+    Core::Rtti type::RTTI(#type, fourcc, type::FactoryCreator, type::FactoryArrayCreator, nullptr, sizeof(type)); \
     Core::Rtti* type::GetRtti() const { return &this->RTTI; } \
     void* type::FactoryCreator() { return type::Create(); } \
 	void* type::FactoryArrayCreator(SizeT num) { return type::CreateArray(num); } \
@@ -341,6 +341,10 @@ private:
 	inline bool operator>(unsigned a, type b) { return a > static_cast<unsigned>(b); }\
 	inline bool operator<(type a, unsigned b) { return static_cast<unsigned>(a) < b; }\
 	inline bool operator<(unsigned a, type b) { return a < static_cast<unsigned>(b); }\
+	inline bool operator>=(type a, unsigned b) { return static_cast<unsigned>(a) >= b; }\
+	inline bool operator>=(unsigned a, type b) { return a >= static_cast<unsigned>(b); }\
+	inline bool operator<=(type a, unsigned b) { return static_cast<unsigned>(a) <= b; }\
+	inline bool operator<=(unsigned a, type b) { return a <= static_cast<unsigned>(b); }\
 	inline bool operator==(type a, unsigned b) { return static_cast<unsigned>(a) == b; }\
 	inline bool operator==(unsigned a, type b) { return a == static_cast<unsigned>(b); }\
 	inline bool operator!=(type a, unsigned b) { return static_cast<unsigned>(a) != b; }\

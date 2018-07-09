@@ -10,8 +10,13 @@
 #include "util/hashtable.h"
 #include "resources/resourceid.h"
 #include "coregraphics/base/vertexlayoutbase.h"
-#include "vkvertexlayout.h"
 #include "coregraphics/vertexlayout.h"
+
+namespace CoreGraphics
+{
+	void SetVertexLayout(const CoreGraphics::VertexLayoutId& vl);
+}
+
 namespace Vulkan
 {
 class VkVertexSignaturePool : public Resources::ResourceMemoryPool
@@ -42,8 +47,6 @@ public:
 	/// unload resource
 	void Unload(const Resources::ResourceId id);
 
-	/// bind layout
-	void VertexLayoutBind(const CoreGraphics::VertexLayoutId id);
 	/// get byte size
 	const SizeT GetVertexLayoutSize(const CoreGraphics::VertexLayoutId id);
 	/// get components
@@ -53,6 +56,8 @@ public:
 private:
 	friend class VkMemoryVertexBufferPool;
 	friend class VertexLayout;
+
+	friend void	CoreGraphics::SetVertexLayout(const CoreGraphics::VertexLayoutId& vl);
 
 	ID_64_TYPE(DerivativeId);
 

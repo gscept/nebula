@@ -4,7 +4,7 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "frameglobalstate.h"
-#include "coregraphics/shader.h"
+#include "coregraphics/graphicsdevice.h"
 
 namespace Frame
 {
@@ -28,24 +28,23 @@ FrameGlobalState::~FrameGlobalState()
 //------------------------------------------------------------------------------
 /**
 */
-void
-FrameGlobalState::Discard()
+FrameOp::Compiled* 
+FrameGlobalState::AllocCompiled(Memory::ChunkAllocator<0xFFFF>& allocator)
 {
-	FrameOp::Discard();
-
-	IndexT i;
-	for (i = 0; i < this->constants.Size(); i++) CoreGraphics::ShaderDestroyState(this->state);
-	this->constants.Clear();
+	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
+	ret->state = this->state;
+	ret->constants = this->constants;
+	return ret;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-FrameGlobalState::Run(const IndexT frameIndex)
+FrameGlobalState::CompiledImpl::Run(const IndexT frameIndex)
 {
 	// commit
-	CoreGraphics::ShaderStateApply(this->state);
+	CoreGraphics::SetShaderState(this->state);
 }
 
 } // namespace Frame2

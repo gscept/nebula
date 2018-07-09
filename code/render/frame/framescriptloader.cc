@@ -32,12 +32,15 @@
 #include "algorithm/algorithms.h"
 #include "coregraphics/displaydevice.h"
 #include "memory/chunkallocator.h"
+#include <mutex>
 
 using namespace CoreGraphics;
 using namespace IO;
 namespace Frame
 {
 
+
+Util::HashTable<uint, FrameScriptLoader::Fn> FrameScriptLoader::constructors;
 //------------------------------------------------------------------------------
 /**
 */
@@ -49,10 +52,18 @@ FrameScriptLoader::LoadFrameScript(const IO::URI& path)
 	if (stream->Open())
 	{
 		void* data = stream->Map();
+		SizeT size = stream->GetSize();
+
+		// create copy for jzon
+		char* jzon_buf = n_new_array(char, size+1);
+		memcpy(jzon_buf, data, size);
+		jzon_buf[size] = '\0';
+
+		stream->Unmap();
+		stream->Close();
 
 		// make sure last byte is 0, since jzon doesn't care about input size
-		((char*)data)[stream->GetSize()] = '\0';
-		JzonParseResult result = jzon_parse((const char*)data);
+		JzonParseResult result = jzon_parse(jzon_buf);
 		JzonValue* json = result.output;
 		if (!result.success)
 		{
@@ -65,15 +76,27 @@ FrameScriptLoader::LoadFrameScript(const IO::URI& path)
 		node = jzon_get(json, "engine");
 		n_assert(Util::String(node->string_value) == "NebulaTrifid");
 
+
+#define CONSTRUCTOR_MACRO(type) \
+		constructors.Add(("Algorithms::" #type ##_str).HashCode(), [](Memory::ChunkAllocator<0xFFFF>& alloc) -> Algorithms::Algorithm* { \
+			void* mem = alloc.Alloc(sizeof(Algorithms::type));\
+			n_new_inplace(Algorithms::type, mem);\
+			return (Algorithms::Algorithm*)mem;\
+		});
+
+		constructors.Clear();
+		CONSTRUCTOR_MACRO(HBAOAlgorithm);
+		CONSTRUCTOR_MACRO(BloomAlgorithm);
+		CONSTRUCTOR_MACRO(TonemapAlgorithm);
+
 		// run parser entry point
 		json = jzon_get(json, "framescript");
 		ParseFrameScript(script, json);
 
 		// clear jzon
+		n_delete_array(jzon_buf);
 		jzon_free(json);
 
-		stream->Unmap();
-		stream->Close();
 	}
 	else
 	{
@@ -99,17 +122,13 @@ FrameScriptLoader::ParseFrameScript(const Ptr<Frame::FrameScript>& script, JzonV
 		else if (name == "readWriteTextures")	ParseImageReadWriteTextureList(script, cur);
 		else if (name == "readWriteBuffers")	ParseImageReadWriteBufferList(script, cur);
 		else if (name == "algorithms")			ParseAlgorithmList(script, cur);
-		else if (name == "events")				ParseEventList(script, cur);
-		else if (name == "shaderStates")		ParseShaderStateList(script, cur);
 		else if (name == "globalState")			ParseGlobalState(script, cur);
 		else if (name == "blit")				ParseBlit(script, cur);
 		else if (name == "copy")				ParseCopy(script, cur);
-		else if (name == "event")				ParseEvent(script, cur);
 		else if (name == "compute")				ParseCompute(script, cur);
 		else if (name == "computeAlgorithm")	ParseComputeAlgorithm(script, cur);
 		else if (name == "swapbuffers")			ParseSwapbuffers(script, cur);
 		else if (name == "pass")				ParsePass(script, cur);
-		else if (name == "barrier")				ParseBarrier(script, cur);
 		
 		else
 		{
@@ -166,7 +185,6 @@ FrameScriptLoader::ParseColorTextureList(const Ptr<Frame::FrameScript>& script, 
 
 			// set relative, dynamic or msaa if defined
 			if (jzon_get(cur, "relative"))	info.relativeSize = jzon_get(cur, "relative")->bool_value;
-			if (jzon_get(cur, "dynamic"))	info.dynamicSize = jzon_get(cur, "dynamic")->bool_value;
 			if (jzon_get(cur, "msaa"))		info.msaa = jzon_get(cur, "msaa")->bool_value;
 
 			// if cube, use 6 layers
@@ -229,7 +247,6 @@ FrameScriptLoader::ParseDepthStencilTextureList(const Ptr<Frame::FrameScript>& s
 
 		// set relative, dynamic or msaa if defined
 		if (jzon_get(cur, "relative"))	info.relativeSize = jzon_get(cur, "relative")->bool_value;
-		if (jzon_get(cur, "dynamic"))	info.dynamicSize = jzon_get(cur, "dynamic")->bool_value;
 		if (jzon_get(cur, "msaa"))		info.msaa = jzon_get(cur, "msaa")->bool_value;
 
 		// if cube, use 6 layers
@@ -281,12 +298,10 @@ FrameScriptLoader::ParseImageReadWriteTextureList(const Ptr<Frame::FrameScript>&
 			Texture2D,	// fixme, not only 2D textures!
 			CoreGraphics::PixelFormat::FromString(format->string_value),
 			(float)width->float_value, (float)height->float_value, 1,
-			1, 1,
-			(float)width->float_value, (float)height->float_value, 1,
+			1
 		};
 
 		if (jzon_get(cur, "relative")) info.relativeSize = jzon_get(cur, "relative")->bool_value;
-		if (jzon_get(cur, "dynamic")) info.dynamicSize = jzon_get(cur, "dynamic")->bool_value;
 		ShaderRWTextureId tex = CreateShaderRWTexture(info);
 
 		// add texture
@@ -341,13 +356,8 @@ FrameScriptLoader::ParseAlgorithmList(const Ptr<Frame::FrameScript>& script, Jzo
 		JzonValue* clazz = jzon_get(cur, "class");
 		n_assert(clazz != NULL);
 
-		Util::HashTable<uint, uint> algorithmTable;
-		algorithmTable.Add(("HBAOAlgorithm"_str).HashCode(), sizeof(Algorithms::HBAOAlgorithm));
-		algorithmTable.Add(("BloomAlgorithm"_str).HashCode(), sizeof(Algorithms::BloomAlgorithm));
-		algorithmTable.Add(("TonemapAlgorithm"_str).HashCode(), sizeof(Algorithms::TonemapAlgorithm));	
-
 		// create algorithm
-		Algorithms::Algorithm* alg = (Algorithms::Algorithm*)script->GetAllocator().Alloc(algorithmTable[Util::String(clazz->string_value).HashCode()]);
+		Algorithms::Algorithm* alg = (constructors[Util::String(clazz->string_value).HashCode()](script->GetAllocator()));
 
 		JzonValue* textures = jzon_get(cur, "renderTextures");
 		if (textures != NULL)
@@ -385,80 +395,6 @@ FrameScriptLoader::ParseAlgorithmList(const Ptr<Frame::FrameScript>& script, Jzo
 		// add algorithm to script
 		alg->Setup();
 		script->AddAlgorithm(name->string_value, alg);
-	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-FrameScriptLoader::ParseEventList(const Ptr<Frame::FrameScript>& script, JzonValue* node)
-{
-	uint i;
-	for (i = 0; i < node->size; i++)
-	{
-		JzonValue* cur = node->array_values[i];
-		JzonValue* name = jzon_get(cur, "name");
-		n_assert(name != NULL);
-
-		// create event
-		CoreGraphics::EventCreateInfo info;
-		if (jzon_get(cur, "signaled")) info.createSignaled = jzon_get(cur, "signaled")->bool_value;
-
-		// create barrier info, which is used to parse the barrier part of the event
-		CoreGraphics::BarrierCreateInfo barrier;
-
-		// call internal parser for barrier
-		JzonValue* bar = jzon_get(cur, "barrier");
-		n_assert(bar != nullptr);
-		BarrierCreateInfo barrierInfo;
-		ParseBarrierInternal(script, bar, barrier);
-
-		info.leftDependency = barrier.leftDependency;
-		info.rightDependency = barrier.rightDependency;
-		info.renderTextureBarriers = barrier.renderTextureBarriers;
-		info.shaderRWTextures = barrier.shaderRWTextures;
-		info.shaderRWBuffers = barrier.shaderRWBuffers;
-
-#ifdef CreateEvent
-#pragma push_macro("CreateEvent")
-#undef CreateEvent
-#endif
-
-		EventId ev = CoreGraphics::CreateEvent(info);
-
-#pragma pop_macro("CreateEvent")
-
-		script->AddEvent(name->string_value, ev);
-	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-FrameScriptLoader::ParseShaderStateList(const Ptr<Frame::FrameScript>& script, JzonValue* node)
-{
-	uint i;
-	for (i = 0; i < node->size; i++)
-	{
-		JzonValue* cur = node->array_values[i];
-		JzonValue* name = jzon_get(cur, "name");
-		n_assert(name != NULL);
-
-		bool createResources = false;
-		JzonValue* create = jzon_get(cur, "createResourceSet");
-		if (create != NULL) createResources = create->bool_value;
-
-		JzonValue* shader = jzon_get(cur, "shader");
-		n_assert(shader != NULL);
-		CoreGraphics::ShaderStateId state = ShaderServer::Instance()->ShaderCreateState(shader->string_value, { NEBULAT_BATCH_GROUP }, createResources);
-
-		JzonValue* vars = jzon_get(cur, "variables");
-		if (vars != NULL) ParseShaderVariables(script, state, vars);
-
-		// add state
-		script->AddShaderState(name->string_value, state);
 	}
 }
 
@@ -559,6 +495,18 @@ FrameScriptLoader::ParseBlit(const Ptr<Frame::FrameScript>& script, JzonValue* n
 	n_assert(name != NULL);
 	op->SetName(name->string_value);
 
+	JzonValue* queue = jzon_get(node, "queue");
+	if (queue == nullptr)
+		op->queue = CoreGraphicsQueueType::GraphicsQueueType;
+	else
+		op->queue = CoreGraphicsQueueTypeFromString(queue->string_value);
+
+	JzonValue* resources = jzon_get(node, "resources");
+	if (resources != nullptr)
+	{
+		ParseResourceDependencies(script, op, resources);
+	}
+
 	JzonValue* from = jzon_get(node, "from");
 	n_assert(from != NULL);
 	const CoreGraphics::RenderTextureId& fromTex = script->GetColorTexture(from->string_value);
@@ -585,6 +533,18 @@ FrameScriptLoader::ParseCopy(const Ptr<Frame::FrameScript>& script, JzonValue* n
 	JzonValue* name = jzon_get(node, "name");
 	n_assert(name != NULL);
 	op->SetName(name->string_value);
+
+	JzonValue* queue = jzon_get(node, "queue");
+	if (queue == nullptr)
+		op->queue = CoreGraphicsQueueType::GraphicsQueueType;
+	else
+		op->queue = CoreGraphicsQueueTypeFromString(queue->string_value);
+
+	JzonValue* resources = jzon_get(node, "resources");
+	if (resources != nullptr)
+	{
+		ParseResourceDependencies(script, op, resources);
+	}
 
 	JzonValue* from = jzon_get(node, "from");
 	n_assert(from != NULL);
@@ -613,10 +573,24 @@ FrameScriptLoader::ParseCompute(const Ptr<Frame::FrameScript>& script, JzonValue
 	n_assert(name != NULL);
 	op->SetName(name->string_value);
 
+	JzonValue* queue = jzon_get(node, "queue");
+	if (queue == nullptr)
+		op->queue = CoreGraphicsQueueType::GraphicsQueueType;
+	else
+		op->queue = CoreGraphicsQueueTypeFromString(queue->string_value);
+
+	JzonValue* resources = jzon_get(node, "resources");
+	if (resources != nullptr)
+	{
+		ParseResourceDependencies(script, op, resources);
+	}
+
 	// create shader state
 	JzonValue* shader = jzon_get(node, "shaderState");
 	n_assert(shader != NULL);
-	ShaderStateId state = script->GetShaderState(shader->string_value);
+
+	CoreGraphics::ShaderStateId state;
+	ParseShaderState(script, shader, state);
 	op->state = state;
 
 	JzonValue* variation = jzon_get(node, "variation");
@@ -651,6 +625,18 @@ FrameScriptLoader::ParseComputeAlgorithm(const Ptr<Frame::FrameScript>& script, 
 	n_assert(name != NULL);
 	op->SetName(name->string_value);
 
+	JzonValue* queue = jzon_get(node, "queue");
+	if (queue == nullptr)
+		op->queue = CoreGraphicsQueueType::GraphicsQueueType;
+	else
+		op->queue = CoreGraphicsQueueTypeFromString(queue->string_value);
+
+	JzonValue* resources = jzon_get(node, "resources");
+	if (resources != nullptr)
+	{
+		ParseResourceDependencies(script, op, resources);
+	}
+
 	JzonValue* alg = jzon_get(node, "algorithm");
 	n_assert(alg != NULL);
 	JzonValue* function = jzon_get(node, "function");
@@ -662,7 +648,6 @@ FrameScriptLoader::ParseComputeAlgorithm(const Ptr<Frame::FrameScript>& script, 
 	op->funcName = function->string_value;
 
 	// add to script
-	op->Setup();
 	script->AddOp(op);
 }
 
@@ -686,202 +671,6 @@ FrameScriptLoader::ParseSwapbuffers(const Ptr<Frame::FrameScript>& script, JzonV
 
 	// add operation
 	script->AddOp(op);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-FrameScriptLoader::ParseEvent(const Ptr<Frame::FrameScript>& script, JzonValue* node)
-{
-	FrameEvent* op = script->GetAllocator().Alloc<FrameEvent>();
-
-	JzonValue* name = jzon_get(node, "name");
-	n_assert(name != NULL);
-	const CoreGraphics::EventId& event = script->GetEvent(name->string_value);
-
-	// go through ops
-	JzonValue* ops = jzon_get(node, "actions");
-	uint i;
-	for (i = 0; i < ops->size; i++)
-	{
-		JzonValue* action = ops->array_values[i];
-		Util::String str(action->string_value);
-		FrameEvent::Action a;
-		if (str == "wait")			a = FrameEvent::Wait;
-		else if (str == "set")		a = FrameEvent::Set;
-		else if (str == "reset")	a = FrameEvent::Reset;
-		else
-		{
-			n_error("Event has no operation named '%s'", str.AsCharPtr());
-		}
-
-		// add action to op
-		op->actions.Append(a);
-	}
-
-	JzonValue* waitDependency = jzon_get(node, "dependency");
-	Util::String str(waitDependency->string_value);
-	op->dependency = BarrierDependencyFromString(str);
-
-	// set event in op
-	op->event = event;
-	script->AddOp(op);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-FrameScriptLoader::ParseBarrier(const Ptr<Frame::FrameScript>& script, JzonValue* node)
-{
-	FrameBarrier* op = script->GetAllocator().Alloc<FrameBarrier>();
-
-	JzonValue* name = jzon_get(node, "name");
-	n_assert(name != NULL);
-	op->SetName(name->string_value);
-
-	// create barrier
-	CoreGraphics::BarrierCreateInfo info;
-
-	// call internal parser
-	ParseBarrierInternal(script, node, info);
-
-	BarrierId barrier = CreateBarrier(info);
-	op->barrier = barrier;
-	script->AddOp(op);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-FrameScriptLoader::ParseBarrierInternal(const Ptr<Frame::FrameScript>& script, JzonValue* node, CoreGraphics::BarrierCreateInfo& barrier)
-{
-	Util::Array<Util::String> flags;
-	BarrierDependency dep;
-	IndexT i;
-
-	// get left side dependency flags
-	JzonValue* leftDep = jzon_get(node, "leftDependency");
-	n_assert(leftDep != nullptr);
-	flags = Util::String(leftDep->string_value).Tokenize("|");
-	dep = BarrierDependency::Bottom;
-	for (i = 0; i < flags.Size(); i++) dep |= BarrierDependencyFromString(flags[i]);
-	barrier.leftDependency = dep;
-
-	// get right side dependency flags
-	JzonValue* rightDep = jzon_get(node, "rightDependency");
-	n_assert(rightDep != nullptr);
-	flags = Util::String(rightDep->string_value).Tokenize("|");
-	dep = BarrierDependency::Top;
-	for (i = 0; i < flags.Size(); i++) dep |= BarrierDependencyFromString(flags[i]);
-	barrier.rightDependency = dep;
-
-	JzonValue* textures = jzon_get(node, "renderTextures");
-	if (textures != NULL)
-	{
-		uint i;
-		for (i = 0; i < textures->size; i++)
-		{
-			Util::Array<Util::String> flags;
-			CoreGraphics::BarrierAccess leftAccessFlags, rightAccessFlags;
-			IndexT j;
-
-			JzonValue* nd = textures->array_values[i];
-			JzonValue* res = jzon_get(nd, "name");
-			n_assert(res != nullptr);
-
-			// get left access flags
-			JzonValue* leftAccess = jzon_get(nd, "leftAccess");
-			n_assert(leftAccess != nullptr);
-			flags = Util::String(leftAccess->string_value).Tokenize("|");
-			leftAccessFlags = BarrierAccess::NoAccess;
-			for (j = 0; j < flags.Size(); j++) leftAccessFlags |= BarrierAccessFromString(flags[i]);
-
-			// get left access flags
-			JzonValue* rightAccess = jzon_get(nd, "rightAccess");
-			n_assert(rightAccess != nullptr);
-			flags = Util::String(rightAccess->string_value).Tokenize("|");
-			rightAccessFlags = BarrierAccess::NoAccess;
-			for (j = 0; j < flags.Size(); j++) rightAccessFlags |= BarrierAccessFromString(flags[i]);
-
-			// set resource
-			Util::String str(res->string_value);
-			const CoreGraphics::RenderTextureId& rt = script->GetColorTexture(str);
-			barrier.renderTextureBarriers.Append(std::make_tuple(rt, leftAccessFlags, rightAccessFlags));
-		}
-	}
-
-	JzonValue* images = jzon_get(node, "readWriteTextures");
-	if (images != NULL)
-	{
-		uint i;
-		for (i = 0; i < images->size; i++)
-		{
-			Util::Array<Util::String> flags;
-			CoreGraphics::BarrierAccess leftAccessFlags, rightAccessFlags;
-			IndexT j;
-
-			JzonValue* nd = images->array_values[i];
-			JzonValue* res = jzon_get(nd, "name");
-			n_assert(res != nullptr);
-
-			// get left access flags
-			JzonValue* leftAccess = jzon_get(nd, "leftAccess");
-			n_assert(leftAccess != nullptr);
-			flags = Util::String(leftAccess->string_value).Tokenize("|");
-			leftAccessFlags = BarrierAccess::NoAccess;
-			for (j = 0; j < flags.Size(); j++) leftAccessFlags |= BarrierAccessFromString(flags[i]);
-
-			// get left access flags
-			JzonValue* rightAccess = jzon_get(nd, "rightAccess");
-			n_assert(rightAccess != nullptr);
-			flags = Util::String(rightAccess->string_value).Tokenize("|");
-			rightAccessFlags = BarrierAccess::NoAccess;
-			for (j = 0; j < flags.Size(); j++) rightAccessFlags |= BarrierAccessFromString(flags[i]);
-
-			// set resource
-			Util::String str(res->string_value);
-			const CoreGraphics::ShaderRWTextureId& rt = script->GetReadWriteTexture(str);
-			barrier.shaderRWTextures.Append(std::make_tuple(rt, leftAccessFlags, rightAccessFlags));
-		}
-	}
-
-	JzonValue* buffers = jzon_get(node, "readWriteBuffers");
-	if (buffers != NULL)
-	{
-		uint i;
-		for (i = 0; i < buffers->size; i++)
-		{
-			Util::Array<Util::String> flags;
-			CoreGraphics::BarrierAccess leftAccessFlags, rightAccessFlags;
-			IndexT j;
-
-			JzonValue* nd = buffers->array_values[i];
-			JzonValue* res = jzon_get(nd, "name");
-			n_assert(res != nullptr);
-
-			// get left access flags
-			JzonValue* leftAccess = jzon_get(nd, "leftAccess");
-			n_assert(leftAccess != nullptr);
-			flags = Util::String(leftAccess->string_value).Tokenize("|");
-			leftAccessFlags = BarrierAccess::NoAccess;
-			for (j = 0; j < flags.Size(); j++) leftAccessFlags |= BarrierAccessFromString(flags[i]);
-
-			// get left access flags
-			JzonValue* rightAccess = jzon_get(nd, "rightAccess");
-			n_assert(rightAccess != nullptr);
-			flags = Util::String(rightAccess->string_value).Tokenize("|");
-			rightAccessFlags = BarrierAccess::NoAccess;
-			for (j = 0; j < flags.Size(); j++) rightAccessFlags |= BarrierAccessFromString(flags[i]);
-
-			// set resource
-			Util::String str(res->string_value);
-			const CoreGraphics::ShaderRWBufferId& rt = script->GetReadWriteBuffer(str);
-			barrier.shaderRWBuffers.Append(std::make_tuple(rt, leftAccessFlags, rightAccessFlags));
-		}
-	}
 }
 
 //------------------------------------------------------------------------------
@@ -929,14 +718,14 @@ FrameScriptLoader::ParsePass(const Ptr<Frame::FrameScript>& script, JzonValue* n
 			}
 
 			JzonValue* ld = jzon_get(cur, "load");
-			if (ld != NULL && ld->int_value == 1)
+			if (ld != NULL && ld->bool_value)
 			{
 				n_assert2(cd == NULL, "Can't load depth from previous pass AND clear.");				
 				depthStencilClearFlags |= Load;
 			}
 
 			JzonValue* ls = jzon_get(cur, "loadStencil");
-			if (ls != NULL && ls->int_value == 1)
+			if (ls != NULL && ls->bool_value)
 			{
 				// can't really load and store
 				n_assert2(cs == NULL, "Can't load stenil from previous pass AND clear.");
@@ -944,13 +733,13 @@ FrameScriptLoader::ParsePass(const Ptr<Frame::FrameScript>& script, JzonValue* n
 			}
 
 			JzonValue* sd = jzon_get(cur, "store");
-			if (sd != NULL && sd->int_value == 1)
+			if (sd != NULL && sd->bool_value)
 			{
 				depthStencilClearFlags |= Store;
 			}
 
 			JzonValue* ss = jzon_get(cur, "storeStencil");
-			if (ss != NULL && ss->int_value == 1)
+			if (ss != NULL && ss->bool_value)
 			{
 				depthStencilClearFlags |= StoreStencil;
 			}
@@ -1006,16 +795,18 @@ FrameScriptLoader::ParseAttachmentList(const Ptr<Frame::FrameScript>& script, Co
 			pass.colorAttachmentClears.Append(clearValue);
 			flags |= Clear;
 		}
+		else
+			pass.colorAttachmentClears.Append(Math::float4(1)); // we set the clear to 1, but the flag is not to clear...
 
 		// set if attachment should store at the end of the pass
 		JzonValue* store = jzon_get(cur, "store");
-		if (store && store->int_value == 1)
+		if (store && store->bool_value)
 		{
 			flags |= Store;
 		}
 
 		JzonValue* load = jzon_get(cur, "load");
-		if (load && load->int_value == 1)
+		if (load && load->bool_value)
 		{
 			// we can't really load and clear
 			n_assert2(clear == NULL, "Can't load color if it's being cleared.");
@@ -1033,6 +824,7 @@ FrameScriptLoader::ParseSubpass(const Ptr<Frame::FrameScript>& script, CoreGraph
 {
 	FrameSubpass* frameSubpass = script->GetAllocator().Alloc<FrameSubpass>();
 
+	frameSubpass->domain = BarrierDomain::Pass;
 	Subpass subpass;
 	subpass.resolve = false;
 	subpass.bindDepth = false;
@@ -1047,14 +839,13 @@ FrameScriptLoader::ParseSubpass(const Ptr<Frame::FrameScript>& script, CoreGraph
 		else if (name == "inputs")				ParseSubpassInputs(framePass, subpass, attachmentNames, cur);
 		else if (name == "depth")				subpass.bindDepth = cur->bool_value;
 		else if (name == "resolve")				subpass.resolve = cur->bool_value;
+		else if (name == "resources")			ParseResourceDependencies(script, framePass, cur);
 		else if (name == "viewports")			ParseSubpassViewports(script, frameSubpass, cur);
 		else if (name == "scissors")			ParseSubpassScissors(script, frameSubpass, cur);
 		else if (name == "subpassAlgorithm")	ParseSubpassAlgorithm(script, frameSubpass, cur);
 		else if (name == "batch")				ParseSubpassBatch(script, frameSubpass, cur);
 		else if (name == "sortedBatch")			ParseSubpassSortedBatch(script, frameSubpass, cur);
 		else if (name == "fullscreenEffect")	ParseSubpassFullscreenEffect(script, frameSubpass, cur);
-		else if (name == "event")				ParseSubpassEvent(script, frameSubpass, cur);
-		else if (name == "barrier")				ParseSubpassBarrier(script, frameSubpass, cur);
 		else if (name == "system")				ParseSubpassSystem(script, frameSubpass, cur);
 		else if (name == "plugins")				ParseSubpassPlugins(script, frameSubpass, cur);
 		else
@@ -1198,6 +989,15 @@ FrameScriptLoader::ParseSubpassAlgorithm(const Ptr<Frame::FrameScript>& script, 
 	n_assert(name != NULL);
 	op->SetName(name->string_value);
 
+	op->domain = BarrierDomain::Pass;
+	op->queue = CoreGraphicsQueueType::GraphicsQueueType;
+
+	JzonValue* resources = jzon_get(node, "resources");
+	if (resources != nullptr)
+	{
+		ParseResourceDependencies(script, op, resources);
+	}
+
 	JzonValue* alg = jzon_get(node, "algorithm");
 	n_assert(alg != NULL);
 	JzonValue* function = jzon_get(node, "function");
@@ -1220,6 +1020,14 @@ void
 FrameScriptLoader::ParseSubpassBatch(const Ptr<Frame::FrameScript>& script, Frame::FrameSubpass* subpass, JzonValue* node)
 {
 	FrameSubpassBatch* op = script->GetAllocator().Alloc<FrameSubpassBatch>();
+	op->domain = BarrierDomain::Pass;
+	op->queue = CoreGraphicsQueueType::GraphicsQueueType;
+
+	JzonValue* resources = jzon_get(node, "resources");
+	if (resources != nullptr)
+	{
+		ParseResourceDependencies(script, op, resources);
+	}
 
 	op->batch = CoreGraphics::BatchGroup::FromName(node->string_value);
 	subpass->AddOp(op);
@@ -1232,6 +1040,14 @@ void
 FrameScriptLoader::ParseSubpassSortedBatch(const Ptr<Frame::FrameScript>& script, Frame::FrameSubpass* subpass, JzonValue* node)
 {
 	FrameSubpassOrderedBatch* op = script->GetAllocator().Alloc<FrameSubpassOrderedBatch>();
+	op->domain = BarrierDomain::Pass;
+	op->queue = CoreGraphicsQueueType::GraphicsQueueType;
+
+	JzonValue* resources = jzon_get(node, "resources");
+	if (resources != nullptr)
+	{
+		ParseResourceDependencies(script, op, resources);
+	}
 	op->batch = CoreGraphics::BatchGroup::FromName(node->string_value);
 	subpass->AddOp(op);
 }
@@ -1248,11 +1064,24 @@ FrameScriptLoader::ParseSubpassFullscreenEffect(const Ptr<Frame::FrameScript>& s
 	JzonValue* name = jzon_get(node, "name");
 	n_assert(name != NULL);
 	op->SetName(name->string_value);
-	
+
+	op->domain = BarrierDomain::Pass;
+	op->queue = CoreGraphicsQueueType::GraphicsQueueType;
+
+	JzonValue* resources = jzon_get(node, "resources");
+	if (resources != nullptr)
+	{
+		ParseResourceDependencies(script, op, resources);
+	}
+
 	// create shader state
 	JzonValue* shaderState = jzon_get(node, "shaderState");
 	n_assert(shaderState != NULL);
-	op->shaderState = script->GetShaderState(shaderState->string_value);
+
+	CoreGraphics::ShaderStateId state;
+	ParseShaderState(script, shaderState, state);
+
+	op->shaderState = state;
 
 	// get texture
 	JzonValue* texture = jzon_get(node, "sizeFromTexture");
@@ -1268,72 +1097,19 @@ FrameScriptLoader::ParseSubpassFullscreenEffect(const Ptr<Frame::FrameScript>& s
 /**
 */
 void
-FrameScriptLoader::ParseSubpassEvent(const Ptr<Frame::FrameScript>& script, Frame::FrameSubpass* subpass, JzonValue* node)
-{
-	FrameEvent* op = script->GetAllocator().Alloc<FrameEvent>();
-
-	JzonValue* name = jzon_get(node, "name");
-	n_assert(name != nullptr);
-	CoreGraphics::EventId event = script->GetEvent(name->string_value);
-
-	// go through ops
-	JzonValue* ops = jzon_get(node, "actions");
-	uint i;
-	for (i = 0; i < ops->size; i++)
-	{
-		JzonValue* action = ops->array_values[i];
-		Util::String str(action->string_value);
-		FrameEvent::Action a;
-		if (str == "wait")			a = FrameEvent::Wait;
-		else if (str == "set")		a = FrameEvent::Set;
-		else if (str == "reset")	a = FrameEvent::Reset;
-		else
-		{
-			n_error("Event has no operation named '%s'", str.AsCharPtr());
-		}
-
-		// add action to op
-		op->actions.Append(a);
-	}
-
-	JzonValue* waitDependency = jzon_get(node, "dependency");
-	Util::String str(waitDependency->string_value);
-	op->dependency = BarrierDependencyFromString(str);
-
-	// set event in op
-	op->event = event;
-	subpass->AddOp(op);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-FrameScriptLoader::ParseSubpassBarrier(const Ptr<Frame::FrameScript>& script, Frame::FrameSubpass* subpass, JzonValue* node)
-{
-	FrameBarrier* op = script->GetAllocator().Alloc<FrameBarrier>();
-	JzonValue* name = jzon_get(node, "name");
-	n_assert(name != NULL);
-	op->SetName(name->string_value);
-
-	// setup barrier
-	BarrierCreateInfo info;
-	info.domain = BarrierDomain::Pass;
-
-	// call internal parser
-	ParseBarrierInternal(script, node, info);
-
-	op->barrier = CreateBarrier(info);
-	subpass->AddOp(op);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
 FrameScriptLoader::ParseSubpassSystem(const Ptr<Frame::FrameScript>& script, Frame::FrameSubpass* subpass, JzonValue* node)
 {
 	FrameSubpassSystem* op = script->GetAllocator().Alloc<FrameSubpassSystem>();
+
+	// assume all of these are graphics
+	op->domain = BarrierDomain::Pass;
+	op->queue = CoreGraphicsQueueType::GraphicsQueueType;
+
+	JzonValue* resources = jzon_get(node, "resources");
+	if (resources != nullptr)
+	{
+		ParseResourceDependencies(script, op, resources);
+	}
 
 	Util::String subsystem(node->string_value);
 	if (subsystem == "Lights")					op->SetSubsystem(FrameSubpassSystem::Lights);
@@ -1363,11 +1139,39 @@ FrameScriptLoader::ParseSubpassPlugins(const Ptr<Frame::FrameScript>& script, Fr
 	n_assert(name != NULL);
 	op->SetName(name->string_value);
 
+	// assume all of these are graphics
+	op->domain = BarrierDomain::Pass;
+	op->queue = CoreGraphicsQueueType::GraphicsQueueType;
+
+	JzonValue* resources = jzon_get(node, "resources");
+	if (resources != nullptr)
+	{
+		ParseResourceDependencies(script, op, resources);
+	}
+
 	JzonValue* filter = jzon_get(node, "filter");
 	n_assert(filter != NULL);
 	op->SetPluginFilter(filter->string_value);
 	op->Setup();
 	subpass->AddOp(op);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+FrameScriptLoader::ParseShaderState(const Ptr<Frame::FrameScript>& script, JzonValue* node, CoreGraphics::ShaderStateId& state)
+{
+	bool createResources = false;
+	JzonValue* create = jzon_get(node, "createResourceSet");
+	if (create != NULL) createResources = create->bool_value;
+
+	JzonValue* shader = jzon_get(node, "shader");
+	n_assert(shader != NULL);
+	state = ShaderServer::Instance()->ShaderCreateState(shader->string_value, { NEBULAT_BATCH_GROUP }, createResources);
+
+	JzonValue* vars = jzon_get(shader, "variables");
+	if (vars != NULL) ParseShaderVariables(script, state, vars);
 }
 
 //------------------------------------------------------------------------------
@@ -1429,6 +1233,59 @@ FrameScriptLoader::ParseShaderVariables(const Ptr<Frame::FrameScript>& script, c
 		case BufferReadWriteVariableType:
 			ShaderResourceSetReadWriteBuffer(varid, state, script->GetReadWriteBuffer(valStr));
 			break;
+		}
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+FrameScriptLoader::ParseResourceDependencies(const Ptr<Frame::FrameScript>& script, Frame::FrameOp* op, JzonValue* node)
+{
+	for (uint i = 0; i < node->size; i++)
+	{
+		JzonValue* dep = node->array_values[i];
+		const Util::String valstr = jzon_get(dep, "name")->string_value;
+		CoreGraphics::BarrierAccess access = BarrierAccessFromString(jzon_get(dep, "access")->string_value);
+		CoreGraphics::BarrierDependency dependency = BarrierDependencyFromString(jzon_get(dep, "stage")->string_value);
+		
+		if (script->readWriteTexturesByName.Contains(valstr))
+		{
+			ImageLayout layout = ImageLayoutFromString(jzon_get(dep, "layout")->string_value);
+			CoreGraphics::ImageSubresourceInfo subres;
+			JzonValue* nd = nullptr;
+			if ((nd = jzon_get(dep, "aspect")) != nullptr) subres.aspect			= ImageAspectFromString(nd->string_value);
+			if ((nd = jzon_get(dep, "mip")) != nullptr) subres.mip					= nd->int_value;
+			if ((nd = jzon_get(dep, "mipCount")) != nullptr) subres.mipCount		= nd->int_value;
+			if ((nd = jzon_get(dep, "layer")) != nullptr) subres.layer				= nd->int_value;
+			if ((nd = jzon_get(dep, "layerCount")) != nullptr) subres.layerCount	= nd->int_value;
+			
+			ShaderRWTextureId tex = script->readWriteTexturesByName[valstr];
+			op->rwTextureDeps.Add(tex, std::make_tuple(access, dependency, subres, layout));
+		}
+		else if (script->readWriteBuffersByName.Contains(valstr))
+		{
+			ShaderRWBufferId buf = script->readWriteBuffersByName[valstr];
+			op->rwBufferDeps.Add(buf, std::make_tuple(access, dependency));
+		}
+		else if (script->colorTexturesByName.Contains(valstr))
+		{
+			ImageLayout layout = ImageLayoutFromString(jzon_get(dep, "layout")->string_value);
+			CoreGraphics::ImageSubresourceInfo subres;
+			JzonValue* nd = nullptr;
+			if ((nd = jzon_get(dep, "aspect")) != nullptr) subres.aspect = ImageAspectFromString(nd->string_value);
+			if ((nd = jzon_get(dep, "mip")) != nullptr) subres.mip = nd->int_value;
+			if ((nd = jzon_get(dep, "mipCount")) != nullptr) subres.mipCount = nd->int_value;
+			if ((nd = jzon_get(dep, "layer")) != nullptr) subres.layer = nd->int_value;
+			if ((nd = jzon_get(dep, "layerCount")) != nullptr) subres.layerCount = nd->int_value;
+
+			RenderTextureId tex = script->colorTexturesByName[valstr];
+			op->renderTextureDeps.Add(tex, std::make_tuple(access, dependency, subres, layout));
+		}
+		else
+		{
+			n_error("No resource named %s declared\n", valstr.AsCharPtr());
 		}
 	}
 }

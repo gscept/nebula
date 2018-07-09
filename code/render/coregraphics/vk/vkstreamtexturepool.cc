@@ -5,13 +5,12 @@
 #include "render/stdneb.h"
 #include "vkstreamtexturepool.h"
 #include "coregraphics/texture.h"
-#include "coregraphics/renderdevice.h"
 #include "io/ioserver.h"
 #include "coregraphics/vk/vktypes.h"
 #include "IL/il.h"
 
 #include <vulkan/vulkan.h>
-#include "vkrenderdevice.h"
+#include "vkgraphicsdevice.h"
 #include "vkutilities.h"
 #include "vkscheduler.h"
 #include "math/scalar.h"
@@ -90,11 +89,11 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 		texturePool->EnterGet();
 		VkTextureRuntimeInfo& runtimeInfo = texturePool->Get<0>(res.allocId);
 		VkTextureLoadInfo& loadInfo = texturePool->Get<1>(res.allocId);
-		loadInfo.dev = VkRenderDevice::Instance()->GetCurrentDevice();
+		loadInfo.dev = Vulkan::GetCurrentDevice();
 		texturePool->LeaveGet();
 
-		VkPhysicalDevice physicalDev = VkRenderDevice::Instance()->GetCurrentPhysicalDevice();
-		VkDevice dev = VkRenderDevice::Instance()->GetCurrentDevice();
+		VkPhysicalDevice physicalDev = Vulkan::GetCurrentPhysicalDevice();
+		VkDevice dev = Vulkan::GetCurrentDevice();
 
 		// load using IL
 		ILuint image = ilGenImage();
@@ -165,7 +164,7 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 		subres.baseMipLevel = 0;
 		subres.layerCount = info.arrayLayers;
 		subres.levelCount = info.mipLevels;
-		scheduler->PushImageLayoutTransition(TransferQueueType, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
+		scheduler->PushImageLayoutTransition(TransferQueueType, CoreGraphics::BarrierDependency::Host, CoreGraphics::BarrierDependency::Transfer, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
 		uint32_t remainingBytes = alignedSize;
 
 		// now load texture by walking through all images and mips
@@ -232,8 +231,9 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 
 		// transition to something readable by shaders
 		VkClearColorValue val = { 1, 0, 0, 1 };
-		scheduler->PushImageLayoutTransition(TransferQueueType, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
-		scheduler->PushImageOwnershipChange(TransferQueueType, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, TransferQueueType, GraphicsQueueType, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+		scheduler->PushImageOwnershipChange(TransferQueueType, CoreGraphics::BarrierDependency::Transfer, CoreGraphics::BarrierDependency::Transfer, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, TransferQueueType, GraphicsQueueType, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
+		scheduler->PushImageLayoutTransition(GraphicsQueueType, CoreGraphics::BarrierDependency::Transfer, CoreGraphics::BarrierDependency::AllGraphicsShaders, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+		
 
 		ilDeleteImage(image);
 
@@ -276,7 +276,7 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 		loadInfo.format = VkTypes::AsNebulaPixelFormat(vkformat);
 		loadInfo.dev = dev;
 		runtimeInfo.type = cube ? CoreGraphics::TextureCube : depth > 1 ? CoreGraphics::Texture3D : CoreGraphics::Texture2D;
-		runtimeInfo.bind = VkShaderServer::Instance()->RegisterTexture(runtimeInfo.view, runtimeInfo.type);
+		runtimeInfo.bind = VkShaderServer::Instance()->RegisterTexture(TextureId(res), runtimeInfo.type);
 
 		stream->Unmap();
 		stream->Close();

@@ -36,17 +36,9 @@ DestroyIndexBuffer(const IndexBufferId id)
 /**
 */
 void
-IndexBufferBind(const IndexBufferId id, const IndexT offset)
-{
-	iboPool->Bind(id, offset);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
 IndexBufferUpdate(const IndexBufferId id, void* data, PtrDiff size, PtrDiff offset)
 {
+	n_error("Not implemented");
 }
 
 //------------------------------------------------------------------------------
@@ -55,7 +47,7 @@ IndexBufferUpdate(const IndexBufferId id, void* data, PtrDiff size, PtrDiff offs
 void
 IndexBufferLock(const IndexBufferId id, const PtrDiff offset, const PtrDiff range)
 {
-	// implement me?
+	n_error("Not implemented");
 }
 
 //------------------------------------------------------------------------------
@@ -64,7 +56,7 @@ IndexBufferLock(const IndexBufferId id, const PtrDiff offset, const PtrDiff rang
 void
 IndexBufferUnlock(const IndexBufferId id, const PtrDiff offset, const PtrDiff range)
 {
-	// implement me?
+	n_error("Not implemented");
 }
 
 //------------------------------------------------------------------------------

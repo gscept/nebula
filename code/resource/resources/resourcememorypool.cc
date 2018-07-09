@@ -89,8 +89,9 @@ ResourceMemoryPool::DiscardResource(const Resources::ResourceId id)
 	if (this->usage[id.poolId] == 0)
 	{
 		// unload immediately
-		this->Unload(id.allocId);
-		this->DeallocObject(id.allocId);
+		this->Unload(id);
+		this->DeallocObject(id.AllocId());
+		
 		this->resourceInstanceIndexPool.Dealloc(id.poolId);
 	}
 }

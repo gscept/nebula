@@ -5,7 +5,7 @@
 #include "render/stdneb.h"
 #include "vkmemoryvertexbufferpool.h"
 #include "coregraphics/vertexbuffer.h"
-#include "vkrenderdevice.h"
+#include "vkgraphicsdevice.h"
 #include "vkutilities.h"
 #include "resources/resourcemanager.h"
 #include "coregraphics/vertexsignaturepool.h"
@@ -36,7 +36,7 @@ VkMemoryVertexBufferPool::LoadFromMemory(const Resources::ResourceId id, const v
 	VkVertexBufferRuntimeInfo& runtimeInfo = this->Get<1>(id.allocId);
 	uint32_t& mapCount = this->Get<2>(id.allocId);
 
-	loadInfo.dev = VkRenderDevice::Instance()->GetCurrentDevice();
+	loadInfo.dev = Vulkan::GetCurrentDevice();
 
 	// create vertex layout
 	VertexLayoutCreateInfo vertexLayoutCreateInfo =
@@ -45,6 +45,7 @@ VkMemoryVertexBufferPool::LoadFromMemory(const Resources::ResourceId id, const v
 	};
 	VertexLayoutId layout = CreateVertexLayout(vertexLayoutCreateInfo);
 	SizeT vertexSize = VertexLayoutGetSize(layout);
+	uint32_t qfamily = Vulkan::GetQueueFamily(GraphicsQueueType);
 
 	// start by creating buffer
 	VkBufferCreateInfo bufinfo =
@@ -55,8 +56,8 @@ VkMemoryVertexBufferPool::LoadFromMemory(const Resources::ResourceId id, const v
 		(uint32_t)(vertexSize * vboInfo->numVerts),
 		VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
 		VK_SHARING_MODE_EXCLUSIVE,						// can only be accessed from the creator queue,
-		1,												// number of queues in family
-		&VkRenderDevice::Instance()->drawQueueFamily	// array of queues belonging to family
+		0,												// number of queues in family
+		nullptr											// array of queues belonging to family
 	};
 
 	VkResult err = vkCreateBuffer(loadInfo.dev, &bufinfo, NULL, &runtimeInfo.buf);
@@ -138,16 +139,6 @@ VkMemoryVertexBufferPool::GetLayout(const CoreGraphics::VertexBufferId id)
 //------------------------------------------------------------------------------
 /**
 */
-void
-VkMemoryVertexBufferPool::Bind(const CoreGraphics::VertexBufferId id, const IndexT slot, const IndexT offset)
-{
-	VkVertexBufferRuntimeInfo& runtimeInfo = this->Get<1>(id.allocId);
-	VkRenderDevice::Instance()->SetStreamVertexBuffer(slot, runtimeInfo.buf, offset);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 void*
 VkMemoryVertexBufferPool::Map(const CoreGraphics::VertexBufferId id, CoreGraphics::GpuBufferTypes::MapType mapType)
 {
@@ -168,6 +159,7 @@ VkMemoryVertexBufferPool::Unmap(const CoreGraphics::VertexBufferId id)
 {
 	VkVertexBufferLoadInfo& loadInfo = this->Get<0>(id.allocId);
 	uint32_t& mapCount = this->Get<2>(id.allocId);
+	n_assert(mapCount > 0);
 	vkUnmapMemory(loadInfo.dev, loadInfo.mem);
 	mapCount--;
 }

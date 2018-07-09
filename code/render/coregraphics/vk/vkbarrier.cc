@@ -10,12 +10,13 @@
 #include "vkrendertexture.h"
 #include "vkshaderrwtexture.h"
 #include "vkshaderrwbuffer.h"
+#include "coregraphics/graphicsdevice.h"
 
 namespace Vulkan
 {
 VkBarrierAllocator barrierAllocator(0x00FFFFFF);
-
 }
+
 namespace CoreGraphics
 {
 using namespace Vulkan;
@@ -28,6 +29,9 @@ CreateBarrier(const BarrierCreateInfo& info)
 {
 	Ids::Id32 id = barrierAllocator.AllocObject();
 	VkBarrierInfo& vkInfo = barrierAllocator.Get<0>(id);
+	Util::Array<CoreGraphics::RenderTextureId>& rts = barrierAllocator.Get<1>(id);
+	Util::Array<CoreGraphics::ShaderRWTextureId>& rws = barrierAllocator.Get<2>(id);
+
 	vkInfo.numImageBarriers = 0;
 	vkInfo.numBufferBarriers = 0;
 	vkInfo.numMemoryBarriers = 0;
@@ -37,25 +41,33 @@ CreateBarrier(const BarrierCreateInfo& info)
 	if (info.domain == BarrierDomain::Pass)
 		vkInfo.dep = VK_DEPENDENCY_BY_REGION_BIT;
 
-	n_assert(info.renderTextureBarriers.Size() < MaxNumBarriers);
+	n_assert(info.renderTextures.Size() < MaxNumBarriers);
 	n_assert(info.shaderRWTextures.Size() < MaxNumBarriers);
 	n_assert(info.shaderRWBuffers.Size() < MaxNumBarriers);
 
 	IndexT i;
-	for (i = 0; i < info.renderTextureBarriers.Size(); i++)
+	for (i = 0; i < info.renderTextures.Size(); i++)
 	{
 		vkInfo.imageBarriers[i].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
 		vkInfo.imageBarriers[i].pNext = nullptr;
 
-		vkInfo.imageBarriers[i].srcAccessMask = VkTypes::AsVkResourceAccessFlags(std::get<1>(info.renderTextureBarriers[i]));
-		vkInfo.imageBarriers[i].dstAccessMask = VkTypes::AsVkResourceAccessFlags(std::get<2>(info.renderTextureBarriers[i]));
+		vkInfo.imageBarriers[i].srcAccessMask = VkTypes::AsVkResourceAccessFlags(std::get<4>(info.renderTextures[i]));
+		vkInfo.imageBarriers[i].dstAccessMask = VkTypes::AsVkResourceAccessFlags(std::get<5>(info.renderTextures[i]));
 
-		vkInfo.imageBarriers[i].image = RenderTextureGetVkImage(std::get<0>(info.renderTextureBarriers[i]));
+		const ImageSubresourceInfo& subres = std::get<1>(info.renderTextures[i]);
+		vkInfo.imageBarriers[i].subresourceRange.aspectMask = VkTypes::AsVkImageAspectFlags(subres.aspect);
+		vkInfo.imageBarriers[i].subresourceRange.baseMipLevel = subres.mip;
+		vkInfo.imageBarriers[i].subresourceRange.levelCount = subres.mipCount;
+		vkInfo.imageBarriers[i].subresourceRange.baseArrayLayer = subres.layer;
+		vkInfo.imageBarriers[i].subresourceRange.layerCount = subres.layerCount;
+		vkInfo.imageBarriers[i].image = RenderTextureGetVkImage(std::get<0>(info.renderTextures[i]));
 		vkInfo.imageBarriers[i].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		vkInfo.imageBarriers[i].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		vkInfo.imageBarriers[i].oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		vkInfo.imageBarriers[i].newLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		vkInfo.imageBarriers[i].oldLayout = VkTypes::AsVkImageLayout(std::get<2>(info.renderTextures[i]));
+		vkInfo.imageBarriers[i].newLayout = VkTypes::AsVkImageLayout(std::get<3>(info.renderTextures[i]));
 		vkInfo.numImageBarriers++;
+
+		rts.Append(std::get<0>(info.renderTextures[i]));
 	}
 
 	// make sure we have room...
@@ -65,15 +77,23 @@ CreateBarrier(const BarrierCreateInfo& info)
 		vkInfo.imageBarriers[i].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
 		vkInfo.imageBarriers[i].pNext = nullptr;
 
-		vkInfo.imageBarriers[i].srcAccessMask = VkTypes::AsVkResourceAccessFlags(std::get<1>(info.shaderRWTextures[i]));
-		vkInfo.imageBarriers[i].dstAccessMask = VkTypes::AsVkResourceAccessFlags(std::get<2>(info.shaderRWTextures[i]));
+		vkInfo.imageBarriers[i].srcAccessMask = VkTypes::AsVkResourceAccessFlags(std::get<4>(info.shaderRWTextures[i]));
+		vkInfo.imageBarriers[i].dstAccessMask = VkTypes::AsVkResourceAccessFlags(std::get<5>(info.shaderRWTextures[i]));
 
+		const ImageSubresourceInfo& subres = std::get<1>(info.shaderRWTextures[i]);
+		vkInfo.imageBarriers[i].subresourceRange.aspectMask = VkTypes::AsVkImageAspectFlags(subres.aspect);
+		vkInfo.imageBarriers[i].subresourceRange.baseMipLevel = subres.mip;
+		vkInfo.imageBarriers[i].subresourceRange.levelCount = subres.mipCount;
+		vkInfo.imageBarriers[i].subresourceRange.baseArrayLayer = subres.layer;
+		vkInfo.imageBarriers[i].subresourceRange.layerCount = subres.layerCount;
 		vkInfo.imageBarriers[i].image = ShaderRWTextureGetVkImage(std::get<0>(info.shaderRWTextures[i]));
 		vkInfo.imageBarriers[i].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		vkInfo.imageBarriers[i].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		vkInfo.imageBarriers[i].oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		vkInfo.imageBarriers[i].newLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		vkInfo.imageBarriers[i].oldLayout = VkTypes::AsVkImageLayout(std::get<2>(info.shaderRWTextures[i]));
+		vkInfo.imageBarriers[i].newLayout = VkTypes::AsVkImageLayout(std::get<3>(info.shaderRWTextures[i]));
 		vkInfo.numImageBarriers++;
+
+		rws.Append(std::get<0>(info.shaderRWTextures[i]));
 	}
 
 	for (i = 0; i < info.shaderRWBuffers.Size(); i++)
@@ -111,9 +131,31 @@ DestroyBarrier(const BarrierId id)
 /**
 */
 void
-InsertBarrier(const BarrierId id, const CmdBufferId cmd)
+BarrierInsert(const BarrierId id, const CoreGraphicsQueueType queue)
 {
-	const VkBarrierInfo& vkInfo = barrierAllocator.Get<0>(id.id24);
-	vkCmdPipelineBarrier(CommandBufferGetVk(cmd), vkInfo.srcFlags, vkInfo.dstFlags, vkInfo.dep, vkInfo.numMemoryBarriers, vkInfo.memoryBarriers, vkInfo.numBufferBarriers, vkInfo.bufferBarriers, vkInfo.numImageBarriers, vkInfo.imageBarriers);
+	CoreGraphics::InsertBarrier(id, queue);
 }
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+BarrierReset(const BarrierId id)
+{
+	VkBarrierInfo& vkInfo = barrierAllocator.Get<0>(id.id24);
+	Util::Array<CoreGraphics::RenderTextureId>& rts = barrierAllocator.Get<1>(id.id24);
+	Util::Array<CoreGraphics::ShaderRWTextureId>& rws = barrierAllocator.Get<2>(id.id24);
+
+	IndexT i;
+	for (i = 0; i < rts.Size(); i++)
+	{
+		vkInfo.imageBarriers[i].image = RenderTextureGetVkImage(rts[i]);
+	}
+
+	for (; i < rws.Size(); i++)
+	{
+		vkInfo.imageBarriers[i].image = ShaderRWTextureGetVkImage(rws[i]);
+	}
+}
+
 } // namespace CoreGraphics

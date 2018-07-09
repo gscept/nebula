@@ -36,6 +36,8 @@ struct TextureId;
 struct ShaderRWTextureId;
 struct ShaderRWBufferId;
 struct RenderTextureId;
+struct ResourceTableLayoutId;
+struct ResourcePipelineId;
 
 RESOURCE_ID_TYPE(ShaderId);				// 32 bits container, 24 bits resource, 8 bits type
 ID_24_8_24_8_NAMED_TYPE(ShaderStateId, shaderId, shaderType, stateId, stateType);		// 32 bits shader, 24 bits state, 8 bits type
@@ -70,7 +72,7 @@ Util::String ConstantTypeToString(const ShaderConstantType& type);
 /// create new shader
 const ShaderId CreateShader(const ShaderCreateInfo& info);
 /// destroy shader
-void DestroyShader(const ShaderId id);
+void DestroyShader(const ShaderId& id);
 
 /// get shader by name
 const ShaderId ShaderGet(const Resources::ResourceName& name);
@@ -78,54 +80,60 @@ const ShaderId ShaderGet(const Resources::ResourceName& name);
 const ShaderId ShaderGet(const ShaderStateId state);
 
 /// create new shader state from shader
-const ShaderStateId ShaderCreateState(const ShaderId id, const Util::Array<IndexT>& groups, bool requiresUniqueResourceTable);
+const ShaderStateId ShaderCreateState(const ShaderId& id, const Util::Array<IndexT>& groups, bool requiresUniqueResourceTable);
 /// create new shader state from shader resource id
 const ShaderStateId ShaderCreateState(const Resources::ResourceName name, const Util::Array<IndexT>& groups, bool requiresUniqueResourceTable);
 /// create a new shared shader state
-const ShaderStateId ShaderCreateSharedState(const ShaderId id, const Util::Array<IndexT>& groups);
+const ShaderStateId ShaderCreateSharedState(const ShaderId& id, const Util::Array<IndexT>& groups);
 /// create a new shared shader state
 const ShaderStateId ShaderCreateSharedState(const Resources::ResourceName name, const Util::Array<IndexT>& groups);
 /// destroy shader state
-void ShaderDestroyState(const ShaderStateId id);
-/// apply shader state
-void ShaderStateApply(const ShaderStateId id);
+void ShaderDestroyState(const ShaderStateId& id);
+/// commit changes done to shader state
+void ShaderStateCommit(const ShaderStateId& id);
 /// get number of active states
-SizeT ShaderGetNumActiveStates(const ShaderId id);
+SizeT ShaderGetNumActiveStates(const ShaderId& id);
+/// get resource table layout
+CoreGraphics::ResourceTableLayoutId ShaderGetResourceTableLayout(const ShaderId& id, const IndexT group);
+/// get pipeline layout for shader
+CoreGraphics::ResourcePipelineId ShaderGetResourcePipeline(const ShaderId& id);
 
 /// create derivative
-DerivativeStateId CreateDerivativeState(const ShaderStateId id, const IndexT group);
+DerivativeStateId CreateDerivativeState(const ShaderStateId& id, const IndexT group);
 /// destroy derivative
-void DestroyDerivativeState(const ShaderStateId id, const DerivativeStateId& deriv);
+void DestroyDerivativeState(const ShaderStateId& id, const DerivativeStateId& deriv);
 /// apply derivative state
-void DerivativeStateApply(const ShaderStateId id, const DerivativeStateId& deriv);
+void DerivativeStateApply(const ShaderStateId& id, const DerivativeStateId& deriv);
 /// commit derivative state
-void DerivativeStateCommit(const ShaderStateId id, const DerivativeStateId& deriv);
+void DerivativeStateCommit(const ShaderStateId& id, const DerivativeStateId& deriv);
 /// reset derivative state
-void DerivativeStateReset(const ShaderStateId id, const DerivativeStateId& deriv);
+void DerivativeStateReset(const ShaderStateId& id, const DerivativeStateId& deriv);
 
 /// get the number of constants from shader
-SizeT ShaderGetConstantCount(const ShaderId id);
+SizeT ShaderGetConstantCount(const ShaderId& id);
 /// get type of variable by index
-ShaderConstantType ShaderGetConstantType(const ShaderId id, const IndexT i);
+ShaderConstantType ShaderGetConstantType(const ShaderId& id, const IndexT i);
 /// get name of variable by index
-Util::StringAtom ShaderGetConstantName(const ShaderId id, const IndexT i);
+Util::StringAtom ShaderGetConstantName(const ShaderId& id, const IndexT i);
 
 /// get the number of constant buffers from shader
-SizeT ShaderGetConstantBufferCount(const ShaderId id);
+SizeT ShaderGetConstantBufferCount(const ShaderId& id);
 /// get size of constant buffer
-SizeT ShaderGetConstantBufferSize(const ShaderId id, const IndexT i);
+SizeT ShaderGetConstantBufferSize(const ShaderId& id, const IndexT i);
 /// get name of constnat buffer
-Util::StringAtom ShaderGetConstantBufferName(const ShaderId id, const IndexT i);
+Util::StringAtom ShaderGetConstantBufferName(const ShaderId& id, const IndexT i);
+/// get slot of shader resource
+IndexT ShaderGetResourceSlot(const ShaderId& id, const Util::StringAtom& name);
 
 /// get programs
-const Util::Dictionary<ShaderFeature::Mask, ShaderProgramId>& ShaderGetPrograms(const ShaderId id);
+const Util::Dictionary<ShaderFeature::Mask, ShaderProgramId>& ShaderGetPrograms(const ShaderId& id);
 /// get name of program
 Util::StringAtom ShaderProgramGetName(const ShaderProgramId id);
 
 /// get the shader variable using name
-ShaderConstantId ShaderStateGetConstant(const ShaderStateId id, const Util::StringAtom& name);
+ShaderConstantId ShaderStateGetConstant(const ShaderStateId& id, const Util::StringAtom& name);
 /// get the shader variable using index
-ShaderConstantId ShaderStateGetConstant(const ShaderStateId id, const IndexT index);
+ShaderConstantId ShaderStateGetConstant(const ShaderStateId& id, const IndexT index);
 /// get the type of constant in state (is identical to ShaderGetConstantType if you are using the shader directly)
 ShaderConstantType ShaderConstantGetType(const ShaderConstantId var, const ShaderStateId state);
 
@@ -151,12 +159,8 @@ void ShaderResourceSetReadWriteBuffer(const ShaderConstantId var, const ShaderSt
 /// convert shader feature from string to mask
 ShaderFeature::Mask ShaderFeatureFromString(const Util::String& str);
 
-/// bind shader
-void ShaderBind(const ShaderId id, const ShaderFeature::Mask& program);
 /// get shader program id from masks, this allows us to apply a shader program directly in the future
-const ShaderProgramId ShaderGetProgram(const ShaderId id, const ShaderFeature::Mask& program);
-/// bind shader and program all in one package
-void ShaderProgramBind(const ShaderProgramId id);
+const ShaderProgramId ShaderGetProgram(const ShaderId& id, const ShaderFeature::Mask& program);
 
 class ShaderPool;
 extern ShaderPool* shaderPool;

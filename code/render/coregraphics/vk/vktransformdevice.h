@@ -9,6 +9,7 @@
 #include "core/refcounted.h"
 #include "coregraphics/base/transformdevicebase.h"
 #include "coregraphics/shader.h"
+#include "coregraphics/graphicsdevice.h"
 
 namespace Vulkan
 {
@@ -57,7 +58,7 @@ private:
 inline void
 VkTransformDevice::BindCameraDescriptorSets()
 {
-	ShaderStateApply(this->sharedShader);
+	CoreGraphics::SetShaderState(this->sharedShader);
 }
 
 } // namespace Vulkan

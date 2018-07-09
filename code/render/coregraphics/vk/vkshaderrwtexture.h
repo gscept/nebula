@@ -22,11 +22,13 @@ struct VkShaderRWTextureLoadInfo
 struct VkShaderRWTextureRuntimeInfo
 {
 	VkImageView view;
+	uint32_t bind;
 };
 
 typedef Ids::IdAllocator<
 	VkShaderRWTextureLoadInfo,
-	VkShaderRWTextureRuntimeInfo
+	VkShaderRWTextureRuntimeInfo,
+	ImageLayout
 > ShaderRWTextureAllocator;
 extern ShaderRWTextureAllocator shaderRWTextureAllocator;
 

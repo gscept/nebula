@@ -1,0 +1,11 @@
+<Shady>
+	<Variation desc="Samples an RGBA Cube texture, uses the normal as a sampler coordinate." simulationValue="Source">
+		<Output type="vec4" name="Sample"/>
+		<Hidden type="samplerCube" name="Source"/>
+		<Source type="GLSL">
+			<Code output="Sample">
+				[output] = texture(Source, params.normal);
+			</Code>
+		</Source>
+	</Variation>
+</Shady>

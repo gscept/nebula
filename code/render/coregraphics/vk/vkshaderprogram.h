@@ -12,6 +12,7 @@
 #include "lowlevel/afxapi.h"
 #include "resources/resourcepool.h"
 #include "coregraphics/shaderfeature.h"
+#include "coregraphics/resourcetable.h"
 
 namespace Vulkan
 {
@@ -26,6 +27,13 @@ enum VkShaderProgramPipelineType
 struct VkShaderProgramSetupInfo
 {
 	VkDevice dev;
+	Util::String name;
+	CoreGraphics::ShaderFeature::Mask mask;
+};
+
+struct VkShaderProgramRuntimeInfo
+{
+	uint32_t stageCount;
 	VkPipelineVertexInputStateCreateInfo vertexInfo;
 	VkPipelineRasterizationStateCreateInfo rasterizerInfo;
 	VkPipelineMultisampleStateCreateInfo multisampleInfo;
@@ -35,13 +43,6 @@ struct VkShaderProgramSetupInfo
 	VkPipelineTessellationStateCreateInfo tessInfo;
 	VkPipelineShaderStageCreateInfo shaderInfos[5];
 	VkShaderModule vs, hs, ds, gs, ps, cs;
-	Util::String name;
-	CoreGraphics::ShaderFeature::Mask mask;
-};
-
-struct VkShaderProgramRuntimeInfo
-{
-	VkGraphicsPipelineCreateInfo info;
 	VkPipeline pipeline;
 	VkPipelineLayout layout;
 	VkShaderProgramPipelineType type;
@@ -59,15 +60,15 @@ typedef Ids::IdAllocator<
 /// applies program
 void VkShaderProgramApply(VkShaderProgramRuntimeInfo& info);
 /// discard variation
-void VkShaderProgramDiscard(VkShaderProgramSetupInfo& info, VkPipeline& computePipeline);
+void VkShaderProgramDiscard(VkShaderProgramSetupInfo& info, VkShaderProgramRuntimeInfo& rt, VkPipeline& computePipeline);
 
 /// setup from AnyFX program
-void VkShaderProgramSetup(const Ids::Id24 id, AnyFX::VkProgram* program, VkPipelineLayout& pipelineLayout, VkShaderProgramAllocator& allocator);
+void VkShaderProgramSetup(const Ids::Id24 id, AnyFX::VkProgram* program, const CoreGraphics::ResourcePipelineId& pipelineLayout, VkShaderProgramAllocator& allocator);
 
 /// create shader object
 void VkShaderProgramCreateShader(const VkDevice dev, VkShaderModule* shader, unsigned binarySize, char* binary);
 /// create this program as a graphics program
-void VkShaderProgramSetupAsGraphics(AnyFX::VkProgram* program, VkShaderProgramSetupInfo& setup, VkShaderProgramRuntimeInfo& runtime);
+void VkShaderProgramSetupAsGraphics(AnyFX::VkProgram* program, VkShaderProgramRuntimeInfo& runtime);
 /// create this program as a compute program (can be done immediately)
 void VkShaderProgramSetupAsCompute(VkShaderProgramSetupInfo& setup, VkShaderProgramRuntimeInfo& runtime);
 } // namespace Vulkan

@@ -18,8 +18,14 @@ public:
 	/// destructor
 	virtual ~FrameSubpassBatch();
 
-	/// run operation
-	void Run(const IndexT frameIndex);
+	struct CompiledImpl : public FrameOp::Compiled
+	{
+		void Run(const IndexT frameIndex);
+
+		CoreGraphics::BatchGroup::Code batch;
+	};
+
+	FrameOp::Compiled* AllocCompiled(Memory::ChunkAllocator<0xFFFF>& allocator);
 
 	CoreGraphics::BatchGroup::Code batch;
 };

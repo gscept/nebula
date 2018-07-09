@@ -202,9 +202,10 @@ ResourceStreamPool::PrepareLoad(_PendingResourceLoad& res)
 	{
 		// construct stream
 		Ptr<Stream> stream = IoServer::Instance()->CreateStream(this->names[res.id.poolId].Value());
+		stream->SetAccessMode(Stream::ReadAccess);
 		if (stream->Open())
 		{
-			ret = this->LoadFromStream(res.id.allocId, res.tag, stream);
+			ret = this->LoadFromStream(res.id, res.tag, stream);
 			stream->Close();
 		}
 		else
@@ -260,11 +261,6 @@ Resources::ResourceStreamPool::CreateResource(const ResourceName& res, const Uti
 		
 		this->ids.Add(res, ret);
 
-		if (success != nullptr || failed != nullptr)
-		{
-			// we need not worry about the thread, since this resource is new
-			this->callbacks[instanceId].Append({ ret, success, failed });
-		}
 
 		Ids::Id32 pendingId = this->pendingLoadPool.Alloc();
 		_PendingResourceLoad& pending = this->pendingLoads[pendingId];
@@ -273,7 +269,33 @@ Resources::ResourceStreamPool::CreateResource(const ResourceName& res, const Uti
 		pending.inflight = false;
 		pending.immediate = immediate;
 		pending.loadFunc = nullptr;
-		this->pendingLoadMap.Add(res, pendingId);
+
+		if (immediate)
+		{
+			LoadStatus status = this->PrepareLoad(pending);
+			this->pendingLoadPool.Dealloc(pendingId);
+			pending = _PendingResourceLoad();
+			if (status == Success)
+			{
+				if (success != nullptr) success(ret);
+				this->states[instanceId] = Resource::Loaded;
+			}
+			else if (status == Failed)
+			{
+				if (failed != nullptr) failed(ret);
+				this->states[instanceId] = Resource::Failed;
+			}
+		}
+		else
+		{
+			if (success != nullptr || failed != nullptr)
+			{
+				// we need not worry about the thread, since this resource is new
+				this->callbacks[instanceId].Append({ ret, success, failed });
+			}
+
+			this->pendingLoadMap.Add(res, pendingId);
+		}
 	}
 	else // this means the resource container is already created, and it may or may not be pending
 	{
@@ -336,8 +358,17 @@ Resources::ResourceStreamPool::DiscardResource(const Resources::ResourceId id)
 	// if usage reaches 0, add it to the list of pending unloads
 	if (this->usage[id.poolId] == 0)
 	{
-		// add pending unload, it will be unloaded once loaded
-		this->pendingUnloads.Append({ id });
+		if (this->async)
+		{
+			// add pending unload, it will be unloaded once loaded
+			this->pendingUnloads.Append({ id });
+			
+		}
+		else
+		{
+			this->Unload(id);
+			this->DeallocObject(id.AllocId());
+		}
 		this->resourceInstanceIndexPool.Dealloc(id.poolId);
 	}
 }

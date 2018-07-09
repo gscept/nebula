@@ -7,7 +7,7 @@
 #include "coregraphics/debug/displaypagehandler.h"
 #include "coregraphics/displaydevice.h"
 #include "http/html/htmlpagewriter.h"
-#include "coregraphics/renderdevice.h"
+#include "coregraphics/graphicsdevice.h"
 
 namespace Debug
 {
@@ -246,7 +246,7 @@ DisplayPageHandler::WriteScreenshot(const String& fileFormat, const Ptr<Stream>&
     {
         fmt = ImageFileFormat::PNG;
     }
-    RenderDevice::Instance()->SaveScreenshot(fmt, responseContentStream);
+	CoreGraphics::SaveScreenshot(fmt, responseContentStream);
     return HttpStatus::OK;
 }
 

@@ -4,7 +4,7 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "vktextrenderer.h"
-#include "coregraphics/renderdevice.h"
+#include "coregraphics/graphicsdevice.h"
 #include "coregraphics/displaydevice.h"
 #include "threading/thread.h"
 
@@ -169,7 +169,7 @@ VkTextRenderer::DrawTextElements()
 	matrix44 proj = matrix44::orthooffcenterrh(0, (float)displayMode.GetWidth(), (float)displayMode.GetHeight(), 0, -1.0f, +1.0f);
 
 	// apply shader and apply state
-	ShaderProgramBind(this->program);
+	CoreGraphics::SetShaderProgram(this->program);
 	ShaderResourceSetTexture(this->texVar, this->shader, this->glyphTexture);
 	ShaderConstantSet(this->modelVar, this->shader, proj);
 
@@ -297,9 +297,6 @@ VkTextRenderer::DrawTextElements()
 void
 VkTextRenderer::Draw(TextElementVertex* buffer, SizeT numChars)
 {
-	// get render device
-	RenderDevice* dev = RenderDevice::Instance();
-
 	// copy to buffer
 	memcpy(this->vertexPtr, buffer, sizeof(TextElementVertex) * numChars * 6);
 
@@ -307,9 +304,9 @@ VkTextRenderer::Draw(TextElementVertex* buffer, SizeT numChars)
 	this->group.SetNumVertices(numChars * 6);
 
 	// get render device and set it up
-	dev->SetPrimitiveTopology(CoreGraphics::PrimitiveTopology::TriangleList);
-	VertexBufferBind(this->vbo, 0, 0);
-	dev->SetPrimitiveGroup(this->group);
+	CoreGraphics::SetPrimitiveTopology(CoreGraphics::PrimitiveTopology::TriangleList);
+	CoreGraphics::SetStreamVertexBuffer(0, this->vbo, 0);
+	CoreGraphics::SetPrimitiveGroup(this->group);
 
 	// set viewport
 	CoreGraphics::WindowId wnd = DisplayDevice::Instance()->GetCurrentWindow();
@@ -321,10 +318,10 @@ VkTextRenderer::Draw(TextElementVertex* buffer, SizeT numChars)
 	//dev->SetScissorRect(Math::rectangle<int>(0, 0, screenWidth, screenHeight), 0);
 
 	// commit changes
-	ShaderStateApply(this->shader);
+	CoreGraphics::SetShaderState(this->shader);
 
 	// setup device
-	dev->Draw();
+	CoreGraphics::Draw();
 }
 
 //------------------------------------------------------------------------------

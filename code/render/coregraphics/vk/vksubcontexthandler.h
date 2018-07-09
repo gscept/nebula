@@ -26,6 +26,7 @@
 //------------------------------------------------------------------------------
 #include "vulkan/vulkan.h"
 #include "util/fixedarray.h"
+#include "coregraphics/config.h"
 namespace Vulkan
 {
 
@@ -33,44 +34,42 @@ class VkSubContextHandler
 {
 public:
 
-	enum SubContextType
-	{
-		DrawContextType,
-		ComputeContextType,
-		TransferContextType,
-		SparseContextType,
-
-		NumSubContextTypes
-	};
-
 	/// setup subcontext handler
 	void Setup(VkDevice dev, const Util::FixedArray<uint> indexMap, const Util::FixedArray<uint> families);
+	/// discard
+	void Discard();
 	/// set to next context of type
-	void SetToNextContext(const SubContextType type);
+	void SetToNextContext(const CoreGraphicsQueueType type);
 	/// insert dependency between the current two queues of given types
-	void InsertDependency(const SubContextType depender, const SubContextType dependee, VkPipelineStageFlags waitFlags);
+	void InsertDependency(const Util::FixedArray<CoreGraphicsQueueType> dependers, const CoreGraphicsQueueType dependee, VkPipelineStageFlags waitFlags);
 	/// insert command buffer
-	void InsertCommandBuffer(const SubContextType type, const VkCommandBuffer buf);
+	void InsertCommandBuffer(const CoreGraphicsQueueType type, const VkCommandBuffer buf);
 	/// submit commands to subcontext, also consumes the dependencies put on this queue
-	void Submit(const SubContextType type, VkFence fence, bool waitImmediately);
+	void Submit(const CoreGraphicsQueueType type, VkFence fence, bool waitImmediately);
 	/// wait for a queue to finish working
-	void WaitIdle(const SubContextType type);
+	void WaitIdle(const CoreGraphicsQueueType type);
 
 	/// get current queue
-	VkQueue GetQueue(const SubContextType type);
+	VkQueue GetQueue(const CoreGraphicsQueueType type);
 
 private:
-	friend class VkRenderDevice;
+	friend const VkQueue GetQueue(const CoreGraphicsQueueType type, const IndexT index);
 
 	VkDevice device;
 	Util::FixedArray<VkQueue> drawQueues;
+	Util::FixedArray<VkPipelineStageFlags> drawQueueStages;
 	Util::FixedArray<VkQueue> computeQueues;
+	Util::FixedArray<VkPipelineStageFlags> computeQueueStages;
 	Util::FixedArray<VkQueue> transferQueues;
+	Util::FixedArray<VkPipelineStageFlags> transferQueueStages;
 	Util::FixedArray<VkQueue> sparseQueues;
+	Util::FixedArray<VkPipelineStageFlags> sparseQueueStages;
 	uint currentDrawQueue;
 	uint currentComputeQueue;
 	uint currentTransferQueue;
 	uint currentSparseQueue;
+	uint queueFamilies[NumQueueTypes];
+
 
 	Util::FixedArray<Util::FixedArray<VkSemaphore>> semaphoreCache;
 
@@ -78,6 +77,7 @@ private:
 	Util::FixedArray<Util::Array<VkSemaphore>> waitSemaphores;
 	Util::FixedArray<Util::Array<VkPipelineStageFlags>> waitFlags;
 	Util::FixedArray<Util::Array<VkSemaphore>> signalSemaphores;
+	Util::FixedArray<Util::Array<VkPipelineStageFlags>> signalFlags;
 };
 
 } // namespace Vulkan

@@ -18,10 +18,14 @@ public:
 	/// destructor
 	virtual ~FrameCopy();
 
-	/// discard operation
-	void Discard();
-	/// run operation
-	void Run(const IndexT frameIndex);
+	struct CompiledImpl : public FrameOp::Compiled
+	{
+		void Run(const IndexT frameIndex);
+
+		CoreGraphics::RenderTextureId from, to;
+	};
+
+	FrameOp::Compiled* AllocCompiled(Memory::ChunkAllocator<0xFFFF>& allocator);
 
 	CoreGraphics::RenderTextureId from, to;
 };

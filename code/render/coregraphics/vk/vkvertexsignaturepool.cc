@@ -34,15 +34,6 @@ VkVertexSignaturePool::~VkVertexSignaturePool()
 //------------------------------------------------------------------------------
 /**
 */
-void
-VkVertexSignaturePool::VertexLayoutBind(const CoreGraphics::VertexLayoutId id)
-{
-	n_error("I am not complete!\n");
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 const SizeT
 VkVertexSignaturePool::GetVertexLayoutSize(const CoreGraphics::VertexLayoutId id)
 {
@@ -68,6 +59,7 @@ VkVertexSignaturePool::LoadFromMemory(const Resources::ResourceId id, const void
 	Util::HashTable<uint64_t, DerivativeLayout>& hashTable = this->Get<0>(id.allocId);
 	VkPipelineVertexInputStateCreateInfo& vertexInfo = this->Get<1>(id.allocId);
 	BindInfo& bindInfo = this->Get<2>(id.allocId);
+	this->Get<3>(id.allocId) = *vertexLayoutInfo;
 
 	// create binds
 	bindInfo.binds.Resize(CoreGraphics::MaxNumVertexStreams);

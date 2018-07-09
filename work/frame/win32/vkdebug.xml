@@ -1,0 +1,73 @@
+<Nebula3>
+ <FrameShader>
+  
+  <!-- depth-stencil buffers -->
+  <DeclareDepthStencilTarget format="D24S8" relHeight="1" relWidth="1" name="DefaultDepthBuffer"/>
+  
+  <!-- special buffers, background for skybox, color buffer for composed color, shape buffer for depth-checked shapes -->
+  <DeclareRenderTarget format="A8R8G8B8" relHeight="1" msaa="false" relWidth="1" name="NormalBuffer"/>
+  <DeclareRenderTarget format="R32F" relHeight="1" msaa="false" relWidth="1" name="DepthBuffer"/>  
+  <DeclareRenderTarget format="A8R8G8B8" depthTarget="DefaultDepthBuffer" relHeight="1" msaa="true" relWidth="1" name="AlbedoBuffer"/>
+  <DeclareRenderTarget format="A8R8G8B8" relHeight="1" msaa="true" relWidth="1" name="SpecularBuffer"/>
+  <DeclareRenderTarget format="A16B16G16R16F" relHeight="1" msaa="true" relWidth="1" name="EmissiveBuffer"/>
+  <DeclareRenderTarget format="A16B16G16R16F" depthTarget="DefaultDepthBuffer" relHeight="1" msaa="false" relWidth="1" name="LightBuffer" clearColor="0.01,0.01,0.01,1"/>  
+    
+  <!-- MRT for opaque geometry -->
+  <DeclareMRT name="GeometryBuffer">
+	<DepthStencilTarget name="DefaultDepthBuffer" clearDepth="1"/>
+	<RenderTarget name="AlbedoBuffer" clearColor="0.1,0.1,0.1,1"/>
+	<RenderTarget name="NormalBuffer" clearColor="0.5,0.5,0,0"/>
+	<RenderTarget name="DepthBuffer" clearColor="-1000,0,0,0"/>   
+	<RenderTarget name="SpecularBuffer" clearColor="0,0,0,0"/>
+	<RenderTarget name="EmissiveBuffer" clearColor="0,0,0,-1"/>
+  </DeclareMRT>
+  
+  <DeclareMRT name="UnlitBuffer">
+	<DepthStencilTarget name="DefaultDepthBuffer"/>
+	<RenderTarget name="LightBuffer"/>
+  </DeclareMRT>
+  
+  <DeclareMRT name="DeferredLightBuffer">
+	<DepthStencilTarget name="DefaultDepthBuffer"/>
+	<RenderTarget name="LightBuffer" clearColor="0.1f, 0.1f, 0.1f, 0.1f"/>
+  </DeclareMRT>
+           
+	
+  <!-- render opaque geometry -->
+  <Pass multipleRenderTarget="GeometryBuffer" name="Geometry">
+	<Batch batchGroup="RenderFirst" sorting="None" lighting="None" type="Geometry">
+		<ApplyShaderVariable sem="DepthBuffer" value="ReflDepthBuffer"/>
+	</Batch>
+	<Batch batchGroup="FlatGeometryLit" sorting="None" lighting="None" type="Geometry"/>
+	<Batch batchGroup="TessellatedGeometryLit" sorting="None" lighting="None" type="Geometry"/>
+	<Batch batchGroup="RenderLast" sorting="None" lighting="None" type="Geometry">
+		<ApplyShaderVariable sem="DepthBuffer" value="ReflDepthBuffer"/>
+	</Batch>
+  </Pass>
+  
+  <!-- renders screen-space lighting for opaque geometry -->
+  <Pass multipleRenderTarget="DeferredLightBuffer" name="LightPass" shader="lights">
+	<Batch type="Lights"/>
+  </Pass>
+  
+  <!-- render unlit objects -->
+  <Pass multipleRenderTarget="UnlitBuffer" name="Unlit">
+	<Batch batchGroup="Unlit" sorting="None" lighting="None" type="Geometry"/>
+  </Pass>
+    
+  <!-- apply last touches before presenting frame -->
+  <PostEffect shader="aaa" name="Finalize" clearColor="1, 0, 0, 1">
+   <ApplyShaderVariable sem="CopyBuffer" value="LightBuffer"/>
+   <ApplyShaderVariable sem="multiplier" value="0.0f"/>
+   <ApplyShaderVariable sem="multiplier2" value="0.1f"/>
+   <ApplyShaderVariable sem="multiplier3" value="0.2f"/>
+   <ApplyShaderVariable sem="ColorMatrix" value="0.0f, 1.0f, 0.0f, 0.0f,	0.0f, 0.0f, 0.0f, 0.0f,		0.0f, 0.0f, 0.0f, 0.0f,		0.0f, 0.0f, 0.0f, 0.0f,"/>
+   <ApplyShaderVariable sem="ColorMatrix1" value="0.0f, 1.0f, 0.0f, 0.0f,	1.0f, 0.0f, 0.0f, 0.0f,		0.0f, 0.0f, 0.0f, 0.0f,		0.0f, 0.0f, 0.0f, 0.0f,"/>
+   <ApplyShaderVariable sem="ColorMatrix2" value="0.0f, 1.0f, 0.0f, 0.0f,	0.0f, 0.0f, 0.0f, 0.0f,		0.0f, -0.2f, 0.0f, 0.0f,		0.0f, 0.0f, 0.0f, 0.0f,"/>
+   
+   <Batch type="UI"/>
+   <!--<Batch type="Text"/>-->
+  </PostEffect>  
+   
+ </FrameShader>
+</Nebula3>

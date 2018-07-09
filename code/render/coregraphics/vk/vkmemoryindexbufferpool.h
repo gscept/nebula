@@ -13,6 +13,12 @@
 #include "coregraphics/indextype.h"
 #include "coregraphics/indexbuffer.h"
 #include "vulkan/vulkan.h"
+
+namespace CoreGraphics
+{
+	void SetIndexBuffer(const CoreGraphics::IndexBufferId& ib, IndexT offsetIndex);
+}
+
 namespace Vulkan
 {
 class VkMemoryIndexBufferPool : public Resources::ResourceMemoryPool
@@ -20,8 +26,6 @@ class VkMemoryIndexBufferPool : public Resources::ResourceMemoryPool
 	__DeclareClass(VkMemoryIndexBufferPool);
 public:
 
-	/// bind index buffer
-	void Bind(const CoreGraphics::IndexBufferId id, const IndexT offset);
 	/// map the vertices for CPU access
 	void* Map(const CoreGraphics::IndexBufferId id, CoreGraphics::GpuBufferTypes::MapType mapType);
 	/// unmap the resource
@@ -37,6 +41,8 @@ public:
 	/// get number of indices for buffer
 	const SizeT GetNumIndices(const CoreGraphics::IndexBufferId id);
 private:
+
+	friend void	CoreGraphics::SetIndexBuffer(const CoreGraphics::IndexBufferId& ib, IndexT offsetIndex);
 
 	struct VkIndexBufferLoadInfo
 	{

@@ -40,12 +40,12 @@ private:
 
 #if NEBULA3_LEGACY_SUPPORT
 	/// setup mesh from nvx2 file in memory
-	LoadStatus SetupMeshFromNvx2(const Ptr<IO::Stream>& stream, const Ids::Id24 res);
+	LoadStatus SetupMeshFromNvx2(const Ptr<IO::Stream>& stream, const Resources::ResourceId res);
 #endif
 	/// setup mesh from nvx3 file in memory
-	LoadStatus SetupMeshFromNvx3(const Ptr<IO::Stream>& stream, const Ids::Id24 res);
+	LoadStatus SetupMeshFromNvx3(const Ptr<IO::Stream>& stream, const Resources::ResourceId res);
 	/// setup mesh from n3d3 file in memory
-	LoadStatus SetupMeshFromN3d3(const Ptr<IO::Stream>& stream, const Ids::Id24 res);
+	LoadStatus SetupMeshFromN3d3(const Ptr<IO::Stream>& stream, const Resources::ResourceId res);
 
 protected:
 	GpuBufferTypes::Usage usage;

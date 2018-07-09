@@ -7,34 +7,30 @@
 */
 //------------------------------------------------------------------------------
 #include <vulkan/vulkan.h>
+#include "coregraphics/config.h"
 #include "threading/thread.h"
 #include "threading/safequeue.h"
 #include "coregraphics/primitivegroup.h"
 #include "debug/debugtimer.h"
+#include "math/rectangle.h"
+#include "coregraphics/indextype.h"
+
+namespace CoreGraphics
+{
+	struct VertexBufferId;
+	struct IndexBufferId;
+	struct EventId;
+	struct BarrierId;
+	enum class BarrierDependency;
+
+}
 namespace Vulkan
 {
 class VkCmdBufferThread : public Threading::Thread
 {
 	__DeclareClass(VkCmdBufferThread);
-	struct Command;
-public:
-	/// constructor
-	VkCmdBufferThread();
-	/// destructor
-	virtual ~VkCmdBufferThread();
 
-	/// called if thread needs a wakeup call before stopping
-	void EmitWakeupSignal();
-	/// this method runs in the thread context
-	void DoWork();
-	/// push command buffer work
-	void PushCommand(const Command& command);
-	/// push command buffer work
-	void PushCommands(const Util::Array<Command>& commands);
-	/// set command buffer
-	void SetCommandBuffer(const VkCommandBuffer& buffer);
-private:
-	friend class VkRenderDevice;
+public:
 
 	enum CommandType
 	{
@@ -59,7 +55,6 @@ private:
 		WaitForEvent,
 		Barrier,
 		Sync,
-		LunarGCircumventValidation
 	};
 
 	struct Command
@@ -68,7 +63,11 @@ private:
 
 		union
 		{
-			VkPipeline pipeline;
+			
+			struct // Pipeline bind
+			{
+				VkPipeline pipeline;
+			} pipe;
 
 			struct // BeginCmd
 			{
@@ -88,8 +87,8 @@ private:
 				VkBuffer buffer;
 				VkDeviceSize offset;
 				VkIndexType indexType;
-			} ibo;			
-			
+			} ibo;
+
 			struct // Draw
 			{
 				uint32_t baseIndex;
@@ -202,8 +201,29 @@ private:
 			} barrier;
 
 			Threading::Event* syncEvent;
-		};		
+		};
 	};
+
+	/// constructor
+	VkCmdBufferThread();
+	/// destructor
+	virtual ~VkCmdBufferThread();
+
+	/// called if thread needs a wakeup call before stopping
+	void EmitWakeupSignal();
+	/// this method runs in the thread context
+	void DoWork();
+	/// push command buffer work
+	void PushCommand(const Command& command);
+	/// push command buffer work
+	void PushCommands(const Util::Array<Command>& commands);
+	/// set command buffer
+	void SetCommandBuffer(const VkCommandBuffer& buffer);
+private:
+	friend struct GraphicsDeviceState;
+
+
+
 
 	VkCommandBuffer commandBuffer;
 	Threading::SafeQueue<Command> commands;

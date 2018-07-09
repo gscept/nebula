@@ -17,7 +17,7 @@ MemoryTexturePool* texturePool = nullptr;
 /**
 */
 const TextureId
-CreateTexture(TextureCreateInfo info)
+CreateTexture(const TextureCreateInfo& info)
 {
 	TextureId id = texturePool->ReserveResource(info.name, info.tag);
 	n_assert(id.allocType == TextureIdType);
@@ -59,6 +59,15 @@ TextureType
 TextureGetType(const TextureId id)
 {
 	return texturePool->GetType(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+ImageLayout
+TextureGetLayout(const TextureId id)
+{
+	return texturePool->GetLayout(id);
 }
 
 //------------------------------------------------------------------------------
