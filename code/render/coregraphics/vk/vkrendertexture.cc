@@ -5,13 +5,14 @@
 #include "render/stdneb.h"
 #include "vkrendertexture.h"
 #include "vktypes.h"
-#include "vkrenderdevice.h"
+#include "vkgraphicsdevice.h"
 #include "vkutilities.h"
 #include "vkscheduler.h"
 #include "coregraphics/window.h"
 #include "coregraphics/displaydevice.h"
 #include "coregraphics/config.h"
 #include "coregraphics/glfw/glfwwindow.h"
+#include "coregraphics/shaderserver.h"
 
 namespace Vulkan
 {
@@ -36,6 +37,11 @@ CreateRenderTexture(const RenderTextureCreateInfo& info)
 	VkRenderTextureRuntimeInfo& runtimeInfo = renderTextureAllocator.Get<1>(id);
 	VkRenderTextureMappingInfo& mapInfo = renderTextureAllocator.Get<2>(id);
 	VkRenderTextureWindowInfo& swapInfo = renderTextureAllocator.Get<3>(id);
+	ImageLayout& layout = renderTextureAllocator.Get<4>(id);
+
+	RenderTextureId rtId;
+	rtId.id24 = id;
+	rtId.id8 = RenderTextureIdType;
 
 	// set map to 0
 	mapInfo.mapCount = 0;
@@ -50,12 +56,12 @@ CreateRenderTexture(const RenderTextureCreateInfo& info)
 	loadInfo.mips = adjustedInfo.mips;
 	loadInfo.layers = adjustedInfo.layers;
 	loadInfo.format = adjustedInfo.format;
-	loadInfo.dynamicSize = adjustedInfo.dynamicSize;
 	loadInfo.relativeSize = adjustedInfo.relativeSize;
 	loadInfo.msaa = adjustedInfo.msaa;
-	loadInfo.dev = VkRenderDevice::Instance()->GetCurrentDevice();
+	loadInfo.dev = Vulkan::GetCurrentDevice();
 	runtimeInfo.inpass = false;
 	runtimeInfo.type = adjustedInfo.type;
+	runtimeInfo.bind = -1;
 
 	VkScheduler* scheduler = VkScheduler::Instance();
 
@@ -78,15 +84,16 @@ CreateRenderTexture(const RenderTextureCreateInfo& info)
 		IndexT i;
 		for (i = 0; i < swapInfo.swapimages.Size(); i++)
 		{
-			scheduler->PushImageLayoutTransition(GraphicsQueueType, VkUtilities::ImageMemoryBarrier(swapInfo.swapimages[i], subres, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL));
-			scheduler->PushImageColorClear(swapInfo.swapimages[i], GraphicsQueueType, VK_IMAGE_LAYOUT_GENERAL, clear, subres);
-			scheduler->PushImageLayoutTransition(GraphicsQueueType, VkUtilities::ImageMemoryBarrier(swapInfo.swapimages[i], subres, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
+			scheduler->PushImageLayoutTransition(GraphicsQueueType, CoreGraphics::BarrierDependency::Host, CoreGraphics::BarrierDependency::Transfer, VkUtilities::ImageMemoryBarrier(swapInfo.swapimages[i], subres, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
+			scheduler->PushImageColorClear(swapInfo.swapimages[i], GraphicsQueueType, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, clear, subres);
+			scheduler->PushImageLayoutTransition(GraphicsQueueType, CoreGraphics::BarrierDependency::Transfer, CoreGraphics::BarrierDependency::PassOutput, VkUtilities::ImageMemoryBarrier(swapInfo.swapimages[i], subres, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR));
 		}
-
+		
 		n_assert(adjustedInfo.type == Texture2D);
 		n_assert(adjustedInfo.mips == 1);
 		n_assert(!adjustedInfo.msaa);
 		
+		layout = ImageLayout::Present;
 		loadInfo.img = swapInfo.swapimages[0];
 		loadInfo.isWindow = true;
 		loadInfo.mem = VK_NULL_HANDLE;
@@ -124,7 +131,7 @@ CreateRenderTexture(const RenderTextureCreateInfo& info)
 		if (adjustedInfo.usage == ColorAttachment)
 		{
 			VkFormatProperties formatProps;
-			vkGetPhysicalDeviceFormatProperties(VkRenderDevice::Instance()->GetCurrentPhysicalDevice(), fmt, &formatProps);
+			vkGetPhysicalDeviceFormatProperties(Vulkan::GetCurrentPhysicalDevice(), fmt, &formatProps);
 			n_assert(formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT &&
 				formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT &&
 				formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT);
@@ -184,23 +191,27 @@ CreateRenderTexture(const RenderTextureCreateInfo& info)
 		{
 			// clear image and transition layout
 			VkClearColorValue clear = { 0, 0, 0, 0 };
-			scheduler->PushImageLayoutTransition(GraphicsQueueType, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL));
-			scheduler->PushImageColorClear(loadInfo.img, GraphicsQueueType, VK_IMAGE_LAYOUT_GENERAL, clear, subres);
-			scheduler->PushImageLayoutTransition(GraphicsQueueType, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+			scheduler->PushImageLayoutTransition(GraphicsQueueType, CoreGraphics::BarrierDependency::Host, CoreGraphics::BarrierDependency::Transfer, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
+			scheduler->PushImageColorClear(loadInfo.img, GraphicsQueueType, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, clear, subres);
+			scheduler->PushImageLayoutTransition(GraphicsQueueType, CoreGraphics::BarrierDependency::Transfer, CoreGraphics::BarrierDependency::PassOutput, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+
+			// create binding
+			layout = ImageLayout::ShaderRead;
+			runtimeInfo.bind = VkShaderServer::Instance()->RegisterTexture(rtId, false, runtimeInfo.type);
+
 		}
 		else
 		{
 			// clear image and transition layout
 			VkClearDepthStencilValue clear = { 1, 0 };
-			scheduler->PushImageLayoutTransition(GraphicsQueueType, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL));
-			scheduler->PushImageDepthStencilClear(loadInfo.img, GraphicsQueueType, VK_IMAGE_LAYOUT_GENERAL, clear, subres);
-			scheduler->PushImageLayoutTransition(GraphicsQueueType, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL));
+			scheduler->PushImageLayoutTransition(GraphicsQueueType, CoreGraphics::BarrierDependency::Host, CoreGraphics::BarrierDependency::Transfer, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
+			scheduler->PushImageDepthStencilClear(loadInfo.img, GraphicsQueueType, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, clear, subres);
+			scheduler->PushImageLayoutTransition(GraphicsQueueType, CoreGraphics::BarrierDependency::Transfer, CoreGraphics::BarrierDependency::LateDepth, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL));
+
+			layout = ImageLayout::DepthStencilRead;
+			//runtimeInfo.bind = VkShaderServer::Instance()->RegisterTexture(rtId, true, runtimeInfo.type);
 		}
 	}
-
-	RenderTextureId rtId;
-	rtId.id24 = id;
-	rtId.id8 = RenderTextureIdType;
 	return rtId;
 }
 
@@ -213,6 +224,10 @@ DestroyRenderTexture(const RenderTextureId id)
 	VkRenderTextureLoadInfo& loadInfo = renderTextureAllocator.Get<0>(id.id24);
 	VkRenderTextureRuntimeInfo& runtimeInfo = renderTextureAllocator.Get<1>(id.id24);
 	VkRenderTextureWindowInfo& swapInfo = renderTextureAllocator.Get<3>(id.id24);
+
+	if (runtimeInfo.bind != -1)
+		VkShaderServer::Instance()->UnregisterTexture(runtimeInfo.bind, runtimeInfo.type);
+
 	if (loadInfo.isWindow)
 	{
 		swapInfo.swapimages.Clear();
@@ -220,6 +235,7 @@ DestroyRenderTexture(const RenderTextureId id)
 	}
 	else
 	{
+
 		vkFreeMemory(loadInfo.dev, loadInfo.mem, nullptr);
 		vkDestroyImage(loadInfo.dev, loadInfo.img, nullptr);		
 		vkDestroyImageView(loadInfo.dev, runtimeInfo.view, nullptr);
@@ -269,7 +285,7 @@ RenderTextureResize(const RenderTextureId id, const RenderTextureResizeInfo& inf
 	if (adjustedInfo.usage == ColorAttachment)
 	{
 		VkFormatProperties formatProps;
-		vkGetPhysicalDeviceFormatProperties(VkRenderDevice::Instance()->GetCurrentPhysicalDevice(), fmt, &formatProps);
+		vkGetPhysicalDeviceFormatProperties(Vulkan::GetCurrentPhysicalDevice(), fmt, &formatProps);
 		n_assert(formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT &&
 			formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT &&
 			formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT);
@@ -329,17 +345,17 @@ RenderTextureResize(const RenderTextureId id, const RenderTextureResizeInfo& inf
 	{
 		// clear image and transition layout
 		VkClearColorValue clear = { 0, 0, 0, 0 };
-		scheduler->PushImageLayoutTransition(GraphicsQueueType, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL));
+		scheduler->PushImageLayoutTransition(GraphicsQueueType, CoreGraphics::BarrierDependency::Host, CoreGraphics::BarrierDependency::NoDependencies, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_MEMORY_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL));
 		scheduler->PushImageColorClear(loadInfo.img, GraphicsQueueType, VK_IMAGE_LAYOUT_GENERAL, clear, subres);
-		scheduler->PushImageLayoutTransition(GraphicsQueueType, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+		scheduler->PushImageLayoutTransition(GraphicsQueueType, CoreGraphics::BarrierDependency::PixelShader, CoreGraphics::BarrierDependency::AllGraphicsShaders, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_MEMORY_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
 	}
 	else
 	{
 		// clear image and transition layout
 		VkClearDepthStencilValue clear = { 1, 0 };
-		scheduler->PushImageLayoutTransition(GraphicsQueueType, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL));
+		scheduler->PushImageLayoutTransition(GraphicsQueueType, CoreGraphics::BarrierDependency::Host, CoreGraphics::BarrierDependency::NoDependencies, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_MEMORY_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL));
 		scheduler->PushImageDepthStencilClear(loadInfo.img, GraphicsQueueType, VK_IMAGE_LAYOUT_GENERAL, clear, subres);
-		scheduler->PushImageLayoutTransition(GraphicsQueueType, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL));
+		scheduler->PushImageLayoutTransition(GraphicsQueueType, CoreGraphics::BarrierDependency::NoDependencies, CoreGraphics::BarrierDependency::AllGraphicsShaders, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_MEMORY_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL));
 	}
 }
 
@@ -352,8 +368,8 @@ RenderTextureSwapBuffers(const CoreGraphics::RenderTextureId id)
 	VkRenderTextureLoadInfo& loadInfo = renderTextureAllocator.Get<0>(id.id24);
 	VkRenderTextureRuntimeInfo& runtimeInfo = renderTextureAllocator.Get<1>(id.id24);
 	n_assert(loadInfo.isWindow);
-	VkWindowSwapInfo& swapInfo = CoreGraphics::glfwWindowAllocator.Get<4>(loadInfo.window.id24);
-	VkResult res = vkAcquireNextImageKHR(VkRenderDevice::Instance()->GetCurrentDevice(), swapInfo.swapchain, UINT64_MAX, swapInfo.displaySemaphore, VK_NULL_HANDLE, &swapInfo.currentBackbuffer);
+	VkWindowSwapInfo& swapInfo = CoreGraphics::glfwWindowAllocator.Get<5>(loadInfo.window.id24);
+	VkResult res = vkAcquireNextImageKHR(Vulkan::GetCurrentDevice(), swapInfo.swapchain, UINT64_MAX, swapInfo.displaySemaphore, VK_NULL_HANDLE, &swapInfo.currentBackbuffer);
 	if (res == VK_ERROR_OUT_OF_DATE_KHR)
 	{
 		// this means our swapchain needs a resize!
@@ -412,6 +428,15 @@ const bool
 RenderTextureGetMSAA(const RenderTextureId id)
 {
 	return renderTextureAllocator.Get<0>(id.id24).msaa;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const ImageLayout
+RenderTextureGetLayout(const RenderTextureId id)
+{
+	return renderTextureAllocator.Get<4>(id.id24);
 }
 
 } // namespace CoreGraphics
@@ -504,9 +529,9 @@ RenderTextureGenerateMipHelper(const CoreGraphics::RenderTextureId id, IndexT fr
 	const VkRenderTextureLoadInfo& loadInfoFrom = renderTextureAllocator.Get<0>(id.id24);
 	const VkRenderTextureLoadInfo& loadInfoTo = renderTextureAllocator.Get<0>(target.id24);
 	const VkRenderTextureRuntimeInfo& rtInfo = renderTextureAllocator.Get<1>(id.id24);
+
 	n_assert(!rtInfo.inpass);
 	n_assert(loadInfoFrom.format == loadInfoTo.format);
-	VkRenderDevice* dev = VkRenderDevice::Instance();
 
 	// setup from-region
 	int32_t fromMipWidth = (int32_t)Math::n_max(1.0f, Math::n_floor(loadInfoFrom.dims.width / Math::n_pow(2, (float)from)));
@@ -525,7 +550,7 @@ RenderTextureGenerateMipHelper(const CoreGraphics::RenderTextureId id, IndexT fr
 	fromSubres.levelCount = 1;
 
 	// transition source to blit source
-	VkUtilities::ImageLayoutTransition(GraphicsQueueType, VkUtilities::ImageMemoryBarrier(loadInfoFrom.img, fromSubres, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL));
+	VkUtilities::ImageLayoutTransition(GraphicsQueueType, VkTypes::AsVkPipelineFlags(CoreGraphics::BarrierDependency::AllGraphicsShaders), VkTypes::AsVkPipelineFlags(CoreGraphics::BarrierDependency::Transfer), VkUtilities::ImageMemoryBarrier(loadInfoFrom.img, fromSubres, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL));
 
 	VkImageSubresourceRange toSubres;
 	toSubres.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -543,12 +568,12 @@ RenderTextureGenerateMipHelper(const CoreGraphics::RenderTextureId id, IndexT fr
 	toRegion.bottom = toMipHeight;
 	
 	// transition the texture to destination, blit, and transition it back
-	VkUtilities::ImageLayoutTransition(GraphicsQueueType, VkUtilities::ImageMemoryBarrier(loadInfoTo.img, toSubres, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
-	dev->Blit(loadInfoFrom.img, fromRegion, from, loadInfoTo.img, toRegion, to);
-	VkUtilities::ImageLayoutTransition(GraphicsQueueType, VkUtilities::ImageMemoryBarrier(loadInfoTo.img, toSubres, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+	VkUtilities::ImageLayoutTransition(GraphicsQueueType, VkTypes::AsVkPipelineFlags(CoreGraphics::BarrierDependency::AllGraphicsShaders), VkTypes::AsVkPipelineFlags(CoreGraphics::BarrierDependency::Transfer), VkUtilities::ImageMemoryBarrier(loadInfoTo.img, toSubres, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
+	Vulkan::Blit(loadInfoFrom.img, fromRegion, from, loadInfoTo.img, toRegion, to);
+	VkUtilities::ImageLayoutTransition(GraphicsQueueType, VkTypes::AsVkPipelineFlags(CoreGraphics::BarrierDependency::Transfer), VkTypes::AsVkPipelineFlags(CoreGraphics::BarrierDependency::AllGraphicsShaders), VkUtilities::ImageMemoryBarrier(loadInfoTo.img, toSubres, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
 
 	// transition source out from being blit source
-	VkUtilities::ImageLayoutTransition(GraphicsQueueType, VkUtilities::ImageMemoryBarrier(loadInfoFrom.img, fromSubres, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+	VkUtilities::ImageLayoutTransition(GraphicsQueueType, VkTypes::AsVkPipelineFlags(CoreGraphics::BarrierDependency::Transfer), VkTypes::AsVkPipelineFlags(CoreGraphics::BarrierDependency::AllGraphicsShaders), VkUtilities::ImageMemoryBarrier(loadInfoFrom.img, fromSubres, VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
 }
 
 } // namespace Vulkan

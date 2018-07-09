@@ -69,11 +69,11 @@ VkCmdBufferThread::DoWork()
 				break;
 			case GraphicsPipeline:
 				n_assert(this->commandBuffer != VK_NULL_HANDLE);
-				vkCmdBindPipeline(this->commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, cmd.pipeline);
+				vkCmdBindPipeline(this->commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, cmd.pipe.pipeline);
 				break;
 			case ComputePipeline:
 				n_assert(this->commandBuffer != VK_NULL_HANDLE);
-				vkCmdBindPipeline(this->commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, cmd.pipeline);
+				vkCmdBindPipeline(this->commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, cmd.pipe.pipeline);
 				break;
 			case InputAssemblyVertex:
 				n_assert(this->commandBuffer != VK_NULL_HANDLE);

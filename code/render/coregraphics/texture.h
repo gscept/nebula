@@ -8,6 +8,7 @@
 //------------------------------------------------------------------------------
 #include "coregraphics/gpubuffertypes.h"
 #include "coregraphics/pixelformat.h"
+#include "coregraphics/config.h"
 
 namespace CoreGraphics
 {
@@ -82,7 +83,7 @@ class MemoryTexturePool;
 extern MemoryTexturePool* texturePool;
 
 /// create new vertex buffer with intended usage, access and CPU syncing parameters, together with size of buffer
-const TextureId CreateTexture(TextureCreateInfo info);
+const TextureId CreateTexture(const TextureCreateInfo& info);
 /// destroy vertex buffer
 void DestroyTexture(const TextureId id);
 
@@ -92,6 +93,8 @@ TextureDimensions TextureGetDimensions(const TextureId id);
 CoreGraphics::PixelFormat::Code TextureGetPixelFormat(const TextureId id);
 /// get texture type
 TextureType TextureGetType(const TextureId id);
+/// get layout of texture
+ImageLayout TextureGetLayout(const TextureId id);
 /// get number of mips
 uint TextureGetNumMips(const TextureId id);
 

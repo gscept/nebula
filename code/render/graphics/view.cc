@@ -4,8 +4,9 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "view.h"
-#include "coregraphics/renderdevice.h"
+#include "coregraphics/graphicsdevice.h"
 #include "coregraphics/displaydevice.h"
+#include "coregraphics/transformdevice.h"
 #include "stage.h"
 
 using namespace CoreGraphics;
@@ -38,15 +39,20 @@ View::~View()
 void
 View::Render(const IndexT frameIndex, const Timing::Time time)
 {
-	RenderDevice* renderDevice = RenderDevice::Instance();
 	DisplayDevice* displayDevice = DisplayDevice::Instance();
+	TransformDevice* transDev = TransformDevice::Instance();
 
-	if (this->camera != CameraId::Invalid() && renderDevice->BeginFrame(frameIndex))
+	if (this->camera != CameraId::Invalid() && CoreGraphics::BeginFrame(frameIndex))
 	{
 		n_assert(this->stage.isvalid());
 		n_assert(this->script.isvalid());
+		transDev->SetViewTransform(CameraGetTransform(this->camera));
+		transDev->SetProjTransform(CameraGetProjection(this->camera));
+		transDev->SetFocalLength(CameraGetSettings(this->camera).GetFocalLength());
+		transDev->ApplyViewSettings();
 		this->script->Run(frameIndex);
-		renderDevice->EndFrame(frameIndex);
+		CoreGraphics::EndFrame(frameIndex);
+		CoreGraphics::Present();
 	}
 }
 } // namespace Graphics

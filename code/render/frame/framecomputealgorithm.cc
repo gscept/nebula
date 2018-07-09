@@ -28,30 +28,30 @@ FrameComputeAlgorithm::~FrameComputeAlgorithm()
 /**
 */
 void
-FrameComputeAlgorithm::Setup()
-{
-	this->func = this->alg->GetFunction(this->funcName);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-FrameComputeAlgorithm::Discard()
-{
-	FrameOp::Discard();
-
-	this->func = nullptr;
-	this->alg = nullptr;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-FrameComputeAlgorithm::Run(const IndexT frameIndex)
+FrameComputeAlgorithm::CompiledImpl::Run(const IndexT frameIndex)
 {
 	this->func(frameIndex);
 }
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+FrameComputeAlgorithm::CompiledImpl::Discard()
+{
+	this->func = nullptr;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+FrameOp::Compiled* 
+FrameComputeAlgorithm::AllocCompiled(Memory::ChunkAllocator<0xFFFF>& allocator)
+{
+	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
+	ret->func = this->alg->GetFunction(this->funcName);
+	return ret;
+}
+
 
 } // namespace Frame2

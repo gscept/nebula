@@ -33,8 +33,7 @@ struct IndexBufferCreateInfo
 const IndexBufferId CreateIndexBuffer(IndexBufferCreateInfo info);
 /// destroy Index buffer
 void DestroyIndexBuffer(const IndexBufferId id);
-/// bind Index buffer resource individually
-void IndexBufferBind(const IndexBufferId id, const IndexT offset);
+
 /// update Index buffer
 void IndexBufferUpdate(const IndexBufferId id, void* data, PtrDiff size, PtrDiff offset);
 /// request lock for Index buffer, such that it can be updated

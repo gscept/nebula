@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Nebula3 version="1">
+    <Options exportFlags="4" exportMode="0" scale="1.000000" />
+    <States>
+        <ModelNode name="root/pCube1" material="Static">
+            <Textures>
+                <Texture name="DiffuseMap" value="tex:system/grid" />
+                <Texture name="NormalMap" value="tex:system/nobump" />
+            </Textures>
+            <Variables>
+                <Variable name="AlphaSensitivity" type="3" value="0.200000" min="0.000000" max="1.000000" />
+            </Variables>
+        </ModelNode>
+        <ModelNode name="root/pCube13" material="sur:system/placeholder">
+            <Textures>
+                <Texture name="DiffuseMap" value="tex:system/placeholder" />
+                <Texture name="NormalMap" value="tex:system/nobump" />
+            </Textures>
+        </ModelNode>
+    </States>
+</Nebula3>

@@ -21,11 +21,15 @@ CreateVertexLayout(VertexLayoutCreateInfo& info)
 
 	Util::String sig;
 	IndexT i;
+	for (i = 0; i < CoreGraphics::MaxNumVertexStreams; i++)
+		loadInfo.usedStreams[i] = false;
+
 	SizeT size = 0;
 	for (i = 0; i < info.comps.Size(); i++)
 	{
 		sig.Append(info.comps[i].GetSignature());
 		loadInfo.usedStreams[info.comps[i].GetStreamIndex()] = true;
+		size += info.comps[i].GetByteSize();
 	}
 	sig = Util::String::Sprintf("%s", sig.AsCharPtr());
 	Util::StringAtom atom(sig);
@@ -39,7 +43,7 @@ CreateVertexLayout(VertexLayoutCreateInfo& info)
 	VertexLayoutId id = layoutPool->ReserveResource(atom, "render_system");
 	id.allocType = VertexLayoutIdType;
 	if (layoutPool->GetState(id) == Resources::Resource::Pending)
-		layoutPool->LoadFromMemory(id.allocId, &loadInfo);
+		layoutPool->LoadFromMemory(id, &loadInfo);
 
 	return id;
 }
@@ -51,15 +55,6 @@ void
 DestroyVertexLayout(const VertexLayoutId id)
 {
 	layoutPool->Unload(id.allocId);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-VertexLayoutBind(const VertexLayoutId id)
-{
-	layoutPool->VertexLayoutBind(id);
 }
 
 //------------------------------------------------------------------------------

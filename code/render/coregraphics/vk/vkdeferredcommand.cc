@@ -4,7 +4,7 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "vkdeferredcommand.h"
-#include "vkrenderdevice.h"
+#include "vkgraphicsdevice.h"
 #include "vkutilities.h"
 
 namespace Vulkan
@@ -45,21 +45,21 @@ VkDeferredCommand::RunDelegate()
 		Memory::Free(Memory::ScratchHeap, this->del.memory.data);
 		break;
 	case FreeBuffer:
-		vkFreeMemory(this->dev, this->del.buffer.mem, NULL);
-		vkDestroyBuffer(this->dev, this->del.buffer.buf, NULL);
+		vkFreeMemory(this->dev, this->del.buffer.mem, nullptr);
+		vkDestroyBuffer(this->dev, this->del.buffer.buf, nullptr);
 		break;
 	case FreeImage:
-		vkFreeMemory(this->dev, this->del.image.mem, NULL);
-		vkDestroyImage(this->dev, this->del.image.img, NULL);
+		vkFreeMemory(this->dev, this->del.image.mem, nullptr);
+		vkDestroyImage(this->dev, this->del.image.img, nullptr);
 		break;
 	case BindDescriptorSets:
 		if (this->del.descSetBind.type == VK_PIPELINE_BIND_POINT_GRAPHICS)
 		{
-			VkRenderDevice::Instance()->BindDescriptorsGraphics(this->del.descSetBind.sets, this->del.descSetBind.layout, this->del.descSetBind.baseSet, this->del.descSetBind.numSets, this->del.descSetBind.offsets, this->del.descSetBind.numOffsets);
+			Vulkan::BindDescriptorsGraphics(this->del.descSetBind.sets, this->del.descSetBind.layout, this->del.descSetBind.baseSet, this->del.descSetBind.numSets, this->del.descSetBind.offsets, this->del.descSetBind.numOffsets);
 		}
 		else
 		{
-			VkRenderDevice::Instance()->BindDescriptorsCompute(this->del.descSetBind.sets, this->del.descSetBind.layout, this->del.descSetBind.baseSet, this->del.descSetBind.numSets, this->del.descSetBind.offsets, this->del.descSetBind.numOffsets);
+			Vulkan::BindDescriptorsCompute(this->del.descSetBind.sets, this->del.descSetBind.layout, this->del.descSetBind.baseSet, this->del.descSetBind.numSets, this->del.descSetBind.offsets, this->del.descSetBind.numOffsets);
 		}
 		break;
 	
@@ -70,7 +70,7 @@ VkDeferredCommand::RunDelegate()
 		VkUtilities::ImageUpdate(this->del.imageUpd.img, this->del.imageUpd.info, this->del.imageUpd.mip, this->del.imageUpd.face, this->del.imageUpd.size, this->del.imageUpd.data);
 		break;
 	case DestroyPipeline:
-		vkDestroyPipeline(this->dev, this->del.pipelineDestroy.pipeline, NULL);
+		vkDestroyPipeline(this->dev, this->del.pipelineDestroy.pipeline, nullptr);
 		break;
 	case ClearColorImage:
 		VkUtilities::ImageColorClear(this->del.imgColorClear.img, this->del.queue, this->del.imgColorClear.layout, this->del.imgColorClear.clearValue, this->del.imgColorClear.region);
@@ -79,10 +79,10 @@ VkDeferredCommand::RunDelegate()
 		VkUtilities::ImageDepthStencilClear(this->del.imgDepthStencilClear.img, this->del.queue, this->del.imgDepthStencilClear.layout, this->del.imgDepthStencilClear.clearValue, this->del.imgDepthStencilClear.region);
 		break;
 	case ImageLayoutTransition:
-		VkUtilities::ImageLayoutTransition(this->del.queue, this->del.imgBarrier.barrier);
+		VkUtilities::ImageLayoutTransition(this->del.queue, this->del.imgBarrier.left, this->del.imgBarrier.right, this->del.imgBarrier.barrier);
 		break;
 	case ImageOwnershipChange:
-		VkUtilities::ImageOwnershipChange(this->del.queue, this->del.imgOwnerChange.barrier);
+		VkUtilities::ImageOwnershipChange(this->del.queue, this->del.imgOwnerChange.left, this->del.imgOwnerChange.right, this->del.imgOwnerChange.barrier);
 		break;
 	}
 }

@@ -22,8 +22,15 @@ public:
 	void Setup();
 	/// discard operation
 	void Discard();
-	/// run operation
-	void Run(const IndexT frameIndex);
+
+	struct CompiledImpl : public FrameOp::Compiled
+	{
+		void Run(const IndexT frameIndex);
+
+		std::function<void(IndexT)> func;
+	};
+
+	FrameOp::Compiled* AllocCompiled(Memory::ChunkAllocator<0xFFFF>& allocator);
 
 	Util::StringAtom funcName;
 	Algorithms::Algorithm* alg;

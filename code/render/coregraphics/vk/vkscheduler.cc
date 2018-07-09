@@ -4,8 +4,9 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "vkscheduler.h"
-#include "vkrenderdevice.h"
+#include "vkgraphicsdevice.h"
 #include "coregraphics/config.h"
+#include "vktypes.h"
 
 namespace Vulkan
 {
@@ -35,10 +36,13 @@ VkScheduler::~VkScheduler()
 /**
 */
 void
-VkScheduler::PushImageLayoutTransition(CoreGraphicsQueueType queue, VkImageMemoryBarrier barrier)
+VkScheduler::PushImageLayoutTransition(CoreGraphicsQueueType queue, CoreGraphics::BarrierDependency left, CoreGraphics::BarrierDependency right, VkImageMemoryBarrier barrier)
 {
+	n_assert(this->dev != nullptr);
 	VkDeferredCommand del;
 	del.del.type = VkDeferredCommand::ImageLayoutTransition;
+	del.del.imgBarrier.left = VkTypes::AsVkPipelineFlags(left);
+	del.del.imgBarrier.right = VkTypes::AsVkPipelineFlags(right);
 	del.del.imgBarrier.barrier = barrier;
 	del.del.queue = queue;
 	del.dev = this->dev;
@@ -49,10 +53,13 @@ VkScheduler::PushImageLayoutTransition(CoreGraphicsQueueType queue, VkImageMemor
 /**
 */
 void
-VkScheduler::PushImageOwnershipChange(CoreGraphicsQueueType queue, VkImageMemoryBarrier barrier)
+VkScheduler::PushImageOwnershipChange(CoreGraphicsQueueType queue, CoreGraphics::BarrierDependency left, CoreGraphics::BarrierDependency right, VkImageMemoryBarrier barrier)
 {
+	n_assert(this->dev != nullptr);
 	VkDeferredCommand del;
 	del.del.type = VkDeferredCommand::ImageOwnershipChange;
+	del.del.imgOwnerChange.left = VkTypes::AsVkPipelineFlags(left);
+	del.del.imgOwnerChange.right = VkTypes::AsVkPipelineFlags(right);
 	del.del.imgOwnerChange.barrier = barrier;
 	del.del.queue = queue;
 	del.dev = this->dev;
@@ -65,6 +72,7 @@ VkScheduler::PushImageOwnershipChange(CoreGraphicsQueueType queue, VkImageMemory
 void
 VkScheduler::PushImageColorClear(const VkImage& image, const CoreGraphicsQueueType queue, VkImageLayout layout, VkClearColorValue clearValue, VkImageSubresourceRange subres)
 {
+	n_assert(this->dev != nullptr);
 	VkDeferredCommand del;
 	del.del.type = VkDeferredCommand::ClearColorImage;
 	del.del.imgColorClear.clearValue = clearValue;
@@ -82,6 +90,7 @@ VkScheduler::PushImageColorClear(const VkImage& image, const CoreGraphicsQueueTy
 void
 VkScheduler::PushImageDepthStencilClear(const VkImage& image, const CoreGraphicsQueueType queue, VkImageLayout layout, VkClearDepthStencilValue clearValue, VkImageSubresourceRange subres)
 {
+	n_assert(this->dev != nullptr);
 	VkDeferredCommand del;
 	del.del.type = VkDeferredCommand::ClearDepthStencilImage;
 	del.del.imgDepthStencilClear.clearValue = clearValue;
@@ -99,6 +108,7 @@ VkScheduler::PushImageDepthStencilClear(const VkImage& image, const CoreGraphics
 void
 VkScheduler::PushImageUpdate(const VkImage& img, const VkImageCreateInfo& info, uint32_t mip, uint32_t face, VkDeviceSize size, uint32_t* data)
 {
+	n_assert(this->dev != nullptr);
 	uint32_t* imgCopy = (uint32_t*)Memory::Alloc(Memory::ScratchHeap, VK_DEVICE_SIZE_CONV(size));
 	Memory::Copy(data, imgCopy, VK_DEVICE_SIZE_CONV(size));
 
@@ -136,7 +146,7 @@ VkScheduler::ExecuteCommandPass(const CommandPass& pass)
 				{
 					cmds[j].RunDelegate();
 				}
-				vkDestroyFence(this->dev, fence, NULL);
+				vkDestroyFence(this->dev, fence, nullptr);
 				this->transferFenceCommands.EraseAtIndex(i--);
 			}
 		}
@@ -156,7 +166,7 @@ VkScheduler::ExecuteCommandPass(const CommandPass& pass)
 				{
 					cmds[j].RunDelegate();
 				}
-				vkDestroyFence(this->dev, fence, NULL);
+				vkDestroyFence(this->dev, fence, nullptr);
 				this->sparseFenceCommands.EraseAtIndex(i--);
 			}
 		}
@@ -176,7 +186,7 @@ VkScheduler::ExecuteCommandPass(const CommandPass& pass)
 				{
 					cmds[j].RunDelegate();
 				}
-				vkDestroyFence(this->dev, fence, NULL);
+				vkDestroyFence(this->dev, fence, nullptr);
 				this->computeFenceCommands.EraseAtIndex(i--);
 			}
 		}
@@ -196,7 +206,7 @@ VkScheduler::ExecuteCommandPass(const CommandPass& pass)
 				{
 					cmds[j].RunDelegate();
 				}
-				vkDestroyFence(this->dev, fence, NULL);
+				vkDestroyFence(this->dev, fence, nullptr);
 				this->drawFenceCommands.EraseAtIndex(i--);
 			}
 		}
@@ -232,6 +242,7 @@ VkScheduler::PushCommand(const VkDeferredCommand& cmd, const CommandPass& pass)
 void
 VkScheduler::Begin()
 {
+	n_assert(this->dev != nullptr);
 	this->putTransferFenceThisFrame = false;
 	this->putSparseFenceThisFrame = false;
 	this->putDrawFenceThisFrame = false;
@@ -253,13 +264,13 @@ VkScheduler::EndTransfers()
 	if (this->putTransferFenceThisFrame)
 	{
 		VkFence fence;
-		VkResult res = vkCreateFence(this->dev, &info, NULL, &fence);
+		VkResult res = vkCreateFence(this->dev, &info, nullptr, &fence);
 		n_assert(res == VK_SUCCESS);
 		this->transferFenceCommands.Add(fence, this->commands[OnHandleTransferFences]);
 		this->commands[OnHandleTransferFences].Clear();
 
 		// submit to queue
-		res = vkQueueSubmit(VkRenderDevice::Instance()->GetQueue(VkSubContextHandler::TransferContextType), 0, VK_NULL_HANDLE, fence);
+		res = vkQueueSubmit(Vulkan::GetCurrentQueue(TransferQueueType), 0, VK_NULL_HANDLE, fence);
 		n_assert(res == VK_SUCCESS);
 		this->putTransferFenceThisFrame = false;
 	}
@@ -280,11 +291,13 @@ VkScheduler::EndDraws()
 	if (this->putDrawFenceThisFrame)
 	{
 		VkFence fence;
-		VkResult res = vkCreateFence(this->dev, &info, NULL, &fence);
+		VkResult res = vkCreateFence(this->dev, &info, nullptr, &fence);
 		n_assert(res == VK_SUCCESS);
 		this->drawFenceCommands.Add(fence, this->commands[OnHandleDrawFences]);
 		this->commands[OnHandleDrawFences].Clear();
-		res = vkQueueSubmit(VkRenderDevice::Instance()->GetQueue(VkSubContextHandler::DrawContextType), 0, VK_NULL_HANDLE, fence);
+
+		// submit to queue
+		res = vkQueueSubmit(Vulkan::GetCurrentQueue(GraphicsQueueType), 0, VK_NULL_HANDLE, fence);
 		n_assert(res == VK_SUCCESS);
 		this->putDrawFenceThisFrame = false;
 	}
@@ -305,14 +318,27 @@ VkScheduler::EndComputes()
 	if (this->putComputeFenceThisFrame)
 	{
 		VkFence fence;
-		VkResult res = vkCreateFence(this->dev, &info, NULL, &fence);
+		VkResult res = vkCreateFence(this->dev, &info, nullptr, &fence);
 		n_assert(res == VK_SUCCESS);
 		this->computeFenceCommands.Add(fence, this->commands[OnHandleComputeFences]);
 		this->commands[OnHandleComputeFences].Clear();
-		res = vkQueueSubmit(VkRenderDevice::Instance()->GetQueue(VkSubContextHandler::ComputeContextType), 0, VK_NULL_HANDLE, fence);
+
+		// submit to queue
+		res = vkQueueSubmit(Vulkan::GetCurrentQueue(ComputeQueueType), 0, VK_NULL_HANDLE, fence);
 		n_assert(res == VK_SUCCESS);
 		this->putComputeFenceThisFrame = false;
 	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+VkScheduler::Discard()
+{
+	IndexT i;
+	for (i = 0; i < NumCommandPasses; i++)
+		ExecuteCommandPass((CommandPass)i);
 }
 
 } // namespace Vulkan

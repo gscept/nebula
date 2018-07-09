@@ -18,10 +18,15 @@ public:
 	/// destructor
 	virtual ~FrameGlobalState();
 
-	/// discard operation
-	void Discard();
-	/// run operation
-	void Run(const IndexT frameIndex);
+	struct CompiledImpl : public FrameOp::Compiled
+	{
+		void Run(const IndexT frameIndex);
+
+		CoreGraphics::ShaderStateId state;
+		Util::Array<CoreGraphics::ShaderConstantId> constants;
+	};
+
+	FrameOp::Compiled* AllocCompiled(Memory::ChunkAllocator<0xFFFF>& allocator);
 
 	CoreGraphics::ShaderStateId state;
 	Util::Array<CoreGraphics::ShaderConstantId> constants;

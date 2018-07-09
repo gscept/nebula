@@ -7,11 +7,10 @@
 #include "rendermodules/rt/rtpluginregistry.h"
 #include "coregraphics/textrenderer.h"
 #include "coregraphics/shaperenderer.h"
-#include "coregraphics/renderdevice.h"
+#include "coregraphics/graphicsdevice.h"
 #include "frame/framebatchtype.h"
 
 using namespace CoreGraphics;
-using namespace Lighting;
 namespace Frame
 {
 
@@ -34,10 +33,12 @@ FrameSubpassSystem::~FrameSubpassSystem()
 //------------------------------------------------------------------------------
 /**
 */
-void
-FrameSubpassSystem::Setup()
+FrameOp::Compiled*
+FrameSubpassSystem::AllocCompiled(Memory::ChunkAllocator<0xFFFF>& allocator)
 {
-	FrameOp::Setup();
+	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
+	ret->call = this->call;
+	return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -46,20 +47,19 @@ FrameSubpassSystem::Setup()
 	be manageable as to where they should be rendered.
 */
 void
-FrameSubpassSystem::Run(const IndexT frameIndex)
+FrameSubpassSystem::CompiledImpl::Run(const IndexT frameIndex)
 {
-	CoreGraphics::RenderDevice* renderDev = CoreGraphics::RenderDevice::Instance();
 	switch (this->call)
 	{
 	case Lights:
-		renderDev->BeginBatch(FrameBatchType::System);
+		CoreGraphics::BeginBatch(FrameBatchType::System);
 		//LightServer::Instance()->RenderLights();
-		renderDev->EndBatch();
+		CoreGraphics::EndBatch();
 		break;
 	case LightProbes:
-		renderDev->BeginBatch(FrameBatchType::System);
+		CoreGraphics::BeginBatch(FrameBatchType::System);
 		//LightServer::Instance()->RenderLightProbes();
-		renderDev->EndBatch();
+		CoreGraphics::EndBatch();
 		break;
 	case LocalShadowsSpot:	// shadows implement their own batching
 		//ShadowServer::Instance()->UpdateSpotLightShadowBuffers();
@@ -74,14 +74,14 @@ FrameSubpassSystem::Run(const IndexT frameIndex)
 		//RenderModules::RTPluginRegistry::Instance()->OnRender(FrameBatchType::UI);
 		break;
 	case Text:
-		renderDev->BeginBatch(FrameBatchType::System);
-		TextRenderer::Instance()->DrawTextElements();
-		renderDev->EndBatch();
+		CoreGraphics::BeginBatch(FrameBatchType::System);
+		//TextRenderer::Instance()->DrawTextElements();
+		CoreGraphics::EndBatch();
 		break;
 	case Shapes:
-		renderDev->BeginBatch(FrameBatchType::System);
-		ShapeRenderer::Instance()->DrawShapes();
-		renderDev->EndBatch();
+		CoreGraphics::BeginBatch(FrameBatchType::System);
+		//ShapeRenderer::Instance()->DrawShapes();
+		CoreGraphics::EndBatch();
 		break;
 	default:
 		n_error("Invalid system call!");

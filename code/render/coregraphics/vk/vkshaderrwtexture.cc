@@ -4,11 +4,12 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "vkshaderrwtexture.h"
-#include "vkrenderdevice.h"
+#include "vkgraphicsdevice.h"
 #include "vktypes.h"
 #include "vkutilities.h"
 #include "vkscheduler.h"
 #include "coregraphics/config.h"
+#include "coregraphics/shaderserver.h"
 #include <array>
 
 
@@ -51,14 +52,15 @@ CreateShaderRWTexture(const ShaderRWTextureCreateInfo& info)
 
 	VkShaderRWTextureLoadInfo& loadInfo = shaderRWTextureAllocator.Get<0>(id);
 	VkShaderRWTextureRuntimeInfo& runtimeInfo = shaderRWTextureAllocator.Get<1>(id);
+	ImageLayout& layout = shaderRWTextureAllocator.Get<2>(id);
 
 	ShaderRWTextureInfo adjustedInfo = ShaderRWTextureInfoSetupHelper(info);
 	loadInfo.dims.width = adjustedInfo.width;
 	loadInfo.dims.height = adjustedInfo.height;
 	loadInfo.dims.depth = 1;
-	loadInfo.dev = VkRenderDevice::Instance()->GetCurrentDevice();
+	loadInfo.dev = Vulkan::GetCurrentDevice();
 
-	VkPhysicalDevice physicalDev = VkRenderDevice::Instance()->GetCurrentPhysicalDevice();
+	VkPhysicalDevice physicalDev = Vulkan::GetCurrentPhysicalDevice();
 	VkFormat vkformat = VkTypes::AsVkDataFormat(adjustedInfo.format);
 	VkFormatProperties formatProps;
 	vkGetPhysicalDeviceFormatProperties(physicalDev, vkformat, &formatProps);
@@ -68,7 +70,7 @@ CreateShaderRWTexture(const ShaderRWTextureCreateInfo& info)
 	extents.height = adjustedInfo.height;
 	extents.depth = 1;
 
-	const std::array<uint32_t, 4> queues = VkRenderDevice::Instance()->GetQueueFamilies();
+	const Util::Set<uint32_t>& queues = Vulkan::GetQueueFamilies();
 	VkImageCreateInfo crinfo =
 	{
 		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -83,8 +85,8 @@ CreateShaderRWTexture(const ShaderRWTextureCreateInfo& info)
 		VK_IMAGE_TILING_OPTIMAL,
 		VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
 		VK_SHARING_MODE_CONCURRENT,
-		(uint32_t)queues.size(),
-		queues.data(),
+		(uint32_t)queues.Size(),
+		queues.KeysAsArray().Begin(),
 		VK_IMAGE_LAYOUT_UNDEFINED
 	};
 	VkResult stat = vkCreateImage(loadInfo.dev, &crinfo, NULL, &loadInfo.img);
@@ -116,11 +118,15 @@ CreateShaderRWTexture(const ShaderRWTextureCreateInfo& info)
 	n_assert(stat == VK_SUCCESS);
 
 	// transition to a useable state
-	VkScheduler::Instance()->PushImageLayoutTransition(GraphicsQueueType, VkUtilities::ImageMemoryBarrier(loadInfo.img, viewRange, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL));
+	VkScheduler::Instance()->PushImageLayoutTransition(GraphicsQueueType, CoreGraphics::BarrierDependency::Host, CoreGraphics::BarrierDependency::AllGraphicsShaders, VkUtilities::ImageMemoryBarrier(loadInfo.img, viewRange, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL));
 
+	layout = ImageLayout::General;
 	ShaderRWTextureId ret;
 	ret.id24 = id;
 	ret.id8 = ShaderRWTextureIdType;
+
+	runtimeInfo.bind = VkShaderServer::Instance()->RegisterTexture(ret, Texture2D);
+
 	return ret;
 }
 
@@ -133,6 +139,7 @@ DestroyShaderRWTexture(const ShaderRWTextureId id)
 	VkShaderRWTextureLoadInfo& loadInfo = shaderRWTextureAllocator.Get<0>(id.id24);
 	VkShaderRWTextureRuntimeInfo& runtimeInfo = shaderRWTextureAllocator.Get<1>(id.id24);
 
+	VkShaderServer::Instance()->UnregisterTexture(runtimeInfo.bind, Texture2D);
 	vkDestroyImageView(loadInfo.dev, runtimeInfo.view, nullptr);
 	vkDestroyImage(loadInfo.dev, loadInfo.img, nullptr);
 	vkFreeMemory(loadInfo.dev, loadInfo.mem, nullptr);
@@ -196,6 +203,15 @@ const TextureDimensions
 ShaderRWTextureGetDimensions(const ShaderRWTextureId id)
 {
 	return shaderRWTextureAllocator.Get<0>(id.id24).dims;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const ImageLayout
+ShaderRWTextureGetLayout(const ShaderRWTextureId id)
+{
+	return shaderRWTextureAllocator.Get<2>(id.id24);
 }
 
 } // namespace CoreGraphics

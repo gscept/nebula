@@ -38,8 +38,19 @@ FrameSwapbuffers::Discard()
 //------------------------------------------------------------------------------
 /**
 */
+FrameOp::Compiled*
+FrameSwapbuffers::AllocCompiled(Memory::ChunkAllocator<0xFFFF>& allocator)
+{
+	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
+	ret->tex = this->tex;
+	return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
-FrameSwapbuffers::Run(const IndexT frameIndex)
+FrameSwapbuffers::CompiledImpl::Run(const IndexT frameIndex)
 {
 	CoreGraphics::RenderTextureSwapBuffers(this->tex);
 }

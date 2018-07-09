@@ -26,9 +26,9 @@ ID_32_TYPE(ConstantBufferSliceId);
 
 struct ConstantBufferCreateInfo
 {
-	bool setupFromReflection;
+	bool setupFromReflection;			// use if created outside a shader state, and is supposed to be attached to a shader within said state
 
-	ShaderStateId state;				// the shader state to bind to
+	ShaderId shader;					// the shader state to bind to
 	Util::StringAtom name;				// name in shader state for the block
 	SizeT size;							// if setupFromReflection is true, this is the number of backing buffers, otherwise, it is the byte size
 	SizeT numBuffers;					// declare the amount of buffer rings (double, triple, quadruple buffering...)
@@ -48,12 +48,27 @@ ConstantBufferSliceId ConstantBufferAllocateInstance(const ConstantBufferId id);
 /// free an instance
 void ConstantBufferFreeInstance(const ConstantBufferId id, ConstantBufferSliceId slice);
 /// reset instances in constant buffer
-void ConstantBufferReset(const ConstantBufferId id);
+void ConstantBufferResetInstances(const ConstantBufferId id);
+
+/// get constant buffer slot from reflection
+IndexT ConstantBufferGetSlot(const ConstantBufferId id);
 
 /// update constant buffer
 void ConstantBufferUpdate(const ConstantBufferId id, const void* data, const uint offset, const uint size);
 /// update constant buffer using array of objects
 void ConstantBufferArrayUpdate(const ConstantBufferId id, const void* data, const uint offset, const uint size, const uint count);
+/// update constant buffer
+template<class TYPE> void ConstantBufferUpdate(const ConstantBufferId id, const TYPE* data, const uint offset);
+/// update constant buffer using array of objects
+template<class TYPE> void ConstantBufferArrayUpdate(const ConstantBufferId id, const TYPE* data, const uint offset, const uint count);
+/// update constant buffer
+void ConstantBufferUpdate(const ConstantBufferId id, const ShaderConstantId cid, const uint size, const void* data);
+/// update constant buffer using array of objects
+void ConstantBufferArrayUpdate(const ConstantBufferId id, const ShaderConstantId cid, const void* data, const uint size, const uint count);
+/// update constant buffer
+template<class TYPE> void ConstantBufferUpdate(const ConstantBufferId id, const ShaderConstantId cid, const TYPE* data);
+/// update constant buffer using array of objects
+template<class TYPE> void ConstantBufferArrayUpdate(const ConstantBufferId id, const ShaderConstantId cid, const TYPE* data, const uint count);
 /// set base offset for constant buffer
 void ConstantBufferSetBaseOffset(const ConstantBufferId id, const uint offset);
 
@@ -61,5 +76,41 @@ void ConstantBufferSetBaseOffset(const ConstantBufferId id, const uint offset);
 const ShaderConstantId ConstantBufferCreateShaderVariable(const ConstantBufferId id, const ConstantBufferSliceId slice, const Util::StringAtom& name);
 /// destroy variable on this constant buffer
 void ConstantBufferDestroyShaderVariable(const ConstantBufferId id, const ShaderConstantId var);
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE> void
+ConstantBufferUpdate(const ConstantBufferId id, const TYPE* data, const uint offset)
+{
+	ConstantBufferUpdate(id, data, offset, sizeof(TYPE));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE> void
+ConstantBufferArrayUpdate(const ConstantBufferId id, const TYPE* data, const uint offset, const uint count)
+{
+	ConstantBufferArrayUpdate(id, data, offset, sizeof(TYPE), count);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE> void
+ConstantBufferUpdate(const ConstantBufferId id, const ShaderConstantId cid, const TYPE* data)
+{
+	ConstantBufferUpdate(id, cid, data, sizeof(TYPE));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE> void
+ConstantBufferArrayUpdate(const ConstantBufferId id, const ShaderConstantId cid, const TYPE* data, const uint count)
+{
+	ConstantBufferArrayUpdate(id, cid, data, sizeof(TYPE), count);
+}
 
 } // CoreGraphics

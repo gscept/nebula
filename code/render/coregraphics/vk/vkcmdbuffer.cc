@@ -4,7 +4,6 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "vkcmdbuffer.h"
-#include "vkrenderdevice.h"
 #include "coregraphics/config.h"
 namespace Vulkan
 {
@@ -31,28 +30,32 @@ SetupVkPools(VkDevice dev, uint32_t drawQueue, uint32_t computeQueue, uint32_t t
 
 	pools.dev = dev;
 
-	memset(pools.draw, 0, sizeof(pools.draw));
-	memset(pools.compute, 0, sizeof(pools.compute));
-	memset(pools.transfer, 0, sizeof(pools.transfer));
-	memset(pools.sparse, 0, sizeof(pools.sparse));
+	memset(pools.pools[CoreGraphics::CmdDraw], 0, sizeof(pools.pools[CoreGraphics::CmdDraw]));
+	memset(pools.pools[CoreGraphics::CmdCompute], 0, sizeof(pools.pools[CoreGraphics::CmdCompute]));
+	memset(pools.pools[CoreGraphics::CmdTransfer], 0, sizeof(pools.pools[CoreGraphics::CmdTransfer]));
+	memset(pools.pools[CoreGraphics::CmdSparse], 0, sizeof(pools.pools[CoreGraphics::CmdSparse]));
+	pools.queueFamilies[CoreGraphics::CmdDraw] = drawQueue;
+	pools.queueFamilies[CoreGraphics::CmdCompute] = computeQueue;
+	pools.queueFamilies[CoreGraphics::CmdTransfer] = transferQueue;
+	pools.queueFamilies[CoreGraphics::CmdSparse] = sparseQueue;
 
 	// draw pools, we assume we at least have drawing capabilities
 	cmdPoolInfo.queueFamilyIndex = drawQueue;
 
 	cmdPoolInfo.flags = 0;
-	result = vkCreateCommandPool(dev, &cmdPoolInfo, NULL, &pools.draw[0]);
+	result = vkCreateCommandPool(dev, &cmdPoolInfo, NULL, &pools.pools[CoreGraphics::CmdDraw][cmdPoolInfo.flags]);
 	n_assert(result == VK_SUCCESS);
 
 	cmdPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-	result = vkCreateCommandPool(dev, &cmdPoolInfo, NULL, &pools.draw[1]);
+	result = vkCreateCommandPool(dev, &cmdPoolInfo, NULL, &pools.pools[CoreGraphics::CmdDraw][cmdPoolInfo.flags]);
 	n_assert(result == VK_SUCCESS);
 
 	cmdPoolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-	result = vkCreateCommandPool(dev, &cmdPoolInfo, NULL, &pools.draw[2]);
+	result = vkCreateCommandPool(dev, &cmdPoolInfo, NULL, &pools.pools[CoreGraphics::CmdDraw][cmdPoolInfo.flags]);
 	n_assert(result == VK_SUCCESS);
 
 	cmdPoolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-	result = vkCreateCommandPool(dev, &cmdPoolInfo, NULL, &pools.draw[3]);
+	result = vkCreateCommandPool(dev, &cmdPoolInfo, NULL, &pools.pools[CoreGraphics::CmdDraw][cmdPoolInfo.flags]);
 	n_assert(result == VK_SUCCESS);
 
 	if (computeQueue != InvalidIndex)
@@ -61,19 +64,19 @@ SetupVkPools(VkDevice dev, uint32_t drawQueue, uint32_t computeQueue, uint32_t t
 		cmdPoolInfo.queueFamilyIndex = computeQueue;
 
 		cmdPoolInfo.flags = 0;
-		result = vkCreateCommandPool(dev, &cmdPoolInfo, NULL, &pools.compute[0]);
+		result = vkCreateCommandPool(dev, &cmdPoolInfo, NULL, &pools.pools[CoreGraphics::CmdCompute][cmdPoolInfo.flags]);
 		n_assert(result == VK_SUCCESS);
 
 		cmdPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-		result = vkCreateCommandPool(dev, &cmdPoolInfo, NULL, &pools.compute[1]);
+		result = vkCreateCommandPool(dev, &cmdPoolInfo, NULL, &pools.pools[CoreGraphics::CmdCompute][cmdPoolInfo.flags]);
 		n_assert(result == VK_SUCCESS);
 
 		cmdPoolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-		result = vkCreateCommandPool(dev, &cmdPoolInfo, NULL, &pools.compute[2]);
+		result = vkCreateCommandPool(dev, &cmdPoolInfo, NULL, &pools.pools[CoreGraphics::CmdCompute][cmdPoolInfo.flags]);
 		n_assert(result == VK_SUCCESS);
 
 		cmdPoolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-		result = vkCreateCommandPool(dev, &cmdPoolInfo, NULL, &pools.compute[3]);
+		result = vkCreateCommandPool(dev, &cmdPoolInfo, NULL, &pools.pools[CoreGraphics::CmdCompute][cmdPoolInfo.flags]);
 		n_assert(result == VK_SUCCESS);
 	}
 
@@ -83,19 +86,19 @@ SetupVkPools(VkDevice dev, uint32_t drawQueue, uint32_t computeQueue, uint32_t t
 		cmdPoolInfo.queueFamilyIndex = transferQueue;
 
 		cmdPoolInfo.flags = 0;
-		result = vkCreateCommandPool(dev, &cmdPoolInfo, NULL, &pools.transfer[0]);
+		result = vkCreateCommandPool(dev, &cmdPoolInfo, NULL, &pools.pools[CoreGraphics::CmdTransfer][cmdPoolInfo.flags]);
 		n_assert(result == VK_SUCCESS);
 
 		cmdPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-		result = vkCreateCommandPool(dev, &cmdPoolInfo, NULL, &pools.transfer[1]);
+		result = vkCreateCommandPool(dev, &cmdPoolInfo, NULL, &pools.pools[CoreGraphics::CmdTransfer][cmdPoolInfo.flags]);
 		n_assert(result == VK_SUCCESS);
 
 		cmdPoolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-		result = vkCreateCommandPool(dev, &cmdPoolInfo, NULL, &pools.transfer[2]);
+		result = vkCreateCommandPool(dev, &cmdPoolInfo, NULL, &pools.pools[CoreGraphics::CmdTransfer][cmdPoolInfo.flags]);
 		n_assert(result == VK_SUCCESS);
 
 		cmdPoolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-		result = vkCreateCommandPool(dev, &cmdPoolInfo, NULL, &pools.transfer[3]);
+		result = vkCreateCommandPool(dev, &cmdPoolInfo, NULL, &pools.pools[CoreGraphics::CmdTransfer][cmdPoolInfo.flags]);
 		n_assert(result == VK_SUCCESS);
 	}
 
@@ -105,19 +108,19 @@ SetupVkPools(VkDevice dev, uint32_t drawQueue, uint32_t computeQueue, uint32_t t
 		cmdPoolInfo.queueFamilyIndex = sparseQueue;
 
 		cmdPoolInfo.flags = 0;
-		result = vkCreateCommandPool(dev, &cmdPoolInfo, NULL, &pools.sparse[0]);
+		result = vkCreateCommandPool(dev, &cmdPoolInfo, NULL, &pools.pools[CoreGraphics::CmdSparse][cmdPoolInfo.flags]);
 		n_assert(result == VK_SUCCESS);
 
 		cmdPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-		result = vkCreateCommandPool(dev, &cmdPoolInfo, NULL, &pools.sparse[1]);
+		result = vkCreateCommandPool(dev, &cmdPoolInfo, NULL, &pools.pools[CoreGraphics::CmdSparse][cmdPoolInfo.flags]);
 		n_assert(result == VK_SUCCESS);
 
 		cmdPoolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-		result = vkCreateCommandPool(dev, &cmdPoolInfo, NULL, &pools.sparse[2]);
+		result = vkCreateCommandPool(dev, &cmdPoolInfo, NULL, &pools.pools[CoreGraphics::CmdSparse][cmdPoolInfo.flags]);
 		n_assert(result == VK_SUCCESS);
 
 		cmdPoolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-		result = vkCreateCommandPool(dev, &cmdPoolInfo, NULL, &pools.sparse[3]);
+		result = vkCreateCommandPool(dev, &cmdPoolInfo, NULL, &pools.pools[CoreGraphics::CmdSparse][cmdPoolInfo.flags]);
 		n_assert(result == VK_SUCCESS);
 	}
 }
@@ -128,26 +131,23 @@ SetupVkPools(VkDevice dev, uint32_t drawQueue, uint32_t computeQueue, uint32_t t
 void
 DestroyVkPools(VkDevice dev)
 {
+	for (IndexT i = 0; i < CoreGraphics::NumCmdBufferUsages; i++)
+	{
+		vkDestroyCommandPool(dev, pools.pools[i][0], nullptr);
+		vkDestroyCommandPool(dev, pools.pools[i][1], nullptr);
+		vkDestroyCommandPool(dev, pools.pools[i][2], nullptr);
+		vkDestroyCommandPool(dev, pools.pools[i][3], nullptr);
+	}
+}
 
-	vkDestroyCommandPool(dev, pools.draw[0], nullptr);
-	vkDestroyCommandPool(dev, pools.draw[1], nullptr);
-	vkDestroyCommandPool(dev, pools.draw[2], nullptr);
-	vkDestroyCommandPool(dev, pools.draw[3], nullptr);
-
-	vkDestroyCommandPool(dev, pools.compute[0], nullptr);
-	vkDestroyCommandPool(dev, pools.compute[1], nullptr);
-	vkDestroyCommandPool(dev, pools.compute[2], nullptr);
-	vkDestroyCommandPool(dev, pools.compute[3], nullptr);
-
-	vkDestroyCommandPool(dev, pools.transfer[0], nullptr);
-	vkDestroyCommandPool(dev, pools.transfer[1], nullptr);
-	vkDestroyCommandPool(dev, pools.transfer[2], nullptr);
-	vkDestroyCommandPool(dev, pools.transfer[3], nullptr);
-
-	vkDestroyCommandPool(dev, pools.sparse[0], nullptr);
-	vkDestroyCommandPool(dev, pools.sparse[1], nullptr);
-	vkDestroyCommandPool(dev, pools.sparse[2], nullptr);
-	vkDestroyCommandPool(dev, pools.sparse[3], nullptr);
+//------------------------------------------------------------------------------
+/**
+*/
+const VkCommandPool
+CommandBufferGetVkPool(CoreGraphics::CmdBufferUsage usage, VkCommandPoolCreateFlags flags)
+{
+	n_assert(usage != CoreGraphics::InvalidCmdUsage);
+	return pools.pools[usage][flags];
 }
 
 //------------------------------------------------------------------------------
@@ -175,30 +175,13 @@ using namespace Vulkan;
 const CmdBufferId
 CreateCmdBuffer(const CmdBufferCreateInfo& info)
 {
-	VkCommandPool* poolFamily;
-	switch (info.usage)
-	{
-	case CmdDraw:
-		poolFamily = pools.draw;
-		break;
-	case CmdCompute:
-		poolFamily = pools.compute;
-		break;
-	case CmdTransfer:
-		poolFamily = pools.transfer;
-		break;
-	case CmdSparse:
-		poolFamily = pools.sparse;
-		break;
-	default:
-		n_error("No Command Buffer usage %d exists!\n", info.usage);
-	}
-
-	// the array should match the flag values
-	VkCommandPoolCreateFlags flags;
+	VkCommandPoolCreateFlags flags = 0;
 	flags |= info.resetable ? VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT : 0;
 	flags |= info.shortlived ? VK_COMMAND_POOL_CREATE_TRANSIENT_BIT : 0;
-	VkCommandPool pool = poolFamily[flags];
+
+	n_assert(info.usage != CoreGraphics::InvalidCmdUsage);
+	VkCommandPool pool = pools.pools[info.usage][flags];
+
 	VkCommandBufferAllocateInfo vkInfo =
 	{
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
@@ -208,7 +191,8 @@ CreateCmdBuffer(const CmdBufferCreateInfo& info)
 		1
 	};
 	Ids::Id32 id = commandBuffers.AllocObject();
-	vkAllocateCommandBuffers(pools.dev, &vkInfo, &commandBuffers.Get<0>(id));
+	VkResult res = vkAllocateCommandBuffers(pools.dev, &vkInfo, &commandBuffers.Get<0>(id));
+	n_assert(res == VK_SUCCESS);
 	commandBuffers.Get<1>(id) = pool;
 	CmdBufferId ret;
 	ret.id24 = id;
@@ -248,7 +232,8 @@ CmdBufferBeginRecord(const CmdBufferId id, const CmdBufferBeginInfo& info)
 		flags,
 		nullptr		// fixme, this part can optimize if used properly!
 	};
-	vkBeginCommandBuffer(commandBuffers.Get<0>(id.id24), &begin);
+	VkResult res = vkBeginCommandBuffer(commandBuffers.Get<0>(id.id24), &begin);
+	n_assert(res == VK_SUCCESS);
 }
 
 //------------------------------------------------------------------------------
@@ -260,7 +245,8 @@ CmdBufferEndRecord(const CmdBufferId id)
 #if _DEBUG
 	n_assert(id.id8 == CommandBufferIdType);
 #endif
-	vkEndCommandBuffer(commandBuffers.Get<0>(id.id24));
+	VkResult res = vkEndCommandBuffer(commandBuffers.Get<0>(id.id24));
+	n_assert(res == VK_SUCCESS);
 }
 
 //------------------------------------------------------------------------------
@@ -274,7 +260,8 @@ CmdBufferClear(const CmdBufferId id, const CmdBufferClearInfo& info)
 #endif
 	VkCommandBufferResetFlags flags = 0;
 	flags |= info.allowRelease ? VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT : 0;
-	vkResetCommandBuffer(commandBuffers.Get<0>(id.id24), flags);
+	VkResult res = vkResetCommandBuffer(commandBuffers.Get<0>(id.id24), flags);
+	n_assert(res == VK_SUCCESS);
 }
 
-}
+} // namespace Vulkan

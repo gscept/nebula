@@ -4,7 +4,7 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "framecopy.h"
-#include "coregraphics/renderdevice.h"
+#include "coregraphics/graphicsdevice.h"
 
 using namespace CoreGraphics;
 namespace Frame
@@ -29,21 +29,21 @@ FrameCopy::~FrameCopy()
 //------------------------------------------------------------------------------
 /**
 */
-void
-FrameCopy::Discard()
+FrameOp::Compiled*
+FrameCopy::AllocCompiled(Memory::ChunkAllocator<0xFFFF>& allocator)
 {
-	FrameOp::Discard();
-	this->from = CoreGraphics::RenderTextureId::Invalid();
-	this->to = CoreGraphics::RenderTextureId::Invalid();
+	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
+	ret->from = this->from;
+	ret->to = this->to;
+	return ret;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-FrameCopy::Run(const IndexT frameIndex)
+FrameCopy::CompiledImpl::Run(const IndexT frameIndex)
 {
-	RenderDevice* renderDev = RenderDevice::Instance();
 
 	// get dimensions
 	CoreGraphics::TextureDimensions fromDims = RenderTextureGetDimensions(this->from);
@@ -60,7 +60,7 @@ FrameCopy::Run(const IndexT frameIndex)
 	toRegion.top = 0;
 	toRegion.right = toDims.width;
 	toRegion.bottom = toDims.height;
-	renderDev->Copy(this->from, fromRegion, this->to, toRegion);
+	CoreGraphics::Copy(this->from, fromRegion, this->to, toRegion);
 }
 
 } // namespace Frame2

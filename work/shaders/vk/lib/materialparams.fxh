@@ -8,7 +8,7 @@
 #include "std.fxh"
 
 // material properties
-group(BATCH_GROUP) shared varblock MaterialParams [ bool DynamicOffset = true; ]
+group(INSTANCE_GROUP) shared varblock MaterialParams [ bool DynamicOffset = true; string Visibility = "PS"; ]
 {
 	float AlphaSensitivity = 1.0f;
 	float AlphaBlendFactor = 0.0f;

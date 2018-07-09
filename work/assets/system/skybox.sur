@@ -1,0 +1,12 @@
+<!--
+	Surface material for the placeholder material
+-->
+<NebulaT>
+	<Surface template="Skybox">
+		<Param name="SkyLayer1" value="tex:system/sky_refl"/>
+		<Param name="SkyLayer2" value="tex:system/placeholder"/>
+		<Param name="SkyBlendFactor" value="0.0f"/>
+		<Param name="Contrast" value="1.0f"/>
+		<Param name="Brightness" value="0.0f"/>
+	</Surface>
+</NebulaT>

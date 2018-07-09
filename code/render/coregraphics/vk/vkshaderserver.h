@@ -31,9 +31,17 @@ public:
 	void Close();
 	
 	/// register new texture
-	uint32_t RegisterTexture(const VkImageView tex, CoreGraphics::TextureType type);
+	uint32_t RegisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics::TextureType type);
+	/// register new texture
+	uint32_t RegisterTexture(const CoreGraphics::RenderTextureId& tex, bool depth, CoreGraphics::TextureType type);
+	/// register new texture
+	uint32_t RegisterTexture(const CoreGraphics::ShaderRWTextureId& tex, CoreGraphics::TextureType type);
 	/// unregister texture
 	void UnregisterTexture(const uint32_t id, const CoreGraphics::TextureType type);
+
+
+	/// submit resource changes
+	void SubmitTextureDescriptorChanges();
 	/// commit texture library to shader
 	void BindTextureDescriptorSets();
 
@@ -53,9 +61,11 @@ private:
 	Util::FixedPool<uint32_t> image3DPool;
 	Util::FixedPool<uint32_t> imageCubePool;
 
+	CoreGraphics::ResourceTableId resourceTable;
 	CoreGraphics::ShaderStateId textureShaderState;
 	CoreGraphics::ShaderConstantId texture2DTextureVar;
 	CoreGraphics::ShaderConstantId texture2DMSTextureVar;
+	CoreGraphics::ShaderConstantId texture2DArrayTextureVar;
 	CoreGraphics::ShaderConstantId texture3DTextureVar;
 	CoreGraphics::ShaderConstantId textureCubeTextureVar;
 	CoreGraphics::ShaderConstantId image2DTextureVar;
@@ -79,9 +89,18 @@ private:
 /**
 */
 inline void
+VkShaderServer::SubmitTextureDescriptorChanges()
+{
+	ResourceTableCommitChanges(this->resourceTable);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
 VkShaderServer::BindTextureDescriptorSets()
 {
-	CoreGraphics::shaderPool->ApplyState(this->textureShaderState);
+	CoreGraphics::SetShaderState(this->textureShaderState);
 }
 
 } // namespace Vulkan

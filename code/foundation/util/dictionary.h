@@ -56,6 +56,8 @@ public:
     void Add(const KeyValuePair<KEYTYPE, VALUETYPE>& kvp);
     /// add a key and associated value
     void Add(const KEYTYPE& key, const VALUETYPE& value);
+	/// creates a new entry of VALUETYPE if key does not exist, 
+	VALUETYPE& AddUnique(const KEYTYPE& key);
     /// end a bulk insert (this will sort the internal array)
     void EndBulkAdd();
 	/// merge two dictionaries
@@ -168,23 +170,6 @@ Dictionary<KEYTYPE, VALUETYPE>::IsEmpty() const
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE> 
-inline void
-Dictionary<KEYTYPE, VALUETYPE>::Add(const KeyValuePair<KEYTYPE, VALUETYPE>& kvp)
-{
-    if (this->inBulkInsert)
-    {
-        this->keyValuePairs.Append(kvp);
-    }
-    else
-    {
-        this->keyValuePairs.InsertSorted(kvp);
-    }
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 template<class KEYTYPE, class VALUETYPE>
 inline void
 Dictionary<KEYTYPE, VALUETYPE>::Reserve(SizeT numElements)
@@ -235,6 +220,24 @@ Dictionary<KEYTYPE, VALUETYPE>::Merge(const Dictionary<KEYTYPE, VALUETYPE>& rhs)
 	this->EndBulkAdd();
 }
 
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class KEYTYPE, class VALUETYPE>
+inline void
+Dictionary<KEYTYPE, VALUETYPE>::Add(const KeyValuePair<KEYTYPE, VALUETYPE>& kvp)
+{
+	if (this->inBulkInsert)
+	{
+		this->keyValuePairs.Append(kvp);
+	}
+	else
+	{
+		this->keyValuePairs.InsertSorted(kvp);
+	}
+}
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -252,6 +255,25 @@ Dictionary<KEYTYPE, VALUETYPE>::Add(const KEYTYPE& key, const VALUETYPE& value)
     {
         this->keyValuePairs.InsertSorted(kvp);
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class KEYTYPE, class VALUETYPE>
+inline VALUETYPE&
+Dictionary<KEYTYPE, VALUETYPE>::AddUnique(const KEYTYPE& key)
+{
+	IndexT i = this->FindIndex(key);
+	if (i == InvalidIndex)
+	{
+		this->Add(key, VALUETYPE());
+		return this->ValueAtIndex(this->FindIndex(key));
+	}
+	else
+	{
+		return this->ValueAtIndex(i);
+	}
 }
 
 //------------------------------------------------------------------------------

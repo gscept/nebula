@@ -6,7 +6,7 @@
 #include "render/stdneb.h"
 #include "renderutil/drawfullscreenquad.h"
 #include "coregraphics/memoryvertexbufferpool.h"
-#include "coregraphics/renderdevice.h"
+#include "coregraphics/graphicsdevice.h"
 
 namespace RenderUtil
 {
@@ -64,15 +64,15 @@ DrawFullScreenQuad::Setup(SizeT rtWidth, SizeT rtHeight)
 
     // compute uv coordinates, for GL and Vulkan, the Y coordinate is reversed
 #if (__VULKAN__ || __OGL4__)
-	float u0 = 1.0f;
-	float u1 = 3.0f;
-	float v0 = 3.0f;
-	float v1 = 1.0f;
+	float u0 = 0.0f;
+	float u1 = 1.0f;
+	float v0 = 1.0f;
+	float v1 = 0.0f;
 #else
-    float u0 = 1.0f;
-    float u1 = 3.0f;
-    float v0 = 1.0f;
-    float v1 = 3.0f;
+    float u0 = 0.0f;
+    float u1 = 1.0f;
+    float v0 = 0.0f;
+    float v1 = 1.0f;
 #endif
 
     // setup a vertex buffer with 2 triangles
@@ -80,9 +80,9 @@ DrawFullScreenQuad::Setup(SizeT rtWidth, SizeT rtHeight)
 
 #if COREGRAPHICS_TRIANGLE_FRONT_FACE_CCW
     // first triangle
-    v[0][0] = left;  v[0][1] = top;		v[0][2] = 0.0f; v[0][3] = u0; v[0][4] = v0;
-    v[1][0] = right; v[1][1] = top;		v[1][2] = 0.0f; v[1][3] = u1; v[1][4] = v0;
-    v[2][0] = left;  v[2][1] = bottom;  v[2][2] = 0.0f; v[2][3] = u0; v[2][4] = v1;
+    v[0][0] = left;		v[0][1] = top;		v[0][2] = 0.0f; v[0][3] = u0; v[0][4] = v0;
+    v[1][0] = left;		v[1][1] = bottom;	v[1][2] = 0.0f; v[1][3] = u0; v[1][4] = v1;
+    v[2][0] = right;	v[2][1] = top;		v[2][2] = 0.0f; v[2][3] = u1; v[2][4] = v0;
 
 #else
 	// first triangle
@@ -100,12 +100,11 @@ DrawFullScreenQuad::Setup(SizeT rtWidth, SizeT rtHeight)
 		3, vertexComponents, v, sizeof(v)
 	};
 	this->vertexBuffer = CreateVertexBuffer(info);
-
-	this->vertexLayout = CreateVertexLayout(VertexLayoutCreateInfo{ vertexComponents });
+	this->vertexLayout = VertexBufferGetLayout(this->vertexBuffer);
 
     // setup a primitive group object
     this->primGroup.SetBaseVertex(0);
-    this->primGroup.SetNumVertices(6);
+    this->primGroup.SetNumVertices(3);
     this->primGroup.SetBaseIndex(0);
     this->primGroup.SetNumIndices(0);
 }
@@ -128,11 +127,10 @@ DrawFullScreenQuad::Discard()
 void
 DrawFullScreenQuad::ApplyMesh()
 {
-	RenderDevice* renderDevice = RenderDevice::Instance();
-	renderDevice->SetPrimitiveTopology(PrimitiveTopology::TriangleList);
-	VertexLayoutBind(this->vertexLayout);
-	VertexBufferBind(this->vertexBuffer, 0, 0);
-	renderDevice->SetPrimitiveGroup(this->primGroup);
+	CoreGraphics::SetPrimitiveTopology(PrimitiveTopology::TriangleList);
+	CoreGraphics::SetVertexLayout(this->vertexLayout);
+	CoreGraphics::SetStreamVertexBuffer(0, this->vertexBuffer, 0);
+	CoreGraphics::SetPrimitiveGroup(this->primGroup);
 }
 
 //------------------------------------------------------------------------------
@@ -141,8 +139,7 @@ DrawFullScreenQuad::ApplyMesh()
 void
 DrawFullScreenQuad::Draw()
 {
-    RenderDevice* renderDevice = RenderDevice::Instance();
-    renderDevice->Draw();
+	CoreGraphics::Draw();
 }
 
 } // namespace RenderUtil

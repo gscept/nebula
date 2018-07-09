@@ -1,7 +1,9 @@
 /**********************************************************************
  * 
  * StackWalker.cpp
- * http://stackwalker.codeplex.com/
+ * https://github.com/JochenKalmbach/StackWalker
+ *
+ * Old location: http://stackwalker.codeplex.com/
  *
  *
  * History:
@@ -86,10 +88,6 @@
 #pragma comment(lib, "version.lib")  // for "VerQueryValue"
 #pragma warning(disable:4826)
 
-#if _MSC_VER >= 1600
-#pragma warning(disable:4996 4091)
-#endif
-
 #include "StackWalker.h"
 
 
@@ -97,7 +95,6 @@
 #pragma pack(push,8)
 #if _MSC_VER >= 1300
 #include <dbghelp.h>
-#include <sysinfoapi.h>
 #else
 // inline the important dbghelp.h-declarations...
 typedef enum {
@@ -656,7 +653,7 @@ private:
     pGMI = (tGMI) GetProcAddress( hPsapi, "GetModuleInformation" );
     if ( (pEPM == NULL) || (pGMFNE == NULL) || (pGMBN == NULL) || (pGMI == NULL) )
     {
-      // we couldn´t find all functions
+      // we couldn?t find all functions
       FreeLibrary(hPsapi);
       return FALSE;
     }
@@ -1052,6 +1049,11 @@ BOOL StackWalker::ShowCallstack(HANDLE hThread, const CONTEXT *context, PReadPro
       SuspendThread(hThread);
       memset(&c, 0, sizeof(CONTEXT));
       c.ContextFlags = USED_CONTEXT_FLAGS;
+
+      // TODO: Detect if you want to get a thread context of a different process, which is running a different processor architecture...
+      // This does only work if we are x64 and the target process is x64 or x86;
+      // It cannnot work, if this process is x64 and the target process is x64... this is not supported...
+      // See also: http://www.howzatt.demon.co.uk/articles/DebuggingInWin64.html
       if (GetThreadContext(hThread, &c) == FALSE)
       {
         ResumeThread(hThread);
@@ -1251,6 +1253,42 @@ BOOL StackWalker::ShowCallstack(HANDLE hThread, const CONTEXT *context, PReadPro
   return TRUE;
 }
 
+BOOL StackWalker::ShowObject(LPVOID pObject)
+{
+  // Load modules if not done yet
+  if (m_modulesLoaded == FALSE)
+    this->LoadModules();  // ignore the result...
+
+  // Verify that the DebugHelp.dll was actually found
+  if (this->m_sw->m_hDbhHelp == NULL)
+  {
+    SetLastError(ERROR_DLL_INIT_FAILED);
+    return FALSE;
+  }
+
+  // SymGetSymFromAddr64() is required
+  if (this->m_sw->pSGSFA == NULL)
+    return FALSE;
+
+  // Show object info (SymGetSymFromAddr64())
+  DWORD64 dwAddress = DWORD64(pObject);
+  DWORD64 dwDisplacement = 0;
+  IMAGEHLP_SYMBOL64* pSym = (IMAGEHLP_SYMBOL64 *) malloc(sizeof(IMAGEHLP_SYMBOL64) + STACKWALK_MAX_NAMELEN);
+  memset(pSym, 0, sizeof(IMAGEHLP_SYMBOL64) + STACKWALK_MAX_NAMELEN);
+  pSym->SizeOfStruct = sizeof(IMAGEHLP_SYMBOL64);
+  pSym->MaxNameLength = STACKWALK_MAX_NAMELEN;
+  if (this->m_sw->pSGSFA(this->m_hProcess, dwAddress, &dwDisplacement, pSym) == FALSE)
+  {
+    this->OnDbgHelpErr("SymGetSymFromAddr64", GetLastError(), dwAddress);
+    return FALSE;
+  }
+  // Object name output
+  this->OnOutput(pSym->Name);
+
+  free(pSym);
+  return TRUE;
+};
+
 BOOL __stdcall StackWalker::myReadProcMem(
     HANDLE      hProcess,
     DWORD64     qwBaseAddress,
@@ -1276,22 +1314,31 @@ BOOL __stdcall StackWalker::myReadProcMem(
 void StackWalker::OnLoadModule(LPCSTR img, LPCSTR mod, DWORD64 baseAddr, DWORD size, DWORD result, LPCSTR symType, LPCSTR pdbName, ULONGLONG fileVersion)
 {
   CHAR buffer[STACKWALK_MAX_NAMELEN];
+  size_t maxLen = STACKWALK_MAX_NAMELEN;
+#if _MSC_VER >= 1400
+  maxLen = _TRUNCATE;
+#endif
   if (fileVersion == 0)
-    _snprintf_s(buffer, STACKWALK_MAX_NAMELEN, "%s:%s (%p), size: %d (result: %d), SymType: '%s', PDB: '%s'\n", img, mod, (LPVOID) baseAddr, size, result, symType, pdbName);
+    _snprintf_s(buffer, maxLen, "%s:%s (%p), size: %d (result: %d), SymType: '%s', PDB: '%s'\n", img, mod, (LPVOID)baseAddr, size, result, symType, pdbName);
   else
   {
     DWORD v4 = (DWORD) (fileVersion & 0xFFFF);
     DWORD v3 = (DWORD) ((fileVersion>>16) & 0xFFFF);
     DWORD v2 = (DWORD) ((fileVersion>>32) & 0xFFFF);
     DWORD v1 = (DWORD) ((fileVersion>>48) & 0xFFFF);
-    _snprintf_s(buffer, STACKWALK_MAX_NAMELEN, "%s:%s (%p), size: %d (result: %d), SymType: '%s', PDB: '%s', fileVersion: %d.%d.%d.%d\n", img, mod, (LPVOID) baseAddr, size, result, symType, pdbName, v1, v2, v3, v4);
+    _snprintf_s(buffer, maxLen, "%s:%s (%p), size: %d (result: %d), SymType: '%s', PDB: '%s', fileVersion: %d.%d.%d.%d\n", img, mod, (LPVOID) baseAddr, size, result, symType, pdbName, v1, v2, v3, v4);
   }
+  buffer[STACKWALK_MAX_NAMELEN - 1] = 0;  // be sure it is NUL terminated
   OnOutput(buffer);
 }
 
 void StackWalker::OnCallstackEntry(CallstackEntryType eType, CallstackEntry &entry)
 {
   CHAR buffer[STACKWALK_MAX_NAMELEN];
+  size_t maxLen = STACKWALK_MAX_NAMELEN;
+#if _MSC_VER >= 1400
+  maxLen = _TRUNCATE;
+#endif
   if ( (eType != lastEntry) && (entry.offset != 0) )
   {
     if (entry.name[0] == 0)
@@ -1305,10 +1352,10 @@ void StackWalker::OnCallstackEntry(CallstackEntryType eType, CallstackEntry &ent
       MyStrCpy(entry.lineFileName, STACKWALK_MAX_NAMELEN, "(filename not available)");
       if (entry.moduleName[0] == 0)
         MyStrCpy(entry.moduleName, STACKWALK_MAX_NAMELEN, "(module-name not available)");
-      _snprintf_s(buffer, STACKWALK_MAX_NAMELEN, "%p (%s): %s: %s\n", (LPVOID) entry.offset, entry.moduleName, entry.lineFileName, entry.name);
+      _snprintf_s(buffer, maxLen, "%p (%s): %s: %s\n", (LPVOID) entry.offset, entry.moduleName, entry.lineFileName, entry.name);
     }
     else
-      _snprintf_s(buffer, STACKWALK_MAX_NAMELEN, "%s (%d): %s\n", entry.lineFileName, entry.lineNumber, entry.name);
+      _snprintf_s(buffer, maxLen, "%s (%d): %s\n", entry.lineFileName, entry.lineNumber, entry.name);
     buffer[STACKWALK_MAX_NAMELEN-1] = 0;
     OnOutput(buffer);
   }
@@ -1317,14 +1364,24 @@ void StackWalker::OnCallstackEntry(CallstackEntryType eType, CallstackEntry &ent
 void StackWalker::OnDbgHelpErr(LPCSTR szFuncName, DWORD gle, DWORD64 addr)
 {
   CHAR buffer[STACKWALK_MAX_NAMELEN];
-  _snprintf_s(buffer, STACKWALK_MAX_NAMELEN, "ERROR: %s, GetLastError: %d (Address: %p)\n", szFuncName, gle, (LPVOID) addr);
+  size_t maxLen = STACKWALK_MAX_NAMELEN;
+#if _MSC_VER >= 1400
+  maxLen = _TRUNCATE;
+#endif
+  _snprintf_s(buffer, maxLen, "ERROR: %s, GetLastError: %d (Address: %p)\n", szFuncName, gle, (LPVOID) addr);
+  buffer[STACKWALK_MAX_NAMELEN - 1] = 0;
   OnOutput(buffer);
 }
 
 void StackWalker::OnSymInit(LPCSTR szSearchPath, DWORD symOptions, LPCSTR szUserName)
 {
   CHAR buffer[STACKWALK_MAX_NAMELEN];
-  _snprintf_s(buffer, STACKWALK_MAX_NAMELEN, "SymInit: Symbol-SearchPath: '%s', symOptions: %d, UserName: '%s'\n", szSearchPath, symOptions, szUserName);
+  size_t maxLen = STACKWALK_MAX_NAMELEN;
+#if _MSC_VER >= 1400
+  maxLen = _TRUNCATE;
+#endif
+  _snprintf_s(buffer, maxLen, "SymInit: Symbol-SearchPath: '%s', symOptions: %d, UserName: '%s'\n", szSearchPath, symOptions, szUserName);
+  buffer[STACKWALK_MAX_NAMELEN - 1] = 0;
   OnOutput(buffer);
   // Also display the OS-version
 #if _MSC_VER <= 1200
@@ -1333,22 +1390,31 @@ void StackWalker::OnSymInit(LPCSTR szSearchPath, DWORD symOptions, LPCSTR szUser
   ver.dwOSVersionInfoSize = sizeof(ver);
   if (GetVersionExA(&ver) != FALSE)
   {
-    _snprintf_s(buffer, STACKWALK_MAX_NAMELEN, "OS-Version: %d.%d.%d (%s)\n", 
+    _snprintf_s(buffer, maxLen, "OS-Version: %d.%d.%d (%s)\n", 
       ver.dwMajorVersion, ver.dwMinorVersion, ver.dwBuildNumber,
       ver.szCSDVersion);
+    buffer[STACKWALK_MAX_NAMELEN - 1] = 0;
     OnOutput(buffer);
   }
 #else
   OSVERSIONINFOEXA ver;
   ZeroMemory(&ver, sizeof(OSVERSIONINFOEXA));
   ver.dwOSVersionInfoSize = sizeof(ver);
+#if _MSC_VER >= 1900
+#pragma warning(push)
+#pragma warning(disable: 4996)
+#endif
   if (GetVersionExA( (OSVERSIONINFOA*) &ver) != FALSE)
   {
-    _snprintf_s(buffer, STACKWALK_MAX_NAMELEN, "OS-Version: %d.%d.%d (%s) 0x%x-0x%x\n", 
+    _snprintf_s(buffer, maxLen, "OS-Version: %d.%d.%d (%s) 0x%x-0x%x\n", 
       ver.dwMajorVersion, ver.dwMinorVersion, ver.dwBuildNumber,
       ver.szCSDVersion, ver.wSuiteMask, ver.wProductType);
+    buffer[STACKWALK_MAX_NAMELEN - 1] = 0;
     OnOutput(buffer);
   }
+#if _MSC_VER >= 1900
+#pragma warning(pop)
+#endif
 #endif
 }
 

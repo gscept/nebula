@@ -29,7 +29,7 @@ void
 VkShaderConstantBindToUniformBuffer(const CoreGraphics::ShaderConstantId var, CoreGraphics::ConstantBufferId buffer, VkShaderConstantAllocator& allocator, uint32_t offset, uint32_t size, int8_t* defaultValue)
 {
 	VkShaderConstantMemoryBinding& binding = allocator.Get<0>(var.id);
-	binding.backing.uniformBuffer = buffer.id24;
+	binding.backing.uniformBuffer = buffer.HashCode();
 	binding.offset = offset;
 	binding.size = size;
 	binding.defaultValue = defaultValue;
@@ -71,18 +71,8 @@ VkShaderVariableGetBinding(const CoreGraphics::ShaderConstantId var, VkShaderCon
 //------------------------------------------------------------------------------
 /**
 */
-VkDescriptorSet
-VkShaderVariableGetDescriptorSet(const CoreGraphics::ShaderConstantId var, VkShaderConstantAllocator& allocator)
-{
-	const VkShaderConstantDescriptorBinding& binding = allocator.Get<1>(var.id);
-	return binding.set;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 void
-VkShaderConstantSetup(AnyFX::VkVariable* var, Ids::Id24 id, VkShaderConstantAllocator& allocator, const VkDescriptorSet set)
+VkShaderConstantSetup(AnyFX::VkVariable* var, Ids::Id24 id, VkShaderConstantAllocator& allocator, const CoreGraphics::ResourceTableId& tid)
 {
 	n_assert(0 != var);
 
@@ -91,9 +81,17 @@ VkShaderConstantSetup(AnyFX::VkVariable* var, Ids::Id24 id, VkShaderConstantAllo
 	VkShaderConstantMemoryBinding& varBind = allocator.Get<0>(id);
 	VkShaderConstantDescriptorBinding& resBind = allocator.Get<1>(id);
 	VkShaderConstantSetupInfo& setupInfo = allocator.Get<2>(id);
+	varBind.backing.push = nullptr;
+	varBind.isbuffer = false;
+	varBind.size = 0;
+	varBind.offset = 0;
+	varBind.defaultValue = nullptr;
+	resBind.textureIsHandle = false;
+	resBind.dynamicOffset = 0;
+	resBind.setBinding = -1;
 	
 	setupInfo.name = name;
-	resBind.set = set;
+	resBind.set = tid;
 	switch (var->type)
 	{
 	case AnyFX::Double:
@@ -151,7 +149,7 @@ VkShaderConstantSetup(AnyFX::VkVariable* var, Ids::Id24 id, VkShaderConstantAllo
 	case AnyFX::ImageCube:
 	case AnyFX::ImageCubeArray:
 		setupInfo.type = ImageReadWriteVariableType;
-		n_assert(set != VK_NULL_HANDLE);
+		n_assert(tid != ResourceTableId::Invalid());
 		resBind.setBinding = var->bindingLayout.binding;
 		break;
 	case AnyFX::Sampler1D:
@@ -164,7 +162,7 @@ VkShaderConstantSetup(AnyFX::VkVariable* var, Ids::Id24 id, VkShaderConstantAllo
 	case AnyFX::SamplerCube:
 	case AnyFX::SamplerCubeArray:
 		setupInfo.type = SamplerVariableType;
-		n_assert(set != VK_NULL_HANDLE);
+		n_assert(tid != ResourceTableId::Invalid());
 		resBind.setBinding = var->bindingLayout.binding;
 		break;
 	case AnyFX::Texture1D:
@@ -177,7 +175,7 @@ VkShaderConstantSetup(AnyFX::VkVariable* var, Ids::Id24 id, VkShaderConstantAllo
 	case AnyFX::TextureCube:
 	case AnyFX::TextureCubeArray:
 		setupInfo.type = TextureVariableType;
-		n_assert(set != VK_NULL_HANDLE);
+		n_assert(tid != ResourceTableId::Invalid());
 		resBind.setBinding = var->bindingLayout.binding;
 		break;
 	case AnyFX::TextureHandle:
@@ -186,6 +184,7 @@ VkShaderConstantSetup(AnyFX::VkVariable* var, Ids::Id24 id, VkShaderConstantAllo
 		break;
 	case AnyFX::ImageHandle:
 		setupInfo.type = ImageReadWriteVariableType;
+		resBind.textureIsHandle = true;
 		break;
 	case AnyFX::SamplerHandle:
 		setupInfo.type = SamplerVariableType;
@@ -193,7 +192,7 @@ VkShaderConstantSetup(AnyFX::VkVariable* var, Ids::Id24 id, VkShaderConstantAllo
 		break;
 	default:
 		setupInfo.type = ConstantBufferVariableType;
-		n_assert(set != VK_NULL_HANDLE);
+		n_assert(tid != ResourceTableId::Invalid());
 		resBind.setBinding = var->bindingLayout.binding;
 		break;
 	}
@@ -203,7 +202,7 @@ VkShaderConstantSetup(AnyFX::VkVariable* var, Ids::Id24 id, VkShaderConstantAllo
 /**
 */
 void
-VkShaderConstantSetup(AnyFX::VkVarbuffer* var, Ids::Id24 id, VkShaderConstantAllocator& allocator, const VkDescriptorSet set)
+VkShaderConstantSetup(AnyFX::VkVarbuffer* var, Ids::Id24 id, VkShaderConstantAllocator& allocator, const CoreGraphics::ResourceTableId& tid)
 {
 	n_assert(0 != var);
 	Util::String name = var->name.c_str();
@@ -213,16 +212,16 @@ VkShaderConstantSetup(AnyFX::VkVarbuffer* var, Ids::Id24 id, VkShaderConstantAll
 
 	setupInfo.name = name;
 	setupInfo.type = BufferReadWriteVariableType;
-	resBind.dynamicOffset = var->Flag("DynamicOffset");
+	resBind.dynamicOffset = var->set == NEBULAT_DYNAMIC_OFFSET_GROUP;
 	resBind.setBinding = var->bindingLayout.binding;
-	resBind.set = set;
+	resBind.set = tid;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkShaderConstantSetup(AnyFX::VkVarblock* var, Ids::Id24 id, VkShaderConstantAllocator& allocator, const VkDescriptorSet set)
+VkShaderConstantSetup(AnyFX::VkVarblock* var, Ids::Id24 id, VkShaderConstantAllocator& allocator, const CoreGraphics::ResourceTableId& tid)
 {
 	n_assert(0 != var);
 	Util::String name = var->name.c_str();
@@ -232,9 +231,9 @@ VkShaderConstantSetup(AnyFX::VkVarblock* var, Ids::Id24 id, VkShaderConstantAllo
 	
 	setupInfo.name = name;
 	setupInfo.type = ConstantBufferVariableType;
-	resBind.dynamicOffset = var->Flag("DynamicOffset");
+	resBind.dynamicOffset = var->set == NEBULAT_DYNAMIC_OFFSET_GROUP;
 	resBind.setBinding = var->bindingLayout.binding;
-	resBind.set = set;
+	resBind.set = tid;
 }
 
 //------------------------------------------------------------------------------
@@ -385,7 +384,7 @@ SetBoolArray(VkShaderConstantMemoryBinding& bind, const bool* values, SizeT coun
 /**
 */
 void
-SetTexture(VkShaderConstantMemoryBinding& bind, VkShaderConstantDescriptorBinding& res, Util::Array<VkWriteDescriptorSet>& writes, const CoreGraphics::TextureId tex)
+SetTexture(VkShaderConstantMemoryBinding& bind, VkShaderConstantDescriptorBinding& res, const CoreGraphics::TextureId tex)
 {
 	VkTextureRuntimeInfo& info = textureAllocator.GetSafe<0>(tex.allocId);
 
@@ -405,33 +404,14 @@ SetTexture(VkShaderConstantMemoryBinding& bind, VkShaderConstantDescriptorBindin
 		}
 		else
 		{
-			// dependent on type of variable, select if sampler should be coupled with sampler or if it will be assembled in-shader
-			const VkImageView& view = info.view;
-			VkDescriptorType type;
-			if (info.type == TextureVariableType)		type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-			else if (info.type == SamplerVariableType)	type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			else
-			{
-				n_error("Variable '%d' is must be either Texture or Integer to be assigned a texture!\n", res.setBinding);
-			}
+			CoreGraphics::ResourceTableTexture info;
+			info.isDepth = false;
+			info.sampler = CoreGraphics::SamplerId::Invalid();
+			info.slot = res.setBinding;
+			info.tex = tex;
+			info.index = 0;
 
-			VkWriteDescriptorSet set;
-			set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			set.pNext = NULL;
-			set.descriptorCount = 1;
-			set.descriptorType = type;
-			set.dstArrayElement = 0;
-			set.dstBinding = res.setBinding;
-			set.dstSet = res.set;
-			set.pBufferInfo = NULL;
-			set.pTexelBufferView = NULL;
-			set.pImageInfo = &res.write.img;
-			res.write.img.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			res.write.img.sampler = VK_NULL_HANDLE;
-			res.write.img.imageView = info.view;
-
-			// add to shader to update on next update
-			writes.Append(set);
+			CoreGraphics::ResourceTableSetTexture(res.set, info);
 		}
 	}	
 }
@@ -440,7 +420,7 @@ SetTexture(VkShaderConstantMemoryBinding& bind, VkShaderConstantDescriptorBindin
 /**
 */
 void
-SetRenderTexture(VkShaderConstantMemoryBinding& bind, VkShaderConstantDescriptorBinding& res, Util::Array<VkWriteDescriptorSet>& writes, const CoreGraphics::RenderTextureId tex)
+SetRenderTexture(VkShaderConstantMemoryBinding& bind, VkShaderConstantDescriptorBinding& res, const CoreGraphics::RenderTextureId tex)
 {
 	VkRenderTextureRuntimeInfo& info = renderTextureAllocator.Get<1>(tex.id24);
 
@@ -460,33 +440,14 @@ SetRenderTexture(VkShaderConstantMemoryBinding& bind, VkShaderConstantDescriptor
 		}
 		else
 		{
-			// dependent on type of variable, select if sampler should be coupled with sampler or if it will be assembled in-shader
-			const VkImageView& view = info.view;
-			VkDescriptorType type;
-			if (info.type == TextureVariableType)		type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-			else if (info.type == SamplerVariableType)	type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			else
-			{
-				n_error("Variable '%d' is must be either Texture or Integer to be assigned a texture!\n", res.setBinding);
-			}
+			CoreGraphics::ResourceTableRenderTexture info;
+			info.isDepth = false;
+			info.sampler = CoreGraphics::SamplerId::Invalid();
+			info.slot = res.setBinding;
+			info.tex = tex;
+			info.index = 0;
 
-			VkWriteDescriptorSet set;
-			set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			set.pNext = NULL;
-			set.descriptorCount = 1;
-			set.descriptorType = type;
-			set.dstArrayElement = 0;
-			set.dstBinding = res.setBinding;
-			set.dstSet = res.set;
-			set.pBufferInfo = NULL;
-			set.pTexelBufferView = NULL;
-			set.pImageInfo = &res.write.img;
-			res.write.img.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			res.write.img.sampler = VK_NULL_HANDLE;
-			res.write.img.imageView = info.view;
-
-			// add to shader to update on next update
-			writes.Append(set);
+			CoreGraphics::ResourceTableSetRenderTexture(res.set, info);
 		}
 	}
 }
@@ -495,29 +456,21 @@ SetRenderTexture(VkShaderConstantMemoryBinding& bind, VkShaderConstantDescriptor
 /**
 */
 void
-SetConstantBuffer(VkShaderConstantDescriptorBinding& bind, Util::Array<VkWriteDescriptorSet>& writes, const CoreGraphics::ConstantBufferId buf)
+SetConstantBuffer(VkShaderConstantDescriptorBinding& bind, const CoreGraphics::ConstantBufferId buf)
 {
 	VkConstantBufferRuntimeInfo& info = constantBufferAllocator.Get<0>(buf.id24);
 	if (info.buf != bind.write.buf.buffer)
 	{
-		VkWriteDescriptorSet set;
-		set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		set.pNext = NULL;
-		set.descriptorCount = 1;
-		if (bind.dynamicOffset)		set.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-		else						set.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		set.dstArrayElement = 0;
-		set.dstBinding = bind.setBinding;
-		set.dstSet = bind.set;
-		set.pBufferInfo = &bind.write.buf;
-		set.pTexelBufferView = NULL;
-		set.pImageInfo = NULL;
-		bind.write.buf.buffer = info.buf;
-		bind.write.buf.offset = 0;
-		bind.write.buf.range = VK_WHOLE_SIZE;
+		CoreGraphics::ResourceTableConstantBuffer info;
+		info.buf = buf;
+		info.offset = 0;
+		info.size = -1;
+		info.dynamicOffset = bind.dynamicOffset;
+		info.slot = bind.setBinding;
+		info.index = 0;
+		info.texelBuffer = false;
 
-		// add to shader to update on next update
-		writes.Append(set);
+		CoreGraphics::ResourceTableSetConstantBuffer(bind.set, info);
 	}
 }
 
@@ -525,29 +478,30 @@ SetConstantBuffer(VkShaderConstantDescriptorBinding& bind, Util::Array<VkWriteDe
 /**
 */
 void
-SetShaderReadWriteTexture(VkShaderConstantDescriptorBinding& bind, Util::Array<VkWriteDescriptorSet>& writes, const CoreGraphics::ShaderRWTextureId tex)
+SetShaderReadWriteTexture(VkShaderConstantMemoryBinding& bind, VkShaderConstantDescriptorBinding& res, const CoreGraphics::ShaderRWTextureId tex)
 {
 	VkShaderRWTextureRuntimeInfo& info = shaderRWTextureAllocator.Get<1>(tex.id24);
-	if (info.view != bind.write.img.imageView)
+	if (info.view != res.write.img.imageView)
 	{
-		VkWriteDescriptorSet set;
-		set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		set.pNext = NULL;
+		// if image can be set as an integer, do it
+		if (res.textureIsHandle)
+		{
+			// update texture id
+			if (bind.isbuffer)
+				ConstantBufferUpdate(bind.backing.uniformBuffer, &info.bind, bind.offset, sizeof(uint32_t));
+			else
+				VkShaderVariableUpdatePushRange(bind.backing.push, sizeof(uint32_t), info.bind);
+		}
+		else
+		{
+			CoreGraphics::ResourceTableShaderRWTexture info;
+			info.sampler = SamplerId::Invalid();
+			info.slot = res.setBinding;
+			info.tex = tex;
+			info.index = 0;
 
-		set.descriptorCount = 1;
-		set.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		set.dstArrayElement = 0;
-		set.dstBinding = bind.setBinding;
-		set.dstSet = bind.set;
-		set.pBufferInfo = NULL;
-		set.pTexelBufferView = NULL;
-		set.pImageInfo = &bind.write.img;
-		bind.write.img.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-		bind.write.img.imageView = info.view;
-		bind.write.img.sampler = VK_NULL_HANDLE;
-
-		// add to shader to update on next update
-		writes.Append(set);
+			CoreGraphics::ResourceTableSetShaderRWTexture(res.set, info);
+		}
 	}
 }
 
@@ -555,29 +509,19 @@ SetShaderReadWriteTexture(VkShaderConstantDescriptorBinding& bind, Util::Array<V
 /**
 */
 void
-SetShaderReadWriteTexture(VkShaderConstantDescriptorBinding& bind, Util::Array<VkWriteDescriptorSet>& writes, const CoreGraphics::TextureId tex)
+SetShaderReadWriteTexture(VkShaderConstantDescriptorBinding& bind, const CoreGraphics::TextureId tex)
 {
 	VkTextureRuntimeInfo& info = textureAllocator.GetSafe<0>(tex.allocId);
 	if (info.view != bind.write.img.imageView)
 	{
-		VkWriteDescriptorSet set;
-		set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		set.pNext = NULL;
+		CoreGraphics::ResourceTableTexture info;
+		info.sampler = SamplerId::Invalid();
+		info.slot = bind.setBinding;
+		info.tex = tex;
+		info.isDepth = false;
+		info.index = 0;
 
-		set.descriptorCount = 1;
-		set.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		set.dstArrayElement = 0;
-		set.dstBinding = bind.setBinding;
-		set.dstSet = bind.set;
-		set.pBufferInfo = NULL;
-		set.pTexelBufferView = NULL;
-		set.pImageInfo = &bind.write.img;
-		bind.write.img.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-		bind.write.img.imageView = info.view;
-		bind.write.img.sampler = VK_NULL_HANDLE;
-
-		// add to shader to update on next update
-		writes.Append(set);
+		CoreGraphics::ResourceTableSetShaderRWTexture(bind.set, info);
 	}
 }
 
@@ -585,31 +529,21 @@ SetShaderReadWriteTexture(VkShaderConstantDescriptorBinding& bind, Util::Array<V
 /**
 */
 void
-SetShaderReadWriteBuffer(VkShaderConstantDescriptorBinding& bind, Util::Array<VkWriteDescriptorSet>& writes, const CoreGraphics::ShaderRWBufferId buf)
+SetShaderReadWriteBuffer(VkShaderConstantDescriptorBinding& bind, const CoreGraphics::ShaderRWBufferId buf)
 {
 	VkShaderRWBufferRuntimeInfo& info = shaderRWBufferAllocator.Get<1>(buf.id24);
 	if (info.buf != bind.write.buf.buffer)
 	{
-		VkWriteDescriptorSet set;
-		set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		set.pNext = NULL;
+		CoreGraphics::ResourceTableShaderRWBuffer info;
+		info.buf = buf;
+		info.offset = 0;
+		info.size = -1;
+		info.dynamicOffset = bind.dynamicOffset;
+		info.texelBuffer = false;
+		info.slot = bind.setBinding;
+		info.index = 0;
 
-		set.descriptorCount = 1;
-		if (bind.dynamicOffset)		set.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
-		else						set.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		set.dstArrayElement = 0;
-		set.dstBinding = bind.setBinding;
-		set.dstSet = bind.set;
-		set.pBufferInfo = &bind.write.buf;
-		set.pTexelBufferView = NULL;
-		set.pImageInfo = NULL;
-
-		bind.write.buf.buffer = info.buf;
-		bind.write.buf.offset = 0;
-		bind.write.buf.range = VK_WHOLE_SIZE;
-
-		// add to shader to update on next update
-		writes.Append(set);
+		CoreGraphics::ResourceTableSetShaderRWBuffer(bind.set, info);
 	}
 }
 

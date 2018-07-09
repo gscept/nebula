@@ -5,7 +5,6 @@
 #include "render/stdneb.h"
 #include "vkpipelinedatabase.h"
 #include "vkshaderprogram.h"
-#include "vkvertexlayout.h"
 #include "vkpass.h"
 #include "coregraphics/shaderpool.h"
 
@@ -73,7 +72,7 @@ VkPipelineDatabase::SetSubpass(uint32_t subpass)
 	if (index != InvalidIndex)
 	{
 		this->ct2 = this->ct1->children.ValueAtIndex(index);
-		this->SetShader(this->currentShaderProgram);
+		this->SetShader(this->currentShaderProgram, this->currentShaderInfo);
 	}
 	else
 	{
@@ -86,9 +85,10 @@ VkPipelineDatabase::SetSubpass(uint32_t subpass)
 /**
 */
 void
-VkPipelineDatabase::SetShader(const CoreGraphics::ShaderProgramId program)
+VkPipelineDatabase::SetShader(const CoreGraphics::ShaderProgramId program, const VkGraphicsPipelineCreateInfo& gfxPipe)
 {
 	this->currentShaderProgram = program;
+	this->currentShaderInfo = gfxPipe;
 	IndexT index = this->ct2->children.FindIndex(program);
 	if (index != InvalidIndex)
 	{
@@ -158,8 +158,7 @@ VkPipelineDatabase::GetCompiledPipeline()
 		this->ct5->initial)
 	{
 		// get fragment of graphics pipeline residing in shader
-		const VkShaderProgramRuntimeInfo& rtInfo = CoreGraphics::shaderPool->Get<3>(this->currentShaderProgram.shaderId).Get<2>(this->currentShaderProgram.programId);
-		VkGraphicsPipelineCreateInfo shaderInfo = rtInfo.info;
+		VkGraphicsPipelineCreateInfo shaderInfo = this->currentShaderInfo;
 
 		// get other fragment from framebuffer
 		VkGraphicsPipelineCreateInfo passInfo = PassGetVkFramebufferInfo(this->currentPass);

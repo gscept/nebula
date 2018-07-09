@@ -1,0 +1,5 @@
+<Shady>
+	<Variation desc="Random number.">
+		<Output type="float" name="Random" static="true" param="true"/>
+	</Variation>
+</Shady>

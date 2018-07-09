@@ -1,0 +1,13 @@
+<Shady>
+	<Variation desc="Adds two variables together to produce a sum. The two inputs much have the same type" simulationCommand="add">
+		<Input type="any" name="input1"/>
+		<Input type="any" name="input2"/>
+		<Output type="any" name="product"/>
+		<Source type="GLSL">
+			<Code output="product">
+				[output] = input1 + input2;
+			</Code>
+		</Source>
+
+	</Variation>
+</Shady>

@@ -37,8 +37,6 @@ const VertexBufferId CreateVertexBuffer(VertexBufferCreateInfo info);
 /// destroy vertex buffer
 void DestroyVertexBuffer(const VertexBufferId id);
 
-/// bind vertex buffer resource individually
-void VertexBufferBind(const VertexBufferId id, const IndexT slot, const IndexT vertexOffset);
 /// update vertex buffer
 void VertexBufferUpdate(const VertexBufferId id, void* data, PtrDiff size, PtrDiff offset);
 /// request lock for vertex buffer, such that it can be updated

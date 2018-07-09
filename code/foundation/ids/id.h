@@ -115,6 +115,7 @@ namespace Ids
 	constexpr x(const Ids::Id64 id) : id24_0_name(Ids::Id::GetBig(Ids::Id::GetHigh(id))), id8_0_name(Ids::Id::GetTiny(Ids::Id::GetHigh(id))), id24_1_name(Ids::Id::GetBig(Ids::Id::GetLow(id))), id8_1_name(Ids::Id::GetTiny(Ids::Id::GetLow(id))) {};\
 	explicit constexpr operator Ids::Id64() const { return Ids::Id::MakeId24_8_24_8(id24_0_name, id8_0_name, id24_1_name, id8_1_name); }\
 	static constexpr x Invalid() { return Ids::Id::MakeId24_8_24_8(Ids::InvalidId24, Ids::InvalidId8, Ids::InvalidId24, Ids::InvalidId8); }\
+	constexpr Ids::Id32 AllocId() const { return Ids::Id::MakeId24_8(id24_1_name, id8_1_name); }\
 	constexpr IndexT HashCode() const { return (IndexT)Ids::Id::MakeId24_8(id24_0_name, id8_0_name); }\
 	constexpr Ids::Id64 HashCode64() const { return Ids::Id::MakeId24_8_24_8(id24_0_name, id8_0_name, id24_1_name, id8_1_name); }\
 	const bool operator==(const x& rhs) const { return id24_0_name == rhs.id24_0_name && id8_0_name == rhs.id8_0_name && id24_1_name == rhs.id24_1_name && id8_1_name == rhs.id8_1_name; }\

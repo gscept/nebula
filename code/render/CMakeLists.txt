@@ -2,10 +2,21 @@
 # Render
 #-------------------------------------------------------------------------------
 
+macro(shaderc)
+	# add more export paths here when it gets relevant
+	if (${FIPS_WINDOWS})
+		set(export_platform_string "win32")
+	endif()
+
+	fips_generate(TYPE shaderc FROM ${FIPS_DEPLOY_DIR}/nebula-toolkit/${FIPS_CONFIG} HEADER None SOURCE None ARGS ${FIPS_DEPLOY_DIR}/${CMAKE_PROJECT_NAME}/${FIPS_CONFIG}/export_${export_platform_string})
+endmacro()
+
 fips_begin_module(render)
 	fips_vs_warning_level(3)
 	fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/resource ${CODE_ROOT}/foundation)	
 	fips_deps(foundation resource anyfx libpng libjpeg DevIL)
+	shaderc()
+	
 	if(N_USE_VULKAN)
 		#include(FindVulkan)
 		FIND_PACKAGE(Vulkan)
@@ -81,8 +92,8 @@ ENDIF()
 			fips_files(				
 				displaydevicebase.cc
 				displaydevicebase.h
-				renderdevicebase.cc
-				renderdevicebase.h
+				#renderdevicebase.cc
+				#renderdevicebase.h
 				shaderserverbase.cc
 				shaderserverbase.h
 				shaperendererbase.cc
@@ -113,6 +124,8 @@ ENDIF()
 				displayeventhandler.h
 				displaymode.h
 				event.h
+                fence.h
+				graphicsdevice.h
 				imagefileformat.cc
 				imagefileformat.h
 				indexbuffer.cc
@@ -134,8 +147,8 @@ ENDIF()
 				primitivegroup.h
 				primitivetopology.cc
 				primitivetopology.h
-				renderdevice.cc
-				renderdevice.h
+				#renderdevice.cc
+				#renderdevice.h
 				renderevent.h
 				rendereventhandler.cc
 				rendereventhandler.h
@@ -143,13 +156,15 @@ ENDIF()
 				rendershape.h
 				rendertexture.cc
 				rendertexture.h
+				resourcetable.h
+				sampler.h
+                semaphore.h
 				shader.cc
 				shader.h
 				shaderfeature.cc
 				shaderfeature.h
 				shaderidentifier.cc
 				shaderidentifier.h
-				shaderrwbuffer.cc
 				shaderrwbuffer.h
 				shaderrwtexture.cc
 				shaderrwtexture.h
@@ -161,7 +176,7 @@ ENDIF()
 				streammeshpool.cc
 				streammeshpool.h
 				shaderpool.cc
-				shaderpool.h
+                shaderpool.h
 				streamtexturepool.cc
 				streamtexturepool.h
 				streamtexturesaver.h
@@ -285,6 +300,10 @@ ENDIF()
 				vkcmdbufferthread.h
 				vkevent.cc
 				vkevent.h
+				vkfence.cc
+				vkfence.h
+				vkgraphicsdevice.h
+				vkgraphicsdevice.cc
 				vkdeferredcommand.cc
 				vkdeferredcommand.h
 				vkmemoryindexbufferpool.cc
@@ -297,12 +316,18 @@ ENDIF()
 				vkpass.h
 				vkpipelinedatabase.cc
 				vkpipelinedatabase.h
-				vkrenderdevice.cc
-				vkrenderdevice.h
+				#vkrenderdevice.cc
+				#vkrenderdevice.h
 				vkrendertexture.cc
 				vkrendertexture.h
+				vkresourcetable.cc
+				vkresourcetable.h
+				vksampler.cc
+				vksampler.h
 				vkscheduler.cc
 				vkscheduler.h
+				vksemaphore.cc
+                vksemaphore.h
 				vkshader.cc
 				vkshader.h
 				vkshaderrwbuffer.cc
@@ -346,8 +371,8 @@ ENDIF()
 
 		fips_dir(frame)
 			fips_files(
-				framebarrier.cc
-				framebarrier.h
+				#framebarrier.cc
+				#framebarrier.h
 				framebatchtype.h
 				frameblit.cc
 				frameblit.h
@@ -357,14 +382,16 @@ ENDIF()
 				framecomputealgorithm.h
 				framecopy.cc
 				framecopy.h
-				frameevent.cc
-				frameevent.h
+				#frameevent.cc
+				#frameevent.h
 				frameglobalstate.cc
 				frameglobalstate.h
 				frameop.cc
 				frameop.h
 				framepass.cc
 				framepass.h
+				frameresourcebarrier.cc
+				frameresourcebarrier.h
 				framescript.cc
 				framescript.h
 				framescriptloader.cc

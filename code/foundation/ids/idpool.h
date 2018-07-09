@@ -39,6 +39,8 @@ public:
 	void Dealloc(uint32_t id);
 	/// get number of active ids
 	uint32_t GetNumUsed() const;
+	/// get number of free elements
+	uint32_t GetNumFree() const;
 	/// get grow
 	const uint32_t GetGrow() const;
 private:
@@ -126,6 +128,15 @@ inline uint32_t
 IdPool::GetNumUsed() const
 {
 	return this->maxId - this->free.Size();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline uint32_t
+IdPool::GetNumFree() const
+{
+	return this->free.Size();
 }
 
 //------------------------------------------------------------------------------

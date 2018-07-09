@@ -1,0 +1,5 @@
+<Shady>
+	<Variation desc="Represents a single-component float parameter." simulationValue="Value">
+		<Output type="float" name="Value" param="true"/>
+	</Variation>
+</Shady>

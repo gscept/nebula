@@ -22,6 +22,7 @@ namespace CoreGraphics
 {
 
 ID_24_8_TYPE(WindowId);
+struct RenderTextureId;
 
 struct WindowCreateInfo
 {
@@ -70,6 +71,8 @@ const bool WindowIsResizable(const WindowId id);
 const Util::StringAtom& WindowGetTitle(const WindowId id);
 /// get window icon
 const Util::StringAtom& WindowGetIcon(const WindowId id);
+/// get render texture associated with window
+const CoreGraphics::RenderTextureId& WindowGetRenderTexture(const WindowId id);
 
 extern Ids::IdPool windowIdPool;
 

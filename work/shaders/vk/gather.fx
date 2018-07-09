@@ -80,7 +80,8 @@ psMain(in vec2 UV,
 	
 	float depth = sample2DLod(DepthTexture, GatherSampler, UV, 0).r;
 	color = psFog(depth, color);
-	MergedColor = EncodeHDR(color);
+	//MergedColor = EncodeHDR(color);
+	MergedColor = vec4(1,0,0,1);
 }
 
 //------------------------------------------------------------------------------

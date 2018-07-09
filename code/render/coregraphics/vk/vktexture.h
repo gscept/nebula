@@ -47,11 +47,14 @@ struct VkTextureMappingInfo
 typedef Ids::IdAllocatorSafe<
 	VkTextureRuntimeInfo,					// 0 runtime info (for binding)
 	VkTextureLoadInfo,						// 1 loading info (mostly used during the load/unload phase)
-	VkTextureMappingInfo					// 2 used when image is mapped to memory
+	VkTextureMappingInfo,					// 2 used when image is mapped to memory
+	ImageLayout								// 3 used to keep track of image layout (use only when necessary)
 > VkTextureAllocator;
 extern VkTextureAllocator textureAllocator;
 
 /// get Vk image
-const VkImage TextureGetVk(const CoreGraphics::TextureId id);
+const VkImage TextureGetVkImage(const CoreGraphics::TextureId id);
+/// get vk image view
+const VkImageView TextureGetVkImageView(const CoreGraphics::TextureId id);
 
 } // namespace Vulkan

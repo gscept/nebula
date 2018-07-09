@@ -3,8 +3,12 @@
 /**
 	A FrameScript describes render operations being done to produce a single frame.
 
-	Frame scripts can also execute a subset of commands, which is retrievable through 
-	an execution mask.
+	Frame scripts are loaded once like a template, and then compiled to produce
+	an optimized result. When a pass is disabled or re-enabled, the script
+	is rebuilt, so refrain from doing this frequently. 
+
+	On DX12 and Vulkan, the compile process serves to insert proper barriers, events
+	and semaphore operations such that shader resources are not stomped or read prematurely.
 	
 	(C) 2016 Individual contributors, see AUTHORS file
 */
@@ -60,18 +64,10 @@ public:
 	void AddReadWriteBuffer(const Util::StringAtom& name, const CoreGraphics::ShaderRWBufferId buf);
 	/// get read-write buffer
 	const CoreGraphics::ShaderRWBufferId GetReadWriteBuffer(const Util::StringAtom& name);
-	/// add event
-	void AddEvent(const Util::StringAtom& name, const CoreGraphics::EventId event);
-	/// get event
-	const CoreGraphics::EventId GetEvent(const Util::StringAtom& name);
 	/// add algorithm
 	void AddAlgorithm(const Util::StringAtom& name, Algorithms::Algorithm* alg);
 	/// get algorithm
 	Algorithms::Algorithm* GetAlgorithm(const Util::StringAtom& name);
-	/// add shader state
-	void AddShaderState(const Util::StringAtom& name, const CoreGraphics::ShaderStateId state);
-	/// get shader state
-	const CoreGraphics::ShaderStateId GetShaderState(const Util::StringAtom& name);
 
 	/// setup script
 	void Setup();
@@ -79,15 +75,9 @@ public:
 	void Discard();
 	/// run script
 	void Run(const IndexT frameIndex);
-	/// run segment of script
-	void RunSegment(const FrameOp::ExecutionMask mask, const IndexT frameIndex);
 
-	/// create an execution between two subpasses
-	FrameOp::ExecutionMask CreateMask(const Util::StringAtom& startOp, const Util::StringAtom& endOp);
-	/// create an execution mask running up to a pass, and then into a certain subpass
-	FrameOp::ExecutionMask CreateSubpassMask(const Ptr<FramePass>& pass, const Util::StringAtom& passOp, const Util::StringAtom& subpass);
-	/// get begin and end ops for mask
-	void GetOps(const FrameOp::ExecutionMask mask, FrameOp* startOp, FrameOp* endOp);
+	/// build framescript, this will delete and replace the old frame used for Run()
+	void Build();
 
 private:
 	friend class FrameScriptLoader;
@@ -102,6 +92,11 @@ private:
 	CoreGraphics::WindowId window;
 	Memory::ChunkAllocator<0xFFFF> allocator;
 
+	Util::Array<CoreGraphics::EventId> events;
+	Util::Array<CoreGraphics::BarrierId> barriers;
+	Util::Array<CoreGraphics::SemaphoreId> semaphores;
+	Memory::ChunkAllocator<0xFFFF> buildAllocator;
+
 	Resources::ResourceName resId;
 	Util::Array<CoreGraphics::RenderTextureId> colorTextures;
 	Util::Dictionary<Util::StringAtom, CoreGraphics::RenderTextureId> colorTexturesByName;
@@ -111,13 +106,12 @@ private:
 	Util::Dictionary<Util::StringAtom, CoreGraphics::ShaderRWTextureId> readWriteTexturesByName;
 	Util::Array<CoreGraphics::ShaderRWBufferId> readWriteBuffers;
 	Util::Dictionary<Util::StringAtom, CoreGraphics::ShaderRWBufferId> readWriteBuffersByName;
-	Util::Array<CoreGraphics::EventId> events;
-	Util::Dictionary<Util::StringAtom, CoreGraphics::EventId> eventsByName;
 	Util::Array<Frame::FrameOp*> ops;
+	Util::Array<Frame::FrameOp::Compiled*> compiled;
+	CoreGraphics::BarrierId endOfFrameBarrier;
+	IndexT frameOpCounter;
 	Util::Array<Algorithms::Algorithm*> algorithms;
 	Util::Dictionary<Util::StringAtom, Algorithms::Algorithm*> algorithmsByName;
-	Util::Array<CoreGraphics::ShaderStateId> shaderStates;
-	Util::Dictionary<Util::StringAtom, CoreGraphics::ShaderStateId> shaderStatesByName;
 };
 
 //------------------------------------------------------------------------------
@@ -145,6 +139,15 @@ inline Memory::ChunkAllocator<0xFFFF>&
 FrameScript::GetAllocator()
 {
 	return this->allocator;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline Algorithms::Algorithm*
+FrameScript::GetAlgorithm(const Util::StringAtom& name)
+{
+	return this->algorithmsByName[name];
 }
 
 //------------------------------------------------------------------------------
@@ -183,30 +186,4 @@ FrameScript::GetReadWriteBuffer(const Util::StringAtom& name)
 	return this->readWriteBuffersByName[name];
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-inline const CoreGraphics::EventId
-FrameScript::GetEvent(const Util::StringAtom& name)
-{
-	return this->eventsByName[name];
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline Algorithms::Algorithm*
-FrameScript::GetAlgorithm(const Util::StringAtom& name)
-{
-	return this->algorithmsByName[name];
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const CoreGraphics::ShaderStateId
-FrameScript::GetShaderState(const Util::StringAtom& name)
-{
-	return this->shaderStatesByName[name];
-}
 } // namespace Frame2

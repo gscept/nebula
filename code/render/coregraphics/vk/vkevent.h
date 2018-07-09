@@ -11,20 +11,21 @@
 namespace Vulkan
 {
 
-static const SizeT MaxNumBarriers = 16;
+static const SizeT EventMaxNumBarriers = 16;
 
 struct VkEventInfo
 {
 	VkEvent event;
 	VkPipelineStageFlags leftDependency;
 	VkPipelineStageFlags rightDependency;
-	VkImageMemoryBarrier imageBarriers[MaxNumBarriers];
+	VkImageMemoryBarrier imageBarriers[EventMaxNumBarriers];
 	uint32_t numImageBarriers;
-	VkBufferMemoryBarrier bufferBarriers[MaxNumBarriers];
+	VkBufferMemoryBarrier bufferBarriers[EventMaxNumBarriers];
 	uint32_t numBufferBarriers;
-	VkMemoryBarrier memoryBarriers[MaxNumBarriers];
+	VkMemoryBarrier memoryBarriers[EventMaxNumBarriers];
 	uint32_t numMemoryBarriers;
 	
 };
 typedef Ids::IdAllocator<VkDevice, VkEventInfo> VkEventAllocator;
+extern VkEventAllocator eventAllocator;
 } // namespace Vulkan

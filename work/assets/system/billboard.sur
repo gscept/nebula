@@ -1,0 +1,10 @@
+<!--
+	Surface material for the placeholder material
+-->
+<NebulaT>
+	<Surface template="Billboard">
+		<Param name="AlbedoMap" value="tex:system/placeholder"/>
+		<Param name="Color" value="1,1,1,1"/>
+		<Param name="ViewAligned" value="false"/>
+	</Surface>
+</NebulaT>

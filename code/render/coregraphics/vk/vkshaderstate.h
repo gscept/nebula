@@ -23,6 +23,7 @@
 #include "coregraphics/constantbuffer.h"
 #include "vkshaderconstant.h"
 #include "lowlevel/afxapi.h"
+#include "vkshaderprogram.h"
 namespace Lighting
 {
 	class VkLightServer;
@@ -33,8 +34,8 @@ namespace Vulkan
 #pragma pack(push, 16)
 struct VkShaderStateDescriptorSetBinding
 {
-	VkDescriptorSet set;
-	VkPipelineLayout layout;
+	CoreGraphics::ResourceTableId set;
+	CoreGraphics::ResourcePipelineId layout;
 	IndexT slot;
 };
 
@@ -50,25 +51,25 @@ struct VkShaderStateRuntimeInfo
 	VkDevice dev;
 	Util::FixedArray<VkShaderStateDescriptorSetBinding> setBindings;
 	Util::FixedArray<Util::Array<uint32_t>> setOffsets;
-	VkPipelineLayout pushLayout;
+	CoreGraphics::ResourcePipelineId pushLayout;
 	uint8_t* pushData;
 	uint32_t pushDataSize;
 	bool setsDirty;
-	bool shared;
+	bool propagate; // when bound, propagate to all threads of queue type
 };
 
 struct VkShaderStateSetupInfo
 {
 	VkDescriptorPool descPool;
-	bool freeSet;
-	Util::FixedArray<VkDescriptorSet> sets;
+	Util::FixedArray<CoreGraphics::ResourceTableId> sets;
 	Util::FixedArray<Util::Dictionary<uint32_t, VkShaderStateBufferMapping>> setBufferMapping;
 	Util::Dictionary<uint32_t, uint32_t> groupIndexMap;
 	Util::Array<uint32_t> offsets;
 	Util::Dictionary<Util::StringAtom, uint32_t> offsetsByName;
 	Util::Dictionary<CoreGraphics::ConstantBufferId, CoreGraphics::ConstantBufferSliceId> instances;
 	Util::Dictionary<Util::StringAtom, CoreGraphics::ShaderConstantId> variableMap;
-	VkPipelineLayout pipelineLayout;
+	Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBufferId> bufferMap;
+	CoreGraphics::ResourcePipelineId pipelineLayout;
 };
 
 struct VkDerivativeShaderStateRuntimeInfo
@@ -78,8 +79,8 @@ struct VkDerivativeShaderStateRuntimeInfo
 	uint32_t* offsets;
 	Util::Array<CoreGraphics::ConstantBufferId> buffers;
 	uint32_t group;
-	VkDescriptorSet set;
-	VkPipelineLayout layout;
+	CoreGraphics::ResourceTableId set;
+	CoreGraphics::ResourcePipelineId layout;
 	bool bindShared;
 	VkShaderStateRuntimeInfo* parentRuntime;
 	VkShaderStateSetupInfo* parentSetup;
@@ -92,20 +93,19 @@ typedef Ids::IdAllocator<
 	VkShaderStateRuntimeInfo,											//1 setup info
 	VkShaderStateSetupInfo,												//2 runtime info
 	VkShaderConstantAllocator,											//3 variable allocator
-	Util::Array<VkWriteDescriptorSet>,									//4 descriptor set writes
-	VkDerivativeStateAllocator											//5 derivative states
+	VkDerivativeStateAllocator											//4 derivative states
 > VkShaderStateAllocator;
 
 /// setup the shader instance from its original shader object
 void VkShaderStateSetup(
-	const Ids::Id24 id,
+	const CoreGraphics::ShaderStateId id,
 	AnyFX::ShaderEffect* effect,
 	const Util::Array<IndexT>& groups,
 	VkShaderStateAllocator& allocator,
-	Util::FixedArray<VkDescriptorSet>& sets,
-	Util::FixedArray<VkDescriptorSetLayout>& setLayouts,
-	const Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBufferId>& buffers,
-	bool createUniqueSet);
+	Util::FixedArray<std::pair<uint32_t, CoreGraphics::ResourceTableLayoutId>>& setLayouts,
+	Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBufferId>& sharedBuffers,
+	Util::Dictionary<uint32_t, Util::Array<CoreGraphics::ConstantBufferId>>& sharedBuffersByGroup,
+	CoreGraphics::ResourcePipelineId layout);
 
 /// setup derivative
 void VkShaderStateSetupDerivative(
@@ -115,12 +115,11 @@ void VkShaderStateSetupDerivative(
 	VkShaderStateRuntimeInfo& parentRuntime,
 	VkShaderStateSetupInfo& parentSetup,
 	const Util::Dictionary<uint32_t, Util::Array<CoreGraphics::ConstantBufferId>>& buffersByGroup,
-	const IndexT group
-);
+	const IndexT group);
 
 /// sets up variables
 void VkShaderStateSetupConstants(
-	const Ids::Id24 id,
+	const CoreGraphics::ShaderStateId id,
 	AnyFX::ShaderEffect* effect,
 	VkShaderStateRuntimeInfo& runtime,
 	VkShaderStateSetupInfo& setup,
@@ -129,28 +128,25 @@ void VkShaderStateSetupConstants(
 
 /// setup uniform buffers for shader state
 void VkShaderStateSetupConstantBuffers(
-	const Ids::Id24 id,
+	const CoreGraphics::ShaderStateId id,
 	AnyFX::ShaderEffect* effect,
 	VkShaderStateRuntimeInfo& runtime,
 	VkShaderStateSetupInfo& setup,
 	VkShaderConstantAllocator& varAllocator,
-	Util::Array<VkWriteDescriptorSet>& setWrites,
 	const Util::Array<IndexT>& groups,
-	const Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBufferId>& buffers);
+	Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBufferId>& buffers,
+	Util::Dictionary<uint32_t, Util::Array<CoreGraphics::ConstantBufferId>>& sharedBuffersByGroup);
 
 /// discard state
 void VkShaderStateDiscard(
-	const Ids::Id24 id,
 	VkShaderStateRuntimeInfo& runtime,
 	VkShaderStateSetupInfo& setup,
 	VkShaderConstantAllocator& varAllocator
 );
 
-/// commit changes before rendering
-void VkShaderStateCommit(Ids::Id24 currentProgram, Util::Array<VkWriteDescriptorSet>& writes, VkShaderStateRuntimeInfo& stateInfo);
+/// apply current state of shader
+void VkShaderStateCommit(VkShaderStateRuntimeInfo& stateInfo);
 
-/// use this if some system want to allocate and use their own descriptor sets
-void VkShaderStateSetDescriptorSet(VkShaderStateRuntimeInfo& runtime, VkShaderStateSetupInfo& setup, const VkDescriptorSet& set, const IndexT slot);
 /// create array of offsets
 void VkShaderStateCreateOffsetArray(VkShaderStateRuntimeInfo& runtime, VkShaderStateSetupInfo& setup, Util::Array<uint32_t>& outOffsets, const IndexT group);
 /// get index in offset array based on binding
@@ -162,14 +158,10 @@ void VkShaderStateDerivativeStateApply(const VkDerivativeShaderStateRuntimeInfo&
 void VkShaderStateDerivativeStateCommit(const VkDerivativeShaderStateRuntimeInfo& info);
 /// reset derivative state
 void VkShaderStateDerivativeStateReset(VkDerivativeShaderStateRuntimeInfo& info);
-/// tell device to update a set of descriptor sets
-void VkShaderStateUpdateDescriptorSets(VkDevice dev, Util::Array<VkWriteDescriptorSet>& writes, bool& dirty);
 
-/// set the descriptor set
-void VkShaderStateSetDescriptorSet(CoreGraphics::ShaderStateId id, VkDescriptorSet set, const IndexT group);
+/// get resource table
+const CoreGraphics::ResourceTableId& VkShaderStateGetResourceTable(CoreGraphics::ShaderStateId id, const IndexT group);
 /// set the state to be applied shared (as in shared across several shaders)
-void VkShaderStateSetShared(CoreGraphics::ShaderStateId id, bool b);
-/// add a descriptor set write to be executed the next time this state is used
-void VkShaderStateAddDescriptorSetWrite(CoreGraphics::ShaderStateId id, VkWriteDescriptorSet write);
+void VkShaderStateSetPropagate(CoreGraphics::ShaderStateId id, bool b);
 
 } // namespace Vulkan

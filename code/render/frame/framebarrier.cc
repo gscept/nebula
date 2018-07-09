@@ -4,7 +4,7 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "framebarrier.h"
-#include "coregraphics/renderdevice.h"
+#include "coregraphics/graphicsdevice.h"
 
 using namespace CoreGraphics;
 namespace Frame
@@ -32,8 +32,7 @@ FrameBarrier::~FrameBarrier()
 void
 FrameBarrier::Run(const IndexT frameIndex)
 {
-	RenderDevice* dev = RenderDevice::Instance();
-	dev->InsertBarrier(this->barrier);
+	CoreGraphics::BarrierInsert(this->barrier, this->queue);
 }
 
 } // namespace Frame2

@@ -9,8 +9,20 @@
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
 #include "util/stringatom.h"
+#include "coregraphics/barrier.h"
+#include "coregraphics/event.h"
+#include "coregraphics/semaphore.h"
+#include "memory/chunkallocator.h"
 namespace Frame
 {
+
+enum class DependencyIntent
+{
+	Read,	// reading means we must wait if we are writing
+	Write	// writing always means we must wait for previous writes and reads to finish
+};
+
+
 class FrameOp
 {
 public:
@@ -21,23 +33,107 @@ public:
 	/// destructor
 	virtual ~FrameOp();
 
+	/// discard operation
+	virtual void Discard();
+
 	/// set name
 	void SetName(const Util::StringAtom& name);
 	/// get name
 	const Util::StringAtom& GetName() const;
 
-	/// setup operation
-	virtual void Setup();
-	/// discard operation
-	virtual void Discard();
-	/// run operation
-	virtual void Run(const IndexT frameIndex);
-	/// run segment
-	virtual void RunSegment(const FrameOp::ExecutionMask mask, const IndexT frameIndex);
 	/// handle display resizing
 	virtual void OnWindowResized();
+
 protected:
+	friend class FrameScriptLoader;
+	friend class FrameScript;
+	friend class FramePass;
+	friend class FrameSubpass;
+
+	// inherit this class to implement the compiled runtime for the frame operation
+	struct Compiled
+	{
+		virtual void Run(const IndexT frameIndex) = 0;
+		virtual void Discard();
+
+		void SignalEvents();
+		void WaitAndResetEvents();
+		void InsertBarriers();
+
+		SizeT numWaitEvents;
+		struct
+		{
+			CoreGraphics::EventId event;
+			CoreGraphicsQueueType queue;
+		} *waitEvents;
+
+		SizeT numSignalEvents;
+		struct
+		{
+			CoreGraphics::EventId event;
+			CoreGraphicsQueueType queue;
+		} *signalEvents;
+
+		SizeT numBarriers;
+		struct
+		{
+			CoreGraphics::BarrierId barrier;
+			CoreGraphicsQueueType queue;
+		} *barriers;
+
+		SizeT numWaitSemaphores;
+		CoreGraphics::SemaphoreId* waitSemaphores;
+
+		SizeT numSignalSemaphores;
+		CoreGraphics::SemaphoreId* signalSemaphores;
+
+		CoreGraphicsQueueType queue;
+	};
+
+	struct TextureDependency
+	{
+		FrameOp::Compiled* op;
+		CoreGraphicsQueueType queue;
+		ImageLayout layout;
+		CoreGraphics::BarrierDependency stage;
+		CoreGraphics::BarrierAccess access;
+		DependencyIntent intent;
+		IndexT index;
+	};
+
+	struct BufferDependency
+	{
+		FrameOp::Compiled* op;
+		CoreGraphicsQueueType queue;
+		CoreGraphics::BarrierDependency stage;
+		CoreGraphics::BarrierAccess access;
+		DependencyIntent intent;
+		IndexT index;
+	};
+
+	/// allocate instance of compiled
+	virtual Compiled* AllocCompiled(Memory::ChunkAllocator<0xFFFF>& allocator) = 0;
+
+	/// build operation
+	virtual void Build(
+		Memory::ChunkAllocator<0xFFFF>& allocator,
+		Util::Array<FrameOp::Compiled*>& compiledOps,
+		Util::Array<CoreGraphics::EventId>& events,
+		Util::Array<CoreGraphics::BarrierId>& barriers,
+		Util::Array<CoreGraphics::SemaphoreId>& semaphores,
+		Util::Dictionary<CoreGraphics::ShaderRWTextureId, Util::Array<std::tuple<CoreGraphics::ImageSubresourceInfo, TextureDependency>>>& rwTextures,
+		Util::Dictionary<CoreGraphics::ShaderRWBufferId, BufferDependency>& rwBuffers,
+		Util::Dictionary<CoreGraphics::RenderTextureId, Util::Array<std::tuple<CoreGraphics::ImageSubresourceInfo, TextureDependency>>>& renderTextures);
+
+	CoreGraphics::BarrierDomain domain;
+	CoreGraphicsQueueType queue;
+	Util::Dictionary<CoreGraphics::ShaderRWTextureId, std::tuple<CoreGraphics::BarrierAccess, CoreGraphics::BarrierDependency, CoreGraphics::ImageSubresourceInfo, ImageLayout>> rwTextureDeps;
+	Util::Dictionary<CoreGraphics::RenderTextureId, std::tuple<CoreGraphics::BarrierAccess, CoreGraphics::BarrierDependency, CoreGraphics::ImageSubresourceInfo, ImageLayout>> renderTextureDeps;
+	Util::Dictionary<CoreGraphics::ShaderRWBufferId, std::tuple<CoreGraphics::BarrierAccess, CoreGraphics::BarrierDependency>> rwBufferDeps;
+
+	Compiled* compiled;
 	Util::StringAtom name;
+	IndexT index;
 };
 
 //------------------------------------------------------------------------------

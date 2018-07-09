@@ -4,7 +4,6 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "mesh.h"
-#include "coregraphics/renderdevice.h"
 #include "memorymeshpool.h"
 
 namespace CoreGraphics

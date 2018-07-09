@@ -8,7 +8,7 @@
 #include "std.fxh"
 
 // material properties
-group(BATCH_GROUP) shared varblock TessellationParams [ bool DynamicOffset = true; ]
+group(INSTANCE_GROUP) shared varblock TessellationParams [ bool DynamicOffset = true; string Visibility = "HS|DS";]
 {
 	float TessellationFactor = 1.0f;
 	float MaxDistance = 250.0f;

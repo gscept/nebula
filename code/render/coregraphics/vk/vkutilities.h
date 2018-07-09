@@ -23,19 +23,19 @@ public:
 	virtual ~VkUtilities();
 
 	/// perform image layout transition immediately
-	static void ImageLayoutTransition(CoreGraphicsQueueType queue, VkImageMemoryBarrier barrier);
+	static void ImageLayoutTransition(CoreGraphicsQueueType queue, VkPipelineStageFlags left, VkPipelineStageFlags right, VkImageMemoryBarrier barrier);
 	/// perform image layout transition immediately
-	static void ImageLayoutTransition(VkCommandBuffer buf, VkImageMemoryBarrier barrier);
+	static void ImageLayoutTransition(VkCommandBuffer buf, VkPipelineStageFlags left, VkPipelineStageFlags right, VkImageMemoryBarrier barrier);
 	/// create image memory barrier
-	static VkImageMemoryBarrier ImageMemoryBarrier(const VkImage& img, VkImageSubresourceRange subres, VkImageLayout oldLayout, VkImageLayout newLayout);
+	static VkImageMemoryBarrier ImageMemoryBarrier(const VkImage& img, VkImageSubresourceRange subres, VkAccessFlags left, VkAccessFlags right, VkImageLayout oldLayout, VkImageLayout newLayout);
 	/// create image ownership change
-	static VkImageMemoryBarrier ImageMemoryBarrier(const VkImage& img, VkImageSubresourceRange subres, CoreGraphicsQueueType fromQueue, CoreGraphicsQueueType toQueue, VkImageLayout layout);
+	static VkImageMemoryBarrier ImageMemoryBarrier(const VkImage& img, VkImageSubresourceRange subres, CoreGraphicsQueueType fromQueue, CoreGraphicsQueueType toQueue, VkAccessFlags left, VkAccessFlags right, VkImageLayout oldLayout, VkImageLayout newLayout);
 	/// create buffer memory barrier
 	static VkBufferMemoryBarrier BufferMemoryBarrier(const VkBuffer& buf, VkDeviceSize offset, VkDeviceSize size, VkAccessFlags srcAccess, VkAccessFlags dstAccess);
 	/// transition image between layouts
 	static void ChangeImageLayout(const VkImageMemoryBarrier& barrier, const CoreGraphicsQueueType type);
 	/// transition image ownership
-	static void ImageOwnershipChange(CoreGraphicsQueueType queue, VkImageMemoryBarrier barrier);
+	static void ImageOwnershipChange(CoreGraphicsQueueType queue, VkPipelineStageFlags left, VkPipelineStageFlags right, VkImageMemoryBarrier barrier);
 	/// perform image color clear
 	static void ImageColorClear(const VkImage& image, const CoreGraphicsQueueType queue, VkImageLayout layout, VkClearColorValue clearValue, VkImageSubresourceRange subres);
 	/// perform image depth stencil clear

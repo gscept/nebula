@@ -24,8 +24,17 @@ public:
 	void Setup();
 	/// discard operation
 	void Discard();
-	/// run operation
-	void Run(const IndexT frameIndex);
+
+	struct CompiledImpl : public FrameOp::Compiled
+	{
+		void Run(const IndexT frameIndex);
+
+		RenderUtil::DrawFullScreenQuad fsq;
+		CoreGraphics::ShaderProgramId program;
+		CoreGraphics::ShaderStateId shaderState;
+	};
+
+	FrameOp::Compiled* AllocCompiled(Memory::ChunkAllocator<0xFFFF>& allocator);
 	
 	RenderUtil::DrawFullScreenQuad fsq;
 	CoreGraphics::ShaderId shader;

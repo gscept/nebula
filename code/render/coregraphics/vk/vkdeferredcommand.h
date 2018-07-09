@@ -8,6 +8,7 @@
 //------------------------------------------------------------------------------
 #include "util/fixedarray.h"
 #include "coregraphics/config.h"
+#include "coregraphics/barrier.h"
 #include <vulkan/vulkan.h>
 namespace Vulkan
 {
@@ -95,6 +96,8 @@ struct VkDeferredCommand
 
 			struct // ImageLayoutTransition
 			{
+				VkPipelineStageFlags left;
+				VkPipelineStageFlags right;
 				VkImageMemoryBarrier barrier;
 			} imgBarrier;
 
@@ -116,6 +119,8 @@ struct VkDeferredCommand
 
 			struct // ImageOwnershipChange
 			{
+				VkPipelineStageFlags left;
+				VkPipelineStageFlags right;
 				VkImageMemoryBarrier barrier;
 			} imgOwnerChange;
 

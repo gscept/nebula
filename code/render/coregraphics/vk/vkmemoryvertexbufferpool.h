@@ -12,6 +12,11 @@
 #include "coregraphics/gpubuffertypes.h"
 #include "coregraphics/vertexlayout.h"
 #include "coregraphics/vertexbuffer.h"
+
+namespace CoreGraphics
+{
+	void SetStreamVertexBuffer(IndexT streamIndex, const CoreGraphics::VertexBufferId& vb, IndexT offsetVertexIndex);
+}
 namespace Vulkan
 {
 class VkMemoryVertexBufferPool : public Resources::ResourceMemoryPool
@@ -20,8 +25,6 @@ class VkMemoryVertexBufferPool : public Resources::ResourceMemoryPool
 
 public:
 
-	/// bind vertex buffer
-	void Bind(const CoreGraphics::VertexBufferId id, const IndexT slot, const IndexT offset);
 	/// map the vertices for CPU access
 	void* Map(const CoreGraphics::VertexBufferId id, CoreGraphics::GpuBufferTypes::MapType mapType);
 	/// unmap the resource
@@ -37,6 +40,7 @@ public:
 	/// get layout
 	const CoreGraphics::VertexLayoutId GetLayout(const CoreGraphics::VertexBufferId id);
 private:
+	friend void	CoreGraphics::SetStreamVertexBuffer(IndexT streamIndex, const CoreGraphics::VertexBufferId& vb, IndexT offsetVertexIndex);
 
 	struct VkVertexBufferLoadInfo
 	{

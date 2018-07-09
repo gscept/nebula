@@ -7,6 +7,7 @@
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
+#include "coregraphics/config.h"
 #include "resources/resourcestreampool.h"
 #include "util/dictionary.h"
 #include "coregraphics/shaderfeature.h"
@@ -18,12 +19,19 @@
 #include "coregraphics/shaderrwbuffer.h"
 #include "coregraphics/shaderidentifier.h"
 #include "coregraphics/rendertexture.h"
+#include "coregraphics/resourcetable.h"
 #include "vkshaderprogram.h"
 #include "vkshaderstate.h"
 #include "vktexture.h"
 #include "vkshaderconstant.h"
 #include "vkshader.h"
 
+namespace CoreGraphics
+{
+	void SetShaderState(const CoreGraphics::ShaderStateId& state);
+	void SetShaderProgram(const CoreGraphics::ShaderProgramId& pro);
+	void SetShaderProgram(const CoreGraphics::ShaderId shaderId, const CoreGraphics::ShaderFeature::Mask mask);
+}
 
 namespace Vulkan
 {
@@ -34,27 +42,35 @@ class VkShaderPool : public Resources::ResourceStreamPool
 
 public:
 
+	typedef Util::Dictionary<CoreGraphics::ShaderFeature::Mask, CoreGraphics::ShaderProgramId> ProgramMap;
+	struct VkShaderRuntimeInfo
+	{
+		CoreGraphics::ShaderFeature::Mask activeMask;
+		CoreGraphics::ShaderProgramId activeShaderProgram;
+		ProgramMap programMap;
+	};
+
 	/// constructor
 	VkShaderPool();
 	/// destructor
 	virtual ~VkShaderPool();
 
-	/// bind shader (and variation within shader)
-	void ShaderBind(const CoreGraphics::ShaderId shaderId, const CoreGraphics::ShaderFeature::Mask mask);
-	/// bind shader using only a concatenated shader-program id
-	void ShaderBind(const CoreGraphics::ShaderProgramId shaderProgramId);
 	/// get shader-program id, which can be used to directly access a program in a shader
 	CoreGraphics::ShaderProgramId GetShaderProgram(const CoreGraphics::ShaderId shaderId, const CoreGraphics::ShaderFeature::Mask mask);
 	/// create a new shader state
 	CoreGraphics::ShaderStateId CreateState(const CoreGraphics::ShaderId shader, const Util::Array<IndexT>& groups, bool createUniqueSet);
 	/// create a shared state, might return a new StateId, or a previously allocated one
-	CoreGraphics::ShaderStateId CreateSharedState(const CoreGraphics::ShaderId shader, const Util::Array<IndexT>& groups);
+	CoreGraphics::ShaderStateId CreateSlicedState(const CoreGraphics::ShaderId shader, const Util::Array<IndexT>& groups);
 	/// destroy a shader state
 	void DestroyState(const CoreGraphics::ShaderStateId state);
-	/// apply state
-	void ApplyState(const CoreGraphics::ShaderStateId state);
+	/// commit changes done to state
+	void CommitState(const CoreGraphics::ShaderStateId state);
 	/// get number of used states
 	SizeT GetNumActiveStates(const CoreGraphics::ShaderId shaderId);
+	/// get the resource table layout
+	CoreGraphics::ResourceTableLayoutId GetResourceTableLayout(const CoreGraphics::ShaderId id, const IndexT group);
+	/// get the pipeline layout
+	CoreGraphics::ResourcePipelineId GetResourcePipeline(const CoreGraphics::ShaderId id);
 
 	/// create derivative
 	CoreGraphics::DerivativeStateId CreateDerivativeState(const CoreGraphics::ShaderStateId id, const IndexT group);
@@ -80,6 +96,8 @@ public:
 	const SizeT GetConstantBufferSize(const CoreGraphics::ShaderId id, const IndexT i) const;
 	/// get name of constnat buffer
 	const Util::StringAtom GetConstantBufferName(const CoreGraphics::ShaderId id, const IndexT i) const;
+	/// get slot of shader resource
+	const IndexT GetResourceSlot(const CoreGraphics::ShaderId id, const Util::StringAtom& name) const;
 
 	/// get list all mask-program pairs
 	const Util::Dictionary<CoreGraphics::ShaderFeature::Mask, CoreGraphics::ShaderProgramId>& GetPrograms(const CoreGraphics::ShaderId id);
@@ -110,11 +128,6 @@ public:
 	/// set constant as texture
 	void ShaderResourceSetReadWriteBuffer(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ShaderStateId state, const CoreGraphics::ShaderRWBufferId buf);
 
-	/// get pipeline layout for shader
-	const VkPipelineLayout GetPipelineLayout(const CoreGraphics::ShaderId id) const;
-	/// get descriptor set layout for shader and group
-	const VkDescriptorSetLayout GetDescriptorSetLayout(const CoreGraphics::ShaderId id, const IndexT group) const;
-
 	/// get state allocator for shader
 	VkShaderStateAllocator& GetStateAllocator(const CoreGraphics::ShaderStateId id);
 
@@ -123,7 +136,10 @@ private:
 	friend class VkPipelineDatabase;
 	friend const CoreGraphics::ConstantBufferId CoreGraphics::CreateConstantBuffer(const CoreGraphics::ConstantBufferCreateInfo& info);
 	friend uint32_t	VkShaderGetVkShaderVariableBinding(const CoreGraphics::ShaderStateId shader, const CoreGraphics::ShaderConstantId var);
-	friend VkDescriptorSet VkShaderGetVkShaderVariableDescriptorSet(const CoreGraphics::ShaderStateId shader, const CoreGraphics::ShaderConstantId var);
+
+	friend void	CoreGraphics::SetShaderState(const CoreGraphics::ShaderStateId& state);
+	friend void CoreGraphics::SetShaderProgram(const CoreGraphics::ShaderProgramId& pro);
+	friend void CoreGraphics::SetShaderProgram(const CoreGraphics::ShaderId shaderId, const CoreGraphics::ShaderFeature::Mask mask);
 
 	/// get shader program
 	AnyFX::VkProgram* GetProgram(const CoreGraphics::ShaderProgramId shaderProgramId);
@@ -132,10 +148,8 @@ private:
 	/// unload shader
 	void Unload(const Resources::ResourceId id) override;
 
-	typedef Util::Dictionary<uint32_t, Util::Array<VkDescriptorSetLayoutBinding>> SetBinding;
 	typedef Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBufferId> UniformBufferMap;
 	typedef Util::Dictionary<uint32_t, Util::Array<CoreGraphics::ConstantBufferId>> UniformBufferGroupMap;
-	typedef Util::Dictionary<CoreGraphics::ShaderFeature::Mask, CoreGraphics::ShaderProgramId> ProgramMap;
 
 #pragma pack(push, 16)
 	struct DescriptorSetBinding
@@ -154,31 +168,19 @@ private:
 
 	struct VkShaderSetupInfo
 	{
+		VkDevice dev;
 		Resources::ResourceName name;
 		CoreGraphics::ShaderIdentifier::Code id;
-		UniformBufferMap uniformBufferMap;
-		UniformBufferGroupMap uniformBufferGroupMap;
+		UniformBufferMap uniformBufferMap;				// uniform buffers shared by all shader states
+		UniformBufferGroupMap uniformBufferGroupMap;	// same as above but grouped
 
-		VkPipelineLayout pipelineLayout;
+		CoreGraphics::ResourcePipelineId pipelineLayout;
+		Util::FixedArray<CoreGraphics::ResourceTableId> tables;
 		VkPushConstantRange constantRangeLayout;
-		Util::Array<VkSampler> immutableSamplers;
-		Util::FixedArray<VkDescriptorSetLayout> descriptorSetLayouts;
-		SetBinding setBindings;
-		Util::FixedArray<VkDescriptorPool> setPools;
-		Util::FixedArray<VkDescriptorSet> sets;
+		Util::Array<CoreGraphics::SamplerId> immutableSamplers;
+		Util::Dictionary<Util::StringAtom, uint32_t> resourceIndexMap;
+		Util::FixedArray<std::pair<uint32_t, CoreGraphics::ResourceTableLayoutId>> descriptorSetLayouts;
 	};
-
-	struct VkShaderRuntimeInfo
-	{
-		CoreGraphics::ShaderFeature::Mask activeMask;
-		CoreGraphics::ShaderProgramId activeShaderProgram;
-		ProgramMap programMap;
-	};
-
-	struct VkShaderConstantReflection
-	{
-
-	};																
 
 	/// this member allocates shaders
 	Ids::IdAllocator<
@@ -188,12 +190,12 @@ private:
 		VkShaderProgramAllocator,					//3 variations
 		VkShaderStateAllocator						//4 the shader states, sorted by shader
 	> shaderAlloc;
-	__ImplementResourceAllocator(shaderAlloc);	
+	__ImplementResourceAllocatorTyped(shaderAlloc, ShaderIdType);	
 
 	//__ResourceAllocator(VkShader);
 	CoreGraphics::ShaderProgramId activeShaderProgram;
 	CoreGraphics::ShaderFeature::Mask activeMask;
-	Util::Dictionary<Ids::Id24, Ids::Id32> sharedStateMap;
+	Util::Dictionary<Ids::Id24, Ids::Id32> slicedStateMap;
 };
 
 //------------------------------------------------------------------------------
@@ -324,7 +326,7 @@ VkShaderPool::ShaderResourceSetRenderTexture(const CoreGraphics::ShaderConstantI
 {
 	VkShaderStateAllocator& stateAlloc = this->shaderAlloc.Get<4>(state.shaderId);
 	VkShaderConstantAllocator& alloc = stateAlloc.Get<3>(state.stateId);
-	SetRenderTexture(alloc.Get<0>(var.id), alloc.Get<1>(var.id), stateAlloc.Get<4>(state.stateId), texture);
+	SetRenderTexture(alloc.Get<0>(var.id), alloc.Get<1>(var.id), texture);
 }
 
 //------------------------------------------------------------------------------
@@ -335,7 +337,7 @@ VkShaderPool::ShaderResourceSetTexture(const CoreGraphics::ShaderConstantId var,
 {
 	VkShaderStateAllocator& stateAlloc = this->shaderAlloc.Get<4>(state.shaderId);
 	VkShaderConstantAllocator& alloc = stateAlloc.Get<3>(state.stateId);
-	SetTexture(alloc.Get<0>(var.id), alloc.Get<1>(var.id), stateAlloc.Get<4>(state.stateId), texture);
+	SetTexture(alloc.Get<0>(var.id), alloc.Get<1>(var.id), texture);
 }
 
 //------------------------------------------------------------------------------
@@ -346,7 +348,7 @@ VkShaderPool::ShaderResourceSetConstantBuffer(const CoreGraphics::ShaderConstant
 {
 	VkShaderStateAllocator& stateAlloc = this->shaderAlloc.Get<4>(state.shaderId);
 	VkShaderConstantAllocator& alloc = stateAlloc.Get<3>(state.stateId);
-	SetConstantBuffer(alloc.Get<1>(var.id), stateAlloc.Get<4>(state.stateId), buffer);
+	SetConstantBuffer(alloc.Get<1>(var.id), buffer);
 }
 
 //------------------------------------------------------------------------------
@@ -369,7 +371,7 @@ VkShaderPool::ShaderResourceSetReadWriteTexture(const CoreGraphics::ShaderConsta
 {
 	VkShaderStateAllocator& stateAlloc = this->shaderAlloc.Get<4>(state.shaderId);
 	VkShaderConstantAllocator& varAlloc = stateAlloc.Get<3>(state.stateId);
-	SetShaderReadWriteTexture(varAlloc.Get<1>(var.id), stateAlloc.Get<4>(state.stateId), tex);
+	SetShaderReadWriteTexture(varAlloc.Get<0>(var.id), varAlloc.Get<1>(var.id), tex);
 }
 
 //------------------------------------------------------------------------------
@@ -380,27 +382,7 @@ VkShaderPool::ShaderResourceSetReadWriteBuffer(const CoreGraphics::ShaderConstan
 {
 	VkShaderStateAllocator& stateAlloc = this->shaderAlloc.Get<4>(state.shaderId);
 	VkShaderConstantAllocator& varAlloc = stateAlloc.Get<3>(state.stateId);
-	SetShaderReadWriteBuffer(varAlloc.Get<1>(var.id), stateAlloc.Get<4>(state.stateId), buf);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const VkPipelineLayout
-VkShaderPool::GetPipelineLayout(const CoreGraphics::ShaderId id) const
-{
-	const VkShaderSetupInfo& setupInfo = this->shaderAlloc.Get<1>(id.allocId);
-	return setupInfo.pipelineLayout;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const VkDescriptorSetLayout
-VkShaderPool::GetDescriptorSetLayout(const CoreGraphics::ShaderId id, const IndexT group) const
-{
-	const VkShaderSetupInfo& setupInfo = this->shaderAlloc.Get<1>(id.allocId);
-	return setupInfo.descriptorSetLayouts[group];
+	SetShaderReadWriteBuffer(varAlloc.Get<1>(var.id), buf);
 }
 
 //------------------------------------------------------------------------------

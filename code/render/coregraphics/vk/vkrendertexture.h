@@ -37,7 +37,6 @@ struct VkRenderTextureLoadInfo
 	uint32_t mips;
 	uint32_t layers;
 	bool isWindow : 1;
-	bool dynamicSize : 1;
 	bool relativeSize : 1;
 	bool msaa : 1;
 	CoreGraphics::WindowId window;
@@ -50,6 +49,7 @@ struct VkRenderTextureRuntimeInfo
 {
 	VkImageView view;
 	uint32_t bind;
+	VkImageLayout layout;
 	CoreGraphics::TextureType type : 3;
 	bool inpass : 1;
 };
@@ -72,7 +72,8 @@ typedef Ids::IdAllocator<
 	VkRenderTextureLoadInfo,
 	VkRenderTextureRuntimeInfo,
 	VkRenderTextureMappingInfo,
-	VkRenderTextureWindowInfo
+	VkRenderTextureWindowInfo,
+	ImageLayout
 > VkRenderTextureAllocator;
 extern VkRenderTextureAllocator renderTextureAllocator;
 } // namespace Vulkan

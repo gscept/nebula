@@ -22,6 +22,7 @@ public:
 	void Run(const IndexT frameIndex);
 
 	CoreGraphics::BarrierId barrier;
+	CoreGraphicsQueueType queue;
 };
 
 } // namespace Frame2

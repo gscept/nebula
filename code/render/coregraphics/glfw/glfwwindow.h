@@ -31,7 +31,6 @@ struct VkSwapchainInfo
 {
 	VkFormat format;
 	VkColorSpaceKHR colorSpace;
-	VkSwapchainKHR swapchain;
 	VkSurfaceKHR surface;
 };
 
@@ -39,14 +38,13 @@ struct VkBackbufferInfo
 {
 	Util::FixedArray<VkImage> backbuffers;
 	Util::FixedArray<VkImageView> backbufferViews;
-	Util::FixedArray<VkSemaphore> backbufferSemaphores;
 	uint32_t numBackbuffers;
 };
 
 /// get surface
 const VkSurfaceKHR& GetSurface(const CoreGraphics::WindowId& id);
 /// setup Vulkan swapchain
-void SetupVulkanSwapchain(const CoreGraphics::WindowId& id, const CoreGraphics::DisplayMode& mode);
+void SetupVulkanSwapchain(const CoreGraphics::WindowId& id, const CoreGraphics::DisplayMode& mode, const Util::StringAtom& title);
 /// destroy Vulkan swapchain
 void DiscardVulkanSwapchain(const CoreGraphics::WindowId& id);
 /// perform a present
@@ -65,6 +63,7 @@ enum
 	GLFWDisplayModeField,
 	GLFWSwapFrameField,
 	GLFWSetupInfoField,
+	RenderTextureField,
 #if __VULKAN__
 	GLFWWindowSwapInfoField,
 	GLFWSwapChainField,
@@ -77,7 +76,8 @@ typedef Ids::IdAllocator<
 	  GLFWwindow*					
 	, CoreGraphics::DisplayMode		
 	, IndexT						
-	, WindowCreateInfo				
+	, WindowCreateInfo
+	, RenderTextureId
 #if __VULKAN__
 	, Vulkan::VkWindowSwapInfo		
 	, Vulkan::VkSwapchainInfo		

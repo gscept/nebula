@@ -44,7 +44,7 @@ using get_template_type_t = typename get_template_type<C>::type;
 
 /// unpacks allocations for each member in a tuble
 template<class...Ts, std::size_t...Is>
-void alloc_for_each_in_tuple(std::tuple<Ts...> & tuple, std::index_sequence<Is...>)
+void alloc_for_each_in_tuple(std::tuple<Ts...>& tuple, std::index_sequence<Is...>)
 {
 	using expander = int[];
 	(void)expander
@@ -56,9 +56,28 @@ void alloc_for_each_in_tuple(std::tuple<Ts...> & tuple, std::index_sequence<Is..
 
 /// entry point for above expansion function
 template<class...Ts>
-void alloc_for_each_in_tuple(std::tuple<Ts...> & tuple)
+void alloc_for_each_in_tuple(std::tuple<Ts...>& tuple)
 {
 	alloc_for_each_in_tuple(tuple, std::make_index_sequence<sizeof...(Ts)>());
+}
+
+/// unpacks allocations for each member in a tuble
+template<class...Ts, std::size_t...Is>
+void clear_for_each_in_tuple(std::tuple<Ts...>& tuple, std::index_sequence<Is...>)
+{
+	using expander = int[];
+	(void)expander
+	{
+		0,
+		(std::get<Is>(tuple).Clear(), 0)...
+	};
+}
+
+/// entry point for above expansion function
+template<class...Ts>
+void clear_for_each_in_tuple(std::tuple<Ts...>& tuple)
+{
+	clear_for_each_in_tuple(tuple, std::make_index_sequence<sizeof...(Ts)>());
 }
 
 /// get type of contained element in Util::Array stored in std::tuple
@@ -71,8 +90,31 @@ class IdAllocator
 public:
 	/// constructor
 	IdAllocator(uint32_t maxid = 0xFFFFFFFF, uint32_t grow = 512) : pool(maxid, grow), size(0) {};
+	/// move constructor
+	IdAllocator(IdAllocator<TYPES...>&& rhs)
+	{
+		this->objects = rhs.objects;
+		clear_for_each_in_tuple(rhs.objects);
+	}
+	/// copy constructor
+	IdAllocator(const IdAllocator<TYPES...>& rhs)
+	{
+		this->objects = rhs.objects;
+	}
 	/// destructor
 	~IdAllocator() {};
+
+	/// assign operator
+	void operator=(const IdAllocator<TYPES...>& rhs)
+	{
+		this->objects = rhs.objects;
+	}
+	/// move operator
+	void operator=(IdAllocator<TYPES...>&& rhs)
+	{
+		this->objects = rhs.objects;
+		clear_for_each_in_tuple(rhs.objects);
+	}
 
 	/// allocate a new resource, and generate new entries if required
 	Ids::Id32 AllocObject()
@@ -158,8 +200,31 @@ class IdAllocatorSafe
 public:
 	/// constructor
 	IdAllocatorSafe(uint32_t maxid = 0xFFFFFFFF, uint32_t grow = 512) : pool(maxid, grow), size(0), inBeginGet(false) {};
+	/// copy constructor
+	IdAllocatorSafe(const IdAllocatorSafe<TYPES...>& rhs)
+	{
+		this->objects = rhs.objects;
+	}
+	/// move operator
+	IdAllocatorSafe(IdAllocatorSafe<TYPES...>&& rhs)
+	{
+		this->objects = rhs.objects;
+		clear_for_each_in_tuple(rhs.objects);
+	}
 	/// destructor
 	~IdAllocatorSafe() {};
+
+	/// assign operator
+	void operator=(const IdAllocatorSafe<TYPES...>& rhs)
+	{
+		this->objects = rhs.objects;
+	}
+	/// move operator
+	void operator=(IdAllocatorSafe<TYPES...>&& rhs)
+	{
+		this->objects = rhs.objects;
+		clear_for_each_in_tuple(rhs.objects);
+	}
 
 	/// allocate a new resource, and generate new entries if required
 	Ids::Id32 AllocObject()

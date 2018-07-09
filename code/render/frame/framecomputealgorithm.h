@@ -18,18 +18,19 @@ public:
 	/// destructor
 	virtual ~FrameComputeAlgorithm();
 
-	/// setup operation
-	void Setup();
-	/// discard operation
-	void Discard();
-	/// run operation
-	void Run(const IndexT frameIndex);
+	struct CompiledImpl : public FrameOp::Compiled
+	{
+		void Run(const IndexT frameIndex);
+		void Discard();
+
+		std::function<void(IndexT)> func;
+	};
+
+	FrameOp::Compiled* AllocCompiled(Memory::ChunkAllocator<0xFFFF>& allocator);
 
 	Util::StringAtom funcName;
 	Algorithms::Algorithm* alg;
 private:
-	
-	std::function<void(IndexT)> func;
 };
 
 } // namespace Frame2

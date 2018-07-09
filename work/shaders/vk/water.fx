@@ -17,7 +17,7 @@
 #include "lib/tessellationparams.fxh"
 #include "lib/defaultsamplers.fxh"
 
-group(BATCH_GROUP) shared varblock WaterBlock [ bool DynamicOffset = true; ]
+group(BATCH_GROUP) shared varblock WaterBlock [ string Visibility = "DS|PS"; ]
 {
 
 	float DynamicTessellationFactor = 32.0f;

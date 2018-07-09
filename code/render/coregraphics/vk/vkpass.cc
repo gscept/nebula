@@ -4,7 +4,7 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "vkpass.h"
-#include "vkrenderdevice.h"
+#include "vkgraphicsdevice.h"
 #include "vktypes.h"
 #include "coregraphics/rendertexture.h"
 #include "coregraphics/config.h"
@@ -12,6 +12,7 @@
 #include "vkconstantbuffer.h"
 #include "vkrendertexture.h"
 #include "vkshader.h"
+#include "vkresourcetable.h"
 
 using namespace CoreGraphics;
 namespace Vulkan
@@ -69,6 +70,7 @@ using namespace Vulkan;
 const PassId
 CreatePass(const PassCreateInfo& info)
 {
+	n_assert(info.subpasses.Size() > 0);
 	Ids::Id32 id = passAllocator.AllocObject();
 	VkPassLoadInfo& loadInfo = passAllocator.Get<0>(id);
 	VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<1>(id);
@@ -76,27 +78,12 @@ CreatePass(const PassCreateInfo& info)
 	Util::Array<uint32_t>& subpassAttachmentCounts = passAllocator.Get<3>(id);
 
 	ShaderId sid = ShaderServer::Instance()->GetShader("shd:shared"_atm);
-	loadInfo.shaderState = ShaderCreateState(sid, { NEBULAT_PASS_GROUP }, false);
-	VkDescriptorSetLayout layout = shaderPool->GetDescriptorSetLayout(sid, NEBULAT_PASS_GROUP);
-	runtimeInfo.passPipelineLayout = shaderPool->GetPipelineLayout(sid);
 
 	loadInfo.colorAttachments = info.colorAttachments;
 	loadInfo.colorAttachmentClears = info.colorAttachmentClears;
 	loadInfo.depthStencilAttachment = info.depthStencilAttachment;
-	loadInfo.dev = VkRenderDevice::Instance()->GetCurrentDevice();
-	loadInfo.pool = VkRenderDevice::Instance()->GetCurrentDescriptorPool();
-
-	// create descriptor set used by our pass
-	VkDescriptorSetAllocateInfo descInfo =
-	{
-		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-		nullptr,
-		loadInfo.pool,
-		1,
-		&layout
-	};
-	VkResult res = vkAllocateDescriptorSets(loadInfo.dev, &descInfo, &runtimeInfo.passDescriptorSet);
-	n_assert(res == VK_SUCCESS);
+	loadInfo.dev = Vulkan::GetCurrentDevice();
+	loadInfo.pool = Vulkan::GetCurrentDescriptorPool();
 
 	// gather image views
 	uint32_t width = 0;
@@ -155,6 +142,7 @@ CreatePass(const PassCreateInfo& info)
 	subpassDepthStencils.Resize(info.subpasses.Size());
 	runtimeInfo.subpassViewports.Resize(info.subpasses.Size());
 	runtimeInfo.subpassRects.Resize(info.subpasses.Size());
+	runtimeInfo.subpassPipelineInfo.Resize(info.subpasses.Size());
 
 	for (i = 0; i < info.subpasses.Size(); i++)
 	{
@@ -172,6 +160,16 @@ CreatePass(const PassCreateInfo& info)
 		// resize rects
 		runtimeInfo.subpassViewports[i].Resize(subpass.attachments.Size());
 		runtimeInfo.subpassRects[i].Resize(subpass.attachments.Size());
+		runtimeInfo.subpassPipelineInfo[i] =
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+			nullptr,
+			0,
+			(uint32_t)runtimeInfo.subpassViewports[i].Size(),
+			runtimeInfo.subpassViewports[i].Begin(),
+			(uint32_t)runtimeInfo.subpassRects[i].Size(),
+			runtimeInfo.subpassRects[i].Begin()
+		};
 
 		// get references to fixed arrays
 		Util::FixedArray<VkAttachmentReference>& references = subpassReferences[i];
@@ -188,6 +186,7 @@ CreatePass(const PassCreateInfo& info)
 		// if subpass binds depth, the slot for the depth-stencil buffer is color attachments + 1
 		if (subpass.bindDepth)
 		{
+			n_assert(info.depthStencilAttachment != RenderTextureId::Invalid());
 			VkAttachmentReference& ds = subpassDepthStencils[i];
 			ds.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 			ds.attachment = info.colorAttachments.Size();
@@ -278,7 +277,7 @@ CreatePass(const PassCreateInfo& info)
 			vksubpass.preserveAttachmentCount = 0;
 		}
 
-		subpassAttachmentCounts.Append(vksubpass.inputAttachmentCount);
+		subpassAttachmentCounts.Append(vksubpass.colorAttachmentCount);
 	}
 
 	VkAttachmentLoadOp loadOps[] =
@@ -299,7 +298,7 @@ CreatePass(const PassCreateInfo& info)
 	attachments.Resize(info.colorAttachments.Size() + 1);
 	for (i = 0; i < info.colorAttachments.Size(); i++)
 	{
-		VkFormat fmt = VkTypes::AsVkFormat(RenderTextureGetPixelFormat(info.colorAttachments[i]));
+		VkFormat fmt = VkTypes::AsVkFramebufferFormat(RenderTextureGetPixelFormat(info.colorAttachments[i]));
 		VkAttachmentDescription& attachment = attachments[i];
 		IndexT loadIdx = info.colorAttachmentFlags[i] & Load ? 2 : info.colorAttachmentFlags[i] & Clear ? 1 : 0;
 		IndexT storeIdx = info.colorAttachmentFlags[i] & Store ? 1 : 0;
@@ -325,7 +324,7 @@ CreatePass(const PassCreateInfo& info)
 		attachment.flags = 0;
 		attachment.initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
 		attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-		attachment.format = VkTypes::AsVkFormat(RenderTextureGetPixelFormat(info.depthStencilAttachment));
+		attachment.format = VkTypes::AsVkFramebufferFormat(RenderTextureGetPixelFormat(info.depthStencilAttachment));
 		attachment.loadOp = loadOps[loadIdx];
 		attachment.storeOp = storeOps[storeIdx];
 		attachment.stencilLoadOp = loadOps[stencilLoadIdx];
@@ -347,7 +346,7 @@ CreatePass(const PassCreateInfo& info)
 		(uint32_t)subpassDeps.Size(),
 		subpassDeps.IsEmpty() ? nullptr : subpassDeps.Begin()
 	};
-	res = vkCreateRenderPass(loadInfo.dev, &rpinfo, nullptr, &loadInfo.pass);
+	VkResult res = vkCreateRenderPass(loadInfo.dev, &rpinfo, nullptr, &loadInfo.pass);
 	n_assert(res == VK_SUCCESS);
 
 	if (info.depthStencilAttachment != Ids::InvalidId32)
@@ -388,68 +387,49 @@ CreatePass(const PassCreateInfo& info)
 	runtimeInfo.viewportInfo.pViewports = loadInfo.viewports.Size() > 0 ? loadInfo.viewports.Begin() : 0;
 
 	// setup uniform buffer for render target information
-	ConstantBufferCreateInfo cbinfo = { true, loadInfo.shaderState, "PassBlock", 0, 1 };
+	ConstantBufferCreateInfo cbinfo = { true, sid, "PassBlock", 0, 1 };
 	loadInfo.passBlockBuffer = CreateConstantBuffer(cbinfo);
-	loadInfo.passBlockVar = ShaderStateGetConstant(loadInfo.shaderState, "PassBlock");
 	loadInfo.renderTargetDimensionsVar = ConstantBufferCreateShaderVariable(loadInfo.passBlockBuffer, 0, "RenderTargetDimensions");
-		//loadInfo.passBlockBuffer->GetVariableByName("RenderTargetDimensions");
 
-	VkWriteDescriptorSet write;
-	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	write.pNext = nullptr;
-	write.descriptorCount = 1;
-	write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	write.dstBinding = VkShaderGetVkShaderVariableBinding(loadInfo.shaderState, loadInfo.passBlockVar);
-	write.dstArrayElement = 0;
-	write.dstSet = runtimeInfo.passDescriptorSet;
+	CoreGraphics::ResourceTableLayoutId tableLayout = ShaderGetResourceTableLayout(sid, NEBULAT_PASS_GROUP);
+	runtimeInfo.passDescriptorSet = CreateResourceTable(ResourceTableCreateInfo{ tableLayout });
+	runtimeInfo.passPipelineLayout = ShaderGetResourcePipeline(sid);
 
-	VkDescriptorBufferInfo buf;
-	buf.buffer = ConstantBufferGetVk(loadInfo.passBlockBuffer);
-	buf.offset = 0;
-	buf.range = VK_WHOLE_SIZE;
-	write.pBufferInfo = &buf;
-	write.pImageInfo = nullptr;
-	write.pTexelBufferView = nullptr;
-
-	// update descriptor set with attachment
-	vkUpdateDescriptorSets(loadInfo.dev, 1, &write, 0, nullptr);
+	CoreGraphics::ResourceTableConstantBuffer write;
+	write.buf = loadInfo.passBlockBuffer;
+	write.offset = 0;
+	write.size = -1;
+	write.index = 0;
+	write.dynamicOffset = false;
+	write.texelBuffer = false;
+	write.slot = ConstantBufferGetSlot(loadInfo.passBlockBuffer);
+	ResourceTableSetConstantBuffer(runtimeInfo.passDescriptorSet, write);
 
 	// update descriptor set based on images attachments
-	const CoreGraphics::ShaderConstantId inputAttachmentsVar = ShaderStateGetConstant(loadInfo.shaderState, "InputAttachments");
+	IndexT inputAttachmentLocation = ShaderGetResourceSlot(sid, "InputAttachments");
 
 	// setup input attachments
 	Util::FixedArray<Math::float4> dimensions(info.colorAttachments.Size());
 	for (i = 0; i < info.colorAttachments.Size(); i++)
 	{
-		VkWriteDescriptorSet write;
-		write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		write.pNext = NULL;
-		write.descriptorCount = 1;
-		write.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-		write.dstBinding = VkShaderGetVkShaderVariableBinding(loadInfo.shaderState, inputAttachmentsVar);
-		write.dstArrayElement = i;
-		write.dstSet = runtimeInfo.passDescriptorSet;
-
-		VkDescriptorImageInfo img;
-		img.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-		img.imageView = RenderTextureGetVkImageView(info.colorAttachments[i]);
-		img.sampler = VK_NULL_HANDLE;
-		write.pImageInfo = &img;
-
-		// update descriptor set with attachment
-		vkUpdateDescriptorSets(loadInfo.dev, 1, &write, 0, NULL);
+		CoreGraphics::ResourceTableInputAttachment write;
+		write.tex = info.colorAttachments[i];
+		write.isDepth = false;
+		write.sampler = SamplerId::Invalid();
+		write.slot = inputAttachmentLocation;
+		write.index = i;
+		ResourceTableSetInputAttachment(runtimeInfo.passDescriptorSet, write);
 
 		// create dimensions float4
-		const CoreGraphics::TextureDimensions rtdims = RenderTextureGetDimensions(info.depthStencilAttachment);
+		const CoreGraphics::TextureDimensions rtdims = RenderTextureGetDimensions(info.colorAttachments[i]);
 		Math::float4& dims = dimensions[i];
 		dims.x() = (Math::scalar)rtdims.width;
 		dims.y() = (Math::scalar)rtdims.height;
 		dims.z() = 1 / dims.x();
 		dims.w() = 1 / dims.y();
 	}
-	ShaderConstantSetArray(loadInfo.renderTargetDimensionsVar, loadInfo.shaderState, dimensions.Begin(), dimensions.Size());
-	VkShaderStateSetDescriptorSet(loadInfo.shaderState, runtimeInfo.passDescriptorSet, NEBULAT_PASS_GROUP);
-	VkShaderStateSetShared(loadInfo.shaderState, true);
+	ConstantBufferArrayUpdate(loadInfo.passBlockBuffer, loadInfo.renderTargetDimensionsVar, dimensions.Begin(), dimensions.Size());
+	ResourceTableCommitChanges(runtimeInfo.passDescriptorSet);
 
 	// create framebuffer
 	VkFramebufferCreateInfo fbInfo =
@@ -500,7 +480,8 @@ DiscardPass(const PassId& id)
 	VkRenderPassBeginInfo& beginInfo = passAllocator.Get<2>(id.id24);
 
 	// destroy pass and our descriptor set
-	vkFreeDescriptorSets(loadInfo.dev, loadInfo.pool, 1, &runtimeInfo.passDescriptorSet);
+	DestroyResourceTable(runtimeInfo.passDescriptorSet);
+	DestroyConstantBuffer(loadInfo.passBlockBuffer);
 	vkDestroyRenderPass(loadInfo.dev, loadInfo.pass, NULL);
 	vkDestroyFramebuffer(loadInfo.dev, loadInfo.framebuffer, NULL);
 }
@@ -512,15 +493,30 @@ void
 PassBegin(const PassId& id)
 {
 	VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<1>(id.id24);
-	VkRenderDevice* dev = VkRenderDevice::Instance();
 
 	// bind descriptor set
 	static const uint32_t offset = 0;
-	dev->BindDescriptorsGraphics(&runtimeInfo.passDescriptorSet, runtimeInfo.passPipelineLayout, NEBULAT_PASS_GROUP, 1, &offset, 1, true);
+	BindDescriptorsGraphics(
+		&ResourceTableGetVkDescriptorSet(runtimeInfo.passDescriptorSet),
+		ResourcePipelineGetVk(runtimeInfo.passPipelineLayout), 
+		NEBULAT_PASS_GROUP, 
+		1, 
+		nullptr, 
+		0, 
+		true);
 
 	// update framebuffer pipeline info to next subpass
 	runtimeInfo.currentSubpassIndex = 0;
-	runtimeInfo.framebufferPipelineInfo.subpass = runtimeInfo.currentSubpassIndex;
+	runtimeInfo.framebufferPipelineInfo.subpass = 0;
+	runtimeInfo.framebufferPipelineInfo.pViewportState = &runtimeInfo.subpassPipelineInfo[0];
+
+	const Util::FixedArray<VkViewport>& viewports = runtimeInfo.subpassViewports[0];
+	SetViewports(viewports.Begin(), viewports.Size());
+
+	const Util::FixedArray<VkRect2D>& scissors = runtimeInfo.subpassRects[0];
+	SetScissorRects(scissors.Begin(), scissors.Size());
+
+	CoreGraphics::BeginPass(id);
 }
 
 //------------------------------------------------------------------------------
@@ -529,6 +525,7 @@ PassBegin(const PassId& id)
 void
 PassBeginBatch(const PassId& id, Frame::FrameBatchType::Code batch)
 {
+
 }
 
 //------------------------------------------------------------------------------
@@ -539,6 +536,14 @@ PassNextSubpass(const PassId& id)
 {
 	VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<1>(id.id24);
 	runtimeInfo.currentSubpassIndex++;
+	runtimeInfo.framebufferPipelineInfo.subpass = runtimeInfo.currentSubpassIndex;
+	runtimeInfo.framebufferPipelineInfo.pViewportState = &runtimeInfo.subpassPipelineInfo[runtimeInfo.currentSubpassIndex];
+
+	const Util::FixedArray<VkViewport>& viewports = runtimeInfo.subpassViewports[runtimeInfo.currentSubpassIndex];
+	SetViewports(viewports.Begin(), viewports.Size());
+
+	const Util::FixedArray<VkRect2D>& scissors = runtimeInfo.subpassRects[runtimeInfo.currentSubpassIndex];
+	SetScissorRects(scissors.Begin(), scissors.Size());
 }
 
 //------------------------------------------------------------------------------
@@ -547,6 +552,7 @@ PassNextSubpass(const PassId& id)
 void
 PassEndBatch(const PassId& id)
 {
+	
 }
 
 //------------------------------------------------------------------------------
@@ -555,7 +561,7 @@ PassEndBatch(const PassId& id)
 void
 PassEnd(const PassId& id)
 {
-
+	CoreGraphics::EndPass();
 }
 
 //------------------------------------------------------------------------------
@@ -639,7 +645,7 @@ PassWindowResizeCallback(const PassId& id)
 		dims.z() = 1 / dims.x();
 		dims.w() = 1 / dims.y();
 	}
-	ShaderConstantSetArray(loadInfo.renderTargetDimensionsVar, loadInfo.shaderState, dimensions.Begin(), dimensions.Size());
+	ConstantBufferArrayUpdate(loadInfo.passBlockBuffer, loadInfo.renderTargetDimensionsVar, dimensions.Begin(), dimensions.Size());
 }
 
 //------------------------------------------------------------------------------

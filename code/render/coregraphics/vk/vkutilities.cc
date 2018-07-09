@@ -4,9 +4,11 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "vkutilities.h"
-#include "vkrenderdevice.h"
+#include "vkgraphicsdevice.h"
 #include "coregraphics/config.h"
+#include "vkcmdbuffer.h"
 #include "vktypes.h"
+#include "vkscheduler.h"
 
 namespace Vulkan
 {
@@ -32,21 +34,13 @@ VkUtilities::~VkUtilities()
 /**
 */
 void
-VkUtilities::ImageLayoutTransition(CoreGraphicsQueueType queue, VkImageMemoryBarrier barrier)
+VkUtilities::ImageLayoutTransition(CoreGraphicsQueueType queue, VkPipelineStageFlags left, VkPipelineStageFlags right, VkImageMemoryBarrier barrier)
 {
-	VkCommandBuffer buf;
-	VkPipelineStageFlags flags;
-	switch (queue)
-	{
-	case GraphicsQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdDrawBuffer); flags = VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT; break;
-	case TransferQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdTransferBuffer); flags = VK_PIPELINE_STAGE_TRANSFER_BIT; break;
-	case ComputeQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdComputeBuffer); flags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT; break;
-	case SparseQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdSparseBuffer); flags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT; break;
-	}
+	VkCommandBuffer buf = Vulkan::GetMainBuffer(queue);
 
 	// execute command
 	vkCmdPipelineBarrier(buf,
-		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+		left, right,
 		0,
 		0, VK_NULL_HANDLE,
 		0, VK_NULL_HANDLE,
@@ -57,11 +51,11 @@ VkUtilities::ImageLayoutTransition(CoreGraphicsQueueType queue, VkImageMemoryBar
 /**
 */
 void
-VkUtilities::ImageLayoutTransition(VkCommandBuffer buf, VkImageMemoryBarrier barrier)
+VkUtilities::ImageLayoutTransition(VkCommandBuffer buf, VkPipelineStageFlags left, VkPipelineStageFlags right, VkImageMemoryBarrier barrier)
 {
 	// execute command
 	vkCmdPipelineBarrier(buf,
-		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+		left, right,
 		0,
 		0, VK_NULL_HANDLE,
 		0, VK_NULL_HANDLE,
@@ -72,7 +66,7 @@ VkUtilities::ImageLayoutTransition(VkCommandBuffer buf, VkImageMemoryBarrier bar
 /**
 */
 VkImageMemoryBarrier
-VkUtilities::ImageMemoryBarrier(const VkImage& img, VkImageSubresourceRange subres, VkImageLayout oldLayout, VkImageLayout newLayout)
+VkUtilities::ImageMemoryBarrier(const VkImage& img, VkImageSubresourceRange subres, VkAccessFlags left, VkAccessFlags right, VkImageLayout oldLayout, VkImageLayout newLayout)
 {
 	VkImageMemoryBarrier barrier;
 	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -80,62 +74,11 @@ VkUtilities::ImageMemoryBarrier(const VkImage& img, VkImageSubresourceRange subr
 	barrier.image = img;
 	barrier.oldLayout = oldLayout;
 	barrier.newLayout = newLayout;
-	barrier.srcAccessMask = 0;
-	barrier.dstAccessMask = 0;
+	barrier.srcAccessMask = left;
+	barrier.dstAccessMask = right;
 	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	barrier.subresourceRange = subres;
-	switch (oldLayout)
-	{
-	case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
-	case VK_IMAGE_LAYOUT_UNDEFINED:
-	case VK_IMAGE_LAYOUT_PREINITIALIZED:
-		barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT | VK_ACCESS_HOST_WRITE_BIT;
-		break;
-	case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
-		barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-		break;
-	case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
-		barrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-		break;
-	case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
-		barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-		break;
-	case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
-		barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
-		break;
-	case VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL:
-		barrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-		break;
-	}
-
-	switch (newLayout)
-	{
-	case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
-		barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_HOST_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
-		break;
-	case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
-		barrier.srcAccessMask = barrier.srcAccessMask | VK_ACCESS_TRANSFER_READ_BIT;
-		barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_HOST_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
-		break;
-	case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
-		barrier.srcAccessMask = barrier.srcAccessMask | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-		barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
-		break;
-	case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
-		barrier.dstAccessMask = barrier.dstAccessMask | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
-		break;
-	case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
-		barrier.srcAccessMask = barrier.srcAccessMask | VK_ACCESS_TRANSFER_WRITE_BIT | VK_ACCESS_HOST_WRITE_BIT;
-		barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-		break;
-	case VK_IMAGE_LAYOUT_PREINITIALIZED:
-		barrier.dstAccessMask = VK_ACCESS_HOST_WRITE_BIT;
-		break;
-	case VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL:
-		barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
-		break;
-	}
 	return barrier;
 }
 
@@ -143,32 +86,19 @@ VkUtilities::ImageMemoryBarrier(const VkImage& img, VkImageSubresourceRange subr
 /**
 */
 VkImageMemoryBarrier
-VkUtilities::ImageMemoryBarrier(const VkImage& img, VkImageSubresourceRange subres, CoreGraphicsQueueType fromQueue, CoreGraphicsQueueType toQueue, VkImageLayout layout)
+VkUtilities::ImageMemoryBarrier(const VkImage& img, VkImageSubresourceRange subres, CoreGraphicsQueueType fromQueue, CoreGraphicsQueueType toQueue, VkAccessFlags left, VkAccessFlags right, VkImageLayout oldLayout, VkImageLayout newLayout)
 {
-	uint32_t from;
-	switch (fromQueue)
-	{
-	case GraphicsQueueType: from = VkRenderDevice::Instance()->drawQueueFamily; break;
-	case ComputeQueueType: from = VkRenderDevice::Instance()->computeQueueFamily; break;
-	case TransferQueueType: from = VkRenderDevice::Instance()->transferQueueFamily; break;
-	}
-
-	uint32_t to;
-	switch (toQueue)
-	{
-	case GraphicsQueueType: to = VkRenderDevice::Instance()->drawQueueFamily; break;
-	case ComputeQueueType: to = VkRenderDevice::Instance()->computeQueueFamily; break;
-	case TransferQueueType: to = VkRenderDevice::Instance()->transferQueueFamily; break;
-	}
+	uint32_t from = Vulkan::GetQueueFamily(fromQueue);
+	uint32_t to = Vulkan::GetQueueFamily(toQueue);
 
 	VkImageMemoryBarrier barrier;
 	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
 	barrier.pNext = NULL;
 	barrier.image = img;
-	barrier.oldLayout = layout;
-	barrier.newLayout = layout;
-	barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
-	barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+	barrier.oldLayout = oldLayout;
+	barrier.newLayout = newLayout;
+	barrier.srcAccessMask = left;
+	barrier.dstAccessMask = right;
 	barrier.srcQueueFamilyIndex = from;
 	barrier.dstQueueFamilyIndex = to;
 	barrier.subresourceRange = subres;
@@ -207,21 +137,13 @@ VkUtilities::ChangeImageLayout(const VkImageMemoryBarrier& barrier, const CoreGr
 /**
 */
 void
-VkUtilities::ImageOwnershipChange(CoreGraphicsQueueType queue, VkImageMemoryBarrier barrier)
+VkUtilities::ImageOwnershipChange(CoreGraphicsQueueType queue, VkPipelineStageFlags left, VkPipelineStageFlags right, VkImageMemoryBarrier barrier)
 {
-	VkCommandBuffer buf;
-	VkPipelineStageFlags flags;
-	switch (queue)
-	{
-	case GraphicsQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdDrawBuffer); flags = VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT; break;
-	case TransferQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdTransferBuffer); flags = VK_PIPELINE_STAGE_TRANSFER_BIT; break;
-	case ComputeQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdComputeBuffer); flags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT; break;
-	case SparseQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdSparseBuffer); flags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT; break;
-	}
+	VkCommandBuffer buf = Vulkan::GetMainBuffer(queue);
 
 	// execute command
 	vkCmdPipelineBarrier(buf,
-		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+		left, right,
 		0,
 		0, VK_NULL_HANDLE,
 		0, VK_NULL_HANDLE,
@@ -234,14 +156,7 @@ VkUtilities::ImageOwnershipChange(CoreGraphicsQueueType queue, VkImageMemoryBarr
 void
 VkUtilities::ImageColorClear(const VkImage& image, const CoreGraphicsQueueType queue, VkImageLayout layout, VkClearColorValue clearValue, VkImageSubresourceRange subres)
 {
-	VkCommandBuffer buf;
-	switch (queue)
-	{
-	case GraphicsQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdDrawBuffer); break;
-	case TransferQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdTransferBuffer); break;
-	case ComputeQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdComputeBuffer); break;
-	case SparseQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdSparseBuffer); break;
-	}
+	VkCommandBuffer buf = Vulkan::GetMainBuffer(queue);
 	vkCmdClearColorImage(buf, image, layout, &clearValue, 1, &subres);
 }
 
@@ -251,14 +166,7 @@ VkUtilities::ImageColorClear(const VkImage& image, const CoreGraphicsQueueType q
 void
 VkUtilities::ImageDepthStencilClear(const VkImage& image, const CoreGraphicsQueueType queue, VkImageLayout layout, VkClearDepthStencilValue clearValue, VkImageSubresourceRange subres)
 {
-	VkCommandBuffer buf;
-	switch (queue)
-	{
-	case GraphicsQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdDrawBuffer); break;
-	case TransferQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdTransferBuffer); break;
-	case ComputeQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdComputeBuffer); break;
-	case SparseQueueType: buf = CommandBufferGetVk(VkRenderDevice::mainCmdSparseBuffer); break;
-	}
+	VkCommandBuffer buf = Vulkan::GetMainBuffer(queue);
 	vkCmdClearDepthStencilImage(buf, image, layout, &clearValue, 1, &subres);
 }
 
@@ -339,7 +247,7 @@ VkUtilities::AllocateImageMemory(const VkDevice dev, const VkImage& img, VkDevic
 VkResult
 VkUtilities::GetMemoryType(uint32_t bits, VkMemoryPropertyFlags flags, uint32_t& index)
 {
-	VkPhysicalDeviceMemoryProperties props = VkRenderDevice::Instance()->memoryProps;
+	VkPhysicalDeviceMemoryProperties props = Vulkan::GetMemoryProperties();
 	for (uint32_t i = 0; i < VK_MAX_MEMORY_TYPES; i++)
 	{
 		if ((bits & 1) == 1)
@@ -367,7 +275,7 @@ VkUtilities::BufferUpdate(const VkBuffer& buf, VkDeviceSize offset, VkDeviceSize
 	{
 		const uint8_t* ptr = (const uint8_t*)data + totalOffset;
 		VkDeviceSize uploadSize = totalSize < 65536 ? totalSize : 65536;
-		vkCmdUpdateBuffer(CommandBufferGetVk(VkRenderDevice::mainCmdTransferBuffer), buf, totalOffset, uploadSize, (const uint32_t*)ptr);
+		vkCmdUpdateBuffer(Vulkan::GetMainBuffer(TransferQueueType), buf, totalOffset, uploadSize, (const uint32_t*)ptr);
 		totalSize -= uploadSize;
 		totalOffset += uploadSize;
 	}
@@ -397,9 +305,10 @@ VkUtilities::BufferUpdate(VkCommandBuffer cmd, const VkBuffer& buf, VkDeviceSize
 void
 VkUtilities::ImageUpdate(const VkImage& img, const VkImageCreateInfo& info, uint32_t mip, uint32_t face, VkDeviceSize size, uint32_t* data)
 {
-	VkDevice dev = VkRenderDevice::Instance()->GetCurrentDevice();
+	VkDevice dev = Vulkan::GetCurrentDevice();
 
 	// create transfer buffer
+	const uint32_t qfamily = Vulkan::GetQueueFamily(TransferQueueType);
 	VkBufferCreateInfo bufInfo =
 	{
 		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
@@ -409,7 +318,7 @@ VkUtilities::ImageUpdate(const VkImage& img, const VkImageCreateInfo& info, uint
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 		VK_SHARING_MODE_EXCLUSIVE,
 		1,
-		&VkRenderDevice::Instance()->transferQueueFamily
+		&qfamily
 	};
 	VkBuffer buf;
 	vkCreateBuffer(dev, &bufInfo, NULL, &buf);
@@ -435,7 +344,7 @@ VkUtilities::ImageUpdate(const VkImage& img, const VkImageCreateInfo& info, uint
 	copy.imageExtent = info.extent;
 	copy.imageOffset = { 0, 0, 0 };
 	copy.imageSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, mip, face, 1 };
-	vkCmdCopyBufferToImage(CommandBufferGetVk(VkRenderDevice::mainCmdTransferBuffer), buf, img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
+	vkCmdCopyBufferToImage(Vulkan::GetMainBuffer(TransferQueueType), buf, img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
 	
 	// get scheduler
 	VkScheduler* scheduler = VkScheduler::Instance();
@@ -464,7 +373,7 @@ VkUtilities::ImageUpdate(const VkImage& img, const VkImageCreateInfo& info, uint
 void
 VkUtilities::ReadImage(const VkImage tex, CoreGraphics::PixelFormat::Code format, CoreGraphics::TextureDimensions dims, CoreGraphics::TextureType type, VkImageCopy copy, uint32_t& outMemSize, VkDeviceMemory& outMem, VkBuffer& outBuffer)
 {
-	VkDevice dev = VkRenderDevice::Instance()->GetCurrentDevice();
+	VkDevice dev = Vulkan::GetCurrentDevice();
 	CoreGraphics::CmdBufferId cmdBuf = VkUtilities::BeginImmediateTransfer();
 
 	// find format of equal size so that we can decompress later
@@ -527,11 +436,11 @@ VkUtilities::ReadImage(const VkImage tex, CoreGraphics::PixelFormat::Code format
 
 	// perform update of buffer, and stage a copy of buffer data to image
 	VkCommandBuffer cbuf = CommandBufferGetVk(cmdBuf);
-	VkUtilities::ImageLayoutTransition(cbuf, VkUtilities::ImageMemoryBarrier(img, dstSubres, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
-	VkUtilities::ImageLayoutTransition(cbuf, VkUtilities::ImageMemoryBarrier(tex, srcSubres, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL));
+	VkUtilities::ImageLayoutTransition(cbuf, VkTypes::AsVkPipelineFlags(CoreGraphics::BarrierDependency::Host), VkTypes::AsVkPipelineFlags(CoreGraphics::BarrierDependency::Transfer), VkUtilities::ImageMemoryBarrier(img, dstSubres, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
+	VkUtilities::ImageLayoutTransition(cbuf, VkTypes::AsVkPipelineFlags(CoreGraphics::BarrierDependency::AllGraphicsShaders), VkTypes::AsVkPipelineFlags(CoreGraphics::BarrierDependency::Transfer), VkUtilities::ImageMemoryBarrier(tex, srcSubres, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL));
 	vkCmdCopyImage(cbuf, tex, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
-	VkUtilities::ImageLayoutTransition(cbuf, VkUtilities::ImageMemoryBarrier(tex, srcSubres, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
-	VkUtilities::ImageLayoutTransition(cbuf, VkUtilities::ImageMemoryBarrier(img, dstSubres, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL));
+	VkUtilities::ImageLayoutTransition(cbuf, VkTypes::AsVkPipelineFlags(CoreGraphics::BarrierDependency::Transfer), VkTypes::AsVkPipelineFlags(CoreGraphics::BarrierDependency::AllGraphicsShaders), VkUtilities::ImageMemoryBarrier(tex, srcSubres, VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_COLOR_ATTACHMENT_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+	VkUtilities::ImageLayoutTransition(cbuf, VkTypes::AsVkPipelineFlags(CoreGraphics::BarrierDependency::Transfer), VkTypes::AsVkPipelineFlags(CoreGraphics::BarrierDependency::Transfer), VkUtilities::ImageMemoryBarrier(img, dstSubres, VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL));
 
 	VkBufferCreateInfo bufInfo =
 	{
@@ -566,8 +475,8 @@ VkUtilities::ReadImage(const VkImage tex, CoreGraphics::PixelFormat::Code format
 	VkUtilities::EndImmediateTransfer(cmdBuf);
 
 	// delete image
-	vkFreeMemory(dev, imgMem, NULL);
-	vkDestroyImage(dev, img, NULL);
+	vkFreeMemory(dev, imgMem, nullptr);
+	vkDestroyImage(dev, img, nullptr);
 
 	outBuffer = buf;
 	outMem = bufMem;
@@ -621,28 +530,27 @@ VkUtilities::EndImmediateTransfer(CoreGraphics::CmdBufferId cmdBuf)
 	VkSubmitInfo submit =
 	{
 		VK_STRUCTURE_TYPE_SUBMIT_INFO,
-		NULL,
-		0, NULL, NULL,
+		nullptr,
+		0, nullptr, nullptr,
 		1, &buf,
-		0, NULL
+		0, nullptr
 	};
 
 	VkFenceCreateInfo fence =
 	{
 		VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-		NULL,
+		nullptr,
 		0
 	};
 
-
-	VkDevice dev = VkRenderDevice::Instance()->GetCurrentDevice();
+	VkDevice dev = Vulkan::GetCurrentDevice();
 
 	// create a fence we can wait for, and execute this very tiny command buffer
 	VkResult res;
 	VkFence sync;
-	res = vkCreateFence(dev, &fence, NULL, &sync);
+	res = vkCreateFence(dev, &fence, nullptr, &sync);
 	n_assert(res == VK_SUCCESS);
-	res = vkQueueSubmit(VkRenderDevice::Instance()->GetQueue(VkSubContextHandler::DrawContextType), 1, &submit, sync);
+	res = vkQueueSubmit(Vulkan::GetCurrentQueue(GraphicsQueueType), 1, &submit, sync);
 	n_assert(res == VK_SUCCESS);
 
 	// wait for fences, this waits for our commands to finish
@@ -652,7 +560,7 @@ VkUtilities::EndImmediateTransfer(CoreGraphics::CmdBufferId cmdBuf)
 	DestroyCmdBuffer(cmdBuf);
 
 	// cleanup fence, buffer and buffer memory
-	vkDestroyFence(dev, sync, NULL);
+	vkDestroyFence(dev, sync, nullptr);
 }
 
 } // namespace Vulkan

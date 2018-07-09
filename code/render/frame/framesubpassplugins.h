@@ -25,8 +25,15 @@ public:
 	void Setup();
 	/// discard operation
 	void Discard();
-	/// run plugin pass
-	void Run(const IndexT frameIndex);
+
+	struct CompiledImpl : public FrameOp::Compiled
+	{
+		void Run(const IndexT frameIndex);
+
+		Util::StringAtom pluginFilter;
+	};
+
+	FrameOp::Compiled* AllocCompiled(Memory::ChunkAllocator<0xFFFF>& allocator);
 private:
 	Util::StringAtom pluginFilter;
 	//Ptr<RenderModules::RTPluginRegistry> pluginRegistry;

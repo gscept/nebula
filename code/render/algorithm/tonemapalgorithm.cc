@@ -5,7 +5,7 @@
 #include "render/stdneb.h"
 #include "tonemapalgorithm.h"
 #include "coregraphics/shaderserver.h"
-#include "coregraphics/renderdevice.h"
+#include "coregraphics/graphicsdevice.h"
 #include "framesync/framesynctimer.h"
 
 using namespace CoreGraphics;
@@ -45,8 +45,7 @@ TonemapAlgorithm::Setup()
 		ColorAttachment,
 		2, 2, 1,
 		1, 1,
-		0.0f, 0.0f, 0.0f, 
-		false, false, false, false
+		false, false, false
 	};
 	this->downsample2x2 = CreateRenderTexture(rtinfo);
 
@@ -55,9 +54,6 @@ TonemapAlgorithm::Setup()
 	rtinfo.height = 1;
 	rtinfo.format = RenderTextureGetPixelFormat(this->renderTextures[1]);
 	this->copy = CreateRenderTexture(rtinfo);
-
-	// get render device
-	CoreGraphics::RenderDevice* dev = CoreGraphics::RenderDevice::Instance();
 
 	// create shader
 	this->shader = ShaderGet("shd:averagelum");
@@ -70,30 +66,29 @@ TonemapAlgorithm::Setup()
 	ShaderResourceSetRenderTexture(this->colorvar, this->tonemapShader, this->downsample2x2);
 	this->fsq.Setup(2, 2);
 
-
 	// begin by copying and mipping down to a 2x2 texture
 	this->AddFunction("Downsample", Algorithm::Compute, [this](IndexT)
 	{
-		RenderDevice::Instance()->Blit(this->renderTextures[0], Math::rectangle<int>(0, 0, 512, 512), 0, this->downsample2x2, Math::rectangle<int>(0, 0, 2, 2), 0);
+		CoreGraphics::Blit(this->renderTextures[0], Math::rectangle<int>(0, 0, 512, 512), 0, this->downsample2x2, Math::rectangle<int>(0, 0, 2, 2), 0);
 	});
 
 	// this pass calculates tonemapping from 2x2 cluster down to single pixel, called from the script
-	this->AddFunction("AverageLum", Algorithm::Graphics, [this, dev](IndexT)
+	this->AddFunction("AverageLum", Algorithm::Graphics, [this](IndexT)
 	{
 		Timing::Time time = FrameSync::FrameSyncTimer::Instance()->GetFrameTime();
-		ShaderProgramBind(this->program);
-		dev->BeginBatch(Frame::FrameBatchType::System);
+		CoreGraphics::SetShaderProgram(this->program);
+		CoreGraphics::BeginBatch(Frame::FrameBatchType::System);
 		this->fsq.ApplyMesh();
 		ShaderConstantSet(this->timevar, this->tonemapShader, (float)time);
-		ShaderStateApply(this->tonemapShader);
+		CoreGraphics::SetShaderState(this->tonemapShader);
 		this->fsq.Draw();
-		dev->EndBatch();
+		CoreGraphics::EndBatch();
 	});
 
 	// last pass, copy from render target to copy
 	this->AddFunction("Copy", Algorithm::Compute, [this](IndexT)
 	{
-		RenderDevice::Instance()->Copy(this->renderTextures[1], Math::rectangle<int>(0, 0, 1, 1), this->copy, Math::rectangle<int>(0, 0, 1, 1));
+		CoreGraphics::Copy(this->renderTextures[1], Math::rectangle<int>(0, 0, 1, 1), this->copy, Math::rectangle<int>(0, 0, 1, 1));
 	});
 }
 

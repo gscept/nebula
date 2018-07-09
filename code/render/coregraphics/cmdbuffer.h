@@ -16,7 +16,8 @@ enum CmdBufferUsage
 	CmdCompute,
 	CmdTransfer,		// CPU GPU data transfer calls
 	CmdSparse,			// Sparse binding calls
-	InvalidCmdUsage
+	InvalidCmdUsage,
+	NumCmdBufferUsages = InvalidCmdUsage
 };
 
 struct CmdBufferCreateInfo

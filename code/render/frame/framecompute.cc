@@ -4,7 +4,7 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "framecompute.h"
-#include "coregraphics/renderdevice.h"
+#include "coregraphics/graphicsdevice.h"
 
 using namespace CoreGraphics;
 namespace Frame
@@ -30,30 +30,42 @@ FrameCompute::~FrameCompute()
 //------------------------------------------------------------------------------
 /**
 */
-void
+void 
 FrameCompute::Discard()
 {
-	FrameOp::Discard();
+	ShaderDestroyState(this->state);
 	this->program = ShaderProgramId::Invalid();
-	this->state = ShaderStateId::Invalid();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+FrameOp::Compiled*
+FrameCompute::AllocCompiled(Memory::ChunkAllocator<0xFFFF>& allocator)
+{
+	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
+	ret->program = this->program;
+	ret->state = this->state;
+	ret->x = this->x;
+	ret->y = this->y;
+	ret->z = this->z;
+	return ret;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-FrameCompute::Run(const IndexT frameIndex)
+FrameCompute::CompiledImpl::Run(const IndexT frameIndex)
 {
 	n_assert(this->program != ShaderProgramId::Invalid());
 	n_assert(this->state != ShaderStateId::Invalid());
 
-	RenderDevice* dev = RenderDevice::Instance();
-
-	ShaderProgramBind(this->program);
-	ShaderStateApply(this->state);
+	CoreGraphics::SetShaderProgram(this->program);
+	CoreGraphics::SetShaderState(this->state);
 
 	// compute
-	dev->Compute(this->x, this->y, this->z);
+	CoreGraphics::Compute(this->x, this->y, this->z);
 }
 
 } // namespace Frame2

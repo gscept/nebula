@@ -16,8 +16,13 @@
 #include "stage.h"
 #include "graphicsentity.h"
 #include "visibility/visibilityserver.h"
-#include "coregraphics/renderdevice.h"
+#include "coregraphics/graphicsdevice.h"
 #include "coregraphics/displaydevice.h"
+#include "coregraphics/shaderserver.h"
+#include "coregraphics/transformdevice.h"
+#include "coregraphics/shaperenderer.h"
+#include "coregraphics/textrenderer.h"
+#include "frame/frameserver.h"
 #include "debug/debughandler.h"
 
 namespace Graphics
@@ -48,7 +53,7 @@ public:
 	bool IsValidGraphicsEntity(const GraphicsEntityId id);
 
 	/// create a new view
-	Ptr<View> CreateView(const Util::StringAtom& framescript);
+	Ptr<View> CreateView(const Util::StringAtom& name, const IO::URI& framescript);
 	/// discard view
 	void DiscardView(const Ptr<View>& view);
 	/// get current view
@@ -74,7 +79,6 @@ private:
 	Util::Array<Ptr<GraphicsContext>> contexts;
 	Ptr<Visibility::VisibilityServer> visServer;
 
-
 	Util::Array<Ptr<Stage>> stages;
 	Util::Array<Ptr<View>> views;
 	CoreGraphics::BatchGroup batchGroupRegistry;
@@ -82,7 +86,13 @@ private:
 	Ptr<View> currentView;
 
 	Ptr<CoreGraphics::DisplayDevice> displayDevice;
-	Ptr<CoreGraphics::RenderDevice> renderDevice;
+	bool graphicsDevice;
+	Ptr<CoreGraphics::ShaderServer> shaderServer;
+	Ptr<Materials::MaterialServer> materialServer;
+	Ptr<CoreGraphics::TransformDevice> transformDevice;
+	Ptr<CoreGraphics::ShapeRenderer> shapeRenderer;
+	Ptr<CoreGraphics::TextRenderer> textRenderer;
+	Ptr<Frame::FrameServer> frameServer;
 	Ptr<Debug::DebugHandler> debugHandler;
 
 	bool isOpen;

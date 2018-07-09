@@ -58,9 +58,9 @@ public:
 	virtual ~VkScheduler();
 
 	/// push image layout change
-	void PushImageLayoutTransition(CoreGraphicsQueueType queue, VkImageMemoryBarrier barrier);
+	void PushImageLayoutTransition(CoreGraphicsQueueType queue, CoreGraphics::BarrierDependency left, CoreGraphics::BarrierDependency right, VkImageMemoryBarrier barrier);
 	/// push transition image ownership transition
-	void PushImageOwnershipChange(CoreGraphicsQueueType queue, VkImageMemoryBarrier barrier);
+	void PushImageOwnershipChange(CoreGraphicsQueueType queue, CoreGraphics::BarrierDependency left, CoreGraphics::BarrierDependency right, VkImageMemoryBarrier barrier);
 	/// push image color clear
 	void PushImageColorClear(const VkImage& image, const CoreGraphicsQueueType queue, VkImageLayout layout, VkClearColorValue clearValue, VkImageSubresourceRange subres);
 	/// push image depth stencil clear
@@ -70,6 +70,8 @@ public:
 
 	/// execute stacked commands
 	void ExecuteCommandPass(const CommandPass& pass);
+	/// set device to be used by this scheduler
+	void SetDevice(const VkDevice dev);
 
 	/// begin new cycle for all queues
 	void Begin();
@@ -80,14 +82,20 @@ public:
 	/// end cycle for computes
 	void EndComputes();
 
+	/// discard scheduler
+	void Discard();
+
 private:
 
 	/// push command to sheduler
 	void PushCommand(const VkDeferredCommand& cmd, const CommandPass& pass);
 
-
-	friend class VkRenderDevice;
 	friend class VkUtilities;
+
+	friend void	BindDescriptorsGraphics(const VkDescriptorSet* descriptors, const VkPipelineLayout & layout, uint32_t baseSet, uint32_t setCount, const uint32_t* offsets, uint32_t offsetCount, bool shared);
+	friend void	BindDescriptorsCompute(const VkDescriptorSet* descriptors, const VkPipelineLayout & layout, uint32_t baseSet, uint32_t setCount, const uint32_t* offsets, uint32_t offsetCount);
+	friend void	EndDrawThreads();
+	friend void	EndDrawSubpass();
 
 	bool putTransferFenceThisFrame;
 	bool putSparseFenceThisFrame;
@@ -100,4 +108,15 @@ private:
 	Util::Dictionary<VkFence, Util::Array<VkDeferredCommand>> computeFenceCommands;
 	Util::Dictionary<VkFence, Util::Array<VkDeferredCommand>> sparseFenceCommands;
 };
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+VkScheduler::SetDevice(const VkDevice dev)
+{
+	this->dev = dev;
+}
+
 } // namespace Vulkan

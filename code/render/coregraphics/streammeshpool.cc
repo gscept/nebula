@@ -9,7 +9,7 @@
 #include "coregraphics/memoryindexbufferpool.h"
 #include "coregraphics/memoryvertexbufferpool.h"
 #include "coregraphics/memorymeshpool.h"
-#include "coregraphics/renderdevice.h"
+#include "coregraphics/graphicsdevice.h"
 #include "streammeshpool.h"
 
 namespace CoreGraphics
@@ -48,17 +48,17 @@ StreamMeshPool::LoadFromStream(const Resources::ResourceId id, const Util::Strin
 #if NEBULA3_LEGACY_SUPPORT
 	if (resIdExt == "nvx2")
 	{
-		return this->SetupMeshFromNvx2(stream, id.allocId);
+		return this->SetupMeshFromNvx2(stream, id);
 	}
 	else
 #endif
 		if (resIdExt == "nvx3")
 		{
-			return this->SetupMeshFromNvx3(stream, id.allocId);
+			return this->SetupMeshFromNvx3(stream, id);
 		}
 		else if (resIdExt == "n3d3")
 		{
-			return this->SetupMeshFromN3d3(stream, id.allocId);
+			return this->SetupMeshFromN3d3(stream, id);
 		}
 		else
 		{
@@ -76,8 +76,8 @@ StreamMeshPool::Unload(const Resources::ResourceId id)
 	n_assert(id != Ids::InvalidId24);
 	const MeshCreateInfo& msh = meshPool->GetSafe<0>(id.allocId);
 
-	if (msh.indexBuffer != IndexBufferId::Invalid()) CoreGraphics::iboPool->Unload(msh.indexBuffer.allocId);
-	if (msh.vertexBuffer != VertexBufferId::Invalid()) CoreGraphics::vboPool->Unload(msh.vertexBuffer.allocId);
+	if (msh.indexBuffer != IndexBufferId::Invalid()) CoreGraphics::iboPool->Unload(msh.indexBuffer.AllocId());
+	if (msh.vertexBuffer != VertexBufferId::Invalid()) CoreGraphics::vboPool->Unload(msh.vertexBuffer.AllocId());
 }
 
 //------------------------------------------------------------------------------
@@ -104,7 +104,7 @@ StreamMeshPool::DeallocObject(const Resources::ResourceUnknownId id)
 */
 #if NEBULA3_LEGACY_SUPPORT
 Resources::ResourcePool::LoadStatus
-StreamMeshPool::SetupMeshFromNvx2(const Ptr<Stream>& stream, const Ids::Id24 res)
+StreamMeshPool::SetupMeshFromNvx2(const Ptr<Stream>& stream, const Resources::ResourceId res)
 {
 	n_assert(stream.isvalid());
 	Ptr<Legacy::Nvx2StreamReader> nvx2Reader = Legacy::Nvx2StreamReader::Create();
@@ -118,7 +118,7 @@ StreamMeshPool::SetupMeshFromNvx2(const Ptr<Stream>& stream, const Ids::Id24 res
 	{
 		meshPool->EnterGet();
 		MeshCreateInfo& msh = meshPool->Get<0>(res);
-		n_assert(this->GetState(res) == Resources::Resource::Loaded);
+		n_assert(this->GetState(res) == Resources::Resource::Pending);
 		msh.vertexBuffer = nvx2Reader->GetVertexBuffer();
 		msh.indexBuffer = nvx2Reader->GetIndexBuffer();
 		msh.topology = PrimitiveTopology::TriangleList;
@@ -138,7 +138,7 @@ StreamMeshPool::SetupMeshFromNvx2(const Ptr<Stream>& stream, const Ids::Id24 res
 	native binary mesh file format).
 */
 Resources::ResourcePool::LoadStatus
-StreamMeshPool::SetupMeshFromNvx3(const Ptr<Stream>& stream, const Ids::Id24 res)
+StreamMeshPool::SetupMeshFromNvx3(const Ptr<Stream>& stream, const Resources::ResourceId res)
 {
 	// FIXME!
 	n_error("StreamMeshPool::SetupMeshFromNvx3() not yet implemented");
@@ -151,7 +151,7 @@ StreamMeshPool::SetupMeshFromNvx3(const Ptr<Stream>& stream, const Ids::Id24 res
 	native ascii mesh file format).
 */
 Resources::ResourcePool::LoadStatus
-StreamMeshPool::SetupMeshFromN3d3(const Ptr<Stream>& stream, const Ids::Id24 res)
+StreamMeshPool::SetupMeshFromN3d3(const Ptr<Stream>& stream, const Resources::ResourceId res)
 {
 	// FIXME!
 	n_error("StreamMeshPool::SetupMeshFromN3d3() not yet implemented");
@@ -168,11 +168,11 @@ StreamMeshPool::MeshBind(const Resources::ResourceId id)
 	const MeshCreateInfo& msh = meshPool->Get<0>(id);
 
 	// bind vbo, and optional ibo
-	CoreGraphics::RenderDevice::Instance()->SetPrimitiveTopology(msh.topology);
-	CoreGraphics::VertexLayoutBind(msh.vertexLayout);
-	CoreGraphics::VertexBufferBind(msh.vertexBuffer, 0, 0);
+	CoreGraphics::SetPrimitiveTopology(msh.topology);
+	CoreGraphics::SetVertexLayout(msh.vertexLayout);
+	CoreGraphics::SetStreamVertexBuffer(0, msh.vertexBuffer, 0);
 	if (msh.indexBuffer != Ids::InvalidId64)
-		CoreGraphics::IndexBufferBind(msh.indexBuffer, 0);
+		CoreGraphics::SetIndexBuffer(msh.indexBuffer, 0);
 
 	meshPool->LeaveGet();
 	this->activeMesh = id;
@@ -187,7 +187,7 @@ StreamMeshPool::BindPrimitiveGroup(const IndexT primgroup)
 	n_assert(this->activeMesh != Ids::InvalidId24);
 	meshPool->EnterGet();
 	const MeshCreateInfo& msh = meshPool->Get<0>(this->activeMesh);
-	RenderDevice::Instance()->SetPrimitiveGroup(msh.primitiveGroups[primgroup]);
+	CoreGraphics::SetPrimitiveGroup(msh.primitiveGroups[primgroup]);
 	meshPool->LeaveGet();
 }
 

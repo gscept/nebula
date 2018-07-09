@@ -4,7 +4,7 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "framesubpassfullscreeneffect.h"
-#include "coregraphics/renderdevice.h"
+#include "coregraphics/graphicsdevice.h"
 #include "coregraphics/shaderserver.h"
 
 using namespace CoreGraphics;
@@ -51,27 +51,39 @@ FrameSubpassFullscreenEffect::Discard()
 
 	this->fsq.Discard();
 	this->tex = RenderTextureId::Invalid();
+	CoreGraphics::ShaderDestroyState(this->shaderState);
 	this->shaderState = ShaderStateId::Invalid();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-void
-FrameSubpassFullscreenEffect::Run(const IndexT frameIndex)
+FrameOp::Compiled*
+FrameSubpassFullscreenEffect::AllocCompiled(Memory::ChunkAllocator<0xFFFF>& allocator)
 {
-	RenderDevice* renderDevice = RenderDevice::Instance();
-	ShaderServer* shaderServer = ShaderServer::Instance();
+	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
+	ret->fsq = this->fsq;
+	ret->program = this->program;
+	ret->shaderState = this->shaderState;
+	ShaderStateCommit(ret->shaderState);
+	return ret;
+}
 
+//------------------------------------------------------------------------------
+/**
+*/
+void
+FrameSubpassFullscreenEffect::CompiledImpl::Run(const IndexT frameIndex)
+{
 	// activate shader
-	ShaderProgramBind(this->program);
+	CoreGraphics::SetShaderProgram(this->program);
 
 	// draw
-	renderDevice->BeginBatch(FrameBatchType::System);
+	CoreGraphics::BeginBatch(FrameBatchType::System);
 	this->fsq.ApplyMesh();
-	ShaderStateApply(this->shaderState);
+	CoreGraphics::SetShaderState(this->shaderState);
 	this->fsq.Draw();
-	renderDevice->EndBatch();
+	CoreGraphics::EndBatch();
 }
 
 } // namespace Frame2

@@ -27,9 +27,9 @@ struct EventCreateInfo
 
 	BarrierDependency leftDependency;
 	BarrierDependency rightDependency;
-	Util::Array<std::tuple<RenderTextureId, BarrierAccess, BarrierAccess>> renderTextureBarriers;
+	Util::Array<std::tuple<RenderTextureId, ImageSubresourceInfo, ImageLayout, ImageLayout, BarrierAccess, BarrierAccess>> renderTextures;
 	Util::Array<std::tuple<ShaderRWBufferId, BarrierAccess, BarrierAccess>> shaderRWBuffers;
-	Util::Array<std::tuple<ShaderRWTextureId, BarrierAccess, BarrierAccess>> shaderRWTextures;
+	Util::Array<std::tuple<ShaderRWTextureId, ImageSubresourceInfo, ImageLayout, ImageLayout, BarrierAccess, BarrierAccess>> shaderRWTextures;
 };
 
 /// create new event
@@ -38,11 +38,13 @@ EventId CreateEvent(const EventCreateInfo& info);
 void DestroyEvent(const EventId id);
 
 /// insert event in command buffer to be signaled
-void EventSignal(const EventId id, const CoreGraphicsQueueType queue, const BarrierDependency when);
+void EventSignal(const EventId id, const CoreGraphicsQueueType queue);
 /// insert wait event in command buffer to wait for
 void EventWait(const EventId id, const CoreGraphicsQueueType queue);
 /// insert reset event
-void EventReset(const EventId id, const CoreGraphicsQueueType queue, const BarrierDependency when);
+void EventReset(const EventId id, const CoreGraphicsQueueType queue);
+/// insert both a wait and reset
+void EventWaitAndReset(const EventId id, const CoreGraphicsQueueType queue);
 
 } // CoreGraphics
 

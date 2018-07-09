@@ -1,0 +1,5 @@
+<Shady>
+	<Variation desc="Represents a two-component float parameter." simulationValue="Value">
+		<Output type="vec2" name="Value" param="true"/>
+	</Variation>
+</Shady>

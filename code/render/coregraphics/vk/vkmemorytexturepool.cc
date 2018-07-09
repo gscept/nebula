@@ -5,12 +5,13 @@
 #include "render/stdneb.h"
 #include "vkmemorytexturepool.h"
 #include "coregraphics/texture.h"
-#include "vkrenderdevice.h"
+#include "vkgraphicsdevice.h"
 #include "vktypes.h"
-#include "coregraphics/renderdevice.h"
 #include "vkutilities.h"
 #include "resources/resourcemanager.h"
 #include "vkshaderserver.h"
+#include "vkscheduler.h"
+#include "vkcmdbuffer.h"
 
 using namespace CoreGraphics;
 using namespace Resources;
@@ -25,19 +26,20 @@ __ImplementClass(Vulkan::VkMemoryTexturePool, 'VKTO', Resources::ResourceMemoryP
 ResourcePool::LoadStatus
 VkMemoryTexturePool::LoadFromMemory(const Resources::ResourceId id, const void* info)
 {
-	const VkMemoryTextureInfo* data = (const VkMemoryTextureInfo*)info;
+	const TextureCreateInfo* data = (const TextureCreateInfo*)info;
 
 	/// during the load-phase, we can safetly get the structs
 	this->EnterGet();
 	VkTextureRuntimeInfo& runtimeInfo = this->Get<0>(id.allocId);
 	VkTextureLoadInfo& loadInfo = this->Get<1>(id.allocId);
-	this->LeaveGet();
+	ImageLayout& layout = this->Get<3>(id.allocId);
 
 	VkFormat vkformat = VkTypes::AsVkFormat(data->format);
 	uint32_t size = PixelFormat::ToSize(data->format);
 
-	VkPhysicalDevice physicalDev = VkRenderDevice::Instance()->GetCurrentPhysicalDevice();
-	VkDevice dev = VkRenderDevice::Instance()->GetCurrentDevice();
+	VkPhysicalDevice physicalDev = Vulkan::GetCurrentPhysicalDevice();
+	VkDevice dev = Vulkan::GetCurrentDevice();
+	loadInfo.dev = dev;
 
 	VkFormatProperties formatProps;
 	vkGetPhysicalDeviceFormatProperties(physicalDev, vkformat, &formatProps);
@@ -49,7 +51,7 @@ VkMemoryTexturePool::LoadFromMemory(const Resources::ResourceId id, const void* 
 	VkImageCreateInfo imgInfo =
 	{
 		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-		NULL,
+		nullptr,
 		0,
 		VK_IMAGE_TYPE_2D,
 		vkformat,
@@ -61,11 +63,11 @@ VkMemoryTexturePool::LoadFromMemory(const Resources::ResourceId id, const void* 
 		VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
 		VK_SHARING_MODE_EXCLUSIVE,
 		0,
-		NULL,
+		nullptr,
 		VK_IMAGE_LAYOUT_UNDEFINED
 	};
 
-	VkResult stat = vkCreateImage(dev, &imgInfo, NULL, &loadInfo.img);
+	VkResult stat = vkCreateImage(dev, &imgInfo, nullptr, &loadInfo.img);
 	n_assert(stat == VK_SUCCESS);
 
 	// allocate memory backing
@@ -82,7 +84,7 @@ VkMemoryTexturePool::LoadFromMemory(const Resources::ResourceId id, const void* 
 	subres.baseMipLevel = 0;
 	subres.layerCount = 1;
 	subres.levelCount = 1;
-	scheduler->PushImageLayoutTransition(TransferQueueType, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
+	scheduler->PushImageLayoutTransition(TransferQueueType, CoreGraphics::BarrierDependency::Host, CoreGraphics::BarrierDependency::Transfer, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
 
 	VkBufferImageCopy copy;
 	copy.bufferOffset = 0;
@@ -98,12 +100,13 @@ VkMemoryTexturePool::LoadFromMemory(const Resources::ResourceId id, const void* 
 	copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 
 	// update image while in transfer optimal
-	scheduler->PushImageUpdate(this->Get<1>(id).img, imgInfo, 0, 0, data->width * data->height * size, (uint32_t*)data->buffer);
+	scheduler->PushImageUpdate(loadInfo.img, imgInfo, 0, 0, data->width * data->height * size, (uint32_t*)data->buffer);
 
 	// transition image to shader variable
-	scheduler->PushImageLayoutTransition(TransferQueueType, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
-	scheduler->PushImageOwnershipChange(TransferQueueType, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, TransferQueueType, GraphicsQueueType, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
-
+	scheduler->PushImageOwnershipChange(TransferQueueType, CoreGraphics::BarrierDependency::Transfer, CoreGraphics::BarrierDependency::Transfer, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, TransferQueueType, GraphicsQueueType, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
+	scheduler->PushImageLayoutTransition(GraphicsQueueType, CoreGraphics::BarrierDependency::Transfer, CoreGraphics::BarrierDependency::AllGraphicsShaders, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+	
+	
 	// create view
 	VkImageViewType viewType = VK_IMAGE_VIEW_TYPE_2D;
 	VkImageSubresourceRange viewRange;
@@ -115,7 +118,7 @@ VkMemoryTexturePool::LoadFromMemory(const Resources::ResourceId id, const void* 
 	VkImageViewCreateInfo viewCreate =
 	{
 		VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-		NULL,
+		nullptr,
 		0,
 		loadInfo.img,
 		viewType,
@@ -123,9 +126,10 @@ VkMemoryTexturePool::LoadFromMemory(const Resources::ResourceId id, const void* 
 		VkTypes::AsVkMapping(data->format),
 		viewRange
 	};
-	stat = vkCreateImageView(dev, &viewCreate, NULL, &runtimeInfo.view);
+	stat = vkCreateImageView(dev, &viewCreate, nullptr, &runtimeInfo.view);
 	n_assert(stat == VK_SUCCESS);
 
+	layout = ImageLayout::ShaderRead;
 	loadInfo.dims.width = data->width;
 	loadInfo.dims.height = data->height;
 	loadInfo.dims.depth = 1;
@@ -133,7 +137,8 @@ VkMemoryTexturePool::LoadFromMemory(const Resources::ResourceId id, const void* 
 	loadInfo.format = data->format;
 	loadInfo.dev = dev;
 	runtimeInfo.type = CoreGraphics::Texture2D;
-	runtimeInfo.bind = VkShaderServer::Instance()->RegisterTexture(runtimeInfo.view, CoreGraphics::Texture2D);
+	runtimeInfo.bind = VkShaderServer::Instance()->RegisterTexture(TextureId(id), CoreGraphics::Texture2D);
+	this->LeaveGet();
 
 	n_assert(this->GetState(id) == Resource::Pending);
 	n_assert(loadInfo.img!= VK_NULL_HANDLE);
@@ -458,6 +463,15 @@ CoreGraphics::TextureType
 VkMemoryTexturePool::GetType(const CoreGraphics::TextureId id)
 {
 	return textureAllocator.Get<0>(id.allocId).type;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+ImageLayout
+VkMemoryTexturePool::GetLayout(const CoreGraphics::TextureId id)
+{
+	return textureAllocator.Get<3>(id.allocId);
 }
 
 //------------------------------------------------------------------------------

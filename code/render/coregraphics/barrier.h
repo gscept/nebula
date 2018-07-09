@@ -13,6 +13,7 @@
 #include "coregraphics/shaderrwtexture.h"
 #include "coregraphics/shaderrwbuffer.h"
 #include "coregraphics/cmdbuffer.h"
+#include "coregraphics/config.h"
 #include <tuple>
 namespace CoreGraphics
 {
@@ -32,6 +33,7 @@ enum class BarrierDependency
 	GeometryShader = (1 << 4),	// blocks geometry shader
 	PixelShader = (1 << 5),		// blocks pixel shader
 	ComputeShader = (1 << 6),	// blocks compute shaders to complete
+	AllGraphicsShaders	= VertexShader | HullShader | DomainShader | GeometryShader | PixelShader,
 
 	VertexInput = (1 << 7),		// blocks vertex input
 	EarlyDepth = (1 << 8),		// blocks early fragment test
@@ -41,7 +43,7 @@ enum class BarrierDependency
 	Host = (1 << 11),			// blocks host operations
 	PassOutput = (1 << 12),		// blocks outputs from render texture attachments		
 
-	Top = (1 << 13),			// blocks start of pipeline
+	Top = (1 << 13),			// blocks start of pipeline 
 	Bottom = (1 << 14)			// blocks end of pipeline
 };
 
@@ -67,21 +69,50 @@ enum class BarrierAccess
 	MemoryWrite = (1 << 17)				// memory is written locally
 };
 
+
 __ImplementEnumBitOperators(BarrierDependency);
 __ImplementEnumComparisonOperators(BarrierDependency);
 __ImplementEnumBitOperators(BarrierAccess);
 __ImplementEnumComparisonOperators(BarrierAccess);
 
+
+#define __BeginEnumString(clazz) inline clazz clazz##FromString(const Util::String& str) {
+#define __EnumString(clazz, x) if (str == #x) return clazz::x;
+#define __EndEnumString(clazz) return (clazz)0; }
+
+#define __BeginStringEnum(clazz) inline Util::String clazz##ToString(const clazz val) { switch (val) {
+#define __StringEnum(clazz, x) case clazz##x: return #x;
+#define __EndStringEnum() default: n_error("No enum value for %d\n", val); return ""; } }
+
 ID_24_8_TYPE(BarrierId);
 
+struct ImageSubresourceInfo
+{
+	ImageAspect aspect;
+	uint mip, mipCount, layer, layerCount;
+
+	ImageSubresourceInfo() :
+		aspect(ImageAspect::ColorBits | ImageAspect::DepthBits | ImageAspect::StencilBits),
+		mip(0),
+		mipCount(1),
+		layer(0),
+		layerCount(1)
+	{}
+
+	const bool Overlaps(const ImageSubresourceInfo& rhs) const
+	{
+		return ((this->aspect & rhs.aspect) != 0) && (this->mip <= rhs.mip && this->mip + this->mipCount >= rhs.mip) && (this->layer <= rhs.layer && this->layer + this->layerCount >= rhs.layer);
+	}
+
+};
 struct BarrierCreateInfo
 {
 	BarrierDomain domain;
 	BarrierDependency leftDependency;
 	BarrierDependency rightDependency;
-	Util::Array<std::tuple<RenderTextureId, BarrierAccess, BarrierAccess>> renderTextureBarriers;
+	Util::Array<std::tuple<RenderTextureId, ImageSubresourceInfo, ImageLayout, ImageLayout, BarrierAccess, BarrierAccess>> renderTextures;
 	Util::Array<std::tuple<ShaderRWBufferId, BarrierAccess, BarrierAccess>> shaderRWBuffers;
-	Util::Array<std::tuple<ShaderRWTextureId, BarrierAccess, BarrierAccess>> shaderRWTextures;
+	Util::Array<std::tuple<ShaderRWTextureId, ImageSubresourceInfo, ImageLayout, ImageLayout, BarrierAccess, BarrierAccess>> shaderRWTextures;
 };
 
 /// create barrier object
@@ -90,7 +121,9 @@ BarrierId CreateBarrier(const BarrierCreateInfo& info);
 void DestroyBarrier(const BarrierId id);
 
 /// insert barrier into command buffer
-void InsertBarrier(const BarrierId id, const CmdBufferId cmd);
+void BarrierInsert(const BarrierId id, const CoreGraphicsQueueType queue);
+/// reset resources previously set in barrier
+void BarrierReset(const BarrierId id);
 
 //------------------------------------------------------------------------------
 /**
@@ -147,5 +180,45 @@ BarrierAccessFromString(const Util::String& str)
 		n_error("Invalid access string '%s'\n", str.AsCharPtr());
 		return BarrierAccess::NoAccess;
 	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline ImageAspect
+ImageAspectFromString(const Util::String& str)
+{
+	if (str == "Color")				return ImageAspect::ColorBits;
+	else if (str == "Depth")		return ImageAspect::DepthBits;
+	else if (str == "Stencil")		return ImageAspect::StencilBits;
+	else if (str == "Metadata")		return ImageAspect::MetaBits;
+	else if (str == "Plane0")		return ImageAspect::Plane0Bits;
+	else if (str == "Plane1")		return ImageAspect::Plane1Bits;
+	else if (str == "Plane2")		return ImageAspect::Plane2Bits;
+	else
+	{
+		n_error("Invalid access string '%s'\n", str.AsCharPtr());
+		return ImageAspect::ColorBits;
+	}
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline ImageLayout
+ImageLayoutFromString(const Util::String& str)
+{
+	if (str == "Undefined")					return ImageLayout::Undefined;
+	else if (str == "General")				return ImageLayout::General;
+	else if (str == "ColorRenderTexture")	return ImageLayout::ColorRenderTexture;
+	else if (str == "DepthRenderTexture")	return ImageLayout::DepthStencilRenderTexture;
+	else if (str == "StencilRead")			return ImageLayout::DepthStencilRead;
+	else if (str == "ShaderRead")			return ImageLayout::ShaderRead;
+	else if (str == "TransferSource")		return ImageLayout::TransferSource;
+	else if (str == "TransferDestination")	return ImageLayout::TransferDestination;
+	else if (str == "Preinitialized")		return ImageLayout::Preinitialized;
+	else if (str == "Present")				return ImageLayout::Present;
+	return ImageLayout::Undefined;
 }
 } // namespace CoreGraphics

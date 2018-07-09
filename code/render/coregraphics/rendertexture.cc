@@ -32,28 +32,29 @@ RenderTextureInfoSetupHelper(const RenderTextureCreateInfo& info)
 		rt.layers = 1;
 		rt.mips = 1;
 		rt.relativeSize = true;
-		rt.dynamicSize = false;
 		rt.msaa = false;
 		rt.widthScale = rt.heightScale = rt.depthScale = 1.0f;
-		rt.name = "__WINDOW__";
+		rt.name = info.name;
 	}
 	else
 	{
 		n_assert(info.width > 0 && info.height > 0 && info.depth > 0);
 		n_assert(info.type == CoreGraphics::Texture2D || info.type == CoreGraphics::TextureCube || info.type == CoreGraphics::Texture2DArray || info.type == CoreGraphics::TextureCubeArray);
 		n_assert(info.usage != InvalidAttachment);
-		n_assert(!(info.relativeSize & info.dynamicSize));
 
+		rt.isWindow = false;
 		rt.window = Ids::InvalidId32;
 		rt.name = info.name;
 		rt.relativeSize = info.relativeSize;
-		rt.dynamicSize = info.dynamicSize;
 		rt.msaa = info.msaa;
 		rt.mips = 1;
 		rt.layers = info.type == CoreGraphics::TextureCubeArray ? 6 : 1;
-		rt.widthScale = info.widthScale;
-		rt.heightScale = info.heightScale;
-		rt.depthScale = info.depthScale;
+		rt.width = (SizeT)info.width;
+		rt.height = (SizeT)info.height;
+		rt.depth = (SizeT)info.depth;
+		rt.widthScale = 0;
+		rt.heightScale = 0;
+		rt.depthScale = 0;
 		rt.type = info.type;
 		rt.usage = info.usage;
 		rt.format = info.format;
@@ -61,22 +62,15 @@ RenderTextureInfoSetupHelper(const RenderTextureCreateInfo& info)
 		if (rt.relativeSize)
 		{
 			CoreGraphics::WindowId wnd = DisplayDevice::Instance()->GetCurrentWindow();
-			const CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(rt.window);
-			rt.width = SizeT(mode.GetWidth() * rt.widthScale);
-			rt.height = SizeT(mode.GetHeight() * rt.heightScale);
+			const CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(wnd);
+			rt.width = SizeT(mode.GetWidth() * info.width);
+			rt.height = SizeT(mode.GetHeight() * info.height);
 			rt.depth = 1;
-		}
-		else if (rt.dynamicSize)
-		{
-			rt.width = SizeT(info.height * rt.widthScale);
-			rt.height = SizeT(info.width * rt.heightScale);
-			rt.depth = SizeT(info.depth * rt.depthScale);
-		}
-		else
-		{
-			rt.width = info.width;
-			rt.height = info.height;
-			rt.depth = info.depth;
+			rt.window = wnd;
+
+			rt.widthScale = info.width;
+			rt.heightScale = info.height;
+			rt.depthScale = info.depth;
 		}
 	}
 	return rt;
@@ -99,13 +93,6 @@ RenderTextureInfoResizeHelper(const RenderTextureResizeInfo& info)
 		rt.width = SizeT(mode.GetWidth() * info.widthScale);
 		rt.height = SizeT(mode.GetHeight() * info.heightScale);
 		rt.depth = 1;
-	}
-	else if (rt.dynamicSize)
-	{
-		// add scale factor here
-		rt.width = SizeT(info.width * rt.widthScale);
-		rt.height = SizeT(info.height * rt.heightScale);
-		rt.depth = SizeT(info.depth * rt.depthScale);
 	}
 	return rt;
 }

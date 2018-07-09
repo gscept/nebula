@@ -18,10 +18,19 @@ public:
 	/// destructor
 	virtual ~FrameCompute();
 
-	/// discard operation
+	/// discard
 	void Discard();
-	/// run operation
-	void Run(const IndexT frameIndex);
+
+	struct CompiledImpl : public FrameOp::Compiled
+	{
+		void Run(const IndexT frameIndex);
+
+		CoreGraphics::ShaderProgramId program;
+		CoreGraphics::ShaderStateId state;
+		SizeT x, y, z;
+	};
+
+	FrameOp::Compiled* AllocCompiled(Memory::ChunkAllocator<0xFFFF>& allocator);
 
 	CoreGraphics::ShaderProgramId program;
 	CoreGraphics::ShaderStateId state;

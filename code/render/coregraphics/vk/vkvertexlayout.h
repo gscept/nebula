@@ -8,7 +8,6 @@
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
 #include "coregraphics/base/vertexlayoutbase.h"
-#include "vkrenderdevice.h"
 #include <array>
 
 namespace Vulkan

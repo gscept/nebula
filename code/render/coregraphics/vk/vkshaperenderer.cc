@@ -5,9 +5,8 @@
 #include "render/stdneb.h"
 #include "vkshaperenderer.h"
 #include "coregraphics/vk/vktypes.h"
-#include "coregraphics/renderdevice.h"
+#include "coregraphics/graphicsdevice.h"
 #include "coregraphics/transformdevice.h"
-#include "coregraphics/renderdevice.h"
 #include "coregraphics/vertexbuffer.h"
 #include "coregraphics/indexbuffer.h"
 #include "coregraphics/mesh.h"
@@ -172,7 +171,7 @@ VkShapeRenderer::DrawShapes()
 
 	for (int depthType = 0; depthType < RenderShape::NumDepthFlags; depthType++)
 	{
-		ShaderProgramBind(this->programs[depthType]);
+		CoreGraphics::SetShaderProgram(this->programs[depthType]);
 
 		IndexT i;
 		for (i = 0; i < this->primitives[depthType].Size(); i++)
@@ -209,7 +208,7 @@ VkShapeRenderer::DrawShapes()
 
 	for (int depthType = 0; depthType < RenderShape::NumDepthFlags; depthType++)
 	{
-		ShaderProgramBind(this->programs[depthType + RenderShape::NumDepthFlags]);
+		CoreGraphics::SetShaderProgram(this->programs[depthType + RenderShape::NumDepthFlags]);
 
 		IndexT i;
 		for (i = 0; i < this->shapes[depthType].Size(); i++)
@@ -234,8 +233,6 @@ VkShapeRenderer::DrawSimpleShape(const Math::matrix44& modelTransform, CoreGraph
 	n_assert(this->shapeMeshes[shapeType] != ResourceId::Invalid());
 	n_assert(shapeType < RenderShape::NumShapeTypes);
 
-	Ptr<RenderDevice> renderDevice = RenderDevice::Instance();
-
 	// resolve model-view-projection matrix and update shader
 	ShaderConstantSet(this->model, this->shapeShaderState, modelTransform);
 	ShaderConstantSet(this->diffuseColor, this->shapeShaderState, color);
@@ -245,10 +242,10 @@ VkShapeRenderer::DrawSimpleShape(const Math::matrix44& modelTransform, CoreGraph
 	for (i = 0; i < numgroups; i++)
 	{
 		MeshBind(this->shapeMeshes[shapeType], i);
-		ShaderStateApply(this->shapeShaderState);
+		CoreGraphics::SetShaderState(this->shapeShaderState);
 
 		// draw
-		renderDevice->Draw();
+		CoreGraphics::Draw();
 	}
 }
 
@@ -259,7 +256,6 @@ void
 VkShapeRenderer::DrawMesh(const Math::matrix44& modelTransform, const CoreGraphics::MeshId mesh, const Math::float4& color)
 {
 	n_assert(mesh != MeshId::Invalid());
-	Ptr<RenderDevice> renderDevice = RenderDevice::Instance();
 
 	// resolve model-view-projection matrix and update shader
 	TransformDevice* transDev = TransformDevice::Instance();
@@ -268,7 +264,7 @@ VkShapeRenderer::DrawMesh(const Math::matrix44& modelTransform, const CoreGraphi
 	ShaderConstantSet(this->model, this->shapeShaderState, modelTransform);
 	ShaderConstantSet(this->diffuseColor, this->shapeShaderState, color);
 
-	n_assert(RenderDevice::Instance()->IsInBeginFrame());
+	n_assert(CoreGraphics::IsInBeginFrame());
 	const SizeT numgroups = MeshGetPrimitiveGroups(mesh).Size();
 
 	// draw primitives in shape
@@ -276,10 +272,10 @@ VkShapeRenderer::DrawMesh(const Math::matrix44& modelTransform, const CoreGraphi
 	for (i = 0; i < numgroups; i++)
 	{
 		MeshBind(mesh, i);
-		ShaderStateApply(this->shapeShaderState);
+		CoreGraphics::SetShaderState(this->shapeShaderState);
 
 		// draw
-		renderDevice->Draw();
+		CoreGraphics::Draw();
 	}
 }
 
@@ -369,8 +365,6 @@ VkShapeRenderer::DrawIndexedPrimitives(const Math::matrix44& modelTransform, Cor
 void
 VkShapeRenderer::DrawBufferedPrimitives()
 {
-	Ptr<RenderDevice> renderDevice = RenderDevice::Instance();
-	//renderDevice->SetPrimitiveGroup(this->primGroup);
 	
 	IndexT i;
 	for (i = 0; i < this->unindexed.primitives.Size(); i++)
@@ -383,14 +377,14 @@ VkShapeRenderer::DrawBufferedPrimitives()
 		ShaderConstantSet(this->model, this->shapeShaderState, modelTransform);
 		ShaderConstantSet(this->diffuseColor, this->shapeShaderState, color);
 
-		renderDevice->SetPrimitiveTopology(topo);
-		VertexLayoutBind(this->vertexLayout);
-		VertexBufferBind(this->vbo, 0, 0);
-		renderDevice->SetPrimitiveGroup(group);
+		CoreGraphics::SetPrimitiveTopology(topo);
+		CoreGraphics::SetVertexLayout(this->vertexLayout);
+		CoreGraphics::SetStreamVertexBuffer(0, this->vbo, 0);
+		CoreGraphics::SetPrimitiveGroup(group);
 
-		ShaderStateApply(this->shapeShaderState);
+		CoreGraphics::SetShaderState(this->shapeShaderState);
 
-		renderDevice->Draw();
+		CoreGraphics::Draw();
 	}
 
 	this->unindexed.primitives.Clear();
@@ -405,8 +399,6 @@ VkShapeRenderer::DrawBufferedPrimitives()
 void
 VkShapeRenderer::DrawBufferedIndexedPrimitives()
 {
-	Ptr<RenderDevice> renderDevice = RenderDevice::Instance();
-	//renderDevice->SetPrimitiveGroup(this->primGroup);
 
 	IndexT i;
 	for (i = 0; i < this->indexed.primitives.Size(); i++)
@@ -419,15 +411,15 @@ VkShapeRenderer::DrawBufferedIndexedPrimitives()
 		ShaderConstantSet(this->model, this->shapeShaderState, modelTransform);
 		ShaderConstantSet(this->diffuseColor, this->shapeShaderState, color);
 		
-		renderDevice->SetPrimitiveTopology(topo);
-		VertexLayoutBind(this->vertexLayout);
-		IndexBufferBind(this->ibo, 0);
-		VertexBufferBind(this->vbo, 0, 0);
-		renderDevice->SetPrimitiveGroup(group);
+		CoreGraphics::SetPrimitiveTopology(topo);
+		CoreGraphics::SetVertexLayout(this->vertexLayout);
+		CoreGraphics::SetIndexBuffer(this->ibo, 0);
+		CoreGraphics::SetStreamVertexBuffer(0, this->vbo, 0);
+		CoreGraphics::SetPrimitiveGroup(group);
 
-		ShaderStateApply(this->shapeShaderState);
+		CoreGraphics::SetShaderState(this->shapeShaderState);
 
-		renderDevice->Draw();
+		CoreGraphics::Draw();
 	}
 
 	this->indexed.primitives.Clear();

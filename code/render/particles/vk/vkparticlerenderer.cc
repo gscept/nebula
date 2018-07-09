@@ -5,7 +5,7 @@
 #include "render/stdneb.h"
 #include "vkparticlerenderer.h"
 #include "coregraphics/vertexcomponent.h"
-#include "coregraphics/renderdevice.h"
+#include "coregraphics/graphicsdevice.h"
 #include "coregraphics/vertexsignaturepool.h"
 #include "particles/particle.h"
 #include "coregraphics/vertexbuffer.h"
@@ -167,13 +167,12 @@ void
 VkParticleRenderer::ApplyParticleMesh()
 {
 	n_assert(!this->IsInAttach());
-	RenderDevice* renderDevice = RenderDevice::Instance();
-	renderDevice->SetPrimitiveTopology(PrimitiveTopology::TriangleList);
-	VertexLayoutBind(this->vertexLayout);
-	VertexBufferBind(this->cornerVertexBuffer, 0, 0);
-	VertexBufferBind(this->particleVertexBuffer, 1, 0);
-	IndexBufferBind(this->cornerIndexBuffer, 0);
-	renderDevice->SetPrimitiveGroup(this->GetPrimitiveGroup());
+	CoreGraphics::SetPrimitiveTopology(PrimitiveTopology::TriangleList);
+	CoreGraphics::SetVertexLayout(this->vertexLayout);
+	CoreGraphics::SetStreamVertexBuffer(0, this->cornerVertexBuffer, 0);
+	CoreGraphics::SetStreamVertexBuffer(1, this->particleVertexBuffer, 0);
+	CoreGraphics::SetIndexBuffer(this->cornerIndexBuffer, 0);
+	CoreGraphics::SetPrimitiveGroup(this->GetPrimitiveGroup());
 }
 
 } // namespace Vulkan

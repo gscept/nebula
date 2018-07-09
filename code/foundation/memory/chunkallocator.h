@@ -50,6 +50,7 @@ private:
 template <int ChunkSize>
 inline
 ChunkAllocator<ChunkSize>::ChunkAllocator() :
+	currentChunk(nullptr),
 	iterator(nullptr)
 {
 	// constructor
@@ -72,7 +73,8 @@ template <int ChunkSize>
 inline void
 ChunkAllocator<ChunkSize>::NewChunk()
 {
-	this->retiredChunks.Append(this->currentChunk);
+	if (this->currentChunk != nullptr)
+		this->retiredChunks.Append(this->currentChunk);
 	this->currentChunk = new byte[ChunkSize];
 	this->iterator = this->currentChunk;
 }
@@ -126,6 +128,7 @@ inline void*
 ChunkAllocator<ChunkSize>::Alloc(SizeT size)
 {
 	n_assert(size <= ChunkSize);
+	n_assert(size != 0);
 	if (this->iterator == nullptr)
 	{
 		this->NewChunk();

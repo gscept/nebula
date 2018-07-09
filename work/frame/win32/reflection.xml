@@ -1,0 +1,203 @@
+<Nebula3>
+ <FrameShader>
+  
+  <!-- depth-stencil buffers -->
+  <DeclareDepthStencilTarget format="D24S8" relHeight="1" relWidth="1" name="ReflDefaultDepthBuffer"/>
+  
+  <!-- deferred geometry for opaque geometry -->
+  <DeclareRenderTarget format="A8R8G8B8" relHeight="1" msaa="false" relWidth="1" name="ReflNormalBuffer"/>
+  <DeclareRenderTarget format="R32F" relHeight="1" msaa="false" relWidth="1" name="ReflDepthBuffer"/>  
+  <DeclareRenderTarget format="A8R8G8B8" depthTarget="ReflDefaultDepthBuffer" relHeight="1" msaa="true" relWidth="1" name="ReflAlbedoBuffer"/>
+  <DeclareRenderTarget format="A8R8G8B8" relHeight="1" msaa="true" relWidth="1" name="ReflSpecularBuffer"/>
+  <DeclareRenderTarget format="R16G16B16A16F" relHeight="1" msaa="true" relWidth="1" name="ReflEmissiveBuffer"/>
+  <DeclareRenderTarget format="R16G16B16A16F" depthTarget="ReflDefaultDepthBuffer" relHeight="1" msaa="false" relWidth="1" name="ReflLightBuffer"/>  
+  
+  <!-- buffer used for god ray projection -->
+  <DeclareRenderTarget format="R16G16B16A16F" depthTarget="ReflDefaultDepthBuffer" relHeight="1" msaa="false" relWidth="1" name="ReflUnshadedBuffer"/>
+  
+  <!-- deferred geometry for alpha geometry -->
+  <DeclareRenderTarget format="A8R8G8B8" relHeight="1" msaa="false" relWidth="1" name="ReflAlphaNormalBuffer"/>
+  <DeclareRenderTarget format="R32F" relHeight="1" msaa="false" relWidth="1" name="ReflAlphaDepthBuffer"/>  
+  <DeclareRenderTarget format="A8R8G8B8" relHeight="1" msaa="false" relWidth="1" name="ReflAlphaAlbedoBuffer"/>
+  <DeclareRenderTarget format="A8R8G8B8" relHeight="1" msaa="false" relWidth="1" name="ReflAlphaSpecularBuffer"/>  
+  <DeclareRenderTarget format="R16G16B16A16F" relHeight="1" msaa="false" relWidth="1" name="ReflAlphaEmissiveBuffer"/>
+  <DeclareRenderTarget format="R16G16B16A16F" relHeight="1" msaa="false" relWidth="1" name="ReflAlphaLightBuffer"/>
+  
+  <!-- SSS textures, maybe move to its own server? -->
+  <DeclareRenderTarget format="A8R8G8B8" relHeight="1" msaa="false" relWidth="1" name="ReflSSSBuffer1"/>  
+  <DeclareRenderTarget format="A8R8G8B8" relHeight="1" msaa="false" relWidth="1" name="ReflSSSBuffer"/>  
+  <DeclareRenderTarget format="A8R8G8B8" relHeight="1" msaa="false" relWidth="1" name="ReflSSSAbsorptionBuffer"/>
+  <DeclareRenderTarget format="A8R8G8B8" relHeight="1" msaa="false" relWidth="1" name="ReflSSSScatterBuffer"/>
+  <DeclareRenderTarget format="A8R8G8B8" relHeight="1" msaa="false" relWidth="1" name="ReflSSSMask"/>
+  
+  <!-- special buffers, background for skybox, color buffer for composed color, shape buffer for depth-checked shapes -->
+  <DeclareRenderTarget format="R16G16B16A16F" relHeight="1" msaa="false" relWidth="1" name="ReflColorBuffer"/>
+  <DeclareRenderTarget format="R16G16B16A16F" relHeight="1" msaa="false" relWidth="1" name="ReflColorBufferCopy"/>
+  
+  <!-- special buffer for reflection to change depth to not be in view-space position -->
+  <DeclareRenderTarget format="R32F" relHeight="1" msaa="false" relWidth="1" name="ZDepth"/>  
+    
+  <!-- MRT for opaque geometry -->
+  <DeclareMRT name="ReflGeometryBuffer">
+	<DepthStencilTarget name="ReflDefaultDepthBuffer" clearDepth="1"/>
+	<RenderTarget name="ReflAlbedoBuffer" clearColor="0.52,0.52,0.5,1"/>
+	<RenderTarget name="ReflNormalBuffer" clearColor="0.5,0.5,0,0"/>
+	<RenderTarget name="ReflDepthBuffer" clearColor="-1000,0,0,0"/>   
+	<RenderTarget name="ReflSpecularBuffer" clearColor="0,0,0,0"/>
+	<RenderTarget name="ReflEmissiveBuffer" clearColor="0,0,0,0"/>
+  </DeclareMRT>
+    
+  <!-- MRT for alpha geometry -->
+  <DeclareMRT name="ReflAlphaGeometryBuffer">
+	<DepthStencilTarget name="ReflDefaultDepthBuffer"/>
+	<RenderTarget name="ReflAlphaAlbedoBuffer" clearColor="0,0,0,0"/>
+	<RenderTarget name="ReflAlphaNormalBuffer" clearColor="0.5,0.5,0,0"/>
+	<RenderTarget name="ReflAlphaDepthBuffer" clearColor="-1000,0,0,0"/>
+	<RenderTarget name="ReflAlphaSpecularBuffer" clearColor="0,0,0,0"/>
+  </DeclareMRT>
+
+  <!-- MRT for SSSS geometry -->
+  <DeclareMRT name="ReflSubsurfaceBuffer">
+   <DepthStencilTarget name="ReflDefaultDepthBuffer"/>
+   <RenderTarget name="ReflSSSAbsorptionBuffer" clearColor="0,0,0,0"/>
+   <RenderTarget name="ReflSSSScatterBuffer" clearColor="0,0,0,0"/>
+   <RenderTarget name="ReflSSSMask" clearColor="0,0,0,0"/>
+  </DeclareMRT>  
+  
+  <!-- MRT for unlit rendering -->
+  <DeclareMRT name="ReflUnlitBuffer">
+	<DepthStencilTarget name="ReflDefaultDepthBuffer"/>
+	<RenderTarget name="ReflColorBuffer"/>
+  </DeclareMRT>
+  
+    <!-- MRT for reflection rendering -->
+  <DeclareMRT name="ReflReflectionBuffer">
+	<DepthStencilTarget name="ReflDefaultDepthBuffer"/>
+	<RenderTarget name="ReflEmissiveBuffer"/>
+  </DeclareMRT>
+  
+  <!-- MRT for atmospheric rendering -->
+  <DeclareMRT name="ReflAtmosphericBuffer">
+	<DepthStencilTarget name="ReflDefaultDepthBuffer"/>
+	<RenderTarget name="ReflColorBuffer"/>
+	<RenderTarget name="ReflUnshadedBuffer" clearColor="0,0,0,1"/>
+  </DeclareMRT>
+       
+  <!-- render opaque geometry -->
+  <Pass multipleRenderTarget="ReflGeometryBuffer" name="ReflGeometry">
+	<Batch batchGroup="RenderFirst" sorting="None" lighting="None" type="Geometry">
+		<ApplyShaderVariable sem="DepthBuffer" value="ReflDepthBuffer"/>
+	</Batch>
+	<Batch batchGroup="FlatGeometryLit" sorting="None" lighting="None" type="Geometry"/>
+	<Batch batchGroup="TessellatedGeometryLit" sorting="None" lighting="None" type="Geometry"/>
+	<Batch batchGroup="RenderLast" sorting="None" lighting="None" type="Geometry">
+		<ApplyShaderVariable sem="DepthBuffer" value="ReflDepthBuffer"/>
+	</Batch>
+  </Pass>
+      
+  <!-- perform SSSS -->
+  <Pass multipleRenderTarget="ReflSubsurfaceBuffer" name="ReflSubsurfaceScattering">
+	<Batch batchGroup="Subsurface" sorting="None" lighting="None" type="Geometry"/>
+  </Pass>
+  
+  <!-- renders screen-space lighting for opaque geometry -->
+  <Pass renderTarget="ReflLightBuffer" name="ReflLightPass" clearColor="0.5,0.5,0.5,1" shader="lights">
+	<ApplyShaderVariable sem="NormalBuffer" value="ReflNormalBuffer"/>
+	<ApplyShaderVariable sem="DepthBuffer" value="ReflDepthBuffer"/>
+	<ApplyShaderVariable sem="AlbedoBuffer" value="ReflAlbedoBuffer"/>
+	<ApplyShaderVariable sem="SpecularBuffer" value="ReflSpecularBuffer"/>
+	<ApplyShaderVariable sem="ShadowProjMap" value="ReflShadowBuffer"/>
+	<Batch type="Lights"/>
+  </Pass>
+    
+  <!-- SSSS blur pass 1 -->
+  <PostEffect shader="subsurfacevertical" renderTarget="ReflSSSBuffer1" clearColor="0,0,0,0" name="ReflSubsurfaceScatteringVertical">
+	<ApplyShaderVariable sem="DepthTexture" value="ReflDepthBuffer"/>
+	<ApplyShaderVariable sem="LightTexture" value="ReflLightBuffer"/>
+	<ApplyShaderVariable sem="AbsorptionTexture" value="ReflSSSAbsorptionBuffer"/>
+	<ApplyShaderVariable sem="ScatterTexture" value="ReflSSSScatterBuffer"/>
+	<ApplyShaderVariable sem="Mask" value="ReflSSSMask"/>
+  </PostEffect>  
+  
+  
+  <!-- SSSS blur pass 2 -->
+  <PostEffect shader="subsurfacehorizontal" renderTarget="ReflSSSBuffer" clearColor="0,0,0,0" name="ReflSubsurfaceScatteringHorizontal">
+	<ApplyShaderVariable sem="DepthTexture" value="ReflDepthBuffer"/>
+	<ApplyShaderVariable sem="LightTexture" value="ReflSSSBuffer1"/>
+	<ApplyShaderVariable sem="AbsorptionTexture" value="ReflSSSAbsorptionBuffer"/>
+	<ApplyShaderVariable sem="ScatterTexture" value="ReflSSSScatterBuffer"/>
+	<ApplyShaderVariable sem="Mask" value="ReflSSSMask"/>
+  </PostEffect> 
+  
+  <!-- render alpha geometry -->
+  <Pass multipleRenderTarget="ReflAlphaGeometryBuffer" name="ReflAlphaGeometry">
+	<Batch batchGroup="FlatGeometryAlphaLit" sorting="None" lighting="None" type="Geometry"/>
+	<Batch batchGroup="ParticleLit" sorting="None" lighting="None" type="Geometry"/>
+  </Pass>
+  
+  <!-- render screen-space lighting for alpha geometry -->
+  <Pass renderTarget="ReflAlphaLightBuffer" name="ReflLightPassAlpha" clearColor="0,0,0,0" shader="lights">
+	<ApplyShaderVariable sem="NormalBuffer" value="ReflAlphaNormalBuffer"/>
+	<ApplyShaderVariable sem="DepthBuffer" value="ReflAlphaDepthBuffer"/>
+	<ApplyShaderVariable sem="AlbedoBuffer" value="ReflAlphaAlbedoBuffer"/>
+	<ApplyShaderVariable sem="SpecularBuffer" value="ReflAlphaSpecularBuffer"/>
+	<ApplyShaderVariable sem="ShadowProjMap" value="ReflShadowBuffer"/>
+	<Batch type="Lights"/>
+  </Pass>
+  
+  <!-- render reflections -->
+  <Pass multipleRenderTarget="ReflReflectionBuffer" name="ReflReflectionPass" shader="reflectionprojector">
+	<ApplyShaderVariable sem="NormalMap" value="ReflNormalBuffer"/>
+	<ApplyShaderVariable sem="SpecularMap" value="ReflSpecularBuffer"/>
+	<ApplyShaderVariable sem="AlbedoMap" value="ReflAlbedoBuffer"/>
+	<ApplyShaderVariable sem="DepthMap" value="ReflDepthBuffer"/>
+	<Batch type="LightProbes"/>
+  </Pass>
+  
+  <!-- merge lights and color in screen space, apply specularity and AO -->
+  <PostEffect renderTarget="ReflColorBuffer" shader="gather" name="ReflGather" clearColor="0,0,0,1">
+   <ApplyShaderVariable sem="DepthTexture" value="ReflDepthBuffer"/>
+   <ApplyShaderVariable sem="LightTexture" value="ReflLightBuffer"/>
+   <ApplyShaderVariable sem="EmissiveTexture" value="ReflEmissiveBuffer"/>
+   <ApplyShaderVariable sem="SSSTexture" value="ReflSSSBuffer"/>
+   <ApplyShaderVariable sem="SSAOTexture" value="tex:system/black.dds"/>
+  </PostEffect>
+  
+  <!-- same as the one above but for the alpha buffers -->
+  <PostEffect renderTarget="ReflColorBuffer" shader="gatheralpha" name="ReflGatherAlpha">
+   <ApplyShaderVariable sem="AlphaAlbedoTexture" value="ReflAlphaAlbedoBuffer"/>
+   <ApplyShaderVariable sem="AlphaLightTexture" value="ReflAlphaLightBuffer"/>
+  </PostEffect>
+    
+  <!-- render unlit objects -->
+  <Pass multipleRenderTarget="ReflUnlitBuffer" name="ReflUnlit">	
+	<!-- render skybox -->
+	<Batch batchGroup="Background" sorting="None" lighting="None" type="Geometry"/>
+  </Pass>
+   
+  <!-- perform copy so that we can sample the color and write to it simultaneously -->
+  <Copy from="ReflColorBuffer" to="ReflColorBufferCopy"/>  
+  
+  <!-- render atmospheric stuff like water and volume fog -->
+  <Pass multipleRenderTarget="ReflAtmosphericBuffer" name="ReflAtmosphere">
+	<Batch batchGroup="Fog" sorting="None" lighting="None" type="Geometry">
+		<ApplyShaderVariable sem="DiffuseMap" value="ReflColorBufferCopy"/>
+		<ApplyShaderVariable sem="DepthMap" value="ReflDepthBuffer"/>
+	</Batch>
+	<Batch batchGroup="Water" sorting="None" lighting="None" type="Geometry">
+		<ApplyShaderVariable sem="DepthMap" value="ReflDepthBuffer"/>
+		<ApplyShaderVariable sem="ColorMap" value="ReflColorBufferCopy"/>
+	</Batch>
+  </Pass>
+  
+  <PostEffect shader="vsdepthtoz" name="ReflViewspaceDepthToZ" renderTarget="ZDepth">
+	<ApplyShaderVariable sem="DepthBuffer" value="ReflDepthBuffer"/>
+  </PostEffect>
+    
+  <!-- apply last touches before presenting frame -->
+  <PostEffect shader="finalize_simple" name="ReflFinalize">
+   <ApplyShaderVariable sem="ColorTexture" value="ReflColorBuffer"/>
+  </PostEffect>  
+   
+ </FrameShader>
+</Nebula3>

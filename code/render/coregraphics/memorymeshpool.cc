@@ -7,7 +7,7 @@
 #include "coregraphics/memorymeshpool.h"
 #include "coregraphics/mesh.h"
 #include "coregraphics/legacy/nvx2streamreader.h"
-#include "coregraphics/renderdevice.h"
+#include "coregraphics/graphicsdevice.h"
 #include "coregraphics/config.h"
 namespace CoreGraphics
 {
@@ -60,14 +60,13 @@ MemoryMeshPool::Unload(const Resources::ResourceId id)
 void
 MemoryMeshPool::BindMesh(const MeshId id, const IndexT prim)
 {
-	RenderDevice* renderDevice = RenderDevice::Instance();
 #if _DEBUG
 	n_assert(id.allocType == MeshIdType);
 #endif
 	MeshCreateInfo& inf = this->allocator.Get<0>(id.allocId);
-	VertexBufferBind(inf.vertexBuffer, 0, inf.primitiveGroups[prim].GetBaseVertex());
+	CoreGraphics::SetStreamVertexBuffer(0, inf.vertexBuffer, inf.primitiveGroups[prim].GetBaseVertex());
 	if (inf.indexBuffer != Ids::InvalidId64)
-		IndexBufferBind(inf.indexBuffer, inf.primitiveGroups[prim].GetBaseIndex());
+		CoreGraphics::SetIndexBuffer(inf.indexBuffer, inf.primitiveGroups[prim].GetBaseIndex());
 }
 
 //------------------------------------------------------------------------------

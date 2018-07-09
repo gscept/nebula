@@ -1,0 +1,12 @@
+<Shady>
+	<Variation desc="Multiplies two variables to create a product." simulationCommand="multiply">
+		<Input type="any" name="factor1"/>
+		<Input type="any" name="factor2"/>
+		<Output type="any" name="product"/>
+		<Source type="GLSL">
+			<Code output="product">
+				[output] = factor1 * factor2;
+			</Code>
+		</Source>
+	</Variation>
+</Shady>
