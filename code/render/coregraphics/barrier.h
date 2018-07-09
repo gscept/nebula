@@ -24,7 +24,7 @@ enum class BarrierDomain
 	Pass
 };
 
-enum class BarrierDependency
+enum class BarrierStage
 {
 	NoDependencies = (1 << 0),
 	VertexShader = (1 << 1),	// blocks vertex shader
@@ -70,8 +70,8 @@ enum class BarrierAccess
 };
 
 
-__ImplementEnumBitOperators(BarrierDependency);
-__ImplementEnumComparisonOperators(BarrierDependency);
+__ImplementEnumBitOperators(BarrierStage);
+__ImplementEnumComparisonOperators(BarrierStage);
 __ImplementEnumBitOperators(BarrierAccess);
 __ImplementEnumComparisonOperators(BarrierAccess);
 
@@ -108,8 +108,8 @@ struct ImageSubresourceInfo
 struct BarrierCreateInfo
 {
 	BarrierDomain domain;
-	BarrierDependency leftDependency;
-	BarrierDependency rightDependency;
+	BarrierStage leftDependency;
+	BarrierStage rightDependency;
 	Util::Array<std::tuple<RenderTextureId, ImageSubresourceInfo, ImageLayout, ImageLayout, BarrierAccess, BarrierAccess>> renderTextures;
 	Util::Array<std::tuple<ShaderRWBufferId, BarrierAccess, BarrierAccess>> shaderRWBuffers;
 	Util::Array<std::tuple<ShaderRWTextureId, ImageSubresourceInfo, ImageLayout, ImageLayout, BarrierAccess, BarrierAccess>> shaderRWTextures;
@@ -128,27 +128,27 @@ void BarrierReset(const BarrierId id);
 //------------------------------------------------------------------------------
 /**
 */
-inline BarrierDependency
+inline BarrierStage
 BarrierDependencyFromString(const Util::String& str)
 {
-	if (str == "VertexShader")			return BarrierDependency::VertexShader;
-	else if (str == "HullShader")		return BarrierDependency::HullShader;
-	else if (str == "DomainShader")		return BarrierDependency::DomainShader;
-	else if (str == "GeometryShader")	return BarrierDependency::GeometryShader;
-	else if (str == "PixelShader")		return BarrierDependency::PixelShader;
-	else if (str == "ComputeShader")	return BarrierDependency::ComputeShader;
-	else if (str == "VertexInput")		return BarrierDependency::VertexInput;
-	else if (str == "EarlyDepth")		return BarrierDependency::EarlyDepth;
-	else if (str == "LateDepth")		return BarrierDependency::LateDepth;
-	else if (str == "Transfer")			return BarrierDependency::Transfer;
-	else if (str == "Host")				return BarrierDependency::Host;
-	else if (str == "PassOutput")		return BarrierDependency::PassOutput;
-	else if (str == "Top")				return BarrierDependency::Top;
-	else if (str == "Bottom")			return BarrierDependency::Bottom;
+	if (str == "VertexShader")			return BarrierStage::VertexShader;
+	else if (str == "HullShader")		return BarrierStage::HullShader;
+	else if (str == "DomainShader")		return BarrierStage::DomainShader;
+	else if (str == "GeometryShader")	return BarrierStage::GeometryShader;
+	else if (str == "PixelShader")		return BarrierStage::PixelShader;
+	else if (str == "ComputeShader")	return BarrierStage::ComputeShader;
+	else if (str == "VertexInput")		return BarrierStage::VertexInput;
+	else if (str == "EarlyDepth")		return BarrierStage::EarlyDepth;
+	else if (str == "LateDepth")		return BarrierStage::LateDepth;
+	else if (str == "Transfer")			return BarrierStage::Transfer;
+	else if (str == "Host")				return BarrierStage::Host;
+	else if (str == "PassOutput")		return BarrierStage::PassOutput;
+	else if (str == "Top")				return BarrierStage::Top;
+	else if (str == "Bottom")			return BarrierStage::Bottom;
 	else
 	{
 		n_error("Invalid dependency string '%s'\n", str.AsCharPtr());
-		return BarrierDependency::NoDependencies;
+		return BarrierStage::NoDependencies;
 	}
 }
 

@@ -81,7 +81,7 @@ FrameOp::Build(
 
 			// right dependency set
 			const CoreGraphics::BarrierAccess& access = std::get<0>(this->rwTextureDeps.ValueAtIndex(i));
-			const CoreGraphics::BarrierDependency& stage = std::get<1>(this->rwTextureDeps.ValueAtIndex(i));
+			const CoreGraphics::BarrierStage& stage = std::get<1>(this->rwTextureDeps.ValueAtIndex(i));
 			const CoreGraphics::ImageSubresourceInfo& subres = std::get<2>(this->rwTextureDeps.ValueAtIndex(i));
 			const ImageLayout& layout = std::get<3>(this->rwTextureDeps.ValueAtIndex(i));
 
@@ -174,7 +174,7 @@ FrameOp::Build(
 				{
 					CoreGraphics::BarrierCreateInfo& info = barriers.AddUnique(std::make_pair(-1, this->index));
 					info.domain = CoreGraphics::BarrierDomain::Global;
-					info.leftDependency = CoreGraphics::BarrierDependency::ComputeShader;
+					info.leftDependency = CoreGraphics::BarrierStage::ComputeShader;
 					info.rightDependency = stage;
 					info.shaderRWTextures.Append(std::make_tuple(tex, subres, origLayout, layout, CoreGraphics::BarrierAccess::ShaderRead, access));
 				}
@@ -195,7 +195,7 @@ FrameOp::Build(
 
 			// right dependency set
 			const CoreGraphics::BarrierAccess& access = std::get<0>(this->renderTextureDeps.ValueAtIndex(i));
-			const CoreGraphics::BarrierDependency& stage = std::get<1>(this->renderTextureDeps.ValueAtIndex(i));
+			const CoreGraphics::BarrierStage& stage = std::get<1>(this->renderTextureDeps.ValueAtIndex(i));
 			const CoreGraphics::ImageSubresourceInfo& subres = std::get<2>(this->renderTextureDeps.ValueAtIndex(i));
 			const ImageLayout& layout = std::get<3>(this->renderTextureDeps.ValueAtIndex(i));
 
@@ -287,7 +287,7 @@ FrameOp::Build(
 				{
 					CoreGraphics::BarrierCreateInfo& info = barriers.AddUnique(std::make_pair(-1, this->index));
 					info.domain = CoreGraphics::BarrierDomain::Global;
-					info.leftDependency = CoreGraphics::BarrierDependency::PixelShader;
+					info.leftDependency = CoreGraphics::BarrierStage::PixelShader;
 					info.rightDependency = stage;
 					info.renderTextures.Append(std::make_tuple(tex, subres, origLayout, layout, CoreGraphics::BarrierAccess::ShaderRead, access));
 				}
@@ -307,7 +307,7 @@ FrameOp::Build(
 
 			// right dependency set
 			const CoreGraphics::BarrierAccess& access = std::get<0>(this->rwBufferDeps.ValueAtIndex(i));
-			const CoreGraphics::BarrierDependency& stage = std::get<1>(this->rwBufferDeps.ValueAtIndex(i));
+			const CoreGraphics::BarrierStage& stage = std::get<1>(this->rwBufferDeps.ValueAtIndex(i));
 
 			DependencyIntent readOrWrite = DependencyIntent::Read;
 			switch (access)

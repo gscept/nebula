@@ -36,7 +36,7 @@ VkScheduler::~VkScheduler()
 /**
 */
 void
-VkScheduler::PushImageLayoutTransition(CoreGraphicsQueueType queue, CoreGraphics::BarrierDependency left, CoreGraphics::BarrierDependency right, VkImageMemoryBarrier barrier)
+VkScheduler::PushImageLayoutTransition(CoreGraphicsQueueType queue, CoreGraphics::BarrierStage left, CoreGraphics::BarrierStage right, VkImageMemoryBarrier barrier)
 {
 	n_assert(this->dev != nullptr);
 	VkDeferredCommand del;
@@ -53,7 +53,7 @@ VkScheduler::PushImageLayoutTransition(CoreGraphicsQueueType queue, CoreGraphics
 /**
 */
 void
-VkScheduler::PushImageOwnershipChange(CoreGraphicsQueueType queue, CoreGraphics::BarrierDependency left, CoreGraphics::BarrierDependency right, VkImageMemoryBarrier barrier)
+VkScheduler::PushImageOwnershipChange(CoreGraphicsQueueType queue, CoreGraphics::BarrierStage left, CoreGraphics::BarrierStage right, VkImageMemoryBarrier barrier)
 {
 	n_assert(this->dev != nullptr);
 	VkDeferredCommand del;

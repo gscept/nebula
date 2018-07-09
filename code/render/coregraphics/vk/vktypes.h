@@ -56,7 +56,7 @@ public:
 	/// convert pixel format to Vulkan component mapping
 	static VkComponentMapping AsVkMapping(CoreGraphics::PixelFormat::Code p);
 	/// convert dependency flags to vulkan
-	static VkPipelineStageFlags AsVkPipelineFlags(const CoreGraphics::BarrierDependency dep);
+	static VkPipelineStageFlags AsVkPipelineFlags(const CoreGraphics::BarrierStage dep);
 	/// convert dependency flags to vulkan
 	static VkPipelineStageFlags AsVkResourceAccessFlags(const CoreGraphics::BarrierAccess access);
 	/// convert image aspects to Vulkan

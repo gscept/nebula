@@ -164,7 +164,7 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 		subres.baseMipLevel = 0;
 		subres.layerCount = info.arrayLayers;
 		subres.levelCount = info.mipLevels;
-		scheduler->PushImageLayoutTransition(TransferQueueType, CoreGraphics::BarrierDependency::Host, CoreGraphics::BarrierDependency::Transfer, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
+		scheduler->PushImageLayoutTransition(TransferQueueType, CoreGraphics::BarrierStage::Host, CoreGraphics::BarrierStage::Transfer, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
 		uint32_t remainingBytes = alignedSize;
 
 		// now load texture by walking through all images and mips
@@ -231,8 +231,8 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 
 		// transition to something readable by shaders
 		VkClearColorValue val = { 1, 0, 0, 1 };
-		scheduler->PushImageOwnershipChange(TransferQueueType, CoreGraphics::BarrierDependency::Transfer, CoreGraphics::BarrierDependency::Transfer, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, TransferQueueType, GraphicsQueueType, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
-		scheduler->PushImageLayoutTransition(GraphicsQueueType, CoreGraphics::BarrierDependency::Transfer, CoreGraphics::BarrierDependency::AllGraphicsShaders, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+		scheduler->PushImageOwnershipChange(TransferQueueType, CoreGraphics::BarrierStage::Transfer, CoreGraphics::BarrierStage::Transfer, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, TransferQueueType, GraphicsQueueType, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
+		scheduler->PushImageLayoutTransition(GraphicsQueueType, CoreGraphics::BarrierStage::Transfer, CoreGraphics::BarrierStage::AllGraphicsShaders, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
 		
 
 		ilDeleteImage(image);

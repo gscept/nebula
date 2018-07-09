@@ -21,7 +21,7 @@ namespace CoreGraphics
 	struct IndexBufferId;
 	struct EventId;
 	struct BarrierId;
-	enum class BarrierDependency;
+	enum class BarrierStage;
 
 }
 namespace Vulkan

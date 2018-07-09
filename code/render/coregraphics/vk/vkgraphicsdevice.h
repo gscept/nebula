@@ -93,16 +93,10 @@ void WaitForFences(VkFence* fences, uint32_t numFences, bool waitForAll);
 void BeginDrawThread();
 /// finish current draw threads
 void EndDrawThreads();
-/// continues to next thread
-void NextThread();
 /// add command to thread
 void PushToThread(const VkCmdBufferThread::Command& cmd, const IndexT& index, bool allowStaging = true);
 /// flush remaining staging thread commands
 void FlushToThread(const IndexT& index);
-/// begin draw subpass 
-void BeginDrawSubpass();
-/// end draw subpass
-void EndDrawSubpass();
 
 /// binds common descriptors
 void BindSharedDescriptorSets();

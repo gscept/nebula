@@ -215,8 +215,8 @@ FrameScript::Build()
 	CoreGraphics::BarrierCreateInfo info =
 	{
 		CoreGraphics::BarrierDomain::Global,
-		CoreGraphics::BarrierDependency::Bottom,
-		CoreGraphics::BarrierDependency::Bottom,
+		CoreGraphics::BarrierStage::Bottom,
+		CoreGraphics::BarrierStage::Bottom,
 		renderTexturesBarr, shaderRWBuffersBarr, shaderRWTexturesBarr
 	};
 	if (this->endOfFrameBarrier != CoreGraphics::BarrierId::Invalid())

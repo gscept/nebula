@@ -58,9 +58,9 @@ public:
 	virtual ~VkScheduler();
 
 	/// push image layout change
-	void PushImageLayoutTransition(CoreGraphicsQueueType queue, CoreGraphics::BarrierDependency left, CoreGraphics::BarrierDependency right, VkImageMemoryBarrier barrier);
+	void PushImageLayoutTransition(CoreGraphicsQueueType queue, CoreGraphics::BarrierStage left, CoreGraphics::BarrierStage right, VkImageMemoryBarrier barrier);
 	/// push transition image ownership transition
-	void PushImageOwnershipChange(CoreGraphicsQueueType queue, CoreGraphics::BarrierDependency left, CoreGraphics::BarrierDependency right, VkImageMemoryBarrier barrier);
+	void PushImageOwnershipChange(CoreGraphicsQueueType queue, CoreGraphics::BarrierStage left, CoreGraphics::BarrierStage right, VkImageMemoryBarrier barrier);
 	/// push image color clear
 	void PushImageColorClear(const VkImage& image, const CoreGraphicsQueueType queue, VkImageLayout layout, VkClearColorValue clearValue, VkImageSubresourceRange subres);
 	/// push image depth stencil clear

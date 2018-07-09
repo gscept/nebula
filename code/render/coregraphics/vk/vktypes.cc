@@ -517,54 +517,54 @@ VkTypes::AsVkMapping(ILenum p)
 /**
 */
 VkPipelineStageFlags
-VkTypes::AsVkPipelineFlags(const CoreGraphics::BarrierDependency dep)
+VkTypes::AsVkPipelineFlags(const CoreGraphics::BarrierStage dep)
 {
 	VkPipelineStageFlags flags = 0;
 	uint32_t bit;
 	for (bit = 1; dep >= bit; bit *= 2)
 	{
-		if ((dep & bit) == bit) switch ((CoreGraphics::BarrierDependency)bit)
+		if ((dep & bit) == bit) switch ((CoreGraphics::BarrierStage)bit)
 		{
-		case CoreGraphics::BarrierDependency::VertexShader:
+		case CoreGraphics::BarrierStage::VertexShader:
 			flags |= VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
 			break;
-		case CoreGraphics::BarrierDependency::HullShader:
+		case CoreGraphics::BarrierStage::HullShader:
 			flags |= VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT;
 			break;
-		case CoreGraphics::BarrierDependency::DomainShader:
+		case CoreGraphics::BarrierStage::DomainShader:
 			flags |= VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT;
 			break;
-		case CoreGraphics::BarrierDependency::GeometryShader:
+		case CoreGraphics::BarrierStage::GeometryShader:
 			flags |= VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT;
 			break;
-		case CoreGraphics::BarrierDependency::PixelShader:
+		case CoreGraphics::BarrierStage::PixelShader:
 			flags |= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 			break;
-		case CoreGraphics::BarrierDependency::ComputeShader:
+		case CoreGraphics::BarrierStage::ComputeShader:
 			flags |= VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
 			break;
-		case CoreGraphics::BarrierDependency::VertexInput:
+		case CoreGraphics::BarrierStage::VertexInput:
 			flags |= VK_PIPELINE_STAGE_VERTEX_INPUT_BIT;
 			break;
-		case CoreGraphics::BarrierDependency::EarlyDepth:
+		case CoreGraphics::BarrierStage::EarlyDepth:
 			flags |= VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
 			break;
-		case CoreGraphics::BarrierDependency::LateDepth:
+		case CoreGraphics::BarrierStage::LateDepth:
 			flags |= VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
 			break;
-		case CoreGraphics::BarrierDependency::Transfer:
+		case CoreGraphics::BarrierStage::Transfer:
 			flags |= VK_PIPELINE_STAGE_TRANSFER_BIT;
 			break;
-		case CoreGraphics::BarrierDependency::Host:
+		case CoreGraphics::BarrierStage::Host:
 			flags |= VK_PIPELINE_STAGE_HOST_BIT;
 			break;
-		case CoreGraphics::BarrierDependency::PassOutput:
+		case CoreGraphics::BarrierStage::PassOutput:
 			flags |= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 			break;
-		case CoreGraphics::BarrierDependency::Top:
+		case CoreGraphics::BarrierStage::Top:
 			flags |= VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 			break;
-		case CoreGraphics::BarrierDependency::Bottom:
+		case CoreGraphics::BarrierStage::Bottom:
 			flags |= VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
 			break;
 		}

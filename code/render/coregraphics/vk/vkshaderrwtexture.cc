@@ -118,7 +118,7 @@ CreateShaderRWTexture(const ShaderRWTextureCreateInfo& info)
 	n_assert(stat == VK_SUCCESS);
 
 	// transition to a useable state
-	VkScheduler::Instance()->PushImageLayoutTransition(GraphicsQueueType, CoreGraphics::BarrierDependency::Host, CoreGraphics::BarrierDependency::AllGraphicsShaders, VkUtilities::ImageMemoryBarrier(loadInfo.img, viewRange, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL));
+	VkScheduler::Instance()->PushImageLayoutTransition(GraphicsQueueType, CoreGraphics::BarrierStage::Host, CoreGraphics::BarrierStage::AllGraphicsShaders, VkUtilities::ImageMemoryBarrier(loadInfo.img, viewRange, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL));
 
 	layout = ImageLayout::General;
 	ShaderRWTextureId ret;
