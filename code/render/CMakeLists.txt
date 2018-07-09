@@ -300,8 +300,6 @@ ENDIF()
 				vkcmdbufferthread.h
 				vkevent.cc
 				vkevent.h
-				vkfence.cc
-				vkfence.h
 				vkgraphicsdevice.h
 				vkgraphicsdevice.cc
 				vkdeferredcommand.cc
@@ -390,8 +388,6 @@ ENDIF()
 				frameop.h
 				framepass.cc
 				framepass.h
-				frameresourcebarrier.cc
-				frameresourcebarrier.h
 				framescript.cc
 				framescript.h
 				framescriptloader.cc

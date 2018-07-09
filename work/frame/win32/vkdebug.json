@@ -109,7 +109,6 @@ framescript:
 	pass:
 	{
 		name: "Pass2",
-
 		attachments:
 		[
 			{ name: "ScreenBuffer", 	clear: [0.1, 1.0, 0.1, 1], 		store: true	},
@@ -121,7 +120,7 @@ framescript:
 		{
 			resources:
 			[
-				{ name: "ScreenBuffer", access: "ShaderWrite", layout: "ColorAttachmentWrite", stage: "PixelShader", mip: 0, layer: 0, aspect: "Color" }
+				{ name: "ScreenBuffer", access: "ColorAttachmentWrite", layout: "ColorAttachmentWrite", stage: "PixelShader", mip: 0, layer: 0, aspect: "Color" }
 			],
 			
 			name: "GeometryPass",

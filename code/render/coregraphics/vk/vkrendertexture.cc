@@ -84,9 +84,9 @@ CreateRenderTexture(const RenderTextureCreateInfo& info)
 		IndexT i;
 		for (i = 0; i < swapInfo.swapimages.Size(); i++)
 		{
-			scheduler->PushImageLayoutTransition(GraphicsQueueType, CoreGraphics::BarrierDependency::Host, CoreGraphics::BarrierDependency::Transfer, VkUtilities::ImageMemoryBarrier(swapInfo.swapimages[i], subres, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
+			scheduler->PushImageLayoutTransition(GraphicsQueueType, CoreGraphics::BarrierStage::Host, CoreGraphics::BarrierStage::Transfer, VkUtilities::ImageMemoryBarrier(swapInfo.swapimages[i], subres, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
 			scheduler->PushImageColorClear(swapInfo.swapimages[i], GraphicsQueueType, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, clear, subres);
-			scheduler->PushImageLayoutTransition(GraphicsQueueType, CoreGraphics::BarrierDependency::Transfer, CoreGraphics::BarrierDependency::PassOutput, VkUtilities::ImageMemoryBarrier(swapInfo.swapimages[i], subres, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR));
+			scheduler->PushImageLayoutTransition(GraphicsQueueType, CoreGraphics::BarrierStage::Transfer, CoreGraphics::BarrierStage::PassOutput, VkUtilities::ImageMemoryBarrier(swapInfo.swapimages[i], subres, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR));
 		}
 		
 		n_assert(adjustedInfo.type == Texture2D);
@@ -191,9 +191,9 @@ CreateRenderTexture(const RenderTextureCreateInfo& info)
 		{
 			// clear image and transition layout
 			VkClearColorValue clear = { 0, 0, 0, 0 };
-			scheduler->PushImageLayoutTransition(GraphicsQueueType, CoreGraphics::BarrierDependency::Host, CoreGraphics::BarrierDependency::Transfer, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
+			scheduler->PushImageLayoutTransition(GraphicsQueueType, CoreGraphics::BarrierStage::Host, CoreGraphics::BarrierStage::Transfer, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
 			scheduler->PushImageColorClear(loadInfo.img, GraphicsQueueType, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, clear, subres);
-			scheduler->PushImageLayoutTransition(GraphicsQueueType, CoreGraphics::BarrierDependency::Transfer, CoreGraphics::BarrierDependency::PassOutput, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+			scheduler->PushImageLayoutTransition(GraphicsQueueType, CoreGraphics::BarrierStage::Transfer, CoreGraphics::BarrierStage::PassOutput, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
 
 			// create binding
 			layout = ImageLayout::ShaderRead;
@@ -204,9 +204,9 @@ CreateRenderTexture(const RenderTextureCreateInfo& info)
 		{
 			// clear image and transition layout
 			VkClearDepthStencilValue clear = { 1, 0 };
-			scheduler->PushImageLayoutTransition(GraphicsQueueType, CoreGraphics::BarrierDependency::Host, CoreGraphics::BarrierDependency::Transfer, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
+			scheduler->PushImageLayoutTransition(GraphicsQueueType, CoreGraphics::BarrierStage::Host, CoreGraphics::BarrierStage::Transfer, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
 			scheduler->PushImageDepthStencilClear(loadInfo.img, GraphicsQueueType, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, clear, subres);
-			scheduler->PushImageLayoutTransition(GraphicsQueueType, CoreGraphics::BarrierDependency::Transfer, CoreGraphics::BarrierDependency::LateDepth, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL));
+			scheduler->PushImageLayoutTransition(GraphicsQueueType, CoreGraphics::BarrierStage::Transfer, CoreGraphics::BarrierStage::LateDepth, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL));
 
 			layout = ImageLayout::DepthStencilRead;
 			//runtimeInfo.bind = VkShaderServer::Instance()->RegisterTexture(rtId, true, runtimeInfo.type);
@@ -345,17 +345,17 @@ RenderTextureResize(const RenderTextureId id, const RenderTextureResizeInfo& inf
 	{
 		// clear image and transition layout
 		VkClearColorValue clear = { 0, 0, 0, 0 };
-		scheduler->PushImageLayoutTransition(GraphicsQueueType, CoreGraphics::BarrierDependency::Host, CoreGraphics::BarrierDependency::NoDependencies, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_MEMORY_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL));
+		scheduler->PushImageLayoutTransition(GraphicsQueueType, CoreGraphics::BarrierStage::Host, CoreGraphics::BarrierStage::NoDependencies, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_MEMORY_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL));
 		scheduler->PushImageColorClear(loadInfo.img, GraphicsQueueType, VK_IMAGE_LAYOUT_GENERAL, clear, subres);
-		scheduler->PushImageLayoutTransition(GraphicsQueueType, CoreGraphics::BarrierDependency::PixelShader, CoreGraphics::BarrierDependency::AllGraphicsShaders, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_MEMORY_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+		scheduler->PushImageLayoutTransition(GraphicsQueueType, CoreGraphics::BarrierStage::PixelShader, CoreGraphics::BarrierStage::AllGraphicsShaders, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_MEMORY_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
 	}
 	else
 	{
 		// clear image and transition layout
 		VkClearDepthStencilValue clear = { 1, 0 };
-		scheduler->PushImageLayoutTransition(GraphicsQueueType, CoreGraphics::BarrierDependency::Host, CoreGraphics::BarrierDependency::NoDependencies, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_MEMORY_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL));
+		scheduler->PushImageLayoutTransition(GraphicsQueueType, CoreGraphics::BarrierStage::Host, CoreGraphics::BarrierStage::NoDependencies, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_MEMORY_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL));
 		scheduler->PushImageDepthStencilClear(loadInfo.img, GraphicsQueueType, VK_IMAGE_LAYOUT_GENERAL, clear, subres);
-		scheduler->PushImageLayoutTransition(GraphicsQueueType, CoreGraphics::BarrierDependency::NoDependencies, CoreGraphics::BarrierDependency::AllGraphicsShaders, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_MEMORY_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL));
+		scheduler->PushImageLayoutTransition(GraphicsQueueType, CoreGraphics::BarrierStage::NoDependencies, CoreGraphics::BarrierStage::AllGraphicsShaders, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_MEMORY_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL));
 	}
 }
 
@@ -550,7 +550,7 @@ RenderTextureGenerateMipHelper(const CoreGraphics::RenderTextureId id, IndexT fr
 	fromSubres.levelCount = 1;
 
 	// transition source to blit source
-	VkUtilities::ImageLayoutTransition(GraphicsQueueType, VkTypes::AsVkPipelineFlags(CoreGraphics::BarrierDependency::AllGraphicsShaders), VkTypes::AsVkPipelineFlags(CoreGraphics::BarrierDependency::Transfer), VkUtilities::ImageMemoryBarrier(loadInfoFrom.img, fromSubres, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL));
+	VkUtilities::ImageLayoutTransition(GraphicsQueueType, VkTypes::AsVkPipelineFlags(CoreGraphics::BarrierStage::AllGraphicsShaders), VkTypes::AsVkPipelineFlags(CoreGraphics::BarrierStage::Transfer), VkUtilities::ImageMemoryBarrier(loadInfoFrom.img, fromSubres, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL));
 
 	VkImageSubresourceRange toSubres;
 	toSubres.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -568,12 +568,12 @@ RenderTextureGenerateMipHelper(const CoreGraphics::RenderTextureId id, IndexT fr
 	toRegion.bottom = toMipHeight;
 	
 	// transition the texture to destination, blit, and transition it back
-	VkUtilities::ImageLayoutTransition(GraphicsQueueType, VkTypes::AsVkPipelineFlags(CoreGraphics::BarrierDependency::AllGraphicsShaders), VkTypes::AsVkPipelineFlags(CoreGraphics::BarrierDependency::Transfer), VkUtilities::ImageMemoryBarrier(loadInfoTo.img, toSubres, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
+	VkUtilities::ImageLayoutTransition(GraphicsQueueType, VkTypes::AsVkPipelineFlags(CoreGraphics::BarrierStage::AllGraphicsShaders), VkTypes::AsVkPipelineFlags(CoreGraphics::BarrierStage::Transfer), VkUtilities::ImageMemoryBarrier(loadInfoTo.img, toSubres, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
 	Vulkan::Blit(loadInfoFrom.img, fromRegion, from, loadInfoTo.img, toRegion, to);
-	VkUtilities::ImageLayoutTransition(GraphicsQueueType, VkTypes::AsVkPipelineFlags(CoreGraphics::BarrierDependency::Transfer), VkTypes::AsVkPipelineFlags(CoreGraphics::BarrierDependency::AllGraphicsShaders), VkUtilities::ImageMemoryBarrier(loadInfoTo.img, toSubres, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+	VkUtilities::ImageLayoutTransition(GraphicsQueueType, VkTypes::AsVkPipelineFlags(CoreGraphics::BarrierStage::Transfer), VkTypes::AsVkPipelineFlags(CoreGraphics::BarrierStage::AllGraphicsShaders), VkUtilities::ImageMemoryBarrier(loadInfoTo.img, toSubres, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
 
 	// transition source out from being blit source
-	VkUtilities::ImageLayoutTransition(GraphicsQueueType, VkTypes::AsVkPipelineFlags(CoreGraphics::BarrierDependency::Transfer), VkTypes::AsVkPipelineFlags(CoreGraphics::BarrierDependency::AllGraphicsShaders), VkUtilities::ImageMemoryBarrier(loadInfoFrom.img, fromSubres, VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+	VkUtilities::ImageLayoutTransition(GraphicsQueueType, VkTypes::AsVkPipelineFlags(CoreGraphics::BarrierStage::Transfer), VkTypes::AsVkPipelineFlags(CoreGraphics::BarrierStage::AllGraphicsShaders), VkUtilities::ImageMemoryBarrier(loadInfoFrom.img, fromSubres, VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
 }
 
 } // namespace Vulkan

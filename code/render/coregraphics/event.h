@@ -25,8 +25,8 @@ struct EventCreateInfo
 {
 	bool createSignaled : 1;
 
-	BarrierDependency leftDependency;
-	BarrierDependency rightDependency;
+	BarrierStage leftDependency;
+	BarrierStage rightDependency;
 	Util::Array<std::tuple<RenderTextureId, ImageSubresourceInfo, ImageLayout, ImageLayout, BarrierAccess, BarrierAccess>> renderTextures;
 	Util::Array<std::tuple<ShaderRWBufferId, BarrierAccess, BarrierAccess>> shaderRWBuffers;
 	Util::Array<std::tuple<ShaderRWTextureId, ImageSubresourceInfo, ImageLayout, ImageLayout, BarrierAccess, BarrierAccess>> shaderRWTextures;

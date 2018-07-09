@@ -95,7 +95,7 @@ protected:
 		FrameOp::Compiled* op;
 		CoreGraphicsQueueType queue;
 		ImageLayout layout;
-		CoreGraphics::BarrierDependency stage;
+		CoreGraphics::BarrierStage stage;
 		CoreGraphics::BarrierAccess access;
 		DependencyIntent intent;
 		IndexT index;
@@ -105,7 +105,7 @@ protected:
 	{
 		FrameOp::Compiled* op;
 		CoreGraphicsQueueType queue;
-		CoreGraphics::BarrierDependency stage;
+		CoreGraphics::BarrierStage stage;
 		CoreGraphics::BarrierAccess access;
 		DependencyIntent intent;
 		IndexT index;
@@ -127,9 +127,9 @@ protected:
 
 	CoreGraphics::BarrierDomain domain;
 	CoreGraphicsQueueType queue;
-	Util::Dictionary<CoreGraphics::ShaderRWTextureId, std::tuple<CoreGraphics::BarrierAccess, CoreGraphics::BarrierDependency, CoreGraphics::ImageSubresourceInfo, ImageLayout>> rwTextureDeps;
-	Util::Dictionary<CoreGraphics::RenderTextureId, std::tuple<CoreGraphics::BarrierAccess, CoreGraphics::BarrierDependency, CoreGraphics::ImageSubresourceInfo, ImageLayout>> renderTextureDeps;
-	Util::Dictionary<CoreGraphics::ShaderRWBufferId, std::tuple<CoreGraphics::BarrierAccess, CoreGraphics::BarrierDependency>> rwBufferDeps;
+	Util::Dictionary<CoreGraphics::ShaderRWTextureId, std::tuple<CoreGraphics::BarrierAccess, CoreGraphics::BarrierStage, CoreGraphics::ImageSubresourceInfo, ImageLayout>> rwTextureDeps;
+	Util::Dictionary<CoreGraphics::RenderTextureId, std::tuple<CoreGraphics::BarrierAccess, CoreGraphics::BarrierStage, CoreGraphics::ImageSubresourceInfo, ImageLayout>> renderTextureDeps;
+	Util::Dictionary<CoreGraphics::ShaderRWBufferId, std::tuple<CoreGraphics::BarrierAccess, CoreGraphics::BarrierStage>> rwBufferDeps;
 
 	Compiled* compiled;
 	Util::StringAtom name;

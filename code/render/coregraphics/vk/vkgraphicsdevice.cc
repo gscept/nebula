@@ -89,9 +89,6 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 	Ptr<VkCmdBufferThread> compThreads[NumComputeThreads];
 	Threading::Event* compCompletionEvents[NumComputeThreads];
 
-	VkCommandPool subpassCmdDrawBufferPool;
-	VkCommandBuffer subpassCmdDrawBuffer;
-
 	Util::Array<VkCmdBufferThread::Command> propagateDescriptorSets;
 	Util::Array<VkCmdBufferThread::Command> threadCmds[NumDrawThreads];
 	SizeT numCallsLastFrame;
@@ -879,23 +876,13 @@ EndDrawThreads()
 /**
 */
 void 
-NextThread()
-{
-	state.currentDrawThread = (state.currentDrawThread + 1) % state.NumDrawThreads;
-	state.numUsedThreads = Math::n_min(state.numUsedThreads + 1, state.NumDrawThreads);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
 PushToThread(const VkCmdBufferThread::Command& cmd, const IndexT& index, bool allowStaging)
 {
 	//this->threadCmds[index].Append(cmd);
 	if (allowStaging)
 	{
 		state.threadCmds[index].Append(cmd);
-		if (state.threadCmds[index].Size() == 250)
+		if (state.threadCmds[index].Size() == 1)
 		{
 			state.drawThreads[index]->PushCommands(state.threadCmds[index]);
 			state.threadCmds[index].Reset();
@@ -918,53 +905,6 @@ FlushToThread(const IndexT& index)
 		state.drawThreads[index]->PushCommands(state.threadCmds[index]);
 		state.threadCmds[index].Clear();
 	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-BeginDrawSubpass()
-{
-	// allocate command buffer
-	VkCommandBufferAllocateInfo subpassInfo =
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-		NULL,
-		state.subpassCmdDrawBufferPool,
-		VK_COMMAND_BUFFER_LEVEL_SECONDARY,
-		1
-	};
-	vkAllocateCommandBuffers(state.devices[state.currentDevice], &subpassInfo, &state.subpassCmdDrawBuffer);
-
-	// start subpass recording
-	VkCommandBufferBeginInfo begin =
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-		NULL,
-		VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT | VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT,
-		&state.passInfo
-	};
-	vkBeginCommandBuffer(state.subpassCmdDrawBuffer, &begin);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-EndDrawSubpass()
-{
-	// execute pending commands before batch
-	vkEndCommandBuffer(state.subpassCmdDrawBuffer);
-	vkCmdExecuteCommands(CommandBufferGetVk(state.mainCmdDrawBuffer), 1, &state.subpassCmdDrawBuffer);
-
-	VkDeferredCommand cmd;
-	cmd.del.type = VkDeferredCommand::FreeCmdBuffers;
-	cmd.del.cmdbufferfree.buffers[0] = state.subpassCmdDrawBuffer;
-	cmd.del.cmdbufferfree.numBuffers = 1;
-	cmd.del.cmdbufferfree.pool = state.subpassCmdDrawBufferPool;
-	cmd.dev = state.devices[state.currentDevice];
-	state.scheduler.PushCommand(cmd, VkScheduler::OnHandleDrawFences);
 }
 
 //------------------------------------------------------------------------------
@@ -1335,7 +1275,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		{
 			VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
 			nullptr,
-			VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+			VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,
 			state.drawQueueFamily
 		};
 		VkResult res = vkCreateCommandPool(state.devices[state.currentDevice], &info, nullptr, &state.dispatchableCmdDrawBufferPool[i]);
@@ -1358,7 +1298,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		{
 			VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
 			nullptr,
-			VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+			VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,
 			state.computeQueueFamily
 		};
 		VkResult res = vkCreateCommandPool(state.devices[state.currentDevice], &info, nullptr, &state.dispatchableCmdCompBufferPool[i]);
@@ -1381,7 +1321,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		{
 			VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
 			nullptr,
-			VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+			VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,
 			state.transferQueueFamily
 		};
 		VkResult res = vkCreateCommandPool(state.devices[state.currentDevice], &info, nullptr, &state.dispatchableCmdTransBufferPool[i]);
@@ -1452,6 +1392,9 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	state.inBeginCompute = false;
 	state.inBeginFrame = false;
 	state.inBeginPass = false;
+
+	state.currentDrawThread = 0;
+	state.numActiveThreads = 0;
 
 	_setup_timer(state.DebugTimer);
 	_setup_counter(state.NumImageBytesAllocated);

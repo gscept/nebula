@@ -21,7 +21,7 @@ ID_24_8_TYPE(SemaphoreId);
 
 struct SemaphoreCreateInfo
 {
-	CoreGraphics::BarrierDependency dependency;
+	CoreGraphics::BarrierStage dependency;
 };
 
 /// create semaphore

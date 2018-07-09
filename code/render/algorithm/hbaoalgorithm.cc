@@ -63,8 +63,8 @@ HBAOAlgorithm::Setup()
 	CoreGraphics::BarrierCreateInfo binfo =
 	{
 		BarrierDomain::Global,
-		BarrierDependency::ComputeShader,
-		BarrierDependency::ComputeShader
+		BarrierStage::ComputeShader,
+		BarrierStage::ComputeShader
 	};
 	ImageSubresourceInfo subres;
 	subres.aspect = ImageAspect::ColorBits;
