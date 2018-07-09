@@ -5,7 +5,7 @@
 #include "stdneb.h"
 
 #include "componenttest.h"
-#include "id/id.h"
+#include "ids/id.h"
 #include "component/componentcontainer.h"
 #include "math/float4.h"
 #include "util/string.h"

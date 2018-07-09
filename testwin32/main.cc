@@ -29,8 +29,8 @@ __cdecl main()
     testRunner->Run(); 
 
     coreServer->Close();
-    testRunner = 0;
-    coreServer = 0;
+    testRunner = nullptr;
+    coreServer = nullptr;
     
     Core::SysFunc::Exit(0);
 }

@@ -5,7 +5,7 @@
 #include "stdneb.h"
 
 #include "idtest.h"
-#include "id/id.h"
+#include "ids/id.h"
 
 using namespace Game;
 
