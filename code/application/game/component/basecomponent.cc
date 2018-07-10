@@ -49,7 +49,7 @@ BaseComponent::RegisterEntity(const Entity& entity)
 /**
 */
 void
-BaseComponent::UnregisterEntity(const Entity& entity)
+BaseComponent::DeregisterEntity(const Entity& entity)
 {
 	// Override in subclass
 	n_assert2(false, "Method has not been overridden!");
@@ -131,6 +131,42 @@ BaseComponent::GetAttributeIds() const
 /**
 */
 void
+BaseComponent::Activate(const Entity & entity)
+{
+	// Override this.
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+BaseComponent::Deactivate(const Entity & entity)
+{
+	// Override this.
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+BaseComponent::OnActivate(const uint32_t& instance)
+{
+	// Override in subclass if neccessary.
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+BaseComponent::OnDeactivate(const uint32_t& instance)
+{
+	// Override in subclass if neccessary.
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 BaseComponent::OnBeginFrame()
 {
 	// Override in subclass if neccessary.
@@ -141,6 +177,15 @@ BaseComponent::OnBeginFrame()
 */
 void
 BaseComponent::OnRender()
+{
+	// Override in subclass if neccessary.
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+BaseComponent::OnEndFrame()
 {
 	// Override in subclass if neccessary.
 }
