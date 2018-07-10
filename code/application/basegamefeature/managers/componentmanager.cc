@@ -46,6 +46,11 @@ ComponentManager::RegisterComponent(const Ptr<BaseComponent>& component)
 		auto d = Util::Delegate<>::FromMethod<BaseComponent, &BaseComponent::OnRender>(component);
 		this->delegates_OnBeginFrame.Append(d);
 	}
+	if (bitField.IsSet(ComponentEvent::OnEndFrame))
+	{
+		auto d = Util::Delegate<>::FromMethod<BaseComponent, &BaseComponent::OnEndFrame>(component);
+		this->delegates_OnEndFrame.Append(d);
+	}
 	if (bitField.IsSet(ComponentEvent::OnRenderDebug))
 	{
 		auto d = Util::Delegate<>::FromMethod<BaseComponent, &BaseComponent::OnRenderDebug>(component);

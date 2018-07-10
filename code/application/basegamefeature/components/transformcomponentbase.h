@@ -38,10 +38,32 @@ public:
 	TransformComponentBase();
 	~TransformComponentBase();
 
+	/// Registers an entity to this component. Entity is inactive to begin with.
 	void RegisterEntity(const Entity& entity);
-	void UnregisterEntity(const Entity& entity);
+
+	/// Deregister Entity. This checks both active and inactive component instances.
+	void DeregisterEntity(const Entity& entity);
+
+	/// Checks whether the entity is registered. Checks both inactive and active datasets.
+	bool IsRegistered(const Entity& entity) const;
+
+	virtual void OnActivate(const uint32_t& instance);
+	virtual void OnDeactivate(const uint32_t& instance);
+
+	/// Activate entity component instance.
+	void Activate(const Entity& entity);
+
+	/// Deactivate entity component instance. Instance state will remain after reactivation but not after deregistering.
+	void Deactivate(const Entity& entity);
+
+	/// Returns the index of the data array to the component instance
+	/// Note that this only checks the active dataset
 	uint32_t GetInstance(const Entity& entity) const;
+
+	/// Returns the owner entity id of provided instance id
 	Entity GetOwner(const uint32_t& instance) const;
+
+	/// Optimize data array and pack data
 	SizeT Optimize();
 
 	/// Returns an attribute value as a variant from index.
@@ -59,7 +81,11 @@ protected:
 	uint32_t& PrevSibling(const uint32_t& instance);
 
 private:
+	/// Holds all active entities data
 	ComponentData<TransformAttributes> data;
+
+	/// Holds all inactive component instances.
+	ComponentData<TransformAttributes> inactiveData;
 
 	/// Attributes
 	/*

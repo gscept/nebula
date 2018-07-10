@@ -33,8 +33,8 @@ public:
 
 	SizeT Size() const;
 
-	/// register an Id. Will create new mapping and allocate instance data
-	void RegisterEntity(const Entity& e);
+	/// register an Id. Will create new mapping and allocate instance data. Returns index of new instance data
+	uint32_t RegisterEntity(const Entity& e);
 
 	/// deregister an Id. will only remove the id and zero the block
 	void DeregisterEntity(const Entity& e);
@@ -110,7 +110,7 @@ ComponentData<InstanceData>::Size() const
 //------------------------------------------------------------------------------
 /**
 */
-template <class InstanceData> void
+template <class InstanceData> uint32_t
 ComponentData<InstanceData>::RegisterEntity(const Entity& e)
 {
 	n_assert2(!this->idMap.Contains(e.id), "ID has already been registered.");
@@ -130,6 +130,8 @@ ComponentData<InstanceData>::RegisterEntity(const Entity& e)
 	
 	this->data[index].owner = e;
 	this->idMap.Add(e.id, index);
+
+	return index;
 }
 
 //------------------------------------------------------------------------------
