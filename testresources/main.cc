@@ -6,7 +6,7 @@
 #include "system/appentry.h"
 #include "core/coreserver.h"
 #include "testbase/testrunner.h"
-#include "rendertest.h"
+#include "resourcetest.h"
 
 using namespace Core;
 using namespace Test;
@@ -18,15 +18,17 @@ NebulaMain(const Util::CommandLineArgs& args)
 {
 	// create Nebula3 runtime
 	Ptr<CoreServer> coreServer = CoreServer::Create();
-	coreServer->SetAppName(Util::StringAtom("Nebula Render Tests"));
+	coreServer->SetAppName(Util::StringAtom("Nebula Resource Loading Tests"));
 	coreServer->Open();
 
-	n_printf("NEBULA RENDER TESTS\n");
+	//Ptr<AssignRegistry> assignReg = AssignRegistry::Create();
+
+	n_printf("\n\nNEBULA RESOURCE TESTS\n");
 	n_printf("========================\n");
 
 	// setup and run test runner
 	Ptr<TestRunner> testRunner = TestRunner::Create();
-	testRunner->AttachTestCase(RenderTest::Create());
+	testRunner->AttachTestCase(ResourceTest::Create());
 	testRunner->Run();
 	//testRunner->AttachTestCase(BXmlReaderTest::Create());
 
