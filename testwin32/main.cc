@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //  testwin32/main.cc
-//  (C) 2012 gscept
+//  (C) 2012-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "foundation.h"
@@ -15,12 +15,12 @@ using namespace Test;
 void
 __cdecl main()
 {
-    // create Nebula3 runtime
+    // create Nebula runtime
     Ptr<CoreServer> coreServer = CoreServer::Create();
-    coreServer->SetAppName("Nebula3 win32 Tests");
+    coreServer->SetAppName("Nebula win32 Tests");
     coreServer->Open();
 
-    n_printf("NEBULA3 win32 TESTS\n");
+    n_printf("NEBULA win32 TESTS\n");
     n_printf("========================\n");
 
     // setup and run test runner
@@ -29,8 +29,8 @@ __cdecl main()
     testRunner->Run(); 
 
     coreServer->Close();
-    testRunner = 0;
-    coreServer = 0;
+    testRunner = nullptr;
+    coreServer = nullptr;
     
     Core::SysFunc::Exit(0);
 }
