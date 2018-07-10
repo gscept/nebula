@@ -1170,7 +1170,7 @@ FrameScriptLoader::ParseShaderState(const Ptr<Frame::FrameScript>& script, JzonV
 	n_assert(shader != NULL);
 	state = ShaderServer::Instance()->ShaderCreateState(shader->string_value, { NEBULAT_BATCH_GROUP }, createResources);
 
-	JzonValue* vars = jzon_get(shader, "variables");
+	JzonValue* vars = jzon_get(node, "variables");
 	if (vars != NULL) ParseShaderVariables(script, state, vars);
 }
 
@@ -1218,12 +1218,23 @@ FrameScriptLoader::ParseShaderVariables(const Ptr<Frame::FrameScript>& script, c
 		case SamplerVariableType:
 		case TextureVariableType:
 		{
-			const Ptr<Resources::ResourceManager>& resManager = Resources::ResourceManager::Instance();
-			Resources::ResourceId id = resManager->GetId(valStr);
-			if (id != Resources::ResourceId::Invalid())
+			if (script->GetColorTexture(valStr) != CoreGraphics::RenderTextureId::Invalid())
 			{
-				TextureId tex = id;
-				ShaderResourceSetTexture(varid, state, tex);
+				ShaderResourceSetRenderTexture(varid, state, script->GetColorTexture(valStr));
+			}
+			else if (script->GetReadWriteTexture(valStr) != CoreGraphics::ShaderRWTextureId::Invalid())
+			{
+				ShaderResourceSetReadWriteTexture(varid, state, script->GetReadWriteTexture(valStr));
+			}
+			else
+			{
+				const Ptr<Resources::ResourceManager>& resManager = Resources::ResourceManager::Instance();
+				Resources::ResourceId id = resManager->CreateResource(valStr, nullptr, nullptr, true);
+				if (id != Resources::ResourceId::Invalid())
+				{
+					TextureId tex = id;
+					ShaderResourceSetTexture(varid, state, tex);
+				}
 			}
 			break;
 		}

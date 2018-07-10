@@ -156,7 +156,8 @@ FrameScript::GetAlgorithm(const Util::StringAtom& name)
 inline const CoreGraphics::RenderTextureId
 FrameScript::GetColorTexture(const Util::StringAtom& name)
 {
-	return this->colorTexturesByName[name];
+	IndexT i = this->colorTexturesByName.FindIndex(name);
+	return i == InvalidIndex ? CoreGraphics::RenderTextureId::Invalid() : this->colorTexturesByName.ValueAtIndex(i);
 }
 
 //------------------------------------------------------------------------------
@@ -165,7 +166,8 @@ FrameScript::GetColorTexture(const Util::StringAtom& name)
 inline const CoreGraphics::RenderTextureId
 FrameScript::GetDepthStencilTexture(const Util::StringAtom& name)
 {
-	return this->depthStencilTexturesByName[name];
+	IndexT i = this->depthStencilTexturesByName.FindIndex(name);
+	return i == InvalidIndex ? CoreGraphics::RenderTextureId::Invalid() : this->colorTexturesByName.ValueAtIndex(i);
 }
 
 //------------------------------------------------------------------------------
@@ -174,7 +176,8 @@ FrameScript::GetDepthStencilTexture(const Util::StringAtom& name)
 inline const CoreGraphics::ShaderRWTextureId
 FrameScript::GetReadWriteTexture(const Util::StringAtom& name)
 {
-	return this->readWriteTexturesByName[name];
+	IndexT i = this->readWriteTexturesByName.FindIndex(name);
+	return i == InvalidIndex ? CoreGraphics::ShaderRWTextureId::Invalid() : this->readWriteTexturesByName.ValueAtIndex(i);
 }
 
 //------------------------------------------------------------------------------
@@ -183,7 +186,8 @@ FrameScript::GetReadWriteTexture(const Util::StringAtom& name)
 inline const CoreGraphics::ShaderRWBufferId
 FrameScript::GetReadWriteBuffer(const Util::StringAtom& name)
 {
-	return this->readWriteBuffersByName[name];
+	IndexT i = this->readWriteBuffersByName.FindIndex(name);
+	return i == InvalidIndex ? CoreGraphics::ShaderRWBufferId::Invalid() : this->readWriteBuffersByName.ValueAtIndex(i);
 }
 
 } // namespace Frame2

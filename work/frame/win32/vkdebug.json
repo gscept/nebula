@@ -109,6 +109,7 @@ framescript:
 	pass:
 	{
 		name: "Pass2",
+
 		attachments:
 		[
 			{ name: "ScreenBuffer", 	clear: [0.1, 1.0, 0.1, 1], 		store: true	},
@@ -117,12 +118,7 @@ framescript:
 		depthStencil: { name: "ZBuffer", store: true },
 
 		subpass:
-		{
-			resources:
-			[
-				{ name: "ScreenBuffer", access: "ColorAttachmentWrite", layout: "ColorAttachmentWrite", stage: "PixelShader", mip: 0, layer: 0, aspect: "Color" }
-			],
-			
+		{			
 			name: "GeometryPass",
 			dependencies: [], 
 			attachments: [ "ScreenBuffer" ],
@@ -133,14 +129,10 @@ framescript:
 				name: 			"GatherPostEffect",
 				shaderState:
 				{
-					shader: 	"shd:gather",
+					shader: 	"shd:copy",
 					variables:
 					[
-						{ semantic: "LightTexture", 	value: "LightBuffer" },
-						{ semantic: "SSSTexture", 		value: "SSSBuffer" },
-						{ semantic: "EmissiveTexture", 	value: "EmissiveBuffer" },
-						{ semantic: "SSAOTexture", 		value: "HBAOBuffer" },
-						{ semantic: "DepthTexture", 	value: "DepthBuffer" }
+						{ semantic: "CopyBuffer", 	value: "tex:Castle_Gate_diffuse.dds" },
 					]
 				}
 				sizeFromTexture: 	"ScreenBuffer"
