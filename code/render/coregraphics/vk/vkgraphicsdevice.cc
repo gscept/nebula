@@ -225,7 +225,7 @@ SetupAdapter()
 					Util::String str(state.caps[i][j].extensionName);
 
 					// only load khronos extensions
-					if (str.BeginsWithString("VK_KHR"))
+					if (str.BeginsWithString("VK_KHR_"))
 						state.deviceFeatureStrings[i][newNumCaps++] = state.caps[i][j].extensionName;
 				}
 				state.numCaps[i] = newNumCaps;
@@ -1002,9 +1002,11 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	const char* layers[] = { "VK_LAYER_LUNARG_standard_validation" };
 #if NEBULAT_VULKAN_DEBUG
 	state.extensions[state.usedExtensions++] = VK_EXT_DEBUG_REPORT_EXTENSION_NAME;
-	const int numLayers = sizeof(layers) / sizeof(const char*);
-#else
-	const int numLayers = 0;
+	#if NEBULAT_VULKAN_VALIDATION
+		const int numLayers = sizeof(layers) / sizeof(const char*);
+	#else
+		const int numLayers = 0;
+	#endif
 #endif
 
 	// setup instance
@@ -1328,22 +1330,6 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		n_assert(res == VK_SUCCESS);
 	}
 
-	{
-		VkCommandPoolCreateInfo info =
-		{
-			VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-			nullptr,
-			VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-			-1
-		};
-
-		VkResult res;
-
-		info.queueFamilyIndex = state.drawQueueFamily;
-		res = vkCreateCommandPool(state.devices[state.currentDevice], &info, nullptr, &state.subpassCmdDrawBufferPool);
-		n_assert(res == VK_SUCCESS);
-	}
-
 	VkFenceCreateInfo fenceInfo =
 	{
 		VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
@@ -1482,7 +1468,7 @@ DestroyGraphicsDevice()
 	}
 	state.descriptorPools.Clear();
 
-	vkDestroyCommandPool(state.devices[state.currentDevice], state.subpassCmdDrawBufferPool, nullptr);
+
 	vkDestroyPipelineCache(state.devices[state.currentDevice], state.cache, nullptr);
 
 	// free our main buffers, our secondary buffers should be fine so the pools should be free to destroy
@@ -2018,16 +2004,6 @@ InsertBarrier(const CoreGraphics::BarrierId barrier, const CoreGraphicsQueueType
 			cmd.barrier.imageBarriers = info.imageBarriers;
 			PushToThread(cmd, state.currentDrawThread);
 		}
-		else
-		{
-			vkCmdPipelineBarrier(state.subpassCmdDrawBuffer,
-				info.srcFlags,
-				info.dstFlags,
-				info.dep,
-				info.numMemoryBarriers, info.memoryBarriers,
-				info.numBufferBarriers, info.bufferBarriers,
-				info.numImageBarriers, info.imageBarriers);
-		}
 	}
 	else
 	{
@@ -2066,10 +2042,6 @@ SignalEvent(const CoreGraphics::EventId & ev, const CoreGraphicsQueueType queue)
 			cmd.setEvent.event = info.event;
 			cmd.setEvent.stages = info.leftDependency;
 			PushToThread(cmd, state.currentDrawThread);
-		}
-		else
-		{
-			vkCmdSetEvent(state.subpassCmdDrawBuffer, info.event, info.leftDependency);
 		}
 	}
 	else
@@ -2112,18 +2084,6 @@ WaitEvent(const CoreGraphics::EventId & ev, const CoreGraphicsQueueType queue)
 			cmd.waitEvent.signalingStage = info.rightDependency;
 			PushToThread(cmd, state.currentDrawThread);
 		}
-		else
-		{
-			vkCmdWaitEvents(state.subpassCmdDrawBuffer, 1, &info.event,
-				info.leftDependency,
-				info.rightDependency,
-				info.numMemoryBarriers,
-				info.memoryBarriers,
-				info.numBufferBarriers,
-				info.bufferBarriers,
-				info.numImageBarriers,
-				info.imageBarriers);
-		}
 	}
 	else
 	{
@@ -2164,10 +2124,6 @@ ResetEvent(const CoreGraphics::EventId & ev, const CoreGraphicsQueueType queue)
 			cmd.setEvent.event = info.event;
 			cmd.setEvent.stages = info.rightDependency;
 			PushToThread(cmd, state.currentDrawThread);
-		}
-		else
-		{
-			vkCmdResetEvent(state.subpassCmdDrawBuffer, info.event, info.rightDependency);
 		}
 	}
 	else

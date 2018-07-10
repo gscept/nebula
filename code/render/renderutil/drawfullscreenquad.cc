@@ -63,33 +63,33 @@ DrawFullScreenQuad::Setup(SizeT rtWidth, SizeT rtHeight)
 
 
     // compute uv coordinates, for GL and Vulkan, the Y coordinate is reversed
-#if (__VULKAN__ || __OGL4__)
+#if (__VULKAN__ || __DX11__ || __DX12__)
 	float u0 = 0.0f;
-	float u1 = 1.0f;
-	float v0 = 1.0f;
+	float u1 = 3.0f;
+	float v0 = 3.0f;
 	float v1 = 0.0f;
 #else
     float u0 = 0.0f;
-    float u1 = 1.0f;
+    float u1 = 3.0f;
     float v0 = 0.0f;
-    float v1 = 1.0f;
+    float v1 = 3.0f;
 #endif
 
     // setup a vertex buffer with 2 triangles
     float v[3][5];
 
-#if COREGRAPHICS_TRIANGLE_FRONT_FACE_CCW
-    // first triangle
-    v[0][0] = left;		v[0][1] = top;		v[0][2] = 0.0f; v[0][3] = u0; v[0][4] = v0;
-    v[1][0] = left;		v[1][1] = bottom;	v[1][2] = 0.0f; v[1][3] = u0; v[1][4] = v1;
-    v[2][0] = right;	v[2][1] = top;		v[2][2] = 0.0f; v[2][3] = u1; v[2][4] = v0;
-
+#if (__VULKAN__ || __DX11__ || __DX12__)
+	// first triangle
+	v[0][0] = left;		v[0][1] = bottom;	v[0][2] = 0.0f; v[0][3] = u0; v[0][4] = v0;
+	v[1][0] = left;		v[1][1] = top;		v[1][2] = 0.0f; v[1][3] = u0; v[1][4] = v1;
+	v[2][0] = right;	v[2][1] = bottom;	v[2][2] = 0.0f; v[2][3] = u1; v[2][4] = v0;
 #else
 	// first triangle
-	v[0][0] = left;  v[0][1] = top;    v[0][2] = 0.0f; v[0][3] = u0; v[0][4] = v0;
-	v[1][0] = right; v[1][1] = top;    v[1][2] = 0.0f; v[1][3] = u1; v[1][4] = v0;
-	v[2][0] = left;  v[2][1] = bottom; v[2][2] = 0.0f; v[2][3] = u0; v[2][4] = v1;
+	v[0][0] = left;		v[0][1] = top;		v[0][2] = 0.0f; v[0][3] = u0; v[0][4] = v0;
+	v[1][0] = left;		v[1][1] = bottom;	v[1][2] = 0.0f; v[1][3] = u0; v[1][4] = v1;
+	v[2][0] = right;	v[2][1] = top;		v[2][2] = 0.0f; v[2][3] = u1; v[2][4] = v0;
 #endif
+
 
     // setup vertex buffer with memory-vertexbuffer-loader
 	
