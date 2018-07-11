@@ -412,6 +412,7 @@ CreatePass(const PassCreateInfo& info)
 	Util::FixedArray<Math::float4> dimensions(info.colorAttachments.Size());
 	for (i = 0; i < info.colorAttachments.Size(); i++)
 	{
+		n_assert(info.colorAttachments.Size() < 8); // only allow 8 input attachments in the shader, so we must limit it
 		CoreGraphics::ResourceTableInputAttachment write;
 		write.tex = info.colorAttachments[i];
 		write.isDepth = false;

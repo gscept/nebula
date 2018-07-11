@@ -161,11 +161,11 @@ group(DYNAMIC_OFFSET_GROUP) shared varblock InstancingBlock [ bool System = true
 	int IdArray[MAX_BATCH_SIZE];
 };
 
-group(PASS_GROUP) inputAttachment InputAttachments[32];
+group(PASS_GROUP) inputAttachment InputAttachments[8];
 group(PASS_GROUP) shared varblock PassBlock [ bool System = true; ]
 {
 	// render target dimensions are size (xy) inversed size (zw)
-	vec4 RenderTargetDimensions[32];
+	vec4 RenderTargetDimensions[8];
 };
 
 
