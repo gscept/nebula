@@ -26,6 +26,7 @@ enum ValueType
 	Transform44Type = Util::Variant::Transform44,
     BlobType = Util::Variant::Blob,
     GuidType = Util::Variant::Guid,
+	EntityType = Util::Variant::UInt
 };
 
 // these class definitions are just for template specializations later on,

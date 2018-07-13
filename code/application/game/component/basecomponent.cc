@@ -58,6 +58,46 @@ BaseComponent::DeregisterEntity(const Entity& entity)
 //------------------------------------------------------------------------------
 /**
 */
+void
+BaseComponent::DeregisterAll()
+{
+	// Override in subclass
+	n_assert2(false, "Method has not been overridden!");
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+BaseComponent::DeregisterAllDead()
+{
+	// Override in subclass
+	n_assert2(false, "Method has not been overridden!");
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+BaseComponent::CleanData()
+{
+	// Override in subclass
+	n_assert2(false, "Method has not been overridden!");
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+BaseComponent::DestroyAll()
+{
+	// Override in subclass
+	n_assert2(false, "Method has not been overridden!");
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 uint32_t
 BaseComponent::GetInstance(const Entity & entity) const
 {

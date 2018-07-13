@@ -10,7 +10,7 @@
 //------------------------------------------------------------------------------
 #include "game/entity.h"
 #include "core/refcounted.h"
-#include "componentmacros.h"
+#include "componentdata.h"
 #include "util/bitfield.h"
 #include "game/attr/attrid.h"
 #include "game/attr/attributedefinition.h"
@@ -46,6 +46,19 @@ public:
 	/// Deregisters an entity from this component. The data will still exist in the buffer until Optimize() is called.
 	/// Note that even though this keeps the data intact, registering the same entity again won't result in the same data being used.
 	virtual void DeregisterEntity(const Entity& entity);
+
+	/// Deregister all entities from both inactive and active. Garbage collection will take care of freeing up data.
+	virtual void DeregisterAll();
+	
+	/// Deregister all non-alive entities from both inactive and active. This can be extremely slow!
+	virtual void DeregisterAllDead();
+
+	/// Cleans up right away and frees any memory that does not belong to an entity. This can be extremely slow!
+	virtual void CleanData();
+
+	/// Destroys all instances of this component, and deregisters every entity.
+	virtual void DestroyAll();
+
 
 	/// returns an index to the instance data within the data buffer.
 	virtual uint32_t GetInstance(const Entity& entity) const;
@@ -96,8 +109,10 @@ public:
 	virtual void OnRenderDebug();
 	
 protected:
+	/// Holds all events this component is subscribed to.
 	Util::BitField<ComponentEvent::NumEvents> events;
 
+	/// Holds all attributedefinitions that this components has available.
 	Util::FixedArray<Attr::AttrId> attributes;
 };
 

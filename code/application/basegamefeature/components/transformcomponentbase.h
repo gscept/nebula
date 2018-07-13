@@ -44,11 +44,20 @@ public:
 	/// Deregister Entity. This checks both active and inactive component instances.
 	void DeregisterEntity(const Entity& entity);
 
+	/// Deregister all entities from both inactive and active. Garbage collection will take care of freeing up data.
+	void DeregisterAll();
+
+	/// Deregister all non-alive entities from both inactive and active. This can be extremely slow!
+	void DeregisterAllDead();
+
+	/// Cleans up right away and frees any memory that does not belong to an entity. This can be extremely slow!
+	void CleanData();
+
+	/// Destroys all instances of this component, and deregisters every entity.
+	void DestroyAll();
+
 	/// Checks whether the entity is registered. Checks both inactive and active datasets.
 	bool IsRegistered(const Entity& entity) const;
-
-	virtual void OnActivate(const uint32_t& instance);
-	virtual void OnDeactivate(const uint32_t& instance);
 
 	/// Activate entity component instance.
 	void Activate(const Entity& entity);
@@ -86,22 +95,6 @@ private:
 
 	/// Holds all inactive component instances.
 	ComponentData<TransformAttributes> inactiveData;
-
-	/// Attributes
-	/*
-	Ids::IdAllocator<
-		Entity,
-		Math::matrix44,
-		Math::matrix44,
-		uint32_t,
-		uint32_t,
-		uint32_t,
-		uint32_t,		
-	> data;
-
-	/// Contains the link between InstanceData and Id
-	Util::Dictionary<Ids::Id32, uint32_t> idMap;
-	*/
 };
 
 } // namespace Game

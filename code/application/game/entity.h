@@ -22,6 +22,22 @@ namespace Game
 struct Entity
 {
 	Ids::Id32 id;
+
+	bool operator==(const Ids::Id32& rhs)
+	{
+		return this->id == rhs;
+	}
+
+	Entity& operator=(const Ids::Id32& rhs)
+	{
+		this->id = rhs;
+		return *this;
+	}
+
+	/*static bool IsAlive() const
+	{
+		return false;
+	}*/
 };
 
 } // namespace Game
