@@ -1,12 +1,12 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	@class Game::ComponentDataData
+	@class Game::ComponentData
 
-	Base ComponentData that provides mapping from Game::Ids to an internal array index for ComponentDatas
+	Base ComponentData that provides mapping from Entites to an internal array index for ComponentDatas
 	Can perform garbage collection that rearranges array entries to avoid gaps
 	
-	(C) 2017 Individual contributors, see AUTHORS file
+	(C) 2018 Individual contributors, see AUTHORS file
 */
 
 #include "util/dictionary.h"
@@ -50,6 +50,15 @@ public:
 
 	/// Destroys all instances and sets all memory used free.
 	void DestroyAll();
+
+	/// Deregister all inactive entities.
+	void DeregisterAllInactive();
+
+	/// Deregister all entities
+	void DeregisterAll();
+
+	/// Free up all non-reserved by entity data.
+	void Clean();
 
 	/// retrieve the instance id of an external id for faster lookup. Will be made invalid by Optimize()
 	uint32_t GetInstance(const Entity& e) const;
@@ -224,6 +233,57 @@ ComponentData<InstanceData>::DestroyAll()
 	this->freeIds.Clear();
 	this->data.Clear();
 	this->idMap.Clear();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class InstanceData> void
+ComponentData<InstanceData>::DeregisterAll()
+{
+	for (SizeT i = 0; i < this->idMap.Size(); i++)
+	{
+		SizeT id = this->idMap.KeyAtIndex(i);
+		this->idMap.EraseAtIndex(i)
+		this->freeIds.Push(id);
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class InstanceData> void
+ComponentData<InstanceData>::DeregisterAllInactive()
+{
+	Ptr<Game::EntityManager> manager = Game::EntityManager::Instance();
+	for (SizeT i = 0; i < this->idMap.Size(); i++)
+	{
+		SizeT id = this->idMap.KeyAtIndex(i);
+		if (!manager->IsAlive(id))
+		{
+			this->idMap.EraseAtIndex(i)
+			this->freeIds.Push(id);
+		}
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class InstanceData> void
+ComponentData<InstanceData>::Clean()
+{
+	Ptr<Game::EntityManager> entityManager = Game::EntityManager::Instance();
+	SizeT index = 0;
+	while (i < this->data.Size())
+	{
+		if (!entityManager->IsAlive(this->data[index].owner))
+		{
+			this->data.EraseIndexSwap(index);
+			continue;
+		}
+		index++;
+	}
 }
 
 //------------------------------------------------------------------------------

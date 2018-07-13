@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-//  component.cc
+//  transformcomponentbase.cc
 //  (C) 2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
@@ -15,7 +15,7 @@ namespace Game
 */
 TransformComponentBase::TransformComponentBase()
 {
-	this->events.SetBit(ComponentEvent::OnBeginFrame);
+	//this->events.SetBit(ComponentEvent::OnBeginFrame);
 
 	this->attributes.SetSize(7);
 	this->attributes[0] = Attr::Owner;
@@ -41,10 +41,6 @@ TransformComponentBase::~TransformComponentBase()
 void
 TransformComponentBase::RegisterEntity(const Entity& entity)
 {
-	/*n_assert2(!this->idMap.Contains(entity.id), "ID has already been registered.");
-	uint32_t index = this->data.AllocObject();
-	this->data.Get<0>(index) = entity;
-	this->idMap.Add(entity.id, index);*/
 	this->inactiveData.RegisterEntity(entity);
 }
 
@@ -54,11 +50,6 @@ TransformComponentBase::RegisterEntity(const Entity& entity)
 void
 TransformComponentBase::DeregisterEntity(const Entity& entity)
 {
-	/*n_assert2(this->idMap.Contains(entity.id), "Tried to remove an ID that had not been registered.");
-	SizeT index = this->idMap[entity.id];
-	this->data.DeallocObject(index);
-	this->idMap.Erase(entity.id);*/
-	
 	uint32_t index = this->data.GetInstance(entity);
 	if (index != InvalidIndex)
 	{
@@ -72,6 +63,46 @@ TransformComponentBase::DeregisterEntity(const Entity& entity)
 		this->inactiveData.DeregisterEntityImmediate(entity, index);
 		return;
 	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TransformComponentBase::DeregisterAll()
+{
+	this->data.DeregisterAll();
+	this->inactiveData.DeregisterAll();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TransformComponentBase::DeregisterAllDead()
+{
+	this->data.DeregisterAllInactive();
+	this->inactiveData.DeregisterAllInactive();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TransformComponentBase::CleanData()
+{
+	this->data.Clean();
+	this->inactiveData.Clean();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TransformComponentBase::DestroyAll()
+{
+	this->data.DestroyAll();
+	this->inactiveData.DestroyAll();
 }
 
 //------------------------------------------------------------------------------
@@ -134,7 +165,6 @@ TransformComponentBase::Deactivate(const Entity& entity)
 uint32_t
 TransformComponentBase::GetInstance(const Entity& entity) const
 {
-	//return this->idMap[entity.id];
 	return this->data.GetInstance(entity);
 }
 
@@ -144,7 +174,6 @@ TransformComponentBase::GetInstance(const Entity& entity) const
 Entity
 TransformComponentBase::GetOwner(const uint32_t& instance) const
 {
-	//return this->data.Get<0>(instance);
 	return this->data.data[instance].owner;
 }
 
@@ -166,8 +195,7 @@ TransformComponentBase::GetAttributeValue(uint32_t instance, IndexT attributeInd
 	switch (attributeIndex)
 	{
 	case 0:
-		// return Util::Variant(this->data.data[instance].owner);
-		n_error("Util::Variant Entity not implemented yet!");
+		return Util::Variant(this->data.data[instance].owner.id);
 	case 1:
 		return Util::Variant(this->data.data[instance].localTransform);
 	case 2:
@@ -194,8 +222,7 @@ TransformComponentBase::GetAttributeValue(uint32_t instance, Attr::AttrId attrib
 {
 	if (attributeId == Attr::Owner)
 	{
-		// return Util::Variant(this->data.data[instance].owner);
-		n_error("Util::Variant Entity not implemented yet!");
+		return Util::Variant(this->data.data[instance].owner.id);
 	}
 	else if (attributeId == Attr::LocalTransform)
 	{
@@ -232,7 +259,6 @@ TransformComponentBase::GetAttributeValue(uint32_t instance, Attr::AttrId attrib
 Math::matrix44& 
 TransformComponentBase::LocalTransform(const uint32_t& instance)
 {
-	//return this->data.Get<1>(instance);
 	return this->data.data[instance].localTransform;
 }
 
@@ -242,7 +268,6 @@ TransformComponentBase::LocalTransform(const uint32_t& instance)
 Math::matrix44& 
 TransformComponentBase::WorldTransform(const uint32_t& instance)
 {
-	//return this->data.Get<2>(instance);
 	return this->data.data[instance].worldTransform;
 }
 
@@ -252,7 +277,6 @@ TransformComponentBase::WorldTransform(const uint32_t& instance)
 uint32_t& 
 TransformComponentBase::Parent(const uint32_t& instance)
 {
-	//return this->data.Get<3>(instance);
 	return this->data.data[instance].parent;
 }
 
@@ -262,7 +286,6 @@ TransformComponentBase::Parent(const uint32_t& instance)
 uint32_t& 
 TransformComponentBase::FirstChild(const uint32_t& instance)
 {
-	//return this->data.Get<4>(instance);
 	return this->data.data[instance].firstChild;
 }
 
@@ -272,7 +295,6 @@ TransformComponentBase::FirstChild(const uint32_t& instance)
 uint32_t& 
 TransformComponentBase::NextSibling(const uint32_t& instance)
 {
-	//return this->data.Get<5>(instance);
 	return this->data.data[instance].nextSibling;
 }
 
@@ -282,7 +304,6 @@ TransformComponentBase::NextSibling(const uint32_t& instance)
 uint32_t& 
 TransformComponentBase::PrevSibling(const uint32_t& instance)
 {
-	//return this->data.Get<6>(instance);
 	return this->data.data[instance].prevSibling;
 }
 	

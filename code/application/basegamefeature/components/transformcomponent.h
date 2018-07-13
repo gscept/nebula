@@ -20,7 +20,6 @@ public:
 	TransformComponent();
 	~TransformComponent();
 
-	void OnBeginFrame();
 	void SetLocalTransform(const uint32_t& instance, const Math::matrix44& val);
 };
 

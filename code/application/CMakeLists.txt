@@ -29,7 +29,6 @@ fips_begin_module(application)
 			componentdata.cc
 			componentplugin.h
 			componentplugin.cc
-			componentmacros.h
 		)
 	fips_dir(game/attr)
 		fips_files(

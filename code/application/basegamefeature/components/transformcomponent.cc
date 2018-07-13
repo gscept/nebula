@@ -30,15 +30,6 @@ TransformComponent::~TransformComponent()
 /**
 */
 void
-TransformComponent::OnBeginFrame()
-{
-	n_printf("TransformComponent::OnBeginFrame() called.\n");
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
 TransformComponent::SetLocalTransform(const uint32_t& i, const Math::matrix44& val)
 {
 	this->LocalTransform(i) = val;
