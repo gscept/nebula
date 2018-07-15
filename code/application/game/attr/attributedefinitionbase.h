@@ -43,7 +43,9 @@ public:
     /// blob constructor
     explicit AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode, const Util::Blob& defVal, bool isDynamic);
     /// guid constructor
-    explicit AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode, const Util::Guid& defVal, bool isDynamic);    
+	explicit AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode, const Util::Guid& defVal, bool isDynamic);
+	/// uint32_t constructor
+	explicit AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode, const uint32_t& defVal, bool isDynamic);
     /// destructor
     ~AttributeDefinitionBase();
     /// static destruction method - call to cleanup the registry hashtable

@@ -39,7 +39,7 @@ IdGenerationPool::Allocate(Id32& id)
     }
     else
     {
-        uint32_t id = this->freeIds.Dequeue();
+        id = this->freeIds.Dequeue();
         id = CreateId(id, this->generations[id]);
 		return true;
     }

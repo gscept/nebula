@@ -180,6 +180,32 @@ GameApplication::Run()
 
 //------------------------------------------------------------------------------
 /**
+*/
+void
+GameApplication::StepFrame()
+{
+	_start_timer(GameApplicationFrameTimeAll);
+
+	// trigger core server
+	this->coreServer->Trigger();
+
+	// trigger beginning of frame for feature units
+	this->gameServer->OnBeginFrame();
+
+	// trigger frame for feature units
+	this->gameServer->OnFrame();
+
+	// call the app's Run() method
+	Application::Run();
+
+	// trigger end of frame for feature units
+	this->gameServer->OnEndFrame();
+
+	_stop_timer(GameApplicationFrameTimeAll);
+}
+
+//------------------------------------------------------------------------------
+/**
     Setup new game features which should be used by this application.
     Overwrite for all features which have to be used.
 */
