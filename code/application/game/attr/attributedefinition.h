@@ -71,8 +71,8 @@ AttributeDefinition<VALUETYPE,TYPE>::AttributeDefinition(const Util::String& n, 
 #define DefineGuid(NAME,FOURCC,ACCESSMODE) const AttributeDefinition<Attr::GuidTypeClass, const Util::Guid&> NAME(#NAME,FOURCC,ACCESSMODE, Util::Guid());
 #define DefineGuidWithDefault(NAME,FOURCC,ACCESSMODE,DEFVAL) const AttributeDefinition<Attr::GuidTypeClass, const Util::Guid&> NAME(#NAME,FOURCC,ACCESSMODE,DEFVAL);
 
-#define DeclareEntity(NAME,FOURCC,ACCESSMODE) extern const AttributeDefinition<Attr::EntityTypeClass, uint32_t> NAME;
-#define DefineEntity(NAME,FOURCC,ACCESSMODE) const AttributeDefinition<Attr::EntityTypeClass, uint32_t> NAME(#NAME,FOURCC,ACCESSMODE, uint32_t());
+#define DeclareEntity(NAME,FOURCC,ACCESSMODE) extern const AttributeDefinition<Attr::EntityTypeClass, const uint32_t&> NAME;
+#define DefineEntity(NAME,FOURCC,ACCESSMODE) const AttributeDefinition<Attr::EntityTypeClass, const uint32_t&> NAME(#NAME,FOURCC,ACCESSMODE, uint32_t(0));
 
 } // namespace Attr
 //------------------------------------------------------------------------------

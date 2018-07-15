@@ -156,6 +156,19 @@ AttributeDefinitionBase::AttributeDefinitionBase(const Util::String& n, const Ut
 //------------------------------------------------------------------------------
 /**
 */
+AttributeDefinitionBase::AttributeDefinitionBase(const Util::String& n, const Util::FourCC& fcc, AccessMode m, const uint32_t& defVal, bool dyn) :
+	isDynamic(dyn),
+	name(n),
+	fourCC(fcc),
+	accessMode(m),
+	defaultValue(defVal)
+{
+	this->Register();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 AttributeDefinitionBase::~AttributeDefinitionBase()
 {
     // empty

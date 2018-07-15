@@ -23,6 +23,18 @@ struct Entity
 {
 	Ids::Id32 id;
 
+	//Default constructor
+	Entity() : id(0)
+	{
+		// Empty
+	}
+
+	// Entity from id.
+	Entity(const Ids::Id32& id) : id(id)
+	{
+		// empty
+	}
+
 	bool operator==(const Ids::Id32& rhs)
 	{
 		return this->id == rhs;

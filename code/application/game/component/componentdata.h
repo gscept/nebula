@@ -243,9 +243,8 @@ ComponentData<InstanceData>::DeregisterAll()
 {
 	for (SizeT i = 0; i < this->idMap.Size(); i++)
 	{
-		SizeT id = this->idMap.KeyAtIndex(i);
-		this->idMap.EraseAtIndex(i)
-		this->freeIds.Push(id);
+		this->freeIds.Push(this->idMap.ValueAtIndex(i));
+		this->idMap.EraseAtIndex(i);
 	}
 }
 
@@ -258,11 +257,12 @@ ComponentData<InstanceData>::DeregisterAllInactive()
 	Ptr<Game::EntityManager> manager = Game::EntityManager::Instance();
 	for (SizeT i = 0; i < this->idMap.Size(); i++)
 	{
-		SizeT id = this->idMap.KeyAtIndex(i);
-		if (!manager->IsAlive(id))
+		Ids::Id32 id = this->idMap.KeyAtIndex(i);
+		Entity e(id);
+		if (!manager->IsAlive(e))
 		{
-			this->idMap.EraseAtIndex(i)
-			this->freeIds.Push(id);
+			this->freeIds.Push(this->idMap.ValueAtIndex(i));
+			this->idMap.EraseAtIndex(i);
 		}
 	}
 }
@@ -275,7 +275,7 @@ ComponentData<InstanceData>::Clean()
 {
 	Ptr<Game::EntityManager> entityManager = Game::EntityManager::Instance();
 	SizeT index = 0;
-	while (i < this->data.Size())
+	while (index < this->data.Size())
 	{
 		if (!entityManager->IsAlive(this->data[index].owner))
 		{

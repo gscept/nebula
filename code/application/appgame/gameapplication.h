@@ -40,6 +40,8 @@ public:
     virtual void Close();
     /// run the application
     virtual void Run();
+	/// step one frame, mainly for debugging purposes
+	virtual void StepFrame();
 
 protected:
     /// setup game features
