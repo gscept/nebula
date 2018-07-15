@@ -51,7 +51,7 @@ public:
     /// remove an id
     void Deallocate(Id32 id);
     /// check if valid
-    bool IsValid(Id32 id);
+    bool IsValid(Id32 id) const;
 
 private:
     /// array containing generation value for every index
