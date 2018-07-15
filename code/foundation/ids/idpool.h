@@ -21,6 +21,7 @@
 #include "util/array.h"
 #include "id.h"
 #include "math/scalar.h"
+#include <functional>
 namespace Ids
 {
 class IdPool
@@ -41,6 +42,10 @@ public:
 	uint32_t GetNumUsed() const;
 	/// get number of free elements
 	uint32_t GetNumFree() const;
+	/// iterate free indices
+	void ForEachFree(const std::function<void(uint32_t, uint32_t)> fun);
+	/// frees up lhs and erases rhs
+	void Move(uint32_t lhs, uint32_t rhs);
 	/// get grow
 	const uint32_t GetGrow() const;
 private:
@@ -91,18 +96,19 @@ IdPool::Alloc()
 	if (this->free.Size() == 0)
 	{
 		// calculate how many more indices we are allowed to get
-		uint32_t remainder = Math::n_min(this->maxId - this->free.Size(), this->grow);
+		SizeT growTo = Math::n_min(this->maxId, this->grow);
+		SizeT oldCapacity = this->free.Capacity();
 
 		// make sure we don't allocate too many indices
-		n_assert2(this->free.Size() + remainder < this->maxId, "Pool is full! Be careful with how much you allocate!\n");
+		n_assert2((uint32_t)(oldCapacity + growTo) < this->maxId, "Pool is full! Be careful with how much you allocate!\n");
 
 		// reserve more space for new Ids
-		this->free.Reserve(this->free.Size() + remainder);
+		this->free.Reserve(oldCapacity + growTo);
 		IndexT i;
-		for (i = this->free.Size(); i < this->free.Capacity(); i++)
+		for (i = this->free.Capacity()-1; i >= oldCapacity; i--)
 		{
 			// count backwards from the max id
-			this->free.Append(this->maxId - this->grow + i + 1);
+			this->free.Append(this->maxId - i);
 		}
 	}
 
@@ -127,7 +133,7 @@ IdPool::Dealloc(uint32_t id)
 inline uint32_t
 IdPool::GetNumUsed() const
 {
-	return this->maxId - this->free.Size();
+	return this->free.Capacity() - this->free.Size();
 }
 
 //------------------------------------------------------------------------------
@@ -137,6 +143,27 @@ inline uint32_t
 IdPool::GetNumFree() const
 {
 	return this->free.Size();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+IdPool::ForEachFree(const std::function<void(uint32_t, uint32_t)> fun)
+{
+	SizeT size = this->free.Size();
+	for (IndexT i = 0; i < size; i++)
+		fun(this->maxId - this->free[i], i);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+IdPool::Move(uint32_t idx, uint32_t id)
+{
+	this->free.Append(this->maxId - id);
+	this->free.EraseIndex(idx);
 }
 
 //------------------------------------------------------------------------------
