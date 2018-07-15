@@ -19,11 +19,11 @@ exports:
         - code/foundation
         - code/render        
         - code/resource
-        - code/game
+        - code/application
         - extlibs/mixed
     modules:
         foundation: code/foundation
         render: code/render
         resource: code/resource
-        game: code/game
+        game: code/application
         corelibs: extlibs/mixed
