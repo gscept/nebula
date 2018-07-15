@@ -39,7 +39,7 @@ IdGenerationPool::Allocate(Id32& id)
     }
     else
     {
-        uint32_t id = this->freeIds.Dequeue();
+        id = this->freeIds.Dequeue();
         id = CreateId(id, this->generations[id]);
 		return true;
     }
@@ -60,7 +60,7 @@ IdGenerationPool::Deallocate(Id32 id)
 /**
 */
 bool
-IdGenerationPool::IsValid(Id32 id)
+IdGenerationPool::IsValid(Id32 id) const
 {
     return Index(id) < (uint32_t)this->generations.Size() && Generation(id) == this->generations[Index(id)];
 }

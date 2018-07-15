@@ -6,7 +6,7 @@
     Implements large bit field with multiple of 32 bits.
     
     (C) 2009 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 
@@ -28,6 +28,8 @@ public:
     /// inequality operator
     bool operator!=(const BitField<NUMBITS>& rhs) const;
     
+	/// Check if single bit is set
+	bool IsSet(IndexT bitIndex) const;
     /// clear content
     void Clear();
     /// return true if all bits are 0
@@ -110,6 +112,17 @@ template<unsigned int NUMBITS> bool
 BitField<NUMBITS>::operator!=(const BitField<NUMBITS>& rhs) const
 {
     return !(*this == rhs);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<unsigned int NUMBITS> bool
+BitField<NUMBITS>::IsSet(IndexT bitIndex) const
+{
+	n_assert(bitIndex < NUMBITS);
+	const uint i = (1 << (bitIndex % 32));
+	return (this->bits[bitIndex / 32] & i) == i;
 }
 
 //------------------------------------------------------------------------------
