@@ -1,0 +1,8 @@
+---
+platform: win64 
+generator-platform: x64
+build_tool: vscode_cmake
+build_type: Debug
+defines:
+    N_USE_VULKAN: ON
+    __X64__: ON
