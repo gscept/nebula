@@ -80,6 +80,25 @@ void clear_for_each_in_tuple(std::tuple<Ts...>& tuple)
 	clear_for_each_in_tuple(tuple, std::make_index_sequence<sizeof...(Ts)>());
 }
 
+/// entry point for moving an element between two indices
+template <class...Ts, std::size_t...Is>
+void move_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t to, uint32_t from, std::index_sequence<Is...>)
+{
+	using expander = int[];
+	(void)expander
+	{
+		0,
+		(std::get<Is>(tuple)[to] = std::get<Is>(tuple)[from], 0)...
+	};
+}
+
+/// entry point for moving an element between two indices
+template <class...Ts>
+void move_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t to, uint32_t from)
+{
+	move_for_each_in_tuple(tuple, to, from, std::make_index_sequence<sizeof...(Ts)>());
+}
+
 /// get type of contained element in Util::Array stored in std::tuple
 template <int MEMBER, class ... TYPES>
 using tuple_array_t = get_template_type_t<std::tuple_element_t<MEMBER, std::tuple<Util::Array<TYPES>...>>>;
@@ -130,6 +149,19 @@ public:
 
 	/// recycle id
 	void DeallocObject(const Ids::Id32 id) { this->pool.Dealloc(id); }
+
+	/// defragment allocator to make data tightly organized
+	void Defragment(Util::Array<Ids::Id32>& usedIds)
+	{
+		// go through free, and run callback for every free index
+		this->pool.ForEachFree([&usedIds, this](uint32_t idx, uint32_t i)
+		{
+			Ids::Id32 elem = usedIds.Back();
+			this->pool.Move(i, elem);
+			move_for_each_in_tuple(this->objects, idx, elem);
+			usedIds.Erase(usedIds.End()-1);
+		});
+	}
 
 	/// get single item from resource, template expansion might give you cancer
 	template <int MEMBER>

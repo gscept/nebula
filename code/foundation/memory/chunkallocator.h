@@ -103,7 +103,7 @@ template<typename T>
 inline T*
 ChunkAllocator<ChunkSize>::Alloc()
 {
-	n_assert(sizeof(T) <= ChunkSize);
+	static_assert(sizeof(T) <= ChunkSize, "Size of type is bigger than the chunk size!");
 	if (this->iterator == nullptr)
 	{
 		this->NewChunk();

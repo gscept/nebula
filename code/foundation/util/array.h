@@ -141,7 +141,6 @@ private:
     SizeT capacity;                         // number of elements allocated
     SizeT size;                             // number of elements in array
     TYPE* elements;                         // pointer to element array
-	using type = typename TYPE;
 };
 
 //------------------------------------------------------------------------------
