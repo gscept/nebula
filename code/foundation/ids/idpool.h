@@ -43,7 +43,7 @@ public:
 	/// get number of free elements
 	uint32_t GetNumFree() const;
 	/// iterate free indices
-	void ForEachFree(const std::function<void(uint32_t, uint32_t)> fun);
+	void ForEachFree(const std::function<void(uint32_t, uint32_t)> fun, SizeT num);
 	/// frees up lhs and erases rhs
 	void Move(uint32_t lhs, uint32_t rhs);
 	/// get grow
@@ -149,11 +149,18 @@ IdPool::GetNumFree() const
 /**
 */
 inline void
-IdPool::ForEachFree(const std::function<void(uint32_t, uint32_t)> fun)
+IdPool::ForEachFree(const std::function<void(uint32_t, uint32_t)> fun, SizeT num)
 {
 	SizeT size = this->free.Size();
-	for (IndexT i = 0; i < size; i++)
-		fun(this->maxId - this->free[i], i);
+	for (IndexT i = size - 1; i >= 0; i--)
+	{
+		const uint32_t id = this->maxId - this->free[i];
+		if (id < (uint32_t)num)
+		{
+			fun(id, i);
+			num--;
+		}
+	}
 }
 
 //------------------------------------------------------------------------------
