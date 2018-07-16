@@ -71,6 +71,7 @@ fips_begin_module(foundation)
 		fips_dir(util)
 		fips_files(
 			array.h
+			arrayallocator.h
 			bitfield.h
 			blob.cc
 			blob.h
