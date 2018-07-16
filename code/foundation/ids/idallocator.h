@@ -160,7 +160,7 @@ public:
 			this->pool.Move(i, elem);
 			move_for_each_in_tuple(this->objects, idx, elem);
 			usedIds.Erase(usedIds.End()-1);
-		});
+		}, usedIds.Size());
 	}
 
 	/// get single item from resource, template expansion might give you cancer
