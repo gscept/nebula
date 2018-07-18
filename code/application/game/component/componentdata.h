@@ -3,9 +3,9 @@
 /**
 	@class Game::ComponentData
 
-	Base ComponentData that provides mapping from Entites to an internal array index for ComponentDatas
-	Can perform garbage collection that rearranges array entries to avoid gaps
-	
+	ComponentData as a struct of arrays.
+	Can perform garbage collection that rearranges arrays entries to avoid gaps
+
 	(C) 2018 Individual contributors, see AUTHORS file
 */
 
@@ -14,12 +14,13 @@
 #include "ids/id.h"
 #include "util/random.h"
 #include "basegamefeature/managers/entitymanager.h"
+#include "util/arrayallocator.h"
 
 //-----------------------------------------------------------------------------
 namespace Game
 {
 
-template <class InstanceData>
+template <class ... TYPES>
 class ComponentData
 {
 public:
@@ -27,9 +28,6 @@ public:
 	ComponentData();
 	///
 	~ComponentData();
-
-	/// access to a single instance data block by index
-	InstanceData& operator[](uint32_t instance) const;
 
 	SizeT Size() const;
 
@@ -60,21 +58,25 @@ public:
 	/// Free up all non-reserved by entity data.
 	void Clean();
 
+	/// Return the owner of a given instance
+	Entity GetOwner(const uint32_t& i) const;
+
 	/// retrieve the instance id of an external id for faster lookup. Will be made invalid by Optimize()
 	uint32_t GetInstance(const Entity& e) const;
 
-	/// Set instance data directly.
-	void SetInstanceData(const Entity& e, const InstanceData& data);
+	/// Shortcut to set all instances values to provided values.
+	void SetInstanceData(const uint32_t& index, TYPES...);
 
 	/// Contains all data for all instances of this component.
-	Util::Array<InstanceData> data;
+	/// @note	The 0th type is always the owner Entity!
+	Util::ArrayAllocator<Entity, TYPES...> data;
 
 private:
-
 	/// contains free id's that we reuse as soon as possible.
 	Util::Stack<uint32_t> freeIds;
 
-	/// Contains the link between InstanceData and Id
+	/// Contains the link between InstanceData and Entity Id
+	/// @todo	Replace with hashtable for faster lookup
 	Util::Dictionary<Ids::Id32, uint32_t> idMap;
 };
 
@@ -82,8 +84,8 @@ private:
 //------------------------------------------------------------------------------
 /**
 */
-template <class InstanceData>
-ComponentData<InstanceData>::ComponentData()
+template <class ... TYPES>
+ComponentData<TYPES ...>::ComponentData()
 {
 	// empty
 }
@@ -91,27 +93,17 @@ ComponentData<InstanceData>::ComponentData()
 //------------------------------------------------------------------------------
 /**
 */
-template <class InstanceData>
-ComponentData<InstanceData>::~ComponentData()
+template <class ... TYPES>
+ComponentData<TYPES ...>::~ComponentData()
 {
 	this->DestroyAll();
 }
 
-
 //------------------------------------------------------------------------------
 /**
 */
-template <class InstanceData> InstanceData&
-ComponentData<InstanceData>::operator[](uint32_t instance) const
-{
-	return this->data[instance];
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-template<class InstanceData> SizeT
-ComponentData<InstanceData>::Size() const
+template <class ... TYPES> SizeT
+ComponentData<TYPES ...>::Size() const
 {
 	return this->data.Size();
 }
@@ -119,8 +111,8 @@ ComponentData<InstanceData>::Size() const
 //------------------------------------------------------------------------------
 /**
 */
-template <class InstanceData> uint32_t
-ComponentData<InstanceData>::RegisterEntity(const Entity& e)
+template <class ... TYPES> uint32_t
+ComponentData<TYPES ...>::RegisterEntity(const Entity& e)
 {
 	n_assert2(!this->idMap.Contains(e.id), "ID has already been registered.");
 
@@ -129,15 +121,13 @@ ComponentData<InstanceData>::RegisterEntity(const Entity& e)
 	if (this->freeIds.Size() > 0)
 	{
 		index = this->freeIds.Pop();
-		this->data[index] = InstanceData();
 	}
 	else
 	{
-		index = this->data.Size();
-		this->data.Append(InstanceData());
+		index = this->data.Alloc();
 	}
-	
-	this->data[index].owner = e;
+
+	this->data.Get<0>(index) = e;
 	this->idMap.Add(e.id, index);
 
 	return index;
@@ -146,11 +136,11 @@ ComponentData<InstanceData>::RegisterEntity(const Entity& e)
 //------------------------------------------------------------------------------
 /**
 */
-template <class InstanceData> void
-ComponentData<InstanceData>::DeregisterEntity(const Entity& e)
+template <class ... TYPES> void
+ComponentData<TYPES ...>::DeregisterEntity(const Entity& e)
 {
 	n_assert2(this->idMap.Contains(e.id), "Tried to remove an ID that had not been registered.");
-	SizeT index = this->idMap[e.id];
+	uint32_t index = this->idMap[e.id];
 	this->idMap.Erase(e.id);
 	this->freeIds.Push(index);
 }
@@ -158,49 +148,57 @@ ComponentData<InstanceData>::DeregisterEntity(const Entity& e)
 //------------------------------------------------------------------------------
 /**
 */
-template <class InstanceData> void
-ComponentData<InstanceData>::DeregisterEntityImmediate(const Entity& e)
+template <class ... TYPES> void
+ComponentData<TYPES ...>::DeregisterEntityImmediate(const Entity& e)
 {
 	n_assert2(this->idMap.Contains(e.id), "Tried to remove an ID that had not been registered.");
-
-	SizeT index = this->idMap[e.id];
+	uint32_t index = this->idMap[e.id];
 	this->DeregisterEntityImmediate(e, index);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-template <class InstanceData> void
-ComponentData<InstanceData>::DeregisterEntityImmediate(const Entity& e, const uint32_t& index)
+template <class ... TYPES> void
+ComponentData<TYPES ...>::DeregisterEntityImmediate(const Entity& e, const uint32_t& index)
 {
 	auto id = e.id;
 	n_assert2(this->idMap.Contains(id), "Tried to remove an ID that had not been registered.");
-	auto lastId = this->data.Back().owner.id;
+	Ids::Id32 lastId = this->data.Get<0>(this->data.Size() - 1).id;
 	this->data.EraseIndexSwap(index);
-	this->idMap[lastId] = index;
+	uint32_t mapIndex = this->idMap.FindIndex(lastId);
+	if (mapIndex != InvalidIndex)
+	{
+		this->idMap.ValueAtIndex(mapIndex) = index;
+	}
 	this->idMap.Erase(id);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-template <class InstanceData> SizeT
-ComponentData<InstanceData>::Optimize()
+template <class ... TYPES> SizeT
+ComponentData<TYPES ...>::Optimize()
 {
 	Ptr<EntityManager> entityManager = EntityManager::Instance();
 	uint numAlive = 0;
 	SizeT numErased = 0;
 	Ids::Id32 lastId;
 	uint32_t index;
-	
-	// Pack array
+	uint32_t mapIndex;
+
+	// Pack arrays
 	SizeT size = this->freeIds.Size();
 	for (SizeT i = 0; i < size; ++i)
 	{
 		index = this->freeIds.Pop();
-		lastId = this->data.Back().owner.id;
-		this->idMap[lastId] = index;
+		lastId = this->data.Get<0>(this->data.Size() - 1).id;
 		this->data.EraseIndexSwap(index);
+		mapIndex = this->idMap.FindIndex(lastId);
+		if (mapIndex != InvalidIndex)
+		{
+			this->idMap.ValueAtIndex(mapIndex) = index;
+		}
 		++numErased;
 	}
 
@@ -209,7 +207,7 @@ ComponentData<InstanceData>::Optimize()
 	while (this->data.Size() > 0 && numAlive < 4)
 	{
 		index = Util::FastRandom() % this->data.Size();
-		if (entityManager->IsAlive(this->data[index].owner))
+		if (entityManager->IsAlive(this->data.Get<0>(index)))
 		{
 			++numAlive;
 			continue;
@@ -217,7 +215,7 @@ ComponentData<InstanceData>::Optimize()
 		numAlive = 0;
 		// Deregister entity and make sure it's removed from the list
 		// so that we don't accidentally try to delete it again.
-		this->DeregisterEntityImmediate(this->data[index].owner, index);
+		this->DeregisterEntityImmediate(this->data.Get<0>(index), index);
 		++numErased;
 	}
 
@@ -227,8 +225,8 @@ ComponentData<InstanceData>::Optimize()
 //------------------------------------------------------------------------------
 /**
 */
-template<class InstanceData> void
-ComponentData<InstanceData>::DestroyAll()
+template <class ... TYPES> void
+ComponentData<TYPES ...>::DestroyAll()
 {
 	this->freeIds.Clear();
 	this->data.Clear();
@@ -238,8 +236,8 @@ ComponentData<InstanceData>::DestroyAll()
 //------------------------------------------------------------------------------
 /**
 */
-template<class InstanceData> void
-ComponentData<InstanceData>::DeregisterAll()
+template <class ... TYPES> void
+ComponentData<TYPES ...>::DeregisterAll()
 {
 	for (SizeT i = 0; i < this->idMap.Size(); i++)
 	{
@@ -251,8 +249,8 @@ ComponentData<InstanceData>::DeregisterAll()
 //------------------------------------------------------------------------------
 /**
 */
-template<class InstanceData> void
-ComponentData<InstanceData>::DeregisterAllInactive()
+template <class ... TYPES> void
+ComponentData<TYPES ...>::DeregisterAllInactive()
 {
 	Ptr<Game::EntityManager> manager = Game::EntityManager::Instance();
 	for (SizeT i = 0; i < this->idMap.Size(); i++)
@@ -270,14 +268,14 @@ ComponentData<InstanceData>::DeregisterAllInactive()
 //------------------------------------------------------------------------------
 /**
 */
-template<class InstanceData> void
-ComponentData<InstanceData>::Clean()
+template <class ... TYPES> void
+ComponentData<TYPES ...>::Clean()
 {
 	Ptr<Game::EntityManager> entityManager = Game::EntityManager::Instance();
 	SizeT index = 0;
 	while (index < this->data.Size())
 	{
-		if (!entityManager->IsAlive(this->data[index].owner))
+		if (!entityManager->IsAlive(this->data.Get<0>(index)))
 		{
 			this->data.EraseIndexSwap(index);
 			continue;
@@ -289,8 +287,18 @@ ComponentData<InstanceData>::Clean()
 //------------------------------------------------------------------------------
 /**
 */
-template <class InstanceData> uint32_t
-ComponentData<InstanceData>::GetInstance(const Entity& e) const
+template <class ... TYPES> Entity
+ComponentData<TYPES ...>::GetOwner(const uint32_t& i) const
+{
+	n_assert(this->data.Size() > i);
+	return this->data.Get<0>(i);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <class ... TYPES> uint32_t
+ComponentData<TYPES ...>::GetInstance(const Entity& e) const
 {
 	auto i = this->idMap.FindIndex(e.id);
 	if (i != InvalidIndex)
@@ -299,16 +307,16 @@ ComponentData<InstanceData>::GetInstance(const Entity& e) const
 	}
 
 	// Entity is not registered.
-	return InvalidIndex;	
+	return InvalidIndex;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-template<class InstanceData> void
-ComponentData<InstanceData>::SetInstanceData(const Entity& e, const InstanceData& data)
+template<class ... TYPES> void
+ComponentData<TYPES...>::SetInstanceData(const uint32_t & index, TYPES ... values)
 {
-	this->data[this->idMap[e.id]] = data;
+	this->data.Set(index, this->data.Get<0>(index), values...);
 }
 
 }

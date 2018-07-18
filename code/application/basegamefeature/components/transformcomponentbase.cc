@@ -122,14 +122,14 @@ TransformComponentBase::Activate(const Entity& entity)
 {
 	n_assert2(this->IsRegistered(entity), "Cannot activate component for an entity that is not registered!");
 
-	if (this->data.GetInstance(entity) || !EntityManager::Instance()->IsAlive(entity)) return;
+	if (this->data.GetInstance(entity) != InvalidIndex || !EntityManager::Instance()->IsAlive(entity)) return;
 
 	auto inactiveInstance = this->inactiveData.GetInstance(entity);
 
 	if (inactiveInstance != InvalidIndex)
 	{
 		uint32_t newInstance = this->data.RegisterEntity(entity);
-		this->data.SetInstanceData(entity, this->inactiveData.data[inactiveInstance]);
+		this->data.SetInstanceData(newInstance, this->inactiveData.data.Get<1>(inactiveInstance));
 
 		// NOTE: If this would be registered to OnActivate event, we would call OnActivate(newInstance) here.
 
@@ -153,8 +153,8 @@ TransformComponentBase::Deactivate(const Entity& entity)
 	{
 		// NOTE: If this would be registered to OnDeactivate event, we would call OnDeactivate(instance) here.
 
-		this->inactiveData.RegisterEntity(entity);
-		this->inactiveData.SetInstanceData(entity, this->data.data[instance]);
+		uint32_t inactiveInstance = this->inactiveData.RegisterEntity(entity);
+		this->inactiveData.SetInstanceData(inactiveInstance, this->data.data.Get<1>(instance));
 		this->data.DeregisterEntityImmediate(entity, instance);
 	}
 }
@@ -174,7 +174,7 @@ TransformComponentBase::GetInstance(const Entity& entity) const
 Entity
 TransformComponentBase::GetOwner(const uint32_t& instance) const
 {
-	return this->data.data[instance].owner;
+	return this->data.GetOwner(instance);
 }
 
 //------------------------------------------------------------------------------
@@ -195,19 +195,19 @@ TransformComponentBase::GetAttributeValue(uint32_t instance, IndexT attributeInd
 	switch (attributeIndex)
 	{
 	case 0:
-		return Util::Variant(this->data.data[instance].owner.id);
+		return Util::Variant(this->data.data.Get<0>(instance).id);
 	case 1:
-		return Util::Variant(this->data.data[instance].localTransform);
+		return Util::Variant(this->data.data.Get<1>(instance).localTransform);
 	case 2:
-		return Util::Variant(this->data.data[instance].worldTransform);
+		return Util::Variant(this->data.data.Get<1>(instance).worldTransform);
 	case 3:
-		return Util::Variant(this->data.data[instance].parent);
+		return Util::Variant(this->data.data.Get<1>(instance).parent);
 	case 4:
-		return Util::Variant(this->data.data[instance].firstChild);
+		return Util::Variant(this->data.data.Get<1>(instance).firstChild);
 	case 5:
-		return Util::Variant(this->data.data[instance].nextSibling);
+		return Util::Variant(this->data.data.Get<1>(instance).nextSibling);
 	case 6:
-		return Util::Variant(this->data.data[instance].prevSibling);
+		return Util::Variant(this->data.data.Get<1>(instance).prevSibling);
 	default:
 		n_assert2(false, "Component doesn't contain this attribute!\n");
 		return Util::Variant();
@@ -222,31 +222,31 @@ TransformComponentBase::GetAttributeValue(uint32_t instance, Attr::AttrId attrib
 {
 	if (attributeId == Attr::Owner)
 	{
-		return Util::Variant(this->data.data[instance].owner.id);
+		return Util::Variant(this->data.data.Get<0>(instance).id);
 	}
 	else if (attributeId == Attr::LocalTransform)
 	{
-		return Util::Variant(this->data.data[instance].localTransform);
+		return Util::Variant(this->data.data.Get<1>(instance).localTransform);
 	}
 	else if (attributeId == Attr::WorldTransform)
 	{
-		return Util::Variant(this->data.data[instance].worldTransform);
+		return Util::Variant(this->data.data.Get<1>(instance).worldTransform);
 	}
 	else if (attributeId == Attr::Parent)
 	{
-		return Util::Variant(this->data.data[instance].parent);
+		return Util::Variant(this->data.data.Get<1>(instance).parent);
 	}
 	else if (attributeId == Attr::FirstChild)
 	{
-		return Util::Variant(this->data.data[instance].firstChild);
+		return Util::Variant(this->data.data.Get<1>(instance).firstChild);
 	}
 	else if (attributeId == Attr::NextSibling)
 	{
-		return Util::Variant(this->data.data[instance].nextSibling);
+		return Util::Variant(this->data.data.Get<1>(instance).nextSibling);
 	}
 	else if (attributeId == Attr::PreviousSibling)
 	{
-		return Util::Variant(this->data.data[instance].prevSibling);
+		return Util::Variant(this->data.data.Get<1>(instance).prevSibling);
 	}
 	
 	n_assert2(false, "Component doesn't contain this attribute!\n");
@@ -259,7 +259,7 @@ TransformComponentBase::GetAttributeValue(uint32_t instance, Attr::AttrId attrib
 Math::matrix44& 
 TransformComponentBase::LocalTransform(const uint32_t& instance)
 {
-	return this->data.data[instance].localTransform;
+	return this->data.data.Get<1>(instance).localTransform;
 }
 
 //------------------------------------------------------------------------------
@@ -268,7 +268,7 @@ TransformComponentBase::LocalTransform(const uint32_t& instance)
 Math::matrix44& 
 TransformComponentBase::WorldTransform(const uint32_t& instance)
 {
-	return this->data.data[instance].worldTransform;
+	return this->data.data.Get<1>(instance).worldTransform;
 }
 
 //------------------------------------------------------------------------------
@@ -277,7 +277,7 @@ TransformComponentBase::WorldTransform(const uint32_t& instance)
 uint32_t& 
 TransformComponentBase::Parent(const uint32_t& instance)
 {
-	return this->data.data[instance].parent;
+	return this->data.data.Get<1>(instance).parent;
 }
 
 //------------------------------------------------------------------------------
@@ -286,7 +286,7 @@ TransformComponentBase::Parent(const uint32_t& instance)
 uint32_t& 
 TransformComponentBase::FirstChild(const uint32_t& instance)
 {
-	return this->data.data[instance].firstChild;
+	return this->data.data.Get<1>(instance).firstChild;
 }
 
 //------------------------------------------------------------------------------
@@ -295,7 +295,7 @@ TransformComponentBase::FirstChild(const uint32_t& instance)
 uint32_t& 
 TransformComponentBase::NextSibling(const uint32_t& instance)
 {
-	return this->data.data[instance].nextSibling;
+	return this->data.data.Get<1>(instance).nextSibling;
 }
 
 //------------------------------------------------------------------------------
@@ -304,7 +304,7 @@ TransformComponentBase::NextSibling(const uint32_t& instance)
 uint32_t& 
 TransformComponentBase::PrevSibling(const uint32_t& instance)
 {
-	return this->data.data[instance].prevSibling;
+	return this->data.data.Get<1>(instance).prevSibling;
 }
 	
 

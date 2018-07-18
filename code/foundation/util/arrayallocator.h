@@ -166,7 +166,7 @@ erase_index_swap_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t i, std::in
 	(void)expander
 	{
 		0,
-			(std::get<Is>(tuple).EraseIndexSwap(i), 0)...
+		(std::get<Is>(tuple).EraseIndexSwap(i), 0)...
 	};
 }
 
@@ -181,6 +181,32 @@ template <class...Ts> void
 erase_index_swap_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t i)
 {
 	erase_index_swap_for_each_in_tuple(tuple, i, std::make_index_sequence<sizeof...(Ts)>());
+}
+
+//------------------------------------------------------------------------------
+/**
+	Entry point for setting values in each array at an index
+*/
+template <class...Ts, std::size_t...Is, class...TYPES> void
+set_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t i, std::index_sequence<Is...>, TYPES const& ... values)
+{
+
+	using expander = int[];
+	(void)expander
+	{
+		0,
+		(std::get<Is>(tuple)[i] = values, 0)...
+	};
+}
+
+//------------------------------------------------------------------------------
+/**
+	Entry point for setting values in each array at an index
+*/
+template <class...Ts, class...TYPES> void
+set_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t i, TYPES const& ... values)
+{
+	set_for_each_in_tuple(tuple, i, std::make_index_sequence<sizeof...(Ts)>(), values...);
 }
 
 //------------------------------------------------------------------------------
@@ -242,6 +268,9 @@ public:
 	/// get array
 	template <int MEMBER>
 	Util::Array<tuple_array_t<MEMBER, TYPES...>>& GetArray();
+
+	/// set for each in tuple
+	void Set(const uint32_t index, TYPES...);
 
 	/// get number of used indices
 	const uint32_t Size() const;
@@ -409,6 +438,15 @@ inline Util::Array<tuple_array_t<MEMBER, TYPES...>>&
 ArrayAllocator<TYPES...>::GetArray()
 {
 	return std::get<MEMBER>(this->objects);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class ...TYPES> void
+ArrayAllocator<TYPES...>::Set(const uint32_t index, TYPES... values)
+{
+	set_for_each_in_tuple(this->objects, index, values...);
 }
 
 } // namespace Util
