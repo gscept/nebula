@@ -22,7 +22,6 @@ namespace Game
 
 struct TransformAttributes
 {
-	Game::Entity owner;
 	Math::matrix44 localTransform;
 	Math::matrix44 worldTransform;
 	uint32_t parent;
