@@ -5,7 +5,7 @@
     
     Testscomponentdata functionality.
     
-    (C) 2017 Individual contributors, see AUTHORS file
+    (C) 2018 Individual contributors, see AUTHORS file
 */
 #include "testbase/testcase.h"
 
