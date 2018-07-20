@@ -10,7 +10,6 @@
 //------------------------------------------------------------------------------
 #include "game/entity.h"
 #include "core/refcounted.h"
-#include "componentdata.h"
 #include "util/bitfield.h"
 #include "game/attr/attrid.h"
 #include "game/attr/attributedefinition.h"
