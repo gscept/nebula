@@ -59,6 +59,16 @@ BaseComponent::DeregisterEntity(const Entity& entity)
 /**
 */
 void
+BaseComponent::OnEntityDeleted(Entity entity)
+{
+	// Override in subclass
+	n_assert2(false, "Method has not been overridden!");
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 BaseComponent::DeregisterAll()
 {
 	// Override in subclass
