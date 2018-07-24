@@ -436,7 +436,7 @@ template<class TYPE>
 IndexT
 Ptr<TYPE>::HashCode() const
 {
-	return (IndexT)this->ptr;
+	return (IndexT)(std::hash<unsigned long long>{}((uintptr_t)this->ptr) & 0x7FFFFFFF);
 }
 
 //------------------------------------------------------------------------------
