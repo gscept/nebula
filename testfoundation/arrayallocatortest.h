@@ -1,24 +1,24 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @class Test::ComponentTest
-    
-    Testscomponentdata functionality.
-    
-    (C) 2017 Individual contributors, see AUTHORS file
+	@class Test::ArrayAllocatorTest
+
+	Tests Nebula's array allocator class.
+
+	(C) 2018 Individual contributors, see AUTHORS file
 */
 #include "testbase/testcase.h"
 
 //------------------------------------------------------------------------------
 namespace Test
 {
-class CompDataTest : public TestCase
+class ArrayAllocatorTest : public TestCase
 {
-    __DeclareClass(CompDataTest);
+	__DeclareClass(ArrayAllocatorTest);
 public:
-    /// run the test
-    virtual void Run();
+	/// run the test
+	virtual void Run();
 };
 
-} // namespace Test
+}; // namespace Test
 //------------------------------------------------------------------------------

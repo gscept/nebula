@@ -10,6 +10,7 @@
 #include "testbase/testrunner.h"
 #include "stringtest.h"
 #include "arraytest.h"
+#include "arrayallocatortest.h"
 #include "stacktest.h"
 #include "listtest.h"
 #include "dictionarytest.h"
@@ -104,6 +105,7 @@ __cdecl main()
     testRunner->AttachTestCase(VariantTest::Create());
     testRunner->AttachTestCase(IOInterfaceTest::Create());
     testRunner->AttachTestCase(ThreadTest::Create());
+	testRunner->AttachTestCase(ArrayAllocatorTest::Create());
     testRunner->Run(); 
 
     gameContentServer->Discard();
