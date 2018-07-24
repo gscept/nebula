@@ -45,6 +45,10 @@ public:
 	/// Deregisters an entity from this component. The data will still exist in the buffer until Optimize() is called.
 	/// Note that even though this keeps the data intact, registering the same entity again won't result in the same data being used.
 	virtual void DeregisterEntity(const Entity& entity);
+	
+	/// Called from entitymanager if this component is registered with a deletion callback.
+	/// Immediately removes the data instance
+	virtual void OnEntityDeleted(Entity entity);
 
 	/// Deregister all entities from both inactive and active. Garbage collection will take care of freeing up data.
 	virtual void DeregisterAll();
@@ -85,7 +89,6 @@ public:
 
 	/// Call this to deactivate an entitys component instance
 	virtual void Deactivate(const Entity& entity);
-
 
 	// Methods for custom implementations
 

@@ -55,7 +55,7 @@ using get_template_type_t = typename get_template_type<C>::type;
 	Unpacks allocations for each member in a tuble
 */
 template<class...Ts, std::size_t...Is> void
-alloc_for_each_in_tuple(std::tuple<Ts...>& tuple, std::index_sequence<Is...>)
+alloc_for_each_in_tuple(std::tuple<Ts...>& tuple, std::integer_sequence<Is...>)
 {
 	using expander = int[];
 	(void)expander
@@ -72,7 +72,7 @@ alloc_for_each_in_tuple(std::tuple<Ts...>& tuple, std::index_sequence<Is...>)
 template<class...Ts> void
 alloc_for_each_in_tuple(std::tuple<Ts...>& tuple)
 {
-	alloc_for_each_in_tuple(tuple, std::make_index_sequence<sizeof...(Ts)>());
+	alloc_for_each_in_tuple(tuple, std::make_integer_sequence<sizeof...(Ts)>());
 }
 
 //------------------------------------------------------------------------------
@@ -80,7 +80,7 @@ alloc_for_each_in_tuple(std::tuple<Ts...>& tuple)
 	Unpacks allocations for each member in a tuple
 */
 template<class...Ts, std::size_t...Is> void
-clear_for_each_in_tuple(std::tuple<Ts...>& tuple, std::index_sequence<Is...>)
+clear_for_each_in_tuple(std::tuple<Ts...>& tuple, std::integer_sequence<Is...>)
 {
 	using expander = int[];
 	(void)expander
@@ -97,7 +97,7 @@ clear_for_each_in_tuple(std::tuple<Ts...>& tuple, std::index_sequence<Is...>)
 template<class...Ts> void
 clear_for_each_in_tuple(std::tuple<Ts...>& tuple)
 {
-	clear_for_each_in_tuple(tuple, std::make_index_sequence<sizeof...(Ts)>());
+	clear_for_each_in_tuple(tuple, std::make_integer_sequence<sizeof...(Ts)>());
 }
 
 //------------------------------------------------------------------------------
@@ -105,7 +105,7 @@ clear_for_each_in_tuple(std::tuple<Ts...>& tuple)
 	Entry point for moving an element between two indices
 */
 template <class...Ts, std::size_t...Is> void
-move_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t to, uint32_t from, std::index_sequence<Is...>)
+move_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t to, uint32_t from, std::integer_sequence<Is...>)
 {
 	using expander = int[];
 	(void)expander
@@ -122,7 +122,7 @@ move_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t to, uint32_t from, std
 template <class...Ts> void
 move_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t to, uint32_t from)
 {
-	move_for_each_in_tuple(tuple, to, from, std::make_index_sequence<sizeof...(Ts)>());
+	move_for_each_in_tuple(tuple, to, from, std::make_integer_sequence<sizeof...(Ts)>());
 }
 
 //------------------------------------------------------------------------------
@@ -131,7 +131,7 @@ move_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t to, uint32_t from)
 	due to shifting all element at i + 1 one step left.
 */
 template <class...Ts, std::size_t...Is> void
-erase_index_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t i, std::index_sequence<Is...>)
+erase_index_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t i, std::integer_sequence<Is...>)
 {
 	using expander = int[];
 	(void)expander
@@ -149,7 +149,7 @@ erase_index_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t i, std::index_s
 template <class...Ts> void
 erase_index_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t i)
 {
-	erase_index_for_each_in_tuple(tuple, i, std::make_index_sequence<sizeof...(Ts)>());
+	erase_index_for_each_in_tuple(tuple, i, std::make_integer_sequence<sizeof...(Ts)>());
 }
 
 //------------------------------------------------------------------------------
@@ -160,7 +160,7 @@ erase_index_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t i)
 	@note	Destroys sorting!
 */
 template <class...Ts, std::size_t...Is> void
-erase_index_swap_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t i, std::index_sequence<Is...>)
+erase_index_swap_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t i, std::integer_sequence<Is...>)
 {
 	using expander = int[];
 	(void)expander
@@ -180,7 +180,7 @@ erase_index_swap_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t i, std::in
 template <class...Ts> void
 erase_index_swap_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t i)
 {
-	erase_index_swap_for_each_in_tuple(tuple, i, std::make_index_sequence<sizeof...(Ts)>());
+	erase_index_swap_for_each_in_tuple(tuple, i, std::make_integer_sequence<sizeof...(Ts)>());
 }
 
 //------------------------------------------------------------------------------
@@ -188,7 +188,7 @@ erase_index_swap_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t i)
 	Entry point for setting values in each array at an index
 */
 template <class...Ts, std::size_t...Is, class...TYPES> void
-set_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t i, std::index_sequence<Is...>, TYPES const& ... values)
+set_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t i, std::integer_sequence<Is...>, TYPES const& ... values)
 {
 
 	using expander = int[];
@@ -206,7 +206,7 @@ set_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t i, std::index_sequence<
 template <class...Ts, class...TYPES> void
 set_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t i, TYPES const& ... values)
 {
-	set_for_each_in_tuple(tuple, i, std::make_index_sequence<sizeof...(Ts)>(), values...);
+	set_for_each_in_tuple(tuple, i, std::make_integer_sequence<sizeof...(Ts)>(), values...);
 }
 
 //------------------------------------------------------------------------------
@@ -433,7 +433,8 @@ ArrayAllocator<TYPES...>::GetArray() const
 //------------------------------------------------------------------------------
 /**
 */
-template<class ...TYPES> template<int MEMBER>
+template<class ...TYPES>
+template<int MEMBER>
 inline Util::Array<tuple_array_t<MEMBER, TYPES...>>&
 ArrayAllocator<TYPES...>::GetArray()
 {

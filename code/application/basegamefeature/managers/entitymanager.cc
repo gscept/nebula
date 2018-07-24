@@ -30,7 +30,8 @@ EntityManager::~EntityManager()
 //------------------------------------------------------------------------------
 /**
 */
-Entity EntityManager::NewEntity()
+Entity
+EntityManager::NewEntity()
 {
 	Entity e;
 	this->pool.Allocate(e.id);
@@ -40,17 +41,71 @@ Entity EntityManager::NewEntity()
 //------------------------------------------------------------------------------
 /**
 */
-void EntityManager::DeleteEntity(const Entity & e)
+void
+EntityManager::DeleteEntity(const Entity & e)
 {
 	this->pool.Deallocate(e.id);
+
+	// Call deletion callbacks for this entity
+	if (this->deletionCallbacks.Contains(e))
+	{
+		Util::Array<Util::Delegate<Entity>>& delegates = this->deletionCallbacks[e];
+		for (SizeT i = 0; i < delegates.Size(); ++i)
+		{
+			n_assert2(delegates[i].IsValid(), "Deletion callback is not valid!");
+			delegates[i](e);
+		}
+		this->deletionCallbacks.Erase(e);
+	}
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-bool EntityManager::IsAlive(const Entity & e) const
+bool
+EntityManager::IsAlive(const Entity & e) const
 {
 	return this->pool.IsValid(e.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+EntityManager::RegisterDeletionCallback(const Entity & e, const Ptr<BaseComponent>& component)
+{
+	Util::Delegate<Entity> d = Util::Delegate<Entity>::FromMethod<BaseComponent, &BaseComponent::OnEntityDeleted>(component);
+	
+	if (this->deletionCallbacks.Contains(e))
+	{
+		// Entity already has deletion callbacks registered
+		this->deletionCallbacks[e].Append(d);
+		return;
+	}
+
+	// Add new entry
+	Util::Array<Util::Delegate<Entity>> delArray;
+	delArray.Append(d);
+	this->deletionCallbacks.Add(e, delArray);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+EntityManager::DeregisterDeletionCallback(const Entity & e, const Ptr<BaseComponent>& component)
+{
+	n_assert2(this->deletionCallbacks.Contains(e), "Entity does not have a deletion callback registered for this component!");
+
+	Util::Array<Util::Delegate<Entity>>& delegates = this->deletionCallbacks[e];
+	for (SizeT i = 0; i < delegates.Size(); ++i)
+	{
+		if (delegates[i].GetObject<Ptr<BaseComponent>>()->HashCode() == component.HashCode())
+		{
+			delegates.EraseIndexSwap(i);
+			return;
+		}
+	}
 }
 
 } // namespace Game
