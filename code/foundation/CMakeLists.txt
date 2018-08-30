@@ -397,38 +397,8 @@ fips_begin_module(foundation)
 		)
 		fips_dir(jobs)
 		fips_files(
-			job.cc
-			job.h
-			jobdatadesc.h
-			jobfunccontext.h
-			jobfuncdesc.h
-			jobport.cc
-			jobport.h
-			jobsystem.cc
-			jobsystem.h
-			jobuniformdesc.h
-			stdjob.h
-			base/jobbase.cc
-			base/jobbase.h
-			base/jobfuncdescbase.h
-			base/jobportbase.cc
-			base/jobportbase.h
-			base/jobsystembase.cc
-			base/jobsystembase.h
-			tp/tpjob.cc
-			tp/tpjob.h
-			tp/tpjobcommand.h
-			tp/tpjobfuncdesc.h
-			tp/tpjobport.cc
-			tp/tpjobport.h
-			tp/tpjobslice.cc
-			tp/tpjobslice.h
-			tp/tpjobsystem.cc
-			tp/tpjobsystem.h
-			tp/tpjobthreadpool.cc
-			tp/tpjobthreadpool.h
-			tp/tpworkerthread.cc
-			tp/tpworkerthread.h
+			jobs.cc
+			jobs.h
 		)
 		fips_dir(framesync)
 		fips_files(
