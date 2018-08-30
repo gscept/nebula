@@ -4,17 +4,39 @@
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "system/appentry.h"
-#include "core/coreserver.h"
 #include "testbase/testrunner.h"
 
 // tests
 #include "idtest.h"
-#include "componenttest.h"
-
+#include "componentdatatest.h"
+#include "appgame/gameapplication.h"
+#include "componentsystemtest.h"
+#include "basegamefeature/basegamefeatureunit.h"
 ImplementNebulaApplication();
 
 using namespace Core;
 using namespace Test;
+
+class GameAppTest : public App::GameApplication
+{
+private:
+	/// setup game features
+	void SetupGameFeatures()
+	{
+		gameFeature = BaseGameFeature::BaseGameFeatureUnit::Create();
+		this->gameServer->AttachGameFeature(gameFeature);
+	}
+	/// cleanup game features
+	void CleanupGameFeatures()
+	{
+		this->gameServer->RemoveGameFeature(gameFeature);
+		gameFeature->CleanupWorld();
+		gameFeature->Release();
+		gameFeature = nullptr;
+	}
+
+	Ptr<BaseGameFeature::BaseGameFeatureUnit> gameFeature;
+};
 
 //------------------------------------------------------------------------------
 /**
@@ -22,24 +44,32 @@ using namespace Test;
 void
 NebulaMain(const Util::CommandLineArgs& args)
 {
-    // create Nebula runtime
-    Ptr<CoreServer> coreServer = CoreServer::Create();
-    coreServer->SetAppName(Util::StringAtom("Nebula Foundation testgame"));
-    coreServer->Open();
+	GameAppTest gameApp;
+	gameApp.SetCompanyName("Test Company");
+	gameApp.SetAppTitle("NEBULA GAME-TESTS");
 
-    n_printf("NEBULA GAME-TESTS\n");
-    n_printf("========================\n");
+	if (!gameApp.Open())
+	{
+		n_printf("Aborting component system test due to unrecoverable error...\n");
+		return;
+	}
+    
+	n_printf("NEBULA GAME-TESTS\n");
+	n_printf("========================\n");
 
 	// setup and run test runner
     Ptr<TestRunner> testRunner = TestRunner::Create();
     testRunner->AttachTestCase(IdTest::Create());
     testRunner->AttachTestCase(CompDataTest::Create());
+
+	Ptr<ComponentSystemTest> compSysTest = ComponentSystemTest::Create();
+	compSysTest->gameApp = &gameApp;
+
+	testRunner->AttachTestCase(compSysTest);
     
     testRunner->Run(); 
 
-    coreServer->Close();
-    testRunner = 0;
-    coreServer = 0;
-    
+    testRunner = nullptr;
+
     Core::SysFunc::Exit(0);
 }
