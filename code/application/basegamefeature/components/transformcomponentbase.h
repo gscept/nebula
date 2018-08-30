@@ -16,13 +16,13 @@
 #include "game/attr/attributedefinitionbase.h"
 #include "attributes/transformattr.h"
 #include "util/dictionary.h"
+#include "game/component/componentdata.h"
 
 namespace Game
 {
 
 struct TransformAttributes
 {
-	Game::Entity owner;
 	Math::matrix44 localTransform;
 	Math::matrix44 worldTransform;
 	uint32_t parent;

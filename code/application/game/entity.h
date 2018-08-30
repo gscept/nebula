@@ -19,18 +19,21 @@ namespace Attr
 namespace Game
 {
 
+ID_32_TYPE(Entity)
+
+/*
 struct Entity
 {
 	Ids::Id32 id;
 
 	//Default constructor
-	Entity() : id(0)
+	constexpr Entity() : id(-1)
 	{
 		// Empty
 	}
 
 	// Entity from id.
-	Entity(const Ids::Id32& id) : id(id)
+	constexpr Entity(const Ids::Id32& id) : id(id)
 	{
 		// empty
 	}
@@ -46,11 +49,18 @@ struct Entity
 		return *this;
 	}
 
-	/*static bool IsAlive() const
+	/// return a 32-bit hash code for the string
+	constexpr IndexT HashCode() const
 	{
-		return false;
-	}*/
+		return this->id;
+	}
+
+	constexpr explicit operator Ids::Id32() const 
+	{
+		return this->id;
+	}
 };
+*/
 
 } // namespace Game
 
