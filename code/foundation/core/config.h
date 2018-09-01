@@ -186,11 +186,11 @@ static const int JobMaxSliceSize = 0xFFFF;
 
 // default resource names
 #if __WIN32__ || __LINUX__
-#define NEBULA3_PLACEHOLDER_TEXTURENAME "systex:system/placeholder.dds"
-#define NEBULA3_PLACEHOLDER_MESHNAME  "sysmsh:system/placeholder.nvx2"
-#define NEBULA3_TEXTURE_EXTENSION ".dds"
-#define NEBULA3_SURFACE_EXTENSION ".sur"
-#define NEBULA3_MESH_EXTENSION ".nvx2"
+#define NEBULAT_PLACEHOLDER_TEXTURENAME "systex:system/placeholder.dds"
+#define NEBULAT_PLACEHOLDER_MESHNAME  "sysmsh:system/placeholder.nvx2"
+#define NEBULAT_TEXTURE_EXTENSION ".dds"
+#define NEBULAT_SURFACE_EXTENSION ".sur"
+#define NEBULAT_MESH_EXTENSION ".nvx2"
 #endif
 
 // VisualStudio settings

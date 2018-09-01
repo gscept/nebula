@@ -150,7 +150,6 @@ private:
 
 ID_32_TYPE(JobId);
 ID_16_TYPE(JobPortId);
-ID_32_16_16_TYPE(JobScheduleId); // combined JobId, JobPortId and execution index
 
 struct CreateJobPortInfo
 {

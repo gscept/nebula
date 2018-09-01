@@ -69,7 +69,7 @@ namespace Ids
 	constexpr x(const Ids::Id16 id) : id(id) {}; \
 	constexpr explicit operator Ids::Id16() const { return id; } \
 	static constexpr x Invalid() { return Ids::InvalidId16; } \
-	constexpr IndexT HashCode() const { return (IndexT)(id); } }; \
+	constexpr IndexT HashCode() const { return (IndexT)(id); } \
 	const bool operator==(const x& rhs) const { return id == rhs.id; } \
 	const bool operator!=(const x& rhs) const { return id != rhs.id; } \
 	const bool operator<(const x& rhs) const { return HashCode() < rhs.HashCode(); } \
@@ -105,6 +105,23 @@ namespace Ids
 	const bool operator>(const x& rhs) const { return HashCode64() > rhs.HashCode64(); }\
 	};
 #define ID_32_24_8_TYPE(x) ID_32_24_8_NAMED_TYPE(x, id32, id24, id8)
+
+#define ID_32_16_16_NAMED_TYPE(x, id32_name, id16_0_name, id16_1_name) struct x { \
+	Ids::Id32 id32_name : 32;\
+	Ids::Id16 id16_0_name : 16;\
+	Ids::Id16 id16_1_name : 16;\
+	constexpr x() : id32_name(Ids::InvalidId32), id16_0_name(Ids::InvalidId16), id16_1_name(Ids::InvalidId16) {};\
+	constexpr x(const Ids::Id64 id) : id32_name(Ids::Id::GetHigh(id)), id16_0_name(Ids::Id::GetHigh(Ids::Id::GetLow(id))), id16_1_name(Ids::Id::GetLow(Ids::Id::GetLow(id))) {};\
+	explicit constexpr operator Ids::Id64() const { return Ids::Id::MakeId32_16_16(id32_name, id16_0_name, id16_1_name); }\
+	static constexpr x Invalid() { return Ids::Id::MakeId32_16_16(Ids::InvalidId32, Ids::InvalidId16, Ids::InvalidId16); }\
+	constexpr IndexT HashCode() const { return (IndexT)Ids::Id::MakeId32(id16_0_name, id16_1_name); }\
+	constexpr Ids::Id64 HashCode64() const { return Ids::Id::MakeId32_16_16(id32_name, id16_0_name, id16_1_name); }\
+	const bool operator==(const x& rhs) const { return id32_name == rhs.id32_name && id16_0_name == rhs.id16_0_name && id16_1_name == rhs.id16_1_name; }\
+	const bool operator!=(const x& rhs) const { return id32_name != rhs.id32_name || id16_0_name != rhs.id16_0_name || id16_1_name != rhs.id16_1_name; }\
+	const bool operator<(const x& rhs) const { return HashCode64() < rhs.HashCode64(); }\
+	const bool operator>(const x& rhs) const { return HashCode64() > rhs.HashCode64(); }\
+	};
+#define ID_32_16_16_TYPE(x) ID_32_16_16_NAMED_TYPE(x, id32, id16_0, id16_1)
 
 #define ID_24_8_24_8_NAMED_TYPE(x, id24_0_name, id8_0_name, id24_1_name, id8_1_name) struct x { \
 	Ids::Id24 id24_0_name : 24;\
@@ -177,12 +194,14 @@ struct Id
 	static constexpr Id16 GetLow(const Id32 bits);
 	/// create new Id using both high and low bits
 	static constexpr Id64 MakeId64(const Id32 low, const Id32 high);
-	/// set high bits in half Id, which returns an integer
+	/// set 16-16 bits id by low and high
 	static constexpr Id32 MakeId32(const Id16 high, const Id16 low);
 	/// set 24-8 bits in integer
 	static constexpr Id32 MakeId24_8(const Id24 big, const Id8 tiny);
 	/// set 32-24-8 bits 64 bit integer
 	static constexpr Id64 MakeId32_24_8(const Id32 upper, const Id24 big, const Id8 tiny);
+	/// set 32-16-16 bits 64 bit integer
+	static constexpr Id64 MakeId32_16_16(const Id32 upper, const Id16 high, const Id16 low);
 	/// set 24-8-24-8 bits 64 bit integer
 	static constexpr Id64 MakeId24_8_24_8(const Id24 big0, const Id8 tiny0, const Id24 big1, const Id8 tiny1);
 	/// split 64 bit integer into 2 32 0bit integers
@@ -299,6 +318,16 @@ inline constexpr Id64
 Id::MakeId32_24_8(const Id32 upper, const Id24 big, const Id8 tiny)
 {
 	return (((uint64_t)upper << 32) & 0xFFFFFFFF00000000) + (((uint64_t)tiny) & 0x00000000000000FF) + (((uint64_t)big << 8) & 0x00000000FFFFFF00);
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline constexpr Id64
+Id::MakeId32_16_16(const Id32 upper, const Id16 high, const Id16 low)
+{
+	return (((uint64_t)upper << 32) & 0xFFFFFFFF00000000) + (((uint64_t)high) & 0x00000000FFFF0000) + (((uint64_t)low << 8) & 0x000000000000FFFF);
 }
 
 //------------------------------------------------------------------------------

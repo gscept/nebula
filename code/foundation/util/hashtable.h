@@ -62,12 +62,18 @@ public:
     void Add(const KeyValuePair<KEYTYPE, VALUETYPE>& kvp);
     /// add a key and associated value
     void Add(const KEYTYPE& key, const VALUETYPE& value);
+	/// adds element only if it doesn't exist, and return reference to it
+	VALUETYPE& AddUnique(const KEYTYPE& key);
 	/// merge two dictionaries
 	void Merge(const HashTable<KEYTYPE, VALUETYPE>& rhs);
     /// erase an entry
     void Erase(const KEYTYPE& key);
     /// return true if key exists in the array
     bool Contains(const KEYTYPE& key) const;
+	/// find index in bucket
+	IndexT FindIndex(const KEYTYPE& key) const;
+	/// get value from key and bucket
+	VALUETYPE& ValueAtIndex(const KEYTYPE& key, IndexT i) const;
     /// return array of all key/value pairs in the table (slow)
     Array<KeyValuePair<KEYTYPE, VALUETYPE> > Content() const;
 	/// get all keys as an Util::Array (slow)
@@ -255,6 +261,7 @@ HashTable<KEYTYPE, VALUETYPE>::Add(const KeyValuePair<KEYTYPE, VALUETYPE>& kvp)
     n_assert(!this->Contains(kvp.Key()));
     #endif
     IndexT hashIndex = GetHashCode<KEYTYPE>(kvp.Key());
+	n_assert(hashIndex >= 0);
     this->hashArray[hashIndex].InsertSorted(kvp);
     this->size++;
 }
@@ -274,14 +281,45 @@ HashTable<KEYTYPE, VALUETYPE>::Add(const KEYTYPE& key, const VALUETYPE& value)
 /**
 */
 template<class KEYTYPE, class VALUETYPE>
+inline VALUETYPE&
+HashTable<KEYTYPE, VALUETYPE>::AddUnique(const KEYTYPE& key)
+{
+	// get hash code from key, trim to capacity
+	IndexT hashIndex = GetHashCode<KEYTYPE>(key);
+	Array<KeyValuePair<KEYTYPE, VALUETYPE> >& hashElements = this->hashArray[hashIndex];
+	if (hashElements.Size() == 0)
+	{
+		this->Add(key, VALUETYPE());
+	}
+	else if (hashElements.Size() > 1)
+	{
+		IndexT hashElementIndex = hashElements.BinarySearchIndex(key);
+		if (hashElementIndex == InvalidIndex)
+		{
+			this->Add(key, VALUETYPE());
+			hashElementIndex = hashElements.BinarySearchIndex(key);
+		}
+		return hashElements[hashElementIndex].Value();
+	}
+	return hashElements[0].Value();
+
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class KEYTYPE, class VALUETYPE>
 void
 HashTable<KEYTYPE, VALUETYPE>::Merge(const HashTable<KEYTYPE, VALUETYPE>& rhs)
 {
-	n_assert(this->size == rhs.size);
+	n_assert(this->hashArray.Size() == rhs.hashArray.Size());
 	IndexT i;
-	for (i = 0; i < rhs.size; i++)
-		this->hashArray[i].AppendArray(rhs.hashArray[i]);
-
+	for (i = 0; i < rhs.hashArray.Size(); i++)
+	{
+		IndexT j;
+		for (j = 0; j < rhs.hashArray[i].Size(); j++)
+			this->Add(rhs.hashArray[i][j]);
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -322,6 +360,31 @@ HashTable<KEYTYPE, VALUETYPE>::Contains(const KEYTYPE& key) const
     {
         return false;
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class KEYTYPE, class VALUETYPE>
+inline IndexT
+HashTable<KEYTYPE, VALUETYPE>::FindIndex(const KEYTYPE& key) const
+{
+	IndexT hashIndex = GetHashCode<KEYTYPE>(key);
+	Array<KeyValuePair<KEYTYPE, VALUETYPE> >& hashElements = this->hashArray[hashIndex];
+	IndexT hashElementIndex = hashElements.BinarySearchIndex(key);
+	return hashElementIndex;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class KEYTYPE, class VALUETYPE>
+inline VALUETYPE&
+HashTable<KEYTYPE, VALUETYPE>::ValueAtIndex(const KEYTYPE& key, IndexT i) const
+{
+	IndexT hashIndex = GetHashCode<KEYTYPE>(key);
+	Array<KeyValuePair<KEYTYPE, VALUETYPE> >& hashElements = this->hashArray[hashIndex];
+	return hashElements[i].Value();
 }
 
 //------------------------------------------------------------------------------

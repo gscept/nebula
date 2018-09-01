@@ -5,8 +5,6 @@
 #include "stdneb.h"
 #include "resourcestreampool.h"
 #include "io/ioserver.h"
-#include "jobs/job.h"
-#include "jobs/jobfunccontext.h"
 #include "resourcemanager.h"
 
 using namespace IO;
@@ -68,6 +66,9 @@ ResourceStreamPool::Update(IndexT frameIndex)
 		// skip unused elements
 		if (element.id.poolId == Ids::InvalidId24) continue;
 
+		// save id here, because we might modify the id to know the pending resource should be finished
+		Resources::ResourceId id = element.id;
+
 		// if the element has an invalid id, it means a thread has eaten it
 		if (element.id.poolIndex == Ids::InvalidId8)
 		{
@@ -90,7 +91,7 @@ ResourceStreamPool::Update(IndexT frameIndex)
 			if (status != Threaded)
 			{
 				// immediate load, run callbacks on status, erase callbacks, and return id of pending element
-				this->RunCallbacks(status, element.id);
+				this->RunCallbacks(status, id);
 				this->callbacks[element.id.poolId].Clear();
 				this->pendingLoadPool.Dealloc(element.id.poolId);
 				this->pendingLoadMap.Erase(this->names[element.id.poolId]);
