@@ -13,7 +13,6 @@
     (C) 2013-2016 Individual contributors, see AUTHORS file
 */
 #include "util/string.h"
-
 //------------------------------------------------------------------------------
 namespace Util
 {
@@ -340,7 +339,9 @@ StringAtom::AsString() const
 inline IndexT
 StringAtom::HashCode() const
 {
-	return (IndexT)reinterpret_cast<PtrT>(this->content);
+	// FIXME, test this :D
+	PtrT key = PtrT(this->content);
+	return (IndexT)(std::hash<unsigned long long>{}(key) & 0x7FFFFFFF);
 }
 
 } // namespace Util
