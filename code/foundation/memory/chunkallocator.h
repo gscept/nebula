@@ -28,8 +28,18 @@ public:
 	ChunkAllocator();
 	/// destructor
 	~ChunkAllocator();
+
+	/// copy constructor
+	ChunkAllocator(const ChunkAllocator& rhs);
+	/// assignment operator
+	void operator=(const ChunkAllocator& rhs);
+
+	/// move constructor
+	ChunkAllocator(ChunkAllocator&& rhs);
+	/// move operator
+	void operator=(ChunkAllocator&& rhs);
 	
-	/// allocate new object
+	/// allocate new object, and calls constructor, but beware because this allocator does not run the destructors
 	template <typename T> T* Alloc();
 	/// allocate new chunk of size
 	void* Alloc(SizeT size);
@@ -69,13 +79,101 @@ ChunkAllocator<ChunkSize>::~ChunkAllocator()
 //------------------------------------------------------------------------------
 /**
 */
+template<int ChunkSize>
+inline
+ChunkAllocator<ChunkSize>::ChunkAllocator(ChunkAllocator&& rhs)
+{
+	this->retiredChunks = rhs.retiredChunks;
+	this->currentChunk = rhs.currentChunk;
+	this->iterator = rhs.iterator;
+
+	rhs.retiredChunks.Clear();
+	rhs.currentChunk = nullptr;
+	rhs.iterator = nullptr;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<int ChunkSize>
+inline
+ChunkAllocator<ChunkSize>::ChunkAllocator(const ChunkAllocator& rhs)
+{
+	IndexT i;
+	for (i = 0; i < rhs.retiredChunks.Size(); i++)
+	{
+		byte* chunk = (byte*)Memory::Alloc(ObjectArrayHeap, ChunkSize);
+		memcpy(chunk, rhs.retiredChunks[i], ChunkSize);
+		this->retiredChunks.Append(chunk);
+	}
+	if (rhs.currentChunk)
+	{
+		this->currentChunk = (byte*)Memory::Alloc(ObjectArrayHeap, ChunkSize);
+		ptrdiff_t size = rhs.iterator - rhs.currentChunk;
+		memcpy(this->currentChunk, rhs.currentChunk, size);
+		this->iterator = this->currentChunk + size;
+	}
+	else
+	{
+		this->currentChunk = nullptr;
+		this->iterator = nullptr;
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<int ChunkSize>
+inline void
+ChunkAllocator<ChunkSize>::operator=(ChunkAllocator&& rhs)
+{
+	this->retiredChunks = rhs.retiredChunks;
+	this->currentChunk = rhs.currentChunk;
+	this->iterator = rhs.iterator;
+
+	rhs.retiredChunks.Clear();
+	rhs.currentChunk = nullptr;
+	rhs.iterator = nullptr;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<int ChunkSize>
+inline void
+ChunkAllocator<ChunkSize>::operator=(const ChunkAllocator& rhs)
+{
+	IndexT i;
+	for (i = 0; i < rhs.retiredChunks.Size(); i++)
+	{
+		byte* chunk = (byte*)Memory::Alloc(ObjectArrayHeap, ChunkSize);
+		memcpy(chunk, rhs.retiredChunks[i], ChunkSize);
+		this->retiredChunks.Append(chunk);
+	}
+	if (rhs.currentChunk)
+	{
+		this->currentChunk = (byte*)Memory::Alloc(ObjectArrayHeap, ChunkSize);
+		ptrdiff_t size = rhs.iterator - rhs.currentChunk;
+		memcpy(this->currentChunk, rhs.currentChunk, size);
+		this->iterator = this->currentChunk + size;
+	}
+	else
+	{
+		this->currentChunk = nullptr;
+		this->iterator = nullptr;
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 template <int ChunkSize>
 inline void
 ChunkAllocator<ChunkSize>::NewChunk()
 {
 	if (this->currentChunk != nullptr)
 		this->retiredChunks.Append(this->currentChunk);
-	this->currentChunk = new byte[ChunkSize];
+	this->currentChunk = (byte*)Memory::Alloc(ObjectArrayHeap, ChunkSize);
 	this->iterator = this->currentChunk;
 }
 
@@ -88,11 +186,12 @@ inline void ChunkAllocator<ChunkSize>::Release()
 	IndexT i;
 	for (i = 0; i < this->retiredChunks.Size(); i++)
 	{
-		delete[] this->retiredChunks[i];
+		Memory::Free(ObjectArrayHeap, this->retiredChunks[i]);
 	}
-	if (this->currentChunk) delete[] this->currentChunk;
+	if (this->currentChunk) Memory::Free(ObjectArrayHeap, this->currentChunk);
 	this->retiredChunks.Clear();
 	this->currentChunk = nullptr;
+	this->iterator = nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -110,7 +209,8 @@ ChunkAllocator<ChunkSize>::Alloc()
 	}
 	else
 	{
-		PtrDiff remainder = this->currentChunk + ChunkSize - this->iterator;
+		// we cast the pointer diff but it should be safe since it should never be above ChunkSize
+		SizeT remainder = ChunkSize - SizeT(this->iterator - this->currentChunk);
 		if (remainder < sizeof(T))
 			this->NewChunk();
 	}
