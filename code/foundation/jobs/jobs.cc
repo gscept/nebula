@@ -51,6 +51,56 @@ DestroyJobPort(const JobPortId& id)
 //------------------------------------------------------------------------------
 /**
 */
+bool
+JobPortBusy(const JobPortId& id)
+{
+	const JobId job = jobPortAllocator.Get<3>((Ids::Id32)id.id);
+	if (job != JobId::Invalid())
+	{
+		const Threading::Event* ev = jobAllocator.Get<2>(job.id);
+		return !ev->Peek();
+	}
+	return false;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+JobPortSync(const JobPortId& id)
+{
+	const JobId job = jobPortAllocator.Get<3>((Ids::Id32)id.id);
+	const Util::FixedArray<Ptr<JobThread>>& threads = jobPortAllocator.Get<1>((Ids::Id32)id.id);
+	if (job != JobId::Invalid())
+	{
+		JobThread::JobThreadCommand cmd;
+		cmd.ev = JobThread::Wait;
+		cmd.sync.ev = jobAllocator.Get<2>(job.id);
+
+		// push to all threads
+		IndexT i;
+		for (i = 0; i < threads.Size(); i++)
+			threads[i]->PushCommand(cmd);
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+JobPortWait(const JobPortId& id)
+{
+	const JobId job = jobPortAllocator.Get<3>((Ids::Id32)id.id);
+	if (job != JobId::Invalid())
+	{
+		const Threading::Event* ev = jobAllocator.Get<2>(job.id);
+		ev->Wait();
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 JobId
 CreateJob(const CreateJobInfo& info)
 {
@@ -95,6 +145,9 @@ JobSchedule(const JobId& job, const JobPortId& port, const JobContext& ctx, cons
 	n_assert(ctx.input.numBuffers > 0);
 	n_assert(ctx.output.numBuffers > 0);
 
+	// set this job to be the last pushed one
+	jobPortAllocator.Get<3>((Ids::Id32)port.id) = job;
+
 	// port related stuff
 	Util::FixedArray<Ptr<JobThread>>& threads = jobPortAllocator.Get<1>((Ids::Id32)port.id);
 	uint& threadIndex = jobPortAllocator.Get<2>((Ids::Id32)port.id);
@@ -137,7 +190,7 @@ JobSchedule(const JobId& job, const JobPortId& port, const JobContext& ctx, cons
 			cmd.run.slice = i;
 			cmd.run.numSlices = numWorkUnitSlices[i];
 			cmd.run.stride = stride;
-			cmd.run.context = &ctx;
+			cmd.run.context = ctx;
 			cmd.run.JobFunc = info.JobFunc;
 			cmd.run.completionCounter = completionCounter;
 			cmd.run.completionEvent = completionEvent;
@@ -235,7 +288,7 @@ JobThread::DoWork()
 /**
 */
 void
-JobThread::PushJobSlices(uint firstSliceIndex, uint numSlices, uint stride, const JobContext* ctx, void(*JobFunc)(const JobFuncContext& ctx), std::atomic_uint* completionCounter, Threading::Event* completionEvent, const std::function<void()>* callback)
+JobThread::PushJobSlices(uint firstSliceIndex, uint numSlices, uint stride, const JobContext ctx, void(*JobFunc)(const JobFuncContext& ctx), std::atomic_uint* completionCounter, Threading::Event* completionEvent, const std::function<void()>* callback)
 {
 	uint sliceIndex = firstSliceIndex;
 
@@ -247,16 +300,16 @@ JobThread::PushJobSlices(uint firstSliceIndex, uint numSlices, uint stride, cons
 
 		// setup uniforms which are the same for all threads
 		uint bufIdx;
-		tctx.numUniforms = ctx->uniform.numBuffers;
+		tctx.numUniforms = ctx.uniform.numBuffers;
 		for (bufIdx = 0; bufIdx < tctx.numUniforms; bufIdx++)
 		{
-			tctx.uniforms[bufIdx] = (ubyte*)ctx->uniform.data[bufIdx];
-			tctx.uniformSizes[bufIdx] = ctx->uniform.dataSize[bufIdx];
+			tctx.uniforms[bufIdx] = (ubyte*)ctx.uniform.data[bufIdx];
+			tctx.uniformSizes[bufIdx] = ctx.uniform.dataSize[bufIdx];
 		}
 
-		if (ctx->uniform.scratchSize > 0)
+		if (ctx.uniform.scratchSize > 0)
 		{
-			n_assert(ctx->uniform.scratchSize < JobThread::MaxScratchSize);
+			n_assert(ctx.uniform.scratchSize < JobThread::MaxScratchSize);
 			tctx.scratch = this->scratchBuffer;
 		}
 		else
@@ -265,25 +318,25 @@ JobThread::PushJobSlices(uint firstSliceIndex, uint numSlices, uint stride, cons
 		}
 
 		// setup inputs
-		tctx.numInputs = ctx->input.numBuffers;
+		tctx.numInputs = ctx.input.numBuffers;
 		for (bufIdx = 0; bufIdx < tctx.numInputs; bufIdx++)
 		{
-			ubyte* buf = (ubyte*)ctx->input.data[bufIdx];
+			ubyte* buf = (ubyte*)ctx.input.data[bufIdx];
 			n_assert(buf != nullptr);
-			const IndexT offset = sliceIndex * ctx->input.sliceSize[bufIdx];
+			const IndexT offset = sliceIndex * ctx.input.sliceSize[bufIdx];
 			tctx.inputs[bufIdx] = buf + offset;
-			tctx.inputSizes[bufIdx] = Math::n_min(ctx->input.sliceSize[bufIdx], ctx->input.dataSize[bufIdx] - offset);
+			tctx.inputSizes[bufIdx] = Math::n_min(ctx.input.sliceSize[bufIdx], ctx.input.dataSize[bufIdx] - offset);
 		}
 
 		// setup outputs
-		tctx.numOutputs = ctx->output.numBuffers;
+		tctx.numOutputs = ctx.output.numBuffers;
 		for (bufIdx = 0; bufIdx < tctx.numOutputs; bufIdx++)
 		{
-			ubyte* buf = (ubyte*)ctx->output.data[bufIdx];
+			ubyte* buf = (ubyte*)ctx.output.data[bufIdx];
 			n_assert(buf != nullptr);
-			const IndexT offset = sliceIndex * ctx->output.sliceSize[bufIdx];
+			const IndexT offset = sliceIndex * ctx.output.sliceSize[bufIdx];
 			tctx.outputs[bufIdx] = buf + offset;
-			tctx.outputSizes[bufIdx] = Math::n_min(ctx->output.sliceSize[bufIdx], ctx->output.dataSize[bufIdx] - offset);
+			tctx.outputSizes[bufIdx] = Math::n_min(ctx.output.sliceSize[bufIdx], ctx.output.dataSize[bufIdx] - offset);
 		}
 
 		// run job
