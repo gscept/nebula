@@ -1,80 +1,98 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	A VisibilityContext adds a module to a GraphicsEntity which makes it take part
-	in visibility resolution. Most graphics entities should use this, but some entities,
-	like the skybox, or UI elements, does not need to be checked for visibility. 
+	Contains two contexts, one for observers and one for observables
 
-	The same goes for lights
-	
-	(C) 2017 Individual contributors, see AUTHORS file
+	(C) 2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "core/refcounted.h"
-#include "core/singleton.h"
 #include "graphics/graphicscontext.h"
-#include "coregraphics/batchgroup.h"
-#include "util/hashtable.h"
-#include "util/keyvaluepair.h"
-#include "math/bbox.h"
 #include "visibility.h"
-#include "models/model.h"
+#include "jobs/jobs.h"
+#include "visibility/systems/system.h"
 namespace Visibility
 {
-class VisibilityContext : public Graphics::GraphicsContext
+
+class ObserverContext : public Graphics::GraphicsContext
 {
-	__DeclareClass(VisibilityContext);
-	__DeclareSingleton(VisibilityContext);
+	DeclareContext();
 public:
-	/// constructor
-	VisibilityContext();
-	/// destructor
-	virtual ~VisibilityContext();
 
-	/// setup
-	void Setup(const Graphics::GraphicsEntityId id, VisibilityEntityType type);
-
-	/// register entity
-	void RegisterEntity(const Graphics::GraphicsEntityId entity) override;
-	/// unregister entity
-	void DeregisterEntity(const Graphics::GraphicsEntityId entity) override;
+	/// setup entity
+	static void Setup(const Graphics::GraphicsEntityId id, VisibilityEntityType entityType);
 
 	/// runs before frame is updated
-	void OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime);
+	static void OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime);
+
+	/// create context
+	static void Create();
+
+	/// create a box system
+	static System* CreateBoxSystem(const BoxSystemLoadInfo& info);
+	/// create a portal system
+	static System* CreatePortalSystem(const PortalSystemLoadInfo& info);
+	/// create octree system
+	static System* CreateOctreeSystem(const OctreeSystemLoadInfo& info);
+	/// create quadtree system
+	static System* CreateQuadtreeSystem(const QuadtreeSystemLoadInfo& info);
+	/// create brute force system
+	static System* CreateBruteforceSystem(const BruteforceSystemLoadInfo& info);
+
+	/// wait for all visibility jobs
+	static void WaitForVisibility();
+
+	static Jobs::JobPortId jobPort;
+	static Threading::SafeQueue<Jobs::JobId> runningJobs;
+
 private:
 
-
-
-	Ids::IdAllocator<
-		Math::matrix44,				// transform
-		Math::bbox,					// bounding box
-		Models::ModelInstanceId,	// model
-		VisibilityEntityType		// type of visibility entity
-	> visibilityContextAllocator;
+	friend class ObservableContext;
+	friend class VisibilityContex;
+	typedef Ids::IdAllocator<
+		bool
+	> VisibilityResultAllocator;
+	typedef Ids::IdAllocator<
+		Math::matrix44,					// transform of observer camera
+		Graphics::GraphicsEntityId, 	// entity id
+		VisibilityEntityType,			// type of object so we know how to get the transform
+		VisibilityResultAllocator		// visibility lookup table
+	> ObserverAllocator;
+	static ObserverAllocator observerAllocator;
 
 	/// allocate a new slice for this context
-	Graphics::ContextEntityId Alloc();
+	static Graphics::ContextEntityId Alloc();
 	/// deallocate a slice
-	void Dealloc(Graphics::ContextEntityId id);
-		
+	static void Dealloc(Graphics::ContextEntityId id);
+
+	/// keep as ordinary array of pointers, no need to have them cache aligned
+	static Util::Array<System*> systems;
 };
 
-//------------------------------------------------------------------------------
-/**
-*/
-inline Graphics::ContextEntityId
-VisibilityContext::Alloc()
+class ObservableContext : public Graphics::GraphicsContext
 {
-	return this->visibilityContextAllocator.AllocObject();
-}
+	DeclareContext();
+public:
 
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-VisibilityContext::Dealloc(Graphics::ContextEntityId id)
-{
-	this->visibilityContextAllocator.DeallocObject(id.id);
-}
+	/// setup entity
+	static void Setup(const Graphics::GraphicsEntityId id, VisibilityEntityType entityType);
+
+	/// create context
+	static void Create();
+private:
+
+	friend class ObserverContext;
+	friend class VisibilityContex;
+	typedef Ids::IdAllocator<
+		Math::matrix44,					// transform
+		Graphics::GraphicsEntityId,		// entity id
+		VisibilityEntityType			// type of object so we know how to get the transform
+	> ObserveeAllocator;
+	static ObserveeAllocator observeeAllocator;
+
+	/// allocate a new slice for this context
+	static Graphics::ContextEntityId Alloc();
+	/// deallocate a slice
+	static void Dealloc(Graphics::ContextEntityId id);
+};
 
 } // namespace Visibility

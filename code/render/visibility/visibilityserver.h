@@ -28,9 +28,7 @@
 #include "core/refcounted.h"
 #include "core/singleton.h"
 #include "graphics/graphicsentity.h"
-#include "models/modelcontext.h"
 #include "visibility.h"
-#include "graphics/graphicscontext.h"
 
 namespace CoreGraphics
 {
@@ -69,17 +67,8 @@ public:
 	/// applies a visibility result, may apply the previous visibility result if the previously initiated is not ready yet, and makes that container the current one
 	void ApplyVisibility(const Ptr<Graphics::View>& view);
 
-	/// register graphics entity as an observer
-	void RegisterObserver(const Graphics::GraphicsEntityId obs, ObserverMask mask);
-	/// unregister graphics entity 
-	void UnregisterObserver(const Graphics::GraphicsEntityId obs, ObserverMask mask);
-
 	/// begin preparing for the scene to change, this phase should encompass the entirety of the void outside of the render loop
 	void EnterVisibilityLockstep();
-	/// register a renderable entity
-	void RegisterGraphicsEntity(const Graphics::GraphicsEntityId entity);
-	/// deregister renderable entity
-	void UnregisterGraphicsEntity(const Graphics::GraphicsEntityId entity);
 	/// finish up scene changes, this will cause all observers to reconstruct their visibility list
 	void LeaveVisibilityLockstep();
 
@@ -87,35 +76,6 @@ public:
 private:
 
 	bool locked;
-	bool visibilityDirty;
 	Util::Array<Graphics::GraphicsEntityId> observers;
-	Util::Array<ObserverMask> observerMasks;
-	//Util::Array<Ptr<VisibilitySystemBase>> systems;
-
-	Util::Array<Graphics::GraphicsEntityId> entities;
-	Util::Array<Models::ModelInstanceId> models;
-
-	typedef Ids::Id32 MaterialTypeId;
-	typedef CoreGraphics::BatchGroup::Code MaterialBatchId;
-	typedef Ids::Id32 MaterialInstanceId;
-	typedef Ids::Id32 ModelResourceId;
-	typedef Ids::Id32 ModelNodeResourceId;
-	typedef Ids::Id32 ModelNodeInstanceId;
-
-	template <class KEY, class VALUE>
-	struct VisibilityLevel
-	{
-		bool anyVisible;
-		Util::HashTable<KEY, VALUE> level;
-	};
-
-	/// the visibility data structure, the entity id is the observer list
-	typedef Util::HashTable<Graphics::GraphicsEntityId,
-		VisibilityLevel<MaterialTypeId,
-		VisibilityLevel<MaterialBatchId,
-		VisibilityLevel<MaterialInstanceId,
-		VisibilityLevel<ModelResourceId,
-		VisibilityLevel<ModelNodeResourceId, Util::Array<ModelNodeInstanceId>
-		>>>>>> VisibilityMatrix;
 };
 } // namespace Visibility

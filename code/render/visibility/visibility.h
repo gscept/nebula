@@ -3,8 +3,6 @@
 // visibility.h
 // (C) 2017 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "visibility.h"
-
 namespace Visibility
 {
 
@@ -31,9 +29,11 @@ __ImplementEnumBitOperators(ObserverType);
 
 enum VisibilityEntityType : uint8_t
 {
-	Observer = 0,				// entity is an observer
-	Observee = 1,				// entity is to be observed
-	ObserverAndObservee = 2		// entity can be seen, and see others (light sources, for example)
+	Model,							// entity is a model
+	Camera,							// ordinary camera
+	Light,							// entity is a light source
+	LightProbe						// entity is a light probe
+	
 };
 
 } // namespace Visibility

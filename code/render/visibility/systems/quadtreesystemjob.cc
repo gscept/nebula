@@ -1,28 +1,28 @@
 //------------------------------------------------------------------------------
-// visibilitybruteforcesystem.cc
-// (C) 2017 Individual contributors, see AUTHORS file
+//  quadtreesystemjob.cc
+//  (C) 2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
-#include "visibilitybruteforcesystem.h"
-
+#include "quadtreesystem.h"
 namespace Visibility
 {
 
-__ImplementClass(Visibility::VisibilityBruteForceSystem, 'VBFS', Visibility::VisibilitySystemBase);
 //------------------------------------------------------------------------------
 /**
 */
-VisibilityBruteForceSystem::VisibilityBruteForceSystem()
+void 
+QuadtreeInjectFunction(const Jobs::JobFuncContext& ctx)
 {
-	// empty
+
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-VisibilityBruteForceSystem::~VisibilityBruteForceSystem()
+void 
+QuadtreeResolveFunction(const Jobs::JobFuncContext& ctx)
 {
-	// empty
+
 }
 
 } // namespace Visibility
