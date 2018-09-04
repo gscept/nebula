@@ -78,7 +78,7 @@ FrameScriptLoader::LoadFrameScript(const IO::URI& path)
 
 
 #define CONSTRUCTOR_MACRO(type) \
-		constructors.Add(("Algorithms::" #type ##_str).HashCode(), [](Memory::ChunkAllocator<0xFFFF>& alloc) -> Algorithms::Algorithm* { \
+		constructors.Add(("Algorithms::" #type ##_str).HashCode(), [](Memory::ChunkAllocator<BIG_CHUNK>& alloc) -> Algorithms::Algorithm* { \
 			void* mem = alloc.Alloc(sizeof(Algorithms::type));\
 			n_new_inplace(Algorithms::type, mem);\
 			return (Algorithms::Algorithm*)mem;\

@@ -34,7 +34,7 @@ public:
 		CoreGraphics::ShaderStateId shaderState;
 	};
 
-	FrameOp::Compiled* AllocCompiled(Memory::ChunkAllocator<0xFFFF>& allocator);
+	FrameOp::Compiled* AllocCompiled(Memory::ChunkAllocator<BIG_CHUNK>& allocator);
 	
 	RenderUtil::DrawFullScreenQuad fsq;
 	CoreGraphics::ShaderId shader;

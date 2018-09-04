@@ -123,7 +123,7 @@ FramePass::OnWindowResized()
 /**
 */
 FrameOp::Compiled* 
-FramePass::AllocCompiled(Memory::ChunkAllocator<0xFFFF>& allocator)
+FramePass::AllocCompiled(Memory::ChunkAllocator<BIG_CHUNK>& allocator)
 {
 	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
 	ret->pass = this->pass;
@@ -135,7 +135,7 @@ FramePass::AllocCompiled(Memory::ChunkAllocator<0xFFFF>& allocator)
 */
 void 
 FramePass::Build(
-	Memory::ChunkAllocator<0xFFFF>& allocator, 
+	Memory::ChunkAllocator<BIG_CHUNK>& allocator,
 	Util::Array<FrameOp::Compiled*>& compiledOps, 
 	Util::Array<CoreGraphics::EventId>& events,
 	Util::Array<CoreGraphics::BarrierId>& barriers,

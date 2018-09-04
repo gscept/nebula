@@ -29,7 +29,7 @@ FrameGlobalState::~FrameGlobalState()
 /**
 */
 FrameOp::Compiled* 
-FrameGlobalState::AllocCompiled(Memory::ChunkAllocator<0xFFFF>& allocator)
+FrameGlobalState::AllocCompiled(Memory::ChunkAllocator<BIG_CHUNK>& allocator)
 {
 	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
 	ret->state = this->state;

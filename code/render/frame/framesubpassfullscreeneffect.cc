@@ -59,7 +59,7 @@ FrameSubpassFullscreenEffect::Discard()
 /**
 */
 FrameOp::Compiled*
-FrameSubpassFullscreenEffect::AllocCompiled(Memory::ChunkAllocator<0xFFFF>& allocator)
+FrameSubpassFullscreenEffect::AllocCompiled(Memory::ChunkAllocator<BIG_CHUNK>& allocator)
 {
 	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
 	ret->fsq = this->fsq;

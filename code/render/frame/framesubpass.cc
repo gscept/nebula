@@ -83,7 +83,7 @@ FrameSubpass::CompiledImpl::Discard()
 /**
 */
 FrameOp::Compiled*
-FrameSubpass::AllocCompiled(Memory::ChunkAllocator<0xFFFF>& allocator)
+FrameSubpass::AllocCompiled(Memory::ChunkAllocator<BIG_CHUNK>& allocator)
 {
 	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
 	ret->viewports = this->viewports;
@@ -97,7 +97,7 @@ FrameSubpass::AllocCompiled(Memory::ChunkAllocator<0xFFFF>& allocator)
 */
 void 
 FrameSubpass::Build(
-	Memory::ChunkAllocator<0xFFFF>& allocator, 
+	Memory::ChunkAllocator<BIG_CHUNK>& allocator,
 	Util::Array<FrameOp::Compiled*>& compiledOps, 
 	Util::Array<CoreGraphics::EventId>& events,
 	Util::Array<CoreGraphics::BarrierId>& barriers,

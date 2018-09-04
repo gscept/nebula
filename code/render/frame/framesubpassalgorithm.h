@@ -30,7 +30,7 @@ public:
 		std::function<void(IndexT)> func;
 	};
 
-	FrameOp::Compiled* AllocCompiled(Memory::ChunkAllocator<0xFFFF>& allocator);
+	FrameOp::Compiled* AllocCompiled(Memory::ChunkAllocator<BIG_CHUNK>& allocator);
 
 	Util::StringAtom funcName;
 	Algorithms::Algorithm* alg;

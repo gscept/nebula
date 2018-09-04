@@ -113,11 +113,11 @@ protected:
 	};
 
 	/// allocate instance of compiled
-	virtual Compiled* AllocCompiled(Memory::ChunkAllocator<0xFFFF>& allocator) = 0;
+	virtual Compiled* AllocCompiled(Memory::ChunkAllocator<BIG_CHUNK>& allocator) = 0;
 
 	/// build operation
 	virtual void Build(
-		Memory::ChunkAllocator<0xFFFF>& allocator,
+		Memory::ChunkAllocator<BIG_CHUNK>& allocator,
 		Util::Array<FrameOp::Compiled*>& compiledOps,
 		Util::Array<CoreGraphics::EventId>& events,
 		Util::Array<CoreGraphics::BarrierId>& barriers,

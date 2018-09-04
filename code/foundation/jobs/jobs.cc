@@ -216,7 +216,6 @@ __ImplementClass(Jobs::JobThread, 'JBTH', Threading::Thread);
 /**
 */
 JobThread::JobThread() :
-	busy(false),
 	scratchBuffer(nullptr)
 {
 	// empty
@@ -250,13 +249,11 @@ JobThread::DoWork()
 	this->scratchBuffer = (ubyte*)Memory::Alloc(Memory::ScratchHeap, MaxScratchSize);
 
 	Util::Array<JobThreadCommand> curCommands;
-	curCommands.Reserve(1000);
 	while (!this->ThreadStopRequested())
 	{
 		// dequeue all commands, this ensures we don't gain any new commands this thread loop
 		this->commands.DequeueAll(curCommands);
 
-		this->busy = true;
 		IndexT i;
 		for (i = 0; i < curCommands.Size(); i++)
 		{
@@ -274,8 +271,6 @@ JobThread::DoWork()
 		}
 
 		// reset commands, but don't destroy them
-		curCommands.Reset();
-		this->busy = false;
 		this->commands.Wait();
 	}
 

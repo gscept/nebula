@@ -30,7 +30,7 @@ public:
 		SizeT x, y, z;
 	};
 
-	FrameOp::Compiled* AllocCompiled(Memory::ChunkAllocator<0xFFFF>& allocator);
+	FrameOp::Compiled* AllocCompiled(Memory::ChunkAllocator<BIG_CHUNK>& allocator);
 
 	CoreGraphics::ShaderProgramId program;
 	CoreGraphics::ShaderStateId state;

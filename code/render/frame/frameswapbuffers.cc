@@ -39,7 +39,7 @@ FrameSwapbuffers::Discard()
 /**
 */
 FrameOp::Compiled*
-FrameSwapbuffers::AllocCompiled(Memory::ChunkAllocator<0xFFFF>& allocator)
+FrameSwapbuffers::AllocCompiled(Memory::ChunkAllocator<BIG_CHUNK>& allocator)
 {
 	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
 	ret->tex = this->tex;

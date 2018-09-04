@@ -118,7 +118,11 @@ FrameScript::Discard()
 	for (i = 0; i < this->ops.Size(); i++)
 	{
 		this->ops[i]->Discard();
+		this->ops[i]->~FrameOp();
 	}
+
+	this->buildAllocator.Release();
+	this->allocator.Release();
 }
 
 //------------------------------------------------------------------------------

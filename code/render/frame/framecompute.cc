@@ -41,7 +41,7 @@ FrameCompute::Discard()
 /**
 */
 FrameOp::Compiled*
-FrameCompute::AllocCompiled(Memory::ChunkAllocator<0xFFFF>& allocator)
+FrameCompute::AllocCompiled(Memory::ChunkAllocator<BIG_CHUNK>& allocator)
 {
 	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
 	ret->program = this->program;
