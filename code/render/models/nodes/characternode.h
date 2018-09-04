@@ -48,11 +48,11 @@ public:
 		IndexT updateFrame;
 		bool updateThisFrame;
 
-		void Setup(const Models::ModelNode* parent) override;
+		void Setup(const Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
 	};
 
 	/// create instance
-	virtual ModelNode::Instance* CreateInstance(Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& alloc) const;
+	virtual ModelNode::Instance* CreateInstance(Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& alloc, const Models::ModelNode::Instance* parent) const;
 
 private:
     /// recursively create model node instance and child model node instances
@@ -101,9 +101,9 @@ ModelNodeInstanceCreator(CharacterNode)
 /**
 */
 inline void
-CharacterNode::Instance::Setup(const Models::ModelNode* parent)
+CharacterNode::Instance::Setup(const Models::ModelNode* node, const Models::ModelNode::Instance* parent)
 {
-	ModelNode::Instance::Setup(parent);
+	ModelNode::Instance::Setup(node, parent);
 	this->type = CharacterNodeType;
 }
 

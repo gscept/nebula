@@ -25,11 +25,11 @@ public:
 
 	struct Instance : public ShaderStateNode::Instance
 	{
-		void Setup(const Models::ModelNode* parent) override;
+		void Setup(const Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
 	};
 
 	/// create instance
-	virtual ModelNode::Instance* CreateInstance(Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& alloc) const;
+	virtual ModelNode::Instance* CreateInstance(Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& alloc, const Models::ModelNode::Instance* parent) const;
 
 protected:
 	friend class StreamModelPool;
@@ -52,9 +52,9 @@ ModelNodeInstanceCreator(PrimitiveNode)
 /**
 */
 inline void
-PrimitiveNode::Instance::Setup(const Models::ModelNode* parent)
+PrimitiveNode::Instance::Setup(const Models::ModelNode* node, const Models::ModelNode::Instance* parent)
 {
-	TransformNode::Instance::Setup(parent);
+	ShaderStateNode::Instance::Setup(node, parent);
 	this->type = PrimtiveNodeType;
 }
 

@@ -28,11 +28,11 @@ public:
 		bool lockedToViewer;
 
 		void ApplyNodeInstanceState() override;
-		virtual void Setup(const Models::ModelNode* parent) override;
+		virtual void Setup(const Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
 	};
 
 	/// create instance
-	virtual ModelNode::Instance* CreateInstance(Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& alloc) const;
+	virtual ModelNode::Instance* CreateInstance(Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& alloc, const Models::ModelNode::Instance* parent) const;
 
 protected:
 	friend class StreamModelPool;
@@ -59,9 +59,10 @@ ModelNodeInstanceCreator(TransformNode)
 /**
 */
 inline void
-TransformNode::Instance::Setup(const Models::ModelNode* parent)
+TransformNode::Instance::Setup(const Models::ModelNode* node, const Models::ModelNode::Instance* parent)
 {
-	const TransformNode* tnode = static_cast<const TransformNode*>(parent);
+	ModelNode::Instance::Setup(node, parent);
+	const TransformNode* tnode = static_cast<const TransformNode*>(node);
 	this->transform.setposition(tnode->position);
 	this->transform.setrotate(tnode->rotate);
 	this->transform.setscale(tnode->scale);

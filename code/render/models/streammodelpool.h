@@ -60,7 +60,7 @@ private:
 	friend class Visibility::VisibilityContext;
 
 	/// create an instance of a model recursively
-	void CreateModelInstanceRecursive(Models::ModelNode* parent, Models::ModelNode::Instance* parentInstance, Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& allocator, Util::Array<Models::ModelNode::Instance*>& instances);
+	void CreateModelInstanceRecursive(Models::ModelNode* node, Models::ModelNode::Instance* parentInstance, Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& allocator, Util::Array<Models::ModelNode::Instance*>& instances);
 
 	/// perform actual load, override in subclass
 	LoadStatus LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream);

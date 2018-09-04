@@ -15,7 +15,8 @@ namespace Models
 //------------------------------------------------------------------------------
 /**
 */
-PrimitiveNode::PrimitiveNode()
+PrimitiveNode::PrimitiveNode() :
+	primitiveGroupIndex(InvalidIndex)
 {
 	// empty
 }

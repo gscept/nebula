@@ -46,11 +46,11 @@ public:
 		CoreGraphics::ShaderConstantId animsPerSecVar;
 		IndexT bufferIndex;
 
-		void Setup(const Models::ModelNode* parent) override;
+		void Setup(const Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
 	};
 
 	/// create instance
-	virtual ModelNode::Instance* CreateInstance(Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& alloc) const;
+	virtual ModelNode::Instance* CreateInstance(Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& alloc, const Models::ModelNode::Instance* parent) const;
 private:
     /// helper function to parse an EnvelopeCurve from a data stream
     Particles::EnvelopeCurve ParseEnvelopeCurveData(const Ptr<IO::BinaryReader>& reader) const;
@@ -111,10 +111,10 @@ ModelNodeInstanceCreator(ParticleSystemNode)
 /**
 */
 inline void
-ParticleSystemNode::Instance::Setup(const Models::ModelNode* parent)
+ParticleSystemNode::Instance::Setup(const Models::ModelNode* node, const Models::ModelNode::Instance* parent)
 {
-	TransformNode::Instance::Setup(parent);
-	this->particleShader = ShaderCreateState(static_cast<const ParticleSystemNode*>(parent)->shader, { NEBULAT_DYNAMIC_OFFSET_GROUP }, false);
+	TransformNode::Instance::Setup(node, parent);
+	this->particleShader = ShaderCreateState(static_cast<const ParticleSystemNode*>(node)->shader, { NEBULAT_DYNAMIC_OFFSET_GROUP }, false);
 	this->emitterOrientationVar = CoreGraphics::ShaderStateGetConstant(this->particleShader, "EmitterTransform");
 	this->billboardVar = CoreGraphics::ShaderStateGetConstant(this->particleShader, "Billboard");
 	this->bboxCenterVar = CoreGraphics::ShaderStateGetConstant(this->particleShader, "BBoxCenter");

@@ -23,10 +23,10 @@
 #include "models/model.h"
 
 #define ModelNodeInstanceCreator(type) \
-inline ModelNode::Instance* type::CreateInstance(Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& alloc) const\
+inline ModelNode::Instance* type::CreateInstance(Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& alloc, const ModelNode::Instance* parent) const\
 {\
 	auto node = alloc.Alloc<type::Instance>();\
-	node->Setup(this);\
+	node->Setup(this, parent);\
 	return node;\
 }
 
@@ -39,13 +39,13 @@ class ModelNode
 public:
 	struct Instance
 	{
-		ModelNode::Instance* parent;	// pointer to parent
-		ModelNode* node;				// pointer to resource-level node
+		const ModelNode::Instance* parent;	// pointer to parent
+		const ModelNode* node;				// pointer to resource-level node
 		NodeType type;
 		Math::bbox boundingBox;
 
 		virtual void ApplyNodeInstanceState();
-		virtual void Setup(const Models::ModelNode* parent);
+		virtual void Setup(const Models::ModelNode* node, const Models::ModelNode::Instance* parent);
 	};
 
 	/// constructor
@@ -56,7 +56,7 @@ public:
 	/// return constant reference to children
 	const Util::Array<ModelNode*>& GetChildren() const;
 	/// create an instance of a node, override in the leaf classes
-	virtual ModelNode::Instance* CreateInstance(Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& alloc) const;
+	virtual ModelNode::Instance* CreateInstance(Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& alloc, const Models::ModelNode::Instance* parent) const;
 
 	/// apply node-level state
 	virtual void ApplyNodeState();
@@ -88,7 +88,7 @@ protected:
 /**
 */
 inline ModelNode::Instance*
-ModelNode::CreateInstance(Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& alloc) const
+ModelNode::CreateInstance(Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& alloc, const Models::ModelNode::Instance* parent) const
 {
 	return nullptr;
 }
