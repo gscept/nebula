@@ -49,7 +49,7 @@ FrameOp::OnWindowResized()
 */
 void
 FrameOp::Build(
-	Memory::ChunkAllocator<0xFFFF>& allocator, 
+	Memory::ChunkAllocator<BIG_CHUNK>& allocator,
 	Util::Array<FrameOp::Compiled*>& compiledOps,
 	Util::Array<CoreGraphics::EventId>& events,
 	Util::Array<CoreGraphics::BarrierId>& barriers,

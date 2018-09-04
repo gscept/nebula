@@ -34,7 +34,7 @@ FrameSubpassSystem::~FrameSubpassSystem()
 /**
 */
 FrameOp::Compiled*
-FrameSubpassSystem::AllocCompiled(Memory::ChunkAllocator<0xFFFF>& allocator)
+FrameSubpassSystem::AllocCompiled(Memory::ChunkAllocator<BIG_CHUNK>& allocator)
 {
 	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
 	ret->call = this->call;

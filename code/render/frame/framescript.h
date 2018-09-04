@@ -39,7 +39,7 @@ public:
 	virtual ~FrameScript();
 
 	/// get allocator
-	Memory::ChunkAllocator<0xFFFF>& GetAllocator();
+	Memory::ChunkAllocator<BIG_CHUNK>& GetAllocator();
 
 	/// set name
 	void SetResourceName(const Resources::ResourceName& name);
@@ -90,12 +90,12 @@ private:
 	void OnWindowResized();
 
 	CoreGraphics::WindowId window;
-	Memory::ChunkAllocator<0xFFFF> allocator;
+	Memory::ChunkAllocator<BIG_CHUNK> allocator;
 
 	Util::Array<CoreGraphics::EventId> events;
 	Util::Array<CoreGraphics::BarrierId> barriers;
 	Util::Array<CoreGraphics::SemaphoreId> semaphores;
-	Memory::ChunkAllocator<0xFFFF> buildAllocator;
+	Memory::ChunkAllocator<BIG_CHUNK> buildAllocator;
 
 	Resources::ResourceName resId;
 	Util::Array<CoreGraphics::RenderTextureId> colorTextures;
@@ -135,7 +135,7 @@ FrameScript::GetResourceName() const
 //------------------------------------------------------------------------------
 /**
 */
-inline Memory::ChunkAllocator<0xFFFF>&
+inline Memory::ChunkAllocator<BIG_CHUNK>&
 FrameScript::GetAllocator()
 {
 	return this->allocator;

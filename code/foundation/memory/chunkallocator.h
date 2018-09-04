@@ -17,8 +17,13 @@
 //------------------------------------------------------------------------------
 #include "core/config.h"
 #include "util/array.h"
+
+#define SMALL_CHUNK 0x100
+#define MEDIUM_CHUNK 0x1000
+#define BIG_CHUNK 0x10000
 namespace Memory
 {
+
 
 template <int ChunkSize>
 class ChunkAllocator
@@ -73,7 +78,10 @@ template <int ChunkSize>
 inline
 ChunkAllocator<ChunkSize>::~ChunkAllocator()
 {
-	this->Release();
+	this->currentChunk = nullptr;
+	this->iterator = nullptr;
+	this->retiredChunks.Clear();
+	//this->Release(); // perhaps call release when we actually want to dealloc
 }
 
 //------------------------------------------------------------------------------
@@ -99,6 +107,11 @@ template<int ChunkSize>
 inline
 ChunkAllocator<ChunkSize>::ChunkAllocator(const ChunkAllocator& rhs)
 {
+	// copy chunk
+	this->retiredChunks = rhs.retiredChunks;
+	this->currentChunk = rhs.currentChunk;
+	this->iterator = rhs.iterator;
+	/*
 	IndexT i;
 	for (i = 0; i < rhs.retiredChunks.Size(); i++)
 	{
@@ -118,6 +131,7 @@ ChunkAllocator<ChunkSize>::ChunkAllocator(const ChunkAllocator& rhs)
 		this->currentChunk = nullptr;
 		this->iterator = nullptr;
 	}
+	*/
 }
 
 //------------------------------------------------------------------------------
@@ -143,6 +157,10 @@ template<int ChunkSize>
 inline void
 ChunkAllocator<ChunkSize>::operator=(const ChunkAllocator& rhs)
 {
+	this->retiredChunks = rhs.retiredChunks;
+	this->currentChunk = rhs.currentChunk;
+	this->iterator = rhs.iterator;
+	/*
 	IndexT i;
 	for (i = 0; i < rhs.retiredChunks.Size(); i++)
 	{
@@ -162,6 +180,7 @@ ChunkAllocator<ChunkSize>::operator=(const ChunkAllocator& rhs)
 		this->currentChunk = nullptr;
 		this->iterator = nullptr;
 	}
+	*/
 }
 
 //------------------------------------------------------------------------------
@@ -215,7 +234,7 @@ ChunkAllocator<ChunkSize>::Alloc()
 			this->NewChunk();
 	}
 
-	T* ret = new (this->iterator) T();
+	T* ret = new (this->iterator) T;
 	this->iterator += sizeof(T);
 	return ret;
 }

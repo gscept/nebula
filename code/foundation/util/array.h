@@ -234,6 +234,19 @@ Array<TYPE>::Array(std::initializer_list<TYPE> list) :
 //------------------------------------------------------------------------------
 /**
 */
+template<class TYPE>
+Array<TYPE>::Array(const Array<TYPE>& rhs) :
+	grow(0),
+	capacity(0),
+	size(0),
+	elements(0)
+{
+	this->Copy(rhs);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 template<class TYPE> void
 Array<TYPE>::Copy(const Array<TYPE>& src)
 {
@@ -284,19 +297,6 @@ Array<TYPE>::Destroy(TYPE* elm)
 /**
 */
 template<class TYPE>
-Array<TYPE>::Array(const Array<TYPE>& rhs) :
-    grow(0),
-    capacity(0),
-    size(0),
-    elements(0)
-{
-    this->Copy(rhs);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-template<class TYPE>
 Array<TYPE>::~Array()
 {
     this->Delete();
@@ -337,7 +337,7 @@ Array<TYPE>::operator=(const Array<TYPE>& rhs)
             IndexT i;
             for (i = 0; i < rhs.size; i++)
             {
-                this->elements[i] = std::move(rhs.elements[i]);
+                this->elements[i] = rhs.elements[i];
             }
 
             // properly destroy remaining original elements
@@ -370,11 +370,11 @@ Array<TYPE>::GrowTo(SizeT newCapacity)
         IndexT i;
         for (i = 0; i < this->size; i++)
         {
-            newArray[i] = std::move(this->elements[i]);
+            newArray[i] = this->elements[i];
         }
 
-        // discard old array and update contents
-        n_delete_array(this->elements);
+        // discard old array
+		n_delete_array(this->elements);
     }
     this->elements  = newArray;
     this->capacity = newCapacity;

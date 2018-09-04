@@ -26,7 +26,7 @@ public:
 		Util::Array<CoreGraphics::ShaderConstantId> constants;
 	};
 
-	FrameOp::Compiled* AllocCompiled(Memory::ChunkAllocator<0xFFFF>& allocator);
+	FrameOp::Compiled* AllocCompiled(Memory::ChunkAllocator<BIG_CHUNK>& allocator);
 
 	CoreGraphics::ShaderStateId state;
 	Util::Array<CoreGraphics::ShaderConstantId> constants;

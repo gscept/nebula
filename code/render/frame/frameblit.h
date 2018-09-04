@@ -26,7 +26,7 @@ public:
 		CoreGraphics::RenderTextureId from, to;
 	};
 
-	FrameOp::Compiled* AllocCompiled(Memory::ChunkAllocator<0xFFFF>& allocator);
+	FrameOp::Compiled* AllocCompiled(Memory::ChunkAllocator<BIG_CHUNK>& allocator);
 
 	CoreGraphics::RenderTextureId from, to;
 };

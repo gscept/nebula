@@ -142,7 +142,6 @@ private:
 
 	static const SizeT MaxScratchSize = (64 * 1024);    // 64 kB max scratch size
 
-	bool busy;
 	Threading::SafeQueue<JobThreadCommand> commands;
 	ubyte* scratchBuffer;
 };
