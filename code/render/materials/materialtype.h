@@ -12,13 +12,14 @@
 #include "memory/chunkallocator.h"
 #include "util/variant.h"
 #include "coregraphics/texture.h"
-#include "ids/idallocator.h"
+#include "material.h"
 namespace Materials
 {
 struct MaterialTexture
 {
 	CoreGraphics::TextureId default;
 	CoreGraphics::TextureType type;
+	bool system : 1;
 };
 struct MaterialConstant
 {
@@ -26,17 +27,9 @@ struct MaterialConstant
 	Util::Variant min;
 	Util::Variant max;
 	Util::Variant::Type type;
+	bool system : 1;
 };
 
-struct MaterialSetup
-{
-	Util::Array<Util::StringAtom> textureNames;
-	Util::Array<MaterialTexture> textures;
-	Util::Array<Util::StringAtom> constantNames;
-	Util::Array<MaterialConstant> constants;
-};
-
-ID_32_TYPE(MaterialTypeId);
 class MaterialType
 {
 public:
@@ -47,27 +40,28 @@ public:
 	~MaterialType();
 
 	/// create an instance of a material
-	Ids::Id32 CreateMaterial();
+	MaterialId CreateInstance();
 	/// destroy an instance of a material
-	void DestroyMaterial(Ids::Id32 mat);
-	/// setup material
-	void SetupMaterial(Ids::Id32 mat, MaterialSetup setup);
+	void DestroyInstance(MaterialId mat);
 	/// set constant in material
-	void MaterialSetConstant(Ids::Id32 mat, Util::StringAtom name, const Util::Variant& constant);
+	void SetConstant(MaterialId mat, Util::StringAtom name, const Util::Variant& constant);
 	/// set texture in material
-	void MaterialSetTexture(Ids::Id32 mat, Util::StringAtom, const CoreGraphics::TextureId tex);
+	void SetTexture(MaterialId mat, Util::StringAtom, const CoreGraphics::TextureId tex);
 
-	/// apply type-specific material state
-	void BeginBatch(CoreGraphics::BatchGroup::Code batch);
-	/// end batch
-	void EndBatch();
 
-	/// apply specific material instance, using the same batch as 
-	void ApplyMaterial(Ids::Id32 mat);
 private:
 	friend class MaterialServer;
 	friend class MaterialPool;
+	friend void	MaterialBeginBatch(MaterialType* type, CoreGraphics::BatchGroup::Code batch);
+	friend void	MaterialApply(const Resources::ResourceId& mat);
+	friend void	MaterialEndBatch();
 
+	/// apply type-specific material state
+	void BeginBatch(CoreGraphics::BatchGroup::Code batch);
+	/// apply specific material instance, using the same batch as 
+	void ApplyInstance(const MaterialId& mat);
+	/// end batch
+	void EndBatch();
 
 	Util::Array<CoreGraphics::BatchGroup::Code> batches;
 	Util::HashTable<CoreGraphics::BatchGroup::Code, CoreGraphics::ShaderProgramId> programs;

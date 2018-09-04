@@ -29,15 +29,6 @@ ModelNode::~ModelNode()
 //------------------------------------------------------------------------------
 /**
 */
-ModelNode::Instance*
-ModelNode::CreateInstance(Memory::ChunkAllocator<0xFFF>& alloc) const
-{
-	return nullptr;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 bool
 ModelNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader)
 {
@@ -65,7 +56,7 @@ ModelNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const P
 	{
 		// throw error on unknown tag (we can't skip unknown tags)
 		n_error("ModelNode::Load: unknown data tag '%s' in '%s'!",
-			tag.AsString().AsCharPtr(),
+			fourcc.AsString().AsCharPtr(),
 			reader->GetStream()->GetURI().AsString().AsCharPtr());
 		return false;
 	}
@@ -94,7 +85,7 @@ ModelNode::OnFinishedLoading()
 /**
 */
 void
-ModelNode::Setup()
+ModelNode::Discard()
 {
 	// override in subclass
 }
@@ -102,10 +93,28 @@ ModelNode::Setup()
 //------------------------------------------------------------------------------
 /**
 */
-void
-ModelNode::Discard()
+ void
+ModelNode::ApplyNodeState()
 {
-	// override in subclass
+	// empty
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ModelNode::Instance::ApplyNodeInstanceState()
+{
+	// empty
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ModelNode::Instance::Setup(const Models::ModelNode* parent)
+{
+	// empty
 }
 
 } // namespace Models

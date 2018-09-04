@@ -73,6 +73,11 @@ public:
     const Math::matrix44& GetInvModelViewTransform();
     /// get current model-view-projection transform
     const Math::matrix44& GetModelViewProjTransform();
+
+	/// set object id
+	void SetObjectId(const uint id);
+	/// get object id
+	uint GetObjectId() const;
     /// set focal length
     void SetFocalLength(const Math::float2& len);
     /// get focal length
@@ -120,6 +125,7 @@ private:
     bool isOpen;
     uint dirtyFlags;                                // or'ed (1<<TransformType) dirty flags
     Util::FixedArray<Math::matrix44> transforms;    // index is transform type
+	uint id;										// id of current object
     Math::float2 focalLength;
 };
 
@@ -275,6 +281,24 @@ TransformDeviceBase::GetModelViewProjTransform()
         this->UpdateModelViewProjTransform();
     }
     return this->transforms[ModelViewProj];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+TransformDeviceBase::SetObjectId(const uint id)
+{
+	this->id = id;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline uint
+TransformDeviceBase::GetObjectId() const
+{
+	return this->id;
 }
 
 //------------------------------------------------------------------------------

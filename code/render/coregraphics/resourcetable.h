@@ -163,7 +163,7 @@ void ResourceTableSetTexture(const ResourceTableId& id, const ResourceTableTextu
 /// set resource table rwtexture as read-only
 void ResourceTableSetTexture(const ResourceTableId& id, const ResourceTableShaderRWTexture& tex);
 /// set resource table render texture
-void ResourceTableSetRenderTexture(const ResourceTableId& id, const ResourceTableRenderTexture& tex);
+void ResourceTableSetTexture(const ResourceTableId& id, const ResourceTableRenderTexture& tex);
 /// set resource table input attachment
 void ResourceTableSetInputAttachment(const ResourceTableId& id, const ResourceTableInputAttachment& tex);
 /// set resource table rw texture

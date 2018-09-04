@@ -24,11 +24,13 @@
 #include "coregraphics/textrenderer.h"
 #include "frame/frameserver.h"
 #include "debug/debughandler.h"
+#include "materials/materialserver.h"
 
 namespace Graphics
 {
 
 class GraphicsContext;
+struct GraphicsContextFunctionBundle;
 class View;
 class GraphicsServer : public Core::RefCounted
 {
@@ -67,8 +69,10 @@ public:
 	/// call per-frame to update graphics subsystem
 	void OnFrame();
 
-	/// create and register context class with graphics server, this later allows for that context to be used with graphics entities
-	void RegisterGraphicsContext(const Core::Rtti& rtti);
+	/// register function bundle from graphics context, see GraphicsContextType::Create
+	void RegisterGraphicsContext(GraphicsContextFunctionBundle* context);
+	/// unregister function bundle
+	void UnregisterGraphicsContext(GraphicsContextFunctionBundle* context);
 private:
 	friend class GraphicsEntity;
 	friend class CoreGraphics::BatchGroup;
@@ -76,7 +80,7 @@ private:
 	Ids::IdGenerationPool entityPool;
 
 	Ptr<FrameSync::FrameSyncTimer> timer;
-	Util::Array<Ptr<GraphicsContext>> contexts;
+	Util::Array<GraphicsContextFunctionBundle*> contexts;
 	Ptr<Visibility::VisibilityServer> visServer;
 
 	Util::Array<Ptr<Stage>> stages;

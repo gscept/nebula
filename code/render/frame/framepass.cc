@@ -59,16 +59,20 @@ FramePass::CompiledImpl::Run(const IndexT frameIndex)
 {
 	// begin pass
 	PassBegin(this->pass);
+	
+	IndexT i;
 
 	// run subpasses
-	IndexT i;
 	for (i = 0; i < this->subpasses.Size(); i++)
 	{
 		// progress to next subpass if not on first iteration
 		if (i > 0) CoreGraphics::SetToNextSubpass();
 
-		// execute contents of this subpass
-		this->subpasses[i]->Run(frameIndex);		
+		// execute contents of this subpass and synchronize
+		// note that we overload the cross queue sync so we do it outside the render pass
+		this->subpasses[i]->QueuePreSync();
+		this->subpasses[i]->Run(frameIndex);
+		this->subpasses[i]->QueuePostSync();
 	}
 
 	// end pass
@@ -83,6 +87,26 @@ FramePass::CompiledImpl::Discard()
 {
 	for (IndexT i = 0; i < this->subpasses.Size(); i++)
 		this->subpasses[i]->Discard();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+FramePass::CompiledImpl::CrossQueuePreSync()
+{
+	for (IndexT i = 0; i < this->subpasses.Size(); i++)
+		this->subpasses[i]->CrossQueuePreSync();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+FramePass::CompiledImpl::CrossQueuePostSync()
+{
+	for (IndexT i = 0; i < this->subpasses.Size(); i++)
+		this->subpasses[i]->CrossQueuePostSync();
 }
 
 //------------------------------------------------------------------------------
@@ -128,8 +152,6 @@ FramePass::Build(
 		this->subpasses[i]->Build(allocator, subpassOps, events, barriers, semaphores, rwTextures, rwBuffers, renderTextures);
 	}
 	myCompiled->subpasses = subpassOps;
-
-	// don't add subpasses to array, since they will be called by the pass
 	compiledOps.Append(myCompiled);
 }
 

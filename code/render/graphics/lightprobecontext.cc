@@ -4,11 +4,13 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "lightprobecontext.h"
+#include "graphics/graphicsserver.h"
 
 namespace Graphics
 {
 
-__ImplementClass(Graphics::LightProbeContext, 'LPCO', Graphics::GraphicsContext);
+ImplementContext(LightProbeContext);
+LightProbeContext::LightProbeAllocator LightProbeContext::lightProbeAllocator;
 //------------------------------------------------------------------------------
 /**
 */
@@ -23,6 +25,16 @@ LightProbeContext::LightProbeContext()
 LightProbeContext::~LightProbeContext()
 {
 	// empty
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Math::matrix44&
+LightProbeContext::GetTransform(const Graphics::GraphicsEntityId id)
+{
+	const ContextEntityId cid = GetContextId(id);
+	return lightProbeAllocator.Get<0>(cid.id);
 }
 
 //------------------------------------------------------------------------------

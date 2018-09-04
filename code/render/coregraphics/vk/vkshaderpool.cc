@@ -79,6 +79,7 @@ VkShaderPool::LoadFromStream(const Resources::ResourceId id, const Util::StringA
 		setupInfo.constantRangeLayout,
 		setupInfo.immutableSamplers,
 		setupInfo.descriptorSetLayouts,
+		setupInfo.descriptorSetLayoutMap,
 		setupInfo.pipelineLayout,
 		setupInfo.tables,
 		setupInfo.resourceIndexMap,
@@ -143,7 +144,9 @@ CoreGraphics::ShaderProgramId
 VkShaderPool::GetShaderProgram(const CoreGraphics::ShaderId shaderId, const CoreGraphics::ShaderFeature::Mask mask)
 {
 	VkShaderRuntimeInfo& runtime = this->shaderAlloc.Get<2>(shaderId.allocId);
-	return runtime.programMap[mask];
+	IndexT i = runtime.programMap.FindIndex(mask);
+	if (i == InvalidIndex)	return CoreGraphics::ShaderProgramId::Invalid();
+	else					return runtime.programMap.ValueAtIndex(i);
 }
 
 //------------------------------------------------------------------------------
@@ -165,6 +168,7 @@ VkShaderPool::CreateState(const CoreGraphics::ShaderId shader, const Util::Array
 		groups,
 		stateAllocator,
 		info.descriptorSetLayouts,
+		info.descriptorSetLayoutMap,
 		info.uniformBufferMap,
 		info.uniformBufferGroupMap,
 		info.pipelineLayout
@@ -193,6 +197,7 @@ VkShaderPool::CreateSlicedState(const CoreGraphics::ShaderId shader, const Util:
 			groups,
 			stateAllocator,
 			info.descriptorSetLayouts,
+			info.descriptorSetLayoutMap,
 			info.uniformBufferMap,
 			info.uniformBufferGroupMap,
 			info.pipelineLayout
@@ -323,7 +328,9 @@ VkShaderPool::DerivativeStateReset(const CoreGraphics::ShaderStateId id, const C
 const CoreGraphics::ShaderConstantId
 VkShaderPool::ShaderStateGetConstant(const CoreGraphics::ShaderStateId state, const Util::StringAtom& name) const
 {
-	return this->shaderAlloc.Get<4>(state.shaderId).Get<2>(state.stateId).variableMap[name];
+	IndexT i = this->shaderAlloc.Get<4>(state.shaderId).Get<2>(state.stateId).variableMap.FindIndex(name);
+	if (i == InvalidIndex)	return CoreGraphics::ShaderConstantId::Invalid();
+	else					return this->shaderAlloc.Get<4>(state.shaderId).Get<2>(state.stateId).variableMap.ValueAtIndex(i);
 }
 
 //------------------------------------------------------------------------------

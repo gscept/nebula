@@ -90,9 +90,21 @@ framescript:
 		{
 			name: "GeometryPass",
 			dependencies: [], 
-			attachments: ["LightBuffer"],
+			attachments: ["AlbedoBuffer", "NormalBuffer", "DepthBuffer", "SpecularBuffer", "EmissiveBuffer"],
 			depth: true,
+			batch: "FlatGeometryLit", 
+			batch: "TesselatedGeometryLit",
+			batch: "Background"
 		},
+		subpass:
+		{
+			name: "GeometryPass",
+			dependencies: [0],
+			inputs: ["AlbedoBuffer", "NormalBuffer", "DepthBuffer", "SpecularBuffer", "EmissiveBuffer"],
+			depth: true,
+			attachments: [5],
+			system: "Lights"
+		}
 	},
 
 	computeAlgorithm:
@@ -132,7 +144,7 @@ framescript:
 					shader: 	"shd:copy",
 					variables:
 					[
-						{ semantic: "CopyBuffer", 	value: "tex:Castle_Gate_diffuse.dds" },
+						{ semantic: "CopyBuffer", 	value: "tex:Buildings/Castle_Gate_diffuse.dds" },
 					]
 				}
 				sizeFromTexture: 	"ScreenBuffer"

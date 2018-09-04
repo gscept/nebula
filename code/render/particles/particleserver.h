@@ -11,6 +11,7 @@
 #include "core/refcounted.h"
 #include "core/singleton.h"
 #include "particles/particlerenderer.h"
+#include "jobs/jobs.h"
 
 //------------------------------------------------------------------------------
 namespace Particles
@@ -35,10 +36,14 @@ public:
 	/// gets the default emitter mesh
 	const CoreGraphics::MeshId& GetDefaultEmitterMesh();
 
+	/// get job port
+	const Jobs::JobPortId GetJobPort();
+
 private:
     bool isOpen;
     Ptr<ParticleRenderer> particleRenderer;
 	CoreGraphics::MeshId defaultEmitterMesh;
+	Jobs::JobPortId jobPort;
 };
 
 //------------------------------------------------------------------------------
@@ -57,6 +62,15 @@ inline const CoreGraphics::MeshId&
 ParticleServer::GetDefaultEmitterMesh()
 {
 	return this->defaultEmitterMesh;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const Jobs::JobPortId
+ParticleServer::GetJobPort()
+{
+	return this->jobPort;
 }
 
 } // namespace Particles

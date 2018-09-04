@@ -103,6 +103,7 @@ void VkShaderStateSetup(
 	const Util::Array<IndexT>& groups,
 	VkShaderStateAllocator& allocator,
 	Util::FixedArray<std::pair<uint32_t, CoreGraphics::ResourceTableLayoutId>>& setLayouts,
+	const Util::Dictionary<uint32_t, uint32_t>& setLayoutMap,
 	Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBufferId>& sharedBuffers,
 	Util::Dictionary<uint32_t, Util::Array<CoreGraphics::ConstantBufferId>>& sharedBuffersByGroup,
 	CoreGraphics::ResourcePipelineId layout);

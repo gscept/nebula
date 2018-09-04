@@ -65,6 +65,10 @@ typedef Ids::IdAllocator<
 void SetInt(VkShaderConstantMemoryBinding& bind, int value);
 /// set int array values
 void SetIntArray(VkShaderConstantMemoryBinding& bind, const int* values, SizeT count);
+/// set int value
+void SetUInt(VkShaderConstantMemoryBinding& bind, uint value);
+/// set int array values
+void SetUIntArray(VkShaderConstantMemoryBinding& bind, const uint* values, SizeT count);
 /// set float value
 void SetFloat(VkShaderConstantMemoryBinding& bind, float value);
 /// set float array values

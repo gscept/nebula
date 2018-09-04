@@ -928,7 +928,7 @@ Present(const CoreGraphics::WindowId& id)
 		0,
 		nullptr
 	};
-	VkResult res = vkQueueSubmit(wndInfo.presentQueue, 1, &submitInfo, nullptr);
+	VkResult res = vkQueueSubmit(wndInfo.presentQueue, 1, &submitInfo, VK_NULL_HANDLE);
 	n_assert(res == VK_SUCCESS);
 
 	// present

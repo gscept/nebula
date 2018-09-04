@@ -32,17 +32,17 @@
 <Nebula3>
 	<Materials>
 
-		<Material name="PlacementHandleWireframeNoPick" type="special" desc="Inhouse material used by level editor to render handles">
+		<Material name="PlacementHandleWireframeNoPick" vertexType="special" desc="Inhouse material used by level editor to render handles">
 			<Pass batch="DirectToColor" shader="leveleditor" variation="Alt0"/>
 	   
 			<Param name="MatDiffuse" type="float4" defaultValue="0,0,0,0"/>
 		</Material>
-		<Material name="PlacementHandleSolidNoPick" type="special" desc="Inhouse material used by level editor to render handles">
+		<Material name="PlacementHandleSolidNoPick" vertexType="special" desc="Inhouse material used by level editor to render handles">
 			<Pass batch="DirectToColor" shader="leveleditor" variation="Alt0|Alt2"/>
 	   
 			<Param name="MatDiffuse" type="float4" defaultValue="0,0,0,0"/>
 		</Material>
-		<Material name="PlacementHandleWireframe" type="special" desc="Inhouse material used by level editor to render handles">
+		<Material name="PlacementHandleWireframe" vertexType="special" desc="Inhouse material used by level editor to render handles">
 			<Pass batch="DirectToColor" shader="leveleditor" variation="Alt0"/>
 			<Pass batch="PickingInFront" shader="leveleditor" variation="Alt1"/>
 	   
@@ -51,7 +51,7 @@
 			<!-- use object id for picking -->
 			<Param name="ObjectId" type="int" system="true"/>
 		</Material>
-		<Material name="PlacementHandleSolid" type="special" desc="Inhouse material used by level editor to render handles">
+		<Material name="PlacementHandleSolid" vertexType="special" desc="Inhouse material used by level editor to render handles">
 			<Pass batch="DirectToColor" shader="leveleditor" variation="Alt0|Alt2"/>
 			<Pass batch="PickingInFront" shader="leveleditor" variation="Alt1|Alt2"/>
 	   

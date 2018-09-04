@@ -350,6 +350,7 @@ RequestDescriptorPool()
 	VkDescriptorPool pool;
 	VkResult res = vkCreateDescriptorPool(state.devices[state.currentDevice], &poolInfo, nullptr, &pool);
 	n_assert(res == VK_SUCCESS);
+	state.currentPool++;
 	state.descriptorPools.Append(pool);
 }
 
@@ -1007,6 +1008,8 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	#else
 		const int numLayers = 0;
 	#endif
+#else
+	const int numLayers = 0;
 #endif
 
 	// setup instance

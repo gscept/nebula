@@ -32,6 +32,7 @@ VkShaderSetup(
 	VkPushConstantRange& constantRange,
 	Util::Array<CoreGraphics::SamplerId>& immutableSamplers,
 	Util::FixedArray<std::pair<uint32_t, CoreGraphics::ResourceTableLayoutId>>& setLayouts,
+	Util::Dictionary<uint32_t, uint32_t>& setLayoutMap,
 	CoreGraphics::ResourcePipelineId& pipelineLayout,
 	Util::FixedArray<CoreGraphics::ResourceTableId>& tables,
 	Util::Dictionary<Util::StringAtom, uint32_t>& resourceSlotMap,
@@ -56,6 +57,7 @@ VkShaderSetup(
 	constantRange.offset = 0;
 	constantRange.stageFlags = VK_SHADER_STAGE_ALL;
 	bool usePushConstants = false;
+	uint32_t pushConstantSet = 0xFFFFFFFF;
 
 #define uint_max(a, b) (a > b ? a : b)
 
@@ -78,7 +80,11 @@ VkShaderSetup(
 		uint32_t slotsUsed = 0;
 
 		if (block->variables.empty()) continue;
-		if (AnyFX::HasFlags(block->qualifiers, AnyFX::Qualifiers::Push)) continue;
+		if (AnyFX::HasFlags(block->qualifiers, AnyFX::Qualifiers::Push))
+		{
+			usePushConstants = true;
+			pushConstantSet = block->set;
+		};
 		ResourceTableLayoutCreateInfo& rinfo = layoutCreateInfos.AddUnique(block->set);
 		numsets = uint_max(numsets, block->set + 1);
 
@@ -296,6 +302,7 @@ VkShaderSetup(
 			const ResourceTableLayoutCreateInfo& info = layoutCreateInfos.ValueAtIndex(i);
 			ResourceTableLayoutId layout = CreateResourceTableLayout(info);
 			setLayouts[i] = std::make_pair(layoutCreateInfos.KeyAtIndex(i), layout);
+			setLayoutMap.Add(layoutCreateInfos.KeyAtIndex(i), i);
 		}
 	}
 

@@ -137,9 +137,9 @@ private:
 	friend const CoreGraphics::ConstantBufferId CoreGraphics::CreateConstantBuffer(const CoreGraphics::ConstantBufferCreateInfo& info);
 	friend uint32_t	VkShaderGetVkShaderVariableBinding(const CoreGraphics::ShaderStateId shader, const CoreGraphics::ShaderConstantId var);
 
-	friend void	CoreGraphics::SetShaderState(const CoreGraphics::ShaderStateId& state);
-	friend void CoreGraphics::SetShaderProgram(const CoreGraphics::ShaderProgramId& pro);
-	friend void CoreGraphics::SetShaderProgram(const CoreGraphics::ShaderId shaderId, const CoreGraphics::ShaderFeature::Mask mask);
+	friend void	::CoreGraphics::SetShaderState(const CoreGraphics::ShaderStateId& state);
+	friend void ::CoreGraphics::SetShaderProgram(const CoreGraphics::ShaderProgramId& pro);
+	friend void ::CoreGraphics::SetShaderProgram(const CoreGraphics::ShaderId shaderId, const CoreGraphics::ShaderFeature::Mask mask);
 
 	/// get shader program
 	AnyFX::VkProgram* GetProgram(const CoreGraphics::ShaderProgramId shaderProgramId);
@@ -180,6 +180,7 @@ private:
 		Util::Array<CoreGraphics::SamplerId> immutableSamplers;
 		Util::Dictionary<Util::StringAtom, uint32_t> resourceIndexMap;
 		Util::FixedArray<std::pair<uint32_t, CoreGraphics::ResourceTableLayoutId>> descriptorSetLayouts;
+		Util::Dictionary<uint32_t, uint32_t> descriptorSetLayoutMap;
 	};
 
 	/// this member allocates shaders
@@ -216,6 +217,25 @@ VkShaderPool::ShaderConstantSetArray(const CoreGraphics::ShaderConstantId var, c
 {
 	VkShaderConstantAllocator& alloc = this->shaderAlloc.Get<4>(state.shaderId).Get<3>(state.stateId);
 	SetIntArray(alloc.Get<0>(var.id), value, count);
+}
+//------------------------------------------------------------------------------
+/**
+*/
+template<> inline void
+VkShaderPool::ShaderConstantSet(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ShaderStateId state, const uint& value)
+{
+	VkShaderConstantAllocator& alloc = this->shaderAlloc.Get<4>(state.shaderId).Get<3>(state.stateId);
+	SetUInt(alloc.Get<0>(var.id), value);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<> inline void
+VkShaderPool::ShaderConstantSetArray(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ShaderStateId state, const uint* value, uint32_t count)
+{
+	VkShaderConstantAllocator& alloc = this->shaderAlloc.Get<4>(state.shaderId).Get<3>(state.stateId);
+	SetUIntArray(alloc.Get<0>(var.id), value, count);
 }
 
 //------------------------------------------------------------------------------

@@ -73,6 +73,7 @@ GraphicsServer::Open()
 		Resources::ResourceManager::Instance()->RegisterStreamPool("shd", CoreGraphics::ShaderPool::RTTI);
 		Resources::ResourceManager::Instance()->RegisterStreamPool("n3", Models::StreamModelPool::RTTI);
 		Resources::ResourceManager::Instance()->RegisterStreamPool("nvx2", CoreGraphics::StreamMeshPool::RTTI);
+		Resources::ResourceManager::Instance()->RegisterStreamPool("sur", Materials::MaterialPool::RTTI);
 
 		// setup internal pool pointers for convenient access (note, will also assert if texture, shader, model or mesh pools is not registered yet!)
 		CoreGraphics::vboPool = Resources::GetMemoryPool<CoreGraphics::MemoryVertexBufferPool>();
@@ -83,6 +84,7 @@ GraphicsServer::Open()
 
 		CoreGraphics::shaderPool = Resources::GetStreamPool<CoreGraphics::ShaderPool>();
 		Models::modelPool = Resources::GetStreamPool<Models::StreamModelPool>();
+		Materials::materialPool = Resources::GetStreamPool<Materials::MaterialPool>();
 
 		this->shaderServer = CoreGraphics::ShaderServer::Create();
 		this->shaderServer->Open();
@@ -164,7 +166,8 @@ GraphicsServer::OnFrame()
 	IndexT i;
 	for (i = 0; i < this->contexts.Size(); i++)
 	{
-		this->contexts[i]->OnBeforeFrame(frameIndex, time);
+		if (this->contexts[i]->OnBeforeFrame != nullptr) 
+			this->contexts[i]->OnBeforeFrame(frameIndex, time);
 	}
 
 	// begin updating visibility
@@ -178,7 +181,8 @@ GraphicsServer::OnFrame()
 		IndexT j;
 		for (j = 0; j < this->contexts.Size(); j++)
 		{
-			this->contexts[j]->OnBeforeView(view, frameIndex, time);
+			if (this->contexts[j]->OnBeforeView != nullptr)
+				this->contexts[j]->OnBeforeView(view, frameIndex, time);
 		}
 
 		// apply visibility result for this view
@@ -186,7 +190,8 @@ GraphicsServer::OnFrame()
 
 		for (j = 0; j < this->contexts.Size(); j++)
 		{
-			this->contexts[j]->OnVisibilityReady(frameIndex, time);
+			if (this->contexts[j]->OnVisibilityReady != nullptr)
+				this->contexts[j]->OnVisibilityReady(frameIndex, time);
 		}
 
 		// render view
@@ -194,14 +199,16 @@ GraphicsServer::OnFrame()
 
 		for (j = 0; j < this->contexts.Size(); j++)
 		{
-			this->contexts[j]->OnAfterView(view, frameIndex, time);
+			if (this->contexts[j]->OnAfterView != nullptr)
+				this->contexts[j]->OnAfterView(view, frameIndex, time);
 		}
 	}
 
 	// finish frame and prepare for the next one
 	for (i = 0; i < this->contexts.Size(); i++)
 	{
-		this->contexts[i]->OnAfterFrame(frameIndex, time);
+		if (this->contexts[i]->OnAfterFrame != nullptr)
+			this->contexts[i]->OnAfterFrame(frameIndex, time);
 	}
 
 	// leave visibility lockstep
@@ -212,12 +219,20 @@ GraphicsServer::OnFrame()
 /**
 */
 void
-GraphicsServer::RegisterGraphicsContext(const Core::Rtti& rtti)
+GraphicsServer::RegisterGraphicsContext(GraphicsContextFunctionBundle* context)
 {
-	n_assert(rtti.IsDerivedFrom(GraphicsContext::RTTI));
-	void* obj = rtti.Create();
-	Ptr<GraphicsContext> ptr((GraphicsContext*)obj);
-	this->contexts.Append(ptr);
+	this->contexts.Append(context);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GraphicsServer::UnregisterGraphicsContext(GraphicsContextFunctionBundle* context)
+{
+	IndexT i = this->contexts.FindIndex(context);
+	n_assert(i != InvalidIndex);
+	this->contexts.EraseIndex(i);
 }
 
 //------------------------------------------------------------------------------

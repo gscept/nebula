@@ -115,6 +115,7 @@ CreateConstantBuffer(const ConstantBufferCreateInfo& info)
 	setup.dev = dev;
 	setup.numBuffers = info.numBuffers;
 	setup.reflection = nullptr;
+	setup.grow = 16;
 	SizeT size = info.size;
 
 	// if we setup from reflection, then fetch the size from the shader
@@ -164,7 +165,8 @@ CreateConstantBuffer(const ConstantBufferCreateInfo& info)
 
 	// setup stretch callback interface
 	stretch.obj = ret;
-	stretch.resizer.Setup(&stretch, setup.stride, props.limits.minUniformBufferOffsetAlignment, setup.numBuffers);
+	stretch.resizer.Setup(setup.stride, props.limits.minUniformBufferOffsetAlignment, setup.numBuffers);
+	stretch.resizer.SetTarget(&stretch);
 
 	return ret;
 }

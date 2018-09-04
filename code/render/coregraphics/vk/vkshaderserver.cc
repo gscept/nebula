@@ -173,7 +173,7 @@ VkShaderServer::RegisterTexture(const CoreGraphics::RenderTextureId& tex, bool d
 	info.sampler = SamplerId::Invalid();
 	info.isDepth = depth;
 	info.slot = VkShaderGetVkShaderVariableBinding(this->textureShaderState, var);
-	ResourceTableSetRenderTexture(this->resourceTable, info);
+	ResourceTableSetTexture(this->resourceTable, info);
 
 	return idx;
 }

@@ -1080,7 +1080,6 @@ FrameScriptLoader::ParseSubpassFullscreenEffect(const Ptr<Frame::FrameScript>& s
 
 	CoreGraphics::ShaderStateId state;
 	ParseShaderState(script, shaderState, state);
-
 	op->shaderState = state;
 
 	// get texture
@@ -1172,6 +1171,7 @@ FrameScriptLoader::ParseShaderState(const Ptr<Frame::FrameScript>& script, JzonV
 
 	JzonValue* vars = jzon_get(node, "variables");
 	if (vars != NULL) ParseShaderVariables(script, state, vars);
+	CoreGraphics::ShaderStateCommit(state);
 }
 
 //------------------------------------------------------------------------------
@@ -1246,6 +1246,7 @@ FrameScriptLoader::ParseShaderVariables(const Ptr<Frame::FrameScript>& script, c
 			break;
 		}
 	}
+
 }
 
 //------------------------------------------------------------------------------

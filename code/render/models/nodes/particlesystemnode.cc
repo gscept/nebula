@@ -9,6 +9,7 @@
 #include "particles/particlerenderer.h"
 #include "models/streammodelpool.h"
 #include "coregraphics/mesh.h"
+#include "coregraphics/shaderserver.h"
 
 namespace Models
 {
@@ -66,6 +67,8 @@ ParticleSystemNode::OnFinishedLoading()
 	Math::bbox& box = modelPool->GetModelBoundingBox(this->model);
     this->boundingBox.set(box.center(), Math::point(activityDist, activityDist, activityDist));
 	box.extend(this->boundingBox);
+
+	this->shader = CoreGraphics::ShaderServer::Instance()->GetShader("shd:particle");
 }
 
 //------------------------------------------------------------------------------
@@ -259,7 +262,7 @@ ParticleSystemNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag
     }
     else
     {
-        retval = ShaderStateNode::Load(fourcc, tag, reader);
+        retval = TransformNode::Load(fourcc, tag, reader);
     }   
     return retval;    
 }

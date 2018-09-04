@@ -56,9 +56,10 @@ protected:
 		virtual void Run(const IndexT frameIndex) = 0;
 		virtual void Discard();
 
-		void SignalEvents();
-		void WaitAndResetEvents();
-		void InsertBarriers();
+		virtual void CrossQueuePreSync();
+		virtual void CrossQueuePostSync();
+		virtual void QueuePreSync();
+		virtual void QueuePostSync();
 
 		SizeT numWaitEvents;
 		struct

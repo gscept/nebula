@@ -38,10 +38,14 @@ PrimitiveNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, con
 	if (FourCC('MESH') == fourcc)
 	{
 		// get mesh resource
-		this->meshName = reader->ReadString();
+		Resources::ResourceName meshName = reader->ReadString();
+
+#if NEBULA_DEBUG
+		this->meshName = meshName;
+#endif
 
 		// add as pending resource in loader
-		this->res = Resources::CreateResource(this->meshName, tag, nullptr, nullptr, false);
+		this->res = Resources::CreateResource(meshName, tag, nullptr, nullptr, false);
 	}
 	else if (FourCC('PGRI') == fourcc)
 	{
@@ -53,6 +57,15 @@ PrimitiveNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, con
 		retval = ShaderStateNode::Load(fourcc, tag, reader);
 	}
 	return retval;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+PrimitiveNode::ApplyNodeState()
+{
+	CoreGraphics::MeshBind(this->res, this->primitiveGroupIndex);
 }
 
 } // namespace Models

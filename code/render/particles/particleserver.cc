@@ -45,6 +45,8 @@ ParticleServer::Open()
     this->particleRenderer = ParticleRenderer::Create();
     this->particleRenderer->Setup();
 
+	// create job port
+	this->jobPort = Jobs::CreateJobPort({ "ParticleJobs", 4, UINT_MAX });
 
 	// setup mesh
 	Util::Array<VertexComponent> emitterComponents;
@@ -131,6 +133,10 @@ void
 ParticleServer::Close()
 {
     n_assert(this->IsOpen());
+
+	// destroy job port
+	Jobs::DestroyJobPort(this->jobPort);
+	this->jobPort = Jobs::JobPortId::Invalid();
 
     // destroy the particle renderer singleton
     this->particleRenderer->Discard();

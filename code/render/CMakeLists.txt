@@ -8,7 +8,7 @@ macro(shaderc)
 		set(export_platform_string "win32")
 	endif()
 
-	fips_generate(TYPE shaderc FROM ${FIPS_DEPLOY_DIR}/nebula-toolkit/${FIPS_CONFIG} HEADER None SOURCE None ARGS ${FIPS_DEPLOY_DIR}/${CMAKE_PROJECT_NAME}/${FIPS_CONFIG}/export_${export_platform_string})
+	fips_generate(TYPE shaderc FROM ${FIPS_DEPLOY_DIR}/nebula-toolkit/${FIPS_CONFIG}/shaderbatcher.exe HEADER None SOURCE None ARGS ${FIPS_DEPLOY_DIR}/${CMAKE_PROJECT_NAME}/${FIPS_CONFIG}/export_${export_platform_string})
 endmacro()
 
 fips_begin_module(render)
@@ -414,8 +414,8 @@ ENDIF()
 			
 		fips_dir(graphics)
 			fips_files(
-				camera.cc
-				camera.h
+				cameracontext.cc
+				cameracontext.h
 				camerasettings.cc
 				camerasettings.h
 				graphicscontext.cc
@@ -510,8 +510,8 @@ IF(FALSE)
 			../coreanimation/jobs/animjobsamplemix.cc
 			../coreanimation/jobs/animjobutil.h
 			../skinning/jobs/charevalskeletonjob.cc
-			../visibility/jobs/visibilityboxsystemjob.cc
-			../visibility/jobs/visibilityquadtreejob.cc
+			#../visibility/jobs/visibilityboxsystemjob.cc
+			#../visibility/jobs/visibilityquadtreejob.cc
 			../particles/jobs/particlejob.cc
 			)			
 		fips_dir(lighting/base GROUP "lighting/base")
@@ -589,6 +589,8 @@ IF(FALSE)
 ENDIF()
 		fips_dir(materials)
 			fips_files(
+				material.cc
+				material.h
 				materialpool.cc
 				materialpool.h
 				materialserver.cc
@@ -696,25 +698,6 @@ IF(FALSE)
 
 		fips_dir(skinning)
 		
-		fips_dir(visibility/visibilitysystems GROUP "visibility/visibilitysystems")
-			fips_files(
-				visibilitybox.cc
-				visibilitybox.h
-				visibilityboxsystem.cc
-				visibilityboxsystem.h
-				visibilitybruteforcesystem.cc
-				visibilitybruteforcesystem.h
-				visibilitycell.cc
-				visibilitycell.h
-				visibilitycluster.cc
-				visibilitycluster.h
-				visibilityclustersystem.cc
-				visibilityclustersystem.h
-				visibilityquadtreesystem.cc
-				visibilityquadtreesystem.h
-				visibilitysystembase.cc
-				visibilitysystembase.h
-			)
 ENDIF()
 		fips_dir(visibility)
 			fips_files(
@@ -724,5 +707,24 @@ ENDIF()
 				visibilityserver.cc
 				visibilityserver.h
 			)
-
+		fips_dir(visibility/systems)
+			fips_files(
+				boxsystem.h
+				boxsystem.cc
+				boxsystemjob.cc
+				bruteforcesystem.h
+				bruteforcesystem.cc
+				bruteforcesystemjob.cc
+				octreesystem.h
+				octreesystem.cc
+				octreesystemjob.cc
+				portalsystem.h
+				portalsystem.cc
+				portalsystemjob.cc
+				quadtreesystem.h
+				quadtreesystem.cc
+				quadtreesystemjob.cc
+				system.h
+				system.cc
+			)
 fips_end_module()

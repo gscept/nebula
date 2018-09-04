@@ -61,17 +61,6 @@ CharacterNode::RecurseCreateNodeInstanceHierarchy(const Ptr<ModelInstance>& mode
 /**
 */
 void
-CharacterNode::Setup()
-{
-	// create a Character object and prepare it for setup
-	//this->character = Character::Create();
-	//this->character->Setup();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
 CharacterNode::Discard()
 {
 	//n_assert(this->character.isvalid());

@@ -72,7 +72,7 @@ private:
     float keyPos1;
     float frequency;
     float amplitude;
-    ModFunc modFunction;
+    ModFunc modFunction : 1;
 };
 
 //------------------------------------------------------------------------------
@@ -83,7 +83,6 @@ EnvelopeCurve::GetValues() const
 {
 	return this->values;
 }
-
 
 //------------------------------------------------------------------------------
 /**

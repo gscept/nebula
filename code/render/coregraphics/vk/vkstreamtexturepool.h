@@ -37,5 +37,4 @@ private:
 	void DeallocObject(const Resources::ResourceUnknownId id) override;
 };
 
-
 } // namespace Vulkan

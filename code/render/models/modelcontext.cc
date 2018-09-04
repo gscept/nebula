@@ -8,20 +8,21 @@
 #include "models/model.h"
 #include "nodes/modelnode.h"
 #include "streammodelpool.h"
+#include "graphics/graphicsserver.h"
 
 using namespace Graphics;
 using namespace Resources;
 namespace Models
 {
 
-__ImplementClass(Models::ModelContext, 'MOCO', Graphics::GraphicsContext);
-__ImplementSingleton(Models::ModelContext);
+ImplementContext(ModelContext);
+ModelContext::ModelContextAllocator ModelContext::modelContextAllocator;
 //------------------------------------------------------------------------------
 /**
 */
 ModelContext::ModelContext()
 {
-	__ConstructSingleton;
+	// empty
 }
 
 //------------------------------------------------------------------------------
@@ -29,7 +30,23 @@ ModelContext::ModelContext()
 */
 ModelContext::~ModelContext()
 {
-	__DestructSingleton;
+	// empty
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ModelContext::Create()
+{
+	__bundle.OnBeforeFrame = ModelContext::OnBeforeFrame;
+	__bundle.OnVisibilityReady = ModelContext::OnVisibilityReady;
+	__bundle.OnBeforeView = ModelContext::OnBeforeView;
+	__bundle.OnAfterView = ModelContext::OnAfterView;
+	__bundle.OnAfterFrame = ModelContext::OnAfterFrame;
+	Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle);
+
+	CreateContext();
 }
 
 //------------------------------------------------------------------------------
@@ -38,19 +55,21 @@ ModelContext::~ModelContext()
 void
 ModelContext::Setup(const Graphics::GraphicsEntityId id, const Resources::ResourceName& name, const Util::StringAtom& tag)
 {
-	const ContextEntityId cid = this->entitySliceMap[id.id];
-	ModelId& rid = this->modelContextAllocator.Get<0>(cid.id);
-	ModelInstanceId& mdl = this->modelContextAllocator.Get<1>(cid.id);
+	const ContextEntityId cid = GetContextId(id);
+	ModelId& rid = modelContextAllocator.Get<0>(cid.id);
+	ModelInstanceId& mdl = modelContextAllocator.Get<1>(cid.id);
 	mdl = ModelInstanceId::Invalid();
 
 	ModelCreateInfo info;
 	info.resource = name;
 	info.tag = tag;
-	info.async = true;
+	info.async = false;
 	info.failCallback = nullptr;
-	info.successCallback = [&mdl, rid, this](Resources::ResourceId id)
+	info.successCallback = [&mdl, cid](Resources::ResourceId id)
 	{
 		mdl = Models::CreateModelInstance(id);
+		const Math::matrix44& pending = modelContextAllocator.Get<2>(cid.id);
+		Models::modelPool->modelInstanceAllocator.Get<2>(mdl.instance) = pending;
 	};
 
 	rid = Models::CreateModel(info);
@@ -62,25 +81,28 @@ ModelContext::Setup(const Graphics::GraphicsEntityId id, const Resources::Resour
 void
 ModelContext::ChangeModel(const Graphics::GraphicsEntityId id, const Resources::ResourceName& name, const Util::StringAtom& tag)
 {
-	const ContextEntityId cid = this->entitySliceMap[id.id];
+	const ContextEntityId cid = GetContextId(id);
 
 	// clean up old stuff, but don't deallocate entity
-	ModelId& rid = this->modelContextAllocator.Get<0>(cid.id);
-	ModelInstanceId& mdl = this->modelContextAllocator.Get<1>(cid.id);
+	ModelId& rid = modelContextAllocator.Get<0>(cid.id);
+	ModelInstanceId& mdl = modelContextAllocator.Get<1>(cid.id);
+	mdl = ModelInstanceId::Invalid();
 
-	if (rid != ModelId::Invalid())
+	if (rid != ModelId::Invalid()) // decrement model resource
 		Models::DestroyModel(rid);
-	if (mdl != ModelInstanceId::Invalid()) 
+	if (mdl != ModelInstanceId::Invalid()) // actually deallocate current instance
 		Models::DestroyModelInstance(mdl);
 
 	ModelCreateInfo info;
 	info.resource = name;
 	info.tag = tag;
-	info.async = true;
+	info.async = false;
 	info.failCallback = nullptr;
-	info.successCallback = [&mdl, rid, this](Resources::ResourceId id)
+	info.successCallback = [&mdl, rid, cid](Resources::ResourceId id)
 	{
 		mdl = Models::CreateModelInstance(id);
+		const Math::matrix44& pending = modelContextAllocator.Get<2>(cid.id);
+		Models::modelPool->modelInstanceAllocator.Get<2>(mdl.instance) = pending;
 	};
 
 	rid = Models::CreateModel(info);
@@ -92,18 +114,34 @@ ModelContext::ChangeModel(const Graphics::GraphicsEntityId id, const Resources::
 const Models::ModelInstanceId
 ModelContext::GetModel(const Graphics::GraphicsEntityId id)
 {
-	const ContextEntityId cid = this->entitySliceMap[id.id];
-	return this->modelContextAllocator.Get<1>(cid.id);
+	const ContextEntityId cid = GetContextId(id);
+	return modelContextAllocator.Get<1>(cid.id);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-ModelContext::SetTransform(const Graphics::GraphicsEntityId id, const Math::matrix44 transform)
+ModelContext::SetTransform(const Graphics::GraphicsEntityId id, const Math::matrix44& transform)
 {
-	const ContextEntityId cid = this->entitySliceMap[id.id];
-	Models::modelPool->modelInstanceAllocator.Get<3>(cid.id) = transform;
+	const ContextEntityId cid = GetContextId(id);
+	ModelInstanceId& inst = modelContextAllocator.Get<1>(cid.id);
+	Math::matrix44& pending = modelContextAllocator.Get<2>(cid.id);
+	if (inst != ModelInstanceId::Invalid())
+		Models::modelPool->modelInstanceAllocator.Get<2>(inst.instance) = transform;
+	else
+		pending = transform;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::matrix44
+ModelContext::GetTransform(const Graphics::GraphicsEntityId id)
+{
+	const ContextEntityId cid = GetContextId(id);
+	ModelInstanceId& inst = modelContextAllocator.Get<1>(cid.id);
+	return Models::modelPool->modelInstanceAllocator.Get<2>(inst.instance);
 }
 
 //------------------------------------------------------------------------------
@@ -113,21 +151,23 @@ ModelContext::SetTransform(const Graphics::GraphicsEntityId id, const Math::matr
 void
 ModelContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime)
 {
-	const Util::Array<ModelInstanceId>& instances = this->modelContextAllocator.GetArray<1>();
+	const Util::Array<ModelInstanceId>& instances = modelContextAllocator.GetArray<1>();
 	const Util::Array<Math::matrix44>& transforms = Models::modelPool->modelInstanceAllocator.GetArray<2>();
 	const Util::Array<Math::bbox>& modelBoxes = Models::modelPool->modelAllocator.GetArray<0>();
 	Util::Array<Math::bbox>& instanceBoxes = Models::modelPool->modelInstanceAllocator.GetArray<3>();
-
+	Util::Array<Math::matrix44>& pending = modelContextAllocator.GetArray<2>();
+	
 	SizeT i;
 	for (i = 0; i < instances.Size(); i++)
 	{
 		const ModelInstanceId& instance = instances[i];
+		if (instance == ModelInstanceId::Invalid()) continue; // hmm, bad, should reorder and keep a 'last valid index'
 		instanceBoxes[instance.instance] = modelBoxes[instance.model];
 		instanceBoxes[instance.instance].transform(transforms[instance.instance]);
 
 		Util::Array<Models::ModelNode::Instance*>& nodes = Models::modelPool->modelInstanceAllocator.Get<1>(instance.instance);
 
-		// nodes are allocated breadth first, so just going through the list will guarantee the hierarchy is intact
+		// nodes are allocated breadth first, so just going through the list will guarantee the hierarchy is traversed in proper order
 		SizeT j;
 		for (j = 0; j < nodes.Size(); j++)
 		{

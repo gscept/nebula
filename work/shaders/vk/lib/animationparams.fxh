@@ -8,7 +8,7 @@
 #include "std.fxh"
 
 // material properties
-group(INSTANCE_GROUP) shared varblock AnimationParams [ bool DynamicOffset = true; string Visibility = "VS"; ]
+group(BATCH_GROUP) shared varblock AnimationParams [ string Visibility = "VS"; ]
 {
 	vec2 AnimationDirection;
 	float AnimationAngle;

@@ -24,6 +24,7 @@ void VkShaderSetup(
 	VkPushConstantRange& constantRange,
 	Util::Array<CoreGraphics::SamplerId>& immutableSamplers,
 	Util::FixedArray<std::pair<uint32_t, CoreGraphics::ResourceTableLayoutId>>& setLayouts,
+	Util::Dictionary<uint32_t, uint32_t>& setLayoutMap,
 	CoreGraphics::ResourcePipelineId& pipelineLayout,
 	Util::FixedArray<CoreGraphics::ResourceTableId>& sets,
 	Util::Dictionary<Util::StringAtom, uint32_t>& resourceSlotMap,

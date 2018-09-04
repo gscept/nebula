@@ -4,6 +4,7 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "transformnode.h"
+#include "coregraphics/transformdevice.h"
 
 using namespace Util;
 namespace Models
@@ -76,6 +77,16 @@ TransformNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, con
 		retval = ModelNode::Load(fourcc, tag, reader);
 	}
 	return retval;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TransformNode::Instance::ApplyNodeInstanceState()
+{
+	CoreGraphics::TransformDevice* transformDevice = CoreGraphics::TransformDevice::Instance();
+	transformDevice->SetModelTransform(this->modelTransform);
 }
 
 } // namespace Models

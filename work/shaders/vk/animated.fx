@@ -32,7 +32,7 @@ vsAnimated(
 {
 	vec4 modelSpace = Model * vec4(position, 1);
     gl_Position = ViewProjection * modelSpace;
-	
+
 	// create rotation matrix
 	float angle = AnimationAngle * TimeAndRandom.x * AnimationAngularSpeed;
 	float rotSin, rotCos;
