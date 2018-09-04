@@ -337,7 +337,7 @@ Array<TYPE>::operator=(const Array<TYPE>& rhs)
             IndexT i;
             for (i = 0; i < rhs.size; i++)
             {
-                this->elements[i] = rhs.elements[i];
+                this->elements[i] = std::move(rhs.elements[i]);
             }
 
             // properly destroy remaining original elements
@@ -370,7 +370,7 @@ Array<TYPE>::GrowTo(SizeT newCapacity)
         IndexT i;
         for (i = 0; i < this->size; i++)
         {
-            newArray[i] = this->elements[i];
+            newArray[i] = std::move(this->elements[i]);
         }
 
         // discard old array and update contents
