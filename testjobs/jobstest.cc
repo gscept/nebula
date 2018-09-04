@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-// blockallocatortest.cc
+// visibilitytest.cc
 // (C) 2017 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
@@ -32,7 +32,7 @@ JobsTest::Run()
 
 	Ptr<IO::IoServer> ioServer = IO::IoServer::Create();
 
-	app.SetAppTitle("RenderTest!");
+	app.SetAppTitle("Jobs test!");
 	app.SetCompanyName("gscept");
 	app.Open();
 

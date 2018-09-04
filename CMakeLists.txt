@@ -16,5 +16,6 @@ fips_add_subdirectory(mathtest)
 fips_add_subdirectory(testwin32)
 fips_add_subdirectory(testgame)
 fips_add_subdirectory(testjobs)
+fips_add_subdirectory(testvisibility)
 
 fips_finish()

@@ -15,8 +15,8 @@
 #include "input/inputserver.h"
 #include "input/keyboard.h"
 #include "io/ioserver.h"
-#include "graphics/camera.h"
 #include "graphics/view.h"
+#include "graphics/cameracontext.h"
 
 using namespace Timing;
 using namespace Graphics;
@@ -53,14 +53,15 @@ RenderTest::Run()
 		"Render test!", "", CoreGraphics::AntiAliasQuality::None, true, true, false
 	};
 	CoreGraphics::WindowId wnd = CreateWindow(wndInfo);
-	GraphicsEntityId ent = Graphics::CreateEntity();
 
 	Ptr<View> view = gfxServer->CreateView("mainview", "frame:vkdebug.json");
 	Ptr<Stage> stage = gfxServer->CreateStage("stage1", true);
-	CameraId cam = CreateCamera();
+	
+	GraphicsEntityId cam = Graphics::CreateEntity();
+	CameraContext::RegisterEntity(cam);
+	CameraContext::SetupProjectionFov(cam, 16.f / 9.f, 90.f, 0.01f, 1000.0f);
 	view->SetCamera(cam);
 	view->SetStage(stage);
-	CameraSetProjectionFov(cam, 16.f / 9.f, 90.f, 0.01f, 1000.0f);
 	
 	IndexT frameIndex = -1;
 	bool run = true;
@@ -75,6 +76,11 @@ RenderTest::Run()
 	}
 
 	DestroyWindow(wnd);
+
+	// clean up entities
+	CameraContext::DeregisterEntity(cam);
+	Graphics::DestroyEntity(cam);
+
 	gfxServer->DiscardStage(stage);
 	gfxServer->DiscardView(view);
 
