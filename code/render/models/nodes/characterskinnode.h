@@ -40,11 +40,11 @@ public:
 		CoreGraphics::ShaderConstantId jointPaletteVar;
 		Ids::Id32 characterId;
 
-		void Setup(const Models::ModelNode* parent) override;
+		void Setup(const Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
 	};
 
 	/// create instance
-	virtual ModelNode::Instance* CreateInstance(Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& alloc) const;
+	virtual ModelNode::Instance* CreateInstance(Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& alloc, const Models::ModelNode::Instance* parent) const;
 private:
     /// a skin fragment
     class Fragment
@@ -97,9 +97,9 @@ ModelNodeInstanceCreator(CharacterSkinNode)
 /**
 */
 inline void
-CharacterSkinNode::Instance::Setup(const Models::ModelNode* parent)
+CharacterSkinNode::Instance::Setup(const Models::ModelNode* node, const Models::ModelNode::Instance* parent)
 {
-	PrimitiveNode::Instance::Setup(parent);
+	PrimitiveNode::Instance::Setup(node, parent);
 	this->type = CharacterSkinNodeType;
 }
 

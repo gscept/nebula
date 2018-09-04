@@ -140,21 +140,15 @@ StreamModelPool::GetModelInstanceBoundingBox(const ModelInstanceId id)
 	Create model instance breadth first
 */
 void
-StreamModelPool::CreateModelInstanceRecursive(Models::ModelNode* parent, Models::ModelNode::Instance* parentInstance, Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& allocator, Util::Array<Models::ModelNode::Instance*>& instances)
+StreamModelPool::CreateModelInstanceRecursive(Models::ModelNode* node, Models::ModelNode::Instance* parentInstance, Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& allocator, Util::Array<Models::ModelNode::Instance*>& instances)
 {
-	IndexT offset = instances.Size();
-	SizeT i;
-	for (i = 0; i < parent->children.Size(); i++)
-	{
-		Models::ModelNode::Instance* inst = parent->children[i]->CreateInstance(allocator);
-		inst->parent = parentInstance;
-		inst->node = parent;
-		instances.Append(inst);
-	}
+	Models::ModelNode::Instance* inst = node->CreateInstance(allocator, parentInstance);
+	instances.Append(inst);
 
 	// continue recursion
-	for (i = 0; i < parent->children.Size(); i++)
-		CreateModelInstanceRecursive(parent->children[i], instances[offset + i], allocator, instances);
+	IndexT i;
+	for (i = 0; i < node->children.Size(); i++)
+		CreateModelInstanceRecursive(node->children[i], inst, allocator, instances);
 }
 
 //------------------------------------------------------------------------------

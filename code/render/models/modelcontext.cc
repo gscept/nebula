@@ -39,7 +39,7 @@ ModelContext::~ModelContext()
 void
 ModelContext::Create()
 {
-	__bundle.OnBeforeFrame = ModelContext::OnBeforeFrame;
+	__bundle.OnBeforeFrame = nullptr;// ModelContext::OnBeforeFrame;
 	__bundle.OnVisibilityReady = ModelContext::OnVisibilityReady;
 	__bundle.OnBeforeView = ModelContext::OnBeforeView;
 	__bundle.OnAfterView = ModelContext::OnAfterView;
@@ -57,16 +57,16 @@ ModelContext::Setup(const Graphics::GraphicsEntityId id, const Resources::Resour
 {
 	const ContextEntityId cid = GetContextId(id);
 	ModelId& rid = modelContextAllocator.Get<0>(cid.id);
-	ModelInstanceId& mdl = modelContextAllocator.Get<1>(cid.id);
-	mdl = ModelInstanceId::Invalid();
+	modelContextAllocator.Get<1>(cid.id) = ModelInstanceId::Invalid();
 
 	ModelCreateInfo info;
 	info.resource = name;
 	info.tag = tag;
-	info.async = false;
+	info.async = true;
 	info.failCallback = nullptr;
-	info.successCallback = [&mdl, cid](Resources::ResourceId id)
+	info.successCallback = [cid](Resources::ResourceId id)
 	{
+		ModelInstanceId& mdl = modelContextAllocator.Get<1>(cid.id);
 		mdl = Models::CreateModelInstance(id);
 		const Math::matrix44& pending = modelContextAllocator.Get<2>(cid.id);
 		Models::modelPool->modelInstanceAllocator.Get<2>(mdl.instance) = pending;
@@ -96,7 +96,7 @@ ModelContext::ChangeModel(const Graphics::GraphicsEntityId id, const Resources::
 	ModelCreateInfo info;
 	info.resource = name;
 	info.tag = tag;
-	info.async = false;
+	info.async = true;
 	info.failCallback = nullptr;
 	info.successCallback = [&mdl, rid, cid](Resources::ResourceId id)
 	{
@@ -171,20 +171,21 @@ ModelContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTim
 		SizeT j;
 		for (j = 0; j < nodes.Size(); j++)
 		{
+			Models::ModelNode::Instance* node = nodes[j];
 			Math::matrix44 parentTransform = transforms[instance.instance];
-			if (nodes[j]->parent != nullptr && nodes[j]->type > NodeHasTransform)
-				parentTransform = static_cast<TransformNode::Instance*>(nodes[j]->parent)->modelTransform;
+			if (node->parent != nullptr && node->type > NodeHasTransform)
+				parentTransform = static_cast<const TransformNode::Instance*>(node->parent)->modelTransform;
 
-			if (nodes[j]->type > NodeHasTransform)
+			if (node->type > NodeHasTransform)
 			{
-				TransformNode::Instance* tnode = static_cast<TransformNode::Instance*>(nodes[j]);
+				TransformNode::Instance* tnode = static_cast<TransformNode::Instance*>(node);
 				tnode->modelTransform = Math::matrix44::multiply(tnode->transform.getmatrix(), transforms[instance.instance]);
 				parentTransform = tnode->modelTransform;
 			}
 
 			// reset bounding box
-			nodes[j]->boundingBox = nodes[j]->node->boundingBox;
-			nodes[j]->boundingBox.transform(parentTransform);
+			node->boundingBox = node->node->boundingBox;
+			node->boundingBox.transform(parentTransform);
 		}
 	}
 }

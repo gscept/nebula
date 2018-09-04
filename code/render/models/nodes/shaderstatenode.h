@@ -33,11 +33,11 @@ public:
 		IndexT bufferIndex;
 
 		void ApplyNodeInstanceState() override;
-		void Setup(const Models::ModelNode* parent) override;
+		void Setup(const Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
 	};
 
 	/// create instance
-	virtual ModelNode::Instance* CreateInstance(Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& alloc) const;
+	virtual ModelNode::Instance* CreateInstance(Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& alloc, const Models::ModelNode::Instance* parent) const;
 	/// apply node-level state
 	virtual void ApplyNodeState();
 
@@ -60,10 +60,10 @@ ModelNodeInstanceCreator(ShaderStateNode)
 /**
 */
 inline void
-ShaderStateNode::Instance::Setup(const Models::ModelNode* parent)
+ShaderStateNode::Instance::Setup(const Models::ModelNode* node, const Models::ModelNode::Instance* parent)
 {
-	TransformNode::Instance::Setup(parent);
-	this->sharedShader = CoreGraphics::ShaderCreateState(static_cast<const ShaderStateNode*>(parent)->sharedShader, { NEBULAT_DYNAMIC_OFFSET_GROUP }, false);
+	TransformNode::Instance::Setup(node, parent);
+	this->sharedShader = CoreGraphics::ShaderCreateState(static_cast<const ShaderStateNode*>(node)->sharedShader, { NEBULAT_DYNAMIC_OFFSET_GROUP }, false);
 	this->modelVar = CoreGraphics::ShaderStateGetConstant(this->sharedShader, "Model");
 	this->invModelVar = CoreGraphics::ShaderStateGetConstant(this->sharedShader, "InvModel");
 	this->modelViewProjVar = CoreGraphics::ShaderStateGetConstant(this->sharedShader, "ModelViewProjection");

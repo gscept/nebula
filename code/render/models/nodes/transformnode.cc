@@ -13,7 +13,17 @@ namespace Models
 //------------------------------------------------------------------------------
 /**
 */
-TransformNode::TransformNode()
+TransformNode::TransformNode() :
+	position(0.0f, 0.0f, 0.0f),
+	rotate(0.0f, 0.0f, 0.0f, 1.0f),
+	scale(1.0f, 1.0f, 1.0f),
+	rotatePivot(0.0f, 0.0f, 0.0f),
+	scalePivot(0.0f, 0.0f, 0.0f),
+	isInViewSpace(false),
+	minDistance(0.0f),
+	maxDistance(10000.0f),
+	useLodDistances(false),
+	lockedToViewer(false)
 {
 	// empty
 }
