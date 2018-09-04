@@ -35,7 +35,7 @@ namespace Jobs
 
 //------------------------------------------------------------------------------
 /**
-	This type explains the data used by a single thread execution of a job
+	This class describes the size of a workload for a single thread (can be multiple items)
 */
 struct JobFuncContext
 {
@@ -107,7 +107,7 @@ public:
 				uint slice;
 				uint numSlices;
 				uint stride;
-				const JobContext* context;
+				JobContext context;
 				void(*JobFunc)(const JobFuncContext& ctx);
 				std::atomic_uint* completionCounter;
 				Threading::Event* completionEvent;
@@ -132,7 +132,7 @@ public:
 	void DoWork();
 
 	/// push a set of job slices
-	void PushJobSlices(uint sliceIndex, uint numSlices, uint stride, const JobContext* ctx, void(*JobFunc)(const JobFuncContext& ctx), std::atomic_uint* completionCounter, Threading::Event* completionEvent, const std::function<void()>* callback);
+	void PushJobSlices(uint sliceIndex, uint numSlices, uint stride, const JobContext ctx, void(*JobFunc)(const JobFuncContext& ctx), std::atomic_uint* completionCounter, Threading::Event* completionEvent, const std::function<void()>* callback);
 	/// push command buffer work
 	void PushCommand(const JobThreadCommand& command);
 	/// push command buffer work
@@ -163,10 +163,18 @@ JobPortId CreateJobPort(const CreateJobPortInfo& info);
 /// destroy job port
 void DestroyJobPort(const JobPortId& id);
 
+/// check to see if port is idle
+bool JobPortBusy(const JobPortId& id);
+/// wait for pending jobs to finish
+void JobPortWait(const JobPortId& id);
+/// insert synchronization point for other jobs to wait on
+void JobPortSync(const JobPortId& id);
+
 typedef Ids::IdAllocator<
 	Util::StringAtom,						// 0 - name
 	Util::FixedArray<Ptr<JobThread>>,		// 1 - threads
-	uint									// 2 - next thread index
+	uint,									// 2 - next thread index
+	JobId									// 3 - last pushed job
 > JobPortAllocator;
 extern JobPortAllocator jobPortAllocator;
 
