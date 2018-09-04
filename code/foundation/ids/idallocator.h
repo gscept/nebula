@@ -44,7 +44,7 @@ using get_template_type_t = typename get_template_type<C>::type;
 
 /// unpacks allocations for each member in a tuble
 template<class...Ts, std::size_t...Is>
-void alloc_for_each_in_tuple(std::tuple<Ts...>& tuple, std::index_sequence<Is...>)
+void alloc_for_each_in_tuple(std::tuple<Ts...>& tuple, std::integer_sequence<size_t, Is...>)
 {
 	using expander = int[];
 	(void)expander
@@ -58,12 +58,12 @@ void alloc_for_each_in_tuple(std::tuple<Ts...>& tuple, std::index_sequence<Is...
 template<class...Ts>
 void alloc_for_each_in_tuple(std::tuple<Ts...>& tuple)
 {
-	alloc_for_each_in_tuple(tuple, std::make_index_sequence<sizeof...(Ts)>());
+	alloc_for_each_in_tuple(tuple, std::make_integer_sequence<size_t, sizeof...(Ts)>());
 }
 
 /// unpacks allocations for each member in a tuble
 template<class...Ts, std::size_t...Is>
-void clear_for_each_in_tuple(std::tuple<Ts...>& tuple, std::index_sequence<Is...>)
+void clear_for_each_in_tuple(std::tuple<Ts...>& tuple, std::integer_sequence<size_t, Is...>)
 {
 	using expander = int[];
 	(void)expander
@@ -77,12 +77,12 @@ void clear_for_each_in_tuple(std::tuple<Ts...>& tuple, std::index_sequence<Is...
 template<class...Ts>
 void clear_for_each_in_tuple(std::tuple<Ts...>& tuple)
 {
-	clear_for_each_in_tuple(tuple, std::make_index_sequence<sizeof...(Ts)>());
+	clear_for_each_in_tuple(tuple, std::make_integer_sequence<size_t, sizeof...(Ts)>());
 }
 
 /// entry point for moving an element between two indices
 template <class...Ts, std::size_t...Is>
-void move_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t to, uint32_t from, std::index_sequence<Is...>)
+void move_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t to, uint32_t from, std::integer_sequence<size_t, Is...>)
 {
 	using expander = int[];
 	(void)expander
@@ -96,7 +96,7 @@ void move_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t to, uint32_t from
 template <class...Ts>
 void move_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t to, uint32_t from)
 {
-	move_for_each_in_tuple(tuple, to, from, std::make_index_sequence<sizeof...(Ts)>());
+	move_for_each_in_tuple(tuple, to, from, std::make_integer_sequence<size_t, sizeof...(Ts)>());
 }
 
 /// get type of contained element in Util::Array stored in std::tuple
@@ -247,19 +247,22 @@ public:
 	~IdAllocatorSafe() {};
 
 	/// assign operator
-	void operator=(const IdAllocatorSafe<TYPES...>& rhs)
+	void
+	operator=(const IdAllocatorSafe<TYPES...>& rhs)
 	{
 		this->objects = rhs.objects;
 	}
 	/// move operator
-	void operator=(IdAllocatorSafe<TYPES...>&& rhs)
+	void
+	operator=(IdAllocatorSafe<TYPES...>&& rhs)
 	{
 		this->objects = rhs.objects;
 		clear_for_each_in_tuple(rhs.objects);
 	}
 
 	/// allocate a new resource, and generate new entries if required
-	Ids::Id32 AllocObject()
+	Ids::Id32
+	AllocObject()
 	{
 		this->sect.Enter();
 		Ids::Id32 id = this->pool.Alloc();
@@ -273,7 +276,8 @@ public:
 	}
 
 	/// recycle id
-	void DeallocObject(const Ids::Id32 id) 
+	void
+	DeallocObject(const Ids::Id32 id) 
 	{ 
 		this->sect.Enter();
 		this->pool.Dealloc(id);
@@ -281,7 +285,8 @@ public:
 	}
 
 	/// enter thread safe get-mode
-	void EnterGet()
+	void
+	EnterGet()
 	{
 		n_assert(!this->inBeginGet);
 		this->sect.Enter();
@@ -345,7 +350,8 @@ public:
 	}
 
 	/// leave thread safe get-mode
-	void LeaveGet()
+	void
+	LeaveGet()
 	{
 		n_assert(this->inBeginGet);
 		this->sect.Leave();
