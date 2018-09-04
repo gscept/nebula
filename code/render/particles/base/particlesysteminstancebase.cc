@@ -9,13 +9,12 @@
 #include "coregraphics/shaperenderer.h"
 #include "threading/thread.h"
 #include "particles/particlerenderer.h"
-#include "jobs/jobport.h"
-#include "jobs/job.h"
-#if __PS3__
-#include "coregraphics/ps3/ps3dynamicgeometryserver.h"
-#endif // __PS3__
+#include "particles/particleserver.h"
+#include "jobs/jobs.h"
 
 #define USE_FIXED_UPDATE_TIME    0
+
+extern void ParticleJobFunc(const Jobs::JobFuncContext& ctx);
 
 namespace Particles
 {
@@ -24,16 +23,6 @@ __ImplementAbstractClass(Particles::ParticleSystemInstanceBase, 'PSIB', Core::Re
 using namespace Math;
 using namespace Util;
 using namespace CoreGraphics;
-
-// job function declaration
-#if __PS3__
-extern "C" {
-    extern const char _binary_jqjob_render_particlejob_ps3_bin_start[];
-    extern const char _binary_jqjob_render_particlejob_ps3_bin_size[];
-}
-#else
-extern void ParticleJobFunc(const JobFuncContext& ctx);
-#endif
 
 Particles::JOB_ID ParticleSystemInstanceBase::jobIdCounter = 0;
 
@@ -112,9 +101,9 @@ ParticleSystemInstanceBase::Setup(const CoreGraphics::MeshId iemitterMesh, Index
     n_assert(!this->jobData.sliceCount);
     n_assert(!this->jobData.sliceOutputCapacity);
     n_assert(!this->jobData.sliceOutput);
+
     // setup a job system port
-    this->jobData.jobPort = Jobs::JobPort::Create();
-    this->jobData.jobPort->Setup();
+	this->jobData.jobPort = ParticleServer::Instance()->GetJobPort();
 
     this->boundingBox.pmin = this->GetTransform().get_position();
     this->boundingBox.pmax = this->GetTransform().get_position();
@@ -127,8 +116,7 @@ void
 ParticleSystemInstanceBase::Discard()
 {
     n_assert(this->IsValid());
-    this->jobData.jobPort->Discard();
-    this->jobData.jobPort = nullptr;
+    this->jobData.jobPort = Jobs::JobPortId::Invalid();
     if(this->jobData.sliceOutput)
     {
         n_delete_array(this->jobData.sliceOutput);
@@ -520,9 +508,9 @@ ParticleSystemInstanceBase::FinalizeJobs()
 {
     if(!this->jobData.running) return;
 
-    if (!this->jobData.jobPort->CheckDone())
+    if (Jobs::JobPortBusy(this->jobData.jobPort))
     {
-        this->jobData.jobPort->WaitDone();
+		Jobs::JobPortWait(this->jobData.jobPort);
     }
 
     // collect slice-specific output data
@@ -550,20 +538,22 @@ ParticleSystemInstanceBase::FinalizeJobs()
 /**
 */
 void
-ParticleSystemInstanceBase::PrepareJobUniformData(float stepTime, bool generateVertexList, Jobs::JobUniformDesc &uniformDesc)
+ParticleSystemInstanceBase::PrepareJobUniformData(float stepTime, bool generateVertexList, Jobs::JobUniformData& uniformDesc)
 {
     this->jobUniformData.stepTime = stepTime;
 #if !__WII__    
     n_assert(!((uintptr)&this->jobUniformData & 0xF));
 #endif    
-    uniformDesc = Jobs::JobUniformDesc(&this->jobUniformData, sizeof(this->jobUniformData), 0);
+	uniformDesc.data[0] = &this->jobUniformData;
+	uniformDesc.dataSize[0] = sizeof(this->jobUniformData);
+	uniformDesc.numBuffers = 1;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-ParticleSystemInstanceBase::PrepareJobOutputData(bool generateVertexList, int inputBufferSize, Jobs::JobDataDesc &outputDesc)
+ParticleSystemInstanceBase::PrepareJobOutputData(bool generateVertexList, int inputBufferSize, Jobs::JobIOData& outputDesc)
 {
 #if __PS3__
     const SizeT sliceSize = generateVertexList ? PARTICLE_JOB_INPUT_SLICE_SIZE__VSTREAM_ON :
@@ -571,8 +561,13 @@ ParticleSystemInstanceBase::PrepareJobOutputData(bool generateVertexList, int in
 #else
     const SizeT sliceSize = PARTICLE_JOB_INPUT_SLICE_SIZE__VSTREAM_OFF;
 #endif
-    outputDesc = Jobs::JobDataDesc(this->particles.GetBuffer(), inputBufferSize, sliceSize,
-                                   this->jobData.sliceOutput, sizeof(JobSliceOutputData) * this->jobData.sliceCount, sizeof(JobSliceOutputData));
+	outputDesc.data[0] = this->particles.GetBuffer();
+	outputDesc.dataSize[0] = inputBufferSize;
+	outputDesc.sliceSize[0] = sliceSize;
+	outputDesc.data[1] = this->jobData.sliceOutput;
+	outputDesc.dataSize[1] = sizeof(JobSliceOutputData) * this->jobData.sliceCount;
+	outputDesc.sliceSize[1] = sizeof(JobSliceOutputData);
+	outputDesc.numBuffers = 2;
 }
 
 //------------------------------------------------------------------------------
@@ -599,7 +594,7 @@ ParticleSystemInstanceBase::StartJobStepParticles(float stepTime, bool generateV
 
     ///////////////////////
     // setup uniform data
-    Jobs::JobUniformDesc uniformDesc;
+    Jobs::JobUniformData uniformDesc;
     this->PrepareJobUniformData(stepTime, generateVertexList, uniformDesc);
 
     ///////////////////////
@@ -612,12 +607,16 @@ ParticleSystemInstanceBase::StartJobStepParticles(float stepTime, bool generateV
 
 
 #if __PS3__
-    const SizeT intputSliceSize = generateVertexList ? PARTICLE_JOB_INPUT_SLICE_SIZE__VSTREAM_ON :
+    const SizeT inputSliceSize = generateVertexList ? PARTICLE_JOB_INPUT_SLICE_SIZE__VSTREAM_ON :
                                                        PARTICLE_JOB_INPUT_SLICE_SIZE__VSTREAM_OFF;
 #else
-    const SizeT intputSliceSize = PARTICLE_JOB_INPUT_SLICE_SIZE__VSTREAM_OFF;
+    const SizeT inputSliceSize = PARTICLE_JOB_INPUT_SLICE_SIZE__VSTREAM_OFF;
 #endif
-    Jobs::JobDataDesc inputDesc(this->particles.GetBuffer(), inputBufferSize, intputSliceSize);
+	Jobs::JobIOData inputDesc;
+	inputDesc.data[0] = this->particles.GetBuffer();
+	inputDesc.dataSize[0] = inputBufferSize;
+	inputDesc.sliceSize[0] = inputSliceSize;
+	inputDesc.numBuffers = 1;
 
     ///////////////////////
     // setup output data
@@ -625,7 +624,7 @@ ParticleSystemInstanceBase::StartJobStepParticles(float stepTime, bool generateV
     //   buffer 1: each slices generates output into this buffer (per slice: bounding box, numLivingParticles)
     //   buffer 2: (only ps3, only if generateVertexList == true) vertex stream for rendering
     // calculate number of slices
-    this->jobData.sliceCount = (inputBufferSize +(intputSliceSize-1)) / intputSliceSize;
+    this->jobData.sliceCount = (inputBufferSize +(inputSliceSize -1)) / inputSliceSize;
     n_assert(this->jobData.sliceCount > 0);
     // and resize the slice-outputbuffer if necessary
     if(this->jobData.sliceCount > this->jobData.sliceOutputCapacity)
@@ -638,23 +637,21 @@ ParticleSystemInstanceBase::StartJobStepParticles(float stepTime, bool generateV
         n_assert(!((uintptr)this->jobData.sliceOutput & 0xF));
 #endif        
     }
-    Jobs::JobDataDesc outputDesc;
+    Jobs::JobIOData outputDesc;
     this->PrepareJobOutputData(generateVertexList, inputBufferSize, outputDesc);
 
     ///////////////////////
     // setup job and run it
-    #if __PS3__
-    Jobs::JobFuncDesc jobFunc(_binary_jqjob_render_particlejob_ps3_bin_start, _binary_jqjob_render_particlejob_ps3_bin_size);
-    #else
-    Jobs::JobFuncDesc jobFunc(ParticleJobFunc);
-    #endif
     this->jobData.running = true;
-    this->jobData.job = Jobs::Job::Create();
-    this->jobData.job->Setup(uniformDesc, inputDesc, outputDesc, jobFunc);
+	this->jobData.job = Jobs::CreateJob({ ParticleJobFunc });
     // !!! this is very important, otherwise there is no guarantee, that the job uses the
     // !!! current read only uniform data, there were cases where the last uniform data was used
-    this->jobData.jobPort->PushFlush();
-    this->jobData.jobPort->PushJob(this->jobData.job);
+    // this->jobData.jobPort->PushFlush(); //ps3 only
+	Jobs::JobContext ctx;
+	ctx.input = inputDesc;
+	ctx.output = outputDesc;
+	ctx.uniform = uniformDesc;
+	Jobs::JobSchedule(this->jobData.job, this->jobData.jobPort, ctx);
 }
 
 //------------------------------------------------------------------------------

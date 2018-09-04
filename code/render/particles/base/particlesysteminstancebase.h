@@ -16,7 +16,7 @@
 #include "math/matrix44.h"
 #include "util/ringbuffer.h"
 #include "timing/time.h"
-#include "jobs/job.h"
+#include "jobs/jobs.h"
 #include "particles/particlerenderinfo.h"
 
 namespace Jobs { class JobPort; }
@@ -99,9 +99,9 @@ private:
 
 protected:
     /// prepare pre-frame update of the job's uniform data for next job
-    virtual void PrepareJobUniformData(float stepTime, bool generateVertexList, Jobs::JobUniformDesc &uniformDesc);
+    virtual void PrepareJobUniformData(float stepTime, bool generateVertexList, Jobs::JobUniformData& uniformDesc);
     /// prepare pre-frame update of the uniform for next job
-    virtual void PrepareJobOutputData(bool generateVertexList, int inputBufferSize, Jobs::JobDataDesc &outputDesc);
+    virtual void PrepareJobOutputData(bool generateVertexList, int inputBufferSize, Jobs::JobIOData& outputDesc);
     /// perform a single time-step-update on particles as jobs
     virtual void StartJobStepParticles(float stepTime, bool generateVertexList);
     /// collect job data 
@@ -137,8 +137,8 @@ protected:
     struct JobData
     {
         bool running;
-        Ptr<Jobs::JobPort> jobPort;
-        Ptr<Jobs::Job> job;               
+        Jobs::JobPortId jobPort;
+        Jobs::JobId job;               
         // slices for current job
         int sliceCount;        
         // number of JobSliceOutputData's which can be stored 
