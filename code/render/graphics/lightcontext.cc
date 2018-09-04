@@ -4,11 +4,13 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "lightcontext.h"
+#include "graphics/graphicsserver.h"
 
 namespace Graphics
 {
 
-__ImplementClass(Graphics::LightContext, 'LICO', Graphics::GraphicsContext);
+ImplementContext(LightContext);
+LightContext::LightAllocator LightContext::lightAllocator;
 //------------------------------------------------------------------------------
 /**
 */
@@ -23,6 +25,16 @@ LightContext::LightContext()
 LightContext::~LightContext()
 {
 	// empty
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Math::matrix44&
+LightContext::GetTransform(const Graphics::GraphicsEntityId id)
+{
+	const ContextEntityId cid = GetContextId(id);
+	return lightAllocator.Get<0>(cid.id);
 }
 
 //------------------------------------------------------------------------------

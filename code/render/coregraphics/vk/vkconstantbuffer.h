@@ -50,6 +50,14 @@ struct ConstantBufferStretchInterface
 	CoreGraphics::StretchyBuffer<ConstantBufferStretchInterface> resizer;
 	CoreGraphics::ConstantBufferId obj;
 	SizeT Grow(const SizeT capacity, const SizeT numInstances, SizeT& newCapacity);
+
+	// when we copy from arrays, we might have to reset the pointer...
+	void operator=(const ConstantBufferStretchInterface& rhs)
+	{
+		this->resizer = rhs.resizer;
+		this->obj = rhs.obj;
+		this->resizer.SetTarget(this);
+	}
 };
 
 typedef Ids::IdAllocator<

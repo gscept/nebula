@@ -55,6 +55,22 @@ DestroySemaphore(const SemaphoreId& semaphore)
 	semaphoreAllocator.DeallocObject(semaphore.id24);
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+void
+SemaphoreWait(const SemaphoreId& semaphore)
+{
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+SemaphoreSignal(const SemaphoreId& semaphore)
+{
+}
+
 } // namespace Vulkan
 
 #pragma pop_macro("CreateSemaphore")

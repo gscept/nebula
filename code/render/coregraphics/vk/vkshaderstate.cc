@@ -27,6 +27,7 @@ VkShaderStateSetup(
 	const Util::Array<IndexT>& groups, 
 	VkShaderStateAllocator& allocator,
 	Util::FixedArray<std::pair<uint32_t, CoreGraphics::ResourceTableLayoutId>>& setLayouts,
+	const Util::Dictionary<uint32_t, uint32_t>& setLayoutMap,
 	Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBufferId>& sharedBuffers,
 	Util::Dictionary<uint32_t, Util::Array<CoreGraphics::ConstantBufferId>>& sharedBuffersByGroup,
 	CoreGraphics::ResourcePipelineId layout)
@@ -42,21 +43,42 @@ VkShaderStateSetup(
 	setup.setBufferMapping.Resize(groups.Size());
 	setup.descPool = Vulkan::GetCurrentDescriptorPool();
 	setup.pipelineLayout = layout;
-	runtime.dev = Vulkan::GetCurrentDevice();
+ 	runtime.dev = Vulkan::GetCurrentDevice();
 	runtime.setBindings.Resize(groups.Size());
 	runtime.setOffsets.Resize(groups.Size());
 	runtime.setsDirty = true;
 
-
-	// if we want to create our own resource set
+	// setup binds, we will use there later when applying the shader
 	IndexT i;
 	for (i = 0; i < groups.Size(); i++)
-	{	
-		ResourceTableCreateInfo tinfo =
+	{
+		IndexT gidx = setLayoutMap.FindIndex(groups[i]);
+		if (gidx != InvalidIndex)
 		{
-			std::get<1>(setLayouts[groups[i]])
-		};
-		setup.sets[i] = CreateResourceTable(tinfo);
+			VkShaderStateDescriptorSetBinding binding;
+			setup.groupIndexMap.Add(groups[i], i);
+			binding.slot = groups[i];
+			binding.layout = setup.pipelineLayout;
+			runtime.setBindings[i] = binding;
+
+			ResourceTableCreateInfo tinfo =
+			{
+				std::get<1>(setLayouts[setLayoutMap.ValueAtIndex(gidx)])
+			};
+			setup.sets[i] = CreateResourceTable(tinfo);
+			runtime.setBindings[i].set = setup.sets[i];
+		}
+		else
+		{
+			setup.sets[i] = ResourceTableId::Invalid();
+			runtime.setBindings[i] = VkShaderStateDescriptorSetBinding{ CoreGraphics::ResourceTableId::Invalid(), CoreGraphics::ResourcePipelineId::Invalid(), InvalidIndex};
+		}		
+	}
+
+	// if we want to create our own resource set
+	for (i = 0; i < groups.Size(); i++)
+	{	
+
 	}
 
 	// setup variables if we have any layouts
@@ -110,20 +132,8 @@ VkShaderStateCommit(VkShaderStateRuntimeInfo& stateInfo)
 void
 VkShaderStateSetupConstants(const CoreGraphics::ShaderStateId id, AnyFX::ShaderEffect* effect, VkShaderStateRuntimeInfo& runtime, VkShaderStateSetupInfo& setup, VkShaderConstantAllocator& varAllocator, const Util::Array<IndexT>& groups)
 {
-	// setup binds, we will use there later when applying the shader
-	IndexT i;
-	for (i = 0; i < groups.Size(); i++)
-	{
-		VkShaderStateDescriptorSetBinding binding;
-		setup.groupIndexMap.Add(groups[i], i);
-		binding.set = setup.sets[i];
-		binding.slot = groups[i];
-		//binding.layout = this->shader->pipelineSetLayouts[groups[i]];
-		binding.layout = setup.pipelineLayout;
-		runtime.setBindings[i] = binding;
-	}
-
 	/// setup variables for the groups this shader should modify
+	IndexT i;
 	for (i = 0; i < groups.Size(); i++)
 	{
 		const AnyFX::ProgramBase* program = effect->GetPrograms()[0];

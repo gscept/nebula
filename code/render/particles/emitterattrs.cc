@@ -15,8 +15,8 @@ namespace Particles
 EmitterAttrs::EmitterAttrs()
 {
     Memory::Clear(this->floatValues, sizeof(this->floatValues));
-    Memory::Clear(this->intValues, sizeof(this->intValues));
-    Memory::Clear(this->boolValues, sizeof(this->boolValues));
+    Memory::Clear(&this->intAttributes, sizeof(this->intAttributes));
+	Memory::Clear(&this->boolAttributes, sizeof(this->boolAttributes));
 	Memory::Clear(this->float4Values, sizeof(this->float4Values));
 }
 

@@ -70,7 +70,7 @@ StreamModelPool::CreateModelInstance(const ModelId id)
 
 	// get all template nodes
 	Util::Array<Models::ModelNode::Instance*>& nodeInstances = this->modelInstanceAllocator.Get<1>(mnid);
-	Memory::ChunkAllocator<0xFFF>& alloc = this->modelInstanceAllocator.Get<0>(mnid);
+	Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& alloc = this->modelInstanceAllocator.Get<0>(mnid);
 	SizeT i;
 	for (i = 0; i < nodes.Size(); i++)
 	{
@@ -140,7 +140,7 @@ StreamModelPool::GetModelInstanceBoundingBox(const ModelInstanceId id)
 	Create model instance breadth first
 */
 void
-StreamModelPool::CreateModelInstanceRecursive(Models::ModelNode* parent, Models::ModelNode::Instance* parentInstance, Memory::ChunkAllocator<0xFFF>& allocator, Util::Array<Models::ModelNode::Instance*>& instances)
+StreamModelPool::CreateModelInstanceRecursive(Models::ModelNode* parent, Models::ModelNode::Instance* parentInstance, Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& allocator, Util::Array<Models::ModelNode::Instance*>& instances)
 {
 	IndexT offset = instances.Size();
 	SizeT i;
@@ -166,7 +166,7 @@ StreamModelPool::LoadFromStream(const Resources::ResourceId id, const Util::Stri
 	// a model is a list of resources, a bounding box, and a dictionary of nodes
 	Math::bbox& boundingBox = this->Get<0>(id);
 	boundingBox.set(Math::point(0), Math::vector(0));
-	Memory::ChunkAllocator<0xFFF>& allocator = this->Get<1>(id);
+	Memory::ChunkAllocator<MODEL_MEMORY_CHUNK_SIZE>& allocator = this->Get<1>(id);
 	Util::Dictionary<Util::StringAtom, Models::ModelNode*>& nodes = this->Get<2>(id);
 	Models::ModelNode*& root = this->Get<3>(id);
 	Ptr<BinaryReader> reader = BinaryReader::Create();
@@ -242,7 +242,7 @@ StreamModelPool::LoadFromStream(const Resources::ResourceId id, const Util::Stri
 				// end of current ModelNode
 				n_assert(!this->nodeStack.IsEmpty());
 				Models::ModelNode* node = this->nodeStack.Pop();
-				node->Setup();
+				node->OnFinishedLoading();
 			}
 			else
 			{
@@ -252,9 +252,6 @@ StreamModelPool::LoadFromStream(const Resources::ResourceId id, const Util::Stri
 				{
 					break;
 				}
-
-				// call callback after we are done loading
-				node->OnFinishedLoading();
 			}
 		}
 		reader->Close();

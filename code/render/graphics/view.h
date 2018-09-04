@@ -10,7 +10,7 @@
 #include "core/refcounted.h"
 #include "frame/framescript.h"
 #include "timing/time.h"
-#include "camera.h"
+#include "graphicsentity.h"
 #include "stage.h"
 namespace Graphics
 {
@@ -29,9 +29,9 @@ public:
 	void Render(const IndexT frameIndex, const Timing::Time time);
 
 	/// set camera
-	void SetCamera(const CameraId& camera);
+	void SetCamera(const GraphicsEntityId& camera);
 	/// get camera
-	const CameraId& GetCamera();
+	const GraphicsEntityId& GetCamera();
 
 	/// set stage
 	void SetStage(const Ptr<Stage>& stage);
@@ -41,7 +41,7 @@ private:
 	friend class GraphicsServer;
 
 	Ptr<Frame::FrameScript> script;
-	CameraId camera;
+	GraphicsEntityId camera;
 	Ptr<Stage> stage;
 };
 
@@ -49,7 +49,7 @@ private:
 /**
 */
 inline void
-View::SetCamera(const CameraId& camera)
+View::SetCamera(const GraphicsEntityId& camera)
 {
 	this->camera = camera;
 }
@@ -57,7 +57,7 @@ View::SetCamera(const CameraId& camera)
 //------------------------------------------------------------------------------
 /**
 */
-inline const CameraId&
+inline const GraphicsEntityId&
 Graphics::View::GetCamera()
 {
 	return this->camera;

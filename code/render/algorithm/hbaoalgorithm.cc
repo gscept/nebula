@@ -10,7 +10,7 @@
 #include "coregraphics/shaderrwtexture.h"
 #include "coregraphics/shaderrwbuffer.h"
 #include "graphics/graphicsserver.h"
-#include "graphics/camera.h"
+#include "graphics/cameracontext.h"
 #include "graphics/view.h"
 
 using namespace CoreGraphics;
@@ -137,7 +137,7 @@ HBAOAlgorithm::Setup()
 	this->AddFunction("Prepare", Algorithm::Compute, [this](IndexT)
 	{
 		// get camera settings
-		const CameraSettings& cameraSettings = CameraGetSettings(Graphics::GraphicsServer::Instance()->GetCurrentView()->GetCamera());
+		const CameraSettings& cameraSettings = CameraContext::GetSettings(Graphics::GraphicsServer::Instance()->GetCurrentView()->GetCamera());
 
 		this->vars.width = this->vars.fullWidth / this->vars.downsample;
 		this->vars.height = this->vars.fullHeight / this->vars.downsample;

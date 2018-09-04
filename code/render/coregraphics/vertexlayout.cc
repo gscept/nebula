@@ -41,7 +41,6 @@ CreateVertexLayout(VertexLayoutCreateInfo& info)
 
 	// reserve resource using signature as name, don't load again unless needed
 	VertexLayoutId id = layoutPool->ReserveResource(atom, "render_system");
-	id.allocType = VertexLayoutIdType;
 	if (layoutPool->GetState(id) == Resources::Resource::Pending)
 		layoutPool->LoadFromMemory(id, &loadInfo);
 

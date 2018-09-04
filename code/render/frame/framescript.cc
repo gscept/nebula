@@ -131,10 +131,11 @@ FrameScript::Run(const IndexT frameIndex)
 	IndexT i;
 	for (i = 0; i < this->compiled.Size(); i++)
 	{
-		this->compiled[i]->InsertBarriers();
-		this->compiled[i]->WaitAndResetEvents();
+		this->compiled[i]->CrossQueuePreSync();		// wait cross-queue
+		this->compiled[i]->QueuePreSync();			// wait within queue
 		this->compiled[i]->Run(frameIndex);
-		this->compiled[i]->SignalEvents();
+		this->compiled[i]->QueuePostSync();			// signal within queue
+		this->compiled[i]->CrossQueuePostSync();	// signal cross-queue
 	}
 
 	// make sure to transition resources back to their original state in preparation for the next frame

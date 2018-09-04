@@ -118,9 +118,23 @@ public:
 private:
 	Math::float4 float4Values[NumFloat4Attrs];
     float floatValues[NumFloatAttrs];
-    int intValues[NumIntAttrs];
-    bool boolValues[NumBoolAttrs];
     EnvelopeCurve envelopeValues[NumEnvelopeAttrs];
+
+	struct IntAttributes
+	{
+		uint stretchDetail : 8;
+		uint animPhases : 8;
+	} intAttributes;
+
+	struct BoolAttributes
+	{
+		bool looping : 1;
+		bool randomizeRotation : 1;
+		bool stretchToStart : 1;
+		bool renderOldestFirst : 1;
+		bool viewAngleFade : 1;
+		bool billboard : 1;
+	} boolAttributes;
 };
 
 //------------------------------------------------------------------------------
@@ -147,7 +161,27 @@ EmitterAttrs::GetFloat(FloatAttr key) const
 inline void
 EmitterAttrs::SetBool(BoolAttr key, bool value)
 {
-    this->boolValues[key] = value;
+	switch (key)
+	{
+	case Looping:
+		this->boolAttributes.looping = value;
+		break;
+	case RandomizeRotation:
+		this->boolAttributes.randomizeRotation = value;
+		break;
+	case StretchToStart:
+		this->boolAttributes.stretchToStart = value;
+		break;
+	case RenderOldestFirst:
+		this->boolAttributes.renderOldestFirst = value;
+		break;
+	case ViewAngleFade:
+		this->boolAttributes.viewAngleFade = value;
+		break;
+	case Billboard:
+		this->boolAttributes.billboard = value;
+		break;
+	};
 }
 
 //------------------------------------------------------------------------------
@@ -156,7 +190,22 @@ EmitterAttrs::SetBool(BoolAttr key, bool value)
 inline bool
 EmitterAttrs::GetBool(BoolAttr key) const
 {
-    return this->boolValues[key];
+	switch (key)
+	{
+	case Looping:
+		return this->boolAttributes.looping;
+	case RandomizeRotation:
+		return this->boolAttributes.randomizeRotation;
+	case StretchToStart:
+		return this->boolAttributes.stretchToStart;
+	case RenderOldestFirst:
+		return this->boolAttributes.renderOldestFirst;
+	case ViewAngleFade:
+		return this->boolAttributes.viewAngleFade;
+	case Billboard:
+		return this->boolAttributes.billboard;
+	};
+	return false;
 }
 
 //------------------------------------------------------------------------------
@@ -165,7 +214,15 @@ EmitterAttrs::GetBool(BoolAttr key) const
 inline void
 EmitterAttrs::SetInt(IntAttr key, int value)
 {
-    this->intValues[key] = value;
+	switch (key)
+	{
+	case StretchDetail:
+		this->intAttributes.stretchDetail = value;
+		break;
+	case AnimPhases:
+		this->intAttributes.stretchDetail = value;
+		break;
+	};
 }
 
 //------------------------------------------------------------------------------
@@ -174,7 +231,14 @@ EmitterAttrs::SetInt(IntAttr key, int value)
 inline int
 EmitterAttrs::GetInt(IntAttr key) const
 {
-    return this->intValues[key];
+	switch (key)
+	{
+	case StretchDetail:
+		return this->intAttributes.stretchDetail;
+	case AnimPhases:
+		return this->intAttributes.stretchDetail;
+	};
+	return 0;
 }
 
 //------------------------------------------------------------------------------

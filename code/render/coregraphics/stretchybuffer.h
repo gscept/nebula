@@ -28,7 +28,9 @@ public:
 	~StretchyBuffer();
 
 	/// setup stretchy buffer on a target
-	void Setup(T* target, SizeT stride, SizeT alignment, SizeT numElements);
+	void Setup(SizeT stride, SizeT alignment, SizeT numElements);
+	/// set target
+	void SetTarget(T* target);
 
 	/// set all free indices to be considered used up
 	void SetFull();
@@ -41,6 +43,7 @@ public:
 	/// deallocates instance memory
 	void FreeInstance(SizeT offset);
 protected:
+
 
 	Util::Array<IndexT> freeIndices;
 	Util::Array<IndexT> usedIndices;
@@ -75,14 +78,22 @@ StretchyBuffer<T>::~StretchyBuffer()
 /**
 */
 template<class T> inline 
-void StretchyBuffer<T>::Setup(T* target, SizeT stride, SizeT alignment, SizeT numElements)
+void StretchyBuffer<T>::Setup(SizeT stride, SizeT alignment, SizeT numElements)
 {
-	this->target = target;
 	this->stride = stride;
 	this->byteAlignment = alignment;
 
 	for (IndexT i = 0; i < numElements; i++)
 		this->freeIndices.Append(i);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class T>
+inline void StretchyBuffer<T>::SetTarget(T* target)
+{
+	this->target = target;
 }
 
 #define ROUND_TO_POW(n, p) ((n + p - 1) & ~(p - 1))

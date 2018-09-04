@@ -7,6 +7,7 @@
 */
 //------------------------------------------------------------------------------
 #include "resources/resourcestreampool.h"
+#include "materialtype.h"
 
 namespace Materials
 {
@@ -14,6 +15,12 @@ namespace Materials
 struct MaterialInfo
 {
 	Resources::ResourceName materialType;
+};
+
+struct MaterialRuntime // consider splitting into runtime and setup
+{
+	MaterialId id;
+	MaterialType* type;
 };
 
 struct MaterialId;
@@ -26,16 +33,24 @@ public:
 	/// update reserved resource, the info struct is loader dependent (overload to implement resource deallocation, remember to set resource state!)
 	Resources::ResourcePool::LoadStatus LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream);
 
+	/// get material id
+	const MaterialId& GetId(const Resources::ResourceId& id);
 private:
 
-	/// allocate object by probing the material type from the file
-	Resources::ResourceUnknownId AllocObject();
-	/// deallocate resource
-	void DeallocObject(const Resources::ResourceUnknownId id);
 	/// unload resource (overload to implement resource deallocation)
 	void Unload(const Resources::ResourceId id);
 
-	Util::Dictionary<Resources::ResourceId, MaterialId> materialTable;
+	Ids::IdAllocatorSafe<MaterialRuntime> allocator;
+	__ImplementResourceAllocatorSafe(allocator);
 };
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const MaterialId&
+MaterialPool::GetId(const Resources::ResourceId& id)
+{
+	return allocator.Get<0>(id.allocId).id;
+}
 
 } // namespace Materials

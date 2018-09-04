@@ -10,6 +10,7 @@
 #include "modelnode.h"
 #include "resources/resourceid.h"
 #include "coregraphics/shader.h"
+#include "materials/materialserver.h"
 #include "transformnode.h"
 namespace Models
 {
@@ -23,34 +24,52 @@ public:
 
 	struct Instance : public TransformNode::Instance
 	{
-		CoreGraphics::ShaderId sharedShader;
+		CoreGraphics::ShaderStateId sharedShader;
 		CoreGraphics::ShaderConstantId modelVar;
 		CoreGraphics::ShaderConstantId invModelVar;
 		CoreGraphics::ShaderConstantId modelViewProjVar;
 		CoreGraphics::ShaderConstantId modelViewVar;
 		CoreGraphics::ShaderConstantId objectIdVar;
 		IndexT bufferIndex;
+
+		void ApplyNodeInstanceState() override;
+		void Setup(const Models::ModelNode* parent) override;
 	};
 
 	/// create instance
-	virtual ModelNode::Instance* CreateInstance(Memory::ChunkAllocator<0xFFF>& alloc) const;
+	virtual ModelNode::Instance* CreateInstance(Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& alloc) const;
+	/// apply node-level state
+	virtual void ApplyNodeState();
 
 protected:
 	friend class StreamModelPool;
 
 	/// load shader state
 	bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader);
+	/// called when loading finished
+	virtual void OnFinishedLoading();
 
-
+	CoreGraphics::ShaderId sharedShader;
+	Resources::ResourceId material;
 	Resources::ResourceName materialName;
 };
+
+ModelNodeInstanceCreator(ShaderStateNode)
 
 //------------------------------------------------------------------------------
 /**
 */
-inline ModelNode::Instance*
-ShaderStateNode::CreateInstance(Memory::ChunkAllocator<0xFFF>& alloc) const
+inline void
+ShaderStateNode::Instance::Setup(const Models::ModelNode* parent)
 {
-	return alloc.Alloc<ShaderStateNode::Instance>();
+	TransformNode::Instance::Setup(parent);
+	this->sharedShader = CoreGraphics::ShaderCreateState(static_cast<const ShaderStateNode*>(parent)->sharedShader, { NEBULAT_DYNAMIC_OFFSET_GROUP }, false);
+	this->modelVar = CoreGraphics::ShaderStateGetConstant(this->sharedShader, "Model");
+	this->invModelVar = CoreGraphics::ShaderStateGetConstant(this->sharedShader, "InvModel");
+	this->modelViewProjVar = CoreGraphics::ShaderStateGetConstant(this->sharedShader, "ModelViewProjection");
+	this->modelViewVar = CoreGraphics::ShaderStateGetConstant(this->sharedShader, "ModelView");
+	this->objectIdVar = CoreGraphics::ShaderStateGetConstant(this->sharedShader, "ObjectId");
+	this->type = ShaderStateNodeType;
 }
+
 } // namespace Models

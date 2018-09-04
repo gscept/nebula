@@ -56,24 +56,16 @@ DrawFullScreenQuad::Setup(SizeT rtWidth, SizeT rtHeight)
 	Math::float4 halfPixelSize = 0.0f;
 #endif
 
+	// create corners and uvs
     float left   = -1.0f - halfPixelSize.x();
     float right  = +3.0f - halfPixelSize.x();
     float top    = +3.0f + halfPixelSize.y();
     float bottom = -1.0f + halfPixelSize.y();
 
-
-    // compute uv coordinates, for GL and Vulkan, the Y coordinate is reversed
-#if (__VULKAN__ || __DX11__ || __DX12__)
-	float u0 = 0.0f;
-	float u1 = 3.0f;
-	float v0 = 3.0f;
-	float v1 = 0.0f;
-#else
     float u0 = 0.0f;
-    float u1 = 3.0f;
+    float u1 = 2.0f;
     float v0 = 0.0f;
-    float v1 = 3.0f;
-#endif
+    float v1 = 2.0f;
 
     // setup a vertex buffer with 2 triangles
     float v[3][5];
@@ -90,9 +82,7 @@ DrawFullScreenQuad::Setup(SizeT rtWidth, SizeT rtHeight)
 	v[2][0] = right;	v[2][1] = top;		v[2][2] = 0.0f; v[2][3] = u1; v[2][4] = v0;
 #endif
 
-
-    // setup vertex buffer with memory-vertexbuffer-loader
-	
+    // load vertex buffer
 	VertexBufferCreateInfo info =
 	{
 		"fsq_vbo", "render_system",

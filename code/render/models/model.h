@@ -17,6 +17,9 @@ namespace Models
 RESOURCE_ID_TYPE(ModelId);
 ID_32_32_NAMED_TYPE(ModelInstanceId, model, instance);
 
+#define MODEL_MEMORY_CHUNK_SIZE 0x7FF
+#define MODEL_INSTANCE_MEMORY_CHUNK_SIZE 0xFFF
+
 enum NodeType
 {
 	CharacterNodeType,

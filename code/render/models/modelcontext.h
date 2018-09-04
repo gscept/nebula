@@ -15,48 +15,54 @@ namespace Models
 {
 class ModelContext : public Graphics::GraphicsContext
 {
-	__DeclareClass(ModelContext);
-	__DeclareSingleton(ModelContext);
+	DeclareContext();
 public:
 	/// constructor
 	ModelContext();
 	/// destructor
 	virtual ~ModelContext();
 
+	/// create context
+	static void Create();
+
 	/// setup
-	void Setup(const Graphics::GraphicsEntityId id, const Resources::ResourceName& name, const Util::StringAtom& tag);
+	static void Setup(const Graphics::GraphicsEntityId id, const Resources::ResourceName& name, const Util::StringAtom& tag);
 
 	/// change model for existing entity
-	void ChangeModel(const Graphics::GraphicsEntityId id, const Resources::ResourceName& name, const Util::StringAtom& tag);
+	static void ChangeModel(const Graphics::GraphicsEntityId id, const Resources::ResourceName& name, const Util::StringAtom& tag);
 	/// get model
-	const Models::ModelInstanceId GetModel(const Graphics::GraphicsEntityId id);
+	static const Models::ModelInstanceId GetModel(const Graphics::GraphicsEntityId id);
 
 	/// set the transform for a model
-	void SetTransform(const Graphics::GraphicsEntityId id, const Math::matrix44 transform);
+	static void SetTransform(const Graphics::GraphicsEntityId id, const Math::matrix44& transform);
+	/// get the transform for a model
+	static Math::matrix44 GetTransform(const Graphics::GraphicsEntityId id);
 
 	/// runs before frame is updated
-	void OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime);
+	static void OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime);
 	/// runs when visibility has finished processing 
-	void OnVisibilityReady(const IndexT frameIndex, const Timing::Time frameTime);
+	static void OnVisibilityReady(const IndexT frameIndex, const Timing::Time frameTime);
 	/// runs before a specific view
-	void OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime);
+	static void OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime);
 	/// runs after view is rendered
-	void OnAfterView(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime);
+	static void OnAfterView(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime);
 	/// runs after a frame is updated
-	void OnAfterFrame(const IndexT frameIndex, const Timing::Time frameTime);
+	static void OnAfterFrame(const IndexT frameIndex, const Timing::Time frameTime);
 
 private:
 
-	Ids::IdAllocator<
+	
+	typedef Ids::IdAllocator<
 		ModelId,
-		ModelInstanceId
-	> modelContextAllocator;
+		ModelInstanceId,
+		Math::matrix44 // pending transforms
+	> ModelContextAllocator;
+	static ModelContextAllocator modelContextAllocator;
 
 	/// allocate a new slice for this context
-	Graphics::ContextEntityId Alloc();
+	static Graphics::ContextEntityId Alloc();
 	/// deallocate a slice
-	void Dealloc(Graphics::ContextEntityId id);
-
+	static void Dealloc(Graphics::ContextEntityId id);
 };
 
 //------------------------------------------------------------------------------
@@ -65,7 +71,7 @@ private:
 inline Graphics::ContextEntityId
 ModelContext::Alloc()
 {
-	return this->modelContextAllocator.AllocObject();
+	return modelContextAllocator.AllocObject();
 }
 
 //------------------------------------------------------------------------------
@@ -74,27 +80,7 @@ ModelContext::Alloc()
 inline void
 ModelContext::Dealloc(Graphics::ContextEntityId id)
 {
-	this->modelContextAllocator.DeallocObject(id.id);
-}
-
-//------------------------------------------------------------------------------
-/**
-	Shorthand for adding a model to a graphics entity, Models::Attach
-*/
-inline void
-ModelContextAttach(const Graphics::GraphicsEntityId entity, const Resources::ResourceName& res, const Util::StringAtom& tag)
-{
-	ModelContext::Instance()->RegisterEntity(entity);
-	ModelContext::Instance()->Setup(entity, res, tag);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-ModelContextDetach(const Graphics::GraphicsEntityId entity)
-{
-	ModelContext::Instance()->DeregisterEntity(entity);
+	modelContextAllocator.DeallocObject(id.id);
 }
 
 } // namespace Models

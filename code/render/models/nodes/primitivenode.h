@@ -25,30 +25,38 @@ public:
 
 	struct Instance : public ShaderStateNode::Instance
 	{
-		// empty
+		void Setup(const Models::ModelNode* parent) override;
 	};
 
 	/// create instance
-	virtual ModelNode::Instance* CreateInstance(Memory::ChunkAllocator<0xFFF>& alloc) const;
+	virtual ModelNode::Instance* CreateInstance(Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& alloc) const;
 
 protected:
 	friend class StreamModelPool;
 
 	/// load primitive
 	virtual bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader);
+	/// apply state
+	void ApplyNodeState() override;
 
+#if NEBULA_DEBUG
 	Resources::ResourceName meshName;
+#endif
 	CoreGraphics::MeshId res;
 	uint32_t primitiveGroupIndex;
 };
 
+ModelNodeInstanceCreator(PrimitiveNode)
+
 //------------------------------------------------------------------------------
 /**
 */
-inline ModelNode::Instance*
-PrimitiveNode::CreateInstance(Memory::ChunkAllocator<0xFFF>& alloc) const
+inline void
+PrimitiveNode::Instance::Setup(const Models::ModelNode* parent)
 {
-	return alloc.Alloc<PrimitiveNode::Instance>();
+	TransformNode::Instance::Setup(parent);
+	this->type = PrimtiveNodeType;
 }
+
 
 } // namespace Models

@@ -130,7 +130,8 @@ CreateShaderRWBuffer(const ShaderRWBufferCreateInfo& info)
 	ret.id24 = id;
 	ret.id8 = ShaderRWBufferIdType;
 	stretch.obj = ret;
-	stretch.resizer.Setup(&stretch, setupInfo.stride, (SizeT)props.limits.minStorageBufferOffsetAlignment, setupInfo.numBuffers);
+	stretch.resizer.Setup(setupInfo.stride, (SizeT)props.limits.minStorageBufferOffsetAlignment, setupInfo.numBuffers);
+	stretch.resizer.SetTarget(&stretch);
 
 	// map memory so we can use it later
 	res = vkMapMemory(setupInfo.dev, setupInfo.mem, 0, alignedSize, 0, &mapInfo.data);

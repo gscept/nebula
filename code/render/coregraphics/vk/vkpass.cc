@@ -314,7 +314,7 @@ CreatePass(const PassCreateInfo& info)
 	}
 
 	// use depth stencil attachments if pointer is not null
-	if (info.depthStencilAttachment != Ids::InvalidId32)
+	if (info.depthStencilAttachment != CoreGraphics::RenderTextureId::Invalid())
 	{
 		VkAttachmentDescription& attachment = attachments[i];
 		IndexT loadIdx = info.depthStencilFlags & Load ? 2 : info.depthStencilFlags & Clear ? 1 : 0;
@@ -349,7 +349,7 @@ CreatePass(const PassCreateInfo& info)
 	VkResult res = vkCreateRenderPass(loadInfo.dev, &rpinfo, nullptr, &loadInfo.pass);
 	n_assert(res == VK_SUCCESS);
 
-	if (info.depthStencilAttachment != Ids::InvalidId32)
+	if (info.depthStencilAttachment != CoreGraphics::RenderTextureId::Invalid())
 	{
 		images[i] = RenderTextureGetVkImageView(info.depthStencilAttachment);
 		const CoreGraphics::TextureDimensions dims = RenderTextureGetDimensions(info.depthStencilAttachment);

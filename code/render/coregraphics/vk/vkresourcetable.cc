@@ -35,7 +35,7 @@ ResourceTableGetVkDescriptorSet(const CoreGraphics::ResourceTableId& id)
 const VkDescriptorSetLayout&
 ResourceTableGetVkLayout(const CoreGraphics::ResourceTableId& id)
 {
-	return resourceTableAllocator.Get<3>(id.id24);
+	return ResourceTableLayoutGetVk(resourceTableAllocator.Get<3>(id.id24));
 }
 
 //------------------------------------------------------------------------------
@@ -74,11 +74,11 @@ CreateResourceTable(const ResourceTableCreateInfo& info)
 	VkDevice& dev = resourceTableAllocator.Get<0>(id);
 	VkDescriptorSet& set = resourceTableAllocator.Get<1>(id);
 	VkDescriptorPool& pool = resourceTableAllocator.Get<2>(id);
-	VkDescriptorSetLayout& layout = resourceTableAllocator.Get<3>(id);
+	CoreGraphics::ResourceTableLayoutId& layout = resourceTableAllocator.Get<3>(id);
 
 	dev = Vulkan::GetCurrentDevice();
 	pool = Vulkan::GetCurrentDescriptorPool();
-	layout = resourceTableLayoutAllocator.Get<1>(info.layout.id24);
+	layout = info.layout;
 
 	VkDescriptorSetAllocateInfo dsetAlloc =
 	{
@@ -86,10 +86,20 @@ CreateResourceTable(const ResourceTableCreateInfo& info)
 		nullptr,
 		pool,
 		1,
-		&layout
+		&ResourceTableLayoutGetVk(layout)
 	};
 	VkResult res = vkAllocateDescriptorSets(dev, &dsetAlloc, &set);
-	n_assert(res == VK_SUCCESS);
+
+	// if we are full, request new pool
+	if (res == VK_ERROR_OUT_OF_POOL_MEMORY)
+	{
+		Vulkan::RequestDescriptorPool();
+
+		pool = Vulkan::GetCurrentDescriptorPool();
+		dsetAlloc.descriptorPool = pool;
+		VkResult res = vkAllocateDescriptorSets(dev, &dsetAlloc, &set);
+		n_assert(res == VK_SUCCESS);
+	}
 
 	ResourceTableId ret;
 	ret.id24 = id;
@@ -139,25 +149,26 @@ ResourceTableSetTexture(const ResourceTableId& id, const ResourceTableTexture& t
 	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 	write.pNext = nullptr;
 
-	if (tex.sampler == SamplerId::Invalid())
-		write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-	else
+	const CoreGraphics::ResourceTableLayoutId& layout = resourceTableAllocator.Get<3>(id.id24);
+	const Util::HashTable<uint32_t, bool>& immutable = resourceTableLayoutAllocator.Get<3>(layout.id24);
+
+	VkDescriptorImageInfo img;
+	if (immutable[tex.slot])
+	{
+		n_assert(tex.sampler == SamplerId::Invalid());
 		write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		img.sampler = VK_NULL_HANDLE;
+	}
+	else
+	{
+		write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+		img.sampler = tex.sampler == SamplerId::Invalid() ? VK_NULL_HANDLE : SamplerGetVk(tex.sampler);
+	}
+
 	write.descriptorCount = 1;
 	write.dstArrayElement = tex.index;
 	write.dstBinding = tex.slot;
 	write.dstSet = set;
-
-	VkDescriptorImageInfo img;
-	if (tex.sampler == SamplerId::Invalid())
-		img.sampler = VK_NULL_HANDLE;
-	else
-		img.sampler = SamplerGetVk(tex.sampler);
-
-#if _DEBUG
-	if (write.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER && tex.sampler == SamplerId::Invalid())
-		n_warning("Texture %d bound to resource table %d lacks sampler, cannot be sampled from!", tex.tex.allocId, id.id24);
-#endif
 
 	if (tex.isDepth)
 		img.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
@@ -180,7 +191,7 @@ ResourceTableSetTexture(const ResourceTableId& id, const ResourceTableTexture& t
 /**
 */
 void
-ResourceTableSetRenderTexture(const ResourceTableId& id, const ResourceTableRenderTexture& tex)
+ResourceTableSetTexture(const ResourceTableId& id, const ResourceTableRenderTexture& tex)
 {
 	VkDevice& dev = resourceTableAllocator.Get<0>(id.id24);
 	VkDescriptorSet& set = resourceTableAllocator.Get<1>(id.id24);
@@ -190,21 +201,27 @@ ResourceTableSetRenderTexture(const ResourceTableId& id, const ResourceTableRend
 	VkWriteDescriptorSet write;
 	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 	write.pNext = nullptr;
-
-	if (tex.sampler == SamplerId::Invalid())
-		write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-	else
-		write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		
 	write.descriptorCount = 1;
 	write.dstArrayElement = tex.index;
 	write.dstBinding = tex.slot;
 	write.dstSet = set;
 
+	const CoreGraphics::ResourceTableLayoutId& layout = resourceTableAllocator.Get<3>(id.id24);
+	const Util::HashTable<uint32_t, bool>& immutable = resourceTableLayoutAllocator.Get<3>(layout.id24);
+
 	VkDescriptorImageInfo img;
-	if (tex.sampler == SamplerId::Invalid())
+	if (immutable[tex.slot])
+	{
+		n_assert(tex.sampler == SamplerId::Invalid());
+		write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		img.sampler = VK_NULL_HANDLE;
+	}
 	else
-		img.sampler = SamplerGetVk(tex.sampler);
+	{
+		write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+		img.sampler = tex.sampler == SamplerId::Invalid() ? VK_NULL_HANDLE : SamplerGetVk(tex.sampler);
+	}
 
 	if (tex.isDepth)
 		img.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
@@ -245,16 +262,21 @@ ResourceTableSetTexture(const ResourceTableId& id, const ResourceTableShaderRWTe
 	write.dstBinding = tex.slot;
 	write.dstSet = set;
 
-	VkDescriptorImageInfo img;
-	if (tex.sampler == SamplerId::Invalid())
-		img.sampler = VK_NULL_HANDLE;
-	else
-		img.sampler = SamplerGetVk(tex.sampler);
+	const CoreGraphics::ResourceTableLayoutId& layout = resourceTableAllocator.Get<3>(id.id24);
+	const Util::HashTable<uint32_t, bool>& immutable = resourceTableLayoutAllocator.Get<3>(layout.id24);
 
-#if _DEBUG
-	if (write.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER && tex.sampler == SamplerId::Invalid())
-		n_warning("Texture %d bound to resource table %d lacks sampler, cannot be sampled from!", tex.tex.id24, id.id24);
-#endif
+	VkDescriptorImageInfo img;
+	if (immutable[tex.slot])
+	{
+		n_assert(tex.sampler == SamplerId::Invalid());
+		write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		img.sampler = VK_NULL_HANDLE;
+	}
+	else
+	{
+		write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+		img.sampler = tex.sampler == SamplerId::Invalid() ? VK_NULL_HANDLE : SamplerGetVk(tex.sampler);
+	}
 
 	img.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 	img.imageView = ShaderRWTextureGetVkImageView(tex.tex);
@@ -574,6 +596,7 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
 	VkDevice& dev = resourceTableLayoutAllocator.Get<0>(id);
 	VkDescriptorSetLayout& layout = resourceTableLayoutAllocator.Get<1>(id);
 	Util::Array<std::pair<CoreGraphics::SamplerId, uint32_t>>& samplers = resourceTableLayoutAllocator.Get<2>(id);
+	Util::HashTable<uint32_t, bool>& immutable = resourceTableLayoutAllocator.Get<3>(id);
 
 	dev = Vulkan::GetCurrentDevice();
 	Util::Array<VkDescriptorSetLayoutBinding> bindings;
@@ -589,11 +612,13 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
 		{
 			binding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
 			binding.pImmutableSamplers = nullptr;
+			immutable.Add(tex.slot, false);
 		}
 		else
 		{
 			binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 			binding.pImmutableSamplers = &SamplerGetVk(tex.immutableSampler);
+			immutable.Add(tex.slot, true);
 		}
 		binding.stageFlags = VkTypes::AsVkShaderVisibility(tex.visibility);
 		bindings.Append(binding);

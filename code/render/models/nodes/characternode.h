@@ -31,8 +31,6 @@ public:
     /// parse data tag (called by loader code)
     bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader);
 
-	/// setup node
-	void Setup();
 	/// discard node
 	void Discard();
 
@@ -49,10 +47,12 @@ public:
 		Ids::Id32 characterId;
 		IndexT updateFrame;
 		bool updateThisFrame;
+
+		void Setup(const Models::ModelNode* parent) override;
 	};
 
 	/// create instance
-	virtual ModelNode::Instance* CreateInstance(Memory::ChunkAllocator<0xFFF>& alloc) const;
+	virtual ModelNode::Instance* CreateInstance(Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& alloc) const;
 
 private:
     /// recursively create model node instance and child model node instances
@@ -95,13 +95,16 @@ CharacterNode::GetAnimationResourceId() const
     return this->managedAnimResource;
 }
 
+ModelNodeInstanceCreator(CharacterNode)
+
 //------------------------------------------------------------------------------
 /**
 */
-inline ModelNode::Instance*
-CharacterNode::CreateInstance(Memory::ChunkAllocator<0xFFF>& alloc) const
+inline void
+CharacterNode::Instance::Setup(const Models::ModelNode* parent)
 {
-	return alloc.Alloc<CharacterNode::Instance>();
+	ModelNode::Instance::Setup(parent);
+	this->type = CharacterNodeType;
 }
 
 } // namespace Characters

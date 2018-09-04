@@ -15,18 +15,13 @@
 //------------------------------------------------------------------------------
 namespace Models
 {
-class ParticleSystemNode : public Models::ShaderStateNode
+class ParticleSystemNode : public TransformNode
 {
 public:
     /// constructor
     ParticleSystemNode();
     /// destructor
     virtual ~ParticleSystemNode();
-
-    /// called once when all pending resource have been loaded
-    virtual void OnFinishedLoading();
-    /// parse data tag (called by loader code)
-    virtual bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader);
 
 	/// change a mesh during runtime
 	virtual void UpdateMeshResource(const Resources::ResourceName& msh);
@@ -39,27 +34,34 @@ public:
 	/// get emitter mesh
 	const CoreGraphics::MeshId GetEmitterMesh() const;
 
-	struct Instance : public ShaderStateNode::Instance
+	struct Instance : public TransformNode::Instance
 	{
 		Ids::Id32 particleSystemId;
-		CoreGraphics::ShaderId particleShader;
+		CoreGraphics::ShaderStateId particleShader;
 		CoreGraphics::ShaderConstantId emitterOrientationVar;
-		CoreGraphics::ShaderConstantId billBoardVar;
+		CoreGraphics::ShaderConstantId billboardVar;
 		CoreGraphics::ShaderConstantId bboxCenterVar;
 		CoreGraphics::ShaderConstantId bboxSizeVar;
 		CoreGraphics::ShaderConstantId animPhasesVar;
 		CoreGraphics::ShaderConstantId animsPerSecVar;
 		IndexT bufferIndex;
+
+		void Setup(const Models::ModelNode* parent) override;
 	};
 
 	/// create instance
-	virtual ModelNode::Instance* CreateInstance(Memory::ChunkAllocator<0xFFF>& alloc) const;
+	virtual ModelNode::Instance* CreateInstance(Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& alloc) const;
 private:
     /// helper function to parse an EnvelopeCurve from a data stream
     Particles::EnvelopeCurve ParseEnvelopeCurveData(const Ptr<IO::BinaryReader>& reader) const;
 
 protected:    
+	/// called once when all pending resource have been loaded
+	virtual void OnFinishedLoading();
+	/// parse data tag (called by loader code)
+	virtual bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader);
 
+	CoreGraphics::ShaderId shader;
 	Particles::EmitterAttrs emitterAttrs;
     Resources::ResourceName meshResId;
 	Util::StringAtom tag;
@@ -103,13 +105,23 @@ ParticleSystemNode::GetEmitterAttrs() const
     return this->emitterAttrs;
 }
 
+ModelNodeInstanceCreator(ParticleSystemNode)
+
 //------------------------------------------------------------------------------
 /**
 */
-inline ModelNode::Instance*
-ParticleSystemNode::CreateInstance(Memory::ChunkAllocator<0xFFF>& alloc) const
+inline void
+ParticleSystemNode::Instance::Setup(const Models::ModelNode* parent)
 {
-	return alloc.Alloc<ParticleSystemNode::Instance>();
+	TransformNode::Instance::Setup(parent);
+	this->particleShader = ShaderCreateState(static_cast<const ParticleSystemNode*>(parent)->shader, { NEBULAT_DYNAMIC_OFFSET_GROUP }, false);
+	this->emitterOrientationVar = CoreGraphics::ShaderStateGetConstant(this->particleShader, "EmitterTransform");
+	this->billboardVar = CoreGraphics::ShaderStateGetConstant(this->particleShader, "Billboard");
+	this->bboxCenterVar = CoreGraphics::ShaderStateGetConstant(this->particleShader, "BBoxCenter");
+	this->bboxSizeVar = CoreGraphics::ShaderStateGetConstant(this->particleShader, "BBoxSize");
+	this->animPhasesVar = CoreGraphics::ShaderStateGetConstant(this->particleShader, "NumAnimPhases");
+	this->animsPerSecVar = CoreGraphics::ShaderStateGetConstant(this->particleShader, "AnimFramesPerSecond");
+	this->type = ParticleSystemNodeType;
 }
 
 } // namespace Particles

@@ -36,6 +36,9 @@ public:
 		void Run(const IndexT frameIndex);
 		void Discard();
 
+		void CrossQueuePreSync() override;
+		void CrossQueuePostSync() override;
+
 		Util::Array<FrameOp::Compiled*> subpasses;
 		CoreGraphics::PassId pass;
 	};

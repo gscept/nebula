@@ -23,9 +23,9 @@ typedef Ids::IdAllocator<
 	VkDevice,
 	VkDescriptorSet,
 	VkDescriptorPool,
-	VkDescriptorSetLayout,
+	CoreGraphics::ResourceTableLayoutId,
 	Util::Array<VkWriteDescriptorSet>,
-	Util::Array<WriteInfo>
+	Util::Array<WriteInfo>	
 > VkResourceTableAllocator;
 extern VkResourceTableAllocator resourceTableAllocator;
 
@@ -37,7 +37,8 @@ const VkDescriptorSetLayout& ResourceTableGetVkLayout(const CoreGraphics::Resour
 typedef Ids::IdAllocator<
 	VkDevice,
 	VkDescriptorSetLayout,
-	Util::Array<std::pair<CoreGraphics::SamplerId, uint32_t>>
+	Util::Array<std::pair<CoreGraphics::SamplerId, uint32_t>>,
+	Util::HashTable<uint32_t, bool>
 > VkResourceTableLayoutAllocator;
 extern VkResourceTableLayoutAllocator resourceTableLayoutAllocator;
 

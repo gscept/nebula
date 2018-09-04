@@ -5,6 +5,7 @@
 #include "render/stdneb.h"
 #include "model.h"
 #include "streammodelpool.h"
+#include "coregraphics/config.h"
 
 namespace Models
 {

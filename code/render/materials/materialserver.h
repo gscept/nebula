@@ -16,8 +16,6 @@
 namespace Materials
 {
 
-ID_32_32_NAMED_TYPE(MaterialId, typeId, instanceId);
-
 class MaterialServer : public Core::RefCounted
 {
 	__DeclareClass(MaterialServer);
@@ -37,57 +35,21 @@ public:
 	/// load material types from file
 	bool LoadMaterialTypes(const IO::URI& file);
 
-	/// allocate an instance of a material
-	MaterialId AllocateMaterial(const Resources::ResourceName& type);
-	/// deallocate material instance
-	void DeallocateMaterial(const MaterialId id);
-	/// set material constant
-	void SetMaterialConstant(const MaterialId id, const Util::StringAtom& name, const Util::Variant& val);
-	/// set material texture
-	void SetMaterialTexture(const MaterialId id, const Util::StringAtom& name, const CoreGraphics::TextureId val);
+	/// get material
+	MaterialType* GetMaterial(const Resources::ResourceName& type);
+	/// get material types by batch code
+	const Util::Array<MaterialType*>* GetMaterialTypesByBatch(CoreGraphics::BatchGroup::Code code);
 
 private:
 	friend class MaterialPool;
 
+	Memory::ChunkAllocator<0x1FF> materialAllocator;
 	Util::Dictionary<Resources::ResourceName, MaterialType*> materialTypesByName;
-	Util::Array<MaterialType> materialTypes;
+	Util::HashTable<CoreGraphics::BatchGroup::Code, Util::Array<MaterialType*>> materialTypesByBatch;
+	Util::Array<MaterialType*> materialTypes;
 	Ptr<MaterialPool> materialPool;
+	MaterialType* currentType;
 	bool isOpen;
 };
 
-//------------------------------------------------------------------------------
-/**
-*/
-inline MaterialId
-CreateMaterial(const Resources::ResourceName& type)
-{
-	return MaterialServer::Instance()->AllocateMaterial(type);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-DeallocateMaterial(const MaterialId id)
-{
-	MaterialServer::Instance()->DeallocateMaterial(id);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-MaterialSetConstant(const MaterialId id, const Util::StringAtom& name, const Util::Variant& val)
-{
-	MaterialServer::Instance()->SetMaterialConstant(id, name, val);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-MaterialSetTexture(const MaterialId id, const Util::StringAtom& name, const CoreGraphics::TextureId val)
-{
-	MaterialServer::Instance()->SetMaterialTexture(id, name, val);
-}
 } // namespace Materials

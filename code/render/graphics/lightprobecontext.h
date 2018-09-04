@@ -11,17 +11,26 @@ namespace Graphics
 {
 class LightProbeContext : public GraphicsContext
 {
-	__DeclareClass(LightProbeContext);
+	DeclareContext();
 public:
 	/// constructor
 	LightProbeContext();
 	/// destructor
 	virtual ~LightProbeContext();
+
+	/// get transform
+	static const Math::matrix44& GetTransform(const Graphics::GraphicsEntityId id);
 private:
 
+	typedef Ids::IdAllocator<
+		Math::matrix44,				// projection
+		Math::matrix44				// view-transform
+	> LightProbeAllocator;
+	static LightProbeAllocator lightProbeAllocator;
+
 	/// allocate a new slice for this context
-	ContextEntityId Alloc();
+	static ContextEntityId Alloc();
 	/// deallocate a slice
-	void Dealloc(ContextEntityId id);
+	static void Dealloc(ContextEntityId id);
 };
 } // namespace Graphics

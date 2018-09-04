@@ -114,7 +114,7 @@ FrameSubpass::Build(
 		this->ops[i]->Build(allocator, subpassOps, events, barriers, semaphores, rwTextures, rwBuffers, renderTextures);
 	}
 	myCompiled->ops = subpassOps;
-	compiledOps.AppendArray(subpassOps);
+	compiledOps.Append(myCompiled);
 }
 
 } // namespace Frame2

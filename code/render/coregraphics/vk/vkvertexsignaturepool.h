@@ -11,6 +11,7 @@
 #include "resources/resourceid.h"
 #include "coregraphics/base/vertexlayoutbase.h"
 #include "coregraphics/vertexlayout.h"
+#include "coregraphics/config.h"
 
 namespace CoreGraphics
 {
@@ -67,6 +68,6 @@ private:
 		BindInfo,											//2 setup info
 		CoreGraphics::VertexLayoutInfo						//3 base info
 	> allocator;
-	__ImplementResourceAllocator(allocator);
+	__ImplementResourceAllocatorTyped(allocator, VertexLayoutIdType);
 };
 } // namespace Vulkan

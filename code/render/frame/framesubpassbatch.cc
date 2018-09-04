@@ -66,6 +66,14 @@ FrameSubpassBatch::CompiledImpl::Run(const IndexT frameIndex)
 	// start batch
 	CoreGraphics::BeginBatch(FrameBatchType::Geometry);
 
+	const Util::Array<MaterialType*>* types = matServer->GetMaterialTypesByBatch(this->batch);
+	if (types != nullptr) for (IndexT typeIdx = 0; typeIdx < types->Size(); typeIdx++)
+	{
+		MaterialType* type = (*types)[typeIdx];
+		MaterialBeginBatch(type, this->batch);
+
+		MaterialEndBatch();
+	}
 	/*
 
 	if (matServer->HasMaterialsByBatchGroup(this->batch))

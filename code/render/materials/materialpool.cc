@@ -33,15 +33,18 @@ MaterialPool::LoadFromStream(const Resources::ResourceId id, const Util::StringA
 		// send to first node
 		reader->SetToNode("/NebulaT/Surface");
 
+		this->EnterGet();
+		MaterialRuntime& info = this->Get<0>(id.allocId);
+
 		// load surface
 		Resources::ResourceName materialType = reader->GetString("template");
 		Materials::MaterialServer* server = Materials::MaterialServer::Instance();
-		MaterialId mid = server->AllocateMaterial(materialType);
+		MaterialType* type = server->materialTypesByName[materialType];
 
 		// add to internal table
-		this->materialTable.Add(id, mid);
-
-		const MaterialType* type = server->materialTypesByName[materialType];
+		MaterialId mid = type->CreateInstance();
+		info.id = mid;
+		info.type = type;
 
 		if (reader->SetToFirstChild("Param")) do
 		{
@@ -54,7 +57,8 @@ MaterialPool::LoadFromStream(const Resources::ResourceId id, const Util::StringA
 			}
 			else if (type->textures.Contains(paramName, index))
 			{
-				defaultVal.SetUInt64(type->textures.ValueAtIndex(index).default.HashCode64());
+				defaultVal.SetType(Util::Variant::Int64);
+				defaultVal.SetInt64(type->textures.ValueAtIndex(index).default.HashCode64());
 			}
 			else
 			{
@@ -68,58 +72,42 @@ MaterialPool::LoadFromStream(const Resources::ResourceId id, const Util::StringA
 			{
 			case Util::Variant::Float:
 				defaultVal.SetFloat(reader->GetOptFloat("value", defaultVal.GetFloat()));
-				MaterialSetConstant(mid, paramName, defaultVal);
+				type->SetConstant(mid, paramName, defaultVal);
 				break;
 			case Util::Variant::Int:
 				defaultVal.SetInt(reader->GetOptInt("value", defaultVal.GetInt()));
-				MaterialSetConstant(mid, paramName, defaultVal);
+				type->SetConstant(mid, paramName, defaultVal);
 				break;
 			case Util::Variant::Bool:
 				defaultVal.SetBool(reader->GetOptBool("value", defaultVal.GetBool()));
-				MaterialSetConstant(mid, paramName, defaultVal);
+				type->SetConstant(mid, paramName, defaultVal);
 				break;
 			case Util::Variant::Float4:
 				defaultVal.SetFloat4(reader->GetOptFloat4("value", defaultVal.GetFloat4()));
-				MaterialSetConstant(mid, paramName, defaultVal);
+				type->SetConstant(mid, paramName, defaultVal);
 				break;
 			case Util::Variant::Float2:
 				defaultVal.SetFloat2(reader->GetOptFloat2("value", defaultVal.GetFloat2()));
-				MaterialSetConstant(mid, paramName, defaultVal);
+				type->SetConstant(mid, paramName, defaultVal);
 				break;
 			case Util::Variant::Matrix44:
 				defaultVal.SetMatrix44(reader->GetOptMatrix44("value", defaultVal.GetMatrix44()));
-				MaterialSetConstant(mid, paramName, defaultVal);
+				type->SetConstant(mid, paramName, defaultVal);
 				break;
 			case Util::Variant::String: // texture
 			{
 				CoreGraphics::TextureId tex = Resources::CreateResource(reader->GetString("value"), tag, nullptr, nullptr);
-				MaterialSetTexture(mid, paramName, tex);
+				type->SetTexture(mid, paramName, tex);
 				defaultVal.SetUInt64(tex.HashCode64());
 				break;
 			}
 			}
 		} while (reader->SetToNextChild("Param"));
+
+		this->LeaveGet();
+		return Success;
 	}
-	return Success;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-Resources::ResourceUnknownId
-MaterialPool::AllocObject()
-{
-	// actually, yes, return a crap ID, we do all the work in the LoadFromStream...
-	return Resources::ResourceUnknownId();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-MaterialPool::DeallocObject(const Resources::ResourceUnknownId id)
-{
-	// yeah, do nothing, it's fine!
+	return Failed;
 }
 
 //------------------------------------------------------------------------------
@@ -128,9 +116,10 @@ MaterialPool::DeallocObject(const Resources::ResourceUnknownId id)
 void
 MaterialPool::Unload(const Resources::ResourceId id)
 {
-	const MaterialId mid = this->materialTable[id];
-	Materials::MaterialServer* server = Materials::MaterialServer::Instance();
-	server->DeallocateMaterial(mid);
+	const MaterialRuntime& runtime = this->Get<0>(id.allocId);
+	const MaterialId mid = runtime.id;
+	MaterialType* type = runtime.type;
+	type->DestroyInstance(mid);
 }
 
 } // namespace Materials

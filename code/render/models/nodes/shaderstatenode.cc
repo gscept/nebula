@@ -5,6 +5,9 @@
 #include "render/stdneb.h"
 #include "shaderstatenode.h"
 #include "transformnode.h"
+#include "coregraphics/shaderserver.h"
+#include "coregraphics/transformdevice.h"
+#include "resources/resourcemanager.h"
 
 using namespace Util;
 using namespace Math;
@@ -40,14 +43,14 @@ ShaderStateNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, c
 	}
 	else if (FourCC('MATE') == fourcc)
 	{
-		this->materialName = reader->ReadString();
+		this->materialName = reader->ReadString() + NEBULAT_SURFACE_EXTENSION;
 	}
 	else if (FourCC('STXT') == fourcc)
 	{
 		// ShaderTexture
 		StringAtom paramName = reader->ReadString();
 		StringAtom paramValue = reader->ReadString();
-		String fullTexResId = String(paramValue.AsString() + NEBULA3_TEXTURE_EXTENSION);
+		String fullTexResId = String(paramValue.AsString() + NEBULAT_TEXTURE_EXTENSION);
 	}
 	else if (FourCC('SINT') == fourcc)
 	{
@@ -102,6 +105,42 @@ ShaderStateNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, c
 		retval = TransformNode::Load(fourcc, tag, reader);
 	}
 	return retval;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ShaderStateNode::OnFinishedLoading()
+{
+	this->sharedShader = CoreGraphics::ShaderServer::Instance()->GetSharedShader();
+	this->material = Resources::CreateResource(this->materialName, "", nullptr, nullptr, false);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ShaderStateNode::ApplyNodeState()
+{
+	// apply material
+	Materials::MaterialApply(this->material);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ShaderStateNode::Instance::ApplyNodeInstanceState()
+{
+	CoreGraphics::TransformDevice* transformDevice = CoreGraphics::TransformDevice::Instance();
+
+	// okay, in cases like this, we would benefit shittons if we could just do one set for the entire struct...
+	CoreGraphics::ShaderConstantSet(this->modelVar, this->sharedShader, transformDevice->GetModelTransform());
+	CoreGraphics::ShaderConstantSet(this->invModelVar, this->sharedShader, transformDevice->GetInvModelTransform());
+	CoreGraphics::ShaderConstantSet(this->modelViewProjVar, this->sharedShader, transformDevice->GetModelViewProjTransform());
+	CoreGraphics::ShaderConstantSet(this->modelViewVar, this->sharedShader, transformDevice->GetModelViewTransform());
+	CoreGraphics::ShaderConstantSet(this->objectIdVar, this->sharedShader, transformDevice->GetObjectId());
 }
 
 } // namespace Models

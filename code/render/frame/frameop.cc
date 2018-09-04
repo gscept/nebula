@@ -443,12 +443,12 @@ FrameOp::Compiled::Discard()
 /**
 */
 void
-FrameOp::Compiled::SignalEvents()
+FrameOp::Compiled::CrossQueuePreSync()
 {
 	IndexT i;
-	for (i = 0; i < this->numSignalEvents; i++)
+	for (i = 0; i < this->numWaitSemaphores; i++)
 	{
-		CoreGraphics::EventSignal(this->signalEvents[i].event, this->signalEvents[i].queue);
+		CoreGraphics::SemaphoreWait(this->waitSemaphores[i]);
 	}
 }
 
@@ -456,26 +456,43 @@ FrameOp::Compiled::SignalEvents()
 /**
 */
 void
-FrameOp::Compiled::WaitAndResetEvents()
+FrameOp::Compiled::CrossQueuePostSync()
+{
+	IndexT i;
+	for (i = 0; i < this->numSignalSemaphores; i++)
+	{
+		CoreGraphics::SemaphoreWait(this->signalSemaphores[i]);
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+FrameOp::Compiled::QueuePreSync()
 {
 	IndexT i;
 	for (i = 0; i < this->numWaitEvents; i++)
 	{
 		CoreGraphics::EventWaitAndReset(this->waitEvents[i].event, this->waitEvents[i].queue);
 	}
+	for (i = 0; i < this->numBarriers; i++)
+	{
+		CoreGraphics::BarrierReset(this->barriers[i].barrier);
+		CoreGraphics::BarrierInsert(this->barriers[i].barrier, this->barriers[i].queue);
+	}
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-FrameOp::Compiled::InsertBarriers()
+FrameOp::Compiled::QueuePostSync()
 {
 	IndexT i;
-	for (i = 0; i < this->numBarriers; i++)
+	for (i = 0; i < this->numSignalEvents; i++)
 	{
-		CoreGraphics::BarrierReset(this->barriers[i].barrier);
-		CoreGraphics::BarrierInsert(this->barriers[i].barrier, this->barriers[i].queue);
+		CoreGraphics::EventSignal(this->signalEvents[i].event, this->signalEvents[i].queue);
 	}
 }
 

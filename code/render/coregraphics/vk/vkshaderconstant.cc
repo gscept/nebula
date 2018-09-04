@@ -264,6 +264,30 @@ SetIntArray(VkShaderConstantMemoryBinding& bind, const int* values, SizeT count)
 /**
 */
 void
+SetUInt(VkShaderConstantMemoryBinding& bind, uint value)
+{
+	if (bind.isbuffer)
+		ConstantBufferUpdate(bind.backing.uniformBuffer, &value, bind.offset, sizeof(uint));
+	else
+		VkShaderVariableUpdatePushRange(bind.backing.push, sizeof(uint), value);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+SetUIntArray(VkShaderConstantMemoryBinding& bind, const uint* values, SizeT count)
+{
+	if (bind.isbuffer)
+		ConstantBufferArrayUpdate(bind.backing.uniformBuffer, values, bind.offset, sizeof(uint), count);
+	else
+		VkShaderVariableUpdatePushRange(bind.backing.push, sizeof(uint) * count, values);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 SetFloat(VkShaderConstantMemoryBinding& bind, float value)
 {
 	if (bind.isbuffer)
@@ -447,7 +471,7 @@ SetRenderTexture(VkShaderConstantMemoryBinding& bind, VkShaderConstantDescriptor
 			info.tex = tex;
 			info.index = 0;
 
-			CoreGraphics::ResourceTableSetRenderTexture(res.set, info);
+			CoreGraphics::ResourceTableSetTexture(res.set, info);
 		}
 	}
 }

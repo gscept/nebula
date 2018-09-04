@@ -1,49 +1,12 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	A graphics context is the base class which implements a graphics entity rendering component.
-	This class is abstract, but any class inheriting it has to be a singleton.
+	Graphics context is a helper class to setup graphics contexts.
 
-	The idea is that every rendering module should implement its own GraphicsContext. The data
-	for each graphics entity is then saved in an allocator as defined in this class, and
-	that data is sliced into whatever is important. This way, we can simply loop over all
-	slices in the allocator once per update, and simply ignore all the crud in between.
+	A graphics context is a resource which holds a contextual representation for
+	a graphics entity.
 
-	Example:
-
-		OOP:
-			Entity:
-				Model
-				Character
-				AnimEvents
-				Resource Loading data
-				Instancing stuff
-				Picking stuff
-				LightProbe stuff
-				Transform
-
-			For each entity
-				Run anim event update on entity
-					> requires: animation event list, character
-					> stride between each entity = tons of stuff
-		DO:
-			Entity:
-				Transform
-			Context Singleton:
-				Models[]
-				Characters[]
-				AnimEvents[]
-
-			For each frame
-				Run anim event update on AnimEvents[] array
-					> Updates all entities
-					> stride between each entity = 0
-
-	This base class implements a block allocator which creates chunks of FixedPool objects.
-	Whenever an entity is registered, a slice ID is calculated using the pool index, and the index within the pool as a 64 bit integer.
-	The entity id is then paired with that slice id, so that the slice and pool can be obtained and free'd. 
-
-	The graphics context only implements allocating a new slice, but it doesn't provide a generic setup function.
+	Use the DeclareRegistration macro in the header and DefineRegistration in the implementation
 	
 	(C) 2017 Individual contributors, see AUTHORS file
 */
@@ -54,14 +17,72 @@
 #include "ids/idallocator.h"			// include this here since it will be used by all contexts
 #include "ids/idgenerationpool.h"
 #include "graphicsentity.h"
+
+#define DeclareContext() \
+private:\
+	static Graphics::GraphicsContext::State __state;\
+	static Graphics::GraphicsContextFunctionBundle __bundle;\
+public:\
+	static void RegisterEntity(const Graphics::GraphicsEntityId id);\
+	static void DeregisterEntity(const Graphics::GraphicsEntityId id);\
+	static bool IsEntityRegistered(const Graphics::GraphicsEntityId id);\
+	static void Destroy();
+
+#define ImplementContext(ctx) \
+Graphics::GraphicsContext::State ctx::__state; \
+Graphics::GraphicsContextFunctionBundle ctx::__bundle; \
+void ctx::RegisterEntity(const Graphics::GraphicsEntityId id) \
+{\
+	n_assert(!__state.entitySliceMap.Contains(id.id));\
+	Graphics::ContextEntityId allocId = __state.Alloc();\
+	__state.entitySliceMap.Add(id, allocId);\
+}\
+\
+void ctx::DeregisterEntity(const Graphics::GraphicsEntityId id)\
+{\
+	IndexT i = __state.entitySliceMap.FindIndex(id.id);\
+	n_assert(i != InvalidIndex);\
+	__state.Dealloc(__state.entitySliceMap.ValueAtIndex(i));\
+	__state.entitySliceMap.Erase(i);\
+}\
+\
+bool ctx::IsEntityRegistered(const Graphics::GraphicsEntityId id)\
+{\
+	return __state.entitySliceMap.Contains(id.id);\
+}\
+void ctx::Destroy()\
+{\
+	Graphics::GraphicsServer::Instance()->UnregisterGraphicsContext(&__bundle);\
+}
+
+#define CreateContext() \
+	__state.Alloc = Alloc; \
+	__state.Dealloc = Dealloc; 
+
+#define GetContextId(id) __state.entitySliceMap[id.id]
+
+
 namespace Graphics
 {
 
-ID_32_TYPE(ContextEntityId)
 class View;
-class GraphicsContext : public Core::RefCounted
+struct GraphicsContextFunctionBundle
 {
-	__DeclareAbstractClass(GraphicsContext);
+	void(*OnBeforeFrame)(const IndexT frameIndex, const Timing::Time frameTime);
+	void(*OnVisibilityReady)(const IndexT frameIndex, const Timing::Time frameTime);
+	void(*OnBeforeView)(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime);
+	void(*OnAfterView)(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime);
+	void(*OnAfterFrame)(const IndexT frameIndex, const Timing::Time frameTime);
+
+	GraphicsContextFunctionBundle() : OnBeforeFrame(nullptr), OnVisibilityReady(nullptr), OnBeforeView(nullptr), OnAfterView(nullptr), OnAfterFrame(nullptr)
+	{
+	};
+};
+
+ID_32_TYPE(ContextEntityId)
+
+class GraphicsContext
+{
 
 public:
 	/// constructor
@@ -69,34 +90,21 @@ public:
 	/// destructor
 	virtual ~GraphicsContext();
 
-	friend class GraphicsServer;
-
-	/// register a new entity with the context
-	virtual void RegisterEntity(const GraphicsEntityId id);
-	/// deregister entity from context
-	virtual void DeregisterEntity(const GraphicsEntityId id);
-	/// returns true if entity is registered for context
-	bool IsEntityRegistered(const GraphicsEntityId id);
-
-	/// runs before frame is updated
-	void OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime);
-	/// runs when visibility has finished processing 
-	void OnVisibilityReady(const IndexT frameIndex, const Timing::Time frameTime);
-	/// runs before a specific view
-	void OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime);
-	/// runs after view is rendered
-	void OnAfterView(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime);
-	/// runs after a frame is updated
-	void OnAfterFrame(const IndexT frameIndex, const Timing::Time frameTime);
+	/// create context
+	virtual void Create() = 0;
+	/// destroy context
+	virtual void Destroy() = 0;
 
 protected:
-	
-	/// allocate a new slice for this context
-	virtual ContextEntityId Alloc() = 0;
-	/// deallocate a slice
-	virtual void Dealloc(ContextEntityId id) = 0;
+	friend class GraphicsServer;
 
-	Util::Dictionary<GraphicsEntityId, ContextEntityId> entitySliceMap;
+
+	struct State
+	{
+		Util::Dictionary<GraphicsEntityId, ContextEntityId> entitySliceMap;
+		ContextEntityId(*Alloc)();
+		void(*Dealloc)(ContextEntityId id);
+	}* state;
 };
 
 } // namespace Graphics

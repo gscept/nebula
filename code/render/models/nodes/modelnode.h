@@ -22,6 +22,14 @@
 #include "memory/chunkallocator.h"
 #include "models/model.h"
 
+#define ModelNodeInstanceCreator(type) \
+inline ModelNode::Instance* type::CreateInstance(Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& alloc) const\
+{\
+	auto node = alloc.Alloc<type::Instance>();\
+	node->Setup(this);\
+	return node;\
+}
+
 namespace Models
 {
 
@@ -35,6 +43,9 @@ public:
 		ModelNode* node;				// pointer to resource-level node
 		NodeType type;
 		Math::bbox boundingBox;
+
+		virtual void ApplyNodeInstanceState();
+		virtual void Setup(const Models::ModelNode* parent);
 	};
 
 	/// constructor
@@ -45,9 +56,10 @@ public:
 	/// return constant reference to children
 	const Util::Array<ModelNode*>& GetChildren() const;
 	/// create an instance of a node, override in the leaf classes
-	virtual ModelNode::Instance* CreateInstance(Memory::ChunkAllocator<0xFFF>& alloc) const;
+	virtual ModelNode::Instance* CreateInstance(Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& alloc) const;
 
-	// base class for instances
+	/// apply node-level state
+	virtual void ApplyNodeState();
 
 protected:
 	friend class StreamModelPool;
@@ -59,10 +71,8 @@ protected:
 	/// unload data
 	virtual void Unload();
 	/// call when model node data is finished loading (not accounting for secondary resources)
-	void OnFinishedLoading();
+	virtual void OnFinishedLoading();
 
-	/// setup node
-	virtual void Setup();
 	/// discard node
 	virtual void Discard();
 
@@ -72,6 +82,16 @@ protected:
 	Util::Array<Models::ModelNode*> children;
 	Math::bbox boundingBox;
 };
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline ModelNode::Instance*
+ModelNode::CreateInstance(Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& alloc) const
+{
+	return nullptr;
+}
 
 //------------------------------------------------------------------------------
 /**

@@ -20,7 +20,8 @@ __ImplementSingleton(Materials::MaterialServer)
 /**
 */
 MaterialServer::MaterialServer() :
-	isOpen(false)
+	isOpen(false),
+	currentType(nullptr)
 {
 	__ConstructSingleton;
 }
@@ -43,9 +44,15 @@ MaterialServer::Open()
 	this->isOpen = true;
 
 	// load base materials first
-	this->LoadMaterialTypes("base.xml");
+	this->LoadMaterialTypes("mat:base.xml");
 
-	Resources::ResourceManager::Instance()->RegisterStreamPool("sur", Materials::MaterialPool::RTTI);
+	// okay, now load the rest of the materials
+	Util::Array<Util::String> materialTables = IO::IoServer::Instance()->ListFiles("mat:", "*.xml");
+	for (IndexT i = 0; i < materialTables.Size(); i++)
+	{
+		if (materialTables[i] == "base.xml") continue;
+		this->LoadMaterialTypes("mat:" + materialTables[i]);
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -54,6 +61,7 @@ MaterialServer::Open()
 void
 MaterialServer::Close()
 {
+	this->materialAllocator.Release();
 }
 
 //------------------------------------------------------------------------------
@@ -76,17 +84,17 @@ MaterialServer::LoadMaterialTypes(const IO::URI& file)
 		}
 		reader->SetToNode("/Nebula3/Materials");
 
-
 		// parse materials
 		if (reader->SetToFirstChild("Material")) do
 		{
-			this->materialTypes.Append(MaterialType());
-			MaterialType* type = this->materialTypes.End();
+			MaterialType* type = this->materialAllocator.Alloc<MaterialType>();
+			this->materialTypes.Append(type);
 
 			type->name = reader->GetString("name");
 			type->description = reader->GetOptString("desc", "");
 			type->group = reader->GetOptString("group", "Ungrouped");
 			type->id = this->materialTypes.Size() - 1; // they are load-time, so we can safetly use this as the id
+			materialTypesByName.Add(type->name, type);
 
 			n_assert2(!type->name.ContainsCharFromSet("|"), "Name of material may not contain character '|' since it's used to denote multiple inheritance");
 
@@ -103,6 +111,7 @@ MaterialServer::LoadMaterialTypes(const IO::URI& file)
 				Util::String vtype = reader->GetString("vertexType");
 				type->vertexType = vtype.HashCode();
 			}
+			type->isVirtual = isVirtual;
 
 			Util::String inherits = reader->GetOptString("inherits", "");
 
@@ -145,8 +154,17 @@ MaterialServer::LoadMaterialTypes(const IO::URI& file)
 				CoreGraphics::ShaderFeature::Mask mask = CoreGraphics::ShaderServer::Instance()->FeatureStringToMask(shaderFeatures);
 				CoreGraphics::ShaderProgramId program = CoreGraphics::ShaderGetProgram(shd, mask);
 
+				if (program == CoreGraphics::ShaderProgramId::Invalid())
+					n_warning("WARNING: Material '%s' failed to load program with features '%s'\n", type->name.AsCharPtr(), shaderFeatures.AsCharPtr());
+
+				n_assert(!type->programs.Contains(code));
 				type->batches.Append(code);
 				type->programs.Add(code, program);
+
+				// add material to server
+				Util::Array<Materials::MaterialType*>& mats = this->materialTypesByBatch.AddUnique(code);
+				mats.Append(type);
+
 			} while (reader->SetToNextChild("Pass"));
 
 			// parse parameters
@@ -174,14 +192,15 @@ MaterialServer::LoadMaterialTypes(const IO::URI& file)
 					{
 						n_error("Invalid texture type %s\n", ptype.AsCharPtr());
 					}
-					texture.default = Resources::CreateResource(reader->GetString("defaultValue"), type->name, nullptr, nullptr, true);
-
+					texture.default = Resources::CreateResource(reader->GetString("defaultValue") + NEBULAT_TEXTURE_EXTENSION, "material types", nullptr, nullptr, true);
+					texture.system = system;
 					type->textures.Add(name, texture);
 				}
 				else
 				{
 					MaterialConstant constant;
 					constant.type = Util::Variant::StringToType(ptype);
+					constant.system = system;
 					switch (constant.type)
 					{
 					case Util::Variant::Float:
@@ -233,45 +252,22 @@ MaterialServer::LoadMaterialTypes(const IO::URI& file)
 //------------------------------------------------------------------------------
 /**
 */
-MaterialId
-MaterialServer::AllocateMaterial(const Resources::ResourceName& type)
+MaterialType* 
+MaterialServer::GetMaterial(const Resources::ResourceName& type)
 {
 	MaterialType* mat = this->materialTypesByName[type];
-	Ids::Id32 matId = mat->CreateMaterial();
-	MaterialId ret;
-	ret.instanceId = matId;
-	ret.typeId = mat->id.id;
-	return ret;
+	return mat;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-void
-MaterialServer::DeallocateMaterial(const MaterialId id)
+const Util::Array<MaterialType*>*
+MaterialServer::GetMaterialTypesByBatch(CoreGraphics::BatchGroup::Code code)
 {
-	MaterialType* type = &this->materialTypes[id.typeId];
-	type->DestroyMaterial(id.instanceId);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-MaterialServer::SetMaterialConstant(const MaterialId id, const Util::StringAtom& name, const Util::Variant& val)
-{
-	MaterialType* type = &this->materialTypes[id.typeId];
-	type->MaterialSetConstant(id.instanceId, name, val);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-MaterialServer::SetMaterialTexture(const MaterialId id, const Util::StringAtom & name, const CoreGraphics::TextureId val)
-{
-	MaterialType* type = &this->materialTypes[id.typeId];
-	type->MaterialSetTexture(id.instanceId, name, val);
+	IndexT i = this->materialTypesByBatch.FindIndex(code);
+	if (i == InvalidIndex)  return nullptr;
+	else					return &this->materialTypesByBatch.ValueAtIndex(code, i);
 }
 
 } // namespace Base

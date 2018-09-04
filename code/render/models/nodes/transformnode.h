@@ -26,10 +26,13 @@ public:
 		Math::matrix44 modelTransform;
 		bool isInViewSpace;
 		bool lockedToViewer;
+
+		void ApplyNodeInstanceState() override;
+		virtual void Setup(const Models::ModelNode* parent) override;
 	};
 
 	/// create instance
-	virtual ModelNode::Instance* CreateInstance(Memory::ChunkAllocator<0xFFF>& alloc) const;
+	virtual ModelNode::Instance* CreateInstance(Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& alloc) const;
 
 protected:
 	friend class StreamModelPool;
@@ -50,20 +53,23 @@ protected:
 	bool lockedToViewer;
 };
 
+ModelNodeInstanceCreator(TransformNode)
 
 //------------------------------------------------------------------------------
 /**
 */
-inline ModelNode::Instance*
-TransformNode::CreateInstance(Memory::ChunkAllocator<0xFFF>& alloc) const
+inline void
+TransformNode::Instance::Setup(const Models::ModelNode* parent)
 {
-	TransformNode::Instance* tnode = alloc.Alloc<TransformNode::Instance>();
-	tnode->transform.setposition(this->position);
-	tnode->transform.setrotate(this->rotate);
-	tnode->transform.setscale(this->scale);
-	tnode->transform.setrotatepivot(this->rotatePivot);
-	tnode->transform.setscalepivot(this->scalePivot);
-	return tnode;
+	const TransformNode* tnode = static_cast<const TransformNode*>(parent);
+	this->transform.setposition(tnode->position);
+	this->transform.setrotate(tnode->rotate);
+	this->transform.setscale(tnode->scale);
+	this->transform.setrotatepivot(tnode->rotatePivot);
+	this->transform.setscalepivot(tnode->scalePivot);
+	this->lockedToViewer = tnode->lockedToViewer;
+	this->isInViewSpace = tnode->isInViewSpace;
+	this->type = TransformNodeType;
 }
 
 } // namespace Models
