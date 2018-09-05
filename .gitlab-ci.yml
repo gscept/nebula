@@ -1,5 +1,6 @@
 before_script:
     - call ./fips fetch
+    - call ./fips update
     
 stages:
     - build
