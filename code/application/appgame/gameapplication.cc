@@ -76,11 +76,7 @@ GameApplication::Open()
 		//n_assert2(System::NebulaSettings::ReadString("gscept", "ToolkitShared", "workdir"), "No working directory defined!");
 
         this->coreServer->SetRootDirectory(root);
-        this->coreServer->Open();
-
-        // setup the job system
-        this->jobSystem = Jobs::JobSystem::Create();
-        this->jobSystem->Setup();
+        this->coreServer->Open();        
 
         // setup game content server
         this->gameContentServer = GameContentServer::Create();
@@ -137,9 +133,6 @@ GameApplication::Close()
     this->ioInterface->Close();
     this->ioInterface = nullptr;
     this->ioServer = nullptr;
-
-    this->jobSystem->Discard();
-    this->jobSystem = nullptr;
 
     this->coreServer->Close();
     this->coreServer = nullptr;
