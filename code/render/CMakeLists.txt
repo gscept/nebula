@@ -11,11 +11,16 @@ macro(shaderc)
 	fips_generate(TYPE shaderc FROM ${FIPS_DEPLOY_DIR}/nebula-toolkit/${FIPS_CONFIG}/shaderbatcher.exe HEADER None SOURCE None ARGS ${FIPS_DEPLOY_DIR}/${CMAKE_PROJECT_NAME}/${FIPS_CONFIG}/export_${export_platform_string})
 endmacro()
 
+option(N_COMPILE_SHADERS "Compile shaders in standalone compile" OFF)
+
+
 fips_begin_module(render)
 	fips_vs_warning_level(3)
 	fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/resource ${CODE_ROOT}/foundation)	
 	fips_deps(foundation resource anyfx libpng libjpeg DevIL)
-	shaderc()
+    if(N_COMPILE_SHADERS)
+        shaderc()
+    ENDIF()
 	
 	if(N_USE_VULKAN)
 		#include(FindVulkan)
