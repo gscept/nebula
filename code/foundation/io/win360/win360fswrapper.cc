@@ -6,6 +6,7 @@
 #include "foundation/stdneb.h"
 #include "io/win360/win360fswrapper.h"
 #include "core/sysfunc.h"
+#include "system/nebulasettings.h"
 #if __WIN32__
 #include "util/win32/win32stringconverter.h"
 #endif
@@ -729,37 +730,45 @@ Win360FSWrapper::GetBinDirectory()
 String
 Win360FSWrapper::GetHomeDirectory()
 {
-    #if __WIN32__
-        ushort wideBuffer[NEBULA3_MAXPATH];
-        DWORD res = GetModuleFileNameW(NULL, (LPWSTR)wideBuffer, sizeof(wideBuffer) / 2);
-        n_assert(0 != res);
 
-        String pathToExe = Win32::Win32StringConverter::WideToUTF8(wideBuffer);
-        pathToExe.ConvertBackslashes();
+    ushort wideBuffer[NEBULA3_MAXPATH];
+    DWORD res = GetModuleFileNameW(NULL, (LPWSTR)wideBuffer, sizeof(wideBuffer) / 2);
+    n_assert(0 != res);
 
-        // check if executable resides in a win32 directory
-        String pathToDir = pathToExe.ExtractLastDirName();
-        if (n_stricmp(pathToDir.AsCharPtr(), "win32") == 0)
-        {
-            // normal home:bin/win32 directory structure
-            // strip bin/win32
-            String homePath = pathToExe.ExtractDirName();
-            homePath = homePath.ExtractDirName();
-            homePath = homePath.ExtractDirName();
-            homePath.TrimRight("/");
-            return String("file:///") + homePath;
-        }
-        else
-        {
-            // not in normal home:bin/win32 directory structure, 
-            // use the exe's directory as home path
-            String homePath = pathToExe.ExtractDirName();
-            return String("file:///") + homePath;
-        }
-    #else
-        // Xbox360 case is a bit simpler...
-        return "file:///GAME:/";
-    #endif
+    String pathToExe = Win32::Win32StringConverter::WideToUTF8(wideBuffer);
+    pathToExe.ConvertBackslashes();
+#if PUBLIC_BUILD
+    // check if executable resides in a win32 directory
+    String pathToDir = pathToExe.ExtractLastDirName();
+    if (n_stricmp(pathToDir.AsCharPtr(), "win32") == 0)
+    {
+        // normal home:bin/win32 directory structure
+        // strip bin/win32
+        String homePath = pathToExe.ExtractDirName();
+        homePath = homePath.ExtractDirName();
+        homePath = homePath.ExtractDirName();
+        homePath.TrimRight("/");
+        return String("file:///") + homePath;
+    }
+    else
+    {
+        // not in normal home:bin/win32 directory structure, 
+        // use the exe's directory as home path
+        String homePath = pathToExe.ExtractDirName();
+        return String("file:///") + homePath;
+    }            
+#else
+    Util::String root = System::NebulaSettings::ReadString("gscept", "ToolkitShared", "workdir");
+    if (root.IsEmpty())
+    {
+        String homePath = pathToExe.ExtractDirName();
+        return String("file:///") + homePath;
+    }
+    else
+    {
+        return String("file:///") + root;
+    }
+#endif
 }
 
 //------------------------------------------------------------------------------
