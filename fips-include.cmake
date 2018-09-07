@@ -111,8 +111,7 @@ macro(add_frameshader)
     if(SHADERC)
     foreach(frm ${ARGN})        
             get_filename_component(basename ${frm} NAME)                   
-            set(output ${EXPORT_DIR}/frame/${basename})      
-MESSAGE(WARNING ${output})            
+            set(output ${EXPORT_DIR}/frame/${basename})                              
             add_custom_command(OUTPUT ${output}
                 COMMAND ${SHADERC} -i ${frm} -o ${EXPORT_DIR} -t frame
                 MAIN_DEPENDENCY ${frm}

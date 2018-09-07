@@ -18,7 +18,7 @@ using namespace IO;
 */
 CoreServer::CoreServer() :
     companyName("gscept"),
-    appName("NebulaT"),
+    appName("Nebula"),
     rootDirectory("home:"),
     isOpen(false)
 {
@@ -26,8 +26,7 @@ CoreServer::CoreServer() :
 }
 
 //------------------------------------------------------------------------------
-/**
-*/
+/***/
 CoreServer::~CoreServer()
 {
     if (this->IsOpen())
