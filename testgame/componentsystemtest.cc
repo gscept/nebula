@@ -36,7 +36,6 @@ ComponentSystemTest::Run()
 	entities.Append(entity);
 	
 	tComp->RegisterEntity(entity);
-	tComp->Activate(entity);
 	for (SizeT i = 0; i < 32768; i++)
 	{
 		if (i % 5 == 0)
@@ -62,15 +61,6 @@ ComponentSystemTest::Run()
 		tComp->RegisterEntity(entity);
 
 		this->gameApp->StepFrame();
-
-		if (i % 2 == 0)
-		{
-			tComp->Activate(entity);
-		}
-		else if (i % 4 == 0)
-		{
-			tComp->Deactivate(entity);
-		}
 	}
 
 	for (SizeT i = 0; i < entities.Size(); i++)

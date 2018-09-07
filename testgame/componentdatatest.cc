@@ -40,9 +40,9 @@ CompDataTest::Run()
 
 		Entity entity;
 		uint32_t instance;
-
+		const uint32_t n = 10000;
 		// First iteration register
-		for (size_t i = 0; i < 10000; i++)
+		for (size_t i = 0; i < n; i++)
 		{
 			entity = manager->NewEntity();
 			entities.Append(entity);
@@ -54,13 +54,13 @@ CompDataTest::Run()
 		}
 
 		// Testing second iteration of entities inserted in old positions
-		for (size_t i = 0; i < 5000; i++)
+		for (size_t i = 0; i < n; i++)
 		{
 			component.DeregisterEntity(entities[i]);
 		}
 
 		// Second iteration register
-		for (size_t i = 0; i < 5000; i++)
+		for (size_t i = 0; i < n / 2; i++)
 		{
 			component.RegisterEntity(entities[i]);
 			instance = component.GetInstance(entities[i]);
@@ -70,13 +70,13 @@ CompDataTest::Run()
 		}
 
 		// Third iteration unregister
-		for (size_t i = 0; i < 5000; i++)
+		for (size_t i = 0; i < n / 2; i++)
 		{
 			component.DeregisterEntity(entities[i]);
 		}
 
 		// Third iteration register
-		for (size_t i = 0; i < 5000; i++)
+		for (size_t i = 0; i < n / 2; i++)
 		{
 			entity = manager->NewEntity();
 			entities.Append(entity);
@@ -99,7 +99,7 @@ CompDataTest::Run()
 
 		// optimization of dataset
 		int i = 0;
-		while (i < 10000)
+		while (i < 4)
 		{
 			component.Optimize();
 			i++;
@@ -222,6 +222,7 @@ CompDataTest::Run()
 			component.Optimize();
 			i++;
 		}
+
 
 		// Deregistering immediate on all entities
 		for (size_t i = 0; i < entities.Size(); i++)
