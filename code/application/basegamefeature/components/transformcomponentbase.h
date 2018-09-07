@@ -59,12 +59,6 @@ public:
 	/// Checks whether the entity is registered. Checks both inactive and active datasets.
 	bool IsRegistered(const Entity& entity) const;
 
-	/// Activate entity component instance.
-	void Activate(const Entity& entity);
-
-	/// Deactivate entity component instance. Instance state will remain after reactivation but not after deregistering.
-	void Deactivate(const Entity& entity);
-
 	/// Returns the index of the data array to the component instance
 	/// Note that this only checks the active dataset
 	uint32_t GetInstance(const Entity& entity) const;
@@ -92,9 +86,6 @@ protected:
 private:
 	/// Holds all active entities data
 	ComponentData<TransformAttributes> data;
-
-	/// Holds all inactive component instances.
-	ComponentData<TransformAttributes> inactiveData;
 };
 
 } // namespace Game

@@ -83,14 +83,15 @@ public:
 
 	/// Returns an array with all attribute ids for this component
 	const Util::FixedArray<Attr::AttrId>& GetAttributeIds() const;
-
-	/// Call this to activate an entitys component instance
-	virtual void Activate(const Entity& entity);
-
-	/// Call this to deactivate an entitys component instance
-	virtual void Deactivate(const Entity& entity);
-
+	
 	// Methods for custom implementations
+	/// Returns all attributes that are of Entity type.
+	/// Extremely slow and should never be called during gameplay.
+	//virtual Util::Array<Util::Array<Entity>*> GetEntityAttributes();
+
+	/// Called when relationships needs to be reconstructed
+	/// parentIndices point into the entities array
+	virtual void SetParents(const uint32_t& start, const uint32_t& end, const Util::Array<Entity>& entities, const Util::Array<uint32_t>& parentIndices);
 
 	/// Called upon activation of component instance
 	virtual void OnActivate(const uint32_t& instance);
