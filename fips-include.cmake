@@ -102,11 +102,48 @@ macro(add_shaders)
                 VERBATIM
                 )        
             fips_files(${shd})
-            SOURCE_GROUP("shaders" FILES ${shd})        
+            SOURCE_GROUP("res\\shaders" FILES ${shd})        
         endforeach()             
     endif()
 endmacro()
     
+macro(add_frameshader)
+    if(SHADERC)
+    foreach(frm ${ARGN})        
+            get_filename_component(basename ${frm} NAME)                   
+            set(output ${EXPORT_DIR}/frame/${basename})      
+MESSAGE(WARNING ${output})            
+            add_custom_command(OUTPUT ${output}
+                COMMAND ${SHADERC} -i ${frm} -o ${EXPORT_DIR} -t frame
+                MAIN_DEPENDENCY ${frm}
+                WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
+                COMMENT "Compiling frame shader ${frm}"
+                VERBATIM
+                )        
+            fips_files(${frm})
+            SOURCE_GROUP("res\\frameshaders" FILES ${frm})
+        endforeach()             
+    endif()
+endmacro()
+
+macro(add_material)
+    if(SHADERC)
+    foreach(mat ${ARGN})        
+            get_filename_component(basename ${mat} NAME)                   
+            set(output ${EXPORT_DIR}/materials/${basename})
+            add_custom_command(OUTPUT ${output}
+                COMMAND ${SHADERC} -i ${mat} -o ${EXPORT_DIR} -t material
+                MAIN_DEPENDENCY ${mat}
+                WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
+                COMMENT "Compiling frame shader ${mat}"
+                VERBATIM
+                )        
+            fips_files(${mat})
+            SOURCE_GROUP("res\\materials" FILES ${mat})
+        endforeach()             
+    endif()
+endmacro()
+
 macro(add_nebula_shaders)                
     if(NOT SHADERC)
         MESSAGE(WARNING "Not compiling shaders, ShaderC not found, did you compile nebula-toolkit?")
@@ -117,12 +154,23 @@ macro(add_nebula_shaders)
         endif()
         
         file(GLOB_RECURSE FXH "${NROOT}/work/shaders/vk/*.fxh")        
-        SOURCE_GROUP("shaders\\headers" FILES ${FXH})
+        SOURCE_GROUP("res\\shaders\\headers" FILES ${FXH})
         fips_files(${FXH})
         file(GLOB_RECURSE FX "${NROOT}/work/shaders/vk/*.fx")    
         foreach(shd ${FX})        
             add_shaders(${shd})
         endforeach()        
+        
+        file(GLOB_RECURSE FRM "${NROOT}/work/frame/win32/*.json")    
+        foreach(shd ${FRM})        
+            add_frameshader(${shd})
+        endforeach()        
+        
+         file(GLOB_RECURSE MAT "${NROOT}/work/materials/*.xml")    
+        foreach(shd ${MAT})        
+            add_material(${shd})
+        endforeach()        
+        
     endif()
 endmacro()
     
