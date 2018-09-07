@@ -60,7 +60,7 @@ VkShaderServer::Open()
 	this->textureCubePool.Resize(MAX_CUBE_TEXTURES);
 
 	// create shader state for textures, and fetch variables
-	ShaderId shader = VkShaderServer::Instance()->GetShader("shd:shared"_atm);
+	ShaderId shader = VkShaderServer::Instance()->GetShader("shd:shared.fxb"_atm);
 
 	this->textureShaderState = CoreGraphics::shaderPool->CreateState(shader, { NEBULAT_TICK_GROUP }, false);
 	this->texture2DTextureVar = CoreGraphics::shaderPool->ShaderStateGetConstant(this->textureShaderState, "Textures2D");
