@@ -40,8 +40,8 @@ BloomAlgorithm::Setup()
 	n_assert(this->readWriteTextures.Size() == 1);
 
 	// setup shaders
-	this->brightPassShader = ShaderGet("shd:brightpass");
-	this->blurShader = ShaderGet("shd:blur_2d_rgb16f_cs");
+	this->brightPassShader = ShaderGet("shd:brightpass.fxb");
+	this->blurShader = ShaderGet("shd:blur_2d_rgb16f_cs.fxb");
 	this->brightPass = ShaderCreateState(this->brightPassShader, { NEBULAT_BATCH_GROUP }, false);
 	this->blur = ShaderCreateState(this->blurShader, { NEBULAT_BATCH_GROUP }, false);
 

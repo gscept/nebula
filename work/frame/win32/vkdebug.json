@@ -141,7 +141,7 @@ framescript:
 				name: 			"GatherPostEffect",
 				shaderState:
 				{
-					shader: 	"shd:copy",
+					shader: 	"copy",
 					variables:
 					[
 						{ semantic: "CopyBuffer", 	value: "tex:Buildings/Castle_Gate_diffuse.dds" },
