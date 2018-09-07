@@ -181,19 +181,11 @@ BaseComponent::GetAttributeIds() const
 /**
 */
 void
-BaseComponent::Activate(const Entity & entity)
+BaseComponent::SetParents(const uint32_t& start, const uint32_t& end, const Util::Array<Entity>& entities, const Util::Array<uint32_t>& parentIndices)
 {
-	// Override this.
+	// Override in subclass if neccessary.
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-void
-BaseComponent::Deactivate(const Entity & entity)
-{
-	// Override this.
-}
 
 //------------------------------------------------------------------------------
 /**
