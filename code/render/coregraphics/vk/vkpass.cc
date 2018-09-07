@@ -77,7 +77,7 @@ CreatePass(const PassCreateInfo& info)
 	VkRenderPassBeginInfo& beginInfo = passAllocator.Get<2>(id);
 	Util::Array<uint32_t>& subpassAttachmentCounts = passAllocator.Get<3>(id);
 
-	ShaderId sid = ShaderServer::Instance()->GetShader("shd:shared"_atm);
+	ShaderId sid = ShaderServer::Instance()->GetShader("shd:shared.fxb"_atm);
 
 	loadInfo.colorAttachments = info.colorAttachments;
 	loadInfo.colorAttachmentClears = info.colorAttachmentClears;

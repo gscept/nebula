@@ -93,7 +93,7 @@ macro(add_shaders)
         foreach(shd ${ARGN})        
             get_filename_component(basename ${shd} NAME_WE)        
             get_filename_component(foldername ${shd} DIRECTORY)        
-            set(output ${EXPORT_DIR}/shaders/${basename})           
+            set(output ${EXPORT_DIR}/shaders/${basename}.fxb)           
             add_custom_command(OUTPUT ${output}
                 COMMAND ${SHADERC} -i ${shd} -I ${NROOT}/work/shaders -I ${foldername} -o ${EXPORT_DIR} -t shader ${shader_debug}
                 MAIN_DEPENDENCY ${shd}
