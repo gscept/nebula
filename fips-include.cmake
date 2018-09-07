@@ -82,3 +82,47 @@ endif()
 
 option(N_BUILD_NVTT "use NVTT" OFF)
 
+option(N_NEBULA_DEBUG_SHADERS "Compile shaders with debug flag" OFF)
+
+macro(add_shaders)    
+    if(SHADERC)           
+        if(N_NEBULA_DEBUG_SHADERS)
+            #set(shader_debug "-debug")
+        endif()               
+        
+        foreach(shd ${ARGN})        
+            get_filename_component(basename ${shd} NAME_WE)        
+            get_filename_component(foldername ${shd} DIRECTORY)        
+            set(output ${EXPORT_DIR}/shaders/${basename})           
+            add_custom_command(OUTPUT ${output}
+                COMMAND ${SHADERC} -i ${shd} -I ${NROOT}/work/shaders -I ${foldername} -o ${EXPORT_DIR} -t shader ${shader_debug}
+                MAIN_DEPENDENCY ${shd}
+                WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
+                COMMENT "Compiling shader ${shd}"
+                VERBATIM
+                )        
+            fips_files(${shd})
+            SOURCE_GROUP("shaders" FILES ${shd})        
+        endforeach()             
+    endif()
+endmacro()
+    
+macro(add_nebula_shaders)                
+    if(NOT SHADERC)
+        MESSAGE(WARNING "Not compiling shaders, ShaderC not found, did you compile nebula-toolkit?")
+    else()    
+        if(FIPS_WINDOWS)
+            get_filename_component(workdir "[HKEY_CURRENT_USER\\SOFTWARE\\gscept\\ToolkitShared;workdir]" ABSOLUTE)
+            set(EXPORT_DIR "${workdir}/export_win32")
+        endif()
+        
+        file(GLOB_RECURSE FXH "${NROOT}/work/shaders/vk/*.fxh")        
+        SOURCE_GROUP("shaders\\headers" FILES ${FXH})
+        fips_files(${FXH})
+        file(GLOB_RECURSE FX "${NROOT}/work/shaders/vk/*.fx")    
+        foreach(shd ${FX})        
+            add_shaders(${shd})
+        endforeach()        
+    endif()
+endmacro()
+    
