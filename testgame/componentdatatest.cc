@@ -51,10 +51,6 @@ CompDataTest::Run()
 			component.data.Get<1>(instance).name = "First iteration of entities";
 			component.data.Get<1>(instance).mass = i;
 			component.data.Get<1>(instance).pos = Math::float4(i * 4, i * 4 + 1, i * 4 + 2, i * 4 + 3);
-			if (i % 2 == 0)
-			{
-				component.Activate(instance);
-			}
 		}
 
 		// Testing second iteration of entities inserted in old positions
@@ -71,10 +67,6 @@ CompDataTest::Run()
 			component.data.Get<1>(instance).name = "Second iteration. Same entities.";
 			component.data.Get<1>(instance).mass = i * 100;
 			component.data.Get<1>(instance).pos = Math::float4(i * 400, i * 400 + 1, i * 400 + 2, i * 400 + 3);
-			if (i % 2 == 0)
-			{
-				component.Activate(instance);
-			}
 		}
 
 		// Third iteration unregister
@@ -93,10 +85,6 @@ CompDataTest::Run()
 			component.data.Get<1>(instance).name = "Third iteration with new entities.";
 			component.data.Get<1>(instance).mass = i * 200;
 			component.data.Get<1>(instance).pos = Math::float4(i * 800, i * 800 + 1, i * 800 + 2, i * 800 + 3);
-			if (i % 2 == 0)
-			{
-				component.Activate(instance);
-			}
 		}
 
 		// Testing optimization
