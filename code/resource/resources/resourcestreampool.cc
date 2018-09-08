@@ -184,6 +184,7 @@ ResourceStreamPool::PrepareLoad(_PendingResourceLoad& res)
 				this->RunCallbacks(Failed, res.id);
 				this->asyncSection.Leave();
 				this->states[res.id.poolId] = Resource::Failed;
+				n_printf("Failed to load resource %s\n", this->names[res.id.poolId].Value());
 			}
 
 			// mark that we are done with this resource so it may be cleared later
@@ -212,6 +213,7 @@ ResourceStreamPool::PrepareLoad(_PendingResourceLoad& res)
 		else
 		{
 			ret = Failed;
+			n_printf("Failed to load resource %s\n", this->names[res.id.poolId].Value());
 		}
 
 		// mark that we are done with this resource so it may be cleared later

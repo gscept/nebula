@@ -46,6 +46,7 @@ fips_begin_module(foundation)
 			memorypool.h
 			poolarrayallocator.cc
 			poolarrayallocator.h
+			ringallocator.h
 			win360/win360memorypool.h
 			debug/memorypagehandler.cc
 			debug/memorypagehandler.h
