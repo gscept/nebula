@@ -59,4 +59,16 @@ TransformComponent::SetLocalTransform(const uint32_t& i, const Math::matrix44& v
 	}
 }
 
+void TransformComponent::SetParents(const uint32_t & start, const uint32_t & end, const Util::Array<Entity>& entities, const Util::Array<uint32_t>& parentIndices)
+{
+	SizeT i = 0;
+	for (SizeT instance = start; instance < end; instance++)
+	{
+		this->Parent(i) = this->GetInstance(entities[parentIndices[i]]);
+		// TODO: Fix this... Needs to recalculate relationships and transforms.
+		i++;
+	}
+}
+
+
 } // namespace Game

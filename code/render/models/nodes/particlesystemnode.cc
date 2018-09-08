@@ -68,7 +68,7 @@ ParticleSystemNode::OnFinishedLoading()
     this->boundingBox.set(box.center(), Math::point(activityDist, activityDist, activityDist));
 	box.extend(this->boundingBox);
 
-	this->shader = CoreGraphics::ShaderServer::Instance()->GetShader("shd:particle");
+	this->shader = CoreGraphics::ShaderServer::Instance()->GetShader("shd:particle.fxb");
 }
 
 //------------------------------------------------------------------------------

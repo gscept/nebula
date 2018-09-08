@@ -56,7 +56,7 @@ TonemapAlgorithm::Setup()
 	this->copy = CreateRenderTexture(rtinfo);
 
 	// create shader
-	this->shader = ShaderGet("shd:averagelum");
+	this->shader = ShaderGet("shd:averagelum.fxb");
 	this->tonemapShader = ShaderCreateState(this->shader, { NEBULAT_BATCH_GROUP }, false);
 	this->timevar = ShaderStateGetConstant(this->tonemapShader, "TimeDiff");
 	this->colorvar = ShaderStateGetConstant(this->tonemapShader, "ColorSource");

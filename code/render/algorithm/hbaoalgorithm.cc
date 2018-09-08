@@ -81,8 +81,8 @@ HBAOAlgorithm::Setup()
 	this->barriers[2] = CreateBarrier(binfo);
 
 	// setup shaders
-	this->hbaoShader = ShaderGet("shd:hbao_cs");
-	this->blurShader = ShaderGet("shd:hbaoblur_cs");
+	this->hbaoShader = ShaderGet("shd:hbao_cs.fxb");
+	this->blurShader = ShaderGet("shd:hbaoblur_cs.fxb");
 	this->hbao = ShaderCreateState(this->hbaoShader, { NEBULAT_BATCH_GROUP }, false);
 	this->blur = ShaderCreateState(this->blurShader, { NEBULAT_BATCH_GROUP }, false);
 

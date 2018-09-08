@@ -28,6 +28,9 @@ def run_shaderc(input_file, args) :
     subprocess.call(cmd)
 
 #-------------------------------------------------------------------------------
-def generate(input, out_src, out_hdr, args) :
+def generate(input, out_src, out_hdr, args) :    
     shaderc_path = input
-    run_shaderc(shaderc_path, args)
+    if not os.path.isfile(shaderc_path) :
+        genutil.fmtWarning("Can't find shaderbatcher, ignoring shaders")
+    else :
+        run_shaderc(shaderc_path, args)

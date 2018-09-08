@@ -41,7 +41,7 @@ TransformComponentBase::~TransformComponentBase()
 void
 TransformComponentBase::RegisterEntity(const Entity& entity)
 {
-	this->inactiveData.RegisterEntity(entity);
+	this->data.RegisterEntity(entity);
 }
 
 //------------------------------------------------------------------------------
@@ -56,13 +56,6 @@ TransformComponentBase::DeregisterEntity(const Entity& entity)
 		this->data.DeregisterEntity(entity);
 		return;
 	}
-
-	index = this->inactiveData.GetInstance(entity);
-	if (index != InvalidIndex)
-	{
-		this->inactiveData.DeregisterEntityImmediate(entity, index);
-		return;
-	}
 }
 
 //------------------------------------------------------------------------------
@@ -72,7 +65,6 @@ void
 TransformComponentBase::DeregisterAll()
 {
 	this->data.DeregisterAll();
-	this->inactiveData.DeregisterAll();
 }
 
 //------------------------------------------------------------------------------
@@ -82,7 +74,6 @@ void
 TransformComponentBase::DeregisterAllDead()
 {
 	this->data.DeregisterAllInactive();
-	this->inactiveData.DeregisterAllInactive();
 }
 
 //------------------------------------------------------------------------------
@@ -92,7 +83,6 @@ void
 TransformComponentBase::CleanData()
 {
 	this->data.Clean();
-	this->inactiveData.Clean();
 }
 
 //------------------------------------------------------------------------------
@@ -102,7 +92,6 @@ void
 TransformComponentBase::DestroyAll()
 {
 	this->data.DestroyAll();
-	this->inactiveData.DestroyAll();
 }
 
 //------------------------------------------------------------------------------
@@ -111,52 +100,7 @@ TransformComponentBase::DestroyAll()
 bool
 TransformComponentBase::IsRegistered(const Entity& entity) const
 {
-	return this->data.GetInstance(entity) != InvalidIndex || this->inactiveData.GetInstance(entity) != InvalidIndex;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-TransformComponentBase::Activate(const Entity& entity)
-{
-	n_assert2(this->IsRegistered(entity), "Cannot activate component for an entity that is not registered!");
-
-	if (this->data.GetInstance(entity) != InvalidIndex || !EntityManager::Instance()->IsAlive(entity)) return;
-
-	auto inactiveInstance = this->inactiveData.GetInstance(entity);
-
-	if (inactiveInstance != InvalidIndex)
-	{
-		uint32_t newInstance = this->data.RegisterEntity(entity);
-		this->data.SetInstanceData(newInstance, this->inactiveData.data.Get<1>(inactiveInstance));
-
-		// NOTE: If this would be registered to OnActivate event, we would call OnActivate(newInstance) here.
-
-		this->inactiveData.DeregisterEntityImmediate(entity, inactiveInstance);
-	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-TransformComponentBase::Deactivate(const Entity& entity)
-{
-	n_assert2(this->IsRegistered(entity), "Cannot Deactivate component for an entity that is not even registered!");
-
-	if (!this->data.GetInstance(entity) || !EntityManager::Instance()->IsAlive(entity)) return;
-
-	auto instance = this->data.GetInstance(entity);
-
-	if (instance != InvalidIndex)
-	{
-		// NOTE: If this would be registered to OnDeactivate event, we would call OnDeactivate(instance) here.
-
-		uint32_t inactiveInstance = this->inactiveData.RegisterEntity(entity);
-		this->inactiveData.SetInstanceData(inactiveInstance, this->data.data.Get<1>(instance));
-		this->data.DeregisterEntityImmediate(entity, instance);
-	}
+	return this->data.GetInstance(entity) != InvalidIndex;
 }
 
 //------------------------------------------------------------------------------
