@@ -5,11 +5,6 @@
 #include "stdneb.h"
 #include "entity.h"
 
-namespace Attr
-{
-	DefineEntity(Owner, 'OWNR', Attr::ReadOnly);
-}
-
 namespace Base
 {
 

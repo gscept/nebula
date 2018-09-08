@@ -13,6 +13,7 @@
 #include "util/bitfield.h"
 #include "game/attr/attrid.h"
 #include "game/attr/attributedefinition.h"
+#include "game/entityattr.h"
 
 namespace Game
 {

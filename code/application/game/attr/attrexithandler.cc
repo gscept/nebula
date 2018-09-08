@@ -16,8 +16,7 @@ namespace Attr
 void
 AttrExitHandler::OnExit() const
 {
-    // cleanup dynamic attributes
-    AttributeDefinitionBase::ClearDynamicAttributes();
+    // do nothing for now.
 }
 
 } // namespace Attr
