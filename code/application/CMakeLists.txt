@@ -3,7 +3,7 @@
 #-------------------------------------------------------------------------------
 
 fips_begin_module(application)
-	fips_include_directories(. ${CODE_ROOT}/foundation)
+	fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/foundation)	
 	fips_deps(foundation)
 	fips_dir(.)
 		fips_files(
@@ -14,6 +14,8 @@ fips_begin_module(application)
 		fips_files(
 			entity.h
 			entity.cc
+			entityattr.h
+			entityattr.cc
 			featureunit.h
 			featureunit.cc
 			gameserver.h
@@ -40,15 +42,6 @@ fips_begin_module(application)
 			attributedefinitionbase.cc
 			attrid.h
 			attrid.cc
-			blobattrid.h
-			boolattrid.h
-			float4attrid.h
-			floatattrid.h
-			guidattrid.h
-			intattrid.h
-			matrix44attrid.h
-			stringattrid.h
-			transform44attrid.h
 			valuetype.h
 		)
 	fips_dir(basegamefeature)
