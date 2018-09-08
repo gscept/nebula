@@ -149,7 +149,7 @@ MaterialServer::LoadMaterialTypes(const IO::URI& file)
 
 				//get shader
 				Util::String shaderName = reader->GetString("shader");
-				Resources::ResourceName shaderResId = Resources::ResourceName("shd:" + shaderName);
+				Resources::ResourceName shaderResId = Resources::ResourceName("shd:" + shaderName + ".fxb");
 				CoreGraphics::ShaderId shd = CoreGraphics::ShaderServer::Instance()->GetShader(shaderResId);
 				CoreGraphics::ShaderFeature::Mask mask = CoreGraphics::ShaderServer::Instance()->FeatureStringToMask(shaderFeatures);
 				CoreGraphics::ShaderProgramId program = CoreGraphics::ShaderGetProgram(shd, mask);

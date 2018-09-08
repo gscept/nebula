@@ -53,6 +53,7 @@ ShaderServerBase::Open()
     n_assert(!this->isOpen);
     n_assert(this->shaders.IsEmpty());
 
+#ifdef USE_SHADER_DICTIONARY
     // open the shaders dictionary file
     Ptr<Stream> stream = IoServer::Instance()->CreateStream("shd:shaders.dic");
     Ptr<TextReader> textReader = TextReader::Create();
@@ -77,11 +78,21 @@ ShaderServerBase::Open()
     {
         n_error("ShaderServerBase: Failed to open shader dictionary!\n");
     }
+#else
+    Util::Array<Util::String> files = IoServer::Instance()->ListFiles("shd:", "*.fxb");
+    for (IndexT i = 0; i < files.Size(); i++)
+    {
+        ResourceName resId = "shd:" + files[i];
+        
+        // load shader
+        this->LoadShader(resId);
+    }
+#endif
 
     // create standard shader for access to shared variables
-    if (this->shaders.Contains(ResourceName("shd:shared")))
+    if (this->shaders.Contains(ResourceName("shd:shared.fxb")))
     {
-		this->sharedVariableShader = this->GetShader("shd:shared");
+		this->sharedVariableShader = this->GetShader("shd:shared.fxb");
 		n_assert(this->sharedVariableShader != ShaderId::Invalid());
 		this->sharedVariableShaderState = CoreGraphics::shaderPool->CreateState(this->sharedVariableShader, { NEBULAT_FRAME_GROUP, NEBULAT_TICK_GROUP, NEBULAT_DYNAMIC_OFFSET_GROUP }, false);
         n_assert(this->sharedVariableShaderState != ShaderStateId::Invalid());

@@ -333,6 +333,7 @@ fips_begin_module(foundation)
 			byteorder.h
 			cpu.h
 			systeminfo.h
+			nebulasettings.h
 			base/systeminfobase.cc
 			base/systeminfobase.h
 		)

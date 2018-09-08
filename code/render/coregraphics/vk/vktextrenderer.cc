@@ -120,8 +120,8 @@ VkTextRenderer::Open()
 	this->glyphTexture = CreateTexture(texInfo);
 
 	// create shader instance
-	const ShaderId shd = ShaderServer::Instance()->GetShader("shd:text");
-	this->shader = ShaderServer::Instance()->ShaderCreateState("shd:text", { NEBULAT_BATCH_GROUP }, false);
+	const ShaderId shd = ShaderServer::Instance()->GetShader("shd:text.fxb");
+	this->shader = ShaderServer::Instance()->ShaderCreateState("shd:text.fxb", { NEBULAT_BATCH_GROUP }, false);
 	this->program = ShaderGetProgram(shd, ShaderServer::Instance()->FeatureStringToMask("Static"));
 
 	// get variable

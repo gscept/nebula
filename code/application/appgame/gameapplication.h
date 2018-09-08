@@ -19,7 +19,6 @@
 #include "debug/debuginterface.h"
 #include "io/ioserver.h"
 #include "io/iointerface.h"
-#include "jobs/jobsystem.h"   
 #include "io/gamecontentserver.h"
 
 //------------------------------------------------------------------------------
@@ -51,8 +50,7 @@ protected:
     /// setup app from cmd lines
     virtual void SetupAppFromCmdLineArgs();
 
-    Ptr<Core::CoreServer> coreServer;
-    Ptr<Jobs::JobSystem> jobSystem;
+    Ptr<Core::CoreServer> coreServer;   
     Ptr<IO::GameContentServer> gameContentServer;
     Ptr<IO::IoServer> ioServer;
     Ptr<IO::IoInterface> ioInterface;  

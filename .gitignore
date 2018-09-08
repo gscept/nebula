@@ -6,3 +6,4 @@ CMakeLists.txt.user*
 .vscode
 
 fips-generators/*.pyc
+export_win32/*

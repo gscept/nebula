@@ -58,7 +58,7 @@ VkShapeRenderer::Open()
 	ShapeRendererBase::Open();
 
 	// create shape shader instance
-	this->shapeShader = ShaderServer::Instance()->GetShader("shd:simple"_atm);
+	this->shapeShader = ShaderServer::Instance()->GetShader("shd:simple.fxb"_atm);
 	this->shapeShaderState = ShaderCreateState(this->shapeShader, { NEBULAT_BATCH_GROUP }, false);
 	this->shapeMeshResources.SetSize(CoreGraphics::RenderShape::NumShapeTypes);
 	this->shapeMeshes.SetSize(CoreGraphics::RenderShape::NumShapeTypes);
