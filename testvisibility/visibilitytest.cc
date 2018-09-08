@@ -4,7 +4,6 @@
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "core/refcounted.h"
-#include "memory/sliceallocatorpool.h"
 #include "timing/timer.h"
 #include "io/console.h"
 #include "visibilitytest.h"
@@ -133,13 +132,14 @@ VisibilityTest::Run()
 		resMgr->Update(frameIndex);
 		gfxServer->OnFrame();
 
+		timer.Stop();
+		n_printf("Frame took %f ms\n", timer.GetTime() * 1000);
 		// force wait immediately
 		//ObserverContext::WaitForVisibility();
 		WindowPresent(wnd, frameIndex);
 		if (inputServer->GetDefaultKeyboard()->KeyPressed(Input::Key::Escape)) run = false;
 		frameIndex++;
-		timer.Stop();
-		n_printf("Frame took %f ms\n", timer.GetTime()*1000);
+		
 	}
 
 	DestroyWindow(wnd);
