@@ -162,10 +162,28 @@ BaseComponent::GetAttributeValue(uint32_t instance, Attr::AttrId attributeId) co
 //------------------------------------------------------------------------------
 /**
 */
+void
+BaseComponent::SetAttributeValue(uint32_t instance, IndexT attributeIndex, Util::Variant value)
+{
+	// Override in subclass if needed
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+BaseComponent::SetAttributeValue(uint32_t instance, Attr::AttrId attributeId, Util::Variant value)
+{
+	// Override in subclass if needed
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 const Attr::AttrId&
 BaseComponent::GetAttributeId(IndexT index) const
 {
-	return this->attributes[index];
+	return this->attributeIds[index];
 }
 
 //------------------------------------------------------------------------------
@@ -174,7 +192,7 @@ BaseComponent::GetAttributeId(IndexT index) const
 const Util::FixedArray<Attr::AttrId>&
 BaseComponent::GetAttributeIds() const
 {
-	return this->attributes;
+	return this->attributeIds;
 }
 
 //------------------------------------------------------------------------------

@@ -71,7 +71,7 @@ public:
 	Util::Variant GetAttributeValue(uint32_t instance, IndexT attributeIndex) const;
 	/// Returns an attribute value as a variant from attribute id.
 	Util::Variant GetAttributeValue(uint32_t instance, Attr::AttrId attributeId) const;
-
+	
 protected:
 	/// Read/write access to attributes.
 	Math::matrix44& LocalTransform(const uint32_t& instance);
