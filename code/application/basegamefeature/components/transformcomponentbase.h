@@ -12,8 +12,6 @@
 #include "math/float4.h"
 #include "math/scalar.h"
 #include "game/component/basecomponent.h"
-#include "game/entity.h"
-#include "game/attr/attributedefinitionbase.h"
 #include "attributes/transformattr.h"
 #include "util/dictionary.h"
 #include "game/component/componentdata.h"

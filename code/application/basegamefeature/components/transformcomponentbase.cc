@@ -4,6 +4,7 @@
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "transformcomponentbase.h"
+#include "game/entityattr.h"
 
 __ImplementClass(Game::TransformComponentBase, 'TrCo', Game::BaseComponent)
 
