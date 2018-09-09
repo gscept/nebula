@@ -79,6 +79,12 @@ public:
 	/// Returns an attribute value as a variant from attribute id. Needs to be overloaded in subclass.
 	virtual Util::Variant GetAttributeValue(uint32_t instance, Attr::AttrId attributeId) const;
 	
+	/// Set an attribute value from index
+	virtual void SetAttributeValue(uint32_t instance, IndexT attributeIndex, Util::Variant value);
+
+	/// Set an attribute value from attribute id
+	virtual void SetAttributeValue(uint32_t instance, Attr::AttrId attributeId, Util::Variant value);
+
 	/// Returns attribute id at index.
 	const Attr::AttrId& GetAttributeId(IndexT index) const;
 
@@ -117,7 +123,7 @@ protected:
 	Util::BitField<ComponentEvent::NumEvents> events;
 
 	/// Holds all attributedefinitions that this components has available.
-	Util::FixedArray<Attr::AttrId> attributes;
+	Util::FixedArray<Attr::AttrId> attributeIds;
 };
 
 } // namespace Game

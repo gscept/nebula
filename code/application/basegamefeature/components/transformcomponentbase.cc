@@ -18,14 +18,14 @@ TransformComponentBase::TransformComponentBase()
 {
 	//this->events.SetBit(ComponentEvent::OnBeginFrame);
 
-	this->attributes.SetSize(7);
-	this->attributes[0] = Attr::Owner;
-	this->attributes[1] = Attr::LocalTransform;
-	this->attributes[2] = Attr::WorldTransform;
-	this->attributes[3] = Attr::Parent;
-	this->attributes[4] = Attr::FirstChild;
-	this->attributes[5] = Attr::NextSibling;
-	this->attributes[6] = Attr::PreviousSibling;
+	this->attributeIds.SetSize(7);
+	this->attributeIds[0] = Attr::Owner;
+	this->attributeIds[1] = Attr::LocalTransform;
+	this->attributeIds[2] = Attr::WorldTransform;
+	this->attributeIds[3] = Attr::Parent;
+	this->attributeIds[4] = Attr::FirstChild;
+	this->attributeIds[5] = Attr::NextSibling;
+	this->attributeIds[6] = Attr::PreviousSibling;
 }
 
 //------------------------------------------------------------------------------
