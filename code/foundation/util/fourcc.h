@@ -49,6 +49,8 @@ public:
     static String ToString(const FourCC& f);
     /// convert string to fourcc
     static FourCC FromString(const String& s);
+	/// return a hashcode (just returns the fourcc)
+	IndexT HashCode() const;
 
 private:
     uint fourCC;
@@ -210,6 +212,15 @@ FourCC::FromString(const String& s)
 #else
 	return FourCC(uint(s[0] | s[1]<<8 | s[2]<<16 | s[3]<<24));
 #endif
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline IndexT
+FourCC::HashCode() const
+{
+	return this->fourCC;
 }
 
 } // namespace Util
