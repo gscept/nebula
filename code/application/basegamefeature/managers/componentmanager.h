@@ -30,14 +30,18 @@ public:
 	/// Register a component and setup all event delegates for it.
 	void RegisterComponent(const Ptr<BaseComponent>& component);
 
-	// TODO: implement this.
-	// void DeregisterComponent(const Ptr<BaseComponent>& component);
+	/// Deregister a component and remove all event delegates associated with it.
+	void DeregisterComponent(const Ptr<BaseComponent>& component);
+
+	/// Retrieve a component from the registry
+	template<class T>
+	const Ptr<T>& GetComponent();
 
 	/// Execute all OnBeginFrame events
 	void OnBeginFrame();
 
 	/// Execute all OnFrame events
-	void OnFrame();
+	void OnRender();
 
 	/// Execute all OnEndFrame events
 	void OnEndFrame();
@@ -46,11 +50,17 @@ public:
 	void OnRenderDebug();
 
 private:
-	Util::Array<Ptr<BaseComponent>> registry;
+	Util::Array<Ptr<BaseComponent>> components;
 
-	/// All arrays containing the delegates for different events
+	Util::HashTable<Util::FourCC, Ptr<BaseComponent>> registry;
+
+	/// Find the index of a delegate based on a component
+	static IndexT FindDelegateIndex(const Util::Array<Util::Delegate<>>& delegateArray, const Ptr<BaseComponent>& component);
+
+	/// All arrays containing the delegates for different events.
+	/// Honestly, I don't remember why I designed it like this anymore.
 	Util::Array<Util::Delegate<>> delegates_OnBeginFrame;
-	Util::Array<Util::Delegate<>> delegates_OnFrame;
+	Util::Array<Util::Delegate<>> delegates_OnRender;
 	Util::Array<Util::Delegate<>> delegates_OnEndFrame;
 	Util::Array<Util::Delegate<>> delegates_OnRenderDebug;
 };
