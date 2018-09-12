@@ -34,6 +34,8 @@ ComponentManager::~ComponentManager()
 void
 ComponentManager::RegisterComponent(const Ptr<BaseComponent>& component)
 {
+	n_assert2(!this->registry.Contains(component->GetRtti()->GetFourCC()), "Component already registered!");
+
 	this->components.InsertSorted(component);
 	this->registry.Add(component->GetRtti()->GetFourCC(), component);
 
