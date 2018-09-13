@@ -154,6 +154,7 @@ struct CreateJobPortInfo
 {
 	Util::StringAtom name;
 	SizeT numThreads;
+	uint affinity;
 	uint priority;
 };
 

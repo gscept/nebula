@@ -44,7 +44,10 @@ public:
 	};
 
 	/// create instance
-	virtual ModelNode::Instance* CreateInstance(Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& alloc, const Models::ModelNode::Instance* parent) const;
+	virtual ModelNode::Instance* CreateInstance(byte* memory, const Models::ModelNode::Instance* parent) const;
+
+	/// get size of instance
+	virtual const SizeT GetInstanceSize() const { return sizeof(Instance); }
 private:
     /// a skin fragment
     class Fragment

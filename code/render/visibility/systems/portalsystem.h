@@ -6,14 +6,14 @@
 	(C) 2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "system.h"
+#include "visibilitysystem.h"
 #include "jobs/jobs.h"
 namespace Visibility
 {
 	
 extern void PortalSystemJobFunc(const Jobs::JobFuncContext& ctx);
 
-class PortalSystem : public System
+class PortalSystem : public VisibilitySystem
 {
 public:
 private:

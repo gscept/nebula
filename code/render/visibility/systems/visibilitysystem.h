@@ -75,7 +75,7 @@ struct BruteforceSystemLoadInfo
 	// empty on purpose
 };
 
-class System
+class VisibilitySystem
 {
 public:
 

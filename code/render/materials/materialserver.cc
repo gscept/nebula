@@ -232,7 +232,7 @@ MaterialServer::LoadMaterialTypes(const IO::URI& file)
 						constant.default.SetMatrix44(reader->GetOptMatrix44("defaultValue", Math::matrix44::identity()));
 						break;
 					default:
-						n_error("Unknown material parameter type %s\n", ptype);
+						n_error("Unknown material parameter type %s\n", ptype.AsCharPtr());
 					}
 
 					type->constants.Add(name, constant);

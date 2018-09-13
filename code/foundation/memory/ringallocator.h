@@ -114,7 +114,7 @@ void RingAllocator<SYNCPOINTS>::Start()
 	for (IndexT i = 0; i < this->events.Size(); i++)
 	{
 		Threading::Event& ev = this->events[i];
-		if (ev.Peek())
+		if (ev.Peek() && this->freeInterval.lower)
 		{
 			// set interval and reset
 			this->freeInterval.upper = this->lockedIntervals[i].upper;

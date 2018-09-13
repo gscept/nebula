@@ -41,7 +41,7 @@ DebugInterface::Open()
     // setup the message handler thread object
     Ptr<RunThroughHandlerThread> handlerThread = RunThroughHandlerThread::Create();
     handlerThread->SetName("DebugInterface Thread");
-    handlerThread->SetCoreId(System::Cpu::MiscThreadCore);
+    handlerThread->SetThreadAffinity(System::Cpu::Core4);
 #if __WII_
     handlerThread->SetPriority(Thread::NormalBoost);
 #endif        
