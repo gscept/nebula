@@ -14,7 +14,8 @@ __ImplementSingleton(EntityManager)
 //------------------------------------------------------------------------------
 /**
 */
-EntityManager::EntityManager()
+EntityManager::EntityManager() :
+	numEntities(0)
 {
 	__ConstructSingleton;
 }
@@ -35,6 +36,7 @@ EntityManager::NewEntity()
 {
 	Entity e;
 	this->pool.Allocate(e.id);
+	this->numEntities++;
 	return e;
 }
 
@@ -57,6 +59,8 @@ EntityManager::DeleteEntity(const Entity & e)
 		}
 		this->deletionCallbacks.Erase(e);
 	}
+
+	this->numEntities--;
 }
 
 //------------------------------------------------------------------------------

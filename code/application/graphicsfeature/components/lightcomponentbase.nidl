@@ -1,0 +1,61 @@
+"namespace": "GraphicsFeature"
+"attributes": {
+    "range": {
+        "type": "float"
+        "fourcc": "LRAD"
+        "access": "R"
+        "default": 10.0
+    }
+    "color": {
+        "type": "float4"
+        "fourcc": "LCLR"
+        "access": "RW"
+        "default": [1.0, 0.88, 0.65, 1.0]
+    }
+    "castShadows": {
+        "type": "bool"
+        "fourcc": "SHDW"
+        "access": "RW"
+        "default": true
+    }
+    "angle": {
+        "type": "float"
+        "fourcc": "LNGL"
+        "access": "RW"
+        "default": 30.0
+    }
+    "direction": {
+        "type": "float4"
+        "fourcc": "LDIR"
+        "access": "RW"
+        "default": [0.0, 0.0, 1.0, 0.0]
+    }
+}
+"components": {
+    "PointLightComponent": {
+        "attributes": [
+            "range"
+            "color"
+            "castShadows"
+        ]
+        "dataLayout": "PACKED_PER_ATTRIBUTE"
+    }
+    "SpotLightComponent": {
+        "attributes": [
+            "range"
+            "angle"
+            "direction"
+            "color"
+            "castShadows"
+        ]
+        "dataLayout": "PACKED_PER_ATTRIBUTE"
+    }
+    "DirectionalLightComponent": {
+        "attributes": [
+            "direction"
+            "color"
+            "castShadows"
+        ]
+        "dataLayout": "PACKED_PER_INSTANCE"
+    }
+}

@@ -17,6 +17,7 @@
 #include "math/bbox.h"
 #include "managers/entitymanager.h"
 #include "managers/componentmanager.h"
+#include "basegamefeature/components/transformcomponent.h"
 
 //------------------------------------------------------------------------------
 namespace BaseGameFeature
@@ -58,6 +59,7 @@ public:
 protected:
     
     Ptr<Game::EntityManager> entityManager;
+	Ptr<Game::TransformComponent> transformComponent;
 	Ptr<Game::ComponentManager> componentManager;
 
     Math::bbox worldBox;

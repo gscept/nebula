@@ -1,19 +1,24 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	Entity
-
-	An entity is essentially just an Id with some utility functions attached.
+	PointLightComponent
 
 	(C) 2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "ids/id.h"
+#include "lightcomponentbase.h"
 
-namespace Game
+namespace GraphicsFeature
 {
-	ID_32_TYPE(Entity)
-} // namespace Game
 
+class PointLightComponent : public PointLightComponentBase
+{
+public:
+	PointLightComponent();
+	~PointLightComponent();
 
+private:
 
+};
+
+} // namespace GraphicsFeature

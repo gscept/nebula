@@ -34,7 +34,11 @@ ComponentManager::~ComponentManager()
 void
 ComponentManager::RegisterComponent(const Ptr<BaseComponent>& component)
 {
-	this->registry.InsertSorted(component);
+	n_assert2(!this->registry.Contains(component->GetRtti()->GetFourCC()), "Component already registered!");
+
+	this->components.InsertSorted(component);
+	this->registry.Add(component->GetRtti()->GetFourCC(), component);
+
 	auto bitField = component->SubscribedEvents();
 	if (bitField.IsSet(ComponentEvent::OnBeginFrame))
 	{
@@ -61,14 +65,95 @@ ComponentManager::RegisterComponent(const Ptr<BaseComponent>& component)
 //------------------------------------------------------------------------------
 /**
 */
-//void
-//ComponentManager::DeregisterComponent(const Ptr<BaseComponent>& component)
-//{
-//	IndexT i = this->registry.FindIndex(component);
-//	this->registry.EraseIndex(i);
-//
-//	
-//}
+void
+ComponentManager::DeregisterComponent(const Ptr<BaseComponent>& component)
+{
+	IndexT i = this->components.FindIndex(component);
+	this->components[i]->DestroyAll();
+	this->registry.Erase(this->components[i]->GetRtti()->GetFourCC());
+	this->components.EraseIndex(i);
+
+	auto bitField = component->SubscribedEvents();
+	if (bitField.IsSet(ComponentEvent::OnBeginFrame))
+	{
+		IndexT i = this->FindDelegateIndex(this->delegates_OnBeginFrame, component);
+		if (i != InvalidIndex) this->delegates_OnBeginFrame.EraseIndex(i);
+	}
+	if (bitField.IsSet(ComponentEvent::OnRender))
+	{
+		IndexT i = this->FindDelegateIndex(this->delegates_OnRender, component);
+		if (i != InvalidIndex) this->delegates_OnRender.EraseIndex(i);
+	}
+	if (bitField.IsSet(ComponentEvent::OnEndFrame))
+	{
+		IndexT i = this->FindDelegateIndex(this->delegates_OnEndFrame, component);
+		if (i != InvalidIndex) this->delegates_OnEndFrame.EraseIndex(i);
+	}
+	if (bitField.IsSet(ComponentEvent::OnRenderDebug))
+	{
+		IndexT i = this->FindDelegateIndex(this->delegates_OnRenderDebug, component);
+		if (i != InvalidIndex) this->delegates_OnRenderDebug.EraseIndex(i);
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ComponentManager::DeregisterAll()
+{
+	this->registry.Clear();
+	// Destroy all component data
+	for (SizeT i = 0; i < this->components.Size(); ++i)
+	{
+		this->components[i]->DestroyAll();
+	}
+	this->components.Clear();
+
+	this->delegates_OnBeginFrame.Clear();
+	this->delegates_OnEndFrame.Clear();
+	this->delegates_OnRender.Clear();
+	this->delegates_OnRenderDebug.Clear();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class T>
+const Ptr<T>& ComponentManager::GetComponent()
+{
+	const Core::Rtti rtti = T::RTTI;
+	n_assert2(this->registry.Contains(rtti.GetFourCC()), "Component not registered to componentmanager!");
+	return this->registry[rtti].cast<T>();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+SizeT
+ComponentManager::GetNumComponents() const
+{
+	return this->components.Size();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Ptr<BaseComponent>&
+ComponentManager::GetComponentAtIndex(IndexT index)
+{
+	return this->components[index];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Ptr<BaseComponent>&
+ComponentManager::ComponentByFourCC(const Util::FourCC & fourcc)
+{
+	n_assert2(this->registry.Contains(fourcc), "Component not registered to componentmanager!");
+	return this->registry[fourcc];
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -78,9 +163,9 @@ ComponentManager::OnBeginFrame()
 {
 	// We need to clean up any erased components, no matter if they're registered to this event.
 	// TODO: Can we do this in a better way?
-	for (SizeT i = 0; i < this->registry.Size(); ++i)
+	for (SizeT i = 0; i < this->components.Size(); ++i)
 	{
-		this->registry[i]->Optimize();
+		this->components[i]->Optimize();
 	}
 
 	// Run all event delegates
@@ -94,11 +179,11 @@ ComponentManager::OnBeginFrame()
 /**
 */
 void
-ComponentManager::OnFrame()
+ComponentManager::OnRender()
 {
-	for (SizeT i = 0; i < this->delegates_OnFrame.Size(); ++i)
+	for (SizeT i = 0; i < this->delegates_OnRender.Size(); ++i)
 	{
-		this->delegates_OnFrame[i]();
+		this->delegates_OnRender[i]();
 	}
 }
 
@@ -124,6 +209,23 @@ ComponentManager::OnRenderDebug()
 	{
 		this->delegates_OnRenderDebug[i]();
 	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+IndexT
+ComponentManager::FindDelegateIndex(const Util::Array<Util::Delegate<>>& delegateArray, const Ptr<BaseComponent>& component)
+{
+	for (SizeT i = 0; i < delegateArray.Size(); i++)
+	{
+		if (delegateArray[i].GetObject<BaseComponent>() == component)
+		{
+			return i;
+		}
+	}
+	return InvalidIndex;
+	
 }
 
 } // namespace Game

@@ -57,8 +57,6 @@ public:
     AccessMode GetAccessMode() const;
     /// get value type
     ValueType GetValueType() const;
-    /// return true if this attribute was dynamically registered
-    bool IsDynamic() const;
     /// return true if the attribute id object is valid
     bool IsValid() const;
 
@@ -286,16 +284,6 @@ AttrId::GetValueType() const
 {
     n_assert(this->IsValid());
     return this->defPtr->GetValueType();
-}
-//------------------------------------------------------------------------------
-/**
-*/
-inline
-bool
-AttrId::IsDynamic() const
-{
-    n_assert(0 != this->defPtr);
-    return this->defPtr->IsDynamic();
 }
 
 //------------------------------------------------------------------------------

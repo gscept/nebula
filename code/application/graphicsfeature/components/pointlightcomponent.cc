@@ -1,11 +1,18 @@
 //------------------------------------------------------------------------------
-//  entity.cc
+//  pointlightcomponent.cc
 //  (C) 2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
-#include "entity.h"
-
-namespace Base
+#include "pointlightcomponent.h"
+namespace GraphicsFeature
 {
 
-} // namespace Base
+PointLightComponent::PointLightComponent()
+{
+}
+
+PointLightComponent::~PointLightComponent()
+{
+}
+
+} // namespace GraphicsFeature
