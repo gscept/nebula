@@ -60,13 +60,26 @@ fips_begin_module(application)
 		fips_files(
 			transformcomponent.h
 			transformcomponent.cc
-			transformcomponentbase.h
-			transformcomponentbase.cc
 		)
-	fips_dir(basegamefeature/components/attributes)
+	
+	fips_dir(basegamefeature/loader)
 		fips_files(
-			transformattr.h
-			transformattr.cc
+			blueprintloader.h
+			blueprintloader.cc
+			entityloaderbase.h
+			entityloaderbase.cc
+			levelloader.h
+			levelloader.cc
+			loaderserver.h
+			loaderserver.cc
+			userprofile.h
+			userprofile.cc
+		)
+	fips_dir(graphicsfeature/components)
+		fips_generate(FROM lightcomponentbase.nidl TYPE NIDL)
+		fips_files(
+			pointlightcomponent.h
+			pointlightcomponent.cc
 		)
 	fips_dir(appgame)
 		fips_files(
