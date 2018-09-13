@@ -5,6 +5,12 @@
 
 	Components derive from this class.
 
+	@todo	Add Allocate virtual function for quickly allocating multiple instances.
+			this->Alloc(numInstances)
+			Also, we need a set data function for quickly setting instance data in a certain span
+			this->SetData(start, end, void*)
+			SetData function should automatically split the void* buffer into each struct of arrays blocks.
+
 	(C) 2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
@@ -92,8 +98,9 @@ public:
 	const Util::FixedArray<Attr::AttrId>& GetAttributeIds() const;
 	
 	// Methods for custom implementations
+
 	/// Returns all attributes that are of Entity type.
-	/// Extremely slow and should never be called during gameplay.
+	/// Just returns a pointer to each of the arrays containing the entity-ids
 	//virtual Util::Array<Util::Array<Entity>*> GetEntityAttributes();
 
 	/// Called when relationships needs to be reconstructed

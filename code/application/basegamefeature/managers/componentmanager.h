@@ -33,9 +33,20 @@ public:
 	/// Deregister a component and remove all event delegates associated with it.
 	void DeregisterComponent(const Ptr<BaseComponent>& component);
 
+	/// Deregister all components. Removes all event delegates too.
+	void DeregisterAll();
+
 	/// Retrieve a component from the registry
 	template<class T>
 	const Ptr<T>& GetComponent();
+
+	/// Returns the number of components registered.
+	SizeT GetNumComponents() const;
+
+	const Ptr<BaseComponent>& GetComponentAtIndex(IndexT index);
+
+	/// Retrieve a component by fourcc.
+	const Ptr<BaseComponent>& ComponentByFourCC(const Util::FourCC& fourcc);
 
 	/// Execute all OnBeginFrame events
 	void OnBeginFrame();

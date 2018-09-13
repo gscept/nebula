@@ -99,12 +99,60 @@ ComponentManager::DeregisterComponent(const Ptr<BaseComponent>& component)
 //------------------------------------------------------------------------------
 /**
 */
+void
+ComponentManager::DeregisterAll()
+{
+	this->registry.Clear();
+	// Destroy all component data
+	for (SizeT i = 0; i < this->components.Size(); ++i)
+	{
+		this->components[i]->DestroyAll();
+	}
+	this->components.Clear();
+
+	this->delegates_OnBeginFrame.Clear();
+	this->delegates_OnEndFrame.Clear();
+	this->delegates_OnRender.Clear();
+	this->delegates_OnRenderDebug.Clear();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 template<class T>
 const Ptr<T>& ComponentManager::GetComponent()
 {
 	const Core::Rtti rtti = T::RTTI;
 	n_assert2(this->registry.Contains(rtti.GetFourCC()), "Component not registered to componentmanager!");
 	return this->registry[rtti].cast<T>();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+SizeT
+ComponentManager::GetNumComponents() const
+{
+	return this->components.Size();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Ptr<BaseComponent>&
+ComponentManager::GetComponentAtIndex(IndexT index)
+{
+	return this->components[index];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Ptr<BaseComponent>&
+ComponentManager::ComponentByFourCC(const Util::FourCC & fourcc)
+{
+	n_assert2(this->registry.Contains(fourcc), "Component not registered to componentmanager!");
+	return this->registry[fourcc];
 }
 
 //------------------------------------------------------------------------------

@@ -213,7 +213,7 @@ class ComponentClassWriter:
         self.f.WriteLine("{")
         self.f.IncreaseIndent()
         self.f.WriteLine("auto instance = this->data.RegisterEntity(entity);")
-
+        # todo: We need to set default values of each attribute.
         if not self.useDelayedRemoval:
             self.f.WriteLine("Game::EntityManager::Instance()->RegisterDeletionCallback(entity, this);")
 
