@@ -3,7 +3,7 @@
 //  (C) 2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
-#include "system.h"
+#include "visibilitysystem.h"
 namespace Visibility
 {
 
@@ -11,7 +11,7 @@ namespace Visibility
 /**
 */
 void
-System::PrepareObservers(const Math::matrix44* transforms, const bool* vis, const SizeT count)
+VisibilitySystem::PrepareObservers(const Math::matrix44* transforms, const bool* vis, const SizeT count)
 {
 	this->obs.transforms = transforms;
 	this->obs.vis = vis;
@@ -22,7 +22,7 @@ System::PrepareObservers(const Math::matrix44* transforms, const bool* vis, cons
 /**
 */
 void
-System::PrepareEntities(const Math::matrix44* transforms, Graphics::GraphicsEntityId* entities, const SizeT count)
+VisibilitySystem::PrepareEntities(const Math::matrix44* transforms, Graphics::GraphicsEntityId* entities, const SizeT count)
 {
 	this->ent.transforms = transforms;
 	this->ent.entities = entities;
@@ -33,7 +33,7 @@ System::PrepareEntities(const Math::matrix44* transforms, Graphics::GraphicsEnti
 /**
 */
 void
-System::Run()
+VisibilitySystem::Run()
 {
 	// do nothing
 }

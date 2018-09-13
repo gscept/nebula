@@ -98,7 +98,7 @@ macro(add_shaders)
                 COMMAND ${SHADERC} -i ${shd} -I ${NROOT}/work/shaders -I ${foldername} -o ${EXPORT_DIR} -t shader ${shader_debug}
                 MAIN_DEPENDENCY ${shd}
                 WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
-                COMMENT "Compiling shader ${shd}"
+                COMMENT ""
                 VERBATIM
                 )        
             fips_files(${shd})
@@ -116,7 +116,7 @@ macro(add_frameshader)
                 COMMAND ${SHADERC} -i ${frm} -o ${EXPORT_DIR} -t frame
                 MAIN_DEPENDENCY ${frm}
                 WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
-                COMMENT "Compiling frame shader ${frm}"
+                COMMENT ""
                 VERBATIM
                 )        
             fips_files(${frm})
@@ -134,7 +134,7 @@ macro(add_material)
                 COMMAND ${SHADERC} -i ${mat} -o ${EXPORT_DIR} -t material
                 MAIN_DEPENDENCY ${mat}
                 WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
-                COMMENT "Compiling frame shader ${mat}"
+                COMMENT ""
                 VERBATIM
                 )        
             fips_files(${mat})

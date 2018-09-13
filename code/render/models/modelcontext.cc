@@ -5,7 +5,6 @@
 #include "render/stdneb.h"
 #include "modelcontext.h"
 #include "resources/resourcemanager.h"
-#include "models/model.h"
 #include "nodes/modelnode.h"
 #include "streammodelpool.h"
 #include "graphics/graphicsserver.h"
@@ -39,7 +38,7 @@ ModelContext::~ModelContext()
 void
 ModelContext::Create()
 {
-	__bundle.OnBeforeFrame = nullptr;// ModelContext::OnBeforeFrame;
+	__bundle.OnBeforeFrame = ModelContext::OnBeforeFrame;
 	__bundle.OnVisibilityReady = ModelContext::OnVisibilityReady;
 	__bundle.OnBeforeView = ModelContext::OnBeforeView;
 	__bundle.OnAfterView = ModelContext::OnAfterView;
@@ -127,10 +126,9 @@ ModelContext::SetTransform(const Graphics::GraphicsEntityId id, const Math::matr
 	const ContextEntityId cid = GetContextId(id);
 	ModelInstanceId& inst = modelContextAllocator.Get<1>(cid.id);
 	Math::matrix44& pending = modelContextAllocator.Get<2>(cid.id);
-	if (inst != ModelInstanceId::Invalid())
-		Models::modelPool->modelInstanceAllocator.Get<2>(inst.instance) = transform;
-	else
-		pending = transform;
+	bool& hasPending = modelContextAllocator.Get<3>(cid.id);
+	pending = transform;
+	hasPending = true;
 }
 
 //------------------------------------------------------------------------------
@@ -141,7 +139,18 @@ ModelContext::GetTransform(const Graphics::GraphicsEntityId id)
 {
 	const ContextEntityId cid = GetContextId(id);
 	ModelInstanceId& inst = modelContextAllocator.Get<1>(cid.id);
-	return Models::modelPool->modelInstanceAllocator.Get<2>(inst.instance);
+	return Models::modelPool->modelInstanceAllocator.Get<1>(inst.instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::Array<Models::ModelNode::Instance*>& 
+ModelContext::GetModelNodeInstances(const Graphics::GraphicsEntityId id)
+{
+	const ContextEntityId cid = GetContextId(id);
+	ModelInstanceId& inst = modelContextAllocator.Get<1>(cid.id);
+	return Models::modelPool->modelInstanceAllocator.Get<0>(inst.instance);
 }
 
 //------------------------------------------------------------------------------
@@ -152,40 +161,52 @@ void
 ModelContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime)
 {
 	const Util::Array<ModelInstanceId>& instances = modelContextAllocator.GetArray<1>();
-	const Util::Array<Math::matrix44>& transforms = Models::modelPool->modelInstanceAllocator.GetArray<2>();
+	const Util::Array<Math::matrix44>& transforms = Models::modelPool->modelInstanceAllocator.GetArray<1>();
 	const Util::Array<Math::bbox>& modelBoxes = Models::modelPool->modelAllocator.GetArray<0>();
-	Util::Array<Math::bbox>& instanceBoxes = Models::modelPool->modelInstanceAllocator.GetArray<3>();
+	Util::Array<Math::bbox>& instanceBoxes = Models::modelPool->modelInstanceAllocator.GetArray<2>();
 	Util::Array<Math::matrix44>& pending = modelContextAllocator.GetArray<2>();
+	Util::Array<bool>& hasPending = modelContextAllocator.GetArray<3>();
 	
 	SizeT i;
 	for (i = 0; i < instances.Size(); i++)
 	{
 		const ModelInstanceId& instance = instances[i];
 		if (instance == ModelInstanceId::Invalid()) continue; // hmm, bad, should reorder and keep a 'last valid index'
-		instanceBoxes[instance.instance] = modelBoxes[instance.model];
-		instanceBoxes[instance.instance].transform(transforms[instance.instance]);
 
-		Util::Array<Models::ModelNode::Instance*>& nodes = Models::modelPool->modelInstanceAllocator.Get<1>(instance.instance);
+		// get reference so we can include it in the pending
+		Math::matrix44 transform = transforms[instance.instance];
 
-		// nodes are allocated breadth first, so just going through the list will guarantee the hierarchy is traversed in proper order
-		SizeT j;
-		for (j = 0; j < nodes.Size(); j++)
+		// if we have a pending transform, apply it and transform bounding box
+		if (hasPending[i])
 		{
-			Models::ModelNode::Instance* node = nodes[j];
-			Math::matrix44 parentTransform = transforms[instance.instance];
-			if (node->parent != nullptr && node->type > NodeHasTransform)
-				parentTransform = static_cast<const TransformNode::Instance*>(node->parent)->modelTransform;
+			transform = Math::matrix44::multiply(transform, pending[i]);
+			hasPending[i] = false;
 
-			if (node->type > NodeHasTransform)
+			// transform the box
+			instanceBoxes[instance.instance] = modelBoxes[instance.model];
+			instanceBoxes[instance.instance].transform(transform);
+
+			// update the actual transform
+			transforms[instance.instance] = transform;
+
+			Util::Array<Models::ModelNode::Instance*>& nodes = Models::modelPool->modelInstanceAllocator.Get<0>(instance.instance);
+
+			// nodes are allocated breadth first, so just going through the list will guarantee the hierarchy is traversed in proper order
+			SizeT j;
+			for (j = 0; j < nodes.Size(); j++)
 			{
-				TransformNode::Instance* tnode = static_cast<TransformNode::Instance*>(node);
-				tnode->modelTransform = Math::matrix44::multiply(tnode->transform.getmatrix(), transforms[instance.instance]);
-				parentTransform = tnode->modelTransform;
-			}
+				Models::ModelNode::Instance* node = nodes[j];
+				Math::matrix44& parentTransform = transform;
+				if (node->parent->type > NodeHasTransform && node->parent != nullptr)
+					parentTransform = static_cast<const TransformNode::Instance*>(node->parent)->modelTransform;
 
-			// reset bounding box
-			node->boundingBox = node->node->boundingBox;
-			node->boundingBox.transform(parentTransform);
+				if (node->type > NodeHasTransform)
+				{
+					TransformNode::Instance* tnode = static_cast<TransformNode::Instance*>(node);
+					tnode->modelTransform = Math::matrix44::multiply(tnode->transform.getmatrix(), parentTransform);
+					parentTransform = tnode->modelTransform;
+				}
+			}
 		}
 	}
 }

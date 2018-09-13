@@ -100,6 +100,8 @@ public:
     void Clear();
     /// reset array (does NOT call destructors)
     void Reset();
+	/// free memory and reset size
+	void Free();
     /// return iterator to beginning of array
     Iterator Begin() const;
     /// return iterator to end of array
@@ -121,6 +123,9 @@ public:
     /// do a binary search, requires a sorted array
     IndexT BinarySearchIndex(const TYPE& elm) const;
 
+	/// for range-based iteration
+	Iterator begin() const;
+	Iterator end() const;
 private:
     /// destroy an element (call destructor without freeing memory)
     void Destroy(TYPE* elm);
@@ -752,6 +757,17 @@ Array<TYPE>::Reset()
 
 //------------------------------------------------------------------------------
 /**
+	Free up memory and reset the grow
+*/
+template<class TYPE> void 
+Array<TYPE>::Free()
+{
+	this->Delete();
+	this->grow = 8;
+}
+
+//------------------------------------------------------------------------------
+/**
 */
 template<class TYPE> typename Array<TYPE>::Iterator
 Array<TYPE>::Begin() const
@@ -930,6 +946,24 @@ Array<TYPE>::BinarySearchIndex(const TYPE& elm) const
         }
     }
     return InvalidIndex;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE> typename Array<TYPE>::Iterator
+Array<TYPE>::begin() const
+{
+	return this->elements;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE> typename Array<TYPE>::Iterator
+Array<TYPE>::end() const
+{
+	return this->elements + this->size;
 }
 
 //------------------------------------------------------------------------------

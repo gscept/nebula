@@ -41,7 +41,7 @@ ResourceManager::Open()
 	n_assert(!this->open);
 	this->loaderThread = ResourceLoaderThread::Create();
 	this->loaderThread->SetPriority(Threading::Thread::Normal);
-	this->loaderThread->SetCoreId(System::Cpu::IoThreadCore);
+	this->loaderThread->SetThreadAffinity(System::Cpu::Core3);
 	this->loaderThread->SetName("Resources::ResourceLoaderThread");
 	this->loaderThread->Start();
 	this->pools.Reserve(256); // lower 8 bits of resource id can only get to 256

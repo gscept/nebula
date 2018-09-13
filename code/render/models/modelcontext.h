@@ -11,6 +11,7 @@
 #include "resources/resourceid.h"
 #include "materials/materialserver.h"
 #include "model.h"
+#include "nodes/modelnode.h"
 namespace Models
 {
 class ModelContext : public Graphics::GraphicsContext
@@ -38,6 +39,9 @@ public:
 	/// get the transform for a model
 	static Math::matrix44 GetTransform(const Graphics::GraphicsEntityId id);
 
+	/// get model node instances
+	static const Util::Array<Models::ModelNode::Instance*>& GetModelNodeInstances(const Graphics::GraphicsEntityId id);
+
 	/// runs before frame is updated
 	static void OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime);
 	/// runs when visibility has finished processing 
@@ -51,11 +55,11 @@ public:
 
 private:
 
-	
 	typedef Ids::IdAllocator<
 		ModelId,
 		ModelInstanceId,
-		Math::matrix44 // pending transforms
+		Math::matrix44,			// pending transforms
+		bool					// transform is dirty
 	> ModelContextAllocator;
 	static ModelContextAllocator modelContextAllocator;
 

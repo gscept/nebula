@@ -41,11 +41,14 @@ SetupHeaps()
         {
             case DefaultHeap:
             case ObjectHeap:
-            case ObjectArrayHeap:
             case RocketHeap:
                 initialSize = 4 * megaByte;
                 useLowFragHeap = true;
                 break;
+
+			case ObjectArrayHeap:
+				initialSize = 4 * megaByte;
+				break;
 
             case ResourceHeap:
             case PhysicsHeap:

@@ -9,7 +9,7 @@
 #include "graphics/graphicscontext.h"
 #include "visibility.h"
 #include "jobs/jobs.h"
-#include "visibility/systems/system.h"
+#include "visibility/systems/visibilitysystem.h"
 namespace Visibility
 {
 
@@ -28,15 +28,15 @@ public:
 	static void Create();
 
 	/// create a box system
-	static System* CreateBoxSystem(const BoxSystemLoadInfo& info);
+	static VisibilitySystem* CreateBoxSystem(const BoxSystemLoadInfo& info);
 	/// create a portal system
-	static System* CreatePortalSystem(const PortalSystemLoadInfo& info);
+	static VisibilitySystem* CreatePortalSystem(const PortalSystemLoadInfo& info);
 	/// create octree system
-	static System* CreateOctreeSystem(const OctreeSystemLoadInfo& info);
+	static VisibilitySystem* CreateOctreeSystem(const OctreeSystemLoadInfo& info);
 	/// create quadtree system
-	static System* CreateQuadtreeSystem(const QuadtreeSystemLoadInfo& info);
+	static VisibilitySystem* CreateQuadtreeSystem(const QuadtreeSystemLoadInfo& info);
 	/// create brute force system
-	static System* CreateBruteforceSystem(const BruteforceSystemLoadInfo& info);
+	static VisibilitySystem* CreateBruteforceSystem(const BruteforceSystemLoadInfo& info);
 
 	/// wait for all visibility jobs
 	static void WaitForVisibility();
@@ -49,7 +49,9 @@ private:
 	friend class ObservableContext;
 	friend class VisibilityContex;
 	typedef Ids::IdAllocator<
-		bool
+		bool,					// visibility result
+		Ids::Id32,				// parent object
+		ubyte					// number of nodes (max 255)
 	> VisibilityResultAllocator;
 	typedef Ids::IdAllocator<
 		Math::matrix44,					// transform of observer camera
@@ -65,7 +67,7 @@ private:
 	static void Dealloc(Graphics::ContextEntityId id);
 
 	/// keep as ordinary array of pointers, no need to have them cache aligned
-	static Util::Array<System*> systems;
+	static Util::Array<VisibilitySystem*> systems;
 };
 
 class ObservableContext : public Graphics::GraphicsContext
