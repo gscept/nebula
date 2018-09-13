@@ -169,8 +169,18 @@ public:
     void SetCharPtr(const char* s);
     /// set as char ptr, with explicit length
     void Set(const char* ptr, SizeT length);
-    /// set as int value
+	/// set as byte value
+	void SetByte(byte val);
+	/// set as ubyte value
+	void SetUByte(ubyte val);
+	/// set as short value
+	void SetShort(short val);
+	/// set as ushort value
+	void SetUShort(ushort val);
+	/// set as int value
     void SetInt(int val);
+	/// set as uint value
+	void SetUInt(uint val);
     /// set as long value
     void SetLong(long val);
 	/// set as long value
@@ -179,6 +189,8 @@ public:
 	void SetLongLong(long long val);
     /// set as float value
     void SetFloat(float val);
+	/// set as double value
+	void SetDouble(double val);
     /// set as bool value
     void SetBool(bool val);	
     
@@ -187,6 +199,8 @@ public:
     void SetFloat2(const Math::float2& v);
     /// set as float4 value
     void SetFloat4(const Math::float4& v);
+	/// set as quaternion
+	void SetQuaternion(const Math::quaternion & v);
     /// set as matrix44 value
     void SetMatrix44(const Math::matrix44& v);
 	/// set as transform44 value
@@ -260,8 +274,18 @@ public:
     /// generic valid checker
     template<typename T> bool IsValid() const;
 
+	/// construct a string from a byte
+	static String FromByte(byte i);
+	/// construct a string from a ubyte
+	static String FromUByte(ubyte i);
+	/// construct a string from a short
+	static String FromShort(short i);
+	/// construct a string from a ushort
+	static String FromUShort(ushort i);
     /// construct a string from an int
     static String FromInt(int i);
+	/// construct a string from a uint
+	static String FromUInt(uint i);
     /// construct a string from a long
     static String FromLong(long i);
 	/// construct a string from a size_t
@@ -270,6 +294,8 @@ public:
 	static String FromLongLong(long long i);
     /// construct a string from a float
     static String FromFloat(float f);
+	/// construct a string from a double
+	static String FromDouble(double f);
     /// construct a string from a bool
     static String FromBool(bool b);
     #if !__OSX__
@@ -497,9 +523,54 @@ String::Reserve(SizeT newSize)
 /**
 */
 inline void
+String::SetByte(byte val)
+{
+	this->Format("%d", val);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+String::SetUByte(ubyte val)
+{
+	this->Format("%u", val);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+String::SetShort(short val)
+{
+	this->Format("%d", val);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+String::SetUShort(ushort val)
+{
+	this->Format("%u", val);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
 String::SetInt(int val)
 {
     this->Format("%d", val);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+String::SetUInt(uint val)
+{
+	this->Format("%u", val);
 }
 
 //------------------------------------------------------------------------------
@@ -542,6 +613,15 @@ String::SetFloat(float val)
 /**
 */
 inline void
+String::SetDouble(double val)
+{
+	this->Format("%.6f", val);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
 String::SetBool(bool val)
 {
     if (val)
@@ -571,6 +651,15 @@ inline void
 String::SetFloat4(const Math::float4& v)
 {
     this->Format("%.6f,%.6f,%.6f,%.6f", v.x(), v.y(), v.z(), v.w());
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+String::SetQuaternion(const Math::quaternion& v)
+{
+	this->Format("%.6f,%.6f,%.6f,%.6f", v.x(), v.y(), v.z(), v.w());
 }
 
 //------------------------------------------------------------------------------
@@ -1002,11 +1091,66 @@ String::ReplaceIllegalFilenameChars(char replacement)
 /**
 */
 inline String
+String::FromByte(byte i)
+{
+	String str;
+	str.SetByte(i);
+	return str;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline String
+String::FromUByte(ubyte i)
+{
+	String str;
+	str.SetUByte(i);
+	return str;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline String
+String::FromShort(short i)
+{
+	String str;
+	str.SetShort(i);
+	return str;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline String
+String::FromUShort(ushort i)
+{
+	String str;
+	str.SetUShort(i);
+	return str;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline String
 String::FromInt(int i)
 {	
     String str;
     str.SetInt(i);
     return str;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline String
+String::FromUInt(uint i)
+{
+	String str;
+	str.SetUInt(i);
+	return str;
 }
 
 //------------------------------------------------------------------------------
@@ -1057,6 +1201,17 @@ String::FromFloat(float f)
 /**
 */
 inline String
+String::FromDouble(double i)
+{
+	String str;
+	str.SetDouble(i);
+	return str;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline String
 String::FromBool(bool b)
 {
     String str;
@@ -1094,7 +1249,7 @@ inline String
 String::FromQuaternion(const Math::quaternion& q)
 {
 	String str;
-	str.SetFloat4(Math::float4(q.x(),q.y(),q.z(),q.w()));
+	str.SetQuaternion(q);
 	return str;
 }
 

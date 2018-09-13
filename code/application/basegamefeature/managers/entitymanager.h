@@ -43,7 +43,11 @@ public:
 	/// Deregister a deletion callback to an entity. Note that this is not super fast.
 	void DeregisterDeletionCallback(const Entity& e, const Ptr<BaseComponent>& component);
 private:
+	/// Generation pool
 	Ids::IdGenerationPool pool;
+
+	/// Number of entities alive
+	SizeT numEntities;
 
 	/// Contains all callbacks for deletion to components for each entity
 	Util::HashTable<Entity, Util::Array<Util::Delegate<Entity>>> deletionCallbacks;

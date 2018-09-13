@@ -11,6 +11,7 @@
 #include "game/gameserver.h"
 #include "io/ioserver.h"
 #include "io/console.h"
+#include "basegamefeature/components/transformcomponent.h"
 
 namespace BaseGameFeature
 {
@@ -46,6 +47,8 @@ BaseGameFeatureUnit::OnActivate()
     
 	this->entityManager = EntityManager::Create();
 	this->componentManager = ComponentManager::Create();
+	this->transformComponent = Game::TransformComponent::Create();
+	this->componentManager->RegisterComponent(this->transformComponent);
 	this->AttachManager(this->entityManager.upcast<Game::Manager>());
 	this->AttachManager(this->componentManager.upcast<Game::Manager>());
 }
@@ -56,6 +59,8 @@ BaseGameFeatureUnit::OnActivate()
 void
 BaseGameFeatureUnit::OnDeactivate()
 {
+	this->componentManager->DeregisterAll();
+
     this->RemoveManager(this->entityManager.upcast<Game::Manager>());
 	this->RemoveManager(this->componentManager.upcast<Game::Manager>());
 

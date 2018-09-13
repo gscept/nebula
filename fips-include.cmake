@@ -97,6 +97,7 @@ macro(add_shaders)
             add_custom_command(OUTPUT ${output}
                 COMMAND ${SHADERC} -i ${shd} -I ${NROOT}/work/shaders -I ${foldername} -o ${EXPORT_DIR} -t shader ${shader_debug}
                 MAIN_DEPENDENCY ${shd}
+                DEPENDS ${SHADERC}                
                 WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
                 COMMENT ""
                 VERBATIM
@@ -115,6 +116,7 @@ macro(add_frameshader)
             add_custom_command(OUTPUT ${output}
                 COMMAND ${SHADERC} -i ${frm} -o ${EXPORT_DIR} -t frame
                 MAIN_DEPENDENCY ${frm}
+                DEPENDS ${SHADERC}
                 WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
                 COMMENT ""
                 VERBATIM
@@ -133,6 +135,7 @@ macro(add_material)
             add_custom_command(OUTPUT ${output}
                 COMMAND ${SHADERC} -i ${mat} -o ${EXPORT_DIR} -t material
                 MAIN_DEPENDENCY ${mat}
+                DEPENDS ${SHADERC}
                 WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
                 COMMENT ""
                 VERBATIM

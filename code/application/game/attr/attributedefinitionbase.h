@@ -17,6 +17,11 @@
 #include "game/attr/valuetype.h"
 #include "game/attr/accessmode.h"
 #include "game/attr/attrexithandler.h"
+#include "game/entity.h"
+#include "util/string.h"
+#include "util/blob.h"
+#include "math/quaternion.h"
+#include "math/transform44.h"
 
 //------------------------------------------------------------------------------
 namespace Attr
@@ -24,28 +29,66 @@ namespace Attr
 class AttributeDefinitionBase
 {
 public:
-    /// constructor
-    explicit AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode, bool isDynamic);
-    /// bool constructor
-    explicit AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode, bool defVal, bool isDynamic);
-    /// int constructor
-    explicit AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode, int defVal, bool isDynamic);
-    /// float constructor
-    explicit AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode, float defVal, bool isDynamic);
-    /// string constructor
-    explicit AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode, const Util::String& defVal, bool isDynamic);
-    /// float4 constructor
-    explicit AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode, const Math::float4& defVal, bool isDynamic);
-    /// matrix44 constructor
-    explicit AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode, const Math::matrix44& defVal, bool isDynamic);
-	/// transform44 constructor
-	explicit AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode, const Math::transform44& defVal, bool isDynamic);
-    /// blob constructor
-    explicit AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode, const Util::Blob& defVal, bool isDynamic);
-    /// guid constructor
-	explicit AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode, const Util::Guid& defVal, bool isDynamic);
-	/// uint32_t constructor
-	explicit AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode, const uint32_t& defVal, bool isDynamic);
+	explicit AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode);
+	/// Constructor with default byte value
+    explicit AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode, const byte& defVal);
+	/// Constructor with default short value
+    explicit AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode, const short& defVal);
+	/// Constructor with default ushort value
+    explicit AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode, const ushort& defVal);
+	/// Constructor with default int value
+    explicit AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode, const int& defVal);
+	/// Constructor with default uint value
+    explicit AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode, const uint& defVal);
+	/// Constructor with default int64 value
+    explicit AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode, const int64_t& defVal);
+	/// Constructor with default uint64 value
+    explicit AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode, const uint64_t& defVal);
+	/// Constructor with default float value
+    explicit AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode, const float& defVal);
+	/// Constructor with default double value
+    explicit AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode, const double& defVal);
+	/// Constructor with default bool value
+    explicit AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode, const bool& defVal);
+	/// Constructor with default float2 value
+    explicit AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode, const Math::float2& defVal);
+	/// Constructor with default float4 value
+    explicit AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode, const Math::float4& defVal);
+	/// Constructor with default quaternion value
+    explicit AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode, const Math::quaternion& defVal);
+	/// Constructor with default string value
+    explicit AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode, const Util::String& defVal);
+	/// Constructor with default matrix44 value
+    explicit AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode, const Math::matrix44& defVal);
+	/// Constructor with default transform44 value
+    explicit AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode, const Math::transform44& defVal);
+	/// Constructor with default blob value
+    explicit AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode, const Util::Blob& defVal);
+	/// Constructor with default guid value
+    explicit AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode, const Util::Guid& defVal);
+	/// Constructor with default void pointer value
+    explicit AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode, void* defVal);
+	/// Constructor with default int array value
+    explicit AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode, const Util::Array<int>& defVal);
+	/// Constructor with default float array value
+    explicit AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode, const Util::Array<float>& defVal);
+	/// Constructor with default bool array value
+    explicit AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode, const Util::Array<bool>& defVal);
+	/// Constructor with default float2 array value
+    explicit AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode, const Util::Array<Math::float2>& defVal);
+	/// Constructor with default float4 array value
+    explicit AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode, const Util::Array<Math::float4>& defVal);
+	/// Constructor with default string array value
+    explicit AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode, const Util::Array<Util::String>& defVal);
+	/// Constructor with default matrix44 array value
+    explicit AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode, const Util::Array<Math::matrix44>& defVal);
+	/// Constructor with default blob array value
+    explicit AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode, const Util::Array<Util::Blob>& defVal);
+	/// Constructor with default guid array value
+    explicit AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode, const Util::Array<Util::Guid>& defVal);
+	/// Constructor with default entity value
+    explicit AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode, const Game::Entity& defVal);
+
     /// destructor
     ~AttributeDefinitionBase();
     /// static destruction method - call to cleanup the registry hashtable
@@ -55,8 +98,6 @@ public:
     const Util::String& GetName() const;
     /// get fourcc code
     const Util::FourCC& GetFourCC() const;
-    /// return true if this is a dynamic attribute
-    bool IsDynamic() const;
     /// get default value
     const Util::Variant& GetDefaultValue() const;
     /// get access type
@@ -67,10 +108,6 @@ public:
     static const AttributeDefinitionBase* FindByName(const Util::String& n);
     /// find by FourCC
     static const AttributeDefinitionBase* FindByFourCC(const Util::FourCC& fcc);
-    /// register a dynamic attribute
-    static void RegisterDynamicAttribute(const Util::String& name, const Util::FourCC& fourCC, ValueType valueType, AccessMode accessMode);
-    /// clear all dynamic attributes
-    static void ClearDynamicAttributes();
 
 protected:
     /// register an attribute definition
@@ -83,20 +120,17 @@ private:
     static void CheckCreateNameRegistry();
     /// check if fourcc registry exists and create on demand
     static void CheckCreateFourCCRegistry();
-    /// check if dynamic attribute array exists and create on demand
-    static void CheckCreateDynamicAttributesArray();
 
-    bool isDynamic;
     Util::String name;
     Util::FourCC fourCC;
     AccessMode accessMode;
     Util::Variant defaultValue;
+	const Attr::ValueType valueType;
 
     friend class AttrId;
     static AttrExitHandler attrExitHandler;
     static Util::HashTable<Util::String, const AttributeDefinitionBase*>* NameRegistry;
     static Util::Dictionary<Util::FourCC, const AttributeDefinitionBase*>* FourCCRegistry;
-    static Util::Array<const AttributeDefinitionBase*>* DynamicAttributes;
 };
 
 //------------------------------------------------------------------------------
@@ -183,16 +217,6 @@ AccessMode
 AttributeDefinitionBase::GetAccessMode() const
 {
     return this->accessMode;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline
-bool
-AttributeDefinitionBase::IsDynamic() const
-{
-    return this->isDynamic;
 }
 
 } // namespace Attr

@@ -5,6 +5,12 @@
 
 	Components derive from this class.
 
+	@todo	Add Allocate virtual function for quickly allocating multiple instances.
+			this->Alloc(numInstances)
+			Also, we need a set data function for quickly setting instance data in a certain span
+			this->SetData(start, end, void*)
+			SetData function should automatically split the void* buffer into each struct of arrays blocks.
+
 	(C) 2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
@@ -13,6 +19,7 @@
 #include "util/bitfield.h"
 #include "game/attr/attrid.h"
 #include "game/attr/attributedefinition.h"
+#include "game/entityattr.h"
 
 namespace Game
 {
@@ -78,6 +85,12 @@ public:
 	/// Returns an attribute value as a variant from attribute id. Needs to be overloaded in subclass.
 	virtual Util::Variant GetAttributeValue(uint32_t instance, Attr::AttrId attributeId) const;
 	
+	/// Set an attribute value from index
+	virtual void SetAttributeValue(uint32_t instance, IndexT attributeIndex, Util::Variant value);
+
+	/// Set an attribute value from attribute id
+	virtual void SetAttributeValue(uint32_t instance, Attr::AttrId attributeId, Util::Variant value);
+
 	/// Returns attribute id at index.
 	const Attr::AttrId& GetAttributeId(IndexT index) const;
 
@@ -85,8 +98,9 @@ public:
 	const Util::FixedArray<Attr::AttrId>& GetAttributeIds() const;
 	
 	// Methods for custom implementations
+
 	/// Returns all attributes that are of Entity type.
-	/// Extremely slow and should never be called during gameplay.
+	/// Just returns a pointer to each of the arrays containing the entity-ids
 	//virtual Util::Array<Util::Array<Entity>*> GetEntityAttributes();
 
 	/// Called when relationships needs to be reconstructed
@@ -116,7 +130,7 @@ protected:
 	Util::BitField<ComponentEvent::NumEvents> events;
 
 	/// Holds all attributedefinitions that this components has available.
-	Util::FixedArray<Attr::AttrId> attributes;
+	Util::FixedArray<Attr::AttrId> attributeIds;
 };
 
 } // namespace Game
