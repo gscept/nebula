@@ -154,71 +154,6 @@ GraphicsServer::Close()
 /**
 */
 void
-GraphicsServer::OnFrame()
-{
-	const IndexT frameIndex = this->timer->GetFrameIndex();
-	const Timing::Time time = this->timer->GetFrameTime();
-
-	// enter visibility lockstep
-	this->visServer->EnterVisibilityLockstep();
-
-	// begin updating visibility
-	IndexT i;
-	for (i = 0; i < this->contexts.Size(); i++)
-	{
-		if (this->contexts[i]->OnBeforeFrame != nullptr) 
-			this->contexts[i]->OnBeforeFrame(frameIndex, time);
-	}
-
-	// begin updating visibility
-	this->visServer->BeginVisibility();
-
-	// go through views and call before view
-	for (i = 0; i < this->views.Size(); i++)
-	{
-		const Ptr<View>& view = this->views[i];
-		this->currentView = view;
-		IndexT j;
-		for (j = 0; j < this->contexts.Size(); j++)
-		{
-			if (this->contexts[j]->OnBeforeView != nullptr)
-				this->contexts[j]->OnBeforeView(view, frameIndex, time);
-		}
-
-		// apply visibility result for this view
-		this->visServer->ApplyVisibility(view);
-
-		for (j = 0; j < this->contexts.Size(); j++)
-		{
-			if (this->contexts[j]->OnVisibilityReady != nullptr)
-				this->contexts[j]->OnVisibilityReady(frameIndex, time);
-		}
-
-		// render view
-		view->Render(frameIndex, time);
-
-		for (j = 0; j < this->contexts.Size(); j++)
-		{
-			if (this->contexts[j]->OnAfterView != nullptr)
-				this->contexts[j]->OnAfterView(view, frameIndex, time);
-		}
-	}
-
-	// finish frame and prepare for the next one
-	for (i = 0; i < this->contexts.Size(); i++)
-	{
-		if (this->contexts[i]->OnAfterFrame != nullptr)
-			this->contexts[i]->OnAfterFrame(frameIndex, time);
-	}
-
-	// leave visibility lockstep
-	this->visServer->LeaveVisibilityLockstep();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
 GraphicsServer::RegisterGraphicsContext(GraphicsContextFunctionBundle* context)
 {
 	this->contexts.Append(context);
@@ -284,6 +219,121 @@ GraphicsServer::DiscardStage(const Ptr<Stage>& stage)
 	IndexT i = this->stages.FindIndex(stage);
 	n_assert(i != InvalidIndex);
 	this->stages.EraseIndex(i);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GraphicsServer::BeginFrame()
+{
+	const IndexT frameIndex = this->timer->GetFrameIndex();
+	const Timing::Time time = this->timer->GetFrameTime();
+
+	// begin updating visibility
+	IndexT i;
+	for (i = 0; i < this->contexts.Size(); i++)
+	{
+		if (this->contexts[i]->OnBeforeFrame != nullptr)
+			this->contexts[i]->OnBeforeFrame(frameIndex, time);
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+GraphicsServer::BeforeViews()
+{
+	const IndexT frameIndex = this->timer->GetFrameIndex();
+	const Timing::Time time = this->timer->GetFrameTime();
+
+	// begin updating visibility
+	IndexT i;
+	for (i = 0; i < this->contexts.Size(); i++)
+	{
+		if (this->contexts[i]->OnWaitForWork != nullptr)
+			this->contexts[i]->OnWaitForWork(frameIndex, time);
+	}
+
+	// go through views and call before view
+	for (i = 0; i < this->views.Size(); i++)
+	{
+		const Ptr<View>& view = this->views[i];
+		this->currentView = view;
+
+		// begin updating visibility
+		IndexT j;
+		for (j = 0; j < this->contexts.Size(); j++)
+		{
+			if (this->contexts[j]->OnBeforeView != nullptr)
+				this->contexts[j]->OnBeforeView(view, frameIndex, time);
+		}
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GraphicsServer::RenderViews()
+{
+	const IndexT frameIndex = this->timer->GetFrameIndex();
+	const Timing::Time time = this->timer->GetFrameTime();
+
+	// begin updating visibility
+	IndexT i;
+	// go through views and call before view
+	for (i = 0; i < this->views.Size(); i++)
+	{
+		const Ptr<View>& view = this->views[i];
+		this->currentView = view;
+		view->Render(frameIndex, time);
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+GraphicsServer::EndViews()
+{
+	const IndexT frameIndex = this->timer->GetFrameIndex();
+	const Timing::Time time = this->timer->GetFrameTime();
+
+	// go through views and call before view
+	IndexT i;
+	for (i = 0; i < this->views.Size(); i++)
+	{
+		const Ptr<View>& view = this->views[i];
+		this->currentView = view;
+
+		// begin updating visibility
+		IndexT j;
+		for (j = 0; j < this->contexts.Size(); j++)
+		{
+			if (this->contexts[j]->OnAfterView != nullptr)
+				this->contexts[j]->OnAfterView(view, frameIndex, time);
+		}
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+GraphicsServer::EndFrame()
+{
+	const IndexT frameIndex = this->timer->GetFrameIndex();
+	const Timing::Time time = this->timer->GetFrameTime();
+
+	// finish frame and prepare for the next one
+	IndexT i;
+	for (i = 0; i < this->contexts.Size(); i++)
+	{
+		if (this->contexts[i]->OnAfterFrame != nullptr)
+			this->contexts[i]->OnAfterFrame(frameIndex, time);
+	}
 }
 
 //------------------------------------------------------------------------------

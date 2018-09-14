@@ -70,12 +70,12 @@ class View;
 struct GraphicsContextFunctionBundle
 {
 	void(*OnBeforeFrame)(const IndexT frameIndex, const Timing::Time frameTime);
-	void(*OnVisibilityReady)(const IndexT frameIndex, const Timing::Time frameTime);
+	void(*OnWaitForWork)(const IndexT frameIndex, const Timing::Time frameTime);
 	void(*OnBeforeView)(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime);
 	void(*OnAfterView)(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime);
 	void(*OnAfterFrame)(const IndexT frameIndex, const Timing::Time frameTime);
 
-	GraphicsContextFunctionBundle() : OnBeforeFrame(nullptr), OnVisibilityReady(nullptr), OnBeforeView(nullptr), OnAfterView(nullptr), OnAfterFrame(nullptr)
+	GraphicsContextFunctionBundle() : OnBeforeFrame(nullptr), OnWaitForWork(nullptr), OnBeforeView(nullptr), OnAfterView(nullptr), OnAfterFrame(nullptr)
 	{
 	};
 };
