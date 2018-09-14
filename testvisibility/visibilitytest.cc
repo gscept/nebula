@@ -103,7 +103,7 @@ VisibilityTest::Run()
 	ObserverContext::Setup(cam, VisibilityEntityType::Camera);
 
 	Util::Array<Graphics::GraphicsEntityId> models;
-	static const int NumModels = 100;
+	static const int NumModels = 150;
 	for (IndexT i = -NumModels; i < NumModels; i++)
 	{
 		for (IndexT j = -NumModels; j < NumModels; j++)
@@ -128,18 +128,35 @@ VisibilityTest::Run()
 	{
 		timer.Reset();
 		timer.Start();
+
 		inputServer->OnFrame();
 		resMgr->Update(frameIndex);
-		gfxServer->OnFrame();
 
-		timer.Stop();
-		n_printf("Frame took %f ms\n", timer.GetTime() * 1000);
+		gfxServer->BeginFrame();
+		
+		// put game code which doesn't need visibility data or animation here
+
+		gfxServer->BeforeViews();
+
+		// put game code which need visibility data here
+
+		gfxServer->RenderViews();
+
+		// put game code which needs rendering to be done (animation etc) here
+
+		gfxServer->EndViews();
+
+		// do stuff after rendering is done
+
+		gfxServer->EndFrame();
+		
 		// force wait immediately
-		//ObserverContext::WaitForVisibility();
 		WindowPresent(wnd, frameIndex);
 		if (inputServer->GetDefaultKeyboard()->KeyPressed(Input::Key::Escape)) run = false;
 		frameIndex++;
-		
+
+		timer.Stop();
+		n_printf("Frame took %f ms\n", timer.GetTime() * 1000);
 	}
 
 	DestroyWindow(wnd);
