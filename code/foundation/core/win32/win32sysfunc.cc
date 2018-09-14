@@ -143,7 +143,8 @@ SysFunc::Error(const char* error)
     */	
 	Util::Array<Util::String> stacktrace = Win32StackTrace::GenerateStackTrace();
 	Util::String format;
-	for (int i = 7; i < Math::n_min(17,stacktrace.Size()); i++)
+    // remove the first 7 entries as they are only the assert/error functions and the last 6 as they are windows startup 
+	for (int i = 7; i < Math::n_min(17,stacktrace.Size() - 6); i++)
 	{
 		format.Append(stacktrace[i]);
 		format.Append("\n");

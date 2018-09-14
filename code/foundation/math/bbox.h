@@ -62,6 +62,8 @@ public:
     void end_extend();
     /// transform bounding box
     void transform(const matrix44& m);
+    /// affine transform bounding box, does not allow for projections
+    void affine_transform(const matrix44& m);
     /// check for intersection with axis aligned bounding box
     bool intersects(const bbox& box) const;
     /// check if this box completely contains the parameter box
@@ -240,21 +242,36 @@ bbox::transform(const matrix44& m)
     for(i = 0; i < 8; ++i)
     {
         // Transform and check extents
-        temp = Math::matrix44::transform(corner_point(i), m);
+        float4 temp_f = Math::matrix44::transform(corner_point(i), m);
+        temp = float4::perspective_div(temp_f);
         maxP = float4::maximize(temp, maxP);
-        minP = float4::minimize(temp, minP);
-        /*
-        if (temp.x() > maxP.x())   maxP.x() = temp.x();
-        if (temp.y() > maxP.y())   maxP.y() = temp.y();
-        if (temp.z() > maxP.z())   maxP.z() = temp.z();
-        if (temp.x() < minP.x())   minP.x() = temp.x();
-        if (temp.y() < minP.y())   minP.y() = temp.y();
-        if (temp.z() < minP.z())   minP.z() = temp.z();
-        */
+        minP = float4::minimize(temp, minP);        
     }    
 
     this->pmin = minP;
     this->pmax = maxP;
+}
+
+//------------------------------------------------------------------------------
+/**
+    
+*/
+inline void
+bbox::affine_transform(const matrix44& m)
+{
+    n_assert2(m.getrow0().w() == 0 && m.getrow1().w() == 0 && m.getrow2().w() == 0 && m.getrow3().w() == 1, "Matrix is not affine");
+
+    float4 xa = m.get_xaxis() * this->pmin.x();
+    float4 xb = m.get_xaxis() * this->pmax.x();
+
+    float4 ya = m.get_yaxis() * this->pmin.y();
+    float4 yb = m.get_yaxis() * this->pmax.y();
+
+    float4 za = m.get_zaxis() * this->pmin.z();
+    float4 zb = m.get_zaxis() * this->pmax.z();
+    
+    this->pmin = float4::minimize(xa, xb) + float4::minimize(ya, yb) + float4::minimize(za, zb) + m.get_position();
+    this->pmax = float4::maximize(xa, xb) + float4::maximize(ya, yb) + float4::maximize(za, zb) + m.get_position();
 }
 
 //------------------------------------------------------------------------------
