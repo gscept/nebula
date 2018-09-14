@@ -214,6 +214,8 @@ public:
     static float4 select(const float4& v0, const float4& v1, const float4& control);
     /// returns a zero vector
     static float4 zerovector();
+    /// return vector divided by w
+    static float4 perspective_div(const float4& v);
 
     /// return true if any XYZ component is less-then
     static bool less3_any(const float4 &v0, const float4 &v1);
@@ -950,6 +952,16 @@ float4::reflect(const float4 &normal, const float4 &incident)
 	res = _mm_mul_ps(res, normal.vec);
 	res = _mm_sub_ps(incident.vec,res);
 	return res;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline float4
+float4::perspective_div(const float4 &v)
+{
+    __m128 d = _mm_set_ps1(1.0f / v.w());
+    return _mm_mul_ps(v.vec, d);
 }
 
 //------------------------------------------------------------------------------
