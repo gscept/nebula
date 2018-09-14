@@ -169,7 +169,7 @@ void
 ObserverContext::Create()
 {
 	__bundle.OnBeforeFrame = ObserverContext::OnBeforeFrame;
-	__bundle.OnVisibilityReady = nullptr;
+	__bundle.OnWaitForWork = ObserverContext::WaitForVisibility;
 	__bundle.OnBeforeView = nullptr;
 	__bundle.OnAfterView = nullptr;
 	__bundle.OnAfterFrame = nullptr;
@@ -251,7 +251,7 @@ ObserverContext::CreateBruteforceSystem(const BruteforceSystemLoadInfo& info)
 /**
 */
 void
-ObserverContext::WaitForVisibility()
+ObserverContext::WaitForVisibility(const IndexT frameIndex, const Timing::Time frameTime)
 {
 	Util::Array<Jobs::JobId> jobs;
 	ObserverContext::runningJobs.DequeueAll(jobs);

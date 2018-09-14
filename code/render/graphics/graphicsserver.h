@@ -66,8 +66,16 @@ public:
 	/// discard stage
 	void DiscardStage(const Ptr<Stage>& stage);	
 
-	/// call per-frame to update graphics subsystem
-	void OnFrame();
+	/// call to prepare for the frame
+	void BeginFrame();
+	/// call before rendering to a view
+	void BeforeViews();
+	/// go through and render views
+	void RenderViews();
+	/// end views
+	void EndViews();
+	/// call when ending the frame
+	void EndFrame();
 
 	/// register function bundle from graphics context, see GraphicsContextType::Create
 	void RegisterGraphicsContext(GraphicsContextFunctionBundle* context);
@@ -85,6 +93,7 @@ private:
 
 	Util::Array<Ptr<Stage>> stages;
 	Util::Array<Ptr<View>> views;
+	uint currentViewIdx;
 	CoreGraphics::BatchGroup batchGroupRegistry;
 
 	Ptr<View> currentView;

@@ -39,7 +39,7 @@ public:
 	static VisibilitySystem* CreateBruteforceSystem(const BruteforceSystemLoadInfo& info);
 
 	/// wait for all visibility jobs
-	static void WaitForVisibility();
+	static void WaitForVisibility(const IndexT frameIndex, const Timing::Time frameTime);
 
 	static Jobs::JobPortId jobPort;
 	static Threading::SafeQueue<Jobs::JobId> runningJobs;

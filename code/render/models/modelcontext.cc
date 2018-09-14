@@ -39,7 +39,7 @@ void
 ModelContext::Create()
 {
 	__bundle.OnBeforeFrame = ModelContext::OnBeforeFrame;
-	__bundle.OnVisibilityReady = ModelContext::OnVisibilityReady;
+	__bundle.OnWaitForWork = nullptr;
 	__bundle.OnBeforeView = ModelContext::OnBeforeView;
 	__bundle.OnAfterView = ModelContext::OnAfterView;
 	__bundle.OnAfterFrame = ModelContext::OnAfterFrame;
@@ -184,7 +184,7 @@ ModelContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTim
 
 			// transform the box
 			instanceBoxes[instance.instance] = modelBoxes[instance.model];
-			instanceBoxes[instance.instance].transform(transform);
+			instanceBoxes[instance.instance].affine_transform(transform);
 
 			// update the actual transform
 			transforms[instance.instance] = transform;
