@@ -171,6 +171,8 @@ public:
 	static float4 select(const float4& v0, const float4& v1, const float4& control);
 	/// returns a zero vector
 	static float4 zerovector();
+    /// return vector divided by w
+    static float4 perspective_div(const float4& v);
 
     /// return true if any XYZ component is less-then
     static bool less3_any(const float4 &v0, const float4 &v1);
@@ -786,6 +788,16 @@ float4::reflect(const float4 &normal, const float4 &incident)
 //------------------------------------------------------------------------------
 /**
 */
+__forceinline float4
+float4::perspective_div(const float4 &v)
+{
+    __m128 d = _mm_set_ps1(1.0f / v.vec.m128_f32[3]);
+    return _mm_mul_ps(v.vec, d);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 __forceinline bool
 float4::less4_any(const float4 &v0, const float4 &v1)
 {
@@ -1062,9 +1074,7 @@ __forceinline
 float4
 float4::splat(scalar s)
 {
-	DirectX::XMVECTOR v;
-	v = DirectX::XMVectorSetX(v, s);
-	return float4(DirectX::XMVectorSplatX(v));
+    return _mm_set_ps1(s);   
 }
 
 //------------------------------------------------------------------------------
