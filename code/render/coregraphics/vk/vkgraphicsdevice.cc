@@ -987,7 +987,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		2,																// application version
 		"Nebula Trifid",												// engine name
 		2,																// engine version
-		VK_MAKE_VERSION(1, 0, VK_HEADER_VERSION)						// API version
+		VK_MAKE_VERSION(1, 1, VK_HEADER_VERSION)						// API version
 	};
 
 	state.usedExtensions = 0;
