@@ -4,7 +4,6 @@
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "core/refcounted.h"
-#include "memory/sliceallocatorpool.h"
 #include "timing/timer.h"
 #include "io/console.h"
 #include "jobstest.h"

@@ -6,7 +6,7 @@
 #include "system/appentry.h"
 #include "core/coreserver.h"
 #include "testbase/testrunner.h"
-#include "visibilitytest.h"
+#include "misctest.h"
 
 using namespace Core;
 using namespace Test;
@@ -17,15 +17,15 @@ __cdecl main()
 {
 	// create Nebula3 runtime
 	Ptr<CoreServer> coreServer = CoreServer::Create();
-	coreServer->SetAppName(Util::StringAtom("Nebula Visibility Tests"));
+	coreServer->SetAppName(Util::StringAtom("Nebula Jobs Tests"));
 	coreServer->Open();
 
-	n_printf("NEBULA VISIBILITY TESTS\n");
+	n_printf("NEBULA JOBS TESTS\n");
 	n_printf("========================\n");
 
 	// setup and run test runner
 	Ptr<TestRunner> testRunner = TestRunner::Create();
-	testRunner->AttachTestCase(VisibilityTest::Create());
+	testRunner->AttachTestCase(MiscTest::Create());
 	testRunner->Run();
 	//testRunner->AttachTestCase(BXmlReaderTest::Create());
 
