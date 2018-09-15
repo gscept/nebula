@@ -29,9 +29,9 @@ List<Win360Thread*> Win360Thread::ThreadList;
 */
 Win360Thread::Win360Thread() :
     threadHandle(0),
+	affinityMask(0),
     priority(Normal),
-    stackSize(NEBULA3_THREAD_DEFAULTSTACKSIZE),
-    coreId(Cpu::InvalidCoreId)
+    stackSize(NEBULA3_THREAD_DEFAULTSTACKSIZE)
 {
     // register with thread list
     #if NEBULA_DEBUG
@@ -96,6 +96,8 @@ Win360Thread::Start()
             break;
     }
     
+	if (this->affinityMask != 0)
+		SetThreadAffinityMask(this->threadHandle, this->affinityMask);
     #if __WIN32__
         // select a good processor for the thread
         /*
@@ -312,7 +314,6 @@ Win360Thread::GetRunningThreadDebugInfos()
             ThreadDebugInfo info;
             info.threadName = cur->GetName();
             info.threadPriority = cur->GetPriority();
-            info.threadCoreId = cur->GetCoreId();
             info.threadStackSize = cur->GetStackSize();
             infos.Append(info);
         }

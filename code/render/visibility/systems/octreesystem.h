@@ -6,14 +6,14 @@
 	(C) 2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "system.h"
+#include "visibilitysystem.h"
 #include "jobs/jobs.h"
 namespace Visibility
 {
 
 extern void OctreeSystemJobFunc(const Jobs::JobFuncContext& ctx);
 
-class OctreeSystem : public System
+class OctreeSystem : public VisibilitySystem
 {
 public:
 private:

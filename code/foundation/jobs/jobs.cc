@@ -24,6 +24,7 @@ CreateJobPort(const CreateJobPortInfo& info)
 		Ptr<JobThread> thread = JobThread::Create();
 		thread->SetName(Util::String::Sprintf("%s%d", info.name.Value(), i));
 		thread->Start();
+		thread->SetThreadAffinity(info.affinity);
 		threads[i] = thread;
 	}
 	jobPortAllocator.Get<1>(port) = threads;

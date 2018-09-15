@@ -46,10 +46,11 @@ public:
 	const Math::bbox& GetModelBoundingBox(const ModelId id) const;
 	/// get bounding box of model
 	Math::bbox& GetModelBoundingBox(const ModelId id);
-	/// get bounding box of model
-	const Math::bbox& GetModelBoundingBox(const ModelInstanceId id);
+	
 	/// get bounding box of model instance
-	const Math::bbox& GetModelInstanceBoundingBox(const ModelInstanceId id);
+	const Math::bbox& GetModelInstanceBoundingBox(const ModelInstanceId id) const;
+	/// get bounding box of model which we can change
+	Math::bbox& GetModelInstanceBoundingBox(const ModelInstanceId id);
 
 private:
 	friend class PrimitiveNode;
@@ -60,7 +61,7 @@ private:
 	friend class Visibility::VisibilityContext;
 
 	/// create an instance of a model recursively
-	void CreateModelInstanceRecursive(Models::ModelNode* node, Models::ModelNode::Instance* parentInstance, Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& allocator, Util::Array<Models::ModelNode::Instance*>& instances);
+	void CreateModelInstanceRecursive(Models::ModelNode* node, Models::ModelNode::Instance* parentInstance, byte* memory, Util::Array<Models::ModelNode::Instance*>& instances);
 
 	/// perform actual load, override in subclass
 	LoadStatus LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream);
@@ -72,11 +73,13 @@ private:
 	Util::Dictionary<Util::FourCC, Ids::Id8> nodeFourCCMapping;
 
 	Ids::IdAllocator<
-		Math::bbox,													// total bounding box
-		Memory::ChunkAllocator<MODEL_MEMORY_CHUNK_SIZE>,			// memory allocator
-		Util::Dictionary<Util::StringAtom, Models::ModelNode*>,		// nodes
-		Models::ModelNode*,											// root
-		SizeT														// instances
+		Math::bbox,													// 0 - total bounding box
+		Memory::ChunkAllocator<MODEL_MEMORY_CHUNK_SIZE>,			// 1 - memory allocator
+		Util::Dictionary<Util::StringAtom, Models::ModelNode*>,		// 2 - nodes
+		Models::ModelNode*,											// 3 - root
+		SizeT,														// 4 - instances
+		SizeT,														// 5 - instance size
+		Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>	// 6 - instance allocator
 	> modelAllocator;
 	__ImplementResourceAllocator(modelAllocator);
 
@@ -84,7 +87,6 @@ private:
 	Util::Array<std::function<Models::ModelNode::Instance*(Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>&)>> nodeInstanceConstructors;
 
 	Ids::IdAllocator<
-		Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>,	// memory allocator
 		Util::Array<Models::ModelNode::Instance*>,					// list of node instances
 		Math::matrix44,												// transform
 		Math::bbox													// transformed bounding box

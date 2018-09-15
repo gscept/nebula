@@ -722,7 +722,7 @@ ENDIF()
 				quadtreesystem.h
 				quadtreesystem.cc
 				quadtreesystemjob.cc
-				system.h
-				system.cc
+				visibilitysystem.h
+				visibilitysystem.cc
 			)
 fips_end_module()

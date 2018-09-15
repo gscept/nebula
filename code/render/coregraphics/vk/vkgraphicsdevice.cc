@@ -1270,7 +1270,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		threadName.Format("DrawCmdBufferThread%d", i);
 		state.drawThreads[i] = VkCmdBufferThread::Create();
 		state.drawThreads[i]->SetPriority(Threading::Thread::High);
-		state.drawThreads[i]->SetCoreId(System::Cpu::RenderThreadFirstCore + i);
+		state.drawThreads[i]->SetThreadAffinity(System::Cpu::Core5);
 		state.drawThreads[i]->SetName(threadName);
 		state.drawThreads[i]->Start();
 
@@ -1293,7 +1293,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		threadName.Format("ComputeCmdBufferThread%d", i);
 		state.compThreads[i] = VkCmdBufferThread::Create();
 		state.compThreads[i]->SetPriority(Threading::Thread::Low);
-		state.compThreads[i]->SetCoreId(System::Cpu::RenderThreadFirstCore + state.NumDrawThreads + state.NumTransferThreads + i);
+		state.compThreads[i]->SetThreadAffinity(System::Cpu::Core5);
 		state.compThreads[i]->SetName(threadName);
 		state.compThreads[i]->Start();
 
@@ -1316,7 +1316,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		threadName.Format("TransferCmdBufferThread%d", i);
 		state.transThreads[i] = VkCmdBufferThread::Create();
 		state.transThreads[i]->SetPriority(Threading::Thread::Low);
-		state.transThreads[i]->SetCoreId(System::Cpu::RenderThreadFirstCore + state.NumDrawThreads + i);
+		state.transThreads[i]->SetThreadAffinity(System::Cpu::Core5);
 		state.transThreads[i]->SetName(threadName);
 		state.transThreads[i]->Start();
 

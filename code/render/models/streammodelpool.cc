@@ -69,8 +69,11 @@ StreamModelPool::CreateModelInstance(const ModelId id)
 	instances++;
 
 	// get all template nodes
-	Util::Array<Models::ModelNode::Instance*>& nodeInstances = this->modelInstanceAllocator.Get<1>(mnid);
-	Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& alloc = this->modelInstanceAllocator.Get<0>(mnid);
+	Util::Array<Models::ModelNode::Instance*>& nodeInstances = this->modelInstanceAllocator.Get<0>(mnid);
+	Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& alloc = this->modelAllocator.Get<6>(id.allocId);
+
+	// allocate memory
+	byte* mem = (byte*)alloc.Alloc(this->modelAllocator.Get<5>(id.allocId));
 	SizeT i;
 	for (i = 0; i < nodes.Size(); i++)
 	{
@@ -79,7 +82,7 @@ StreamModelPool::CreateModelInstance(const ModelId id)
 
 		// root node(s)
 		if (node->parent == nullptr)
-			this->CreateModelInstanceRecursive(node, nullptr, alloc, nodeInstances);
+			this->CreateModelInstanceRecursive(node, nullptr, mem, nodeInstances);
 	}
 
 	return miid;
@@ -94,8 +97,8 @@ StreamModelPool::DestroyModelInstance(const ModelInstanceId id)
 	// release allocator memory, and return index to pool
 	SizeT& instances = this->modelAllocator.Get<4>(id.model);
 	instances--;
-	this->modelInstanceAllocator.Get<0>(id.instance).Release();
-	this->modelInstanceAllocator.Get<1>(id.instance).Clear();
+	//this->modelInstanceAllocator.Get<0>(id.instance).Release();
+	//this->modelInstanceAllocator.Get<1>(id.instance).Clear();
 	this->modelInstanceAllocator.DeallocObject(id.instance);
 }
 
@@ -115,24 +118,24 @@ Math::bbox&
 StreamModelPool::GetModelBoundingBox(const ModelId id)
 {
 	return this->modelAllocator.Get<0>(id.allocId);
-} 
-
-//------------------------------------------------------------------------------
-/**
-*/
-const Math::bbox&
-StreamModelPool::GetModelBoundingBox(const ModelInstanceId id)
-{
-	return this->modelInstanceAllocator.Get<3>(id.model);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 const Math::bbox&
+StreamModelPool::GetModelInstanceBoundingBox(const ModelInstanceId id) const
+{
+	return this->modelInstanceAllocator.Get<2>(id.instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::bbox&
 StreamModelPool::GetModelInstanceBoundingBox(const ModelInstanceId id)
 {
-	return this->modelInstanceAllocator.Get<3>(id.instance);
+	return this->modelInstanceAllocator.Get<2>(id.instance);
 }
 
 //------------------------------------------------------------------------------
@@ -140,15 +143,15 @@ StreamModelPool::GetModelInstanceBoundingBox(const ModelInstanceId id)
 	Create model instance breadth first
 */
 void
-StreamModelPool::CreateModelInstanceRecursive(Models::ModelNode* node, Models::ModelNode::Instance* parentInstance, Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& allocator, Util::Array<Models::ModelNode::Instance*>& instances)
+StreamModelPool::CreateModelInstanceRecursive(Models::ModelNode* node, Models::ModelNode::Instance* parentInstance, byte* memory, Util::Array<Models::ModelNode::Instance*>& instances)
 {
-	Models::ModelNode::Instance* inst = node->CreateInstance(allocator, parentInstance);
+	Models::ModelNode::Instance* inst = node->CreateInstance(memory, parentInstance);
 	instances.Append(inst);
 
 	// continue recursion
 	IndexT i;
 	for (i = 0; i < node->children.Size(); i++)
-		CreateModelInstanceRecursive(node->children[i], inst, allocator, instances);
+		CreateModelInstanceRecursive(node->children[i], inst, memory, instances);
 }
 
 //------------------------------------------------------------------------------
@@ -159,6 +162,8 @@ StreamModelPool::LoadFromStream(const Resources::ResourceId id, const Util::Stri
 {
 	// a model is a list of resources, a bounding box, and a dictionary of nodes
 	Math::bbox& boundingBox = this->Get<0>(id);
+	SizeT& instanceSize = this->Get<5>(id);
+	instanceSize = 0;
 	boundingBox.set(Math::point(0), Math::vector(0));
 	Memory::ChunkAllocator<MODEL_MEMORY_CHUNK_SIZE>& allocator = this->Get<1>(id);
 	Util::Dictionary<Util::StringAtom, Models::ModelNode*>& nodes = this->Get<2>(id);
@@ -222,6 +227,7 @@ StreamModelPool::LoadFromStream(const Resources::ResourceId id, const Util::Stri
 				node->boundingBox = Math::bbox();
 				node->model = id;
 				node->name = name;
+				instanceSize += node->GetInstanceSize();
 				if (!this->nodeStack.IsEmpty())
 				{
 					Models::ModelNode* parent = this->nodeStack.Peek();

@@ -33,22 +33,22 @@ Graphics::GraphicsContext::State ctx::__state; \
 Graphics::GraphicsContextFunctionBundle ctx::__bundle; \
 void ctx::RegisterEntity(const Graphics::GraphicsEntityId id) \
 {\
-	n_assert(!__state.entitySliceMap.Contains(id.id));\
+	n_assert(!__state.entitySliceMap.Contains(id));\
 	Graphics::ContextEntityId allocId = __state.Alloc();\
 	__state.entitySliceMap.Add(id, allocId);\
 }\
 \
 void ctx::DeregisterEntity(const Graphics::GraphicsEntityId id)\
 {\
-	IndexT i = __state.entitySliceMap.FindIndex(id.id);\
+	IndexT i = __state.entitySliceMap.FindIndex(id);\
 	n_assert(i != InvalidIndex);\
-	__state.Dealloc(__state.entitySliceMap.ValueAtIndex(i));\
+	__state.Dealloc(__state.entitySliceMap.ValueAtIndex(id, i));\
 	__state.entitySliceMap.Erase(i);\
 }\
 \
 bool ctx::IsEntityRegistered(const Graphics::GraphicsEntityId id)\
 {\
-	return __state.entitySliceMap.Contains(id.id);\
+	return __state.entitySliceMap.Contains(id);\
 }\
 void ctx::Destroy()\
 {\
@@ -57,9 +57,10 @@ void ctx::Destroy()\
 
 #define CreateContext() \
 	__state.Alloc = Alloc; \
-	__state.Dealloc = Dealloc; 
+	__state.Dealloc = Dealloc; \
+	__state.entitySliceMap = Util::HashTable<Graphics::GraphicsEntityId, Graphics::ContextEntityId>(512);
 
-#define GetContextId(id) __state.entitySliceMap[id.id]
+#define GetContextId(id) __state.entitySliceMap[id]
 
 
 namespace Graphics
@@ -69,12 +70,12 @@ class View;
 struct GraphicsContextFunctionBundle
 {
 	void(*OnBeforeFrame)(const IndexT frameIndex, const Timing::Time frameTime);
-	void(*OnVisibilityReady)(const IndexT frameIndex, const Timing::Time frameTime);
+	void(*OnWaitForWork)(const IndexT frameIndex, const Timing::Time frameTime);
 	void(*OnBeforeView)(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime);
 	void(*OnAfterView)(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime);
 	void(*OnAfterFrame)(const IndexT frameIndex, const Timing::Time frameTime);
 
-	GraphicsContextFunctionBundle() : OnBeforeFrame(nullptr), OnVisibilityReady(nullptr), OnBeforeView(nullptr), OnAfterView(nullptr), OnAfterFrame(nullptr)
+	GraphicsContextFunctionBundle() : OnBeforeFrame(nullptr), OnWaitForWork(nullptr), OnBeforeView(nullptr), OnAfterView(nullptr), OnAfterFrame(nullptr)
 	{
 	};
 };
@@ -101,9 +102,10 @@ protected:
 
 	struct State
 	{
-		Util::Dictionary<GraphicsEntityId, ContextEntityId> entitySliceMap;
+		Util::HashTable<GraphicsEntityId, ContextEntityId> entitySliceMap;
 		ContextEntityId(*Alloc)();
 		void(*Dealloc)(ContextEntityId id);
+
 	}* state;
 };
 

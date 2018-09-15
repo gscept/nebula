@@ -37,10 +37,6 @@ public:
     void SetPriority(Priority p);
     /// get the thread priority
     Priority GetPriority() const;
-    /// set cpu core on which the thread should be running
-    void SetCoreId(System::Cpu::CoreId coreId);
-    /// get the cpu core on which the thread should be running
-    System::Cpu::CoreId GetCoreId() const;
     /// set stack size in bytes (default is 4 KByte)
     void SetStackSize(SizeT s);
     /// get stack size
@@ -49,6 +45,8 @@ public:
     void SetName(const Util::String& n);
     /// get thread name
     const Util::String& GetName() const;
+	/// set the thread affinity
+	void SetThreadAffinity(const uint mask);
 
     /// start executing the thread code, returns when thread has actually started
     void Start();
@@ -94,9 +92,9 @@ private:
     Win360Event threadStartedEvent;
     Win360Event stopRequestEvent;
     Priority priority;
+	uint affinityMask;
     SizeT stackSize;
     Util::String name;
-    System::Cpu::CoreId coreId;
     ThreadLocal static const char* ThreadName;
  
     #if NEBULA_DEBUG
@@ -184,19 +182,10 @@ Win360Thread::GetName() const
 //------------------------------------------------------------------------------
 /**
 */
-inline void
-Win360Thread::SetCoreId(System::Cpu::CoreId id)
+inline void 
+Win360Thread::SetThreadAffinity(const uint mask)
 {
-    this->coreId = id;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline System::Cpu::CoreId
-Win360Thread::GetCoreId() const
-{
-    return this->coreId;
+	this->affinityMask = mask;
 }
 
 }; // namespace Win360

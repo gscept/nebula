@@ -46,7 +46,7 @@ public:
 	
 	/// allocate new object, and calls constructor, but beware because this allocator does not run the destructors
 	template <typename T> T* Alloc();
-	/// allocate new chunk of size
+	/// allocate new chunk of sizew		
 	void* Alloc(SizeT size);
 	/// retires a chunk and creates a new one (might waste memory)
 	void NewChunk();

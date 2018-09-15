@@ -17,13 +17,15 @@
 #include "systems/quadtreesystem.h"
 #include "systems/bruteforcesystem.h"
 
+#include "system/cpu.h"
+
 namespace Visibility
 {
 
 ObserverContext::ObserverAllocator ObserverContext::observerAllocator;
 ObservableContext::ObserveeAllocator ObservableContext::observeeAllocator;
 
-Util::Array<System*> ObserverContext::systems;
+Util::Array<VisibilitySystem*> ObserverContext::systems;
 Jobs::JobPortId ObserverContext::jobPort;
 Threading::SafeQueue<Jobs::JobId> ObserverContext::runningJobs;
 
@@ -42,10 +44,19 @@ ObserverContext::Setup(const Graphics::GraphicsEntityId id, VisibilityEntityType
 	const Util::Array<Graphics::GraphicsEntityId>& ids = ObservableContext::observeeAllocator.GetArray<1>();
 	for (IndexT i = 0; i < ids.Size(); i++)
 	{
+		
 		Ids::Id32 res = observerAllocator.Get<3>(cid.id).AllocObject();
 		Graphics::ContextEntityId cid2 = ObservableContext::__state.entitySliceMap[ids[i].id];
 		n_assert(res == cid2.id);
 		observerAllocator.Get<3>(cid.id).Get<0>(res) = true;
+
+		if (entityType == Model)
+		{
+			const Util::Array<Models::ModelNode::Instance*>& nodes = Models::ModelContext::GetModelNodeInstances(id);
+
+			// set number of nodes allocated
+			observerAllocator.Get<3>(cid.id).Get<2>(res) = nodes.Size();
+		}
 	}
 }
 
@@ -129,7 +140,7 @@ ObserverContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frame
 	// prepare visibility systems
 	if (observerTransforms.Size() > 0) for (i = 0; i < ObserverContext::systems.Size(); i++)
 	{
-		System* sys = ObserverContext::systems[i];
+		VisibilitySystem* sys = ObserverContext::systems[i];
 		Util::Array<bool>& flags = vis[i].GetArray<0>();
 		sys->PrepareObservers(observerTransforms.Begin(), flags.Begin(), observerTransforms.Size());
 	}
@@ -138,7 +149,7 @@ ObserverContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frame
 	const Util::Array<Graphics::GraphicsEntityId>& ids = ObservableContext::observeeAllocator.GetArray<1>();
 	if (observeeTransforms.Size() > 0) for (i = 0; i < ObserverContext::systems.Size(); i++)
 	{
-		System* sys = ObserverContext::systems[i];
+		VisibilitySystem* sys = ObserverContext::systems[i];
 		sys->PrepareEntities(observeeTransforms.Begin(), ids.Begin(), observeeTransforms.Size());
 	}
 
@@ -146,7 +157,7 @@ ObserverContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frame
 	IndexT j;
 	for (j = 0; j < ObserverContext::systems.Size(); j++)
 	{
-		System* sys = ObserverContext::systems[j];
+		VisibilitySystem* sys = ObserverContext::systems[j];
 		sys->Run();
 	}
 }
@@ -158,7 +169,7 @@ void
 ObserverContext::Create()
 {
 	__bundle.OnBeforeFrame = ObserverContext::OnBeforeFrame;
-	__bundle.OnVisibilityReady = nullptr;
+	__bundle.OnWaitForWork = ObserverContext::WaitForVisibility;
 	__bundle.OnBeforeView = nullptr;
 	__bundle.OnAfterView = nullptr;
 	__bundle.OnAfterFrame = nullptr;
@@ -167,7 +178,8 @@ ObserverContext::Create()
 	Jobs::CreateJobPortInfo info =
 	{
 		"VisibilityJobPort",
-		8,
+		4,
+		System::Cpu::Core1 | System::Cpu::Core2 | System::Cpu::Core3 | System::Cpu::Core4,
 		UINT_MAX
 	};
 	ObserverContext::jobPort = Jobs::CreateJobPort(info);
@@ -178,7 +190,7 @@ ObserverContext::Create()
 //------------------------------------------------------------------------------
 /**
 */
-System*
+VisibilitySystem*
 ObserverContext::CreateBoxSystem(const BoxSystemLoadInfo& info)
 {
 	BoxSystem* system = n_new(BoxSystem);
@@ -190,7 +202,7 @@ ObserverContext::CreateBoxSystem(const BoxSystemLoadInfo& info)
 //------------------------------------------------------------------------------
 /**
 */
-System*
+VisibilitySystem*
 ObserverContext::CreatePortalSystem(const PortalSystemLoadInfo& info)
 {
 	PortalSystem* system = n_new(PortalSystem);
@@ -202,7 +214,7 @@ ObserverContext::CreatePortalSystem(const PortalSystemLoadInfo& info)
 //------------------------------------------------------------------------------
 /**
 */
-System*
+VisibilitySystem*
 ObserverContext::CreateOctreeSystem(const OctreeSystemLoadInfo& info)
 {
 	OctreeSystem* system = n_new(OctreeSystem);
@@ -214,7 +226,7 @@ ObserverContext::CreateOctreeSystem(const OctreeSystemLoadInfo& info)
 //------------------------------------------------------------------------------
 /**
 */
-System*
+VisibilitySystem*
 ObserverContext::CreateQuadtreeSystem(const QuadtreeSystemLoadInfo & info)
 {
 	QuadtreeSystem* system = n_new(QuadtreeSystem);
@@ -226,7 +238,7 @@ ObserverContext::CreateQuadtreeSystem(const QuadtreeSystemLoadInfo & info)
 //------------------------------------------------------------------------------
 /**
 */
-System* 
+VisibilitySystem* 
 ObserverContext::CreateBruteforceSystem(const BruteforceSystemLoadInfo& info)
 {
 	BruteforceSystem* system = n_new(BruteforceSystem);
@@ -239,7 +251,7 @@ ObserverContext::CreateBruteforceSystem(const BruteforceSystemLoadInfo& info)
 /**
 */
 void
-ObserverContext::WaitForVisibility()
+ObserverContext::WaitForVisibility(const IndexT frameIndex, const Timing::Time frameTime)
 {
 	Util::Array<Jobs::JobId> jobs;
 	ObserverContext::runningJobs.DequeueAll(jobs);

@@ -580,8 +580,8 @@ ResourceTableCommitChanges(const ResourceTableId& id)
 	if (i != 0) 
 	{
 		vkUpdateDescriptorSets(dev, writeList.Size(), writeList.Begin(), 0, nullptr);
-		writeList.Clear();
-		infoList.Clear();
+		writeList.Free();
+		infoList.Free();
 	}
 }
 
