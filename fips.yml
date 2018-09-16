@@ -12,6 +12,9 @@ imports:
         git: https://github.com/gscept/fips-devil.git
      fips-flatbuffers:
         git: ssh://git@git.ikplus.de:4715/nebula/fips-flatbuffers.git
+     fips-stackwalker:
+        git: https://github.com/gscept/fips-stackwalker.git
+        cond: "FIPS_WINDOWS"
 
 exports:
     header-dirs : 

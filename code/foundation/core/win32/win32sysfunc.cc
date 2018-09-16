@@ -140,6 +140,7 @@ SysFunc::Error(const char* error)
     {
         ShowWindow(hwnd, SW_MINIMIZE);
     }
+    */
 	Util::Array<Util::String> stacktrace = Win32StackTrace::GenerateStackTrace();
 	Util::String format;
     // remove the first 7 entries as they are only the assert/error functions and the last 6 as they are windows startup 
@@ -149,9 +150,9 @@ SysFunc::Error(const char* error)
 		format.Append("\n");
 	}
 	format.Format("%s\nCallstack:\n%s", error, format.AsCharPtr());
-	*/
+	
 
-	::MessageBox(NULL, error, "NEBULA T SYSTEM ERROR", MB_OK | MB_APPLMODAL | MB_SETFOREGROUND | MB_TOPMOST | MB_ICONERROR);
+	::MessageBox(NULL, format.AsCharPtr(), "NEBULA T SYSTEM ERROR", MB_OK | MB_APPLMODAL | MB_SETFOREGROUND | MB_TOPMOST | MB_ICONERROR);
     #if !__MAYA__
     Debug::MiniDump::WriteMiniDump();
     #endif
