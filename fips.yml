@@ -33,4 +33,3 @@ exports:
         resource: code/resource
         game: code/application
         corelibs: extlibs/mixed
-        physics: code/physics
