@@ -70,8 +70,7 @@ void
 BaseContactListener::OnNewContactPoint(const Ptr<Physics::PhysicsObject>& object, const Math::point& point, const Math::vector& normal, float distance)
 {
 	const PhysicsObject::Id& id = object->GetUniqueId();
-
-	//FIXME (Havok): sometimes the engine removes a collision before a new contact point is registered
+	
 	if (!this->collisions.Contains(id))
 	{
 		n_printf(" ----- BaseContactListener::OnNewContactPoint: Error, id %d @ %d\n", (int)object->GetUniqueId(), (int)object.get());
