@@ -23,9 +23,9 @@ PosixThread::PosixThread() :
     running(false),
     priority(Normal),
     stackSize(4096),
-    coreId(System::Cpu::InvalidCoreId)
+    coreId(System::Cpu::Core0)
 {
-    // empty
+	// empty
 }
 
 //------------------------------------------------------------------------------
@@ -185,5 +185,15 @@ Posix::PosixThread::YieldThread()
 #endif
 }
 
-
+//------------------------------------------------------------------------------
+/**
+ */
+void
+PosixThread::SetThreadAffinity(uint mask)
+{
+	n_assert(this->threadHandle != 0);
+	CPU_SET(mask, &this->affinity);
+	pthread_set_affinity_np(this->threadHandle, sizeof(cpu_set_t), &this->affinity);
+}
+	
 };
