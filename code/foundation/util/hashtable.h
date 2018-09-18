@@ -85,9 +85,9 @@ private:
 	int size;
 
 	/// if type is integral, just use that value directly
-	template<typename HASHTYPE> const IndexT GetHashCode(const typename std::enable_if<std::is_integral<HASHTYPE>::value, HASHTYPE>::type& key) const { return IndexT(key % this->hashArray.Size()); };
-	/// if not, call the function on HashCode on KEYTPYE
-	template<typename HASHTYPE> const IndexT GetHashCode(const HASHTYPE& key) const { return key.HashCode() % this->hashArray.Size();  };
+	template <typename HASHKEY> const IndexT GetHashCode(const typename std::enable_if<std::is_integral<HASHKEY>::value, HASHKEY>::type& key) const { return IndexT(key % this->hashArray.Size()); };
+	/// if not, call the function on HashCode on HASHKEY
+	template <typename HASHKEY> const IndexT GetHashCode(const HASHKEY& key) const { return key.HashCode() % this->hashArray.Size();  };
 };
 
 //------------------------------------------------------------------------------
@@ -260,7 +260,7 @@ HashTable<KEYTYPE, VALUETYPE>::Add(const KeyValuePair<KEYTYPE, VALUETYPE>& kvp)
 	#if NEBULA3_BOUNDSCHECKS
 	n_assert(!this->Contains(kvp.Key()));
 	#endif
-	IndexT hashIndex = GetHashCode(kvp.Key());
+	IndexT hashIndex = GetHashCode<KEYTYPE>(kvp.Key());
 	n_assert(hashIndex >= 0);
 	this->hashArray[hashIndex].InsertSorted(kvp);
 	this->size++;
@@ -285,7 +285,7 @@ inline VALUETYPE&
 HashTable<KEYTYPE, VALUETYPE>::AddUnique(const KEYTYPE& key)
 {
 	// get hash code from key, trim to capacity
-	IndexT hashIndex = GetHashCode(key);
+	IndexT hashIndex = GetHashCode<KEYTYPE>(key);
 	Array<KeyValuePair<KEYTYPE, VALUETYPE> >& hashElements = this->hashArray[hashIndex];
 	if (hashElements.Size() == 0)
 	{
@@ -332,7 +332,7 @@ HashTable<KEYTYPE, VALUETYPE>::Erase(const KEYTYPE& key)
 	#if NEBULA3_BOUNDSCHECKS
 	n_assert(this->size > 0);
 	#endif
-	IndexT hashIndex = GetHashCode(key);
+	IndexT hashIndex = GetHashCode<KEYTYPE>(key);
 	Array<KeyValuePair<KEYTYPE, VALUETYPE> >& hashElements = this->hashArray[hashIndex];
 	IndexT hashElementIndex = hashElements.BinarySearchIndex(key);
 	#if NEBULA3_BOUNDSCHECKS
@@ -351,7 +351,7 @@ HashTable<KEYTYPE, VALUETYPE>::Contains(const KEYTYPE& key) const
 {
 	if (this->size > 0)
 	{
-		IndexT hashIndex = GetHashCode(key);
+		IndexT hashIndex = GetHashCode<KEYTYPE>(key);
 		Array<KeyValuePair<KEYTYPE, VALUETYPE> >& hashElements = this->hashArray[hashIndex];
 		IndexT hashElementIndex = hashElements.BinarySearchIndex(key);
 		return (InvalidIndex != hashElementIndex);
@@ -369,7 +369,7 @@ template<class KEYTYPE, class VALUETYPE>
 inline IndexT
 HashTable<KEYTYPE, VALUETYPE>::FindIndex(const KEYTYPE& key) const
 {
-	IndexT hashIndex = GetHashCode(key);
+	IndexT hashIndex = GetHashCode<KEYTYPE>(key);
 	Array<KeyValuePair<KEYTYPE, VALUETYPE> >& hashElements = this->hashArray[hashIndex];
 	IndexT hashElementIndex = hashElements.BinarySearchIndex(key);
 	return hashElementIndex;
@@ -382,7 +382,7 @@ template<class KEYTYPE, class VALUETYPE>
 inline VALUETYPE&
 HashTable<KEYTYPE, VALUETYPE>::ValueAtIndex(const KEYTYPE& key, IndexT i) const
 {
-	IndexT hashIndex = GetHashCode(key);
+	IndexT hashIndex = GetHashCode<KEYTYPE>(key);
 	Array<KeyValuePair<KEYTYPE, VALUETYPE> >& hashElements = this->hashArray[hashIndex];
 	return hashElements[i].Value();
 }
