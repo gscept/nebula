@@ -15,6 +15,7 @@
 #include "threading/interlocked.h"
 #include "memory/posix/posixmemoryconfig.h"
 #include <malloc.h>
+#include <string.h>
 
 namespace Memory
 {
