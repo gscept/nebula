@@ -14,9 +14,14 @@ if(FIPS_WINDOWS)
 	SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /RTC1 /RTCc")
 	SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /RTC1")
 elseif(FIPS_LINUX)
-	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -std=gnu++0x -msse4.2 -march=sandybridge -ffast-math -fPIC -fno-trapping-math -funsafe-math-optimizations -ffinite-math-only -mrecip=all")
-	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse4.2 -march=sandybridge -ffast-math -fPIC -fno-trapping-math -funsafe-math-optimizations -ffinite-math-only -mrecip=all")
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -msse4.2 -march=sandybridge -ffast-math -fPIC -fno-trapping-math -funsafe-math-optimizations -ffinite-math-only -mrecip=all -Wall")
+	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse4.2 -march=sandybridge -ffast-math -fPIC -fno-trapping-math -funsafe-math-optimizations -ffinite-math-only -mrecip=all -Wall")
 endif()
+
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse4 -mavx")
 
 if(FIPS_WINDOWS)
 	option(N_MATH_DIRECTX "Use DirectXMath" ON)
@@ -36,6 +41,18 @@ set(DEFQT "N_QT4")
 set(N_QT ${DEFQT} CACHE STRING "Qt Version")
 set_property(CACHE N_QT PROPERTY STRINGS "N_QT4" "N_QT5")
 set(${N_QT} ON)
+
+
+# select physics implementation
+SET(N_BUILD_BULLET OFF)
+SET(N_BUILD_PHYSX OFF)
+SET(N_DEFAULT_PHYSICS "N_BUILD_BULLET")
+SET(N_PHYSICS ${N_DEFAULT_PHYSICS} CACHE STRING "Physics engine chosen by CMake")
+SET_PROPERTY(CACHE N_PHYSICS PROPERTY STRINGS "N_BUILD_BULLET" "N_BUILD_PHYSX")
+SET(${N_PHYSICS} ON)
+												
+SET_PROPERTY(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS $<$<BOOL:${N_BUILD_BULLET}>:__USE_BULLET__> $<$<BOOL:${N_BUILD_PHYSX}>:__USE_PHYSX__>)
+
 
 set(DEF_RENDERER "N_RENDERER_VULKAN")
 set(N_RENDERER ${DEF_RENDERER} CACHE STRING "Nebula 3D Render Device")

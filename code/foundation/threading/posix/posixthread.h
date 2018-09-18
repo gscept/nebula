@@ -14,6 +14,7 @@
 #include "threading/posix/posixevent.h"
 #include "threading/threadid.h"
 #include "system/cpu.h"
+#include <sched.h>
 
 //------------------------------------------------------------------------------
 namespace Posix
@@ -37,10 +38,8 @@ public:
     void SetPriority(Priority p);
     /// get the thread priority
     Priority GetPriority() const;
-    /// set cpu core on which the thread should be running
-    void SetCoreId(System::Cpu::CoreId coreId);
-    /// get the cpu core on which the thread should be running
-    System::Cpu::CoreId GetCoreId() const;
+    /// set thread affinity
+    void SetThreadAffinity(uint mask);
     /// set stack size in bytes (default is 4 KByte)
     void SetStackSize(unsigned int s);
     /// get stack size
@@ -76,12 +75,12 @@ private:
     static void* ThreadProc(void* self);
 
     pthread_t threadHandle;
+	cpu_set_t affinity;
     PosixEvent stopRequestEvent;
     bool running;
     Priority priority;
     unsigned int stackSize;
     Util::String name;
-    System::Cpu::CoreId coreId;
     static ThreadLocal const char* ThreadName;
 };
 
@@ -151,24 +150,6 @@ PosixThread::GetName() const
     return this->name;
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-PosixThread::SetCoreId(System::Cpu::CoreId id)
-{
-    this->coreId = id;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline System::Cpu::CoreId
-PosixThread::GetCoreId() const
-{
-    return this->coreId;
-}
-
-}; // namespace Posix
+} // namespace Posix
 //------------------------------------------------------------------------------
 #endif
