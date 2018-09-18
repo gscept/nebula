@@ -1,11 +1,11 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @class OpenGL4::GLFWDisplayDevice
+	@class OpenGL4::GLFWDisplayDevice
 
-    GLFW based OpenGL implementation of DisplayDevice class.
+	GLFW based OpenGL implementation of DisplayDevice class.
 
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+	(C) 2013-2016 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "GLFW/glfw3.h"
@@ -18,13 +18,13 @@ namespace GLFW
 {
 class GLFWDisplayDevice : public Base::DisplayDeviceBase
 {
-    __DeclareClass(GLFWDisplayDevice);
-    __DeclareSingleton(GLFWDisplayDevice);
+	__DeclareClass(GLFWDisplayDevice);
+	__DeclareSingleton(GLFWDisplayDevice);
 public:
-    /// constructor
-    GLFWDisplayDevice();
-    /// destructor
-    virtual ~GLFWDisplayDevice();
+	/// constructor
+	GLFWDisplayDevice();
+	/// destructor
+	virtual ~GLFWDisplayDevice();
 
 	/// open the display
 	bool Open();
@@ -55,7 +55,7 @@ protected:
 	friend class GLFWWindow;
 
 	friend class OGL4RenderDevice;
-    friend class GLFWInputServer;
+	friend class GLFWInputServer;
 
 	friend void CoreGraphics::DestroyWindow(const WindowId id);
 	friend void KeyFunc(const CoreGraphics::WindowId& id, int key, int scancode, int action, int mods);

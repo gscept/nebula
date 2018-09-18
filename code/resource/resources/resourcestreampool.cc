@@ -37,8 +37,8 @@ void
 ResourceStreamPool::Setup()
 {
 	// implement loader-specific setups, such as placeholder and error resource ids, as well as the acceptable resource class
-	this->placeholderResourceId = "";
-	this->errorResourceId = "";
+	this->placeholderResourceName = "";
+	this->errorResourceName = "";
 	this->uniqueResourceId = 0;
 }
 
@@ -263,7 +263,6 @@ Resources::ResourceStreamPool::CreateResource(const ResourceName& res, const Uti
 		ret.allocType = resourceId.id8;
 		
 		this->ids.Add(res, ret);
-
 
 		Ids::Id32 pendingId = this->pendingLoadPool.Alloc();
 		_PendingResourceLoad& pending = this->pendingLoads[pendingId];

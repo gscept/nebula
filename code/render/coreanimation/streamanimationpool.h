@@ -1,12 +1,12 @@
 #pragma once
 //------------------------------------------------------------------------------
 /** 
-    @class CoreAnimation::StreamAnimationLoader
-    
-    Initialize a CoreAnimation::AnimResource from the content of a stream.
-    
-    (C) 2008 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+	@class CoreAnimation::StreamAnimationLoader
+	
+	Initialize a CoreAnimation::AnimResource from the content of a stream.
+	
+	(C) 2008 Radon Labs GmbH
+	(C) 2013-2016 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 
@@ -22,7 +22,7 @@ namespace CoreAnimation
 
 class StreamAnimationPool : public Resources::ResourceStreamPool
 {
-    __DeclareClass(StreamAnimationPool);
+	__DeclareClass(StreamAnimationPool);
 
 public:
 	/// get clips
