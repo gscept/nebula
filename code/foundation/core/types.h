@@ -13,8 +13,8 @@
 #include "memory/memory.h"
 #endif
 
-#include <cstdint>
-
+#include <stddef.h>
+#include <stdint.h>
 // fixing Windows defines...
 #ifdef DeleteFile
 #undef DeleteFile

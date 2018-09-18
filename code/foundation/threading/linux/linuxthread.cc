@@ -36,7 +36,7 @@ List<LinuxThread*> LinuxThread::ThreadList;
 LinuxThread::LinuxThread() :
     priority(Normal),
     stackSize(0),
-    coreId(Cpu::InvalidCoreId),
+    coreId(System::Cpu::Core0),
     threadState(Initial)
 {
     // register with thread list
@@ -328,6 +328,17 @@ LinuxThread::GetMyThreadPriority()
     int policy;
     pthread_getschedparam(pthread_self(), &policy, &param);
     return param.sched_priority;
+}
+
+//------------------------------------------------------------------------------
+/**
+ */
+void
+LinuxThread::SetThreadAffinity(uint mask)
+{
+    n_assert(this->thread != 0);
+	CPU_SET(mask, &this->affinity);
+	pthread_set_affinity_np(this->thread, sizeof(cpu_set_t), &this->affinity);
 }
 
 } // namespace Linux
