@@ -3,7 +3,7 @@
 //  (C) 2010 Radon Labs GmbH
 //  (C) 2013 Individual contributors, see AUTHORS file
 //-------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "foundation/stdneb.h"
 #include "linuxthread.h"
 #if !(__OSX__ || __NACL__)
 #include <sched.h>
@@ -338,7 +338,7 @@ LinuxThread::SetThreadAffinity(uint mask)
 {
     n_assert(this->thread != 0);
 	CPU_SET(mask, &this->affinity);
-	pthread_set_affinity_np(this->thread, sizeof(cpu_set_t), &this->affinity);
+	pthread_setaffinity_np(this->thread, sizeof(cpu_set_t), &this->affinity);
 }
 
 } // namespace Linux

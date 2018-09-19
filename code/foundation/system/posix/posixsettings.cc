@@ -2,7 +2,7 @@
 //  posixsettings.cc
 //  (C) 2013 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "foundation/stdneb.h"
 #include "core/ptr.h"
 #include "io/fswrapper.h"
 #include "system/posix/posixsettings.h"
