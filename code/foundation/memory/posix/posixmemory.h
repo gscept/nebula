@@ -279,6 +279,7 @@ __cdecl operator delete[](void* p)
 }
 
 #define n_new(type) new type
+#define n_new_inplace(type, mem) new (mem) type 
 #define n_new_array(type,size) new type[size]
 #define n_delete(ptr) delete ptr
 #define n_delete_array(ptr) delete[] ptr
