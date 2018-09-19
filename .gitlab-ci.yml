@@ -7,6 +7,8 @@ stages:
 
 build:
    stage: build
+   only:
+    - master
    script:
     - call ./fips set config vulkan-win64-vstudio-debug
     - call ./fips gen
