@@ -85,9 +85,9 @@ private:
 	int size;
 
 	/// if type is integral, just use that value directly
-	template <typename KEYTYPE> const IndexT GetHashCode(const typename std::enable_if<std::is_integral<KEYTYPE>::value, KEYTYPE>::type& key) const { return IndexT(key % this->hashArray.Size()); };
-	/// if not, call the function on HashCode on KEYTPYE
-	template <typename KEYTYPE> const IndexT GetHashCode(const KEYTYPE& key) const { return key.HashCode() % this->hashArray.Size();  };
+	template <typename HASHKEY> const IndexT GetHashCode(const typename std::enable_if<std::is_integral<HASHKEY>::value, HASHKEY>::type& key) const { return IndexT(key % this->hashArray.Size()); };
+	/// if not, call the function on HashCode on HASHKEY
+	template <typename HASHKEY> const IndexT GetHashCode(const HASHKEY& key) const { return key.HashCode() % this->hashArray.Size();  };
 };
 
 //------------------------------------------------------------------------------

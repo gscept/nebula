@@ -53,9 +53,6 @@ ObserverContext::Setup(const Graphics::GraphicsEntityId id, VisibilityEntityType
 		if (entityType == Model)
 		{
 			const Util::Array<Models::ModelNode::Instance*>& nodes = Models::ModelContext::GetModelNodeInstances(id);
-
-			// set number of nodes allocated
-			observerAllocator.Get<3>(cid.id).Get<2>(res) = nodes.Size();
 		}
 	}
 }
@@ -288,7 +285,7 @@ ImplementContext(ObservableContext);
 void
 ObservableContext::Setup(const Graphics::GraphicsEntityId id, VisibilityEntityType entityType)
 {
-	const Graphics::ContextEntityId cid = GetContextId(id);
+	const Graphics::ContextEntityId cid = ObservableContext::GetContextId(id);
 	observeeAllocator.Get<1>(cid.id) = id;
 	observeeAllocator.Get<2>(cid.id) = entityType;
 
@@ -300,6 +297,7 @@ ObservableContext::Setup(const Graphics::GraphicsEntityId id, VisibilityEntityTy
 		Ids::Id32 obj = alloc.AllocObject();
 		n_assert(cid == obj);
 		alloc.Get<0>(obj) = true;
+		alloc.Get<1>(obj) = Models::ModelContext::GetContextId(id); // get context Id since model can be loaded later...
 	}
 }
 

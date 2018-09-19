@@ -139,7 +139,7 @@ ModelContext::GetTransform(const Graphics::GraphicsEntityId id)
 {
 	const ContextEntityId cid = GetContextId(id);
 	ModelInstanceId& inst = modelContextAllocator.Get<1>(cid.id);
-	return Models::modelPool->modelInstanceAllocator.Get<1>(inst.instance);
+	return modelContextAllocator.Get<2>(cid.id);
 }
 
 //------------------------------------------------------------------------------
@@ -215,7 +215,7 @@ ModelContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTim
 /**
 */
 void
-ModelContext::OnVisibilityReady(const IndexT frameIndex, const Timing::Time frameTime)
+ModelContext::OnWaitForWork(const IndexT frameIndex, const Timing::Time frameTime)
 {
 }
 

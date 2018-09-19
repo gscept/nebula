@@ -12,6 +12,10 @@
 	24 bytes ---------------8 bytes --------------- 24 bytes -------------- 8 bytes
 	Pool storage id			Pool id					Allocator id			Allocator resource type
 
+	The pool storage id is the resource level index, the pool id is the global id of the resource pool, 
+	allocator id is instance level id, and the allocator resource type is just a flag we can use to check
+	the type of the id, in case we are confused. 
+
 	Example: If we allocate a texture and want to use TextureId, then we take the 24 bytes part (id.id24)
 	and use it to construct a Texture id, but we still need the ResourceId if we want to deallocate that
 	texture at some later point. To convert to such an id, use the SpecializedId.

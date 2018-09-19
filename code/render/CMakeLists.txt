@@ -704,6 +704,7 @@ ENDIF()
 				visibilitycontext.h
 				visibilityserver.cc
 				visibilityserver.h
+				visibilitysortjob.cc
 			)
 		fips_dir(visibility/systems)
 			fips_files(

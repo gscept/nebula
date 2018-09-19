@@ -10,6 +10,9 @@
 #include "visibility.h"
 #include "jobs/jobs.h"
 #include "visibility/systems/visibilitysystem.h"
+#include "models/model.h"
+#include "models/nodes/modelnode.h"
+#include "materials/materialtype.h"
 namespace Visibility
 {
 
@@ -44,20 +47,30 @@ public:
 	static Jobs::JobPortId jobPort;
 	static Threading::SafeQueue<Jobs::JobId> runningJobs;
 
+	template <class KEY, class T>
+	using VisibilityBucketTier = Util::HashTable<KEY, std::pair<bool, T>>;
+
+	template <class KEY>
+	using VisibilityBucketLeaf = Util::HashTable<KEY, Util::Array<Models::ModelNode::Instance*>>;
+
+	typedef 						VisibilityBucketTier<
+		Models::ModelId,			VisibilityBucketTier<
+		Models::ModelNode*,			VisibilityBucketTier<
+		Materials::MaterialType*,	VisibilityBucketLeaf<
+		Materials::MaterialId>>>>	VisibilityBuckets;
 private:
 
 	friend class ObservableContext;
-	friend class VisibilityContex;
 	typedef Ids::IdAllocator<
-		bool,					// visibility result
-		Ids::Id32,				// parent object
-		ubyte					// number of nodes (max 255)
+		bool,                               // visibility result
+		Graphics::ContextEntityId			// model context id
 	> VisibilityResultAllocator;
+
 	typedef Ids::IdAllocator<
-		Math::matrix44,					// transform of observer camera
-		Graphics::GraphicsEntityId, 	// entity id
-		VisibilityEntityType,			// type of object so we know how to get the transform
-		VisibilityResultAllocator		// visibility lookup table
+		Math::matrix44,						// transform of observer camera
+		Graphics::GraphicsEntityId, 		// entity id
+		VisibilityEntityType,				// type of object so we know how to get the transform
+		VisibilityResultAllocator			// visibility lookup table
 	> ObserverAllocator;
 	static ObserverAllocator observerAllocator;
 
