@@ -91,6 +91,8 @@ public:
     Util::Array<float> ReadFloatArray();
     /// read an int array from the stream
     Util::Array<int> ReadIntArray();
+	/// read an int array from the stream
+	Util::Array<uint> ReadUIntArray();
     /// read a bool array from the stream
     Util::Array<bool> ReadBoolArray();
     /// read a guid

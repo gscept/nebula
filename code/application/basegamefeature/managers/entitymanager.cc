@@ -43,6 +43,20 @@ EntityManager::NewEntity()
 //------------------------------------------------------------------------------
 /**
 */
+Util::Array<Entity>
+EntityManager::CreateEntities(uint n)
+{
+	Util::Array<Entity> arr;
+	for (SizeT i = 0; i < n; i++)
+	{
+		arr.Append(this->NewEntity());
+	}
+	return arr;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 EntityManager::DeleteEntity(const Entity & e)
 {
@@ -70,6 +84,15 @@ bool
 EntityManager::IsAlive(const Entity & e) const
 {
 	return this->pool.IsValid(e.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint
+EntityManager::GetNumEntities() const
+{
+	return this->numEntities;
 }
 
 //------------------------------------------------------------------------------

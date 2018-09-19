@@ -109,6 +109,16 @@ BaseComponent::DestroyAll()
 /**
 */
 uint32_t
+BaseComponent::GetNumInstances() const
+{
+	n_assert2(false, "Method has not been overridden!");
+	return 0;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint32_t
 BaseComponent::GetInstance(const Entity & entity) const
 {
 	// Override in subclass
@@ -193,6 +203,44 @@ const Util::FixedArray<Attr::AttrId>&
 BaseComponent::GetAttributeIds() const
 {
 	return this->attributeIds;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+BaseComponent::AllocInstances(uint num)
+{
+	n_assert2(false, "Method has not been overridden!");
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+BaseComponent::SetDataFromBlobs(uint from, uint to, Util::Array<Util::Blob> data)
+{
+	n_assert2(false, "Method has not been overridden!");
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Util::Array<Util::Blob>
+BaseComponent::GetDataAsBlobs()
+{
+	n_assert2(false, "Method has not been overridden!");
+	return Util::Array<Util::Blob>();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Util::Array<Util::Array<Entity>*>
+BaseComponent::GetEntityAttributes()
+{
+	n_assert2(false, "Method has not been overridden!");
+	return Util::Array<Util::Array<Entity>*>();
 }
 
 //------------------------------------------------------------------------------

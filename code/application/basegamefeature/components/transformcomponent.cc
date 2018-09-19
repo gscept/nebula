@@ -117,6 +117,67 @@ TransformComponent::DeregisterEntity(const Entity& entity)
 
 //------------------------------------------------------------------------------
 /**
+	@todo	we should reserve per array here.
+*/
+void
+TransformComponent::AllocInstances(uint num)
+{
+	for (size_t i = 0; i < num; i++)
+	{
+		this->data.data.Alloc();
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TransformComponent::SetDataFromBlobs(uint from, uint to, Util::Array<Util::Blob> data)
+{
+	this->data.data.GetArray<0>().Reserve(to - from);
+	void* ptr = (void*)&this->data.data.GetArray<0>();
+	Memory::Copy(data[0].GetPtr(), ptr, data[0].Size());
+
+	this->data.data.GetArray<0>().Reserve(to - from);
+	void* ptr = (void*)&this->data.data.GetArray<0>();
+	Memory::Copy(data[0].GetPtr(), ptr, data[0].Size());
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Util::Array<Util::Blob>
+TransformComponent::GetDataAsBlobs()
+{
+	Util::Array<Util::Blob> arr;
+
+	arr.Append(Util::Blob((void*)this->data.data.GetArray<0>().Begin(), this->data.data.GetArray<0>().ByteSize()));
+	arr.Append(Util::Blob((void*)this->data.data.GetArray<1>().Begin(), this->data.data.GetArray<0>().ByteSize()));
+	arr.Append(Util::Blob((void*)this->data.data.GetArray<2>().Begin(), this->data.data.GetArray<0>().ByteSize()));
+	arr.Append(Util::Blob((void*)this->data.data.GetArray<3>().Begin(), this->data.data.GetArray<0>().ByteSize()));
+	arr.Append(Util::Blob((void*)this->data.data.GetArray<4>().Begin(), this->data.data.GetArray<0>().ByteSize()));
+	arr.Append(Util::Blob((void*)this->data.data.GetArray<5>().Begin(), this->data.data.GetArray<0>().ByteSize()));
+	arr.Append(Util::Blob((void*)this->data.data.GetArray<6>().Begin(), this->data.data.GetArray<0>().ByteSize()));
+	
+	return arr;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Util::Array<Util::Array<Game::Entity>*>
+TransformComponent::GetEntityAttributes()
+{
+	Util::Array<Util::Array<Game::Entity>*> arr;
+	
+	// We only have one entity array for the transform component.
+	arr.Append(&this->data.data.GetArray<0>());
+
+	return arr;
+}
+
+//------------------------------------------------------------------------------
+/**
 */
 void
 TransformComponent::DeregisterAll()

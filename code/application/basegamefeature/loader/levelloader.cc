@@ -4,6 +4,10 @@
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "levelloader.h"
+#include "util/hashtable.h"
+#include "scenecompiler.h"
+#include "basegamefeature/managers/entitymanager.h"
+#include "basegamefeature/managers/componentmanager.h"
 
 namespace BaseGameFeature
 {
@@ -25,33 +29,52 @@ namespace BaseGameFeature
 bool
 LevelLoader::Save(const Util::String& levelName)
 {
-	//const uint ROOT = UINT_MAX;
-	//Scene scene;
-	//HashTable<Entity, uint> entities;
+	auto numEntities = Game::EntityManager::Instance()->GetNumEntities();
+	SceneCompiler scene;
+	uint hashedEntities = 0;
+	Util::HashTable<Game::Entity, uint> entities;
 
-	//// Fill numEntities and parentIndices
-	//RegisterNodes(ROOT, scene.Root(), scene, entities);
+	scene.numEntities = numEntities;
 
-	//// Fill components
-	//for (auto component : manager.registeredComponents)
-	//{
-	//	Component c;
+	// Fill components
 
-	//	c.fourcc = component.FourCC();
-	//	c.numInstances = component.NumRegistered();
-	//	c.data = component.InstanceDataBlob();
+	Ptr<Game::ComponentManager> manager = Game::ComponentManager::Instance();
+	scene.numComponents = manager->GetNumComponents();
+	for (SizeT i = 0; i < scene.numComponents; i++)
+	{
+		Ptr<Game::BaseComponent> component = manager->GetComponentAtIndex(i);
+		SceneComponent c;
 
-	//	// Update update each entity attribute
-	//	for (Entity& entity : component.GetEntityAttributes())
-	//	{
-	//		// Update all entity ids to the indices theyre located at.
-	//		// When loading we can then switch back to real entity ids.
-	//		entity = entities[entity];
-	//	}
+		c.fourcc = component->GetClassFourCC();
+		c.numInstances = component->GetNumInstances();
+		c.data = component->GetDataAsBlobs();
 
-	//	scene.numComponentTypes++;
-	//	scene.components.Append(c);
-	//}
+		// Update update each entity attribute
+		auto entityAttributes = component->GetEntityAttributes();
+		for (SizeT k = 0; k < entityAttributes.Size(); k++)
+		{
+			for (SizeT j = 0; j < entityAttributes[k]->Size(); j++)
+			{
+				// Update all entity ids to the indices they're located at.
+				// When loading we can then switch back to real entity ids.
+				if (entities.Contains((*entityAttributes[k])[j]))
+				{
+					(*entityAttributes[k])[j] = entities[(*entityAttributes[k])[j]];
+				}
+				else
+				{
+					// hash entity
+					entities.Add((*entityAttributes[k])[j], hashedEntities);
+					(*entityAttributes[k])[j] = hashedEntities;
+					hashedEntities++;
+				}
+			}
+		}
+
+		scene.components.Append(c);
+	}
+	scene.Compile(levelName);
+	
 	return false;
 }
 
@@ -62,28 +85,33 @@ LevelLoader::Save(const Util::String& levelName)
 bool
 LevelLoader::Load(const Util::String& levelName)
 {
-	//auto scene = LevelManager::GetLevel(levelName);
-	//Array<Entity> entities = EntityManager.CreateEntities(scene.numEntities);
-	//for (auto component : scene.components)
-	//{
-	//	Ptr<BaseComponent> c = ComponentManager::Instance()->ComponentByFourCC(component.fourcc);
-	//	if (c)
-	//	{
-	//		// Needs to create entirely new instances, not reuse old.
-	//		uint start = c->Size();
-	//		c->Alloc(component.numInstances);
-	//		uint end = c->Size();
-	//		c->SetData(start, end, component.data.unsafe_ptr());
-	//		auto entityAttributes = c->GetEntityAttributes();
-	//		for (uint i = start; i < end; i++)
-	//		{
-	//			// Update all entity ids to the newly generated.
-	//			entityAttributes[i] = entities[entityAttributes[i]];
-	//		}
+	SceneCompiler scene;
+	scene.Decompile(levelName);
+	
+	Util::Array<Game::Entity> entities = Game::EntityManager::Instance()->CreateEntities(scene.numEntities);
+	for (auto component : scene.components)
+	{
+		Ptr<Game::BaseComponent> c = Game::ComponentManager::Instance()->ComponentByFourCC(component.fourcc);
+		if (c.isvalid())
+		{
+			// Needs to create entirely new instances, not reuse old.
+			uint start = c->GetNumInstances();
+			c->AllocInstances(component.numInstances);
+			uint end = c->GetNumInstances();
+			c->SetDataFromBlobs(start, end, component.data);
+			auto entityAttributes = c->GetEntityAttributes();
+			for (SizeT k = 0; k < entityAttributes.Size(); k++)
+			{
+				for (uint j = start; j < end; j++)
+				{
+					// Update all entity ids to the newly generated.
+					(*entityAttributes[k])[j] = entities[(*entityAttributes[k])[j].id];
+				}
+			}
 
-	//		c->SetParents(start, end, entities, scene.parentIndices);
-	//	}
-	//}
+			c->SetParents(start, end, entities, scene.parentIndices);
+		}
+	}
 	return false;
 }
 

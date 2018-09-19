@@ -69,6 +69,8 @@ public:
 	/// Destroys all instances of this component, and deregisters every entity.
 	virtual void DestroyAll();
 
+	/// Return amount of registered entities
+	virtual uint32_t GetNumInstances() const;
 
 	/// returns an index to the instance data within the data buffer.
 	virtual uint32_t GetInstance(const Entity& entity) const;
@@ -96,12 +98,23 @@ public:
 
 	/// Returns an array with all attribute ids for this component
 	const Util::FixedArray<Attr::AttrId>& GetAttributeIds() const;
+		
 	
 	// Methods for custom implementations
+	// ----------------------------------
+
+	/// Allocate multiple instances quickly
+	virtual void AllocInstances(uint num);
+	
+	/// Sets data for each 
+	virtual void SetDataFromBlobs(uint from, uint to, Util::Array<Util::Blob> data);
+
+	/// Returns a blob for each attribute array this component contains. Implemented in componentdata
+	virtual Util::Array<Util::Blob> GetDataAsBlobs();
 
 	/// Returns all attributes that are of Entity type.
 	/// Just returns a pointer to each of the arrays containing the entity-ids
-	//virtual Util::Array<Util::Array<Entity>*> GetEntityAttributes();
+	virtual Util::Array<Util::Array<Game::Entity>*> GetEntityAttributes();
 
 	/// Called when relationships needs to be reconstructed
 	/// parentIndices point into the entities array

@@ -45,6 +45,15 @@ public:
 	/// Deregister Entity. This checks both active and inactive component instances.
 	void DeregisterEntity(const Entity& entity);
 
+	/// Allocate multiple instances
+	void AllocInstances(uint num);
+
+	void SetDataFromBlobs(uint from, uint to, Util::Array<Util::Blob> data);
+
+	Util::Array<Util::Blob> GetDataAsBlobs();
+
+	Util::Array<Util::Array<Game::Entity>*> GetEntityAttributes();
+
 	/// Deregister all entities from both inactive and active. Garbage collection will take care of freeing up data.
 	void DeregisterAll();
 
