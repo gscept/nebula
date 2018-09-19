@@ -569,6 +569,32 @@ BinaryReader::ReadIntArray()
 //------------------------------------------------------------------------------
 /**
 */
+Util::Array<uint>
+BinaryReader::ReadUIntArray()
+{
+	uint size = this->ReadInt();
+	uint* buf = (uint*)Memory::Alloc(Memory::ScratchHeap, sizeof(uint) * size);
+	if (this->isMapped)
+	{
+		// note: the memory copy is necessary to circumvent alignment problem on some CPUs
+		n_assert((this->mapCursor + sizeof(Math::matrix44)) <= this->mapEnd);
+		Memory::Copy(this->mapCursor, buf, sizeof(uint) * size);
+		this->mapCursor += sizeof(uint) * size;
+	}
+	else
+	{
+		this->stream->Read(buf, sizeof(uint) * size);
+	}
+	Util::Array<uint> val(size, 0, 0);
+	IndexT i;
+	for (i = 0; i < size; i++) val[i] = buf[i];
+	Memory::Free(Memory::ScratchHeap, (void*)buf);
+	return val;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 Util::Array<bool> 
 BinaryReader::ReadBoolArray()
 {

@@ -123,6 +123,9 @@ public:
     /// do a binary search, requires a sorted array
     IndexT BinarySearchIndex(const TYPE& elm) const;
 
+	/// Return the byte size of the array
+	SizeT ByteSize() const;
+
 	/// for range-based iteration
 	Iterator begin() const;
 	Iterator end() const;
@@ -946,6 +949,15 @@ Array<TYPE>::BinarySearchIndex(const TYPE& elm) const
         }
     }
     return InvalidIndex;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE> SizeT
+Array<TYPE>::ByteSize() const
+{
+	return this->size * sizeof(TYPE);
 }
 
 //------------------------------------------------------------------------------
