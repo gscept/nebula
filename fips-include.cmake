@@ -163,7 +163,13 @@ macro(add_nebula_shaders)
         MESSAGE(WARNING "Not compiling shaders, ShaderC not found, did you compile nebula-toolkit?")
     else()    
         if(FIPS_WINDOWS)
+            
             get_filename_component(workdir "[HKEY_CURRENT_USER\\SOFTWARE\\gscept\\ToolkitShared;workdir]" ABSOLUTE)
+            # get_filename_component returns /registry when a key is not found...
+            if(${workdir} STREQUAL "/registry")
+                MESSAGE(WARNING "Registry keys for project not found, did you set your workdir?")
+                return()
+            endif()
             set(EXPORT_DIR "${workdir}/export_win32")
         endif()
         
