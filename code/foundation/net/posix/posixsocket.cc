@@ -325,7 +325,7 @@ PosixSocket::Accept(Ptr<Net::Socket>& outSocket)
     n_assert(this->IsBound());
 
     this->ClearError();
-    outSocket = 0;
+    outSocket = nullptr;
     sockaddr_in sockAddr;
     socklen_t sockAddrSize = sizeof(sockAddr);
     SOCKET newSocket = accept(this->sock, (sockaddr*) &sockAddr, &sockAddrSize);

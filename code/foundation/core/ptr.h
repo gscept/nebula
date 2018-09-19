@@ -14,6 +14,7 @@
 */
 #include "core/types.h"
 #include <type_traits>
+#include <functional>
 
 // platform secific stuff for handling/suppress "unused-argument"-warnings
 #if NEBULA_DEBUG

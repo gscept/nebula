@@ -45,7 +45,7 @@ public:
 	/// runs before frame is updated
 	static void OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime);
 	/// runs when visibility has finished processing 
-	static void OnVisibilityReady(const IndexT frameIndex, const Timing::Time frameTime);
+	static void OnWaitForWork(const IndexT frameIndex, const Timing::Time frameTime);
 	/// runs before a specific view
 	static void OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime);
 	/// runs after view is rendered
@@ -54,7 +54,6 @@ public:
 	static void OnAfterFrame(const IndexT frameIndex, const Timing::Time frameTime);
 
 private:
-
 	typedef Ids::IdAllocator<
 		ModelId,
 		ModelInstanceId,

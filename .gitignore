@@ -9,3 +9,11 @@ fips-generators/*.pyc
 /fips-files/verbs/*.pyc
 /fips-files/generators/**/*.pyc
 export_win32/*
+/code/render/coregraphics/attic
+/code/foundation/jobs/attic
+/code/render/coregraphics/mesh_old.h
+/code/render/coregraphics/mesh_old.cc
+/code/render/materials_old
+/code/render/models_old
+/code/render/visibility/jobs_old
+/code/render/visibility/visibilitysystems_old
