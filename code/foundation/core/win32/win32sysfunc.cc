@@ -16,6 +16,7 @@
 #include "util/localstringatomtable.h"  
 #include "system/systeminfo.h"
 #include "debug/win32/win32stacktrace.h"
+#include <io.h>
 
 namespace Win32
 {
@@ -151,12 +152,23 @@ SysFunc::Error(const char* error)
 	}
 	format.Format("%s\nCallstack:\n%s", error, format.AsCharPtr());
 	
-
-	::MessageBox(NULL, format.AsCharPtr(), "NEBULA T SYSTEM ERROR", MB_OK | MB_APPLMODAL | MB_SETFOREGROUND | MB_TOPMOST | MB_ICONERROR);
-    #if !__MAYA__
-    Debug::MiniDump::WriteMiniDump();
-    #endif
-    abort();
+    if(_isatty(_fileno(stdout)))
+    {
+        ::MessageBox(NULL, format.AsCharPtr(), "NEBULA T SYSTEM ERROR", MB_OK | MB_APPLMODAL | MB_SETFOREGROUND | MB_TOPMOST | MB_ICONERROR);
+#if !__MAYA__
+        Debug::MiniDump::WriteMiniDump();
+#endif
+        abort();
+    }
+    else
+    {
+#ifdef _DEBUG
+        OutputDebugString(format.AsCharPtr());
+        fprintf(stderr,"%s\n",format.AsCharPtr());        
+#endif
+        exit(1);//abort();        
+    }
+	
 }
 
 //------------------------------------------------------------------------------

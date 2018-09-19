@@ -8,7 +8,7 @@
     (C) 2013 Gustav Sterbrant
 */
 #include "core/types.h"
-#include "base/resourcebase.h"
+#include "coregraphics/gpubuffertypes.h"
 
 namespace CoreGraphics
 {
@@ -31,8 +31,8 @@ struct Nvx3Header
 	uint vertexWidth;
 	uint numIndices;
 	uint vertexComponentMask;
-	Base::ResourceBase::Usage usage;
-	Base::ResourceBase::Access access;
+	CoreGraphics::GpuBufferTypes::Usage usage;
+	CoreGraphics::GpuBufferTypes::Access access;
 };
 
 struct Nvx3Group
