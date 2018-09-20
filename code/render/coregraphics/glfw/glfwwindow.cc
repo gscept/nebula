@@ -691,7 +691,7 @@ namespace Vulkan
 /**
 */
 const VkSurfaceKHR&
-Vulkan::GetSurface(const CoreGraphics::WindowId& id)
+GetSurface(const CoreGraphics::WindowId& id)
 {
 	const VkSwapchainInfo& swapInfo = glfwWindowAllocator.Get<GLFWSwapChainField>(id.id24);
 	return swapInfo.surface;
@@ -701,7 +701,7 @@ Vulkan::GetSurface(const CoreGraphics::WindowId& id)
 /**
 */
 void
-Vulkan::SetupVulkanSwapchain(const CoreGraphics::WindowId& id, const CoreGraphics::DisplayMode& mode, const Util::StringAtom& title)
+SetupVulkanSwapchain(const CoreGraphics::WindowId& id, const CoreGraphics::DisplayMode& mode, const Util::StringAtom& title)
 {
 	VkWindowSwapInfo& windowInfo = glfwWindowAllocator.Get<GLFWWindowSwapInfoField>(id.id24);
 	VkSwapchainInfo& swapInfo = glfwWindowAllocator.Get<GLFWSwapChainField>(id.id24);
@@ -890,7 +890,7 @@ Vulkan::SetupVulkanSwapchain(const CoreGraphics::WindowId& id, const CoreGraphic
 /**
 */
 void
-Vulkan::DiscardVulkanSwapchain(const CoreGraphics::WindowId& id)
+DiscardVulkanSwapchain(const CoreGraphics::WindowId& id)
 {
 	VkWindowSwapInfo& wndInfo = glfwWindowAllocator.Get<GLFWWindowSwapInfoField>(id.id24);
 	VkBackbufferInfo& backbufferInfo = glfwWindowAllocator.Get<GLFWBackbufferField>(id.id24);

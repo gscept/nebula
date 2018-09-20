@@ -94,10 +94,11 @@ public:
 	/// destructor
 	virtual ~GraphicsContext();
 
+	// gcc doesnt like these at all.
 	/// create context
-	virtual void Create() = 0;
+	//virtual void Create() = 0;
 	/// destroy context
-	virtual void Destroy() = 0;
+	//virtual void Destroy() = 0;
 
 protected:
 	friend class GraphicsServer;

@@ -23,5 +23,5 @@
 #error "precompiled.h not implemented on this platform"
 #endif
 
-#include "precompiled.h"
+#include "render/precompiled.h"
 //------------------------------------------------------------------------------

@@ -17,13 +17,13 @@ namespace Materials
 {
 struct MaterialTexture
 {
-	CoreGraphics::TextureId default;
+	CoreGraphics::TextureId defaultValue;
 	CoreGraphics::TextureType type;
 	bool system : 1;
 };
 struct MaterialConstant
 {
-	Util::Variant default;
+	Util::Variant defaultValue;
 	Util::Variant min;
 	Util::Variant max;
 	Util::Variant::Type type;
