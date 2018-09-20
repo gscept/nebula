@@ -12,6 +12,17 @@
 #include "materials/materialserver.h"
 #include "model.h"
 #include "nodes/modelnode.h"
+
+namespace Jobs
+{
+struct JobFuncContext;
+};
+
+namespace Visibility
+{
+void VisibilitySortJob(const Jobs::JobFuncContext& ctx);
+};
+
 namespace Models
 {
 class ModelContext : public Graphics::GraphicsContext
@@ -66,6 +77,13 @@ private:
 	static Graphics::ContextEntityId Alloc();
 	/// deallocate a slice
 	static void Dealloc(Graphics::ContextEntityId id);
+
+	friend void Visibility::VisibilitySortJob(const Jobs::JobFuncContext& ctx);
+
+	/// get model
+	static const Models::ModelInstanceId GetModel(const Graphics::ContextEntityId id);
+	/// get model node instances
+	static const Util::Array<Models::ModelNode::Instance*>& GetModelNodeInstances(const Graphics::ContextEntityId id);
 };
 
 //------------------------------------------------------------------------------
@@ -85,5 +103,6 @@ ModelContext::Dealloc(Graphics::ContextEntityId id)
 {
 	modelContextAllocator.DeallocObject(id.id);
 }
+
 
 } // namespace Models

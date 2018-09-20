@@ -29,6 +29,8 @@ Util::Array<VisibilitySystem*> ObserverContext::systems;
 Jobs::JobPortId ObserverContext::jobPort;
 Threading::SafeQueue<Jobs::JobId> ObserverContext::runningJobs;
 
+extern void VisibilitySortJob(const Jobs::JobFuncContext& ctx);
+
 ImplementContext(ObserverContext);
 //------------------------------------------------------------------------------
 /**
@@ -72,28 +74,26 @@ ObserverContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frame
 	Util::Array<Math::matrix44>& observerTransforms = observerAllocator.GetArray<0>();
 	Util::Array<Math::matrix44>& observeeTransforms = ObservableContext::observeeAllocator.GetArray<0>();
 
+	const Util::Array<VisibilityResultAllocator>& results = observerAllocator.GetArray<3>();
+
 	IndexT i;
 	for (i = 0; i < observeeIds.Size(); i++)
 	{
 		const Graphics::GraphicsEntityId id = observeeIds[i];
 		const VisibilityEntityType type = observeeTypes[i];
 
-		Math::matrix44 mat;
-
 		switch (type)
 		{
 		case Model:
-			mat = Models::ModelContext::GetTransform(id);
+			observeeTransforms[i] = Models::ModelContext::GetTransform(id);
 			break;
 		case Light:
-			mat = Graphics::LightContext::GetTransform(id);
+			observeeTransforms[i] = Graphics::LightContext::GetTransform(id);
 			break;
 		case LightProbe:
-			mat = Graphics::LightProbeContext::GetTransform(id);
+			observeeTransforms[i] = Graphics::LightProbeContext::GetTransform(id);
 			break;
 		}
-
-		observeeTransforms[i] = mat;
 	}
 
 	for (i = 0; i < observerIds.Size(); i++)
@@ -101,22 +101,41 @@ ObserverContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frame
 		const Graphics::GraphicsEntityId id = observerIds[i];
 		const VisibilityEntityType type = observerTypes[i];
 
-		Math::matrix44 mat;
+		VisibilityResultAllocator& result = results[i];
+
+		// fetch current context ids
+		IndexT j;
+		for (j = 0; j < observeeIds.Size(); j++)
+		{
+			const VisibilityEntityType type = observeeTypes[i];
+			Util::Array<Graphics::ContextEntityId>& contextIds = result.GetArray<1>();
+
+			switch (type)
+			{
+			case Model:
+				contextIds[j] = Models::ModelContext::GetContextId(observeeIds[j]);
+				break;
+			case Light:
+				contextIds[j] = Graphics::LightContext::GetContextId(observeeIds[j]);
+				break;
+			case LightProbe:
+				contextIds[j] = Graphics::LightProbeContext::GetContextId(observeeIds[j]);
+				break;
+			}
+		}
 
 		switch (type)
 		{
 		case Camera:
-			mat = Graphics::CameraContext::GetViewProjection(id);
+			observerTransforms[i] = Graphics::CameraContext::GetViewProjection(id);
 			break;
 		case Light:
-			mat = Graphics::LightContext::GetTransform(id);
+			observerTransforms[i] = Graphics::LightContext::GetTransform(id);
 			break;
 		case LightProbe:
-			mat = Graphics::LightProbeContext::GetTransform(id);
+			observerTransforms[i] = Graphics::LightProbeContext::GetTransform(id);
 			break;
 		}
-
-		observerTransforms[i] = mat;
 	}
 
 	// first step, go through list of visible entities and reset
@@ -157,6 +176,42 @@ ObserverContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frame
 		VisibilitySystem* sys = ObserverContext::systems[j];
 		sys->Run();
 	}
+
+	// put a sync point for the jobs
+	Jobs::JobPortSync(ObserverContext::jobPort);
+
+	if (vis.Size() > 0) for (i = 0; i < vis.Size(); i++)
+	{
+		Util::Array<bool>& flags = vis[i].GetArray<0>();
+		Util::Array<Graphics::ContextEntityId>& entities = vis[i].GetArray<1>();
+		VisibilityBuckets& visibilities = observerAllocator.GetArray<4>()[i];
+
+		// then execute sort job, which only runs the function once
+		Jobs::JobContext ctx;
+		ctx.uniform.numBuffers = 0;
+		ctx.input.numBuffers = 2;
+		ctx.output.numBuffers = 1;
+
+		ctx.input.data[0] = flags.Begin();
+		ctx.input.dataSize[0] = sizeof(bool) * flags.Size();
+		ctx.input.sliceSize[0] = sizeof(bool) * flags.Size();
+		
+		ctx.input.data[1] = entities.Begin();
+		ctx.input.dataSize[1] = sizeof(Graphics::ContextEntityId) * entities.Size();
+		ctx.input.sliceSize[1] = sizeof(Graphics::ContextEntityId) * entities.Size();
+
+		ctx.output.data[0] = &visibilities;
+		ctx.output.dataSize[0] = sizeof(VisibilityBuckets);
+		ctx.output.sliceSize[0] = sizeof(VisibilityBuckets);
+
+		// schedule job
+		Jobs::JobId job = Jobs::CreateJob({ VisibilitySortJob });
+		Jobs::JobSchedule(job, ObserverContext::jobPort, ctx);
+
+		// add to delete list
+		ObserverContext::runningJobs.Enqueue(job);
+	}
+
 }
 
 //------------------------------------------------------------------------------
@@ -256,7 +311,10 @@ ObserverContext::WaitForVisibility(const IndexT frameIndex, const Timing::Time f
 	// wait for all jobs to finish
 	IndexT i;
 	for (i = 0; i < jobs.Size(); i++)
+	{
 		Jobs::JobWait(jobs[i]);
+		Jobs::DestroyJob(jobs[i]);
+	}
 }
 
 //------------------------------------------------------------------------------
