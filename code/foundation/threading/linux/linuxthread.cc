@@ -37,8 +37,10 @@ LinuxThread::LinuxThread() :
     priority(Normal),
     stackSize(0),
     coreId(System::Cpu::Core0),
-    threadState(Initial)
+    threadState(Initial),
+    thread(0)
 {
+    CPU_ZERO(&this->affinity);
     // register with thread list
     #if NEBULA3_DEBUG
     LinuxThread::criticalSection.Enter();
@@ -114,6 +116,11 @@ LinuxThread::Start()
 
     // FIXME: thread stack size isn't set?
 
+    // if affinity is set apply it
+    if(CPU_COUNT(&this->affinity))
+    {
+        pthread_setaffinity_np(this->thread, sizeof(cpu_set_t), &this->affinity);        
+    }
     // wait for thread to run
     this->threadStartedEvent.Wait();
 }
@@ -335,10 +342,12 @@ LinuxThread::GetMyThreadPriority()
  */
 void
 LinuxThread::SetThreadAffinity(uint mask)
-{
-    n_assert(this->thread != 0);
+{    
 	CPU_SET(mask, &this->affinity);
-	pthread_setaffinity_np(this->thread, sizeof(cpu_set_t), &this->affinity);
+    if(this->thread != 0)
+    {
+	    pthread_setaffinity_np(this->thread, sizeof(cpu_set_t), &this->affinity);
+    }
 }
 
 } // namespace Linux

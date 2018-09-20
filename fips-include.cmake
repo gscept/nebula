@@ -176,6 +176,9 @@ macro(add_nebula_shaders)
                 return()
             endif()
             set(EXPORT_DIR "${workdir}/export_win32")
+        else()
+            # use environment
+            set(EXPORT_DIR $ENV{NEBULA_WORK}/export_win32)
         endif()
         
         file(GLOB_RECURSE FXH "${NROOT}/work/shaders/vk/*.fxh")        

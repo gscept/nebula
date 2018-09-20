@@ -31,7 +31,7 @@ using namespace Util;
 /**
 */
 IoServer::IoServer() :
-    archiveFileSystemEnabled(true)
+    archiveFileSystemEnabled(false)
 {
     __ConstructSingleton;
 

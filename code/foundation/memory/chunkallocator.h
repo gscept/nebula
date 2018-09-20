@@ -222,6 +222,7 @@ inline T*
 ChunkAllocator<ChunkSize>::Alloc()
 {
 	static_assert(sizeof(T) <= ChunkSize, "Size of type is bigger than the chunk size!");
+	SizeT alignedSize = sizeof(T) + 16 - (sizeof(T)%16);
 	if (this->iterator == nullptr)
 	{
 		this->NewChunk();
@@ -229,13 +230,13 @@ ChunkAllocator<ChunkSize>::Alloc()
 	else
 	{
 		// we cast the pointer diff but it should be safe since it should never be above ChunkSize
-		SizeT remainder = ChunkSize - SizeT(this->iterator - this->currentChunk);
-		if (remainder < sizeof(T))
+		SizeT remainder = ChunkSize - SizeT(this->iterator - this->currentChunk);		
+		if (remainder < alignedSize)//sizeof(T))
 			this->NewChunk();
 	}
 
 	T* ret = new (this->iterator) T;
-	this->iterator += sizeof(T);
+	this->iterator += alignedSize;//sizeof(T);
 	return ret;
 }
 
@@ -246,6 +247,7 @@ template <int ChunkSize>
 inline void*
 ChunkAllocator<ChunkSize>::Alloc(SizeT size)
 {
+	size += 16-(size%16);
 	n_assert(size <= ChunkSize);
 	n_assert(size != 0);
 	if (this->iterator == nullptr)

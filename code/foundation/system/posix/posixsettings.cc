@@ -5,13 +5,31 @@
 #include "foundation/stdneb.h"
 #include "core/ptr.h"
 #include "io/fswrapper.h"
+#include "io/uri.h"
+#include "io/textreader.h"
+#include "io/ioserver.h"
 #include "system/posix/posixsettings.h"
+#include "cJSON.h"
 
 namespace Posix
 {
 using namespace Core;
 using namespace Util;
 
+static cJSON*
+GetSettingsJson(const Util::String & path)
+{
+    if(IO::FSWrapper::FileExists(path))
+    {
+        Ptr<IO::TextReader> reader = IO::TextReader::Create();
+        reader->SetStream(IO::IoServer::Instance()->CreateStream(path));
+        if(reader->Open())
+        {
+            Util::String str = reader->ReadAll();
+            return cJSON_Parse(str.AsCharPtr());            
+        }
+    }    
+}
 //------------------------------------------------------------------------------
 /**
     Return true if a specific entry exists in the config files
@@ -21,26 +39,18 @@ PosixSettings::Exists(const Util::String & vendor, const String& key, const Stri
 {       
     // build path to config
     Util::String path = GetUserDir() + "/.config/nebula/"+ vendor + ".cfg";
-    /*
-    if(IO::FSWrapper::FileExists(path))
+    bool found = false;
+    cJSON * js = GetSettingsJson(path);
+    if(js != NULL)
     {
-        property_tree::ptree pt;
-        read_xml(path.AsCharPtr(), pt);
-     
-        Util::String skey = key + "." + name;
-        try
+        const cJSON * keys = cJSON_GetObjectItemCaseSensitive(js, key.AsCharPtr());
+        if(keys != NULL)
         {
-            pt.get<std::string>(skey.AsCharPtr());
-            return true;
+            found = cJSON_HasObjectItem(keys, name.AsCharPtr());            
         }
-        catch(property_tree::ptree_bad_path p)
-        {
-            return false;
-        }
-        
+        cJSON_Delete(js);        
     }
-    */
-    return false;    
+    return found;
 }
 
 //------------------------------------------------------------------------------
@@ -106,26 +116,24 @@ PosixSettings::ReadString(const Util::String & vendor, const String& key, const 
 {        
     // build path to config
     Util::String path = GetUserDir() + "/.config/nebula/"+ vendor + ".cfg";    
-    /*
-    if(IO::FSWrapper::FileExists(path))
+
+    cJSON * js = GetSettingsJson(path);
+    if(js != NULL)
     {
-        property_tree::ptree pt;
-        read_xml(path.AsCharPtr(), pt);
-     
-        Util::String skey = key + "." + name;
-        Util::String retString;
-        try
+        const cJSON * keys = cJSON_GetObjectItemCaseSensitive(js, key.AsCharPtr());
+        if(keys != NULL)
         {
-            std::string ret = pt.get<std::string>(skey.AsCharPtr());            
-            retString.SetCharPtr(ret.c_str());
+            cJSON * val = cJSON_GetObjectItemCaseSensitive(js, name.AsCharPtr());
+            if( val != NULL && cJSON_IsString(val))
+            {
+                Util::String ret(val->valuestring);
+                cJSON_Delete(js);                
+                return ret;
+            }
         }
-        catch(property_tree::ptree_bad_path p)
-        {
-            n_error("failed to read setting %s from file %s\n",skey.AsCharPtr(),path.AsCharPtr());
-        }
-        return retString;        
+        cJSON_Delete(js);        
     }
-    */
+    
     n_error("failed to open settings file %s\n",path.AsCharPtr());
 }
 
