@@ -2,7 +2,7 @@
 //  particlesystemmaterialnodeinstance.cc
 //  (C) 2011-2016 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "render/stdneb.h"
 #include "particles/particlesystemnodeinstance.h"
 #include "particles/particlesystemnode.h"
 #include "coregraphics/transformdevice.h"

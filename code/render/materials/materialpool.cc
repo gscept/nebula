@@ -53,12 +53,12 @@ MaterialPool::LoadFromStream(const Resources::ResourceId id, const Util::StringA
 			IndexT index;
 			if (type->constants.Contains(paramName, index))
 			{
-				defaultVal = type->constants.ValueAtIndex(index).default;
+				defaultVal = type->constants.ValueAtIndex(index).defaultValue;
 			}
 			else if (type->textures.Contains(paramName, index))
 			{
 				defaultVal.SetType(Util::Variant::Int64);
-				defaultVal.SetInt64(type->textures.ValueAtIndex(index).default.HashCode64());
+				defaultVal.SetInt64(type->textures.ValueAtIndex(index).defaultValue.HashCode64());
 			}
 			else
 			{

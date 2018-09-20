@@ -17,6 +17,9 @@ imports:
         cond: "FIPS_WINDOWS"
     fips-bullet:
         git: https://github.com/floooh/fips-bullet.git
+    fips-cjson:
+        git: https://github.com/floooh/fips-cjson.git
+        cond: "FIPS_LINUX"
 
 exports:
     header-dirs : 
@@ -31,5 +34,4 @@ exports:
         foundation: code/foundation
         render: code/render
         resource: code/resource
-        game: code/application
         corelibs: extlibs/mixed

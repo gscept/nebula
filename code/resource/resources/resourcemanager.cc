@@ -21,6 +21,7 @@ int32_t ResourceManager::UniquePoolCounter = 0;
 ResourceManager::ResourceManager()
 {
 	__ConstructSingleton;
+	this->open = false;
 }
 
 //------------------------------------------------------------------------------
