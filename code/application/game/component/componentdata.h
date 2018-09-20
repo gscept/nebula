@@ -67,6 +67,14 @@ public:
 	/// Shortcut to set all instances values to provided values.
 	void SetInstanceData(const uint32_t& index, TYPES...);
 
+	/// Return data as a blob.
+	template <std::size_t...Is>
+	Util::Blob GetBlob() const;
+
+	/// Set data from blob
+	template <std::size_t...Is>
+	void SetBlob(uint from, uint to, const Util::Blob& data);
+
 	/// Contains all data for all instances of this component.
 	/// @note	The 0th type is always the owner Entity!
 	Util::ArrayAllocator<Entity, TYPES...> data;
@@ -317,6 +325,54 @@ template<class ... TYPES> void
 ComponentData<TYPES...>::SetInstanceData(const uint32_t & index, TYPES ... values)
 {
 	this->data.Set(index, this->data.Get<0>(index), values...);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <class ... TYPES>
+template <std::size_t...Is>
+inline Util::Blob
+ComponentData<TYPES...>::GetBlob() const
+{
+	std::index_sequence<Is...> sequence = std::make_index_sequence<sizeof...(TYPES) + 1>();
+
+	SizeT numBytes = 0;
+
+	using expander = int[];
+	(void)expander
+	{
+		0,
+		(numBytes += this->data.GetArray<Is>().ByteSize(), 0)...
+	};
+
+	Util::Blob blob;
+
+	SizeT offset = 0;
+
+	blob.Allocate(numBytes);
+
+	using expander = int[];
+	(void)expander
+	{
+		0,
+		(
+			numBytes = this->data.GetArray<Is>().ByteSize();
+			blob.SetChunk(&this->data.GetArray<Is>()[0], numBytes, offset);
+			offset += numBytes;
+		, 0)...
+	};
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <class ... TYPES>
+template <std::size_t...Is>
+inline void
+ComponentData<TYPES...>::SetBlob(uint from, uint to, const Util::Blob& data)
+{
+
 }
 
 }

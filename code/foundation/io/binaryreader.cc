@@ -573,6 +573,13 @@ Util::Array<uint>
 BinaryReader::ReadUIntArray()
 {
 	uint size = this->ReadInt();
+	Util::Array<uint> val(size, 0, 0);
+	if (size == 0)
+	{
+		//Early out if size is 0
+		return val;
+	}
+
 	uint* buf = (uint*)Memory::Alloc(Memory::ScratchHeap, sizeof(uint) * size);
 	if (this->isMapped)
 	{
@@ -585,8 +592,7 @@ BinaryReader::ReadUIntArray()
 	{
 		this->stream->Read(buf, sizeof(uint) * size);
 	}
-	Util::Array<uint> val(size, 0, 0);
-	IndexT i;
+	uint i;
 	for (i = 0; i < size; i++) val[i] = buf[i];
 	Memory::Free(Memory::ScratchHeap, (void*)buf);
 	return val;
