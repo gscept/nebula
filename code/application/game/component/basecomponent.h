@@ -107,7 +107,7 @@ public:
 	virtual void AllocInstances(uint num);
 	
 	/// Sets data for each 
-	virtual void SetDataFromBlobs(uint from, uint to, Util::Array<Util::Blob> data);
+	virtual void SetDataFromBlobs(uint from, uint to, const Util::Array<Util::Blob>& data);
 
 	/// Returns a blob for each attribute array this component contains. Implemented in componentdata
 	virtual Util::Array<Util::Blob> GetDataAsBlobs();

@@ -85,8 +85,8 @@ TransformComponent::SetParents(const uint32_t & start, const uint32_t & end, con
 	SizeT i = 0;
 	for (SizeT instance = start; instance < end; instance++)
 	{
-		this->Parent(i) = this->GetInstance(entities[parentIndices[i]]);
 		// TODO: Implement this entire function. Needs to recalculate relationships and transforms.
+		// this->Parent(i) = this->GetInstance(entities[parentIndices[i]]);
 		i++;
 	}
 }
@@ -117,6 +117,15 @@ TransformComponent::DeregisterEntity(const Entity& entity)
 
 //------------------------------------------------------------------------------
 /**
+*/
+uint32_t
+TransformComponent::GetNumInstances() const
+{
+	return this->data.Size();
+}
+
+//------------------------------------------------------------------------------
+/**
 	@todo	we should reserve per array here.
 */
 void
@@ -126,40 +135,6 @@ TransformComponent::AllocInstances(uint num)
 	{
 		this->data.data.Alloc();
 	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-TransformComponent::SetDataFromBlobs(uint from, uint to, Util::Array<Util::Blob> data)
-{
-	this->data.data.GetArray<0>().Reserve(to - from);
-	void* ptr = (void*)&this->data.data.GetArray<0>();
-	Memory::Copy(data[0].GetPtr(), ptr, data[0].Size());
-
-	this->data.data.GetArray<0>().Reserve(to - from);
-	void* ptr = (void*)&this->data.data.GetArray<0>();
-	Memory::Copy(data[0].GetPtr(), ptr, data[0].Size());
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-Util::Array<Util::Blob>
-TransformComponent::GetDataAsBlobs()
-{
-	Util::Array<Util::Blob> arr;
-
-	arr.Append(Util::Blob((void*)this->data.data.GetArray<0>().Begin(), this->data.data.GetArray<0>().ByteSize()));
-	arr.Append(Util::Blob((void*)this->data.data.GetArray<1>().Begin(), this->data.data.GetArray<0>().ByteSize()));
-	arr.Append(Util::Blob((void*)this->data.data.GetArray<2>().Begin(), this->data.data.GetArray<0>().ByteSize()));
-	arr.Append(Util::Blob((void*)this->data.data.GetArray<3>().Begin(), this->data.data.GetArray<0>().ByteSize()));
-	arr.Append(Util::Blob((void*)this->data.data.GetArray<4>().Begin(), this->data.data.GetArray<0>().ByteSize()));
-	arr.Append(Util::Blob((void*)this->data.data.GetArray<5>().Begin(), this->data.data.GetArray<0>().ByteSize()));
-	arr.Append(Util::Blob((void*)this->data.data.GetArray<6>().Begin(), this->data.data.GetArray<0>().ByteSize()));
-	
-	return arr;
 }
 
 //------------------------------------------------------------------------------

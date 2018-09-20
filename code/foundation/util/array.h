@@ -123,7 +123,8 @@ public:
     /// do a binary search, requires a sorted array
     IndexT BinarySearchIndex(const TYPE& elm) const;
 
-	/// Return the byte size of the array
+	/// Return the byte size of the array.
+	/// Note that this is not the entire size of this object, only the size (not capacity) of the elements buffer in bytes
 	SizeT ByteSize() const;
 
 	/// for range-based iteration

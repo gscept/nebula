@@ -218,7 +218,7 @@ BaseComponent::AllocInstances(uint num)
 /**
 */
 void
-BaseComponent::SetDataFromBlobs(uint from, uint to, Util::Array<Util::Blob> data)
+BaseComponent::SetDataFromBlobs(uint from, uint to, const Util::Array<Util::Blob>& data)
 {
 	n_assert2(false, "Method has not been overridden!");
 }

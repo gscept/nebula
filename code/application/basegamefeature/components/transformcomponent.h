@@ -45,10 +45,12 @@ public:
 	/// Deregister Entity. This checks both active and inactive component instances.
 	void DeregisterEntity(const Entity& entity);
 
+	uint32_t GetNumInstances() const;
+
 	/// Allocate multiple instances
 	void AllocInstances(uint num);
 
-	void SetDataFromBlobs(uint from, uint to, Util::Array<Util::Blob> data);
+	void SetDataFromBlobs(uint from, uint to, const Util::Array<Util::Blob>& data);
 
 	Util::Array<Util::Blob> GetDataAsBlobs();
 

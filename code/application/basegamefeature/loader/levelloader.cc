@@ -47,7 +47,6 @@ LevelLoader::Save(const Util::String& levelName)
 
 		c.fourcc = component->GetClassFourCC();
 		c.numInstances = component->GetNumInstances();
-		c.data = component->GetDataAsBlobs();
 
 		// Update update each entity attribute
 		auto entityAttributes = component->GetEntityAttributes();
@@ -70,6 +69,8 @@ LevelLoader::Save(const Util::String& levelName)
 				}
 			}
 		}
+
+		c.data = component->GetDataAsBlobs();
 
 		scene.components.Append(c);
 	}
@@ -112,7 +113,7 @@ LevelLoader::Load(const Util::String& levelName)
 			c->SetParents(start, end, entities, scene.parentIndices);
 		}
 	}
-	return false;
+	return true;
 }
 
 } // namespace BaseGameFeature

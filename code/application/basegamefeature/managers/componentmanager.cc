@@ -119,17 +119,6 @@ ComponentManager::DeregisterAll()
 //------------------------------------------------------------------------------
 /**
 */
-template<class T>
-const Ptr<T>& ComponentManager::GetComponent()
-{
-	const Core::Rtti rtti = T::RTTI;
-	n_assert2(this->registry.Contains(rtti.GetFourCC()), "Component not registered to componentmanager!");
-	return this->registry[rtti].cast<T>();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 SizeT
 ComponentManager::GetNumComponents() const
 {
