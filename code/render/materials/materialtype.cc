@@ -57,7 +57,7 @@ MaterialType::CreateInstance()
 				matConstantDict.Add(this->constants.KeyAtIndex(j), cid);
 				if (cid != CoreGraphics::ShaderConstantId::Invalid())
 				{
-					CoreGraphics::ShaderConstantSet(cid, state, this->constants.ValueAtIndex(j).default);
+					CoreGraphics::ShaderConstantSet(cid, state, this->constants.ValueAtIndex(j).defaultValue);
 				}
 			}
 		}
@@ -69,7 +69,7 @@ MaterialType::CreateInstance()
 				matTextureDict.Add(this->textures.KeyAtIndex(j), cid);
 				if (cid != CoreGraphics::ShaderConstantId::Invalid())
 				{
-					CoreGraphics::ShaderResourceSetTexture(cid, state, this->textures.ValueAtIndex(j).default);
+					CoreGraphics::ShaderResourceSetTexture(cid, state, this->textures.ValueAtIndex(j).defaultValue);
 				}
 			}
 		}

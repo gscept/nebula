@@ -14,7 +14,7 @@ VertexSignaturePool* layoutPool = nullptr;
 /**
 */
 const VertexLayoutId
-CreateVertexLayout(VertexLayoutCreateInfo& info)
+CreateVertexLayout(const VertexLayoutCreateInfo& info)
 {
 	n_assert(info.comps.Size() > 0);
 	VertexLayoutInfo loadInfo;

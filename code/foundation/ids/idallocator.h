@@ -29,42 +29,42 @@ struct get_template_type;
 template <template <typename X> class C, typename T>
 struct get_template_type<C<T>>
 {
-	using type = typename T;
+	using type = T;
 };
 
 /// get inner type of a constant ref outer type
 template <template <typename X> class C, typename T>
 struct get_template_type<const C<T>&>
 {
-	using type = typename T;
+	using type = T;
 };
 
-/// helper typedef so that the above expression can be used like decltype
+/// helper typedef so that the above expression can be used like declt
 template <typename C>
 using get_template_type_t = typename get_template_type<C>::type;
 
 /// unpacks allocations for each member in a tuble
 template<class... Ts, std::size_t... Is>
-void alloc_for_each_in_tuple(std::tuple<typename Ts...>& tuple, std::integer_sequence<std::size_t, Is...>)
+void alloc_for_each_in_tuple(std::tuple<Ts...>& tuple, std::integer_sequence<std::size_t, Is...>)
 {
 	using expander = int[];
 	(void)expander
 	{
 		0, 
-		(std::get<Is>(tuple).Append(get_template_type<typename Ts>::type()), 0)...
+		(std::get<Is>(tuple).Append(typename get_template_type<Ts>::type()), 0)...
 	};
 }
 
 /// entry point for above expansion function
 template<class... Ts>
-void alloc_for_each_in_tuple(std::tuple<typename Ts...>& tuple)
+void alloc_for_each_in_tuple(std::tuple<Ts...>& tuple)
 {
 	alloc_for_each_in_tuple(tuple, std::make_integer_sequence<std::size_t, sizeof...(Ts)>());
 }
 
 /// unpacks allocations for each member in a tuble
 template<class... Ts, std::size_t... Is>
-void clear_for_each_in_tuple(std::tuple<typename Ts...>& tuple, std::integer_sequence<std::size_t, Is...>)
+void clear_for_each_in_tuple(std::tuple<Ts...>& tuple, std::integer_sequence<std::size_t, Is...>)
 {
 	using expander = int[];
 	(void)expander
@@ -76,14 +76,14 @@ void clear_for_each_in_tuple(std::tuple<typename Ts...>& tuple, std::integer_seq
 
 /// entry point for above expansion function
 template<class... Ts>
-void clear_for_each_in_tuple(std::tuple<typename Ts...>& tuple)
+void clear_for_each_in_tuple(std::tuple<Ts...>& tuple)
 {
-	clear_for_each_in_tuple(tuple, std::make_integer_sequence<size_t, sizeof...(typename Ts)>());
+	clear_for_each_in_tuple(tuple, std::make_integer_sequence<size_t, sizeof...(Ts)>());
 }
 
 /// entry point for moving an element between two indices
 template <class... Ts, std::size_t... Is>
-void move_for_each_in_tuple(std::tuple<typename Ts...>& tuple, uint32_t to, uint32_t from, std::integer_sequence<std::size_t, Is...>)
+void move_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t to, uint32_t from, std::integer_sequence<std::size_t, Is...>)
 {
 	using expander = int[];
 	(void)expander
@@ -97,7 +97,7 @@ void move_for_each_in_tuple(std::tuple<typename Ts...>& tuple, uint32_t to, uint
 template <class... Ts>
 void move_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t to, uint32_t from)
 {
-	move_for_each_in_tuple(tuple, to, from, std::make_integer_sequence<std::size_t, sizeof...(typename Ts)>());
+	move_for_each_in_tuple(tuple, to, from, std::make_integer_sequence<std::size_t, sizeof...(Ts)>());
 }
 
 /// get type of contained element in Util::Array stored in std::tuple

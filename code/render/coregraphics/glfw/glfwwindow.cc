@@ -691,7 +691,7 @@ namespace Vulkan
 /**
 */
 const VkSurfaceKHR&
-Vulkan::GetSurface(const CoreGraphics::WindowId& id)
+GetSurface(const CoreGraphics::WindowId& id)
 {
 	const VkSwapchainInfo& swapInfo = glfwWindowAllocator.Get<GLFWSwapChainField>(id.id24);
 	return swapInfo.surface;
@@ -701,7 +701,7 @@ Vulkan::GetSurface(const CoreGraphics::WindowId& id)
 /**
 */
 void
-Vulkan::SetupVulkanSwapchain(const CoreGraphics::WindowId& id, const CoreGraphics::DisplayMode& mode, const Util::StringAtom& title)
+SetupVulkanSwapchain(const CoreGraphics::WindowId& id, const CoreGraphics::DisplayMode& mode, const Util::StringAtom& title)
 {
 	VkWindowSwapInfo& windowInfo = glfwWindowAllocator.Get<GLFWWindowSwapInfoField>(id.id24);
 	VkSwapchainInfo& swapInfo = glfwWindowAllocator.Get<GLFWSwapChainField>(id.id24);
@@ -709,13 +709,6 @@ Vulkan::SetupVulkanSwapchain(const CoreGraphics::WindowId& id, const CoreGraphic
 
 	VkPhysicalDevice physicalDev = Vulkan::GetCurrentPhysicalDevice();
 	VkDevice dev = Vulkan::GetCurrentDevice();
-
-	VkPhysicalDeviceSurfaceInfo2KHR surfaceInfo =
-	{
-		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR,
-		nullptr,
-		swapInfo.surface
-	};
 
 	// find available surface formats
 	uint32_t numFormats;
@@ -890,7 +883,7 @@ Vulkan::SetupVulkanSwapchain(const CoreGraphics::WindowId& id, const CoreGraphic
 /**
 */
 void
-Vulkan::DiscardVulkanSwapchain(const CoreGraphics::WindowId& id)
+DiscardVulkanSwapchain(const CoreGraphics::WindowId& id)
 {
 	VkWindowSwapInfo& wndInfo = glfwWindowAllocator.Get<GLFWWindowSwapInfoField>(id.id24);
 	VkBackbufferInfo& backbufferInfo = glfwWindowAllocator.Get<GLFWBackbufferField>(id.id24);
