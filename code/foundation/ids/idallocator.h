@@ -26,14 +26,14 @@ template <typename C>
 struct get_template_type;
 
 /// get inner type of two types
-template <template <typename > class C, typename T>
+template <template <typename X> class C, typename T>
 struct get_template_type<C<T>>
 {
 	using type = T;
 };
 
 /// get inner type of a constant ref outer type
-template <template <typename > class C, typename T>
+template <template <typename X> class C, typename T>
 struct get_template_type<const C<T>&>
 {
 	using type = T;
