@@ -39,6 +39,9 @@ Alloc(HeapType heapType, size_t size)
         // XXX: n_assert(0 != Heaps[heapType]);
         // allocPtr =  HeapAlloc(Heaps[heapType], HEAP_GENERATE_EXCEPTIONS, size);
         allocPtr = memalign(16,size);        
+        #if NEBULA_DEBUG
+        explicit_bzero(allocPtr,size);
+        #endif
     }
     #if NEBULA3_MEMORY_STATS
         SIZE_T s = HeapSize(Heaps[heapType], 0, allocPtr);
