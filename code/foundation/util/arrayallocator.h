@@ -61,7 +61,7 @@ alloc_for_each_in_tuple(std::tuple<Ts...>& tuple, std::index_sequence<Is...>)
 	(void)expander
 	{
 		0,
-		(std::get<Is>(tuple).Append(get_template_type<Ts>::type()), 0)...
+		(std::get<Is>(tuple).Append(typename get_template_type<Ts>::type()), 0)...
 	};
 }
 

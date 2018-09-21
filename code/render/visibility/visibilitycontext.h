@@ -56,8 +56,9 @@ public:
 	typedef 						VisibilityBucketTier<
 		Models::ModelId,			VisibilityBucketTier<
 		Models::ModelNode*,			VisibilityBucketTier<
-		Materials::MaterialType*,	VisibilityBucketLeaf<
-		Materials::MaterialId>>>>	VisibilityBuckets;
+		Materials::MaterialType*,	VisibilityBucketTier<
+		Materials::MaterialId,		VisibilityBucketLeaf<
+		Models::ModelNode::Instance*>>>>>	VisibilityBuckets;
 private:
 
 	friend class ObservableContext;
@@ -70,7 +71,8 @@ private:
 		Math::matrix44,						// transform of observer camera
 		Graphics::GraphicsEntityId, 		// entity id
 		VisibilityEntityType,				// type of object so we know how to get the transform
-		VisibilityResultAllocator			// visibility lookup table
+		VisibilityResultAllocator,			// visibility lookup table
+		VisibilityBuckets					// per-frame sorted entities
 	> ObserverAllocator;
 	static ObserverAllocator observerAllocator;
 

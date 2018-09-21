@@ -17,7 +17,7 @@
 #include "core/wii/precompiled.h"
 #elif __PS3__
 #include "core/ps3/precompiled.h"
-#elif linux
+#elif __linux__
 #include "core/posix/precompiled.h"
 #else
 #error "precompiled.h not implemented on this platform"

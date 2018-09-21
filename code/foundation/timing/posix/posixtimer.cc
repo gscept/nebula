@@ -2,7 +2,7 @@
 //  posixtimer.cc
 //  (C) 2007 Oleg Khryptul (Haron)
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "foundation/stdneb.h"
 #include "timing/posix/posixtimer.h"
 #include <time.h>
 

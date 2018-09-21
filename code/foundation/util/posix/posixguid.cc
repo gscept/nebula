@@ -3,7 +3,7 @@
 //  (C) 2006 Radon Labs GmbH
 //  (C) 2013 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "foundation/stdneb.h"
 #include "util/posix/posixguid.h"
 
 namespace Posix

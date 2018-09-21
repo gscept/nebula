@@ -192,7 +192,7 @@ MaterialServer::LoadMaterialTypes(const IO::URI& file)
 					{
 						n_error("Invalid texture type %s\n", ptype.AsCharPtr());
 					}
-					texture.default = Resources::CreateResource(reader->GetString("defaultValue") + NEBULAT_TEXTURE_EXTENSION, "material types", nullptr, nullptr, true);
+					texture.defaultValue = Resources::CreateResource(reader->GetString("defaultValue") + NEBULAT_TEXTURE_EXTENSION, "material types", nullptr, nullptr, true);
 					texture.system = system;
 					type->textures.Add(name, texture);
 				}
@@ -204,32 +204,32 @@ MaterialServer::LoadMaterialTypes(const IO::URI& file)
 					switch (constant.type)
 					{
 					case Util::Variant::Float:
-						constant.default.SetFloat(reader->GetOptFloat("defaultValue", 0.0f));
+						constant.defaultValue.SetFloat(reader->GetOptFloat("defaultValue", 0.0f));
 						constant.min.SetFloat(reader->GetOptFloat("min", 0.0f));
 						constant.max.SetFloat(reader->GetOptFloat("max", 1.0f));
 						break;
 					case Util::Variant::Int:
-						constant.default.SetInt(reader->GetOptInt("defaultValue", 0));
+						constant.defaultValue.SetInt(reader->GetOptInt("defaultValue", 0));
 						constant.min.SetInt(reader->GetOptInt("min", 0));
 						constant.max.SetInt(reader->GetOptInt("max", 1));
 						break;
 					case Util::Variant::Bool:
-						constant.default.SetBool(reader->GetOptBool("defaultValue", false));
+						constant.defaultValue.SetBool(reader->GetOptBool("defaultValue", false));
 						constant.min.SetBool(false);
 						constant.max.SetBool(true);
 						break;
 					case Util::Variant::Float4:
-						constant.default.SetFloat4(reader->GetOptFloat4("defaultValue", Math::float4(0, 0, 0, 0)));
+						constant.defaultValue.SetFloat4(reader->GetOptFloat4("defaultValue", Math::float4(0, 0, 0, 0)));
 						constant.min.SetFloat4(reader->GetOptFloat4("min", Math::float4(0, 0, 0, 0)));
 						constant.max.SetFloat4(reader->GetOptFloat4("max", Math::float4(1, 1, 1, 1)));
 						break;
 					case Util::Variant::Float2:
-						constant.default.SetFloat2(reader->GetOptFloat2("defaultValue", Math::float2(0, 0)));
+						constant.defaultValue.SetFloat2(reader->GetOptFloat2("defaultValue", Math::float2(0, 0)));
 						constant.min.SetFloat2(reader->GetOptFloat2("min", Math::float2(0, 0)));
 						constant.max.SetFloat2(reader->GetOptFloat2("max", Math::float2(1, 1)));
 						break;
 					case Util::Variant::Matrix44:
-						constant.default.SetMatrix44(reader->GetOptMatrix44("defaultValue", Math::matrix44::identity()));
+						constant.defaultValue.SetMatrix44(reader->GetOptMatrix44("defaultValue", Math::matrix44::identity()));
 						break;
 					default:
 						n_error("Unknown material parameter type %s\n", ptype.AsCharPtr());

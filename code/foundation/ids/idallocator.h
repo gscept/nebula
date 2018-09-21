@@ -26,20 +26,20 @@ template <typename C>
 struct get_template_type;
 
 /// get inner type of two types
-template <template <typename > class C, typename T>
+template <template <typename X> class C, typename T>
 struct get_template_type<C<T>>
 {
 	using type = T;
 };
 
 /// get inner type of a constant ref outer type
-template <template <typename > class C, typename T>
+template <template <typename X> class C, typename T>
 struct get_template_type<const C<T>&>
 {
 	using type = T;
 };
 
-/// helper typedef so that the above expression can be used like decltype
+/// helper typedef so that the above expression can be used like declt
 template <typename C>
 using get_template_type_t = typename get_template_type<C>::type;
 
@@ -51,7 +51,7 @@ void alloc_for_each_in_tuple(std::tuple<Ts...>& tuple, std::integer_sequence<std
 	(void)expander
 	{
 		0, 
-		(std::get<Is>(tuple).Append(get_template_type<Ts>::type()), 0)...
+		(std::get<Is>(tuple).Append(typename get_template_type<Ts>::type()), 0)...
 	};
 }
 
