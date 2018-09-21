@@ -710,13 +710,6 @@ SetupVulkanSwapchain(const CoreGraphics::WindowId& id, const CoreGraphics::Displ
 	VkPhysicalDevice physicalDev = Vulkan::GetCurrentPhysicalDevice();
 	VkDevice dev = Vulkan::GetCurrentDevice();
 
-	VkPhysicalDeviceSurfaceInfo2KHR surfaceInfo =
-	{
-		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR,
-		nullptr,
-		swapInfo.surface
-	};
-
 	// find available surface formats
 	uint32_t numFormats;
 	VkResult res;
