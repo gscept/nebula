@@ -2,7 +2,7 @@
 //  posixenvironment.cc
 //  (C) 2013 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "foundation/stdneb.h"
 #include "system/posix/posixenvironment.h"
 
 namespace Posix

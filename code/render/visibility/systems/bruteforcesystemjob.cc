@@ -20,16 +20,12 @@ BruteforceSystemJobFunc(const Jobs::JobFuncContext& ctx)
 	const Graphics::GraphicsEntityId* ids = (const Graphics::GraphicsEntityId*)ctx.inputs[2];
 	bool* flags = (bool*)ctx.outputs[0];
 
-	uint i;
-	for (i = 0; i < ctx.numInputs; i++)
-	{
-		const Math::bbox& box = transforms[i];
-		const Math::ClipStatus::Type status = box.clipstatus(*camera);
+	const Math::bbox& box = transforms[0];
+	const Math::ClipStatus::Type status = box.clipstatus(*camera);
 
-		// if clip status is outside, unset visibility
-		if (status == Math::ClipStatus::Outside)
-			flags[i] = false;
-	}
+	// if clip status is outside, unset visibility
+	if (status == Math::ClipStatus::Outside)
+		flags[0] = false;
 }
 
 } // namespace Visibility

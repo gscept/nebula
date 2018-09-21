@@ -16,12 +16,12 @@ if(FIPS_WINDOWS)
 elseif(FIPS_LINUX)
 	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -msse4.2 -march=sandybridge -ffast-math -fPIC -fno-trapping-math -funsafe-math-optimizations -ffinite-math-only -mrecip=all -Wall")
 	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse4.2 -march=sandybridge -ffast-math -fPIC -fno-trapping-math -funsafe-math-optimizations -ffinite-math-only -mrecip=all -Wall")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse4 -mavx -w")
 endif()
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse4 -mavx")
 
 if(FIPS_WINDOWS)
 	option(N_MATH_DIRECTX "Use DirectXMath" ON)
@@ -168,8 +168,17 @@ macro(add_nebula_shaders)
         MESSAGE(WARNING "Not compiling shaders, ShaderC not found, did you compile nebula-toolkit?")
     else()    
         if(FIPS_WINDOWS)
+            
             get_filename_component(workdir "[HKEY_CURRENT_USER\\SOFTWARE\\gscept\\ToolkitShared;workdir]" ABSOLUTE)
+            # get_filename_component returns /registry when a key is not found...
+            if(${workdir} STREQUAL "/registry")
+                MESSAGE(WARNING "Registry keys for project not found, did you set your workdir?")
+                return()
+            endif()
             set(EXPORT_DIR "${workdir}/export_win32")
+        else()
+            # use environment
+            set(EXPORT_DIR $ENV{NEBULA_WORK}/export_win32)
         endif()
         
         file(GLOB_RECURSE FXH "${NROOT}/work/shaders/vk/*.fxh")        

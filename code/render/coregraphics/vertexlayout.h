@@ -32,7 +32,7 @@ struct VertexLayoutInfo
 };
 
 /// create new vertex layout
-const VertexLayoutId CreateVertexLayout(VertexLayoutCreateInfo& info);
+const VertexLayoutId CreateVertexLayout(const VertexLayoutCreateInfo& info);
 /// destroy vertex layout
 void DestroyVertexLayout(const VertexLayoutId id);
 
