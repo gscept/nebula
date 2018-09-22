@@ -20,6 +20,40 @@
 namespace Game
 {
 
+template <class...Ts, std::size_t...Is>
+void FillBlobSequenced(const Util::ArrayAllocator<Game::Entity, Ts...>& data, Util::Blob& blob, SizeT& offset, std::index_sequence<Is...>)
+{
+	SizeT numBytes;
+	
+	using expander = int[];
+	(void)expander
+	{
+		0, (
+			numBytes = data.GetArray<Is>().ByteSize(),
+			blob.SetChunk(&data.GetArray<Is>()[0], numBytes, offset),
+			offset += numBytes
+		, 0)...
+	};
+}
+
+template <class...Ts, std::size_t...Is>
+void GetDataSize(const Util::ArrayAllocator<Game::Entity, Ts...>& data, SizeT& size, std::index_sequence<Is...>)
+{
+	using expander = int[];
+	(void)expander
+	{
+		0,
+			(size += data.GetArray<Is>().ByteSize(), 0)...
+	};
+}
+
+template <class...Ts, std::size_t...Is>
+void SetBlobSequenced(Util::ArrayAllocator<Game::Entity, Ts...>& data, uint from, uint to, const Util::Blob& blob, std::index_sequence<Is...>)
+{
+
+}
+
+
 template <class ... TYPES>
 class ComponentData
 {
@@ -68,17 +102,15 @@ public:
 	void SetInstanceData(const uint32_t& index, TYPES...);
 
 	/// Return data as a blob.
-	template <std::size_t...Is>
 	Util::Blob GetBlob() const;
 
 	/// Set data from blob
-	template <std::size_t...Is>
 	void SetBlob(uint from, uint to, const Util::Blob& data);
 
 	/// Contains all data for all instances of this component.
 	/// @note	The 0th type is always the owner Entity!
 	Util::ArrayAllocator<Entity, TYPES...> data;
-
+	
 private:
 	/// contains free id's that we reuse as soon as possible.
 	Util::Stack<uint32_t> freeIds;
@@ -331,44 +363,28 @@ ComponentData<TYPES...>::SetInstanceData(const uint32_t & index, TYPES ... value
 /**
 */
 template <class ... TYPES>
-template <std::size_t...Is>
 inline Util::Blob
 ComponentData<TYPES...>::GetBlob() const
 {
-	std::index_sequence<Is...> sequence = std::make_index_sequence<sizeof...(TYPES) + 1>();
-
 	SizeT numBytes = 0;
 
-	using expander = int[];
-	(void)expander
-	{
-		0,
-		(numBytes += this->data.GetArray<Is>().ByteSize(), 0)...
-	};
+	GetDataSize(this->data, numBytes, std::make_index_sequence<sizeof...(TYPES)+1>());
 
 	Util::Blob blob;
 
 	SizeT offset = 0;
 
-	blob.Allocate(numBytes);
+	blob.Reserve(numBytes);
 
-	using expander = int[];
-	(void)expander
-	{
-		0,
-		(
-			numBytes = this->data.GetArray<Is>().ByteSize();
-			blob.SetChunk(&this->data.GetArray<Is>()[0], numBytes, offset);
-			offset += numBytes;
-		, 0)...
-	};
+	FillBlobSequenced(this->data, blob, offset, std::make_index_sequence<sizeof...(TYPES)+1>());
+
+	return blob;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 template <class ... TYPES>
-template <std::size_t...Is>
 inline void
 ComponentData<TYPES...>::SetBlob(uint from, uint to, const Util::Blob& data)
 {

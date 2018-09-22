@@ -217,25 +217,6 @@ BaseComponent::AllocInstances(uint num)
 //------------------------------------------------------------------------------
 /**
 */
-void
-BaseComponent::SetDataFromBlobs(uint from, uint to, const Util::Array<Util::Blob>& data)
-{
-	n_assert2(false, "Method has not been overridden!");
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-Util::Array<Util::Blob>
-BaseComponent::GetDataAsBlobs()
-{
-	n_assert2(false, "Method has not been overridden!");
-	return Util::Array<Util::Blob>();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 Util::Array<Util::Array<Entity>*>
 BaseComponent::GetEntityAttributes()
 {
