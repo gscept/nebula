@@ -3,7 +3,7 @@
 //  (C) 2006 Radon Labs GmbH
 //  (C) 2013 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "foundation/stdneb.h"
 #include "net/socket/socket.h"
 
 #include <sys/errno.h>
@@ -325,7 +325,7 @@ PosixSocket::Accept(Ptr<Net::Socket>& outSocket)
     n_assert(this->IsBound());
 
     this->ClearError();
-    outSocket = 0;
+    outSocket = nullptr;
     sockaddr_in sockAddr;
     socklen_t sockAddrSize = sizeof(sockAddr);
     SOCKET newSocket = accept(this->sock, (sockaddr*) &sockAddr, &sockAddrSize);

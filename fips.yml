@@ -1,17 +1,25 @@
 ---
 imports:
-     fips-zlib:
+    fips-zlib:
         git: https://github.com/floooh/fips-zlib.git
-     fips-directxmath:
+    fips-directxmath:
         git: ssh://git@git.ikplus.de:4715/nebula/fips-directxmath.git
-     fips-glfw:
+    fips-glfw:
         git: https://github.com/gscept/fips-glfw.git
-     fips-anyfx:
+    fips-anyfx:
         git: https://github.com/Duttenheim/fips-anyfx.git
-     fips-devil:
+    fips-devil:
         git: https://github.com/gscept/fips-devil.git
-     fips-flatbuffers:
+    fips-flatbuffers:
         git: ssh://git@git.ikplus.de:4715/nebula/fips-flatbuffers.git
+    fips-stackwalker:
+        git: https://github.com/gscept/fips-stackwalker.git
+        cond: "FIPS_WINDOWS"
+    fips-bullet:
+        git: https://github.com/floooh/fips-bullet.git
+    fips-cjson:
+        git: https://github.com/floooh/fips-cjson.git
+        cond: "FIPS_LINUX"
 
 exports:
     header-dirs : 
@@ -20,10 +28,10 @@ exports:
         - code/render        
         - code/resource
         - code/application
+        - code/physics
         - extlibs/mixed
     modules:
         foundation: code/foundation
         render: code/render
         resource: code/resource
-        game: code/application
         corelibs: extlibs/mixed

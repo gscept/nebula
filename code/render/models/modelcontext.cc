@@ -61,7 +61,7 @@ ModelContext::Setup(const Graphics::GraphicsEntityId id, const Resources::Resour
 	ModelCreateInfo info;
 	info.resource = name;
 	info.tag = tag;
-	info.async = true;
+	info.async = false;
 	info.failCallback = nullptr;
 	info.successCallback = [cid](Resources::ResourceId id)
 	{
@@ -95,7 +95,7 @@ ModelContext::ChangeModel(const Graphics::GraphicsEntityId id, const Resources::
 	ModelCreateInfo info;
 	info.resource = name;
 	info.tag = tag;
-	info.async = true;
+	info.async = false;
 	info.failCallback = nullptr;
 	info.successCallback = [&mdl, rid, cid](Resources::ResourceId id)
 	{
@@ -120,6 +120,15 @@ ModelContext::GetModel(const Graphics::GraphicsEntityId id)
 //------------------------------------------------------------------------------
 /**
 */
+const Models::ModelInstanceId
+ModelContext::GetModel(const Graphics::ContextEntityId id)
+{
+	return modelContextAllocator.Get<1>(id.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 ModelContext::SetTransform(const Graphics::GraphicsEntityId id, const Math::matrix44& transform)
 {
@@ -139,7 +148,7 @@ ModelContext::GetTransform(const Graphics::GraphicsEntityId id)
 {
 	const ContextEntityId cid = GetContextId(id);
 	ModelInstanceId& inst = modelContextAllocator.Get<1>(cid.id);
-	return Models::modelPool->modelInstanceAllocator.Get<1>(inst.instance);
+	return modelContextAllocator.Get<2>(cid.id);
 }
 
 //------------------------------------------------------------------------------
@@ -150,6 +159,16 @@ ModelContext::GetModelNodeInstances(const Graphics::GraphicsEntityId id)
 {
 	const ContextEntityId cid = GetContextId(id);
 	ModelInstanceId& inst = modelContextAllocator.Get<1>(cid.id);
+	return Models::modelPool->modelInstanceAllocator.Get<0>(inst.instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::Array<Models::ModelNode::Instance*>&
+ModelContext::GetModelNodeInstances(const Graphics::ContextEntityId id)
+{
+	ModelInstanceId& inst = modelContextAllocator.Get<1>(id.id);
 	return Models::modelPool->modelInstanceAllocator.Get<0>(inst.instance);
 }
 
@@ -215,7 +234,7 @@ ModelContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTim
 /**
 */
 void
-ModelContext::OnVisibilityReady(const IndexT frameIndex, const Timing::Time frameTime)
+ModelContext::OnWaitForWork(const IndexT frameIndex, const Timing::Time frameTime)
 {
 }
 

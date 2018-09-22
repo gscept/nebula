@@ -60,9 +60,13 @@
 #include <DWrite.h>
 #endif
 
+#if __WIN32__
 #include <xinput.h>
 #define DIRECTINPUT_VERSION 0x0800
 #include <dinput.h>
+#endif
+
+#include <climits>
 //------------------------------------------------------------------------------
 
 

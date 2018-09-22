@@ -26,7 +26,8 @@ public:\
 	static void RegisterEntity(const Graphics::GraphicsEntityId id);\
 	static void DeregisterEntity(const Graphics::GraphicsEntityId id);\
 	static bool IsEntityRegistered(const Graphics::GraphicsEntityId id);\
-	static void Destroy();
+	static void Destroy(); \
+	static Graphics::ContextEntityId GetContextId(const Graphics::GraphicsEntityId id);
 
 #define ImplementContext(ctx) \
 Graphics::GraphicsContext::State ctx::__state; \
@@ -53,14 +54,16 @@ bool ctx::IsEntityRegistered(const Graphics::GraphicsEntityId id)\
 void ctx::Destroy()\
 {\
 	Graphics::GraphicsServer::Instance()->UnregisterGraphicsContext(&__bundle);\
+}\
+Graphics::ContextEntityId ctx::GetContextId(const Graphics::GraphicsEntityId id)\
+{\
+	return __state.entitySliceMap[id];\
 }
 
 #define CreateContext() \
 	__state.Alloc = Alloc; \
 	__state.Dealloc = Dealloc; \
 	__state.entitySliceMap = Util::HashTable<Graphics::GraphicsEntityId, Graphics::ContextEntityId>(512);
-
-#define GetContextId(id) __state.entitySliceMap[id]
 
 
 namespace Graphics
@@ -91,10 +94,11 @@ public:
 	/// destructor
 	virtual ~GraphicsContext();
 
+	// gcc doesnt like these at all.
 	/// create context
-	virtual void Create() = 0;
+	//virtual void Create() = 0;
 	/// destroy context
-	virtual void Destroy() = 0;
+	//virtual void Destroy() = 0;
 
 protected:
 	friend class GraphicsServer;

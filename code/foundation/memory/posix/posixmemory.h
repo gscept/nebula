@@ -15,6 +15,7 @@
 #include "threading/interlocked.h"
 #include "memory/posix/posixmemoryconfig.h"
 #include <malloc.h>
+#include <string.h>
 
 namespace Memory
 {
@@ -38,6 +39,9 @@ Alloc(HeapType heapType, size_t size)
         // XXX: n_assert(0 != Heaps[heapType]);
         // allocPtr =  HeapAlloc(Heaps[heapType], HEAP_GENERATE_EXCEPTIONS, size);
         allocPtr = memalign(16,size);        
+        #if NEBULA_DEBUG
+        explicit_bzero(allocPtr,size);
+        #endif
     }
     #if NEBULA3_MEMORY_STATS
         SIZE_T s = HeapSize(Heaps[heapType], 0, allocPtr);
@@ -278,6 +282,7 @@ __cdecl operator delete[](void* p)
 }
 
 #define n_new(type) new type
+#define n_new_inplace(type, mem) new (mem) type 
 #define n_new_array(type,size) new type[size]
 #define n_delete(ptr) delete ptr
 #define n_delete_array(ptr) delete[] ptr

@@ -41,8 +41,8 @@ StreamModelPool::~StreamModelPool()
 void
 StreamModelPool::Setup()
 {
-	this->placeholderResourceId = "mdl:system/placeholder.n3";
-	this->errorResourceId = "mdl:system/error.n3";
+	this->placeholderResourceName = "mdl:system/placeholder.n3";
+	this->errorResourceName = "mdl:system/error.n3";
 
 	IMPLEMENT_NODE_ALLOCATOR('TRFN', TransformNode, this->transformNodes, this->transformNodeInstances);
 	IMPLEMENT_NODE_ALLOCATOR('SPND', PrimitiveNode, this->primitiveNodes, this->primitiveNodeInstances);

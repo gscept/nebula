@@ -12,6 +12,17 @@
 #include "materials/materialserver.h"
 #include "model.h"
 #include "nodes/modelnode.h"
+
+namespace Jobs
+{
+struct JobFuncContext;
+};
+
+namespace Visibility
+{
+void VisibilitySortJob(const Jobs::JobFuncContext& ctx);
+};
+
 namespace Models
 {
 class ModelContext : public Graphics::GraphicsContext
@@ -45,7 +56,7 @@ public:
 	/// runs before frame is updated
 	static void OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime);
 	/// runs when visibility has finished processing 
-	static void OnVisibilityReady(const IndexT frameIndex, const Timing::Time frameTime);
+	static void OnWaitForWork(const IndexT frameIndex, const Timing::Time frameTime);
 	/// runs before a specific view
 	static void OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime);
 	/// runs after view is rendered
@@ -54,7 +65,6 @@ public:
 	static void OnAfterFrame(const IndexT frameIndex, const Timing::Time frameTime);
 
 private:
-
 	typedef Ids::IdAllocator<
 		ModelId,
 		ModelInstanceId,
@@ -67,6 +77,13 @@ private:
 	static Graphics::ContextEntityId Alloc();
 	/// deallocate a slice
 	static void Dealloc(Graphics::ContextEntityId id);
+
+	friend void Visibility::VisibilitySortJob(const Jobs::JobFuncContext& ctx);
+
+	/// get model
+	static const Models::ModelInstanceId GetModel(const Graphics::ContextEntityId id);
+	/// get model node instances
+	static const Util::Array<Models::ModelNode::Instance*>& GetModelNodeInstances(const Graphics::ContextEntityId id);
 };
 
 //------------------------------------------------------------------------------
@@ -86,5 +103,6 @@ ModelContext::Dealloc(Graphics::ContextEntityId id)
 {
 	modelContextAllocator.DeallocObject(id.id);
 }
+
 
 } // namespace Models

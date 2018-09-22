@@ -47,8 +47,8 @@ void
 VkStreamTexturePool::Setup()
 {
 	ResourceStreamPool::Setup();
-	this->placeholderResourceId = "mdl:system/placeholder.dds";
-	this->errorResourceId = "mdl:system/error.dds";
+	this->placeholderResourceName = "mdl:system/placeholder.dds";
+	this->errorResourceName = "mdl:system/error.dds";
 }
 
 //------------------------------------------------------------------------------

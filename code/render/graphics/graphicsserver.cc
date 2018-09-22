@@ -103,6 +103,9 @@ GraphicsServer::Open()
 		
 		this->textRenderer = CoreGraphics::TextRenderer::Create();
 		this->textRenderer->Open();
+
+		// start timer
+		this->timer->StartTime();
 	}
 	else
 	{
@@ -144,6 +147,8 @@ GraphicsServer::Close()
 
 	this->displayDevice->Close();
 	this->displayDevice = nullptr;
+
+	this->timer->StopTime();
 
 	if (this->graphicsDevice) CoreGraphics::DestroyGraphicsDevice();
 
@@ -227,6 +232,7 @@ GraphicsServer::DiscardStage(const Ptr<Stage>& stage)
 void
 GraphicsServer::BeginFrame()
 {
+	this->timer->UpdateTimePolling();
 	const IndexT frameIndex = this->timer->GetFrameIndex();
 	const Timing::Time time = this->timer->GetFrameTime();
 

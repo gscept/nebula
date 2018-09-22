@@ -36,10 +36,8 @@ public:
     void SetPriority(Priority p);
     /// get the thread priority
     Priority GetPriority() const;
-    /// set cpu core on which the thread should be running
-    void SetCoreId(System::Cpu::CoreId coreId);
-    /// get the cpu core on which the thread should be running
-    System::Cpu::CoreId GetCoreId() const;
+    /// set thread affinity
+    void SetThreadAffinity(uint mask);
     /// set stack size in bytes
     void SetStackSize(SizeT s);
     /// get stack size
@@ -104,6 +102,7 @@ private:
     };
 
     pthread_t thread;
+	cpu_set_t affinity;
     Priority priority;
     SizeT stackSize;
     Util::String name;
@@ -200,23 +199,6 @@ LinuxThread::GetName() const
     return this->name;
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-LinuxThread::SetCoreId(System::Cpu::CoreId id)
-{
-    this->coreId = id;
-}
-
-//------------------------------------------------------------------------------
-/**
- */
-inline System::Cpu::CoreId
-LinuxThread::GetCoreId() const
-{
-    return this->coreId;
-}
 
 } // namespace Linux
 //------------------------------------------------------------------------------

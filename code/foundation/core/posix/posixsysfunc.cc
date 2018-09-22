@@ -3,7 +3,7 @@
 //  (C) 2006 Radon Labs GmbH
 //  (C) 2013 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "foundation/stdneb.h"
 #include "core/posix/posixsysfunc.h"
 #include "core/refcounted.h"
 #include "debug/minidump.h"
@@ -138,7 +138,7 @@ Posix::SysFunc::MessageBox(const char* msg)
 void
 SysFunc::Sleep(double sec)
 {
-    int milliSecs = int(sec * 1000.0);
+    int milliSecs = int(sec * 1000000.0);
     usleep(milliSecs);
 }
 

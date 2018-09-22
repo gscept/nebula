@@ -105,11 +105,11 @@ protected:
 	void RunCallbacks(LoadStatus status, const Resources::ResourceId id);
 
 	/// these types need to be properly initiated in a subclass Setup function
-	Util::StringAtom placeholderResourceId;
-	Util::StringAtom errorResourceId;
+	Util::StringAtom placeholderResourceName;
+	Util::StringAtom errorResourceName;
 
-	Ids::Id32 placeholderResource;
-	Ids::Id32 errorResource;
+	Ids::Id32 placeholderResourceId;
+	Ids::Id32 errorResourceId;
 
 	bool async;
 

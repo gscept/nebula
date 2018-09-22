@@ -9,6 +9,8 @@
 class StackWalkerToString: public StackWalker
 {
 public:	
+
+	StackWalkerToString(int options) : StackWalker(options) {};
 	const Util::Array<Util::String>& GetTrace()
 	{
 		return this->trace;
@@ -33,7 +35,7 @@ protected:
 const Util::Array<Util::String>
 Win32::Win32StackTrace::GenerateStackTrace()
 {
-	StackWalkerToString sw;
+	StackWalkerToString sw(StackWalker::RetrieveVerbose & StackWalker::SymBuildPath);
 	sw.ShowCallstack();
 	return sw.GetTrace();
 }

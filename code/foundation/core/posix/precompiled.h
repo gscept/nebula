@@ -24,6 +24,7 @@
 #include <cstdint>
 #include <pthread.h>
 #include <errno.h>
+#include <cfloat>
 
 // sse intrinsics
 #include <emmintrin.h>

@@ -4,11 +4,14 @@
 
 fips_begin_module(foundation)
 	if(FIPS_LINUX)
-		fips_libs(uuid)
+		fips_libs(uuid cjson)
 	endif()
 	fips_vs_warning_level(3)
 	fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 	fips_deps(corelibs zlib)
+	if(FIPS_WINDOWS)
+		fips_deps(StackWalker)
+	endif()
 		fips_files(foundation/stdneb.h foundation/stdneb.cc)
 		fips_dir(core)
 			fips_files(
@@ -73,6 +76,7 @@ fips_begin_module(foundation)
 		fips_files(
 			array.h
 			arrayallocator.h
+			bit.h
 			bitfield.h
 			blob.cc
 			blob.h

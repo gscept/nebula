@@ -758,7 +758,11 @@ Win360FSWrapper::GetHomeDirectory()
         return String("file:///") + homePath;
     }            
 #else
-    Util::String root = System::NebulaSettings::ReadString("gscept", "ToolkitShared", "workdir");
+    Util::String root;
+    if( System::NebulaSettings::Exists("gscept", "ToolkitShared", "workdir"))
+    {
+        root = System::NebulaSettings::ReadString("gscept", "ToolkitShared", "workdir");    
+    }    
     if (root.IsEmpty())
     {
         String homePath = pathToExe.ExtractDirName();
