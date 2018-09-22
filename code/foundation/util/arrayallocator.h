@@ -190,7 +190,6 @@ erase_index_swap_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t i)
 template <class...Ts, std::size_t...Is, class...TYPES> void
 set_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t i, std::index_sequence<Is...>, TYPES const& ... values)
 {
-
 	using expander = int[];
 	(void)expander
 	{

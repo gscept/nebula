@@ -106,12 +106,6 @@ public:
 	/// Allocate multiple instances quickly
 	virtual void AllocInstances(uint num);
 	
-	/// Sets data for each 
-	virtual void SetDataFromBlobs(uint from, uint to, const Util::Array<Util::Blob>& data);
-
-	/// Returns a blob for each attribute array this component contains. Implemented in componentdata
-	virtual Util::Array<Util::Blob> GetDataAsBlobs();
-
 	/// Returns all attributes that are of Entity type.
 	/// Just returns a pointer to each of the arrays containing the entity-ids
 	virtual Util::Array<Util::Array<Game::Entity>*> GetEntityAttributes();

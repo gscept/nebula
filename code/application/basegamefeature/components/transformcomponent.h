@@ -50,10 +50,6 @@ public:
 	/// Allocate multiple instances
 	void AllocInstances(uint num);
 
-	void SetDataFromBlobs(uint from, uint to, const Util::Array<Util::Blob>& data);
-
-	Util::Array<Util::Blob> GetDataAsBlobs();
-
 	Util::Array<Util::Array<Game::Entity>*> GetEntityAttributes();
 
 	/// Deregister all entities from both inactive and active. Garbage collection will take care of freeing up data.
