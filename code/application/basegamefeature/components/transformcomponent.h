@@ -50,8 +50,6 @@ public:
 	/// Allocate multiple instances
 	void AllocInstances(uint num);
 
-	Util::Array<Util::Array<Game::Entity>*> GetEntityAttributes();
-
 	/// Deregister all non-alive entities from both inactive and active. This can be extremely slow!
 	void DeregisterAllDead();
 

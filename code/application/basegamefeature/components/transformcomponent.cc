@@ -140,20 +140,6 @@ TransformComponent::AllocInstances(uint num)
 //------------------------------------------------------------------------------
 /**
 */
-Util::Array<Util::Array<Game::Entity>*>
-TransformComponent::GetEntityAttributes()
-{
-	Util::Array<Util::Array<Game::Entity>*> arr;
-	
-	// We only have one entity array for the transform component.
-	arr.Append(&this->data.data.GetArray<0>());
-
-	return arr;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 void
 TransformComponent::DeregisterAllDead()
 {

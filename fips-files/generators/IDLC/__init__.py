@@ -11,6 +11,13 @@ class IDLCodeGenerator:
     def __init__(self):
         self.document = None
         self.documentPath = ""
+        self.version = 0;
+
+    #------------------------------------------------------------------------------
+    ##
+    #
+    def SetVersion(self, v):
+        self.version = v
 
     #------------------------------------------------------------------------------
     ##
@@ -34,6 +41,8 @@ class IDLCodeGenerator:
     def GenerateHeader(self, hdrPath) :
         f = filewriter.FileWriter()
         f.Open(hdrPath)
+
+        f.WriteLine("// NIDL #version:{}#".format(self.version))
 
         attributeLibraries = []
 
@@ -89,6 +98,8 @@ class IDLCodeGenerator:
     def GenerateSource(self, srcPath, hdrPath) :
         f = filewriter.FileWriter()
         f.Open(srcPath)
+
+        f.WriteLine("// NIDL #version:{}#".format(self.version))
 
         head, tail = ntpath.split(hdrPath)
         hdrInclude = tail or ntpath.basename(head)
