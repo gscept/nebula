@@ -82,6 +82,10 @@ public:
 	/// Returns an attribute value as a variant from attribute id.
 	Util::Variant GetAttributeValue(uint32_t instance, Attr::AttrId attributeId) const;
 
+	Util::Blob GetBlob() const;
+
+	void SetBlob(const Util::Blob& blob, uint offset, uint numInstances);
+
 private:
 	/// Read/write access to attributes.
 	Math::matrix44& LocalTransform(const uint32_t& instance);

@@ -70,10 +70,7 @@ SceneCompiler::Compile(Util::String filename)
 		writer->WriteUInt(component.fourcc.AsUInt());
 		writer->WriteUInt(component.numInstances);
 		
-		for (auto blob : component.data)
-		{
-			writer->WriteBlob(blob);
-		}
+		writer->WriteBlob(component.data);
 	}
 
 	stream->Close();
@@ -109,11 +106,9 @@ SceneCompiler::Decompile(Util::String filename)
 		SceneComponent component;
 		component.fourcc = Util::FourCC(reader->ReadUInt());
 		component.numInstances = reader->ReadUInt();
+			
+		component.data = reader->ReadBlob();
 		
-		for (SizeT k = 0; k < component.numInstances; k++)
-		{
-			component.data.Append(reader->ReadBlob());
-		}
 		this->components.Append(component);
 	}
 

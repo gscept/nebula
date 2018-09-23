@@ -9,6 +9,9 @@
 #include "basegamefeature/managers/entitymanager.h"
 #include "basegamefeature/managers/componentmanager.h"
 
+#include <chrono>
+#include <ctime>
+
 namespace BaseGameFeature
 {
 
@@ -29,6 +32,8 @@ namespace BaseGameFeature
 bool
 LevelLoader::Save(const Util::String& levelName)
 {
+	auto tstart = std::chrono::system_clock::now();
+
 	auto numEntities = Game::EntityManager::Instance()->GetNumEntities();
 	SceneCompiler scene;
 	uint hashedEntities = 0;
@@ -70,12 +75,16 @@ LevelLoader::Save(const Util::String& levelName)
 			}
 		}
 
-		c.data = component->GetDataAsBlobs();
+		c.data = component->GetBlob();
 
 		scene.components.Append(c);
 	}
 	scene.Compile(levelName);
 	
+	auto tend = std::chrono::system_clock::now();
+	std::chrono::duration<double> elapsed_seconds = tend - tstart;
+	n_printf("Save time: %f\n", elapsed_seconds.count());
+
 	return false;
 }
 
@@ -86,20 +95,25 @@ LevelLoader::Save(const Util::String& levelName)
 bool
 LevelLoader::Load(const Util::String& levelName)
 {
+	auto tstart = std::chrono::system_clock::now();
 	SceneCompiler scene;
+
 	scene.Decompile(levelName);
 	
 	Util::Array<Game::Entity> entities = Game::EntityManager::Instance()->CreateEntities(scene.numEntities);
+		
 	for (auto component : scene.components)
 	{
 		Ptr<Game::BaseComponent> c = Game::ComponentManager::Instance()->ComponentByFourCC(component.fourcc);
 		if (c.isvalid())
 		{
 			// Needs to create entirely new instances, not reuse old.
+
 			uint start = c->GetNumInstances();
 			c->AllocInstances(component.numInstances);
 			uint end = c->GetNumInstances();
-			c->SetDataFromBlobs(start, end, component.data);
+
+			c->SetBlob(component.data, start, component.numInstances);
 			auto entityAttributes = c->GetEntityAttributes();
 			for (SizeT k = 0; k < entityAttributes.Size(); k++)
 			{
@@ -113,6 +127,11 @@ LevelLoader::Load(const Util::String& levelName)
 			c->SetParents(start, end, entities, scene.parentIndices);
 		}
 	}
+
+	auto tend = std::chrono::system_clock::now();
+	std::chrono::duration<double> elapsed_seconds = tend - tstart;
+	n_printf("Load time: %f\n", elapsed_seconds.count());
+
 	return true;
 }
 

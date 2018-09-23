@@ -110,6 +110,12 @@ public:
 	/// Just returns a pointer to each of the arrays containing the entity-ids
 	virtual Util::Array<Util::Array<Game::Entity>*> GetEntityAttributes();
 
+	/// Get component data as a blob
+	virtual Util::Blob GetBlob() const;
+
+	/// Set component data from a blob
+	virtual void SetBlob(const Util::Blob& blob, uint offset, uint numInstances);
+
 	/// Called when relationships needs to be reconstructed
 	/// parentIndices point into the entities array
 	virtual void SetParents(const uint32_t& start, const uint32_t& end, const Util::Array<Entity>& entities, const Util::Array<uint32_t>& parentIndices);

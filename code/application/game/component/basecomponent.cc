@@ -227,6 +227,26 @@ BaseComponent::GetEntityAttributes()
 //------------------------------------------------------------------------------
 /**
 */
+Util::Blob
+BaseComponent::GetBlob() const
+{
+	n_assert2(false, "Method has not been overridden!");
+	return Util::Blob();
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+BaseComponent::SetBlob(const Util::Blob & blob, uint offset, uint numInstances)
+{
+	n_assert2(false, "Method has not been overridden!");
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 BaseComponent::SetParents(const uint32_t& start, const uint32_t& end, const Util::Array<Entity>& entities, const Util::Array<uint32_t>& parentIndices)
 {
