@@ -82,9 +82,6 @@ class ComponentClassWriter:
         self.f.WriteLine("/// Deregister Entity. This checks both active and inactive component instances.")
         self.f.WriteLine("void DeregisterEntity(const Game::Entity& entity);")
         self.f.WriteLine("")
-        self.f.WriteLine("/// Deregister all entities. Garbage collection will take care of freeing up data.")
-        self.f.WriteLine("void DeregisterAll();")
-        self.f.WriteLine("")
         self.f.WriteLine("/// Deregister all non-alive entities, both inactive and active. This can be extremely slow!")
         self.f.WriteLine("void DeregisterAllDead();")
         self.f.WriteLine("")
@@ -104,6 +101,9 @@ class ComponentClassWriter:
         self.f.WriteLine("/// Returns the owner entity id of provided instance id")
         self.f.WriteLine("Game::Entity GetOwner(const uint32_t& instance) const;")
         self.f.WriteLine("")
+        self.f.WriteLine("/// Set the owner of a given instance. This does not care if the entity is registered or not!")
+        self.f.WriteLine("void SetOwner(const uint32_t& i, const Game::Entity& entity);")
+        self.f.WriteLine("")
         self.f.WriteLine("/// Optimize data array and pack data")
         self.f.WriteLine("SizeT Optimize();")
         self.f.WriteLine("")
@@ -117,7 +117,16 @@ class ComponentClassWriter:
         self.f.WriteLine("/// Set an attribute value from attribute id")
         self.f.WriteLine("void SetAttributeValue(uint32_t instance, Attr::AttrId attributeId, Util::Variant value);")
         self.f.WriteLine("")
+        self.f.WriteLine("/// Get data as a blob. @note Copies all memory")
+        self.f.WriteLine("Util::Blob GetBlob() const;")
+        self.f.WriteLine("/// Set data from a blob.")
+        self.f.WriteLine("void SetBlob(const Util::Blob& blob, uint offset, uint numInstances);")
+        self.f.WriteLine("/// Get the total number of instances of this component")
+        self.f.WriteLine("uint32_t GetNumInstances() const;")
+        self.f.WriteLine("/// Allocate multiple instances")
+        self.f.WriteLine("void AllocInstances(uint num);")
 
+        
         if not self.useDelayedRemoval:
             self.f.WriteLine("/// Called from entitymanager if this component is registered with a deletion callback.")
             self.f.WriteLine("/// Removes entity immediately from component instances.")
@@ -284,15 +293,6 @@ class ComponentClassWriter:
     def WriteCleanupMethods(self):
         self.f.InsertNebulaComment("@todo	if needed: deregister deletion callbacks")
         self.f.WriteLine("void")
-        self.f.WriteLine("{}::DeregisterAll()".format(self.className))
-        self.f.WriteLine("{")
-        self.f.IncreaseIndent()
-        self.f.WriteLine("this->data.DeregisterAll();")
-        self.f.DecreaseIndent()
-        self.f.WriteLine("}")
-        self.f.WriteLine("")
-        self.f.InsertNebulaComment("@todo	if needed: deregister deletion callbacks")
-        self.f.WriteLine("void")
         self.f.WriteLine("{}::DeregisterAllDead()".format(self.className))
         self.f.WriteLine("{")
         self.f.IncreaseIndent()
@@ -350,7 +350,7 @@ class ComponentClassWriter:
     #------------------------------------------------------------------------------
     ##
     #
-    def WriteGetOwnerImplementation(self):
+    def WriteOwnerImplementation(self):
         self.f.InsertNebulaDivider()
         self.f.WriteLine("Game::Entity")
         self.f.WriteLine("{}::GetOwner(const uint32_t& instance) const".format(self.className))
@@ -360,6 +360,16 @@ class ComponentClassWriter:
         self.f.DecreaseIndent()
         self.f.WriteLine("}")
         self.f.WriteLine("")
+        
+        self.f.InsertNebulaDivider()
+        self.f.WriteLine("void")
+        self.f.WriteLine("{}::SetOwner(const uint32_t & i, const Game::Entity & entity)".format(self.className))
+        self.f.WriteLine("{")
+        self.f.IncreaseIndent()
+        self.f.WriteLine("this->data.SetOwner(i, entity);")
+        self.f.DecreaseIndent()
+        self.f.WriteLine("}")
+
 
     #------------------------------------------------------------------------------
     ##
@@ -534,6 +544,55 @@ class ComponentClassWriter:
     #------------------------------------------------------------------------------
     ##
     #
+    def WriteBlobMethods(self):
+        self.f.InsertNebulaDivider()
+        self.f.WriteLine("Util::Blob")
+        self.f.WriteLine("{}::GetBlob() const".format(self.className))
+        self.f.WriteLine("{")
+        self.f.IncreaseIndent()
+        self.f.WriteLine("return this->data.GetBlob();")
+        self.f.DecreaseIndent()
+        self.f.WriteLine("}")
+        self.f.WriteLine("");
+        self.f.WriteLine("void")
+        self.f.WriteLine("{}::SetBlob(const Util::Blob & blob, uint offset, uint numInstances)".format(self.className))
+        self.f.WriteLine("{")
+        self.f.IncreaseIndent()
+        self.f.WriteLine("this->data.SetBlob(blob, offset, numInstances);")
+        self.f.DecreaseIndent()
+        self.f.WriteLine("}")
+
+    #------------------------------------------------------------------------------
+    ##
+    #
+    def WriteAllocInstancesMethod(self):
+        self.f.InsertNebulaDivider()
+        self.f.WriteLine("uint32_t")
+        self.f.WriteLine("{}::GetNumInstances() const".format(self.className))
+        self.f.WriteLine("{")
+        self.f.IncreaseIndent()
+        self.f.WriteLine("return this->data.Size();")
+        self.f.DecreaseIndent()
+        self.f.WriteLine("}")
+
+        self.f.InsertNebulaComment("@todo	we should reserve per array here.")
+        self.f.WriteLine("void")
+        self.f.WriteLine("{}::AllocInstances(uint num)".format(self.className))
+        self.f.WriteLine("{")
+        self.f.IncreaseIndent()
+        self.f.WriteLine("for (size_t i = 0; i < num; i++)")
+        self.f.WriteLine("{")
+        self.f.IncreaseIndent()
+        self.f.WriteLine("this->data.data.Alloc();")
+        self.f.DecreaseIndent()
+        self.f.WriteLine("}")
+        self.f.DecreaseIndent()
+        self.f.WriteLine("}")
+
+
+    #------------------------------------------------------------------------------
+    ##
+    #
     def WriteClassImplementation(self):
         self.WriteConstructorImplementation()
         self.WriteDestructorImplementation()
@@ -542,10 +601,12 @@ class ComponentClassWriter:
         self.WriteCleanupMethods()
         self.WriteIsRegisteredImplementation()
         self.WriteGetInstanceImplementation()
-        self.WriteGetOwnerImplementation()
+        self.WriteOwnerImplementation()
         self.WriteOptimizeImplementation()
         self.WriteGetAttributeMethod()
         self.WriteSetAttributeMethod()
+        self.WriteBlobMethods()
         self.WriteOnEntityDeletedImplementation()
         self.WriteAttrAccessImplementations()
+
 

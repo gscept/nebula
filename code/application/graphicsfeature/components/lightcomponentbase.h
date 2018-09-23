@@ -1,3 +1,4 @@
+//NIDL #version:1#
 #pragma once
 //------------------------------------------------------------------------------
 /**
@@ -36,9 +37,6 @@ public:
     /// Deregister Entity. This checks both active and inactive component instances.
     void DeregisterEntity(const Game::Entity& entity);
     
-    /// Deregister all entities. Garbage collection will take care of freeing up data.
-    void DeregisterAll();
-    
     /// Deregister all non-alive entities, both inactive and active. This can be extremely slow!
     void DeregisterAllDead();
     
@@ -58,6 +56,9 @@ public:
     /// Returns the owner entity id of provided instance id
     Game::Entity GetOwner(const uint32_t& instance) const;
     
+    /// Set the owner of a given instance. This does not care if the entity is registered or not!
+    void SetOwner(const uint32_t& i, const Game::Entity& entity);
+    
     /// Optimize data array and pack data
     SizeT Optimize();
     
@@ -71,6 +72,14 @@ public:
     /// Set an attribute value from attribute id
     void SetAttributeValue(uint32_t instance, Attr::AttrId attributeId, Util::Variant value);
     
+    /// Get data as a blob. @note Copies all memory
+    Util::Blob GetBlob() const;
+    /// Set data from a blob.
+    void SetBlob(const Util::Blob& blob, uint offset, uint numInstances);
+    /// Get the total number of instances of this component
+    uint32_t GetNumInstances() const;
+    /// Allocate multiple instances
+    void AllocInstances(uint num);
     /// Called from entitymanager if this component is registered with a deletion callback.
     /// Removes entity immediately from component instances.
     void OnEntityDeleted(Game::Entity entity);
@@ -104,9 +113,6 @@ public:
     /// Deregister Entity. This checks both active and inactive component instances.
     void DeregisterEntity(const Game::Entity& entity);
     
-    /// Deregister all entities. Garbage collection will take care of freeing up data.
-    void DeregisterAll();
-    
     /// Deregister all non-alive entities, both inactive and active. This can be extremely slow!
     void DeregisterAllDead();
     
@@ -126,6 +132,9 @@ public:
     /// Returns the owner entity id of provided instance id
     Game::Entity GetOwner(const uint32_t& instance) const;
     
+    /// Set the owner of a given instance. This does not care if the entity is registered or not!
+    void SetOwner(const uint32_t& i, const Game::Entity& entity);
+    
     /// Optimize data array and pack data
     SizeT Optimize();
     
@@ -139,6 +148,14 @@ public:
     /// Set an attribute value from attribute id
     void SetAttributeValue(uint32_t instance, Attr::AttrId attributeId, Util::Variant value);
     
+    /// Get data as a blob. @note Copies all memory
+    Util::Blob GetBlob() const;
+    /// Set data from a blob.
+    void SetBlob(const Util::Blob& blob, uint offset, uint numInstances);
+    /// Get the total number of instances of this component
+    uint32_t GetNumInstances() const;
+    /// Allocate multiple instances
+    void AllocInstances(uint num);
     /// Called from entitymanager if this component is registered with a deletion callback.
     /// Removes entity immediately from component instances.
     void OnEntityDeleted(Game::Entity entity);
@@ -184,9 +201,6 @@ public:
     /// Deregister Entity. This checks both active and inactive component instances.
     void DeregisterEntity(const Game::Entity& entity);
     
-    /// Deregister all entities. Garbage collection will take care of freeing up data.
-    void DeregisterAll();
-    
     /// Deregister all non-alive entities, both inactive and active. This can be extremely slow!
     void DeregisterAllDead();
     
@@ -206,6 +220,9 @@ public:
     /// Returns the owner entity id of provided instance id
     Game::Entity GetOwner(const uint32_t& instance) const;
     
+    /// Set the owner of a given instance. This does not care if the entity is registered or not!
+    void SetOwner(const uint32_t& i, const Game::Entity& entity);
+    
     /// Optimize data array and pack data
     SizeT Optimize();
     
@@ -219,6 +236,14 @@ public:
     /// Set an attribute value from attribute id
     void SetAttributeValue(uint32_t instance, Attr::AttrId attributeId, Util::Variant value);
     
+    /// Get data as a blob. @note Copies all memory
+    Util::Blob GetBlob() const;
+    /// Set data from a blob.
+    void SetBlob(const Util::Blob& blob, uint offset, uint numInstances);
+    /// Get the total number of instances of this component
+    uint32_t GetNumInstances() const;
+    /// Allocate multiple instances
+    void AllocInstances(uint num);
     /// Called from entitymanager if this component is registered with a deletion callback.
     /// Removes entity immediately from component instances.
     void OnEntityDeleted(Game::Entity entity);
