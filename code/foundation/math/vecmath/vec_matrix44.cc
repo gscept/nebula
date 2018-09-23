@@ -130,25 +130,23 @@ matrix44::affinetransformation(scalar scaling, float4 const &rotationCenter, con
 
 //------------------------------------------------------------------------------
 /**
+    TODO: rewrite using SSE
 */
 matrix44
 matrix44::rotationquaternion(const quaternion& q)
 {	
-	n_error("fixme not implemented");
-	//Vectormath::Aos::Matrix3 m(q.vec);
-	matrix44 ret;
-	/*float4 row = m.getCol0().get128();
-	row.set_w(0.0f);
-	ret.setrow0(row);
+    matrix44 ret;
+    float d = q.lengthsq();
+    n_assert(d != 0.0f);
+    float s = 2.0f / d;
+    float xs = q.x() * s, ys = q.y() * s, zs = q.z() * s;
+    float wx = q.w() * xs, wy = q.w() * ys, wz = q.w() * zs;
+    float xx = q.x() * xs, xy = q.x() * ys, xz = q.x() * zs;
+    float yy = q.y() * ys, yz = q.y() * zs, zz = q.z() * zs;       
 
-	row = m.getCol1().get128();
-	row.set_w(0.0f);
-	ret.setrow1(row);
-
-	row = m.getCol2().get128();
-	row.set_w(0.0f);
-	ret.setrow2(row);*/
-
+    ret.row0().set(1.0f - (yy + zz), xy + wz, xz - wy, 0.0f);
+    ret.row1().set(xy - wz, 1.0f - (xx + zz), yz + wx, 0.0f);
+    ret.row2().set(xz + wy, yz - wx, 1.0f - (xx + yy), 0.0f);
 	return ret;
 }
 
