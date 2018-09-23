@@ -20,7 +20,7 @@ public:
 
     Util::FourCC fourcc;
     uint numInstances;
-    Util::Array<Util::Blob> data;
+    Util::Blob data;
 };
 
 class SceneCompiler

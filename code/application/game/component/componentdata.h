@@ -43,14 +43,24 @@ void GetDataSize(const Util::ArrayAllocator<Game::Entity, Ts...>& data, SizeT& s
 	(void)expander
 	{
 		0,
-			(size += data.GetArray<Is>().ByteSize(), 0)...
+		(size += data.GetArray<Is>().ByteSize(), 0)...
 	};
 }
 
 template <class...Ts, std::size_t...Is>
-void SetBlobSequenced(Util::ArrayAllocator<Game::Entity, Ts...>& data, uint from, uint to, const Util::Blob& blob, std::index_sequence<Is...>)
+void SetBlobSequenced(Util::ArrayAllocator<Game::Entity, Ts...>& data, uint offset, uint numInstances, const Util::Blob& blob, std::index_sequence<Is...>)
 {
-
+	SizeT blobOffset = 0;
+	SizeT bytes = 0;
+	using expander = int[];
+	(void)expander
+	{
+		0, (
+			bytes = numInstances * data.GetArray<Is>().TypeSize(),
+			Memory::Copy((void*)((byte*)blob.GetPtr() + blobOffset), (void*)&data.GetArray<Is>()[offset], bytes),
+			blobOffset += bytes
+		, 0)...
+	};
 }
 
 
@@ -105,7 +115,7 @@ public:
 	Util::Blob GetBlob() const;
 
 	/// Set data from blob
-	void SetBlob(uint from, uint to, const Util::Blob& data);
+	void SetBlob(const Util::Blob& blob, uint offset, uint numInstances);
 
 	/// Contains all data for all instances of this component.
 	/// @note	The 0th type is always the owner Entity!
@@ -386,9 +396,9 @@ ComponentData<TYPES...>::GetBlob() const
 */
 template <class ... TYPES>
 inline void
-ComponentData<TYPES...>::SetBlob(uint from, uint to, const Util::Blob& data)
+ComponentData<TYPES...>::SetBlob(const Util::Blob& blob, uint offset, uint numInstances)
 {
-
+	SetBlobSequenced(this->data, offset, numInstances, blob, std::make_index_sequence<sizeof...(TYPES) + 1>());
 }
 
 }

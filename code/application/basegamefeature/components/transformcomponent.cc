@@ -291,6 +291,24 @@ TransformComponent::GetAttributeValue(uint32_t instance, Attr::AttrId attributeI
 	return Util::Variant();
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+Util::Blob
+TransformComponent::GetBlob() const
+{
+	return this->data.GetBlob();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TransformComponent::SetBlob(const Util::Blob & blob, uint offset, uint numInstances)
+{
+	this->data.SetBlob(blob, offset, numInstances);
+}
+
 
 //------------------------------------------------------------------------------
 /**
