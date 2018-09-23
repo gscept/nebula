@@ -5,6 +5,8 @@
     
     Nebula3's queue class (a FIFO container).
     
+	@todo	This is extremely slow and should probably use a list instead.
+
     (C) 2006 Radon Labs GmbH
     (C) 2013-2016 Individual contributors, see AUTHORS file
 */
