@@ -16,7 +16,7 @@
 
 #include "foundation/stdneb.h"
 #include "util/array.h"
-#include "util/queue.h"
+#include "util/list.h"
 #include "id.h"
 
 const uint32_t ID_BITS = 24;
@@ -58,7 +58,8 @@ private:
     Util::Array<generation_t> generations;
 
     /// stores freed indices
-    Util::Queue<Id32> freeIds;
+    Util::List<Id32> freeIds;
+	SizeT freeIdsSize;
 };
 
 //------------------------------------------------------------------------------
