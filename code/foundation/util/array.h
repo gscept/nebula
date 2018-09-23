@@ -127,6 +127,9 @@ public:
 	/// Note that this is not the entire size of this object, only the size (not capacity) of the elements buffer in bytes
 	SizeT ByteSize() const;
 
+	/// Returns sizeof(TYPE)
+	constexpr SizeT TypeSize() const;
+
 	/// for range-based iteration
 	Iterator begin() const;
 	Iterator end() const;
@@ -959,6 +962,12 @@ template<class TYPE> SizeT
 Array<TYPE>::ByteSize() const
 {
 	return this->size * sizeof(TYPE);
+}
+
+template<class TYPE>
+inline constexpr SizeT Array<TYPE>::TypeSize() const
+{
+	return sizeof(TYPE);
 }
 
 //------------------------------------------------------------------------------
