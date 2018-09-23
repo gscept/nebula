@@ -52,9 +52,6 @@ public:
 
 	Util::Array<Util::Array<Game::Entity>*> GetEntityAttributes();
 
-	/// Deregister all entities from both inactive and active. Garbage collection will take care of freeing up data.
-	void DeregisterAll();
-
 	/// Deregister all non-alive entities from both inactive and active. This can be extremely slow!
 	void DeregisterAllDead();
 
@@ -73,6 +70,9 @@ public:
 
 	/// Returns the owner entity id of provided instance id
 	Entity GetOwner(const uint32_t& instance) const;
+
+	/// Set the owner of a given instance. This does not care if the entity is registered or not!
+	void SetOwner(const uint32_t& i, const Game::Entity& entity);
 
 	/// Optimize data array and pack data
 	SizeT Optimize();

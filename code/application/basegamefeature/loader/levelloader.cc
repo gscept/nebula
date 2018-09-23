@@ -37,7 +37,7 @@ LevelLoader::Save(const Util::String& levelName)
 	auto numEntities = Game::EntityManager::Instance()->GetNumEntities();
 	SceneCompiler scene;
 	uint hashedEntities = 0;
-	Util::HashTable<Game::Entity, uint> entities;
+	Util::HashTable<Game::Entity, uint> entities(numEntities);
 
 	scene.numEntities = numEntities;
 
@@ -53,30 +53,38 @@ LevelLoader::Save(const Util::String& levelName)
 		c.fourcc = component->GetClassFourCC();
 		c.numInstances = component->GetNumInstances();
 
-		// Update update each entity attribute
-		auto entityAttributes = component->GetEntityAttributes();
-		for (SizeT k = 0; k < entityAttributes.Size(); k++)
+		// save state
+		auto state = component->GetBlob();
+
+		// update owner to the entity index
+		for (uint j = 0; j < component->GetNumInstances(); j++)
 		{
-			for (SizeT j = 0; j < entityAttributes[k]->Size(); j++)
+			auto o = component->GetOwner(j);
+			if (entities.Contains(o))
 			{
-				// Update all entity ids to the indices they're located at.
-				// When loading we can then switch back to real entity ids.
-				if (entities.Contains((*entityAttributes[k])[j]))
-				{
-					(*entityAttributes[k])[j] = entities[(*entityAttributes[k])[j]];
-				}
-				else
-				{
-					// hash entity
-					entities.Add((*entityAttributes[k])[j], hashedEntities);
-					(*entityAttributes[k])[j] = hashedEntities;
-					hashedEntities++;
-				}
+				component->SetOwner(j, entities[o]);
+			}
+			else
+			{
+				// hash entity
+				entities.Add(o, hashedEntities);
+				component->SetOwner(j, hashedEntities);
+				hashedEntities++;
 			}
 		}
 
+		// Get blob
 		c.data = component->GetBlob();
 
+		// Reset state
+		component->SetBlob(state, 0, component->GetNumInstances());
+
+		// id maps
+		for (uint j = 0; j < component->GetNumInstances(); j++)
+		{
+			component->SetOwner(j, component->GetOwner(j));
+		}
+	
 		scene.components.Append(c);
 	}
 	scene.Compile(levelName);
@@ -114,14 +122,11 @@ LevelLoader::Load(const Util::String& levelName)
 			uint end = c->GetNumInstances();
 
 			c->SetBlob(component.data, start, component.numInstances);
-			auto entityAttributes = c->GetEntityAttributes();
-			for (SizeT k = 0; k < entityAttributes.Size(); k++)
+			
+			// update owner and id maps
+			for (uint j = start; j < end; j++)
 			{
-				for (uint j = start; j < end; j++)
-				{
-					// Update all entity ids to the newly generated.
-					(*entityAttributes[k])[j] = entities[(*entityAttributes[k])[j].id];
-				}
+				c->SetOwner(j, entities[c->GetOwner(j).id]);
 			}
 
 			c->SetParents(start, end, entities, scene.parentIndices);
