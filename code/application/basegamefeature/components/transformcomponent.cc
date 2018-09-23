@@ -155,15 +155,6 @@ TransformComponent::GetEntityAttributes()
 /**
 */
 void
-TransformComponent::DeregisterAll()
-{
-	this->data.DeregisterAll();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
 TransformComponent::DeregisterAllDead()
 {
 	this->data.DeregisterAllInactive();
@@ -212,6 +203,15 @@ Entity
 TransformComponent::GetOwner(const uint32_t& instance) const
 {
 	return this->data.GetOwner(instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TransformComponent::SetOwner(const uint32_t & i, const Game::Entity & entity)
+{
+	this->data.SetOwner(i, entity);
 }
 
 //------------------------------------------------------------------------------

@@ -57,9 +57,6 @@ public:
 	/// Immediately removes the data instance
 	virtual void OnEntityDeleted(Entity entity);
 
-	/// Deregister all entities from both inactive and active. Garbage collection will take care of freeing up data.
-	virtual void DeregisterAll();
-	
 	/// Deregister all non-alive entities from both inactive and active. This can be extremely slow!
 	virtual void DeregisterAllDead();
 
@@ -77,6 +74,9 @@ public:
 
 	/// returns a instances owner entity id
 	virtual Entity GetOwner(const uint32_t& instance) const;
+
+	/// Set the owner of a given instance. This does not care if the entity is registered or not!
+	virtual void SetOwner(const uint32_t& i, const Game::Entity& entity);
 
 	/// perform garbage collection. Returns number of erased instances.
 	virtual SizeT Optimize();

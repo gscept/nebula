@@ -69,16 +69,6 @@ BaseComponent::OnEntityDeleted(Entity entity)
 /**
 */
 void
-BaseComponent::DeregisterAll()
-{
-	// Override in subclass
-	n_assert2(false, "Method has not been overridden!");
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
 BaseComponent::DeregisterAllDead()
 {
 	// Override in subclass
@@ -135,6 +125,16 @@ BaseComponent::GetOwner(const uint32_t & instance) const
 	// Override in subclass
 	n_assert2(false, "Method has not been overridden!");
 	return Entity();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+BaseComponent::SetOwner(const uint32_t & i, const Game::Entity & entity)
+{
+	// Override in subclass
+	n_assert2(false, "Method has not been overridden!");
 }
 
 //------------------------------------------------------------------------------
