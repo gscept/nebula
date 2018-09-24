@@ -135,10 +135,11 @@ private:
 
 //------------------------------------------------------------------------------
 /**
+	@todo	idMap hashtable needs to be configured depending on the amount of entities we expect to be registered.
 */
 template <class ... TYPES>
 ComponentData<TYPES ...>::ComponentData() :
-	idMap(65535) // Quite large hashmap, since scenes often has large amounts of entities.
+	idMap(1024)
 {
 	// empty
 }
