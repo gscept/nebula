@@ -101,6 +101,7 @@ fips_begin_module(foundation)
 			priorityarray.h
 			quadtree.h
 			queue.h
+			dequeue.h
 			random.h
 			random.cc
 			randomnumbertable.cc
