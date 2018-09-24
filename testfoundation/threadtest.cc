@@ -71,8 +71,8 @@ TestSingle::~TestSingle()
 void
 ThreadTest::Run()
 {
-    this->mythread = MyThread::Create();
-    this->mythread->SetCoreId(System::Cpu::MainThreadCore);
+    this->mythread = MyThread::Create();    ;
+    this->mythread->SetThreadAffinity(System::Cpu::Core1);
     this->single = TestSingle::Create();
 
     this->single = TestSingle::Instance();
