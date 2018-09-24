@@ -16,8 +16,9 @@
 
 #include "foundation/stdneb.h"
 #include "util/array.h"
-#include "util/list.h"
+#include "util/dequeue.h"
 #include "id.h"
+#include "util/list.h"
 
 const uint32_t ID_BITS = 24;
 const uint32_t GENERATION_BITS = 8;

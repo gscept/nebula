@@ -14,6 +14,7 @@ namespace Ids
 IdGenerationPool::IdGenerationPool() :
 	freeIdsSize(0)
 {
+	// this->freeIds.Reserve(2048);
     this->generations.Reserve(1024);
 }
 
@@ -54,7 +55,7 @@ IdGenerationPool::Deallocate(Id32 id)
 {
     n_assert2(this->IsValid(id), "Tried to delete invalid/destroyed id");
 	this->freeIdsSize++;
-    this->freeIds.AddFront(Index(id));
+    this->freeIds.AddBack(Index(id));
     this->generations[Index(id)]++;
 }
 
