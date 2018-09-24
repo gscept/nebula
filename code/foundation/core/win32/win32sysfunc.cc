@@ -164,8 +164,13 @@ SysFunc::Error(const char* error)
 #ifdef _DEBUG
         OutputDebugString(format.AsCharPtr());
         fprintf(stderr,"%s\n",format.AsCharPtr());        
+        if (IsDebuggerPresent())
+        { 
+            n_break();
+        }        
+#else
+        exit(1);
 #endif
-        exit(1);//abort();        
     }
 	
 }

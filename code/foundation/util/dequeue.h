@@ -221,7 +221,7 @@ DeQueue<TYPE>::Reserve(SizeT num)
             Memory::Copy(&this->data[this->start], newdata, Math::n_min(this->capacity - this->start, this->size) * sizeof(TYPE));
 
             IndexT wrap = (this->start + this->size) % this->capacity;
-            if (wrap < this->start)
+            if (wrap <= this->start)
             {
                 Memory::Copy(this->data, &newdata[this->capacity - this->start], wrap * sizeof(TYPE));
             }
