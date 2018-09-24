@@ -138,7 +138,7 @@ Posix::SysFunc::MessageBox(const char* msg)
 void
 SysFunc::Sleep(double sec)
 {
-    int milliSecs = int(sec * 1000.0);
+    int milliSecs = int(sec * 1000000.0);
     usleep(milliSecs);
 }
 
