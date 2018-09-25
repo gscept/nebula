@@ -10,6 +10,15 @@
 */
 #include "core/types.h"
 #include "math/scalar.h"
+#include "util/round.h"
+#include <type_traits>
+
+#if (__cplusplus >= 201703L ) || (_MSVC_LANG >= 201703L)
+#define IFCONSTEXPR if constexpr
+#else
+#define IFCONSTEXPR if
+#endif
+
 
 //------------------------------------------------------------------------------
 namespace Util
@@ -57,6 +66,41 @@ public:
     TYPE& Peek() const;
 
 protected:
+    template<typename X>
+    __forceinline
+    typename std::enable_if<std::is_trivially_destructible<X>::value == false>::type
+    DestroyElement(IndexT idx)
+    {
+        this->data[idx].~X(); 
+    }
+    
+    template<typename X>
+    __forceinline
+    typename std::enable_if<std::is_trivially_destructible<X>::value == true>::type
+    DestroyElement(IndexT idx)
+    {
+        // empty
+    }
+
+    template<typename X>
+    __forceinline
+        typename std::enable_if<std::is_trivially_destructible<X>::value == false>::type
+        ClearAll()
+    {
+        for (IndexT i = 0; i < this->size; i++)
+        {
+            this->data[this->MapIndex(i)].~X();
+        }        
+    }
+
+    template<typename X>
+    __forceinline
+        typename std::enable_if<std::is_trivially_destructible<X>::value == true>::type
+        ClearAll()
+    {
+        // empty
+    }
+    
     /// maps index to actual item position using wrapping
     IndexT MapIndex(IndexT index) const;
     TYPE * data;
@@ -91,6 +135,7 @@ DeQueue<TYPE>::~DeQueue()
 {
     if (this->data)
     {
+        this->Clear();
         n_delete_array(this->data);
     }    
     this->data = nullptr;
@@ -135,6 +180,7 @@ DeQueue<TYPE>::operator=(const DeQueue<TYPE>& rhs)
 /**
 */
 template<class TYPE>
+__forceinline
 TYPE&
 DeQueue<TYPE>::operator[](IndexT index) const
 {
@@ -202,6 +248,7 @@ template<class TYPE>
 void
 DeQueue<TYPE>::Clear()
 {    
+    this->ClearAll<TYPE>();
     this->size = 0;
     this->start = 0;
 }
@@ -215,21 +262,47 @@ DeQueue<TYPE>::Reserve(SizeT num)
 {
     if (num > this->capacity)
     {
-        TYPE * newdata = n_new_array(TYPE, num);
-        if (this->size > 0)
-        {            
-            Memory::Copy(&this->data[this->start], newdata, Math::n_min(this->capacity - this->start, this->size) * sizeof(TYPE));
+        // round up to next multiple of 64                
+        num = num<64? num: Util::Round::RoundUp(num, 64);
 
-            IndexT wrap = (this->start + this->size) % this->capacity;
-            if (wrap <= this->start)
+        TYPE * newdata = n_new_array(TYPE, num);
+        n_printf("reserve: %d\n", num);
+        // we could use SFINAE here as well, but as its a single if in a (rare) call its not worth the bother
+        IFCONSTEXPR(std::is_trivially_constructible_v<TYPE>)
+        {
+            if (this->size > 0)
             {
-                Memory::Copy(this->data, &newdata[this->capacity - this->start], wrap * sizeof(TYPE));
+                SizeT upper = this->capacity - this->start;
+                SizeT lower = this->size - (this->capacity - this->start);
+
+                if (lower < 0)
+                {
+                    Memory::Copy(&this->data[this->start], newdata, this->size * sizeof(TYPE));
+                }
+                else
+                {
+                    Memory::Copy(&this->data[this->start], newdata, upper * sizeof(TYPE));
+                    Memory::Copy(this->data, &newdata[upper], lower * sizeof(TYPE));
+                }
+            }
+            if (this->data != nullptr)
+            {
+                n_delete_array(this->data);
             }
         }
-        if (this->data != nullptr)
+        else
         {
-            n_delete_array(this->data);
-        }        
+            for (IndexT i = 0; i < this->size; i++)
+            {
+                IndexT idx = this->MapIndex(i);
+                newdata[i] = this->data[idx];
+                this->DestroyElement<TYPE>(idx);
+            }
+            if (this->data != nullptr)
+            {
+                n_delete_array(this->data);
+            }
+        }
         this->data = newdata;        
         this->capacity = num;
         this->start = 0;
@@ -251,6 +324,7 @@ DeQueue<TYPE>::Grow()
     {
         // grow by half of the current capacity, but never more then MaxGrowSize
         SizeT growBy = this->capacity >> 1;
+        
         if (growBy == 0)
         {
             growBy = MinGrowSize;
@@ -268,6 +342,7 @@ DeQueue<TYPE>::Grow()
 /**
 */
 template<class TYPE>
+__forceinline
 SizeT
 DeQueue<TYPE>::Size() const
 {
@@ -278,6 +353,7 @@ DeQueue<TYPE>::Size() const
 /**
 */
 template<class TYPE>
+__forceinline
 SizeT
 DeQueue<TYPE>::Capacity() const
 {
@@ -288,6 +364,7 @@ DeQueue<TYPE>::Capacity() const
 /**
 */
 template<class TYPE>
+__forceinline
 bool
 DeQueue<TYPE>::IsEmpty() const
 {
@@ -298,6 +375,7 @@ DeQueue<TYPE>::IsEmpty() const
 /**
 */
 template<class TYPE>
+__forceinline
 void
 DeQueue<TYPE>::Enqueue(const TYPE& e)
 {
@@ -312,18 +390,29 @@ DeQueue<TYPE>::Enqueue(const TYPE& e)
 /**
 */
 template<class TYPE>
+__forceinline
 TYPE
 DeQueue<TYPE>::Dequeue()
 {    
+    TYPE t = this->data[this->start];
+    #if __cplusplus > 201703L
+    if constexpr (!std::is_nothrow_destructible_v<TYPE>)
+    {
+        (&(this->data[this->start]))->~TYPE();
+    }
+    #else
+    this->DestroyElement<TYPE>(this->start);
+    #endif
     this->start = this->MapIndex(1);
     --this->size;
-    return this->operator[](-1);
+    return t;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 template<class TYPE>
+__forceinline
 TYPE&
 DeQueue<TYPE>::Peek() const
 {
@@ -335,7 +424,9 @@ DeQueue<TYPE>::Peek() const
     Maps an index onto the actual array index by wrapping around. can deal
     with negative indices as well
 */
+
 template<class TYPE>
+__forceinline
 IndexT
 DeQueue<TYPE>::MapIndex(IndexT idx) const
 {    
