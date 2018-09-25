@@ -266,7 +266,6 @@ DeQueue<TYPE>::Reserve(SizeT num)
         num = num<64? num: Util::Round::RoundUp(num, 64);
 
         TYPE * newdata = n_new_array(TYPE, num);
-        n_printf("reserve: %d\n", num);
         // we could use SFINAE here as well, but as its a single if in a (rare) call its not worth the bother
         IFCONSTEXPR(std::is_trivially_constructible_v<TYPE>)
         {
