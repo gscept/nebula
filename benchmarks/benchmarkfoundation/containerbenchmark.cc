@@ -9,7 +9,7 @@
 #include "util/list.h"
 
 
-const int numObjects = 100000;
+const int numObjects = 50000;
 
 #define DECLARE_CB_TEST(name, ctype, dtype) ContainerBenchmark<ctype<dtype>, dtype> name;
 #define SETUP_CB_TEST(cb, data, addfunc, rmfunc ) cb.Setup(data, [](decltype(cb)::ctype& c, decltype(cb)::dtype d) { c.addfunc(d); },  [&](decltype(cb)::ctype& c) { return c.rmfunc(); } );

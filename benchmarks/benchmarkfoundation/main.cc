@@ -15,7 +15,7 @@
 #include "matrix44inverse.h"
 #include "matrix44multiply.h"
 #include "mempoolbenchmark.h"
-#include "queue.h"
+#include "containerbenchmark.h"
 
 using namespace Core;
 using namespace Benchmarking;
@@ -30,13 +30,13 @@ main()
 
     // setup and run benchmarks
     Ptr<BenchmarkRunner> runner = BenchmarkRunner::Create();    
-    /*runner->AttachBenchmark(Matrix44Multiply::Create());
+    runner->AttachBenchmark(Matrix44Multiply::Create());
     runner->AttachBenchmark(Matrix44Inverse::Create());
     runner->AttachBenchmark(Float4Math::Create());
     runner->AttachBenchmark(MemPoolBenchmark::Create());
     runner->AttachBenchmark(CreateObjects::Create());
     runner->AttachBenchmark(CreateObjectsByFourCC::Create());
-    runner->AttachBenchmark(CreateObjectsByClassName::Create());*/
+    runner->AttachBenchmark(CreateObjectsByClassName::Create());
     runner->AttachBenchmark(ContainerBench::Create());
     runner->Run();
     

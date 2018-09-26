@@ -74,6 +74,20 @@ public:
         n_printf("adding %d with 5 at a time remove right after: %f\n", numObjects, now - last);
         last = now;
 
+        CONT c4;
+        for (int i = 0; i < numObjects >>1 ; i++)
+        {            
+            this->add(c4, this->data);         
+        }
+        for (int i = 0; i < numObjects; i++)
+        {
+            this->add(c4, this->data);
+            v = this->remove(c4);
+        }
+        now = timer.GetTime();
+        n_printf("adding %d with 5 at a time remove right after in half-full container: %f\n", numObjects, now - last);
+        last = now;
+
         n_printf("Total time: %f\n", last - start);
         n_printf("---------------------------------------------------------------\n");
     }
