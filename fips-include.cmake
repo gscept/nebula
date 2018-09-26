@@ -1,4 +1,4 @@
-
+fips_ide_group(nebula)
 SET(NROOT ${CMAKE_CURRENT_LIST_DIR})
 SET(CODE_ROOT ${CMAKE_CURRENT_LIST_DIR}/code)
 
