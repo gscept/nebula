@@ -317,14 +317,14 @@ Matrix44Test::Run()
 	const vector up(0.0f, 1.0f, 0.0f);
 	// lookatlh
 	matrix44 tmp = matrix44::lookatlh(eye, at, up);
-	this->Verify(matrix44equal(tmp, matrix44(float4(  0.0f,  0.0f,  0.0f, 0.0f),
-										     float4(  0.0f,  0.0f,  0.0f, 0.0f),
+	this->Verify(matrix44equal(tmp, matrix44(float4(  0.0f,  0.0f,  -1.0f, 0.0f),
+										     float4(  1.0f,  0.0f,  0.0f, 0.0f),
 										     float4(  0.0f, -1.0f,  0.0f, 0.0f),
 										     float4(  3.0f, 10.0f, -2.0f, 1.0f))));
 	// lookatrh
 	tmp = matrix44::lookatrh(eye, at, up);
-	this->Verify(matrix44equal(tmp, matrix44(float4(  0.0f,  0.0f,  0.0f, 0.0f),
-										     float4(  0.0f,  0.0f,  0.0f, 0.0f),
+	this->Verify(matrix44equal(tmp, matrix44(float4(  0.0f,  0.0f,  1.0f, 0.0f),
+										     float4(  1.0f,  0.0f,  0.0f, 0.0f),
 										     float4(  0.0f,  1.0f,  0.0f, 0.0f),
 										     float4(  3.0f, 10.0f, -2.0f, 1.0f))));
 	// ortholh
