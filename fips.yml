@@ -2,24 +2,32 @@
 imports:
     fips-zlib:
         git: https://github.com/floooh/fips-zlib.git
+        group: misc
     fips-directxmath:
         git: ssh://git@git.ikplus.de:4715/nebula/fips-directxmath.git
+        group: misc
     fips-glfw:
         git: https://github.com/gscept/fips-glfw.git
+        group: gfx
     fips-anyfx:
         git: https://github.com/Duttenheim/fips-anyfx.git
+        group: gfx
     fips-devil:
-        git: https://github.com/gscept/fips-devil.git
+        git: https://github.com/gscept/fips-devil.git        
+        group: gfx
     fips-flatbuffers:
-        git: ssh://git@git.ikplus.de:4715/nebula/fips-flatbuffers.git
+        git: ssh://git@git.ikplus.de:4715/nebula/fips-flatbuffers.git        
+        group: misc
     fips-stackwalker:
         git: https://github.com/gscept/fips-stackwalker.git
         cond: "FIPS_WINDOWS"
+        group: misc
     fips-bullet:
-        git: https://github.com/floooh/fips-bullet.git
+        git: https://github.com/floooh/fips-bullet.git        
     fips-cjson:
         git: https://github.com/floooh/fips-cjson.git
         cond: "FIPS_LINUX"
+        group: misc
 
 exports:
     header-dirs : 
