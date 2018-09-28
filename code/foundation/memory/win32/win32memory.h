@@ -31,6 +31,22 @@ Copy(const void* from, void* to, size_t numBytes)
 
 //------------------------------------------------------------------------------
 /**
+    Move a chunk of memory, can handle overlapping regions
+*/
+__forceinline void
+Move(const void* from, void* to, size_t numBytes)
+{
+    if (numBytes > 0)
+    {
+        n_assert(0 != from);
+        n_assert(0 != to);
+        n_assert(from != to);
+        MoveMemory(to, from, numBytes);
+    }
+
+}
+//------------------------------------------------------------------------------
+/**
     Copy data from a system memory buffer to graphics resource memory. Some
     platforms may need special handling of this case.
 */
