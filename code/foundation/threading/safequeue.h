@@ -185,8 +185,7 @@ template<class TYPE> TYPE
 SafeQueue<TYPE>::Dequeue()
 {
     this->criticalSection.Enter();
-    TYPE e = this->queue.Dequeue();
-    this->queueArray.EraseIndex(0);
+    TYPE e = this->queue.Dequeue();    
     this->criticalSection.Leave();
     return e;
 }
