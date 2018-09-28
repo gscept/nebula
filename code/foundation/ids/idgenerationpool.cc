@@ -40,8 +40,8 @@ IdGenerationPool::Allocate(Id32& id)
     }
     else
     {
-		this->freeIdsSize--;
-        id = this->freeIds.RemoveFront();
+		this->freeIdsSize--;        
+        id = this->freeIds.Dequeue();
         id = CreateId(id, this->generations[id]);
 		return true;
     }
@@ -54,8 +54,8 @@ void
 IdGenerationPool::Deallocate(Id32 id)
 {
     n_assert2(this->IsValid(id), "Tried to delete invalid/destroyed id");
-	this->freeIdsSize++;
-    this->freeIds.AddBack(Index(id));
+	this->freeIdsSize++;        
+    this->freeIds.Enqueue(Index(id));
     this->generations[Index(id)]++;
 }
 
