@@ -1,14 +1,15 @@
 //------------------------------------------------------------------------------
-//  dequeuetest.cc
-//  (C) 2018 Individual contributors, see AUTHORS file
+//  arrayqueuetest.cc
+//  (C) 2006 Radon Labs GmbH
+//  (C)2013 - 2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
-#include "dequeuetest.h"
-#include "util/dequeue.h"
+#include "arrayqueuetest.h"
+#include "util/arrayqueue.h"
 
 namespace Test
 {
-__ImplementClass(Test::DequeueTest, 'DQET', Test::TestCase);
+__ImplementClass(Test::ArrayQueueTest, 'QUET', Test::TestCase);
 
 using namespace Util;
 
@@ -16,9 +17,9 @@ using namespace Util;
 /**
 */
 void
-DequeueTest::Run()
+ArrayQueueTest::Run()
 {
-    DeQueue<int> queue0;
+    ArrayQueue<int> queue0;
     this->Verify(queue0.Size() == 0);
     this->Verify(queue0.IsEmpty());
 
@@ -35,7 +36,7 @@ DequeueTest::Run()
     this->Verify(queue0[1] == 2);
     this->Verify(queue0[2] == 3);
 
-    DeQueue<int> queue1 = queue0;
+    ArrayQueue<int> queue1 = queue0;
     this->Verify(queue0 == queue1);
     this->Verify(!(queue0 != queue1));
     this->Verify(queue1.Dequeue() == 1);
@@ -51,46 +52,6 @@ DequeueTest::Run()
     queue0.Clear();
     this->Verify(queue0.Size() == 0);
     this->Verify(queue0.IsEmpty());
-
-    SizeT capacity = 2* queue0.Capacity();
-    for (IndexT i = 0; i < capacity; i++)
-    {
-        queue0.Enqueue(i);
-    }
-    this->Verify(queue0.Size() == capacity);
-    bool same = true;
-    for (IndexT i = 0; i < capacity; i++)
-    {
-        same &= queue0.Dequeue() == i;
-    }
-    this->Verify(same);
-
-    capacity = queue0.Capacity() >> 1;
-
-    for (IndexT i = 0; i < capacity; i++)
-    {
-        queue0.Enqueue(i);
-        queue0.Dequeue();
-    }
-    IndexT limit = 2 * capacity - 1;
-    for (IndexT i = 0; i < limit; i++)
-    {
-        queue0.Enqueue(i);
-    }
-    same = true;
-    for (IndexT i = 0; i < limit; i++)
-    {
-        same &= queue0[i] == i;
-    }
-    this->Verify(same);
-
-    queue0.Grow();
-    same = true;
-    for (IndexT i = 0; i < limit; i++)
-    {
-        same &= queue0[i] == i;
-    }
-    this->Verify(same);
 }
 
 }; // namespace Test

@@ -18,7 +18,7 @@
 #include "fixedtabletest.h"
 #include "hashtabletest.h"
 #include "queuetest.h"
-#include "dequeuetest.h"
+#include "arrayqueuetest.h"
 #include "memorystreamtest.h"
 #include "guidtest.h"
 #include "fileservertest.h"
@@ -94,9 +94,9 @@ __cdecl main()
     testRunner->AttachTestCase(DictionaryTest::Create());
     testRunner->AttachTestCase(FixedArrayTest::Create());
     testRunner->AttachTestCase(FixedTableTest::Create());
-    testRunner->AttachTestCase(HashTableTest::Create());
+    //testRunner->AttachTestCase(HashTableTest::Create());
     testRunner->AttachTestCase(QueueTest::Create());
-    testRunner->AttachTestCase(DequeueTest::Create());
+    testRunner->AttachTestCase(ArrayQueueTest::Create());
     testRunner->AttachTestCase(MemoryStreamTest::Create());
     testRunner->AttachTestCase(GuidTest::Create());
     testRunner->AttachTestCase(FileServerTest::Create());
