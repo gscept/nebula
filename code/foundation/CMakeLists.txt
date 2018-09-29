@@ -121,6 +121,7 @@ fips_begin_module(foundation)
 			stringatomtablebase.h
 			stringbuffer.cc
 			stringbuffer.h
+			trivialarray.h
 			typepunning.h
 			variant.h
 		)

@@ -134,7 +134,7 @@ public:
 	/// for range-based iteration
 	Iterator begin() const;
 	Iterator end() const;
-private:
+protected:
     /// destroy an element (call destructor without freeing memory)
     void Destroy(TYPE* elm);
     /// copy content
