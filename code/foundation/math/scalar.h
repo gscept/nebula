@@ -408,6 +408,15 @@ n_mostsignificant(uint val)
 #endif
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline uint
+n_align(uint alignant, uint alignment)
+{
+	return (alignant + alignment - 1) & ~(alignment - 1);
+}
+
 #endif // #if !SPU
 
 } // namespace Math

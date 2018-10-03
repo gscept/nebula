@@ -29,6 +29,8 @@ public:
     FixedArray(SizeT s, const TYPE& initialValue);
     /// copy constructor
     FixedArray(const FixedArray<TYPE>& rhs);
+	/// construct an empty fixed array
+	FixedArray(std::nullptr_t);
     /// destructor
     ~FixedArray();
     /// assignment operator
@@ -172,6 +174,16 @@ FixedArray<TYPE>::FixedArray(const FixedArray<TYPE>& rhs) :
     elements(0)
 {
     this->Copy(rhs);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+FixedArray<TYPE>::FixedArray(std::nullptr_t) :
+	size(0),
+	elements(0)
+{
 }
 
 //------------------------------------------------------------------------------

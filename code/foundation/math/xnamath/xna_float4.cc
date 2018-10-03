@@ -43,9 +43,18 @@ float4::angle(__Float4Arg v0, __Float4Arg v1)
 /**
 */
 float4 
-float4::select( const float4& v0, const float4& v1, const float4& control )
+float4::select(const float4& v0, const float4& v1, const float4& control)
 {
 	return DirectX::XMVectorSelect(v0.vec, v1.vec, control.vec);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+float4
+float4::select(const float4 & v0, const float4 & v1, const uint i0, const uint i1, const uint i2, const uint i3)
+{
+	return DirectX::XMVectorSelect(v0.vec, v1.vec, DirectX::XMVectorSelectControl(i0, i1, i2, i3));
 }
 
 //------------------------------------------------------------------------------
