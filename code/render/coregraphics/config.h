@@ -40,7 +40,8 @@ enum CoreGraphicsIdType
 	ResourceTableIdType,
 	ResourceTableLayoutIdType,
 	ResourcePipelineIdType,
-	SamplerIdType
+	SamplerIdType,
+	MaterialIdType
 };
 
 enum CoreGraphicsQueueType
@@ -132,6 +133,10 @@ CoreGraphicsQueueTypeFromString(const Util::String& str)
 
 
 #define SHADER_POSTEFFECT_DEFAULT_FEATURE_MASK "Alt0"
+
+#if !PUBLIC_BUILD
+#define NEBULAT_GRAPHICS_DEBUG 1
+#endif
 
 //------------------------------------------------------------------------------
 #if __DX11__ || __DX9__

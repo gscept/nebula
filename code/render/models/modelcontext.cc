@@ -110,8 +110,18 @@ ModelContext::ChangeModel(const Graphics::GraphicsEntityId id, const Resources::
 //------------------------------------------------------------------------------
 /**
 */
-const Models::ModelInstanceId
+const Models::ModelId 
 ModelContext::GetModel(const Graphics::GraphicsEntityId id)
+{
+	const ContextEntityId cid = GetContextId(id);
+	return modelContextAllocator.Get<0>(cid.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Models::ModelInstanceId
+ModelContext::GetModelInstance(const Graphics::GraphicsEntityId id)
 {
 	const ContextEntityId cid = GetContextId(id);
 	return modelContextAllocator.Get<1>(cid.id);
@@ -120,8 +130,17 @@ ModelContext::GetModel(const Graphics::GraphicsEntityId id)
 //------------------------------------------------------------------------------
 /**
 */
-const Models::ModelInstanceId
+const Models::ModelId 
 ModelContext::GetModel(const Graphics::ContextEntityId id)
+{
+	return modelContextAllocator.Get<0>(id.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Models::ModelInstanceId
+ModelContext::GetModelInstance(const Graphics::ContextEntityId id)
 {
 	return modelContextAllocator.Get<1>(id.id);
 }
@@ -165,11 +184,32 @@ ModelContext::GetModelNodeInstances(const Graphics::GraphicsEntityId id)
 //------------------------------------------------------------------------------
 /**
 */
+const Util::Array<Models::NodeType>& 
+ModelContext::GetModelNodeTypes(const Graphics::GraphicsEntityId id)
+{
+	const ContextEntityId cid = GetContextId(id);
+	ModelInstanceId& inst = modelContextAllocator.Get<1>(cid.id);
+	return Models::modelPool->modelInstanceAllocator.Get<1>(inst.instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 const Util::Array<Models::ModelNode::Instance*>&
 ModelContext::GetModelNodeInstances(const Graphics::ContextEntityId id)
 {
 	ModelInstanceId& inst = modelContextAllocator.Get<1>(id.id);
 	return Models::modelPool->modelInstanceAllocator.Get<0>(inst.instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::Array<Models::NodeType>&
+ModelContext::GetModelNodeTypes(const Graphics::ContextEntityId id)
+{
+	ModelInstanceId& inst = modelContextAllocator.Get<1>(id.id);
+	return Models::modelPool->modelInstanceAllocator.Get<1>(inst.instance);
 }
 
 //------------------------------------------------------------------------------
@@ -180,9 +220,9 @@ void
 ModelContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime)
 {
 	const Util::Array<ModelInstanceId>& instances = modelContextAllocator.GetArray<1>();
-	const Util::Array<Math::matrix44>& transforms = Models::modelPool->modelInstanceAllocator.GetArray<1>();
+	const Util::Array<Math::matrix44>& transforms = Models::modelPool->modelInstanceAllocator.GetArray<2>();
 	const Util::Array<Math::bbox>& modelBoxes = Models::modelPool->modelAllocator.GetArray<0>();
-	Util::Array<Math::bbox>& instanceBoxes = Models::modelPool->modelInstanceAllocator.GetArray<2>();
+	Util::Array<Math::bbox>& instanceBoxes = Models::modelPool->modelInstanceAllocator.GetArray<3>();
 	Util::Array<Math::matrix44>& pending = modelContextAllocator.GetArray<2>();
 	Util::Array<bool>& hasPending = modelContextAllocator.GetArray<3>();
 	
@@ -209,17 +249,17 @@ ModelContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTim
 			transforms[instance.instance] = transform;
 
 			Util::Array<Models::ModelNode::Instance*>& nodes = Models::modelPool->modelInstanceAllocator.Get<0>(instance.instance);
-
+			Util::Array<Models::NodeType>& types = Models::modelPool->modelInstanceAllocator.Get<1>(instance.instance);
 			// nodes are allocated breadth first, so just going through the list will guarantee the hierarchy is traversed in proper order
 			SizeT j;
 			for (j = 0; j < nodes.Size(); j++)
 			{
 				Models::ModelNode::Instance* node = nodes[j];
 				Math::matrix44& parentTransform = transform;
-				if (node->parent->type > NodeHasTransform && node->parent != nullptr)
+				if (node->parent->node->type > NodeHasTransform && node->parent != nullptr)
 					parentTransform = static_cast<const TransformNode::Instance*>(node->parent)->modelTransform;
 
-				if (node->type > NodeHasTransform)
+				if (types[j] > NodeHasTransform)
 				{
 					TransformNode::Instance* tnode = static_cast<TransformNode::Instance*>(node);
 					tnode->modelTransform = Math::matrix44::multiply(tnode->transform.getmatrix(), parentTransform);

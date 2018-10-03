@@ -187,6 +187,7 @@ CreateRenderTexture(const RenderTextureCreateInfo& info)
 		res = vkCreateImageView(loadInfo.dev, &viewInfo, NULL, &runtimeInfo.view);
 		n_assert(res == VK_SUCCESS);
 
+
 		if (adjustedInfo.usage == ColorAttachment)
 		{
 			// clear image and transition layout
@@ -212,6 +213,11 @@ CreateRenderTexture(const RenderTextureCreateInfo& info)
 			//runtimeInfo.bind = VkShaderServer::Instance()->RegisterTexture(rtId, true, runtimeInfo.type);
 		}
 	}
+
+#if NEBULAT_GRAPHICS_DEBUG
+	ObjectSetName(rtId, info.name.Value());
+#endif
+
 	return rtId;
 }
 

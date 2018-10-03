@@ -63,10 +63,15 @@ MemoryMeshPool::BindMesh(const MeshId id, const IndexT prim)
 #if _DEBUG
 	n_assert(id.allocType == MeshIdType);
 #endif
+	this->allocator.EnterGet();
 	MeshCreateInfo& inf = this->allocator.Get<0>(id.allocId);
+	CoreGraphics::SetVertexLayout(inf.vertexLayout);
+	CoreGraphics::SetPrimitiveTopology(inf.topology);
+	CoreGraphics::SetPrimitiveGroup(inf.primitiveGroups[prim]);
 	CoreGraphics::SetStreamVertexBuffer(0, inf.vertexBuffer, inf.primitiveGroups[prim].GetBaseVertex());
 	if (inf.indexBuffer != CoreGraphics::IndexBufferId::Invalid())
 		CoreGraphics::SetIndexBuffer(inf.indexBuffer, inf.primitiveGroups[prim].GetBaseIndex());
+	this->allocator.LeaveGet();
 }
 
 //------------------------------------------------------------------------------

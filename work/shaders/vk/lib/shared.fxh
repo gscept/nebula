@@ -153,7 +153,7 @@ group(DYNAMIC_OFFSET_GROUP) shared varblock ObjectBlock [ string Visibility = "V
 
 // define how many objects we can render simultaneously 
 #define MAX_BATCH_SIZE 256
-group(DYNAMIC_OFFSET_GROUP) shared varblock InstancingBlock [ bool System = true; ]
+group(DYNAMIC_OFFSET_GROUP) shared varblock InstancingBlock [ bool System = true; string Visibility = "VS"; ]
 {
 	mat4 ModelArray[MAX_BATCH_SIZE];
 	mat4 ModelViewArray[MAX_BATCH_SIZE];

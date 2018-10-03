@@ -12,9 +12,6 @@ varblock HBAOBlur
 	float PowerExponent = 1.0f;
 	float BlurFalloff;
 	float BlurDepthThreshold;
-
-	textureHandle HBAOX;
-	textureHandle HBAOY;
 };
 
 samplerstate LinearState
@@ -33,7 +30,8 @@ samplerstate PointState
 	AddressV = Clamp;
 };
 
-
+texture2D HBAOX;
+texture2D HBAOY;
 write rg16f image2D HBAORG;
 write r16f image2D HBAOR;
 
@@ -63,7 +61,7 @@ void
 csMainX() 
 {
 	// get full resolution and inverse full resolution
-	ivec2 size = textureSize(sampler2D(Textures2D[HBAOX], LinearState), 0);
+	ivec2 size = textureSize(sampler2D(HBAOX, LinearState), 0);
 	
 	// calculate offsets
 	const uint         tileStart = int(gl_WorkGroupID.x) * HBAO_TILE_WIDTH;
@@ -73,7 +71,7 @@ csMainX()
 	
 	const uint x = apronStart + gl_LocalInvocationID.x;
 	const uint y = gl_WorkGroupID.y;
-	SharedMemory[gl_LocalInvocationID.x] = fetch2D(HBAOX, LinearState, ivec2(x, y), 0).xy;
+	SharedMemory[gl_LocalInvocationID.x] = texelFetch(sampler2D(HBAOX, LinearState), ivec2(x, y), 0).xy;
 	groupMemoryBarrier();
 	
 	const uint writePos = tileStart + gl_LocalInvocationID.x;
@@ -82,7 +80,7 @@ csMainX()
 	if (writePos < tileEndClamped)
 	{
 		// Fetch (ao,z) at the kernel center
-		vec2 AoDepth = fetch2D(HBAOX, PointState, ivec2(writePos, y), 0).xy;
+        vec2 AoDepth = texelFetch(sampler2D(HBAOX, PointState), ivec2(writePos, y), 0).xy;
 		float ao_total = AoDepth.x;
 		float center_d = AoDepth.y;
 		float w_total = 1;
@@ -126,7 +124,7 @@ void
 csMainY() 
 {
 	// get full resolution and inverse full resolution
-	ivec2 size = textureSize(sampler2D(Textures2D[HBAOY], LinearState), 0);
+	ivec2 size = textureSize(sampler2D(HBAOY, LinearState), 0);
 	vec2 inverseSize = 1 / vec2(size);
 	
 	// calculate offsets
@@ -137,7 +135,7 @@ csMainY()
 	
 	const uint x = gl_WorkGroupID.y;
 	const uint y = apronStart + gl_LocalInvocationID.x;
-	SharedMemory[gl_LocalInvocationID.x] = fetch2D(HBAOY, LinearState, ivec2(x, y), 0).xy;
+	SharedMemory[gl_LocalInvocationID.x] = texelFetch(sampler2D(HBAOY, LinearState), ivec2(x, y), 0).xy;
 	groupMemoryBarrier();
 	
 	const uint writePos = tileStart + gl_LocalInvocationID.x;
@@ -146,7 +144,7 @@ csMainY()
 	if (writePos < tileEndClamped)
 	{
 		// Fetch (ao,z) at the kernel center
-		vec2 AoDepth = fetch2D(HBAOY, PointState, ivec2(x, writePos), 0).xy;
+        vec2 AoDepth = texelFetch(sampler2D(HBAOY, PointState), ivec2(x, writePos), 0).xy;
 		float ao_total = AoDepth.x;
 		float center_d = AoDepth.y;
 		float w_total = 1;

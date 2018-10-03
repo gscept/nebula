@@ -24,7 +24,7 @@ using namespace Math;
 */
 CharacterNode::CharacterNode()
 {
-    // empty
+	this->type = CharacterNodeType;
 }
 
 //------------------------------------------------------------------------------

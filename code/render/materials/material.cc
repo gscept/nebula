@@ -15,12 +15,12 @@ MaterialType* currentType = nullptr;
 //------------------------------------------------------------------------------
 /**
 */
-void
+bool
 MaterialBeginBatch(MaterialType* type, CoreGraphics::BatchGroup::Code batch)
 {
 	n_assert(type != nullptr);
 	currentType = type;
-	currentType->BeginBatch(batch);
+	return currentType->BeginBatch(batch);
 }
 
 //------------------------------------------------------------------------------

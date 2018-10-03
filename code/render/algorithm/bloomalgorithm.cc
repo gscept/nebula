@@ -28,7 +28,6 @@ BloomAlgorithm::~BloomAlgorithm()
 	// empty
 }
 
-
 //------------------------------------------------------------------------------
 /**
 */
@@ -42,8 +41,15 @@ BloomAlgorithm::Setup()
 	// setup shaders
 	this->brightPassShader = ShaderGet("shd:brightpass.fxb");
 	this->blurShader = ShaderGet("shd:blur_2d_rgb16f_cs.fxb");
-	this->brightPass = ShaderCreateState(this->brightPassShader, { NEBULAT_BATCH_GROUP }, false);
-	this->blur = ShaderCreateState(this->blurShader, { NEBULAT_BATCH_GROUP }, false);
+	this->brightPassTable = ShaderCreateResourceTable(this->brightPassShader, NEBULAT_BATCH_GROUP);
+	this->blurTable = ShaderCreateResourceTable(this->blurShader, NEBULAT_BATCH_GROUP);
+	
+	this->colorSourceSlot = ShaderGetResourceSlot(this->brightPassShader, "ColorSource");
+	this->luminanceTextureSlot = ShaderGetResourceSlot(this->brightPassShader, "LuminanceTexture");
+	this->inputImageXSlot = ShaderGetResourceSlot(this->blurShader, "InputImageX");
+	this->inputImageYSlot = ShaderGetResourceSlot(this->blurShader, "InputImageY");
+	this->blurImageXSlot = ShaderGetResourceSlot(this->blurShader, "BlurImageX");
+	this->blurImageYSlot = ShaderGetResourceSlot(this->blurShader, "BlurImageY");
 
 	TextureDimensions dims = ShaderRWTextureGetDimensions(this->readWriteTextures[0]);
 	ShaderRWTextureCreateInfo tinfo = 
@@ -69,27 +75,19 @@ BloomAlgorithm::Setup()
 	binfo.shaderRWTextures.Append(std::make_tuple(this->internalTargets[0], subres, ImageLayout::General, ImageLayout::General, BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead));
 	this->barriers[0] = CreateBarrier(binfo);
 
-	this->brightPassColor = ShaderStateGetConstant(this->brightPass, "ColorSource");
-	this->brightPassLuminance = ShaderStateGetConstant(this->brightPass, "LuminanceTexture");
-	ShaderResourceSetRenderTexture(this->brightPassColor, this->brightPass, this->renderTextures[0]);
-	ShaderResourceSetRenderTexture(this->brightPassLuminance, this->brightPass, this->renderTextures[1]);
-	// get brightpass variables and set them up
+	ResourceTableSetTexture(this->brightPassTable, { this->renderTextures[0], this->colorSourceSlot, 0, CoreGraphics::SamplerId::Invalid() , false });
+	ResourceTableSetTexture(this->brightPassTable, { this->renderTextures[1], this->luminanceTextureSlot, 0, CoreGraphics::SamplerId::Invalid() , false });
+	ResourceTableCommitChanges(this->brightPassTable);
 
-	// get blur variables and set them up
-	this->blurInputX = ShaderStateGetConstant(this->blur, "InputImageX");
-	this->blurInputY = ShaderStateGetConstant(this->blur, "InputImageY");
-	this->blurOutputX = ShaderStateGetConstant(this->blur, "BlurImageX");
-	this->blurOutputY = ShaderStateGetConstant(this->blur, "BlurImageY");
+	ResourceTableSetTexture(this->blurTable, { this->renderTextures[2], this->inputImageXSlot, 0, CoreGraphics::SamplerId::Invalid() , false });
+	ResourceTableSetTexture(this->blurTable, { this->internalTargets[0], this->inputImageYSlot, 0, CoreGraphics::SamplerId::Invalid() });
+	ResourceTableSetShaderRWTexture(this->blurTable, { this->internalTargets[0], this->blurImageXSlot, 0, CoreGraphics::SamplerId::Invalid() });
+	ResourceTableSetShaderRWTexture(this->blurTable, { this->readWriteTextures[0], this->blurImageYSlot, 0, CoreGraphics::SamplerId::Invalid() });
+	ResourceTableCommitChanges(this->blurTable);
 
 	this->blurX = ShaderGetProgram(this->blurShader, ShaderFeatureFromString("Alt0"));
 	this->blurY = ShaderGetProgram(this->blurShader, ShaderFeatureFromString("Alt1"));
 	this->brightPassProgram = ShaderGetProgram(this->brightPassShader, ShaderFeatureFromString("Alt0"));
-
-	// setup blur, we start by feeding the bloom rendered, then we just use the internal target (which should work, since we use barriers to block cross-tile execution)
-	ShaderResourceSetRenderTexture(this->blurInputX, this->blur, this->renderTextures[2]);
-	ShaderResourceSetReadWriteTexture(this->blurOutputX, this->blur, this->internalTargets[0]);
-	ShaderResourceSetReadWriteTexture(this->blurInputY, this->blur, this->internalTargets[0]);
-	ShaderResourceSetReadWriteTexture(this->blurOutputY, this->blur, this->readWriteTextures[0]);
 
 	dims = ShaderRWTextureGetDimensions(this->readWriteTextures[0]);
 
@@ -100,8 +98,8 @@ BloomAlgorithm::Setup()
 	{
 		CoreGraphics::SetShaderProgram(this->brightPassProgram);
 		CoreGraphics::BeginBatch(Frame::FrameBatchType::System);
-		this->fsq.ApplyMesh();		
-		CoreGraphics::SetShaderState(this->brightPass);
+		this->fsq.ApplyMesh();
+		CoreGraphics::SetResourceTable(this->brightPassTable, NEBULAT_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
 		this->fsq.Draw();
 		CoreGraphics::EndBatch();
 	});
@@ -119,14 +117,14 @@ BloomAlgorithm::Setup()
 		uint numGroupsY2 = dims.height;
 
 		CoreGraphics::SetShaderProgram(this->blurX);
-		CoreGraphics::SetShaderState(this->blur);
+		CoreGraphics::SetResourceTable(this->blurTable, NEBULAT_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
 		CoreGraphics::Compute(numGroupsX1, numGroupsY2, 1);
 
 		// insert barrier between passes
 		CoreGraphics::InsertBarrier(this->barriers[0], ComputeQueueType);
 
 		CoreGraphics::SetShaderProgram(this->blurY);
-		CoreGraphics::SetShaderState(this->blur);
+		CoreGraphics::SetResourceTable(this->blurTable, NEBULAT_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
 		CoreGraphics::Compute(numGroupsY1, numGroupsX2, 1);
 
 	});
@@ -138,8 +136,8 @@ BloomAlgorithm::Setup()
 void
 BloomAlgorithm::Discard()
 {
-	ShaderDestroyState(this->blur);
-	ShaderDestroyState(this->brightPass);
+	DestroyResourceTable(this->brightPassTable);
+	DestroyResourceTable(this->blurTable);
 	DestroyBarrier(this->barriers[0]);
 	DestroyShaderRWTexture(this->internalTargets[0]);
 	this->fsq.Discard();

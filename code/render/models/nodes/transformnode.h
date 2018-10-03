@@ -28,11 +28,11 @@ public:
 		bool lockedToViewer;
 
 		void ApplyNodeInstanceState() override;
-		virtual void Setup(const Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
+		virtual void Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
 	};
 
 	/// create instance
-	virtual ModelNode::Instance* CreateInstance(byte* memory, const Models::ModelNode::Instance* parent) const;
+	virtual ModelNode::Instance* CreateInstance(byte* memory, const Models::ModelNode::Instance* parent) override;
 	/// get size of instance
 	virtual const SizeT GetInstanceSize() const { return sizeof(Instance); }
 
@@ -61,7 +61,7 @@ ModelNodeInstanceCreator(TransformNode)
 /**
 */
 inline void
-TransformNode::Instance::Setup(const Models::ModelNode* node, const Models::ModelNode::Instance* parent)
+TransformNode::Instance::Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent)
 {
 	ModelNode::Instance::Setup(node, parent);
 	const TransformNode* tnode = static_cast<const TransformNode*>(node);
@@ -72,7 +72,6 @@ TransformNode::Instance::Setup(const Models::ModelNode* node, const Models::Mode
 	this->transform.setscalepivot(tnode->scalePivot);
 	this->lockedToViewer = tnode->lockedToViewer;
 	this->isInViewSpace = tnode->isInViewSpace;
-	this->type = TransformNodeType;
 }
 
 } // namespace Models

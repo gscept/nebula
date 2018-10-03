@@ -167,7 +167,7 @@ inline const CoreGraphics::RenderTextureId
 FrameScript::GetDepthStencilTexture(const Util::StringAtom& name)
 {
 	IndexT i = this->depthStencilTexturesByName.FindIndex(name);
-	return i == InvalidIndex ? CoreGraphics::RenderTextureId::Invalid() : this->colorTexturesByName.ValueAtIndex(i);
+	return i == InvalidIndex ? CoreGraphics::RenderTextureId::Invalid() : this->depthStencilTexturesByName.ValueAtIndex(i);
 }
 
 //------------------------------------------------------------------------------

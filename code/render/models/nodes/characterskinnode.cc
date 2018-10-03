@@ -21,6 +21,7 @@ using namespace Resources;
 CharacterSkinNode::CharacterSkinNode()
 {
     this->skinnedShaderFeatureBits = ShaderServer::Instance()->FeatureStringToMask("Skinned");
+	this->type = CharacterSkinNodeType;
 }
 
 //------------------------------------------------------------------------------

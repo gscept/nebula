@@ -72,10 +72,10 @@ framescript:
 	
 	pass:
 	{
-		name: "Pass1",
+		name: "GBufferPass",
 		attachments:
 		[
-			{ name: "AlbedoBuffer", 	clear: [0.1, 0.1, 0.1, 1], 		store: true	},
+			{ name: "AlbedoBuffer", 	clear: [0.5, 0.5, 0.5, 1], 		store: true	},
 			{ name: "NormalBuffer", 	clear: [0.5, 0.5, 0, 0], 		store: true },
 			{ name: "DepthBuffer", 		clear: [-1000, 0, 0, 0], 		store: true },
 			{ name: "SpecularBuffer", 	clear: [0, 0, 0, 0], 			store: true	},
@@ -98,11 +98,11 @@ framescript:
 		},
 		subpass:
 		{
-			name: "GeometryPass",
-			dependencies: [0],
+			name: "LightPass",
+			dependencies: ["GeometryPass"],
 			inputs: ["AlbedoBuffer", "NormalBuffer", "DepthBuffer", "SpecularBuffer", "EmissiveBuffer"],
 			depth: true,
-			attachments: [5],
+			attachments: ["LightBuffer"],
 			system: "Lights"
 		}
 	},
@@ -120,7 +120,7 @@ framescript:
 
 	pass:
 	{
-		name: "Pass2",
+		name: "ScreenPass",
 
 		attachments:
 		[
@@ -131,7 +131,7 @@ framescript:
 
 		subpass:
 		{			
-			name: "GeometryPass",
+			name: "ScreenPass",
 			dependencies: [], 
 			attachments: [ "ScreenBuffer" ],
 			depth: false,
@@ -144,7 +144,7 @@ framescript:
 					shader: 	"copy",
 					variables:
 					[
-						{ semantic: "CopyBuffer", 	value: "tex:Buildings/Castle_Gate_diffuse.dds" },
+						{ semantic: "CopyBuffer", 	value: "AlbedoBuffer" },
 					]
 				}
 				sizeFromTexture: 	"ScreenBuffer"

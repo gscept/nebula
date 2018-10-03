@@ -5,6 +5,7 @@
 #include "render/stdneb.h"
 #include "vkcmdbufferthread.h"
 #include "threading/event.h"
+#include "coregraphics/vk/vkgraphicsdevice.h"
 
 namespace Vulkan
 {
@@ -58,6 +59,12 @@ VkCmdBufferThread::DoWork()
 			{
 			case BeginCommand:
 				this->commandBuffer = cmd.bgCmd.buf;
+#if defined(NEBULAT_GRAPHICS_DEBUG)
+				{
+					Util::String name = Util::String::Sprintf("%s Generate draws", this->GetMyThreadName());
+					Vulkan::CmdBufBeginMarker(this->commandBuffer, Math::float4(0.8f, 0.6f, 0.6f, 1.0f), name.AsCharPtr());
+				}
+#endif
 				n_assert(vkBeginCommandBuffer(this->commandBuffer, &cmd.bgCmd.info) == VK_SUCCESS);
 				break;
 			case ResetCommands:
@@ -65,6 +72,10 @@ VkCmdBufferThread::DoWork()
 				break;
 			case EndCommand:
 				n_assert(vkEndCommandBuffer(this->commandBuffer) == VK_SUCCESS);
+
+#if defined(NEBULAT_GRAPHICS_DEBUG)
+				Vulkan::CmdBufEndMarker(this->commandBuffer);
+#endif
 				this->commandBuffer = VK_NULL_HANDLE;
 				break;
 			case GraphicsPipeline:

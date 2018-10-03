@@ -7,6 +7,7 @@
 #include "coregraphics/graphicsdevice.h"
 #include "coregraphics/shader.h"
 #include "coregraphics/config.h"
+#include "coregraphics/resourcetable.h"
 namespace Materials
 {
 
@@ -28,36 +29,37 @@ MaterialType::~MaterialType()
 //------------------------------------------------------------------------------
 /**
 */
-MaterialId
+MaterialInstanceId
 MaterialType::CreateInstance()
 {
 	Ids::Id32 mat = this->materialAllocator.AllocObject();
 	Util::Array<Ids::Id32>& indices = this->materialAllocator.Get<0>(mat);
-	Util::Array<Util::HashTable<Util::StringAtom, CoreGraphics::ShaderConstantId>>& matConstants = this->materialAllocator.Get<1>(mat);
-	Util::Array<Util::HashTable<Util::StringAtom, CoreGraphics::ShaderConstantId>>& matTextures = this->materialAllocator.Get<2>(mat);
+	Util::Array<Util::HashTable<Util::StringAtom, CoreGraphics::ConstantBinding>>& matConstants = this->materialAllocator.Get<1>(mat);
+	Util::Array<Util::HashTable<Util::StringAtom, IndexT>>& matTextures = this->materialAllocator.Get<2>(mat);
 	SizeT i;
 	for (i = 0; i < batches.Size(); i++)
 	{
 		const CoreGraphics::BatchGroup::Code batch = batches[i];
 		CoreGraphics::ShaderId shid;
 		shid.allocId = programs[batch].shaderId;
-		CoreGraphics::ShaderStateId state = CoreGraphics::ShaderCreateState(shid, { NEBULAT_BATCH_GROUP }, false);
+		CoreGraphics::ResourceTableId table = CoreGraphics::ShaderCreateResourceTable(shid, NEBULAT_BATCH_GROUP);
 
-		matConstants.Append(Util::HashTable<Util::StringAtom, CoreGraphics::ShaderConstantId>());
-		Util::HashTable<Util::StringAtom, CoreGraphics::ShaderConstantId>& matConstantDict = matConstants.Back();
+		matConstants.Append(Util::HashTable<Util::StringAtom, CoreGraphics::ConstantBinding>());
+		Util::HashTable<Util::StringAtom, CoreGraphics::ConstantBinding>& matConstantDict = matConstants.Back();
 
-		matTextures.Append(Util::HashTable<Util::StringAtom, CoreGraphics::ShaderConstantId>());
-		Util::HashTable<Util::StringAtom, CoreGraphics::ShaderConstantId>& matTextureDict = matTextures.Back();
+		matTextures.Append(Util::HashTable<Util::StringAtom, IndexT>());
+		Util::HashTable<Util::StringAtom, IndexT>& matTextureDict = matTextures.Back();
 		SizeT j;
 		for (j = 0; j < this->constants.Size(); j++)
 		{
 			if (!this->constants.ValueAtIndex(j).system)
 			{
-				CoreGraphics::ShaderConstantId cid = CoreGraphics::ShaderStateGetConstant(state, this->constants.KeyAtIndex(j));
+				CoreGraphics::ConstantBinding cid = CoreGraphics::ShaderGetConstantBinding(shid, this->constants.KeyAtIndex(j));
 				matConstantDict.Add(this->constants.KeyAtIndex(j), cid);
-				if (cid != CoreGraphics::ShaderConstantId::Invalid())
+				if (cid.byteSize != -1)
 				{
-					CoreGraphics::ShaderConstantSet(cid, state, this->constants.ValueAtIndex(j).defaultValue);
+
+					//CoreGraphics::ShaderConstantSet(cid, state, this->constants.ValueAtIndex(j).defaultValue);
 				}
 			}
 		}
@@ -65,18 +67,19 @@ MaterialType::CreateInstance()
 		{
 			if (!this->textures.ValueAtIndex(j).system)
 			{
-				CoreGraphics::ShaderConstantId cid = CoreGraphics::ShaderStateGetConstant(state, this->textures.KeyAtIndex(j));
+				IndexT cid = CoreGraphics::ShaderGetResourceSlot(shid, this->textures.KeyAtIndex(j));
 				matTextureDict.Add(this->textures.KeyAtIndex(j), cid);
-				if (cid != CoreGraphics::ShaderConstantId::Invalid())
+				if (cid != InvalidIndex)
 				{
-					CoreGraphics::ShaderResourceSetTexture(cid, state, this->textures.ValueAtIndex(j).defaultValue);
+					//CoreGraphics::ShaderResourceSetTexture(cid, state, this->textures.ValueAtIndex(j).defaultValue);
 				}
 			}
 		}
-		Util::Array<CoreGraphics::ShaderStateId>& shaderStates = this->states.AddUnique(batch);
-		shaderStates.Append(state);
+		Util::Array<CoreGraphics::ResourceTableId>& tables = this->tables.AddUnique(batch);
+		CoreGraphics::ResourceTableCommitChanges(table);
+		tables.Append(table);
 
-		indices.Append(this->states[batch].Size()-1);
+		indices.Append(this->tables[batch].Size()-1);
 	}
 	return mat;
 }
@@ -85,18 +88,18 @@ MaterialType::CreateInstance()
 /**
 */
 void
-MaterialType::DestroyInstance(MaterialId mat)
+MaterialType::DestroyInstance(MaterialInstanceId mat)
 {
 	SizeT i;
 	for (i = 0; i < this->batches.Size(); i++)
 	{
 		const CoreGraphics::BatchGroup::Code batch = this->batches[i];
-		const Util::Array<CoreGraphics::ShaderStateId>& stateIds = this->states[batch];
+		const Util::Array<CoreGraphics::ResourceTableId>& tableIds = this->tables[batch];
 		const Util::Array<Ids::Id32>& indices = this->materialAllocator.Get<0>(mat.id);
 		SizeT j;
 		for (j = 0; j < indices.Size(); j++)
 		{
-			CoreGraphics::ShaderDestroyState(stateIds[indices[j]]);
+			CoreGraphics::DestroyResourceTable(tableIds[indices[j]]);
 		}
 	}
 	this->materialAllocator.DeallocObject(mat.id);
@@ -106,23 +109,23 @@ MaterialType::DestroyInstance(MaterialId mat)
 /**
 */
 void
-MaterialType::SetConstant(MaterialId mat, Util::StringAtom name, const Util::Variant& constant)
+MaterialType::SetConstant(MaterialInstanceId mat, Util::StringAtom name, const Util::Variant& constant)
 {
 	const Util::Array<Ids::Id32>& indices = this->materialAllocator.Get<0>(mat.id);
-	const Util::Array<Util::HashTable<Util::StringAtom, CoreGraphics::ShaderConstantId>>& matConstants = this->materialAllocator.Get<1>(mat.id);
+	const Util::Array<Util::HashTable<Util::StringAtom, CoreGraphics::ConstantBinding>>& matConstants = this->materialAllocator.Get<1>(mat.id);
 
 	SizeT i;
 	for (i = 0; i < this->batches.Size(); i++)
 	{
 		const CoreGraphics::BatchGroup::Code batch = this->batches[i];
-		const Util::Array<CoreGraphics::ShaderStateId>& stateIds = this->states[batch];
+		const Util::Array<CoreGraphics::ResourceTableId>& tableIds = this->tables[batch];
 		SizeT j;
 		for (j = 0; j < indices.Size(); j++)
 		{
-			if (matConstants[i][name] != CoreGraphics::ShaderConstantId::Invalid())
+			if (matConstants[i][name].byteSize != -1)
 			{
-				const CoreGraphics::ShaderStateId state = stateIds[indices[j]];
-				CoreGraphics::ShaderConstantSet(matConstants[i][name], state, constant);
+				const CoreGraphics::ResourceTableId table = tableIds[indices[j]];
+				//CoreGraphics::ShaderConstantSet(matConstants[i][name], state, constant);
 			}
 		}
 	}
@@ -132,23 +135,23 @@ MaterialType::SetConstant(MaterialId mat, Util::StringAtom name, const Util::Var
 /**
 */
 void
-MaterialType::SetTexture(MaterialId mat, Util::StringAtom name, const CoreGraphics::TextureId tex)
+MaterialType::SetTexture(MaterialInstanceId mat, Util::StringAtom name, const CoreGraphics::TextureId tex)
 {
 	const Util::Array<Ids::Id32>& indices = this->materialAllocator.Get<0>(mat.id);
-	const Util::Array<Util::HashTable<Util::StringAtom, CoreGraphics::ShaderConstantId>>& matTextures = this->materialAllocator.Get<2>(mat.id);
+	const Util::Array<Util::HashTable<Util::StringAtom, IndexT>>& matTextures = this->materialAllocator.Get<2>(mat.id);
 
 	SizeT i;
 	for (i = 0; i < this->batches.Size(); i++)
 	{
 		const CoreGraphics::BatchGroup::Code batch = this->batches[i];
-		const Util::Array<CoreGraphics::ShaderStateId>& stateIds = this->states[batch];
+		const Util::Array<CoreGraphics::ResourceTableId>& tableIds = this->tables[batch];
 		SizeT j;
 		for (j = 0; j < indices.Size(); j++)
 		{
-			if (matTextures[i][name] != CoreGraphics::ShaderConstantId::Invalid())
+			if (matTextures[i][name] != InvalidIndex)
 			{
-				const CoreGraphics::ShaderStateId state = stateIds[indices[j]];
-				CoreGraphics::ShaderResourceSetTexture(matTextures[i][name], state, tex);
+				const CoreGraphics::ResourceTableId state = tableIds[indices[j]];
+				//CoreGraphics::ShaderResourceSetTexture(matTextures[i][name], state, tex);
 			}
 		}
 	}
@@ -157,15 +160,17 @@ MaterialType::SetTexture(MaterialId mat, Util::StringAtom name, const CoreGraphi
 //------------------------------------------------------------------------------
 /**
 */
-void
+bool
 MaterialType::BeginBatch(CoreGraphics::BatchGroup::Code batch)
 {
 	n_assert(this->currentAllocator == nullptr);
-	if (states.Contains(batch))
+	if (tables.Contains(batch))
 	{
-		this->currentAllocator = &states[batch];
+		this->currentAllocator = &tables[batch];
 		CoreGraphics::SetShaderProgram(this->programs[batch]);
+		return true;
 	}
+	return false;
 }
 
 //------------------------------------------------------------------------------
@@ -181,10 +186,10 @@ MaterialType::EndBatch()
 /**
 */
 void
-MaterialType::ApplyInstance(const MaterialId& mat)
+MaterialType::ApplyInstance(const MaterialInstanceId& mat)
 {
 	n_assert(this->currentAllocator != nullptr);
 	const Util::Array<Ids::Id32>& indices = this->materialAllocator.Get<0>(mat.id);
-	CoreGraphics::SetShaderState((*this->currentAllocator)[indices[mat.id]]);
+	CoreGraphics::SetResourceTable((*this->currentAllocator)[indices[mat.id]], NEBULAT_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
 }
 } // namespace Materials

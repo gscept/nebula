@@ -39,6 +39,9 @@ public:
 		void CrossQueuePreSync() override;
 		void CrossQueuePostSync() override;
 
+#if defined(NEBULAT_GRAPHICS_DEBUG)
+		Util::StringAtom name;
+#endif
 		Util::Array<FrameOp::Compiled*> subpasses;
 		CoreGraphics::PassId pass;
 	};

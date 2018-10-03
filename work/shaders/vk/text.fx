@@ -10,10 +10,11 @@
 #include "lib/techniques.fxh"
 #include "lib/shared.fxh"
 
+group(BATCH_GROUP) texture2D Texture;
+
 /// Declaring used textures
 group(BATCH_GROUP) push varblock Text
 {
-	textureHandle Texture;
 	mat4 TextProjectionModel;
 };
 
@@ -61,7 +62,7 @@ psMain(
 	in vec4 Color,
 	[color0] out vec4 FinalColor) 
 {
-	vec4 texColor = sample2D(Text.Texture, TextureSampler, UV).rrrr;
+	vec4 texColor = texture(sampler2D(Texture, TextureSampler), UV).rrrr;
 	FinalColor = texColor * Color;
 }
 

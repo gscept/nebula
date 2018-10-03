@@ -37,14 +37,14 @@ public:
 	struct Instance : public PrimitiveNode::Instance
 	{
 		CoreGraphics::ShaderId skinShader;
-		CoreGraphics::ShaderConstantId jointPaletteVar;
+		CoreGraphics::ConstantBinding jointPaletteVar;
 		Ids::Id32 characterId;
 
-		void Setup(const Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
+		void Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
 	};
 
 	/// create instance
-	virtual ModelNode::Instance* CreateInstance(byte* memory, const Models::ModelNode::Instance* parent) const;
+	virtual ModelNode::Instance* CreateInstance(byte* memory, const Models::ModelNode::Instance* parent) override;
 
 	/// get size of instance
 	virtual const SizeT GetInstanceSize() const { return sizeof(Instance); }
@@ -100,10 +100,9 @@ ModelNodeInstanceCreator(CharacterSkinNode)
 /**
 */
 inline void
-CharacterSkinNode::Instance::Setup(const Models::ModelNode* node, const Models::ModelNode::Instance* parent)
+CharacterSkinNode::Instance::Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent)
 {
 	PrimitiveNode::Instance::Setup(node, parent);
-	this->type = CharacterSkinNodeType;
 }
 
 } // namespace Characters

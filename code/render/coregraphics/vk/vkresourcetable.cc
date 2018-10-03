@@ -19,6 +19,7 @@ namespace Vulkan
 VkResourceTableAllocator resourceTableAllocator;
 VkResourceTableLayoutAllocator resourceTableLayoutAllocator;
 VkResourcePipelineAllocator resourcePipelineAllocator;
+VkDescriptorSetLayout emptySetLayout;
 
 //------------------------------------------------------------------------------
 /**
@@ -36,6 +37,24 @@ const VkDescriptorSetLayout&
 ResourceTableGetVkLayout(const CoreGraphics::ResourceTableId& id)
 {
 	return ResourceTableLayoutGetVk(resourceTableAllocator.Get<3>(id.id24));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+SetupEmptyDescriptorSet()
+{
+	VkDescriptorSetLayoutCreateInfo info = 
+	{
+		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+		nullptr,
+		0,
+		0,
+		nullptr
+	};
+	VkResult res = vkCreateDescriptorSetLayout(Vulkan::GetCurrentDevice(), &info, nullptr, &emptySetLayout);
+	n_assert(res == VK_SUCCESS);
 }
 
 //------------------------------------------------------------------------------
@@ -730,13 +749,24 @@ CreateResourcePipeline(const ResourcePipelineCreateInfo& info)
 
 	VkDevice& dev = resourcePipelineAllocator.Get<0>(id);
 	VkPipelineLayout& layout = resourcePipelineAllocator.Get<1>(id);
-
 	dev = Vulkan::GetCurrentDevice();
-	Util::FixedArray<VkDescriptorSetLayout> layouts(info.tables.Size());
+
+	Util::Array<VkDescriptorSetLayout> layouts;
+
+
 	IndexT i;
-	for (i = 0; i < info.tables.Size(); i++)
+	for (i = 0; i < info.indices.Size(); i++)
 	{
-		layouts[i] = resourceTableLayoutAllocator.Get<1>(info.tables[i].id24);
+		if (info.indices[i] != i)
+		{
+			IndexT tmp = i;
+			while (tmp != info.indices[i])
+			{
+				layouts.Append(emptySetLayout);
+				tmp++;
+			}
+		}
+		layouts.Append(resourceTableLayoutAllocator.Get<1>(info.tables[i].id24));
 	}
 
 	VkPushConstantRange push;

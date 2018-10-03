@@ -8,6 +8,7 @@
 //------------------------------------------------------------------------------
 #include "frameop.h"
 #include "coregraphics/shader.h"
+#include "coregraphics/resourcetable.h"
 namespace Frame
 {
 class FrameCompute : public FrameOp
@@ -26,14 +27,16 @@ public:
 		void Run(const IndexT frameIndex);
 
 		CoreGraphics::ShaderProgramId program;
-		CoreGraphics::ShaderStateId state;
+		CoreGraphics::ResourceTableId resourceTable;
 		SizeT x, y, z;
 	};
 
 	FrameOp::Compiled* AllocCompiled(Memory::ChunkAllocator<BIG_CHUNK>& allocator);
 
+	Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBufferId> constantBuffers;
+	CoreGraphics::ResourceTableId resourceTable;
+	CoreGraphics::ShaderId shader;
 	CoreGraphics::ShaderProgramId program;
-	CoreGraphics::ShaderStateId state;
 	SizeT x, y, z;
 };
 

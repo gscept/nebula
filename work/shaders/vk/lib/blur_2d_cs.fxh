@@ -42,8 +42,8 @@ samplerstate InputSampler
 	AddressV = Clamp;
 };
 
-textureHandle InputImageX;
-textureHandle InputImageY;
+texture2D InputImageX;
+texture2D InputImageY;
 write IMAGE_FORMAT_TYPE image2D BlurImageX;
 write IMAGE_FORMAT_TYPE image2D BlurImageY;
 #define INV_LN2 1.44269504f
@@ -106,7 +106,7 @@ csMainX()
 	
 	// load into workgroup saved memory, this allows us to use the original pixel even though 
 	// we might have replaced it with the result from this thread!
-	SharedMemory[gl_LocalInvocationID.x] = IMAGE_LOAD_SWIZZLE(sample2DLod(InputImageX, InputSampler, sampleCoord, 0));
+	SharedMemory[gl_LocalInvocationID.x] = IMAGE_LOAD_SWIZZLE(textureLod(sampler2D(InputImageX, InputSampler), sampleCoord, 0));
 	groupMemoryBarrier();
 	
 	const uint writePos = tileStart + gl_LocalInvocationID.x;
@@ -157,7 +157,7 @@ csMainY()
 	
 	// load into workgroup saved memory, this allows us to use the original pixel even though 
 	// we might have replaced it with the result from this thread!
-	SharedMemory[gl_LocalInvocationID.x] = IMAGE_LOAD_SWIZZLE(sample2DLod(InputImageY, InputSampler, sampleCoord, 0));
+	SharedMemory[gl_LocalInvocationID.x] = IMAGE_LOAD_SWIZZLE(textureLod(sampler2D(InputImageY, InputSampler), sampleCoord, 0));
 	groupMemoryBarrier();
 	
 	const uint writePos = tileStart + gl_LocalInvocationID.x;

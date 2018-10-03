@@ -686,12 +686,12 @@ VkShaderStageFlags
 VkTypes::AsVkShaderVisibility(const CoreGraphicsShaderVisibility vis)
 {
 	VkShaderStageFlags ret = 0;
-	if ((vis & VertexShaderVisibility) == VertexShaderVisibility)		ret |= VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
-	if ((vis & HullShaderVisibility) == HullShaderVisibility)			ret |= VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT;
-	if ((vis & DomainShaderVisibility) == DomainShaderVisibility)		ret |= VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT;
-	if ((vis & GeometryShaderVisibility) == GeometryShaderVisibility)	ret |= VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT;
-	if ((vis & PixelShaderVisibility) == PixelShaderVisibility)			ret |= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-	if ((vis & ComputeShaderVisibility) == ComputeShaderVisibility)		ret |= VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+	if ((vis & VertexShaderVisibility) == VertexShaderVisibility)		ret |= VK_SHADER_STAGE_VERTEX_BIT;
+	if ((vis & HullShaderVisibility) == HullShaderVisibility)			ret |= VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+	if ((vis & DomainShaderVisibility) == DomainShaderVisibility)		ret |= VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+	if ((vis & GeometryShaderVisibility) == GeometryShaderVisibility)	ret |= VK_SHADER_STAGE_GEOMETRY_BIT;
+	if ((vis & PixelShaderVisibility) == PixelShaderVisibility)			ret |= VK_SHADER_STAGE_FRAGMENT_BIT;
+	if ((vis & ComputeShaderVisibility) == ComputeShaderVisibility)		ret |= VK_SHADER_STAGE_COMPUTE_BIT;
 	return ret;
 }
 

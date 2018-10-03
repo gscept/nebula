@@ -253,7 +253,7 @@ MaterialServer::LoadMaterialTypes(const IO::URI& file)
 /**
 */
 MaterialType* 
-MaterialServer::GetMaterial(const Resources::ResourceName& type)
+MaterialServer::GetMaterialType(const Resources::ResourceName& type)
 {
 	MaterialType* mat = this->materialTypesByName[type];
 	return mat;

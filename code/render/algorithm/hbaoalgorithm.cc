@@ -83,30 +83,38 @@ HBAOAlgorithm::Setup()
 	// setup shaders
 	this->hbaoShader = ShaderGet("shd:hbao_cs.fxb");
 	this->blurShader = ShaderGet("shd:hbaoblur_cs.fxb");
-	this->hbao = ShaderCreateState(this->hbaoShader, { NEBULAT_BATCH_GROUP }, false);
-	this->blur = ShaderCreateState(this->blurShader, { NEBULAT_BATCH_GROUP }, false);
+	this->hbaoTable = ShaderCreateResourceTable(this->hbaoShader, NEBULAT_BATCH_GROUP);
+	this->blurTable = ShaderCreateResourceTable(this->blurShader, NEBULAT_BATCH_GROUP);
+	this->hbao0 = ShaderGetResourceSlot(this->hbaoShader, "HBAO0");
+	this->hbao1 = ShaderGetResourceSlot(this->hbaoShader, "HBAO1");
+	this->hbaoC = ShaderGetResourceSlot(this->hbaoShader, "HBAOBlock");
+	this->hbaoX = ShaderGetResourceSlot(this->blurShader, "HBAOX");
+	this->hbaoY = ShaderGetResourceSlot(this->blurShader, "HBAOY");
+	this->hbaoBlurRG = ShaderGetResourceSlot(this->blurShader, "HBAORG");
+	this->hbaoBlurR = ShaderGetResourceSlot(this->blurShader, "HBAOR");
+	this->blurC = ShaderGetResourceSlot(this->blurShader, "HBAOBlur");
 
 	this->xDirectionHBAO = ShaderGetProgram(this->hbaoShader, ShaderFeatureFromString("Alt0"));
 	this->yDirectionHBAO = ShaderGetProgram(this->hbaoShader, ShaderFeatureFromString("Alt1"));
 	this->xDirectionBlur = ShaderGetProgram(this->blurShader, ShaderFeatureFromString("Alt0"));
 	this->yDirectionBlur = ShaderGetProgram(this->blurShader, ShaderFeatureFromString("Alt1"));
 
-	this->hbao0Var = ShaderStateGetConstant(this->hbao, "HBAO0");
-	this->hbao1Var = ShaderStateGetConstant(this->hbao, "HBAO1");
-	this->hbaoX = ShaderStateGetConstant(this->blur, "HBAOX");
-	this->hbaoY = ShaderStateGetConstant(this->blur, "HBAOY");
-	
-	this->hbaoBlurRGVar = ShaderStateGetConstant(this->blur, "HBAORG");
-	this->hbaoBlurRVar = ShaderStateGetConstant(this->blur, "HBAOR");
-	
-	ShaderResourceSetReadWriteTexture(this->hbaoX, this->blur, this->internalTargets[1]);
-	ShaderResourceSetReadWriteTexture(this->hbaoY, this->blur, this->internalTargets[0]);
+	this->hbaoConstants = ShaderCreateConstantBuffer(this->hbaoShader, "HBAOBlock");
+	this->blurConstants = ShaderCreateConstantBuffer(this->blurShader, "HBAOBlur");
 
-	// assign variables, HBAO0 is read-write
-	ShaderResourceSetReadWriteTexture(this->hbao0Var, this->hbao, this->internalTargets[0]);
-	ShaderResourceSetReadWriteTexture(this->hbao1Var, this->hbao, this->internalTargets[1]);
-	ShaderResourceSetReadWriteTexture(this->hbaoBlurRGVar, this->blur, this->internalTargets[0]);
-	ShaderResourceSetReadWriteTexture(this->hbaoBlurRVar, this->blur, this->readWriteTextures[0]);
+	// setup hbao table
+	ResourceTableSetShaderRWTexture(this->hbaoTable, { this->internalTargets[1], this->hbao0, 0, CoreGraphics::SamplerId::Invalid() });
+	ResourceTableSetShaderRWTexture(this->hbaoTable, { this->internalTargets[0], this->hbao1, 0, CoreGraphics::SamplerId::Invalid() });
+	ResourceTableSetConstantBuffer(this->hbaoTable, {this->hbaoConstants, this->hbaoC, 0, false, false, -1, 0});
+	ResourceTableCommitChanges(this->hbaoTable);
+
+	// setup blur table
+	ResourceTableSetTexture(this->blurTable, { this->internalTargets[0], this->hbaoX, 0, CoreGraphics::SamplerId::Invalid() });
+	ResourceTableSetTexture(this->blurTable, { this->internalTargets[1], this->hbaoY, 0, CoreGraphics::SamplerId::Invalid() });
+	ResourceTableSetShaderRWTexture(this->blurTable, { this->internalTargets[0], this->hbaoBlurRG, 0, CoreGraphics::SamplerId::Invalid() });
+	ResourceTableSetShaderRWTexture(this->blurTable, { this->readWriteTextures[0], this->hbaoBlurR, 0, CoreGraphics::SamplerId::Invalid() });
+	ResourceTableSetConstantBuffer(this->blurTable, { this->blurConstants, this->blurC, 0, false, false, -1, 0 });
+	ResourceTableCommitChanges(this->blurTable);
 
 	TextureDimensions dims = RenderTextureGetDimensions(this->renderTextures[0]);
 	this->vars.fullWidth = (float)dims.width;
@@ -120,18 +128,18 @@ HBAOAlgorithm::Setup()
 	this->vars.strength = 2.0f;
 
 	// setup hbao params
-	this->uvToViewAVar = ShaderStateGetConstant(this->hbao, NEBULA3_SEMANTIC_UVTOVIEWA);
-	this->uvToViewBVar = ShaderStateGetConstant(this->hbao, NEBULA3_SEMANTIC_UVTOVIEWB);
-	this->r2Var = ShaderStateGetConstant(this->hbao, NEBULA3_SEMANTIC_R2);
-	this->aoResolutionVar = ShaderStateGetConstant(this->hbao, NEBULA3_SEMANTIC_AORESOLUTION);
-	this->invAOResolutionVar = ShaderStateGetConstant(this->hbao, NEBULA3_SEMANTIC_INVAORESOLUTION);
-	this->strengthVar = ShaderStateGetConstant(this->hbao, NEBULA3_SEMANTIC_STRENGHT);
-	this->tanAngleBiasVar = ShaderStateGetConstant(this->hbao, NEBULA3_SEMANTIC_TANANGLEBIAS);
+	this->uvToViewAVar = ShaderGetConstantBinding(this->hbaoShader, NEBULA3_SEMANTIC_UVTOVIEWA);
+	this->uvToViewBVar = ShaderGetConstantBinding(this->hbaoShader, NEBULA3_SEMANTIC_UVTOVIEWB);
+	this->r2Var = ShaderGetConstantBinding(this->hbaoShader, NEBULA3_SEMANTIC_R2);
+	this->aoResolutionVar = ShaderGetConstantBinding(this->hbaoShader, NEBULA3_SEMANTIC_AORESOLUTION);
+	this->invAOResolutionVar = ShaderGetConstantBinding(this->hbaoShader, NEBULA3_SEMANTIC_INVAORESOLUTION);
+	this->strengthVar = ShaderGetConstantBinding(this->hbaoShader, NEBULA3_SEMANTIC_STRENGHT);
+	this->tanAngleBiasVar = ShaderGetConstantBinding(this->hbaoShader, NEBULA3_SEMANTIC_TANANGLEBIAS);
 
 	// setup blur params
-	this->powerExponentVar = ShaderStateGetConstant(this->blur, NEBULA3_SEMANTIC_POWEREXPONENT);
-	this->blurFalloff = ShaderStateGetConstant(this->blur, NEBULA3_SEMANTIC_FALLOFF);
-	this->blurDepthThreshold = ShaderStateGetConstant(this->blur, NEBULA3_SEMANTIC_DEPTHTHRESHOLD);
+	this->powerExponentVar = ShaderGetConstantBinding(this->blurShader, NEBULA3_SEMANTIC_POWEREXPONENT);
+	this->blurFalloff = ShaderGetConstantBinding(this->blurShader, NEBULA3_SEMANTIC_FALLOFF);
+	this->blurDepthThreshold = ShaderGetConstantBinding(this->blurShader, NEBULA3_SEMANTIC_DEPTHTHRESHOLD);
 
 	// calculate relevant stuff for AO
 	this->AddFunction("Prepare", Algorithm::Compute, [this](IndexT)
@@ -182,14 +190,13 @@ HBAOAlgorithm::Setup()
 		vars.blurFalloff = INV_LN2 / (2.0f * blurSigma * blurSigma);
 		vars.blurThreshold = 2.0f * SQRT_LN2 * (this->vars.sceneScale / BLUR_SHARPNESS);
 
-		// actually set variables
-		ShaderConstantSet(this->uvToViewAVar, this->hbao, this->vars.uvToViewA);
-		ShaderConstantSet(this->uvToViewBVar, this->hbao, this->vars.uvToViewB);
+		ConstantBufferUpdate(this->hbaoConstants, this->vars.uvToViewA, this->uvToViewAVar);
+		ConstantBufferUpdate(this->hbaoConstants, this->vars.uvToViewB, this->uvToViewBVar);
 
-		ShaderConstantSet(this->r2Var, this->hbao, this->vars.r2);
-		ShaderConstantSet(this->aoResolutionVar, this->hbao, this->vars.aoResolution);
-		ShaderConstantSet(this->invAOResolutionVar, this->hbao, this->vars.invAOResolution);
-		ShaderConstantSet(this->strengthVar, this->hbao, this->vars.strength);
+		ConstantBufferUpdate(this->hbaoConstants, this->vars.r2, this->r2Var);
+		ConstantBufferUpdate(this->hbaoConstants, this->vars.aoResolution, this->aoResolutionVar);
+		ConstantBufferUpdate(this->hbaoConstants, this->vars.invAOResolution, this->invAOResolutionVar);
+		ConstantBufferUpdate(this->hbaoConstants, this->vars.strength, this->strengthVar);
 	});
 
 	// calculate HBAO and blur
@@ -211,25 +218,25 @@ HBAOAlgorithm::Setup()
 
 		// render AO in X
 		CoreGraphics::SetShaderProgram(this->xDirectionHBAO);
-		CoreGraphics::SetShaderState(this->hbao);
+		CoreGraphics::SetResourceTable(this->hbaoTable, NEBULAT_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
 		CoreGraphics::Compute(numGroupsX1, numGroupsY2, 1);
 
 		CoreGraphics::InsertBarrier(this->barriers[0], ComputeQueueType);
 
 		CoreGraphics::SetShaderProgram(this->yDirectionHBAO);
-		CoreGraphics::SetShaderState(this->hbao);
+		CoreGraphics::SetResourceTable(this->hbaoTable, NEBULAT_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
 		CoreGraphics::Compute(numGroupsY1, numGroupsX2, 1);
 
 		CoreGraphics::InsertBarrier(this->barriers[1], ComputeQueueType);
 
 		CoreGraphics::SetShaderProgram(this->xDirectionBlur);
-		CoreGraphics::SetShaderState(this->blur);
+		CoreGraphics::SetResourceTable(this->blurTable, NEBULAT_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
 		CoreGraphics::Compute(numGroupsX1, numGroupsY2, 1);
 
 		CoreGraphics::InsertBarrier(this->barriers[0], ComputeQueueType);
 
 		CoreGraphics::SetShaderProgram(this->yDirectionBlur);
-		CoreGraphics::SetShaderState(this->blur);
+		CoreGraphics::SetResourceTable(this->blurTable, NEBULAT_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
 		CoreGraphics::Compute(numGroupsY1, numGroupsX2, 1);
 
 		//renderDevice->InsertBarrier(this->barriers[2]);
@@ -245,8 +252,10 @@ HBAOAlgorithm::Discard()
 	Algorithm::Discard();
 	CoreGraphics::DestroyShaderRWTexture(internalTargets[0]);
 	CoreGraphics::DestroyShaderRWTexture(internalTargets[1]);
-	ShaderDestroyState(this->hbao);
-	ShaderDestroyState(this->blur);
+	DestroyConstantBuffer(this->hbaoConstants);
+	DestroyConstantBuffer(this->blurConstants);
+	DestroyResourceTable(this->hbaoTable);
+	DestroyResourceTable(this->blurTable);
 }
 
 } // namespace Algorithms

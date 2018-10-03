@@ -94,6 +94,7 @@ CreatePass(const PassCreateInfo& info)
 	loadInfo.clearValues.Resize(images.Size());
 	loadInfo.rects.Resize(images.Size());
 	loadInfo.viewports.Resize(images.Size());
+	loadInfo.name = info.name;
 
 	IndexT i;
 	for (i = 0; i < info.colorAttachments.Size(); i++)
@@ -222,21 +223,26 @@ CreatePass(const PassCreateInfo& info)
 			if (subpass.resolve) resolves[j] = ref;
 		}
 
-		for (; j < info.colorAttachments.Size(); j++)
-		{
-			VkAttachmentReference& ref = references[j];
-			ref.attachment = VK_ATTACHMENT_UNUSED;
-			ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-			preserves[preserveAttachments] = allAttachments[preserveAttachments];
-			preserveAttachments++;
-		}
-
 		for (j = 0; j < subpass.inputs.Size(); j++)
 		{
 			VkAttachmentReference& ref = inputs[j];
 			ref.attachment = subpass.inputs[j];
 			ref.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+			IndexT index = allAttachments.FindIndex(ref.attachment);
+			n_assert_fmt(index != InvalidIndex, "Input attachment %d is already being used as an output attachment", ref.attachment);
+			allAttachments.EraseIndex(index);
 		}
+
+		for (j = 0; j < allAttachments.Size(); j++)
+		{
+			VkAttachmentReference& ref = references[usedAttachments + preserveAttachments];
+			ref.attachment = VK_ATTACHMENT_UNUSED;
+			ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+			preserves[preserveAttachments] = allAttachments[j];
+			preserveAttachments++;
+		}
+
 
 		for (j = 0; j < subpass.dependencies.Size(); j++)
 		{
@@ -269,7 +275,7 @@ CreatePass(const PassCreateInfo& info)
 		// the rest are automatically preserve
 		if (preserves.Size() > 0)
 		{
-			vksubpass.preserveAttachmentCount = preserves.Size();
+			vksubpass.preserveAttachmentCount = preserveAttachments;
 			vksubpass.pPreserveAttachments = preserves.IsEmpty() ? nullptr : preserves.Begin();
 		}
 		else
@@ -389,7 +395,7 @@ CreatePass(const PassCreateInfo& info)
 	// setup uniform buffer for render target information
 	ConstantBufferCreateInfo cbinfo = { true, sid, "PassBlock", 0, 1 };
 	loadInfo.passBlockBuffer = CreateConstantBuffer(cbinfo);
-	loadInfo.renderTargetDimensionsVar = ConstantBufferCreateShaderVariable(loadInfo.passBlockBuffer, 0, "RenderTargetDimensions");
+	loadInfo.renderTargetDimensionsVar = ShaderGetConstantBinding(sid, "RenderTargetDimensions");
 
 	CoreGraphics::ResourceTableLayoutId tableLayout = ShaderGetResourceTableLayout(sid, NEBULAT_PASS_GROUP);
 	runtimeInfo.passDescriptorSet = CreateResourceTable(ResourceTableCreateInfo{ tableLayout });
@@ -429,7 +435,7 @@ CreatePass(const PassCreateInfo& info)
 		dims.z() = 1 / dims.x();
 		dims.w() = 1 / dims.y();
 	}
-	ConstantBufferArrayUpdate(loadInfo.passBlockBuffer, loadInfo.renderTargetDimensionsVar, dimensions.Begin(), dimensions.Size());
+	ConstantBufferUpdateArray(loadInfo.passBlockBuffer, dimensions.Begin(), dimensions.Size(), loadInfo.renderTargetDimensionsVar);
 	ResourceTableCommitChanges(runtimeInfo.passDescriptorSet);
 
 	// create framebuffer
@@ -545,6 +551,8 @@ PassNextSubpass(const PassId& id)
 
 	const Util::FixedArray<VkRect2D>& scissors = runtimeInfo.subpassRects[runtimeInfo.currentSubpassIndex];
 	SetScissorRects(scissors.Begin(), scissors.Size());
+
+	CoreGraphics::SetToNextSubpass();
 }
 
 //------------------------------------------------------------------------------
@@ -646,14 +654,14 @@ PassWindowResizeCallback(const PassId& id)
 		dims.z() = 1 / dims.x();
 		dims.w() = 1 / dims.y();
 	}
-	ConstantBufferArrayUpdate(loadInfo.passBlockBuffer, loadInfo.renderTargetDimensionsVar, dimensions.Begin(), dimensions.Size());
+	ConstantBufferUpdateArray(loadInfo.passBlockBuffer, dimensions.Begin(), dimensions.Size(), loadInfo.renderTargetDimensionsVar);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 const Util::Array<CoreGraphics::RenderTextureId>&
-PassGetAttachments(const CoreGraphics::PassId& id)
+PassGetAttachments(const CoreGraphics::PassId id)
 {
 	return passAllocator.Get<0>(id.id24).colorAttachments;
 }
@@ -662,9 +670,18 @@ PassGetAttachments(const CoreGraphics::PassId& id)
 /**
 */
 const uint32_t
-PassGetNumSubpassAttachments(const CoreGraphics::PassId & id, const IndexT subpass)
+PassGetNumSubpassAttachments(const CoreGraphics::PassId id, const IndexT subpass)
 {
 	return passAllocator.Get<3>(id.id24)[subpass];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::StringAtom 
+PassGetName(const CoreGraphics::PassId id)
+{
+	return passAllocator.Get<0>(id.id24).name;
 }
 
 } // namespace Vulkan

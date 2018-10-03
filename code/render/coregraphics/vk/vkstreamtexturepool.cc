@@ -276,6 +276,11 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 	runtimeInfo.bind = VkShaderServer::Instance()->RegisterTexture(TextureId(res), runtimeInfo.type);
 
 	stream->Unmap();
+
+#if NEBULAT_GRAPHICS_DEBUG
+	ObjectSetName((TextureId)res, stream->GetURI().LocalPath().AsCharPtr());
+#endif
+
 	return ResourcePool::Success;
 }
 

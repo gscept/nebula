@@ -48,28 +48,4 @@ class ShaderPool : public Direct3D9::D3D9StreamShaderLoader
 #error "StreamShaderLoader class not implemented on this platform!"
 #endif
 
-namespace CoreGraphics
-{
-//------------------------------------------------------------------------------
-/**
-*/
-template<class TYPE>
-void
-ShaderConstantSet(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ShaderStateId state, const TYPE& value)
-{
-	shaderPool->ShaderConstantSet<TYPE>(var, state, value);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-template<class TYPE>
-void
-ShaderConstantSetArray(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ShaderStateId state, const TYPE* value, uint32_t count)
-{
-	shaderPool->ShaderConstantSetArray<TYPE>(var, state, value, count);
-}
-//------------------------------------------------------------------------------
-}
-
     

@@ -25,7 +25,7 @@ TransformNode::TransformNode() :
 	useLodDistances(false),
 	lockedToViewer(false)
 {
-	// empty
+	this->type = TransformNodeType;
 }
 
 //------------------------------------------------------------------------------
