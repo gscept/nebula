@@ -173,7 +173,7 @@ public:
     /// return the transpose of a matrix
     static matrix44 transpose(const matrix44& m);
     /// transform 4d vector by matrix44, faster inline version than float4::transform
-    static float4 transform(const float4 &v, const matrix44 &m);
+    static float4 transform(const float4& v, const matrix44& m);
     /// return a quaternion from rotational part of the 4x4 matrix
     static quaternion rotationmatrix(const matrix44& m);
     /// transform a plane with a matrix
@@ -862,7 +862,7 @@ matrix44::transpose(const matrix44& m)
 */
 __forceinline
 float4
-matrix44::transform(const float4 &v, const matrix44 &m)
+matrix44::transform(const float4& v, const matrix44& m)
 {
     return DirectX::XMVector4Transform(v.vec, m.mx);
 }
