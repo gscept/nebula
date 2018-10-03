@@ -198,6 +198,7 @@ struct ResourcePipelinePushConstantRange
 struct ResourcePipelineCreateInfo
 {
 	Util::Array<ResourceTableLayoutId> tables;
+	Util::Array<uint32_t> indices;
 	ResourcePipelinePushConstantRange push;
 };
 

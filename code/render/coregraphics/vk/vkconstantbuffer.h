@@ -17,7 +17,7 @@
 #include "core/refcounted.h"
 #include "coregraphics/constantbuffer.h"
 #include "coregraphics/stretchybuffer.h"
-#include "vkshaderconstant.h"
+#include <lowlevel/afxapi.h>
 namespace Vulkan
 {
 
@@ -64,8 +64,7 @@ typedef Ids::IdAllocator<
 	VkConstantBufferRuntimeInfo,
 	VkConstantBufferSetupInfo,
 	VkConstantBufferMapInfo,
-	ConstantBufferStretchInterface,
-	VkShaderConstantAllocator
+	ConstantBufferStretchInterface
 > VkConstantBufferAllocator;
 extern VkConstantBufferAllocator constantBufferAllocator;
 

@@ -119,6 +119,7 @@ StreamMeshPool::SetupMeshFromNvx2(const Ptr<Stream>& stream, const Resources::Re
 		meshPool->EnterGet();
 		MeshCreateInfo& msh = meshPool->Get<0>(res);
 		n_assert(this->GetState(res) == Resources::Resource::Pending);
+		msh.vertexLayout = CreateVertexLayout({ nvx2Reader->GetVertexComponents() });
 		msh.vertexBuffer = nvx2Reader->GetVertexBuffer();
 		msh.indexBuffer = nvx2Reader->GetIndexBuffer();
 		msh.topology = PrimitiveTopology::TriangleList;

@@ -22,8 +22,8 @@ void
 VkShaderProgramApply(VkShaderProgramRuntimeInfo& info)
 {
 	// if we are compute, we can set the pipeline straight away, otherwise we have to accumulate the infos
-	if (info.type == ComputePipeline)		Vulkan::BindComputePipeline(info.pipeline, info.layout);
-	else if (info.type == GraphicsPipeline)
+	if (info.type == CoreGraphics::ComputePipeline)		Vulkan::BindComputePipeline(info.pipeline, info.layout);
+	else if (info.type == CoreGraphics::GraphicsPipeline)
 	{
 		// setup pipeline information regarding the shader state
 		VkGraphicsPipelineCreateInfo ginfo =
@@ -81,7 +81,7 @@ VkShaderProgramSetup(const Ids::Id24 id, AnyFX::VkProgram* program, const CoreGr
 	// if we have a compute shader, it will be the one we use, otherwise use the graphics one
 	if (runtime.cs)			VkShaderProgramSetupAsCompute(setup, runtime);
 	else if (runtime.vs)	VkShaderProgramSetupAsGraphics(program, runtime);
-	else				runtime.type = VkShaderProgramPipelineType::InvalidType;
+	else				runtime.type = CoreGraphics::InvalidPipeline;
 }
 
 //------------------------------------------------------------------------------
@@ -247,7 +247,7 @@ VkShaderProgramSetupAsGraphics(AnyFX::VkProgram* program, VkShaderProgramRuntime
 	};
 
 	// be sure to flag compute shader as null
-	runtime.type = GraphicsPipeline;
+	runtime.type = CoreGraphics::GraphicsPipeline;
 }
 
 //------------------------------------------------------------------------------
@@ -284,7 +284,7 @@ VkShaderProgramSetupAsCompute(VkShaderProgramSetupInfo& setup, VkShaderProgramRu
 	// create pipeline
 	VkResult res = vkCreateComputePipelines(setup.dev, Vulkan::GetPipelineCache(), 1, &pInfo, NULL, &runtime.pipeline);
 	n_assert(res == VK_SUCCESS);
-	runtime.type = ComputePipeline;
+	runtime.type = CoreGraphics::ComputePipeline;
 }
 
 //------------------------------------------------------------------------------

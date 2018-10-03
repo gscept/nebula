@@ -23,7 +23,7 @@
 #include "models/model.h"
 
 #define ModelNodeInstanceCreator(type) \
-inline ModelNode::Instance* type::CreateInstance(byte* memory, const ModelNode::Instance* parent) const\
+inline ModelNode::Instance* type::CreateInstance(byte* memory, const ModelNode::Instance* parent)\
 {\
 	auto node = new (memory) Instance();\
 	node->Setup(this, parent);\
@@ -40,11 +40,10 @@ public:
 	struct Instance
 	{
 		const ModelNode::Instance* parent;	// pointer to parent
-		const ModelNode* node;				// pointer to resource-level node
-		NodeType type;
+		ModelNode* node;				// pointer to resource-level node
 
 		virtual void ApplyNodeInstanceState();
-		virtual void Setup(const Models::ModelNode* node, const Models::ModelNode::Instance* parent);
+		virtual void Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent);
 	};
 
 	/// constructor
@@ -55,7 +54,7 @@ public:
 	/// return constant reference to children
 	const Util::Array<ModelNode*>& GetChildren() const;
 	/// create an instance of a node, override in the leaf classes
-	virtual ModelNode::Instance* CreateInstance(byte* memory, const Models::ModelNode::Instance* parent) const;
+	virtual ModelNode::Instance* CreateInstance(byte* memory, const Models::ModelNode::Instance* parent);
 
 	/// get size of instance
 	virtual const SizeT GetInstanceSize() const { return sizeof(Instance); }
@@ -79,10 +78,14 @@ protected:
 	virtual void Discard();
 
 	Util::StringAtom name;
+	NodeType type;
+
 	Models::ModelNode* parent;
 	ModelId model;
 	Util::Array<Models::ModelNode*> children;
 	Math::bbox boundingBox;
+	Util::StringAtom tag;
+
 };
 
 
@@ -90,7 +93,7 @@ protected:
 /**
 */
 inline ModelNode::Instance*
-ModelNode::CreateInstance(byte* memory, const Models::ModelNode::Instance* parent) const
+ModelNode::CreateInstance(byte* memory, const Models::ModelNode::Instance* parent)
 {
 	return nullptr;
 }

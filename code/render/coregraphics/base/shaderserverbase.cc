@@ -26,7 +26,6 @@ using namespace Resources;
 /**
 */
 ShaderServerBase::ShaderServerBase() :
-	sharedVariableShaderState(Ids::InvalidId64),
 	objectIdShaderVar(Ids::InvalidId32),
     curShaderFeatureBits(0),        
     activeShader(NULL),
@@ -94,8 +93,6 @@ ShaderServerBase::Open()
     {
 		this->sharedVariableShader = this->GetShader("shd:shared.fxb");
 		n_assert(this->sharedVariableShader != ShaderId::Invalid());
-		this->sharedVariableShaderState = CoreGraphics::shaderPool->CreateState(this->sharedVariableShader, { NEBULAT_FRAME_GROUP, NEBULAT_TICK_GROUP, NEBULAT_DYNAMIC_OFFSET_GROUP }, false);
-        n_assert(this->sharedVariableShaderState != ShaderStateId::Invalid());
 
         // get shared object id shader variable
 #if !__WII__ && !__PS3__
@@ -116,12 +113,6 @@ ShaderServerBase::Close()
 {
     n_assert(this->isOpen);
 
-    // release shared instance shader
-    if (this->sharedVariableShaderState != ShaderStateId::Invalid())
-    {        
-		CoreGraphics::shaderPool->DestroyState(this->sharedVariableShaderState);
-    } 
-
     // unload all currently loaded shaders
     IndexT i;
     for (i = 0; i < this->shaders.Size(); i++)
@@ -131,62 +122,6 @@ ShaderServerBase::Close()
     this->shaders.Clear();
 
     this->isOpen = false;
-}
-
-//------------------------------------------------------------------------------
-/**
-	Create a shared state (that is, it can be split between many shaders, and have the same global variables)
-*/
-CoreGraphics::ShaderStateId
-ShaderServerBase::ShaderCreateState(const Resources::ResourceName& resId, const Util::Array<IndexT>& groups, bool createResourceSet)
-{
-	n_assert(resId.IsValid());
-
-	CoreGraphics::ShaderStateId state;
-
-	// first check if the shader is already loaded
-	if (!this->shaders.Contains(resId))
-	{
-		n_error("ShaderServer: shader '%s' not found!", resId.Value());
-	}
-	else
-	{
-		state = CoreGraphics::shaderPool->CreateState(this->shaders[resId], groups, createResourceSet);
-	}
-
-	// create a shader instance object from the shader
-	return state;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-CoreGraphics::ShaderStateId
-ShaderServerBase::ShaderCreateSharedState(const Resources::ResourceName& resId, const Util::Array<IndexT>& groups)
-{
-	n_assert(resId.IsValid());
-
-	CoreGraphics::ShaderStateId state;
-
-	// format a signature
-	Util::String signature = resId.Value();
-	Util::Array<IndexT> sortedGroups = groups;
-	sortedGroups.Sort();
-	IndexT i;
-	for (i = 0; i < sortedGroups.Size(); i++) signature.AppendInt(sortedGroups[i]);
-
-	// if we don't have the shared state, create it, otherwise just return it
-	if (this->sharedShaderStates.Contains(signature))
-	{
-		state = this->sharedShaderStates[signature];
-	}
-	else
-	{
-		state = CoreGraphics::shaderPool->CreateState(this->shaders[resId], groups, false);
-		this->sharedShaderStates.Add(signature, state);
-	}
-
-	return state;
 }
 
 //------------------------------------------------------------------------------
@@ -205,7 +140,7 @@ ShaderServerBase::ApplyObjectId(IndexT i)
 #endif
     if (this->objectIdShaderVar != Ids::InvalidId32)
     {
-		CoreGraphics::shaderPool->ShaderConstantSet(this->objectIdShaderVar, this->sharedVariableShaderState, ((float)i) / 255.0f);
+		//CoreGraphics::shaderPool->ShaderConstantSet(this->objectIdShaderVar, this->sharedVariableShaderState, ((float)i) / 255.0f);
     }       
 }
 

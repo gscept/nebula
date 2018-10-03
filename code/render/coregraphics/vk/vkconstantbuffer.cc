@@ -9,6 +9,7 @@
 #include "coregraphics/config.h"
 #include "vkutilities.h"
 #include "coregraphics/shaderpool.h"
+#include "lowlevel/vk/vkvarblock.h"
 
 namespace Vulkan
 {
@@ -114,7 +115,6 @@ CreateConstantBuffer(const ConstantBufferCreateInfo& info)
 	setup.reflection = nullptr;
 	setup.dev = dev;
 	setup.numBuffers = info.numBuffers;
-	setup.reflection = nullptr;
 	setup.grow = 16;
 	SizeT size = info.size;
 
@@ -190,21 +190,21 @@ DestroyConstantBuffer(const ConstantBufferId id)
 //------------------------------------------------------------------------------
 /**
 */
-ConstantBufferSliceId
-ConstantBufferAllocateInstance(const ConstantBufferId id)
+bool
+ConstantBufferAllocateInstance(const ConstantBufferId id, uint& offset, uint& slice)
 {
 	ConstantBufferStretchInterface& stretch = constantBufferAllocator.Get<3>(id.id24);
-	return stretch.resizer.AllocateInstance(1);
+	return stretch.resizer.AllocateInstance(1, offset, slice);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-ConstantBufferFreeInstance(ConstantBufferId id, ConstantBufferSliceId slice)
+ConstantBufferFreeInstance(ConstantBufferId id, uint slice)
 {
 	ConstantBufferStretchInterface& stretch = constantBufferAllocator.Get<3>(id.id24);
-	stretch.resizer.FreeInstance(slice.id);
+	stretch.resizer.FreeInstance(slice);
 }
 
 //------------------------------------------------------------------------------
@@ -231,53 +231,65 @@ ConstantBufferGetSlot(const ConstantBufferId id)
 //------------------------------------------------------------------------------
 /**
 */
-void
-ConstantBufferUpdate(const ConstantBufferId id, const void* data, const uint offset, const uint size)
+void 
+ConstantBufferUpdate(const ConstantBufferId id, const void* data, const uint size, ConstantBinding bind)
 {
 	VkConstantBufferMapInfo& map = constantBufferAllocator.Get<2>(id.id24);
+
 #if NEBULA_DEBUG
 	VkConstantBufferSetupInfo& setup = constantBufferAllocator.Get<1>(id.id24);
-	n_assert(size + offset <= (uint)setup.size);
+	n_assert(size + bind.offset <= (uint)setup.size);
 #endif
-	byte* buf = (byte*)map.data + offset + map.baseOffset;
+	byte* buf = (byte*)map.data + bind.offset;
 	memcpy(buf, data, size);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-void
-ConstantBufferArrayUpdate(const ConstantBufferId id, const void* data, const uint offset, const uint size, const uint count)
+void 
+ConstantBufferUpdateArray(const ConstantBufferId id, const void* data, const uint size, const uint count, ConstantBinding bind)
 {
 	VkConstantBufferMapInfo& map = constantBufferAllocator.Get<2>(id.id24);
+
 #if NEBULA_DEBUG
 	VkConstantBufferSetupInfo& setup = constantBufferAllocator.Get<1>(id.id24);
-	n_assert(size + offset <= (uint)setup.size);
+	n_assert(size + bind.offset <= (uint)setup.size);
 #endif
-	byte* buf = (byte*)map.data + offset + map.baseOffset;
+	byte* buf = (byte*)map.data + bind.offset;
 	memcpy(buf, data, size * count);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-void
-ConstantBufferUpdate(const ConstantBufferId id, const ShaderConstantId cid, const uint size, const void* data)
+void 
+ConstantBufferUpdateInstance(const ConstantBufferId id, const void* data, const uint size, const uint instance, ConstantBinding bind)
 {
-	VkShaderConstantAllocator& alloc = constantBufferAllocator.Get<4>(id.id24);
-	VkShaderConstantMemoryBinding& bind = alloc.Get<0>(cid.id);
-	ConstantBufferUpdate(id, data, bind.offset, size);
+	VkConstantBufferMapInfo& map = constantBufferAllocator.Get<2>(id.id24);
+	VkConstantBufferSetupInfo& setup = constantBufferAllocator.Get<1>(id.id24);
+
+#if NEBULA_DEBUG
+	n_assert(size + bind.offset + setup.stride * instance <= (uint)setup.size);
+#endif
+	byte* buf = (byte*)map.data + bind.offset + setup.stride * instance;
+	memcpy(buf, data, size);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-void
-ConstantBufferArrayUpdate(const ConstantBufferId id, const ShaderConstantId cid, const void* data, const uint size, const uint count)
+void 
+ConstantBufferUpdateArrayInstance(const ConstantBufferId id, const void* data, const uint size, const uint count, const uint instance, ConstantBinding bind)
 {
-	VkShaderConstantAllocator& alloc = constantBufferAllocator.Get<4>(id.id24);
-	VkShaderConstantMemoryBinding& bind = alloc.Get<0>(cid.id);
-	ConstantBufferArrayUpdate(id, data, bind.offset, size, count);
+	VkConstantBufferMapInfo& map = constantBufferAllocator.Get<2>(id.id24);
+	VkConstantBufferSetupInfo& setup = constantBufferAllocator.Get<1>(id.id24);
+
+#if NEBULA_DEBUG
+	n_assert(size + bind.offset + setup.stride * instance <= (uint)setup.size);
+#endif
+	byte* buf = (byte*)map.data + bind.offset + setup.stride * instance;
+	memcpy(buf, data, size * count);
 }
 
 //------------------------------------------------------------------------------
@@ -288,38 +300,6 @@ ConstantBufferSetBaseOffset(const ConstantBufferId id, const uint offset)
 {
 	VkConstantBufferMapInfo& map = constantBufferAllocator.Get<2>(id.id24);
 	map.baseOffset = offset;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const ShaderConstantId
-ConstantBufferCreateShaderVariable(const ConstantBufferId id, const ConstantBufferSliceId slice, const Util::StringAtom& name)
-{
-	VkConstantBufferSetupInfo& setup = constantBufferAllocator.Get<1>(id.id24);
-	VkShaderConstantAllocator& alloc = constantBufferAllocator.Get<4>(id.id24);
-
-	Ids::Id24 var = alloc.AllocObject();
-	auto it = setup.reflection->variablesByName.find(name.Value());
-	n_assert(it != setup.reflection->variablesByName.end());
-
-	// step one, setup variable
-	VkShaderConstantSetup((AnyFX::VkVariable*)it->second, var, alloc, CoreGraphics::ResourceTableId::Invalid());
-
-	// step two, bind to uniform buffer
-	VkShaderConstantBindToUniformBuffer(var, id, alloc, setup.reflection->offsetsByName[name.Value()], it->second->byteSize, (int8_t*)it->second->currentValue);
-	
-	return var;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-ConstantBufferDestroyShaderVariable(const ConstantBufferId id, const ShaderConstantId var)
-{
-	VkShaderConstantAllocator& alloc = constantBufferAllocator.Get<4>(id.id24);
-	alloc.DeallocObject(var.id);
 }
 
 } // namespace CoreGraphics

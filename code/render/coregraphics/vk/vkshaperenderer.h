@@ -10,6 +10,7 @@
 #include "coregraphics/vertexlayout.h"
 #include "coregraphics/vertexbuffer.h"
 #include "coregraphics/indexbuffer.h"
+#include "coregraphics/resourcetable.h"
 #include "util/fixedarray.h"
 namespace Vulkan
 {
@@ -71,15 +72,14 @@ private:
 	Util::FixedArray<Resources::ResourceId> shapeMeshResources;
 	Util::FixedArray<CoreGraphics::MeshId> shapeMeshes;
 	CoreGraphics::ShaderId shapeShader;
-	CoreGraphics::ShaderStateId shapeShaderState;
+
 	CoreGraphics::PrimitiveGroup primGroup;
 
 	CoreGraphics::VertexBufferId vbo;
 	CoreGraphics::IndexBufferId ibo;
 	CoreGraphics::VertexLayoutId vertexLayout;
-	CoreGraphics::ShaderConstantId model;
-	CoreGraphics::ShaderConstantId viewProjection;
-	CoreGraphics::ShaderConstantId diffuseColor;
+	CoreGraphics::ConstantBinding model;
+	CoreGraphics::ConstantBinding diffuseColor;
 
 	SizeT numPrimitives;
 	SizeT numIndices;

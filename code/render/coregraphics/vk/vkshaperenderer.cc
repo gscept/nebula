@@ -53,13 +53,11 @@ void
 VkShapeRenderer::Open()
 {
 	n_assert(!this->IsOpen());
-	n_assert(this->shapeShaderState == ShaderStateId::Invalid());
 
 	ShapeRendererBase::Open();
 
 	// create shape shader instance
 	this->shapeShader = ShaderServer::Instance()->GetShader("shd:simple.fxb"_atm);
-	this->shapeShaderState = ShaderCreateState(this->shapeShader, { NEBULAT_BATCH_GROUP }, false);
 	this->shapeMeshResources.SetSize(CoreGraphics::RenderShape::NumShapeTypes);
 	this->shapeMeshes.SetSize(CoreGraphics::RenderShape::NumShapeTypes);
 
@@ -71,8 +69,8 @@ VkShapeRenderer::Open()
 	this->CreateConeShape();
 
 	// lookup ModelViewProjection shader variable
-	this->model = ShaderStateGetConstant(this->shapeShaderState, "ShapeModel");
-	this->diffuseColor = ShaderStateGetConstant(this->shapeShaderState, "MatDiffuse");
+	this->model = ShaderGetConstantBinding(this->shapeShader, "ShapeModel");
+	this->diffuseColor = ShaderGetConstantBinding(this->shapeShader, "MatDiffuse");
 
 	this->programs[RenderShape::AlwaysOnTop] = ShaderGetProgram(this->shapeShader, ShaderServer::Instance()->FeatureStringToMask("Colored"));
 	this->programs[RenderShape::CheckDepth] = ShaderGetProgram(this->shapeShader, ShaderServer::Instance()->FeatureStringToMask("Colored|Alt0"));
@@ -133,10 +131,6 @@ void
 VkShapeRenderer::Close()
 {
 	n_assert(this->IsOpen());
-	n_assert(this->shapeShaderState != ShaderStateId::Invalid());
-
-	this->diffuseColor = 0;
-	this->model = 0;
 
 	// unload shape meshes
 	DiscardResource(this->shapeMeshResources[RenderShape::Box]);
@@ -146,8 +140,6 @@ VkShapeRenderer::Close()
 	DiscardResource(this->shapeMeshResources[RenderShape::Cone]);
 	this->shapeMeshResources.Clear();
 
-	// discard shape shader
-	ShaderDestroyState(this->shapeShaderState);
 
 	// unload dynamic buffers
 	VertexBufferUnmap(this->vbo);
@@ -234,15 +226,13 @@ VkShapeRenderer::DrawSimpleShape(const Math::matrix44& modelTransform, CoreGraph
 	n_assert(shapeType < RenderShape::NumShapeTypes);
 
 	// resolve model-view-projection matrix and update shader
-	ShaderConstantSet(this->model, this->shapeShaderState, modelTransform);
-	ShaderConstantSet(this->diffuseColor, this->shapeShaderState, color);
-
+	CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->model.offset, sizeof(modelTransform), (byte*)&modelTransform);
+	CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->diffuseColor.offset, sizeof(color), (byte*)&color);
 	const SizeT numgroups = MeshGetPrimitiveGroups(this->shapeMeshes[shapeType]).Size();
 	IndexT i;
 	for (i = 0; i < numgroups; i++)
 	{
 		MeshBind(this->shapeMeshes[shapeType], i);
-		CoreGraphics::SetShaderState(this->shapeShaderState);
 
 		// draw
 		CoreGraphics::Draw();
@@ -261,8 +251,8 @@ VkShapeRenderer::DrawMesh(const Math::matrix44& modelTransform, const CoreGraphi
 	TransformDevice* transDev = TransformDevice::Instance();
 
 	// resolve model-view-projection matrix and update shader
-	ShaderConstantSet(this->model, this->shapeShaderState, modelTransform);
-	ShaderConstantSet(this->diffuseColor, this->shapeShaderState, color);
+	CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->model.offset, sizeof(modelTransform), (byte*)&modelTransform);
+	CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->diffuseColor.offset, sizeof(color), (byte*)&color);
 
 	n_assert(CoreGraphics::IsInBeginFrame());
 	const SizeT numgroups = MeshGetPrimitiveGroups(mesh).Size();
@@ -272,7 +262,6 @@ VkShapeRenderer::DrawMesh(const Math::matrix44& modelTransform, const CoreGraphi
 	for (i = 0; i < numgroups; i++)
 	{
 		MeshBind(mesh, i);
-		CoreGraphics::SetShaderState(this->shapeShaderState);
 
 		// draw
 		CoreGraphics::Draw();
@@ -374,15 +363,13 @@ VkShapeRenderer::DrawBufferedPrimitives()
 		const Math::matrix44& modelTransform = this->unindexed.transforms[i];
 		const Math::float4& color = this->unindexed.colors[i];
 
-		ShaderConstantSet(this->model, this->shapeShaderState, modelTransform);
-		ShaderConstantSet(this->diffuseColor, this->shapeShaderState, color);
+		CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->model.offset, sizeof(modelTransform), (byte*)&modelTransform);
+		CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->diffuseColor.offset, sizeof(color), (byte*)&color);
 
 		CoreGraphics::SetPrimitiveTopology(topo);
 		CoreGraphics::SetVertexLayout(this->vertexLayout);
 		CoreGraphics::SetStreamVertexBuffer(0, this->vbo, 0);
 		CoreGraphics::SetPrimitiveGroup(group);
-
-		CoreGraphics::SetShaderState(this->shapeShaderState);
 
 		CoreGraphics::Draw();
 	}
@@ -408,16 +395,14 @@ VkShapeRenderer::DrawBufferedIndexedPrimitives()
 		const Math::matrix44& modelTransform = this->indexed.transforms[i];
 		const Math::float4& color = this->indexed.colors[i];
 
-		ShaderConstantSet(this->model, this->shapeShaderState, modelTransform);
-		ShaderConstantSet(this->diffuseColor, this->shapeShaderState, color);
+		CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->model.offset, sizeof(modelTransform), (byte*)&modelTransform);
+		CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->diffuseColor.offset, sizeof(color), (byte*)&color);
 		
 		CoreGraphics::SetPrimitiveTopology(topo);
 		CoreGraphics::SetVertexLayout(this->vertexLayout);
 		CoreGraphics::SetIndexBuffer(this->ibo, 0);
 		CoreGraphics::SetStreamVertexBuffer(0, this->vbo, 0);
 		CoreGraphics::SetPrimitiveGroup(group);
-
-		CoreGraphics::SetShaderState(this->shapeShaderState);
 
 		CoreGraphics::Draw();
 	}

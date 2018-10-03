@@ -53,6 +53,13 @@ protected:
 	// inherit this class to implement the compiled runtime for the frame operation
 	struct Compiled
 	{
+		Compiled() :
+			numWaitEvents(0),
+			numSignalEvents(0),
+			numBarriers(0),
+			numWaitSemaphores(0),
+			numSignalSemaphores(0){};
+
 		virtual void Run(const IndexT frameIndex) = 0;
 		virtual void Discard();
 

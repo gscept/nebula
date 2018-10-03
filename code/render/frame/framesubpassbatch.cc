@@ -8,10 +8,12 @@
 #include "coregraphics/graphicsdevice.h"
 #include "materials/materialserver.h"
 #include "models/model.h"
+#include "graphics/graphicsserver.h"
+#include "graphics/view.h"
+#include "visibility/visibilitycontext.h"
 
 using namespace Graphics;
 using namespace CoreGraphics;
-using namespace Lighting;
 using namespace Materials;
 using namespace Models;
 using namespace Util;
@@ -63,6 +65,10 @@ FrameSubpassBatch::CompiledImpl::Run(const IndexT frameIndex)
 	ShaderServer* shaderServer = ShaderServer::Instance();
 	MaterialServer* matServer = MaterialServer::Instance();
 
+	// get current view and visibility draw list
+	const Ptr<View>& view = Graphics::GraphicsServer::Instance()->GetCurrentView();
+	const Visibility::ObserverContext::VisibilityDrawList& drawList = Visibility::ObserverContext::GetVisibilityDrawList(view->GetCamera());
+	return;
 	// start batch
 	CoreGraphics::BeginBatch(FrameBatchType::Geometry);
 
@@ -70,9 +76,39 @@ FrameSubpassBatch::CompiledImpl::Run(const IndexT frameIndex)
 	if (types != nullptr) for (IndexT typeIdx = 0; typeIdx < types->Size(); typeIdx++)
 	{
 		MaterialType* type = (*types)[typeIdx];
-		MaterialBeginBatch(type, this->batch);
+		if (MaterialBeginBatch(type, this->batch))
+		{
+			IndexT idx = drawList.FindIndex(type);
+			if (idx != InvalidIndex)
+			{
+				auto& model = drawList.ValueAtIndex(type, idx);
+				auto& it = model.Begin();
+				auto& end = model.End();
+				while (it != end)
+				{
+					Models::ModelNode* node = *it.key;
 
-		MaterialEndBatch();
+					const Util::Array<Models::ModelNode::Instance*>& instances = *it.val;
+					if (instances.Size() > 0)
+					{
+						// apply node-wide state
+						node->ApplyNodeState();
+
+						IndexT i;
+						for (i = 0; i < instances.Size(); i++)
+						{
+							Models::ModelNode::Instance* instance = instances[i];
+
+							// apply instance state
+							instance->ApplyNodeInstanceState();
+							CoreGraphics::Draw();
+						}
+					}
+					it++;
+				}
+			}
+			MaterialEndBatch();
+		}
 	}
 	/*
 

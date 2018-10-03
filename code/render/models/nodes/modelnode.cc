@@ -112,7 +112,7 @@ ModelNode::Instance::ApplyNodeInstanceState()
 /**
 */
 void
-ModelNode::Instance::Setup(const Models::ModelNode* node, const Models::ModelNode::Instance* parent)
+ModelNode::Instance::Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent)
 {
 	this->node = node;
 	this->parent = parent;

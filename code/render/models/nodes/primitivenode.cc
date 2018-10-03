@@ -18,7 +18,7 @@ namespace Models
 PrimitiveNode::PrimitiveNode() :
 	primitiveGroupIndex(InvalidIndex)
 {
-	// empty
+	this->type = PrimitiveNodeType;
 }
 
 //------------------------------------------------------------------------------
@@ -66,6 +66,7 @@ PrimitiveNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, con
 void
 PrimitiveNode::ApplyNodeState()
 {
+	ShaderStateNode::ApplyNodeState();
 	CoreGraphics::MeshBind(this->res, this->primitiveGroupIndex);
 }
 

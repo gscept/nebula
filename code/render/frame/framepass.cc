@@ -57,16 +57,20 @@ FramePass::Discard()
 void
 FramePass::CompiledImpl::Run(const IndexT frameIndex)
 {
+
+#if defined(NEBULAT_GRAPHICS_DEBUG)
+	CoreGraphics::CmdBufBeginMarker(GraphicsQueueType, Math::float4(0.6f, 0.8f, 0.6f, 1), this->name.Value());
+#endif
+
 	// begin pass
 	PassBegin(this->pass);
 	
-	IndexT i;
-
 	// run subpasses
+	IndexT i;
 	for (i = 0; i < this->subpasses.Size(); i++)
 	{
 		// progress to next subpass if not on first iteration
-		if (i > 0) CoreGraphics::SetToNextSubpass();
+		if (i > 0) PassNextSubpass(this->pass);
 
 		// execute contents of this subpass and synchronize
 		// note that we overload the cross queue sync so we do it outside the render pass
@@ -77,6 +81,10 @@ FramePass::CompiledImpl::Run(const IndexT frameIndex)
 
 	// end pass
 	PassEnd(this->pass);
+
+#if defined(NEBULAT_GRAPHICS_DEBUG)
+	CoreGraphics::CmdBufEndMarker(GraphicsQueueType);
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -145,6 +153,10 @@ FramePass::Build(
 	Util::Dictionary<CoreGraphics::RenderTextureId, Util::Array<std::tuple<CoreGraphics::ImageSubresourceInfo, TextureDependency>>>& renderTextures)
 {
 	CompiledImpl* myCompiled = (CompiledImpl*)this->AllocCompiled(allocator);
+
+#if defined(NEBULAT_GRAPHICS_DEBUG)
+	myCompiled->name = this->name;
+#endif
 
 	Util::Array<FrameOp::Compiled*> subpassOps;
 	for (IndexT i = 0; i < this->subpasses.Size(); i++)

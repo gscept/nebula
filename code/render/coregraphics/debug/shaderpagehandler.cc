@@ -85,15 +85,12 @@ ShaderPageHandler::HandleRequest(const Ptr<HttpRequest>& request)
                         htmlWriter->AddAttr("href", "/shader?shaderinfo=" + name.AsString());
                         htmlWriter->Element(HtmlElement::Anchor, name.Value());
                     htmlWriter->End(HtmlElement::TableData);
-                    htmlWriter->Element(HtmlElement::TableData, String::FromInt(ShaderGetNumActiveStates(shd)));
                 htmlWriter->End(HtmlElement::TableRow);
             }
         htmlWriter->End(HtmlElement::Table);
 
         // create a table of globally shared variables
         htmlWriter->Element(HtmlElement::Heading3, "Shared Shader Variables");
-        
-        this->WriteShaderVariableTable(htmlWriter, shdServer->GetSharedShader());
 
         htmlWriter->Close();
         request->SetStatus(HttpStatus::OK);
@@ -156,7 +153,6 @@ ShaderPageHandler::HandleShaderInfoRequest(const Util::String& resId, const Ptr<
             htmlWriter->End(HtmlElement::TableRow);
             htmlWriter->Begin(HtmlElement::TableRow);
                 htmlWriter->Element(HtmlElement::TableData, "Number of active states: ");
-                htmlWriter->Element(HtmlElement::TableData, String::FromInt(ShaderGetNumActiveStates(shd)));
             htmlWriter->End(HtmlElement::TableRow);
         htmlWriter->End(HtmlElement::Table);
 

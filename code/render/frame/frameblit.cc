@@ -33,6 +33,11 @@ FrameOp::Compiled*
 FrameBlit::AllocCompiled(Memory::ChunkAllocator<BIG_CHUNK>& allocator)
 {
 	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
+
+#if defined(NEBULAT_GRAPHICS_DEBUG)
+	ret->name = this->name;
+#endif
+
 	ret->from = this->from;
 	ret->to = this->to;
 	return ret;
@@ -59,7 +64,16 @@ FrameBlit::CompiledImpl::Run(const IndexT frameIndex)
 	toRegion.top = 0;
 	toRegion.right = toDims.width;
 	toRegion.bottom = toDims.height;
+
+#if defined(NEBULAT_GRAPHICS_DEBUG)
+	CoreGraphics::CmdBufBeginMarker(GraphicsQueueType, Math::float4(0.8f, 0.6f, 0.6f, 1), this->name.Value());
+#endif
+
 	CoreGraphics::Blit(this->from, fromRegion, 0, this->to, toRegion, 0);
+
+#if defined(NEBULAT_GRAPHICS_DEBUG)
+	CoreGraphics::CmdBufEndMarker(GraphicsQueueType);
+#endif
 }
 
 //------------------------------------------------------------------------------

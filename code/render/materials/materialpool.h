@@ -8,6 +8,7 @@
 //------------------------------------------------------------------------------
 #include "resources/resourcestreampool.h"
 #include "materialtype.h"
+#include "coregraphics/config.h"
 
 namespace Materials
 {
@@ -19,11 +20,12 @@ struct MaterialInfo
 
 struct MaterialRuntime // consider splitting into runtime and setup
 {
-	MaterialId id;
+	MaterialInstanceId id;
 	MaterialType* type;
 };
 
 struct MaterialId;
+RESOURCE_ID_TYPE(MaterialId);
 
 class MaterialPool : public Resources::ResourceStreamPool
 {
@@ -34,23 +36,40 @@ public:
 	Resources::ResourcePool::LoadStatus LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream);
 
 	/// get material id
-	const MaterialId& GetId(const Resources::ResourceId& id);
+	const MaterialInstanceId& GetId(const MaterialId& id);
+	/// get material type
+	MaterialType* const GetType(const MaterialId& id);
 private:
 
 	/// unload resource (overload to implement resource deallocation)
 	void Unload(const Resources::ResourceId id);
 
 	Ids::IdAllocatorSafe<MaterialRuntime> allocator;
-	__ImplementResourceAllocatorSafe(allocator);
+	__ImplementResourceAllocatorTypedSafe(allocator, MaterialIdType);
 };
 
 //------------------------------------------------------------------------------
 /**
 */
-inline const MaterialId&
-MaterialPool::GetId(const Resources::ResourceId& id)
+inline const MaterialInstanceId&
+MaterialPool::GetId(const MaterialId& id)
 {
-	return allocator.Get<0>(id.allocId).id;
+	allocator.EnterGet();
+	const MaterialInstanceId& ret = allocator.Get<0>(id.allocId).id;
+	allocator.LeaveGet();
+	return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline MaterialType* const
+MaterialPool::GetType(const MaterialId& id)
+{
+	allocator.EnterGet();
+	MaterialType* const ret = allocator.Get<0>(id.allocId).type;
+	allocator.LeaveGet();
+	return ret;
 }
 
 } // namespace Materials

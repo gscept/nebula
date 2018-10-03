@@ -65,7 +65,7 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 	VkFence mainCmdCmpFence;
 	VkFence mainCmdTransFence;
 
-	VkShaderProgramPipelineType currentBindPoint;
+	CoreGraphics::ShaderPipeline currentBindPoint;
 	VkGraphicsDeviceStateMode currentCommandState;
 
 	static const SizeT NumDrawThreads = 8;
@@ -170,13 +170,26 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 	_declare_timer(DebugTimer);
 
 #if NEBULAT_VULKAN_DEBUG
-	VkDebugReportCallbackEXT debugCallbackHandle;
-	PFN_vkCreateDebugReportCallbackEXT debugCallbackCreatePtr;
-	PFN_vkDestroyDebugReportCallbackEXT debugCallbackDestroyPtr;
+
 #endif
 } state;
 
+#if NEBULAT_VULKAN_DEBUG
+VkDebugUtilsMessengerEXT VkDebugMessageHandle = nullptr;
+PFN_vkCreateDebugUtilsMessengerEXT VkCreateDebugMessenger = nullptr;
+PFN_vkDestroyDebugUtilsMessengerEXT VkDestroyDebugMessenger = nullptr;
+#endif
 
+#if NEBULAT_GRAPHICS_DEBUG
+PFN_vkSetDebugUtilsObjectNameEXT VkDebugObjectName = nullptr;
+PFN_vkSetDebugUtilsObjectTagEXT VkDebugObjectTag = nullptr;
+PFN_vkQueueBeginDebugUtilsLabelEXT VkQueueBeginLabel = nullptr;
+PFN_vkQueueEndDebugUtilsLabelEXT VkQueueEndLabel = nullptr;
+PFN_vkQueueInsertDebugUtilsLabelEXT VkQueueInsertLabel = nullptr;
+PFN_vkCmdBeginDebugUtilsLabelEXT VkCmdDebugMarkerBegin = nullptr;
+PFN_vkCmdEndDebugUtilsLabelEXT VkCmdDebugMarkerEnd = nullptr;
+PFN_vkCmdInsertDebugUtilsLabelEXT VkCmdDebugMarkerInsert = nullptr;
+#endif
 //------------------------------------------------------------------------------
 /**
 */
@@ -442,7 +455,7 @@ Blit(const VkImage from, Math::rectangle<SizeT> fromRegion, IndexT fromMip, cons
 /**
 */
 void 
-BindDescriptorsGraphics(const VkDescriptorSet* descriptors, const VkPipelineLayout & layout, uint32_t baseSet, uint32_t setCount, const uint32_t* offsets, uint32_t offsetCount, bool propagate)
+BindDescriptorsGraphics(const VkDescriptorSet* descriptors, const VkPipelineLayout& layout, uint32_t baseSet, uint32_t setCount, const uint32_t* offsets, uint32_t offsetCount, bool propagate)
 {
 	// if we are in the local state, push directly to thread
 	if (state.currentCommandState == ThreadState)
@@ -664,7 +677,7 @@ void
 BindComputePipeline(const VkPipeline& pipeline, const VkPipelineLayout& layout)
 {
 	// bind compute pipeline
-	state.currentBindPoint = VkShaderProgramPipelineType::ComputePipeline;
+	state.currentBindPoint = CoreGraphics::ComputePipeline;
 
 	// bind shared descriptors
 	VkShaderServer::Instance()->BindTextureDescriptorSets();
@@ -683,7 +696,7 @@ BindComputePipeline(const VkPipeline& pipeline, const VkPipelineLayout& layout)
 void 
 UnbindPipeline()
 {
-	state.currentBindPoint = VkShaderProgramPipelineType::InvalidType;
+	state.currentBindPoint = CoreGraphics::InvalidPipeline;
 	state.currentPipelineBits &= ~ShaderInfoSet;
 }
 
@@ -924,13 +937,44 @@ BindSharedDescriptorSets()
 	}
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+CmdBufBeginMarker(VkCommandBuffer buf, const Math::float4& color, const char* name)
+{
+	alignas(16) float col[4];
+	color.store(col);
+	VkDebugUtilsLabelEXT info =
+	{
+		VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT,
+		nullptr,
+		name,
+		{ col[0], col[1], col[2], col[3] }
+	};
+	VkCmdDebugMarkerBegin(buf, &info);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+CmdBufEndMarker(VkCommandBuffer buf)
+{
+	VkCmdDebugMarkerEnd(buf);
+}
+
 } // namespace Vulkan
 
 //------------------------------------------------------------------------------
 /**
 */
 VKAPI_ATTR VkBool32 VKAPI_CALL
-NebulaVulkanDebugCallback(VkFlags msgFlags, VkDebugReportObjectTypeEXT objectType, uint64_t src, size_t location, int32_t msgCode, const char* layerPrefix, const char* msg, void* userData)
+NebulaVulkanDebugCallback(
+	VkDebugUtilsMessageSeverityFlagBitsEXT severity,
+	VkDebugUtilsMessageTypeFlagsEXT type,
+	const VkDebugUtilsMessengerCallbackDataEXT* callbackData,
+	void* userData)
 {
 
 #if NEBULAT_VULKAN_DEBUG
@@ -950,13 +994,13 @@ NebulaVulkanDebugCallback(VkFlags msgFlags, VkDebugReportObjectTypeEXT objectTyp
 	}
 
 	
-	if (msgFlags & VK_DEBUG_REPORT_ERROR_BIT_EXT)
+	if (severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
 	{
-		n_warning("VULKAN ERROR: [%s], code %d : %s\n", layerPrefix, msgCode, msg);
+		n_warning("VULKAN ERROR: %s\n", callbackData->pMessage);
 	}
-	else if (msgFlags & VK_DEBUG_REPORT_WARNING_BIT_EXT)
+	else if (severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
 	{
-		n_warning("VULKAN WARNING: [%s], code %d : %s\n", layerPrefix, msgCode, msg);
+		n_warning("VULKAN WARNING: %s\n", callbackData->pMessage);
 	}
 	return ret;
 }
@@ -1001,13 +1045,14 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 
 	//const char* layers[] = { "VK_LAYER_LUNARG_core_validation", "VK_LAYER_LUNARG_parameter_validation" };
 	const char* layers[] = { "VK_LAYER_LUNARG_standard_validation" };
-#if NEBULAT_VULKAN_DEBUG
-	state.extensions[state.usedExtensions++] = VK_EXT_DEBUG_REPORT_EXTENSION_NAME;
-	#if NEBULAT_VULKAN_VALIDATION
-		const int numLayers = sizeof(layers) / sizeof(const char*);
-	#else
-		const int numLayers = 0;
-	#endif
+#define NEBULAT_VULKAN_VALIDATION 1
+#if NEBULAT_GRAPHICS_DEBUG
+	state.extensions[state.usedExtensions++] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
+#if NEBULAT_VULKAN_VALIDATION
+	const int numLayers = sizeof(layers) / sizeof(const char*);
+#else
+	const int numLayers = 0;
+#endif
 #else
 	const int numLayers = 0;
 #endif
@@ -1046,16 +1091,29 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	state.currentDevice = 0;
 
 #if NEBULAT_VULKAN_DEBUG
-	state.debugCallbackCreatePtr = (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(state.instance, "vkCreateDebugReportCallbackEXT");
-	state.debugCallbackDestroyPtr = (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr(state.instance, "vkDestroyDebugReportCallbackEXT");
-	VkDebugReportCallbackCreateInfoEXT dbgInfo;
-	dbgInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT;
-	dbgInfo.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT | VK_DEBUG_REPORT_DEBUG_BIT_EXT | VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT;
-	dbgInfo.pNext = NULL;
-	dbgInfo.pfnCallback = NebulaVulkanDebugCallback;
-	dbgInfo.pUserData = NULL;
-	res = state.debugCallbackCreatePtr(state.instance, &dbgInfo, NULL, &state.debugCallbackHandle);
+	VkCreateDebugMessenger = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(state.instance, "vkCreateDebugUtilsMessengerEXT");
+	VkDestroyDebugMessenger = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(state.instance, "vkDestroyDebugUtilsMessengerEXT");
+	VkDebugUtilsMessengerCreateInfoEXT dbgInfo;
+	dbgInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+	dbgInfo.flags = 0;
+	dbgInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT;
+	dbgInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+	dbgInfo.pNext = nullptr;
+	dbgInfo.pfnUserCallback = NebulaVulkanDebugCallback;
+	dbgInfo.pUserData = nullptr;
+	res = VkCreateDebugMessenger(state.instance, &dbgInfo, NULL, &VkDebugMessageHandle);
 	n_assert(res == VK_SUCCESS);
+#endif
+
+#if NEBULAT_GRAPHICS_DEBUG
+	VkDebugObjectName = (PFN_vkSetDebugUtilsObjectNameEXT)vkGetInstanceProcAddr(state.instance, "vkSetDebugUtilsObjectNameEXT");
+	VkDebugObjectTag = (PFN_vkSetDebugUtilsObjectTagEXT)vkGetInstanceProcAddr(state.instance, "vkSetDebugUtilsObjectTagEXT");
+	VkQueueBeginLabel = (PFN_vkQueueBeginDebugUtilsLabelEXT)vkGetInstanceProcAddr(state.instance, "vkQueueBeginDebugUtilsLabelEXT");;
+	VkQueueEndLabel = (PFN_vkQueueEndDebugUtilsLabelEXT)vkGetInstanceProcAddr(state.instance, "vkQueueEndDebugUtilsLabelEXT");;
+	VkQueueInsertLabel = (PFN_vkQueueInsertDebugUtilsLabelEXT)vkGetInstanceProcAddr(state.instance, "vkQueueInsertDebugUtilsLabelEXT");;
+	VkCmdDebugMarkerBegin = (PFN_vkCmdBeginDebugUtilsLabelEXT)vkGetInstanceProcAddr(state.instance, "vkCmdBeginDebugUtilsLabelEXT");;
+	VkCmdDebugMarkerEnd = (PFN_vkCmdEndDebugUtilsLabelEXT)vkGetInstanceProcAddr(state.instance, "vkCmdEndDebugUtilsLabelEXT");;
+	VkCmdDebugMarkerInsert = (PFN_vkCmdInsertDebugUtilsLabelEXT)vkGetInstanceProcAddr(state.instance, "vkCmdInsertDebugUtilsLabelEXT");;
 #endif
 
 	vkGetPhysicalDeviceQueueFamilyProperties(state.physicalDevices[state.currentDevice], &state.numQueues, NULL);
@@ -1216,6 +1274,8 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	// setup our own pipeline database
 	state.database.Setup(state.devices[state.currentDevice], state.cache);
 
+	// setup the empty descriptor set
+	SetupEmptyDescriptorSet();
 
 	std::tuple<VkDescriptorType, uint32_t> descCounts[] =
 	{
@@ -1486,7 +1546,7 @@ DestroyGraphicsDevice()
 	vkDestroyFence(state.devices[0], state.mainCmdTransFence, nullptr);
 
 #if NEBULAT_VULKAN_DEBUG
-	state.debugCallbackDestroyPtr(state.instance, state.debugCallbackHandle, nullptr);
+	VkDestroyDebugMessenger(state.instance, VkDebugMessageHandle, nullptr);
 #endif
 
 	vkDestroyDevice(state.devices[0], nullptr);
@@ -1606,6 +1666,7 @@ BeginPass(const CoreGraphics::PassId pass)
 	state.database.SetSubpass(0);
 
 	const VkRenderPassBeginInfo& info = PassGetVkRenderPassBeginInfo(pass);
+
 	vkCmdBeginRenderPass(CommandBufferGetVk(state.mainCmdDrawBuffer), &info, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
 	// run this phase for scheduler
@@ -1638,6 +1699,8 @@ SetToNextSubpass()
 	n_assert(state.inBeginFrame);
 	n_assert(state.inBeginPass);
 	n_assert(state.pass != PassId::Invalid());
+	SetFramebufferLayoutInfo(PassGetVkFramebufferInfo(state.pass));
+	vkCmdNextSubpass(CommandBufferGetVk(state.mainCmdDrawBuffer), VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 }
 
 //------------------------------------------------------------------------------
@@ -1755,7 +1818,7 @@ BuildRenderPipeline()
 {
 	n_assert((state.currentPipelineBits & AllInfoSet) != 0);
 	n_assert(state.inBeginBatch);
-	state.currentBindPoint = VkShaderProgramPipelineType::GraphicsPipeline;
+	state.currentBindPoint = CoreGraphics::GraphicsPipeline;
 	if ((state.currentPipelineBits & PipelineBuilt) == 0)
 	{
 		CreateAndBindGraphicsPipeline();
@@ -1771,6 +1834,8 @@ SetShaderProgram(const CoreGraphics::ShaderProgramId& pro)
 {
 	const VkShaderProgramRuntimeInfo& info = CoreGraphics::shaderPool->shaderAlloc.Get<3>(pro.shaderId).Get<2>(pro.programId);
 	state.currentShaderProgram = pro;
+	state.currentPipelineLayout = info.layout;
+	state.currentProgram = info.uniqueId;
 
 	// if we are compute, we can set the pipeline straight away, otherwise we have to accumulate the infos
 	if (info.type == ComputePipeline)		Vulkan::BindComputePipeline(info.pipeline, info.layout);
@@ -1827,159 +1892,53 @@ SetShaderProgram(const CoreGraphics::ShaderId shaderId, const CoreGraphics::Shad
 /**
 */
 void
-SetShaderState(const CoreGraphics::ShaderStateId& sh)
+SetResourceTable(const CoreGraphics::ResourceTableId table, const IndexT slot, ShaderPipeline pipeline, const Util::FixedArray<uint>& offsets)
 {
-	const VkShaderStateRuntimeInfo& stateInfo = CoreGraphics::shaderPool->shaderAlloc.Get<4>(sh.shaderId).Get<1>(sh.stateId);
-
-	// now go through and make sure the shader can bind the sets updated
-	if (state.currentProgram != Ids::InvalidId24 && state.currentBindPoint != VkShaderProgramPipelineType::InvalidType)
+	switch (pipeline)
 	{
-		const VkShaderProgramPipelineType type = state.currentBindPoint;
-		n_assert(type != VkShaderProgramPipelineType::InvalidType);
-		if (type == VkShaderProgramPipelineType::GraphicsPipeline)
-		{
-			// if no variation is being used, bind descriptors for both graphics and compute
-			IndexT i;
-			for (i = 0; i < stateInfo.setBindings.Size(); i++)
-			{
-				const VkShaderStateDescriptorSetBinding& binding = stateInfo.setBindings[i];
-				if (binding.slot == NEBULAT_DYNAMIC_OFFSET_GROUP)
-				{
-					const Util::Array<uint32_t>& offsets = stateInfo.setOffsets[i];
-					Vulkan::BindDescriptorsGraphics(
-						&ResourceTableGetVkDescriptorSet(binding.set),
-						ResourcePipelineGetVk(binding.layout),
-						binding.slot,
-						1,
-						offsets.Begin(),
-						offsets.Size(),
-						stateInfo.propagate);
-				}
-				else
-				{
-					Vulkan::BindDescriptorsGraphics(
-						&ResourceTableGetVkDescriptorSet(binding.set),
-						ResourcePipelineGetVk(binding.layout),
-						binding.slot,
-						1,
-						nullptr,
-						0,
-						stateInfo.propagate);
-				}
-
-			}
-
-			// update push ranges
-			if (stateInfo.pushDataSize > 0)
-			{
-				Vulkan::UpdatePushRanges(
-					VK_SHADER_STAGE_ALL_GRAPHICS,
-					ResourcePipelineGetVk(stateInfo.pushLayout),
-					0,
-					stateInfo.pushDataSize,
-					stateInfo.pushData);
-			}
-		}
-		else
-		{
-			// if no variation is being used, bind descriptors for both graphics and compute
-			IndexT i;
-			for (i = 0; i < stateInfo.setBindings.Size(); i++)
-			{
-				const VkShaderStateDescriptorSetBinding& binding = stateInfo.setBindings[i];
-				if (binding.slot == NEBULAT_DYNAMIC_OFFSET_GROUP)
-				{
-					const Util::Array<uint32_t>& offsets = stateInfo.setOffsets[i];
-					Vulkan::BindDescriptorsCompute(
-						&ResourceTableGetVkDescriptorSet(binding.set),
-						ResourcePipelineGetVk(binding.layout),
-						binding.slot,
-						1,
-						offsets.Begin(),
-						offsets.Size());
-				}
-				else
-				{
-					Vulkan::BindDescriptorsCompute(
-						&ResourceTableGetVkDescriptorSet(binding.set),
-						ResourcePipelineGetVk(binding.layout),
-						binding.slot,
-						1,
-						nullptr,
-						0);
-				}
-			}
-
-			// update push ranges
-			if (stateInfo.pushDataSize > 0)
-			{
-				Vulkan::UpdatePushRanges(
-					VK_SHADER_STAGE_COMPUTE_BIT,
-					ResourcePipelineGetVk(stateInfo.pushLayout),
-					0,
-					stateInfo.pushDataSize,
-					stateInfo.pushData);
-			}
-		}
+	case GraphicsPipeline:
+		Vulkan::BindDescriptorsGraphics(&ResourceTableGetVkDescriptorSet(table),
+			state.currentPipelineLayout,
+			slot,
+			1,
+			offsets.IsEmpty() ? nullptr : offsets.Begin(),
+			offsets.Size());
+		break;
+	case ComputePipeline:
+		Vulkan::BindDescriptorsCompute(&ResourceTableGetVkDescriptorSet(table),
+			state.currentPipelineLayout,
+			slot,
+			1,
+			offsets.IsEmpty() ? nullptr : offsets.Begin(),
+			offsets.Size());
+		break;
 	}
-	else
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+SetResourceTablePipeline(const CoreGraphics::ResourcePipelineId layout)
+{
+	n_assert(layout != CoreGraphics::ResourcePipelineId::Invalid());
+	state.currentPipelineLayout = ResourcePipelineGetVk(layout);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+PushConstants(ShaderPipeline pipeline, uint offset, uint size, byte* data)
+{
+	switch (pipeline)
 	{
-		// if no variation is being used, bind descriptors for both graphics and compute
-		IndexT i;
-		for (i = 0; i < stateInfo.setBindings.Size(); i++)
-		{
-			const VkShaderStateDescriptorSetBinding& binding = stateInfo.setBindings[i];
-			if (binding.slot == NEBULAT_DYNAMIC_OFFSET_GROUP)
-			{
-				const Util::Array<uint32_t>& offsets = stateInfo.setOffsets[i];
-				Vulkan::BindDescriptorsGraphics(
-					&ResourceTableGetVkDescriptorSet(binding.set),
-					ResourcePipelineGetVk(binding.layout),
-					binding.slot,
-					1,
-					offsets.Begin(),
-					offsets.Size(),
-					stateInfo.propagate);
-
-				Vulkan::BindDescriptorsCompute(
-					&ResourceTableGetVkDescriptorSet(binding.set),
-					ResourcePipelineGetVk(binding.layout),
-					binding.slot,
-					1,
-					offsets.Begin(),
-					offsets.Size());
-			}
-			else
-			{
-				Vulkan::BindDescriptorsGraphics(
-					&ResourceTableGetVkDescriptorSet(binding.set),
-					ResourcePipelineGetVk(binding.layout),
-					binding.slot,
-					1,
-					nullptr,
-					0,
-					stateInfo.propagate);
-
-				Vulkan::BindDescriptorsCompute(
-					&ResourceTableGetVkDescriptorSet(binding.set),
-					ResourcePipelineGetVk(binding.layout),
-					binding.slot,
-					1,
-					nullptr,
-					0);
-			}
-		}
-
-		// push to both compute and graphics
-		if (stateInfo.pushDataSize > 0)
-		{
-			Vulkan::UpdatePushRanges(
-				VK_SHADER_STAGE_ALL,
-				ResourcePipelineGetVk(stateInfo.pushLayout),
-				0,
-				stateInfo.pushDataSize,
-				stateInfo.pushData);
-		}
+	case GraphicsPipeline:
+		Vulkan::UpdatePushRanges(VK_SHADER_STAGE_ALL_GRAPHICS, state.currentPipelineLayout, offset, size, data);
+		break;
+	case ComputePipeline:
+		Vulkan::UpdatePushRanges(VK_SHADER_STAGE_COMPUTE_BIT, state.currentPipelineLayout, offset, size, data);
+		break;
 	}
 }
 
@@ -2118,7 +2077,7 @@ void
 ResetEvent(const CoreGraphics::EventId & ev, const CoreGraphicsQueueType queue)
 {
 	VkEventInfo& info = eventAllocator.Get<1>(ev.id24);
-	if (queue == GraphicsQueueType && state.inBeginPass)
+	if (queue == GraphicsQueueType && state.inBeginPass)	
 	{
 		if (state.numActiveThreads > 0)
 		{
@@ -2281,6 +2240,10 @@ EndFrame(IndexT frameIndex)
 	CmdBufferEndRecord(state.mainCmdDrawBuffer);
 	CmdBufferEndRecord(state.mainCmdSparseBuffer);
 
+#if NEBULAT_GRAPHICS_DEBUG
+	CoreGraphics::QueueBeginMarker(TransferQueueType, Math::float4(0.6f, 0.6f, 0.8f, 1.0f), "End of frame transfer queue submission");
+#endif
+
 	// kick transfer commands
 	state.subcontextHandler.InsertCommandBuffer(TransferQueueType, CommandBufferGetVk(state.mainCmdTransferBuffer));
 	state.subcontextHandler.InsertDependency({ GraphicsQueueType, TransferQueueType }, TransferQueueType, VK_PIPELINE_STAGE_TRANSFER_BIT);
@@ -2290,6 +2253,15 @@ EndFrame(IndexT frameIndex)
 	state.scheduler.ExecuteCommandPass(VkScheduler::OnMainTransferSubmitted);
 	state.scheduler.EndTransfers();
 
+#if NEBULAT_GRAPHICS_DEBUG
+	CoreGraphics::QueueEndMarker(TransferQueueType);
+#endif
+
+
+#if NEBULAT_GRAPHICS_DEBUG
+	CoreGraphics::QueueBeginMarker(ComputeQueueType, Math::float4(0.6f, 0.6f, 0.8f, 1.0f), "End of frame compute queue submission");
+#endif
+
 	// submit compute stuff
 	state.subcontextHandler.InsertCommandBuffer(ComputeQueueType, CommandBufferGetVk(state.mainCmdComputeBuffer));
 	state.subcontextHandler.Submit(ComputeQueueType, state.mainCmdCmpFence, true);
@@ -2297,12 +2269,26 @@ EndFrame(IndexT frameIndex)
 	state.scheduler.ExecuteCommandPass(VkScheduler::OnMainComputeSubmitted);
 	state.scheduler.EndComputes();
 
+#if NEBULAT_GRAPHICS_DEBUG
+	CoreGraphics::QueueEndMarker(ComputeQueueType);
+#endif
+
+
+#if NEBULAT_GRAPHICS_DEBUG
+	CoreGraphics::QueueBeginMarker(GraphicsQueueType, Math::float4(0.6f, 0.6f, 0.8f, 1.0f), "End of frame graphics queue submission");
+#endif
+
 	// submit draw stuff
 	state.subcontextHandler.InsertCommandBuffer(GraphicsQueueType, CommandBufferGetVk(state.mainCmdDrawBuffer));
 	state.subcontextHandler.Submit(GraphicsQueueType, state.mainCmdDrawFence, true);
 
 	state.scheduler.ExecuteCommandPass(VkScheduler::OnMainDrawSubmitted);
 	state.scheduler.EndDraws();
+
+#if NEBULAT_GRAPHICS_DEBUG
+	CoreGraphics::QueueEndMarker(GraphicsQueueType);
+#endif
+
 
 	static VkFence fences[] = { state.mainCmdTransFence, state.mainCmdCmpFence, state.mainCmdDrawFence };
 	WaitForFences(fences, 3, true);
@@ -2508,5 +2494,201 @@ SetScissorRect(const Math::rectangle<int>& rect, int index)
 		state.scissors[index] = sc;
 	}
 }
+
+#if defined(NEBULAT_GRAPHICS_DEBUG)
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<>
+void
+ObjectSetName(const CoreGraphics::TextureId id, const Util::String& name)
+{
+	VkDebugUtilsObjectNameInfoEXT info =
+	{
+		VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
+		nullptr,
+		VK_OBJECT_TYPE_IMAGE,
+		(uint64_t)Vulkan::TextureGetVkImage(id),
+		name.AsCharPtr()
+	};
+	VkDevice dev = GetCurrentDevice();
+	n_assert(VkDebugObjectName(dev, &info) == VK_SUCCESS);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<>
+void
+ObjectSetName(const CoreGraphics::RenderTextureId id, const Util::String& name)
+{
+	VkDebugUtilsObjectNameInfoEXT info =
+	{
+		VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
+		nullptr,
+		VK_OBJECT_TYPE_IMAGE,
+		(uint64_t)Vulkan::RenderTextureGetVkImage(id),
+		name.AsCharPtr()
+	};
+	VkDevice dev = GetCurrentDevice();
+	n_assert(VkDebugObjectName(dev, &info) == VK_SUCCESS);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<>
+void
+ObjectSetName(const CoreGraphics::ResourceTableLayoutId id, const Util::String& name)
+{
+	VkDebugUtilsObjectNameInfoEXT info =
+	{
+		VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
+		nullptr,
+		VK_OBJECT_TYPE_IMAGE,
+		(uint64_t)Vulkan::ResourceTableLayoutGetVk(id),
+		name.AsCharPtr()
+	};
+	VkDevice dev = GetCurrentDevice();
+	n_assert(VkDebugObjectName(dev, &info) == VK_SUCCESS);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<>
+void
+ObjectSetName(const CoreGraphics::ResourcePipelineId id, const Util::String& name)
+{
+	VkDebugUtilsObjectNameInfoEXT info =
+	{
+		VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
+		nullptr,
+		VK_OBJECT_TYPE_IMAGE,
+		(uint64_t)Vulkan::ResourcePipelineGetVk(id),
+		name.AsCharPtr()
+	};
+	VkDevice dev = GetCurrentDevice();
+	n_assert(VkDebugObjectName(dev, &info) == VK_SUCCESS);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+QueueBeginMarker(const CoreGraphicsQueueType queue, const Math::float4& color, const Util::String& name)
+{
+	VkQueue vkqueue = state.subcontextHandler.GetQueue(queue);
+	alignas(16) float col[4];
+	color.store(col);
+	VkDebugUtilsLabelEXT info =
+	{
+		VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT,
+		nullptr,
+		name.AsCharPtr(),
+		{ col[0], col[1], col[2], col[3] }
+	};
+	VkQueueBeginLabel(vkqueue, &info);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+QueueEndMarker(const CoreGraphicsQueueType queue)
+{
+	VkQueue vkqueue = state.subcontextHandler.GetQueue(queue);
+	VkQueueEndLabel(vkqueue);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+QueueInsertMarker(const CoreGraphicsQueueType queue, const Math::float4& color, const Util::String& name)
+{
+	VkQueue vkqueue = state.subcontextHandler.GetQueue(queue);
+	alignas(16) float col[4];
+	color.store(col);
+	VkDebugUtilsLabelEXT info =
+	{
+		VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT,
+		nullptr,
+		name.AsCharPtr(),
+		{ col[0], col[1], col[2], col[3] }
+	};
+	VkQueueInsertLabel(vkqueue, &info);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+CmdBufBeginMarker(const CoreGraphicsQueueType queue, const Math::float4& color, const Util::String& name)
+{
+	VkCommandBuffer buf;
+	switch (queue)
+	{
+	case GraphicsQueueType: buf = CommandBufferGetVk(state.mainCmdDrawBuffer); break;
+	case ComputeQueueType: buf = CommandBufferGetVk(state.mainCmdComputeBuffer); break;
+	case TransferQueueType: buf = CommandBufferGetVk(state.mainCmdTransferBuffer); break;
+	case SparseQueueType: buf = CommandBufferGetVk(state.mainCmdSparseBuffer); break;
+	}
+	alignas(16) float col[4];
+	color.store(col);
+	VkDebugUtilsLabelEXT info =
+	{
+		VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT,
+		nullptr,
+		name.AsCharPtr(),
+		{ col[0], col[1], col[2], col[3] }
+	};
+	VkCmdDebugMarkerBegin(buf, &info);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+CmdBufEndMarker(const CoreGraphicsQueueType queue)
+{
+	VkCommandBuffer buf;
+	switch (queue)
+	{
+	case GraphicsQueueType: buf = CommandBufferGetVk(state.mainCmdDrawBuffer); break;
+	case ComputeQueueType: buf = CommandBufferGetVk(state.mainCmdComputeBuffer); break;
+	case TransferQueueType: buf = CommandBufferGetVk(state.mainCmdTransferBuffer); break;
+	case SparseQueueType: buf = CommandBufferGetVk(state.mainCmdSparseBuffer); break;
+	}
+	VkCmdDebugMarkerEnd(buf);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+CmdBufInsertMarker(const CoreGraphicsQueueType queue, const Math::float4& color, const Util::String& name)
+{
+	VkCommandBuffer buf;
+	switch (queue)
+	{
+	case GraphicsQueueType: buf = CommandBufferGetVk(state.mainCmdDrawBuffer); break;
+	case ComputeQueueType: buf = CommandBufferGetVk(state.mainCmdComputeBuffer); break;
+	case TransferQueueType: buf = CommandBufferGetVk(state.mainCmdTransferBuffer); break;
+	case SparseQueueType: buf = CommandBufferGetVk(state.mainCmdSparseBuffer); break;
+	}
+	alignas(16) float col[4];
+	color.store(col);
+	VkDebugUtilsLabelEXT info =
+	{
+		VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT,
+		nullptr,
+		name.AsCharPtr(),
+		{ col[0], col[1], col[2], col[3] }
+	};
+	VkCmdDebugMarkerInsert(buf, &info);
+}
+#endif
 
 } // namespace CoreGraphics

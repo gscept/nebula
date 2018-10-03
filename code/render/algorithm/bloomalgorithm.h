@@ -8,6 +8,7 @@
 //------------------------------------------------------------------------------
 #include "algorithm.h"
 #include "coregraphics/shader.h"
+#include "coregraphics/resourcetable.h"
 #include "renderutil/drawfullscreenquad.h"
 #include "coregraphics/barrier.h"
 namespace Algorithms
@@ -28,11 +29,12 @@ private:
 
 	CoreGraphics::BarrierId barriers[1];
 	CoreGraphics::ShaderRWTextureId internalTargets[1];
-	CoreGraphics::ShaderConstantId brightPassColor, brightPassLuminance, blurInputX, blurInputY, blurOutputX, blurOutputY;
 	CoreGraphics::ShaderProgramId brightPassProgram;
 	CoreGraphics::ShaderProgramId blurX, blurY;
 	CoreGraphics::ShaderId brightPassShader, blurShader;
-	CoreGraphics::ShaderStateId brightPass, blur;
+
+	CoreGraphics::ResourceTableId brightPassTable, blurTable;
+	IndexT colorSourceSlot, luminanceTextureSlot, inputImageXSlot, inputImageYSlot, blurImageXSlot, blurImageYSlot;
 	
 	RenderUtil::DrawFullScreenQuad fsq;
 };

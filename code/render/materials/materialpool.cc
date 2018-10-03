@@ -42,7 +42,7 @@ MaterialPool::LoadFromStream(const Resources::ResourceId id, const Util::StringA
 		MaterialType* type = server->materialTypesByName[materialType];
 
 		// add to internal table
-		MaterialId mid = type->CreateInstance();
+		MaterialInstanceId mid = type->CreateInstance();
 		info.id = mid;
 		info.type = type;
 
@@ -117,7 +117,7 @@ void
 MaterialPool::Unload(const Resources::ResourceId id)
 {
 	const MaterialRuntime& runtime = this->Get<0>(id.allocId);
-	const MaterialId mid = runtime.id;
+	const MaterialInstanceId mid = runtime.id;
 	MaterialType* type = runtime.type;
 	type->DestroyInstance(mid);
 }

@@ -8,7 +8,7 @@
 #include "std.fxh"
 
 // material properties
-group(BATCH_GROUP) shared varblock MaterialParams [ string Visibility = "PS"; ]
+group(BATCH_GROUP) shared varblock MaterialParams [ string Visibility = "VS|PS"; ]
 {
 	float AlphaSensitivity = 1.0f;
 	float AlphaBlendFactor = 0.0f;

@@ -22,14 +22,10 @@ public:
 	{
 		void Run(const IndexT frameIndex);
 
-		CoreGraphics::ShaderStateId state;
-		Util::Array<CoreGraphics::ShaderConstantId> constants;
 	};
 
 	FrameOp::Compiled* AllocCompiled(Memory::ChunkAllocator<BIG_CHUNK>& allocator);
 
-	CoreGraphics::ShaderStateId state;
-	Util::Array<CoreGraphics::ShaderConstantId> constants;
 };
 
 } // namespace Frame2

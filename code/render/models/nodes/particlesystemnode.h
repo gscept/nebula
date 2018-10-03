@@ -11,6 +11,8 @@
 #include "shaderstatenode.h"
 #include "particles/particlesystem.h"
 #include "particles/emitterattrs.h"
+#include "coregraphics/constantbuffer.h"
+#include "coregraphics/resourcetable.h"
 
 //------------------------------------------------------------------------------
 namespace Models
@@ -37,20 +39,24 @@ public:
 	struct Instance : public TransformNode::Instance
 	{
 		Ids::Id32 particleSystemId;
-		CoreGraphics::ShaderStateId particleShader;
-		CoreGraphics::ShaderConstantId emitterOrientationVar;
-		CoreGraphics::ShaderConstantId billboardVar;
-		CoreGraphics::ShaderConstantId bboxCenterVar;
-		CoreGraphics::ShaderConstantId bboxSizeVar;
-		CoreGraphics::ShaderConstantId animPhasesVar;
-		CoreGraphics::ShaderConstantId animsPerSecVar;
-		IndexT bufferIndex;
+		
+		CoreGraphics::ResourceTableId resourceTable;
+		CoreGraphics::ConstantBufferId cbo;
+		CoreGraphics::ConstantBinding emitterOrientationVar;
+		CoreGraphics::ConstantBinding billboardVar;
+		CoreGraphics::ConstantBinding bboxCenterVar;
+		CoreGraphics::ConstantBinding bboxSizeVar;
+		CoreGraphics::ConstantBinding animPhasesVar;
+		CoreGraphics::ConstantBinding animsPerSecVar;
+		
+		uint32 instance;
+		Util::FixedArray<uint32> offsets;
 
-		void Setup(const Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
+		void Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
 	};
 
 	/// create instance
-	virtual ModelNode::Instance* CreateInstance(byte* memory, const Models::ModelNode::Instance* parent) const;
+	virtual ModelNode::Instance* CreateInstance(byte* memory, const Models::ModelNode::Instance* parent) override;
 	/// get size of instance
 	virtual const SizeT GetInstanceSize() const { return sizeof(Instance); }
 private:
@@ -63,12 +69,23 @@ protected:
 	/// parse data tag (called by loader code)
 	virtual bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader);
 
-	CoreGraphics::ShaderId shader;
+	
 	Particles::EmitterAttrs emitterAttrs;
     Resources::ResourceName meshResId;
 	Util::StringAtom tag;
     IndexT primGroupIndex;
 	CoreGraphics::MeshId mesh;
+
+	CoreGraphics::ShaderId shader;
+	CoreGraphics::ConstantBufferId cbo;
+	IndexT cboIndex;
+	CoreGraphics::ResourceTableId resourceTable;
+	CoreGraphics::ConstantBinding emitterOrientationVar;
+	CoreGraphics::ConstantBinding billboardVar;
+	CoreGraphics::ConstantBinding bboxCenterVar;
+	CoreGraphics::ConstantBinding bboxSizeVar;
+	CoreGraphics::ConstantBinding animPhasesVar;
+	CoreGraphics::ConstantBinding animsPerSecVar;
 };
 
 //------------------------------------------------------------------------------
@@ -113,17 +130,26 @@ ModelNodeInstanceCreator(ParticleSystemNode)
 /**
 */
 inline void
-ParticleSystemNode::Instance::Setup(const Models::ModelNode* node, const Models::ModelNode::Instance* parent)
+ParticleSystemNode::Instance::Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent)
 {
 	TransformNode::Instance::Setup(node, parent);
-	this->particleShader = ShaderCreateState(static_cast<const ParticleSystemNode*>(node)->shader, { NEBULAT_DYNAMIC_OFFSET_GROUP }, false);
-	this->emitterOrientationVar = CoreGraphics::ShaderStateGetConstant(this->particleShader, "EmitterTransform");
-	this->billboardVar = CoreGraphics::ShaderStateGetConstant(this->particleShader, "Billboard");
-	this->bboxCenterVar = CoreGraphics::ShaderStateGetConstant(this->particleShader, "BBoxCenter");
-	this->bboxSizeVar = CoreGraphics::ShaderStateGetConstant(this->particleShader, "BBoxSize");
-	this->animPhasesVar = CoreGraphics::ShaderStateGetConstant(this->particleShader, "NumAnimPhases");
-	this->animsPerSecVar = CoreGraphics::ShaderStateGetConstant(this->particleShader, "AnimFramesPerSecond");
-	this->type = ParticleSystemNodeType;
+	ParticleSystemNode* pparent = static_cast<ParticleSystemNode*>(node);
+	CoreGraphics::ConstantBufferId cbo = pparent->cbo;
+	this->cbo = cbo;
+	this->resourceTable = pparent->resourceTable;
+	this->offsets.Resize(1);
+	bool rebind = CoreGraphics::ConstantBufferAllocateInstance(cbo, this->offsets[0], this->instance);
+	if (rebind)
+	{
+		CoreGraphics::ResourceTableSetConstantBuffer(pparent->resourceTable, { pparent->cbo, pparent->cboIndex, 0, true, false, -1, 0 });
+		CoreGraphics::ResourceTableCommitChanges(pparent->resourceTable);
+	}
+	this->emitterOrientationVar = pparent->emitterOrientationVar;
+	this->billboardVar = pparent->billboardVar;
+	this->bboxCenterVar = pparent->bboxCenterVar;
+	this->bboxSizeVar = pparent->bboxSizeVar;
+	this->animPhasesVar = pparent->animPhasesVar;
+	this->animsPerSecVar = pparent->animsPerSecVar;
 }
 
 } // namespace Particles

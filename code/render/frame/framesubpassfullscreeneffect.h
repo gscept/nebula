@@ -10,6 +10,7 @@
 #include "renderutil/drawfullscreenquad.h"
 #include "coregraphics/shader.h"
 #include "coregraphics/rendertexture.h"
+#include "coregraphics/resourcetable.h"
 namespace Frame
 {
 class FrameSubpassFullscreenEffect : public FrameOp
@@ -31,15 +32,17 @@ public:
 
 		RenderUtil::DrawFullScreenQuad fsq;
 		CoreGraphics::ShaderProgramId program;
-		CoreGraphics::ShaderStateId shaderState;
+		CoreGraphics::ResourceTableId resourceTable;
 	};
 
 	FrameOp::Compiled* AllocCompiled(Memory::ChunkAllocator<BIG_CHUNK>& allocator);
 	
+	Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBufferId> constantBuffers;
+	CoreGraphics::ResourceTableId resourceTable;
+
 	RenderUtil::DrawFullScreenQuad fsq;
 	CoreGraphics::ShaderId shader;
 	CoreGraphics::ShaderProgramId program;
-	CoreGraphics::ShaderStateId shaderState;
 	CoreGraphics::RenderTextureId tex;
 	
 };

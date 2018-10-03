@@ -10,8 +10,8 @@
 
 
 /// Declaring used textures
-textureHandle ColorSource;
-textureHandle LuminanceTexture;
+texture2D ColorSource;
+texture2D LuminanceTexture;
 
 samplerstate BrightPassSampler
 {
@@ -49,10 +49,10 @@ void
 psMain(in vec2 uv,
 	[color0] out vec4 Color) 
 {	
-	vec4 sampleColor = sample2DLod(ColorSource, BrightPassSampler, uv, 0);
+	vec4 sampleColor = textureLod(sampler2D(ColorSource, BrightPassSampler), uv, 0);
 	
 	// Get the calculated average luminance 
-	float lumavg = fetch2D(LuminanceTexture, BrightPassSampler, ivec2(0, 0), 0).r;
+	float lumavg = texelFetch(sampler2D(LuminanceTexture, BrightPassSampler), ivec2(0, 0), 0).r;
 	//float lumavg = 1.0f;
 	
 	vec4 tonedColor = ToneMap(sampleColor, vec4(lumavg), MaxLuminance);

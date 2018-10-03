@@ -67,6 +67,9 @@ public:
 			struct // Pipeline bind
 			{
 				VkPipeline pipeline;
+#if NEBULAT_GRAPHICS_DEBUG
+				const char* name;
+#endif
 			} pipe;
 
 			struct // BeginCmd
