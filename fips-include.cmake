@@ -104,17 +104,37 @@ option(N_NEBULA_DEBUG_SHADERS "Compile shaders with debug flag" OFF)
 macro(add_shaders)    
     if(SHADERC)           
         if(N_NEBULA_DEBUG_SHADERS)
-            #set(shader_debug "-debug")
-        endif()               
+            set(shader_debug "-debug")
+        endif()                       
         
         foreach(shd ${ARGN})        
             get_filename_component(basename ${shd} NAME_WE)        
             get_filename_component(foldername ${shd} DIRECTORY)        
+
+            # first calculate dependencies
+            set(depoutput ${CMAKE_BINARY_DIR}/shaders/${basename}.dep)
+            # create it the first time by force, after that with dependencies
+            # since custom command does not want to play ball atm, we just generate it every time
+            if(NOT EXISTS ${depoutput} OR ${shd} IS_NEWER_THAN ${depoutput})
+                execute_process(COMMAND ${SHADERC} -M -i ${shd} -I ${NROOT}/work/shaders -I ${foldername} -o ${CMAKE_BINARY_DIR} -t shader)
+            endif()
+            
+            # sadly this doesnt work for some reason
+            #add_custom_command(OUTPUT ${depoutput}
+            #COMMAND ${SHADERC} -M -i ${shd} -I ${NROOT}/work/shaders -I ${foldername} -o ${CMAKE_BINARY_DIR} -t shader
+            #DEPENDS ${SHADERC} ${shd}
+            #WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
+            #COMMENT ""
+            #VERBATIM
+            #)                        
+            
+            file(READ ${depoutput} deps)
+
             set(output ${EXPORT_DIR}/shaders/${basename}.fxb)           
             add_custom_command(OUTPUT ${output}
-                COMMAND ${SHADERC} -i ${shd} -I ${NROOT}/work/shaders -I ${foldername} -o ${EXPORT_DIR} -t shader ${shader_debug}
+                COMMAND ${SHADERC} -i ${shd} -I ${NROOT}/work/shaders -I ${foldername} -o ${EXPORT_DIR} -t shader ${shader_debug}                
                 MAIN_DEPENDENCY ${shd}
-                DEPENDS ${SHADERC}                
+                DEPENDS ${SHADERC} ${deps}
                 WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
                 COMMENT ""
                 VERBATIM
