@@ -22,7 +22,7 @@
 //------------------------------------------------------------------------------
 namespace Threading
 {
-template<class TYPE> class SafeQueue : protected Util::Queue<TYPE>
+template<class TYPE> class SafeQueue
 {
 public:
     /// constructor
@@ -65,6 +65,7 @@ protected:
     CriticalSection criticalSection;
     Event enqueueEvent;
     bool signalOnEnqueueEnabled;
+    Util::Queue<TYPE> queue;
 };
 
 //------------------------------------------------------------------------------
@@ -84,7 +85,7 @@ template<class TYPE>
 SafeQueue<TYPE>::SafeQueue(const SafeQueue<TYPE>& rhs)
 {
     this->criticalSection.Enter();
-    this->queueArray = rhs.queueArray;
+    this->queue = rhs.queue;
     this->signalOnEnqueueEnabled = rhs.signalOnEnqueueEnabled;
     this->criticalSection.Leave();
 }
@@ -96,7 +97,7 @@ template<class TYPE> void
 SafeQueue<TYPE>::operator=(const SafeQueue<TYPE>& rhs)
 {
     this->criticalSection.Enter();
-    this->queueArray = rhs.queueArray;
+    this->queue = rhs.queue;
     this->signalOnEnqueueEnabled = rhs.signalOnEnqueueEnabled;
     this->criticalSection.Leave();
 }
@@ -119,7 +120,7 @@ template<class TYPE> void
 SafeQueue<TYPE>::Clear()
 {
     this->criticalSection.Enter();
-    this->queueArray.Clear();
+    this->queue.Clear();
     this->criticalSection.Leave();
 }
 
@@ -129,7 +130,7 @@ SafeQueue<TYPE>::Clear()
 template<class TYPE> SizeT
 SafeQueue<TYPE>::Size() const
 {
-    return this->queueArray.Size();
+    return this->queue.Size();
 }
 
 //------------------------------------------------------------------------------
@@ -139,7 +140,7 @@ template<class TYPE> bool
 SafeQueue<TYPE>::IsEmpty() const
 {
     this->criticalSection.Enter();
-    bool isEmpty = this->queueArray.IsEmpty();
+    bool isEmpty = this->queue.IsEmpty();
     this->criticalSection.Leave();
     return isEmpty;
 }
@@ -151,7 +152,7 @@ template<class TYPE> void
 SafeQueue<TYPE>::Enqueue(const TYPE& e)
 {
     this->criticalSection.Enter();
-    this->queueArray.Append(e);
+    this->queue.Enqueue(e);
     this->criticalSection.Leave();
     if (this->signalOnEnqueueEnabled)
     {
@@ -166,7 +167,10 @@ template<class TYPE> void
 SafeQueue<TYPE>::EnqueueArray(const Util::Array<TYPE>& a)
 {
     this->criticalSection.Enter();
-    this->queueArray.AppendArray(a);
+    for (auto &i : a)
+    {
+        this->queue.Enqueue(i);
+    }    
     this->criticalSection.Leave();
     if (this->signalOnEnqueueEnabled)
     {
@@ -181,8 +185,7 @@ template<class TYPE> TYPE
 SafeQueue<TYPE>::Dequeue()
 {
     this->criticalSection.Enter();
-    TYPE e = this->queueArray.Front();
-    this->queueArray.EraseIndex(0);
+    TYPE e = this->queue.Dequeue();    
     this->criticalSection.Leave();
     return e;
 }
@@ -194,8 +197,13 @@ template<class TYPE> void
 SafeQueue<TYPE>::DequeueAll(Util::Array<TYPE>& outArray)
 {
     this->criticalSection.Enter();
-    outArray = this->queueArray;
-    this->queueArray.Clear();
+    outArray.Clear();
+    outArray.Reserve(this->queue.Size());
+    for (IndexT i = 0; i < this->queue.Size(); i++)
+    {
+        outArray.Append(this->queue[i]);
+    }
+    this->queue.Clear();    
     this->criticalSection.Leave();
 }
 
@@ -206,7 +214,7 @@ template<class TYPE> TYPE
 SafeQueue<TYPE>::Peek() const
 {
     this->criticalSection.Enter();
-    TYPE e = this->queueArray.Front();
+    TYPE e = this->queue.Peek();
     this->criticalSection.Leave();
     return e;
 }
@@ -255,11 +263,11 @@ SafeQueue<TYPE>::EraseMatchingElements(const TYPE& e)
 {
     this->criticalSection.Enter();
     IndexT i;
-    for (i = this->queueArray.Size() - 1; i >= 0; i--)
+    for (i = this->queue.Size() - 1; i >= 0; i--)
     {
-        if (e == this->queueArray[i])
+        if (e == this->queue[i])
         {
-            this->queueArray.EraseIndex(i);
+            this->queue.EraseIndex(i);
         }
     }
     this->criticalSection.Leave();

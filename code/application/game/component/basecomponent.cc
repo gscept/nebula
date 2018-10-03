@@ -69,16 +69,6 @@ BaseComponent::OnEntityDeleted(Entity entity)
 /**
 */
 void
-BaseComponent::DeregisterAll()
-{
-	// Override in subclass
-	n_assert2(false, "Method has not been overridden!");
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
 BaseComponent::DeregisterAllDead()
 {
 	// Override in subclass
@@ -109,6 +99,16 @@ BaseComponent::DestroyAll()
 /**
 */
 uint32_t
+BaseComponent::GetNumInstances() const
+{
+	n_assert2(false, "Method has not been overridden!");
+	return 0;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint32_t
 BaseComponent::GetInstance(const Entity & entity) const
 {
 	// Override in subclass
@@ -125,6 +125,16 @@ BaseComponent::GetOwner(const uint32_t & instance) const
 	// Override in subclass
 	n_assert2(false, "Method has not been overridden!");
 	return Entity();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+BaseComponent::SetOwner(const uint32_t & i, const Game::Entity & entity)
+{
+	// Override in subclass
+	n_assert2(false, "Method has not been overridden!");
 }
 
 //------------------------------------------------------------------------------
@@ -193,6 +203,45 @@ const Util::FixedArray<Attr::AttrId>&
 BaseComponent::GetAttributeIds() const
 {
 	return this->attributeIds;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+BaseComponent::AllocInstances(uint num)
+{
+	n_assert2(false, "Method has not been overridden!");
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Util::Array<Util::Array<Entity>*>
+BaseComponent::GetEntityAttributes()
+{
+	n_assert2(false, "Method has not been overridden!");
+	return Util::Array<Util::Array<Entity>*>();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Util::Blob
+BaseComponent::GetBlob() const
+{
+	n_assert2(false, "Method has not been overridden!");
+	return Util::Blob();
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+BaseComponent::SetBlob(const Util::Blob & blob, uint offset, uint numInstances)
+{
+	n_assert2(false, "Method has not been overridden!");
 }
 
 //------------------------------------------------------------------------------

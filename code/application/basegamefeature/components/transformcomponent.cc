@@ -85,8 +85,8 @@ TransformComponent::SetParents(const uint32_t & start, const uint32_t & end, con
 	SizeT i = 0;
 	for (SizeT instance = start; instance < end; instance++)
 	{
-		this->Parent(i) = this->GetInstance(entities[parentIndices[i]]);
 		// TODO: Implement this entire function. Needs to recalculate relationships and transforms.
+		// this->Parent(i) = this->GetInstance(entities[parentIndices[i]]);
 		i++;
 	}
 }
@@ -118,10 +118,23 @@ TransformComponent::DeregisterEntity(const Entity& entity)
 //------------------------------------------------------------------------------
 /**
 */
-void
-TransformComponent::DeregisterAll()
+uint32_t
+TransformComponent::GetNumInstances() const
 {
-	this->data.DeregisterAll();
+	return this->data.Size();
+}
+
+//------------------------------------------------------------------------------
+/**
+	@todo	we should reserve per array here.
+*/
+void
+TransformComponent::AllocInstances(uint num)
+{
+	for (size_t i = 0; i < num; i++)
+	{
+		this->data.data.Alloc();
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -176,6 +189,15 @@ Entity
 TransformComponent::GetOwner(const uint32_t& instance) const
 {
 	return this->data.GetOwner(instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TransformComponent::SetOwner(const uint32_t & i, const Game::Entity & entity)
+{
+	this->data.SetOwner(i, entity);
 }
 
 //------------------------------------------------------------------------------
@@ -253,6 +275,24 @@ TransformComponent::GetAttributeValue(uint32_t instance, Attr::AttrId attributeI
 
 	n_assert2(false, "Component doesn't contain this attribute!\n");
 	return Util::Variant();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Util::Blob
+TransformComponent::GetBlob() const
+{
+	return this->data.GetBlob();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TransformComponent::SetBlob(const Util::Blob & blob, uint offset, uint numInstances)
+{
+	this->data.SetBlob(blob, offset, numInstances);
 }
 
 

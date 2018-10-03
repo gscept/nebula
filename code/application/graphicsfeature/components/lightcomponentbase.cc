@@ -1,3 +1,4 @@
+//NIDL #version:1#
 //------------------------------------------------------------------------------
 //  lightcomponentbase.cc
 //  (C) Individual contributors, see AUTHORS file
@@ -74,17 +75,6 @@ PointLightComponentBase::DeregisterEntity(const Game::Entity& entity)
     @todo	if needed: deregister deletion callbacks
 */
 void
-PointLightComponentBase::DeregisterAll()
-{
-    this->data.DeregisterAll();
-}
-
-
-//------------------------------------------------------------------------------
-/**
-    @todo	if needed: deregister deletion callbacks
-*/
-void
 PointLightComponentBase::DeregisterAllDead()
 {
     this->data.DeregisterAllInactive();
@@ -142,6 +132,15 @@ PointLightComponentBase::GetOwner(const uint32_t& instance) const
     return this->data.GetOwner(instance);
 }
 
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+PointLightComponentBase::SetOwner(const uint32_t & i, const Game::Entity & entity)
+{
+    this->data.SetOwner(i, entity);
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -210,6 +209,21 @@ PointLightComponentBase::SetAttributeValue(uint32_t instance, Attr::AttrId attri
     else if (attributeId == Attr::CastShadows) this->data.data.Get<3>(instance) = value.GetBool();
 }
 
+
+//------------------------------------------------------------------------------
+/**
+*/
+Util::Blob
+PointLightComponentBase::GetBlob() const
+{
+    return this->data.GetBlob();
+}
+
+void
+PointLightComponentBase::SetBlob(const Util::Blob & blob, uint offset, uint numInstances)
+{
+    this->data.SetBlob(blob, offset, numInstances);
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -344,17 +358,6 @@ SpotLightComponentBase::DeregisterEntity(const Game::Entity& entity)
     @todo	if needed: deregister deletion callbacks
 */
 void
-SpotLightComponentBase::DeregisterAll()
-{
-    this->data.DeregisterAll();
-}
-
-
-//------------------------------------------------------------------------------
-/**
-    @todo	if needed: deregister deletion callbacks
-*/
-void
 SpotLightComponentBase::DeregisterAllDead()
 {
     this->data.DeregisterAllInactive();
@@ -412,6 +415,15 @@ SpotLightComponentBase::GetOwner(const uint32_t& instance) const
     return this->data.GetOwner(instance);
 }
 
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+SpotLightComponentBase::SetOwner(const uint32_t & i, const Game::Entity & entity)
+{
+    this->data.SetOwner(i, entity);
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -488,6 +500,21 @@ SpotLightComponentBase::SetAttributeValue(uint32_t instance, Attr::AttrId attrib
     else if (attributeId == Attr::CastShadows) this->data.data.Get<5>(instance) = value.GetBool();
 }
 
+
+//------------------------------------------------------------------------------
+/**
+*/
+Util::Blob
+SpotLightComponentBase::GetBlob() const
+{
+    return this->data.GetBlob();
+}
+
+void
+SpotLightComponentBase::SetBlob(const Util::Blob & blob, uint offset, uint numInstances)
+{
+    this->data.SetBlob(blob, offset, numInstances);
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -660,17 +687,6 @@ DirectionalLightComponentBase::DeregisterEntity(const Game::Entity& entity)
     @todo	if needed: deregister deletion callbacks
 */
 void
-DirectionalLightComponentBase::DeregisterAll()
-{
-    this->data.DeregisterAll();
-}
-
-
-//------------------------------------------------------------------------------
-/**
-    @todo	if needed: deregister deletion callbacks
-*/
-void
 DirectionalLightComponentBase::DeregisterAllDead()
 {
     this->data.DeregisterAllInactive();
@@ -728,6 +744,15 @@ DirectionalLightComponentBase::GetOwner(const uint32_t& instance) const
     return this->data.GetOwner(instance);
 }
 
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+DirectionalLightComponentBase::SetOwner(const uint32_t & i, const Game::Entity & entity)
+{
+    this->data.SetOwner(i, entity);
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -798,6 +823,21 @@ DirectionalLightComponentBase::SetAttributeValue(uint32_t instance, Attr::AttrId
     else if (attributeId == Attr::CastShadows) this->data.data.Get<1>(instance).castShadows = value.GetBool();
 }
 
+
+//------------------------------------------------------------------------------
+/**
+*/
+Util::Blob
+DirectionalLightComponentBase::GetBlob() const
+{
+    return this->data.GetBlob();
+}
+
+void
+DirectionalLightComponentBase::SetBlob(const Util::Blob & blob, uint offset, uint numInstances)
+{
+    this->data.SetBlob(blob, offset, numInstances);
+}
 
 //------------------------------------------------------------------------------
 /**

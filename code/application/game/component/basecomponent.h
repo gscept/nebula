@@ -57,9 +57,6 @@ public:
 	/// Immediately removes the data instance
 	virtual void OnEntityDeleted(Entity entity);
 
-	/// Deregister all entities from both inactive and active. Garbage collection will take care of freeing up data.
-	virtual void DeregisterAll();
-	
 	/// Deregister all non-alive entities from both inactive and active. This can be extremely slow!
 	virtual void DeregisterAllDead();
 
@@ -69,12 +66,17 @@ public:
 	/// Destroys all instances of this component, and deregisters every entity.
 	virtual void DestroyAll();
 
+	/// Return amount of registered entities
+	virtual uint32_t GetNumInstances() const;
 
 	/// returns an index to the instance data within the data buffer.
 	virtual uint32_t GetInstance(const Entity& entity) const;
 
 	/// returns a instances owner entity id
 	virtual Entity GetOwner(const uint32_t& instance) const;
+
+	/// Set the owner of a given instance. This does not care if the entity is registered or not!
+	virtual void SetOwner(const uint32_t& i, const Game::Entity& entity);
 
 	/// perform garbage collection. Returns number of erased instances.
 	virtual SizeT Optimize();
@@ -96,12 +98,23 @@ public:
 
 	/// Returns an array with all attribute ids for this component
 	const Util::FixedArray<Attr::AttrId>& GetAttributeIds() const;
+		
 	
 	// Methods for custom implementations
+	// ----------------------------------
 
+	/// Allocate multiple instances quickly
+	virtual void AllocInstances(uint num);
+	
 	/// Returns all attributes that are of Entity type.
 	/// Just returns a pointer to each of the arrays containing the entity-ids
-	//virtual Util::Array<Util::Array<Entity>*> GetEntityAttributes();
+	virtual Util::Array<Util::Array<Game::Entity>*> GetEntityAttributes();
+
+	/// Get component data as a blob
+	virtual Util::Blob GetBlob() const;
+
+	/// Set component data from a blob
+	virtual void SetBlob(const Util::Blob& blob, uint offset, uint numInstances);
 
 	/// Called when relationships needs to be reconstructed
 	/// parentIndices point into the entities array

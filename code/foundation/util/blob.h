@@ -64,6 +64,8 @@ public:
     void Trim(SizeT size);
     /// set blob contents
     void Set(const void* ptr, SizeT size);
+	/// set chunk contents
+	void SetChunk(const void* from, SizeT size, SizeT internalOffset);
     /// get blob ptr
     void* GetPtr() const;
     /// get blob size
@@ -364,6 +366,18 @@ inline void
 Blob::Set(const void* fromPtr, SizeT fromSize)
 {
     this->Copy(fromPtr, fromSize);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+Blob::SetChunk(const void* from, SizeT size, SizeT internalOffset)
+{
+	n_assert((0 != from) && (size > 0));
+	n_assert((nullptr != this->ptr) || (this->allocSize < internalOffset + size))
+	
+	Memory::Copy(from, (void*)((byte*)this->ptr + internalOffset), size);
 }
 
 //------------------------------------------------------------------------------

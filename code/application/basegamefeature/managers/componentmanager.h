@@ -38,7 +38,7 @@ public:
 
 	/// Retrieve a component from the registry
 	template<class T>
-	const Ptr<T>& GetComponent();
+	const Ptr<T>& GetComponent() const;
 
 	/// Returns the number of components registered.
 	SizeT GetNumComponents() const;
@@ -75,5 +75,18 @@ private:
 	Util::Array<Util::Delegate<>> delegates_OnEndFrame;
 	Util::Array<Util::Delegate<>> delegates_OnRenderDebug;
 };
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class T>
+inline const Ptr<T>& ComponentManager::GetComponent() const
+{
+	const Core::Rtti rtti = T::RTTI;
+	n_assert2(this->registry.Contains(rtti.GetFourCC()), "Component not registered to componentmanager!");
+	return this->registry[rtti.GetFourCC()].cast<T>();
+}
+
 
 } // namespace Game

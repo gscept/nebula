@@ -110,7 +110,7 @@ operator new(size_t size)
 }
 
 __forceinline void*
-operator new(size_t size, const std::nothrow_t& noThrow)
+operator new(size_t size, const std::nothrow_t& noThrow) noexcept
 {
     return Memory::Alloc(Memory::ObjectHeap, size);
 }
@@ -122,7 +122,7 @@ operator new[](size_t size)
 }
 
 __forceinline void*
-operator new[](size_t size, const std::nothrow_t& noThrow)
+operator new[](size_t size, const std::nothrow_t& noThrow) noexcept
 {
     return Memory::Alloc(Memory::ObjectArrayHeap, size);
 }

@@ -90,11 +90,12 @@ n_max(int a, int b)
 
 //------------------------------------------------------------------------------
 /**
+    branchless max for uint32
 */
 __forceinline unsigned int
 n_max(unsigned int a, unsigned int b)
 {
-	return (a > b) ? a : b;
+    return a - ((a - b) & (a - b) >> 31);
 }
 
 //------------------------------------------------------------------------------
@@ -126,11 +127,12 @@ n_min(int a, int b)
 
 //------------------------------------------------------------------------------
 /**
+    branchless min for uints
 */
 __forceinline unsigned int
 n_min(unsigned int a, unsigned int b)
 {
-	return (a < b) ? a : b;
+    return b + ((a - b) & (a - b) >> 31);
 }
 
 //------------------------------------------------------------------------------
