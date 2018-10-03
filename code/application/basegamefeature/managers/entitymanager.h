@@ -31,11 +31,17 @@ public:
 	/// Generate a new entity.
 	Entity NewEntity();
 	
+	/// Create n amount of entities at the same time.
+	Util::Array<Entity> CreateEntities(uint n);
+
 	/// Delete an entity.
 	void DeleteEntity(const Entity& e);
 	
 	/// Check if an entity ID is still valid.
 	bool IsAlive(const Entity& e) const;
+
+	/// Returns number of active entities
+	uint GetNumEntities() const;
 
 	/// Register a deletion callback to an entity
 	void RegisterDeletionCallback(const Entity& e, const Ptr<BaseComponent>& component);

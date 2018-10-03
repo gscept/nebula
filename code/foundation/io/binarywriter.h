@@ -88,6 +88,8 @@ public:
     void WriteFloatArray(const Util::Array<float>& arr);
     /// write a int array to the stream
     void WriteIntArray(const Util::Array<int>& arr);
+	/// write a unsigned int array to the stream
+	void WriteUIntArray(const Util::Array<uint>& arr);
     /// write a bool array to the stream
     void WriteBoolArray(const Util::Array<bool>& arr);
     /// write a guid

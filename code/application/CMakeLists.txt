@@ -74,6 +74,8 @@ fips_begin_module(application)
 			loaderserver.cc
 			userprofile.h
 			userprofile.cc
+			scenecompiler.h
+			scenecompiler.cc
 		)
 	fips_dir(graphicsfeature/components)
 		fips_generate(FROM lightcomponentbase.nidl TYPE NIDL)

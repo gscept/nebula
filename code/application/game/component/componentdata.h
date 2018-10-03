@@ -9,7 +9,7 @@
 	(C) 2018 Individual contributors, see AUTHORS file
 */
 
-#include "util/dictionary.h"
+#include "util/hashtable.h"
 #include "util/stack.h"
 #include "ids/id.h"
 #include "util/random.h"
@@ -19,6 +19,50 @@
 //-----------------------------------------------------------------------------
 namespace Game
 {
+
+template <class...Ts, std::size_t...Is>
+void FillBlobSequenced(const Util::ArrayAllocator<Game::Entity, Ts...>& data, Util::Blob& blob, SizeT& offset, std::index_sequence<Is...>)
+{
+	SizeT numBytes;
+	
+	using expander = int[];
+	(void)expander
+	{
+		0, (
+			numBytes = data.GetArray<Is>().ByteSize(),
+			blob.SetChunk(&data.GetArray<Is>()[0], numBytes, offset),
+			offset += numBytes
+		, 0)...
+	};
+}
+
+template <class...Ts, std::size_t...Is>
+void GetDataSize(const Util::ArrayAllocator<Game::Entity, Ts...>& data, SizeT& size, std::index_sequence<Is...>)
+{
+	using expander = int[];
+	(void)expander
+	{
+		0,
+		(size += data.GetArray<Is>().ByteSize(), 0)...
+	};
+}
+
+template <class...Ts, std::size_t...Is>
+void SetBlobSequenced(Util::ArrayAllocator<Game::Entity, Ts...>& data, uint offset, uint numInstances, const Util::Blob& blob, std::index_sequence<Is...>)
+{
+	SizeT blobOffset = 0;
+	SizeT bytes = 0;
+	using expander = int[];
+	(void)expander
+	{
+		0, (
+			bytes = numInstances * data.GetArray<Is>().TypeSize(),
+			Memory::Copy((void*)((byte*)blob.GetPtr() + blobOffset), (void*)&data.GetArray<Is>()[offset], bytes),
+			blobOffset += bytes
+		, 0)...
+	};
+}
+
 
 template <class ... TYPES>
 class ComponentData
@@ -42,7 +86,7 @@ public:
 
 	/// deregister an Id immediately. This will swap the last entity instance with this entitys' assuring a packed array.
 	void DeregisterEntityImmediate(const Entity& e, const uint32_t& index);
-
+	
 	/// perform garbage collection. Returns number of erased instances.
 	SizeT Optimize();
 
@@ -53,7 +97,7 @@ public:
 	void DeregisterAllInactive();
 
 	/// Deregister all entities
-	void DeregisterAll();
+	//void DeregisterAll();
 
 	/// Free up all non-reserved by entity data.
 	void Clean();
@@ -61,31 +105,41 @@ public:
 	/// Return the owner of a given instance
 	Entity GetOwner(const uint32_t& i) const;
 
+	/// Set the owner of a given instance. This does not care if the entity is registered or not!
+	void SetOwner(const uint32_t& i, const Game::Entity& entity);
+
 	/// retrieve the instance id of an external id for faster lookup. Will be made invalid by Optimize()
 	uint32_t GetInstance(const Entity& e) const;
 
 	/// Shortcut to set all instances values to provided values.
 	void SetInstanceData(const uint32_t& index, TYPES...);
 
+	/// Return data as a blob.
+	Util::Blob GetBlob() const;
+
+	/// Set data from blob
+	void SetBlob(const Util::Blob& blob, uint offset, uint numInstances);
+
 	/// Contains all data for all instances of this component.
 	/// @note	The 0th type is always the owner Entity!
 	Util::ArrayAllocator<Entity, TYPES...> data;
-
+	
 private:
 	/// contains free id's that we reuse as soon as possible.
 	Util::Stack<uint32_t> freeIds;
 
 	/// Contains the link between InstanceData and Entity Id
-	/// @todo	Replace with hashtable for faster lookup
-	Util::Dictionary<Ids::Id32, uint32_t> idMap;
+	Util::HashTable<Ids::Id32, uint32_t> idMap;
 };
 
 
 //------------------------------------------------------------------------------
 /**
+	@todo	idMap hashtable needs to be configured depending on the amount of entities we expect to be registered.
 */
 template <class ... TYPES>
-ComponentData<TYPES ...>::ComponentData()
+ComponentData<TYPES ...>::ComponentData() :
+	idMap(1024)
 {
 	// empty
 }
@@ -169,7 +223,7 @@ ComponentData<TYPES ...>::DeregisterEntityImmediate(const Entity& e, const uint3
 	uint32_t mapIndex = this->idMap.FindIndex(lastId);
 	if (mapIndex != InvalidIndex)
 	{
-		this->idMap.ValueAtIndex(mapIndex) = index;
+		this->idMap.ValueAtIndex(lastId, mapIndex) = index;
 	}
 	this->idMap.Erase(id);
 }
@@ -197,7 +251,7 @@ ComponentData<TYPES ...>::Optimize()
 		mapIndex = this->idMap.FindIndex(lastId);
 		if (mapIndex != InvalidIndex)
 		{
-			this->idMap.ValueAtIndex(mapIndex) = index;
+			this->idMap.ValueAtIndex(lastId, mapIndex) = index;
 		}
 		++numErased;
 	}
@@ -237,30 +291,16 @@ ComponentData<TYPES ...>::DestroyAll()
 /**
 */
 template <class ... TYPES> void
-ComponentData<TYPES ...>::DeregisterAll()
-{
-	for (SizeT i = 0; i < this->idMap.Size(); i++)
-	{
-		this->freeIds.Push(this->idMap.ValueAtIndex(i));
-		this->idMap.EraseAtIndex(i);
-	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-template <class ... TYPES> void
 ComponentData<TYPES ...>::DeregisterAllInactive()
 {
 	Ptr<Game::EntityManager> manager = Game::EntityManager::Instance();
-	for (SizeT i = 0; i < this->idMap.Size(); i++)
+	for (SizeT i = 0; i < this->data.Size(); i++)
 	{
-		Ids::Id32 id = this->idMap.KeyAtIndex(i);
-		Entity e(id);
+		Entity e = this->data.Get<0>(i);
 		if (!manager->IsAlive(e))
 		{
-			this->freeIds.Push(this->idMap.ValueAtIndex(i));
-			this->idMap.EraseAtIndex(i);
+			this->freeIds.Push(this->idMap.ValueAtIndex(e.id, i));
+			this->idMap.Erase(e.id);
 		}
 	}
 }
@@ -297,13 +337,31 @@ ComponentData<TYPES ...>::GetOwner(const uint32_t& i) const
 //------------------------------------------------------------------------------
 /**
 */
+template<class ... TYPES>
+inline void ComponentData<TYPES ...>::SetOwner(const uint32_t & i, const Game::Entity& entity)
+{
+	this->data.Get<0>(i) = entity;
+
+	auto index = this->idMap.FindIndex(entity.id);
+	if (index != InvalidIndex)
+	{
+		this->idMap.ValueAtIndex(entity.id, index) = i;
+		return;
+	}
+
+	this->idMap.Add(entity.id, i);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 template <class ... TYPES> uint32_t
 ComponentData<TYPES ...>::GetInstance(const Entity& e) const
 {
 	auto i = this->idMap.FindIndex(e.id);
 	if (i != InvalidIndex)
 	{
-		return this->idMap.ValueAtIndex(i);
+		return this->idMap.ValueAtIndex(e.id, i);
 	}
 
 	// Entity is not registered.
@@ -317,6 +375,39 @@ template<class ... TYPES> void
 ComponentData<TYPES...>::SetInstanceData(const uint32_t & index, TYPES ... values)
 {
 	this->data.Set(index, this->data.Get<0>(index), values...);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <class ... TYPES>
+inline Util::Blob
+ComponentData<TYPES...>::GetBlob() const
+{
+	SizeT numBytes = 0;
+
+	GetDataSize(this->data, numBytes, std::make_index_sequence<sizeof...(TYPES)+1>());
+
+	Util::Blob blob;
+
+	SizeT offset = 0;
+
+	blob.Reserve(numBytes);
+
+	FillBlobSequenced(this->data, blob, offset, std::make_index_sequence<sizeof...(TYPES)+1>());
+
+	return blob;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <class ... TYPES>
+inline void
+ComponentData<TYPES...>::SetBlob(const Util::Blob& blob, uint offset, uint numInstances)
+{
+	SetBlobSequenced(this->data, offset, numInstances, blob, std::make_index_sequence<sizeof...(TYPES) + 1>());
+
 }
 
 }

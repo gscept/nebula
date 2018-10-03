@@ -28,6 +28,7 @@
     elements).
 
     (C) 2006 RadonLabs GmbH
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 
@@ -68,7 +69,7 @@ public:
     void Append(const TYPE& elm);
     /// append the contents of an array to this array
     void AppendArray(const Array<TYPE>& rhs);
-    /// increase capacity to fit N more elements into the array
+    /// increase capacity to fit N more elements into the array. A reserve of 0 will trigger a normal grow
     void Reserve(SizeT num);
     /// get number of elements in array
     SizeT Size() const;
@@ -123,10 +124,17 @@ public:
     /// do a binary search, requires a sorted array
     IndexT BinarySearchIndex(const TYPE& elm) const;
 
+	/// Return the byte size of the array.
+	/// Note that this is not the entire size of this object, only the size (not capacity) of the elements buffer in bytes
+	SizeT ByteSize() const;
+
+	/// Returns sizeof(TYPE)
+	constexpr SizeT TypeSize() const;
+
 	/// for range-based iteration
 	Iterator begin() const;
 	Iterator end() const;
-private:
+protected:
     /// destroy an element (call destructor without freeing memory)
     void Destroy(TYPE* elm);
     /// copy content
@@ -525,13 +533,17 @@ Array<TYPE>::AppendArray(const Array<TYPE>& rhs)
 template<class TYPE> void
 Array<TYPE>::Reserve(SizeT num)
 {
-    #if NEBULA3_BOUNDSCHECKS
-    n_assert(num > 0);
-    #endif
-    SizeT neededCapacity = this->size + num;
-    if (neededCapacity > this->capacity)
+    if(num > 0)
+    {   
+        SizeT neededCapacity = this->size + num;
+        if (neededCapacity > this->capacity)
+        {
+            this->GrowTo(neededCapacity);
+        }
+    }
+    else
     {
-        this->GrowTo(neededCapacity);
+        this->Grow();
     }
 }
 
@@ -946,6 +958,21 @@ Array<TYPE>::BinarySearchIndex(const TYPE& elm) const
         }
     }
     return InvalidIndex;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE> SizeT
+Array<TYPE>::ByteSize() const
+{
+	return this->size * sizeof(TYPE);
+}
+
+template<class TYPE>
+inline constexpr SizeT Array<TYPE>::TypeSize() const
+{
+	return sizeof(TYPE);
 }
 
 //------------------------------------------------------------------------------
