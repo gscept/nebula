@@ -7,6 +7,7 @@
     Posix implementation of CalendarTime.
     
     (C) 2007 Radon Labs GmbH
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */    
 #include "timing/base/calendartimebase.h"
 

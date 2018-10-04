@@ -3,7 +3,7 @@
 /**
 	Performs an algorithm used in a subpass, for rendering
 	
-	(C) 2016 Individual contributors, see AUTHORS file
+	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "frameop.h"

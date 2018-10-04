@@ -1,6 +1,7 @@
 //------------------------------------------------------------------------------
 //  nvx2streamreader.cc
 //  (C) 2007 Radon Labs GmbH
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "coregraphics/nvx3streamreader.h"

@@ -12,7 +12,7 @@
     Animeventhandler are specified by the category name they handle!
 
     (C) 2009 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "messaging/handler.h"
 #include "core/singleton.h"

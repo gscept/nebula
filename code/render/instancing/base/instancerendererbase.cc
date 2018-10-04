@@ -1,6 +1,7 @@
 //------------------------------------------------------------------------------
 //  instancerendererbase.cc
 //  (C) 2012 Gustav Sterbrant
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "instancerendererbase.h"

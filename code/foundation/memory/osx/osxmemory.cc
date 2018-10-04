@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 //  osxmemory.cc
 //  (C) 2010 RadonLabs GmbH
-//  (C) 2013 Individual contributors, see AUTHORS file
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "core/types.h"

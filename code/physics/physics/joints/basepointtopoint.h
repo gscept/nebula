@@ -5,7 +5,7 @@
 
     A joint (also known as constraint) connects two Actors    
 
-    (C) 2012-2016 Individual contributors, see AUTHORS file
+    (C) 2012-2018 Individual contributors, see AUTHORS file
 */
 #include "core/refcounted.h"
 #include "core/ptr.h"

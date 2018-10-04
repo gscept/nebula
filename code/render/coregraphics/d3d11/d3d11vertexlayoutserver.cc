@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //  d3d11vertexlayoutserver.cc
-//  (C) 2011 gscept
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "coregraphics/d3d11/d3d11vertexlayoutserver.h"

@@ -1,6 +1,7 @@
 //------------------------------------------------------------------------------
-//  debug.cc
+// debug.cc
 //  (C) 2002 RadonLabs GmbH
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "core/types.h"

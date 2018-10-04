@@ -19,7 +19,7 @@
 	as well as the resource binds to that state. They are bound to a inherently bound to a state, and such
 	modifying a constant requires both the state and constant id for that state. 
 
-	(C) 2017 Individual contributors, see AUTHORS file
+	(C)2017-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "ids/id.h"

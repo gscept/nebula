@@ -5,7 +5,7 @@
     
     Implements a free camera
     
-    (C) 2012-2016 Individual contributors, see AUTHORS file
+    (C) 2012-2018 Individual contributors, see AUTHORS file
 */
 #include "math/matrix44.h"
 #include "math/float2.h"

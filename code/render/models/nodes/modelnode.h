@@ -11,7 +11,7 @@
 	for each node. The model itself keeps track of the root node, and a dictionary
 	of all nodes and their corresponding names.
 	
-	(C) 2017 Individual contributors, see AUTHORS file
+	(C)2017-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"

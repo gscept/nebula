@@ -4,7 +4,7 @@
 	A barrier contains information about a GPU execution barrier, which is used to
 	sequence two dependent commands.
 	
-	(C) 2016 Individual contributors, see AUTHORS file
+	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"

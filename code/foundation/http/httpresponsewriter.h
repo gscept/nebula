@@ -8,7 +8,7 @@
     Stream writer which writes a correct HTTP response to a stream.
     
     (C) 2007 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "io/streamwriter.h"
 #include "http/httpstatus.h"

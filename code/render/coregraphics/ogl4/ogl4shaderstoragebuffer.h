@@ -7,7 +7,7 @@
 
 	Hmm, if one defines the OGL4_SHADER_BUFFER_ALWAYS_MAPPED, one must also make sure to lock the buffer after rendering is done.
 	
-	(C) 2012-2016 Individual contributors, see AUTHORS file
+	(C) 2012-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 

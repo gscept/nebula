@@ -5,7 +5,7 @@
 
 	Win32 implementation of stacktrace
 
-	(C) 2015-2016 Individual contributors, see AUTHORS file
+	(C) 2015-2018 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 #include "util/string.h"

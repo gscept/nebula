@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //  win32stacktrace.cc
-//  (C) 2015-2016 Individual contributors, see AUTHORS file
+//  (C) 2015-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "debug/win32/win32stacktrace.h"

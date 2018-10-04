@@ -1,6 +1,7 @@
 //------------------------------------------------------------------------------
 //  ogl4shaderinstance.cc
 //  (C) 2013 Gustav Sterbrant
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "coregraphics/ogl4/ogl4shaderinstance.h"

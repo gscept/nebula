@@ -5,7 +5,7 @@
  
     A thread id uniquely identifies a thread within the process.
  
-    (C) 2013 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 

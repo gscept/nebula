@@ -8,6 +8,7 @@
     The float4 class implemented on top of the D3DX math functions.
     
     (C) 2007 Radon Labs GmbH
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */    
 #include "core/types.h"
 #include "math/scalar.h"

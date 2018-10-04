@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //  particlesystemmaterialnode.cc
-//  (C) 2011-2016 Individual contributors, see AUTHORS file
+//  (C) 2011-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "particlesystemnode.h"

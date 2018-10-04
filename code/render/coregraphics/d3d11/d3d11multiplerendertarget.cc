@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //  d3d11multiplerendertarget.cc
-//  (C) 2013 gscept
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "d3d11multiplerendertarget.h"

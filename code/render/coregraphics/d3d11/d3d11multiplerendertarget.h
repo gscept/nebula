@@ -5,7 +5,7 @@
     
     Direct3D11 implementation of multiple render target.
     
-    (C) 2013 gscept
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "coregraphics/base/multiplerendertargetbase.h"

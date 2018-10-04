@@ -3,7 +3,7 @@
 /**
 	The transform node contains just a hierarchical transform
 	
-	(C) 2017 Individual contributors, see AUTHORS file
+	(C)2017-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "modelnode.h"

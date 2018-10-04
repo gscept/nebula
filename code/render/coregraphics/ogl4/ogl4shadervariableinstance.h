@@ -6,7 +6,7 @@
 	Implements a binding of a shader variable which can 
     contain a local state without directly affecting the shader.
 	
-	(C) 2015-2016 Individual contributors, see AUTHORS file
+	(C) 2015-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "coregraphics/base/shadervariableinstancebase.h"

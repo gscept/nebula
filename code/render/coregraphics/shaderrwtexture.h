@@ -3,7 +3,7 @@
 /**
 	The shader read-write texture works like any read/write GPU resource, however it is meant to be used as a texture
 
-	(C) 2017 Individual contributors, see AUTHORS file
+	(C)2017-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "ids/id.h"

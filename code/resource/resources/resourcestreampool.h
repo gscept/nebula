@@ -28,7 +28,7 @@
 	be discarded by using that tag. If a resource is loaded with a tag, it will remain bound
 	to that tag, no matter what consecutive loads say. 
 	
-	(C) 2017 Individual contributors, see AUTHORS file
+	(C)2017-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "resourcepool.h"

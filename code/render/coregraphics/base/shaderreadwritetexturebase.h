@@ -9,7 +9,7 @@
 	the read-write texture must be unlocked prior to updating it, and locked prior to using it. This behavior guarantees
 	the image data is never stomped.
 	
-	(C) 2016 Individual contributors, see AUTHORS file
+	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
