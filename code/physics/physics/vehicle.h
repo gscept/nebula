@@ -5,7 +5,7 @@
 
     A physics Vehicle
 
-    (C) 2012 Johannes Hirche, LTU Skelleftea
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #if (__USE_BULLET__)
 #include "physics2/bullet/bulletVehicle.h"

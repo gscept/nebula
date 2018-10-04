@@ -5,7 +5,7 @@
     
 	A model node that handles materials for characters
     
-    (C) 2011-2013 Individual contributors, see AUTHORS file
+    (C) 2011-2018 Individual contributors, see AUTHORS file
 */
 #include "primitivenode.h"
 

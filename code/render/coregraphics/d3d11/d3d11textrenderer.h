@@ -9,7 +9,7 @@
     FIXME: Need to handle Lost Device (ID3DXFont)
     
     (C) 2012 Radon Labs GmbH
-    (C) 2013 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */    
 //------------------------------------------------------------------------------
 #include "coregraphics/base/textrendererbase.h"

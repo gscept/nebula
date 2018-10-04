@@ -8,7 +8,7 @@
     Provides simple atomic operations on shared variables.
     
     (C) 2008 Bruce Mitchener, Jr.
-    (C) 2013 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 #include <libkern/OSAtomic.h>

@@ -5,7 +5,7 @@
   
     Implements a RenderDevice on top of OpenGL4.
         
-	(C) 2013-2016 Individual contributors, see AUTHORS file
+	(C) 2013-2018 Individual contributors, see AUTHORS file
 */    
 #include "coregraphics/base/renderdevicebase.h"
 #include "coregraphics/pixelformat.h"

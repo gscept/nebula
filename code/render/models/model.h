@@ -4,7 +4,7 @@
 	A model resource consists of nodes, each of which inhibit some information
 	read from an .n3 file. 
 	
-	(C) 2017 Individual contributors, see AUTHORS file
+	(C)2017-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "ids/id.h"

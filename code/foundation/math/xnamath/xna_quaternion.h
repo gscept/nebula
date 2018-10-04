@@ -6,7 +6,7 @@
     A quaternion class on top of the Xbox360 math functions.
     
     (C) 2007 Radon Labs GmbH
-    (C) 2013-2014 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */    
 #include "core/types.h"
 #include "math/scalar.h"

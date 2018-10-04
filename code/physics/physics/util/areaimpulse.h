@@ -7,7 +7,7 @@
     to all objects within a given area volume. Subclasses implement specific
     volumes and behaviours. Most useful for explosions and similar stuff.
     
-	(C) 2012-2016 Individual contributors, see AUTHORS file
+	(C) 2012-2018 Individual contributors, see AUTHORS file
 */
 #include "core/refcounted.h"
 #include "physics/scene.h"

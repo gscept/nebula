@@ -6,6 +6,7 @@
     OGL4 implementation of Texture class
     
     (C) 2013 Gustav Sterbrant
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "coregraphics/base/texturebase.h"
 #include "afxapi.h"

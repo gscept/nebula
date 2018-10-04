@@ -7,6 +7,7 @@
 	so as to decrease draw calls when rendering huge amounts of identical objects
 
     (C) 2012 Gustav Sterbrant
+	(C) 2013-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 

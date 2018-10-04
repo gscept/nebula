@@ -5,7 +5,7 @@
     
     Implements an OpenGL4 depth-stencil target.
     
-    (C) 2013 gscept
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "coregraphics/base/depthstenciltargetbase.h"

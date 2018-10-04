@@ -3,7 +3,7 @@
 /**
 	conversion utils for converting between bullet and nebula math types
 
-	(C) 2012-2016 Individual contributors, see AUTHORS file
+	(C) 2012-2018 Individual contributors, see AUTHORS file
 */
 #include "math/float2.h"
 #include "math/line.h"

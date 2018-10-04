@@ -9,7 +9,7 @@
     the event handler, these events will be stored in a 
     
     (C) 2007 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "coregraphics/displayeventhandler.h"
 #include "threading/safequeue.h"

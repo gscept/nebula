@@ -4,7 +4,7 @@
 	A view describes a camera which can observe a Stage. The view processes 
 	the attached Stage through its FrameScript each frame.
 	
-	(C) 2017 Individual contributors, see AUTHORS file
+	(C)2017-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"

@@ -11,7 +11,7 @@
 	is increased, such that the next time the id is reused, it can be checked for
 	validity against any dangling instances of the previous generations. 
     
-    (C) 2017 Individual contributors, see AUTHORS file
+    (C) 2017-2018 Individual contributors, see AUTHORS file
 */
 
 #include "foundation/stdneb.h"

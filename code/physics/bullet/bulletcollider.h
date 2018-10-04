@@ -3,7 +3,7 @@
 /**
 	@class Bullet::BulletCollider
 
-	(C) 2012-2016 Individual contributors, see AUTHORS file
+	(C) 2012-2018 Individual contributors, see AUTHORS file
 */
 #include "util/array.h"
 #include "math/plane.h"

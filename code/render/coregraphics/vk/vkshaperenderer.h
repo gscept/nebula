@@ -3,7 +3,7 @@
 /**
 	Implements a Vulkan immediate shape and primitive renderer (debug meshes, random primitives, wireframes etc)
 	
-	(C) 2016 Individual contributors, see AUTHORS file
+	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "coregraphics/base/shaperendererbase.h"

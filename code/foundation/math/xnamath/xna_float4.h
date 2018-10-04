@@ -8,7 +8,7 @@
     (and the compiler knows how to handle this stuff).
 
     (C) 2007 Radon Labs GmbH
-    (C) 2013-2014 Individual contributors, see AUTHORS file	
+    (C) 2013-2018 Individual contributors, see AUTHORS file	
 */
 #include "core/types.h"
 #include "math/scalar.h"

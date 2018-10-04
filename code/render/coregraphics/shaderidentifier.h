@@ -14,7 +14,7 @@
     shader files before this class stops behaving (although this value can 
     be increased if need be)
 
-    (C) 2015 Individual contributors, see AUTHORS file
+    (C) 2015-2018 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 #include "util/stringatom.h"

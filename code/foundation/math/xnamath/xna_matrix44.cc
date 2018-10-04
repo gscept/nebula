@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 //  matrix44.cc
 //  (C) 2007 Radon Labs GmbH
-//  (C) 2013-2014 Individual contributors, see AUTHORS file
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "math/matrix44.h"

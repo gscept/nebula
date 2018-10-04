@@ -6,7 +6,7 @@
     A lookup table for pre-sampled envelope curves.
     
     (C) 2008 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "particles/envelopecurve.h"
 #include "particles/emitterattrs.h"

@@ -7,6 +7,7 @@
     particles are created and updated.
     
     (C) 2008 Radon Labs GmbH
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "particles/base/particlesysteminstancebase.h"
 

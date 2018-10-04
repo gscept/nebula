@@ -5,7 +5,7 @@
     
     Implements a layout server for handling vertex layouts with DX11
     
-    (C) 2012-2016 Individual contributors, see AUTHORS file
+    (C) 2012-2018 Individual contributors, see AUTHORS file
 */
 #include "core/singleton.h"
 #include "coregraphics/vertexcomponent.h"

@@ -3,7 +3,7 @@
 /**
 	Implements a vertex layout object used to construct a Vulkan pipeline.
 	
-	(C) 2016 Individual contributors, see AUTHORS file
+	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"

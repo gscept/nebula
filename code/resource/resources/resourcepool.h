@@ -26,7 +26,7 @@
 	is not, because the comma after uint32_t will end the first macro argument, and Util::Array<VkDescriptorSetLayoutBinding>>
 	becomes the second, and setBindings the third (when the macro only takes two arguments).
 
-	(C) 2017 Individual contributors, see AUTHORS file
+	(C)2017-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"

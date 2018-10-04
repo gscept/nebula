@@ -1,4 +1,12 @@
 #pragma once
+//------------------------------------------------------------------------------
+/**
+    @class Direct3D11::D3D11MemoryTextureLoader
+           
+    (C) 2007 Radon Labs GmbH
+    (C) 2013-2018 Individual contributors, see AUTHORS file
+*/
+//-----------------------------------------------------------------------------
 
 #include "resources/resourcestreampool.h"
 #include "coregraphics/pixelformat.h"

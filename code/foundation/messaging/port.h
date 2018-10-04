@@ -17,7 +17,7 @@
     handlers in a separate thread, please check Message::AsyncPort.
 
     (C) 2006 RadonLabs GmbH
-	(C) 2013-2016 Individual contributors, see AUTHORS file
+	(C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/refcounted.h"
 #include "core/ptr.h"

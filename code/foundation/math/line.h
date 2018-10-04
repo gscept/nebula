@@ -8,7 +8,7 @@
     A line in 3d space.
 
     (C) 2004 RadonLabs GmbH
-	(C) 2013-2016 Individual contributors, see AUTHORS file
+	(C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "math/point.h"
 #include "math/vector.h"

@@ -5,7 +5,7 @@
     
     OGL4 implementation of StreamTextureSaver.
     
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "coregraphics/base/streamtexturesaverbase.h"
 #include "coregraphics/texture.h"

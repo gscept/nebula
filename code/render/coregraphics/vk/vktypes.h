@@ -3,7 +3,7 @@
 /**
 	Utility functions to convert from Nebula enums to Vulkan values.
 	
-	(C) 2016 Individual contributors, see AUTHORS file
+	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/types.h"

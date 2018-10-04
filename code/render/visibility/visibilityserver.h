@@ -22,7 +22,7 @@
 	for entities visible for that view. This way, a Stage is simply a visibility filter. Therefore, all entities, 
 	if they are to be rendered, needs to be registered here. 
 	
-	(C) 2017 Individual contributors, see AUTHORS file
+	(C)2017-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"

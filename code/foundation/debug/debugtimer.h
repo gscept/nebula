@@ -6,7 +6,7 @@
     A debug timer for measuring time spent in code blocks.
     
     (C) 2008 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/refcounted.h"
 #include "timing/timer.h"
