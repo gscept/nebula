@@ -1,21 +1,21 @@
 #-------------------------------------------------------------------------------
 # benchmarkaddon
 #-------------------------------------------------------------------------------
-INCLUDE_DIRECTORIES(				${Nebula3_SOURCE_DIR}/code/application
-									${Nebula3_SOURCE_DIR}/code/addons									
-									${Nebula3_SOURCE_DIR}/code/application/basegamefeature
-									${Nebula3_SOURCE_DIR}/code/application/corefeature
-									${Nebula3_SOURCE_DIR}/code/application/graphicsfeature
-									${Nebula3_SOURCE_DIR}/code/application/physicsfeature
-									${Nebula3_SOURCE_DIR}/code/extlibs
-									${Nebula3_SOURCE_DIR}/code/extlibs/ode
-									${Nebula3_SOURCE_DIR}/code/foundation
-									${Nebula3_SOURCE_DIR}/code/render
-									${Nebula3_SOURCE_DIR}/code/sui
-									${Nebula3_SOURCE_DIR}/code/tools		
-									${Nebula3_SOURCE_DIR}/code/toolkit
-									${Nebula3_SOURCE_DIR}/code/benchmarks/
-									${Nebula3_SOURCE_DIR}/code
+INCLUDE_DIRECTORIES(				${Nebula_SOURCE_DIR}/code/application
+									${Nebula_SOURCE_DIR}/code/addons									
+									${Nebula_SOURCE_DIR}/code/application/basegamefeature
+									${Nebula_SOURCE_DIR}/code/application/corefeature
+									${Nebula_SOURCE_DIR}/code/application/graphicsfeature
+									${Nebula_SOURCE_DIR}/code/application/physicsfeature
+									${Nebula_SOURCE_DIR}/code/extlibs
+									${Nebula_SOURCE_DIR}/code/extlibs/ode
+									${Nebula_SOURCE_DIR}/code/foundation
+									${Nebula_SOURCE_DIR}/code/render
+									${Nebula_SOURCE_DIR}/code/sui
+									${Nebula_SOURCE_DIR}/code/tools		
+									${Nebula_SOURCE_DIR}/code/toolkit
+									${Nebula_SOURCE_DIR}/code/benchmarks/
+									${Nebula_SOURCE_DIR}/code
 					)
 
 FILE(GLOB SRC "*.cc")

@@ -14,13 +14,13 @@ static const scalar TEST_EPSILON = 0.000001;
 #define RUN_TEST_PARAM1(func, param, expected)\
 {\
 	scalar result = (scalar)func(param);\
-	this->Verify(nearly_equal(result, (expected), TEST_EPSILON));\
+	VERIFY(nearly_equal(result, (expected), TEST_EPSILON));\
 }
 
 #define RUN_TEST_PARAM2( func, param0, param1, expected )\
 {\
 	scalar result = (scalar)func((param0), (param1));\
-	this->Verify(nearly_equal(result, (expected), TEST_EPSILON));\
+	VERIFY(nearly_equal(result, (expected), TEST_EPSILON));\
 }
 
 using namespace Test;
@@ -52,8 +52,8 @@ void ScalarTest::Run()
 	for(index = 0; index < LOOPS; ++index)
 	{
 		test = n_rand();
-		this->Verify(test >= scalar(0.0));
-		this->Verify(test <= scalar(1.0));
+		VERIFY(test >= scalar(0.0));
+		VERIFY(test <= scalar(1.0));
 	}
 
 	// scalar	n_rand(scalar min, scalar max);
@@ -68,8 +68,8 @@ void ScalarTest::Run()
 			min = tmp;
 		}
 		test = n_rand(min, max);
-		this->Verify(test >= min);
-		this->Verify(test <= max);
+		VERIFY(test >= min);
+		VERIFY(test <= max);
 	}
 
 	// n_sin

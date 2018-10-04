@@ -7,6 +7,7 @@
     The test runner class which runs all test cases.
     
     (C) 2006 Radon Labs GmbH
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/refcounted.h"
 #include "core/ptr.h"

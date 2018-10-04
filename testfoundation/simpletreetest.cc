@@ -50,27 +50,27 @@ SimpleTreeTest::Run()
     tree.Root()[2][2].Append("Node331");
 
     // verify contents
-    this->Verify(!tree.Root().HasParent());
-    this->Verify(tree.Root().Size() == 3);
+    VERIFY(!tree.Root().HasParent());
+    VERIFY(tree.Root().Size() == 3);
     const SimpleTree<String>::Node& node1 = tree.Root()[0];
     const SimpleTree<String>::Node& node2 = tree.Root()[1];
     const SimpleTree<String>::Node& node3 = tree.Root()[2];
-    this->Verify(node1.HasParent());
-    this->Verify(&tree.Root() == &node1.Parent());
-    this->Verify(node1.Value() == "Node1");
-    this->Verify(node2.Value() == "Node2");
-    this->Verify(node3.Value() == "Node3");
-    this->Verify(node1.Size() == 2);
-    this->Verify(node2.Size() == 1);
-    this->Verify(node3.Size() == 3);
+    VERIFY(node1.HasParent());
+    VERIFY(&tree.Root() == &node1.Parent());
+    VERIFY(node1.Value() == "Node1");
+    VERIFY(node2.Value() == "Node2");
+    VERIFY(node3.Value() == "Node3");
+    VERIFY(node1.Size() == 2);
+    VERIFY(node2.Size() == 1);
+    VERIFY(node3.Size() == 3);
 
-    this->Verify(node1.Front().Value() == "Node11");
-    this->Verify(node1.Back().Value() == "Node12");
+    VERIFY(node1.Front().Value() == "Node11");
+    VERIFY(node1.Back().Value() == "Node12");
     
     // delete some stuff
     tree.Root()[1].Clear();
-    this->Verify(tree.Root()[1].IsEmpty());
-    this->Verify(tree.Root()[1].Size() == 0);
+    VERIFY(tree.Root()[1].IsEmpty());
+    VERIFY(tree.Root()[1].Size() == 0);
 }
 
 } // namespace Test

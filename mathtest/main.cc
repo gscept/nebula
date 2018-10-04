@@ -41,12 +41,12 @@ NebulaMain(const Util::CommandLineArgs& args)
 {
     STACK_CHECKPOINT("NebulaMain");
 
-    // create Nebula3 runtime
+    // create Nebula runtime
     Ptr<CoreServer> coreServer = CoreServer::Create();
-    coreServer->SetAppName(Util::StringAtom("Nebula3 Foundation Math-Tests"));
+    coreServer->SetAppName(Util::StringAtom("Nebula Foundation Math-Tests"));
     coreServer->Open();
 
-    n_printf("NEBULA3 FOUNDATION MATH-TESTS\n");
+    n_printf("NEBULA FOUNDATION MATH-TESTS\n");
     n_printf("========================\n");
 
 	// setup and run test runner

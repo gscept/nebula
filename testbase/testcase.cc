@@ -1,6 +1,7 @@
 //------------------------------------------------------------------------------
 //  testcase.cc
 //  (C) 2006 Radon Labs GmbH
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "testcase.h"
@@ -42,7 +43,7 @@ TestCase::Run()
 /*
 */
 void
-TestCase::Verify(bool b)
+TestCase::Verify(bool b, const char * test, const char * file, int line)
 {
     if (b)
     {
@@ -51,7 +52,9 @@ TestCase::Verify(bool b)
     }
     else
     {
-        n_printf("%s #%d: FAILED\n", this->GetClassName().AsCharPtr(), this->numVerified);		
+        n_printf("%s #%d: FAILED\n", this->GetClassName().AsCharPtr(), this->numVerified);
+        FailedTest f = { test, file, line };
+        this->failed.Append(f);
         this->numFailed++;
     }
     this->numVerified++;

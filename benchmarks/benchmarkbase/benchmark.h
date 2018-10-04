@@ -4,7 +4,7 @@
 /**
     @class Benchmarking::Benchmark
     
-    Base class for Nebula3 benchmarks.
+    Base class for Nebula benchmarks.
     
     (C) 2006 Radon Labs GmbH
 */

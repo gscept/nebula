@@ -70,7 +70,7 @@ ComponentSystemTest::Run()
 	tComp->CleanData();
 
 	// Went through with no bugs, hurray!!
-	this->Verify(true);
+	VERIFY(true);
 }
 
 } // namespace Test

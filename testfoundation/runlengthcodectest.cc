@@ -24,34 +24,34 @@ RunLengthCodecTest::Run()
     uchar decodeData[32];
 
     SizeT rleSize = RunLengthCodec::Encode(srcData, 13, rleData, sizeof(rleData));
-    this->Verify(10 == rleSize);
-    this->Verify(rleData[0] == 6);
-    this->Verify(rleData[1] == 'a');
-    this->Verify(rleData[2] == 1);
-    this->Verify(rleData[3] == 'b');
-    this->Verify(rleData[4] == 1);
-    this->Verify(rleData[5] == 'c');
-    this->Verify(rleData[6] == 2);
-    this->Verify(rleData[7] == 'd');
-    this->Verify(rleData[8] == 3);
-    this->Verify(rleData[9] == 'c');
-    this->Verify(RunLengthCodec::ComputeDecodedSize(rleData, rleSize) == 13);
+    VERIFY(10 == rleSize);
+    VERIFY(rleData[0] == 6);
+    VERIFY(rleData[1] == 'a');
+    VERIFY(rleData[2] == 1);
+    VERIFY(rleData[3] == 'b');
+    VERIFY(rleData[4] == 1);
+    VERIFY(rleData[5] == 'c');
+    VERIFY(rleData[6] == 2);
+    VERIFY(rleData[7] == 'd');
+    VERIFY(rleData[8] == 3);
+    VERIFY(rleData[9] == 'c');
+    VERIFY(RunLengthCodec::ComputeDecodedSize(rleData, rleSize) == 13);
 
     SizeT decodeSize = RunLengthCodec::Decode(rleData, rleSize, decodeData, sizeof(decodeData));
-    this->Verify(decodeSize == 13);
-    this->Verify(decodeData[0] == 'a');
-    this->Verify(decodeData[1] == 'a');
-    this->Verify(decodeData[2] == 'a');
-    this->Verify(decodeData[3] == 'a');
-    this->Verify(decodeData[4] == 'a');
-    this->Verify(decodeData[5] == 'a');
-    this->Verify(decodeData[6] == 'b');
-    this->Verify(decodeData[7] == 'c');
-    this->Verify(decodeData[8] == 'd');
-    this->Verify(decodeData[9] == 'd');
-    this->Verify(decodeData[10] == 'c');
-    this->Verify(decodeData[11] == 'c');
-    this->Verify(decodeData[12] == 'c');
+    VERIFY(decodeSize == 13);
+    VERIFY(decodeData[0] == 'a');
+    VERIFY(decodeData[1] == 'a');
+    VERIFY(decodeData[2] == 'a');
+    VERIFY(decodeData[3] == 'a');
+    VERIFY(decodeData[4] == 'a');
+    VERIFY(decodeData[5] == 'a');
+    VERIFY(decodeData[6] == 'b');
+    VERIFY(decodeData[7] == 'c');
+    VERIFY(decodeData[8] == 'd');
+    VERIFY(decodeData[9] == 'd');
+    VERIFY(decodeData[10] == 'c');
+    VERIFY(decodeData[11] == 'c');
+    VERIFY(decodeData[12] == 'c');
 
     // test some large data with many identical pieces
     const SizeT bufSize = 2001;
@@ -69,9 +69,9 @@ RunLengthCodecTest::Run()
     srcBuffer[2000] = 1;
 
     rleSize = RunLengthCodec::Encode(srcBuffer, bufSize, rleBuffer, rleBufferSize);
-    this->Verify(RunLengthCodec::ComputeDecodedSize(rleBuffer, rleSize) == 2001);
+    VERIFY(RunLengthCodec::ComputeDecodedSize(rleBuffer, rleSize) == 2001);
     decodeSize = RunLengthCodec::Decode(rleBuffer, rleSize, dstBuffer, bufSize);
-    this->Verify(decodeSize == bufSize);
+    VERIFY(decodeSize == bufSize);
     bool isIdentical = true;
     IndexT i;
     for (i = 0; i < bufSize; i++)
@@ -82,7 +82,7 @@ RunLengthCodecTest::Run()
             break;
         }
     }
-    this->Verify(isIdentical);
+    VERIFY(isIdentical);
 
     // test some semi-random data
     for (i = 0; i < bufSize; i++)
@@ -90,9 +90,9 @@ RunLengthCodecTest::Run()
         srcBuffer[i] = (uchar) (rand() % 16);
     }
     rleSize = RunLengthCodec::Encode(srcBuffer, bufSize, rleBuffer, rleBufferSize);
-    this->Verify(RunLengthCodec::ComputeDecodedSize(rleBuffer, rleSize) == 2001);
+    VERIFY(RunLengthCodec::ComputeDecodedSize(rleBuffer, rleSize) == 2001);
     decodeSize = RunLengthCodec::Decode(rleBuffer, rleSize, dstBuffer, bufSize);
-    this->Verify(decodeSize == bufSize);
+    VERIFY(decodeSize == bufSize);
     isIdentical = true;
     for (i = 0; i < bufSize; i++)
     {
@@ -102,7 +102,7 @@ RunLengthCodecTest::Run()
             break;
         }
     }
-    this->Verify(isIdentical);
+    VERIFY(isIdentical);
 
     Memory::Free(Memory::ScratchHeap, srcBuffer);
     Memory::Free(Memory::ScratchHeap, rleBuffer);

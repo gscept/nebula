@@ -4,7 +4,7 @@
 /**
     @class Test::ListTest
     
-    Test functionality of Nebula3's List class.
+    Test functionality of Nebula's List class.
     
     (C) 2006 Radon Labs GmbH
 */

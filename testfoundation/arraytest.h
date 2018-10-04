@@ -4,7 +4,7 @@
 /**
     @class Test::ArrayTest
     
-    Tests Nebula3's dynamic array class.
+    Tests Nebula's dynamic array class.
     
     (C) 2006 Radon Labs GmbH
 */

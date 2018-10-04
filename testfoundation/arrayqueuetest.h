@@ -3,7 +3,7 @@
 /**
     @class Test::ArrayQueueTest
 
-    Test Nebula3's ArrayQueue functionality.
+    Test Nebula's ArrayQueue functionality.
 
     (C) 2006 Radon Labs GmbH
     (C) 2013-2018 Individual contributors, see AUTHORS file

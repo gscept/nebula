@@ -48,30 +48,30 @@ VariantTest::Run()
     Variant blobVar(blob);
 
     // test variant types
-    this->Verify(intVar.GetType() == Variant::Int);
-    this->Verify(floatVar.GetType() == Variant::Float);
-    this->Verify(boolVar.GetType() == Variant::Bool);
-    this->Verify(float4Var.GetType() == Variant::Float4);
-    this->Verify(matrixVar.GetType() == Variant::Matrix44);
-    this->Verify(charPtrVar.GetType() == Variant::String);
-    this->Verify(strVar.GetType() == Variant::String);
-    this->Verify(blobVar.GetType() == Variant::Blob);
+    VERIFY(intVar.GetType() == Variant::Int);
+    VERIFY(floatVar.GetType() == Variant::Float);
+    VERIFY(boolVar.GetType() == Variant::Bool);
+    VERIFY(float4Var.GetType() == Variant::Float4);
+    VERIFY(matrixVar.GetType() == Variant::Matrix44);
+    VERIFY(charPtrVar.GetType() == Variant::String);
+    VERIFY(strVar.GetType() == Variant::String);
+    VERIFY(blobVar.GetType() == Variant::Blob);
 
 
     // test equality operator
-    this->Verify(intVar == 123);
-    this->Verify(floatVar == 123.4f);
-    this->Verify(boolVar == true);
-    this->Verify(float4Var == float4(1.0f, 2.0f, 3.0f, 4.0f));
-    this->Verify(charPtrVar == "Bla Bla");
-    this->Verify(strVar == bla);
+    VERIFY(intVar == 123);
+    VERIFY(floatVar == 123.4f);
+    VERIFY(boolVar == true);
+    VERIFY(float4Var == float4(1.0f, 2.0f, 3.0f, 4.0f));
+    VERIFY(charPtrVar == "Bla Bla");
+    VERIFY(strVar == bla);
 
     // test inequality operator
-    this->Verify(intVar != 124);
-    this->Verify(floatVar != 122.3f);
-    this->Verify(boolVar != false);
-    this->Verify(float4Var != float4(1.0f, 1.0f, 2.0f, 3.0f));
-    this->Verify(charPtrVar != "Blob Blob");
+    VERIFY(intVar != 124);
+    VERIFY(floatVar != 122.3f);
+    VERIFY(boolVar != false);
+    VERIFY(float4Var != float4(1.0f, 1.0f, 2.0f, 3.0f));
+    VERIFY(charPtrVar != "Blob Blob");
 
     #if __WIN32__
     Guid guid;
@@ -79,9 +79,9 @@ VariantTest::Run()
     Guid otherGuid;
     otherGuid.Generate();
     Variant guidVar(guid);
-    this->Verify(guidVar.GetType() == Variant::Guid);
-    this->Verify(guidVar == guid);
-    this->Verify(guidVar != otherGuid);
+    VERIFY(guidVar.GetType() == Variant::Guid);
+    VERIFY(guidVar == guid);
+    VERIFY(guidVar != otherGuid);
     #endif
 }
 

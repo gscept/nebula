@@ -53,9 +53,9 @@ using namespace Test;
 int
 __cdecl main()
 {
-    // create Nebula3 runtime
+    // create Nebula runtime
     Ptr<CoreServer> coreServer = CoreServer::Create();
-    coreServer->SetAppName(Util::StringAtom("Nebula3 Foundation Tests"));
+    coreServer->SetAppName(Util::StringAtom("Nebula Foundation Tests"));
     coreServer->Open();
 
     Ptr<IO::GameContentServer> gameContentServer = IO::GameContentServer::Create();
@@ -64,7 +64,7 @@ __cdecl main()
     gameContentServer->SetVersion("1.00");
     gameContentServer->Setup();
 
-    n_printf("NEBULA3 FOUNDATION TESTS\n");
+    n_printf("NEBULA FOUNDATION TESTS\n");
     n_printf("========================\n");
 
     // setup and run test runner

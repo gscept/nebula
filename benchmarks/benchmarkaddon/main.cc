@@ -18,9 +18,9 @@ using namespace Benchmarking;
 void __cdecl
 main()
 {
-    // create Nebula3 runtime
+    // create Nebula runtime
     Ptr<CoreServer> coreServer = CoreServer::Create();
-    coreServer->SetAppName(Util::StringAtom("Nebula3 Benchmark Runner"));
+    coreServer->SetAppName(Util::StringAtom("Nebula Benchmark Runner"));
     coreServer->Open();
 
     Ptr<IO::IoServer> ioServer = IO::IoServer::Create();    
@@ -31,7 +31,7 @@ main()
     runner->AttachBenchmark(DatabaseQuery::Create());
     runner->Run();
     
-    // shutdown Nebula3 runtime
+    // shutdown Nebula runtime
     runner = 0;
     ioServer = 0;
     coreServer->Close();

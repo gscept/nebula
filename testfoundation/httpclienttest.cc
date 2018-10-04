@@ -30,18 +30,18 @@ HttpClientTest::Run()
     URI imgUri("http://old.gscept.com/themes/site_themes/gscept/gimage/logo.png");
 
     bool connected = httpClient->Connect(serverUri);
-    this->Verify(connected);
-    this->Verify(httpClient->IsConnected());
+    VERIFY(connected);
+    VERIFY(httpClient->IsConnected());
     if (connected)
     {
         HttpStatus::Code status;
         Ptr<Stream> contentStream = MemoryStream::Create();
         status = httpClient->SendRequest(HttpMethod::Get, imgUri, contentStream);
-        this->Verify(HttpStatus::OK == status);
-        this->Verify(contentStream->GetSize() == 5646);
+        VERIFY(HttpStatus::OK == status);
+        VERIFY(contentStream->GetSize() == 5646);
 
         httpClient->Disconnect();
-        this->Verify(!httpClient->IsConnected());
+        VERIFY(!httpClient->IsConnected());
     }
 }
 

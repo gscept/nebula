@@ -71,9 +71,9 @@ MessageReaderWriterTest::Run()
 
     // encode the messages into the stream
     stream->SetAccessMode(Stream::WriteAccess);
-    this->Verify(stream->Open());
+    VERIFY(stream->Open());
     writer->SetStream(stream.upcast<Stream>());
-    this->Verify(writer->Open());
+    VERIFY(writer->Open());
     writer->WriteMessage(origMsg1.upcast<Message>());
     writer->WriteMessage(origMsg2.upcast<Message>());
     writer->Close();
@@ -81,23 +81,23 @@ MessageReaderWriterTest::Run()
 
     // open stream for reading and read back messages
     stream->SetAccessMode(Stream::ReadAccess);
-    this->Verify(stream->Open());
+    VERIFY(stream->Open());
     reader->SetStream(stream.upcast<Stream>());
-    this->Verify(reader->Open());
+    VERIFY(reader->Open());
     Ptr<TestMessage> copyMsg1 = (TestMessage*) reader->ReadMessage();
     Ptr<TestMessage> copyMsg2 = (TestMessage*) reader->ReadMessage();
     reader->Close();
     stream->Close();
 
     // verify result
-    this->Verify(copyMsg1->IsA(TestMessage::RTTI));
-    this->Verify(copyMsg2->IsA(TestMessage::RTTI));
-    this->Verify(copyMsg1->GetCommand() == "Goto");
-    this->Verify(copyMsg1->GetPosition() == point(1.0f, 2.0f, 3.0f));
-    this->Verify(copyMsg1->GetVelocity() == 4.0f);
-    this->Verify(copyMsg2->GetCommand() == "Flyto");
-    this->Verify(copyMsg2->GetPosition() == point(5.0f, 6.0f, 7.0f));
-    this->Verify(copyMsg2->GetVelocity() == 8.0f);
+    VERIFY(copyMsg1->IsA(TestMessage::RTTI));
+    VERIFY(copyMsg2->IsA(TestMessage::RTTI));
+    VERIFY(copyMsg1->GetCommand() == "Goto");
+    VERIFY(copyMsg1->GetPosition() == point(1.0f, 2.0f, 3.0f));
+    VERIFY(copyMsg1->GetVelocity() == 4.0f);
+    VERIFY(copyMsg2->GetCommand() == "Flyto");
+    VERIFY(copyMsg2->GetPosition() == point(5.0f, 6.0f, 7.0f));
+    VERIFY(copyMsg2->GetVelocity() == 8.0f);
 }
 
 }; // namespace Test
