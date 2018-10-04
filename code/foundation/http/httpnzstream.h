@@ -4,7 +4,7 @@
     @class Http::HttpNzStream
     
     A version of HttpStream which reads .nz compressed files as created by
-    the Nebula3 archiver tool. .nz is a simple container for ZLIB 
+    the Nebula archiver tool. .nz is a simple container for ZLIB 
     compressed data.
     
     (C) 2009 Radon Labs GmbH
@@ -13,7 +13,7 @@
 #include "core/config.h"
 
 // HttpStream not implemented on Wii
-#if __NEBULA3_HTTP_FILESYSTEM__
+#if __NEBULA_HTTP_FILESYSTEM__
 #include "io/memorystream.h"
 #include "http/httpclient.h"
 

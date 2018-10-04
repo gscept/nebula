@@ -5,7 +5,7 @@
 /**
     @class Debug::ThreadPageHandler
     
-    Displays info about currently running Nebula3 threads.
+    Displays info about currently running Nebula threads.
     
     (C) 2008 Radon Labs GmbH
     (C) 2013-2016 Individual contributors, see AUTHORS file

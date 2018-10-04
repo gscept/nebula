@@ -1,5 +1,5 @@
 <?  xml version="1.0" encoding="UTF-8"?>
-<Nebula3 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../schemas/frame.xsd">
+<Nebula xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../schemas/frame.xsd">
 
 <!-- 
     Test frame shader for the Win32 platform.
@@ -164,4 +164,4 @@
 
     
 </FrameShader>
-</Nebula3>
+</Nebula>

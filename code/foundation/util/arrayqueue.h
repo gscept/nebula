@@ -3,7 +3,7 @@
 /**
     @class Util::Queue
     
-    Nebula3's queue class (a FIFO container).
+    Nebula's queue class (a FIFO container).
     
 	@todo	This is extremely slow and should probably use a list instead.
 

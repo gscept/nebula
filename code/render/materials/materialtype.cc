@@ -42,7 +42,7 @@ MaterialType::CreateInstance()
 		const CoreGraphics::BatchGroup::Code batch = batches[i];
 		CoreGraphics::ShaderId shid;
 		shid.allocId = programs[batch].shaderId;
-		CoreGraphics::ResourceTableId table = CoreGraphics::ShaderCreateResourceTable(shid, NEBULAT_BATCH_GROUP);
+		CoreGraphics::ResourceTableId table = CoreGraphics::ShaderCreateResourceTable(shid, NEBULA_BATCH_GROUP);
 
 		matConstants.Append(Util::HashTable<Util::StringAtom, CoreGraphics::ConstantBinding>());
 		Util::HashTable<Util::StringAtom, CoreGraphics::ConstantBinding>& matConstantDict = matConstants.Back();
@@ -190,6 +190,6 @@ MaterialType::ApplyInstance(const MaterialInstanceId& mat)
 {
 	n_assert(this->currentAllocator != nullptr);
 	const Util::Array<Ids::Id32>& indices = this->materialAllocator.Get<0>(mat.id);
-	CoreGraphics::SetResourceTable((*this->currentAllocator)[indices[mat.id]], NEBULAT_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
+	CoreGraphics::SetResourceTable((*this->currentAllocator)[indices[mat.id]], NEBULA_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
 }
 } // namespace Materials

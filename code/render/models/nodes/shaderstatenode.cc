@@ -43,14 +43,14 @@ ShaderStateNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, c
 	}
 	else if (FourCC('MATE') == fourcc)
 	{
-		this->materialName = reader->ReadString() + NEBULAT_SURFACE_EXTENSION;
+		this->materialName = reader->ReadString() + NEBULA_SURFACE_EXTENSION;
 	}
 	else if (FourCC('STXT') == fourcc)
 	{
 		// ShaderTexture
 		StringAtom paramName = reader->ReadString();
 		StringAtom paramValue = reader->ReadString();
-		String fullTexResId = String(paramValue.AsString() + NEBULAT_TEXTURE_EXTENSION);
+		String fullTexResId = String(paramValue.AsString() + NEBULA_TEXTURE_EXTENSION);
 	}
 	else if (FourCC('SINT') == fourcc)
 	{
@@ -118,7 +118,7 @@ ShaderStateNode::OnFinishedLoading()
 	this->materialType = Materials::materialPool->GetType(this->material);
 	this->cbo = CoreGraphics::ShaderCreateConstantBuffer(this->sharedShader, "ObjectBlock");
 	this->cboIndex = CoreGraphics::ShaderGetResourceSlot(this->sharedShader, "ObjectBlock");
-	this->resourceTable = CoreGraphics::ShaderCreateResourceTable(this->sharedShader, NEBULAT_DYNAMIC_OFFSET_GROUP);
+	this->resourceTable = CoreGraphics::ShaderCreateResourceTable(this->sharedShader, NEBULA_DYNAMIC_OFFSET_GROUP);
 	CoreGraphics::ResourceTableSetConstantBuffer(this->resourceTable, { this->cbo, this->cboIndex, 0, true, false, -1, 0 });
 	CoreGraphics::ResourceTableCommitChanges(this->resourceTable);
 
@@ -156,7 +156,7 @@ ShaderStateNode::Instance::ApplyNodeInstanceState()
 	CoreGraphics::ConstantBufferUpdateInstance(this->cbo, transformDevice->GetObjectId(), this->instance, this->objectIdVar);
 
 	// apply with offsets
-	CoreGraphics::SetResourceTable(this->resourceTable, NEBULAT_DYNAMIC_OFFSET_GROUP, CoreGraphics::GraphicsPipeline, this->offsets);
+	CoreGraphics::SetResourceTable(this->resourceTable, NEBULA_DYNAMIC_OFFSET_GROUP, CoreGraphics::GraphicsPipeline, this->offsets);
 }
 
 } // namespace Models

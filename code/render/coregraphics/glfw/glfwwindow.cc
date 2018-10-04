@@ -345,7 +345,7 @@ const WindowId
 InternalSetupFunction(const WindowCreateInfo& info, const Util::Blob& windowData, bool embed)
 {
 #if __OGL4__
-#if NEBULA3_OPENGL4_DEBUG
+#if NEBULA_OPENGL4_DEBUG
 	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
 	glfwSetErrorCallback(NebulaGLFWErrorCallback);
 	n_printf("Creating OpenGL debug context\n");

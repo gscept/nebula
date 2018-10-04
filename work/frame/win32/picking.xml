@@ -1,5 +1,5 @@
 <!DOCTYPE picking>
-<Nebula3>
+<Nebula>
  <FrameShader>
  
   <!-- depth-stencil buffers -->
@@ -14,4 +14,4 @@
 	<Batch batchGroup="PickingInFront" sorting="None" lighting="None" type="Geometry"/>
   </Pass>
  </FrameShader>
-</Nebula3>
+</Nebula>

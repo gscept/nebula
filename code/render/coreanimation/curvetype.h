@@ -9,7 +9,7 @@
     (C) 2013-2016 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
-#if !__NEBULA3_JOB__
+#if !__NEBULA_JOB__
 #include "util/string.h"
 #endif
 
@@ -33,7 +33,7 @@ public:
         InvalidCurveType,
     };
 
-    #if !__NEBULA3_JOB__
+    #if !__NEBULA_JOB__
     /// convert from string
     static Code FromString(const Util::String& str);
     /// convert to string

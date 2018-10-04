@@ -3,9 +3,9 @@
 /**
     @class Core::CoreServer
     
-    The central core server object initializes a minimal Nebula3 runtime
-    environment necessary to boot up the rest of Nebula3. It should be the
-    first object a Nebula3 application creates, and the last to destroy
+    The central core server object initializes a minimal Nebula runtime
+    environment necessary to boot up the rest of Nebula. It should be the
+    first object a Nebula application creates, and the last to destroy
     before shutdown.
     
     (C) 2006 Radon Labs GmbH

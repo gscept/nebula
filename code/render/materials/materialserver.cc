@@ -76,13 +76,13 @@ MaterialServer::LoadMaterialTypes(const IO::URI& file)
 
 	if (reader->Open())
 	{
-		// check to see it's a valid Nebula3 materials file
-		if (!reader->HasNode("/Nebula3/Materials"))
+		// check to see it's a valid Nebula materials file
+		if (!reader->HasNode("/Nebula/Materials"))
 		{
 			n_error("MaterialLoader: '%s' is not a valid material XML!", file.AsString().AsCharPtr());
 			return false;
 		}
-		reader->SetToNode("/Nebula3/Materials");
+		reader->SetToNode("/Nebula/Materials");
 
 		// parse materials
 		if (reader->SetToFirstChild("Material")) do
@@ -192,7 +192,7 @@ MaterialServer::LoadMaterialTypes(const IO::URI& file)
 					{
 						n_error("Invalid texture type %s\n", ptype.AsCharPtr());
 					}
-					texture.defaultValue = Resources::CreateResource(reader->GetString("defaultValue") + NEBULAT_TEXTURE_EXTENSION, "material types", nullptr, nullptr, true);
+					texture.defaultValue = Resources::CreateResource(reader->GetString("defaultValue") + NEBULA_TEXTURE_EXTENSION, "material types", nullptr, nullptr, true);
 					texture.system = system;
 					type->textures.Add(name, texture);
 				}

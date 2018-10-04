@@ -45,7 +45,7 @@ StreamMeshPool::LoadFromStream(const Resources::ResourceId id, const Util::Strin
 	n_assert(id != Ids::InvalidId24);
 	String resIdExt = this->GetName(id.poolId).AsString().GetFileExtension();
 
-#if NEBULA3_LEGACY_SUPPORT
+#if NEBULA_LEGACY_SUPPORT
 	if (resIdExt == "nvx2")
 	{
 		return this->SetupMeshFromNvx2(stream, id);
@@ -102,7 +102,7 @@ StreamMeshPool::DeallocObject(const Resources::ResourceUnknownId id)
 /**
 	Setup the mesh resource from legacy nvx2 file (Nebula2 binary mesh format).
 */
-#if NEBULA3_LEGACY_SUPPORT
+#if NEBULA_LEGACY_SUPPORT
 Resources::ResourcePool::LoadStatus
 StreamMeshPool::SetupMeshFromNvx2(const Ptr<Stream>& stream, const Resources::ResourceId res)
 {
@@ -135,7 +135,7 @@ StreamMeshPool::SetupMeshFromNvx2(const Ptr<Stream>& stream, const Resources::Re
 
 //------------------------------------------------------------------------------
 /**
-	Setup the mesh resource from a nvx3 file (Nebula3's
+	Setup the mesh resource from a nvx3 file (Nebula's
 	native binary mesh file format).
 */
 Resources::ResourcePool::LoadStatus
@@ -148,7 +148,7 @@ StreamMeshPool::SetupMeshFromNvx3(const Ptr<Stream>& stream, const Resources::Re
 
 //------------------------------------------------------------------------------
 /**
-	Setup the mesh resource from a n3d3 file (Nebula3's
+	Setup the mesh resource from a n3d3 file (Nebula's
 	native ascii mesh file format).
 */
 Resources::ResourcePool::LoadStatus

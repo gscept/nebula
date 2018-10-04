@@ -24,7 +24,7 @@ public:
 
 		CoreGraphics::RenderTextureId from, to;
 
-#if defined(NEBULAT_GRAPHICS_DEBUG)
+#if defined(NEBULA_GRAPHICS_DEBUG)
 		Util::StringAtom name;
 #endif
 	};

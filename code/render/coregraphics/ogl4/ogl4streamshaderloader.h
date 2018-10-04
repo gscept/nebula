@@ -21,7 +21,7 @@ public:
     virtual bool CanLoadAsync() const;
     
 private:
-    /// setup the shader from a Nebula3 stream
+    /// setup the shader from a Nebula stream
     virtual bool SetupResourceFromStream(const Ptr<IO::Stream>& stream);
 };
 

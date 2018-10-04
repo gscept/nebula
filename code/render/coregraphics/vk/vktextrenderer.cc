@@ -118,7 +118,7 @@ VkTextRenderer::Open()
 	// create shader instance
 	const ShaderId shd = ShaderServer::Instance()->GetShader("shd:text.fxb");
 	this->program = ShaderGetProgram(shd, ShaderServer::Instance()->FeatureStringToMask("Static"));
-	this->textTable = ShaderCreateResourceTable(shd, NEBULAT_BATCH_GROUP);
+	this->textTable = ShaderCreateResourceTable(shd, NEBULA_BATCH_GROUP);
 	// get variable
 
 	this->texVar = ShaderGetResourceSlot(shd, "Texture");
@@ -168,7 +168,7 @@ VkTextRenderer::DrawTextElements()
 	// apply shader and apply state
 	CoreGraphics::SetShaderProgram(this->program);
 	CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->modelVar.offset, sizeof(proj), (byte*)&proj);
-	CoreGraphics::SetResourceTable(this->textTable, NEBULAT_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
+	CoreGraphics::SetResourceTable(this->textTable, NEBULA_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
 
 	uint screenWidth, screenHeight;
 	screenWidth = displayMode.GetWidth();

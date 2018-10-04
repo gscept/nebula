@@ -39,7 +39,7 @@ public:
     /// access to memory pool at pool index (for debugging)
     const MemoryPool& GetMemoryPool(IndexT index) const;
 
-    #if NEBULA3_MEMORY_STATS
+    #if NEBULA_MEMORY_STATS
     /// dump number of memory allocations (if > 0)
     void Dump();
     #endif

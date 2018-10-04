@@ -103,7 +103,7 @@ VkShaderSetup(
 			if ((vis & PixelShaderVisibility) == PixelShaderVisibility)			slotsUsed++;
 			if ((vis & ComputeShaderVisibility) == ComputeShaderVisibility)		slotsUsed++;
 		}
-		if (block->set == NEBULAT_DYNAMIC_OFFSET_GROUP) { cbo.dynamicOffset = true; numUniformDyn += slotsUsed; }
+		if (block->set == NEBULA_DYNAMIC_OFFSET_GROUP) { cbo.dynamicOffset = true; numUniformDyn += slotsUsed; }
 		else											{ cbo.dynamicOffset = false; numUniform += slotsUsed; }
 
 		rinfo.constantBuffers.Append(cbo);
@@ -114,7 +114,7 @@ VkShaderSetup(
 		for (j = 0; j < vars.size(); j++)
 		{
 			const AnyFX::VariableBase* var = vars[j];
-#if NEBULAT_DEBUG
+#if NEBULA_DEBUG
 			n_assert(!constantBindings.Contains(var->name.c_str()));
 #endif
 			constantBindings.Add(var->name.c_str(), { block->offsetsByName[var->name], (uint)var->arraySize, (uint)var->byteSize });
@@ -158,7 +158,7 @@ VkShaderSetup(
 			if ((vis & ComputeShaderVisibility) == ComputeShaderVisibility)		slotsUsed++;
 		}
 
-		if (buffer->set == NEBULAT_DYNAMIC_OFFSET_GROUP) { rwbo.dynamicOffset = true; numStorageDyn += slotsUsed; }
+		if (buffer->set == NEBULA_DYNAMIC_OFFSET_GROUP) { rwbo.dynamicOffset = true; numStorageDyn += slotsUsed; }
 		else											 { rwbo.dynamicOffset = false; numStorage += slotsUsed; }
 
 		rinfo.rwBuffers.Append(rwbo);

@@ -50,11 +50,11 @@ public:
     static GLenum AsOGL4PrimitiveType(CoreGraphics::PrimitiveTopology::Code t);
     /// convert antialias quality to D3D multisample type
     static GLuint AsOGL4MultiSampleType(CoreGraphics::AntiAliasQuality::Code c);
-	/// convert Nebula3 access to OGL4 access
+	/// convert Nebula access to OGL4 access
 	static GLuint AsOGL4Access( Base::ResourceBase::Access access);
-	/// convert Nebula3 usage to OGL4 usage
+	/// convert Nebula usage to OGL4 usage
 	static GLuint AsOGL4Usage(Base::ResourceBase::Usage usage, Base::ResourceBase::Access access);
-	/// convert Nebula3 syncing to OGL4 syncing
+	/// convert Nebula syncing to OGL4 syncing
 	static GLuint AsOGL4Syncing(Base::ResourceBase::Syncing syncing);
     /// convert index type to DXGI format
     static GLenum IndexTypeAsOGL4Format(CoreGraphics::IndexType::Code indexType);

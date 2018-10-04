@@ -5,7 +5,7 @@
 /**
     @class Http::DefaultHttpRequestHandler
     
-    This implements the "Home Page" of the Nebula3 application. It will
+    This implements the "Home Page" of the Nebula application. It will
     answer all HTTP requests which are not handled by a custom
     HttpRequestHandler.
     

@@ -1,8 +1,8 @@
 <!--
 	Surface material for the placeholder material
 -->
-<NebulaT>
+<Nebula>
 	<Surface template="PlacementHandleSolid">
 		<Param name="MatDiffuse" value="0,0,0,0"/>
 	</Surface>
-</NebulaT>
+</Nebula>

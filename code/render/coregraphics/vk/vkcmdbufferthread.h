@@ -67,7 +67,7 @@ public:
 			struct // Pipeline bind
 			{
 				VkPipeline pipeline;
-#if NEBULAT_GRAPHICS_DEBUG
+#if NEBULA_GRAPHICS_DEBUG
 				const char* name;
 #endif
 			} pipe;
@@ -230,7 +230,7 @@ private:
 
 	VkCommandBuffer commandBuffer;
 	Threading::SafeQueue<Command> commands;
-#if NEBULA3_ENABLE_PROFILING
+#if NEBULA_ENABLE_PROFILING
 	_declare_timer(debugTimer);
 #endif
 };

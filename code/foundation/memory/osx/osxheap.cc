@@ -10,7 +10,7 @@
 namespace OSX
 {
 
-#if NEBULA3_MEMORY_STATS
+#if NEBULA_MEMORY_STATS
 List<OSXHeap*>* OSXHeap::list = 0;
 CriticalSection* OSXHeap::criticalSection = 0;
 #endif
@@ -23,7 +23,7 @@ CriticalSection* OSXHeap::criticalSection = 0;
 void
 OSXHeap::Setup()
 {
-    #if NEBULA3_MEMORY_STATS
+    #if NEBULA_MEMORY_STATS
     n_assert(0 == list);
     n_assert(0 == criticalSection);
     list = n_new(List<OSXHeap*>);
@@ -40,7 +40,7 @@ OSXHeap::OSXHeap(const char* heapName, size_t initialSize)
     this->name = heapName;
     this->heapZone = malloc_create_zone(initialSize, 0);
     
-    #if NEBULA3_MEMORY_STATS
+    #if NEBULA_MEMORY_STATS
     n_assert(0 != criticalSection);
     this->allocCount = 0;
     this->allocSize = 0;
@@ -55,7 +55,7 @@ OSXHeap::OSXHeap(const char* heapName, size_t initialSize)
 */
 OSXHeap::~OSXHeap()
 {
-    #if NEBULA3_MEMORY_STATS
+    #if NEBULA_MEMORY_STATS
     this->DumpLeaks();
     #endif
     
@@ -63,7 +63,7 @@ OSXHeap::~OSXHeap()
     this->heapZone = 0;
     
     // dump memory leaks and unlink from heap list
-    #if NEBULA3_MEMORY_STATS
+    #if NEBULA_MEMORY_STATS
     n_assert(0 == this->allocCount);
     n_assert(0 != criticalSection);
     n_assert(0 != this->listIterator);
@@ -85,7 +85,7 @@ OSXHeap::Alloc(size_t size, size_t alignment)
     {
         n_error("OSXHeap::Alloc(): Out of mem on heap '%s', trying to allocate %i bytes!\n", this->name, int(size));
     }
-    #if NEBULA3_MEMORY_STATS
+    #if NEBULA_MEMORY_STATS
     size_t allocatedSize = malloc_size(allocPtr);
     Threading::Interlocked::Increment(this->allocCount);
     Threading::Interlocked::Add(this->allocSize, allocatedSize);
@@ -99,7 +99,7 @@ OSXHeap::Alloc(size_t size, size_t alignment)
 void*
 OSXHeap::Realloc(void* ptr, size_t size)
 {
-    #if NEBULA3_MEMORY_STATS
+    #if NEBULA_MEMORY_STATS
     size_t oldSize = malloc_size(ptr);
     #endif
     void* allocPtr = malloc_zone_realloc(this->heapZone, ptr, size);
@@ -107,7 +107,7 @@ OSXHeap::Realloc(void* ptr, size_t size)
     {
         n_error("OSXHeap::Realloc(): Out of memory on heap '%s', trying to re-alloc %i bytes!\n", this->name, (int)size);
     }
-    #if NEBULA3_MEMORY_STATS
+    #if NEBULA_MEMORY_STATS
     size_t newSize = malloc_size(ptr);
     Threading::Interlocked::Add(this->allocSize, int(newSize - oldSize));
     #endif
@@ -121,7 +121,7 @@ void
 OSXHeap::Free(void* ptr)
 {
     n_assert(0 != ptr);
-    #if NEBULA3_MEMORY_STATS
+    #if NEBULA_MEMORY_STATS
     size_t allocSize = malloc_size(ptr);
     Threading::Interlocked::Add(this->allocSize, -int(allocSize));
     Threading::Interlocked::Decrement(this->allocCount);
@@ -129,7 +129,7 @@ OSXHeap::Free(void* ptr)
     malloc_zone_free(this->heapZone, ptr);
 }
 
-#if NEBULA3_MEMORY_STATS
+#if NEBULA_MEMORY_STATS
 //------------------------------------------------------------------------------
 /**
     Validate the heap. This walks over the heap's memory block and checks
@@ -227,6 +227,6 @@ OSXHeap::DumpLeaksAllHeaps()
     }
     criticalSection->Leave();
 }
-#endif // NEBULA3_MEMORY_STATS
+#endif // NEBULA_MEMORY_STATS
 
 } // namespace Memory

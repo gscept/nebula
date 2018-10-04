@@ -38,7 +38,7 @@ void operator delete[](void* p)
 namespace Memory
 {
     
-#if NEBULA3_MEMORY_STATS
+#if NEBULA_MEMORY_STATS
 int volatile TotalAllocCount = 0;
 int volatile TotalAllocSize = 0;
 int volatile HeapTypeAllocCount[NumHeapTypes] = { 0 };
@@ -61,7 +61,7 @@ Alloc(HeapType heapType, size_t size, size_t alignment)
     Core::SysFunc::Setup();
         
     void* allocPtr = 0;
-#if NEBULA3_MEMORY_STATS
+#if NEBULA_MEMORY_STATS
     size_t allocatedSize = 0;
 #endif
         
@@ -71,11 +71,11 @@ Alloc(HeapType heapType, size_t size, size_t alignment)
     {
         n_error("Allocation failed from Heap '%s'!\n", GetHeapTypeName(heapType));
     }
-#if NEBULA3_MEMORY_STATS
+#if NEBULA_MEMORY_STATS
     allocatedSize = malloc_size(allocPtr);
 #endif
         
-#if NEBULA3_MEMORY_STATS                
+#if NEBULA_MEMORY_STATS                
     Threading::Interlocked::Increment(TotalAllocCount);
     Threading::Interlocked::Add(TotalAllocSize, allocatedSize);
     Threading::Interlocked::Increment(HeapTypeAllocCount[heapType]);
@@ -104,7 +104,7 @@ Realloc(HeapType heapType, void* ptr, size_t size)
     Core::SysFunc::Setup();
                 
     // get old size for stats tracking
-#if NEBULA3_MEMORY_STATS
+#if NEBULA_MEMORY_STATS
     size_t oldSize = malloc_size(ptr);
 #endif
         
@@ -115,7 +115,7 @@ Realloc(HeapType heapType, void* ptr, size_t size)
         n_error("Allocation failed from Heap '%s'!\n", GetHeapTypeName(heapType));
     }
         
-#if NEBULA3_MEMORY_STATS
+#if NEBULA_MEMORY_STATS
     size_t allocatedSize = mspace_malloc_usable_size(allocPtr);
     Threading::Interlocked::Add(TotalAllocSize, size_t(allocatedSize - oldSize));
     Threading::Interlocked::Add(HeapTypeAllocSize[heapType], size_t(allocatedSize - oldSize));
@@ -139,12 +139,12 @@ Free(HeapType heapType, void* ptr)
     {
         n_assert(heapType < NumHeapTypes);
             
-#if NEBULA3_MEMORY_STATS
+#if NEBULA_MEMORY_STATS
         size_t allocatedSize = malloc_size(ptr);
 #endif
         malloc_zone_free(Heaps[heapType], ptr);
             
-#if NEBULA3_MEMORY_STATS
+#if NEBULA_MEMORY_STATS
         Threading::Interlocked::Add(TotalAllocSize, -allocatedSize);
         Threading::Interlocked::Decrement(TotalAllocCount);
         Threading::Interlocked::Add(HeapTypeAllocSize[heapType], -allocatedSize);
@@ -241,7 +241,7 @@ Fill(void* ptr, size_t numBytes, unsigned char value)
     memset(ptr, value, numBytes);
 }
     
-#if NEBULA3_MEMORY_STATS
+#if NEBULA_MEMORY_STATS
 //------------------------------------------------------------------------------
 /**
     Enable memory logging.
@@ -280,9 +280,9 @@ ToggleMemoryLogging(unsigned int threshold, HeapType heapType)
         EnableMemoryLogging(threshold, heapType);
     }
 }
-#endif // NEBULA3_MEMORY_STATS
+#endif // NEBULA_MEMORY_STATS
     
-#if NEBULA3_MEMORY_ADVANCED_DEBUGGING
+#if NEBULA_MEMORY_ADVANCED_DEBUGGING
 //------------------------------------------------------------------------------
 /**
     Debug function which validates all heaps. 
@@ -327,6 +327,6 @@ DumpMemoryLeaks()
 {
     n_error("IMPLEMENT ME: DumpMemoryLeaks()");
 }
-#endif // NEBULA3_MEMORY_ADVANCED_DEBUGGING
+#endif // NEBULA_MEMORY_ADVANCED_DEBUGGING
     
 } // namespace Memory

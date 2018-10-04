@@ -3,7 +3,7 @@
 /**
     @class CoreGraphics::StreamTextureLoader
   
-    Resource loader for loading texture data from a Nebula3 stream. Supports
+    Resource loader for loading texture data from a Nebula stream. Supports
     synchronous and asynchronous loading.
     
     (C) 2007 Radon Labs GmbH

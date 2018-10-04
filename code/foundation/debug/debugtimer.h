@@ -15,7 +15,7 @@
 #include "threading/criticalsection.h"
 
 //------------------------------------------------------------------------------
-#if NEBULA3_ENABLE_PROFILING
+#if NEBULA_ENABLE_PROFILING
 #define _declare_timer(timer) Ptr<Debug::DebugTimer> timer;
 #define _declare_static_timer(timer) static Ptr<Debug::DebugTimer> timer;
 #define _setup_timer(timer) {timer = Debug::DebugTimer::Create(); timer->Setup(Util::StringAtom(#timer));}

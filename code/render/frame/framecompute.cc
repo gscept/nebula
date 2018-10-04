@@ -66,7 +66,7 @@ FrameCompute::CompiledImpl::Run(const IndexT frameIndex)
 	CoreGraphics::SetShaderProgram(this->program);
 
 	// compute
-	CoreGraphics::SetResourceTable(this->resourceTable, NEBULAT_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+	CoreGraphics::SetResourceTable(this->resourceTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
 	CoreGraphics::Compute(this->x, this->y, this->z);
 }
 

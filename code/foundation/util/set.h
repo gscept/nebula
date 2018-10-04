@@ -94,7 +94,7 @@ Set<KEYTYPE>::Set(const Set<KEYTYPE>& rhs) :
     values(rhs.keyValuePairs),
     inBulkInsert(false)
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(!rhs.inBulkInsert);
     #endif
 }
@@ -105,7 +105,7 @@ Set<KEYTYPE>::Set(const Set<KEYTYPE>& rhs) :
 template<class KEYTYPE> void
 Set<KEYTYPE>::operator=(const Set<KEYTYPE>& rhs)
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(!this->inBulkInsert);
     n_assert(!rhs.inBulkInsert);
     #endif
@@ -118,7 +118,7 @@ Set<KEYTYPE>::operator=(const Set<KEYTYPE>& rhs)
 template<class KEYTYPE> void
 Set<KEYTYPE>::Clear()
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(!this->inBulkInsert);
     #endif
 	this->values.Clear();
@@ -157,7 +157,7 @@ Set<KEYTYPE>::Reserve(SizeT numElements)
 template<class KEYTYPE> void
 Set<KEYTYPE>::BeginBulkAdd()
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(!this->inBulkInsert);
     #endif
     this->inBulkInsert = true;
@@ -169,7 +169,7 @@ Set<KEYTYPE>::BeginBulkAdd()
 template<class KEYTYPE> void
 Set<KEYTYPE>::EndBulkAdd()
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(this->inBulkInsert);
     #endif
 	this->values.Sort();
@@ -202,11 +202,11 @@ Set<KEYTYPE>::Add(const KEYTYPE& key)
 template<class KEYTYPE> void
 Set<KEYTYPE>::Erase(const KEYTYPE& key)
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(!this->inBulkInsert);
     #endif
 	IndexT eraseIndex = this->values.BinarySearchIndex(key);
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(InvalidIndex != eraseIndex);
     #endif
 	this->values.EraseIndex(eraseIndex);
@@ -218,7 +218,7 @@ Set<KEYTYPE>::Erase(const KEYTYPE& key)
 template<class KEYTYPE> void
 Set<KEYTYPE>::EraseAtIndex(IndexT index)
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(!this->inBulkInsert);
     #endif
 	this->values.EraseIndex(index);
@@ -230,7 +230,7 @@ Set<KEYTYPE>::EraseAtIndex(IndexT index)
 template<class KEYTYPE> IndexT
 Set<KEYTYPE>::FindIndex(const KEYTYPE& key) const
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(!this->inBulkInsert);
     #endif
     return this->values.BinarySearchIndex(key);
@@ -242,7 +242,7 @@ Set<KEYTYPE>::FindIndex(const KEYTYPE& key) const
 template<class KEYTYPE> bool
 Set<KEYTYPE>::Contains(const KEYTYPE& key) const
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(!this->inBulkInsert);
     #endif
 	return (InvalidIndex != this->values.BinarySearchIndex(key));
@@ -254,7 +254,7 @@ Set<KEYTYPE>::Contains(const KEYTYPE& key) const
 template<class KEYTYPE> const KEYTYPE&
 Set<KEYTYPE>::KeyAtIndex(IndexT index) const
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(!this->inBulkInsert);
     #endif
 	return this->values[index];
@@ -268,7 +268,7 @@ template<class RETURNTYPE>
 RETURNTYPE
 Set<KEYTYPE>::KeysAs() const
 {
-    #if NEBULA3_BOUNDSCHECKS    
+    #if NEBULA_BOUNDSCHECKS    
     n_assert(!this->inBulkInsert);
     #endif
     RETURNTYPE result(this->Size(), this->Size());

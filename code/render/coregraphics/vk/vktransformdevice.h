@@ -62,8 +62,8 @@ private:
 inline void
 VkTransformDevice::BindCameraDescriptorSets()
 {
-	CoreGraphics::SetResourceTable(this->viewTable, NEBULAT_FRAME_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
-	//CoreGraphics::SetResourceTable(this->viewTable, NEBULAT_FRAME_GROUP, CoreGraphics::ComputePipeline, nullptr);
+	CoreGraphics::SetResourceTable(this->viewTable, NEBULA_FRAME_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
+	//CoreGraphics::SetResourceTable(this->viewTable, NEBULA_FRAME_GROUP, CoreGraphics::ComputePipeline, nullptr);
 }
 
 } // namespace Vulkan

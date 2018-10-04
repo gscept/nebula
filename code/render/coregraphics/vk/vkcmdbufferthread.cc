@@ -59,7 +59,7 @@ VkCmdBufferThread::DoWork()
 			{
 			case BeginCommand:
 				this->commandBuffer = cmd.bgCmd.buf;
-#if defined(NEBULAT_GRAPHICS_DEBUG)
+#if defined(NEBULA_GRAPHICS_DEBUG)
 				{
 					Util::String name = Util::String::Sprintf("%s Generate draws", this->GetMyThreadName());
 					Vulkan::CmdBufBeginMarker(this->commandBuffer, Math::float4(0.8f, 0.6f, 0.6f, 1.0f), name.AsCharPtr());
@@ -73,7 +73,7 @@ VkCmdBufferThread::DoWork()
 			case EndCommand:
 				n_assert(vkEndCommandBuffer(this->commandBuffer) == VK_SUCCESS);
 
-#if defined(NEBULAT_GRAPHICS_DEBUG)
+#if defined(NEBULA_GRAPHICS_DEBUG)
 				Vulkan::CmdBufEndMarker(this->commandBuffer);
 #endif
 				this->commandBuffer = VK_NULL_HANDLE;

@@ -299,11 +299,11 @@ D3D11RenderTarget::SetupMultiSampleType()
     D3D11RenderDevice* renderDevice = D3D11RenderDevice::Instance();
     ID3D11Device* d3d11 = renderDevice->GetDirect3DDevice();
 
-    #if NEBULA3_DIRECT3D_DEBUG
+    #if NEBULA_DIRECT3D_DEBUG
         this->d3d11MultiSampleDescription.Count = 0;
         this->d3d11MultiSampleDescription.Quality = 0;
     #else
-        // convert Nebula3 antialias quality into D3D type
+        // convert Nebula antialias quality into D3D type
         this->d3d11MultiSampleDescription.Count = D3D11Types::AsD3D11MultiSampleType(this->antiAliasQuality);
 		this->d3d11MultiSampleDescription.Quality = 0;
 

@@ -16,7 +16,7 @@
 //------------------------------------------------------------------------------
 namespace CoreAnimation
 {
-struct NEBULA3_ALIGN16 AnimSampleMixInfo
+struct NEBULA_ALIGN16 AnimSampleMixInfo
 {
     SampleType::Code sampleType;
     float sampleWeight;

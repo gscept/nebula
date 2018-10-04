@@ -58,7 +58,7 @@ void
 FramePass::CompiledImpl::Run(const IndexT frameIndex)
 {
 
-#if defined(NEBULAT_GRAPHICS_DEBUG)
+#if defined(NEBULA_GRAPHICS_DEBUG)
 	CoreGraphics::CmdBufBeginMarker(GraphicsQueueType, Math::float4(0.6f, 0.8f, 0.6f, 1), this->name.Value());
 #endif
 
@@ -82,7 +82,7 @@ FramePass::CompiledImpl::Run(const IndexT frameIndex)
 	// end pass
 	PassEnd(this->pass);
 
-#if defined(NEBULAT_GRAPHICS_DEBUG)
+#if defined(NEBULA_GRAPHICS_DEBUG)
 	CoreGraphics::CmdBufEndMarker(GraphicsQueueType);
 #endif
 }
@@ -154,7 +154,7 @@ FramePass::Build(
 {
 	CompiledImpl* myCompiled = (CompiledImpl*)this->AllocCompiled(allocator);
 
-#if defined(NEBULAT_GRAPHICS_DEBUG)
+#if defined(NEBULA_GRAPHICS_DEBUG)
 	myCompiled->name = this->name;
 #endif
 

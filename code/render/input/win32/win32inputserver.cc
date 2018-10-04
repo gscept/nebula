@@ -132,7 +132,7 @@ Win32InputServer::OpenDInputMouse()
     // set the cooperative level of the device, we're friendly
     // note: use Win32's FindWindow() to find our top level window because 
     // the DisplayDevice may be running in a different thread
-    HWND hWnd = FindWindow(NEBULA3_WINDOW_CLASS, NULL);
+    HWND hWnd = FindWindow(NEBULA_WINDOW_CLASS, NULL);
     if (0 != hWnd)
     {
         hr = this->di8Mouse->SetCooperativeLevel(hWnd, DISCL_FOREGROUND | DISCL_NOWINKEY | DISCL_NONEXCLUSIVE);
@@ -234,7 +234,7 @@ void
 Win32InputServer::SetMousePosition(Math::float2& position)
 {
 	WINDOWINFO windowInfo;
-	HWND nebWindow = FindWindow(NEBULA3_WINDOW_CLASS, NULL);
+	HWND nebWindow = FindWindow(NEBULA_WINDOW_CLASS, NULL);
 	
 	if (nebWindow != 0 && GetWindowInfo(nebWindow, &windowInfo))
 	{

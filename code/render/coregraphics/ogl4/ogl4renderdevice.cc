@@ -51,7 +51,7 @@ struct DrawArraysCommand
 	GLuint baseInstance;
 };
 
-#if NEBULA3_OPENGL4_DEBUG
+#if NEBULA_OPENGL4_DEBUG
 
 // thank you.
 #ifdef __WIN32__
@@ -61,7 +61,7 @@ struct DrawArraysCommand
 #endif
 
 // uncomment this for extra spammy opengl info output
-//#define NEBULA3_OPENGL4_VERBOSE_DEBUG 1
+//#define NEBULA_OPENGL4_VERBOSE_DEBUG 1
 //------------------------------------------------------------------------------
 /**
 */
@@ -100,7 +100,7 @@ NebulaGLDebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GL
 		n_warning("Performance issue: %s\n", msg.AsCharPtr());
 		break;
 	default:		// Portability, Deprecated, Other
-#ifdef NEBULA3_OPENGL4_VERBOSE_DEBUG
+#ifdef NEBULA_OPENGL4_VERBOSE_DEBUG
 		n_printf("%s\n", msg.AsCharPtr());
 #endif
 		break;
@@ -248,7 +248,7 @@ OGL4RenderDevice::OpenOpenGL4Context()
 	// assert that we have GL version 4.3
 	n_assert(GLEW_VERSION_4_3);
 
-#if NEBULA3_OPENGL4_DEBUG
+#if NEBULA_OPENGL4_DEBUG
 	glEnable(GL_DEBUG_OUTPUT);
 	glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 	glDebugMessageCallback(NebulaGLDebugCallback, NULL);

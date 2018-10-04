@@ -39,7 +39,7 @@ MemoryPageHandler::HandleRequest(const Ptr<HttpRequest>& request)
     // configure a HTML page writer
     Ptr<HtmlPageWriter> htmlWriter = HtmlPageWriter::Create();
     htmlWriter->SetStream(request->GetResponseContentStream());
-    htmlWriter->SetTitle("NebulaT Memory Info");
+    htmlWriter->SetTitle("Nebula Memory Info");
     if (htmlWriter->Open())
     {
         htmlWriter->Element(HtmlElement::Heading1, "Memory");
@@ -48,11 +48,11 @@ MemoryPageHandler::HandleRequest(const Ptr<HttpRequest>& request)
         htmlWriter->LineBreak();
         htmlWriter->LineBreak();
 
-        // if not compiled with NEBULA3_MEMORY_STATS, display a message
-        #if (NEBULA3_MEMORY_STATS == 0)
-        htmlWriter->Text("Memory stats not available because NEBULA3_MEMORY_STATS was not defined "
+        // if not compiled with NEBULA_MEMORY_STATS, display a message
+        #if (NEBULA_MEMORY_STATS == 0)
+        htmlWriter->Text("Memory stats not available because NEBULA_MEMORY_STATS was not defined "
                          "when application was compiled. Go to /foundation/core/config.h, change "
-                         "NEBULA3_MEMORY_STATS to (1) and recompile the application!");
+                         "NEBULA_MEMORY_STATS to (1) and recompile the application!");
         #else
 
         htmlWriter->Text("This includes all allocations that go through the Memory subsystem "
@@ -71,30 +71,30 @@ MemoryPageHandler::HandleRequest(const Ptr<HttpRequest>& request)
             heapAllocCount += heapStats[i].allocCount;
             heapAllocSize  += heapStats[i].allocSize;
         };
-        htmlWriter->Element(HtmlElement::Heading3, "NebulaT Overall Stats");
+        htmlWriter->Element(HtmlElement::Heading3, "Nebula Overall Stats");
         htmlWriter->Begin(HtmlElement::Table);
             htmlWriter->Begin(HtmlElement::TableRow);
-                htmlWriter->Element(HtmlElement::TableData, "NebulaT Global Heaps Alloc Count: ");
+                htmlWriter->Element(HtmlElement::TableData, "Nebula Global Heaps Alloc Count: ");
                 htmlWriter->Element(HtmlElement::TableData, String::FromLong(Memory::TotalAllocCount));
             htmlWriter->End(HtmlElement::TableRow);
             htmlWriter->Begin(HtmlElement::TableRow);
-                htmlWriter->Element(HtmlElement::TableData, "NebulaT Global Heaps Alloc Size: ");
+                htmlWriter->Element(HtmlElement::TableData, "Nebula Global Heaps Alloc Size: ");
                 htmlWriter->Element(HtmlElement::TableData, String::FromLong(Memory::TotalAllocSize) + " bytes");
             htmlWriter->End(HtmlElement::TableRow);
             htmlWriter->Begin(HtmlElement::TableRow);
-                htmlWriter->Element(HtmlElement::TableData, "NebulaT Local Heaps Alloc Count: ");
+                htmlWriter->Element(HtmlElement::TableData, "Nebula Local Heaps Alloc Count: ");
                 htmlWriter->Element(HtmlElement::TableData, String::FromLong(heapAllocCount));
             htmlWriter->End(HtmlElement::TableRow);
             htmlWriter->Begin(HtmlElement::TableRow);
-                htmlWriter->Element(HtmlElement::TableData, "NebulaT Local Heaps Alloc Size: ");
+                htmlWriter->Element(HtmlElement::TableData, "Nebula Local Heaps Alloc Size: ");
                 htmlWriter->Element(HtmlElement::TableData, String::FromLong(heapAllocSize) + " bytes");
             htmlWriter->End(HtmlElement::TableRow);
             htmlWriter->Begin(HtmlElement::TableRow);
-                htmlWriter->Element(HtmlElement::TableData, "NebulaT Overall Alloc Count: ");
+                htmlWriter->Element(HtmlElement::TableData, "Nebula Overall Alloc Count: ");
                 htmlWriter->Element(HtmlElement::TableData, String::FromLong(heapAllocCount + Memory::TotalAllocCount));
             htmlWriter->End(HtmlElement::TableRow);
             htmlWriter->Begin(HtmlElement::TableRow);
-                htmlWriter->Element(HtmlElement::TableData, "NebulaT Overall Alloc Size: ");
+                htmlWriter->Element(HtmlElement::TableData, "Nebula Overall Alloc Size: ");
                 htmlWriter->Element(HtmlElement::TableData, String::FromLong(heapAllocSize + Memory::TotalAllocSize) + " bytes");
             htmlWriter->End(HtmlElement::TableRow);
         htmlWriter->End(HtmlElement::Table);
@@ -167,7 +167,7 @@ MemoryPageHandler::HandleRequest(const Ptr<HttpRequest>& request)
         htmlWriter->End(HtmlElement::Table);
 
         // dump RefCounted pool allocator stats
-        #if NEBULA3_OBJECTS_USE_MEMORYPOOL
+        #if NEBULA_OBJECTS_USE_MEMORYPOOL
         
         htmlWriter->Element(HtmlElement::Heading3, "Object PoolArrayAllocator Stats");
         htmlWriter->AddAttr("border", "1");
@@ -215,8 +215,8 @@ MemoryPageHandler::HandleRequest(const Ptr<HttpRequest>& request)
         htmlWriter->End(HtmlElement::Table);
 
 
-        #endif // NEBULA3_OBJECTS_USE_MEMORYPOOL
-        #endif // NEBULA3_MEMORY_STATS
+        #endif // NEBULA_OBJECTS_USE_MEMORYPOOL
+        #endif // NEBULA_MEMORY_STATS
         htmlWriter->Close();
         request->SetStatus(HttpStatus::OK);
     }

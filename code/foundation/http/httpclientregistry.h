@@ -11,7 +11,7 @@
     (C) 2013-2016 Individual contributors, see AUTHORS file
 */
 // HttpClientRegistry not implemented on the Wii
-#if __NEBULA3_HTTP_FILESYSTEM__
+#if __NEBULA_HTTP_FILESYSTEM__
 #include "core/refcounted.h"
 #include "core/singleton.h"
 #include "http/httpclient.h"

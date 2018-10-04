@@ -17,7 +17,7 @@ class OGL4StreamTextureLoader : public Resources::StreamResourceLoader
 {
     __DeclareClass(OGL4StreamTextureLoader);
 private:
-    /// setup the texture from a Nebula3 stream
+    /// setup the texture from a Nebula stream
     virtual bool SetupResourceFromStream(const Ptr<IO::Stream>& stream);
 };
 

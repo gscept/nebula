@@ -11,7 +11,7 @@ LIST(APPEND extlibs_libjpg_SRCS ${SRC} ${HEAD})
 SOURCE_GROUP(libjpeg FILES ${extlibs_libjpg_SRCS})
 
 ADD_LIBRARY(libjpeg STATIC ${extlibs_libjpg_SRCS})
-TARGET_INCLUDE_DIRECTORIES(libjpeg PUBLIC ${Nebula3_SOURCE_DIR}/code/extlibs)
+TARGET_INCLUDE_DIRECTORIES(libjpeg PUBLIC ${Nebula_SOURCE_DIR}/code/extlibs)
 SET_TARGET_PROPERTIES(libjpeg PROPERTIES FOLDER "extlibs")
 
 N_SET_COMPILER_DEFAULTS()

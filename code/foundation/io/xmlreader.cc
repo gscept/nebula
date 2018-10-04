@@ -465,7 +465,7 @@ XmlReader::GetFloat2(const char* name) const
 float4
 XmlReader::GetFloat4(const char* name) const
 {
-#if NEBULA3_XMLREADER_LEGACY_VECTORS
+#if NEBULA_XMLREADER_LEGACY_VECTORS
     const String& float4String = this->GetString(name);
     Array<String> tokens = float4String.Tokenize(", \t");
     if (tokens.Size() == 3)

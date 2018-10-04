@@ -70,7 +70,7 @@ extern const char* GetHeapTypeName(HeapType heapType);
     Global PoolArrayAllocator objects, these are all setup in a central
     place in the Memory::SetupHeaps() function!
 */
-#if NEBULA3_OBJECTS_USE_MEMORYPOOL
+#if NEBULA_OBJECTS_USE_MEMORYPOOL
 class PoolArrayAllocator;
 extern PoolArrayAllocator* ObjectPoolAllocator;  // Rtti::AllocInstanceMemory() and new operators alloc from here
 #endif    

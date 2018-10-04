@@ -11,7 +11,7 @@
 #include "resources/resourcemanager.h"
 #include "coregraphics/config.h"
 
-#if NEBULA3_LEGACY_SUPPORT
+#if NEBULA_LEGACY_SUPPORT
 namespace Legacy
 {
 __ImplementClass(Legacy::Nvx2StreamReader, 'N2SR', IO::StreamReader);
@@ -320,4 +320,4 @@ Nvx2StreamReader::SetupIndexBuffer(const Resources::ResourceName& name)
 
 } // namespace Legacy
 
-#endif // NEBULA3_LEGACY_SUPPORT
+#endif // NEBULA_LEGACY_SUPPORT

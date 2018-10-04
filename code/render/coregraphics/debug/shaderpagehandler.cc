@@ -52,7 +52,7 @@ ShaderPageHandler::HandleRequest(const Ptr<HttpRequest>& request)
     // no command, send the home page
     Ptr<HtmlPageWriter> htmlWriter = HtmlPageWriter::Create();
     htmlWriter->SetStream(request->GetResponseContentStream());
-    htmlWriter->SetTitle("NebulaT Shaders");
+    htmlWriter->SetTitle("Nebula Shaders");
     if (htmlWriter->Open())
     {
         ShaderServer* shdServer = ShaderServer::Instance();
@@ -125,7 +125,7 @@ ShaderPageHandler::HandleShaderInfoRequest(const Util::String& resId, const Ptr<
 
     Ptr<HtmlPageWriter> htmlWriter = HtmlPageWriter::Create();
     htmlWriter->SetStream(responseContentStream);
-    htmlWriter->SetTitle("NebulaT Shader Info");
+    htmlWriter->SetTitle("Nebula Shader Info");
     if (htmlWriter->Open())
     {
         // we need to create a temp shader instance to get reflection info
@@ -158,7 +158,7 @@ ShaderPageHandler::HandleShaderInfoRequest(const Util::String& resId, const Ptr<
 
         // display shader variables
         htmlWriter->Element(HtmlElement::Heading3, "Shader Variables");
-#if __NEBULA3_HTTP__
+#if __NEBULA_HTTP__
 		if (numVars > 0)
         {
             this->WriteShaderVariableTable(htmlWriter, shd);

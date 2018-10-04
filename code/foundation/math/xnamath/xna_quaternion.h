@@ -27,7 +27,7 @@ typedef const quaternion& __QuaternionArg;
 #endif
 
 
-NEBULA3_ALIGN16
+NEBULA_ALIGN16
 #if __XBOX360__
 __declspec(passinreg)
 #endif

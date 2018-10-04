@@ -134,7 +134,7 @@ TrivialArray<TYPE>::TrivialArray(const Array<TYPE>& rhs) :
 template<class TYPE> void
 TrivialArray<TYPE>::Copy(const TrivialArray<TYPE>& src)
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(0 == this->elements);
     #endif
 
@@ -154,7 +154,7 @@ TrivialArray<TYPE>::Copy(const TrivialArray<TYPE>& src)
 template<class TYPE> void
 TrivialArray<TYPE>::Copy(const Array<TYPE>& src)
 {
-#if NEBULA3_BOUNDSCHECKS
+#if NEBULA_BOUNDSCHECKS
     n_assert(0 == this->elements);
 #endif    
     this->grow = src.grow;
@@ -261,7 +261,7 @@ TrivialArray<TYPE>::GrowTo(SizeT newCapacity)
 template<class TYPE> void
 TrivialArray<TYPE>::Move(IndexT fromIndex, IndexT toIndex)
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements);
     n_assert(fromIndex < this->size);
     #endif
@@ -312,7 +312,7 @@ TrivialArray<TYPE>::Move(IndexT fromIndex, IndexT toIndex)
 template<class TYPE> void
 TrivialArray<TYPE>::EraseIndex(IndexT index)
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements && (index < this->size));
     #endif
     if (index == (this->size - 1))
@@ -333,7 +333,7 @@ TrivialArray<TYPE>::EraseIndex(IndexT index)
 template<class TYPE> void
 TrivialArray<TYPE>::EraseIndexSwap(IndexT index)
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements && (index < this->size));
     #endif
 

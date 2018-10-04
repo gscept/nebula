@@ -46,7 +46,7 @@ extern void Fill(void* ptr, size_t numBytes, unsigned char value);
 //------------------------------------------------------------------------------
 /**
     Get the system's total current memory, this does not only include
-    Nebula3's memory allocations but the memory usage of the entire system.
+    Nebula's memory allocations but the memory usage of the entire system.
 */
 struct TotalMemoryStatus
 {
@@ -61,7 +61,7 @@ extern TotalMemoryStatus GetTotalMemoryStatus();
 /**
     Debug and memory validation functions.
 */
-#if NEBULA3_MEMORY_STATS
+#if NEBULA_MEMORY_STATS
 /// enable memory logging
 void EnableMemoryLogging(unsigned int threshold, HeapType = InvalidHeapType);
 /// disable memory logging
@@ -70,7 +70,7 @@ void DisableMemoryLogging();
 void ToggleMemoryLogging(unsigned int threshold, HeapType = InvalidHeapType);
 #endif
     
-#if NEBULA3_MEMORY_ADVANCED_DEBUGGING
+#if NEBULA_MEMORY_ADVANCED_DEBUGGING
 /// check memory lists for consistency
 extern bool ValidateMemory();
 /// dump current memory status to log file
@@ -79,7 +79,7 @@ extern void Checkpoint(const char* msg);
 void DumpMemoryLeaks();
 #endif
     
-#if NEBULA3_MEMORY_ADVANCED_DEBUGGING
+#if NEBULA_MEMORY_ADVANCED_DEBUGGING
 #define __MEMORY_CHECKPOINT(s) Memory::Checkpoint(##s)
 #else
 #define __MEMORY_CHECKPOINT(s)

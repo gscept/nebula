@@ -3,7 +3,7 @@
 /**
     @class App::ConsoleApplication
   
-    Base class for Nebula3 console applications. Will provide a typicel
+    Base class for Nebula console applications. Will provide a typicel
     execution environment for console apps.
     
     (C) 2006 Radon Labs GmbH

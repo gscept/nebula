@@ -7,7 +7,7 @@
 #include "memory/win360/win360memoryconfig.h"
 #include "core/sysfunc.h"
 
-#if NEBULA3_OBJECTS_USE_MEMORYPOOL
+#if NEBULA_OBJECTS_USE_MEMORYPOOL
 #include "memory/poolarrayallocator.h"
 #endif
 
@@ -15,14 +15,14 @@ namespace Memory
 {
 HANDLE volatile Heaps[NumHeapTypes] = { NULL };
 
-#if NEBULA3_OBJECTS_USE_MEMORYPOOL
+#if NEBULA_OBJECTS_USE_MEMORYPOOL
 PoolArrayAllocator* ObjectPoolAllocator = 0;
 #endif
 
 //------------------------------------------------------------------------------
 /**
     This method is called once at application startup from 
-    Core::SysFunc::Setup() to setup the various Nebula3 heaps.
+    Core::SysFunc::Setup() to setup the various Nebula heaps.
 */
 void
 SetupHeaps()
@@ -99,7 +99,7 @@ SetupHeaps()
         }
     }
 
-    #if NEBULA3_OBJECTS_USE_MEMORYPOOL        
+    #if NEBULA_OBJECTS_USE_MEMORYPOOL        
     // setup the RefCounted pool allocator
     // HMM THESE NUMBERS ARE SO HIGH BECAUSE OF GODSEND...
     #if NEBULA_DEBUG

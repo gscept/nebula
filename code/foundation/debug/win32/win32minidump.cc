@@ -40,7 +40,7 @@ Win32MiniDump::WriteMiniDump()
 bool
 Win32MiniDump::WriteMiniDumpInternal(EXCEPTION_POINTERS* exceptionInfo)
 {
-#if (NEBULA3_ENABLE_MINIDUMPS)
+#if (NEBULA_ENABLE_MINIDUMPS)
     String dumpFilename = BuildMiniDumpFilename();
     if (dumpFilename.IsValid())
     {

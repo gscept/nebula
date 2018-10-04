@@ -74,7 +74,7 @@ FrameScriptLoader::LoadFrameScript(const IO::URI& path)
 		JzonValue* node = jzon_get(json, "version");
 		n_assert(node->int_value >= 2);
 		node = jzon_get(json, "engine");
-		n_assert(Util::String(node->string_value) == "NebulaTrifid");
+		n_assert(Util::String(node->string_value) == "Nebularifid");
 
 
 #define CONSTRUCTOR_MACRO(type) \
@@ -412,7 +412,7 @@ FrameScriptLoader::ParseGlobalState(const Ptr<Frame::FrameScript>& script, JzonV
 	op->SetName(name->string_value);
 
 	// create shared state, this will be set while running the script and update the shared state
-	//CoreGraphics::ShaderStateId state = ShaderServer::Instance()->ShaderCreateSharedState("shd:shared.fxb", { NEBULAT_FRAME_GROUP });
+	//CoreGraphics::ShaderStateId state = ShaderServer::Instance()->ShaderCreateSharedState("shd:shared.fxb", { NEBULA_FRAME_GROUP });
 	//op->state = state;
 
 	// setup variables
@@ -1169,7 +1169,7 @@ FrameScriptLoader::ParseShaderState(const Ptr<Frame::FrameScript>& script, JzonV
 	n_assert(shader != NULL);
     Util::String shaderRes = "shd:" + Util::String(shader->string_value) + ".fxb";
 	shd = ShaderGet(shaderRes);
-	table = ShaderCreateResourceTable(shd, NEBULAT_BATCH_GROUP);
+	table = ShaderCreateResourceTable(shd, NEBULA_BATCH_GROUP);
 
 	JzonValue* vars = jzon_get(node, "variables");
 	if (vars != NULL) ParseShaderVariables(script, shd, table, constantBuffers, vars);

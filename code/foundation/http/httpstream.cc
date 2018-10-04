@@ -8,7 +8,7 @@
 #include "http/httpclientregistry.h"
 
 // HttpStream not implemented on Wii
-#if __NEBULA3_HTTP_FILESYSTEM__
+#if __NEBULA_HTTP_FILESYSTEM__
 namespace Http
 {
 __ImplementClass(Http::HttpStream, 'HTST', IO::MemoryStream);

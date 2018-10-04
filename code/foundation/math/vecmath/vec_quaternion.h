@@ -27,7 +27,7 @@ typedef const quaternion& __QuaternionArg;
 #endif
 
 
-class NEBULA3_ALIGN16 quaternion
+class NEBULA_ALIGN16 quaternion
 {
 public:
     /// default constructor, NOTE: does NOT setup components!
@@ -487,7 +487,7 @@ quaternion::barycentric(const quaternion& q0, const quaternion& q1, const quater
 __forceinline quaternion
 quaternion::conjugate(const quaternion& q)
 {
-	const NEBULA3_ALIGN16 mm128_vec con = {-1.0f, -1.0f, -1.0f, 1.0f};	
+	const NEBULA_ALIGN16 mm128_vec con = {-1.0f, -1.0f, -1.0f, 1.0f};	
 	quaternion qq(_mm_mul_ps(q.vec.vec,con.vec));
 	return qq;
 }

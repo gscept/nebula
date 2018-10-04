@@ -23,7 +23,7 @@ public:
 		void Run(const IndexT frameIndex);
 		void Discard();
 
-#if defined(NEBULAT_GRAPHICS_DEBUG)
+#if defined(NEBULA_GRAPHICS_DEBUG)
 		Util::StringAtom name;
 #endif
 

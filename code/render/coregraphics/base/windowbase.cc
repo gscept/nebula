@@ -21,7 +21,7 @@ WindowBase::WindowBase() :
 	modeSwitchEnabled(true),
 	tripleBufferingEnabled(false),
 	alwaysOnTop(false),
-	windowTitle("Nebula3 Application Window"),
+	windowTitle("Nebula Application Window"),
 	iconName("NebulaIcon"),
 	windowData(0),
 	embedded(false),

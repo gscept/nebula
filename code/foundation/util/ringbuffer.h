@@ -75,7 +75,7 @@ private:
 template<class TYPE> void
 RingBuffer<TYPE>::Allocate(SizeT c)
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(0 == this->elements);
     n_assert(c > 0);
     #endif
@@ -109,7 +109,7 @@ RingBuffer<TYPE>::Delete()
 template<class TYPE> void
 RingBuffer<TYPE>::Copy(const RingBuffer<TYPE>& rhs)
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(0 == this->elements);
     #endif
     this->Allocate(rhs.capacity);
@@ -182,7 +182,7 @@ RingBuffer<TYPE>::operator=(const RingBuffer<TYPE>& rhs)
 template<class TYPE> TYPE&
 RingBuffer<TYPE>::operator[](IndexT index) const
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements && (index < this->size));
     #endif
     IndexT absIndex = index + this->baseIndex;
@@ -209,7 +209,7 @@ RingBuffer<TYPE>::Front() const
 template<class TYPE> TYPE&
 RingBuffer<TYPE>::Back() const
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(this->size > 0);
     #endif
     return (*this)[this->size - 1];
@@ -269,7 +269,7 @@ RingBuffer<TYPE>::Size() const
 template<class TYPE> void
 RingBuffer<TYPE>::Add(const TYPE& elm)
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(0 != this->elements);
     #endif
 

@@ -16,7 +16,7 @@ __ImplementSingleton(App::Application);
 */
 Application::Application() :
     companyName("gscept"),
-    appName("NebulaT Application"),
+    appName("Nebula Application"),
     appID("RLTITLEID"), // the format of application/title id is dependend on used platform
     appVersion("1.00"),
     isOpen(false),
@@ -67,7 +67,7 @@ Application::Run()
 //------------------------------------------------------------------------------
 /**
     This method must be called right before the main() function's end.
-    It will properly cleanup the Nebula3 runtime, its static objects,
+    It will properly cleanup the Nebula runtime, its static objects,
     private heaps and finally produce a refcount leak and mem leak report
     (debug builds only).
 */

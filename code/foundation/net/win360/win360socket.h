@@ -8,7 +8,7 @@
     Xbox Live related stuff, use the Xbox-specific add-on modules!
 
     A lowlevel socket wrapper class. This class is primarily a
-    platform abstraction class, not an "end-user-class". Usually a Nebula3 
+    platform abstraction class, not an "end-user-class". Usually a Nebula 
     application doesn't use this class directly but instead uses the higher
     level classes like TcpServer, TclClient, etc...
 

@@ -80,14 +80,14 @@ OGL4LightServer::Open()
 	this->lightProbeMesh = resManager->CreateManagedResource(Mesh::RTTI, ResourceId("msh:system/box.nvx2")).downcast<ManagedMesh>();
 
 	Util::String lightTexPath("tex:system/white");
-	lightTexPath.Append(NEBULA3_TEXTURE_EXTENSION);
+	lightTexPath.Append(NEBULA_TEXTURE_EXTENSION);
 
 	// setup the shared light project map resource
 	this->lightProjMap = ResourceManager::Instance()->CreateManagedResource(Texture::RTTI, ResourceId(lightTexPath)).downcast<ManagedTexture>();
 
 	// light group is for shared variables, default is for shader local variables
-	this->lightShader							= shdServer->GetShader("shd:lights")->CreateState({ NEBULAT_LIGHT_GROUP,  NEBULAT_DEFAULT_GROUP });
-	this->lightProbeShader						= shdServer->GetShader("shd:reflectionprojector")->CreateState({ NEBULAT_DEFAULT_GROUP });
+	this->lightShader							= shdServer->GetShader("shd:lights")->CreateState({ NEBULA_LIGHT_GROUP,  NEBULA_DEFAULT_GROUP });
+	this->lightProbeShader						= shdServer->GetShader("shd:reflectionprojector")->CreateState({ NEBULA_DEFAULT_GROUP });
 
 	this->globalLightFeatureBits[NoShadows]		= shdServer->FeatureStringToMask("Global");
 	this->globalLightFeatureBits[CastShadows]	= shdServer->FeatureStringToMask("Global|Alt0");
@@ -103,38 +103,38 @@ OGL4LightServer::Open()
 	this->lightProbeFeatureBits[LightProbeEntity::Sphere + 2] = shdServer->FeatureStringToMask("Alt1|Alt2");
 
 	// global light variables used for shadowing
-	this->globalLightCascadeOffset				= this->lightShader->GetVariableByName(NEBULA3_SEMANTIC_CASCADEOFFSET);
-	this->globalLightCascadeScale				= this->lightShader->GetVariableByName(NEBULA3_SEMANTIC_CASCADESCALE);
-	this->globalLightMinBorderPadding			= this->lightShader->GetVariableByName(NEBULA3_SEMANTIC_MINBORDERPADDING);
-	this->globalLightMaxBorderPadding			= this->lightShader->GetVariableByName(NEBULA3_SEMANTIC_MAXBORDERPADDING);
-	this->globalLightPartitionSize				= this->lightShader->GetVariableByName(NEBULA3_SEMANTIC_SHADOWPARTITIONSIZE);
+	this->globalLightCascadeOffset				= this->lightShader->GetVariableByName(NEBULA_SEMANTIC_CASCADEOFFSET);
+	this->globalLightCascadeScale				= this->lightShader->GetVariableByName(NEBULA_SEMANTIC_CASCADESCALE);
+	this->globalLightMinBorderPadding			= this->lightShader->GetVariableByName(NEBULA_SEMANTIC_MINBORDERPADDING);
+	this->globalLightMaxBorderPadding			= this->lightShader->GetVariableByName(NEBULA_SEMANTIC_MAXBORDERPADDING);
+	this->globalLightPartitionSize				= this->lightShader->GetVariableByName(NEBULA_SEMANTIC_SHADOWPARTITIONSIZE);
 
     // setup block for global light
     this->globalLightBuffer                     = ConstantBuffer::Create();
     this->globalLightBuffer->SetupFromBlockInShader(this->lightShader, "GlobalLightBlock");
-    this->globalLightDir                        = this->globalLightBuffer->GetVariableByName(NEBULA3_SEMANTIC_GLOBALLIGHTDIR);
-    this->globalLightColor                      = this->globalLightBuffer->GetVariableByName(NEBULA3_SEMANTIC_GLOBALLIGHTCOLOR);
-    this->globalBackLightColor                  = this->globalLightBuffer->GetVariableByName(NEBULA3_SEMANTIC_GLOBALBACKLIGHTCOLOR);
-    this->globalAmbientLightColor               = this->globalLightBuffer->GetVariableByName(NEBULA3_SEMANTIC_GLOBALAMBIENTLIGHTCOLOR);
-    this->globalBackLightOffset                 = this->globalLightBuffer->GetVariableByName(NEBULA3_SEMANTIC_GLOBALBACKLIGHTOFFSET);
-    this->globalLightShadowMatrixVar            = this->globalLightBuffer->GetVariableByName(NEBULA3_SEMANTIC_CSMSHADOWMATRIX);
+    this->globalLightDir                        = this->globalLightBuffer->GetVariableByName(NEBULA_SEMANTIC_GLOBALLIGHTDIR);
+    this->globalLightColor                      = this->globalLightBuffer->GetVariableByName(NEBULA_SEMANTIC_GLOBALLIGHTCOLOR);
+    this->globalBackLightColor                  = this->globalLightBuffer->GetVariableByName(NEBULA_SEMANTIC_GLOBALBACKLIGHTCOLOR);
+    this->globalAmbientLightColor               = this->globalLightBuffer->GetVariableByName(NEBULA_SEMANTIC_GLOBALAMBIENTLIGHTCOLOR);
+    this->globalBackLightOffset                 = this->globalLightBuffer->GetVariableByName(NEBULA_SEMANTIC_GLOBALBACKLIGHTOFFSET);
+    this->globalLightShadowMatrixVar            = this->globalLightBuffer->GetVariableByName(NEBULA_SEMANTIC_CSMSHADOWMATRIX);
 
 	// bind our custom buffer to the binding spot
 	this->globalLightBlockVar = this->lightShader->GetVariableByName("GlobalLightBlock");
     this->globalLightBlockVar->SetConstantBuffer(this->globalLightBuffer);
 
 	// local light variables
-	this->lightPosRange							= this->lightShader->GetVariableByName(NEBULA3_SEMANTIC_LIGHTPOSRANGE);
-	this->lightColor             				= this->lightShader->GetVariableByName(NEBULA3_SEMANTIC_LIGHTCOLOR);
-	this->lightProjTransform     				= this->lightShader->GetVariableByName(NEBULA3_SEMANTIC_LIGHTPROJTRANSFORM);
-	this->lightTransform						= this->lightShader->GetVariableByName(NEBULA3_SEMANTIC_LIGHTTRANSFORM);
-	this->lightProjMapVar						= this->lightShader->GetVariableByName(NEBULA3_SEMANTIC_LIGHTPROJMAP); 
-	this->lightProjCubeVar						= this->lightShader->GetVariableByName(NEBULA3_SEMANTIC_LIGHTPROJCUBE); 
-	this->shadowProjMapVar						= this->lightShader->GetVariableByName(NEBULA3_SEMANTIC_SHADOWPROJMAP);
-    this->shadowProjCubeVar                     = this->lightShader->GetVariableByName(NEBULA3_SEMANTIC_SHADOWPROJCUBE);
-	this->shadowProjTransform    				= this->lightShader->GetVariableByName(NEBULA3_SEMANTIC_SHADOWPROJTRANSFORM);
-	this->shadowOffsetScaleVar   				= this->lightShader->GetVariableByName(NEBULA3_SEMANTIC_SHADOWOFFSETSCALE);
-	this->shadowIntensityVar          			= this->lightShader->GetVariableByName(NEBULA3_SEMANTIC_SHADOWINTENSITY);
+	this->lightPosRange							= this->lightShader->GetVariableByName(NEBULA_SEMANTIC_LIGHTPOSRANGE);
+	this->lightColor             				= this->lightShader->GetVariableByName(NEBULA_SEMANTIC_LIGHTCOLOR);
+	this->lightProjTransform     				= this->lightShader->GetVariableByName(NEBULA_SEMANTIC_LIGHTPROJTRANSFORM);
+	this->lightTransform						= this->lightShader->GetVariableByName(NEBULA_SEMANTIC_LIGHTTRANSFORM);
+	this->lightProjMapVar						= this->lightShader->GetVariableByName(NEBULA_SEMANTIC_LIGHTPROJMAP); 
+	this->lightProjCubeVar						= this->lightShader->GetVariableByName(NEBULA_SEMANTIC_LIGHTPROJCUBE); 
+	this->shadowProjMapVar						= this->lightShader->GetVariableByName(NEBULA_SEMANTIC_SHADOWPROJMAP);
+    this->shadowProjCubeVar                     = this->lightShader->GetVariableByName(NEBULA_SEMANTIC_SHADOWPROJCUBE);
+	this->shadowProjTransform    				= this->lightShader->GetVariableByName(NEBULA_SEMANTIC_SHADOWPROJTRANSFORM);
+	this->shadowOffsetScaleVar   				= this->lightShader->GetVariableByName(NEBULA_SEMANTIC_SHADOWOFFSETSCALE);
+	this->shadowIntensityVar          			= this->lightShader->GetVariableByName(NEBULA_SEMANTIC_SHADOWINTENSITY);
 
 	//this->shadowConstants->SetFloat4(float4(100.0f, 100.0f, 0.003f, 1024.0f));
 }

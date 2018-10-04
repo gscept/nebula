@@ -26,7 +26,7 @@ PoolArrayAllocator::PoolArrayAllocator() :
 PoolArrayAllocator::~PoolArrayAllocator()
 {
     // check for mem leaks
-    #if NEBULA3_MEMORY_STATS
+    #if NEBULA_MEMORY_STATS
     this->Dump();
     #endif
 }
@@ -155,7 +155,7 @@ PoolArrayAllocator::GetMemoryPool(IndexT index) const
 //------------------------------------------------------------------------------
 /**
 */
-#if NEBULA3_MEMORY_STATS
+#if NEBULA_MEMORY_STATS
 void
 PoolArrayAllocator::Dump()
 {

@@ -3,7 +3,7 @@
 /**
     @class Util::Stack
   
-    Nebula3's stack class (a FILO container).
+    Nebula's stack class (a FILO container).
       
     (C) 2006 Radon Labs GmbH
     (C) 2013-2016 Individual contributors, see AUTHORS file

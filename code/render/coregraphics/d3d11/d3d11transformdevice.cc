@@ -23,19 +23,19 @@ using namespace Math;
 /**
 */
 D3D11TransformDevice::D3D11TransformDevice() :
-    mvpSemantic(NEBULA3_SEMANTIC_MODELVIEWPROJECTION),
-    modelSemantic(NEBULA3_SEMANTIC_MODEL),
-    viewSemantic(NEBULA3_SEMANTIC_VIEW),
-    modelViewSemantic(NEBULA3_SEMANTIC_MODELVIEW),
-	invModelSemantic(NEBULA3_SEMANTIC_INVMODEL),
-    invModelViewSemantic(NEBULA3_SEMANTIC_INVMODELVIEW),
-    invViewSemantic(NEBULA3_SEMANTIC_INVVIEW),
-    viewProjSemantic(NEBULA3_SEMANTIC_VIEWPROJECTION),
-	invViewProjSemantic(NEBULA3_SEMANTIC_INVVIEWPROJECTION),
-    eyePosSemantic(NEBULA3_SEMANTIC_EYEPOS),
-    projSemantic(NEBULA3_SEMANTIC_PROJECTION),
-    invProjectionSemantic(NEBULA3_SEMANTIC_INVPROJECTION),
-	csmSplitMatricesSemantic(NEBULA3_SEMANTIC_CSMSPLITMATRICES)
+    mvpSemantic(NEBULA_SEMANTIC_MODELVIEWPROJECTION),
+    modelSemantic(NEBULA_SEMANTIC_MODEL),
+    viewSemantic(NEBULA_SEMANTIC_VIEW),
+    modelViewSemantic(NEBULA_SEMANTIC_MODELVIEW),
+	invModelSemantic(NEBULA_SEMANTIC_INVMODEL),
+    invModelViewSemantic(NEBULA_SEMANTIC_INVMODELVIEW),
+    invViewSemantic(NEBULA_SEMANTIC_INVVIEW),
+    viewProjSemantic(NEBULA_SEMANTIC_VIEWPROJECTION),
+	invViewProjSemantic(NEBULA_SEMANTIC_INVVIEWPROJECTION),
+    eyePosSemantic(NEBULA_SEMANTIC_EYEPOS),
+    projSemantic(NEBULA_SEMANTIC_PROJECTION),
+    invProjectionSemantic(NEBULA_SEMANTIC_INVPROJECTION),
+	csmSplitMatricesSemantic(NEBULA_SEMANTIC_CSMSPLITMATRICES)
 {
     // empty
 }

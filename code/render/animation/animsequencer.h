@@ -95,7 +95,7 @@ private:
     /// FIXME FIXME FIXME: helper method, for determining dominating job
     IndexT FindDominatingAnimJobIndex(Timing::Tick startTime, Timing::Tick endTime) const;
 
-    #if NEBULA3_ANIMATIONSYSTEM_FRAMEDUMP
+    #if NEBULA_ANIMATIONSYSTEM_FRAMEDUMP
     /// dump debug information for the current frame
     void DumpFrameDebugInfo(Timing::Tick time);
     #endif

@@ -23,11 +23,11 @@
 #include "io/gamecontentserver.h"
 #include "util/delegate.h"
 #include "messaging/message.h"
-#if __NEBULA3_HTTP__
+#if __NEBULA_HTTP__
 #include "http/httpinterface.h"
 #include "http/httpserverproxy.h"
 #endif
-#if __NEBULA3_HTTP_FILESYSTEM__
+#if __NEBULA_HTTP_FILESYSTEM__
 #include "http/httpclientregistry.h"
 #endif
 
@@ -97,13 +97,13 @@ protected:
 	Ptr<Resources::ResourceManager> resManager;
     Util::Blob windowData;
 
-#if __NEBULA3_HTTP__            
+#if __NEBULA_HTTP__            
     Ptr<Debug::DebugInterface> debugInterface;
     Ptr<Http::HttpInterface> httpInterface;
     Ptr<Http::HttpServerProxy> httpServerProxy;
 #endif
 
-#if __NEBULA3_HTTP_FILESYSTEM__
+#if __NEBULA_HTTP_FILESYSTEM__
     Ptr<Http::HttpClientRegistry> httpClientRegistry;
 #endif         
 

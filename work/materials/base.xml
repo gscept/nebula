@@ -29,7 +29,7 @@
 	MAX IS 32
 	
 -->
-<Nebula3>
+<Nebula>
  <Materials>
  
    <!--
@@ -791,4 +791,4 @@
   </Material>
   
  </Materials>
-</Nebula3>
+</Nebula>

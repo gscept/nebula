@@ -397,7 +397,7 @@ CreatePass(const PassCreateInfo& info)
 	loadInfo.passBlockBuffer = CreateConstantBuffer(cbinfo);
 	loadInfo.renderTargetDimensionsVar = ShaderGetConstantBinding(sid, "RenderTargetDimensions");
 
-	CoreGraphics::ResourceTableLayoutId tableLayout = ShaderGetResourceTableLayout(sid, NEBULAT_PASS_GROUP);
+	CoreGraphics::ResourceTableLayoutId tableLayout = ShaderGetResourceTableLayout(sid, NEBULA_PASS_GROUP);
 	runtimeInfo.passDescriptorSet = CreateResourceTable(ResourceTableCreateInfo{ tableLayout });
 	runtimeInfo.passPipelineLayout = ShaderGetResourcePipeline(sid);
 
@@ -506,7 +506,7 @@ PassBegin(const PassId& id)
 	BindDescriptorsGraphics(
 		&ResourceTableGetVkDescriptorSet(runtimeInfo.passDescriptorSet),
 		ResourcePipelineGetVk(runtimeInfo.passPipelineLayout), 
-		NEBULAT_PASS_GROUP, 
+		NEBULA_PASS_GROUP, 
 		1, 
 		nullptr, 
 		0, 

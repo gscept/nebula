@@ -14,7 +14,7 @@
 #include "core/config.h"
 
 // HttpClient not implemented on the Wii
-#if __NEBULA3_HTTP_FILESYSTEM__
+#if __NEBULA_HTTP_FILESYSTEM__
 #include "core/refcounted.h"
 #include "net/tcpclient.h"
 #include "http/httpstatus.h"

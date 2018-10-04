@@ -52,15 +52,15 @@ OGL4TransformDevice::Open()
     // setup camera block, update once per frame - no need to sync
     this->cameraBuffer = ConstantBuffer::Create();
 	this->cameraBuffer->SetupFromBlockInShader(this->sharedShader, "CameraBlock");
-    this->viewVar = this->cameraBuffer->GetVariableByName(NEBULA3_SEMANTIC_VIEW);
-    this->invViewVar = this->cameraBuffer->GetVariableByName(NEBULA3_SEMANTIC_INVVIEW);
-    this->viewProjVar = this->cameraBuffer->GetVariableByName(NEBULA3_SEMANTIC_VIEWPROJECTION);
-    this->invViewProjVar = this->cameraBuffer->GetVariableByName(NEBULA3_SEMANTIC_INVVIEWPROJECTION);
-    this->projVar = this->cameraBuffer->GetVariableByName(NEBULA3_SEMANTIC_PROJECTION);
-    this->invProjVar = this->cameraBuffer->GetVariableByName(NEBULA3_SEMANTIC_INVPROJECTION);
-    this->eyePosVar = this->cameraBuffer->GetVariableByName(NEBULA3_SEMANTIC_EYEPOS);
-    this->focalLengthVar = this->cameraBuffer->GetVariableByName(NEBULA3_SEMANTIC_FOCALLENGTH);
-    this->timeAndRandomVar = this->cameraBuffer->GetVariableByName(NEBULA3_SEMANTIC_TIMEANDRANDOM);
+    this->viewVar = this->cameraBuffer->GetVariableByName(NEBULA_SEMANTIC_VIEW);
+    this->invViewVar = this->cameraBuffer->GetVariableByName(NEBULA_SEMANTIC_INVVIEW);
+    this->viewProjVar = this->cameraBuffer->GetVariableByName(NEBULA_SEMANTIC_VIEWPROJECTION);
+    this->invViewProjVar = this->cameraBuffer->GetVariableByName(NEBULA_SEMANTIC_INVVIEWPROJECTION);
+    this->projVar = this->cameraBuffer->GetVariableByName(NEBULA_SEMANTIC_PROJECTION);
+    this->invProjVar = this->cameraBuffer->GetVariableByName(NEBULA_SEMANTIC_INVPROJECTION);
+    this->eyePosVar = this->cameraBuffer->GetVariableByName(NEBULA_SEMANTIC_EYEPOS);
+    this->focalLengthVar = this->cameraBuffer->GetVariableByName(NEBULA_SEMANTIC_FOCALLENGTH);
+    this->timeAndRandomVar = this->cameraBuffer->GetVariableByName(NEBULA_SEMANTIC_TIMEANDRANDOM);
     this->cameraBlockVar = this->sharedShader->GetVariableByName("CameraBlock");
     this->cameraBlockVar->SetBufferHandle(this->cameraBuffer->GetHandle());
 
@@ -68,7 +68,7 @@ OGL4TransformDevice::Open()
     this->shadowCameraBuffer = ConstantBuffer::Create();
 	this->shadowCameraBuffer->SetSync(true);
     this->shadowCameraBuffer->SetupFromBlockInShader(this->sharedShader, "ShadowCameraBlock");
-    this->viewMatricesVar = this->shadowCameraBuffer->GetVariableByName(NEBULA3_SEMANTIC_VIEWMATRIXARRAY);
+    this->viewMatricesVar = this->shadowCameraBuffer->GetVariableByName(NEBULA_SEMANTIC_VIEWMATRIXARRAY);
 	this->shadowCameraBlockVar = this->sharedShader->GetVariableByName("ShadowCameraBlock");
     this->shadowCameraBlockVar->SetBufferHandle(this->shadowCameraBuffer->GetHandle());
 
@@ -150,13 +150,13 @@ OGL4TransformDevice::ApplyViewMatrixArray(const Math::matrix44* matrices, SizeT 
 void
 OGL4TransformDevice::ApplyModelTransforms(const Ptr<Shader>& shdInst)
 {    
-    if (shdInst->HasVariableByName(NEBULA3_SEMANTIC_MODEL))
+    if (shdInst->HasVariableByName(NEBULA_SEMANTIC_MODEL))
     {
-        shdInst->GetVariableByName(NEBULA3_SEMANTIC_MODEL)->SetMatrix(this->GetModelTransform());
+        shdInst->GetVariableByName(NEBULA_SEMANTIC_MODEL)->SetMatrix(this->GetModelTransform());
     }
-    if (shdInst->HasVariableByName(NEBULA3_SEMANTIC_INVMODEL))
+    if (shdInst->HasVariableByName(NEBULA_SEMANTIC_INVMODEL))
     {
-        shdInst->GetVariableByName(NEBULA3_SEMANTIC_INVMODEL)->SetMatrix(this->GetInvModelTransform());
+        shdInst->GetVariableByName(NEBULA_SEMANTIC_INVMODEL)->SetMatrix(this->GetInvModelTransform());
     }
 }
 

@@ -12,7 +12,7 @@
     (C) 2013-2016 Individual contributors, see AUTHORS file
 */    
 #include "core/config.h"
-#if NEBULA3_LEGACY_SUPPORT
+#if NEBULA_LEGACY_SUPPORT
 #include "io/streamreader.h"
 #include "coregraphics/vertexbuffer.h"
 #include "coregraphics/indexbuffer.h"
@@ -289,4 +289,4 @@ Nvx2StreamReader::GetAccess() const
 
 } // namespace Legacy
 //------------------------------------------------------------------------------
-#endif // NEBULA3_LEGACY_SUPPORT
+#endif // NEBULA_LEGACY_SUPPORT

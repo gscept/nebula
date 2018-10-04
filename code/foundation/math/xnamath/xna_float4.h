@@ -29,7 +29,7 @@ typedef const float4& __Float4Arg;
 #endif
 
 
-NEBULA3_ALIGN16
+NEBULA_ALIGN16
 #if __XBOX360__
 __declspec(passinreg)
 #endif

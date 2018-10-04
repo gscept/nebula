@@ -18,7 +18,7 @@ class D3D11StreamTextureLoader : public Resources::StreamResourceLoader
 {
     __DeclareClass(D3D11StreamTextureLoader);
 private:
-    /// setup the texture from a Nebula3 stream
+    /// setup the texture from a Nebula stream
     virtual bool SetupResourceFromStream(const Ptr<IO::Stream>& stream);
 };
 

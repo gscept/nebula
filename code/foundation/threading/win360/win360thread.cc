@@ -31,7 +31,7 @@ Win360Thread::Win360Thread() :
     threadHandle(0),
 	affinityMask(0),
     priority(Normal),
-    stackSize(NEBULA3_THREAD_DEFAULTSTACKSIZE)
+    stackSize(NEBULA_THREAD_DEFAULTSTACKSIZE)
 {
     // register with thread list
     #if NEBULA_DEBUG
@@ -210,7 +210,7 @@ Win360Thread::ThreadProc(LPVOID self)
 {
     n_assert(0 != self);
     
-    #if NEBULA3_ENABLE_THREADLOCAL_STRINGATOM_TABLES
+    #if NEBULA_ENABLE_THREADLOCAL_STRINGATOM_TABLES
     // setup thread-local string atom table (will be discarded when thread terminates)
     LocalStringAtomTable localStringAtomTable;
     #endif

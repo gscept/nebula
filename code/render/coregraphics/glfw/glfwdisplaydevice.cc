@@ -21,7 +21,7 @@ static LRESULT CALLBACK windowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
 #endif
 
 
-#if NEBULA3_OPENGL4_DEBUG
+#if NEBULA_OPENGL4_DEBUG
 //------------------------------------------------------------------------------
 /**
 */

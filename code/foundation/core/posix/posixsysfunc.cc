@@ -26,7 +26,7 @@ const Core::ExitHandler* SysFunc::ExitHandlers = 0;
 System::SystemInfo SysFunc::systemInfo;
 
 Util::GlobalStringAtomTable* globalStringAtomTable = 0;
-#if NEBULA3_ENABLE_THREADLOCAL_STRINGATOM_TABLES
+#if NEBULA_ENABLE_THREADLOCAL_STRINGATOM_TABLES
     Util::LocalStringAtomTable* localStringAtomTable = 0;
 #endif
     
@@ -54,7 +54,7 @@ SysFunc::Setup()
         #endif   
 
         globalStringAtomTable = n_new(Util::GlobalStringAtomTable);
-        #if NEBULA3_ENABLE_THREADLOCAL_STRINGATOM_TABLES
+        #if NEBULA_ENABLE_THREADLOCAL_STRINGATOM_TABLES
             localStringAtomTable = n_new(Util::LocalStringAtomTable);
         #endif    
 
@@ -65,7 +65,7 @@ SysFunc::Setup()
 /**
     This method is called by Application::Exit(), or otherwise must be
     called right before the end of the programs main() function. The method
-    will properly shutdown the Nebula3 runtime environment, and report 
+    will properly shutdown the Nebula runtime environment, and report 
     refcounting and memory leaks (debug builds only). This method will not
     return.
 */
@@ -74,11 +74,11 @@ SysFunc::Exit(int exitCode)
 {
     // delete string atom tables
     n_delete(globalStringAtomTable);
-    #if NEBULA3_ENABLE_THREADLOCAL_STRINGATOM_TABLES
+    #if NEBULA_ENABLE_THREADLOCAL_STRINGATOM_TABLES
         n_delete(localStringAtomTable);
     #endif
     // first produce a RefCount leak report
-    #if NEBULA3_DEBUG
+    #if NEBULA_DEBUG
     Core::RefCounted::DumpRefCountingLeaks();
     #endif
 
@@ -97,13 +97,13 @@ SysFunc::Exit(int exitCode)
     Core::Factory::Destroy();
 
     // delete the memory pools
-    #if NEBULA3_OBJECTS_USE_MEMORYPOOL        
+    #if NEBULA_OBJECTS_USE_MEMORYPOOL        
     n_delete(Memory::ObjectPoolAllocator);
     Memory::ObjectPoolAllocator = 0;
     #endif
 
     // report mem leaks
-    #if NEBULA3_MEMORY_ADVANCED_DEBUGGING
+    #if NEBULA_MEMORY_ADVANCED_DEBUGGING
     Memory::DumpMemoryLeaks();
     #endif   
 

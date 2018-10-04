@@ -16,7 +16,7 @@ using namespace Util;
 /**
 */
 HistoryConsoleHandler::HistoryConsoleHandler() :
-    history(NEBULA3_CONSOLE_HISTORY_SIZE)
+    history(NEBULA_CONSOLE_HISTORY_SIZE)
 {
     // empty
 }
