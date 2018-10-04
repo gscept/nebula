@@ -18,8 +18,8 @@ AttrId::GetAllAttrIds()
 {
     n_assert(0 != AttributeDefinitionBase::NameRegistry);
 
-    // get attribute registry content
-    Util::Array<Util::KeyValuePair<Util::String, const Attr::AttributeDefinitionBase*> > attrDefs = AttributeDefinitionBase::NameRegistry->Content();
+    // get attribute registry content    
+    auto attrDefs = AttributeDefinitionBase::NameRegistry->Content();
     Util::FixedArray<AttrId> result(attrDefs.Size());
     IndexT i;
     SizeT num = attrDefs.Size();
