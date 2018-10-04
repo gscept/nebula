@@ -82,7 +82,7 @@ FrameSubpassFullscreenEffect::CompiledImpl::Run(const IndexT frameIndex)
 	// draw
 	CoreGraphics::BeginBatch(FrameBatchType::System);
 	this->fsq.ApplyMesh();
-	CoreGraphics::SetResourceTable(this->resourceTable, NEBULAT_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
+	CoreGraphics::SetResourceTable(this->resourceTable, NEBULA_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
 	this->fsq.Draw();
 	CoreGraphics::EndBatch();
 }

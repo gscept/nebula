@@ -27,7 +27,7 @@ typedef const point& __PointArg;
 #endif
 
 
-class NEBULA3_ALIGN16 point : public float4
+class NEBULA_ALIGN16 point : public float4
 {
 public:
     /// default constructor

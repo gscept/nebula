@@ -91,48 +91,48 @@ ParticleSystemNodeInstance::Setup(const Ptr<ModelInstance>& inst, const Ptr<Mode
 
 #if SHADER_MODEL_5
 	ShaderServer* shdServer = ShaderServer::Instance();
-	this->particleShader = shdServer->CreateShaderState("shd:particle", { NEBULAT_SYSTEM_GROUP });
-	this->emitterOrientationVar = this->particleShader->GetVariableByName(NEBULA3_SEMANTIC_EMITTERTRANSFORM);
-	this->billBoardVar = this->particleShader->GetVariableByName(NEBULA3_SEMANTIC_BILLBOARD);
-	this->bboxCenterVar = this->particleShader->GetVariableByName(NEBULA3_SEMANTIC_BBOXCENTER);
-	this->bboxSizeVar = this->particleShader->GetVariableByName(NEBULA3_SEMANTIC_BBOXSIZE);
-	this->animPhasesVar = this->particleShader->GetVariableByName(NEBULA3_SEMANTIC_ANIMPHASES);
-	this->animsPerSecVar = this->particleShader->GetVariableByName(NEBULA3_SEMANTIC_ANIMSPERSEC);
+	this->particleShader = shdServer->CreateShaderState("shd:particle", { NEBULA_SYSTEM_GROUP });
+	this->emitterOrientationVar = this->particleShader->GetVariableByName(NEBULA_SEMANTIC_EMITTERTRANSFORM);
+	this->billBoardVar = this->particleShader->GetVariableByName(NEBULA_SEMANTIC_BILLBOARD);
+	this->bboxCenterVar = this->particleShader->GetVariableByName(NEBULA_SEMANTIC_BBOXCENTER);
+	this->bboxSizeVar = this->particleShader->GetVariableByName(NEBULA_SEMANTIC_BBOXSIZE);
+	this->animPhasesVar = this->particleShader->GetVariableByName(NEBULA_SEMANTIC_ANIMPHASES);
+	this->animsPerSecVar = this->particleShader->GetVariableByName(NEBULA_SEMANTIC_ANIMSPERSEC);
 #else
-	if (this->surfaceInstance->HasConstant(NEBULA3_SEMANTIC_EMITTERTRANSFORM))
+	if (this->surfaceInstance->HasConstant(NEBULA_SEMANTIC_EMITTERTRANSFORM))
 	{
-		this->emitterOrientation = this->surfaceInstance->GetConstant(NEBULA3_SEMANTIC_EMITTERTRANSFORM);
+		this->emitterOrientation = this->surfaceInstance->GetConstant(NEBULA_SEMANTIC_EMITTERTRANSFORM);
 	}
-	if (this->surfaceInstance->HasConstant(NEBULA3_SEMANTIC_BILLBOARD))
+	if (this->surfaceInstance->HasConstant(NEBULA_SEMANTIC_BILLBOARD))
 	{
-		this->billBoard = this->surfaceInstance->GetConstant(NEBULA3_SEMANTIC_BILLBOARD);
+		this->billBoard = this->surfaceInstance->GetConstant(NEBULA_SEMANTIC_BILLBOARD);
 	}
-	if (this->surfaceInstance->HasConstant(NEBULA3_SEMANTIC_BBOXCENTER))
+	if (this->surfaceInstance->HasConstant(NEBULA_SEMANTIC_BBOXCENTER))
 	{
-		this->bboxCenter = this->surfaceInstance->GetConstant(NEBULA3_SEMANTIC_BBOXCENTER);
+		this->bboxCenter = this->surfaceInstance->GetConstant(NEBULA_SEMANTIC_BBOXCENTER);
 	}
-	if (this->surfaceInstance->HasConstant(NEBULA3_SEMANTIC_BBOXSIZE))
+	if (this->surfaceInstance->HasConstant(NEBULA_SEMANTIC_BBOXSIZE))
 	{
-		this->bboxSize = this->surfaceInstance->GetConstant(NEBULA3_SEMANTIC_BBOXSIZE);
+		this->bboxSize = this->surfaceInstance->GetConstant(NEBULA_SEMANTIC_BBOXSIZE);
 	}
-	if (this->surfaceInstance->HasConstant(NEBULA3_SEMANTIC_TIME))
+	if (this->surfaceInstance->HasConstant(NEBULA_SEMANTIC_TIME))
 	{
-		this->time = this->surfaceInstance->GetConstant(NEBULA3_SEMANTIC_TIME);
+		this->time = this->surfaceInstance->GetConstant(NEBULA_SEMANTIC_TIME);
 	}
-	if (this->surfaceInstance->HasConstant(NEBULA3_SEMANTIC_ANIMPHASES))
+	if (this->surfaceInstance->HasConstant(NEBULA_SEMANTIC_ANIMPHASES))
 	{
-		this->animPhases = this->surfaceInstance->GetConstant(NEBULA3_SEMANTIC_ANIMPHASES);
+		this->animPhases = this->surfaceInstance->GetConstant(NEBULA_SEMANTIC_ANIMPHASES);
 	}
-	if (this->surfaceInstance->HasConstant(NEBULA3_SEMANTIC_ANIMSPERSEC))
+	if (this->surfaceInstance->HasConstant(NEBULA_SEMANTIC_ANIMSPERSEC))
 	{
-		this->animsPerSec = this->surfaceInstance->GetConstant(NEBULA3_SEMANTIC_ANIMSPERSEC);
+		this->animsPerSec = this->surfaceInstance->GetConstant(NEBULA_SEMANTIC_ANIMSPERSEC);
 	}
 #endif
 
-    if (this->surfaceInstance->HasConstant(NEBULA3_SEMANTIC_DEPTHBUFFER))
+    if (this->surfaceInstance->HasConstant(NEBULA_SEMANTIC_DEPTHBUFFER))
 	{
 		Ptr<Texture> depthTexture = Resources::ResourceManager::Instance()->CreateUnmanagedResource("DepthBuffer", Texture::RTTI).downcast<Texture>();
-		this->depthBuffer = this->surfaceInstance->GetConstant(NEBULA3_SEMANTIC_DEPTHBUFFER);
+		this->depthBuffer = this->surfaceInstance->GetConstant(NEBULA_SEMANTIC_DEPTHBUFFER);
 		this->depthBuffer->SetTexture(depthTexture);
 	}
 
@@ -378,40 +378,40 @@ ParticleSystemNodeInstance::SetSurfaceInstance(const Ptr<Materials::SurfaceInsta
 
 #if !SHADER_MODEL_5
 	// setup variables again
-	if (this->surfaceInstance->HasConstant(NEBULA3_SEMANTIC_EMITTERTRANSFORM))
+	if (this->surfaceInstance->HasConstant(NEBULA_SEMANTIC_EMITTERTRANSFORM))
 	{
-		this->emitterOrientation = this->surfaceInstance->GetConstant(NEBULA3_SEMANTIC_EMITTERTRANSFORM);
+		this->emitterOrientation = this->surfaceInstance->GetConstant(NEBULA_SEMANTIC_EMITTERTRANSFORM);
 	}
-	if (this->surfaceInstance->HasConstant(NEBULA3_SEMANTIC_BILLBOARD))
+	if (this->surfaceInstance->HasConstant(NEBULA_SEMANTIC_BILLBOARD))
 	{
-		this->billBoard = this->surfaceInstance->GetConstant(NEBULA3_SEMANTIC_BILLBOARD);
+		this->billBoard = this->surfaceInstance->GetConstant(NEBULA_SEMANTIC_BILLBOARD);
 	}
-	if (this->surfaceInstance->HasConstant(NEBULA3_SEMANTIC_BBOXCENTER))
+	if (this->surfaceInstance->HasConstant(NEBULA_SEMANTIC_BBOXCENTER))
 	{
-		this->bboxCenter = this->surfaceInstance->GetConstant(NEBULA3_SEMANTIC_BBOXCENTER);
+		this->bboxCenter = this->surfaceInstance->GetConstant(NEBULA_SEMANTIC_BBOXCENTER);
 	}
-	if (this->surfaceInstance->HasConstant(NEBULA3_SEMANTIC_BBOXSIZE))
+	if (this->surfaceInstance->HasConstant(NEBULA_SEMANTIC_BBOXSIZE))
 	{
-		this->bboxSize = this->surfaceInstance->GetConstant(NEBULA3_SEMANTIC_BBOXSIZE);
+		this->bboxSize = this->surfaceInstance->GetConstant(NEBULA_SEMANTIC_BBOXSIZE);
 	}
-	if (this->surfaceInstance->HasConstant(NEBULA3_SEMANTIC_TIME))
+	if (this->surfaceInstance->HasConstant(NEBULA_SEMANTIC_TIME))
 	{
-		this->time = this->surfaceInstance->GetConstant(NEBULA3_SEMANTIC_TIME);
+		this->time = this->surfaceInstance->GetConstant(NEBULA_SEMANTIC_TIME);
 	}
-	if (this->surfaceInstance->HasConstant(NEBULA3_SEMANTIC_ANIMPHASES))
+	if (this->surfaceInstance->HasConstant(NEBULA_SEMANTIC_ANIMPHASES))
 	{
-		this->animPhases = this->surfaceInstance->GetConstant(NEBULA3_SEMANTIC_ANIMPHASES);
+		this->animPhases = this->surfaceInstance->GetConstant(NEBULA_SEMANTIC_ANIMPHASES);
 	}
-	if (this->surfaceInstance->HasConstant(NEBULA3_SEMANTIC_ANIMSPERSEC))
+	if (this->surfaceInstance->HasConstant(NEBULA_SEMANTIC_ANIMSPERSEC))
 	{
-		this->animsPerSec = this->surfaceInstance->GetConstant(NEBULA3_SEMANTIC_ANIMSPERSEC);
+		this->animsPerSec = this->surfaceInstance->GetConstant(NEBULA_SEMANTIC_ANIMSPERSEC);
 	}
 
 #endif
-	if (this->surfaceInstance->HasConstant(NEBULA3_SEMANTIC_DEPTHBUFFER))
+	if (this->surfaceInstance->HasConstant(NEBULA_SEMANTIC_DEPTHBUFFER))
 	{
 		Ptr<Texture> depthTexture = Resources::ResourceManager::Instance()->CreateUnmanagedResource("DepthBuffer", Texture::RTTI).downcast<Texture>();
-		this->depthBuffer = this->surfaceInstance->GetConstant(NEBULA3_SEMANTIC_DEPTHBUFFER);
+		this->depthBuffer = this->surfaceInstance->GetConstant(NEBULA_SEMANTIC_DEPTHBUFFER);
 		this->depthBuffer->SetTexture(depthTexture);
 	}
 

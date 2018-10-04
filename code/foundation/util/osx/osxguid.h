@@ -75,7 +75,7 @@ OSXGuid::operator new(size_t size)
     n_assert(size == sizeof(OSXGuid));
     #endif
     
-    #if NEBULA3_OBJECTS_USE_MEMORYPOOL
+    #if NEBULA_OBJECTS_USE_MEMORYPOOL
     return Memory::ObjectPoolAllocator->Alloc(size);
     #else
     return Memory::Alloc(Memory::ObjectHeap, size);
@@ -88,7 +88,7 @@ OSXGuid::operator new(size_t size)
 __forceinline void
 OSXGuid::operator delete(void* ptr)
 {
-    #if NEBULA3_OBJECTS_USE_MEMORYPOOL
+    #if NEBULA_OBJECTS_USE_MEMORYPOOL
     return Memory::ObjectPoolAllocator->Free(ptr, sizeof(OSXGuid));
     #else
     return Memory::Free(Memory::ObjectHeap, ptr);

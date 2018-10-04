@@ -214,7 +214,7 @@ CreateRenderTexture(const RenderTextureCreateInfo& info)
 		}
 	}
 
-#if NEBULAT_GRAPHICS_DEBUG
+#if NEBULA_GRAPHICS_DEBUG
 	ObjectSetName(rtId, info.name.Value());
 #endif
 

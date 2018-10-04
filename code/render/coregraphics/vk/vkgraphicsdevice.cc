@@ -169,18 +169,18 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 	_declare_counter(NumPipelinesBuilt);
 	_declare_timer(DebugTimer);
 
-#if NEBULAT_VULKAN_DEBUG
+#if NEBULA_VULKAN_DEBUG
 
 #endif
 } state;
 
-#if NEBULAT_VULKAN_DEBUG
+#if NEBULA_VULKAN_DEBUG
 VkDebugUtilsMessengerEXT VkDebugMessageHandle = nullptr;
 PFN_vkCreateDebugUtilsMessengerEXT VkCreateDebugMessenger = nullptr;
 PFN_vkDestroyDebugUtilsMessengerEXT VkDestroyDebugMessenger = nullptr;
 #endif
 
-#if NEBULAT_GRAPHICS_DEBUG
+#if NEBULA_GRAPHICS_DEBUG
 PFN_vkSetDebugUtilsObjectNameEXT VkDebugObjectName = nullptr;
 PFN_vkSetDebugUtilsObjectTagEXT VkDebugObjectTag = nullptr;
 PFN_vkQueueBeginDebugUtilsLabelEXT VkQueueBeginLabel = nullptr;
@@ -977,7 +977,7 @@ NebulaVulkanDebugCallback(
 	void* userData)
 {
 
-#if NEBULAT_VULKAN_DEBUG
+#if NEBULA_VULKAN_DEBUG
 	bool ret = true;
 #else
 	bool ret = false;
@@ -1045,10 +1045,10 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 
 	//const char* layers[] = { "VK_LAYER_LUNARG_core_validation", "VK_LAYER_LUNARG_parameter_validation" };
 	const char* layers[] = { "VK_LAYER_LUNARG_standard_validation" };
-#define NEBULAT_VULKAN_VALIDATION 1
-#if NEBULAT_GRAPHICS_DEBUG
+#define NEBULA_VULKAN_VALIDATION 1
+#if NEBULA_GRAPHICS_DEBUG
 	state.extensions[state.usedExtensions++] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
-#if NEBULAT_VULKAN_VALIDATION
+#if NEBULA_VULKAN_VALIDATION
 	const int numLayers = sizeof(layers) / sizeof(const char*);
 #else
 	const int numLayers = 0;
@@ -1090,7 +1090,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	SetupAdapter();
 	state.currentDevice = 0;
 
-#if NEBULAT_VULKAN_DEBUG
+#if NEBULA_VULKAN_DEBUG
 	VkCreateDebugMessenger = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(state.instance, "vkCreateDebugUtilsMessengerEXT");
 	VkDestroyDebugMessenger = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(state.instance, "vkDestroyDebugUtilsMessengerEXT");
 	VkDebugUtilsMessengerCreateInfoEXT dbgInfo;
@@ -1105,7 +1105,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	n_assert(res == VK_SUCCESS);
 #endif
 
-#if NEBULAT_GRAPHICS_DEBUG
+#if NEBULA_GRAPHICS_DEBUG
 	VkDebugObjectName = (PFN_vkSetDebugUtilsObjectNameEXT)vkGetInstanceProcAddr(state.instance, "vkSetDebugUtilsObjectNameEXT");
 	VkDebugObjectTag = (PFN_vkSetDebugUtilsObjectTagEXT)vkGetInstanceProcAddr(state.instance, "vkSetDebugUtilsObjectTagEXT");
 	VkQueueBeginLabel = (PFN_vkQueueBeginDebugUtilsLabelEXT)vkGetInstanceProcAddr(state.instance, "vkQueueBeginDebugUtilsLabelEXT");;
@@ -1545,7 +1545,7 @@ DestroyGraphicsDevice()
 	vkDestroyFence(state.devices[0], state.mainCmdCmpFence, nullptr);
 	vkDestroyFence(state.devices[0], state.mainCmdTransFence, nullptr);
 
-#if NEBULAT_VULKAN_DEBUG
+#if NEBULA_VULKAN_DEBUG
 	VkDestroyDebugMessenger(state.instance, VkDebugMessageHandle, nullptr);
 #endif
 
@@ -2240,7 +2240,7 @@ EndFrame(IndexT frameIndex)
 	CmdBufferEndRecord(state.mainCmdDrawBuffer);
 	CmdBufferEndRecord(state.mainCmdSparseBuffer);
 
-#if NEBULAT_GRAPHICS_DEBUG
+#if NEBULA_GRAPHICS_DEBUG
 	CoreGraphics::QueueBeginMarker(TransferQueueType, Math::float4(0.6f, 0.6f, 0.8f, 1.0f), "End of frame transfer queue submission");
 #endif
 
@@ -2253,12 +2253,12 @@ EndFrame(IndexT frameIndex)
 	state.scheduler.ExecuteCommandPass(VkScheduler::OnMainTransferSubmitted);
 	state.scheduler.EndTransfers();
 
-#if NEBULAT_GRAPHICS_DEBUG
+#if NEBULA_GRAPHICS_DEBUG
 	CoreGraphics::QueueEndMarker(TransferQueueType);
 #endif
 
 
-#if NEBULAT_GRAPHICS_DEBUG
+#if NEBULA_GRAPHICS_DEBUG
 	CoreGraphics::QueueBeginMarker(ComputeQueueType, Math::float4(0.6f, 0.6f, 0.8f, 1.0f), "End of frame compute queue submission");
 #endif
 
@@ -2269,12 +2269,12 @@ EndFrame(IndexT frameIndex)
 	state.scheduler.ExecuteCommandPass(VkScheduler::OnMainComputeSubmitted);
 	state.scheduler.EndComputes();
 
-#if NEBULAT_GRAPHICS_DEBUG
+#if NEBULA_GRAPHICS_DEBUG
 	CoreGraphics::QueueEndMarker(ComputeQueueType);
 #endif
 
 
-#if NEBULAT_GRAPHICS_DEBUG
+#if NEBULA_GRAPHICS_DEBUG
 	CoreGraphics::QueueBeginMarker(GraphicsQueueType, Math::float4(0.6f, 0.6f, 0.8f, 1.0f), "End of frame graphics queue submission");
 #endif
 
@@ -2285,7 +2285,7 @@ EndFrame(IndexT frameIndex)
 	state.scheduler.ExecuteCommandPass(VkScheduler::OnMainDrawSubmitted);
 	state.scheduler.EndDraws();
 
-#if NEBULAT_GRAPHICS_DEBUG
+#if NEBULA_GRAPHICS_DEBUG
 	CoreGraphics::QueueEndMarker(GraphicsQueueType);
 #endif
 
@@ -2495,7 +2495,7 @@ SetScissorRect(const Math::rectangle<int>& rect, int index)
 	}
 }
 
-#if defined(NEBULAT_GRAPHICS_DEBUG)
+#if defined(NEBULA_GRAPHICS_DEBUG)
 
 //------------------------------------------------------------------------------
 /**

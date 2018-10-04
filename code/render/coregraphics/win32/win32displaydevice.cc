@@ -189,7 +189,7 @@ Win32DisplayDevice::OpenWindow()
     wndClass.hCursor       = LoadCursor(NULL, IDC_ARROW);
     wndClass.hbrBackground = (HBRUSH) GetStockObject(NULL_BRUSH);
     wndClass.lpszMenuName  = NULL;
-    wndClass.lpszClassName = NEBULA3_WINDOW_CLASS;
+    wndClass.lpszClassName = NEBULA_WINDOW_CLASS;
     wndClass.hIconSm       = NULL;
     RegisterClassEx(&wndClass);
 
@@ -208,7 +208,7 @@ Win32DisplayDevice::OpenWindow()
 
     // open window
     this->hWnd = CreateWindowEx(WS_EX_APPWINDOW,					// dwExStyle
-							  NEBULA3_WINDOW_CLASS,                 // lpClassName
+							  NEBULA_WINDOW_CLASS,                 // lpClassName
                               this->windowTitle.AsCharPtr(),        // lpWindowName
                               windowStyle,                          // dwStyle
                               adjMode.GetXPos(),                    // x
@@ -290,7 +290,7 @@ Win32DisplayDevice::CloseWindow()
     }
 
     // unregister the window class
-    UnregisterClass(NEBULA3_WINDOW_CLASS, this->hInst);
+    UnregisterClass(NEBULA_WINDOW_CLASS, this->hInst);
 }
 
 //------------------------------------------------------------------------------
@@ -565,7 +565,7 @@ Win32DisplayDevice::OnMouseWheel(WPARAM wParam)
 
 //------------------------------------------------------------------------------
 /**
-    The Nebula3 WinProc.
+    The Nebula WinProc.
 */
 LRESULT CALLBACK
 Win32DisplayDevice::WinProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)

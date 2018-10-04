@@ -3,7 +3,7 @@
 /**
     @class App::GameApplication
 
-    Nebula3's default game application. It creates and triggers the GameServer.
+    Nebula's default game application. It creates and triggers the GameServer.
     For game features it creates the core and graphicsfeature which is used in every
     gamestate (such as level gamestates or only gui gamestates).
 

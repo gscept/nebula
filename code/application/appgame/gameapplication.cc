@@ -54,7 +54,7 @@ GameApplication::Open()
         // setup from cmd line args
         this->SetupAppFromCmdLineArgs();
                
-        // setup basic Nebula3 runtime system
+        // setup basic Nebula runtime system
         this->coreServer = CoreServer::Create();
         this->coreServer->SetCompanyName(Application::Instance()->GetCompanyName());
         this->coreServer->SetAppName(Application::Instance()->GetAppTitle());
@@ -122,7 +122,7 @@ GameApplication::Close()
 
     _discard_timer(GameApplicationFrameTimeAll);
 
-    // shutdown basic Nebula3 runtime
+    // shutdown basic Nebula runtime
     this->CleanupGameFeatures();
     this->gameServer->Close();
     this->gameServer = nullptr;

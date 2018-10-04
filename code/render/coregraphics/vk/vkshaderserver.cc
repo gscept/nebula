@@ -67,7 +67,7 @@ VkShaderServer::Open()
 	this->texture2DArrayTextureVar = ShaderGetResourceSlot(shader, "Textures2DArray");
 	this->textureCubeTextureVar = ShaderGetResourceSlot(shader, "TexturesCube");
 	this->texture3DTextureVar = ShaderGetResourceSlot(shader, "Textures3D");
-	this->resourceTable = ShaderCreateResourceTable(shader, NEBULAT_TICK_GROUP);
+	this->resourceTable = ShaderCreateResourceTable(shader, NEBULA_TICK_GROUP);
 	this->tableLayout = ShaderGetResourcePipeline(shader);
 
 	/*

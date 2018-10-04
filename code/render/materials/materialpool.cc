@@ -24,14 +24,14 @@ MaterialPool::LoadFromStream(const Resources::ResourceId id, const Util::StringA
 	if (reader->Open())
 	{
 		// make sure it's a valid frame shader file
-		if (!reader->HasNode("/NebulaT/Surface"))
+		if (!reader->HasNode("/Nebula/Surface"))
 		{
 			n_error("StreamSurfaceMaterialLoader: '%s' is not a valid surface!", stream->GetURI().AsString().AsCharPtr());
 			return Failed;
 		}
 
 		// send to first node
-		reader->SetToNode("/NebulaT/Surface");
+		reader->SetToNode("/Nebula/Surface");
 
 		this->EnterGet();
 		MaterialRuntime& info = this->Get<0>(id.allocId);

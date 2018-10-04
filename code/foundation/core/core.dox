@@ -1,34 +1,34 @@
 /**
 @namespace Core
 
-@section Nebula3CoreSystem The Nebula3 Core Subsystem
+@section NebulaCoreSystem The Nebula Core Subsystem
 
-The Nebula3 Core subsystem (as the name implies) implements the core concepts
-of Nebula3 which are:
+The Nebula Core subsystem (as the name implies) implements the core concepts
+of Nebula which are:
 
 - a RefCounted base class which implements a strong ref counting mechanism
 - a runtime type information system
 - a templated smart pointer class Ptr<> which manages the life time of RefCounted objects
 - a factory mechanism which allows to construct C++ objects from their string class name
-- a central Server object which setsup a basic Nebula3 runtime environment
+- a central Server object which setsup a basic Nebula runtime environment
 
-@subsection Nebula3ObjectModel The Nebula3 Object Model
+@subsection NebulaObjectModel The Nebula Object Model
 
-Nebula3 implements a basic object model which implements the following
+Nebula implements a basic object model which implements the following
 new features on top of the C++ object model:
 
 - lifetime management by refcounting and smart pointers
 - object creation by string or fourcc class identifier
 - a runtime type information system
 
-@subsection Nebula3ClassImplementation Implementing A New Nebula3 Class
+@subsection NebulaClassImplementation Implementing A New Nebula Class
 
 The first decision when implementing a new class should be whether the
 new class should be derived from the Core::RefCounted class or whether
 it should be a traditional C++ class. The following points should help
 to find the answer:
 
-- if the class wants to make use of the extended Nebula3 object model 
+- if the class wants to make use of the extended Nebula object model 
 features like refcounting, RTTI, and so forth, it must be derived from
 the Core::RefCounted class
 - if the class is a typical small helper or utility class, like a
@@ -40,13 +40,13 @@ Deriving from the Core::RefCounted class implies some restrictions:
 - RefCounted-derived objects may never be created directly in the 
 local C++ context as stack objects, since stack objects are lifetime-
 managed by C++ (they are destroyed when the current C++ context is
-left, circumventing Nebula3's refcounted lifetime management completely)
+left, circumventing Nebula's refcounted lifetime management completely)
 - RefCounted-derived classes only have a default constructor.
 - RefCounted-derived classes must have a virtual destructor.
 - RefCounted-derived classes must not be copied, since this
 would confuse the refcounting mechanism.
 
-To make use of the Nebula3 object model features, one needs to derive from
+To make use of the Nebula object model features, one needs to derive from
 the Core::RefCounted class and annotate the new class with some additional
 information in the class declaration and in the header file:
 
@@ -70,15 +70,15 @@ RegisterClass(MyClass);
 
 Notice the DeclareClass() macro, the default constructor and the virtual destructor
 and the RegisterClass() macro outside of the class declaration. The DeclareClass() 
-macro adds some minimal Nebula3-specific information to the class declaration for 
+macro adds some minimal Nebula-specific information to the class declaration for 
 the RTTI and factory mechanism. The DeclareClass() macro generally hides the internals
-of the Nebula3 object model from the programmer, so that (hopefully), internals of the
+of the Nebula object model from the programmer, so that (hopefully), internals of the
 object model can be changed without affecting existing classes. The RegisterClass()
 macro is optional and registers the class with the central factory object. If you
 know that objects of this class will never be created by string class name or
 fourcc code, the RegisterClass() macro can be omitted.
 
-The .cc side of the class needs to contain the following Nebula3 specific 
+The .cc side of the class needs to contain the following Nebula specific 
 information:
 
 @code
@@ -99,7 +99,7 @@ to reconstruct the class tree.
 
 @subsection RefCountingAndSmartPointers RefCounting And Smart Pointers
 
-Nebula3 uses traditional refcounting to manage the lifetime of its objects. A 
+Nebula uses traditional refcounting to manage the lifetime of its objects. A 
 templated smart pointer class Ptr<> exists to hide the refcounting details
 from the programmer. As a general rule of thumb, always use smart pointers
 to point to RefCounted-derived objects unless you can make sure that within
@@ -127,12 +127,12 @@ contained object pointer is valid. The resulting performance hit is usually negl
 you may have to be aware of it in inner loops.
 - Presumably dead objects still alive: Since objects managed by smart pointers are 
 only deleted when the last client gives up ownership, objects may exist longer then
-intended. Often this is points to a bug. Nebula3 will notify you about any refcounting
+intended. Often this is points to a bug. Nebula will notify you about any refcounting
 leaks (that is, refcounting objects that still exist at application shutdown)
 
-@subsection CreatingNebula3Objects Creating Nebula3 Objects
+@subsection CreatingNebulaObjects Creating Nebula Objects
 
-Nebula3 objects that are derived from Core::RefCounted can be created in 3 different
+Nebula objects that are derived from Core::RefCounted can be created in 3 different
 ways:
 
 Directly through the static create method:
@@ -145,7 +145,7 @@ In fact, the Create() method is nothing more then an inline method with a call t
 the new operator inside. Also note the correct use of a smart pointer to hold the new
 object.
 
-Another way to create a Nebula3 method is by class name:
+Another way to create a Nebula method is by class name:
 @code
     using namespace Core;
     Ptr<MyClass> myObj = (MyClass*) Factory::Instance()->Create("MyNamespace::MyClass");
@@ -168,9 +168,9 @@ the fourcc class identifier uses less space (4 bytes) then the string class name
 which may be of advantage when objects are encoded/decoded to and from binary 
 streams. 
 
-@subsection Nebula3RTTI The Nebula3 Runtime Type Information System
+@subsection NebulaRTTI The Nebula Runtime Type Information System
 
-The Nebula3 RTTI system gives you access to an objects class type at runtime
+The Nebula RTTI system gives you access to an objects class type at runtime
 and lets you check whether an object is the exact instance of a class, or
 an instance of a derived class. You can also get the class name or the class
 fourcc identifier directly from an object. All this functionality is implemented
@@ -221,9 +221,9 @@ registered:
     }
 @endcode
 
-@subsection Nebula3Singletons Nebula3 Singletons
+@subsection NebulaSingletons Nebula Singletons
 
-Many central Nebula3 objects are singletons, that is, an object which only
+Many central Nebula objects are singletons, that is, an object which only
 exists once in the application and often is known to all other objects in the
 application. 
 
@@ -246,7 +246,7 @@ You can also check for the existance of a given singleton:
     }
 @endcode
 
-Nebula3 provides some helper macros to implement a singleton class:
+Nebula provides some helper macros to implement a singleton class:
 
 @code
 // declare a singleton class
@@ -294,23 +294,23 @@ that no other instance of the class exists (otherwise, an assertion will be thro
 DestructSingleton invalidates the static singleton pointer.
 
 Access to singletons is by default thread-local. This means that a singleton created
-in one thread of a Nebula3 application isn't accessible from another thread. This
+in one thread of a Nebula application isn't accessible from another thread. This
 follows the "Parallel Nebulas" paradigm which simplifies multithreaded programming
-a lot. The idea behind "Parallel Nebulas" is, that a typical Nebula3 application contains
+a lot. The idea behind "Parallel Nebulas" is, that a typical Nebula application contains
 of a few "fat threads" each running ideally on a separate CPU core. Fat threads implement
 for instance asynchronous IO, rendering, physics, and so on. Each of those fat threads
-initializes its own Nebula3 runtime, which just contains the minimal Nebula3 environment 
+initializes its own Nebula runtime, which just contains the minimal Nebula environment 
 needed to perform the Fat Threads specific task. This basically eliminates the need for 
-fine-grained synchronisation in almost all of the Nebula3 code and concentrates "thread-aware"
+fine-grained synchronisation in almost all of the Nebula code and concentrates "thread-aware"
 code to a few well-defined code areas which deals with communication between fat threads.
 Another positive side effect of the "Parallel Nebulas" paradigm is, that a programmer
 typically doesn't have to care too much about running in a multithreaded environment.
-Most of the typical Nebula3 code looks just like normal singlethreaded code, yet can
+Most of the typical Nebula code looks just like normal singlethreaded code, yet can
 still run in its own fat thread.
 
 @subsection CorePerfAndMemConsideratins Performance And Memory Footprint Considerations
 
-One of the design goals of the Nebula3 Core Layer was to reduce the memory footprint of 
+One of the design goals of the Nebula Core Layer was to reduce the memory footprint of 
 low level code to make the system better suited for small host platforms like
 handheld consoles (and a small memory footprint doesn't hurt on bigger platforms either). 
 Here are some points how these goals are accomplished:

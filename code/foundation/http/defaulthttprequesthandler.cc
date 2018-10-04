@@ -46,7 +46,7 @@ DefaultHttpRequestHandler::HandleRequest(const Ptr<HttpRequest>& request)
     // always show the home page
     Ptr<HtmlPageWriter> htmlWriter = HtmlPageWriter::Create();
     htmlWriter->SetStream(request->GetResponseContentStream());
-    htmlWriter->SetTitle("NebulaT Application");
+    htmlWriter->SetTitle("Nebula Application");
     if (htmlWriter->Open())
     {
         htmlWriter->Element(HtmlElement::Heading1, "Main Page");

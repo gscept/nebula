@@ -73,7 +73,7 @@ DebugPageHandler::HandleRequest(const Ptr<HttpRequest>& request)
     // no command, display root page
     Ptr<HtmlPageWriter> htmlWriter = HtmlPageWriter::Create();
     htmlWriter->SetStream(request->GetResponseContentStream());
-    htmlWriter->SetTitle("NebulaT Debug Subsystem Info");
+    htmlWriter->SetTitle("Nebula Debug Subsystem Info");
     if (htmlWriter->Open())
     {
         htmlWriter->Element(HtmlElement::Heading1, "Profiling Subsystem");
@@ -386,7 +386,7 @@ DebugPageHandler::HandleTimerRequest(const String& timerName, const Ptr<HttpRequ
 {
     Ptr<HtmlPageWriter> htmlWriter = HtmlPageWriter::Create();
     htmlWriter->SetStream(request->GetResponseContentStream());
-    htmlWriter->SetTitle("NebulaT Debug Timer Info");
+    htmlWriter->SetTitle("Nebula Debug Timer Info");
     if (htmlWriter->Open())
     {
         htmlWriter->Element(HtmlElement::Heading1, "Timer: " + timerName);
@@ -416,7 +416,7 @@ DebugPageHandler::HandleCounterRequest(const String& counterName, const Ptr<Http
 {
     Ptr<HtmlPageWriter> htmlWriter = HtmlPageWriter::Create();
     htmlWriter->SetStream(request->GetResponseContentStream());
-    htmlWriter->SetTitle("NebulaT Debug Counter Info");
+    htmlWriter->SetTitle("Nebula Debug Counter Info");
     if (htmlWriter->Open())
     {
         htmlWriter->Element(HtmlElement::Heading1, "Counter: " + counterName);

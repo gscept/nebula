@@ -45,7 +45,7 @@ VkTransformDevice::Open()
 	ShaderServer* shdServer = ShaderServer::Instance();
 	
 	ShaderId shader = ShaderGet("shd:shared.fxb"_atm);
-	this->viewTable = ShaderCreateResourceTable(shader, NEBULAT_FRAME_GROUP);
+	this->viewTable = ShaderCreateResourceTable(shader, NEBULA_FRAME_GROUP);
 	this->viewConstants = ShaderCreateConstantBuffer(shader, "FrameBlock");
 	IndexT viewConstantsSlot = ShaderGetResourceSlot(shader, "FrameBlock");
 	ResourceTableSetConstantBuffer(this->viewTable, { this->viewConstants, viewConstantsSlot, 0, false, false, -1, 0});
@@ -53,15 +53,15 @@ VkTransformDevice::Open()
 	this->tableLayout = ShaderGetResourcePipeline(shader);
 
 	// setup camera block, update once per frame - no need to sync
-	this->viewVar = ShaderGetConstantBinding(shader, NEBULA3_SEMANTIC_VIEW);
-	this->invViewVar = ShaderGetConstantBinding(shader, NEBULA3_SEMANTIC_INVVIEW);
-	this->viewProjVar = ShaderGetConstantBinding(shader, NEBULA3_SEMANTIC_VIEWPROJECTION);
-	this->invViewProjVar = ShaderGetConstantBinding(shader, NEBULA3_SEMANTIC_INVVIEWPROJECTION);
-	this->projVar = ShaderGetConstantBinding(shader, NEBULA3_SEMANTIC_PROJECTION);
-	this->invProjVar = ShaderGetConstantBinding(shader, NEBULA3_SEMANTIC_INVPROJECTION);
-	this->eyePosVar = ShaderGetConstantBinding(shader, NEBULA3_SEMANTIC_EYEPOS);
-	this->focalLengthVar = ShaderGetConstantBinding(shader, NEBULA3_SEMANTIC_FOCALLENGTH);
-	this->timeAndRandomVar = ShaderGetConstantBinding(shader, NEBULA3_SEMANTIC_TIMEANDRANDOM);
+	this->viewVar = ShaderGetConstantBinding(shader, NEBULA_SEMANTIC_VIEW);
+	this->invViewVar = ShaderGetConstantBinding(shader, NEBULA_SEMANTIC_INVVIEW);
+	this->viewProjVar = ShaderGetConstantBinding(shader, NEBULA_SEMANTIC_VIEWPROJECTION);
+	this->invViewProjVar = ShaderGetConstantBinding(shader, NEBULA_SEMANTIC_INVVIEWPROJECTION);
+	this->projVar = ShaderGetConstantBinding(shader, NEBULA_SEMANTIC_PROJECTION);
+	this->invProjVar = ShaderGetConstantBinding(shader, NEBULA_SEMANTIC_INVPROJECTION);
+	this->eyePosVar = ShaderGetConstantBinding(shader, NEBULA_SEMANTIC_EYEPOS);
+	this->focalLengthVar = ShaderGetConstantBinding(shader, NEBULA_SEMANTIC_FOCALLENGTH);
+	this->timeAndRandomVar = ShaderGetConstantBinding(shader, NEBULA_SEMANTIC_TIMEANDRANDOM);
 
 	return TransformDeviceBase::Open();
 }

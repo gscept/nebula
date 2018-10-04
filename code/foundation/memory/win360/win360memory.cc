@@ -44,7 +44,7 @@ Alloc(HeapType heapType, size_t size)
                     GetHeapTypeName(heapType), size);
         }
     }
-    #if NEBULA3_MEMORY_STATS
+    #if NEBULA_MEMORY_STATS
         Threading::Interlocked::Increment(TotalAllocCount);
         Threading::Interlocked::Add(TotalAllocSize, (long)size + 16);
         Threading::Interlocked::Increment(HeapTypeAllocCount[heapType]);
@@ -67,7 +67,7 @@ Realloc(HeapType heapType, void* ptr, size_t size)
 {
     n_assert((heapType != Xbox360GraphicsHeap) && (heapType != Xbox360AudioHeap));
     n_assert((heapType < NumHeapTypes) && (0 != Heaps[heapType]));
-    #if NEBULA3_MEMORY_STATS
+    #if NEBULA_MEMORY_STATS
         SIZE_T oldSize = __HeapSize16(Heaps[heapType], 0, ptr);
     #endif
     void* allocPtr = __HeapReAlloc16(Heaps[heapType], 0, ptr, size);
@@ -77,7 +77,7 @@ Realloc(HeapType heapType, void* ptr, size_t size)
         n_error("Realloc: Out of memory, allocating '%s' trying to allocate '%d' bytes\n",
                 GetHeapTypeName(heapType), size);
     }
-    #if NEBULA3_MEMORY_STATS
+    #if NEBULA_MEMORY_STATS
         SIZE_T newSize = __HeapSize16(Heaps[heapType], 0, allocPtr);
 		Threading::Interlocked::Add(TotalAllocSize, int(newSize - oldSize + 16));
 		Threading::Interlocked::Add(HeapTypeAllocSize[heapType], int(newSize - oldSize + 16));
@@ -101,20 +101,20 @@ Free(HeapType heapType, void* ptr)
     if (0 != ptr)
     {
         n_assert(heapType < NumHeapTypes);
-        #if NEBULA3_MEMORY_STATS
+        #if NEBULA_MEMORY_STATS
             SIZE_T size = 0;
         #endif    
         #if __XBOX360__
         if (Xbox360GraphicsHeap == heapType)
         {
-            #if NEBULA3_MEMORY_STATS
+            #if NEBULA_MEMORY_STATS
                 size = Xbox360PhysicalMemorySize(ptr, XALLOC_MEMPROTECT_WRITECOMBINE);
             #endif
             Xbox360FreePhysicalMemory(ptr, XALLOC_MEMPROTECT_WRITECOMBINE);
         }
         else if (Xbox360AudioHeap == heapType)
         {
-            #if NEBULA3_MEMORY_STATS
+            #if NEBULA_MEMORY_STATS
                 size = Xbox360PhysicalMemorySize(ptr, 0);
             #endif
             Xbox360FreePhysicalMemory(ptr, 0);
@@ -123,12 +123,12 @@ Free(HeapType heapType, void* ptr)
         #endif // __XBOX360__
         {
             n_assert(0 != Heaps[heapType]);
-            #if NEBULA3_MEMORY_STATS
+            #if NEBULA_MEMORY_STATS
                 size = __HeapSize16(Heaps[heapType], 0, ptr);
             #endif
             __HeapFree16(Heaps[heapType], 0, ptr);
         }
-        #if NEBULA3_MEMORY_STATS
+        #if NEBULA_MEMORY_STATS
             Threading::Interlocked::Add(TotalAllocSize, -int(size));
             Threading::Interlocked::Decrement(TotalAllocCount);
             Threading::Interlocked::Add(HeapTypeAllocSize[heapType], -int(size));
@@ -205,7 +205,7 @@ DumpTotalMemoryStatus()
     n_printf("DumpTotalMemoryStatus() not implemented yet in N3.\n");   
 }
 
-#if NEBULA3_MEMORY_STATS
+#if NEBULA_MEMORY_STATS
 //------------------------------------------------------------------------------
 /**
     Enable memory logging.
@@ -244,9 +244,9 @@ ToggleMemoryLogging(unsigned int threshold, HeapType heapType)
         EnableMemoryLogging(threshold, heapType);
     }
 }
-#endif // NEBULA3_MEMORY_STATS
+#endif // NEBULA_MEMORY_STATS
 
-#if NEBULA3_MEMORY_ADVANCED_DEBUGGING
+#if NEBULA_MEMORY_ADVANCED_DEBUGGING
 //------------------------------------------------------------------------------
 /**
     Debug function which validates the process heap and all local heaps. 

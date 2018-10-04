@@ -14,7 +14,7 @@
 #include "threading/criticalsection.h"
 
 //------------------------------------------------------------------------------
-#if NEBULA3_ENABLE_PROFILING
+#if NEBULA_ENABLE_PROFILING
 #define _declare_counter(counter) Ptr<Debug::DebugCounter> counter;
 #define _setup_counter(counter) counter = Debug::DebugCounter::Create(); counter->Setup(Util::StringAtom(#counter));
 #define _setup_grouped_counter(counter, group) counter = Debug::DebugCounter::Create(); counter->Setup(Util::StringAtom(#counter), group);

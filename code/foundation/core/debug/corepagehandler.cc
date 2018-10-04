@@ -40,7 +40,7 @@ CorePageHandler::HandleRequest(const Ptr<HttpRequest>& request)
     // configure a HTML page writer
     Ptr<HtmlPageWriter> htmlWriter = HtmlPageWriter::Create();
     htmlWriter->SetStream(request->GetResponseContentStream());
-    htmlWriter->SetTitle("NebulaT Core Info");
+    htmlWriter->SetTitle("Nebula Core Info");
     if (htmlWriter->Open())
     {
         htmlWriter->Element(HtmlElement::Heading1, "Core Subsystem");

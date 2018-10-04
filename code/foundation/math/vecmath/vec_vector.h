@@ -25,7 +25,7 @@ typedef const vector  __VectorArg;
 typedef const vector& __VectorArg;
 #endif
 
-class NEBULA3_ALIGN16 vector : public float4
+class NEBULA_ALIGN16 vector : public float4
 {
 public:
     /// default constructor

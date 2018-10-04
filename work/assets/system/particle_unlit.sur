@@ -1,8 +1,8 @@
 <!--
 	Surface material for the placeholder material
 -->
-<NebulaT>
+<Nebula>
 	<Surface template="ParticleUnlit">
 		<Param name="AlbedoMap" value="tex:system/placeholder"/>
 	</Surface>
-</NebulaT>
+</Nebula>

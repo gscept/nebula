@@ -1,5 +1,5 @@
  <!DOCTYPE dx11default>
-<Nebula3>
+<Nebula>
  <FrameShader>
  
   <!-- god ray buffers -->
@@ -18,4 +18,4 @@
   
   
   </FrameShader>
-</Nebula3>
+</Nebula>

@@ -71,7 +71,7 @@ EnvelopeSampleBuffer::AsSampleIndex(float t) const
 inline float*
 EnvelopeSampleBuffer::LookupSamples(IndexT sampleIndex) const
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert((sampleIndex >= 0) && (sampleIndex < this->numSamples));
     n_assert(0 != buffer);
     #endif

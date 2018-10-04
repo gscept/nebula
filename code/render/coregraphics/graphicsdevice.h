@@ -153,7 +153,7 @@ void SetViewport(const Math::rectangle<int>& rect, int index);
 /// adds a scissor rect
 void SetScissorRect(const Math::rectangle<int>& rect, int index);
 
-#if defined(NEBULAT_GRAPHICS_DEBUG)
+#if defined(NEBULA_GRAPHICS_DEBUG)
 /// set debug name for object
 template<typename OBJECT_ID_TYPE> void ObjectSetName(const OBJECT_ID_TYPE id, const Util::String& name);
 /// begin debug marker region

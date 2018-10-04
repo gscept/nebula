@@ -18,7 +18,7 @@
 //------------------------------------------------------------------------------
 namespace Math
 {
-class NEBULA3_ALIGN16 transform44
+class NEBULA_ALIGN16 transform44
 {
 public:
     /// constructor

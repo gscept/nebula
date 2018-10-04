@@ -109,7 +109,7 @@ VkShaderPool::LoadFromStream(const Resources::ResourceId id, const Util::StringA
 	runtimeInfo.activeMask = runtimeInfo.programMap.KeyAtIndex(0);
 	runtimeInfo.activeShaderProgram = runtimeInfo.programMap.ValueAtIndex(0);
 
-#if __NEBULA3_HTTP__
+#if __NEBULA_HTTP__
 	//res->debugState = res->CreateState();
 #endif
 	return ResourcePool::Success;

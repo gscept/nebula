@@ -3,7 +3,7 @@
 /**
     @class Core::Factory
 
-    Provides the central object factory mechanism for Nebula3. Classes
+    Provides the central object factory mechanism for Nebula. Classes
     which are derived from RefCounted register themselves automatically
     to the central Factory object through the __DeclareClass and
     __ImplementClass macros.

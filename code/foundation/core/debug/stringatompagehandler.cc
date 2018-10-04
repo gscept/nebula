@@ -40,7 +40,7 @@ StringAtomPageHandler::HandleRequest(const Ptr<HttpRequest>& request)
     // configure a HTML page writer
     Ptr<HtmlPageWriter> htmlWriter = HtmlPageWriter::Create();
     htmlWriter->SetStream(request->GetResponseContentStream());
-    htmlWriter->SetTitle("NebulaT StringAtom Info");
+    htmlWriter->SetTitle("Nebula StringAtom Info");
     if (htmlWriter->Open())
     {
         htmlWriter->Element(HtmlElement::Heading1, "StringAtom System");

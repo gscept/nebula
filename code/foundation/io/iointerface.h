@@ -4,7 +4,7 @@
     @class IO::Interface
     
     Implements the asynchronous interface to the IO subsystem. This will
-    run a minimal Nebula3 runtime with an IO subsystem in an extra thread.
+    run a minimal Nebula runtime with an IO subsystem in an extra thread.
     Communication with the IO::Interface happens by sending messages to
     the Interface object. Messages are guaranteed to be handled sequentially 
     in FIFO order (there's exactly one handler thread which handles all 

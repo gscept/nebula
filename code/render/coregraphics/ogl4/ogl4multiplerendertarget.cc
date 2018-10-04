@@ -96,9 +96,9 @@ OGL4MultipleRenderTarget::BeginPass()
 
     // set display dimensions
 	Ptr<Shader> shader = ShaderServer::Instance()->GetSharedShader();
-    if (shader.isvalid() && shader->HasVariableByName(NEBULA3_SEMANTIC_RENDERTARGETDIMENSIONS))
+    if (shader.isvalid() && shader->HasVariableByName(NEBULA_SEMANTIC_RENDERTARGETDIMENSIONS))
     {
-        Ptr<CoreGraphics::ShaderVariable> var = shader->GetVariableByName(NEBULA3_SEMANTIC_RENDERTARGETDIMENSIONS);
+        Ptr<CoreGraphics::ShaderVariable> var = shader->GetVariableByName(NEBULA_SEMANTIC_RENDERTARGETDIMENSIONS);
         uint width = this->renderTarget[0]->GetResolveTextureWidth();
         uint height = this->renderTarget[0]->GetResolveTextureHeight();
         float xRatio = 1 / float(width);

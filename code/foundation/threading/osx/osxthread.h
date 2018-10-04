@@ -59,7 +59,7 @@ public:
     /// get the thread ID of this thread
     static Threading::ThreadId GetMyThreadId();
     
-    #if NEBULA3_DEBUG
+    #if NEBULA_DEBUG
     /*
     struct ThreadDebugInfo
     {
@@ -97,7 +97,7 @@ private:
     System::Cpu::CoreId coreId;
     ThreadState volatile threadState;
     
-#if NEBULA3_DEBUG
+#if NEBULA_DEBUG
     static Threading::CriticalSection criticalSection;
     static Util::List<OSXThread*> ThreadList;
     Util::List<OSXThread*>::Iterator threadListIterator;

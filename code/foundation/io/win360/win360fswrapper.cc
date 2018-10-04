@@ -602,7 +602,7 @@ String
 Win360FSWrapper::GetUserDirectory()
 {
     #if __WIN32__
-        ushort wideBuffer[NEBULA3_MAXPATH] = { 0 };
+        ushort wideBuffer[NEBULA_MAXPATH] = { 0 };
         HRESULT hr = SHGetFolderPathW(NULL, 
                                       CSIDL_PERSONAL | CSIDL_FLAG_CREATE, 
                                       NULL, 
@@ -626,7 +626,7 @@ String
 Win360FSWrapper::GetAppDataDirectory()
 {    
     #if __WIN32__
-        ushort wideBuffer[NEBULA3_MAXPATH] = { 0 };
+        ushort wideBuffer[NEBULA_MAXPATH] = { 0 };
         HRESULT hr = SHGetFolderPathW(NULL, 
                                       CSIDL_APPDATA | CSIDL_FLAG_CREATE, 
                                       NULL, 
@@ -650,7 +650,7 @@ String
 Win360FSWrapper::GetProgramsDirectory()
 {
     #if __WIN32__
-        ushort wideBuffer[NEBULA3_MAXPATH] = { 0 };
+        ushort wideBuffer[NEBULA_MAXPATH] = { 0 };
         HRESULT hr = SHGetFolderPathW(NULL,
                                       CSIDL_PROGRAM_FILES,
                                       NULL,
@@ -672,8 +672,8 @@ Win360FSWrapper::GetProgramsDirectory()
 String
 Win360FSWrapper::GetCurrentDirectory()
 {
-    char buffer[NEBULA3_MAXPATH] = { 0 };
-    n_assert(_getcwd(buffer, NEBULA3_MAXPATH));
+    char buffer[NEBULA_MAXPATH] = { 0 };
+    n_assert(_getcwd(buffer, NEBULA_MAXPATH));
     String result = buffer;
     result.ConvertBackslashes();
     return String("file:///") + result;    
@@ -688,7 +688,7 @@ String
 Win360FSWrapper::GetTempDirectory()
 {
     #if __WIN32__
-        ushort wideBuffer[NEBULA3_MAXPATH] = { 0 };
+        ushort wideBuffer[NEBULA_MAXPATH] = { 0 };
         GetTempPathW(sizeof(wideBuffer) / 2, (LPWSTR)wideBuffer);
         String result = Win32::Win32StringConverter::WideToUTF8(wideBuffer);
         result.ConvertBackslashes();
@@ -709,7 +709,7 @@ String
 Win360FSWrapper::GetBinDirectory()
 {
     #if __WIN32__
-        ushort wideBuffer[NEBULA3_MAXPATH];
+        ushort wideBuffer[NEBULA_MAXPATH];
         DWORD res = GetModuleFileNameW(NULL, (LPWSTR)wideBuffer, sizeof(wideBuffer) / 2);
         n_assert(0 != res);
         String result = Win32::Win32StringConverter::WideToUTF8(wideBuffer);
@@ -731,7 +731,7 @@ String
 Win360FSWrapper::GetHomeDirectory()
 {
 
-    ushort wideBuffer[NEBULA3_MAXPATH];
+    ushort wideBuffer[NEBULA_MAXPATH];
     DWORD res = GetModuleFileNameW(NULL, (LPWSTR)wideBuffer, sizeof(wideBuffer) / 2);
     n_assert(0 != res);
 

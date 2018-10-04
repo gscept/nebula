@@ -100,8 +100,8 @@ VkShaderServer::SubmitTextureDescriptorChanges()
 inline void
 VkShaderServer::BindTextureDescriptorSets()
 {
-	CoreGraphics::SetResourceTable(this->resourceTable, NEBULAT_TICK_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
-	//CoreGraphics::SetResourceTable(this->resourceTable, NEBULAT_TICK_GROUP, CoreGraphics::ComputePipeline, nullptr);
+	CoreGraphics::SetResourceTable(this->resourceTable, NEBULA_TICK_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
+	//CoreGraphics::SetResourceTable(this->resourceTable, NEBULA_TICK_GROUP, CoreGraphics::ComputePipeline, nullptr);
 }
 
 } // namespace Vulkan

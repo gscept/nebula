@@ -128,12 +128,12 @@ IoServer::SetArchiveFileSystemEnabled(bool b)
 /**
     NOTE: on platforms which provide transparent archive access through
     the OS (like on PS3) this method will always return false. This saves
-    some unecessary overhead in the Nebula3 IoServer.
+    some unecessary overhead in the Nebula IoServer.
 */
 inline bool
 IoServer::IsArchiveFileSystemEnabled() const
 {
-    #if NEBULA3_NATIVE_ARCHIVE_SUPPORT
+    #if NEBULA_NATIVE_ARCHIVE_SUPPORT
         return false;
     #else
         return this->archiveFileSystemEnabled;

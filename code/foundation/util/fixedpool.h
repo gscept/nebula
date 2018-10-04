@@ -132,7 +132,7 @@ template<class TYPE>
 TYPE&
 Util::FixedPool<TYPE>::operator[](const IndexT elem)
 {
-#if NEBULA3_BOUNDSCHECKS
+#if NEBULA_BOUNDSCHECKS
 	n_assert(this->usedValues.Size() > elem);
 #endif
 	return this->usedValues[elem];

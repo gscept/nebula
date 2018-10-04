@@ -11,7 +11,7 @@ namespace Win360
 using namespace Threading;
 using namespace Util;
 
-#if NEBULA3_MEMORY_STATS
+#if NEBULA_MEMORY_STATS
 List<Win360Heap*>* Win360Heap::list = 0;
 CriticalSection* Win360Heap::criticalSection = 0;
 #endif
@@ -24,7 +24,7 @@ CriticalSection* Win360Heap::criticalSection = 0;
 void
 Win360Heap::Setup()
 {
-    #if NEBULA3_MEMORY_STATS
+    #if NEBULA_MEMORY_STATS
     n_assert(0 == list);
     n_assert(0 == criticalSection);
     list = n_new(List<Win360Heap*>);
@@ -49,7 +49,7 @@ Win360Heap::Win360Heap(const char* heapName, size_t initialSize, size_t maxSize)
     #endif
 
     // link into Heap list
-    #if NEBULA3_MEMORY_STATS
+    #if NEBULA_MEMORY_STATS
     n_assert(0 != criticalSection);
     this->allocCount = 0;
     this->allocSize  = 0;
@@ -64,7 +64,7 @@ Win360Heap::Win360Heap(const char* heapName, size_t initialSize, size_t maxSize)
 */
 Win360Heap::~Win360Heap()
 {
-    #if NEBULA3_MEMORY_STATS
+    #if NEBULA_MEMORY_STATS
     this->DumpLeaks();
     #endif
 
@@ -73,7 +73,7 @@ Win360Heap::~Win360Heap()
     this->heap = 0;
 
     // dump memory leaks and unlink from Heap list
-    #if NEBULA3_MEMORY_STATS
+    #if NEBULA_MEMORY_STATS
     n_assert(0 == this->allocCount);
     n_assert(0 != criticalSection);
     n_assert(0 != this->listIterator);
@@ -84,7 +84,7 @@ Win360Heap::~Win360Heap()
     #endif   
 }
 
-#if NEBULA3_MEMORY_STATS
+#if NEBULA_MEMORY_STATS
 //------------------------------------------------------------------------------
 /**
     Validate the heap. This walks over the heap's memory block and checks
@@ -214,6 +214,6 @@ Win360Heap::DumpLeaksAllHeaps()
     }
     criticalSection->Leave();
 }
-#endif // NEBULA3_MEMORY_ADVANCED_DEBUGGING
+#endif // NEBULA_MEMORY_ADVANCED_DEBUGGING
 
 } // namespace Memory

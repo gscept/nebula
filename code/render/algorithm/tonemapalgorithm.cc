@@ -57,7 +57,7 @@ TonemapAlgorithm::Setup()
 
 	// create shader
 	this->shader = ShaderGet("shd:averagelum.fxb");
-	this->tonemapTable = ShaderCreateResourceTable(this->shader, NEBULAT_BATCH_GROUP);
+	this->tonemapTable = ShaderCreateResourceTable(this->shader, NEBULA_BATCH_GROUP);
 	this->constants = ShaderCreateConstantBuffer(this->shader, "AverageLumBlock");
 	this->timevar = ShaderGetConstantBinding(this->shader, "TimeDiff");
 	this->colorSlot = ShaderGetResourceSlot(this->shader, "ColorSource");
@@ -85,7 +85,7 @@ TonemapAlgorithm::Setup()
 		CoreGraphics::BeginBatch(Frame::FrameBatchType::System);
 		this->fsq.ApplyMesh();
 		ConstantBufferUpdate(this->constants, time, this->timevar);
-		CoreGraphics::SetResourceTable(this->tonemapTable, NEBULAT_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
+		CoreGraphics::SetResourceTable(this->tonemapTable, NEBULA_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
 		this->fsq.Draw();
 		CoreGraphics::EndBatch();
 	});

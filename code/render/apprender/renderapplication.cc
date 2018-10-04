@@ -141,13 +141,13 @@ RenderApplication::Open()
         }
         #endif
 
-#if __NEBULA3_HTTP_FILESYSTEM__
+#if __NEBULA_HTTP_FILESYSTEM__
 		// setup http subsystem
 		this->httpClientRegistry = Http::HttpClientRegistry::Create();
 		this->httpClientRegistry->Setup();
 #endif
                             
-#if __NEBULA3_HTTP__
+#if __NEBULA_HTTP__
 		this->httpInterface = Http::HttpInterface::Create();
 		this->httpInterface->Open();
 		this->httpServerProxy = Http::HttpServerProxy::Create();
@@ -262,7 +262,7 @@ RenderApplication::OnSetupResourceMappers()
 
     // setup resource mapper for textures
     Ptr<SimpleResourceMapper> texMapper = SimpleResourceMapper::Create();
-    texMapper->SetPlaceholderResourceId(ResourceId(NEBULA3_PLACEHOLDER_TEXTURENAME));
+    texMapper->SetPlaceholderResourceId(ResourceId(NEBULA_PLACEHOLDER_TEXTURENAME));
     texMapper->SetResourceClass(Texture::RTTI);
     texMapper->SetResourceLoaderClass(CoreGraphics::StreamTextureLoader::RTTI);
     texMapper->SetManagedResourceClass(ManagedTexture::RTTI);
@@ -270,7 +270,7 @@ RenderApplication::OnSetupResourceMappers()
 
     // setup resource mapper for meshes
     Ptr<SimpleResourceMapper> meshMapper = SimpleResourceMapper::Create();
-    meshMapper->SetPlaceholderResourceId(ResourceId(NEBULA3_PLACEHOLDER_MESHNAME));
+    meshMapper->SetPlaceholderResourceId(ResourceId(NEBULA_PLACEHOLDER_MESHNAME));
     meshMapper->SetResourceClass(Mesh::RTTI);
     meshMapper->SetResourceLoaderClass(CoreGraphics::StreamMeshLoader::RTTI);
     meshMapper->SetManagedResourceClass(ManagedMesh::RTTI);
@@ -320,7 +320,7 @@ RenderApplication::Close()
     this->jobSystem->Discard();
     this->jobSystem = 0;
 
-#if __NEBULA3_HTTP__           
+#if __NEBULA_HTTP__           
     this->debugInterface->Close();
     this->debugInterface = 0;
 
@@ -330,7 +330,7 @@ RenderApplication::Close()
     this->httpInterface = 0;
 #endif
 
-#if __NEBULA3_HTTP_FILESYSTEM__
+#if __NEBULA_HTTP_FILESYSTEM__
 	this->httpClientRegistry->Discard();
 	this->httpClientRegistry = 0;    
 #endif
@@ -355,7 +355,7 @@ RenderApplication::Run()
 		// begin new frame of input
 		this->inputServer->BeginFrame();
 
-#if __NEBULA3_HTTP__
+#if __NEBULA_HTTP__
         // handle any http requests from the HttpServer thread
         this->httpServerProxy->HandlePendingRequests();
 #endif

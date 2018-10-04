@@ -1,11 +1,11 @@
 /**
 @namespace Net
 
-The Nebula3 Net subsystem offers simple client/server-style communication
+The Nebula Net subsystem offers simple client/server-style communication
 using the TCP protocol over LAN or internet connections. It is not intended
 for highlevel game-oriented communication with lobbies, session management
 and synchronisation of player data. This will be provided in higher level 
-Nebula3 networking subsystems.
+Nebula networking subsystems.
 
 @section NetIPAddress Working with IP addresses
 
@@ -219,7 +219,7 @@ or whether more data needs to be received until message is complete.
 
 Servers and clients may run on CPUs with different byte order. If binary data is sent
 over a network connection, the data must be converted into a "network byte order" which 
-both clients agree on. Nebula3 offers automatic byte order conversion in the
+both clients agree on. Nebula offers automatic byte order conversion in the
 IO::BinaryReader and IO::BinaryWriter classes. Simply call the following methods
 before reading from or writing to a network communication stream:
 

@@ -39,7 +39,7 @@ VkMeshPool::Load(const Ptr<Resources::Resource>& res, const Util::StringAtom& ta
 	n_assert(res.isvalid());
 	String resIdExt = res->GetResourceName().AsString().GetFileExtension();
 
-#if NEBULA3_LEGACY_SUPPORT
+#if NEBULA_LEGACY_SUPPORT
 	if (resIdExt == "nvx2")
 	{
 		return this->SetupMeshFromNvx2(stream);
@@ -66,7 +66,7 @@ VkMeshPool::Load(const Ptr<Resources::Resource>& res, const Util::StringAtom& ta
 /**
 	Setup the mesh resource from legacy nvx2 file (Nebula2 binary mesh format).
 */
-#if NEBULA3_LEGACY_SUPPORT
+#if NEBULA_LEGACY_SUPPORT
 bool
 VkMeshPool::SetupMeshFromNvx2(const Ptr<Stream>& stream, const Ptr<Resources::Resource>& res)
 {
@@ -92,7 +92,7 @@ VkMeshPool::SetupMeshFromNvx2(const Ptr<Stream>& stream, const Ptr<Resources::Re
 
 //------------------------------------------------------------------------------
 /**
-	Setup the mesh resource from a nvx3 file (Nebula3's
+	Setup the mesh resource from a nvx3 file (Nebula's
 	native binary mesh file format).
 */
 bool
@@ -105,7 +105,7 @@ VkMeshPool::SetupMeshFromNvx3(const Ptr<Stream>& stream, const Ptr<Resources::Re
 
 //------------------------------------------------------------------------------
 /**
-	Setup the mesh resource from a n3d3 file (Nebula3's
+	Setup the mesh resource from a n3d3 file (Nebula's
 	native ascii mesh file format).
 */
 bool

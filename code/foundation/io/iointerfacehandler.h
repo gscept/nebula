@@ -12,7 +12,7 @@
 #include "io/console.h"
 #include "io/ioserver.h"
 #include "io/iointerfaceprotocol.h"
-#if __NEBULA3_HTTP_FILESYSTEM__
+#if __NEBULA_HTTP_FILESYSTEM__
 #include "http/httpclientregistry.h"
 #endif
 
@@ -52,7 +52,7 @@ protected:
     void OnMountArchive(const Ptr<IO::MountArchive>& msg);
 
     Ptr<IO::IoServer> ioServer;
-    #if __NEBULA3_HTTP_FILESYSTEM__
+    #if __NEBULA_HTTP_FILESYSTEM__
     Ptr<Http::HttpClientRegistry> httpClientRegistry;
     #endif
 };

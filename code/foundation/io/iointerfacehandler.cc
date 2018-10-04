@@ -33,7 +33,7 @@ IoInterfaceHandler::~IoInterfaceHandler()
 /**
     Opens the Interface message handler which does all the interesting stuff.
     This method already runs in the handler thread.
-    The method initializes a minimal thread local Nebula3 runtime, just
+    The method initializes a minimal thread local Nebula runtime, just
     enough to handle the IO messages.
 */
 void
@@ -41,7 +41,7 @@ IoInterfaceHandler::Open()
 {
     InterfaceHandlerBase::Open();
     this->ioServer = IO::IoServer::Create();
-    #if __NEBULA3_HTTP_FILESYSTEM__
+    #if __NEBULA_HTTP_FILESYSTEM__
     this->httpClientRegistry = Http::HttpClientRegistry::Create();
     this->httpClientRegistry->Setup();
     #endif
@@ -50,13 +50,13 @@ IoInterfaceHandler::Open()
 //------------------------------------------------------------------------------
 /**
     Closes the Interface message handler. This will shut down the
-    minimal Nebula3 runtime, the method runs in the handler thread and is
+    minimal Nebula runtime, the method runs in the handler thread and is
     called just before the thread shuts down.
 */
 void
 IoInterfaceHandler::Close()
 {
-    #if __NEBULA3_HTTP_FILESYSTEM__
+    #if __NEBULA_HTTP_FILESYSTEM__
     this->httpClientRegistry->Discard();
     this->httpClientRegistry = nullptr;
     #endif

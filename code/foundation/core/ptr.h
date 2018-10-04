@@ -3,7 +3,7 @@
 /**
     @class Ptr
 
-    Nebula3's smart pointer class which manages the life time of RefCounted
+    Nebula's smart pointer class which manages the life time of RefCounted
     objects. Can be used like a normal C++ pointer in most cases.
 
     NOTE: the Ptr class is not part of the Core namespace for
@@ -24,9 +24,9 @@
 #pragma warning(disable: 4189)
 #endif
 #if __PS3__
-#define NEBULA3_UNUSED_ATTR __attribute__ ((unused))
+#define NEBULA_UNUSED_ATTR __attribute__ ((unused))
 #else
-#define NEBULA3_UNUSED_ATTR
+#define NEBULA_UNUSED_ATTR
 #endif
 #endif // NEBULA_DEBUG
 
@@ -445,6 +445,6 @@ Ptr<TYPE>::HashCode() const
 #if (__XBOX360__ || __WIN32__) && NEBULA_DEBUG
 #pragma warning( pop )
 #endif
-#ifdef NEBULA3_UNUSED_ATTR
-#undef NEBULA3_UNUSED_ATTR
+#ifdef NEBULA_UNUSED_ATTR
+#undef NEBULA_UNUSED_ATTR
 #endif

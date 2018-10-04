@@ -4,7 +4,7 @@
     @class IO::SchemeRegistry
     
     Central registry for URI schemes, associates an URI scheme (e.g. http, 
-    file, ...) with a Nebula3 stream class.
+    file, ...) with a Nebula stream class.
     
     (C) 2008 Radon Labs GmbH
     (C) 2013-2016 Individual contributors, see AUTHORS file

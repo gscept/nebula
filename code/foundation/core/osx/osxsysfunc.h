@@ -22,7 +22,7 @@ namespace OSX
 class SysFunc
 {
 public:
-    /// setup lowlevel Nebula3 runtime (called before anything else)
+    /// setup lowlevel Nebula runtime (called before anything else)
     static void Setup();
     /// cleanly exit the process
     static void Exit(int exitCode);

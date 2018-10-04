@@ -57,7 +57,7 @@ DisplayPageHandler::HandleRequest(const Ptr<Http::HttpRequest>& request)
     // configure a HTML page writer
     Ptr<HtmlPageWriter> htmlWriter = HtmlPageWriter::Create();
     htmlWriter->SetStream(request->GetResponseContentStream());
-    htmlWriter->SetTitle("NebulaT Display Info");
+    htmlWriter->SetTitle("Nebula Display Info");
     if (htmlWriter->Open())
     {
         String str;

@@ -32,7 +32,7 @@ public:
     /// free a block of memory
     void Free(void* ptr);
     
-    #if NEBULA3_MEMORY_STATS
+    #if NEBULA_MEMORY_STATS
     /// heap stats structure
     struct Stats
     {
@@ -63,7 +63,7 @@ private:
     const char* name;
     malloc_zone_t* heapZone;
     
-    #if NEBULA3_MEMORY_STATS
+    #if NEBULA_MEMORY_STATS
     int volatile allocCount;
     int volatile allocSize;
     static Threading::CriticalSection* criticalSection;

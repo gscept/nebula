@@ -122,7 +122,7 @@ QuadTree<TYPE>::~QuadTree()
 template<class TYPE> void
 QuadTree<TYPE>::Setup(const Math::bbox& box, uchar depth)
 {
-    #if NEBULA3_BOUNDSCHECKS    
+    #if NEBULA_BOUNDSCHECKS    
     n_assert(depth > 0);
     #endif
 
@@ -139,7 +139,7 @@ QuadTree<TYPE>::Setup(const Math::bbox& box, uchar depth)
     this->nodeArray[0].Setup(this, 0, 0, 0);
 
     // make sure all nodes have been initialized
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     int i;
     int num = this->nodeArray.Size();
     for (i = 0; i < num; i++)
@@ -198,7 +198,7 @@ QuadTree<TYPE>::GetNumNodesInTree() const
 template<class TYPE> IndexT
 QuadTree<TYPE>::GetNodeIndex(uchar level, ushort col, ushort row) const
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert((col >= 0) && (col < (1 << level)));
     n_assert((row >= 0) && (row < (1 << level)));
     #endif
@@ -248,7 +248,7 @@ QuadTree<TYPE>::Node::~Node()
 template<class TYPE> void
 QuadTree<TYPE>::Node::Setup(QuadTree* tree, uchar _level, ushort _col, ushort _row)
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(tree);
     n_assert(this->level == -1);
     n_assert(_col < (1 << _level));

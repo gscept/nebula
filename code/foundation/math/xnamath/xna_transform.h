@@ -17,7 +17,7 @@
 namespace Math
 {
 // it appears that this is not required according to vs2015
-//NEBULA3_ALIGN16
+//NEBULA_ALIGN16
 class transform
 {
 public:

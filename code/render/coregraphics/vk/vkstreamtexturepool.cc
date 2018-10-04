@@ -277,7 +277,7 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 
 	stream->Unmap();
 
-#if NEBULAT_GRAPHICS_DEBUG
+#if NEBULA_GRAPHICS_DEBUG
 	ObjectSetName((TextureId)res, stream->GetURI().LocalPath().AsCharPtr());
 #endif
 

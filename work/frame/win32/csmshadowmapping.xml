@@ -1,5 +1,5 @@
 <!DOCTYPE shadowmapping>
-<Nebula3>
+<Nebula>
  <FrameShader>
  
   <!-- depth-stencil buffers -->
@@ -11,4 +11,4 @@
 	<Batch batchGroup="GlobalShadow" sorting="None" lighting="None" type="Geometry" instances="4"/>
   </Pass>
  </FrameShader>
-</Nebula3>
+</Nebula>

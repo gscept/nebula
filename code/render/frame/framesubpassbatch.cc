@@ -18,8 +18,8 @@ using namespace Materials;
 using namespace Models;
 using namespace Util;
 
-#define NEBULA3_FRAME_LOG_ENABLED   (0)
-#if NEBULA3_FRAME_LOG_ENABLED
+#define NEBULA_FRAME_LOG_ENABLED   (0)
+#if NEBULA_FRAME_LOG_ENABLED
 #define FRAME_LOG(...) n_printf(__VA_ARGS__); n_printf("\n")
 #else
 #define FRAME_LOG(...)
@@ -175,7 +175,7 @@ FrameSubpassBatch::CompiledImpl::Run(const IndexT frameIndex)
 							modelNode->ApplySharedState(frameIndex);
 							FRAME_LOG("        FrameBatch::RenderBatch() node: %s", modelNode->GetName().Value());
 
-#if NEBULA3_ENABLE_PROFILING
+#if NEBULA_ENABLE_PROFILING
 							modelNode->StartTimer();
 #endif
 							IndexT nodeInstIndex;
@@ -183,7 +183,7 @@ FrameSubpassBatch::CompiledImpl::Run(const IndexT frameIndex)
 							{
 								const Ptr<ModelNodeInstance>& nodeInstance = nodeInstances[nodeInstIndex];
 								const Ptr<StateNodeInstance>& stateNode = nodeInstance.downcast<StateNodeInstance>();
-#if NEBULA3_ENABLE_PROFILING
+#if NEBULA_ENABLE_PROFILING
 								nodeInstance->StartDebugTimer();
 #endif  
 								// render the node instance
@@ -191,13 +191,13 @@ FrameSubpassBatch::CompiledImpl::Run(const IndexT frameIndex)
 
 								// render single
 								nodeInstance->Render();
-#if NEBULA3_ENABLE_PROFILING
+#if NEBULA_ENABLE_PROFILING
 								modelNode->IncrementDraws();
 								nodeInstance->StopDebugTimer();
 #endif  
 							}
 
-#if NEBULA3_ENABLE_PROFILING
+#if NEBULA_ENABLE_PROFILING
 							modelNode->StopTimer();
 #endif
 						}

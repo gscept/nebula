@@ -7,7 +7,7 @@
     
     Implements an extremly simple standalone HTTP server with attached
     HttpRequestHandlers. Can be used to serve debug information about the 
-    Nebula3 application to web browsers.
+    Nebula application to web browsers.
 
     (C) 2007 Radon Labs GmbH
     (C) 2013-2016 Individual contributors, see AUTHORS file

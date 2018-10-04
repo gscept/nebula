@@ -9,7 +9,7 @@
    
 namespace Win360
 {
-#if NEBULA3_USER_CRITICAL_SECTION
+#if NEBULA_USER_CRITICAL_SECTION
 //------------------------------------------------------------------------------
 /**
 */  

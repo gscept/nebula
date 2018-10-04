@@ -24,7 +24,7 @@ class plane;
 // this is a reference so far
 typedef const matrix44& __Matrix44Arg;
 
-NEBULA3_ALIGN16
+NEBULA_ALIGN16
 class matrix44
 {
 public:

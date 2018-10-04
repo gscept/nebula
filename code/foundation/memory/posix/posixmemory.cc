@@ -10,7 +10,7 @@
 namespace Memory
 {
 void* volatile PosixProcessHeap = 0;
-#if NEBULA3_MEMORY_STATS
+#if NEBULA_MEMORY_STATS
 int volatile TotalAllocCount = 0;
 int volatile TotalAllocSize = 0;
 int volatile HeapTypeAllocCount[NumHeapTypes] = { 0 };
@@ -38,7 +38,7 @@ Validate()
 }
 
 #endif
-#if NEBULA3_MEMORY_ADVANCED_DEBUGGING
+#if NEBULA_MEMORY_ADVANCED_DEBUGGING
 void DumpMemoryLeaks()
 {
 	// FIXME

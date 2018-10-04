@@ -3,7 +3,7 @@
 /**
     @class Util::ArrayStack
 
-    NebulaT's small vector optimized array. Identical to Array in every way except
+    Nebula's small vector optimized array. Identical to Array in every way except
 	that it keeps a stack allocated small buffer (much like String) and can allow
 	for arrays to be tightly packed in memory.
 
@@ -253,7 +253,7 @@ ArrayStack<TYPE, STACK_SIZE>::ArrayStack(const ArrayStack<TYPE, STACK_SIZE>& rhs
 template<class TYPE, int STACK_SIZE> void
 ArrayStack<TYPE, STACK_SIZE>::Copy(const ArrayStack<TYPE, STACK_SIZE>& src)
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
 	if (this->elements != this->smallVector)
 		n_assert(0 == this->elements);
     #endif
@@ -404,7 +404,7 @@ ArrayStack<TYPE, STACK_SIZE>::GrowTo(SizeT newCapacity)
 template<class TYPE, int STACK_SIZE> void
 ArrayStack<TYPE, STACK_SIZE>::Grow()
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(this->grow > 0);
     #endif
 
@@ -438,7 +438,7 @@ ArrayStack<TYPE, STACK_SIZE>::Grow()
 template<class TYPE, int STACK_SIZE> void
 ArrayStack<TYPE, STACK_SIZE>::Move(IndexT fromIndex, IndexT toIndex)
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements);
     n_assert(fromIndex < this->size);
     #endif
@@ -505,7 +505,7 @@ ArrayStack<TYPE, STACK_SIZE>::Append(const TYPE& elm)
     {
         this->Grow();
     }
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements);
     #endif
     this->elements[this->size++] = elm;
@@ -538,7 +538,7 @@ ArrayStack<TYPE, STACK_SIZE>::AppendArray(const ArrayStack<TYPE, STACK_SIZE>& rh
 template<class TYPE, int STACK_SIZE> void
 ArrayStack<TYPE, STACK_SIZE>::Reserve(SizeT num)
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(num > 0);
     #endif
     SizeT neededCapacity = this->size + num;
@@ -574,7 +574,7 @@ ArrayStack<TYPE, STACK_SIZE>::Capacity() const
 template<class TYPE, int STACK_SIZE> TYPE&
 ArrayStack<TYPE, STACK_SIZE>::operator[](IndexT index) const
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements && (index < this->size));
     #endif
     return this->elements[index];
@@ -624,7 +624,7 @@ ArrayStack<TYPE, STACK_SIZE>::operator!=(const ArrayStack<TYPE, STACK_SIZE>& rhs
 template<class TYPE, int STACK_SIZE> TYPE&
 ArrayStack<TYPE, STACK_SIZE>::Front() const
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements && (this->size > 0));
     #endif
     return this->elements[0];
@@ -636,7 +636,7 @@ ArrayStack<TYPE, STACK_SIZE>::Front() const
 template<class TYPE, int STACK_SIZE> TYPE&
 ArrayStack<TYPE, STACK_SIZE>::Back() const
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements && (this->size > 0));
     #endif
     return this->elements[this->size - 1];
@@ -657,7 +657,7 @@ ArrayStack<TYPE, STACK_SIZE>::IsEmpty() const
 template<class TYPE, int STACK_SIZE> void
 ArrayStack<TYPE, STACK_SIZE>::EraseIndex(IndexT index)
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements && (index < this->size));
     #endif
     if (index == (this->size - 1))
@@ -679,7 +679,7 @@ ArrayStack<TYPE, STACK_SIZE>::EraseIndex(IndexT index)
 template<class TYPE, int STACK_SIZE> void
 ArrayStack<TYPE, STACK_SIZE>::EraseIndexSwap(IndexT index)
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements && (index < this->size));
     #endif
 
@@ -699,7 +699,7 @@ ArrayStack<TYPE, STACK_SIZE>::EraseIndexSwap(IndexT index)
 template<class TYPE, int STACK_SIZE> typename ArrayStack<TYPE, STACK_SIZE>::Iterator
 ArrayStack<TYPE, STACK_SIZE>::Erase(typename ArrayStack<TYPE, STACK_SIZE>::Iterator iter)
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements && (iter >= this->elements) && (iter < (this->elements + this->size)));
     #endif
     this->EraseIndex(IndexT(iter - this->elements));
@@ -713,7 +713,7 @@ ArrayStack<TYPE, STACK_SIZE>::Erase(typename ArrayStack<TYPE, STACK_SIZE>::Itera
 template<class TYPE, int STACK_SIZE> typename ArrayStack<TYPE, STACK_SIZE>::Iterator
 ArrayStack<TYPE, STACK_SIZE>::EraseSwap(typename ArrayStack<TYPE, STACK_SIZE>::Iterator iter)
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements && (iter >= this->elements) && (iter < (this->elements + this->size)));
     #endif
 	this->EraseIndexSwap(IndexT(iter - this->elements));
@@ -726,7 +726,7 @@ ArrayStack<TYPE, STACK_SIZE>::EraseSwap(typename ArrayStack<TYPE, STACK_SIZE>::I
 template<class TYPE, int STACK_SIZE> void
 ArrayStack<TYPE, STACK_SIZE>::Insert(IndexT index, const TYPE& elm)
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(index <= this->size);
     #endif
     if (index == this->size)
@@ -1098,7 +1098,7 @@ ArrayStack<TYPE, STACK_SIZE>::InsertSorted(const TYPE& elm)
             } 
             else 
             {
-                #if NEBULA3_BOUNDSCHECKS
+                #if NEBULA_BOUNDSCHECKS
                 n_assert(0 == lo);
                 #endif
                 this->Insert(lo, elm);

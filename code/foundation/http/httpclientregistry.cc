@@ -6,7 +6,7 @@
 #include "foundation/stdneb.h"
 
 // HttpClientRegistry not implemented on the Wii
-#if __NEBULA3_HTTP_FILESYSTEM__
+#if __NEBULA_HTTP_FILESYSTEM__
 #include "http/httpclientregistry.h"
 
 namespace Http

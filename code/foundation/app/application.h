@@ -3,7 +3,7 @@
 /**
     @class App::Application
   
-    Provides a simple application model for Nebula3 apps.
+    Provides a simple application model for Nebula apps.
     
     (C) 2006 Radon Labs GmbH
     (C) 2013-2016 Individual contributors, see AUTHORS file

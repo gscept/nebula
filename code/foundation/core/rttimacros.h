@@ -3,7 +3,7 @@
 /**
     @file core/rttimacros.h
     
-    This defines the macros for Nebula3's RTTI mechanism 
+    This defines the macros for Nebula's RTTI mechanism 
     (__DeclareClass, __ImplementClass, etc...).
     
     (C) 2008 Radon Labs GmbH

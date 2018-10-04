@@ -36,7 +36,7 @@ public:
     /// free a block of memory which has been allocated from this heap
     void Free(void* ptr);
 
-    #if NEBULA3_MEMORY_STATS
+    #if NEBULA_MEMORY_STATS
     /// heap stats structure
     struct Stats
     {
@@ -69,7 +69,7 @@ private:
     HANDLE heap;
     const char* name;
 
-    #if NEBULA3_MEMORY_STATS
+    #if NEBULA_MEMORY_STATS
     long volatile allocCount;
     long volatile allocSize;
     static Threading::CriticalSection*  criticalSection;
@@ -94,7 +94,7 @@ Win360Heap::GetName() const
 __forceinline void*
 Win360Heap::Alloc(size_t size)
 {
-    #if NEBULA3_MEMORY_STATS
+    #if NEBULA_MEMORY_STATS
     Threading::Interlocked::Increment(this->allocCount);
 	// __HeapAlloc16 will always add 16 bytes for memory alignment padding
     Threading::Interlocked::Add(this->allocSize, int(size + 16));
@@ -109,7 +109,7 @@ Win360Heap::Alloc(size_t size)
 __forceinline void*
 Win360Heap::Realloc(void* ptr, size_t size)
 {
-    #if NEBULA3_MEMORY_STATS
+    #if NEBULA_MEMORY_STATS
     size_t curSize = Memory::__HeapSize16(this->heap, 0, ptr);
 	// __HeapAlloc16 will always add 16 bytes for memory alignment padding
 	Threading::Interlocked::Add(this->allocSize, int(size - curSize + 16));
@@ -125,7 +125,7 @@ __forceinline void
 Win360Heap::Free(void* ptr)
 {
     n_assert(0 != ptr);
-    #if NEBULA3_MEMORY_STATS
+    #if NEBULA_MEMORY_STATS
     size_t size = Memory::__HeapSize16(this->heap, 0, ptr);
     Threading::Interlocked::Add(this->allocSize, -int(size));
     Threading::Interlocked::Decrement(this->allocCount);

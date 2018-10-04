@@ -3,7 +3,7 @@
 /**
     @class Util::Array
 
-    Nebula3's dynamic array class. This class is also used by most other
+    Nebula's dynamic array class. This class is also used by most other
     collection classes.
 
     The default constructor will not pre-allocate elements, so no space
@@ -20,7 +20,7 @@
 
     It is possible to sort the array using the Sort() method, this uses
     std::sort (one of the very few exceptions where the STL is used in
-    Nebula3).
+    Nebula).
 
     One should generally be careful with costly copy operators, the Array
     class (and the other container classes using Array) may do some heavy
@@ -263,7 +263,7 @@ Array<TYPE>::Array(const Array<TYPE>& rhs) :
 template<class TYPE> void
 Array<TYPE>::Copy(const Array<TYPE>& src)
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(0 == this->elements);
     #endif
 
@@ -399,7 +399,7 @@ Array<TYPE>::GrowTo(SizeT newCapacity)
 template<class TYPE> void
 Array<TYPE>::Grow()
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(this->grow > 0);
     #endif
 
@@ -433,7 +433,7 @@ Array<TYPE>::Grow()
 template<class TYPE> void
 Array<TYPE>::Move(IndexT fromIndex, IndexT toIndex)
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements);
     n_assert(fromIndex < this->size);
     #endif
@@ -500,7 +500,7 @@ Array<TYPE>::Append(const TYPE& elm)
     {
         this->Grow();
     }
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements);
     #endif
     this->elements[this->size++] = elm;
@@ -573,7 +573,7 @@ Array<TYPE>::Capacity() const
 template<class TYPE> TYPE&
 Array<TYPE>::operator[](IndexT index) const
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements && (index < this->size));
     #endif
     return this->elements[index];
@@ -623,7 +623,7 @@ Array<TYPE>::operator!=(const Array<TYPE>& rhs) const
 template<class TYPE> TYPE&
 Array<TYPE>::Front() const
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements && (this->size > 0));
     #endif
     return this->elements[0];
@@ -635,7 +635,7 @@ Array<TYPE>::Front() const
 template<class TYPE> TYPE&
 Array<TYPE>::Back() const
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements && (this->size > 0));
     #endif
     return this->elements[this->size - 1];
@@ -656,7 +656,7 @@ Array<TYPE>::IsEmpty() const
 template<class TYPE> void
 Array<TYPE>::EraseIndex(IndexT index)
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements && (index < this->size));
     #endif
     if (index == (this->size - 1))
@@ -678,7 +678,7 @@ Array<TYPE>::EraseIndex(IndexT index)
 template<class TYPE> void
 Array<TYPE>::EraseIndexSwap(IndexT index)
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements && (index < this->size));
     #endif
 
@@ -698,7 +698,7 @@ Array<TYPE>::EraseIndexSwap(IndexT index)
 template<class TYPE> typename Array<TYPE>::Iterator
 Array<TYPE>::Erase(typename Array<TYPE>::Iterator iter)
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements && (iter >= this->elements) && (iter < (this->elements + this->size)));
     #endif
     this->EraseIndex(IndexT(iter - this->elements));
@@ -712,7 +712,7 @@ Array<TYPE>::Erase(typename Array<TYPE>::Iterator iter)
 template<class TYPE> typename Array<TYPE>::Iterator
 Array<TYPE>::EraseSwap(typename Array<TYPE>::Iterator iter)
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements && (iter >= this->elements) && (iter < (this->elements + this->size)));
     #endif
 	this->EraseIndexSwap(IndexT(iter - this->elements));
@@ -725,7 +725,7 @@ Array<TYPE>::EraseSwap(typename Array<TYPE>::Iterator iter)
 template<class TYPE> void
 Array<TYPE>::Insert(IndexT index, const TYPE& elm)
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(index <= this->size);
     #endif
     if (index == this->size)
@@ -1103,7 +1103,7 @@ Array<TYPE>::InsertSorted(const TYPE& elm)
             } 
             else 
             {
-                #if NEBULA3_BOUNDSCHECKS
+                #if NEBULA_BOUNDSCHECKS
                 n_assert(0 == lo);
                 #endif
                 this->Insert(lo, elm);

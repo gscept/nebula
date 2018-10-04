@@ -14,7 +14,7 @@ namespace CoreAnimation
 {
 #pragma pack(push, 1)
 
-#define NEBULA3_NAX3_MAGICNUMBER 'NA01'
+#define NEBULA_NAX3_MAGICNUMBER 'NA01'
 
 //------------------------------------------------------------------------------
 /** 

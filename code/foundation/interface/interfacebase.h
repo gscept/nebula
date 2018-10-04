@@ -4,7 +4,7 @@
     @class Interface::InterfaceBase
     
     Base class for interfaces. An interface is the frontend of a fat thread,
-    visible from all threads in the Nebula3 application. Other threads can
+    visible from all threads in the Nebula application. Other threads can
     send messages to the Interface singleton which will dispatch the
     messages to handlers running in the thread context.
     

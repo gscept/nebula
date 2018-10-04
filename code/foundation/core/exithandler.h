@@ -5,8 +5,8 @@
     
     ExitHandlers are static objects which register themselves automatically
     once at startup and are called back from the Core::SysFunc::Exit()
-    static method which is called right before a Nebula3 application exists.  
-    Please note that the Nebula3 runtime usually doesn't yet exist when
+    static method which is called right before a Nebula application exists.  
+    Please note that the Nebula runtime usually doesn't yet exist when
     the ExitHandler is created or destroyed, so don't put anything complex
     into the constructor or destructor of the class!
     

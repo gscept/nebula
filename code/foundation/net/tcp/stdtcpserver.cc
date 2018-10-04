@@ -202,7 +202,7 @@ StdTcpServer::ListenerThread::SetClientConnectionClass(const Core::Rtti& type)
 void
 StdTcpServer::ListenerThread::DoWork()
 {
-    // we need a minimal Nebula3 runtime to work
+    // we need a minimal Nebula runtime to work
     n_printf("ListenerThread started!\n");
 
     // create a server socket

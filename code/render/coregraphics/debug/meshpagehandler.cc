@@ -58,7 +58,7 @@ MeshPageHandler::HandleRequest(const Ptr<HttpRequest>& request)
 	// no command, send the home page
 	Ptr<HtmlPageWriter> htmlWriter = HtmlPageWriter::Create();
 	htmlWriter->SetStream(request->GetResponseContentStream());
-	htmlWriter->SetTitle("NebulaT Meshes");
+	htmlWriter->SetTitle("Nebula Meshes");
 	if (htmlWriter->Open())
 	{
 		htmlWriter->Element(HtmlElement::Heading1, "Shared Mesh Resources");
@@ -136,7 +136,7 @@ MeshPageHandler::HandleMeshInfoRequest(const Util::String& resId, const Ptr<Stre
 
 	Ptr<HtmlPageWriter> htmlWriter = HtmlPageWriter::Create();
 	htmlWriter->SetStream(responseContentStream);
-	htmlWriter->SetTitle("NebulaT Mesh Info");
+	htmlWriter->SetTitle("Nebula Mesh Info");
 	if (htmlWriter->Open())
 	{
 		const Resources::ResourceName& name = resManager->GetName(id);
@@ -311,7 +311,7 @@ MeshPageHandler::HandleVertexDumpRequest(const Util::String& resId, IndexT minVe
 	
 	Ptr<HtmlPageWriter> htmlWriter = HtmlPageWriter::Create();
 	htmlWriter->SetStream(responseContentStream);
-	htmlWriter->SetTitle("NebulaT Mesh Dump");
+	htmlWriter->SetTitle("Nebula Mesh Dump");
 	if (htmlWriter->Open())
 	{
 		// write header

@@ -65,7 +65,7 @@ StreamAnimationPool::LoadFromStream(const Resources::ResourceId id, const Util::
 		ptr += sizeof(Nax3Header);
 
 		// check magic value
-		if (FourCC(naxHeader->magic) != NEBULA3_NAX3_MAGICNUMBER)
+		if (FourCC(naxHeader->magic) != NEBULA_NAX3_MAGICNUMBER)
 		{
 			n_error("StreamAnimationLoader::SetupFromNax3(): '%s' has invalid file format (magic number doesn't match)!", stream->GetURI().AsString().AsCharPtr());
 			return Failed;

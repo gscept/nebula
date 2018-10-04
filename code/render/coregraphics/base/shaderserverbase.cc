@@ -96,7 +96,7 @@ ShaderServerBase::Open()
 
         // get shared object id shader variable
 #if !__WII__ && !__PS3__
-       // this->objectIdShaderVar = this->sharedVariableShaderInst->GetVariableBySemantic(NEBULA3_SEMANTIC_OBJECTID);
+       // this->objectIdShaderVar = this->sharedVariableShaderInst->GetVariableBySemantic(NEBULA_SEMANTIC_OBJECTID);
         //n_assert(this->objectIdShaderVar.isvalid());
 #endif
     }
@@ -133,9 +133,9 @@ ShaderServerBase::ApplyObjectId(IndexT i)
     n_assert(i >= 0);
     n_assert(i < 256);
 #if __PS3__
-    if (this->GetActiveShader()->HasVariableBySemantic(NEBULA3_SEMANTIC_OBJECTID))
+    if (this->GetActiveShader()->HasVariableBySemantic(NEBULA_SEMANTIC_OBJECTID))
     {
-        this->objectIdShaderVar = this->GetActiveShader()->GetVariableBySemantic(NEBULA3_SEMANTIC_OBJECTID);
+        this->objectIdShaderVar = this->GetActiveShader()->GetVariableBySemantic(NEBULA_SEMANTIC_OBJECTID);
     }       
 #endif
     if (this->objectIdShaderVar != Ids::InvalidId32)

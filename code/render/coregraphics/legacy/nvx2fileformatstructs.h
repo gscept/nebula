@@ -14,7 +14,7 @@ namespace CoreGraphics
 {
 #pragma pack(push, 1)
 
-#define NEBULA3_NVX2_MAGICNUMBER 'NVX2'
+#define NEBULA_NVX2_MAGICNUMBER 'NVX2'
 
 //------------------------------------------------------------------------------
 /** 

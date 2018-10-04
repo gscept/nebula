@@ -53,7 +53,7 @@ public:
 	/// get the state associated with the creation of the shader
 	const Ptr<CoreGraphics::ShaderState>& GetMainState();
 
-#if __NEBULA3_HTTP__
+#if __NEBULA_HTTP__
 	/// get the debug shader state
 	const Ptr<CoreGraphics::ShaderState>& GetDebugState();
 #endif
@@ -85,7 +85,7 @@ protected:
 
 	Ptr<CoreGraphics::ShaderState> mainState;
 
-#if __NEBULA3_HTTP__
+#if __NEBULA_HTTP__
 	Ptr<CoreGraphics::ShaderState> debugState; // instance of shader with all variables, only to be used by debugging
 #endif
     Util::Array<Ptr<CoreGraphics::ShaderState>> shaderInstances;
@@ -105,7 +105,7 @@ ShaderBase::GetMainState()
 	return this->mainState;
 }
 
-#if __NEBULA3_HTTP__
+#if __NEBULA_HTTP__
 //------------------------------------------------------------------------------
 /**
 */

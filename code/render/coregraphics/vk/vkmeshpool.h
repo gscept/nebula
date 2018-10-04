@@ -34,7 +34,7 @@ private:
 	/// perform load
 	LoadStatus Load(const Ptr<Resources::Resource>& res, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream);
 
-#if NEBULA3_LEGACY_SUPPORT
+#if NEBULA_LEGACY_SUPPORT
 	/// setup mesh from nvx2 file in memory
 	bool SetupMeshFromNvx2(const Ptr<IO::Stream>& stream, const Ptr<Resources::Resource>& res);
 #endif

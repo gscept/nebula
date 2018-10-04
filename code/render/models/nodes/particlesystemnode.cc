@@ -71,7 +71,7 @@ ParticleSystemNode::OnFinishedLoading()
 	this->shader = CoreGraphics::ShaderServer::Instance()->GetShader("shd:particle.fxb");
 	this->cbo = CoreGraphics::ShaderCreateConstantBuffer(this->shader, "ParticleObjectBlock");
 	this->cboIndex = CoreGraphics::ShaderGetResourceSlot(this->shader, "ParticleObjectBlock");
-	this->resourceTable = CoreGraphics::ShaderCreateResourceTable(this->shader, NEBULAT_DYNAMIC_OFFSET_GROUP);
+	this->resourceTable = CoreGraphics::ShaderCreateResourceTable(this->shader, NEBULA_DYNAMIC_OFFSET_GROUP);
 	CoreGraphics::ResourceTableSetConstantBuffer(this->resourceTable, { this->cbo, this->cboIndex, 0, true, false, -1, 0 });
 	CoreGraphics::ResourceTableCommitChanges(this->resourceTable);
 

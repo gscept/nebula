@@ -41,8 +41,8 @@ BloomAlgorithm::Setup()
 	// setup shaders
 	this->brightPassShader = ShaderGet("shd:brightpass.fxb");
 	this->blurShader = ShaderGet("shd:blur_2d_rgb16f_cs.fxb");
-	this->brightPassTable = ShaderCreateResourceTable(this->brightPassShader, NEBULAT_BATCH_GROUP);
-	this->blurTable = ShaderCreateResourceTable(this->blurShader, NEBULAT_BATCH_GROUP);
+	this->brightPassTable = ShaderCreateResourceTable(this->brightPassShader, NEBULA_BATCH_GROUP);
+	this->blurTable = ShaderCreateResourceTable(this->blurShader, NEBULA_BATCH_GROUP);
 	
 	this->colorSourceSlot = ShaderGetResourceSlot(this->brightPassShader, "ColorSource");
 	this->luminanceTextureSlot = ShaderGetResourceSlot(this->brightPassShader, "LuminanceTexture");
@@ -99,7 +99,7 @@ BloomAlgorithm::Setup()
 		CoreGraphics::SetShaderProgram(this->brightPassProgram);
 		CoreGraphics::BeginBatch(Frame::FrameBatchType::System);
 		this->fsq.ApplyMesh();
-		CoreGraphics::SetResourceTable(this->brightPassTable, NEBULAT_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
+		CoreGraphics::SetResourceTable(this->brightPassTable, NEBULA_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
 		this->fsq.Draw();
 		CoreGraphics::EndBatch();
 	});
@@ -117,14 +117,14 @@ BloomAlgorithm::Setup()
 		uint numGroupsY2 = dims.height;
 
 		CoreGraphics::SetShaderProgram(this->blurX);
-		CoreGraphics::SetResourceTable(this->blurTable, NEBULAT_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+		CoreGraphics::SetResourceTable(this->blurTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
 		CoreGraphics::Compute(numGroupsX1, numGroupsY2, 1);
 
 		// insert barrier between passes
 		CoreGraphics::InsertBarrier(this->barriers[0], ComputeQueueType);
 
 		CoreGraphics::SetShaderProgram(this->blurY);
-		CoreGraphics::SetResourceTable(this->blurTable, NEBULAT_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+		CoreGraphics::SetResourceTable(this->blurTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
 		CoreGraphics::Compute(numGroupsY1, numGroupsX2, 1);
 
 	});

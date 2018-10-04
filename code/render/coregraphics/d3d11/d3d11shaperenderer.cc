@@ -81,8 +81,8 @@ D3D11ShapeRenderer::Open()
 	this->CreateConeShape();
 
     // lookup ModelViewProjection shader variable
-	this->model = this->shapeShader->GetVariableBySemantic(ShaderVariable::Name(NEBULA3_SEMANTIC_MODEL));
-	this->viewProjection = this->shapeShader->GetVariableBySemantic(ShaderVariable::Name(NEBULA3_SEMANTIC_VIEWPROJECTION));
+	this->model = this->shapeShader->GetVariableBySemantic(ShaderVariable::Name(NEBULA_SEMANTIC_MODEL));
+	this->viewProjection = this->shapeShader->GetVariableBySemantic(ShaderVariable::Name(NEBULA_SEMANTIC_VIEWPROJECTION));
 	this->diffuseColor  = this->shapeShader->GetVariableBySemantic(ShaderVariable::Name("MatDiffuse"));
 
 	this->depthFeatureBits[RenderShape::AlwaysOnTop] = ShaderServer::Instance()->FeatureStringToMask("Static");    
