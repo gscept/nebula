@@ -168,6 +168,8 @@ fips_begin_module(foundation)
 			iointerfacehandler.h
 			logfileconsolehandler.cc
 			logfileconsolehandler.h
+            jsonreader.cc
+            jsonreader.h
 			mediatype.h
 			memorystream.cc
 			memorystream.h
