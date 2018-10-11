@@ -80,7 +80,7 @@ ThreadTest::Run()
     this->mythread->Start();
     
     threadEvent.Wait();
-    this->Verify(!InstanceCheck);    
+    VERIFY(!InstanceCheck);    
 }
 
 } // namespace Test

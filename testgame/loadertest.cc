@@ -60,15 +60,15 @@ LoaderTest::Run()
 	for (SizeT i = 0; i < entities.Size(); i++)
 		entityManager->DeleteEntity(entities[i]);
 
-	this->Verify(tComp->GetNumInstances() == 0);
-	this->Verify(entityManager->GetNumEntities() == 0);
+	VERIFY(tComp->GetNumInstances() == 0);
+	VERIFY(entityManager->GetNumEntities() == 0);
 
 	LevelLoader::Load("bin:test.scnb");
 
 	tComp->DeregisterAllDead();
 
-	this->Verify(tComp->GetNumInstances() != 0);
-	this->Verify(entityManager->GetNumEntities() != 0);
+	VERIFY(tComp->GetNumInstances() != 0);
+	VERIFY(entityManager->GetNumEntities() != 0);
 	
 	entities.Clear();
 }

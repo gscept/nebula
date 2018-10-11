@@ -22,12 +22,12 @@ ArrayAllocatorTest::Run()
 
 	uint32_t id = allocator.Alloc();
 
-	this->Verify(id == 0);
-	this->Verify(allocator.Size() == 1);
+	VERIFY(id == 0);
+	VERIFY(allocator.Size() == 1);
 
 	allocator.EraseIndex(id);
 
-	this->Verify(allocator.Size() == 0);
+	VERIFY(allocator.Size() == 0);
 
 	for (SizeT i = 0; i < 20000; i++)
 	{
@@ -38,33 +38,33 @@ ArrayAllocatorTest::Run()
 		allocator.Get<3>(i) = bool(i & 1);
 	}
 
-	this->Verify(allocator.Size() == 20000);
+	VERIFY(allocator.Size() == 20000);
 
 	for (SizeT i = 0; i < 10000; i++)
 	{
 		allocator.EraseIndexSwap(i);
 	}
 
-	this->Verify(allocator.Size() == 10000);
+	VERIFY(allocator.Size() == 10000);
 
-	this->Verify(allocator.Get<0>(0) == 19999);
-	this->Verify(allocator.Get<1>(1) == 19998.0f * 2.0f);
-	this->Verify(allocator.Get<2>(2) == 19997 % 10);
-	this->Verify(allocator.Get<3>(3) == bool(19996 & 1));
+	VERIFY(allocator.Get<0>(0) == 19999);
+	VERIFY(allocator.Get<1>(1) == 19998.0f * 2.0f);
+	VERIFY(allocator.Get<2>(2) == 19997 % 10);
+	VERIFY(allocator.Get<3>(3) == bool(19996 & 1));
 
-	this->Verify(allocator.GetArray<0>().Size() == 10000);
-	this->Verify(allocator.GetArray<1>().Size() == 10000);
-	this->Verify(allocator.GetArray<2>().Size() == 10000);
-	this->Verify(allocator.GetArray<3>().Size() == 10000);
+	VERIFY(allocator.GetArray<0>().Size() == 10000);
+	VERIFY(allocator.GetArray<1>().Size() == 10000);
+	VERIFY(allocator.GetArray<2>().Size() == 10000);
+	VERIFY(allocator.GetArray<3>().Size() == 10000);
 
 	allocator.Clear();
 
-	this->Verify(allocator.GetArray<0>().Size() == 0);
-	this->Verify(allocator.GetArray<1>().Size() == 0);
-	this->Verify(allocator.GetArray<2>().Size() == 0);
-	this->Verify(allocator.GetArray<3>().Size() == 0);
+	VERIFY(allocator.GetArray<0>().Size() == 0);
+	VERIFY(allocator.GetArray<1>().Size() == 0);
+	VERIFY(allocator.GetArray<2>().Size() == 0);
+	VERIFY(allocator.GetArray<3>().Size() == 0);
 
-	this->Verify(allocator.Size() == 0);	
+	VERIFY(allocator.Size() == 0);	
 }
 
 } // namespace Test

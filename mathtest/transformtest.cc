@@ -32,13 +32,13 @@ TransformTest::Run()
     point p1(5.0f, 6.0f, 7.0f);
 
     t1.set(q1, p1);
-    this->Verify(t1.get_position() == p1);
-    this->Verify(t1.get_orientation() == q1);
+    VERIFY(t1.get_position() == p1);
+    VERIFY(t1.get_orientation() == q1);
     matrix44 foo;
     t1.to_matrix44(foo);
-    this->Verify(t1.get_orientation() == q1);
+    VERIFY(t1.get_orientation() == q1);
     matrix44 mm = matrix44::affinetransformation(1.0, float4(0), q1, p1);
-    this->Verify(mm == foo);
+    VERIFY(mm == foo);
 }
 
 }

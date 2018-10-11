@@ -1,21 +1,21 @@
-#ifndef TEST_LISTTEST_H
-#define TEST_LISTTEST_H
+#pragma once
 //------------------------------------------------------------------------------
 /**
-    @class Test::ListTest
-    
-    Test functionality of Nebula's List class.
-    
+    @class Test::ArrayQueueTest
+
+    Test Nebula's ArrayQueue functionality.
+
     (C) 2006 Radon Labs GmbH
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "testbase/testcase.h"
 
 //------------------------------------------------------------------------------
 namespace Test
 {
-class ListTest : public TestCase
+class ArrayQueueTest : public TestCase
 {
-    __DeclareClass(ListTest);
+    __DeclareClass(ArrayQueueTest);
 public:
     /// run the test
     virtual void Run();
@@ -23,4 +23,3 @@ public:
 
 };
 //------------------------------------------------------------------------------
-#endif    

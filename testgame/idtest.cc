@@ -30,19 +30,19 @@ IdTest::Run()
 		
 		Id32 tmp;
 		pool.Allocate(tmp);
-		this->Verify(tmp == 0);
-		this->Verify(pool.IsValid(tmp));
+		VERIFY(tmp == 0);
+		VERIFY(pool.IsValid(tmp));
 
 		pool.Deallocate(tmp);
-		this->Verify(!pool.IsValid(tmp));
+		VERIFY(!pool.IsValid(tmp));
 		Id32 tmp2;
 		pool.Allocate(tmp2);
-		this->Verify(tmp != tmp2);
+		VERIFY(tmp != tmp2);
 		pool.Deallocate(tmp2);
-		this->Verify(!pool.IsValid(tmp2));
+		VERIFY(!pool.IsValid(tmp2));
 
 		uint32_t generation = Generation(tmp);
-		this->Verify(generation == 0);
+		VERIFY(generation == 0);
 
 		uint32_t lastidx = tmp2;
 		bool increase = true;
@@ -54,7 +54,7 @@ IdTest::Run()
 			lastidx = tmp;
 			pool.Deallocate(tmp);
 		}
-		this->Verify(increase);
+		VERIFY(increase);
 		for (int i = 0; i < 1022; i++)
 		{
 			Id32 tmp;
@@ -64,9 +64,9 @@ IdTest::Run()
 			increase &= index < 1024;
 			pool.Deallocate(tmp);
 		}
-		this->Verify(increase);
+		VERIFY(increase);
 
-		this->Verify(generation == 1);
+		VERIFY(generation == 1);
 
 		pool = IdGenerationPool();
 
@@ -92,7 +92,7 @@ IdTest::Run()
 
 		for (SizeT i = 0; i < numIds; i++)
 		{
-			this->Verify(firstGenIds[i] != secondGenIds[i]);
+			VERIFY(firstGenIds[i] != secondGenIds[i]);
 		}
 
 		firstGenIds.Clear();
@@ -105,7 +105,7 @@ IdTest::Run()
 
 		for (SizeT i = 0; i < numIds; i++)
 		{
-			this->Verify(firstGenIds[i] != secondGenIds[i]);
+			VERIFY(firstGenIds[i] != secondGenIds[i]);
 		}
 	}
 
@@ -123,14 +123,14 @@ IdTest::Run()
 			allocator.Get<1>(id) = 2.0f;
 			allocator.Get<2>(id) = "Test";
 		}
-		this->Verify(allocator.GetNumUsed() == numAllocs);
+		VERIFY(allocator.GetNumUsed() == numAllocs);
 
-		this->Verify(allocator.Get<1>(Id32(0)) == 2.0f);
-		this->Verify(allocator.Get<2>(Id32(0)) == "Test");
+		VERIFY(allocator.Get<1>(Id32(0)) == 2.0f);
+		VERIFY(allocator.Get<2>(Id32(0)) == "Test");
 
 		for (SizeT i = 0; i < numAllocs; i++)
 		{
-			this->Verify(allocator.Get<0>(ids[i]) == i);
+			VERIFY(allocator.Get<0>(ids[i]) == i);
 		}
 
 		for (SizeT i = 0; i < numAllocs; i++)
@@ -138,7 +138,7 @@ IdTest::Run()
 			allocator.DeallocObject(ids[i]);
 		}
 
-		this->Verify(allocator.GetNumUsed() == 0);
+		VERIFY(allocator.GetNumUsed() == 0);
 	}
 }
 

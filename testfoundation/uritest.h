@@ -4,7 +4,7 @@
 /**
     @class Test::URITest
     
-    Tests Nebula3's IO::URI class.
+    Tests Nebula's IO::URI class.
     
     (C) 2006 Radon Labs GmbH
 */

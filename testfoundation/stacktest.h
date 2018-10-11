@@ -4,7 +4,7 @@
 /**
     @class Test::StackTest
     
-    Test functionality of Nebula3's Stack class.
+    Test functionality of Nebula's Stack class.
     
     (C) 2006 Radon Labs GmbH
 */

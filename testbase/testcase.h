@@ -7,6 +7,7 @@
     Base class for a test case.
     
     (C) 2006 Radon Labs GmbH
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/refcounted.h"
 
@@ -24,19 +25,33 @@ public:
     /// run the test
     virtual void Run();
     /// verify a statement
-    void Verify(bool b);
+    void Verify(bool b, const char * test, const char * file, int line);
     /// return number of succeeded verifies
     int GetNumSucceeded() const;
     /// return number of failed verifies
     int GetNumFailed() const;
     /// return overall number of verifies
     int GetNumVerified() const;
+
+
+    struct FailedTest
+    {
+        Util::String compare;
+        Util::String file;
+        int line;
+    };
+
+    /// get errors
+    const Util::Array<FailedTest> & GetFailed() const;
 private:
     int numVerified;
     int numSucceeded;
-    int numFailed;    
+    int numFailed;  
+
+    Util::Array< FailedTest> failed;
 };
 
+#define VERIFY(test) Verify(test, #test, __FILE__, __LINE__)
 //------------------------------------------------------------------------------
 /*
 */
@@ -65,6 +80,16 @@ int
 TestCase::GetNumVerified() const
 {
     return this->numVerified;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline
+const Util::Array<TestCase::FailedTest> &
+TestCase::GetFailed() const
+{
+    return this->failed;
 }
 
 };

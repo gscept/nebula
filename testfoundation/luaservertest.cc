@@ -22,12 +22,12 @@ LuaServerTest::Run()
     Ptr<LuaServer> luaServer = LuaServer::Create();
     
     luaServer->Open();
-    this->Verify(luaServer->IsOpen());
+    VERIFY(luaServer->IsOpen());
 
     luaServer->Eval("i = 3");
 
     luaServer->Close();
-    this->Verify(!luaServer->IsOpen());
+    VERIFY(!luaServer->IsOpen());
 */
 }
 

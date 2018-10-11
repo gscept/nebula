@@ -15,7 +15,7 @@ using namespace Test;
 void
 __cdecl main()
 {
-	// create Nebula3 runtime
+	// create Nebula runtime
 	Ptr<CoreServer> coreServer = CoreServer::Create();
 	coreServer->SetAppName(Util::StringAtom("Nebula Jobs Tests"));
 	coreServer->Open();

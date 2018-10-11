@@ -31,39 +31,39 @@ URITest::Run()
     URI complexHttpUri("http://floh@www.radonlabs.de:1088/query.php?who=bla;where=blub");
 
     // verify URIs for correct splitting
-    this->Verify(!remoteFileUri.IsEmpty());
-    this->Verify(remoteFileUri.Scheme() == "file");
-    this->Verify(remoteFileUri.UserInfo().IsEmpty());
-    this->Verify(remoteFileUri.Host() == "gambar");
-    this->Verify(remoteFileUri.Port().IsEmpty());
-    this->Verify(remoteFileUri.LocalPath() == "temp/bla.txt");
-    this->Verify(remoteFileUri.Fragment().IsEmpty());
-    this->Verify(remoteFileUri.Query().IsEmpty());
-    this->Verify(remoteFileUri.AsString() == "file://gambar/temp/bla.txt");
+    VERIFY(!remoteFileUri.IsEmpty());
+    VERIFY(remoteFileUri.Scheme() == "file");
+    VERIFY(remoteFileUri.UserInfo().IsEmpty());
+    VERIFY(remoteFileUri.Host() == "gambar");
+    VERIFY(remoteFileUri.Port().IsEmpty());
+    VERIFY(remoteFileUri.LocalPath() == "temp/bla.txt");
+    VERIFY(remoteFileUri.Fragment().IsEmpty());
+    VERIFY(remoteFileUri.Query().IsEmpty());
+    VERIFY(remoteFileUri.AsString() == "file://gambar/temp/bla.txt");
 
-    this->Verify(localFileUri.Scheme() == "file");
-    this->Verify(localFileUri.UserInfo().IsEmpty());
-    this->Verify(localFileUri.Host().IsEmpty());
-    this->Verify(localFileUri.Port().IsEmpty());
-    this->Verify(localFileUri.LocalPath() == "temp/blub.txt");
-    this->Verify(localFileUri.Fragment().IsEmpty());
-    this->Verify(localFileUri.Query().IsEmpty());
+    VERIFY(localFileUri.Scheme() == "file");
+    VERIFY(localFileUri.UserInfo().IsEmpty());
+    VERIFY(localFileUri.Host().IsEmpty());
+    VERIFY(localFileUri.Port().IsEmpty());
+    VERIFY(localFileUri.LocalPath() == "temp/blub.txt");
+    VERIFY(localFileUri.Fragment().IsEmpty());
+    VERIFY(localFileUri.Query().IsEmpty());
 
-    this->Verify(simpleHttpUri.Scheme() == "http");
-    this->Verify(simpleHttpUri.UserInfo().IsEmpty());
-    this->Verify(simpleHttpUri.Host() == "www.radonlabs.de");
-    this->Verify(simpleHttpUri.Port().IsEmpty());
-    this->Verify(simpleHttpUri.LocalPath() == "index.html");
-    this->Verify(simpleHttpUri.Fragment() == "main");
-    this->Verify(simpleHttpUri.Query().IsEmpty());
+    VERIFY(simpleHttpUri.Scheme() == "http");
+    VERIFY(simpleHttpUri.UserInfo().IsEmpty());
+    VERIFY(simpleHttpUri.Host() == "www.radonlabs.de");
+    VERIFY(simpleHttpUri.Port().IsEmpty());
+    VERIFY(simpleHttpUri.LocalPath() == "index.html");
+    VERIFY(simpleHttpUri.Fragment() == "main");
+    VERIFY(simpleHttpUri.Query().IsEmpty());
 
-    this->Verify(complexHttpUri.Scheme() == "http");
-    this->Verify(complexHttpUri.UserInfo() == "floh");
-    this->Verify(complexHttpUri.Host() == "www.radonlabs.de");
-    this->Verify(complexHttpUri.Port() == "1088");
-    this->Verify(complexHttpUri.LocalPath() == "query.php");
-    this->Verify(complexHttpUri.Fragment() == "");
-    this->Verify(complexHttpUri.Query() == "who=bla;where=blub");
+    VERIFY(complexHttpUri.Scheme() == "http");
+    VERIFY(complexHttpUri.UserInfo() == "floh");
+    VERIFY(complexHttpUri.Host() == "www.radonlabs.de");
+    VERIFY(complexHttpUri.Port() == "1088");
+    VERIFY(complexHttpUri.LocalPath() == "query.php");
+    VERIFY(complexHttpUri.Fragment() == "");
+    VERIFY(complexHttpUri.Query() == "who=bla;where=blub");
 }
 
 }; // namespace Test

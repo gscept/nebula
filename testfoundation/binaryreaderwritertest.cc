@@ -47,10 +47,10 @@ BinaryReaderWriterTest::Run()
 
     // write some stuff to the stream without memory mapping
     stream->SetAccessMode(Stream::WriteAccess);
-    this->Verify(stream->Open());
+    VERIFY(stream->Open());
     writer->SetStream(stream.upcast<Stream>());
     writer->SetMemoryMappingEnabled(false);
-    this->Verify(writer->Open());
+    VERIFY(writer->Open());
     writer->WriteChar('a');
     writer->WriteUChar(uchar('ü'));
     writer->WriteShort(-12);
@@ -70,33 +70,33 @@ BinaryReaderWriterTest::Run()
 
     // read back with memory mapping enabled
     stream->SetAccessMode(Stream::ReadAccess);
-    this->Verify(stream->Open());
+    VERIFY(stream->Open());
     reader->SetStream(stream.upcast<Stream>());
     reader->SetMemoryMappingEnabled(true);
-    this->Verify(reader->Open());
-    this->Verify(reader->ReadChar() == 'a');
-    this->Verify(reader->ReadUChar() == (unsigned char) 'ü');
-    this->Verify(reader->ReadShort() == -12);
-    this->Verify(reader->ReadUShort() == 13);
-    this->Verify(reader->ReadInt() == -123);
-    this->Verify(reader->ReadUInt() == 1023);
-    this->Verify(reader->ReadFloat() == 1.23f);
-    this->Verify(reader->ReadDouble() == 2.34);
-    this->Verify(reader->ReadBool() == true);
-    this->Verify(reader->ReadBool() == false);
-    this->Verify(reader->ReadString() == "Ein String");
-    this->Verify(reader->ReadFloat4() == v4);
-    this->Verify(reader->ReadMatrix44() == m44);
-    this->Verify(reader->ReadBlob() == Blob(&writeBlob, sizeof(writeBlob)));
+    VERIFY(reader->Open());
+    VERIFY(reader->ReadChar() == 'a');
+    VERIFY(reader->ReadUChar() == (unsigned char) 'ü');
+    VERIFY(reader->ReadShort() == -12);
+    VERIFY(reader->ReadUShort() == 13);
+    VERIFY(reader->ReadInt() == -123);
+    VERIFY(reader->ReadUInt() == 1023);
+    VERIFY(reader->ReadFloat() == 1.23f);
+    VERIFY(reader->ReadDouble() == 2.34);
+    VERIFY(reader->ReadBool() == true);
+    VERIFY(reader->ReadBool() == false);
+    VERIFY(reader->ReadString() == "Ein String");
+    VERIFY(reader->ReadFloat4() == v4);
+    VERIFY(reader->ReadMatrix44() == m44);
+    VERIFY(reader->ReadBlob() == Blob(&writeBlob, sizeof(writeBlob)));
     reader->Close();
     stream->Close();
 
     // now write stuff with memory mapping enabled
     stream->SetAccessMode(Stream::WriteAccess);
-    this->Verify(stream->Open());
+    VERIFY(stream->Open());
     writer->SetStream(stream.upcast<Stream>());
     writer->SetMemoryMappingEnabled(true);
-    this->Verify(writer->Open());
+    VERIFY(writer->Open());
     writer->WriteChar('a');
     writer->WriteUChar(uchar('ü'));
     writer->WriteShort(-12);
@@ -116,24 +116,24 @@ BinaryReaderWriterTest::Run()
 
     // and read back without memory mapping
     stream->SetAccessMode(Stream::ReadAccess);
-    this->Verify(stream->Open());
+    VERIFY(stream->Open());
     reader->SetStream(stream.upcast<Stream>());
     reader->SetMemoryMappingEnabled(false);
-    this->Verify(reader->Open());
-    this->Verify(reader->ReadChar() == 'a');
-    this->Verify(reader->ReadUChar() == (unsigned char) 'ü');
-    this->Verify(reader->ReadShort() == -12);
-    this->Verify(reader->ReadUShort() == 13);
-    this->Verify(reader->ReadInt() == -123);
-    this->Verify(reader->ReadUInt() == 1023);
-    this->Verify(reader->ReadFloat() == 1.23f);
-    this->Verify(reader->ReadDouble() == 2.34);
-    this->Verify(reader->ReadBool() == true);
-    this->Verify(reader->ReadBool() == false);
-    this->Verify(reader->ReadString() == "Ein String");
-    this->Verify(reader->ReadFloat4() == v4);
-    this->Verify(reader->ReadMatrix44() == m44);
-    this->Verify(reader->ReadBlob() == Blob(&writeBlob, sizeof(writeBlob)));
+    VERIFY(reader->Open());
+    VERIFY(reader->ReadChar() == 'a');
+    VERIFY(reader->ReadUChar() == (unsigned char) 'ü');
+    VERIFY(reader->ReadShort() == -12);
+    VERIFY(reader->ReadUShort() == 13);
+    VERIFY(reader->ReadInt() == -123);
+    VERIFY(reader->ReadUInt() == 1023);
+    VERIFY(reader->ReadFloat() == 1.23f);
+    VERIFY(reader->ReadDouble() == 2.34);
+    VERIFY(reader->ReadBool() == true);
+    VERIFY(reader->ReadBool() == false);
+    VERIFY(reader->ReadString() == "Ein String");
+    VERIFY(reader->ReadFloat4() == v4);
+    VERIFY(reader->ReadMatrix44() == m44);
+    VERIFY(reader->ReadBlob() == Blob(&writeBlob, sizeof(writeBlob)));
     reader->Close();
     stream->Close();
 }

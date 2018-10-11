@@ -91,7 +91,7 @@ JobsTest::Run()
 
 	for (uint i = 0; i < NumInputs; i++)
 	{
-		this->Verify(outputs[i] == Math::float4(-4, 8, -4, 0));
+		VERIFY(outputs[i] == Math::float4(-4, 8, -4, 0));
 	}
 
 	app.Close();

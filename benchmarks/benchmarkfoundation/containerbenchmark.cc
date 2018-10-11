@@ -5,7 +5,7 @@
 #include "stdneb.h"
 #include "containerbenchmark.h"
 #include "util/queue.h"
-#include "util/dequeue.h"
+#include "util/arrayqueue.h"
 #include "util/list.h"
 
 
@@ -37,9 +37,9 @@ ContainerBench::Run(Timer& timer)
     DECLARE_CB_TEST(cbs, Util::Queue, Util::String);
     SETUP_CB_TEST(cbs, "test123", Enqueue, Dequeue);
 
-    DECLARE_CB_TEST(cbq, Util::DeQueue, int);
+    DECLARE_CB_TEST(cbq, Util::ArrayQueue, int);
     SETUP_CB_TEST(cbq, 1024, Enqueue, Dequeue);
-    DECLARE_CB_TEST(cbqs, Util::DeQueue, Util::String);
+    DECLARE_CB_TEST(cbqs, Util::ArrayQueue, Util::String);
     SETUP_CB_TEST(cbqs, "test123", Enqueue, Dequeue);
 
     DECLARE_CB_TEST(cbl, Util::List, int);

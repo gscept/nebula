@@ -23,14 +23,14 @@ FixedTableTest::Run()
     FixedTable<int> table(w, h, 7);
     
     // verify correct construction
-    this->Verify(table.Width() == w);
-    this->Verify(table.Height() == h);
+    VERIFY(table.Width() == w);
+    VERIFY(table.Height() == h);
     IndexT y, x;
     for (y = 0; y < h; y++)
     {
         for (x = 0; x < w; x++)
         {
-            this->Verify(table.At(x, y) == 7);
+            VERIFY(table.At(x, y) == 7);
         }
     }
 
@@ -48,29 +48,29 @@ FixedTableTest::Run()
     {
         for (x = 0; x < w; x++)
         {
-            this->Verify(table.At(x, y) == val);
+            VERIFY(table.At(x, y) == val);
             val++;
         }
     }
 
     // build another table as copy of the first one
     FixedTable<int> copy = table;
-    this->Verify(copy == table);
-    this->Verify(!(copy != table));
+    VERIFY(copy == table);
+    VERIFY(!(copy != table));
     copy.At(3, 1) = 23;
-    this->Verify(copy != table);
-    this->Verify(!(copy == table));
+    VERIFY(copy != table);
+    VERIFY(!(copy == table));
 
     copy.SetSize(2, 2);
-    this->Verify(copy.Width() == 2);
-    this->Verify(copy.Height() == 2);
+    VERIFY(copy.Width() == 2);
+    VERIFY(copy.Height() == 2);
     copy.Clear(3);
-    this->Verify(copy.At(0, 0) == 3);
-    this->Verify(copy.At(0, 1) == 3);
-    this->Verify(copy.At(1, 0) == 3);
-    this->Verify(copy.At(0, 1) == 3);
-    this->Verify(copy != table);
-    this->Verify(!(copy == table));
+    VERIFY(copy.At(0, 0) == 3);
+    VERIFY(copy.At(0, 1) == 3);
+    VERIFY(copy.At(1, 0) == 3);
+    VERIFY(copy.At(0, 1) == 3);
+    VERIFY(copy != table);
+    VERIFY(!(copy == table));
 }
 
 } // namespace Test
