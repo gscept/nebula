@@ -1,4 +1,4 @@
-//NIDL #version:1#
+// NIDL #version:7#
 #pragma once
 //------------------------------------------------------------------------------
 /**
@@ -12,6 +12,7 @@
 //------------------------------------------------------------------------------
 namespace Attr
 {
+    DeclareString(DebugName, 'tStr', Attr::ReadWrite);
     DeclareFloat(Range, 'LRAD', Attr::ReadOnly);
     DeclareFloat4(Color, 'LCLR', Attr::ReadWrite);
     DeclareBool(CastShadows, 'SHDW', Attr::ReadWrite);
@@ -72,18 +73,14 @@ public:
     /// Set an attribute value from attribute id
     void SetAttributeValue(uint32_t instance, Attr::AttrId attributeId, Util::Variant value);
     
-    /// Get data as a blob. @note Copies all memory
-    Util::Blob GetBlob() const;
-    /// Set data from a blob.
-    void SetBlob(const Util::Blob& blob, uint offset, uint numInstances);
+    /// Serialize component into binary stream
+    void Serialize(const Ptr<IO::BinaryWriter>& writer) const;
+    /// Deserialize from binary stream and set data.
+    void Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances);
     /// Get the total number of instances of this component
     uint32_t GetNumInstances() const;
     /// Allocate multiple instances
     void AllocInstances(uint num);
-    /// Called from entitymanager if this component is registered with a deletion callback.
-    /// Removes entity immediately from component instances.
-    void OnEntityDeleted(Game::Entity entity);
-    
 protected:
     /// Read/write access to attributes.
     const float& GetAttrRange(const uint32_t& instance);
@@ -92,10 +89,12 @@ protected:
     void SetAttrColor(const uint32_t& instance, const Math::float4& value);
     const bool& GetAttrCastShadows(const uint32_t& instance);
     void SetAttrCastShadows(const uint32_t& instance, const bool& value);
+    const Util::String& GetAttrDebugName(const uint32_t& instance);
+    void SetAttrDebugName(const uint32_t& instance, const Util::String& value);
     
 private:
     /// Holds all entity instances data
-    Game::ComponentData<float, Math::float4, bool> data;
+    Game::ComponentData<float, Math::float4, bool, Util::String> data;
 };
 
 class SpotLightComponentBase : public Game::BaseComponent
@@ -148,10 +147,10 @@ public:
     /// Set an attribute value from attribute id
     void SetAttributeValue(uint32_t instance, Attr::AttrId attributeId, Util::Variant value);
     
-    /// Get data as a blob. @note Copies all memory
-    Util::Blob GetBlob() const;
-    /// Set data from a blob.
-    void SetBlob(const Util::Blob& blob, uint offset, uint numInstances);
+    /// Serialize component into binary stream
+    void Serialize(const Ptr<IO::BinaryWriter>& writer) const;
+    /// Deserialize from binary stream and set data.
+    void Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances);
     /// Get the total number of instances of this component
     uint32_t GetNumInstances() const;
     /// Allocate multiple instances
@@ -178,14 +177,6 @@ private:
     Game::ComponentData<float, float, Math::float4, Math::float4, bool> data;
 };
 
-struct DirectionalLightComponentInstance
-{
-    Math::float4 direction;
-    Math::float4 color;
-    bool castShadows;
-};
-
-//------------------------------------------------------------------------------
 class DirectionalLightComponentBase : public Game::BaseComponent
 {
     __DeclareClass(DirectionalLightComponentBase)
@@ -236,10 +227,10 @@ public:
     /// Set an attribute value from attribute id
     void SetAttributeValue(uint32_t instance, Attr::AttrId attributeId, Util::Variant value);
     
-    /// Get data as a blob. @note Copies all memory
-    Util::Blob GetBlob() const;
-    /// Set data from a blob.
-    void SetBlob(const Util::Blob& blob, uint offset, uint numInstances);
+    /// Serialize component into binary stream
+    void Serialize(const Ptr<IO::BinaryWriter>& writer) const;
+    /// Deserialize from binary stream and set data.
+    void Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances);
     /// Get the total number of instances of this component
     uint32_t GetNumInstances() const;
     /// Allocate multiple instances
@@ -259,7 +250,7 @@ protected:
     
 private:
     /// Holds all entity instances data
-    Game::ComponentData<DirectionalLightComponentInstance> data;
+    Game::ComponentData<Math::float4, Math::float4, bool> data;
 };
 
 } // namespace GraphicsFeature

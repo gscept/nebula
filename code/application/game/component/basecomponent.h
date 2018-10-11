@@ -20,6 +20,8 @@
 #include "game/attr/attrid.h"
 #include "game/attr/attributedefinition.h"
 #include "game/entityattr.h"
+#include "io/binaryreader.h"
+#include "io/binarywriter.h"
 
 namespace Game
 {
@@ -110,11 +112,11 @@ public:
 	/// Just returns a pointer to each of the arrays containing the entity-ids
 	virtual Util::Array<Util::Array<Game::Entity>*> GetEntityAttributes();
 
-	/// Get component data as a blob
-	virtual Util::Blob GetBlob() const;
+	/// Serialize component and write to binary stream
+	virtual void Serialize(const Ptr<IO::BinaryWriter>& writer) const;
 
-	/// Set component data from a blob
-	virtual void SetBlob(const Util::Blob& blob, uint offset, uint numInstances);
+	/// Deserialize component from binary stream
+	virtual void Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances);
 
 	/// Called when relationships needs to be reconstructed
 	/// parentIndices point into the entities array
