@@ -18,12 +18,18 @@ def WriteIncludes(f, attributeLibraries):
 
 
 class ComponentClassWriter:
-    def __init__(self, fileWriter, document, component, componentName):
+    def __init__(self, fileWriter, document, component, componentName, namespace):
         self.f = fileWriter
         self.document = document
         self.component = component
         self.componentName = componentName
         self.className = '{}Base'.format(self.componentName)
+        self.namespace = namespace
+
+        if (not "fourcc" in component):
+            util.fmtError('Component does contain a FourCC')
+
+        self.fourcc = component["fourcc"]
         self.useDelayedRemoval = "useDelayedRemoval" in component and component["useDelayedRemoval"] == True
 
         self.hasEvents = "events" in component
@@ -117,10 +123,10 @@ class ComponentClassWriter:
         self.f.WriteLine("/// Set an attribute value from attribute id")
         self.f.WriteLine("void SetAttributeValue(uint32_t instance, Attr::AttrId attributeId, Util::Variant value);")
         self.f.WriteLine("")
-        self.f.WriteLine("/// Get data as a blob. @note Copies all memory")
-        self.f.WriteLine("Util::Blob GetBlob() const;")
-        self.f.WriteLine("/// Set data from a blob.")
-        self.f.WriteLine("void SetBlob(const Util::Blob& blob, uint offset, uint numInstances);")
+        self.f.WriteLine("/// Serialize component into binary stream")
+        self.f.WriteLine("void Serialize(const Ptr<IO::BinaryWriter>& writer) const;")
+        self.f.WriteLine("/// Deserialize from binary stream and set data.")
+        self.f.WriteLine("void Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances);")
         self.f.WriteLine("/// Get the total number of instances of this component")
         self.f.WriteLine("uint32_t GetNumInstances() const;")
         self.f.WriteLine("/// Allocate multiple instances")
@@ -174,6 +180,8 @@ class ComponentClassWriter:
     ##
     #
     def WriteConstructorImplementation(self):
+        self.f.WriteLine("__ImplementClass({}::{}, '{}', Core::RefCounted)".format(self.namespace, self.className, self.fourcc))
+        self.f.WriteLine("")
         self.f.InsertNebulaDivider()
         self.f.WriteLine("{}::{}()".format(self.className, self.className))
         self.f.WriteLine("{")
@@ -544,21 +552,22 @@ class ComponentClassWriter:
     #------------------------------------------------------------------------------
     ##
     #
-    def WriteBlobMethods(self):
+    def WriteSerializationMethods(self):
         self.f.InsertNebulaDivider()
-        self.f.WriteLine("Util::Blob")
-        self.f.WriteLine("{}::GetBlob() const".format(self.className))
+        self.f.WriteLine("void")
+        self.f.WriteLine("{}::Serialize(const Ptr<IO::BinaryWriter>& writer) const".format(self.className))
         self.f.WriteLine("{")
         self.f.IncreaseIndent()
-        self.f.WriteLine("return this->data.GetBlob();")
+        self.f.WriteLine("this->data.Serialize(writer);")
         self.f.DecreaseIndent()
         self.f.WriteLine("}")
         self.f.WriteLine("");
+        self.f.InsertNebulaDivider()
         self.f.WriteLine("void")
-        self.f.WriteLine("{}::SetBlob(const Util::Blob & blob, uint offset, uint numInstances)".format(self.className))
+        self.f.WriteLine("{}::Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances)".format(self.className))
         self.f.WriteLine("{")
         self.f.IncreaseIndent()
-        self.f.WriteLine("this->data.SetBlob(blob, offset, numInstances);")
+        self.f.WriteLine("this->data.Deserialize(reader, offset, numInstances);")
         self.f.DecreaseIndent()
         self.f.WriteLine("}")
 
@@ -605,8 +614,9 @@ class ComponentClassWriter:
         self.WriteOptimizeImplementation()
         self.WriteGetAttributeMethod()
         self.WriteSetAttributeMethod()
-        self.WriteBlobMethods()
+        self.WriteSerializationMethods()
         self.WriteOnEntityDeletedImplementation()
         self.WriteAttrAccessImplementations()
+        self.WriteAllocInstancesMethod()
 
 

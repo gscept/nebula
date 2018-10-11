@@ -1,4 +1,4 @@
-//NIDL #version:1#
+// NIDL #version:7#
 //------------------------------------------------------------------------------
 //  lightcomponentbase.cc
 //  (C) Individual contributors, see AUTHORS file
@@ -10,6 +10,7 @@
 //------------------------------------------------------------------------------
 namespace Attr
 {
+    DefineStringWithDefault(DebugName, 'tStr', Attr::ReadWrite, Util::String("tjene"));
     DefineFloatWithDefault(Range, 'LRAD', Attr::ReadOnly, float(10.0f));
     DefineFloat4WithDefault(Color, 'LCLR', Attr::ReadWrite, Math::float4(1.0f, 0.88f, 0.65f, 1.0f));
     DefineBoolWithDefault(CastShadows, 'SHDW', Attr::ReadWrite, bool(true));
@@ -20,17 +21,20 @@ namespace Attr
 namespace GraphicsFeature
 {
 
+__ImplementClass(GraphicsFeature::PointLightComponentBase, 'plcp', Core::RefCounted)
+
 
 //------------------------------------------------------------------------------
 /**
 */
 PointLightComponentBase::PointLightComponentBase()
 {
-    this->attributeIds.SetSize(4);
+    this->attributeIds.SetSize(5);
     this->attributeIds[0] = Attr::Owner;
     this->attributeIds[1] = Attr::Range;
     this->attributeIds[2] = Attr::Color;
     this->attributeIds[3] = Attr::CastShadows;
+    this->attributeIds[4] = Attr::DebugName;
 }
 
 
@@ -50,7 +54,6 @@ void
 PointLightComponentBase::RegisterEntity(const Game::Entity& entity)
 {
     auto instance = this->data.RegisterEntity(entity);
-    Game::EntityManager::Instance()->RegisterDeletionCallback(entity, this);
 }
 
 
@@ -63,8 +66,7 @@ PointLightComponentBase::DeregisterEntity(const Game::Entity& entity)
     uint32_t index = this->data.GetInstance(entity);
     if (index != InvalidIndex)
     {
-        this->data.DeregisterEntityImmediate(entity);
-        Game::EntityManager::Instance()->DeregisterDeletionCallback(entity, this);
+        this->data.DeregisterEntity(entity);
         return;
     }
 }
@@ -148,7 +150,7 @@ PointLightComponentBase::SetOwner(const uint32_t & i, const Game::Entity & entit
 SizeT
 PointLightComponentBase::Optimize()
 {
-    return 0;
+    return this->data.Optimize();;
 }
 
 
@@ -164,6 +166,7 @@ PointLightComponentBase::GetAttributeValue(uint32_t instance, IndexT attributeIn
         case 1: return Util::Variant(this->data.data.Get<1>(instance));
         case 2: return Util::Variant(this->data.data.Get<2>(instance));
         case 3: return Util::Variant(this->data.data.Get<3>(instance));
+        case 4: return Util::Variant(this->data.data.Get<4>(instance));
         default:
             n_assert2(false, "Component doesn't contain this attribute!");
             return Util::Variant();
@@ -181,6 +184,7 @@ PointLightComponentBase::GetAttributeValue(uint32_t instance, Attr::AttrId attri
     else if (attributeId == Attr::Range) return Util::Variant(this->data.data.Get<1>(instance));
     else if (attributeId == Attr::Color) return Util::Variant(this->data.data.Get<2>(instance));
     else if (attributeId == Attr::CastShadows) return Util::Variant(this->data.data.Get<3>(instance));
+    else if (attributeId == Attr::DebugName) return Util::Variant(this->data.data.Get<4>(instance));
     n_assert2(false, "Component does not contain this attribute!");
     return Util::Variant();
 }
@@ -195,6 +199,7 @@ PointLightComponentBase::SetAttributeValue(uint32_t instance, IndexT index, Util
     {
         case 2: this->data.data.Get<2>(instance) = value.GetFloat4();
         case 3: this->data.data.Get<3>(instance) = value.GetBool();
+        case 4: this->data.data.Get<4>(instance) = value.GetString();
     }
 }
 
@@ -207,38 +212,28 @@ PointLightComponentBase::SetAttributeValue(uint32_t instance, Attr::AttrId attri
 {
     if (attributeId == Attr::Color) this->data.data.Get<2>(instance) = value.GetFloat4();
     else if (attributeId == Attr::CastShadows) this->data.data.Get<3>(instance) = value.GetBool();
+    else if (attributeId == Attr::DebugName) this->data.data.Get<4>(instance) = value.GetString();
 }
 
 
 //------------------------------------------------------------------------------
 /**
 */
-Util::Blob
-PointLightComponentBase::GetBlob() const
+void
+PointLightComponentBase::Serialize(const Ptr<IO::BinaryWriter>& writer) const
 {
-    return this->data.GetBlob();
+    this->data.Serialize(writer);
 }
 
-void
-PointLightComponentBase::SetBlob(const Util::Blob & blob, uint offset, uint numInstances)
-{
-    this->data.SetBlob(blob, offset, numInstances);
-}
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-PointLightComponentBase::OnEntityDeleted(Game::Entity entity)
+PointLightComponentBase::Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances)
 {
-    uint32_t index = this->data.GetInstance(entity);
-    if (index != InvalidIndex)
-    {
-        this->data.DeregisterEntityImmediate(entity);
-        return;
-    }
+    this->data.Deserialize(reader, offset, numInstances);
 }
-
 
 //------------------------------------------------------------------------------
 /**
@@ -300,6 +295,50 @@ PointLightComponentBase::SetAttrCastShadows(const uint32_t& instance, const bool
 }
 
 
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::String&
+PointLightComponentBase::GetAttrDebugName(const uint32_t& instance)
+{
+    return this->data.data.Get<4>(instance);
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+PointLightComponentBase::SetAttrDebugName(const uint32_t& instance, const Util::String& value)
+{
+    this->data.data.Get<4>(instance) = value;
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint32_t
+PointLightComponentBase::GetNumInstances() const
+{
+    return this->data.Size();
+}
+
+//------------------------------------------------------------------------------
+/**
+    @todo	we should reserve per array here.
+*/
+void
+PointLightComponentBase::AllocInstances(uint num)
+{
+    for (size_t i = 0; i < num; i++)
+    {
+        this->data.data.Alloc();
+    }
+}
+
+
+__ImplementClass(GraphicsFeature::SpotLightComponentBase, 'splc', Core::RefCounted)
 
 
 //------------------------------------------------------------------------------
@@ -504,16 +543,20 @@ SpotLightComponentBase::SetAttributeValue(uint32_t instance, Attr::AttrId attrib
 //------------------------------------------------------------------------------
 /**
 */
-Util::Blob
-SpotLightComponentBase::GetBlob() const
+void
+SpotLightComponentBase::Serialize(const Ptr<IO::BinaryWriter>& writer) const
 {
-    return this->data.GetBlob();
+    this->data.Serialize(writer);
 }
 
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
-SpotLightComponentBase::SetBlob(const Util::Blob & blob, uint offset, uint numInstances)
+SpotLightComponentBase::Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances)
 {
-    this->data.SetBlob(blob, offset, numInstances);
+    this->data.Deserialize(reader, offset, numInstances);
 }
 
 //------------------------------------------------------------------------------
@@ -631,6 +674,30 @@ SpotLightComponentBase::SetAttrCastShadows(const uint32_t& instance, const bool&
 }
 
 
+//------------------------------------------------------------------------------
+/**
+*/
+uint32_t
+SpotLightComponentBase::GetNumInstances() const
+{
+    return this->data.Size();
+}
+
+//------------------------------------------------------------------------------
+/**
+    @todo	we should reserve per array here.
+*/
+void
+SpotLightComponentBase::AllocInstances(uint num)
+{
+    for (size_t i = 0; i < num; i++)
+    {
+        this->data.data.Alloc();
+    }
+}
+
+
+__ImplementClass(GraphicsFeature::DirectionalLightComponentBase, 'drlc', Core::RefCounted)
 
 
 //------------------------------------------------------------------------------
@@ -773,9 +840,9 @@ DirectionalLightComponentBase::GetAttributeValue(uint32_t instance, IndexT attri
     switch (attributeIndex)
     {
         case 0: return Util::Variant(this->data.data.Get<0>(instance).id);
-        case 1: return Util::Variant(this->data.data.Get<1>(instance).direction);
-        case 2: return Util::Variant(this->data.data.Get<1>(instance).color);
-        case 3: return Util::Variant(this->data.data.Get<1>(instance).castShadows);
+        case 1: return Util::Variant(this->data.data.Get<1>(instance));
+        case 2: return Util::Variant(this->data.data.Get<2>(instance));
+        case 3: return Util::Variant(this->data.data.Get<3>(instance));
         default:
             n_assert2(false, "Component doesn't contain this attribute!");
             return Util::Variant();
@@ -790,9 +857,9 @@ Util::Variant
 DirectionalLightComponentBase::GetAttributeValue(uint32_t instance, Attr::AttrId attributeId) const
 {
     if (attributeId == Attr::Owner) return Util::Variant(this->data.data.Get<0>(instance).id);
-    else if (attributeId == Attr::Direction) return Util::Variant(this->data.data.Get<1>(instance).direction);
-    else if (attributeId == Attr::Color) return Util::Variant(this->data.data.Get<1>(instance).color);
-    else if (attributeId == Attr::CastShadows) return Util::Variant(this->data.data.Get<1>(instance).castShadows);
+    else if (attributeId == Attr::Direction) return Util::Variant(this->data.data.Get<1>(instance));
+    else if (attributeId == Attr::Color) return Util::Variant(this->data.data.Get<2>(instance));
+    else if (attributeId == Attr::CastShadows) return Util::Variant(this->data.data.Get<3>(instance));
     n_assert2(false, "Component does not contain this attribute!");
     return Util::Variant();
 }
@@ -805,9 +872,9 @@ DirectionalLightComponentBase::SetAttributeValue(uint32_t instance, IndexT index
 {
     switch (index)
     {
-        case 1: this->data.data.Get<1>(instance).direction = value.GetFloat4();
-        case 2: this->data.data.Get<1>(instance).color = value.GetFloat4();
-        case 3: this->data.data.Get<1>(instance).castShadows = value.GetBool();
+        case 1: this->data.data.Get<1>(instance) = value.GetFloat4();
+        case 2: this->data.data.Get<2>(instance) = value.GetFloat4();
+        case 3: this->data.data.Get<3>(instance) = value.GetBool();
     }
 }
 
@@ -818,25 +885,29 @@ DirectionalLightComponentBase::SetAttributeValue(uint32_t instance, IndexT index
 void
 DirectionalLightComponentBase::SetAttributeValue(uint32_t instance, Attr::AttrId attributeId, Util::Variant value)
 {
-    if (attributeId == Attr::Direction) this->data.data.Get<1>(instance).direction = value.GetFloat4();
-    else if (attributeId == Attr::Color) this->data.data.Get<1>(instance).color = value.GetFloat4();
-    else if (attributeId == Attr::CastShadows) this->data.data.Get<1>(instance).castShadows = value.GetBool();
+    if (attributeId == Attr::Direction) this->data.data.Get<1>(instance) = value.GetFloat4();
+    else if (attributeId == Attr::Color) this->data.data.Get<2>(instance) = value.GetFloat4();
+    else if (attributeId == Attr::CastShadows) this->data.data.Get<3>(instance) = value.GetBool();
 }
 
 
 //------------------------------------------------------------------------------
 /**
 */
-Util::Blob
-DirectionalLightComponentBase::GetBlob() const
+void
+DirectionalLightComponentBase::Serialize(const Ptr<IO::BinaryWriter>& writer) const
 {
-    return this->data.GetBlob();
+    this->data.Serialize(writer);
 }
 
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
-DirectionalLightComponentBase::SetBlob(const Util::Blob & blob, uint offset, uint numInstances)
+DirectionalLightComponentBase::Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances)
 {
-    this->data.SetBlob(blob, offset, numInstances);
+    this->data.Deserialize(reader, offset, numInstances);
 }
 
 //------------------------------------------------------------------------------
@@ -860,7 +931,7 @@ DirectionalLightComponentBase::OnEntityDeleted(Game::Entity entity)
 const Math::float4&
 DirectionalLightComponentBase::GetAttrDirection(const uint32_t& instance)
 {
-    return this->data.data.Get<1>(instance).direction;
+    return this->data.data.Get<1>(instance);
 }
 
 
@@ -870,7 +941,7 @@ DirectionalLightComponentBase::GetAttrDirection(const uint32_t& instance)
 void
 DirectionalLightComponentBase::SetAttrDirection(const uint32_t& instance, const Math::float4& value)
 {
-    this->data.data.Get<1>(instance).direction = value;
+    this->data.data.Get<1>(instance) = value;
 }
 
 
@@ -880,7 +951,7 @@ DirectionalLightComponentBase::SetAttrDirection(const uint32_t& instance, const 
 const Math::float4&
 DirectionalLightComponentBase::GetAttrColor(const uint32_t& instance)
 {
-    return this->data.data.Get<1>(instance).color;
+    return this->data.data.Get<2>(instance);
 }
 
 
@@ -890,7 +961,7 @@ DirectionalLightComponentBase::GetAttrColor(const uint32_t& instance)
 void
 DirectionalLightComponentBase::SetAttrColor(const uint32_t& instance, const Math::float4& value)
 {
-    this->data.data.Get<1>(instance).color = value;
+    this->data.data.Get<2>(instance) = value;
 }
 
 
@@ -900,7 +971,7 @@ DirectionalLightComponentBase::SetAttrColor(const uint32_t& instance, const Math
 const bool&
 DirectionalLightComponentBase::GetAttrCastShadows(const uint32_t& instance)
 {
-    return this->data.data.Get<1>(instance).castShadows;
+    return this->data.data.Get<3>(instance);
 }
 
 
@@ -910,8 +981,30 @@ DirectionalLightComponentBase::GetAttrCastShadows(const uint32_t& instance)
 void
 DirectionalLightComponentBase::SetAttrCastShadows(const uint32_t& instance, const bool& value)
 {
-    this->data.data.Get<1>(instance).castShadows = value;
+    this->data.data.Get<3>(instance) = value;
 }
 
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint32_t
+DirectionalLightComponentBase::GetNumInstances() const
+{
+    return this->data.Size();
+}
+
+//------------------------------------------------------------------------------
+/**
+    @todo	we should reserve per array here.
+*/
+void
+DirectionalLightComponentBase::AllocInstances(uint num)
+{
+    for (size_t i = 0; i < num; i++)
+    {
+        this->data.data.Alloc();
+    }
+}
 
 } // namespace GraphicsFeature

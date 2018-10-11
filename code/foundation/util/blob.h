@@ -375,8 +375,20 @@ inline void
 Blob::SetChunk(const void* from, SizeT size, SizeT internalOffset)
 {
 	n_assert((0 != from) && (size > 0));
-	n_assert((nullptr != this->ptr) || (this->allocSize < internalOffset + size))
-	
+	n_assert((nullptr != this->ptr))
+
+	SizeT newSize = internalOffset + size;
+
+	// allocate more memory if necessary
+	if (this->allocSize < newSize)
+	{
+		void* nPtr = DataHeap->Alloc(newSize);
+		Memory::Copy(this->ptr, nPtr, this->size);
+		DataHeap->Free(this->ptr);
+		this->ptr = nPtr;
+		this->allocSize = newSize;
+	}
+
 	Memory::Copy(from, (void*)((byte*)this->ptr + internalOffset), size);
 }
 

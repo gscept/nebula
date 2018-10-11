@@ -151,7 +151,7 @@ def DefaultToString(default):
     elif type(default) is bool:
         return str(default).lower()
     elif type(default) is str:
-        return default
+        return '"{}"'.format(default)
 
 #------------------------------------------------------------------------------
 ##

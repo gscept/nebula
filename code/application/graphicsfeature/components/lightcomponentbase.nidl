@@ -1,5 +1,11 @@
 "namespace": "GraphicsFeature"
 "attributes": {
+    "debugName": {
+        "type": "string"
+        "fourcc": "tStr"
+        "access": "RW"
+        "default": "tjene"
+    }
     "range": {
         "type": "float"
         "fourcc": "LRAD"
@@ -33,14 +39,18 @@
 }
 "components": {
     "PointLightComponent": {
+        "fourcc": "plcp"
         "attributes": [
             "range"
             "color"
             "castShadows"
+            "debugName"
         ]
         "dataLayout": "PACKED_PER_ATTRIBUTE"
+        "useDelayedRemoval": true
     }
     "SpotLightComponent": {
+        "fourcc": "splc"
         "attributes": [
             "range"
             "angle"
@@ -51,11 +61,12 @@
         "dataLayout": "PACKED_PER_ATTRIBUTE"
     }
     "DirectionalLightComponent": {
+        "fourcc": "drlc"
         "attributes": [
             "direction"
             "color"
             "castShadows"
         ]
-        "dataLayout": "PACKED_PER_INSTANCE"
+        "dataLayout": "PACKED_PER_ATTRIBUTE"
     }
 }

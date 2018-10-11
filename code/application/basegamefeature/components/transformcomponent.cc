@@ -280,19 +280,19 @@ TransformComponent::GetAttributeValue(uint32_t instance, Attr::AttrId attributeI
 //------------------------------------------------------------------------------
 /**
 */
-Util::Blob
-TransformComponent::GetBlob() const
+void
+TransformComponent::Serialize(const Ptr<IO::BinaryWriter>& writer) const
 {
-	return this->data.GetBlob();
+	return this->data.Serialize(writer);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-TransformComponent::SetBlob(const Util::Blob & blob, uint offset, uint numInstances)
+TransformComponent::Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances)
 {
-	this->data.SetBlob(blob, offset, numInstances);
+	this->data.Deserialize(reader, offset, numInstances);
 }
 
 

@@ -15,51 +15,145 @@
 #include "util/random.h"
 #include "basegamefeature/managers/entitymanager.h"
 #include "util/arrayallocator.h"
+#include "io/memorystream.h"
+#include "io/binarywriter.h"
+#include "io/binaryreader.h"
 
 //-----------------------------------------------------------------------------
 namespace Game
 {
 
-template <class...Ts, std::size_t...Is>
-void FillBlobSequenced(const Util::ArrayAllocator<Game::Entity, Ts...>& data, Util::Blob& blob, SizeT& offset, std::index_sequence<Is...>)
+//------------------------------------------------------------------------------
+/**
+*/
+template<class X>
+__forceinline typename std::enable_if<std::is_trivial<X>::value == false, void>::type
+Serialize(const Ptr<IO::BinaryWriter>& writer, const Util::Array<X>& data)
 {
-	SizeT numBytes;
+	static_assert(false, "Type is not trivial and does have a serialize template specialization!");
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class X>
+__forceinline typename std::enable_if<std::is_trivial<X>::value == false, void>::type
+Deserialize(const Ptr<IO::BinaryReader>& reader, Util::Array<X>& data, uint32_t offset, uint32_t numInstances)
+{
+	static_assert(false, "Type is not trivial and does have a Deserialize template specialization!");
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class X>
+__forceinline typename std::enable_if<std::is_trivial<X>::value == true, void>::type
+Serialize(const Ptr<IO::BinaryWriter>& writer, const Util::Array<X>& data)
+{
+	writer->WriteRawData((void*)&data[0], data.ByteSize());
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class X>
+__forceinline typename std::enable_if<std::is_trivial<X>::value == true, void>::type
+Deserialize(const Ptr<IO::BinaryReader>& reader, Util::Array<X>& data, uint32_t offset, uint32_t numInstances)
+{
+	reader->ReadRawData((void*)&data[offset], numInstances * data.TypeSize());
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<>
+__forceinline void
+Serialize<Math::matrix44>(const Ptr<IO::BinaryWriter>& writer, const Util::Array<Math::matrix44>& data)
+{
+	writer->WriteRawData((void*)&data[0], data.ByteSize());
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<>
+__forceinline void
+Deserialize<Math::matrix44>(const Ptr<IO::BinaryReader>& reader, Util::Array<Math::matrix44>& data, uint32_t offset, uint32_t numInstances)
+{
+	reader->ReadRawData((void*)&data[offset], numInstances * data.TypeSize());
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<>
+__forceinline void
+Serialize<Math::float4>(const Ptr<IO::BinaryWriter>& writer, const Util::Array<Math::float4>& data)
+{
+	writer->WriteRawData((void*)&data[0], data.ByteSize());
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<>
+__forceinline void
+Deserialize<Math::float4>(const Ptr<IO::BinaryReader>& reader, Util::Array<Math::float4>& data, uint32_t offset, uint32_t numInstances)
+{
+	reader->ReadRawData((void*)&data[offset], numInstances * data.TypeSize());
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<>
+__forceinline void
+Serialize<Util::String>(const Ptr<IO::BinaryWriter>& writer, const Util::Array<Util::String>& data)
+{
+	// Write each string
+	for (SizeT i = 0; i < data.Size(); ++i)
+	{
+		writer->WriteString(data[i]);
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<>
+__forceinline void
+Deserialize<Util::String>(const Ptr<IO::BinaryReader>& reader, Util::Array<Util::String>& data, uint32_t offset, uint32_t numInstances)
+{
+	// read each string
+	for (SizeT i = 0; i < numInstances; ++i)
+	{
+		data[offset + i] = reader->ReadString();
+	}
+}
+
+template <class...Ts, std::size_t...Is>
+void WriteDataSequenced(const Util::ArrayAllocator<Game::Entity, Ts...>& data, const Ptr<IO::BinaryWriter>& writer, std::index_sequence<Is...>)
+{
+	writer->WriteRawData((void*)&data.GetArray<0>()[0], data.GetArray<0>().ByteSize());
 	
 	using expander = int[];
 	(void)expander
 	{
 		0, (
-			numBytes = data.GetArray<Is>().ByteSize(),
-			blob.SetChunk(&data.GetArray<Is>()[0], numBytes, offset),
-			offset += numBytes
-		, 0)...
+		Serialize<Ts>(writer, data.GetArray<Is + 1>()), 0)...
 	};
 }
 
 template <class...Ts, std::size_t...Is>
-void GetDataSize(const Util::ArrayAllocator<Game::Entity, Ts...>& data, SizeT& size, std::index_sequence<Is...>)
+void ReadDataSequenced(Util::ArrayAllocator<Game::Entity, Ts...>& data, const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances, std::index_sequence<Is...>)
 {
-	using expander = int[];
-	(void)expander
-	{
-		0,
-		(size += data.GetArray<Is>().ByteSize(), 0)...
-	};
-}
+	reader->ReadRawData((void*)&data.GetArray<0>()[offset], numInstances * data.GetArray<0>().TypeSize());
 
-template <class...Ts, std::size_t...Is>
-void SetBlobSequenced(Util::ArrayAllocator<Game::Entity, Ts...>& data, uint offset, uint numInstances, const Util::Blob& blob, std::index_sequence<Is...>)
-{
-	SizeT blobOffset = 0;
-	SizeT bytes = 0;
 	using expander = int[];
 	(void)expander
 	{
 		0, (
-			bytes = numInstances * data.GetArray<Is>().TypeSize(),
-			Memory::Copy((void*)((byte*)blob.GetPtr() + blobOffset), (void*)&data.GetArray<Is>()[offset], bytes),
-			blobOffset += bytes
-		, 0)...
+		Deserialize<Ts>(reader, data.GetArray<Is + 1>(), offset, numInstances), 0)...
 	};
 }
 
@@ -114,11 +208,11 @@ public:
 	/// Shortcut to set all instances values to provided values.
 	void SetInstanceData(const uint32_t& index, TYPES...);
 
-	/// Return data as a blob.
-	Util::Blob GetBlob() const;
+	/// Write data into writer.
+	void Serialize(const Ptr<IO::BinaryWriter>& writer) const;
 
 	/// Set data from blob
-	void SetBlob(const Util::Blob& blob, uint offset, uint numInstances);
+	void Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances);
 
 	/// Contains all data for all instances of this component.
 	/// @note	The 0th type is always the owner Entity!
@@ -381,22 +475,10 @@ ComponentData<TYPES...>::SetInstanceData(const uint32_t & index, TYPES ... value
 /**
 */
 template <class ... TYPES>
-inline Util::Blob
-ComponentData<TYPES...>::GetBlob() const
+inline void
+ComponentData<TYPES...>::Serialize(const Ptr<IO::BinaryWriter>& writer) const
 {
-	SizeT numBytes = 0;
-
-	GetDataSize(this->data, numBytes, std::make_index_sequence<sizeof...(TYPES)+1>());
-
-	Util::Blob blob;
-
-	SizeT offset = 0;
-
-	blob.Reserve(numBytes);
-
-	FillBlobSequenced(this->data, blob, offset, std::make_index_sequence<sizeof...(TYPES)+1>());
-
-	return blob;
+	WriteDataSequenced(this->data, writer, std::make_index_sequence<sizeof...(TYPES)>());
 }
 
 //------------------------------------------------------------------------------
@@ -404,10 +486,9 @@ ComponentData<TYPES...>::GetBlob() const
 */
 template <class ... TYPES>
 inline void
-ComponentData<TYPES...>::SetBlob(const Util::Blob& blob, uint offset, uint numInstances)
+ComponentData<TYPES...>::Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances)
 {
-	SetBlobSequenced(this->data, offset, numInstances, blob, std::make_index_sequence<sizeof...(TYPES) + 1>());
-
+	ReadDataSequenced(this->data, reader, offset, numInstances, std::make_index_sequence<sizeof...(TYPES)>());
 }
 
 }

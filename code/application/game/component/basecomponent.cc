@@ -4,6 +4,8 @@
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "basecomponent.h"
+#include "io/binaryreader.h"
+#include "io/binarywriter.h"
 
 __ImplementClass(Game::BaseComponent, 'BaCo', Core::RefCounted)
 
@@ -227,11 +229,10 @@ BaseComponent::GetEntityAttributes()
 //------------------------------------------------------------------------------
 /**
 */
-Util::Blob
-BaseComponent::GetBlob() const
+void
+BaseComponent::Serialize(const Ptr<IO::BinaryWriter>& writer) const
 {
 	n_assert2(false, "Method has not been overridden!");
-	return Util::Blob();
 }
 
 
@@ -239,7 +240,7 @@ BaseComponent::GetBlob() const
 /**
 */
 void
-BaseComponent::SetBlob(const Util::Blob & blob, uint offset, uint numInstances)
+BaseComponent::Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances)
 {
 	n_assert2(false, "Method has not been overridden!");
 }
