@@ -10,6 +10,8 @@
 #include "basegamefeature/managers/componentmanager.h"
 #include "basegamefeature/managers/entitymanager.h"
 #include "basegamefeature/components/transformcomponent.h"
+#include "graphicsfeature/components/pointlightcomponent.h"
+
 using namespace BaseGameFeature;
 using namespace Game;
 
@@ -24,6 +26,10 @@ void
 LoaderTest::Run()
 {
 	Ptr<Game::ComponentManager> componentManager = Game::ComponentManager::Instance();
+
+	Ptr<GraphicsFeature::PointLightComponentBase> plComp = GraphicsFeature::PointLightComponentBase::Create();
+	componentManager->RegisterComponent(plComp.cast<Game::BaseComponent>());
+
 	Ptr<Game::EntityManager> entityManager = Game::EntityManager::Instance();
 
 	Ptr<Game::TransformComponent> tComp = componentManager->GetComponent<Game::TransformComponent>();
@@ -35,12 +41,15 @@ LoaderTest::Run()
 	tComp->DestroyAll();
 
 	// fill scene
-	for (SizeT i = 0; i < 100000; i++)
+	for (SizeT i = 0; i < 1000000; i++)
 	{
 		entity = entityManager->NewEntity();
 		entities.Append(entity);
 
 		tComp->RegisterEntity(entity);
+		plComp->RegisterEntity(entity);
+		auto instance = plComp->GetInstance(entity);
+		plComp->SetAttributeValue(instance, Attr::DebugName, "Tjene");
 	}
 
 	LevelLoader::Save("bin:test.scnb");
