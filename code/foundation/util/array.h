@@ -123,6 +123,9 @@ public:
 	void SortWithFunc(bool (*func)(const TYPE& lhs, const TYPE& rhs));
     /// do a binary search, requires a sorted array
     IndexT BinarySearchIndex(const TYPE& elm) const;
+	
+	/// Set size. Grows array if size is greater than capacity. Calls destroy on all objects at index > size!
+	void SetSize(SizeT num);
 
 	/// Return the byte size of the array.
 	/// Note that this is not the entire size of this object, only the size (not capacity) of the elements buffer in bytes
@@ -963,12 +966,36 @@ Array<TYPE>::BinarySearchIndex(const TYPE& elm) const
 //------------------------------------------------------------------------------
 /**
 */
+template<class TYPE> void
+Array<TYPE>::SetSize(SizeT num)
+{
+	if (num < this->size)
+	{
+		for (SizeT i = num; i < this->size; i++)
+		{
+			this->Destroy(this->elements + i);
+		}
+	}
+	else if (num > capacity)
+	{
+		this->GrowTo(num);
+	}
+
+	this->size = num;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 template<class TYPE> SizeT
 Array<TYPE>::ByteSize() const
 {
 	return this->size * sizeof(TYPE);
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 template<class TYPE>
 inline constexpr SizeT Array<TYPE>::TypeSize() const
 {
