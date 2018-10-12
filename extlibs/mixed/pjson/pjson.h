@@ -1378,11 +1378,26 @@ namespace pjson
             }
             case cJSONValueTypeDouble:
             {
-#ifdef _MSC_VER
-               return 0 == _gcvt_s(pBuf, buf_size, m_data.m_flVal, 15);
-#else // TODO
-	       abort();
-#endif
+
+                if ((m_data.m_flVal * 0) != 0)
+                {
+
+                    pBuf[0] = 'n', pBuf[1] = 'u', pBuf[2] = 'l', pBuf[3] = 'l', pBuf[4] = '\0';
+                    return true;
+                }
+                else if ((fabs(floor(m_data.m_flVal) - m_data.m_flVal) <= DBL_EPSILON) && (fabs(m_data.m_flVal) < 1.0e60))
+                {
+                    /* integer */
+                    snprintf(pBuf, buf_size, "%.0f", m_data.m_flVal);                    
+                }
+                else if ((fabs(m_data.m_flVal) < 1.0e-6) || (fabs(m_data.m_flVal) > 1.0e9))
+                {
+                    snprintf(pBuf, buf_size, "%e", m_data.m_flVal);                    
+                }
+                else
+                {
+                    snprintf(pBuf, buf_size, "%f", m_data.m_flVal);
+                }
             }
             default:
 	       break;
