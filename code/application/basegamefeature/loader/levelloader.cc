@@ -35,10 +35,19 @@ LevelLoader::Save(const Util::String& levelName)
 	// Fill components
 
 	Ptr<Game::ComponentManager> manager = Game::ComponentManager::Instance();
-	scene.numComponents = manager->GetNumComponents();
-	for (SizeT i = 0; i < scene.numComponents; i++)
+	scene.numComponents = 0;
+	uint numComponents = manager->GetNumComponents();
+	for (SizeT i = 0; i < numComponents; i++)
 	{
 		Ptr<Game::BaseComponent> component = manager->GetComponentAtIndex(i);
+		if (component->GetNumInstances() == 0)
+		{
+			// Skip this component
+			continue;
+		}
+		// this component is part of scene.
+		scene.numComponents++;
+
 		ComponentBuildData c;
 
 		c.fourcc = component->GetClassFourCC();
