@@ -210,6 +210,31 @@ set_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t i, TYPES const& ... val
 
 //------------------------------------------------------------------------------
 /**
+	Entry point for reserving in each array
+*/
+template <class...Ts, std::size_t...Is> void
+reserve_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t size, std::index_sequence<Is...>)
+{
+	using expander = int[];
+	(void)expander
+	{
+		0,
+		(std::get<Is>(tuple).Reserve(size), 0)...
+	};
+}
+
+//------------------------------------------------------------------------------
+/**
+	Entry point for reserving in each array
+*/
+template <class...Ts> void
+reserve_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t size)
+{
+	reserve_for_each_in_tuple(tuple, size, std::make_index_sequence<sizeof...(Ts)>());
+}
+
+//------------------------------------------------------------------------------
+/**
 	Get type of contained element in Util::Array stored in std::tuple
 */
 template <int MEMBER, class ... TYPES>
@@ -273,6 +298,9 @@ public:
 
 	/// get number of used indices
 	const uint32_t Size() const;
+
+	/// grow capacity of arrays to size
+	void Reserve(uint32_t size);
 
 	/// clear entire allocator and start from scratch.
 	void Clear();
@@ -383,6 +411,17 @@ inline const uint32_t
 ArrayAllocator<TYPES...>::Size() const
 {
 	return this->size;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class ...TYPES>
+inline void
+ArrayAllocator<TYPES...>::Reserve(uint32_t num)
+{
+	reserve_for_each_in_tuple(this->objects, num);
+	// Size is still the same.
 }
 
 //------------------------------------------------------------------------------
