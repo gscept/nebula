@@ -3,7 +3,7 @@
 /**
 	Implements a mesh loader from stream into Vulkan. Doubtful this is Vulkan specific...
 	
-	(C) 2016 Individual contributors, see AUTHORS file
+	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
@@ -38,7 +38,7 @@ private:
 	/// deallocate object
 	void DeallocObject(const Resources::ResourceUnknownId id) override;
 
-#if NEBULA3_LEGACY_SUPPORT
+#if NEBULA_LEGACY_SUPPORT
 	/// setup mesh from nvx2 file in memory
 	LoadStatus SetupMeshFromNvx2(const Ptr<IO::Stream>& stream, const Resources::ResourceId res);
 #endif

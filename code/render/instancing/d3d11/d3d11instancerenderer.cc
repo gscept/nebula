@@ -1,6 +1,7 @@
 //------------------------------------------------------------------------------
 //  d3d11instancerenderer.cc
 //  (C) 2012 Gustav Sterbrant
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "d3d11instancerenderer.h"
@@ -17,9 +18,9 @@ __ImplementClass(Instancing::D3D11InstanceRenderer, 'D1IR', Instancing::Instance
 /**
 */
 D3D11InstanceRenderer::D3D11InstanceRenderer() :
-	modelArraySemantic(NEBULA3_SEMANTIC_MODELARRAY),
-	modelViewArraySemantic(NEBULA3_SEMANTIC_MODELVIEWARRAY),
-	modelViewProjectionArraySemantic(NEBULA3_SEMANTIC_MODELVIEWPROJECTIONARRAY)
+	modelArraySemantic(NEBULA_SEMANTIC_MODELARRAY),
+	modelViewArraySemantic(NEBULA_SEMANTIC_MODELVIEWARRAY),
+	modelViewProjectionArraySemantic(NEBULA_SEMANTIC_MODELVIEWPROJECTIONARRAY)
 {
 	// empty
 }

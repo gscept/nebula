@@ -6,6 +6,7 @@
     A thread-barrier for exactly 2 threads.
     
     (C) 2010 Radon Labs GmbH
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/config.h"
 #if (__WIN32__ || __XBOX360__)

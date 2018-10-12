@@ -4,7 +4,7 @@
 	A frame op is a base class for frame operations, use as base class for runnable
 	sequences within a frame script.
 	
-	(C) 2016 Individual contributors, see AUTHORS file
+	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
@@ -53,6 +53,13 @@ protected:
 	// inherit this class to implement the compiled runtime for the frame operation
 	struct Compiled
 	{
+		Compiled() :
+			numWaitEvents(0),
+			numSignalEvents(0),
+			numBarriers(0),
+			numWaitSemaphores(0),
+			numSignalSemaphores(0){};
+
 		virtual void Run(const IndexT frameIndex) = 0;
 		virtual void Discard();
 

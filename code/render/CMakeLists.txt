@@ -334,10 +334,6 @@ ENDIF()
 				vkshaderprogram.h
 				vkshaderserver.cc
 				vkshaderserver.h
-				vkshaderstate.cc
-				vkshaderstate.h
-				vkshaderconstant.cc
-				vkshaderconstant.h
 				vkshaperenderer.cc
 				vkshaperenderer.h
 				vkshaderpool.cc

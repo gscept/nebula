@@ -140,6 +140,7 @@ ObserverContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frame
 
 	// first step, go through list of visible entities and reset
 	Util::Array<VisibilityResultAllocator>& vis = observerAllocator.GetArray<3>();
+	Util::Array<VisibilityDrawList>& draws = observerAllocator.GetArray<4>();
 
 	// reset all lists to that all entities are visible
 	for (i = 0; i < vis.Size(); i++)
@@ -150,6 +151,20 @@ ObserverContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frame
 		for (IndexT j = 0; j < flags.Size(); j++)
 		{
 			flags[j] = true;
+		}
+
+		// clear draw lists
+		VisibilityDrawList& draw = draws[i];
+		auto it1 = draw.Begin();
+		while (it1 != draw.End())
+		{
+			auto it2 = it1.val->Begin();
+			while (it2 != it1.val->End())
+			{
+				it2.val->Clear();
+				it2++;
+			}
+			it1++;
 		}
 	}
 
@@ -184,10 +199,11 @@ ObserverContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frame
 	{
 		Util::Array<bool>& flags = vis[i].GetArray<0>();
 		Util::Array<Graphics::ContextEntityId>& entities = vis[i].GetArray<1>();
-		VisibilityBuckets& visibilities = observerAllocator.GetArray<4>()[i];
+		VisibilityDrawList& visibilities = observerAllocator.GetArray<4>()[i];
 
 		// then execute sort job, which only runs the function once
 		Jobs::JobContext ctx;
+		ctx.uniform.scratchSize = 0;
 		ctx.uniform.numBuffers = 0;
 		ctx.input.numBuffers = 2;
 		ctx.output.numBuffers = 1;
@@ -201,8 +217,8 @@ ObserverContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frame
 		ctx.input.sliceSize[1] = sizeof(Graphics::ContextEntityId) * entities.Size();
 
 		ctx.output.data[0] = &visibilities;
-		ctx.output.dataSize[0] = sizeof(VisibilityBuckets);
-		ctx.output.sliceSize[0] = sizeof(VisibilityBuckets);
+		ctx.output.dataSize[0] = sizeof(VisibilityDrawList);
+		ctx.output.sliceSize[0] = sizeof(VisibilityDrawList);
 
 		// schedule job
 		Jobs::JobId job = Jobs::CreateJob({ VisibilitySortJob });
@@ -230,7 +246,7 @@ ObserverContext::Create()
 	Jobs::CreateJobPortInfo info =
 	{
 		"VisibilityJobPort",
-		4,
+		8,
 		System::Cpu::Core1 | System::Cpu::Core2 | System::Cpu::Core3 | System::Cpu::Core4,
 		UINT_MAX
 	};
@@ -309,12 +325,24 @@ ObserverContext::WaitForVisibility(const IndexT frameIndex, const Timing::Time f
 	ObserverContext::runningJobs.DequeueAll(jobs);
 
 	// wait for all jobs to finish
+	Jobs::JobPortWait(ObserverContext::jobPort);
+
+	// destroy jobs
 	IndexT i;
 	for (i = 0; i < jobs.Size(); i++)
 	{
-		Jobs::JobWait(jobs[i]);
 		Jobs::DestroyJob(jobs[i]);
 	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const ObserverContext::VisibilityDrawList&
+ObserverContext::GetVisibilityDrawList(const Graphics::GraphicsEntityId id)
+{
+	const Graphics::ContextEntityId cid = ObserverContext::GetContextId(id);
+	return observerAllocator.Get<4>(cid.id);
 }
 
 //------------------------------------------------------------------------------

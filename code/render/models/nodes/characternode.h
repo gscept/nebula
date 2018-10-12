@@ -7,7 +7,7 @@
     for rendering.
     
     (C) 2008 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */  
 #include "models/nodes/transformnode.h"
 //#include "characters/character.h"
@@ -49,11 +49,11 @@ public:
 		IndexT updateFrame;
 		bool updateThisFrame;
 
-		void Setup(const Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
+		void Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
 	};
 
 	/// create instance
-	virtual ModelNode::Instance* CreateInstance(byte* memory, const Models::ModelNode::Instance* parent) const;
+	virtual ModelNode::Instance* CreateInstance(byte* memory, const Models::ModelNode::Instance* parent) override;
 
 	/// get size of instance
 	virtual const SizeT GetInstanceSize() const { return sizeof(Instance); }
@@ -105,10 +105,9 @@ ModelNodeInstanceCreator(CharacterNode)
 /**
 */
 inline void
-CharacterNode::Instance::Setup(const Models::ModelNode* node, const Models::ModelNode::Instance* parent)
+CharacterNode::Instance::Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent)
 {
 	ModelNode::Instance::Setup(node, parent);
-	this->type = CharacterNodeType;
 }
 
 } // namespace Characters

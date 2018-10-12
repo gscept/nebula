@@ -88,8 +88,13 @@ void BuildRenderPipeline();
 void SetShaderProgram(const CoreGraphics::ShaderProgramId& pro);
 /// set shader program
 void SetShaderProgram(const CoreGraphics::ShaderId shaderId, const CoreGraphics::ShaderFeature::Mask mask);
-/// set shader state
-void SetShaderState(const CoreGraphics::ShaderStateId& sh);
+/// set resource table
+void SetResourceTable(const CoreGraphics::ResourceTableId table, const IndexT slot, ShaderPipeline pipeline, const Util::FixedArray<uint>& offsets);
+/// set resoure table layout
+void SetResourceTablePipeline(const CoreGraphics::ResourcePipelineId layout);
+/// push constants
+void PushConstants(ShaderPipeline pipeline, uint offset, uint size, byte* data);
+
 
 /// insert execution barrier
 void InsertBarrier(const CoreGraphics::BarrierId barrier, const CoreGraphicsQueueType queue);
@@ -147,5 +152,24 @@ bool GetUsePatches();
 void SetViewport(const Math::rectangle<int>& rect, int index);
 /// adds a scissor rect
 void SetScissorRect(const Math::rectangle<int>& rect, int index);
+
+#if defined(NEBULA_GRAPHICS_DEBUG)
+/// set debug name for object
+template<typename OBJECT_ID_TYPE> void ObjectSetName(const OBJECT_ID_TYPE id, const Util::String& name);
+/// begin debug marker region
+void QueueBeginMarker(const CoreGraphicsQueueType queue, const Math::float4& color, const Util::String& name);
+/// end debug marker region
+void QueueEndMarker(const CoreGraphicsQueueType queue);
+/// insert marker
+void QueueInsertMarker(const CoreGraphicsQueueType queue, const Math::float4& color, const Util::String& name);
+/// begin debug marker region
+void CmdBufBeginMarker(const CoreGraphicsQueueType queue, const Math::float4& color, const Util::String& name);
+/// end debug marker region
+void CmdBufEndMarker(const CoreGraphicsQueueType queue);
+/// insert marker
+void CmdBufInsertMarker(const CoreGraphicsQueueType queue, const Math::float4& color, const Util::String& name);
+#endif
+
+
 
 } // namespace CoreGraphics

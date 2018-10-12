@@ -5,7 +5,7 @@
   
     A resource which contains data done after a transform feedback/stream output operation is done
     
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/refcounted.h"
 #include "coregraphics/vertexlayout.h"

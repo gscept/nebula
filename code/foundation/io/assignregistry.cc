@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 //  assignregistry.cc
 //  (C) 2008 Radon Labs GmbH
-//  (C) 2013-2016 Individual contributors, see AUTHORS file
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "io/assignregistry.h"
@@ -264,7 +264,7 @@ AssignRegistry::GetAllAssigns() const
 {
     this->critSect.Enter();
 
-    Array<KeyValuePair<String,String> > content = this->assignTable.Content();
+    ArrayStack<KeyValuePair<String,String>, 1> content = this->assignTable.Content();
     Array<Assign> assigns(content.Size(), 0);
     IndexT i;
     for (i = 0; i < content.Size(); i++)

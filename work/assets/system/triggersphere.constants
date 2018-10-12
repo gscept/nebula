@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<Nebula3 version="4">
+<Nebula version="4">
     <Model name="system/triggersphere" bboxcenter="0.000000,-0.000000,0.000000,1.000000" bboxextents="0.500500,0.500500,0.500500,0.000000">
         <ShapeNodes>
             <ShapeNode name="pTorus13" type="static" path="root/pTorus13" useLOD="false" primitive="0" position="0.000000,0.000000,0.000000,1.000000" rotation="0.000000,0.000000,0.000000,1.000000" scale="1.000000,1.000000,1.000000,0.000000" mesh="msh:system/triggersphere.nvx2" bboxcenter="0.000000,-0.000000,0.000000,1.000000" bboxextents="0.500500,0.500500,0.500500,0.000000" />
@@ -8,4 +8,4 @@
             <PhysicsNode name="pSphere4" path="root/pSphere4" mesh="phymsh:system/triggersphere_ph.nvx2" primitive="0" position="0.000000,0.000000,0.000000,1.000000" rotation="0.000000,0.000000,0.000000,1.000000" scale="1.000000,1.000000,1.000000,0.000000" />
         </PhysicsNodes>
     </Model>
-</Nebula3>
+</Nebula>

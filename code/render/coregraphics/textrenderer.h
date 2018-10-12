@@ -7,7 +7,7 @@
     Only for debug purposes.
     
     (C) 2008 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */    
 #if __DX11__
 #include "coregraphics/d3d11/d3d11textrenderer.h"

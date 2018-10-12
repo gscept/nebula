@@ -40,26 +40,25 @@ public:
 	~MaterialType();
 
 	/// create an instance of a material
-	MaterialId CreateInstance();
+	MaterialInstanceId CreateInstance();
 	/// destroy an instance of a material
-	void DestroyInstance(MaterialId mat);
+	void DestroyInstance(MaterialInstanceId mat);
 	/// set constant in material
-	void SetConstant(MaterialId mat, Util::StringAtom name, const Util::Variant& constant);
+	void SetConstant(MaterialInstanceId mat, Util::StringAtom name, const Util::Variant& constant);
 	/// set texture in material
-	void SetTexture(MaterialId mat, Util::StringAtom, const CoreGraphics::TextureId tex);
-
+	void SetTexture(MaterialInstanceId mat, Util::StringAtom, const CoreGraphics::TextureId tex);
 
 private:
 	friend class MaterialServer;
 	friend class MaterialPool;
-	friend void	MaterialBeginBatch(MaterialType* type, CoreGraphics::BatchGroup::Code batch);
+	friend bool	MaterialBeginBatch(MaterialType* type, CoreGraphics::BatchGroup::Code batch);
 	friend void	MaterialApply(const Resources::ResourceId& mat);
 	friend void	MaterialEndBatch();
 
 	/// apply type-specific material state
-	void BeginBatch(CoreGraphics::BatchGroup::Code batch);
+	bool BeginBatch(CoreGraphics::BatchGroup::Code batch);
 	/// apply specific material instance, using the same batch as 
-	void ApplyInstance(const MaterialId& mat);
+	void ApplyInstance(const MaterialInstanceId& mat);
 	/// end batch
 	void EndBatch();
 
@@ -73,16 +72,16 @@ private:
 	Util::String group;
 	uint vertexType;
 
-	typedef Ids::IdAllocator<CoreGraphics::ShaderStateId> MaterialStateAllocator;
-	Util::HashTable<CoreGraphics::BatchGroup::Code, Util::Array<CoreGraphics::ShaderStateId>> states;
-	Util::Array<CoreGraphics::ShaderStateId>* currentAllocator;
+	typedef Ids::IdAllocator<CoreGraphics::ResourceTableId> MaterialStateAllocator;
+	Util::HashTable<CoreGraphics::BatchGroup::Code, Util::Array<CoreGraphics::ResourceTableId>> tables;
+	Util::Array<CoreGraphics::ResourceTableId>* currentAllocator;
 
 	/// this will cause somewhat bad cache coherency, since the states across all passes are stored tightly/
 	/// however, between two passes, the memory is still likely to have been nuked
 	Ids::IdAllocator<
 		Util::Array<Ids::Id32>,		// state indices
-		Util::Array<Util::HashTable<Util::StringAtom, CoreGraphics::ShaderConstantId>>, // constants
-		Util::Array<Util::HashTable<Util::StringAtom, CoreGraphics::ShaderConstantId>> // textures
+		Util::Array<Util::HashTable<Util::StringAtom, CoreGraphics::ConstantBinding>>, // constants
+		Util::Array<Util::HashTable<Util::StringAtom, IndexT>> // textures
 	> materialAllocator;
 	MaterialTypeId id;
 };

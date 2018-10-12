@@ -6,7 +6,7 @@
     A debug timer for measuring time spent in code blocks.
     
     (C) 2008 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/refcounted.h"
 #include "timing/timer.h"
@@ -15,7 +15,7 @@
 #include "threading/criticalsection.h"
 
 //------------------------------------------------------------------------------
-#if NEBULA3_ENABLE_PROFILING
+#if NEBULA_ENABLE_PROFILING
 #define _declare_timer(timer) Ptr<Debug::DebugTimer> timer;
 #define _declare_static_timer(timer) static Ptr<Debug::DebugTimer> timer;
 #define _setup_timer(timer) {timer = Debug::DebugTimer::Create(); timer->Setup(Util::StringAtom(#timer));}

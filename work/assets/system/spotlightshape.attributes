@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<Nebula3 version="1">
+<Nebula version="1">
     <Options exportFlags="4" exportMode="0" scale="1.000000" />
     <States>
         <ModelNode name="root/pPyramid1" material="Static">
@@ -9,4 +9,4 @@
             </Textures>
         </ModelNode>
     </States>
-</Nebula3>
+</Nebula>

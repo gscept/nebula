@@ -1,6 +1,7 @@
 //------------------------------------------------------------------------------
-//  debug.cc
+// debug.cc
 //  (C) 2002 RadonLabs GmbH
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "core/types.h"
@@ -22,7 +23,7 @@ n_barf(const char* exp, const char* file, int line)
     else
     {
     	Util::String msg;
-    	msg.Format("*** NEBULA ASSERTION ***\nexpression: %s\nfile: %s\nline: %d\n", exp, file, line);
+    	msg.Format("*** NEBULA ASSERTION ***\n%s(%d): expression: %s\n", file, line, exp);
         Core::SysFunc::Error(msg.AsCharPtr());
     }
 }

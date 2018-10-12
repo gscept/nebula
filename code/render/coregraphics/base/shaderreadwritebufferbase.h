@@ -8,7 +8,7 @@
 	Same as for ShaderReadWriteTextureBase, this class must be unlocked prior to updating, 
 	and locked prior to being used by the GPU.
 	
-	(C) 2012-2014 Individual contributors, see AUTHORS file
+	(C) 2012-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "coregraphics/stretchybuffer.h"

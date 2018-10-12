@@ -7,7 +7,7 @@
     in 3d space and always has a w component of 0.0.
     
     (C) 2007 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "math/float4.h"
 
@@ -25,7 +25,7 @@ typedef const vector  __VectorArg;
 typedef const vector& __VectorArg;
 #endif
 
-class NEBULA3_ALIGN16 vector : public float4
+class NEBULA_ALIGN16 vector : public float4
 {
 public:
     /// default constructor

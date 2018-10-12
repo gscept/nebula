@@ -41,6 +41,10 @@ typedef Ids::IdAllocator<
 	Util::HashTable<uint32_t, bool>
 > VkResourceTableLayoutAllocator;
 extern VkResourceTableLayoutAllocator resourceTableLayoutAllocator;
+extern VkDescriptorSetLayout emptySetLayout;
+
+/// run this before using any resource tables
+void SetupEmptyDescriptorSet();
 
 /// get table layout
 const VkDescriptorSetLayout& ResourceTableLayoutGetVk(const CoreGraphics::ResourceTableLayoutId& id);

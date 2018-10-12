@@ -6,7 +6,7 @@
     Compile time configuration options for the CoreGraphics subsystem.
     
     (C) 2007 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 #include "util/string.h"
@@ -40,7 +40,8 @@ enum CoreGraphicsIdType
 	ResourceTableIdType,
 	ResourceTableLayoutIdType,
 	ResourcePipelineIdType,
-	SamplerIdType
+	SamplerIdType,
+	MaterialIdType
 };
 
 enum CoreGraphicsQueueType
@@ -133,6 +134,10 @@ CoreGraphicsQueueTypeFromString(const Util::String& str)
 
 #define SHADER_POSTEFFECT_DEFAULT_FEATURE_MASK "Alt0"
 
+#if !PUBLIC_BUILD
+#define NEBULA_GRAPHICS_DEBUG 1
+#endif
+
 //------------------------------------------------------------------------------
 #if __DX11__ || __DX9__
     #if __DX11__
@@ -141,34 +146,34 @@ CoreGraphicsQueueTypeFromString(const Util::String& str)
 	#define COREGRAPHICS_PIXEL_CENTER_HALF_PIXEL (1)
 	#define COREGRAPHICS_TRIANGLE_FRONT_FACE_CCW (1)
 
-	#define NEBULA3_USEDIRECT3D9 (1)
-	#define NEBULA3_USEDIRECT3D10 (0)
+	#define NEBULA_USEDIRECT3D9 (1)
+	#define NEBULA_USEDIRECT3D10 (0)
 
-	#define NEBULA3_DIRECT3D_USENVPERFHUD (0)
-	#define NEBULA3_DIRECT3D_DEBUG (0)
+	#define NEBULA_DIRECT3D_USENVPERFHUD (0)
+	#define NEBULA_DIRECT3D_DEBUG (0)
 
-	#if NEBULA3_DIRECT3D_USENVPERFHUD
-	#define NEBULA3_DIRECT3D_DEVICETYPE D3DDEVTYPE_REF
+	#if NEBULA_DIRECT3D_USENVPERFHUD
+	#define NEBULA_DIRECT3D_DEVICETYPE D3DDEVTYPE_REF
 	#else
-	#define NEBULA3_DIRECT3D_DEVICETYPE D3DDEVTYPE_HAL
+	#define NEBULA_DIRECT3D_DEVICETYPE D3DDEVTYPE_HAL
 	#endif
 	
 #elif __OGL4__
     #define SHADER_MODEL_5 (1)
     #ifdef _DEBUG
-	    #define NEBULA3_OPENGL4_DEBUG (1)
+	    #define NEBULA_OPENGL4_DEBUG (1)
     #else
-        #define	NEBULA3_OPENGL4_DEBUG (0)
+        #define	NEBULA_OPENGL4_DEBUG (0)
     #endif
 #elif __VULKAN__
 	#define COREGRAPHICS_TRIANGLE_FRONT_FACE_CCW (1)
 	// define the same descriptor set slots as we do in the shaders
-	#define NEBULAT_TICK_GROUP 0				// set per tick (once for all views) by the system
-	#define NEBULAT_FRAME_GROUP 1				// set per frame (once per view) by the system
-	#define NEBULAT_PASS_GROUP 2				// set per pass by the system
-	#define NEBULAT_BATCH_GROUP 3				// set per batch (material settings or system stuff)
-	#define NEBULAT_INSTANCE_GROUP 4			// set a batch-internal copy of some specific settings
-	#define NEBULAT_DYNAMIC_OFFSET_GROUP 5		// set once per shader and is offset for each instance
+	#define NEBULA_TICK_GROUP 0				// set per tick (once for all views) by the system
+	#define NEBULA_FRAME_GROUP 1				// set per frame (once per view) by the system
+	#define NEBULA_PASS_GROUP 2				// set per pass by the system
+	#define NEBULA_BATCH_GROUP 3				// set per batch (material settings or system stuff)
+	#define NEBULA_INSTANCE_GROUP 4			// set a batch-internal copy of some specific settings
+	#define NEBULA_DYNAMIC_OFFSET_GROUP 5		// set once per shader and is offset for each instance
 
 	#define MAX_INPUT_ATTACHMENTS 32
 
@@ -183,9 +188,9 @@ CoreGraphicsQueueTypeFromString(const Util::String& str)
 
 	#define SHADER_MODEL_5 (1)
 	#ifdef _DEBUG
-		#define NEBULAT_VULKAN_DEBUG (1)
+		#define NEBULA_VULKAN_DEBUG (1)
 	#else
-		#define NEBULAT_VULKAN_DEBUG (0)
+		#define NEBULA_VULKAN_DEBUG (0)
 	#endif
 #if __X64__
 	#define VK_DEVICE_SIZE_CONV(x) uint64_t(x)

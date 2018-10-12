@@ -6,7 +6,7 @@
     Implements a RenderDevice on top of Direct3D11.
     
     (C) 2007 Radon Labs GmbH
-    (C) 2013 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */    
 //------------------------------------------------------------------------------
 #include "coregraphics/base/renderdevicebase.h"
@@ -17,8 +17,8 @@
 namespace Direct3D11
 {
 
-#define NEBULA3_USE_FLOAT_DEPTHBUFFER 0
-#if NEBULA3_USE_FLOAT_DEPTHBUFFER
+#define NEBULA_USE_FLOAT_DEPTHBUFFER 0
+#if NEBULA_USE_FLOAT_DEPTHBUFFER
     #define DepthFormat DXGI_FORMAT_D24_UNORM_S8_UINT
     #define ViewportMinZ 1
     #define ViewportMaxZ 0

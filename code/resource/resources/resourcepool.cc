@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 // resourceloader.cc
-// (C) 2017 Individual contributors, see AUTHORS file
+// (C)2017-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "resourcepool.h"

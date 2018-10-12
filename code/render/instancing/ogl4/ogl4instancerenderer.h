@@ -6,6 +6,7 @@
     Performs instanced rendering with OpenGL 4
     
     (C) 2013 Gustav Sterbrant
+	(C) 2013-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "instancing/base/instancerendererbase.h"

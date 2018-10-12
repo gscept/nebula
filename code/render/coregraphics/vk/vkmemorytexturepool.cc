@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 // vkmemorytextureloader.cc
-// (C) 2016 Individual contributors, see AUTHORS file
+// (C) 2016-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "vkmemorytexturepool.h"
@@ -145,6 +145,10 @@ VkMemoryTexturePool::LoadFromMemory(const Resources::ResourceId id, const void* 
 
 	// set loaded flag
 	this->states[id.poolId] = Resources::Resource::Loaded;
+
+#if NEBULA_GRAPHICS_DEBUG
+	ObjectSetName((TextureId)id, data->name.Value());
+#endif
 
 	return ResourcePool::Success;
 }

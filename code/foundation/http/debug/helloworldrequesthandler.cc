@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 //  helloworldrequesthandler.cc
 //  (C) 2008 Radon Labs GmbH
-//  (C) 2013-2016 Individual contributors, see AUTHORS file
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "http/debug/helloworldrequesthandler.h"
@@ -36,7 +36,7 @@ HelloWorldRequestHandler::HandleRequest(const Ptr<HttpRequest>& request)
 
     // in order to server a valid HTML page to the request's ResponseContentStream, 
     // we need to create a HtmlPageWriter and connect it to the 
-    // ResponseContentStream, this is standard Nebula3 IO stuff...
+    // ResponseContentStream, this is standard Nebula IO stuff...
     Ptr<HtmlPageWriter> htmlWriter = HtmlPageWriter::Create();
     htmlWriter->SetStream(request->GetResponseContentStream());
     htmlWriter->SetTitle("Hello World");

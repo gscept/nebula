@@ -9,7 +9,7 @@
     the object can be asked about all physics entities which have been
     affected.
     
-    (C) 2012-2016 Individual contributors, see AUTHORS file
+    (C) 2012-2018 Individual contributors, see AUTHORS file
 */
 #include "physics/util/areaimpulse.h"
 #include "util/array.h"

@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /**   
     (C) 2009 Radon Labs GmbH
-//  (C) 2013-2016 Individual contributors, see AUTHORS file
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "foundation/stdneb.h"
 #include "threading/win360/win360criticalsection.h"     
@@ -9,7 +9,7 @@
    
 namespace Win360
 {
-#if NEBULA3_USER_CRITICAL_SECTION
+#if NEBULA_USER_CRITICAL_SECTION
 //------------------------------------------------------------------------------
 /**
 */  

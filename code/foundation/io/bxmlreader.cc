@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 //  bxmlreader.cc
 //  (C) 2009 Radon Labs GmbH
-//  (C) 2013-2016 Individual contributors, see AUTHORS file
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "bxmlreader.h"
@@ -262,7 +262,7 @@ BXmlReader::GetFloat2(const char* attr) const
 Math::float4
 BXmlReader::GetFloat4(const char* attr) const
 {
-#if NEBULA3_XMLREADER_LEGACY_VECTORS
+#if NEBULA_XMLREADER_LEGACY_VECTORS
     const String& float4String = this->GetString(attr);
     Array<String> tokens = float4String.Tokenize(", \t");
     if (tokens.Size() == 3)

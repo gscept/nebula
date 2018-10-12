@@ -15,6 +15,7 @@
     is crossed).
     
     (C) 2007 Oleg Khryptul (Haron)
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 
 //------------------------------------------------------------------------------

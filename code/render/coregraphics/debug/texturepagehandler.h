@@ -14,7 +14,7 @@
     http://host/texture?texinfo=[resId]         - build a HTML page about specific texture    
 
     (C) 2007 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "http/httprequesthandler.h"
 #include "resources/resourceid.h"

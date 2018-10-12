@@ -8,6 +8,7 @@
    new.
 
     (C) 2006 RadonLabs GmbH
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 
@@ -222,7 +223,7 @@ RttiArray<TYPE>::RttiArray(const Core::Rtti& type, std::initializer_list<TYPE> l
 template<class TYPE> void
 RttiArray<TYPE>::Copy(const RttiArray<TYPE>& src)
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(0 == this->elements);
     #endif
 
@@ -372,7 +373,7 @@ RttiArray<TYPE>::GrowTo(SizeT newCapacity)
 template<class TYPE> void
 RttiArray<TYPE>::Grow()
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(this->grow > 0);
     #endif
 
@@ -406,7 +407,7 @@ RttiArray<TYPE>::Grow()
 template<class TYPE> void
 RttiArray<TYPE>::Move(IndexT fromIndex, IndexT toIndex)
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements);
     n_assert(fromIndex < this->size);
     #endif
@@ -473,7 +474,7 @@ RttiArray<TYPE>::Append(const TYPE& elm)
     {
         this->Grow();
     }
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements);
     #endif
     this->elements[this->size++] = elm;
@@ -506,7 +507,7 @@ RttiArray<TYPE>::AppendArray(const RttiArray<TYPE>& rhs)
 template<class TYPE> void
 RttiArray<TYPE>::Reserve(SizeT num)
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(num > 0);
     #endif
     SizeT neededCapacity = this->size + num;
@@ -542,7 +543,7 @@ RttiArray<TYPE>::Capacity() const
 template<class TYPE> TYPE&
 RttiArray<TYPE>::operator[](IndexT index) const
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements && (index < this->size));
     #endif
     return this->elements[index];
@@ -592,7 +593,7 @@ RttiArray<TYPE>::operator!=(const RttiArray<TYPE>& rhs) const
 template<class TYPE> TYPE&
 RttiArray<TYPE>::Front() const
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements && (this->size > 0));
     #endif
     return this->elements[0];
@@ -604,7 +605,7 @@ RttiArray<TYPE>::Front() const
 template<class TYPE> TYPE&
 RttiArray<TYPE>::Back() const
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements && (this->size > 0));
     #endif
     return this->elements[this->size - 1];
@@ -625,7 +626,7 @@ RttiArray<TYPE>::IsEmpty() const
 template<class TYPE> void
 RttiArray<TYPE>::EraseIndex(IndexT index)
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements && (index < this->size));
     #endif
     if (index == (this->size - 1))
@@ -647,7 +648,7 @@ RttiArray<TYPE>::EraseIndex(IndexT index)
 template<class TYPE> void
 RttiArray<TYPE>::EraseIndexSwap(IndexT index)
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements && (index < this->size));
     #endif
 
@@ -667,7 +668,7 @@ RttiArray<TYPE>::EraseIndexSwap(IndexT index)
 template<class TYPE> typename RttiArray<TYPE>::Iterator
 RttiArray<TYPE>::Erase(typename RttiArray<TYPE>::Iterator iter)
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements && (iter >= this->elements) && (iter < (this->elements + this->size)));
     #endif
     this->EraseIndex(IndexT(iter - this->elements));
@@ -681,7 +682,7 @@ RttiArray<TYPE>::Erase(typename RttiArray<TYPE>::Iterator iter)
 template<class TYPE> typename RttiArray<TYPE>::Iterator
 RttiArray<TYPE>::EraseSwap(typename RttiArray<TYPE>::Iterator iter)
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements && (iter >= this->elements) && (iter < (this->elements + this->size)));
     #endif
 	this->EraseIndexSwap(IndexT(iter - this->elements));
@@ -694,7 +695,7 @@ RttiArray<TYPE>::EraseSwap(typename RttiArray<TYPE>::Iterator iter)
 template<class TYPE> void
 RttiArray<TYPE>::Insert(IndexT index, const TYPE& elm)
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(index <= this->size);
     #endif
     if (index == this->size)
@@ -1028,7 +1029,7 @@ RttiArray<TYPE>::InsertSorted(const TYPE& elm)
             } 
             else 
             {
-                #if NEBULA3_BOUNDSCHECKS
+                #if NEBULA_BOUNDSCHECKS
                 n_assert(0 == lo);
                 #endif
                 this->Insert(lo, elm);

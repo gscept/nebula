@@ -7,7 +7,7 @@
     window.
     
     (C) 2006 Radon Labs GmbH
-    (C) 2013 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "coregraphics/base/displaydevicebase.h"
 
@@ -78,7 +78,7 @@ protected:
     virtual void OnMouseMove(LPARAM lParam);
     /// called on WM_MOUSEWHEEL
     virtual void OnMouseWheel(WPARAM wParam);
-    /// translate a Windows virtual key code into a Nebula3 key code
+    /// translate a Windows virtual key code into a Nebula key code
     Input::Key::Code TranslateKeyCode(LPARAM lParam, WPARAM wParam) const;
     /// adjust window size taking client area into account
     virtual CoreGraphics::DisplayMode ComputeAdjustedWindowRect();

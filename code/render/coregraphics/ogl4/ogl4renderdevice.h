@@ -5,7 +5,7 @@
   
     Implements a RenderDevice on top of OpenGL4.
         
-	(C) 2013-2016 Individual contributors, see AUTHORS file
+	(C) 2013-2018 Individual contributors, see AUTHORS file
 */    
 #include "coregraphics/base/renderdevicebase.h"
 #include "coregraphics/pixelformat.h"
@@ -18,8 +18,8 @@
 namespace OpenGL4
 {
 
-#define NEBULA3_USE_FLOAT_DEPTHBUFFER 0
-#if NEBULA3_USE_FLOAT_DEPTHBUFFER
+#define NEBULA_USE_FLOAT_DEPTHBUFFER 0
+#if NEBULA_USE_FLOAT_DEPTHBUFFER
     #define DepthBits 24
     #define StencilBits 8
     #define ViewportMinZ 1

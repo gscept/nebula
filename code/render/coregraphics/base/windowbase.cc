@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 // windowbase.cc
-// (C) 2016 Individual contributors, see AUTHORS file
+// (C) 2016-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "windowbase.h"
@@ -21,7 +21,7 @@ WindowBase::WindowBase() :
 	modeSwitchEnabled(true),
 	tripleBufferingEnabled(false),
 	alwaysOnTop(false),
-	windowTitle("Nebula3 Application Window"),
+	windowTitle("Nebula Application Window"),
 	iconName("NebulaIcon"),
 	windowData(0),
 	embedded(false),

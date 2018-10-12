@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 //  xmlreader.cc
 //  (C) 2006 Radon Labs GmbH
-//  (C) 2013-2016 Individual contributors, see AUTHORS file
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "io/xmlreader.h"
@@ -465,7 +465,7 @@ XmlReader::GetFloat2(const char* name) const
 float4
 XmlReader::GetFloat4(const char* name) const
 {
-#if NEBULA3_XMLREADER_LEGACY_VECTORS
+#if NEBULA_XMLREADER_LEGACY_VECTORS
     const String& float4String = this->GetString(name);
     Array<String> tokens = float4String.Tokenize(", \t");
     if (tokens.Size() == 3)

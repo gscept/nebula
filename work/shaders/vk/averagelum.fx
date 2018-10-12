@@ -8,10 +8,12 @@
 #include "lib/util.fxh"
 #include "lib/shared.fxh"
 
+texture2D ColorSource;
+texture2D PreviousLum;
+
 varblock AverageLumBlock
 {
-	textureHandle ColorSource;
-	textureHandle PreviousLum;
+	
 	float TimeDiff;
 };
 
@@ -58,12 +60,12 @@ psMain(in vec2 UV,
 	//vec2 pixelSize = GetPixelSize(ColorSource);
 	
 	// source should be a 512x512 texture, so we sample the 8'th mip of the texture
-	vec4 sample1 = fetch2D(ColorSource, LuminanceSampler, ivec2(1, 0), 0);
-	vec4 sample2 = fetch2D(ColorSource, LuminanceSampler, ivec2(0, 1), 0);
-	vec4 sample3 = fetch2D(ColorSource, LuminanceSampler, ivec2(1, 1), 0);
-	vec4 sample4 = fetch2D(ColorSource, LuminanceSampler, ivec2(0, 0), 0);
+	vec4 sample1 = texelFetch(sampler2D(ColorSource, LuminanceSampler), ivec2(1, 0), 0);
+	vec4 sample2 = texelFetch(sampler2D(ColorSource, LuminanceSampler), ivec2(0, 1), 0);
+	vec4 sample3 = texelFetch(sampler2D(ColorSource, LuminanceSampler), ivec2(1, 1), 0);
+	vec4 sample4 = texelFetch(sampler2D(ColorSource, LuminanceSampler), ivec2(0, 0), 0);
 	float currentLum = dot((sample1 + sample2 + sample3 + sample4) * 0.25f, vec4(0.2126f, 0.7152f, 0.0722f, 0));
-	float lastLum = fetch2D(PreviousLum, LuminanceSampler, ivec2(0, 0), 0).r;
+	float lastLum = texelFetch(sampler2D(PreviousLum, LuminanceSampler), ivec2(0, 0), 0).r;
 	
 /*	float	sigma = 0.04/(0.04 + Clum.x);
 	float	tau = sigma*0.4 + (1.0 - sigma)*0.1;

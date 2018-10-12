@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //  vkshadowserver.cc
-//  (C) 2016 Individual contributors, see AUTHORS file
+//  (C) 2016-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "lighting/vk/vkshadowserver.h"
@@ -73,9 +73,9 @@ VkShadowServer::Open()
 	IndexT i;
 	for (i = 0; i < NumShadowCastingLights; i++)
 	{
-		this->shaderStates[i] = ShaderServer::Instance()->CreateShaderState("shd:shadow", { NEBULAT_SYSTEM_GROUP });
+		this->shaderStates[i] = ShaderServer::Instance()->CreateShaderState("shd:shadow", { NEBULA_SYSTEM_GROUP });
 		this->shaderStates[i]->SetApplyShared(false);
-		this->viewArrayVar[i] = this->shaderStates[i]->GetVariableByName(NEBULA3_SEMANTIC_VIEWMATRIXARRAY);
+		this->viewArrayVar[i] = this->shaderStates[i]->GetVariableByName(NEBULA_SEMANTIC_VIEWMATRIXARRAY);
 	}
 	this->lightIndexPool.SetSetupFunc([](IndexT& val, IndexT idx) { val = idx;  });
 	this->lightIndexPool.Resize(NumShadowCastingLights);
@@ -91,7 +91,7 @@ VkShadowServer::Open()
 	this->csmUtil.SetClampingMethod(CSMUtil::AABB);
 	this->csmUtil.SetFittingMethod(CSMUtil::Scene);
 
-#if NEBULA3_ENABLE_PROFILING
+#if NEBULA_ENABLE_PROFILING
 	this->globalShadow = Debug::DebugTimer::Create();
 	String name("ShadowServer_GlobalShadow");
 	this->globalShadow->Setup(name, "Shadowmapping");

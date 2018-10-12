@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 //  texturepagehandler.cc
 //  (C) 2007 Radon Labs GmbH
-//  (C) 2013-2016 Individual contributors, see AUTHORS file
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "coregraphics/debug/texturepagehandler.h"
@@ -59,7 +59,7 @@ TexturePageHandler::HandleRequest(const Ptr<HttpRequest>& request)
     // no command, send the Texture home page
     Ptr<HtmlPageWriter> htmlWriter = HtmlPageWriter::Create();
     htmlWriter->SetStream(request->GetResponseContentStream());
-    htmlWriter->SetTitle("NebulaT Textures");
+    htmlWriter->SetTitle("Nebula Textures");
     if (htmlWriter->Open())
     {
         htmlWriter->Element(HtmlElement::Heading1, "Texture Resources (stream loaded)");
@@ -321,7 +321,7 @@ TexturePageHandler::HandleTextureInfoRequest(const Util::String& resId, const Pt
 
     Ptr<HtmlPageWriter> htmlWriter = HtmlPageWriter::Create();
     htmlWriter->SetStream(responseContentStream);
-    htmlWriter->SetTitle("NebulaT Texture Info");
+    htmlWriter->SetTitle("Nebula Texture Info");
     if (htmlWriter->Open())
     {
 		const Resources::ResourceName& name = resManager->GetName(id);

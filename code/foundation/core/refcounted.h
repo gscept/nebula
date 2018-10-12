@@ -3,8 +3,8 @@
 /**
     @class Core::RefCounted
     
-    The common base class of Nebula3. Implement a strong refcounted
-    mechanism and runtime type information. Nebula3 checks at
+    The common base class of Nebula. Implement a strong refcounted
+    mechanism and runtime type information. Nebula checks at
     application shutdown for propert cleanup of all 
     RefCounted objects. Refcounting leaks will generate a log
     on the debug output.
@@ -17,7 +17,7 @@
     thread-synchronization adds unnecessary overhead.
 
     (C) 2006 RadonLabs GmbH
-    (C) 2013-2014 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 #include "core/rtti.h"

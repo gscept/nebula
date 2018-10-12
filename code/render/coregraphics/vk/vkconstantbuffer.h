@@ -11,13 +11,13 @@
 	the uniform buffer, use SetActiveInstance to automatically have the variables update data
 	at that instances offset.
 	
-	(C) 2016 Individual contributors, see AUTHORS file
+	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
 #include "coregraphics/constantbuffer.h"
 #include "coregraphics/stretchybuffer.h"
-#include "vkshaderconstant.h"
+#include <lowlevel/afxapi.h>
 namespace Vulkan
 {
 
@@ -64,8 +64,7 @@ typedef Ids::IdAllocator<
 	VkConstantBufferRuntimeInfo,
 	VkConstantBufferSetupInfo,
 	VkConstantBufferMapInfo,
-	ConstantBufferStretchInterface,
-	VkShaderConstantAllocator
+	ConstantBufferStretchInterface
 > VkConstantBufferAllocator;
 extern VkConstantBufferAllocator constantBufferAllocator;
 

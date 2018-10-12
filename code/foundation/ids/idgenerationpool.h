@@ -11,14 +11,14 @@
 	is increased, such that the next time the id is reused, it can be checked for
 	validity against any dangling instances of the previous generations. 
     
-    (C) 2017 Individual contributors, see AUTHORS file
+    (C) 2017-2018 Individual contributors, see AUTHORS file
 */
 
 #include "foundation/stdneb.h"
 #include "util/array.h"
-#include "util/dequeue.h"
 #include "id.h"
 #include "util/list.h"
+#include "util/queue.h"
 
 const uint32_t ID_BITS = 24;
 const uint32_t GENERATION_BITS = 8;
@@ -59,7 +59,8 @@ private:
     Util::Array<generation_t> generations;
 
     /// stores freed indices
-    Util::List<Id32> freeIds;
+    Util::List<Id32> freeIds2;
+    Util::Queue<Id32> freeIds;
 	SizeT freeIdsSize;
 };
 

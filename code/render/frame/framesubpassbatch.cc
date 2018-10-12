@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 // framesubpassbatch.cc
-// (C) 2016 Individual contributors, see AUTHORS file
+// (C) 2016-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "framesubpassbatch.h"
@@ -8,16 +8,18 @@
 #include "coregraphics/graphicsdevice.h"
 #include "materials/materialserver.h"
 #include "models/model.h"
+#include "graphics/graphicsserver.h"
+#include "graphics/view.h"
+#include "visibility/visibilitycontext.h"
 
 using namespace Graphics;
 using namespace CoreGraphics;
-using namespace Lighting;
 using namespace Materials;
 using namespace Models;
 using namespace Util;
 
-#define NEBULA3_FRAME_LOG_ENABLED   (0)
-#if NEBULA3_FRAME_LOG_ENABLED
+#define NEBULA_FRAME_LOG_ENABLED   (0)
+#if NEBULA_FRAME_LOG_ENABLED
 #define FRAME_LOG(...) n_printf(__VA_ARGS__); n_printf("\n")
 #else
 #define FRAME_LOG(...)
@@ -63,6 +65,10 @@ FrameSubpassBatch::CompiledImpl::Run(const IndexT frameIndex)
 	ShaderServer* shaderServer = ShaderServer::Instance();
 	MaterialServer* matServer = MaterialServer::Instance();
 
+	// get current view and visibility draw list
+	const Ptr<View>& view = Graphics::GraphicsServer::Instance()->GetCurrentView();
+	const Visibility::ObserverContext::VisibilityDrawList& drawList = Visibility::ObserverContext::GetVisibilityDrawList(view->GetCamera());
+	return;
 	// start batch
 	CoreGraphics::BeginBatch(FrameBatchType::Geometry);
 
@@ -70,9 +76,39 @@ FrameSubpassBatch::CompiledImpl::Run(const IndexT frameIndex)
 	if (types != nullptr) for (IndexT typeIdx = 0; typeIdx < types->Size(); typeIdx++)
 	{
 		MaterialType* type = (*types)[typeIdx];
-		MaterialBeginBatch(type, this->batch);
+		if (MaterialBeginBatch(type, this->batch))
+		{
+			IndexT idx = drawList.FindIndex(type);
+			if (idx != InvalidIndex)
+			{
+				auto& model = drawList.ValueAtIndex(type, idx);
+				auto& it = model.Begin();
+				auto& end = model.End();
+				while (it != end)
+				{
+					Models::ModelNode* node = *it.key;
 
-		MaterialEndBatch();
+					const Util::Array<Models::ModelNode::Instance*>& instances = *it.val;
+					if (instances.Size() > 0)
+					{
+						// apply node-wide state
+						node->ApplyNodeState();
+
+						IndexT i;
+						for (i = 0; i < instances.Size(); i++)
+						{
+							Models::ModelNode::Instance* instance = instances[i];
+
+							// apply instance state
+							instance->ApplyNodeInstanceState();
+							CoreGraphics::Draw();
+						}
+					}
+					it++;
+				}
+			}
+			MaterialEndBatch();
+		}
 	}
 	/*
 
@@ -139,7 +175,7 @@ FrameSubpassBatch::CompiledImpl::Run(const IndexT frameIndex)
 							modelNode->ApplySharedState(frameIndex);
 							FRAME_LOG("        FrameBatch::RenderBatch() node: %s", modelNode->GetName().Value());
 
-#if NEBULA3_ENABLE_PROFILING
+#if NEBULA_ENABLE_PROFILING
 							modelNode->StartTimer();
 #endif
 							IndexT nodeInstIndex;
@@ -147,7 +183,7 @@ FrameSubpassBatch::CompiledImpl::Run(const IndexT frameIndex)
 							{
 								const Ptr<ModelNodeInstance>& nodeInstance = nodeInstances[nodeInstIndex];
 								const Ptr<StateNodeInstance>& stateNode = nodeInstance.downcast<StateNodeInstance>();
-#if NEBULA3_ENABLE_PROFILING
+#if NEBULA_ENABLE_PROFILING
 								nodeInstance->StartDebugTimer();
 #endif  
 								// render the node instance
@@ -155,13 +191,13 @@ FrameSubpassBatch::CompiledImpl::Run(const IndexT frameIndex)
 
 								// render single
 								nodeInstance->Render();
-#if NEBULA3_ENABLE_PROFILING
+#if NEBULA_ENABLE_PROFILING
 								modelNode->IncrementDraws();
 								nodeInstance->StopDebugTimer();
 #endif  
 							}
 
-#if NEBULA3_ENABLE_PROFILING
+#if NEBULA_ENABLE_PROFILING
 							modelNode->StopTimer();
 #endif
 						}

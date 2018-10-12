@@ -8,6 +8,7 @@
     A plane class on top of SCE math functions.
     
     (C) 2007 Radon Labs GmbH
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 #include "math/sce/sce_scalar.h"

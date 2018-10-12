@@ -68,7 +68,7 @@ Script must be wrapped with:
 @code
 {
 	"version": 2,
-	"engine": "NebulaTrifid",
+	"engine": "Nebula",
 	"framescript": 
 	{
 		...

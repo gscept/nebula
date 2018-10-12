@@ -36,14 +36,14 @@ public:
 	bool LoadMaterialTypes(const IO::URI& file);
 
 	/// get material
-	MaterialType* GetMaterial(const Resources::ResourceName& type);
+	MaterialType* GetMaterialType(const Resources::ResourceName& type);
 	/// get material types by batch code
 	const Util::Array<MaterialType*>* GetMaterialTypesByBatch(CoreGraphics::BatchGroup::Code code);
 
 private:
 	friend class MaterialPool;
 
-	Memory::ChunkAllocator<0x1FF> materialAllocator;
+	Memory::ChunkAllocator<0x200> materialAllocator;
 	Util::Dictionary<Resources::ResourceName, MaterialType*> materialTypesByName;
 	Util::HashTable<CoreGraphics::BatchGroup::Code, Util::Array<MaterialType*>> materialTypesByBatch;
 	Util::Array<MaterialType*> materialTypes;

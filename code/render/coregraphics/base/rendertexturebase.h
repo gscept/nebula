@@ -10,7 +10,7 @@
 	FIXME: Good opportunity to use the new window system now to make the screen relative
 	bool use the proper window pointer.
 	
-	(C) 2016 Individual contributors, see AUTHORS file
+	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"

@@ -14,7 +14,7 @@
     Recv() will only return finished messages.
 
     (C) 2009 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "net/tcpclientconnection.h"
 #include "net/tcpmessagecodec.h"

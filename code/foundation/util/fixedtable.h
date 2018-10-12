@@ -6,7 +6,7 @@
     A fixed-size 2-dimensional array.
     
     (C) 2006 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 
@@ -95,7 +95,7 @@ template<class TYPE>
 void
 FixedTable<TYPE>::Allocate(SizeT w, SizeT h)
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(0 == this->elements);
     #endif
     if ((w > 0) && (h > 0))
@@ -286,7 +286,7 @@ template<class TYPE>
 void
 FixedTable<TYPE>::Set(IndexT x, IndexT y, const TYPE& val)
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert((x >= 0) && (x < this->width));
     n_assert(y < this->height);
     n_assert(0 != this->elements);    
@@ -302,7 +302,7 @@ template<class TYPE>
 TYPE&
 FixedTable<TYPE>::At(IndexT x, IndexT y) const
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert((x >= 0) && (x < this->width));
     n_assert(y < this->height);
     n_assert(0 != this->elements);

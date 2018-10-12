@@ -1,5 +1,5 @@
 <!DOCTYPE shadowmapping>
-<Nebula3>
+<Nebula>
  <FrameShader>
   <!-- depth-stencil buffers -->
   <DeclareDepthStencilTarget format="D24S8" width="512" height="512" name="DefaultDepthBuffer"/>
@@ -20,4 +20,4 @@
   </PostEffect>
   -->
  </FrameShader>
-</Nebula3>
+</Nebula>

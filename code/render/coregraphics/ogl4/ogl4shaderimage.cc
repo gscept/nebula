@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 // ogl4shaderimage.cc
-// (C) 2016 Individual contributors, see AUTHORS file
+// (C) 2016-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "ogl4shaderimage.h"

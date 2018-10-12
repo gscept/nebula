@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 //  stdtcperver.cc
 //  (C) 2006 Radon Labs GmbH
-//  (C) 2013-2016 Individual contributors, see AUTHORS file
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "net/tcp/stdtcpserver.h"
@@ -202,7 +202,7 @@ StdTcpServer::ListenerThread::SetClientConnectionClass(const Core::Rtti& type)
 void
 StdTcpServer::ListenerThread::DoWork()
 {
-    // we need a minimal Nebula3 runtime to work
+    // we need a minimal Nebula runtime to work
     n_printf("ListenerThread started!\n");
 
     // create a server socket

@@ -6,7 +6,7 @@
     OGL4 implementation of StreamTextureLoader.
 
     (C) 2007 Radon Labs GmbH
-	(C) 2013-2016 Individual contributors, see AUTHORS file
+	(C) 2013-2018 Individual contributors, see AUTHORS file
 */    
 #include "resources/streamresourceloader.h"
 
@@ -17,7 +17,7 @@ class OGL4StreamTextureLoader : public Resources::StreamResourceLoader
 {
     __DeclareClass(OGL4StreamTextureLoader);
 private:
-    /// setup the texture from a Nebula3 stream
+    /// setup the texture from a Nebula stream
     virtual bool SetupResourceFromStream(const Ptr<IO::Stream>& stream);
 };
 

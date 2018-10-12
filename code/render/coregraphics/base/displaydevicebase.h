@@ -6,10 +6,10 @@
     A DisplayDevice object represents the display where the RenderDevice
     presents the rendered frame. Use the display device object to 
     get information about available adapters and display modes, and
-    to set the preferred display mode of a Nebula3 application.
+    to set the preferred display mode of a Nebula application.
     
     (C) 2006 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/refcounted.h"
 #include "core/singleton.h"

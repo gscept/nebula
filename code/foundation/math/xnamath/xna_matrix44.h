@@ -6,7 +6,7 @@
     A matrix44 class on top of Xbox360 math functions.
     
     (C) 2007 Radon Labs GmbH
-    (C) 2013-2014 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 #include "math/scalar.h"
@@ -24,7 +24,7 @@ class plane;
 // this is a reference so far
 typedef const matrix44& __Matrix44Arg;
 
-NEBULA3_ALIGN16
+NEBULA_ALIGN16
 class matrix44
 {
 public:
@@ -173,7 +173,7 @@ public:
     /// return the transpose of a matrix
     static matrix44 transpose(const matrix44& m);
     /// transform 4d vector by matrix44, faster inline version than float4::transform
-    static float4 transform(const float4 &v, const matrix44 &m);
+    static float4 transform(const float4& v, const matrix44& m);
     /// return a quaternion from rotational part of the 4x4 matrix
     static quaternion rotationmatrix(const matrix44& m);
     /// transform a plane with a matrix
@@ -862,7 +862,7 @@ matrix44::transpose(const matrix44& m)
 */
 __forceinline
 float4
-matrix44::transform(const float4 &v, const matrix44 &m)
+matrix44::transform(const float4& v, const matrix44& m)
 {
     return DirectX::XMVector4Transform(v.vec, m.mx);
 }

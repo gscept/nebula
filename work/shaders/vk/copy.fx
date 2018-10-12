@@ -12,7 +12,7 @@ sampler2D CopyBuffer;
 samplerstate CopySampler
 {
 	Samplers = { CopyBuffer };
-	Filter = Point;
+	Filter = Linear;
 };
 
 

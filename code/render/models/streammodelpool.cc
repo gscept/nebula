@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 // streammodelpool.cc
-// (C) 2017 Individual contributors, see AUTHORS file
+// (C)2017-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "streammodelpool.h"
@@ -70,6 +70,7 @@ StreamModelPool::CreateModelInstance(const ModelId id)
 
 	// get all template nodes
 	Util::Array<Models::ModelNode::Instance*>& nodeInstances = this->modelInstanceAllocator.Get<0>(mnid);
+	Util::Array<Models::NodeType>& nodeTypes = this->modelInstanceAllocator.Get<1>(mnid);
 	Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& alloc = this->modelAllocator.Get<6>(id.allocId);
 
 	// allocate memory
@@ -82,7 +83,7 @@ StreamModelPool::CreateModelInstance(const ModelId id)
 
 		// root node(s)
 		if (node->parent == nullptr)
-			this->CreateModelInstanceRecursive(node, nullptr, mem, nodeInstances);
+			this->CreateModelInstanceRecursive(node, nullptr, mem, nodeInstances, nodeTypes);
 	}
 
 	return miid;
@@ -126,7 +127,7 @@ StreamModelPool::GetModelBoundingBox(const ModelId id)
 const Math::bbox&
 StreamModelPool::GetModelInstanceBoundingBox(const ModelInstanceId id) const
 {
-	return this->modelInstanceAllocator.Get<2>(id.instance);
+	return this->modelInstanceAllocator.Get<3>(id.instance);
 }
 
 //------------------------------------------------------------------------------
@@ -135,7 +136,7 @@ StreamModelPool::GetModelInstanceBoundingBox(const ModelInstanceId id) const
 Math::bbox&
 StreamModelPool::GetModelInstanceBoundingBox(const ModelInstanceId id)
 {
-	return this->modelInstanceAllocator.Get<2>(id.instance);
+	return this->modelInstanceAllocator.Get<3>(id.instance);
 }
 
 //------------------------------------------------------------------------------
@@ -143,15 +144,16 @@ StreamModelPool::GetModelInstanceBoundingBox(const ModelInstanceId id)
 	Create model instance breadth first
 */
 void
-StreamModelPool::CreateModelInstanceRecursive(Models::ModelNode* node, Models::ModelNode::Instance* parentInstance, byte* memory, Util::Array<Models::ModelNode::Instance*>& instances)
+StreamModelPool::CreateModelInstanceRecursive(Models::ModelNode* node, Models::ModelNode::Instance* parentInstance, byte* memory, Util::Array<Models::ModelNode::Instance*>& instances, Util::Array<Models::NodeType>& types)
 {
 	Models::ModelNode::Instance* inst = node->CreateInstance(memory, parentInstance);
 	instances.Append(inst);
+	types.Append(node->type);
 
 	// continue recursion
 	IndexT i;
 	for (i = 0; i < node->children.Size(); i++)
-		CreateModelInstanceRecursive(node->children[i], inst, memory, instances);
+		CreateModelInstanceRecursive(node->children[i], inst, memory, instances, types);
 }
 
 //------------------------------------------------------------------------------
@@ -227,6 +229,7 @@ StreamModelPool::LoadFromStream(const Resources::ResourceId id, const Util::Stri
 				node->boundingBox = Math::bbox();
 				node->model = id;
 				node->name = name;
+				node->tag = tag;
 				instanceSize += node->GetInstanceSize();
 				if (!this->nodeStack.IsEmpty())
 				{

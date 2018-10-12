@@ -52,7 +52,7 @@ UserProfile::GetProfileRootDirectory()
 
 //------------------------------------------------------------------------------
 /**
-    Returns the path to the user's profile directory using the Nebula3
+    Returns the path to the user's profile directory using the Nebula
     filesystem path conventions.
 */
 Util::String
@@ -78,7 +78,7 @@ UserProfile::GetDatabasePath() const
 //------------------------------------------------------------------------------
 /**
     Returns the path to the user's savegame directory (inside the profile
-    directory) using the Nebula3 filesystem path conventions.
+    directory) using the Nebula filesystem path conventions.
 */
 Util::String
 UserProfile::GetSaveGameDirectory() const

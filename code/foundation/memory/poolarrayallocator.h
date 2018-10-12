@@ -10,7 +10,7 @@
     one conventional without providing the size.
     
     (C) 2009 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "memory/memorypool.h"
 
@@ -39,7 +39,7 @@ public:
     /// access to memory pool at pool index (for debugging)
     const MemoryPool& GetMemoryPool(IndexT index) const;
 
-    #if NEBULA3_MEMORY_STATS
+    #if NEBULA_MEMORY_STATS
     /// dump number of memory allocations (if > 0)
     void Dump();
     #endif

@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 // frameglobalstate.cc
-// (C) 2016 Individual contributors, see AUTHORS file
+// (C) 2016-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "frameglobalstate.h"
@@ -32,8 +32,6 @@ FrameOp::Compiled*
 FrameGlobalState::AllocCompiled(Memory::ChunkAllocator<BIG_CHUNK>& allocator)
 {
 	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
-	ret->state = this->state;
-	ret->constants = this->constants;
 	return ret;
 }
 
@@ -43,8 +41,6 @@ FrameGlobalState::AllocCompiled(Memory::ChunkAllocator<BIG_CHUNK>& allocator)
 void
 FrameGlobalState::CompiledImpl::Run(const IndexT frameIndex)
 {
-	// commit
-	CoreGraphics::SetShaderState(this->state);
 }
 
 } // namespace Frame2

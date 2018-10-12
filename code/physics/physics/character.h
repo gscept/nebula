@@ -3,7 +3,7 @@
 /**
 	Physics::Character
 
-	(C) 2013-2016 Individual contributors, see AUTHORS file
+	(C) 2013-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #if (__USE_BULLET__)

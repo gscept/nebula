@@ -6,7 +6,7 @@
 	Initialize a CoreAnimation::AnimResource from the content of a stream.
 	
 	(C) 2008 Radon Labs GmbH
-	(C) 2013-2016 Individual contributors, see AUTHORS file
+	(C) 2013-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 

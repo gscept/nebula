@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 //  application.cc
 //  (C) 2006 Radon Labs GmbH
-//  (C) 2013-2016 Individual contributors, see AUTHORS file
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "app/application.h"
@@ -16,7 +16,7 @@ __ImplementSingleton(App::Application);
 */
 Application::Application() :
     companyName("gscept"),
-    appName("NebulaT Application"),
+    appName("Nebula Application"),
     appID("RLTITLEID"), // the format of application/title id is dependend on used platform
     appVersion("1.00"),
     isOpen(false),
@@ -67,7 +67,7 @@ Application::Run()
 //------------------------------------------------------------------------------
 /**
     This method must be called right before the main() function's end.
-    It will properly cleanup the Nebula3 runtime, its static objects,
+    It will properly cleanup the Nebula runtime, its static objects,
     private heaps and finally produce a refcount leak and mem leak report
     (debug builds only).
 */

@@ -6,7 +6,7 @@
     Implements a fixed size one-dimensional array.
     
     (C) 2006 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 #include "util/array.h"
@@ -29,6 +29,8 @@ public:
     FixedArray(SizeT s, const TYPE& initialValue);
     /// copy constructor
     FixedArray(const FixedArray<TYPE>& rhs);
+	/// construct an empty fixed array
+	FixedArray(std::nullptr_t);
     /// destructor
     ~FixedArray();
     /// assignment operator
@@ -112,7 +114,7 @@ FixedArray<TYPE>::Delete()
 template<class TYPE> void
 FixedArray<TYPE>::Alloc(SizeT s)
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(0 == this->elements) 
     #endif
     if (s > 0)
@@ -178,6 +180,16 @@ FixedArray<TYPE>::FixedArray(const FixedArray<TYPE>& rhs) :
 /**
 */
 template<class TYPE>
+FixedArray<TYPE>::FixedArray(std::nullptr_t) :
+	size(0),
+	elements(0)
+{
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
 FixedArray<TYPE>::~FixedArray()
 {
     this->Delete();
@@ -199,7 +211,7 @@ FixedArray<TYPE>::operator=(const FixedArray<TYPE>& rhs)
 template<class TYPE> TYPE&
 FixedArray<TYPE>::operator[](IndexT index) const
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements && (index < this->size));
     #endif
     return this->elements[index];
@@ -217,7 +229,7 @@ FixedArray<TYPE>::operator==(const FixedArray<TYPE>& rhs) const
     }
     else
     {
-        #if NEBULA3_BOUNDSCHECKS
+        #if NEBULA_BOUNDSCHECKS
         n_assert(this->elements && rhs.elements);
         #endif
         IndexT i;
@@ -326,7 +338,7 @@ FixedArray<TYPE>::Fill(const TYPE& val)
 template<class TYPE> void
 FixedArray<TYPE>::Fill(IndexT first, SizeT num, const TYPE& val)
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert((first + num) < this->size);
     n_assert(0 != this->elements);
     #endif

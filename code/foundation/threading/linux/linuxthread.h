@@ -6,7 +6,7 @@
     Linux implementation of Threading::Thread. Uses the pthread API.
 
     (C) 2010 Radon Labs GmbH
-    (C) 2013 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/refcounted.h"
 #include "threading/threadid.h"

@@ -16,7 +16,7 @@
 	probably more efficient to bind all possible combinations of render targets in the pass
 	then have a subpass select which ones will be used.
 	
-	(C) 2016 Individual contributors, see AUTHORS file
+	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"

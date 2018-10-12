@@ -5,7 +5,7 @@
     
     Setup a physics model object from a stream. 
                     
-    (C) 2012-2016 Individual contributors, see AUTHORS file
+    (C) 2012-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "resources/streamresourceloader.h"

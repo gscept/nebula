@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //  safefilestream.cc
-//  (C) 2016 Individual contributors, see AUTHORS file
+//  (C) 2016-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "io/safefilestream.h"

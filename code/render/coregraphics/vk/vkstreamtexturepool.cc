@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 // vkstreamtextureloader.cc
-// (C) 2016 Individual contributors, see AUTHORS file
+// (C) 2016-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "vkstreamtexturepool.h"
@@ -276,6 +276,11 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 	runtimeInfo.bind = VkShaderServer::Instance()->RegisterTexture(TextureId(res), runtimeInfo.type);
 
 	stream->Unmap();
+
+#if NEBULA_GRAPHICS_DEBUG
+	ObjectSetName((TextureId)res, stream->GetURI().LocalPath().AsCharPtr());
+#endif
+
 	return ResourcePool::Success;
 }
 

@@ -4,7 +4,7 @@
 	@class PhysiX::PhysXHinge
 	
 
-	(C) 2016 Individual contributors, see AUTHORS file
+	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
 #include "core/refcounted.h"
 #include "core/ptr.h"

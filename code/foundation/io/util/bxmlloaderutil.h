@@ -9,10 +9,10 @@
     like XmlReader.
 
     Uses raw char pointers so that the class can both be used
-    with Nebula2 and Nebula3.
+    with Nebula2 and Nebula.
     
     (C) 2009 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 #include "io/util/bxmlfilestructs.h"

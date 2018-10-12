@@ -3,7 +3,7 @@
 /**
     @class Util::String
 
-    Nebula3's universal string class. An empty string object is always 32
+    Nebula's universal string class. An empty string object is always 32
     bytes big. The string class tries to avoid costly heap allocations
     with the following tactics:
 
@@ -17,11 +17,11 @@
     be faster then going through the process heap.
 
     Besides the usual string manipulation methods, the String class also
-    offers methods to convert basic Nebula3 datatypes from and to string,
+    offers methods to convert basic Nebula datatypes from and to string,
     and a group of methods which manipulate filename strings.
 
     (C) 2006 RadonLabs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 #include "core/sysfunc.h"
@@ -393,7 +393,7 @@ String::operator new(size_t size)
     n_assert(size == sizeof(String));
     #endif
 
-    #if NEBULA3_OBJECTS_USE_MEMORYPOOL
+    #if NEBULA_OBJECTS_USE_MEMORYPOOL
         return Memory::ObjectPoolAllocator->Alloc(size);
     #else
         return Memory::Alloc(Memory::ObjectHeap, size);
@@ -406,7 +406,7 @@ String::operator new(size_t size)
 __forceinline void
 String::operator delete(void* ptr)
 {
-    #if NEBULA3_OBJECTS_USE_MEMORYPOOL
+    #if NEBULA_OBJECTS_USE_MEMORYPOOL
         return Memory::ObjectPoolAllocator->Free(ptr, sizeof(String));
     #else
         return Memory::Free(Memory::ObjectHeap, ptr);

@@ -3,7 +3,7 @@
 /**
 	@class Bullet::BulletSlider
 
-	(C) 2012-2016 Individual contributors, see AUTHORS file
+	(C) 2012-2018 Individual contributors, see AUTHORS file
 */
 #include "physics/joints/baseslider.h"
 #include "physics/base/basescene.h"

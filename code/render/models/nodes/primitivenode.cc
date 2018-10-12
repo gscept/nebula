@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 // primitivenode.cc
-// (C) 2017 Individual contributors, see AUTHORS file
+// (C)2017-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "primitivenode.h"
@@ -18,7 +18,7 @@ namespace Models
 PrimitiveNode::PrimitiveNode() :
 	primitiveGroupIndex(InvalidIndex)
 {
-	// empty
+	this->type = PrimitiveNodeType;
 }
 
 //------------------------------------------------------------------------------
@@ -66,6 +66,7 @@ PrimitiveNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, con
 void
 PrimitiveNode::ApplyNodeState()
 {
+	ShaderStateNode::ApplyNodeState();
 	CoreGraphics::MeshBind(this->res, this->primitiveGroupIndex);
 }
 

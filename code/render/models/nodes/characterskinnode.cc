@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //  charactermaterialskinnode.cc
-//  (C) 2011-2013 Individual contributors, see AUTHORS file
+//  (C) 2011-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "characterskinnode.h"
@@ -21,6 +21,7 @@ using namespace Resources;
 CharacterSkinNode::CharacterSkinNode()
 {
     this->skinnedShaderFeatureBits = ShaderServer::Instance()->FeatureStringToMask("Skinned");
+	this->type = CharacterSkinNodeType;
 }
 
 //------------------------------------------------------------------------------

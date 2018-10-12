@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //  materialpool.cc
-//  (C) 2017 Individual contributors, see AUTHORS file
+//  (C)2017-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "materialpool.h"
@@ -24,14 +24,14 @@ MaterialPool::LoadFromStream(const Resources::ResourceId id, const Util::StringA
 	if (reader->Open())
 	{
 		// make sure it's a valid frame shader file
-		if (!reader->HasNode("/NebulaT/Surface"))
+		if (!reader->HasNode("/Nebula/Surface"))
 		{
 			n_error("StreamSurfaceMaterialLoader: '%s' is not a valid surface!", stream->GetURI().AsString().AsCharPtr());
 			return Failed;
 		}
 
 		// send to first node
-		reader->SetToNode("/NebulaT/Surface");
+		reader->SetToNode("/Nebula/Surface");
 
 		this->EnterGet();
 		MaterialRuntime& info = this->Get<0>(id.allocId);
@@ -42,7 +42,7 @@ MaterialPool::LoadFromStream(const Resources::ResourceId id, const Util::StringA
 		MaterialType* type = server->materialTypesByName[materialType];
 
 		// add to internal table
-		MaterialId mid = type->CreateInstance();
+		MaterialInstanceId mid = type->CreateInstance();
 		info.id = mid;
 		info.type = type;
 
@@ -117,7 +117,7 @@ void
 MaterialPool::Unload(const Resources::ResourceId id)
 {
 	const MaterialRuntime& runtime = this->Get<0>(id.allocId);
-	const MaterialId mid = runtime.id;
+	const MaterialInstanceId mid = runtime.id;
 	MaterialType* type = runtime.type;
 	type->DestroyInstance(mid);
 }

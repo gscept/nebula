@@ -6,7 +6,7 @@
 	This type of texture is only to be used for shaders which do image read/writes, 
 	and	not for rendering objects or attaching them to framebuffers.
 	
-	(C) 2016 Individual contributors, see AUTHORS file
+	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "coregraphics/base/shaderreadwritetexturebase.h"

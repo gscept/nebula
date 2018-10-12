@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 //  sysfunc.cc
 //  (C) 2006 Radon Labs GmbH
-//  (C) 2013-2016 Individual contributors, see AUTHORS file
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "core/win32/win32sysfunc.h"
@@ -27,7 +27,7 @@ const Core::ExitHandler* SysFunc::ExitHandlers = 0;
 System::SystemInfo SysFunc::systemInfo;
 
 Util::GlobalStringAtomTable* globalStringAtomTable = 0;
-#if NEBULA3_ENABLE_THREADLOCAL_STRINGATOM_TABLES
+#if NEBULA_ENABLE_THREADLOCAL_STRINGATOM_TABLES
     Util::LocalStringAtomTable* localStringAtomTable = 0;
 #endif
 
@@ -56,7 +56,7 @@ SysFunc::Setup()
         #endif   
 
         globalStringAtomTable = n_new(Util::GlobalStringAtomTable);
-        #if NEBULA3_ENABLE_THREADLOCAL_STRINGATOM_TABLES
+        #if NEBULA_ENABLE_THREADLOCAL_STRINGATOM_TABLES
             localStringAtomTable = n_new(Util::LocalStringAtomTable);
         #endif    
 
@@ -74,7 +74,7 @@ SysFunc::Setup()
 /**
     This method is called by Application::Exit(), or otherwise must be
     called right before the end of the programs main() function. The method
-    will properly shutdown the Nebula3 runtime environment, and report 
+    will properly shutdown the Nebula runtime environment, and report 
     refcounting and memory leaks (debug builds only). This method will not
     return.
 */
@@ -83,7 +83,7 @@ SysFunc::Exit(int exitCode)
 {
     // delete string atom tables
     n_delete(globalStringAtomTable);
-    #if NEBULA3_ENABLE_THREADLOCAL_STRINGATOM_TABLES
+    #if NEBULA_ENABLE_THREADLOCAL_STRINGATOM_TABLES
         n_delete(localStringAtomTable);
     #endif
 
@@ -111,13 +111,13 @@ SysFunc::Exit(int exitCode)
     Core::Factory::Destroy();
 
     // delete the memory pools
-    #if NEBULA3_OBJECTS_USE_MEMORYPOOL        
+    #if NEBULA_OBJECTS_USE_MEMORYPOOL        
     n_delete(Memory::ObjectPoolAllocator);
     Memory::ObjectPoolAllocator = 0;
     #endif
 
     // report mem leaks
-    #if NEBULA3_MEMORY_ADVANCED_DEBUGGING
+    #if NEBULA_MEMORY_ADVANCED_DEBUGGING
     Memory::DumpMemoryLeaks();
     #endif   
 
@@ -136,7 +136,7 @@ SysFunc::Error(const char* error)
     OutputDebugString(error);	
     #endif
     /*
-    HWND hwnd = FindWindow(NEBULA3_WINDOW_CLASS, NULL);
+    HWND hwnd = FindWindow(NEBULA_WINDOW_CLASS, NULL);
     if (hwnd)
     {
         ShowWindow(hwnd, SW_MINIMIZE);
@@ -151,13 +151,26 @@ SysFunc::Error(const char* error)
 		format.Append("\n");
 	}
 	format.Format("%s\nCall Stack:\n%s", error, format.AsCharPtr());
+
     if(_isatty(_fileno(stdout)))
     {
-        ::MessageBox(NULL, format.AsCharPtr(), "NEBULA T SYSTEM ERROR", MB_OK | MB_APPLMODAL | MB_SETFOREGROUND | MB_TOPMOST | MB_ICONERROR);
-#if !__MAYA__
-        Debug::MiniDump::WriteMiniDump();
+#ifdef _DEBUG
+        if (IsDebuggerPresent())
+        {
+            OutputDebugString(format.AsCharPtr());
+            fprintf(stderr, "%s\n", format.AsCharPtr());
+            n_break();
+            exit(1);
+        }
+        else
 #endif
-        abort();
+        {
+            ::MessageBox(NULL, format.AsCharPtr(), "NEBULA SYSTEM ERROR", MB_OK | MB_APPLMODAL | MB_SETFOREGROUND | MB_TOPMOST | MB_ICONERROR);
+#if !__MAYA__
+            Debug::MiniDump::WriteMiniDump();
+#endif
+            abort();
+        }
     }
     else
     {
@@ -185,12 +198,12 @@ SysFunc::MessageBox(const char* msg)
     #ifdef _DEBUG
     OutputDebugString(msg);
     #endif
-    HWND hwnd = FindWindow(NEBULA3_WINDOW_CLASS, NULL);
+    HWND hwnd = FindWindow(NEBULA_WINDOW_CLASS, NULL);
     if (hwnd)
     {
         ShowWindow(hwnd, SW_MINIMIZE);
     }
-    ::MessageBox(NULL, msg, "NEBULA TRIFID MESSAGE", MB_OK|MB_APPLMODAL|MB_SETFOREGROUND|MB_TOPMOST|MB_ICONINFORMATION);
+    ::MessageBox(NULL, msg, "NEBULA MESSAGE", MB_OK|MB_APPLMODAL|MB_SETFOREGROUND|MB_TOPMOST|MB_ICONINFORMATION);
 }
 
 //------------------------------------------------------------------------------

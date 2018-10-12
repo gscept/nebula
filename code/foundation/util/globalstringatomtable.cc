@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 //  globalstringatomtable.cc
 //  (C) 2009 Radon Labs GmbH
-//  (C) 2013-2016 Individual contributors, see AUTHORS file
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "util/globalstringatomtable.h"
@@ -18,7 +18,7 @@ GlobalStringAtomTable::GlobalStringAtomTable()
     __ConstructInterfaceSingleton;
     
     // setup the global string buffer
-    this->stringBuffer.Setup(NEBULA3_GLOBAL_STRINGBUFFER_CHUNKSIZE);
+    this->stringBuffer.Setup(NEBULA_GLOBAL_STRINGBUFFER_CHUNKSIZE);
 }
 
 //------------------------------------------------------------------------------
@@ -76,11 +76,11 @@ GlobalStringAtomTable::GetDebugInfo() const
     this->critSect.Enter();
     DebugInfo debugInfo;
     debugInfo.strings.Reserve(this->table.Size());
-    debugInfo.chunkSize = NEBULA3_GLOBAL_STRINGBUFFER_CHUNKSIZE;
+    debugInfo.chunkSize = NEBULA_GLOBAL_STRINGBUFFER_CHUNKSIZE;
     debugInfo.numChunks = this->stringBuffer.GetNumChunks();
     debugInfo.allocSize = debugInfo.chunkSize * debugInfo.numChunks;
     debugInfo.usedSize  = 0;
-    debugInfo.growthEnabled = NEBULA3_ENABLE_GLOBAL_STRINGBUFFER_GROWTH;
+    debugInfo.growthEnabled = NEBULA_ENABLE_GLOBAL_STRINGBUFFER_GROWTH;
 
     IndexT i;
     for (i = 0; i < table.Size(); i++)

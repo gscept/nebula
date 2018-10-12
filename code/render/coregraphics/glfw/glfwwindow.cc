@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 // glfwwindow.cc
-// (C) 2016 Individual contributors, see AUTHORS file
+// (C) 2016-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "coregraphics/config.h"
@@ -345,7 +345,7 @@ const WindowId
 InternalSetupFunction(const WindowCreateInfo& info, const Util::Blob& windowData, bool embed)
 {
 #if __OGL4__
-#if NEBULA3_OPENGL4_DEBUG
+#if NEBULA_OPENGL4_DEBUG
 	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
 	glfwSetErrorCallback(NebulaGLFWErrorCallback);
 	n_printf("Creating OpenGL debug context\n");

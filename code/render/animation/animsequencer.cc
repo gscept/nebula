@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 //  animsequencer.cc
 //  (C) 2008 Radon Labs GmbH
-//  (C) 2013-2016 Individual contributors, see AUTHORS file
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "animation/animsequencer.h"
@@ -55,7 +55,7 @@ AnimSequencer::Setup(const Ptr<AnimResource>& animRsrc)
     this->dstSampleBuffer = AnimSampleBuffer::Create();
     this->dstSampleBuffer->Setup(animRsrc);
 
-    #if NEBULA3_ANIMATIONSYSTEM_VERBOSELOG
+    #if NEBULA_ANIMATIONSYSTEM_VERBOSELOG
     n_dbgout("AnimSequencer::Setup(%d)\n", animRsrc->GetResourceId().Value());
     #endif
 }
@@ -69,7 +69,7 @@ AnimSequencer::Discard()
 {
     n_assert(this->IsValid());
 
-    #if NEBULA3_ANIMATIONSYSTEM_VERBOSELOG
+    #if NEBULA_ANIMATIONSYSTEM_VERBOSELOG
     n_dbgout("AnimSequencer::Discard(%d)\n", this->animResource->GetResourceId().Value());
     #endif
 
@@ -129,7 +129,7 @@ AnimSequencer::EnqueueAnimJobForStopping(const Ptr<AnimJob>& animJob)
     {
         this->stoppedAnimJobs.Append(animJob);
 
-        #if NEBULA3_ANIMATIONSYSTEM_VERBOSELOG
+        #if NEBULA_ANIMATIONSYSTEM_VERBOSELOG
         n_dbgout("AnimSequencer::EnqueueAnimJobForStopping(animRsrc='%s' animJob='%s')\n", 
             this->animResource->GetResourceId().Value(),
             animJob->GetName().Value());
@@ -150,7 +150,7 @@ AnimSequencer::DiscardAnimJob(Ptr<AnimJob> animJob)
 {
     n_assert(animJob->IsAttachedToSequencer());
 
-    #if NEBULA3_ANIMATIONSYSTEM_VERBOSELOG
+    #if NEBULA_ANIMATIONSYSTEM_VERBOSELOG
     n_dbgout("AnimSequencer::DiscardAnimJob(animRsrc='%s' animJob='%s')\n", 
         this->animResource->GetResourceId().Value(),
         animJob->GetName().Value());
@@ -181,7 +181,7 @@ AnimSequencer::DiscardAnimJob(Ptr<AnimJob> animJob)
 void
 AnimSequencer::StopTrack(IndexT trackIndex, bool allowFadeOut)
 {
-    #if NEBULA3_ANIMATIONSYSTEM_VERBOSELOG
+    #if NEBULA_ANIMATIONSYSTEM_VERBOSELOG
     // n_dbgout("AnimSequencer::StopTrack(trackIndex=%d, allowFadeOut=%s)\n", trackIndex, allowFadeOut ? "true" : "false");
     #endif
 
@@ -212,7 +212,7 @@ AnimSequencer::StopTrack(IndexT trackIndex, bool allowFadeOut)
 void
 AnimSequencer::StopAllTracks(bool allowFadeOut)
 {
-    #if NEBULA3_ANIMATIONSYSTEM_VERBOSELOG
+    #if NEBULA_ANIMATIONSYSTEM_VERBOSELOG
     n_dbgout("AnimSequencer::StopAllTracks(allowFadeOut=%s)\n", allowFadeOut ? "true" : "false");
     #endif
 
@@ -333,7 +333,7 @@ AnimSequencer::InsertEnqueuedAnimJobs(Timing::Tick time)
                     if ((curAnimJob->GetName() == newAnimJobName) && (!curAnimJob->IsStoppingOrExpired(time)))
                     {
                         dropAnimJob = true;
-                        #if NEBULA3_ANIMATIONSYSTEM_VERBOSELOG
+                        #if NEBULA_ANIMATIONSYSTEM_VERBOSELOG
                         n_dbgout("AnimSequencer::InsertEnqueuedAnimJobs(): dropping new anim job '%s' (reason: IgnoreIfSameClipActive)!\n",
                             newAnimJob->GetName().Value());
                         #endif
@@ -351,7 +351,7 @@ AnimSequencer::InsertEnqueuedAnimJobs(Timing::Tick time)
                     if ((curAnimJob->GetExclusiveTag() == newAnimJobExclTag) && (!curAnimJob->IsStoppingOrExpired(time)))
                     {
                         dropAnimJob = true;
-                        #if NEBULA3_ANIMATIONSYSTEM_VERBOSELOG
+                        #if NEBULA_ANIMATIONSYSTEM_VERBOSELOG
                         n_dbgout("AnimSequencer::InsertEnqueuedAnimJobs(): dropping new anim job '%s' (reason: IgnoreIfSameExclTagActive)!\n",
                             newAnimJob->GetName().Value());
                         #endif
@@ -380,7 +380,7 @@ AnimSequencer::InsertEnqueuedAnimJobs(Timing::Tick time)
             this->animJobs.Insert(insertionIndex, newAnimJob);
             newAnimJob->SetBaseTime(baseTime);
 
-            #if NEBULA3_ANIMATIONSYSTEM_VERBOSELOG
+            #if NEBULA_ANIMATIONSYSTEM_VERBOSELOG
             n_dbgout("AnimSequencer::InsertEnqueuedAnimJobs(): inserting new anim job '%s' at index %d (animRes=%s)\n", 
                 newAnimJob->GetName().Value(), insertionIndex, this->animResource->GetResourceId().Value());
             #endif
@@ -419,14 +419,14 @@ AnimSequencer::UpdateStoppedAnimJobs(Timing::Tick time)
         if (animJob->IsPending(time))
         {
             // if the anim job is expired or hasn't started yet, discard it right away
-            #if NEBULA3_ANIMATIONSYSTEM_VERBOSELOG
+            #if NEBULA_ANIMATIONSYSTEM_VERBOSELOG
             n_dbgout("AnimSequencer::UpdateStoppedAnimJobs(): discard anim job because it is PENDING (%s)\n", animJob->GetName().Value());
             #endif
             this->DiscardAnimJob(animJob);
         }
         else if (animJob->IsExpired(time))
         {
-            #if NEBULA3_ANIMATIONSYSTEM_VERBOSELOG
+            #if NEBULA_ANIMATIONSYSTEM_VERBOSELOG
             n_dbgout("AnimSequencer::UpdateStoppedAnimJobs(): discard anim job because it is EXPIRED (%s)\n", animJob->GetName().Value());
             #endif
             this->DiscardAnimJob(animJob);
@@ -434,14 +434,14 @@ AnimSequencer::UpdateStoppedAnimJobs(Timing::Tick time)
         else if (animJob->IsStoppingOrExpired(time))
         {
             // if the anim job is already stopping (fadeout-phase), don't do anything
-            #if NEBULA3_ANIMATIONSYSTEM_VERBOSELOG
+            #if NEBULA_ANIMATIONSYSTEM_VERBOSELOG
             n_dbgout("AnimSequencer::UpdateStoppedAnimJobs(): anim job already STOPPING (%s)\n", animJob->GetName().Value());
             #endif
         }
         else
         {
             // stop the animation job (this will just compute a new duration)
-            #if NEBULA3_ANIMATIONSYSTEM_VERBOSELOG
+            #if NEBULA_ANIMATIONSYSTEM_VERBOSELOG
             n_dbgout("AnimSequencer::UpdateStoppedAnimJobs(): actually stop anim job '%s'\n", animJob->GetName().Value());
             #endif
             animJob->Stop(time);
@@ -466,7 +466,7 @@ AnimSequencer::RemoveExpiredAnimJobs(Timing::Tick time)
     {
         if (this->animJobs[i]->IsExpired(time))
         {
-            #if NEBULA3_ANIMATIONSYSTEM_VERBOSELOG
+            #if NEBULA_ANIMATIONSYSTEM_VERBOSELOG
             n_dbgout("AnimSequencer::RemoveExpiredAnimJobs(): discard anim job because it is expired (%s)\n", this->animJobs[i]->IsPending(time) ? "pending" : "expired");
             #endif
             this->DiscardAnimJob(this->animJobs[i]);
@@ -507,7 +507,7 @@ AnimSequencer::UpdateTime(Timing::Tick curTime)
     }
 
     // dump anim job info
-    #if NEBULA3_ANIMATIONSYSTEM_FRAMEDUMP
+    #if NEBULA_ANIMATIONSYSTEM_FRAMEDUMP
     this->DumpFrameDebugInfo(time);
     #endif
 }
@@ -730,7 +730,7 @@ AnimSequencer::FindDominatingAnimJobIndex(Timing::Tick startTime, Timing::Tick e
 /**
     Dump debug info about this frame's state.
 */
-#if NEBULA3_ANIMATIONSYSTEM_FRAMEDUMP
+#if NEBULA_ANIMATIONSYSTEM_FRAMEDUMP
 void
 AnimSequencer::DumpFrameDebugInfo(Timing::Tick time)
 {
