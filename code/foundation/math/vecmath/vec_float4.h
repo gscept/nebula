@@ -5,7 +5,7 @@
 
     VectorMath implementation of float4.
 
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 #include "math/scalar.h"
@@ -27,7 +27,7 @@ typedef const float4& __Float4Arg;
 //#endif
 
 
-typedef NEBULA3_ALIGN16 struct mm128_vec {
+typedef NEBULA_ALIGN16 struct mm128_vec {
   union {
       float f[4];
       unsigned int u[4];
@@ -36,7 +36,7 @@ typedef NEBULA3_ALIGN16 struct mm128_vec {
   inline operator __m128() const { return vec;}
 } mm128_vec;
 
- typedef NEBULA3_ALIGN16 struct mm128_ivec {
+ typedef NEBULA_ALIGN16 struct mm128_ivec {
      union {
          int u[4];
          mm128_vec vec;
@@ -44,7 +44,7 @@ typedef NEBULA3_ALIGN16 struct mm128_vec {
      inline operator __m128() const { return vec.vec;}
  } mm128_ivec;
 
- typedef NEBULA3_ALIGN16 struct mm128_uivec {
+ typedef NEBULA_ALIGN16 struct mm128_uivec {
      union {
          unsigned int u[4];
          mm128_vec vec;
@@ -63,7 +63,7 @@ const mm128_uivec _mask_xyz = { 0xFFFFFFFF ,0xFFFFFFFF ,0xFFFFFFFF,0 };
 
 
 
-class NEBULA3_ALIGN16 float4
+class NEBULA_ALIGN16 float4
 {
 public:
     /// default constructor, NOTE: does NOT setup components!
@@ -1368,7 +1368,7 @@ float4::permute(const float4& v0, const float4& v1, unsigned int i0, unsigned in
 {
 	static mm128_ivec three = {3,3,3,3};
 
-	NEBULA3_ALIGN16 unsigned int elem[4] = { i0, i1, i2, i3 };
+	NEBULA_ALIGN16 unsigned int elem[4] = { i0, i1, i2, i3 };
 	__m128i vControl = _mm_load_si128( reinterpret_cast<const __m128i *>(&elem[0]) );
 
 	__m128i vSelect = _mm_cmpgt_epi32( vControl, (reinterpret_cast<const __m128i *>(&three)[0]));

@@ -5,7 +5,7 @@
   
     Specialized managed resource for physics models
     
-	(C) 2012-2016 Individual contributors, see AUTHORS file
+	(C) 2012-2018 Individual contributors, see AUTHORS file
 */
 #include "resources/managedresource.h"
 #include "physics/model/physicsmodel.h"

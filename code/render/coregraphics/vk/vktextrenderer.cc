@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 // vktextrenderer.cc
-// (C) 2016 Individual contributors, see AUTHORS file
+// (C) 2016-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "vktextrenderer.h"
@@ -31,11 +31,7 @@ __ImplementSingleton(Vulkan::VkTextRenderer);
 //------------------------------------------------------------------------------
 /**
 */
-VkTextRenderer::VkTextRenderer() :
-	shader(NULL),
-	texVar(NULL),
-	modelVar(NULL),
-	vbo(NULL)
+VkTextRenderer::VkTextRenderer()
 {
 	__ConstructSingleton;
 }
@@ -121,12 +117,14 @@ VkTextRenderer::Open()
 
 	// create shader instance
 	const ShaderId shd = ShaderServer::Instance()->GetShader("shd:text.fxb");
-	this->shader = ShaderServer::Instance()->ShaderCreateState("shd:text.fxb", { NEBULAT_BATCH_GROUP }, false);
 	this->program = ShaderGetProgram(shd, ShaderServer::Instance()->FeatureStringToMask("Static"));
-
+	this->textTable = ShaderCreateResourceTable(shd, NEBULA_BATCH_GROUP);
 	// get variable
-	this->texVar = ShaderStateGetConstant(this->shader, "Texture");
-	this->modelVar = ShaderStateGetConstant(this->shader, "TextProjectionModel");
+
+	this->texVar = ShaderGetResourceSlot(shd, "Texture");
+	ResourceTableSetTexture(this->textTable, { this->glyphTexture, this->texVar, 0, CoreGraphics::SamplerId::Invalid(), false});
+	ResourceTableCommitChanges(this->textTable);
+	this->modelVar = ShaderGetConstantBinding(shd, "TextProjectionModel");
 
 	n_delete_array(bitmap);
 }
@@ -143,7 +141,6 @@ VkTextRenderer::Close()
 	Base::TextRendererBase::Close();
 
 	// discard shader
-	ShaderDestroyState(this->shader);
 	VertexBufferUnmap(this->vbo);
 	this->vertexPtr = nullptr;
 
@@ -170,8 +167,8 @@ VkTextRenderer::DrawTextElements()
 
 	// apply shader and apply state
 	CoreGraphics::SetShaderProgram(this->program);
-	ShaderResourceSetTexture(this->texVar, this->shader, this->glyphTexture);
-	ShaderConstantSet(this->modelVar, this->shader, proj);
+	CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->modelVar.offset, sizeof(proj), (byte*)&proj);
+	CoreGraphics::SetResourceTable(this->textTable, NEBULA_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
 
 	uint screenWidth, screenHeight;
 	screenWidth = displayMode.GetWidth();
@@ -316,9 +313,6 @@ VkTextRenderer::Draw(TextElementVertex* buffer, SizeT numChars)
 	screenHeight = displayMode.GetHeight();
 	//dev->SetViewport(Math::rectangle<int>(0, 0, screenWidth, screenHeight), 0);
 	//dev->SetScissorRect(Math::rectangle<int>(0, 0, screenWidth, screenHeight), 0);
-
-	// commit changes
-	CoreGraphics::SetShaderState(this->shader);
 
 	// setup device
 	CoreGraphics::Draw();

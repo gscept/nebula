@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //  ogl4shadowserver.cc
-//  (C) 2016 Individual contributors, see AUTHORS file
+//  (C) 2016-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "lighting/ogl4/ogl4shadowserver.h"
@@ -120,9 +120,9 @@ OGL4ShadowServer::Open()
 	this->spotLightPass->AddBatch(this->spotLightBatch);
 
 	// create SAT shaders
-	this->satXShader = ShaderServer::Instance()->GetShader("shd:box3taphori")->CreateState({ NEBULAT_DEFAULT_GROUP });
+	this->satXShader = ShaderServer::Instance()->GetShader("shd:box3taphori")->CreateState({ NEBULA_DEFAULT_GROUP });
 	this->satXShader->GetVariableByName("SourceBuffer")->SetTexture(this->spotLightShadowMap1->GetResolveTexture());
-	this->satYShader = ShaderServer::Instance()->GetShader("shd:box3tapvert")->CreateState({ NEBULAT_DEFAULT_GROUP });
+	this->satYShader = ShaderServer::Instance()->GetShader("shd:box3tapvert")->CreateState({ NEBULA_DEFAULT_GROUP });
 	this->satYShader->GetVariableByName("SourceBuffer")->SetTexture(this->spotLightShadowMap2->GetResolveTexture());
 
 	// setup sat passes
@@ -138,7 +138,7 @@ OGL4ShadowServer::Open()
 	this->spotLightHoriPass->SetShaderState(this->satYShader);
 	this->spotLightHoriPass->Setup();
 
-#if NEBULA3_ENABLE_PROFILING
+#if NEBULA_ENABLE_PROFILING
 	{
 		// add debug timer for batch
 		Util::String name;
@@ -189,18 +189,18 @@ OGL4ShadowServer::Open()
     this->pointLightPass->SetName("PointLightShadowPass");
 	this->pointLightPass->SetClearColor(float4(1000, 1000, 0, 0));
     this->pointLightPass->AddBatch(this->pointLightBatch);
-	this->shadowShader = ShaderServer::Instance()->GetShader("shd:shadow")->CreateState({ NEBULAT_DEFAULT_GROUP });
+	this->shadowShader = ShaderServer::Instance()->GetShader("shd:shadow")->CreateState({ NEBULA_DEFAULT_GROUP });
 	this->pointLightPosVar = this->shadowShader->GetVariableByName("LightCenter");
 
 	// load shaders for point light blur
-	this->pointLightBlur = ShaderServer::Instance()->GetShader("shd:blur_cube_rg32f_cs")->CreateState({ NEBULAT_DEFAULT_GROUP });
+	this->pointLightBlur = ShaderServer::Instance()->GetShader("shd:blur_cube_rg32f_cs")->CreateState({ NEBULA_DEFAULT_GROUP });
 	this->xBlurMask = ShaderServer::Instance()->FeatureStringToMask("Alt0");
 	this->yBlurMask = ShaderServer::Instance()->FeatureStringToMask("Alt1");
 	//this->pointLightBlurReadLinear = this->pointLightBlur->GetVariableByName("ReadImageLinear");
 	//this->pointLightBlurReadPoint = this->pointLightBlur->GetVariableByName("ReadImagePoint");
 	this->pointLightBlurWrite = this->pointLightBlur->GetVariableByName("WriteImage");
 
-#if NEBULA3_ENABLE_PROFILING
+#if NEBULA_ENABLE_PROFILING
     {
         // add debug timer
         Util::String name;
@@ -251,7 +251,7 @@ OGL4ShadowServer::Open()
 	this->globalLightHotPass->AddBatch(this->globalLightShadowBatch);
 
 	// get blur shader
-	this->blurShader = ShaderServer::Instance()->GetShader("shd:csmblur")->CreateState({ NEBULAT_DEFAULT_GROUP });
+	this->blurShader = ShaderServer::Instance()->GetShader("shd:csmblur")->CreateState({ NEBULA_DEFAULT_GROUP });
 
 	// create blur pass
 	this->globalLightBlurPass = FramePostEffect::Create();
@@ -261,7 +261,7 @@ OGL4ShadowServer::Open()
 	this->globalLightBlurPass->Setup();
 	this->blurShader->GetVariableByName("SourceMap")->SetTexture(this->globalLightShadowBuffer->GetResolveTexture());
 
-#if NEBULA3_ENABLE_PROFILING
+#if NEBULA_ENABLE_PROFILING
 	{
         // add debug timer for batch
         Util::String name;
@@ -301,7 +301,7 @@ OGL4ShadowServer::Open()
 	this->csmUtil.SetClampingMethod(CSMUtil::AABB);
 	this->csmUtil.SetFittingMethod(CSMUtil::Scene);
 
-#if NEBULA3_ENABLE_PROFILING
+#if NEBULA_ENABLE_PROFILING
 	this->globalShadow = Debug::DebugTimer::Create();
 	String name("ShadowServer_GlobalShadow");
 	this->globalShadow->Setup(name, "Shadowmapping");

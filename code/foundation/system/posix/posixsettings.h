@@ -6,7 +6,7 @@
     A simple wrapper class to store config files in the users home directory
     Uses Boosts Property_tree library for the time being
         
-    (C) 2013 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 #include "util/string.h"

@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 // modelnode.cc
-// (C) 2017 Individual contributors, see AUTHORS file
+// (C)2017-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "modelnode.h"
@@ -112,7 +112,7 @@ ModelNode::Instance::ApplyNodeInstanceState()
 /**
 */
 void
-ModelNode::Instance::Setup(const Models::ModelNode* node, const Models::ModelNode::Instance* parent)
+ModelNode::Instance::Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent)
 {
 	this->node = node;
 	this->parent = parent;

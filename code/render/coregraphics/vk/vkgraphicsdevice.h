@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 //------------------------------------------------------------------------------
 /**
 	The Vulkan implementation of the graphics device.
@@ -100,5 +100,10 @@ void FlushToThread(const IndexT& index);
 
 /// binds common descriptors
 void BindSharedDescriptorSets();
+
+/// begin command buffer marker (directly on vkcommandbuffer)
+void CmdBufBeginMarker(VkCommandBuffer buf, const Math::float4& color, const char* name);
+/// end command buffer marker (directly on vkcommandbuffer)
+void CmdBufEndMarker(VkCommandBuffer buf);
 
 } // namespace Vulkan

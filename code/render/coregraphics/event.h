@@ -3,7 +3,7 @@
 /**
 	An event is a signal and wait type object which is used for in-queue GPU sync.
 
-	(C) 2017 Individual contributors, see AUTHORS file
+	(C)2017-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "ids/id.h"

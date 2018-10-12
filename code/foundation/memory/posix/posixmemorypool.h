@@ -6,7 +6,7 @@
     FIXME: IMPLEMENT ME!
  
     (C) 2010 Radon Labs GmbH
-    (C) 2013 Individual contributors, see AUTHORS file    
+    (C) 2013-2018 Individual contributors, see AUTHORS file    
 */
 #include "core/types.h"
 
@@ -39,7 +39,7 @@ public:
     /// get pool size
     uint GetPoolSize() const;
     /// get current allocation count
-#if NEBULA3_MEMORY_STATS
+#if NEBULA_MEMORY_STATS
     uint GetAllocCount() const;
 #endif
 };
@@ -47,7 +47,7 @@ public:
 //------------------------------------------------------------------------------
 /**
 */
-#if NEBULA3_MEMORY_STATS
+#if NEBULA_MEMORY_STATS
 inline uint
 PosixMemoryPool::GetAllocCount() const
 {

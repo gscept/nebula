@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 //  lightprepassserver.cc
 //  (C) 2009 Radon Labs GmbH
-//  (C) 2013-2015 Individual contributors, see AUTHORS file
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "lighting/lightprepass/lightprepassserver.h"
@@ -75,37 +75,37 @@ LightPrePassServer::Open()
     this->spotLightMesh = resManager->CreateManagedResource(Mesh::RTTI, ResourceId("sysmsh:system/spotlightshape_s_0.nvx2")).downcast<ManagedMesh>();
 
     Util::String lightTexPath("systex:lighting/lightcones");
-    lightTexPath.Append(NEBULA3_TEXTURE_EXTENSION);
+    lightTexPath.Append(NEBULA_TEXTURE_EXTENSION);
     // setup the shared light project map resource
     this->lightProjMap = ResourceManager::Instance()->CreateManagedResource(Texture::RTTI, ResourceId(lightTexPath)).downcast<ManagedTexture>();
 
 
     // setup shader stuff
-	this->lightShader						 = shdServer->CreateShaderState("shd:lightsources", { NEBULAT_DEFAULT_GROUP });
+	this->lightShader						 = shdServer->CreateShaderState("shd:lightsources", { NEBULA_DEFAULT_GROUP });
 	this->pointLightFeatureBits[NoShadows]   = shdServer->FeatureStringToMask("PointLight");    
 	this->pointLightFeatureBits[CastShadows] = shdServer->FeatureStringToMask("PointLightShadows");    
 	this->spotLightFeatureBits[NoShadows]    = shdServer->FeatureStringToMask("SpotLight"); 
 	this->spotLightFeatureBits[CastShadows]  = shdServer->FeatureStringToMask("SpotLightShadows");
 	this->globalLightFeatureBits             = shdServer->FeatureStringToMask("GlobalLight");
-	this->lightPosRange           = this->lightShader->GetVariableByName(NEBULA3_SEMANTIC_LIGHTPOSRANGE);
-	this->lightColor              = this->lightShader->GetVariableByName(NEBULA3_SEMANTIC_LIGHTCOLOR);
-	this->globalLightDir          = this->lightShader->GetVariableByName(NEBULA3_SEMANTIC_GLOBALLIGHTDIR);
-	this->globalLightColor        = this->lightShader->GetVariableByName(NEBULA3_SEMANTIC_GLOBALLIGHTCOLOR);
-	this->globalBackLightColor    = this->lightShader->GetVariableByName(NEBULA3_SEMANTIC_GLOBALBACKLIGHTCOLOR);
-	this->globalAmbientLightColor = this->lightShader->GetVariableByName(NEBULA3_SEMANTIC_GLOBALAMBIENTLIGHTCOLOR);
-	this->globalBackLightOffset   = this->lightShader->GetVariableByName(NEBULA3_SEMANTIC_GLOBALBACKLIGHTOFFSET);
-	this->lightProjTransform      = this->lightShader->GetVariableByName(NEBULA3_SEMANTIC_LIGHTPROJTRANSFORM);
-	this->shadowProjTransform     = this->lightShader->GetVariableByName(NEBULA3_SEMANTIC_SHADOWPROJTRANSFORM);
-	this->shadowOffsetScaleVar    = this->lightShader->GetVariableByName(NEBULA3_SEMANTIC_SHADOWOFFSETSCALE);
-	this->shadowFadeVar           = this->lightShader->GetVariableByName(NEBULA3_SEMANTIC_SHADOWINTENSITY);
+	this->lightPosRange           = this->lightShader->GetVariableByName(NEBULA_SEMANTIC_LIGHTPOSRANGE);
+	this->lightColor              = this->lightShader->GetVariableByName(NEBULA_SEMANTIC_LIGHTCOLOR);
+	this->globalLightDir          = this->lightShader->GetVariableByName(NEBULA_SEMANTIC_GLOBALLIGHTDIR);
+	this->globalLightColor        = this->lightShader->GetVariableByName(NEBULA_SEMANTIC_GLOBALLIGHTCOLOR);
+	this->globalBackLightColor    = this->lightShader->GetVariableByName(NEBULA_SEMANTIC_GLOBALBACKLIGHTCOLOR);
+	this->globalAmbientLightColor = this->lightShader->GetVariableByName(NEBULA_SEMANTIC_GLOBALAMBIENTLIGHTCOLOR);
+	this->globalBackLightOffset   = this->lightShader->GetVariableByName(NEBULA_SEMANTIC_GLOBALBACKLIGHTOFFSET);
+	this->lightProjTransform      = this->lightShader->GetVariableByName(NEBULA_SEMANTIC_LIGHTPROJTRANSFORM);
+	this->shadowProjTransform     = this->lightShader->GetVariableByName(NEBULA_SEMANTIC_SHADOWPROJTRANSFORM);
+	this->shadowOffsetScaleVar    = this->lightShader->GetVariableByName(NEBULA_SEMANTIC_SHADOWOFFSETSCALE);
+	this->shadowFadeVar           = this->lightShader->GetVariableByName(NEBULA_SEMANTIC_SHADOWINTENSITY);
 
     const Ptr<ShaderState>& sharedShader = shdServer->GetSharedShader();
-	this->lightProjMapVar         = sharedShader->GetVariableByName(NEBULA3_SEMANTIC_LIGHTPROJMAP); 
-	this->normalBufferVar         = sharedShader->GetVariableByName(NEBULA3_SEMANTIC_NORMALBUFFER);
-	this->dsfObjectDepthBufferVar = sharedShader->GetVariableByName(NEBULA3_SEMANTIC_DEPTHBUFFER);
-	this->lightBufferVar          = sharedShader->GetVariableByName(NEBULA3_SEMANTIC_LIGHTBUFFER);
-	this->shadowProjMapVar        = sharedShader->GetVariableByName(NEBULA3_SEMANTIC_SHADOWPROJMAP);
-	this->shadowConstants         = sharedShader->GetVariableByName(NEBULA3_SEMANTIC_SHADOWCONSTANTS);
+	this->lightProjMapVar         = sharedShader->GetVariableByName(NEBULA_SEMANTIC_LIGHTPROJMAP); 
+	this->normalBufferVar         = sharedShader->GetVariableByName(NEBULA_SEMANTIC_NORMALBUFFER);
+	this->dsfObjectDepthBufferVar = sharedShader->GetVariableByName(NEBULA_SEMANTIC_DEPTHBUFFER);
+	this->lightBufferVar          = sharedShader->GetVariableByName(NEBULA_SEMANTIC_LIGHTBUFFER);
+	this->shadowProjMapVar        = sharedShader->GetVariableByName(NEBULA_SEMANTIC_SHADOWPROJMAP);
+	this->shadowConstants         = sharedShader->GetVariableByName(NEBULA_SEMANTIC_SHADOWCONSTANTS);
 
 	// shadowConstants default-values in shader didnt quite work for the ps3, so we commit it here once
 	this->shadowConstants->SetFloat4(float4(100.0f, 100.0f, 0.003f, 512.0f));

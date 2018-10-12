@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 //  schemeregistry.cc
 //  (C) 2008 Radon Labs GmbH
-//  (C) 2013-2016 Individual contributors, see AUTHORS file
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "io/schemeregistry.h"
@@ -163,7 +163,7 @@ SchemeRegistry::SetupStandardSchemes()
     this->RegisterUriScheme("file", FileStream::RTTI);
 	this->RegisterUriScheme("safefile", SafeFileStream::RTTI);
 
-#if __NEBULA3_HTTP_FILESYSTEM__
+#if __NEBULA_HTTP_FILESYSTEM__
     this->RegisterUriScheme("http", Http::HttpStream::RTTI);
     this->RegisterUriScheme("httpnz", Http::HttpNzStream::RTTI);
 #endif

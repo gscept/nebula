@@ -6,13 +6,13 @@
     Setup a Mesh object from a stream. Supports the following file formats:
     
     - nvx2 (Nebula2 binary mesh file format)
-    - nvx3 (Nebula3 binary mesh file format)
-    - n3d3 (Nebula3 ascii mesh file format)
+    - nvx3 (Nebula binary mesh file format)
+    - n3d3 (Nebula ascii mesh file format)
     
     @todo: document file formats
     
     (C) 2007 Radon Labs GmbH
-    (C) 2013 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "resources/streamresourceloader.h"
@@ -38,7 +38,7 @@ public:
 private:
     /// setup mesh from generic stream, branches to specialized loader methods
     virtual bool SetupResourceFromStream(const Ptr<IO::Stream>& stream);
-    #if NEBULA3_LEGACY_SUPPORT
+    #if NEBULA_LEGACY_SUPPORT
     /// setup mesh from nvx2 file in memory
     bool SetupMeshFromNvx2(const Ptr<IO::Stream>& stream);
     #endif

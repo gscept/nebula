@@ -8,7 +8,7 @@
     the main thread.
       
     (C) 2006 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */    
 #include "messaging/message.h"
 #include "messaging/handler.h"

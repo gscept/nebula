@@ -3,7 +3,7 @@
 /**
 	A model context bind a ModelInstance to a model, which allows it to be rendered using an .n3 file.
 	
-	(C) 2017 Individual contributors, see AUTHORS file
+	(C)2017-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "graphics/graphicscontext.h"
@@ -43,7 +43,9 @@ public:
 	/// change model for existing entity
 	static void ChangeModel(const Graphics::GraphicsEntityId id, const Resources::ResourceName& name, const Util::StringAtom& tag);
 	/// get model
-	static const Models::ModelInstanceId GetModel(const Graphics::GraphicsEntityId id);
+	static const Models::ModelId GetModel(const Graphics::GraphicsEntityId id);
+	/// get model instance
+	static const Models::ModelInstanceId GetModelInstance(const Graphics::GraphicsEntityId id);
 
 	/// set the transform for a model
 	static void SetTransform(const Graphics::GraphicsEntityId id, const Math::matrix44& transform);
@@ -52,6 +54,8 @@ public:
 
 	/// get model node instances
 	static const Util::Array<Models::ModelNode::Instance*>& GetModelNodeInstances(const Graphics::GraphicsEntityId id);
+	/// get model node types
+	static const Util::Array<Models::NodeType>& GetModelNodeTypes(const Graphics::GraphicsEntityId id);
 
 	/// runs before frame is updated
 	static void OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime);
@@ -81,9 +85,13 @@ private:
 	friend void Visibility::VisibilitySortJob(const Jobs::JobFuncContext& ctx);
 
 	/// get model
-	static const Models::ModelInstanceId GetModel(const Graphics::ContextEntityId id);
+	static const Models::ModelId GetModel(const Graphics::ContextEntityId id);
+	/// get model instance
+	static const Models::ModelInstanceId GetModelInstance(const Graphics::ContextEntityId id);
 	/// get model node instances
 	static const Util::Array<Models::ModelNode::Instance*>& GetModelNodeInstances(const Graphics::ContextEntityId id);
+	/// get model node instances
+	static const Util::Array<Models::NodeType>& GetModelNodeTypes(const Graphics::ContextEntityId id);
 };
 
 //------------------------------------------------------------------------------

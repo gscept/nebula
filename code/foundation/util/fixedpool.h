@@ -6,7 +6,7 @@
     Implements a fixed size pool, from which objects of a specific type can be
 	allocated and freed for reuse.
 
-    (C) 2013-2015 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 #include "util/array.h"
@@ -132,7 +132,7 @@ template<class TYPE>
 TYPE&
 Util::FixedPool<TYPE>::operator[](const IndexT elem)
 {
-#if NEBULA3_BOUNDSCHECKS
+#if NEBULA_BOUNDSCHECKS
 	n_assert(this->usedValues.Size() > elem);
 #endif
 	return this->usedValues[elem];

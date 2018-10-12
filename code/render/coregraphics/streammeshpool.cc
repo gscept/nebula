@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 // vkstreammeshloader.cc
-// (C) 2016 Individual contributors, see AUTHORS file
+// (C) 2016-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "streammeshpool.h"
@@ -45,7 +45,7 @@ StreamMeshPool::LoadFromStream(const Resources::ResourceId id, const Util::Strin
 	n_assert(id != Ids::InvalidId24);
 	String resIdExt = this->GetName(id.poolId).AsString().GetFileExtension();
 
-#if NEBULA3_LEGACY_SUPPORT
+#if NEBULA_LEGACY_SUPPORT
 	if (resIdExt == "nvx2")
 	{
 		return this->SetupMeshFromNvx2(stream, id);
@@ -102,7 +102,7 @@ StreamMeshPool::DeallocObject(const Resources::ResourceUnknownId id)
 /**
 	Setup the mesh resource from legacy nvx2 file (Nebula2 binary mesh format).
 */
-#if NEBULA3_LEGACY_SUPPORT
+#if NEBULA_LEGACY_SUPPORT
 Resources::ResourcePool::LoadStatus
 StreamMeshPool::SetupMeshFromNvx2(const Ptr<Stream>& stream, const Resources::ResourceId res)
 {
@@ -119,6 +119,7 @@ StreamMeshPool::SetupMeshFromNvx2(const Ptr<Stream>& stream, const Resources::Re
 		meshPool->EnterGet();
 		MeshCreateInfo& msh = meshPool->Get<0>(res);
 		n_assert(this->GetState(res) == Resources::Resource::Pending);
+		msh.vertexLayout = CreateVertexLayout({ nvx2Reader->GetVertexComponents() });
 		msh.vertexBuffer = nvx2Reader->GetVertexBuffer();
 		msh.indexBuffer = nvx2Reader->GetIndexBuffer();
 		msh.topology = PrimitiveTopology::TriangleList;
@@ -134,7 +135,7 @@ StreamMeshPool::SetupMeshFromNvx2(const Ptr<Stream>& stream, const Resources::Re
 
 //------------------------------------------------------------------------------
 /**
-	Setup the mesh resource from a nvx3 file (Nebula3's
+	Setup the mesh resource from a nvx3 file (Nebula's
 	native binary mesh file format).
 */
 Resources::ResourcePool::LoadStatus
@@ -147,7 +148,7 @@ StreamMeshPool::SetupMeshFromNvx3(const Ptr<Stream>& stream, const Resources::Re
 
 //------------------------------------------------------------------------------
 /**
-	Setup the mesh resource from a n3d3 file (Nebula3's
+	Setup the mesh resource from a n3d3 file (Nebula's
 	native ascii mesh file format).
 */
 Resources::ResourcePool::LoadStatus

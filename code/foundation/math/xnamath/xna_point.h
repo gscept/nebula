@@ -7,7 +7,7 @@
     and has its W component set to 1.0.
     
     (C) 2007 Radon Labs GmbH
-    (C) 2013-2014 Individual contributors, see AUTHORS file	
+    (C) 2013-2018 Individual contributors, see AUTHORS file	
 */
 #include "math/float4.h"
 #include "math/vector.h"
@@ -27,7 +27,7 @@ typedef const point& __PointArg;
 #endif
 
 
-NEBULA3_ALIGN16
+NEBULA_ALIGN16
 #if __XBOX360__
 __declspec(passinreg)
 #endif

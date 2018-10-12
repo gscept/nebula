@@ -4,7 +4,7 @@
 	A frame event is a wait-signal-reset type event which can be used to wait for executions
 	within a frame script.
 	
-	(C) 2016 Individual contributors, see AUTHORS file
+	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "frameop.h"

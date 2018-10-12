@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 //  win32minidump.cc
 //  (C) 2007 Radon Labs GmbH
-//  (C) 2013-2016 Individual contributors, see AUTHORS file
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "debug/win32/win32minidump.h"
@@ -40,7 +40,7 @@ Win32MiniDump::WriteMiniDump()
 bool
 Win32MiniDump::WriteMiniDumpInternal(EXCEPTION_POINTERS* exceptionInfo)
 {
-#if (NEBULA3_ENABLE_MINIDUMPS)
+#if (NEBULA_ENABLE_MINIDUMPS)
     String dumpFilename = BuildMiniDumpFilename();
     if (dumpFilename.IsValid())
     {

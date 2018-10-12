@@ -13,7 +13,7 @@
     To apply the local state of the shader instance, such as variables and constant
     buffers, use the Commit function.
 
-    (C) 2007 Radon Labs GmbH
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "afxapi.h"

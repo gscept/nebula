@@ -10,20 +10,20 @@
     of your code.
     
     (C) 2006 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file	
+    (C) 2013-2018 Individual contributors, see AUTHORS file	
 */
 #include "core/types.h"     
 #include "core/sysfunc.h"
 
 #if __XBOX360__
 // on xbox360 the critical section implementation seems to do the same as the windows user implementation
-#define NEBULA3_USER_CRITICAL_SECTION 0
+#define NEBULA_USER_CRITICAL_SECTION 0
 #else
 // user implementation bases on "Fast critical sections with timeout" by Vladislav Gelfer
-#define NEBULA3_USER_CRITICAL_SECTION 1
+#define NEBULA_USER_CRITICAL_SECTION 1
 #endif
 
-#if NEBULA3_USER_CRITICAL_SECTION
+#if NEBULA_USER_CRITICAL_SECTION
 extern "C" void _WriteBarrier();
 extern "C" void _ReadWriteBarrier();
 #pragma intrinsic(_WriteBarrier)
@@ -45,7 +45,7 @@ public:
     void Leave() const;
 private:
 
-#if NEBULA3_USER_CRITICAL_SECTION
+#if NEBULA_USER_CRITICAL_SECTION
     /// lock with increment
     bool PerfLockImmediate(DWORD dwThreadID) const;
     /// lock with semaphore
@@ -73,7 +73,7 @@ private:
 #endif
 };         
 
-#if !NEBULA3_USER_CRITICAL_SECTION
+#if !NEBULA_USER_CRITICAL_SECTION
 //------------------------------------------------------------------------------
 /**
 */      

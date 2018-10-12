@@ -6,7 +6,7 @@
     Describes a text element for the text renderer.
     
     (C) 2008 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "util/string.h"
 #include "math/float4.h"

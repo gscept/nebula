@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 // vkshaderserver.cc
-// (C) 2016 Individual contributors, see AUTHORS file
+// (C) 2016-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "vkshaderserver.h"
@@ -62,13 +62,13 @@ VkShaderServer::Open()
 	// create shader state for textures, and fetch variables
 	ShaderId shader = VkShaderServer::Instance()->GetShader("shd:shared.fxb"_atm);
 
-	this->textureShaderState = CoreGraphics::shaderPool->CreateState(shader, { NEBULAT_TICK_GROUP }, false);
-	this->texture2DTextureVar = CoreGraphics::shaderPool->ShaderStateGetConstant(this->textureShaderState, "Textures2D");
-	this->texture2DMSTextureVar = CoreGraphics::shaderPool->ShaderStateGetConstant(this->textureShaderState, "Textures2DMS");
-	this->texture2DArrayTextureVar = CoreGraphics::shaderPool->ShaderStateGetConstant(this->textureShaderState, "Textures2DArray");
-	this->textureCubeTextureVar = CoreGraphics::shaderPool->ShaderStateGetConstant(this->textureShaderState, "TexturesCube");
-	this->texture3DTextureVar = CoreGraphics::shaderPool->ShaderStateGetConstant(this->textureShaderState, "Textures3D");
-	this->resourceTable = VkShaderStateGetResourceTable(this->textureShaderState, NEBULAT_TICK_GROUP);
+	this->texture2DTextureVar = ShaderGetResourceSlot(shader, "Textures2D");
+	this->texture2DMSTextureVar = ShaderGetResourceSlot(shader, "Textures2DMS");
+	this->texture2DArrayTextureVar = ShaderGetResourceSlot(shader, "Textures2DArray");
+	this->textureCubeTextureVar = ShaderGetResourceSlot(shader, "TexturesCube");
+	this->texture3DTextureVar = ShaderGetResourceSlot(shader, "Textures3D");
+	this->resourceTable = ShaderCreateResourceTable(shader, NEBULA_TICK_GROUP);
+	this->tableLayout = ShaderGetResourcePipeline(shader);
 
 	/*
 	ResourceTableSetTexture(this->resourceTable, ResourceTableTexture{CoreGraphics::TextureId::Invalid(), VkShaderGetVkShaderVariableBinding(this->textureShaderState, this->texture2DTextureVar), 0, CoreGraphics::SamplerId::Invalid(), false});
@@ -90,7 +90,7 @@ VkShaderServer::Close()
 {
 	n_assert(this->IsOpen());
 	n_delete(this->factory);
-	CoreGraphics::shaderPool->DestroyState(this->textureShaderState);
+	DestroyResourceTable(this->resourceTable);
 	ShaderServerBase::Close();
 }
 
@@ -101,7 +101,7 @@ uint32_t
 VkShaderServer::RegisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics::TextureType type)
 {
 	uint32_t idx;
-	ShaderConstantId var;
+	IndexT var;
 	VkDescriptorImageInfo* img;
 	switch (type)
 	{
@@ -130,7 +130,7 @@ VkShaderServer::RegisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics
 	info.index = idx;
 	info.sampler = SamplerId::Invalid();
 	info.isDepth = false;
-	info.slot = VkShaderGetVkShaderVariableBinding(this->textureShaderState, var);
+	info.slot = var;
 	ResourceTableSetTexture(this->resourceTable, info);
 
 	return idx;
@@ -143,7 +143,7 @@ uint32_t
 VkShaderServer::RegisterTexture(const CoreGraphics::RenderTextureId& tex, bool depth, CoreGraphics::TextureType type)
 {
 	uint32_t idx;
-	ShaderConstantId var;
+	IndexT var;
 	VkDescriptorImageInfo* img;
 	switch (type)
 	{
@@ -172,7 +172,7 @@ VkShaderServer::RegisterTexture(const CoreGraphics::RenderTextureId& tex, bool d
 	info.index = idx;
 	info.sampler = SamplerId::Invalid();
 	info.isDepth = depth;
-	info.slot = VkShaderGetVkShaderVariableBinding(this->textureShaderState, var);
+	info.slot = var;
 	ResourceTableSetTexture(this->resourceTable, info);
 
 	return idx;
@@ -185,7 +185,7 @@ uint32_t
 VkShaderServer::RegisterTexture(const CoreGraphics::ShaderRWTextureId& tex, CoreGraphics::TextureType type)
 {
 	uint32_t idx;
-	ShaderConstantId var;
+	IndexT var;
 	VkDescriptorImageInfo* img;
 	switch (type)
 	{
@@ -213,7 +213,7 @@ VkShaderServer::RegisterTexture(const CoreGraphics::ShaderRWTextureId& tex, Core
 	info.tex = tex;
 	info.index = idx;
 	info.sampler = SamplerId::Invalid();
-	info.slot = VkShaderGetVkShaderVariableBinding(this->textureShaderState, var);
+	info.slot = var;
 	ResourceTableSetTexture(this->resourceTable, info);
 
 	return idx;

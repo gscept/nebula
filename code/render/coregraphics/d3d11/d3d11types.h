@@ -7,7 +7,7 @@
     data types and enumerations.
     
     (C) 2007 Radon Labs GmbH
-    (C) 2013 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/types.h"
@@ -44,13 +44,13 @@ public:
     static UINT AsD3D11MultiSampleType(CoreGraphics::AntiAliasQuality::Code c);
     /// convert image file format to D3DX file format
     static D3DX11_IMAGE_FILE_FORMAT AsD3DXImageFileFormat(CoreGraphics::ImageFileFormat::Code c);
-    /// convert Nebula3 resource usage/access flag pair into D3D11 pool
+    /// convert Nebula resource usage/access flag pair into D3D11 pool
     static D3DPOOL AsD3D11Pool(Base::ResourceBase::Usage usage, Base::ResourceBase::Access access);
-    /// convert Nebula3 resource usage/access flag pair into D3D11 usage flags
+    /// convert Nebula resource usage/access flag pair into D3D11 usage flags
     static UINT AsD3D11Usage(Base::ResourceBase::Usage usage);
-	/// convert Nebula3 access to D3D11 CPU access
+	/// convert Nebula access to D3D11 CPU access
 	static UINT AsD3D11Access( Base::ResourceBase::Access access);
-	/// convert Nebula3 access to appropriate buffer
+	/// convert Nebula access to appropriate buffer
 	static UINT AsD3D11BufferType( Base::ResourceBase::Usage usage );
 	/// check to see if format is compatible with creating a shader resource view
 	static BOOL CanCreateShaderResourceView( DXGI_FORMAT f );

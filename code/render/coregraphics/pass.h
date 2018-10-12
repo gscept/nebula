@@ -5,7 +5,7 @@
   
     A pass describe a set of textures used for rendering
     
-    (C) 2015 Individual contributors, see AUTHORS file
+    (C) 2015-2018 Individual contributors, see AUTHORS file
 */    
 //------------------------------------------------------------------------------
 #include "ids/id.h"
@@ -78,9 +78,12 @@ void PassEnd(const PassId& id);
 void PassWindowResizeCallback(const PassId& id);
 
 /// get number of color attachments for entire pass (attachment list)
-const Util::Array<CoreGraphics::RenderTextureId>& PassGetAttachments(const CoreGraphics::PassId& id);
+const Util::Array<CoreGraphics::RenderTextureId>& PassGetAttachments(const CoreGraphics::PassId id);
 /// get list of color attachments for specific subpass
-const uint32_t PassGetNumSubpassAttachments(const CoreGraphics::PassId& id, const IndexT subpass);
+const uint32_t PassGetNumSubpassAttachments(const CoreGraphics::PassId id, const IndexT subpass);
+
+/// get name
+const Util::StringAtom PassGetName(const CoreGraphics::PassId id);
 
 } // namespace CoreGraphics
 

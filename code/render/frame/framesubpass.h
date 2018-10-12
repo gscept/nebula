@@ -6,7 +6,7 @@
 	Subpasses can be dependent on each other, and can declare which attachments in the pass
 	should be passed between them. 
 
-	(C) 2016 Individual contributors, see AUTHORS file
+	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "frameop.h"

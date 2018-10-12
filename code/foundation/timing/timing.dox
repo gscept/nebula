@@ -1,12 +1,12 @@
 /**
 @namespace Timing
 
-@section Nebula3TimingSystem The Nebula3 Timing Subsystem
+@section NebulaTimingSystem The Nebula Timing Subsystem
 
-The Nebula3 Timing subsystem offers classes and servies for measuring 
+The Nebula Timing subsystem offers classes and servies for measuring 
 elapsed time, and working with the calendar time (days, weeks, month, years).
 
-@subsection Nebula3TimingBasics Timing Subsystem Basics
+@subsection NebulaTimingBasics Timing Subsystem Basics
 
 - Timing::Time represents a double-precision floating point number and contains a time value in seconds.
 - Timing::Tick represent an integer number contains a time value in milli-seconds (1/1000sec).

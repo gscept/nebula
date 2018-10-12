@@ -10,7 +10,7 @@
 	Note: Make sure to place continuous calls of draw-methods into 
 	OnStepBefore() of physicsclasses, instead of RenderDebug for example.
     
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 

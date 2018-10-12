@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 //  rtti.cc
 //  (C) 2006 Radon Labs GmbH
-//  (C) 2013-2016 Individual contributors, see AUTHORS file
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "core/rtti.h"
@@ -187,7 +187,7 @@ Rtti::IsDerivedFrom(const Util::FourCC& otherClassFourCC) const
 void*
 Rtti::AllocInstanceMemory()
 {
- #if NEBULA3_OBJECTS_USE_MEMORYPOOL    
+ #if NEBULA_OBJECTS_USE_MEMORYPOOL    
     void* ptr = Memory::ObjectPoolAllocator->Alloc(this->instanceSize);
  #else
     void* ptr = Memory::Alloc(Memory::ObjectHeap, this->instanceSize);
@@ -201,7 +201,7 @@ Rtti::AllocInstanceMemory()
 void*
 Rtti::AllocInstanceMemoryArray(size_t num)
 {
-#if NEBULA3_OBJECTS_USE_MEMORYPOOL    
+#if NEBULA_OBJECTS_USE_MEMORYPOOL    
 	void* ptr = Memory::ObjectPoolAllocator->Alloc(this->instanceSize * num);
 #else
 	void* ptr = Memory::Alloc(Memory::ObjectHeap, this->instanceSize * (num / this->instanceSize));
@@ -215,7 +215,7 @@ Rtti::AllocInstanceMemoryArray(size_t num)
 void
 Rtti::FreeInstanceMemory(void* ptr)
 {
-    #if NEBULA3_OBJECTS_USE_MEMORYPOOL
+    #if NEBULA_OBJECTS_USE_MEMORYPOOL
     Memory::ObjectPoolAllocator->Free(ptr, this->instanceSize);
     #else
     Memory::Free(Memory::ObjectHeap, ptr);

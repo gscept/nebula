@@ -8,7 +8,7 @@
 
 	Use the DeclareRegistration macro in the header and DefineRegistration in the implementation
 	
-	(C) 2017 Individual contributors, see AUTHORS file
+	(C)2017-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
@@ -27,7 +27,9 @@ public:\
 	static void DeregisterEntity(const Graphics::GraphicsEntityId id);\
 	static bool IsEntityRegistered(const Graphics::GraphicsEntityId id);\
 	static void Destroy(); \
-	static Graphics::ContextEntityId GetContextId(const Graphics::GraphicsEntityId id);
+	static Graphics::ContextEntityId GetContextId(const Graphics::GraphicsEntityId id); \
+	static void BeginBulkRegister(); \
+	static void EndBulkRegister();
 
 #define ImplementContext(ctx) \
 Graphics::GraphicsContext::State ctx::__state; \
@@ -58,12 +60,20 @@ void ctx::Destroy()\
 Graphics::ContextEntityId ctx::GetContextId(const Graphics::GraphicsEntityId id)\
 {\
 	return __state.entitySliceMap[id];\
+}\
+void ctx::BeginBulkRegister()\
+{\
+	__state.entitySliceMap.BeginBulkAdd();\
+}\
+void ctx::EndBulkRegister()\
+{\
+	__state.entitySliceMap.EndBulkAdd();\
 }
 
 #define CreateContext() \
 	__state.Alloc = Alloc; \
 	__state.Dealloc = Dealloc; \
-	__state.entitySliceMap = Util::HashTable<Graphics::GraphicsEntityId, Graphics::ContextEntityId>(512);
+	__state.entitySliceMap = Util::HashTable<Graphics::GraphicsEntityId, Graphics::ContextEntityId, 64>(512);
 
 
 namespace Graphics
@@ -106,7 +116,7 @@ protected:
 
 	struct State
 	{
-		Util::HashTable<GraphicsEntityId, ContextEntityId> entitySliceMap;
+		Util::HashTable<GraphicsEntityId, ContextEntityId, 64> entitySliceMap;
 		ContextEntityId(*Alloc)();
 		void(*Dealloc)(ContextEntityId id);
 

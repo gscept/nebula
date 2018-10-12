@@ -6,12 +6,12 @@
     Wraps client HTTP requests to a HTTP server into an IO::Stream.
     
     (C) 2009 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */    
 #include "core/config.h"
 
 // HttpStream not implemented on Wii
-#if __NEBULA3_HTTP_FILESYSTEM__
+#if __NEBULA_HTTP_FILESYSTEM__
 #include "io/memorystream.h"
 #include "http/httpclient.h"
 

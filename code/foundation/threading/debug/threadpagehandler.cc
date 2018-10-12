@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 //  threadpagehandler.cc
 //  (C) 2008 Radon Labs GmbH
-//  (C) 2013-2016 Individual contributors, see AUTHORS file
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "threading/debug/threadpagehandler.h"
@@ -38,10 +38,10 @@ ThreadPageHandler::HandleRequest(const Ptr<HttpRequest>& request)
     // configure a HTML page writer
     Ptr<HtmlPageWriter> htmlWriter = HtmlPageWriter::Create();
     htmlWriter->SetStream(request->GetResponseContentStream());
-    htmlWriter->SetTitle("NebulaT Thread Info");
+    htmlWriter->SetTitle("Nebula Thread Info");
     if (htmlWriter->Open())
     {
-        htmlWriter->Element(HtmlElement::Heading1, "NebulaT Threads");
+        htmlWriter->Element(HtmlElement::Heading1, "Nebula Threads");
         htmlWriter->AddAttr("href", "/index.html");
         htmlWriter->Element(HtmlElement::Anchor, "Home");
 

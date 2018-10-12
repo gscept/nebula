@@ -5,7 +5,7 @@
 	
 	Wraps an OpenGL4 uniform buffer to enable updating and comitting shader variables in a buffered manner.
 	
-	(C) 2015-2016 Individual contributors, see AUTHORS file
+	(C) 2015-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "coregraphics/shader.h"

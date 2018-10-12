@@ -11,7 +11,7 @@
     header.
 
     (C) 2007 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 
 #if __USE_MATH_DIRECTX
@@ -90,11 +90,12 @@ n_max(int a, int b)
 
 //------------------------------------------------------------------------------
 /**
+    branchless max for uint32
 */
 __forceinline unsigned int
 n_max(unsigned int a, unsigned int b)
 {
-	return (a > b) ? a : b;
+    return a - ((a - b) & (a - b) >> 31);
 }
 
 //------------------------------------------------------------------------------
@@ -126,11 +127,12 @@ n_min(int a, int b)
 
 //------------------------------------------------------------------------------
 /**
+    branchless min for uints
 */
 __forceinline unsigned int
 n_min(unsigned int a, unsigned int b)
 {
-	return (a < b) ? a : b;
+    return b + ((a - b) & (a - b) >> 31);
 }
 
 //------------------------------------------------------------------------------
@@ -406,6 +408,15 @@ n_mostsignificant(uint val)
 #else
 	n_error("not implemented\n");
 #endif
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline uint
+n_align(uint alignant, uint alignment)
+{
+	return (alignant + alignment - 1) & ~(alignment - 1);
 }
 
 #endif // #if !SPU

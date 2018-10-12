@@ -8,7 +8,7 @@
     Memory subsystem features for the Posix platform
     
     (C) 2008 Radon Labs GmbH
-    (C) 2013 Individual contributors, see AUTHORS file    
+    (C) 2013-2018 Individual contributors, see AUTHORS file    
 */
 #include "core/config.h"
 #include "core/debug.h"
@@ -19,7 +19,7 @@
 
 namespace Memory
 {
-#if NEBULA3_MEMORY_STATS
+#if NEBULA_MEMORY_STATS
 extern int volatile TotalAllocCount;
 extern int volatile TotalAllocSize;
 extern int volatile HeapTypeAllocCount[NumHeapTypes];
@@ -43,7 +43,7 @@ Alloc(HeapType heapType, size_t size)
         explicit_bzero(allocPtr,size);
         #endif
     }
-    #if NEBULA3_MEMORY_STATS
+    #if NEBULA_MEMORY_STATS
         SIZE_T s = HeapSize(Heaps[heapType], 0, allocPtr);
         Threading::Interlocked::Increment(TotalAllocCount);
         Threading::Interlocked::Add(TotalAllocSize, int(s));
@@ -62,12 +62,12 @@ Realloc(HeapType heapType, void* ptr, size_t size)
 {
     // XXX: n_assert((heapType < NumHeapTypes) && (0 != Heaps[heapType]));
     n_assert(heapType < NumHeapTypes);
-    #if NEBULA3_MEMORY_STATS
+    #if NEBULA_MEMORY_STATS
         SIZE_T oldSize = HeapSize(Heaps[heapType], 0, ptr);
     #endif
     // void* allocPtr = HeapReAlloc(Heaps[heapType], HEAP_GENERATE_EXCEPTIONS, ptr, size);
     void* allocPtr = realloc(ptr, size);
-    #if NEBULA3_MEMORY_STATS
+    #if NEBULA_MEMORY_STATS
         SIZE_T newSize = HeapSize(Heaps[heapType], 0, allocPtr);
         Threading::Interlocked::Add(TotalAllocSize, int(newSize - oldSize));
         Threading::Interlocked::Add(HeapTypeAllocSize[heapType], int(newSize - oldSize));
@@ -86,18 +86,18 @@ Free(HeapType heapType, void* ptr)
     if (0 != ptr)
     {
         n_assert(heapType < NumHeapTypes);
-        #if NEBULA3_MEMORY_STATS
+        #if NEBULA_MEMORY_STATS
             SIZE_T size = 0;
         #endif    
         {
             // XXX: n_assert(0 != Heaps[heapType]);
-            #if NEBULA3_MEMORY_STATS
+            #if NEBULA_MEMORY_STATS
                 size = HeapSize(Heaps[heapType], 0, ptr);
             #endif
             // HeapFree(Heaps[heapType], 0, ptr);
             free(ptr);
         }
-        #if NEBULA3_MEMORY_STATS
+        #if NEBULA_MEMORY_STATS
             Threading::Interlocked::Add(TotalAllocSize, -int(size));
             Threading::Interlocked::Decrement(TotalAllocCount);
             Threading::Interlocked::Add(HeapTypeAllocSize[heapType], -int(size));
@@ -193,7 +193,7 @@ IsOverlapping(const unsigned char* srcPtr, size_t srcSize, const unsigned char* 
 //------------------------------------------------------------------------------
 /**
     Get the system's total current memory, this does not only include
-    Nebula3's memory allocations but the memory usage of the entire system.
+    Nebula's memory allocations but the memory usage of the entire system.
 */
 struct TotalMemoryStatus
 {
@@ -227,7 +227,7 @@ GetTotalMemoryStatus()
     local heaps (call Heap::ValidateAllHeaps() for this). 
     Stops the program if something is wrong. 
 */
-#if NEBULA3_MEMORY_STATS
+#if NEBULA_MEMORY_STATS
 extern bool Validate();
 #endif
 

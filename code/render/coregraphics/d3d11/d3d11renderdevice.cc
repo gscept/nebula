@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 //  D3D11RenderDevice.cc
 //  (C) 2007 Radon Labs GmbH
-//  (C) 2013 Individual contributors, see AUTHORS file
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 
 #include "stdneb.h"
@@ -165,7 +165,7 @@ D3D11RenderDevice::SetupAdapter()
     Adapter::Code requestedAdapter = displayDevice->GetAdapter();
     n_assert(displayDevice->AdapterExists(requestedAdapter));
 
-    #if NEBULA3_DIRECT3D_USENVPERFHUD
+    #if NEBULA_DIRECT3D_USENVPERFHUD
         this->adapter = this->d3d11->GetAdapterCount() - 1;
     #else
         this->adapter = (UINT) requestedAdapter;

@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 //  corepagehandler.cc
 //  (C) 2007 Radon Labs GmbH
-//  (C) 2013-2016 Individual contributors, see AUTHORS file
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "core/debug/corepagehandler.h"
@@ -40,7 +40,7 @@ CorePageHandler::HandleRequest(const Ptr<HttpRequest>& request)
     // configure a HTML page writer
     Ptr<HtmlPageWriter> htmlWriter = HtmlPageWriter::Create();
     htmlWriter->SetStream(request->GetResponseContentStream());
-    htmlWriter->SetTitle("NebulaT Core Info");
+    htmlWriter->SetTitle("Nebula Core Info");
     if (htmlWriter->Open())
     {
         htmlWriter->Element(HtmlElement::Heading1, "Core Subsystem");

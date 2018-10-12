@@ -9,6 +9,7 @@
     and has its W component set to 1.0.
     
     (C) 2007 Radon Labs GmbH
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "math/sce/sce_float4.h"
 #include "math/sce/sce_vector.h"

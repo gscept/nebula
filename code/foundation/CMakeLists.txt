@@ -49,8 +49,7 @@ fips_begin_module(foundation)
 			memorypool.h
 			poolarrayallocator.cc
 			poolarrayallocator.h
-			ringallocator.h
-			win360/win360memorypool.h
+			ringallocator.h			
 			debug/memorypagehandler.cc
 			debug/memorypagehandler.h
 		)
@@ -76,6 +75,7 @@ fips_begin_module(foundation)
 		fips_files(
 			array.h
 			arrayallocator.h
+			arraystack.h
 			bit.h
 			bitfield.h
 			blob.cc
@@ -101,7 +101,7 @@ fips_begin_module(foundation)
 			priorityarray.h
 			quadtree.h
 			queue.h
-			dequeue.h
+			arrayqueue.h
 			random.h
 			random.cc
 			randomnumbertable.cc
@@ -122,6 +122,7 @@ fips_begin_module(foundation)
 			stringatomtablebase.h
 			stringbuffer.cc
 			stringbuffer.h
+			trivialarray.h
 			typepunning.h
 			variant.h
 		)
@@ -167,6 +168,8 @@ fips_begin_module(foundation)
 			iointerfacehandler.h
 			logfileconsolehandler.cc
 			logfileconsolehandler.h
+            jsonreader.cc
+            jsonreader.h
 			mediatype.h
 			memorystream.cc
 			memorystream.h
@@ -433,6 +436,7 @@ fips_begin_module(foundation)
 				win360/win360memoryconfig.cc
 				win360/win360memoryconfig.h
 				win360/win360memorypool.cc
+				win360/win360memorypool.h
 			)
 		fips_dir(debug GROUP "debug/win32")
 			fips_files(

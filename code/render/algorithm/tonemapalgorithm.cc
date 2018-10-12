@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 // tonemapalgorithm.cc
-// (C) 2016 Individual contributors, see AUTHORS file
+// (C) 2016-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "tonemapalgorithm.h"
@@ -57,13 +57,18 @@ TonemapAlgorithm::Setup()
 
 	// create shader
 	this->shader = ShaderGet("shd:averagelum.fxb");
-	this->tonemapShader = ShaderCreateState(this->shader, { NEBULAT_BATCH_GROUP }, false);
-	this->timevar = ShaderStateGetConstant(this->tonemapShader, "TimeDiff");
-	this->colorvar = ShaderStateGetConstant(this->tonemapShader, "ColorSource");
-	this->prevvar = ShaderStateGetConstant(this->tonemapShader, "PreviousLum");
+	this->tonemapTable = ShaderCreateResourceTable(this->shader, NEBULA_BATCH_GROUP);
+	this->constants = ShaderCreateConstantBuffer(this->shader, "AverageLumBlock");
+	this->timevar = ShaderGetConstantBinding(this->shader, "TimeDiff");
+	this->colorSlot = ShaderGetResourceSlot(this->shader, "ColorSource");
+	this->prevSlot = ShaderGetResourceSlot(this->shader, "PreviousLum");
+	this->constantsSlot = ShaderGetResourceSlot(this->shader, "AverageLumBlock");
 	this->program = ShaderGetProgram(this->shader, ShaderFeatureFromString("Alt0"));
-	ShaderResourceSetRenderTexture(this->prevvar, this->tonemapShader, this->copy);
-	ShaderResourceSetRenderTexture(this->colorvar, this->tonemapShader, this->downsample2x2);
+	ResourceTableSetConstantBuffer(this->tonemapTable, { this->constants, this->constantsSlot, 0, false, false, -1, 0});
+	ResourceTableSetTexture(this->tonemapTable, { this->copy, this->prevSlot, 0, SamplerId::Invalid(), false });
+	ResourceTableSetTexture(this->tonemapTable, { this->downsample2x2, this->colorSlot, 0, SamplerId::Invalid(), false });
+	ResourceTableCommitChanges(this->tonemapTable);
+
 	this->fsq.Setup(2, 2);
 
 	// begin by copying and mipping down to a 2x2 texture
@@ -79,8 +84,8 @@ TonemapAlgorithm::Setup()
 		CoreGraphics::SetShaderProgram(this->program);
 		CoreGraphics::BeginBatch(Frame::FrameBatchType::System);
 		this->fsq.ApplyMesh();
-		ShaderConstantSet(this->timevar, this->tonemapShader, (float)time);
-		CoreGraphics::SetShaderState(this->tonemapShader);
+		ConstantBufferUpdate(this->constants, time, this->timevar);
+		CoreGraphics::SetResourceTable(this->tonemapTable, NEBULA_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
 		this->fsq.Draw();
 		CoreGraphics::EndBatch();
 	});
@@ -101,7 +106,8 @@ TonemapAlgorithm::Discard()
 	Algorithm::Discard();
 	DestroyRenderTexture(this->downsample2x2);
 	DestroyRenderTexture(this->copy);
-	ShaderDestroyState(this->tonemapShader);
+	DestroyConstantBuffer(this->constants);
+	DestroyResourceTable(this->tonemapTable);
 	this->fsq.Discard();
 }
 

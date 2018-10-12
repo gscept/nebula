@@ -1,6 +1,7 @@
 //------------------------------------------------------------------------------
 //  nvx2streamreader.cc
 //  (C) 2007 Radon Labs GmbH
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "coregraphics/nvx3streamreader.h"
@@ -208,7 +209,7 @@ Nvx3StreamReader::SetupVertexComponents()
                 case N3JIndices:     sem = VertexComponent::SkinJIndices; fmt = VertexComponent::Float4; break;
                 case N3JIndicesUB4:  sem = VertexComponent::SkinJIndices; fmt = VertexComponent::UByte4; break;
                 default:
-                    n_error("Invalid Nebula3 VertexComponent in Nvx3StreamReader::SetupVertexComponents");
+                    n_error("Invalid Nebula VertexComponent in Nvx3StreamReader::SetupVertexComponents");
                     sem = VertexComponent::Position;
                     fmt = VertexComponent::Float3;
                     break;

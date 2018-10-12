@@ -5,7 +5,7 @@
   
     OGL4/Xbox360 implementation of VertexBuffer.
     
-    (C) 2007 Radon Labs GmbH
+    (C) 2012-2018 Individual contributors, see AUTHORS file
 */    
 #include "coregraphics/base/feedbackbufferbase.h"
 #include "coregraphics/base/resourcebase.h"

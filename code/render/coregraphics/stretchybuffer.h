@@ -12,7 +12,7 @@
 	When constructing, the stride is the size for each element, and alignment
 	is the required byte alignment per element.
 	
-	(C) 2016 Individual contributors, see AUTHORS file
+	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
@@ -38,8 +38,8 @@ public:
 	void SetEmpty();
 	/// set range of values to be considered free
 	void SetFree(uint start, SizeT num);
-	/// allocates instance memory, and returns offset into buffer at new instance
-	SizeT AllocateInstance(SizeT numInstances = 1);
+	/// allocates instance memory, and returns offset into buffer at new instance, returns true if a reallocation took place
+	bool AllocateInstance(SizeT numInstances, uint& offset, uint& instance);
 	/// deallocates instance memory
 	void FreeInstance(SizeT offset);
 protected:
@@ -106,12 +106,12 @@ inline void StretchyBuffer<T>::SetTarget(T* target)
 	If there is no continuous range fitting numInstances, alloc and return offset without disturbing other free instances.
 */
 template <class T>
-inline SizeT
-StretchyBuffer<T>::AllocateInstance(SizeT numInstances)
+inline bool
+StretchyBuffer<T>::AllocateInstance(SizeT numInstances, uint& offset, uint& instance)
 {
 	n_assert(numInstances > 0);
 	n_assert(this->target != nullptr);
-	SizeT offset;
+	bool ret = false;
 
 	// pool is exhausted, allocate new elements
 	if (this->freeIndices.IsEmpty())
@@ -122,8 +122,10 @@ StretchyBuffer<T>::AllocateInstance(SizeT numInstances)
 		// calculate current offset
 		SizeT newCapacity;
 		offset = ROUND_TO_POW(capacity * this->stride, this->byteAlignment);
+		instance = capacity;
 		uint32_t alignedSize = this->target->Grow(capacity, numInstances, newCapacity);
 		this->SetFree(capacity + numInstances, newCapacity - capacity - numInstances);
+		ret = true;
 
 		// add instance to used indices
 		IndexT i;
@@ -143,6 +145,7 @@ StretchyBuffer<T>::AllocateInstance(SizeT numInstances)
 
 			// return offset
 			offset = ROUND_TO_POW(index * this->stride, this->byteAlignment);
+			instance = index;
 			this->usedIndices.Append(index);
 		}
 		else if (this->freeIndices.Size() > numInstances) // pool could possibly fit range, find range
@@ -165,6 +168,7 @@ StretchyBuffer<T>::AllocateInstance(SizeT numInstances)
 				{
 					// find offset to first index
 					offset = ROUND_TO_POW((idx - numInstances) * this->stride, this->byteAlignment);
+					instance = (idx - numInstances);
 					break;
 				}
 				freeIndex = idx;
@@ -178,8 +182,10 @@ StretchyBuffer<T>::AllocateInstance(SizeT numInstances)
 				// calculate offset
 				SizeT newCapacity;
 				offset = ROUND_TO_POW(capacity * this->stride, this->byteAlignment);
+				instance = offset;
 				uint32_t alignedSize = this->target->Grow(capacity, numInstances, newCapacity);
 				this->SetFree(capacity + numInstances, newCapacity - capacity - numInstances);
+				ret = true;
 
 				// add instance to used indices
 				IndexT i;
@@ -196,8 +202,10 @@ StretchyBuffer<T>::AllocateInstance(SizeT numInstances)
 			// calculate offset
 			SizeT newCapacity;
 			offset = ROUND_TO_POW(capacity * this->stride, this->byteAlignment);
+			instance = capacity;
 			uint32_t alignedSize = this->target->Grow(capacity, numInstances, newCapacity);
 			this->SetFree(capacity + numInstances, newCapacity - capacity - numInstances);
+			ret = true;
 
 			// add instance to used indices
 			IndexT i;
@@ -208,7 +216,7 @@ StretchyBuffer<T>::AllocateInstance(SizeT numInstances)
 		}
 	}
 
-	return offset;
+	return ret;
 }
 
 //------------------------------------------------------------------------------

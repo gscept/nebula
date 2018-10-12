@@ -4,8 +4,8 @@
 @class Physics2::Material
 
     A physics Material
-
-    (C) 2012 Johannes Hirche, LTU Skelleftea
+    
+    (C) 2012-2018 Individual contributors, see AUTHORS file
 */
 #if (__USE_BULLET__)
 #include "physics2/bullet/bulletmaterial.h"

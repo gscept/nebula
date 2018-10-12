@@ -6,7 +6,7 @@
     A matrix44 class on top of VectorMath math functions.
 
     (C) 2007 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 #include "math/scalar.h"
@@ -24,7 +24,7 @@ namespace Math
 class quaternion;
 class plane;
 
-typedef NEBULA3_ALIGN16 struct mm128_mat
+typedef NEBULA_ALIGN16 struct mm128_mat
 {
 	union
 	{
@@ -49,7 +49,7 @@ const mm128_ivec maskW = {0,0,0,-1};
 // this is a reference so far
 typedef const matrix44& __Matrix44Arg;
 
-class NEBULA3_ALIGN16 matrix44
+class NEBULA_ALIGN16 matrix44
 {
 public:
     /// default constructor, NOTE: does NOT setup components!

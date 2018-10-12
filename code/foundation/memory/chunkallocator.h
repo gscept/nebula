@@ -12,7 +12,7 @@
 	allocated linearly in memory, thus providing a cache-friendly access pattern
 	for places where memory allocation is somewhat deterministic. 
 
-	(C) 2017 Individual contributors, see AUTHORS file
+	(C) 2017-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/config.h"
@@ -223,7 +223,7 @@ ChunkAllocator<ChunkSize>::Alloc()
 {
 	static_assert(sizeof(T) <= ChunkSize, "Size of type is bigger than the chunk size!");
 	// pad up to next multiple of 16 to avoid alignment issues
-	SizeT alignedSize = (sizeof(T) + 15) & 0xFFFFFFF0;
+	SizeT alignedSize = Math::n_align(sizeof(T), 16);
 	if (this->iterator == nullptr)
 	{
 		this->NewChunk();
@@ -249,7 +249,7 @@ inline void*
 ChunkAllocator<ChunkSize>::Alloc(SizeT size)
 {
 	// pad to next alignment.
-	size = (size + 15) & 0xFFFFFFF0;
+	size = Math::n_align(size, 16);
 	n_assert(size <= ChunkSize);
 	n_assert(size != 0);
 	if (this->iterator == nullptr)

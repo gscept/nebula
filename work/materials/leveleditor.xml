@@ -29,7 +29,7 @@
 	MAX IS 32
 	
 -->
-<Nebula3>
+<Nebula>
 	<Materials>
 
 		<Material name="PlacementHandleWireframeNoPick" vertexType="special" desc="Inhouse material used by level editor to render handles">
@@ -61,4 +61,4 @@
 			<Param name="ObjectId" type="int" system="true"/>
 		</Material>
 	</Materials>
-</Nebula3>
+</Nebula>

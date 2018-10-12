@@ -6,7 +6,7 @@
     Common gamepad support for Xbox360 and Windows.
     
     (C) 2007 Radon Labs GmbH
-    (C) 2013 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "input/base/gamepadbase.h"
 #include "timing/time.h"

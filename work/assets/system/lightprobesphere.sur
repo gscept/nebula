@@ -1,6 +1,6 @@
 <!--
 -->
-<NebulaT>
+<Nebula>
 	<Surface template="Static">
 		<Param name="DiffuseMap" value="tex:system/placeholder"/>
 		<Param name="SpecularMap" value="tex:system/white"/>
@@ -12,4 +12,4 @@
         <Param name="MatSpecularIntensity" value="1.000000,1.000000,1.000000,1.000000" />
 		<Param name="MatRoughnessIntensity" value="1.000000" />
 	</Surface>
-</NebulaT>
+</Nebula>

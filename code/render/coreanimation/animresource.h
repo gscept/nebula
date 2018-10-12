@@ -9,7 +9,7 @@
     usually contains the data of one animation resource file.
     
     (C) 2008 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "resources/resource.h"
 #include "coreanimation/animclip.h"

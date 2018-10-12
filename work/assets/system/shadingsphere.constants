@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<Nebula3 version="4">
+<Nebula version="4">
     <Model name="test/shadingsphere" bboxcenter="0.000000,0.000000,0.000000,1.000000" bboxextents="1.000000,1.000000,0.999999,0.000000">
         <CharacterNodes>
             <CharacterNode name="shadingsphere_ch" animation="ani:system/shadingsphere.nax3">
@@ -20,4 +20,4 @@
             </Skin>
         </Skins>
     </Model>
-</Nebula3>
+</Nebula>

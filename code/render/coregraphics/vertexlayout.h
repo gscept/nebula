@@ -3,7 +3,7 @@
 /**
 	Vertex layout declares the interface between application and vertex shader
 
-	(C) 2017 Individual contributors, see AUTHORS file
+	(C)2017-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "ids/id.h"

@@ -30,7 +30,7 @@
 	it gives a more human-readable output than just the normal debugger.
 
     (C) 2009 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 
 #include "math/float4.h"

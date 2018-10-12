@@ -3,7 +3,7 @@
 /**
 	Implements the shader server used by Vulkan.
 	
-	(C) 2016 Individual contributors, see AUTHORS file
+	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
@@ -12,6 +12,7 @@
 #include "coregraphics/config.h"
 #include "effectfactory.h"
 #include "vkshaderpool.h"
+#include "coregraphics/graphicsdevice.h"
 
 namespace Vulkan
 {
@@ -39,7 +40,6 @@ public:
 	/// unregister texture
 	void UnregisterTexture(const uint32_t id, const CoreGraphics::TextureType type);
 
-
 	/// submit resource changes
 	void SubmitTextureDescriptorChanges();
 	/// commit texture library to shader
@@ -62,25 +62,25 @@ private:
 	Util::FixedPool<uint32_t> imageCubePool;
 
 	CoreGraphics::ResourceTableId resourceTable;
-	CoreGraphics::ShaderStateId textureShaderState;
-	CoreGraphics::ShaderConstantId texture2DTextureVar;
-	CoreGraphics::ShaderConstantId texture2DMSTextureVar;
-	CoreGraphics::ShaderConstantId texture2DArrayTextureVar;
-	CoreGraphics::ShaderConstantId texture3DTextureVar;
-	CoreGraphics::ShaderConstantId textureCubeTextureVar;
-	CoreGraphics::ShaderConstantId image2DTextureVar;
-	CoreGraphics::ShaderConstantId image2DMSTextureVar;
-	CoreGraphics::ShaderConstantId image3DTextureVar;
-	CoreGraphics::ShaderConstantId imageCubeTextureVar;
+	CoreGraphics::ResourcePipelineId tableLayout;
+	IndexT texture2DTextureVar;
+	IndexT texture2DMSTextureVar;
+	IndexT texture2DArrayTextureVar;
+	IndexT texture3DTextureVar;
+	IndexT textureCubeTextureVar;
+	IndexT image2DTextureVar;
+	IndexT image2DMSTextureVar;
+	IndexT image3DTextureVar;
+	IndexT imageCubeTextureVar;
 
-	CoreGraphics::ShaderConstantId depthBufferTextureVar;
-	CoreGraphics::ShaderConstantId normalBufferTextureVar;
-	CoreGraphics::ShaderConstantId albedoBufferTextureVar;
-	CoreGraphics::ShaderConstantId specularBufferTextureVar;
-	CoreGraphics::ShaderConstantId lightBufferTextureVar;
+	IndexT depthBufferTextureVar;
+	IndexT normalBufferTextureVar;
+	IndexT albedoBufferTextureVar;
+	IndexT specularBufferTextureVar;
+	IndexT lightBufferTextureVar;
 
-	CoreGraphics::ShaderConstantId csmBufferTextureVar;
-	CoreGraphics::ShaderConstantId spotlightAtlasShadowBufferTextureVar;
+	IndexT csmBufferTextureVar;
+	IndexT spotlightAtlasShadowBufferTextureVar;
 
 	AnyFX::EffectFactory* factory;
 };
@@ -100,7 +100,8 @@ VkShaderServer::SubmitTextureDescriptorChanges()
 inline void
 VkShaderServer::BindTextureDescriptorSets()
 {
-	CoreGraphics::SetShaderState(this->textureShaderState);
+	CoreGraphics::SetResourceTable(this->resourceTable, NEBULA_TICK_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
+	//CoreGraphics::SetResourceTable(this->resourceTable, NEBULA_TICK_GROUP, CoreGraphics::ComputePipeline, nullptr);
 }
 
 } // namespace Vulkan

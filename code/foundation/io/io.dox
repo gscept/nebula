@@ -1,9 +1,9 @@
 /**
 @namespace IO
 
-@section Nebula3IOSystem The Nebula3 IO Subsystem
+@section NebulaIOSystem The Nebula IO Subsystem
 
-The Nebula3 IO subsystem is a huge step forward from the Nebula1 and Nebula2
+The Nebula IO subsystem is a huge step forward from the Nebula1 and Nebula2
 IO systems. The main design goals of the new IO subsystem are:
 
 - use more standard mechanisms, like URIs to identify resource locations, and
@@ -20,16 +20,16 @@ able to use platform-specific IO functions under the hood instead of relying
 to CLib functions like fopen() for portability, which may come with an additional 
 performance or memory overhead compared to the platform specific IO functions
 
-The main concepts of the Nebula3 IO subsystem are:
+The main concepts of the Nebula IO subsystem are:
 
 - A central <b>IO::Console</b> object for <b>all</b> text input and output with attachable 
-console handlers. It is guaranteed that all Nebula3 text output goes through the
+console handlers. It is guaranteed that all Nebula text output goes through the
 console as the one centralized in/out channel. Specialized console handlers can
 be used to handle text output in a special way (for instance writing the output
 to stdout, an ingame console, a log file or a network connection).
 - <b>Assigns</b> as path aliases. The general functionality is the same as in Nebula1
 and Nebula2, or the original AmigaOS assigns which inspired Nebula's assign mechanism.
-A new feature of Nebula3 assigns is that they can be aliases for complete URI's. For instance,
+A new feature of Nebula assigns is that they can be aliases for complete URI's. For instance,
 the assign "textures:" could be defined as "http://www.radonlabs.de/textures", so that the
 shortcut resource path "textures:mytexture.dds" would be resolve to the absolute location
 "http://www.radonlabs.de/textures/mytexture.dds"
@@ -42,7 +42,7 @@ easy-to-use interfaces to read and write different data formats. For instance on
 attach an IO::XmlReader to a IO::FileStream to read XML-formatted data from a filesystem
 file, or attach it to an IO::HttpStream to read XML-formatted data from a HTTP connection.
 
-A good example to show the power of the Nebula3 in/out system is the following
+A good example to show the power of the Nebula in/out system is the following
 code fragment:
 
 @code
@@ -54,17 +54,17 @@ temp directory. With only a few lines more you could create a stream object poin
 to a HTML file on a HTTP server, attach an XML reader to the stream, and parse the
 content of the HTML file without any intermediate storage file.
 
-@subsection Nebula3Assigns Nebula3 Standard Assigns
+@subsection NebulaAssigns Nebula Standard Assigns
 
-Nebula3 initializes the following standard assigns:
+Nebula initializes the following standard assigns:
 
 - <b>home:</b> Points to the application directory, in a German Windows
-installation, this is usually somewhere under "C:/Programme". Nebula3 applications
+installation, this is usually somewhere under "C:/Programme". Nebula applications
 should treat the home: location as a read only directory so that the user doesn't
 need administrator rights to run the application.
 - <b>user:</b> This points to the currently logged in user directory for this
-Nebula3 application. In a German Windows installation, this is somewhere under
-"C:/Eigene Dateien/[username]". Nebula3 will automatically create a local directory in the
+Nebula application. In a German Windows installation, this is somewhere under
+"C:/Eigene Dateien/[username]". Nebula will automatically create a local directory in the
 user directory to prevent different applications to overwrite their data. It is generally
 safe to write data to the user directory. This is the place where configuration and
 save game data should be written, or any other data which should persist between
@@ -84,12 +84,12 @@ that a path with assigns is often much shorter then an "absolute" path resulting
 in a smaller memory footprint.
 
 
-@subsection Nebula3URI Nebula3 URIs
+@subsection NebulaURI Nebula URIs
 
-Resource locations are generally defined through standard URIs in Nebula3. URIs
+Resource locations are generally defined through standard URIs in Nebula. URIs
 may consist of the following parts, some of them optional:
 
-- a scheme, for instance "http:", "file:", etc... Nebula3 doesn't define any
+- a scheme, for instance "http:", "file:", etc... Nebula doesn't define any
 hardcoded schemes, instead, schemes are bound to stream classes by registering
 them with the IO::StreamServer singleton
 - an optional user info field, often this is a login name and a password to
@@ -116,11 +116,11 @@ http://www.radonlabs.de/index.html
 http://user:password@www.myserver.com:8080/index.html#main
 @endverbatim
 
-By using Nebula3 assigns you can simplify those complex pathnames a lot. To reference
+By using Nebula assigns you can simplify those complex pathnames a lot. To reference
 a file in the application directory you can write for instance <b>home:bla.txt</b> which
 would resolve to something like <b>file:///c:/programme/[myapp]/bla.txt</b>.
 
-@subsection Nebula3StreamsReadersWriters Nebula3 Streams, Readers and Writers
+@subsection NebulaStreamsReadersWriters Nebula Streams, Readers and Writers
 
 Streams provide a common interface for storing or transporting raw data. They
 replace the nFile class of Nebula2 with a much more general approach for storing,
@@ -131,22 +131,22 @@ Stream objects use an IO::URI object to define their resource location. Usually,
 one URI scheme maps to a specific stream class. For instance the URI scheme
 "http:" usually maps to the Net::HttpStream class, while the scheme "file:" maps
 to the IO::FileStream class. This mapping is implemented by the StreamServer
-which constructs a matching stream object given an URI. A Nebula3 application
+which constructs a matching stream object given an URI. A Nebula application
 is responsible to provide the mapping of URI scheme to stream classes using the
 StreamServer::Register() method. This is also the way how new stream classes
-and schemes are registered with Nebula3.
+and schemes are registered with Nebula.
 
-Important stream classes in Nebula3 are for instance:
+Important stream classes in Nebula are for instance:
 
 - IO::FileStream: provides access to the host's filesystem
 - IO::MemoryStream: a dynamic memory buffer with a stream interface
 - IO::HttpStream: provides a stream interface to files on a HTTP server
 
 To read and write formatted stream data in a more flexible way then Nebula2, 
-stream reader and stream writer classes have been introduced in Nebula3. 
+stream reader and stream writer classes have been introduced in Nebula. 
 Stream reader and writer classes provide a comfortable interface which is
 specialized on a specific data format. Here are some examples of stream
-readers and writers provided by Nebula3:
+readers and writers provided by Nebula:
 
 - IO::BinaryReader/IO::BinaryWriter: read and write binary data
 - IO::TextReader/IO::TextWriter: read and write text and character data
@@ -168,9 +168,9 @@ Here's a simple example how to access a file on a HTTP server with a XmlReader:
 @endcode
 
 
-@subsection Nebula3FileServer The Nebula3 File Server
+@subsection NebulaFileServer The Nebula File Server
 
-The Nebula3 IO::FileServer class provides a singleton which offers access to the
+The Nebula IO::FileServer class provides a singleton which offers access to the
 hosts filesystem for global operations like defining assigns, copying, deleting and
 checking for existance of files and directories, listing directory contents, and so on.
 
@@ -189,7 +189,7 @@ Here's some sample code fragments for some of the more useful FileServer methods
     
     // resolve a path with assigns into an absolute filesystem
     // path, this is sometimes necessary to interface with 
-    // 3rd party libraries which don't understand Nebula3 paths directly
+    // 3rd party libraries which don't understand Nebula paths directly
     String absPath = fs->ResolveAssings("user:myapp/savegames");
     
     // create a directory, note that all missing subdirectories will
@@ -207,7 +207,7 @@ Here's some sample code fragments for some of the more useful FileServer methods
     Array<String> dirs = fs->ListDirectories("temp:", "*");
 @endcode
 
-@subsection Nebula3Console The Nebula3 Console
+@subsection NebulaConsole The Nebula Console
 
 [TODO]
 */

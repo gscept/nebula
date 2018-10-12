@@ -3,7 +3,7 @@
 /**
 	Implements a shader variation (shader program within effect) in Vulkan.
 	
-	(C) 2016 Individual contributors, see AUTHORS file
+	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
@@ -16,13 +16,6 @@
 
 namespace Vulkan
 {
-
-enum VkShaderProgramPipelineType
-{
-	InvalidType,
-	ComputePipeline,
-	GraphicsPipeline
-};
 
 struct VkShaderProgramSetupInfo
 {
@@ -45,7 +38,7 @@ struct VkShaderProgramRuntimeInfo
 	VkShaderModule vs, hs, ds, gs, ps, cs;
 	VkPipeline pipeline;
 	VkPipelineLayout layout;
-	VkShaderProgramPipelineType type;
+	CoreGraphics::ShaderPipeline type;
 	uint32_t uniqueId;
 };
 

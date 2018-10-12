@@ -6,7 +6,7 @@
     D3D11/Xbox360 implementation of StreamTextureLoader.
 
     (C) 2007 Radon Labs GmbH
-    (C) 2013 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */    
 //------------------------------------------------------------------------------
 #include "resources/streamresourceloader.h"
@@ -18,7 +18,7 @@ class D3D11StreamTextureLoader : public Resources::StreamResourceLoader
 {
     __DeclareClass(D3D11StreamTextureLoader);
 private:
-    /// setup the texture from a Nebula3 stream
+    /// setup the texture from a Nebula stream
     virtual bool SetupResourceFromStream(const Ptr<IO::Stream>& stream);
 };
 

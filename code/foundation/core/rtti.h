@@ -3,13 +3,14 @@
 /**
     @class Core::Rtti
 
-    Nebula3's runtime type information for one class. Every class derived
+    Nebula's runtime type information for one class. Every class derived
     from Core::RefCounted should use the macros __DeclareClass and __ImplementClass
     to properly initialize the runtime type information for the class. This
     will also automatically register the class with the Core::Factory object
     to implement object construction from class name string or fourcc code.
 
     (C) 2006 RadonLabs GmbH
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 #include "core/factory.h"

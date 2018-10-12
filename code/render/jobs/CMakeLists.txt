@@ -1,8 +1,8 @@
-INCLUDE_DIRECTORIES(${Nebula3_SOURCE_DIR}/code
-					${Nebula3_SOURCE_DIR}/code/addons/
-					${Nebula3_SOURCE_DIR}/code/render/
-					${Nebula3_SOURCE_DIR}/code/foundation/
-					${Nebula3_SOURCE_DIR}/code/extlibs/					
+INCLUDE_DIRECTORIES(${Nebula_SOURCE_DIR}/code
+					${Nebula_SOURCE_DIR}/code/addons/
+					${Nebula_SOURCE_DIR}/code/render/
+					${Nebula_SOURCE_DIR}/code/foundation/
+					${Nebula_SOURCE_DIR}/code/extlibs/					
 					)
 
 

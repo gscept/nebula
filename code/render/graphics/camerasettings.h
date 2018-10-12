@@ -6,7 +6,7 @@
     Wraps camera settings into an object.
     
     (C) 2009 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "math/matrix44.h"
 #include "math/float2.h"

@@ -3,13 +3,15 @@
 /**
 	Implements the transform device to manage object and camera transforms in Vulkan.
 	
-	(C) 2016 Individual contributors, see AUTHORS file
+	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
 #include "coregraphics/base/transformdevicebase.h"
 #include "coregraphics/shader.h"
 #include "coregraphics/graphicsdevice.h"
+#include "coregraphics/constantbuffer.h"
+#include "coregraphics/resourcetable.h"
 
 namespace Vulkan
 {
@@ -37,19 +39,21 @@ private:
 
 	Math::matrix44 viewMatrixArray[6];
 
-	CoreGraphics::ShaderConstantId viewVar;
-	CoreGraphics::ShaderConstantId invViewVar;
-	CoreGraphics::ShaderConstantId viewProjVar;
-	CoreGraphics::ShaderConstantId invViewProjVar;
-	CoreGraphics::ShaderConstantId projVar;
-	CoreGraphics::ShaderConstantId invProjVar;
-	CoreGraphics::ShaderConstantId eyePosVar;
-	CoreGraphics::ShaderConstantId focalLengthVar;
-	CoreGraphics::ShaderConstantId viewMatricesVar;
-	CoreGraphics::ShaderConstantId timeAndRandomVar;
+	CoreGraphics::ConstantBinding viewVar;
+	CoreGraphics::ConstantBinding invViewVar;
+	CoreGraphics::ConstantBinding viewProjVar;
+	CoreGraphics::ConstantBinding invViewProjVar;
+	CoreGraphics::ConstantBinding projVar;
+	CoreGraphics::ConstantBinding invProjVar;
+	CoreGraphics::ConstantBinding eyePosVar;
+	CoreGraphics::ConstantBinding focalLengthVar;
+	CoreGraphics::ConstantBinding viewMatricesVar;
+	CoreGraphics::ConstantBinding timeAndRandomVar;
 
-	CoreGraphics::ShaderConstantId shadowCameraBlockVar;
-	CoreGraphics::ShaderStateId sharedShader;
+	CoreGraphics::ConstantBinding shadowCameraBlockVar;
+	CoreGraphics::ConstantBufferId viewConstants;
+	CoreGraphics::ResourceTableId viewTable;
+	CoreGraphics::ResourcePipelineId tableLayout;
 };
 
 //------------------------------------------------------------------------------
@@ -58,7 +62,8 @@ private:
 inline void
 VkTransformDevice::BindCameraDescriptorSets()
 {
-	CoreGraphics::SetShaderState(this->sharedShader);
+	CoreGraphics::SetResourceTable(this->viewTable, NEBULA_FRAME_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
+	//CoreGraphics::SetResourceTable(this->viewTable, NEBULA_FRAME_GROUP, CoreGraphics::ComputePipeline, nullptr);
 }
 
 } // namespace Vulkan

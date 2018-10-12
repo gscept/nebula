@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 // framecopy.cc
-// (C) 2016 Individual contributors, see AUTHORS file
+// (C) 2016-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "framecopy.h"
@@ -33,6 +33,11 @@ FrameOp::Compiled*
 FrameCopy::AllocCompiled(Memory::ChunkAllocator<BIG_CHUNK>& allocator)
 {
 	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
+
+#if defined(NEBULA_GRAPHICS_DEBUG)
+	ret->name = this->name;
+#endif
+
 	ret->from = this->from;
 	ret->to = this->to;
 	return ret;
@@ -44,7 +49,6 @@ FrameCopy::AllocCompiled(Memory::ChunkAllocator<BIG_CHUNK>& allocator)
 void
 FrameCopy::CompiledImpl::Run(const IndexT frameIndex)
 {
-
 	// get dimensions
 	CoreGraphics::TextureDimensions fromDims = RenderTextureGetDimensions(this->from);
 	CoreGraphics::TextureDimensions toDims = RenderTextureGetDimensions(this->to);
@@ -60,7 +64,16 @@ FrameCopy::CompiledImpl::Run(const IndexT frameIndex)
 	toRegion.top = 0;
 	toRegion.right = toDims.width;
 	toRegion.bottom = toDims.height;
+
+#if defined(NEBULA_GRAPHICS_DEBUG)
+	CoreGraphics::CmdBufBeginMarker(GraphicsQueueType, Math::float4(0.8f, 0.6f, 0.6f, 1), this->name.Value());
+#endif
+
 	CoreGraphics::Copy(this->from, fromRegion, this->to, toRegion);
+
+#if defined(NEBULA_GRAPHICS_DEBUG)
+	CoreGraphics::CmdBufEndMarker(GraphicsQueueType);
+#endif
 }
 
 } // namespace Frame2

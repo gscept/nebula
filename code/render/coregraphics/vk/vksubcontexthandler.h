@@ -21,7 +21,7 @@
 
 	TODO: We should be able to use this handler across devices too...
 
-	(C) 2017 Individual contributors, see AUTHORS file
+	(C)2017-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "vulkan/vulkan.h"

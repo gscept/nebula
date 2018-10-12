@@ -7,7 +7,7 @@
 	are appended in a sequence. Note that the number of physics bodies must 
 	equal num joints + 1.
     
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "physics/joint.h"
 
