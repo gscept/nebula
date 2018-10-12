@@ -170,6 +170,8 @@ fips_begin_module(foundation)
 			logfileconsolehandler.h
             jsonreader.cc
             jsonreader.h
+			jsonwriter.cc
+            jsonwriter.h
 			mediatype.h
 			memorystream.cc
 			memorystream.h
