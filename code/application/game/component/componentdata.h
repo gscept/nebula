@@ -157,7 +157,6 @@ void ReadDataSequenced(Util::ArrayAllocator<Game::Entity, Ts...>& data, const Pt
 	};
 }
 
-
 template <class ... TYPES>
 class ComponentData
 {
@@ -219,11 +218,13 @@ public:
 	Util::ArrayAllocator<Entity, TYPES...> data;
 	
 private:
+	const static int STACK_SIZE = 8;
+
 	/// contains free id's that we reuse as soon as possible.
 	Util::Stack<uint32_t> freeIds;
 
 	/// Contains the link between InstanceData and Entity Id
-	Util::HashTable<Ids::Id32, uint32_t> idMap;
+	Util::HashTable<Ids::Id32, uint32_t, STACK_SIZE> idMap;
 };
 
 
