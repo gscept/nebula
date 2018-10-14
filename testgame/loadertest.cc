@@ -47,28 +47,30 @@ LoaderTest::Run()
 		entities.Append(entity);
 
 		tComp->RegisterEntity(entity);
-		plComp->RegisterEntity(entity);
-		auto instance = plComp->GetInstance(entity);
-		plComp->SetAttributeValue(instance, Attr::DebugName, "Tjene");
+		//plComp->RegisterEntity(entity);
+		//auto instance = plComp->GetInstance(entity);
+		//plComp->SetAttributeValue(instance, Attr::DebugName, "Tjene");
 	}
 
 	LevelLoader::Save("bin:test.scnb");
 
 	tComp->DestroyAll();
+	plComp->DestroyAll();
 
 	// Delete all entities.
 	for (SizeT i = 0; i < entities.Size(); i++)
 		entityManager->DeleteEntity(entities[i]);
 
-	this->Verify(tComp->GetNumInstances() == 0);
-	this->Verify(entityManager->GetNumEntities() == 0);
+	VERIFY(tComp->GetNumInstances() == 0);
+	VERIFY(entityManager->GetNumEntities() == 0);
 
 	LevelLoader::Load("bin:test.scnb");
 
 	tComp->DeregisterAllDead();
+	plComp->DeregisterAllDead();
 
-	this->Verify(tComp->GetNumInstances() != 0);
-	this->Verify(entityManager->GetNumEntities() != 0);
+	VERIFY(tComp->GetNumInstances() != 0);
+	VERIFY(entityManager->GetNumEntities() != 0);
 	
 	entities.Clear();
 }
