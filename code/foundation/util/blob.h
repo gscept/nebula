@@ -38,10 +38,14 @@ public:
 	Blob(SizeT size);
 	/// copy constructor
 	Blob(const Blob& rhs);
+    /// move constructor
+    Blob(Blob&& rhs);
 	/// destructor
 	~Blob();
 	/// assignment operator
 	void operator=(const Blob& rhs);
+    /// move assignment operator
+    void operator=(Blob&& rhs);
 
 	/// equality operator
 	bool operator==(const Blob& rhs) const;
@@ -64,6 +68,9 @@ public:
 	void Trim(SizeT size);
 	/// set blob contents
 	void Set(const void* ptr, SizeT size);
+    /// set from base64 enconded
+    void SetFromBase64(const void* ptr, SizeT size);
+
 	/// set chunk contents. Will allocate more memory if necessary.
 	void SetChunk(const void* from, SizeT size, SizeT internalOffset);
 	/// get blob ptr
@@ -72,6 +79,8 @@ public:
 	SizeT Size() const;
 	/// get a hash code (compatible with Util::HashTable)
 	IndexT HashCode() const;
+    /// get as base64 encoded
+    Util::Blob GetBase64() const;
 
 private:
 	/// delete content
@@ -198,6 +207,26 @@ Blob::Blob(const Blob& rhs) :
 /**
 */
 inline
+Blob::Blob(Blob&& rhs) :
+    ptr(0),
+    size(0),
+    allocSize(0)
+{
+    if (rhs.IsValid())
+    {
+        this->ptr = rhs.ptr;
+        this->size = rhs.size;
+        this->allocSize = rhs.allocSize;
+        rhs.ptr = nullptr;
+        rhs.size = 0;
+        rhs.allocSize = 0;
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline
 Blob::Blob(SizeT s) :
 	ptr(0),
 	size(0),
@@ -297,6 +326,27 @@ Blob::operator=(const Blob& rhs)
     if (rhs.IsValid())
     {
         this->Copy(rhs.ptr, rhs.size);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+Blob::operator=(Blob&& rhs)
+{
+    if (this != &rhs)
+    {
+        if (this->IsValid())
+        {
+            this->Delete();
+        }
+        this->ptr = rhs.ptr;
+        this->size = rhs.size;
+        this->allocSize = rhs.allocSize;
+        rhs.ptr = nullptr;
+        rhs.size = 0;
+        rhs.allocSize = 0;
     }
 }
 
