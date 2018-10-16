@@ -98,7 +98,15 @@ TransformComponent::SetParents(const uint32_t & start, const uint32_t & end, con
 void
 TransformComponent::RegisterEntity(const Entity& entity)
 {
-	this->data.RegisterEntity(entity);
+	uint32_t instance = this->data.RegisterEntity(entity);
+	
+	// Set default values
+	this->LocalTransform(instance) = Math::matrix44::identity();
+	this->WorldTransform(instance) = Math::matrix44::identity();
+	this->Parent(instance) = uint32_t(-1);
+	this->FirstChild(instance) = uint32_t(-1);
+	this->NextSibling(instance) = uint32_t(-1);
+	this->PrevSibling(instance) = uint32_t(-1);
 }
 
 //------------------------------------------------------------------------------
@@ -126,15 +134,21 @@ TransformComponent::GetNumInstances() const
 
 //------------------------------------------------------------------------------
 /**
-	@todo	we should reserve per array here.
 */
 void
 TransformComponent::AllocInstances(uint num)
 {
-	for (size_t i = 0; i < num; i++)
-	{
-		this->data.data.Alloc();
-	}
+	/// @todo	we should reserve per array here.
+	SizeT first = this->data.data.Size();
+	this->data.data.Reserve(first + num);
+	
+	this->data.data.GetArray<0>().SetSize(first + num);
+	this->data.data.GetArray<1>().Fill(first, num, Math::matrix44::identity());
+	this->data.data.GetArray<2>().Fill(first, num, Math::matrix44::identity());
+	this->data.data.GetArray<3>().Fill(first, num, uint(-1));
+	this->data.data.GetArray<4>().Fill(first, num, uint(-1));
+	this->data.data.GetArray<5>().Fill(first, num, uint(-1));
+	this->data.data.GetArray<6>().Fill(first, num, uint(-1));
 }
 
 //------------------------------------------------------------------------------
