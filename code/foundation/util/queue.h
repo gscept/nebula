@@ -146,8 +146,9 @@ Queue<TYPE>::~Queue()
 /**
 */
 template<class TYPE>
-Queue<TYPE>::Queue(const Queue<TYPE>& rhs)
-    : data(nullptr)
+Queue<TYPE>::Queue(const Queue<TYPE>& rhs):
+    data(nullptr),
+    capacity(0)
 {
     this->Reserve(rhs.size);
     for (IndexT i = 0; i < rhs.size; i++)

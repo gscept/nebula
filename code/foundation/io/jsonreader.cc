@@ -63,7 +63,7 @@ JsonReader::Open()
             const URI& uri = this->stream->GetURI();
             const pjson::error_info & error = this->document->get_error();
             Util::String position;
-            if(error.m_ofs<this->stream->GetSize())
+            if(error.m_ofs<(size_t)this->stream->GetSize())
             {
                 position.Set(((const char *)contents) + error.m_ofs, 40);
             }            
@@ -203,7 +203,7 @@ JsonReader::SetToNode(const String& path)
         {
             Util::String num = cur;
             num.Trim("[]");
-            uint idx = num.AsInt();
+            unsigned int idx = num.AsInt();
             n_assert(node->is_object_or_array());
             n_assert(idx < node->size());
             node = &node->get_value_at_index(idx);
@@ -395,7 +395,7 @@ JsonReader::GetAttrs() const
     n_assert(0 != this->curNode);
     n_assert(this->curNode->is_object());
     Array<String> res;
-    for (uint i = 0; i < this->curNode->size(); ++i)
+    for (unsigned int i = 0; i < this->curNode->size(); ++i)
     {
         res.Append(this->curNode->get_key_name_at_index(i));
     }
@@ -719,10 +719,10 @@ template<> Util::Array<int> JsonReader::Get<Util::Array<int>>(const char* attr) 
     const value_variant * node = this->GetChild(attr);
 
     n_assert(node->is_array());
-    uint count = node->size();
+    unsigned int count = node->size();
     Util::Array<int> ret(count, 0);
 
-    for (uint i = 0; i < count; i++)
+    for (unsigned int i = 0; i < count; i++)
     {
         ret.Append(node->get_value_at_index(i).as_int32());
     }
@@ -737,10 +737,10 @@ template<> Util::Array<float> JsonReader::Get<Util::Array<float>>(const char* at
     const value_variant * node = this->GetChild(attr);
 
     n_assert(node->is_array());
-    uint count = node->size();
+    unsigned int count = node->size();
     Util::Array<float> ret(count, 0);
 
-    for (uint i = 0; i < count; i++)
+    for (unsigned int i = 0; i < count; i++)
     {
         ret.Append(node->get_value_at_index(i).as_float());
     }
@@ -755,10 +755,10 @@ template<> Util::Array<Util::String> JsonReader::Get<Util::Array<Util::String>>(
     const value_variant * node = this->GetChild(attr);
 
     n_assert(node->is_array());
-    uint count = node->size();
+    unsigned int count = node->size();
     Util::Array<Util::String> ret(count, 0);
 
-    for (uint i = 0; i < count; i++)
+    for (unsigned int i = 0; i < count; i++)
     {
         ret.Append(node->get_value_at_index(i).as_string_ptr());
     }

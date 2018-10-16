@@ -89,7 +89,7 @@ base64_encode(unsigned char *in, int inlen, char *out)
 		out[j++] = BASE64_PAD;
 	}
 
-	return BASE64_OK;
+	return j;
 }
 
 int
@@ -102,7 +102,7 @@ base64_decode(char *in, int inlen, unsigned char *out)
 		int s = i % 4; 			/* from 8/gcd(6, 8) */
 
 		if (in[i] == '=')
-			return BASE64_OK;
+			return j;
 
 		if (in[i] < BASE64DE_FIRST || in[i] > BASE64DE_LAST ||
 		    (c = base64de[in[i] - BASE64DE_FIRST]) == -1)
@@ -131,5 +131,5 @@ base64_decode(char *in, int inlen, unsigned char *out)
 		}
 	}
 
-	return BASE64_OK;
+	return j;
 }
