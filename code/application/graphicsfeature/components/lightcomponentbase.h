@@ -1,4 +1,4 @@
-// NIDL #version:7#
+// NIDL #version:12#
 #pragma once
 //------------------------------------------------------------------------------
 /**
@@ -32,6 +32,16 @@ public:
     /// Default destructor
     ~PointLightComponentBase();
     
+    enum AttributeIndex
+    {
+        OWNER,
+        RANGE,
+        COLOR,
+        CASTSHADOWS,
+        DEBUGNAME,
+        NumAttributes
+    };
+    
     /// Registers an entity to this component. Entity is inactive to begin with.
     void RegisterEntity(const Game::Entity& entity);
     
@@ -64,12 +74,12 @@ public:
     SizeT Optimize();
     
     /// Returns an attribute value as a variant from index.
-    Util::Variant GetAttributeValue(uint32_t instance, IndexT attributeIndex) const;
+    Util::Variant GetAttributeValue(uint32_t instance, AttributeIndex attributeIndex) const;
     /// Returns an attribute value as a variant from attribute id.
     Util::Variant GetAttributeValue(uint32_t instance, Attr::AttrId attributeId) const;
     
     /// Set an attribute value from index
-    void SetAttributeValue(uint32_t instance, IndexT attributeIndex, Util::Variant value);
+    void SetAttributeValue(uint32_t instance, AttributeIndex attributeIndex, Util::Variant value);
     /// Set an attribute value from attribute id
     void SetAttributeValue(uint32_t instance, Attr::AttrId attributeId, Util::Variant value);
     
@@ -78,20 +88,25 @@ public:
     /// Deserialize from binary stream and set data.
     void Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances);
     /// Get the total number of instances of this component
-    uint32_t GetNumInstances() const;
+    uint32_t NumRegistered() const;
     /// Allocate multiple instances
-    void AllocInstances(uint num);
-protected:
+    void Allocate(uint num);
     /// Read/write access to attributes.
-    const float& GetAttrRange(const uint32_t& instance);
-    void SetAttrRange(const uint32_t& instance, const float& value);
-    const Math::float4& GetAttrColor(const uint32_t& instance);
-    void SetAttrColor(const uint32_t& instance, const Math::float4& value);
-    const bool& GetAttrCastShadows(const uint32_t& instance);
-    void SetAttrCastShadows(const uint32_t& instance, const bool& value);
-    const Util::String& GetAttrDebugName(const uint32_t& instance);
-    void SetAttrDebugName(const uint32_t& instance, const Util::String& value);
+    const float& GetRange(const uint32_t& instance);
+    void SetRange(const uint32_t& instance, const float& value);
+    const Math::float4& GetColor(const uint32_t& instance);
+    void SetColor(const uint32_t& instance, const Math::float4& value);
+    const bool& GetCastShadows(const uint32_t& instance);
+    void SetCastShadows(const uint32_t& instance, const bool& value);
+    const Util::String& GetDebugName(const uint32_t& instance);
+    void SetDebugName(const uint32_t& instance, const Util::String& value);
     
+protected:
+    /// Callbacks for reacting to updated attributes.
+    virtual void OnRangeUpdated(const uint32_t& instance, const float& value);
+    virtual void OnColorUpdated(const uint32_t& instance, const Math::float4& value);
+    virtual void OnCastShadowsUpdated(const uint32_t& instance, const bool& value);
+    virtual void OnDebugNameUpdated(const uint32_t& instance, const Util::String& value);
 private:
     /// Holds all entity instances data
     Game::ComponentData<float, Math::float4, bool, Util::String> data;
@@ -106,6 +121,17 @@ public:
     /// Default destructor
     ~SpotLightComponentBase();
     
+    enum AttributeIndex
+    {
+        OWNER,
+        RANGE,
+        ANGLE,
+        DIRECTION,
+        COLOR,
+        CASTSHADOWS,
+        NumAttributes
+    };
+    
     /// Registers an entity to this component. Entity is inactive to begin with.
     void RegisterEntity(const Game::Entity& entity);
     
@@ -138,12 +164,12 @@ public:
     SizeT Optimize();
     
     /// Returns an attribute value as a variant from index.
-    Util::Variant GetAttributeValue(uint32_t instance, IndexT attributeIndex) const;
+    Util::Variant GetAttributeValue(uint32_t instance, AttributeIndex attributeIndex) const;
     /// Returns an attribute value as a variant from attribute id.
     Util::Variant GetAttributeValue(uint32_t instance, Attr::AttrId attributeId) const;
     
     /// Set an attribute value from index
-    void SetAttributeValue(uint32_t instance, IndexT attributeIndex, Util::Variant value);
+    void SetAttributeValue(uint32_t instance, AttributeIndex attributeIndex, Util::Variant value);
     /// Set an attribute value from attribute id
     void SetAttributeValue(uint32_t instance, Attr::AttrId attributeId, Util::Variant value);
     
@@ -152,26 +178,32 @@ public:
     /// Deserialize from binary stream and set data.
     void Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances);
     /// Get the total number of instances of this component
-    uint32_t GetNumInstances() const;
+    uint32_t NumRegistered() const;
     /// Allocate multiple instances
-    void AllocInstances(uint num);
+    void Allocate(uint num);
     /// Called from entitymanager if this component is registered with a deletion callback.
     /// Removes entity immediately from component instances.
     void OnEntityDeleted(Game::Entity entity);
     
-protected:
     /// Read/write access to attributes.
-    const float& GetAttrRange(const uint32_t& instance);
-    void SetAttrRange(const uint32_t& instance, const float& value);
-    const float& GetAttrAngle(const uint32_t& instance);
-    void SetAttrAngle(const uint32_t& instance, const float& value);
-    const Math::float4& GetAttrDirection(const uint32_t& instance);
-    void SetAttrDirection(const uint32_t& instance, const Math::float4& value);
-    const Math::float4& GetAttrColor(const uint32_t& instance);
-    void SetAttrColor(const uint32_t& instance, const Math::float4& value);
-    const bool& GetAttrCastShadows(const uint32_t& instance);
-    void SetAttrCastShadows(const uint32_t& instance, const bool& value);
+    const float& GetRange(const uint32_t& instance);
+    void SetRange(const uint32_t& instance, const float& value);
+    const float& GetAngle(const uint32_t& instance);
+    void SetAngle(const uint32_t& instance, const float& value);
+    const Math::float4& GetDirection(const uint32_t& instance);
+    void SetDirection(const uint32_t& instance, const Math::float4& value);
+    const Math::float4& GetColor(const uint32_t& instance);
+    void SetColor(const uint32_t& instance, const Math::float4& value);
+    const bool& GetCastShadows(const uint32_t& instance);
+    void SetCastShadows(const uint32_t& instance, const bool& value);
     
+protected:
+    /// Callbacks for reacting to updated attributes.
+    virtual void OnRangeUpdated(const uint32_t& instance, const float& value);
+    virtual void OnAngleUpdated(const uint32_t& instance, const float& value);
+    virtual void OnDirectionUpdated(const uint32_t& instance, const Math::float4& value);
+    virtual void OnColorUpdated(const uint32_t& instance, const Math::float4& value);
+    virtual void OnCastShadowsUpdated(const uint32_t& instance, const bool& value);
 private:
     /// Holds all entity instances data
     Game::ComponentData<float, float, Math::float4, Math::float4, bool> data;
@@ -186,6 +218,15 @@ public:
     /// Default destructor
     ~DirectionalLightComponentBase();
     
+    enum AttributeIndex
+    {
+        OWNER,
+        DIRECTION,
+        COLOR,
+        CASTSHADOWS,
+        NumAttributes
+    };
+    
     /// Registers an entity to this component. Entity is inactive to begin with.
     void RegisterEntity(const Game::Entity& entity);
     
@@ -218,12 +259,12 @@ public:
     SizeT Optimize();
     
     /// Returns an attribute value as a variant from index.
-    Util::Variant GetAttributeValue(uint32_t instance, IndexT attributeIndex) const;
+    Util::Variant GetAttributeValue(uint32_t instance, AttributeIndex attributeIndex) const;
     /// Returns an attribute value as a variant from attribute id.
     Util::Variant GetAttributeValue(uint32_t instance, Attr::AttrId attributeId) const;
     
     /// Set an attribute value from index
-    void SetAttributeValue(uint32_t instance, IndexT attributeIndex, Util::Variant value);
+    void SetAttributeValue(uint32_t instance, AttributeIndex attributeIndex, Util::Variant value);
     /// Set an attribute value from attribute id
     void SetAttributeValue(uint32_t instance, Attr::AttrId attributeId, Util::Variant value);
     
@@ -232,22 +273,26 @@ public:
     /// Deserialize from binary stream and set data.
     void Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances);
     /// Get the total number of instances of this component
-    uint32_t GetNumInstances() const;
+    uint32_t NumRegistered() const;
     /// Allocate multiple instances
-    void AllocInstances(uint num);
+    void Allocate(uint num);
     /// Called from entitymanager if this component is registered with a deletion callback.
     /// Removes entity immediately from component instances.
     void OnEntityDeleted(Game::Entity entity);
     
-protected:
     /// Read/write access to attributes.
-    const Math::float4& GetAttrDirection(const uint32_t& instance);
-    void SetAttrDirection(const uint32_t& instance, const Math::float4& value);
-    const Math::float4& GetAttrColor(const uint32_t& instance);
-    void SetAttrColor(const uint32_t& instance, const Math::float4& value);
-    const bool& GetAttrCastShadows(const uint32_t& instance);
-    void SetAttrCastShadows(const uint32_t& instance, const bool& value);
+    const Math::float4& GetDirection(const uint32_t& instance);
+    void SetDirection(const uint32_t& instance, const Math::float4& value);
+    const Math::float4& GetColor(const uint32_t& instance);
+    void SetColor(const uint32_t& instance, const Math::float4& value);
+    const bool& GetCastShadows(const uint32_t& instance);
+    void SetCastShadows(const uint32_t& instance, const bool& value);
     
+protected:
+    /// Callbacks for reacting to updated attributes.
+    virtual void OnDirectionUpdated(const uint32_t& instance, const Math::float4& value);
+    virtual void OnColorUpdated(const uint32_t& instance, const Math::float4& value);
+    virtual void OnCastShadowsUpdated(const uint32_t& instance, const bool& value);
 private:
     /// Holds all entity instances data
     Game::ComponentData<Math::float4, Math::float4, bool> data;

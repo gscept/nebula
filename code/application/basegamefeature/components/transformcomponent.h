@@ -34,10 +34,25 @@ public:
 	TransformComponent();
 	~TransformComponent();
 
+	enum Attributes
+	{
+		OWNER,
+		LOCALTRANSFORM,
+		WORLDTRANSFORM,
+		PARENT,
+		FIRSTCHILD,
+		NEXTSIBLING,
+		PREVIOUSSIBLING,
+		NumAttributes
+	};
+
+	/// Set the local transform of instance. Will update hierarchy
 	void SetLocalTransform(const uint32_t& instance, const Math::matrix44& val);
 
 	/// Update relationships
 	void SetParents(const uint32_t& start, const uint32_t& end, const Util::Array<Entity>& entities, const Util::Array<uint32_t>& parentIndices);
+
+	// Generated -------------------------------------------
 
 	/// Registers an entity to this component. Entity is inactive to begin with.
 	void RegisterEntity(const Entity& entity);
@@ -45,15 +60,12 @@ public:
 	/// Deregister Entity. This checks both active and inactive component instances.
 	void DeregisterEntity(const Entity& entity);
 
-	uint32_t GetNumInstances() const;
+	uint32_t NumRegistered() const;
 
 	/// Allocate multiple instances
-	void AllocInstances(uint num);
+	void Allocate(uint numInstances);
 
-	/// Deregister all non-alive entities from both inactive and active. This can be extremely slow!
-	void DeregisterAllDead();
-
-	/// Cleans up right away and frees any memory that does not belong to an entity. This can be extremely slow!
+	/// Cleans up right away and frees any memory that does not belong to an entity. (slow)
 	void CleanData();
 
 	/// Destroys all instances of this component, and deregisters every entity.
@@ -76,7 +88,7 @@ public:
 	SizeT Optimize();
 
 	/// Returns an attribute value as a variant from index.
-	Util::Variant GetAttributeValue(uint32_t instance, IndexT attributeIndex) const;
+	Util::Variant GetAttributeValue(uint32_t instance, Attributes attributeIndex) const;
 	/// Returns an attribute value as a variant from attribute id.
 	Util::Variant GetAttributeValue(uint32_t instance, Attr::AttrId attributeId) const;
 

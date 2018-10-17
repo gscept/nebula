@@ -71,16 +71,6 @@ BaseComponent::OnEntityDeleted(Entity entity)
 /**
 */
 void
-BaseComponent::DeregisterAllDead()
-{
-	// Override in subclass
-	n_assert2(false, "Method has not been overridden!");
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
 BaseComponent::CleanData()
 {
 	// Override in subclass
@@ -101,7 +91,7 @@ BaseComponent::DestroyAll()
 /**
 */
 uint32_t
-BaseComponent::GetNumInstances() const
+BaseComponent::NumRegistered() const
 {
 	n_assert2(false, "Method has not been overridden!");
 	return 0;
@@ -211,7 +201,7 @@ BaseComponent::GetAttributeIds() const
 /**
 */
 void
-BaseComponent::AllocInstances(uint num)
+BaseComponent::Allocate(uint num)
 {
 	n_assert2(false, "Method has not been overridden!");
 }

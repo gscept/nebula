@@ -40,7 +40,7 @@ LevelLoader::Save(const Util::String& levelName)
 	for (SizeT i = 0; i < numComponents; i++)
 	{
 		Ptr<Game::BaseComponent> component = manager->GetComponentAtIndex(i);
-		if (component->GetNumInstances() == 0)
+		if (component->NumRegistered() == 0)
 		{
 			// Skip this component
 			continue;
@@ -51,7 +51,7 @@ LevelLoader::Save(const Util::String& levelName)
 		ComponentBuildData c;
 
 		c.fourcc = component->GetClassFourCC();
-		c.numInstances = component->GetNumInstances();
+		c.numInstances = component->NumRegistered();
 
 		// TODO: Add description of component so that we can make sure we're not reading incorrect or outdated data later.
 		// ex. c.description = Util::String(for each attribute: { return attributeDefinition.ToString() })
@@ -120,9 +120,9 @@ LevelLoader::Load(const Util::String& levelName)
 		{
 			// Needs to create entirely new instances, not reuse old.
 
-			uint start = c->GetNumInstances();
-			c->AllocInstances(component.numInstances);
-			uint end = c->GetNumInstances();
+			uint start = c->NumRegistered();
+			c->Allocate(component.numInstances);
+			uint end = c->NumRegistered();
 
 			Ptr<IO::BinaryReader> bReader = IO::BinaryReader::Create();
 			bReader->SetStream(component.mStream);
