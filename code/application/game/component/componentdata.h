@@ -147,12 +147,17 @@ void WriteDataSequenced(const Util::ArrayAllocator<Game::Entity, Ts...>& data, c
 template <class...Ts, std::size_t...Is>
 void ReadDataSequenced(Util::ArrayAllocator<Game::Entity, Ts...>& data, const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances, std::index_sequence<Is...>)
 {
+	if (data.GetArray<0>().Size() < offset + numInstances)
+	{
+		data.GetArray<0>().SetSize(offset + numInstances);
+	}
 	reader->ReadRawData((void*)&data.GetArray<0>()[offset], numInstances * data.GetArray<0>().TypeSize());
 
 	using expander = int[];
 	(void)expander
 	{
 		0, (
+		data.GetArray<Is + 1>().SetSize(offset + numInstances),
 		Deserialize<Ts>(reader, data.GetArray<Is + 1>(), offset, numInstances), 0)...
 	};
 }
@@ -218,7 +223,7 @@ public:
 	Util::ArrayAllocator<Entity, TYPES...> data;
 	
 private:
-	const static int STACK_SIZE = 8;
+	const static int STACK_SIZE = 4;
 
 	/// contains free id's that we reuse as soon as possible.
 	Util::Stack<uint32_t> freeIds;

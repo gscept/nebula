@@ -5,12 +5,6 @@
 
 	Components derive from this class.
 
-	@todo	Add Allocate virtual function for quickly allocating multiple instances.
-			this->Alloc(numInstances)
-			Also, we need a set data function for quickly setting instance data in a certain span
-			this->SetData(start, end, void*)
-			SetData function should automatically split the void* buffer into each struct of arrays blocks.
-
 	(C) 2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
@@ -59,9 +53,6 @@ public:
 	/// Immediately removes the data instance
 	virtual void OnEntityDeleted(Entity entity);
 
-	/// Deregister all non-alive entities from both inactive and active. This can be extremely slow!
-	virtual void DeregisterAllDead();
-
 	/// Cleans up right away and frees any memory that does not belong to an entity. This can be extremely slow!
 	virtual void CleanData();
 
@@ -69,7 +60,7 @@ public:
 	virtual void DestroyAll();
 
 	/// Return amount of registered entities
-	virtual uint32_t GetNumInstances() const;
+	virtual uint32_t NumRegistered() const;
 
 	/// returns an index to the instance data within the data buffer.
 	virtual uint32_t GetInstance(const Entity& entity) const;
@@ -106,7 +97,7 @@ public:
 	// ----------------------------------
 
 	/// Allocate multiple instances quickly
-	virtual void AllocInstances(uint num);
+	virtual void Allocate(uint num);
 	
 	/// Returns all attributes that are of Entity type.
 	/// Just returns a pointer to each of the arrays containing the entity-ids
