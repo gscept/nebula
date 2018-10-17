@@ -508,7 +508,7 @@ class ComponentClassWriter:
                 index = 1
                 self.f.WriteLine("this->data.data.Get<{}>(instance).{} = value.Get{}();".format(index, attributeName, IDLTypes.ConvertToCamelNotation(attribute["type"])))
             else:
-                self.f.WriteLine("this->data.data.Get<{}>(instance) = value.Get{}();".format(index, IDLTypes.ConvertToCamelNotation(attribute["type"])))
+                self.f.WriteLine("this->Set{}(instance, value.Get{}());".format(Capitalize(attributeName), IDLTypes.ConvertToCamelNotation(attribute["type"])))
         self.f.DecreaseIndent()
         self.f.WriteLine("}")
         self.f.DecreaseIndent()
@@ -538,7 +538,7 @@ class ComponentClassWriter:
                 index = 1
                 self.f.WriteLine("this->data.data.Get<{}>(instance).{} = value.Get{}();".format(index, attributeName, IDLTypes.ConvertToCamelNotation(attribute["type"])))
             else:
-                self.f.WriteLine("this->data.data.Get<{}>(instance) = value.Get{}();".format(index, IDLTypes.ConvertToCamelNotation(attribute["type"])))
+                self.f.WriteLine("this->Set{}(instance, value.Get{}());".format(Capitalize(attributeName), IDLTypes.ConvertToCamelNotation(attribute["type"])))
         self.f.DecreaseIndent()
         self.f.WriteLine("}")
         self.f.WriteLine("")
@@ -575,6 +575,8 @@ class ComponentClassWriter:
                     self.f.WriteLine("this->data.data.Get<1>(instance).{} = value;".format(attributeName))
                 else:
                     self.f.WriteLine("this->data.data.Get<{}>(instance) = value;".format(i + 1))
+                self.f.WriteLine("// callback that we can hook into to react to this change")
+                self.f.WriteLine("this->On{}Updated(instance, value);".format(Capitalize(attributeName)));
                 self.f.DecreaseIndent()
                 self.f.WriteLine("}")
                 self.f.WriteLine("")
