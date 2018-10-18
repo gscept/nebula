@@ -45,161 +45,165 @@ class ComponentClassWriter:
 
         self.hasAttributes = "attributes" in self.component
 
-
         if self.hasAttributes and not "attributes" in self.document:
             util.fmtError('Component has attributes attached but none could be found by the component compiler! Please make sure they\'re defined or imported as a dependency in the current .nidl file.')
+        
+        self.componentDataArguments = ""
+        if (self.hasAttributes):
+            numAttributes = len(self.component["attributes"])
+            for i, attributeName in enumerate(self.component["attributes"]):
+                if not attributeName in self.document["attributes"]:
+                    util.fmtError(AttributeNotFoundError.format(attributeName))
+                self.componentDataArguments += IDLTypes.GetTypeString(self.document["attributes"][attributeName]["type"])
+                if i != (numAttributes - 1):
+                    self.componentDataArguments += ", "
 
     #------------------------------------------------------------------------------
     ##
     #
     def WriteClassDeclaration(self):
-        # Write instance structure for PPI components
-        if self.dataLayout == IDLTypes.PACKED_PER_INSTANCE:
-            self.f.WriteLine('struct {}Instance'.format(self.componentName))
-            self.f.WriteLine("{")
-            self.f.IncreaseIndent()
-            if self.hasAttributes:
-                for attributeName in self.component["attributes"]:
-                    if not attributeName in self.document["attributes"]:
-                        util.fmtError(AttributeNotFoundError.format(attributeName))
-                    self.f.WriteLine('{} {};'.format(IDLTypes.GetTypeString(self.document["attributes"][attributeName]["type"]), attributeName))
-            self.f.DecreaseIndent()
-            self.f.WriteLine("};")
-            self.f.WriteLine("")
-            self.f.WriteLine("//------------------------------------------------------------------------------")
+        headerTemplate = """
+class {className} : public Game::BaseComponent
+{{
+    __DeclareClass({className})
 
-        # Declare class
-        self.f.WriteLine('class {} : public Game::BaseComponent'.format(self.className))
-        self.f.WriteLine("{")
+public:
+    /// Default constructor
+    {className}();
+    /// Default destructor
+    ~{className}();
 
-        self.f.IncreaseIndent()
-        self.f.WriteLine('__DeclareClass({})'.format(self.className))
-        self.f.DecreaseIndent()
-        self.f.WriteLine("public:")
-        self.f.IncreaseIndent()
-        self.f.WriteLine("/// Default constructor")
-        self.f.WriteLine('{}();'.format(self.className))
-        self.f.WriteLine("/// Default destructor")
-        self.f.WriteLine('~{}();'.format(self.className))
-        self.f.WriteLine("")
+    enum AttributeIndex
+    {{
+        OWNER,
+{enumAttributeList}
+        NumAttributes
+    }};
 
-        self.f.WriteLine("enum AttributeIndex")
-        self.f.WriteLine("{")
-        self.f.IncreaseIndent()
-        self.f.WriteLine("OWNER,")
+    /// Registers an entity to this component.
+    void RegisterEntity(const Game::Entity& entity);
+    
+    /// Deregister Entity.
+    void DeregisterEntity(const Game::Entity& entity);
+    
+    /// Cleans up right away and frees any memory that does not belong to an entity. (slow!)
+    void CleanData();
+    
+    /// Destroys all instances of this component, and deregisters every entity.
+    void DestroyAll();
+    
+    /// Checks whether the entity is registered.
+    bool IsRegistered(const Game::Entity& entity) const;
+    
+    /// Returns the index of the data array to the component instance
+    uint32_t GetInstance(const Game::Entity& entity) const;
+    
+    /// Returns the owner entity id of provided instance id
+    Game::Entity GetOwner(const uint32_t& instance) const;
+    
+    /// Set the owner of a given instance. This does not care if the entity is registered or not!
+    void SetOwner(const uint32_t& i, const Game::Entity& entity);
+    
+    /// Optimize data array and pack data
+    SizeT Optimize();
+    
+    /// Returns an attribute value as a variant from index.
+    Util::Variant GetAttributeValue(uint32_t instance, AttributeIndex attributeIndex) const;
+    
+    /// Returns an attribute value as a variant from attribute id.
+    Util::Variant GetAttributeValue(uint32_t instance, Attr::AttrId attributeId) const;
+    
+    /// Set an attribute value from index
+    void SetAttributeValue(uint32_t instance, AttributeIndex attributeIndex, Util::Variant value);
+    
+    /// Set an attribute value from attribute id
+    void SetAttributeValue(uint32_t instance, Attr::AttrId attributeId, Util::Variant value);
+    
+    /// Serialize component into binary stream
+    void Serialize(const Ptr<IO::BinaryWriter>& writer) const;
+
+    /// Deserialize from binary stream and set data.
+    void Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances);
+
+    /// Get the total number of instances of this component
+    uint32_t NumRegistered() const;
+
+    /// Allocate multiple instances
+    void Allocate(uint num);
+    {onEntityDeletedDeclaration}
+
+    {attributeSetGetDeclarations}
+
+protected:
+    {attributeOnUpdatedCallbacks}
+
+private:
+    /// Holds all entity instances data")
+    Game::ComponentData<{componentDataArguments}> data;
+}};
+        """.format(
+            className=self.className,
+            enumAttributeList=self.GetEnumAttributeList(),
+            onEntityDeletedDeclaration=self.GetEntityDeletedDeclaration(),
+            attributeSetGetDeclarations=self.GetAttributeAccessDeclarations(),
+            attributeOnUpdatedCallbacks=self.GetAttributeOnUpdatedDeclarations(),
+            componentDataArguments=self.componentDataArguments
+        )
+
+        self.f.WriteLine(headerTemplate)
+
+    #------------------------------------------------------------------------------
+    ##
+    #
+    def GetEnumAttributeList(self):
+        retval = ""
         if self.hasAttributes:
             for attributeName in self.component["attributes"]:
                 if not attributeName in self.document["attributes"]:
                     util.fmtError(AttributeNotFoundError.format(attributeName))
-                self.f.WriteLine("{},".format(attributeName.upper()))
-        self.f.WriteLine("NumAttributes")
-        self.f.DecreaseIndent()
-        self.f.WriteLine("};")
+                retval += "        {},\n".format(attributeName.upper())
+        return retval
 
-        self.f.WriteLine("")
-        self.f.WriteLine("/// Registers an entity to this component. Entity is inactive to begin with.")
-        self.f.WriteLine("void RegisterEntity(const Game::Entity& entity);")
-        self.f.WriteLine("")
-        self.f.WriteLine("/// Deregister Entity. This checks both active and inactive component instances.")
-        self.f.WriteLine("void DeregisterEntity(const Game::Entity& entity);")
-        self.f.WriteLine("")
-        self.f.WriteLine("/// Deregister all non-alive entities, both inactive and active. This can be extremely slow!")
-        self.f.WriteLine("void DeregisterAllDead();")
-        self.f.WriteLine("")
-        self.f.WriteLine("/// Cleans up right away and frees any memory that does not belong to an entity. This can be extremely slow!")
-        self.f.WriteLine("void CleanData();")
-        self.f.WriteLine("")
-        self.f.WriteLine("/// Destroys all instances of this component, and deregisters every entity.")
-        self.f.WriteLine("void DestroyAll();")
-        self.f.WriteLine("")
-        self.f.WriteLine("/// Checks whether the entity is registered. Checks both inactive and active datasets.")
-        self.f.WriteLine("bool IsRegistered(const Game::Entity& entity) const;")
-        self.f.WriteLine("")
-        self.f.WriteLine("/// Returns the index of the data array to the component instance")
-        self.f.WriteLine("/// Note that this only checks the active dataset")
-        self.f.WriteLine("uint32_t GetInstance(const Game::Entity& entity) const;")
-        self.f.WriteLine("")
-        self.f.WriteLine("/// Returns the owner entity id of provided instance id")
-        self.f.WriteLine("Game::Entity GetOwner(const uint32_t& instance) const;")
-        self.f.WriteLine("")
-        self.f.WriteLine("/// Set the owner of a given instance. This does not care if the entity is registered or not!")
-        self.f.WriteLine("void SetOwner(const uint32_t& i, const Game::Entity& entity);")
-        self.f.WriteLine("")
-        self.f.WriteLine("/// Optimize data array and pack data")
-        self.f.WriteLine("SizeT Optimize();")
-        self.f.WriteLine("")
-        self.f.WriteLine("/// Returns an attribute value as a variant from index.")
-        self.f.WriteLine("Util::Variant GetAttributeValue(uint32_t instance, AttributeIndex attributeIndex) const;")
-        self.f.WriteLine("/// Returns an attribute value as a variant from attribute id.")
-        self.f.WriteLine("Util::Variant GetAttributeValue(uint32_t instance, Attr::AttrId attributeId) const;")
-        self.f.WriteLine("")
-        self.f.WriteLine("/// Set an attribute value from index")
-        self.f.WriteLine("void SetAttributeValue(uint32_t instance, AttributeIndex attributeIndex, Util::Variant value);")
-        self.f.WriteLine("/// Set an attribute value from attribute id")
-        self.f.WriteLine("void SetAttributeValue(uint32_t instance, Attr::AttrId attributeId, Util::Variant value);")
-        self.f.WriteLine("")
-        self.f.WriteLine("/// Serialize component into binary stream")
-        self.f.WriteLine("void Serialize(const Ptr<IO::BinaryWriter>& writer) const;")
-        self.f.WriteLine("/// Deserialize from binary stream and set data.")
-        self.f.WriteLine("void Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances);")
-        self.f.WriteLine("/// Get the total number of instances of this component")
-        self.f.WriteLine("uint32_t NumRegistered() const;")
-        self.f.WriteLine("/// Allocate multiple instances")
-        self.f.WriteLine("void Allocate(uint num);")
-
-        
+    #------------------------------------------------------------------------------
+    ##
+    #
+    def GetEntityDeletedDeclaration(self):
         if not self.useDelayedRemoval:
-            self.f.WriteLine("/// Called from entitymanager if this component is registered with a deletion callback.")
-            self.f.WriteLine("/// Removes entity immediately from component instances.")
-            self.f.WriteLine("void OnEntityDeleted(Game::Entity entity);")
-            self.f.WriteLine("")
-
-        self.f.WriteLine("/// Read/write access to attributes.")
+            return """
+            /// Called from entitymanager if this component is registered with a deletion callback.
+            /// Removes entity immediately from component instances.
+            void OnEntityDeleted(Game::Entity entity);
+            
+            """
+        else:
+            return ""
+    
+    #------------------------------------------------------------------------------
+    ##
+    #
+    def GetAttributeAccessDeclarations(self):
+        retval = ""
         if self.hasAttributes:
+            retval += "/// Read/write access to attributes.\n"
             for attributeName in self.component["attributes"]:
                 if not attributeName in self.document["attributes"]:
                     util.fmtError(AttributeNotFoundError.format(attributeName))
-                self.f.WriteLine('const {}& Get{}(const uint32_t& instance);'.format(IDLTypes.GetTypeString(self.document["attributes"][attributeName]["type"]), Capitalize(attributeName)))
-                self.f.WriteLine('void Set{}(const uint32_t& instance, const {}& value);'.format(Capitalize(attributeName), IDLTypes.GetTypeString(self.document["attributes"][attributeName]["type"])))
-        self.f.WriteLine("")
-        self.f.DecreaseIndent()
-        
-        
-        self.f.WriteLine("protected:")
-        self.f.IncreaseIndent()
-        self.f.WriteLine("/// Callbacks for reacting to updated attributes.")
+                retval += '    const {}& Get{}(const uint32_t& instance);\n'.format(IDLTypes.GetTypeString(self.document["attributes"][attributeName]["type"]), Capitalize(attributeName))
+                retval += '    void Set{}(const uint32_t& instance, const {}& value);\n'.format(Capitalize(attributeName), IDLTypes.GetTypeString(self.document["attributes"][attributeName]["type"]))
+        return retval
+
+    #------------------------------------------------------------------------------
+    ##
+    #
+    def GetAttributeOnUpdatedDeclarations(self):
+        retval = ""
         if self.hasAttributes:
+            retval += "/// Callbacks for reacting to updated attributes.\n"
             for attributeName in self.component["attributes"]:
                 if not attributeName in self.document["attributes"]:
                     util.fmtError(AttributeNotFoundError.format(attributeName))
-                self.f.WriteLine('virtual void On{}Updated(const uint32_t& instance, const {}& value);'.format(Capitalize(attributeName), IDLTypes.GetTypeString(self.document["attributes"][attributeName]["type"])))
-        self.f.DecreaseIndent()
-
-
-        self.f.WriteLine("private:")
-        self.f.IncreaseIndent()
-
-        templateArgs = ""
-
-        if (self.hasAttributes):
-            if self.dataLayout == IDLTypes.PACKED_PER_ATTRIBUTE:
-                numAttributes = len(self.component["attributes"])
-                for i, attributeName in enumerate(self.component["attributes"]):
-                    if not attributeName in self.document["attributes"]:
-                        util.fmtError(AttributeNotFoundError.format(attributeName))
-                    templateArgs += IDLTypes.GetTypeString(self.document["attributes"][attributeName]["type"])
-                    if i != (numAttributes - 1):
-                        templateArgs += ", "
-            else:
-                templateArgs += '{}Instance'.format(self.componentName)
-
-        componentData = 'Game::ComponentData<{}> {};'
-
-        self.f.WriteLine("/// Holds all entity instances data")
-        self.f.WriteLine(componentData.format(templateArgs, "data"))
-        self.f.DecreaseIndent()
-        self.f.WriteLine("};")
-        self.f.WriteLine("")
+                retval += '    virtual void On{}Updated(const uint32_t& instance, const {}& value);\n'.format(Capitalize(attributeName), IDLTypes.GetTypeString(self.document["attributes"][attributeName]["type"]))
+        return retval
 
     #------------------------------------------------------------------------------
     ##
@@ -329,15 +333,6 @@ class ComponentClassWriter:
     ##
     #
     def WriteCleanupMethods(self):
-        self.f.InsertNebulaComment("@todo	if needed: deregister deletion callbacks")
-        self.f.WriteLine("void")
-        self.f.WriteLine("{}::DeregisterAllDead()".format(self.className))
-        self.f.WriteLine("{")
-        self.f.IncreaseIndent()
-        self.f.WriteLine("this->data.DeregisterAllInactive();")
-        self.f.DecreaseIndent()
-        self.f.WriteLine("}")
-        self.f.WriteLine("")
         self.f.InsertNebulaComment("@todo	if needed: deregister deletion callbacks")
         self.f.WriteLine("void")
         self.f.WriteLine("{}::CleanData()".format(self.className))
@@ -669,5 +664,6 @@ class ComponentClassWriter:
         self.WriteAttrAccessImplementations()
         self.WriteAllocInstancesMethod()
         self.WriteCallbackMethods();
+        
 
 

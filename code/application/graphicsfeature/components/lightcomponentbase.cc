@@ -1,4 +1,4 @@
-// NIDL #version:14#
+// NIDL #version:15#
 //------------------------------------------------------------------------------
 //  lightcomponentbase.cc
 //  (C) Individual contributors, see AUTHORS file
@@ -73,17 +73,6 @@ PointLightComponentBase::DeregisterEntity(const Game::Entity& entity)
         this->data.DeregisterEntity(entity);
         return;
     }
-}
-
-
-//------------------------------------------------------------------------------
-/**
-    @todo	if needed: deregister deletion callbacks
-*/
-void
-PointLightComponentBase::DeregisterAllDead()
-{
-    this->data.DeregisterAllInactive();
 }
 
 
@@ -448,17 +437,6 @@ SpotLightComponentBase::DeregisterEntity(const Game::Entity& entity)
         Game::EntityManager::Instance()->DeregisterDeletionCallback(entity, this);
         return;
     }
-}
-
-
-//------------------------------------------------------------------------------
-/**
-    @todo	if needed: deregister deletion callbacks
-*/
-void
-SpotLightComponentBase::DeregisterAllDead()
-{
-    this->data.DeregisterAllInactive();
 }
 
 
@@ -871,17 +849,6 @@ DirectionalLightComponentBase::DeregisterEntity(const Game::Entity& entity)
         Game::EntityManager::Instance()->DeregisterDeletionCallback(entity, this);
         return;
     }
-}
-
-
-//------------------------------------------------------------------------------
-/**
-    @todo	if needed: deregister deletion callbacks
-*/
-void
-DirectionalLightComponentBase::DeregisterAllDead()
-{
-    this->data.DeregisterAllInactive();
 }
 
 
