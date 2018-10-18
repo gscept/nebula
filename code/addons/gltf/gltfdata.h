@@ -17,7 +17,6 @@
 #include "math/vector.h"
 #include "util/string.h"
 #include "util/blob.h"
-#include "coregraphics/legacy/nvx2streamreader.h"
 
 namespace pjson
 {
