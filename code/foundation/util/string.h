@@ -37,11 +37,12 @@
 #endif
 
 #include "memory/poolarrayallocator.h"
-#include "blob.h"
 
 //------------------------------------------------------------------------------
 namespace Util
 {
+class Blob;
+
 class String
 {
 public:

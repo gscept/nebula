@@ -12,6 +12,7 @@
 #include "core/types.h"
 #include "memory/heap.h"
 #include "memory/poolarrayallocator.h"
+#include "io/uri.h"
 
 //------------------------------------------------------------------------------
 namespace Util
@@ -70,6 +71,8 @@ public:
 	void Set(const void* ptr, SizeT size);
     /// set from base64 enconded
     void SetFromBase64(const void* ptr, SizeT size);
+    /// set from file
+    void SetFromFile(const IO::URI & uri);
 
 	/// set chunk contents. Will allocate more memory if necessary.
 	void SetChunk(const void* from, SizeT size, SizeT internalOffset);
@@ -410,11 +413,18 @@ Blob::operator<=(const Blob& rhs) const
 inline void
 Blob::Reserve(SizeT s)
 {
-    if (this->allocSize > 0 && this->allocSize < s)
+    if (this->IsValid())
     {
-        this->Delete();        
+        if (this->allocSize < s)
+        {
+            this->Delete();
+            this->Allocate(s);
+        }
     }
-    this->Allocate(s);
+    else
+    {
+        this->Allocate(s);
+    }
     this->size = s;
 }
 

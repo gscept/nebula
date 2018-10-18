@@ -85,7 +85,7 @@ public:
 	/// get transform44 attribute value from current node
 	Math::transform44 GetTransform44(const char* attr = 0) const;
     /// generic getter for extension types
-    template<typename T> T Get(const char* attr = 0) const;
+    template<typename T> void Get(T& target, const char* attr = 0);    
 
     /// get optional string attribute value from current node
     Util::String GetOptString(const char* attr, const Util::String& defaultValue) const;
@@ -102,7 +102,12 @@ public:
     /// get optional matrix44 attribute value from current node
     Math::matrix44 GetOptMatrix44(const char* attr, const Math::matrix44& defaultValue) const;
 	/// get transform44 attribute value from current node
-	Math::transform44 GetOptTransform44(const char* attr, const Math::transform44& defaultValue) const;    
+	Math::transform44 GetOptTransform44(const char* attr, const Math::transform44& defaultValue) const;
+
+    /// generic getter for optional items
+    template<typename T> bool GetOpt(T& target, const char* attr = 0);
+    /// generic getter for optional items
+    template<typename T> bool GetOpt(T& target, const char* attr, const T& default);
     
 private:  
     ///
@@ -113,7 +118,24 @@ private:
     IndexT childIdx = -1;
     Util::Stack<const pjson::value_variant*> parents;
     Util::Stack<IndexT> parentIdx;
+    // 0 terminated buffer containing the raw json file
+    char * buffer = nullptr;
 };
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<typename T> 
+inline bool
+JsonReader::GetOpt(T& target, const char* attr, const T& defaultVal)
+{
+    if (!this->GetOpt<T>(target, attr))
+    {
+        target = defaultVal;
+        return false;
+    }
+    return true;
+}
 
 } // namespace IO
 //------------------------------------------------------------------------------

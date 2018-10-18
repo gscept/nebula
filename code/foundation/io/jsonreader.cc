@@ -45,7 +45,7 @@ JsonReader::~JsonReader()
 //------------------------------------------------------------------------------
 /**
     Opens the stream and reads the content of the stream into
-    TinyXML.
+    pjson.
 */
 bool
 JsonReader::Open()
@@ -55,29 +55,26 @@ JsonReader::Open()
     if (StreamReader::Open())
     {
         this->document = n_new(pjson::document);
-        // create an XML document object        
-        n_assert(this->stream->CanBeMapped());
-        void * contents = this->stream->Map();
-        if (!this->document->deserialize_in_place((char*)contents))
+
+        // create an document object        
+        // we need to 0 terminate the input buffer
+        SizeT fileSize = this->stream->GetSize();
+        this->buffer = (char*)Memory::Alloc(Memory::StreamDataHeap, fileSize + 1);
+        this->stream->Read(buffer, fileSize);
+        this->buffer[fileSize] = '\0';
+        if (!this->document->deserialize_in_place(buffer))
         {
             const URI& uri = this->stream->GetURI();
             const pjson::error_info & error = this->document->get_error();
             Util::String position;
             if(error.m_ofs<(size_t)this->stream->GetSize())
             {
-                position.Set(((const char *)contents) + error.m_ofs, 40);
+                position.Set(((const char *)this->buffer) + error.m_ofs, 40);
             }            
             n_error("JsonReader::Open(): failed to parse json file: %s\n%s\nat: %s\n", uri.AsString().AsCharPtr(), error.m_pError_message, position.AsCharPtr());
             
             return false;
-        }
-
-        // since the XML document is now loaded, we can close the original stream
-        if (!this->streamWasOpen)
-        {
-            this->stream->Unmap();
-            this->stream->Close();
-        }
+        }        
 
         // set the current node to the root node
         this->curNode = this->document;
@@ -96,7 +93,9 @@ JsonReader::Close()
     this->document->clear();    
     n_delete(this->document);
     this->curNode = 0;
-
+    this->stream->Close();
+    Memory::Free(Memory::StreamDataHeap, this->buffer);
+    this->buffer = nullptr;
     StreamReader::Close();
 }
 
@@ -264,8 +263,7 @@ JsonReader::SetToFirstChild(const Util::String& name)
         return true;
     }
     else
-    {        
-        this->childIdx = -1;
+    {                
         return false;
     }
 }
@@ -286,12 +284,14 @@ JsonReader::SetToNextChild()
 
     this->childIdx++;
 
-    const value_variant* child = &this->parents.Peek()->get_value_at_index(this->childIdx);
-    
-    if (child)
+    if (this->childIdx < (IndexT)this->parents.Peek()->size())
     {
-        this->curNode = child;
-        return true;
+        const value_variant* child = &this->parents.Peek()->get_value_at_index(this->childIdx);
+        if (child)
+        {
+            this->curNode = child;
+            return true;
+        }
     }
     return false;    
 }
@@ -415,7 +415,7 @@ JsonReader::GetChild(const char * name) const
 
     if (0 != name)
     {
-        n_assert(this->curNode->is_object());
+        n_assert(this->curNode->is_object());        
         return this->curNode->find_value_variant(name);
     }
     else
@@ -710,60 +710,364 @@ JsonReader::GetOptTransform44(const char* name, const transform44& defaultValue)
 	}
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+template<> void JsonReader::Get<Util::Array<uint32_t>>(Util::Array<uint32_t> & ret, const char* attr)
+{
+    const value_variant * node = this->GetChild(attr);
+
+    n_assert(node->is_array());
+    unsigned int count = node->size();    
+    ret.Reserve(count);
+    for (unsigned int i = 0; i < count; i++)
+    {
+        ret.Append(node->get_value_at_index(i).as_int32());
+    }    
+}
 
 //------------------------------------------------------------------------------
 /**
 */
-template<> Util::Array<int> JsonReader::Get<Util::Array<int>>(const char* attr) const
+template<> void JsonReader::Get<Util::Array<int>>(Util::Array<int> & ret, const char* attr)
 {
     const value_variant * node = this->GetChild(attr);
 
     n_assert(node->is_array());
     unsigned int count = node->size();
-    Util::Array<int> ret(count, 0);
-
+    ret.Reserve(count);
     for (unsigned int i = 0; i < count; i++)
     {
         ret.Append(node->get_value_at_index(i).as_int32());
     }
-    return ret;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-template<> Util::Array<float> JsonReader::Get<Util::Array<float>>(const char* attr) const
+template<> void JsonReader::Get<bool>(bool & ret, const char* attr)
+{
+    const value_variant * node = this->GetChild(attr);
+
+    n_assert(node->is_bool());
+    ret = node->as_bool();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<> void JsonReader::Get<int>(int & ret, const char* attr)
+{
+    const value_variant * node = this->GetChild(attr);
+
+    n_assert(node->is_int());
+    ret = node->as_int32();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<> void JsonReader::Get<uint32_t>(uint32_t & ret, const char* attr)
+{
+    const value_variant * node = this->GetChild(attr);
+
+    n_assert(node->is_int());
+    ret = node->as_int32();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<> void JsonReader::Get<float>(float & ret, const char* attr)
+{
+    const value_variant * node = this->GetChild(attr);
+
+    n_assert(node->is_numeric());
+    ret = node->as_float();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<> void JsonReader::Get<Util::String>(Util::String & ret, const char* attr)
+{
+    const value_variant * node = this->GetChild(attr);
+
+    n_assert(node->is_string());
+    ret = node->as_string_ptr();
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<> void JsonReader::Get<Util::Array<float>>(Util::Array<float> &ret, const char* attr)
 {
     const value_variant * node = this->GetChild(attr);
 
     n_assert(node->is_array());
     unsigned int count = node->size();
-    Util::Array<float> ret(count, 0);
-
+    ret.Reserve(count);
     for (unsigned int i = 0; i < count; i++)
     {
         ret.Append(node->get_value_at_index(i).as_float());
-    }
-    return ret;
+    }    
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-template<> Util::Array<Util::String> JsonReader::Get<Util::Array<Util::String>>(const char* attr) const
+template<> void JsonReader::Get<Util::Array<Util::String>>(Util::Array<Util::String> &ret, const char* attr)
 {
     const value_variant * node = this->GetChild(attr);
 
     n_assert(node->is_array());
     unsigned int count = node->size();
-    Util::Array<Util::String> ret(count, 0);
-
+    ret.Reserve(count);
     for (unsigned int i = 0; i < count; i++)
     {
         ret.Append(node->get_value_at_index(i).as_string_ptr());
-    }
-    return ret;
+    }    
 }
 
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<> bool JsonReader::GetOpt<bool>(bool & ret, const char* attr)
+{
+    const value_variant * node = this->GetChild(attr);
+    if (node)
+    {
+        n_assert(node->is_bool());
+        ret = node->as_bool();
+        return true;
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<> bool JsonReader::GetOpt<int>(int & ret, const char* attr)
+{
+    const value_variant * node = this->GetChild(attr);
+    if (node)
+    {
+        n_assert(node->is_int());
+        ret = node->as_int32();
+        return true;
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<> bool JsonReader::GetOpt<uint16_t>(uint16_t & ret, const char* attr)
+{
+    const value_variant * node = this->GetChild(attr);
+    if (node)
+    {
+        n_assert(node->is_int());
+        ret = static_cast<uint16_t>(node->as_int32());
+        return true;
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<> bool JsonReader::GetOpt<uint32_t>(uint32_t & ret, const char* attr)
+{
+    const value_variant * node = this->GetChild(attr);
+    if (node)
+    {
+        n_assert(node->is_int());
+        ret = node->as_int32();        
+        return true;
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<> bool JsonReader::GetOpt<float>(float & ret, const char* attr)
+{
+    const value_variant * node = this->GetChild(attr);
+    if (node)
+    {
+        n_assert(node->is_numeric());
+        ret = node->as_float();
+        return true;
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<> bool JsonReader::GetOpt<Math::float4>(Math::float4 & ret, const char* attr)
+{    
+    //FIXME this searches twice
+    const value_variant * node = this->GetChild(attr);
+    if (node)
+    {
+        ret = this->GetFloat4(attr);        
+        return true;
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<> bool JsonReader::GetOpt<Math::vector>(Math::vector & ret, const char* attr)
+{
+    //FIXME this searches twice
+    const value_variant * node = this->GetChild(attr);
+    if (node)
+    {
+        NEBULA_ALIGN16 float v[4];
+        for (int i = 0; i < 3; i++)
+        {
+            v[i] = node->get_value_at_index(i).as_float();
+        }
+        ret.load(v);
+        return true;
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<> bool JsonReader::GetOpt<Math::quaternion>(Math::quaternion & ret, const char* attr)
+{
+    //FIXME this searches twice
+    const value_variant * node = this->GetChild(attr);
+    if (node)
+    {
+        ret = this->GetFloat4(attr);
+        return true;
+    }
+    return false;
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<> bool JsonReader::GetOpt<Math::matrix44>(Math::matrix44 & ret, const char* attr)
+{
+    //FIXME this searches twice
+    const value_variant * node = this->GetChild(attr);
+    if (node)
+    {
+        ret = this->GetMatrix44(attr);
+        return true;
+    }
+    return false;
+}
+//------------------------------------------------------------------------------
+/**
+*/
+template<> bool JsonReader::GetOpt<Util::String>(Util::String & ret, const char* attr)
+{
+    const value_variant * node = this->GetChild(attr);
+    if (node)
+    {
+        n_assert(node->is_string());
+        ret = node->as_string_ptr();
+        return true;
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<> bool JsonReader::GetOpt<Util::Array<int>>(Util::Array<int> & target, const char* attr)
+{
+    const value_variant * node = this->GetChild(attr);
+
+    if (node)
+    {
+        n_assert(node->is_array());
+        unsigned int count = node->size();
+        target.Reserve(count);
+        for (unsigned int i = 0; i < count; i++)
+        {
+            target.Append(node->get_value_at_index(i).as_int32());
+        }
+        return true;
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<> bool JsonReader::GetOpt<Util::Array<uint32_t>>(Util::Array<uint32_t> & target, const char* attr)
+{
+    const value_variant * node = this->GetChild(attr);
+
+    if (node)
+    {
+        n_assert(node->is_array());
+        unsigned int count = node->size();
+        target.Reserve(count);
+        for (unsigned int i = 0; i < count; i++)
+        {
+            target.Append(node->get_value_at_index(i).as_int32());
+        }
+        return true;
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<> bool JsonReader::GetOpt<Util::Array<float>>(Util::Array<float> & target, const char* attr)
+{
+    const value_variant * node = this->GetChild(attr);
+    
+    if (node)
+    {
+        n_assert(node->is_array());
+        unsigned int count = node->size();
+        target.Reserve(count);
+        for (unsigned int i = 0; i < count; i++)
+        {
+            target.Append(node->get_value_at_index(i).as_float());
+        }
+        return true;
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<> bool JsonReader::GetOpt<Util::Array<Util::String>>(Util::Array<Util::String> & target, const char* attr)
+{
+    const value_variant * node = this->GetChild(attr);
+
+    if (node)
+    {
+        n_assert(node->is_array());
+        unsigned int count = node->size();
+        target.Reserve(count);
+        for (unsigned int i = 0; i < count; i++)
+        {
+            target.Append(node->get_value_at_index(i).as_string_ptr());
+        }
+        return true;
+    }
+    return false;
+}
 
 } // namespace IO
