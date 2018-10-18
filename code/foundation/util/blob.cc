@@ -7,6 +7,9 @@
 #include "util/blob.h"
 #include <string.h>
 #include "base64/base64.h"
+#include "io/uri.h"
+#include "io/ioserver.h"
+#include "io/filestream.h"
 
 namespace Util
 {
@@ -62,6 +65,20 @@ Blob::GetBase64() const
     n_assert(enc >= 0);
     ret.size = enc;
     return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+    loads binary from file
+*/
+void 
+Blob::SetFromFile(const IO::URI & uri)
+{
+    Ptr<IO::FileStream> file = IO::IoServer::Instance()->CreateStream(uri).downcast<IO::FileStream>();
+    n_assert(file->Open());
+    this->Reserve(file->GetSize());
+    file->Read(this->ptr, file->GetSize());
+    file->Close();
 }
 
 }

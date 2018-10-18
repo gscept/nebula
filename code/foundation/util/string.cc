@@ -10,6 +10,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include "base64/base64.h"
+#include "blob.h"
 
 
 //------------------------------------------------------------------------------

@@ -37,6 +37,7 @@ exports:
         - code/resource
         - code/application
         - code/physics
+        - code/addons
         - extlibs/mixed
     modules:
         foundation: code/foundation
@@ -44,3 +45,4 @@ exports:
         resource: code/resource
         application: code/application
         corelibs: extlibs/mixed
+        addons: code/addons
