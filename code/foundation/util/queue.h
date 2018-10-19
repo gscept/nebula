@@ -32,9 +32,13 @@ public:
     ~Queue();
     /// copy constructor
     Queue(const Queue<TYPE>& rhs);
-	
+    /// move constructor
+    Queue(Queue<TYPE>&& rhs);
+
     /// assignment operator
     void operator=(const Queue<TYPE>& rhs);
+    /// move assignment operator
+    void operator=(Queue<TYPE>&& rhs);
     /// access element by index, 0 is the frontmost element (next to be dequeued)
     TYPE& operator[](IndexT index) const;
     /// equality operator
@@ -164,17 +168,59 @@ Queue<TYPE>::Queue(const Queue<TYPE>& rhs):
 /**
 */
 template<class TYPE>
+Queue<TYPE>::Queue(Queue<TYPE>&& rhs) :
+    data(rhs.data),
+    capacity(rhs.capacity),
+    size(rhs.size),
+    grow(rhs.grow),
+    start(rhs.start)
+{
+#ifdef NEBULA_DEBUG
+    rhs.data = nullptr;
+    rhs.capacity = 0;
+    rhs.size = 0;
+#endif
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
 void
 Queue<TYPE>::operator=(const Queue<TYPE>& rhs)
 {
-    this->Reserve(rhs.size);
-    for (IndexT i = 0; i < rhs.size; i++)
+    if (this != &rhs)
     {
-        this->data[i] = rhs[i];
+        this->Reserve(rhs.size);
+        for (IndexT i = 0; i < rhs.size; i++)
+        {
+            this->data[i] = rhs[i];
+        }
+        this->size = rhs.size;
+        this->grow = rhs.grow;
+        this->start = 0;
     }
-    this->size = rhs.size;
-    this->grow = rhs.grow;
-    this->start = 0;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+void
+Queue<TYPE>::operator=(Queue<TYPE>&& rhs)
+{
+    if (this != &rhs)
+    {
+        this->data = rhs.data;
+        this->size = rhs.size;
+        this->grow = rhs.grow;
+        this->capacity = rhs.capacity;
+        this->start = rhs.start;
+#ifdef NEBULA_DEBUG
+        rhs.data = nullptr;
+        rhs.size = 0;
+#endif
+    }
 }
 
 //------------------------------------------------------------------------------

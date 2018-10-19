@@ -23,11 +23,15 @@ public:
     ArrayQueue();
     /// copy constructor
     ArrayQueue(const ArrayQueue<TYPE>& rhs);
+    /// move constructor
+    ArrayQueue(ArrayQueue<TYPE>&& rhs);
 	/// conversion constructor for array
     ArrayQueue(const Array<TYPE>& rhs);
 
     /// assignment operator
     void operator=(const ArrayQueue<TYPE>& rhs);
+    /// move assignment operator
+    void operator=(ArrayQueue<TYPE>&& rhs);
     /// access element by index, 0 is the frontmost element (next to be dequeued)
     TYPE& operator[](IndexT index) const;
     /// equality operator
@@ -80,6 +84,16 @@ ArrayQueue<TYPE>::ArrayQueue(const ArrayQueue<TYPE>& rhs)
 /**
 */
 template<class TYPE>
+ArrayQueue<TYPE>::ArrayQueue(ArrayQueue<TYPE>&& rhs):
+    queueArray(std::move(rhs.queueArray))
+{
+    // empty
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
 Util::ArrayQueue<TYPE>::ArrayQueue(const Array<TYPE>& rhs)
 {
 	this->queueArray = rhs;
@@ -93,6 +107,16 @@ void
 ArrayQueue<TYPE>::operator=(const ArrayQueue<TYPE>& rhs)
 {
     this->queueArray = rhs.queueArray;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+void
+ArrayQueue<TYPE>::operator=(ArrayQueue<TYPE>&& rhs)
+{
+    this->queueArray = std::move(rhs.queueArray);
 }
 
 //------------------------------------------------------------------------------
