@@ -25,8 +25,12 @@ public:
     KeyValuePair(const KEYTYPE& k);
     /// copy constructor
     KeyValuePair(const KeyValuePair<KEYTYPE, VALUETYPE>& rhs);
+    /// move constructor
+    KeyValuePair(KeyValuePair<KEYTYPE, VALUETYPE>&& rhs);
     /// assignment operator
     void operator=(const KeyValuePair<KEYTYPE, VALUETYPE>& rhs);
+    /// move assignment operator
+    void operator=(KeyValuePair<KEYTYPE, VALUETYPE>&& rhs);
     /// equality operator
     bool operator==(const KeyValuePair<KEYTYPE, VALUETYPE>& rhs) const;
     /// inequality operator
@@ -98,11 +102,33 @@ KeyValuePair<KEYTYPE, VALUETYPE>::KeyValuePair(const KeyValuePair<KEYTYPE, VALUE
 /**
 */
 template<class KEYTYPE, class VALUETYPE>
+KeyValuePair<KEYTYPE, VALUETYPE>::KeyValuePair(KeyValuePair<KEYTYPE, VALUETYPE>&& rhs) :
+    keyData(std::move(rhs.keyData)),
+    valueData(std::move(rhs.valueData))
+{
+    // empty
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class KEYTYPE, class VALUETYPE>
 void
 KeyValuePair<KEYTYPE, VALUETYPE>::operator=(const KeyValuePair<KEYTYPE, VALUETYPE>& rhs)
 {
     this->keyData = rhs.keyData;
     this->valueData = rhs.valueData;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class KEYTYPE, class VALUETYPE>
+void
+KeyValuePair<KEYTYPE, VALUETYPE>::operator=(KeyValuePair<KEYTYPE, VALUETYPE>&& rhs)
+{
+    this->keyData = std::move(rhs.keyData);
+    this->valueData = std::move(rhs.valueData);
 }
 
 //------------------------------------------------------------------------------

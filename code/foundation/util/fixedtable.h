@@ -24,10 +24,14 @@ public:
     FixedTable(SizeT w, SizeT h, const TYPE& val);
     /// copy constructor
     FixedTable(const FixedTable<TYPE>& rhs);
+    /// move constructor
+    FixedTable(FixedTable<TYPE>&& rhs);
     /// destructor
     ~FixedTable();
     /// assignment operator
     void operator=(const FixedTable<TYPE>& rhs);
+    /// move assignment operator
+    void operator=(FixedTable<TYPE>&& rhs);
     /// equality operator
     bool operator==(const FixedTable<TYPE>& rhs) const;
     /// inequality operator
@@ -190,6 +194,22 @@ FixedTable<TYPE>::FixedTable(const FixedTable<TYPE>& rhs) :
 /**
 */
 template<class TYPE>
+FixedTable<TYPE>::FixedTable(FixedTable<TYPE>&& rhs) :
+    width(rhs.width),
+    height(rhs.height),
+    elements(rhs.height)
+{
+#ifdef NEBULA_DEBUG
+    rhs.elements = nullptr;
+    rhs.width = 0;
+    rhs.height = 0;
+#endif
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
 FixedTable<TYPE>::~FixedTable()
 {
     this->Delete();
@@ -204,6 +224,27 @@ FixedTable<TYPE>::operator=(const FixedTable<TYPE>& rhs)
 {
     this->Delete();
     this->Copy(rhs);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+void
+FixedTable<TYPE>::operator=(FixedTable<TYPE>&& rhs)
+{
+    if (*this != rhs)
+    {
+        this->Delete();
+        this->elements = rhs.elements;
+        this->height = rhs.height;
+        this->width = rhs.width;
+#ifdef NEBULA_DEBUG
+        rhs.elements = nullptr;
+        rhs.width = 0;
+        rhs.height = 0;
+#endif
+    }    
 }
 
 //------------------------------------------------------------------------------
