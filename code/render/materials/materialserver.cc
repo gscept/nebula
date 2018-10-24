@@ -5,7 +5,7 @@
 #include "render/stdneb.h"
 #include "materialserver.h"
 #include "resources/resourcemanager.h"
-#include "materialpool.h"
+#include "surfacepool.h"
 #include "materialtype.h"
 #include "io/ioserver.h"
 #include "io/bxmlreader.h"
@@ -61,7 +61,7 @@ MaterialServer::Open()
 void
 MaterialServer::Close()
 {
-	this->materialAllocator.Release();
+	this->surfaceAllocator.Release();
 }
 
 //------------------------------------------------------------------------------
@@ -87,7 +87,7 @@ MaterialServer::LoadMaterialTypes(const IO::URI& file)
 		// parse materials
 		if (reader->SetToFirstChild("Material")) do
 		{
-			MaterialType* type = this->materialAllocator.Alloc<MaterialType>();
+			MaterialType* type = this->surfaceAllocator.Alloc<MaterialType>();
 			this->materialTypes.Append(type);
 
 			type->name = reader->GetString("name");
@@ -129,15 +129,39 @@ MaterialServer::LoadMaterialTypes(const IO::URI& file)
 					else
 					{
 						MaterialType* mat = this->materialTypesByName.ValueAtIndex(index);
-						type->batches.AppendArray(mat->batches);
-						type->programs.Merge(mat->programs);
+
 						type->textures.Merge(mat->textures);
 						type->constants.Merge(mat->constants);
+
+						// merge materials by adding new entry
+						auto it = mat->batchToIndexMap.Begin();
+						while (it != mat->batchToIndexMap.End())
+						{
+							IndexT idx = type->batchToIndexMap.FindIndex(*it.key);
+							if (idx == InvalidIndex)
+							{
+								// if new entry, add mapping and entry in lists
+								type->batchToIndexMap.Add(*it.key, type->programs.Size());
+								type->programs.Append(mat->programs[*it.val]);
+								type->texturesByBatch.Append(mat->texturesByBatch[*it.val]);
+								type->constantsByBatch.Append(mat->constantsByBatch[*it.val]);
+							}
+							else
+							{
+								// if entry exists, merge constants and texture dictionaries
+								idx = type->batchToIndexMap.FindIndex(idx);
+								type->programs[idx] = mat->programs[*it.val]; // this actually replaces the program, perhaps we want this to overload shaders
+								type->texturesByBatch[idx].Merge(mat->texturesByBatch[*it.val]);
+								type->constantsByBatch[idx].Merge(mat->constantsByBatch[*it.val]);
+							}
+							it++;
+						}
 					}
 				}
 			}
 
 			// parse passes
+			uint passIndex = 0;
 			if (reader->SetToFirstChild("Pass")) do
 			{
 				// get batch name
@@ -155,15 +179,21 @@ MaterialServer::LoadMaterialTypes(const IO::URI& file)
 				CoreGraphics::ShaderProgramId program = CoreGraphics::ShaderGetProgram(shd, mask);
 
 				if (program == CoreGraphics::ShaderProgramId::Invalid())
+				{
 					n_warning("WARNING: Material '%s' failed to load program with features '%s'\n", type->name.AsCharPtr(), shaderFeatures.AsCharPtr());
+				}
+				else
+				{
+					n_assert(!type->batchToIndexMap.Contains(code));
+					type->batchToIndexMap.Add(code, passIndex++);
+					type->programs.Append(program);
+					type->texturesByBatch.Append({});
+					type->constantsByBatch.Append({});
 
-				n_assert(!type->programs.Contains(code));
-				type->batches.Append(code);
-				type->programs.Add(code, program);
-
-				// add material to server
-				Util::Array<Materials::MaterialType*>& mats = this->materialTypesByBatch.AddUnique(code);
-				mats.Append(type);
+					// add material to server
+					Util::Array<Materials::MaterialType*>& mats = this->materialTypesByBatch.AddUnique(code);
+					mats.Append(type);
+				}
 
 			} while (reader->SetToNextChild("Pass"));
 
@@ -177,7 +207,23 @@ MaterialServer::LoadMaterialTypes(const IO::URI& file)
 				Util::String editType = reader->GetOptString("edit", "raw");
 				bool system = reader->GetOptBool("system", false);
 
-				if (ptype.BeginsWithString("texture"))
+				if (ptype.BeginsWithString("textureHandle"))
+				{
+					MaterialConstant constant;
+					constant.type = Util::Variant::UInt64;
+					auto res = Resources::CreateResource(reader->GetString("defaultValue") + NEBULA_TEXTURE_EXTENSION, "material types", nullptr, nullptr, true);
+					constant.defaultValue = CoreGraphics::TextureGetBindlessHandle(res.As<CoreGraphics::TextureId>());
+					constant.min = -1;
+					constant.max = -1;
+
+					constant.system = system;
+					constant.name = name;
+					constant.offset = { UINT_MAX };
+					constant.slot = InvalidIndex;
+					constant.group = InvalidIndex;
+					type->constants.Add(name, constant);
+				}
+				else if (ptype.BeginsWithString("texture"))
 				{
 					MaterialTexture texture;
 					if (ptype == "texture1d") texture.type = CoreGraphics::Texture1D;
@@ -192,15 +238,18 @@ MaterialServer::LoadMaterialTypes(const IO::URI& file)
 					{
 						n_error("Invalid texture type %s\n", ptype.AsCharPtr());
 					}
-					texture.defaultValue = Resources::CreateResource(reader->GetString("defaultValue") + NEBULA_TEXTURE_EXTENSION, "material types", nullptr, nullptr, true);
+					auto res = Resources::CreateResource(reader->GetString("defaultValue") + NEBULA_TEXTURE_EXTENSION, "material types", nullptr, nullptr, true);
+					texture.defaultValue = res.As<CoreGraphics::TextureId>();
 					texture.system = system;
+					texture.name = name;
+					texture.slot = InvalidIndex;
 					type->textures.Add(name, texture);
 				}
 				else
 				{
 					MaterialConstant constant;
 					constant.type = Util::Variant::StringToType(ptype);
-					constant.system = system;
+
 					switch (constant.type)
 					{
 					case Util::Variant::Float:
@@ -235,14 +284,20 @@ MaterialServer::LoadMaterialTypes(const IO::URI& file)
 						n_error("Unknown material parameter type %s\n", ptype.AsCharPtr());
 					}
 
+					constant.system = system;
+					constant.name = name;
+					constant.offset = { UINT_MAX };
+					constant.slot = InvalidIndex;
+					constant.group = InvalidIndex;
 					type->constants.Add(name, constant);
 				}
-			} while (reader->SetToNextChild("Param"));
+			}
+			while (reader->SetToNextChild("Param"));
 
-			// go throught constants and collect groups
-			Util::HashTable<CoreGraphics::BatchGroup::Code, Util::Set<IndexT>> uniqueGroups;
-
-		} while (reader->SetToNextChild("Material"));
+			// setup type (this maps valid constants to their respective programs)
+			type->Setup();
+		} 
+		while (reader->SetToNextChild("Material"));
 
 		return true;
 	}

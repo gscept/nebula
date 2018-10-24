@@ -41,7 +41,7 @@ struct ResourceTableLayoutId;
 struct ResourcePipelineId;
 
 RESOURCE_ID_TYPE(ShaderId);				// 32 bits container, 24 bits resource, 8 bits type
-ID_24_8_24_8_NAMED_TYPE(ShaderProgramId, shaderId, shaderType, programId, programType);		// 32 bits shader, 24 bits program, 8 bits type
+ID_24_8_24_8_NAMED_TYPE(ShaderProgramId, programId, programType, shaderId, shaderType);		// 32 bits shader, 24 bits program, 8 bits type
 
 ID_32_TYPE(DerivativeStateId);			// 32 bits derivative state (already created from an ordinary state)
 
@@ -75,11 +75,11 @@ enum ShaderPipeline
 
 struct ConstantBinding
 {
-	uint offset, arraySize, byteSize;
+	uint offset;
 };
 
 /// get constant type as string
-Util::String ConstantTypeToString(const ShaderConstantType& type);
+const Util::String ConstantTypeToString(const ShaderConstantType& type);
 
 /// create new shader
 const ShaderId CreateShader(const ShaderCreateInfo& info);
@@ -95,6 +95,15 @@ const ResourceTableId ShaderCreateResourceTable(const ShaderId id, const IndexT 
 const ConstantBufferId ShaderCreateConstantBuffer(const ShaderId id, const Util::StringAtom& name);
 /// create constant buffer from index
 const ConstantBufferId ShaderCreateConstantBuffer(const ShaderId id, const IndexT cbIndex);
+
+/// get the number of constants from shader
+const SizeT ShaderGetConstantCount(const ShaderId id);
+/// get type of variable by index
+const ShaderConstantType ShaderGetConstantType(const ShaderId id, const IndexT i);
+/// get type of variable by index
+const ShaderConstantType ShaderGetConstantType(const ShaderId id, const Util::StringAtom& name);
+/// get name of variable by index
+const Util::StringAtom ShaderGetConstantName(const ShaderId id, const IndexT i);
 /// get constant buffer binding by name
 const ConstantBinding ShaderGetConstantBinding(const ShaderId id, const Util::StringAtom& name);
 /// get constant buffer binding by index
@@ -105,38 +114,38 @@ const Util::StringAtom ShaderGetConstantBlockName(const ShaderId id, const Util:
 const Util::StringAtom ShaderGetConstantBlockName(const ShaderId id, const IndexT cIndex);
 /// get count of constant buffer bindings (for iteration)
 const SizeT ShaderGetConstantBindingsCount(const ShaderId id);
-
+/// get group to which constant is bound (the constant buffer which it resides in)
+const IndexT ShaderGetConstantGroup(const ShaderId id, const Util::StringAtom& name);
+/// get binding inside group of the constant buffer the constant lies in
+const IndexT ShaderGetConstantSlot(const ShaderId id, const Util::StringAtom& name);
 
 /// get resource table layout
 CoreGraphics::ResourceTableLayoutId ShaderGetResourceTableLayout(const ShaderId id, const IndexT group);
 /// get pipeline layout for shader
 CoreGraphics::ResourcePipelineId ShaderGetResourcePipeline(const ShaderId id);
 
-/// get the number of constants from shader
-SizeT ShaderGetConstantCount(const ShaderId id);
-/// get type of variable by index
-ShaderConstantType ShaderGetConstantType(const ShaderId id, const IndexT i);
-/// get type of variable by index
-ShaderConstantType ShaderGetConstantType(const ShaderId id, const Util::StringAtom& name);
-/// get name of variable by index
-Util::StringAtom ShaderGetConstantName(const ShaderId id, const IndexT i);
-
 /// get the number of constant buffers from shader
-SizeT ShaderGetConstantBufferCount(const ShaderId id);
+const SizeT ShaderGetConstantBufferCount(const ShaderId id);
 /// get size of constant buffer
-SizeT ShaderGetConstantBufferSize(const ShaderId id, const IndexT i);
-/// get name of constnat buffer
-Util::StringAtom ShaderGetConstantBufferName(const ShaderId id, const IndexT i);
-/// get slot of shader resource
-IndexT ShaderGetResourceSlot(const ShaderId id, const Util::StringAtom& name);
+const SizeT ShaderGetConstantBufferSize(const ShaderId id, const IndexT i);
+/// get name of constant buffer
+const Util::StringAtom ShaderGetConstantBufferName(const ShaderId id, const IndexT i);
+/// get binding inside group of constant buffer
+const IndexT ShaderGetConstantBufferResourceSlot(const ShaderId id, const IndexT i);
+/// get group of constant buffer
+const IndexT ShaderGetConstantBufferResourceGroup(const ShaderId id, const IndexT i);
+
+/// get slot of any shader resource
+const IndexT ShaderGetResourceSlot(const ShaderId id, const Util::StringAtom& name);
+
 
 /// get programs
 const Util::Dictionary<ShaderFeature::Mask, ShaderProgramId>& ShaderGetPrograms(const ShaderId id);
 /// get name of program
-Util::StringAtom ShaderProgramGetName(const ShaderProgramId id);
+const Util::StringAtom ShaderProgramGetName(const ShaderProgramId id);
 
 /// convert shader feature from string to mask
-ShaderFeature::Mask ShaderFeatureFromString(const Util::String& str);
+const ShaderFeature::Mask ShaderFeatureFromString(const Util::String& str);
 
 /// get shader program id from masks, this allows us to apply a shader program directly in the future
 const CoreGraphics::ShaderProgramId ShaderGetProgram(const ShaderId id, const CoreGraphics::ShaderFeature::Mask program);

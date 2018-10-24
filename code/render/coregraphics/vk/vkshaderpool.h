@@ -61,6 +61,7 @@ public:
 	CoreGraphics::ConstantBufferId CreateConstantBuffer(const CoreGraphics::ShaderId id, const Util::StringAtom& name);
 	/// create constant buffer from id
 	CoreGraphics::ConstantBufferId CreateConstantBuffer(const CoreGraphics::ShaderId id, const IndexT cbIndex);
+
 	/// get constant buffer binding from name
 	const CoreGraphics::ConstantBinding GetConstantBinding(const CoreGraphics::ShaderId id, const Util::StringAtom& name) const;
 	/// get constant buffer binding from index
@@ -86,16 +87,24 @@ public:
 	/// get name of constant by index
 	const Util::StringAtom GetConstantName(const CoreGraphics::ShaderId id, const IndexT i) const;
 
+	/// get constant buffer group index of constant
+	const IndexT GetConstantGroup(const CoreGraphics::ShaderId id, const Util::StringAtom& name) const;
+	/// get constant buffer slot index of constant
+	const IndexT GetConstantSlot(const CoreGraphics::ShaderId id, const Util::StringAtom& name) const;
+
 	/// get number of constant blocks
 	const SizeT GetConstantBufferCount(const CoreGraphics::ShaderId id) const;
 	/// get size of constant buffer
 	const SizeT GetConstantBufferSize(const CoreGraphics::ShaderId id, const IndexT i) const;
 	/// get name of constnat buffer
 	const Util::StringAtom GetConstantBufferName(const CoreGraphics::ShaderId id, const IndexT i) const;
-	/// get id of constant buffer
-	const IndexT GetConstantBufferIndex(const CoreGraphics::ShaderId id, const Util::StringAtom& name) const;
+	/// get slot of constant buffer based on index
+	const IndexT GetConstantBufferResourceSlot(const CoreGraphics::ShaderId id, const IndexT i) const;
+	/// get group of constant buffer based on index
+	const IndexT GetConstantBufferResourceGroup(const CoreGraphics::ShaderId id, const IndexT i) const;
 	/// get slot of shader resource
 	const IndexT GetResourceSlot(const CoreGraphics::ShaderId id, const Util::StringAtom& name) const;
+	
 
 	/// get list all mask-program pairs
 	const Util::Dictionary<CoreGraphics::ShaderFeature::Mask, CoreGraphics::ShaderProgramId>& GetPrograms(const CoreGraphics::ShaderId id);

@@ -70,15 +70,6 @@ VkShaderServer::Open()
 	this->resourceTable = ShaderCreateResourceTable(shader, NEBULA_TICK_GROUP);
 	this->tableLayout = ShaderGetResourcePipeline(shader);
 
-	/*
-	ResourceTableSetTexture(this->resourceTable, ResourceTableTexture{CoreGraphics::TextureId::Invalid(), VkShaderGetVkShaderVariableBinding(this->textureShaderState, this->texture2DTextureVar), 0, CoreGraphics::SamplerId::Invalid(), false});
-	ResourceTableSetTexture(this->resourceTable, ResourceTableTexture{CoreGraphics::TextureId::Invalid(), VkShaderGetVkShaderVariableBinding(this->textureShaderState, this->texture2DMSTextureVar), 0, CoreGraphics::SamplerId::Invalid(), false});
-	ResourceTableSetTexture(this->resourceTable, ResourceTableTexture{CoreGraphics::TextureId::Invalid(), VkShaderGetVkShaderVariableBinding(this->textureShaderState, this->texture2DArrayTextureVar), 0, CoreGraphics::SamplerId::Invalid(), false});
-	ResourceTableSetTexture(this->resourceTable, ResourceTableTexture{CoreGraphics::TextureId::Invalid(), VkShaderGetVkShaderVariableBinding(this->textureShaderState, this->textureCubeTextureVar), 0, CoreGraphics::SamplerId::Invalid(), false});
-	ResourceTableSetTexture(this->resourceTable, ResourceTableTexture{CoreGraphics::TextureId::Invalid(), VkShaderGetVkShaderVariableBinding(this->textureShaderState, this->texture3DTextureVar), 0, CoreGraphics::SamplerId::Invalid(), false});
-	ResourceTableCommitChanges(this->resourceTable);
-	*/
-
 	return true;
 }
 

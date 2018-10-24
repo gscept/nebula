@@ -465,9 +465,11 @@ ENDIF()
 				mousebutton.cc
 				mousebutton.h
 			)
+
+		
 IF(FALSE)
 
-		fips_dir(instancing)
+fips_dir(instancing)
 			fips_files(
 				instancerenderer.cc
 				instancerenderer.h
@@ -498,6 +500,37 @@ IF(FALSE)
 				d3d11instanceserver.h
 			)
 	endif()
+
+	fips_dir(lighting/base GROUP "lighting/base")
+		fips_files(
+			lightserverbase.cc
+			lightserverbase.h
+			shadowserverbase.cc
+			shadowserverbase.h
+		)
+	if (N_USE_VULKAN)
+	fips_dir(lighting/vk GROUP "lighting/vk")
+		fips_files(
+			vklightserver.cc
+			vklightserver.h
+			vkshadowserver.cc
+			vkshadowserver.h
+		)
+	endif()
+
+	fips_dir(lighting)
+		fips_files(
+			csmutil.cc
+			csmutil.h
+			environmentprobe.cc
+			environmentprobe.h
+			lightserver.cc
+			lightserver.h
+			lighttype.cc
+			lighttype.h
+			shadowserver.cc
+			shadowserver.h
+		)
 		fips_dir(jobs GROUPS "jobs")
 			fips_files(
 			../coreanimation/jobs/animjobsample.cc
@@ -508,22 +541,7 @@ IF(FALSE)
 			#../visibility/jobs/visibilityquadtreejob.cc
 			../particles/jobs/particlejob.cc
 			)			
-		fips_dir(lighting/base GROUP "lighting/base")
-			fips_files(
-				lightserverbase.cc
-				lightserverbase.h
-				shadowserverbase.cc
-				shadowserverbase.h
-			)
-	if (N_USE_VULKAN)
-		fips_dir(lighting/vk GROUP "lighting/vk")
-			fips_files(
-				vklightserver.cc
-				vklightserver.h
-				vkshadowserver.cc
-				vkshadowserver.h
-			)
-	endif()
+
 		fips_dir(lighting/handlers GROUP "lighting/handlers")
 			fips_files(
 				abstractlightentityhandler.cc
@@ -531,66 +549,17 @@ IF(FALSE)
 				pointlightentityhandler.cc
 				spotlightentityhandler.cc
 			)
-		fips_dir(lighting)
-			fips_files(
-				csmutil.cc
-				csmutil.h
-				environmentprobe.cc
-				environmentprobe.h
-				lightserver.cc
-				lightserver.h
-				lighttype.cc
-				lighttype.h
-				shadowserver.cc
-				shadowserver.h
-			)
-
-		fips_dir(materials)
-			fips_files(
-				material.cc
-				material.h
-				materialfeature.cc
-				materialfeature.h
-				materialinstance.cc
-				materialinstance.h
-				materialloader.cc
-				materialloader.h
-				materialpalette.cc
-				materialpalette.h
-				materialserver.cc
-				materialserver.h
-				materialtype.cc
-				materialtype.h
-				materialvariable.cc
-				materialvariable.h
-				materialvariableinstance.cc
-				materialvariableinstance.h
-				streamsurfaceloader.cc
-				streamsurfaceloader.h
-				streamsurfacesaver.cc
-				streamsurfacesaver.h
-				surface.cc
-				surface.h
-				surfaceconstant.cc
-				surfaceconstant.h
-				surfaceconstantinstance.cc
-				surfaceconstantinstance.h
-				surfaceinstance.cc
-				surfaceinstance.h
-				surfacename.cc
-				surfacename.h
-			)
 ENDIF()
 		fips_dir(materials)
 			fips_files(
 				material.cc
 				material.h
-				materialpool.cc
-				materialpool.h
 				materialserver.cc
 				materialserver.h
 				materialtype.cc
 				materialtype.h
+				surfacepool.cc
+				surfacepool.h
 			)
 		fips_dir(models/nodes GROUP "models/nodes")
 			fips_files(

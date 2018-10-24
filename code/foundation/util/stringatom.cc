@@ -68,7 +68,7 @@ StringAtom::Setup(const char* str)
 bool
 StringAtom::operator==(const char* rhs) const
 {
-    if (0 == this->content)
+    if (nullptr == this->content)
     {
         return false;
     }
@@ -80,12 +80,21 @@ StringAtom::operator==(const char* rhs) const
 
 //------------------------------------------------------------------------------
 /**
+*/
+bool 
+StringAtom::operator==(nullptr_t) const
+{
+	return this->content == nullptr;
+}
+
+//------------------------------------------------------------------------------
+/**
     Compare with raw string. Careful, slow!
 */
 bool
 StringAtom::operator!=(const char* rhs) const
 {
-    if (0 == this->content)
+    if (nullptr == this->content)
     {
         return false;
     }
@@ -95,7 +104,11 @@ StringAtom::operator!=(const char* rhs) const
     }
 }
 
-Util::StringAtom operator""_atm(const char * c)
+//------------------------------------------------------------------------------
+/**
+*/
+Util::StringAtom
+operator""_atm(const char* c)
 {
 	return Util::StringAtom();
 }

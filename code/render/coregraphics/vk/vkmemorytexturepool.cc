@@ -487,4 +487,16 @@ VkMemoryTexturePool::GetNumMips(const CoreGraphics::TextureId id)
 	return textureAllocator.Get<1>(id.allocId).mips;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+uint64 
+VkMemoryTexturePool::GetBindlessHandle(const CoreGraphics::TextureId id)
+{
+	textureAllocator.EnterGet();
+	auto ret = textureAllocator.Get<0>(id.allocId).bind;
+	textureAllocator.LeaveGet();
+	return ret;
+}
+
 } // namespace Vulkan

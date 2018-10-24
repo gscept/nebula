@@ -502,15 +502,7 @@ PassBegin(const PassId& id)
 	VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<1>(id.id24);
 
 	// bind descriptor set
-	static const uint32_t offset = 0;
-	BindDescriptorsGraphics(
-		&ResourceTableGetVkDescriptorSet(runtimeInfo.passDescriptorSet),
-		ResourcePipelineGetVk(runtimeInfo.passPipelineLayout), 
-		NEBULA_PASS_GROUP, 
-		1, 
-		nullptr, 
-		0, 
-		true);
+	CoreGraphics::SetResourceTable(runtimeInfo.passDescriptorSet, NEBULA_PASS_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
 
 	// update framebuffer pipeline info to next subpass
 	runtimeInfo.currentSubpassIndex = 0;

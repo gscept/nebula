@@ -83,7 +83,7 @@ StreamModelPool::CreateModelInstance(const ModelId id)
 
 		// root node(s)
 		if (node->parent == nullptr)
-			this->CreateModelInstanceRecursive(node, nullptr, mem, nodeInstances, nodeTypes);
+			this->CreateModelInstanceRecursive(node, nullptr, &mem, nodeInstances, nodeTypes);
 	}
 
 	return miid;
@@ -144,7 +144,7 @@ StreamModelPool::GetModelInstanceBoundingBox(const ModelInstanceId id)
 	Create model instance breadth first
 */
 void
-StreamModelPool::CreateModelInstanceRecursive(Models::ModelNode* node, Models::ModelNode::Instance* parentInstance, byte* memory, Util::Array<Models::ModelNode::Instance*>& instances, Util::Array<Models::NodeType>& types)
+StreamModelPool::CreateModelInstanceRecursive(Models::ModelNode* node, Models::ModelNode::Instance* parentInstance, byte** memory, Util::Array<Models::ModelNode::Instance*>& instances, Util::Array<Models::NodeType>& types)
 {
 	Models::ModelNode::Instance* inst = node->CreateInstance(memory, parentInstance);
 	instances.Append(inst);

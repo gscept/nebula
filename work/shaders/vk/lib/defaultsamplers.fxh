@@ -7,7 +7,7 @@
 #define DEFAULTSAMPLERS_FXH
 
 
-group(INSTANCE_GROUP) shared varblock DefaultSamplers [ bool DynamicOffset = true; string Visibility = "VS|PS"; ]
+group(BATCH_GROUP) shared varblock DefaultSamplers [ string Visibility = "VS|PS"; ]
 {
 	textureHandle AlbedoMap;
 	textureHandle DisplacementMap;

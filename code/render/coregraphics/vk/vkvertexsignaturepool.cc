@@ -147,7 +147,7 @@ VkVertexSignaturePool::GetDerivativeLayout(const CoreGraphics::VertexLayoutId la
 	}
 	else
 	{
-		DerivativeLayout layout;
+		DerivativeLayout& layout = hashTable.AddUnique(shaderHash);
 		AnyFX::VkProgram* program = CoreGraphics::shaderPool->GetProgram(shader);
 		layout.info = baseInfo;
 
@@ -169,7 +169,6 @@ VkVertexSignaturePool::GetDerivativeLayout(const CoreGraphics::VertexLayoutId la
 
 		layout.info.vertexAttributeDescriptionCount = layout.attrs.Size();
 		layout.info.pVertexAttributeDescriptions = layout.attrs.Begin();
-		hashTable.Add(shaderHash, layout);
 		return &hashTable[shaderHash].info;
 	}
 }

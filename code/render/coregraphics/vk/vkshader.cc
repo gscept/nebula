@@ -30,6 +30,7 @@ Util::Dictionary<Util::StringAtom, VkDescriptorSet> VkShaderDescriptorSetCache;
 void
 VkShaderSetup(
 	VkDevice dev,
+	const Util::StringAtom& name,
 	const VkPhysicalDeviceProperties props,
 	AnyFX::ShaderEffect* effect,
 	VkPushConstantRange& constantRange,
@@ -103,7 +104,7 @@ VkShaderSetup(
 			if ((vis & PixelShaderVisibility) == PixelShaderVisibility)			slotsUsed++;
 			if ((vis & ComputeShaderVisibility) == ComputeShaderVisibility)		slotsUsed++;
 		}
-		if (block->set == NEBULA_DYNAMIC_OFFSET_GROUP) { cbo.dynamicOffset = true; numUniformDyn += slotsUsed; }
+		if (block->set == NEBULA_DYNAMIC_OFFSET_GROUP || block->set == NEBULA_INSTANCE_GROUP) { cbo.dynamicOffset = true; numUniformDyn += slotsUsed; }
 		else											{ cbo.dynamicOffset = false; numUniform += slotsUsed; }
 
 		rinfo.constantBuffers.Append(cbo);
@@ -117,7 +118,7 @@ VkShaderSetup(
 #if NEBULA_DEBUG
 			n_assert(!constantBindings.Contains(var->name.c_str()));
 #endif
-			constantBindings.Add(var->name.c_str(), { block->offsetsByName[var->name], (uint)var->arraySize, (uint)var->byteSize });
+			constantBindings.Add(var->name.c_str(), { block->offsetsByName[var->name] });
 		}
 	}
     n_assert(maxUniformBuffersDyn >= numUniformDyn);
@@ -158,7 +159,7 @@ VkShaderSetup(
 			if ((vis & ComputeShaderVisibility) == ComputeShaderVisibility)		slotsUsed++;
 		}
 
-		if (buffer->set == NEBULA_DYNAMIC_OFFSET_GROUP) { rwbo.dynamicOffset = true; numStorageDyn += slotsUsed; }
+		if (buffer->set == NEBULA_DYNAMIC_OFFSET_GROUP || buffer->set == NEBULA_INSTANCE_GROUP) { rwbo.dynamicOffset = true; numStorageDyn += slotsUsed; }
 		else											 { rwbo.dynamicOffset = false; numStorage += slotsUsed; }
 
 		rinfo.rwBuffers.Append(rwbo);
@@ -304,9 +305,6 @@ VkShaderSetup(
 		}
 	}
 
-	// create a string for caching pipelines
-	Util::String pipelineSignature;
-
 	// skip the rest if we don't have any descriptor sets
 	if (!layoutCreateInfos.IsEmpty())
 	{
@@ -340,6 +338,10 @@ VkShaderSetup(
 		layoutList, layoutIndices, push
 	};
 	pipelineLayout = CreateResourcePipeline(piInfo);
+
+#if NEBULA_GRAPHICS_DEBUG
+	ObjectSetName(pipelineLayout, Util::String::Sprintf("%s - Resource Pipeline", name.Value()));
+#endif
 }
 
 //------------------------------------------------------------------------------

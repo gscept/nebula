@@ -193,7 +193,11 @@ ResourceTableSetTexture(const ResourceTableId& id, const ResourceTableTexture& t
 		img.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
 	else
 		img.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	img.imageView = TextureGetVkImageView(tex.tex);
+
+	if (tex.tex == TextureId::Invalid())
+		img.imageView = VK_NULL_HANDLE;
+	else
+		img.imageView = TextureGetVkImageView(tex.tex);
 
 	WriteInfo inf;
 	inf.img = img;
@@ -246,7 +250,11 @@ ResourceTableSetTexture(const ResourceTableId& id, const ResourceTableRenderText
 		img.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
 	else
 		img.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	img.imageView = RenderTextureGetVkImageView(tex.tex);
+
+	if (tex.tex == RenderTextureId::Invalid())
+		img.imageView = VK_NULL_HANDLE;
+	else
+		img.imageView = RenderTextureGetVkImageView(tex.tex);
 
 	WriteInfo inf;
 	inf.img = img;
@@ -298,7 +306,11 @@ ResourceTableSetTexture(const ResourceTableId& id, const ResourceTableShaderRWTe
 	}
 
 	img.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	img.imageView = ShaderRWTextureGetVkImageView(tex.tex);
+
+	if (tex.tex == ShaderRWTextureId::Invalid())
+		img.imageView = VK_NULL_HANDLE;
+	else
+		img.imageView = ShaderRWTextureGetVkImageView(tex.tex);
 
 	WriteInfo inf;
 	inf.img = img;
@@ -334,7 +346,10 @@ ResourceTableSetInputAttachment(const ResourceTableId& id, const ResourceTableIn
 	VkDescriptorImageInfo img;
 	img.sampler = VK_NULL_HANDLE;
 	img.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-	img.imageView = RenderTextureGetVkImageView(tex.tex);
+	if (tex.tex == RenderTextureId::Invalid())
+		img.imageView = VK_NULL_HANDLE;
+	else
+		img.imageView = RenderTextureGetVkImageView(tex.tex);
 
 	WriteInfo inf;
 	inf.img = img;
@@ -370,7 +385,10 @@ ResourceTableSetShaderRWTexture(const ResourceTableId& id, const ResourceTableSh
 	VkDescriptorImageInfo img;
 	img.sampler = VK_NULL_HANDLE;
 	img.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-	img.imageView = ShaderRWTextureGetVkImageView(tex.tex);
+	if (tex.tex == ShaderRWTextureId::Invalid())
+		img.imageView = VK_NULL_HANDLE;
+	else
+		img.imageView = ShaderRWTextureGetVkImageView(tex.tex);
 
 	WriteInfo inf;
 	inf.img = img;
@@ -406,7 +424,10 @@ ResourceTableSetShaderRWTexture(const ResourceTableId& id, const ResourceTableTe
 	VkDescriptorImageInfo img;
 	img.sampler = VK_NULL_HANDLE;
 	img.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-	img.imageView = TextureGetVkImageView(tex.tex);
+	if (tex.tex == TextureId::Invalid())
+		img.imageView = VK_NULL_HANDLE;
+	else
+		img.imageView = TextureGetVkImageView(tex.tex);
 
 	WriteInfo inf;
 	inf.img = img;
@@ -442,7 +463,10 @@ ResourceTableSetShaderRWTexture(const ResourceTableId& id, const ResourceTableRe
 	VkDescriptorImageInfo img;
 	img.sampler = VK_NULL_HANDLE;
 	img.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-	img.imageView = RenderTextureGetVkImageView(tex.tex);
+	if (tex.tex == RenderTextureId::Invalid())
+		img.imageView = VK_NULL_HANDLE;
+	else
+		img.imageView = RenderTextureGetVkImageView(tex.tex);
 
 	WriteInfo inf;
 	inf.img = img;
@@ -484,7 +508,10 @@ ResourceTableSetConstantBuffer(const ResourceTableId& id, const ResourceTableCon
 	n_assert2(write.descriptorType != VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, "Texel buffers are not implemented");
 
 	VkDescriptorBufferInfo buff;
-	buff.buffer = ConstantBufferGetVk(buf.buf);
+	if (buf.buf == ConstantBufferId::Invalid())
+		buff.buffer = VK_NULL_HANDLE;
+	else
+		buff.buffer = ConstantBufferGetVk(buf.buf);
 	buff.offset = buf.offset;
 	buff.range = buf.size == -1 ? VK_WHOLE_SIZE : buf.size;
 
@@ -528,7 +555,10 @@ ResourceTableSetShaderRWBuffer(const ResourceTableId& id, const ResourceTableSha
 	n_assert2(write.descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, "Texel buffers are not implemented");
 
 	VkDescriptorBufferInfo buff;
-	buff.buffer = ShaderRWBufferGetVkBuffer(buf.buf);
+	if (buf.buf == ShaderRWBufferId::Invalid())
+		buff.buffer = VK_NULL_HANDLE;
+	else
+		buff.buffer = ShaderRWBufferGetVkBuffer(buf.buf);
 	buff.offset = buf.offset;
 	buff.range = buf.size == -1 ? VK_WHOLE_SIZE : buf.size;
 	WriteInfo inf;
@@ -563,7 +593,11 @@ ResourceTableSetSampler(const ResourceTableId& id, const ResourceTableSampler& s
 	write.dstSet = set;
 
 	VkDescriptorImageInfo img;
-	img.sampler = SamplerGetVk(samp.samp);
+	if (samp.samp == SamplerId::Invalid())
+		img.sampler = VK_NULL_HANDLE;
+	else
+		img.sampler = SamplerGetVk(samp.samp);
+
 	img.imageView = VK_NULL_HANDLE;
 	img.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	WriteInfo inf;
@@ -686,7 +720,7 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
 		binding.binding = samp.slot;
 		binding.descriptorCount = 1;
 		binding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
-		binding.pImmutableSamplers = nullptr;
+		binding.pImmutableSamplers = &SamplerGetVk(samp.sampler);
 		binding.stageFlags = VkTypes::AsVkShaderVisibility(samp.visibility);
 		bindings.Append(binding);
 
@@ -752,7 +786,6 @@ CreateResourcePipeline(const ResourcePipelineCreateInfo& info)
 	dev = Vulkan::GetCurrentDevice();
 
 	Util::Array<VkDescriptorSetLayout> layouts;
-
 
 	IndexT i;
 	for (i = 0; i < info.indices.Size(); i++)

@@ -92,8 +92,8 @@ private:
 
 	friend class VkUtilities;
 
-	friend void	BindDescriptorsGraphics(const VkDescriptorSet* descriptors, const VkPipelineLayout & layout, uint32_t baseSet, uint32_t setCount, const uint32_t* offsets, uint32_t offsetCount, bool shared);
-	friend void	BindDescriptorsCompute(const VkDescriptorSet* descriptors, const VkPipelineLayout & layout, uint32_t baseSet, uint32_t setCount, const uint32_t* offsets, uint32_t offsetCount);
+	friend void	BindDescriptorsGraphics(const VkDescriptorSet* descriptors, uint32_t baseSet, uint32_t setCount, const uint32_t* offsets, uint32_t offsetCount, bool shared);
+	friend void	BindDescriptorsCompute(const VkDescriptorSet* descriptors, uint32_t baseSet, uint32_t setCount, const uint32_t* offsets, uint32_t offsetCount);
 	friend void	EndDrawThreads();
 	friend void	EndDrawSubpass();
 

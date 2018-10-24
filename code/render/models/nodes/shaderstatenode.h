@@ -42,16 +42,22 @@ public:
 		CoreGraphics::ConstantBinding objectIdVar;
 
 		uint32 instance;
+		Materials::SurfaceInstanceId surfaceInstance;
 		Util::FixedArray<uint32> offsets;
 
 		void ApplyNodeInstanceState() override;
 		void Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
+
+		const Materials::SurfaceInstanceId GetSurfaceInstance() const { return this->surfaceInstance; };
 	};
 
 	/// create instance
-	virtual ModelNode::Instance* CreateInstance(byte* memory, const Models::ModelNode::Instance* parent) override;
+	virtual ModelNode::Instance* CreateInstance(byte** memory, const Models::ModelNode::Instance* parent) override;
 	/// get size of instance
 	virtual const SizeT GetInstanceSize() const { return sizeof(Instance); }
+
+	/// get surface
+	const Materials::SurfaceId GetSurface() const { return this->surface; };
 	/// apply node-level state
 	virtual void ApplyNodeState();
 
@@ -66,7 +72,8 @@ protected:
 	virtual void OnFinishedLoading();
 	
 	Materials::MaterialType* materialType;
-	Materials::MaterialId material;
+	Materials::SurfaceId surface;
+	Materials::SurfaceResourceId surRes;
 	Resources::ResourceName materialName;
 
 	CoreGraphics::ShaderId sharedShader;
@@ -93,8 +100,9 @@ ShaderStateNode::Instance::Setup(Models::ModelNode* node, const Models::ModelNod
 	CoreGraphics::ConstantBufferId cbo = sparent->cbo;
 	this->cbo = cbo;
 	this->resourceTable = sparent->resourceTable;
-	this->offsets.Resize(1);
+	this->offsets.Resize(2);
 	bool rebind = CoreGraphics::ConstantBufferAllocateInstance(cbo, this->offsets[0], this->instance);
+	this->offsets[1] = 0; // instancing offset
 	if (rebind)
 	{
 		CoreGraphics::ResourceTableSetConstantBuffer(sparent->resourceTable, { sparent->cbo, sparent->cboIndex, 0, true, false, -1, 0 });
@@ -105,6 +113,9 @@ ShaderStateNode::Instance::Setup(Models::ModelNode* node, const Models::ModelNod
 	this->modelViewProjVar = sparent->modelViewProjVar;
 	this->modelViewVar = sparent->modelViewVar;
 	this->objectIdVar = sparent->objectIdVar;
+
+	// create surface instance
+	this->surfaceInstance = sparent->materialType->CreateSurfaceInstance(sparent->surface);
 }
 
 } // namespace Models

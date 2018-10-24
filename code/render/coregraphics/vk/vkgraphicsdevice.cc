@@ -455,7 +455,7 @@ Blit(const VkImage from, Math::rectangle<SizeT> fromRegion, IndexT fromMip, cons
 /**
 */
 void 
-BindDescriptorsGraphics(const VkDescriptorSet* descriptors, const VkPipelineLayout& layout, uint32_t baseSet, uint32_t setCount, const uint32_t* offsets, uint32_t offsetCount, bool propagate)
+BindDescriptorsGraphics(const VkDescriptorSet* descriptors, uint32_t baseSet, uint32_t setCount, const uint32_t* offsets, uint32_t offsetCount, bool propagate)
 {
 	// if we are in the local state, push directly to thread
 	if (state.currentCommandState == ThreadState)
@@ -465,7 +465,6 @@ BindDescriptorsGraphics(const VkDescriptorSet* descriptors, const VkPipelineLayo
 		cmd.descriptor.baseSet = baseSet;
 		cmd.descriptor.numSets = setCount;
 		cmd.descriptor.sets = descriptors;
-		cmd.descriptor.layout = layout;
 		cmd.descriptor.numOffsets = offsetCount;
 		cmd.descriptor.offsets = offsets;
 		cmd.descriptor.type = VK_PIPELINE_BIND_POINT_GRAPHICS;
@@ -481,7 +480,6 @@ BindDescriptorsGraphics(const VkDescriptorSet* descriptors, const VkPipelineLayo
 			cmd.descriptor.baseSet = baseSet;
 			cmd.descriptor.numSets = setCount;
 			cmd.descriptor.sets = descriptors;
-			cmd.descriptor.layout = layout;
 			cmd.descriptor.numOffsets = offsetCount;
 			cmd.descriptor.offsets = offsets;
 			cmd.descriptor.type = VK_PIPELINE_BIND_POINT_GRAPHICS;
@@ -494,7 +492,6 @@ BindDescriptorsGraphics(const VkDescriptorSet* descriptors, const VkPipelineLayo
 			cmd.del.descSetBind.baseSet = baseSet;
 			cmd.del.descSetBind.numSets = setCount;
 			cmd.del.descSetBind.sets = descriptors;
-			cmd.del.descSetBind.layout = layout;
 			cmd.del.descSetBind.numOffsets = offsetCount;
 			cmd.del.descSetBind.offsets = offsets;
 			cmd.del.descSetBind.type = VK_PIPELINE_BIND_POINT_GRAPHICS;
@@ -508,18 +505,17 @@ BindDescriptorsGraphics(const VkDescriptorSet* descriptors, const VkPipelineLayo
 /**
 */
 void 
-BindDescriptorsCompute(const VkDescriptorSet* descriptors, const VkPipelineLayout & layout, uint32_t baseSet, uint32_t setCount, const uint32_t* offsets, uint32_t offsetCount)
+BindDescriptorsCompute(const VkDescriptorSet* descriptors, uint32_t baseSet, uint32_t setCount, const uint32_t* offsets, uint32_t offsetCount)
 {
 	if (state.inBeginFrame)
 	{
-		vkCmdBindDescriptorSets(CommandBufferGetVk(state.mainCmdDrawBuffer), VK_PIPELINE_BIND_POINT_COMPUTE, layout, baseSet, setCount, descriptors, offsetCount, offsets);
+		vkCmdBindDescriptorSets(CommandBufferGetVk(state.mainCmdDrawBuffer), VK_PIPELINE_BIND_POINT_COMPUTE, state.currentPipelineLayout, baseSet, setCount, descriptors, offsetCount, offsets);
 	}
 	else
 	{
 		VkDeferredCommand cmd;
 		cmd.del.type = VkDeferredCommand::BindDescriptorSets;
 		cmd.del.descSetBind.baseSet = baseSet;
-		cmd.del.descSetBind.layout = layout;
 		cmd.del.descSetBind.numOffsets = offsetCount;
 		cmd.del.descSetBind.offsets = offsets;
 		cmd.del.descSetBind.numSets = setCount;
@@ -647,6 +643,7 @@ CreateAndBindGraphicsPipeline()
 	// send pipeline bind command, this is the first step in our procedure, so we use this as a trigger to switch threads
 	cmd.type = VkCmdBufferThread::GraphicsPipeline;
 	cmd.pipe.pipeline = pipeline;
+	cmd.pipe.layout = state.currentPipelineLayout;
 	PushToThread(cmd, state.currentDrawThread);
 	BindSharedDescriptorSets();
 
@@ -896,7 +893,7 @@ PushToThread(const VkCmdBufferThread::Command& cmd, const IndexT& index, bool al
 	if (allowStaging)
 	{
 		state.threadCmds[index].Append(cmd);
-		if (state.threadCmds[index].Size() == 1)
+		if (state.threadCmds[index].Size() == 1500)
 		{
 			state.drawThreads[index]->PushCommands(state.threadCmds[index]);
 			state.threadCmds[index].Reset();
@@ -937,6 +934,7 @@ BindSharedDescriptorSets()
 	}
 }
 
+#if NEBULA_GRAPHICS_DEBUG
 //------------------------------------------------------------------------------
 /**
 */
@@ -963,7 +961,7 @@ CmdBufEndMarker(VkCommandBuffer buf)
 {
 	VkCmdDebugMarkerEnd(buf);
 }
-
+#endif
 } // namespace Vulkan
 
 //------------------------------------------------------------------------------
@@ -1010,6 +1008,10 @@ namespace CoreGraphics
 {
 using namespace Vulkan;
 
+#if NEBULA_GRAPHICS_DEBUG
+template<> void ObjectSetName(const CoreGraphics::CmdBufferId id, const Util::String& name);
+#endif
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -1043,18 +1045,25 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		state.extensions[state.usedExtensions++] = requiredExtensions[i];
 	}
 
-	//const char* layers[] = { "VK_LAYER_LUNARG_core_validation", "VK_LAYER_LUNARG_parameter_validation" };
-	const char* layers[] = { "VK_LAYER_LUNARG_standard_validation" };
-#define NEBULA_VULKAN_VALIDATION 1
-#if NEBULA_GRAPHICS_DEBUG
+	
+#define NEBULA_VULKAN_VALIDATION 0
+#if NEBULA_GRAPHICS_DEBUG || NEBULA_VULKAN_DEBUG
 	state.extensions[state.usedExtensions++] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
-#if NEBULA_VULKAN_VALIDATION
-	const int numLayers = sizeof(layers) / sizeof(const char*);
+	#if NEBULA_VULKAN_VALIDATION
+		const char* layers[] = { "VK_LAYER_LUNARG_standard_validation" };		
+		const int numLayers = 1;
+	#else
+		const char* layers[] = { "VK_LAYER_LUNARG_object_tracker" };
+		const int numLayers = 1;
+	#endif
 #else
-	const int numLayers = 0;
-#endif
-#else
-	const int numLayers = 0;
+	#if NEBULA_VULKAN_VALIDATION
+		const char* layers[] = { "VK_LAYER_LUNARG_standard_validation" };
+		const int numLayers = 1;
+	#else
+		const char* layers[] =  { nullptr };
+		const int numLayers = 0;
+	#endif
 #endif
 
 	// setup instance
@@ -1322,6 +1331,13 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 
 	cmdCreateInfo.usage = CmdSparse;
 	state.mainCmdSparseBuffer = CreateCmdBuffer(cmdCreateInfo);
+
+#if NEBULA_GRAPHICS_DEBUG
+	ObjectSetName(state.mainCmdDrawBuffer, "Main Draw Command Buffer");
+	ObjectSetName(state.mainCmdComputeBuffer, "Main Compute Command Buffer");
+	ObjectSetName(state.mainCmdTransferBuffer, "Main Transfer Command Buffer");
+	ObjectSetName(state.mainCmdSparseBuffer, "Main Sparse Bind Command Buffer");
+#endif
 
 	// setup draw threads
 	Util::String threadName;
@@ -1747,7 +1763,8 @@ void
 SetVertexLayout(const CoreGraphics::VertexLayoutId& vl)
 {
 	n_assert(state.currentProgram != 0);
-	SetVertexLayoutPipelineInfo(&CoreGraphics::layoutPool->allocator.Get<1>(vl.allocId));
+	VkPipelineVertexInputStateCreateInfo* info = CoreGraphics::layoutPool->GetDerivativeLayout(vl, state.currentShaderProgram);
+	SetVertexLayoutPipelineInfo(info);
 }
 
 //------------------------------------------------------------------------------
@@ -1762,7 +1779,7 @@ SetIndexBuffer(const CoreGraphics::IndexBufferId& ib, IndexT offsetIndex)
 	VkCmdBufferThread::Command cmd;
 	cmd.type = VkCmdBufferThread::InputAssemblyIndex;
 	cmd.ibo.buffer = CoreGraphics::iboPool->allocator.Get<1>(ib.allocId).buf;
-	cmd.ibo.indexType = CoreGraphics::iboPool->allocator.Get<1>(ib.allocId).type ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32;
+	cmd.ibo.indexType = CoreGraphics::iboPool->allocator.Get<1>(ib.allocId).type == IndexType::Index16 ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32;
 	cmd.ibo.offset = offsetIndex;
 	PushToThread(cmd, state.currentDrawThread);
 }
@@ -1835,7 +1852,6 @@ SetShaderProgram(const CoreGraphics::ShaderProgramId& pro)
 	const VkShaderProgramRuntimeInfo& info = CoreGraphics::shaderPool->shaderAlloc.Get<3>(pro.shaderId).Get<2>(pro.programId);
 	state.currentShaderProgram = pro;
 	state.currentPipelineLayout = info.layout;
-	state.currentProgram = info.uniqueId;
 
 	// if we are compute, we can set the pipeline straight away, otherwise we have to accumulate the infos
 	if (info.type == ComputePipeline)		Vulkan::BindComputePipeline(info.pipeline, info.layout);
@@ -1898,7 +1914,6 @@ SetResourceTable(const CoreGraphics::ResourceTableId table, const IndexT slot, S
 	{
 	case GraphicsPipeline:
 		Vulkan::BindDescriptorsGraphics(&ResourceTableGetVkDescriptorSet(table),
-			state.currentPipelineLayout,
 			slot,
 			1,
 			offsets.IsEmpty() ? nullptr : offsets.Begin(),
@@ -1906,7 +1921,6 @@ SetResourceTable(const CoreGraphics::ResourceTableId table, const IndexT slot, S
 		break;
 	case ComputePipeline:
 		Vulkan::BindDescriptorsCompute(&ResourceTableGetVkDescriptorSet(table),
-			state.currentPipelineLayout,
 			slot,
 			1,
 			offsets.IsEmpty() ? nullptr : offsets.Begin(),
@@ -2453,7 +2467,7 @@ SetViewport(const Math::rectangle<int>& rect, int index)
 {
 	VkViewport vp;
 	vp.width = (float)rect.width();
-	vp.height = (float)rect.height();
+	vp.height = (float)-rect.height();
 	vp.x = (float)rect.left;
 	vp.y = (float)rect.top;
 	if (state.currentCommandState == ThreadState)
@@ -2477,8 +2491,8 @@ void
 SetScissorRect(const Math::rectangle<int>& rect, int index)
 {
 	VkRect2D sc;
-	sc.extent.height = rect.height();
 	sc.extent.width = rect.width();
+	sc.extent.height = -rect.height();
 	sc.offset.x = rect.left;
 	sc.offset.y = rect.top;
 	if (state.currentCommandState == ThreadState)
@@ -2495,7 +2509,7 @@ SetScissorRect(const Math::rectangle<int>& rect, int index)
 	}
 }
 
-#if defined(NEBULA_GRAPHICS_DEBUG)
+#if NEBULA_GRAPHICS_DEBUG
 
 //------------------------------------------------------------------------------
 /**
@@ -2513,6 +2527,12 @@ ObjectSetName(const CoreGraphics::TextureId id, const Util::String& name)
 		name.AsCharPtr()
 	};
 	VkDevice dev = GetCurrentDevice();
+	n_assert(VkDebugObjectName(dev, &info) == VK_SUCCESS);
+
+	info.objectHandle = (uint64_t)Vulkan::TextureGetVkImageView(id);
+	info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
+	Util::String str = Util::String::Sprintf("%s - View", name.AsCharPtr());
+	info.pObjectName = str.AsCharPtr();
 	n_assert(VkDebugObjectName(dev, &info) == VK_SUCCESS);
 }
 
@@ -2532,6 +2552,12 @@ ObjectSetName(const CoreGraphics::RenderTextureId id, const Util::String& name)
 		name.AsCharPtr()
 	};
 	VkDevice dev = GetCurrentDevice();
+	n_assert(VkDebugObjectName(dev, &info) == VK_SUCCESS);
+
+	info.objectHandle = (uint64_t)Vulkan::RenderTextureGetVkImageView(id);
+	info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
+	Util::String str = Util::String::Sprintf("%s - View", name.AsCharPtr());
+	info.pObjectName = str.AsCharPtr();
 	n_assert(VkDebugObjectName(dev, &info) == VK_SUCCESS);
 }
 
@@ -2567,6 +2593,44 @@ ObjectSetName(const CoreGraphics::ResourcePipelineId id, const Util::String& nam
 		nullptr,
 		VK_OBJECT_TYPE_IMAGE,
 		(uint64_t)Vulkan::ResourcePipelineGetVk(id),
+		name.AsCharPtr()
+	};
+	VkDevice dev = GetCurrentDevice();
+	n_assert(VkDebugObjectName(dev, &info) == VK_SUCCESS);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<>
+void
+ObjectSetName(const CoreGraphics::CmdBufferId id, const Util::String& name)
+{
+	VkDebugUtilsObjectNameInfoEXT info =
+	{
+		VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
+		nullptr,
+		VK_OBJECT_TYPE_COMMAND_BUFFER,
+		(uint64_t)Vulkan::CommandBufferGetVk(id),
+		name.AsCharPtr()
+	};
+	VkDevice dev = GetCurrentDevice();
+	n_assert(VkDebugObjectName(dev, &info) == VK_SUCCESS);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<>
+void
+ObjectSetName(const VkShaderModule id, const Util::String& name)
+{
+	VkDebugUtilsObjectNameInfoEXT info =
+	{
+		VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
+		nullptr,
+		VK_OBJECT_TYPE_SHADER_MODULE,
+		(uint64_t)id,
 		name.AsCharPtr()
 	};
 	VkDevice dev = GetCurrentDevice();

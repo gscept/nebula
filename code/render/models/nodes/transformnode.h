@@ -32,7 +32,7 @@ public:
 	};
 
 	/// create instance
-	virtual ModelNode::Instance* CreateInstance(byte* memory, const Models::ModelNode::Instance* parent) override;
+	virtual ModelNode::Instance* CreateInstance(byte** memory, const Models::ModelNode::Instance* parent) override;
 	/// get size of instance
 	virtual const SizeT GetInstanceSize() const { return sizeof(Instance); }
 

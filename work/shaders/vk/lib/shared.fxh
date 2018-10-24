@@ -142,7 +142,7 @@ group(FRAME_GROUP) shared varblock FrameBlock
 
          
 // contains variables which are guaranteed to be unique per object.
-group(DYNAMIC_OFFSET_GROUP) shared varblock ObjectBlock [ string Visibility = "VS"; ]
+group(DYNAMIC_OFFSET_GROUP) shared varblock ObjectBlock [ string Visibility = "VS|PS"; ]
 {
 	mat4 Model;
 	mat4 InvModel;
