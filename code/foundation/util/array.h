@@ -533,18 +533,14 @@ Array<TYPE>::AppendArray(const Array<TYPE>& rhs)
 template<class TYPE> void
 Array<TYPE>::Reserve(SizeT num)
 {
-    if(num > 0)
-    {   
-        SizeT neededCapacity = this->size + num;
-        if (neededCapacity > this->capacity)
-        {
-            this->GrowTo(neededCapacity);
-        }
-    }
-    else
-    {
-        this->Grow();
-    }
+#if NEBULA_BOUNDSCHECKS
+	n_assert(num > 0);
+#endif
+	SizeT neededCapacity = this->size + num;
+	if (neededCapacity > this->capacity)
+	{
+		this->GrowTo(neededCapacity);
+	}
 }
 
 //------------------------------------------------------------------------------

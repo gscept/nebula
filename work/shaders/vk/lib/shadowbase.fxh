@@ -9,7 +9,7 @@
 
 #include "lib/defaultsamplers.fxh"
 
-group(INSTANCE_GROUP) shared varblock ShadowMatrixBlock [ bool DynamicOffset = true; string Visibility = "VS|GS"; ]
+group(FRAME_GROUP) shared varblock ShadowMatrixBlock [ bool DynamicOffset = true; string Visibility = "VS|GS"; ]
 {
 	mat4 ViewMatrixArray[6];
 };

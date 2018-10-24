@@ -82,6 +82,15 @@ TextureGetNumMips(const TextureId id)
 //------------------------------------------------------------------------------
 /**
 */
+uint64 
+TextureGetBindlessHandle(const TextureId id)
+{
+	return texturePool->GetBindlessHandle(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 TextureMapInfo 
 TextureMap(const TextureId id, IndexT mip, const CoreGraphics::GpuBufferTypes::MapType type)
 {

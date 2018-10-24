@@ -67,6 +67,7 @@ public:
 			struct // Pipeline bind
 			{
 				VkPipeline pipeline;
+				VkPipelineLayout layout;
 #if NEBULA_GRAPHICS_DEBUG
 				const char* name;
 #endif
@@ -112,7 +113,6 @@ public:
 			struct // Descriptors
 			{
 				VkPipelineBindPoint type;
-				VkPipelineLayout layout;
 				uint32_t baseSet;
 				uint32_t numSets;
 				const VkDescriptorSet* sets;
@@ -226,9 +226,8 @@ private:
 	friend struct GraphicsDeviceState;
 
 
-
-
 	VkCommandBuffer commandBuffer;
+	VkPipelineLayout pipelineLayout;
 	Threading::SafeQueue<Command> commands;
 #if NEBULA_ENABLE_PROFILING
 	_declare_timer(debugTimer);

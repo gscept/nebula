@@ -22,6 +22,7 @@ namespace Vulkan
 /// create descriptor set layout
 void VkShaderSetup(
 	VkDevice dev,
+	const Util::StringAtom& name,
 	const VkPhysicalDeviceProperties props,
 	AnyFX::ShaderEffect* effect,
 	VkPushConstantRange& constantRange,

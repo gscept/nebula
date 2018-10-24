@@ -18,7 +18,7 @@ RESOURCE_ID_TYPE(TextureId);
 /// texture types
 enum TextureType
 {
-	InvalidType,
+	InvalidTextureType,
 
 	Texture1D,		//> a 1-dimensional texture
 	Texture2D,      //> a 2-dimensional texture
@@ -97,6 +97,9 @@ TextureType TextureGetType(const TextureId id);
 ImageLayout TextureGetLayout(const TextureId id);
 /// get number of mips
 uint TextureGetNumMips(const TextureId id);
+
+/// get bindless texture handle
+uint64 TextureGetBindlessHandle(const TextureId id);
 
 /// map GPU memory
 TextureMapInfo TextureMap(const TextureId id, IndexT mip, const CoreGraphics::GpuBufferTypes::MapType type);

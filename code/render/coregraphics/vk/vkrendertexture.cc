@@ -241,7 +241,6 @@ DestroyRenderTexture(const RenderTextureId id)
 	}
 	else
 	{
-
 		vkFreeMemory(loadInfo.dev, loadInfo.mem, nullptr);
 		vkDestroyImage(loadInfo.dev, loadInfo.img, nullptr);		
 		vkDestroyImageView(loadInfo.dev, runtimeInfo.view, nullptr);

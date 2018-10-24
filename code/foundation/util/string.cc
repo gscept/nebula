@@ -838,6 +838,15 @@ operator==(const char* cStr, const String& b)
 //------------------------------------------------------------------------------
 /**
 */
+bool
+operator==(const String& a, nullptr_t)
+{
+	return a.Length() == 0;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 bool 
 operator != (const String& a, const String& b)
 {

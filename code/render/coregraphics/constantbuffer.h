@@ -58,7 +58,7 @@ void ConstantBufferUpdate(const ConstantBufferId id, const void* data, const uin
 /// update constant buffer data as array
 void ConstantBufferUpdateArray(const ConstantBufferId id, const void* data, const uint size, const uint count, ConstantBinding bind);
 /// update constant buffer data
-template<class TYPE> void ConstantBufferUpdate(const ConstantBufferId id, const TYPE data, ConstantBinding bind);
+template<class TYPE> void ConstantBufferUpdate(const ConstantBufferId id, const TYPE& data, ConstantBinding bind);
 /// update constant buffer data as array
 template<class TYPE> void ConstantBufferUpdateArray(const ConstantBufferId id, const TYPE* data, const uint count, ConstantBinding bind);
 /// update constant buffer data instanced
@@ -66,15 +66,33 @@ void ConstantBufferUpdateInstance(const ConstantBufferId id, const void* data, c
 /// update constant buffer data as array instanced
 void ConstantBufferUpdateArrayInstance(const ConstantBufferId id, const void* data, const uint size, const uint count, const uint instance, ConstantBinding bind);
 /// update constant buffer data instanced
-template<class TYPE> void ConstantBufferUpdateInstance(const ConstantBufferId id, const TYPE data, const uint instance, ConstantBinding bind);
+template<class TYPE> void ConstantBufferUpdateInstance(const ConstantBufferId id, const TYPE& data, const uint instance, ConstantBinding bind);
 /// update constant buffer data as array instanced
 template<class TYPE> void ConstantBufferUpdateArrayInstance(const ConstantBufferId id, const TYPE* data, const uint count, const uint instance, ConstantBinding bind);
 
 //------------------------------------------------------------------------------
 /**
 */
+template<>
+inline void ConstantBufferUpdate(const ConstantBufferId id, const Util::Variant& data, ConstantBinding bind)
+{
+	ConstantBufferUpdate(id, data.AsVoidPtr(), data.Size(), bind);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<>
+inline void ConstantBufferUpdateInstance(const ConstantBufferId id, const Util::Variant& data, const uint instance, ConstantBinding bind)
+{
+	ConstantBufferUpdateInstance(id, data.AsVoidPtr(), data.Size(), instance, bind);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 template<class TYPE>
-void ConstantBufferUpdate(const ConstantBufferId id, const TYPE data, ConstantBinding bind)
+void ConstantBufferUpdate(const ConstantBufferId id, const TYPE& data, ConstantBinding bind)
 {
 	ConstantBufferUpdate(id, &data, sizeof(TYPE), bind);
 }
@@ -92,7 +110,7 @@ void ConstantBufferUpdateArray(const ConstantBufferId id, const TYPE* data, cons
 /**
 */
 template<class TYPE>
-void ConstantBufferUpdateInstance(const ConstantBufferId id, const TYPE data, const uint instance, ConstantBinding bind)
+void ConstantBufferUpdateInstance(const ConstantBufferId id, const TYPE& data, const uint instance, ConstantBinding bind)
 {
 	ConstantBufferUpdateInstance(id, &data, sizeof(TYPE), instance, bind);
 }

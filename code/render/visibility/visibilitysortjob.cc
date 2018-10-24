@@ -22,6 +22,9 @@ VisibilitySortJob(const Jobs::JobFuncContext& ctx)
 	bool* results = (bool*)ctx.inputs[0];
 	Graphics::ContextEntityId* entities = (Graphics::ContextEntityId*)ctx.inputs[1];
 
+	// begin adding buckets
+	buckets->BeginBulkAdd();
+
 	// calculate amount of models
 	uint32 numModels = ctx.inputSizes[0] / sizeof(bool);
 	uint32 i;
@@ -44,11 +47,25 @@ VisibilitySortJob(const Jobs::JobFuncContext& ctx)
 				Models::ShaderStateNode::Instance* const shdNodeInst = static_cast<Models::ShaderStateNode::Instance*>(inst);
 				Models::ShaderStateNode* const shdNode = static_cast<Models::ShaderStateNode*>(inst->node);
 				auto& bucket = buckets->AddUnique(shdNode->materialType);
+				if (!bucket.IsBulkAdd())
+					bucket.BeginBulkAdd();
+
 				auto& draw = bucket.AddUnique(inst->node);
 				draw.Append(inst);
 			}
 		}
 	}
+
+	// end adding inner buckets
+	auto it = buckets->Begin();
+	while (it != buckets->End())
+	{
+		it.val->EndBulkAdd();
+		it++;
+	}
+
+	// end adding buckets
+	buckets->EndBulkAdd();
 }
 
 } // namespace Visibility

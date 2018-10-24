@@ -197,8 +197,10 @@ template<class TYPE> void
 SafeQueue<TYPE>::DequeueAll(Util::Array<TYPE>& outArray)
 {
     this->criticalSection.Enter();
+#if NEBULA_BOUNDSCHECKS
+	n_assert(outArray.Capacity() >= this->queue.Size());
+#endif
     outArray.Clear();
-    outArray.Reserve(this->queue.Size());
     for (IndexT i = 0; i < this->queue.Size(); i++)
     {
         outArray.Append(this->queue[i]);

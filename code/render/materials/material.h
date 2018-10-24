@@ -16,18 +16,23 @@ namespace Materials
 
 class MaterialType;
 ID_32_TYPE(MaterialTypeId);
-ID_32_TYPE(MaterialInstanceId);
+ID_32_TYPE(SurfaceId);
+ID_32_32_NAMED_TYPE(SurfaceInstanceId, surface, instance); // 32 bits instance, 32 bits surface
 
 
 /// begin a material batch
 bool MaterialBeginBatch(MaterialType* type, CoreGraphics::BatchGroup::Code batch);
-/// apply instance of material
-void MaterialApply(const Resources::ResourceId& mat);
+/// begin surface
+bool MaterialBeginSurface(const SurfaceId id);
+/// apply instance of surface
+void MaterialApplySurfaceInstance(const SurfaceInstanceId id);
+/// end surface
+void MaterialEndSurface();
 /// end a material batch
 void MaterialEndBatch();
 
 extern MaterialType* currentType;
 
-class MaterialPool;
-extern MaterialPool* materialPool;
+class SurfacePool;
+extern SurfacePool* surfacePool;
 } // namespace Materials

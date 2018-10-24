@@ -71,6 +71,8 @@ public:
     friend bool operator==(const String& a, const char* cStr);
     /// shortcut equality operator
     friend bool operator==(const char* cStr, const String& a);
+	/// empty string operator
+	friend bool operator==(const String&, nullptr_t);
     /// inequality operator
     friend bool operator !=(const String& a, const String& b);
     /// less-then operator

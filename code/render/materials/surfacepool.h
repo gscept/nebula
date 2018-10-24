@@ -18,44 +18,44 @@ struct MaterialInfo
 	Resources::ResourceName materialType;
 };
 
-struct MaterialRuntime // consider splitting into runtime and setup
+struct SurfaceRuntime // consider splitting into runtime and setup
 {
-	MaterialInstanceId id;
+	SurfaceId id;
 	MaterialType* type;
 };
 
-struct MaterialId;
-RESOURCE_ID_TYPE(MaterialId);
+struct SurfaceResourceId;
+RESOURCE_ID_TYPE(SurfaceResourceId);
 
-class MaterialPool : public Resources::ResourceStreamPool
+class SurfacePool : public Resources::ResourceStreamPool
 {
-	__DeclareClass(MaterialPool);
+	__DeclareClass(SurfacePool);
 public:
 
 	/// update reserved resource, the info struct is loader dependent (overload to implement resource deallocation, remember to set resource state!)
 	Resources::ResourcePool::LoadStatus LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream);
 
 	/// get material id
-	const MaterialInstanceId& GetId(const MaterialId& id);
+	const SurfaceId GetId(const SurfaceResourceId id);
 	/// get material type
-	MaterialType* const GetType(const MaterialId& id);
+	MaterialType* const GetType(const SurfaceResourceId id);
 private:
 
 	/// unload resource (overload to implement resource deallocation)
 	void Unload(const Resources::ResourceId id);
 
-	Ids::IdAllocatorSafe<MaterialRuntime> allocator;
+	Ids::IdAllocatorSafe<SurfaceRuntime> allocator;
 	__ImplementResourceAllocatorTypedSafe(allocator, MaterialIdType);
 };
 
 //------------------------------------------------------------------------------
 /**
 */
-inline const MaterialInstanceId&
-MaterialPool::GetId(const MaterialId& id)
+inline const SurfaceId
+SurfacePool::GetId(const SurfaceResourceId id)
 {
 	allocator.EnterGet();
-	const MaterialInstanceId& ret = allocator.Get<0>(id.allocId).id;
+	const SurfaceId ret = allocator.Get<0>(id.allocId).id;
 	allocator.LeaveGet();
 	return ret;
 }
@@ -64,7 +64,7 @@ MaterialPool::GetId(const MaterialId& id)
 /**
 */
 inline MaterialType* const
-MaterialPool::GetType(const MaterialId& id)
+SurfacePool::GetType(const SurfaceResourceId id)
 {
 	allocator.EnterGet();
 	MaterialType* const ret = allocator.Get<0>(id.allocId).type;

@@ -10,7 +10,7 @@
 #include "core/singleton.h"
 #include "resources/resourceid.h"
 #include "materialtype.h"
-#include "materialpool.h"
+#include "surfacepool.h"
 #include "ids/id.h"
 #include "io/uri.h"
 namespace Materials
@@ -41,13 +41,13 @@ public:
 	const Util::Array<MaterialType*>* GetMaterialTypesByBatch(CoreGraphics::BatchGroup::Code code);
 
 private:
-	friend class MaterialPool;
+	friend class SurfacePool;
 
-	Memory::ChunkAllocator<0x200> materialAllocator;
+	Memory::ChunkAllocator<0x400> surfaceAllocator;
 	Util::Dictionary<Resources::ResourceName, MaterialType*> materialTypesByName;
 	Util::HashTable<CoreGraphics::BatchGroup::Code, Util::Array<MaterialType*>> materialTypesByBatch;
 	Util::Array<MaterialType*> materialTypes;
-	Ptr<MaterialPool> materialPool;
+	Ptr<SurfacePool> surfacePool;
 	MaterialType* currentType;
 	bool isOpen;
 };

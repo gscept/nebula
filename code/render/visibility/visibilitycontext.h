@@ -12,7 +12,7 @@
 #include "visibility/systems/visibilitysystem.h"
 #include "models/model.h"
 #include "models/nodes/modelnode.h"
-#include "materials/materialpool.h"
+#include "materials/surfacepool.h"
 #include "materials/materialtype.h"
 namespace Visibility
 {

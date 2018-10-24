@@ -238,7 +238,7 @@ ModelContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTim
 		// if we have a pending transform, apply it and transform bounding box
 		if (hasPending[i])
 		{
-			transform = Math::matrix44::multiply(transform, pending[i]);
+			transform = pending[i];
 			hasPending[i] = false;
 
 			// transform the box
@@ -256,10 +256,10 @@ ModelContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTim
 			{
 				Models::ModelNode::Instance* node = nodes[j];
 				Math::matrix44& parentTransform = transform;
-				if (node->parent->node->type > NodeHasTransform && node->parent != nullptr)
+				if (node->parent != nullptr && node->parent->node->type >= NodeHasTransform)
 					parentTransform = static_cast<const TransformNode::Instance*>(node->parent)->modelTransform;
 
-				if (types[j] > NodeHasTransform)
+				if (types[j] >= NodeHasTransform)
 				{
 					TransformNode::Instance* tnode = static_cast<TransformNode::Instance*>(node);
 					tnode->modelTransform = Math::matrix44::multiply(tnode->transform.getmatrix(), parentTransform);

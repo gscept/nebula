@@ -8,6 +8,7 @@
 //------------------------------------------------------------------------------
 #include "graphics/graphicscontext.h"
 #include "camerasettings.h"
+#include "math/scalar.h"
 namespace Graphics
 {
 

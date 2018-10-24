@@ -75,7 +75,7 @@ framescript:
 		name: "GBufferPass",
 		attachments:
 		[
-			{ name: "AlbedoBuffer", 	clear: [0.5, 0.5, 0.5, 1], 		store: true	},
+			{ name: "AlbedoBuffer", 	clear: [0.5, 0.5, 0, 1], 		store: true	},
 			{ name: "NormalBuffer", 	clear: [0.5, 0.5, 0, 0], 		store: true },
 			{ name: "DepthBuffer", 		clear: [-1000, 0, 0, 0], 		store: true },
 			{ name: "SpecularBuffer", 	clear: [0, 0, 0, 0], 			store: true	},

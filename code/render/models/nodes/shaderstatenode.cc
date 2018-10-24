@@ -114,8 +114,9 @@ void
 ShaderStateNode::OnFinishedLoading()
 {
 	this->sharedShader = CoreGraphics::ShaderServer::Instance()->GetShader("shd:shared.fxb"_atm);
-	this->material = Resources::CreateResource(this->materialName, this->tag, nullptr, nullptr, true);
-	this->materialType = Materials::materialPool->GetType(this->material);
+	this->surRes = Resources::CreateResource(this->materialName, this->tag, nullptr, nullptr, true);
+	this->materialType = Materials::surfacePool->GetType(this->surRes);
+	this->surface = Materials::surfacePool->GetId(this->surRes);
 	this->cbo = CoreGraphics::ShaderCreateConstantBuffer(this->sharedShader, "ObjectBlock");
 	this->cboIndex = CoreGraphics::ShaderGetResourceSlot(this->sharedShader, "ObjectBlock");
 	this->resourceTable = CoreGraphics::ShaderCreateResourceTable(this->sharedShader, NEBULA_DYNAMIC_OFFSET_GROUP);
@@ -135,8 +136,9 @@ ShaderStateNode::OnFinishedLoading()
 void
 ShaderStateNode::ApplyNodeState()
 {
+	TransformNode::ApplyNodeState();
 	// apply material and bind 
-	Materials::MaterialApply(this->material);
+	//Materials::MaterialBeginSurface(this->surface);
 }
 
 //------------------------------------------------------------------------------

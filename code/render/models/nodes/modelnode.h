@@ -23,10 +23,11 @@
 #include "models/model.h"
 
 #define ModelNodeInstanceCreator(type) \
-inline ModelNode::Instance* type::CreateInstance(byte* memory, const ModelNode::Instance* parent)\
+inline ModelNode::Instance* type::CreateInstance(byte** memory, const ModelNode::Instance* parent)\
 {\
-	auto node = new (memory) Instance();\
+	auto node = new (*memory) type::Instance();\
 	node->Setup(this, parent);\
+	*memory += sizeof(type::Instance);\
 	return node;\
 }
 
@@ -54,7 +55,7 @@ public:
 	/// return constant reference to children
 	const Util::Array<ModelNode*>& GetChildren() const;
 	/// create an instance of a node, override in the leaf classes
-	virtual ModelNode::Instance* CreateInstance(byte* memory, const Models::ModelNode::Instance* parent);
+	virtual ModelNode::Instance* CreateInstance(byte** memory, const Models::ModelNode::Instance* parent);
 
 	/// get size of instance
 	virtual const SizeT GetInstanceSize() const { return sizeof(Instance); }
@@ -93,7 +94,7 @@ protected:
 /**
 */
 inline ModelNode::Instance*
-ModelNode::CreateInstance(byte* memory, const Models::ModelNode::Instance* parent)
+ModelNode::CreateInstance(byte** memory, const Models::ModelNode::Instance* parent)
 {
 	return nullptr;
 }

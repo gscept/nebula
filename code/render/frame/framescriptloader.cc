@@ -74,7 +74,7 @@ FrameScriptLoader::LoadFrameScript(const IO::URI& path)
 		JzonValue* node = jzon_get(json, "version");
 		n_assert(node->int_value >= 2);
 		node = jzon_get(json, "engine");
-		n_assert(Util::String(node->string_value) == "Nebularifid");
+		n_assert(Util::String(node->string_value) == "Nebula");
 
 
 #define CONSTRUCTOR_MACRO(type) \
@@ -1198,7 +1198,7 @@ FrameScriptLoader::ParseShaderVariables(const Ptr<Frame::FrameScript>& script, c
 		
 		ShaderConstantType type = ShaderGetConstantType(shd, sem->string_value);
 		ConstantBufferId cbo = ConstantBufferId::Invalid();
-		ConstantBinding bind = { -1, -1, -1 };
+		ConstantBinding bind = { -1 };
 		if (type != SamplerVariableType && type != TextureVariableType && type != ImageReadWriteVariableType && type != BufferReadWriteVariableType)
 		{
 			Util::StringAtom block = ShaderGetConstantBlockName(shd, sem->string_value);

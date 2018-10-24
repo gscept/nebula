@@ -107,6 +107,8 @@ public:
     Variant(Core::RefCounted* ptr);
     /// void pointer constructor
     Variant(void* ptr);
+	/// null pointer construction
+	Variant(nullptr_t);
     /// int array constructor
     Variant(const Util::Array<int>& rhs);
     /// float array constructor
@@ -408,9 +410,13 @@ public:
     Util::String ToString() const;
     /// set value from string, if type doesn't match, returns false
     bool SetParseString(const Util::String& string);
+	/// get size
+	const SizeT Size() const;
+	/// get pointer to data (use void pointer union)
+	const void* AsVoidPtr() const;
+
     /// create from string
     static Variant FromString(const Util::String& string);
-
     /// convert type to string
     static Util::String TypeToString(Type t);
     /// convert string to type
@@ -880,6 +886,16 @@ Variant::Variant(void* ptr) :
     type(VoidPtr)
 {
     this->voidPtr = ptr;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline 
+Variant::Variant(nullptr_t)	:
+	type(VoidPtr)
+{
+	this->voidPtr = nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -2901,6 +2917,61 @@ Util::Variant::SetParseString(const Util::String& string)
             }
     }
     return retval;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline 
+const SizeT 
+Variant::Size() const
+{
+	switch (this->type)
+	{
+	case Void:          return 0;
+	case Byte:          return sizeof(uint8);
+	case Short:         return sizeof(uint16);
+	case UShort:        return sizeof(uint16);
+	case Int:           return sizeof(uint32);
+	case UInt:          return sizeof(uint32);
+	case Int64:         return sizeof(uint64);
+	case UInt64:        return sizeof(uint64);
+	case Float:         return sizeof(float);
+	case Double:        return sizeof(double);
+	case Bool:          return sizeof(bool);
+	case Float2:		return sizeof(float) * 2;
+	case Float4:        return sizeof(float) * 4;
+	case Quaternion:    return sizeof(float) * 4;
+	case String:        return sizeof(void*);
+	case Matrix44:      return sizeof(void*);
+	case Transform44:   return sizeof(void*);
+	case Blob:          return sizeof(void*);
+	case Guid:          return sizeof(void*);
+	case Object:        return sizeof(void*);
+	case VoidPtr:       return sizeof(void*);
+	case IntArray:      return sizeof(void*);
+	case FloatArray:    return sizeof(void*);
+	case BoolArray:     return sizeof(void*);
+	case Float2Array:	return sizeof(void*);
+	case Float4Array:   return sizeof(void*);
+	case Matrix44Array: return sizeof(void*);
+	case StringArray:   return sizeof(void*);
+	case GuidArray:     return sizeof(void*);
+	case BlobArray:     return sizeof(void*);
+	default:
+		n_error("Variant::Size(): invalid type enum '%d'!", t);
+		return 0;
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline 
+const void*
+Variant::AsVoidPtr() const
+{
+	return &this->i8;
 }
 
 //------------------------------------------------------------------------------

@@ -322,6 +322,7 @@ void
 ObserverContext::WaitForVisibility(const IndexT frameIndex, const Timing::Time frameTime)
 {
 	Util::Array<Jobs::JobId> jobs;
+	jobs.Reserve(100);
 	ObserverContext::runningJobs.DequeueAll(jobs);
 
 	// wait for all jobs to finish

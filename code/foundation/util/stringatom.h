@@ -44,6 +44,8 @@ public:
 
     /// equality operator
     bool operator==(const StringAtom& rhs) const;
+	/// equality operator for nullptr
+	bool operator==(nullptr_t) const;
     /// inequality operator
     bool operator!=(const StringAtom& rhs) const;
     /// greater-then operator

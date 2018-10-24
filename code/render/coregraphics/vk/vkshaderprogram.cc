@@ -15,49 +15,12 @@ namespace Vulkan
 {
 
 uint32_t UniqueIdCounter = 0;
-//------------------------------------------------------------------------------
-/**
-*/
-void
-VkShaderProgramApply(VkShaderProgramRuntimeInfo& info)
-{
-	// if we are compute, we can set the pipeline straight away, otherwise we have to accumulate the infos
-	if (info.type == CoreGraphics::ComputePipeline)		Vulkan::BindComputePipeline(info.pipeline, info.layout);
-	else if (info.type == CoreGraphics::GraphicsPipeline)
-	{
-		// setup pipeline information regarding the shader state
-		VkGraphicsPipelineCreateInfo ginfo =
-		{
-			VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-			NULL,
-			VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT,
-			info.stageCount,
-			info.shaderInfos,
-			&info.vertexInfo,			// we only save how many vs inputs we allow here
-			NULL,						// this is input type related (triangles, patches etc)
-			&info.tessInfo,
-			NULL,						// this is our viewport and is setup by the framebuffer
-			&info.rasterizerInfo,
-			&info.multisampleInfo,
-			&info.depthStencilInfo,
-			&info.colorBlendInfo,
-			&info.dynamicInfo,
-			info.layout,
-			NULL,							// pass specific stuff, keep as NULL, handled by the framebuffer
-			0,
-			VK_NULL_HANDLE, 0				// base pipeline is kept as NULL too, because this is the base for all derivatives
-		};
-		Vulkan::BindGraphicsPipelineInfo(ginfo, info.uniqueId);
-	}
-	else
-		Vulkan::UnbindPipeline();
-}
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkShaderProgramSetup(const Ids::Id24 id, AnyFX::VkProgram* program, const CoreGraphics::ResourcePipelineId& pipelineLayout, VkShaderProgramAllocator& allocator)
+VkShaderProgramSetup(const Ids::Id24 id, const Resources::ResourceName& shaderName, AnyFX::VkProgram* program, const CoreGraphics::ResourcePipelineId& pipelineLayout, VkShaderProgramAllocator& allocator)
 {
 	allocator.Get<1>(id) = program;
 	String mask = program->GetAnnotationString("Mask").c_str();
@@ -79,8 +42,15 @@ VkShaderProgramSetup(const Ids::Id24 id, AnyFX::VkProgram* program, const CoreGr
 	VkShaderProgramCreateShader(setup.dev, &runtime.cs, program->shaderBlock.csBinarySize, program->shaderBlock.csBinary);
 
 	// if we have a compute shader, it will be the one we use, otherwise use the graphics one
-	if (runtime.cs)			VkShaderProgramSetupAsCompute(setup, runtime);
-	else if (runtime.vs)	VkShaderProgramSetupAsGraphics(program, runtime);
+	if (runtime.cs)
+	{
+#if NEBULA_GRAPHICS_DEBUG
+		CoreGraphics::ObjectSetName(runtime.cs, Util::String::Sprintf("%s - Program: %s - Shader: %s", shaderName.Value(), program->name.c_str(), program->shaderBlock.cs->name.c_str()));
+#endif
+
+		VkShaderProgramSetupAsCompute(setup, runtime);
+	}
+	else if (runtime.vs)	VkShaderProgramSetupAsGraphics(program, shaderName, runtime);
 	else				runtime.type = CoreGraphics::InvalidPipeline;
 }
 
@@ -111,7 +81,7 @@ VkShaderProgramCreateShader(const VkDevice dev, VkShaderModule* shader, unsigned
 /**
 */
 void
-VkShaderProgramSetupAsGraphics(AnyFX::VkProgram* program, VkShaderProgramRuntimeInfo& runtime)
+VkShaderProgramSetupAsGraphics(AnyFX::VkProgram* program, const Resources::ResourceName& shaderName, VkShaderProgramRuntimeInfo& runtime)
 {
 	// we have to keep track of how MANY shaders we are using, AnyFX makes every function 'main'
 	unsigned shaderIdx = 0;
@@ -129,6 +99,10 @@ VkShaderProgramSetupAsGraphics(AnyFX::VkProgram* program, VkShaderProgramRuntime
 		runtime.shaderInfos[shaderIdx].pName = name;
 		runtime.shaderInfos[shaderIdx].pSpecializationInfo = NULL;
 		shaderIdx++;
+
+#if NEBULA_GRAPHICS_DEBUG
+		CoreGraphics::ObjectSetName(runtime.vs, Util::String::Sprintf("%s - Program: %s - Shader: %s", shaderName.Value(), program->name.c_str(), program->shaderBlock.vs->name.c_str()));
+#endif
 	}
 
 	if (0 != runtime.hs)
@@ -141,6 +115,10 @@ VkShaderProgramSetupAsGraphics(AnyFX::VkProgram* program, VkShaderProgramRuntime
 		runtime.shaderInfos[shaderIdx].pName = name;
 		runtime.shaderInfos[shaderIdx].pSpecializationInfo = NULL;
 		shaderIdx++;
+
+#if NEBULA_GRAPHICS_DEBUG
+		CoreGraphics::ObjectSetName(runtime.hs, Util::String::Sprintf("%s - Program: %s - Shader: %s", shaderName.Value(), program->name.c_str(), program->shaderBlock.hs->name.c_str()));
+#endif
 	}
 
 	if (0 != runtime.ds)
@@ -153,6 +131,10 @@ VkShaderProgramSetupAsGraphics(AnyFX::VkProgram* program, VkShaderProgramRuntime
 		runtime.shaderInfos[shaderIdx].pName = name;
 		runtime.shaderInfos[shaderIdx].pSpecializationInfo = NULL;
 		shaderIdx++;
+
+#if NEBULA_GRAPHICS_DEBUG
+		CoreGraphics::ObjectSetName(runtime.ds, Util::String::Sprintf("%s - Program: %s - Shader: %s", shaderName.Value(), program->name.c_str(), program->shaderBlock.ds->name.c_str()));
+#endif
 	}
 
 	if (0 != runtime.gs)
@@ -165,6 +147,10 @@ VkShaderProgramSetupAsGraphics(AnyFX::VkProgram* program, VkShaderProgramRuntime
 		runtime.shaderInfos[shaderIdx].pName = name;
 		runtime.shaderInfos[shaderIdx].pSpecializationInfo = NULL;
 		shaderIdx++;
+
+#if NEBULA_GRAPHICS_DEBUG
+		CoreGraphics::ObjectSetName(runtime.gs, Util::String::Sprintf("%s - Program: %s - Shader: %s", shaderName.Value(), program->name.c_str(), program->shaderBlock.gs->name.c_str()));
+#endif
 	}
 
 	if (0 != runtime.ps)
@@ -177,6 +163,10 @@ VkShaderProgramSetupAsGraphics(AnyFX::VkProgram* program, VkShaderProgramRuntime
 		runtime.shaderInfos[shaderIdx].pName = name;
 		runtime.shaderInfos[shaderIdx].pSpecializationInfo = NULL;
 		shaderIdx++;
+
+#if NEBULA_GRAPHICS_DEBUG
+		CoreGraphics::ObjectSetName(runtime.ps, Util::String::Sprintf("%s - Program: %s - Shader: %s", shaderName.Value(), program->name.c_str(), program->shaderBlock.ps->name.c_str()));
+#endif
 	}
 
 	runtime.stageCount = shaderIdx;
@@ -258,6 +248,7 @@ VkShaderProgramSetupAsCompute(VkShaderProgramSetupInfo& setup, VkShaderProgramRu
 {
 	// create 6 shader info stages for each shader type
 	n_assert(0 != runtime.cs);
+
 
 	VkPipelineShaderStageCreateInfo shader =
 	{

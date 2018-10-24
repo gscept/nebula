@@ -39,9 +39,9 @@
   -->
   <Material name="Classic rendering" virtual="true" desc="Virtual material used for the default variables available to an object">
    <!-- material textures -->
-   <Param name="AlbedoMap" type="texture2d" defaultValue="tex:system/placeholder"/>
-   <Param name="SpecularMap" type="texture2d" defaultValue="tex:system/white"/>
-   <Param name="NormalMap" type="texture2d" defaultValue="tex:system/nobump"/>
+   <Param name="AlbedoMap" type="textureHandle" defaultValue="tex:system/placeholder"/>
+   <Param name="SpecularMap" type="textureHandle" defaultValue="tex:system/white"/>
+   <Param name="NormalMap" type="textureHandle" defaultValue="tex:system/nobump"/>
    
    <Param name="MatAlbedoIntensity" type="float4" defaultValue="1.0f, 1.0f, 1.0f, 1.0f" min="0.0f, 0.0f, 0.0f, 0.0f" max="10.0f, 10.0f, 10.0f, 1.0f" edit="color" desc="Material albedo multiplier"/>
    <Param name="MatSpecularIntensity" type="float4" defaultValue="0.0f, 0.0f, 0.0f, 0.0f" min="0.0f, 0.0f, 0.0f, 0.0f" max="10.0f, 10.0f, 10.0f, 1.0f" edit="color" desc="Material specular reflectivity index"/>
@@ -52,12 +52,12 @@
   
   <Material name="PBR + IBL" inherits="Classic rendering" desc="Virtual material used for all PBR + IBL based materials" virtual="true">
    
-   <Param name="RoughnessMap" type="texture2d" defaultValue="tex:system/white" desc="Describes the microsurface roughness of the surface."/>
-   <Param name="CavityMap" type="texture2d" defaultValue="tex:system/white" desc="Describes where the surface has sharp creaks, multiplies with reflectivity and irradiance."/>      
+   <Param name="RoughnessMap" type="textureHandle" defaultValue="tex:system/white" desc="Describes the microsurface roughness of the surface."/>
+   <Param name="CavityMap" type="textureHandle" defaultValue="tex:system/white" desc="Describes where the surface has sharp creaks, multiplies with reflectivity and irradiance."/>      
    
    <Param name="MatRoughnessIntensity" type="float" defaultValue="0.0f" min="0.0f" max="1.0f" desc="Material roughness multiplier"/>   
-   <Param name="EnvironmentMap" system="true" type="texturecube" defaultValue="tex:system/sky_refl"/>
-   <Param name="IrradianceMap" system="true" type="texturecube" defaultValue="tex:system/sky_irr"/>
+   <Param name="EnvironmentMap" system="true" type="textureHandle" defaultValue="tex:system/sky_refl"/>
+   <Param name="IrradianceMap" system="true" type="textureHandle" defaultValue="tex:system/sky_irr"/>
    <Param name="NumEnvMips" system="true" type="int" defaultValue="9"/>
    
    <Param name="EnvNumMips" type="int" system="true"/>

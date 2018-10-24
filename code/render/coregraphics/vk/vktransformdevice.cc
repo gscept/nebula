@@ -79,6 +79,17 @@ VkTransformDevice::Close()
 //------------------------------------------------------------------------------
 /**
 */
+void 
+VkTransformDevice::SetProjTransform(const Math::matrix44& m)
+{
+	Math::matrix44 conv = m;
+	conv.setrow1(float4::multiply(conv.getrow1(), float4(-1)));
+	TransformDeviceBase::SetProjTransform(conv);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 VkTransformDevice::ApplyViewSettings()
 {

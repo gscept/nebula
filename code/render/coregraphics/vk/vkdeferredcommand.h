@@ -127,7 +127,6 @@ struct VkDeferredCommand
 			struct // BindDescriptorSets
 			{
 				VkPipelineBindPoint type;
-				VkPipelineLayout layout;
 				uint32_t baseSet;
 				uint32_t numSets;
 				const VkDescriptorSet* sets;

@@ -8,6 +8,7 @@
 #include "coregraphics/graphicsdevice.h"
 #include "materials/materialserver.h"
 #include "models/model.h"
+#include "models/nodes/shaderstatenode.h"
 #include "graphics/graphicsserver.h"
 #include "graphics/view.h"
 #include "visibility/visibilitycontext.h"
@@ -68,7 +69,7 @@ FrameSubpassBatch::CompiledImpl::Run(const IndexT frameIndex)
 	// get current view and visibility draw list
 	const Ptr<View>& view = Graphics::GraphicsServer::Instance()->GetCurrentView();
 	const Visibility::ObserverContext::VisibilityDrawList& drawList = Visibility::ObserverContext::GetVisibilityDrawList(view->GetCamera());
-	return;
+
 	// start batch
 	CoreGraphics::BeginBatch(FrameBatchType::Geometry);
 
@@ -76,10 +77,10 @@ FrameSubpassBatch::CompiledImpl::Run(const IndexT frameIndex)
 	if (types != nullptr) for (IndexT typeIdx = 0; typeIdx < types->Size(); typeIdx++)
 	{
 		MaterialType* type = (*types)[typeIdx];
-		if (MaterialBeginBatch(type, this->batch))
+		IndexT idx = drawList.FindIndex(type);
+		if (idx != InvalidIndex)
 		{
-			IndexT idx = drawList.FindIndex(type);
-			if (idx != InvalidIndex)
+			if (Materials::MaterialBeginBatch(type, this->batch))
 			{
 				auto& model = drawList.ValueAtIndex(type, idx);
 				auto& it = model.Begin();
@@ -87,6 +88,8 @@ FrameSubpassBatch::CompiledImpl::Run(const IndexT frameIndex)
 				while (it != end)
 				{
 					Models::ModelNode* node = *it.key;
+					Models::ShaderStateNode* stateNode = static_cast<Models::ShaderStateNode*>(node);
+					//if (MaterialBeginSurface(type, stateNode->sur
 
 					const Util::Array<Models::ModelNode::Instance*>& instances = *it.val;
 					if (instances.Size() > 0)
@@ -94,20 +97,29 @@ FrameSubpassBatch::CompiledImpl::Run(const IndexT frameIndex)
 						// apply node-wide state
 						node->ApplyNodeState();
 
-						IndexT i;
-						for (i = 0; i < instances.Size(); i++)
+						if (Materials::MaterialBeginSurface(stateNode->GetSurface()))
 						{
-							Models::ModelNode::Instance* instance = instances[i];
+							IndexT i;
+							for (i = 0; i < instances.Size(); i++)
+							{
+								Models::ShaderStateNode::Instance* instance = static_cast<Models::ShaderStateNode::Instance*>(instances[i]);
 
-							// apply instance state
-							instance->ApplyNodeInstanceState();
-							CoreGraphics::Draw();
+								// apply instance state
+								const Materials::SurfaceInstanceId surfaceInstance = instance->GetSurfaceInstance();
+								if (surfaceInstance != Materials::SurfaceInstanceId::Invalid())
+									Materials::MaterialApplySurfaceInstance(instance->GetSurfaceInstance());
+								instance->ApplyNodeInstanceState();
+								CoreGraphics::Draw();
+							}
+
+							// end surface
+							Materials::MaterialEndSurface();
 						}
 					}
 					it++;
 				}
 			}
-			MaterialEndBatch();
+			Materials::MaterialEndBatch();
 		}
 	}
 	/*

@@ -60,6 +60,8 @@ public:
 	bool IsEmpty() const;
 	/// begin bulk adding to the hashtable, which will amortize the cost of sorting the hash buckets upon end
 	void BeginBulkAdd();
+	/// returns true if currently bulk adding
+	const bool IsBulkAdd() const;
 	/// add a key/value pair object to the hash table, returns index within hash array where item is stored
 	IndexT Add(const KeyValuePair<KEYTYPE, VALUETYPE>& kvp);
 	/// add a key and associated value
@@ -364,6 +366,16 @@ HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::BeginBulkAdd()
 /**
 */
 template<class KEYTYPE, class VALUETYPE, int STACK_SIZE>
+inline const bool
+HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::IsBulkAdd() const
+{
+	return this->inBulkAdd;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class KEYTYPE, class VALUETYPE, int STACK_SIZE>
 IndexT
 HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::Add(const KeyValuePair<KEYTYPE, VALUETYPE>& kvp)
 {
@@ -375,7 +387,7 @@ HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::Add(const KeyValuePair<KEYTYPE, VALUE
 	IndexT ret;
 	if (this->inBulkAdd)
 	{
-		ret = this->hashArray[hashIndex].Size() - 1;
+		ret = this->hashArray[hashIndex].Size();
 		this->hashArray[hashIndex].Append(kvp);
 		this->bulkDirty[hashIndex] = true;
 	}
@@ -440,6 +452,7 @@ HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::EndBulkAdd()
 			this->bulkDirty[i] = false;
 		}
 	}
+	this->inBulkAdd = false;
 }
 
 //------------------------------------------------------------------------------

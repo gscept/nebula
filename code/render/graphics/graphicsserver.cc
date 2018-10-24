@@ -73,7 +73,7 @@ GraphicsServer::Open()
 		Resources::ResourceManager::Instance()->RegisterStreamPool("shd", CoreGraphics::ShaderPool::RTTI);
 		Resources::ResourceManager::Instance()->RegisterStreamPool("n3", Models::StreamModelPool::RTTI);
 		Resources::ResourceManager::Instance()->RegisterStreamPool("nvx2", CoreGraphics::StreamMeshPool::RTTI);
-		Resources::ResourceManager::Instance()->RegisterStreamPool("sur", Materials::MaterialPool::RTTI);
+		Resources::ResourceManager::Instance()->RegisterStreamPool("sur", Materials::SurfacePool::RTTI);
 
 		// setup internal pool pointers for convenient access (note, will also assert if texture, shader, model or mesh pools is not registered yet!)
 		CoreGraphics::vboPool = Resources::GetMemoryPool<CoreGraphics::MemoryVertexBufferPool>();
@@ -84,7 +84,7 @@ GraphicsServer::Open()
 
 		CoreGraphics::shaderPool = Resources::GetStreamPool<CoreGraphics::ShaderPool>();
 		Models::modelPool = Resources::GetStreamPool<Models::StreamModelPool>();
-		Materials::materialPool = Resources::GetStreamPool<Materials::MaterialPool>();
+		Materials::surfacePool = Resources::GetStreamPool<Materials::SurfacePool>();
 
 		this->shaderServer = CoreGraphics::ShaderServer::Create();
 		this->shaderServer->Open();

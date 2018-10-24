@@ -30,6 +30,9 @@ public:
 	/// close the transform device
 	void Close();
 
+	/// set projection transform
+	void SetProjTransform(const Math::matrix44& m);
+
 	/// updates shared shader variables dependent on view matrix
 	void ApplyViewSettings();
 

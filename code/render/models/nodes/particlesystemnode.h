@@ -56,7 +56,7 @@ public:
 	};
 
 	/// create instance
-	virtual ModelNode::Instance* CreateInstance(byte* memory, const Models::ModelNode::Instance* parent) override;
+	virtual ModelNode::Instance* CreateInstance(byte** memory, const Models::ModelNode::Instance* parent) override;
 	/// get size of instance
 	virtual const SizeT GetInstanceSize() const { return sizeof(Instance); }
 private:
@@ -137,8 +137,9 @@ ParticleSystemNode::Instance::Setup(Models::ModelNode* node, const Models::Model
 	CoreGraphics::ConstantBufferId cbo = pparent->cbo;
 	this->cbo = cbo;
 	this->resourceTable = pparent->resourceTable;
-	this->offsets.Resize(1);
+	this->offsets.Resize(2);
 	bool rebind = CoreGraphics::ConstantBufferAllocateInstance(cbo, this->offsets[0], this->instance);
+	this->offsets[1] = 0; // instancing offset
 	if (rebind)
 	{
 		CoreGraphics::ResourceTableSetConstantBuffer(pparent->resourceTable, { pparent->cbo, pparent->cboIndex, 0, true, false, -1, 0 });
