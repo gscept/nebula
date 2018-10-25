@@ -46,7 +46,6 @@
             "castShadows"
             "debugName"
         ]
-        "dataLayout": "PACKED_PER_ATTRIBUTE"
         "useDelayedRemoval": true
     }
     "SpotLightComponent": {
@@ -58,7 +57,6 @@
             "color"
             "castShadows"
         ]
-        "dataLayout": "PACKED_PER_ATTRIBUTE"
     }
     "DirectionalLightComponent": {
         "fourcc": "drlc"
@@ -67,6 +65,5 @@
             "color"
             "castShadows"
         ]
-        "dataLayout": "PACKED_PER_ATTRIBUTE"
     }
 }

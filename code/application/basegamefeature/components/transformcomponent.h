@@ -49,6 +49,8 @@ public:
 	/// Set the local transform of instance. Will update hierarchy
 	void SetLocalTransform(const uint32_t& instance, const Math::matrix44& val);
 
+	void UpdateLocalTransform(const Game::Entity& entity, const Math::matrix44& value1, const Math::matrix44& value2);
+
 	/// Update relationships
 	void SetParents(const uint32_t& start, const uint32_t& end, const Util::Array<Entity>& entities, const Util::Array<uint32_t>& parentIndices);
 
@@ -60,6 +62,7 @@ public:
 	/// Deregister Entity. This checks both active and inactive component instances.
 	void DeregisterEntity(const Entity& entity);
 
+	/// Amount of entities registered to this component
 	uint32_t NumRegistered() const;
 
 	/// Allocate multiple instances
@@ -88,9 +91,12 @@ public:
 	SizeT Optimize();
 
 	/// Returns an attribute value as a variant from index.
-	Util::Variant GetAttributeValue(uint32_t instance, Attributes attributeIndex) const;
+	Util::Variant GetAttributeValue(uint32_t instance, IndexT attributeIndex) const;
 	/// Returns an attribute value as a variant from attribute id.
 	Util::Variant GetAttributeValue(uint32_t instance, Attr::AttrId attributeId) const;
+
+	void SetAttributeValue(uint32_t instance, IndexT attributeIndex, Util::Variant value);
+	void SetAttributeValue(uint32_t instance, Attr::AttrId attributeId, Util::Variant value);
 
 	void Serialize(const Ptr<IO::BinaryWriter>& writer) const;
 

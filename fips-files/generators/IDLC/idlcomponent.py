@@ -38,11 +38,6 @@ class ComponentClassWriter:
             for i, event in enumerate(self.events):
                 self.events[i] = event.lower()
 
-        self.dataLayout = IDLTypes.PACKED_PER_ATTRIBUTE
-        # Read dataLayout from NIDL file
-        if "dataLayout" in self.component:
-            self.dataLayout = IDLTypes.GetDataLayout(component["dataLayout"])
-
         self.hasAttributes = "attributes" in self.component
 
         if self.hasAttributes and not "attributes" in self.document:
@@ -443,11 +438,7 @@ private:
         for i, attributeName in enumerate(self.component["attributes"]):
             index = i + 1
             self.f.Write("case {}: ".format(index))
-            if self.dataLayout == IDLTypes.PACKED_PER_INSTANCE:
-                index = 1
-                self.f.WriteLine("return Util::Variant(this->data.data.Get<{}>(instance).{});".format(index, attributeName))
-            else:
-                self.f.WriteLine("return Util::Variant(this->data.data.Get<{}>(instance));".format(index))
+            self.f.WriteLine("return Util::Variant(this->data.data.Get<{}>(instance));".format(index))
         self.f.WriteLine("default:")
         self.f.WriteLine("    n_assert2(false, \"Component doesn't contain this attribute!\");")
         self.f.WriteLine("    return Util::Variant();")
@@ -467,11 +458,7 @@ private:
         for i, attributeName in enumerate(self.component["attributes"]):
             index = i + 1
             self.f.Write("else if (attributeId == Attr::{}) ".format(Capitalize(attributeName)))
-            if self.dataLayout == IDLTypes.PACKED_PER_INSTANCE:
-                index = 1
-                self.f.WriteLine("return Util::Variant(this->data.data.Get<{}>(instance).{});".format(index, attributeName))
-            else:
-                self.f.WriteLine("return Util::Variant(this->data.data.Get<{}>(instance));".format(index))
+            self.f.WriteLine("return Util::Variant(this->data.data.Get<{}>(instance));".format(index))
             
         self.f.WriteLine('n_assert2(false, "Component does not contain this attribute!");')
         self.f.WriteLine("return Util::Variant();")
@@ -499,11 +486,7 @@ private:
             if attribute["access"].lower() == "r":
                 continue
             self.f.Write("case {}: ".format(index))
-            if self.dataLayout == IDLTypes.PACKED_PER_INSTANCE:
-                index = 1
-                self.f.WriteLine("this->data.data.Get<{}>(instance).{} = value.Get{}();".format(index, attributeName, IDLTypes.ConvertToCamelNotation(attribute["type"])))
-            else:
-                self.f.WriteLine("this->Set{}(instance, value.Get{}());".format(Capitalize(attributeName), IDLTypes.ConvertToCamelNotation(attribute["type"])))
+            self.f.WriteLine("this->Set{}(instance, value.Get{}());".format(Capitalize(attributeName), IDLTypes.ConvertToCamelNotation(attribute["type"])))
         self.f.DecreaseIndent()
         self.f.WriteLine("}")
         self.f.DecreaseIndent()
@@ -529,11 +512,7 @@ private:
                 printElse = True
 
             self.f.Write("if (attributeId == Attr::{}) ".format(Capitalize(attributeName)))
-            if self.dataLayout == IDLTypes.PACKED_PER_INSTANCE:
-                index = 1
-                self.f.WriteLine("this->data.data.Get<{}>(instance).{} = value.Get{}();".format(index, attributeName, IDLTypes.ConvertToCamelNotation(attribute["type"])))
-            else:
-                self.f.WriteLine("this->Set{}(instance, value.Get{}());".format(Capitalize(attributeName), IDLTypes.ConvertToCamelNotation(attribute["type"])))
+            self.f.WriteLine("this->Set{}(instance, value.Get{}());".format(Capitalize(attributeName), IDLTypes.ConvertToCamelNotation(attribute["type"])))
         self.f.DecreaseIndent()
         self.f.WriteLine("}")
         self.f.WriteLine("")
@@ -553,10 +532,7 @@ private:
                 self.f.WriteLine("{}::Get{}(const uint32_t& instance)".format(self.className, Capitalize(attributeName)))
                 self.f.WriteLine("{")
                 self.f.IncreaseIndent()
-                if self.dataLayout == IDLTypes.PACKED_PER_INSTANCE:
-                    self.f.WriteLine("return this->data.data.Get<1>(instance).{};".format(attributeName))
-                else:
-                    self.f.WriteLine("return this->data.data.Get<{}>(instance);".format(i + 1))
+                self.f.WriteLine("return this->data.data.Get<{}>(instance);".format(i + 1))
                 self.f.DecreaseIndent()
                 self.f.WriteLine("}")
                 self.f.WriteLine("")
@@ -566,10 +542,7 @@ private:
                 self.f.WriteLine("{}::Set{}(const uint32_t& instance, const {}& value)".format(self.className, Capitalize(attributeName), T))
                 self.f.WriteLine("{")
                 self.f.IncreaseIndent()
-                if self.dataLayout == IDLTypes.PACKED_PER_INSTANCE:
-                    self.f.WriteLine("this->data.data.Get<1>(instance).{} = value;".format(attributeName))
-                else:
-                    self.f.WriteLine("this->data.data.Get<{}>(instance) = value;".format(i + 1))
+                self.f.WriteLine("this->data.data.Get<{}>(instance) = value;".format(i + 1))
                 self.f.WriteLine("// callback that we can hook into to react to this change")
                 self.f.WriteLine("this->On{}Updated(instance, value);".format(Capitalize(attributeName)));
                 self.f.DecreaseIndent()

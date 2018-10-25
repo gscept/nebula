@@ -44,6 +44,11 @@ fips_begin_module(application)
 			attrid.cc
 			valuetype.h
 		)
+	fips_dir(game/messaging)
+		fips_files(
+			message.h	
+			message.cc	
+		)
 	fips_dir(basegamefeature)
 		fips_files(
 			basegamefeatureunit.h
