@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //  vehicle.cc
-//  (C) 2012 Johannes Hirche, LTU Skelleftea
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "physics2/vehicle.h"

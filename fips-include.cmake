@@ -127,8 +127,9 @@ macro(add_shaders)
             #COMMENT ""
             #VERBATIM
             #)                        
-            
-            file(READ ${depoutput} deps)
+            if(EXISTS ${depoutput})
+                file(READ ${depoutput} deps)
+            endif()
 
             set(output ${EXPORT_DIR}/shaders/${basename}.fxb)           
             add_custom_command(OUTPUT ${output}

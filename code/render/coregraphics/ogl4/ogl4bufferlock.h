@@ -5,7 +5,7 @@
 	
 	A buffer lock in OpenGL4 uses a range of GLSync objects which gets locked and unlocked whenever a fragment of data is required.
 	
-	(C) 2012-2016 Individual contributors, see AUTHORS file
+	(C) 2012-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "coregraphics/base/bufferlockbase.h"

@@ -6,7 +6,7 @@
     Platform independent way for storing persistent settings 
     Will use registry in windows and config files on other platforms
         
-    (C) 2013 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #if __WIN32__
 #include "system/win32/win32registry.h"

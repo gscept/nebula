@@ -11,6 +11,7 @@
     http://zeuxcg.blogspot.com/2007/09/particle-rendering-revisited.html
 
     (C) 2008 Radon Labs GmbH
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "particles/base/particlerendererbase.h"
 #include "coregraphics/vertexbuffer.h"

@@ -7,7 +7,7 @@
     NOTE: using this class restricts your code to the Win32 platform.
 
     (C) 2007 Radon Labs GmbH
-    (C) 2013-2014 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 #include "util/string.h"

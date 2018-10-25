@@ -8,6 +8,7 @@
     @todo: UNTESTED!
 
     (C) 2004 RadonLabs GmbH
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "math/point.h"
 #include "math/vector.h"

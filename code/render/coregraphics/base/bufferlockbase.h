@@ -6,7 +6,7 @@
 	A buffer lock is used to avoid writing to a GPU buffer while its in flight.
 	Also defines a struct which is used to represent a buffer range.
 	
-	(C) 2012-2016 Individual contributors, see AUTHORS file
+	(C) 2012-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"

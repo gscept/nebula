@@ -21,7 +21,7 @@
     and a group of methods which manipulate filename strings.
 
     (C) 2006 RadonLabs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 #include "core/sysfunc.h"
@@ -37,11 +37,12 @@
 #endif
 
 #include "memory/poolarrayallocator.h"
-#include "blob.h"
 
 //------------------------------------------------------------------------------
 namespace Util
 {
+class Blob;
+
 class String
 {
 public:
@@ -54,6 +55,8 @@ public:
     String();
     /// copy constructor
     String(const String& rhs);
+    /// move constructor
+    String(String&& rhs);
     /// construct from C string
     String(const char* cStr);
     /// destructor
@@ -61,6 +64,8 @@ public:
 
     /// assignment operator
     void operator=(const String& rhs);
+    /// move operator
+    void operator=(String&& rhs);
     /// assign from const char*
     void operator=(const char* cStr);
     /// += operator
@@ -725,6 +730,29 @@ String::String(const String& rhs) :
 //------------------------------------------------------------------------------
 /**
 */
+inline
+String::String(String&& rhs) :
+    heapBuffer(rhs.heapBuffer),
+    strLen(rhs.strLen),
+    heapBufferSize(rhs.heapBufferSize)
+{
+    if (rhs.heapBuffer)
+    {
+        rhs.heapBuffer = nullptr;
+        this->localBuffer[0] = 0;
+    }
+    else
+    {
+        if (this->strLen > 0)
+        {
+            Memory::Copy(rhs.localBuffer, this->localBuffer, this->strLen + 1);
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 inline const char*
 String::AsCharPtr() const
 {
@@ -756,6 +784,33 @@ String::operator=(const String& rhs)
     if (&rhs != this)
     {
         this->SetCharPtr(rhs.AsCharPtr());
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+String::operator=(String&& rhs)
+{
+    if (&rhs != this)
+    {
+        this->Delete();
+        this->strLen = rhs.strLen;
+        if (rhs.heapBuffer)
+        {
+            this->heapBuffer = rhs.heapBuffer;
+            this->heapBufferSize = rhs.heapBufferSize;
+            rhs.heapBuffer = nullptr;
+            rhs.heapBufferSize = 0;            
+        }
+        else
+        {
+            if (this->strLen > 0)
+            {
+                Memory::Copy(rhs.localBuffer, this->localBuffer, this->strLen + 1);
+            } 
+        }
     }
 }
 

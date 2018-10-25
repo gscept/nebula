@@ -7,7 +7,7 @@
     and has its W component set to 1.0.
     
     (C) 2007 Radon Labs GmbH
-    (C) 2013-2014 Individual contributors, see AUTHORS file	
+    (C) 2013-2018 Individual contributors, see AUTHORS file	
 */
 #include "math/float4.h"
 #include "math/vector.h"

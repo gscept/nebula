@@ -6,7 +6,7 @@
     Under Direct3D11, a shader variation is represented by an d3dx effect 
     technique which must be annotated by a FeatureMask string.
 
-    (C) 2011-2013 Individual contributors, see AUTHORS file
+    (C) 2011-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "coregraphics/base/shadervariationbase.h"

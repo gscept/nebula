@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //  shaderidentifier.cc
-//  (C) 2015 Individual contributors, see AUTHORS file
+//  (C) 2015-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "coregraphics/shaderidentifier.h"

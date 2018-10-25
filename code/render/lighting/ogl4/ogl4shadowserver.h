@@ -5,7 +5,7 @@
     
     Handles shadowing using SM 5.0
     
-    (C) 2012-2015 Individual contributors, see AUTHORS file
+    (C) 2012-2018 Individual contributors, see AUTHORS file
 */
 #include "lighting/base/shadowserverbase.h"
 #include "frame/frameshader.h"

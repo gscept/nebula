@@ -6,7 +6,7 @@
     D3D11/Xbox360 implementation of ShapeRenderer.
     
     (C) 2007 Radon Labs GmbH
-    (C) 2013 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */    
 //------------------------------------------------------------------------------
 #include "coregraphics/base/shaperendererbase.h"

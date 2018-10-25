@@ -12,7 +12,7 @@
     is called.
     
     (C) 2007 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */    
 #if __OGL4__
 #include "coregraphics/ogl4/ogl4vertexlayoutserver.h"

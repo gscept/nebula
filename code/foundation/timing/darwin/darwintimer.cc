@@ -1,6 +1,7 @@
 //------------------------------------------------------------------------------
 //  darwintimer.cc
 //  (C) 2006 Radon Labs GmbH
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "timing/darwin/darwintimer.h"

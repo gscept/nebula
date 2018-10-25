@@ -417,10 +417,6 @@ ENDIF()
 				graphicsentity.h
 				graphicsserver.cc
 				graphicsserver.h
-				lightcontext.cc
-				lightcontext.h
-				lightprobecontext.cc
-				lightprobecontext.h
 				stage.cc
 				stage.h
 				view.cc
@@ -466,10 +462,7 @@ ENDIF()
 				mousebutton.h
 			)
 
-		
-IF(FALSE)
-
-fips_dir(instancing)
+		fips_dir(instancing)
 			fips_files(
 				instancerenderer.cc
 				instancerenderer.h
@@ -500,37 +493,17 @@ fips_dir(instancing)
 				d3d11instanceserver.h
 			)
 	endif()
-
-	fips_dir(lighting/base GROUP "lighting/base")
-		fips_files(
-			lightserverbase.cc
-			lightserverbase.h
-			shadowserverbase.cc
-			shadowserverbase.h
-		)
-	if (N_USE_VULKAN)
-	fips_dir(lighting/vk GROUP "lighting/vk")
-		fips_files(
-			vklightserver.cc
-			vklightserver.h
-			vkshadowserver.cc
-			vkshadowserver.h
-		)
-	endif()
-
+	
 	fips_dir(lighting)
 		fips_files(
 			csmutil.cc
 			csmutil.h
-			environmentprobe.cc
-			environmentprobe.h
-			lightserver.cc
-			lightserver.h
-			lighttype.cc
-			lighttype.h
-			shadowserver.cc
-			shadowserver.h
+			lightcontext.cc
+			lightcontext.h
+			lightprobecontext.cc
+			lightprobecontext.h
 		)
+IF(FALSE)
 		fips_dir(jobs GROUPS "jobs")
 			fips_files(
 			../coreanimation/jobs/animjobsample.cc

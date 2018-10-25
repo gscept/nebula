@@ -7,6 +7,7 @@
 	Instancing in this context means instanced rendering.
     
     (C) 2012 Gustav Sterbrant
+	(C) 2013-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"

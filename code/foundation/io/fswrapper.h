@@ -9,7 +9,7 @@
     FSWrapper class.
     
     (C) 2006 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #if (__WIN32__ || __XBOX360__)
 #include "io/win360/win360fswrapper.h"

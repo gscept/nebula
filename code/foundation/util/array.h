@@ -49,6 +49,8 @@ public:
     Array(SizeT initialSize, SizeT initialGrow, const TYPE& initialValue);
     /// copy constructor
     Array(const Array<TYPE>& rhs);
+    /// move constructor
+    Array(Array<TYPE>&& rhs);
 	/// constructor from initializer list
 	Array(std::initializer_list<TYPE> list);
     /// destructor
@@ -56,6 +58,8 @@ public:
 
     /// assignment operator
     void operator=(const Array<TYPE>& rhs);
+    /// move operator
+    void operator=(Array<TYPE>&& rhs);
     /// [] operator
     TYPE& operator[](IndexT index) const;
     /// equality operator
@@ -123,6 +127,9 @@ public:
 	void SortWithFunc(bool (*func)(const TYPE& lhs, const TYPE& rhs));
     /// do a binary search, requires a sorted array
     IndexT BinarySearchIndex(const TYPE& elm) const;
+	
+	/// Set size. Grows array if size is greater than capacity. Calls destroy on all objects at index > size!
+	void SetSize(SizeT num);
 
 	/// Return the byte size of the array.
 	/// Note that this is not the entire size of this object, only the size (not capacity) of the elements buffer in bytes
@@ -260,6 +267,23 @@ Array<TYPE>::Array(const Array<TYPE>& rhs) :
 //------------------------------------------------------------------------------
 /**
 */
+template<class TYPE>
+Array<TYPE>::Array(Array<TYPE>&& rhs) :
+    grow(rhs.grow),
+    capacity(rhs.capacity),
+    size(rhs.size),
+    elements(rhs.elements)
+{
+#ifdef NEBULA_DEBUG
+    rhs.elements = nullptr;
+    rhs.size = 0;
+    rhs.capacity = 0;
+#endif
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 template<class TYPE> void
 Array<TYPE>::Copy(const Array<TYPE>& src)
 {
@@ -367,6 +391,26 @@ Array<TYPE>::operator=(const Array<TYPE>& rhs)
             this->Delete();
             this->Copy(rhs);
         }
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE> void
+Array<TYPE>::operator=(Array<TYPE>&& rhs)
+{
+    if (this != &rhs)
+    {
+        this->elements = rhs.elements;
+        this->grow = rhs.grow;
+        this->size = rhs.size;
+        this->capacity = rhs.capacity;
+#ifdef NEBULA_DEBUG
+        rhs.elements = nullptr;
+        rhs.size = 0;
+        rhs.capacity;
+#endif
     }
 }
 
@@ -959,12 +1003,36 @@ Array<TYPE>::BinarySearchIndex(const TYPE& elm) const
 //------------------------------------------------------------------------------
 /**
 */
+template<class TYPE> void
+Array<TYPE>::SetSize(SizeT num)
+{
+	if (num < this->size)
+	{
+		for (SizeT i = num; i < this->size; i++)
+		{
+			this->Destroy(this->elements + i);
+		}
+	}
+	else if (num > capacity)
+	{
+		this->GrowTo(num);
+	}
+
+	this->size = num;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 template<class TYPE> SizeT
 Array<TYPE>::ByteSize() const
 {
 	return this->size * sizeof(TYPE);
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 template<class TYPE>
 inline constexpr SizeT Array<TYPE>::TypeSize() const
 {

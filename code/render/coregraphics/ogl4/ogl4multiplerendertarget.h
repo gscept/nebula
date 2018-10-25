@@ -5,7 +5,7 @@
     
     Implements an OpenGL4 MRT.
     
-	(C) 2013-2016 Individual contributors, see AUTHORS file
+	(C) 2013-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "coregraphics/base/multiplerendertargetbase.h"

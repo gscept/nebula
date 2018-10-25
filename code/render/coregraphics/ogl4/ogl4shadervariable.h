@@ -6,6 +6,7 @@
     OGL4 implementation of ShaderVariable.
     
     (C) 2013 Gustav Sterbrant
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "afxapi.h"
 #include "coregraphics/base/shadervariablebase.h"

@@ -6,7 +6,7 @@
     Lowlevel memory functions for the OSX platform.
  
     (C) 2010 Radon Labs GmbH
-    (C) 2013 Individual contributors, see AUTHORS file    
+    (C) 2013-2018 Individual contributors, see AUTHORS file    
  */
 #include "core/config.h"
 #include "core/debug.h"

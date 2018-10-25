@@ -4,7 +4,7 @@
 	An event is a subsystem implemented synchronization variable. This type of event
 	is meant to put into a (one or several) GPU work queues.
 	
-	(C) 2016 Individual contributors, see AUTHORS file
+	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"

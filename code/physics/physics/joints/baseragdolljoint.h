@@ -6,7 +6,7 @@
     Base class for ragdoll joints, can use motors to rotate the bodies to a 
 	specific target orientation.
     
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "physics/joint.h"
 

@@ -7,6 +7,7 @@
  * 	__thread implementation but a pthread implementation.
  *
  * 	(C) 2011 A.Weissflog
+ *  (C) 2013-2018 Individual contributors, see AUTHORS file
  */
 #include "core/types.h"
 

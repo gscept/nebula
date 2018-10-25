@@ -1,6 +1,7 @@
 //------------------------------------------------------------------------------
 //  messagecallbackhandler.cc
 //  (C) 2013 Gustav Sterbrant
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "messagecallbackhandler.h"

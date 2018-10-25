@@ -7,7 +7,7 @@
     physics entities. It is used to include or exclude physics entities
     from various tests (like stabbing checks).
     
-	(C) 2012-2016 Individual contributors, see AUTHORS file
+	(C) 2012-2018 Individual contributors, see AUTHORS file
 */
 #include "util/array.h"
 #include "model/templates.h"

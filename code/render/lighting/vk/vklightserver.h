@@ -5,7 +5,7 @@
     
     A newer version of the light prepass server, used for deferred lighting
     
-    (C) 2011-2013 Individual contributors, see AUTHORS file
+    (C) 2011-2018 Individual contributors, see AUTHORS file
 */
 #include "lighting/base/lightserverbase.h"
 #include "graphics/pointlightentity.h"

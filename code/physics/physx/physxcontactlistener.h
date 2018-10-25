@@ -5,7 +5,7 @@
     
     Base class for a contact listener which is attached to a physics body.
     
-    (C) 2013-2015 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/refcounted.h"
 #include "physics/physicsobject.h"

@@ -12,7 +12,7 @@
 	When constructing, the stride is the size for each element, and alignment
 	is the required byte alignment per element.
 	
-	(C) 2016 Individual contributors, see AUTHORS file
+	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"

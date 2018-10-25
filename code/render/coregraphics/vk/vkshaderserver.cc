@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 // vkshaderserver.cc
-// (C) 2016 Individual contributors, see AUTHORS file
+// (C) 2016-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "vkshaderserver.h"

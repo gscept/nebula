@@ -7,7 +7,7 @@
     window. Uses Win32DisplayDevice for creating the base window and the event loop, 
 	will not work on other platforms obviously
     
-    (C) 2012 Johannes Hirche
+    (C) 2012-2018 Individual contributors, see AUTHORS file
 */
 #include "coregraphics/win32/win32displaydevice.h"
 #include "util/array.h"

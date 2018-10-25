@@ -6,7 +6,7 @@
     An input handler which represents a game pad.
     
     (C) 2007 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */ 
 #if (__OGL4__ || __VULKAN__)
 #include "input/base/gamepadbase.h"

@@ -9,6 +9,7 @@
     production code!
 
     (C) 2012 Gustav Sterbrant
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */    
 #include "core/config.h"
 #include "io/streamreader.h"

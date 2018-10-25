@@ -3,7 +3,7 @@
 /**
 	Implements a window using GLFW
 	
-	(C) 2016 Individual contributors, see AUTHORS file
+	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "GLFW/glfw3.h"

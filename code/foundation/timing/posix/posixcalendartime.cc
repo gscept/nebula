@@ -1,6 +1,7 @@
 //------------------------------------------------------------------------------
 //  posixcalendartime.cc
 //  (C) 2007 Radon Labs GmbH
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "timing/calendartime.h"
