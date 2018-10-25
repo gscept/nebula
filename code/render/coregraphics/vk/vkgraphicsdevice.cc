@@ -2139,8 +2139,8 @@ Draw()
 	PushToThread(cmd, state.currentDrawThread);
 
 	// go to next thread
-	_incr_counter(GraphicsDeviceNumDrawCalls, 1);
-	_incr_counter(GraphicsDeviceNumPrimitives, state.primitiveGroup.GetNumVertices() / 3);
+	_incr_counter(state.GraphicsDeviceNumDrawCalls, 1);
+	_incr_counter(state.GraphicsDeviceNumPrimitives, state.primitiveGroup.GetNumVertices() / 3);
 }
 
 //------------------------------------------------------------------------------
@@ -2162,8 +2162,8 @@ DrawIndexedInstanced(SizeT numInstances, IndexT baseInstance)
 	PushToThread(cmd, state.currentDrawThread);
 
 	// go to next thread
-	_incr_counter(GraphicsDeviceNumDrawCalls, 1);
-	_incr_counter(GraphicsDeviceNumPrimitives, state.primitiveGroup.GetNumIndices() * numInstances / 3);
+	_incr_counter(state.GraphicsDeviceNumDrawCalls, 1);
+	_incr_counter(state.GraphicsDeviceNumPrimitives, state.primitiveGroup.GetNumIndices() * numInstances / 3);
 }
 
 //------------------------------------------------------------------------------
