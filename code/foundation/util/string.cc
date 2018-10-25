@@ -1,6 +1,7 @@
 //------------------------------------------------------------------------------
 //  string.cc
 //  (C) 2006 RadonLabs GmbH
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "util/string.h"
@@ -9,6 +10,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include "base64/base64.h"
+#include "blob.h"
 
 
 //------------------------------------------------------------------------------

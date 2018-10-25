@@ -1,5 +1,7 @@
 /**
 @namespace Lighting
 
-FIXME!
+The lighting subsystem allows for attaching light source functionality to a GraphicsEntityId. It currently supports
+a deferred renderer, dynamic global and local shadows, as well as light probes which are used for dynamic or static
+environment reflections and irradiance. 
 */

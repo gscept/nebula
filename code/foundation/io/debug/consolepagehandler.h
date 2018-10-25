@@ -6,7 +6,7 @@
     Print console output to HTML page.
     
     (C) 2008 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "http/httprequesthandler.h"    
 #include "io/historyconsolehandler.h"

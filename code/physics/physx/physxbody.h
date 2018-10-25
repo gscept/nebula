@@ -4,7 +4,7 @@
     @class PhysX::PhysXBody
     
     
-    (C) 2016 Individual contributors, see AUTHORS file
+    (C) 2016-2018 Individual contributors, see AUTHORS file
 */
 #include "core/refcounted.h"
 #include "math/matrix44.h"

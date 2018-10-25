@@ -6,6 +6,7 @@
     The instance renderer performs actual rendering and updating of shader variables for transforms.
 
     (C) 2012 Gustav Sterbrant
+	(C) 2013-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"

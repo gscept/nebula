@@ -13,7 +13,7 @@
     the pre- and post-infinity types per curve, but only per clip.
     
     (C) 2008 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 #include "coreanimation/curvetype.h"

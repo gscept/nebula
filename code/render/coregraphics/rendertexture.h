@@ -3,7 +3,7 @@
 /**
 	RenderTexture is a texture which can be attached to the render device when rendering
 
-	(C) 2017 Individual contributors, see AUTHORS file
+	(C)2017-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "ids/id.h"

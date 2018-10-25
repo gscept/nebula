@@ -9,6 +9,7 @@
     in 3d space and always has a w component of 0.0.
     
     (C) 2007 Radon Labs GmbH
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "math/sce/sce_float4.h"
 

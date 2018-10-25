@@ -5,7 +5,7 @@
     
     OpenGL4 implementation of the instance server.
     
-    (C) 2013 gscept
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "instancing/base/instanceserverbase.h"

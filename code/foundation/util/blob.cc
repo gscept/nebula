@@ -1,10 +1,15 @@
 //------------------------------------------------------------------------------
 //  blob.cc
 //  (C) 2006 RadonLabs GmbH
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "util/blob.h"
 #include <string.h>
+#include "base64/base64.h"
+#include "io/uri.h"
+#include "io/ioserver.h"
+#include "io/filestream.h"
 
 namespace Util
 {
@@ -31,6 +36,49 @@ Blob::BinaryCompare(const Blob& rhs) const
     {
         return -1;
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+    decodes a base64 buffer and stores it inside
+*/
+void
+Blob::SetFromBase64(const void* ptr, SizeT size)
+{
+    SizeT allocsize = BASE64_DECODE_OUT_SIZE(size);
+    this->Reserve(allocsize);    
+    int ret = base64_decode((char*)ptr, size, (unsigned char*)this->ptr);    
+    n_assert(ret >= 0);
+    this->size = ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+    creates a base64 copy blob
+*/
+Util::Blob 
+Blob::GetBase64() const
+{    
+    SizeT allocsize = BASE64_ENCODE_OUT_SIZE(this->size);    
+    Util::Blob ret(allocsize);
+    int enc = base64_encode((unsigned char*)this->ptr, this->size, (char*)ret.ptr);
+    n_assert(enc >= 0);
+    ret.size = enc;
+    return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+    loads binary from file
+*/
+void 
+Blob::SetFromFile(const IO::URI & uri)
+{
+    Ptr<IO::FileStream> file = IO::IoServer::Instance()->CreateStream(uri).downcast<IO::FileStream>();
+    n_assert(file->Open());
+    this->Reserve(file->GetSize());
+    file->Read(this->ptr, file->GetSize());
+    file->Close();
 }
 
 }

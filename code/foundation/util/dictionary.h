@@ -21,7 +21,7 @@
     throw an assertion between BeginBulkAdd() and EndBulkAdd().
 
     (C) 2006 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file	
+    (C) 2013-2018 Individual contributors, see AUTHORS file	
 */    
 #include "util/array.h"
 #include "util/keyvaluepair.h"
@@ -36,8 +36,12 @@ public:
     Dictionary();
     /// copy constructor
     Dictionary(const Dictionary<KEYTYPE, VALUETYPE>& rhs);
+    /// move constructor
+    Dictionary(Dictionary<KEYTYPE, VALUETYPE>&& rhs);
     /// assignment operator
     void operator=(const Dictionary<KEYTYPE, VALUETYPE>& rhs);
+    /// move operator
+    void operator=(Dictionary<KEYTYPE, VALUETYPE>&& rhs);
     /// read/write [] operator
     VALUETYPE& operator[](const KEYTYPE& key);
     /// read-only [] operator
@@ -124,6 +128,19 @@ Dictionary<KEYTYPE, VALUETYPE>::Dictionary(const Dictionary<KEYTYPE, VALUETYPE>&
 /**
 */
 template<class KEYTYPE, class VALUETYPE>
+Dictionary<KEYTYPE, VALUETYPE>::Dictionary(Dictionary<KEYTYPE, VALUETYPE>&& rhs) :
+    keyValuePairs(std::move(rhs.keyValuePairs)),
+    inBulkInsert(false)
+{
+#if NEBULA_BOUNDSCHECKS
+    n_assert(!rhs.inBulkInsert);
+#endif
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class KEYTYPE, class VALUETYPE>
 inline void
 Dictionary<KEYTYPE, VALUETYPE>::operator=(const Dictionary<KEYTYPE, VALUETYPE>& rhs)
 {
@@ -132,6 +149,20 @@ Dictionary<KEYTYPE, VALUETYPE>::operator=(const Dictionary<KEYTYPE, VALUETYPE>& 
     n_assert(!rhs.inBulkInsert);
     #endif
     this->keyValuePairs = rhs.keyValuePairs;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class KEYTYPE, class VALUETYPE>
+inline void
+Dictionary<KEYTYPE, VALUETYPE>::operator=(Dictionary<KEYTYPE, VALUETYPE>&& rhs)
+{
+#if NEBULA_BOUNDSCHECKS
+    n_assert(!this->inBulkInsert);
+    n_assert(!rhs.inBulkInsert);
+#endif
+    this->keyValuePairs = std::move(rhs.keyValuePairs);   
 }
 
 //------------------------------------------------------------------------------

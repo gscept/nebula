@@ -3,7 +3,7 @@
 /**
     Physics mesh stub
 
-	(C) 2012-2016 Individual contributors, see AUTHORS file
+	(C) 2012-2018 Individual contributors, see AUTHORS file
 */
 #if (__USE_BULLET__)
 #include "physics/bullet/bulletphysicsmesh.h"

@@ -5,7 +5,7 @@
     
     D3D11 implementation of StreamTextureSaver.
     
-    (C) 2011-2013 Individual contributors, see AUTHORS file
+    (C) 2011-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "coregraphics/base/streamtexturesaverbase.h"

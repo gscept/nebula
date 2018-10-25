@@ -6,7 +6,7 @@
     Contains precompiled headers on the Win32 platform.
     
     (C) 2007 Radon Labs GmbH
-    (C) 2013-2017 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN

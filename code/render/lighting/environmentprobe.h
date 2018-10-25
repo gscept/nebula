@@ -5,7 +5,7 @@
 	
 	An environment probe contains information about the environment and irradiance map being used in an area.
 
-	(C) 2012-2016 Individual contributors, see AUTHORS file
+	(C) 2012-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"

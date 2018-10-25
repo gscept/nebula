@@ -8,7 +8,7 @@
     insert/remove performance is more important then traversal performance.
     
     (C) 2006 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */    
 #include "core/types.h"
 
@@ -26,10 +26,14 @@ public:
     List();
     /// copy constructor
     List(const List<TYPE>& rhs);
+    /// move constructor
+    List(List<TYPE>&& rhs);
     /// destructor
     ~List();
     /// assignment operator
     void operator=(const List<TYPE>& rhs);
+    /// assignment operator
+    void operator=(List<TYPE>&& rhs);
 
     /// return true if the list is empty
     bool IsEmpty() const;
@@ -395,6 +399,20 @@ List<TYPE>::List(const List<TYPE>& rhs) :
     back(0)
 {
     this->AddList(rhs);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+List<TYPE>::List(List<TYPE>&& rhs) :
+    front(rhs.front),
+    back(rhs.back)
+{
+#ifdef NEBULA_DEBUG
+    rhs.front = nullptr;
+    rhs.back = nullptr;
+#endif
 }
 
 //------------------------------------------------------------------------------

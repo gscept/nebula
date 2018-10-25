@@ -11,7 +11,7 @@
 	The thread safe allocator requires the Get-methods to be within an Enter/Leave
 	lockstep phase. 
 	
-	(C) 2017 Individual contributors, see AUTHORS file
+	(C) 2017-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "id.h"

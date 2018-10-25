@@ -1,6 +1,7 @@
 //------------------------------------------------------------------------------
 //  d3d9particlerenderer.cc
 //  (C) 2008 Radon Labs GmbH
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #ifndef __DX11__

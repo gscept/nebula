@@ -8,7 +8,7 @@
     attached to the mouse, so that the user can intuitively manipulate
     the physics objects around him.
     
-    (C) 2012-2016 Individual contributors, see AUTHORS file
+    (C) 2012-2018 Individual contributors, see AUTHORS file
 */
 #include "core/refcounted.h"
 #include "core/ptr.h"

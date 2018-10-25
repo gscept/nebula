@@ -26,7 +26,7 @@
 	keys.
 
 	(C) 2006 Radon Labs GmbH
-	(C) 2013-2016 Individual contributors, see AUTHORS file
+	(C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "util/fixedarray.h"
 #include "util/arraystack.h"
@@ -46,8 +46,12 @@ public:
 	HashTable(SizeT capacity);
 	/// copy constructor
 	HashTable(const HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>& rhs);
-	/// assignment operator
+    /// move constructor
+    HashTable(HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>&& rhs);
+    /// assignment operator
 	void operator=(const HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>& rhs);
+    /// move assignment operator
+    void operator=(HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>&& rhs);
 	/// read/write [] operator, assertion if key not found
 	VALUETYPE& operator[](const KEYTYPE& key) const;
 	/// return current number of values in the hashtable
@@ -262,6 +266,21 @@ HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::HashTable(const HashTable<KEYTYPE, VA
 /**
 */
 template<class KEYTYPE, class VALUETYPE, int STACK_SIZE>
+HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::HashTable(HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>&& rhs) :
+    hashArray(std::move(rhs.hashArray)),
+    bulkDirty(rhs.bulkDirty),
+    inBulkAdd(rhs.inBulkAdd),
+    size(rhs.size)
+{
+#ifdef NEBULA_DEBUG
+    rhs.size = 0;
+#endif
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class KEYTYPE, class VALUETYPE, int STACK_SIZE>
 void
 HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::operator=(const HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>& rhs)
 {
@@ -271,6 +290,24 @@ HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::operator=(const HashTable<KEYTYPE, VA
 		this->bulkDirty = rhs.bulkDirty;
 		this->size = rhs.size;
 	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class KEYTYPE, class VALUETYPE, int STACK_SIZE>
+void
+HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::operator=(HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>&& rhs)
+{
+    if (this != &rhs)
+    {
+        this->hashArray = std::move(rhs.hashArray);
+        this->bulkDirty = rhs.bulkDirty;
+        this->size = rhs.size;
+#ifdef NEBULA_DEBUG
+        rhs.size = 0;
+#endif
+    }
 }
 
 //------------------------------------------------------------------------------

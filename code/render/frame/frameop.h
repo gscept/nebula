@@ -4,7 +4,7 @@
 	A frame op is a base class for frame operations, use as base class for runnable
 	sequences within a frame script.
 	
-	(C) 2016 Individual contributors, see AUTHORS file
+	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"

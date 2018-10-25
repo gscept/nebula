@@ -6,6 +6,7 @@
     NVX3 file format structures.
     
     (C) 2013 Gustav Sterbrant
+	(C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 #include "coregraphics/gpubuffertypes.h"

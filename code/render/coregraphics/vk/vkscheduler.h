@@ -9,7 +9,7 @@
 
 	For immediate calls to Vulkan, look at VkUtilities
 	
-	(C) 2017 Individual contributors, see AUTHORS file
+	(C)2017-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "vkdeferredcommand.h"

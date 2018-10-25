@@ -5,7 +5,7 @@
     
     Transform based on an __mm256 which stores an quaternion and position.
     
-    (C) 2017 Individual contributors, see AUTHORS file
+    (C)2017-2018 Individual contributors, see AUTHORS file
 */
 
 #include "core/types.h"

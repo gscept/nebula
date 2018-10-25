@@ -15,7 +15,7 @@
 	child nodes are created for the rest of the currently used state. This is somewhat unnecessary,
 	instead, the nodes should be created when and if we actually do create a pipeline. 
 
-	(C) 2016 Individual contributors, see AUTHORS file
+	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/singleton.h"

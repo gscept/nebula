@@ -1,6 +1,7 @@
 //------------------------------------------------------------------------------
 //  d3d9particlesysteminstance.cc
 //  (C) 2009 Radon Labs GmbH
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 

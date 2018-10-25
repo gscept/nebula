@@ -3,7 +3,7 @@
 /**
 	The material pool provides a chunk allocation source for material types and instances
 
-	(C) 2017 Individual contributors, see AUTHORS file
+	(C)2017-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "resources/resourcestreampool.h"

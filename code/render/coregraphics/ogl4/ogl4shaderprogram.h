@@ -7,6 +7,7 @@
     program which must be annotated by a FeatureMask string.
 
     (C) 2013 Gustav Sterbrant
+	(C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "afxapi.h"
 #include "coregraphics/base/shadervariationbase.h"

@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //  posixsysteminfo.cc
-//  (C) 2013 Individual contributors, see AUTHORS file
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "system/posix/posixsysteminfo.h"
