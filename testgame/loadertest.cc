@@ -41,15 +41,16 @@ LoaderTest::Run()
 	tComp->DestroyAll();
 
 	// fill scene
-	for (SizeT i = 0; i < 1000000; i++)
+	for (SizeT i = 0; i < 100000; i++)
 	{
 		entity = entityManager->NewEntity();
 		entities.Append(entity);
 
 		tComp->RegisterEntity(entity);
-		//plComp->RegisterEntity(entity);
-		//auto instance = plComp->GetInstance(entity);
-		//plComp->SetAttributeValue(instance, Attr::DebugName, "Tjene");
+		plComp->RegisterEntity(entity);
+		auto instance = plComp->GetInstance(entity);
+		tComp->SetAttributeValue(instance, Attr::Parent, uint(i));
+		plComp->SetAttributeValue(instance, Attr::DebugName, "Tjene");
 	}
 
 	LevelLoader::Save("bin:test.scnb");
@@ -61,17 +62,18 @@ LoaderTest::Run()
 	for (SizeT i = 0; i < entities.Size(); i++)
 		entityManager->DeleteEntity(entities[i]);
 
-	VERIFY(tComp->GetNumInstances() == 0);
+	VERIFY(tComp->NumRegistered() == 0);
+	VERIFY(plComp->NumRegistered() == 0);
 	VERIFY(entityManager->GetNumEntities() == 0);
 
 	LevelLoader::Load("bin:test.scnb");
 
-	tComp->DeregisterAllDead();
-	plComp->DeregisterAllDead();
-
-	VERIFY(tComp->GetNumInstances() != 0);
+	VERIFY(tComp->NumRegistered() != 0);
+	VERIFY(plComp->NumRegistered() != 0);
 	VERIFY(entityManager->GetNumEntities() != 0);
-	
+
+	tComp->DestroyAll();
+	plComp->DestroyAll();
 	entities.Clear();
 }
 
