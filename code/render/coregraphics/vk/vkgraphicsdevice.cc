@@ -167,6 +167,9 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 	_declare_counter(NumBufferBytesAllocated);
 	_declare_counter(NumBytesAllocated);
 	_declare_counter(NumPipelinesBuilt);
+	_declare_counter(GraphicsDeviceNumComputes);
+	_declare_counter(GraphicsDeviceNumPrimitives);
+	_declare_counter(GraphicsDeviceNumDrawCalls);
 	_declare_timer(DebugTimer);
 
 #if NEBULA_VULKAN_DEBUG
