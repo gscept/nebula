@@ -49,8 +49,6 @@ public:
 	/// Set the local transform of instance. Will update hierarchy
 	void SetLocalTransform(const uint32_t& instance, const Math::matrix44& val);
 
-	void UpdateLocalTransform(const Game::Entity& entity, const Math::matrix44& value1, const Math::matrix44& value2);
-
 	/// Update relationships
 	void SetParents(const uint32_t& start, const uint32_t& end, const Util::Array<Entity>& entities, const Util::Array<uint32_t>& parentIndices);
 

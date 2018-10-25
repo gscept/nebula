@@ -598,6 +598,7 @@ private:
                 default = "Attr::{}.GetDefaultValue().Get{}()".format(Capitalize(attributeName), IDLTypes.ConvertToCamelNotation(self.document["attributes"][attributeName]["type"]))
                 self.f.WriteLine("this->data.data.GetArray<{}>().Fill(first, num, {});".format(attributeName.upper(), default))
 
+        self.f.WriteLine("this->data.data.UpdateSize();");
         self.f.DecreaseIndent()
         self.f.WriteLine("}")
 

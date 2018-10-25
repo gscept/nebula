@@ -1,4 +1,4 @@
-// NIDL #version:15#
+// NIDL #version:16#
 //------------------------------------------------------------------------------
 //  lightcomponentbase.cc
 //  (C) Individual contributors, see AUTHORS file
@@ -338,6 +338,7 @@ PointLightComponentBase::Allocate(uint num)
     this->data.data.GetArray<COLOR>().Fill(first, num, Attr::Color.GetDefaultValue().GetFloat4());
     this->data.data.GetArray<CASTSHADOWS>().Fill(first, num, Attr::CastShadows.GetDefaultValue().GetBool());
     this->data.data.GetArray<DEBUGNAME>().Fill(first, num, Attr::DebugName.GetDefaultValue().GetString());
+    this->data.data.UpdateSize();
 }
 
 
@@ -744,6 +745,7 @@ SpotLightComponentBase::Allocate(uint num)
     this->data.data.GetArray<DIRECTION>().Fill(first, num, Attr::Direction.GetDefaultValue().GetFloat4());
     this->data.data.GetArray<COLOR>().Fill(first, num, Attr::Color.GetDefaultValue().GetFloat4());
     this->data.data.GetArray<CASTSHADOWS>().Fill(first, num, Attr::CastShadows.GetDefaultValue().GetBool());
+    this->data.data.UpdateSize();
 }
 
 
@@ -1104,6 +1106,7 @@ DirectionalLightComponentBase::Allocate(uint num)
     this->data.data.GetArray<DIRECTION>().Fill(first, num, Attr::Direction.GetDefaultValue().GetFloat4());
     this->data.data.GetArray<COLOR>().Fill(first, num, Attr::Color.GetDefaultValue().GetFloat4());
     this->data.data.GetArray<CASTSHADOWS>().Fill(first, num, Attr::CastShadows.GetDefaultValue().GetBool());
+    this->data.data.UpdateSize();
 }
 
 

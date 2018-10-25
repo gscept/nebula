@@ -18,7 +18,7 @@ namespace Game
 
 ID_32_TYPE(MessageListenerId)
 
-#define __DeclareMsg(MSGTYPE, ...) class MSGTYPE : public Msg::Msg<__VA_ARGS__> { MSGTYPE(){}; ~MSGTYPE(){};};
+#define __DeclareMsg(MSGTYPE, ...) class MSGTYPE : public Game::Message<__VA_ARGS__> { MSGTYPE(){}; ~MSGTYPE(){};};
 
 template <class ... TYPES>
 class Message
