@@ -17,17 +17,26 @@ const static uint sceneMagic = 'SCN0';
 //------------------------------------------------------------------------------
 /**
 */
-SceneComponent::SceneComponent()
+ComponentBuildData::ComponentBuildData()
 {
-	// empty
+
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-SceneComponent::~SceneComponent()
+ComponentBuildData::~ComponentBuildData()
 {
-	// empty
+
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ComponentBuildData::InitializeStream()
+{
+	this->mStream = IO::MemoryStream::Create();
 }
 
 //------------------------------------------------------------------------------
@@ -69,8 +78,12 @@ SceneCompiler::Compile(Util::String filename)
 	{
 		writer->WriteUInt(component.fourcc.AsUInt());
 		writer->WriteUInt(component.numInstances);
-		
-		writer->WriteBlob(component.data);
+		// TODO: Write description of component so that we can make sure we're not reading junk or outdated component data.
+
+		// Write size of stream
+		writer->WriteUInt(component.mStream->GetSize());
+		// Fill with content
+		writer->WriteRawData(component.mStream->GetRawPointer(), component.mStream->GetSize());
 	}
 
 	stream->Close();
@@ -103,12 +116,17 @@ SceneCompiler::Decompile(Util::String filename)
 
 	for (SizeT i = 0; i < this->numComponents; i++)
 	{
-		SceneComponent component;
+		ComponentBuildData component;
 		component.fourcc = Util::FourCC(reader->ReadUInt());
 		component.numInstances = reader->ReadUInt();
-			
-		component.data = reader->ReadBlob();
-		
+		// TODO: Read description of component so that we can make sure we're not reading junk or outdated component data.
+
+		component.InitializeStream();
+		uint size = reader->ReadUInt();
+
+		component.mStream->SetSize(size);
+		reader->ReadRawData(component.mStream->GetRawPointer(), size);
+
 		this->components.Append(component);
 	}
 

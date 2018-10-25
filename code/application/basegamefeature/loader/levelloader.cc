@@ -8,23 +8,14 @@
 #include "scenecompiler.h"
 #include "basegamefeature/managers/entitymanager.h"
 #include "basegamefeature/managers/componentmanager.h"
+#include "io/memorystream.h"
+
 
 #include <chrono>
 #include <ctime>
 
 namespace BaseGameFeature
 {
-
-//void RegisterNodes(int parent, Node node, Scene& scene, HashTable<Entity, uint>& entities)
-//{
-//	// Add entity to index map entry
-//	entities.Add(node.entity, scene.numEntities);
-//	scene.numEntities++;
-//	scene.parentIndices.Append(parent)
-//	for (auto child : node.children)
-//		RegisterNodes(scene.numEntities - 1, child, scene);
-//}
-
 
 //------------------------------------------------------------------------------
 /**
@@ -36,55 +27,67 @@ LevelLoader::Save(const Util::String& levelName)
 
 	auto numEntities = Game::EntityManager::Instance()->GetNumEntities();
 	SceneCompiler scene;
-	uint hashedEntities = 0;
-	Util::HashTable<Game::Entity, uint> entities(numEntities);
+	uint indexHash = 0;
+	Util::HashTable<Game::Entity, uint> entityToIndex(numEntities);
 
 	scene.numEntities = numEntities;
 
 	// Fill components
 
 	Ptr<Game::ComponentManager> manager = Game::ComponentManager::Instance();
-	scene.numComponents = manager->GetNumComponents();
-	for (SizeT i = 0; i < scene.numComponents; i++)
+	scene.numComponents = 0;
+	uint numComponents = manager->GetNumComponents();
+	for (SizeT i = 0; i < numComponents; i++)
 	{
 		Ptr<Game::BaseComponent> component = manager->GetComponentAtIndex(i);
-		SceneComponent c;
+		if (component->NumRegistered() == 0)
+		{
+			// Skip this component
+			continue;
+		}
+		// this component is part of scene.
+		scene.numComponents++;
+
+		ComponentBuildData c;
 
 		c.fourcc = component->GetClassFourCC();
-		c.numInstances = component->GetNumInstances();
+		c.numInstances = component->NumRegistered();
 
-		// save state
-		auto state = component->GetBlob();
+		// TODO: Add description of component so that we can make sure we're not reading incorrect or outdated data later.
+		// ex. c.description = Util::String(for each attribute: { return attributeDefinition.ToString() })
 
-		// update owner to the entity index
-		for (uint j = 0; j < component->GetNumInstances(); j++)
+		// Serialize the component data into builddata local stream
+		Ptr<IO::BinaryWriter> bWriter = IO::BinaryWriter::Create();
+
+		c.InitializeStream();
+		bWriter->SetStream(c.mStream);
+		bWriter->Open();
+		component->Serialize(bWriter);
+		bWriter->Close();
+
+		// We know the owner is always the first attribute
+		// so we can easily update owner of each instance
 		{
-			auto o = component->GetOwner(j);
-			if (entities.Contains(o))
+			Game::Entity* owners = (Game::Entity*)c.mStream->GetRawPointer();
+			
+			// update owner to the entity index
+			for (uint instance = 0; instance < c.numInstances; instance++)
 			{
-				component->SetOwner(j, entities[o]);
-			}
-			else
-			{
-				// hash entity
-				entities.Add(o, hashedEntities);
-				component->SetOwner(j, hashedEntities);
-				hashedEntities++;
+				Game::Entity owner = owners[instance];
+				if (entityToIndex.Contains(owner))
+				{
+					owners[instance] = entityToIndex[owner];
+				}
+				else
+				{
+					// hash entity
+					entityToIndex.Add(owner, indexHash);
+					owners[instance] = indexHash;
+					indexHash++;
+				}
 			}
 		}
 
-		// Get blob
-		c.data = component->GetBlob();
-
-		// Reset state
-		component->SetBlob(state, 0, component->GetNumInstances());
-
-		// id maps
-		for (uint j = 0; j < component->GetNumInstances(); j++)
-		{
-			component->SetOwner(j, component->GetOwner(j));
-		}
-	
 		scene.components.Append(c);
 	}
 	scene.Compile(levelName);
@@ -117,12 +120,18 @@ LevelLoader::Load(const Util::String& levelName)
 		{
 			// Needs to create entirely new instances, not reuse old.
 
-			uint start = c->GetNumInstances();
-			c->AllocInstances(component.numInstances);
-			uint end = c->GetNumInstances();
+			uint start = c->NumRegistered();
+			c->Allocate(component.numInstances);
+			uint end = c->NumRegistered();
 
-			c->SetBlob(component.data, start, component.numInstances);
+			Ptr<IO::BinaryReader> bReader = IO::BinaryReader::Create();
+			bReader->SetStream(component.mStream);
+			bReader->Open();
 			
+			c->Deserialize(bReader, start, component.numInstances);
+			
+			bReader->Close();
+
 			// update owner and id maps
 			for (uint j = start; j < end; j++)
 			{

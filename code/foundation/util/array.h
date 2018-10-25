@@ -128,7 +128,7 @@ public:
     /// do a binary search, requires a sorted array
     IndexT BinarySearchIndex(const TYPE& elm) const;
 	
-	/// Set size. Grows array if size is greater than capacity. Calls destroy on all objects at index > size!
+	/// Set size. Grows array if num is greater than capacity. Calls destroy on all objects at index > num!
 	void SetSize(SizeT num);
 
 	/// Return the byte size of the array.
@@ -584,10 +584,6 @@ Array<TYPE>::Reserve(SizeT num)
         {
             this->GrowTo(neededCapacity);
         }
-    }
-    else
-    {
-        this->Grow();
     }
 }
 

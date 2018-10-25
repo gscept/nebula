@@ -110,7 +110,7 @@ static const int JobMaxSliceSize = 0xFFFF;
 #if PUBLIC_BUILD
 #define __NEBULA_HTTP__ (0)
 #else
-#define __NEBULA_HTTP__ (0)
+#define __NEBULA_HTTP__ (1)
 #endif
 
 // enable/disable the transparent web filesystem

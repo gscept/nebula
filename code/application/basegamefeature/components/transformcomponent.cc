@@ -80,6 +80,21 @@ TransformComponent::SetLocalTransform(const uint32_t& i, const Math::matrix44& v
 /**
 */
 void
+TransformComponent::UpdateLocalTransform(const Game::Entity& entity, const Math::matrix44& value1, const Math::matrix44& value2)
+{
+	if (entity != InvalidIndex)
+	{
+		return;
+	}
+
+	this->LocalTransform(1) = value1;
+	this->WorldTransform(1) = value2;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 TransformComponent::SetParents(const uint32_t & start, const uint32_t & end, const Util::Array<Entity>& entities, const Util::Array<uint32_t>& parentIndices)
 {
 	SizeT i = 0;
@@ -127,7 +142,7 @@ TransformComponent::DeregisterEntity(const Entity& entity)
 /**
 */
 uint32_t
-TransformComponent::GetNumInstances() const
+TransformComponent::NumRegistered() const
 {
 	return this->data.Size();
 }
@@ -136,28 +151,19 @@ TransformComponent::GetNumInstances() const
 /**
 */
 void
-TransformComponent::AllocInstances(uint num)
+TransformComponent::Allocate(uint num)
 {
-	/// @todo	we should reserve per array here.
 	SizeT first = this->data.data.Size();
 	this->data.data.Reserve(first + num);
 	
-	this->data.data.GetArray<0>().SetSize(first + num);
-	this->data.data.GetArray<1>().Fill(first, num, Math::matrix44::identity());
-	this->data.data.GetArray<2>().Fill(first, num, Math::matrix44::identity());
-	this->data.data.GetArray<3>().Fill(first, num, uint(-1));
-	this->data.data.GetArray<4>().Fill(first, num, uint(-1));
-	this->data.data.GetArray<5>().Fill(first, num, uint(-1));
-	this->data.data.GetArray<6>().Fill(first, num, uint(-1));
-}
+	this->data.data.GetArray<OWNER>().SetSize(first + num);
 
-//------------------------------------------------------------------------------
-/**
-*/
-void
-TransformComponent::DeregisterAllDead()
-{
-	this->data.DeregisterAllInactive();
+	this->data.data.GetArray<WORLDTRANSFORM>().Fill(first, num, Math::matrix44::identity());
+	this->data.data.GetArray<LOCALTRANSFORM>().Fill(first, num, Math::matrix44::identity());
+	this->data.data.GetArray<PARENT>().Fill(first, num, uint(-1));
+	this->data.data.GetArray<FIRSTCHILD>().Fill(first, num, uint(-1));
+	this->data.data.GetArray<NEXTSIBLING>().Fill(first, num, uint(-1));
+	this->data.data.GetArray<PREVIOUSSIBLING>().Fill(first, num, uint(-1));
 }
 
 //------------------------------------------------------------------------------
@@ -232,20 +238,20 @@ TransformComponent::GetAttributeValue(uint32_t instance, IndexT attributeIndex) 
 {
 	switch (attributeIndex)
 	{
-	case 0:
-		return Util::Variant(this->data.data.Get<0>(instance).id);
-	case 1:
-		return Util::Variant(this->data.data.Get<1>(instance));
-	case 2:
-		return Util::Variant(this->data.data.Get<2>(instance));
-	case 3:
-		return Util::Variant(this->data.data.Get<3>(instance));
-	case 4:
-		return Util::Variant(this->data.data.Get<4>(instance));
-	case 5:
-		return Util::Variant(this->data.data.Get<5>(instance));
-	case 6:
-		return Util::Variant(this->data.data.Get<6>(instance));
+	case OWNER:
+		return Util::Variant(this->data.data.Get<OWNER>(instance).id);
+	case LOCALTRANSFORM:
+		return Util::Variant(this->data.data.Get<LOCALTRANSFORM>(instance));
+	case WORLDTRANSFORM:
+		return Util::Variant(this->data.data.Get<WORLDTRANSFORM>(instance));
+	case PARENT:
+		return Util::Variant(this->data.data.Get<PARENT>(instance));
+	case FIRSTCHILD:
+		return Util::Variant(this->data.data.Get<FIRSTCHILD>(instance));
+	case NEXTSIBLING:
+		return Util::Variant(this->data.data.Get<NEXTSIBLING>(instance));
+	case PREVIOUSSIBLING:
+		return Util::Variant(this->data.data.Get<PREVIOUSSIBLING>(instance));
 	default:
 		n_assert2(false, "Component doesn't contain this attribute!\n");
 		return Util::Variant();
@@ -294,19 +300,44 @@ TransformComponent::GetAttributeValue(uint32_t instance, Attr::AttrId attributeI
 //------------------------------------------------------------------------------
 /**
 */
-Util::Blob
-TransformComponent::GetBlob() const
+void
+TransformComponent::SetAttributeValue(uint32_t instance, IndexT index, Util::Variant value)
 {
-	return this->data.GetBlob();
+	switch (index)
+	{
+	case LOCALTRANSFORM:
+		this->SetLocalTransform(instance, value.GetMatrix44());
+		break;
+	}
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TransformComponent::SetAttributeValue(uint32_t instance, Attr::AttrId attributeId, Util::Variant value)
+{
+	if (attributeId == Attr::LocalTransform)
+		this->SetLocalTransform(instance, value.GetMatrix44());
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-TransformComponent::SetBlob(const Util::Blob & blob, uint offset, uint numInstances)
+TransformComponent::Serialize(const Ptr<IO::BinaryWriter>& writer) const
 {
-	this->data.SetBlob(blob, offset, numInstances);
+	return this->data.Serialize(writer);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TransformComponent::Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances)
+{
+	this->data.Deserialize(reader, offset, numInstances);
 }
 
 

@@ -1,6 +1,14 @@
 default_namespace = "Components"
 
 #------------------------------------------------------------------------------
+##
+#
+def GetNamespace(document):
+    if "namespace" in document:
+        return document["namespace"]
+    return default_namespace
+
+#------------------------------------------------------------------------------
 ## Write header for include file
 #
 def WriteIncludeHeader(f):

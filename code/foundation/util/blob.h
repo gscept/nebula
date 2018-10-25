@@ -2,10 +2,10 @@
 //------------------------------------------------------------------------------
 /**
     @class Util::Blob
-    
-    The Util::Blob class encapsulates a chunk of raw memory into 
+
+    The Util::Blob class encapsulates a chunk of raw memory into
     a C++ object which can be copied, compared and hashed.
-    
+
     (C) 2006 Radon Labs GmbH
     (C) 2013-2018 Individual contributors, see AUTHORS file
 */
@@ -361,7 +361,7 @@ Blob::operator==(const Blob& rhs) const
 {
     return (this->BinaryCompare(rhs) == 0);
 }
-            
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -379,7 +379,7 @@ Blob::operator>(const Blob& rhs) const
 {
     return (this->BinaryCompare(rhs) > 0);
 }
-            
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -397,7 +397,7 @@ Blob::operator>=(const Blob& rhs) const
 {
     return (this->BinaryCompare(rhs) >= 0);
 }
-            
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -423,7 +423,7 @@ Blob::Reserve(SizeT s)
     }
     else
     {
-        this->Allocate(s);
+        this->Delete();
     }
     this->size = s;
 }
@@ -461,7 +461,7 @@ Blob::SetChunk(const void* from, SizeT size, SizeT internalOffset)
 	{
 		this->GrowTo(newSize);
 	}
-	
+
 	Memory::Copy(from, (void*)((byte*)this->ptr + internalOffset), size);
 }
 
@@ -509,4 +509,3 @@ Blob::HashCode() const
 
 } // namespace Util
 //------------------------------------------------------------------------------
-    

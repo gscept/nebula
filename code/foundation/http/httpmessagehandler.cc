@@ -3,7 +3,7 @@
 //  (C) 2008 Radon Labs GmbH
 //  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "foundation/stdneb.h"
 #include "http/httpmessagehandler.h"
 #include "threading/thread.h"
 
@@ -56,7 +56,7 @@ HttpMessageHandler::Close()
     n_assert(this->IsOpen());
 
     this->httpServer->Close();
-    this->httpServer = 0;
+    this->httpServer = nullptr;
 
     InterfaceHandlerBase::Close();
 }
