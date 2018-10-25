@@ -1,4 +1,4 @@
-//NIDL #version:1#
+// NIDL #version:15#
 //------------------------------------------------------------------------------
 //  lightcomponentbase.cc
 //  (C) Individual contributors, see AUTHORS file
@@ -10,6 +10,7 @@
 //------------------------------------------------------------------------------
 namespace Attr
 {
+    DefineStringWithDefault(DebugName, 'tStr', Attr::ReadWrite, Util::String("tjene"));
     DefineFloatWithDefault(Range, 'LRAD', Attr::ReadOnly, float(10.0f));
     DefineFloat4WithDefault(Color, 'LCLR', Attr::ReadWrite, Math::float4(1.0f, 0.88f, 0.65f, 1.0f));
     DefineBoolWithDefault(CastShadows, 'SHDW', Attr::ReadWrite, bool(true));
@@ -20,17 +21,20 @@ namespace Attr
 namespace GraphicsFeature
 {
 
+__ImplementClass(GraphicsFeature::PointLightComponentBase, 'plcp', Core::RefCounted)
+
 
 //------------------------------------------------------------------------------
 /**
 */
 PointLightComponentBase::PointLightComponentBase()
 {
-    this->attributeIds.SetSize(4);
+    this->attributeIds.SetSize(5);
     this->attributeIds[0] = Attr::Owner;
     this->attributeIds[1] = Attr::Range;
     this->attributeIds[2] = Attr::Color;
     this->attributeIds[3] = Attr::CastShadows;
+    this->attributeIds[4] = Attr::DebugName;
 }
 
 
@@ -50,7 +54,10 @@ void
 PointLightComponentBase::RegisterEntity(const Game::Entity& entity)
 {
     auto instance = this->data.RegisterEntity(entity);
-    Game::EntityManager::Instance()->RegisterDeletionCallback(entity, this);
+    this->data.data.Get<RANGE>(instance) = Attr::Range.GetDefaultValue().GetFloat();
+    this->data.data.Get<COLOR>(instance) = Attr::Color.GetDefaultValue().GetFloat4();
+    this->data.data.Get<CASTSHADOWS>(instance) = Attr::CastShadows.GetDefaultValue().GetBool();
+    this->data.data.Get<DEBUGNAME>(instance) = Attr::DebugName.GetDefaultValue().GetString();
 }
 
 
@@ -63,21 +70,9 @@ PointLightComponentBase::DeregisterEntity(const Game::Entity& entity)
     uint32_t index = this->data.GetInstance(entity);
     if (index != InvalidIndex)
     {
-        this->data.DeregisterEntityImmediate(entity);
-        Game::EntityManager::Instance()->DeregisterDeletionCallback(entity, this);
+        this->data.DeregisterEntity(entity);
         return;
     }
-}
-
-
-//------------------------------------------------------------------------------
-/**
-    @todo	if needed: deregister deletion callbacks
-*/
-void
-PointLightComponentBase::DeregisterAllDead()
-{
-    this->data.DeregisterAllInactive();
 }
 
 
@@ -148,7 +143,7 @@ PointLightComponentBase::SetOwner(const uint32_t & i, const Game::Entity & entit
 SizeT
 PointLightComponentBase::Optimize()
 {
-    return 0;
+    return this->data.Optimize();;
 }
 
 
@@ -156,7 +151,7 @@ PointLightComponentBase::Optimize()
 /**
 */
 Util::Variant
-PointLightComponentBase::GetAttributeValue(uint32_t instance, IndexT attributeIndex) const
+PointLightComponentBase::GetAttributeValue(uint32_t instance, AttributeIndex attributeIndex) const
 {
     switch (attributeIndex)
     {
@@ -164,6 +159,7 @@ PointLightComponentBase::GetAttributeValue(uint32_t instance, IndexT attributeIn
         case 1: return Util::Variant(this->data.data.Get<1>(instance));
         case 2: return Util::Variant(this->data.data.Get<2>(instance));
         case 3: return Util::Variant(this->data.data.Get<3>(instance));
+        case 4: return Util::Variant(this->data.data.Get<4>(instance));
         default:
             n_assert2(false, "Component doesn't contain this attribute!");
             return Util::Variant();
@@ -181,6 +177,7 @@ PointLightComponentBase::GetAttributeValue(uint32_t instance, Attr::AttrId attri
     else if (attributeId == Attr::Range) return Util::Variant(this->data.data.Get<1>(instance));
     else if (attributeId == Attr::Color) return Util::Variant(this->data.data.Get<2>(instance));
     else if (attributeId == Attr::CastShadows) return Util::Variant(this->data.data.Get<3>(instance));
+    else if (attributeId == Attr::DebugName) return Util::Variant(this->data.data.Get<4>(instance));
     n_assert2(false, "Component does not contain this attribute!");
     return Util::Variant();
 }
@@ -189,12 +186,13 @@ PointLightComponentBase::GetAttributeValue(uint32_t instance, Attr::AttrId attri
 /**
 */
 void
-PointLightComponentBase::SetAttributeValue(uint32_t instance, IndexT index, Util::Variant value)
+PointLightComponentBase::SetAttributeValue(uint32_t instance, AttributeIndex index, Util::Variant value)
 {
     switch (index)
     {
-        case 2: this->data.data.Get<2>(instance) = value.GetFloat4();
-        case 3: this->data.data.Get<3>(instance) = value.GetBool();
+        case 2: this->SetColor(instance, value.GetFloat4());
+        case 3: this->SetCastShadows(instance, value.GetBool());
+        case 4: this->SetDebugName(instance, value.GetString());
     }
 }
 
@@ -205,46 +203,36 @@ PointLightComponentBase::SetAttributeValue(uint32_t instance, IndexT index, Util
 void
 PointLightComponentBase::SetAttributeValue(uint32_t instance, Attr::AttrId attributeId, Util::Variant value)
 {
-    if (attributeId == Attr::Color) this->data.data.Get<2>(instance) = value.GetFloat4();
-    else if (attributeId == Attr::CastShadows) this->data.data.Get<3>(instance) = value.GetBool();
+    if (attributeId == Attr::Color) this->SetColor(instance, value.GetFloat4());
+    else if (attributeId == Attr::CastShadows) this->SetCastShadows(instance, value.GetBool());
+    else if (attributeId == Attr::DebugName) this->SetDebugName(instance, value.GetString());
 }
 
 
 //------------------------------------------------------------------------------
 /**
 */
-Util::Blob
-PointLightComponentBase::GetBlob() const
+void
+PointLightComponentBase::Serialize(const Ptr<IO::BinaryWriter>& writer) const
 {
-    return this->data.GetBlob();
+    this->data.Serialize(writer);
 }
 
-void
-PointLightComponentBase::SetBlob(const Util::Blob & blob, uint offset, uint numInstances)
-{
-    this->data.SetBlob(blob, offset, numInstances);
-}
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-PointLightComponentBase::OnEntityDeleted(Game::Entity entity)
+PointLightComponentBase::Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances)
 {
-    uint32_t index = this->data.GetInstance(entity);
-    if (index != InvalidIndex)
-    {
-        this->data.DeregisterEntityImmediate(entity);
-        return;
-    }
+    this->data.Deserialize(reader, offset, numInstances);
 }
-
 
 //------------------------------------------------------------------------------
 /**
 */
 const float&
-PointLightComponentBase::GetAttrRange(const uint32_t& instance)
+PointLightComponentBase::GetRange(const uint32_t& instance)
 {
     return this->data.data.Get<1>(instance);
 }
@@ -254,9 +242,11 @@ PointLightComponentBase::GetAttrRange(const uint32_t& instance)
 /**
 */
 void
-PointLightComponentBase::SetAttrRange(const uint32_t& instance, const float& value)
+PointLightComponentBase::SetRange(const uint32_t& instance, const float& value)
 {
     this->data.data.Get<1>(instance) = value;
+    // callback that we can hook into to react to this change
+    this->OnRangeUpdated(instance, value);
 }
 
 
@@ -264,7 +254,7 @@ PointLightComponentBase::SetAttrRange(const uint32_t& instance, const float& val
 /**
 */
 const Math::float4&
-PointLightComponentBase::GetAttrColor(const uint32_t& instance)
+PointLightComponentBase::GetColor(const uint32_t& instance)
 {
     return this->data.data.Get<2>(instance);
 }
@@ -274,9 +264,11 @@ PointLightComponentBase::GetAttrColor(const uint32_t& instance)
 /**
 */
 void
-PointLightComponentBase::SetAttrColor(const uint32_t& instance, const Math::float4& value)
+PointLightComponentBase::SetColor(const uint32_t& instance, const Math::float4& value)
 {
     this->data.data.Get<2>(instance) = value;
+    // callback that we can hook into to react to this change
+    this->OnColorUpdated(instance, value);
 }
 
 
@@ -284,7 +276,7 @@ PointLightComponentBase::SetAttrColor(const uint32_t& instance, const Math::floa
 /**
 */
 const bool&
-PointLightComponentBase::GetAttrCastShadows(const uint32_t& instance)
+PointLightComponentBase::GetCastShadows(const uint32_t& instance)
 {
     return this->data.data.Get<3>(instance);
 }
@@ -294,12 +286,102 @@ PointLightComponentBase::GetAttrCastShadows(const uint32_t& instance)
 /**
 */
 void
-PointLightComponentBase::SetAttrCastShadows(const uint32_t& instance, const bool& value)
+PointLightComponentBase::SetCastShadows(const uint32_t& instance, const bool& value)
 {
     this->data.data.Get<3>(instance) = value;
+    // callback that we can hook into to react to this change
+    this->OnCastShadowsUpdated(instance, value);
 }
 
 
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::String&
+PointLightComponentBase::GetDebugName(const uint32_t& instance)
+{
+    return this->data.data.Get<4>(instance);
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+PointLightComponentBase::SetDebugName(const uint32_t& instance, const Util::String& value)
+{
+    this->data.data.Get<4>(instance) = value;
+    // callback that we can hook into to react to this change
+    this->OnDebugNameUpdated(instance, value);
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint32_t
+PointLightComponentBase::NumRegistered() const
+{
+    return this->data.Size();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+PointLightComponentBase::Allocate(uint num)
+{
+    SizeT first = this->data.data.Size();
+    this->data.data.Reserve(first + num);
+    this->data.data.GetArray<OWNER>().SetSize(first + num);
+    this->data.data.GetArray<RANGE>().Fill(first, num, Attr::Range.GetDefaultValue().GetFloat());
+    this->data.data.GetArray<COLOR>().Fill(first, num, Attr::Color.GetDefaultValue().GetFloat4());
+    this->data.data.GetArray<CASTSHADOWS>().Fill(first, num, Attr::CastShadows.GetDefaultValue().GetBool());
+    this->data.data.GetArray<DEBUGNAME>().Fill(first, num, Attr::DebugName.GetDefaultValue().GetString());
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+PointLightComponentBase::OnRangeUpdated(const uint32_t& instance, const float& value)
+{
+    // Empty - override if necessary
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+PointLightComponentBase::OnColorUpdated(const uint32_t& instance, const Math::float4& value)
+{
+    // Empty - override if necessary
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+PointLightComponentBase::OnCastShadowsUpdated(const uint32_t& instance, const bool& value)
+{
+    // Empty - override if necessary
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+PointLightComponentBase::OnDebugNameUpdated(const uint32_t& instance, const Util::String& value)
+{
+    // Empty - override if necessary
+}
+
+
+__ImplementClass(GraphicsFeature::SpotLightComponentBase, 'splc', Core::RefCounted)
 
 
 //------------------------------------------------------------------------------
@@ -333,6 +415,11 @@ void
 SpotLightComponentBase::RegisterEntity(const Game::Entity& entity)
 {
     auto instance = this->data.RegisterEntity(entity);
+    this->data.data.Get<RANGE>(instance) = Attr::Range.GetDefaultValue().GetFloat();
+    this->data.data.Get<ANGLE>(instance) = Attr::Angle.GetDefaultValue().GetFloat();
+    this->data.data.Get<DIRECTION>(instance) = Attr::Direction.GetDefaultValue().GetFloat4();
+    this->data.data.Get<COLOR>(instance) = Attr::Color.GetDefaultValue().GetFloat4();
+    this->data.data.Get<CASTSHADOWS>(instance) = Attr::CastShadows.GetDefaultValue().GetBool();
     Game::EntityManager::Instance()->RegisterDeletionCallback(entity, this);
 }
 
@@ -350,17 +437,6 @@ SpotLightComponentBase::DeregisterEntity(const Game::Entity& entity)
         Game::EntityManager::Instance()->DeregisterDeletionCallback(entity, this);
         return;
     }
-}
-
-
-//------------------------------------------------------------------------------
-/**
-    @todo	if needed: deregister deletion callbacks
-*/
-void
-SpotLightComponentBase::DeregisterAllDead()
-{
-    this->data.DeregisterAllInactive();
 }
 
 
@@ -439,7 +515,7 @@ SpotLightComponentBase::Optimize()
 /**
 */
 Util::Variant
-SpotLightComponentBase::GetAttributeValue(uint32_t instance, IndexT attributeIndex) const
+SpotLightComponentBase::GetAttributeValue(uint32_t instance, AttributeIndex attributeIndex) const
 {
     switch (attributeIndex)
     {
@@ -476,14 +552,14 @@ SpotLightComponentBase::GetAttributeValue(uint32_t instance, Attr::AttrId attrib
 /**
 */
 void
-SpotLightComponentBase::SetAttributeValue(uint32_t instance, IndexT index, Util::Variant value)
+SpotLightComponentBase::SetAttributeValue(uint32_t instance, AttributeIndex index, Util::Variant value)
 {
     switch (index)
     {
-        case 2: this->data.data.Get<2>(instance) = value.GetFloat();
-        case 3: this->data.data.Get<3>(instance) = value.GetFloat4();
-        case 4: this->data.data.Get<4>(instance) = value.GetFloat4();
-        case 5: this->data.data.Get<5>(instance) = value.GetBool();
+        case 2: this->SetAngle(instance, value.GetFloat());
+        case 3: this->SetDirection(instance, value.GetFloat4());
+        case 4: this->SetColor(instance, value.GetFloat4());
+        case 5: this->SetCastShadows(instance, value.GetBool());
     }
 }
 
@@ -494,26 +570,30 @@ SpotLightComponentBase::SetAttributeValue(uint32_t instance, IndexT index, Util:
 void
 SpotLightComponentBase::SetAttributeValue(uint32_t instance, Attr::AttrId attributeId, Util::Variant value)
 {
-    if (attributeId == Attr::Angle) this->data.data.Get<2>(instance) = value.GetFloat();
-    else if (attributeId == Attr::Direction) this->data.data.Get<3>(instance) = value.GetFloat4();
-    else if (attributeId == Attr::Color) this->data.data.Get<4>(instance) = value.GetFloat4();
-    else if (attributeId == Attr::CastShadows) this->data.data.Get<5>(instance) = value.GetBool();
+    if (attributeId == Attr::Angle) this->SetAngle(instance, value.GetFloat());
+    else if (attributeId == Attr::Direction) this->SetDirection(instance, value.GetFloat4());
+    else if (attributeId == Attr::Color) this->SetColor(instance, value.GetFloat4());
+    else if (attributeId == Attr::CastShadows) this->SetCastShadows(instance, value.GetBool());
 }
 
 
 //------------------------------------------------------------------------------
 /**
 */
-Util::Blob
-SpotLightComponentBase::GetBlob() const
+void
+SpotLightComponentBase::Serialize(const Ptr<IO::BinaryWriter>& writer) const
 {
-    return this->data.GetBlob();
+    this->data.Serialize(writer);
 }
 
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
-SpotLightComponentBase::SetBlob(const Util::Blob & blob, uint offset, uint numInstances)
+SpotLightComponentBase::Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances)
 {
-    this->data.SetBlob(blob, offset, numInstances);
+    this->data.Deserialize(reader, offset, numInstances);
 }
 
 //------------------------------------------------------------------------------
@@ -535,7 +615,7 @@ SpotLightComponentBase::OnEntityDeleted(Game::Entity entity)
 /**
 */
 const float&
-SpotLightComponentBase::GetAttrRange(const uint32_t& instance)
+SpotLightComponentBase::GetRange(const uint32_t& instance)
 {
     return this->data.data.Get<1>(instance);
 }
@@ -545,9 +625,11 @@ SpotLightComponentBase::GetAttrRange(const uint32_t& instance)
 /**
 */
 void
-SpotLightComponentBase::SetAttrRange(const uint32_t& instance, const float& value)
+SpotLightComponentBase::SetRange(const uint32_t& instance, const float& value)
 {
     this->data.data.Get<1>(instance) = value;
+    // callback that we can hook into to react to this change
+    this->OnRangeUpdated(instance, value);
 }
 
 
@@ -555,7 +637,7 @@ SpotLightComponentBase::SetAttrRange(const uint32_t& instance, const float& valu
 /**
 */
 const float&
-SpotLightComponentBase::GetAttrAngle(const uint32_t& instance)
+SpotLightComponentBase::GetAngle(const uint32_t& instance)
 {
     return this->data.data.Get<2>(instance);
 }
@@ -565,9 +647,11 @@ SpotLightComponentBase::GetAttrAngle(const uint32_t& instance)
 /**
 */
 void
-SpotLightComponentBase::SetAttrAngle(const uint32_t& instance, const float& value)
+SpotLightComponentBase::SetAngle(const uint32_t& instance, const float& value)
 {
     this->data.data.Get<2>(instance) = value;
+    // callback that we can hook into to react to this change
+    this->OnAngleUpdated(instance, value);
 }
 
 
@@ -575,7 +659,7 @@ SpotLightComponentBase::SetAttrAngle(const uint32_t& instance, const float& valu
 /**
 */
 const Math::float4&
-SpotLightComponentBase::GetAttrDirection(const uint32_t& instance)
+SpotLightComponentBase::GetDirection(const uint32_t& instance)
 {
     return this->data.data.Get<3>(instance);
 }
@@ -585,9 +669,11 @@ SpotLightComponentBase::GetAttrDirection(const uint32_t& instance)
 /**
 */
 void
-SpotLightComponentBase::SetAttrDirection(const uint32_t& instance, const Math::float4& value)
+SpotLightComponentBase::SetDirection(const uint32_t& instance, const Math::float4& value)
 {
     this->data.data.Get<3>(instance) = value;
+    // callback that we can hook into to react to this change
+    this->OnDirectionUpdated(instance, value);
 }
 
 
@@ -595,7 +681,7 @@ SpotLightComponentBase::SetAttrDirection(const uint32_t& instance, const Math::f
 /**
 */
 const Math::float4&
-SpotLightComponentBase::GetAttrColor(const uint32_t& instance)
+SpotLightComponentBase::GetColor(const uint32_t& instance)
 {
     return this->data.data.Get<4>(instance);
 }
@@ -605,9 +691,11 @@ SpotLightComponentBase::GetAttrColor(const uint32_t& instance)
 /**
 */
 void
-SpotLightComponentBase::SetAttrColor(const uint32_t& instance, const Math::float4& value)
+SpotLightComponentBase::SetColor(const uint32_t& instance, const Math::float4& value)
 {
     this->data.data.Get<4>(instance) = value;
+    // callback that we can hook into to react to this change
+    this->OnColorUpdated(instance, value);
 }
 
 
@@ -615,7 +703,7 @@ SpotLightComponentBase::SetAttrColor(const uint32_t& instance, const Math::float
 /**
 */
 const bool&
-SpotLightComponentBase::GetAttrCastShadows(const uint32_t& instance)
+SpotLightComponentBase::GetCastShadows(const uint32_t& instance)
 {
     return this->data.data.Get<5>(instance);
 }
@@ -625,12 +713,91 @@ SpotLightComponentBase::GetAttrCastShadows(const uint32_t& instance)
 /**
 */
 void
-SpotLightComponentBase::SetAttrCastShadows(const uint32_t& instance, const bool& value)
+SpotLightComponentBase::SetCastShadows(const uint32_t& instance, const bool& value)
 {
     this->data.data.Get<5>(instance) = value;
+    // callback that we can hook into to react to this change
+    this->OnCastShadowsUpdated(instance, value);
 }
 
 
+//------------------------------------------------------------------------------
+/**
+*/
+uint32_t
+SpotLightComponentBase::NumRegistered() const
+{
+    return this->data.Size();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+SpotLightComponentBase::Allocate(uint num)
+{
+    SizeT first = this->data.data.Size();
+    this->data.data.Reserve(first + num);
+    this->data.data.GetArray<OWNER>().SetSize(first + num);
+    this->data.data.GetArray<RANGE>().Fill(first, num, Attr::Range.GetDefaultValue().GetFloat());
+    this->data.data.GetArray<ANGLE>().Fill(first, num, Attr::Angle.GetDefaultValue().GetFloat());
+    this->data.data.GetArray<DIRECTION>().Fill(first, num, Attr::Direction.GetDefaultValue().GetFloat4());
+    this->data.data.GetArray<COLOR>().Fill(first, num, Attr::Color.GetDefaultValue().GetFloat4());
+    this->data.data.GetArray<CASTSHADOWS>().Fill(first, num, Attr::CastShadows.GetDefaultValue().GetBool());
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+SpotLightComponentBase::OnRangeUpdated(const uint32_t& instance, const float& value)
+{
+    // Empty - override if necessary
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+SpotLightComponentBase::OnAngleUpdated(const uint32_t& instance, const float& value)
+{
+    // Empty - override if necessary
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+SpotLightComponentBase::OnDirectionUpdated(const uint32_t& instance, const Math::float4& value)
+{
+    // Empty - override if necessary
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+SpotLightComponentBase::OnColorUpdated(const uint32_t& instance, const Math::float4& value)
+{
+    // Empty - override if necessary
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+SpotLightComponentBase::OnCastShadowsUpdated(const uint32_t& instance, const bool& value)
+{
+    // Empty - override if necessary
+}
+
+
+__ImplementClass(GraphicsFeature::DirectionalLightComponentBase, 'drlc', Core::RefCounted)
 
 
 //------------------------------------------------------------------------------
@@ -662,6 +829,9 @@ void
 DirectionalLightComponentBase::RegisterEntity(const Game::Entity& entity)
 {
     auto instance = this->data.RegisterEntity(entity);
+    this->data.data.Get<DIRECTION>(instance) = Attr::Direction.GetDefaultValue().GetFloat4();
+    this->data.data.Get<COLOR>(instance) = Attr::Color.GetDefaultValue().GetFloat4();
+    this->data.data.Get<CASTSHADOWS>(instance) = Attr::CastShadows.GetDefaultValue().GetBool();
     Game::EntityManager::Instance()->RegisterDeletionCallback(entity, this);
 }
 
@@ -679,17 +849,6 @@ DirectionalLightComponentBase::DeregisterEntity(const Game::Entity& entity)
         Game::EntityManager::Instance()->DeregisterDeletionCallback(entity, this);
         return;
     }
-}
-
-
-//------------------------------------------------------------------------------
-/**
-    @todo	if needed: deregister deletion callbacks
-*/
-void
-DirectionalLightComponentBase::DeregisterAllDead()
-{
-    this->data.DeregisterAllInactive();
 }
 
 
@@ -768,14 +927,14 @@ DirectionalLightComponentBase::Optimize()
 /**
 */
 Util::Variant
-DirectionalLightComponentBase::GetAttributeValue(uint32_t instance, IndexT attributeIndex) const
+DirectionalLightComponentBase::GetAttributeValue(uint32_t instance, AttributeIndex attributeIndex) const
 {
     switch (attributeIndex)
     {
         case 0: return Util::Variant(this->data.data.Get<0>(instance).id);
-        case 1: return Util::Variant(this->data.data.Get<1>(instance).direction);
-        case 2: return Util::Variant(this->data.data.Get<1>(instance).color);
-        case 3: return Util::Variant(this->data.data.Get<1>(instance).castShadows);
+        case 1: return Util::Variant(this->data.data.Get<1>(instance));
+        case 2: return Util::Variant(this->data.data.Get<2>(instance));
+        case 3: return Util::Variant(this->data.data.Get<3>(instance));
         default:
             n_assert2(false, "Component doesn't contain this attribute!");
             return Util::Variant();
@@ -790,9 +949,9 @@ Util::Variant
 DirectionalLightComponentBase::GetAttributeValue(uint32_t instance, Attr::AttrId attributeId) const
 {
     if (attributeId == Attr::Owner) return Util::Variant(this->data.data.Get<0>(instance).id);
-    else if (attributeId == Attr::Direction) return Util::Variant(this->data.data.Get<1>(instance).direction);
-    else if (attributeId == Attr::Color) return Util::Variant(this->data.data.Get<1>(instance).color);
-    else if (attributeId == Attr::CastShadows) return Util::Variant(this->data.data.Get<1>(instance).castShadows);
+    else if (attributeId == Attr::Direction) return Util::Variant(this->data.data.Get<1>(instance));
+    else if (attributeId == Attr::Color) return Util::Variant(this->data.data.Get<2>(instance));
+    else if (attributeId == Attr::CastShadows) return Util::Variant(this->data.data.Get<3>(instance));
     n_assert2(false, "Component does not contain this attribute!");
     return Util::Variant();
 }
@@ -801,13 +960,13 @@ DirectionalLightComponentBase::GetAttributeValue(uint32_t instance, Attr::AttrId
 /**
 */
 void
-DirectionalLightComponentBase::SetAttributeValue(uint32_t instance, IndexT index, Util::Variant value)
+DirectionalLightComponentBase::SetAttributeValue(uint32_t instance, AttributeIndex index, Util::Variant value)
 {
     switch (index)
     {
-        case 1: this->data.data.Get<1>(instance).direction = value.GetFloat4();
-        case 2: this->data.data.Get<1>(instance).color = value.GetFloat4();
-        case 3: this->data.data.Get<1>(instance).castShadows = value.GetBool();
+        case 1: this->SetDirection(instance, value.GetFloat4());
+        case 2: this->SetColor(instance, value.GetFloat4());
+        case 3: this->SetCastShadows(instance, value.GetBool());
     }
 }
 
@@ -818,25 +977,29 @@ DirectionalLightComponentBase::SetAttributeValue(uint32_t instance, IndexT index
 void
 DirectionalLightComponentBase::SetAttributeValue(uint32_t instance, Attr::AttrId attributeId, Util::Variant value)
 {
-    if (attributeId == Attr::Direction) this->data.data.Get<1>(instance).direction = value.GetFloat4();
-    else if (attributeId == Attr::Color) this->data.data.Get<1>(instance).color = value.GetFloat4();
-    else if (attributeId == Attr::CastShadows) this->data.data.Get<1>(instance).castShadows = value.GetBool();
+    if (attributeId == Attr::Direction) this->SetDirection(instance, value.GetFloat4());
+    else if (attributeId == Attr::Color) this->SetColor(instance, value.GetFloat4());
+    else if (attributeId == Attr::CastShadows) this->SetCastShadows(instance, value.GetBool());
 }
 
 
 //------------------------------------------------------------------------------
 /**
 */
-Util::Blob
-DirectionalLightComponentBase::GetBlob() const
+void
+DirectionalLightComponentBase::Serialize(const Ptr<IO::BinaryWriter>& writer) const
 {
-    return this->data.GetBlob();
+    this->data.Serialize(writer);
 }
 
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
-DirectionalLightComponentBase::SetBlob(const Util::Blob & blob, uint offset, uint numInstances)
+DirectionalLightComponentBase::Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances)
 {
-    this->data.SetBlob(blob, offset, numInstances);
+    this->data.Deserialize(reader, offset, numInstances);
 }
 
 //------------------------------------------------------------------------------
@@ -858,9 +1021,9 @@ DirectionalLightComponentBase::OnEntityDeleted(Game::Entity entity)
 /**
 */
 const Math::float4&
-DirectionalLightComponentBase::GetAttrDirection(const uint32_t& instance)
+DirectionalLightComponentBase::GetDirection(const uint32_t& instance)
 {
-    return this->data.data.Get<1>(instance).direction;
+    return this->data.data.Get<1>(instance);
 }
 
 
@@ -868,9 +1031,11 @@ DirectionalLightComponentBase::GetAttrDirection(const uint32_t& instance)
 /**
 */
 void
-DirectionalLightComponentBase::SetAttrDirection(const uint32_t& instance, const Math::float4& value)
+DirectionalLightComponentBase::SetDirection(const uint32_t& instance, const Math::float4& value)
 {
-    this->data.data.Get<1>(instance).direction = value;
+    this->data.data.Get<1>(instance) = value;
+    // callback that we can hook into to react to this change
+    this->OnDirectionUpdated(instance, value);
 }
 
 
@@ -878,9 +1043,9 @@ DirectionalLightComponentBase::SetAttrDirection(const uint32_t& instance, const 
 /**
 */
 const Math::float4&
-DirectionalLightComponentBase::GetAttrColor(const uint32_t& instance)
+DirectionalLightComponentBase::GetColor(const uint32_t& instance)
 {
-    return this->data.data.Get<1>(instance).color;
+    return this->data.data.Get<2>(instance);
 }
 
 
@@ -888,9 +1053,11 @@ DirectionalLightComponentBase::GetAttrColor(const uint32_t& instance)
 /**
 */
 void
-DirectionalLightComponentBase::SetAttrColor(const uint32_t& instance, const Math::float4& value)
+DirectionalLightComponentBase::SetColor(const uint32_t& instance, const Math::float4& value)
 {
-    this->data.data.Get<1>(instance).color = value;
+    this->data.data.Get<2>(instance) = value;
+    // callback that we can hook into to react to this change
+    this->OnColorUpdated(instance, value);
 }
 
 
@@ -898,9 +1065,9 @@ DirectionalLightComponentBase::SetAttrColor(const uint32_t& instance, const Math
 /**
 */
 const bool&
-DirectionalLightComponentBase::GetAttrCastShadows(const uint32_t& instance)
+DirectionalLightComponentBase::GetCastShadows(const uint32_t& instance)
 {
-    return this->data.data.Get<1>(instance).castShadows;
+    return this->data.data.Get<3>(instance);
 }
 
 
@@ -908,10 +1075,65 @@ DirectionalLightComponentBase::GetAttrCastShadows(const uint32_t& instance)
 /**
 */
 void
-DirectionalLightComponentBase::SetAttrCastShadows(const uint32_t& instance, const bool& value)
+DirectionalLightComponentBase::SetCastShadows(const uint32_t& instance, const bool& value)
 {
-    this->data.data.Get<1>(instance).castShadows = value;
+    this->data.data.Get<3>(instance) = value;
+    // callback that we can hook into to react to this change
+    this->OnCastShadowsUpdated(instance, value);
 }
 
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint32_t
+DirectionalLightComponentBase::NumRegistered() const
+{
+    return this->data.Size();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+DirectionalLightComponentBase::Allocate(uint num)
+{
+    SizeT first = this->data.data.Size();
+    this->data.data.Reserve(first + num);
+    this->data.data.GetArray<OWNER>().SetSize(first + num);
+    this->data.data.GetArray<DIRECTION>().Fill(first, num, Attr::Direction.GetDefaultValue().GetFloat4());
+    this->data.data.GetArray<COLOR>().Fill(first, num, Attr::Color.GetDefaultValue().GetFloat4());
+    this->data.data.GetArray<CASTSHADOWS>().Fill(first, num, Attr::CastShadows.GetDefaultValue().GetBool());
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+DirectionalLightComponentBase::OnDirectionUpdated(const uint32_t& instance, const Math::float4& value)
+{
+    // Empty - override if necessary
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+DirectionalLightComponentBase::OnColorUpdated(const uint32_t& instance, const Math::float4& value)
+{
+    // Empty - override if necessary
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+DirectionalLightComponentBase::OnCastShadowsUpdated(const uint32_t& instance, const bool& value)
+{
+    // Empty - override if necessary
+}
 
 } // namespace GraphicsFeature

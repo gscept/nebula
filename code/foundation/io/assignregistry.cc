@@ -169,7 +169,6 @@ AssignRegistry::SetupProjectAssigns()
     this->SetAssign(Assign("audio", "export:audio"));
     this->SetAssign(Assign("phys", "export:physics"));
     this->SetAssign(Assign("sui", "export:sui"));       
-    this->SetAssign(Assign("wiidata", "export:wiidata"));   
     this->SetAssign(Assign("mat", "export:materials"));
 	this->SetAssign(Assign("sur", "export:surfaces"));
     this->SetAssign(Assign("scr", "root:data/scripts"));

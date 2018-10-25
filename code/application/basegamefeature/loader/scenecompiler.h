@@ -8,19 +8,22 @@
 //------------------------------------------------------------------------------
 #include "util/fourcc.h"
 #include "util/blob.h"
+#include "io/memorystream.h"
 
 namespace BaseGameFeature
 {
 
-class SceneComponent
+class ComponentBuildData
 {
 public:
-	SceneComponent();
-	~SceneComponent();
+	ComponentBuildData();
+	~ComponentBuildData();
+
+	void InitializeStream();
 
     Util::FourCC fourcc;
     uint numInstances;
-    Util::Blob data;
+	Ptr<IO::MemoryStream> mStream;
 };
 
 class SceneCompiler
@@ -35,7 +38,7 @@ public:
     uint numEntities;
     uint numComponents;
 	Util::Array<uint> parentIndices;
-    Util::Array<SceneComponent> components;
+    Util::Array<ComponentBuildData> components;
 };
 
 } // namespace BaseGameFeature
