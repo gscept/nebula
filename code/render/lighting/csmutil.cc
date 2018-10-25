@@ -8,9 +8,8 @@
 #include "coregraphics/rendershape.h"
 #include "coregraphics/shaperenderer.h"
 #include "threading/thread.h"
-#include "graphics/graphicsinterface.h"
-#include "graphics/graphicsprotocol.h"
-#include "debugrender/debugshaperenderer.h"
+#include "graphics/cameracontext.h"
+#include "lighting/lightcontext.h"
 
 using namespace Math;
 using namespace Graphics;
@@ -335,13 +334,13 @@ CSMUtil::ComputeNearAndFar(float& nearPlane, float& farPlane, const Math::float4
 void 
 CSMUtil::Compute()
 {
-	n_assert(this->cameraEntity.isvalid())
-	const CameraSettings& camSettings = this->cameraEntity->GetCameraSettings();
-	matrix44 cameraProjection = this->cameraEntity->GetProjTransform();
-	matrix44 cameraView = this->cameraEntity->GetTransform();	
+	n_assert(this->cameraEntity != Graphics::GraphicsEntityId::Invalid());
+	const CameraSettings& camSettings = Graphics::CameraContext::GetSettings(this->cameraEntity);
+	matrix44 cameraProjection = Graphics::CameraContext::GetProjection(this->cameraEntity);
+	matrix44 cameraView = Graphics::CameraContext::GetTransform(this->cameraEntity);	
 
 	// get inversed shadow matrix, this is basically the global light transform, normalized and inversed
-	matrix44 lightView = this->globalLight->GetShadowInvTransform();		
+	matrix44 lightView = Lighting::LightContext::GetTransform(this->globalLight);		
 	
 	// calculate light AABB based on the AABB of the scene
 	float4 sceneCenter = this->shadowBox.center();

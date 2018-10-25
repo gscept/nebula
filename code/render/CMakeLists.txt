@@ -461,6 +461,17 @@ ENDIF()
 				mousebutton.cc
 				mousebutton.h
 			)
+	
+	fips_dir(lighting)
+		fips_files(
+			csmutil.cc
+			csmutil.h
+			lightcontext.cc
+			lightcontext.h
+			lightprobecontext.cc
+			lightprobecontext.h
+		)
+IF(FALSE)
 
 		fips_dir(instancing)
 			fips_files(
@@ -493,17 +504,6 @@ ENDIF()
 				d3d11instanceserver.h
 			)
 	endif()
-	
-	fips_dir(lighting)
-		fips_files(
-			csmutil.cc
-			csmutil.h
-			lightcontext.cc
-			lightcontext.h
-			lightprobecontext.cc
-			lightprobecontext.h
-		)
-IF(FALSE)
 		fips_dir(jobs GROUPS "jobs")
 			fips_files(
 			../coreanimation/jobs/animjobsample.cc
