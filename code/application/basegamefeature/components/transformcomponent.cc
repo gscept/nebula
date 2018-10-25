@@ -80,21 +80,6 @@ TransformComponent::SetLocalTransform(const uint32_t& i, const Math::matrix44& v
 /**
 */
 void
-TransformComponent::UpdateLocalTransform(const Game::Entity& entity, const Math::matrix44& value1, const Math::matrix44& value2)
-{
-	if (entity != InvalidIndex)
-	{
-		return;
-	}
-
-	this->LocalTransform(1) = value1;
-	this->WorldTransform(1) = value2;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
 TransformComponent::SetParents(const uint32_t & start, const uint32_t & end, const Util::Array<Entity>& entities, const Util::Array<uint32_t>& parentIndices)
 {
 	SizeT i = 0;
@@ -164,6 +149,7 @@ TransformComponent::Allocate(uint num)
 	this->data.data.GetArray<FIRSTCHILD>().Fill(first, num, uint(-1));
 	this->data.data.GetArray<NEXTSIBLING>().Fill(first, num, uint(-1));
 	this->data.data.GetArray<PREVIOUSSIBLING>().Fill(first, num, uint(-1));
+	this->data.data.UpdateSize();
 }
 
 //------------------------------------------------------------------------------
