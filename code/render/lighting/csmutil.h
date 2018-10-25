@@ -10,8 +10,7 @@
 #include "core/refcounted.h"
 #include "math/frustum.h"
 #include "math/matrix44.h"
-#include "graphics/globallightentity.h"
-#include "graphics/cameraentity.h"
+#include "graphics/graphicsentity.h"
 
 #ifndef FLT_MAX
 #define FLT_MAX 3.402823466e+38F
@@ -51,15 +50,15 @@ public:
 	virtual ~CSMUtil();
 
 	/// sets the camera entity
-	void SetCameraEntity(const Ptr<Graphics::CameraEntity>& camera);
+	void SetCameraEntity(const Graphics::GraphicsEntityId camera);
 	/// get the camera entity
-	const Ptr<Graphics::CameraEntity>& GetCameraEntity() const;
+	const Graphics::GraphicsEntityId GetCameraEntity() const;
 	/// sets the scene bounding box
 	void SetShadowBox(const Math::bbox& sceneBox);
 	/// sets the global light entity
-	void SetGlobalLight(const Ptr<Graphics::GlobalLightEntity>& globalLight);
+	void SetGlobalLight(const Graphics::GraphicsEntityId globalLight);
 	/// gets the global light entity
-	const Ptr<Graphics::GlobalLightEntity>& GetGlobalLight() const;
+	const Graphics::GraphicsEntityId GetGlobalLight() const;
 	/// sets the texture width for the CSM texture buffer
 	void SetTextureWidth(int width);
 	/// sets the CSM fitting method
@@ -116,8 +115,8 @@ private:
 
 	Math::bbox shadowBox;
 	Math::float4 frustumCenter;
-	Ptr<Graphics::GlobalLightEntity> globalLight;
-	Ptr<Graphics::CameraEntity> cameraEntity;
+	Graphics::GraphicsEntityId globalLight;
+	Graphics::GraphicsEntityId cameraEntity;
 	Math::matrix44 cascadeProjectionTransform[NumCascades];
 	Math::matrix44 cascadeViewProjectionTransform[NumCascades];
 	Math::matrix44 shadowView;
@@ -145,7 +144,7 @@ CSMUtil::SetShadowBox( const Math::bbox& shadowRange )
 /**
 */
 inline void 
-CSMUtil::SetCameraEntity( const Ptr<Graphics::CameraEntity>& camera )
+CSMUtil::SetCameraEntity( const Graphics::GraphicsEntityId camera )
 {
 	this->cameraEntity = camera;
 }
@@ -153,7 +152,7 @@ CSMUtil::SetCameraEntity( const Ptr<Graphics::CameraEntity>& camera )
 //------------------------------------------------------------------------------
 /**
 */
-inline const Ptr<Graphics::CameraEntity>& 
+inline const Graphics::GraphicsEntityId
 CSMUtil::GetCameraEntity() const
 {
 	return this->cameraEntity;
@@ -163,7 +162,7 @@ CSMUtil::GetCameraEntity() const
 /**
 */
 inline void 
-CSMUtil::SetGlobalLight( const Ptr<Graphics::GlobalLightEntity>& globalLight )
+CSMUtil::SetGlobalLight( const Graphics::GraphicsEntityId globalLight )
 {
 	this->globalLight = globalLight;
 }
@@ -171,7 +170,7 @@ CSMUtil::SetGlobalLight( const Ptr<Graphics::GlobalLightEntity>& globalLight )
 //------------------------------------------------------------------------------
 /**
 */
-inline const Ptr<Graphics::GlobalLightEntity>& 
+inline const Graphics::GraphicsEntityId
 CSMUtil::GetGlobalLight() const
 {
 	return this->globalLight;

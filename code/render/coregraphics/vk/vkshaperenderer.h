@@ -100,7 +100,7 @@ private:
 		Util::Array<Math::matrix44> transforms;
 	} unindexed;
 
-	static const GLuint NumBuffers = 12;
+	static const uint8 NumBuffers = 12;
 	byte* vertexBufferPtr;
 	byte* indexBufferPtr;
 };
