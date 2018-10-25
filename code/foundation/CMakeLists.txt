@@ -383,6 +383,10 @@ fips_begin_module(foundation)
 			httpstatus.h
 			httpstream.cc
 			httpstream.h
+			httpinterface.h
+			httpinterface.cc
+			httpmessagehandler.h
+			httpmessagehandler.cc
 			debug/helloworldrequesthandler.cc
 			debug/helloworldrequesthandler.h
 			debug/svgtestpagehandler.cc

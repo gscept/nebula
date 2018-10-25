@@ -164,12 +164,3 @@ def AccessModeToClassString(accessMode):
         return "Attr::ReadOnly"
     else:
         util.fmtError('"{}" is not a valid access mode!'.format(access))
-
-#------------------------------------------------------------------------------
-##
-#
-def GetDataLayout(string):
-    if string == "PACKED_PER_ATTRIBUTE":
-        return PACKED_PER_ATTRIBUTE
-    elif string == "PACKED_PER_INSTANCE":
-        return PACKED_PER_INSTANCE

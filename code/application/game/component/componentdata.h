@@ -194,9 +194,6 @@ public:
 	/// Deregister all inactive entities.
 	void DeregisterAllInactive();
 
-	/// Deregister all entities
-	//void DeregisterAll();
-
 	/// Free up all non-reserved by entity data.
 	void Clean();
 

@@ -56,7 +56,7 @@ HttpMessageHandler::Close()
     n_assert(this->IsOpen());
 
     this->httpServer->Close();
-    this->httpServer = 0;
+    this->httpServer = nullptr;
 
     InterfaceHandlerBase::Close();
 }

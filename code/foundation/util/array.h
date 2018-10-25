@@ -544,10 +544,6 @@ Array<TYPE>::Reserve(SizeT num)
             this->GrowTo(neededCapacity);
         }
     }
-    else
-    {
-        this->Grow();
-    }
 }
 
 //------------------------------------------------------------------------------

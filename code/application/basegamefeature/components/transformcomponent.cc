@@ -80,6 +80,21 @@ TransformComponent::SetLocalTransform(const uint32_t& i, const Math::matrix44& v
 /**
 */
 void
+TransformComponent::UpdateLocalTransform(const Game::Entity& entity, const Math::matrix44& value1, const Math::matrix44& value2)
+{
+	if (entity != InvalidIndex)
+	{
+		return;
+	}
+
+	this->LocalTransform(1) = value1;
+	this->WorldTransform(1) = value2;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 TransformComponent::SetParents(const uint32_t & start, const uint32_t & end, const Util::Array<Entity>& entities, const Util::Array<uint32_t>& parentIndices)
 {
 	SizeT i = 0;
@@ -219,7 +234,7 @@ TransformComponent::Optimize()
 /**
 */
 Util::Variant
-TransformComponent::GetAttributeValue(uint32_t instance, TransformComponent::Attributes attributeIndex) const
+TransformComponent::GetAttributeValue(uint32_t instance, IndexT attributeIndex) const
 {
 	switch (attributeIndex)
 	{
@@ -280,6 +295,31 @@ TransformComponent::GetAttributeValue(uint32_t instance, Attr::AttrId attributeI
 
 	n_assert2(false, "Component doesn't contain this attribute!\n");
 	return Util::Variant();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TransformComponent::SetAttributeValue(uint32_t instance, IndexT index, Util::Variant value)
+{
+	switch (index)
+	{
+	case LOCALTRANSFORM:
+		this->SetLocalTransform(instance, value.GetMatrix44());
+		break;
+	}
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TransformComponent::SetAttributeValue(uint32_t instance, Attr::AttrId attributeId, Util::Variant value)
+{
+	if (attributeId == Attr::LocalTransform)
+		this->SetLocalTransform(instance, value.GetMatrix44());
 }
 
 //------------------------------------------------------------------------------

@@ -56,7 +56,7 @@ public:
     
     /// Destroys all instances of this component, and deregisters every entity.
     void DestroyAll();
-    
+
     /// Checks whether the entity is registered.
     bool IsRegistered(const Game::Entity& entity) const;
     

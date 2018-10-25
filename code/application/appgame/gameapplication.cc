@@ -17,18 +17,21 @@
 
 namespace App
 {
-using namespace Util;
-
 __ImplementSingleton(App::GameApplication);
 
 using namespace Util;
 using namespace Core;
 using namespace IO;
+using namespace Http;
+using namespace Debug;
 
 //------------------------------------------------------------------------------
 /**
 */
 GameApplication::GameApplication()
+#if __NEBULA_HTTP__
+	:defaultTcpPort(2100)
+#endif
 {
     __ConstructSingleton;
 }
@@ -97,6 +100,30 @@ GameApplication::Open()
         Console::Instance()->AttachHandler(logFileHandler.upcast<ConsoleHandler>());
 #endif
 
+#if __NEBULA_HTTP_FILESYSTEM__
+		// setup http subsystem
+		this->httpClientRegistry = Http::HttpClientRegistry::Create();
+		this->httpClientRegistry->Setup();
+#endif
+
+#if __NEBULA_HTTP__
+		// setup http subsystem
+		this->httpInterface = Http::HttpInterface::Create();
+		this->httpInterface->SetTcpPort(this->defaultTcpPort);
+		this->httpInterface->Open();
+		this->httpServerProxy = Http::HttpServerProxy::Create();
+		this->httpServerProxy->Open();
+		this->httpServerProxy->AttachRequestHandler(Debug::CorePageHandler::Create());
+		this->httpServerProxy->AttachRequestHandler(Debug::ThreadPageHandler::Create());
+		this->httpServerProxy->AttachRequestHandler(Debug::MemoryPageHandler::Create());
+		this->httpServerProxy->AttachRequestHandler(Debug::ConsolePageHandler::Create());
+		this->httpServerProxy->AttachRequestHandler(Debug::IoPageHandler::Create());
+
+		// setup debug subsystem
+		this->debugInterface = DebugInterface::Create();
+		this->debugInterface->Open();
+#endif
+
         // create our game server and open it
         this->gameServer = Game::GameServer::Create();
         this->gameServer->Open();
@@ -134,6 +161,21 @@ GameApplication::Close()
     this->ioInterface = nullptr;
     this->ioServer = nullptr;
 
+#if __NEBULA_HTTP__
+	this->debugInterface->Close();
+	this->debugInterface = nullptr;
+
+	this->httpServerProxy->Close();
+	this->httpServerProxy = nullptr;
+	this->httpInterface->Close();
+	this->httpInterface = nullptr;
+#endif
+
+#if __NEBULA_HTTP_FILESYSTEM__
+	this->httpClientRegistry->Discard();
+	this->httpClientRegistry = nullptr;
+#endif
+
     this->coreServer->Close();
     this->coreServer = nullptr;
 
@@ -152,20 +194,7 @@ GameApplication::Run()
     {
         _start_timer(GameApplicationFrameTimeAll);
 
-        // trigger core server
-        this->coreServer->Trigger();
-
-        // trigger beginning of frame for feature units
-        this->gameServer->OnBeginFrame();
-
-		// trigger frame for feature units
-		this->gameServer->OnFrame();
-
-        // call the app's Run() method
-        Application::Run();
-
-		// trigger end of frame for feature units
-		this->gameServer->OnEndFrame();
+		this->StepFrame();
 
         _stop_timer(GameApplicationFrameTimeAll);
     }
@@ -177,7 +206,9 @@ GameApplication::Run()
 void
 GameApplication::StepFrame()
 {
-	_start_timer(GameApplicationFrameTimeAll);
+#if __NEBULA_HTTP__
+	this->httpServerProxy->HandlePendingRequests();
+#endif
 
 	// trigger core server
 	this->coreServer->Trigger();
@@ -193,8 +224,6 @@ GameApplication::StepFrame()
 
 	// trigger end of frame for feature units
 	this->gameServer->OnEndFrame();
-
-	_stop_timer(GameApplicationFrameTimeAll);
 }
 
 //------------------------------------------------------------------------------
