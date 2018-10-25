@@ -13,6 +13,7 @@ namespace GraphicsFeature
 
 class PointLightComponent : public PointLightComponentBase
 {
+	
 public:
 	PointLightComponent();
 	~PointLightComponent();

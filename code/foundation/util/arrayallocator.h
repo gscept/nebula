@@ -305,6 +305,10 @@ public:
 	/// clear entire allocator and start from scratch.
 	void Clear();
 
+	/// Any reserve and direct array access might mess with the size.
+	/// This will update the size to reflect the first member array size in objects.
+	void UpdateSize();
+
 private:
 	uint32_t size;
 	std::tuple<Util::Array<TYPES>...> objects;
@@ -486,6 +490,15 @@ template<class ...TYPES> void
 ArrayAllocator<TYPES...>::Set(const uint32_t index, TYPES... values)
 {
 	set_for_each_in_tuple(this->objects, index, values...);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class ...TYPES> void
+ArrayAllocator<TYPES...>::UpdateSize()
+{
+	this->size = this->GetArray<0>().Size();
 }
 
 } // namespace Util

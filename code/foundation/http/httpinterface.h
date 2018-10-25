@@ -11,7 +11,9 @@
     (C) 2008 Radon Labs GmbH
     (C) 2013-2018 Individual contributors, see AUTHORS file
 */
+#include "core/types.h"
 #include "interface/interfacebase.h"
+#include "core/refcounted.h"
 #include "core/singleton.h"
 
 //------------------------------------------------------------------------------

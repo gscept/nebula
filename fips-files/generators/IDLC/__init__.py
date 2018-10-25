@@ -84,8 +84,9 @@ class IDLCodeGenerator:
         # Generate components base classes headers
         if "components" in self.document:
             IDLDocument.BeginNamespace(f, self.document)
+            namespace = IDLDocument.GetNamespace(self.document)
             for componentName, component in self.document["components"].iteritems():
-                componentWriter = IDLComponent.ComponentClassWriter(f, self.document, component, componentName)
+                componentWriter = IDLComponent.ComponentClassWriter(f, self.document, component, componentName, namespace)
                 componentWriter.WriteClassDeclaration()
             IDLDocument.EndNamespace(f, self.document)
         
@@ -127,9 +128,10 @@ class IDLCodeGenerator:
 
         if "components" in self.document:
             IDLDocument.BeginNamespace(f, self.document)
+            namespace = IDLDocument.GetNamespace(self.document)
             for componentName, component in self.document["components"].iteritems():
                 f.WriteLine("")
-                componentWriter = IDLComponent.ComponentClassWriter(f, self.document, component, componentName)
+                componentWriter = IDLComponent.ComponentClassWriter(f, self.document, component, componentName, namespace)
                 componentWriter.WriteClassImplementation()
                 f.WriteLine("")
             IDLDocument.EndNamespace(f, self.document)
