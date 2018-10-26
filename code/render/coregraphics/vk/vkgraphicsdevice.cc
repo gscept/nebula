@@ -1473,6 +1473,12 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	_begin_counter(state.NumBytesAllocated);
 	_setup_counter(state.NumPipelinesBuilt);
 	_begin_counter(state.NumPipelinesBuilt);
+    _setup_counter(state.GraphicsDeviceNumComputes);
+    _begin_counter(state.GraphicsDeviceNumComputes);
+    _setup_counter(state.GraphicsDeviceNumPrimitives);
+    _begin_counter(state.GraphicsDeviceNumPrimitives);
+    _setup_counter(state.GraphicsDeviceNumDrawCalls);
+    _begin_counter(state.GraphicsDeviceNumDrawCalls);
 
 	// yay, Vulkan!
 	return true;
@@ -1485,6 +1491,12 @@ void
 DestroyGraphicsDevice()
 {
 	_discard_timer(state.DebugTimer);
+    _end_counter(state.GraphicsDeviceNumDrawCalls);
+    _discard_counter(state.GraphicsDeviceNumDrawCalls);
+    _end_counter(state.GraphicsDeviceNumPrimitives);
+    _discard_counter(state.GraphicsDeviceNumPrimitives);
+    _end_counter(state.GraphicsDeviceNumComputes);
+    _discard_counter(state.GraphicsDeviceNumComputes);
 	_end_counter(state.NumImageBytesAllocated);
 	_discard_counter(state.NumImageBytesAllocated);
 	_end_counter(state.NumBufferBytesAllocated);
