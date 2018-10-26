@@ -17,7 +17,7 @@ class PointLightComponent : public PointLightComponentBase
 public:
 	PointLightComponent();
 	~PointLightComponent();
-
+	
 private:
 
 };

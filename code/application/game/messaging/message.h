@@ -13,12 +13,16 @@
 #include "util/arrayallocator.h"
 #include "util/string.h"
 
+#define __DeclareMsg(MSGTYPE, ...) class MSGTYPE : public Game::Message<__VA_ARGS__> { MSGTYPE(){}; ~MSGTYPE(){};};
+
+/// This is placed within the object
+#define __RegisterMsg(MSGTYPE, METHOD) MSGTYPE::Register(MSGTYPE::Delegate::FromMethod<std::remove_pointer<decltype(this)>::type, &std::remove_pointer<decltype(this)>::type::METHOD>(this));
+
 namespace Game
 {
 
 ID_32_TYPE(MessageListenerId)
 
-#define __DeclareMsg(MSGTYPE, ...) class MSGTYPE : public Game::Message<__VA_ARGS__> { MSGTYPE(){}; ~MSGTYPE(){};};
 
 template <class ... TYPES>
 class Message

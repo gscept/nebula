@@ -3,7 +3,7 @@
 #-------------------------------------------------------------------------------
 
 fips_begin_module(application)
-	fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/foundation)	
+	fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/foundation)
 	fips_deps(foundation)
 	fips_dir(.)
 		fips_files(
@@ -46,8 +46,8 @@ fips_begin_module(application)
 		)
 	fips_dir(game/messaging)
 		fips_files(
-			message.h	
-			message.cc	
+			message.h
+			message.cc
 		)
 	fips_dir(basegamefeature)
 		fips_files(
@@ -66,7 +66,11 @@ fips_begin_module(application)
 			transformcomponent.h
 			transformcomponent.cc
 		)
-	
+	fips_dir(basegamefeature/messages)
+		fips_files(
+			setlocaltransform.h
+			setlocaltransform.cc
+		)
 	fips_dir(basegamefeature/loader)
 		fips_files(
 			blueprintloader.h
@@ -93,5 +97,5 @@ fips_begin_module(application)
 			gameapplication.h
 			gameapplication.cc
 		)
-	fips_dir(.)	
+	fips_dir(.)
 fips_end_module()
