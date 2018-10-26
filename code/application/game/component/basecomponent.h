@@ -56,6 +56,9 @@ public:
 	/// Cleans up right away and frees any memory that does not belong to an entity. This can be extremely slow!
 	virtual void CleanData();
 
+	/// Setup accepted messages
+	virtual void SetupAcceptedMessages();
+
 	/// Destroys all instances of this component, and deregisters every entity.
 	virtual void DestroyAll();
 

@@ -81,6 +81,15 @@ BaseComponent::CleanData()
 /**
 */
 void
+BaseComponent::SetupAcceptedMessages()
+{
+	// Override in subclass if necessary
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 BaseComponent::DestroyAll()
 {
 	// Override in subclass

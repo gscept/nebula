@@ -4,6 +4,7 @@
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "transformcomponent.h"
+#include "basegamefeature/messages/setlocaltransform.h"
 
 namespace Attr
 {
@@ -47,6 +48,16 @@ TransformComponent::~TransformComponent()
 /**
 */
 void
+TransformComponent::SetupAcceptedMessages()
+{
+	// SetLocalTransform message will be handled by this->SetLocalTransform(...)
+	__RegisterMsg(Msg::SetLocalTransform, SetLocalTransform);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 TransformComponent::SetLocalTransform(const uint32_t& i, const Math::matrix44& val)
 {
 	this->LocalTransform(i) = val;
@@ -73,6 +84,19 @@ TransformComponent::SetLocalTransform(const uint32_t& i, const Math::matrix44& v
 		}
 		child = this->NextSibling(parent);
 		parent = this->Parent(parent);
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TransformComponent::SetLocalTransform(const Game::Entity& entity, const Math::matrix44& val)
+{
+	uint32_t instance = this->GetInstance(entity);
+	if (instance != InvalidIndex)
+	{
+		this->SetLocalTransform(instance, val);
 	}
 }
 
