@@ -67,8 +67,9 @@ private:
 	> GenericLightAllocator;
 	static GenericLightAllocator genericLightAllocator;
 
-	Util::HashTable<const Graphics::GraphicsEntityId, Ids::Id32> pointLightMapping;
-	Util::HashTable<const Graphics::GraphicsEntityId, Ids::Id32> spotLightMapping;
+	static Util::HashTable<const Graphics::GraphicsEntityId, Ids::Id32> pointLightMapping;
+	static Util::HashTable<const Graphics::GraphicsEntityId, Ids::Id32> spotLightMapping;
+	static Util::HashTable<const Graphics::GraphicsEntityId, Ids::Id32> globalLightMapping;
 
 	enum
 	{
@@ -93,6 +94,15 @@ private:
 		float						// cone angle
 	> SpotLightAllocator;
 	static SpotLightAllocator spotLightAllocator;
+
+	enum
+	{
+		GlobalLightDirection
+	};
+	typedef Ids::IdAllocator<
+		Math::float4			// direction
+	> GlobalLightAllocator;
+	static GlobalLightAllocator globalLightAllocator;
 
 	/// allocate a new slice for this context
 	static Graphics::ContextEntityId Alloc();

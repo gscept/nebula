@@ -172,9 +172,6 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 	_declare_counter(GraphicsDeviceNumDrawCalls);
 	_declare_timer(DebugTimer);
 
-#if NEBULA_VULKAN_DEBUG
-
-#endif
 } state;
 
 #if NEBULA_VULKAN_DEBUG

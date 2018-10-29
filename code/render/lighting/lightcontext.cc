@@ -14,6 +14,10 @@ LightContext::GenericLightAllocator LightContext::genericLightAllocator;
 LightContext::PointLightAllocator LightContext::pointLightAllocator;
 LightContext::SpotLightAllocator LightContext::spotLightAllocator;
 
+Util::HashTable<const Graphics::GraphicsEntityId, Ids::Id32> LightContext::pointLightMapping;
+Util::HashTable<const Graphics::GraphicsEntityId, Ids::Id32> LightContext::spotLightMapping;
+Util::HashTable<const Graphics::GraphicsEntityId, Ids::Id32> LightContext::globalLightMapping;
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -34,7 +38,7 @@ LightContext::~LightContext()
 /**
 */
 void 
-LightContext::SetupGlobalLight(const Graphics::GraphicsEntityId id, const Math::float4& color, const float intensity, bool castShadows)
+LightContext::SetupGlobalLight(const Graphics::GraphicsEntityId id, const Math::float4& color, const float intensity, const Math::float4& direction, bool castShadows)
 {
 	n_assert(id != Graphics::GraphicsEntityId::Invalid());
 	const Graphics::ContextEntityId cid = GetContextId(id);
@@ -42,6 +46,10 @@ LightContext::SetupGlobalLight(const Graphics::GraphicsEntityId id, const Math::
 	genericLightAllocator.Get<Color>(cid.id) = color;
 	genericLightAllocator.Get<Intensity>(cid.id) = intensity;
 	genericLightAllocator.Get<ShadowCaster>(cid.id) = castShadows;
+
+	auto lid = globalLightAllocator.AllocObject();
+	globalLightAllocator.Get<GlobalLightDirection>(lid) = direction;
+	globalLightMapping.Add(id, lid);
 }
 
 //------------------------------------------------------------------------------
