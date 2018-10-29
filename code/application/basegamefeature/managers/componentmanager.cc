@@ -60,6 +60,8 @@ ComponentManager::RegisterComponent(const Ptr<BaseComponent>& component)
 		auto d = Util::Delegate<>::FromMethod<BaseComponent, &BaseComponent::OnRenderDebug>(component);
 		this->delegates_OnBeginFrame.Append(d);
 	}
+
+	component->SetupAcceptedMessages();
 }
 
 //------------------------------------------------------------------------------

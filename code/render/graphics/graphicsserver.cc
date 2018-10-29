@@ -121,7 +121,7 @@ GraphicsServer::Close()
 {
 	n_assert(this->isOpen);
 	this->visServer = nullptr;
-	this->timer = nullptr;
+	
 	this->isOpen = false;
 
 	this->debugHandler->Close();
@@ -149,6 +149,7 @@ GraphicsServer::Close()
 	this->displayDevice = nullptr;
 
 	this->timer->StopTime();
+    this->timer = nullptr;
 
 	if (this->graphicsDevice) CoreGraphics::DestroyGraphicsDevice();
 

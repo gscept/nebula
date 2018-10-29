@@ -71,10 +71,13 @@ HttpServerProxy::AttachRequestHandler(const Ptr<HttpRequestHandler>& requestHand
     this->requestHandlers.Append(requestHandler);
 
 #if __NEBULA_HTTP__
-    // register request handler with HttpServer thread 
-    Ptr<Http::AttachRequestHandler> msg = Http::AttachRequestHandler::Create();
-    msg->SetRequestHandler(requestHandler);
-    HttpInterface::Instance()->Send(msg.cast<Messaging::Message>());
+    if (HttpInterface::HasInstance())
+    {
+        // register request handler with HttpServer thread 
+        Ptr<Http::AttachRequestHandler> msg = Http::AttachRequestHandler::Create();
+        msg->SetRequestHandler(requestHandler);
+        HttpInterface::Instance()->Send(msg.cast<Messaging::Message>());
+    }
 #endif
 }
 
@@ -89,10 +92,13 @@ HttpServerProxy::RemoveRequestHandler(const Ptr<HttpRequestHandler>& requestHand
     n_assert(InvalidIndex != index);
     
 #if __NEBULA_HTTP__
-    // unregister request handler from HttpServer thread
-    Ptr<Http::RemoveRequestHandler> msg = Http::RemoveRequestHandler::Create();
-    msg->SetRequestHandler(requestHandler);
-    HttpInterface::Instance()->Send(msg.cast<Messaging::Message>());
+    if (HttpInterface::HasInstance())
+    {
+        // unregister request handler from HttpServer thread
+        Ptr<Http::RemoveRequestHandler> msg = Http::RemoveRequestHandler::Create();
+        msg->SetRequestHandler(requestHandler);
+        HttpInterface::Instance()->Send(msg.cast<Messaging::Message>());
+    }
 #endif
 
     // delete from local array
