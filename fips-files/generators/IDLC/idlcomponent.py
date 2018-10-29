@@ -12,7 +12,7 @@ def Capitalize(s):
 def WriteIncludes(f, attributeLibraries):
     f.WriteLine('#include "game/component/componentdata.h"')
     f.WriteLine('#include "game/component/basecomponent.h"')
-    
+
     for lib in attributeLibraries:
         f.WriteLine('#include "{}"'.format(lib))
 
@@ -42,7 +42,7 @@ class ComponentClassWriter:
 
         if self.hasAttributes and not "attributes" in self.document:
             util.fmtError('Component has attributes attached but none could be found by the component compiler! Please make sure they\'re defined or imported as a dependency in the current .nidl file.')
-        
+
         self.componentDataArguments = ""
         if (self.hasAttributes):
             numAttributes = len(self.component["attributes"])
@@ -77,43 +77,43 @@ public:
 
     /// Registers an entity to this component.
     void RegisterEntity(const Game::Entity& entity);
-    
+
     /// Deregister Entity.
     void DeregisterEntity(const Game::Entity& entity);
-    
+
     /// Cleans up right away and frees any memory that does not belong to an entity. (slow!)
     void CleanData();
-    
+
     /// Destroys all instances of this component, and deregisters every entity.
     void DestroyAll();
-    
+
     /// Checks whether the entity is registered.
     bool IsRegistered(const Game::Entity& entity) const;
-    
+
     /// Returns the index of the data array to the component instance
     uint32_t GetInstance(const Game::Entity& entity) const;
-    
+
     /// Returns the owner entity id of provided instance id
     Game::Entity GetOwner(const uint32_t& instance) const;
-    
+
     /// Set the owner of a given instance. This does not care if the entity is registered or not!
     void SetOwner(const uint32_t& i, const Game::Entity& entity);
-    
+
     /// Optimize data array and pack data
     SizeT Optimize();
-    
+
     /// Returns an attribute value as a variant from index.
-    Util::Variant GetAttributeValue(uint32_t instance, AttributeIndex attributeIndex) const;
-    
+    Util::Variant GetAttributeValue(uint32_t instance, IndexT attributeIndex) const;
+
     /// Returns an attribute value as a variant from attribute id.
     Util::Variant GetAttributeValue(uint32_t instance, Attr::AttrId attributeId) const;
-    
+
     /// Set an attribute value from index
-    void SetAttributeValue(uint32_t instance, AttributeIndex attributeIndex, Util::Variant value);
-    
+    void SetAttributeValue(uint32_t instance, IndexT attributeIndex, Util::Variant value);
+
     /// Set an attribute value from attribute id
     void SetAttributeValue(uint32_t instance, Attr::AttrId attributeId, Util::Variant value);
-    
+
     /// Serialize component into binary stream
     void Serialize(const Ptr<IO::BinaryWriter>& writer) const;
 
@@ -168,11 +168,11 @@ private:
             /// Called from entitymanager if this component is registered with a deletion callback.
             /// Removes entity immediately from component instances.
             void OnEntityDeleted(Game::Entity entity);
-            
+
             """
         else:
             return ""
-    
+
     #------------------------------------------------------------------------------
     ##
     #
@@ -254,7 +254,7 @@ private:
         self.f.WriteLine("{")
         self.f.IncreaseIndent()
         self.f.WriteLine("auto instance = this->data.RegisterEntity(entity);")
-        
+
         if self.hasAttributes:
             for attributeName in self.component["attributes"]:
                 default = "Attr::{}.GetDefaultValue().Get{}()".format(Capitalize(attributeName), IDLTypes.ConvertToCamelNotation(self.document["attributes"][attributeName]["type"]))
@@ -388,7 +388,7 @@ private:
         self.f.DecreaseIndent()
         self.f.WriteLine("}")
         self.f.WriteLine("")
-        
+
         self.f.InsertNebulaDivider()
         self.f.WriteLine("void")
         self.f.WriteLine("{}::SetOwner(const uint32_t & i, const Game::Entity & entity)".format(self.className))
@@ -410,7 +410,7 @@ private:
         self.f.IncreaseIndent()
 
         if self.useDelayedRemoval:
-            self.f.WriteLine("return this->data.Optimize();;")
+            self.f.WriteLine("return this->data.Optimize();")
         else:
             self.f.WriteLine("return 0;")
 
@@ -427,7 +427,7 @@ private:
 
         self.f.InsertNebulaDivider()
         self.f.WriteLine("Util::Variant")
-        self.f.WriteLine("{}::GetAttributeValue(uint32_t instance, AttributeIndex attributeIndex) const".format(self.className))
+        self.f.WriteLine("{}::GetAttributeValue(uint32_t instance, IndexT attributeIndex) const".format(self.className))
         self.f.WriteLine("{")
         self.f.IncreaseIndent()
         self.f.WriteLine("switch (attributeIndex)")
@@ -438,7 +438,7 @@ private:
         for i, attributeName in enumerate(self.component["attributes"]):
             index = i + 1
             self.f.Write("case {}: ".format(index))
-            self.f.WriteLine("return Util::Variant(this->data.data.Get<{}>(instance));".format(index))
+            self.f.WriteLine("return Util::Variant(this->data.data.Get<{}>(instance)); break;".format(index))
         self.f.WriteLine("default:")
         self.f.WriteLine("    n_assert2(false, \"Component doesn't contain this attribute!\");")
         self.f.WriteLine("    return Util::Variant();")
@@ -454,12 +454,12 @@ private:
         self.f.WriteLine("{")
         self.f.IncreaseIndent()
         self.f.WriteLine("if (attributeId == Attr::Owner) return Util::Variant(this->data.data.Get<0>(instance).id);")
-            
+
         for i, attributeName in enumerate(self.component["attributes"]):
             index = i + 1
             self.f.Write("else if (attributeId == Attr::{}) ".format(Capitalize(attributeName)))
             self.f.WriteLine("return Util::Variant(this->data.data.Get<{}>(instance));".format(index))
-            
+
         self.f.WriteLine('n_assert2(false, "Component does not contain this attribute!");')
         self.f.WriteLine("return Util::Variant();")
         self.f.DecreaseIndent()
@@ -474,7 +474,7 @@ private:
 
         self.f.InsertNebulaDivider()
         self.f.WriteLine("void")
-        self.f.WriteLine("{}::SetAttributeValue(uint32_t instance, AttributeIndex index, Util::Variant value)".format(self.className))
+        self.f.WriteLine("{}::SetAttributeValue(uint32_t instance, IndexT index, Util::Variant value)".format(self.className))
         self.f.WriteLine("{")
         self.f.IncreaseIndent()
         self.f.WriteLine("switch (index)")
@@ -486,7 +486,7 @@ private:
             if attribute["access"].lower() == "r":
                 continue
             self.f.Write("case {}: ".format(index))
-            self.f.WriteLine("this->Set{}(instance, value.Get{}());".format(Capitalize(attributeName), IDLTypes.ConvertToCamelNotation(attribute["type"])))
+            self.f.WriteLine("this->Set{}(instance, value.Get{}()); break;".format(Capitalize(attributeName), IDLTypes.ConvertToCamelNotation(attribute["type"])))
         self.f.DecreaseIndent()
         self.f.WriteLine("}")
         self.f.DecreaseIndent()
@@ -504,7 +504,7 @@ private:
             attribute = self.document["attributes"][attributeName]
             if attribute["access"].lower() == "r":
                 continue
-            
+
             # kinda dirty, but it works
             if printElse:
                 self.f.Write("else ")
@@ -544,7 +544,7 @@ private:
                 self.f.IncreaseIndent()
                 self.f.WriteLine("this->data.data.Get<{}>(instance) = value;".format(i + 1))
                 self.f.WriteLine("// callback that we can hook into to react to this change")
-                self.f.WriteLine("this->On{}Updated(instance, value);".format(Capitalize(attributeName)));
+                self.f.WriteLine("this->On{}Updated(instance, value);".format(Capitalize(attributeName)))
                 self.f.DecreaseIndent()
                 self.f.WriteLine("}")
                 self.f.WriteLine("")
@@ -598,7 +598,7 @@ private:
                 default = "Attr::{}.GetDefaultValue().Get{}()".format(Capitalize(attributeName), IDLTypes.ConvertToCamelNotation(self.document["attributes"][attributeName]["type"]))
                 self.f.WriteLine("this->data.data.GetArray<{}>().Fill(first, num, {});".format(attributeName.upper(), default))
 
-        self.f.WriteLine("this->data.data.UpdateSize();");
+        self.f.WriteLine("this->data.data.UpdateSize();")
         self.f.DecreaseIndent()
         self.f.WriteLine("}")
 
@@ -608,7 +608,7 @@ private:
     def WriteCallbackMethods(self):
         if self.hasAttributes:
             for attributeName in self.component["attributes"]:
-                self.f.WriteLine("");
+                self.f.WriteLine("")
                 self.f.InsertNebulaDivider()
                 self.f.WriteLine("void")
                 self.f.WriteLine('{}::On{}Updated(const uint32_t& instance, const {}& value)'.format(self.className, Capitalize(attributeName), IDLTypes.GetTypeString(self.document["attributes"][attributeName]["type"])))
@@ -638,6 +638,6 @@ private:
         self.WriteAttrAccessImplementations()
         self.WriteAllocInstancesMethod()
         self.WriteCallbackMethods();
-        
+
 
 

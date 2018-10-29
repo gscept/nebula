@@ -7,8 +7,8 @@
 #include "graphics/graphicsserver.h"
 
 #include "graphics/cameracontext.h"
-#include "graphics/lightcontext.h"
-#include "graphics/lightprobecontext.h"
+#include "lighting/lightcontext.h"
+#include "lighting/lightprobecontext.h"
 #include "models/modelcontext.h"
 
 #include "systems/boxsystem.h"
@@ -88,7 +88,7 @@ ObserverContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frame
 			observeeTransforms[i] = Models::ModelContext::GetTransform(id);
 			break;
 		case Light:
-			observeeTransforms[i] = Graphics::LightContext::GetTransform(id);
+			observeeTransforms[i] = Lighting::LightContext::GetTransform(id);
 			break;
 		case LightProbe:
 			observeeTransforms[i] = Graphics::LightProbeContext::GetTransform(id);
@@ -116,7 +116,7 @@ ObserverContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frame
 				contextIds[j] = Models::ModelContext::GetContextId(observeeIds[j]);
 				break;
 			case Light:
-				contextIds[j] = Graphics::LightContext::GetContextId(observeeIds[j]);
+				contextIds[j] = Lighting::LightContext::GetContextId(observeeIds[j]);
 				break;
 			case LightProbe:
 				contextIds[j] = Graphics::LightProbeContext::GetContextId(observeeIds[j]);
@@ -130,7 +130,7 @@ ObserverContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frame
 			observerTransforms[i] = Graphics::CameraContext::GetViewProjection(id);
 			break;
 		case Light:
-			observerTransforms[i] = Graphics::LightContext::GetTransform(id);
+			observerTransforms[i] = Lighting::LightContext::GetTransform(id);
 			break;
 		case LightProbe:
 			observerTransforms[i] = Graphics::LightProbeContext::GetTransform(id);
