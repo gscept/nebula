@@ -1,1 +1,2 @@
 fips_add_subdirectory(gltf)
+fips_add_subdirectory(dynui)
