@@ -29,7 +29,7 @@ public:
 	virtual ~LightContext();
 
 	/// setup entity as global light
-	static void SetupGlobalLight(const Graphics::GraphicsEntityId id, const Math::float4& color, const float intensity, bool castShadows);
+	static void SetupGlobalLight(const Graphics::GraphicsEntityId id, const Math::float4& color, const float intensity, const Math::float4& direction, bool castShadows);
 	/// setup entity as point light source
 	static void SetupPointLight(const Graphics::GraphicsEntityId id, const Math::float4& color, const float intensity, bool castShadows);
 	/// setup entity as spot light
