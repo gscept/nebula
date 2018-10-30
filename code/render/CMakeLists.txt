@@ -298,6 +298,8 @@ ENDIF()
 				vkcmdbufferthread.h
 				vkevent.cc
 				vkevent.h
+				vkfence.cc
+				vkfence.h
 				vkgraphicsdevice.h
 				vkgraphicsdevice.cc
 				vkdeferredcommand.cc
