@@ -592,47 +592,48 @@ ENDIF()
 		mouserayutil.cc
 		mouserayutil.h
 	)
-		fips_dir(particles)
-			fips_files(
-				emitterattrs.cc
-				emitterattrs.h
-				emittermesh.cc
-				emittermesh.h
-				envelopecurve.cc
-				envelopecurve.h
-				envelopesamplebuffer.cc
-				envelopesamplebuffer.h
-				particle.h
-				particlerenderer.cc
-				particlerenderer.h
-				particlerenderinfo.h
-				particleserver.cc
-				particleserver.h
-				particlesystem.cc
-				particlesystem.h
-				particlesysteminstance.cc
-				particlesysteminstance.h
-				particlesystemstate.h
-			)
-IF(FALSE)
+	fips_dir(particles)
+		fips_files(
+			emitterattrs.cc
+			emitterattrs.h
+			emittermesh.cc
+			emittermesh.h
+			envelopecurve.cc
+			envelopecurve.h
+			envelopesamplebuffer.cc
+			envelopesamplebuffer.h
+			particle.h
+			particlerenderer.cc
+			particlerenderer.h
+			particlerenderinfo.h
+			particleserver.cc
+			particleserver.h
+			particlesystem.cc
+			particlesystem.h
+			particlesysteminstance.cc
+			particlesysteminstance.h
+			particlesystemstate.h
+		)
 
+	fips_dir(rendermodules/rt GROUP "rendermodules/rt")
+		fips_files(
+			rtplugin.cc
+			rtplugin.h
+			rtpluginregistry.cc
+			rtpluginregistry.h
+		)
+	fips_dir(rendermodules)
+		fips_files(
+			rendermodule.cc
+			rendermodule.h
+		)
+IF(FALSE)
 		fips_dir(picking)
 			fips_files(
 				pickingserver.cc
 				pickingserver.h
 			)
-		fips_dir(rendermodules/rt GROUP "rendermodules/rt")
-			fips_files(
-				rtplugin.cc
-				rtplugin.h
-				rtpluginregistry.cc
-				rtpluginregistry.h
-			)
-		fips_dir(rendermodules)
-			fips_files(
-				rendermodule.cc
-				rendermodule.h
-			)
+
 
 		fips_dir(skinning)
 		

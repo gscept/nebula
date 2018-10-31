@@ -5,21 +5,15 @@
 #include "stdneb.h"
 #include "imguirenderer.h"
 #include "imgui.h"
-#include "coregraphics/memorytextureloader.h"
 #include "resources/resourcemanager.h"
-#include "SOIL/SOIL.h"
-#include "coregraphics/memoryvertexbufferloader.h"
 #include "math/rectangle.h"
 #include "coregraphics/shaderserver.h"
 #include "coregraphics/displaydevice.h"
-#include "coregraphics/memoryindexbufferloader.h"
 
 using namespace Math;
 using namespace CoreGraphics;
 using namespace Base;
 using namespace Input;
-
-
 
 namespace Dynui
 {
@@ -28,7 +22,7 @@ namespace Dynui
 /**
 	Imgui rendering function
 */
-static void
+void
 ImguiDrawFunction(ImDrawData* data)
 {
 	// get Imgui context
@@ -37,33 +31,27 @@ ImguiDrawFunction(ImDrawData* data)
 	int fb_height = (int)(io.DisplaySize.y * io.DisplayFramebufferScale.y);
 	data->ScaleClipRects(io.DisplayFramebufferScale);
 
-	// get rendering device
-	const Ptr<RenderDevice>& device = RenderDevice::Instance();
-
 	// get renderer
 	const Ptr<ImguiRenderer>& renderer = ImguiRenderer::Instance();
-	ShaderId shader = renderer->GetShader();
 	//const Ptr<BufferLock>& vboLock = renderer->GetVertexBufferLock();
 	//const Ptr<BufferLock>& iboLock = renderer->GetIndexBufferLock();
-	VertexBufferId vbo = renderer->GetVertexBuffer();
-	IndexBufferId ibo = renderer->GetIndexBuffer();
-	const ImguiRendererParams& params = renderer->GetParams();
+	VertexBufferId vbo = renderer->vbo;
+	IndexBufferId ibo = renderer->ibo;
+	const ImguiRendererParams& params = renderer->params;
 
 	// apply shader
-    shader->Apply();
+	CoreGraphics::SetShaderProgram(renderer->prog);
 
 	// create orthogonal matrix
 	matrix44 proj = matrix44::orthooffcenterrh(0.0f, io.DisplaySize.x, io.DisplaySize.y, 0.0f, -1.0f, +1.0f);
 
-	// set in shader
-    shader->BeginUpdate();
-	params.projVar->SetMatrix(proj);
-    shader->EndUpdate();
+	// set projection
+	CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, renderer->textProjectionConstant.offset, sizeof(proj), (byte*)&proj);
 
 	// setup device
-	device->SetStreamSource(0, vbo, 0);
-	device->SetVertexLayout(vbo->GetVertexLayout());
-	device->SetIndexBuffer(ibo);
+	CoreGraphics::SetStreamVertexBuffer(0, renderer->vbo, 0);
+	CoreGraphics::SetVertexLayout(CoreGraphics::VertexBufferGetLayout(renderer->vbo));
+	CoreGraphics::SetIndexBuffer(renderer->ibo, 0);
 
 	IndexT vertexOffset = 0;
 	IndexT indexOffset = 0;
@@ -80,14 +68,12 @@ ImguiDrawFunction(ImDrawData* data)
 		const SizeT indexBufferSize = commandList->IdxBuffer.size() * sizeof(ImDrawIdx);					// using 16 bit indices
 
 		// if we render too many vertices, we will simply assert
-		n_assert(vertexBufferOffset + (IndexT)commandList->VtxBuffer.size() < vbo->GetNumVertices());
-		n_assert(indexBufferOffset + (IndexT)commandList->IdxBuffer.size() < ibo->GetNumIndices());
+		n_assert(vertexBufferOffset + (IndexT)commandList->VtxBuffer.size() < CoreGraphics::VertexBufferGetNumVertices(renderer->vbo));
+		n_assert(indexBufferOffset + (IndexT)commandList->IdxBuffer.size() < CoreGraphics::IndexBufferGetNumIndices(renderer->ibo));
 
 		// wait for previous draws to finish...
-		vboLock->WaitForRange(vertexBufferOffset, vertexBufferSize);
-		iboLock->WaitForRange(indexBufferOffset, indexBufferSize);
-		memcpy(renderer->GetVertexPtr() + vertexBufferOffset, vertexBuffer, vertexBufferSize);
-		memcpy(renderer->GetIndexPtr() + indexBufferOffset, indexBuffer, indexBufferSize);
+		memcpy(renderer->vertexPtr + vertexBufferOffset, vertexBuffer, vertexBufferSize);
+		memcpy(renderer->indexPtr + indexBufferOffset, indexBuffer, indexBufferSize);
 		IndexT j;
 		IndexT primitiveIndexOffset = 0;
 		for (j = 0; j < commandList->CmdBuffer.size(); j++)
@@ -101,24 +87,22 @@ ImguiDrawFunction(ImDrawData* data)
 			{
 				// setup scissor rect
 				Math::rectangle<int> scissorRect((int)command->ClipRect.x, (int)command->ClipRect.y, (int)command->ClipRect.z, (int)command->ClipRect.w);
-				device->SetScissorRect(scissorRect, 0);
+				CoreGraphics::SetScissorRect(scissorRect, 0);
 
 				// set texture in shader, we shouldn't have to put it into ImGui
-				params.fontVar->SetTexture((CoreGraphics::Texture*)command->TextureId);
-
-				// commit variable changes
-				shader->Commit();
+				CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, renderer->textureConstant.offset, sizeof(CoreGraphics::TextureId), (byte*)&command->TextureId);
 
 				// setup primitive
 				CoreGraphics::PrimitiveGroup primitive;
 				primitive.SetNumIndices(command->ElemCount);
 				primitive.SetBaseIndex(primitiveIndexOffset + indexOffset);
 				primitive.SetBaseVertex(vertexOffset);
-				primitive.SetPrimitiveTopology(CoreGraphics::PrimitiveTopology::TriangleList);
+
+				CoreGraphics::SetPrimitiveGroup(primitive);
+				CoreGraphics::SetPrimitiveTopology(CoreGraphics::PrimitiveTopology::TriangleList);
 
 				// prepare render device and draw
-				device->SetPrimitiveGroup(primitive);
-				device->Draw();
+				CoreGraphics::Draw();
 			}
 
 			// increment vertex offset
@@ -130,9 +114,7 @@ ImguiDrawFunction(ImDrawData* data)
 		indexOffset += commandList->IdxBuffer.size();
 
 		// lock buffers
-		vboLock->LockRange(vertexBufferOffset, vertexBufferSize);
 		vertexBufferOffset += vertexBufferSize;
-		iboLock->LockRange(indexBufferOffset, indexBufferSize);
 		indexBufferOffset += indexBufferSize;
 	}
 }
@@ -166,49 +148,52 @@ ImguiRenderer::Setup()
 	this->uiShader = ShaderServer::Instance()->GetShader("shd:imgui");
 	this->params.projVar = CoreGraphics::ShaderGetConstantBinding(this->uiShader,"TextProjectionModel");
 	this->params.fontVar = CoreGraphics::ShaderGetConstantBinding(this->uiShader, "Texture");
-    this->cbo = CoreGraphics::ShaderCreateConstantBuffer(this->uiShader, "GuiBlock");
+	this->prog = CoreGraphics::ShaderGetProgram(this->uiShader, CoreGraphics::ShaderFeatureFromString("Static"));
+
+	this->textureConstant = CoreGraphics::ShaderGetConstantBinding(this->uiShader, "Texture");
+	this->textProjectionConstant = CoreGraphics::ShaderGetConstantBinding(this->uiShader, "TextProjectionModel");
 
 	// create vertex buffer
 	Util::Array<CoreGraphics::VertexComponent> components;
     components.Append(VertexComponent((VertexComponent::SemanticName)0, 0, VertexComponentBase::Float2, 0));
 	components.Append(VertexComponent((VertexComponent::SemanticName)1, 0, VertexComponentBase::Float2, 0));
     components.Append(VertexComponent((VertexComponent::SemanticName)2, 0, VertexComponentBase::UByte4N, 0));
-    
-	// load vbo
-	Ptr<MemoryVertexBufferLoader> vboLoader = MemoryVertexBufferLoader::Create();
-	vboLoader->Setup(components, 1000000 * 3, NULL, 0, ResourceBase::UsageDynamic, ResourceBase::AccessWrite, ResourceBase::SyncingCoherentPersistent);
 
-	// load buffer
-	this->vbo = VertexBuffer::Create();
-	this->vbo->SetLoader(vboLoader.upcast<Resources::ResourceLoader>());
-	this->vbo->SetAsyncEnabled(false);
-	this->vbo->Load();
-	n_assert(this->vbo->IsLoaded());
-	this->vbo->SetLoader(NULL);	
+	CoreGraphics::VertexBufferCreateInfo vboInfo =
+	{
+		"imgui_vbo"_atm,
+		"system",
+		CoreGraphics::GpuBufferTypes::AccessWrite,
+		CoreGraphics::GpuBufferTypes::UsageDynamic,
+		CoreGraphics::GpuBufferTypes::SyncingCoherent | CoreGraphics::GpuBufferTypes::SyncingPersistent,
+		1000000 * 3,
+		components,
+		nullptr,
+		0
+	};
+	this->vbo = CoreGraphics::CreateVertexBuffer(vboInfo);
 
-	// load ibo
-	Ptr<MemoryIndexBufferLoader> iboLoader = MemoryIndexBufferLoader::Create();
-	iboLoader->Setup(IndexType::Index16, 100000 * 3, NULL, 0, ResourceBase::UsageDynamic, ResourceBase::AccessWrite, ResourceBase::SyncingCoherentPersistent);
-
-	// load buffer
-	this->ibo = IndexBuffer::Create();
-	this->ibo->SetLoader(iboLoader.upcast<Resources::ResourceLoader>());
-	this->ibo->SetAsyncEnabled(false);
-	this->ibo->Load();
-	n_assert(this->ibo->IsLoaded());
-	this->ibo->SetLoader(NULL);
+	CoreGraphics::IndexBufferCreateInfo iboInfo = 
+	{
+		"imgui_ibo"_atm,
+		"system",
+		CoreGraphics::GpuBufferTypes::AccessWrite,
+		CoreGraphics::GpuBufferTypes::UsageDynamic,
+		CoreGraphics::GpuBufferTypes::SyncingCoherent | CoreGraphics::GpuBufferTypes::SyncingPersistent,
+		IndexType::Index16,
+		100000 * 3,
+		nullptr,
+		0
+	};
+	this->ibo = CoreGraphics::CreateIndexBuffer(iboInfo);
 
 	// map buffer
-	this->vertexPtr = (byte*)this->vbo->Map(ResourceBase::MapWrite);
-	this->indexPtr = (byte*)this->ibo->Map(ResourceBase::MapWrite);
-
-	// create buffer lock
-	this->vboBufferLock = BufferLock::Create();
-	this->iboBufferLock = BufferLock::Create();
+	this->vertexPtr = (byte*)CoreGraphics::VertexBufferMap(this->vbo, CoreGraphics::GpuBufferTypes::MapWrite);
+	this->indexPtr = (byte*)CoreGraphics::IndexBufferMap(this->ibo, CoreGraphics::GpuBufferTypes::MapWrite);
 
 	// get display mode, this will be our default size
 	Ptr<DisplayDevice> display = DisplayDevice::Instance();
-	DisplayMode mode = display->GetCurrentWindow()->GetDisplayMode();
+	DisplayMode mode = CoreGraphics::WindowGetDisplayMode(display->GetCurrentWindow());
 
 	// setup Imgui
 	ImGuiIO& io = ImGui::GetIO();
@@ -309,19 +294,16 @@ ImguiRenderer::Setup()
 	// load image using SOIL
 	// unsigned char* texData = SOIL_load_image_from_memory(buffer, width * height * channels, &width, &height, &channels, SOIL_LOAD_AUTO);
 
-	// setup texture
-	this->fontTexture = Resources::ResourceManager::Instance()->CreateUnmanagedResource("ImguiFontTexture", Texture::RTTI).downcast<Texture>();
-	Ptr<MemoryTextureLoader> texLoader = MemoryTextureLoader::Create();
-	texLoader->SetImageBuffer(buffer, width, height, PixelFormat::A8R8G8B8);
-	this->fontTexture->SetLoader(texLoader.upcast<Resources::ResourceLoader>());
-	this->fontTexture->SetAsyncEnabled(false);
-	this->fontTexture->Load();
-	n_assert(this->fontTexture->IsLoaded());
-	this->fontTexture->SetLoader(0);
-	io.Fonts->TexID = this->fontTexture;
-
-	// set texture in shader, we shouldn't have to put it into ImGui
-	this->params.fontVar->SetTexture(this->fontTexture);
+	CoreGraphics::TextureCreateInfo texInfo = 
+	{
+		"imgui_font_tex"_atm,
+		"system",
+		buffer,
+		CoreGraphics::PixelFormat::R8G8B8A8,
+		width, height, 1
+	};
+	this->fontTexture = CoreGraphics::CreateTexture(texInfo);
+	io.Fonts->TexID = &this->fontTexture;
 }
 
 //------------------------------------------------------------------------------
@@ -330,23 +312,15 @@ ImguiRenderer::Setup()
 void
 ImguiRenderer::Discard()
 {
-	this->uiShader = 0;
+	CoreGraphics::VertexBufferUnmap(this->vbo);
+	CoreGraphics::IndexBufferUnmap(this->ibo);
 
-	this->vbo->Unmap();
-	this->vbo->Unload();
-	this->vbo = 0;
-	this->vertexPtr = 0;
+	CoreGraphics::DestroyVertexBuffer(this->vbo);
+	CoreGraphics::DestroyIndexBuffer(this->ibo);
+	this->vertexPtr = nullptr;
+	this->indexPtr = nullptr;
 
-	this->ibo->Unmap();
-	this->ibo->Unload();
-	this->ibo = 0;
-	this->indexPtr = 0;
-
-	this->vboBufferLock = 0;
-	this->iboBufferLock = 0;
-
-	this->fontTexture->Unload();
-	this->fontTexture = 0;
+	CoreGraphics::DestroyTexture(this->fontTexture);
 	ImGui::Shutdown();
 }
 
