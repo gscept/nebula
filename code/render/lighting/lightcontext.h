@@ -67,9 +67,9 @@ private:
 	> GenericLightAllocator;
 	static GenericLightAllocator genericLightAllocator;
 
-	static Util::HashTable<const Graphics::GraphicsEntityId, Ids::Id32> pointLightMapping;
-	static Util::HashTable<const Graphics::GraphicsEntityId, Ids::Id32> spotLightMapping;
-	static Util::HashTable<const Graphics::GraphicsEntityId, Ids::Id32> globalLightMapping;
+	static Util::HashTable<Graphics::GraphicsEntityId, Ids::Id32> pointLightMapping;
+	static Util::HashTable<Graphics::GraphicsEntityId, Ids::Id32> spotLightMapping;
+	static Util::HashTable<Graphics::GraphicsEntityId, Ids::Id32> globalLightMapping;
 
 	enum
 	{

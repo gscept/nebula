@@ -16,8 +16,11 @@
 #include "coregraphics/indexbuffer.h"
 #include "input/inputevent.h"
 
+struct ImDrawData;
 namespace Dynui
 {
+
+extern void ImguiDrawFunction(ImDrawData* data);
 struct ImguiRendererParams
 {
 	CoreGraphics::ConstantBinding projVar;
@@ -47,118 +50,23 @@ public:
 	/// handle event
 	bool HandleInput(const Input::InputEvent& event);
 
-	/// get buffer lock for vertex buffer
-	//const Ptr<CoreGraphics::BufferLock>& GetVertexBufferLock() const;
-	/// get buffer lock for index buffer
-	//const Ptr<CoreGraphics::BufferLock>& GetIndexBufferLock() const;
-	/// get vertex buffer pointer
-	byte* GetVertexPtr() const;
-	/// get vertex buffer pointer
-	byte* GetIndexPtr() const;
-	/// get vertex buffer
-    CoreGraphics::VertexBufferId GetVertexBuffer() const;
-	/// get index buffer
-    CoreGraphics::IndexBufferId GetIndexBuffer() const;
-	/// get shader
-    CoreGraphics::ShaderId GetShader() const;
-	/// get font texture
-    CoreGraphics::TextureId GetFontTexture() const;
-	/// get shader params
-	const ImguiRendererParams& GetParams() const;
-
 private:
+
+	friend void ImguiDrawFunction(ImDrawData* data);
 
 	ImguiRendererParams params;
     CoreGraphics::ShaderId uiShader;
+	CoreGraphics::ShaderProgramId prog;
 	CoreGraphics::TextureId fontTexture;
 	CoreGraphics::VertexBufferId vbo;
 	CoreGraphics::IndexBufferId ibo;
+
+	CoreGraphics::ConstantBinding textureConstant;
+	CoreGraphics::ConstantBinding textProjectionConstant;
 	//Ptr<CoreGraphics::BufferLock> vboBufferLock;
 	//Ptr<CoreGraphics::BufferLock> iboBufferLock;
 	byte* vertexPtr;
 	byte* indexPtr;
 };
-
-#if 0
-//------------------------------------------------------------------------------
-/**
-*/
-inline const Ptr<CoreGraphics::BufferLock>&
-ImguiRenderer::GetVertexBufferLock() const
-{
-	return this->vboBufferLock;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const Ptr<CoreGraphics::BufferLock>&
-ImguiRenderer::GetIndexBufferLock() const
-{
-	return this->iboBufferLock;
-}
-#endif
-//------------------------------------------------------------------------------
-/**
-*/
-inline byte*
-ImguiRenderer::GetVertexPtr() const
-{
-	return this->vertexPtr;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline byte*
-ImguiRenderer::GetIndexPtr() const
-{
-	return this->indexPtr;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline CoreGraphics::VertexBufferId
-ImguiRenderer::GetVertexBuffer() const
-{
-	return this->vbo;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline CoreGraphics::IndexBufferId
-ImguiRenderer::GetIndexBuffer() const
-{
-	return this->ibo;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline CoreGraphics::ShaderId
-ImguiRenderer::GetShader() const
-{
-	return this->uiShader;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline CoreGraphics::TextureId
-ImguiRenderer::GetFontTexture() const
-{
-	return this->fontTexture;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const ImguiRendererParams&
-ImguiRenderer::GetParams() const
-{
-	return this->params;
-}
 
 } // namespace Dynui

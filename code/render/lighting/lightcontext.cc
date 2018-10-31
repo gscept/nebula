@@ -13,10 +13,11 @@ ImplementContext(LightContext);
 LightContext::GenericLightAllocator LightContext::genericLightAllocator;
 LightContext::PointLightAllocator LightContext::pointLightAllocator;
 LightContext::SpotLightAllocator LightContext::spotLightAllocator;
+LightContext::GlobalLightAllocator LightContext::globalLightAllocator;
 
-Util::HashTable<const Graphics::GraphicsEntityId, Ids::Id32> LightContext::pointLightMapping;
-Util::HashTable<const Graphics::GraphicsEntityId, Ids::Id32> LightContext::spotLightMapping;
-Util::HashTable<const Graphics::GraphicsEntityId, Ids::Id32> LightContext::globalLightMapping;
+Util::HashTable<Graphics::GraphicsEntityId, Ids::Id32> LightContext::pointLightMapping;
+Util::HashTable<Graphics::GraphicsEntityId, Ids::Id32> LightContext::spotLightMapping;
+Util::HashTable<Graphics::GraphicsEntityId, Ids::Id32> LightContext::globalLightMapping;
 
 //------------------------------------------------------------------------------
 /**

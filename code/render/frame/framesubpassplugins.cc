@@ -47,6 +47,7 @@ FrameSubpassPlugins::AllocCompiled(Memory::ChunkAllocator<BIG_CHUNK>& allocator)
 {
 	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
 	ret->pluginFilter = this->pluginFilter;
+	ret->pluginRegistry = this->pluginRegistry;
 	return ret;
 }
 
@@ -56,8 +57,8 @@ FrameSubpassPlugins::AllocCompiled(Memory::ChunkAllocator<BIG_CHUNK>& allocator)
 void
 FrameSubpassPlugins::Setup()
 {
-	//n_assert(!this->pluginRegistry.isvalid());
-	//this->pluginRegistry = RenderModules::RTPluginRegistry::Instance();
+	n_assert(!this->pluginRegistry.isvalid());
+	this->pluginRegistry = RenderModules::RTPluginRegistry::Instance();
 }
 
 //------------------------------------------------------------------------------
@@ -67,7 +68,7 @@ void
 FrameSubpassPlugins::CompiledImpl::Run(const IndexT frameIndex)
 {
 	CoreGraphics::BeginBatch(FrameBatchType::System);
-	//this->pluginRegistry->OnRender(this->pluginFilter);
+	this->pluginRegistry->OnRender(this->pluginFilter);
 	CoreGraphics::EndBatch();
 }
 

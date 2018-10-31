@@ -99,4 +99,3 @@ FenceWait(const FenceId id, const uint64 time)
 
 } // namespace CoreGraphics
 
-#pragma pop_macro("CreateEvent")
