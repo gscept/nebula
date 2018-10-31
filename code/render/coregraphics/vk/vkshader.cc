@@ -33,7 +33,7 @@ VkShaderSetup(
 	const Util::StringAtom& name,
 	const VkPhysicalDeviceProperties props,
 	AnyFX::ShaderEffect* effect,
-	VkPushConstantRange& constantRange,
+	Util::FixedArray<CoreGraphics::ResourcePipelinePushConstantRange>& constantRange,
 	Util::Array<CoreGraphics::SamplerId>& immutableSamplers,
 	Util::FixedArray<std::pair<uint32_t, CoreGraphics::ResourceTableLayoutId>>& setLayouts,
 	Util::Dictionary<uint32_t, uint32_t>& setLayoutMap,
@@ -54,12 +54,12 @@ VkShaderSetup(
 	Util::Dictionary<uint32_t, ResourceTableLayoutCreateInfo> layoutCreateInfos;
 	uint32_t numsets = 0;
 
+
 	// always create push constant range in layout, making all shaders using push constants compatible
-	constantRange.size = props.limits.maxPushConstantsSize;
-	constantRange.offset = 0;
-	constantRange.stageFlags = VK_SHADER_STAGE_ALL;
+	uint32_t maxConstantBytes = props.limits.maxPushConstantsSize;
+	uint32_t pushRangeOffset = 0; // we must append previous push range size to offset
+	constantRange.Resize(6); // one per shader stage
 	bool usePushConstants = false;
-	uint32_t pushConstantSet = 0xFFFFFFFF;
 
 #define uint_max(a, b) (a > b ? a : b)
 
@@ -80,19 +80,6 @@ VkShaderSetup(
 		cbo.visibility = AllVisibility;
 		uint32_t slotsUsed = 0;
 
-		if (block->variables.empty()) continue;
-		if (AnyFX::HasFlags(block->qualifiers, AnyFX::Qualifiers::Push))
-		{
-			usePushConstants = true;
-			pushConstantSet = block->set;
-			continue; // if push-constant block, do not add to resource table!
-		};
-
-		// add to resource map
-		resourceSlotMapping.Add(block->name.c_str(), block->binding);
-		ResourceTableLayoutCreateInfo& rinfo = layoutCreateInfos.AddUnique(block->set);
-		numsets = uint_max(numsets, block->set + 1);
-
 		if (block->HasAnnotation("Visibility"))
 		{
 			CoreGraphicsShaderVisibility vis = ShaderVisibilityFromString(block->GetAnnotationString("Visibility").c_str());
@@ -104,6 +91,27 @@ VkShaderSetup(
 			if ((vis & PixelShaderVisibility) == PixelShaderVisibility)			slotsUsed++;
 			if ((vis & ComputeShaderVisibility) == ComputeShaderVisibility)		slotsUsed++;
 		}
+
+		if (block->variables.empty()) continue;
+		if (AnyFX::HasFlags(block->qualifiers, AnyFX::Qualifiers::Push))
+		{
+			n_assert(block->alignedSize <= maxConstantBytes);
+			maxConstantBytes -= block->alignedSize;
+			CoreGraphics::ResourcePipelinePushConstantRange range;
+			range.offset = pushRangeOffset;
+			range.size = block->alignedSize;
+			range.vis = VertexShaderVisibility; // only allow for fragment bit...
+			constantRange[0] = range; // okay, this is hacky
+			pushRangeOffset += block->alignedSize;
+			usePushConstants = true;
+			continue; // if push-constant block, do not add to resource table!
+		};
+
+		// add to resource map
+		resourceSlotMapping.Add(block->name.c_str(), block->binding);
+		ResourceTableLayoutCreateInfo& rinfo = layoutCreateInfos.AddUnique(block->set);
+		numsets = uint_max(numsets, block->set + 1);
+
 		if (block->set == NEBULA_DYNAMIC_OFFSET_GROUP || block->set == NEBULA_INSTANCE_GROUP) { cbo.dynamicOffset = true; numUniformDyn += slotsUsed; }
 		else											{ cbo.dynamicOffset = false; numUniform += slotsUsed; }
 
@@ -329,13 +337,10 @@ VkShaderSetup(
 			layoutIndices.Append(std::get<0>(setLayouts[i]));
 		}
 	}
-	ResourcePipelinePushConstantRange push;
-	push.size = props.limits.maxPushConstantsSize;
-	push.offset = 0;
-	push.vis = AllVisibility;
+
 	ResourcePipelineCreateInfo piInfo =
 	{
-		layoutList, layoutIndices, push
+		layoutList, layoutIndices, constantRange[0]
 	};
 	pipelineLayout = CreateResourcePipeline(piInfo);
 
