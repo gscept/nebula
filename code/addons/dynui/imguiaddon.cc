@@ -2,7 +2,7 @@
 //  imguifeatureunit.cc
 //  (C) 2012-2016 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "render/stdneb.h"
 #include "imguiaddon.h"
 #include "rendermodules/rt/rtpluginregistry.h"
 #include "input/inputserver.h"

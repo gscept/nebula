@@ -43,7 +43,7 @@ void
 ImguiRTPlugin::OnUnregister()
 {
 	this->renderer->Discard();
-	this->renderer = 0;
+	this->renderer = nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -68,7 +68,5 @@ ImguiRTPlugin::OnWindowResized(IndexT windowId, SizeT width, SizeT height)
 	n_assert(this->renderer.isvalid());
 	this->renderer->SetRectSize(width, height);
 }
-
-
 
 } // namespace Imgui
