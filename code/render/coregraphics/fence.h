@@ -7,6 +7,8 @@
 */
 //------------------------------------------------------------------------------
 #include "ids/id.h"
+#include "coregraphics/config.h"
+
 namespace CoreGraphics
 {
 
