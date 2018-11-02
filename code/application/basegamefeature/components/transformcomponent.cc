@@ -119,7 +119,7 @@ TransformComponent::SetParents(const uint32_t & start, const uint32_t & end, con
 //------------------------------------------------------------------------------
 /**
 */
-void
+uint32_t
 TransformComponent::RegisterEntity(const Entity& entity)
 {
 	uint32_t instance = this->data.RegisterEntity(entity);
@@ -131,6 +131,7 @@ TransformComponent::RegisterEntity(const Entity& entity)
 	this->FirstChild(instance) = uint32_t(-1);
 	this->NextSibling(instance) = uint32_t(-1);
 	this->PrevSibling(instance) = uint32_t(-1);
+	return instance;
 }
 
 //------------------------------------------------------------------------------
@@ -150,7 +151,7 @@ TransformComponent::DeregisterEntity(const Entity& entity)
 //------------------------------------------------------------------------------
 /**
 */
-uint32_t
+SizeT
 TransformComponent::NumRegistered() const
 {
 	return this->data.Size();
