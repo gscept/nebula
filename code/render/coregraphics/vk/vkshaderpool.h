@@ -152,7 +152,7 @@ private:
 		UniformBufferGroupMap uniformBufferGroupMap;	// same as above but grouped
 
 		CoreGraphics::ResourcePipelineId pipelineLayout;
-		VkPushConstantRange constantRangeLayout;
+		Util::FixedArray<CoreGraphics::ResourcePipelinePushConstantRange> constantRangeLayout;
 		Util::Array<CoreGraphics::SamplerId> immutableSamplers;
 		Util::Dictionary<Util::StringAtom, uint32_t> resourceIndexMap;
 		Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBinding> constantBindings;

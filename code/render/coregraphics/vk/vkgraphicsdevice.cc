@@ -20,6 +20,7 @@
 #include "app/application.h"
 #include "io/ioserver.h"
 #include "vkevent.h"
+#include "vkfence.h"
 #include "vktypes.h"
 #include "coregraphics/memoryindexbufferpool.h"
 #include "coregraphics/memoryvertexbufferpool.h"
@@ -172,9 +173,6 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 	_declare_counter(GraphicsDeviceNumDrawCalls);
 	_declare_timer(DebugTimer);
 
-#if NEBULA_VULKAN_DEBUG
-
-#endif
 } state;
 
 #if NEBULA_VULKAN_DEBUG
@@ -2021,7 +2019,7 @@ InsertBarrier(const CoreGraphics::BarrierId barrier, const CoreGraphicsQueueType
 /**
 */
 void 
-SignalEvent(const CoreGraphics::EventId & ev, const CoreGraphicsQueueType queue)
+SignalEvent(const CoreGraphics::EventId ev, const CoreGraphicsQueueType queue)
 {
 	VkEventInfo& info = eventAllocator.Get<1>(ev.id24);
 	if (queue == GraphicsQueueType && state.inBeginPass)
@@ -2054,7 +2052,7 @@ SignalEvent(const CoreGraphics::EventId & ev, const CoreGraphicsQueueType queue)
 /**
 */
 void 
-WaitEvent(const CoreGraphics::EventId & ev, const CoreGraphicsQueueType queue)
+WaitEvent(const CoreGraphics::EventId ev, const CoreGraphicsQueueType queue)
 {
 	VkEventInfo& info = eventAllocator.Get<1>(ev.id24);
 	if (queue == GraphicsQueueType && state.inBeginPass)
@@ -2103,7 +2101,7 @@ WaitEvent(const CoreGraphics::EventId & ev, const CoreGraphicsQueueType queue)
 /**
 */
 void 
-ResetEvent(const CoreGraphics::EventId & ev, const CoreGraphicsQueueType queue)
+ResetEvent(const CoreGraphics::EventId ev, const CoreGraphicsQueueType queue)
 {
 	VkEventInfo& info = eventAllocator.Get<1>(ev.id24);
 	if (queue == GraphicsQueueType && state.inBeginPass)	
@@ -2130,6 +2128,58 @@ ResetEvent(const CoreGraphics::EventId & ev, const CoreGraphicsQueueType queue)
 
 		vkCmdResetEvent(buf, info.event, info.rightDependency);
 	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+SignalFence(const CoreGraphics::FenceId fe, const CoreGraphicsQueueType queue)
+{
+	n_assert2(!fenceAllocator.Get<1>(fe.id24).pending, "Fence is already waiting to be signaled!");
+	VkQueue q = state.subcontextHandler.GetQueue(queue);
+	VkResult res = vkQueueSubmit(q, 0, nullptr, fenceAllocator.Get<1>(fe.id24).fence);
+	n_assert(res == VK_SUCCESS);
+	fenceAllocator.Get<1>(fe.id24).pending = true;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool 
+PeekFence(const CoreGraphics::FenceId fe)
+{
+	VkResult res = vkGetFenceStatus(fenceAllocator.Get<0>(fe.id24), fenceAllocator.Get<1>(fe.id24).fence);
+	return res == VK_SUCCESS;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+ResetFence(const CoreGraphics::FenceId fe)
+{
+	VkResult res = vkResetFences(fenceAllocator.Get<0>(fe.id24), 1, &fenceAllocator.Get<1>(fe.id24).fence);
+	n_assert(res == VK_SUCCESS);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool 
+WaitFence(const CoreGraphics::FenceId fe, uint64 wait)
+{
+	n_assert(fenceAllocator.Get<1>(fe.id24).pending);
+	VkResult res = vkWaitForFences(fenceAllocator.Get<0>(fe.id24), 1, &fenceAllocator.Get<1>(fe.id24).fence, false, UINT_MAX);
+	if (res == VK_SUCCESS)
+	{
+		res = vkResetFences(fenceAllocator.Get<0>(fe.id24), 1, &fenceAllocator.Get<1>(fe.id24).fence);
+		n_assert(res == VK_SUCCESS);
+
+		// reset pending status
+		fenceAllocator.Get<1>(fe.id24).pending = false;
+	}
+	return res;
 }
 
 //------------------------------------------------------------------------------

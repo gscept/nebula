@@ -48,6 +48,7 @@ namespace GpuBufferTypes
 		SyncingPersistent,			// buffer is persistently mapped, no need to unmap
 		SyncingCoherent				// resource is coherent on GPU and CPU when mapped
 	};
+	
 
 	struct SetupFlags
 	{
@@ -56,6 +57,8 @@ namespace GpuBufferTypes
 		CoreGraphics::GpuBufferTypes::Syncing syncing;
 	};
 };
+
+__ImplementEnumBitOperators(GpuBufferTypes::Syncing)
 
 } // namespace CoreGraphics
 //------------------------------------------------------------------------------
