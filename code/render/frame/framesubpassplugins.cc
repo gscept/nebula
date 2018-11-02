@@ -5,6 +5,7 @@
 #include "render/stdneb.h"
 #include "framesubpassplugins.h"
 #include "coregraphics/graphicsdevice.h"
+#include "graphics/graphicsserver.h"
 #include "frame/framebatchtype.h"
 
 using namespace CoreGraphics;
@@ -34,9 +35,7 @@ FrameSubpassPlugins::~FrameSubpassPlugins()
 void
 FrameSubpassPlugins::Discard()
 {
-	FrameOp::Discard();
-
-	//this->pluginRegistry = nullptr;
+	FrameOp::Discard();	
 }
 
 //------------------------------------------------------------------------------
@@ -46,8 +45,7 @@ FrameOp::Compiled*
 FrameSubpassPlugins::AllocCompiled(Memory::ChunkAllocator<BIG_CHUNK>& allocator)
 {
 	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
-	ret->pluginFilter = this->pluginFilter;
-	ret->pluginRegistry = this->pluginRegistry;
+	ret->pluginFilter = this->pluginFilter;	
 	return ret;
 }
 
@@ -57,8 +55,7 @@ FrameSubpassPlugins::AllocCompiled(Memory::ChunkAllocator<BIG_CHUNK>& allocator)
 void
 FrameSubpassPlugins::Setup()
 {
-	n_assert(!this->pluginRegistry.isvalid());
-	this->pluginRegistry = RenderModules::RTPluginRegistry::Instance();
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -68,7 +65,7 @@ void
 FrameSubpassPlugins::CompiledImpl::Run(const IndexT frameIndex)
 {
 	CoreGraphics::BeginBatch(FrameBatchType::System);
-	this->pluginRegistry->OnRender(this->pluginFilter);
+    Graphics::GraphicsServer::Instance()->RenderPlugin(pluginFilter);	
 	CoreGraphics::EndBatch();
 }
 

@@ -1,4 +1,4 @@
-// NIDL #version:16#
+// NIDL #version:19#
 #pragma once
 //------------------------------------------------------------------------------
 /**
@@ -46,44 +46,44 @@ public:
     };
 
     /// Registers an entity to this component.
-    void RegisterEntity(const Game::Entity& entity);
-    
+    uint32_t RegisterEntity(const Game::Entity& entity);
+
     /// Deregister Entity.
     void DeregisterEntity(const Game::Entity& entity);
-    
+
     /// Cleans up right away and frees any memory that does not belong to an entity. (slow!)
     void CleanData();
-    
+
     /// Destroys all instances of this component, and deregisters every entity.
     void DestroyAll();
-    
+
     /// Checks whether the entity is registered.
     bool IsRegistered(const Game::Entity& entity) const;
-    
+
     /// Returns the index of the data array to the component instance
     uint32_t GetInstance(const Game::Entity& entity) const;
-    
+
     /// Returns the owner entity id of provided instance id
     Game::Entity GetOwner(const uint32_t& instance) const;
-    
+
     /// Set the owner of a given instance. This does not care if the entity is registered or not!
     void SetOwner(const uint32_t& i, const Game::Entity& entity);
-    
+
     /// Optimize data array and pack data
     SizeT Optimize();
-    
+
     /// Returns an attribute value as a variant from index.
-    Util::Variant GetAttributeValue(uint32_t instance, AttributeIndex attributeIndex) const;
-    
+    Util::Variant GetAttributeValue(uint32_t instance, IndexT attributeIndex) const;
+
     /// Returns an attribute value as a variant from attribute id.
     Util::Variant GetAttributeValue(uint32_t instance, Attr::AttrId attributeId) const;
-    
+
     /// Set an attribute value from index
-    void SetAttributeValue(uint32_t instance, AttributeIndex attributeIndex, Util::Variant value);
-    
+    void SetAttributeValue(uint32_t instance, IndexT attributeIndex, Util::Variant value);
+
     /// Set an attribute value from attribute id
     void SetAttributeValue(uint32_t instance, Attr::AttrId attributeId, Util::Variant value);
-    
+
     /// Serialize component into binary stream
     void Serialize(const Ptr<IO::BinaryWriter>& writer) const;
 
@@ -91,7 +91,7 @@ public:
     void Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances);
 
     /// Get the total number of instances of this component
-    uint32_t NumRegistered() const;
+    SizeT NumRegistered() const;
 
     /// Allocate multiple instances
     void Allocate(uint num);
@@ -145,44 +145,44 @@ public:
     };
 
     /// Registers an entity to this component.
-    void RegisterEntity(const Game::Entity& entity);
-    
+    uint32_t RegisterEntity(const Game::Entity& entity);
+
     /// Deregister Entity.
     void DeregisterEntity(const Game::Entity& entity);
-    
+
     /// Cleans up right away and frees any memory that does not belong to an entity. (slow!)
     void CleanData();
-    
+
     /// Destroys all instances of this component, and deregisters every entity.
     void DestroyAll();
-    
+
     /// Checks whether the entity is registered.
     bool IsRegistered(const Game::Entity& entity) const;
-    
+
     /// Returns the index of the data array to the component instance
     uint32_t GetInstance(const Game::Entity& entity) const;
-    
+
     /// Returns the owner entity id of provided instance id
     Game::Entity GetOwner(const uint32_t& instance) const;
-    
+
     /// Set the owner of a given instance. This does not care if the entity is registered or not!
     void SetOwner(const uint32_t& i, const Game::Entity& entity);
-    
+
     /// Optimize data array and pack data
     SizeT Optimize();
-    
+
     /// Returns an attribute value as a variant from index.
-    Util::Variant GetAttributeValue(uint32_t instance, AttributeIndex attributeIndex) const;
-    
+    Util::Variant GetAttributeValue(uint32_t instance, IndexT attributeIndex) const;
+
     /// Returns an attribute value as a variant from attribute id.
     Util::Variant GetAttributeValue(uint32_t instance, Attr::AttrId attributeId) const;
-    
+
     /// Set an attribute value from index
-    void SetAttributeValue(uint32_t instance, AttributeIndex attributeIndex, Util::Variant value);
-    
+    void SetAttributeValue(uint32_t instance, IndexT attributeIndex, Util::Variant value);
+
     /// Set an attribute value from attribute id
     void SetAttributeValue(uint32_t instance, Attr::AttrId attributeId, Util::Variant value);
-    
+
     /// Serialize component into binary stream
     void Serialize(const Ptr<IO::BinaryWriter>& writer) const;
 
@@ -190,7 +190,7 @@ public:
     void Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances);
 
     /// Get the total number of instances of this component
-    uint32_t NumRegistered() const;
+    SizeT NumRegistered() const;
 
     /// Allocate multiple instances
     void Allocate(uint num);
@@ -198,7 +198,7 @@ public:
             /// Called from entitymanager if this component is registered with a deletion callback.
             /// Removes entity immediately from component instances.
             void OnEntityDeleted(Game::Entity entity);
-            
+
             
 
     /// Read/write access to attributes.
@@ -250,44 +250,44 @@ public:
     };
 
     /// Registers an entity to this component.
-    void RegisterEntity(const Game::Entity& entity);
-    
+    uint32_t RegisterEntity(const Game::Entity& entity);
+
     /// Deregister Entity.
     void DeregisterEntity(const Game::Entity& entity);
-    
+
     /// Cleans up right away and frees any memory that does not belong to an entity. (slow!)
     void CleanData();
-    
+
     /// Destroys all instances of this component, and deregisters every entity.
     void DestroyAll();
-    
+
     /// Checks whether the entity is registered.
     bool IsRegistered(const Game::Entity& entity) const;
-    
+
     /// Returns the index of the data array to the component instance
     uint32_t GetInstance(const Game::Entity& entity) const;
-    
+
     /// Returns the owner entity id of provided instance id
     Game::Entity GetOwner(const uint32_t& instance) const;
-    
+
     /// Set the owner of a given instance. This does not care if the entity is registered or not!
     void SetOwner(const uint32_t& i, const Game::Entity& entity);
-    
+
     /// Optimize data array and pack data
     SizeT Optimize();
-    
+
     /// Returns an attribute value as a variant from index.
-    Util::Variant GetAttributeValue(uint32_t instance, AttributeIndex attributeIndex) const;
-    
+    Util::Variant GetAttributeValue(uint32_t instance, IndexT attributeIndex) const;
+
     /// Returns an attribute value as a variant from attribute id.
     Util::Variant GetAttributeValue(uint32_t instance, Attr::AttrId attributeId) const;
-    
+
     /// Set an attribute value from index
-    void SetAttributeValue(uint32_t instance, AttributeIndex attributeIndex, Util::Variant value);
-    
+    void SetAttributeValue(uint32_t instance, IndexT attributeIndex, Util::Variant value);
+
     /// Set an attribute value from attribute id
     void SetAttributeValue(uint32_t instance, Attr::AttrId attributeId, Util::Variant value);
-    
+
     /// Serialize component into binary stream
     void Serialize(const Ptr<IO::BinaryWriter>& writer) const;
 
@@ -295,7 +295,7 @@ public:
     void Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances);
 
     /// Get the total number of instances of this component
-    uint32_t NumRegistered() const;
+    SizeT NumRegistered() const;
 
     /// Allocate multiple instances
     void Allocate(uint num);
@@ -303,7 +303,7 @@ public:
             /// Called from entitymanager if this component is registered with a deletion callback.
             /// Removes entity immediately from component instances.
             void OnEntityDeleted(Game::Entity entity);
-            
+
             
 
     /// Read/write access to attributes.

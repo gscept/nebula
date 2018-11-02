@@ -27,7 +27,7 @@ namespace Models
 {
 class ModelContext : public Graphics::GraphicsContext
 {
-	DeclareContext();
+	_DeclareContext();
 public:
 	/// constructor
 	ModelContext();

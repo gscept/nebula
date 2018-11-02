@@ -16,9 +16,10 @@
 #include "ids/id.h"
 #include "ids/idallocator.h"			// include this here since it will be used by all contexts
 #include "ids/idgenerationpool.h"
+#include "util/stringatom.h"
 #include "graphicsentity.h"
 
-#define DeclareContext() \
+#define _DeclareContext() \
 private:\
 	static Graphics::GraphicsContext::State __state;\
 	static Graphics::GraphicsContextFunctionBundle __bundle;\
@@ -31,7 +32,7 @@ public:\
 	static void BeginBulkRegister(); \
 	static void EndBulkRegister();
 
-#define ImplementContext(ctx) \
+#define _ImplementContext(ctx) \
 Graphics::GraphicsContext::State ctx::__state; \
 Graphics::GraphicsContextFunctionBundle ctx::__bundle; \
 void ctx::RegisterEntity(const Graphics::GraphicsEntityId id) \
@@ -70,7 +71,7 @@ void ctx::EndBulkRegister()\
 	__state.entitySliceMap.EndBulkAdd();\
 }
 
-#define CreateContext() \
+#define _CreateContext() \
 	__state.Alloc = Alloc; \
 	__state.Dealloc = Dealloc; \
 	__state.entitySliceMap = Util::HashTable<Graphics::GraphicsEntityId, Graphics::ContextEntityId, 64>(512);
@@ -80,6 +81,7 @@ namespace Graphics
 {
 
 class View;
+class Stage;
 struct GraphicsContextFunctionBundle
 {
 	void(*OnBeforeFrame)(const IndexT frameIndex, const Timing::Time frameTime);
@@ -88,7 +90,17 @@ struct GraphicsContextFunctionBundle
 	void(*OnAfterView)(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime);
 	void(*OnAfterFrame)(const IndexT frameIndex, const Timing::Time frameTime);
 
-	GraphicsContextFunctionBundle() : OnBeforeFrame(nullptr), OnWaitForWork(nullptr), OnBeforeView(nullptr), OnAfterView(nullptr), OnAfterFrame(nullptr)
+    void(*OnStageCreated)(const Ptr<Graphics::Stage>& stage);
+    void(*OnDiscardStage)(const Ptr<Graphics::Stage>& stage);
+    void(*OnViewCreated)(const Ptr<Graphics::View>& view);
+    void(*OnDiscardView)(const Ptr<Graphics::View>& view);
+    void(*OnAttachEntity)(Graphics::GraphicsEntityId entity);
+    void(*OnRemoveEntity)(Graphics::GraphicsEntityId entity);
+    void(*OnWindowResized)(IndexT windowId, SizeT width, SizeT height);
+    void(*OnRenderAsPlugin)(const IndexT frameIndex, const Timing::Time frameTime, const Util::StringAtom& filter);
+
+	GraphicsContextFunctionBundle() : OnBeforeFrame(nullptr), OnWaitForWork(nullptr), OnBeforeView(nullptr), OnAfterView(nullptr), OnAfterFrame(nullptr),
+        OnStageCreated(nullptr), OnDiscardStage(nullptr), OnViewCreated(nullptr), OnDiscardView(nullptr), OnAttachEntity(nullptr), OnRemoveEntity(nullptr), OnWindowResized(nullptr), OnRenderAsPlugin(nullptr)
 	{
 	};
 };

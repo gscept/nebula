@@ -31,6 +31,7 @@ fips_begin_module(application)
 			componentdata.cc
 			componentplugin.h
 			componentplugin.cc
+			component.h
 		)
 	fips_dir(game/attr)
 		fips_files(
@@ -65,6 +66,8 @@ fips_begin_module(application)
 		fips_files(
 			transformcomponent.h
 			transformcomponent.cc
+			tagcomponent.h
+			tagcomponent.cc
 		)
 	fips_dir(basegamefeature/messages)
 		fips_files(
@@ -73,8 +76,6 @@ fips_begin_module(application)
 		)
 	fips_dir(basegamefeature/loader)
 		fips_files(
-			blueprintloader.h
-			blueprintloader.cc
 			entityloaderbase.h
 			entityloaderbase.cc
 			levelloader.h

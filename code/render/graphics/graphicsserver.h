@@ -77,6 +77,9 @@ public:
 	/// call when ending the frame
 	void EndFrame();
 
+    /// call when plugin is rendered
+    void RenderPlugin(const Util::StringAtom& filter);
+
 	/// register function bundle from graphics context, see GraphicsContextType::Create
 	void RegisterGraphicsContext(GraphicsContextFunctionBundle* context);
 	/// unregister function bundle
