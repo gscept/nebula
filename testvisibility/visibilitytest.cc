@@ -10,6 +10,7 @@
 #include "app/application.h"
 #include "input/inputserver.h"
 #include "input/keyboard.h"
+#include "input/mouse.h"
 #include "io/ioserver.h"
 #include "graphics/cameracontext.h"
 #include "graphics/view.h"
@@ -19,6 +20,8 @@
 
 #include "visibility/visibilitycontext.h"
 #include "models/modelcontext.h"
+
+#include "renderutil/mayacamerautil.h"
 
 using namespace Timing;
 using namespace Graphics;
@@ -54,7 +57,7 @@ VisibilityTest::Run()
 
 	CoreGraphics::WindowCreateInfo wndInfo =
 	{
-		CoreGraphics::DisplayMode{ 100, 100, 640, 480 },
+		CoreGraphics::DisplayMode{ 100, 100, 1024, 768 },
 		"Render test!", "", CoreGraphics::AntiAliasQuality::None, true, true, false
 	};
 	CoreGraphics::WindowId wnd = CreateWindow(wndInfo);
@@ -71,7 +74,7 @@ VisibilityTest::Run()
 	// setup camera and view
 	GraphicsEntityId cam = Graphics::CreateEntity();
 	CameraContext::RegisterEntity(cam);
-	CameraContext::SetupProjectionFov(cam, 16.f / 9.f, 90.f, 0.01f, 1000.0f);
+	CameraContext::SetupProjectionFov(cam, 16.f / 9.f, Math::n_deg2rad(60.f), 0.01f, 1000.0f);
 	view->SetCamera(cam);
 	view->SetStage(stage);
 
@@ -103,7 +106,9 @@ VisibilityTest::Run()
 	ObserverContext::Setup(cam, VisibilityEntityType::Camera);
 
 	Util::Array<Graphics::GraphicsEntityId> models;
-	static const int NumModels = 150;
+	ModelContext::BeginBulkRegister();
+	ObservableContext::BeginBulkRegister();
+	static const int NumModels = 10;
 	for (IndexT i = -NumModels; i < NumModels; i++)
 	{
 		for (IndexT j = -NumModels; j < NumModels; j++)
@@ -113,24 +118,41 @@ VisibilityTest::Run()
 			// create model and move it to the front
 			ModelContext::RegisterEntity(ent);
 			ModelContext::Setup(ent, "mdl:Buildings/castle_tower.n3", "NotA");
-			ModelContext::SetTransform(ent, Math::matrix44::translation(Math::float4(i, 0, -j, 1)));
+			ModelContext::SetTransform(ent, Math::matrix44::translation(Math::float4(i*10, 0, -j*10, 1)));
 
 			ObservableContext::RegisterEntity(ent);
 			ObservableContext::Setup(ent, VisibilityEntityType::Model);
 			models.Append(ent);
 		}
 	}
+	ModelContext::EndBulkRegister();
+	ObservableContext::EndBulkRegister();
+
+	RenderUtil::MayaCameraUtil mayaCamera;
+	mayaCamera.Setup(Math::point(0, 0, 0), Math::point(0, 0, 10), Math::vector::upvec());
+	const Ptr<Input::Keyboard>& kdb = inputServer->GetDefaultKeyboard();
+	const Ptr<Input::Mouse>& mouse = inputServer->GetDefaultMouse();
+
+	Math::float2 panning(0.0f, 0.0f);
+	float zoomIn = 0.0f;
+	float zoomOut = 0.0f;
 
 	Timer timer;
 	IndexT frameIndex = -1;
 	bool run = true;
 	while (run && !inputServer->IsQuitRequested())
 	{
+		using namespace Input;
+
 		timer.Reset();
 		timer.Start();
 
-		inputServer->OnFrame();
 		resMgr->Update(frameIndex);
+		CameraContext::SetTransform(cam, Math::matrix44::inverse(mayaCamera.GetCameraTransform()));
+
+		inputServer->BeginFrame();
+		inputServer->OnFrame();
+
 
 		gfxServer->BeginFrame();
 		
@@ -152,7 +174,51 @@ VisibilityTest::Run()
 		
 		// force wait immediately
 		WindowPresent(wnd, frameIndex);
-		if (inputServer->GetDefaultKeyboard()->KeyPressed(Input::Key::Escape)) run = false;
+		if (kdb->KeyPressed(Input::Key::Escape)) run = false;
+
+		// standard input handling: manipulate camera
+		mayaCamera.SetOrbitButton(mouse->ButtonPressed(MouseButton::LeftButton));
+		mayaCamera.SetPanButton(mouse->ButtonPressed(MouseButton::MiddleButton));
+		mayaCamera.SetZoomButton(mouse->ButtonPressed(MouseButton::RightButton));
+		mayaCamera.SetZoomInButton(mouse->WheelForward());
+		mayaCamera.SetZoomOutButton(mouse->WheelBackward());
+
+		if (kdb->KeyPressed(Input::Key::LeftMenu))
+		{
+			mayaCamera.SetMouseMovement(mouse->GetMovement());
+		}
+
+		// handle keyboard input
+		if (kdb->KeyDown(Key::Space))
+		{
+			mayaCamera.Reset();
+		}
+		if (kdb->KeyPressed(Key::Right))
+		{
+			panning.x() -= 0.1f;
+		}
+		if (kdb->KeyPressed(Key::Left))
+		{
+			panning.x() += 0.1f;
+		}
+		if (kdb->KeyPressed(Key::Up))
+		{
+			panning.y() += 0.1f;
+		}
+		if (kdb->KeyPressed(Key::Down))
+		{
+			panning.y() -= 0.1f;
+		}
+
+		// update panning, orbiting, zooming speeds
+		mayaCamera.SetPanning(panning);
+		mayaCamera.SetOrbiting(Math::float2(0.0f));
+
+		mayaCamera.SetZoomIn(0.0f);
+		mayaCamera.SetZoomOut(0.0f);
+		mayaCamera.Update();
+
+		inputServer->EndFrame();
 		frameIndex++;
 
 		timer.Stop();
