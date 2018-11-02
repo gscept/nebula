@@ -43,11 +43,11 @@ ZipFSTest::Run()
         Memory::Free(Memory::ScratchHeap, buf);
 
         Array<String> files = ioServer->ListFiles("export:data/tables", "*");
-        this->Verify(files.Size() == 5);
-        this->Verify(0 != files.Find("anims.xml"));
-        this->Verify(0 != files.Find("blueprints.xml"));
-        this->Verify(0 != files.Find("globals.xml"));
-        this->Verify(0 != files.Find("materials.xml"));
+        VERIFY(files.Size() == 5);
+        VERIFY(0 != files.Find("anims.xml"));
+        VERIFY(0 != files.Find("blueprints.xml"));
+        VERIFY(0 != files.Find("globals.xml"));
+        VERIFY(0 != files.Find("materials.xml"));
     }
 }
 

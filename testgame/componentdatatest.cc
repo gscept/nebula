@@ -127,12 +127,12 @@ CompDataTest::Run()
 			entityAlive = manager->IsAlive(component.data.Get<0>(i));
 			if (entityAlive) break;
 		}
-		this->Verify(!entityAlive);
+		VERIFY(!entityAlive);
 
 		// Clean up the rest
 		component.DestroyAll();
 
-		this->Verify(component.data.Size() == 0);
+		VERIFY(component.data.Size() == 0);
 	}
 	{ // Testing structure of arrays.
 		entities.Clear();
@@ -161,15 +161,15 @@ CompDataTest::Run()
 		uint32_t previd = component.data.Get<0>(0).id;
 		component.SetInstanceData(0, "TESTING SET", 10, Math::float4(1, 2, 3, 4));
 		// Check if we really set data, but left id untouched.
-		this->Verify(component.data.Get<0>(0).id == previd);
-		this->Verify(component.data.Get<1>(0) == "TESTING SET");
-		this->Verify(component.data.Get<2>(0) == 10);
-		this->Verify(component.data.Get<3>(0) == Math::float4(1, 2, 3, 4));
+		VERIFY(component.data.Get<0>(0).id == previd);
+		VERIFY(component.data.Get<1>(0) == "TESTING SET");
+		VERIFY(component.data.Get<2>(0) == 10);
+		VERIFY(component.data.Get<3>(0) == Math::float4(1, 2, 3, 4));
 		// make sure we don't set every single instance.
-		this->Verify(component.data.Get<0>(1).id != previd);
-		this->Verify(component.data.Get<1>(1) != "TESTING SET");
-		this->Verify(component.data.Get<2>(1) != 10);
-		this->Verify(component.data.Get<3>(1) != Math::float4(1, 2, 3, 4));
+		VERIFY(component.data.Get<0>(1).id != previd);
+		VERIFY(component.data.Get<1>(1) != "TESTING SET");
+		VERIFY(component.data.Get<2>(1) != 10);
+		VERIFY(component.data.Get<3>(1) != Math::float4(1, 2, 3, 4));
 
 		// Testing second iteration of entities inserted in old positions
 		for (size_t i = 0; i < 5000; i++)
@@ -246,12 +246,12 @@ CompDataTest::Run()
 			entityAlive = manager->IsAlive(component.data.Get<0>(Ids::Id32(i)));
 			if (entityAlive) break;
 		}
-		this->Verify(!entityAlive);
+		VERIFY(!entityAlive);
 
 		// Clean up the rest
 		component.DestroyAll();
 
-		this->Verify(component.data.Size() == 0);
+		VERIFY(component.data.Size() == 0);
 	}
 }
 }

@@ -1,12 +1,11 @@
-#ifndef TESTS_QUEUETEST_H
-#define TESTS_QUEUETEST_H
+#pragma once
 //------------------------------------------------------------------------------
 /**
     @class Test::QueueTest
 
-    Test Nebula3's Queue functionality.
+    Test Nebula's Queue functionality.
 
-    (C) 2006 Radon Labs GmbH
+    (C) 2018 Individual contributors, see AUTHORS file
 */
 #include "testbase/testcase.h"
 
@@ -23,4 +22,3 @@ public:
 
 };
 //------------------------------------------------------------------------------
-#endif    

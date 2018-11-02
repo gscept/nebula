@@ -15,7 +15,7 @@ using namespace Test;
 void
 __cdecl main()
 {
-	// create Nebula3 runtime
+	// create Nebula runtime
 	Ptr<CoreServer> coreServer = CoreServer::Create();
 	coreServer->SetAppName(Util::StringAtom("Nebula Jobs Tests"));
 	coreServer->Open();
@@ -26,8 +26,7 @@ __cdecl main()
 	// setup and run test runner
 	Ptr<TestRunner> testRunner = TestRunner::Create();
 	testRunner->AttachTestCase(JobsTest::Create());
-	testRunner->Run();
-	//testRunner->AttachTestCase(BXmlReaderTest::Create());
+	testRunner->Run();	
 
 	coreServer->Close();
 	coreServer = nullptr;

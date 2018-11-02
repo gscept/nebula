@@ -5,13 +5,16 @@
 #include "stdneb.h"
 #include "system/appentry.h"
 #include "testbase/testrunner.h"
+#include "basegamefeature/basegamefeatureunit.h"
+#include "appgame/gameapplication.h"
 
 // tests
 #include "idtest.h"
 #include "componentdatatest.h"
-#include "appgame/gameapplication.h"
 #include "componentsystemtest.h"
-#include "basegamefeature/basegamefeatureunit.h"
+#include "loadertest.h"
+#include "messagetest.h"
+
 ImplementNebulaApplication();
 
 using namespace Core;
@@ -65,8 +68,14 @@ NebulaMain(const Util::CommandLineArgs& args)
 	Ptr<ComponentSystemTest> compSysTest = ComponentSystemTest::Create();
 	compSysTest->gameApp = &gameApp;
 
-	testRunner->AttachTestCase(compSysTest);
+	testRunner->AttachTestCase(compSysTest); 
     
+	Ptr<LoaderTest> loaderTest = LoaderTest::Create();
+	testRunner->AttachTestCase(loaderTest);
+
+	Ptr<MessageTest> msgTest = MessageTest::Create();
+	testRunner->AttachTestCase(msgTest);
+
     testRunner->Run(); 
 
     testRunner = nullptr;

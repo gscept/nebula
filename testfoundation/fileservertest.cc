@@ -28,41 +28,41 @@ FileServerTest::Run()
     AssignRegistry* assignRegistry = AssignRegistry::Instance();
 
     // check for standard assigns
-    this->Verify(assignRegistry->HasAssign("home"));
-    this->Verify(!assignRegistry->HasAssign("test"));
+    VERIFY(assignRegistry->HasAssign("home"));
+    VERIFY(!assignRegistry->HasAssign("test"));
     #if __WIN32__
-    this->Verify(assignRegistry->HasAssign("user"));
-    this->Verify(assignRegistry->HasAssign("bin"));
-    this->Verify(assignRegistry->HasAssign("temp"));
+    VERIFY(assignRegistry->HasAssign("user"));
+    VERIFY(assignRegistry->HasAssign("bin"));
+    VERIFY(assignRegistry->HasAssign("temp"));
 
     // add a new assign
     assignRegistry->SetAssign(Assign("test", "file:///c:/temp"));
-    this->Verify(assignRegistry->HasAssign("test"));
-    this->Verify(assignRegistry->GetAssign("test") == "file:///c:/temp");
+    VERIFY(assignRegistry->HasAssign("test"));
+    VERIFY(assignRegistry->GetAssign("test") == "file:///c:/temp");
 
     // test assign resolution
-    this->Verify(assignRegistry->ResolveAssigns("test:bla.txt") == "file:///c:/temp/bla.txt");
+    VERIFY(assignRegistry->ResolveAssigns("test:bla.txt") == "file:///c:/temp/bla.txt");
 
     // set test assign to another location
     assignRegistry->SetAssign(Assign("test", "temp:"));
-    this->Verify(assignRegistry->GetAssign("test") == "temp:");
+    VERIFY(assignRegistry->GetAssign("test") == "temp:");
 
     // create a test directory in test:
-    this->Verify(ioServer->CreateDirectory("test:one/two"));
+    VERIFY(ioServer->CreateDirectory("test:one/two"));
     assignRegistry->SetAssign(Assign("test", "temp:one/two"));
-    this->Verify(ioServer->DirectoryExists("temp:one"));
-    this->Verify(ioServer->DirectoryExists("temp:one/two"));
-    this->Verify(!ioServer->DirectoryExists("temp:one/two/three"));
-    this->Verify(!ioServer->FileExists("temp:one"));
+    VERIFY(ioServer->DirectoryExists("temp:one"));
+    VERIFY(ioServer->DirectoryExists("temp:one/two"));
+    VERIFY(!ioServer->DirectoryExists("temp:one/two/three"));
+    VERIFY(!ioServer->FileExists("temp:one"));
 
     // create a file in the test directory
     Ptr<Stream> file = ioServer->CreateStream("test:file1");
     file->SetAccessMode(Stream::WriteAccess);
-    this->Verify(file->Open());
+    VERIFY(file->Open());
 
     Ptr<BinaryWriter> writer = BinaryWriter::Create();
     writer->SetStream(file);
-    this->Verify(writer->Open());
+    VERIFY(writer->Open());
     writer->WriteChar('A');
     writer->WriteChar('B');
     writer->WriteChar('C');
@@ -71,57 +71,57 @@ FileServerTest::Run()
     file->Close();
 
     // test if file exists
-    this->Verify(ioServer->FileExists("test:file1"));
-    this->Verify(!ioServer->FileExists("test:file2"));
-    this->Verify(!ioServer->DirectoryExists("test:file1"));
+    VERIFY(ioServer->FileExists("test:file1"));
+    VERIFY(!ioServer->FileExists("test:file2"));
+    VERIFY(!ioServer->DirectoryExists("test:file1"));
 
     // copy file
-    this->Verify(ioServer->CopyFile("test:file1", "test:file2"));
-    this->Verify(ioServer->FileExists("test:file2"));
-    this->Verify(ioServer->ComputeFileCrc("test:file1") == ioServer->ComputeFileCrc("test:file2"));
+    VERIFY(ioServer->CopyFile("test:file1", "test:file2"));
+    VERIFY(ioServer->FileExists("test:file2"));
+    VERIFY(ioServer->ComputeFileCrc("test:file1") == ioServer->ComputeFileCrc("test:file2"));
     
     // check copied contents
     file->SetURI("test:file2");
     file->SetAccessMode(Stream::ReadAccess);
-    this->Verify(file->Open());
+    VERIFY(file->Open());
 
     Ptr<BinaryReader> reader = BinaryReader::Create();
     reader->SetStream(file);
-    this->Verify(reader->Open());
-    this->Verify(reader->ReadChar() == 'A');
-    this->Verify(reader->ReadChar() == 'B');
-    this->Verify(reader->ReadChar() == 'C');
-    this->Verify(reader->ReadChar() == '\n');
-    this->Verify(file->Eof());
+    VERIFY(reader->Open());
+    VERIFY(reader->ReadChar() == 'A');
+    VERIFY(reader->ReadChar() == 'B');
+    VERIFY(reader->ReadChar() == 'C');
+    VERIFY(reader->ReadChar() == '\n');
+    VERIFY(file->Eof());
     reader->Close();
     file->Close();
 
-    this->Verify(!ioServer->IsReadOnly("test:file2"));
+    VERIFY(!ioServer->IsReadOnly("test:file2"));
     ioServer->SetReadOnly("test:file2", true);
-    this->Verify(ioServer->IsReadOnly("test:file2"));
+    VERIFY(ioServer->IsReadOnly("test:file2"));
     ioServer->SetReadOnly("test:file2", false);
-    this->Verify(!ioServer->IsReadOnly("test:file2"));
+    VERIFY(!ioServer->IsReadOnly("test:file2"));
 
     // test directory listing
-    this->Verify(ioServer->CreateDirectory("temp:one/anotherdir"));
+    VERIFY(ioServer->CreateDirectory("temp:one/anotherdir"));
     Array<String> list = ioServer->ListFiles("temp:one/two", "*");
-    this->Verify(list.Size() == 2);
+    VERIFY(list.Size() == 2);
     list = ioServer->ListDirectories("temp:one/two", "*");
-    this->Verify(list.Size() == 0);
+    VERIFY(list.Size() == 0);
     list = ioServer->ListFiles("temp:one", "*");
-    this->Verify(list.Size() == 0);
+    VERIFY(list.Size() == 0);
     list = ioServer->ListDirectories("temp:one", "*");
-    this->Verify(list.Size() == 2);
+    VERIFY(list.Size() == 2);
 
     // test file deleting
-    this->Verify(ioServer->DeleteFile("temp:one/two/file1"));
-    this->Verify(!ioServer->FileExists("temp:one/two/file1"));
-    this->Verify(!ioServer->DeleteDirectory("temp:one/two"));
-    this->Verify(ioServer->DeleteFile("temp:one/two/file2"));
-    this->Verify(ioServer->DeleteDirectory("temp:one/two"));
-    this->Verify(!ioServer->DirectoryExists("temp:one/two"));
-    this->Verify(ioServer->DeleteDirectory("temp:one/anotherdir"));
-    this->Verify(ioServer->DeleteDirectory("temp:one"));
+    VERIFY(ioServer->DeleteFile("temp:one/two/file1"));
+    VERIFY(!ioServer->FileExists("temp:one/two/file1"));
+    VERIFY(!ioServer->DeleteDirectory("temp:one/two"));
+    VERIFY(ioServer->DeleteFile("temp:one/two/file2"));
+    VERIFY(ioServer->DeleteDirectory("temp:one/two"));
+    VERIFY(!ioServer->DirectoryExists("temp:one/two"));
+    VERIFY(ioServer->DeleteDirectory("temp:one/anotherdir"));
+    VERIFY(ioServer->DeleteDirectory("temp:one"));
     #endif
 }
 

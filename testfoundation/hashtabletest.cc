@@ -30,10 +30,10 @@ HashTableTest::Run()
 
     // create a hashtable with string keys and IndexT value
     HashTable<String, IndexT> table(capacity);
-    this->Verify(table.Size() == 0);
-    this->Verify(table.IsEmpty());
-    this->Verify(table.Capacity() == capacity);
-    this->Verify(!table.Contains("Ein schoener Tag"));
+    VERIFY(table.Size() == 0);
+    VERIFY(table.IsEmpty());
+    VERIFY(table.Capacity() == capacity);
+    VERIFY(!table.Contains("Ein schoener Tag"));
 
     // populate the hash table
     IndexT i;
@@ -42,36 +42,36 @@ HashTableTest::Run()
     {
         table.Add(titles[i], i);
     }
-    this->Verify(!table.IsEmpty());
-    this->Verify(table.Size() == titles.Size());
+    VERIFY(!table.IsEmpty());
+    VERIFY(table.Size() == titles.Size());
     for (i = 0; i < num; i++)
     {
-        this->Verify(table.Contains(titles[i]));
-        this->Verify(table[titles[i]] == i);
+        VERIFY(table.Contains(titles[i]));
+        VERIFY(table[titles[i]] == i);
     }
 
     // check copy constructor
     HashTable<String, IndexT> copy = table;
     for (i = 0; i < num; i++)
     {
-        this->Verify(copy.Contains(titles[i]));
-        this->Verify(copy[titles[i]] == i);
+        VERIFY(copy.Contains(titles[i]));
+        VERIFY(copy[titles[i]] == i);
     }
 
     // check erasing
     table.Erase(titles[1]);
-    this->Verify(table.Size() == (titles.Size() - 1));
-    this->Verify(table.Contains(titles[0]));
-    this->Verify(table.Contains(titles[2]));
-    this->Verify(table.Contains(titles[3]));
-    this->Verify(table.Contains(titles[4]));
-    this->Verify(table.Contains(titles[5]));
-    this->Verify(!table.Contains(titles[1]));
+    VERIFY(table.Size() == (titles.Size() - 1));
+    VERIFY(table.Contains(titles[0]));
+    VERIFY(table.Contains(titles[2]));
+    VERIFY(table.Contains(titles[3]));
+    VERIFY(table.Contains(titles[4]));
+    VERIFY(table.Contains(titles[5]));
+    VERIFY(!table.Contains(titles[1]));
 
     // check clearing
     table.Clear();
-    this->Verify(table.Size() == 0);
-    this->Verify(table.IsEmpty());
+    VERIFY(table.Size() == 0);
+    VERIFY(table.IsEmpty());
 }
 
 };

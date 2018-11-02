@@ -54,10 +54,10 @@ DelegateTableTest::Run()
     Ptr<IO::DeleteDirectory> delDirMsg = IO::DeleteDirectory::Create();
     Ptr<IO::MountArchive> mntZipMsg = IO::MountArchive::Create();
 
-    this->Verify(delTable.Invoke(copyFileMsg.cast<Message>()));
-    this->Verify(delTable.Invoke(createDirMsg.cast<Message>()));
-    this->Verify(delTable.Invoke(delDirMsg.cast<Message>()));
-    this->Verify(!delTable.Invoke(mntZipMsg.cast<Message>()));
+    VERIFY(delTable.Invoke(copyFileMsg.cast<Message>()));
+    VERIFY(delTable.Invoke(createDirMsg.cast<Message>()));
+    VERIFY(delTable.Invoke(delDirMsg.cast<Message>()));
+    VERIFY(!delTable.Invoke(mntZipMsg.cast<Message>()));
 }    
 
 } // namespace Test

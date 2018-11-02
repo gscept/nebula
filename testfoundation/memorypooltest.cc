@@ -24,8 +24,8 @@ MemoryPoolTest::Run()
     const SizeT numBlocks = 4;
     MemoryPool memPool("TestPool", blockSize, numBlocks);
 
-    this->Verify(Util::String("TestPool") == memPool.GetName());
-    this->Verify(memPool.GetBlockSize() == blockSize);
+    VERIFY(Util::String("TestPool") == memPool.GetName());
+    VERIFY(memPool.GetBlockSize() == blockSize);
 
     // do some allocations
     void* ptr[numBlocks] = { 0 };

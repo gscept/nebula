@@ -35,8 +35,8 @@ XmlReaderWriterTest::Run()
 
     // write some stuff to the file
     stream->SetAccessMode(Stream::WriteAccess);
-    this->Verify(stream->Open());
-    this->Verify(writer->Open());
+    VERIFY(stream->Open());
+    VERIFY(writer->Open());
     writer->BeginNode("RootNode");
     writer->SetString("rootString", "Bla");
     writer->SetInt("rootInt", 123);
@@ -67,35 +67,35 @@ XmlReaderWriterTest::Run()
 
     // read the just written file with a stream reader and verify its contents
     stream->SetAccessMode(Stream::ReadAccess);
-    this->Verify(stream->Open());
-    this->Verify(reader->Open());
-    this->Verify(reader->GetCurrentNodeName() == "RootNode");
-    this->Verify(reader->HasNode("/RootNode/Node0"));
-    this->Verify(reader->HasNode("Node1"));
-    this->Verify(reader->HasNode("/RootNode/Node2"));
-    this->Verify(reader->HasNode("/RootNode/Node3"));
+    VERIFY(stream->Open());
+    VERIFY(reader->Open());
+    VERIFY(reader->GetCurrentNodeName() == "RootNode");
+    VERIFY(reader->HasNode("/RootNode/Node0"));
+    VERIFY(reader->HasNode("Node1"));
+    VERIFY(reader->HasNode("/RootNode/Node2"));
+    VERIFY(reader->HasNode("/RootNode/Node3"));
     
-    this->Verify(reader->SetToFirstChild());
-    this->Verify(reader->GetCurrentNodeName() == "Node0");
-    this->Verify(reader->HasAttr("attr0"));
-    this->Verify(reader->HasAttr("attr1"));
-    this->Verify(!reader->HasAttr("bla"));
-    this->Verify(reader->GetBool("attr0") == false);
-    this->Verify(reader->GetBool("attr1") == true);
+    VERIFY(reader->SetToFirstChild());
+    VERIFY(reader->GetCurrentNodeName() == "Node0");
+    VERIFY(reader->HasAttr("attr0"));
+    VERIFY(reader->HasAttr("attr1"));
+    VERIFY(!reader->HasAttr("bla"));
+    VERIFY(reader->GetBool("attr0") == false);
+    VERIFY(reader->GetBool("attr1") == true);
 
-    this->Verify(reader->SetToNextChild());
-    this->Verify(reader->GetCurrentNodePath() == "/RootNode/Node1");
-    this->Verify(reader->HasAttr("attr"));
-    this->Verify(reader->GetFloat("attr") == 123.4f);
+    VERIFY(reader->SetToNextChild());
+    VERIFY(reader->GetCurrentNodePath() == "/RootNode/Node1");
+    VERIFY(reader->HasAttr("attr"));
+    VERIFY(reader->GetFloat("attr") == 123.4f);
 
     reader->SetToNode("/RootNode/Node2");
-    this->Verify(reader->GetCurrentNodeName() == "Node2");
-    this->Verify(reader->HasAttr("attr1"));
-    this->Verify(reader->GetFloat4("attr1") == float4(4.0f, 5.0f, 6.0f, 7.0f));
+    VERIFY(reader->GetCurrentNodeName() == "Node2");
+    VERIFY(reader->HasAttr("attr1"));
+    VERIFY(reader->GetFloat4("attr1") == float4(4.0f, 5.0f, 6.0f, 7.0f));
 
-    this->Verify(reader->SetToNextChild());
-    this->Verify(reader->HasAttr("attr"));
-    this->Verify(!reader->SetToNextChild());
+    VERIFY(reader->SetToNextChild());
+    VERIFY(reader->HasAttr("attr"));
+    VERIFY(!reader->SetToNextChild());
 
     reader->Close();
     stream->Close();

@@ -16,7 +16,7 @@ ImplementNebulaApplication();
 void
 NebulaMain(const Util::CommandLineArgs& args)
 {
-	// create Nebula3 runtime
+	// create Nebula runtime
 	Ptr<CoreServer> coreServer = CoreServer::Create();
 	coreServer->SetAppName(Util::StringAtom("Nebula Render Tests"));
 	coreServer->Open();

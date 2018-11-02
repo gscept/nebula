@@ -26,9 +26,7 @@ ComponentSystemTest::Run()
 	Ptr<EntityManager> eMgr = EntityManager::Instance();
 	Ptr<ComponentManager> cMgr = ComponentManager::Instance();
 
-	Ptr<TransformComponent> tComp = TransformComponent::Create();
-
-	cMgr->RegisterComponent(tComp);
+	Ptr<TransformComponent> tComp = cMgr->GetComponent<TransformComponent>();
 
 	Util::Array<Entity> entities;
 
@@ -68,11 +66,11 @@ ComponentSystemTest::Run()
 		eMgr->DeleteEntity(entities[i]);
 	}
 
-	tComp->DeregisterAll();
+	tComp->DestroyAll();
 	tComp->CleanData();
 
 	// Went through with no bugs, hurray!!
-	this->Verify(true);
+	VERIFY(true);
 }
 
 } // namespace Test

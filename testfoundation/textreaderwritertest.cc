@@ -34,8 +34,8 @@ TextReaderWriterTest::Run()
 
     // write some stuff to the stream
     stream->SetAccessMode(Stream::WriteAccess);
-    this->Verify(stream->Open());
-    this->Verify(writer->Open());
+    VERIFY(stream->Open());
+    VERIFY(writer->Open());
     writer->WriteChar('A');
     writer->WriteChar('B');
     writer->WriteChar('C');
@@ -55,22 +55,22 @@ TextReaderWriterTest::Run()
 
     // read back stuff...
     stream->SetAccessMode(Stream::ReadAccess);
-    this->Verify(stream->Open());
-    this->Verify(reader->Open());
+    VERIFY(stream->Open());
+    VERIFY(reader->Open());
     lines = reader->ReadAllLines();
     reader->Close();
     stream->Close();
 
     // verify result...
-    this->Verify(lines.Size() == 8);
-    this->Verify(lines[0] == "ABC abc");
-    this->Verify(lines[1] == "The first line.");
-    this->Verify(lines[2] == "The second line, this is a verrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrryyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooong line!");
-    this->Verify(lines[3] == "The first array line.");
-    this->Verify(lines[4] == "The second array line.");
-    this->Verify(lines[5] == "The third array line.");
-    this->Verify(lines[6] == "This is the last line.");
-    this->Verify(lines[7] == "Something without a newline at the end...");
+    VERIFY(lines.Size() == 8);
+    VERIFY(lines[0] == "ABC abc");
+    VERIFY(lines[1] == "The first line.");
+    VERIFY(lines[2] == "The second line, this is a verrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrryyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooong line!");
+    VERIFY(lines[3] == "The first array line.");
+    VERIFY(lines[4] == "The second array line.");
+    VERIFY(lines[5] == "The third array line.");
+    VERIFY(lines[6] == "This is the last line.");
+    VERIFY(lines[7] == "Something without a newline at the end...");
 }
 
 }; // namespace Test

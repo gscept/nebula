@@ -23,27 +23,27 @@ GuidTest::Run()
     Guid guid;
     
     // test generation, assignment, conversion from and to string, equality
-    this->Verify(!guid.IsValid());
+    VERIFY(!guid.IsValid());
     guid.Generate();
-    this->Verify(guid.IsValid());
+    VERIFY(guid.IsValid());
 
     Guid guid1 = guid;
-    this->Verify(guid1.IsValid());
-    this->Verify(guid == guid1);
+    VERIFY(guid1.IsValid());
+    VERIFY(guid == guid1);
     
     Guid guid2;
     guid2.Generate();
-    this->Verify(guid2 != guid);
-    this->Verify(guid2 != guid1);
+    VERIFY(guid2 != guid);
+    VERIFY(guid2 != guid1);
 
     String guidStr = guid.AsString();
     String guid1Str = guid1.AsString();
     String guid2Str = guid2.AsString();
-    this->Verify(guidStr == guid1Str);
-    this->Verify(guidStr != guid2Str);
+    VERIFY(guidStr == guid1Str);
+    VERIFY(guidStr != guid2Str);
 
     guid2 = guid1Str;
-    this->Verify(guid1 == guid2);
+    VERIFY(guid1 == guid2);
 
     // test hash code functionality
     Guid guids[5];
@@ -58,11 +58,11 @@ GuidTest::Run()
     hashTable.Add(guids[2], "Guid2");
     hashTable.Add(guids[3], "Guid3");
     hashTable.Add(guids[4], "Guid4");
-    this->Verify(hashTable[guids[0]] == "Guid0");
-    this->Verify(hashTable[guids[1]] == "Guid1");
-    this->Verify(hashTable[guids[2]] == "Guid2");
-    this->Verify(hashTable[guids[3]] == "Guid3");
-    this->Verify(hashTable[guids[4]] == "Guid4");
+    VERIFY(hashTable[guids[0]] == "Guid0");
+    VERIFY(hashTable[guids[1]] == "Guid1");
+    VERIFY(hashTable[guids[2]] == "Guid2");
+    VERIFY(hashTable[guids[3]] == "Guid3");
+    VERIFY(hashTable[guids[4]] == "Guid4");
 #endif
 }
 

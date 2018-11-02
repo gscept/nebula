@@ -39,8 +39,8 @@ IOInterfaceTest::Run()
     {
         ioServer->DeleteFile(copyUri);
     }
-    this->Verify(!ioServer->FileExists(uri));
-    this->Verify(!ioServer->FileExists(copyUri));
+    VERIFY(!ioServer->FileExists(uri));
+    VERIFY(!ioServer->FileExists(copyUri));
 
     // write a large file (100 MB)
     n_printf("Writing large file...\n");
@@ -66,8 +66,8 @@ IOInterfaceTest::Run()
         counter++;
     }
     n_printf("File written, idle counter: %d\n", counter);
-    this->Verify(writeStreamMsg->Handled());
-    this->Verify(ioServer->FileExists(uri));
+    VERIFY(writeStreamMsg->Handled());
+    VERIFY(ioServer->FileExists(uri));
 
     // read back the written data into a new stream
     Ptr<MemoryStream> readStream = MemoryStream::Create();
@@ -83,8 +83,8 @@ IOInterfaceTest::Run()
         counter++;
     }
     n_printf("File read, idle counter: %d\n", counter);
-    this->Verify(readStreamMsg->Handled());
-    this->Verify(readStream->GetSize() == fileSize);
+    VERIFY(readStreamMsg->Handled());
+    VERIFY(readStream->GetSize() == fileSize);
 
     // asynchronously copy the file
     Ptr<CopyFile> copyMsg = CopyFile::Create();
@@ -99,8 +99,8 @@ IOInterfaceTest::Run()
         counter++;
     }
     n_printf("File copied, idle counter: %d\n", counter);
-    this->Verify(copyMsg->Handled());
-    this->Verify(ioServer->FileExists(copyUri));
+    VERIFY(copyMsg->Handled());
+    VERIFY(ioServer->FileExists(copyUri));
 
     // asynchronously delete the files
     Ptr<DeleteFile> delMsg0 = DeleteFile::Create();
@@ -117,10 +117,10 @@ IOInterfaceTest::Run()
         counter++;
     }
     n_printf("2 Files deleted, idle counter: %d\n", counter);
-    this->Verify(delMsg0->Handled());
-    this->Verify(delMsg1->Handled());
-    this->Verify(!ioServer->FileExists(uri));
-    this->Verify(!ioServer->FileExists(copyUri));
+    VERIFY(delMsg0->Handled());
+    VERIFY(delMsg1->Handled());
+    VERIFY(!ioServer->FileExists(uri));
+    VERIFY(!ioServer->FileExists(copyUri));
     #endif
 
     iface->Close();

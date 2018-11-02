@@ -23,20 +23,20 @@ MediaTypeTest::Run()
     MediaType m1("text", "html");
     MediaType m2 = m0;
 
-    this->Verify(m0.GetType() == "text");
-    this->Verify(m0.GetSubType() == "plain");
-    this->Verify(m0.AsString() == "text/plain");
+    VERIFY(m0.GetType() == "text");
+    VERIFY(m0.GetSubType() == "plain");
+    VERIFY(m0.AsString() == "text/plain");
 
-    this->Verify(m1.GetType() == "text");
-    this->Verify(m1.GetSubType() == "html");
-    this->Verify(m1.AsString() == "text/html");
+    VERIFY(m1.GetType() == "text");
+    VERIFY(m1.GetSubType() == "html");
+    VERIFY(m1.AsString() == "text/html");
 
-    this->Verify(m2.GetType() == "text");
-    this->Verify(m2.GetSubType() == "plain");
-    this->Verify(m2.AsString() == "text/plain");
+    VERIFY(m2.GetType() == "text");
+    VERIFY(m2.GetSubType() == "plain");
+    VERIFY(m2.AsString() == "text/plain");
 
-    this->Verify(m0 == m2);
-    this->Verify(m0 != m1);
+    VERIFY(m0 == m2);
+    VERIFY(m0 != m1);
 }
 
 }
