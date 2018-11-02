@@ -122,10 +122,7 @@ GraphicsServer::Close()
 	n_assert(this->isOpen);
 	this->visServer = nullptr;
 	
-	this->isOpen = false;
-
-	this->debugHandler->Close();
-	this->debugHandler = nullptr;
+	this->isOpen = false;	
 
 	this->textRenderer->Close();
 	this->textRenderer = nullptr;
@@ -153,6 +150,8 @@ GraphicsServer::Close()
 
 	if (this->graphicsDevice) CoreGraphics::DestroyGraphicsDevice();
 
+    this->debugHandler->Close();
+    this->debugHandler = nullptr;
 	// clear transforms pool
 }
 

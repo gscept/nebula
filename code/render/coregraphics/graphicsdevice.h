@@ -13,6 +13,7 @@
 #include "indexbuffer.h"
 #include "imagefileformat.h"
 #include "io/stream.h"
+#include "fence.h"
 #include "debug/debugcounter.h"
 #include "coregraphics/rendereventhandler.h"
 
@@ -95,15 +96,22 @@ void SetResourceTablePipeline(const CoreGraphics::ResourcePipelineId layout);
 /// push constants
 void PushConstants(ShaderPipeline pipeline, uint offset, uint size, byte* data);
 
-
 /// insert execution barrier
 void InsertBarrier(const CoreGraphics::BarrierId barrier, const CoreGraphicsQueueType queue);
 /// signals an event
-void SignalEvent(const CoreGraphics::EventId& ev, const CoreGraphicsQueueType queue);
+void SignalEvent(const CoreGraphics::EventId ev, const CoreGraphicsQueueType queue);
 /// signals an event
-void WaitEvent(const CoreGraphics::EventId& ev, const CoreGraphicsQueueType queue);
+void WaitEvent(const CoreGraphics::EventId ev, const CoreGraphicsQueueType queue);
 /// signals an event
-void ResetEvent(const CoreGraphics::EventId& ev, const CoreGraphicsQueueType queue);
+void ResetEvent(const CoreGraphics::EventId ev, const CoreGraphicsQueueType queue);
+/// insert a fence to be signaled in the selected queue
+void SignalFence(const CoreGraphics::FenceId fe, const CoreGraphicsQueueType queue);
+/// peek fence, returns true if fence is signaled
+bool PeekFence(const CoreGraphics::FenceId fe);
+/// reset fence
+void ResetFence(const CoreGraphics::FenceId fe);
+/// wait for a fence indefinitely (using UINT_MAX) or with a timeout, returns bool if fence was encountered
+bool WaitFence(const CoreGraphics::FenceId fe, uint64 wait);
 /// draw current primitives
 void Draw();
 /// draw indexed, instanced primitives

@@ -16,16 +16,13 @@
 namespace Vulkan
 {
 
-
-
-
 /// create descriptor set layout
 void VkShaderSetup(
 	VkDevice dev,
 	const Util::StringAtom& name,
 	const VkPhysicalDeviceProperties props,
 	AnyFX::ShaderEffect* effect,
-	VkPushConstantRange& constantRange,
+	Util::FixedArray<CoreGraphics::ResourcePipelinePushConstantRange>& constantRange,
 	Util::Array<CoreGraphics::SamplerId>& immutableSamplers,
 	Util::FixedArray<std::pair<uint32_t, CoreGraphics::ResourceTableLayoutId>>& setLayouts,
 	Util::Dictionary<uint32_t, uint32_t>& setLayoutMap,

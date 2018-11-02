@@ -1,4 +1,4 @@
-# FIXME this should be split into seperate modules later on
+# gltf module
 
 fips_begin_module(gltf)
 fips_include_directories(${CODE_ROOT}/foundation)

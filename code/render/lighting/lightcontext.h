@@ -29,7 +29,7 @@ public:
 	virtual ~LightContext();
 
 	/// setup entity as global light
-	static void SetupGlobalLight(const Graphics::GraphicsEntityId id, const Math::float4& color, const float intensity, bool castShadows);
+	static void SetupGlobalLight(const Graphics::GraphicsEntityId id, const Math::float4& color, const float intensity, const Math::float4& direction, bool castShadows);
 	/// setup entity as point light source
 	static void SetupPointLight(const Graphics::GraphicsEntityId id, const Math::float4& color, const float intensity, bool castShadows);
 	/// setup entity as spot light
@@ -67,8 +67,9 @@ private:
 	> GenericLightAllocator;
 	static GenericLightAllocator genericLightAllocator;
 
-	Util::HashTable<const Graphics::GraphicsEntityId, Ids::Id32> pointLightMapping;
-	Util::HashTable<const Graphics::GraphicsEntityId, Ids::Id32> spotLightMapping;
+	static Util::HashTable<Graphics::GraphicsEntityId, Ids::Id32> pointLightMapping;
+	static Util::HashTable<Graphics::GraphicsEntityId, Ids::Id32> spotLightMapping;
+	static Util::HashTable<Graphics::GraphicsEntityId, Ids::Id32> globalLightMapping;
 
 	enum
 	{
@@ -93,6 +94,15 @@ private:
 		float						// cone angle
 	> SpotLightAllocator;
 	static SpotLightAllocator spotLightAllocator;
+
+	enum
+	{
+		GlobalLightDirection
+	};
+	typedef Ids::IdAllocator<
+		Math::float4			// direction
+	> GlobalLightAllocator;
+	static GlobalLightAllocator globalLightAllocator;
 
 	/// allocate a new slice for this context
 	static Graphics::ContextEntityId Alloc();
