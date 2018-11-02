@@ -20,6 +20,9 @@ class AttributeDefinition : public AttributeDefinitionBase
 public:
     /// constructor
     AttributeDefinition(const Util::String& n, const Util::FourCC& fourCC, AccessMode am, TYPE defVal);
+	
+	/// Inner type
+	using AttrDeclType = typename TYPE;
 };
 
 //------------------------------------------------------------------------------

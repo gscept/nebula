@@ -407,6 +407,10 @@ public:
     /// get blob array content
     const Util::Array<Util::Blob>& GetBlobArray() const;
 
+	/// Templated get method.
+	template <typename TYPE>
+	const TYPE& Get() const;
+
     /// convert value to string
     Util::String ToString() const;
     /// set value from string, if type doesn't match, returns false
@@ -2798,6 +2802,276 @@ Variant::GetBlobArray() const
 {
     n_assert(BlobArray == this->type);
     return *(this->blobArray);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <typename TYPE>
+inline const TYPE&
+Variant::Get() const
+{
+	static_assert("Get method for TYPE is not implemented!");
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline const byte&
+Variant::Get() const
+{
+	return this->GetByte();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline const short&
+Variant::Get() const
+{
+	return this->GetShort();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline const int&
+Variant::Get() const
+{
+	return this->GetInt();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline const uint&
+Variant::Get() const
+{
+	return this->GetUInt();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline const int64_t&
+Variant::Get() const
+{
+	return this->GetInt64();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline const uint64_t&
+Variant::Get() const
+{
+	return this->GetUInt64();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline const bool&
+Variant::Get() const
+{
+	return this->GetBool();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline const double&
+Variant::Get() const
+{
+	return this->GetDouble();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline const float&
+Variant::Get() const
+{
+	return this->GetFloat();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline const Math::float2&
+Variant::Get() const
+{
+	return this->GetFloat2();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline const Math::float4&
+Variant::Get() const
+{
+	return this->GetFloat4();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline const Math::quaternion&
+Variant::Get() const
+{
+	return this->GetQuaternion();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline const Math::matrix44&
+Variant::Get() const
+{
+	return this->GetMatrix44();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline const Math::transform44&
+Variant::Get() const
+{
+	return this->GetTransform44();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline const Util::String&
+Variant::Get() const
+{
+	return this->GetString();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline const Util::Guid&
+Variant::Get() const
+{
+	return this->GetGuid();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline const Util::Blob&
+Variant::Get() const
+{
+	return this->GetBlob();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline const Util::Array<int>&
+Variant::Get() const
+{
+	return this->GetIntArray();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline const Util::Array<float>&
+Variant::Get() const
+{
+	return this->GetFloatArray();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline const Util::Array<bool>&
+Variant::Get() const
+{
+	return this->GetBoolArray();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline const Util::Array<Math::float2>&
+Variant::Get() const
+{
+	return this->GetFloat2Array();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline const Util::Array<Math::float4>&
+Variant::Get() const
+{
+	return this->GetFloat4Array();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline const Util::Array<Math::matrix44>&
+Variant::Get() const
+{
+	return this->GetMatrix44Array();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline const Util::Array<Util::String>&
+Variant::Get() const
+{
+	return this->GetStringArray();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline const Util::Array<Util::Guid>&
+Variant::Get() const
+{
+	return this->GetGuidArray();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline const Util::Array<Util::Blob>&
+Variant::Get() const
+{
+	return this->GetBlobArray();
 }
 
 //------------------------------------------------------------------------------
