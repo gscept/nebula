@@ -5,6 +5,7 @@
 #include "stdneb.h"
 #include "imguirenderer.h"
 #include "imgui.h"
+#include "graphics/graphicsserver.h"
 #include "resources/resourcemanager.h"
 #include "math/rectangle.h"
 #include "coregraphics/shaderserver.h"
@@ -18,12 +19,13 @@ using namespace Input;
 namespace Dynui
 {
 
+
 //------------------------------------------------------------------------------
 /**
 	Imgui rendering function
 */
 void
-ImguiDrawFunction(ImDrawData* data)
+ImguiContext::ImguiDrawFunction(ImDrawData* data)
 {
 	// get Imgui context
 	ImGuiIO& io = ImGui::GetIO();
@@ -31,27 +33,26 @@ ImguiDrawFunction(ImDrawData* data)
 	int fb_height = (int)(io.DisplaySize.y * io.DisplayFramebufferScale.y);
 	data->ScaleClipRects(io.DisplayFramebufferScale);
 
-	// get renderer
-	const Ptr<ImguiRenderer>& renderer = ImguiRenderer::Instance();
+	// get renderer	
 	//const Ptr<BufferLock>& vboLock = renderer->GetVertexBufferLock();
 	//const Ptr<BufferLock>& iboLock = renderer->GetIndexBufferLock();
-	VertexBufferId vbo = renderer->vbo;
-	IndexBufferId ibo = renderer->ibo;
-	const ImguiRendererParams& params = renderer->params;
+	VertexBufferId vbo = state.vbo;
+	IndexBufferId ibo = state.ibo;
+	const ImguiRendererParams& params = state.params;
 
 	// apply shader
-	CoreGraphics::SetShaderProgram(renderer->prog);
+	CoreGraphics::SetShaderProgram(state.prog);
 
 	// create orthogonal matrix
 	matrix44 proj = matrix44::orthooffcenterrh(0.0f, io.DisplaySize.x, io.DisplaySize.y, 0.0f, -1.0f, +1.0f);
 
 	// set projection
-	CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, renderer->textProjectionConstant.offset, sizeof(proj), (byte*)&proj);
+	CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, state.textProjectionConstant.offset, sizeof(proj), (byte*)&proj);
 
 	// setup device
-	CoreGraphics::SetStreamVertexBuffer(0, renderer->vbo, 0);
-	CoreGraphics::SetVertexLayout(CoreGraphics::VertexBufferGetLayout(renderer->vbo));
-	CoreGraphics::SetIndexBuffer(renderer->ibo, 0);
+	CoreGraphics::SetStreamVertexBuffer(0, state.vbo, 0);
+	CoreGraphics::SetVertexLayout(CoreGraphics::VertexBufferGetLayout(state.vbo));
+	CoreGraphics::SetIndexBuffer(state.ibo, 0);
 
 	IndexT vertexOffset = 0;
 	IndexT indexOffset = 0;
@@ -68,12 +69,12 @@ ImguiDrawFunction(ImDrawData* data)
 		const SizeT indexBufferSize = commandList->IdxBuffer.size() * sizeof(ImDrawIdx);					// using 16 bit indices
 
 		// if we render too many vertices, we will simply assert
-		n_assert(vertexBufferOffset + (IndexT)commandList->VtxBuffer.size() < CoreGraphics::VertexBufferGetNumVertices(renderer->vbo));
-		n_assert(indexBufferOffset + (IndexT)commandList->IdxBuffer.size() < CoreGraphics::IndexBufferGetNumIndices(renderer->ibo));
+		n_assert(vertexBufferOffset + (IndexT)commandList->VtxBuffer.size() < CoreGraphics::VertexBufferGetNumVertices(state.vbo));
+		n_assert(indexBufferOffset + (IndexT)commandList->IdxBuffer.size() < CoreGraphics::IndexBufferGetNumIndices(state.ibo));
 
 		// wait for previous draws to finish...
-		memcpy(renderer->vertexPtr + vertexBufferOffset, vertexBuffer, vertexBufferSize);
-		memcpy(renderer->indexPtr + indexBufferOffset, indexBuffer, indexBufferSize);
+		memcpy(state.vertexPtr + vertexBufferOffset, vertexBuffer, vertexBufferSize);
+		memcpy(state.indexPtr + indexBufferOffset, indexBuffer, indexBufferSize);
 		IndexT j;
 		IndexT primitiveIndexOffset = 0;
 		for (j = 0; j < commandList->CmdBuffer.size(); j++)
@@ -90,7 +91,7 @@ ImguiDrawFunction(ImDrawData* data)
 				CoreGraphics::SetScissorRect(scissorRect, 0);
 
 				// set texture in shader, we shouldn't have to put it into ImGui
-				CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, renderer->textureConstant.offset, sizeof(CoreGraphics::TextureId), (byte*)&command->TextureId);
+				CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, state.textureConstant.offset, sizeof(CoreGraphics::TextureId), (byte*)&command->TextureId);
 
 				// setup primitive
 				CoreGraphics::PrimitiveGroup primitive;
@@ -119,39 +120,42 @@ ImguiDrawFunction(ImDrawData* data)
 	}
 }
 
-__ImplementClass(Dynui::ImguiRenderer, 'IMRE', Core::RefCounted);
-__ImplementSingleton(Dynui::ImguiRenderer);
-
+_ImplementContext(ImguiContext);
+Dynui::ImguiContext::ImguiState Dynui::ImguiContext::state;
 //------------------------------------------------------------------------------
 /**
 */
-ImguiRenderer::ImguiRenderer()
+ImguiContext::ImguiContext()
 {
-	__ConstructSingleton;
+	//empty;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-ImguiRenderer::~ImguiRenderer()
+ImguiContext::~ImguiContext()
 {
-	__DestructSingleton
+   
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-ImguiRenderer::Setup()
+ImguiContext::Create()
 {
-	// allocate imgui shader
-	this->uiShader = ShaderServer::Instance()->GetShader("shd:imgui");
-	this->params.projVar = CoreGraphics::ShaderGetConstantBinding(this->uiShader,"TextProjectionModel");
-	this->params.fontVar = CoreGraphics::ShaderGetConstantBinding(this->uiShader, "Texture");
-	this->prog = CoreGraphics::ShaderGetProgram(this->uiShader, CoreGraphics::ShaderFeatureFromString("Static"));
+    __bundle.OnRenderAsPlugin = ImguiContext::OnRenderAsPlugin;
+    __bundle.OnBeforeFrame = ImguiContext::OnBeforeFrame;
+    Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle);
 
-	this->textureConstant = CoreGraphics::ShaderGetConstantBinding(this->uiShader, "Texture");
-	this->textProjectionConstant = CoreGraphics::ShaderGetConstantBinding(this->uiShader, "TextProjectionModel");
+	// allocate imgui shader
+	state.uiShader = ShaderServer::Instance()->GetShader("shd:imgui");
+    state.params.projVar = CoreGraphics::ShaderGetConstantBinding(state.uiShader,"TextProjectionModel");
+    state.params.fontVar = CoreGraphics::ShaderGetConstantBinding(state.uiShader, "Texture");
+    state.prog = CoreGraphics::ShaderGetProgram(state.uiShader, CoreGraphics::ShaderFeatureFromString("Static"));
+
+	state.textureConstant = CoreGraphics::ShaderGetConstantBinding(state.uiShader, "Texture");
+	state.textProjectionConstant = CoreGraphics::ShaderGetConstantBinding(state.uiShader, "TextProjectionModel");
 
 	// create vertex buffer
 	Util::Array<CoreGraphics::VertexComponent> components;
@@ -171,7 +175,7 @@ ImguiRenderer::Setup()
 		nullptr,
 		0
 	};
-	this->vbo = CoreGraphics::CreateVertexBuffer(vboInfo);
+    state.vbo = CoreGraphics::CreateVertexBuffer(vboInfo);
 
 	CoreGraphics::IndexBufferCreateInfo iboInfo = 
 	{
@@ -185,11 +189,11 @@ ImguiRenderer::Setup()
 		nullptr,
 		0
 	};
-	this->ibo = CoreGraphics::CreateIndexBuffer(iboInfo);
+    state.ibo = CoreGraphics::CreateIndexBuffer(iboInfo);
 
 	// map buffer
-	this->vertexPtr = (byte*)CoreGraphics::VertexBufferMap(this->vbo, CoreGraphics::GpuBufferTypes::MapWrite);
-	this->indexPtr = (byte*)CoreGraphics::IndexBufferMap(this->ibo, CoreGraphics::GpuBufferTypes::MapWrite);
+    state.vertexPtr = (byte*)CoreGraphics::VertexBufferMap(state.vbo, CoreGraphics::GpuBufferTypes::MapWrite);
+    state.indexPtr = (byte*)CoreGraphics::IndexBufferMap(state.ibo, CoreGraphics::GpuBufferTypes::MapWrite);
 
 	// get display mode, this will be our default size
 	Ptr<DisplayDevice> display = DisplayDevice::Instance();
@@ -302,43 +306,33 @@ ImguiRenderer::Setup()
 		CoreGraphics::PixelFormat::R8G8B8A8,
 		width, height, 1
 	};
-	this->fontTexture = CoreGraphics::CreateTexture(texInfo);
-	io.Fonts->TexID = &this->fontTexture;
+    state.fontTexture = CoreGraphics::CreateTexture(texInfo);
+	io.Fonts->TexID = &state.fontTexture;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-ImguiRenderer::Discard()
+ImguiContext::Discard()
 {
-	CoreGraphics::VertexBufferUnmap(this->vbo);
-	CoreGraphics::IndexBufferUnmap(this->ibo);
+	CoreGraphics::VertexBufferUnmap(state.vbo);
+	CoreGraphics::IndexBufferUnmap(state.ibo);
 
-	CoreGraphics::DestroyVertexBuffer(this->vbo);
-	CoreGraphics::DestroyIndexBuffer(this->ibo);
-	this->vertexPtr = nullptr;
-	this->indexPtr = nullptr;
+	CoreGraphics::DestroyVertexBuffer(state.vbo);
+	CoreGraphics::DestroyIndexBuffer(state.ibo);
+    state.vertexPtr = nullptr;
+    state.indexPtr = nullptr;
 
-	CoreGraphics::DestroyTexture(this->fontTexture);
+	CoreGraphics::DestroyTexture(state.fontTexture);
 	ImGui::Shutdown();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-void
-ImguiRenderer::Render()
-{
-	// render ImGui
-	ImGui::Render();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 bool
-ImguiRenderer::HandleInput(const Input::InputEvent& event)
+ImguiContext::HandleInput(const Input::InputEvent& event)
 {
 	ImGuiIO& io = ImGui::GetIO();
 	switch (event.GetType())
@@ -388,14 +382,25 @@ ImguiRenderer::HandleInput(const Input::InputEvent& event)
 	return false;
 }
 
+void ImguiContext::OnRenderAsPlugin(const IndexT frameIndex, const Timing::Time frameTime, const Util::StringAtom & filter)
+{
+    //FIME filter
+    ImGui::Render();
+}
+
 //------------------------------------------------------------------------------
 /**
 */
 void
-ImguiRenderer::SetRectSize(SizeT width, SizeT height)
+ImguiContext::OnWindowResized(IndexT windowId, SizeT width, SizeT height)
 {
 	ImGuiIO& io = ImGui::GetIO();
 	io.DisplaySize = ImVec2((float)width, (float)height);
+}
+
+void ImguiContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime)
+{
+    ImGui::NewFrame();
 }
 
 } // namespace Dynui
