@@ -14,7 +14,7 @@ namespace Graphics
 
 class CameraContext : public Graphics::GraphicsContext
 {
-	DeclareContext();
+	_DeclareContext();
 public:
 
 	/// constructor

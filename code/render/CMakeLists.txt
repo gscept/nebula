@@ -615,19 +615,7 @@ ENDIF()
 			particlesystemstate.h
 		)
 
-	fips_dir(rendermodules/rt GROUP "rendermodules/rt")
-		fips_files(
-			rtplugin.cc
-			rtplugin.h
-			rtpluginregistry.cc
-			rtpluginregistry.h
-		)
-	fips_dir(rendermodules)
-		fips_files(
-			rendermodule.cc
-			rendermodule.h
-		)
-IF(FALSE)
+	IF(FALSE)
 		fips_dir(picking)
 			fips_files(
 				pickingserver.cc

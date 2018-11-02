@@ -31,7 +31,7 @@ Threading::SafeQueue<Jobs::JobId> ObserverContext::runningJobs;
 
 extern void VisibilitySortJob(const Jobs::JobFuncContext& ctx);
 
-ImplementContext(ObserverContext);
+_ImplementContext(ObserverContext);
 //------------------------------------------------------------------------------
 /**
 */
@@ -252,7 +252,7 @@ ObserverContext::Create()
 	};
 	ObserverContext::jobPort = Jobs::CreateJobPort(info);
 
-	CreateContext();
+	_CreateContext();
 }
 
 //------------------------------------------------------------------------------
@@ -365,7 +365,7 @@ ObserverContext::Dealloc(Graphics::ContextEntityId id)
 }
 
 
-ImplementContext(ObservableContext);
+_ImplementContext(ObservableContext);
 //------------------------------------------------------------------------------
 /**
 */
@@ -394,7 +394,7 @@ ObservableContext::Setup(const Graphics::GraphicsEntityId id, VisibilityEntityTy
 void 
 ObservableContext::Create()
 {
-	CreateContext();
+	_CreateContext();
 }
 
 //------------------------------------------------------------------------------

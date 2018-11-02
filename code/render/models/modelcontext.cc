@@ -14,7 +14,7 @@ using namespace Resources;
 namespace Models
 {
 
-ImplementContext(ModelContext);
+_ImplementContext(ModelContext);
 ModelContext::ModelContextAllocator ModelContext::modelContextAllocator;
 //------------------------------------------------------------------------------
 /**
@@ -45,7 +45,7 @@ ModelContext::Create()
 	__bundle.OnAfterFrame = ModelContext::OnAfterFrame;
 	Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle);
 
-	CreateContext();
+	_CreateContext();
 }
 
 //------------------------------------------------------------------------------

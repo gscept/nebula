@@ -15,6 +15,8 @@
 #include "coregraphics/vertexbuffer.h"
 #include "coregraphics/indexbuffer.h"
 #include "input/inputevent.h"
+#include "graphics/graphicscontext.h"
+
 
 struct ImDrawData;
 namespace Dynui
@@ -27,46 +29,52 @@ struct ImguiRendererParams
 	CoreGraphics::ConstantBinding fontVar;
 };
 
-class ImguiRenderer : public Core::RefCounted
+class ImguiContext : public Graphics::GraphicsContext
 {
-	__DeclareClass(ImguiRenderer);
-	__DeclareSingleton(ImguiRenderer);
+    _DeclareContext();
 public:
 	/// constructor
-	ImguiRenderer();
+    ImguiContext();
 	/// destructor
-	virtual ~ImguiRenderer();
+	virtual ~ImguiContext();
+
+    static void Create();
+    static void Discard();
 
 	/// set the screen dimensions to use when rendering the UI (all vertices will be mapped to these values)
-	void SetRectSize(SizeT width, SizeT height);
+	static void SetRectSize(SizeT width, SizeT height);
 	
-	/// setup the imgui renderer, call SetRectSize prior to this
-	void Setup();
-	/// discard imgui renderer
-	void Discard();
-	
-	/// render frame
-	void Render();
 	/// handle event
-	bool HandleInput(const Input::InputEvent& event);
+	static bool HandleInput(const Input::InputEvent& event);
+
+    /// called when rendering a frame batch
+    static void OnRenderAsPlugin(const IndexT frameIndex, const Timing::Time frameTime, const Util::StringAtom& filter);
+
+    /// called if the window size has changed
+    static void OnWindowResized(IndexT windowId, SizeT width, SizeT height);
+    /// called before frame
+    static void OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime);
 
 private:
 
-	friend void ImguiDrawFunction(ImDrawData* data);
+    static void ImguiDrawFunction(ImDrawData* data);
+    struct ImguiState
+    {
+        ImguiRendererParams params;
+        CoreGraphics::ShaderId uiShader;
+        CoreGraphics::ShaderProgramId prog;
+        CoreGraphics::TextureId fontTexture;
+        CoreGraphics::VertexBufferId vbo;
+        CoreGraphics::IndexBufferId ibo;
 
-	ImguiRendererParams params;
-    CoreGraphics::ShaderId uiShader;
-	CoreGraphics::ShaderProgramId prog;
-	CoreGraphics::TextureId fontTexture;
-	CoreGraphics::VertexBufferId vbo;
-	CoreGraphics::IndexBufferId ibo;
-
-	CoreGraphics::ConstantBinding textureConstant;
-	CoreGraphics::ConstantBinding textProjectionConstant;
-	//Ptr<CoreGraphics::BufferLock> vboBufferLock;
-	//Ptr<CoreGraphics::BufferLock> iboBufferLock;
-	byte* vertexPtr;
-	byte* indexPtr;
+        CoreGraphics::ConstantBinding textureConstant;
+        CoreGraphics::ConstantBinding textProjectionConstant;
+        //Ptr<CoreGraphics::BufferLock> vboBufferLock;
+        //Ptr<CoreGraphics::BufferLock> iboBufferLock;
+        byte* vertexPtr;
+        byte* indexPtr;
+    };
+    static ImguiState state;
 };
 
 } // namespace Dynui
