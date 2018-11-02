@@ -76,7 +76,7 @@ public:
     }};
 
     /// Registers an entity to this component.
-    void RegisterEntity(const Game::Entity& entity);
+    uint32_t RegisterEntity(const Game::Entity& entity);
 
     /// Deregister Entity.
     void DeregisterEntity(const Game::Entity& entity);
@@ -121,7 +121,7 @@ public:
     void Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances);
 
     /// Get the total number of instances of this component
-    uint32_t NumRegistered() const;
+    SizeT NumRegistered() const;
 
     /// Allocate multiple instances
     void Allocate(uint num);
@@ -249,7 +249,7 @@ private:
     #
     def WriteRegisterEntityImplementation(self):
         self.f.InsertNebulaDivider()
-        self.f.WriteLine("void")
+        self.f.WriteLine("uint32_t")
         self.f.WriteLine("{}::RegisterEntity(const Game::Entity& entity)".format(self.className))
         self.f.WriteLine("{")
         self.f.IncreaseIndent()
@@ -267,6 +267,7 @@ private:
             self.f.WriteLine("")
             self.f.WriteLine("this->OnActivate(instance);")
 
+        self.f.WriteLine("return instance;")
         self.f.DecreaseIndent()
         self.f.WriteLine("}")
         self.f.WriteLine("")
@@ -576,7 +577,7 @@ private:
     #
     def WriteAllocInstancesMethod(self):
         self.f.InsertNebulaDivider()
-        self.f.WriteLine("uint32_t")
+        self.f.WriteLine("SizeT")
         self.f.WriteLine("{}::NumRegistered() const".format(self.className))
         self.f.WriteLine("{")
         self.f.IncreaseIndent()
