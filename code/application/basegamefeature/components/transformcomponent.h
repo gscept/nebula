@@ -62,13 +62,13 @@ public:
 	// Generated -------------------------------------------
 
 	/// Registers an entity to this component. Entity is inactive to begin with.
-	void RegisterEntity(const Entity& entity);
+	uint32_t RegisterEntity(const Entity& entity);
 
 	/// Deregister Entity. This checks both active and inactive component instances.
 	void DeregisterEntity(const Entity& entity);
 
 	/// Amount of entities registered to this component
-	uint32_t NumRegistered() const;
+	SizeT NumRegistered() const;
 
 	/// Allocate multiple instances
 	void Allocate(uint numInstances);

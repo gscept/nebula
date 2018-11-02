@@ -4,11 +4,8 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "imguiaddon.h"
-#include "rendermodules/rt/rtpluginregistry.h"
 #include "input/inputserver.h"
-#include "imguirtplugin.h"
-#include "imgui/imgui.h"
-#include "framesync/framesynctimer.h"
+#include "imguirenderer.h"
 
 namespace Dynui
 {
@@ -36,8 +33,8 @@ ImguiAddon::~ImguiAddon()
 void
 ImguiAddon::Setup()
 {
-	// register render plugin
-	RenderModules::RTPluginRegistry::Instance()->RegisterRTPlugin(&ImguiRTPlugin::RTTI);
+	// register context
+    Dynui::ImguiContext::Create();
 
 	// create and register input handler
 	this->inputHandler = ImguiInputHandler::Create();
@@ -54,30 +51,7 @@ ImguiAddon::Discard()
 	Input::InputServer::Instance()->RemoveInputHandler(this->inputHandler.upcast<Input::InputHandler>());
 	this->inputHandler = nullptr;
 
-	// remove RT plugin
-	RenderModules::RTPluginRegistry::Instance()->UnregisterRTPlugin(&ImguiRTPlugin::RTTI);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-ImguiAddon::BeginFrame()
-{
-	// update frame time
-	Timing::Time frameTime = FrameSync::FrameSyncTimer::Instance()->GetFrameTime();
-	ImGui::GetIO().DeltaTime = (float)frameTime;
-
-	// start new frame
-	ImGui::NewFrame();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-ImguiAddon::EndFrame()
-{
+    Dynui::ImguiContext::Destroy();
 }
 
 } // namespace Dynui

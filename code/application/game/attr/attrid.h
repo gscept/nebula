@@ -78,6 +78,8 @@ public:
     const Util::Blob& GetBlobDefValue() const;
     /// get guid default value
     const Util::Guid& GetGuidDefValue() const;
+	/// get default value as a variant
+	const Util::Variant& GetDefaultValue() const;
 
     /// return all attribute id's (slow!)
     static Util::FixedArray<AttrId> GetAllAttrIds();
@@ -383,6 +385,17 @@ AttrId::GetGuidDefValue() const
 {
     n_assert(0 != this->defPtr);
     return this->defPtr->GetDefaultValue().GetGuid();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline
+const Util::Variant&
+AttrId::GetDefaultValue() const
+{
+	n_assert(0 != this->defPtr);
+	return this->defPtr->GetDefaultValue();
 }
 
 } // namespace Attr

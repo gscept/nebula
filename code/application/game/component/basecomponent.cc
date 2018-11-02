@@ -40,11 +40,12 @@ BaseComponent::SubscribedEvents() const
 //------------------------------------------------------------------------------
 /**
 */
-void
+uint32_t
 BaseComponent::RegisterEntity(const Entity& entity)
 {
 	// Override in subclass
 	n_assert2(false, "Method has not been overridden!");
+	return InvalidIndex;
 }
 
 //------------------------------------------------------------------------------
@@ -99,7 +100,7 @@ BaseComponent::DestroyAll()
 //------------------------------------------------------------------------------
 /**
 */
-uint32_t
+SizeT
 BaseComponent::NumRegistered() const
 {
 	n_assert2(false, "Method has not been overridden!");

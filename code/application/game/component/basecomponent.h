@@ -43,7 +43,7 @@ public:
 
 	/// Registers an entity to this component. Will try to reuse old datablocks (clearing them first)
 	/// within componentData and create new data if no free id is available.
-	virtual void RegisterEntity(const Entity& entity);
+	virtual uint32_t RegisterEntity(const Entity& entity);
 
 	/// Deregisters an entity from this component. The data will still exist in the buffer until Optimize() is called.
 	/// Note that even though this keeps the data intact, registering the same entity again won't result in the same data being used.
@@ -63,7 +63,7 @@ public:
 	virtual void DestroyAll();
 
 	/// Return amount of registered entities
-	virtual uint32_t NumRegistered() const;
+	virtual SizeT NumRegistered() const;
 
 	/// returns an index to the instance data within the data buffer.
 	virtual uint32_t GetInstance(const Entity& entity) const;

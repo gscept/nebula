@@ -12,7 +12,5 @@ fips_files(
 	imguiinputhandler.h
 	imguirenderer.cc
 	imguirenderer.h
-	imguirtplugin.cc
-	imguirtplugin.h
 	)
 fips_end_module()

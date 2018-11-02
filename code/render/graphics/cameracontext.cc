@@ -9,7 +9,7 @@
 namespace Graphics
 {
 
-ImplementContext(CameraContext);
+_ImplementContext(CameraContext);
 CameraContext::CameraAllocator CameraContext::cameraAllocator;
 
 //------------------------------------------------------------------------------
@@ -37,7 +37,7 @@ CameraContext::Create()
 	__bundle.OnBeforeFrame = CameraContext::OnBeforeFrame;
 	Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle);
 
-	CreateContext();
+	_CreateContext();
 }
 
 //------------------------------------------------------------------------------
