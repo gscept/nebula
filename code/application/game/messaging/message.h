@@ -1,7 +1,17 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	Message
+	@class	Game::Message
+
+	Messages the main communications channel between components.
+
+	Messages aren't exclusive to component however, any method or function can be
+	used as a callback from a message which means you can hook into a message
+	from anywhere. This can be useful for debugging, tools, managers etc.
+
+	Messages are declared with the __DeclareMsg macro.
+	A component can register a message callback by using the __RegisterMsg macro
+	in any member method (preferably SetupAcceptedMessages).
 
 	(C) 2018 Individual contributors, see AUTHORS file
 */
@@ -12,18 +22,49 @@
 #include "util/hashtable.h"
 #include "util/arrayallocator.h"
 #include "util/string.h"
+#include "util/stringatom.h"
+#include "util/fourcc.h"
 
-#define __DeclareMsg(MSGTYPE, ...) class MSGTYPE : public Game::Message<__VA_ARGS__> { MSGTYPE(){}; ~MSGTYPE(){};};
+#define __DeclareMsg(NAME, FOURCC, ...) \
+class NAME : public Game::Message<__VA_ARGS__> \
+{ \
+	NAME() \
+	{ \
+		this->name = #NAME; \
+		this->fourcc = FOURCC; \
+	}; \
+	~NAME()\
+	{ \
+	}; \
+};
 
-/// This is placed within the object
-#define __RegisterMsg(MSGTYPE, METHOD) MSGTYPE::Register(MSGTYPE::Delegate::FromMethod<std::remove_pointer<decltype(this)>::type, &std::remove_pointer<decltype(this)>::type::METHOD>(this));
+///@note	This is placed within the object!
+#define __RegisterMsg(MSGTYPE, METHOD) \
+auto listener = MSGTYPE::Register( \
+	MSGTYPE::Delegate::FromMethod< \
+		std::remove_pointer<decltype(this)>::type, \
+		&std::remove_pointer<decltype(this)>::type::METHOD \
+	>(this) \
+); \
+this->messageListeners.Append(listener);
 
 namespace Game
 {
 
 ID_32_TYPE(MessageListenerId)
 
+//------------------------------------------------------------------------------
+/**
+*/
+struct MessageListener
+{
+	Util::FourCC messageId;
+	MessageListenerId listenerId;
+};
 
+//------------------------------------------------------------------------------
+/**
+*/
 template <class ... TYPES>
 class Message
 {
@@ -38,10 +79,10 @@ public:
 	using Delegate = Util::Delegate<const TYPES& ...>;
 
 	/// Register a listener to this message. Returns an ID for the listener so that we can associate it.
-	static MessageListenerId Register(Delegate&& callback);
+	static MessageListener Register(Delegate&& callback);
 
 	/// Deregister a listener
-	static void Deregister(MessageListenerId listener);
+	static void Deregister(MessageListener listener);
 
 	/// Send a message to an entity
 	static void Send(const TYPES& ... values);
@@ -83,6 +124,8 @@ private:
 	> distributedMessages;
 
 protected:
+	Util::StringAtom name;
+	Util::FourCC fourcc;
 	Ids::IdGenerationPool pool;
 };
 
@@ -110,7 +153,7 @@ Message<TYPES...>::~Message()
 /**
 */
 template <class ... TYPES>
-inline MessageListenerId
+inline MessageListener
 Message<TYPES...>::Register(Delegate&& callback)
 {
 	MessageListenerId l;
@@ -118,7 +161,8 @@ Message<TYPES...>::Register(Delegate&& callback)
 	IndexT index = Instance()->callbacks.Alloc();
 	Instance()->callbacks.Set(index, l, callback);
 	Instance()->listenerMap.Add(l, index);
-	return l;
+	MessageListener listener = { Instance()->fourcc, l };
+	return listener;
 }
 
 //------------------------------------------------------------------------------
@@ -126,15 +170,19 @@ Message<TYPES...>::Register(Delegate&& callback)
 */
 template <class ... TYPES>
 inline void
-Message<TYPES...>::Deregister(MessageListenerId listener)
+Message<TYPES...>::Deregister(MessageListener listener)
 {
 	auto instance = Instance();
-	IndexT index = instance->listenerMap[listener];
-	instance->listenerMap.Erase(listener);
-	instance->callbacks.EraseIndexSwap(index);
-	if (instance->callbacks.Size() != 0)
+	n_assert(listener.messageId == instance->fourcc);
+	IndexT index = instance->listenerMap[listener.listenerId];
+	if (index != InvalidIndex)
 	{
-		instance->listenerMap[instance->callbacks.Get<0>(index)] = index;
+		instance->listenerMap.Erase(listener.listenerId);
+		instance->callbacks.EraseIndexSwap(index);
+		if (instance->callbacks.Size() != 0)
+		{
+			instance->listenerMap[instance->callbacks.Get<0>(index)] = index;
+		}
 	}
 }
 
@@ -149,6 +197,7 @@ Message<TYPES...>::Send(const TYPES& ... values)
 	SizeT size = instance->callbacks.Size();
 	for (SizeT i = 0; i < size; ++i)
 	{
+		// n_assert(instance->callbacks.Get<1>(i).GetObject() != nullptr);
 		instance->callbacks.Get<1>(i)(values...);
 	}
 }

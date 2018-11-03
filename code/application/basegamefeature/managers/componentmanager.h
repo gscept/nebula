@@ -43,10 +43,10 @@ public:
 	/// Returns the number of components registered.
 	SizeT GetNumComponents() const;
 
-	const Ptr<BaseComponent>& GetComponentAtIndex(IndexT index);
+	Ptr<BaseComponent> GetComponentAtIndex(IndexT index);
 
 	/// Retrieve a component by fourcc.
-	const Ptr<BaseComponent>& ComponentByFourCC(const Util::FourCC& fourcc);
+	Ptr<BaseComponent> ComponentByFourCC(const Util::FourCC& fourcc);
 
 	/// Execute all OnBeginFrame events
 	void OnBeginFrame();
