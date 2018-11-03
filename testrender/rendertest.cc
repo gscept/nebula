@@ -58,7 +58,7 @@ RenderTest::Run()
 	
 	GraphicsEntityId cam = Graphics::CreateEntity();
 	CameraContext::RegisterEntity(cam);
-	CameraContext::SetupProjectionFov(cam, 16.f / 9.f, 90.f, 0.01f, 1000.0f);
+	CameraContext::SetupProjectionFov(cam, 16.f / 9.f, Math::n_deg2rad(60.f), 1.0f, 1000.0f);
 	view->SetCamera(cam);
 	view->SetStage(stage);
 	
