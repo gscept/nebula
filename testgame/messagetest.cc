@@ -19,7 +19,7 @@ namespace Test
 {
 __ImplementClass(Test::MessageTest, 'msTS', Test::TestCase);
 
-__DeclareMsg(TestMessage, uint32_t, Math::matrix44)
+__DeclareMsg(TestMessage, 'TstM', uint32_t, Math::matrix44)
 
 //------------------------------------------------------------------------------
 /**
@@ -57,6 +57,8 @@ MessageTest::Run()
 	elapsed_seconds = tend - tstart;
 	n_printf("Direct call time: %f\n", elapsed_seconds.count());
 
+	tComp->DestroyAll();
+	Game::EntityManager::Instance()->InvalidateAllEntities();
 
 	TestMessage::Deregister(listener);
 }

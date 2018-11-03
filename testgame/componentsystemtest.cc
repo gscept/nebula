@@ -74,6 +74,9 @@ ComponentSystemTest::Run()
 	tComp->DestroyAll();
 	tComp->Clean();
 
+	tagComp->DestroyAll();
+	tagComp->Clean();
+
 	// Went through with no bugs, hurray!!
 	VERIFY(true);
 }

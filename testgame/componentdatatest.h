@@ -53,9 +53,8 @@ public:
 	void DeregisterEntity(const Game::Entity& e);
 	SizeT Optimize();
 
-	/// get single item from resource, template expansion might give you cancer
-	template <int MEMBER>
-	void Set(const uint32_t instance, Util::Variant value);
+	using data_type = decltype(component_templated_t::data);
+	data_type* GetDataPtr();
 
 private:
 	bool immediate_deletion = false;

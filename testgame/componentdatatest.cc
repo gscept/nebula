@@ -99,12 +99,10 @@ TestComponent::Optimize()
 	return component_templated_t::Optimize();
 }
 
-template <int MEMBER> void
-TestComponent::Set(const uint32_t instance, Util::Variant value)
+TestComponent::data_type*
+TestComponent::GetDataPtr()
 {
-	auto& v = this->data.Get<MEMBER>(instance);
-	using t = decltype(v);
-	v = value.Get<std::remove_reference<t>::type>();
+	return &this->data;
 }
 
 //------------------------------------------------------------------------------
@@ -130,23 +128,23 @@ CompDataTest::Run()
 			entities.Append(entity);
 			component->RegisterEntity(entity);
 			instance = component->GetInstance(entity);
-			component->Set<STRING>(instance, "First iteration of entities");
-			component->Set<INT>(instance, 1);
-			component->Set<FLOAT>(instance, float(i * 4));
+			component->GetDataPtr()->Get<STRING>(instance) = "First iteration of entities";
+			component->GetDataPtr()->Get<INT>(instance) = 1;
+			component->GetDataPtr()->Get<FLOAT>(instance) = float(i * 4);
 		}
 
-		// uint32_t previd = component->GetOwner(0).id;
-		// component->Set(0, "TESTING SET", 10, Math::float4(1, 2, 3, 4));
+		uint32_t previd = component->GetOwner(0).id;
+		component->SetInstanceData(0, Util::Guid(), "TESTING SET", 7331, 12345.6f);
 		// Check if we really set data, but left id untouched.
-		// VERIFY(component.data.Get<0>(0).id == previd);
-		// VERIFY(component.data.Get<1>(0) == "TESTING SET");
-		// VERIFY(component.data.Get<2>(0) == 10);
-		// VERIFY(component.data.Get<3>(0) == Math::float4(1, 2, 3, 4));
+		VERIFY(component->GetDataPtr()->Get<OWNER>(0).id == previd);
+		VERIFY(component->GetDataPtr()->Get<STRING>(0) == "TESTING SET");
+		VERIFY(component->GetDataPtr()->Get<INT>(0) == 7331);
+		VERIFY(component->GetDataPtr()->Get<FLOAT>(0) == 12345.6f);
 		// make sure we don't set every single instance.
-		// VERIFY(component.data.Get<0>(1).id != previd);
-		// VERIFY(component.data.Get<1>(1) != "TESTING SET");
-		// VERIFY(component.data.Get<2>(1) != 10);
-		// VERIFY(component.data.Get<3>(1) != Math::float4(1, 2, 3, 4));
+		VERIFY(component->GetDataPtr()->Get<OWNER>(1).id != previd);
+		VERIFY(component->GetDataPtr()->Get<STRING>(1) != "TESTING SET");
+		VERIFY(component->GetDataPtr()->Get<INT>(1) != 7331);
+		VERIFY(component->GetDataPtr()->Get<FLOAT>(1) != 12345.6f);
 
 		// Testing second iteration of entities inserted in old positions
 		for (size_t i = 0; i < 5000; i++)
@@ -159,9 +157,9 @@ CompDataTest::Run()
 		{
 			component->RegisterEntity(entities[i]);
 			instance = component->GetInstance(entities[i]);
-			// component.data.Get<1>(instance) = "Second iteration. Same entities.";
-			// component.data.Get<2>(instance) = i * 100;
-			// component.data.Get<3>(instance) = Math::float4(i * 400, i * 400 + 1, i * 400 + 2, i * 400 + 3);
+			component->GetDataPtr()->Get<STRING>(instance) = "Second iteration. Same entities.";
+			component->GetDataPtr()->Get<INT>(instance) = i * 100;
+			component->GetDataPtr()->Get<FLOAT>(instance) = float(i * 400);
 		}
 
 		// Third iteration unregister
@@ -177,9 +175,9 @@ CompDataTest::Run()
 			entities.Append(entity);
 			component->RegisterEntity(entity);
 			instance = component->GetInstance(entity);
-			// component.Get<1>(instance) = "Third iteration with new entities.";
-			// component.Get<2>(instance) = i * 200;
-			// component.Get<3>(instance) = Math::float4(i * 800, i * 800 + 1, i * 800 + 2, i * 800 + 3);
+			component->GetDataPtr()->Get<STRING>(instance) = "Third iteration with new entities.";
+			component->GetDataPtr()->Get<INT>(instance) = i * 200;
+			component->GetDataPtr()->Get<FLOAT>(instance) = float(i * 800);
 		}
 
 		// Testing optimization

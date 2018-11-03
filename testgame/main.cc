@@ -69,8 +69,8 @@ NebulaMain(const Util::CommandLineArgs& args)
 	compSysTest->gameApp = &gameApp;
 	testRunner->AttachTestCase(compSysTest); 
 
-	// testRunner->AttachTestCase(LoaderTest::Create());
 	testRunner->AttachTestCase(MessageTest::Create());
+	testRunner->AttachTestCase(LoaderTest::Create());
 
     testRunner->Run(); 
 
