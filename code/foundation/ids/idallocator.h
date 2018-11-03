@@ -20,89 +20,10 @@
 #include "threading/criticalsection.h"
 #include <tuple>
 #include <utility>
+#include "util/tupleutility.h"
+
 namespace Ids
 {
-template <typename C>
-struct get_template_type;
-
-/// get inner type of two types
-template <template <typename X> class C, typename T>
-struct get_template_type<C<T>>
-{
-	using type = T;
-};
-
-/// get inner type of a constant ref outer type
-template <template <typename X> class C, typename T>
-struct get_template_type<const C<T>&>
-{
-	using type = T;
-};
-
-/// helper typedef so that the above expression can be used like declt
-template <typename C>
-using get_template_type_t = typename get_template_type<C>::type;
-
-/// unpacks allocations for each member in a tuble
-template<class... Ts, std::size_t... Is>
-void alloc_for_each_in_tuple(std::tuple<Ts...>& tuple, std::integer_sequence<std::size_t, Is...>)
-{
-	using expander = int[];
-	(void)expander
-	{
-		0, 
-		(std::get<Is>(tuple).Append(typename get_template_type<Ts>::type()), 0)...
-	};
-}
-
-/// entry point for above expansion function
-template<class... Ts>
-void alloc_for_each_in_tuple(std::tuple<Ts...>& tuple)
-{
-	alloc_for_each_in_tuple(tuple, std::make_integer_sequence<std::size_t, sizeof...(Ts)>());
-}
-
-/// unpacks allocations for each member in a tuble
-template<class... Ts, std::size_t... Is>
-void clear_for_each_in_tuple(std::tuple<Ts...>& tuple, std::integer_sequence<std::size_t, Is...>)
-{
-	using expander = int[];
-	(void)expander
-	{
-		0,
-		(std::get<Is>(tuple).Clear(), 0)...
-	};
-}
-
-/// entry point for above expansion function
-template<class... Ts>
-void clear_for_each_in_tuple(std::tuple<Ts...>& tuple)
-{
-	clear_for_each_in_tuple(tuple, std::make_integer_sequence<size_t, sizeof...(Ts)>());
-}
-
-/// entry point for moving an element between two indices
-template <class... Ts, std::size_t... Is>
-void move_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t to, uint32_t from, std::integer_sequence<std::size_t, Is...>)
-{
-	using expander = int[];
-	(void)expander
-	{
-		0,
-		(std::get<Is>(tuple)[to] = std::get<Is>(tuple)[from], 0)...
-	};
-}
-
-/// entry point for moving an element between two indices
-template <class... Ts>
-void move_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t to, uint32_t from)
-{
-	move_for_each_in_tuple(tuple, to, from, std::make_integer_sequence<std::size_t, sizeof...(Ts)>());
-}
-
-/// get type of contained element in Util::Array stored in std::tuple
-template <int MEMBER, class... TYPES>
-using tuple_array_t = get_template_type_t<std::tuple_element_t<MEMBER, std::tuple<Util::Array<TYPES>...>>>;
 
 template <class ... TYPES>
 class IdAllocator
@@ -114,7 +35,7 @@ public:
 	IdAllocator(IdAllocator<TYPES...>&& rhs)
 	{
 		this->objects = rhs.objects;
-		clear_for_each_in_tuple(rhs.objects);
+		Util::clear_for_each_in_tuple(rhs.objects);
 	}
 	/// copy constructor
 	IdAllocator(const IdAllocator<TYPES...>& rhs)
@@ -133,7 +54,7 @@ public:
 	void operator=(IdAllocator<TYPES...>&& rhs)
 	{
 		this->objects = rhs.objects;
-		clear_for_each_in_tuple(rhs.objects);
+		Util::clear_for_each_in_tuple(rhs.objects);
 	}
 
 	/// allocate a new resource, and generate new entries if required
@@ -142,7 +63,7 @@ public:
 		Ids::Id32 id = this->pool.Alloc();
 		if (id >= this->size)
 		{
-			alloc_for_each_in_tuple(this->objects);
+			Util::alloc_for_each_in_tuple(this->objects);
 			this->size++;
 		}
 		return id;
@@ -159,14 +80,14 @@ public:
 		{
 			Ids::Id32 elem = usedIds.Back();
 			this->pool.Move(i, elem);
-			move_for_each_in_tuple(this->objects, idx, elem);
+			Util::move_for_each_in_tuple(this->objects, idx, elem);
 			usedIds.Erase(usedIds.End()-1);
 		}, usedIds.Size());
 	}
 
 	/// get single item from resource, template expansion might give you cancer
 	template <int MEMBER>
-	inline tuple_array_t<MEMBER, TYPES...>&
+	inline Util::tuple_array_t<MEMBER, TYPES...>&
 	Get(const Ids::Id32 index)
 	{
 		return std::get<MEMBER>(this->objects)[index];
@@ -174,7 +95,7 @@ public:
 
 	/// same as 32 bit get, but const
 	template <int MEMBER>
-	const inline tuple_array_t<MEMBER, TYPES...>&
+	const inline Util::tuple_array_t<MEMBER, TYPES...>&
 	Get(const Ids::Id32 index) const
 	{
 		return std::get<MEMBER>(this->objects)[index];
@@ -182,7 +103,7 @@ public:
 
 	/// get using 64 bit id
 	template <int MEMBER>
-	inline tuple_array_t<MEMBER, TYPES...>&
+	inline Util::tuple_array_t<MEMBER, TYPES...>&
 	Get(const Ids::Id64 index)
 	{
 		Ids::Id24 resId = Ids::Id::GetLow(Ids::Id::GetBig(index));
@@ -191,7 +112,7 @@ public:
 
 	/// same as 64 bit get, but const
 	template <int MEMBER>
-	const inline tuple_array_t<MEMBER, TYPES...>&
+	const inline Util::tuple_array_t<MEMBER, TYPES...>&
 	Get(const Ids::Id64 index) const
 	{
 		Ids::Id24 resId = Ids::Id::GetLow(Ids::Id::GetBig(index));
@@ -200,7 +121,7 @@ public:
 
 	/// get array const reference
 	template <int MEMBER>
-	const inline Util::Array<tuple_array_t<MEMBER, TYPES...>>&
+	const inline Util::Array<Util::tuple_array_t<MEMBER, TYPES...>>&
 	GetArray() const
 	{
 		return std::get<MEMBER>(this->objects);
@@ -208,7 +129,7 @@ public:
 
 	/// get array
 	template <int MEMBER>
-	inline Util::Array<tuple_array_t<MEMBER, TYPES...>>&
+	inline Util::Array<Util::tuple_array_t<MEMBER, TYPES...>>&
 	GetArray()
 	{
 		return std::get<MEMBER>(this->objects);
@@ -242,7 +163,7 @@ public:
 	IdAllocatorSafe(IdAllocatorSafe<TYPES...>&& rhs)
 	{
 		this->objects = rhs.objects;
-		clear_for_each_in_tuple(rhs.objects);
+		Util::clear_for_each_in_tuple(rhs.objects);
 	}
 	/// destructor
 	~IdAllocatorSafe() {};
@@ -258,7 +179,7 @@ public:
 	operator=(IdAllocatorSafe<TYPES...>&& rhs)
 	{
 		this->objects = rhs.objects;
-		clear_for_each_in_tuple(rhs.objects);
+		Util::clear_for_each_in_tuple(rhs.objects);
 	}
 
 	/// allocate a new resource, and generate new entries if required
@@ -269,7 +190,7 @@ public:
 		Ids::Id32 id = this->pool.Alloc();
 		if (id >= this->size)
 		{
-			alloc_for_each_in_tuple(this->objects);
+			Util::alloc_for_each_in_tuple(this->objects);
 			this->size++;
 		}
 		this->sect.Leave();
@@ -296,7 +217,7 @@ public:
 
 	/// get single item from within Enter/Leave phase
 	template <int MEMBER>
-	inline tuple_array_t<MEMBER, TYPES...>&
+	inline Util::tuple_array_t<MEMBER, TYPES...>&
 	Get(const Ids::Id32 index)
 	{
 		n_assert(this->inBeginGet);
@@ -305,7 +226,7 @@ public:
 
 	/// get const
 	template <int MEMBER>
-	const inline tuple_array_t<MEMBER, TYPES...>&
+	const inline Util::tuple_array_t<MEMBER, TYPES...>&
 	Get(const Ids::Id32 index) const
 	{
 		n_assert(this->inBeginGet);
@@ -314,7 +235,7 @@ public:
 
 	/// get single item from within Enter/Leave phase
 	template <int MEMBER>
-	inline tuple_array_t<MEMBER, TYPES...>&
+	inline Util::tuple_array_t<MEMBER, TYPES...>&
 	Get(const Ids::Id64 index)
 	{
 		n_assert(this->inBeginGet);
@@ -324,7 +245,7 @@ public:
 
 	/// 64 bit get const
 	template <int MEMBER>
-	const inline tuple_array_t<MEMBER, TYPES...>&
+	const inline Util::tuple_array_t<MEMBER, TYPES...>&
 	Get(const Ids::Id64 index) const
 	{
 		n_assert(this->inBeginGet);
@@ -334,7 +255,7 @@ public:
 
 	/// get array const
 	template <int MEMBER>
-	const inline Util::Array<tuple_array_t<MEMBER, TYPES...>>&
+	const inline Util::Array<Util::tuple_array_t<MEMBER, TYPES...>>&
 	GetArray() const
 	{
 		n_assert(this->inBeginGet);
@@ -343,7 +264,7 @@ public:
 
 	/// get array
 	template <int MEMBER>
-	inline Util::Array<tuple_array_t<MEMBER, TYPES...>>&
+	inline Util::Array<Util::tuple_array_t<MEMBER, TYPES...>>&
 	GetArray()
 	{
 		n_assert(this->inBeginGet);
@@ -361,30 +282,30 @@ public:
 
 	/// get single item safely 
 	template <int MEMBER>
-	inline tuple_array_t<MEMBER, TYPES...>&
+	inline Util::tuple_array_t<MEMBER, TYPES...>&
 	GetSafe(const Ids::Id32 index)
 	{
 		this->sect.Enter();
-		tuple_array_t<MEMBER, TYPES...>& res = std::get<MEMBER>(this->objects)[index];
+		Util::tuple_array_t<MEMBER, TYPES...>& res = std::get<MEMBER>(this->objects)[index];
 		this->sect.Leave();
 		return res;
 	}
 
 	/// get single item safely 
 	template <int MEMBER>
-	inline tuple_array_t<MEMBER, TYPES...>&
+	inline Util::tuple_array_t<MEMBER, TYPES...>&
 	GetSafe(const Ids::Id64 index)
 	{
 		Ids::Id24 resId = Ids::Id::GetBig(Ids::Id::GetLow(index));
 		this->sect.Enter();
-		tuple_array_t<MEMBER, TYPES...>& res = std::get<MEMBER>(this->objects)[resId];
+		Util::tuple_array_t<MEMBER, TYPES...>& res = std::get<MEMBER>(this->objects)[resId];
 		this->sect.Leave();
 		return res;
 	}
 
 	/// get single item unsafe (use with extreme caution)
 	template <int MEMBER>
-	inline tuple_array_t<MEMBER, TYPES...>&
+	inline Util::tuple_array_t<MEMBER, TYPES...>&
 	GetUnsafe(const Ids::Id32 index)
 	{
 		return std::get<MEMBER>(this->objects)[index];
@@ -392,7 +313,7 @@ public:
 
 	/// get single item unsafe (use with extreme caution)
 	template <int MEMBER>
-	inline tuple_array_t<MEMBER, TYPES...>&
+	inline Util::tuple_array_t<MEMBER, TYPES...>&
 	GetUnsafe(const Ids::Id64 index)
 	{
 		Ids::Id24 resId = Ids::Id::GetBig(Ids::Id::GetLow(index));
