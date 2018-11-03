@@ -19,7 +19,7 @@ namespace Test
 {
 __ImplementClass(Test::MessageTest, 'msTS', Test::TestCase);
 
-__DeclareMsg(TestMessage, uint32_t, Math::matrix44)
+__DeclareMsg(TestMessage, 'TstM', uint32_t, Math::matrix44)
 
 //------------------------------------------------------------------------------
 /**
@@ -32,7 +32,7 @@ MessageTest::Run()
 	Ptr<TransformComponent> tComp = cMgr->GetComponent<TransformComponent>();
 
 	auto listener = TestMessage::Register(TestMessage::Delegate::FromMethod<TransformComponent, &TransformComponent::SetLocalTransform>(tComp));
-	
+
 	auto a = Math::matrix44::identity();
 	auto entity = Game::EntityManager::Instance()->NewEntity();
 	tComp->RegisterEntity(entity);
@@ -40,7 +40,7 @@ MessageTest::Run()
 	auto instance = tComp->GetInstance(entity);
 
 	auto tstart = std::chrono::system_clock::now();
-	for (SizeT i = 0; i < 10000; i++)
+	for (SizeT i = 0; i < 100000; i++)
 	{
 		TestMessage::Send(instance, a);
 	}
@@ -49,7 +49,7 @@ MessageTest::Run()
 	n_printf("Send time: %f\n", elapsed_seconds.count());
 	
 	tstart = std::chrono::system_clock::now();
-	for (SizeT i = 0; i < 10000; i++)
+	for (SizeT i = 0; i < 100000; i++)
 	{
 		tComp->SetLocalTransform(instance, a);
 	}
@@ -57,6 +57,8 @@ MessageTest::Run()
 	elapsed_seconds = tend - tstart;
 	n_printf("Direct call time: %f\n", elapsed_seconds.count());
 
+	tComp->DestroyAll();
+	Game::EntityManager::Instance()->InvalidateAllEntities();
 
 	TestMessage::Deregister(listener);
 }
