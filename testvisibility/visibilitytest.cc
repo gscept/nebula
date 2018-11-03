@@ -23,6 +23,9 @@
 
 #include "renderutil/mayacamerautil.h"
 
+#include "dynui/imguirenderer.h"
+#include "imgui.h"
+
 using namespace Timing;
 using namespace Graphics;
 using namespace Visibility;
@@ -67,6 +70,8 @@ VisibilityTest::Run()
 	ModelContext::Create();
 	ObserverContext::Create();
 	ObservableContext::Create();
+
+	Dynui::ImguiContext::Create();
 	
 	Ptr<View> view = gfxServer->CreateView("mainview", "frame:vkdebug.json");
 	Ptr<Stage> stage = gfxServer->CreateStage("stage1", true);
@@ -139,6 +144,7 @@ VisibilityTest::Run()
 
 	Timer timer;
 	IndexT frameIndex = -1;
+	double previousTime = 0.0f;
 	bool run = true;
 	while (run && !inputServer->IsQuitRequested())
 	{
@@ -156,6 +162,9 @@ VisibilityTest::Run()
 
 		gfxServer->BeginFrame();
 		
+		ImGui::Begin("VisibilityTest", NULL, ImVec2(200, 200));
+		ImGui::Text("FPS: %.2f", 1 / (previousTime /1000.0f));
+		ImGui::End();
 		// put game code which doesn't need visibility data or animation here
 
 		gfxServer->BeforeViews();
@@ -222,7 +231,8 @@ VisibilityTest::Run()
 		frameIndex++;
 
 		timer.Stop();
-		n_printf("Frame took %f ms\n", timer.GetTime() * 1000);
+		previousTime = timer.GetTime() * 1000;
+		n_printf("Frame took %f ms\n", previousTime);
 	}
 
 	DestroyWindow(wnd);
