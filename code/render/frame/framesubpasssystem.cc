@@ -4,7 +4,6 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "framesubpasssystem.h"
-#include "rendermodules/rt/rtpluginregistry.h"
 #include "coregraphics/textrenderer.h"
 #include "coregraphics/shaperenderer.h"
 #include "coregraphics/graphicsdevice.h"

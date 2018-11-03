@@ -12,7 +12,7 @@
 #include "lib/defaultsamplers.fxh"
 
 // put variables in push-constant block
-group(BATCH_GROUP) push varblock ImGUI[string Visibility = "PS"; ]
+push varblock ImGUI [ string Visibility = "PS|VS"; ]
 {
 	textureHandle Texture; 
 	mat4 TextProjectionModel;

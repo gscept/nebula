@@ -9,7 +9,7 @@
 namespace Graphics
 {
 
-ImplementContext(LightProbeContext);
+_ImplementContext(LightProbeContext);
 LightProbeContext::LightProbeAllocator LightProbeContext::lightProbeAllocator;
 //------------------------------------------------------------------------------
 /**

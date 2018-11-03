@@ -345,6 +345,24 @@ GraphicsServer::EndFrame()
 //------------------------------------------------------------------------------
 /**
 */
+void 
+GraphicsServer::RenderPlugin(const Util::StringAtom & filter)
+{
+    const IndexT frameIndex = this->timer->GetFrameIndex();
+    const Timing::Time time = this->timer->GetFrameTime();
+
+    // finish frame and prepare for the next one
+    IndexT i;
+    for (i = 0; i < this->contexts.Size(); i++)
+    {
+        if (this->contexts[i]->OnRenderAsPlugin != nullptr)
+            this->contexts[i]->OnRenderAsPlugin(frameIndex, time, filter);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 Ptr<Graphics::View>
 GraphicsServer::CreateView(const Util::StringAtom& name, const IO::URI& framescript)
 {
@@ -353,6 +371,14 @@ GraphicsServer::CreateView(const Util::StringAtom& name, const IO::URI& framescr
 	frameScript->Build();
 	view->script = frameScript;
 	this->views.Append(view);
+
+    // invoke all interested contexts
+    IndexT i;
+    for (i = 0; i < this->contexts.Size(); i++)
+    {
+        if (this->contexts[i]->OnViewCreated != nullptr)
+            this->contexts[i]->OnViewCreated(view);
+    }
 	return view;
 }
 
@@ -362,9 +388,15 @@ GraphicsServer::CreateView(const Util::StringAtom& name, const IO::URI& framescr
 void
 GraphicsServer::DiscardView(const Ptr<View>& view)
 {
-	IndexT i = this->views.FindIndex(view);
-	n_assert(i != InvalidIndex);
-	this->views.EraseIndex(i);
+	IndexT idx = this->views.FindIndex(view);
+	n_assert(idx != InvalidIndex);
+	this->views.EraseIndex(idx);
+    // invoke all interested contexts    
+    for (IndexT i = 0; i < this->contexts.Size(); i++)
+    {
+        if (this->contexts[i]->OnDiscardView != nullptr)
+            this->contexts[i]->OnDiscardView(view);
+    }
 	view->script->Discard();
 }
 

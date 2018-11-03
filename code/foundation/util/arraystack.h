@@ -31,6 +31,8 @@ public:
 	ArrayStack(SizeT initialSize, SizeT initialGrow, const TYPE& initialValue);
     /// copy constructor
 	ArrayStack(const ArrayStack<TYPE, STACK_SIZE>& rhs);
+	/// move constructor
+	ArrayStack(ArrayStack<TYPE, STACK_SIZE>&& rhs);
 	/// constructor from initializer list
 	ArrayStack(std::initializer_list<TYPE> list);
     /// destructor
@@ -38,6 +40,8 @@ public:
 
     /// assignment operator
     void operator=(const ArrayStack<TYPE, STACK_SIZE>& rhs);
+	/// move operator
+	void operator=(ArrayStack<TYPE, STACK_SIZE>&& rhs);
     /// [] operator
     TYPE& operator[](IndexT index) const;
     /// equality operator
@@ -250,6 +254,28 @@ ArrayStack<TYPE, STACK_SIZE>::ArrayStack(const ArrayStack<TYPE, STACK_SIZE>& rhs
 //------------------------------------------------------------------------------
 /**
 */
+template<class TYPE, int STACK_SIZE>
+inline ArrayStack<TYPE, STACK_SIZE>::ArrayStack(ArrayStack<TYPE, STACK_SIZE>&& rhs)
+{
+	this->capacity = rhs.capacity;
+	this->size = rhs.size;
+	this->grow = rhs.grow;
+	if (this->capacity > STACK_SIZE)
+	{
+		this->elements = rhs.elements;
+	}
+	else
+	{
+		memcpy(this->smallVector, rhs.smallVector, sizeof(TYPE) * rhs.size);
+	}
+	rhs.size = 0;
+	rhs.capacity = 0;
+	rhs.elements = nullptr;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 template<class TYPE, int STACK_SIZE> void
 ArrayStack<TYPE, STACK_SIZE>::Copy(const ArrayStack<TYPE, STACK_SIZE>& src)
 {
@@ -368,6 +394,28 @@ ArrayStack<TYPE, STACK_SIZE>::operator=(const ArrayStack<TYPE, STACK_SIZE>& rhs)
             this->Copy(rhs);
         }
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE, int STACK_SIZE>
+inline void ArrayStack<TYPE, STACK_SIZE>::operator=(ArrayStack<TYPE, STACK_SIZE>&& rhs)
+{
+	this->capacity = rhs.capacity;
+	this->size = rhs.size;
+	this->grow = rhs.grow;
+	if (this->capacity > STACK_SIZE)
+	{
+		this->elements = rhs.elements;
+	}
+	else
+	{
+		memcpy(this->smallVector, rhs.smallVector, sizeof(TYPE) * rhs.size);
+	}
+	rhs.size = 0;
+	rhs.capacity = 0;
+	rhs.elements = nullptr;
 }
 
 //------------------------------------------------------------------------------

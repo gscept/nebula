@@ -59,6 +59,10 @@ VkShaderSetup(
 	uint32_t maxConstantBytes = props.limits.maxPushConstantsSize;
 	uint32_t pushRangeOffset = 0; // we must append previous push range size to offset
 	constantRange.Resize(6); // one per shader stage
+	uint i;
+	for (i = 0; i < 6; i++)
+		constantRange[i] = CoreGraphics::ResourcePipelinePushConstantRange{ 0,0,InvalidVisibility };
+
 	bool usePushConstants = false;
 
 #define uint_max(a, b) (a > b ? a : b)
@@ -69,7 +73,6 @@ VkShaderSetup(
 	uint32_t maxUniformBuffers = props.limits.maxDescriptorSetUniformBuffers;
 	uint32_t numUniformDyn = 0;
 	uint32_t numUniform = 0;
-	uint i;
 	for (i = 0; i < varblocks.size(); i++) 
 	{ 
 		AnyFX::VkVarblock* block = static_cast<AnyFX::VkVarblock*>(varblocks[i]);
@@ -100,11 +103,11 @@ VkShaderSetup(
 			CoreGraphics::ResourcePipelinePushConstantRange range;
 			range.offset = pushRangeOffset;
 			range.size = block->alignedSize;
-			range.vis = VertexShaderVisibility; // only allow for fragment bit...
+			range.vis = AllGraphicsVisibility; // only allow for fragment bit...
 			constantRange[0] = range; // okay, this is hacky
 			pushRangeOffset += block->alignedSize;
 			usePushConstants = true;
-			continue; // if push-constant block, do not add to resource table!
+			goto skipbuffer; // if push-constant block, do not add to resource table, but add constant bindings!
 		};
 
 		// add to resource map
@@ -117,6 +120,8 @@ VkShaderSetup(
 
 		rinfo.constantBuffers.Append(cbo);
 		n_assert(block->alignedSize < maxUniformBufferRange);
+
+		skipbuffer:
 
 		const std::vector<AnyFX::VariableBase*>& vars = block->variables;
 		uint j;

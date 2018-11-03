@@ -9,7 +9,7 @@
 namespace Lighting
 {
 
-ImplementContext(LightContext);
+_ImplementContext(LightContext);
 LightContext::GenericLightAllocator LightContext::genericLightAllocator;
 LightContext::PointLightAllocator LightContext::pointLightAllocator;
 LightContext::SpotLightAllocator LightContext::spotLightAllocator;

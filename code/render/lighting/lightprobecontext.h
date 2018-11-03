@@ -11,7 +11,7 @@ namespace Graphics
 {
 class LightProbeContext : public GraphicsContext
 {
-	DeclareContext();
+	_DeclareContext();
 public:
 	/// constructor
 	LightProbeContext();

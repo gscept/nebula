@@ -7,7 +7,7 @@
 */
 //------------------------------------------------------------------------------
 #include "frameop.h"
-#include "rendermodules/rt/rtpluginregistry.h"
+
 namespace Frame
 {
 class FrameSubpassPlugins : public FrameOp
@@ -30,14 +30,12 @@ public:
 	{
 		void Run(const IndexT frameIndex);
 
-		Util::StringAtom pluginFilter;
-		Ptr<RenderModules::RTPluginRegistry> pluginRegistry;
+		Util::StringAtom pluginFilter;		
 	};
 
 	FrameOp::Compiled* AllocCompiled(Memory::ChunkAllocator<BIG_CHUNK>& allocator);
 private:
-	Util::StringAtom pluginFilter;
-	Ptr<RenderModules::RTPluginRegistry> pluginRegistry;
+	Util::StringAtom pluginFilter;	
 };
 
 //------------------------------------------------------------------------------

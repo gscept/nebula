@@ -409,10 +409,8 @@ List<TYPE>::List(List<TYPE>&& rhs) :
     front(rhs.front),
     back(rhs.back)
 {
-#ifdef NEBULA_DEBUG
     rhs.front = nullptr;
     rhs.back = nullptr;
-#endif
 }
 
 //------------------------------------------------------------------------------

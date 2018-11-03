@@ -2532,7 +2532,7 @@ SetViewport(const Math::rectangle<int>& rect, int index)
 {
 	VkViewport vp;
 	vp.width = (float)rect.width();
-	vp.height = (float)-rect.height();
+	vp.height = (float)rect.height();
 	vp.x = (float)rect.left;
 	vp.y = (float)rect.top;
 	if (state.currentCommandState == ThreadState)
@@ -2557,7 +2557,7 @@ SetScissorRect(const Math::rectangle<int>& rect, int index)
 {
 	VkRect2D sc;
 	sc.extent.width = rect.width();
-	sc.extent.height = -rect.height();
+	sc.extent.height = rect.height();
 	sc.offset.x = rect.left;
 	sc.offset.y = rect.top;
 	if (state.currentCommandState == ThreadState)

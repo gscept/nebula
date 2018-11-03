@@ -1,9 +1,9 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	@class Dynui::ImguiFeatureUnit
+	@class Dynui::ImguiAddon
 	
-	Feature unit used for Imgui.	
+
 	
 	(C) 2012-2016 Individual contributors, see AUTHORS file
 */
@@ -26,11 +26,6 @@ public:
 	void Setup();
 	/// discard addon
 	void Discard();
-
-	/// call before performing immediate UI rendering
-	static void BeginFrame();
-	/// call after frame is done, will reset all windows and inputs
-	static void EndFrame();
 
 private:
 	Ptr<ImguiInputHandler> inputHandler;
