@@ -409,7 +409,7 @@ public:
 
 	/// Templated get method.
 	template <typename TYPE>
-	const TYPE& Get() const;
+	TYPE Get() const;
 
     /// convert value to string
     Util::String ToString() const;
@@ -2808,7 +2808,7 @@ Variant::GetBlobArray() const
 /**
 */
 template <typename TYPE>
-inline const TYPE&
+inline TYPE
 Variant::Get() const
 {
 	static_assert("Get method for TYPE is not implemented!");
@@ -2818,7 +2818,7 @@ Variant::Get() const
 /**
 */
 template <>
-inline const byte&
+inline byte
 Variant::Get() const
 {
 	return this->GetByte();
@@ -2828,7 +2828,7 @@ Variant::Get() const
 /**
 */
 template <>
-inline const short&
+inline short
 Variant::Get() const
 {
 	return this->GetShort();
@@ -2838,7 +2838,7 @@ Variant::Get() const
 /**
 */
 template <>
-inline const int&
+inline int
 Variant::Get() const
 {
 	return this->GetInt();
@@ -2848,7 +2848,7 @@ Variant::Get() const
 /**
 */
 template <>
-inline const uint&
+inline uint
 Variant::Get() const
 {
 	return this->GetUInt();
@@ -2858,7 +2858,7 @@ Variant::Get() const
 /**
 */
 template <>
-inline const int64_t&
+inline int64_t
 Variant::Get() const
 {
 	return this->GetInt64();
@@ -2868,7 +2868,7 @@ Variant::Get() const
 /**
 */
 template <>
-inline const uint64_t&
+inline uint64_t
 Variant::Get() const
 {
 	return this->GetUInt64();
@@ -2878,7 +2878,7 @@ Variant::Get() const
 /**
 */
 template <>
-inline const bool&
+inline bool
 Variant::Get() const
 {
 	return this->GetBool();
@@ -2888,7 +2888,7 @@ Variant::Get() const
 /**
 */
 template <>
-inline const double&
+inline double
 Variant::Get() const
 {
 	return this->GetDouble();
@@ -2898,7 +2898,7 @@ Variant::Get() const
 /**
 */
 template <>
-inline const float&
+inline float
 Variant::Get() const
 {
 	return this->GetFloat();
@@ -2908,7 +2908,7 @@ Variant::Get() const
 /**
 */
 template <>
-inline const Math::float2&
+inline Math::float2
 Variant::Get() const
 {
 	return this->GetFloat2();
@@ -2918,7 +2918,7 @@ Variant::Get() const
 /**
 */
 template <>
-inline const Math::float4&
+inline Math::float4
 Variant::Get() const
 {
 	return this->GetFloat4();
@@ -2928,7 +2928,7 @@ Variant::Get() const
 /**
 */
 template <>
-inline const Math::quaternion&
+inline Math::quaternion
 Variant::Get() const
 {
 	return this->GetQuaternion();
@@ -2938,7 +2938,7 @@ Variant::Get() const
 /**
 */
 template <>
-inline const Math::matrix44&
+inline Math::matrix44
 Variant::Get() const
 {
 	return this->GetMatrix44();
@@ -2948,7 +2948,7 @@ Variant::Get() const
 /**
 */
 template <>
-inline const Math::transform44&
+inline Math::transform44
 Variant::Get() const
 {
 	return this->GetTransform44();
@@ -2958,7 +2958,7 @@ Variant::Get() const
 /**
 */
 template <>
-inline const Util::String&
+inline Util::String
 Variant::Get() const
 {
 	return this->GetString();
@@ -2968,7 +2968,7 @@ Variant::Get() const
 /**
 */
 template <>
-inline const Util::Guid&
+inline Util::Guid
 Variant::Get() const
 {
 	return this->GetGuid();
@@ -2978,7 +2978,7 @@ Variant::Get() const
 /**
 */
 template <>
-inline const Util::Blob&
+inline Util::Blob
 Variant::Get() const
 {
 	return this->GetBlob();
@@ -2988,7 +2988,7 @@ Variant::Get() const
 /**
 */
 template <>
-inline const Util::Array<int>&
+inline Util::Array<int>
 Variant::Get() const
 {
 	return this->GetIntArray();
@@ -2998,7 +2998,7 @@ Variant::Get() const
 /**
 */
 template <>
-inline const Util::Array<float>&
+inline Util::Array<float>
 Variant::Get() const
 {
 	return this->GetFloatArray();
@@ -3008,7 +3008,7 @@ Variant::Get() const
 /**
 */
 template <>
-inline const Util::Array<bool>&
+inline Util::Array<bool>
 Variant::Get() const
 {
 	return this->GetBoolArray();
@@ -3018,7 +3018,7 @@ Variant::Get() const
 /**
 */
 template <>
-inline const Util::Array<Math::float2>&
+inline Util::Array<Math::float2>
 Variant::Get() const
 {
 	return this->GetFloat2Array();
@@ -3028,7 +3028,7 @@ Variant::Get() const
 /**
 */
 template <>
-inline const Util::Array<Math::float4>&
+inline Util::Array<Math::float4>
 Variant::Get() const
 {
 	return this->GetFloat4Array();
@@ -3038,7 +3038,7 @@ Variant::Get() const
 /**
 */
 template <>
-inline const Util::Array<Math::matrix44>&
+inline Util::Array<Math::matrix44>
 Variant::Get() const
 {
 	return this->GetMatrix44Array();
@@ -3048,7 +3048,7 @@ Variant::Get() const
 /**
 */
 template <>
-inline const Util::Array<Util::String>&
+inline Util::Array<Util::String>
 Variant::Get() const
 {
 	return this->GetStringArray();
@@ -3058,7 +3058,7 @@ Variant::Get() const
 /**
 */
 template <>
-inline const Util::Array<Util::Guid>&
+inline Util::Array<Util::Guid>
 Variant::Get() const
 {
 	return this->GetGuidArray();
@@ -3068,7 +3068,7 @@ Variant::Get() const
 /**
 */
 template <>
-inline const Util::Array<Util::Blob>&
+inline Util::Array<Util::Blob>
 Variant::Get() const
 {
 	return this->GetBlobArray();
