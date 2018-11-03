@@ -58,8 +58,6 @@ public:
 
 	/// get surface
 	const Materials::SurfaceId GetSurface() const { return this->surface; };
-	/// apply node-level state
-	virtual void ApplyNodeState();
 
 protected:
 	friend class StreamModelPool;
