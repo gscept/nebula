@@ -12,5 +12,5 @@
 
 namespace Msg
 {
-	__DeclareMsg(SetLocalTransform, Game::Entity, Math::matrix44)
+	__DeclareMsg(SetLocalTransform, 'SLTM', Game::Entity, Math::matrix44)
 } // namespace Msg

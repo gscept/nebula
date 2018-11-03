@@ -99,6 +99,18 @@ EntityManager::GetNumEntities() const
 /**
 */
 void
+EntityManager::InvalidateAllEntities()
+{
+	// Create a new pool
+	this->pool = Ids::IdGenerationPool();
+	this->numEntities = 0;
+	this->deletionCallbacks.Clear();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 EntityManager::RegisterDeletionCallback(const Entity & e, const Ptr<BaseComponent>& component)
 {
 	Util::Delegate<Entity> d = Util::Delegate<Entity>::FromMethod<BaseComponent, &BaseComponent::OnEntityDeleted>(component);

@@ -7,11 +7,10 @@
 
 namespace Attr
 {
-	DefineGuid(LocalTransform, 'TFLT', Attr::ReadWrite)
-	DefineStringWithDefault(WorldTransform, 'TRWT', Attr::ReadWrite, "None");
+	DefineGuid(Tag, 'TAG!', Attr::ReadWrite)
 } // namespace Attr
 
-__ImplementClass(Game::TagComponent, 'TRCM', Game::BaseComponent);
+__ImplementClass(Game::TagComponent, 'TAGC', Game::BaseComponent);
 
 namespace Game
 {
@@ -21,8 +20,7 @@ namespace Game
 */
 TagComponent::TagComponent() : 
 	component_templated_t({
-		Attr::Tag, 
-		Attr::TagName
+		Attr::Tag
 	})
 {
 	// this->events.SetBit(ComponentEvent::OnActivate);
@@ -75,7 +73,7 @@ TagComponent::Optimize()
 #if IMMEDIATE_DELETION
 	return 0;
 #else
-	return component_templated_t::OptimizeData();
+	return component_templated_t::Optimize();
 #endif
 }
 

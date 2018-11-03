@@ -5,6 +5,26 @@
 
 	Components derive from this class.
 
+	A component is a collection of data and functionality that makes up the
+	behaviour of a game's entities.
+	Entities are registered to components and the components handle the internal
+	mapping between entity and their data instance.
+
+	The variables that component instances hold are described as attributes.
+	Each component contains a list of attribute definitions that can be read to
+	get an understanding of the variables that each component instance holds.
+	@see	game/attr/attributedefinition.h
+
+	Components are usually registered to the ComponentManager and each event is
+	called from there via delegates. Each event that a component want to subscribe
+	to must be setup before being registered to the component manager.
+	@see	basegamefeature/managers/componentmanager.h
+	@see	foundation/util/delegate.h
+
+	Components communicate with each other via messages. A component can subscribe
+	to messages with delegates.
+	@see	game/messaging/message.h
+
 	(C) 2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
@@ -16,6 +36,7 @@
 #include "game/entityattr.h"
 #include "io/binaryreader.h"
 #include "io/binarywriter.h"
+#include "game/messaging/message.h"
 
 namespace Game
 {
@@ -54,7 +75,7 @@ public:
 	virtual void OnEntityDeleted(Entity entity);
 
 	/// Cleans up right away and frees any memory that does not belong to an entity. This can be extremely slow!
-	virtual void CleanData();
+	virtual void Clean();
 
 	/// Setup accepted messages
 	virtual void SetupAcceptedMessages();
@@ -137,6 +158,8 @@ public:
 protected:
 	/// Holds all events this component is subscribed to.
 	Util::BitField<ComponentEvent::NumEvents> events;
+
+	Util::Array<MessageListener> messageListeners;
 
 	/// Holds all attributedefinitions that this components has available.
 	Util::FixedArray<Attr::AttrId> attributeIds;

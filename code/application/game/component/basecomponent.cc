@@ -72,7 +72,7 @@ BaseComponent::OnEntityDeleted(Entity entity)
 /**
 */
 void
-BaseComponent::CleanData()
+BaseComponent::Clean()
 {
 	// Override in subclass
 	n_assert2(false, "Method has not been overridden!");
