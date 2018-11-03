@@ -1,10 +1,11 @@
-import os, platform
+import os, platform, sys
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 import idldocument as IDLDocument
 import idlattribute as IDLAttribute
 import idlcomponent as IDLComponent
 import sjson
 import filewriter
-import genutil as util
+#import genutil as util
 import ntpath
 
 class IDLCodeGenerator:
