@@ -50,7 +50,7 @@ ObserverContext::Setup(const Graphics::GraphicsEntityId id, VisibilityEntityType
 		Ids::Id32 res = observerAllocator.Get<3>(cid.id).AllocObject();
 		Graphics::ContextEntityId cid2 = ObservableContext::__state.entitySliceMap[ids[i].id];
 		n_assert(res == cid2.id);
-		observerAllocator.Get<3>(cid.id).Get<0>(res) = true;
+		observerAllocator.Get<3>(cid.id).Get<0>(res) = false;
 
 		if (entityType == Model)
 		{
@@ -150,7 +150,7 @@ ObserverContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frame
 
 		for (IndexT j = 0; j < flags.Size(); j++)
 		{
-			flags[j] = true;
+			flags[j] = false;
 		}
 
 		// clear draw lists
@@ -164,6 +164,7 @@ ObserverContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frame
 				it2.val->Clear();
 				it2++;
 			}
+			it1.val->Clear();
 			it1++;
 		}
 	}
@@ -383,7 +384,7 @@ ObservableContext::Setup(const Graphics::GraphicsEntityId id, VisibilityEntityTy
 		ObserverContext::VisibilityResultAllocator& alloc = visAllocators[i];
 		Ids::Id32 obj = alloc.AllocObject();
 		n_assert(cid == obj);
-		alloc.Get<0>(obj) = true;
+		alloc.Get<0>(obj) = false;
 		alloc.Get<1>(obj) = Models::ModelContext::GetContextId(id); // get context Id since model can be loaded later...
 	}
 }

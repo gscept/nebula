@@ -98,8 +98,8 @@ StreamModelPool::DestroyModelInstance(const ModelInstanceId id)
 	// release allocator memory, and return index to pool
 	SizeT& instances = this->modelAllocator.Get<4>(id.model);
 	instances--;
-	//this->modelInstanceAllocator.Get<0>(id.instance).Release();
-	//this->modelInstanceAllocator.Get<1>(id.instance).Clear();
+	this->modelInstanceAllocator.Get<NodeInstances>(id.instance).Clear();
+	this->modelInstanceAllocator.Get<NodeTypes>(id.instance).Clear();
 	this->modelInstanceAllocator.DeallocObject(id.instance);
 }
 
@@ -268,12 +268,15 @@ StreamModelPool::LoadFromStream(const Resources::ResourceId id, const Util::Stri
 void
 StreamModelPool::Unload(const Resources::ResourceId id)
 {
-	const SizeT& instances = this->Get<4>(id);
+	const SizeT& instances = this->Get<InstanceCount>(id);
 	if (instances > 0)
 		n_error("Model '%s' still has active instances!", this->names[id.poolId].Value());
-	Util::Dictionary<Util::StringAtom, Models::ModelNode*>& nodes = this->Get<2>(id);
+	Util::Dictionary<Util::StringAtom, Models::ModelNode*>& nodes = this->Get<ModelNodes>(id);
 	nodes.Clear();
-	this->Get<1>(id).Release();
+
+	this->Get<ModelNodeAllocator>(id).Release();
+	this->Get<InstanceNodeAllocator>(id).Release();
+	this->Get<RootNode>(id) = nullptr;
 }
 
 } // namespace Models

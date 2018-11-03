@@ -72,6 +72,17 @@ private:
 	Util::Stack<Models::ModelNode*> nodeStack;
 	Util::Dictionary<Util::FourCC, Ids::Id8> nodeFourCCMapping;
 
+	enum
+	{
+		ModelBoundingBox,
+		ModelNodeAllocator,
+		ModelNodes,
+		RootNode,
+		InstanceCount,
+		InstanceAllocSize,
+		InstanceNodeAllocator
+	};
+
 	Ids::IdAllocator<
 		Math::bbox,													// 0 - total bounding box
 		Memory::ChunkAllocator<MODEL_MEMORY_CHUNK_SIZE>,			// 1 - memory allocator
@@ -86,6 +97,13 @@ private:
 	Util::Array<std::function<Models::ModelNode*(Memory::ChunkAllocator<MODEL_MEMORY_CHUNK_SIZE>&)>> nodeConstructors;
 	Util::Array<std::function<Models::ModelNode::Instance*(Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>&)>> nodeInstanceConstructors;
 
+	enum
+	{
+		NodeInstances,
+		NodeTypes,
+		InstanceTransform,
+		InstanceBoundingBox
+	};
 	Ids::IdAllocator<
 		Util::Array<Models::ModelNode::Instance*>,					// list of node instances
 		Util::Array<Models::NodeType>,								// node instance types
