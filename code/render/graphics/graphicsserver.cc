@@ -342,7 +342,11 @@ GraphicsServer::EndFrame()
 	}
 }
 
-void GraphicsServer::RenderPlugin(const Util::StringAtom & filter)
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+GraphicsServer::RenderPlugin(const Util::StringAtom & filter)
 {
     const IndexT frameIndex = this->timer->GetFrameIndex();
     const Timing::Time time = this->timer->GetFrameTime();

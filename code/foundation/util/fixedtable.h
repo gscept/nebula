@@ -199,11 +199,9 @@ FixedTable<TYPE>::FixedTable(FixedTable<TYPE>&& rhs) :
     height(rhs.height),
     elements(rhs.height)
 {
-#ifdef NEBULA_DEBUG
     rhs.elements = nullptr;
     rhs.width = 0;
     rhs.height = 0;
-#endif
 }
 
 //------------------------------------------------------------------------------
@@ -239,11 +237,9 @@ FixedTable<TYPE>::operator=(FixedTable<TYPE>&& rhs)
         this->elements = rhs.elements;
         this->height = rhs.height;
         this->width = rhs.width;
-#ifdef NEBULA_DEBUG
         rhs.elements = nullptr;
         rhs.width = 0;
         rhs.height = 0;
-#endif
     }    
 }
 

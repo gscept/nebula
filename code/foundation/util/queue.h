@@ -175,11 +175,9 @@ Queue<TYPE>::Queue(Queue<TYPE>&& rhs) :
     grow(rhs.grow),
     start(rhs.start)
 {
-#ifdef NEBULA_DEBUG
     rhs.data = nullptr;
     rhs.capacity = 0;
     rhs.size = 0;
-#endif
 }
 
 //------------------------------------------------------------------------------
@@ -216,10 +214,8 @@ Queue<TYPE>::operator=(Queue<TYPE>&& rhs)
         this->grow = rhs.grow;
         this->capacity = rhs.capacity;
         this->start = rhs.start;
-#ifdef NEBULA_DEBUG
         rhs.data = nullptr;
         rhs.size = 0;
-#endif
     }
 }
 

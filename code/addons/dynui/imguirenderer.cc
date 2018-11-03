@@ -42,17 +42,22 @@ ImguiContext::ImguiDrawFunction(ImDrawData* data)
 
 	// apply shader
 	CoreGraphics::SetShaderProgram(state.prog);
+	CoreGraphics::SetResourceTable(state.resourceTable, NEBULA_BATCH_GROUP, GraphicsPipeline, nullptr);
 
 	// create orthogonal matrix
+#if __VULKAN__
+	matrix44 proj = matrix44::orthooffcenterrh(0.0f, io.DisplaySize.x, 0.0f, io.DisplaySize.y, -1.0f, +1.0f);
+#else
 	matrix44 proj = matrix44::orthooffcenterrh(0.0f, io.DisplaySize.x, io.DisplaySize.y, 0.0f, -1.0f, +1.0f);
+#endif
+
+	// setup device
+	CoreGraphics::SetVertexLayout(CoreGraphics::VertexBufferGetLayout(state.vbo));
+	CoreGraphics::SetStreamVertexBuffer(0, state.vbo, 0);
+	CoreGraphics::SetIndexBuffer(state.ibo, 0);
 
 	// set projection
 	CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, state.textProjectionConstant.offset, sizeof(proj), (byte*)&proj);
-
-	// setup device
-	CoreGraphics::SetStreamVertexBuffer(0, state.vbo, 0);
-	CoreGraphics::SetVertexLayout(CoreGraphics::VertexBufferGetLayout(state.vbo));
-	CoreGraphics::SetIndexBuffer(state.ibo, 0);
 
 	IndexT vertexOffset = 0;
 	IndexT indexOffset = 0;
@@ -91,7 +96,8 @@ ImguiContext::ImguiDrawFunction(ImDrawData* data)
 				CoreGraphics::SetScissorRect(scissorRect, 0);
 
 				// set texture in shader, we shouldn't have to put it into ImGui
-				CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, state.textureConstant.offset, sizeof(CoreGraphics::TextureId), (byte*)&command->TextureId);
+				uint64 imageHandle = CoreGraphics::TextureGetBindlessHandle(*((CoreGraphics::TextureId*)command->TextureId));
+				CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, state.textureConstant.offset, sizeof(uint64), (byte*)&imageHandle);
 
 				// setup primitive
 				CoreGraphics::PrimitiveGroup primitive;
@@ -149,10 +155,12 @@ ImguiContext::Create()
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle);
 
 	// allocate imgui shader
-	state.uiShader = ShaderServer::Instance()->GetShader("shd:imgui");
+	state.uiShader = ShaderServer::Instance()->GetShader("shd:imgui.fxb");
     state.params.projVar = CoreGraphics::ShaderGetConstantBinding(state.uiShader,"TextProjectionModel");
     state.params.fontVar = CoreGraphics::ShaderGetConstantBinding(state.uiShader, "Texture");
     state.prog = CoreGraphics::ShaderGetProgram(state.uiShader, CoreGraphics::ShaderFeatureFromString("Static"));
+
+	state.resourceTable = CoreGraphics::ShaderCreateResourceTable(state.uiShader, NEBULA_BATCH_GROUP);
 
 	state.textureConstant = CoreGraphics::ShaderGetConstantBinding(state.uiShader, "Texture");
 	state.textProjectionConstant = CoreGraphics::ShaderGetConstantBinding(state.uiShader, "TextProjectionModel");
@@ -170,7 +178,7 @@ ImguiContext::Create()
 		CoreGraphics::GpuBufferTypes::AccessWrite,
 		CoreGraphics::GpuBufferTypes::UsageDynamic,
 		CoreGraphics::GpuBufferTypes::SyncingCoherent | CoreGraphics::GpuBufferTypes::SyncingPersistent,
-		1000000 * 3,
+		10000 * 3,
 		components,
 		nullptr,
 		0
@@ -185,7 +193,7 @@ ImguiContext::Create()
 		CoreGraphics::GpuBufferTypes::UsageDynamic,
 		CoreGraphics::GpuBufferTypes::SyncingCoherent | CoreGraphics::GpuBufferTypes::SyncingPersistent,
 		IndexType::Index16,
-		100000 * 3,
+		10000 * 3,
 		nullptr,
 		0
 	};
@@ -303,7 +311,7 @@ ImguiContext::Create()
 		"imgui_font_tex"_atm,
 		"system",
 		buffer,
-		CoreGraphics::PixelFormat::R8G8B8A8,
+		CoreGraphics::PixelFormat::A8B8G8R8,
 		width, height, 1
 	};
     state.fontTexture = CoreGraphics::CreateTexture(texInfo);
@@ -382,10 +390,15 @@ ImguiContext::HandleInput(const Input::InputEvent& event)
 	return false;
 }
 
-void ImguiContext::OnRenderAsPlugin(const IndexT frameIndex, const Timing::Time frameTime, const Util::StringAtom & filter)
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+ImguiContext::OnRenderAsPlugin(const IndexT frameIndex, const Timing::Time frameTime, const Util::StringAtom& filter)
 {
     //FIME filter
-    ImGui::Render();
+	if (filter == "IMGUI"_atm)
+		ImGui::Render();
 }
 
 //------------------------------------------------------------------------------
@@ -398,7 +411,11 @@ ImguiContext::OnWindowResized(IndexT windowId, SizeT width, SizeT height)
 	io.DisplaySize = ImVec2((float)width, (float)height);
 }
 
-void ImguiContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime)
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+ImguiContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime)
 {
     ImGui::NewFrame();
 }
