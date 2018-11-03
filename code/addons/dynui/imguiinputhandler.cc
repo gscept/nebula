@@ -5,7 +5,7 @@
 #include "stdneb.h"
 #include "imguiinputhandler.h"
 #include "input/inputserver.h"
-#include "imguirenderer.h"
+#include "imguicontext.h"
 #include "imgui.h"
 
 namespace Dynui

@@ -41,10 +41,6 @@ PrimitiveNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, con
 		// get mesh resource
 		Resources::ResourceName meshName = reader->ReadString();
 
-#if NEBULA_DEBUG
-		this->meshName = meshName;
-#endif
-
 		// add as pending resource in loader
 		this->res = Resources::CreateResource(meshName, tag, nullptr, nullptr, false);
 	}
