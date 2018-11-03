@@ -48,7 +48,9 @@ BaseGameFeatureUnit::OnActivate()
 	this->entityManager = EntityManager::Create();
 	this->componentManager = ComponentManager::Create();
 	this->transformComponent = Game::TransformComponent::Create();
+	this->tagComponent = Game::TagComponent::Create();
 	this->componentManager->RegisterComponent(this->transformComponent);
+	this->componentManager->RegisterComponent(this->tagComponent);
 	this->AttachManager(this->entityManager.upcast<Game::Manager>());
 	this->AttachManager(this->componentManager.upcast<Game::Manager>());
 }

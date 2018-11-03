@@ -18,6 +18,7 @@
 #include "managers/entitymanager.h"
 #include "managers/componentmanager.h"
 #include "basegamefeature/components/transformcomponent.h"
+#include "basegamefeature/components/tagcomponent.h"
 
 //------------------------------------------------------------------------------
 namespace BaseGameFeature
@@ -35,9 +36,9 @@ public:
     /// destructor
     virtual ~BaseGameFeatureUnit();
 
-    /// called from BaseGameFeatureUnit::ActivateProperties()
+	/// Called upon activation of feature unit
     virtual void OnActivate();
-    /// called from BaseGameFeatureUnit::DeactivateProperties()
+	/// Called upon deactivation of feature unit
     virtual void OnDeactivate();
          
     /// called at the end of the feature trigger cycle
@@ -60,6 +61,7 @@ protected:
     
     Ptr<Game::EntityManager> entityManager;
 	Ptr<Game::TransformComponent> transformComponent;
+	Ptr<Game::TagComponent> tagComponent;
 	Ptr<Game::ComponentManager> componentManager;
 
     Math::bbox worldBox;

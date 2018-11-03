@@ -3,8 +3,8 @@
 #-------------------------------------------------------------------------------
 
 fips_begin_module(application)
-	fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/foundation)
-	fips_deps(foundation)
+	fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/foundation ${CODE_ROOT}/render ${CODE_ROOT}/resource)
+	fips_deps(foundation render resource)
 	fips_dir(.)
 		fips_files(
 			stdneb.h
@@ -86,12 +86,22 @@ fips_begin_module(application)
 			scenecompiler.h
 			scenecompiler.cc
 		)
+	fips_dir(graphicsfeature)
+		fips_files(
+			graphicsfeatureunit.h
+			graphicsfeatureunit.cc
+		)
 	fips_dir(graphicsfeature/components)
 		fips_generate(FROM lightcomponentbase.nidl TYPE NIDL)
-		# fips_files(
-		# 	pointlightcomponent.h
-		# 	pointlightcomponent.cc
-		# )
+		fips_generate(FROM graphicscomponentbase.nidl TYPE NIDL)
+		fips_files(
+			graphicscomponent.h
+			graphicscomponent.cc
+		)
+	fips_dir(graphicsfeature/messages)
+		fips_files(
+			graphicsprotocol.h
+		)
 	fips_dir(appgame)
 		fips_files(
 			gameapplication.h
