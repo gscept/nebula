@@ -26,8 +26,8 @@ BruteforceSystemJobFunc(const Jobs::JobFuncContext& ctx)
 	const Math::ClipStatus::Type status = box.clipstatus_soa(cam);
 
 	// if clip status is outside, unset visibility
-	if (status == Math::ClipStatus::Outside)
-		flags[0] = false;
+	if (status == Math::ClipStatus::Inside || Math::ClipStatus::Clipped)
+		flags[0] = true;
 }
 
 } // namespace Visibility

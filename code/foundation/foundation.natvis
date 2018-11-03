@@ -94,6 +94,23 @@
       </ArrayItems>
     </Expand>
   </Type>
+  <Type Name="Util::HashTable&lt;*,*&gt;">
+    <DisplayString>Size={size}</DisplayString>
+    <Expand>
+      <Item Name="[Size]">size</Item>
+      <CustomListItems>
+        <Variable Name="pBucket" InitialValue="nullptr"/>
+        <Exec>pIt = Begin()</Exec>
+        <Loop>
+          <If Condition="pIt == End()">
+            <Exec>break;</Exec>
+          </If>
+          <Item Name="{(*it).key, na}">(*it).val</Item>
+          <Exec>it++</Exec>
+        </Loop>
+      </CustomListItems>
+    </Expand>
+  </Type>
 
   
 </AutoVisualizer>

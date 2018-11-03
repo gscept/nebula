@@ -85,12 +85,12 @@ ModelContext::ChangeModel(const Graphics::GraphicsEntityId id, const Resources::
 	// clean up old stuff, but don't deallocate entity
 	ModelId& rid = modelContextAllocator.Get<0>(cid.id);
 	ModelInstanceId& mdl = modelContextAllocator.Get<1>(cid.id);
-	mdl = ModelInstanceId::Invalid();
 
-	if (rid != ModelId::Invalid()) // decrement model resource
-		Models::DestroyModel(rid);
 	if (mdl != ModelInstanceId::Invalid()) // actually deallocate current instance
 		Models::DestroyModelInstance(mdl);
+	if (rid != ModelId::Invalid()) // decrement model resource
+		Models::DestroyModel(rid);
+	mdl = ModelInstanceId::Invalid();
 
 	ModelCreateInfo info;
 	info.resource = name;
