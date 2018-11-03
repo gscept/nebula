@@ -30,6 +30,7 @@ fips_begin_module(application)
 			componentplugin.h
 			componentplugin.cc
 			component.h
+			componentserialization.h
 		)
 	fips_dir(game/attr)
 		fips_files(

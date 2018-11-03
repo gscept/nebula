@@ -130,7 +130,7 @@ ComponentManager::GetNumComponents() const
 //------------------------------------------------------------------------------
 /**
 */
-const Ptr<BaseComponent>&
+Ptr<BaseComponent>
 ComponentManager::GetComponentAtIndex(IndexT index)
 {
 	return this->components[index];
@@ -139,10 +139,12 @@ ComponentManager::GetComponentAtIndex(IndexT index)
 //------------------------------------------------------------------------------
 /**
 */
-const Ptr<BaseComponent>&
+Ptr<BaseComponent>
 ComponentManager::ComponentByFourCC(const Util::FourCC & fourcc)
 {
-	n_assert2(this->registry.Contains(fourcc), "Component not registered to componentmanager!");
+	// n_assert2(this->registry.Contains(fourcc), "Component not registered to componentmanager!");
+	if (!this->registry.Contains(fourcc))
+		return nullptr;
 	return this->registry[fourcc];
 }
 

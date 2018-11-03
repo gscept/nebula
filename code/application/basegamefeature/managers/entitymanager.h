@@ -1,9 +1,9 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	Entity Manager
+	@class	Game::EntityManager
 
-	Keeps track of all existing entites
+	Keeps track of all existing entites.
 
 	(C) 2018 Individual contributors, see AUTHORS file
 */
@@ -42,6 +42,9 @@ public:
 
 	/// Returns number of active entities
 	uint GetNumEntities() const;
+
+	/// Invalidates all entities and essentially resets the manager.
+	void InvalidateAllEntities();
 
 	/// Register a deletion callback to an entity
 	void RegisterDeletionCallback(const Entity& e, const Ptr<BaseComponent>& component);
