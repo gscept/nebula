@@ -10,7 +10,6 @@
 #include "basegamefeature/managers/componentmanager.h"
 #include "basegamefeature/managers/entitymanager.h"
 #include "basegamefeature/components/transformcomponent.h"
-#include "graphicsfeature/components/pointlightcomponent.h"
 
 using namespace BaseGameFeature;
 using namespace Game;
@@ -26,9 +25,6 @@ void
 LoaderTest::Run()
 {
 	Ptr<Game::ComponentManager> componentManager = Game::ComponentManager::Instance();
-
-	Ptr<GraphicsFeature::PointLightComponentBase> plComp = GraphicsFeature::PointLightComponentBase::Create();
-	componentManager->RegisterComponent(plComp.cast<Game::BaseComponent>());
 
 	Ptr<Game::EntityManager> entityManager = Game::EntityManager::Instance();
 
@@ -46,34 +42,27 @@ LoaderTest::Run()
 		entity = entityManager->NewEntity();
 		entities.Append(entity);
 
-		tComp->RegisterEntity(entity);
-		plComp->RegisterEntity(entity);
-		auto instance = plComp->GetInstance(entity);
+		auto instance = tComp->RegisterEntity(entity);
 		tComp->SetAttributeValue(instance, Attr::Parent, uint(i));
-		plComp->SetAttributeValue(instance, Attr::DebugName, "Tjene");
 	}
 
 	LevelLoader::Save("bin:test.scnb");
 
 	tComp->DestroyAll();
-	plComp->DestroyAll();
 
 	// Delete all entities.
 	for (SizeT i = 0; i < entities.Size(); i++)
 		entityManager->DeleteEntity(entities[i]);
 
 	VERIFY(tComp->NumRegistered() == 0);
-	VERIFY(plComp->NumRegistered() == 0);
 	VERIFY(entityManager->GetNumEntities() == 0);
 
 	LevelLoader::Load("bin:test.scnb");
 
 	VERIFY(tComp->NumRegistered() != 0);
-	VERIFY(plComp->NumRegistered() != 0);
 	VERIFY(entityManager->GetNumEntities() != 0);
 
 	tComp->DestroyAll();
-	plComp->DestroyAll();
 	entities.Clear();
 }
 

@@ -9,6 +9,7 @@
 #include "basegamefeature/managers/componentmanager.h"
 #include "basegamefeature/components/transformcomponent.h"
 #include "util/random.h"
+#include "basegamefeature/components/tagcomponent.h"
 
 using namespace Game;
 
@@ -27,6 +28,8 @@ ComponentSystemTest::Run()
 	Ptr<ComponentManager> cMgr = ComponentManager::Instance();
 
 	Ptr<TransformComponent> tComp = cMgr->GetComponent<TransformComponent>();
+	Ptr<TagComponent> tagComp = TagComponent::Create();
+	cMgr->RegisterComponent(tagComp.upcast<BaseComponent>());
 
 	Util::Array<Entity> entities;
 
@@ -58,6 +61,8 @@ ComponentSystemTest::Run()
 		entities.Append(entity);
 		tComp->RegisterEntity(entity);
 
+		tagComp->RegisterEntity(entity);
+
 		this->gameApp->StepFrame();
 	}
 
@@ -67,7 +72,7 @@ ComponentSystemTest::Run()
 	}
 
 	tComp->DestroyAll();
-	tComp->CleanData();
+	tComp->Clean();
 
 	// Went through with no bugs, hurray!!
 	VERIFY(true);
