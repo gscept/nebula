@@ -89,7 +89,6 @@ MaterialType::CreateSurface()
 	this->surfaceAllocator.Get<Textures>(sur).Resize(this->batchToIndexMap.Size()); // textures
 	this->surfaceAllocator.Get<Constants>(sur).Resize(this->batchToIndexMap.Size()); // constants
 	
-	
 	// go through all batches
 	auto batchIt = this->batchToIndexMap.Begin();
 	while (batchIt != this->batchToIndexMap.End())

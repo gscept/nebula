@@ -14,9 +14,9 @@
 #include "coregraphics/constantbuffer.h"
 #include "coregraphics/vertexbuffer.h"
 #include "coregraphics/indexbuffer.h"
+#include "coregraphics/resourcetable.h"
 #include "input/inputevent.h"
 #include "graphics/graphicscontext.h"
-
 
 struct ImDrawData;
 namespace Dynui
@@ -69,6 +69,7 @@ private:
 
         CoreGraphics::ConstantBinding textureConstant;
         CoreGraphics::ConstantBinding textProjectionConstant;
+		CoreGraphics::ResourceTableId resourceTable;
         //Ptr<CoreGraphics::BufferLock> vboBufferLock;
         //Ptr<CoreGraphics::BufferLock> iboBufferLock;
         byte* vertexPtr;

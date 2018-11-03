@@ -272,9 +272,7 @@ HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::HashTable(HashTable<KEYTYPE, VALUETYP
     inBulkAdd(rhs.inBulkAdd),
     size(rhs.size)
 {
-#ifdef NEBULA_DEBUG
     rhs.size = 0;
-#endif
 }
 
 //------------------------------------------------------------------------------
@@ -304,9 +302,7 @@ HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::operator=(HashTable<KEYTYPE, VALUETYP
         this->hashArray = std::move(rhs.hashArray);
         this->bulkDirty = rhs.bulkDirty;
         this->size = rhs.size;
-#ifdef NEBULA_DEBUG
         rhs.size = 0;
-#endif
     }
 }
 

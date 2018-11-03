@@ -274,11 +274,9 @@ Array<TYPE>::Array(Array<TYPE>&& rhs) :
     size(rhs.size),
     elements(rhs.elements)
 {
-#ifdef NEBULA_DEBUG
     rhs.elements = nullptr;
     rhs.size = 0;
     rhs.capacity = 0;
-#endif
 }
 
 //------------------------------------------------------------------------------
@@ -406,11 +404,9 @@ Array<TYPE>::operator=(Array<TYPE>&& rhs)
         this->grow = rhs.grow;
         this->size = rhs.size;
         this->capacity = rhs.capacity;
-#ifdef NEBULA_DEBUG
         rhs.elements = nullptr;
         rhs.size = 0;
         rhs.capacity;
-#endif
     }
 }
 
