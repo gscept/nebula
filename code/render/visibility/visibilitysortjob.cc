@@ -60,7 +60,8 @@ VisibilitySortJob(const Jobs::JobFuncContext& ctx)
 	auto it = buckets->Begin();
 	while (it != buckets->End())
 	{
-		it.val->EndBulkAdd();
+		if (it.val->IsBulkAdd())
+			it.val->EndBulkAdd();
 		it++;
 	}
 
