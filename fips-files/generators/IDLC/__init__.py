@@ -5,7 +5,7 @@ import idlattribute as IDLAttribute
 import idlcomponent as IDLComponent
 import sjson
 import filewriter
-#import genutil as util
+import genutil as util
 import ntpath
 
 class IDLCodeGenerator:
