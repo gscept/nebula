@@ -27,8 +27,6 @@ fips_begin_module(application)
 		fips_files(
 			basecomponent.h
 			basecomponent.cc
-			componentdata.h
-			componentdata.cc
 			componentplugin.h
 			componentplugin.cc
 			component.h
@@ -87,12 +85,12 @@ fips_begin_module(application)
 			scenecompiler.h
 			scenecompiler.cc
 		)
-	fips_dir(graphicsfeature/components)
-		fips_generate(FROM lightcomponentbase.nidl TYPE NIDL)
-		fips_files(
-			pointlightcomponent.h
-			pointlightcomponent.cc
-		)
+	# fips_dir(graphicsfeature/components)
+	# 	fips_generate(FROM lightcomponentbase.nidl TYPE NIDL)
+	# 	fips_files(
+	# 		pointlightcomponent.h
+	# 		pointlightcomponent.cc
+	# 	)
 	fips_dir(appgame)
 		fips_files(
 			gameapplication.h

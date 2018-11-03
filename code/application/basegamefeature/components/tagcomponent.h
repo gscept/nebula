@@ -13,14 +13,13 @@
 namespace Attr
 {
 	DeclareGuid(Tag, 'TAG!', Attr::ReadWrite);
-	DeclareString(TagName, 'TAGS', Attr::ReadWrite);
 };
 //------------------------------------------------------------------------------
 
 namespace Game
 {
 
-class TagComponent : public Component<decltype(Attr::Tag), decltype(Attr::TagName)>
+class TagComponent : public Component<decltype(Attr::Tag)>
 {
 	__DeclareClass(TagComponent)
 public:
