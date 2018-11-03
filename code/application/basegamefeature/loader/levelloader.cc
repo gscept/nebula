@@ -96,7 +96,7 @@ LevelLoader::Save(const Util::String& levelName)
 	std::chrono::duration<double> elapsed_seconds = tend - tstart;
 	n_printf("Save time: %f\n", elapsed_seconds.count());
 
-	return false;
+	return true;
 }
 
 

@@ -65,6 +65,7 @@ RunThroughHandlerThread::DoWork()
         if (!this->msgQueue.IsEmpty())
         {
             Util::Array<Ptr<Message> > msgArray;
+			msgArray.Reserve(this->msgQueue.Size());
             this->msgQueue.DequeueAll(msgArray);
             msgHandled |= this->ThreadHandleMessages(msgArray);
         }
