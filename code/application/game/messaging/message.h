@@ -40,13 +40,12 @@ class NAME : public Game::Message<__VA_ARGS__> \
 
 ///@note	This is placed within the object!
 #define __RegisterMsg(MSGTYPE, METHOD) \
-auto listener = MSGTYPE::Register( \
+this->messageListeners.Append(MSGTYPE::Register( \
 	MSGTYPE::Delegate::FromMethod< \
 		std::remove_pointer<decltype(this)>::type, \
 		&std::remove_pointer<decltype(this)>::type::METHOD \
 	>(this) \
-); \
-this->messageListeners.Append(listener);
+));
 
 namespace Game
 {

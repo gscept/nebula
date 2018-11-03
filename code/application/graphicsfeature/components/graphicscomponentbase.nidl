@@ -1,0 +1,20 @@
+"namespace": "GraphicsFeature"
+"attributes": {
+    "graphicsEntity": {
+        "type": "uint"
+        "fourcc": "gEnt"
+        "access": "R"
+    }
+}
+"components": {
+    "GraphicsComponent": {
+        "fourcc": "GFXC"
+        "attributes": [
+            "graphicsEntity"
+        ]
+        "events": [
+            "OnActivate"
+            "OnDeactivate"
+        ]
+    }
+}
