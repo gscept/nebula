@@ -1,10 +1,9 @@
 import os, platform, sys
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-import idldocument as IDLDocument
-import idlattribute as IDLAttribute
-import idlcomponent as IDLComponent
+import IDLC.idldocument as IDLDocument
+import IDLC.idlattribute as IDLAttribute
+import IDLC.idlcomponent as IDLComponent
 import sjson
-import filewriter
+import IDLC.filewriter
 import genutil as util
 import ntpath
 
@@ -56,11 +55,10 @@ class IDLCodeGenerator:
         IDLDocument.WriteIncludeHeader(f)
         IDLComponent.WriteIncludes(f, attributeLibraries)
 
-
         # Generate attributes include file
         if "attributes" in self.document:
             IDLDocument.WriteAttributeLibraryDeclaration(f)
-            
+
             if "enums" in self.document:
                 IDLDocument.BeginNamespace(f, self.document)
                 IDLAttribute.WriteEnumeratedTypes(f, self.document)
@@ -71,6 +69,8 @@ class IDLCodeGenerator:
             IDLAttribute.WriteAttributeHeaderDeclarations(f, self.document)
             IDLDocument.EndNamespaceOverride(f, self.document, "Attr")
             f.WriteLine("")
+
+        
 
         # Add additional dependencies to document.
         if "dependencies" in self.document:
@@ -86,7 +86,7 @@ class IDLCodeGenerator:
         if "components" in self.document:
             IDLDocument.BeginNamespace(f, self.document)
             namespace = IDLDocument.GetNamespace(self.document)
-            for componentName, component in self.document["components"].iteritems():
+            for componentName, component in self.document["components"].items():
                 componentWriter = IDLComponent.ComponentClassWriter(f, self.document, component, componentName, namespace)
                 componentWriter.WriteClassDeclaration()
             IDLDocument.EndNamespace(f, self.document)
@@ -130,7 +130,7 @@ class IDLCodeGenerator:
         if "components" in self.document:
             IDLDocument.BeginNamespace(f, self.document)
             namespace = IDLDocument.GetNamespace(self.document)
-            for componentName, component in self.document["components"].iteritems():
+            for componentName, component in self.document["components"].items():
                 f.WriteLine("")
                 componentWriter = IDLComponent.ComponentClassWriter(f, self.document, component, componentName, namespace)
                 componentWriter.WriteClassImplementation()
