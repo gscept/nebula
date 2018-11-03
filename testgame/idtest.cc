@@ -90,6 +90,7 @@ IdTest::Run()
 			secondGenIds.Append(temp);
 		}
 
+		bool failed = false;
 		for (SizeT i = 0; i < numIds; i++)
 		{
 			VERIFY(firstGenIds[i] != secondGenIds[i]);

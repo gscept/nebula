@@ -13,6 +13,7 @@
 #include "componentdatatest.h"
 #include "componentsystemtest.h"
 #include "loadertest.h"
+#include "messagetest.h"
 
 ImplementNebulaApplication();
 
@@ -66,12 +67,10 @@ NebulaMain(const Util::CommandLineArgs& args)
 
 	Ptr<ComponentSystemTest> compSysTest = ComponentSystemTest::Create();
 	compSysTest->gameApp = &gameApp;
-
 	testRunner->AttachTestCase(compSysTest); 
-    
-	Ptr<LoaderTest> loaderTest = LoaderTest::Create();
 
-	testRunner->AttachTestCase(loaderTest);
+	testRunner->AttachTestCase(MessageTest::Create());
+	testRunner->AttachTestCase(LoaderTest::Create());
 
     testRunner->Run(); 
 

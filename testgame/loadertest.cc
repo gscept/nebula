@@ -10,6 +10,8 @@
 #include "basegamefeature/managers/componentmanager.h"
 #include "basegamefeature/managers/entitymanager.h"
 #include "basegamefeature/components/transformcomponent.h"
+#include "basegamefeature/components/tagcomponent.h"
+
 using namespace BaseGameFeature;
 using namespace Game;
 
@@ -24,9 +26,11 @@ void
 LoaderTest::Run()
 {
 	Ptr<Game::ComponentManager> componentManager = Game::ComponentManager::Instance();
+
 	Ptr<Game::EntityManager> entityManager = Game::EntityManager::Instance();
 
 	Ptr<Game::TransformComponent> tComp = componentManager->GetComponent<Game::TransformComponent>();
+	Ptr<Game::TagComponent> tagComp = componentManager->GetComponent<Game::TagComponent>();
 
 	Util::Array<Entity> entities;
 
@@ -34,33 +38,57 @@ LoaderTest::Run()
 	
 	tComp->DestroyAll();
 
+	const auto numIter = 10000;
+
 	// fill scene
-	for (SizeT i = 0; i < 100000; i++)
+	for (SizeT i = 0; i < numIter; i++)
 	{
 		entity = entityManager->NewEntity();
 		entities.Append(entity);
 
-		tComp->RegisterEntity(entity);
+		auto instance = tComp->RegisterEntity(entity);
+		tComp->SetAttributeValue(instance, Attr::Parent, uint(i));
+		tagComp->RegisterEntity(entity);
 	}
 
-	LevelLoader::Save("bin:test.scnb");
+	// Save level
+	VERIFY(LevelLoader::Save("bin:test.scnb"));
 
 	tComp->DestroyAll();
+	tagComp->DestroyAll();
 
 	// Delete all entities.
 	for (SizeT i = 0; i < entities.Size(); i++)
 		entityManager->DeleteEntity(entities[i]);
 
-	VERIFY(tComp->GetNumInstances() == 0);
+	VERIFY(tComp->NumRegistered() == 0);
 	VERIFY(entityManager->GetNumEntities() == 0);
 
-	LevelLoader::Load("bin:test.scnb");
+	// Load level without any entities in the scene
+	VERIFY(LevelLoader::Load("bin:test.scnb"));
 
-	tComp->DeregisterAllDead();
-
-	VERIFY(tComp->GetNumInstances() != 0);
+	VERIFY(tComp->NumRegistered() != 0);
 	VERIFY(entityManager->GetNumEntities() != 0);
+
+	// Load level with a number of entities already registered to the scene
+	VERIFY(LevelLoader::Load("bin:test.scnb"));
+
+	tagComp->DestroyAll();
+
+	// Load with partial data destroyed.
+	VERIFY(LevelLoader::Load("bin:test.scnb"));
+
+	componentManager->DeregisterComponent(tagComp);
 	
+	// load level with a missing component
+	VERIFY(LevelLoader::Load("bin:test.scnb"));
+
+	componentManager->DeregisterComponent(tComp);
+
+	// load level with no components at all
+	VERIFY(LevelLoader::Load("bin:test.scnb"));
+
+	entityManager->InvalidateAllEntities();
 	entities.Clear();
 }
 
