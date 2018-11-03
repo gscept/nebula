@@ -95,6 +95,8 @@ void SetResourceTable(const CoreGraphics::ResourceTableId table, const IndexT sl
 void SetResourceTablePipeline(const CoreGraphics::ResourcePipelineId layout);
 /// push constants
 void PushConstants(ShaderPipeline pipeline, uint offset, uint size, byte* data);
+/// set pipeline using current layout, shader and pass
+void SetGraphicsPipeline();
 
 /// insert execution barrier
 void InsertBarrier(const CoreGraphics::BarrierId barrier, const CoreGraphicsQueueType queue);

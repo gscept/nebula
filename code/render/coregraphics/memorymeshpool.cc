@@ -65,8 +65,13 @@ MemoryMeshPool::BindMesh(const MeshId id, const IndexT prim)
 #endif
 	this->allocator.EnterGet();
 	MeshCreateInfo& inf = this->allocator.Get<0>(id.allocId);
+
+	// setup pipeline (a bit ugly)
 	CoreGraphics::SetVertexLayout(inf.vertexLayout);
 	CoreGraphics::SetPrimitiveTopology(inf.topology);
+	CoreGraphics::SetGraphicsPipeline();
+
+	// set input
 	CoreGraphics::SetPrimitiveGroup(inf.primitiveGroups[prim]);
 	CoreGraphics::SetStreamVertexBuffer(0, inf.vertexBuffer, inf.primitiveGroups[prim].GetBaseVertex());
 	if (inf.indexBuffer != CoreGraphics::IndexBufferId::Invalid())

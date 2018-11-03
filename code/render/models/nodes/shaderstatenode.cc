@@ -134,17 +134,6 @@ ShaderStateNode::OnFinishedLoading()
 /**
 */
 void
-ShaderStateNode::ApplyNodeState()
-{
-	TransformNode::ApplyNodeState();
-	// apply material and bind 
-	//Materials::MaterialBeginSurface(this->surface);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
 ShaderStateNode::Instance::ApplyNodeInstanceState()
 {
 	TransformNode::Instance::ApplyNodeInstanceState();

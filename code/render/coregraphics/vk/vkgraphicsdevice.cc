@@ -1757,9 +1757,6 @@ BeginBatch(Frame::FrameBatchType::Code batchType)
 void 
 SetStreamVertexBuffer(IndexT streamIndex, const CoreGraphics::VertexBufferId& vb, IndexT offsetVertexIndex)
 {
-	// hmm, build pipeline before we start setting this stuff
-	BuildRenderPipeline();
-
 	//RenderDeviceBase::SetStreamVertexBuffer(streamIndex, vb, offsetVertexIndex);
 	VkCmdBufferThread::Command cmd;
 	cmd.type = VkCmdBufferThread::InputAssemblyVertex;
@@ -1786,9 +1783,6 @@ SetVertexLayout(const CoreGraphics::VertexLayoutId& vl)
 void 
 SetIndexBuffer(const CoreGraphics::IndexBufferId& ib, IndexT offsetIndex)
 {
-	// hmm, build pipeline before we start setting this stuff
-	BuildRenderPipeline();
-
 	VkCmdBufferThread::Command cmd;
 	cmd.type = VkCmdBufferThread::InputAssemblyIndex;
 	cmd.ibo.buffer = CoreGraphics::iboPool->allocator.Get<1>(ib.allocId).buf;
@@ -1838,22 +1832,6 @@ const CoreGraphics::PrimitiveGroup&
 GetPrimitiveGroup()
 {
 	return state.primitiveGroup;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-BuildRenderPipeline()
-{
-	n_assert((state.currentPipelineBits & AllInfoSet) != 0);
-	n_assert(state.inBeginBatch);
-	state.currentBindPoint = CoreGraphics::GraphicsPipeline;
-	if ((state.currentPipelineBits & PipelineBuilt) == 0)
-	{
-		CreateAndBindGraphicsPipeline();
-		state.currentPipelineBits |= PipelineBuilt;
-	}
 }
 
 //------------------------------------------------------------------------------
@@ -1966,6 +1944,23 @@ PushConstants(ShaderPipeline pipeline, uint offset, uint size, byte* data)
 	case ComputePipeline:
 		Vulkan::UpdatePushRanges(VK_SHADER_STAGE_COMPUTE_BIT, state.currentPipelineLayout, offset, size, data);
 		break;
+	}
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+SetGraphicsPipeline()
+{
+	n_assert((state.currentPipelineBits & AllInfoSet) != 0);
+	n_assert(state.inBeginBatch);
+	state.currentBindPoint = CoreGraphics::GraphicsPipeline;
+	if ((state.currentPipelineBits & PipelineBuilt) == 0)
+	{
+		CreateAndBindGraphicsPipeline();
+		state.currentPipelineBits |= PipelineBuilt;
 	}
 }
 
