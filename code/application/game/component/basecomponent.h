@@ -54,7 +54,7 @@ public:
 	virtual void OnEntityDeleted(Entity entity);
 
 	/// Cleans up right away and frees any memory that does not belong to an entity. This can be extremely slow!
-	virtual void CleanData();
+	virtual void Clean();
 
 	/// Setup accepted messages
 	virtual void SetupAcceptedMessages();

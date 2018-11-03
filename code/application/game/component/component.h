@@ -239,7 +239,7 @@ public:
 	void SetToDefault(const uint32_t& instance);
 
 	void OnEntityDeleted(Game::Entity entity);
-protected:
+	
 	/// deregister an Id immediately. This will swap the last entity instance with this entitys' assuring a packed array.
 	void DeregisterEntityImmediate(const Entity& e);
 
@@ -247,8 +247,9 @@ protected:
 	void DeregisterEntityImmediate(const Entity& e, const uint32_t& index);
 
 	/// perform garbage collection. Returns number of erased instances.
-	SizeT OptimizeData();
-
+	SizeT Optimize();
+protected:
+	
 	/// Contains all data for all instances of this component.
 	/// @note	The 0th type is always the owner Entity!
 	Util::ArrayAllocator<Entity, typename TYPES::AttrDeclType...> data;
@@ -454,7 +455,7 @@ Component<TYPES ...>::DeregisterEntityImmediate(const Entity& e, const uint32_t&
 /**
 */
 template <class ... TYPES> SizeT
-Component<TYPES ...>::OptimizeData()
+Component<TYPES ...>::Optimize()
 {
 	Ptr<EntityManager> entityManager = EntityManager::Instance();
 	uint numAlive = 0;
