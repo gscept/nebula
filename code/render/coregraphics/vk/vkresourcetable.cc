@@ -814,7 +814,7 @@ CreateResourcePipeline(const ResourcePipelineCreateInfo& info)
 		0,
 		layouts.Size(),
 		layouts.Begin(),
-		info.push.size > 0 ? 1 : 0,
+		push.size > 0 ? 1 : 0,
 		&push
 	};
 	VkResult res = vkCreatePipelineLayout(dev, &crInfo, nullptr, &layout);

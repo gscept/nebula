@@ -41,9 +41,6 @@ protected:
 	/// apply state
 	void ApplyNodeState() override;
 
-#if NEBULA_DEBUG
-	Resources::ResourceName meshName;
-#endif
 	CoreGraphics::MeshId res;
 	uint32_t primitiveGroupIndex;
 };

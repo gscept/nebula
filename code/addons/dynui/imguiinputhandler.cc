@@ -5,7 +5,7 @@
 #include "stdneb.h"
 #include "imguiinputhandler.h"
 #include "input/inputserver.h"
-#include "imguirenderer.h"
+#include "imguicontext.h"
 #include "imgui.h"
 
 namespace Dynui
@@ -53,8 +53,7 @@ ImguiInputHandler::EndCapture()
 */
 bool
 ImguiInputHandler::OnEvent(const Input::InputEvent& inputEvent)
-{
-	const Ptr<ImguiRenderer>& renderer = ImguiRenderer::Instance();
+{	
 	switch (inputEvent.GetType())
 	{
 #ifndef _DEBUG
@@ -66,7 +65,7 @@ ImguiInputHandler::OnEvent(const Input::InputEvent& inputEvent)
 		break;
 
 	default:
-		return renderer->HandleInput(inputEvent);
+		return ImguiContext::HandleInput(inputEvent);
 	}
 	return false;
 }

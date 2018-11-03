@@ -89,7 +89,6 @@ MaterialType::CreateSurface()
 	this->surfaceAllocator.Get<Textures>(sur).Resize(this->batchToIndexMap.Size()); // textures
 	this->surfaceAllocator.Get<Constants>(sur).Resize(this->batchToIndexMap.Size()); // constants
 	
-	
 	// go through all batches
 	auto batchIt = this->batchToIndexMap.Begin();
 	while (batchIt != this->batchToIndexMap.End())
@@ -172,6 +171,7 @@ MaterialType::CreateSurface()
 			surConst.defaultValue = constant.defaultValue;
 			surConst.binding = constant.offset;
 			surConst.bufferIndex = InvalidIndex;
+			surConst.instanceConstant = false;
 			surConst.buffer = CoreGraphics::ConstantBufferId::Invalid();
 			if (constant.group == NEBULA_BATCH_GROUP)
 			{
@@ -373,9 +373,11 @@ MaterialType::SetSurfaceConstant(const SurfaceId sur, IndexT name, const Util::V
 	while (it != this->batchToIndexMap.End())
 	{
 		const SurfaceConstant& constant = this->surfaceAllocator.Get<Constants>(sur.id)[*it.val][name];
-		n_assert(!constant.instanceConstant);
-		if (constant.buffer != CoreGraphics::ConstantBufferId::Invalid())
+		if (constant.buffer != CoreGraphics::ConstantBufferId::Invalid() && constant.binding.offset != UINT_MAX)
+		{
+			n_assert(!constant.instanceConstant);
 			CoreGraphics::ConstantBufferUpdate(constant.buffer, value, constant.binding);
+		}
 		it++;
 	}
 }

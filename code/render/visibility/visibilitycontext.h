@@ -19,7 +19,7 @@ namespace Visibility
 
 class ObserverContext : public Graphics::GraphicsContext
 {
-	DeclareContext();
+	_DeclareContext();
 public:
 
 	/// setup entity
@@ -85,7 +85,7 @@ private:
 
 class ObservableContext : public Graphics::GraphicsContext
 {
-	DeclareContext();
+	_DeclareContext();
 public:
 
 	/// setup entity

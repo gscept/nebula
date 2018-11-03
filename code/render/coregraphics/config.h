@@ -62,6 +62,7 @@ enum CoreGraphicsShaderVisibility
 	DomainShaderVisibility		= 1 << 3,
 	GeometryShaderVisibility	= 1 << 4,
 	PixelShaderVisibility		= 1 << 5,
+	AllGraphicsVisibility		= VertexShaderVisibility | HullShaderVisibility | DomainShaderVisibility | GeometryShaderVisibility | PixelShaderVisibility,
 	ComputeShaderVisibility		= 1 << 6,
 	AllVisibility				= VertexShaderVisibility | HullShaderVisibility | DomainShaderVisibility | GeometryShaderVisibility | PixelShaderVisibility | ComputeShaderVisibility
 };

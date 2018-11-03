@@ -188,10 +188,8 @@ FixedArray<TYPE>::FixedArray(FixedArray<TYPE>&& rhs) :
     size(rhs.size),
     elements(rhs.elements)
 {
-#ifdef NEBULA_DEBUG
     rhs.size = 0;
     rhs.elements = nullptr;
-#endif
 }
 
 //------------------------------------------------------------------------------
@@ -238,10 +236,8 @@ FixedArray<TYPE>::operator=(FixedArray<TYPE>&& rhs)
         this->Delete();
         this->elements = rhs.elements;
         this->size = rhs.size;
-#ifdef NEBULA_DEBUG
         rhs.elements = nullptr;
         rhs.size = 0;
-#endif
     }
    
 }
