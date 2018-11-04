@@ -70,8 +70,7 @@ fips_begin_module(application)
 		)
 	fips_dir(basegamefeature/messages)
 		fips_files(
-			setlocaltransform.h
-			setlocaltransform.cc
+			basegameprotocol.h
 		)
 	fips_dir(basegamefeature/loader)
 		fips_files(
