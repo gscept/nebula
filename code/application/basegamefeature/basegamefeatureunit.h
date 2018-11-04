@@ -19,6 +19,7 @@
 #include "managers/componentmanager.h"
 #include "basegamefeature/components/transformcomponent.h"
 #include "basegamefeature/components/tagcomponent.h"
+#include "basegamefeature/loader/loaderserver.h"
 
 //------------------------------------------------------------------------------
 namespace BaseGameFeature
@@ -63,6 +64,8 @@ protected:
 	Ptr<Game::TransformComponent> transformComponent;
 	Ptr<Game::TagComponent> tagComponent;
 	Ptr<Game::ComponentManager> componentManager;
+	
+	Ptr<BaseGameFeature::LoaderServer> loaderServer;
 
     Math::bbox worldBox;
 };

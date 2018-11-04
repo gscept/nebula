@@ -53,6 +53,8 @@ BaseGameFeatureUnit::OnActivate()
 	this->componentManager->RegisterComponent(this->tagComponent);
 	this->AttachManager(this->entityManager.upcast<Game::Manager>());
 	this->AttachManager(this->componentManager.upcast<Game::Manager>());
+
+	this->loaderServer = LoaderServer::Create();
 }
 
 //------------------------------------------------------------------------------
@@ -68,6 +70,9 @@ BaseGameFeatureUnit::OnDeactivate()
 
     this->entityManager = nullptr;
 	this->componentManager = nullptr;
+
+	this->loaderServer->Release();
+	this->loaderServer = nullptr;
 
     FeatureUnit::OnDeactivate();
 }
