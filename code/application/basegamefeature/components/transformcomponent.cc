@@ -67,14 +67,19 @@ TransformComponent::SetLocalTransform(const uint32_t& i, const Math::matrix44& v
 	uint32_t parent = this->Parent(i);
 	uint32_t child;
 	Math::matrix44 transform;
-	// First of, transform this with parent transform if any
-	if (parent != InvalidIndex)
+	if (parent == InvalidIndex)
 	{
+		this->WorldTransform(i) = val;
+		Msg::UpdateTransform::Defer(messageQueue, this->GetOwner(i), val);
+	}
+	else
+	{
+		// First of, transform this with parent transform if any
 		transform = this->WorldTransform(parent);
-		auto local = this->LocalTransform(i);
 		this->WorldTransform(i) = Math::matrix44::multiply(this->LocalTransform(i), transform);
 		Msg::UpdateTransform::Defer(messageQueue, this->GetOwner(i), this->WorldTransform(i));
 	}
+	
 	child = this->FirstChild(i);
 	parent = i;
 	// Transform every child and their siblings.
@@ -83,7 +88,7 @@ TransformComponent::SetLocalTransform(const uint32_t& i, const Math::matrix44& v
 		while (child != InvalidIndex)
 		{
 			transform = this->WorldTransform(parent);
-			this->WorldTransform(child) = Math::matrix44::multiply(this->LocalTransform(parent), transform);
+			this->WorldTransform(child) = Math::matrix44::multiply(this->LocalTransform(child), transform);
 			Msg::UpdateTransform::Defer(messageQueue, this->GetOwner(child), this->WorldTransform(child));
 			parent = child;
 			child = this->FirstChild(child);
@@ -132,7 +137,12 @@ void
 TransformComponent::SetParent(const Game::Entity& entity, const Game::Entity& parent)
 {
 	uint32_t instance = this->GetInstance(entity);
+	uint32_t parentInstance = this->GetInstance(parent);
 	this->Parent(instance) = this->GetInstance(parent);
+	this->FirstChild(parentInstance) = instance;
+
+	// TODO: update siblings
+
 
 	this->UpdateHierarchy(instance);
 }

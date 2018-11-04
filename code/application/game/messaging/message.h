@@ -26,7 +26,7 @@
 #include "util/fourcc.h"
 
 #define __DeclareMsg(NAME, FOURCC, ...) \
-class NAME : public Game::Message<__VA_ARGS__> \
+class NAME : public Game::Message<NAME, __VA_ARGS__> \
 { \
 	NAME() \
 	{ \
@@ -64,7 +64,7 @@ struct MessageListener
 //------------------------------------------------------------------------------
 /**
 */
-template <class ... TYPES>
+template <typename MSG, class ... TYPES>
 class Message
 {
 public:
@@ -73,8 +73,8 @@ public:
 	Message();
 	~Message();
 
-	Message<TYPES...>(const Message<TYPES...>&) = delete;
-	void operator=(const Message<TYPES...>&) = delete;
+	Message<MSG, TYPES...>(const Message<MSG, TYPES...>&) = delete;
+	void operator=(const Message<MSG, TYPES...>&) = delete;
 
 	/// Type definition for this message's delegate
 	using Delegate = Util::Delegate<const TYPES& ...>;
@@ -114,9 +114,9 @@ public:
 
 private:
 	/// Internal singleton instance
-	static Message<TYPES...>* Instance()
+	static Message<MSG, TYPES...>* Instance()
 	{
-		static Message<TYPES...> instance;
+		static Message<MSG, TYPES...> instance;
 		return &instance;
 	}
 
@@ -166,9 +166,9 @@ private:
 //------------------------------------------------------------------------------
 /**
 */
-template <class ... TYPES>
+template <typename MSG, class ... TYPES>
 inline
-Message<TYPES...>::Message()
+Message<MSG, TYPES...>::Message()
 {
 	// empty
 }
@@ -176,9 +176,9 @@ Message<TYPES...>::Message()
 //------------------------------------------------------------------------------
 /**
 */
-template <class ... TYPES>
+template <typename MSG, class ... TYPES>
 inline
-Message<TYPES...>::~Message()
+Message<MSG, TYPES...>::~Message()
 {
 	// empty
 }
@@ -186,9 +186,9 @@ Message<TYPES...>::~Message()
 //------------------------------------------------------------------------------
 /**
 */
-template <class ... TYPES>
+template <typename MSG, class ... TYPES>
 inline MessageListener
-Message<TYPES...>::Register(Delegate&& callback)
+Message<MSG, TYPES...>::Register(Delegate&& callback)
 {
 	MessageListenerId l;
 	Instance()->listenerPool.Allocate(l.id);
@@ -202,9 +202,9 @@ Message<TYPES...>::Register(Delegate&& callback)
 //------------------------------------------------------------------------------
 /**
 */
-template <class ... TYPES>
+template <typename MSG, class ... TYPES>
 inline void
-Message<TYPES...>::Deregister(MessageListener listener)
+Message<MSG, TYPES...>::Deregister(MessageListener listener)
 {
 	auto instance = Instance();
 	n_assert(listener.messageId == instance->fourcc);
@@ -223,9 +223,9 @@ Message<TYPES...>::Deregister(MessageListener listener)
 //------------------------------------------------------------------------------
 /**
 */
-template <class ... TYPES>
+template <typename MSG, class ... TYPES>
 inline void
-Message<TYPES...>::Send(const TYPES& ... values)
+Message<MSG, TYPES...>::Send(const TYPES& ... values)
 {
 	auto instance = Instance();
 	SizeT size = instance->callbacks.Size();
@@ -239,9 +239,9 @@ Message<TYPES...>::Send(const TYPES& ... values)
 //------------------------------------------------------------------------------
 /**
 */
-template<class ...TYPES>
-inline typename Message<TYPES...>::MessageQueueId
-Message<TYPES...>::AllocateMessageQueue()
+template<typename MSG, class ...TYPES>
+inline typename Message<MSG, TYPES...>::MessageQueueId
+Message<MSG, TYPES...>::AllocateMessageQueue()
 {
 	auto instance = Instance();
 	MessageQueueId id;
@@ -257,9 +257,9 @@ Message<TYPES...>::AllocateMessageQueue()
 	return id;
 }
 
-template<class ...TYPES>
+template<typename MSG, class ...TYPES>
 inline void 
-Message<TYPES...>::Defer(MessageQueueId qid, const TYPES & ...values)
+Message<MSG, TYPES...>::Defer(MessageQueueId qid, const TYPES & ...values)
 {
 	auto instance = Instance();
 	SizeT index = Ids::Index(qid.id);
@@ -271,9 +271,9 @@ Message<TYPES...>::Defer(MessageQueueId qid, const TYPES & ...values)
 //------------------------------------------------------------------------------
 /**
 */
-template<class ... TYPES>
+template<typename MSG, class ... TYPES>
 inline void
-Message<TYPES...>::DispatchMessageQueue(MessageQueueId id)
+Message<MSG, TYPES...>::DispatchMessageQueue(MessageQueueId id)
 {
 	auto instance = Instance();
 	
@@ -295,8 +295,8 @@ Message<TYPES...>::DispatchMessageQueue(MessageQueueId id)
 //------------------------------------------------------------------------------
 /**
 */
-template<class ...TYPES> inline void
-Message<TYPES...>::DeAllocateMessageQueue(MessageQueueId id)
+template<typename MSG, class ...TYPES> inline void
+Message<MSG, TYPES...>::DeAllocateMessageQueue(MessageQueueId id)
 {
 	auto instance = Instance();
 	
@@ -307,8 +307,8 @@ Message<TYPES...>::DeAllocateMessageQueue(MessageQueueId id)
 	instance->messageQueueIdPool.Deallocate(id.id);
 }
 
-template<class ...TYPES> inline bool
-Message<TYPES...>::IsMessageQueueValid(MessageQueueId id)
+template<typename MSG, class ...TYPES> inline bool
+Message<MSG, TYPES...>::IsMessageQueueValid(MessageQueueId id)
 {
 	return Instance()->messageQueueIdPool.IsValid(id.id);
 }
@@ -319,9 +319,9 @@ Message<TYPES...>::IsMessageQueueValid(MessageQueueId id)
 /**
 	@todo	Implement networked messages.
 */
-template <class ... TYPES>
+template <typename MSG, class ... TYPES>
 inline void
-Message<TYPES...>::Distribute(const TYPES& ...)
+Message<MSG, TYPES...>::Distribute(const TYPES& ...)
 {
 	n_error("Network distributed messages not yet supported!");
 }
@@ -329,9 +329,9 @@ Message<TYPES...>::Distribute(const TYPES& ...)
 //------------------------------------------------------------------------------
 /**
 */
-template <class ... TYPES>
+template <typename MSG, class ... TYPES>
 inline void
-Message<TYPES...>::DeregisterAll()
+Message<MSG, TYPES...>::DeregisterAll()
 {
 	auto instance = Instance();
 	SizeT size = instance->callbacks.Size();
@@ -347,9 +347,9 @@ Message<TYPES...>::DeregisterAll()
 //------------------------------------------------------------------------------
 /**
 */
-template <class ... TYPES>
+template <typename MSG, class ... TYPES>
 inline bool
-Message<TYPES...>::IsValid(MessageListenerId listener)
+Message<MSG, TYPES...>::IsValid(MessageListenerId listener)
 {
 	return Instance()->listenerPool.IsValid(listener.id);
 }
