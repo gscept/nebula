@@ -185,7 +185,7 @@ ImguiContext::Create()
 		CoreGraphics::GpuBufferTypes::AccessWrite,
 		CoreGraphics::GpuBufferTypes::UsageDynamic,
 		CoreGraphics::GpuBufferTypes::SyncingCoherent | CoreGraphics::GpuBufferTypes::SyncingPersistent,
-		10000 * 3,
+		100000 * 3,
 		components,
 		nullptr,
 		0
@@ -200,7 +200,7 @@ ImguiContext::Create()
 		CoreGraphics::GpuBufferTypes::UsageDynamic,
 		CoreGraphics::GpuBufferTypes::SyncingCoherent | CoreGraphics::GpuBufferTypes::SyncingPersistent,
 		IndexType::Index16,
-		10000 * 3,
+		100000 * 3,
 		nullptr,
 		0
 	};

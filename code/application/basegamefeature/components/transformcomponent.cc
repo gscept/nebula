@@ -4,7 +4,6 @@
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "transformcomponent.h"
-#include "basegamefeature/messages/setlocaltransform.h"
 
 namespace Attr
 {
@@ -53,6 +52,9 @@ TransformComponent::SetupAcceptedMessages()
 {
 	// SetLocalTransform message will be handled by this->SetLocalTransform(...)
 	__RegisterMsg(Msg::SetLocalTransform, SetLocalTransform);
+	__RegisterMsg(Msg::SetParent, SetParent);
+	messageQueue = Msg::UpdateTransform::AllocateMessageQueue();
+	
 }
 
 //------------------------------------------------------------------------------
@@ -69,7 +71,9 @@ TransformComponent::SetLocalTransform(const uint32_t& i, const Math::matrix44& v
 	if (parent != InvalidIndex)
 	{
 		transform = this->WorldTransform(parent);
+		auto local = this->LocalTransform(i);
 		this->WorldTransform(i) = Math::matrix44::multiply(this->LocalTransform(i), transform);
+		Msg::UpdateTransform::Defer(messageQueue, this->GetOwner(i), this->WorldTransform(i));
 	}
 	child = this->FirstChild(i);
 	parent = i;
@@ -80,12 +84,17 @@ TransformComponent::SetLocalTransform(const uint32_t& i, const Math::matrix44& v
 		{
 			transform = this->WorldTransform(parent);
 			this->WorldTransform(child) = Math::matrix44::multiply(this->LocalTransform(parent), transform);
+			Msg::UpdateTransform::Defer(messageQueue, this->GetOwner(child), this->WorldTransform(child));
 			parent = child;
 			child = this->FirstChild(child);
 		}
 		child = this->NextSibling(parent);
 		parent = this->Parent(parent);
 	}
+
+	// Dispatch all world transform update messages sequentially at the end of the method.
+	// Keeps it cache friendly(er)
+	Msg::UpdateTransform::DispatchMessageQueue(messageQueue);
 }
 
 //------------------------------------------------------------------------------
@@ -114,6 +123,18 @@ TransformComponent::SetParents(const uint32_t & start, const uint32_t & end, con
 		// this->Parent(i) = this->GetInstance(entities[parentIndices[i]]);
 		i++;
 	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TransformComponent::SetParent(const Game::Entity& entity, const Game::Entity& parent)
+{
+	uint32_t instance = this->GetInstance(entity);
+	this->Parent(instance) = this->GetInstance(parent);
+
+	this->UpdateHierarchy(instance);
 }
 
 //------------------------------------------------------------------------------
@@ -217,6 +238,18 @@ TransformComponent::SetAttributeValue(uint32_t instance, Attr::AttrId attributeI
 {
 	if (attributeId == Attr::LocalTransform)
 		this->SetLocalTransform(instance, value.GetMatrix44());
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TransformComponent::UpdateHierarchy(uint32_t instance)
+{
+	// TODO: There are more elegant ways for this.
+	uint32_t parent = this->Parent(instance);
+	if (parent != InvalidIndex)
+		this->SetLocalTransform(parent, this->LocalTransform(parent));
 }
 
 //------------------------------------------------------------------------------

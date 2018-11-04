@@ -4,7 +4,7 @@
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "graphicscomponent.h"
-#include "basegamefeature/messages/setlocaltransform.h"
+#include "basegamefeature/messages/basegameprotocol.h"
 #include "graphicsfeature/messages/graphicsprotocol.h"
 #include "models/modelcontext.h"
 #include "graphics/graphicsserver.h"
@@ -35,7 +35,7 @@ GraphicsComponent::~GraphicsComponent()
 void
 GraphicsComponent::SetupAcceptedMessages()
 {
-	__RegisterMsg(Msg::SetLocalTransform, UpdateTransform)
+	__RegisterMsg(Msg::UpdateTransform, UpdateTransform)
 	__RegisterMsg(Msg::SetModel, SetModel)
 }
 
