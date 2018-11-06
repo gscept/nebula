@@ -28,14 +28,19 @@
 #define __DeclareMsg(NAME, FOURCC, ...) \
 class NAME : public Game::Message<NAME, __VA_ARGS__> \
 { \
-	NAME() \
-	{ \
-		this->name = #NAME; \
-		this->fourcc = FOURCC; \
-	}; \
-	~NAME()\
-	{ \
-	}; \
+	public: \
+		NAME() = delete; \
+		~NAME() = delete; \
+		\
+		constexpr static const char* GetName() \
+		{ \
+			return #NAME; \
+		}; \
+		\
+		constexpr static const uint GetFourCC() \
+		{ \
+			return FOURCC; \
+		}; \
 };
 
 ///@note	This is placed within the object!
@@ -64,7 +69,7 @@ struct MessageListener
 //------------------------------------------------------------------------------
 /**
 */
-template <typename MSG, class ... TYPES>
+template <class MSG, class ... TYPES>
 class Message
 {
 public:
@@ -112,7 +117,8 @@ public:
 	/// Returns whether a MessageListenerId is still registered or not.
 	static bool IsValid(MessageListenerId listener);
 
-private:
+protected:
+	friend MSG;
 	/// Internal singleton instance
 	static Message<MSG, TYPES...>* Instance()
 	{
@@ -170,7 +176,8 @@ template <typename MSG, class ... TYPES>
 inline
 Message<MSG, TYPES...>::Message()
 {
-	// empty
+	this->name = MSG::GetName();
+	this->fourcc = MSG::GetFourCC();
 }
 
 //------------------------------------------------------------------------------
