@@ -59,7 +59,6 @@ private:
     Util::Array<generation_t> generations;
 
     /// stores freed indices
-    Util::List<Id32> freeIds2;
     Util::Queue<Id32> freeIds;
 	SizeT freeIdsSize;
 };

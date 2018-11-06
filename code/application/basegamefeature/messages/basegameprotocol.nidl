@@ -1,0 +1,25 @@
+"namespace": "Msg"
+"messages": {
+    "SetLocalTransform": {
+        "fourcc": "SLTM"
+        "args": {
+            "entity": "Game::Entity"
+            "value": "Math::matrix44"
+        }
+    }
+    "UpdateTransform": {
+        "fourcc": "UpdT"
+        "args": {
+            "entity": "Game::Entity"
+            "value": "Math::matrix44"
+        }
+    }
+    "SetParent": {
+        "fourcc": "SetP"
+        "args": {
+            "entity": "entity"
+            "parent": "Game::Entity"
+        }
+        "export": false
+    }
+}

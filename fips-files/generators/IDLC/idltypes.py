@@ -13,17 +13,17 @@ PACKED_PER_INSTANCE = 1
 def GetEventEnum(string):
     s = string.lower()
     if s == "beginframe":
-        return "ComponentEvent::OnBeginFrame"
+        return "Game::ComponentEvent::OnBeginFrame"
     elif s == "render":
-        return "ComponentEvent::OnRender"
+        return "Game::ComponentEvent::OnRender"
     elif s == "endframe":
-        return "ComponentEvent::OnEndFrame"
+        return "Game::ComponentEvent::OnEndFrame"
     elif s == "renderdebug":
-        return "ComponentEvent::OnRenderDebug"
+        return "Game::ComponentEvent::OnRenderDebug"
     elif s == "onactivate":
-        return "ComponentEvent::OnActivate"
+        return "Game::ComponentEvent::OnActivate"
     elif s == "ondeactivate":
-        return "ComponentEvent::OnDeactivate"
+        return "Game::ComponentEvent::OnDeactivate"
     else:
         util.fmtError('"{}" is not a valid event!'.format(string))
 
