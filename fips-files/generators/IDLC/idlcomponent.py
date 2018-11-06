@@ -10,8 +10,6 @@ def Capitalize(s):
 ##
 #
 def WriteIncludes(f, attributeLibraries):
-    f.WriteLine('#include "game/component/component.h"')
-
     for lib in attributeLibraries:
         f.WriteLine('#include "{}"'.format(lib))
 

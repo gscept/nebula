@@ -1,4 +1,4 @@
-// NIDL #version:20#
+// NIDL #version:22#
 //------------------------------------------------------------------------------
 //  graphicscomponentbase.cc
 //  (C) Individual contributors, see AUTHORS file

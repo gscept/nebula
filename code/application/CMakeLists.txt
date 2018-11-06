@@ -69,9 +69,7 @@ fips_begin_module(application)
 			tagcomponent.cc
 		)
 	fips_dir(basegamefeature/messages)
-		fips_files(
-			basegameprotocol.h
-		)
+		fips_generate(FROM basegameprotocol.nidl TYPE NIDL)
 	fips_dir(basegamefeature/loader)
 		fips_files(
 			entityloaderbase.h
@@ -98,9 +96,7 @@ fips_begin_module(application)
 			graphicscomponent.cc
 		)
 	fips_dir(graphicsfeature/messages)
-		fips_files(
-			graphicsprotocol.h
-		)
+		fips_generate(FROM graphicsprotocol.nidl TYPE NIDL)
 	fips_dir(appgame)
 		fips_files(
 			gameapplication.h

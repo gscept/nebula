@@ -1,0 +1,10 @@
+"namespace": "Msg"
+"messages": {
+    "SetModel": {
+        "fourcc": "SMDL"
+        "args": {
+            "entity": "entity"
+            "value": "string"
+        }
+    }
+}
