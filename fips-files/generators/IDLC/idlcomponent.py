@@ -1,5 +1,5 @@
 import genutil as util
-import idltypes as IDLTypes
+import IDLC.idltypes as IDLTypes
 
 AttributeNotFoundError = 'No attribute named {} could be found by component compiler! Please make sure it\'s defined or imported as a dependency in the current .nidl file.'
 
@@ -10,8 +10,6 @@ def Capitalize(s):
 ##
 #
 def WriteIncludes(f, attributeLibraries):
-    f.WriteLine('#include "game/component/component.h"')
-
     for lib in attributeLibraries:
         f.WriteLine('#include "{}"'.format(lib))
 

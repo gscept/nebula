@@ -26,27 +26,31 @@
 #include "util/fourcc.h"
 
 #define __DeclareMsg(NAME, FOURCC, ...) \
-class NAME : public Game::Message<__VA_ARGS__> \
+class NAME : public Game::Message<NAME, __VA_ARGS__> \
 { \
-	NAME() \
-	{ \
-		this->name = #NAME; \
-		this->fourcc = FOURCC; \
-	}; \
-	~NAME()\
-	{ \
-	}; \
+	public: \
+		NAME() = delete; \
+		~NAME() = delete; \
+		\
+		constexpr static const char* GetName() \
+		{ \
+			return #NAME; \
+		}; \
+		\
+		constexpr static const uint GetFourCC() \
+		{ \
+			return FOURCC; \
+		}; \
 };
 
 ///@note	This is placed within the object!
 #define __RegisterMsg(MSGTYPE, METHOD) \
-auto listener = MSGTYPE::Register( \
+this->messageListeners.Append(MSGTYPE::Register( \
 	MSGTYPE::Delegate::FromMethod< \
 		std::remove_pointer<decltype(this)>::type, \
 		&std::remove_pointer<decltype(this)>::type::METHOD \
 	>(this) \
-); \
-this->messageListeners.Append(listener);
+));
 
 namespace Game
 {
@@ -65,15 +69,17 @@ struct MessageListener
 //------------------------------------------------------------------------------
 /**
 */
-template <class ... TYPES>
+template <class MSG, class ... TYPES>
 class Message
 {
 public:
+	ID_32_TYPE(MessageQueueId)
+
 	Message();
 	~Message();
 
-	Message<TYPES...>(const Message<TYPES...>&) = delete;
-	void operator=(const Message<TYPES...>&) = delete;
+	Message<MSG, TYPES...>(const Message<MSG, TYPES...>&) = delete;
+	void operator=(const Message<MSG, TYPES...>&) = delete;
 
 	/// Type definition for this message's delegate
 	using Delegate = Util::Delegate<const TYPES& ...>;
@@ -87,6 +93,21 @@ public:
 	/// Send a message to an entity
 	static void Send(const TYPES& ... values);
 
+	/// Creates a new message queue for deferred dispatching
+	static MessageQueueId AllocateMessageQueue();
+
+	/// Add a message to a message queue
+	static void Defer(MessageQueueId qid, const TYPES& ... values);
+	
+	/// Dispatch all messages in a message queue
+	static void DispatchMessageQueue(MessageQueueId id);
+
+	/// Deallocate a message queue. All messages in the queue will be destroyed.
+	static void DeAllocateMessageQueue(MessageQueueId id);
+
+	/// Check whether a message queue is still valid.
+	static bool IsMessageQueueValid(MessageQueueId id);
+
 	/// Send a network distributed message
 	static void Distribute(const TYPES& ...);
 
@@ -96,11 +117,12 @@ public:
 	/// Returns whether a MessageListenerId is still registered or not.
 	static bool IsValid(MessageListenerId listener);
 
-private:
+protected:
+	friend MSG;
 	/// Internal singleton instance
-	static Message<TYPES...>* Instance()
+	static Message<MSG, TYPES...>* Instance()
 	{
-		static Message<TYPES...> instance;
+		static Message<MSG, TYPES...> instance;
 		return &instance;
 	}
 
@@ -111,7 +133,12 @@ private:
 	Util::ArrayAllocator<
 		MessageListenerId,
 		Delegate
-	> callbacks;
+	> callbacks;	
+
+	/// id generation pool for the deferred messages queues.
+	Ids::IdGenerationPool messageQueueIdPool;
+	/// Deferred messages
+	Util::Array<Util::ArrayAllocator<TYPES ...>> messageQueues;
 
 #ifndef __PUBLIC_BUILD__
 	/// Contains the sender of the distributed message.
@@ -126,15 +153,39 @@ private:
 protected:
 	Util::StringAtom name;
 	Util::FourCC fourcc;
-	Ids::IdGenerationPool pool;
+	Ids::IdGenerationPool listenerPool;
+
+
+private:
+	template<std::size_t...Is>
+	void send_expander(Util::ArrayAllocator<TYPES...>& data, const SizeT& index, std::index_sequence<Is...>)
+	{
+		Send(data.Get<Is>(index)...);
+	}
+
+	void send_expander(Util::ArrayAllocator<TYPES...>& data, const SizeT& index)
+	{
+		this->send_expander(data, index, std::make_index_sequence<sizeof...(TYPES)>());
+	}
 };
 
 //------------------------------------------------------------------------------
 /**
 */
-template <class ... TYPES>
+template <typename MSG, class ... TYPES>
 inline
-Message<TYPES...>::Message()
+Message<MSG, TYPES...>::Message()
+{
+	this->name = MSG::GetName();
+	this->fourcc = MSG::GetFourCC();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <typename MSG, class ... TYPES>
+inline
+Message<MSG, TYPES...>::~Message()
 {
 	// empty
 }
@@ -142,22 +193,12 @@ Message<TYPES...>::Message()
 //------------------------------------------------------------------------------
 /**
 */
-template <class ... TYPES>
-inline
-Message<TYPES...>::~Message()
-{
-	// empty
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-template <class ... TYPES>
+template <typename MSG, class ... TYPES>
 inline MessageListener
-Message<TYPES...>::Register(Delegate&& callback)
+Message<MSG, TYPES...>::Register(Delegate&& callback)
 {
 	MessageListenerId l;
-	Instance()->pool.Allocate(l.id);
+	Instance()->listenerPool.Allocate(l.id);
 	IndexT index = Instance()->callbacks.Alloc();
 	Instance()->callbacks.Set(index, l, callback);
 	Instance()->listenerMap.Add(l, index);
@@ -168,9 +209,9 @@ Message<TYPES...>::Register(Delegate&& callback)
 //------------------------------------------------------------------------------
 /**
 */
-template <class ... TYPES>
+template <typename MSG, class ... TYPES>
 inline void
-Message<TYPES...>::Deregister(MessageListener listener)
+Message<MSG, TYPES...>::Deregister(MessageListener listener)
 {
 	auto instance = Instance();
 	n_assert(listener.messageId == instance->fourcc);
@@ -189,9 +230,9 @@ Message<TYPES...>::Deregister(MessageListener listener)
 //------------------------------------------------------------------------------
 /**
 */
-template <class ... TYPES>
+template <typename MSG, class ... TYPES>
 inline void
-Message<TYPES...>::Send(const TYPES& ... values)
+Message<MSG, TYPES...>::Send(const TYPES& ... values)
 {
 	auto instance = Instance();
 	SizeT size = instance->callbacks.Size();
@@ -204,11 +245,90 @@ Message<TYPES...>::Send(const TYPES& ... values)
 
 //------------------------------------------------------------------------------
 /**
+*/
+template<typename MSG, class ...TYPES>
+inline typename Message<MSG, TYPES...>::MessageQueueId
+Message<MSG, TYPES...>::AllocateMessageQueue()
+{
+	auto instance = Instance();
+	MessageQueueId id;
+	instance->messageQueueIdPool.Allocate(id.id);
+	
+	if (Ids::Index(id.id) >= instance->messageQueues.Size())
+	{
+		// This should garantuee that the id is the newest element
+		n_assert(instance->messageQueues.Size() == Ids::Index(id.id));
+		instance->messageQueues.Append({});
+	}
+	
+	return id;
+}
+
+template<typename MSG, class ...TYPES>
+inline void 
+Message<MSG, TYPES...>::Defer(MessageQueueId qid, const TYPES & ...values)
+{
+	auto instance = Instance();
+	SizeT index = Ids::Index(qid.id);
+
+	auto i = instance->messageQueues[index].Alloc();
+	instance->messageQueues[index].Set(i, values...);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<typename MSG, class ... TYPES>
+inline void
+Message<MSG, TYPES...>::DispatchMessageQueue(MessageQueueId id)
+{
+	auto instance = Instance();
+	
+	n_assert(instance->messageQueues.Size() > Ids::Index(id.id));
+	n_assert(instance->messageQueueIdPool.IsValid(id.id));
+
+	auto& data = instance->messageQueues[Ids::Index(id.id)];
+
+	SizeT size = data.Size();
+	for (SizeT i = 0; i < size; i++)
+	{
+		instance->send_expander(data, i);
+	}
+
+	// TODO:	Should we call reset here instead?
+	data.Clear();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<typename MSG, class ...TYPES> inline void
+Message<MSG, TYPES...>::DeAllocateMessageQueue(MessageQueueId id)
+{
+	auto instance = Instance();
+	
+	n_assert(instance->messageQueues.Size() > Ids::Index(id.id));
+	n_assert(instance->messageQueueIdPool.IsValid(id.id));
+
+	instance->messageQueues[Ids::Index(id.id)].Clear();
+	instance->messageQueueIdPool.Deallocate(id.id);
+}
+
+template<typename MSG, class ...TYPES> inline bool
+Message<MSG, TYPES...>::IsMessageQueueValid(MessageQueueId id)
+{
+	return Instance()->messageQueueIdPool.IsValid(id.id);
+}
+
+
+
+//------------------------------------------------------------------------------
+/**
 	@todo	Implement networked messages.
 */
-template <class ... TYPES>
+template <typename MSG, class ... TYPES>
 inline void
-Message<TYPES...>::Distribute(const TYPES& ...)
+Message<MSG, TYPES...>::Distribute(const TYPES& ...)
 {
 	n_error("Network distributed messages not yet supported!");
 }
@@ -216,15 +336,15 @@ Message<TYPES...>::Distribute(const TYPES& ...)
 //------------------------------------------------------------------------------
 /**
 */
-template <class ... TYPES>
+template <typename MSG, class ... TYPES>
 inline void
-Message<TYPES...>::DeregisterAll()
+Message<MSG, TYPES...>::DeregisterAll()
 {
 	auto instance = Instance();
 	SizeT size = instance->callbacks.Size();
 	for (SizeT i = 0; i < size; i++)
 	{
-		instance->pool.Deallocate(instance->callbacks.Get<0>(i).id);
+		instance->listenerPool.Deallocate(instance->callbacks.Get<0>(i).id);
 	}
 	instance->callbacks.Clear();
 	instance->distributedMessages.Clear();
@@ -234,11 +354,11 @@ Message<TYPES...>::DeregisterAll()
 //------------------------------------------------------------------------------
 /**
 */
-template <class ... TYPES>
+template <typename MSG, class ... TYPES>
 inline bool
-Message<TYPES...>::IsValid(MessageListenerId listener)
+Message<MSG, TYPES...>::IsValid(MessageListenerId listener)
 {
-	return Instance()->pool.IsValid(listener.id);
+	return Instance()->listenerPool.IsValid(listener.id);
 }
 
 } // namespace Msg

@@ -125,6 +125,7 @@ fips_begin_module(foundation)
 			trivialarray.h
 			typepunning.h
 			variant.h
+			tupleutility.h
 		)
 		fips_dir(interface)
 		fips_files(

@@ -112,6 +112,17 @@ LoaderServer::LoadLevel(const Util::String& levelName)
 
 //------------------------------------------------------------------------------
 /**
+*/
+bool
+LoaderServer::SaveLevel(const Util::String & levelName)
+{
+	n_assert(levelName.IsValid());
+	bool success = LevelLoader::Save(levelName);
+	return success;
+}
+
+//------------------------------------------------------------------------------
+/**
     Attach new entity loader to LoaderServer.
 
     @param  loader    loader class   

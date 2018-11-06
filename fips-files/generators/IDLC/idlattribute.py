@@ -1,4 +1,4 @@
-import idltypes as IDLTypes
+import IDLC.idltypes as IDLTypes
 import genutil as util
 
 def Capitalize(s):
@@ -21,7 +21,7 @@ def GetTypeCamelNotation(attributeName, attribute, document):
 ##
 #
 def WriteAttributeHeaderDeclarations(f, document):
-    for attributeName, attribute in document["attributes"].iteritems():
+    for attributeName, attribute in document["attributes"].items():
         typeString = GetTypeCamelNotation(attributeName, attribute, document)
 
         if not "fourcc" in attribute:
@@ -38,7 +38,7 @@ def WriteAttributeHeaderDeclarations(f, document):
 ##
 #
 def WriteAttributeDefinitions(f, document):
-    for attributeName, attribute in document["attributes"].iteritems():
+    for attributeName, attribute in document["attributes"].items():
         typeString = GetTypeCamelNotation(attributeName, attribute, document)
         
         if not "fourcc" in attribute:
@@ -64,14 +64,14 @@ def WriteAttributeDefinitions(f, document):
 #
 def WriteEnumeratedTypes(f, document):
     if "enums" in document:
-        for enumName, enum in document["enums"].iteritems():
+        for enumName, enum in document["enums"].items():
             # Declare Enums
             f.InsertNebulaDivider()
             f.WriteLine("enum {}".format(enumName))
             f.WriteLine("{")
             f.IncreaseIndent()
             numValues = 0
-            for key, value in enum.iteritems():
+            for key, value in enum.items():
                 f.WriteLine("{} = {},".format(key, value))
                 numValues += 1
             f.WriteLine("Num{} = {}".format(Capitalize(enumName), numValues))

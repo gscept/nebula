@@ -54,6 +54,8 @@ public:
     /// load a new level, this method is usually called by Game::SetupManager
 	virtual bool LoadLevel(const Util::String& levelName);
 
+	virtual bool SaveLevel(const Util::String& levelName);
+
     /// attach loader
     void AttachEntityLoader(const Ptr<EntityLoaderBase>& loader);
     /// remove loader
