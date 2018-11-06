@@ -15,6 +15,7 @@
 #include "math/vector.h"
 #include "math/point.h"
 #include "dynui/imguicontext.h"
+#include "lighting/lightcontext.h"
 #include "imgui.h"
 
 using namespace Timing;
@@ -25,6 +26,9 @@ using namespace Models;
 namespace Tests
 {
 
+//------------------------------------------------------------------------------
+/**
+*/
 const char* stateToString(Resources::Resource::State state)
 {
     switch (state)
@@ -37,22 +41,28 @@ const char* stateToString(Resources::Resource::State state)
     return "Unknown";
 }
 
-
-
-
-
+//------------------------------------------------------------------------------
+/**
+*/
 SimpleViewerApplication::SimpleViewerApplication()
 {
     this->SetAppTitle("Viewer App");
     this->SetCompanyName("Nebula");
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 SimpleViewerApplication::~SimpleViewerApplication()
 {
     // empty
 }
 
-bool SimpleViewerApplication::Open()
+//------------------------------------------------------------------------------
+/**
+*/
+bool 
+SimpleViewerApplication::Open()
 {
     if (Application::Open())
     {
@@ -81,6 +91,7 @@ bool SimpleViewerApplication::Open()
         ModelContext::Create();
         ObserverContext::Create();
         ObservableContext::Create();
+		Lighting::LightContext::Create();
         Dynui::ImguiContext::Create();
 
         this->view = gfxServer->CreateView("mainview", "frame:vkdebug.json");
@@ -89,9 +100,23 @@ bool SimpleViewerApplication::Open()
         CameraContext::RegisterEntity(this->cam);
         CameraContext::SetupProjectionFov(this->cam, width / (float)height, 45.f, 0.01f, 1000.0f);
 
+		this->globalLight = Graphics::CreateEntity();
+		Lighting::LightContext::RegisterEntity(this->globalLight);
+		Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::float4(0, 0, 0, 0), 1.0f, Math::float4(0, 0, 0, 0), Math::float4(0, 0, 0, 0), 0.0f, Math::vector(1, 1, 1), false);
+
+		this->pointLights[0] = Graphics::CreateEntity();
+		Lighting::LightContext::RegisterEntity(this->pointLights[0]);
+		Lighting::LightContext::SetupPointLight(this->pointLights[0], Math::float4(1, 0, 0, 1), 10.0f, Math::matrix44::translation(0, 0, -10), 10.0f, false);
+
+		this->pointLights[1] = Graphics::CreateEntity();
+		Lighting::LightContext::RegisterEntity(this->pointLights[1]);
+		Lighting::LightContext::SetupPointLight(this->pointLights[1], Math::float4(0, 1, 0, 1), 10.0f, Math::matrix44::translation(-10, 0, -10), 10.0f, false);
+
+		this->pointLights[2] = Graphics::CreateEntity();
+		Lighting::LightContext::RegisterEntity(this->pointLights[2]);
+		Lighting::LightContext::SetupPointLight(this->pointLights[2], Math::float4(0, 0, 1, 1), 10.0f, Math::matrix44::translation(-10, 0, 0), 10.0f, false);
 
         this->defaultViewPoint = Math::point(15.0f, 15.0f, -15.0f);
-
         this->ResetCamera();
         CameraContext::SetTransform(this->cam, this->mayaCameraUtil.GetCameraTransform());
 
@@ -111,11 +136,40 @@ bool SimpleViewerApplication::Open()
         ObserverContext::RegisterEntity(this->cam);
         ObserverContext::Setup(this->cam, VisibilityEntityType::Camera);
 
+
+		Util::Array<Graphics::GraphicsEntityId> models;
+		ModelContext::BeginBulkRegister();
+		ObservableContext::BeginBulkRegister();
+		static const int NumModels = 1;
+		for (IndexT i = -NumModels; i < NumModels; i++)
+		{
+			for (IndexT j = -NumModels; j < NumModels; j++)
+			{
+				Graphics::GraphicsEntityId ent = Graphics::CreateEntity();
+
+				// create model and move it to the front
+				ModelContext::RegisterEntity(ent);
+				ModelContext::Setup(ent, "mdl:Buildings/castle_tower.n3", "NotA");
+				ModelContext::SetTransform(ent, Math::matrix44::translation(Math::float4(i * 10, 0, -j * 10, 1)));
+
+				ObservableContext::RegisterEntity(ent);
+				ObservableContext::Setup(ent, VisibilityEntityType::Model);
+				models.Append(ent);
+			}
+		}
+		ModelContext::EndBulkRegister();
+		ObservableContext::EndBulkRegister();
+
         return true;
     }
     return false;
 }
-void SimpleViewerApplication::Close()
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+SimpleViewerApplication::Close()
 {
     DestroyWindow(this->wnd);
     this->gfxServer->DiscardStage(this->stage);
@@ -127,7 +181,11 @@ void SimpleViewerApplication::Close()
     this->Close();
 }
 
-void SimpleViewerApplication::Run()
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+SimpleViewerApplication::Run()
 {    
     bool run = true;
 
@@ -171,7 +229,12 @@ void SimpleViewerApplication::Run()
         this->inputServer->EndFrame();
     }
 }
-void SimpleViewerApplication::RenderUI()
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+SimpleViewerApplication::RenderUI()
 {
     ImGui::Begin("Viewer", nullptr, ImVec2(240, 400), 0.25, 0);
     if (ImGui::CollapsingHeader("Camera mode","camMode",true, true))    
@@ -229,7 +292,12 @@ void SimpleViewerApplication::RenderUI()
     }            
     ImGui::End();
 }
-void SimpleViewerApplication::UpdateCamera()
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+SimpleViewerApplication::UpdateCamera()
 {
     const Ptr<Input::Keyboard>& keyboard = inputServer->GetDefaultKeyboard();
     const Ptr<Input::Mouse>& mouse = inputServer->GetDefaultMouse();
@@ -315,22 +383,42 @@ void SimpleViewerApplication::UpdateCamera()
         break;
     }
 }
-void SimpleViewerApplication::ResetCamera()
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+SimpleViewerApplication::ResetCamera()
 {
     this->freeCamUtil.Setup(this->defaultViewPoint, Math::float4::normalize(this->defaultViewPoint));
     this->freeCamUtil.Update();
     this->mayaCameraUtil.Setup(Math::point(0.0f, 0.0f, 0.0f), this->defaultViewPoint, Math::vector(0.0f, 1.0f, 0.0f));
 }
-void SimpleViewerApplication::ToMaya()
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+SimpleViewerApplication::ToMaya()
 {
     this->mayaCameraUtil.Setup(this->mayaCameraUtil.GetCenterOfInterest(), this->freeCamUtil.GetTransform().get_position(), Math::vector(0, 1, 0));
 }
-void SimpleViewerApplication::ToFree()
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+SimpleViewerApplication::ToFree()
 {
     Math::float4 pos = this->mayaCameraUtil.GetCameraTransform().get_position();
     this->freeCamUtil.Setup(pos, Math::float4::normalize(pos - this->mayaCameraUtil.GetCenterOfInterest()));
 }
-void SimpleViewerApplication::Browse()
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+SimpleViewerApplication::Browse()
 {
     this->folders = IO::IoServer::Instance()->ListDirectories("mdl:", "*");    
     this->files = IO::IoServer::Instance()->ListFiles("mdl:" + this->folders[this->selectedFolder], "*");

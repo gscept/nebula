@@ -55,6 +55,8 @@ protected:
 
     Graphics::GraphicsEntityId cam;
     Graphics::GraphicsEntityId entity;
+	Graphics::GraphicsEntityId globalLight;
+	Graphics::GraphicsEntityId pointLights[3];
     IndexT frameIndex = -1;
 
     Util::Array<Util::String> folders;
