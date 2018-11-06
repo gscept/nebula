@@ -106,7 +106,7 @@ option(N_BUILD_NVTT "use NVTT" OFF)
 
 option(N_NEBULA_DEBUG_SHADERS "Compile shaders with debug flag" OFF)
 
-macro(add_shaders)    
+macro(add_shaders_intern)    
     if(SHADERC)           
         if(N_NEBULA_DEBUG_SHADERS)
             set(shader_debug "-debug")
@@ -121,7 +121,7 @@ macro(add_shaders)
             # create it the first time by force, after that with dependencies
             # since custom command does not want to play ball atm, we just generate it every time
             if(NOT EXISTS ${depoutput} OR ${shd} IS_NEWER_THAN ${depoutput})
-                execute_process(COMMAND ${SHADERC} -M -i ${shd} -I ${NROOT}/work/shaders -I ${foldername} -o ${CMAKE_BINARY_DIR} -t shader)
+                execute_process(COMMAND ${SHADERC} -M -i ${shd} -I ${NROOT}/work/shaders/vk -I ${foldername} -o ${CMAKE_BINARY_DIR} -t shader)
             endif()
             
             # sadly this doesnt work for some reason
@@ -138,7 +138,7 @@ macro(add_shaders)
 
             set(output ${EXPORT_DIR}/shaders/${basename}.fxb)           
             add_custom_command(OUTPUT ${output}
-                COMMAND ${SHADERC} -i ${shd} -I ${NROOT}/work/shaders -I ${foldername} -o ${EXPORT_DIR} -t shader ${shader_debug}                
+                COMMAND ${SHADERC} -i ${shd} -I ${NROOT}/work/shaders/vk -I ${foldername} -o ${EXPORT_DIR} -t shader ${shader_debug}                
                 MAIN_DEPENDENCY ${shd}
                 DEPENDS ${SHADERC} ${deps}
                 WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
@@ -146,6 +146,7 @@ macro(add_shaders)
                 VERBATIM
                 )        
             fips_files(${shd})
+
             SOURCE_GROUP("res\\shaders" FILES ${shd})        
         endforeach()             
     endif()
@@ -212,7 +213,7 @@ macro(add_nebula_shaders)
         fips_files(${FXH})
         file(GLOB_RECURSE FX "${NROOT}/work/shaders/vk/*.fx")    
         foreach(shd ${FX})        
-            add_shaders(${shd})
+            add_shaders_intern(${shd})
         endforeach()        
         
         file(GLOB_RECURSE FRM "${NROOT}/work/frame/win32/*.json")    
@@ -223,6 +224,30 @@ macro(add_nebula_shaders)
          file(GLOB_RECURSE MAT "${NROOT}/work/materials/*.xml")    
         foreach(shd ${MAT})        
             add_material(${shd})
+        endforeach()        
+        
+    endif()
+endmacro()
+    
+macro(add_shaders)                
+    if(NOT SHADERC)
+        MESSAGE(WARNING "Not compiling shaders, ShaderC not found, did you compile nebula-toolkit?")
+    else()    
+        if(FIPS_WINDOWS)
+            
+            get_filename_component(workdir "[HKEY_CURRENT_USER\\SOFTWARE\\gscept\\ToolkitShared;workdir]" ABSOLUTE)
+            # get_filename_component returns /registry when a key is not found...
+            if(${workdir} STREQUAL "/registry")
+                MESSAGE(WARNING "Registry keys for project not found, did you set your workdir?")
+                return()
+            endif()
+            set(EXPORT_DIR "${workdir}/export_win32")
+        else()
+            # use environment
+            set(EXPORT_DIR $ENV{NEBULA_WORK}/export_win32)
+        endif()
+        foreach(shd ${ARGN})         
+            add_shaders_intern(${CMAKE_CURRENT_SOURCE_DIR}/${shd})
         endforeach()        
         
     endif()
