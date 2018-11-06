@@ -17,6 +17,8 @@
 #include "dynui/imguicontext.h"
 #include "lighting/lightcontext.h"
 #include "imgui.h"
+#include "im3d/im3dcontext.h"
+#include "im3d/im3d.h"
 
 using namespace Timing;
 using namespace Graphics;
@@ -93,6 +95,7 @@ SimpleViewerApplication::Open()
         ObservableContext::Create();
 		Lighting::LightContext::Create();
         Dynui::ImguiContext::Create();
+        Im3d::Im3dContext::Create();
 
         this->view = gfxServer->CreateView("mainview", "frame:vkdebug.json");
         this->stage = gfxServer->CreateStage("stage1", true);
@@ -205,6 +208,16 @@ SimpleViewerApplication::Run()
         // put game code which doesn't need visibility data or animation here
         this->gfxServer->BeforeViews();
 
+        Im3d::Mat4 trans = ModelContext::GetTransform(this->entity);
+        auto const& cts = Im3d::GetContext();
+        bool updateCam = true;
+        if (Im3d::Gizmo("GizmoUnified", trans))
+        {
+            updateCam = false;
+            ModelContext::SetTransform(this->entity, trans);
+        }
+
+
         // put game code which need visibility data here
 
         this->gfxServer->RenderViews();
@@ -222,7 +235,8 @@ SimpleViewerApplication::Run()
         WindowPresent(wnd, frameIndex);
         if (this->inputServer->GetDefaultKeyboard()->KeyPressed(Input::Key::Escape)) run = false;        
         
-        this->UpdateCamera();
+        if(updateCam)
+            this->UpdateCamera();
         
 
         frameIndex++;             
