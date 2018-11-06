@@ -86,9 +86,7 @@ protected:
 	Util::Array<Models::ModelNode*> children;
 	Math::bbox boundingBox;
 	Util::StringAtom tag;
-
 };
-
 
 //------------------------------------------------------------------------------
 /**

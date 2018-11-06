@@ -240,6 +240,8 @@ GraphicsServer::BeginFrame()
 	IndexT i;
 	for (i = 0; i < this->contexts.Size(); i++)
 	{
+		if (this->contexts[i]->StageBits)
+			*this->contexts[i]->StageBits = Graphics::OnBeforeFrameStage;
 		if (this->contexts[i]->OnBeforeFrame != nullptr)
 			this->contexts[i]->OnBeforeFrame(frameIndex, time);
 	}
@@ -258,6 +260,8 @@ GraphicsServer::BeforeViews()
 	IndexT i;
 	for (i = 0; i < this->contexts.Size(); i++)
 	{
+		if (this->contexts[i]->StageBits)
+			*this->contexts[i]->StageBits = Graphics::OnWaitForWorkStage;
 		if (this->contexts[i]->OnWaitForWork != nullptr)
 			this->contexts[i]->OnWaitForWork(frameIndex, time);
 	}
@@ -272,6 +276,8 @@ GraphicsServer::BeforeViews()
 		IndexT j;
 		for (j = 0; j < this->contexts.Size(); j++)
 		{
+			if (this->contexts[i]->StageBits)
+				*this->contexts[i]->StageBits = Graphics::OnBeforeViewStage;
 			if (this->contexts[j]->OnBeforeView != nullptr)
 				this->contexts[j]->OnBeforeView(view, frameIndex, time);
 		}
@@ -318,6 +324,8 @@ GraphicsServer::EndViews()
 		IndexT j;
 		for (j = 0; j < this->contexts.Size(); j++)
 		{
+			if (this->contexts[i]->StageBits)
+				*this->contexts[i]->StageBits = Graphics::OnAfterViewStage;
 			if (this->contexts[j]->OnAfterView != nullptr)
 				this->contexts[j]->OnAfterView(view, frameIndex, time);
 		}
@@ -337,6 +345,8 @@ GraphicsServer::EndFrame()
 	IndexT i;
 	for (i = 0; i < this->contexts.Size(); i++)
 	{
+		if (this->contexts[i]->StageBits) 
+			*this->contexts[i]->StageBits = Graphics::OnAfterFrameStage;
 		if (this->contexts[i]->OnAfterFrame != nullptr)
 			this->contexts[i]->OnAfterFrame(frameIndex, time);
 	}

@@ -266,7 +266,7 @@ version: 2, engine: "Nebula", framescript: {
           variables: [
             {
               semantic: "CopyBuffer",
-              value: "AlbedoBuffer"
+              value: "LightBuffer"
             },
           ]
         }

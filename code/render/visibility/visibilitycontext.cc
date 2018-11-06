@@ -50,7 +50,7 @@ ObserverContext::Setup(const Graphics::GraphicsEntityId id, VisibilityEntityType
 		Ids::Id32 res = observerAllocator.Get<3>(cid.id).AllocObject();
 		Graphics::ContextEntityId cid2 = ObservableContext::__state.entitySliceMap[ids[i].id];
 		n_assert(res == cid2.id);
-		observerAllocator.Get<3>(cid.id).Get<0>(res) = false;
+		observerAllocator.Get<3>(cid.id).Get<0>(res) = true;
 
 		if (entityType == Model)
 		{
@@ -150,7 +150,7 @@ ObserverContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frame
 
 		for (IndexT j = 0; j < flags.Size(); j++)
 		{
-			flags[j] = false;
+			flags[j] = true;
 		}
 
 		// clear draw lists
@@ -187,11 +187,12 @@ ObserverContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frame
 
 	// run all visibility systems
 	IndexT j;
-	for (j = 0; j < ObserverContext::systems.Size(); j++)
-	{
-		VisibilitySystem* sys = ObserverContext::systems[j];
-		sys->Run();
-	}
+	if ((observerTransforms.Size() > 0) && (observeeTransforms.Size() > 0))
+		for (j = 0; j < ObserverContext::systems.Size(); j++)
+		{
+			VisibilitySystem* sys = ObserverContext::systems[j];
+			sys->Run();
+		}
 
 	// put a sync point for the jobs
 	Jobs::JobPortSync(ObserverContext::jobPort);
@@ -242,6 +243,9 @@ ObserverContext::Create()
 	__bundle.OnBeforeView = nullptr;
 	__bundle.OnAfterView = nullptr;
 	__bundle.OnAfterFrame = nullptr;
+	__bundle.StageBits = &ObservableContext::__state.currentStage;
+	ObserverContext::__state.allowedRemoveStages = Graphics::OnBeforeFrameStage;
+
 	Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle);
 
 	Jobs::CreateJobPortInfo info =
@@ -340,11 +344,12 @@ ObserverContext::WaitForVisibility(const IndexT frameIndex, const Timing::Time f
 //------------------------------------------------------------------------------
 /**
 */
-const ObserverContext::VisibilityDrawList&
+const ObserverContext::VisibilityDrawList*
 ObserverContext::GetVisibilityDrawList(const Graphics::GraphicsEntityId id)
 {
 	const Graphics::ContextEntityId cid = ObserverContext::GetContextId(id);
-	return observerAllocator.Get<4>(cid.id);
+	if (cid == Graphics::ContextEntityId::Invalid()) return nullptr;
+	else return &observerAllocator.Get<4>(cid.id);
 }
 
 //------------------------------------------------------------------------------
@@ -362,6 +367,27 @@ ObserverContext::Alloc()
 void
 ObserverContext::Dealloc(Graphics::ContextEntityId id)
 {
+	Util::Array<VisibilityDrawList>& draws = observerAllocator.GetArray<4>();
+
+	// reset all lists to that all entities are visible
+	IndexT i;
+	for (i = 0; i < draws.Size(); i++)
+	{
+		// clear draw lists
+		VisibilityDrawList& draw = draws[i];
+		auto it1 = draw.Begin();
+		while (it1 != draw.End())
+		{
+			auto it2 = it1.val->Begin();
+			while (it2 != it1.val->End())
+			{
+				it2.val->Clear();
+				it2++;
+			}
+			it1.val->Clear();
+			it1++;
+		}
+	}
 	observerAllocator.DeallocObject(id.id);
 }
 
@@ -384,7 +410,7 @@ ObservableContext::Setup(const Graphics::GraphicsEntityId id, VisibilityEntityTy
 		ObserverContext::VisibilityResultAllocator& alloc = visAllocators[i];
 		Ids::Id32 obj = alloc.AllocObject();
 		n_assert(cid == obj);
-		alloc.Get<0>(obj) = false;
+		alloc.Get<0>(obj) = true;
 		alloc.Get<1>(obj) = Models::ModelContext::GetContextId(id); // get context Id since model can be loaded later...
 	}
 }

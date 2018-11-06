@@ -40,6 +40,9 @@ public:
 	/// unregister texture
 	void UnregisterTexture(const uint32_t id, const CoreGraphics::TextureType type);
 
+	/// get tick params constant buffer
+	const CoreGraphics::ConstantBufferId GetTickParams() const;
+
 	/// submit resource changes
 	void SubmitTextureDescriptorChanges();
 	/// commit texture library to shader
@@ -81,6 +84,8 @@ private:
 
 	IndexT csmBufferTextureVar;
 	IndexT spotlightAtlasShadowBufferTextureVar;
+
+	CoreGraphics::ConstantBufferId tickParams;
 
 	AnyFX::EffectFactory* factory;
 };

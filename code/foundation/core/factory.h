@@ -62,7 +62,7 @@ private:
     ~Factory();
 
     static Factory* Singleton;
-    Util::HashTable<Util::String, const Rtti*> nameTable;		// for fast lookup by class name
+    Util::HashTable<Util::String, const Rtti*, 1024> nameTable;	// for fast lookup by class name
     Util::Dictionary<Util::FourCC, const Rtti*> fourccTable;	// for fast lookup by fourcc code
 };
 
