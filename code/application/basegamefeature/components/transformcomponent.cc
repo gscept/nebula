@@ -118,6 +118,48 @@ TransformComponent::SetLocalTransform(const Game::Entity& entity, const Math::ma
 //------------------------------------------------------------------------------
 /**
 */
+Math::matrix44
+TransformComponent::GetLocalTransform(const uint32_t & instance)
+{
+	if (instance < this->data.Size())
+		return this->LocalTransform(instance);
+
+	return Math::matrix44::identity();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::matrix44
+TransformComponent::GetLocalTransform(const Game::Entity & entity)
+{
+	return this->GetLocalTransform(this->GetInstance(entity));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::matrix44
+TransformComponent::GetWorldTransform(const uint32_t & instance)
+{
+	if (instance < this->data.Size())
+		return this->WorldTransform(instance);
+
+	return Math::matrix44::identity();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::matrix44
+TransformComponent::GetWorldTransform(const Game::Entity & entity)
+{
+	return this->GetWorldTransform(this->GetInstance(entity));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 TransformComponent::SetParents(const uint32_t & start, const uint32_t & end, const Util::Array<Entity>& entities, const Util::Array<uint32_t>& parentIndices)
 {

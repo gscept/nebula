@@ -9,6 +9,8 @@
 #include "models/modelcontext.h"
 #include "graphics/graphicsserver.h"
 #include "visibility/visibilitycontext.h"
+#include "basegamefeature/components/transformcomponent.h"
+#include "basegamefeature/managers/componentmanager.h"
 
 namespace GraphicsFeature
 {
@@ -49,7 +51,9 @@ GraphicsComponent::OnActivate(const uint32_t& instance)
 	this->data.Get<GRAPHICSENTITY>(instance) = gfxEntity.id;
 	Models::ModelContext::RegisterEntity(gfxEntity);
 	Models::ModelContext::Setup(gfxEntity, "mdl:Buildings/castle_tower.n3", "NONE");
-	Models::ModelContext::SetTransform(gfxEntity, Math::matrix44::identity());
+	auto transform = Game::ComponentManager::Instance()->GetComponent<Game::TransformComponent>()->GetWorldTransform(this->GetOwner(instance));
+	// auto transform = Game::TransformComponent::GetWorldTransform(this->GetOwner(instance));
+	Models::ModelContext::SetTransform(gfxEntity, transform);
 	Visibility::ObservableContext::RegisterEntity(gfxEntity);
 	Visibility::ObservableContext::Setup(gfxEntity, Visibility::VisibilityEntityType::Model);
 }
