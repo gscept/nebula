@@ -99,6 +99,12 @@ LevelLoader::Save(const Util::String& levelName)
 	return true;
 }
 
+struct ActivateListener
+{
+	Ptr<Game::BaseComponent> component;
+	uint firstInstance;
+	uint numInstances;
+};
 
 //------------------------------------------------------------------------------
 /**
@@ -113,6 +119,10 @@ LevelLoader::Load(const Util::String& levelName)
 	
 	Util::Array<Game::Entity> entities = Game::EntityManager::Instance()->CreateEntities(scene.numEntities);
 		
+	// We need to save each component and enitity start index so that we can call activate after
+	// all components has been loaded
+	Util::Array<ActivateListener> activateListeners;
+
 	for (auto component : scene.components)
 	{
 		Ptr<Game::BaseComponent> c = Game::ComponentManager::Instance()->ComponentByFourCC(component.fourcc);
@@ -139,6 +149,25 @@ LevelLoader::Load(const Util::String& levelName)
 			}
 
 			c->SetParents(start, end, entities, scene.parentIndices);
+
+			if (c->SubscribedEvents().IsSet(Game::ComponentEvent::OnActivate))
+			{
+				// Add to list to that we can activate all instances in this component later.
+				ActivateListener listener;
+				listener.component = c;
+				listener.firstInstance = start;
+				listener.numInstances = component.numInstances;
+				activateListeners.Append(listener);
+			}
+		}
+	}
+
+
+	for (auto listener : activateListeners)
+	{
+		for (SizeT i = listener.firstInstance; i < listener.numInstances; i++)
+		{
+			listener.component->OnActivate(i);
 		}
 	}
 

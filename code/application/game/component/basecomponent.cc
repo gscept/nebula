@@ -219,16 +219,6 @@ BaseComponent::Allocate(uint num)
 //------------------------------------------------------------------------------
 /**
 */
-Util::Array<Util::Array<Entity>*>
-BaseComponent::GetEntityAttributes()
-{
-	n_assert2(false, "Method has not been overridden!");
-	return Util::Array<Util::Array<Entity>*>();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 void
 BaseComponent::Serialize(const Ptr<IO::BinaryWriter>& writer) const
 {

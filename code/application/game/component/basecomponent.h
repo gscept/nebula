@@ -49,7 +49,7 @@ enum ComponentEvent
 	OnRenderDebug	= 3,
 	OnActivate		= 4,
 	OnDeactivate	= 5,
-	NumEvents		= 6
+	NumEvents		= 7
 };
 
 class BaseComponent : public Core::RefCounted
@@ -123,10 +123,6 @@ public:
 	/// Allocate multiple instances quickly
 	virtual void Allocate(uint num);
 	
-	/// Returns all attributes that are of Entity type.
-	/// Just returns a pointer to each of the arrays containing the entity-ids
-	virtual Util::Array<Util::Array<Game::Entity>*> GetEntityAttributes();
-
 	/// Serialize component and write to binary stream
 	virtual void Serialize(const Ptr<IO::BinaryWriter>& writer) const;
 
