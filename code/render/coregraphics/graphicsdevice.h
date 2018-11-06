@@ -68,6 +68,8 @@ void BeginPass(const CoreGraphics::PassId pass);
 void SetToNextSubpass();
 /// begin rendering a batch
 void BeginBatch(Frame::FrameBatchType::Code batchType);
+/// go to next sub-batch
+void SetToNextSubBatch();
 
 /// set the current vertex stream source
 void SetStreamVertexBuffer(IndexT streamIndex, const CoreGraphics::VertexBufferId& vb, IndexT offsetVertexIndex);
