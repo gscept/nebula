@@ -46,7 +46,7 @@
 #include "delegatetabletest.h"
 #include "httpclienttest.h"
 #include "bxmlreadertest.h"
-
+#include "blobtest.h"
 using namespace Core;
 using namespace Test;
 
@@ -70,11 +70,10 @@ __cdecl main()
     // setup and run test runner
     Ptr<TestRunner> testRunner = TestRunner::Create();
     //testRunner->AttachTestCase(BXmlReaderTest::Create());
-    testRunner->AttachTestCase(HttpClientTest::Create());
-    #if !__PS3__
+    testRunner->AttachTestCase(HttpClientTest::Create());    
     testRunner->AttachTestCase(DelegateTableTest::Create());
     testRunner->AttachTestCase(DelegateTest::Create());
-    #endif
+    testRunner->AttachTestCase(BlobTest::Create());
     testRunner->AttachTestCase(ExcelXmlReaderTest::Create());
     testRunner->AttachTestCase(RingBufferTest::Create());
     testRunner->AttachTestCase(RunLengthCodecTest::Create());
