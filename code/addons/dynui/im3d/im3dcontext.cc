@@ -83,6 +83,10 @@ struct Im3dState
     CoreGraphics::ShaderProgramId points;
     CoreGraphics::ShaderProgramId triangles;
     CoreGraphics::VertexBufferId vbo;       
+    bool renderGrid = false;
+    int gridSize = 20;
+    float cellSize = 1.0f;
+    Math::float4 gridColor{ 1.0f,1.0f,1.0f,0.3f };
     Ptr<Im3dInputHandler> inputHandler;
     byte* vertexPtr;    
 };
@@ -246,6 +250,24 @@ Im3dContext::OnRenderAsPlugin(const IndexT frameIndex, const Timing::Time frameT
     //FIME use a better pass
     if (filter == "IMGUI"_atm)
     {
+     
+        if (imState.renderGrid)
+        {
+            int gridSize = imState.gridSize;            
+            float cellSize = imState.cellSize;            
+            Im3d::SetSize(1.0f);            
+            Im3d::BeginLines();
+            Im3d::Color col = imState.gridColor;
+            for (int x = -gridSize; x <= gridSize; ++x) {
+                Im3d::Vertex(-gridSize * cellSize, 0.0f, (float)x * cellSize, col);
+                Im3d::Vertex(gridSize * cellSize, 0.0f, (float)x * cellSize, col);
+            }
+            for (int z = -gridSize; z <= gridSize; ++z) {
+                Im3d::Vertex((float)z * cellSize, 0.0f, -gridSize * cellSize, col);
+                Im3d::Vertex((float)z * cellSize, 0.0f, gridSize* cellSize, col);
+            }
+            Im3d::End();
+        }
         Im3d::EndFrame();
         VertexBufferId vbo = imState.vbo;                
 
@@ -310,6 +332,22 @@ bool Im3dContext::HandleInput(const Input::InputEvent & event)
         }
     }
     return false;
+}
+
+void Im3dContext::SetGridStatus(bool enable)
+{
+    imState.renderGrid = enable;
+}
+
+void Im3dContext::SetGridSize(float cellSize, int cellCount)
+{
+    imState.cellSize = cellSize;
+    imState.gridSize = cellCount;
+}
+
+void Im3dContext::SetGridColor(Math::float4 const & color)
+{
+    imState.gridColor = color;
 }
 
 void Im3dContext::SetGizmoSize(int size, int width)
