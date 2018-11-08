@@ -47,7 +47,7 @@
 #include "delegatetabletest.h"
 #include "httpclienttest.h"
 #include "bxmlreadertest.h"
-
+#include "blobtest.h"
 using namespace Core;
 using namespace Test;
 
@@ -74,6 +74,7 @@ __cdecl main()
     testRunner->AttachTestCase(HttpClientTest::Create());    
     testRunner->AttachTestCase(DelegateTableTest::Create());
     testRunner->AttachTestCase(DelegateTest::Create());
+    testRunner->AttachTestCase(BlobTest::Create());
     testRunner->AttachTestCase(ExcelXmlReaderTest::Create());
     testRunner->AttachTestCase(RingBufferTest::Create());
     testRunner->AttachTestCase(RunLengthCodecTest::Create());
