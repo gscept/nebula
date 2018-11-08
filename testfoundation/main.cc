@@ -26,6 +26,7 @@
 #include "textreaderwritertest.h"
 #include "messagereaderwritertest.h"
 #include "xmlreaderwritertest.h"
+#include "jsonreaderwritertest.h"
 #include "binaryreaderwritertest.h"
 #include "uritest.h"
 #include "mediatypetest.h"
@@ -70,11 +71,9 @@ __cdecl main()
     // setup and run test runner
     Ptr<TestRunner> testRunner = TestRunner::Create();
     //testRunner->AttachTestCase(BXmlReaderTest::Create());
-    testRunner->AttachTestCase(HttpClientTest::Create());
-    #if !__PS3__
+    testRunner->AttachTestCase(HttpClientTest::Create());    
     testRunner->AttachTestCase(DelegateTableTest::Create());
     testRunner->AttachTestCase(DelegateTest::Create());
-    #endif
     testRunner->AttachTestCase(ExcelXmlReaderTest::Create());
     testRunner->AttachTestCase(RingBufferTest::Create());
     testRunner->AttachTestCase(RunLengthCodecTest::Create());
@@ -94,7 +93,7 @@ __cdecl main()
     testRunner->AttachTestCase(DictionaryTest::Create());
     testRunner->AttachTestCase(FixedArrayTest::Create());
     testRunner->AttachTestCase(FixedTableTest::Create());
-    //testRunner->AttachTestCase(HashTableTest::Create());
+    testRunner->AttachTestCase(HashTableTest::Create());
     testRunner->AttachTestCase(QueueTest::Create());
     testRunner->AttachTestCase(ArrayQueueTest::Create());
     testRunner->AttachTestCase(MemoryStreamTest::Create());
@@ -103,6 +102,7 @@ __cdecl main()
     testRunner->AttachTestCase(TextReaderWriterTest::Create());
     testRunner->AttachTestCase(MessageReaderWriterTest::Create());
     testRunner->AttachTestCase(XmlReaderWriterTest::Create());
+    testRunner->AttachTestCase(JSonReaderWriterTest::Create());
     testRunner->AttachTestCase(BinaryReaderWriterTest::Create());
     testRunner->AttachTestCase(VariantTest::Create());
     testRunner->AttachTestCase(IOInterfaceTest::Create());
