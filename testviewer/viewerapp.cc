@@ -86,6 +86,10 @@ bool SimpleViewerApplication::Open()
         Dynui::ImguiContext::Create();
         Im3d::Im3dContext::Create();
 
+        Im3d::Im3dContext::SetGridStatus(true);
+        Im3d::Im3dContext::SetGridSize(1.0f, 25);
+        Im3d::Im3dContext::SetGridColor(Math::float4(0.2f, 0.2f, 0.2f, 0.8f));
+
         this->view = gfxServer->CreateView("mainview", "frame:vkdebug.json");
         this->stage = gfxServer->CreateStage("stage1", true);
         this->cam = Graphics::CreateEntity();
