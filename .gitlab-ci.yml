@@ -1,6 +1,7 @@
 before_script:
     - call ./fips fetch
     - call ./fips update
+    - call ./fips nebula
     
 stages:
     - build
