@@ -656,3 +656,7 @@ ENDIF()
 				visibilitysystem.cc
 			)
 fips_end_module()
+# FIXME
+if(N_USE_VULKAN)		
+		target_include_directories(render PUBLIC ${Vulkan_INCLUDE_DIR})        
+endif()
