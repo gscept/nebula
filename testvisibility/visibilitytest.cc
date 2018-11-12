@@ -23,7 +23,7 @@
 
 #include "renderutil/mayacamerautil.h"
 
-#include "dynui/imguirenderer.h"
+#include "dynui/imguicontext.h"
 #include "imgui.h"
 
 using namespace Timing;
