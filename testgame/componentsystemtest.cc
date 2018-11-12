@@ -10,6 +10,7 @@
 #include "basegamefeature/components/transformcomponent.h"
 #include "util/random.h"
 #include "basegamefeature/components/tagcomponent.h"
+#include "timing/timer.h"
 
 using namespace Game;
 
@@ -25,23 +26,24 @@ void
 ComponentSystemTest::Run()
 {
 	Ptr<EntityManager> eMgr = EntityManager::Instance();
-	Ptr<ComponentManager> cMgr = ComponentManager::Instance();
-
-	Ptr<TransformComponent> tComp = cMgr->GetComponent<TransformComponent>();
-	Ptr<TagComponent> tagComp = TagComponent::Create();
-	cMgr->RegisterComponent(tagComp.upcast<BaseComponent>());
-
+	
 	Util::Array<Entity> entities;
 
 	auto entity = eMgr->NewEntity();
 	entities.Append(entity);
+
+	TransformComponent::RegisterEntity(entity);
 	
-	tComp->RegisterEntity(entity);
+	Timing::Timer timer;
+
+	timer.Reset();
+
+	timer.Start();
 	for (SizeT i = 0; i < 32768; i++)
 	{
 		if (i % 5 == 0)
 		{
-			tComp->DeregisterEntity(entity);
+			TransformComponent::DeregisterEntity(entity);
 		}
 		else if (i % 50 == 0)
 		{
@@ -59,23 +61,21 @@ ComponentSystemTest::Run()
 		
 		entity = eMgr->NewEntity();
 		entities.Append(entity);
-		tComp->RegisterEntity(entity);
+		TransformComponent::RegisterEntity(entity);
 
-		tagComp->RegisterEntity(entity);
+		TagComponent::RegisterEntity(entity);
 
 		this->gameApp->StepFrame();
 	}
+	timer.Stop();
+	n_printf("Average step time = %f\n", timer.GetTime() / 32768.0f);
 
 	for (SizeT i = 0; i < entities.Size(); i++)
 	{
 		eMgr->DeleteEntity(entities[i]);
 	}
 
-	tComp->DestroyAll();
-	tComp->Clean();
-
-	tagComp->DestroyAll();
-	tagComp->Clean();
+	Game::ComponentManager::Instance()->ClearAll();
 
 	// Went through with no bugs, hurray!!
 	VERIFY(true);

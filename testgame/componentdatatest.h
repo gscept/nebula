@@ -27,35 +27,9 @@ namespace Attr
 namespace Test
 {
 
-enum AttributeNames
+class TestComponent
 {
-	OWNER,
-	GUID,
-	STRING,
-	INT,
-	FLOAT,
-	NumAttributes
-};
-
-class TestComponent : public Game::Component<
-	decltype(Attr::GuidTest),
-	decltype(Attr::StringTest),
-	decltype(Attr::IntTest),
-	decltype(Attr::FloatTest)
->
-{
-	__DeclareClass(TestComponent)
-public:
-	TestComponent();
-	~TestComponent();
-
-	uint32_t RegisterEntity(const Game::Entity& e);
-	void DeregisterEntity(const Game::Entity& e);
-	SizeT Optimize();
-
-	using data_type = decltype(component_templated_t::data);
-	data_type* GetDataPtr();
-
+	__DeclareComponent(TestComponent)
 private:
 	bool immediate_deletion = false;
 };

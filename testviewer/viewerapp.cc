@@ -16,8 +16,8 @@
 #include "math/point.h"
 #include "dynui/imguicontext.h"
 #include "imgui.h"
-#include "im3d/im3dcontext.h"
-#include "im3d/im3d.h"
+#include "dynui/im3d/im3dcontext.h"
+#include "dynui/im3d/im3d.h"
 
 using namespace Timing;
 using namespace Graphics;
