@@ -6,7 +6,6 @@
     (C) 2018 Individual contributors, see AUTHORS file
 */
 #include "game/featureunit.h"
-#include "basegamefeature/managers/componentmanager.h"
 #include "graphicsfeature/components/graphicscomponent.h"
 
 //------------------------------------------------------------------------------
@@ -29,9 +28,6 @@ public:
 	void OnActivate();
 	/// Called upon deactivation of feature unit
 	void OnDeactivate();
-
-private:
-	Ptr<GraphicsComponent> graphicsComponent;
 };
 
 } // namespace GraphicsFeature

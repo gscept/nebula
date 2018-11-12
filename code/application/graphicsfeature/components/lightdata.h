@@ -1,4 +1,4 @@
-// NIDL #version:22#
+// NIDL #version:32#
 #pragma once
 //------------------------------------------------------------------------------
 /**
@@ -23,20 +23,19 @@ namespace Attr
 namespace GraphicsFeature
 {
 
-class PointLightComponentBase : public Game::Component<
+class PointLightComponentData : public Game::Component<
     decltype(Attr::Range),
     decltype(Attr::Color),
     decltype(Attr::CastShadows),
     decltype(Attr::DebugName)
 >
 {
-    __DeclareClass(PointLightComponentBase)
-
+    __DeclareClass(PointLightComponentData);
 public:
     /// Default constructor
-    PointLightComponentBase();
+    PointLightComponentData();
     /// Default destructor
-    ~PointLightComponentBase();
+    ~PointLightComponentData();
 
     enum AttributeIndex
     {
@@ -67,7 +66,7 @@ public:
 };
         
 
-class SpotLightComponentBase : public Game::Component<
+class SpotLightComponentData : public Game::Component<
     decltype(Attr::Range),
     decltype(Attr::Angle),
     decltype(Attr::Direction),
@@ -75,13 +74,12 @@ class SpotLightComponentBase : public Game::Component<
     decltype(Attr::CastShadows)
 >
 {
-    __DeclareClass(SpotLightComponentBase)
-
+    __DeclareClass(SpotLightComponentData);
 public:
     /// Default constructor
-    SpotLightComponentBase();
+    SpotLightComponentData();
     /// Default destructor
-    ~SpotLightComponentBase();
+    ~SpotLightComponentData();
 
     enum AttributeIndex
     {
@@ -113,19 +111,18 @@ public:
 };
         
 
-class DirectionalLightComponentBase : public Game::Component<
+class DirectionalLightComponentData : public Game::Component<
     decltype(Attr::Direction),
     decltype(Attr::Color),
     decltype(Attr::CastShadows)
 >
 {
-    __DeclareClass(DirectionalLightComponentBase)
-
+    __DeclareClass(DirectionalLightComponentData);
 public:
     /// Default constructor
-    DirectionalLightComponentBase();
+    DirectionalLightComponentData();
     /// Default destructor
-    ~DirectionalLightComponentBase();
+    ~DirectionalLightComponentData();
 
     enum AttributeIndex
     {

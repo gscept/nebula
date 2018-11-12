@@ -6,25 +6,23 @@
 	(C) 2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "graphicscomponentbase.h"
+#include "game/component/component.h"
 
 namespace GraphicsFeature
 {
 
-class GraphicsComponent : public GraphicsComponentBase
+class GraphicsComponent
 {
-	__DeclareClass(GraphicsComponent)
+	__DeclareComponent(GraphicsComponent)
 public:
-	GraphicsComponent();
-	~GraphicsComponent();
+	static void SetupAcceptedMessages();
 	
-	void SetupAcceptedMessages();
+	static void OnActivate(const uint32_t& instance);
+	static void OnDeactivate(const uint32_t& instance);
 
-	void OnActivate(const uint32_t& instance);
-	void OnDeactivate(const uint32_t& instance);
+	static void UpdateTransform(const Game::Entity&, const Math::matrix44&);
+	static void SetModel(const Game::Entity&, const Util::String&);
 
-	void UpdateTransform(const Game::Entity&, const Math::matrix44&);
-	void SetModel(const Game::Entity&, const Util::String&);
 
 private:
 
