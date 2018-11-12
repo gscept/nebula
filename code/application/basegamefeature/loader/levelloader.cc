@@ -7,9 +7,8 @@
 #include "util/hashtable.h"
 #include "scenecompiler.h"
 #include "basegamefeature/managers/entitymanager.h"
-#include "basegamefeature/managers/componentmanager.h"
 #include "io/memorystream.h"
-
+#include "basegamefeature/managers/componentmanager.h"
 
 #include <chrono>
 #include <ctime>
@@ -39,7 +38,7 @@ LevelLoader::Save(const Util::String& levelName)
 	uint numComponents = manager->GetNumComponents();
 	for (SizeT i = 0; i < numComponents; i++)
 	{
-		Ptr<Game::BaseComponent> component = manager->GetComponentAtIndex(i);
+		Game::ComponentInterface* component = manager->GetComponentAtIndex(i);
 		if (component->NumRegistered() == 0)
 		{
 			// Skip this component
@@ -50,7 +49,7 @@ LevelLoader::Save(const Util::String& levelName)
 
 		ComponentBuildData c;
 
-		c.fourcc = component->GetClassFourCC();
+		c.fourcc = component->GetRtti()->GetFourCC();
 		c.numInstances = component->NumRegistered();
 
 		// TODO: Add description of component so that we can make sure we're not reading incorrect or outdated data later.
@@ -62,7 +61,7 @@ LevelLoader::Save(const Util::String& levelName)
 		c.InitializeStream();
 		bWriter->SetStream(c.mStream);
 		bWriter->Open();
-		component->Serialize(bWriter);
+		component->functions.Serialize(bWriter);
 		bWriter->Close();
 
 		// We know the owner is always the first attribute
@@ -101,7 +100,7 @@ LevelLoader::Save(const Util::String& levelName)
 
 struct ActivateListener
 {
-	Ptr<Game::BaseComponent> component;
+	Game::ComponentInterface* component;
 	uint firstInstance;
 	uint numInstances;
 };
@@ -125,8 +124,8 @@ LevelLoader::Load(const Util::String& levelName)
 
 	for (auto component : scene.components)
 	{
-		Ptr<Game::BaseComponent> c = Game::ComponentManager::Instance()->ComponentByFourCC(component.fourcc);
-		if (c.isvalid())
+		Game::ComponentInterface* c = Game::ComponentManager::Instance()->GetComponentByFourCC(component.fourcc);
+		if (c != nullptr)
 		{
 			// Needs to create entirely new instances, not reuse old.
 
@@ -138,7 +137,7 @@ LevelLoader::Load(const Util::String& levelName)
 			bReader->SetStream(component.mStream);
 			bReader->Open();
 			
-			c->Deserialize(bReader, start, component.numInstances);
+			c->functions.Deserialize(bReader, start, component.numInstances);
 			
 			bReader->Close();
 
@@ -148,9 +147,10 @@ LevelLoader::Load(const Util::String& levelName)
 				c->SetOwner(j, entities[c->GetOwner(j).id]);
 			}
 
-			c->SetParents(start, end, entities, scene.parentIndices);
+			if (c->functions.SetParents != nullptr)
+				c->functions.SetParents(start, end, entities, scene.parentIndices);
 
-			if (c->SubscribedEvents().IsSet(Game::ComponentEvent::OnActivate))
+			if (c->SubscribedEvents().IsSet(Game::ComponentEvent::OnActivate) && c->functions.OnActivate != nullptr)
 			{
 				// Add to list to that we can activate all instances in this component later.
 				ActivateListener listener;
@@ -167,7 +167,7 @@ LevelLoader::Load(const Util::String& levelName)
 	{
 		for (SizeT i = listener.firstInstance; i < listener.numInstances; i++)
 		{
-			listener.component->OnActivate(i);
+			listener.component->functions.OnActivate(i);
 		}
 	}
 

@@ -5,6 +5,8 @@
 
 	Keeps track of all existing entites.
 
+	Components can register deletion callbacks to
+
 	(C) 2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
@@ -14,7 +16,7 @@
 #include "game/entity.h"
 #include "game/manager.h"
 #include "util/delegate.h"
-#include "game/component/basecomponent.h"
+#include "game/component/componentinterface.h"
 
 namespace Game {
 
@@ -47,11 +49,14 @@ public:
 	void InvalidateAllEntities();
 
 	/// Register a deletion callback to an entity
-	void RegisterDeletionCallback(const Entity& e, const Ptr<BaseComponent>& component);
-
+	void RegisterDeletionCallback(const Entity& e, ComponentInterface* component);
+	
 	/// Deregister a deletion callback to an entity. Note that this is not super fast.
-	void DeregisterDeletionCallback(const Entity& e, const Ptr<BaseComponent>& component);
+	void DeregisterDeletionCallback(const Entity& e, ComponentInterface* component);
 private:
+	/// Register a deletion callback to when a specific entity is deleted
+	void RegisterDeletionCallback(const Entity& e, const Util::Delegate<Entity>& callback);
+
 	/// Generation pool
 	Ids::IdGenerationPool pool;
 

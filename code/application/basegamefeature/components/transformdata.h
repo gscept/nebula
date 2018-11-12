@@ -1,4 +1,4 @@
-// NIDL #version:22#
+// NIDL #version:32#
 #pragma once
 //------------------------------------------------------------------------------
 /**
@@ -11,29 +11,43 @@
 //------------------------------------------------------------------------------
 namespace Attr
 {
-    DeclareUInt(GraphicsEntity, 'gEnt', Attr::ReadOnly);
+    DeclareMatrix44(LocalTransform, 'TFLT', Attr::ReadWrite);
+    DeclareMatrix44(WorldTransform, 'TFWT', Attr::ReadOnly);
+    DeclareUInt(Parent, 'TFPT', Attr::ReadOnly);
+    DeclareUInt(FirstChild, 'TFFC', Attr::ReadOnly);
+    DeclareUInt(NextSibling, 'TFNS', Attr::ReadOnly);
+    DeclareUInt(PreviousSibling, 'TFPS', Attr::ReadOnly);
 } // namespace Attr
 
 //------------------------------------------------------------------------------
-namespace GraphicsFeature
+namespace Game
 {
 
-class GraphicsComponentBase : public Game::Component<
-    decltype(Attr::GraphicsEntity)
+class TransformComponentData : public Game::Component<
+    decltype(Attr::Parent),
+    decltype(Attr::FirstChild),
+    decltype(Attr::NextSibling),
+    decltype(Attr::PreviousSibling),
+    decltype(Attr::LocalTransform),
+    decltype(Attr::WorldTransform)
 >
 {
-    __DeclareClass(GraphicsComponentBase)
-
+    __DeclareClass(TransformComponentData);
 public:
     /// Default constructor
-    GraphicsComponentBase();
+    TransformComponentData();
     /// Default destructor
-    ~GraphicsComponentBase();
+    ~TransformComponentData();
 
     enum AttributeIndex
     {
         OWNER,
-        GRAPHICSENTITY,
+        PARENT,
+        FIRSTCHILD,
+        NEXTSIBLING,
+        PREVIOUSSIBLING,
+        LOCALTRANSFORM,
+        WORLDTRANSFORM,
 
         NumAttributes
     };
@@ -55,4 +69,4 @@ public:
     void OnEntityDeleted(Game::Entity entity);
 };
         
-} // namespace GraphicsFeature
+} // namespace Game

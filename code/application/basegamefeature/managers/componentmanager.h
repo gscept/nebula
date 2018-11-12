@@ -13,11 +13,12 @@
 #include "util/delegate.h"
 #include "util/bitfield.h"
 #include "util/dictionary.h"
+#include "ids/id.h"
+#include "util/fourcc.h"
 
 namespace Game
 {
-
-class BaseComponent;
+class ComponentInterface;
 
 class ComponentManager : public Game::Manager
 {
@@ -28,25 +29,20 @@ public:
 	~ComponentManager();
 
 	/// Register a component and setup all event delegates for it.
-	void RegisterComponent(const Ptr<BaseComponent>& component);
-
-	/// Deregister a component and remove all event delegates associated with it.
-	void DeregisterComponent(const Ptr<BaseComponent>& component);
+	void RegisterComponent(ComponentInterface* component);
 
 	/// Deregister all components. Removes all event delegates too.
 	void DeregisterAll();
 
-	/// Retrieve a component from the registry
-	template<class T>
-	const Ptr<T>& GetComponent() const;
+	/// Destroys all component instances of each component
+	void ClearAll();
 
 	/// Returns the number of components registered.
 	SizeT GetNumComponents() const;
 
-	Ptr<BaseComponent> GetComponentAtIndex(IndexT index);
+	ComponentInterface* GetComponentAtIndex(IndexT index);
 
-	/// Retrieve a component by fourcc.
-	Ptr<BaseComponent> ComponentByFourCC(const Util::FourCC& fourcc);
+	ComponentInterface* GetComponentByFourCC(const Util::FourCC& fourcc);
 
 	/// Execute all OnBeginFrame events
 	void OnBeginFrame();
@@ -61,32 +57,7 @@ public:
 	void OnRenderDebug();
 
 private:
-	Util::Array<Ptr<BaseComponent>> components;
-
-	Util::HashTable<Util::FourCC, Ptr<BaseComponent>> registry;
-
-	/// Find the index of a delegate based on a component
-	static IndexT FindDelegateIndex(const Util::Array<Util::Delegate<>>& delegateArray, const Ptr<BaseComponent>& component);
-
-	/// All arrays containing the delegates for different events.
-	/// Honestly, I don't remember why I designed it like this anymore.
-	Util::Array<Util::Delegate<>> delegates_OnBeginFrame;
-	Util::Array<Util::Delegate<>> delegates_OnRender;
-	Util::Array<Util::Delegate<>> delegates_OnEndFrame;
-	Util::Array<Util::Delegate<>> delegates_OnRenderDebug;
+	Util::Array<ComponentInterface*> components;
 };
-
-
-//------------------------------------------------------------------------------
-/**
-*/
-template<class T>
-inline const Ptr<T>& ComponentManager::GetComponent() const
-{
-	const Core::Rtti rtti = T::RTTI;
-	n_assert2(this->registry.Contains(rtti.GetFourCC()), "Component not registered to componentmanager!");
-	return this->registry[rtti.GetFourCC()].cast<T>();
-}
-
 
 } // namespace Game
