@@ -165,8 +165,7 @@ TransformComponent::SetParents(const uint32_t & start, const uint32_t & end, con
 	SizeT i = 0;
 	for (SizeT instance = start; instance < end; instance++)
 	{
-		// TODO: Implement this entire function. Needs to recalculate relationships and transforms.
-		// this->Parent(i) = this->GetInstance(entities[parentIndices[i]]);
+		SetParent(instance, GetInstance(entities[parentIndices[i]]));
 		i++;
 	}
 }
@@ -179,7 +178,15 @@ TransformComponent::SetParent(const Game::Entity& entity, const Game::Entity& pa
 {
 	uint32_t instance = component.GetInstance(entity);
 	uint32_t parentInstance = component.GetInstance(parent);
+	SetParent(instance, parentInstance);
+}
 
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TransformComponent::SetParent(const uint32_t& instance, const uint32_t& parentInstance)
+{
 	if (instance == InvalidIndex ||
 		parentInstance == InvalidIndex ||
 		instance == parentInstance ||
@@ -191,10 +198,25 @@ TransformComponent::SetParent(const Game::Entity& entity, const Game::Entity& pa
 	}
 	
 	component.data.Get<AttrIndex::PARENT>(instance) = parentInstance;
-	component.data.Get<AttrIndex::FIRSTCHILD>(parentInstance) = instance;
 
-	// TODO: update siblings
+	uint32_t child = component.data.Get<AttrIndex::FIRSTCHILD>(parentInstance);
+	if (child == InvalidIndex)
+	{
+		component.data.Get<AttrIndex::FIRSTCHILD>(parentInstance) = instance;
+	}
+	else
+	{
+		// Find last child and make this a sibling to that instance
+		uint32_t sibling = component.data.Get<AttrIndex::NEXTSIBLING>(child);
+		while (sibling != InvalidIndex)
+		{
+			child = sibling;
+			sibling = component.data.Get<AttrIndex::NEXTSIBLING>(child);
+		}
 
+		component.data.Get<AttrIndex::NEXTSIBLING>(child) = instance;
+		component.data.Get<AttrIndex::PREVIOUSSIBLING>(instance) = child;
+	}
 
 	UpdateHierarchy(instance);
 }
