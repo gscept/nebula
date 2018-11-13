@@ -36,6 +36,7 @@ public:
 
 	/// Set parent of specific entity
 	static void SetParent(const Game::Entity& entity, const Game::Entity& parent);
+	static void TransformComponent::SetParent(const uint32_t& instance, const uint32_t& parentInstance);
 
 private:
 	static void UpdateHierarchy(uint32_t instance);
