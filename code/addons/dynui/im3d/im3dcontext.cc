@@ -148,8 +148,6 @@ Im3dContext::Create()
     imState.vertexPtr = (byte*)CoreGraphics::VertexBufferMap(imState.vbo, CoreGraphics::GpuBufferTypes::MapWrite);
 }
 
-
-
 //------------------------------------------------------------------------------
 /**
 */
@@ -163,7 +161,6 @@ Im3dContext::Discard()
     CoreGraphics::DestroyVertexBuffer(imState.vbo);
     imState.vertexPtr = nullptr;
 }
-
 
 //------------------------------------------------------------------------------
 /**
@@ -189,7 +186,7 @@ Im3dContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameInd
     // m_projScaleY controls how gizmos are scaled in world space to maintain a constant screen height
     ad.m_projScaleY = tanf(Math::n_deg2rad(settings.GetFov()) * 0.5f) * 2.0f; // or vertical fov for a perspective projection
     
-    auto const & mouse = Input::InputServer::Instance()->GetDefaultMouse();
+    auto const& mouse = Input::InputServer::Instance()->GetDefaultMouse();
     
     // window origin is top-left, ndc is bottom-left
     Math::float2 mousePos = mouse->GetScreenPosition();
@@ -236,7 +233,6 @@ Im3dContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameInd
     Im3d::NewFrame();
 }
 
-
 //------------------------------------------------------------------------------
 /**
 */
@@ -279,6 +275,7 @@ Im3dContext::OnRenderAsPlugin(const IndexT frameIndex, const Timing::Time frameT
             const SizeT vertexBufferSize = drawList.m_vertexCount * sizeof(Im3d::VertexData);
             Memory::Copy(vertexBuffer, imState.vertexPtr + vertexBufferOffset, vertexBufferSize);
             CoreGraphics::SetGraphicsPipeline();
+
             // setup input buffers
             CoreGraphics::SetStreamVertexBuffer(0, vbo, 0);
 
@@ -298,10 +295,14 @@ Im3dContext::OnRenderAsPlugin(const IndexT frameIndex, const Timing::Time frameT
     }
 }
 
-bool Im3dContext::HandleInput(const Input::InputEvent & event)
+//------------------------------------------------------------------------------
+/**
+*/
+bool 
+Im3dContext::HandleInput(const Input::InputEvent& event)
 {
     auto const& evType = event.GetType();
-    auto & ctx = Im3d::GetContext();
+    auto& ctx = Im3d::GetContext();
     if (evType == InputEvent::MouseButtonDown)
     {
         if (ctx.m_hotId > 0)
@@ -312,9 +313,13 @@ bool Im3dContext::HandleInput(const Input::InputEvent & event)
     return false;
 }
 
-void Im3dContext::SetGizmoSize(int size, int width)
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+Im3dContext::SetGizmoSize(int size, int width)
 {
-    auto & ctx = GetContext();
+    auto& ctx = GetContext();
 
     ctx.m_gizmoHeightPixels = size;
     ctx.m_gizmoSizePixels = width;

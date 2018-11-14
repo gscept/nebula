@@ -129,6 +129,9 @@ ImguiContext::ImguiDrawFunction(ImDrawData* data)
 		vertexBufferOffset += vertexBufferSize;
 		indexBufferOffset += indexBufferSize;
 	}
+
+	// reset clip settings
+	CoreGraphics::ResetClipSettings();
 }
 
 _ImplementContext(ImguiContext);

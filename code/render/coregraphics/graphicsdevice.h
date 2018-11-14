@@ -71,6 +71,9 @@ void BeginBatch(Frame::FrameBatchType::Code batchType);
 /// go to next sub-batch
 void SetToNextSubBatch();
 
+/// reset clip settings to pass
+void ResetClipSettings();
+
 /// set the current vertex stream source
 void SetStreamVertexBuffer(IndexT streamIndex, const CoreGraphics::VertexBufferId& vb, IndexT offsetVertexIndex);
 /// set current vertex layout

@@ -147,10 +147,12 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 	VkPipelineLayout currentPipelineLayout;
 	VkPipeline currentPipeline;
 	VkPipelineInfoBits currentPipelineBits;
+
+	static const SizeT MaxClipSettings = 8;
 	uint32_t numViewports;
-	VkViewport* viewports;
+	VkViewport viewports[MaxClipSettings];
 	uint32_t numScissors;
-	VkRect2D* scissors;
+	VkRect2D scissors[MaxClipSettings];
 	bool viewportsDirty[NumDrawThreads];
 	bool scissorsDirty[NumDrawThreads];
 
@@ -703,7 +705,8 @@ UnbindPipeline()
 void
 SetViewports(VkViewport* viewports, SizeT num)
 {
-	state.viewports = viewports;
+	n_assert(num < state.MaxClipSettings);
+	memcpy(state.viewports, viewports, sizeof(VkViewport) * num);
 	state.numViewports = num;
 	if (state.currentProgram != -1)
 	{
@@ -729,7 +732,8 @@ SetViewports(VkViewport* viewports, SizeT num)
 void
 SetScissorRects(VkRect2D* scissors, SizeT num)
 {
-	state.scissors = scissors;
+	n_assert(num < state.MaxClipSettings);
+	memcpy(state.scissors, scissors, sizeof(VkRect2D) * num);
 	state.numScissors = num;
 	if (state.currentProgram != -1)
 	{
@@ -1702,16 +1706,6 @@ BeginPass(const CoreGraphics::PassId pass)
 	state.passInfo.pipelineStatistics = 0;
 	state.passInfo.queryFlags = 0;
 	state.passInfo.occlusionQueryEnable = VK_FALSE;
-
-	// begin intermittent commandbuffer
-	//BeginDrawSubpass();
-
-	const Util::FixedArray<VkRect2D>& scissors = PassGetVkRects(pass);
-	state.numScissors = scissors.Size();
-	state.scissors = scissors.Begin();
-	const Util::FixedArray<VkViewport>& viewports = PassGetVkViewports(pass);
-	state.numViewports = viewports.Size();
-	state.viewports = viewports.Begin();
 }
 
 //------------------------------------------------------------------------------
@@ -1759,6 +1753,15 @@ SetToNextSubBatch()
 		// if we want a new thread, make one, then bind shared descriptor sets
 		BeginDrawThread();
 	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+ResetClipSettings()
+{
+	PassApplyClipSettings(state.pass);
 }
 
 //------------------------------------------------------------------------------
@@ -2571,6 +2574,7 @@ GetUsePatches()
 void 
 SetViewport(const Math::rectangle<int>& rect, int index)
 {
+	// copy here is on purpose, because we don't want to modify the state viewports (they are pointers to the pass)
 	VkViewport& vp = state.viewports[index];
 	vp.width = (float)rect.width();
 	vp.height = (float)rect.height();
@@ -2601,6 +2605,7 @@ SetViewport(const Math::rectangle<int>& rect, int index)
 void 
 SetScissorRect(const Math::rectangle<int>& rect, int index)
 {
+	// copy here is on purpose, because we don't want to modify the state scissors (they are pointers to the pass)
 	VkRect2D& sc = state.scissors[index];
 	sc.extent.width = rect.width();
 	sc.extent.height = rect.height();
