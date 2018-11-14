@@ -14,7 +14,6 @@
 using namespace Game;
 using namespace Core;
 
-
 namespace Attr
 {
 	DefineGuid(GuidTest, 'gTst', Attr::ReadWrite)
@@ -28,81 +27,49 @@ namespace Test
 {
 
 __ImplementClass(Test::CompDataTest, 'CDTS', Test::TestCase);
-__ImplementClass(Test::TestComponent, 'tstC', Game::BaseComponent);
 
+static Game::Component<
+	decltype(Attr::GuidTest),
+	decltype(Attr::StringTest),
+	decltype(Attr::IntTest),
+	decltype(Attr::FloatTest)
+> component;
+
+enum AttributeNames
+{
+	OWNER,
+	GUID,
+	STRING,
+	INT,
+	FLOAT,
+	NumAttributes
+};
+
+__ImplementComponent(TestComponent, component);
 
 //------------------------------------------------------------------------------
 /**
 */
-TestComponent::TestComponent() :
-	component_templated_t({
+void
+TestComponent::Create()
+{
+	component = {
 		Attr::GuidTest,
 		Attr::StringTest,
 		Attr::IntTest,
 		Attr::FloatTest
-	})
-{
-	// this->events.SetBit(ComponentEvent::OnActivate);
-	// this->events.SetBit(ComponentEvent::OnDeactivate);
-}
+	};
 
-//------------------------------------------------------------------------------
-/**
-*/
-TestComponent::~TestComponent()
-{
-	// Empty
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-uint32_t
-TestComponent::RegisterEntity(const Game::Entity & e)
-{
-	auto instance = component_templated_t::RegisterEntity(e);
-	if (this->immediate_deletion)
-	{
-		Game::EntityManager::Instance()->RegisterDeletionCallback(e, this);
-	}
-	return instance;
+	__RegisterComponent(&component);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-TestComponent::DeregisterEntity(const Game::Entity & e)
+TestComponent::Discard()
 {
-	if (this->immediate_deletion)
-	{
-		component_templated_t::DeregisterEntityImmediate(e);
-		Game::EntityManager::Instance()->DeregisterDeletionCallback(e, this);
-	}
-	else
-	{
-		component_templated_t::DeregisterEntity(e);
-	}
-}
 
-//------------------------------------------------------------------------------
-/**
-*/
-SizeT
-TestComponent::Optimize()
-{
-	if (this->immediate_deletion)
-	{
-		return 0;
-	}
-	
-	return component_templated_t::Optimize();
-}
-
-TestComponent::data_type*
-TestComponent::GetDataPtr()
-{
-	return &this->data;
 }
 
 //------------------------------------------------------------------------------
@@ -112,12 +79,13 @@ void
 CompDataTest::Run()
 {
 	Ptr<EntityManager> manager = EntityManager::Instance();
+	
+	TestComponent::Create();
+	
 	Util::Array<Game::Entity> entities;
 	{ // Testing structure of arrays.
 		entities.Clear();
 		
-		Ptr<TestComponent> component = TestComponent::Create();
-
 		Game::Entity entity;
 		uint32_t instance;
 
@@ -126,46 +94,46 @@ CompDataTest::Run()
 		{
 			entity = manager->NewEntity();
 			entities.Append(entity);
-			component->RegisterEntity(entity);
-			instance = component->GetInstance(entity);
-			component->GetDataPtr()->Get<STRING>(instance) = "First iteration of entities";
-			component->GetDataPtr()->Get<INT>(instance) = 1;
-			component->GetDataPtr()->Get<FLOAT>(instance) = float(i * 4);
+			component.RegisterEntity(entity);
+			instance = component.GetInstance(entity);
+			component.data.Get<STRING>(instance) = "First iteration of entities";
+			component.data.Get<INT>(instance) = 1;
+			component.data.Get<FLOAT>(instance) = float(i * 4);
 		}
 
-		uint32_t previd = component->GetOwner(0).id;
-		component->SetInstanceData(0, Util::Guid(), "TESTING SET", 7331, 12345.6f);
+		uint32_t previd = component.GetOwner(0).id;
+		component.SetInstanceData(0, Util::Guid(), "TESTING SET", 7331, 12345.6f);
 		// Check if we really set data, but left id untouched.
-		VERIFY(component->GetDataPtr()->Get<OWNER>(0).id == previd);
-		VERIFY(component->GetDataPtr()->Get<STRING>(0) == "TESTING SET");
-		VERIFY(component->GetDataPtr()->Get<INT>(0) == 7331);
-		VERIFY(component->GetDataPtr()->Get<FLOAT>(0) == 12345.6f);
+		VERIFY(component.data.Get<OWNER>(0).id == previd);
+		VERIFY(component.data.Get<STRING>(0) == "TESTING SET");
+		VERIFY(component.data.Get<INT>(0) == 7331);
+		VERIFY(component.data.Get<FLOAT>(0) == 12345.6f);
 		// make sure we don't set every single instance.
-		VERIFY(component->GetDataPtr()->Get<OWNER>(1).id != previd);
-		VERIFY(component->GetDataPtr()->Get<STRING>(1) != "TESTING SET");
-		VERIFY(component->GetDataPtr()->Get<INT>(1) != 7331);
-		VERIFY(component->GetDataPtr()->Get<FLOAT>(1) != 12345.6f);
+		VERIFY(component.data.Get<OWNER>(1).id != previd);
+		VERIFY(component.data.Get<STRING>(1) != "TESTING SET");
+		VERIFY(component.data.Get<INT>(1) != 7331);
+		VERIFY(component.data.Get<FLOAT>(1) != 12345.6f);
 
 		// Testing second iteration of entities inserted in old positions
 		for (size_t i = 0; i < 5000; i++)
 		{
-			component->DeregisterEntity(entities[i]);
+			component.DeregisterEntity(entities[i]);
 		}
 
 		// Second iteration register
 		for (size_t i = 0; i < 5000; i++)
 		{
-			component->RegisterEntity(entities[i]);
-			instance = component->GetInstance(entities[i]);
-			component->GetDataPtr()->Get<STRING>(instance) = "Second iteration. Same entities.";
-			component->GetDataPtr()->Get<INT>(instance) = i * 100;
-			component->GetDataPtr()->Get<FLOAT>(instance) = float(i * 400);
+			component.RegisterEntity(entities[i]);
+			instance = component.GetInstance(entities[i]);
+			component.data.Get<STRING>(instance) = "Second iteration. Same entities.";
+			component.data.Get<INT>(instance) = i * 100;
+			component.data.Get<FLOAT>(instance) = float(i * 400);
 		}
 
 		// Third iteration unregister
 		for (size_t i = 0; i < 5000; i++)
 		{
-			component->DeregisterEntity(entities[i]);
+			component.DeregisterEntity(entities[i]);
 		}
 
 		// Third iteration register
@@ -173,11 +141,11 @@ CompDataTest::Run()
 		{
 			entity = manager->NewEntity();
 			entities.Append(entity);
-			component->RegisterEntity(entity);
-			instance = component->GetInstance(entity);
-			component->GetDataPtr()->Get<STRING>(instance) = "Third iteration with new entities.";
-			component->GetDataPtr()->Get<INT>(instance) = i * 200;
-			component->GetDataPtr()->Get<FLOAT>(instance) = float(i * 800);
+			component.RegisterEntity(entity);
+			instance = component.GetInstance(entity);
+			component.data.Get<STRING>(instance) = "Third iteration with new entities.";
+			component.data.Get<INT>(instance) = i * 200;
+			component.data.Get<FLOAT>(instance) = float(i * 800);
 		}
 
 		// Testing optimization
@@ -194,7 +162,7 @@ CompDataTest::Run()
 		int i = 0;
 		while (i < 10000)
 		{
-			component->Optimize();
+			component.Optimize();
 			i++;
 		}
 
@@ -202,9 +170,9 @@ CompDataTest::Run()
 		// Deregistering immediate on all entities
 		for (size_t i = 0; i < entities.Size(); i++)
 		{
-			if (component->GetInstance(entities[i]) != InvalidIndex)
+			if (component.GetInstance(entities[i]) != InvalidIndex)
 			{
-				component->DeregisterEntityImmediate(entities[i]);
+				component.DeregisterEntityImmediate(entities[i]);
 			}
 		}
 
@@ -216,17 +184,17 @@ CompDataTest::Run()
 
 		// No entities should be alive at this moment, however, GC might not have been able to clean up everything yet.
 		bool entityAlive = false;
-		for (int i = 0; i < component->NumRegistered(); i++)
+		for (int i = 0; i < component.NumRegistered(); i++)
 		{
-			entityAlive = manager->IsAlive(component->GetOwner(i));
+			entityAlive = manager->IsAlive(component.GetOwner(i));
 			if (entityAlive) break;
 		}
 		VERIFY(!entityAlive);
 
 		// Clean up the rest
-		component->DestroyAll();
+		component.DestroyAll();
 
-		VERIFY(component->NumRegistered() == 0);
+		VERIFY(component.NumRegistered() == 0);
 	}
 }
 }
