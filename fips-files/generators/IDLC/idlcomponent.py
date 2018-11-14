@@ -20,7 +20,7 @@ class ComponentClassWriter:
         self.document = document
         self.component = component
         self.componentName = componentName
-        self.className = '{}Base'.format(self.componentName)
+        self.className = '{}Data'.format(self.componentName)
         self.namespace = namespace
 
         if (not "fourcc" in component):
@@ -59,8 +59,7 @@ class {className} : public Game::Component<
     {componentTemplateArguments}
 >
 {{
-    __DeclareClass({className})
-
+    __DeclareClass({className});
 public:
     /// Default constructor
     {className}();
@@ -118,8 +117,9 @@ public:
         if self.hasAttributes:
             numAttributes += len(self.component["attributes"])
 
-        self.f.WriteLine("__ImplementClass({}::{}, '{}', Core::RefCounted)".format(self.namespace, self.className, self.fourcc))
-        self.f.WriteLine("")
+        self.f.WriteLine("__ImplementWeakClass({}::{}, '{}', Game::ComponentInterface);".format(self.namespace, self.className, self.fourcc))
+        self.f.WriteLine("__RegisterClass({})".format(self.className))
+
         self.f.InsertNebulaDivider()
         self.f.WriteLine("{className}::{className}() :".format(className=self.className))
         self.f.IncreaseIndent()
@@ -172,7 +172,7 @@ public:
 
         if self.hasEvents and "onactivate" in self.events:
             self.f.WriteLine("")
-            self.f.WriteLine("this->OnActivate(instance);")
+            self.f.WriteLine("this->functions.OnActivate(instance);")
 
         self.f.WriteLine("return instance;")
         self.f.DecreaseIndent()
@@ -193,7 +193,7 @@ public:
         self.f.IncreaseIndent()
 
         if self.hasEvents and "ondeactivate" in self.events:
-            self.f.WriteLine("this->OnDeactivate(index);")
+            self.f.WriteLine("this->functions.OnDeactivate(index);")
             self.f.WriteLine("")
 
         if self.useDelayedRemoval:

@@ -61,8 +61,6 @@ public:
 protected:
     
     Ptr<Game::EntityManager> entityManager;
-	Ptr<Game::TransformComponent> transformComponent;
-	Ptr<Game::TagComponent> tagComponent;
 	Ptr<Game::ComponentManager> componentManager;
 	
 	Ptr<BaseGameFeature::LoaderServer> loaderServer;

@@ -610,7 +610,7 @@ template<class TYPE> TYPE&
 Array<TYPE>::operator[](IndexT index) const
 {
     #if NEBULA_BOUNDSCHECKS
-    n_assert(this->elements && (index < this->size));
+    n_assert(this->elements && (index < this->size) && (index >= 0));
     #endif
     return this->elements[index];
 }
@@ -693,7 +693,7 @@ template<class TYPE> void
 Array<TYPE>::EraseIndex(IndexT index)
 {
     #if NEBULA_BOUNDSCHECKS
-    n_assert(this->elements && (index < this->size));
+    n_assert(this->elements && (index < this->size) && (index >= 0));
     #endif
     if (index == (this->size - 1))
     {
@@ -715,7 +715,7 @@ template<class TYPE> void
 Array<TYPE>::EraseIndexSwap(IndexT index)
 {
     #if NEBULA_BOUNDSCHECKS
-    n_assert(this->elements && (index < this->size));
+    n_assert(this->elements && (index < this->size) && (index >= 0));
     #endif
 
     // swap with last element, and destroy last element
@@ -762,7 +762,7 @@ template<class TYPE> void
 Array<TYPE>::Insert(IndexT index, const TYPE& elm)
 {
     #if NEBULA_BOUNDSCHECKS
-    n_assert(index <= this->size);
+    n_assert(index <= this->size && (index >= 0));
     #endif
     if (index == this->size)
     {

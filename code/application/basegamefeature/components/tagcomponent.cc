@@ -4,64 +4,36 @@
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "tagcomponent.h"
-
-namespace Attr
-{
-	DefineGuid(Tag, 'TAG!', Attr::ReadWrite)
-} // namespace Attr
-
-__ImplementClass(Game::TagComponent, 'TAGC', Game::BaseComponent);
+#include "basegamefeature/managers/componentmanager.h"
+#include "tagdata.h"
 
 namespace Game
 {
 
-//------------------------------------------------------------------------------
-/**
-*/
-TagComponent::TagComponent() : 
-	component_templated_t({
-		Attr::Tag
-	})
-{
-	// this->events.SetBit(ComponentEvent::OnActivate);
-	// this->events.SetBit(ComponentEvent::OnDeactivate);
-}
+static TagComponentData component;
+
+__ImplementComponent(TagComponent, component);
 
 //------------------------------------------------------------------------------
 /**
 */
-TagComponent::~TagComponent()
+void
+TagComponent::Create()
 {
-	// Empty
+	component = TagComponentData();
+
+	__SetupDefaultComponentBundle(component);
+	component.functions.Optimize = Optimize;
+	__RegisterComponent(&component);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-TagComponent::SetupAcceptedMessages()
+TagComponent::Discard()
 {
 	// Empty
-}
-
-uint32_t
-TagComponent::RegisterEntity(const Entity & e)
-{
-	auto instance = component_templated_t::RegisterEntity(e);
-#if IMMEDIATE_DELETION
-	Game::EntityManager::Instance()->RegisterDeletionCallback(e, this);
-#endif
-	return instance;
-}
-
-void TagComponent::DeregisterEntity(const Entity & e)
-{
-#if IMMEDIATE_DELETION
-	component_templated_t::DeregisterEntityImmediate(e);
-	Game::EntityManager::Instance()->DeregisterDeletionCallback(e, this);
-#else
-	component_templated_t::DeregisterEntity(e);
-#endif
 }
 
 //------------------------------------------------------------------------------
@@ -70,11 +42,7 @@ void TagComponent::DeregisterEntity(const Entity & e)
 SizeT
 TagComponent::Optimize()
 {
-#if IMMEDIATE_DELETION
-	return 0;
-#else
-	return component_templated_t::Optimize();
-#endif
+	return component.Optimize();
 }
 
 } // namespace Game

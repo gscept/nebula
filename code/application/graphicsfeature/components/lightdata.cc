@@ -1,12 +1,12 @@
-// NIDL #version:22#
+// NIDL #version:32#
 //------------------------------------------------------------------------------
-//  lightcomponentbase.cc
+//  lightdata.cc
 //  (C) Individual contributors, see AUTHORS file
 //
 //  MACHINE GENERATED, DON'T EDIT!
 //------------------------------------------------------------------------------
 #include "stdneb.h"
-#include "lightcomponentbase.h"
+#include "lightdata.h"
 //------------------------------------------------------------------------------
 namespace Attr
 {
@@ -21,13 +21,13 @@ namespace Attr
 namespace GraphicsFeature
 {
 
-__ImplementClass(GraphicsFeature::PointLightComponentBase, 'plcp', Core::RefCounted)
-
+__ImplementWeakClass(GraphicsFeature::PointLightComponentData, 'plcp', Game::ComponentInterface);
+__RegisterClass(PointLightComponentData)
 
 //------------------------------------------------------------------------------
 /**
 */
-PointLightComponentBase::PointLightComponentBase() :
+PointLightComponentData::PointLightComponentData() :
     component_templated_t({
         Attr::Range,
         Attr::Color,
@@ -40,7 +40,7 @@ PointLightComponentBase::PointLightComponentBase() :
 //------------------------------------------------------------------------------
 /**
 */
-PointLightComponentBase::~PointLightComponentBase()
+PointLightComponentData::~PointLightComponentData()
 {
     // empty
 }
@@ -49,7 +49,7 @@ PointLightComponentBase::~PointLightComponentBase()
 /**
 */
 uint32_t
-PointLightComponentBase::RegisterEntity(const Game::Entity& entity)
+PointLightComponentData::RegisterEntity(const Game::Entity& entity)
 {
     auto instance = component_templated_t::RegisterEntity(entity);
     return instance;
@@ -59,7 +59,7 @@ PointLightComponentBase::RegisterEntity(const Game::Entity& entity)
 /**
 */
 void
-PointLightComponentBase::DeregisterEntity(const Game::Entity& entity)
+PointLightComponentData::DeregisterEntity(const Game::Entity& entity)
 {
     uint32_t index = this->GetInstance(entity);
     if (index != InvalidIndex)
@@ -73,7 +73,7 @@ PointLightComponentBase::DeregisterEntity(const Game::Entity& entity)
 /**
 */
 void
-PointLightComponentBase::DestroyAll()
+PointLightComponentData::DestroyAll()
 {
     component_templated_t::DestroyAll();
 }
@@ -82,7 +82,7 @@ PointLightComponentBase::DestroyAll()
 /**
 */
 SizeT
-PointLightComponentBase::Optimize()
+PointLightComponentData::Optimize()
 {
     return component_templated_t::Optimize();
 }
@@ -91,19 +91,19 @@ PointLightComponentBase::Optimize()
 /**
 */
 void
-PointLightComponentBase::OnEntityDeleted(Game::Entity entity)
+PointLightComponentData::OnEntityDeleted(Game::Entity entity)
 {
     return;
 }
 
 
-__ImplementClass(GraphicsFeature::SpotLightComponentBase, 'splc', Core::RefCounted)
-
+__ImplementWeakClass(GraphicsFeature::SpotLightComponentData, 'splc', Game::ComponentInterface);
+__RegisterClass(SpotLightComponentData)
 
 //------------------------------------------------------------------------------
 /**
 */
-SpotLightComponentBase::SpotLightComponentBase() :
+SpotLightComponentData::SpotLightComponentData() :
     component_templated_t({
         Attr::Range,
         Attr::Angle,
@@ -117,7 +117,7 @@ SpotLightComponentBase::SpotLightComponentBase() :
 //------------------------------------------------------------------------------
 /**
 */
-SpotLightComponentBase::~SpotLightComponentBase()
+SpotLightComponentData::~SpotLightComponentData()
 {
     // empty
 }
@@ -126,7 +126,7 @@ SpotLightComponentBase::~SpotLightComponentBase()
 /**
 */
 uint32_t
-SpotLightComponentBase::RegisterEntity(const Game::Entity& entity)
+SpotLightComponentData::RegisterEntity(const Game::Entity& entity)
 {
     auto instance = component_templated_t::RegisterEntity(entity);
     Game::EntityManager::Instance()->RegisterDeletionCallback(entity, this);
@@ -137,7 +137,7 @@ SpotLightComponentBase::RegisterEntity(const Game::Entity& entity)
 /**
 */
 void
-SpotLightComponentBase::DeregisterEntity(const Game::Entity& entity)
+SpotLightComponentData::DeregisterEntity(const Game::Entity& entity)
 {
     uint32_t index = this->GetInstance(entity);
     if (index != InvalidIndex)
@@ -152,7 +152,7 @@ SpotLightComponentBase::DeregisterEntity(const Game::Entity& entity)
 /**
 */
 void
-SpotLightComponentBase::DestroyAll()
+SpotLightComponentData::DestroyAll()
 {
     SizeT length = this->data.Size();
     for (SizeT i = 0; i < length; i++)
@@ -166,7 +166,7 @@ SpotLightComponentBase::DestroyAll()
 /**
 */
 SizeT
-SpotLightComponentBase::Optimize()
+SpotLightComponentData::Optimize()
 {
     return 0;
 }
@@ -175,7 +175,7 @@ SpotLightComponentBase::Optimize()
 /**
 */
 void
-SpotLightComponentBase::OnEntityDeleted(Game::Entity entity)
+SpotLightComponentData::OnEntityDeleted(Game::Entity entity)
 {
     uint32_t index = this->GetInstance(entity);
     if (index != InvalidIndex)
@@ -186,13 +186,13 @@ SpotLightComponentBase::OnEntityDeleted(Game::Entity entity)
 }
 
 
-__ImplementClass(GraphicsFeature::DirectionalLightComponentBase, 'drlc', Core::RefCounted)
-
+__ImplementWeakClass(GraphicsFeature::DirectionalLightComponentData, 'drlc', Game::ComponentInterface);
+__RegisterClass(DirectionalLightComponentData)
 
 //------------------------------------------------------------------------------
 /**
 */
-DirectionalLightComponentBase::DirectionalLightComponentBase() :
+DirectionalLightComponentData::DirectionalLightComponentData() :
     component_templated_t({
         Attr::Direction,
         Attr::Color,
@@ -204,7 +204,7 @@ DirectionalLightComponentBase::DirectionalLightComponentBase() :
 //------------------------------------------------------------------------------
 /**
 */
-DirectionalLightComponentBase::~DirectionalLightComponentBase()
+DirectionalLightComponentData::~DirectionalLightComponentData()
 {
     // empty
 }
@@ -213,7 +213,7 @@ DirectionalLightComponentBase::~DirectionalLightComponentBase()
 /**
 */
 uint32_t
-DirectionalLightComponentBase::RegisterEntity(const Game::Entity& entity)
+DirectionalLightComponentData::RegisterEntity(const Game::Entity& entity)
 {
     auto instance = component_templated_t::RegisterEntity(entity);
     Game::EntityManager::Instance()->RegisterDeletionCallback(entity, this);
@@ -224,7 +224,7 @@ DirectionalLightComponentBase::RegisterEntity(const Game::Entity& entity)
 /**
 */
 void
-DirectionalLightComponentBase::DeregisterEntity(const Game::Entity& entity)
+DirectionalLightComponentData::DeregisterEntity(const Game::Entity& entity)
 {
     uint32_t index = this->GetInstance(entity);
     if (index != InvalidIndex)
@@ -239,7 +239,7 @@ DirectionalLightComponentBase::DeregisterEntity(const Game::Entity& entity)
 /**
 */
 void
-DirectionalLightComponentBase::DestroyAll()
+DirectionalLightComponentData::DestroyAll()
 {
     SizeT length = this->data.Size();
     for (SizeT i = 0; i < length; i++)
@@ -253,7 +253,7 @@ DirectionalLightComponentBase::DestroyAll()
 /**
 */
 SizeT
-DirectionalLightComponentBase::Optimize()
+DirectionalLightComponentData::Optimize()
 {
     return 0;
 }
@@ -262,7 +262,7 @@ DirectionalLightComponentBase::Optimize()
 /**
 */
 void
-DirectionalLightComponentBase::OnEntityDeleted(Game::Entity entity)
+DirectionalLightComponentData::OnEntityDeleted(Game::Entity entity)
 {
     uint32_t index = this->GetInstance(entity);
     if (index != InvalidIndex)
