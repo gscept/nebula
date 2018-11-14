@@ -17,8 +17,8 @@
 #include "dynui/imguicontext.h"
 #include "lighting/lightcontext.h"
 #include "imgui.h"
-#include "im3d/im3dcontext.h"
-#include "im3d/im3d.h"
+#include "dynui/im3d/im3dcontext.h"
+#include "dynui/im3d/im3d.h"
 
 using namespace Timing;
 using namespace Graphics;
@@ -105,7 +105,7 @@ SimpleViewerApplication::Open()
 
 		this->globalLight = Graphics::CreateEntity();
 		Lighting::LightContext::RegisterEntity(this->globalLight);
-		Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::float4(0, 0, 0, 0), 1.0f, Math::float4(0, 0, 0, 0), Math::float4(0, 0, 0, 0), 0.0f, Math::vector(1, 1, 1), false);
+		Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::float4(1, 1, 1, 0), 1.0f, Math::float4(0, 0, 0, 0), Math::float4(0, 0, 0, 0), 0.0f, Math::vector(1, 1, 1), false);
 
 		this->pointLights[0] = Graphics::CreateEntity();
 		Lighting::LightContext::RegisterEntity(this->pointLights[0]);
@@ -119,6 +119,36 @@ SimpleViewerApplication::Open()
 		Lighting::LightContext::RegisterEntity(this->pointLights[2]);
 		Lighting::LightContext::SetupPointLight(this->pointLights[2], Math::float4(0, 0, 1, 1), 10.0f, Math::matrix44::translation(-10, 0, 0), 10.0f, false);
 
+		{
+			this->spotLights[0] = Graphics::CreateEntity();
+			Lighting::LightContext::RegisterEntity(this->spotLights[0]);
+			Math::matrix44 spotLightMatrix;
+			spotLightMatrix.scale(Math::vector(30, 30, 40));
+			spotLightMatrix = Math::matrix44::multiply(spotLightMatrix, Math::matrix44::rotationyawpitchroll(0, Math::n_deg2rad(-55), 0));
+			spotLightMatrix.set_position(Math::point(0, 2, 0));
+			Lighting::LightContext::SetupSpotLight(this->spotLights[0], Math::float4(1, 1, 0, 1), 10.0f, spotLightMatrix, false);
+		}
+
+		{
+			this->spotLights[1] = Graphics::CreateEntity();
+			Lighting::LightContext::RegisterEntity(this->spotLights[1]);
+			Math::matrix44 spotLightMatrix;
+			spotLightMatrix.scale(Math::vector(30, 30, 40));
+			spotLightMatrix = Math::matrix44::multiply(spotLightMatrix, Math::matrix44::rotationyawpitchroll(Math::n_deg2rad(60), Math::n_deg2rad(-55), 0));
+			spotLightMatrix.set_position(Math::point(0, 2, 0));
+			Lighting::LightContext::SetupSpotLight(this->spotLights[1], Math::float4(0, 1, 1, 1), 10.0f, spotLightMatrix, false);
+		}
+
+		{
+			this->spotLights[2] = Graphics::CreateEntity();
+			Lighting::LightContext::RegisterEntity(this->spotLights[2]);
+			Math::matrix44 spotLightMatrix;
+			spotLightMatrix.scale(Math::vector(30, 30, 40));
+			spotLightMatrix = Math::matrix44::multiply(spotLightMatrix, Math::matrix44::rotationyawpitchroll(Math::n_deg2rad(120), Math::n_deg2rad(-55), 0));
+			spotLightMatrix.set_position(Math::point(0, 2, 0));
+			Lighting::LightContext::SetupSpotLight(this->spotLights[2], Math::float4(1, 0, 1, 1), 10.0f, spotLightMatrix, false);
+		}
+
         this->defaultViewPoint = Math::point(15.0f, 15.0f, -15.0f);
         this->ResetCamera();
         CameraContext::SetTransform(this->cam, this->mayaCameraUtil.GetCameraTransform());
@@ -131,14 +161,20 @@ SimpleViewerApplication::Open()
         ModelContext::Setup(this->entity, "mdl:Buildings/castle_tower.n3", "Viewer");
         ModelContext::SetTransform(this->entity, Math::matrix44::translation(Math::float4(0, 0, 0, 1)));
 
+		this->ground = Graphics::CreateEntity();
+		ModelContext::RegisterEntity(this->ground);
+		ModelContext::Setup(this->ground, "mdl:environment/Groundplane.n3", "Viewer");
+		ModelContext::SetTransform(this->ground, Math::matrix44::translation(Math::float4(0, 0, 0, 1)));
+
         // register visibility system
         ObserverContext::CreateBruteforceSystem({});
 
         ObservableContext::RegisterEntity(this->entity);
         ObservableContext::Setup(this->entity, VisibilityEntityType::Model);
+		//ObservableContext::RegisterEntity(this->ground);
+		//ObservableContext::Setup(this->ground, VisibilityEntityType::Model);
         ObserverContext::RegisterEntity(this->cam);
         ObserverContext::Setup(this->cam, VisibilityEntityType::Camera);
-
 
 		Util::Array<Graphics::GraphicsEntityId> models;
 		ModelContext::BeginBulkRegister();
@@ -216,7 +252,6 @@ SimpleViewerApplication::Run()
             updateCam = false;
             ModelContext::SetTransform(this->entity, trans);
         }
-
 
         // put game code which need visibility data here
 
