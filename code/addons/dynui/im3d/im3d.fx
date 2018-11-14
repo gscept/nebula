@@ -19,6 +19,16 @@ state Im3dState
     CullMode = None;
     ScissorEnabled = false;
 };
+state Im3dDepthState
+{
+    BlendEnabled[0] = true;
+    SrcBlend[0] = SrcAlpha;
+    DstBlend[0] = OneMinusSrcAlpha;
+    DepthWrite = false;
+    DepthEnabled = true;
+    CullMode = None;
+    ScissorEnabled = false;
+};
 #define kAntialiasing 2.0
 
 shader
@@ -162,5 +172,6 @@ psMainPoints(
 }
 
 GeometryTechnique(Lines, "Static|Lines", vsMainLines(), psMainLines(), gsMain(), Im3dState);
+GeometryTechnique(LinesDepth, "StaticDepth|Lines", vsMainLines(), psMainLines(), gsMain(), Im3dDepthState);
 SimpleTechnique(Points, "Static|Points", vsMainPoints(), psMainPoints(), Im3dState);
 SimpleTechnique(Triangles, "Static|Triangles", vsMainTriangles(), psMainTriangles(), Im3dState);
