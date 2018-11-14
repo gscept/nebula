@@ -480,7 +480,7 @@ CreatePass(const PassCreateInfo& info)
 /**
 */
 void
-DiscardPass(const PassId& id)
+DiscardPass(const PassId id)
 {
 	VkPassLoadInfo& loadInfo = passAllocator.Get<0>(id.id24);
 	VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<1>(id.id24);
@@ -497,7 +497,7 @@ DiscardPass(const PassId& id)
 /**
 */
 void
-PassBegin(const PassId& id)
+PassBegin(const PassId id)
 {
 	VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<1>(id.id24);
 
@@ -510,10 +510,9 @@ PassBegin(const PassId& id)
 	runtimeInfo.framebufferPipelineInfo.pViewportState = &runtimeInfo.subpassPipelineInfo[0];
 
 	const Util::FixedArray<VkViewport>& viewports = runtimeInfo.subpassViewports[0];
-	SetViewports(viewports.Begin(), viewports.Size());
-
+	CoreGraphics::SetViewports(viewports.Begin(), viewports.Size());
 	const Util::FixedArray<VkRect2D>& scissors = runtimeInfo.subpassRects[0];
-	SetScissorRects(scissors.Begin(), scissors.Size());
+	CoreGraphics::SetScissorRects(scissors.Begin(), scissors.Size());
 
 	CoreGraphics::BeginPass(id);
 }
@@ -522,16 +521,16 @@ PassBegin(const PassId& id)
 /**
 */
 void
-PassBeginBatch(const PassId& id, Frame::FrameBatchType::Code batch)
+PassBeginBatch(const PassId id, Frame::FrameBatchType::Code batch)
 {
-
+	// empty
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-PassNextSubpass(const PassId& id)
+PassNextSubpass(const PassId id)
 {
 	VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<1>(id.id24);
 	runtimeInfo.currentSubpassIndex++;
@@ -539,10 +538,9 @@ PassNextSubpass(const PassId& id)
 	runtimeInfo.framebufferPipelineInfo.pViewportState = &runtimeInfo.subpassPipelineInfo[runtimeInfo.currentSubpassIndex];
 
 	const Util::FixedArray<VkViewport>& viewports = runtimeInfo.subpassViewports[runtimeInfo.currentSubpassIndex];
-	SetViewports(viewports.Begin(), viewports.Size());
-
+	CoreGraphics::SetViewports(viewports.Begin(), viewports.Size());
 	const Util::FixedArray<VkRect2D>& scissors = runtimeInfo.subpassRects[runtimeInfo.currentSubpassIndex];
-	SetScissorRects(scissors.Begin(), scissors.Size());
+	CoreGraphics::SetScissorRects(scissors.Begin(), scissors.Size());
 
 	CoreGraphics::SetToNextSubpass();
 }
@@ -551,16 +549,16 @@ PassNextSubpass(const PassId& id)
 /**
 */
 void
-PassEndBatch(const PassId& id)
+PassEndBatch(const PassId id)
 {
-	
+	// empty
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-PassEnd(const PassId& id)
+PassEnd(const PassId id)
 {
 	CoreGraphics::EndPass();
 }
@@ -568,8 +566,22 @@ PassEnd(const PassId& id)
 //------------------------------------------------------------------------------
 /**
 */
+void 
+PassApplyClipSettings(const PassId id)
+{
+	VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<1>(id.id24);
+	const Util::FixedArray<VkViewport>& viewports = runtimeInfo.subpassViewports[runtimeInfo.currentSubpassIndex];
+	SetViewports(viewports.Begin(), viewports.Size());
+
+	const Util::FixedArray<VkRect2D>& scissors = runtimeInfo.subpassRects[runtimeInfo.currentSubpassIndex];
+	SetScissorRects(scissors.Begin(), scissors.Size());
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
-PassWindowResizeCallback(const PassId& id)
+PassWindowResizeCallback(const PassId id)
 {
 	VkPassLoadInfo& loadInfo = passAllocator.Get<0>(id.id24);
 	VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<1>(id.id24);

@@ -155,11 +155,16 @@ CoreGraphics::ResourceTableId
 VkShaderPool::CreateResourceTable(const CoreGraphics::ShaderId id, const IndexT group)
 {
 	const VkShaderSetupInfo& info = this->shaderAlloc.Get<1>(id.allocId);
-	ResourceTableCreateInfo crInfo = 
+	IndexT idx = info.descriptorSetLayoutMap.FindIndex(group);
+	if (idx == InvalidIndex) return CoreGraphics::ResourceTableId::Invalid();
+	else
 	{
-		std::get<1>(info.descriptorSetLayouts[info.descriptorSetLayoutMap[group]])
-	};
-	return CoreGraphics::CreateResourceTable(crInfo);
+		ResourceTableCreateInfo crInfo =
+		{
+			std::get<1>(info.descriptorSetLayouts[info.descriptorSetLayoutMap.ValueAtIndex(idx)])
+		};
+		return CoreGraphics::CreateResourceTable(crInfo);
+	}	
 }
 
 //------------------------------------------------------------------------------
