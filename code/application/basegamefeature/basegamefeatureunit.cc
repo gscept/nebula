@@ -47,12 +47,11 @@ BaseGameFeatureUnit::OnActivate()
     
 	this->entityManager = EntityManager::Create();
 	this->componentManager = ComponentManager::Create();
-	this->transformComponent = Game::TransformComponent::Create();
-	this->tagComponent = Game::TagComponent::Create();
-	this->componentManager->RegisterComponent(this->transformComponent);
-	this->componentManager->RegisterComponent(this->tagComponent);
 	this->AttachManager(this->entityManager.upcast<Game::Manager>());
 	this->AttachManager(this->componentManager.upcast<Game::Manager>());
+
+	Game::TransformComponent::Create();
+	Game::TagComponent::Create();
 
 	this->loaderServer = LoaderServer::Create();
 }
@@ -63,13 +62,16 @@ BaseGameFeatureUnit::OnActivate()
 void
 BaseGameFeatureUnit::OnDeactivate()
 {
-	this->componentManager->DeregisterAll();
+	this->componentManager->ClearAll();
 
     this->RemoveManager(this->entityManager.upcast<Game::Manager>());
 	this->RemoveManager(this->componentManager.upcast<Game::Manager>());
 
     this->entityManager = nullptr;
 	this->componentManager = nullptr;
+
+	Game::TransformComponent::Discard();
+	Game::TagComponent::Discard();
 
 	this->loaderServer->Release();
 	this->loaderServer = nullptr;
@@ -84,7 +86,6 @@ void
 BaseGameFeatureUnit::OnRenderDebug()
 {
     // render debug for all entities and its properties
-    this->componentManager->OnRenderDebug();
     FeatureUnit::OnRenderDebug();
 }
 

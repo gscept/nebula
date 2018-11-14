@@ -9,9 +9,14 @@
 	used as a callback from a message which means you can hook into a message
 	from anywhere. This can be useful for debugging, tools, managers etc.
 
-	Messages are declared with the __DeclareMsg macro.
-	A component can register a message callback by using the __RegisterMsg macro
-	in any member method (preferably SetupAcceptedMessages).
+	A component can register a message callback by using the __RegisterMsg macro.
+
+	Messages should be generated using Nebula's IDLC.
+	If that's not preferred, you can implement a message by deriving from the
+	Game::Message class and overriding the GetName, GetFourCC, Send and Defer methods.
+	This class uses curiously recurring template patterns and you need to provide the
+	template with the subclass as the first template argument. The rest of the
+	template arguments are the callbacks parameters.
 
 	(C) 2018 Individual contributors, see AUTHORS file
 */
@@ -43,14 +48,8 @@ class NAME : public Game::Message<NAME, __VA_ARGS__> \
 		}; \
 };
 
-///@note	This is placed within the object!
-#define __RegisterMsg(MSGTYPE, METHOD) \
-this->messageListeners.Append(MSGTYPE::Register( \
-	MSGTYPE::Delegate::FromMethod< \
-		std::remove_pointer<decltype(this)>::type, \
-		&std::remove_pointer<decltype(this)>::type::METHOD \
-	>(this) \
-));
+#define __RegisterMsg(MSGTYPE, FUNCTION) \
+	MSGTYPE::Register(MSGTYPE::Delegate::FromFunction<FUNCTION>())
 
 namespace Game
 {
@@ -90,7 +89,7 @@ public:
 	/// Deregister a listener
 	static void Deregister(MessageListener listener);
 
-	/// Send a message to an entity
+	/// Send a message
 	static void Send(const TYPES& ... values);
 
 	/// Creates a new message queue for deferred dispatching

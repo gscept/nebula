@@ -80,10 +80,16 @@ struct Im3dState
 {
     CoreGraphics::ShaderId im3dShader;
     CoreGraphics::ShaderProgramId lines;
+    CoreGraphics::ShaderProgramId depthLines;
     CoreGraphics::ShaderProgramId points;
     CoreGraphics::ShaderProgramId triangles;
     CoreGraphics::VertexBufferId vbo;       
+    bool renderGrid = false;
+    int gridSize = 20;
+    float cellSize = 1.0f;
+    Math::float4 gridColor{ 1.0f,1.0f,1.0f,0.3f };
     Ptr<Im3dInputHandler> inputHandler;
+    Im3d::Id depthLayerId;
     byte* vertexPtr;    
 };
 static Im3dState imState;
@@ -122,9 +128,11 @@ Im3dContext::Create()
     // allocate imgui shader
     imState.im3dShader = ShaderServer::Instance()->GetShader("shd:im3d.fxb");
     imState.lines = CoreGraphics::ShaderGetProgram(imState.im3dShader, CoreGraphics::ShaderFeatureFromString("Static|Lines"));
+    imState.depthLines = CoreGraphics::ShaderGetProgram(imState.im3dShader, CoreGraphics::ShaderFeatureFromString("StaticDepth|Lines"));
     imState.points = CoreGraphics::ShaderGetProgram(imState.im3dShader, CoreGraphics::ShaderFeatureFromString("Static|Points"));
     imState.triangles = CoreGraphics::ShaderGetProgram(imState.im3dShader, CoreGraphics::ShaderFeatureFromString("Static|Triangles"));
-
+    
+    imState.depthLayerId = Im3d::MakeId("depthEnabled");
     // create vertex buffer
     Util::Array<CoreGraphics::VertexComponent> components;
     components.Append(VertexComponent((VertexComponent::SemanticName)0, 0, VertexComponentBase::Float4, 0));
@@ -242,6 +250,26 @@ Im3dContext::OnRenderAsPlugin(const IndexT frameIndex, const Timing::Time frameT
     //FIME use a better pass
     if (filter == "IMGUI"_atm)
     {
+     
+        if (imState.renderGrid)
+        {
+            int gridSize = imState.gridSize;            
+            float cellSize = imState.cellSize;            
+            Im3d::SetSize(1.0f);
+            Im3d::PushLayerId(imState.depthLayerId);            
+            Im3d::BeginLines();
+            Im3d::Color col = imState.gridColor;
+            for (int x = -gridSize; x <= gridSize; ++x) {
+                Im3d::Vertex(-gridSize * cellSize, 0.0f, (float)x * cellSize, col);
+                Im3d::Vertex(gridSize * cellSize, 0.0f, (float)x * cellSize, col);
+            }
+            for (int z = -gridSize; z <= gridSize; ++z) {
+                Im3d::Vertex((float)z * cellSize, 0.0f, -gridSize * cellSize, col);
+                Im3d::Vertex((float)z * cellSize, 0.0f, gridSize* cellSize, col);
+            }
+            Im3d::End();
+            Im3d::PopLayerId();
+        }
         Im3d::EndFrame();
         VertexBufferId vbo = imState.vbo;                
 
@@ -260,7 +288,14 @@ Im3dContext::OnRenderAsPlugin(const IndexT frameIndex, const Timing::Time frameT
                 CoreGraphics::SetPrimitiveTopology(CoreGraphics::PrimitiveTopology::PointList);
                 break;
             case Im3d::DrawPrimitive_Lines:
-                CoreGraphics::SetShaderProgram(imState.lines);
+                if (drawList.m_layerId == imState.depthLayerId)
+                {
+                    CoreGraphics::SetShaderProgram(imState.depthLines);
+                }
+                else
+                {
+                    CoreGraphics::SetShaderProgram(imState.lines);
+                }                
                 CoreGraphics::SetPrimitiveTopology(CoreGraphics::PrimitiveTopology::LineList);
                 break;
             case Im3d::DrawPrimitive_Triangles:
@@ -316,7 +351,35 @@ Im3dContext::HandleInput(const Input::InputEvent& event)
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
+Im3dContext::SetGridStatus(bool enable)
+{
+    imState.renderGrid = enable;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Im3dContext::SetGridSize(float cellSize, int cellCount)
+{
+    imState.cellSize = cellSize;
+    imState.gridSize = cellCount;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Im3dContext::SetGridColor(Math::float4 const & color)
+{
+    imState.gridColor = color;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 Im3dContext::SetGizmoSize(int size, int width)
 {
     auto& ctx = GetContext();

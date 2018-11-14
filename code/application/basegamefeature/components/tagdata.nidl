@@ -1,0 +1,17 @@
+"namespace": "Game"
+"attributes": {
+    "Tag": {
+        "type": "guid"
+        "fourcc": "TAG!"
+        "access": "rw"
+    }
+}
+"components": {
+    "TagComponent": {
+        "fourcc": "TAGC"
+        "attributes": [
+            "Tag"
+        ]
+        "useDelayedRemoval": true
+    }
+}

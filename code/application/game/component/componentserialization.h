@@ -3,6 +3,8 @@
 /**
 	Component serialization functions
 
+	Implements various serialization functions for different types of arrays.
+
 	(C) 2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

@@ -19,14 +19,23 @@ state Im3dState
     CullMode = None;
     ScissorEnabled = false;
 };
+state Im3dDepthState
+{
+    BlendEnabled[0] = true;
+    SrcBlend[0] = SrcAlpha;
+    DstBlend[0] = OneMinusSrcAlpha;
+    DepthWrite = false;
+    DepthEnabled = true;
+    CullMode = None;
+    ScissorEnabled = false;
+};
 #define kAntialiasing 2.0
 
 shader
 void
 vsMainLines(
     [slot = 0] in vec4 position_size,
-    [slot = 1] in vec4 color,
-    out noperspective float edgeDistance,
+    [slot = 1] in vec4 color,    
     out noperspective float size,
     out vec4 Color
 )
@@ -41,12 +50,11 @@ shader
 void
 vsMainPoints(
     [slot = 0] in vec4 position_size,
-    [slot = 1] in vec4 color,
-    out noperspective float edgeDistance,
+    [slot = 1] in vec4 color,    
     out noperspective float size,
     out vec4 Color
 )
-{
+{    
     Color = color.abgr;
     Color.a *= smoothstep(0.0, 1.0, position_size.w / kAntialiasing);    
     size = max(position_size.w, kAntialiasing);
@@ -59,8 +67,7 @@ shader
 void
 vsMainTriangles(
     [slot = 0] in vec4 position_size,
-    [slot = 1] in vec4 color,
-    out noperspective float edgeDistance,
+    [slot = 1] in vec4 color,    
     out noperspective float size,
     out vec4 Color
 )
@@ -75,12 +82,11 @@ vsMainTriangles(
 [maxvertexcount] = 4
 shader
 void
-gsMain( 
-    in noperspective float edgeDistance[],
+gsMain(     
     in noperspective float size[],
     in vec4 color[],		
-    out noperspective flat float EdgeDistance,
-    out noperspective flat float Size,
+    out noperspective float EdgeDistance,
+    out noperspective float Size,
     out vec4 Color
 )
 {
@@ -88,10 +94,10 @@ gsMain(
 	vec2 pos1 = gl_in[1].gl_Position.xy / gl_in[1].gl_Position.w;
 		
 	vec2 dir = pos0 - pos1;
-	dir = normalize(vec2(dir.x, dir.y * RenderTargetDimensions[0].y / RenderTargetDimensions[0].x)); // correct for aspect ratio
+	dir = normalize(vec2(dir.x, dir.y * RenderTargetDimensions[0].y * RenderTargetDimensions[0].z)); // correct for aspect ratio
 	vec2 tng0 = vec2(-dir.y, dir.x);
-	vec2 tng1 = tng0 * size[1] / RenderTargetDimensions[0].xy;
-	tng0 = tng0 * size[0] / RenderTargetDimensions[0].xy;
+    vec2 tng1 = tng0 * size[1] * RenderTargetDimensions[0].zw;
+    tng0 = tng0 * size[0] * RenderTargetDimensions[0].zw;
 		
 	// line start
 	gl_Position = vec4((pos0 - tng0) * gl_in[0].gl_Position.w, gl_in[0].gl_Position.zw); 
@@ -138,8 +144,8 @@ psMainTriangles(
 shader
 void
 psMainLines(
-    in float edgeDistance,
-    in float size,
+    in noperspective float edgeDistance,
+    in noperspective float size,
     in vec4 color,
     [color0] out vec4 finalColor
 )
@@ -166,5 +172,6 @@ psMainPoints(
 }
 
 GeometryTechnique(Lines, "Static|Lines", vsMainLines(), psMainLines(), gsMain(), Im3dState);
+GeometryTechnique(LinesDepth, "StaticDepth|Lines", vsMainLines(), psMainLines(), gsMain(), Im3dDepthState);
 SimpleTechnique(Points, "Static|Points", vsMainPoints(), psMainPoints(), Im3dState);
 SimpleTechnique(Triangles, "Static|Triangles", vsMainTriangles(), psMainTriangles(), Im3dState);

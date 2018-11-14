@@ -4,7 +4,6 @@
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "graphicsfeature/graphicsfeatureunit.h"
-#include "basegamefeature/managers/componentmanager.h"
 
 namespace GraphicsFeature
 {
@@ -35,9 +34,7 @@ GraphicsFeatureUnit::OnActivate()
 {
 	FeatureUnit::OnActivate();
 
-	Ptr<Game::ComponentManager> componentManager = Game::ComponentManager::Instance();
-	this->graphicsComponent = GraphicsComponent::Create();
-	componentManager->RegisterComponent(this->graphicsComponent.upcast<Game::BaseComponent>());	
+	GraphicsComponent::Create();
 }
 
 //------------------------------------------------------------------------------
@@ -45,12 +42,10 @@ GraphicsFeatureUnit::OnActivate()
 */
 void
 GraphicsFeatureUnit::OnDeactivate()
-{
-	Ptr<Game::ComponentManager> componentManager = Game::ComponentManager::Instance();
-	componentManager->DeregisterComponent(this->graphicsComponent);
-	this->graphicsComponent = nullptr;
-	
+{	
     FeatureUnit::OnDeactivate();
+
+	GraphicsComponent::Discard();
 }
 
 } // namespace Game
