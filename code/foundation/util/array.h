@@ -574,8 +574,14 @@ template<class TYPE> void
 Array<TYPE>::Reserve(SizeT num)
 {
 #if NEBULA_BOUNDSCHECKS
-	n_assert(num > 0);
+	n_assert(num >= 0);
 #endif
+	if (num == 0)
+	{
+		this->Grow();
+		return;
+	}
+	
 	SizeT neededCapacity = this->size + num;
 	if (neededCapacity > this->capacity)
 	{
