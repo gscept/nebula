@@ -277,8 +277,8 @@ version: 2, engine: "Nebula", framescript: {
     subpass: {
       name: "UI",
       dependencies: [ "ScreenPass" ],
-      depth: false,
-      attachments: [ "ScreenBuffer" ],
+      depth: true,
+      attachments: [ "ScreenBuffer", "DepthBuffer" ],
 
       plugins: {
         name: "ImGui",
