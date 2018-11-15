@@ -244,6 +244,42 @@ Im3dContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameInd
     Im3d::NewFrame();
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+template<typename filterFunc>
+static inline 
+void
+CollectByFilter(ShaderProgramId const & shader, PrimitiveTopology::Code topology, IndexT &vertexBufferOffset, IndexT & vertexCount, filterFunc && filter)
+{
+    CoreGraphics::SetShaderProgram(shader);
+    CoreGraphics::SetPrimitiveTopology(topology);
+    CoreGraphics::SetGraphicsPipeline();
+    // setup input buffers
+    CoreGraphics::SetStreamVertexBuffer(0, imState.vbo, 0);    
+
+    for (uint32_t i = 0, n = Im3d::GetDrawListCount(); i < n; ++i)
+    {
+        auto& drawList = Im3d::GetDrawLists()[i];
+        if (filter(drawList))
+        {
+            const unsigned char* vertexBuffer = (unsigned char*)drawList.m_vertexData;
+            const SizeT vertexBufferSize = drawList.m_vertexCount * sizeof(Im3d::VertexData);
+            Memory::Copy(vertexBuffer, imState.vertexPtr + vertexBufferOffset, vertexBufferSize);
+
+            CoreGraphics::PrimitiveGroup primitive;
+            primitive.SetNumIndices(0);
+            primitive.SetBaseIndex(0);
+            primitive.SetNumVertices(drawList.m_vertexCount);
+            primitive.SetBaseVertex(vertexCount);
+            CoreGraphics::SetPrimitiveGroup(primitive);            
+            CoreGraphics::Draw();
+
+            vertexBufferOffset += vertexBufferSize;
+            vertexCount += drawList.m_vertexCount;
+        }
+    }    
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -278,58 +314,21 @@ Im3dContext::OnRenderAsPlugin(const IndexT frameIndex, const Timing::Time frameT
         VertexBufferId vbo = imState.vbo;                
 
         // setup device
-        CoreGraphics::SetVertexLayout(CoreGraphics::VertexBufferGetLayout(vbo));
-        IndexT vertexOffset = 0;        
-        IndexT vertexBufferOffset = 0;        
+        CoreGraphics::SetVertexLayout(CoreGraphics::VertexBufferGetLayout(vbo));        
+        IndexT vertexCount = 0;
+        IndexT vertexBufferOffset = 0;
+        // collect draws and loop a couple of times instead
+        CollectByFilter(imState.points, CoreGraphics::PrimitiveTopology::PointList, vertexBufferOffset, vertexCount,
+            [](Im3d::DrawList const& l) { return l.m_primType == Im3d::DrawPrimitive_Points; });
 
-        for (uint32_t i = 0, n = Im3d::GetDrawListCount(); i < n; ++i)
-        {
-            auto& drawList = Im3d::GetDrawLists()[i];
-            switch (drawList.m_primType)
-            {
-            case Im3d::DrawPrimitive_Points:
-                CoreGraphics::SetShaderProgram(imState.points);
-                CoreGraphics::SetPrimitiveTopology(CoreGraphics::PrimitiveTopology::PointList);
-                break;
-            case Im3d::DrawPrimitive_Lines:
-                if (drawList.m_layerId == imState.depthLayerId)
-                {
-                    CoreGraphics::SetShaderProgram(imState.depthLines);
-                }
-                else
-                {
-                    CoreGraphics::SetShaderProgram(imState.lines);
-                }                
-                CoreGraphics::SetPrimitiveTopology(CoreGraphics::PrimitiveTopology::LineList);
-                break;
-            case Im3d::DrawPrimitive_Triangles:
-                CoreGraphics::SetShaderProgram(imState.triangles);
-                CoreGraphics::SetPrimitiveTopology(CoreGraphics::PrimitiveTopology::TriangleList);
-                break;
-            default:
-                n_assert("Unkown Primtype");
-                break;
-            }
-            const unsigned char* vertexBuffer = (unsigned char*)drawList.m_vertexData;
-            const SizeT vertexBufferSize = drawList.m_vertexCount * sizeof(Im3d::VertexData);
-            Memory::Copy(vertexBuffer, imState.vertexPtr + vertexBufferOffset, vertexBufferSize);
-            CoreGraphics::SetGraphicsPipeline();
-            // setup input buffers
-            CoreGraphics::SetStreamVertexBuffer(0, vbo, 0);
+        CollectByFilter(imState.triangles, CoreGraphics::PrimitiveTopology::TriangleList, vertexBufferOffset, vertexCount,
+            [](Im3d::DrawList const& l) { return l.m_primType == Im3d::DrawPrimitive_Triangles; });
 
-            CoreGraphics::PrimitiveGroup primitive;
-            primitive.SetNumIndices(0);
-            primitive.SetBaseIndex(0);
-            primitive.SetNumVertices(drawList.m_vertexCount);
-            primitive.SetBaseVertex(vertexOffset);
+        CollectByFilter(imState.depthLines, CoreGraphics::PrimitiveTopology::LineList, vertexBufferOffset, vertexCount,
+            [](Im3d::DrawList const& l) { return l.m_primType == Im3d::DrawPrimitive_Lines && l.m_layerId == imState.depthLayerId; });
 
-            vertexBufferOffset += vertexBufferSize;
-            vertexOffset += drawList.m_vertexCount;
-            CoreGraphics::SetPrimitiveGroup(primitive);
-
-            // prepare render device and draw
-            CoreGraphics::Draw();
-        }
+        CollectByFilter(imState.lines, CoreGraphics::PrimitiveTopology::LineList, vertexBufferOffset, vertexCount,
+            [](Im3d::DrawList const& l) { return l.m_primType == Im3d::DrawPrimitive_Lines && l.m_layerId != imState.depthLayerId; });                                        
     }
 }
 
