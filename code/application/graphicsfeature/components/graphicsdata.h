@@ -12,6 +12,7 @@
 namespace Attr
 {
     DeclareUInt(GraphicsEntity, 'gEnt', Attr::ReadOnly);
+    DeclareString(ModelResource, 'mdlR', Attr::ReadOnly);
 } // namespace Attr
 
 //------------------------------------------------------------------------------
@@ -19,7 +20,8 @@ namespace GraphicsFeature
 {
 
 class GraphicsComponentData : public Game::Component<
-    decltype(Attr::GraphicsEntity)
+    decltype(Attr::GraphicsEntity),
+    decltype(Attr::ModelResource)
 >
 {
     __DeclareClass(GraphicsComponentData);
@@ -33,6 +35,7 @@ public:
     {
         OWNER,
         GRAPHICSENTITY,
+        MODELRESOURCE,
 
         NumAttributes
     };
