@@ -383,9 +383,6 @@ ImguiContext::HandleInput(const Input::InputEvent& event)
 	case InputEvent::MouseMove:
 		io.MousePos = ImVec2(event.GetAbsMousePos().x(), event.GetAbsMousePos().y());
 		return io.WantCaptureMouse;
-	case InputEvent::MouseButtonDoubleClick:
-		io.MouseDoubleClicked[event.GetMouseButton()] = true;
-		return io.WantCaptureMouse;
 	case InputEvent::MouseButtonDown:
 		io.MouseDown[event.GetMouseButton()] = true;
 		return io.WantCaptureMouse;
@@ -430,6 +427,8 @@ ImguiContext::OnWindowResized(IndexT windowId, SizeT width, SizeT height)
 void 
 ImguiContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime)
 {
+	ImGuiIO& io = ImGui::GetIO();
+	io.DeltaTime = frameTime;
     ImGui::NewFrame();
 }
 

@@ -28,6 +28,8 @@ ComponentInterface::ComponentInterface()
 	functions.Optimize = nullptr;
 	functions.DestroyAll = nullptr;
 	functions.SetParents = nullptr;
+	functions.OnLoad = nullptr;
+	functions.OnSave = nullptr;
 }
 
 //------------------------------------------------------------------------------

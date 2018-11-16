@@ -38,7 +38,23 @@ public:
 	static void SetParent(const Game::Entity& entity, const Game::Entity& parent);
 	static void SetParent(const uint32_t& instance, const uint32_t& parentInstance);
 
+	/// Get parent of instance
+	static uint32_t GetParent(const uint32_t& instance);
+	
+	/// Get owner of instance
+	static Game::Entity GetOwner(const uint32_t& instance);
+
+	/// Get first child of instance
+	static uint32_t GetFirstChild(const uint32_t& instance);
+
+	/// Get the first sibling of this instance
+	static uint32_t GetNextSibling(const uint32_t& instance);
+
+	/// Get the previous sibling of this instance
+	static uint32_t GetPreviousSibling(const uint32_t& instance);
+
 private:
+	/// Update the transform hierarchy of this instance and all its children
 	static void UpdateHierarchy(uint32_t instance);
 };
 

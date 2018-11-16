@@ -201,6 +201,9 @@ public:
     /// set as bool value
     void SetBool(bool val);	
     
+	/// set string length and fill all characters with arg
+	void Fill(SizeT length, unsigned char character);
+
     #if !__OSX__
     /// set as float2 value
     void SetFloat2(const Math::float2& v);
@@ -639,6 +642,19 @@ String::SetBool(bool val)
     {
         this->SetCharPtr("false");
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+String::Fill(SizeT length, unsigned char character)
+{
+	this->Alloc(length + 1);
+	Memory::Fill(this->heapBuffer, length, character);
+	this->heapBuffer[length] = 0;
+	this->localBuffer[0] = 0;
+	this->strLen = length;
 }
 
 #if !__OSX__
