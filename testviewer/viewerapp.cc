@@ -114,7 +114,7 @@ SimpleViewerApplication::Open()
 		this->pointLights[0] = Graphics::CreateEntity();
 		Lighting::LightContext::RegisterEntity(this->pointLights[0]);
 		Lighting::LightContext::SetupPointLight(this->pointLights[0], Math::float4(1, 0, 0, 1), 10.0f, Math::matrix44::translation(0, 0, -10), 10.0f, false);
-
+        
 		this->pointLights[1] = Graphics::CreateEntity();
 		Lighting::LightContext::RegisterEntity(this->pointLights[1]);
 		Lighting::LightContext::SetupPointLight(this->pointLights[1], Math::float4(0, 1, 0, 1), 10.0f, Math::matrix44::translation(-10, 0, -10), 10.0f, false);
@@ -122,6 +122,11 @@ SimpleViewerApplication::Open()
 		this->pointLights[2] = Graphics::CreateEntity();
 		Lighting::LightContext::RegisterEntity(this->pointLights[2]);
 		Lighting::LightContext::SetupPointLight(this->pointLights[2], Math::float4(0, 0, 1, 1), 10.0f, Math::matrix44::translation(-10, 0, 0), 10.0f, false);
+
+        for (int i = 0; i < 3; i++)
+        {
+            this->entities.Append(this->pointLights[i]);
+        }
 
 		{
 			this->spotLights[0] = Graphics::CreateEntity();
@@ -164,11 +169,13 @@ SimpleViewerApplication::Open()
         ModelContext::RegisterEntity(this->entity);
         ModelContext::Setup(this->entity, "mdl:Buildings/castle_tower.n3", "Viewer");
         ModelContext::SetTransform(this->entity, Math::matrix44::translation(Math::float4(0, 0, 0, 1)));
+        this->entities.Append(this->entity);
 
 		this->ground = Graphics::CreateEntity();
 		ModelContext::RegisterEntity(this->ground);
 		ModelContext::Setup(this->ground, "mdl:environment/Groundplane.n3", "Viewer");
 		ModelContext::SetTransform(this->ground, Math::matrix44::translation(Math::float4(0, 0, 0, 1)));
+        this->entities.Append(this->ground);
 
         // register visibility system
         ObserverContext::CreateBruteforceSystem({});
@@ -189,6 +196,7 @@ SimpleViewerApplication::Open()
 			for (IndexT j = -NumModels; j < NumModels; j++)
 			{
 				Graphics::GraphicsEntityId ent = Graphics::CreateEntity();
+                this->entities.Append(ent);
 
 				// create model and move it to the front
 				ModelContext::RegisterEntity(ent);
@@ -202,6 +210,7 @@ SimpleViewerApplication::Open()
 		}
 		ModelContext::EndBulkRegister();
 		ObservableContext::EndBulkRegister();
+        this->UpdateCamera();
 
         return true;
     }
@@ -244,19 +253,12 @@ SimpleViewerApplication::Run()
         this->resMgr->Update(frameIndex);
 
         this->gfxServer->BeginFrame();
-        this->RenderUI();
+        
         // put game code which doesn't need visibility data or animation here
         this->gfxServer->BeforeViews();
+        this->RenderUI();             
 
-        Im3d::Mat4 trans = ModelContext::GetTransform(this->entity);
-        auto const& cts = Im3d::GetContext();
-        bool updateCam = true;
-        if (Im3d::Gizmo("GizmoUnified", trans))
-        {
-            updateCam = false;
-            ModelContext::SetTransform(this->entity, trans);
-        }
-
+        this->gfxServer->RenderDebug(0);
         // put game code which need visibility data here
 
         this->gfxServer->RenderViews();
@@ -273,8 +275,8 @@ SimpleViewerApplication::Run()
         // force wait immediately
         WindowPresent(wnd, frameIndex);
         if (this->inputServer->GetDefaultKeyboard()->KeyPressed(Input::Key::Escape)) run = false;        
-        
-        if(updateCam)
+                
+        if(this->inputServer->GetDefaultKeyboard()->KeyPressed(Input::Key::LeftMenu))
             this->UpdateCamera();
         
 
@@ -283,6 +285,44 @@ SimpleViewerApplication::Run()
     }
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+void
+SimpleViewerApplication::RenderEntityUI()
+{
+    ImGui::Begin("Entities", nullptr, ImVec2(240, 400), 0.6f, 0);
+    ImGui::BeginChild("##entities", ImVec2(0, 300), true);
+    static int selected = 0;
+    for (int i = 0 ; i < this->entities.Size();i++)
+    {
+        Util::String sid;
+        sid.Format("entityid: %d", this->entities[i]);
+        if (ImGui::Selectable(sid.AsCharPtr(), i == selected))
+        {
+            selected = i;
+        }        
+    }
+    ImGui::EndChild();
+    ImGui::End();
+    auto id = this->entities[selected];
+    if (ModelContext::IsEntityRegistered(id))
+    {
+        Im3d::Mat4 trans = ModelContext::GetTransform(id);
+        if (Im3d::Gizmo("GizmoEntity", trans))
+        {            
+            ModelContext::SetTransform(id, trans);
+        }
+    }            
+    else if (Lighting::LightContext::IsEntityRegistered(id))
+    {
+        Im3d::Mat4 trans = Lighting::LightContext::GetTransform(id);
+        if (Im3d::Gizmo("GizmoEntity", trans))
+        {
+            Lighting::LightContext::SetTransform(id, trans);
+        }
+    }
+}
 //------------------------------------------------------------------------------
 /**
 */
@@ -344,6 +384,7 @@ SimpleViewerApplication::RenderUI()
         ImGui::EndPopup();
     }            
     ImGui::End();
+    this->RenderEntityUI();
 }
 
 //------------------------------------------------------------------------------

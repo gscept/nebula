@@ -38,6 +38,7 @@ public:
 
 protected:
     void RenderUI();
+    void RenderEntityUI();
     void UpdateCamera();
     void ResetCamera();
     void ToMaya();
@@ -77,6 +78,7 @@ protected:
     RenderUtil::MayaCameraUtil mayaCameraUtil;
     RenderUtil::FreeCameraUtil freeCamUtil;        
     Math::point defaultViewPoint;
+    Util::Array<Graphics::GraphicsEntityId> entities;
 };
 
 }
