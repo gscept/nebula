@@ -7,6 +7,13 @@
             "value": "Math::matrix44"
         }
     }
+	"SetWorldTransform": {
+        "fourcc": "SWTM"
+        "args": {
+            "entity": "Game::Entity"
+            "value": "Math::matrix44"
+        }
+    }
     "UpdateTransform": {
         "fourcc": "UpdT"
         "args": {

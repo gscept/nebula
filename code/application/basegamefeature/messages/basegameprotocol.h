@@ -39,6 +39,33 @@ public:
 //------------------------------------------------------------------------------
 /**
 */
+class SetWorldTransform : public Game::Message<SetWorldTransform, Game::Entity, Math::matrix44>
+{
+public:
+    SetWorldTransform() = delete;
+    ~SetWorldTransform() = delete;
+    constexpr static const char* GetName() { return "SetWorldTransform"; };
+    constexpr static const uint GetFourCC()	{ return 'SWTM'; };
+    static void Send(const Game::Entity& entity, const Math::matrix44& value)
+    {
+        auto instance = Instance();
+        SizeT size = instance->callbacks.Size();
+        for (SizeT i = 0; i < size; ++i)
+            instance->callbacks.Get<1>(i)(entity, value);
+    }
+    static void Defer(MessageQueueId qid, const Game::Entity& entity, const Math::matrix44& value)
+    {
+        auto instance = Instance();
+        SizeT index = Ids::Index(qid.id);
+        auto i = instance->messageQueues[index].Alloc();
+        instance->messageQueues[index].Set(i, entity, value);
+    }
+};
+        
+
+//------------------------------------------------------------------------------
+/**
+*/
 class UpdateTransform : public Game::Message<UpdateTransform, Game::Entity, Math::matrix44>
 {
 public:
