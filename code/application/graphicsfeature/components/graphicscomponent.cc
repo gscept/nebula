@@ -19,7 +19,7 @@ namespace GraphicsFeature
 
 static GraphicsComponentData component;
 
-__ImplementComponent(GraphicsFeature::GraphicsComponent, component)
+__ImplementComponent_woSerialization(GraphicsFeature::GraphicsComponent, component)
 
 //------------------------------------------------------------------------------
 /**
@@ -65,7 +65,7 @@ GraphicsComponent::OnActivate(const uint32_t& instance)
 	auto gfxEntity = Graphics::CreateEntity();
 	component.data.Get<GraphicsComponentData::GRAPHICSENTITY>(instance) = gfxEntity.id;
 	Models::ModelContext::RegisterEntity(gfxEntity);
-	Models::ModelContext::Setup(gfxEntity, "mdl:Buildings/castle_tower.n3", "NONE");
+	Models::ModelContext::Setup(gfxEntity, component.data.Get<GraphicsComponentData::MODELRESOURCE>(instance), "NONE");
 	auto transform = Game::TransformComponent::GetWorldTransform(component.GetOwner(instance));
 	Models::ModelContext::SetTransform(gfxEntity, transform);
 	Visibility::ObservableContext::RegisterEntity(gfxEntity);
@@ -109,7 +109,30 @@ GraphicsComponent::SetModel(const Game::Entity & entity, const Util::String & pa
 	{
 		Graphics::GraphicsEntityId gfxEntity = { component.data.Get<GraphicsComponentData::GRAPHICSENTITY>(instance) };
 		Models::ModelContext::ChangeModel(gfxEntity, path, "NONE");
+		component.data.Get<GraphicsComponentData::MODELRESOURCE>(instance) = path;
 	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GraphicsComponent::Serialize(const Ptr<IO::BinaryWriter>& writer)
+{
+	Game::Serialize(writer, component.data.GetArray<GraphicsComponentData::MODELRESOURCE>());
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GraphicsComponent::Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances)
+{
+	Game::Deserialize(reader, component.data.GetArray<GraphicsComponentData::MODELRESOURCE>(), offset, numInstances);
+
+	// make sure to set fill the rest of the arrays.
+	component.data.GetArray<GraphicsComponentData::GRAPHICSENTITY>().SetSize(offset + numInstances);
+	component.data.GetArray<GraphicsComponentData::GRAPHICSENTITY>().Fill(offset, numInstances, Attr::GraphicsEntity.GetDefaultValue().GetUInt());
 }
 
 } // namespace GraphicsFeature

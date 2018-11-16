@@ -74,6 +74,19 @@
 	void COMPONENTTYPE::Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances) { BASEOBJECT.Deserialize(reader, offset, numInstances); } \
 	uint32_t COMPONENTTYPE::GetInstance(const Game::Entity& entity) { return BASEOBJECT.GetInstance(entity); } 
 
+//------------------------------------------------------------------------------
+/**
+	Implements default behaviour of a component.
+
+	Remember to write implementations for Create() and Discard()!
+*/
+#define __ImplementComponent_woSerialization(COMPONENTTYPE, BASEOBJECT) \
+	uint32_t COMPONENTTYPE::RegisterEntity(const Game::Entity& entity) { return BASEOBJECT.RegisterEntity(entity); } \
+	void COMPONENTTYPE::DeregisterEntity(const Game::Entity& entity) { BASEOBJECT.DeregisterEntity(entity); } \
+	void COMPONENTTYPE::DestroyAll() { BASEOBJECT.DestroyAll(); } \
+	SizeT COMPONENTTYPE::NumRegistered() { return BASEOBJECT.NumRegistered(); } \
+	uint32_t COMPONENTTYPE::GetInstance(const Game::Entity& entity) { return BASEOBJECT.GetInstance(entity); } 
+
 namespace Game
 {
 

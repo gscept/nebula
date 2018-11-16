@@ -10,7 +10,8 @@
 //------------------------------------------------------------------------------
 namespace Attr
 {
-    DefineUInt(GraphicsEntity, 'gEnt', Attr::ReadOnly);
+    DefineUIntWithDefault(GraphicsEntity, 'gEnt', Attr::ReadOnly, uint(-1));
+    DefineStringWithDefault(ModelResource, 'mdlR', Attr::ReadOnly, Util::String("mdl:Buildings/castle_tower.n3"));
 } // namespace Attr
 //------------------------------------------------------------------------------
 namespace GraphicsFeature
@@ -25,6 +26,7 @@ __RegisterClass(GraphicsComponentData)
 GraphicsComponentData::GraphicsComponentData() :
     component_templated_t({
         Attr::GraphicsEntity,
+        Attr::ModelResource,
     })
 {
     this->events.SetBit(Game::ComponentEvent::OnActivate);
