@@ -9,8 +9,13 @@
 #include "graphics/cameracontext.h"
 #include "renderutil/drawfullscreenquad.h"
 #include "csmutil.h"
+#include "math/polar.h"
 #include "frame/framebatchtype.h"
 #include "resources/resourcemanager.h"
+
+// match these in lights.fx
+const uint USE_SHADOW_BITFLAG = 0x1;
+const uint USE_PROJECTION_TEX_BITFLAG = 0x2;
 
 namespace Lighting
 {
@@ -42,13 +47,11 @@ struct LightServerState
 	RenderUtil::DrawFullScreenQuad fsq;
 
 	CoreGraphics::ShaderProgramId spotLight;		
-	CoreGraphics::ShaderProgramId spotLightShadow;
 	CoreGraphics::ShaderProgramId pointLight;
-	CoreGraphics::ShaderProgramId pointLightShadow;
 
 	struct LocalLight
 	{
-		CoreGraphics::ConstantBinding color, posRange, projectionTransform, transform, projectionTexture;
+		CoreGraphics::ConstantBinding color, posRange, projectionTransform, transform, projectionTexture, flags;
 		CoreGraphics::ConstantBinding shadowOffsetScale, shadowConstants, shadowBias, shadowIntensity, shadowTransform, shadowMap;
 	} local;
 
@@ -58,6 +61,7 @@ struct LightServerState
 
 	CoreGraphics::MeshId spotLightMesh;
 	CoreGraphics::MeshId pointLightMesh;
+	CoreGraphics::TextureId spotLightDefaultProjection;
 
 	IndexT localLightsSlot, localLightShadowSlot;
 } lightServerState;
@@ -107,9 +111,8 @@ LightContext::Create()
 	lightServerState.global.shadowHandle = ShaderGetConstantBinding(lightServerState.lightShader, "GlobalLightShadowBuffer");
 
 	lightServerState.pointLight = ShaderGetProgram(lightServerState.lightShader, CoreGraphics::ShaderFeatureFromString("Point"));
-	lightServerState.pointLightShadow = ShaderGetProgram(lightServerState.lightShader, CoreGraphics::ShaderFeatureFromString("Point|Alt0"));
 	lightServerState.spotLight = ShaderGetProgram(lightServerState.lightShader, CoreGraphics::ShaderFeatureFromString("Spot"));
-	lightServerState.spotLightShadow = ShaderGetProgram(lightServerState.lightShader, CoreGraphics::ShaderFeatureFromString("Spot|Alt0"));
+	lightServerState.local.flags = ShaderGetConstantBinding(lightServerState.lightShader, "Flags");
 	lightServerState.local.color = ShaderGetConstantBinding(lightServerState.lightShader, "LightColor");
 	lightServerState.local.posRange = ShaderGetConstantBinding(lightServerState.lightShader, "LightPosRange");
 	lightServerState.local.projectionTransform = ShaderGetConstantBinding(lightServerState.lightShader, "LightProjTransform");
@@ -136,6 +139,7 @@ LightContext::Create()
 
 	lightServerState.spotLightMesh = Resources::CreateResource("msh:system/spotlightshape.nvx2", "system", nullptr, nullptr, true);
 	lightServerState.pointLightMesh = Resources::CreateResource("msh:system/pointlightshape.nvx2", "system", nullptr, nullptr, true);
+	lightServerState.spotLightDefaultProjection = Resources::CreateResource("tex:system/spotlight.dds", "system", nullptr, nullptr, true);
 
 	DisplayMode mode = WindowGetDisplayMode(DisplayDevice::Instance()->GetCurrentWindow());
 	lightServerState.fsq.Setup(mode.GetWidth(), mode.GetHeight());
@@ -172,7 +176,13 @@ LightContext::SetupGlobalLight(const Graphics::GraphicsEntityId id, const Math::
 /**
 */
 void 
-LightContext::SetupPointLight(const Graphics::GraphicsEntityId id, const Math::float4& color, const float intensity, const Math::matrix44& transform, const float range, bool castShadows)
+LightContext::SetupPointLight(const Graphics::GraphicsEntityId id, 
+	const Math::float4& color, 
+	const float intensity, 
+	const Math::matrix44& transform, 
+	const float range, 
+	bool castShadows, 
+	const CoreGraphics::TextureId projection)
 {
 	n_assert(id != Graphics::GraphicsEntityId::Invalid());
 	const Graphics::ContextEntityId cid = GetContextId(id);
@@ -197,6 +207,7 @@ LightContext::SetupPointLight(const Graphics::GraphicsEntityId id, const Math::f
 	}
 	pointLightAllocator.Get<PointLightConstantBufferSet>(pli) = { offset, slice };
 	pointLightAllocator.Get<PointLightDynamicOffsets>(pli)[0] = offset;
+	pointLightAllocator.Get<PointLightProjectionTexture>(pli) = projection;
 
 	// allocate shadow buffer slice if we cast shadows
 	offset = 0;
@@ -223,7 +234,12 @@ LightContext::SetupPointLight(const Graphics::GraphicsEntityId id, const Math::f
 /**
 */
 void 
-LightContext::SetupSpotLight(const Graphics::GraphicsEntityId id, const Math::float4& color, const float intensity, const Math::matrix44& transform, const float coneAngle, bool castShadows)
+LightContext::SetupSpotLight(const Graphics::GraphicsEntityId id, 
+	const Math::float4& color, 
+	const float intensity, 
+	const Math::matrix44& transform,
+	bool castShadows, 
+	const CoreGraphics::TextureId projection)
 {
 	n_assert(id != Graphics::GraphicsEntityId::Invalid());
 	const Graphics::ContextEntityId cid = GetContextId(id);
@@ -232,11 +248,30 @@ LightContext::SetupSpotLight(const Graphics::GraphicsEntityId id, const Math::fl
 	genericLightAllocator.Get<Intensity>(cid.id) = intensity;
 	genericLightAllocator.Get<ShadowCaster>(cid.id) = castShadows;
 
+
 	auto sli = spotLightAllocator.AllocObject();
 	spotLightAllocator.Get<SpotLightTransform>(sli) = transform;
-	spotLightAllocator.Get<SpotLightConeAngle>(sli) = coneAngle;
 	spotLightAllocator.Get<SpotLightDynamicOffsets>(sli).Resize(2);
 	genericLightAllocator.Get<TypedLightId>(cid.id) = sli;
+
+
+	// compute the spot light's perspective projection matrix from
+	// its transform matrix (spot direction is along -z, and goes
+	// throught the rectangle formed by the x and y components
+	// at the end of -z
+	float widthAtFarZ = transform.getrow0().length() * 2.0f;
+	float heightAtFarZ = transform.getrow1().length() * 2.0f;
+	float nearZ = 0.001f; // put the near plane at 0.001cm 
+	float farZ = transform.getrow2().length();
+	n_assert(farZ > 0.0f);
+	if (nearZ >= farZ)
+	{
+		nearZ = farZ / 2.0f;
+	}
+	float widthAtNearZ = (widthAtFarZ / farZ) * nearZ;
+	float heightAtNearZ = (heightAtFarZ / farZ) * nearZ;
+	spotLightAllocator.Get<SpotLightProjection>(sli) = Math::matrix44::persprh(widthAtNearZ, heightAtNearZ, nearZ, farZ);
+	spotLightAllocator.Get<SpotLightInvViewProjection>(sli) = Math::matrix44::multiply(transform, spotLightAllocator.Get<SpotLightProjection>(sli));
 
 	// allocate constant buffer slice
 	bool changes = false;
@@ -248,6 +283,7 @@ LightContext::SetupSpotLight(const Graphics::GraphicsEntityId id, const Math::fl
 	}
 	spotLightAllocator.Get<SpotLightConstantBufferSet>(sli) = { offset, slice };
 	spotLightAllocator.Get<SpotLightDynamicOffsets>(sli)[0] = offset;
+	spotLightAllocator.Get<SpotLightProjectionTexture>(sli) = projection == CoreGraphics::TextureId::Invalid() ? lightServerState.spotLightDefaultProjection : projection;
 	offset = 0;
 
 	// allocate constant buffer for shadows if it casts them
@@ -328,6 +364,7 @@ LightContext::SetSpotLightTransform(const Graphics::GraphicsEntityId id, const M
 	n_assert(genericLightAllocator.Get<Type>(cid.id) == SpotLightType);
 #endif
 
+	// todo, update projection and invviewprojection!!!!
 	auto lid = genericLightAllocator.Get<TypedLightId>(cid.id);
 	spotLightAllocator.Get<SpotLightTransform>(lid) = transform;
 }
@@ -373,6 +410,7 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIn
 
 	// get camera view
 	Math::matrix44 viewTransform = Graphics::CameraContext::GetTransform(view->GetCamera());
+	Math::matrix44 invViewTransform = Math::matrix44::inverse(viewTransform);
 
 	// update constant buffer
 	Ids::Id32 globalLightId = genericLightAllocator.Get<TypedLightId>(cid.id);
@@ -400,17 +438,32 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIn
 		{
 			auto cboLight = pointLightAllocator.Get<PointLightConstantBufferSet>(typeIds[i]);
 			auto trans = pointLightAllocator.Get<PointLightTransform>(typeIds[i]);
+			auto tex = pointLightAllocator.Get<PointLightProjectionTexture>(typeIds[i]);
 			ConstantBufferUpdateInstance(lightServerState.localLightsConstantBuffer, color[i] * intensity[i], cboLight.slice, lightServerState.local.color);
 			ConstantBufferUpdateInstance(lightServerState.localLightsConstantBuffer, trans, cboLight.slice, lightServerState.local.transform);
+
+			uint flags = 0;
 
 			Math::float4 posAndRange = Math::matrix44::transform(trans.get_position(), viewTransform);
 			posAndRange.w() = 1 / trans.get_zaxis().length();
 			ConstantBufferUpdateInstance(lightServerState.localLightsConstantBuffer, posAndRange, cboLight.slice, lightServerState.local.posRange);
 
+			// update shadow stuff
 			if (castShadow[i])
 			{
 				auto cboShadow = pointLightAllocator.Get<PointLightShadowConstantBufferSet>(typeIds[i]);
+				flags |= USE_SHADOW_BITFLAG;
 			}
+
+			// bind projection
+			if (tex != TextureId::Invalid())
+			{
+				ConstantBufferUpdateInstance(lightServerState.localLightsConstantBuffer, TextureGetBindlessHandle(tex), cboLight.slice, lightServerState.local.projectionTexture);
+				flags |= USE_PROJECTION_TEX_BITFLAG;
+			}
+
+			// update flags (maybe this can be done less often...)
+			ConstantBufferUpdateInstance(lightServerState.localLightsConstantBuffer, flags, cboLight.slice, lightServerState.local.flags);
 		}
 		break;
 
@@ -418,13 +471,31 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIn
 		{
 			auto cboLight = spotLightAllocator.Get<SpotLightConstantBufferSet>(typeIds[i]);
 			auto trans = spotLightAllocator.Get<SpotLightTransform>(typeIds[i]);
+			auto tex = spotLightAllocator.Get<SpotLightProjectionTexture>(typeIds[i]);
+			auto invViewProj = spotLightAllocator.Get<SpotLightProjection>(typeIds[i]);
 			ConstantBufferUpdateInstance(lightServerState.localLightsConstantBuffer, color[i] * intensity[i], cboLight.slice, lightServerState.local.color);
 			ConstantBufferUpdateInstance(lightServerState.localLightsConstantBuffer, trans, cboLight.slice, lightServerState.local.transform);
 
+			uint flags = USE_PROJECTION_TEX_BITFLAG;
+
+			Math::float4 posAndRange = Math::matrix44::transform(trans.get_position(), viewTransform);
+			posAndRange.w() = 1 / trans.get_zaxis().length();
+			ConstantBufferUpdateInstance(lightServerState.localLightsConstantBuffer, posAndRange, cboLight.slice, lightServerState.local.posRange);
+
+			// update shadow data
 			if (castShadow[i])
 			{
 				auto cboShadow = spotLightAllocator.Get<SpotLightShadowConstantBufferSet>(typeIds[i]);
+				flags |= USE_SHADOW_BITFLAG;
 			}
+
+			// update projection transform
+			Math::matrix44 fromViewToLightProj = Math::matrix44::multiply(invViewTransform, invViewProj);
+			ConstantBufferUpdateInstance(lightServerState.localLightsConstantBuffer, fromViewToLightProj, cboLight.slice, lightServerState.local.projectionTransform);
+
+			// update flag and projection (maybe this can be done less often...)
+			ConstantBufferUpdateInstance(lightServerState.localLightsConstantBuffer, TextureGetBindlessHandle(tex), cboLight.slice, lightServerState.local.projectionTexture);
+			ConstantBufferUpdateInstance(lightServerState.localLightsConstantBuffer, flags, cboLight.slice, lightServerState.local.flags);
 		}
 		break;
 
@@ -458,21 +529,37 @@ LightContext::RenderLights()
 	// first bind pointlight mesh
 	CoreGraphics::MeshBind(lightServerState.pointLightMesh, 0);
 
+	// set shader program and bind pipeline
+	CoreGraphics::SetShaderProgram(lightServerState.pointLight);
+	CoreGraphics::SetGraphicsPipeline();
+
 	// draw local lights
-	const Util::Array<ConstantBufferSet>& lightCbo = pointLightAllocator.GetArray<PointLightConstantBufferSet>();
-	const Util::Array<ConstantBufferSet>& shadowCbo = pointLightAllocator.GetArray<PointLightShadowConstantBufferSet>();
-	const Util::Array<Util::FixedArray<uint>>& dynamicOffsets = pointLightAllocator.GetArray<PointLightDynamicOffsets>();
+	const Util::Array<Util::FixedArray<uint>>& pdynamicOffsets = pointLightAllocator.GetArray<PointLightDynamicOffsets>();
+
 	IndexT i;
-	for (i = 0; i < lightCbo.Size(); i++)
+	for (i = 0; i < pdynamicOffsets.Size(); i++)
 	{
-		// set shader program and bind pipeline
-		CoreGraphics::SetShaderProgram(lightServerState.pointLight);
-		CoreGraphics::SetGraphicsPipeline();
-
 		// setup resources
-		CoreGraphics::SetResourceTable(lightServerState.localLightsResourceTable, NEBULA_INSTANCE_GROUP, CoreGraphics::GraphicsPipeline, dynamicOffsets[i]);
+		CoreGraphics::SetResourceTable(lightServerState.localLightsResourceTable, NEBULA_INSTANCE_GROUP, CoreGraphics::GraphicsPipeline, pdynamicOffsets[i]);
 
-		// draw light!
+		// draw point light!
+		CoreGraphics::Draw();
+	}
+
+	// first bind pointlight mesh
+	CoreGraphics::MeshBind(lightServerState.spotLightMesh, 0);
+
+	// set shader program and bind pipeline
+	CoreGraphics::SetShaderProgram(lightServerState.spotLight);
+	CoreGraphics::SetGraphicsPipeline();
+
+	const Util::Array<Util::FixedArray<uint>>& sdynamicOffsets = spotLightAllocator.GetArray<SpotLightDynamicOffsets>();
+	for (i = 0; i < sdynamicOffsets.Size(); i++)
+	{
+		// setup resources
+		CoreGraphics::SetResourceTable(lightServerState.localLightsResourceTable, NEBULA_INSTANCE_GROUP, CoreGraphics::GraphicsPipeline, sdynamicOffsets[i]);
+
+		// draw point light!
 		CoreGraphics::Draw();
 	}
 	CoreGraphics::EndBatch();

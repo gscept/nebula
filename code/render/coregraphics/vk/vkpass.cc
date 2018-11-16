@@ -180,7 +180,7 @@ CreatePass(const PassCreateInfo& info)
 
 		// resize arrays straight away since we already know the size
 		references.Resize(info.colorAttachments.Size());
-		inputs.Resize(subpass.inputs.Size());
+		inputs.Resize(8);
 		preserves.Resize(info.colorAttachments.Size() - subpass.attachments.Size());
 		if (subpass.resolve) resolves.Resize(subpass.attachments.Size());
 
@@ -223,6 +223,7 @@ CreatePass(const PassCreateInfo& info)
 			if (subpass.resolve) resolves[j] = ref;
 		}
 
+
 		for (j = 0; j < subpass.inputs.Size(); j++)
 		{
 			VkAttachmentReference& ref = inputs[j];
@@ -232,6 +233,14 @@ CreatePass(const PassCreateInfo& info)
 			IndexT index = allAttachments.FindIndex(ref.attachment);
 			n_assert_fmt(index != InvalidIndex, "Input attachment %d is already being used as an output attachment", ref.attachment);
 			allAttachments.EraseIndex(index);
+		}
+
+		// fill the rest of the subpass attachments with bullshit
+		for (; j < 8; j++)
+		{
+			VkAttachmentReference& ref = inputs[j];
+			ref.attachment = VK_ATTACHMENT_UNUSED;
+			ref.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		}
 
 		for (j = 0; j < allAttachments.Size(); j++)
@@ -266,10 +275,6 @@ CreatePass(const PassCreateInfo& info)
 		{
 			vksubpass.inputAttachmentCount = inputs.Size();
 			vksubpass.pInputAttachments = inputs.IsEmpty() ? nullptr : inputs.Begin();
-		}
-		else
-		{
-			vksubpass.inputAttachmentCount = 0;
 		}
 
 		// the rest are automatically preserve

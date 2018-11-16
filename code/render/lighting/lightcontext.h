@@ -33,11 +33,23 @@ public:
 	static void Create();
 
 	/// setup entity as global light
-	static void SetupGlobalLight(const Graphics::GraphicsEntityId id, const Math::float4& color, const float intensity, const Math::float4& ambient, const Math::float4& backlight, const float backlightFactor, const Math::vector& direction, bool castShadows);
+	static void SetupGlobalLight(const Graphics::GraphicsEntityId id, const Math::float4& color, const float intensity, const Math::float4& ambient, const Math::float4& backlight, const float backlightFactor, const Math::vector& direction, bool castShadows = false);
 	/// setup entity as point light source
-	static void SetupPointLight(const Graphics::GraphicsEntityId id, const Math::float4& color, const float intensity, const Math::matrix44& transform, const float range, bool castShadows);
+	static void SetupPointLight(const Graphics::GraphicsEntityId id, 
+		const Math::float4& color, 
+		const float intensity, 
+		const Math::matrix44& transform, 
+		const float range, 
+		bool castShadows = false, 
+		const CoreGraphics::TextureId projection = CoreGraphics::TextureId::Invalid());
+
 	/// setup entity as spot light
-	static void SetupSpotLight(const Graphics::GraphicsEntityId id, const Math::float4& color, const float intensity, const Math::matrix44& transform, const float coneAngle, bool castShadows);
+	static void SetupSpotLight(const Graphics::GraphicsEntityId id, 
+		const Math::float4& color, 
+		const float intensity, 
+		const Math::matrix44& transform,
+		bool castShadows = false, 
+		const CoreGraphics::TextureId projection = CoreGraphics::TextureId::Invalid());
 
 	/// set color of light
 	static void SetColor(const Graphics::GraphicsEntityId id, const Math::float4& color);
@@ -98,14 +110,16 @@ private:
 		PointLightTransform,
 		PointLightConstantBufferSet,
 		PointLightShadowConstantBufferSet,
-		PointLightDynamicOffsets
+		PointLightDynamicOffsets,
+		PointLightProjectionTexture
 	};
 
 	typedef Ids::IdAllocator<
 		Math::matrix44,			// transform
 		ConstantBufferSet,		// constant buffer binding for light
 		ConstantBufferSet,		// constant buffer binding for shadows
-		Util::FixedArray<uint>	// dynamic offsets
+		Util::FixedArray<uint>,	// dynamic offsets
+		CoreGraphics::TextureId // projection (if invalid, don't use)
 	> PointLightAllocator;
 	static PointLightAllocator pointLightAllocator;
 
@@ -113,19 +127,21 @@ private:
 	{
 		SpotLightTransform,
 		SpotLightProjection,
-		SpotLightConeAngle,
+		SpotLightInvViewProjection,
 		SpotLightConstantBufferSet,
 		SpotLightShadowConstantBufferSet,
-		SpotLightDynamicOffsets
+		SpotLightDynamicOffsets,
+		SpotLightProjectionTexture
 	};
 
 	typedef Ids::IdAllocator<
 		Math::matrix44,				// transform
 		Math::matrix44,				// projection
-		float,						// cone angle
+		Math::matrix44,				// inversed view-projection
 		ConstantBufferSet,			// constant buffer binding for light
 		ConstantBufferSet,			// constant buffer binding for shadows
-		Util::FixedArray<uint>	// dynamic offsets
+		Util::FixedArray<uint>,		// dynamic offsets
+		CoreGraphics::TextureId		// projection (if invalid, don't use)
 	> SpotLightAllocator;
 	static SpotLightAllocator spotLightAllocator;
 

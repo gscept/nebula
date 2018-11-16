@@ -169,13 +169,10 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 
 } state;
 
-#if NEBULA_VULKAN_DEBUG
 VkDebugUtilsMessengerEXT VkDebugMessageHandle = nullptr;
 PFN_vkCreateDebugUtilsMessengerEXT VkCreateDebugMessenger = nullptr;
 PFN_vkDestroyDebugUtilsMessengerEXT VkDestroyDebugMessenger = nullptr;
-#endif
 
-#if NEBULA_GRAPHICS_DEBUG
 PFN_vkSetDebugUtilsObjectNameEXT VkDebugObjectName = nullptr;
 PFN_vkSetDebugUtilsObjectTagEXT VkDebugObjectTag = nullptr;
 PFN_vkQueueBeginDebugUtilsLabelEXT VkQueueBeginLabel = nullptr;
@@ -184,7 +181,6 @@ PFN_vkQueueInsertDebugUtilsLabelEXT VkQueueInsertLabel = nullptr;
 PFN_vkCmdBeginDebugUtilsLabelEXT VkCmdDebugMarkerBegin = nullptr;
 PFN_vkCmdEndDebugUtilsLabelEXT VkCmdDebugMarkerEnd = nullptr;
 PFN_vkCmdInsertDebugUtilsLabelEXT VkCmdDebugMarkerInsert = nullptr;
-#endif
 //------------------------------------------------------------------------------
 /**
 */
@@ -721,7 +717,8 @@ SetViewports(VkViewport* viewports, SizeT num)
 		}
 		else
 		{
-			vkCmdSetViewport(CommandBufferGetVk(state.mainCmdDrawBuffer), 0, num, viewports);
+			// activate this code when we have main thread secondary buffers
+			//vkCmdSetViewport(CommandBufferGetVk(state.mainCmdDrawBuffer), 0, num, viewports);
 		}
 	}
 }
@@ -748,7 +745,8 @@ SetScissorRects(VkRect2D* scissors, SizeT num)
 		}
 		else
 		{
-			vkCmdSetScissor(CommandBufferGetVk(state.mainCmdDrawBuffer), 0, num, scissors);
+			// activate this code when we have main thread secondary buffers
+			//vkCmdSetScissor(CommandBufferGetVk(state.mainCmdDrawBuffer), 0, num, scissors);
 		}
 	}
 }
@@ -979,13 +977,6 @@ NebulaVulkanDebugCallback(
 	const VkDebugUtilsMessengerCallbackDataEXT* callbackData,
 	void* userData)
 {
-
-#if NEBULA_VULKAN_DEBUG
-	bool ret = true;
-#else
-	bool ret = false;
-#endif
-
 	const int32_t ignore[] =
 	{
 		61
@@ -993,10 +984,9 @@ NebulaVulkanDebugCallback(
 
 	for (IndexT i = 0; i < sizeof(ignore) / sizeof(int32_t); i++)
 	{
-		//if (msgCode == ignore[i]) return true;
+		if (callbackData->messageIdNumber == ignore[i]) return true;
 	}
 
-	
 	if (severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
 	{
 		n_warning("VULKAN ERROR: %s\n", callbackData->pMessage);
@@ -1005,7 +995,7 @@ NebulaVulkanDebugCallback(
 	{
 		n_warning("VULKAN WARNING: %s\n", callbackData->pMessage);
 	}
-	return ret;
+	return false;
 }
 
 
@@ -1025,6 +1015,8 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 {
 	DisplayDevice* displayDevice = DisplayDevice::Instance();
 	n_assert(displayDevice->IsOpen());
+
+	state.enableValidation = info.enableValidation;
 
 	// create result
 	VkResult res;
@@ -1050,25 +1042,29 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		state.extensions[state.usedExtensions++] = requiredExtensions[i];
 	}
 
-	
-#define NEBULA_VULKAN_VALIDATION 0
-#if NEBULA_GRAPHICS_DEBUG || NEBULA_VULKAN_DEBUG
+	const char* layers[] = { "VK_LAYER_LUNARG_standard_validation", "VK_LAYER_LUNARG_object_tracker" };
+	int numLayers = 0;
+	const char* usedLayers = nullptr;
+
+#if NEBULA_GRAPHICS_DEBUG
+	if (info.enableValidation)
+	{
+		usedLayers = layers[0];
+		numLayers = 1;
+	}
+	else
+	{
+		usedLayers = layers[1];
+		numLayers = 1;
+	}
 	state.extensions[state.usedExtensions++] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
-	#if NEBULA_VULKAN_VALIDATION
-		const char* layers[] = { "VK_LAYER_LUNARG_standard_validation" };		
-		const int numLayers = 1;
-	#else
-		const char* layers[] = { "VK_LAYER_LUNARG_object_tracker" };
-		const int numLayers = 1;
-	#endif
 #else
-	#if NEBULA_VULKAN_VALIDATION
-		const char* layers[] = { "VK_LAYER_LUNARG_standard_validation" };
-		const int numLayers = 1;
-	#else
-		const char* layers[] =  { nullptr };
-		const int numLayers = 0;
-	#endif
+	if (info.enableValidation)
+	{
+		usedLayers = layers[0];
+		numLayers = 1;
+		state.extensions[state.usedExtensions++] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
+	}
 #endif
 
 	// setup instance
@@ -1104,30 +1100,34 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	SetupAdapter();
 	state.currentDevice = 0;
 
-#if NEBULA_VULKAN_DEBUG
-	VkCreateDebugMessenger = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(state.instance, "vkCreateDebugUtilsMessengerEXT");
-	VkDestroyDebugMessenger = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(state.instance, "vkDestroyDebugUtilsMessengerEXT");
-	VkDebugUtilsMessengerCreateInfoEXT dbgInfo;
-	dbgInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-	dbgInfo.flags = 0;
-	dbgInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT;
-	dbgInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-	dbgInfo.pNext = nullptr;
-	dbgInfo.pfnUserCallback = NebulaVulkanDebugCallback;
-	dbgInfo.pUserData = nullptr;
-	res = VkCreateDebugMessenger(state.instance, &dbgInfo, NULL, &VkDebugMessageHandle);
-	n_assert(res == VK_SUCCESS);
+#if NEBULA_GRAPHICS_DEBUG
+#else
+	if (info.enableValidation)
 #endif
+	{
+		VkCreateDebugMessenger = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(state.instance, "vkCreateDebugUtilsMessengerEXT");
+		VkDestroyDebugMessenger = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(state.instance, "vkDestroyDebugUtilsMessengerEXT");
+		VkDebugUtilsMessengerCreateInfoEXT dbgInfo;
+		dbgInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+		dbgInfo.flags = 0;
+		dbgInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT;
+		dbgInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+		dbgInfo.pNext = nullptr;
+		dbgInfo.pfnUserCallback = NebulaVulkanDebugCallback;
+		dbgInfo.pUserData = nullptr;
+		res = VkCreateDebugMessenger(state.instance, &dbgInfo, NULL, &VkDebugMessageHandle);
+		n_assert(res == VK_SUCCESS);
+	}
 
 #if NEBULA_GRAPHICS_DEBUG
 	VkDebugObjectName = (PFN_vkSetDebugUtilsObjectNameEXT)vkGetInstanceProcAddr(state.instance, "vkSetDebugUtilsObjectNameEXT");
 	VkDebugObjectTag = (PFN_vkSetDebugUtilsObjectTagEXT)vkGetInstanceProcAddr(state.instance, "vkSetDebugUtilsObjectTagEXT");
-	VkQueueBeginLabel = (PFN_vkQueueBeginDebugUtilsLabelEXT)vkGetInstanceProcAddr(state.instance, "vkQueueBeginDebugUtilsLabelEXT");;
-	VkQueueEndLabel = (PFN_vkQueueEndDebugUtilsLabelEXT)vkGetInstanceProcAddr(state.instance, "vkQueueEndDebugUtilsLabelEXT");;
-	VkQueueInsertLabel = (PFN_vkQueueInsertDebugUtilsLabelEXT)vkGetInstanceProcAddr(state.instance, "vkQueueInsertDebugUtilsLabelEXT");;
-	VkCmdDebugMarkerBegin = (PFN_vkCmdBeginDebugUtilsLabelEXT)vkGetInstanceProcAddr(state.instance, "vkCmdBeginDebugUtilsLabelEXT");;
-	VkCmdDebugMarkerEnd = (PFN_vkCmdEndDebugUtilsLabelEXT)vkGetInstanceProcAddr(state.instance, "vkCmdEndDebugUtilsLabelEXT");;
-	VkCmdDebugMarkerInsert = (PFN_vkCmdInsertDebugUtilsLabelEXT)vkGetInstanceProcAddr(state.instance, "vkCmdInsertDebugUtilsLabelEXT");;
+	VkQueueBeginLabel = (PFN_vkQueueBeginDebugUtilsLabelEXT)vkGetInstanceProcAddr(state.instance, "vkQueueBeginDebugUtilsLabelEXT");
+	VkQueueEndLabel = (PFN_vkQueueEndDebugUtilsLabelEXT)vkGetInstanceProcAddr(state.instance, "vkQueueEndDebugUtilsLabelEXT");
+	VkQueueInsertLabel = (PFN_vkQueueInsertDebugUtilsLabelEXT)vkGetInstanceProcAddr(state.instance, "vkQueueInsertDebugUtilsLabelEXT");
+	VkCmdDebugMarkerBegin = (PFN_vkCmdBeginDebugUtilsLabelEXT)vkGetInstanceProcAddr(state.instance, "vkCmdBeginDebugUtilsLabelEXT");
+	VkCmdDebugMarkerEnd = (PFN_vkCmdEndDebugUtilsLabelEXT)vkGetInstanceProcAddr(state.instance, "vkCmdEndDebugUtilsLabelEXT");
+	VkCmdDebugMarkerInsert = (PFN_vkCmdInsertDebugUtilsLabelEXT)vkGetInstanceProcAddr(state.instance, "vkCmdInsertDebugUtilsLabelEXT");
 #endif
 
 	vkGetPhysicalDeviceQueueFamilyProperties(state.physicalDevices[state.currentDevice], &state.numQueues, NULL);
@@ -1716,8 +1716,11 @@ SetToNextSubpass()
 {
 	n_assert(state.inBeginFrame);
 	n_assert(state.inBeginPass);
+	n_assert(!state.inBeginBatch);
 	n_assert(state.pass != PassId::Invalid());
 	SetFramebufferLayoutInfo(PassGetVkFramebufferInfo(state.pass));
+	state.database.SetSubpass(state.currentPipelineInfo.subpass);
+	state.passInfo.subpass = state.currentPipelineInfo.subpass;
 	vkCmdNextSubpass(CommandBufferGetVk(state.mainCmdDrawBuffer), VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 }
 
@@ -2378,10 +2381,6 @@ EndFrame(IndexT frameIndex)
 
 #if NEBULA_GRAPHICS_DEBUG
 	CoreGraphics::QueueEndMarker(TransferQueueType);
-#endif
-
-
-#if NEBULA_GRAPHICS_DEBUG
 	CoreGraphics::QueueBeginMarker(ComputeQueueType, Math::float4(0.6f, 0.6f, 0.8f, 1.0f), "End of frame compute queue submission");
 #endif
 
@@ -2394,10 +2393,6 @@ EndFrame(IndexT frameIndex)
 
 #if NEBULA_GRAPHICS_DEBUG
 	CoreGraphics::QueueEndMarker(ComputeQueueType);
-#endif
-
-
-#if NEBULA_GRAPHICS_DEBUG
 	CoreGraphics::QueueBeginMarker(GraphicsQueueType, Math::float4(0.6f, 0.6f, 0.8f, 1.0f), "End of frame graphics queue submission");
 #endif
 
@@ -2411,7 +2406,6 @@ EndFrame(IndexT frameIndex)
 #if NEBULA_GRAPHICS_DEBUG
 	CoreGraphics::QueueEndMarker(GraphicsQueueType);
 #endif
-
 
 	static VkFence fences[] = { state.mainCmdTransFence, state.mainCmdCmpFence, state.mainCmdDrawFence };
 	WaitForFences(fences, 3, true);
