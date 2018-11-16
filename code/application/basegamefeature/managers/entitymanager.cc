@@ -89,6 +89,15 @@ EntityManager::IsAlive(const Entity & e) const
 //------------------------------------------------------------------------------
 /**
 */
+uint32_t
+EntityManager::GetIndex(const Entity& entity)
+{
+	return Ids::Index(entity.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 uint
 EntityManager::GetNumEntities() const
 {

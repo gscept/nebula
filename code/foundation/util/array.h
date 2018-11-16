@@ -73,7 +73,7 @@ public:
     void Append(const TYPE& elm);
     /// append the contents of an array to this array
     void AppendArray(const Array<TYPE>& rhs);
-    /// increase capacity to fit N more elements into the array. A reserve of 0 will trigger a normal grow
+    /// increase capacity to fit N more elements into the array.
     void Reserve(SizeT num);
     /// get number of elements in array
     SizeT Size() const;
@@ -574,8 +574,9 @@ template<class TYPE> void
 Array<TYPE>::Reserve(SizeT num)
 {
 #if NEBULA_BOUNDSCHECKS
-	n_assert(num > 0);
+	n_assert(num >= 0);
 #endif
+	
 	SizeT neededCapacity = this->size + num;
 	if (neededCapacity > this->capacity)
 	{

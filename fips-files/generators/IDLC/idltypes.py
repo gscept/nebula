@@ -24,6 +24,10 @@ def GetEventEnum(string):
         return "Game::ComponentEvent::OnActivate"
     elif s == "ondeactivate":
         return "Game::ComponentEvent::OnDeactivate"
+    elif s == "onload":
+        return "Game::ComponentEvent::OnLoad"
+    elif s == "onsave":
+        return "Game::ComponentEvent::OnSave"
     else:
         util.fmtError('"{}" is not a valid event!'.format(string))
 
