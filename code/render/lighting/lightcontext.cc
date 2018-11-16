@@ -12,6 +12,9 @@
 #include "math/polar.h"
 #include "frame/framebatchtype.h"
 #include "resources/resourcemanager.h"
+#ifndef PUBLIC_BUILD
+#include "dynui/im3d/im3dcontext.h"
+#endif
 
 // match these in lights.fx
 const uint USE_SHADOW_BITFLAG = 0x1;
@@ -94,6 +97,9 @@ LightContext::Create()
 	__bundle.OnAfterView = nullptr;
 	__bundle.OnAfterFrame = nullptr;
 	__bundle.StageBits = &LightContext::__state.currentStage;
+#ifndef PUBLIC_BUILD
+    __bundle.OnRenderDebug = LightContext::OnRenderDebug;
+#endif
 	Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle);
 
 	using namespace CoreGraphics;
@@ -357,6 +363,30 @@ LightContext::GetTransform(const Graphics::GraphicsEntityId id)
 /**
 */
 void
+LightContext::SetTransform(const Graphics::GraphicsEntityId id, const Math::matrix44& trans)
+{
+    const Graphics::ContextEntityId cid = GetContextId(id);
+    LightType type = genericLightAllocator.Get<Type>(cid.id);    
+
+    switch (type)
+    {
+    case GlobalLightType:
+        SetGlobalLightDirection(id, trans.get_yaxis());        
+        break;
+    case SpotLightType:
+        SetSpotLightTransform(id, trans);        
+        break;
+    case PointLightType:
+        SetPointLightTransform(id, trans);
+        break;
+    default:    
+        break;
+    }
+}
+//------------------------------------------------------------------------------
+/**
+*/
+void
 LightContext::SetSpotLightTransform(const Graphics::GraphicsEntityId id, const Math::matrix44& transform)
 {
 	const Graphics::ContextEntityId cid = GetContextId(id);
@@ -607,4 +637,51 @@ LightContext::Dealloc(Graphics::ContextEntityId id)
 	genericLightAllocator.DeallocObject(id.id);
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+void
+LightContext::OnRenderDebug(uint32_t flags)
+{
+    auto const& types = genericLightAllocator.GetArray<Type>();    
+    auto const& colours = genericLightAllocator.GetArray<Color>();
+    auto const& ids = genericLightAllocator.GetArray<TypedLightId>();
+    auto const& pointTrans = pointLightAllocator.GetArray<PointLightTransform>();
+    auto const& spotTrans = spotLightAllocator.GetArray< SpotLightTransform>();
+    auto const& spotProj = spotLightAllocator.GetArray< SpotLightProjection>();
+    auto const& spotInvProj = spotLightAllocator.GetArray< SpotLightInvViewProjection>();
+    for (int i = 0, n = types.Size(); i < n; ++i)
+    {
+        switch(types[i])
+        {
+        case PointLightType:
+        {
+            Math::matrix44 const& trans = pointTrans[ids[i]];
+            Math::float4 col = colours[i];            
+            Im3d::Im3dContext::DrawSphere(trans, col, Im3d::CheckDepth|Im3d::Wireframe);
+            //FIXME define debug flags somewhere
+            if (flags & Im3d::Solid)
+            {
+                col.set_w(0.5f);
+                Im3d::Im3dContext::DrawSphere(trans, col, Im3d::CheckDepth | Im3d::Solid);
+            }            
+        }
+        break;
+        case SpotLightType:
+        {
+            //FIXME            
+            /*
+            Math::matrix44 unscaledTransform = spotTrans[ids[i]];
+            unscaledTransform.set_xaxis(Math::float4::normalize(unscaledTransform.get_xaxis()));
+            unscaledTransform.set_yaxis(Math::float4::normalize(unscaledTransform.get_yaxis()));
+            unscaledTransform.set_zaxis(Math::float4::normalize(unscaledTransform.get_zaxis()));
+            Math::matrix44 frustum = Math::matrix44::multiply(spotInvProj[ids[i]], unscaledTransform);
+            Math::float4 col = colours[i];
+            Im3d::Im3dContext::DrawBox(frustum, col);
+            */            
+        }
+        break;
+        }
+    }
+}
 } // namespace Lighting

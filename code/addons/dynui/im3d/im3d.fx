@@ -29,6 +29,7 @@ state Im3dDepthState
     CullMode = None;
     ScissorEnabled = false;
 };
+
 #define kAntialiasing 2.0
 
 shader
@@ -130,16 +131,14 @@ gsMain(
 
 shader
 void
-psMainTriangles(
-    in float edgeDistance,
-    in float size,
+psMainTriangles(    
+    in noperspective float size,
     in vec4 color,	
 	[color0] out vec4 finalColor
 )
 {
-    finalColor = color;    
+    finalColor = color;        
 }
-
 
 shader
 void
@@ -158,9 +157,8 @@ psMainLines(
 
 shader
 void
-psMainPoints(
-    in float edgeDistance,
-    in float size,
+psMainPoints(    
+    in noperspective float size,
     in vec4 color,
     [color0] out vec4 finalColor
 )
@@ -175,3 +173,4 @@ GeometryTechnique(Lines, "Static|Lines", vsMainLines(), psMainLines(), gsMain(),
 GeometryTechnique(LinesDepth, "StaticDepth|Lines", vsMainLines(), psMainLines(), gsMain(), Im3dDepthState);
 SimpleTechnique(Points, "Static|Points", vsMainPoints(), psMainPoints(), Im3dState);
 SimpleTechnique(Triangles, "Static|Triangles", vsMainTriangles(), psMainTriangles(), Im3dState);
+SimpleTechnique(TrianglesDepth, "StaticDepth|Triangles", vsMainTriangles(), psMainTriangles(), Im3dDepthState);

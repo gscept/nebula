@@ -16,8 +16,8 @@ const float exaggerateSpec = float(1.8f);
 const vec3 luminanceValue = vec3(0.299f, 0.587f, 0.114f); 
 
 // match these in lightcontext.cc
-const uint USE_SHADOW_BITFLAG				= 0x1;
-const uint USE_PROJECTION_TEX_BITFLAG		= 0x2;
+const uint USE_SHADOW_BITFLAG				= 1;
+const uint USE_PROJECTION_TEX_BITFLAG		= 2;
 
 #define FlagSet(x, flags) ((x & flags) == flags)
 

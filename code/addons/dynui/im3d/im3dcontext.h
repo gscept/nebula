@@ -14,9 +14,18 @@
 #include "coregraphics/indexbuffer.h"
 #include "graphics/graphicscontext.h"
 #include "input/inputevent.h"
+#include "math/bbox.h"
 
 namespace Im3d
 {
+enum RenderFlag
+{
+    CheckDepth = 0x1,
+    AlwaysOnTop = 0x2,
+    Wireframe = 0x4,
+    Solid = 0x8,
+    NumDepthFlags
+};
 
 class Im3dContext : public Graphics::GraphicsContext
 {
@@ -29,6 +38,18 @@ public:
 
     static void Create();
     static void Discard();
+
+    static void DrawBox(const Math::bbox& box, const Math::float4& color, uint32_t depthFlag = CheckDepth|Wireframe);
+
+    static void DrawOrientedBox(const Math::matrix44& transform, const Math::bbox& box, const Math::float4& color, uint32_t depthFlag = CheckDepth | Wireframe);
+
+    static void DrawBox(const Math::matrix44& modelTransform, const Math::float4& color, uint32_t depthFlag = CheckDepth | Wireframe);
+    /// draw a sphere
+    static void DrawSphere(const Math::matrix44& modelTransform, const Math::float4& color, uint32_t depthFlag = CheckDepth | Wireframe);
+    /// draw a cylinder
+    static void DrawCylinder(const Math::matrix44& modelTransform, const Math::float4& color, uint32_t depthFlag = CheckDepth | Wireframe);
+    /// draw a cone
+    static void DrawCone(const Math::matrix44& modelTransform, const Math::float4& color, uint32_t depthFlag = CheckDepth | Wireframe);
 
     /// called before frame
     static void OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime);
