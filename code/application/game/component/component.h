@@ -148,6 +148,12 @@ public:
 	/// @note	The 0th type is always the owner Entity!
 	Util::ArrayAllocator<Entity, typename TYPES::AttrDeclType...> data;
 
+	/// Write owners into writer.
+	void SerializeOwners(const Ptr<IO::BinaryWriter>& writer) const;
+
+	/// Set owners from reader
+	void DeserializeOwners(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances);
+
 protected:
 	/// short hand for getting the component with template arguments filled
 	using component_templated_t = Component<TYPES...>;
@@ -591,6 +597,26 @@ inline void
 Component<TYPES...>::Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances)
 {
 	ReadDataSequenced(this->data, reader, offset, numInstances, std::make_index_sequence<sizeof...(TYPES)>());
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <class ... TYPES>
+inline void
+Component<TYPES...>::SerializeOwners(const Ptr<IO::BinaryWriter>& writer) const
+{
+	Game::Serialize(writer, this->data.GetArray<0>());
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <class ... TYPES>
+inline void
+Component<TYPES...>::DeserializeOwners(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances)
+{
+	Game::Deserialize(reader, this->data.GetArray<0>(), offset, numInstances);
 }
 
 }

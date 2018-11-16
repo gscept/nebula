@@ -9,6 +9,7 @@
 #include "basegamefeature/managers/entitymanager.h"
 #include "io/memorystream.h"
 #include "basegamefeature/managers/componentmanager.h"
+#include "basegamefeature/components/transformcomponent.h"
 
 #include <chrono>
 #include <ctime>
@@ -61,9 +62,13 @@ LevelLoader::Save(const Util::String& levelName)
 		c.InitializeStream();
 		bWriter->SetStream(c.mStream);
 		bWriter->Open();
-		component->functions.Serialize(bWriter);
-		bWriter->Close();
+		component->SerializeOwners(bWriter);
 
+		if (component->functions.Serialize != nullptr)
+			component->functions.Serialize(bWriter);
+
+		bWriter->Close();
+		 
 		// We know the owner is always the first attribute
 		// so we can easily update owner of each instance
 		{
@@ -89,6 +94,25 @@ LevelLoader::Save(const Util::String& levelName)
 
 		scene.components.Append(c);
 	}
+
+	// Create the scene hierarchy parent indices list
+	{
+		SizeT numRegisteredTransforms = Game::TransformComponent::NumRegistered();
+		for (int i = 0; i < numRegisteredTransforms; ++i)
+		{
+			uint32_t parentInstance = Game::TransformComponent::GetParent(i);
+			if (parentInstance == InvalidIndex)
+			{
+				scene.parentIndices.Append(-1);
+			}
+			else
+			{
+				Game::Entity parentEntity = Game::TransformComponent::GetOwner(parentInstance);
+				scene.parentIndices.Append(entityToIndex[parentEntity]);
+			}
+		}
+	}
+
 	scene.Compile(levelName);
 	
 	auto tend = std::chrono::system_clock::now();
@@ -98,7 +122,7 @@ LevelLoader::Save(const Util::String& levelName)
 	return true;
 }
 
-struct ActivateListener
+struct Listener
 {
 	Game::ComponentInterface* component;
 	uint firstInstance;
@@ -120,7 +144,8 @@ LevelLoader::Load(const Util::String& levelName)
 		
 	// We need to save each component and enitity start index so that we can call activate after
 	// all components has been loaded
-	Util::Array<ActivateListener> activateListeners;
+	Util::Array<Listener> activateListeners;
+	Util::Array<Listener> loadListeners;
 
 	for (auto component : scene.components)
 	{
@@ -137,7 +162,9 @@ LevelLoader::Load(const Util::String& levelName)
 			bReader->SetStream(component.mStream);
 			bReader->Open();
 			
-			c->functions.Deserialize(bReader, start, component.numInstances);
+			c->DeserializeOwners(bReader, start, component.numInstances);
+			if (c->functions.Deserialize != nullptr)
+				c->functions.Deserialize(bReader, start, component.numInstances);
 			
 			bReader->Close();
 
@@ -147,13 +174,25 @@ LevelLoader::Load(const Util::String& levelName)
 				c->SetOwner(j, entities[c->GetOwner(j).id]);
 			}
 
-			if (c->functions.SetParents != nullptr)
+			if (c->functions.SetParents != nullptr && scene.parentIndices.Size() > 0)
+			{
 				c->functions.SetParents(start, end, entities, scene.parentIndices);
+			}
+
+			if (c->SubscribedEvents().IsSet(Game::ComponentEvent::OnLoad) && c->functions.OnLoad != nullptr)
+			{
+				// Add to list to that we can call OnLoad for all instances in this component later.
+				Listener listener;
+				listener.component = c;
+				listener.firstInstance = start;
+				listener.numInstances = component.numInstances;
+				loadListeners.Append(listener);
+			}
 
 			if (c->SubscribedEvents().IsSet(Game::ComponentEvent::OnActivate) && c->functions.OnActivate != nullptr)
 			{
 				// Add to list to that we can activate all instances in this component later.
-				ActivateListener listener;
+				Listener listener;
 				listener.component = c;
 				listener.firstInstance = start;
 				listener.numInstances = component.numInstances;
@@ -162,6 +201,13 @@ LevelLoader::Load(const Util::String& levelName)
 		}
 	}
 
+	for (auto listener : loadListeners)
+	{
+		for (SizeT i = listener.firstInstance; i < listener.numInstances; i++)
+		{
+			listener.component->functions.OnLoad(i);
+		}
+	}
 
 	for (auto listener : activateListeners)
 	{

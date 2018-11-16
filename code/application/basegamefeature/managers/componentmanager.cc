@@ -37,15 +37,20 @@ ComponentManager::RegisterComponent(ComponentInterface* component)
 	// Check if each event is actually setup.
 	auto events = component->SubscribedEvents();
 
-#define CHECKEVENT(EVENT) if (events.IsSet(ComponentEvent::EVENT)) \
-							n_assert2(component->functions.EVENT != nullptr, #EVENT " event callback has not been defined in component function bundle!");
+#define CHECKEVENT(EVENT) if (events.IsSet(ComponentEvent::EVENT)) {\
+							n_assert2(component->functions.EVENT != nullptr, #EVENT " event callback has not been defined in component function bundle!"); \
+						  } else {\
+							n_assert2(component->functions.EVENT == nullptr, #EVENT " event callback has been defined in bundle, but not set up in NIDL file!"); \
+						  }
 
 	CHECKEVENT(OnBeginFrame);
 	CHECKEVENT(OnRender);
-	CHECKEVENT(OnEndFrame);
+	CHECKEVENT(OnEndFrame);	
 	CHECKEVENT(OnRenderDebug);
 	CHECKEVENT(OnActivate);
 	CHECKEVENT(OnDeactivate);
+	CHECKEVENT(OnLoad);
+	CHECKEVENT(OnSave);
 
 	this->components.Append(component);
 }
