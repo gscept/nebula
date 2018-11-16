@@ -1,4 +1,4 @@
-// NIDL #version:32#
+// NIDL #version:33#
 //------------------------------------------------------------------------------
 //  graphicsdata.cc
 //  (C) Individual contributors, see AUTHORS file

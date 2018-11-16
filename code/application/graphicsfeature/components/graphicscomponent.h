@@ -23,7 +23,6 @@ public:
 	static void UpdateTransform(const Game::Entity&, const Math::matrix44&);
 	static void SetModel(const Game::Entity&, const Util::String&);
 
-
 private:
 
 };

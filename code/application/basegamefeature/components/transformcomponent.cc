@@ -15,7 +15,16 @@ static Msg::UpdateTransform::MessageQueueId messageQueue;
 
 using AttrIndex = TransformComponentData::AttributeIndex;
 
-__ImplementComponent(TransformComponent, component)
+
+//------------------------------------------------------------------------------
+/**
+	Default implementations
+*/
+uint32_t TransformComponent::RegisterEntity(const Game::Entity& entity) { return component.RegisterEntity(entity); }
+void TransformComponent::DeregisterEntity(const Game::Entity& entity) { component.DeregisterEntity(entity); }
+void TransformComponent::DestroyAll() { component.DestroyAll(); }
+SizeT TransformComponent::NumRegistered() { return component.NumRegistered(); }
+uint32_t TransformComponent::GetInstance(const Game::Entity& entity) { return component.GetInstance(entity); }
 
 //------------------------------------------------------------------------------
 /**
@@ -156,6 +165,53 @@ TransformComponent::GetWorldTransform(const Game::Entity & entity)
 	return GetWorldTransform(component.GetInstance(entity));
 }
 
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+InternalSetParent(const uint32_t& instance, const uint32_t& parentInstance)
+{
+	if (instance == InvalidIndex ||
+		instance == parentInstance
+		)
+	{
+		return;
+	}
+
+	if (parentInstance != InvalidIndex &&
+		component.data.Get<AttrIndex::PARENT>(parentInstance) == instance
+		)
+	{
+		return;
+	}
+
+	component.data.Get<AttrIndex::PARENT>(instance) = parentInstance;
+
+	if (parentInstance != InvalidIndex)
+	{
+		uint32_t child = component.data.Get<AttrIndex::FIRSTCHILD>(parentInstance);
+		if (child == InvalidIndex)
+		{
+			component.data.Get<AttrIndex::FIRSTCHILD>(parentInstance) = instance;
+		}
+		else
+		{
+			// Find last child and make this a sibling to that instance
+			uint32_t sibling = component.data.Get<AttrIndex::NEXTSIBLING>(child);
+			while (sibling != InvalidIndex)
+			{
+				child = sibling;
+				sibling = component.data.Get<AttrIndex::NEXTSIBLING>(child);
+			}
+
+			component.data.Get<AttrIndex::NEXTSIBLING>(child) = instance;
+			component.data.Get<AttrIndex::PREVIOUSSIBLING>(instance) = child;
+		}
+	}
+}
+
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -165,8 +221,27 @@ TransformComponent::SetParents(const uint32_t & start, const uint32_t & end, con
 	SizeT i = 0;
 	for (SizeT instance = start; instance < end; instance++)
 	{
-		SetParent(instance, GetInstance(entities[parentIndices[i]]));
+		if (parentIndices[i] == InvalidIndex)
+		{
+			InternalSetParent(instance, -1); // Instance has no parent :'(
+		}
+		else
+		{
+			auto e = entities[parentIndices[i]];
+			auto p = GetInstance(entities[parentIndices[i]]);
+			InternalSetParent(instance, GetInstance(entities[parentIndices[i]]));
+		}
 		i++;
+	}
+
+	// Update transforms after updating all parent, child and sibling indices.
+	for (SizeT instance = start; instance < end; instance++)
+	{
+		// Only need to update from root
+		if (GetParent(instance) == InvalidIndex)
+		{
+			UpdateHierarchy(instance);
+		}
 	}
 }
 
@@ -187,38 +262,53 @@ TransformComponent::SetParent(const Game::Entity& entity, const Game::Entity& pa
 void
 TransformComponent::SetParent(const uint32_t& instance, const uint32_t& parentInstance)
 {
-	if (instance == InvalidIndex ||
-		parentInstance == InvalidIndex ||
-		instance == parentInstance ||
-		component.data.Get<AttrIndex::PARENT>(parentInstance) == instance ||
-		component.data.Get<AttrIndex::PARENT>(instance) == parentInstance
-		)
-	{
-		return;
-	}
-	
-	component.data.Get<AttrIndex::PARENT>(instance) = parentInstance;
-
-	uint32_t child = component.data.Get<AttrIndex::FIRSTCHILD>(parentInstance);
-	if (child == InvalidIndex)
-	{
-		component.data.Get<AttrIndex::FIRSTCHILD>(parentInstance) = instance;
-	}
-	else
-	{
-		// Find last child and make this a sibling to that instance
-		uint32_t sibling = component.data.Get<AttrIndex::NEXTSIBLING>(child);
-		while (sibling != InvalidIndex)
-		{
-			child = sibling;
-			sibling = component.data.Get<AttrIndex::NEXTSIBLING>(child);
-		}
-
-		component.data.Get<AttrIndex::NEXTSIBLING>(child) = instance;
-		component.data.Get<AttrIndex::PREVIOUSSIBLING>(instance) = child;
-	}
-
+	InternalSetParent(instance, parentInstance);
 	UpdateHierarchy(instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint32_t
+TransformComponent::GetParent(const uint32_t& instance)
+{
+	return component.data.Get<AttrIndex::PARENT>(instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Game::Entity
+TransformComponent::GetOwner(const uint32_t& instance)
+{
+	return component.GetOwner(instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint32_t
+TransformComponent::GetFirstChild(const uint32_t& instance)
+{
+	return component.data.Get<AttrIndex::FIRSTCHILD>(instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint32_t
+TransformComponent::GetNextSibling(const uint32_t& instance)
+{
+	return component.data.Get<AttrIndex::NEXTSIBLING>(instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint32_t
+TransformComponent::GetPreviousSibling(const uint32_t& instance)
+{
+	return component.data.Get<AttrIndex::PREVIOUSSIBLING>(instance);
 }
 
 //------------------------------------------------------------------------------
@@ -227,10 +317,41 @@ TransformComponent::SetParent(const uint32_t& instance, const uint32_t& parentIn
 void
 TransformComponent::UpdateHierarchy(uint32_t instance)
 {
-	// TODO: There are more elegant ways for this.
-	uint32_t parent = component.data.Get<AttrIndex::PARENT>(instance);
-	if (parent != InvalidIndex)
-		SetLocalTransform(parent, component.data.Get<AttrIndex::LOCALTRANSFORM>(parent));
+	// TODO: There are more elegant ways for this.	
+	SetLocalTransform(instance, component.data.Get<AttrIndex::LOCALTRANSFORM>(instance));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TransformComponent::Serialize(const Ptr<IO::BinaryWriter>& writer)
+{
+	// Only serialize the ones we want.
+	Game::Serialize(writer, component.data.GetArray<AttrIndex::LOCALTRANSFORM>());
+	Game::Serialize(writer, component.data.GetArray<AttrIndex::WORLDTRANSFORM>());
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TransformComponent::Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances)
+{
+	// Only serialize the ones we want.
+	Game::Deserialize(reader, component.data.GetArray<AttrIndex::LOCALTRANSFORM>(), offset, numInstances);
+	Game::Deserialize(reader, component.data.GetArray<AttrIndex::WORLDTRANSFORM>(), offset, numInstances);
+
+	// make sure to set fill the rest of the arrays.
+	component.data.GetArray<AttrIndex::PARENT>().SetSize(offset + numInstances);
+	component.data.GetArray<AttrIndex::FIRSTCHILD>().SetSize(offset + numInstances);
+	component.data.GetArray<AttrIndex::NEXTSIBLING>().SetSize(offset + numInstances);
+	component.data.GetArray<AttrIndex::PREVIOUSSIBLING>().SetSize(offset + numInstances);
+
+	component.data.GetArray<AttrIndex::PARENT>().Fill(offset, numInstances, Attr::Parent.GetDefaultValue().GetUInt());
+	component.data.GetArray<AttrIndex::FIRSTCHILD>().Fill(offset, numInstances, Attr::Parent.GetDefaultValue().GetUInt());
+	component.data.GetArray<AttrIndex::NEXTSIBLING>().Fill(offset, numInstances, Attr::Parent.GetDefaultValue().GetUInt());
+	component.data.GetArray<AttrIndex::PREVIOUSSIBLING>().Fill(offset, numInstances, Attr::Parent.GetDefaultValue().GetUInt());
 }
 
 } // namespace Game

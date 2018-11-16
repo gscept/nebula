@@ -42,6 +42,8 @@ public:
 	/// Check if an entity ID is still valid.
 	bool IsAlive(const Entity& e) const;
 
+	static uint32_t GetIndex(const Entity& entity);
+
 	/// Returns number of active entities
 	uint GetNumEntities() const;
 

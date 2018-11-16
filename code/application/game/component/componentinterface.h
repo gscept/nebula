@@ -49,7 +49,9 @@ enum ComponentEvent
 	OnRenderDebug	= 3,
 	OnActivate		= 4,
 	OnDeactivate	= 5,
-	NumEvents		= 7
+	OnLoad			= 7,
+	OnSave			= 9,
+	NumEvents		= 10
 };
 
 class ComponentInterface
@@ -74,21 +76,36 @@ public:
 	/// Returns an array with all attribute ids for this component
 	const Util::FixedArray<Attr::AttrId>& GetAttributeIds() const;
 
+	/// Callback for when an entity has been deleted.
+	/// This in only used when immediate instance deletion is required.
 	virtual void OnEntityDeleted(Game::Entity) = 0;
 
+	/// Allocate a number of instances
 	virtual void Allocate(uint num) = 0;
 
+	/// Returns the number of registered entities
 	virtual SizeT NumRegistered() const = 0;
 
+	/// Returns the owner (entity) of an instance
 	virtual Game::Entity GetOwner(const uint& instance) const = 0;
 
+	/// Sets the owner of an instance. This should be used cautiously.
 	virtual void SetOwner(const uint32_t& i, const Game::Entity& entity) = 0;
 
+	/// Get an attribute value as a variant type
 	virtual Util::Variant GetAttributeValue(const uint32_t& i, IndexT attributeIndex) = 0;
 	
+	/// Set an attribute value from a variant type
 	virtual void SetAttributeValue(const uint32_t& i, IndexT attributeIndex, const Util::Variant& value) = 0;
 
+	/// Returns the instance of an entity; or InvalidIndex if not registered.
 	virtual uint32_t GetInstance(const Entity& e) const = 0;
+
+	/// Subsequently calls functionbundle serialize.
+	virtual void SerializeOwners(const Ptr<IO::BinaryWriter>& writer) const = 0;
+
+	/// Subsequently calls functionbundle deserialize.
+	virtual void DeserializeOwners(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances) = 0;
 
 	struct FunctionBundle
 	{
@@ -110,12 +127,25 @@ public:
 		/// called when game debug visualization is on
 		void(*OnRenderDebug)();
 
+		/// called after an entity has been loaded from file.
+		void(*OnLoad)(const uint32_t& instance);
+
+		/// called after an entity has been save to a file.
+		void(*OnSave)(const uint32_t& instance);
+
+		/// Serialize the components attributes (excluding owners)
 		void(*Serialize)(const Ptr<IO::BinaryWriter>& writer);
+
+		/// Deserialize the components attributes (excluding owners)
 		void(*Deserialize)(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances);
 
+		/// Garbage collect
 		SizeT(*Optimize)();
 
+		/// Destroy all instances
 		void(*DestroyAll)();
+
+		/// Callback for when entities has been loaded and you need to hook into the hierarchy update.
 		void(*SetParents)(const uint32_t& start, const uint32_t& end, const Util::Array<Entity>& entities, const Util::Array<uint32_t>& parentIndices);
 	} functions;
 

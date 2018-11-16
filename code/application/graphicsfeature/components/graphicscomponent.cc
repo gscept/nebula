@@ -12,6 +12,7 @@
 #include "basegamefeature/components/transformcomponent.h"
 #include "basegamefeature/managers/componentmanager.h"
 #include "graphicsdata.h"
+#include "game/component/componentserialization.h"
 
 namespace GraphicsFeature
 {
@@ -100,7 +101,8 @@ GraphicsComponent::UpdateTransform(const Game::Entity & entity, const Math::matr
 //------------------------------------------------------------------------------
 /**
 */
-void GraphicsComponent::SetModel(const Game::Entity & entity, const Util::String & path)
+void
+GraphicsComponent::SetModel(const Game::Entity & entity, const Util::String & path)
 {
 	auto instance = component.GetInstance(entity);
 	if (instance != InvalidIndex)
