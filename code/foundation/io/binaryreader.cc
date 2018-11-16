@@ -335,7 +335,7 @@ BinaryReader::ReadString()
         Util::String str;
         if (length > 0)
         {
-            str.Reserve(length + 1);
+			str.Fill(length, 0);
             char* buf = (char*) str.AsCharPtr();
             Memory::Copy(this->mapCursor, buf, length);
             this->mapCursor += length;
@@ -349,7 +349,7 @@ BinaryReader::ReadString()
         Util::String str;
         if (length > 0)
         {
-            str.Reserve(length + 1);
+            str.Fill(length, 0);
             char* buf = (char*) str.AsCharPtr();
             this->stream->Read((void*)buf, length);
             buf[length] = 0;
