@@ -9,6 +9,10 @@
 #include "streammodelpool.h"
 #include "graphics/graphicsserver.h"
 
+#ifndef PUBLIC_BUILD
+#include "dynui/im3d/im3dcontext.h"
+#endif
+
 using namespace Graphics;
 using namespace Resources;
 namespace Models
@@ -44,6 +48,9 @@ ModelContext::Create()
 	__bundle.OnAfterView = ModelContext::OnAfterView;
 	__bundle.OnAfterFrame = ModelContext::OnAfterFrame;
 	__bundle.StageBits = &ModelContext::__state.currentStage;
+#ifndef PUBLIC_BUILD
+    __bundle.OnRenderDebug = ModelContext::OnRenderDebug;
+#endif
 	ModelContext::__state.allowedRemoveStages = Graphics::OnBeforeFrameStage;
 	Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle);
 
@@ -302,6 +309,29 @@ ModelContext::OnAfterView(const Ptr<Graphics::View>& view, const IndexT frameInd
 void
 ModelContext::OnAfterFrame(const IndexT frameIndex, const Timing::Time frameTime)
 {
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ModelContext::OnRenderDebug(uint32_t flags)
+{
+    const Util::Array<ModelInstanceId>& instances = modelContextAllocator.GetArray<1>();    
+    Util::Array<Math::bbox>& instanceBoxes = Models::modelPool->modelInstanceAllocator.GetArray<StreamModelPool::InstanceBoundingBox>();
+    const Util::Array<Math::matrix44>& transforms = Models::modelPool->modelInstanceAllocator.GetArray<StreamModelPool::InstanceTransform>();
+    const Util::Array<Math::bbox>& modelBoxes = Models::modelPool->modelAllocator.GetArray<0>();
+    
+    Math::float4 white(1.0f, 1.0f, 1.0f, 1.0f);
+    Math::float4 gray(1.0f, 0.0f, 0.0f, 1.0f);
+    int i, n;
+    for (i = 0,n = instances.Size(); i<n ; i++)
+    {
+        const ModelInstanceId& instance = instances[i];
+        if (instance == ModelInstanceId::Invalid()) continue;
+        Im3d::Im3dContext::DrawBox(instanceBoxes[instance.instance], white, Im3d::CheckDepth);
+        Im3d::Im3dContext::DrawOrientedBox(transforms[instance.instance], modelBoxes[instance.model], gray, Im3d::CheckDepth);
+    }
 }
 
 } // namespace Models

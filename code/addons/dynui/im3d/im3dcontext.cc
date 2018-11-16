@@ -7,6 +7,7 @@
 #include "im3d.h"
 #include "graphics/graphicsserver.h"
 #include "math/rectangle.h"
+#include "util/bit.h"
 #include "coregraphics/shaderserver.h"
 #include "coregraphics/displaydevice.h"
 #include "graphics/graphicsserver.h"
@@ -83,6 +84,7 @@ struct Im3dState
     CoreGraphics::ShaderProgramId depthLines;
     CoreGraphics::ShaderProgramId points;
     CoreGraphics::ShaderProgramId triangles;
+    CoreGraphics::ShaderProgramId depthTriangles;
     CoreGraphics::VertexBufferId vbo;       
     bool renderGrid = false;
     int gridSize = 20;
@@ -131,6 +133,7 @@ Im3dContext::Create()
     imState.depthLines = CoreGraphics::ShaderGetProgram(imState.im3dShader, CoreGraphics::ShaderFeatureFromString("StaticDepth|Lines"));
     imState.points = CoreGraphics::ShaderGetProgram(imState.im3dShader, CoreGraphics::ShaderFeatureFromString("Static|Points"));
     imState.triangles = CoreGraphics::ShaderGetProgram(imState.im3dShader, CoreGraphics::ShaderFeatureFromString("Static|Triangles"));
+    imState.depthTriangles = CoreGraphics::ShaderGetProgram(imState.im3dShader, CoreGraphics::ShaderFeatureFromString("StaticDepth|Triangles"));
     
     imState.depthLayerId = Im3d::MakeId("depthEnabled");
     // create vertex buffer
@@ -168,6 +171,104 @@ Im3dContext::Discard()
 
     CoreGraphics::DestroyVertexBuffer(imState.vbo);
     imState.vertexPtr = nullptr;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+Im3dContext::DrawBox(const Math::bbox & box, const Math::float4 & color, uint32_t depthFlag)
+{
+    Im3d::PushDrawState();
+    if (depthFlag & CheckDepth) Im3d::PushLayerId(imState.depthLayerId);
+    Im3d::SetSize(1.0f);    
+    Im3d::SetColor(Im3d::Vec4(color));
+    if (depthFlag &Wireframe)
+    {
+        Im3d::DrawAlignedBox(box.pmin, box.pmax);
+    }
+    if (depthFlag & Solid)
+    {
+        Im3d::DrawAlignedBoxFilled(box.pmin, box.pmax);
+    }
+    if (depthFlag & CheckDepth) Im3d::PopLayerId();
+    Im3d::PopDrawState();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Im3dContext::DrawBox(const Math::matrix44& transform, const Math::float4 & color, uint32_t depthFlag)
+{
+    Math::bbox box;
+    box.pmin.set(-1.0f, -1.0f, -1.0f);
+    box.pmax.set(1.0f, 1.0f, 1.0f);
+
+    DrawOrientedBox(transform, box, color, depthFlag);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Im3dContext::DrawOrientedBox(const Math::matrix44& transform, const Math::bbox & box, const Math::float4 & color, uint32_t depthFlag)
+{
+    Im3d::PushDrawState();
+
+    Im3d::Vec3 p[8];
+    for (int i = 0; i < 8; i++)
+    {
+        p[i] = Math::matrix44::transform(box.corner_point(i), transform);
+    }    
+    if (depthFlag & CheckDepth) Im3d::PushLayerId(imState.depthLayerId);
+    Im3d::SetSize(2.0f);
+    Im3d::SetColor(Im3d::Vec4(color));
+    Im3d::BeginLineLoop();
+        Im3d::Vertex(p[0]);
+        Im3d::Vertex(p[1]);
+        Im3d::Vertex(p[2]);
+        Im3d::Vertex(p[3]);
+    Im3d::End();
+    Im3d::BeginLineLoop();
+        Im3d::Vertex(p[4]);
+        Im3d::Vertex(p[5]);
+        Im3d::Vertex(p[6]);
+        Im3d::Vertex(p[7]);
+    Im3d::End();
+    Im3d::BeginLines();
+        Im3d::Vertex(p[0]); Im3d::Vertex(p[6]);
+        Im3d::Vertex(p[1]); Im3d::Vertex(p[5]);
+        Im3d::Vertex(p[2]); Im3d::Vertex(p[4]);
+        Im3d::Vertex(p[3]); Im3d::Vertex(p[7]);
+    Im3d::End();
+    if (depthFlag & CheckDepth) Im3d::PopLayerId();
+    Im3d::PopDrawState();
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Im3dContext::DrawSphere(const Math::matrix44& modelTransform, const Math::float4& color, uint32_t depthFlag)
+{
+    Im3d::PushDrawState();
+    if (depthFlag & CheckDepth) Im3d::PushLayerId(imState.depthLayerId);
+    Im3d::SetSize(2.0f);    
+    Im3d::SetColor(Im3d::Vec4(color));
+    Im3d::PushMatrix(modelTransform);
+    if (depthFlag & Wireframe)
+    {
+        Im3d::DrawSphere(Vec3(0.0f), 1.0f, 16);
+    }        
+    if (depthFlag & Solid)
+    {
+        Im3d::DrawSphereFilled(Vec3(0.0f), 1.0f, 16);
+    }            
+    Im3d::PopMatrix();
+    if (depthFlag & CheckDepth) Im3d::PopLayerId();
+    Im3d::PopDrawState();
 }
 
 //------------------------------------------------------------------------------
@@ -315,16 +416,22 @@ Im3dContext::OnRenderAsPlugin(const IndexT frameIndex, const Timing::Time frameT
         IndexT vertexCount = 0;
         IndexT vertexBufferOffset = 0;
         // collect draws and loop a couple of times instead
+
         CollectByFilter(imState.points, CoreGraphics::PrimitiveTopology::PointList, vertexBufferOffset, vertexCount,
             [](Im3d::DrawList const& l) { return l.m_primType == Im3d::DrawPrimitive_Points; });
-
-
+        
+        CollectByFilter(imState.triangles, CoreGraphics::PrimitiveTopology::TriangleList, vertexBufferOffset, vertexCount,
+            [](Im3d::DrawList const& l) { return l.m_primType == Im3d::DrawPrimitive_Triangles && l.m_layerId != imState.depthLayerId; });
+        
+        CollectByFilter(imState.lines, CoreGraphics::PrimitiveTopology::LineList, vertexBufferOffset, vertexCount,
+            [](Im3d::DrawList const& l) { return l.m_primType == Im3d::DrawPrimitive_Lines && l.m_layerId != imState.depthLayerId; });     
 
         CollectByFilter(imState.depthLines, CoreGraphics::PrimitiveTopology::LineList, vertexBufferOffset, vertexCount,
             [](Im3d::DrawList const& l) { return l.m_primType == Im3d::DrawPrimitive_Lines && l.m_layerId == imState.depthLayerId; });
-
-        CollectByFilter(imState.lines, CoreGraphics::PrimitiveTopology::LineList, vertexBufferOffset, vertexCount,
-            [](Im3d::DrawList const& l) { return l.m_primType == Im3d::DrawPrimitive_Lines && l.m_layerId != imState.depthLayerId; });                                        
+        
+        //CollectByFilter(imState.depthTriangles, CoreGraphics::PrimitiveTopology::TriangleList, vertexBufferOffset, vertexCount,
+        CollectByFilter(imState.depthTriangles, CoreGraphics::PrimitiveTopology::TriangleList, vertexBufferOffset, vertexCount,
+            [](Im3d::DrawList const& l) { return l.m_primType == Im3d::DrawPrimitive_Triangles && l.m_layerId == imState.depthLayerId; });
     }
 }
 

@@ -410,5 +410,19 @@ GraphicsServer::DiscardView(const Ptr<View>& view)
 	view->script->Discard();
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GraphicsServer::RenderDebug(uint32_t flags)
+{    
+    IndexT i;
+    for (i = 0; i < this->contexts.Size(); i++)
+    {
+        if (this->contexts[i]->OnRenderDebug != nullptr)
+            this->contexts[i]->OnRenderDebug(flags);
+    }
+}
+
 
 } // namespace Graphics

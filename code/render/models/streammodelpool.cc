@@ -220,16 +220,16 @@ StreamModelPool::LoadFromStream(const Resources::ResourceId id, const Util::Stri
 				done = true;
 
 				// update model-global bounding box
-				Math::bbox boundingBox;
-				boundingBox.begin_extend();
+				Math::bbox box;
+				box.begin_extend();
 				IndexT i;
 				for (i = 0; i < nodes.Size(); i++)
 				{
 					const ModelNode* node = nodes.ValueAtIndex(i);
-					boundingBox.extend(node->boundingBox);
+					box.extend(node->boundingBox);
 				}
-				boundingBox.end_extend();
-				boundingBox = boundingBox;
+				box.end_extend();
+				boundingBox = box;
 			}
 			else if (fourCC == FourCC('>MND'))
 			{

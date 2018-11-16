@@ -57,6 +57,8 @@ public:
 	static void SetIntensity(const Graphics::GraphicsEntityId id, const float intensity);
 	/// get transform
 	static const Math::matrix44 GetTransform(const Graphics::GraphicsEntityId id);
+	/// set transform depending on type
+	static void SetTransform(const Graphics::GraphicsEntityId id, const Math::matrix44& transform);
 
 	/// set transform, type must match the type the entity was created with
 	static void SetSpotLightTransform(const Graphics::GraphicsEntityId id, const Math::matrix44& transform);
@@ -67,6 +69,10 @@ public:
 
 	/// do light classification for tiled/clustered compute
 	static void OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime);
+#ifndef PUBLIC_BUILD
+	//
+	static void OnRenderDebug(uint32_t flags);
+#endif
 
 private:
 

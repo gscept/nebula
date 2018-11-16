@@ -114,6 +114,9 @@ struct GraphicsContextFunctionBundle
 	void(*OnAfterView)(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime);
 	void(*OnAfterFrame)(const IndexT frameIndex, const Timing::Time frameTime);
 
+    // debug callbacks
+    void(*OnRenderDebug)(uint32_t flags);
+
 	// change callbacks
     void(*OnStageCreated)(const Ptr<Graphics::Stage>& stage);
     void(*OnDiscardStage)(const Ptr<Graphics::Stage>& stage);
@@ -129,7 +132,7 @@ struct GraphicsContextFunctionBundle
 	StageBits* StageBits;
 	GraphicsContextFunctionBundle() : OnBeforeFrame(nullptr), OnWaitForWork(nullptr), OnBeforeView(nullptr), OnAfterView(nullptr), OnAfterFrame(nullptr),
         OnStageCreated(nullptr), OnDiscardStage(nullptr), OnViewCreated(nullptr), OnDiscardView(nullptr), OnAttachEntity(nullptr), OnRemoveEntity(nullptr), OnWindowResized(nullptr), OnRenderAsPlugin(nullptr),
-		StageBits(nullptr)
+		StageBits(nullptr), OnRenderDebug(nullptr)
 	{
 	};
 };
