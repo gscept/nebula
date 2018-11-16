@@ -258,7 +258,11 @@ SimpleViewerApplication::Run()
         this->gfxServer->BeforeViews();
         this->RenderUI();             
 
-        this->gfxServer->RenderDebug(0);
+        if (this->renderDebug)
+        {
+            this->gfxServer->RenderDebug(0);
+        }
+        
         // put game code which need visibility data here
 
         this->gfxServer->RenderViews();
@@ -285,6 +289,15 @@ SimpleViewerApplication::Run()
     }
 }
 
+static
+const char * 
+GraphicsEntityToName(GraphicsEntityId id)
+{
+    if (ModelContext::IsEntityRegistered(id)) return "Model";
+    if (Lighting::LightContext::IsEntityRegistered(id)) return "Light";
+    return "Entity";
+}
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -297,7 +310,7 @@ SimpleViewerApplication::RenderEntityUI()
     for (int i = 0 ; i < this->entities.Size();i++)
     {
         Util::String sid;
-        sid.Format("entityid: %d", this->entities[i]);
+        sid.Format("%s: %d", GraphicsEntityToName(this->entities[i]), this->entities[i]);
         if (ImGui::Selectable(sid.AsCharPtr(), i == selected))
         {
             selected = i;
@@ -338,6 +351,7 @@ SimpleViewerApplication::RenderUI()
         ImGui::SameLine();
         if (ImGui::Button("Reset")) this->ResetCamera();
     }
+    ImGui::Checkbox("Debug Rendering", &this->renderDebug);
     Models::ModelId model = ModelContext::GetModel(this->entity);
     auto modelPool = Resources::GetStreamPool<Models::StreamModelPool>();
     auto resource = modelPool->GetName(model);    

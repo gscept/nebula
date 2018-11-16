@@ -70,6 +70,7 @@ protected:
 
     Math::transform44 transform;
 
+    bool renderDebug = true;
     int cameraMode = 0;
     float zoomIn = 0.0f;
     float zoomOut = 0.0f;
