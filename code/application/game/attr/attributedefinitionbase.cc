@@ -431,7 +431,7 @@ AttributeDefinitionBase::CheckCreateNameRegistry()
 {
     if (0 == NameRegistry)
     {
-        NameRegistry = new Util::HashTable<Util::String, const AttributeDefinitionBase*>(4096);
+        NameRegistry = new Util::HashTable<Util::String, const AttributeDefinitionBase*>();
     }
 }
 //------------------------------------------------------------------------------

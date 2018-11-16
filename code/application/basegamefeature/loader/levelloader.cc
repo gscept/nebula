@@ -28,7 +28,7 @@ LevelLoader::Save(const Util::String& levelName)
 	auto numEntities = Game::EntityManager::Instance()->GetNumEntities();
 	SceneCompiler scene;
 	uint indexHash = 0;
-	Util::HashTable<Game::Entity, uint> entityToIndex(numEntities);
+	Util::HashTable<Game::Entity, uint, 1024> entityToIndex;
 
 	scene.numEntities = numEntities;
 

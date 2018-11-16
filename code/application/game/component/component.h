@@ -178,8 +178,9 @@ private:
 	Util::Stack<uint32_t> freeIds;
 
 	const static int STACK_SIZE = 4;
+	const static int TABLE_SIZE = 1024;
 	/// Contains the link between InstanceData and Entity Id
-	Util::HashTable<Ids::Id32, uint32_t, STACK_SIZE> idMap;
+	Util::HashTable<Ids::Id32, uint32_t, TABLE_SIZE, STACK_SIZE> idMap;
 };
 
 //------------------------------------------------------------------------------
@@ -196,8 +197,7 @@ Component<TYPES...>::Component()
 	@todo	idMap hashtable needs to be configured depending on the amount of entities we expect to be registered.
 */
 template <class ... TYPES>
-Component<TYPES ...>::Component(std::initializer_list<Attr::AttrId> list) :
-	idMap(1024)
+Component<TYPES ...>::Component(std::initializer_list<Attr::AttrId> list)
 {
 	this->attributeIds.SetSize(list.size() + 1);
 
