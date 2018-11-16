@@ -15,6 +15,12 @@ const float rimLighting = float(0.2f);
 const float exaggerateSpec = float(1.8f);
 const vec3 luminanceValue = vec3(0.299f, 0.587f, 0.114f); 
 
+// match these in lightcontext.cc
+const uint USE_SHADOW_BITFLAG				= 0x1;
+const uint USE_PROJECTION_TEX_BITFLAG		= 0x2;
+
+#define FlagSet(x, flags) ((x & flags) == flags)
+
 group(INSTANCE_GROUP) shared varblock LocalLightBlock [ string Visibility = "VS|PS"; ]
 {
 	vec4 LightColor;
@@ -24,6 +30,8 @@ group(INSTANCE_GROUP) shared varblock LocalLightBlock [ string Visibility = "VS|
 	mat4 LightTransform;
 	
 	textureHandle ProjectionTexture;
+	uint Flags;
+	uint3 _pad0;
 };
 
 group(INSTANCE_GROUP) shared varblock LocalLightShadowBlock [string Visibility = "VS|PS"; ]
@@ -94,7 +102,6 @@ psGlob(
 	vec3 ViewSpaceNormal = UnpackViewSpaceNormal(subpassLoad(InputAttachments[1]));
 	float Depth = subpassLoad(InputAttachments[2]).r;
 	
-	//vec4 albedoColor = sample2DLod(AlbedoBuffer, PosteffectSampler, UV, 0);
 	vec4 albedoColor = subpassLoad(InputAttachments[0]);
 	if (Depth < 0) { Color = EncodeHDR(albedoColor); return; };
 	
@@ -244,55 +251,23 @@ psSpot(
 	float mipSelect = 0;
 	vec2 lightSpaceUv = vec2(((projLightPos.xy / projLightPos.ww) * vec2(0.5f, 0.5f)) + 0.5f);
 	
-	vec4 lightModColor = sample2DLod(ProjectionTexture, SpotlightTextureSampler, lightSpaceUv, mipSelect);
-	vec4 specColor = subpassLoad(InputAttachments[3]);
-	vec4 albedoColor = subpassLoad(InputAttachments[0]);
-	float specPower = ROUGHNESS_TO_SPECPOWER(specColor.a);	
-	
-	float NL = dot(lightDir, ViewSpaceNormal);
-	vec3 diff = LightColor.xyz * saturate(NL) * att;
-	
-	vec3 H = normalize(lightDir - viewVec);
-	float NH = saturate(dot(ViewSpaceNormal, H));
-	float NV = saturate(dot(ViewSpaceNormal, -viewVec));
-	float HL = saturate(dot(H, lightDir));
-	vec3 spec;
-	BRDFLighting(NH, NL, NV, HL, specPower, specColor.rgb, spec);
-	vec3 final = (albedoColor.rgb + spec) * diff;
-	
-	vec4 oColor = vec4(lightModColor.rgb * final, lightModColor.a);
-	
-	Color = EncodeHDR(oColor); 
-}
+	vec4 lightModColor = vec4(1, 1, 1, 1);
 
-//---------------------------------------------------------------------------------------------------------------------------
-/**
-*/
-shader
-void
-psSpotShadow(
-	in vec3 ViewSpacePosition,
-	[color0] out vec4 Color) 
-{
-	vec2 pixelSize = RenderTargetDimensions[0].zw;
-	vec2 screenUV = psComputeScreenCoord(gl_FragCoord.xy, pixelSize.xy);
-	vec3 ViewSpaceNormal = UnpackViewSpaceNormal(subpassLoad(InputAttachments[1]));
-	float Depth = subpassLoad(InputAttachments[2]).r;
-	
-	vec3 viewVec = normalize(ViewSpacePosition);
-	vec3 surfacePos = viewVec * Depth;    
-	vec3 lightDir = (LightPosRange.xyz - surfacePos);
-	
-	float att = saturate(1.0 - length(lightDir) * LightPosRange.w);    
-	if (att - 0.004 < 0) discard;
-	lightDir = normalize(lightDir);
-	
-	vec4 projLightPos = LightProjTransform * vec4(surfacePos, 1.0f);
-	if(projLightPos.z - 0.001 < 0) discard;
-	float mipSelect = 0;
-	vec2 lightSpaceUv = (projLightPos.xy / projLightPos.ww) * vec2(0.5f, -0.5f) + 0.5f;
-	
-	vec4 lightModColor = sample2DLod(ProjectionTexture, SpotlightTextureSampler, lightSpaceUv, mipSelect);
+	if (FlagSet(Flags, USE_PROJECTION_TEX_BITFLAG))
+		vec4 lightModColor = sample2DLod(ProjectionTexture, SpotlightTextureSampler, lightSpaceUv, mipSelect);
+
+	float shadowFactor = 1.0f;
+	if (FlagSet(Flags, USE_SHADOW_BITFLAG))
+	{
+		// shadows
+		vec4 shadowProjLightPos = ShadowProjTransform * vec4(surfacePos, 1.0f);
+		vec2 shadowLookup = (shadowProjLightPos.xy / shadowProjLightPos.ww) * vec2(0.5f, -0.5f) + 0.5f;
+		shadowLookup.y = 1 - shadowLookup.y;
+		float receiverDepth = projLightPos.z / projLightPos.w;
+		shadowFactor = GetInvertedOcclusionSpotLight(receiverDepth, shadowLookup, ShadowMap);
+		shadowFactor = saturate(lerp(1.0f, saturate(shadowFactor), ShadowIntensity));
+	}	
+
 	vec4 specColor = subpassLoad(InputAttachments[3]);
 	vec4 albedoColor = subpassLoad(InputAttachments[0]);
 	float specPower = ROUGHNESS_TO_SPECPOWER(specColor.a);	
@@ -307,36 +282,17 @@ psSpotShadow(
 	vec3 spec;
 	BRDFLighting(NH, NL, NV, HL, specPower, specColor.rgb, spec);
 	vec3 final = (albedoColor.rgb + spec) * diff;
+	
 	vec4 oColor = vec4(lightModColor.rgb * final, lightModColor.a);
-	
-	// shadows
-	vec4 shadowProjLightPos = ShadowProjTransform * vec4(surfacePos, 1.0f);
-	vec2 shadowLookup = (shadowProjLightPos.xy / shadowProjLightPos.ww) * vec2(0.5f, -0.5f) + 0.5f; 
-	shadowLookup.y = 1 - shadowLookup.y;
-	float receiverDepth = projLightPos.z / projLightPos.w;
-	float shadowFactor = GetInvertedOcclusionSpotLight(receiverDepth, shadowLookup, ShadowMap);
-	//shadowFactor = smoothstep(0.0000001f, 1, shadowFactor);
-	shadowFactor = saturate(lerp(1.0f, saturate(shadowFactor), ShadowIntensity));
-	
 	
 	Color = EncodeHDR(oColor * shadowFactor);
 }
+
 //---------------------------------------------------------------------------------------------------------------------------
 //											POINT LIGHT
 //---------------------------------------------------------------------------------------------------------------------------
 
-state PointLightStateStandard
-{
-	BlendEnabled[0] = true;
-	SrcBlend[0] = One;
-	DstBlend[0] = One;
-	CullMode = Front;
-	DepthEnabled = true;
-	DepthWrite = false;
-	DepthFunc = Greater;
-};
-
-state PointLightStateShadow
+state PointLightState
 {
 	BlendEnabled[0] = true;
 	SrcBlend[0] = One;
@@ -405,7 +361,10 @@ psPoint(
 	vec3 surfacePos = viewVec * Depth;
 	vec3 lightDir = (LightPosRange.xyz - surfacePos);
 	vec3 projDir = (InvView * vec4(-lightDir, 0)).xyz;
-	vec4 lightModColor = sampleCubeLod(ProjectionTexture, PointLightTextureSampler, projDir, 0);
+
+	vec4 lightModColor = vec4(1, 1, 1, 1);
+	if (FlagSet(Flags, USE_PROJECTION_TEX_BITFLAG))
+		vec4 lightModColor = sampleCubeLod(ProjectionTexture, PointLightTextureSampler, projDir, 0);
 	
 	vec4 specColor = subpassLoad(InputAttachments[3]);
 	vec4 albedoColor = subpassLoad(InputAttachments[0]);
@@ -427,62 +386,20 @@ psPoint(
 	vec3 final = (albedoColor.rgb + spec) * diff;
 	
 	vec4 oColor = vec4(lightModColor.rgb * final, lightModColor.a);
-	              
-	Color = EncodeHDR(oColor);
-}
 
-//---------------------------------------------------------------------------------------------------------------------------
-/**
-*/
-shader
-void
-psPointShadow(
-	in vec3 ViewSpacePosition,	
-	in vec3 WorldPosition,
-	in vec4 ProjPosition,
-	[color0] out vec4 Color) 
-{
-	vec2 pixelSize = RenderTargetDimensions[0].zw;
-	vec2 screenUV = psComputeScreenCoord(gl_FragCoord.xy, pixelSize.xy);
-	vec3 ViewSpaceNormal = UnpackViewSpaceNormal(subpassLoad(InputAttachments[1]));
-	float Depth = subpassLoad(InputAttachments[2]).r;
-	
-	vec3 viewVec = normalize(ViewSpacePosition);
-	vec3 surfacePos = viewVec * Depth;
-	vec3 lightDir = (LightPosRange.xyz - surfacePos);
-	vec3 projDir = (InvView * vec4(-lightDir, 0)).xyz;
-	float distToSurface = length(lightDir);
-	
-	vec4 lightModColor = sampleCubeLod(ProjectionTexture, PointLightTextureSampler, projDir, 0);
-	vec4 specColor = subpassLoad(InputAttachments[3]);
-	vec4 albedoColor = subpassLoad(InputAttachments[0]);
-	float specPower = ROUGHNESS_TO_SPECPOWER(specColor.a);	
-	
-	float att = saturate(1.0 - distToSurface * LightPosRange.w);
-	att *= att;
-	lightDir = normalize(lightDir);
-	
-	float NL = dot(lightDir, ViewSpaceNormal);
-	vec3 diff = LightColor.xyz * saturate(NL) * att;
-	
-	vec3 H = normalize(lightDir - viewVec);
-	float NH = saturate(dot(ViewSpaceNormal, H));
-	float NV = saturate(dot(ViewSpaceNormal, -viewVec));
-	float HL = saturate(dot(H, lightDir));
-	vec3 spec;
-	BRDFLighting(NH, NL, NV, HL, specPower, specColor.rgb, spec);
-	vec3 final = (albedoColor.rgb + spec) * diff;
-	
-	vec4 oColor = vec4(lightModColor.rgb * final, lightModColor.a);
-	
 	// shadows
-	float shadowFactor = GetInvertedOcclusionPointLight(gl_FragCoord.z,
-						projDir,
-						ShadowMap);	
-	shadowFactor = saturate(lerp(1.0f, saturate(shadowFactor), ShadowIntensity));      	
-	
+	float shadowFactor = 1.0f;
+	if (FlagSet(Flags, USE_SHADOW_BITFLAG))
+	{
+		shadowFactor = GetInvertedOcclusionPointLight(gl_FragCoord.z,
+			projDir,
+			ShadowMap);
+		shadowFactor = saturate(lerp(1.0f, saturate(shadowFactor), ShadowIntensity));
+	}
+	              
 	Color = EncodeHDR(oColor * shadowFactor);
 }
+
 
 //------------------------------------------------------------------------------
 /**
@@ -490,6 +407,4 @@ psPointShadow(
 SimpleTechnique(GlobalLight, "Global", vsGlob(), psGlob(), GlobalLightState);
 SimpleTechnique(GlobalLightShadow, "Global|Alt0", vsGlob(), psGlobShadow(), GlobalLightState);
 SimpleTechnique(SpotLight, "Spot", vsSpot(), psSpot(), SpotLightState);
-SimpleTechnique(SpotLightShadow, "Spot|Alt0", vsSpot(), psSpotShadow(), SpotLightState);
-SimpleTechnique(PointLight, "Point", vsPoint(), psPoint(), PointLightStateStandard);
-SimpleTechnique(PointLightShadow, "Point|Alt0", vsPoint(), psPointShadow(), PointLightStateShadow);
+SimpleTechnique(PointLight, "Point", vsPoint(), psPoint(), PointLightState);

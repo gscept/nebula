@@ -57,7 +57,7 @@ GraphicsServer::Open()
 	this->displayDevice = CoreGraphics::DisplayDevice::Create();
 	this->displayDevice->Open();
 
-	CoreGraphics::GraphicsDeviceCreateInfo gfxInfo;
+	CoreGraphics::GraphicsDeviceCreateInfo gfxInfo{false};
 	this->graphicsDevice = CoreGraphics::CreateGraphicsDevice(gfxInfo);
 	if (this->graphicsDevice)
 	{
