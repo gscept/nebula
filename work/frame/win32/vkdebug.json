@@ -250,7 +250,8 @@ version: 2, engine: "Nebula", framescript: {
 
     depthStencil: {
       name: "ZBuffer",
-      store: true
+      store: true,
+      load: true
     },
 
     subpass: {
@@ -266,7 +267,7 @@ version: 2, engine: "Nebula", framescript: {
           variables: [
             {
               semantic: "CopyBuffer",
-              value: "AlbedoBuffer"
+              value: "LightBuffer"
             },
           ]
         }
@@ -277,8 +278,8 @@ version: 2, engine: "Nebula", framescript: {
     subpass: {
       name: "UI",
       dependencies: [ "ScreenPass" ],
-      depth: false,
-      attachments: [ "ScreenBuffer" ],
+      depth: true,
+      attachments: [ "ScreenBuffer", "DepthBuffer" ],
 
       plugins: {
         name: "ImGui",

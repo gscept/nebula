@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 // modelcontext.cc
-// (C)2017-2018 Individual contributors, see AUTHORS file
+// (C) 2017-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "modelcontext.h"
@@ -43,6 +43,8 @@ ModelContext::Create()
 	__bundle.OnBeforeView = ModelContext::OnBeforeView;
 	__bundle.OnAfterView = ModelContext::OnAfterView;
 	__bundle.OnAfterFrame = ModelContext::OnAfterFrame;
+	__bundle.StageBits = &ModelContext::__state.currentStage;
+	ModelContext::__state.allowedRemoveStages = Graphics::OnBeforeFrameStage;
 	Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle);
 
 	_CreateContext();
@@ -68,7 +70,7 @@ ModelContext::Setup(const Graphics::GraphicsEntityId id, const Resources::Resour
 		ModelInstanceId& mdl = modelContextAllocator.Get<1>(cid.id);
 		mdl = Models::CreateModelInstance(id);
 		const Math::matrix44& pending = modelContextAllocator.Get<2>(cid.id);
-		Models::modelPool->modelInstanceAllocator.Get<2>(mdl.instance) = pending;
+		Models::modelPool->modelInstanceAllocator.Get<StreamModelPool::InstanceTransform>(mdl.instance) = pending;
 	};
 
 	rid = Models::CreateModel(info);
@@ -101,7 +103,7 @@ ModelContext::ChangeModel(const Graphics::GraphicsEntityId id, const Resources::
 	{
 		mdl = Models::CreateModelInstance(id);
 		const Math::matrix44& pending = modelContextAllocator.Get<2>(cid.id);
-		Models::modelPool->modelInstanceAllocator.Get<2>(mdl.instance) = pending;
+		Models::modelPool->modelInstanceAllocator.Get<StreamModelPool::InstanceTransform>(mdl.instance) = pending;
 	};
 
 	rid = Models::CreateModel(info);
@@ -220,9 +222,9 @@ void
 ModelContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime)
 {
 	const Util::Array<ModelInstanceId>& instances = modelContextAllocator.GetArray<1>();
-	const Util::Array<Math::matrix44>& transforms = Models::modelPool->modelInstanceAllocator.GetArray<2>();
+	const Util::Array<Math::matrix44>& transforms = Models::modelPool->modelInstanceAllocator.GetArray<StreamModelPool::InstanceTransform>();
 	const Util::Array<Math::bbox>& modelBoxes = Models::modelPool->modelAllocator.GetArray<0>();
-	Util::Array<Math::bbox>& instanceBoxes = Models::modelPool->modelInstanceAllocator.GetArray<3>();
+	Util::Array<Math::bbox>& instanceBoxes = Models::modelPool->modelInstanceAllocator.GetArray<StreamModelPool::InstanceBoundingBox>();
 	Util::Array<Math::matrix44>& pending = modelContextAllocator.GetArray<2>();
 	Util::Array<bool>& hasPending = modelContextAllocator.GetArray<3>();
 	

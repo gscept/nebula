@@ -68,21 +68,21 @@ FrameSubpassBatch::CompiledImpl::Run(const IndexT frameIndex)
 
 	// get current view and visibility draw list
 	const Ptr<View>& view = Graphics::GraphicsServer::Instance()->GetCurrentView();
-	const Visibility::ObserverContext::VisibilityDrawList& drawList = Visibility::ObserverContext::GetVisibilityDrawList(view->GetCamera());
+	const Visibility::ObserverContext::VisibilityDrawList* drawList = Visibility::ObserverContext::GetVisibilityDrawList(view->GetCamera());
 
 	// start batch
 	CoreGraphics::BeginBatch(FrameBatchType::Geometry);
 
 	const Util::Array<MaterialType*>* types = matServer->GetMaterialTypesByBatch(this->batch);
-	if (types != nullptr) for (IndexT typeIdx = 0; typeIdx < types->Size(); typeIdx++)
+	if ((types != nullptr) && (drawList != nullptr)) for (IndexT typeIdx = 0; typeIdx < types->Size(); typeIdx++)
 	{
 		MaterialType* type = (*types)[typeIdx];
-		IndexT idx = drawList.FindIndex(type);
+		IndexT idx = drawList->FindIndex(type);
 		if (idx != InvalidIndex)
 		{
 			if (Materials::MaterialBeginBatch(type, this->batch))
 			{
-				auto& model = drawList.ValueAtIndex(type, idx);
+				auto& model = drawList->ValueAtIndex(type, idx);
 				auto& it = model.Begin();
 				auto& end = model.End();
 				while (it != end)
@@ -96,6 +96,9 @@ FrameSubpassBatch::CompiledImpl::Run(const IndexT frameIndex)
 					{
 						// apply node-wide state
 						node->ApplyNodeState();
+
+						// bind graphics pipeline
+						CoreGraphics::SetGraphicsPipeline();
 
 						if (Materials::MaterialBeginSurface(stateNode->GetSurface()))
 						{

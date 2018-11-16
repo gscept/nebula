@@ -80,6 +80,7 @@ struct Im3dState
 {
     CoreGraphics::ShaderId im3dShader;
     CoreGraphics::ShaderProgramId lines;
+    CoreGraphics::ShaderProgramId depthLines;
     CoreGraphics::ShaderProgramId points;
     CoreGraphics::ShaderProgramId triangles;
     CoreGraphics::VertexBufferId vbo;       
@@ -88,6 +89,7 @@ struct Im3dState
     float cellSize = 1.0f;
     Math::float4 gridColor{ 1.0f,1.0f,1.0f,0.3f };
     Ptr<Im3dInputHandler> inputHandler;
+    Im3d::Id depthLayerId;
     byte* vertexPtr;    
 };
 static Im3dState imState;
@@ -126,9 +128,11 @@ Im3dContext::Create()
     // allocate imgui shader
     imState.im3dShader = ShaderServer::Instance()->GetShader("shd:im3d.fxb");
     imState.lines = CoreGraphics::ShaderGetProgram(imState.im3dShader, CoreGraphics::ShaderFeatureFromString("Static|Lines"));
+    imState.depthLines = CoreGraphics::ShaderGetProgram(imState.im3dShader, CoreGraphics::ShaderFeatureFromString("StaticDepth|Lines"));
     imState.points = CoreGraphics::ShaderGetProgram(imState.im3dShader, CoreGraphics::ShaderFeatureFromString("Static|Points"));
     imState.triangles = CoreGraphics::ShaderGetProgram(imState.im3dShader, CoreGraphics::ShaderFeatureFromString("Static|Triangles"));
-
+    
+    imState.depthLayerId = Im3d::MakeId("depthEnabled");
     // create vertex buffer
     Util::Array<CoreGraphics::VertexComponent> components;
     components.Append(VertexComponent((VertexComponent::SemanticName)0, 0, VertexComponentBase::Float4, 0));
@@ -152,8 +156,6 @@ Im3dContext::Create()
     imState.vertexPtr = (byte*)CoreGraphics::VertexBufferMap(imState.vbo, CoreGraphics::GpuBufferTypes::MapWrite);
 }
 
-
-
 //------------------------------------------------------------------------------
 /**
 */
@@ -167,7 +169,6 @@ Im3dContext::Discard()
     CoreGraphics::DestroyVertexBuffer(imState.vbo);
     imState.vertexPtr = nullptr;
 }
-
 
 //------------------------------------------------------------------------------
 /**
@@ -193,7 +194,7 @@ Im3dContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameInd
     // m_projScaleY controls how gizmos are scaled in world space to maintain a constant screen height
     ad.m_projScaleY = tanf(Math::n_deg2rad(settings.GetFov()) * 0.5f) * 2.0f; // or vertical fov for a perspective projection
     
-    auto const & mouse = Input::InputServer::Instance()->GetDefaultMouse();
+    auto const& mouse = Input::InputServer::Instance()->GetDefaultMouse();
     
     // window origin is top-left, ndc is bottom-left
     Math::float2 mousePos = mouse->GetScreenPosition();
@@ -240,6 +241,42 @@ Im3dContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameInd
     Im3d::NewFrame();
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+template<typename filterFunc>
+static inline 
+void
+CollectByFilter(ShaderProgramId const & shader, PrimitiveTopology::Code topology, IndexT &vertexBufferOffset, IndexT & vertexCount, filterFunc && filter)
+{
+    CoreGraphics::SetShaderProgram(shader);
+    CoreGraphics::SetPrimitiveTopology(topology);
+    CoreGraphics::SetGraphicsPipeline();
+    // setup input buffers
+    CoreGraphics::SetStreamVertexBuffer(0, imState.vbo, 0);    
+
+    for (uint32_t i = 0, n = Im3d::GetDrawListCount(); i < n; ++i)
+    {
+        auto& drawList = Im3d::GetDrawLists()[i];
+        if (filter(drawList))
+        {
+            const unsigned char* vertexBuffer = (unsigned char*)drawList.m_vertexData;
+            const SizeT vertexBufferSize = drawList.m_vertexCount * sizeof(Im3d::VertexData);
+            Memory::Copy(vertexBuffer, imState.vertexPtr + vertexBufferOffset, vertexBufferSize);
+
+            CoreGraphics::PrimitiveGroup primitive;
+            primitive.SetNumIndices(0);
+            primitive.SetBaseIndex(0);
+            primitive.SetNumVertices(drawList.m_vertexCount);
+            primitive.SetBaseVertex(vertexCount);
+            CoreGraphics::SetPrimitiveGroup(primitive);            
+            CoreGraphics::Draw();
+
+            vertexBufferOffset += vertexBufferSize;
+            vertexCount += drawList.m_vertexCount;
+        }
+    }    
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -255,7 +292,8 @@ Im3dContext::OnRenderAsPlugin(const IndexT frameIndex, const Timing::Time frameT
         {
             int gridSize = imState.gridSize;            
             float cellSize = imState.cellSize;            
-            Im3d::SetSize(1.0f);            
+            Im3d::SetSize(1.0f);
+            Im3d::PushLayerId(imState.depthLayerId);            
             Im3d::BeginLines();
             Im3d::Color col = imState.gridColor;
             for (int x = -gridSize; x <= gridSize; ++x) {
@@ -267,63 +305,37 @@ Im3dContext::OnRenderAsPlugin(const IndexT frameIndex, const Timing::Time frameT
                 Im3d::Vertex((float)z * cellSize, 0.0f, gridSize* cellSize, col);
             }
             Im3d::End();
+            Im3d::PopLayerId();
         }
         Im3d::EndFrame();
         VertexBufferId vbo = imState.vbo;                
 
         // setup device
-        CoreGraphics::SetVertexLayout(CoreGraphics::VertexBufferGetLayout(vbo));
-        IndexT vertexOffset = 0;        
-        IndexT vertexBufferOffset = 0;        
+        CoreGraphics::SetVertexLayout(CoreGraphics::VertexBufferGetLayout(vbo));        
+        IndexT vertexCount = 0;
+        IndexT vertexBufferOffset = 0;
+        // collect draws and loop a couple of times instead
+        CollectByFilter(imState.points, CoreGraphics::PrimitiveTopology::PointList, vertexBufferOffset, vertexCount,
+            [](Im3d::DrawList const& l) { return l.m_primType == Im3d::DrawPrimitive_Points; });
 
-        for (uint32_t i = 0, n = Im3d::GetDrawListCount(); i < n; ++i)
-        {
-            auto& drawList = Im3d::GetDrawLists()[i];
-            switch (drawList.m_primType)
-            {
-            case Im3d::DrawPrimitive_Points:
-                CoreGraphics::SetShaderProgram(imState.points);
-                CoreGraphics::SetPrimitiveTopology(CoreGraphics::PrimitiveTopology::PointList);
-                break;
-            case Im3d::DrawPrimitive_Lines:
-                CoreGraphics::SetShaderProgram(imState.lines);
-                CoreGraphics::SetPrimitiveTopology(CoreGraphics::PrimitiveTopology::LineList);
-                break;
-            case Im3d::DrawPrimitive_Triangles:
-                CoreGraphics::SetShaderProgram(imState.triangles);
-                CoreGraphics::SetPrimitiveTopology(CoreGraphics::PrimitiveTopology::TriangleList);
-                break;
-            default:
-                n_assert("Unkown Primtype");
-                break;
-            }
-            const unsigned char* vertexBuffer = (unsigned char*)drawList.m_vertexData;
-            const SizeT vertexBufferSize = drawList.m_vertexCount * sizeof(Im3d::VertexData);
-            Memory::Copy(vertexBuffer, imState.vertexPtr + vertexBufferOffset, vertexBufferSize);
-            CoreGraphics::SetGraphicsPipeline();
-            // setup input buffers
-            CoreGraphics::SetStreamVertexBuffer(0, vbo, 0);
 
-            CoreGraphics::PrimitiveGroup primitive;
-            primitive.SetNumIndices(0);
-            primitive.SetBaseIndex(0);
-            primitive.SetNumVertices(drawList.m_vertexCount);
-            primitive.SetBaseVertex(vertexOffset);
 
-            vertexBufferOffset += vertexBufferSize;
-            vertexOffset += drawList.m_vertexCount;
-            CoreGraphics::SetPrimitiveGroup(primitive);
+        CollectByFilter(imState.depthLines, CoreGraphics::PrimitiveTopology::LineList, vertexBufferOffset, vertexCount,
+            [](Im3d::DrawList const& l) { return l.m_primType == Im3d::DrawPrimitive_Lines && l.m_layerId == imState.depthLayerId; });
 
-            // prepare render device and draw
-            CoreGraphics::Draw();
-        }
+        CollectByFilter(imState.lines, CoreGraphics::PrimitiveTopology::LineList, vertexBufferOffset, vertexCount,
+            [](Im3d::DrawList const& l) { return l.m_primType == Im3d::DrawPrimitive_Lines && l.m_layerId != imState.depthLayerId; });                                        
     }
 }
 
-bool Im3dContext::HandleInput(const Input::InputEvent & event)
+//------------------------------------------------------------------------------
+/**
+*/
+bool 
+Im3dContext::HandleInput(const Input::InputEvent& event)
 {
     auto const& evType = event.GetType();
-    auto & ctx = Im3d::GetContext();
+    auto& ctx = Im3d::GetContext();
     if (evType == InputEvent::MouseButtonDown)
     {
         if (ctx.m_hotId > 0)
@@ -334,25 +346,41 @@ bool Im3dContext::HandleInput(const Input::InputEvent & event)
     return false;
 }
 
-void Im3dContext::SetGridStatus(bool enable)
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Im3dContext::SetGridStatus(bool enable)
 {
     imState.renderGrid = enable;
 }
 
-void Im3dContext::SetGridSize(float cellSize, int cellCount)
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Im3dContext::SetGridSize(float cellSize, int cellCount)
 {
     imState.cellSize = cellSize;
     imState.gridSize = cellCount;
 }
 
-void Im3dContext::SetGridColor(Math::float4 const & color)
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Im3dContext::SetGridColor(Math::float4 const & color)
 {
     imState.gridColor = color;
 }
 
-void Im3dContext::SetGizmoSize(int size, int width)
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Im3dContext::SetGizmoSize(int size, int width)
 {
-    auto & ctx = GetContext();
+    auto& ctx = GetContext();
 
     ctx.m_gizmoHeightPixels = size;
     ctx.m_gizmoSizePixels = width;

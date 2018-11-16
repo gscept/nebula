@@ -101,12 +101,14 @@ private:
 	{
 		NodeInstances,
 		NodeTypes,
+		InstanceMemory,
 		InstanceTransform,
 		InstanceBoundingBox
 	};
 	Ids::IdAllocator<
 		Util::Array<Models::ModelNode::Instance*>,					// list of node instances
 		Util::Array<Models::NodeType>,								// node instance types
+		byte*,														// allocated memory
 		Math::matrix44,												// transform
 		Math::bbox													// transformed bounding box
 	> modelInstanceAllocator;
