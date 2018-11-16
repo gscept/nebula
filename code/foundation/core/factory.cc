@@ -51,8 +51,7 @@ Factory::Destroy()
     The factory's constructor is private so that it may only be called 
     by Factory::Instance().
 */
-Factory::Factory() :
-    nameTable(1024)
+Factory::Factory()
 {
     // empty
 }

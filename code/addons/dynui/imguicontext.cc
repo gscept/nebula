@@ -44,7 +44,6 @@ ImguiContext::ImguiDrawFunction(ImDrawData* data)
 
 	// apply shader
 	CoreGraphics::SetShaderProgram(state.prog);
-	CoreGraphics::SetResourceTable(state.resourceTable, NEBULA_BATCH_GROUP, GraphicsPipeline, nullptr);
 
 	// create orthogonal matrix
 #if __VULKAN__
@@ -59,6 +58,7 @@ ImguiContext::ImguiDrawFunction(ImDrawData* data)
 	CoreGraphics::SetGraphicsPipeline();
 
 	// setup input buffers
+	CoreGraphics::SetResourceTable(state.resourceTable, NEBULA_BATCH_GROUP, GraphicsPipeline, nullptr);
 	CoreGraphics::SetStreamVertexBuffer(0, state.vbo, 0);
 	CoreGraphics::SetIndexBuffer(state.ibo, 0);
 
@@ -129,6 +129,9 @@ ImguiContext::ImguiDrawFunction(ImDrawData* data)
 		vertexBufferOffset += vertexBufferSize;
 		indexBufferOffset += indexBufferSize;
 	}
+
+	// reset clip settings
+	CoreGraphics::ResetClipSettings();
 }
 
 _ImplementContext(ImguiContext);
@@ -380,9 +383,6 @@ ImguiContext::HandleInput(const Input::InputEvent& event)
 	case InputEvent::MouseMove:
 		io.MousePos = ImVec2(event.GetAbsMousePos().x(), event.GetAbsMousePos().y());
 		return io.WantCaptureMouse;
-	case InputEvent::MouseButtonDoubleClick:
-		io.MouseDoubleClicked[event.GetMouseButton()] = true;
-		return io.WantCaptureMouse;
 	case InputEvent::MouseButtonDown:
 		io.MouseDown[event.GetMouseButton()] = true;
 		return io.WantCaptureMouse;
@@ -427,6 +427,8 @@ ImguiContext::OnWindowResized(IndexT windowId, SizeT width, SizeT height)
 void 
 ImguiContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime)
 {
+	ImGuiIO& io = ImGui::GetIO();
+	io.DeltaTime = frameTime;
     ImGui::NewFrame();
 }
 

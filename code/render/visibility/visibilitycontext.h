@@ -52,7 +52,7 @@ public:
 		VisibilityDrawList;
 
 	/// get visibility draw list
-	static const VisibilityDrawList& GetVisibilityDrawList(const Graphics::GraphicsEntityId id);
+	static const VisibilityDrawList* GetVisibilityDrawList(const Graphics::GraphicsEntityId id);
 
 	static Jobs::JobPortId jobPort;
 	static Threading::SafeQueue<Jobs::JobId> runningJobs;

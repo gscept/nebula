@@ -8,6 +8,7 @@
 #include "coregraphics/shaperenderer.h"
 #include "coregraphics/graphicsdevice.h"
 #include "frame/framebatchtype.h"
+#include "lighting/lightcontext.h"
 
 using namespace CoreGraphics;
 namespace Frame
@@ -51,9 +52,7 @@ FrameSubpassSystem::CompiledImpl::Run(const IndexT frameIndex)
 	switch (this->call)
 	{
 	case Lights:
-		CoreGraphics::BeginBatch(FrameBatchType::System);
-		//LightServer::Instance()->RenderLights();
-		CoreGraphics::EndBatch();
+		Lighting::LightContext::RenderLights();
 		break;
 	case LightProbes:
 		CoreGraphics::BeginBatch(FrameBatchType::System);
