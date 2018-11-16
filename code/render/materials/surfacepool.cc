@@ -85,7 +85,16 @@ SurfacePool::LoadFromStream(const Resources::ResourceId id, const Util::StringAt
 					break;
 				case Util::Variant::UInt64: // texture handle
 				{
-					CoreGraphics::TextureId tex = Resources::CreateResource(reader->GetString("value") + NEBULA_TEXTURE_EXTENSION, tag, nullptr, nullptr, true);
+					const Util::String path = reader->GetOptString("value", "");
+					CoreGraphics::TextureId tex;
+					if (!path.IsEmpty())
+					{
+						tex = Resources::CreateResource(path + NEBULA_TEXTURE_EXTENSION, tag, nullptr, nullptr, true);
+						defaultVal = tex.HashCode64();
+					}
+					else
+						tex = CoreGraphics::TextureId(defaultVal.GetUInt64());
+					
 					defaultVal.SetUInt64(tex.HashCode64());
 					type->SetSurfaceConstant(sid, binding, CoreGraphics::TextureGetBindlessHandle(tex));
 					break;

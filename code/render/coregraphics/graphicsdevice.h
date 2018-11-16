@@ -22,7 +22,7 @@ namespace CoreGraphics
 
 struct GraphicsDeviceCreateInfo
 {
-
+	bool enableValidation : 1;		// enables validation layer and writes output to console
 };
 
 /// create graphics device
@@ -36,16 +36,17 @@ struct GraphicsDeviceState
 	CoreGraphics::PrimitiveTopology::Code primitiveTopology;
 	CoreGraphics::PrimitiveGroup primitiveGroup;
 	CoreGraphics::PassId pass;
-	bool isOpen;
-	bool inNotifyEventHandlers;
-	bool inBeginFrame;
-	bool inBeginPass;
-	bool inBeginBatch;
-	bool inBeginCompute;
-	bool inBeginAsyncCompute;
-	bool renderWireframe;
-	bool visualizeMipMaps;
-	bool usePatches;
+	bool isOpen : 1;
+	bool inNotifyEventHandlers : 1;
+	bool inBeginFrame : 1;
+	bool inBeginPass : 1;
+	bool inBeginBatch : 1;
+	bool inBeginCompute : 1;
+	bool inBeginAsyncCompute : 1;
+	bool renderWireframe : 1;
+	bool visualizeMipMaps : 1;
+	bool usePatches : 1;
+	bool enableValidation : 1;
 	IndexT currentFrameIndex;
 
 	_declare_counter(RenderDeviceNumComputes);
@@ -68,6 +69,11 @@ void BeginPass(const CoreGraphics::PassId pass);
 void SetToNextSubpass();
 /// begin rendering a batch
 void BeginBatch(Frame::FrameBatchType::Code batchType);
+/// go to next sub-batch
+void SetToNextSubBatch();
+
+/// reset clip settings to pass
+void ResetClipSettings();
 
 /// set the current vertex stream source
 void SetStreamVertexBuffer(IndexT streamIndex, const CoreGraphics::VertexBufferId& vb, IndexT offsetVertexIndex);

@@ -490,7 +490,7 @@ VkMemoryTexturePool::GetNumMips(const CoreGraphics::TextureId id)
 //------------------------------------------------------------------------------
 /**
 */
-uint64 
+uint 
 VkMemoryTexturePool::GetBindlessHandle(const CoreGraphics::TextureId id)
 {
 	textureAllocator.EnterGet();

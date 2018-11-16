@@ -44,7 +44,6 @@ ImguiContext::ImguiDrawFunction(ImDrawData* data)
 
 	// apply shader
 	CoreGraphics::SetShaderProgram(state.prog);
-	CoreGraphics::SetResourceTable(state.resourceTable, NEBULA_BATCH_GROUP, GraphicsPipeline, nullptr);
 
 	// create orthogonal matrix
 #if __VULKAN__
@@ -59,6 +58,7 @@ ImguiContext::ImguiDrawFunction(ImDrawData* data)
 	CoreGraphics::SetGraphicsPipeline();
 
 	// setup input buffers
+	CoreGraphics::SetResourceTable(state.resourceTable, NEBULA_BATCH_GROUP, GraphicsPipeline, nullptr);
 	CoreGraphics::SetStreamVertexBuffer(0, state.vbo, 0);
 	CoreGraphics::SetIndexBuffer(state.ibo, 0);
 
@@ -129,6 +129,9 @@ ImguiContext::ImguiDrawFunction(ImDrawData* data)
 		vertexBufferOffset += vertexBufferSize;
 		indexBufferOffset += indexBufferSize;
 	}
+
+	// reset clip settings
+	CoreGraphics::ResetClipSettings();
 }
 
 _ImplementContext(ImguiContext);
