@@ -88,7 +88,7 @@ public:
 	/// get number of mips
 	uint GetNumMips(const CoreGraphics::TextureId id);
 	/// get bindless handle
-	uint64 GetBindlessHandle(const CoreGraphics::TextureId id);
+	uint GetBindlessHandle(const CoreGraphics::TextureId id);
 private:
 	friend class VkStreamTexturePool;
 	__ImplementResourceAllocatorTypedSafe(textureAllocator, TextureIdType);
