@@ -23,6 +23,10 @@ public:
 	static void SetLocalTransform(const uint32_t& instance, const Math::matrix44& val);
 	static void SetLocalTransform(const Game::Entity& entity, const Math::matrix44& val);
 	
+	/// Set the world transform of an instance. This will update the hierarchy and also set the local transform.
+	static void SetWorldTransform(const uint32_t& instance, const Math::matrix44& val);
+	static void SetWorldTransform(const Game::Entity& entity, const Math::matrix44& val);
+
 	/// Return the local transform of an instance.
 	static Math::matrix44 GetLocalTransform(const uint32_t& instance);
 	static Math::matrix44 GetLocalTransform(const Game::Entity& entity);

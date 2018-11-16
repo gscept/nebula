@@ -60,6 +60,7 @@ TransformComponent::SetupAcceptedMessages()
 {
 	// SetLocalTransform message will be handled by ::SetLocalTransform(...)
 	component.messageListeners.Append(__RegisterMsg(Msg::SetLocalTransform, SetLocalTransform));
+	component.messageListeners.Append(__RegisterMsg(Msg::SetWorldTransform, SetWorldTransform));
 	component.messageListeners.Append(__RegisterMsg(Msg::SetParent, SetParent));
 	messageQueue = Msg::UpdateTransform::AllocateMessageQueue();
 	
@@ -120,6 +121,46 @@ TransformComponent::SetLocalTransform(const Game::Entity& entity, const Math::ma
 	if (instance != InvalidIndex)
 	{
 		SetLocalTransform(instance, val);
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TransformComponent::SetWorldTransform(const uint32_t& instance, const Math::matrix44& val)
+{
+	n_assert(component.data.Size() > instance);
+	if (component.data.Size() <= instance)
+	{
+		return;
+	}
+
+	uint32_t parentInstance = component.data.Get<AttrIndex::PARENT>(instance);
+	if (parentInstance != InvalidIndex)
+	{
+		Math::matrix44& parentWorld = component.data.Get<AttrIndex::WORLDTRANSFORM>(parentInstance);
+		Math::matrix44 parentInverse = Math::matrix44::inverse(parentWorld);
+		Math::matrix44 local = Math::matrix44::multiply(val, parentInverse);
+		SetLocalTransform(instance, local);
+	}
+	else
+	{
+		// world transform is same as local if we have no parent
+		SetLocalTransform(instance, val);
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TransformComponent::SetWorldTransform(const Game::Entity& entity, const Math::matrix44& val)
+{
+	uint32_t instance = component.GetInstance(entity);
+	if (instance != InvalidIndex)
+	{
+		SetWorldTransform(instance, val);
 	}
 }
 
