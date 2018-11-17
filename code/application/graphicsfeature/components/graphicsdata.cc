@@ -1,4 +1,7 @@
-// NIDL #version:39#
+// NIDL #version:48#
+#ifdef _WIN32
+#define NOMINMAX
+#endif
 //------------------------------------------------------------------------------
 //  graphicsdata.cc
 //  (C) Individual contributors, see AUTHORS file

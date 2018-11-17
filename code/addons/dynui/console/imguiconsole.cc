@@ -142,7 +142,8 @@ ImguiConsole::ImguiConsole() :
 	moveScroll(false),
 	visible(false),
 	selectedSuggestion(0),
-	previousCommandIndex(-1)
+	previousCommandIndex(-1),
+	scrollToBottom(true)
 {
 	__ConstructInterfaceSingleton;
 }
@@ -201,48 +202,151 @@ ImguiConsole::Render()
 	if (!this->visible) return;
 	
 	ImGui::Begin("Nebula Console", NULL, ImVec2(300, 300), -1.0f, ImGuiWindowFlags_NoScrollbar);
-	ImGui::PushItemWidth(ImGui::GetWindowWidth());
-	ImVec2 windowSize = ImGui::GetWindowSize();
-	ImVec2 windowPos = ImGui::GetWindowPos();	
-	ImGui::BeginChild("output", ImVec2(0, windowSize.y - 75), true);
-		for (int i = 0; i < this->consoleBuffer.Size(); i++)
-		{
-			ImGui::TextUnformatted(this->consoleBuffer[i].AsCharPtr());
-		}
-		if (moveScroll)
-		{
-			moveScroll = false;
-			ImGui::SetScrollHere();
-		}
-	ImGui::EndChild();
 
-	if (ImGui::InputText("console_input", this->command, sizeof(this->command), ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CallbackHistory | ImGuiInputTextFlags_CallbackCompletion, TextEditCallback, (void*)this))
+
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+	static ImGuiTextFilter filter;
+	filter.Draw("Filter", 180);
+	ImGui::PopStyleVar();
+	ImGui::Separator();
+
+	ImGui::BeginChild("ScrollingRegion", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), false, ImGuiWindowFlags_HorizontalScrollbar);
+	if (ImGui::BeginPopupContextWindow())
 	{
-		//ImGui::SetKeyboardFocusHere();
-		moveScroll = true;
-		if (this->command[0] != '\0')
-		{
-			this->consoleBuffer.Add((const char*)this->command);
-			this->consoleBuffer.Add("\n");
+		if (ImGui::Selectable("Clear"))
+			this->consoleBuffer.Reset();
+		ImGui::EndPopup();
+	}
 
-			this->previousCommandIndex = -1;
-			for (int i = 0; i < this->previousCommands.Size(); i++)
-			{
-				if (this->previousCommands[i] == this->command)
-				{
-					this->previousCommands.EraseIndex(i);
-					break;
-				}
-			}
+	// Display every line as a separate entry so we can change their color or add custom widgets. If you only want raw text you can use ImGui::TextUnformatted(log.begin(), log.end());
+	// NB- if you have thousands of entries this approach may be too inefficient and may require user-side clipping to only process visible items.
+	// You can seek and display only the lines that are visible using the ImGuiListClipper helper, if your elements are evenly spaced and you have cheap random access to the elements.
+	// To use the clipper we could replace the 'for (int i = 0; i < Items.Size; i++)' loop with:
+	//     ImGuiListClipper clipper(Items.Size);
+	//     while (clipper.Step())
+	//         for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
+	// However take note that you can not use this code as is if a filter is active because it breaks the 'cheap random-access' property. We would need random-access on the post-filtered list.
+	// A typical application wanting coarse clipping and filtering may want to pre-compute an array of indices that passed the filtering test, recomputing this array when user changes the filter,
+	// and appending newly elements as they are inserted. This is left as a task to the user until we can manage to improve this example code!
+	// If your items are of variable size you may want to implement code similar to what ImGuiListClipper does. Or split your data into fixed height items to allow random-seeking into your list.
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 1)); // Tighten spacing
+	for (int i = 0; i < consoleBuffer.Size(); i++)
+	{
+		const char* item = consoleBuffer[i].msg.AsCharPtr();
+		
+		//Filter on both time, prefix and entry
+		if (!filter.PassFilter(item) && !filter.PassFilter(this->LogEntryTypeAsCharPtr(consoleBuffer[i].type)))
+			continue;
+
+		ImVec4 col;
+		switch (consoleBuffer[i].type)
+		{
+		case N_MESSAGE:
+			col = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+			break;
+		case N_INPUT:
+			col = ImVec4(0.4f, 1.0f, 0.4f, 1.0f);
+			break;
+		case N_WARNING:
+			col = ImVec4(1.0f, 1.0f, 0.4f, 1.0f);
+			break;
+		case N_ERROR:
+			col = ImVec4(1.0f, 0.4f, 0.4f, 1.0f);
+			break;
+		case N_EXCEPTION:
+			col = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
+			break;
+		case N_SYSTEM:
+			col = ImVec4(1.0f, 5.0f, 3.0f, 1.0f);
+			break;
+		default:
+			break;
+		}
+
+		ImGui::PushStyleColor(ImGuiCol_Text, col);
+		ImGui::SameLine();
+		//Print message prefix
+		ImGui::TextUnformatted(this->LogEntryTypeAsCharPtr(consoleBuffer[i].type));
+		ImGui::SameLine();
+		//Print log entry
+		ImGui::TextWrapped(item);
+		ImGui::NewLine();
+
+		ImGui::PopStyleColor();
+	}
+
+	if (this->scrollToBottom)
+		ImGui::SetScrollHere();
+
+	ImGui::PopStyleVar();
+	ImGui::EndChild();
+	ImGui::Separator();
+
+	// Command-line / Input ----------------------------------------------------
+
+	auto callback = [](ImGuiTextEditCallbackData* data)
+	{
+		//switch (data->EventFlag)
+		//{
+		//case ImGuiInputTextFlags_CallbackCompletion:
+		//{
+		//	// TODO
+		//	break;
+		//}
+		//case ImGuiInputTextFlags_CallbackHistory:
+		//{
+		//	const int prev_history_pos = HistoryPos;
+		//	if (data->EventKey == ImGuiKey_UpArrow)
+		//	{
+		//		if (HistoryPos == -1)
+		//			HistoryPos = History.Size - 1;
+		//		else if (HistoryPos > 0)
+		//			HistoryPos--;
+		//	}
+		//	else if (data->EventKey == ImGuiKey_DownArrow)
+		//	{
+		//		if (HistoryPos != -1)
+		//			if (++HistoryPos >= History.Size)
+		//				HistoryPos = -1;
+		//	}
+
+		//	// A better implementation would preserve the data on the current input line along with cursor position.
+		//	if (prev_history_pos != HistoryPos)
+		//	{
+		//		data->CursorPos = data->SelectionStart = data->SelectionEnd = data->BufTextLen = (int)snprintf(data->Buf, (size_t)data->BufSize, "%s", (HistoryPos >= 0) ? History[HistoryPos] : "");
+		//		data->BufDirty = true;
+		//	}
+		//}
+		//}
+		return 1;
+	};
+
+	if (ImGui::InputText("|", this->command, sizeof(this->command), ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CallbackCompletion | ImGuiInputTextFlags_CallbackHistory, callback, (void*)this))
+	{
+		char* input_end = this->command + strlen(this->command);
+		while (input_end > this->command && input_end[-1] == ' ') input_end--; *input_end = 0;
+		if (this->command[0])
+		{
+			this->AppendToLog({LogMessageType::N_INPUT, this->command});
 
 			// execute script
 			this->Execute(this->command);
 			this->previousCommands.Append(this->command);
-
-			// reset command to b empty
-			memset(this->command, '\0', sizeof(this->command));
 		}
-	}		
+		memset(this->command, '\0', sizeof(this->command));
+	}
+
+	//keeping auto focus on the input box
+	if (ImGui::IsItemHovered() || (ImGui::IsRootWindowOrAnyChildFocused() && !ImGui::IsAnyItemActive() && !ImGui::IsMouseClicked(0)))
+		ImGui::SetKeyboardFocusHere(-1); // Auto focus previous widget
+
+	ImGui::SameLine();
+	ImGui::PushItemWidth(-140);
+	if (ImGui::SmallButton("Auto Scroll"))
+		this->scrollToBottom = !this->scrollToBottom;
+
+	ImGui::PopItemWidth();
+	ImGui::Separator();
 
 	/*
 	if (this->command[0] != '\0')
@@ -283,8 +387,6 @@ ImguiConsole::Render()
 		}
 	}
 	*/
-	
-	ImGui::PopItemWidth();
 	ImGui::End();
 
 	//ImGui::ShowStyleEditor();
@@ -313,7 +415,7 @@ ImguiConsole::Execute(const Util::String& command)
 			this->consoleBuffer.Add(output);
 		}
         */
-        this->consoleBuffer.Add("Go away");
+		this->consoleBuffer.Add({ LogMessageType::N_MESSAGE, "Go away" });
 	}
 	else if (splits[0] == "clear")
 	{
@@ -344,8 +446,42 @@ ImguiConsole::Execute(const Util::String& command)
 /**
 */
 void
-ImguiConsole::AppendToLog(const Util::String & msg)
+ImguiConsole::AppendToLog(const LogEntry& msg)
 {
 	this->consoleBuffer.Add(msg);	
 }
+
+//------------------------------------------------------------------------------
+/**
+*/
+const char*
+ImguiConsole::LogEntryTypeAsCharPtr(const LogMessageType& type) const
+{
+	//static const prefixes that are appended to messages. Doing this saves a ton of memory.
+	static const Util::String prefix_message = "[Message]: ";
+	static const Util::String prefix_input = ">> ";
+	static const Util::String prefix_warning = "[Warning]: ";
+	static const Util::String prefix_error = "[ Error ]: ";
+	static const Util::String prefix_exception = "[FATAL ERROR]: ";
+	static const Util::String prefix_system ="[System]: ";
+
+	switch (type)
+	{
+	case N_MESSAGE:
+		return prefix_message.AsCharPtr();
+	case N_INPUT:
+		return prefix_input.AsCharPtr();
+	case N_WARNING:
+		return prefix_warning.AsCharPtr();
+	case N_ERROR:
+		return prefix_error.AsCharPtr();
+	case N_EXCEPTION:
+		return prefix_exception.AsCharPtr();
+	case N_SYSTEM:
+		return prefix_system.AsCharPtr();
+	default:
+		return nullptr;
+	}
+}
+
 } // namespace Dynui

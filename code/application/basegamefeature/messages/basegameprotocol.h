@@ -1,14 +1,12 @@
-// NIDL #version:39#
-#ifdef __WIN32__
-#define NOMINMAX
-#endif
+// NIDL #version:48#
 #pragma once
 //------------------------------------------------------------------------------
 /**
     This file was generated with Nebula's IDL compiler tool.
     DO NOT EDIT
 */
-#include "pybind11/pybind11.h"
+#include "game/entity.h"
+#include "game/messaging/message.h"
 //------------------------------------------------------------------------------
 namespace Msg
 {
@@ -120,10 +118,4 @@ public:
     }
 };
         
-PYBIND11_MODULE(basegameprotocol, m)
-{
-    m.doc() = "namespace Msg";
-    m.def("SetLocalTransform", &SetLocalTransform::Send, "Set the local transform of an entity.");
-    m.def("SetWorldTransform", &SetWorldTransform::Send, "Set the world transform on an entity");
-}
 } // namespace Msg
