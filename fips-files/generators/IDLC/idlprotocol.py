@@ -62,6 +62,9 @@ public:
 
         ))
 
+
+
+def WriteMessageImplementation(f, document):
     # We need to set all messages within the same module at the same time.
     f.WriteLine("PYBIND11_MODULE({}, m)".format(f.fileName))
     f.WriteLine("{")

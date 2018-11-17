@@ -59,9 +59,6 @@ class IDLCodeGenerator:
         if "components" in self.document:
             attributeLibraries.append("game/component/component.h")
 
-        if "messages" in self.document:
-            attributeLibraries.append("#include <pybind11/pybind11.h>")
-
         IDLDocument.WriteIncludeHeader(f)
         IDLComponent.WriteIncludes(f, attributeLibraries)
 
@@ -136,6 +133,11 @@ class IDLCodeGenerator:
         IDLDocument.WriteSourceHeader(f, srcFileName)
         IDLDocument.AddInclude(f, hdrInclude)
 
+        hasMessages = "messages" in self.document
+
+        if hasMessages:
+            IDLDocument.AddInclude(f, "scripting/bindings.h")
+
         if "attributes" in self.document:
             IDLDocument.BeginNamespaceOverride(f, self.document, "Attr")
             IDLAttribute.WriteAttributeDefinitions(f, self.document)
@@ -151,14 +153,21 @@ class IDLCodeGenerator:
                 self.document["attributes"].update(deps)
                 fstream.close()
 
-        if "components" in self.document:
+        hasComponents = "components" in self.document
+        if hasComponents or hasMessages:
             IDLDocument.BeginNamespace(f, self.document)
-            namespace = IDLDocument.GetNamespace(self.document)
-            for componentName, component in self.document["components"].items():
-                f.WriteLine("")
-                componentWriter = IDLComponent.ComponentClassWriter(f, self.document, component, componentName, namespace)
-                componentWriter.WriteClassImplementation()
-                f.WriteLine("")
+
+            if hasMessages:
+                IDLProtocol.WriteMessageDeclarations(f, self.document)
+
+            if hasComponents:
+                namespace = IDLDocument.GetNamespace(self.document)
+                for componentName, component in self.document["components"].items():
+                    f.WriteLine("")
+                    componentWriter = IDLComponent.ComponentClassWriter(f, self.document, component, componentName, namespace)
+                    componentWriter.WriteClassImplementation()
+                    f.WriteLine("")
+
             IDLDocument.EndNamespace(f, self.document)
 
         f.Close()
