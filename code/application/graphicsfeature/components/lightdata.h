@@ -1,10 +1,11 @@
-// NIDL #version:39#
+// NIDL #version:48#
 #pragma once
 //------------------------------------------------------------------------------
 /**
     This file was generated with Nebula's IDL compiler tool.
     DO NOT EDIT
 */
+#include "game/entity.h"
 #include "game/component/component.h"
 #include "game/attr/attrid.h"
 
