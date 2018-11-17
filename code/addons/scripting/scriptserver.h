@@ -15,7 +15,6 @@
 #include "core/refcounted.h"
 #include "core/singleton.h"
 #include "io/uri.h"
-#include "debug/scriptingpagehandler.h"
 #include "util/variant.h"
 
 //------------------------------------------------------------------------------
@@ -41,11 +40,8 @@ public:
     /// set debugging with the HTTP interface
     void SetDebug(const bool b);    
     /// evaluate a script statement in a string
-    virtual bool Eval(const Util::String& str);
-    /// evaluate a script file
-    virtual bool EvalScript(const IO::URI& uri);
-protected:
-	Ptr<Debug::ScriptingPageHandler> pageHandler;
+    virtual bool Eval(const Util::String& str) { return false; }
+protected:	
     bool isOpen;
     bool debug;
 };

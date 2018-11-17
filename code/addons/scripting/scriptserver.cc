@@ -6,7 +6,6 @@
 #include "stdneb.h"
 #include "scripting/scriptserver.h"
 #include "io/console.h"
-#include "http/httpserverproxy.h"
 
 namespace Scripting
 {
@@ -43,14 +42,6 @@ ScriptServer::Open()
 {
     n_assert(!this->isOpen);
     this->isOpen = true;
-#if __NEBULA_HTTP__
-    if (this->debug)
-    {
-	    // create handler for http debug requests
-	    this->pageHandler = Debug::ScriptingPageHandler::Create();
-	    Http::HttpServerProxy::Instance()->AttachRequestHandler(this->pageHandler.cast<Http::HttpRequestHandler>());
-    }
-#endif
     return true;
 }
 
