@@ -129,10 +129,6 @@ void
 GraphicsComponent::Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances)
 {
 	Game::Deserialize(reader, component.data.GetArray<GraphicsComponentData::MODELRESOURCE>(), offset, numInstances);
-
-	// make sure to set fill the rest of the arrays.
-	component.data.GetArray<GraphicsComponentData::GRAPHICSENTITY>().SetSize(offset + numInstances);
-	component.data.GetArray<GraphicsComponentData::GRAPHICSENTITY>().Fill(offset, numInstances, Attr::GraphicsEntity.GetDefaultValue().GetUInt());
 }
 
 } // namespace GraphicsFeature
