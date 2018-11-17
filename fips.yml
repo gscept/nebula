@@ -32,6 +32,8 @@ imports:
         git: https://github.com/fungos/fips-imgui.git
     fips-nfd:
         git: https://github.com/fungos/fips-nfd.git
+    fips-pybind11:
+        git: https://git.ikplus.de/nebula/fips-pybind11.git
 
 exports:
     header-dirs : 

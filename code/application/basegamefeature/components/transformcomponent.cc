@@ -382,17 +382,6 @@ TransformComponent::Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset
 	// Only serialize the ones we want.
 	Game::Deserialize(reader, component.data.GetArray<AttrIndex::LOCALTRANSFORM>(), offset, numInstances);
 	Game::Deserialize(reader, component.data.GetArray<AttrIndex::WORLDTRANSFORM>(), offset, numInstances);
-
-	// make sure to set fill the rest of the arrays.
-	component.data.GetArray<AttrIndex::PARENT>().SetSize(offset + numInstances);
-	component.data.GetArray<AttrIndex::FIRSTCHILD>().SetSize(offset + numInstances);
-	component.data.GetArray<AttrIndex::NEXTSIBLING>().SetSize(offset + numInstances);
-	component.data.GetArray<AttrIndex::PREVIOUSSIBLING>().SetSize(offset + numInstances);
-
-	component.data.GetArray<AttrIndex::PARENT>().Fill(offset, numInstances, Attr::Parent.GetDefaultValue().GetUInt());
-	component.data.GetArray<AttrIndex::FIRSTCHILD>().Fill(offset, numInstances, Attr::Parent.GetDefaultValue().GetUInt());
-	component.data.GetArray<AttrIndex::NEXTSIBLING>().Fill(offset, numInstances, Attr::Parent.GetDefaultValue().GetUInt());
-	component.data.GetArray<AttrIndex::PREVIOUSSIBLING>().Fill(offset, numInstances, Attr::Parent.GetDefaultValue().GetUInt());
 }
 
 } // namespace Game

@@ -52,7 +52,6 @@ template<class X>
 __forceinline typename std::enable_if<std::is_trivial<X>::value == true, void>::type
 Deserialize(const Ptr<IO::BinaryReader>& reader, Util::Array<X>& data, uint32_t offset, uint32_t numInstances)
 {
-	data.SetSize(offset + numInstances);
 	reader->ReadRawData((void*)&data[offset], numInstances * data.TypeSize());
 }
 
@@ -73,7 +72,6 @@ template<>
 __forceinline void
 Deserialize<Game::Entity>(const Ptr<IO::BinaryReader>& reader, Util::Array<Game::Entity>& data, uint32_t offset, uint32_t numInstances)
 {
-	data.SetSize(offset + numInstances);
 	reader->ReadRawData((void*)&data[offset], numInstances * data.TypeSize());
 }
 
@@ -94,7 +92,6 @@ template<>
 __forceinline void
 Deserialize<Math::matrix44>(const Ptr<IO::BinaryReader>& reader, Util::Array<Math::matrix44>& data, uint32_t offset, uint32_t numInstances)
 {
-	data.SetSize(offset + numInstances);
 	reader->ReadRawData((void*)&data[offset], numInstances * data.TypeSize());
 }
 
@@ -115,7 +112,6 @@ template<>
 __forceinline void
 Deserialize<Math::float4>(const Ptr<IO::BinaryReader>& reader, Util::Array<Math::float4>& data, uint32_t offset, uint32_t numInstances)
 {
-	data.SetSize(offset + numInstances);
 	reader->ReadRawData((void*)&data[offset], numInstances * data.TypeSize());
 }
 
@@ -140,7 +136,6 @@ template<>
 __forceinline void
 Deserialize<Util::String>(const Ptr<IO::BinaryReader>& reader, Util::Array<Util::String>& data, uint32_t offset, uint32_t numInstances)
 {
-	data.SetSize(offset + numInstances);
 	// read each string
 	for (SizeT i = 0; i < numInstances; ++i)
 	{
