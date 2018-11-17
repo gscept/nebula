@@ -59,6 +59,7 @@ struct LightServerState
 	} local;
 
 	CoreGraphics::ResourceTableId localLightsResourceTable;
+	CoreGraphics::ResourceTableId lightsbatchResourceTable;
 	CoreGraphics::ConstantBufferId localLightsConstantBuffer;			// use for all lights
 	CoreGraphics::ConstantBufferId localLightsShadowConstantBuffer;		// only use for shadowcasting lights
 
@@ -146,6 +147,9 @@ LightContext::Create()
 	lightServerState.spotLightMesh = Resources::CreateResource("msh:system/spotlightshape.nvx2", "system", nullptr, nullptr, true);
 	lightServerState.pointLightMesh = Resources::CreateResource("msh:system/pointlightshape.nvx2", "system", nullptr, nullptr, true);
 	lightServerState.spotLightDefaultProjection = Resources::CreateResource("tex:system/spotlight.dds", "system", nullptr, nullptr, true);
+
+	// setup batch table (contains all the samplers and such)
+	lightServerState.lightsbatchResourceTable = ShaderCreateResourceTable(lightServerState.lightShader, NEBULA_BATCH_GROUP);
 
 	DisplayMode mode = WindowGetDisplayMode(DisplayDevice::Instance()->GetCurrentWindow());
 	lightServerState.fsq.Setup(mode.GetWidth(), mode.GetHeight());
@@ -539,6 +543,9 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIn
 void 
 LightContext::RenderLights()
 {
+	// bind the batch-local resource table here so it will propagate to all light shaders
+	CoreGraphics::SetResourceTable(lightServerState.lightsbatchResourceTable, NEBULA_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
+
 	// begin batch
 	CoreGraphics::BeginBatch(Frame::FrameBatchType::Lights);
 
@@ -553,8 +560,11 @@ LightContext::RenderLights()
 
 		// draw
 		lightServerState.fsq.ApplyMesh();
-		CoreGraphics::Draw();
+		CoreGraphics::SetResourceTable(lightServerState.lightsbatchResourceTable, NEBULA_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
+		//CoreGraphics::Draw();
 	}
+
+	/*
 
 	// first bind pointlight mesh
 	CoreGraphics::MeshBind(lightServerState.pointLightMesh, 0);
@@ -592,6 +602,8 @@ LightContext::RenderLights()
 		// draw point light!
 		CoreGraphics::Draw();
 	}
+	*/
+
 	CoreGraphics::EndBatch();
 }
 

@@ -239,7 +239,7 @@ CreatePass(const PassCreateInfo& info)
 		for (; j < 8; j++)
 		{
 			VkAttachmentReference& ref = inputs[j];
-			ref.attachment = VK_ATTACHMENT_UNUSED;
+			ref.attachment = 0; // this is bogus, but... 
 			ref.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		}
 
