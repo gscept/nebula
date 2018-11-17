@@ -561,10 +561,10 @@ LightContext::RenderLights()
 		// draw
 		lightServerState.fsq.ApplyMesh();
 		CoreGraphics::SetResourceTable(lightServerState.lightsbatchResourceTable, NEBULA_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
-		//CoreGraphics::Draw();
+		CoreGraphics::Draw();
 	}
 
-	/*
+
 
 	// first bind pointlight mesh
 	CoreGraphics::MeshBind(lightServerState.pointLightMesh, 0);
@@ -602,8 +602,6 @@ LightContext::RenderLights()
 		// draw point light!
 		CoreGraphics::Draw();
 	}
-	*/
-
 	CoreGraphics::EndBatch();
 }
 

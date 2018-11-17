@@ -49,6 +49,17 @@
       </ArrayItems>
     </Expand>
   </Type>
+  <Type Name="Util::ArrayStack&lt;*&gt;">
+    <DisplayString>Size={size}, Capacity={capacity}</DisplayString>
+    <Expand>
+      <Item Name="[Size]">size</Item>
+      <Item Name="[Capacity]">capacity</Item>
+      <ArrayItems>
+        <Size>size</Size>
+        <ValuePointer>elements</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
   <Type Name="Util::KeyValuePair&lt;*,*&gt;">
     <DisplayString>Key={keyData}, Value={valueData}</DisplayString>
     <Expand>
