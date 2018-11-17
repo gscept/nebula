@@ -329,7 +329,7 @@ ModelContext::OnRenderDebug(uint32_t flags)
     {
         const ModelInstanceId& instance = instances[i];
         if (instance == ModelInstanceId::Invalid()) continue;
-        Im3d::Im3dContext::DrawBox(instanceBoxes[instance.instance], white, Im3d::CheckDepth);
+        Im3d::Im3dContext::DrawBox(instanceBoxes[instance.instance], white, Im3d::CheckDepth|Im3d::Wireframe);
         Im3d::Im3dContext::DrawOrientedBox(transforms[instance.instance], modelBoxes[instance.model], gray, Im3d::CheckDepth);
     }
 }
