@@ -7,17 +7,6 @@
 #define SKINNING_FXH
 #include "lib/shared.fxh"
 
-/*
-shared buffers=1024 varblock Joints
-{
-	mat4 JointPalette[96];
-};
-*/
-group(INSTANCE_GROUP) shared varblock JointBlock [ bool DynamicOffset = true; string Visibility = "VS"; ]
-{
-	mat4 JointPalette[256];
-};
-
 sampler2D JointInstanceTexture;
 
 //------------------------------------------------------------------------------

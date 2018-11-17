@@ -9,11 +9,6 @@
 
 #include "lib/defaultsamplers.fxh"
 
-group(FRAME_GROUP) shared varblock ShadowMatrixBlock [ bool DynamicOffset = true; string Visibility = "VS|GS"; ]
-{
-	mat4 ViewMatrixArray[6];
-};
-
 const float DepthScaling = 5.0f;
 const float DarkeningFactor = 1.0f;
 const float ShadowConstant = 100.0f;

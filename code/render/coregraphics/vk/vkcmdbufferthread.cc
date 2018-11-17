@@ -114,7 +114,7 @@ VkCmdBufferThread::DoWork()
 			case PushRange:
 				n_assert(this->commandBuffer != VK_NULL_HANDLE);
 				n_assert(this->pipelineLayout != VK_NULL_HANDLE);
-				vkCmdPushConstants(this->commandBuffer, cmd.pushranges.layout, cmd.pushranges.stages, cmd.pushranges.offset, cmd.pushranges.size, cmd.pushranges.data);
+				vkCmdPushConstants(this->commandBuffer, this->pipelineLayout, cmd.pushranges.stages, cmd.pushranges.offset, cmd.pushranges.size, cmd.pushranges.data);
 				Memory::Free(Memory::ScratchHeap, cmd.pushranges.data);
 				break;
 			case Viewport:

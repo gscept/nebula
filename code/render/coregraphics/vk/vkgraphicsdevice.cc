@@ -984,7 +984,7 @@ NebulaVulkanDebugCallback(
 
 	for (IndexT i = 0; i < sizeof(ignore) / sizeof(int32_t); i++)
 	{
-		if (callbackData->messageIdNumber == ignore[i]) return true;
+		if (callbackData->messageIdNumber == ignore[i]) return VK_FALSE;
 	}
 
 	if (severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
@@ -995,7 +995,7 @@ NebulaVulkanDebugCallback(
 	{
 		n_warning("VULKAN WARNING: %s\n", callbackData->pMessage);
 	}
-	return false;
+	return VK_FALSE;
 }
 
 
@@ -2313,6 +2313,7 @@ EndBatch()
 	n_assert(state.inBeginBatch);
 	n_assert(state.pass != PassId::Invalid());
 
+	state.currentProgram = -1;
 	state.inBeginBatch = false;
 	PassEndBatch(state.pass);
 
