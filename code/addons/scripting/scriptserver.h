@@ -20,7 +20,7 @@
 //------------------------------------------------------------------------------
 namespace Scripting
 {
-class Command;
+
 
 class ScriptServer : public Core::RefCounted
 {
