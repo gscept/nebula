@@ -180,7 +180,7 @@ CreatePass(const PassCreateInfo& info)
 
 		// resize arrays straight away since we already know the size
 		references.Resize(info.colorAttachments.Size());
-		inputs.Resize(8);
+		inputs.Resize(subpass.inputs.Size());
 		preserves.Resize(info.colorAttachments.Size() - subpass.attachments.Size());
 		if (subpass.resolve) resolves.Resize(subpass.attachments.Size());
 
@@ -223,7 +223,6 @@ CreatePass(const PassCreateInfo& info)
 			if (subpass.resolve) resolves[j] = ref;
 		}
 
-
 		for (j = 0; j < subpass.inputs.Size(); j++)
 		{
 			VkAttachmentReference& ref = inputs[j];
@@ -235,32 +234,23 @@ CreatePass(const PassCreateInfo& info)
 			allAttachments.EraseIndex(index);
 		}
 
-		// fill the rest of the subpass attachments with bullshit
-		for (; j < 8; j++)
-		{
-			VkAttachmentReference& ref = inputs[j];
-			ref.attachment = 0; // this is bogus, but... 
-			ref.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		}
-
 		for (j = 0; j < allAttachments.Size(); j++)
 		{
-			VkAttachmentReference& ref = references[usedAttachments + preserveAttachments];
-			ref.attachment = VK_ATTACHMENT_UNUSED;
-			ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+			VkAttachmentReference& ref = references[allAttachments[j]];
+			ref.attachment = allAttachments[j];
+			ref.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 			preserves[preserveAttachments] = allAttachments[j];
 			preserveAttachments++;
 		}
-
 
 		for (j = 0; j < subpass.dependencies.Size(); j++)
 		{
 			VkSubpassDependency dep;
 			dep.srcSubpass = subpass.dependencies[j];
-			dep.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+			dep.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 			dep.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 			dep.dstSubpass = i;
-			dep.dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+			dep.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 			dep.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
 			dep.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 			subpassDeps.Append(dep);
@@ -275,6 +265,10 @@ CreatePass(const PassCreateInfo& info)
 		{
 			vksubpass.inputAttachmentCount = inputs.Size();
 			vksubpass.pInputAttachments = inputs.IsEmpty() ? nullptr : inputs.Begin();
+		}
+		else
+		{
+			vksubpass.inputAttachmentCount = 0;
 		}
 
 		// the rest are automatically preserve

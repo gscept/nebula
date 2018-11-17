@@ -458,7 +458,9 @@ MaterialType::ApplyInstance(const SurfaceInstanceId id)
 {
 	n_assert(this->currentBatch != CoreGraphics::BatchGroup::InvalidBatchGroup);
 	n_assert(this->currentSurfaceBatchIndex != InvalidIndex);
-	CoreGraphics::SetResourceTable(this->surfaceAllocator.Get<InstanceTable>(id.surface)[this->currentSurfaceBatchIndex], NEBULA_INSTANCE_GROUP, CoreGraphics::GraphicsPipeline, this->surfaceInstanceAllocator.Get<ConstantBufferOffsets>(id.instance)[this->currentSurfaceBatchIndex]);
+	const CoreGraphics::ResourceTableId table = this->surfaceAllocator.Get<InstanceTable>(id.surface)[this->currentSurfaceBatchIndex];
+	if (table != CoreGraphics::ResourceTableId::Invalid())
+		CoreGraphics::SetResourceTable(table, NEBULA_INSTANCE_GROUP, CoreGraphics::GraphicsPipeline, this->surfaceInstanceAllocator.Get<ConstantBufferOffsets>(id.instance)[this->currentSurfaceBatchIndex]);
 }
 
 //------------------------------------------------------------------------------

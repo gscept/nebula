@@ -34,6 +34,41 @@ public:
 	{
 		VkPipelineVertexInputStateCreateInfo info;
 		Util::Array<VkVertexInputAttributeDescription> attrs;
+
+		DerivativeLayout()
+		{
+
+		}
+		DerivativeLayout(const DerivativeLayout& rhs)
+		{
+			this->info = rhs.info;
+			this->attrs = rhs.attrs;
+			this->info.vertexAttributeDescriptionCount = this->attrs.Size();
+			this->info.pVertexAttributeDescriptions = this->attrs.Begin();
+		}
+		DerivativeLayout(DerivativeLayout&& rhs)
+		{
+			this->info = rhs.info;
+			this->attrs = std::move(rhs.attrs);
+			this->info.vertexAttributeDescriptionCount = this->attrs.Size();
+			this->info.pVertexAttributeDescriptions = this->attrs.Begin();
+		}
+
+		void operator=(const DerivativeLayout& rhs)
+		{
+			this->info = rhs.info;
+			this->attrs = rhs.attrs;
+			this->info.vertexAttributeDescriptionCount = this->attrs.Size();
+			this->info.pVertexAttributeDescriptions = this->attrs.Begin();
+		}
+
+		void operator=(DerivativeLayout&& rhs)
+		{
+			this->info = rhs.info;
+			this->attrs = std::move(rhs.attrs);
+			this->info.vertexAttributeDescriptionCount = this->attrs.Size();
+			this->info.pVertexAttributeDescriptions = this->attrs.Begin();
+		}
 	};
 
 	struct BindInfo
