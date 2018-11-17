@@ -436,22 +436,21 @@ HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::AddUnique(const KEYTYPE& 
 {
 	// get hash code from key, trim to capacity
 	IndexT hashIndex = GetHashCode<KEYTYPE>(key);
+	IndexT elementIndex = InvalidIndex;
 	ArrayStack<KeyValuePair<KEYTYPE, VALUETYPE>, STACK_SIZE>& hashElements = this->hashArray[hashIndex];
 	if (hashElements.Size() == 0)
 	{
-		this->Add(key, VALUETYPE());
+		elementIndex = this->Add(key, VALUETYPE());
 	}
-	else if (hashElements.Size() > 1)
+	else
 	{
-		IndexT hashElementIndex = hashElements.BinarySearchIndex(key);
-		if (hashElementIndex == InvalidIndex)
+		elementIndex = hashElements.BinarySearchIndex(key);
+		if (elementIndex == InvalidIndex)
 		{
-			hashElementIndex = this->Add(key, VALUETYPE());
+			elementIndex = this->Add(key, VALUETYPE());
 		}
-		return hashElements[hashElementIndex].Value();
 	}
-	return hashElements[0].Value();
-
+	return hashElements[elementIndex].Value();
 }
 
 //------------------------------------------------------------------------------

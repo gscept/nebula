@@ -141,13 +141,15 @@ VkVertexSignaturePool::GetDerivativeLayout(const CoreGraphics::VertexLayoutId la
 	const BindInfo& bindInfo = this->Get<2>(layout.allocId);
 	const VkPipelineVertexInputStateCreateInfo& baseInfo = this->Get<1>(layout.allocId);
 	const Ids::Id64 shaderHash = shader.HashCode64();
-	if (hashTable.Contains(shaderHash))
+	IndexT i = hashTable.FindIndex(shaderHash);
+	if (i != InvalidIndex)
 	{
-		return &hashTable[shaderHash].info;
+		return &hashTable.ValueAtIndex(shaderHash, i).info;
 	}
 	else
 	{
-		DerivativeLayout& layout = hashTable.AddUnique(shaderHash);
+		IndexT index = hashTable.Add(shaderHash, {});
+		DerivativeLayout& layout = hashTable.ValueAtIndex(shaderHash, index);
 		AnyFX::VkProgram* program = CoreGraphics::shaderPool->GetProgram(shader);
 		layout.info = baseInfo;
 
@@ -169,7 +171,7 @@ VkVertexSignaturePool::GetDerivativeLayout(const CoreGraphics::VertexLayoutId la
 
 		layout.info.vertexAttributeDescriptionCount = layout.attrs.Size();
 		layout.info.pVertexAttributeDescriptions = layout.attrs.Begin();
-		return &hashTable[shaderHash].info;
+		return &layout.info;
 	}
 }
 
