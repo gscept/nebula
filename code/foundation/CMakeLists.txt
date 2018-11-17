@@ -49,7 +49,7 @@ fips_begin_module(foundation)
 			memorypool.h
 			poolarrayallocator.cc
 			poolarrayallocator.h
-			ringallocator.h			
+			ringallocator.h	
 			debug/memorypagehandler.cc
 			debug/memorypagehandler.h
 		)
@@ -173,6 +173,8 @@ fips_begin_module(foundation)
             jsonreader.h
 			jsonwriter.cc
             jsonwriter.h
+            filedialog.cc
+            filedialog.h
 			mediatype.h
 			memorystream.cc
 			memorystream.h

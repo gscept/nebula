@@ -30,6 +30,8 @@ imports:
         group: misc
     fips-imgui:
         git: https://github.com/fungos/fips-imgui.git
+    fips-nfd:
+        git: https://github.com/fungos/fips-nfd.git
 
 exports:
     header-dirs : 
