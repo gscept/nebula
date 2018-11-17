@@ -12,7 +12,7 @@ class IDLCodeGenerator:
     def __init__(self):
         self.document = None
         self.documentPath = ""
-        self.version = 0;
+        self.version = 0
 
     #------------------------------------------------------------------------------
     ##
@@ -59,6 +59,9 @@ class IDLCodeGenerator:
         if "components" in self.document:
             attributeLibraries.append("game/component/component.h")
 
+        if "messages" in self.document:
+            attributeLibraries.append("#include <pybind11/pybind11.h>")
+
         IDLDocument.WriteIncludeHeader(f)
         IDLComponent.WriteIncludes(f, attributeLibraries)
 
@@ -79,7 +82,7 @@ class IDLCodeGenerator:
             IDLDocument.EndNamespaceOverride(f, self.document, "Attr")
             f.WriteLine("")
 
-        
+
 
         # Add additional dependencies to document.
         if "dependencies" in self.document:
@@ -109,7 +112,7 @@ class IDLCodeGenerator:
                     componentWriter.WriteClassDeclaration()
 
             IDLDocument.EndNamespace(f, self.document)
-        
+
         f.Close()
 
         return requiresSourceFile

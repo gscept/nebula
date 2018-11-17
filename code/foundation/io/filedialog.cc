@@ -9,12 +9,13 @@
 
 namespace IO
 {
-
+namespace FileDialog
+{
 //------------------------------------------------------------------------------
 /**
 */
 bool 
-FileDialog::OpenFile(const IO::URI & start, const Util::String& filters, Util::String& path)
+OpenFile(const IO::URI & start, const Util::String& filters, Util::String& path)
 {
     Util::String localpath = start.LocalPath();
 
@@ -34,7 +35,7 @@ FileDialog::OpenFile(const IO::URI & start, const Util::String& filters, Util::S
 /**
 */
 bool 
-FileDialog::OpenFolder(const IO::URI & start, Util::String& path)
+OpenFolder(const IO::URI & start, Util::String& path)
 {
     Util::String localpath = start.LocalPath();
 
@@ -55,7 +56,7 @@ FileDialog::OpenFolder(const IO::URI & start, Util::String& path)
 /**
 */
 bool 
-FileDialog::SaveFile(const IO::URI & start, const Util::String& filters, Util::String& path)
+SaveFile(const IO::URI & start, const Util::String& filters, Util::String& path)
 {
     Util::String localpath = start.LocalPath();
 
@@ -71,4 +72,6 @@ FileDialog::SaveFile(const IO::URI & start, const Util::String& filters, Util::S
     }
     return false;
 }
-}
+
+} // namespace FileDialog
+} // namespace IO
