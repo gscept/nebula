@@ -290,6 +290,7 @@ void Component<TYPES...>::Allocate(const uint& num, std::index_sequence<Is...>)
 	(void)expander
 	{
 		0, (
+		this->data.GetArray<Is + 1>().SetSize(first + num),
 		this->data.GetArray<Is + 1>().Fill(first, num, this->attributeIds[Is + 1].GetDefaultValue().Get<typename TYPES::AttrDeclType>()),
 		0)...
 	};
