@@ -1,4 +1,4 @@
-// NIDL #version:33#
+// NIDL #version:39#
 //------------------------------------------------------------------------------
 //  lightdata.cc
 //  (C) Individual contributors, see AUTHORS file

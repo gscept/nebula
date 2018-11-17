@@ -1,10 +1,11 @@
-// NIDL #version:33#
+// NIDL #version:39#
 #pragma once
 //------------------------------------------------------------------------------
 /**
     This file was generated with Nebula's IDL compiler tool.
     DO NOT EDIT
 */
+#include "#include <pybind11/pybind11.h>"
 //------------------------------------------------------------------------------
 namespace Msg
 {
@@ -35,4 +36,9 @@ public:
     }
 };
         
+PYBIND11_MODULE(graphicsprotocol, m)
+{
+    m.doc() = "namespace Msg";
+    m.def("SetModel", &SetModel::Send, "Set the model resource.");
+}
 } // namespace Msg

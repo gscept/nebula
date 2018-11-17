@@ -15,15 +15,13 @@
 //------------------------------------------------------------------------------
 namespace IO
 {
-class FileDialog
+namespace FileDialog
 {
-        
-public:
     /// Shows open file dialog 
-    static bool OpenFile(const IO::URI & start, const Util::String& filters, Util::String& path);
+    bool OpenFile(const IO::URI & start, const Util::String& filters, Util::String& path);
     /// Folder selection dialog
-    static bool OpenFolder(const IO::URI & start, Util::String& path);
+    bool OpenFolder(const IO::URI & start, Util::String& path);
     /// Save file dialog
-    static bool SaveFile(const IO::URI & start, const Util::String& filters, Util::String& path);
-};
+    bool SaveFile(const IO::URI & start, const Util::String& filters, Util::String& path);
+}
 }
