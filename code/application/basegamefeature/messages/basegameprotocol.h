@@ -1,11 +1,14 @@
 // NIDL #version:39#
+#ifdef __WIN32__
+#define NOMINMAX
+#endif
 #pragma once
 //------------------------------------------------------------------------------
 /**
     This file was generated with Nebula's IDL compiler tool.
     DO NOT EDIT
 */
-#include "#include <pybind11/pybind11.h>"
+#include "pybind11/pybind11.h"
 //------------------------------------------------------------------------------
 namespace Msg
 {
