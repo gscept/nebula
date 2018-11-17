@@ -5,7 +5,7 @@ import IDLC
 
 #-------------------------------------------------------------------------------
 def generate(input, out_src, out_hdr) :
-    if util.isDirty(Version, [input], [out_src, out_hdr]) :
+    if util.isDirty(Version, [input], [out_hdr]) :
         idlc = IDLC.IDLCodeGenerator()
 
         idlc.SetVersion(Version)
