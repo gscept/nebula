@@ -43,8 +43,6 @@ class IDLCodeGenerator:
         f = filewriter.FileWriter()
         f.Open(hdrPath)
 
-        requiresSourceFile = False
-
         f.WriteLine("// NIDL #version:{}#".format(self.version))
 
         attributeLibraries = []
@@ -55,16 +53,20 @@ class IDLCodeGenerator:
                 fileName = '{}.h'.format(os.path.splitext(dependency)[0]).lower()
                 attributeLibraries.append(fileName)
 
+        attributeLibraries.append("game/entity.h")
 
         if "components" in self.document:
             attributeLibraries.append("game/component/component.h")
+
+        if "messages" in self.document:
+            attributeLibraries.append("game/messaging/message.h")
+            
 
         IDLDocument.WriteIncludeHeader(f)
         IDLComponent.WriteIncludes(f, attributeLibraries)
 
         # Generate attributes include file
-        if "attributes" in self.document:
-            requiresSourceFile = True
+        if "attributes" in self.document:            
             IDLDocument.WriteAttributeLibraryDeclaration(f)
 
         if "enums" in self.document:
@@ -102,7 +104,6 @@ class IDLCodeGenerator:
                 IDLProtocol.WriteMessageDeclarations(f, self.document)
 
             if hasComponents:
-                requiresSourceFile = True
                 namespace = IDLDocument.GetNamespace(self.document)
                 for componentName, component in self.document["components"].items():
                     componentWriter = IDLComponent.ComponentClassWriter(f, self.document, component, componentName, namespace)
@@ -111,8 +112,7 @@ class IDLCodeGenerator:
             IDLDocument.EndNamespace(f, self.document)
 
         f.Close()
-
-        return requiresSourceFile
+        return
 
 
     #------------------------------------------------------------------------------
@@ -120,22 +120,21 @@ class IDLCodeGenerator:
     #
     def GenerateSource(self, srcPath, hdrPath) :
         f = filewriter.FileWriter()
-        f.Open(srcPath)
-
-        f.WriteLine("// NIDL #version:{}#".format(self.version))
-
+        f.Open(srcPath)        
+        f.WriteLine("// NIDL #version:{}#".format(self.version))      
+        f.WriteLine("#ifdef _WIN32\n#define NOMINMAX\n#endif")  
         head, tail = ntpath.split(hdrPath)
         hdrInclude = tail or ntpath.basename(head)
 
         head, tail = ntpath.split(srcPath)
         srcFileName = tail or ntpath.basename(head)
 
-        IDLDocument.WriteSourceHeader(f, srcFileName)
+        IDLDocument.WriteSourceHeader(f, srcFileName)        
         IDLDocument.AddInclude(f, hdrInclude)
 
         hasMessages = "messages" in self.document
 
-        if hasMessages:
+        if hasMessages:            
             IDLDocument.AddInclude(f, "scripting/bindings.h")
 
         if "attributes" in self.document:
@@ -158,7 +157,7 @@ class IDLCodeGenerator:
             IDLDocument.BeginNamespace(f, self.document)
 
             if hasMessages:
-                IDLProtocol.WriteMessageDeclarations(f, self.document)
+                IDLProtocol.WriteMessageImplementation(f, self.document)
 
             if hasComponents:
                 namespace = IDLDocument.GetNamespace(self.document)

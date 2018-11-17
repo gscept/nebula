@@ -4,7 +4,7 @@
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "imguiconsole.h"
-#include "imgui/imgui.h"
+#include "imgui.h"
 #include "input/key.h"
 #include "input/inputserver.h"
 #include "input/keyboard.h"
@@ -34,7 +34,7 @@ TextEditCallback(ImGuiTextEditCallbackData* data)
 
 		Util::Array<Util::String> commands;
 		IndexT i;
-		for (i = 0; i < console->commands.Size(); i++)
+		/*for (i = 0; i < console->commands.Size(); i++)
 		{
 			const Util::String& name = console->commands.KeyAtIndex(i);
 			if (name.FindStringIndex(command) == 0 && name != command)
@@ -42,7 +42,7 @@ TextEditCallback(ImGuiTextEditCallbackData* data)
 				commands.Append(name);
 			}
 		}
-
+        */
 		if (commands.IsEmpty())
 		{
 			n_printf("No completion for '%s'\n", command.AsCharPtr());
@@ -56,6 +56,7 @@ TextEditCallback(ImGuiTextEditCallbackData* data)
 		}
 		else
 		{
+            /*
 			int match_len = command.Length();
 			for (;;)
 			{
@@ -70,7 +71,7 @@ TextEditCallback(ImGuiTextEditCallbackData* data)
 					break;
 				match_len++;
 			}
-
+            
 			if (match_len > 0)
 			{
 				data->DeleteChars((int)(word_start - data->Buf), (int)(word_end - word_start));
@@ -83,6 +84,7 @@ TextEditCallback(ImGuiTextEditCallbackData* data)
 			{
 				n_printf("- %s\n", commands[i].AsCharPtr());
 			}
+            */
 		}
 		
 		
@@ -166,12 +168,13 @@ ImguiConsole::Setup()
 	this->scriptServer = Scripting::ScriptServer::Instance();
 
 	// load commands into dictionary
-	SizeT numCommands = this->scriptServer->GetNumCommands();
+/*	SizeT numCommands = this->scriptServer->GetNumCommands();
 	for (IndexT i = 0; i < numCommands; i++)
 	{
 		const Ptr<Scripting::Command>& command = this->scriptServer->GetCommandByIndex(i);
 		this->commands.Add(command->GetName(), command);
 	}
+    */
 	this->consoleBuffer.SetCapacity(2048);
 }
 
@@ -197,7 +200,7 @@ ImguiConsole::Render()
 	}	
 	if (!this->visible) return;
 	
-	ImGui::Begin("Nebula T Console", NULL, ImVec2(300, 300), -1.0f, ImGuiWindowFlags_NoScrollbar);
+	ImGui::Begin("Nebula Console", NULL, ImVec2(300, 300), -1.0f, ImGuiWindowFlags_NoScrollbar);
 	ImGui::PushItemWidth(ImGui::GetWindowWidth());
 	ImVec2 windowSize = ImGui::GetWindowSize();
 	ImVec2 windowPos = ImGui::GetWindowPos();	
@@ -209,7 +212,7 @@ ImguiConsole::Render()
 		if (moveScroll)
 		{
 			moveScroll = false;
-			ImGui::SetScrollPosHere();
+			ImGui::SetScrollHere();
 		}
 	ImGui::EndChild();
 
@@ -299,7 +302,7 @@ ImguiConsole::Execute(const Util::String& command)
 	Util::Array<Util::String> splits = command.Tokenize(" ");
 	if (splits[0] == "help")
 	{
-		SizeT numCommands = this->scriptServer->GetNumCommands();
+		/*SizeT numCommands = this->scriptServer->GetNumCommands();
 		IndexT i;
 		for (i = 0; i < numCommands; i++)
 		{ 
@@ -309,12 +312,14 @@ ImguiConsole::Execute(const Util::String& command)
 			output.SubstituteString("<br />", "\n");
 			this->consoleBuffer.Add(output);
 		}
+        */
+        this->consoleBuffer.Add("Go away");
 	}
 	else if (splits[0] == "clear")
 	{
 		this->consoleBuffer.Reset();
 	}
-	else if (this->commands.Contains(splits[0]) && splits.Size() == 2)
+/*	else if (this->commands.Contains(splits[0]) && splits.Size() == 2)
 	{
 		if (splits[1] == "help")
 		{
@@ -324,12 +329,13 @@ ImguiConsole::Execute(const Util::String& command)
 		{
 			this->consoleBuffer.Add(this->commands[splits[0]]->GetSyntax());
 		}
-	}
+	}*/
 	else if (!this->scriptServer->Eval(command))
 	{
-		this->consoleBuffer.Add(this->scriptServer->GetError() + "\n");
+		//this->consoleBuffer.Add(this->scriptServer->GetError() + "\n");
 	}
 	
+
 	// add to previous commands
 	this->previousCommands.Append(command);
 }
