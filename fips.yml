@@ -24,6 +24,7 @@ imports:
         group: misc
     fips-bullet:
         git: https://github.com/floooh/fips-bullet.git        
+        cond: "DISABLE_FOR_NOW"
     fips-cjson:
         git: https://github.com/floooh/fips-cjson.git
         cond: "FIPS_LINUX"

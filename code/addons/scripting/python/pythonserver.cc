@@ -3,7 +3,7 @@
 //  (C) 2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #define NOMINMAX
-#include "stdneb.h"
+#include "foundation/stdneb.h"
 #include "scripting/python/pythonserver.h"
 #include "pybind11/embed.h"
 
