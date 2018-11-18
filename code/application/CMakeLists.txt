@@ -106,3 +106,5 @@ fips_begin_module(application)
 		)
 	fips_dir(.)
 fips_end_module()
+
+target_link_options(application PUBLIC "/WHOLEARCHIVE:application")
