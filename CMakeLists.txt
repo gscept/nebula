@@ -11,7 +11,7 @@ include(${FIPS_ROOT_DIR}/cmake/fips.cmake)
 fips_setup(PROJECT Nebula)
 SET(CODE_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/code)
 
-#fips_include_directories(code/foundation)
+fips_include_directories(code/addons)
 fips_include_directories(extlibs/mixed)
 fips_include_directories(extlibs/scripts)
 
