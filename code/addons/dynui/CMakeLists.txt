@@ -3,7 +3,7 @@
 #-------------------------------------------------------------------------------
 
 fips_begin_module(dynui)
-fips_deps(render imgui)
+fips_deps(render imgui scripting)
 fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/resource ${CODE_ROOT}/render ${CODE_ROOT}/foundation)	
 add_shaders(im3d/im3d.fx imgui.fx)
 fips_files(

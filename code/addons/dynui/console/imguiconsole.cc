@@ -2,7 +2,7 @@
 //  imguiconsole.cc
 //  (C) 2012-2016 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "foundation/stdneb.h"
 #include "imguiconsole.h"
 #include "imgui.h"
 #include "input/key.h"

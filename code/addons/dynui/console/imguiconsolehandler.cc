@@ -2,7 +2,7 @@
 //  imguiconsolehandler.cc
 //  (C) 2015-2016 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "foundation/stdneb.h"
 #include "imguiconsolehandler.h"
 #include "io/console.h"
 
