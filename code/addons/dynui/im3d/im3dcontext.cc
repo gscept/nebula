@@ -258,7 +258,7 @@ Im3dContext::DrawSphere(const Math::matrix44& modelTransform, const Math::float4
     Im3d::SetSize(2.0f);    
     Im3d::SetColor(Im3d::Vec4(color));
     Im3d::PushMatrix(modelTransform);
-    Im3d::PushEnableSorting(true);
+    //Im3d::PushEnableSorting(true);
     if (depthFlag & Wireframe)
     {
         Im3d::DrawSphere(Vec3(0.0f), 1.0f, 16);
@@ -267,7 +267,7 @@ Im3dContext::DrawSphere(const Math::matrix44& modelTransform, const Math::float4
     {
         Im3d::DrawSphereFilled(Vec3(0.0f), 1.0f, 64);
     }            
-    Im3d::PopEnableSorting();
+    //Im3d::PopEnableSorting();
     Im3d::PopMatrix();
     if (depthFlag & CheckDepth) Im3d::PopLayerId();
     Im3d::PopDrawState();

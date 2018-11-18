@@ -9,7 +9,6 @@
 */
 #include "scripting/scriptserver.h"
 #include "util/string.h"
-#include "Python.h"
 
 //------------------------------------------------------------------------------
 namespace Scripting
