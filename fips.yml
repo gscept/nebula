@@ -34,7 +34,7 @@ imports:
     fips-nfd:
         git: https://github.com/fungos/fips-nfd.git
     fips-pybind11:
-        git: https://git.ikplus.de/nebula/fips-pybind11.git
+        git: ssh://git@git.ikplus.de:4715/nebula/fips-pybind11.git
 
 exports:
     header-dirs : 
