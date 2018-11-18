@@ -231,7 +231,7 @@ ImguiContext::Create()
 	style.ChildRounding = 2.5f;
 	//style.WindowTitleAlign = ImGuiAlign_Center;
 	//style.WindowRounding = 1.0f;
-	
+
 	ImVec4 nebulaOrange(1.0f, 0.30f, 0.0f, 1.0f);
 	nebulaOrange.w = 0.3f;
 	style.Colors[ImGuiCol_TitleBg] = nebulaOrange;
@@ -247,13 +247,13 @@ ImguiContext::Create()
 	style.Colors[ImGuiCol_ScrollbarGrabHovered] = nebulaOrange;
 	nebulaOrange.w = 0.6f;
 	style.Colors[ImGuiCol_Header] = nebulaOrange;
-	//style.Colors[ImGuiCol_FrameBg] = nebulaOrange;
+	style.Colors[ImGuiCol_FrameBg] = nebulaOrange;
 	nebulaOrange.w = 0.7f;
 	style.Colors[ImGuiCol_HeaderHovered] = nebulaOrange;
-	//style.Colors[ImGuiCol_FrameBgHovered] = nebulaOrange;
+	style.Colors[ImGuiCol_FrameBgHovered] = nebulaOrange;
 	nebulaOrange.w = 0.9f;
 	style.Colors[ImGuiCol_HeaderActive] = nebulaOrange;
-	//style.Colors[ImGuiCol_FrameBgActive] = nebulaOrange;
+	style.Colors[ImGuiCol_FrameBgActive] = nebulaOrange;
 	nebulaOrange.w = 0.7f;	
 	nebulaOrange.w = 0.5f;
 	style.Colors[ImGuiCol_Button] = nebulaOrange;
@@ -261,12 +261,12 @@ ImguiContext::Create()
 	style.Colors[ImGuiCol_ButtonActive] = nebulaOrange;
 	nebulaOrange.w = 0.7f;
 	style.Colors[ImGuiCol_ButtonHovered] = nebulaOrange;	
-	style.Colors[ImGuiCol_Border] = nebulaOrange;
+	style.Colors[ImGuiCol_Border] = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);
 	style.Colors[ImGuiCol_CheckMark] = nebulaOrange;
-	style.Colors[ImGuiCol_PopupBg] = ImVec4(0, 0, 0, 0.2f);
+	style.Colors[ImGuiCol_PopupBg] = ImVec4(0.05f, 0.05f, 0.05f, 0.95f);
 
 	style.Colors[ImGuiCol_Button] = ImVec4(0.3f, 0.3f, 0.33f, 1.0f);
-	style.Colors[ImGuiCol_WindowBg] = ImVec4(0.1f, 0.1f, 0.1f, 1.0f);
+	style.Colors[ImGuiCol_WindowBg] = ImVec4(0.0f, 0.0f, 0.0f, 0.7f);
 	style.Colors[ImGuiCol_FrameBg] = ImVec4(0.2f, 0.25f, 0.25f, 1.0f);
 	style.Colors[ImGuiCol_FrameBgActive] = ImVec4(0.3f, 0.33f, 0.33f, 1.0f);
 	style.Colors[ImGuiCol_FrameBgHovered] = ImVec4(0.3f, 0.33f, 0.33f, 1.0f);
@@ -276,6 +276,7 @@ ImguiContext::Create()
 	style.Colors[ImGuiCol_CheckMark] = ImVec4(1.0f, 0.47f, 0.0f, 1.0f);
 	style.Colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.13f, 0.13f, 0.13f, 1.0f);
 	style.Colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.3f, 0.33f, 0.33f, 1.0f);
+	
 
 	// Keyboard mapping. ImGui will use those indices to peek into the io.KeyDown[] array.
 	io.KeyMap[ImGuiKey_Tab] = Key::Tab;             
