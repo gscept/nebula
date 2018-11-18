@@ -6,7 +6,8 @@
 #include "foundation/stdneb.h"
 #include "scripting/python/pythonserver.h"
 #include "pybind11/embed.h"
-
+#include "Python.h"
+#include "PyLogHook.h"
 using namespace IO;
 
 namespace Scripting
@@ -36,6 +37,8 @@ PythonServer::~PythonServer()
     }
     __DestructSingleton;
 }
+
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -46,7 +49,9 @@ PythonServer::Open()
     if (ScriptServer::Open())
     {
         Py_Initialize();
-
+        tyti::pylog::redirect_stdout([](const char* msg) {n_printf(msg); });
+        tyti::pylog::redirect_stderr([](const char* msg) {n_warning(msg); });
+        
         return true;
     }
     return false;
