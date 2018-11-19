@@ -60,7 +60,7 @@ GraphicsComponent::SetupAcceptedMessages()
 /**
 */
 void
-GraphicsComponent::OnActivate(const uint32_t& instance)
+GraphicsComponent::OnActivate(uint32_t instance)
 {
 	auto gfxEntity = Graphics::CreateEntity();
 	component.data.Get<GraphicsComponentData::GRAPHICSENTITY>(instance) = gfxEntity.id;
@@ -76,7 +76,7 @@ GraphicsComponent::OnActivate(const uint32_t& instance)
 /**
 */
 void
-GraphicsComponent::OnDeactivate(const uint32_t& instance)
+GraphicsComponent::OnDeactivate(uint32_t instance)
 {
 	Graphics::GraphicsEntityId gfxEntity = { component.data.Get<GraphicsComponentData::GRAPHICSENTITY>(instance) };
 	Models::ModelContext::DeregisterEntity(gfxEntity);
@@ -88,7 +88,7 @@ GraphicsComponent::OnDeactivate(const uint32_t& instance)
 /**
 */
 void
-GraphicsComponent::UpdateTransform(const Game::Entity & entity, const Math::matrix44 & transform)
+GraphicsComponent::UpdateTransform(Game::Entity entity, const Math::matrix44 & transform)
 {
 	auto instance = component.GetInstance(entity);
 	if (instance != InvalidIndex)
@@ -102,7 +102,7 @@ GraphicsComponent::UpdateTransform(const Game::Entity & entity, const Math::matr
 /**
 */
 void
-GraphicsComponent::SetModel(const Game::Entity & entity, const Util::String & path)
+GraphicsComponent::SetModel(Game::Entity entity, const Util::String & path)
 {
 	auto instance = component.GetInstance(entity);
 	if (instance != InvalidIndex)

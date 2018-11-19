@@ -20,9 +20,9 @@ def WriteMessageDeclarations(f, document):
         i = 1
         numArgs = len(document["messages"][messageName]["args"])
         for argName, T in document["messages"][messageName]["args"].items():
-            typeString = IDLTypes.GetTypeString(T)
+            typeString = IDLTypes.GetArgumentType(T)
             templateArgs += typeString
-            messageParams += "const {}& {}".format(typeString, argName)
+            messageParams += "{} {}".format(typeString, argName)
             sendArgs += argName
             if i < numArgs:
                 templateArgs += ", "
