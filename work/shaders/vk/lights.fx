@@ -364,7 +364,7 @@ psPoint(
 
 	vec4 lightModColor = vec4(1, 1, 1, 1);
 	if (FlagSet(Flags, USE_PROJECTION_TEX_BITFLAG))
-		vec4 lightModColor = sampleCubeLod(ProjectionTexture, PointLightTextureSampler, projDir, 0);
+		lightModColor = sampleCubeLod(ProjectionTexture, PointLightTextureSampler, projDir, 0);
 	
 	vec4 specColor = subpassLoad(InputAttachments[3]);
 	vec4 albedoColor = subpassLoad(InputAttachments[0]);
