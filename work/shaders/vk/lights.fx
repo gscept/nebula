@@ -254,7 +254,7 @@ psSpot(
 	vec4 lightModColor = vec4(1, 1, 1, 1);
 
 	if (FlagSet(Flags, USE_PROJECTION_TEX_BITFLAG))
-		vec4 lightModColor = sample2DLod(ProjectionTexture, SpotlightTextureSampler, lightSpaceUv, mipSelect);
+		lightModColor = sample2DLod(ProjectionTexture, SpotlightTextureSampler, lightSpaceUv, mipSelect);
 
 	float shadowFactor = 1.0f;
 	if (FlagSet(Flags, USE_SHADOW_BITFLAG))
