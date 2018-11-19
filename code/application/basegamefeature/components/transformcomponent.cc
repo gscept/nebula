@@ -20,11 +20,11 @@ using AttrIndex = TransformComponentData::AttributeIndex;
 /**
 	Default implementations
 */
-uint32_t TransformComponent::RegisterEntity(const Game::Entity& entity) { return component.RegisterEntity(entity); }
-void TransformComponent::DeregisterEntity(const Game::Entity& entity) { component.DeregisterEntity(entity); }
+uint32_t TransformComponent::RegisterEntity(Game::Entity entity) { return component.RegisterEntity(entity); }
+void TransformComponent::DeregisterEntity(Game::Entity entity) { component.DeregisterEntity(entity); }
 void TransformComponent::DestroyAll() { component.DestroyAll(); }
 SizeT TransformComponent::NumRegistered() { return component.NumRegistered(); }
-uint32_t TransformComponent::GetInstance(const Game::Entity& entity) { return component.GetInstance(entity); }
+uint32_t TransformComponent::GetInstance(Game::Entity entity) { return component.GetInstance(entity); }
 
 //------------------------------------------------------------------------------
 /**
@@ -70,7 +70,7 @@ TransformComponent::SetupAcceptedMessages()
 /**
 */
 void
-TransformComponent::SetLocalTransform(const uint32_t& i, const Math::matrix44& val)
+TransformComponent::SetLocalTransform(uint32_t i, const Math::matrix44& val)
 {
 	component.data.Get<AttrIndex::LOCALTRANSFORM>(i) = val;
 	uint32_t parent = component.data.Get<AttrIndex::PARENT>(i);
@@ -115,7 +115,7 @@ TransformComponent::SetLocalTransform(const uint32_t& i, const Math::matrix44& v
 /**
 */
 void
-TransformComponent::SetLocalTransform(const Game::Entity& entity, const Math::matrix44& val)
+TransformComponent::SetLocalTransform(Game::Entity entity, const Math::matrix44& val)
 {
 	uint32_t instance = component.GetInstance(entity);
 	if (instance != InvalidIndex)
@@ -128,7 +128,7 @@ TransformComponent::SetLocalTransform(const Game::Entity& entity, const Math::ma
 /**
 */
 void
-TransformComponent::SetWorldTransform(const uint32_t& instance, const Math::matrix44& val)
+TransformComponent::SetWorldTransform(uint32_t instance, const Math::matrix44& val)
 {
 	n_assert(component.data.Size() > instance);
 	if (component.data.Size() <= instance)
@@ -155,7 +155,7 @@ TransformComponent::SetWorldTransform(const uint32_t& instance, const Math::matr
 /**
 */
 void
-TransformComponent::SetWorldTransform(const Game::Entity& entity, const Math::matrix44& val)
+TransformComponent::SetWorldTransform(Game::Entity entity, const Math::matrix44& val)
 {
 	uint32_t instance = component.GetInstance(entity);
 	if (instance != InvalidIndex)
@@ -168,7 +168,7 @@ TransformComponent::SetWorldTransform(const Game::Entity& entity, const Math::ma
 /**
 */
 Math::matrix44
-TransformComponent::GetLocalTransform(const uint32_t & instance)
+TransformComponent::GetLocalTransform(uint32_t instance)
 {
 	if (instance < component.data.Size())
 		return component.data.Get<AttrIndex::LOCALTRANSFORM>(instance);
@@ -180,7 +180,7 @@ TransformComponent::GetLocalTransform(const uint32_t & instance)
 /**
 */
 Math::matrix44
-TransformComponent::GetLocalTransform(const Game::Entity & entity)
+TransformComponent::GetLocalTransform(Game::Entity entity)
 {
 	return GetLocalTransform(component.GetInstance(entity));
 }
@@ -189,7 +189,7 @@ TransformComponent::GetLocalTransform(const Game::Entity & entity)
 /**
 */
 Math::matrix44
-TransformComponent::GetWorldTransform(const uint32_t & instance)
+TransformComponent::GetWorldTransform(uint32_t instance)
 {
 	if (instance < component.data.Size())
 		return component.data.Get<AttrIndex::WORLDTRANSFORM>(instance);
@@ -201,7 +201,7 @@ TransformComponent::GetWorldTransform(const uint32_t & instance)
 /**
 */
 Math::matrix44
-TransformComponent::GetWorldTransform(const Game::Entity & entity)
+TransformComponent::GetWorldTransform(Game::Entity entity)
 {
 	return GetWorldTransform(component.GetInstance(entity));
 }
@@ -211,7 +211,7 @@ TransformComponent::GetWorldTransform(const Game::Entity & entity)
 /**
 */
 void
-InternalSetParent(const uint32_t& instance, const uint32_t& parentInstance)
+InternalSetParent(uint32_t instance, uint32_t parentInstance)
 {
 	if (instance == InvalidIndex ||
 		instance == parentInstance
@@ -257,7 +257,7 @@ InternalSetParent(const uint32_t& instance, const uint32_t& parentInstance)
 /**
 */
 void
-TransformComponent::SetParents(const uint32_t & start, const uint32_t & end, const Util::Array<Entity>& entities, const Util::Array<uint32_t>& parentIndices)
+TransformComponent::SetParents(uint32_t start, uint32_t end, const Util::Array<Entity>& entities, const Util::Array<uint32_t>& parentIndices)
 {
 	SizeT i = 0;
 	for (SizeT instance = start; instance < end; instance++)
@@ -290,7 +290,7 @@ TransformComponent::SetParents(const uint32_t & start, const uint32_t & end, con
 /**
 */
 void
-TransformComponent::SetParent(const Game::Entity& entity, const Game::Entity& parent)
+TransformComponent::SetParent(Game::Entity entity, Game::Entity parent)
 {
 	uint32_t instance = component.GetInstance(entity);
 	uint32_t parentInstance = component.GetInstance(parent);
@@ -301,7 +301,7 @@ TransformComponent::SetParent(const Game::Entity& entity, const Game::Entity& pa
 /**
 */
 void
-TransformComponent::SetParent(const uint32_t& instance, const uint32_t& parentInstance)
+TransformComponent::SetParent(uint32_t instance, uint32_t parentInstance)
 {
 	InternalSetParent(instance, parentInstance);
 	UpdateHierarchy(instance);
@@ -311,7 +311,7 @@ TransformComponent::SetParent(const uint32_t& instance, const uint32_t& parentIn
 /**
 */
 uint32_t
-TransformComponent::GetParent(const uint32_t& instance)
+TransformComponent::GetParent(uint32_t instance)
 {
 	return component.data.Get<AttrIndex::PARENT>(instance);
 }
@@ -320,7 +320,7 @@ TransformComponent::GetParent(const uint32_t& instance)
 /**
 */
 Game::Entity
-TransformComponent::GetOwner(const uint32_t& instance)
+TransformComponent::GetOwner(uint32_t instance)
 {
 	return component.GetOwner(instance);
 }
@@ -329,7 +329,7 @@ TransformComponent::GetOwner(const uint32_t& instance)
 /**
 */
 uint32_t
-TransformComponent::GetFirstChild(const uint32_t& instance)
+TransformComponent::GetFirstChild(uint32_t instance)
 {
 	return component.data.Get<AttrIndex::FIRSTCHILD>(instance);
 }
@@ -338,7 +338,7 @@ TransformComponent::GetFirstChild(const uint32_t& instance)
 /**
 */
 uint32_t
-TransformComponent::GetNextSibling(const uint32_t& instance)
+TransformComponent::GetNextSibling(uint32_t instance)
 {
 	return component.data.Get<AttrIndex::NEXTSIBLING>(instance);
 }
@@ -347,7 +347,7 @@ TransformComponent::GetNextSibling(const uint32_t& instance)
 /**
 */
 uint32_t
-TransformComponent::GetPreviousSibling(const uint32_t& instance)
+TransformComponent::GetPreviousSibling(uint32_t instance)
 {
 	return component.data.Get<AttrIndex::PREVIOUSSIBLING>(instance);
 }

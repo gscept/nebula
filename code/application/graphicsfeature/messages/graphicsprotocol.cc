@@ -1,4 +1,4 @@
-// NIDL #version:48#
+// NIDL #version:51#
 #ifdef _WIN32
 #define NOMINMAX
 #endif
@@ -14,7 +14,7 @@
 //------------------------------------------------------------------------------
 namespace Msg
 {
-PYBIND11_MODULE(graphicsprotocol, m)
+PYBIND11_EMBEDDED_MODULE(graphicsprotocol, m)
 {
     m.doc() = "namespace Msg";
     m.def("SetModel", &SetModel::Send, "Set the model resource.");

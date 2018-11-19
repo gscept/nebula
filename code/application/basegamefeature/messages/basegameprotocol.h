@@ -1,4 +1,4 @@
-// NIDL #version:48#
+// NIDL #version:51#
 #pragma once
 //------------------------------------------------------------------------------
 /**
@@ -14,21 +14,21 @@ namespace Msg
 //------------------------------------------------------------------------------
 /**
 */
-class SetLocalTransform : public Game::Message<SetLocalTransform, Game::Entity, Math::matrix44>
+class SetLocalTransform : public Game::Message<SetLocalTransform, Game::Entity, Math::matrix44 const&>
 {
 public:
     SetLocalTransform() = delete;
     ~SetLocalTransform() = delete;
     constexpr static const char* GetName() { return "SetLocalTransform"; };
     constexpr static const uint GetFourCC()	{ return 'SLTM'; };
-    static void Send(const Game::Entity& entity, const Math::matrix44& value)
+    static void Send(Game::Entity entity, Math::matrix44 const& value)
     {
         auto instance = Instance();
         SizeT size = instance->callbacks.Size();
         for (SizeT i = 0; i < size; ++i)
             instance->callbacks.Get<1>(i)(entity, value);
     }
-    static void Defer(MessageQueueId qid, const Game::Entity& entity, const Math::matrix44& value)
+    static void Defer(MessageQueueId qid, Game::Entity entity, Math::matrix44 const& value)
     {
         auto instance = Instance();
         SizeT index = Ids::Index(qid.id);
@@ -41,21 +41,21 @@ public:
 //------------------------------------------------------------------------------
 /**
 */
-class SetWorldTransform : public Game::Message<SetWorldTransform, Game::Entity, Math::matrix44>
+class SetWorldTransform : public Game::Message<SetWorldTransform, Game::Entity, Math::matrix44 const&>
 {
 public:
     SetWorldTransform() = delete;
     ~SetWorldTransform() = delete;
     constexpr static const char* GetName() { return "SetWorldTransform"; };
     constexpr static const uint GetFourCC()	{ return 'SWTM'; };
-    static void Send(const Game::Entity& entity, const Math::matrix44& value)
+    static void Send(Game::Entity entity, Math::matrix44 const& value)
     {
         auto instance = Instance();
         SizeT size = instance->callbacks.Size();
         for (SizeT i = 0; i < size; ++i)
             instance->callbacks.Get<1>(i)(entity, value);
     }
-    static void Defer(MessageQueueId qid, const Game::Entity& entity, const Math::matrix44& value)
+    static void Defer(MessageQueueId qid, Game::Entity entity, Math::matrix44 const& value)
     {
         auto instance = Instance();
         SizeT index = Ids::Index(qid.id);
@@ -68,21 +68,21 @@ public:
 //------------------------------------------------------------------------------
 /**
 */
-class UpdateTransform : public Game::Message<UpdateTransform, Game::Entity, Math::matrix44>
+class UpdateTransform : public Game::Message<UpdateTransform, Game::Entity, Math::matrix44 const&>
 {
 public:
     UpdateTransform() = delete;
     ~UpdateTransform() = delete;
     constexpr static const char* GetName() { return "UpdateTransform"; };
     constexpr static const uint GetFourCC()	{ return 'UpdT'; };
-    static void Send(const Game::Entity& entity, const Math::matrix44& value)
+    static void Send(Game::Entity entity, Math::matrix44 const& value)
     {
         auto instance = Instance();
         SizeT size = instance->callbacks.Size();
         for (SizeT i = 0; i < size; ++i)
             instance->callbacks.Get<1>(i)(entity, value);
     }
-    static void Defer(MessageQueueId qid, const Game::Entity& entity, const Math::matrix44& value)
+    static void Defer(MessageQueueId qid, Game::Entity entity, Math::matrix44 const& value)
     {
         auto instance = Instance();
         SizeT index = Ids::Index(qid.id);
@@ -102,14 +102,14 @@ public:
     ~SetParent() = delete;
     constexpr static const char* GetName() { return "SetParent"; };
     constexpr static const uint GetFourCC()	{ return 'SetP'; };
-    static void Send(const Game::Entity& entity, const Game::Entity& parent)
+    static void Send(Game::Entity entity, Game::Entity parent)
     {
         auto instance = Instance();
         SizeT size = instance->callbacks.Size();
         for (SizeT i = 0; i < size; ++i)
             instance->callbacks.Get<1>(i)(entity, parent);
     }
-    static void Defer(MessageQueueId qid, const Game::Entity& entity, const Game::Entity& parent)
+    static void Defer(MessageQueueId qid, Game::Entity entity, Game::Entity parent)
     {
         auto instance = Instance();
         SizeT index = Ids::Index(qid.id);

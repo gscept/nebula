@@ -74,10 +74,10 @@ public:
     }};
 
     /// Registers an entity to this component.
-    uint32_t RegisterEntity(const Game::Entity& entity);
+    uint32_t RegisterEntity(Game::Entity entity);
 
     /// Deregister Entity.
-    void DeregisterEntity(const Game::Entity& entity);
+    void DeregisterEntity(Game::Entity entity);
 
     /// Destroys all instances of this component, and deregisters every entity.
     void DestroyAll();
@@ -162,7 +162,7 @@ public:
     def WriteRegisterEntityImplementation(self):
         self.f.InsertNebulaDivider()
         self.f.WriteLine("uint32_t")
-        self.f.WriteLine("{}::RegisterEntity(const Game::Entity& entity)".format(self.className))
+        self.f.WriteLine("{}::RegisterEntity(Game::Entity entity)".format(self.className))
         self.f.WriteLine("{")
         self.f.IncreaseIndent()
         self.f.WriteLine("auto instance = component_templated_t::RegisterEntity(entity);")
@@ -184,7 +184,7 @@ public:
     def WriteDeregisterEntityImplementation(self):
         self.f.InsertNebulaDivider()
         self.f.WriteLine("void")
-        self.f.WriteLine("{}::DeregisterEntity(const Game::Entity& entity)".format(self.className))
+        self.f.WriteLine("{}::DeregisterEntity(Game::Entity entity)".format(self.className))
         self.f.WriteLine("{")
         self.f.IncreaseIndent()
         self.f.WriteLine("uint32_t index = this->GetInstance(entity);")
