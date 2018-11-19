@@ -1,4 +1,4 @@
-// NIDL #version:48#
+// NIDL #version:51#
 #ifdef _WIN32
 #define NOMINMAX
 #endif
@@ -44,7 +44,7 @@ TagComponentData::~TagComponentData()
 /**
 */
 uint32_t
-TagComponentData::RegisterEntity(const Game::Entity& entity)
+TagComponentData::RegisterEntity(Game::Entity entity)
 {
     auto instance = component_templated_t::RegisterEntity(entity);
     return instance;
@@ -54,7 +54,7 @@ TagComponentData::RegisterEntity(const Game::Entity& entity)
 /**
 */
 void
-TagComponentData::DeregisterEntity(const Game::Entity& entity)
+TagComponentData::DeregisterEntity(Game::Entity entity)
 {
     uint32_t index = this->GetInstance(entity);
     if (index != InvalidIndex)

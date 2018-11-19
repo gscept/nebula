@@ -17,11 +17,11 @@ class GraphicsComponent
 public:
 	static void SetupAcceptedMessages();
 	
-	static void OnActivate(const uint32_t& instance);
-	static void OnDeactivate(const uint32_t& instance);
+	static void OnActivate(uint32_t instance);
+	static void OnDeactivate(uint32_t instance);
 
-	static void UpdateTransform(const Game::Entity&, const Math::matrix44&);
-	static void SetModel(const Game::Entity&, const Util::String&);
+	static void UpdateTransform(Game::Entity, const Math::matrix44&);
+	static void SetModel(Game::Entity, const Util::String&);
 
 private:
 

@@ -50,13 +50,13 @@
 	public: \
 		static void Create(); \
 		static void Discard(); \
-		static uint32_t RegisterEntity(const Game::Entity& entity); \
-		static void DeregisterEntity(const Game::Entity& entity); \
+		static uint32_t RegisterEntity(Game::Entity entity); \
+		static void DeregisterEntity(Game::Entity entity); \
 		static void DestroyAll(); \
 		static SizeT NumRegistered(); \
 		static void Serialize(const Ptr<IO::BinaryWriter>& writer); \
 		static void Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances); \
-		static uint32_t GetInstance(const Game::Entity& entity); \
+		static uint32_t GetInstance(Game::Entity entity); \
 	private:
 
 //------------------------------------------------------------------------------
@@ -66,13 +66,13 @@
 	Remember to write implementations for Create() and Discard()!
 */
 #define __ImplementComponent(COMPONENTTYPE, BASEOBJECT) \
-	uint32_t COMPONENTTYPE::RegisterEntity(const Game::Entity& entity) { return BASEOBJECT.RegisterEntity(entity); } \
-	void COMPONENTTYPE::DeregisterEntity(const Game::Entity& entity) { BASEOBJECT.DeregisterEntity(entity); } \
+	uint32_t COMPONENTTYPE::RegisterEntity(Game::Entity entity) { return BASEOBJECT.RegisterEntity(entity); } \
+	void COMPONENTTYPE::DeregisterEntity(Game::Entity entity) { BASEOBJECT.DeregisterEntity(entity); } \
 	void COMPONENTTYPE::DestroyAll() { BASEOBJECT.DestroyAll(); } \
 	SizeT COMPONENTTYPE::NumRegistered() { return BASEOBJECT.NumRegistered(); } \
 	void COMPONENTTYPE::Serialize(const Ptr<IO::BinaryWriter>& writer) { BASEOBJECT.Serialize(writer); } \
 	void COMPONENTTYPE::Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances) { BASEOBJECT.Deserialize(reader, offset, numInstances); } \
-	uint32_t COMPONENTTYPE::GetInstance(const Game::Entity& entity) { return BASEOBJECT.GetInstance(entity); } 
+	uint32_t COMPONENTTYPE::GetInstance(Game::Entity entity) { return BASEOBJECT.GetInstance(entity); } 
 
 //------------------------------------------------------------------------------
 /**
@@ -81,11 +81,11 @@
 	Remember to write implementations for Create() and Discard()!
 */
 #define __ImplementComponent_woSerialization(COMPONENTTYPE, BASEOBJECT) \
-	uint32_t COMPONENTTYPE::RegisterEntity(const Game::Entity& entity) { return BASEOBJECT.RegisterEntity(entity); } \
-	void COMPONENTTYPE::DeregisterEntity(const Game::Entity& entity) { BASEOBJECT.DeregisterEntity(entity); } \
+	uint32_t COMPONENTTYPE::RegisterEntity(Game::Entity entity) { return BASEOBJECT.RegisterEntity(entity); } \
+	void COMPONENTTYPE::DeregisterEntity(Game::Entity entity) { BASEOBJECT.DeregisterEntity(entity); } \
 	void COMPONENTTYPE::DestroyAll() { BASEOBJECT.DestroyAll(); } \
 	SizeT COMPONENTTYPE::NumRegistered() { return BASEOBJECT.NumRegistered(); } \
-	uint32_t COMPONENTTYPE::GetInstance(const Game::Entity& entity) { return BASEOBJECT.GetInstance(entity); } 
+	uint32_t COMPONENTTYPE::GetInstance(Game::Entity entity) { return BASEOBJECT.GetInstance(entity); } 
 
 namespace Game
 {
@@ -101,10 +101,10 @@ public:
 	SizeT NumRegistered() const;
 
 	/// register an Id. Will create new mapping and allocate instance data. Returns index of new instance data
-	virtual uint32_t RegisterEntity(const Entity& e);
+	virtual uint32_t RegisterEntity(Entity e);
 
 	/// deregister an Id. will only remove the id and zero the block
-	virtual void DeregisterEntity(const Entity& e);
+	virtual void DeregisterEntity(Entity e);
 	
 	/// Destroys all instances and sets all memory used free.
 	void DestroyAll();
@@ -116,16 +116,16 @@ public:
 	void Clean();
 
 	/// Return the owner of a given instance
-	Entity GetOwner(const uint32_t& i) const;
+	Entity GetOwner(uint32_t i) const;
 
 	/// Set the owner of a given instance. This does not care if the entity is registered or not!
-	void SetOwner(const uint32_t& i, const Game::Entity& entity);
+	void SetOwner(uint32_t i, Game::Entity entity);
 
 	/// retrieve the instance id of an external id for faster lookup. Will be made invalid by Optimize()
-	uint32_t GetInstance(const Entity& e) const;
+	uint32_t GetInstance(Entity e) const;
 
 	/// Shortcut to set all instances values to provided values.
-	void SetInstanceData(const uint32_t& index, typename TYPES::AttrDeclType...);
+	void SetInstanceData(uint32_t index, typename TYPES::AttrDeclType...);
 
 	/// Write data into writer.
 	void Serialize(const Ptr<IO::BinaryWriter>& writer) const;
@@ -137,25 +137,25 @@ public:
 	void Allocate(uint num);
 
 	/// Reset instance to default values.
-	void SetToDefault(const uint32_t& instance);
+	void SetToDefault(uint32_t instance);
 
 	/// Callback for when an entity is deleted. Essentially just call DeregisterEntityImmediate
 	void OnEntityDeleted(Game::Entity entity);
 	
 	/// deregister an Id immediately. This will swap the last entity instance with this entitys' assuring a packed array.
-	void DeregisterEntityImmediate(const Entity& e);
+	void DeregisterEntityImmediate(Entity e);
 
 	/// deregister an Id immediately. This will swap the last entity instance with this entitys' assuring a packed array.
-	void DeregisterEntityImmediate(const Entity& e, const uint32_t& index);
+	void DeregisterEntityImmediate(Entity e, uint32_t index);
 
 	/// perform garbage collection. Returns number of erased instances.
 	SizeT Optimize();
 
 	/// Get attribute value as a variant. This is generally quite slow, so use with care!
-	Util::Variant GetAttributeValue(const uint32_t& instance, IndexT attributeIndex);
+	Util::Variant GetAttributeValue(uint32_t instance, IndexT attributeIndex);
 
 	/// Set attribute value as a variant. This is generally quite slow and won't propagate to other components, so use with care!
-	void SetAttributeValue(const uint32_t& instance, IndexT attributeIndex, const Util::Variant& value);
+	void SetAttributeValue(uint32_t instance, IndexT attributeIndex, const Util::Variant& value);
 
 	/// Contains all data for all instances of this component.
 	/// @note	The 0th type is always the owner Entity!
@@ -173,19 +173,19 @@ protected:
 private:
 	/// Expansion method for setting default values of all types of an instance.
 	template<std::size_t...Is>
-	void SetToDefault(const uint32_t& instance, std::index_sequence<Is...>);
+	void SetToDefault(uint32_t instance, std::index_sequence<Is...>);
 
 	/// Allocate num amount of instances. Owner is not automatically set!
 	template<std::size_t...Is>
-	void Allocate(const uint& num, std::index_sequence<Is...>);
+	void Allocate(uint num, std::index_sequence<Is...>);
 
 	/// Get attribute value expansion method
 	template<std::size_t n>
-	Util::Variant GetAttributeValueDynamic(const uint32_t& instance, IndexT attributeIndex);
+	Util::Variant GetAttributeValueDynamic(uint32_t instance, IndexT attributeIndex);
 
 	/// Set attribute value expansion method
 	template<std::size_t n>
-	void SetAttributeValueDynamic(const uint32_t& instance, IndexT attributeIndex, const Util::Variant& value);
+	void SetAttributeValueDynamic(uint32_t instance, IndexT attributeIndex, const Util::Variant& value);
 
 	/// contains free id's that we reuse as soon as possible.
 	Util::Stack<uint32_t> freeIds;
@@ -246,7 +246,7 @@ Component<TYPES ...>::NumRegistered() const
 /**
 */
 template <class ... TYPES>
-void Component<TYPES...>::SetToDefault(const uint32_t& instance)
+void Component<TYPES...>::SetToDefault(uint32_t instance)
 {
 	this->SetToDefault(instance, std::make_index_sequence<sizeof...(TYPES)>());
 }
@@ -256,7 +256,7 @@ void Component<TYPES...>::SetToDefault(const uint32_t& instance)
 */
 template <class ... TYPES>
 template <std::size_t...Is>
-void Component<TYPES...>::SetToDefault(const uint32_t& instance, std::index_sequence<Is...>)
+void Component<TYPES...>::SetToDefault(uint32_t instance, std::index_sequence<Is...>)
 {
 	using expander = int[];
 	(void)expander
@@ -281,7 +281,7 @@ void Component<TYPES...>::Allocate(uint num)
 */
 template <class ... TYPES>
 template <std::size_t...Is>
-void Component<TYPES...>::Allocate(const uint& num, std::index_sequence<Is...>)
+void Component<TYPES...>::Allocate(uint num, std::index_sequence<Is...>)
 {
 	SizeT first = this->data.Size();
 	this->data.Reserve(first + num);
@@ -303,7 +303,7 @@ void Component<TYPES...>::Allocate(const uint& num, std::index_sequence<Is...>)
 /**
 */
 template <class ... TYPES> uint32_t
-Component<TYPES ...>::RegisterEntity(const Entity& e)
+Component<TYPES ...>::RegisterEntity(Entity e)
 {
 	n_assert2(!this->idMap.Contains(e.id), "ID has already been registered.");
 
@@ -329,7 +329,7 @@ Component<TYPES ...>::RegisterEntity(const Entity& e)
 /**
 */
 template <class ... TYPES> void
-Component<TYPES ...>::DeregisterEntity(const Entity& e)
+Component<TYPES ...>::DeregisterEntity(Entity e)
 {
 	n_assert2(this->idMap.Contains(e.id), "Tried to remove an ID that had not been registered.");
 	
@@ -359,7 +359,7 @@ Component<TYPES ...>::OnEntityDeleted(Game::Entity entity)
 /**
 */
 template <class ... TYPES> void
-Component<TYPES ...>::DeregisterEntityImmediate(const Entity& e)
+Component<TYPES ...>::DeregisterEntityImmediate(Entity e)
 {
 	n_assert2(this->idMap.Contains(e.id), "Tried to remove an ID that had not been registered.");
 	uint32_t index = this->idMap[e.id];
@@ -372,7 +372,7 @@ Component<TYPES ...>::DeregisterEntityImmediate(const Entity& e)
 /**
 */
 template <class ... TYPES> void
-Component<TYPES ...>::DeregisterEntityImmediate(const Entity& e, const uint32_t& index)
+Component<TYPES ...>::DeregisterEntityImmediate(Entity e, uint32_t index)
 {
 	auto id = e.id;
 	n_assert2(this->idMap.Contains(id), "Tried to remove an ID that had not been registered.");
@@ -439,7 +439,7 @@ Component<TYPES ...>::Optimize()
 */
 template<typename ... TYPES>
 inline Util::Variant
-Component<TYPES...>::GetAttributeValue(const uint32_t & instance, IndexT attributeIndex)
+Component<TYPES...>::GetAttributeValue(uint32_t instance, IndexT attributeIndex)
 {
 	n_assert2(attributeIndex <= sizeof...(TYPES), "Index out of range");
 	n_assert2(instance < this->data.Size(), "Invalid instance id");
@@ -453,7 +453,7 @@ Component<TYPES...>::GetAttributeValue(const uint32_t & instance, IndexT attribu
 template <class ... TYPES>
 template <std::size_t n>
 Util::Variant
-Component<TYPES...>::GetAttributeValueDynamic(const uint32_t& instance, IndexT attributeIndex)
+Component<TYPES...>::GetAttributeValueDynamic(uint32_t instance, IndexT attributeIndex)
 {
 	if (attributeIndex == n)
 		return this->data.Get<n>(instance);
@@ -466,7 +466,7 @@ Component<TYPES...>::GetAttributeValueDynamic(const uint32_t& instance, IndexT a
 */
 template<typename ... TYPES>
 inline void
-Component<TYPES...>::SetAttributeValue(const uint32_t & instance, IndexT attributeIndex, const Util::Variant & value)
+Component<TYPES...>::SetAttributeValue(uint32_t instance, IndexT attributeIndex, const Util::Variant & value)
 {
 	n_assert2(attributeIndex <= sizeof...(TYPES), "Index out of range");
 	n_assert2(instance < this->data.Size(), "Invalid instance id");
@@ -481,7 +481,7 @@ Component<TYPES...>::SetAttributeValue(const uint32_t & instance, IndexT attribu
 template <class ... TYPES>
 template <std::size_t n>
 void
-Component<TYPES...>::SetAttributeValueDynamic(const uint32_t& instance, IndexT attributeIndex, const Util::Variant& value)
+Component<TYPES...>::SetAttributeValueDynamic(uint32_t instance, IndexT attributeIndex, const Util::Variant& value)
 {
 	if (attributeIndex == n)
 	{
@@ -544,7 +544,7 @@ Component<TYPES ...>::Clean()
 /**
 */
 template <class ... TYPES> Entity
-Component<TYPES ...>::GetOwner(const uint32_t& i) const
+Component<TYPES ...>::GetOwner(uint32_t i) const
 {
 	n_assert(this->data.Size() > i);
 	return this->data.Get<0>(i);
@@ -554,7 +554,7 @@ Component<TYPES ...>::GetOwner(const uint32_t& i) const
 /**
 */
 template<class ... TYPES>
-inline void Component<TYPES ...>::SetOwner(const uint32_t & i, const Game::Entity& entity)
+inline void Component<TYPES ...>::SetOwner(uint32_t i, Game::Entity entity)
 {
 	this->data.Get<0>(i) = entity;
 
@@ -572,7 +572,7 @@ inline void Component<TYPES ...>::SetOwner(const uint32_t & i, const Game::Entit
 /**
 */
 template <class ... TYPES> uint32_t
-Component<TYPES ...>::GetInstance(const Entity& e) const
+Component<TYPES ...>::GetInstance(Entity e) const
 {
 	auto i = this->idMap.FindIndex(e.id);
 	if (i != InvalidIndex)
@@ -588,7 +588,7 @@ Component<TYPES ...>::GetInstance(const Entity& e) const
 /**
 */
 template<class ... TYPES> void
-Component<TYPES...>::SetInstanceData(const uint32_t & index, typename TYPES::AttrDeclType ... values)
+Component<TYPES...>::SetInstanceData(uint32_t index, typename TYPES::AttrDeclType ... values)
 {
 	this->data.Set(index, this->data.Get<0>(index), values...);
 }

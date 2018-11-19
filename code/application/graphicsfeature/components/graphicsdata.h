@@ -1,4 +1,4 @@
-// NIDL #version:48#
+// NIDL #version:51#
 #pragma once
 //------------------------------------------------------------------------------
 /**
@@ -42,10 +42,10 @@ public:
     };
 
     /// Registers an entity to this component.
-    uint32_t RegisterEntity(const Game::Entity& entity);
+    uint32_t RegisterEntity(Game::Entity entity);
 
     /// Deregister Entity.
-    void DeregisterEntity(const Game::Entity& entity);
+    void DeregisterEntity(Game::Entity entity);
 
     /// Destroys all instances of this component, and deregisters every entity.
     void DestroyAll();

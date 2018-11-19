@@ -1,4 +1,4 @@
-// NIDL #version:48#
+// NIDL #version:51#
 #ifdef _WIN32
 #define NOMINMAX
 #endif
@@ -52,7 +52,7 @@ PointLightComponentData::~PointLightComponentData()
 /**
 */
 uint32_t
-PointLightComponentData::RegisterEntity(const Game::Entity& entity)
+PointLightComponentData::RegisterEntity(Game::Entity entity)
 {
     auto instance = component_templated_t::RegisterEntity(entity);
     return instance;
@@ -62,7 +62,7 @@ PointLightComponentData::RegisterEntity(const Game::Entity& entity)
 /**
 */
 void
-PointLightComponentData::DeregisterEntity(const Game::Entity& entity)
+PointLightComponentData::DeregisterEntity(Game::Entity entity)
 {
     uint32_t index = this->GetInstance(entity);
     if (index != InvalidIndex)
@@ -129,7 +129,7 @@ SpotLightComponentData::~SpotLightComponentData()
 /**
 */
 uint32_t
-SpotLightComponentData::RegisterEntity(const Game::Entity& entity)
+SpotLightComponentData::RegisterEntity(Game::Entity entity)
 {
     auto instance = component_templated_t::RegisterEntity(entity);
     Game::EntityManager::Instance()->RegisterDeletionCallback(entity, this);
@@ -140,7 +140,7 @@ SpotLightComponentData::RegisterEntity(const Game::Entity& entity)
 /**
 */
 void
-SpotLightComponentData::DeregisterEntity(const Game::Entity& entity)
+SpotLightComponentData::DeregisterEntity(Game::Entity entity)
 {
     uint32_t index = this->GetInstance(entity);
     if (index != InvalidIndex)
@@ -216,7 +216,7 @@ DirectionalLightComponentData::~DirectionalLightComponentData()
 /**
 */
 uint32_t
-DirectionalLightComponentData::RegisterEntity(const Game::Entity& entity)
+DirectionalLightComponentData::RegisterEntity(Game::Entity entity)
 {
     auto instance = component_templated_t::RegisterEntity(entity);
     Game::EntityManager::Instance()->RegisterDeletionCallback(entity, this);
@@ -227,7 +227,7 @@ DirectionalLightComponentData::RegisterEntity(const Game::Entity& entity)
 /**
 */
 void
-DirectionalLightComponentData::DeregisterEntity(const Game::Entity& entity)
+DirectionalLightComponentData::DeregisterEntity(Game::Entity entity)
 {
     uint32_t index = this->GetInstance(entity);
     if (index != InvalidIndex)
