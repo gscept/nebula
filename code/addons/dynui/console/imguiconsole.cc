@@ -222,7 +222,7 @@ ImguiConsole::Render()
 
 	// Unfortunately we can't use ImGui::Clipper here since each entry might have a different height.
 	// TODO: We could roll our own "clipper".
-
+	ImGui::PushTextWrapPos(ImGui::GetWindowContentRegionMax().x);
 	for (int i = 0; i < consoleBuffer.Size(); i++)
 	{
 		const char* item = consoleBuffer[i].msg.AsCharPtr();
@@ -262,11 +262,11 @@ ImguiConsole::Render()
 		ImGui::TextUnformatted(this->LogEntryTypeAsCharPtr(consoleBuffer[i].type));
 		ImGui::SameLine();
 		//Print log entry
-		ImGui::TextWrapped(item);
+		ImGui::TextUnformatted(item);
 		ImGui::NewLine();
-
 		ImGui::PopStyleColor();
 	}
+	ImGui::PopTextWrapPos();
 
 	if (this->scrollToBottom)
 		ImGui::SetScrollHere();
