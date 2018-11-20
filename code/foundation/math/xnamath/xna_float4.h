@@ -120,6 +120,8 @@ public:
     scalar z() const;
     /// read-only access to w component
     scalar w() const;
+    /// read access to indexed component
+    const scalar& operator[](const int index)const;
 	/// read/write access to indexed component
 	scalar& operator[](const int index);
     /// return length of vector
@@ -572,6 +574,16 @@ __forceinline scalar
 float4::w() const
 {
     return float4::unpack_w(this->vec);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline const scalar&
+float4::operator[](const int index)const 
+{
+    n_assert(index < 4);
+    return this->vec.m128_f32[index];
 }
 
 //------------------------------------------------------------------------------
