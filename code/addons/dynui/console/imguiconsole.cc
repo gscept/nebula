@@ -276,8 +276,11 @@ ImguiConsole::Render()
 		ImGui::PushStyleColor(ImGuiCol_Text, col);
 		ImGui::SameLine();
 		//Print message prefix
-		ImGui::TextUnformatted(this->LogEntryTypeAsCharPtr(consoleBuffer[i].type));
-		ImGui::SameLine();
+		if (consoleBuffer[i].type != N_MESSAGE)
+		{
+			ImGui::TextUnformatted(this->LogEntryTypeAsCharPtr(consoleBuffer[i].type));
+			ImGui::SameLine();
+		}
 		//Print log entry
 		ImGui::TextUnformatted(item);
 		ImGui::NewLine();
@@ -445,8 +448,6 @@ ImguiConsole::LogEntryTypeAsCharPtr(const LogMessageType& type) const
 
 	switch (type)
 	{
-	//case N_MESSAGE:
-	//	return prefix_message.AsCharPtr();
 	case N_INPUT:
 		return prefix_input.AsCharPtr();
 	case N_WARNING:
