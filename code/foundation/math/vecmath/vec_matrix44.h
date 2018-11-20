@@ -1044,8 +1044,8 @@ matrix44::perspfovlh(scalar fovy, scalar aspect, scalar zn, scalar zf)
 
 	scalar dist = zf / (zf - zn);
 #if __VULKAN__
-	height *= -1;
-	dist *= 0.5f;
+	//height *= -1;
+	//dist *= 0.5f;
 #elif __OGL4__
 	dist *= 0.5f;
 #endif
@@ -1073,8 +1073,8 @@ matrix44::perspfovrh(scalar fovy, scalar aspect, scalar zn, scalar zf)
 
 	scalar dist = zf / (zn - zf);
 #if __VULKAN__
-	height *= -1;
-	dist *= 0.5f;
+	//height *= -1;
+	//dist *= 0.5f;
 #elif __OGL4__
 	dist *= 0.5f;
 #endif

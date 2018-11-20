@@ -212,6 +212,8 @@ public:
     static scalar angle(const float4 & v0, const float4 & v1);
     /// returns vector of boolean values where the values of v1 or v2 corresponds to control
     static float4 select(const float4& v0, const float4& v1, const float4& control);
+    /// returns vector of boolean values where the values of v1 or v2 corresponds to control
+    static float4 select(const float4& v0, const float4& v1, const uint i0, const uint i1, const uint i2, const uint i3);
     /// returns a zero vector
     static float4 zerovector();
     /// return vector divided by w
@@ -1362,7 +1364,16 @@ float4::splat_w(const float4 &v)
 //------------------------------------------------------------------------------
 /**
 */
+__forceinline float4
+float4::select(const float4& v0, const float4& v1, const uint i0, const uint i1, const uint i2, const uint i3)
+{
+	//FIXME this should be converted to something similiar as XMVectorSelect
+	return float::permute(v0, v1, i0, i1, i2, i3);
+}
 
+//------------------------------------------------------------------------------
+/**
+*/
 __forceinline float4
 float4::permute(const float4& v0, const float4& v1, unsigned int i0, unsigned int i1, unsigned int i2, unsigned int i3)
 {
