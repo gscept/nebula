@@ -121,8 +121,7 @@ class IDLCodeGenerator:
     def GenerateSource(self, srcPath, hdrPath) :
         f = filewriter.FileWriter()
         f.Open(srcPath)        
-        f.WriteLine("// NIDL #version:{}#".format(self.version))      
-        f.WriteLine("#ifdef _WIN32\n#define NOMINMAX\n#endif")  
+        f.WriteLine("// NIDL #version:{}#".format(self.version))              
         head, tail = ntpath.split(hdrPath)
         hdrInclude = tail or ntpath.basename(head)
 
