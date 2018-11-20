@@ -18,7 +18,7 @@ float AnimationAngularSpeed;
 int NumXTiles = 1;
 int NumYTiles = 1;
 
-shared varblock MLPTextures
+group(BATCH_GROUP) shared varblock MLPTextures [string Visibility = "PS";]
 {
 	textureHandle AlbedoMap2;
 	textureHandle AlbedoMap3;

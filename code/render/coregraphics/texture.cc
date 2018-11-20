@@ -82,7 +82,7 @@ TextureGetNumMips(const TextureId id)
 //------------------------------------------------------------------------------
 /**
 */
-uint64 
+uint 
 TextureGetBindlessHandle(const TextureId id)
 {
 	return texturePool->GetBindlessHandle(id);

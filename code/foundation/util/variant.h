@@ -2811,7 +2811,9 @@ template <typename TYPE>
 inline TYPE
 Variant::Get() const
 {
-	static_assert("Get method for TYPE is not implemented!");
+	static_assert(true, "Get method for TYPE is not implemented!");
+	TYPE ret;
+	return ret;
 }
 
 //------------------------------------------------------------------------------

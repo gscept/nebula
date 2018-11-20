@@ -212,7 +212,7 @@ MaterialServer::LoadMaterialTypes(const IO::URI& file)
 					MaterialConstant constant;
 					constant.type = Util::Variant::UInt64;
 					auto res = Resources::CreateResource(reader->GetString("defaultValue") + NEBULA_TEXTURE_EXTENSION, "material types", nullptr, nullptr, true);
-					constant.defaultValue = CoreGraphics::TextureGetBindlessHandle(res.As<CoreGraphics::TextureId>());
+					constant.defaultValue = res.HashCode64();
 					constant.min = -1;
 					constant.max = -1;
 
@@ -249,7 +249,6 @@ MaterialServer::LoadMaterialTypes(const IO::URI& file)
 				{
 					MaterialConstant constant;
 					constant.type = Util::Variant::StringToType(ptype);
-
 					switch (constant.type)
 					{
 					case Util::Variant::Float:

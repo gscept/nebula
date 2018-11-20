@@ -99,7 +99,7 @@ ImageLayout TextureGetLayout(const TextureId id);
 uint TextureGetNumMips(const TextureId id);
 
 /// get bindless texture handle
-uint64 TextureGetBindlessHandle(const TextureId id);
+uint TextureGetBindlessHandle(const TextureId id);
 
 /// map GPU memory
 TextureMapInfo TextureMap(const TextureId id, IndexT mip, const CoreGraphics::GpuBufferTypes::MapType type);

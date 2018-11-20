@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 // modelcontext.cc
-// (C)2017-2018 Individual contributors, see AUTHORS file
+// (C) 2017-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "modelcontext.h"
@@ -8,6 +8,10 @@
 #include "nodes/modelnode.h"
 #include "streammodelpool.h"
 #include "graphics/graphicsserver.h"
+
+#ifndef PUBLIC_BUILD
+#include "dynui/im3d/im3dcontext.h"
+#endif
 
 using namespace Graphics;
 using namespace Resources;
@@ -43,6 +47,11 @@ ModelContext::Create()
 	__bundle.OnBeforeView = ModelContext::OnBeforeView;
 	__bundle.OnAfterView = ModelContext::OnAfterView;
 	__bundle.OnAfterFrame = ModelContext::OnAfterFrame;
+	__bundle.StageBits = &ModelContext::__state.currentStage;
+#ifndef PUBLIC_BUILD
+    __bundle.OnRenderDebug = ModelContext::OnRenderDebug;
+#endif
+	ModelContext::__state.allowedRemoveStages = Graphics::OnBeforeFrameStage;
 	Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle);
 
 	_CreateContext();
@@ -68,7 +77,7 @@ ModelContext::Setup(const Graphics::GraphicsEntityId id, const Resources::Resour
 		ModelInstanceId& mdl = modelContextAllocator.Get<1>(cid.id);
 		mdl = Models::CreateModelInstance(id);
 		const Math::matrix44& pending = modelContextAllocator.Get<2>(cid.id);
-		Models::modelPool->modelInstanceAllocator.Get<2>(mdl.instance) = pending;
+		Models::modelPool->modelInstanceAllocator.Get<StreamModelPool::InstanceTransform>(mdl.instance) = pending;
 	};
 
 	rid = Models::CreateModel(info);
@@ -101,7 +110,7 @@ ModelContext::ChangeModel(const Graphics::GraphicsEntityId id, const Resources::
 	{
 		mdl = Models::CreateModelInstance(id);
 		const Math::matrix44& pending = modelContextAllocator.Get<2>(cid.id);
-		Models::modelPool->modelInstanceAllocator.Get<2>(mdl.instance) = pending;
+		Models::modelPool->modelInstanceAllocator.Get<StreamModelPool::InstanceTransform>(mdl.instance) = pending;
 	};
 
 	rid = Models::CreateModel(info);
@@ -220,9 +229,9 @@ void
 ModelContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime)
 {
 	const Util::Array<ModelInstanceId>& instances = modelContextAllocator.GetArray<1>();
-	const Util::Array<Math::matrix44>& transforms = Models::modelPool->modelInstanceAllocator.GetArray<2>();
+	const Util::Array<Math::matrix44>& transforms = Models::modelPool->modelInstanceAllocator.GetArray<StreamModelPool::InstanceTransform>();
 	const Util::Array<Math::bbox>& modelBoxes = Models::modelPool->modelAllocator.GetArray<0>();
-	Util::Array<Math::bbox>& instanceBoxes = Models::modelPool->modelInstanceAllocator.GetArray<3>();
+	Util::Array<Math::bbox>& instanceBoxes = Models::modelPool->modelInstanceAllocator.GetArray<StreamModelPool::InstanceBoundingBox>();
 	Util::Array<Math::matrix44>& pending = modelContextAllocator.GetArray<2>();
 	Util::Array<bool>& hasPending = modelContextAllocator.GetArray<3>();
 	
@@ -300,6 +309,29 @@ ModelContext::OnAfterView(const Ptr<Graphics::View>& view, const IndexT frameInd
 void
 ModelContext::OnAfterFrame(const IndexT frameIndex, const Timing::Time frameTime)
 {
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ModelContext::OnRenderDebug(uint32_t flags)
+{
+    const Util::Array<ModelInstanceId>& instances = modelContextAllocator.GetArray<1>();    
+    Util::Array<Math::bbox>& instanceBoxes = Models::modelPool->modelInstanceAllocator.GetArray<StreamModelPool::InstanceBoundingBox>();
+    const Util::Array<Math::matrix44>& transforms = Models::modelPool->modelInstanceAllocator.GetArray<StreamModelPool::InstanceTransform>();
+    const Util::Array<Math::bbox>& modelBoxes = Models::modelPool->modelAllocator.GetArray<0>();
+    
+    Math::float4 white(1.0f, 1.0f, 1.0f, 1.0f);
+    Math::float4 gray(1.0f, 0.0f, 0.0f, 1.0f);
+    int i, n;
+    for (i = 0,n = instances.Size(); i<n ; i++)
+    {
+        const ModelInstanceId& instance = instances[i];
+        if (instance == ModelInstanceId::Invalid()) continue;
+        Im3d::Im3dContext::DrawBox(instanceBoxes[instance.instance], white, Im3d::CheckDepth|Im3d::Wireframe);
+        Im3d::Im3dContext::DrawOrientedBox(transforms[instance.instance], modelBoxes[instance.model], gray, Im3d::CheckDepth);
+    }
 }
 
 } // namespace Models

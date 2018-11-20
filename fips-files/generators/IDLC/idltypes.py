@@ -24,6 +24,10 @@ def GetEventEnum(string):
         return "Game::ComponentEvent::OnActivate"
     elif s == "ondeactivate":
         return "Game::ComponentEvent::OnDeactivate"
+    elif s == "onload":
+        return "Game::ComponentEvent::OnLoad"
+    elif s == "onsave":
+        return "Game::ComponentEvent::OnSave"
     else:
         util.fmtError('"{}" is not a valid event!'.format(string))
 
@@ -124,6 +128,61 @@ def GetTypeString(attrType):
         return "Util::Blob"
     elif (T == "guid"):
         return "Util::Guid"
+    elif (T == "void*"):
+        return "void*"
+    elif (T == "entity"):
+        return "Game::Entity"
+    else:
+        return attrType
+
+#------------------------------------------------------------------------------
+##
+#   Return the typestring as an argument type.
+#   This suffixes the type with const& if type is larger than 64 bits.
+#   Returns the original attrtype argument if none is found.
+#
+def GetArgumentType(attrType):
+    T = attrType.lower()
+    if (T == "byte"):
+        return "byte"
+    elif (T == "short"):
+        return "short"
+    elif (T == "ushort"):
+        return "ushort"
+    elif (T == "int"):
+        return "int"
+    elif (T == "uint"):
+        return "uint"
+    elif (T == "float"):
+        return "float"
+    elif (T == "int64"):
+        return "int64_t"
+    elif (T == "uint64"):
+        return "uint64_t"
+    elif (T == "double"):
+        return "double"
+    elif (T == "bool"):
+        return "bool"
+    elif (T == "float2"):
+        return "Math::float2 const&"
+    elif (T == "float4"):
+        return "Math::float4 const&"
+    elif (T == "vector"):
+        return "Math::vector const&"
+    elif (T == "point"):
+        return "Math::point const&"
+    elif (T == "quaternion"):
+        return "Math::quaternion const&"
+    elif (T == "matrix44"):
+        return "Math::matrix44 const&"
+    elif (T == "string"):
+        return "Util::String const&"
+    elif (T == "resource"):
+        return "Util::String const&"
+    elif (T == "blob"):
+        return "Util::Blob const&"
+    elif (T == "guid"):
+        return "Util::Guid const&"
     elif (T == "void*"):
         return "void*"
     elif (T == "entity"):

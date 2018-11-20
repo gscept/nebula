@@ -77,6 +77,9 @@ public:
 	/// call when ending the frame
 	void EndFrame();
 
+    /// debug rendering
+    void RenderDebug(uint32_t flags);
+
     /// call when plugin is rendered
     void RenderPlugin(const Util::StringAtom& filter);
 

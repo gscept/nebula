@@ -1,4 +1,5 @@
 import IDLC.idltypes as IDLTypes
+import IDLC.idldocument as IDLDocument
 import genutil as util
 
 def Capitalize(s):
@@ -19,9 +20,9 @@ def WriteMessageDeclarations(f, document):
         i = 1
         numArgs = len(document["messages"][messageName]["args"])
         for argName, T in document["messages"][messageName]["args"].items():
-            typeString = IDLTypes.GetTypeString(T)
+            typeString = IDLTypes.GetArgumentType(T)
             templateArgs += typeString
-            messageParams += "const {}& {}".format(typeString, argName)
+            messageParams += "{} {}".format(typeString, argName)
             sendArgs += argName
             if i < numArgs:
                 templateArgs += ", "
@@ -57,5 +58,28 @@ public:
             TemplateArguments=templateArgs,
             FOURCC=fourcc,
             MessageParameters=messageParams,
-            SendArguments=sendArgs
+            SendArguments=sendArgs,
+
         ))
+
+
+
+def WriteMessageImplementation(f, document):
+    # We need to set all messages within the same module at the same time.
+    f.WriteLine("PYBIND11_EMBEDDED_MODULE({}, m)".format(f.fileName))
+    f.WriteLine("{")
+    f.IncreaseIndent()
+    f.WriteLine('m.doc() = "namespace {}";'.format(IDLDocument.GetNamespace(document)))
+    for messageName, message in document["messages"].items():
+        if not "export" in message or message["export"] == True:
+
+            messageDescription = ""
+            if "description" in message:
+                messageDescription = message["description"]
+
+            f.WriteLine('m.def("{MSG}", &{MSG}::Send, "{MessageDescription}");'.format(
+                MSG=messageName,
+                MessageDescription=messageDescription
+            ))
+    f.DecreaseIndent()
+    f.WriteLine("}")

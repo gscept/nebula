@@ -67,6 +67,10 @@ public:
 	static void OnAfterView(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime);
 	/// runs after a frame is updated
 	static void OnAfterFrame(const IndexT frameIndex, const Timing::Time frameTime);
+#ifndef PUBLIC_DEBUG    
+	/// debug rendering
+	static void OnRenderDebug(uint32_t flags);
+#endif
 
 private:
 	typedef Ids::IdAllocator<

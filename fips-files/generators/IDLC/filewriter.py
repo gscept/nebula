@@ -1,4 +1,5 @@
 import os, platform
+import ntpath
 
 class FileWriter:
     def __init__(self):
@@ -7,8 +8,8 @@ class FileWriter:
         self.currentIndent = 0
         self.filePath = ""
         self.file = None
-        self.line = 0;
-        self.column = 0;
+        self.line = 0
+        self.column = 0
         self.eol = "\n"
 
     #------------------------------------------------------------------------------
@@ -16,6 +17,12 @@ class FileWriter:
     #
     def Open(self, input) :
         self.filePath = input
+
+        temp = os.path.splitext(input)[0]
+        head, tail = ntpath.split(temp)
+
+        self.fileName = tail or ntpath.basename(head)
+
         self.file = open(self.filePath, 'w')
         self.line = 0
         self.currentIndent = 0
@@ -72,7 +79,7 @@ class FileWriter:
     ##
     #
     def Write(self, string):
-        # If we're already in the middle of a line we don't add any indentation.        
+        # If we're already in the middle of a line we don't add any indentation.
         if self.column == 0:
             for i in range(self.currentIndent):
                 self.file.write(self.tab)

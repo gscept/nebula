@@ -1,30 +1,35 @@
-// NIDL #version:22#
+// NIDL #version:57#
+#ifdef _WIN32
+#define NOMINMAX
+#endif
 //------------------------------------------------------------------------------
-//  graphicscomponentbase.cc
+//  graphicsdata.cc
 //  (C) Individual contributors, see AUTHORS file
 //
 //  MACHINE GENERATED, DON'T EDIT!
 //------------------------------------------------------------------------------
 #include "stdneb.h"
-#include "graphicscomponentbase.h"
+#include "graphicsdata.h"
 //------------------------------------------------------------------------------
 namespace Attr
 {
-    DefineUInt(GraphicsEntity, 'gEnt', Attr::ReadOnly);
+    DefineUIntWithDefault(GraphicsEntity, 'gEnt', Attr::ReadOnly, uint(-1));
+    DefineStringWithDefault(ModelResource, 'mdlR', Attr::ReadOnly, Util::String("mdl:Buildings/castle_tower.n3"));
 } // namespace Attr
 //------------------------------------------------------------------------------
 namespace GraphicsFeature
 {
 
-__ImplementClass(GraphicsFeature::GraphicsComponentBase, 'GFXC', Core::RefCounted)
-
+__ImplementWeakClass(GraphicsFeature::GraphicsComponentData, 'GFXC', Game::ComponentInterface);
+__RegisterClass(GraphicsComponentData)
 
 //------------------------------------------------------------------------------
 /**
 */
-GraphicsComponentBase::GraphicsComponentBase() :
+GraphicsComponentData::GraphicsComponentData() :
     component_templated_t({
         Attr::GraphicsEntity,
+        Attr::ModelResource,
     })
 {
     this->events.SetBit(Game::ComponentEvent::OnActivate);
@@ -35,7 +40,7 @@ GraphicsComponentBase::GraphicsComponentBase() :
 //------------------------------------------------------------------------------
 /**
 */
-GraphicsComponentBase::~GraphicsComponentBase()
+GraphicsComponentData::~GraphicsComponentData()
 {
     // empty
 }
@@ -44,12 +49,12 @@ GraphicsComponentBase::~GraphicsComponentBase()
 /**
 */
 uint32_t
-GraphicsComponentBase::RegisterEntity(const Game::Entity& entity)
+GraphicsComponentData::RegisterEntity(Game::Entity entity)
 {
     auto instance = component_templated_t::RegisterEntity(entity);
     Game::EntityManager::Instance()->RegisterDeletionCallback(entity, this);
     
-    this->OnActivate(instance);
+    this->functions.OnActivate(instance);
     return instance;
 }
 
@@ -57,12 +62,12 @@ GraphicsComponentBase::RegisterEntity(const Game::Entity& entity)
 /**
 */
 void
-GraphicsComponentBase::DeregisterEntity(const Game::Entity& entity)
+GraphicsComponentData::DeregisterEntity(Game::Entity entity)
 {
     uint32_t index = this->GetInstance(entity);
     if (index != InvalidIndex)
     {
-        this->OnDeactivate(index);
+        this->functions.OnDeactivate(index);
         
         this->DeregisterEntityImmediate(entity);
         Game::EntityManager::Instance()->DeregisterDeletionCallback(entity, this);
@@ -74,7 +79,7 @@ GraphicsComponentBase::DeregisterEntity(const Game::Entity& entity)
 /**
 */
 void
-GraphicsComponentBase::DestroyAll()
+GraphicsComponentData::DestroyAll()
 {
     SizeT length = this->data.Size();
     for (SizeT i = 0; i < length; i++)
@@ -88,7 +93,7 @@ GraphicsComponentBase::DestroyAll()
 /**
 */
 SizeT
-GraphicsComponentBase::Optimize()
+GraphicsComponentData::Optimize()
 {
     return 0;
 }
@@ -97,7 +102,7 @@ GraphicsComponentBase::Optimize()
 /**
 */
 void
-GraphicsComponentBase::OnEntityDeleted(Game::Entity entity)
+GraphicsComponentData::OnEntityDeleted(Game::Entity entity)
 {
     uint32_t index = this->GetInstance(entity);
     if (index != InvalidIndex)
@@ -105,6 +110,22 @@ GraphicsComponentBase::OnEntityDeleted(Game::Entity entity)
         this->DeregisterEntityImmediate(entity);
         return;
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint& GraphicsComponentData::GraphicsEntity(uint32_t instance)
+{
+    return this->data.Get<1>(instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Util::String& GraphicsComponentData::ModelResource(uint32_t instance)
+{
+    return this->data.Get<2>(instance);
 }
 
 } // namespace GraphicsFeature

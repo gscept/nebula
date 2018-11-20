@@ -89,6 +89,15 @@ EntityManager::IsAlive(const Entity & e) const
 //------------------------------------------------------------------------------
 /**
 */
+uint32_t
+EntityManager::GetIndex(const Entity& entity)
+{
+	return Ids::Index(entity.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 uint
 EntityManager::GetNumEntities() const
 {
@@ -111,20 +120,29 @@ EntityManager::InvalidateAllEntities()
 /**
 */
 void
-EntityManager::RegisterDeletionCallback(const Entity & e, const Ptr<BaseComponent>& component)
+EntityManager::RegisterDeletionCallback(const Entity & e, ComponentInterface* component)
 {
-	Util::Delegate<Entity> d = Util::Delegate<Entity>::FromMethod<BaseComponent, &BaseComponent::OnEntityDeleted>(component);
-	
+	this->RegisterDeletionCallback(e, Util::Delegate<Entity>::FromMethod<ComponentInterface, &ComponentInterface::OnEntityDeleted>(component));
+}
+
+//------------------------------------------------------------------------------
+/**
+	@todo	this can be made available for any callback if we can just
+			keep track of callbacks with some listener id or similar.
+*/
+void
+EntityManager::RegisterDeletionCallback(const Entity & e, const Util::Delegate<Entity>& callback)
+{
 	if (this->deletionCallbacks.Contains(e))
 	{
 		// Entity already has deletion callbacks registered
-		this->deletionCallbacks[e].Append(d);
+		this->deletionCallbacks[e].Append(callback);
 		return;
 	}
 
 	// Add new entry
 	Util::Array<Util::Delegate<Entity>> delArray;
-	delArray.Append(d);
+	delArray.Append(callback);
 	this->deletionCallbacks.Add(e, delArray);
 }
 
@@ -132,14 +150,14 @@ EntityManager::RegisterDeletionCallback(const Entity & e, const Ptr<BaseComponen
 /**
 */
 void
-EntityManager::DeregisterDeletionCallback(const Entity & e, const Ptr<BaseComponent>& component)
+EntityManager::DeregisterDeletionCallback(const Entity & e, ComponentInterface* component)
 {
 	n_assert2(this->deletionCallbacks.Contains(e), "Entity does not have a deletion callback registered for this component!");
 
 	Util::Array<Util::Delegate<Entity>>& delegates = this->deletionCallbacks[e];
 	for (SizeT i = 0; i < delegates.Size(); ++i)
 	{
-		if (delegates[i].GetObject<Ptr<BaseComponent>>()->HashCode() == component.HashCode())
+		if (delegates[i].GetObject<ComponentInterface>() == component)
 		{
 			delegates.EraseIndexSwap(i);
 			return;

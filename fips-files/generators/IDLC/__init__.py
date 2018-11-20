@@ -12,7 +12,7 @@ class IDLCodeGenerator:
     def __init__(self):
         self.document = None
         self.documentPath = ""
-        self.version = 0;
+        self.version = 0
 
     #------------------------------------------------------------------------------
     ##
@@ -43,8 +43,6 @@ class IDLCodeGenerator:
         f = filewriter.FileWriter()
         f.Open(hdrPath)
 
-        requiresSourceFile = False
-
         f.WriteLine("// NIDL #version:{}#".format(self.version))
 
         attributeLibraries = []
@@ -55,16 +53,20 @@ class IDLCodeGenerator:
                 fileName = '{}.h'.format(os.path.splitext(dependency)[0]).lower()
                 attributeLibraries.append(fileName)
 
+        attributeLibraries.append("game/entity.h")
 
         if "components" in self.document:
             attributeLibraries.append("game/component/component.h")
+
+        if "messages" in self.document:
+            attributeLibraries.append("game/messaging/message.h")
+            
 
         IDLDocument.WriteIncludeHeader(f)
         IDLComponent.WriteIncludes(f, attributeLibraries)
 
         # Generate attributes include file
-        if "attributes" in self.document:
-            requiresSourceFile = True
+        if "attributes" in self.document:            
             IDLDocument.WriteAttributeLibraryDeclaration(f)
 
         if "enums" in self.document:
@@ -79,7 +81,7 @@ class IDLCodeGenerator:
             IDLDocument.EndNamespaceOverride(f, self.document, "Attr")
             f.WriteLine("")
 
-        
+
 
         # Add additional dependencies to document.
         if "dependencies" in self.document:
@@ -102,17 +104,15 @@ class IDLCodeGenerator:
                 IDLProtocol.WriteMessageDeclarations(f, self.document)
 
             if hasComponents:
-                requiresSourceFile = True
                 namespace = IDLDocument.GetNamespace(self.document)
                 for componentName, component in self.document["components"].items():
                     componentWriter = IDLComponent.ComponentClassWriter(f, self.document, component, componentName, namespace)
                     componentWriter.WriteClassDeclaration()
 
             IDLDocument.EndNamespace(f, self.document)
-        
-        f.Close()
 
-        return requiresSourceFile
+        f.Close()
+        return
 
 
     #------------------------------------------------------------------------------
@@ -120,18 +120,21 @@ class IDLCodeGenerator:
     #
     def GenerateSource(self, srcPath, hdrPath) :
         f = filewriter.FileWriter()
-        f.Open(srcPath)
-
-        f.WriteLine("// NIDL #version:{}#".format(self.version))
-
+        f.Open(srcPath)        
+        f.WriteLine("// NIDL #version:{}#".format(self.version))              
         head, tail = ntpath.split(hdrPath)
         hdrInclude = tail or ntpath.basename(head)
 
         head, tail = ntpath.split(srcPath)
         srcFileName = tail or ntpath.basename(head)
 
-        IDLDocument.WriteSourceHeader(f, srcFileName)
+        IDLDocument.WriteSourceHeader(f, srcFileName)        
         IDLDocument.AddInclude(f, hdrInclude)
+
+        hasMessages = "messages" in self.document
+
+        if hasMessages:            
+            IDLDocument.AddInclude(f, "scripting/bindings.h")
 
         if "attributes" in self.document:
             IDLDocument.BeginNamespaceOverride(f, self.document, "Attr")
@@ -148,14 +151,21 @@ class IDLCodeGenerator:
                 self.document["attributes"].update(deps)
                 fstream.close()
 
-        if "components" in self.document:
+        hasComponents = "components" in self.document
+        if hasComponents or hasMessages:
             IDLDocument.BeginNamespace(f, self.document)
-            namespace = IDLDocument.GetNamespace(self.document)
-            for componentName, component in self.document["components"].items():
-                f.WriteLine("")
-                componentWriter = IDLComponent.ComponentClassWriter(f, self.document, component, componentName, namespace)
-                componentWriter.WriteClassImplementation()
-                f.WriteLine("")
+
+            if hasMessages:
+                IDLProtocol.WriteMessageImplementation(f, self.document)
+
+            if hasComponents:
+                namespace = IDLDocument.GetNamespace(self.document)
+                for componentName, component in self.document["components"].items():
+                    f.WriteLine("")
+                    componentWriter = IDLComponent.ComponentClassWriter(f, self.document, component, componentName, namespace)
+                    componentWriter.WriteClassImplementation()
+                    f.WriteLine("")
+
             IDLDocument.EndNamespace(f, self.document)
 
         f.Close()

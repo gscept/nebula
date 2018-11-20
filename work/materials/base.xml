@@ -281,16 +281,16 @@
    <Pass batch="FlatGeometryLit" shader="multilayered" variation="Static"/>
    
    <!-- material textures -->
-   <Param name="AlbedoMap2" type="texture2d" defaultValue="tex:system/black"/>
-   <Param name="AlbedoMap3" type="texture2d" defaultValue="tex:system/black"/>
-   <Param name="SpecularMap2" type="texture2d" defaultValue="tex:system/black"/>
-   <Param name="SpecularMap3" type="texture2d" defaultValue="tex:system/black"/>
-   <Param name="EmissiveMap2" type="texture2d" defaultValue="tex:system/black"/>
-   <Param name="EmissiveMap3" type="texture2d" defaultValue="tex:system/black"/>
-   <Param name="NormalMap2" type="texture2d" defaultValue="tex:system/nobump"/>
-   <Param name="NormalMap3" type="texture2d" defaultValue="tex:system/nobump"/>   
-   <Param name="RoughnessMap2" type="texture2d" defaultValue="tex:system/darkgray"/>
-   <Param name="RoughnessMap3" type="texture2d" defaultValue="tex:system/darkgray"/>
+   <Param name="AlbedoMap2" type="textureHandle" defaultValue="tex:system/black"/>
+   <Param name="AlbedoMap3" type="textureHandle" defaultValue="tex:system/black"/>
+   <Param name="SpecularMap2" type="textureHandle" defaultValue="tex:system/black"/>
+   <Param name="SpecularMap3" type="textureHandle" defaultValue="tex:system/black"/>
+   <Param name="EmissiveMap2" type="textureHandle" defaultValue="tex:system/black"/>
+   <Param name="EmissiveMap3" type="textureHandle" defaultValue="tex:system/black"/>
+   <Param name="NormalMap2" type="textureHandle" defaultValue="tex:system/nobump"/>
+   <Param name="NormalMap3" type="textureHandle" defaultValue="tex:system/nobump"/>   
+   <Param name="RoughnessMap2" type="textureHandle" defaultValue="tex:system/darkgray"/>
+   <Param name="RoughnessMap3" type="textureHandle" defaultValue="tex:system/darkgray"/>
    
    <!-- system variables -->
    <Param name="ObjectId" type="int" system="true"/>

@@ -9,9 +9,14 @@
 	used as a callback from a message which means you can hook into a message
 	from anywhere. This can be useful for debugging, tools, managers etc.
 
-	Messages are declared with the __DeclareMsg macro.
-	A component can register a message callback by using the __RegisterMsg macro
-	in any member method (preferably SetupAcceptedMessages).
+	A component can register a message callback by using the __RegisterMsg macro.
+
+	Messages should be generated using Nebula's IDLC.
+	If that's not preferred, you can implement a message by deriving from the
+	Game::Message class and overriding the GetName, GetFourCC, Send and Defer methods.
+	This class uses curiously recurring template patterns and you need to provide the
+	template with the subclass as the first template argument. The rest of the
+	template arguments are the callbacks parameters.
 
 	(C) 2018 Individual contributors, see AUTHORS file
 */
@@ -43,14 +48,12 @@ class NAME : public Game::Message<NAME, __VA_ARGS__> \
 		}; \
 };
 
-///@note	This is placed within the object!
-#define __RegisterMsg(MSGTYPE, METHOD) \
-this->messageListeners.Append(MSGTYPE::Register( \
-	MSGTYPE::Delegate::FromMethod< \
-		std::remove_pointer<decltype(this)>::type, \
-		&std::remove_pointer<decltype(this)>::type::METHOD \
-	>(this) \
-));
+#define __RegisterMsg(MSGTYPE, FUNCTION) \
+	MSGTYPE::Register(MSGTYPE::Delegate::FromFunction<FUNCTION>())
+
+/// Removes const reference from T.
+template<class T>
+using UnqualifiedType = typename std::remove_const<typename std::remove_reference<T>::type>::type;
 
 namespace Game
 {
@@ -82,7 +85,7 @@ public:
 	void operator=(const Message<MSG, TYPES...>&) = delete;
 
 	/// Type definition for this message's delegate
-	using Delegate = Util::Delegate<const TYPES& ...>;
+	using Delegate = Util::Delegate<TYPES...>;
 
 	/// Register a listener to this message. Returns an ID for the listener so that we can associate it.
 	static MessageListener Register(Delegate&& callback);
@@ -90,14 +93,14 @@ public:
 	/// Deregister a listener
 	static void Deregister(MessageListener listener);
 
-	/// Send a message to an entity
-	static void Send(const TYPES& ... values);
+	/// Send a message
+	static void Send(TYPES ... values);
 
 	/// Creates a new message queue for deferred dispatching
 	static MessageQueueId AllocateMessageQueue();
 
 	/// Add a message to a message queue
-	static void Defer(MessageQueueId qid, const TYPES& ... values);
+	static void Defer(MessageQueueId qid, TYPES ... values);
 	
 	/// Dispatch all messages in a message queue
 	static void DispatchMessageQueue(MessageQueueId id);
@@ -109,7 +112,7 @@ public:
 	static bool IsMessageQueueValid(MessageQueueId id);
 
 	/// Send a network distributed message
-	static void Distribute(const TYPES& ...);
+	static void Distribute(TYPES ...);
 
 	/// Deregisters all listeners at once.
 	static void DeregisterAll();
@@ -119,13 +122,15 @@ public:
 
 protected:
 	friend MSG;
-	/// Internal singleton instance
+
 	static Message<MSG, TYPES...>* Instance()
 	{
 		static Message<MSG, TYPES...> instance;
 		return &instance;
 	}
 
+	/// Internal singleton instance
+	
 	/// Registry between component and index in list.
 	Util::HashTable<MessageListenerId, IndexT> listenerMap;
 
@@ -137,8 +142,9 @@ protected:
 
 	/// id generation pool for the deferred messages queues.
 	Ids::IdGenerationPool messageQueueIdPool;
+
 	/// Deferred messages
-	Util::Array<Util::ArrayAllocator<TYPES ...>> messageQueues;
+	Util::Array<Util::ArrayAllocator<UnqualifiedType<TYPES> ...>> messageQueues;
 
 #ifndef __PUBLIC_BUILD__
 	/// Contains the sender of the distributed message.
@@ -147,7 +153,7 @@ protected:
 	/// Contains the arguments of a recieved distributed message.
 	/// @todo	This should be updated by some NetworkMessageManager-y object.
 	Util::ArrayAllocator<
-		TYPES ...
+		UnqualifiedType<TYPES> ...
 	> distributedMessages;
 
 protected:
@@ -158,12 +164,12 @@ protected:
 
 private:
 	template<std::size_t...Is>
-	void send_expander(Util::ArrayAllocator<TYPES...>& data, const SizeT& index, std::index_sequence<Is...>)
+	void send_expander(Util::ArrayAllocator<UnqualifiedType<TYPES> ...>& data, const SizeT& index, std::index_sequence<Is...>)
 	{
 		Send(data.Get<Is>(index)...);
 	}
 
-	void send_expander(Util::ArrayAllocator<TYPES...>& data, const SizeT& index)
+	void send_expander(Util::ArrayAllocator<UnqualifiedType<TYPES>...>& data, const SizeT& index)
 	{
 		this->send_expander(data, index, std::make_index_sequence<sizeof...(TYPES)>());
 	}
@@ -232,7 +238,7 @@ Message<MSG, TYPES...>::Deregister(MessageListener listener)
 */
 template <typename MSG, class ... TYPES>
 inline void
-Message<MSG, TYPES...>::Send(const TYPES& ... values)
+Message<MSG, TYPES...>::Send(TYPES ... values)
 {
 	auto instance = Instance();
 	SizeT size = instance->callbacks.Size();
@@ -266,7 +272,7 @@ Message<MSG, TYPES...>::AllocateMessageQueue()
 
 template<typename MSG, class ...TYPES>
 inline void 
-Message<MSG, TYPES...>::Defer(MessageQueueId qid, const TYPES & ...values)
+Message<MSG, TYPES...>::Defer(MessageQueueId qid, TYPES ...values)
 {
 	auto instance = Instance();
 	SizeT index = Ids::Index(qid.id);
@@ -328,7 +334,7 @@ Message<MSG, TYPES...>::IsMessageQueueValid(MessageQueueId id)
 */
 template <typename MSG, class ... TYPES>
 inline void
-Message<MSG, TYPES...>::Distribute(const TYPES& ...)
+Message<MSG, TYPES...>::Distribute(TYPES ...)
 {
 	n_error("Network distributed messages not yet supported!");
 }

@@ -37,21 +37,19 @@
 //------------------------------------------------------------------------------
 namespace Util
 {
-template<class KEYTYPE, class VALUETYPE, int STACK_SIZE = 1> class HashTable
+template<class KEYTYPE, class VALUETYPE, int TABLE_SIZE = 128, int STACK_SIZE = 1> class HashTable
 {
 public:
 	/// default constructor
 	HashTable();
-	/// constructor with capacity
-	HashTable(SizeT capacity);
 	/// copy constructor
-	HashTable(const HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>& rhs);
+	HashTable(const HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>& rhs);
     /// move constructor
-    HashTable(HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>&& rhs);
+    HashTable(HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>&& rhs);
     /// assignment operator
-	void operator=(const HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>& rhs);
+	void operator=(const HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>& rhs);
     /// move assignment operator
-    void operator=(HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>&& rhs);
+    void operator=(HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>&& rhs);
 	/// read/write [] operator, assertion if key not found
 	VALUETYPE& operator[](const KEYTYPE& key) const;
 	/// return current number of values in the hashtable
@@ -75,7 +73,7 @@ public:
 	/// end bulk adding, which sorts all affected tables
 	void EndBulkAdd();
 	/// merge two dictionaries
-	void Merge(const HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>& rhs);
+	void Merge(const HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>& rhs);
 	/// erase an entry
 	void Erase(const KEYTYPE& key);
 	/// return true if key exists in the array
@@ -106,7 +104,7 @@ public:
 		VALUETYPE* val;
 		KEYTYPE const* key;
 	private:
-		friend class HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>;
+		friend class HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>;
 		FixedArray<ArrayStack<KeyValuePair<KEYTYPE, VALUETYPE>, STACK_SIZE> >* arr;
 		IndexT hashIndex;
 		IndexT bucketIndex;
@@ -134,9 +132,9 @@ private:
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE, int STACK_SIZE>
+template<class KEYTYPE, class VALUETYPE, int TABLE_SIZE, int STACK_SIZE>
 ArrayStack<KEYTYPE, STACK_SIZE>
-HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::KeysAsArray() const
+HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::KeysAsArray() const
 {
 	Util::ArrayStack<KEYTYPE, STACK_SIZE> keys;
 	for (int i = 0; i < this->hashArray.Size(); i++)
@@ -152,9 +150,9 @@ HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::KeysAsArray() const
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE, int STACK_SIZE>
+template<class KEYTYPE, class VALUETYPE, int TABLE_SIZE, int STACK_SIZE>
 ArrayStack<VALUETYPE, STACK_SIZE>
-HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::ValuesAsArray() const
+HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::ValuesAsArray() const
 {
 	Util::ArrayStack<VALUETYPE, STACK_SIZE> vals;
 	for (int i = 0; i < this->hashArray.Size(); i++)
@@ -170,9 +168,9 @@ HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::ValuesAsArray() const
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE, int STACK_SIZE>
-typename HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::Iterator
-HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::Begin()
+template<class KEYTYPE, class VALUETYPE, int TABLE_SIZE, int STACK_SIZE>
+typename HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::Iterator
+HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::Begin()
 {
 	Iterator ret;
 	ret.hashIndex = this->hashArray.Size();
@@ -198,9 +196,9 @@ HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::Begin()
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE, int STACK_SIZE>
-typename HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::Iterator
-HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::End()
+template<class KEYTYPE, class VALUETYPE, int TABLE_SIZE, int STACK_SIZE>
+typename HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::Iterator
+HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::End()
 {
 	Iterator ret;
 	ret.hashIndex = this->hashArray.Size();
@@ -226,10 +224,10 @@ HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::End()
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE, int STACK_SIZE>
-HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::HashTable() :
-	hashArray(128),
-	bulkDirty(128),
+template<class KEYTYPE, class VALUETYPE, int TABLE_SIZE, int STACK_SIZE>
+HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::HashTable() :
+	hashArray(TABLE_SIZE),
+	bulkDirty(TABLE_SIZE),
 	inBulkAdd(false),
 	size(0)
 {
@@ -239,21 +237,8 @@ HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::HashTable() :
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE, int STACK_SIZE>
-HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::HashTable(SizeT capacity) :
-	hashArray(capacity),
-	bulkDirty(capacity),
-	inBulkAdd(false),
-	size(0)
-{
-	// empty
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-template<class KEYTYPE, class VALUETYPE, int STACK_SIZE>
-HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::HashTable(const HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>& rhs) :
+template<class KEYTYPE, class VALUETYPE, int TABLE_SIZE, int STACK_SIZE>
+HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::HashTable(const HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>& rhs) :
 	hashArray(rhs.hashArray),
 	bulkDirty(rhs.bulkDirty),
 	inBulkAdd(rhs.inBulkAdd),
@@ -265,8 +250,8 @@ HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::HashTable(const HashTable<KEYTYPE, VA
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE, int STACK_SIZE>
-HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::HashTable(HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>&& rhs) :
+template<class KEYTYPE, class VALUETYPE, int TABLE_SIZE, int STACK_SIZE>
+HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::HashTable(HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>&& rhs) :
     hashArray(std::move(rhs.hashArray)),
     bulkDirty(rhs.bulkDirty),
     inBulkAdd(rhs.inBulkAdd),
@@ -278,9 +263,9 @@ HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::HashTable(HashTable<KEYTYPE, VALUETYP
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE, int STACK_SIZE>
+template<class KEYTYPE, class VALUETYPE, int TABLE_SIZE, int STACK_SIZE>
 void
-HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::operator=(const HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>& rhs)
+HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::operator=(const HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>& rhs)
 {
 	if (this != &rhs)
 	{
@@ -293,9 +278,9 @@ HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::operator=(const HashTable<KEYTYPE, VA
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE, int STACK_SIZE>
+template<class KEYTYPE, class VALUETYPE, int TABLE_SIZE, int STACK_SIZE>
 void
-HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::operator=(HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>&& rhs)
+HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::operator=(HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>&& rhs)
 {
     if (this != &rhs)
     {
@@ -309,9 +294,9 @@ HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::operator=(HashTable<KEYTYPE, VALUETYP
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE, int STACK_SIZE>
+template<class KEYTYPE, class VALUETYPE, int TABLE_SIZE, int STACK_SIZE>
 VALUETYPE&
-HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::operator[](const KEYTYPE& key) const
+HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::operator[](const KEYTYPE& key) const
 {
 	// get hash code from key, trim to capacity
 	IndexT hashIndex = GetHashCode<KEYTYPE>(key);
@@ -322,7 +307,7 @@ HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::operator[](const KEYTYPE& key) const
 	#endif
 	if (1 == numHashElements)
 	{
-		// no hash collissions, just return the only existing element
+		// no hash collisions, just return the only existing element
 		return hashElements[0].Value();
 	}
 	else
@@ -340,9 +325,9 @@ HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::operator[](const KEYTYPE& key) const
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE, int STACK_SIZE>
+template<class KEYTYPE, class VALUETYPE, int TABLE_SIZE, int STACK_SIZE>
 SizeT
-HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::Size() const
+HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::Size() const
 {
 	return this->size;
 }
@@ -350,9 +335,9 @@ HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::Size() const
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE, int STACK_SIZE>
+template<class KEYTYPE, class VALUETYPE, int TABLE_SIZE, int STACK_SIZE>
 SizeT
-HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::Capacity() const
+HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::Capacity() const
 {
 	return this->hashArray.Size();
 }
@@ -360,9 +345,9 @@ HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::Capacity() const
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE, int STACK_SIZE>
+template<class KEYTYPE, class VALUETYPE, int TABLE_SIZE, int STACK_SIZE>
 void
-HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::Clear()
+HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::Clear()
 {
 	IndexT i;
 	SizeT num = this->hashArray.Size();
@@ -376,9 +361,9 @@ HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::Clear()
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE, int STACK_SIZE>
+template<class KEYTYPE, class VALUETYPE, int TABLE_SIZE, int STACK_SIZE>
 bool
-HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::IsEmpty() const
+HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::IsEmpty() const
 {
 	return (0 == this->size);
 }
@@ -386,9 +371,9 @@ HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::IsEmpty() const
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE, int STACK_SIZE>
+template<class KEYTYPE, class VALUETYPE, int TABLE_SIZE, int STACK_SIZE>
 void
-HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::BeginBulkAdd()
+HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::BeginBulkAdd()
 {
 	n_assert(!this->inBulkAdd);
 	this->inBulkAdd = true;
@@ -398,9 +383,9 @@ HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::BeginBulkAdd()
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE, int STACK_SIZE>
+template<class KEYTYPE, class VALUETYPE, int TABLE_SIZE, int STACK_SIZE>
 inline const bool
-HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::IsBulkAdd() const
+HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::IsBulkAdd() const
 {
 	return this->inBulkAdd;
 }
@@ -408,9 +393,9 @@ HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::IsBulkAdd() const
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE, int STACK_SIZE>
+template<class KEYTYPE, class VALUETYPE, int TABLE_SIZE, int STACK_SIZE>
 IndexT
-HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::Add(const KeyValuePair<KEYTYPE, VALUETYPE>& kvp)
+HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::Add(const KeyValuePair<KEYTYPE, VALUETYPE>& kvp)
 {
 	#if NEBULA_BOUNDSCHECKS
 	n_assert(!this->Contains(kvp.Key()));
@@ -426,6 +411,7 @@ HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::Add(const KeyValuePair<KEYTYPE, VALUE
 	}
 	else
 		ret = this->hashArray[hashIndex].InsertSorted(kvp);
+
 	this->size++;
 	return ret;
 }
@@ -433,9 +419,9 @@ HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::Add(const KeyValuePair<KEYTYPE, VALUE
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE, int STACK_SIZE>
+template<class KEYTYPE, class VALUETYPE, int TABLE_SIZE, int STACK_SIZE>
 IndexT
-HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::Add(const KEYTYPE& key, const VALUETYPE& value)
+HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::Add(const KEYTYPE& key, const VALUETYPE& value)
 {
 	KeyValuePair<KEYTYPE, VALUETYPE> kvp(key, value);
 	return this->Add(kvp);
@@ -444,36 +430,35 @@ HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::Add(const KEYTYPE& key, const VALUETY
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE, int STACK_SIZE>
+template<class KEYTYPE, class VALUETYPE, int TABLE_SIZE, int STACK_SIZE>
 VALUETYPE&
-HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::AddUnique(const KEYTYPE& key)
+HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::AddUnique(const KEYTYPE& key)
 {
 	// get hash code from key, trim to capacity
 	IndexT hashIndex = GetHashCode<KEYTYPE>(key);
+	IndexT elementIndex = InvalidIndex;
 	ArrayStack<KeyValuePair<KEYTYPE, VALUETYPE>, STACK_SIZE>& hashElements = this->hashArray[hashIndex];
 	if (hashElements.Size() == 0)
 	{
-		this->Add(key, VALUETYPE());
+		elementIndex = this->Add(key, VALUETYPE());
 	}
-	else if (hashElements.Size() > 1)
+	else
 	{
-		IndexT hashElementIndex = hashElements.BinarySearchIndex(key);
-		if (hashElementIndex == InvalidIndex)
+		elementIndex = hashElements.BinarySearchIndex(key);
+		if (elementIndex == InvalidIndex)
 		{
-			hashElementIndex = this->Add(key, VALUETYPE());
+			elementIndex = this->Add(key, VALUETYPE());
 		}
-		return hashElements[hashElementIndex].Value();
 	}
-	return hashElements[0].Value();
-
+	return hashElements[elementIndex].Value();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE, int STACK_SIZE>
+template<class KEYTYPE, class VALUETYPE, int TABLE_SIZE, int STACK_SIZE>
 void
-HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::EndBulkAdd()
+HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::EndBulkAdd()
 {
 	n_assert(this->inBulkAdd);
 	IndexT i;
@@ -491,9 +476,9 @@ HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::EndBulkAdd()
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE, int STACK_SIZE>
+template<class KEYTYPE, class VALUETYPE, int TABLE_SIZE, int STACK_SIZE>
 void
-HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::Merge(const HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>& rhs)
+HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::Merge(const HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>& rhs)
 {
 	n_assert(this->hashArray.Size() == rhs.hashArray.Size());
 	IndexT i;
@@ -508,9 +493,9 @@ HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::Merge(const HashTable<KEYTYPE, VALUET
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE, int STACK_SIZE>
+template<class KEYTYPE, class VALUETYPE, int TABLE_SIZE, int STACK_SIZE>
 void
-HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::Erase(const KEYTYPE& key)
+HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::Erase(const KEYTYPE& key)
 {
 	#if NEBULA_BOUNDSCHECKS
 	n_assert(this->size > 0);
@@ -528,9 +513,9 @@ HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::Erase(const KEYTYPE& key)
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE, int STACK_SIZE>
+template<class KEYTYPE, class VALUETYPE, int TABLE_SIZE, int STACK_SIZE>
 bool
-HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::Contains(const KEYTYPE& key) const
+HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::Contains(const KEYTYPE& key) const
 {
 	if (this->size > 0)
 	{
@@ -552,9 +537,9 @@ HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::Contains(const KEYTYPE& key) const
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE, int STACK_SIZE>
+template<class KEYTYPE, class VALUETYPE, int TABLE_SIZE, int STACK_SIZE>
 IndexT
-HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::FindIndex(const KEYTYPE& key) const
+HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::FindIndex(const KEYTYPE& key) const
 {
 	IndexT hashIndex = GetHashCode<KEYTYPE>(key);
 	ArrayStack<KeyValuePair<KEYTYPE, VALUETYPE>, STACK_SIZE>& hashElements = this->hashArray[hashIndex];
@@ -565,9 +550,9 @@ HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::FindIndex(const KEYTYPE& key) const
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE, int STACK_SIZE>
+template<class KEYTYPE, class VALUETYPE, int TABLE_SIZE, int STACK_SIZE>
 VALUETYPE&
-HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::ValueAtIndex(const KEYTYPE& key, IndexT i) const
+HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::ValueAtIndex(const KEYTYPE& key, IndexT i) const
 {
 	IndexT hashIndex = GetHashCode<KEYTYPE>(key);
 	ArrayStack<KeyValuePair<KEYTYPE, VALUETYPE>, STACK_SIZE>& hashElements = this->hashArray[hashIndex];
@@ -577,9 +562,9 @@ HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::ValueAtIndex(const KEYTYPE& key, Inde
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE, int STACK_SIZE>
+template<class KEYTYPE, class VALUETYPE, int TABLE_SIZE, int STACK_SIZE>
 ArrayStack<KeyValuePair<KEYTYPE, VALUETYPE>, STACK_SIZE>
-HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::Content() const
+HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::Content() const
 {
 	ArrayStack<KeyValuePair<KEYTYPE, VALUETYPE>, STACK_SIZE> result;
 	int i;
@@ -597,9 +582,9 @@ HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::Content() const
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE, int STACK_SIZE>
-typename HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::Iterator&
-HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::Iterator::operator++(int)
+template<class KEYTYPE, class VALUETYPE, int TABLE_SIZE, int STACK_SIZE>
+typename HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::Iterator&
+HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::Iterator::operator++(int)
 {
 	const FixedArray<ArrayStack<KeyValuePair<KEYTYPE, VALUETYPE>, STACK_SIZE> >& arr = *this->arr;
 
@@ -632,9 +617,9 @@ HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::Iterator::operator++(int)
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE, int STACK_SIZE>
+template<class KEYTYPE, class VALUETYPE, int TABLE_SIZE, int STACK_SIZE>
 const bool
-HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::Iterator::operator==(const Iterator& rhs) const
+HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::Iterator::operator==(const Iterator& rhs) const
 {
 	return this->hashIndex == rhs.hashIndex && this->bucketIndex == rhs.bucketIndex;
 }
@@ -642,9 +627,9 @@ HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::Iterator::operator==(const Iterator& 
 //------------------------------------------------------------------------------
 /**
 */
-template<class KEYTYPE, class VALUETYPE, int STACK_SIZE>
+template<class KEYTYPE, class VALUETYPE, int TABLE_SIZE, int STACK_SIZE>
 const bool
-HashTable<KEYTYPE, VALUETYPE, STACK_SIZE>::Iterator::operator!=(const Iterator& rhs) const
+HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::Iterator::operator!=(const Iterator& rhs) const
 {
 	return !(this->hashIndex == rhs.hashIndex && this->bucketIndex == rhs.bucketIndex);
 }

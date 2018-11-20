@@ -24,12 +24,17 @@ imports:
         group: misc
     fips-bullet:
         git: https://github.com/floooh/fips-bullet.git        
+        cond: "DISABLE_FOR_NOW"
     fips-cjson:
         git: https://github.com/floooh/fips-cjson.git
         cond: "FIPS_LINUX"
         group: misc
     fips-imgui:
         git: https://github.com/fungos/fips-imgui.git
+    fips-nfd:
+        git: https://github.com/fungos/fips-nfd.git
+    fips-pybind11:
+        git: ssh://git@git.ikplus.de:4715/nebula/fips-pybind11.git
 
 exports:
     header-dirs : 

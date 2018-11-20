@@ -236,22 +236,21 @@ CreatePass(const PassCreateInfo& info)
 
 		for (j = 0; j < allAttachments.Size(); j++)
 		{
-			VkAttachmentReference& ref = references[usedAttachments + preserveAttachments];
-			ref.attachment = VK_ATTACHMENT_UNUSED;
-			ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+			VkAttachmentReference& ref = references[allAttachments[j]];
+			ref.attachment = allAttachments[j];
+			ref.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 			preserves[preserveAttachments] = allAttachments[j];
 			preserveAttachments++;
 		}
-
 
 		for (j = 0; j < subpass.dependencies.Size(); j++)
 		{
 			VkSubpassDependency dep;
 			dep.srcSubpass = subpass.dependencies[j];
-			dep.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+			dep.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 			dep.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 			dep.dstSubpass = i;
-			dep.dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+			dep.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 			dep.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
 			dep.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 			subpassDeps.Append(dep);
@@ -480,7 +479,7 @@ CreatePass(const PassCreateInfo& info)
 /**
 */
 void
-DiscardPass(const PassId& id)
+DiscardPass(const PassId id)
 {
 	VkPassLoadInfo& loadInfo = passAllocator.Get<0>(id.id24);
 	VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<1>(id.id24);
@@ -497,7 +496,7 @@ DiscardPass(const PassId& id)
 /**
 */
 void
-PassBegin(const PassId& id)
+PassBegin(const PassId id)
 {
 	VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<1>(id.id24);
 
@@ -510,10 +509,9 @@ PassBegin(const PassId& id)
 	runtimeInfo.framebufferPipelineInfo.pViewportState = &runtimeInfo.subpassPipelineInfo[0];
 
 	const Util::FixedArray<VkViewport>& viewports = runtimeInfo.subpassViewports[0];
-	SetViewports(viewports.Begin(), viewports.Size());
-
+	CoreGraphics::SetViewports(viewports.Begin(), viewports.Size());
 	const Util::FixedArray<VkRect2D>& scissors = runtimeInfo.subpassRects[0];
-	SetScissorRects(scissors.Begin(), scissors.Size());
+	CoreGraphics::SetScissorRects(scissors.Begin(), scissors.Size());
 
 	CoreGraphics::BeginPass(id);
 }
@@ -522,16 +520,16 @@ PassBegin(const PassId& id)
 /**
 */
 void
-PassBeginBatch(const PassId& id, Frame::FrameBatchType::Code batch)
+PassBeginBatch(const PassId id, Frame::FrameBatchType::Code batch)
 {
-
+	// empty
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-PassNextSubpass(const PassId& id)
+PassNextSubpass(const PassId id)
 {
 	VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<1>(id.id24);
 	runtimeInfo.currentSubpassIndex++;
@@ -539,10 +537,9 @@ PassNextSubpass(const PassId& id)
 	runtimeInfo.framebufferPipelineInfo.pViewportState = &runtimeInfo.subpassPipelineInfo[runtimeInfo.currentSubpassIndex];
 
 	const Util::FixedArray<VkViewport>& viewports = runtimeInfo.subpassViewports[runtimeInfo.currentSubpassIndex];
-	SetViewports(viewports.Begin(), viewports.Size());
-
+	CoreGraphics::SetViewports(viewports.Begin(), viewports.Size());
 	const Util::FixedArray<VkRect2D>& scissors = runtimeInfo.subpassRects[runtimeInfo.currentSubpassIndex];
-	SetScissorRects(scissors.Begin(), scissors.Size());
+	CoreGraphics::SetScissorRects(scissors.Begin(), scissors.Size());
 
 	CoreGraphics::SetToNextSubpass();
 }
@@ -551,16 +548,16 @@ PassNextSubpass(const PassId& id)
 /**
 */
 void
-PassEndBatch(const PassId& id)
+PassEndBatch(const PassId id)
 {
-	
+	// empty
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-PassEnd(const PassId& id)
+PassEnd(const PassId id)
 {
 	CoreGraphics::EndPass();
 }
@@ -568,8 +565,22 @@ PassEnd(const PassId& id)
 //------------------------------------------------------------------------------
 /**
 */
+void 
+PassApplyClipSettings(const PassId id)
+{
+	VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<1>(id.id24);
+	const Util::FixedArray<VkViewport>& viewports = runtimeInfo.subpassViewports[runtimeInfo.currentSubpassIndex];
+	SetViewports(viewports.Begin(), viewports.Size());
+
+	const Util::FixedArray<VkRect2D>& scissors = runtimeInfo.subpassRects[runtimeInfo.currentSubpassIndex];
+	SetScissorRects(scissors.Begin(), scissors.Size());
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
-PassWindowResizeCallback(const PassId& id)
+PassWindowResizeCallback(const PassId id)
 {
 	VkPassLoadInfo& loadInfo = passAllocator.Get<0>(id.id24);
 	VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<1>(id.id24);

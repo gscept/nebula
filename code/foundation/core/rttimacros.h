@@ -251,6 +251,14 @@ private:
 
 //------------------------------------------------------------------------------
 /**
+*/
+#define __ImplementAbstractRootClass(type, fourcc) \
+    Core::Rtti type::RTTI(#type, fourcc, nullptr, nullptr, nullptr, 0); \
+    Core::Rtti* type::GetRtti() const { return &this->RTTI; }
+
+
+//------------------------------------------------------------------------------
+/**
     Type implementation of topmost type in inheritance hierarchy (source file).
 */
 #if NEBULA_DEBUG
