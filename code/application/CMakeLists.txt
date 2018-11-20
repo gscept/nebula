@@ -108,3 +108,4 @@ fips_begin_module(application)
 fips_end_module()
 
 target_link_options(application PUBLIC "/WHOLEARCHIVE:application")
+target_include_directories(application PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
