@@ -72,6 +72,74 @@ struct MessageListener
 //------------------------------------------------------------------------------
 /**
 */
+template <class MSG, class RETURNTYPE, class ... TYPES>
+class Fetcher
+{
+public:
+	Fetcher<MSG, RETURNTYPE, TYPES...>(const Fetcher<MSG, RETURNTYPE, TYPES...>&) = delete;
+	void operator=(const Fetcher<MSG, RETURNTYPE, TYPES...>&) = delete;
+
+	/// callback type.
+	typedef RETURNTYPE(*callback_function)(TYPES...);
+
+	/// Register a listener to this message. There can be only one listener to this type of message.
+	/// Will return a listener that must be used to deregister.
+	static MessageListener Register(callback_function func)
+	{
+		n_assert2(Instance()->callback == nullptr, "There can be only one listener to a fetch message");
+		Instance()->callback = func;
+		MessageListener listener = { Instance()->fourcc, Instance()->validId };
+		return listener;
+	}
+
+	/// Deregister a listener
+	static void Deregister(MessageListener listener)
+	{
+		n_assert2(listener.fourcc == Instance()->fourcc, "MessageListener does not belong to this message!");
+		n_assert2(listener.listenerId == validId, "MessageListener is not valid. It might already have been deregistered!");
+		Instance()->callback = nullptr;
+		Instance()->validId++;
+	}
+
+	/// Fetch a value. Returns the returnvalue of the callback.
+	static RETURNTYPE Fetch(TYPES... values)
+	{
+		return Instance()->callback(values ...);
+	}
+private:
+	friend MSG;
+
+	Fetcher() :
+		callback(nullptr),
+		validId(0)
+	{
+		this->name = MSG::GetName();
+		this->fourcc = MSG::GetFourCC();
+	}
+
+	~Fetcher()
+	{
+		// empty
+	}
+
+	MessageListenerId validId;
+
+	// There can be only ONE!
+	callback_function callback;
+
+	Util::StringAtom name;
+	Util::FourCC fourcc;
+
+	static Fetcher<MSG, RETURNTYPE, TYPES...>* Instance()
+	{
+		static Fetcher<MSG, RETURNTYPE, TYPES...> instance;
+		return &instance;
+	}
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
 template <class MSG, class ... TYPES>
 class Message
 {
@@ -138,7 +206,7 @@ protected:
 	Util::ArrayAllocator<
 		MessageListenerId,
 		Delegate
-	> callbacks;	
+	> callbacks;
 
 	/// id generation pool for the deferred messages queues.
 	Ids::IdGenerationPool messageQueueIdPool;
@@ -146,10 +214,6 @@ protected:
 	/// Deferred messages
 	Util::Array<Util::ArrayAllocator<UnqualifiedType<TYPES> ...>> messageQueues;
 
-#ifndef __PUBLIC_BUILD__
-	/// Contains the sender of the distributed message.
-	Util::Array<Util::String> sender;
-#endif
 	/// Contains the arguments of a recieved distributed message.
 	/// @todo	This should be updated by some NetworkMessageManager-y object.
 	Util::ArrayAllocator<
