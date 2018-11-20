@@ -281,7 +281,7 @@ LightContext::SetupSpotLight(const Graphics::GraphicsEntityId id,
 	float widthAtNearZ = (widthAtFarZ / farZ) * nearZ;
 	float heightAtNearZ = (heightAtFarZ / farZ) * nearZ;
 	spotLightAllocator.Get<SpotLightProjection>(sli) = Math::matrix44::persprh(widthAtNearZ, heightAtNearZ, nearZ, farZ);
-	spotLightAllocator.Get<SpotLightInvViewProjection>(sli) = Math::matrix44::multiply(transform, spotLightAllocator.Get<SpotLightProjection>(sli));
+	spotLightAllocator.Get<SpotLightInvViewProjection>(sli) = Math::matrix44::multiply(Math::matrix44::inverse(transform), spotLightAllocator.Get<SpotLightProjection>(sli));
 
 	// allocate constant buffer slice
 	bool changes = false;
@@ -506,7 +506,7 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIn
 			auto cboLight = spotLightAllocator.Get<SpotLightConstantBufferSet>(typeIds[i]);
 			auto trans = spotLightAllocator.Get<SpotLightTransform>(typeIds[i]);
 			auto tex = spotLightAllocator.Get<SpotLightProjectionTexture>(typeIds[i]);
-			auto invViewProj = spotLightAllocator.Get<SpotLightProjection>(typeIds[i]);
+			auto invViewProj = spotLightAllocator.Get<SpotLightInvViewProjection>(typeIds[i]);
 			ConstantBufferUpdateInstance(lightServerState.localLightsConstantBuffer, color[i] * intensity[i], cboLight.slice, lightServerState.local.color);
 			ConstantBufferUpdateInstance(lightServerState.localLightsConstantBuffer, trans, cboLight.slice, lightServerState.local.transform);
 
