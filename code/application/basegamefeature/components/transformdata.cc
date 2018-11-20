@@ -1,4 +1,4 @@
-// NIDL #version:51#
+// NIDL #version:57#
 #ifdef _WIN32
 #define NOMINMAX
 #endif
@@ -99,6 +99,54 @@ void
 TransformComponentData::OnEntityDeleted(Game::Entity entity)
 {
     return;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint& TransformComponentData::Parent(uint32_t instance)
+{
+    return this->data.Get<1>(instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint& TransformComponentData::FirstChild(uint32_t instance)
+{
+    return this->data.Get<2>(instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint& TransformComponentData::NextSibling(uint32_t instance)
+{
+    return this->data.Get<3>(instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint& TransformComponentData::PreviousSibling(uint32_t instance)
+{
+    return this->data.Get<4>(instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::matrix44& TransformComponentData::LocalTransform(uint32_t instance)
+{
+    return this->data.Get<5>(instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::matrix44& TransformComponentData::WorldTransform(uint32_t instance)
+{
+    return this->data.Get<6>(instance);
 }
 
 } // namespace Game

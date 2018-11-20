@@ -1,4 +1,4 @@
-// NIDL #version:51#
+// NIDL #version:57#
 #ifdef _WIN32
 #define NOMINMAX
 #endif
@@ -99,6 +99,38 @@ PointLightComponentData::OnEntityDeleted(Game::Entity entity)
     return;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+float& PointLightComponentData::Range(uint32_t instance)
+{
+    return this->data.Get<1>(instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::float4& PointLightComponentData::Color(uint32_t instance)
+{
+    return this->data.Get<2>(instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool& PointLightComponentData::CastShadows(uint32_t instance)
+{
+    return this->data.Get<3>(instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Util::String& PointLightComponentData::DebugName(uint32_t instance)
+{
+    return this->data.Get<4>(instance);
+}
+
 
 __ImplementWeakClass(GraphicsFeature::SpotLightComponentData, 'splc', Game::ComponentInterface);
 __RegisterClass(SpotLightComponentData)
@@ -188,6 +220,46 @@ SpotLightComponentData::OnEntityDeleted(Game::Entity entity)
     }
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+float& SpotLightComponentData::Range(uint32_t instance)
+{
+    return this->data.Get<1>(instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+float& SpotLightComponentData::Angle(uint32_t instance)
+{
+    return this->data.Get<2>(instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::float4& SpotLightComponentData::Direction(uint32_t instance)
+{
+    return this->data.Get<3>(instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::float4& SpotLightComponentData::Color(uint32_t instance)
+{
+    return this->data.Get<4>(instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool& SpotLightComponentData::CastShadows(uint32_t instance)
+{
+    return this->data.Get<5>(instance);
+}
+
 
 __ImplementWeakClass(GraphicsFeature::DirectionalLightComponentData, 'drlc', Game::ComponentInterface);
 __RegisterClass(DirectionalLightComponentData)
@@ -273,6 +345,30 @@ DirectionalLightComponentData::OnEntityDeleted(Game::Entity entity)
         this->DeregisterEntityImmediate(entity);
         return;
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::float4& DirectionalLightComponentData::Direction(uint32_t instance)
+{
+    return this->data.Get<1>(instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::float4& DirectionalLightComponentData::Color(uint32_t instance)
+{
+    return this->data.Get<2>(instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool& DirectionalLightComponentData::CastShadows(uint32_t instance)
+{
+    return this->data.Get<3>(instance);
 }
 
 } // namespace GraphicsFeature

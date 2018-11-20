@@ -1,4 +1,4 @@
-// NIDL #version:51#
+// NIDL #version:57#
 #ifdef _WIN32
 #define NOMINMAX
 #endif
@@ -89,6 +89,14 @@ void
 TagComponentData::OnEntityDeleted(Game::Entity entity)
 {
     return;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Util::Guid& TagComponentData::Tag(uint32_t instance)
+{
+    return this->data.Get<1>(instance);
 }
 
 } // namespace Game
