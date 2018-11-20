@@ -1,4 +1,4 @@
-// NIDL #version:51#
+// NIDL #version:57#
 #ifdef _WIN32
 #define NOMINMAX
 #endif

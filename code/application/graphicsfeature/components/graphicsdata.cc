@@ -1,4 +1,4 @@
-// NIDL #version:51#
+// NIDL #version:57#
 #ifdef _WIN32
 #define NOMINMAX
 #endif
@@ -110,6 +110,22 @@ GraphicsComponentData::OnEntityDeleted(Game::Entity entity)
         this->DeregisterEntityImmediate(entity);
         return;
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint& GraphicsComponentData::GraphicsEntity(uint32_t instance)
+{
+    return this->data.Get<1>(instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Util::String& GraphicsComponentData::ModelResource(uint32_t instance)
+{
+    return this->data.Get<2>(instance);
 }
 
 } // namespace GraphicsFeature

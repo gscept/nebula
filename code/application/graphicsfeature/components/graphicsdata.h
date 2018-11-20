@@ -1,4 +1,4 @@
-// NIDL #version:51#
+// NIDL #version:57#
 #pragma once
 //------------------------------------------------------------------------------
 /**
@@ -56,6 +56,10 @@ public:
     /// Called from entitymanager if this component is registered with a deletion callback.
     /// Removes entity immediately from component instances.
     void OnEntityDeleted(Game::Entity entity);
-};
+
         
+    /// Attribute access methods
+    uint& GraphicsEntity(uint32_t instance);
+    Util::String& ModelResource(uint32_t instance);
+};
 } // namespace GraphicsFeature
