@@ -190,8 +190,14 @@ ImguiConsole::Setup()
         reader->Close();
     }
     this->persistentHistory = IO::TextWriter::Create();
-    this->persistentHistory->SetStream(IO::IoServer::Instance()->CreateStream("bin:" + history));
-    this->persistentHistory->Open();
+    auto stream = IO::IoServer::Instance()->CreateStream("bin:" + history);
+    stream->SetAccessMode(IO::Stream::AppendAccess);
+    if (stream->Open())
+    {
+        this->persistentHistory->SetStream(stream);
+        this->persistentHistory->Open();
+    }
+    
 	this->consoleBuffer.SetCapacity(2048);
 }
 
