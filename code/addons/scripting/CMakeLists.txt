@@ -3,7 +3,7 @@
 #-------------------------------------------------------------------------------
 
 fips_begin_module(scripting)
-fips_deps(foundation )
+fips_deps(foundation application)
 fips_include_directories(${PYTHON_INCLUDE_DIRS})
 fips_files(scriptserver.cc scriptserver.h bindings.h bindings.cc	
 )
