@@ -1,4 +1,4 @@
-// NIDL #version:48#
+// NIDL #version:57#
 #ifdef _WIN32
 #define NOMINMAX
 #endif
@@ -14,7 +14,7 @@
 //------------------------------------------------------------------------------
 namespace Msg
 {
-PYBIND11_MODULE(basegameprotocol, m)
+PYBIND11_EMBEDDED_MODULE(basegameprotocol, m)
 {
     m.doc() = "namespace Msg";
     m.def("SetLocalTransform", &SetLocalTransform::Send, "Set the local transform of an entity.");

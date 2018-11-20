@@ -1,4 +1,4 @@
-// NIDL #version:48#
+// NIDL #version:57#
 #ifdef _WIN32
 #define NOMINMAX
 #endif
@@ -49,7 +49,7 @@ GraphicsComponentData::~GraphicsComponentData()
 /**
 */
 uint32_t
-GraphicsComponentData::RegisterEntity(const Game::Entity& entity)
+GraphicsComponentData::RegisterEntity(Game::Entity entity)
 {
     auto instance = component_templated_t::RegisterEntity(entity);
     Game::EntityManager::Instance()->RegisterDeletionCallback(entity, this);
@@ -62,7 +62,7 @@ GraphicsComponentData::RegisterEntity(const Game::Entity& entity)
 /**
 */
 void
-GraphicsComponentData::DeregisterEntity(const Game::Entity& entity)
+GraphicsComponentData::DeregisterEntity(Game::Entity entity)
 {
     uint32_t index = this->GetInstance(entity);
     if (index != InvalidIndex)
@@ -110,6 +110,22 @@ GraphicsComponentData::OnEntityDeleted(Game::Entity entity)
         this->DeregisterEntityImmediate(entity);
         return;
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint& GraphicsComponentData::GraphicsEntity(uint32_t instance)
+{
+    return this->data.Get<1>(instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Util::String& GraphicsComponentData::ModelResource(uint32_t instance)
+{
+    return this->data.Get<2>(instance);
 }
 
 } // namespace GraphicsFeature

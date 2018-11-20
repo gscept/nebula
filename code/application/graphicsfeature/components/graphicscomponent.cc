@@ -60,12 +60,12 @@ GraphicsComponent::SetupAcceptedMessages()
 /**
 */
 void
-GraphicsComponent::OnActivate(const uint32_t& instance)
+GraphicsComponent::OnActivate(uint32_t instance)
 {
 	auto gfxEntity = Graphics::CreateEntity();
-	component.data.Get<GraphicsComponentData::GRAPHICSENTITY>(instance) = gfxEntity.id;
+	component.GraphicsEntity(instance) = gfxEntity.id;
 	Models::ModelContext::RegisterEntity(gfxEntity);
-	Models::ModelContext::Setup(gfxEntity, component.data.Get<GraphicsComponentData::MODELRESOURCE>(instance), "NONE");
+	Models::ModelContext::Setup(gfxEntity, component.ModelResource(instance), "NONE");
 	auto transform = Game::TransformComponent::GetWorldTransform(component.GetOwner(instance));
 	Models::ModelContext::SetTransform(gfxEntity, transform);
 	Visibility::ObservableContext::RegisterEntity(gfxEntity);
@@ -76,9 +76,9 @@ GraphicsComponent::OnActivate(const uint32_t& instance)
 /**
 */
 void
-GraphicsComponent::OnDeactivate(const uint32_t& instance)
+GraphicsComponent::OnDeactivate(uint32_t instance)
 {
-	Graphics::GraphicsEntityId gfxEntity = { component.data.Get<GraphicsComponentData::GRAPHICSENTITY>(instance) };
+	Graphics::GraphicsEntityId gfxEntity = { component.GraphicsEntity(instance) };
 	Models::ModelContext::DeregisterEntity(gfxEntity);
 	Visibility::ObservableContext::DeregisterEntity(gfxEntity);
 	Graphics::DestroyEntity(gfxEntity);
@@ -88,12 +88,12 @@ GraphicsComponent::OnDeactivate(const uint32_t& instance)
 /**
 */
 void
-GraphicsComponent::UpdateTransform(const Game::Entity & entity, const Math::matrix44 & transform)
+GraphicsComponent::UpdateTransform(Game::Entity entity, const Math::matrix44 & transform)
 {
 	auto instance = component.GetInstance(entity);
 	if (instance != InvalidIndex)
 	{
-		Graphics::GraphicsEntityId gfxEntity = { component.data.Get<GraphicsComponentData::GRAPHICSENTITY>(instance) };
+		Graphics::GraphicsEntityId gfxEntity = { component.GraphicsEntity(instance) };
 		Models::ModelContext::SetTransform(gfxEntity, transform);
 	}
 }
@@ -102,14 +102,14 @@ GraphicsComponent::UpdateTransform(const Game::Entity & entity, const Math::matr
 /**
 */
 void
-GraphicsComponent::SetModel(const Game::Entity & entity, const Util::String & path)
+GraphicsComponent::SetModel(Game::Entity entity, const Util::String & path)
 {
 	auto instance = component.GetInstance(entity);
 	if (instance != InvalidIndex)
 	{
-		Graphics::GraphicsEntityId gfxEntity = { component.data.Get<GraphicsComponentData::GRAPHICSENTITY>(instance) };
+		Graphics::GraphicsEntityId gfxEntity = { component.GraphicsEntity(instance) };
 		Models::ModelContext::ChangeModel(gfxEntity, path, "NONE");
-		component.data.Get<GraphicsComponentData::MODELRESOURCE>(instance) = path;
+		component.ModelResource(instance) = path;
 	}
 }
 

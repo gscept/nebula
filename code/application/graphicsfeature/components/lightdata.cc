@@ -1,4 +1,4 @@
-// NIDL #version:48#
+// NIDL #version:57#
 #ifdef _WIN32
 #define NOMINMAX
 #endif
@@ -52,7 +52,7 @@ PointLightComponentData::~PointLightComponentData()
 /**
 */
 uint32_t
-PointLightComponentData::RegisterEntity(const Game::Entity& entity)
+PointLightComponentData::RegisterEntity(Game::Entity entity)
 {
     auto instance = component_templated_t::RegisterEntity(entity);
     return instance;
@@ -62,7 +62,7 @@ PointLightComponentData::RegisterEntity(const Game::Entity& entity)
 /**
 */
 void
-PointLightComponentData::DeregisterEntity(const Game::Entity& entity)
+PointLightComponentData::DeregisterEntity(Game::Entity entity)
 {
     uint32_t index = this->GetInstance(entity);
     if (index != InvalidIndex)
@@ -99,6 +99,38 @@ PointLightComponentData::OnEntityDeleted(Game::Entity entity)
     return;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+float& PointLightComponentData::Range(uint32_t instance)
+{
+    return this->data.Get<1>(instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::float4& PointLightComponentData::Color(uint32_t instance)
+{
+    return this->data.Get<2>(instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool& PointLightComponentData::CastShadows(uint32_t instance)
+{
+    return this->data.Get<3>(instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Util::String& PointLightComponentData::DebugName(uint32_t instance)
+{
+    return this->data.Get<4>(instance);
+}
+
 
 __ImplementWeakClass(GraphicsFeature::SpotLightComponentData, 'splc', Game::ComponentInterface);
 __RegisterClass(SpotLightComponentData)
@@ -129,7 +161,7 @@ SpotLightComponentData::~SpotLightComponentData()
 /**
 */
 uint32_t
-SpotLightComponentData::RegisterEntity(const Game::Entity& entity)
+SpotLightComponentData::RegisterEntity(Game::Entity entity)
 {
     auto instance = component_templated_t::RegisterEntity(entity);
     Game::EntityManager::Instance()->RegisterDeletionCallback(entity, this);
@@ -140,7 +172,7 @@ SpotLightComponentData::RegisterEntity(const Game::Entity& entity)
 /**
 */
 void
-SpotLightComponentData::DeregisterEntity(const Game::Entity& entity)
+SpotLightComponentData::DeregisterEntity(Game::Entity entity)
 {
     uint32_t index = this->GetInstance(entity);
     if (index != InvalidIndex)
@@ -188,6 +220,46 @@ SpotLightComponentData::OnEntityDeleted(Game::Entity entity)
     }
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+float& SpotLightComponentData::Range(uint32_t instance)
+{
+    return this->data.Get<1>(instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+float& SpotLightComponentData::Angle(uint32_t instance)
+{
+    return this->data.Get<2>(instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::float4& SpotLightComponentData::Direction(uint32_t instance)
+{
+    return this->data.Get<3>(instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::float4& SpotLightComponentData::Color(uint32_t instance)
+{
+    return this->data.Get<4>(instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool& SpotLightComponentData::CastShadows(uint32_t instance)
+{
+    return this->data.Get<5>(instance);
+}
+
 
 __ImplementWeakClass(GraphicsFeature::DirectionalLightComponentData, 'drlc', Game::ComponentInterface);
 __RegisterClass(DirectionalLightComponentData)
@@ -216,7 +288,7 @@ DirectionalLightComponentData::~DirectionalLightComponentData()
 /**
 */
 uint32_t
-DirectionalLightComponentData::RegisterEntity(const Game::Entity& entity)
+DirectionalLightComponentData::RegisterEntity(Game::Entity entity)
 {
     auto instance = component_templated_t::RegisterEntity(entity);
     Game::EntityManager::Instance()->RegisterDeletionCallback(entity, this);
@@ -227,7 +299,7 @@ DirectionalLightComponentData::RegisterEntity(const Game::Entity& entity)
 /**
 */
 void
-DirectionalLightComponentData::DeregisterEntity(const Game::Entity& entity)
+DirectionalLightComponentData::DeregisterEntity(Game::Entity entity)
 {
     uint32_t index = this->GetInstance(entity);
     if (index != InvalidIndex)
@@ -273,6 +345,30 @@ DirectionalLightComponentData::OnEntityDeleted(Game::Entity entity)
         this->DeregisterEntityImmediate(entity);
         return;
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::float4& DirectionalLightComponentData::Direction(uint32_t instance)
+{
+    return this->data.Get<1>(instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::float4& DirectionalLightComponentData::Color(uint32_t instance)
+{
+    return this->data.Get<2>(instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool& DirectionalLightComponentData::CastShadows(uint32_t instance)
+{
+    return this->data.Get<3>(instance);
 }
 
 } // namespace GraphicsFeature
