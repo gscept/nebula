@@ -3,6 +3,8 @@
 /**
 	Component serialization functions
 
+	Implements various serialization functions for different types of arrays.
+
 	(C) 2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
@@ -49,6 +51,26 @@ Serialize(const Ptr<IO::BinaryWriter>& writer, const Util::Array<X>& data)
 template<class X>
 __forceinline typename std::enable_if<std::is_trivial<X>::value == true, void>::type
 Deserialize(const Ptr<IO::BinaryReader>& reader, Util::Array<X>& data, uint32_t offset, uint32_t numInstances)
+{
+	reader->ReadRawData((void*)&data[offset], numInstances * data.TypeSize());
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<>
+__forceinline void
+Serialize<Game::Entity>(const Ptr<IO::BinaryWriter>& writer, const Util::Array<Game::Entity>& data)
+{
+	writer->WriteRawData((void*)&data[0], data.ByteSize());
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<>
+__forceinline void
+Deserialize<Game::Entity>(const Ptr<IO::BinaryReader>& reader, Util::Array<Game::Entity>& data, uint32_t offset, uint32_t numInstances)
 {
 	reader->ReadRawData((void*)&data[offset], numInstances * data.TypeSize());
 }
@@ -141,6 +163,7 @@ template<>
 __forceinline void
 Deserialize<Util::Guid>(const Ptr<IO::BinaryReader>& reader, Util::Array<Util::Guid>& data, uint32_t offset, uint32_t numInstances)
 {
+	data.SetSize(offset + numInstances);
 	for (SizeT i = 0; i < numInstances; ++i)
 	{
 		data[offset + i] = reader->ReadGuid();
@@ -150,8 +173,6 @@ Deserialize<Util::Guid>(const Ptr<IO::BinaryReader>& reader, Util::Array<Util::G
 template <class...Ts, std::size_t...Is>
 void WriteDataSequenced(const Util::ArrayAllocator<Game::Entity, Ts...>& data, const Ptr<IO::BinaryWriter>& writer, std::index_sequence<Is...>)
 {
-	writer->WriteRawData((void*)&data.GetArray<0>()[0], data.GetArray<0>().ByteSize());
-	
 	using expander = int[];
 	(void)expander
 	{
@@ -163,12 +184,6 @@ void WriteDataSequenced(const Util::ArrayAllocator<Game::Entity, Ts...>& data, c
 template <class...Ts, std::size_t...Is>
 void ReadDataSequenced(Util::ArrayAllocator<Game::Entity, Ts...>& data, const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances, std::index_sequence<Is...>)
 {
-	if (data.GetArray<0>().Size() < offset + numInstances)
-	{
-		data.GetArray<0>().SetSize(offset + numInstances);
-	}
-	reader->ReadRawData((void*)&data.GetArray<0>()[offset], numInstances * data.GetArray<0>().TypeSize());
-
 	using expander = int[];
 	(void)expander
 	{

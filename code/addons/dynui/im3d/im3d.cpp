@@ -700,7 +700,7 @@ bool Im3d::GizmoTranslation(Id _id, float _translation_[3], bool _local)
 
  // invert axes if viewing from behind
 	const AppData& appData = ctx.getAppData();
-	/*Vec3 viewDir = appData.m_viewOrigin - *outVec3;
+	Vec3 viewDir = appData.m_viewOrigin - *outVec3;
 	for (int i = 0; i < 3; ++i) {
 		if (Dot(axes[i].m_axis, viewDir) < 0.0f) {
 			axes[i].m_axis = -axes[i].m_axis;
@@ -708,7 +708,7 @@ bool Im3d::GizmoTranslation(Id _id, float _translation_[3], bool _local)
 				planes[j].m_origin[i] = -planes[j].m_origin[i];
 			}
 		}
-	}*/
+	}
 
  	Sphere boundingSphere(*outVec3, worldHeight * 1.5f); // expand the bs to catch the planar subgizmos
 	Ray ray(appData.m_cursorRayOrigin, appData.m_cursorRayDirection);
@@ -908,12 +908,12 @@ bool Im3d::GizmoScale(Id _id, float _scale_[3])
 
  // invert axes if viewing from behind
 	const AppData& appData = ctx.getAppData();
-	/*Vec3 viewDir = appData.m_viewOrigin - *outVec3;
+	Vec3 viewDir = appData.m_viewOrigin - *outVec3;
 	for (int i = 0; i < 3; ++i) {
 		if (Dot(axes[i].m_axis, viewDir) < 0.0f) {
 			axes[i].m_axis = -axes[i].m_axis;
 		}
-	}*/
+	}
 
 	Sphere boundingSphere(origin, worldHeight);
 	Ray ray(appData.m_cursorRayOrigin, appData.m_cursorRayDirection);

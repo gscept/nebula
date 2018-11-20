@@ -2,7 +2,8 @@
 # main cmake file that sets up fips
 
 # 3.7.2 required for using FindVulkan
-cmake_minimum_required(VERSION 3.8)
+# 3.13 require for target_link_options, required for scripting atm
+cmake_minimum_required(VERSION 3.13)
 
 get_filename_component(FIPS_ROOT_DIR "../fips" ABSOLUTE)
 include(${FIPS_ROOT_DIR}/cmake/fips.cmake)
@@ -10,7 +11,7 @@ include(${FIPS_ROOT_DIR}/cmake/fips.cmake)
 fips_setup(PROJECT Nebula)
 SET(CODE_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/code)
 
-#fips_include_directories(code/foundation)
+fips_include_directories(code/addons)
 fips_include_directories(extlibs/mixed)
 fips_include_directories(extlibs/scripts)
 

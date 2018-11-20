@@ -70,6 +70,11 @@ VkShaderServer::Open()
 	this->resourceTable = ShaderCreateResourceTable(shader, NEBULA_TICK_GROUP);
 	this->tableLayout = ShaderGetResourcePipeline(shader);
 
+	this->tickParams = ShaderCreateConstantBuffer(shader, "PerTickParams");
+	IndexT slot = ShaderGetResourceSlot(shader, "PerTickParams");
+	ResourceTableSetConstantBuffer(this->resourceTable, {this->tickParams, slot, 0, false, false, -1, 0});
+	ResourceTableCommitChanges(this->resourceTable);
+
 	return true;
 }
 
@@ -228,6 +233,16 @@ VkShaderServer::UnregisterTexture(const uint32_t id, const CoreGraphics::Texture
 		this->textureCubePool.Free(id);
 		break;
 	}
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+const CoreGraphics::ConstantBufferId 
+VkShaderServer::GetTickParams() const
+{
+	return this->tickParams;
 }
 
 } // namespace Vulkan

@@ -69,7 +69,6 @@ MemoryMeshPool::BindMesh(const MeshId id, const IndexT prim)
 	// setup pipeline (a bit ugly)
 	CoreGraphics::SetVertexLayout(inf.vertexLayout);
 	CoreGraphics::SetPrimitiveTopology(inf.topology);
-	CoreGraphics::SetGraphicsPipeline();
 
 	// set input
 	CoreGraphics::SetPrimitiveGroup(inf.primitiveGroups[prim]);

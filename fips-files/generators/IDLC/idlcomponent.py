@@ -20,7 +20,7 @@ class ComponentClassWriter:
         self.document = document
         self.component = component
         self.componentName = componentName
-        self.className = '{}Base'.format(self.componentName)
+        self.className = '{}Data'.format(self.componentName)
         self.namespace = namespace
 
         if (not "fourcc" in component):
@@ -59,8 +59,7 @@ class {className} : public Game::Component<
     {componentTemplateArguments}
 >
 {{
-    __DeclareClass({className})
-
+    __DeclareClass({className});
 public:
     /// Default constructor
     {className}();
@@ -75,10 +74,10 @@ public:
     }};
 
     /// Registers an entity to this component.
-    uint32_t RegisterEntity(const Game::Entity& entity);
+    uint32_t RegisterEntity(Game::Entity entity);
 
     /// Deregister Entity.
-    void DeregisterEntity(const Game::Entity& entity);
+    void DeregisterEntity(Game::Entity entity);
 
     /// Destroys all instances of this component, and deregisters every entity.
     void DestroyAll();
@@ -89,14 +88,52 @@ public:
     /// Called from entitymanager if this component is registered with a deletion callback.
     /// Removes entity immediately from component instances.
     void OnEntityDeleted(Game::Entity entity);
-}};
+
         """.format(
             className=self.className,
             enumAttributeList=self.GetEnumAttributeList(),
             componentTemplateArguments=self.componentTemplateArguments
         )
-
         self.f.WriteLine(headerTemplate)
+        self.f.IncreaseIndent()
+        self.WriteAttributeAccessDeclarations()
+        self.f.DecreaseIndent()
+        self.f.WriteLine("};")
+
+    #------------------------------------------------------------------------------
+    ##
+    #
+    def WriteAttributeAccessDeclarations(self):
+        if self.hasAttributes:
+            self.f.WriteLine("/// Attribute access methods")
+            for attributeName in self.component["attributes"]:
+                if not attributeName in self.document["attributes"]:
+                    util.fmtError(AttributeNotFoundError.format(attributeName))
+                
+                returnType = IDLTypes.GetTypeString(self.document["attributes"][attributeName]["type"])
+                attributeName = Capitalize(attributeName)
+
+                self.f.WriteLine("{retval}& {attributeName}(uint32_t instance);".format(retval=returnType, attributeName=attributeName))
+
+    #------------------------------------------------------------------------------
+    ##
+    #
+    def WriteAttributeAccessImplementation(self):
+        if self.hasAttributes:
+            for i, attributeName in enumerate(self.component["attributes"]):
+                if not attributeName in self.document["attributes"]:
+                    util.fmtError(AttributeNotFoundError.format(attributeName))
+                
+                returnType = IDLTypes.GetTypeString(self.document["attributes"][attributeName]["type"])
+                attributeName = Capitalize(attributeName)
+
+                self.f.InsertNebulaDivider()
+                self.f.WriteLine("{retval}& {className}::{attributeName}(uint32_t instance)".format(retval=returnType, className=self.className, attributeName=attributeName))
+                self.f.WriteLine("{")
+                self.f.IncreaseIndent()
+                self.f.WriteLine("return this->data.Get<{}>(instance);".format(i + 1))
+                self.f.DecreaseIndent()
+                self.f.WriteLine("}")
 
     #------------------------------------------------------------------------------
     ##
@@ -118,8 +155,9 @@ public:
         if self.hasAttributes:
             numAttributes += len(self.component["attributes"])
 
-        self.f.WriteLine("__ImplementClass({}::{}, '{}', Core::RefCounted)".format(self.namespace, self.className, self.fourcc))
-        self.f.WriteLine("")
+        self.f.WriteLine("__ImplementWeakClass({}::{}, '{}', Game::ComponentInterface);".format(self.namespace, self.className, self.fourcc))
+        self.f.WriteLine("__RegisterClass({})".format(self.className))
+
         self.f.InsertNebulaDivider()
         self.f.WriteLine("{className}::{className}() :".format(className=self.className))
         self.f.IncreaseIndent()
@@ -162,7 +200,7 @@ public:
     def WriteRegisterEntityImplementation(self):
         self.f.InsertNebulaDivider()
         self.f.WriteLine("uint32_t")
-        self.f.WriteLine("{}::RegisterEntity(const Game::Entity& entity)".format(self.className))
+        self.f.WriteLine("{}::RegisterEntity(Game::Entity entity)".format(self.className))
         self.f.WriteLine("{")
         self.f.IncreaseIndent()
         self.f.WriteLine("auto instance = component_templated_t::RegisterEntity(entity);")
@@ -172,7 +210,7 @@ public:
 
         if self.hasEvents and "onactivate" in self.events:
             self.f.WriteLine("")
-            self.f.WriteLine("this->OnActivate(instance);")
+            self.f.WriteLine("this->functions.OnActivate(instance);")
 
         self.f.WriteLine("return instance;")
         self.f.DecreaseIndent()
@@ -184,7 +222,7 @@ public:
     def WriteDeregisterEntityImplementation(self):
         self.f.InsertNebulaDivider()
         self.f.WriteLine("void")
-        self.f.WriteLine("{}::DeregisterEntity(const Game::Entity& entity)".format(self.className))
+        self.f.WriteLine("{}::DeregisterEntity(Game::Entity entity)".format(self.className))
         self.f.WriteLine("{")
         self.f.IncreaseIndent()
         self.f.WriteLine("uint32_t index = this->GetInstance(entity);")
@@ -193,7 +231,7 @@ public:
         self.f.IncreaseIndent()
 
         if self.hasEvents and "ondeactivate" in self.events:
-            self.f.WriteLine("this->OnDeactivate(index);")
+            self.f.WriteLine("this->functions.OnDeactivate(index);")
             self.f.WriteLine("")
 
         if self.useDelayedRemoval:
@@ -283,3 +321,4 @@ public:
         self.WriteDestroyAllImplementation()
         self.WriteOptimizeImplementation()
         self.WriteOnEntityDeletedImplementation()
+        self.WriteAttributeAccessImplementation()

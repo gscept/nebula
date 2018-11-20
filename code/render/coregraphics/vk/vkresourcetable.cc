@@ -345,7 +345,7 @@ ResourceTableSetInputAttachment(const ResourceTableId& id, const ResourceTableIn
 
 	VkDescriptorImageInfo img;
 	img.sampler = VK_NULL_HANDLE;
-	img.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+	img.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 	if (tex.tex == RenderTextureId::Invalid())
 		img.imageView = VK_NULL_HANDLE;
 	else

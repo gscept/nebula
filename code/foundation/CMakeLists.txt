@@ -8,7 +8,7 @@ fips_begin_module(foundation)
 	endif()
 	fips_vs_warning_level(3)
 	fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-	fips_deps(corelibs zlib)
+	fips_deps(corelibs zlib nfd)
 	if(FIPS_WINDOWS)
 		fips_deps(StackWalker)
 	endif()
@@ -49,7 +49,7 @@ fips_begin_module(foundation)
 			memorypool.h
 			poolarrayallocator.cc
 			poolarrayallocator.h
-			ringallocator.h			
+			ringallocator.h	
 			debug/memorypagehandler.cc
 			debug/memorypagehandler.h
 		)
@@ -173,6 +173,8 @@ fips_begin_module(foundation)
             jsonreader.h
 			jsonwriter.cc
             jsonwriter.h
+            filedialog.cc
+            filedialog.h
 			mediatype.h
 			memorystream.cc
 			memorystream.h
@@ -602,3 +604,4 @@ fips_begin_module(foundation)
 		)
 	endif()
 fips_end_module()
+target_include_directories(foundation PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

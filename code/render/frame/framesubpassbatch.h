@@ -26,7 +26,6 @@ public:
 	};
 
 	FrameOp::Compiled* AllocCompiled(Memory::ChunkAllocator<BIG_CHUNK>& allocator);
-
 	CoreGraphics::BatchGroup::Code batch;
 };
 

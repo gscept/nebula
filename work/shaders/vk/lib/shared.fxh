@@ -137,6 +137,11 @@ group(FRAME_GROUP) shared varblock FrameBlock
 	textureHandle LightBuffer;
 };
 
+group(FRAME_GROUP) shared varblock ShadowMatrixBlock [ bool DynamicOffset = true; string Visibility = "VS|GS"; ]
+{
+	mat4 ViewMatrixArray[6];
+};
+
 #define FLT_MAX     3.40282347E+38F
 #define FLT_MIN     -3.40282347E+38F
 
@@ -148,17 +153,22 @@ group(DYNAMIC_OFFSET_GROUP) shared varblock ObjectBlock [ string Visibility = "V
 	mat4 InvModel;
 	mat4 ModelViewProjection;
 	mat4 ModelView;
-	int ObjectId;
+	int ObjectId; 
 };
 
 // define how many objects we can render simultaneously 
 #define MAX_BATCH_SIZE 256
-group(DYNAMIC_OFFSET_GROUP) shared varblock InstancingBlock [ bool System = true; string Visibility = "VS"; ]
+group(DYNAMIC_OFFSET_GROUP) shared varblock InstancingBlock [ string Visibility = "VS"; ]
 {
 	mat4 ModelArray[MAX_BATCH_SIZE];
 	mat4 ModelViewArray[MAX_BATCH_SIZE];
 	mat4 ModelViewProjectionArray[MAX_BATCH_SIZE];
 	int IdArray[MAX_BATCH_SIZE];
+};
+
+group(DYNAMIC_OFFSET_GROUP) shared varblock JointBlock [ bool DynamicOffset = true; string Visibility = "VS"; ]
+{
+	mat4 JointPalette[256];
 };
 
 group(PASS_GROUP) inputAttachment InputAttachments[8];

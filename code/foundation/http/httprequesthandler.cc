@@ -50,6 +50,7 @@ HttpRequestHandler::PutRequest(const Ptr<HttpRequest>& httpRequest)
 void
 HttpRequestHandler::HandlePendingRequests()
 {
+	this->curWorkRequests.Reserve(this->pendingRequests.Size());
     this->pendingRequests.DequeueAll(this->curWorkRequests);
     IndexT i;
     for (i = 0; i < this->curWorkRequests.Size(); i++)

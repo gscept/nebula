@@ -4,6 +4,13 @@
         "type": "uint"
         "fourcc": "gEnt"
         "access": "R"
+		"default": -1
+    }
+	"modelResource": {
+        "type": "string"
+        "fourcc": "mdlR"
+        "access": "R"
+		"default": "mdl:Buildings/castle_tower.n3"
     }
 }
 "components": {
@@ -11,6 +18,7 @@
         "fourcc": "GFXC"
         "attributes": [
             "graphicsEntity"
+			"modelResource"
         ]
         "events": [
             "OnActivate"

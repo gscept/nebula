@@ -66,7 +66,7 @@ CameraContext::SetupProjectionFov(const Graphics::GraphicsEntityId id, float asp
 	const ContextEntityId cid = GetContextId(id);
 	CameraSettings& settings = cameraAllocator.Get<0>(cid.id);
 	settings.SetupPerspectiveFov(fov, aspect, znear, zfar);
-	cameraAllocator.Get<1>(id.id) = settings.GetProjTransform();
+	cameraAllocator.Get<1>(cid.id) = settings.GetProjTransform();
 }
 
 //------------------------------------------------------------------------------
@@ -78,7 +78,7 @@ CameraContext::SetupOrthographic(const Graphics::GraphicsEntityId id, float widt
 	const ContextEntityId cid = GetContextId(id);
 	CameraSettings& settings = cameraAllocator.Get<0>(cid.id);
 	settings.SetupOrthogonal(width, height, znear, zfar);
-	cameraAllocator.Get<1>(id.id) = settings.GetProjTransform();
+	cameraAllocator.Get<1>(cid.id) = settings.GetProjTransform();
 }
 
 //------------------------------------------------------------------------------

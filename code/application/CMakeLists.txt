@@ -4,7 +4,7 @@
 
 fips_begin_module(application)
 	fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/foundation ${CODE_ROOT}/render ${CODE_ROOT}/resource)
-	fips_deps(foundation render resource)
+	fips_deps(foundation render resource scripting)
 	fips_dir(.)
 		fips_files(
 			stdneb.h
@@ -25,8 +25,8 @@ fips_begin_module(application)
 		)
 	fips_dir(game/component)
 		fips_files(
-			basecomponent.h
-			basecomponent.cc
+			componentinterface.h
+			componentinterface.cc
 			componentplugin.h
 			componentplugin.cc
 			component.h
@@ -62,6 +62,8 @@ fips_begin_module(application)
 			componentmanager.cc
 		)
 	fips_dir(basegamefeature/components)
+		fips_generate(FROM transformdata.nidl TYPE NIDL)
+		fips_generate(FROM tagdata.nidl TYPE NIDL)
 		fips_files(
 			transformcomponent.h
 			transformcomponent.cc
@@ -89,8 +91,8 @@ fips_begin_module(application)
 			graphicsfeatureunit.cc
 		)
 	fips_dir(graphicsfeature/components)
-		fips_generate(FROM lightcomponentbase.nidl TYPE NIDL)
-		fips_generate(FROM graphicscomponentbase.nidl TYPE NIDL)
+		fips_generate(FROM lightdata.nidl TYPE NIDL)
+		fips_generate(FROM graphicsdata.nidl TYPE NIDL)
 		fips_files(
 			graphicscomponent.h
 			graphicscomponent.cc
@@ -104,3 +106,6 @@ fips_begin_module(application)
 		)
 	fips_dir(.)
 fips_end_module()
+
+target_link_options(application PUBLIC "/WHOLEARCHIVE:application")
+target_include_directories(application PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

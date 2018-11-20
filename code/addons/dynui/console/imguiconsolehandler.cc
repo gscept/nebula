@@ -2,7 +2,7 @@
 //  imguiconsolehandler.cc
 //  (C) 2015-2016 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "foundation/stdneb.h"
 #include "imguiconsolehandler.h"
 #include "io/console.h"
 
@@ -70,7 +70,7 @@ ImguiConsoleHandler::Close()
 void
 ImguiConsoleHandler::Print(const Util::String& msg)
 {
-	ImguiConsole::Instance()->AppendToLog(msg);
+	ImguiConsole::Instance()->AppendToLog({ ImguiConsole::N_MESSAGE, msg });
 }
 
 //------------------------------------------------------------------------------
@@ -79,7 +79,7 @@ ImguiConsoleHandler::Print(const Util::String& msg)
 void
 ImguiConsoleHandler::Error(const Util::String& msg)
 {
-	ImguiConsole::Instance()->AppendToLog(msg);
+	ImguiConsole::Instance()->AppendToLog({ ImguiConsole::N_ERROR, msg });
 }
 //------------------------------------------------------------------------------
 /**
@@ -87,7 +87,7 @@ ImguiConsoleHandler::Error(const Util::String& msg)
 void
 ImguiConsoleHandler::Warning(const Util::String& msg)
 {
-	ImguiConsole::Instance()->AppendToLog(msg);
+	ImguiConsole::Instance()->AppendToLog({ ImguiConsole::N_WARNING, msg });
 }
 //------------------------------------------------------------------------------
 /**
@@ -95,7 +95,7 @@ ImguiConsoleHandler::Warning(const Util::String& msg)
 void
 ImguiConsoleHandler::DebugOut(const Util::String& msg)
 {
-	ImguiConsole::Instance()->AppendToLog(msg);
+	ImguiConsole::Instance()->AppendToLog({ImguiConsole::N_SYSTEM, msg});
 }
 
 
