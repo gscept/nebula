@@ -74,10 +74,10 @@ public:
     }};
 
     /// Registers an entity to this component.
-    uint32_t RegisterEntity(const Game::Entity& entity);
+    uint32_t RegisterEntity(Game::Entity entity);
 
     /// Deregister Entity.
-    void DeregisterEntity(const Game::Entity& entity);
+    void DeregisterEntity(Game::Entity entity);
 
     /// Destroys all instances of this component, and deregisters every entity.
     void DestroyAll();
@@ -88,14 +88,52 @@ public:
     /// Called from entitymanager if this component is registered with a deletion callback.
     /// Removes entity immediately from component instances.
     void OnEntityDeleted(Game::Entity entity);
-}};
+
         """.format(
             className=self.className,
             enumAttributeList=self.GetEnumAttributeList(),
             componentTemplateArguments=self.componentTemplateArguments
         )
-
         self.f.WriteLine(headerTemplate)
+        self.f.IncreaseIndent()
+        self.WriteAttributeAccessDeclarations()
+        self.f.DecreaseIndent()
+        self.f.WriteLine("};")
+
+    #------------------------------------------------------------------------------
+    ##
+    #
+    def WriteAttributeAccessDeclarations(self):
+        if self.hasAttributes:
+            self.f.WriteLine("/// Attribute access methods")
+            for attributeName in self.component["attributes"]:
+                if not attributeName in self.document["attributes"]:
+                    util.fmtError(AttributeNotFoundError.format(attributeName))
+                
+                returnType = IDLTypes.GetTypeString(self.document["attributes"][attributeName]["type"])
+                attributeName = Capitalize(attributeName)
+
+                self.f.WriteLine("{retval}& {attributeName}(uint32_t instance);".format(retval=returnType, attributeName=attributeName))
+
+    #------------------------------------------------------------------------------
+    ##
+    #
+    def WriteAttributeAccessImplementation(self):
+        if self.hasAttributes:
+            for i, attributeName in enumerate(self.component["attributes"]):
+                if not attributeName in self.document["attributes"]:
+                    util.fmtError(AttributeNotFoundError.format(attributeName))
+                
+                returnType = IDLTypes.GetTypeString(self.document["attributes"][attributeName]["type"])
+                attributeName = Capitalize(attributeName)
+
+                self.f.InsertNebulaDivider()
+                self.f.WriteLine("{retval}& {className}::{attributeName}(uint32_t instance)".format(retval=returnType, className=self.className, attributeName=attributeName))
+                self.f.WriteLine("{")
+                self.f.IncreaseIndent()
+                self.f.WriteLine("return this->data.Get<{}>(instance);".format(i + 1))
+                self.f.DecreaseIndent()
+                self.f.WriteLine("}")
 
     #------------------------------------------------------------------------------
     ##
@@ -162,7 +200,7 @@ public:
     def WriteRegisterEntityImplementation(self):
         self.f.InsertNebulaDivider()
         self.f.WriteLine("uint32_t")
-        self.f.WriteLine("{}::RegisterEntity(const Game::Entity& entity)".format(self.className))
+        self.f.WriteLine("{}::RegisterEntity(Game::Entity entity)".format(self.className))
         self.f.WriteLine("{")
         self.f.IncreaseIndent()
         self.f.WriteLine("auto instance = component_templated_t::RegisterEntity(entity);")
@@ -184,7 +222,7 @@ public:
     def WriteDeregisterEntityImplementation(self):
         self.f.InsertNebulaDivider()
         self.f.WriteLine("void")
-        self.f.WriteLine("{}::DeregisterEntity(const Game::Entity& entity)".format(self.className))
+        self.f.WriteLine("{}::DeregisterEntity(Game::Entity entity)".format(self.className))
         self.f.WriteLine("{")
         self.f.IncreaseIndent()
         self.f.WriteLine("uint32_t index = this->GetInstance(entity);")
@@ -283,3 +321,4 @@ public:
         self.WriteDestroyAllImplementation()
         self.WriteOptimizeImplementation()
         self.WriteOnEntityDeletedImplementation()
+        self.WriteAttributeAccessImplementation()

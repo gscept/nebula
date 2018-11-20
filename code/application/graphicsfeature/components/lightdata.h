@@ -1,4 +1,4 @@
-// NIDL #version:48#
+// NIDL #version:57#
 #pragma once
 //------------------------------------------------------------------------------
 /**
@@ -50,10 +50,10 @@ public:
     };
 
     /// Registers an entity to this component.
-    uint32_t RegisterEntity(const Game::Entity& entity);
+    uint32_t RegisterEntity(Game::Entity entity);
 
     /// Deregister Entity.
-    void DeregisterEntity(const Game::Entity& entity);
+    void DeregisterEntity(Game::Entity entity);
 
     /// Destroys all instances of this component, and deregisters every entity.
     void DestroyAll();
@@ -64,8 +64,14 @@ public:
     /// Called from entitymanager if this component is registered with a deletion callback.
     /// Removes entity immediately from component instances.
     void OnEntityDeleted(Game::Entity entity);
-};
+
         
+    /// Attribute access methods
+    float& Range(uint32_t instance);
+    Math::float4& Color(uint32_t instance);
+    bool& CastShadows(uint32_t instance);
+    Util::String& DebugName(uint32_t instance);
+};
 
 class SpotLightComponentData : public Game::Component<
     decltype(Attr::Range),
@@ -95,10 +101,10 @@ public:
     };
 
     /// Registers an entity to this component.
-    uint32_t RegisterEntity(const Game::Entity& entity);
+    uint32_t RegisterEntity(Game::Entity entity);
 
     /// Deregister Entity.
-    void DeregisterEntity(const Game::Entity& entity);
+    void DeregisterEntity(Game::Entity entity);
 
     /// Destroys all instances of this component, and deregisters every entity.
     void DestroyAll();
@@ -109,8 +115,15 @@ public:
     /// Called from entitymanager if this component is registered with a deletion callback.
     /// Removes entity immediately from component instances.
     void OnEntityDeleted(Game::Entity entity);
-};
+
         
+    /// Attribute access methods
+    float& Range(uint32_t instance);
+    float& Angle(uint32_t instance);
+    Math::float4& Direction(uint32_t instance);
+    Math::float4& Color(uint32_t instance);
+    bool& CastShadows(uint32_t instance);
+};
 
 class DirectionalLightComponentData : public Game::Component<
     decltype(Attr::Direction),
@@ -136,10 +149,10 @@ public:
     };
 
     /// Registers an entity to this component.
-    uint32_t RegisterEntity(const Game::Entity& entity);
+    uint32_t RegisterEntity(Game::Entity entity);
 
     /// Deregister Entity.
-    void DeregisterEntity(const Game::Entity& entity);
+    void DeregisterEntity(Game::Entity entity);
 
     /// Destroys all instances of this component, and deregisters every entity.
     void DestroyAll();
@@ -150,6 +163,11 @@ public:
     /// Called from entitymanager if this component is registered with a deletion callback.
     /// Removes entity immediately from component instances.
     void OnEntityDeleted(Game::Entity entity);
-};
+
         
+    /// Attribute access methods
+    Math::float4& Direction(uint32_t instance);
+    Math::float4& Color(uint32_t instance);
+    bool& CastShadows(uint32_t instance);
+};
 } // namespace GraphicsFeature

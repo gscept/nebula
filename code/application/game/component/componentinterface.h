@@ -62,10 +62,10 @@ public:
 	~ComponentInterface();
 
 	/// register an Id. Will create new mapping and allocate instance data. Returns index of new instance data
-	virtual uint32_t RegisterEntity(const Entity& e) = 0;
+	virtual uint32_t RegisterEntity(Entity e) = 0;
 
 	/// deregister an Id. will only remove the id and zero the block
-	virtual void DeregisterEntity(const Entity& e) = 0;
+	virtual void DeregisterEntity(Entity e) = 0;
 
 	/// Returns a bitfield containing the events this component is subscribed to.
 	const Util::BitField<ComponentEvent::NumEvents>& SubscribedEvents() const;
@@ -87,19 +87,19 @@ public:
 	virtual SizeT NumRegistered() const = 0;
 
 	/// Returns the owner (entity) of an instance
-	virtual Game::Entity GetOwner(const uint& instance) const = 0;
+	virtual Game::Entity GetOwner(uint instance) const = 0;
 
 	/// Sets the owner of an instance. This should be used cautiously.
-	virtual void SetOwner(const uint32_t& i, const Game::Entity& entity) = 0;
+	virtual void SetOwner(uint32_t i, Game::Entity entity) = 0;
 
 	/// Get an attribute value as a variant type
-	virtual Util::Variant GetAttributeValue(const uint32_t& i, IndexT attributeIndex) = 0;
+	virtual Util::Variant GetAttributeValue(uint32_t i, IndexT attributeIndex) = 0;
 	
 	/// Set an attribute value from a variant type
-	virtual void SetAttributeValue(const uint32_t& i, IndexT attributeIndex, const Util::Variant& value) = 0;
+	virtual void SetAttributeValue(uint32_t i, IndexT attributeIndex, const Util::Variant& value) = 0;
 
 	/// Returns the instance of an entity; or InvalidIndex if not registered.
-	virtual uint32_t GetInstance(const Entity& e) const = 0;
+	virtual uint32_t GetInstance(Entity e) const = 0;
 
 	/// Subsequently calls functionbundle serialize.
 	virtual void SerializeOwners(const Ptr<IO::BinaryWriter>& writer) const = 0;
@@ -110,10 +110,10 @@ public:
 	struct FunctionBundle
 	{
 		/// Called upon activation of component instance
-		void(*OnActivate)(const uint32_t& instance);
+		void(*OnActivate)(uint32_t instance);
 
 		/// Called upon deactivation of component instance
-		void(*OnDeactivate)(const uint32_t& instance);
+		void(*OnDeactivate)(uint32_t instance);
 
 		/// called at beginning of frame
 		void(*OnBeginFrame)();
@@ -128,10 +128,10 @@ public:
 		void(*OnRenderDebug)();
 
 		/// called after an entity has been loaded from file.
-		void(*OnLoad)(const uint32_t& instance);
+		void(*OnLoad)(uint32_t instance);
 
 		/// called after an entity has been save to a file.
-		void(*OnSave)(const uint32_t& instance);
+		void(*OnSave)(uint32_t instance);
 
 		/// Serialize the components attributes (excluding owners)
 		void(*Serialize)(const Ptr<IO::BinaryWriter>& writer);
@@ -146,7 +146,7 @@ public:
 		void(*DestroyAll)();
 
 		/// Callback for when entities has been loaded and you need to hook into the hierarchy update.
-		void(*SetParents)(const uint32_t& start, const uint32_t& end, const Util::Array<Entity>& entities, const Util::Array<uint32_t>& parentIndices);
+		void(*SetParents)(uint32_t start, uint32_t end, const Util::Array<Entity>& entities, const Util::Array<uint32_t>& parentIndices);
 	} functions;
 
 	Util::Array<MessageListener> messageListeners;
