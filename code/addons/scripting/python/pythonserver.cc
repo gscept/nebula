@@ -51,7 +51,9 @@ PythonServer::Open()
     n_assert(!this->IsOpen());    
     if (ScriptServer::Open())
     {
-        Py_Initialize();
+        
+        Py_Initialize();        
+
         tyti::pylog::redirect_stdout([](const char* msg) 
         {            
             // collect until we get a newline

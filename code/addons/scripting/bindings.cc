@@ -4,6 +4,7 @@
 #include "math/float4.h"
 #include "math/vector.h"
 #include "math/point.h"
+#include "util/array.h"
 #include "game/entity.h"
 #include "pybind11/embed.h"
 #include "scripting/bindings.h"
@@ -22,6 +23,25 @@ PYBIND11_EMBEDDED_MODULE(foundation, m)
     py::class_<Util::String>(m, "string")
         .def(py::init<const char*>());
     py::implicitly_convertible<py::str, Util::String>();
+
+
+    py::class_<Util::Array<int>>(m, "ia", py::buffer_protocol())
+        .def(py::init([](py::array_t<int> &b) {        
+        py::buffer_info info = b.request();
+        Util::Array<int> a;
+        a.SetSize(info.size);
+        Memory::Copy(info.ptr, a.Begin(), info.size * sizeof(int));
+        return a;
+    }))
+        .def_buffer([](Util::Array<int>&a)->py::buffer_info {
+        return py::buffer_info(a.Begin(),
+            sizeof(int),
+            py::format_descriptor<int>::format(),
+            1,
+            { a.Size() },
+            { sizeof(int) }
+        );
+    });
 #endif
 }
 
@@ -166,27 +186,8 @@ PYBIND11_EMBEDDED_MODULE(nmath, f) {
         case 2:f.row2()[i.second] = v; break;
         case 3:f.row3()[i.second] = v; break;
         }
-    });
+    });    
 };
-/*
-py::class_<Util::Array<int>>(f, "ia", py::buffer_protocol())
-    .def("__init__", [](Util::Array<int>&a, py::buffer b)
-{
-    py::buffer_info info = b.request();
-    a.Reserve(info.ndim);
-    Memory::Copy(info.ptr, a.Begin(), info.ndim * sizeof(int));
-}
 
-    )
-    .def_buffer([](Util::Array<int>&a)->py::buffer_info
-    {
-        return py::buffer_info(a.Begin(),
-            sizeof(int),
-            py::format_descriptor<int>::format(),
-            1,
-            {1,a.Size()},
-            {sizeof(int),a.Size()*sizeof(int)}
-        );
-    });
-}
-*/
+
+
