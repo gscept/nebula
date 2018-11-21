@@ -2,7 +2,9 @@
 // wrapper for including python binding generators for easier access
 #include "pybind11/embed.h"
 #include "pybind11/numpy.h"
+#include "pybind11/stl.h"
 #include "util/string.h"
+#include "util/dictionary.h"
 
 namespace pybind11
 {
@@ -60,27 +62,13 @@ namespace pybind11
                 return false;
             }
         };
-        /*
-        template <> struct type_caster<Game::Entity>
-        {
-        public:            
-            PYBIND11_TYPE_CASTER(Game::Entity, _("game.entity"));
-            
-            bool load(handle src, bool) {                
-                PyObject *source = src.ptr();                
-                PyObject *tmp = PyNumber_Long(source);
-                if (!tmp)
-                    return false;                
-                value = PyLong_AsLong(tmp);
-                Py_DECREF(tmp);                
-                return true;
-            }
-            
-            static handle cast(Game::Entity src, return_value_policy policy , handle  parent ) {
-                return PyLong_FromLong(src.id);
-            }
-        };
-    */
+
+        template <typename Key, typename Value> struct type_caster<Util::Dictionary<Key, Value>>
+            : map_caster<Util::Dictionary<Key, Value>, Key, Value> { };
+        template <typename Type> struct type_caster<Util::Array<Type>>
+            : array_caster<Util::Array<Type>, Type, true> { };
+
+        
     };
     class nstr : public str
     {
