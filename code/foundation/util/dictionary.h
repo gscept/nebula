@@ -93,6 +93,12 @@ public:
     /// get all keys as (typically) an array
     template<class RETURNTYPE> RETURNTYPE ValuesAs() const;
 
+    /// functions for stl like behaviour
+    KeyValuePair<KEYTYPE, VALUETYPE>* begin() const;
+    KeyValuePair<KEYTYPE, VALUETYPE>* end() const;
+    void clear();
+    void emplace(KEYTYPE&&key, VALUETYPE&&value);
+
 protected:
     /// make sure the key value pair array is sorted
     void SortIfDirty() const;
@@ -517,5 +523,41 @@ Dictionary<KEYTYPE, VALUETYPE>::KeysAsArray() const
     return this->KeysAs<Array<KEYTYPE> >();
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+template<class KEYTYPE, class VALUETYPE>
+inline KeyValuePair<KEYTYPE, VALUETYPE>*
+Dictionary<KEYTYPE, VALUETYPE>::begin() const
+{
+    return this->keyValuePairs.begin();
+}
+//------------------------------------------------------------------------------
+/**
+*/
+template<class KEYTYPE, class VALUETYPE>
+inline KeyValuePair<KEYTYPE, VALUETYPE>*
+Dictionary<KEYTYPE, VALUETYPE>::end() const
+{
+    return this->keyValuePairs.end();
+}
+//------------------------------------------------------------------------------
+/**
+*/
+template<class KEYTYPE, class VALUETYPE>
+inline void
+Dictionary<KEYTYPE, VALUETYPE>::clear()
+{
+    this->Clear();
+}
+//------------------------------------------------------------------------------
+/**
+*/
+template<class KEYTYPE, class VALUETYPE>
+inline void
+Dictionary<KEYTYPE, VALUETYPE>::emplace(KEYTYPE&&key, VALUETYPE&&value)
+{
+    this->Add(key, value);
+}
 } // namespace Util
 //------------------------------------------------------------------------------
