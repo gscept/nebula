@@ -88,14 +88,52 @@ public:
     /// Called from entitymanager if this component is registered with a deletion callback.
     /// Removes entity immediately from component instances.
     void OnEntityDeleted(Game::Entity entity);
-}};
+
         """.format(
             className=self.className,
             enumAttributeList=self.GetEnumAttributeList(),
             componentTemplateArguments=self.componentTemplateArguments
         )
-
         self.f.WriteLine(headerTemplate)
+        self.f.IncreaseIndent()
+        self.WriteAttributeAccessDeclarations()
+        self.f.DecreaseIndent()
+        self.f.WriteLine("};")
+
+    #------------------------------------------------------------------------------
+    ##
+    #
+    def WriteAttributeAccessDeclarations(self):
+        if self.hasAttributes:
+            self.f.WriteLine("/// Attribute access methods")
+            for attributeName in self.component["attributes"]:
+                if not attributeName in self.document["attributes"]:
+                    util.fmtError(AttributeNotFoundError.format(attributeName))
+                
+                returnType = IDLTypes.GetTypeString(self.document["attributes"][attributeName]["type"])
+                attributeName = Capitalize(attributeName)
+
+                self.f.WriteLine("{retval}& {attributeName}(uint32_t instance);".format(retval=returnType, attributeName=attributeName))
+
+    #------------------------------------------------------------------------------
+    ##
+    #
+    def WriteAttributeAccessImplementation(self):
+        if self.hasAttributes:
+            for i, attributeName in enumerate(self.component["attributes"]):
+                if not attributeName in self.document["attributes"]:
+                    util.fmtError(AttributeNotFoundError.format(attributeName))
+                
+                returnType = IDLTypes.GetTypeString(self.document["attributes"][attributeName]["type"])
+                attributeName = Capitalize(attributeName)
+
+                self.f.InsertNebulaDivider()
+                self.f.WriteLine("{retval}& {className}::{attributeName}(uint32_t instance)".format(retval=returnType, className=self.className, attributeName=attributeName))
+                self.f.WriteLine("{")
+                self.f.IncreaseIndent()
+                self.f.WriteLine("return this->data.Get<{}>(instance);".format(i + 1))
+                self.f.DecreaseIndent()
+                self.f.WriteLine("}")
 
     #------------------------------------------------------------------------------
     ##
@@ -283,3 +321,4 @@ public:
         self.WriteDestroyAllImplementation()
         self.WriteOptimizeImplementation()
         self.WriteOnEntityDeletedImplementation()
+        self.WriteAttributeAccessImplementation()

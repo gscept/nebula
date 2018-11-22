@@ -605,3 +605,5 @@ fips_begin_module(foundation)
 	endif()
 fips_end_module()
 target_include_directories(foundation PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+#FIXME cant add python include dir globally as it clashes with antlr4
+target_include_directories(foundation PUBLIC ${PYTHON_INCLUDE_DIRS})

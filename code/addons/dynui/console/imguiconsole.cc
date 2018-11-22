@@ -8,6 +8,10 @@
 #include "input/key.h"
 #include "input/inputserver.h"
 #include "input/keyboard.h"
+#include "io/textreader.h"
+#include "io/textwriter.h"
+#include "io/ioserver.h"
+#include "app/application.h"
 
 static int
 TextEditCallback(ImGuiTextEditCallbackData* data)
@@ -115,7 +119,7 @@ TextEditCallback(ImGuiTextEditCallbackData* data)
 			lastCommand = lastCommand.ExtractRange(0, Math::n_min(lastCommand.Length(), data->BufSize));
 			sprintf(data->Buf, "%s", lastCommand.AsCharPtr());
 			data->BufDirty = true;
-			data->CursorPos = data->SelectionStart = data->SelectionEnd = (int)strlen(data->Buf);
+			data->CursorPos = data->SelectionStart = data->SelectionEnd = data->BufTextLen = (int)strlen(data->Buf);
 		}
 
 		break;
@@ -145,7 +149,7 @@ ImguiConsole::ImguiConsole() :
 	previousCommandIndex(-1),
 	scrollToBottom(true)
 {
-	__ConstructInterfaceSingleton;
+	__ConstructInterfaceSingleton;    
 }
 
 //------------------------------------------------------------------------------
@@ -176,6 +180,24 @@ ImguiConsole::Setup()
 		this->commands.Add(command->GetName(), command);
 	}
     */
+    // load persistent history
+    auto reader = IO::TextReader::Create();
+    Util::String history = App::Application::Instance()->GetAppTitle() + "_history.txt";    
+    reader->SetStream(IO::IoServer::Instance()->CreateStream("bin:" + history));
+    if (reader->Open())
+    {
+        this->previousCommands = reader->ReadAllLines();
+        reader->Close();
+    }
+    this->persistentHistory = IO::TextWriter::Create();
+    auto stream = IO::IoServer::Instance()->CreateStream("bin:" + history);
+    stream->SetAccessMode(IO::Stream::AppendAccess);
+    if (stream->Open())
+    {
+        this->persistentHistory->SetStream(stream);
+        this->persistentHistory->Open();
+    }
+    
 	this->consoleBuffer.SetCapacity(2048);
 }
 
@@ -186,6 +208,7 @@ void
 ImguiConsole::Discard()
 {
 	// empty
+    this->persistentHistory->Close();
 }
 
 //------------------------------------------------------------------------------
@@ -218,18 +241,11 @@ ImguiConsole::Render()
 		ImGui::EndPopup();
 	}
 
-	// Display every line as a separate entry so we can change their color or add custom widgets. If you only want raw text you can use ImGui::TextUnformatted(log.begin(), log.end());
-	// NB- if you have thousands of entries this approach may be too inefficient and may require user-side clipping to only process visible items.
-	// You can seek and display only the lines that are visible using the ImGuiListClipper helper, if your elements are evenly spaced and you have cheap random access to the elements.
-	// To use the clipper we could replace the 'for (int i = 0; i < Items.Size; i++)' loop with:
-	//     ImGuiListClipper clipper(Items.Size);
-	//     while (clipper.Step())
-	//         for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
-	// However take note that you can not use this code as is if a filter is active because it breaks the 'cheap random-access' property. We would need random-access on the post-filtered list.
-	// A typical application wanting coarse clipping and filtering may want to pre-compute an array of indices that passed the filtering test, recomputing this array when user changes the filter,
-	// and appending newly elements as they are inserted. This is left as a task to the user until we can manage to improve this example code!
-	// If your items are of variable size you may want to implement code similar to what ImGuiListClipper does. Or split your data into fixed height items to allow random-seeking into your list.
 	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 1)); // Tighten spacing
+
+	// Unfortunately we can't use ImGui::Clipper here since each entry might have a different height.
+	// TODO: We could roll our own "clipper".
+	ImGui::PushTextWrapPos(ImGui::GetWindowContentRegionMax().x);
 	for (int i = 0; i < consoleBuffer.Size(); i++)
 	{
 		const char* item = consoleBuffer[i].msg.AsCharPtr();
@@ -266,14 +282,17 @@ ImguiConsole::Render()
 		ImGui::PushStyleColor(ImGuiCol_Text, col);
 		ImGui::SameLine();
 		//Print message prefix
-		ImGui::TextUnformatted(this->LogEntryTypeAsCharPtr(consoleBuffer[i].type));
-		ImGui::SameLine();
+		if (consoleBuffer[i].type != N_MESSAGE)
+		{
+			ImGui::TextUnformatted(this->LogEntryTypeAsCharPtr(consoleBuffer[i].type));
+			ImGui::SameLine();
+		}
 		//Print log entry
-		ImGui::TextWrapped(item);
+		ImGui::TextUnformatted(item);
 		ImGui::NewLine();
-
 		ImGui::PopStyleColor();
 	}
+	ImGui::PopTextWrapPos();
 
 	if (this->scrollToBottom)
 		ImGui::SetScrollHere();
@@ -284,44 +303,7 @@ ImguiConsole::Render()
 
 	// Command-line / Input ----------------------------------------------------
 
-	auto callback = [](ImGuiTextEditCallbackData* data)
-	{
-		//switch (data->EventFlag)
-		//{
-		//case ImGuiInputTextFlags_CallbackCompletion:
-		//{
-		//	// TODO
-		//	break;
-		//}
-		//case ImGuiInputTextFlags_CallbackHistory:
-		//{
-		//	const int prev_history_pos = HistoryPos;
-		//	if (data->EventKey == ImGuiKey_UpArrow)
-		//	{
-		//		if (HistoryPos == -1)
-		//			HistoryPos = History.Size - 1;
-		//		else if (HistoryPos > 0)
-		//			HistoryPos--;
-		//	}
-		//	else if (data->EventKey == ImGuiKey_DownArrow)
-		//	{
-		//		if (HistoryPos != -1)
-		//			if (++HistoryPos >= History.Size)
-		//				HistoryPos = -1;
-		//	}
-
-		//	// A better implementation would preserve the data on the current input line along with cursor position.
-		//	if (prev_history_pos != HistoryPos)
-		//	{
-		//		data->CursorPos = data->SelectionStart = data->SelectionEnd = data->BufTextLen = (int)snprintf(data->Buf, (size_t)data->BufSize, "%s", (HistoryPos >= 0) ? History[HistoryPos] : "");
-		//		data->BufDirty = true;
-		//	}
-		//}
-		//}
-		return 1;
-	};
-
-	if (ImGui::InputText("|", this->command, sizeof(this->command), ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CallbackCompletion | ImGuiInputTextFlags_CallbackHistory, callback, (void*)this))
+	if (ImGui::InputText("|", this->command, sizeof(this->command), ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CallbackCompletion | ImGuiInputTextFlags_CallbackHistory, &TextEditCallback, (void*)this))
 	{
 		char* input_end = this->command + strlen(this->command);
 		while (input_end > this->command && input_end[-1] == ' ') input_end--; *input_end = 0;
@@ -330,8 +312,7 @@ ImguiConsole::Render()
 			this->AppendToLog({LogMessageType::N_INPUT, this->command});
 
 			// execute script
-			this->Execute(this->command);
-			this->previousCommands.Append(this->command);
+			this->Execute(this->command);			
 		}
 		memset(this->command, '\0', sizeof(this->command));
 	}
@@ -402,7 +383,7 @@ ImguiConsole::Execute(const Util::String& command)
 {
 	n_assert(!command.IsEmpty());
 	Util::Array<Util::String> splits = command.Tokenize(" ");
-	if (splits[0] == "help")
+	if (splits[0] == "HELP")
 	{
 		/*SizeT numCommands = this->scriptServer->GetNumCommands();
 		IndexT i;
@@ -440,6 +421,12 @@ ImguiConsole::Execute(const Util::String& command)
 
 	// add to previous commands
 	this->previousCommands.Append(command);
+    if (this->persistentHistory->IsOpen())
+    {
+        this->persistentHistory->WriteLine(command);
+        this->persistentHistory->GetStream()->Flush();
+    }
+
 }
 
 //------------------------------------------------------------------------------
@@ -467,8 +454,6 @@ ImguiConsole::LogEntryTypeAsCharPtr(const LogMessageType& type) const
 
 	switch (type)
 	{
-	case N_MESSAGE:
-		return prefix_message.AsCharPtr();
 	case N_INPUT:
 		return prefix_input.AsCharPtr();
 	case N_WARNING:

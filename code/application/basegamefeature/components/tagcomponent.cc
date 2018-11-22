@@ -5,7 +5,7 @@
 #include "stdneb.h"
 #include "tagcomponent.h"
 #include "basegamefeature/managers/componentmanager.h"
-#include "tagdata.h"
+#include "basegamefeature/components/tagdata.h"
 
 namespace Game
 {

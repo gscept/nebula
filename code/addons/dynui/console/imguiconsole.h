@@ -11,6 +11,7 @@
 #include "core/refcounted.h"
 #include "scripting/scriptserver.h"
 #include "util/ringbuffer.h"
+#include "io/textwriter.h"
 
 namespace Dynui
 {
@@ -85,5 +86,7 @@ private:
 	Ptr<Scripting::ScriptServer> scriptServer;
 	bool moveScroll;
 	bool visible;
+    
+    Ptr<IO::TextWriter> persistentHistory;
 };
 } // namespace Dynui

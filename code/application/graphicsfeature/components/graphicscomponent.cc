@@ -11,7 +11,7 @@
 #include "visibility/visibilitycontext.h"
 #include "basegamefeature/components/transformcomponent.h"
 #include "basegamefeature/managers/componentmanager.h"
-#include "graphicsdata.h"
+#include "graphicsfeature/components/graphicsdata.h"
 #include "game/component/componentserialization.h"
 
 namespace GraphicsFeature
@@ -63,9 +63,9 @@ void
 GraphicsComponent::OnActivate(uint32_t instance)
 {
 	auto gfxEntity = Graphics::CreateEntity();
-	component.data.Get<GraphicsComponentData::GRAPHICSENTITY>(instance) = gfxEntity.id;
+	component.GraphicsEntity(instance) = gfxEntity.id;
 	Models::ModelContext::RegisterEntity(gfxEntity);
-	Models::ModelContext::Setup(gfxEntity, component.data.Get<GraphicsComponentData::MODELRESOURCE>(instance), "NONE");
+	Models::ModelContext::Setup(gfxEntity, component.ModelResource(instance), "NONE");
 	auto transform = Game::TransformComponent::GetWorldTransform(component.GetOwner(instance));
 	Models::ModelContext::SetTransform(gfxEntity, transform);
 	Visibility::ObservableContext::RegisterEntity(gfxEntity);
@@ -78,7 +78,7 @@ GraphicsComponent::OnActivate(uint32_t instance)
 void
 GraphicsComponent::OnDeactivate(uint32_t instance)
 {
-	Graphics::GraphicsEntityId gfxEntity = { component.data.Get<GraphicsComponentData::GRAPHICSENTITY>(instance) };
+	Graphics::GraphicsEntityId gfxEntity = { component.GraphicsEntity(instance) };
 	Models::ModelContext::DeregisterEntity(gfxEntity);
 	Visibility::ObservableContext::DeregisterEntity(gfxEntity);
 	Graphics::DestroyEntity(gfxEntity);
@@ -93,7 +93,7 @@ GraphicsComponent::UpdateTransform(Game::Entity entity, const Math::matrix44 & t
 	auto instance = component.GetInstance(entity);
 	if (instance != InvalidIndex)
 	{
-		Graphics::GraphicsEntityId gfxEntity = { component.data.Get<GraphicsComponentData::GRAPHICSENTITY>(instance) };
+		Graphics::GraphicsEntityId gfxEntity = { component.GraphicsEntity(instance) };
 		Models::ModelContext::SetTransform(gfxEntity, transform);
 	}
 }
@@ -107,9 +107,9 @@ GraphicsComponent::SetModel(Game::Entity entity, const Util::String & path)
 	auto instance = component.GetInstance(entity);
 	if (instance != InvalidIndex)
 	{
-		Graphics::GraphicsEntityId gfxEntity = { component.data.Get<GraphicsComponentData::GRAPHICSENTITY>(instance) };
+		Graphics::GraphicsEntityId gfxEntity = { component.GraphicsEntity(instance) };
 		Models::ModelContext::ChangeModel(gfxEntity, path, "NONE");
-		component.data.Get<GraphicsComponentData::MODELRESOURCE>(instance) = path;
+		component.ModelResource(instance) = path;
 	}
 }
 
