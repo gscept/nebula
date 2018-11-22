@@ -159,7 +159,6 @@ VisibilityTest::Run()
 		inputServer->BeginFrame();
 		inputServer->OnFrame();
 
-
 		gfxServer->BeginFrame();
 		
 		ImGui::Begin("VisibilityTest", NULL, ImVec2(200, 200));

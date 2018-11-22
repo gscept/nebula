@@ -134,8 +134,8 @@ SimpleViewerApplication::Open()
 			Math::matrix44 spotLightMatrix;
 			spotLightMatrix.scale(Math::vector(30, 30, 40));
 			spotLightMatrix = Math::matrix44::multiply(spotLightMatrix, Math::matrix44::rotationyawpitchroll(0, Math::n_deg2rad(-55), 0));
-			spotLightMatrix.set_position(Math::point(0, 2, 0));
-			Lighting::LightContext::SetupSpotLight(this->spotLights[0], Math::float4(1, 1, 0, 1), 10.0f, spotLightMatrix, false);
+			spotLightMatrix.set_position(Math::point(0, 5, 2));
+			Lighting::LightContext::SetupSpotLight(this->spotLights[0], Math::float4(1, 1, 0, 1), 1.0f, spotLightMatrix, false);
 		}
 
 		{
@@ -144,8 +144,8 @@ SimpleViewerApplication::Open()
 			Math::matrix44 spotLightMatrix;
 			spotLightMatrix.scale(Math::vector(30, 30, 40));
 			spotLightMatrix = Math::matrix44::multiply(spotLightMatrix, Math::matrix44::rotationyawpitchroll(Math::n_deg2rad(60), Math::n_deg2rad(-55), 0));
-			spotLightMatrix.set_position(Math::point(0, 2, 0));
-			Lighting::LightContext::SetupSpotLight(this->spotLights[1], Math::float4(0, 1, 1, 1), 10.0f, spotLightMatrix, false);
+			spotLightMatrix.set_position(Math::point(2, 5, 0));
+			Lighting::LightContext::SetupSpotLight(this->spotLights[1], Math::float4(0, 1, 1, 1), 1.0f, spotLightMatrix, false);
 		}
 
 		{
@@ -154,8 +154,8 @@ SimpleViewerApplication::Open()
 			Math::matrix44 spotLightMatrix;
 			spotLightMatrix.scale(Math::vector(30, 30, 40));
 			spotLightMatrix = Math::matrix44::multiply(spotLightMatrix, Math::matrix44::rotationyawpitchroll(Math::n_deg2rad(120), Math::n_deg2rad(-55), 0));
-			spotLightMatrix.set_position(Math::point(0, 2, 0));
-			Lighting::LightContext::SetupSpotLight(this->spotLights[2], Math::float4(1, 0, 1, 1), 10.0f, spotLightMatrix, false);
+			spotLightMatrix.set_position(Math::point(2, 5, 2));
+			Lighting::LightContext::SetupSpotLight(this->spotLights[2], Math::float4(1, 0, 1, 1), 1.0f, spotLightMatrix, false);
 		}
 
         this->defaultViewPoint = Math::point(15.0f, 15.0f, -15.0f);
@@ -182,8 +182,8 @@ SimpleViewerApplication::Open()
 
         ObservableContext::RegisterEntity(this->entity);
         ObservableContext::Setup(this->entity, VisibilityEntityType::Model);
-		//ObservableContext::RegisterEntity(this->ground);
-		//ObservableContext::Setup(this->ground, VisibilityEntityType::Model);
+		ObservableContext::RegisterEntity(this->ground);
+		ObservableContext::Setup(this->ground, VisibilityEntityType::Model);
         ObserverContext::RegisterEntity(this->cam);
         ObserverContext::Setup(this->cam, VisibilityEntityType::Camera);
 
@@ -244,13 +244,24 @@ SimpleViewerApplication::Run()
     const Ptr<Input::Keyboard>& keyboard = inputServer->GetDefaultKeyboard();
     const Ptr<Input::Mouse>& mouse = inputServer->GetDefaultMouse();
     
-    
     while (run && !inputServer->IsQuitRequested())
     {                     
         this->inputServer->BeginFrame();
         this->inputServer->OnFrame();
 
-        this->resMgr->Update(frameIndex);
+        this->resMgr->Update(this->frameIndex);
+
+		// animate the spotlights
+		IndexT i;
+		for (i = 0; i < 3; i++)
+		{
+			Math::matrix44 spotLightTransform;
+			Math::scalar scaleFactor = i * 1.5f + 30;
+			spotLightTransform.scale(Math::point(scaleFactor, scaleFactor, scaleFactor + 10));
+			spotLightTransform = Math::matrix44::multiply(spotLightTransform, Math::matrix44::rotationyawpitchroll(this->gfxServer->GetTime() * 2 * (i + 1) / 3, Math::n_deg2rad(-55), 0));
+			spotLightTransform.set_position(Lighting::LightContext::GetTransform(this->spotLights[i]).get_position());
+			Lighting::LightContext::SetTransform(this->spotLights[i], spotLightTransform);
+		}
 
         this->gfxServer->BeginFrame();
         
@@ -289,8 +300,10 @@ SimpleViewerApplication::Run()
     }
 }
 
-static
-const char * 
+//------------------------------------------------------------------------------
+/**
+*/
+static const char * 
 GraphicsEntityToName(GraphicsEntityId id)
 {
     if (ModelContext::IsEntityRegistered(id)) return "Model";
