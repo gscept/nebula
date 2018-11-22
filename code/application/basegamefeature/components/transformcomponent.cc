@@ -5,7 +5,7 @@
 #include "stdneb.h"
 #include "transformcomponent.h"
 #include "basegamefeature/managers/componentmanager.h"
-#include "transformdata.h"
+#include "basegamefeature/components/transformdata.h"
 
 namespace Game
 {

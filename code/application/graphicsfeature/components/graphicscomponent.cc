@@ -11,7 +11,7 @@
 #include "visibility/visibilitycontext.h"
 #include "basegamefeature/components/transformcomponent.h"
 #include "basegamefeature/managers/componentmanager.h"
-#include "graphicsdata.h"
+#include "graphicsfeature/components/graphicsdata.h"
 #include "game/component/componentserialization.h"
 
 namespace GraphicsFeature
