@@ -52,7 +52,7 @@ GraphicsServer::Open()
 	this->isOpen = true;
 
 	this->debugHandler = Debug::DebugHandler::Create();
-	this->debugHandler->Open();
+	//this->debugHandler->Open();
 
 	this->displayDevice = CoreGraphics::DisplayDevice::Create();
 	this->displayDevice->Open();

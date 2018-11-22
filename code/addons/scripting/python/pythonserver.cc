@@ -45,13 +45,41 @@ PythonServer::~PythonServer()
 bool
 PythonServer::Open()
 {
+    //FIXME fugly as f...
+    static Util::String linebuffer;
+    static Util::String errorbuffer;
     n_assert(!this->IsOpen());    
     if (ScriptServer::Open())
     {
-        Py_Initialize();
-        tyti::pylog::redirect_stdout([](const char* msg) {n_printf(msg); });
-        tyti::pylog::redirect_stderr([](const char* msg) {n_warning(msg); });
         
+        Py_Initialize();        
+
+        tyti::pylog::redirect_stdout([](const char* msg) 
+        {            
+            // collect until we get a newline
+            if (Util::String::StrChr(msg, '\n'))
+            {
+                n_printf("%s%s", linebuffer.AsCharPtr(), msg);
+                linebuffer.Clear();                
+            }
+            else
+            {
+                linebuffer.Append(msg);
+            }            
+        });
+        tyti::pylog::redirect_stderr([](const char* msg) 
+        {
+            // collect until we get a newline
+            if (Util::String::StrChr(msg, '\n'))
+            {
+                n_warning("%s%s", errorbuffer.AsCharPtr(), msg);
+                errorbuffer.Clear();
+            }
+            else
+            {
+                errorbuffer.Append(msg);
+            }
+        });
         return true;
     }
     return false;
@@ -84,5 +112,7 @@ PythonServer::Eval(const String& str)
 
     return 0 != PyRun_SimpleString(str.AsCharPtr());
 }
+
+
 
 } // namespace Scripting

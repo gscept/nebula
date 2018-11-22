@@ -203,7 +203,8 @@ LevelLoader::Load(const Util::String& levelName)
 
 	for (auto listener : loadListeners)
 	{
-		for (SizeT i = listener.firstInstance; i < listener.numInstances; i++)
+		SizeT end = listener.firstInstance + listener.numInstances;
+		for (SizeT i = listener.firstInstance; i < end; i++)
 		{
 			listener.component->functions.OnLoad(i);
 		}
@@ -211,7 +212,8 @@ LevelLoader::Load(const Util::String& levelName)
 
 	for (auto listener : activateListeners)
 	{
-		for (SizeT i = listener.firstInstance; i < listener.numInstances; i++)
+		SizeT end = listener.firstInstance + listener.numInstances;
+		for (SizeT i = listener.firstInstance; i < end; i++)
 		{
 			listener.component->functions.OnActivate(i);
 		}

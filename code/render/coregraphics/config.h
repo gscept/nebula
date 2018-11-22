@@ -136,7 +136,7 @@ CoreGraphicsQueueTypeFromString(const Util::String& str)
 #define SHADER_POSTEFFECT_DEFAULT_FEATURE_MASK "Alt0"
 
 #if !PUBLIC_BUILD
-#define NEBULA_GRAPHICS_DEBUG 1
+#define NEBULA_GRAPHICS_DEBUG 0
 #endif
 
 //------------------------------------------------------------------------------

@@ -13,7 +13,7 @@ fips_begin_module(render)
 	add_nebula_shaders()
 	fips_vs_warning_level(3)
 	fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/resource ${CODE_ROOT}/foundation ${CODE_ROOT}/addons)	
-	fips_deps(foundation resource anyfx libpng libjpeg DevIL dynui)
+	fips_deps(foundation resource anyfx libpng libjpeg DevIL)
 	
 	if(N_USE_VULKAN)
 		#include(FindVulkan)
