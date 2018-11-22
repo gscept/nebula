@@ -37,7 +37,7 @@ CreateRenderTexture(const RenderTextureCreateInfo& info)
 	VkRenderTextureRuntimeInfo& runtimeInfo = renderTextureAllocator.Get<1>(id);
 	VkRenderTextureMappingInfo& mapInfo = renderTextureAllocator.Get<2>(id);
 	VkRenderTextureWindowInfo& swapInfo = renderTextureAllocator.Get<3>(id);
-	ImageLayout& layout = renderTextureAllocator.Get<4>(id);
+	CoreGraphicsImageLayout& layout = renderTextureAllocator.Get<4>(id);
 
 	RenderTextureId rtId;
 	rtId.id24 = id;
@@ -93,7 +93,7 @@ CreateRenderTexture(const RenderTextureCreateInfo& info)
 		n_assert(adjustedInfo.mips == 1);
 		n_assert(!adjustedInfo.msaa);
 		
-		layout = ImageLayout::Present;
+		layout = CoreGraphicsImageLayout::Present;
 		loadInfo.img = swapInfo.swapimages[0];
 		loadInfo.isWindow = true;
 		loadInfo.mem = VK_NULL_HANDLE;
@@ -187,7 +187,6 @@ CreateRenderTexture(const RenderTextureCreateInfo& info)
 		res = vkCreateImageView(loadInfo.dev, &viewInfo, NULL, &runtimeInfo.view);
 		n_assert(res == VK_SUCCESS);
 
-
 		if (adjustedInfo.usage == ColorAttachment)
 		{
 			// clear image and transition layout
@@ -197,7 +196,7 @@ CreateRenderTexture(const RenderTextureCreateInfo& info)
 			scheduler->PushImageLayoutTransition(GraphicsQueueType, CoreGraphics::BarrierStage::Transfer, CoreGraphics::BarrierStage::PassOutput, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
 
 			// create binding
-			layout = ImageLayout::ShaderRead;
+			layout = CoreGraphicsImageLayout::ShaderRead;
 			runtimeInfo.bind = VkShaderServer::Instance()->RegisterTexture(rtId, false, runtimeInfo.type);
 
 		}
@@ -209,8 +208,7 @@ CreateRenderTexture(const RenderTextureCreateInfo& info)
 			scheduler->PushImageDepthStencilClear(loadInfo.img, GraphicsQueueType, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, clear, subres);
 			scheduler->PushImageLayoutTransition(GraphicsQueueType, CoreGraphics::BarrierStage::Transfer, CoreGraphics::BarrierStage::LateDepth, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL));
 
-			layout = ImageLayout::DepthStencilRead;
-			//runtimeInfo.bind = VkShaderServer::Instance()->RegisterTexture(rtId, true, runtimeInfo.type);
+			layout = CoreGraphicsImageLayout::DepthStencilRead;
 		}
 	}
 
@@ -218,6 +216,7 @@ CreateRenderTexture(const RenderTextureCreateInfo& info)
 	ObjectSetName(rtId, info.name.Value());
 #endif
 
+	CoreGraphics::RegisterRenderTexture(info.name, rtId);
 	return rtId;
 }
 
@@ -438,10 +437,19 @@ RenderTextureGetMSAA(const RenderTextureId id)
 //------------------------------------------------------------------------------
 /**
 */
-const ImageLayout
+const CoreGraphicsImageLayout
 RenderTextureGetLayout(const RenderTextureId id)
 {
 	return renderTextureAllocator.Get<4>(id.id24);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint 
+RenderTextureGetBindlessHandle(const RenderTextureId id)
+{
+	return renderTextureAllocator.Get<1>(id.id24).bind;
 }
 
 } // namespace CoreGraphics

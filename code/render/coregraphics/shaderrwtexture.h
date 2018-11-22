@@ -23,10 +23,12 @@ struct ShaderRWTextureCreateInfo
 	Resources::ResourceName name;
 	CoreGraphics::TextureType type;
 	CoreGraphics::PixelFormat::Code format;
+	CoreGraphicsImageLayout layout;
 	float width, height, depth;
 	SizeT layers, mips;
 	bool window : 1;
 	bool relativeSize : 1;
+	bool registerBindless : 1; // true if texture should be accessible in other than compute shaders
 };
 
 struct ShaderRWTextureInfo
@@ -66,6 +68,10 @@ ShaderRWTextureInfo ShaderRWTextureInfoSetupHelper(const ShaderRWTextureCreateIn
 /// get size
 const TextureDimensions ShaderRWTextureGetDimensions(const ShaderRWTextureId id);
 /// get layout
-const ImageLayout ShaderRWTextureGetLayout(const ShaderRWTextureId id);
+const CoreGraphicsImageLayout ShaderRWTextureGetLayout(const ShaderRWTextureId id);
+
+/// get bindless texture handle
+uint ShaderRWTextureGetBindlessHandle(const ShaderRWTextureId id);
+
 
 } // CoreGraphics

@@ -18,9 +18,11 @@ group(BATCH_GROUP) shared varblock DefaultSamplers [ string Visibility = "VS|PS"
 	textureHandle CavityMap;
 	
 	// textures
-	int NumEnvMips = 9;
+	int NumEnvMips = 10;
 	textureHandle EnvironmentMap;
 	textureHandle IrradianceMap;
+
+	uint		  __paddfsmpl;
 };
 
 
