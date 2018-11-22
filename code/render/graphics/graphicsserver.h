@@ -77,6 +77,13 @@ public:
 	/// call when ending the frame
 	void EndFrame();
 
+	/// get total time
+	const Timing::Time GetTime() const;
+	/// get frame time
+	const Timing::Time GetFrameTime() const;
+	/// get frame index
+	const IndexT GetFrameIndex() const;
+
     /// debug rendering
     void RenderDebug(uint32_t flags);
 
@@ -94,6 +101,10 @@ private:
 	Ids::IdGenerationPool entityPool;
 
 	Ptr<FrameSync::FrameSyncTimer> timer;
+	Timing::Time time;
+	Timing::Time frameTime;
+	IndexT frameIndex;
+
 	Util::Array<GraphicsContextFunctionBundle*> contexts;
 	Ptr<Visibility::VisibilityServer> visServer;
 
@@ -129,7 +140,8 @@ CreateEntity()
 //------------------------------------------------------------------------------
 /**
 */
-static void DestroyEntity(const GraphicsEntityId id)
+static void
+DestroyEntity(const GraphicsEntityId id)
 {
 	GraphicsServer::Instance()->DiscardGraphicsEntity(id);
 }
@@ -142,4 +154,32 @@ GraphicsServer::GetCurrentView() const
 {
 	return this->currentView;
 }
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const Timing::Time 
+GraphicsServer::GetTime() const
+{
+	return this->time;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const Timing::Time
+GraphicsServer::GetFrameTime() const
+{
+	return this->frameTime;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const IndexT
+GraphicsServer::GetFrameIndex() const
+{
+	return this->frameIndex;
+}
+
 } // namespace Graphics

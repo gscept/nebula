@@ -63,7 +63,10 @@ enum ShaderConstantType
 	SamplerVariableType,
 	ConstantBufferVariableType,
 	ImageReadWriteVariableType,
-	BufferReadWriteVariableType
+	BufferReadWriteVariableType,
+	TextureHandleType,		// just a uint
+	ImageHandleType,		// just a uint
+	SamplerHandleType		// just a uint
 };
 
 enum ShaderPipeline

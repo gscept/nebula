@@ -32,6 +32,9 @@ void DestroyGraphicsDevice();
 
 struct GraphicsDeviceState
 {
+	Util::Dictionary<Util::StringAtom, CoreGraphics::RenderTextureId> renderTextures;
+	Util::Dictionary<Util::StringAtom, CoreGraphics::ShaderRWTextureId> shaderRWTextures;
+	Util::Dictionary<Util::StringAtom, CoreGraphics::ShaderRWBufferId> shaderRWBuffers;
 	Util::Array<Ptr<CoreGraphics::RenderEventHandler> > eventHandlers;
 	CoreGraphics::PrimitiveTopology::Code primitiveTopology;
 	CoreGraphics::PrimitiveGroup primitiveGroup;
@@ -168,6 +171,19 @@ bool GetUsePatches();
 void SetViewport(const Math::rectangle<int>& rect, int index);
 /// adds a scissor rect
 void SetScissorRect(const Math::rectangle<int>& rect, int index);
+
+/// register render texture
+void RegisterRenderTexture(const Util::StringAtom& name, const CoreGraphics::RenderTextureId id);
+/// get render texture
+const CoreGraphics::RenderTextureId GetRenderTexture(const Util::StringAtom& name);
+/// register render texture
+void RegisterShaderRWTexture(const Util::StringAtom& name, const CoreGraphics::ShaderRWTextureId id);
+/// get render texture
+const CoreGraphics::ShaderRWTextureId GetShaderRWTexture(const Util::StringAtom& name);
+/// register render texture
+void RegisterShaderRWBuffer(const Util::StringAtom& name, const CoreGraphics::ShaderRWBufferId id);
+/// get render texture
+const CoreGraphics::ShaderRWBufferId GetShaderRWBuffer(const Util::StringAtom& name);
 
 #if NEBULA_GRAPHICS_DEBUG
 /// set debug name for object

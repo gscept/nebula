@@ -432,12 +432,12 @@ VkShaderPool::GetConstantType(const CoreGraphics::ShaderId id, const Util::Strin
 	case AnyFX::TextureCubeArray:
 		return TextureVariableType;
 	case AnyFX::TextureHandle:
-		return TextureVariableType;
+		return TextureHandleType;
 	case AnyFX::ImageHandle:
-		return ImageReadWriteVariableType;
+		return ImageHandleType;
 		break;
 	case AnyFX::SamplerHandle:
-		return SamplerVariableType;
+		return SamplerHandleType;
 	default:
 		return ConstantBufferVariableType;
 	}

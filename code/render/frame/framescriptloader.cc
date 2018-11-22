@@ -297,8 +297,10 @@ FrameScriptLoader::ParseImageReadWriteTextureList(const Ptr<Frame::FrameScript>&
 			name->string_value,
 			Texture2D,	// fixme, not only 2D textures!
 			CoreGraphics::PixelFormat::FromString(format->string_value),
+			CoreGraphicsImageLayout::General,		// also guarantee it's in the general state
 			(float)width->float_value, (float)height->float_value, 1,
-			1
+			1, 1,
+			false, false, true
 		};
 
 		if (jzon_get(cur, "relative")) info.relativeSize = jzon_get(cur, "relative")->bool_value;
@@ -327,7 +329,7 @@ FrameScriptLoader::ParseImageReadWriteBufferList(const Ptr<Frame::FrameScript>& 
 		// create shader buffer 
 		ShaderRWBufferCreateInfo info =
 		{
-			size->int_value, 1
+			name->string_value, size->int_value, 1
 		};
 
 		bool relativeSize = false;
@@ -1076,12 +1078,6 @@ FrameScriptLoader::ParseSubpassFullscreenEffect(const Ptr<Frame::FrameScript>& s
 	n_assert(shaderState != NULL);
 	ParseShaderState(script, shaderState, op->shader, op->resourceTable, op->constantBuffers);
 
-	/*
-	CoreGraphics::ShaderStateId state;
-	ParseShaderState(script, shaderState, state);
-	op->shaderState = state;
-	*/
-
 	// get texture
 	JzonValue* texture = jzon_get(node, "sizeFromTexture");
 	n_assert(texture != NULL);
@@ -1195,7 +1191,6 @@ FrameScriptLoader::ParseShaderVariables(const Ptr<Frame::FrameScript>& script, c
 		Util::String valStr(val->string_value);
 
 		// get variable
-		
 		ShaderConstantType type = ShaderGetConstantType(shd, sem->string_value);
 		ConstantBufferId cbo = ConstantBufferId::Invalid();
 		ConstantBinding bind = { -1 };
@@ -1236,26 +1231,51 @@ FrameScriptLoader::ParseShaderVariables(const Ptr<Frame::FrameScript>& script, c
 		case BoolVariableType:
 			ConstantBufferUpdate(cbo, valStr.AsBool(), bind);
 			break;
+		case SamplerHandleType:
+		case ImageHandleType:
+		case TextureHandleType:
+		{
+			CoreGraphics::RenderTextureId rtid = script->GetColorTexture(valStr);
+			if (rtid != CoreGraphics::RenderTextureId::Invalid())
+				ConstantBufferUpdate(cbo, CoreGraphics::RenderTextureGetBindlessHandle(rtid), bind);
+			else
+			{
+				CoreGraphics::ShaderRWTextureId swid = script->GetReadWriteTexture(valStr);
+				if (swid != CoreGraphics::ShaderRWTextureId::Invalid())
+					ConstantBufferUpdate(cbo, CoreGraphics::ShaderRWTextureGetBindlessHandle(swid), bind);
+				else
+				{
+					const Ptr<Resources::ResourceManager>& resManager = Resources::ResourceManager::Instance();
+					CoreGraphics::TextureId id = resManager->CreateResource(valStr, nullptr, nullptr, true).As<CoreGraphics::TextureId>();
+					if (id != CoreGraphics::TextureId::Invalid())
+						ConstantBufferUpdate(cbo, CoreGraphics::TextureGetBindlessHandle(id), bind);
+					else
+						n_error("Unknown resource %s!", valStr.AsCharPtr());
+				}
+			}
+			break;
+		}
 		case SamplerVariableType:
 		case TextureVariableType:
 		{
 			IndexT slot = ShaderGetResourceSlot(shd, sem->string_value);
-			if (script->GetColorTexture(valStr) != CoreGraphics::RenderTextureId::Invalid())
-			{
-				ResourceTableSetTexture(table, { script->GetColorTexture(valStr), slot, 0, CoreGraphics::SamplerId::Invalid(), false });
-			}
-			else if (script->GetReadWriteTexture(valStr) != CoreGraphics::ShaderRWTextureId::Invalid())
-			{
-				ResourceTableSetShaderRWTexture(table, { script->GetReadWriteTexture(valStr), slot, 0, CoreGraphics::SamplerId::Invalid() });
-			}
+
+			CoreGraphics::RenderTextureId rtid = script->GetColorTexture(valStr);
+			if (rtid != CoreGraphics::RenderTextureId::Invalid())
+				ResourceTableSetTexture(table, { rtid, slot, 0, CoreGraphics::SamplerId::Invalid(), false });
 			else
 			{
-				const Ptr<Resources::ResourceManager>& resManager = Resources::ResourceManager::Instance();
-				Resources::ResourceId id = resManager->CreateResource(valStr, nullptr, nullptr, true);
-				if (id != Resources::ResourceId::Invalid())
+				CoreGraphics::ShaderRWTextureId swid = script->GetReadWriteTexture(valStr);
+				if (swid != CoreGraphics::ShaderRWTextureId::Invalid())
+					ResourceTableSetShaderRWTexture(table, { swid, slot, 0, CoreGraphics::SamplerId::Invalid() });
+				else
 				{
-					TextureId tex = id;
-					ResourceTableSetTexture(table, { tex, slot, 0, CoreGraphics::SamplerId::Invalid(), false });
+					const Ptr<Resources::ResourceManager>& resManager = Resources::ResourceManager::Instance();
+					CoreGraphics::TextureId id = resManager->CreateResource(valStr, nullptr, nullptr, true).As<CoreGraphics::TextureId>();
+					if (id != CoreGraphics::TextureId::Invalid())
+						ResourceTableSetTexture(table, { id, slot, 0, CoreGraphics::SamplerId::Invalid(), false });
+					else
+						n_error("Unknown resource %s!", valStr.AsCharPtr());
 				}
 			}
 			break;
@@ -1292,7 +1312,7 @@ FrameScriptLoader::ParseResourceDependencies(const Ptr<Frame::FrameScript>& scri
 		
 		if (script->readWriteTexturesByName.Contains(valstr))
 		{
-			ImageLayout layout = ImageLayoutFromString(jzon_get(dep, "layout")->string_value);
+			CoreGraphicsImageLayout layout = ImageLayoutFromString(jzon_get(dep, "layout")->string_value);
 			CoreGraphics::ImageSubresourceInfo subres;
 			JzonValue* nd = nullptr;
 			if ((nd = jzon_get(dep, "aspect")) != nullptr) subres.aspect			= ImageAspectFromString(nd->string_value);
@@ -1311,7 +1331,7 @@ FrameScriptLoader::ParseResourceDependencies(const Ptr<Frame::FrameScript>& scri
 		}
 		else if (script->colorTexturesByName.Contains(valstr))
 		{
-			ImageLayout layout = ImageLayoutFromString(jzon_get(dep, "layout")->string_value);
+			CoreGraphicsImageLayout layout = ImageLayoutFromString(jzon_get(dep, "layout")->string_value);
 			CoreGraphics::ImageSubresourceInfo subres;
 			JzonValue* nd = nullptr;
 			if ((nd = jzon_get(dep, "aspect")) != nullptr) subres.aspect = ImageAspectFromString(nd->string_value);

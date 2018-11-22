@@ -61,6 +61,7 @@ group(TICK_GROUP) sampler2D ShadowProjMap;
 group(TICK_GROUP) shared varblock PerTickParams
 {
 	vec4 WindDirection = vec4(0.0f,0.0f,0.0f,1.0f);
+
 	float WindWaveSize = 1.0f;
 	float WindSpeed = 0.0f;
 	float WindIntensity = 0.0f;
@@ -68,11 +69,14 @@ group(TICK_GROUP) shared varblock PerTickParams
 	
 	float Saturation = float(1.0f);
 	float MaxLuminance = 1.0f;
-	vec4 Balance = vec4(1.0f, 1.0f, 1.0f, 1.0f);
 	float FadeValue = float(1.0f);
-	vec3 DoFDistances = vec3(0,0,0);
-	bool UseDof = true;
+	uint UseDof = 1;
+
+	vec4 Balance = vec4(1.0f, 1.0f, 1.0f, 1.0f);	
+
+	vec3 DoFDistances = vec3(0,0,0);	
 	float HDRBrightPassThreshold = float(1.0f);
+
 	vec4 HDRBloomColor = vec4(1.0f, 1.0f, 1.0f, 1.0f);
 	vec4 FogDistances = vec4(0.0, 2500.0, 0.0, 1.0);
 	vec4 FogColor = vec4(0.5, 0.5, 0.63, 0.0);
@@ -83,9 +87,11 @@ group(TICK_GROUP) shared varblock PerTickParams
 	vec4 GlobalLightColor;
 	vec4 GlobalBackLightColor;
 	vec4 GlobalAmbientLightColor;
-	float GlobalBackLightOffset;
 	mat4 CSMShadowMatrix;
+
+	float GlobalBackLightOffset;
 	textureHandle GlobalLightShadowBuffer;
+	uint2 __padpertick;
 	
 	// these params are for the Preetham sky model
 	vec4 A;
@@ -95,6 +101,25 @@ group(TICK_GROUP) shared varblock PerTickParams
 	vec4 E;
 	vec4 Z;
 
+	// CSM params
+	vec4 CascadeOffset[CASCADE_COUNT_FLAG];
+	vec4 CascadeScale[CASCADE_COUNT_FLAG];
+	float MinBorderPadding;     
+	float MaxBorderPadding;
+	float ShadowPartitionSize; 
+	float GlobalLightShadowBias = 0.0f;
+
+	textureHandle NormalBuffer;
+	textureHandle DepthBuffer;
+	textureHandle SpecularBuffer;
+	textureHandle AlbedoBuffer;
+	textureHandle EmissiveBuffer;
+	textureHandle LightBuffer;
+	uint	      __padframe;
+};
+
+group(TICK_GROUP) shared varblock ForwardLightBlock
+{
 	// forward lighting
 	int		NumActiveLights = 0;
 	vec4	LightPositionsArray[MAX_NUM_LIGHTS];
@@ -105,15 +130,7 @@ group(TICK_GROUP) shared varblock PerTickParams
 	vec4	LightShadowSizeArray[MAX_NUM_LIGHTS];
 	float	LightInvRangeArray[MAX_NUM_LIGHTS];
 	int		LightTypeArray[MAX_NUM_LIGHTS];
-	bool	LightCastsShadowsArray[MAX_NUM_LIGHTS];
-
-	// CSM params
-	vec4 CascadeOffset[CASCADE_COUNT_FLAG];
-	vec4 CascadeScale[CASCADE_COUNT_FLAG];
-	float MinBorderPadding;     
-	float MaxBorderPadding;
-	float ShadowPartitionSize; 
-	float GlobalLightShadowBias = 0.0f;
+	uint	LightCastsShadowsArray[MAX_NUM_LIGHTS];
 };
 
 // contains the state of the camera (and time)
@@ -128,13 +145,6 @@ group(FRAME_GROUP) shared varblock FrameBlock
 	vec4 EyePos;	
 	vec4 FocalLength;
 	vec4 TimeAndRandom;
-
-	textureHandle NormalBuffer;
-	textureHandle DepthBuffer;
-	textureHandle SpecularBuffer;
-	textureHandle AlbedoBuffer;
-	textureHandle EmissiveBuffer;
-	textureHandle LightBuffer;
 };
 
 group(FRAME_GROUP) shared varblock ShadowMatrixBlock [ bool DynamicOffset = true; string Visibility = "VS|GS"; ]
@@ -154,6 +164,7 @@ group(DYNAMIC_OFFSET_GROUP) shared varblock ObjectBlock [ string Visibility = "V
 	mat4 ModelViewProjection;
 	mat4 ModelView;
 	int ObjectId; 
+	uint3 __pad;
 };
 
 // define how many objects we can render simultaneously 

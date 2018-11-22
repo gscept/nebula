@@ -36,8 +36,10 @@ public:
 	/// updates shared shader variables dependent on view matrix
 	void ApplyViewSettings();
 
-	/// bind descriptors for view
-	void BindCameraDescriptorSets();
+	/// bind descriptors for view in the graphics pipeline
+	void BindCameraDescriptorSetsGraphics();
+	/// bind descriptors for view in the compute pipeline
+	void BindCameraDescriptorSetsCompute();
 private:
 
 	Math::matrix44 viewMatrixArray[6];
@@ -63,10 +65,17 @@ private:
 /**
 */
 inline void
-VkTransformDevice::BindCameraDescriptorSets()
+VkTransformDevice::BindCameraDescriptorSetsGraphics()
 {
 	CoreGraphics::SetResourceTable(this->viewTable, NEBULA_FRAME_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
-	//CoreGraphics::SetResourceTable(this->viewTable, NEBULA_FRAME_GROUP, CoreGraphics::ComputePipeline, nullptr);
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+VkTransformDevice::BindCameraDescriptorSetsCompute()
+{
+	CoreGraphics::SetResourceTable(this->viewTable, NEBULA_FRAME_GROUP, CoreGraphics::ComputePipeline, nullptr);
+}
 } // namespace Vulkan

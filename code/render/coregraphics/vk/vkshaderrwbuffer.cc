@@ -137,6 +137,12 @@ CreateShaderRWBuffer(const ShaderRWBufferCreateInfo& info)
 	res = vkMapMemory(setupInfo.dev, setupInfo.mem, 0, alignedSize, 0, &mapInfo.data);
 	n_assert(res == VK_SUCCESS);
 
+#if NEBULA_GRAPHICS_DEBUG
+	ObjectSetName(ret, info.name.Value());
+#endif
+
+	CoreGraphics::RegisterShaderRWBuffer(info.name, ret);
+
 	return ret;
 }
 
