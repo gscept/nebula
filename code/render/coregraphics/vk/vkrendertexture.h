@@ -73,7 +73,7 @@ typedef Ids::IdAllocator<
 	VkRenderTextureRuntimeInfo,
 	VkRenderTextureMappingInfo,
 	VkRenderTextureWindowInfo,
-	ImageLayout
+	CoreGraphicsImageLayout
 > VkRenderTextureAllocator;
 extern VkRenderTextureAllocator renderTextureAllocator;
 } // namespace Vulkan

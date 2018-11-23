@@ -94,7 +94,7 @@ CoreGraphics::PixelFormat::Code TextureGetPixelFormat(const TextureId id);
 /// get texture type
 TextureType TextureGetType(const TextureId id);
 /// get layout of texture
-ImageLayout TextureGetLayout(const TextureId id);
+CoreGraphicsImageLayout TextureGetLayout(const TextureId id);
 /// get number of mips
 uint TextureGetNumMips(const TextureId id);
 

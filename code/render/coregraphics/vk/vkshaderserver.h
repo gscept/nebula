@@ -45,8 +45,13 @@ public:
 
 	/// submit resource changes
 	void SubmitTextureDescriptorChanges();
-	/// commit texture library to shader
-	void BindTextureDescriptorSets();
+	/// commit texture library to graphics pipeline
+	void BindTextureDescriptorSetsGraphics();
+	/// commit texture library to compute pipeline
+	void BindTextureDescriptorSetsCompute();
+
+	/// setup gbuffer bindings
+	void SetupGBufferConstants();
 
 private:
 
@@ -76,11 +81,12 @@ private:
 	IndexT image3DTextureVar;
 	IndexT imageCubeTextureVar;
 
-	IndexT depthBufferTextureVar;
-	IndexT normalBufferTextureVar;
-	IndexT albedoBufferTextureVar;
-	IndexT specularBufferTextureVar;
-	IndexT lightBufferTextureVar;
+	CoreGraphics::ConstantBinding normalBufferTextureVar;
+	CoreGraphics::ConstantBinding depthBufferTextureVar;
+	CoreGraphics::ConstantBinding specularBufferTextureVar;
+	CoreGraphics::ConstantBinding albedoBufferTextureVar;
+	CoreGraphics::ConstantBinding emissiveBufferTextureVar;
+	CoreGraphics::ConstantBinding lightBufferTextureVar;
 
 	IndexT csmBufferTextureVar;
 	IndexT spotlightAtlasShadowBufferTextureVar;
@@ -103,10 +109,18 @@ VkShaderServer::SubmitTextureDescriptorChanges()
 /**
 */
 inline void
-VkShaderServer::BindTextureDescriptorSets()
+VkShaderServer::BindTextureDescriptorSetsGraphics()
 {
 	CoreGraphics::SetResourceTable(this->resourceTable, NEBULA_TICK_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
-	//CoreGraphics::SetResourceTable(this->resourceTable, NEBULA_TICK_GROUP, CoreGraphics::ComputePipeline, nullptr);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void 
+VkShaderServer::BindTextureDescriptorSetsCompute()
+{
+	CoreGraphics::SetResourceTable(this->resourceTable, NEBULA_TICK_GROUP, CoreGraphics::ComputePipeline, nullptr);
 }
 
 } // namespace Vulkan

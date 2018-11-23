@@ -64,7 +64,7 @@ TextureGetType(const TextureId id)
 //------------------------------------------------------------------------------
 /**
 */
-ImageLayout
+CoreGraphicsImageLayout
 TextureGetLayout(const TextureId id)
 {
 	return texturePool->GetLayout(id);

@@ -52,7 +52,7 @@ CreateShaderRWTexture(const ShaderRWTextureCreateInfo& info)
 
 	VkShaderRWTextureLoadInfo& loadInfo = shaderRWTextureAllocator.Get<0>(id);
 	VkShaderRWTextureRuntimeInfo& runtimeInfo = shaderRWTextureAllocator.Get<1>(id);
-	ImageLayout& layout = shaderRWTextureAllocator.Get<2>(id);
+	CoreGraphicsImageLayout& layout = shaderRWTextureAllocator.Get<2>(id);
 
 	ShaderRWTextureInfo adjustedInfo = ShaderRWTextureInfoSetupHelper(info);
 	loadInfo.dims.width = adjustedInfo.width;
@@ -118,14 +118,23 @@ CreateShaderRWTexture(const ShaderRWTextureCreateInfo& info)
 	n_assert(stat == VK_SUCCESS);
 
 	// transition to a useable state
-	VkScheduler::Instance()->PushImageLayoutTransition(GraphicsQueueType, CoreGraphics::BarrierStage::Host, CoreGraphics::BarrierStage::AllGraphicsShaders, VkUtilities::ImageMemoryBarrier(loadInfo.img, viewRange, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL));
+	VkScheduler::Instance()->PushImageLayoutTransition(GraphicsQueueType, CoreGraphics::BarrierStage::Host, CoreGraphics::BarrierStage::AllGraphicsShaders, VkUtilities::ImageMemoryBarrier(loadInfo.img, viewRange, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VkTypes::AsVkImageLayout(info.layout)));
 
-	layout = ImageLayout::General;
+	layout = info.layout;
 	ShaderRWTextureId ret;
 	ret.id24 = id;
 	ret.id8 = ShaderRWTextureIdType;
 
-	runtimeInfo.bind = VkShaderServer::Instance()->RegisterTexture(ret, Texture2D);
+	if (info.registerBindless)
+		runtimeInfo.bind = VkShaderServer::Instance()->RegisterTexture(ret, Texture2D);
+	else
+		runtimeInfo.bind = 0; // use placeholder
+
+#if NEBULA_GRAPHICS_DEBUG
+	ObjectSetName(ret, info.name.Value());
+#endif
+
+	CoreGraphics::RegisterShaderRWTexture(info.name, ret);
 
 	return ret;
 }
@@ -208,10 +217,19 @@ ShaderRWTextureGetDimensions(const ShaderRWTextureId id)
 //------------------------------------------------------------------------------
 /**
 */
-const ImageLayout
+const CoreGraphicsImageLayout
 ShaderRWTextureGetLayout(const ShaderRWTextureId id)
 {
 	return shaderRWTextureAllocator.Get<2>(id.id24);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint 
+ShaderRWTextureGetBindlessHandle(const ShaderRWTextureId id)
+{
+	return shaderRWTextureAllocator.Get<1>(id.id24).bind;
 }
 
 } // namespace CoreGraphics

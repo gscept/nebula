@@ -6,16 +6,13 @@
 #include "lib/std.fxh"
 #include "lib/util.fxh"
 #include "lib/techniques.fxh"
+
 sampler2D CopyBuffer;
-
-
 samplerstate CopySampler
 {
 	Samplers = { CopyBuffer };
 	Filter = Linear;
 };
-
-
 
 state CopyState
 {

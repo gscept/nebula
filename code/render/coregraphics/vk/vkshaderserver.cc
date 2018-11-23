@@ -72,8 +72,20 @@ VkShaderServer::Open()
 
 	this->tickParams = ShaderCreateConstantBuffer(shader, "PerTickParams");
 	IndexT slot = ShaderGetResourceSlot(shader, "PerTickParams");
-	ResourceTableSetConstantBuffer(this->resourceTable, {this->tickParams, slot, 0, false, false, -1, 0});
+	ResourceTableSetConstantBuffer(this->resourceTable, { this->tickParams, slot, 0, false, false, -1, 0 });
 	ResourceTableCommitChanges(this->resourceTable);
+
+	this->normalBufferTextureVar = ShaderGetConstantBinding(shader, "NormalBuffer");
+	this->depthBufferTextureVar = ShaderGetConstantBinding(shader, "DepthBuffer");
+	this->specularBufferTextureVar = ShaderGetConstantBinding(shader, "SpecularBuffer");
+	this->albedoBufferTextureVar = ShaderGetConstantBinding(shader, "AlbedoBuffer");
+	this->emissiveBufferTextureVar = ShaderGetConstantBinding(shader, "EmissiveBuffer");
+	this->lightBufferTextureVar = ShaderGetConstantBinding(shader, "LightBuffer");
+
+	// update constant buffer with gbuffer handles
+	/*
+
+	*/
 
 	return true;
 }
@@ -243,6 +255,21 @@ const CoreGraphics::ConstantBufferId
 VkShaderServer::GetTickParams() const
 {
 	return this->tickParams;
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+VkShaderServer::SetupGBufferConstants()
+{
+	ConstantBufferUpdate(this->tickParams, RenderTextureGetBindlessHandle(CoreGraphics::GetRenderTexture("NormalBuffer")), this->normalBufferTextureVar);
+	ConstantBufferUpdate(this->tickParams, RenderTextureGetBindlessHandle(CoreGraphics::GetRenderTexture("DepthBuffer")), this->depthBufferTextureVar);
+	ConstantBufferUpdate(this->tickParams, RenderTextureGetBindlessHandle(CoreGraphics::GetRenderTexture("SpecularBuffer")), this->specularBufferTextureVar);
+	ConstantBufferUpdate(this->tickParams, RenderTextureGetBindlessHandle(CoreGraphics::GetRenderTexture("AlbedoBuffer")), this->albedoBufferTextureVar);
+	ConstantBufferUpdate(this->tickParams, RenderTextureGetBindlessHandle(CoreGraphics::GetRenderTexture("EmissiveBuffer")), this->emissiveBufferTextureVar);
+	ConstantBufferUpdate(this->tickParams, RenderTextureGetBindlessHandle(CoreGraphics::GetRenderTexture("LightBuffer")), this->lightBufferTextureVar);
 }
 
 } // namespace Vulkan
