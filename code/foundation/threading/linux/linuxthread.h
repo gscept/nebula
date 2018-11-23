@@ -38,6 +38,8 @@ public:
     Priority GetPriority() const;
     /// set thread affinity
     void SetThreadAffinity(uint mask);
+	/// set thread affinity
+	uint GetThreadAffinity();
     /// set stack size in bytes
     void SetStackSize(SizeT s);
     /// get stack size

@@ -315,6 +315,7 @@ Win360Thread::GetRunningThreadDebugInfos()
             info.threadName = cur->GetName();
             info.threadPriority = cur->GetPriority();
             info.threadStackSize = cur->GetStackSize();
+			info.threadCoreId = (System::Cpu::CoreId)cur->GetThreadAffinity();
             infos.Append(info);
         }
     }

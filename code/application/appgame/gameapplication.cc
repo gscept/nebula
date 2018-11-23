@@ -14,6 +14,7 @@
 #include "messaging/messagecallbackhandler.h"
 #include "system/nebulasettings.h"
 #include "io/fswrapper.h"
+#include "basegamefeature/debug/gamepagehandler.h"
 
 namespace App
 {
@@ -118,6 +119,7 @@ GameApplication::Open()
 		this->httpServerProxy->AttachRequestHandler(Debug::MemoryPageHandler::Create());
 		this->httpServerProxy->AttachRequestHandler(Debug::ConsolePageHandler::Create());
 		this->httpServerProxy->AttachRequestHandler(Debug::IoPageHandler::Create());
+		this->httpServerProxy->AttachRequestHandler(Debug::GamePageHandler::Create());
 
 		// setup debug subsystem
 		this->debugInterface = DebugInterface::Create();

@@ -61,8 +61,9 @@ ThreadPageHandler::HandleRequest(const Ptr<HttpRequest>& request)
             htmlWriter->Begin(HtmlElement::TableRow);
                 htmlWriter->Element(HtmlElement::TableHeader, "Thread Name");
                 htmlWriter->Element(HtmlElement::TableHeader, "Priority");
-                htmlWriter->Element(HtmlElement::TableHeader, "CPU Core");
+				htmlWriter->Element(HtmlElement::TableHeader, "Affinity mask");
                 htmlWriter->Element(HtmlElement::TableHeader, "Stack Size");
+                htmlWriter->Element(HtmlElement::TableHeader, "CPU Cores");
             htmlWriter->End(HtmlElement::TableRow);
 
             IndexT i;
@@ -78,9 +79,23 @@ ThreadPageHandler::HandleRequest(const Ptr<HttpRequest>& request)
                         case Thread::Normal:    pri = "Normal"; break;
                         case Thread::High:      pri = "High"; break;
                     }
+
+					String cores = "";
+					for (SizeT i = 0; i < 32; i++)
+					{
+						uint bit = 1 << i;
+						if (((uint)curThreadInfo.threadCoreId & bit) == bit)
+						{
+							String coreStr;
+							coreStr.Format("Core%d | ", i);
+							cores.Append(coreStr);
+						}
+					}
+
                     htmlWriter->Element(HtmlElement::TableData, pri);
-                    htmlWriter->Element(HtmlElement::TableData, String::FromInt(curThreadInfo.threadCoreId));
+                    htmlWriter->Element(HtmlElement::TableData, String::Hex(curThreadInfo.threadCoreId));
                     htmlWriter->Element(HtmlElement::TableData, String::FromInt(curThreadInfo.threadStackSize));
+					htmlWriter->Element(HtmlElement::TableData, cores);
                 htmlWriter->End(HtmlElement::TableRow);
             }
         htmlWriter->End(HtmlElement::Table);
