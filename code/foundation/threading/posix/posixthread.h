@@ -40,6 +40,8 @@ public:
     Priority GetPriority() const;
     /// set thread affinity
     void SetThreadAffinity(uint mask);
+	/// get thread affinity
+	uint GetThreadAffinity();
     /// set stack size in bytes (default is 4 KByte)
     void SetStackSize(unsigned int s);
     /// get stack size
