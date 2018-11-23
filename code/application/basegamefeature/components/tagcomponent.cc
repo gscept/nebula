@@ -10,9 +10,9 @@
 namespace Game
 {
 
-static TagComponentData component;
+static TagComponentData data;
 
-__ImplementComponent(TagComponent, component);
+__ImplementComponent(TagComponent, data);
 
 //------------------------------------------------------------------------------
 /**
@@ -20,11 +20,11 @@ __ImplementComponent(TagComponent, component);
 void
 TagComponent::Create()
 {
-	component = TagComponentData();
+	data = TagComponentData();
 
-	__SetupDefaultComponentBundle(component);
-	component.functions.Optimize = Optimize;
-	__RegisterComponent(&component);
+	__SetupDefaultComponentBundle(data);
+	data.functions.Optimize = Optimize;
+	__RegisterComponent(&data);
 }
 
 //------------------------------------------------------------------------------
@@ -42,7 +42,7 @@ TagComponent::Discard()
 SizeT
 TagComponent::Optimize()
 {
-	return component.Optimize();
+	return data.Optimize();
 }
 
 } // namespace Game
