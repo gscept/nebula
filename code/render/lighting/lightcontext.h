@@ -60,13 +60,6 @@ public:
 	/// set transform depending on type
 	static void SetTransform(const Graphics::GraphicsEntityId id, const Math::matrix44& transform);
 
-	/// set transform, type must match the type the entity was created with
-	static void SetSpotLightTransform(const Graphics::GraphicsEntityId id, const Math::matrix44& transform);
-	/// set transform, type must match the type the entity was created with
-	static void SetPointLightTransform(const Graphics::GraphicsEntityId id, const Math::matrix44& transform);
-	/// set global light direction
-	static void SetGlobalLightDirection(const Graphics::GraphicsEntityId id, const Math::vector& direction);
-
 	/// do light classification for tiled/clustered compute
 	static void OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime);
 #ifndef PUBLIC_BUILD
@@ -77,6 +70,13 @@ public:
 private:
 
 	friend struct Frame::FrameSubpassSystem::CompiledImpl;
+
+	/// set transform, type must match the type the entity was created with
+	static void SetSpotLightTransform(const Graphics::ContextEntityId id, const Math::matrix44& transform);
+	/// set transform, type must match the type the entity was created with
+	static void SetPointLightTransform(const Graphics::ContextEntityId id, const Math::matrix44& transform);
+	/// set global light direction
+	static void SetGlobalLightDirection(const Graphics::ContextEntityId id, const Math::vector& direction);
 
 	/// render global lights
 	static void RenderLights();

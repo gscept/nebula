@@ -32,7 +32,7 @@ VkMemoryTexturePool::LoadFromMemory(const Resources::ResourceId id, const void* 
 	this->EnterGet();
 	VkTextureRuntimeInfo& runtimeInfo = this->Get<0>(id.allocId);
 	VkTextureLoadInfo& loadInfo = this->Get<1>(id.allocId);
-	ImageLayout& layout = this->Get<3>(id.allocId);
+	CoreGraphicsImageLayout& layout = this->Get<3>(id.allocId);
 
 	VkFormat vkformat = VkTypes::AsVkFormat(data->format);
 	uint32_t size = PixelFormat::ToSize(data->format);
@@ -129,7 +129,7 @@ VkMemoryTexturePool::LoadFromMemory(const Resources::ResourceId id, const void* 
 	stat = vkCreateImageView(dev, &viewCreate, nullptr, &runtimeInfo.view);
 	n_assert(stat == VK_SUCCESS);
 
-	layout = ImageLayout::ShaderRead;
+	layout = CoreGraphicsImageLayout::ShaderRead;
 	loadInfo.dims.width = data->width;
 	loadInfo.dims.height = data->height;
 	loadInfo.dims.depth = 1;
@@ -472,7 +472,7 @@ VkMemoryTexturePool::GetType(const CoreGraphics::TextureId id)
 //------------------------------------------------------------------------------
 /**
 */
-ImageLayout
+CoreGraphicsImageLayout
 VkMemoryTexturePool::GetLayout(const CoreGraphics::TextureId id)
 {
 	return textureAllocator.Get<3>(id.allocId);

@@ -15,6 +15,8 @@
 #include "vkshaderserver.h"
 #include "vkpass.h"
 #include "vkrendertexture.h"
+#include "vkshaderrwtexture.h"
+#include "vkshaderrwbuffer.h"
 #include "vkbarrier.h"
 #include "coregraphics/displaydevice.h"
 #include "app/application.h"
@@ -630,8 +632,8 @@ CreateAndBindGraphicsPipeline()
 		PushToThread(cmd, state.currentDrawThread);
 		
 		// bind textures and camera descriptors
-		VkShaderServer::Instance()->BindTextureDescriptorSets();
-		VkTransformDevice::Instance()->BindCameraDescriptorSets();
+		VkShaderServer::Instance()->BindTextureDescriptorSetsGraphics();
+		VkTransformDevice::Instance()->BindCameraDescriptorSetsGraphics();
 
 		// push propagation descriptors
 		for (IndexT i = 0; i < state.propagateDescriptorSets.Size(); i++)
@@ -674,12 +676,12 @@ BindComputePipeline(const VkPipeline& pipeline, const VkPipelineLayout& layout)
 	// bind compute pipeline
 	state.currentBindPoint = CoreGraphics::ComputePipeline;
 
-	// bind shared descriptors
-	VkShaderServer::Instance()->BindTextureDescriptorSets();
-	VkTransformDevice::Instance()->BindCameraDescriptorSets();
-
 	// bind pipeline
 	vkCmdBindPipeline(CommandBufferGetVk(state.mainCmdDrawBuffer), VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
+
+	// bind shared descriptors
+	VkShaderServer::Instance()->BindTextureDescriptorSetsCompute();
+	VkTransformDevice::Instance()->BindCameraDescriptorSetsCompute();
 
 	// run command pass
 	state.scheduler.ExecuteCommandPass(VkScheduler::OnBindComputePipeline);
@@ -2624,6 +2626,68 @@ SetScissorRect(const Math::rectangle<int>& rect, int index)
 	}
 }
 
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+RegisterRenderTexture(const Util::StringAtom& name, const CoreGraphics::RenderTextureId id)
+{
+	state.renderTextures.Add(name, id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const CoreGraphics::RenderTextureId 
+GetRenderTexture(const Util::StringAtom & name)
+{
+	IndexT i = state.renderTextures.FindIndex(name);
+	if (i == InvalidIndex)		return CoreGraphics::RenderTextureId::Invalid();
+	else						return state.renderTextures[name];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+RegisterShaderRWTexture(const Util::StringAtom& name, const CoreGraphics::ShaderRWTextureId id)
+{
+	state.shaderRWTextures.Add(name, id);
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+const CoreGraphics::ShaderRWTextureId 
+GetShaderRWTexture(const Util::StringAtom & name)
+{
+	IndexT i = state.shaderRWTextures.FindIndex(name);
+	if (i == InvalidIndex)		return CoreGraphics::ShaderRWTextureId::Invalid();
+	else						return state.shaderRWTextures[name];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+RegisterShaderRWBuffer(const Util::StringAtom& name, const CoreGraphics::ShaderRWBufferId id)
+{
+	state.shaderRWBuffers.Add(name, id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const CoreGraphics::ShaderRWBufferId 
+GetShaderRWBuffer(const Util::StringAtom& name)
+{
+	IndexT i = state.shaderRWBuffers.FindIndex(name);
+	if (i == InvalidIndex)		return CoreGraphics::ShaderRWBufferId::Invalid();
+	else						return state.shaderRWBuffers[name];
+}
+
 #if NEBULA_GRAPHICS_DEBUG
 
 //------------------------------------------------------------------------------
@@ -2673,6 +2737,50 @@ ObjectSetName(const CoreGraphics::RenderTextureId id, const Util::String& name)
 	info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
 	Util::String str = Util::String::Sprintf("%s - View", name.AsCharPtr());
 	info.pObjectName = str.AsCharPtr();
+	n_assert(VkDebugObjectName(dev, &info) == VK_SUCCESS);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<>
+void
+ObjectSetName(const CoreGraphics::ShaderRWTextureId id, const Util::String& name)
+{
+	VkDebugUtilsObjectNameInfoEXT info =
+	{
+		VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
+		nullptr,
+		VK_OBJECT_TYPE_IMAGE,
+		(uint64_t)Vulkan::ShaderRWTextureGetVkImage(id),
+		name.AsCharPtr()
+	};
+	VkDevice dev = GetCurrentDevice();
+	n_assert(VkDebugObjectName(dev, &info) == VK_SUCCESS);
+
+	info.objectHandle = (uint64_t)Vulkan::ShaderRWTextureGetVkImageView(id);
+	info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
+	Util::String str = Util::String::Sprintf("%s - View", name.AsCharPtr());
+	info.pObjectName = str.AsCharPtr();
+	n_assert(VkDebugObjectName(dev, &info) == VK_SUCCESS);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<>
+void
+ObjectSetName(const CoreGraphics::ShaderRWBufferId id, const Util::String& name)
+{
+	VkDebugUtilsObjectNameInfoEXT info =
+	{
+		VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
+		nullptr,
+		VK_OBJECT_TYPE_BUFFER,
+		(uint64_t)Vulkan::ShaderRWBufferGetVkBuffer(id),
+		name.AsCharPtr()
+	};
+	VkDevice dev = GetCurrentDevice();
 	n_assert(VkDebugObjectName(dev, &info) == VK_SUCCESS);
 }
 

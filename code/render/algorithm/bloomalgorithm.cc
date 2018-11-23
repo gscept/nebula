@@ -57,6 +57,7 @@ BloomAlgorithm::Setup()
 		"Bloom-Internal0",
 		Texture2D,
 		CoreGraphics::PixelFormat::R16G16B16A16F,
+		CoreGraphicsImageLayout::General,
 		dims.width, dims.height, dims.depth,
 		1, 1,
 		false, false
@@ -70,9 +71,9 @@ BloomAlgorithm::Setup()
 		BarrierStage::ComputeShader
 	};
 	ImageSubresourceInfo subres;
-	subres.aspect = ImageAspect::ColorBits;
+	subres.aspect = CoreGraphicsImageAspect::ColorBits;
 	
-	binfo.shaderRWTextures.Append(std::make_tuple(this->internalTargets[0], subres, ImageLayout::General, ImageLayout::General, BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead));
+	binfo.shaderRWTextures.Append(std::make_tuple(this->internalTargets[0], subres, CoreGraphicsImageLayout::General, CoreGraphicsImageLayout::General, BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead));
 	this->barriers[0] = CreateBarrier(binfo);
 
 	ResourceTableSetTexture(this->brightPassTable, { this->renderTextures[0], this->colorSourceSlot, 0, CoreGraphics::SamplerId::Invalid() , false });

@@ -51,9 +51,10 @@ HBAOAlgorithm::Setup()
 		"HBAO-Internal0",
 		Texture2D,
 		PixelFormat::R16G16F,
+		CoreGraphicsImageLayout::General,
 		1.0f, 1.0f, 1.0f,
 		1, 1,				// layers and mips
-		false, true
+		false, true, false
 	};
 
 	this->internalTargets[0] = CreateShaderRWTexture(tinfo);
@@ -67,17 +68,20 @@ HBAOAlgorithm::Setup()
 		BarrierStage::ComputeShader
 	};
 	ImageSubresourceInfo subres;
-	subres.aspect = ImageAspect::ColorBits;
+	subres.aspect = CoreGraphicsImageAspect::ColorBits;
 
-	binfo.shaderRWTextures.Append(std::make_tuple(this->internalTargets[0], subres, ImageLayout::General, ImageLayout::General, BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead));
+
+	// create barriers to transition RW texture layouts to the RW state (default is to be read)
+	binfo.shaderRWTextures.Append(std::make_tuple(this->internalTargets[0], subres, CoreGraphicsImageLayout::General, CoreGraphicsImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite));
+	binfo.shaderRWTextures.Append(std::make_tuple(this->internalTargets[1], subres, CoreGraphicsImageLayout::General, CoreGraphicsImageLayout::General, BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead));
 	this->barriers[0] = CreateBarrier(binfo);
-
 	binfo.shaderRWTextures.Clear();
-	binfo.shaderRWTextures.Append(std::make_tuple(this->internalTargets[1], subres, ImageLayout::General, ImageLayout::General, BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead));
+
+	binfo.shaderRWTextures.Append(std::make_tuple(this->internalTargets[1], subres, CoreGraphicsImageLayout::General, CoreGraphicsImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite));
 	this->barriers[1] = CreateBarrier(binfo);
-
 	binfo.shaderRWTextures.Clear();
-	binfo.shaderRWTextures.Append(std::make_tuple(this->readWriteTextures[0], subres, ImageLayout::General, ImageLayout::General, BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead));
+
+	binfo.shaderRWTextures.Append(std::make_tuple(this->readWriteTextures[0], subres, CoreGraphicsImageLayout::General, CoreGraphicsImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite));
 	this->barriers[2] = CreateBarrier(binfo);
 
 	// setup shaders
@@ -103,9 +107,9 @@ HBAOAlgorithm::Setup()
 	this->blurConstants = ShaderCreateConstantBuffer(this->blurShader, "HBAOBlur");
 
 	// setup hbao table
-	ResourceTableSetShaderRWTexture(this->hbaoTable, { this->internalTargets[1], this->hbao0, 0, CoreGraphics::SamplerId::Invalid() });
-	ResourceTableSetShaderRWTexture(this->hbaoTable, { this->internalTargets[0], this->hbao1, 0, CoreGraphics::SamplerId::Invalid() });
-	ResourceTableSetConstantBuffer(this->hbaoTable, {this->hbaoConstants, this->hbaoC, 0, false, false, -1, 0});
+	ResourceTableSetShaderRWTexture(this->hbaoTable, { this->internalTargets[0], this->hbao0, 0, CoreGraphics::SamplerId::Invalid() });
+	ResourceTableSetShaderRWTexture(this->hbaoTable, { this->internalTargets[1], this->hbao1, 0, CoreGraphics::SamplerId::Invalid() });
+	ResourceTableSetConstantBuffer(this->hbaoTable, { this->hbaoConstants, this->hbaoC, 0, false, false, -1, 0 });
 	ResourceTableCommitChanges(this->hbaoTable);
 
 	// setup blur table
@@ -144,6 +148,10 @@ HBAOAlgorithm::Setup()
 	// calculate relevant stuff for AO
 	this->AddFunction("Prepare", Algorithm::Compute, [this](IndexT)
 	{
+
+#if NEBULA_GRAPHICS_DEBUG
+		//CoreGraphics::QueueInsertMarker(GraphicsQueueType, Math::float4(0.6f, 0.4f, 0.0f, 1.0f), "HBAO Preparation step");
+#endif
 		// get camera settings
 		const CameraSettings& cameraSettings = CameraContext::GetSettings(Graphics::GraphicsServer::Instance()->GetCurrentView()->GetCamera());
 
@@ -197,6 +205,10 @@ HBAOAlgorithm::Setup()
 		ConstantBufferUpdate(this->hbaoConstants, this->vars.aoResolution, this->aoResolutionVar);
 		ConstantBufferUpdate(this->hbaoConstants, this->vars.invAOResolution, this->invAOResolutionVar);
 		ConstantBufferUpdate(this->hbaoConstants, this->vars.strength, this->strengthVar);
+
+		ConstantBufferUpdate(this->blurConstants, this->vars.blurFalloff, this->blurFalloff);
+		ConstantBufferUpdate(this->blurConstants, this->vars.blurThreshold, this->blurDepthThreshold);
+		ConstantBufferUpdate(this->blurConstants, 1.5f, this->powerExponentVar);
 	});
 
 	// calculate HBAO and blur
@@ -216,30 +228,37 @@ HBAOAlgorithm::Setup()
 		uint numGroupsY1 = DivAndRoundUp(height, TILE_WIDTH);
 		uint numGroupsY2 = height;
 
+		// we are running the SSAO on the graphics queue
+#if NEBULA_GRAPHICS_DEBUG
+		CoreGraphics::CmdBufBeginMarker(GraphicsQueueType, Math::float4(0.8f, 0.6f, 0.0f, 1.0f), "HBAO");
+#endif
+
 		// render AO in X
 		CoreGraphics::SetShaderProgram(this->xDirectionHBAO);
 		CoreGraphics::SetResourceTable(this->hbaoTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
 		CoreGraphics::Compute(numGroupsX1, numGroupsY2, 1);
+		CoreGraphics::InsertBarrier(this->barriers[0], GraphicsQueueType);
 
-		CoreGraphics::InsertBarrier(this->barriers[0], ComputeQueueType);
-
+		// now do it in Y
 		CoreGraphics::SetShaderProgram(this->yDirectionHBAO);
 		CoreGraphics::SetResourceTable(this->hbaoTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
 		CoreGraphics::Compute(numGroupsY1, numGroupsX2, 1);
+		CoreGraphics::InsertBarrier(this->barriers[1], GraphicsQueueType);
 
-		CoreGraphics::InsertBarrier(this->barriers[1], ComputeQueueType);
-
+		// blur in X
 		CoreGraphics::SetShaderProgram(this->xDirectionBlur);
 		CoreGraphics::SetResourceTable(this->blurTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
 		CoreGraphics::Compute(numGroupsX1, numGroupsY2, 1);
+		CoreGraphics::InsertBarrier(this->barriers[0], GraphicsQueueType);
 
-		CoreGraphics::InsertBarrier(this->barriers[0], ComputeQueueType);
-
+		// blur in Y
 		CoreGraphics::SetShaderProgram(this->yDirectionBlur);
 		CoreGraphics::SetResourceTable(this->blurTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
 		CoreGraphics::Compute(numGroupsY1, numGroupsX2, 1);
 
-		//renderDevice->InsertBarrier(this->barriers[2]);
+#if NEBULA_GRAPHICS_DEBUG
+		CoreGraphics::CmdBufEndMarker(GraphicsQueueType);
+#endif
 	});
 }
 

@@ -28,7 +28,7 @@ struct VkShaderRWTextureRuntimeInfo
 typedef Ids::IdAllocator<
 	VkShaderRWTextureLoadInfo,
 	VkShaderRWTextureRuntimeInfo,
-	ImageLayout
+	CoreGraphicsImageLayout
 > ShaderRWTextureAllocator;
 extern ShaderRWTextureAllocator shaderRWTextureAllocator;
 

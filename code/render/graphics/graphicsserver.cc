@@ -233,8 +233,9 @@ void
 GraphicsServer::BeginFrame()
 {
 	this->timer->UpdateTimePolling();
-	const IndexT frameIndex = this->timer->GetFrameIndex();
-	const Timing::Time time = this->timer->GetFrameTime();
+	this->frameIndex = this->timer->GetFrameIndex();
+	this->frameTime = this->timer->GetFrameTime();
+	this->time = this->timer->GetTime();
 
 	// begin updating visibility
 	IndexT i;
@@ -243,7 +244,7 @@ GraphicsServer::BeginFrame()
 		if (this->contexts[i]->StageBits)
 			*this->contexts[i]->StageBits = Graphics::OnBeforeFrameStage;
 		if (this->contexts[i]->OnBeforeFrame != nullptr)
-			this->contexts[i]->OnBeforeFrame(frameIndex, time);
+			this->contexts[i]->OnBeforeFrame(this->frameIndex, this->frameTime);
 	}
 }
 
@@ -253,9 +254,6 @@ GraphicsServer::BeginFrame()
 void 
 GraphicsServer::BeforeViews()
 {
-	const IndexT frameIndex = this->timer->GetFrameIndex();
-	const Timing::Time time = this->timer->GetFrameTime();
-
 	// begin updating visibility
 	IndexT i;
 	for (i = 0; i < this->contexts.Size(); i++)
@@ -263,7 +261,7 @@ GraphicsServer::BeforeViews()
 		if (this->contexts[i]->StageBits)
 			*this->contexts[i]->StageBits = Graphics::OnWaitForWorkStage;
 		if (this->contexts[i]->OnWaitForWork != nullptr)
-			this->contexts[i]->OnWaitForWork(frameIndex, time);
+			this->contexts[i]->OnWaitForWork(this->frameIndex, this->frameTime);
 	}
 
 	// go through views and call before view
@@ -279,7 +277,7 @@ GraphicsServer::BeforeViews()
 			if (this->contexts[i]->StageBits)
 				*this->contexts[i]->StageBits = Graphics::OnBeforeViewStage;
 			if (this->contexts[j]->OnBeforeView != nullptr)
-				this->contexts[j]->OnBeforeView(view, frameIndex, time);
+				this->contexts[j]->OnBeforeView(view, this->frameIndex, this->frameTime);
 		}
 	}
 }
@@ -290,9 +288,6 @@ GraphicsServer::BeforeViews()
 void
 GraphicsServer::RenderViews()
 {
-	const IndexT frameIndex = this->timer->GetFrameIndex();
-	const Timing::Time time = this->timer->GetFrameTime();
-
 	// begin updating visibility
 	IndexT i;
 	// go through views and call before view
@@ -300,7 +295,7 @@ GraphicsServer::RenderViews()
 	{
 		const Ptr<View>& view = this->views[i];
 		this->currentView = view;
-		view->Render(frameIndex, time);
+		view->Render(this->frameIndex, this->frameTime);
 	}
 }
 
@@ -310,9 +305,6 @@ GraphicsServer::RenderViews()
 void 
 GraphicsServer::EndViews()
 {
-	const IndexT frameIndex = this->timer->GetFrameIndex();
-	const Timing::Time time = this->timer->GetFrameTime();
-
 	// go through views and call before view
 	IndexT i;
 	for (i = 0; i < this->views.Size(); i++)
@@ -327,7 +319,7 @@ GraphicsServer::EndViews()
 			if (this->contexts[i]->StageBits)
 				*this->contexts[i]->StageBits = Graphics::OnAfterViewStage;
 			if (this->contexts[j]->OnAfterView != nullptr)
-				this->contexts[j]->OnAfterView(view, frameIndex, time);
+				this->contexts[j]->OnAfterView(view, this->frameIndex, this->frameTime);
 		}
 	}
 }
@@ -338,9 +330,6 @@ GraphicsServer::EndViews()
 void 
 GraphicsServer::EndFrame()
 {
-	const IndexT frameIndex = this->timer->GetFrameIndex();
-	const Timing::Time time = this->timer->GetFrameTime();
-
 	// finish frame and prepare for the next one
 	IndexT i;
 	for (i = 0; i < this->contexts.Size(); i++)
@@ -348,7 +337,7 @@ GraphicsServer::EndFrame()
 		if (this->contexts[i]->StageBits) 
 			*this->contexts[i]->StageBits = Graphics::OnAfterFrameStage;
 		if (this->contexts[i]->OnAfterFrame != nullptr)
-			this->contexts[i]->OnAfterFrame(frameIndex, time);
+			this->contexts[i]->OnAfterFrame(this->frameIndex, this->frameTime);
 	}
 }
 
@@ -358,15 +347,12 @@ GraphicsServer::EndFrame()
 void 
 GraphicsServer::RenderPlugin(const Util::StringAtom & filter)
 {
-    const IndexT frameIndex = this->timer->GetFrameIndex();
-    const Timing::Time time = this->timer->GetFrameTime();
-
     // finish frame and prepare for the next one
     IndexT i;
     for (i = 0; i < this->contexts.Size(); i++)
     {
         if (this->contexts[i]->OnRenderAsPlugin != nullptr)
-            this->contexts[i]->OnRenderAsPlugin(frameIndex, time, filter);
+            this->contexts[i]->OnRenderAsPlugin(this->frameIndex, this->frameTime, filter);
     }
 }
 
@@ -379,6 +365,10 @@ GraphicsServer::CreateView(const Util::StringAtom& name, const IO::URI& framescr
 	Ptr<View> view = View::Create();
 	Ptr<Frame::FrameScript> frameScript = Frame::FrameServer::Instance()->LoadFrameScript(name.AsString() + "_framescript", framescript);
 	frameScript->Build();
+
+	// setup gbuffer bindings after frame script is loaded
+	this->shaderServer->SetupGBufferConstants();
+
 	view->script = frameScript;
 	this->views.Append(view);
 
@@ -423,6 +413,5 @@ GraphicsServer::RenderDebug(uint32_t flags)
             this->contexts[i]->OnRenderDebug(flags);
     }
 }
-
 
 } // namespace Graphics

@@ -84,7 +84,7 @@ public:
 	/// get texture type
 	CoreGraphics::TextureType GetType(const CoreGraphics::TextureId id);
 	/// get texture creation layout
-	ImageLayout GetLayout(const CoreGraphics::TextureId id);
+	CoreGraphicsImageLayout GetLayout(const CoreGraphics::TextureId id);
 	/// get number of mips
 	uint GetNumMips(const CoreGraphics::TextureId id);
 	/// get bindless handle

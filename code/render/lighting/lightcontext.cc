@@ -173,7 +173,8 @@ LightContext::SetupGlobalLight(const Graphics::GraphicsEntityId id, const Math::
 	genericLightAllocator.Get<ShadowCaster>(cid.id) = castShadows;
 
 	auto lid = globalLightAllocator.AllocObject();
-	globalLightAllocator.Get<GlobalLightDirection>(lid) = direction;
+
+	SetGlobalLightDirection(cid, direction);
 	globalLightAllocator.Get<GlobalLightBacklight>(lid) = backlight;
 	globalLightAllocator.Get<GlobalLightAmbient>(lid) = ambient;
 	globalLightAllocator.Get<GlobalLightBacklightOffset>(lid) = backlightFactor;
@@ -203,7 +204,8 @@ LightContext::SetupPointLight(const Graphics::GraphicsEntityId id,
 
 	const Math::matrix44 scaleMatrix = Math::matrix44::scaling(range, range, range);
 	auto pli = pointLightAllocator.AllocObject();
-	pointLightAllocator.Get<PointLightTransform>(pli) = Math::matrix44::multiply(scaleMatrix, transform);
+
+	SetPointLightTransform(cid, Math::matrix44::multiply(scaleMatrix, transform));
 	pointLightAllocator.Get<PointLightDynamicOffsets>(pli).Resize(2);
 	genericLightAllocator.Get<TypedLightId>(cid.id) = pli;
 
@@ -258,30 +260,12 @@ LightContext::SetupSpotLight(const Graphics::GraphicsEntityId id,
 	genericLightAllocator.Get<Intensity>(cid.id) = intensity;
 	genericLightAllocator.Get<ShadowCaster>(cid.id) = castShadows;
 
-
 	auto sli = spotLightAllocator.AllocObject();
-	spotLightAllocator.Get<SpotLightTransform>(sli) = transform;
 	spotLightAllocator.Get<SpotLightDynamicOffsets>(sli).Resize(2);
 	genericLightAllocator.Get<TypedLightId>(cid.id) = sli;
 
-
-	// compute the spot light's perspective projection matrix from
-	// its transform matrix (spot direction is along -z, and goes
-	// throught the rectangle formed by the x and y components
-	// at the end of -z
-	float widthAtFarZ = transform.getrow0().length() * 2.0f;
-	float heightAtFarZ = transform.getrow1().length() * 2.0f;
-	float nearZ = 0.001f; // put the near plane at 0.001cm 
-	float farZ = transform.getrow2().length();
-	n_assert(farZ > 0.0f);
-	if (nearZ >= farZ)
-	{
-		nearZ = farZ / 2.0f;
-	}
-	float widthAtNearZ = (widthAtFarZ / farZ) * nearZ;
-	float heightAtNearZ = (heightAtFarZ / farZ) * nearZ;
-	spotLightAllocator.Get<SpotLightProjection>(sli) = Math::matrix44::persprh(widthAtNearZ, heightAtNearZ, nearZ, farZ);
-	spotLightAllocator.Get<SpotLightInvViewProjection>(sli) = Math::matrix44::multiply(Math::matrix44::inverse(transform), spotLightAllocator.Get<SpotLightProjection>(sli));
+	// do this after we assign the typed light id
+	SetSpotLightTransform(cid, transform);
 
 	// allocate constant buffer slice
 	bool changes = false;
@@ -375,13 +359,13 @@ LightContext::SetTransform(const Graphics::GraphicsEntityId id, const Math::matr
     switch (type)
     {
     case GlobalLightType:
-        SetGlobalLightDirection(id, trans.get_yaxis());        
+        SetGlobalLightDirection(cid, trans.get_yaxis());        
         break;
     case SpotLightType:
-        SetSpotLightTransform(id, trans);        
+        SetSpotLightTransform(cid, trans);        
         break;
     case PointLightType:
-        SetPointLightTransform(id, trans);
+        SetPointLightTransform(cid, trans);
         break;
     default:    
         break;
@@ -391,30 +375,38 @@ LightContext::SetTransform(const Graphics::GraphicsEntityId id, const Math::matr
 /**
 */
 void
-LightContext::SetSpotLightTransform(const Graphics::GraphicsEntityId id, const Math::matrix44& transform)
+LightContext::SetSpotLightTransform(const Graphics::ContextEntityId id, const Math::matrix44& transform)
 {
-	const Graphics::ContextEntityId cid = GetContextId(id);
-#if NEBULA_DEBUG
-	n_assert(genericLightAllocator.Get<Type>(cid.id) == SpotLightType);
-#endif
-
 	// todo, update projection and invviewprojection!!!!
-	auto lid = genericLightAllocator.Get<TypedLightId>(cid.id);
+	auto lid = genericLightAllocator.Get<TypedLightId>(id.id);
 	spotLightAllocator.Get<SpotLightTransform>(lid) = transform;
+
+	// compute the spot light's perspective projection matrix from
+	// its transform matrix (spot direction is along -z, and goes
+	// throught the rectangle formed by the x and y components
+	// at the end of -z
+	float widthAtFarZ = transform.getrow0().length() * 2.0f;
+	float heightAtFarZ = transform.getrow1().length() * 2.0f;
+	float nearZ = 0.001f; // put the near plane at 0.001cm 
+	float farZ = transform.getrow2().length();
+	n_assert(farZ > 0.0f);
+	if (nearZ >= farZ)
+	{
+		nearZ = farZ / 2.0f;
+	}
+	float widthAtNearZ = (widthAtFarZ / farZ) * nearZ;
+	float heightAtNearZ = (heightAtFarZ / farZ) * nearZ;
+	spotLightAllocator.Get<SpotLightProjection>(lid) = Math::matrix44::persprh(widthAtNearZ, heightAtNearZ, nearZ, farZ);
+	spotLightAllocator.Get<SpotLightInvViewProjection>(lid) = Math::matrix44::multiply(Math::matrix44::inverse(transform), spotLightAllocator.Get<SpotLightProjection>(lid));
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void 
-LightContext::SetPointLightTransform(const Graphics::GraphicsEntityId id, const Math::matrix44& transform)
+LightContext::SetPointLightTransform(const Graphics::ContextEntityId id, const Math::matrix44& transform)
 {
-	const Graphics::ContextEntityId cid = GetContextId(id);
-#if NEBULA_DEBUG
-	n_assert(genericLightAllocator.Get<Type>(cid.id) == PointLightType);
-#endif
-
-	auto lid = genericLightAllocator.Get<TypedLightId>(cid.id);
+	auto lid = genericLightAllocator.Get<TypedLightId>(id.id);
 	pointLightAllocator.Get<PointLightTransform>(lid) = transform;
 }
 
@@ -422,14 +414,9 @@ LightContext::SetPointLightTransform(const Graphics::GraphicsEntityId id, const 
 /**
 */
 void 
-LightContext::SetGlobalLightDirection(const Graphics::GraphicsEntityId id, const Math::vector& direction)
+LightContext::SetGlobalLightDirection(const Graphics::ContextEntityId id, const Math::vector& direction)
 {
-	const Graphics::ContextEntityId cid = GetContextId(id);
-#if NEBULA_DEBUG
-	n_assert(genericLightAllocator.Get<Type>(cid.id) == GlobalLightType);
-#endif
-
-	auto lid = genericLightAllocator.Get<TypedLightId>(cid.id);
+	auto lid = genericLightAllocator.Get<TypedLightId>(id.id);
 	globalLightAllocator.Get<GlobalLightDirection>(lid) = direction;
 }
 
