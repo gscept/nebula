@@ -107,6 +107,12 @@ public:
 	/// Subsequently calls functionbundle deserialize.
 	virtual void DeserializeOwners(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances) = 0;
 
+	/// Garbage collect
+	virtual SizeT Optimize() = 0;
+
+	/// Returns whether a component container is enabled.
+	bool Enabled() const;
+
 	struct FunctionBundle
 	{
 		/// Called upon activation of component instance
@@ -139,11 +145,13 @@ public:
 		/// Deserialize the components attributes (excluding owners)
 		void(*Deserialize)(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances);
 
-		/// Garbage collect
-		SizeT(*Optimize)();
-
 		/// Destroy all instances
 		void(*DestroyAll)();
+
+		/// Called after an instance has been moved from one index to another.
+		/// Used in very special cases when you rely on for example instance id relations
+		/// within your components.
+		void(*OnInstanceMoved)(uint32_t instance, uint32_t oldIndex);
 
 		/// Callback for when entities has been loaded and you need to hook into the hierarchy update.
 		void(*SetParents)(uint32_t start, uint32_t end, const Util::Array<Entity>& entities, const Util::Array<uint32_t>& parentIndices);
@@ -151,11 +159,17 @@ public:
 
 	Util::Array<MessageListener> messageListeners;
 protected:
+	friend class ComponentManager;
+
 	/// Holds all events this component is subscribed to.
 	Util::BitField<ComponentEvent::NumEvents> events;
 	
 	/// Holds all attributedefinitions that this components has available.
 	Util::FixedArray<Attr::AttrId> attributeIds;
+
+	/// Determines whether the component manager will execute this components
+	/// update methods (activation, load and such methods will still be called).
+	bool enabled;
 };
 
 } // namespace Game

@@ -15,7 +15,6 @@ class TagComponent
 {
 	__DeclareComponent(TagComponent)
 public:
-	static SizeT Optimize();
 
 private:
 };
