@@ -11,7 +11,7 @@
     (C) 2013-2018 Individual contributors, see AUTHORS file
 */    
 #include "io/stream.h"
-#include "zlib/unzip.h"
+#include "minizip/unzip.h"
 #include "util/stringatom.h"
 
 //------------------------------------------------------------------------------
