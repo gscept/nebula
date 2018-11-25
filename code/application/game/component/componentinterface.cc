@@ -17,19 +17,21 @@ __ImplementAbstractRootClass(ComponentInterface, 'BsCm')
 */
 ComponentInterface::ComponentInterface()
 {
-	functions.OnActivate = nullptr;
-	functions.OnDeactivate = nullptr;
-	functions.OnBeginFrame = nullptr;
-	functions.OnRender = nullptr;
-	functions.OnEndFrame = nullptr;
-	functions.OnRenderDebug = nullptr;
-	functions.Serialize = nullptr;
-	functions.Deserialize = nullptr;
-	functions.Optimize = nullptr;
-	functions.DestroyAll = nullptr;
-	functions.SetParents = nullptr;
-	functions.OnLoad = nullptr;
-	functions.OnSave = nullptr;
+	this->enabled = true;
+
+	this->functions.OnActivate = nullptr;
+	this->functions.OnDeactivate = nullptr;
+	this->functions.OnBeginFrame = nullptr;
+	this->functions.OnRender = nullptr;
+	this->functions.OnEndFrame = nullptr;
+	this->functions.OnRenderDebug = nullptr;
+	this->functions.Serialize = nullptr;
+	this->functions.Deserialize = nullptr;
+	this->functions.DestroyAll = nullptr;
+	this->functions.SetParents = nullptr;
+	this->functions.OnLoad = nullptr;
+	this->functions.OnSave = nullptr;
+	this->functions.OnInstanceMoved = nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -65,6 +67,15 @@ const Util::FixedArray<Attr::AttrId>&
 ComponentInterface::GetAttributeIds() const
 {
 	return this->attributeIds;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+ComponentInterface::Enabled() const
+{
+	return this->enabled;
 }
 
 } // namespace Game

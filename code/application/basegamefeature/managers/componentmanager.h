@@ -44,6 +44,12 @@ public:
 
 	ComponentInterface* GetComponentByFourCC(const Util::FourCC& fourcc);
 
+	/// Enable a component with the given fourcc
+	void EnableComponent(const Util::FourCC& fourcc);
+
+	/// Disable a component with the given fourcc
+	void DisableComponent(const Util::FourCC& fourcc);
+
 	/// Execute all OnBeginFrame events
 	void OnBeginFrame();
 

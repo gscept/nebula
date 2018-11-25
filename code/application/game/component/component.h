@@ -187,6 +187,9 @@ private:
 	template<std::size_t n>
 	void SetAttributeValueDynamic(uint32_t instance, IndexT attributeIndex, const Util::Variant& value);
 
+	/// notify callback if certain requirements are met
+	void NotifyOnInstanceMoved(uint32_t index, uint32_t oldIndex);
+
 	/// contains free id's that we reuse as soon as possible.
 	Util::Stack<uint32_t> freeIds;
 
@@ -376,6 +379,7 @@ Component<TYPES ...>::DeregisterEntityImmediate(Entity e, uint32_t index)
 {
 	auto id = e.id;
 	n_assert2(this->idMap.Contains(id), "Tried to remove an ID that had not been registered.");
+	uint32_t oldIndex = this->data.Size() - 1;
 	Ids::Id32 lastId = this->data.Get<0>(this->data.Size() - 1).id;
 	this->data.EraseIndexSwap(index);
 	uint32_t mapIndex = this->idMap.FindIndex(lastId);
@@ -384,6 +388,8 @@ Component<TYPES ...>::DeregisterEntityImmediate(Entity e, uint32_t index)
 		this->idMap.ValueAtIndex(lastId, mapIndex) = index;
 	}
 	this->idMap.Erase(id);
+
+	this->NotifyOnInstanceMoved(index, oldIndex);
 }
 
 //------------------------------------------------------------------------------
@@ -397,6 +403,7 @@ Component<TYPES ...>::Optimize()
 	SizeT numErased = 0;
 	Ids::Id32 lastId;
 	uint32_t index;
+	uint32_t oldIndex;
 	uint32_t mapIndex;
 
 	// Pack arrays
@@ -404,13 +411,16 @@ Component<TYPES ...>::Optimize()
 	for (SizeT i = 0; i < size; ++i)
 	{
 		index = this->freeIds.Pop();
-		lastId = this->data.Get<0>(this->data.Size() - 1).id;
+		oldIndex = this->data.Size() - 1;
+		lastId = this->data.Get<0>(oldIndex).id;
 		this->data.EraseIndexSwap(index);
 		mapIndex = this->idMap.FindIndex(lastId);
 		if (mapIndex != InvalidIndex)
 		{
 			this->idMap.ValueAtIndex(lastId, mapIndex) = index;
 		}
+
+		this->NotifyOnInstanceMoved(index, oldIndex);
 		++numErased;
 	}
 
@@ -631,6 +641,22 @@ inline void
 Component<TYPES...>::DeserializeOwners(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances)
 {
 	Game::Deserialize(reader, this->data.GetArray<0>(), offset, numInstances);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class ... TYPES>
+inline void
+Component<TYPES...>::NotifyOnInstanceMoved(uint32_t index, uint32_t oldIndex)
+{
+	if (this->functions.OnInstanceMoved != nullptr)
+	{
+		// make sure the instance has actually moved and that
+		// we actually have any registered entities left
+		if (NumRegistered() != 0 && index != oldIndex)
+			this->functions.OnInstanceMoved(index, oldIndex);
+	}
 }
 
 }

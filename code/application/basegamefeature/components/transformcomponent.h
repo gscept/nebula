@@ -58,6 +58,11 @@ public:
 	static uint32_t GetPreviousSibling(uint32_t instance);
 
 private:
+	/// Updates relationships
+	static void OnDeactivate(uint32_t instance);
+
+	static void OnInstanceMoved(uint32_t instance, uint32_t oldIndex);
+
 	/// Update the transform hierarchy of this instance and all its children
 	static void UpdateHierarchy(uint32_t instance);
 };

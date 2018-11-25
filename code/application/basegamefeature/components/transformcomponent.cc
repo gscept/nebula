@@ -35,6 +35,8 @@ TransformComponent::Create()
 	data.functions.Serialize = Serialize;
 	data.functions.Deserialize = Deserialize;
 	data.functions.SetParents = SetParents;
+	data.functions.OnDeactivate = OnDeactivate;
+	data.functions.OnInstanceMoved = OnInstanceMoved;
 	__RegisterComponent(&data);
 
 	SetupAcceptedMessages();
@@ -347,6 +349,92 @@ uint32_t
 TransformComponent::GetPreviousSibling(uint32_t instance)
 {
 	return data.PreviousSibling(instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TransformComponent::OnDeactivate(uint32_t instance)
+{
+	// update sibling relationships
+	uint32_t previousSibling = data.PreviousSibling(instance);
+	uint32_t nextSibling = data.NextSibling(instance);
+	uint32_t child = data.FirstChild(instance);
+	uint32_t parentInstance = data.Parent(instance);
+
+	if(parentInstance != InvalidIndex && data.FirstChild(parentInstance) == instance)
+		data.FirstChild(parentInstance) = child;
+
+	if (previousSibling != InvalidIndex)
+	{
+		if (child != InvalidIndex)
+		{
+			data.PreviousSibling(child) = previousSibling;
+			data.NextSibling(previousSibling) = child;
+		}
+		else
+		{
+			data.NextSibling(previousSibling) = nextSibling;
+		}
+	}
+
+	// Each child needs to update their parent to this instance's parent
+	uint32_t lastChild = InvalidIndex;
+	while (child != InvalidIndex)
+	{
+		data.Parent(child) = parentInstance;
+		UpdateHierarchy(child);
+		lastChild = child;
+		child = data.NextSibling(child);
+	}
+
+	if (nextSibling != InvalidIndex)
+	{
+		if (lastChild != InvalidIndex)
+		{
+			data.NextSibling(lastChild) = nextSibling;
+			data.PreviousSibling(nextSibling) = lastChild;
+		}
+		else
+		{
+			data.PreviousSibling(nextSibling) = previousSibling;
+		}
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+	Update all instance relationships since the instance index has changed
+*/
+void
+TransformComponent::OnInstanceMoved(uint32_t instance, uint32_t oldIndex)
+{
+	uint32_t parent = data.Parent(instance);
+	uint32_t nextSibling = data.NextSibling(instance);
+	uint32_t previousSibling = data.PreviousSibling(instance);
+	uint32_t child = data.FirstChild(instance);
+	
+	if (parent != InvalidIndex && data.FirstChild(parent) == oldIndex)
+	{
+		data.FirstChild(parent) = instance;
+	}
+
+	if (nextSibling != InvalidIndex)
+	{
+		data.PreviousSibling(nextSibling) = instance;
+	}
+
+	if (previousSibling != InvalidIndex)
+	{
+		data.NextSibling(previousSibling) = instance;
+	}
+
+	while (child != InvalidIndex)
+	{
+		data.Parent(child) = instance;
+		child = data.NextSibling(child);
+	}
 }
 
 //------------------------------------------------------------------------------
