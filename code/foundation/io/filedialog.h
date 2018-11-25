@@ -17,11 +17,11 @@ namespace IO
 {
 namespace FileDialog
 {
-    /// Shows open file dialog 
-    bool OpenFile(const IO::URI & start, const Util::String& filters, Util::String& path);
+    /// Shows open file dialog     
+    bool OpenFile(Util::String const& title, const IO::URI & start, std::initializer_list<const char*>const& filters, Util::String& path);
     /// Folder selection dialog
-    bool OpenFolder(const IO::URI & start, Util::String& path);
+    bool OpenFolder(Util::String const& title, const IO::URI & start, Util::String& path);
     /// Save file dialog
-    bool SaveFile(const IO::URI & start, const Util::String& filters, Util::String& path);
+    bool SaveFile(Util::String const& title, const IO::URI & start, std::initializer_list<const char*>const& filters, Util::String& path);
 }
 }

@@ -138,7 +138,10 @@ LevelLoader::Load(const Util::String& levelName)
 	auto tstart = std::chrono::system_clock::now();
 	SceneCompiler scene;
 
-	scene.Decompile(levelName);
+    if (!scene.Decompile(levelName))
+    {
+        return false;
+    }
 	
 	Util::Array<Game::Entity> entities = Game::EntityManager::Instance()->CreateEntities(scene.numEntities);
 		
