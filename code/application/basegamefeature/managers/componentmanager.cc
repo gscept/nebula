@@ -97,6 +97,7 @@ ComponentManager::GetComponentAtIndex(IndexT index)
 
 //------------------------------------------------------------------------------
 /**
+	This is just a linear search, can be quite slow.
 */
 ComponentInterface*
 ComponentManager::GetComponentByFourCC(const Util::FourCC & fourcc)
@@ -114,6 +115,28 @@ ComponentManager::GetComponentByFourCC(const Util::FourCC & fourcc)
 /**
 */
 void
+ComponentManager::EnableComponent(const Util::FourCC & fourcc)
+{
+	auto component = GetComponentByFourCC(fourcc);
+	if (component != nullptr)
+		component->enabled = true;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ComponentManager::DisableComponent(const Util::FourCC & fourcc)
+{
+	auto component = GetComponentByFourCC(fourcc);
+	if (component != nullptr)
+		component->enabled = false;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 ComponentManager::OnBeginFrame()
 {
 	// We need to clean up any erased components, no matter if they're registered to this event.
@@ -121,14 +144,15 @@ ComponentManager::OnBeginFrame()
 	SizeT size = this->components.Size();
 	for (SizeT i = 0; i < size; ++i)
 	{
-		if (this->components[i]->functions.Optimize != nullptr)
-			this->components[i]->functions.Optimize();
+		this->components[i]->Optimize();
 	}
 
+	ComponentInterface* component;
 	for (SizeT i = 0; i < size; ++i)
 	{
-		if (this->components[i]->functions.OnBeginFrame != nullptr)
-			this->components[i]->functions.OnBeginFrame();
+		component = this->components[i];
+		if (component->Enabled() == true && component->functions.OnBeginFrame != nullptr)
+			component->functions.OnBeginFrame();
 	}
 }
 
@@ -139,10 +163,12 @@ void
 ComponentManager::OnRender()
 {
 	SizeT length = this->components.Size();
+	ComponentInterface* component;
 	for (SizeT i = 0; i < length; ++i)
 	{
-		if (this->components[i]->functions.OnRender != nullptr)
-			this->components[i]->functions.OnRender();
+		component = this->components[i];
+		if (component->Enabled() && component->functions.OnRender != nullptr)
+			component->functions.OnRender();
 	}
 }
 
@@ -153,10 +179,12 @@ void
 ComponentManager::OnEndFrame()
 {
 	SizeT length = this->components.Size();
+	ComponentInterface* component;
 	for (SizeT i = 0; i < length; ++i)
 	{
-		if (this->components[i]->functions.OnEndFrame != nullptr)
-			this->components[i]->functions.OnEndFrame();
+		component = this->components[i];
+		if (component->Enabled() && component->functions.OnEndFrame != nullptr)
+			component->functions.OnEndFrame();
 	}
 }
 

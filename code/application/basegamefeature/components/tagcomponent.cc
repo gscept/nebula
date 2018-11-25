@@ -23,7 +23,6 @@ TagComponent::Create()
 	data = TagComponentData();
 
 	__SetupDefaultComponentBundle(data);
-	data.functions.Optimize = Optimize;
 	__RegisterComponent(&data);
 }
 
@@ -34,15 +33,6 @@ void
 TagComponent::Discard()
 {
 	// Empty
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-SizeT
-TagComponent::Optimize()
-{
-	return data.Optimize();
 }
 
 } // namespace Game
