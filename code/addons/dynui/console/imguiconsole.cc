@@ -14,7 +14,7 @@
 #include "app/application.h"
 
 static int
-TextEditCallback(ImGuiTextEditCallbackData* data)
+TextEditCallback(ImGuiInputTextCallbackData* data)
 {
 	Dynui::ImguiConsole* console = (Dynui::ImguiConsole*)data->UserData;
 
@@ -224,7 +224,7 @@ ImguiConsole::Render()
 	}	
 	if (!this->visible) return;
 	
-	ImGui::Begin("Nebula Console", &this->visible, ImVec2(300, 300), -1.0f, ImGuiWindowFlags_NoScrollbar);
+    ImGui::Begin("Nebula Console", &this->visible);// , ImVec2(300, 300), -1.0f, ImGuiWindowFlags_NoScrollbar);
 
 
 	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
@@ -295,7 +295,7 @@ ImguiConsole::Render()
 	ImGui::PopTextWrapPos();
 
 	if (this->scrollToBottom)
-		ImGui::SetScrollHere();
+		ImGui::SetScrollHereY();
 
 	ImGui::PopStyleVar();
 	ImGui::EndChild();
@@ -318,7 +318,7 @@ ImguiConsole::Render()
 	}
 
 	//keeping auto focus on the input box
-	if (ImGui::IsItemHovered() || (ImGui::IsRootWindowOrAnyChildFocused() && !ImGui::IsAnyItemActive() && !ImGui::IsMouseClicked(0)))
+	if (ImGui::IsItemHovered() || (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && !ImGui::IsAnyItemActive() && !ImGui::IsMouseClicked(0)))
 		ImGui::SetKeyboardFocusHere(-1); // Auto focus previous widget
 
 	ImGui::SameLine();
