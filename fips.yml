@@ -27,7 +27,7 @@ imports:
         cond: "FIPS_LINUX"
         group: misc
     fips-imgui:
-        git: https://github.com/fips-libs/fips-imgui.git    
+        git: ssh://git@git.ikplus.de:4715/nebula/fips-imgui.git    
     fips-pybind11:
         git: ssh://git@git.ikplus.de:4715/nebula/fips-pybind11.git
     fips-stb:

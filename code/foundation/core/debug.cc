@@ -8,6 +8,7 @@
 #include "core/sysfunc.h"
 #include "io/console.h"
 #include "util/string.h"
+#include "debugbreak.h"
 
 //------------------------------------------------------------------------------
 /**
@@ -188,9 +189,5 @@ n_sleep(double sec)
 void
 n_break()
 {
-#ifndef __WIN32__
-    n_error("Break not implemented\n");
-#else
-    _CrtDbgBreak();
-#endif
+    debug_break();
 }

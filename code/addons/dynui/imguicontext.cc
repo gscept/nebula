@@ -27,8 +27,9 @@ ImguiContext::ImguiState ImguiContext::state;
 	Imgui rendering function
 */
 void
-ImguiContext::ImguiDrawFunction(ImDrawData* data)
+ImguiContext::ImguiDrawFunction()
 {
+    ImDrawData* data = ImGui::GetDrawData();
 	// get Imgui context
 	ImGuiIO& io = ImGui::GetIO();
 	int fb_width = (int)(io.DisplaySize.x * io.DisplayFramebufferScale.x);
@@ -218,12 +219,13 @@ ImguiContext::Create()
 	DisplayMode mode = CoreGraphics::WindowGetDisplayMode(display->GetCurrentWindow());
 
 	// setup Imgui
+    ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO();
 	io.DisplaySize = ImVec2((float)mode.GetWidth(), (float)mode.GetHeight());
 	io.DeltaTime = 1 / 60.0f;
 	//io.PixelCenterOffset = 0.0f;
 	//io.FontTexUvForWhite = ImVec2(1, 1);
-	io.RenderDrawListsFn = ImguiDrawFunction;
+	//io.RenderDrawListsFn = ImguiDrawFunction;
 
 	ImGuiStyle& style = ImGui::GetStyle();
 	style.FrameRounding = 2.5f;
@@ -347,7 +349,7 @@ ImguiContext::Discard()
 	state.inputHandler = nullptr;
 
 	CoreGraphics::DestroyTexture(state.fontTexture);
-	ImGui::Shutdown();
+	ImGui::DestroyContext();
 }
 
 //------------------------------------------------------------------------------
@@ -408,8 +410,11 @@ void
 ImguiContext::OnRenderAsPlugin(const IndexT frameIndex, const Timing::Time frameTime, const Util::StringAtom& filter)
 {
     //FIME filter
-	if (filter == "IMGUI"_atm)
-		ImGui::Render();
+    if (filter == "IMGUI"_atm)
+    {
+        ImGui::Render();
+        ImguiContext::ImguiDrawFunction();
+    }
 }
 
 //------------------------------------------------------------------------------
