@@ -52,6 +52,12 @@ public:
 	/// get bounding box of model which we can change
 	Math::bbox& GetModelInstanceBoundingBox(const ModelInstanceId id);
 
+	/// Get the object id of model instance
+	uint GetModelInstanceObjectId(const ModelInstanceId id) const;
+	
+	/// Get reference to objectid for assignment
+	uint& GetModelInstanceObjectId(const ModelInstanceId id);
+
 private:
 	friend class PrimitiveNode;
 	friend class CharacterNode;
@@ -103,14 +109,16 @@ private:
 		NodeTypes,
 		InstanceMemory,
 		InstanceTransform,
-		InstanceBoundingBox
+		InstanceBoundingBox,
+		ObjectId
 	};
 	Ids::IdAllocator<
 		Util::Array<Models::ModelNode::Instance*>,					// list of node instances
 		Util::Array<Models::NodeType>,								// node instance types
 		byte*,														// allocated memory
 		Math::matrix44,												// transform
-		Math::bbox													// transformed bounding box
+		Math::bbox,													// transformed bounding box
+		uint														// objectid
 	> modelInstanceAllocator;
 
 	static Ids::Id8 NodeMappingCounter;

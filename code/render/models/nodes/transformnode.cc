@@ -97,6 +97,7 @@ TransformNode::Instance::ApplyNodeInstanceState()
 {
 	CoreGraphics::TransformDevice* transformDevice = CoreGraphics::TransformDevice::Instance();
 	transformDevice->SetModelTransform(this->modelTransform);
+	transformDevice->SetObjectId(this->objectId);
 }
 
 } // namespace Models
