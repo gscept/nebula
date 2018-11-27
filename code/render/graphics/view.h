@@ -37,12 +37,22 @@ public:
 	void SetStage(const Ptr<Stage>& stage);
 	/// get stage
 	const Ptr<Stage>& GetStage() const;
+
+	/// returns whether view is enabled
+	bool IsEnabled() const;
+	
+	/// enable this view
+	void Enable();
+
+	/// disable this view
+	void Disable();
 private:	
 	friend class GraphicsServer;
 
 	Ptr<Frame::FrameScript> script;
 	GraphicsEntityId camera;
 	Ptr<Stage> stage;
+	bool enabled;
 };
 
 //------------------------------------------------------------------------------
@@ -79,6 +89,33 @@ inline const Ptr<Stage>&
 View::GetStage() const
 {
 	return this->stage;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline bool
+View::IsEnabled() const
+{
+	return this->enabled;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+View::Enable()
+{
+	this->enabled = true;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+View::Disable()
+{
+	this->enabled = false;
 }
 
 } // namespace Graphics

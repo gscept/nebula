@@ -26,6 +26,10 @@ public:
 		Math::matrix44 modelTransform;
 		bool isInViewSpace;
 		bool lockedToViewer;
+		
+		// Identifiable object id. Usually the graphics entity id.
+		/// @todo	Should be moved to a per-model-instance resource since it's the same for every model instance
+		uint objectId;
 
 		void ApplyNodeInstanceState() override;
 		virtual void Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
