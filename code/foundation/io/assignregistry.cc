@@ -190,6 +190,9 @@ AssignRegistry::SetupProjectAssigns()
     this->SetAssign(Assign("anims", "export:anims"));
     this->SetAssign(Assign("textures", "export:textures"));
 
+    // tools assigns
+    this->SetAssign(Assign("tool", Core::CoreServer::Instance()->GetToolDirectory().AsString()));    
+
     this->critSect.Leave();
 }
 

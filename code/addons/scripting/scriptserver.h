@@ -39,8 +39,12 @@ public:
     bool IsOpen() const;
     /// set debugging with the HTTP interface
     void SetDebug(const bool b);    
+    /// add module search path
+    virtual void AddModulePath(const IO::URI & folder) { n_assert(false); }
     /// evaluate a script statement in a string
     virtual bool Eval(const Util::String& str) { return false; }
+    /// evaluate script in file
+    virtual bool EvalFile(const IO::URI& file) { return false; }
 protected:	
     bool isOpen;
     bool debug;
