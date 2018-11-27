@@ -103,7 +103,22 @@ ImguiContext::ImguiDrawFunction()
 				CoreGraphics::SetScissorRect(scissorRect, 0);
 
 				// set texture in shader, we shouldn't have to put it into ImGui
-				uint64 imageHandle = CoreGraphics::TextureGetBindlessHandle(*((CoreGraphics::TextureId*)command->TextureId));
+				Resources::ResourceId resourceId = *(Resources::ResourceId*)command->TextureId;
+				uint64 imageHandle;
+
+				if (resourceId.allocType == RenderTextureIdType)
+				{
+					imageHandle = CoreGraphics::RenderTextureGetBindlessHandle(*((CoreGraphics::RenderTextureId*)command->TextureId));
+				}
+				else if (resourceId.allocType == TextureIdType)
+				{
+					imageHandle = CoreGraphics::TextureGetBindlessHandle(*((CoreGraphics::TextureId*)command->TextureId));
+				}
+				else
+				{
+					n_error("ResourceId alloc type unknown or not implemented!\n");
+				}
+				
 				CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, state.textureConstant.offset, sizeof(uint64), (byte*)&imageHandle);
 
 				// setup primitive
