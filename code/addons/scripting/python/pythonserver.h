@@ -26,8 +26,12 @@ public:
     bool Open();
     /// close the script server
     void Close();    
+    /// add module search path
+    void AddModulePath(const IO::URI & folder);
     /// evaluate a script statement in a string
     bool Eval(const Util::String& str);	
+    /// evaluate script in file
+    bool EvalFile(const IO::URI& file);
 private:
     
 };

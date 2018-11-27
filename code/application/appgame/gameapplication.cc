@@ -75,6 +75,10 @@ GameApplication::Open()
 		{
 			root = System::NebulaSettings::ReadString("gscept", "ToolkitShared", "workdir");
 		}
+        if (System::NebulaSettings::Exists("gscept", "ToolkitShared", "path"))
+        {
+            this->coreServer->SetToolDirectory(System::NebulaSettings::ReadString("gscept", "ToolkitShared", "path"));
+        }
 #endif
 				
 		//n_assert2(System::NebulaSettings::ReadString("gscept", "ToolkitShared", "workdir"), "No working directory defined!");
