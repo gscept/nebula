@@ -32,7 +32,7 @@ ComponentManager::~ComponentManager()
 /**
 */
 void
-ComponentManager::RegisterComponent(ComponentInterface* component)
+ComponentManager::RegisterComponent(ComponentInterface* component, const Util::StringAtom& name)
 {
 	// Check if each event is actually setup.
 	auto events = component->SubscribedEvents();
@@ -52,7 +52,11 @@ ComponentManager::RegisterComponent(ComponentInterface* component)
 	CHECKEVENT(OnLoad);
 	CHECKEVENT(OnSave);
 
+	component->componentName = name;
+
 	this->components.Append(component);
+	this->componentByFourcc.Add(component->GetRtti()->GetFourCC(), component);
+	this->componentByName.Add(name, component);
 }
 
 //------------------------------------------------------------------------------
@@ -61,6 +65,8 @@ ComponentManager::RegisterComponent(ComponentInterface* component)
 void
 ComponentManager::DeregisterAll()
 {
+	this->componentByFourcc.Clear();
+	this->componentByName.Clear();
 	this->components.Clear();
 }
 
@@ -97,16 +103,28 @@ ComponentManager::GetComponentAtIndex(IndexT index)
 
 //------------------------------------------------------------------------------
 /**
-	This is just a linear search, can be quite slow.
 */
 ComponentInterface*
 ComponentManager::GetComponentByFourCC(const Util::FourCC & fourcc)
 {
-	SizeT size = this->components.Size();
-	for (SizeT i = 0; i < size; ++i)
+	IndexT idx = this->componentByFourcc.FindIndex(fourcc);
+	if (idx != InvalidIndex)
 	{
-		if (this->components[i]->GetRtti()->GetFourCC() == fourcc)
-			return this->components[i];
+		return this->componentByFourcc.ValueAtIndex(fourcc, idx);
+	}
+	return nullptr;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+ComponentInterface*
+ComponentManager::GetComponentByName(const Util::StringAtom & str)
+{
+	IndexT idx = this->componentByName.FindIndex(str);
+	if (idx != InvalidIndex)
+	{
+		return this->componentByName.ValueAtIndex(str, idx);
 	}
 	return nullptr;
 }

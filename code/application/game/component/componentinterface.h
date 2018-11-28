@@ -61,6 +61,8 @@ public:
 	ComponentInterface();
 	~ComponentInterface();
 
+	const Util::StringAtom& GetName() const;
+
 	/// register an Id. Will create new mapping and allocate instance data. Returns index of new instance data
 	virtual uint32_t RegisterEntity(Entity e) = 0;
 
@@ -170,6 +172,9 @@ protected:
 	/// Determines whether the component manager will execute this components
 	/// update methods (activation, load and such methods will still be called).
 	bool enabled;
+
+	/// name of component
+	Util::StringAtom componentName;
 };
 
 } // namespace Game
