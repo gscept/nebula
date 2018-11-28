@@ -13,6 +13,7 @@
 #include "util/delegate.h"
 #include "util/bitfield.h"
 #include "util/dictionary.h"
+#include "util/stringatom.h"
 #include "ids/id.h"
 #include "util/fourcc.h"
 
