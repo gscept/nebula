@@ -4,9 +4,10 @@ nebula work [working directory]
 nebula toolkit [toolkit directory]
 """
 
-from mod import log, util
+from mod import log, util, settings
 import os
 import sys
+import shutil
 
 if sys.platform == "win32" :
     if sys.version_info.major > 2:
@@ -58,6 +59,11 @@ if sys.platform == "win32" :
                         log.error("invalid setting")
                 else :
                     log.error("expected setting name")
+            elif noun == 'cleannidl' :
+                proj = util.get_project_name_from_dir(proj_dir)
+                cfg = settings.get(proj_dir, 'config')
+                path = util.get_build_dir(fips_dir,proj,cfg)+"/nidl"
+                shutil.rmtree(path,True)
         else :
             try:
                 reg_key = _winreg.OpenKey(_winreg.HKEY_CURRENT_USER, base_reg, 0, _winreg.KEY_READ)

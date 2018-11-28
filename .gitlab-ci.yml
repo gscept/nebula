@@ -3,7 +3,7 @@ before_script:
     - call ./fips update
     - call ./fips nebula set work ../fips-deploy/
     - call ./fips nebula set toolkit .
-    - call rmdir /S /Q ..\fips-build\nebula\vulkan-win64-vstudio-debug\nidl
+    - call ./fips nebula cleannidl    
     
 stages:
     - build
