@@ -27,18 +27,18 @@
 	Use this in your component's Create() method before registering
 	to the component manager to implement default behaviour
 */
-#define __SetupDefaultComponentBundle(COMPONENTNAME) \
-	COMPONENTNAME.functions.DestroyAll = DestroyAll; \
-	COMPONENTNAME.functions.Serialize = Serialize; \
-	COMPONENTNAME.functions.Deserialize = Deserialize; 
+#define __SetupDefaultComponentBundle(ALLOCATOR) \
+	ALLOCATOR.functions.DestroyAll = DestroyAll; \
+	ALLOCATOR.functions.Serialize = Serialize; \
+	ALLOCATOR.functions.Deserialize = Deserialize; 
 
 //------------------------------------------------------------------------------
 /**
 	Shorthand for registering to the component manager.
 	Remember to include componentmanager.h!
 */
-#define __RegisterComponent(COMPONENTNAME) \
-	Game::ComponentManager::Instance()->RegisterComponent(COMPONENTNAME);
+#define __RegisterComponent(ALLOCATOR, COMPONENTNAME) \
+	Game::ComponentManager::Instance()->RegisterComponent(ALLOCATOR, ##COMPONENTNAME);
 
 //------------------------------------------------------------------------------
 /**
@@ -65,27 +65,29 @@
 
 	Remember to write implementations for Create() and Discard()!
 */
-#define __ImplementComponent(COMPONENTTYPE, BASEOBJECT) \
-	uint32_t COMPONENTTYPE::RegisterEntity(Game::Entity entity) { return BASEOBJECT.RegisterEntity(entity); } \
-	void COMPONENTTYPE::DeregisterEntity(Game::Entity entity) { BASEOBJECT.DeregisterEntity(entity); } \
-	void COMPONENTTYPE::DestroyAll() { BASEOBJECT.DestroyAll(); } \
-	SizeT COMPONENTTYPE::NumRegistered() { return BASEOBJECT.NumRegistered(); } \
-	void COMPONENTTYPE::Serialize(const Ptr<IO::BinaryWriter>& writer) { BASEOBJECT.Serialize(writer); } \
-	void COMPONENTTYPE::Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances) { BASEOBJECT.Deserialize(reader, offset, numInstances); } \
-	uint32_t COMPONENTTYPE::GetInstance(Game::Entity entity) { return BASEOBJECT.GetInstance(entity); } 
+#define __ImplementComponent(COMPONENTTYPE, ALLOCATOR) \
+	uint32_t COMPONENTTYPE::RegisterEntity(Game::Entity entity) { return ALLOCATOR.RegisterEntity(entity); } \
+	void COMPONENTTYPE::DeregisterEntity(Game::Entity entity) { ALLOCATOR.DeregisterEntity(entity); } \
+	void COMPONENTTYPE::DestroyAll() { ALLOCATOR.DestroyAll(); } \
+	SizeT COMPONENTTYPE::NumRegistered() { return ALLOCATOR.NumRegistered(); } \
+	void COMPONENTTYPE::Serialize(const Ptr<IO::BinaryWriter>& writer) { ALLOCATOR.Serialize(writer); } \
+	void COMPONENTTYPE::Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances) { ALLOCATOR.Deserialize(reader, offset, numInstances); } \
+	uint32_t COMPONENTTYPE::GetInstance(Game::Entity entity) { return ALLOCATOR.GetInstance(entity); } 
 
 //------------------------------------------------------------------------------
 /**
 	Implements default behaviour of a component.
 
+	Use this if you plan to implement your own serialization functions.
+
 	Remember to write implementations for Create() and Discard()!
 */
-#define __ImplementComponent_woSerialization(COMPONENTTYPE, BASEOBJECT) \
-	uint32_t COMPONENTTYPE::RegisterEntity(Game::Entity entity) { return BASEOBJECT.RegisterEntity(entity); } \
-	void COMPONENTTYPE::DeregisterEntity(Game::Entity entity) { BASEOBJECT.DeregisterEntity(entity); } \
-	void COMPONENTTYPE::DestroyAll() { BASEOBJECT.DestroyAll(); } \
-	SizeT COMPONENTTYPE::NumRegistered() { return BASEOBJECT.NumRegistered(); } \
-	uint32_t COMPONENTTYPE::GetInstance(Game::Entity entity) { return BASEOBJECT.GetInstance(entity); } 
+#define __ImplementComponent_woSerialization(COMPONENTTYPE, ALLOCATOR) \
+	uint32_t COMPONENTTYPE::RegisterEntity(Game::Entity entity) { return ALLOCATOR.RegisterEntity(entity); } \
+	void COMPONENTTYPE::DeregisterEntity(Game::Entity entity) { ALLOCATOR.DeregisterEntity(entity); } \
+	void COMPONENTTYPE::DestroyAll() { ALLOCATOR.DestroyAll(); } \
+	SizeT COMPONENTTYPE::NumRegistered() { return ALLOCATOR.NumRegistered(); } \
+	uint32_t COMPONENTTYPE::GetInstance(Game::Entity entity) { return ALLOCATOR.GetInstance(entity); } 
 
 namespace Game
 {

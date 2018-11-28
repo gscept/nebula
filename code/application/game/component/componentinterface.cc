@@ -45,6 +45,15 @@ ComponentInterface::~ComponentInterface()
 //------------------------------------------------------------------------------
 /**
 */
+const Util::StringAtom&
+ComponentInterface::GetName() const
+{
+	return this->componentName;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 const Util::BitField<ComponentEvent::NumEvents>&
 ComponentInterface::SubscribedEvents() const
 {

@@ -10,18 +10,14 @@
 namespace Game
 {
 
-static TransformComponentData data;
+static TransformComponentAllocator data;
 static Msg::UpdateTransform::MessageQueueId messageQueue;
 
 //------------------------------------------------------------------------------
 /**
 	Default implementations
 */
-uint32_t TransformComponent::RegisterEntity(Game::Entity entity) { return data.RegisterEntity(entity); }
-void TransformComponent::DeregisterEntity(Game::Entity entity) { data.DeregisterEntity(entity); }
-void TransformComponent::DestroyAll() { data.DestroyAll(); }
-SizeT TransformComponent::NumRegistered() { return data.NumRegistered(); }
-uint32_t TransformComponent::GetInstance(Game::Entity entity) { return data.GetInstance(entity); }
+__ImplementComponent_woSerialization(TransformComponent, data);
 
 //------------------------------------------------------------------------------
 /**
@@ -29,15 +25,13 @@ uint32_t TransformComponent::GetInstance(Game::Entity entity) { return data.GetI
 void
 TransformComponent::Create()
 {
-	data = TransformComponentData();
+	data = TransformComponentAllocator();
 
-	data.functions.DestroyAll = DestroyAll;
-	data.functions.Serialize = Serialize;
-	data.functions.Deserialize = Deserialize;
-	data.functions.SetParents = SetParents;
+	__SetupDefaultComponentBundle(data);
 	data.functions.OnDeactivate = OnDeactivate;
 	data.functions.OnInstanceMoved = OnInstanceMoved;
-	__RegisterComponent(&data);
+	data.functions.SetParents = SetParents;
+	__RegisterComponent(&data, "TransformComponent"_atm);
 
 	SetupAcceptedMessages();
 }
@@ -454,8 +448,8 @@ void
 TransformComponent::Serialize(const Ptr<IO::BinaryWriter>& writer)
 {
 	// Only serialize the ones we want.
-	Game::Serialize(writer, data.data.GetArray<TransformComponentData::LOCALTRANSFORM>());
-	Game::Serialize(writer, data.data.GetArray<TransformComponentData::WORLDTRANSFORM>());
+	Game::Serialize(writer, data.data.GetArray<TransformComponentAllocator::LOCALTRANSFORM>());
+	Game::Serialize(writer, data.data.GetArray<TransformComponentAllocator::WORLDTRANSFORM>());
 }
 
 //------------------------------------------------------------------------------
@@ -465,8 +459,8 @@ void
 TransformComponent::Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances)
 {
 	// Only serialize the ones we want.
-	Game::Deserialize(reader, data.data.GetArray<TransformComponentData::LOCALTRANSFORM>(), offset, numInstances);
-	Game::Deserialize(reader, data.data.GetArray<TransformComponentData::WORLDTRANSFORM>(), offset, numInstances);
+	Game::Deserialize(reader, data.data.GetArray<TransformComponentAllocator::LOCALTRANSFORM>(), offset, numInstances);
+	Game::Deserialize(reader, data.data.GetArray<TransformComponentAllocator::WORLDTRANSFORM>(), offset, numInstances);
 }
 
 } // namespace Game
