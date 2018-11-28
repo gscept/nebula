@@ -557,9 +557,9 @@ __forceinline
 void 
 matrix44::translate(float4 const &t)
 {
-    #if NEBULA_DEBUG
+
     n_assert2(t.w() == 0, "w component not 0, use vector for translation not a point!");
-    #endif
+#endif
     this->mx.r[3] = DirectX::XMVectorAdd(this->mx.r[3], t.vec);
 }
 
