@@ -5,7 +5,7 @@
 
     A user profile represents a storage where all user specific 
     data is kept across application restarts. This usually includes
-    save games, options, and other per-user data. Mangalore applications should
+    save games, options, and other per-user data. Applications should
     at least support a default profile, but everything is there to 
     support more then one user profile.
 
