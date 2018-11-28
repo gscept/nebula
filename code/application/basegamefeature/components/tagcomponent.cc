@@ -10,7 +10,7 @@
 namespace Game
 {
 
-static TagComponentData data;
+static TagComponentAllocator data;
 
 __ImplementComponent(TagComponent, data);
 
@@ -20,10 +20,10 @@ __ImplementComponent(TagComponent, data);
 void
 TagComponent::Create()
 {
-	data = TagComponentData();
+	data = TagComponentAllocator();
 
 	__SetupDefaultComponentBundle(data);
-	__RegisterComponent(&data);
+	__RegisterComponent(&data, "TagComponent"_atm);
 }
 
 //------------------------------------------------------------------------------
