@@ -1,3 +1,7 @@
+//------------------------------------------------------------------------------
+//  bindings.cc
+//  (C) 2018 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "util/string.h"
 #include "math/matrix44.h"
@@ -9,7 +13,9 @@
 #include "pybind11/embed.h"
 #include "scripting/bindings.h"
 #include "pybind11/numpy.h"
+#include "basegamefeature/managers/componentmanager.h"
 #include "basegamefeature/components/transformcomponent.h"
+#include "game/attr/attrid.h"
 
 namespace py = pybind11;
 
@@ -43,27 +49,73 @@ PYBIND11_EMBEDDED_MODULE(foundation, m)
         );
     });
 #endif
+    py::class_<Util::FourCC>(m,"rtti")
+    .def("lookup",[](Util::String const& s)->uint32_t
+    {
+        if(Core::Factory::Instance()->ClassExists(s))
+        {
+            return Core::Factory::Instance()->GetClassRtti(s)->GetFourCC().AsUInt();
+        }
+        else throw(std::exception("unknown class"));
+        return false;
+    });
 }
 
 PYBIND11_EMBEDDED_MODULE(game, m)
 {
+    py::class_<Attr::AttrId>(m, "attr")
+        .def(py::init([](uint32_t asint)
+        {            
+            return Attr::AttrId(Util::FourCC(asint));            
+        }))
+        .def(py::init([](Util::String str)
+        {
+            return Attr::AttrId(str);
+        }))
+        ;
     py::class_<Game::Entity>(m, "entity")
-        .def(py::init([](Ids::Id32 id) {
-        Game::Entity e = id; return e;
-    }))
+        .def(py::init([](Ids::Id32 id) 
+        {
+            Game::Entity e = id; return e;
+        }))
+        .def("has_component", [](Game::Entity id, uint32_t fourcc) -> bool
+        {
+            Util::FourCC fcc(fourcc);
+            if (!Core::Factory::Instance()->ClassExists(fcc))
+            {
+                throw std::exception("unknown class id");
+                return false;
+            }
+            auto comp = Game::ComponentManager::Instance()->GetComponentByFourCC(fcc);
+            return (comp->GetInstance(id) != InvalidIndex);
+        })               
         .def_property("worldtransform",
             [](const Game::Entity &id) -> Math::matrix44
-    {
-        return Game::TransformComponent::GetWorldTransform(id);
-    },
+            {
+                return Game::TransformComponent::GetWorldTransform(id);
+            },
             [](const Game::Entity &id, const Math::matrix44& mat)
-    {
-        Game::TransformComponent::SetWorldTransform(id, mat);
-    });
+            {   
+                Game::TransformComponent::SetWorldTransform(id, mat);
+            }
+        )
+        .def_property("localtransform",
+            [](const Game::Entity &id) -> Math::matrix44
+            {
+                return Game::TransformComponent::GetLocalTransform(id);
+            },
+            [](const Game::Entity &id, const Math::matrix44& mat)
+            {
+                Game::TransformComponent::SetLocalTransform(id, mat);
+            }            
+            );
+        //.def("get_attr",[](Game::Entity id, uint32_t component, )
 }
 
 
-PYBIND11_EMBEDDED_MODULE(nmath, f) {
+
+PYBIND11_EMBEDDED_MODULE(nmath, f) 
+{
     py::class_<Math::float4>(f, "float4", py::buffer_protocol())
         .def(py::init([](py::array_t<float> b)
     {
