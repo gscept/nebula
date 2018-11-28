@@ -49,7 +49,7 @@ TextEditCallback(ImGuiInputTextCallbackData* data)
         */
 		if (commands.IsEmpty())
 		{
-			n_printf("No completion for '%s'\n", command.AsCharPtr());
+			// n_printf("No completion for '%s'\n", command.AsCharPtr());
 		}
 		else if (commands.Size() == 1)
 		{

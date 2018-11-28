@@ -307,6 +307,7 @@ ImguiContext::Create()
 	io.KeyMap[ImGuiKey_Backspace] = Key::Back;
 	io.KeyMap[ImGuiKey_Enter] = Key::Return;
 	io.KeyMap[ImGuiKey_Escape] = Key::Escape;
+	io.KeyMap[ImGuiKey_Space] = Key::Space;
 	io.KeyMap[ImGuiKey_A] = Key::A;
 	io.KeyMap[ImGuiKey_C] = Key::C;
 	io.KeyMap[ImGuiKey_V] = Key::V;
@@ -316,6 +317,9 @@ ImguiContext::Create()
 
 	// start a new frame
 	//ImGui::NewFrame();
+
+	// enable keyboard navigation
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
 	// load default font
 	ImFontConfig config;
