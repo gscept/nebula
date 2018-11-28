@@ -68,10 +68,10 @@ JsonWriter::Close()
     n_assert(0 != this->document);
 
     pjson::char_vec_t buffer;
-    n_assert(this->document->serialize(buffer));
+    n_assert(this->document->serialize(buffer, true, false));
 
     this->stream->Write(&buffer[0], (IO::Stream::Size)buffer.size());
-    
+
     n_delete(this->document);
     this->document = 0;
         
@@ -216,8 +216,8 @@ template<> void JsonWriter::Add(const int & value, const Util::String & name)
 template<> void JsonWriter::Add(const float & value, const Util::String & name)
 {
     auto & alloc = this->document->get_allocator();
-    pjson::value_variant val(value);
-    if (name.IsEmpty())
+    pjson::value_variant val(static_cast<double>(value));
+	if (name.IsEmpty())
     {
         this->hierarchy.Peek()->add_value(val, alloc);
     }
