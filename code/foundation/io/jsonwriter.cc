@@ -258,6 +258,30 @@ template<> void JsonWriter::Add(const Math::float4 & value , const Util::String 
 /**
 
 */
+template<> void JsonWriter::Add(const Math::float2& value, const Util::String & name)
+{
+	auto & alloc = this->document->get_allocator();
+	pjson::value_variant val(pjson::cJSONValueTypeArray);
+	{
+		pjson::value_variant valf(value.x());
+		val.add_value(valf, alloc);
+		valf = value.y();
+		val.add_value(valf, alloc);
+	}
+	if (name.IsEmpty())
+	{
+		this->hierarchy.Peek()->add_value(val, alloc);
+	}
+	else
+	{
+		this->hierarchy.Peek()->add_key_value(name.AsCharPtr(), val, alloc);
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+
+*/
 template<> void JsonWriter::Add(const Math::matrix44 & value, const Util::String & name)
 {
     auto & alloc = this->document->get_allocator();

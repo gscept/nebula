@@ -65,18 +65,6 @@ UserProfile::GetProfileDirectory() const
 
 //------------------------------------------------------------------------------
 /**
-    Returns the path to the current world database.
-*/
-Util::String
-UserProfile::GetDatabasePath() const
-{
-    Util::String path = this->GetProfileDirectory();
-    path.Append("/world.db4");
-    return path;
-}
-
-//------------------------------------------------------------------------------
-/**
     Returns the path to the user's savegame directory (inside the profile
     directory) using the Nebula filesystem path conventions.
 */
@@ -154,7 +142,8 @@ UserProfile::Load(const Util::String& path)
 
     if (IO::IoServer::Instance()->FileExists(filename))
     {
-        Ptr<IO::JsonReader> reader = IO::JsonReader::Create();reader->SetStream(IO::IoServer::Instance()->CreateStream(filename));
+        Ptr<IO::JsonReader> reader = IO::JsonReader::Create();
+		reader->SetStream(IO::IoServer::Instance()->CreateStream(filename));
         if (reader->Open())
 		{            
 			reader->SetToNode("/Profile");
