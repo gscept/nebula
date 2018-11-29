@@ -315,9 +315,6 @@ ImguiContext::Create()
 	io.KeyMap[ImGuiKey_Y] = Key::Y;
 	io.KeyMap[ImGuiKey_Z] = Key::Z;
 
-	// start a new frame
-	//ImGui::NewFrame();
-
 	// enable keyboard navigation
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
@@ -348,6 +345,10 @@ ImguiContext::Create()
 	};
     state.fontTexture = CoreGraphics::CreateTexture(texInfo);
 	io.Fonts->TexID = &state.fontTexture;
+
+	// load settings from disk. If we don't do this here we	need to
+	// run an entire frame before being able to create or load settings
+	ImGui::LoadIniSettingsFromDisk("imgui.ini");
 }
 
 //------------------------------------------------------------------------------

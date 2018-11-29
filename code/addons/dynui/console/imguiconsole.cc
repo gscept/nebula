@@ -401,16 +401,21 @@ ImguiConsole::Render()
                 }
 
                 open_autocomplete = false;                
-                if (ImGui::BeginPopup("autocomplete", ImGuiWindowFlags_NoNavInputs))
-                {                                        
-                    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_DownArrow))) ++selectedSuggestion;
-                    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_UpArrow))) --selectedSuggestion;
-                    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Enter)))
-                    {
-                        selectedCompletion = completions[selectedSuggestion].complete;
-                        ImGui::CloseCurrentPopup();
-                    }
-                    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Escape))) ImGui::CloseCurrentPopup();
+				if (ImGui::BeginPopup("autocomplete", ImGuiWindowFlags_NoNavInputs))
+				{
+					if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_DownArrow))) ++selectedSuggestion;
+					if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_UpArrow))) --selectedSuggestion;
+					if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Enter)))
+					{
+						selectedCompletion = completions[selectedSuggestion].complete;
+						completions.Clear();
+						ImGui::CloseCurrentPopup();
+					}
+					if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Escape)))
+					{
+						completions.Clear();
+						ImGui::CloseCurrentPopup();
+					}
                     selectedSuggestion = Math::n_iclamp(selectedSuggestion, 0, completions.size() - 1);
                     for (int i = 0, c = completions.size(); i < c; ++i)
                     {
