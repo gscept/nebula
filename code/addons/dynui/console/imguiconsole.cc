@@ -18,8 +18,16 @@
 
 namespace py = pybind11;
 
-static py::list completions;
-static std::string selectedCompletion;
+struct completion_t
+{
+    Util::String name;
+    Util::String complete;
+    Util::String doc;
+};
+
+Util::Array<completion_t> completions;
+
+static Util::String selectedCompletion;
 static bool open_autocomplete = false;
 
 static int
@@ -107,16 +115,25 @@ TextEditCallback(ImGuiInputTextCallbackData* data)
             py::object scope = py::module::import("__main__").attr("__dict__");
             py::list scopes;
             scopes.append(scope);
-            completions = inter(data->Buf, scopes).attr("completions")();
-            if (completions.size() == 1)
+            py::list pcompletions = inter(data->Buf, scopes).attr("completions")();
+            if (pcompletions.size() == 1)
             {
-                std::string rest = (std::string)py::str(completions[0].attr("complete"));
-                data->InsertChars(data->CursorPos, rest.c_str(), rest.c_str() + rest.size());
-                completions = py::list();
+                std::string rest = (std::string)py::str(pcompletions[0].attr("complete"));
+                data->InsertChars(data->CursorPos, rest.c_str(), rest.c_str() + rest.size());                
             }
-            else if (completions.size() > 0 && completions.size() < 10)
+            else if (pcompletions.size() > 0 && pcompletions.size() < 10)
             {
                 open_autocomplete = true;
+                IndexT j = 0;
+                for (auto const& c : pcompletions)
+                {
+                    Util::String name = ((std::string)py::str(pcompletions[j].attr("name"))).c_str();
+                    Util::String complete = ((std::string)py::str(pcompletions[j].attr("complete"))).c_str();
+                    Util::String tooltip = ((std::string)py::str(pcompletions[j].attr("docstring")())).c_str();
+                    completions.Append({ name,complete,tooltip });
+                    ++j;
+                }
+                
             }            
         }
         catch (pybind11::error_already_set e)
@@ -159,11 +176,11 @@ TextEditCallback(ImGuiInputTextCallbackData* data)
 	}
 
 	}
-    if (!selectedCompletion.empty())
+    if (!selectedCompletion.IsEmpty())
     {
-        data->InsertChars(data->CursorPos, selectedCompletion.c_str(), selectedCompletion.c_str() + selectedCompletion.size());
-        selectedCompletion.clear();
-        completions = py::list();
+        data->InsertChars(data->CursorPos, selectedCompletion.AsCharPtr(), selectedCompletion.AsCharPtr() + selectedCompletion.Length());
+        selectedCompletion.Clear();
+        completions.Clear();
     }
 	
 
@@ -390,24 +407,23 @@ ImguiConsole::Render()
                     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_UpArrow))) --selectedSuggestion;
                     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Enter)))
                     {
-                        selectedCompletion = ((std::string)py::str(completions[selectedSuggestion].attr("complete")));
+                        selectedCompletion = completions[selectedSuggestion].complete;
                         ImGui::CloseCurrentPopup();
                     }
                     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Escape))) ImGui::CloseCurrentPopup();
                     selectedSuggestion = Math::n_iclamp(selectedSuggestion, 0, completions.size() - 1);
                     for (int i = 0, c = completions.size(); i < c; ++i)
                     {
-                        std::string name = (std::string)py::str(completions[i].attr("name"));
-                        if (ImGui::Selectable(name.c_str(), selectedSuggestion == i))
+                        completion_t const & comp = completions[i];                        
+                        if (ImGui::Selectable(comp.name.AsCharPtr(), selectedSuggestion == i))
                         {                            
-                            selectedCompletion = ((std::string)py::str(completions[i].attr("complete")));
+                            selectedCompletion = comp.complete;
                         }
                         if (ImGui::IsItemHovered())
-                        {
-                            std::string tooltip = (std::string)py::str(completions[i].attr("docstring")());
-                            if (!tooltip.empty())
+                        {                           
+                            if (!comp.doc.IsEmpty())
                             {
-                                ImGui::SetTooltip(tooltip.c_str());
+                                ImGui::SetTooltip(comp.doc.AsCharPtr());
                             }                            
                         }
                     }
