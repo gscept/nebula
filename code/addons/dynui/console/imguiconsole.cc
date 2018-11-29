@@ -5,6 +5,7 @@
 #include "foundation/stdneb.h"
 #include "imguiconsole.h"
 #include "imgui.h"
+#include "imgui_internal.h"
 #include "input/key.h"
 #include "input/inputserver.h"
 #include "input/keyboard.h"
@@ -12,6 +13,14 @@
 #include "io/textwriter.h"
 #include "io/ioserver.h"
 #include "app/application.h"
+#include "pybind11/embed.h"
+#include "scripting/bindings.h"
+
+namespace py = pybind11;
+
+static py::list completions;
+static std::string selectedCompletion;
+static bool open_autocomplete = false;
 
 static int
 TextEditCallback(ImGuiInputTextCallbackData* data)
@@ -90,7 +99,31 @@ TextEditCallback(ImGuiInputTextCallbackData* data)
 			}
             */
 		}
-		
+
+		// python command completion using jedi
+        try {
+            py::object jedi = py::module::import("jedi");
+            py::object inter = jedi.attr("Interpreter");
+            py::object scope = py::module::import("__main__").attr("__dict__");
+            py::list scopes;
+            scopes.append(scope);
+            completions = inter(data->Buf, scopes).attr("completions")();
+            if (completions.size() == 1)
+            {
+                std::string rest = (std::string)py::str(completions[0].attr("complete"));
+                data->InsertChars(data->CursorPos, rest.c_str(), rest.c_str() + rest.size());
+                completions = py::list();
+            }
+            else if (completions.size() > 0 && completions.size() < 10)
+            {
+                open_autocomplete = true;
+            }            
+        }
+        catch (pybind11::error_already_set e)
+        {
+            n_printf("%s", e.what());
+        }
+
 		
 		break;
 	}
@@ -126,7 +159,12 @@ TextEditCallback(ImGuiInputTextCallbackData* data)
 	}
 
 	}
-		
+    if (!selectedCompletion.empty())
+    {
+        data->InsertChars(data->CursorPos, selectedCompletion.c_str(), selectedCompletion.c_str() + selectedCompletion.size());
+        selectedCompletion.clear();
+        completions = py::list();
+    }
 	
 
 	return 0;
@@ -303,7 +341,7 @@ ImguiConsole::Render()
 
 	// Command-line / Input ----------------------------------------------------
 
-	if (ImGui::InputText("|", this->command, sizeof(this->command), ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CallbackCompletion | ImGuiInputTextFlags_CallbackHistory, &TextEditCallback, (void*)this))
+	if (ImGui::InputText("|", this->command, sizeof(this->command), ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CallbackCompletion | ImGuiInputTextFlags_CallbackHistory | ImGuiInputTextFlags_CallbackAlways, &TextEditCallback, (void*)this))
 	{
 		char* input_end = this->command + strlen(this->command);
 		while (input_end > this->command && input_end[-1] == ' ') input_end--; *input_end = 0;
@@ -329,45 +367,56 @@ ImguiConsole::Render()
 	ImGui::PopItemWidth();
 	ImGui::Separator();
 
-	/*
-	if (this->command[0] != '\0')
-	{
-		Util::Array<Ptr<Scripting::Command>> matches;
-		IndexT i;
-		for (i = 0; i < this->commands.Size(); i++)
-		{
-			const Util::String& name = this->commands.KeyAtIndex(i);
-			if (name.FindStringIndex(this->command) == 0 && name != this->command) matches.Append(this->commands.ValueAtIndex(i));
-		}
 
-		// handle matches
-		if (matches.Size() > 0)
-		{
-			if (io.KeysDownDuration[Key::Up] == 0.0f)	this->selectedSuggestion--;
-			if (io.KeysDownDuration[Key::Down] == 0.0f) this->selectedSuggestion++;
-			this->selectedSuggestion = Math::n_iclamp(this->selectedSuggestion, 0, matches.Size() - 1);
+	
+	if (completions.size() > 0 && completions.size()<10)
+		{			
+			{
+                if (open_autocomplete) ImGui::OpenPopup("autocomplete");
 
-			if (io.KeysDownDuration[Key::Tab] == 0.0f)
-			{
-				const Util::String& firstCommand = matches[this->selectedSuggestion]->GetName();
-				memcpy(this->command, firstCommand.AsCharPtr(), firstCommand.Length());
-				this->selectedSuggestion = 0;
+                if (open_autocomplete)
+                {
+                    ImGui::OpenPopup("autocomplete");
+                    auto pos = ImGui::GetCurrentContext()->PlatformImePos;
+                    pos.y += 20;
+                    ImGui::SetNextWindowPos(pos);
+                    this->selectedSuggestion = 0;
+                }
+
+                open_autocomplete = false;                
+                if (ImGui::BeginPopup("autocomplete", ImGuiWindowFlags_NoNavInputs))
+                {                                        
+                    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_DownArrow))) ++selectedSuggestion;
+                    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_UpArrow))) --selectedSuggestion;
+                    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Enter)))
+                    {
+                        selectedCompletion = ((std::string)py::str(completions[selectedSuggestion].attr("complete")));
+                        ImGui::CloseCurrentPopup();
+                    }
+                    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Escape))) ImGui::CloseCurrentPopup();
+                    selectedSuggestion = Math::n_iclamp(selectedSuggestion, 0, completions.size() - 1);
+                    for (int i = 0, c = completions.size(); i < c; ++i)
+                    {
+                        std::string name = (std::string)py::str(completions[i].attr("name"));
+                        if (ImGui::Selectable(name.c_str(), selectedSuggestion == i))
+                        {                            
+                            selectedCompletion = ((std::string)py::str(completions[i].attr("complete")));
+                        }
+                        if (ImGui::IsItemHovered())
+                        {
+                            std::string tooltip = (std::string)py::str(completions[i].attr("docstring")());
+                            if (!tooltip.empty())
+                            {
+                                ImGui::SetTooltip(tooltip.c_str());
+                            }                            
+                        }
+                    }
+                       
+                    ImGui::EndPopup();                   
+                }               
 			}
-			else
-			{
-				ImGui::Begin("suggestions", NULL, ImVec2(0, 0), 0.9f, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize);
-				ImGui::SetWindowPos(ImVec2(windowPos.x, windowPos.y + windowSize.y - 10));
-				IndexT i;
-				for (i = 0; i < matches.Size(); i++)
-				{
-					if (i == this->selectedSuggestion) ImGui::TextColored(ImVec4(0.5, 0.5, 0.7, 1.0f), matches[i]->GetName().AsCharPtr());
-					else							   ImGui::Text(matches[i]->GetName().AsCharPtr());
-				}
-				ImGui::End();
-			}
-		}
-	}
-	*/
+		}	
+	
 	ImGui::End();
 
 	//ImGui::ShowStyleEditor();
@@ -426,7 +475,7 @@ ImguiConsole::Execute(const Util::String& command)
         this->persistentHistory->WriteLine(command);
         this->persistentHistory->GetStream()->Flush();
     }
-
+    this->previousCommandIndex = -1;
 }
 
 //------------------------------------------------------------------------------
