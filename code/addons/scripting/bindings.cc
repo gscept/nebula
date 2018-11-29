@@ -24,7 +24,7 @@ namespace py = pybind11;
 
 PYBIND11_EMBEDDED_MODULE(foundation, m)
 {
-#if 0 
+//#if 0 
     // i dont think its needed?
     py::class_<Util::String>(m, "string")
         .def(py::init<const char*>());
@@ -48,7 +48,7 @@ PYBIND11_EMBEDDED_MODULE(foundation, m)
             { sizeof(int) }
         );
     });
-#endif
+//#endif
     py::class_<Util::FourCC>(m,"rtti")
     .def("lookup",[](Util::String const& s)->uint32_t
     {
