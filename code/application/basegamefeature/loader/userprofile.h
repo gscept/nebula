@@ -51,8 +51,6 @@ public:
     Util::String GetProfileDirectory() const;
     /// get the filesystem path to the savegame directory
     Util::String GetSaveGameDirectory() const;
-    /// get path to world database
-    Util::String GetDatabasePath() const;
     /// get path to a complete savegame
     Util::String GetSaveGamePath(const Util::String& saveGameName) const;
     /// return true if attribute exists in the profile
