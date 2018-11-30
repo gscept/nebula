@@ -281,7 +281,21 @@ ImguiConsole::Render()
 	
     ImGui::Begin("Nebula Console", &this->visible);// , ImVec2(300, 300), -1.0f, ImGuiWindowFlags_NoScrollbar);
 
+	RenderContent();
+	
+	ImGui::End();
 
+	//ImGui::ShowStyleEditor();
+	// reset input
+	//ImGui::Reset();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ImguiConsole::RenderContent()
+{
 	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
 	static ImGuiTextFilter filter;
 	filter.Draw("Filter", 180);
@@ -304,7 +318,7 @@ ImguiConsole::Render()
 	for (int i = 0; i < consoleBuffer.Size(); i++)
 	{
 		const char* item = consoleBuffer[i].msg.AsCharPtr();
-		
+
 		//Filter on both time, prefix and entry
 		if (!filter.PassFilter(item) && !filter.PassFilter(this->LogEntryTypeAsCharPtr(consoleBuffer[i].type)))
 			continue;
@@ -364,10 +378,10 @@ ImguiConsole::Render()
 		while (input_end > this->command && input_end[-1] == ' ') input_end--; *input_end = 0;
 		if (this->command[0])
 		{
-			this->AppendToLog({LogMessageType::N_INPUT, this->command});
+			this->AppendToLog({ LogMessageType::N_INPUT, this->command });
 
 			// execute script
-			this->Execute(this->command);			
+			this->Execute(this->command);
 		}
 		memset(this->command, '\0', sizeof(this->command));
 	}
@@ -385,64 +399,60 @@ ImguiConsole::Render()
 	ImGui::Separator();
 
 
-	
-	if (completions.size() > 0 && completions.size()<10)
-		{			
+
+	if (completions.size() > 0 && completions.size() < 10)
+	{
+		{
+			if (open_autocomplete)
 			{
-                if (open_autocomplete) ImGui::OpenPopup("autocomplete");
-
-                if (open_autocomplete)
-                {
-                    ImGui::OpenPopup("autocomplete");
-                    auto pos = ImGui::GetCurrentContext()->PlatformImePos;
-                    pos.y += 20;
-                    ImGui::SetNextWindowPos(pos);
-                    this->selectedSuggestion = 0;
-                }
-
-                open_autocomplete = false;                
-				if (ImGui::BeginPopup("autocomplete", ImGuiWindowFlags_NoNavInputs))
-				{
-					if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_DownArrow))) ++selectedSuggestion;
-					if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_UpArrow))) --selectedSuggestion;
-					if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Enter)))
-					{
-						selectedCompletion = completions[selectedSuggestion].complete;
-						completions.Clear();
-						ImGui::CloseCurrentPopup();
-					}
-					if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Escape)))
-					{
-						completions.Clear();
-						ImGui::CloseCurrentPopup();
-					}
-                    selectedSuggestion = Math::n_iclamp(selectedSuggestion, 0, completions.size() - 1);
-                    for (int i = 0, c = completions.size(); i < c; ++i)
-                    {
-                        completion_t const & comp = completions[i];                        
-                        if (ImGui::Selectable(comp.name.AsCharPtr(), selectedSuggestion == i))
-                        {                            
-                            selectedCompletion = comp.complete;
-                        }
-                        if (ImGui::IsItemHovered())
-                        {                           
-                            if (!comp.doc.IsEmpty())
-                            {
-                                ImGui::SetTooltip(comp.doc.AsCharPtr());
-                            }                            
-                        }
-                    }
-                       
-                    ImGui::EndPopup();                   
-                }               
+				ImGui::OpenPopup("autocomplete");
+				auto pos = ImGui::GetCurrentContext()->PlatformImePos;
+				pos.y += 20;
+				ImGui::SetNextWindowPos(pos);
+				this->selectedSuggestion = 0;
 			}
-		}	
-	
-	ImGui::End();
 
-	//ImGui::ShowStyleEditor();
-	// reset input
-	//ImGui::Reset();
+			open_autocomplete = false;
+			if (ImGui::BeginPopup("autocomplete", ImGuiWindowFlags_NoNavInputs))
+			{
+				if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_DownArrow))) ++selectedSuggestion;
+				if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_UpArrow))) --selectedSuggestion;
+				if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Enter)))
+				{
+					selectedCompletion = completions[selectedSuggestion].complete;
+					completions.Clear();
+					ImGui::CloseCurrentPopup();
+				}
+				if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Escape)))
+				{
+					completions.Clear();
+					ImGui::CloseCurrentPopup();
+				}
+				selectedSuggestion = Math::n_iclamp(selectedSuggestion, 0, completions.size() - 1);
+				for (int i = 0, c = completions.size(); i < c; ++i)
+				{
+					completion_t const & comp = completions[i];
+					if (ImGui::Selectable(comp.name.AsCharPtr(), selectedSuggestion == i))
+					{
+						selectedCompletion = comp.complete;
+					}
+					if (ImGui::IsItemHovered())
+					{
+						if (!comp.doc.IsEmpty())
+						{
+							ImGui::SetTooltip(comp.doc.AsCharPtr());
+						}
+					}
+				}
+
+				ImGui::EndPopup();
+			}
+			else
+			{
+				completions.Clear();
+			}
+		}
+	}
 }
 
 //------------------------------------------------------------------------------
