@@ -110,6 +110,8 @@ GraphicsComponent::SetModel(Game::Entity entity, const Util::String & path)
 		Graphics::GraphicsEntityId gfxEntity = { component.GraphicsEntity(instance) };
 		Models::ModelContext::ChangeModel(gfxEntity, path, "NONE");
 		component.ModelResource(instance) = path;
+		auto transform = Game::TransformComponent::GetWorldTransform(component.GetOwner(instance));
+		Models::ModelContext::SetTransform(gfxEntity, transform);
 	}
 }
 
