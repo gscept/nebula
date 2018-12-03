@@ -156,18 +156,25 @@ public:
 	/// Get attribute value as a variant. This is generally quite slow, so use with care!
 	Util::Variant GetAttributeValue(uint32_t instance, IndexT attributeIndex);
 
+	/// Get attribute value as a variant. This is generally quite slow, so use with care!
+	Util::Variant GetAttributeValue(uint32_t instance, Attr::AttrId attributeId);
+
 	/// Set attribute value as a variant. This is generally quite slow and won't propagate to other components, so use with care!
 	void SetAttributeValue(uint32_t instance, IndexT attributeIndex, const Util::Variant& value);
 
-	/// Contains all data for all instances of this component.
-	/// @note	The 0th type is always the owner Entity!
-	Util::ArrayAllocator<Entity, typename TYPES::AttrDeclType...> data;
+	/// Set attribute value as a variant. This is generally quite slow and won't propagate to other components, so use with care!
+	void SetAttributeValue(uint32_t instance, Attr::AttrId attributeId, const Util::Variant& value);
 
 	/// Write owners into writer.
 	void SerializeOwners(const Ptr<IO::BinaryWriter>& writer) const;
 
 	/// Set owners from reader
 	void DeserializeOwners(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances);
+
+	/// Contains all data for all instances of this component.
+	/// @note	The 0th type is always the owner Entity!
+	/// @note	attribute types need to be in exactly the same order as in the attribute ids list.
+	Util::ArrayAllocator<Entity, typename TYPES::AttrDeclType...> data;
 
 protected:
 	/// short hand for getting the component with template arguments filled
@@ -184,10 +191,18 @@ private:
 	/// Get attribute value expansion method
 	template<std::size_t n>
 	Util::Variant GetAttributeValueDynamic(uint32_t instance, IndexT attributeIndex);
+	
+	/// Get attribute value expansion method
+	template<std::size_t n>
+	Util::Variant GetAttributeValueDynamic(uint32_t instance, Attr::AttrId attributeId);
 
 	/// Set attribute value expansion method
 	template<std::size_t n>
 	void SetAttributeValueDynamic(uint32_t instance, IndexT attributeIndex, const Util::Variant& value);
+
+	/// Set attribute value expansion method
+	template<std::size_t n>
+	void SetAttributeValueDynamic(uint32_t instance, Attr::AttrId attributeId, const Util::Variant& value);
 
 	/// notify callback if certain requirements are met
 	void NotifyOnInstanceMoved(uint32_t index, uint32_t oldIndex);
@@ -462,6 +477,17 @@ Component<TYPES...>::GetAttributeValue(uint32_t instance, IndexT attributeIndex)
 //------------------------------------------------------------------------------
 /**
 */
+template<typename ... TYPES>
+inline Util::Variant
+Component<TYPES...>::GetAttributeValue(uint32_t instance, Attr::AttrId attributeId)
+{
+	n_assert2(instance < this->data.Size(), "Invalid instance id");
+	return this->GetAttributeValueDynamic<1>(instance, attributeId);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 template <class ... TYPES>
 template <std::size_t n>
 Util::Variant
@@ -471,6 +497,20 @@ Component<TYPES...>::GetAttributeValueDynamic(uint32_t instance, IndexT attribut
 		return this->data.Get<n>(instance);
 	else // Recurse and increase n by 1
 		return GetAttributeValueDynamic<(n < sizeof...(TYPES) ? n + 1 : 1)>(instance, attributeIndex);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <class ... TYPES>
+template <std::size_t n>
+Util::Variant
+Component<TYPES...>::GetAttributeValueDynamic(uint32_t instance, Attr::AttrId attributeId)
+{
+	if (attributeId == this->attributeIds[n])
+		return this->data.Get<n>(instance);
+	else // Recurse and increase n by 1
+		return GetAttributeValueDynamic<(n < sizeof...(TYPES) ? n + 1 : 1)>(instance, attributeId);
 }
 
 //------------------------------------------------------------------------------
@@ -490,6 +530,19 @@ Component<TYPES...>::SetAttributeValue(uint32_t instance, IndexT attributeIndex,
 //------------------------------------------------------------------------------
 /**
 */
+template<typename ... TYPES>
+inline void
+Component<TYPES...>::SetAttributeValue(uint32_t instance, Attr::AttrId attributeId, const Util::Variant & value)
+{
+	n_assert2(instance < this->data.Size(), "Invalid instance id");
+	n_assert2(value.GetType() == attributeId.GetValueType(), "Trying to set an attribute value with incorrect variant type!");
+
+	this->SetAttributeValueDynamic<1>(instance, attributeId, value);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 template <class ... TYPES>
 template <std::size_t n>
 void
@@ -502,6 +555,23 @@ Component<TYPES...>::SetAttributeValueDynamic(uint32_t instance, IndexT attribut
 	}
 	else // Recurse and increase n by 1
 		SetAttributeValueDynamic<(n < sizeof...(TYPES) ? n + 1 : 1)>(instance, attributeIndex, value);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <class ... TYPES>
+template <std::size_t n>
+void
+Component<TYPES...>::SetAttributeValueDynamic(uint32_t instance, Attr::AttrId attributeId, const Util::Variant& value)
+{
+	if (attributeId == this->attributeIds[n])
+	{
+		auto& val = this->data.Get<n>(instance);
+		val = value.Get<std::remove_reference<decltype(val)>::type>();
+	}
+	else // Recurse and increase n by 1
+		SetAttributeValueDynamic<(n < sizeof...(TYPES) ? n + 1 : 1)>(instance, attributeId, value);
 }
 
 //------------------------------------------------------------------------------
