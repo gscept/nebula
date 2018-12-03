@@ -97,8 +97,14 @@ public:
 	/// Get an attribute value as a variant type
 	virtual Util::Variant GetAttributeValue(uint32_t i, IndexT attributeIndex) = 0;
 	
+	/// Get an attribute value as a variant type
+	virtual Util::Variant GetAttributeValue(uint32_t i, Attr::AttrId attributeId) = 0;
+	
 	/// Set an attribute value from a variant type
 	virtual void SetAttributeValue(uint32_t i, IndexT attributeIndex, const Util::Variant& value) = 0;
+	
+	/// Set an attribute value from a variant type
+	virtual void SetAttributeValue(uint32_t i, Attr::AttrId attributeId, const Util::Variant& value) = 0;
 
 	/// Returns the instance of an entity; or InvalidIndex if not registered.
 	virtual uint32_t GetInstance(Entity e) const = 0;
@@ -167,6 +173,7 @@ protected:
 	Util::BitField<ComponentEvent::NumEvents> events;
 	
 	/// Holds all attributedefinitions that this components has available.
+	/// This should be adjacent to the data/tuple the values are in.
 	Util::FixedArray<Attr::AttrId> attributeIds;
 
 	/// Determines whether the component manager will execute this components
