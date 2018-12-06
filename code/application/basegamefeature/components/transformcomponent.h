@@ -61,6 +61,7 @@ private:
 	/// Updates relationships
 	static void OnDeactivate(uint32_t instance);
 
+	/// Special case if an instance has changed index because of garbage collection
 	static void OnInstanceMoved(uint32_t instance, uint32_t oldIndex);
 
 	/// Update the transform hierarchy of this instance and all its children
