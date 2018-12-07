@@ -154,6 +154,24 @@ StreamModelPool::GetModelInstanceBoundingBox(const ModelInstanceId id)
 
 //------------------------------------------------------------------------------
 /**
+*/
+uint
+StreamModelPool::GetModelInstanceObjectId(const ModelInstanceId id) const
+{
+	return this->modelInstanceAllocator.Get<ObjectId>(id.instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint
+& StreamModelPool::GetModelInstanceObjectId(const ModelInstanceId id)
+{
+	return this->modelInstanceAllocator.Get<ObjectId>(id.instance);
+}
+
+//------------------------------------------------------------------------------
+/**
 	Create model instance breadth first
 */
 void

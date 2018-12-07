@@ -42,6 +42,11 @@ public:
     /// get the root directory of the application
     const Util::StringAtom& GetRootDirectory() const;
 
+    /// set the tools directory ("tool:")
+    void SetToolDirectory(const Util::StringAtom& s);
+    /// get the tools directory
+    const Util::StringAtom& GetToolDirectory() const;
+
     /// open the core server
     void Open();
     /// close the core server
@@ -56,6 +61,7 @@ private:
     Util::StringAtom companyName;
     Util::StringAtom appName;
     Util::StringAtom rootDirectory;
+    Util::StringAtom toolDirectory;
     bool isOpen;
 };
 
@@ -120,6 +126,24 @@ inline const Util::StringAtom&
 CoreServer::GetRootDirectory() const
 {
     return this->rootDirectory;
+}
+
+//------------------------------------------------------------------------------
+/*
+*/
+inline void
+CoreServer::SetToolDirectory(const Util::StringAtom& s)
+{
+    this->toolDirectory = s;
+}
+
+//------------------------------------------------------------------------------
+/*
+*/
+inline const Util::StringAtom&
+CoreServer::GetToolDirectory() const
+{
+    return this->toolDirectory;
 }
 
 } // namespace Core

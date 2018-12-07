@@ -47,6 +47,8 @@ public:
     const Util::String& GetName() const;
 	/// set the thread affinity
 	void SetThreadAffinity(const uint mask);
+	/// get the thread affinity
+	uint GetThreadAffinity();
 
     /// start executing the thread code, returns when thread has actually started
     void Start();
@@ -186,6 +188,15 @@ inline void
 Win360Thread::SetThreadAffinity(const uint mask)
 {
 	this->affinityMask = mask;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline uint
+Win360Thread::GetThreadAffinity()
+{
+	return this->affinityMask;
 }
 
 }; // namespace Win360

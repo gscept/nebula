@@ -7,6 +7,11 @@
 4. [CMake 3.13+](https://cmake.org/download/)
 5. [Vulkan SDK](https://vulkan.lunarg.com/sdk/home)
 6. [Python 3.5+](https://www.python.org/downloads)
+    * Python modules required:
+        1. numpy
+        2. jedi
+        
+        As root/admin: `python -m pip install numpy jedi`
     * Python requirements (Windows):
         1. Correct architecture (64-bit if you're building for 64-bit systems)
         2. Installed for all users

@@ -67,7 +67,9 @@ public:
     /// return names of all attrs on current node
     Util::Array<Util::String> GetAttrs() const;
 
-        
+	/// get name of current node
+	Util::String GetCurrentNodeName() const;
+
     /// get string attribute value from current node
     Util::String GetString(const char* attr =  0) const;
     /// get bool attribute value from current node

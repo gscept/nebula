@@ -80,6 +80,8 @@ def ConvertToCamelNotation(attrType):
         return "VoidPtr"
     elif (T == "entity"):
         return "Entity"
+    elif (T == "variant"):
+        return "Variant"
     else:
         return None
 
@@ -132,6 +134,8 @@ def GetTypeString(attrType):
         return "void*"
     elif (T == "entity"):
         return "Game::Entity"
+    elif (T == "variant"):
+        return "Util::Variant"
     else:
         return attrType
 
@@ -187,6 +191,8 @@ def GetArgumentType(attrType):
         return "void*"
     elif (T == "entity"):
         return "Game::Entity"
+    elif (T == "variant"):
+        return "Util::Variant const&"
     else:
         return attrType
 

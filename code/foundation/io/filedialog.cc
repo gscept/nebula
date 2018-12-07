@@ -4,9 +4,9 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "io/filedialog.h"
-#include "nfd.h"
-
-
+#include "tinyfiledialogs.h"
+#include "ioserver.h"
+#include <typeinfo>
 namespace IO
 {
 namespace FileDialog
@@ -15,18 +15,29 @@ namespace FileDialog
 /**
 */
 bool 
-OpenFile(const IO::URI & start, const Util::String& filters, Util::String& path)
+OpenFile(Util::String const& title, const IO::URI & start, std::initializer_list<const char*>const& filters, Util::String& path)
 {
     Util::String localpath = start.LocalPath();
-
+    if (!IO::IoServer::Instance()->FileExists(start))
+    {
+        localpath.Append("/");
+    }
 #ifdef __WIN32__
     localpath.SubstituteChar('/', '\\');
 #endif
-    nfdchar_t * nfdpath = NULL;
-    if (NFD_OKAY == NFD_OpenDialog(filters.AsCharPtr(), localpath.AsCharPtr(), &nfdpath))
+    
+    char const * filterlist[16];
+    n_assert2(filters.size() < 16, "Too large initializer list");
+    int c = 0;
+    for (auto i : filters)
     {
-        path = nfdpath;
-        free(nfdpath);
+        filterlist[c++] = i;
+    }
+    
+    const char * fpath = tinyfd_openFileDialog(title.AsCharPtr(), localpath.AsCharPtr(), c, filterlist, NULL, false);
+    if (fpath)
+    {
+        path = fpath;
         return true;
     }
     return false;
@@ -35,18 +46,16 @@ OpenFile(const IO::URI & start, const Util::String& filters, Util::String& path)
 /**
 */
 bool 
-OpenFolder(const IO::URI & start, Util::String& path)
+OpenFolder(Util::String const& title, const IO::URI & start, Util::String& path)
 {
     Util::String localpath = start.LocalPath();
-
 #ifdef __WIN32__
     localpath.SubstituteChar('/', '\\');
 #endif
-    nfdchar_t * nfdpath = NULL;
-    if (NFD_OKAY == NFD_PickFolder(localpath.AsCharPtr(), &nfdpath))
+    const char * fpath = tinyfd_selectFolderDialog(title.AsCharPtr(), localpath.AsCharPtr());
+    if (fpath)
     {
-        path = nfdpath;
-        free(nfdpath);
+        path = fpath;
         return true;
     }
     return false;
@@ -56,18 +65,29 @@ OpenFolder(const IO::URI & start, Util::String& path)
 /**
 */
 bool 
-SaveFile(const IO::URI & start, const Util::String& filters, Util::String& path)
+SaveFile(Util::String const& title, const IO::URI & start, std::initializer_list<const char*>const& filters, Util::String& path)
 {
     Util::String localpath = start.LocalPath();
-
+    if (!IO::IoServer::Instance()->FileExists(start))
+    {
+        localpath.Append("/");
+    }
 #ifdef __WIN32__
     localpath.SubstituteChar('/', '\\');
 #endif
-    nfdchar_t * nfdpath = NULL;
-    if (NFD_OKAY == NFD_SaveDialog(filters.AsCharPtr(), localpath.AsCharPtr(), &nfdpath))
+
+    char const * filterlist[16];
+    n_assert2(filters.size() < 16, "Too large initializer list");
+    int c = 0;
+    for (auto i : filters)
     {
-        path = nfdpath;
-        free(nfdpath);
+        filterlist[c++] = i;
+    }
+
+    const char * fpath = tinyfd_saveFileDialog(title.AsCharPtr(), localpath.AsCharPtr(), c, filterlist, NULL);
+    if (fpath)
+    {
+        path = fpath;
         return true;
     }
     return false;

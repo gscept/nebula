@@ -20,7 +20,7 @@ class ComponentClassWriter:
         self.document = document
         self.component = component
         self.componentName = componentName
-        self.className = '{}Data'.format(self.componentName)
+        self.className = '{}Allocator'.format(self.componentName)
         self.namespace = namespace
 
         if (not "fourcc" in component):

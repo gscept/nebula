@@ -74,7 +74,7 @@ private:
 		Ptr<ImguiInputHandler> inputHandler;
 	};
 	static ImguiState state;
-    static void ImguiDrawFunction(ImDrawData* data);
+    static void ImguiDrawFunction();
 };
 
 } // namespace Dynui

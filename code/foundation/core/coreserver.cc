@@ -20,6 +20,7 @@ CoreServer::CoreServer() :
     companyName("gscept"),
     appName("Nebula"),
     rootDirectory("home:"),
+    toolDirectory("root:"),
     isOpen(false)
 {
     __ConstructSingleton;

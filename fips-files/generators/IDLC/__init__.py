@@ -61,8 +61,8 @@ class IDLCodeGenerator:
         if "messages" in self.document:
             attributeLibraries.append("game/messaging/message.h")
             
-
         IDLDocument.WriteIncludeHeader(f)
+        IDLDocument.WriteIncludes(f, self.document)
         IDLComponent.WriteIncludes(f, attributeLibraries)
 
         # Generate attributes include file

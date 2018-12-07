@@ -1,0 +1,48 @@
+version: 2, engine: "Nebula", framescript: {
+  renderTextures: [
+    {
+      name: "PickingBuffer",
+      format: "R32F",
+      relative: true,
+      width: 1.0,
+      height: 1.0
+    }
+  ],
+
+  depthStencils: [
+    {
+      name: "PickingDepthBuffer",
+      format: "D24S8",
+      relative: true,
+      width: 1.0,
+      height: 1.0
+    }
+  ],
+
+  pass: {
+    name: "Picking",
+    attachments: [
+      {
+        name: "PickingBuffer",
+        clear: [ 0, 0, 0, 0 ],
+        store: true
+      }
+    ],
+
+    depthStencil: {
+      name: "PickingDepthBuffer",
+      clear: 1,
+      clearStencil: 0,
+      store: true
+    },
+
+    subpass: {
+      name: "PickingPass",
+      dependencies: [],
+      attachments: [ "PickingBuffer" ],
+      depth: true,
+      batch: "Picking",
+      batch: "PickingInFront"
+    },
+  },
+}
