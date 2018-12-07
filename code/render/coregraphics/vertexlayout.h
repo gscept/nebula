@@ -15,7 +15,7 @@ namespace CoreGraphics
 RESOURCE_ID_TYPE(VertexLayoutId);
 
 /// max number of vertex streams
-static const IndexT MaxNumVertexStreams = 2;
+static const IndexT MaxNumVertexStreams = 16;
 
 struct VertexLayoutCreateInfo
 {
@@ -28,7 +28,6 @@ struct VertexLayoutInfo
 	SizeT vertexByteSize;
 	Util::Array<VertexComponent> comps;
 	ShaderProgramId shader;
-	bool usedStreams[MaxNumVertexStreams];
 };
 
 /// create new vertex layout

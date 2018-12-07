@@ -77,7 +77,9 @@ StreamMeshPool::Unload(const Resources::ResourceId id)
 	const MeshCreateInfo& msh = meshPool->GetSafe<0>(id.allocId);
 
 	if (msh.indexBuffer != IndexBufferId::Invalid()) CoreGraphics::iboPool->Unload(msh.indexBuffer.AllocId());
-	if (msh.vertexBuffer != VertexBufferId::Invalid()) CoreGraphics::vboPool->Unload(msh.vertexBuffer.AllocId());
+	IndexT i;
+	for (i = 0; i < msh.streams.Size(); i++)
+		CoreGraphics::vboPool->Unload(msh.streams[i].vertexBuffer.AllocId());
 }
 
 //------------------------------------------------------------------------------
@@ -120,7 +122,7 @@ StreamMeshPool::SetupMeshFromNvx2(const Ptr<Stream>& stream, const Resources::Re
 		MeshCreateInfo& msh = meshPool->Get<0>(res);
 		n_assert(this->GetState(res) == Resources::Resource::Pending);
 		msh.vertexLayout = CreateVertexLayout({ nvx2Reader->GetVertexComponents() });
-		msh.vertexBuffer = nvx2Reader->GetVertexBuffer();
+		msh.streams.Append({ nvx2Reader->GetVertexBuffer(), 0 });
 		msh.indexBuffer = nvx2Reader->GetIndexBuffer();
 		msh.topology = PrimitiveTopology::TriangleList;
 		msh.primitiveGroups = nvx2Reader->GetPrimitiveGroups();
@@ -171,7 +173,11 @@ StreamMeshPool::MeshBind(const Resources::ResourceId id)
 	// bind vbo, and optional ibo
 	CoreGraphics::SetPrimitiveTopology(msh.topology);
 	CoreGraphics::SetVertexLayout(msh.vertexLayout);
-	CoreGraphics::SetStreamVertexBuffer(0, msh.vertexBuffer, 0);
+
+	IndexT i;
+	for (i = 0; i < msh.streams.Size(); i++)
+		CoreGraphics::SetStreamVertexBuffer(msh.streams[i].index, msh.streams[i].vertexBuffer, 0);
+
 	if (msh.indexBuffer != Ids::InvalidId64)
 		CoreGraphics::SetIndexBuffer(msh.indexBuffer, 0);
 

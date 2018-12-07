@@ -66,7 +66,7 @@ FrameCopy::CompiledImpl::Run(const IndexT frameIndex)
 	toRegion.bottom = toDims.height;
 
 #if NEBULA_GRAPHICS_DEBUG
-	CoreGraphics::CmdBufBeginMarker(GraphicsQueueType, Math::float4(0.8f, 0.6f, 0.6f, 1), this->name.Value());
+	CoreGraphics::CmdBufBeginMarker(GraphicsQueueType, Math::float4(1.0f, 0.6f, 0.6f, 1), this->name.Value());
 #endif
 
 	CoreGraphics::Copy(this->from, fromRegion, this->to, toRegion);

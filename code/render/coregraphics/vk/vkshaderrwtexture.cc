@@ -148,7 +148,10 @@ DestroyShaderRWTexture(const ShaderRWTextureId id)
 	VkShaderRWTextureLoadInfo& loadInfo = shaderRWTextureAllocator.Get<0>(id.id24);
 	VkShaderRWTextureRuntimeInfo& runtimeInfo = shaderRWTextureAllocator.Get<1>(id.id24);
 
-	VkShaderServer::Instance()->UnregisterTexture(runtimeInfo.bind, Texture2D);
+	// bind 0 is reserved for the placeholder texture, meaning we never registered one
+	if (runtimeInfo.bind != 0)
+		VkShaderServer::Instance()->UnregisterTexture(runtimeInfo.bind, Texture2D);
+
 	vkDestroyImageView(loadInfo.dev, runtimeInfo.view, nullptr);
 	vkDestroyImage(loadInfo.dev, loadInfo.img, nullptr);
 	vkFreeMemory(loadInfo.dev, loadInfo.mem, nullptr);

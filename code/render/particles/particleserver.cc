@@ -54,7 +54,6 @@ ParticleServer::Open()
 	emitterComponents.Append(VertexComponent(VertexComponent::Normal, 0, VertexComponent::Byte4N, 0));
 	emitterComponents.Append(VertexComponent(VertexComponent::Tangent, 0, VertexComponent::Byte4N, 0));
 
-
 	float x = 0 * 0.5f * 255.0f;
 	float y = 1 * 0.5f * 255.0f;
 	float z = 0 * 0.5f * 255.0f;
@@ -121,7 +120,7 @@ ParticleServer::Open()
 	{
 		"Default_Emitter_Mesh",
 		"rendersystem",
-		vbo, ibo, vlo, CoreGraphics::PrimitiveTopology::PointList, groups
+		{ { vbo, 0 } }, ibo, vlo, CoreGraphics::PrimitiveTopology::PointList, groups
 	};
 	this->defaultEmitterMesh = CreateMesh(info);
 }
