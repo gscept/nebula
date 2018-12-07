@@ -17,7 +17,7 @@
 namespace GraphicsFeature
 {
 
-static GraphicsComponentData component;
+static GraphicsComponentAllocator component;
 
 __ImplementComponent_woSerialization(GraphicsFeature::GraphicsComponent, component)
 
@@ -27,12 +27,12 @@ __ImplementComponent_woSerialization(GraphicsFeature::GraphicsComponent, compone
 void
 GraphicsComponent::Create()
 {
-	component = GraphicsComponentData();
+	component = GraphicsComponentAllocator();
 
 	__SetupDefaultComponentBundle(component);
 	component.functions.OnActivate = OnActivate;
 	component.functions.OnDeactivate = OnDeactivate;
-	__RegisterComponent(&component);
+	__RegisterComponent(&component, "GraphicsComponent"_atm);
 
 	SetupAcceptedMessages();
 }
@@ -110,6 +110,8 @@ GraphicsComponent::SetModel(Game::Entity entity, const Util::String & path)
 		Graphics::GraphicsEntityId gfxEntity = { component.GraphicsEntity(instance) };
 		Models::ModelContext::ChangeModel(gfxEntity, path, "NONE");
 		component.ModelResource(instance) = path;
+		auto transform = Game::TransformComponent::GetWorldTransform(component.GetOwner(instance));
+		Models::ModelContext::SetTransform(gfxEntity, transform);
 	}
 }
 
@@ -119,7 +121,7 @@ GraphicsComponent::SetModel(Game::Entity entity, const Util::String & path)
 void
 GraphicsComponent::Serialize(const Ptr<IO::BinaryWriter>& writer)
 {
-	Game::Serialize(writer, component.data.GetArray<GraphicsComponentData::MODELRESOURCE>());
+	Game::Serialize(writer, component.data.GetArray<GraphicsComponentAllocator::MODELRESOURCE>());
 }
 
 //------------------------------------------------------------------------------
@@ -128,7 +130,7 @@ GraphicsComponent::Serialize(const Ptr<IO::BinaryWriter>& writer)
 void
 GraphicsComponent::Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances)
 {
-	Game::Deserialize(reader, component.data.GetArray<GraphicsComponentData::MODELRESOURCE>(), offset, numInstances);
+	Game::Deserialize(reader, component.data.GetArray<GraphicsComponentAllocator::MODELRESOURCE>(), offset, numInstances);
 }
 
 } // namespace GraphicsFeature

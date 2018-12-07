@@ -63,6 +63,9 @@ public:
 
 	/// render, call this per-frame
 	void Render();
+
+	/// render only content, You need to wrap this in ImGui::Begin and ImGui::End
+	void RenderContent();
 	
 	/// add line to the log
 	void AppendToLog(const LogEntry& msg);

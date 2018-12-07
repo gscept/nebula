@@ -102,6 +102,11 @@ nebula_begin_module(application)
 			gameapplication.h
 			gameapplication.cc
 		)
+	fips_dir(basegamefeature/debug)
+		fips_files(
+			gamepagehandler.h
+			gamepagehandler.cc
+		)
 	fips_dir(.)
 nebula_end_module()
 

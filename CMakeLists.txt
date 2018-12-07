@@ -12,13 +12,9 @@ fips_setup(PROJECT Nebula)
 SET(CODE_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/code)
 
 fips_include_directories(code/addons)
-fips_include_directories(extlibs/mixed)
 fips_include_directories(extlibs/scripts)
 
 fips_ide_group(Core)
 fips_add_subdirectory(code)
-
-fips_ide_group(Extlibs)
-fips_add_subdirectory(extlibs)
 
 fips_finish()

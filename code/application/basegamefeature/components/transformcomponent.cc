@@ -10,18 +10,14 @@
 namespace Game
 {
 
-static TransformComponentData component;
+static TransformComponentAllocator data;
 static Msg::UpdateTransform::MessageQueueId messageQueue;
 
 //------------------------------------------------------------------------------
 /**
 	Default implementations
 */
-uint32_t TransformComponent::RegisterEntity(Game::Entity entity) { return component.RegisterEntity(entity); }
-void TransformComponent::DeregisterEntity(Game::Entity entity) { component.DeregisterEntity(entity); }
-void TransformComponent::DestroyAll() { component.DestroyAll(); }
-SizeT TransformComponent::NumRegistered() { return component.NumRegistered(); }
-uint32_t TransformComponent::GetInstance(Game::Entity entity) { return component.GetInstance(entity); }
+__ImplementComponent_woSerialization(TransformComponent, data);
 
 //------------------------------------------------------------------------------
 /**
@@ -29,13 +25,13 @@ uint32_t TransformComponent::GetInstance(Game::Entity entity) { return component
 void
 TransformComponent::Create()
 {
-	component = TransformComponentData();
+	data = TransformComponentAllocator();
 
-	component.functions.DestroyAll = DestroyAll;
-	component.functions.Serialize = Serialize;
-	component.functions.Deserialize = Deserialize;
-	component.functions.SetParents = SetParents;
-	__RegisterComponent(&component);
+	__SetupDefaultComponentBundle(data);
+	data.functions.OnDeactivate = OnDeactivate;
+	data.functions.OnInstanceMoved = OnInstanceMoved;
+	data.functions.SetParents = SetParents;
+	__RegisterComponent(&data, "TransformComponent"_atm);
 
 	SetupAcceptedMessages();
 }
@@ -56,9 +52,9 @@ void
 TransformComponent::SetupAcceptedMessages()
 {
 	// SetLocalTransform message will be handled by ::SetLocalTransform(...)
-	component.messageListeners.Append(__RegisterMsg(Msg::SetLocalTransform, SetLocalTransform));
-	component.messageListeners.Append(__RegisterMsg(Msg::SetWorldTransform, SetWorldTransform));
-	component.messageListeners.Append(__RegisterMsg(Msg::SetParent, SetParent));
+	data.messageListeners.Append(__RegisterMsg(Msg::SetLocalTransform, SetLocalTransform));
+	data.messageListeners.Append(__RegisterMsg(Msg::SetWorldTransform, SetWorldTransform));
+	data.messageListeners.Append(__RegisterMsg(Msg::SetParent, SetParent));
 	messageQueue = Msg::UpdateTransform::AllocateMessageQueue();
 	
 }
@@ -69,38 +65,38 @@ TransformComponent::SetupAcceptedMessages()
 void
 TransformComponent::SetLocalTransform(uint32_t i, const Math::matrix44& val)
 {
-	component.LocalTransform(i) = val;
-	uint32_t parent = component.Parent(i);
+	data.LocalTransform(i) = val;
+	uint32_t parent = data.Parent(i);
 	uint32_t child;
 	Math::matrix44 transform;
 	if (parent == InvalidIndex)
 	{
-		component.WorldTransform(i) = val;
-		Msg::UpdateTransform::Defer(messageQueue, component.GetOwner(i), val);
+		data.WorldTransform(i) = val;
+		Msg::UpdateTransform::Defer(messageQueue, data.GetOwner(i), val);
 	}
 	else
 	{
 		// First of, transform this with parent transform if any
-		transform = component.WorldTransform(parent);
-		component.WorldTransform(i) = Math::matrix44::multiply(component.LocalTransform(i), transform);
-		Msg::UpdateTransform::Defer(messageQueue, component.GetOwner(i), component.WorldTransform(i));
+		transform = data.WorldTransform(parent);
+		data.WorldTransform(i) = Math::matrix44::multiply(data.LocalTransform(i), transform);
+		Msg::UpdateTransform::Defer(messageQueue, data.GetOwner(i), data.WorldTransform(i));
 	}
 	
-	child = component.FirstChild(i);
+	child = data.FirstChild(i);
 	parent = i;
 	// Transform every child and their siblings.
 	while (parent != InvalidIndex)
 	{
 		while (child != InvalidIndex)
 		{
-			transform = component.WorldTransform(parent);
-			component.WorldTransform(child) = Math::matrix44::multiply(component.LocalTransform(child), transform);
-			Msg::UpdateTransform::Defer(messageQueue, component.GetOwner(child), component.WorldTransform(child));
+			transform = data.WorldTransform(parent);
+			data.WorldTransform(child) = Math::matrix44::multiply(data.LocalTransform(child), transform);
+			Msg::UpdateTransform::Defer(messageQueue, data.GetOwner(child), data.WorldTransform(child));
 			parent = child;
-			child = component.FirstChild(child);
+			child = data.FirstChild(child);
 		}
-		child = component.NextSibling(parent);
-		parent = component.Parent(parent);
+		child = data.NextSibling(parent);
+		parent = data.Parent(parent);
 	}
 
 	// Dispatch all world transform update messages sequentially at the end of the method.
@@ -114,7 +110,7 @@ TransformComponent::SetLocalTransform(uint32_t i, const Math::matrix44& val)
 void
 TransformComponent::SetLocalTransform(Game::Entity entity, const Math::matrix44& val)
 {
-	uint32_t instance = component.GetInstance(entity);
+	uint32_t instance = data.GetInstance(entity);
 	if (instance != InvalidIndex)
 	{
 		SetLocalTransform(instance, val);
@@ -127,16 +123,16 @@ TransformComponent::SetLocalTransform(Game::Entity entity, const Math::matrix44&
 void
 TransformComponent::SetWorldTransform(uint32_t instance, const Math::matrix44& val)
 {
-	n_assert(component.data.Size() > instance);
-	if (component.data.Size() <= instance)
+	n_assert(data.data.Size() > instance);
+	if (data.data.Size() <= instance)
 	{
 		return;
 	}
 
-	uint32_t parentInstance = component.Parent(instance);
+	uint32_t parentInstance = data.Parent(instance);
 	if (parentInstance != InvalidIndex)
 	{
-		Math::matrix44& parentWorld = component.WorldTransform(parentInstance);
+		Math::matrix44& parentWorld = data.WorldTransform(parentInstance);
 		Math::matrix44 parentInverse = Math::matrix44::inverse(parentWorld);
 		Math::matrix44 local = Math::matrix44::multiply(val, parentInverse);
 		SetLocalTransform(instance, local);
@@ -154,7 +150,7 @@ TransformComponent::SetWorldTransform(uint32_t instance, const Math::matrix44& v
 void
 TransformComponent::SetWorldTransform(Game::Entity entity, const Math::matrix44& val)
 {
-	uint32_t instance = component.GetInstance(entity);
+	uint32_t instance = data.GetInstance(entity);
 	if (instance != InvalidIndex)
 	{
 		SetWorldTransform(instance, val);
@@ -167,8 +163,8 @@ TransformComponent::SetWorldTransform(Game::Entity entity, const Math::matrix44&
 Math::matrix44
 TransformComponent::GetLocalTransform(uint32_t instance)
 {
-	if (instance < component.data.Size())
-		return component.LocalTransform(instance);
+	if (instance < data.data.Size())
+		return data.LocalTransform(instance);
 
 	return Math::matrix44::identity();
 }
@@ -179,7 +175,7 @@ TransformComponent::GetLocalTransform(uint32_t instance)
 Math::matrix44
 TransformComponent::GetLocalTransform(Game::Entity entity)
 {
-	return GetLocalTransform(component.GetInstance(entity));
+	return GetLocalTransform(data.GetInstance(entity));
 }
 
 //------------------------------------------------------------------------------
@@ -188,8 +184,8 @@ TransformComponent::GetLocalTransform(Game::Entity entity)
 Math::matrix44
 TransformComponent::GetWorldTransform(uint32_t instance)
 {
-	if (instance < component.data.Size())
-		return component.WorldTransform(instance);
+	if (instance < data.data.Size())
+		return data.WorldTransform(instance);
 
 	return Math::matrix44::identity();
 }
@@ -200,7 +196,7 @@ TransformComponent::GetWorldTransform(uint32_t instance)
 Math::matrix44
 TransformComponent::GetWorldTransform(Game::Entity entity)
 {
-	return GetWorldTransform(component.GetInstance(entity));
+	return GetWorldTransform(data.GetInstance(entity));
 }
 
 
@@ -218,33 +214,33 @@ InternalSetParent(uint32_t instance, uint32_t parentInstance)
 	}
 
 	if (parentInstance != InvalidIndex &&
-		component.Parent(parentInstance) == instance
+		data.Parent(parentInstance) == instance
 		)
 	{
 		return;
 	}
 
-	component.Parent(instance) = parentInstance;
+	data.Parent(instance) = parentInstance;
 
 	if (parentInstance != InvalidIndex)
 	{
-		uint32_t child = component.FirstChild(parentInstance);
+		uint32_t child = data.FirstChild(parentInstance);
 		if (child == InvalidIndex)
 		{
-			component.FirstChild(parentInstance) = instance;
+			data.FirstChild(parentInstance) = instance;
 		}
 		else
 		{
 			// Find last child and make this a sibling to that instance
-			uint32_t sibling = component.NextSibling(child);
+			uint32_t sibling = data.NextSibling(child);
 			while (sibling != InvalidIndex)
 			{
 				child = sibling;
-				sibling = component.NextSibling(child);
+				sibling = data.NextSibling(child);
 			}
 
-			component.NextSibling(child) = instance;
-			component.PreviousSibling(instance) = child;
+			data.NextSibling(child) = instance;
+			data.PreviousSibling(instance) = child;
 		}
 	}
 }
@@ -289,8 +285,8 @@ TransformComponent::SetParents(uint32_t start, uint32_t end, const Util::Array<E
 void
 TransformComponent::SetParent(Game::Entity entity, Game::Entity parent)
 {
-	uint32_t instance = component.GetInstance(entity);
-	uint32_t parentInstance = component.GetInstance(parent);
+	uint32_t instance = data.GetInstance(entity);
+	uint32_t parentInstance = data.GetInstance(parent);
 	SetParent(instance, parentInstance);
 }
 
@@ -310,7 +306,7 @@ TransformComponent::SetParent(uint32_t instance, uint32_t parentInstance)
 uint32_t
 TransformComponent::GetParent(uint32_t instance)
 {
-	return component.Parent(instance);
+	return data.Parent(instance);
 }
 
 //------------------------------------------------------------------------------
@@ -319,7 +315,7 @@ TransformComponent::GetParent(uint32_t instance)
 Game::Entity
 TransformComponent::GetOwner(uint32_t instance)
 {
-	return component.GetOwner(instance);
+	return data.GetOwner(instance);
 }
 
 //------------------------------------------------------------------------------
@@ -328,7 +324,7 @@ TransformComponent::GetOwner(uint32_t instance)
 uint32_t
 TransformComponent::GetFirstChild(uint32_t instance)
 {
-	return component.FirstChild(instance);
+	return data.FirstChild(instance);
 }
 
 //------------------------------------------------------------------------------
@@ -337,7 +333,7 @@ TransformComponent::GetFirstChild(uint32_t instance)
 uint32_t
 TransformComponent::GetNextSibling(uint32_t instance)
 {
-	return component.NextSibling(instance);
+	return data.NextSibling(instance);
 }
 
 //------------------------------------------------------------------------------
@@ -346,7 +342,93 @@ TransformComponent::GetNextSibling(uint32_t instance)
 uint32_t
 TransformComponent::GetPreviousSibling(uint32_t instance)
 {
-	return component.PreviousSibling(instance);
+	return data.PreviousSibling(instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TransformComponent::OnDeactivate(uint32_t instance)
+{
+	// update sibling relationships
+	uint32_t previousSibling = data.PreviousSibling(instance);
+	uint32_t nextSibling = data.NextSibling(instance);
+	uint32_t child = data.FirstChild(instance);
+	uint32_t parentInstance = data.Parent(instance);
+
+	if(parentInstance != InvalidIndex && data.FirstChild(parentInstance) == instance)
+		data.FirstChild(parentInstance) = child;
+
+	if (previousSibling != InvalidIndex)
+	{
+		if (child != InvalidIndex)
+		{
+			data.PreviousSibling(child) = previousSibling;
+			data.NextSibling(previousSibling) = child;
+		}
+		else
+		{
+			data.NextSibling(previousSibling) = nextSibling;
+		}
+	}
+
+	// Each child needs to update their parent to this instance's parent
+	uint32_t lastChild = InvalidIndex;
+	while (child != InvalidIndex)
+	{
+		data.Parent(child) = parentInstance;
+		UpdateHierarchy(child);
+		lastChild = child;
+		child = data.NextSibling(child);
+	}
+
+	if (nextSibling != InvalidIndex)
+	{
+		if (lastChild != InvalidIndex)
+		{
+			data.NextSibling(lastChild) = nextSibling;
+			data.PreviousSibling(nextSibling) = lastChild;
+		}
+		else
+		{
+			data.PreviousSibling(nextSibling) = previousSibling;
+		}
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+	Update all instance relationships since the instance index has changed
+*/
+void
+TransformComponent::OnInstanceMoved(uint32_t instance, uint32_t oldIndex)
+{
+	uint32_t parent = data.Parent(instance);
+	uint32_t nextSibling = data.NextSibling(instance);
+	uint32_t previousSibling = data.PreviousSibling(instance);
+	uint32_t child = data.FirstChild(instance);
+	
+	if (parent != InvalidIndex && data.FirstChild(parent) == oldIndex)
+	{
+		data.FirstChild(parent) = instance;
+	}
+
+	if (nextSibling != InvalidIndex)
+	{
+		data.PreviousSibling(nextSibling) = instance;
+	}
+
+	if (previousSibling != InvalidIndex)
+	{
+		data.NextSibling(previousSibling) = instance;
+	}
+
+	while (child != InvalidIndex)
+	{
+		data.Parent(child) = instance;
+		child = data.NextSibling(child);
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -356,7 +438,7 @@ void
 TransformComponent::UpdateHierarchy(uint32_t instance)
 {
 	// TODO: There are more elegant ways for this.	
-	SetLocalTransform(instance, component.LocalTransform(instance));
+	SetLocalTransform(instance, data.LocalTransform(instance));
 }
 
 //------------------------------------------------------------------------------
@@ -366,8 +448,8 @@ void
 TransformComponent::Serialize(const Ptr<IO::BinaryWriter>& writer)
 {
 	// Only serialize the ones we want.
-	Game::Serialize(writer, component.data.GetArray<TransformComponentData::LOCALTRANSFORM>());
-	Game::Serialize(writer, component.data.GetArray<TransformComponentData::WORLDTRANSFORM>());
+	Game::Serialize(writer, data.data.GetArray<TransformComponentAllocator::LOCALTRANSFORM>());
+	Game::Serialize(writer, data.data.GetArray<TransformComponentAllocator::WORLDTRANSFORM>());
 }
 
 //------------------------------------------------------------------------------
@@ -377,8 +459,8 @@ void
 TransformComponent::Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances)
 {
 	// Only serialize the ones we want.
-	Game::Deserialize(reader, component.data.GetArray<TransformComponentData::LOCALTRANSFORM>(), offset, numInstances);
-	Game::Deserialize(reader, component.data.GetArray<TransformComponentData::WORLDTRANSFORM>(), offset, numInstances);
+	Game::Deserialize(reader, data.data.GetArray<TransformComponentAllocator::LOCALTRANSFORM>(), offset, numInstances);
+	Game::Deserialize(reader, data.data.GetArray<TransformComponentAllocator::WORLDTRANSFORM>(), offset, numInstances);
 }
 
 } // namespace Game

@@ -32,7 +32,7 @@ ComponentManager::~ComponentManager()
 /**
 */
 void
-ComponentManager::RegisterComponent(ComponentInterface* component)
+ComponentManager::RegisterComponent(ComponentInterface* component, const Util::StringAtom& name)
 {
 	// Check if each event is actually setup.
 	auto events = component->SubscribedEvents();
@@ -52,7 +52,11 @@ ComponentManager::RegisterComponent(ComponentInterface* component)
 	CHECKEVENT(OnLoad);
 	CHECKEVENT(OnSave);
 
+	component->componentName = name;
+
 	this->components.Append(component);
+	this->componentByFourcc.Add(component->GetRtti()->GetFourCC(), component);
+	this->componentByName.Add(name, component);
 }
 
 //------------------------------------------------------------------------------
@@ -61,6 +65,8 @@ ComponentManager::RegisterComponent(ComponentInterface* component)
 void
 ComponentManager::DeregisterAll()
 {
+	this->componentByFourcc.Clear();
+	this->componentByName.Clear();
 	this->components.Clear();
 }
 
@@ -101,13 +107,48 @@ ComponentManager::GetComponentAtIndex(IndexT index)
 ComponentInterface*
 ComponentManager::GetComponentByFourCC(const Util::FourCC & fourcc)
 {
-	SizeT size = this->components.Size();
-	for (SizeT i = 0; i < size; ++i)
+	IndexT idx = this->componentByFourcc.FindIndex(fourcc);
+	if (idx != InvalidIndex)
 	{
-		if (this->components[i]->GetRtti()->GetFourCC() == fourcc)
-			return this->components[i];
+		return this->componentByFourcc.ValueAtIndex(fourcc, idx);
 	}
 	return nullptr;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+ComponentInterface*
+ComponentManager::GetComponentByName(const Util::StringAtom & str)
+{
+	IndexT idx = this->componentByName.FindIndex(str);
+	if (idx != InvalidIndex)
+	{
+		return this->componentByName.ValueAtIndex(str, idx);
+	}
+	return nullptr;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ComponentManager::EnableComponent(const Util::FourCC & fourcc)
+{
+	auto component = GetComponentByFourCC(fourcc);
+	if (component != nullptr)
+		component->enabled = true;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ComponentManager::DisableComponent(const Util::FourCC & fourcc)
+{
+	auto component = GetComponentByFourCC(fourcc);
+	if (component != nullptr)
+		component->enabled = false;
 }
 
 //------------------------------------------------------------------------------
@@ -121,14 +162,15 @@ ComponentManager::OnBeginFrame()
 	SizeT size = this->components.Size();
 	for (SizeT i = 0; i < size; ++i)
 	{
-		if (this->components[i]->functions.Optimize != nullptr)
-			this->components[i]->functions.Optimize();
+		this->components[i]->Optimize();
 	}
 
+	ComponentInterface* component;
 	for (SizeT i = 0; i < size; ++i)
 	{
-		if (this->components[i]->functions.OnBeginFrame != nullptr)
-			this->components[i]->functions.OnBeginFrame();
+		component = this->components[i];
+		if (component->Enabled() == true && component->functions.OnBeginFrame != nullptr)
+			component->functions.OnBeginFrame();
 	}
 }
 
@@ -139,10 +181,12 @@ void
 ComponentManager::OnRender()
 {
 	SizeT length = this->components.Size();
+	ComponentInterface* component;
 	for (SizeT i = 0; i < length; ++i)
 	{
-		if (this->components[i]->functions.OnRender != nullptr)
-			this->components[i]->functions.OnRender();
+		component = this->components[i];
+		if (component->Enabled() && component->functions.OnRender != nullptr)
+			component->functions.OnRender();
 	}
 }
 
@@ -153,10 +197,12 @@ void
 ComponentManager::OnEndFrame()
 {
 	SizeT length = this->components.Size();
+	ComponentInterface* component;
 	for (SizeT i = 0; i < length; ++i)
 	{
-		if (this->components[i]->functions.OnEndFrame != nullptr)
-			this->components[i]->functions.OnEndFrame();
+		component = this->components[i];
+		if (component->Enabled() && component->functions.OnEndFrame != nullptr)
+			component->functions.OnEndFrame();
 	}
 }
 

@@ -8,6 +8,9 @@
 #include "pybind11/embed.h"
 #include "Python.h"
 #include "PyLogHook.h"
+#include "io/ioserver.h"
+#include "io/textreader.h"
+
 using namespace IO;
 
 namespace Scripting
@@ -100,6 +103,20 @@ PythonServer::Close()
     Py_Finalize();
 }
 
+
+//------------------------------------------------------------------------------
+/**
+    add module path
+*/
+void
+PythonServer::AddModulePath(const IO::URI & folder)
+{
+    n_assert(this->IsOpen());
+    Util::String exec;
+    exec.Format("sys.path.insert(0,\"%s\")\n", folder.LocalPath().AsCharPtr());
+    this->Eval(exec);
+}
+
 //------------------------------------------------------------------------------
 /**
     Evaluates a piece of Python code in a string.
@@ -111,6 +128,27 @@ PythonServer::Eval(const String& str)
     n_assert(str.IsValid());
 
     return 0 != PyRun_SimpleString(str.AsCharPtr());
+}
+
+
+//------------------------------------------------------------------------------
+/**
+    Evaluate script in file
+*/
+bool
+PythonServer::EvalFile(const IO::URI& file)
+{
+    n_assert(this->IsOpen());
+    auto stream = IO::IoServer::Instance()->CreateStream(file);
+    Ptr<TextReader> reader = IO::TextReader::Create();
+    reader->SetStream(stream);
+    if (reader->Open())
+    {
+        Util::String str = reader->ReadAll();
+        reader->Close();
+        return this->Eval(str);
+    }
+    return false;
 }
 
 

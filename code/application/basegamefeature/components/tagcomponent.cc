@@ -10,9 +10,9 @@
 namespace Game
 {
 
-static TagComponentData component;
+static TagComponentAllocator data;
 
-__ImplementComponent(TagComponent, component);
+__ImplementComponent(TagComponent, data);
 
 //------------------------------------------------------------------------------
 /**
@@ -20,11 +20,10 @@ __ImplementComponent(TagComponent, component);
 void
 TagComponent::Create()
 {
-	component = TagComponentData();
+	data = TagComponentAllocator();
 
-	__SetupDefaultComponentBundle(component);
-	component.functions.Optimize = Optimize;
-	__RegisterComponent(&component);
+	__SetupDefaultComponentBundle(data);
+	__RegisterComponent(&data, "TagComponent"_atm);
 }
 
 //------------------------------------------------------------------------------
@@ -34,15 +33,6 @@ void
 TagComponent::Discard()
 {
 	// Empty
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-SizeT
-TagComponent::Optimize()
-{
-	return component.Optimize();
 }
 
 } // namespace Game

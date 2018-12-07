@@ -14,6 +14,7 @@
 #include "messaging/messagecallbackhandler.h"
 #include "system/nebulasettings.h"
 #include "io/fswrapper.h"
+#include "basegamefeature/debug/gamepagehandler.h"
 
 namespace App
 {
@@ -74,6 +75,10 @@ GameApplication::Open()
 		{
 			root = System::NebulaSettings::ReadString("gscept", "ToolkitShared", "workdir");
 		}
+        if (System::NebulaSettings::Exists("gscept", "ToolkitShared", "path"))
+        {
+            this->coreServer->SetToolDirectory(System::NebulaSettings::ReadString("gscept", "ToolkitShared", "path"));
+        }
 #endif
 				
 		//n_assert2(System::NebulaSettings::ReadString("gscept", "ToolkitShared", "workdir"), "No working directory defined!");
@@ -118,6 +123,7 @@ GameApplication::Open()
 		this->httpServerProxy->AttachRequestHandler(Debug::MemoryPageHandler::Create());
 		this->httpServerProxy->AttachRequestHandler(Debug::ConsolePageHandler::Create());
 		this->httpServerProxy->AttachRequestHandler(Debug::IoPageHandler::Create());
+		this->httpServerProxy->AttachRequestHandler(Debug::GamePageHandler::Create());
 
 		// setup debug subsystem
 		this->debugInterface = DebugInterface::Create();

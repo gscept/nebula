@@ -38,6 +38,9 @@
 "components": {
     "TransformComponent": {
         "fourcc": "TFRM"
+		"events": [
+			"OnDeactivate"
+		]
         "attributes": [
             "Parent"
             "FirstChild"

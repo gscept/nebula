@@ -219,8 +219,14 @@ public:
     /// generic setter
     template<typename T> void Set(const T& t);
 
+	/// append character
+	void AppendChar(char val);
     /// append int value
     void AppendInt(int val);
+	/// append byte value
+	void AppendByte(byte val);
+	/// append unsigned byte value
+	void AppendUByte(ubyte val);
     /// append float value
     void AppendFloat(float val);
     /// append bool value
@@ -326,6 +332,10 @@ public:
 	static String FromBase64(const String&);
     /// convert from "anything"
     template<typename T> static String From(const T& t);
+
+	/// construct a hex string from an int
+	template<typename INTEGER>
+	static String Hex(INTEGER i);
 
     /// get filename extension without dot
     String GetFileExtension() const;
@@ -1348,7 +1358,37 @@ String::FromTransform44(const Math::transform44& t)
 	return str;
 }
 #endif
-    
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<typename INTEGER>
+inline String
+String::Hex(INTEGER i)
+{
+	constexpr SizeT hexLength = sizeof(INTEGER) << 1;
+	static Util::String digits = "0123456789ABCDEF";
+
+	String str("0x");
+	str.Reserve(hexLength + 2);
+
+	for (SizeT n = 0, j = (hexLength - 1) * 4; n < hexLength; ++n, j -= 4)
+	{
+		str.AppendChar(digits[(i >> j) & 0x0f]);
+	}
+
+	return str;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+String::AppendChar(char val)
+{
+	this->AppendRange(&val, 1);
+}
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -1356,6 +1396,24 @@ inline void
 String::AppendInt(int val)
 {
     this->Append(FromInt(val));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+String::AppendByte(byte val)
+{
+	this->Append(FromByte(val));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+String::AppendUByte(ubyte val)
+{
+	this->Append(FromUByte(val));
 }
 
 //------------------------------------------------------------------------------

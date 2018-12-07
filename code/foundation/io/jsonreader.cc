@@ -402,6 +402,18 @@ JsonReader::GetAttrs() const
     return res;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+Util::String
+JsonReader::GetCurrentNodeName() const
+{
+	//  get_key_name_at_index(this->childIdx)
+	auto parent = this->parents.Peek();
+	// auto parentIdx = this->parentIdx.Peek();
+	return parent->get_key_name_at_index(this->childIdx);
+}
+
 
 //------------------------------------------------------------------------------
 /**
@@ -480,7 +492,8 @@ JsonReader::GetFloat(const char* name) const
     const value_variant * node = this->GetChild(name);
 
     n_assert(node);
-    n_assert(node->is_double());
+	// Floats can be either double or integer if it has no fraction
+    n_assert(node->is_double() || node->is_int());
     return node->as_float();
 }
 

@@ -21,7 +21,8 @@ __ImplementClass(Graphics::View, 'VIEW', Core::RefCounted);
 View::View() :
 	script(nullptr),
 	camera(GraphicsEntityId::Invalid()),
-	stage(nullptr)
+	stage(nullptr),
+	enabled(true)
 {
 	// empty
 }

@@ -7,8 +7,8 @@
 #include "userprofile.h"
 #include "loaderserver.h"
 #include "io/ioserver.h"
-#include "io/xmlreader.h"
-#include "io/xmlwriter.h"
+#include "io/jsonreader.h"
+#include "io/jsonwriter.h"
 #include "app/application.h"
 
 using namespace Util;
@@ -60,18 +60,6 @@ UserProfile::GetProfileDirectory() const
 {
     Util::String path;
     path.Format("%s/profiles", GetProfileRootDirectory().AsCharPtr());
-    return path;
-}
-
-//------------------------------------------------------------------------------
-/**
-    Returns the path to the current world database.
-*/
-Util::String
-UserProfile::GetDatabasePath() const
-{
-    Util::String path = this->GetProfileDirectory();
-    path.Append("/world.db4");
     return path;
 }
 
@@ -145,7 +133,7 @@ UserProfile::Load(const Util::String& path)
     Util::String filename;
     if (path.IsEmpty())
     {
-        filename.Format("%s/%s.xml", this->GetProfileDirectory().AsCharPtr(), this->GetName().AsCharPtr());
+        filename.Format("%s/%s.json", this->GetProfileDirectory().AsCharPtr(), this->GetName().AsCharPtr());
     }
     else
     {
@@ -154,39 +142,39 @@ UserProfile::Load(const Util::String& path)
 
     if (IO::IoServer::Instance()->FileExists(filename))
     {
-        Ptr<IO::XmlReader> xmlReader = IO::XmlReader::Create();
-        xmlReader->SetStream(IO::IoServer::Instance()->CreateStream(filename));
-        if (xmlReader->Open())
+        Ptr<IO::JsonReader> reader = IO::JsonReader::Create();
+		reader->SetStream(IO::IoServer::Instance()->CreateStream(filename));
+        if (reader->Open())
 		{            
-			xmlReader->SetToNode("/Profile");
+			reader->SetToNode("/Profile");
 
-			if(xmlReader->SetToFirstChild())
+			if(reader->SetToFirstChild())
 			{
 				do
 				{
-					Util::String name = xmlReader->GetCurrentNodeName();
+					Util::String name = reader->GetCurrentNodeName();
 					Util::Variant variant;
-					Util::String type = xmlReader->GetString("type");
+					Util::String type = reader->GetString("type");
 
 					switch (variant.StringToType(type))
 					{
 					case Util::Variant::Bool:
-						variant = xmlReader->GetBool("value");
+						variant = reader->GetBool("value");
 						break;
 					case Util::Variant::Int:
-						variant = xmlReader->GetInt("value");
+						variant = reader->GetInt("value");
 						break;
 					case Util::Variant::Float:
-						variant = xmlReader->GetFloat("value");
+						variant = reader->GetFloat("value");
 						break;
 					case Util::Variant::Float4:
-						variant = xmlReader->GetFloat4("value");
+						variant = reader->GetFloat4("value");
 						break;
 					case Util::Variant::String:
-						variant = xmlReader->GetString("value");
+						variant = reader->GetString("value");
 						break;
 					case Util::Variant::Matrix44:
-						variant = xmlReader->GetMatrix44("value");
+						variant = reader->GetMatrix44("value");
 						break;
 					case Util::Variant::Blob:
 					case Util::Variant::Guid:
@@ -213,7 +201,7 @@ UserProfile::Load(const Util::String& path)
 					{
 						this->profileData.Add(name, variant);
 					}					
-				}while (xmlReader->SetToNextChild());
+				}while (reader->SetToNextChild());
 			};
 
 			this->isLoaded = true;
@@ -236,47 +224,47 @@ bool
 UserProfile::Save()
 {
     Util::String filename;
-    filename.Format("%s/%s.xml", this->GetProfileDirectory().AsCharPtr(), this->GetName().AsCharPtr());
+    filename.Format("%s/%s.json", this->GetProfileDirectory().AsCharPtr(), this->GetName().AsCharPtr());
 
 	if(!IO::IoServer::Instance()->DirectoryExists(this->GetProfileDirectory()))
 	{
 		IO::IoServer::Instance()->CreateDirectory(this->GetProfileDirectory());
 	}
-    Ptr<IO::XmlWriter> xmlWriter = IO::XmlWriter::Create();
-    xmlWriter->SetStream(IO::IoServer::Instance()->CreateStream(filename));
+    Ptr<IO::JsonWriter> writer = IO::JsonWriter::Create();
+	writer->SetStream(IO::IoServer::Instance()->CreateStream(filename));
 
-    if (xmlWriter->Open())
+    if (writer->Open())
     {
-        xmlWriter->BeginNode("Profile");
+		writer->BeginObject("Profile");
         IndexT i;
         for (i = 0; i < this->profileData.Size(); i++)
         {
             String attrName = this->profileData.KeyAtIndex(i);
-            xmlWriter->BeginNode(attrName);                     
+			writer->BeginObject(attrName.AsCharPtr());
             
             Variant& variant = this->profileData.ValueAtIndex(i);
             String type = Variant::TypeToString(variant.GetType());
-            xmlWriter->SetString("type", type);
+			writer->Add(type, "type");
 
             switch (variant.GetType())
             {
             case Util::Variant::Bool:
-                xmlWriter->SetBool("value", variant.GetBool());
+				writer->Add(variant.GetBool(), "value");
                 break;
             case Util::Variant::Int:
-                xmlWriter->SetInt("value", variant.GetInt());
+				writer->Add(variant.GetInt(), "value");
                 break;
             case Util::Variant::Float:
-                xmlWriter->SetFloat("value", variant.GetFloat());
+				writer->Add(variant.GetFloat(), "value");
                 break;
             case Util::Variant::Float4:
-                xmlWriter->SetFloat4("value", variant.GetFloat4());
+				writer->Add(variant.GetFloat4(), "value");
                 break;
             case Util::Variant::String:
-                xmlWriter->SetString("value", variant.GetString());
+				writer->Add(variant.GetString(), "value");
                 break;
             case Util::Variant::Matrix44:
-                xmlWriter->SetMatrix44("value", variant.GetMatrix44());
+				writer->Add(variant.GetMatrix44(), "value");
                 break;
             case Util::Variant::Blob:
             case Util::Variant::Guid:
@@ -295,9 +283,11 @@ UserProfile::Save()
                 n_error("Variant Type Void!");
                 break;
             }
-            xmlWriter->EndNode();
+			writer->End();
         };
-        xmlWriter->EndNode();
+		writer->End();
+
+		writer->Close();
 
         return true;
     }    

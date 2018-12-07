@@ -2,6 +2,7 @@ fips_ide_group(nebula)
 SET(NROOT ${CMAKE_CURRENT_LIST_DIR})
 SET(CODE_ROOT ${CMAKE_CURRENT_LIST_DIR}/code)
 
+
 option(N_USE_PRECOMPILED_HEADERS "Use precompiled headers" OFF)
 
 if(FIPS_WINDOWS)
@@ -168,6 +169,7 @@ macro(nebula_add_nidl)
             PRE_BUILD COMMAND ${PYTHON} ${NROOT}/fips-files/generators/NIDL.py "${f_abs}" "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_header}" 
             WORKING_DIRECTORY "${NROOT}" 
             MAIN_DEPENDENCY "${f_abs}"
+            DEPENDS ${NROOT}/fips-files/generators/NIDL.py
             VERBATIM PRE_BUILD)
         SOURCE_GROUP("${CurGroup}\\Generated" FILES "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_header}" )
         source_group("${CurGroup}" FILES ${f_abs})        

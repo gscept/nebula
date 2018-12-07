@@ -268,6 +268,10 @@ GraphicsServer::BeforeViews()
 	for (i = 0; i < this->views.Size(); i++)
 	{
 		const Ptr<View>& view = this->views[i];
+		
+		if (!view->enabled)
+			continue;
+
 		this->currentView = view;
 
 		// begin updating visibility
@@ -294,6 +298,10 @@ GraphicsServer::RenderViews()
 	for (i = 0; i < this->views.Size(); i++)
 	{
 		const Ptr<View>& view = this->views[i];
+
+		if (!view->enabled)
+			continue;
+
 		this->currentView = view;
 		view->Render(this->frameIndex, this->frameTime);
 	}
@@ -310,6 +318,10 @@ GraphicsServer::EndViews()
 	for (i = 0; i < this->views.Size(); i++)
 	{
 		const Ptr<View>& view = this->views[i];
+
+		if (!view->enabled)
+			continue;
+
 		this->currentView = view;
 
 		// begin updating visibility

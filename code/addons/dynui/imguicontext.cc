@@ -27,8 +27,9 @@ ImguiContext::ImguiState ImguiContext::state;
 	Imgui rendering function
 */
 void
-ImguiContext::ImguiDrawFunction(ImDrawData* data)
+ImguiContext::ImguiDrawFunction()
 {
+    ImDrawData* data = ImGui::GetDrawData();
 	// get Imgui context
 	ImGuiIO& io = ImGui::GetIO();
 	int fb_width = (int)(io.DisplaySize.x * io.DisplayFramebufferScale.x);
@@ -102,7 +103,22 @@ ImguiContext::ImguiDrawFunction(ImDrawData* data)
 				CoreGraphics::SetScissorRect(scissorRect, 0);
 
 				// set texture in shader, we shouldn't have to put it into ImGui
-				uint64 imageHandle = CoreGraphics::TextureGetBindlessHandle(*((CoreGraphics::TextureId*)command->TextureId));
+				Resources::ResourceId resourceId = *(Resources::ResourceId*)command->TextureId;
+				uint64 imageHandle;
+
+				if (resourceId.allocType == RenderTextureIdType)
+				{
+					imageHandle = CoreGraphics::RenderTextureGetBindlessHandle(*((CoreGraphics::RenderTextureId*)command->TextureId));
+				}
+				else if (resourceId.allocType == TextureIdType)
+				{
+					imageHandle = CoreGraphics::TextureGetBindlessHandle(*((CoreGraphics::TextureId*)command->TextureId));
+				}
+				else
+				{
+					n_error("ResourceId alloc type unknown or not implemented!\n");
+				}
+				
 				CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, state.textureConstant.offset, sizeof(uint64), (byte*)&imageHandle);
 
 				// setup primitive
@@ -218,12 +234,13 @@ ImguiContext::Create()
 	DisplayMode mode = CoreGraphics::WindowGetDisplayMode(display->GetCurrentWindow());
 
 	// setup Imgui
+    ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO();
 	io.DisplaySize = ImVec2((float)mode.GetWidth(), (float)mode.GetHeight());
 	io.DeltaTime = 1 / 60.0f;
 	//io.PixelCenterOffset = 0.0f;
 	//io.FontTexUvForWhite = ImVec2(1, 1);
-	io.RenderDrawListsFn = ImguiDrawFunction;
+	//io.RenderDrawListsFn = ImguiDrawFunction;
 
 	ImGuiStyle& style = ImGui::GetStyle();
 	style.FrameRounding = 2.5f;
@@ -290,6 +307,7 @@ ImguiContext::Create()
 	io.KeyMap[ImGuiKey_Backspace] = Key::Back;
 	io.KeyMap[ImGuiKey_Enter] = Key::Return;
 	io.KeyMap[ImGuiKey_Escape] = Key::Escape;
+	io.KeyMap[ImGuiKey_Space] = Key::Space;
 	io.KeyMap[ImGuiKey_A] = Key::A;
 	io.KeyMap[ImGuiKey_C] = Key::C;
 	io.KeyMap[ImGuiKey_V] = Key::V;
@@ -297,8 +315,8 @@ ImguiContext::Create()
 	io.KeyMap[ImGuiKey_Y] = Key::Y;
 	io.KeyMap[ImGuiKey_Z] = Key::Z;
 
-	// start a new frame
-	//ImGui::NewFrame();
+	// enable keyboard navigation
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
 	// load default font
 	ImFontConfig config;
@@ -327,6 +345,10 @@ ImguiContext::Create()
 	};
     state.fontTexture = CoreGraphics::CreateTexture(texInfo);
 	io.Fonts->TexID = &state.fontTexture;
+
+	// load settings from disk. If we don't do this here we	need to
+	// run an entire frame before being able to create or load settings
+	ImGui::LoadIniSettingsFromDisk("imgui.ini");
 }
 
 //------------------------------------------------------------------------------
@@ -347,7 +369,7 @@ ImguiContext::Discard()
 	state.inputHandler = nullptr;
 
 	CoreGraphics::DestroyTexture(state.fontTexture);
-	ImGui::Shutdown();
+	ImGui::DestroyContext();
 }
 
 //------------------------------------------------------------------------------
@@ -408,8 +430,11 @@ void
 ImguiContext::OnRenderAsPlugin(const IndexT frameIndex, const Timing::Time frameTime, const Util::StringAtom& filter)
 {
     //FIME filter
-	if (filter == "IMGUI"_atm)
-		ImGui::Render();
+    if (filter == "IMGUI"_atm)
+    {
+        ImGui::Render();
+        ImguiContext::ImguiDrawFunction();
+    }
 }
 
 //------------------------------------------------------------------------------

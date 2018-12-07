@@ -13,6 +13,7 @@
 #include "util/delegate.h"
 #include "util/bitfield.h"
 #include "util/dictionary.h"
+#include "util/stringatom.h"
 #include "ids/id.h"
 #include "util/fourcc.h"
 
@@ -29,7 +30,7 @@ public:
 	~ComponentManager();
 
 	/// Register a component and setup all event delegates for it.
-	void RegisterComponent(ComponentInterface* component);
+	void RegisterComponent(ComponentInterface* component, const Util::StringAtom& name);
 
 	/// Deregister all components. Removes all event delegates too.
 	void DeregisterAll();
@@ -40,9 +41,20 @@ public:
 	/// Returns the number of components registered.
 	SizeT GetNumComponents() const;
 
+	/// Linear access to components
 	ComponentInterface* GetComponentAtIndex(IndexT index);
 
+	/// Retrieve a component by fourcc
 	ComponentInterface* GetComponentByFourCC(const Util::FourCC& fourcc);
+	
+	/// Retrieve a component by name
+	ComponentInterface* GetComponentByName(const Util::StringAtom& str);
+
+	/// Enable a component with the given fourcc
+	void EnableComponent(const Util::FourCC& fourcc);
+
+	/// Disable a component with the given fourcc
+	void DisableComponent(const Util::FourCC& fourcc);
 
 	/// Execute all OnBeginFrame events
 	void OnBeginFrame();
@@ -57,6 +69,9 @@ public:
 	void OnRenderDebug();
 
 private:
+	// We can afford double hashtables here because there'll never be THAT many components.
+	Util::HashTable<Util::StringAtom, ComponentInterface*, 64> componentByName;
+	Util::HashTable<Util::FourCC, ComponentInterface*, 64> componentByFourcc;
 	Util::Array<ComponentInterface*> components;
 };
 

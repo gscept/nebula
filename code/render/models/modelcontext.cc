@@ -61,23 +61,24 @@ ModelContext::Create()
 /**
 */
 void
-ModelContext::Setup(const Graphics::GraphicsEntityId id, const Resources::ResourceName& name, const Util::StringAtom& tag)
+ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::ResourceName& name, const Util::StringAtom& tag)
 {
-	const ContextEntityId cid = GetContextId(id);
+	const ContextEntityId cid = GetContextId(gfxId);
 	ModelId& rid = modelContextAllocator.Get<0>(cid.id);
 	modelContextAllocator.Get<1>(cid.id) = ModelInstanceId::Invalid();
-
+	
 	ModelCreateInfo info;
 	info.resource = name;
 	info.tag = tag;
 	info.async = false;
 	info.failCallback = nullptr;
-	info.successCallback = [cid](Resources::ResourceId id)
+	info.successCallback = [cid, gfxId](Resources::ResourceId id)
 	{
 		ModelInstanceId& mdl = modelContextAllocator.Get<1>(cid.id);
 		mdl = Models::CreateModelInstance(id);
 		const Math::matrix44& pending = modelContextAllocator.Get<2>(cid.id);
 		Models::modelPool->modelInstanceAllocator.Get<StreamModelPool::InstanceTransform>(mdl.instance) = pending;
+		Models::modelPool->modelInstanceAllocator.Get<StreamModelPool::ObjectId>(mdl.instance) = gfxId.id;
 	};
 
 	rid = Models::CreateModel(info);
@@ -87,9 +88,9 @@ ModelContext::Setup(const Graphics::GraphicsEntityId id, const Resources::Resour
 /**
 */
 void
-ModelContext::ChangeModel(const Graphics::GraphicsEntityId id, const Resources::ResourceName& name, const Util::StringAtom& tag)
+ModelContext::ChangeModel(const Graphics::GraphicsEntityId gfxId, const Resources::ResourceName& name, const Util::StringAtom& tag)
 {
-	const ContextEntityId cid = GetContextId(id);
+	const ContextEntityId cid = GetContextId(gfxId);
 
 	// clean up old stuff, but don't deallocate entity
 	ModelId& rid = modelContextAllocator.Get<0>(cid.id);
@@ -106,11 +107,12 @@ ModelContext::ChangeModel(const Graphics::GraphicsEntityId id, const Resources::
 	info.tag = tag;
 	info.async = false;
 	info.failCallback = nullptr;
-	info.successCallback = [&mdl, rid, cid](Resources::ResourceId id)
+	info.successCallback = [&mdl, rid, cid, gfxId](Resources::ResourceId id)
 	{
 		mdl = Models::CreateModelInstance(id);
 		const Math::matrix44& pending = modelContextAllocator.Get<2>(cid.id);
 		Models::modelPool->modelInstanceAllocator.Get<StreamModelPool::InstanceTransform>(mdl.instance) = pending;
+		Models::modelPool->modelInstanceAllocator.Get<StreamModelPool::ObjectId>(mdl.instance) = gfxId.id;
 	};
 
 	rid = Models::CreateModel(info);
@@ -243,6 +245,8 @@ ModelContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTim
 
 		// get reference so we can include it in the pending
 		Math::matrix44 transform = transforms[instance.instance];
+		
+		uint objectId = Models::modelPool->modelInstanceAllocator.Get<StreamModelPool::ObjectId>(instance.instance);
 
 		// if we have a pending transform, apply it and transform bounding box
 		if (hasPending[i])
@@ -273,6 +277,7 @@ ModelContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTim
 					TransformNode::Instance* tnode = static_cast<TransformNode::Instance*>(node);
 					tnode->modelTransform = Math::matrix44::multiply(tnode->transform.getmatrix(), parentTransform);
 					parentTransform = tnode->modelTransform;
+					tnode->objectId = objectId;
 				}
 			}
 		}
