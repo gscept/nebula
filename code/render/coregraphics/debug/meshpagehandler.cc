@@ -169,7 +169,7 @@ MeshPageHandler::HandleMeshInfoRequest(const Util::String& resId, const Ptr<Stre
 
 		// write vertex buffer info
 		htmlWriter->Element(HtmlElement::Heading3, "Vertices");
-		VertexBufferId vbo = MeshGetVertexBuffer(id);
+		VertexBufferId vbo = MeshGetVertexBuffer(id, 0);
 		if (vbo != VertexBufferId::Invalid())
 		{
 			VertexLayoutId vlo = MeshGetVertexLayout(id);
@@ -295,7 +295,7 @@ MeshPageHandler::HandleVertexDumpRequest(const Util::String& resId, IndexT minVe
 		return HttpStatus::NotFound;
 	}
 	
-	const VertexBufferId vb = MeshGetVertexBuffer(id);
+	const VertexBufferId vb = MeshGetVertexBuffer(id, 0);
 	const VertexLayoutId vl = MeshGetVertexLayout(id);
 
 	// clip to valid range

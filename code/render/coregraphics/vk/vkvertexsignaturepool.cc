@@ -68,18 +68,10 @@ VkVertexSignaturePool::LoadFromMemory(const Resources::ResourceId id, const void
 	SizeT strides[CoreGraphics::MaxNumVertexStreams] = { 0 };
 
 	uint32_t numUsedStreams = 0;
-	IndexT streamIndex;
-	for (streamIndex = 0; streamIndex < CoreGraphics::MaxNumVertexStreams; streamIndex++)
-	{
-		if (vertexLayoutInfo->usedStreams[streamIndex])
-		{
-			bindInfo.binds[numUsedStreams].binding = numUsedStreams;
-			bindInfo.binds[numUsedStreams].inputRate = numUsedStreams > 0 ? VK_VERTEX_INPUT_RATE_INSTANCE : VK_VERTEX_INPUT_RATE_VERTEX;
-			bindInfo.binds[numUsedStreams].stride = 0;
-			numUsedStreams++;
-		}
-	}
-	IndexT curOffset[CoreGraphics::MaxNumVertexStreams] = { 0 };
+	IndexT curOffset[CoreGraphics::MaxNumVertexStreams];
+	bool usedStreams[CoreGraphics::MaxNumVertexStreams];
+	Memory::Fill(curOffset, CoreGraphics::MaxNumVertexStreams * sizeof(IndexT), 0);
+	Memory::Fill(usedStreams, CoreGraphics::MaxNumVertexStreams * sizeof(bool), 0);
 
 	IndexT compIndex;
 	for (compIndex = 0; compIndex < vertexLayoutInfo->comps.Size(); compIndex++)
@@ -91,8 +83,19 @@ VkVertexSignaturePool::LoadFromMemory(const Resources::ResourceId id, const void
 		attr->binding = component.GetStreamIndex();
 		attr->format = VkTypes::AsVkVertexType(component.GetFormat());
 		attr->offset = curOffset[component.GetStreamIndex()];
+
+		if (usedStreams[attr->binding])
+			bindInfo.binds[attr->binding].stride += component.GetByteSize();
+		else
+		{
+			bindInfo.binds[attr->binding].stride = component.GetByteSize();
+			usedStreams[attr->binding] = true;
+			numUsedStreams++;
+		}
+
+		bindInfo.binds[attr->binding].binding = component.GetStreamIndex();
+		bindInfo.binds[attr->binding].inputRate = component.GetStrideType() == CoreGraphics::VertexComponent::PerVertex ? VK_VERTEX_INPUT_RATE_VERTEX : VK_VERTEX_INPUT_RATE_INSTANCE;
 		curOffset[component.GetStreamIndex()] += component.GetByteSize();
-		bindInfo.binds[attr->binding].stride += component.GetByteSize();
 	}
 
 	vertexInfo =

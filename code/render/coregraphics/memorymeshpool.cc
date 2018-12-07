@@ -72,7 +72,12 @@ MemoryMeshPool::BindMesh(const MeshId id, const IndexT prim)
 
 	// set input
 	CoreGraphics::SetPrimitiveGroup(inf.primitiveGroups[prim]);
-	CoreGraphics::SetStreamVertexBuffer(0, inf.vertexBuffer, inf.primitiveGroups[prim].GetBaseVertex());
+
+	// bind vertex buffers
+	IndexT i;
+	for (i = 0; i < inf.streams.Size(); i++)
+		CoreGraphics::SetStreamVertexBuffer(inf.streams[i].index, inf.streams[i].vertexBuffer, inf.primitiveGroups[prim].GetBaseVertex());
+
 	if (inf.indexBuffer != CoreGraphics::IndexBufferId::Invalid())
 		CoreGraphics::SetIndexBuffer(inf.indexBuffer, inf.primitiveGroups[prim].GetBaseIndex());
 	this->allocator.LeaveGet();
@@ -92,10 +97,10 @@ MemoryMeshPool::GetPrimitiveGroups(const MeshId id) const
 /**
 */
 const VertexBufferId
-MemoryMeshPool::GetVertexBuffer(const MeshId id) const
+MemoryMeshPool::GetVertexBuffer(const MeshId id, const IndexT stream) const
 {
 	const MeshCreateInfo& inf = this->allocator.Get<0>(id.allocId);
-	return inf.vertexBuffer;
+	return inf.streams[stream].vertexBuffer;
 }
 
 //------------------------------------------------------------------------------

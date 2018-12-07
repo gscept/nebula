@@ -59,7 +59,7 @@ FramePass::CompiledImpl::Run(const IndexT frameIndex)
 {
 
 #if NEBULA_GRAPHICS_DEBUG
-	CoreGraphics::CmdBufBeginMarker(GraphicsQueueType, Math::float4(0.6f, 0.8f, 0.6f, 1), this->name.Value());
+	CoreGraphics::CmdBufBeginMarker(GraphicsQueueType, Math::float4(0.6f, 1.0f, 0.6f, 1), this->name.Value());
 #endif
 
 	// begin pass

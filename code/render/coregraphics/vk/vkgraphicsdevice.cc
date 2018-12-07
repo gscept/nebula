@@ -2370,7 +2370,7 @@ EndFrame(IndexT frameIndex)
 	CmdBufferEndRecord(state.mainCmdSparseBuffer);
 
 #if NEBULA_GRAPHICS_DEBUG
-	CoreGraphics::QueueBeginMarker(TransferQueueType, Math::float4(0.6f, 0.6f, 0.8f, 1.0f), "End of frame transfer queue submission");
+	CoreGraphics::QueueBeginMarker(TransferQueueType, Math::float4(0.6f, 0.6f, 1.0f, 1.0f), "End of frame transfer queue submission");
 #endif
 
 	// kick transfer commands
@@ -2384,7 +2384,7 @@ EndFrame(IndexT frameIndex)
 
 #if NEBULA_GRAPHICS_DEBUG
 	CoreGraphics::QueueEndMarker(TransferQueueType);
-	CoreGraphics::QueueBeginMarker(ComputeQueueType, Math::float4(0.6f, 0.6f, 0.8f, 1.0f), "End of frame compute queue submission");
+	CoreGraphics::QueueBeginMarker(ComputeQueueType, Math::float4(0.6f, 0.6f, 1.0f, 1.0f), "End of frame compute queue submission");
 #endif
 
 	// submit compute stuff
@@ -2396,7 +2396,7 @@ EndFrame(IndexT frameIndex)
 
 #if NEBULA_GRAPHICS_DEBUG
 	CoreGraphics::QueueEndMarker(ComputeQueueType);
-	CoreGraphics::QueueBeginMarker(GraphicsQueueType, Math::float4(0.6f, 0.6f, 0.8f, 1.0f), "End of frame graphics queue submission");
+	CoreGraphics::QueueBeginMarker(GraphicsQueueType, Math::float4(0.6f, 0.6f, 1.0f, 1.0f), "End of frame graphics queue submission");
 #endif
 
 	// submit draw stuff

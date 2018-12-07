@@ -22,9 +22,15 @@ RESOURCE_ID_TYPE(MeshId);
 
 struct MeshCreateInfo
 {
+	struct Stream
+	{
+		VertexBufferId vertexBuffer;
+		IndexT index;
+	};
+
 	Resources::ResourceName name;
 	Util::StringAtom tag;
-	VertexBufferId vertexBuffer;
+	Util::Array<Stream> streams;
 	IndexBufferId indexBuffer;
 	VertexLayoutId vertexLayout;
 	CoreGraphics::PrimitiveTopology::Code topology;
@@ -41,7 +47,7 @@ void MeshBind(const MeshId id, const IndexT prim);
 /// get number of primitive groups
 const Util::Array<CoreGraphics::PrimitiveGroup>& MeshGetPrimitiveGroups(const MeshId id);
 /// get vertex buffer
-const VertexBufferId MeshGetVertexBuffer(const MeshId id);
+const VertexBufferId MeshGetVertexBuffer(const MeshId id, const IndexT stream);
 /// get vertex layout
 const VertexLayoutId MeshGetVertexLayout(const MeshId id);
 /// get index buffer
