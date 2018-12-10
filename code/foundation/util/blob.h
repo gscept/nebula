@@ -423,7 +423,7 @@ Blob::Reserve(SizeT s)
     }
     else
     {
-        this->Delete();
+        this->Allocate(s);
     }
     this->size = s;
 }
