@@ -121,11 +121,16 @@ StreamMeshPool::SetupMeshFromNvx2(const Ptr<Stream>& stream, const Resources::Re
 		meshPool->EnterGet();
 		MeshCreateInfo& msh = meshPool->Get<0>(res);
 		n_assert(this->GetState(res) == Resources::Resource::Pending);
-		msh.vertexLayout = CreateVertexLayout({ nvx2Reader->GetVertexComponents() });
+		auto vertexLayout = CreateVertexLayout({ nvx2Reader->GetVertexComponents() });
 		msh.streams.Append({ nvx2Reader->GetVertexBuffer(), 0 });
 		msh.indexBuffer = nvx2Reader->GetIndexBuffer();
 		msh.topology = PrimitiveTopology::TriangleList;
 		msh.primitiveGroups = nvx2Reader->GetPrimitiveGroups();
+        // nvx2 does not have per primitive layouts, we apply them to all
+        for (auto & i : msh.primitiveGroups)
+        {
+            i.SetVertexLayout(vertexLayout);
+        }
 		meshPool->LeaveGet();
 
 		nvx2Reader->Close();
@@ -171,8 +176,7 @@ StreamMeshPool::MeshBind(const Resources::ResourceId id)
 	const MeshCreateInfo& msh = meshPool->Get<0>(id);
 
 	// bind vbo, and optional ibo
-	CoreGraphics::SetPrimitiveTopology(msh.topology);
-	CoreGraphics::SetVertexLayout(msh.vertexLayout);
+	CoreGraphics::SetPrimitiveTopology(msh.topology);	
 
 	IndexT i;
 	for (i = 0; i < msh.streams.Size(); i++)
@@ -195,6 +199,7 @@ StreamMeshPool::BindPrimitiveGroup(const IndexT primgroup)
 	meshPool->EnterGet();
 	const MeshCreateInfo& msh = meshPool->Get<0>(this->activeMesh);
 	CoreGraphics::SetPrimitiveGroup(msh.primitiveGroups[primgroup]);
+    CoreGraphics::SetVertexLayout(msh.primitiveGroups[primgroup].GetVertexLayout());
 	meshPool->LeaveGet();
 }
 

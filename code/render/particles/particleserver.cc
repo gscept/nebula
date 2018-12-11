@@ -111,16 +111,15 @@ ParticleServer::Open()
 	group.SetBaseVertex(0);
 	group.SetNumIndices(1);
 	group.SetNumVertices(1);
+    group.SetVertexLayout(VertexBufferGetLayout(vbo));
 	Util::Array<PrimitiveGroup> groups;
 	groups.Append(group);
-
-	VertexLayoutId vlo = VertexBufferGetLayout(vbo);
-
+	
 	MeshCreateInfo info =
 	{
 		"Default_Emitter_Mesh",
 		"rendersystem",
-		{ { vbo, 0 } }, ibo, vlo, CoreGraphics::PrimitiveTopology::PointList, groups
+		{ { vbo, 0 } }, ibo, CoreGraphics::PrimitiveTopology::PointList, groups
 	};
 	this->defaultEmitterMesh = CreateMesh(info);
 }

@@ -172,7 +172,7 @@ MeshPageHandler::HandleMeshInfoRequest(const Util::String& resId, const Ptr<Stre
 		VertexBufferId vbo = MeshGetVertexBuffer(id, 0);
 		if (vbo != VertexBufferId::Invalid())
 		{
-			VertexLayoutId vlo = MeshGetVertexLayout(id);
+            VertexLayoutId vlo = MeshGetPrimitiveGroups(id)[0].GetVertexLayout();
 			htmlWriter->Begin(HtmlElement::Table);
 				htmlWriter->Begin(HtmlElement::TableRow);
 					htmlWriter->Element(HtmlElement::TableData, "Num Vertices: ");
@@ -296,7 +296,8 @@ MeshPageHandler::HandleVertexDumpRequest(const Util::String& resId, IndexT minVe
 	}
 	
 	const VertexBufferId vb = MeshGetVertexBuffer(id, 0);
-	const VertexLayoutId vl = MeshGetVertexLayout(id);
+    //FIXME does not deal with different primitivegroup vertex layouts
+	const VertexLayoutId vl = MeshGetPrimitiveGroups(id)[0].GetVertexLayout();
 
 	// clip to valid range
 	SizeT numverts = VertexBufferGetNumVertices(vb);
