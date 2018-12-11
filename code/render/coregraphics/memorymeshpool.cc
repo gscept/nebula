@@ -67,7 +67,7 @@ MemoryMeshPool::BindMesh(const MeshId id, const IndexT prim)
 	MeshCreateInfo& inf = this->allocator.Get<0>(id.allocId);
 
 	// setup pipeline (a bit ugly)
-	CoreGraphics::SetVertexLayout(inf.vertexLayout);
+	CoreGraphics::SetVertexLayout(inf.primitiveGroups[prim].GetVertexLayout());
 	CoreGraphics::SetPrimitiveTopology(inf.topology);
 
 	// set input
@@ -101,16 +101,6 @@ MemoryMeshPool::GetVertexBuffer(const MeshId id, const IndexT stream) const
 {
 	const MeshCreateInfo& inf = this->allocator.Get<0>(id.allocId);
 	return inf.streams[stream].vertexBuffer;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const VertexLayoutId
-MemoryMeshPool::GetVertexLayout(const MeshId id) const
-{
-	const MeshCreateInfo& inf = this->allocator.Get<0>(id.allocId);
-	return inf.vertexLayout;
 }
 
 //------------------------------------------------------------------------------

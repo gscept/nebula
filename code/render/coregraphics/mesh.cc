@@ -63,15 +63,6 @@ MeshGetVertexBuffer(const MeshId id, const IndexT stream)
 //------------------------------------------------------------------------------
 /**
 */
-const VertexLayoutId
-MeshGetVertexLayout(const MeshId id)
-{
-	return meshPool->GetVertexLayout(id);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 const IndexBufferId
 MeshGetIndexBuffer(const MeshId id)
 {

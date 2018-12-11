@@ -88,7 +88,7 @@ EmitterMesh::Setup(const CoreGraphics::MeshId mesh, IndexT primGroupIndex)
     this->points = n_new_array(EmitterPoint, this->numPoints);
 
     // make sure the emitter mesh actually has the components we need
-	const VertexLayoutId& vertexLayout = MeshGetVertexLayout(mesh);
+	const VertexLayoutId& vertexLayout = MeshGetPrimitiveGroups(mesh)[primGroupIndex].GetVertexLayout();
 
 	const Util::Array<VertexComponent>& comps = VertexLayoutGetComponents(vertexLayout);
 	bool posValid = false, normValid = false, tanValid = false;
