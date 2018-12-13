@@ -286,7 +286,12 @@ void
 TransformComponent::SetParent(Game::Entity entity, Game::Entity parent)
 {
 	uint32_t instance = data.GetInstance(entity);
+	if (instance == InvalidIndex)
+		return;
 	uint32_t parentInstance = data.GetInstance(parent);
+	if (parentInstance == InvalidIndex)
+		return;
+
 	SetParent(instance, parentInstance);
 }
 
@@ -296,6 +301,9 @@ TransformComponent::SetParent(Game::Entity entity, Game::Entity parent)
 void
 TransformComponent::SetParent(uint32_t instance, uint32_t parentInstance)
 {
+	n_assert(instance < data.NumRegistered() && instance != InvalidIndex);
+	n_assert(parentInstance < data.NumRegistered() && parentInstance != InvalidIndex);
+
 	InternalSetParent(instance, parentInstance);
 	UpdateHierarchy(instance);
 }
