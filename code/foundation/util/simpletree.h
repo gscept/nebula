@@ -68,6 +68,12 @@ public:
         /// read-only access to value
         const VALUETYPE& Value() const;
 
+		/// Append child node
+		void Append(const Ptr<Node>& node);
+
+		/// set parent node
+		void SetParentNode(Ptr<Node>& node);
+
     private:
         uint refCount;
         Node* parent;
@@ -293,6 +299,7 @@ template<class VALUETYPE>
 void
 SimpleTree<VALUETYPE>::Node::Erase(IndexT i)
 {
+	this->children[i]->parent = nullptr;
     this->children.EraseIndex(i);
 }
 
@@ -333,6 +340,27 @@ SimpleTree<VALUETYPE>::Node::Find(const VALUETYPE& val) const
         }
     }
     return InvalidIndex;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class VALUETYPE>
+void
+SimpleTree<VALUETYPE>::Node::Append(const Ptr<SimpleTree<VALUETYPE>::Node>& node)
+{
+	this->children.Append(node);
+	node->parent = this;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class VALUETYPE>
+void
+SimpleTree<VALUETYPE>::Node::SetParentNode(Ptr<SimpleTree<VALUETYPE>::Node>& node)
+{
+	this->parent = node;
 }
 
 //------------------------------------------------------------------------------
