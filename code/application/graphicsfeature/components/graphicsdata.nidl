@@ -9,7 +9,7 @@
 	"modelResource": {
         "type": "string"
         "fourcc": "mdlR"
-        "access": "R"
+        "access": "RW"
 		"default": "mdl:Buildings/castle_tower.n3"
     }
 }
