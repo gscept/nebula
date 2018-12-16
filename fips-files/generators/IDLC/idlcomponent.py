@@ -260,6 +260,9 @@ public:
                 self.f.WriteLine("if (index != InvalidIndex)")
                 self.f.WriteLine("{")
                 self.f.IncreaseIndent()
+                if self.hasEvents and "ondeactivate" in self.events:
+                    self.f.WriteLine("this->functions.OnDeactivate(index);")
+                    self.f.WriteLine("")
                 self.f.WriteLine("this->DeregisterEntityImmediate(entity);")
                 self.f.WriteLine("return;")
                 self.f.DecreaseIndent()
