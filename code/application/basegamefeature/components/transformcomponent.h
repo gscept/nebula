@@ -57,6 +57,9 @@ public:
 	/// Get the previous sibling of this instance
 	static uint32_t GetPreviousSibling(uint32_t instance);
 
+	/// Return this components fourcc
+	static Util::FourCC GetFourCC();
+
 private:
 	/// Updates relationships
 	static void OnDeactivate(uint32_t instance);

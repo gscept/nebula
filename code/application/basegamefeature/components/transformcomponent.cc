@@ -220,6 +220,23 @@ InternalSetParent(uint32_t instance, uint32_t parentInstance)
 		return;
 	}
 
+	// Update all old nearest neighbor relationships
+	{
+		uint32_t prevParent = data.Parent(instance);
+		uint32_t nextSibling = data.NextSibling(instance);
+		uint32_t previousSibling = data.NextSibling(instance);
+
+		if (prevParent != InvalidIndex && data.FirstChild(prevParent) == instance)
+			data.FirstChild(prevParent) = nextSibling;
+
+		if (nextSibling != InvalidIndex)
+			data.PreviousSibling(nextSibling) = previousSibling;
+
+		if (previousSibling != InvalidIndex)
+			data.NextSibling(previousSibling) = nextSibling;
+	}
+
+	// Update all new nearest neighbor relationships
 	data.Parent(instance) = parentInstance;
 
 	if (parentInstance != InvalidIndex)
@@ -289,8 +306,6 @@ TransformComponent::SetParent(Game::Entity entity, Game::Entity parent)
 	if (instance == InvalidIndex)
 		return;
 	uint32_t parentInstance = data.GetInstance(parent);
-	if (parentInstance == InvalidIndex)
-		return;
 
 	SetParent(instance, parentInstance);
 }
@@ -302,7 +317,6 @@ void
 TransformComponent::SetParent(uint32_t instance, uint32_t parentInstance)
 {
 	n_assert(instance < data.NumRegistered() && instance != InvalidIndex);
-	n_assert(parentInstance < data.NumRegistered() && parentInstance != InvalidIndex);
 
 	InternalSetParent(instance, parentInstance);
 	UpdateHierarchy(instance);
@@ -351,6 +365,15 @@ uint32_t
 TransformComponent::GetPreviousSibling(uint32_t instance)
 {
 	return data.PreviousSibling(instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Util::FourCC
+TransformComponent::GetFourCC()
+{
+	return data.GetRtti()->GetFourCC();
 }
 
 //------------------------------------------------------------------------------
