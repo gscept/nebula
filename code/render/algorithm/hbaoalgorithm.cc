@@ -230,7 +230,7 @@ HBAOAlgorithm::Setup()
 
 		// we are running the SSAO on the graphics queue
 #if NEBULA_GRAPHICS_DEBUG
-		CoreGraphics::CmdBufBeginMarker(GraphicsQueueType, Math::float4(0.8f, 0.6f, 0.0f, 1.0f), "HBAO");
+		CoreGraphics::CmdBufBeginMarker(GraphicsQueueType, Math::float4(1.0f, 0.8f, 0.0f, 1.0f), "HBAO");
 #endif
 
 		// render AO in X

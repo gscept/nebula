@@ -55,18 +55,9 @@ MeshGetPrimitiveGroups(const MeshId id)
 /**
 */
 const VertexBufferId
-MeshGetVertexBuffer(const MeshId id)
+MeshGetVertexBuffer(const MeshId id, const IndexT stream)
 {
-	return meshPool->GetVertexBuffer(id);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const VertexLayoutId
-MeshGetVertexLayout(const MeshId id)
-{
-	return meshPool->GetVertexLayout(id);
+	return meshPool->GetVertexBuffer(id, stream);
 }
 
 //------------------------------------------------------------------------------

@@ -48,7 +48,7 @@ EmitterMesh::Setup(const CoreGraphics::MeshId mesh, IndexT primGroupIndex)
 	const PrimitiveGroup& primGroup = MeshGetPrimitiveGroups(mesh)[primGroupIndex];// mesh->GetPrimitiveGroupAtIndex(primGroupIndex);
     const IndexBufferId indexBuffer = MeshGetIndexBuffer(mesh);    
     n_assert(IndexBufferGetType(indexBuffer) == IndexType::Index32);
-    const VertexBufferId vertexBuffer = MeshGetVertexBuffer(mesh);
+    const VertexBufferId vertexBuffer = MeshGetVertexBuffer(mesh, 0);
     SizeT numVBufferVertices = VertexBufferGetNumVertices(vertexBuffer);
 
     IndexT baseIndex = primGroup.GetBaseIndex();
@@ -88,7 +88,7 @@ EmitterMesh::Setup(const CoreGraphics::MeshId mesh, IndexT primGroupIndex)
     this->points = n_new_array(EmitterPoint, this->numPoints);
 
     // make sure the emitter mesh actually has the components we need
-	const VertexLayoutId& vertexLayout = MeshGetVertexLayout(mesh);
+	const VertexLayoutId& vertexLayout = MeshGetPrimitiveGroups(mesh)[primGroupIndex].GetVertexLayout();
 
 	const Util::Array<VertexComponent>& comps = VertexLayoutGetComponents(vertexLayout);
 	bool posValid = false, normValid = false, tanValid = false;

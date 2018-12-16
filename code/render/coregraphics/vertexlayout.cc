@@ -21,14 +21,10 @@ CreateVertexLayout(const VertexLayoutCreateInfo& info)
 
 	Util::String sig;
 	IndexT i;
-	for (i = 0; i < CoreGraphics::MaxNumVertexStreams; i++)
-		loadInfo.usedStreams[i] = false;
-
 	SizeT size = 0;
 	for (i = 0; i < info.comps.Size(); i++)
 	{
 		sig.Append(info.comps[i].GetSignature());
-		loadInfo.usedStreams[info.comps[i].GetStreamIndex()] = true;
 		size += info.comps[i].GetByteSize();
 	}
 	sig = Util::String::Sprintf("%s", sig.AsCharPtr());
