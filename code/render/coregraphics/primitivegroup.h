@@ -10,6 +10,7 @@
     (C) 2013-2018 Individual contributors, see AUTHORS file
 */    
 #include "coregraphics/primitivetopology.h"
+#include "coregraphics/vertexlayout.h"
 #include "math/bbox.h"
 
 //------------------------------------------------------------------------------
@@ -43,6 +44,10 @@ public:
     const Math::bbox& GetBoundingBox() const;
     /// get computed number of primitives
 	SizeT GetNumPrimitives(const CoreGraphics::PrimitiveTopology::Code& topo) const;
+    /// set vertex layout
+    void SetVertexLayout(const CoreGraphics::VertexLayoutId& layout);
+    /// get vertex layout
+    const CoreGraphics::VertexLayoutId& GetVertexLayout() const;
 
 private:
     IndexT baseVertex;
@@ -50,6 +55,7 @@ private:
     IndexT baseIndex;
     SizeT numIndices;
     Math::bbox boundingBox;
+    VertexLayoutId layout;
 };
 
 //------------------------------------------------------------------------------
@@ -169,6 +175,24 @@ PrimitiveGroup::GetNumPrimitives(const CoreGraphics::PrimitiveTopology::Code& to
     {
 		return PrimitiveTopology::NumberOfPrimitives(topo, this->numVertices);
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+PrimitiveGroup::SetVertexLayout(const CoreGraphics::VertexLayoutId& layout)
+{
+    this->layout = layout;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const CoreGraphics::VertexLayoutId& 
+PrimitiveGroup::GetVertexLayout() const
+{
+    return this->layout;
 }
 
 } // namespace PrimitiveGroup
