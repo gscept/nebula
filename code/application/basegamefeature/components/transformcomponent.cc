@@ -66,31 +66,43 @@ void
 TransformComponent::SetLocalTransform(uint32_t i, const Math::matrix44& val)
 {
 	data.LocalTransform(i) = val;
+	
 	uint32_t parent = data.Parent(i);
-	uint32_t child;
-	Math::matrix44 transform;
+	uint32_t child = data.FirstChild(i);
 	if (parent == InvalidIndex)
 	{
 		data.WorldTransform(i) = val;
+		if (child == InvalidIndex)
+		{
+			// Early out if we don't have any children
+			Msg::UpdateTransform::Send(data.GetOwner(i), val);
+			return;
+		}
+		
 		Msg::UpdateTransform::Defer(messageQueue, data.GetOwner(i), val);
 	}
 	else
 	{
 		// First of, transform this with parent transform if any
-		transform = data.WorldTransform(parent);
-		data.WorldTransform(i) = Math::matrix44::multiply(data.LocalTransform(i), transform);
+		data.WorldTransform(i) = Math::matrix44::multiply(data.LocalTransform(i), data.WorldTransform(parent));
+
+		if (child == InvalidIndex)
+		{
+			// Early out if we don't have any children
+			Msg::UpdateTransform::Send(data.GetOwner(i), val);
+			return;
+		}
+
 		Msg::UpdateTransform::Defer(messageQueue, data.GetOwner(i), data.WorldTransform(i));
 	}
 	
-	child = data.FirstChild(i);
 	parent = i;
 	// Transform every child and their siblings.
 	while (parent != InvalidIndex)
 	{
 		while (child != InvalidIndex)
 		{
-			transform = data.WorldTransform(parent);
-			data.WorldTransform(child) = Math::matrix44::multiply(data.LocalTransform(child), transform);
+			data.WorldTransform(child) = Math::matrix44::multiply(data.LocalTransform(child), data.WorldTransform(parent));
 			Msg::UpdateTransform::Defer(messageQueue, data.GetOwner(child), data.WorldTransform(child));
 			parent = child;
 			child = data.FirstChild(child);
@@ -98,7 +110,6 @@ TransformComponent::SetLocalTransform(uint32_t i, const Math::matrix44& val)
 		child = data.NextSibling(parent);
 		parent = data.Parent(parent);
 	}
-
 	// Dispatch all world transform update messages sequentially at the end of the method.
 	// Keeps it cache friendly(er)
 	Msg::UpdateTransform::DispatchMessageQueue(messageQueue);

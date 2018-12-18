@@ -24,6 +24,7 @@ public:
 	static void SetLocalTransform(Game::Entity entity, const Math::matrix44& val);
 	
 	/// Set the world transform of an instance. This will update the hierarchy and also set the local transform.
+	/// Note: this is MUCH slower than updating the local transform
 	static void SetWorldTransform(uint32_t instance, const Math::matrix44& val);
 	static void SetWorldTransform(Game::Entity entity, const Math::matrix44& val);
 
