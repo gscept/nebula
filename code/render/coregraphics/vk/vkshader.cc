@@ -1,12 +1,15 @@
 //------------------------------------------------------------------------------
 // vkshader.cc
-// (C) 2016 Individual contributors, see AUTHORS file
+// (C) 2016-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "vkshader.h"
 #include "vkconstantbuffer.h"
 #include "coregraphics/shaderserver.h"
 #include "lowlevel/vk/vksampler.h"
+#include "lowlevel/vk/vkvarblock.h"
+#include "lowlevel/vk/vkvarbuffer.h"
+#include "lowlevel/vk/vkvariable.h"
 #include "coregraphics/sampler.h"
 #include "coregraphics/resourcetable.h"
 #include "vktypes.h"
@@ -27,17 +30,16 @@ Util::Dictionary<Util::StringAtom, VkDescriptorSet> VkShaderDescriptorSetCache;
 void
 VkShaderSetup(
 	VkDevice dev,
+	const Util::StringAtom& name,
 	const VkPhysicalDeviceProperties props,
 	AnyFX::ShaderEffect* effect,
-	VkPushConstantRange& constantRange,
+	Util::FixedArray<CoreGraphics::ResourcePipelinePushConstantRange>& constantRange,
 	Util::Array<CoreGraphics::SamplerId>& immutableSamplers,
 	Util::FixedArray<std::pair<uint32_t, CoreGraphics::ResourceTableLayoutId>>& setLayouts,
 	Util::Dictionary<uint32_t, uint32_t>& setLayoutMap,
 	CoreGraphics::ResourcePipelineId& pipelineLayout,
-	Util::FixedArray<CoreGraphics::ResourceTableId>& tables,
-	Util::Dictionary<Util::StringAtom, uint32_t>& resourceSlotMap,
-	Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBufferId>& sharedBuffers,
-	Util::Dictionary<uint32_t, Util::Array<CoreGraphics::ConstantBufferId>>& sharedBuffersByGroup
+	Util::Dictionary<Util::StringAtom, uint32_t>& resourceSlotMapping,
+	Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBinding>& constantBindings
 	)
 {
 	const std::vector<AnyFX::VarblockBase*>& varblocks = effect->GetVarblocks();
@@ -52,12 +54,16 @@ VkShaderSetup(
 	Util::Dictionary<uint32_t, ResourceTableLayoutCreateInfo> layoutCreateInfos;
 	uint32_t numsets = 0;
 
+
 	// always create push constant range in layout, making all shaders using push constants compatible
-	constantRange.size = props.limits.maxPushConstantsSize;
-	constantRange.offset = 0;
-	constantRange.stageFlags = VK_SHADER_STAGE_ALL;
+	uint32_t maxConstantBytes = props.limits.maxPushConstantsSize;
+	uint32_t pushRangeOffset = 0; // we must append previous push range size to offset
+	constantRange.Resize(6); // one per shader stage
+	uint i;
+	for (i = 0; i < 6; i++)
+		constantRange[i] = CoreGraphics::ResourcePipelinePushConstantRange{ 0,0,InvalidVisibility };
+
 	bool usePushConstants = false;
-	uint32_t pushConstantSet = 0xFFFFFFFF;
 
 #define uint_max(a, b) (a > b ? a : b)
 
@@ -67,26 +73,15 @@ VkShaderSetup(
 	uint32_t maxUniformBuffers = props.limits.maxDescriptorSetUniformBuffers;
 	uint32_t numUniformDyn = 0;
 	uint32_t numUniform = 0;
-	uint i;
 	for (i = 0; i < varblocks.size(); i++) 
 	{ 
 		AnyFX::VkVarblock* block = static_cast<AnyFX::VkVarblock*>(varblocks[i]);
-		resourceSlotMap.Add(block->name.c_str(), block->binding);
 		VkDescriptorSetLayoutBinding& binding = block->bindingLayout;
 		ResourceTableLayoutConstantBuffer cbo;
 		cbo.slot = binding.binding;
 		cbo.num = binding.descriptorCount;
 		cbo.visibility = AllVisibility;
 		uint32_t slotsUsed = 0;
-
-		if (block->variables.empty()) continue;
-		if (AnyFX::HasFlags(block->qualifiers, AnyFX::Qualifiers::Push))
-		{
-			usePushConstants = true;
-			pushConstantSet = block->set;
-		};
-		ResourceTableLayoutCreateInfo& rinfo = layoutCreateInfos.AddUnique(block->set);
-		numsets = uint_max(numsets, block->set + 1);
 
 		if (block->HasAnnotation("Visibility"))
 		{
@@ -99,11 +94,45 @@ VkShaderSetup(
 			if ((vis & PixelShaderVisibility) == PixelShaderVisibility)			slotsUsed++;
 			if ((vis & ComputeShaderVisibility) == ComputeShaderVisibility)		slotsUsed++;
 		}
-		if (block->set == NEBULAT_DYNAMIC_OFFSET_GROUP) { cbo.dynamicOffset = true; numUniformDyn += slotsUsed; }
+
+		if (block->variables.empty()) continue;
+		if (AnyFX::HasFlags(block->qualifiers, AnyFX::Qualifiers::Push))
+		{
+			n_assert(block->alignedSize <= maxConstantBytes);
+			maxConstantBytes -= block->alignedSize;
+			CoreGraphics::ResourcePipelinePushConstantRange range;
+			range.offset = pushRangeOffset;
+			range.size = block->alignedSize;
+			range.vis = AllGraphicsVisibility; // only allow for fragment bit...
+			constantRange[0] = range; // okay, this is hacky
+			pushRangeOffset += block->alignedSize;
+			usePushConstants = true;
+			goto skipbuffer; // if push-constant block, do not add to resource table, but add constant bindings!
+		};
+
+		// add to resource map
+		resourceSlotMapping.Add(block->name.c_str(), block->binding);
+		ResourceTableLayoutCreateInfo& rinfo = layoutCreateInfos.AddUnique(block->set);
+		numsets = uint_max(numsets, block->set + 1);
+
+		if (block->set == NEBULA_DYNAMIC_OFFSET_GROUP || block->set == NEBULA_INSTANCE_GROUP) { cbo.dynamicOffset = true; numUniformDyn += slotsUsed; }
 		else											{ cbo.dynamicOffset = false; numUniform += slotsUsed; }
 
 		rinfo.constantBuffers.Append(cbo);
 		n_assert(block->alignedSize < maxUniformBufferRange);
+
+		skipbuffer:
+
+		const std::vector<AnyFX::VariableBase*>& vars = block->variables;
+		uint j;
+		for (j = 0; j < vars.size(); j++)
+		{
+			const AnyFX::VariableBase* var = vars[j];
+#if NEBULA_DEBUG
+			n_assert(!constantBindings.Contains(var->name.c_str()));
+#endif
+			constantBindings.Add(var->name.c_str(), { block->offsetsByName[var->name] });
+		}
 	}
     n_assert(maxUniformBuffersDyn >= numUniformDyn);
 	n_assert(maxUniformBuffers >= numUniform);
@@ -119,7 +148,7 @@ VkShaderSetup(
 	for (i = 0; i < varbuffers.size(); i++)
 	{
 		AnyFX::VkVarbuffer* buffer = static_cast<AnyFX::VkVarbuffer*>(varbuffers[i]);
-		resourceSlotMap.Add(buffer->name.c_str(), buffer->binding);
+		resourceSlotMapping.Add(buffer->name.c_str(), buffer->binding);
 		VkDescriptorSetLayoutBinding& binding = buffer->bindingLayout;
 		ResourceTableLayoutShaderRWBuffer rwbo;
 		rwbo.slot = binding.binding;
@@ -143,7 +172,7 @@ VkShaderSetup(
 			if ((vis & ComputeShaderVisibility) == ComputeShaderVisibility)		slotsUsed++;
 		}
 
-		if (buffer->set == NEBULAT_DYNAMIC_OFFSET_GROUP) { rwbo.dynamicOffset = true; numStorageDyn += slotsUsed; }
+		if (buffer->set == NEBULA_DYNAMIC_OFFSET_GROUP || buffer->set == NEBULA_INSTANCE_GROUP) { rwbo.dynamicOffset = true; numStorageDyn += slotsUsed; }
 		else											 { rwbo.dynamicOffset = false; numStorage += slotsUsed; }
 
 		rinfo.rwBuffers.Append(rwbo);
@@ -236,9 +265,8 @@ VkShaderSetup(
 		// handle samplers, images and textures
 		if (variable->type >= AnyFX::Sampler1D && variable->type <= AnyFX::TextureCubeArray)
 		{
-			// only add if variable is not a texture handle
-			if (variable->type <= AnyFX::ImageCubeArray)
-				resourceSlotMap.Add(variable->name.c_str(), variable->binding);
+			// add to mapping
+			resourceSlotMapping.Add(variable->name.c_str(), variable->binding);
 
 			ResourceTableLayoutTexture tex;
 			tex.slot = variable->bindingLayout.binding;
@@ -277,7 +305,7 @@ VkShaderSetup(
 		}
 		else if (variable->type >= AnyFX::InputAttachment && variable->type <= AnyFX::InputAttachmentUIntegerMS)
 		{
-			resourceSlotMap.Add(variable->name.c_str(), variable->binding);
+			resourceSlotMapping.Add(variable->name.c_str(), variable->binding);
 			ResourceTableLayoutInputAttachment ia;
 			ia.slot = variable->bindingLayout.binding;
 			ia.num = variable->bindingLayout.descriptorCount;
@@ -289,9 +317,6 @@ VkShaderSetup(
 			numsets = uint_max(numsets, variable->set + 1);
 		}
 	}
-
-	// create a string for caching pipelines
-	Util::String pipelineSignature;
 
 	// skip the rest if we don't have any descriptor sets
 	if (!layoutCreateInfos.IsEmpty())
@@ -307,76 +332,26 @@ VkShaderSetup(
 	}
 
 	Util::Array<ResourceTableLayoutId> layoutList;
+	Util::Array<uint32_t> layoutIndices;
 	for (IndexT i = 0; i < setLayouts.Size(); i++)
 	{
 		const ResourceTableLayoutId& a = std::get<1>(setLayouts[i]);
 		if (a != ResourceTableLayoutId::Invalid())
+		{
 			layoutList.Append(a);
+			layoutIndices.Append(std::get<0>(setLayouts[i]));
+		}
 	}
-	ResourcePipelinePushConstantRange push;
-	push.size = props.limits.maxPushConstantsSize;
-	push.offset = 0;
-	push.vis = AllVisibility;
+
 	ResourcePipelineCreateInfo piInfo =
 	{
-		layoutList, push
+		layoutList, layoutIndices, constantRange[0]
 	};
 	pipelineLayout = CreateResourcePipeline(piInfo);
 
-	// create a resource table for the batch group
-	for (IndexT i = 0; i < setLayouts.Size(); i++)
-	{
-		// only allocate implicit resource tables for the batch group
-		if (std::get<0>(setLayouts[i]) == NEBULAT_BATCH_GROUP)
-		{
-			const ResourceTableLayoutId& layout = std::get<1>(setLayouts[i]);
-			n_assert(layout != ResourceTableLayoutId::Invalid());
-			tables.Resize(1);
-			ResourceTableCreateInfo tinfo = 
-			{
-				layout
-			};
-			ResourceTableId table = CreateResourceTable(tinfo);
-			tables[0] = table;
-		}
-	}
-
-	// setup varblock backing (this is for the shader default state)
-	if (tables.Size() > 0)
-	{
-		for (i = 0; i < varblocks.size(); i++)
-		{
-			// get block
-			AnyFX::VarblockBase* block = varblocks[i];
-			bool isPush = AnyFX::HasFlags(block->qualifiers, AnyFX::Qualifiers::Push);
-			if (block->set == NEBULAT_BATCH_GROUP && block->alignedSize > 0 && !isPush)
-			{
-				CoreGraphics::ConstantBufferCreateInfo cbInfo = { false, CoreGraphics::ShaderId::Invalid(), block->name.c_str(), block->alignedSize, 1 };
-				CoreGraphics::ConstantBufferId uniformBuffer = CreateConstantBuffer(cbInfo);
-
-				// generate a name which we know will be unique
-				Util::String name = block->name.c_str();
-				n_assert(!sharedBuffers.Contains(name));
-
-				ResourceTableConstantBuffer cboUpdate;
-				cboUpdate.buf = uniformBuffer;
-				cboUpdate.dynamicOffset = block->set == NEBULAT_DYNAMIC_OFFSET_GROUP;
-				cboUpdate.offset = 0;
-				cboUpdate.size = -1;
-				cboUpdate.index = 0;
-				cboUpdate.texelBuffer = false;
-				cboUpdate.slot = block->binding;
-				ResourceTableSetConstantBuffer(tables[0], cboUpdate);
-
-				Util::Array<ConstantBufferId>& buffers = sharedBuffersByGroup.AddUnique(block->set);
-				buffers.Append(uniformBuffer);
-				sharedBuffers.Add(name, uniformBuffer);
-			}
-		}
-
-		// commit all changes
-		ResourceTableCommitChanges(tables[0]);
-	}
+#if NEBULA_GRAPHICS_DEBUG
+	ObjectSetName(pipelineLayout, Util::String::Sprintf("%s - Resource Pipeline", name.Value()));
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -412,15 +387,6 @@ VkShaderCleanup(
 	buffers.Clear();
 
 	CoreGraphics::DestroyResourcePipeline(pipelineLayout);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-uint32_t
-VkShaderGetVkShaderVariableBinding(const CoreGraphics::ShaderStateId shader, const CoreGraphics::ShaderConstantId var)
-{
-	return CoreGraphics::shaderPool->shaderAlloc.Get<4>(shader.shaderId).Get<3>(shader.stateId).Get<1>(var.id).setBinding;
 }
 
 //------------------------------------------------------------------------------

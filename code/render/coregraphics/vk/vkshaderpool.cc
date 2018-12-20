@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 // vkstreamshaderloader.cc
-// (C) 2016 Individual contributors, see AUTHORS file
+// (C) 2016-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "vkshaderpool.h"
@@ -74,6 +74,7 @@ VkShaderPool::LoadFromStream(const Resources::ResourceId id, const Util::StringA
 	// the setup code is massive, so just let it be in VkShader...
 	VkShaderSetup(
 		setupInfo.dev,
+		this->GetName(id),
 		Vulkan::GetCurrentProperties(),
 		effect,
 		setupInfo.constantRangeLayout,
@@ -81,10 +82,8 @@ VkShaderPool::LoadFromStream(const Resources::ResourceId id, const Util::StringA
 		setupInfo.descriptorSetLayouts,
 		setupInfo.descriptorSetLayoutMap,
 		setupInfo.pipelineLayout,
-		setupInfo.tables,
 		setupInfo.resourceIndexMap,
-		setupInfo.uniformBufferMap,
-		setupInfo.uniformBufferGroupMap
+		setupInfo.constantBindings
 		);
 
 	// setup shader variations
@@ -97,7 +96,7 @@ VkShaderPool::LoadFromStream(const Resources::ResourceId id, const Util::StringA
 
 		// allocate new program object and set it up
 		Ids::Id32 programId = programAllocator.AllocObject();
-		VkShaderProgramSetup(programId, program, setupInfo.pipelineLayout, this->shaderAlloc.Get<3>(id.allocId));
+		VkShaderProgramSetup(programId, this->GetName(id), program, setupInfo.pipelineLayout, this->shaderAlloc.Get<3>(id.allocId));
 
 		// make an ID which is the shader id and program id
 		ShaderProgramId shaderProgramId;
@@ -111,7 +110,7 @@ VkShaderPool::LoadFromStream(const Resources::ResourceId id, const Util::StringA
 	runtimeInfo.activeMask = runtimeInfo.programMap.KeyAtIndex(0);
 	runtimeInfo.activeShaderProgram = runtimeInfo.programMap.ValueAtIndex(0);
 
-#if __NEBULA3_HTTP__
+#if __NEBULA_HTTP__
 	//res->debugState = res->CreateState();
 #endif
 	return ResourcePool::Success;
@@ -152,94 +151,77 @@ VkShaderPool::GetShaderProgram(const CoreGraphics::ShaderId shaderId, const Core
 //------------------------------------------------------------------------------
 /**
 */
-CoreGraphics::ShaderStateId
-VkShaderPool::CreateState(const CoreGraphics::ShaderId shader, const Util::Array<IndexT>& groups, bool createUniqueSet)
+CoreGraphics::ResourceTableId 
+VkShaderPool::CreateResourceTable(const CoreGraphics::ShaderId id, const IndexT group)
 {
-	// allocate a slice and create an id which is the shader id, and the state id
-	VkShaderStateAllocator& stateAllocator = this->shaderAlloc.Get<4>(shader.allocId);
-	Ids::Id32 stateId = stateAllocator.AllocObject();
-	VkShaderSetupInfo& info = this->shaderAlloc.Get<1>(shader.allocId);
-
-	CoreGraphics::ShaderStateId ret = Ids::Id::MakeId24_8_24_8(shader.allocId, shader.allocType, stateId, ShaderStateIdType);
-
-	VkShaderStateSetup(
-		ret,
-		this->shaderAlloc.Get<0>(shader.allocId),
-		groups,
-		stateAllocator,
-		info.descriptorSetLayouts,
-		info.descriptorSetLayoutMap,
-		info.uniformBufferMap,
-		info.uniformBufferGroupMap,
-		info.pipelineLayout
-		);
-
-	return ret;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-CoreGraphics::ShaderStateId
-VkShaderPool::CreateSlicedState(const CoreGraphics::ShaderId shader, const Util::Array<IndexT>& groups)
-{
-	// allocate a slice and create an id which is the shader id, and the state id
-	Ids::Id32 stateId = -1;
-	if (this->slicedStateMap.Contains(shader.allocId)) stateId = this->slicedStateMap[shader.allocId];
+	const VkShaderSetupInfo& info = this->shaderAlloc.Get<1>(id.allocId);
+	IndexT idx = info.descriptorSetLayoutMap.FindIndex(group);
+	if (idx == InvalidIndex) return CoreGraphics::ResourceTableId::Invalid();
 	else
 	{
-		VkShaderStateAllocator& stateAllocator = this->shaderAlloc.Get<4>(shader.allocId);
-		stateId = stateAllocator.AllocObject();
-		VkShaderSetupInfo& info = this->shaderAlloc.Get<1>(shader.allocId);
-		VkShaderStateSetup(
-			stateId,
-			this->shaderAlloc.Get<0>(shader.allocId),
-			groups,
-			stateAllocator,
-			info.descriptorSetLayouts,
-			info.descriptorSetLayoutMap,
-			info.uniformBufferMap,
-			info.uniformBufferGroupMap,
-			info.pipelineLayout
-		);
-		this->slicedStateMap.Add(shader.allocId, stateId);
-	}
-	n_assert(stateId != -1);
-
-	// the resource id is the shader id and the state id combined
-	CoreGraphics::ShaderStateId ret = Ids::Id::MakeId24_8_24_8(shader.allocId, shader.allocType, stateId, ShaderStateIdType);
-	return ret;
+		ResourceTableCreateInfo crInfo =
+		{
+			std::get<1>(info.descriptorSetLayouts[info.descriptorSetLayoutMap.ValueAtIndex(idx)])
+		};
+		return CoreGraphics::CreateResourceTable(crInfo);
+	}	
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-void
-VkShaderPool::DestroyState(const CoreGraphics::ShaderStateId state)
+CoreGraphics::ConstantBufferId 
+VkShaderPool::CreateConstantBuffer(const CoreGraphics::ShaderId id, const Util::StringAtom& name)
 {
-	VkShaderStateRuntimeInfo& runtime = this->shaderAlloc.Get<4>(state.shaderId).Get<1>(state.stateId);
-	VkShaderStateSetupInfo& setup = this->shaderAlloc.Get<4>(state.shaderId).Get<2>(state.stateId);
-	VkShaderConstantAllocator& alloc = this->shaderAlloc.Get<4>(state.shaderId).Get<3>(state.stateId);
-	VkShaderStateDiscard(runtime, setup, alloc);
-	this->shaderAlloc.Get<4>(state.shaderId).DeallocObject(state.stateId);
+	AnyFX::VarblockBase* var = this->shaderAlloc.Get<0>(id.allocId)->GetVarblock(name.Value());
+	if (var->alignedSize > 0)
+		return CoreGraphics::CreateConstantBuffer({ true, id, name, (SizeT)var->alignedSize, 1 });
+	else
+		return CoreGraphics::ConstantBufferId::Invalid();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-void
-VkShaderPool::CommitState(const CoreGraphics::ShaderStateId state)
+CoreGraphics::ConstantBufferId 
+VkShaderPool::CreateConstantBuffer(const CoreGraphics::ShaderId id, const IndexT cbIndex)
 {
-	VkShaderStateCommit(this->shaderAlloc.Get<4>(state.shaderId).Get<1>(state.stateId));
+	AnyFX::VarblockBase* var = this->shaderAlloc.Get<0>(id.allocId)->GetVarblock(cbIndex);
+	if (var->alignedSize > 0)
+		return CoreGraphics::CreateConstantBuffer({ true, id, var->name.c_str(), (SizeT)var->alignedSize, 1 });
+	else
+		return CoreGraphics::ConstantBufferId::Invalid();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-SizeT
-VkShaderPool::GetNumActiveStates(const CoreGraphics::ShaderId shaderId)
+const CoreGraphics::ConstantBinding
+VkShaderPool::GetConstantBinding(const CoreGraphics::ShaderId id, const Util::StringAtom& name) const
 {
-	return this->shaderAlloc.Get<4>(shaderId.allocId).GetNumUsed();
+	const VkShaderSetupInfo& info = this->shaderAlloc.Get<1>(id.allocId);
+	IndexT index = info.constantBindings.FindIndex(name.Value());
+	if (index == InvalidIndex)	return { UINT_MAX }; // invalid binding
+	else						return info.constantBindings.ValueAtIndex(index);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const CoreGraphics::ConstantBinding 
+VkShaderPool::GetConstantBinding(const CoreGraphics::ShaderId id, const IndexT cIndex) const
+{
+	const VkShaderSetupInfo& info = this->shaderAlloc.Get<1>(id.allocId);
+	return info.constantBindings.ValueAtIndex(cIndex);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const SizeT VkShaderPool::GetConstantBindingsCount(const CoreGraphics::ShaderId id) const
+{
+	const VkShaderSetupInfo& info = this->shaderAlloc.Get<1>(id.allocId);
+	return info.constantBindings.Size();
 }
 
 //------------------------------------------------------------------------------
@@ -258,97 +240,6 @@ CoreGraphics::ResourcePipelineId
 VkShaderPool::GetResourcePipeline(const CoreGraphics::ShaderId id)
 {
 	return this->shaderAlloc.Get<1>(id.allocId).pipelineLayout;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-CoreGraphics::DerivativeStateId
-VkShaderPool::CreateDerivativeState(const CoreGraphics::ShaderStateId id, const IndexT group)
-{
-	const AnyFX::ShaderEffect* effect = this->shaderAlloc.Get<0>(id.shaderId);
-	const UniformBufferGroupMap& uniformBuffersByGroup = this->shaderAlloc.Get<1>(id.shaderId).uniformBufferGroupMap;
-	VkDerivativeStateAllocator& derivAlloc = this->shaderAlloc.Get<4>(id.shaderId).Get<4>(id.stateId);
-	VkShaderStateRuntimeInfo& parentRuntime = this->shaderAlloc.Get<4>(id.shaderId).Get<1>(id.stateId);
-	VkShaderStateSetupInfo& parentSetup = this->shaderAlloc.Get<4>(id.shaderId).Get<2>(id.stateId);
-	Ids::Id32 derivId = derivAlloc.AllocObject();
-
-	VkDerivativeShaderStateRuntimeInfo& info = derivAlloc.Get<0>(derivId);
-	VkShaderStateSetupDerivative(derivId, effect, derivAlloc, parentRuntime, parentSetup, uniformBuffersByGroup, group);
-
-	DerivativeStateId ret;
-	ret.id = derivId;
-	return ret;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-VkShaderPool::DestroyDerivativeState(const CoreGraphics::ShaderStateId id, const CoreGraphics::DerivativeStateId& deriv)
-{
-	VkDerivativeStateAllocator& derivAlloc = this->shaderAlloc.Get<4>(id.shaderId).Get<4>(id.stateId);
-	VkDerivativeShaderStateRuntimeInfo& info = derivAlloc.Get<0>(deriv.id);
-	derivAlloc.DeallocObject(deriv.id);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-VkShaderPool::DerivativeStateApply(const CoreGraphics::ShaderStateId id, const CoreGraphics::DerivativeStateId& deriv)
-{
-	VkDerivativeShaderStateRuntimeInfo& info = this->shaderAlloc.Get<4>(id.shaderId).Get<4>(id.stateId).Get<0>(deriv.id);
-	VkShaderStateDerivativeStateApply(info);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-VkShaderPool::DerivativeStateCommit(const CoreGraphics::ShaderStateId id, const CoreGraphics::DerivativeStateId & deriv)
-{
-	VkDerivativeShaderStateRuntimeInfo& info = this->shaderAlloc.Get<4>(id.shaderId).Get<4>(id.stateId).Get<0>(deriv.id);
-	VkShaderStateDerivativeStateCommit(info);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-VkShaderPool::DerivativeStateReset(const CoreGraphics::ShaderStateId id, const CoreGraphics::DerivativeStateId& deriv)
-{
-	VkDerivativeShaderStateRuntimeInfo& info = this->shaderAlloc.Get<4>(id.shaderId).Get<4>(id.stateId).Get<0>(deriv.id);
-	VkShaderStateDerivativeStateReset(info);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const CoreGraphics::ShaderConstantId
-VkShaderPool::ShaderStateGetConstant(const CoreGraphics::ShaderStateId state, const Util::StringAtom& name) const
-{
-	IndexT i = this->shaderAlloc.Get<4>(state.shaderId).Get<2>(state.stateId).variableMap.FindIndex(name);
-	if (i == InvalidIndex)	return CoreGraphics::ShaderConstantId::Invalid();
-	else					return this->shaderAlloc.Get<4>(state.shaderId).Get<2>(state.stateId).variableMap.ValueAtIndex(i);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const CoreGraphics::ShaderConstantId
-VkShaderPool::ShaderStateGetConstant(const CoreGraphics::ShaderStateId state, const IndexT index) const
-{
-	return this->shaderAlloc.Get<4>(state.shaderId).Get<2>(state.stateId).variableMap.ValueAtIndex(index);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const CoreGraphics::ShaderConstantType
-VkShaderPool::ShaderConstantGetType(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ShaderStateId state) const
-{
-	return this->shaderAlloc.Get<4>(state.shaderId).Get<3>(state.stateId).Get<2>(var.id).type;
 }
 
 //------------------------------------------------------------------------------
@@ -373,7 +264,7 @@ VkShaderPool::GetConstantCount(const CoreGraphics::ShaderId id) const
 //------------------------------------------------------------------------------
 /**
 */
-const  CoreGraphics::ShaderConstantType
+const CoreGraphics::ShaderConstantType
 VkShaderPool::GetConstantType(const CoreGraphics::ShaderId id, const IndexT i) const
 {
 	AnyFX::VariableBase* var = this->shaderAlloc.Get<0>(id.allocId)->GetVariable(i);
@@ -464,11 +355,154 @@ VkShaderPool::GetConstantType(const CoreGraphics::ShaderId id, const IndexT i) c
 //------------------------------------------------------------------------------
 /**
 */
+const CoreGraphics::ShaderConstantType
+VkShaderPool::GetConstantType(const CoreGraphics::ShaderId id, const Util::StringAtom& name) const
+{
+	AnyFX::VariableBase* var = this->shaderAlloc.Get<0>(id.allocId)->GetVariable(name.Value());
+	switch (var->type)
+	{
+	case AnyFX::Double:
+	case AnyFX::Float:
+		return FloatVariableType;
+	case AnyFX::Short:
+	case AnyFX::Integer:
+	case AnyFX::UInteger:
+		return IntVariableType;
+	case AnyFX::Bool:
+		return BoolVariableType;
+	case AnyFX::Float3:
+	case AnyFX::Float4:
+	case AnyFX::Double3:
+	case AnyFX::Double4:
+	case AnyFX::Integer3:
+	case AnyFX::Integer4:
+	case AnyFX::UInteger3:
+	case AnyFX::UInteger4:
+	case AnyFX::Short3:
+	case AnyFX::Short4:
+	case AnyFX::Bool3:
+	case AnyFX::Bool4:
+		return VectorVariableType;
+	case AnyFX::Float2:
+	case AnyFX::Double2:
+	case AnyFX::Integer2:
+	case AnyFX::UInteger2:
+	case AnyFX::Short2:
+	case AnyFX::Bool2:
+		return Vector2VariableType;
+	case AnyFX::Matrix2x2:
+	case AnyFX::Matrix2x3:
+	case AnyFX::Matrix2x4:
+	case AnyFX::Matrix3x2:
+	case AnyFX::Matrix3x3:
+	case AnyFX::Matrix3x4:
+	case AnyFX::Matrix4x2:
+	case AnyFX::Matrix4x3:
+	case AnyFX::Matrix4x4:
+		return MatrixVariableType;
+		break;
+	case AnyFX::Image1D:
+	case AnyFX::Image1DArray:
+	case AnyFX::Image2D:
+	case AnyFX::Image2DArray:
+	case AnyFX::Image2DMS:
+	case AnyFX::Image2DMSArray:
+	case AnyFX::Image3D:
+	case AnyFX::ImageCube:
+	case AnyFX::ImageCubeArray:
+		return ImageReadWriteVariableType;
+	case AnyFX::Sampler1D:
+	case AnyFX::Sampler1DArray:
+	case AnyFX::Sampler2D:
+	case AnyFX::Sampler2DArray:
+	case AnyFX::Sampler2DMS:
+	case AnyFX::Sampler2DMSArray:
+	case AnyFX::Sampler3D:
+	case AnyFX::SamplerCube:
+	case AnyFX::SamplerCubeArray:
+		return SamplerVariableType;
+	case AnyFX::Texture1D:
+	case AnyFX::Texture1DArray:
+	case AnyFX::Texture2D:
+	case AnyFX::Texture2DArray:
+	case AnyFX::Texture2DMS:
+	case AnyFX::Texture2DMSArray:
+	case AnyFX::Texture3D:
+	case AnyFX::TextureCube:
+	case AnyFX::TextureCubeArray:
+		return TextureVariableType;
+	case AnyFX::TextureHandle:
+		return TextureHandleType;
+	case AnyFX::ImageHandle:
+		return ImageHandleType;
+		break;
+	case AnyFX::SamplerHandle:
+		return SamplerHandleType;
+	default:
+		return ConstantBufferVariableType;
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::StringAtom
+VkShaderPool::GetConstantBlockName(const CoreGraphics::ShaderId id, const Util::StringAtom& name)
+{
+	AnyFX::VariableBase* var = this->shaderAlloc.Get<0>(id.allocId)->GetVariable(name.Value());
+	return var->parentBlock->name.c_str();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::StringAtom
+VkShaderPool::GetConstantBlockName(const CoreGraphics::ShaderId id, const IndexT cIndex)
+{
+	AnyFX::VariableBase* var = this->shaderAlloc.Get<0>(id.allocId)->GetVariable(cIndex);
+	return var->parentBlock->name.c_str();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 const Util::StringAtom
 VkShaderPool::GetConstantName(const CoreGraphics::ShaderId id, const IndexT i) const
 {
 	AnyFX::VariableBase* var = this->shaderAlloc.Get<0>(id.allocId)->GetVariable(i);
 	return var->name.c_str();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const IndexT 
+VkShaderPool::GetConstantGroup(const CoreGraphics::ShaderId id, const Util::StringAtom& name) const
+{
+	const unsigned idx = this->shaderAlloc.Get<0>(id.allocId)->FindVariable(name.Value());
+	if (idx != UINT_MAX)
+	{
+		AnyFX::VariableBase* var = this->shaderAlloc.Get<0>(id.allocId)->GetVariableFromMap(idx);
+		return var->parentBlock->set;
+	}
+	else
+		return -1;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const IndexT 
+VkShaderPool::GetConstantSlot(const CoreGraphics::ShaderId id, const Util::StringAtom& name) const
+{
+	const unsigned idx = this->shaderAlloc.Get<0>(id.allocId)->FindVariable(name.Value());
+	if (idx != UINT_MAX)
+	{
+		AnyFX::VariableBase* var = this->shaderAlloc.Get<0>(id.allocId)->GetVariableFromMap(idx);
+		return var->parentBlock->binding;
+	}
+	else
+		return -1;
 }
 
 //------------------------------------------------------------------------------
@@ -503,12 +537,33 @@ VkShaderPool::GetConstantBufferName(const CoreGraphics::ShaderId id, const Index
 //------------------------------------------------------------------------------
 /**
 */
+const IndexT 
+VkShaderPool::GetConstantBufferResourceSlot(const CoreGraphics::ShaderId id, const IndexT i) const
+{
+	AnyFX::VarblockBase* var = this->shaderAlloc.Get<0>(id.allocId)->GetVarblock(i);
+	return var->binding;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const IndexT 
+VkShaderPool::GetConstantBufferResourceGroup(const CoreGraphics::ShaderId id, const IndexT i) const
+{
+	AnyFX::VarblockBase* var = this->shaderAlloc.Get<0>(id.allocId)->GetVarblock(i);
+	return var->set;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 const IndexT
 VkShaderPool::GetResourceSlot(const CoreGraphics::ShaderId id, const Util::StringAtom& name) const
 {
 	const VkShaderSetupInfo& info = this->shaderAlloc.Get<1>(id.allocId);
-	n_assert(info.resourceIndexMap.Contains(name));
-	return info.resourceIndexMap[name];	
+	IndexT index = info.resourceIndexMap.FindIndex(name);
+	if (index == InvalidIndex)	return index;
+	else						return info.resourceIndexMap.ValueAtIndex(index);
 }
 
 //------------------------------------------------------------------------------

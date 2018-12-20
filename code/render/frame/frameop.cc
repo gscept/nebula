@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 // frameop.cc
-// (C) 2016 Individual contributors, see AUTHORS file
+// (C) 2016-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "framescript.h"
@@ -83,7 +83,7 @@ FrameOp::Build(
 			const CoreGraphics::BarrierAccess& access = std::get<0>(this->rwTextureDeps.ValueAtIndex(i));
 			const CoreGraphics::BarrierStage& stage = std::get<1>(this->rwTextureDeps.ValueAtIndex(i));
 			const CoreGraphics::ImageSubresourceInfo& subres = std::get<2>(this->rwTextureDeps.ValueAtIndex(i));
-			const ImageLayout& layout = std::get<3>(this->rwTextureDeps.ValueAtIndex(i));
+			const CoreGraphicsImageLayout& layout = std::get<3>(this->rwTextureDeps.ValueAtIndex(i));
 
 			DependencyIntent readOrWrite = DependencyIntent::Read;
 			switch (access)
@@ -167,7 +167,7 @@ FrameOp::Build(
 			else
 			{
 				// get original layout
-				ImageLayout origLayout = CoreGraphics::ShaderRWTextureGetLayout(tex);
+				CoreGraphicsImageLayout origLayout = CoreGraphics::ShaderRWTextureGetLayout(tex);
 
 				// there is no entry, but we missmatch the default layout for a render texture, so insert a barrier
 				if (layout != origLayout)
@@ -197,7 +197,7 @@ FrameOp::Build(
 			const CoreGraphics::BarrierAccess& access = std::get<0>(this->renderTextureDeps.ValueAtIndex(i));
 			const CoreGraphics::BarrierStage& stage = std::get<1>(this->renderTextureDeps.ValueAtIndex(i));
 			const CoreGraphics::ImageSubresourceInfo& subres = std::get<2>(this->renderTextureDeps.ValueAtIndex(i));
-			const ImageLayout& layout = std::get<3>(this->renderTextureDeps.ValueAtIndex(i));
+			const CoreGraphicsImageLayout& layout = std::get<3>(this->renderTextureDeps.ValueAtIndex(i));
 
 			DependencyIntent readOrWrite = DependencyIntent::Read;
 			switch (access)
@@ -280,7 +280,7 @@ FrameOp::Build(
 			else
 			{
 				// get original layout
-				ImageLayout origLayout = CoreGraphics::RenderTextureGetLayout(tex);
+				CoreGraphicsImageLayout origLayout = CoreGraphics::RenderTextureGetLayout(tex);
 
 				// there is no entry, but we missmatch the default layout for a render texture, so insert a barrier
 				if (layout != origLayout)

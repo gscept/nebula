@@ -1,6 +1,7 @@
-
+fips_ide_group(nebula)
 SET(NROOT ${CMAKE_CURRENT_LIST_DIR})
 SET(CODE_ROOT ${CMAKE_CURRENT_LIST_DIR}/code)
+
 
 option(N_USE_PRECOMPILED_HEADERS "Use precompiled headers" OFF)
 
@@ -13,6 +14,11 @@ if(FIPS_WINDOWS)
 	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /arch:AVX /fp:fast /GS-")
 	SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /RTC1 /RTCc")
 	SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /RTC1")
+    if(N_DEBUG_SYMBOLS)
+        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zi")
+        SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Zi")
+        set(CMAKE_EXE_LINKER_FLAGS_RELEASE "/DEBUG")
+    endif()
 elseif(FIPS_LINUX)
 	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -msse4.2 -march=sandybridge -ffast-math -fPIC -fno-trapping-math -funsafe-math-optimizations -ffinite-math-only -mrecip=all -Wall")
 	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse4.2 -march=sandybridge -ffast-math -fPIC -fno-trapping-math -funsafe-math-optimizations -ffinite-math-only -mrecip=all -Wall")
@@ -42,6 +48,7 @@ set(N_QT ${DEFQT} CACHE STRING "Qt Version")
 set_property(CACHE N_QT PROPERTY STRINGS "N_QT4" "N_QT5")
 set(${N_QT} ON)
 
+find_package(PythonLibs 3.5 REQUIRED)
 
 # select physics implementation
 SET(N_BUILD_BULLET OFF)
@@ -101,28 +108,73 @@ option(N_BUILD_NVTT "use NVTT" OFF)
 
 option(N_NEBULA_DEBUG_SHADERS "Compile shaders with debug flag" OFF)
 
-macro(add_shaders)    
+macro(add_shaders_intern)    
     if(SHADERC)           
         if(N_NEBULA_DEBUG_SHADERS)
-            #set(shader_debug "-debug")
-        endif()               
+            set(shader_debug "-debug")
+        endif()                       
         
         foreach(shd ${ARGN})        
             get_filename_component(basename ${shd} NAME_WE)        
             get_filename_component(foldername ${shd} DIRECTORY)        
+
+            # first calculate dependencies
+            set(depoutput ${CMAKE_BINARY_DIR}/shaders/${basename}.dep)
+            # create it the first time by force, after that with dependencies
+            # since custom command does not want to play ball atm, we just generate it every time
+            if(NOT EXISTS ${depoutput} OR ${shd} IS_NEWER_THAN ${depoutput})
+                execute_process(COMMAND ${SHADERC} -M -i ${shd} -I ${NROOT}/work/shaders/vk -I ${foldername} -o ${CMAKE_BINARY_DIR} -t shader)
+            endif()
+            
+            # sadly this doesnt work for some reason
+            #add_custom_command(OUTPUT ${depoutput}
+            #COMMAND ${SHADERC} -M -i ${shd} -I ${NROOT}/work/shaders -I ${foldername} -o ${CMAKE_BINARY_DIR} -t shader
+            #DEPENDS ${SHADERC} ${shd}
+            #WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
+            #COMMENT ""
+            #VERBATIM
+            #)                        
+            if(EXISTS ${depoutput})
+                file(READ ${depoutput} deps)
+            endif()
+
             set(output ${EXPORT_DIR}/shaders/${basename}.fxb)           
             add_custom_command(OUTPUT ${output}
-                COMMAND ${SHADERC} -i ${shd} -I ${NROOT}/work/shaders -I ${foldername} -o ${EXPORT_DIR} -t shader ${shader_debug}
+                COMMAND ${SHADERC} -i ${shd} -I ${NROOT}/work/shaders/vk -I ${foldername} -o ${EXPORT_DIR} -t shader ${shader_debug}                
                 MAIN_DEPENDENCY ${shd}
-                DEPENDS ${SHADERC}                
+                DEPENDS ${SHADERC} ${deps}
                 WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
                 COMMENT ""
                 VERBATIM
                 )        
             fips_files(${shd})
+
             SOURCE_GROUP("res\\shaders" FILES ${shd})        
         endforeach()             
     endif()
+endmacro()
+
+macro(nebula_add_nidl)    
+    SOURCE_GROUP("NIDL Files" FILES ${ARGN})
+    set(target_has_nidl 1)
+    foreach(nidl ${ARGN})        
+        get_filename_component(f_abs ${CurDir}${nidl} ABSOLUTE)
+        get_filename_component(f_dir ${f_abs} PATH)
+        STRING(REPLACE ".nidl" ".cc" out_source ${nidl}) 
+        STRING(REPLACE ".nidl" ".h" out_header ${nidl})
+        STRING(FIND "${CMAKE_CURRENT_SOURCE_DIR}"  "/" last REVERSE)
+        STRING(SUBSTRING "${CMAKE_CURRENT_SOURCE_DIR}" ${last}+1 -1 folder)         
+        set(abs_output_folder "${CMAKE_BINARY_DIR}/nidl/${CurTargetName}/${CurDir}")        
+        add_custom_command(OUTPUT "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_header}"
+            PRE_BUILD COMMAND ${PYTHON} ${NROOT}/fips-files/generators/NIDL.py "${f_abs}" "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_header}" 
+            WORKING_DIRECTORY "${NROOT}" 
+            MAIN_DEPENDENCY "${f_abs}"
+            DEPENDS ${NROOT}/fips-files/generators/NIDL.py
+            VERBATIM PRE_BUILD)
+        SOURCE_GROUP("${CurGroup}\\Generated" FILES "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_header}" )
+        source_group("${CurGroup}" FILES ${f_abs})        
+        list(APPEND CurSources "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_header}")        
+    endforeach()
 endmacro()
     
 macro(add_frameshader)
@@ -186,7 +238,7 @@ macro(add_nebula_shaders)
         fips_files(${FXH})
         file(GLOB_RECURSE FX "${NROOT}/work/shaders/vk/*.fx")    
         foreach(shd ${FX})        
-            add_shaders(${shd})
+            add_shaders_intern(${shd})
         endforeach()        
         
         file(GLOB_RECURSE FRM "${NROOT}/work/frame/win32/*.json")    
@@ -202,3 +254,65 @@ macro(add_nebula_shaders)
     endif()
 endmacro()
     
+macro(add_shaders)                
+    if(NOT SHADERC)
+        MESSAGE(WARNING "Not compiling shaders, ShaderC not found, did you compile nebula-toolkit?")
+    else()    
+        if(FIPS_WINDOWS)
+            
+            get_filename_component(workdir "[HKEY_CURRENT_USER\\SOFTWARE\\gscept\\ToolkitShared;workdir]" ABSOLUTE)
+            # get_filename_component returns /registry when a key is not found...
+            if(${workdir} STREQUAL "/registry")
+                MESSAGE(WARNING "Registry keys for project not found, did you set your workdir?")
+                return()
+            endif()
+            set(EXPORT_DIR "${workdir}/export_win32")
+        else()
+            # use environment
+            set(EXPORT_DIR $ENV{NEBULA_WORK}/export_win32)
+        endif()
+        foreach(shd ${ARGN})         
+            add_shaders_intern(${CMAKE_CURRENT_SOURCE_DIR}/${shd})
+        endforeach()        
+        
+    endif()
+endmacro()
+    
+macro(nebula_begin_app name type)
+    fips_begin_app(${name} ${type})
+    set(target_has_nidl 0)
+endmacro()
+
+macro(nebula_end_app)
+    set(curtarget ${CurTargetName})
+    fips_end_app()
+    if(target_has_nidl)
+        target_include_directories(${curtarget} PUBLIC "${CMAKE_BINARY_DIR}/nidl/${CurTargetName}")
+    endif()
+endmacro()
+
+macro(nebula_begin_module name)
+    fips_begin_module(${name})
+    set(target_has_nidl 0)
+endmacro()
+
+macro(nebula_end_module)
+    set(curtarget ${CurTargetName})
+    fips_end_module()
+    if(target_has_nidl)
+        target_include_directories(${curtarget} PUBLIC "${CMAKE_BINARY_DIR}/nidl/${CurTargetName}")
+    endif()
+endmacro()
+
+macro(nebula_begin_lib name)
+    fips_begin_lib(${name})
+    set(target_has_nidl 0)
+endmacro()
+
+macro(nebula_end_lib)
+    set(curtarget ${CurTargetName})
+    fips_end_lib()
+    if(target_has_nidl)
+        target_include_directories(${curtarget} PUBLIC "${CMAKE_BINARY_DIR}/nidl/${CurTargetName}")
+    endif()
+endmacro()

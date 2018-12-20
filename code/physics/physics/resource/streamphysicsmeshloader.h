@@ -5,10 +5,10 @@
     
     Setup a physics mesh object from a stream. Supports the following file formats:
         
-    - nvx3 (Nebula3 binary mesh file format)
+    - nvx3 (Nebula binary mesh file format)
     
     
-    (C) 2012-2016 Individual contributors, see AUTHORS file
+    (C) 2012-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "resources/streamresourceloader.h"

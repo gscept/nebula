@@ -3,7 +3,7 @@
 /**
     @class Util::Array
 
-    Nebula3's dynamic array class. This class is also used by most other
+    Nebula's dynamic array class. This class is also used by most other
     collection classes.
 
     The default constructor will not pre-allocate elements, so no space
@@ -20,7 +20,7 @@
 
     It is possible to sort the array using the Sort() method, this uses
     std::sort (one of the very few exceptions where the STL is used in
-    Nebula3).
+    Nebula).
 
     One should generally be careful with costly copy operators, the Array
     class (and the other container classes using Array) may do some heavy
@@ -28,6 +28,7 @@
     elements).
 
     (C) 2006 RadonLabs GmbH
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 
@@ -48,6 +49,8 @@ public:
     Array(SizeT initialSize, SizeT initialGrow, const TYPE& initialValue);
     /// copy constructor
     Array(const Array<TYPE>& rhs);
+    /// move constructor
+    Array(Array<TYPE>&& rhs);
 	/// constructor from initializer list
 	Array(std::initializer_list<TYPE> list);
     /// destructor
@@ -55,8 +58,12 @@ public:
 
     /// assignment operator
     void operator=(const Array<TYPE>& rhs);
+    /// move operator
+    void operator=(Array<TYPE>&& rhs);
     /// [] operator
     TYPE& operator[](IndexT index) const;
+    /// [] operator
+    TYPE& operator[](IndexT index);
     /// equality operator
     bool operator==(const Array<TYPE>& rhs) const;
     /// inequality operator
@@ -68,7 +75,7 @@ public:
     void Append(const TYPE& elm);
     /// append the contents of an array to this array
     void AppendArray(const Array<TYPE>& rhs);
-    /// increase capacity to fit N more elements into the array
+    /// increase capacity to fit N more elements into the array.
     void Reserve(SizeT num);
     /// get number of elements in array
     SizeT Size() const;
@@ -122,11 +129,23 @@ public:
 	void SortWithFunc(bool (*func)(const TYPE& lhs, const TYPE& rhs));
     /// do a binary search, requires a sorted array
     IndexT BinarySearchIndex(const TYPE& elm) const;
+	
+	/// Set size. Grows array if num is greater than capacity. Calls destroy on all objects at index > num!
+	void SetSize(SizeT num);
+
+	/// Return the byte size of the array.
+	/// Note that this is not the entire size of this object, only the size (not capacity) of the elements buffer in bytes
+	SizeT ByteSize() const;
+
+	/// Returns sizeof(TYPE)
+	constexpr SizeT TypeSize() const;
 
 	/// for range-based iteration
 	Iterator begin() const;
 	Iterator end() const;
-private:
+    size_t size() const;
+    void resize(size_t size);
+protected:
     /// destroy an element (call destructor without freeing memory)
     void Destroy(TYPE* elm);
     /// copy content
@@ -144,7 +163,7 @@ private:
     static const SizeT MaxGrowSize = 65536; // FIXME: big grow size needed for mesh tools
     SizeT grow;                             // grow by this number of elements if array exhausted
     SizeT capacity;                         // number of elements allocated
-    SizeT size;                             // number of elements in array
+    SizeT _size;                            // number of elements in array
     TYPE* elements;                         // pointer to element array
 };
 
@@ -155,7 +174,7 @@ template<class TYPE>
 Array<TYPE>::Array() :
     grow(8),
     capacity(0),
-    size(0),
+    _size(0),
     elements(0)
 {
     // empty
@@ -168,7 +187,7 @@ template<class TYPE>
 Array<TYPE>::Array(SizeT _capacity, SizeT _grow) :
     grow(_grow),
     capacity(_capacity),
-    size(0)
+    _size(0)
 {
     if (0 == this->grow)
     {
@@ -191,7 +210,7 @@ template<class TYPE>
 Array<TYPE>::Array(SizeT initialSize, SizeT _grow, const TYPE& initialValue) :
     grow(_grow),
     capacity(initialSize),
-    size(initialSize)
+    _size(initialSize)
 {
     if (0 == this->grow)
     {
@@ -219,13 +238,13 @@ template<class TYPE>
 Array<TYPE>::Array(std::initializer_list<TYPE> list) :
 	grow(16),
 	capacity((SizeT)list.size()),
-	size((SizeT)list.size())
+	_size((SizeT)list.size())
 {
 	if (this->capacity > 0)
 	{
 		this->elements = n_new_array(TYPE, this->capacity);
 		IndexT i;
-		for (i = 0; i < this->size; i++)
+		for (i = 0; i < this->_size; i++)
 		{
 			this->elements[i] = list.begin()[i];
 		}
@@ -243,7 +262,7 @@ template<class TYPE>
 Array<TYPE>::Array(const Array<TYPE>& rhs) :
 	grow(0),
 	capacity(0),
-	size(0),
+	_size(0),
 	elements(0)
 {
 	this->Copy(rhs);
@@ -252,21 +271,36 @@ Array<TYPE>::Array(const Array<TYPE>& rhs) :
 //------------------------------------------------------------------------------
 /**
 */
+template<class TYPE>
+Array<TYPE>::Array(Array<TYPE>&& rhs) :
+    grow(rhs.grow),
+    capacity(rhs.capacity),
+    _size(rhs._size),
+    elements(rhs.elements)
+{
+    rhs.elements = nullptr;
+    rhs._size = 0;
+    rhs.capacity = 0;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 template<class TYPE> void
 Array<TYPE>::Copy(const Array<TYPE>& src)
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(0 == this->elements);
     #endif
 
     this->grow = src.grow;
     this->capacity = src.capacity;
-    this->size = src.size;
+    this->_size = src._size;
     if (this->capacity > 0)
     {
         this->elements = n_new_array(TYPE, this->capacity);
         IndexT i;
-        for (i = 0; i < this->size; i++)
+        for (i = 0; i < this->_size; i++)
         {
             this->elements[i] = src.elements[i];
         }
@@ -281,7 +315,7 @@ Array<TYPE>::Delete()
 {
     this->grow = 0;
     this->capacity = 0;
-    this->size = 0;
+    this->_size = 0;
     if (this->elements)
     {
         n_delete_array(this->elements);
@@ -316,7 +350,7 @@ Array<TYPE>::Realloc(SizeT _capacity, SizeT _grow)
     this->Delete();
     this->grow = _grow;
     this->capacity = _capacity;
-    this->size = 0;
+    this->_size = 0;
     if (this->capacity > 0)
     {
         this->elements = n_new_array(TYPE, this->capacity);
@@ -335,23 +369,23 @@ Array<TYPE>::operator=(const Array<TYPE>& rhs)
 {
     if (this != &rhs)
     {
-        if ((this->capacity > 0) && (rhs.size <= this->capacity))
+        if ((this->capacity > 0) && (rhs._size <= this->capacity))
         {
             // source array fits into our capacity, copy in place
             n_assert(0 != this->elements);
             IndexT i;
-            for (i = 0; i < rhs.size; i++)
+            for (i = 0; i < rhs._size; i++)
             {
                 this->elements[i] = rhs.elements[i];
             }
 
             // properly destroy remaining original elements
-            for (; i < this->size; i++)
+            for (; i < this->_size; i++)
             {
                 this->Destroy(&(this->elements[i]));
             }
             this->grow = rhs.grow;
-            this->size = rhs.size;
+            this->_size = rhs._size;
         }
         else
         {
@@ -366,6 +400,24 @@ Array<TYPE>::operator=(const Array<TYPE>& rhs)
 /**
 */
 template<class TYPE> void
+Array<TYPE>::operator=(Array<TYPE>&& rhs)
+{
+    if (this != &rhs)
+    {
+        this->elements = rhs.elements;
+        this->grow = rhs.grow;
+        this->_size = rhs._size;
+        this->capacity = rhs.capacity;
+        rhs.elements = nullptr;
+        rhs._size = 0;
+        rhs.capacity;
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE> void
 Array<TYPE>::GrowTo(SizeT newCapacity)
 {
     TYPE* newArray = n_new_array(TYPE, newCapacity);
@@ -373,7 +425,7 @@ Array<TYPE>::GrowTo(SizeT newCapacity)
     {
         // copy over contents
         IndexT i;
-        for (i = 0; i < this->size; i++)
+        for (i = 0; i < this->_size; i++)
         {
             newArray[i] = this->elements[i];
         }
@@ -391,7 +443,7 @@ Array<TYPE>::GrowTo(SizeT newCapacity)
 template<class TYPE> void
 Array<TYPE>::Grow()
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(this->grow > 0);
     #endif
 
@@ -425,9 +477,9 @@ Array<TYPE>::Grow()
 template<class TYPE> void
 Array<TYPE>::Move(IndexT fromIndex, IndexT toIndex)
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements);
-    n_assert(fromIndex < this->size);
+    n_assert(fromIndex < this->_size);
     #endif
 
     // nothing to move?
@@ -437,7 +489,7 @@ Array<TYPE>::Move(IndexT fromIndex, IndexT toIndex)
     }
 
     // compute number of elements to move
-    SizeT num = this->size - fromIndex;
+    SizeT num = this->_size - fromIndex;
 
     // check if array needs to grow
     SizeT neededSize = toIndex + num;
@@ -456,7 +508,7 @@ Array<TYPE>::Move(IndexT fromIndex, IndexT toIndex)
         }
 
         // destroy remaining elements
-        for (i = (fromIndex + i) - 1; i < this->size; i++)
+        for (i = (fromIndex + i) - 1; i < this->_size; i++)
         {
             this->Destroy(&(this->elements[i]));
         }
@@ -477,8 +529,8 @@ Array<TYPE>::Move(IndexT fromIndex, IndexT toIndex)
         }
     }
 
-    // adjust array size
-    this->size = toIndex + num;
+    // adjust array _size
+    this->_size = toIndex + num;
 }
 
 //------------------------------------------------------------------------------
@@ -488,14 +540,14 @@ template<class TYPE> void
 Array<TYPE>::Append(const TYPE& elm)
 {
     // grow allocated space if exhausted
-    if (this->size == this->capacity)
+    if (this->_size == this->capacity)
     {
         this->Grow();
     }
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements);
     #endif
-    this->elements[this->size++] = elm;
+    this->elements[this->_size++] = elm;
 }
 
 //------------------------------------------------------------------------------
@@ -505,7 +557,7 @@ template<class TYPE> void
 Array<TYPE>::AppendArray(const Array<TYPE>& rhs)
 {
     IndexT i;
-    SizeT num = rhs.Size();
+    SizeT num = rhs._size;
     for (i = 0; i < num; i++)
     {
         this->Append(rhs[i]);
@@ -525,14 +577,15 @@ Array<TYPE>::AppendArray(const Array<TYPE>& rhs)
 template<class TYPE> void
 Array<TYPE>::Reserve(SizeT num)
 {
-    #if NEBULA3_BOUNDSCHECKS
-    n_assert(num > 0);
-    #endif
-    SizeT neededCapacity = this->size + num;
-    if (neededCapacity > this->capacity)
-    {
-        this->GrowTo(neededCapacity);
-    }
+#if NEBULA_BOUNDSCHECKS
+	n_assert(num >= 0);
+#endif
+	
+	SizeT neededCapacity = this->_size + num;
+	if (neededCapacity > this->capacity)
+	{
+		this->GrowTo(neededCapacity);
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -541,7 +594,7 @@ Array<TYPE>::Reserve(SizeT num)
 template<class TYPE> SizeT
 Array<TYPE>::Size() const
 {
-    return this->size;
+    return this->_size;
 }
 
 //------------------------------------------------------------------------------
@@ -561,9 +614,23 @@ Array<TYPE>::Capacity() const
 template<class TYPE> TYPE&
 Array<TYPE>::operator[](IndexT index) const
 {
-    #if NEBULA3_BOUNDSCHECKS
-    n_assert(this->elements && (index < this->size));
+    #if NEBULA_BOUNDSCHECKS
+    n_assert(this->elements && (index < this->_size) && (index >= 0));
     #endif
+    return this->elements[index];
+}
+
+//------------------------------------------------------------------------------
+/**
+    Access an element. This method will NOT grow the array, and instead do
+    a range check, which may throw an assertion.
+*/
+template<class TYPE> TYPE&
+Array<TYPE>::operator[](IndexT index) 
+{
+#if NEBULA_BOUNDSCHECKS
+    n_assert(this->elements && (index < this->_size) && (index >= 0));
+#endif
     return this->elements[index];
 }
 
@@ -611,8 +678,8 @@ Array<TYPE>::operator!=(const Array<TYPE>& rhs) const
 template<class TYPE> TYPE&
 Array<TYPE>::Front() const
 {
-    #if NEBULA3_BOUNDSCHECKS
-    n_assert(this->elements && (this->size > 0));
+    #if NEBULA_BOUNDSCHECKS
+    n_assert(this->elements && (this->_size > 0));
     #endif
     return this->elements[0];
 }
@@ -623,10 +690,10 @@ Array<TYPE>::Front() const
 template<class TYPE> TYPE&
 Array<TYPE>::Back() const
 {
-    #if NEBULA3_BOUNDSCHECKS
-    n_assert(this->elements && (this->size > 0));
+    #if NEBULA_BOUNDSCHECKS
+    n_assert(this->elements && (this->_size > 0));
     #endif
-    return this->elements[this->size - 1];
+    return this->elements[this->_size - 1];
 }
 
 //------------------------------------------------------------------------------
@@ -635,7 +702,7 @@ Array<TYPE>::Back() const
 template<class TYPE> bool 
 Array<TYPE>::IsEmpty() const
 {
-    return (this->size == 0);
+    return (this->_size == 0);
 }
 
 //------------------------------------------------------------------------------
@@ -644,14 +711,14 @@ Array<TYPE>::IsEmpty() const
 template<class TYPE> void
 Array<TYPE>::EraseIndex(IndexT index)
 {
-    #if NEBULA3_BOUNDSCHECKS
-    n_assert(this->elements && (index < this->size));
+    #if NEBULA_BOUNDSCHECKS
+    n_assert(this->elements && (index < this->_size) && (index >= 0));
     #endif
-    if (index == (this->size - 1))
+    if (index == (this->_size - 1))
     {
         // special case: last element
         this->Destroy(&(this->elements[index]));
-        this->size--;
+        this->_size--;
     }
     else
     {
@@ -666,18 +733,18 @@ Array<TYPE>::EraseIndex(IndexT index)
 template<class TYPE> void
 Array<TYPE>::EraseIndexSwap(IndexT index)
 {
-    #if NEBULA3_BOUNDSCHECKS
-    n_assert(this->elements && (index < this->size));
+    #if NEBULA_BOUNDSCHECKS
+    n_assert(this->elements && (index < this->_size) && (index >= 0));
     #endif
 
     // swap with last element, and destroy last element
-    IndexT lastElementIndex = this->size - 1;
+    IndexT lastElementIndex = this->_size - 1;
     if (index < lastElementIndex)
     {
         this->elements[index] = this->elements[lastElementIndex];
     }
     this->Destroy(&(this->elements[lastElementIndex]));
-    this->size--;
+    this->_size--;
 }
 
 //------------------------------------------------------------------------------
@@ -686,8 +753,8 @@ Array<TYPE>::EraseIndexSwap(IndexT index)
 template<class TYPE> typename Array<TYPE>::Iterator
 Array<TYPE>::Erase(typename Array<TYPE>::Iterator iter)
 {
-    #if NEBULA3_BOUNDSCHECKS
-    n_assert(this->elements && (iter >= this->elements) && (iter < (this->elements + this->size)));
+    #if NEBULA_BOUNDSCHECKS
+    n_assert(this->elements && (iter >= this->elements) && (iter < (this->elements + this->_size)));
     #endif
     this->EraseIndex(IndexT(iter - this->elements));
     return iter;
@@ -700,8 +767,8 @@ Array<TYPE>::Erase(typename Array<TYPE>::Iterator iter)
 template<class TYPE> typename Array<TYPE>::Iterator
 Array<TYPE>::EraseSwap(typename Array<TYPE>::Iterator iter)
 {
-    #if NEBULA3_BOUNDSCHECKS
-    n_assert(this->elements && (iter >= this->elements) && (iter < (this->elements + this->size)));
+    #if NEBULA_BOUNDSCHECKS
+    n_assert(this->elements && (iter >= this->elements) && (iter < (this->elements + this->_size)));
     #endif
 	this->EraseIndexSwap(IndexT(iter - this->elements));
     return iter;
@@ -713,10 +780,10 @@ Array<TYPE>::EraseSwap(typename Array<TYPE>::Iterator iter)
 template<class TYPE> void
 Array<TYPE>::Insert(IndexT index, const TYPE& elm)
 {
-    #if NEBULA3_BOUNDSCHECKS
-    n_assert(index <= this->size);
+    #if NEBULA_BOUNDSCHECKS
+    n_assert(index <= this->_size && (index >= 0));
     #endif
-    if (index == this->size)
+    if (index == this->_size)
     {
         // special case: append element to back
         this->Append(elm);
@@ -731,28 +798,28 @@ Array<TYPE>::Insert(IndexT index, const TYPE& elm)
 //------------------------------------------------------------------------------
 /**
     The current implementation of this method does not shrink the 
-    preallocated space. It simply sets the array size to 0.
+    preallocated space. It simply sets the array _size to 0.
 */
 template<class TYPE> void
 Array<TYPE>::Clear()
 {
     IndexT i;
-    for (i = 0; i < this->size; i++)
+    for (i = 0; i < this->_size; i++)
     {
         this->Destroy(&(this->elements[i]));
     }
-    this->size = 0;
+    this->_size = 0;
 }
 
 //------------------------------------------------------------------------------
 /**
     This is identical with Clear(), but does NOT call destructors (it just
-    resets the size member. USE WITH CARE!
+    resets the _size member. USE WITH CARE!
 */
 template<class TYPE> void
 Array<TYPE>::Reset()
 {
-    this->size = 0;
+    this->_size = 0;
 }
 
 //------------------------------------------------------------------------------
@@ -781,7 +848,7 @@ Array<TYPE>::Begin() const
 template<class TYPE> typename Array<TYPE>::Iterator
 Array<TYPE>::End() const
 {
-    return this->elements + this->size;
+    return this->elements + this->_size;
 }
 
 //------------------------------------------------------------------------------
@@ -796,7 +863,7 @@ template<class TYPE> typename Array<TYPE>::Iterator
 Array<TYPE>::Find(const TYPE& elm) const
 {
     IndexT index;
-    for (index = 0; index < this->size; index++)
+    for (index = 0; index < this->_size; index++)
     {
         if (this->elements[index] == elm)
         {
@@ -818,7 +885,7 @@ template<class TYPE> IndexT
 Array<TYPE>::FindIndex(const TYPE& elm) const
 {
     IndexT index;
-    for (index = 0; index < this->size; index++)
+    for (index = 0; index < this->_size; index++)
     {
         if (this->elements[index] == elm)
         {
@@ -840,7 +907,7 @@ Array<TYPE>::FindIndex(const TYPE& elm) const
 template<class TYPE> void
 Array<TYPE>::Fill(IndexT first, SizeT num, const TYPE& elm)
 {
-    if ((first + num) > this->size)
+    if ((first + num) > this->_size)
     {
         this->GrowTo(first + num);
     }
@@ -951,6 +1018,54 @@ Array<TYPE>::BinarySearchIndex(const TYPE& elm) const
 //------------------------------------------------------------------------------
 /**
 */
+template<class TYPE> void
+Array<TYPE>::SetSize(SizeT num)
+{
+	if (num < this->_size)
+	{
+		for (SizeT i = num; i < this->_size; i++)
+		{
+			this->Destroy(this->elements + i);
+		}
+	}
+	else if (num > capacity)
+	{
+		this->GrowTo(num);
+	}
+
+	this->_size = num;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE> SizeT
+Array<TYPE>::ByteSize() const
+{
+	return this->_size * sizeof(TYPE);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+inline constexpr SizeT Array<TYPE>::TypeSize() const
+{
+	return sizeof(TYPE);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE> size_t
+Array<TYPE>::size() const
+{
+    return this->_size;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 template<class TYPE> typename Array<TYPE>::Iterator
 Array<TYPE>::begin() const
 {
@@ -963,8 +1078,22 @@ Array<TYPE>::begin() const
 template<class TYPE> typename Array<TYPE>::Iterator
 Array<TYPE>::end() const
 {
-	return this->elements + this->size;
+	return this->elements + this->_size;
 }
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE> void
+Array<TYPE>::resize(size_t s)
+{
+    if (s > this->capacity)
+    {
+        this->GrowTo(s);
+    }
+    this->_size = s;    
+}
+
 
 //------------------------------------------------------------------------------
 /**
@@ -974,10 +1103,10 @@ Array<TYPE>::end() const
 template<class TYPE> bool
 Array<TYPE>::IsSorted() const
 {
-    if (this->size > 1)
+    if (this->_size > 1)
     {
         IndexT i;
-        for (i = 0; i < this->size - 1; i++)
+        for (i = 0; i < this->_size - 1; i++)
         {
             if (this->elements[i] > this->elements[i + 1])
             {
@@ -998,7 +1127,7 @@ template<class TYPE> IndexT
 Array<TYPE>::InsertAtEndOfIdenticalRange(IndexT startIndex, const TYPE& elm)
 {
     IndexT i = startIndex + 1;
-    for (; i < this->size; i++)
+    for (; i < this->_size; i++)
     {
         if (this->elements[i] != elm)
         {
@@ -1076,7 +1205,7 @@ Array<TYPE>::InsertSorted(const TYPE& elm)
             } 
             else 
             {
-                #if NEBULA3_BOUNDSCHECKS
+                #if NEBULA_BOUNDSCHECKS
                 n_assert(0 == lo);
                 #endif
                 this->Insert(lo, elm);

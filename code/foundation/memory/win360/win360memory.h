@@ -6,7 +6,7 @@
     Memory subsystem features which are identical on Win32 and Xbox360.
     
     (C) 2008 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/config.h"
 #include "core/debug.h"
@@ -47,7 +47,7 @@ extern bool IsOverlapping(const unsigned char* srcPtr, size_t srcSize, const uns
 //------------------------------------------------------------------------------
 /**
     Get the system's total current memory, this does not only include
-    Nebula3's memory allocations but the memory usage of the entire system.
+    Nebula's memory allocations but the memory usage of the entire system.
 */
 struct TotalMemoryStatus
 {
@@ -66,7 +66,7 @@ extern void DumpTotalMemoryStatus();
     local heaps (call Heap::ValidateAllHeaps() for this). 
     Stops the program if something is wrong. 
 */
-#if NEBULA3_MEMORY_ADVANCED_DEBUGGING
+#if NEBULA_MEMORY_ADVANCED_DEBUGGING
 /// check memory lists for consistency
 extern bool ValidateMemory();
 /// dump current memory status to log file
@@ -81,7 +81,7 @@ void ToggleMemoryLogging(unsigned int threshold, HeapType heapType = InvalidHeap
 void DumpMemoryLeaks();
 #endif
 
-#if NEBULA3_MEMORY_ADVANCED_DEBUGGING
+#if NEBULA_MEMORY_ADVANCED_DEBUGGING
 #define __MEMORY_CHECKPOINT(s) Memory::Checkpoint(##s)
 #else
 #define __MEMORY_CHECKPOINT(s)
@@ -110,7 +110,7 @@ operator new(size_t size)
 }
 
 __forceinline void*
-operator new(size_t size, const std::nothrow_t& noThrow)
+operator new(size_t size, const std::nothrow_t& noThrow) noexcept
 {
     return Memory::Alloc(Memory::ObjectHeap, size);
 }
@@ -122,7 +122,7 @@ operator new[](size_t size)
 }
 
 __forceinline void*
-operator new[](size_t size, const std::nothrow_t& noThrow)
+operator new[](size_t size, const std::nothrow_t& noThrow) noexcept
 {
     return Memory::Alloc(Memory::ObjectArrayHeap, size);
 }

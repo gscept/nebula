@@ -3,17 +3,19 @@
 /**
 	A shader read-write buffer can be both read and written from within a shader.
 
-	(C) 2017 Individual contributors, see AUTHORS file
+	(C)2017-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "ids/id.h"
 #include "ids/idpool.h"
+#include "util/stringatom.h"
 namespace CoreGraphics
 {
 ID_24_8_TYPE(ShaderRWBufferId);
 
 struct ShaderRWBufferCreateInfo
 {
+	const Util::StringAtom& name;
 	SizeT size;
 	SizeT numBackingBuffers;
 	bool screenRelative : 1; // when set, size is bytes per pixel

@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 // transformnode.cc
-// (C) 2017 Individual contributors, see AUTHORS file
+// (C)2017-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "transformnode.h"
@@ -25,7 +25,7 @@ TransformNode::TransformNode() :
 	useLodDistances(false),
 	lockedToViewer(false)
 {
-	// empty
+	this->type = TransformNodeType;
 }
 
 //------------------------------------------------------------------------------
@@ -97,6 +97,7 @@ TransformNode::Instance::ApplyNodeInstanceState()
 {
 	CoreGraphics::TransformDevice* transformDevice = CoreGraphics::TransformDevice::Instance();
 	transformDevice->SetModelTransform(this->modelTransform);
+	transformDevice->SetObjectId(this->objectId);
 }
 
 } // namespace Models

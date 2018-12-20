@@ -3,7 +3,7 @@
 /**
 	Vertex layout declares the interface between application and vertex shader
 
-	(C) 2017 Individual contributors, see AUTHORS file
+	(C)2017-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "ids/id.h"
@@ -15,7 +15,7 @@ namespace CoreGraphics
 RESOURCE_ID_TYPE(VertexLayoutId);
 
 /// max number of vertex streams
-static const IndexT MaxNumVertexStreams = 2;
+static const IndexT MaxNumVertexStreams = 16;
 
 struct VertexLayoutCreateInfo
 {
@@ -28,7 +28,6 @@ struct VertexLayoutInfo
 	SizeT vertexByteSize;
 	Util::Array<VertexComponent> comps;
 	ShaderProgramId shader;
-	bool usedStreams[MaxNumVertexStreams];
 };
 
 /// create new vertex layout

@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 //  posixheap.cc
 //  (C) 2006 Radon Labs GmbH
-//  (C) 2013 Individual contributors, see AUTHORS file
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "memory/posix/posixheap.h"
@@ -11,7 +11,7 @@ namespace Posix
 using namespace Threading;
 using namespace Util;
 
-#if NEBULA3_MEMORY_STATS
+#if NEBULA_MEMORY_STATS
 List<PosixHeap*>* PosixHeap::list = 0;
 CriticalSection* PosixHeap::criticalSection = 0;
 #endif
@@ -24,7 +24,7 @@ CriticalSection* PosixHeap::criticalSection = 0;
 void
 PosixHeap::Setup()
 {
-    #if NEBULA3_MEMORY_STATS
+    #if NEBULA_MEMORY_STATS
     n_assert(0 == list);
     n_assert(0 == criticalSection);
     list = n_new(List<PosixHeap*>);
@@ -41,7 +41,7 @@ PosixHeap::PosixHeap(const char* heapName)
     this->name = heapName;
     
     // link into Heap list
-    #if NEBULA3_MEMORY_STATS
+    #if NEBULA_MEMORY_STATS
     n_assert(0 != criticalSection);
     this->allocCount = 0;
     this->allocSize  = 0;
@@ -57,7 +57,7 @@ PosixHeap::PosixHeap(const char* heapName)
 PosixHeap::~PosixHeap()
 {
     // unlink from Heap list
-    #if NEBULA3_MEMORY_STATS
+    #if NEBULA_MEMORY_STATS
     n_assert(0 == this->allocCount);
     n_assert(0 != criticalSection);
     n_assert(0 != this->listIterator);
@@ -68,7 +68,7 @@ PosixHeap::~PosixHeap()
     #endif   
 }
 
-#if NEBULA3_MEMORY_STATS
+#if NEBULA_MEMORY_STATS
 //------------------------------------------------------------------------------
 /**
     Validate the heap. This walks over the heap's memory block and checks
@@ -141,6 +141,6 @@ PosixHeap::ValidateAllHeaps()
     criticalSection->Leave();
     return result;
 }
-#endif // NEBULA3_MEMORY_STATS
+#endif // NEBULA_MEMORY_STATS
 
 } // namespace Memory

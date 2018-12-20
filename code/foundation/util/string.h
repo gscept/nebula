@@ -3,7 +3,7 @@
 /**
     @class Util::String
 
-    Nebula3's universal string class. An empty string object is always 32
+    Nebula's universal string class. An empty string object is always 32
     bytes big. The string class tries to avoid costly heap allocations
     with the following tactics:
 
@@ -17,11 +17,11 @@
     be faster then going through the process heap.
 
     Besides the usual string manipulation methods, the String class also
-    offers methods to convert basic Nebula3 datatypes from and to string,
+    offers methods to convert basic Nebula datatypes from and to string,
     and a group of methods which manipulate filename strings.
 
     (C) 2006 RadonLabs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 #include "core/sysfunc.h"
@@ -37,11 +37,12 @@
 #endif
 
 #include "memory/poolarrayallocator.h"
-#include "blob.h"
 
 //------------------------------------------------------------------------------
 namespace Util
 {
+class Blob;
+
 class String
 {
 public:
@@ -54,6 +55,8 @@ public:
     String();
     /// copy constructor
     String(const String& rhs);
+    /// move constructor
+    String(String&& rhs);
     /// construct from C string
     String(const char* cStr);
     /// destructor
@@ -61,6 +64,8 @@ public:
 
     /// assignment operator
     void operator=(const String& rhs);
+    /// move operator
+    void operator=(String&& rhs);
     /// assign from const char*
     void operator=(const char* cStr);
     /// += operator
@@ -71,6 +76,8 @@ public:
     friend bool operator==(const String& a, const char* cStr);
     /// shortcut equality operator
     friend bool operator==(const char* cStr, const String& a);
+	/// empty string operator
+	friend bool operator==(const String&, nullptr_t);
     /// inequality operator
     friend bool operator !=(const String& a, const String& b);
     /// less-then operator
@@ -194,6 +201,9 @@ public:
     /// set as bool value
     void SetBool(bool val);	
     
+	/// set string length and fill all characters with arg
+	void Fill(SizeT length, unsigned char character);
+
     #if !__OSX__
     /// set as float2 value
     void SetFloat2(const Math::float2& v);
@@ -209,8 +219,14 @@ public:
     /// generic setter
     template<typename T> void Set(const T& t);
 
+	/// append character
+	void AppendChar(char val);
     /// append int value
     void AppendInt(int val);
+	/// append byte value
+	void AppendByte(byte val);
+	/// append unsigned byte value
+	void AppendUByte(ubyte val);
     /// append float value
     void AppendFloat(float val);
     /// append bool value
@@ -317,6 +333,10 @@ public:
     /// convert from "anything"
     template<typename T> static String From(const T& t);
 
+	/// construct a hex string from an int
+	template<typename INTEGER>
+	static String Hex(INTEGER i);
+
     /// get filename extension without dot
     String GetFileExtension() const;
     /// check file extension
@@ -393,7 +413,7 @@ String::operator new(size_t size)
     n_assert(size == sizeof(String));
     #endif
 
-    #if NEBULA3_OBJECTS_USE_MEMORYPOOL
+    #if NEBULA_OBJECTS_USE_MEMORYPOOL
         return Memory::ObjectPoolAllocator->Alloc(size);
     #else
         return Memory::Alloc(Memory::ObjectHeap, size);
@@ -406,7 +426,7 @@ String::operator new(size_t size)
 __forceinline void
 String::operator delete(void* ptr)
 {
-    #if NEBULA3_OBJECTS_USE_MEMORYPOOL
+    #if NEBULA_OBJECTS_USE_MEMORYPOOL
         return Memory::ObjectPoolAllocator->Free(ptr, sizeof(String));
     #else
         return Memory::Free(Memory::ObjectHeap, ptr);
@@ -634,6 +654,19 @@ String::SetBool(bool val)
     }
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+String::Fill(SizeT length, unsigned char character)
+{
+	this->Alloc(length + 1);
+	Memory::Fill(this->heapBuffer, length, character);
+	this->heapBuffer[length] = 0;
+	this->localBuffer[0] = 0;
+	this->strLen = length;
+}
+
 #if !__OSX__
 //------------------------------------------------------------------------------
 /**
@@ -723,6 +756,29 @@ String::String(const String& rhs) :
 //------------------------------------------------------------------------------
 /**
 */
+inline
+String::String(String&& rhs) :
+    heapBuffer(rhs.heapBuffer),
+    strLen(rhs.strLen),
+    heapBufferSize(rhs.heapBufferSize)
+{
+    if (rhs.heapBuffer)
+    {
+        rhs.heapBuffer = nullptr;
+        this->localBuffer[0] = 0;
+    }
+    else
+    {
+        if (this->strLen > 0)
+        {
+            Memory::Copy(rhs.localBuffer, this->localBuffer, this->strLen + 1);
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 inline const char*
 String::AsCharPtr() const
 {
@@ -754,6 +810,33 @@ String::operator=(const String& rhs)
     if (&rhs != this)
     {
         this->SetCharPtr(rhs.AsCharPtr());
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+String::operator=(String&& rhs)
+{
+    if (&rhs != this)
+    {
+        this->Delete();
+        this->strLen = rhs.strLen;
+        if (rhs.heapBuffer)
+        {
+            this->heapBuffer = rhs.heapBuffer;
+            this->heapBufferSize = rhs.heapBufferSize;
+            rhs.heapBuffer = nullptr;
+            rhs.heapBufferSize = 0;            
+        }
+        else
+        {
+            if (this->strLen > 0)
+            {
+                Memory::Copy(rhs.localBuffer, this->localBuffer, this->strLen + 1);
+            } 
+        }
     }
 }
 
@@ -1275,7 +1358,37 @@ String::FromTransform44(const Math::transform44& t)
 	return str;
 }
 #endif
-    
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<typename INTEGER>
+inline String
+String::Hex(INTEGER i)
+{
+	constexpr SizeT hexLength = sizeof(INTEGER) << 1;
+	static Util::String digits = "0123456789ABCDEF";
+
+	String str("0x");
+	str.Reserve(hexLength + 2);
+
+	for (SizeT n = 0, j = (hexLength - 1) * 4; n < hexLength; ++n, j -= 4)
+	{
+		str.AppendChar(digits[(i >> j) & 0x0f]);
+	}
+
+	return str;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+String::AppendChar(char val)
+{
+	this->AppendRange(&val, 1);
+}
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -1283,6 +1396,24 @@ inline void
 String::AppendInt(int val)
 {
     this->Append(FromInt(val));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+String::AppendByte(byte val)
+{
+	this->Append(FromByte(val));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+String::AppendUByte(ubyte val)
+{
+	this->Append(FromUByte(val));
 }
 
 //------------------------------------------------------------------------------

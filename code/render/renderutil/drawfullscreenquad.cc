@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 //  drawfullscreenquad.cc
 //  (C) 2009 Radon Labs GmbH
-//  (C) 2013-2016 Individual contributors, see AUTHORS file
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "renderutil/drawfullscreenquad.h"
@@ -117,8 +117,12 @@ DrawFullScreenQuad::Discard()
 void
 DrawFullScreenQuad::ApplyMesh()
 {
-	CoreGraphics::SetPrimitiveTopology(PrimitiveTopology::TriangleList);
+	// setup pipeline
 	CoreGraphics::SetVertexLayout(this->vertexLayout);
+	CoreGraphics::SetPrimitiveTopology(PrimitiveTopology::TriangleList);
+	CoreGraphics::SetGraphicsPipeline();
+
+	// setup input data
 	CoreGraphics::SetStreamVertexBuffer(0, this->vertexBuffer, 0);
 	CoreGraphics::SetPrimitiveGroup(this->primGroup);
 }

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Nebula3 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="C:\nebula3\schemas\projectinfo.xsd">
+<Nebula xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="C:\nebula3\schemas\projectinfo.xsd">
     
-    <Project name="Nebula3" defaultPlatform="win32">
+    <Project name="Nebula" defaultPlatform="win32">
         
         <!-- Win32 Platform Info -->
         <Platform name="win32">
@@ -121,4 +121,4 @@
 		</NIDL>
 
     </Project>
-</Nebula3>
+</Nebula>

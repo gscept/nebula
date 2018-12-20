@@ -8,7 +8,7 @@
 	Implements Moment shadow maps for global lights, http://cg.cs.uni-bonn.de/en/publications/paper-details/peters-2015-msm/
 	Variance shadow maps for local lights (spot, point), http://developer.download.nvidia.com/SDK/10/direct3d/Source/VarianceShadowMapping/Doc/VarianceShadowMapping.pdf
     
-    (C) 2012-2015 Individual contributors, see AUTHORS file
+    (C) 2012-2018 Individual contributors, see AUTHORS file
 */
 #include "lighting/base/shadowserverbase.h"
 #include "frame2/frameserver.h"

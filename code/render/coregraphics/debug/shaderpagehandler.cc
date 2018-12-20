@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 //  shaderpagehandler.cc
 //  (C) 2007 Radon Labs GmbH
-//  (C) 2013-2016 Individual contributors, see AUTHORS file
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "coregraphics/debug/shaderpagehandler.h"
@@ -52,7 +52,7 @@ ShaderPageHandler::HandleRequest(const Ptr<HttpRequest>& request)
     // no command, send the home page
     Ptr<HtmlPageWriter> htmlWriter = HtmlPageWriter::Create();
     htmlWriter->SetStream(request->GetResponseContentStream());
-    htmlWriter->SetTitle("NebulaT Shaders");
+    htmlWriter->SetTitle("Nebula Shaders");
     if (htmlWriter->Open())
     {
         ShaderServer* shdServer = ShaderServer::Instance();
@@ -85,15 +85,12 @@ ShaderPageHandler::HandleRequest(const Ptr<HttpRequest>& request)
                         htmlWriter->AddAttr("href", "/shader?shaderinfo=" + name.AsString());
                         htmlWriter->Element(HtmlElement::Anchor, name.Value());
                     htmlWriter->End(HtmlElement::TableData);
-                    htmlWriter->Element(HtmlElement::TableData, String::FromInt(ShaderGetNumActiveStates(shd)));
                 htmlWriter->End(HtmlElement::TableRow);
             }
         htmlWriter->End(HtmlElement::Table);
 
         // create a table of globally shared variables
         htmlWriter->Element(HtmlElement::Heading3, "Shared Shader Variables");
-        
-        this->WriteShaderVariableTable(htmlWriter, shdServer->GetSharedShader());
 
         htmlWriter->Close();
         request->SetStatus(HttpStatus::OK);
@@ -128,7 +125,7 @@ ShaderPageHandler::HandleShaderInfoRequest(const Util::String& resId, const Ptr<
 
     Ptr<HtmlPageWriter> htmlWriter = HtmlPageWriter::Create();
     htmlWriter->SetStream(responseContentStream);
-    htmlWriter->SetTitle("NebulaT Shader Info");
+    htmlWriter->SetTitle("Nebula Shader Info");
     if (htmlWriter->Open())
     {
         // we need to create a temp shader instance to get reflection info
@@ -156,13 +153,12 @@ ShaderPageHandler::HandleShaderInfoRequest(const Util::String& resId, const Ptr<
             htmlWriter->End(HtmlElement::TableRow);
             htmlWriter->Begin(HtmlElement::TableRow);
                 htmlWriter->Element(HtmlElement::TableData, "Number of active states: ");
-                htmlWriter->Element(HtmlElement::TableData, String::FromInt(ShaderGetNumActiveStates(shd)));
             htmlWriter->End(HtmlElement::TableRow);
         htmlWriter->End(HtmlElement::Table);
 
         // display shader variables
         htmlWriter->Element(HtmlElement::Heading3, "Shader Variables");
-#if __NEBULA3_HTTP__
+#if __NEBULA_HTTP__
 		if (numVars > 0)
         {
             this->WriteShaderVariableTable(htmlWriter, shd);

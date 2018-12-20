@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 //  particleserver.cc
 //  (C) 2008 Radon Labs GmbH
-//  (C) 2013-2016 Individual contributors, see AUTHORS file
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "particles/particleserver.h"
@@ -53,7 +53,6 @@ ParticleServer::Open()
 	emitterComponents.Append(VertexComponent(VertexComponent::Position, 0, VertexComponent::Float3, 0));
 	emitterComponents.Append(VertexComponent(VertexComponent::Normal, 0, VertexComponent::Byte4N, 0));
 	emitterComponents.Append(VertexComponent(VertexComponent::Tangent, 0, VertexComponent::Byte4N, 0));
-
 
 	float x = 0 * 0.5f * 255.0f;
 	float y = 1 * 0.5f * 255.0f;
@@ -112,16 +111,15 @@ ParticleServer::Open()
 	group.SetBaseVertex(0);
 	group.SetNumIndices(1);
 	group.SetNumVertices(1);
+    group.SetVertexLayout(VertexBufferGetLayout(vbo));
 	Util::Array<PrimitiveGroup> groups;
 	groups.Append(group);
-
-	VertexLayoutId vlo = VertexBufferGetLayout(vbo);
-
+	
 	MeshCreateInfo info =
 	{
 		"Default_Emitter_Mesh",
 		"rendersystem",
-		vbo, ibo, vlo, CoreGraphics::PrimitiveTopology::PointList, groups
+		{ { vbo, 0 } }, ibo, CoreGraphics::PrimitiveTopology::PointList, groups
 	};
 	this->defaultEmitterMesh = CreateMesh(info);
 }

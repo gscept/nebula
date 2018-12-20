@@ -3,7 +3,7 @@
 /**
 	Implements a text renderer using Vulkan.
 	
-	(C) 2016 Individual contributors, see AUTHORS file
+	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "coregraphics/base/textrendererbase.h"
@@ -11,7 +11,8 @@
 #include "coregraphics/vertexbuffer.h"
 #include "coregraphics/texture.h"
 #include "coregraphics/primitivegroup.h"
-#include "stb/stb_truetype.h"
+#include "coregraphics/resourcetable.h"
+#include "stb_truetype.h"
 namespace Vulkan
 {
 class VkTextRenderer : public Base::TextRendererBase
@@ -56,10 +57,10 @@ private:
 	unsigned char* bitmap;
 
 	TextElementVertex vertices[MaxNumChars * 6];
-	CoreGraphics::ShaderStateId shader;
+	CoreGraphics::ResourceTableId textTable;
 	CoreGraphics::ShaderProgramId program;
-	CoreGraphics::ShaderConstantId texVar;
-	CoreGraphics::ShaderConstantId modelVar;
+	IndexT texVar;
+	CoreGraphics::ConstantBinding modelVar;
 	CoreGraphics::TextureId glyphTexture;
 	CoreGraphics::PrimitiveGroup group;
 	CoreGraphics::VertexBufferId vbo;

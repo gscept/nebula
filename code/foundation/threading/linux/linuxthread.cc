@@ -1,7 +1,7 @@
 //-------------------------------------------------------------------------------
 //  linuxthread.cc
 //  (C) 2010 Radon Labs GmbH
-//  (C) 2013 Individual contributors, see AUTHORS file
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //-------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "linuxthread.h"
@@ -10,7 +10,7 @@
 #include <sys/prctl.h>
 #endif
 
-#if NEBULA3_ENABLE_THREADLOCAL_STRINGATOM_TABLES
+#if NEBULA_ENABLE_THREADLOCAL_STRINGATOM_TABLES
 #include "util/localstringatomtable.h"
 #endif
 
@@ -25,7 +25,7 @@ __ImplementClass(Linux::LinuxThread, 'THRD', Core::RefCounted);
 using namespace System;
 using namespace Util;
 
-#if NEBULA3_DEBUG
+#if NEBULA_DEBUG
 Threading::CriticalSection LinuxThread::criticalSection;
 List<LinuxThread*> LinuxThread::ThreadList;
 #endif
@@ -42,7 +42,7 @@ LinuxThread::LinuxThread() :
 {
     CPU_ZERO(&this->affinity);
     // register with thread list
-    #if NEBULA3_DEBUG
+    #if NEBULA_DEBUG
     LinuxThread::criticalSection.Enter();
     this->threadListIterator = ThreadList.AddBack(this);
     LinuxThread::criticalSection.Leave();
@@ -60,7 +60,7 @@ LinuxThread::~LinuxThread()
     }
 
     // unregister from thread list
-    #if NEBULA3_DEBUG
+    #if NEBULA_DEBUG
     n_assert(0 != this->threadListIterator);
     LinuxThread::criticalSection.Enter();
     ThreadList.Remove(this->threadListIterator);
@@ -175,7 +175,7 @@ LinuxThread::ThreadProc(void *self)
     n_assert(0 != self);
     n_dbgout("LinuxThread::ThreadProc(): thread started!\n");
 
-    #if NEBULA3_ENABLE_THREADLOCAL_STRINGATOM_TABLES
+    #if NEBULA_ENABLE_THREADLOCAL_STRINGATOM_TABLES
     // setup thread-local string atom table (will be discarded when thread terminates)
     LocalStringAtomTable* localStringAtomTable = n_new(LocalStringAtomTable);
     #endif
@@ -187,7 +187,7 @@ LinuxThread::ThreadProc(void *self)
     threadObj->DoWork();
     threadObj->threadState = Stopped;
     // discard local string atom table
-    #if NEBULA3_ENABLE_THREADLOCAL_STRINGATOM_TABLES
+    #if NEBULA_ENABLE_THREADLOCAL_STRINGATOM_TABLES
     n_delete(localStringAtomTable);
     #endif
     // tell memory system that a thread is ending
@@ -235,7 +235,7 @@ LinuxThread::GetMyThreadId()
 /**
     Static method which returns the stop-requested state of this
     thread. Not yet implemented in Linux (see improvements to thread-local-
-    data system under Linux in the Nebula3 mobile thread).
+    data system under Linux in the Nebula mobile thread).
 */
 bool
 LinuxThread::GetMyThreadStopRequested()
@@ -258,7 +258,7 @@ LinuxThread::YieldThread()
 /**
     Returns an array with infos about all currently existing thread objects.
 */
-#if NEBULA3_DEBUG
+#if NEBULA_DEBUG
 Array<LinuxThread::ThreadDebugInfo>
 LinuxThread::GetRunningThreadDebugInfos()
 {

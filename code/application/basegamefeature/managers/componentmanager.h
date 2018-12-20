@@ -13,11 +13,13 @@
 #include "util/delegate.h"
 #include "util/bitfield.h"
 #include "util/dictionary.h"
+#include "util/stringatom.h"
+#include "ids/id.h"
+#include "util/fourcc.h"
 
 namespace Game
 {
-
-class BaseComponent;
+class ComponentInterface;
 
 class ComponentManager : public Game::Manager
 {
@@ -28,25 +30,31 @@ public:
 	~ComponentManager();
 
 	/// Register a component and setup all event delegates for it.
-	void RegisterComponent(const Ptr<BaseComponent>& component);
-
-	/// Deregister a component and remove all event delegates associated with it.
-	void DeregisterComponent(const Ptr<BaseComponent>& component);
+	void RegisterComponent(ComponentInterface* component, const Util::StringAtom& name);
 
 	/// Deregister all components. Removes all event delegates too.
 	void DeregisterAll();
 
-	/// Retrieve a component from the registry
-	template<class T>
-	const Ptr<T>& GetComponent();
+	/// Destroys all component instances of each component
+	void ClearAll();
 
 	/// Returns the number of components registered.
 	SizeT GetNumComponents() const;
 
-	const Ptr<BaseComponent>& GetComponentAtIndex(IndexT index);
+	/// Linear access to components
+	ComponentInterface* GetComponentAtIndex(IndexT index);
 
-	/// Retrieve a component by fourcc.
-	const Ptr<BaseComponent>& ComponentByFourCC(const Util::FourCC& fourcc);
+	/// Retrieve a component by fourcc
+	ComponentInterface* GetComponentByFourCC(const Util::FourCC& fourcc);
+	
+	/// Retrieve a component by name
+	ComponentInterface* GetComponentByName(const Util::StringAtom& str);
+
+	/// Enable a component with the given fourcc
+	void EnableComponent(const Util::FourCC& fourcc);
+
+	/// Disable a component with the given fourcc
+	void DisableComponent(const Util::FourCC& fourcc);
 
 	/// Execute all OnBeginFrame events
 	void OnBeginFrame();
@@ -61,19 +69,10 @@ public:
 	void OnRenderDebug();
 
 private:
-	Util::Array<Ptr<BaseComponent>> components;
-
-	Util::HashTable<Util::FourCC, Ptr<BaseComponent>> registry;
-
-	/// Find the index of a delegate based on a component
-	static IndexT FindDelegateIndex(const Util::Array<Util::Delegate<>>& delegateArray, const Ptr<BaseComponent>& component);
-
-	/// All arrays containing the delegates for different events.
-	/// Honestly, I don't remember why I designed it like this anymore.
-	Util::Array<Util::Delegate<>> delegates_OnBeginFrame;
-	Util::Array<Util::Delegate<>> delegates_OnRender;
-	Util::Array<Util::Delegate<>> delegates_OnEndFrame;
-	Util::Array<Util::Delegate<>> delegates_OnRenderDebug;
+	// We can afford double hashtables here because there'll never be THAT many components.
+	Util::HashTable<Util::StringAtom, ComponentInterface*, 64> componentByName;
+	Util::HashTable<Util::FourCC, ComponentInterface*, 64> componentByFourcc;
+	Util::Array<ComponentInterface*> components;
 };
 
 } // namespace Game

@@ -3,10 +3,10 @@
 /**
     @class core/types.h
 
-    Basic type definitions for Nebula3.
+    Basic type definitions for Nebula.
 
     (C) 2006 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 
 #if !SPU
@@ -94,10 +94,10 @@ typedef unsigned char byte;
 #endif
 
 #if __VC__
-#define NEBULA3_ALIGN16 __declspec(align(16))
+#define NEBULA_ALIGN16 __declspec(align(16))
 #elif __GNUC__
-#define NEBULA3_ALIGN16 __attribute__((aligned(16)))
+#define NEBULA_ALIGN16 __attribute__((aligned(16)))
 #else
-#define NEBULA3_ALIGN16
+#define NEBULA_ALIGN16
 #endif
 //------------------------------------------------------------------------------

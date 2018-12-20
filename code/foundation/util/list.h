@@ -8,7 +8,7 @@
     insert/remove performance is more important then traversal performance.
     
     (C) 2006 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */    
 #include "core/types.h"
 
@@ -26,10 +26,14 @@ public:
     List();
     /// copy constructor
     List(const List<TYPE>& rhs);
+    /// move constructor
+    List(List<TYPE>&& rhs);
     /// destructor
     ~List();
     /// assignment operator
     void operator=(const List<TYPE>& rhs);
+    /// assignment operator
+    void operator=(List<TYPE>&& rhs);
 
     /// return true if the list is empty
     bool IsEmpty() const;
@@ -152,7 +156,7 @@ List<TYPE>::Node::Node(const TYPE& val) :
 template<class TYPE>
 List<TYPE>::Node::~Node()
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(0 == this->next);
     n_assert(0 == this->prev);
     #endif
@@ -279,7 +283,7 @@ template<class TYPE>
 const typename List<TYPE>::Iterator&
 List<TYPE>::Iterator::operator++()
 {
-    #if NEBULA3_BOUNDSCHECKS    
+    #if NEBULA_BOUNDSCHECKS    
     n_assert(0 != this->node);
     #endif
     this->node = this->node->GetNext();
@@ -293,7 +297,7 @@ template<class TYPE>
 typename List<TYPE>::Iterator
 List<TYPE>::Iterator::operator++(int)
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(0 != this->node);
     #endif
     Iterator temp(this->node);
@@ -308,7 +312,7 @@ template<class TYPE>
 const typename List<TYPE>::Iterator&
 List<TYPE>::Iterator::operator--()
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(0 != this->node);
     #endif
     this->node = this->node->GetPred();
@@ -322,7 +326,7 @@ template<class TYPE>
 typename List<TYPE>::Iterator
 List<TYPE>::Iterator::operator--(int)
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(0 != this->node);
     #endif
     Iterator temp(this->node);    
@@ -346,7 +350,7 @@ template<class TYPE>
 TYPE*
 List<TYPE>::Iterator::operator->() const
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(this->node);
     #endif
     return &(this->node->Value());
@@ -359,7 +363,7 @@ template<class TYPE>
 TYPE&
 List<TYPE>::Iterator::operator*() const
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(this->node);
     #endif
     return this->node->Value();
@@ -395,6 +399,18 @@ List<TYPE>::List(const List<TYPE>& rhs) :
     back(0)
 {
     this->AddList(rhs);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+List<TYPE>::List(List<TYPE>&& rhs) :
+    front(rhs.front),
+    back(rhs.back)
+{
+    rhs.front = nullptr;
+    rhs.back = nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -480,7 +496,7 @@ List<TYPE>::AddAfter(Iterator iter, const TYPE& e)
     Node* node = n_new(Node(e));
     if (0 == iter.GetNode())
     {
-        #if NEBULA3_BOUNDSCHECKS
+        #if NEBULA_BOUNDSCHECKS
         n_assert((0 == this->front) && (0 == this->back));
         #endif
         this->front = node;
@@ -513,7 +529,7 @@ List<TYPE>::AddBefore(Iterator iter, const TYPE& e)
     Node *node = n_new(Node(e));
     if (0 == iter.GetNode())
     {
-        #if NEBULA3_BOUNDSCHECKS
+        #if NEBULA_BOUNDSCHECKS
         n_assert((0 == this->front) && (0 == this->back));
         #endif
         this->front = node;
@@ -563,7 +579,7 @@ template<class TYPE>
 TYPE
 List<TYPE>::Remove(Iterator iter)
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(iter.GetNode());
     #endif
     Node* node = iter.GetNode();
@@ -597,7 +613,7 @@ template<class TYPE>
 TYPE
 List<TYPE>::RemoveFront()
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(0 != this->front);
     #endif
     return this->Remove(this->front);
@@ -610,7 +626,7 @@ template<class TYPE>
 TYPE
 List<TYPE>::RemoveBack()
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(0 != this->back);
     #endif
     return this->Remove(this->back);
@@ -623,7 +639,7 @@ template<class TYPE>
 TYPE&
 List<TYPE>::Front() const
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(0 != this->front);
     #endif
     return this->front->Value();
@@ -636,7 +652,7 @@ template<class TYPE>
 TYPE&
 List<TYPE>::Back() const
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(0 != this->back);
     #endif
     return this->back->Value();

@@ -3,13 +3,14 @@
 /**
 	Implements a Vulkan immediate shape and primitive renderer (debug meshes, random primitives, wireframes etc)
 	
-	(C) 2016 Individual contributors, see AUTHORS file
+	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "coregraphics/base/shaperendererbase.h"
 #include "coregraphics/vertexlayout.h"
 #include "coregraphics/vertexbuffer.h"
 #include "coregraphics/indexbuffer.h"
+#include "coregraphics/resourcetable.h"
 #include "util/fixedarray.h"
 namespace Vulkan
 {
@@ -71,15 +72,14 @@ private:
 	Util::FixedArray<Resources::ResourceId> shapeMeshResources;
 	Util::FixedArray<CoreGraphics::MeshId> shapeMeshes;
 	CoreGraphics::ShaderId shapeShader;
-	CoreGraphics::ShaderStateId shapeShaderState;
+
 	CoreGraphics::PrimitiveGroup primGroup;
 
 	CoreGraphics::VertexBufferId vbo;
 	CoreGraphics::IndexBufferId ibo;
 	CoreGraphics::VertexLayoutId vertexLayout;
-	CoreGraphics::ShaderConstantId model;
-	CoreGraphics::ShaderConstantId viewProjection;
-	CoreGraphics::ShaderConstantId diffuseColor;
+	CoreGraphics::ConstantBinding model;
+	CoreGraphics::ConstantBinding diffuseColor;
 
 	SizeT numPrimitives;
 	SizeT numIndices;
@@ -100,7 +100,7 @@ private:
 		Util::Array<Math::matrix44> transforms;
 	} unindexed;
 
-	static const GLuint NumBuffers = 12;
+	static const uint8 NumBuffers = 12;
 	byte* vertexBufferPtr;
 	byte* indexBufferPtr;
 };

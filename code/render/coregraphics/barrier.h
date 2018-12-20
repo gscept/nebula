@@ -4,7 +4,7 @@
 	A barrier is a memory barrier between two GPU operations, 
 	and thus allows for a guarantee of concurrency.
 
-	(C) 2017 Individual contributors, see AUTHORS file
+	(C)2017-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "ids/id.h"
@@ -88,11 +88,11 @@ ID_24_8_TYPE(BarrierId);
 
 struct ImageSubresourceInfo
 {
-	ImageAspect aspect;
+	CoreGraphicsImageAspect aspect;
 	uint mip, mipCount, layer, layerCount;
 
 	ImageSubresourceInfo() :
-		aspect(ImageAspect::ColorBits | ImageAspect::DepthBits | ImageAspect::StencilBits),
+		aspect(CoreGraphicsImageAspect::ColorBits | CoreGraphicsImageAspect::DepthBits | CoreGraphicsImageAspect::StencilBits),
 		mip(0),
 		mipCount(1),
 		layer(0),
@@ -110,9 +110,9 @@ struct BarrierCreateInfo
 	BarrierDomain domain;
 	BarrierStage leftDependency;
 	BarrierStage rightDependency;
-	Util::Array<std::tuple<RenderTextureId, ImageSubresourceInfo, ImageLayout, ImageLayout, BarrierAccess, BarrierAccess>> renderTextures;
+	Util::Array<std::tuple<RenderTextureId, ImageSubresourceInfo, CoreGraphicsImageLayout, CoreGraphicsImageLayout, BarrierAccess, BarrierAccess>> renderTextures;
 	Util::Array<std::tuple<ShaderRWBufferId, BarrierAccess, BarrierAccess>> shaderRWBuffers;
-	Util::Array<std::tuple<ShaderRWTextureId, ImageSubresourceInfo, ImageLayout, ImageLayout, BarrierAccess, BarrierAccess>> shaderRWTextures;
+	Util::Array<std::tuple<ShaderRWTextureId, ImageSubresourceInfo, CoreGraphicsImageLayout, CoreGraphicsImageLayout, BarrierAccess, BarrierAccess>> shaderRWTextures;
 };
 
 /// create barrier object
@@ -185,20 +185,20 @@ BarrierAccessFromString(const Util::String& str)
 //------------------------------------------------------------------------------
 /**
 */
-inline ImageAspect
+inline CoreGraphicsImageAspect
 ImageAspectFromString(const Util::String& str)
 {
-	if (str == "Color")				return ImageAspect::ColorBits;
-	else if (str == "Depth")		return ImageAspect::DepthBits;
-	else if (str == "Stencil")		return ImageAspect::StencilBits;
-	else if (str == "Metadata")		return ImageAspect::MetaBits;
-	else if (str == "Plane0")		return ImageAspect::Plane0Bits;
-	else if (str == "Plane1")		return ImageAspect::Plane1Bits;
-	else if (str == "Plane2")		return ImageAspect::Plane2Bits;
+	if (str == "Color")				return CoreGraphicsImageAspect::ColorBits;
+	else if (str == "Depth")		return CoreGraphicsImageAspect::DepthBits;
+	else if (str == "Stencil")		return CoreGraphicsImageAspect::StencilBits;
+	else if (str == "Metadata")		return CoreGraphicsImageAspect::MetaBits;
+	else if (str == "Plane0")		return CoreGraphicsImageAspect::Plane0Bits;
+	else if (str == "Plane1")		return CoreGraphicsImageAspect::Plane1Bits;
+	else if (str == "Plane2")		return CoreGraphicsImageAspect::Plane2Bits;
 	else
 	{
 		n_error("Invalid access string '%s'\n", str.AsCharPtr());
-		return ImageAspect::ColorBits;
+		return CoreGraphicsImageAspect::ColorBits;
 	}
 }
 
@@ -206,19 +206,19 @@ ImageAspectFromString(const Util::String& str)
 //------------------------------------------------------------------------------
 /**
 */
-inline ImageLayout
+inline CoreGraphicsImageLayout
 ImageLayoutFromString(const Util::String& str)
 {
-	if (str == "Undefined")					return ImageLayout::Undefined;
-	else if (str == "General")				return ImageLayout::General;
-	else if (str == "ColorRenderTexture")	return ImageLayout::ColorRenderTexture;
-	else if (str == "DepthRenderTexture")	return ImageLayout::DepthStencilRenderTexture;
-	else if (str == "StencilRead")			return ImageLayout::DepthStencilRead;
-	else if (str == "ShaderRead")			return ImageLayout::ShaderRead;
-	else if (str == "TransferSource")		return ImageLayout::TransferSource;
-	else if (str == "TransferDestination")	return ImageLayout::TransferDestination;
-	else if (str == "Preinitialized")		return ImageLayout::Preinitialized;
-	else if (str == "Present")				return ImageLayout::Present;
-	return ImageLayout::Undefined;
+	if (str == "Undefined")					return CoreGraphicsImageLayout::Undefined;
+	else if (str == "General")				return CoreGraphicsImageLayout::General;
+	else if (str == "ColorRenderTexture")	return CoreGraphicsImageLayout::ColorRenderTexture;
+	else if (str == "DepthRenderTexture")	return CoreGraphicsImageLayout::DepthStencilRenderTexture;
+	else if (str == "StencilRead")			return CoreGraphicsImageLayout::DepthStencilRead;
+	else if (str == "ShaderRead")			return CoreGraphicsImageLayout::ShaderRead;
+	else if (str == "TransferSource")		return CoreGraphicsImageLayout::TransferSource;
+	else if (str == "TransferDestination")	return CoreGraphicsImageLayout::TransferDestination;
+	else if (str == "Preinitialized")		return CoreGraphicsImageLayout::Preinitialized;
+	else if (str == "Present")				return CoreGraphicsImageLayout::Present;
+	return CoreGraphicsImageLayout::Undefined;
 }
 } // namespace CoreGraphics

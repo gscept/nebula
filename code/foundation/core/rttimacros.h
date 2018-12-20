@@ -3,11 +3,11 @@
 /**
     @file core/rttimacros.h
     
-    This defines the macros for Nebula3's RTTI mechanism 
+    This defines the macros for Nebula's RTTI mechanism 
     (__DeclareClass, __ImplementClass, etc...).
     
     (C) 2008 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file	
+    (C) 2013-2018 Individual contributors, see AUTHORS file	
 */
 
 //------------------------------------------------------------------------------
@@ -248,6 +248,14 @@ private:
 #define __ImplementAbstractClass(type, fourcc, baseType) \
     Core::Rtti type::RTTI(#type, fourcc, nullptr, nullptr, &baseType::RTTI, 0); \
     Core::Rtti* type::GetRtti() const { return &this->RTTI; }
+
+//------------------------------------------------------------------------------
+/**
+*/
+#define __ImplementAbstractRootClass(type, fourcc) \
+    Core::Rtti type::RTTI(#type, fourcc, nullptr, nullptr, nullptr, 0); \
+    Core::Rtti* type::GetRtti() const { return &this->RTTI; }
+
 
 //------------------------------------------------------------------------------
 /**

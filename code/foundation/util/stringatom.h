@@ -10,7 +10,7 @@
     converting back to String!
 
     (C) 2007 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "util/string.h"
 #include <functional>
@@ -44,6 +44,8 @@ public:
 
     /// equality operator
     bool operator==(const StringAtom& rhs) const;
+	/// equality operator for nullptr
+	bool operator==(nullptr_t) const;
     /// inequality operator
     bool operator!=(const StringAtom& rhs) const;
     /// greater-then operator

@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 //  ogl4streammeshloader.cc
 //  (C) 2007 Radon Labs GmbH
-//  (C) 2013-2016 Individual contributors, see AUTHORS file
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "coregraphics/ogl4/ogl4streammeshloader.h"
@@ -35,7 +35,7 @@ OGL4StreamMeshLoader::SetupResourceFromStream(const Ptr<Stream>& stream)
     n_assert(stream.isvalid());
     n_assert(this->resource.isvalid());
     String resIdExt = this->resource->GetResourceId().AsString().GetFileExtension();
-    #if NEBULA3_LEGACY_SUPPORT
+    #if NEBULA_LEGACY_SUPPORT
     if (resIdExt == "nvx2")
     {
         return this->SetupMeshFromNvx2(stream);
@@ -61,7 +61,7 @@ OGL4StreamMeshLoader::SetupResourceFromStream(const Ptr<Stream>& stream)
 /**
     Setup the mesh resource from legacy nvx2 file (Nebula2 binary mesh format).
 */
-#if NEBULA3_LEGACY_SUPPORT
+#if NEBULA_LEGACY_SUPPORT
 bool
 OGL4StreamMeshLoader::SetupMeshFromNvx2(const Ptr<Stream>& stream)
 {
@@ -86,7 +86,7 @@ OGL4StreamMeshLoader::SetupMeshFromNvx2(const Ptr<Stream>& stream)
 
 //------------------------------------------------------------------------------
 /**
-    Setup the mesh resource from a nvx3 file (Nebula3's
+    Setup the mesh resource from a nvx3 file (Nebula's
     native binary mesh file format).
 */
 bool
@@ -99,7 +99,7 @@ OGL4StreamMeshLoader::SetupMeshFromNvx3(const Ptr<Stream>& stream)
 
 //------------------------------------------------------------------------------
 /**
-    Setup the mesh resource from a n3d3 file (Nebula3's
+    Setup the mesh resource from a n3d3 file (Nebula's
     native ascii mesh file format).
 */
 bool

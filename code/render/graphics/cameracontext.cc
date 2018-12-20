@@ -9,7 +9,7 @@
 namespace Graphics
 {
 
-ImplementContext(CameraContext);
+_ImplementContext(CameraContext);
 CameraContext::CameraAllocator CameraContext::cameraAllocator;
 
 //------------------------------------------------------------------------------
@@ -37,7 +37,7 @@ CameraContext::Create()
 	__bundle.OnBeforeFrame = CameraContext::OnBeforeFrame;
 	Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle);
 
-	CreateContext();
+	_CreateContext();
 }
 
 //------------------------------------------------------------------------------
@@ -46,14 +46,14 @@ CameraContext::Create()
 void
 CameraContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime)
 {
-	const Util::Array<Math::matrix44>& views = cameraAllocator.GetArray<1>();
-	const Util::Array<Math::matrix44>& proj = cameraAllocator.GetArray<2>();
+	const Util::Array<Math::matrix44>& proj = cameraAllocator.GetArray<1>();
+	const Util::Array<Math::matrix44>& views = cameraAllocator.GetArray<2>();
 	const Util::Array<Math::matrix44>& viewproj = cameraAllocator.GetArray<3>();
 
 	IndexT i;
 	for (i = 0; i < viewproj.Size(); i++)
 	{
-		viewproj[i] = Math::matrix44::multiply(views[i], proj[i]);
+		viewproj[i] = Math::matrix44::multiply(proj[i], views[i]);
 	}
 }
 
@@ -65,8 +65,8 @@ CameraContext::SetupProjectionFov(const Graphics::GraphicsEntityId id, float asp
 {
 	const ContextEntityId cid = GetContextId(id);
 	CameraSettings& settings = cameraAllocator.Get<0>(cid.id);
-	settings.SetupPerspectiveFov(aspect, fov, znear, zfar);
-	cameraAllocator.Get<1>(id.id) = settings.GetProjTransform();
+	settings.SetupPerspectiveFov(fov, aspect, znear, zfar);
+	cameraAllocator.Get<1>(cid.id) = settings.GetProjTransform();
 }
 
 //------------------------------------------------------------------------------
@@ -78,7 +78,7 @@ CameraContext::SetupOrthographic(const Graphics::GraphicsEntityId id, float widt
 	const ContextEntityId cid = GetContextId(id);
 	CameraSettings& settings = cameraAllocator.Get<0>(cid.id);
 	settings.SetupOrthogonal(width, height, znear, zfar);
-	cameraAllocator.Get<1>(id.id) = settings.GetProjTransform();
+	cameraAllocator.Get<1>(cid.id) = settings.GetProjTransform();
 }
 
 //------------------------------------------------------------------------------

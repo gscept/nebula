@@ -3,12 +3,13 @@
 /**
 	Implements HBAO  as a script algorithm
 	
-	(C) 2016 Individual contributors, see AUTHORS file
+	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
 #include "algorithm.h"
 #include "coregraphics/shader.h"
+#include "coregraphics/resourcetable.h"
 #include "coregraphics/barrier.h"
 namespace Algorithms
 {
@@ -27,19 +28,18 @@ public:
 
 private:
 
-	CoreGraphics::ShaderStateId hbao, blur;
+	
 	CoreGraphics::ShaderId hbaoShader, blurShader;
 	CoreGraphics::ShaderProgramId xDirectionHBAO, yDirectionHBAO, xDirectionBlur, yDirectionBlur;
 
-	// texture variables
-	CoreGraphics::ShaderConstantId hbao0Var, hbao1Var, hbaoX, hbaoY, hbaoBlurRGVar, hbaoBlurRVar;
+	CoreGraphics::ResourceTableId hbaoTable, blurTable;
+	CoreGraphics::ConstantBufferId hbaoConstants, blurConstants;
+	IndexT hbao0, hbao1, hbaoX, hbaoY, hbaoBlurRG, hbaoBlurR, hbaoC, blurC;
 
-	// ao variables
-	CoreGraphics::ShaderConstantId
-		uvToViewAVar, uvToViewBVar, r2Var, 
-		aoResolutionVar, invAOResolutionVar, strengthVar, tanAngleBiasVar, 
+	CoreGraphics::ConstantBinding uvToViewAVar, uvToViewBVar, r2Var,
+		aoResolutionVar, invAOResolutionVar, strengthVar, tanAngleBiasVar,
 		powerExponentVar, blurFalloff, blurDepthThreshold;
-
+		
 	// read-write textures
 	CoreGraphics::ShaderRWTextureId internalTargets[2];
 

@@ -1,5 +1,5 @@
 <!DOCTYPE dx11default>
-<Nebula3>
+<Nebula>
  <FrameShader>
   
   <!-- depth-stencil buffers -->
@@ -300,4 +300,4 @@
   </PostEffect>  
    
  </FrameShader>
-</Nebula3>
+</Nebula>

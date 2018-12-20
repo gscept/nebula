@@ -6,7 +6,7 @@
     A plane class on top of VectorMath functions.
 
     (C) 2007 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 #include "math/scalar.h"
@@ -30,7 +30,7 @@ typedef const plane& __PlaneArg;
 #endif
 
 
-class NEBULA3_ALIGN16 plane
+class NEBULA_ALIGN16 plane
 {
 public:
     /// default constructor, NOTE: does NOT setup componenets!

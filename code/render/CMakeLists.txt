@@ -12,7 +12,7 @@ FIND_PROGRAM(SHADERC
 fips_begin_module(render)
 	add_nebula_shaders()
 	fips_vs_warning_level(3)
-	fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/resource ${CODE_ROOT}/foundation)	
+	fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/resource ${CODE_ROOT}/foundation ${CODE_ROOT}/addons)	
 	fips_deps(foundation resource anyfx libpng libjpeg DevIL)
 	
 	if(N_USE_VULKAN)
@@ -298,6 +298,8 @@ ENDIF()
 				vkcmdbufferthread.h
 				vkevent.cc
 				vkevent.h
+				vkfence.cc
+				vkfence.h
 				vkgraphicsdevice.h
 				vkgraphicsdevice.cc
 				vkdeferredcommand.cc
@@ -334,10 +336,6 @@ ENDIF()
 				vkshaderprogram.h
 				vkshaderserver.cc
 				vkshaderserver.h
-				vkshaderstate.cc
-				vkshaderstate.h
-				vkshaderconstant.cc
-				vkshaderconstant.h
 				vkshaperenderer.cc
 				vkshaperenderer.h
 				vkshaderpool.cc
@@ -421,10 +419,6 @@ ENDIF()
 				graphicsentity.h
 				graphicsserver.cc
 				graphicsserver.h
-				lightcontext.cc
-				lightcontext.h
-				lightprobecontext.cc
-				lightprobecontext.h
 				stage.cc
 				stage.h
 				view.cc
@@ -469,6 +463,16 @@ ENDIF()
 				mousebutton.cc
 				mousebutton.h
 			)
+	
+	fips_dir(lighting)
+		fips_files(
+			csmutil.cc
+			csmutil.h
+			lightcontext.cc
+			lightcontext.h
+			lightprobecontext.cc
+			lightprobecontext.h
+		)
 IF(FALSE)
 
 		fips_dir(instancing)
@@ -512,22 +516,7 @@ IF(FALSE)
 			#../visibility/jobs/visibilityquadtreejob.cc
 			../particles/jobs/particlejob.cc
 			)			
-		fips_dir(lighting/base GROUP "lighting/base")
-			fips_files(
-				lightserverbase.cc
-				lightserverbase.h
-				shadowserverbase.cc
-				shadowserverbase.h
-			)
-	if (N_USE_VULKAN)
-		fips_dir(lighting/vk GROUP "lighting/vk")
-			fips_files(
-				vklightserver.cc
-				vklightserver.h
-				vkshadowserver.cc
-				vkshadowserver.h
-			)
-	endif()
+
 		fips_dir(lighting/handlers GROUP "lighting/handlers")
 			fips_files(
 				abstractlightentityhandler.cc
@@ -535,66 +524,17 @@ IF(FALSE)
 				pointlightentityhandler.cc
 				spotlightentityhandler.cc
 			)
-		fips_dir(lighting)
-			fips_files(
-				csmutil.cc
-				csmutil.h
-				environmentprobe.cc
-				environmentprobe.h
-				lightserver.cc
-				lightserver.h
-				lighttype.cc
-				lighttype.h
-				shadowserver.cc
-				shadowserver.h
-			)
-
-		fips_dir(materials)
-			fips_files(
-				material.cc
-				material.h
-				materialfeature.cc
-				materialfeature.h
-				materialinstance.cc
-				materialinstance.h
-				materialloader.cc
-				materialloader.h
-				materialpalette.cc
-				materialpalette.h
-				materialserver.cc
-				materialserver.h
-				materialtype.cc
-				materialtype.h
-				materialvariable.cc
-				materialvariable.h
-				materialvariableinstance.cc
-				materialvariableinstance.h
-				streamsurfaceloader.cc
-				streamsurfaceloader.h
-				streamsurfacesaver.cc
-				streamsurfacesaver.h
-				surface.cc
-				surface.h
-				surfaceconstant.cc
-				surfaceconstant.h
-				surfaceconstantinstance.cc
-				surfaceconstantinstance.h
-				surfaceinstance.cc
-				surfaceinstance.h
-				surfacename.cc
-				surfacename.h
-			)
 ENDIF()
 		fips_dir(materials)
 			fips_files(
 				material.cc
 				material.h
-				materialpool.cc
-				materialpool.h
 				materialserver.cc
 				materialserver.h
 				materialtype.cc
 				materialtype.h
+				surfacepool.cc
+				surfacepool.h
 			)
 		fips_dir(models/nodes GROUP "models/nodes")
 			fips_files(
@@ -652,47 +592,36 @@ ENDIF()
 		mouserayutil.cc
 		mouserayutil.h
 	)
-		fips_dir(particles)
-			fips_files(
-				emitterattrs.cc
-				emitterattrs.h
-				emittermesh.cc
-				emittermesh.h
-				envelopecurve.cc
-				envelopecurve.h
-				envelopesamplebuffer.cc
-				envelopesamplebuffer.h
-				particle.h
-				particlerenderer.cc
-				particlerenderer.h
-				particlerenderinfo.h
-				particleserver.cc
-				particleserver.h
-				particlesystem.cc
-				particlesystem.h
-				particlesysteminstance.cc
-				particlesysteminstance.h
-				particlesystemstate.h
-			)
-IF(FALSE)
+	fips_dir(particles)
+		fips_files(
+			emitterattrs.cc
+			emitterattrs.h
+			emittermesh.cc
+			emittermesh.h
+			envelopecurve.cc
+			envelopecurve.h
+			envelopesamplebuffer.cc
+			envelopesamplebuffer.h
+			particle.h
+			particlerenderer.cc
+			particlerenderer.h
+			particlerenderinfo.h
+			particleserver.cc
+			particleserver.h
+			particlesystem.cc
+			particlesystem.h
+			particlesysteminstance.cc
+			particlesysteminstance.h
+			particlesystemstate.h
+		)
 
+	IF(FALSE)
 		fips_dir(picking)
 			fips_files(
 				pickingserver.cc
 				pickingserver.h
 			)
-		fips_dir(rendermodules/rt GROUP "rendermodules/rt")
-			fips_files(
-				rtplugin.cc
-				rtplugin.h
-				rtpluginregistry.cc
-				rtpluginregistry.h
-			)
-		fips_dir(rendermodules)
-			fips_files(
-				rendermodule.cc
-				rendermodule.h
-			)
+
 
 		fips_dir(skinning)
 		
@@ -727,3 +656,7 @@ ENDIF()
 				visibilitysystem.cc
 			)
 fips_end_module()
+# FIXME
+if(N_USE_VULKAN)		
+		target_include_directories(render PUBLIC ${Vulkan_INCLUDE_DIR})        
+endif()

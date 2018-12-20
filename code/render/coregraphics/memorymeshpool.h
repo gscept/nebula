@@ -6,7 +6,7 @@
     Setup a Mesh object from a given vertex, index buffer and primitive group.
     
     (C) 2008 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "resources/resourcememorypool.h"
 #include "coregraphics/vertexbuffer.h"
@@ -36,9 +36,7 @@ public:
 	/// get primitive groups from mesh
 	const Util::Array<CoreGraphics::PrimitiveGroup>& GetPrimitiveGroups(const MeshId id) const;
 	/// get vertex buffer
-	const VertexBufferId GetVertexBuffer(const MeshId id) const;
-	/// get vertex layout
-	const VertexLayoutId GetVertexLayout(const MeshId id) const;
+	const VertexBufferId GetVertexBuffer(const MeshId id, const IndexT stream) const;	
 	/// get index buffer
 	const IndexBufferId GetIndexBuffer(const MeshId id) const;
 	/// get topology

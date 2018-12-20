@@ -3,7 +3,7 @@
 /**
 	Implements a pool of vertex signatures (vertex shader input layouts) for Vulkan
 	
-	(C) 2017 Individual contributors, see AUTHORS file
+	(C)2017-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "resources/resourcememorypool.h"
@@ -34,6 +34,41 @@ public:
 	{
 		VkPipelineVertexInputStateCreateInfo info;
 		Util::Array<VkVertexInputAttributeDescription> attrs;
+
+		DerivativeLayout()
+		{
+
+		}
+		DerivativeLayout(const DerivativeLayout& rhs)
+		{
+			this->info = rhs.info;
+			this->attrs = rhs.attrs;
+			this->info.vertexAttributeDescriptionCount = this->attrs.Size();
+			this->info.pVertexAttributeDescriptions = this->attrs.Begin();
+		}
+		DerivativeLayout(DerivativeLayout&& rhs)
+		{
+			this->info = rhs.info;
+			this->attrs = std::move(rhs.attrs);
+			this->info.vertexAttributeDescriptionCount = this->attrs.Size();
+			this->info.pVertexAttributeDescriptions = this->attrs.Begin();
+		}
+
+		void operator=(const DerivativeLayout& rhs)
+		{
+			this->info = rhs.info;
+			this->attrs = rhs.attrs;
+			this->info.vertexAttributeDescriptionCount = this->attrs.Size();
+			this->info.pVertexAttributeDescriptions = this->attrs.Begin();
+		}
+
+		void operator=(DerivativeLayout&& rhs)
+		{
+			this->info = rhs.info;
+			this->attrs = std::move(rhs.attrs);
+			this->info.vertexAttributeDescriptionCount = this->attrs.Size();
+			this->info.pVertexAttributeDescriptions = this->attrs.Begin();
+		}
 	};
 
 	struct BindInfo

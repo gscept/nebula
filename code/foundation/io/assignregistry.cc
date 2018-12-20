@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 //  assignregistry.cc
 //  (C) 2008 Radon Labs GmbH
-//  (C) 2013-2016 Individual contributors, see AUTHORS file
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "io/assignregistry.h"
@@ -169,7 +169,6 @@ AssignRegistry::SetupProjectAssigns()
     this->SetAssign(Assign("audio", "export:audio"));
     this->SetAssign(Assign("phys", "export:physics"));
     this->SetAssign(Assign("sui", "export:sui"));       
-    this->SetAssign(Assign("wiidata", "export:wiidata"));   
     this->SetAssign(Assign("mat", "export:materials"));
 	this->SetAssign(Assign("sur", "export:surfaces"));
     this->SetAssign(Assign("scr", "root:data/scripts"));
@@ -190,6 +189,9 @@ AssignRegistry::SetupProjectAssigns()
     this->SetAssign(Assign("meshes", "export:meshes"));
     this->SetAssign(Assign("anims", "export:anims"));
     this->SetAssign(Assign("textures", "export:textures"));
+
+    // tools assigns
+    this->SetAssign(Assign("tool", Core::CoreServer::Instance()->GetToolDirectory().AsString()));    
 
     this->critSect.Leave();
 }
@@ -264,7 +266,7 @@ AssignRegistry::GetAllAssigns() const
 {
     this->critSect.Enter();
 
-    Array<KeyValuePair<String,String> > content = this->assignTable.Content();
+    ArrayStack<KeyValuePair<String,String>, 1> content = this->assignTable.Content();
     Array<Assign> assigns(content.Size(), 0);
     IndexT i;
     for (i = 0; i < content.Size(); i++)

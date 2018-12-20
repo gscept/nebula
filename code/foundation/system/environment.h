@@ -5,7 +5,7 @@
     
     Provides read-access to environment variables. Useful for tools.
         
-    (C) 2013 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #if __WIN32__
 #include "system/win32/win32environment.h"

@@ -7,6 +7,7 @@
  * 	support for the __thread keyword.
  *
  * 	(C) A.Weissflog 2011
+ *  (C) 2013-2018 Individual contributors, see AUTHORS file
  */
 #include "threading/linux/linuxthreadlocaldata.h"
 

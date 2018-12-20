@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 //  iopagehandler.cc
 //  (C) 2007 Radon Labs GmbH
-//  (C) 2013-2016 Individual contributors, see AUTHORS file
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "io/debug/iopagehandler.h"
@@ -48,7 +48,7 @@ IoPageHandler::HandleRequest(const Ptr<HttpRequest>& request)
     // no command, display root page
     Ptr<HtmlPageWriter> htmlWriter = HtmlPageWriter::Create();
     htmlWriter->SetStream(request->GetResponseContentStream());
-    htmlWriter->SetTitle("NebulaT IO Subsystem Info");
+    htmlWriter->SetTitle("Nebula IO Subsystem Info");
     if (htmlWriter->Open())
     {
         AssignRegistry* assignRegistry = AssignRegistry::Instance();
@@ -134,7 +134,7 @@ IoPageHandler::ListDirectory(const Util::String& path, const Ptr<HttpRequest>& r
 {
     Ptr<HtmlPageWriter> htmlWriter = HtmlPageWriter::Create();
     htmlWriter->SetStream(request->GetResponseContentStream());
-    htmlWriter->SetTitle("NebulaT Directory Listing");
+    htmlWriter->SetTitle("Nebula Directory Listing");
     if (htmlWriter->Open())
     {
         IoServer* ioServer = IoServer::Instance();        

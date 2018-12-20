@@ -3,7 +3,7 @@
 /**
 	Implements a Vulkan pass, which translates into a VkRenderPass.
 	
-	(C) 2016 Individual contributors, see AUTHORS file
+	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "coregraphics/shader.h"
@@ -18,10 +18,11 @@ struct VkPassLoadInfo
 {
 	VkDevice dev;
 	VkDescriptorPool pool;
+	Util::StringAtom name;
 
 	// these hold the per-pass shader state
 	CoreGraphics::ConstantBufferId passBlockBuffer;
-	CoreGraphics::ShaderConstantId renderTargetDimensionsVar;
+	CoreGraphics::ConstantBinding renderTargetDimensionsVar;
 
 	// we need these stored for resizing
 	Util::Array<CoreGraphics::RenderTextureId> colorAttachments;
@@ -67,6 +68,7 @@ const VkGraphicsPipelineCreateInfo& PassGetVkFramebufferInfo(const CoreGraphics:
 const Util::FixedArray<VkRect2D>& PassGetVkRects(const CoreGraphics::PassId& id);
 /// get viewports for current subpass
 const Util::FixedArray<VkViewport>& PassGetVkViewports(const CoreGraphics::PassId& id);
+
 
 
 } // namespace Vulkan

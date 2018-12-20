@@ -6,10 +6,10 @@
     Describes the general data type of the keys stored in an animation curve.
     
     (C) 2008 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
-#if !__NEBULA3_JOB__
+#if !__NEBULA_JOB__
 #include "util/string.h"
 #endif
 
@@ -33,7 +33,7 @@ public:
         InvalidCurveType,
     };
 
-    #if !__NEBULA3_JOB__
+    #if !__NEBULA_JOB__
     /// convert from string
     static Code FromString(const Util::String& str);
     /// convert to string

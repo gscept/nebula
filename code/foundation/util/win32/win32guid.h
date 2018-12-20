@@ -8,7 +8,7 @@
     most collections.
     
     (C) 2006 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 #include "util/string.h"
@@ -78,7 +78,7 @@ Win32Guid::operator new(size_t size)
     n_assert(size == sizeof(Win32Guid));
     #endif
 
-    #if NEBULA3_OBJECTS_USE_MEMORYPOOL
+    #if NEBULA_OBJECTS_USE_MEMORYPOOL
         return Memory::ObjectPoolAllocator->Alloc(size);
     #else
         return Memory::Alloc(Memory::ObjectHeap, size);
@@ -91,7 +91,7 @@ Win32Guid::operator new(size_t size)
 __forceinline void
 Win32Guid::operator delete(void* ptr)
 {
-    #if NEBULA3_OBJECTS_USE_MEMORYPOOL
+    #if NEBULA_OBJECTS_USE_MEMORYPOOL
         return Memory::ObjectPoolAllocator->Free(ptr, sizeof(Win32Guid));
     #else
         return Memory::Free(Memory::ObjectHeap, ptr);

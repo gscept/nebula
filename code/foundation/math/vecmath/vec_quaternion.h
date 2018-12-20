@@ -6,7 +6,7 @@
     A quaternion class using SSE
 
     (C) 2007 Radon Labs GmbH
-    (C) 2013-2017 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 #include "math/scalar.h"
@@ -27,7 +27,7 @@ typedef const quaternion& __QuaternionArg;
 #endif
 
 
-class NEBULA3_ALIGN16 quaternion
+class NEBULA_ALIGN16 quaternion
 {
 public:
     /// default constructor, NOTE: does NOT setup components!
@@ -487,7 +487,7 @@ quaternion::barycentric(const quaternion& q0, const quaternion& q1, const quater
 __forceinline quaternion
 quaternion::conjugate(const quaternion& q)
 {
-	const NEBULA3_ALIGN16 mm128_vec con = {-1.0f, -1.0f, -1.0f, 1.0f};	
+	const NEBULA_ALIGN16 mm128_vec con = {-1.0f, -1.0f, -1.0f, 1.0f};	
 	quaternion qq(_mm_mul_ps(q.vec.vec,con.vec));
 	return qq;
 }
@@ -570,8 +570,8 @@ quaternion::ln(const quaternion& q)
 /**
 */
 __forceinline quaternion
-quaternion::multiply(const quaternion& q0, const quaternion& q1)
-{
+quaternion::multiply(const quaternion& q1, const quaternion& q0)
+{ 
 	//FIXME untested
 	__m128 rev = _mm_shuffle_ps(q0.vec.vec, q0.vec.vec, _MM_SHUFFLE(0, 1, 2, 3));
 	__m128 lo = _mm_shuffle_ps(q1.vec.vec, q1.vec.vec, _MM_SHUFFLE(0, 1, 0, 1));
@@ -598,12 +598,20 @@ quaternion::normalize(const quaternion& q)
 
 //------------------------------------------------------------------------------
 /**
+    quaternion from rotation axis + angle. Axis has to be normalized
 */
 __forceinline quaternion
 quaternion::rotationaxis(const float4& axis, scalar angle)
-{
-	n_error("not implemented");
-	return quaternion();
+{        
+    n_assert2(n_nearequal(axis.length3(), 1.0f, 0.001f), "axis needs to be normalized");
+
+    float sinangle = n_sin(0.5f * angle);
+    float cosangle = n_cos(0.5f * angle);
+
+    // set w component to 1
+    __m128 b = _mm_and_ps(axis.vec.vec, _mask_xyz);
+    b = _mm_or_ps(b, _id_w);            
+    return _mm_mul_ps(b, _mm_set_ps(cosangle, sinangle, sinangle, sinangle));
 }
 
 //------------------------------------------------------------------------------
@@ -633,12 +641,52 @@ quaternion::rotationyawpitchroll(scalar yaw, scalar pitch, scalar roll)
 
 //------------------------------------------------------------------------------
 /**
+    quaternion slerp
+    TODO: rewrite using sse/avx
 */
 __forceinline quaternion
 quaternion::slerp(const quaternion& q1, const quaternion& q2, scalar t)
-{
-	n_error("not implemented");
-	return quaternion();	
+{    
+    __m128 to;
+
+    float qdot = dot(q1, q2);
+    // flip when negative angle
+    if (qdot < 0)
+    {
+        qdot = -qdot;
+        to = _mm_mul_ps(q2.vec.vec, _mm_set_ps1(-1.0f));
+    }
+    else
+    {
+        to = q2.vec.vec;
+    }
+        
+    // just lerp when angle between is narrow
+    if (qdot < 0.95f)
+    {
+        //dont break acos
+        float clamped = n_clamp(qdot, -1.0f, 1.0f);
+        float angle = n_acos(clamped);
+        
+        float sin_angle = n_sin(angle);
+        float sin_angle_t = n_sin(angle*t);
+        float sin_omega_t = n_sin(angle*(1.0f - t));
+
+        __m128 s0 = _mm_set_ps1(sin_omega_t);
+        __m128 s1 = _mm_set_ps1(sin_angle_t);
+        __m128 sin_div = _mm_set_ps1(1.0f / sin_angle);
+        return  _mm_mul_ps (_mm_add_ps(_mm_mul_ps(q1.vec.vec, s0), _mm_mul_ps(to, s1)), sin_div);
+    }
+    else
+    { 
+        
+        float scale0 = 1.0f - t;
+        float scale1 = t;
+        __m128 s0 = _mm_set_ps1(scale0);
+        __m128 s1 = _mm_set_ps1(scale1);
+
+        return _mm_add_ps(_mm_mul_ps(q1.vec.vec, s0), _mm_mul_ps(to, s1));
+    }    
 }
 
 //------------------------------------------------------------------------------
@@ -647,7 +695,9 @@ quaternion::slerp(const quaternion& q1, const quaternion& q2, scalar t)
 __forceinline void
 quaternion::squadsetup(const quaternion& q0, const quaternion& q1, const quaternion& q2, const quaternion& q3, quaternion& aOut, quaternion& bOut, quaternion& cOut)
 {
-	n_error("not implemented");
+	n_error("FIXME: not implemented");
+
+    // not sure what this is useful for or what it exactly does. 
     //XMQuaternionSquadSetup(&aOut.vec, &bOut.vec, &cOut.vec, q0.vec, q1.vec, q2.vec, q3.vec);
 }
 

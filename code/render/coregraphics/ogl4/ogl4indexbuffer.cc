@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //  ogl4indexbuffer.cc
-//  (C) 2014-2016 Individual contributors, see AUTHORS file
+//  (C) 2014-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "coregraphics/ogl4/ogl4indexbuffer.h"

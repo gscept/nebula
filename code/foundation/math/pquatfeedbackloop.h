@@ -9,6 +9,7 @@
     quaternion representation.
     
     (C) 2007 RadonLabs GmbH
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 #include "math/quaternion.h"

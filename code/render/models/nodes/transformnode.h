@@ -3,7 +3,7 @@
 /**
 	The transform node contains just a hierarchical transform
 	
-	(C) 2017 Individual contributors, see AUTHORS file
+	(C)2017-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "modelnode.h"
@@ -26,13 +26,17 @@ public:
 		Math::matrix44 modelTransform;
 		bool isInViewSpace;
 		bool lockedToViewer;
+		
+		// Identifiable object id. Usually the graphics entity id.
+		/// @todo	Should be moved to a per-model-instance resource since it's the same for every model instance
+		uint objectId;
 
 		void ApplyNodeInstanceState() override;
-		virtual void Setup(const Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
+		virtual void Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
 	};
 
 	/// create instance
-	virtual ModelNode::Instance* CreateInstance(byte* memory, const Models::ModelNode::Instance* parent) const;
+	virtual ModelNode::Instance* CreateInstance(byte** memory, const Models::ModelNode::Instance* parent) override;
 	/// get size of instance
 	virtual const SizeT GetInstanceSize() const { return sizeof(Instance); }
 
@@ -61,7 +65,7 @@ ModelNodeInstanceCreator(TransformNode)
 /**
 */
 inline void
-TransformNode::Instance::Setup(const Models::ModelNode* node, const Models::ModelNode::Instance* parent)
+TransformNode::Instance::Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent)
 {
 	ModelNode::Instance::Setup(node, parent);
 	const TransformNode* tnode = static_cast<const TransformNode*>(node);
@@ -72,7 +76,6 @@ TransformNode::Instance::Setup(const Models::ModelNode* node, const Models::Mode
 	this->transform.setscalepivot(tnode->scalePivot);
 	this->lockedToViewer = tnode->lockedToViewer;
 	this->isInViewSpace = tnode->isInViewSpace;
-	this->type = TransformNodeType;
 }
 
 } // namespace Models

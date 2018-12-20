@@ -6,7 +6,7 @@
     Implements a fixed size one-dimensional array.
     
     (C) 2006 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 #include "util/array.h"
@@ -29,10 +29,16 @@ public:
     FixedArray(SizeT s, const TYPE& initialValue);
     /// copy constructor
     FixedArray(const FixedArray<TYPE>& rhs);
+    /// move constructor
+    FixedArray(FixedArray<TYPE>&& rhs);
+	/// construct an empty fixed array
+	FixedArray(std::nullptr_t);
     /// destructor
     ~FixedArray();
     /// assignment operator
     void operator=(const FixedArray<TYPE>& rhs);
+    /// move assignment operator
+    void operator=(FixedArray<TYPE>&& rhs);
     /// write [] operator
     TYPE& operator[](IndexT index) const;
     /// equality operator
@@ -112,7 +118,7 @@ FixedArray<TYPE>::Delete()
 template<class TYPE> void
 FixedArray<TYPE>::Alloc(SizeT s)
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(0 == this->elements) 
     #endif
     if (s > 0)
@@ -178,6 +184,28 @@ FixedArray<TYPE>::FixedArray(const FixedArray<TYPE>& rhs) :
 /**
 */
 template<class TYPE>
+FixedArray<TYPE>::FixedArray(FixedArray<TYPE>&& rhs) :
+    size(rhs.size),
+    elements(rhs.elements)
+{
+    rhs.size = 0;
+    rhs.elements = nullptr;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+FixedArray<TYPE>::FixedArray(std::nullptr_t) :
+	size(0),
+	elements(0)
+{
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
 FixedArray<TYPE>::~FixedArray()
 {
     this->Delete();
@@ -189,8 +217,29 @@ FixedArray<TYPE>::~FixedArray()
 template<class TYPE> void
 FixedArray<TYPE>::operator=(const FixedArray<TYPE>& rhs)
 {
-    this->Delete();
-    this->Copy(rhs);
+    if (this != &rhs)
+    {
+        this->Delete();
+        this->Copy(rhs);
+
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE> void
+FixedArray<TYPE>::operator=(FixedArray<TYPE>&& rhs)
+{
+    if (this != &rhs)
+    {
+        this->Delete();
+        this->elements = rhs.elements;
+        this->size = rhs.size;
+        rhs.elements = nullptr;
+        rhs.size = 0;
+    }
+   
 }
 
 //------------------------------------------------------------------------------
@@ -199,7 +248,7 @@ FixedArray<TYPE>::operator=(const FixedArray<TYPE>& rhs)
 template<class TYPE> TYPE&
 FixedArray<TYPE>::operator[](IndexT index) const
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements && (index < this->size));
     #endif
     return this->elements[index];
@@ -217,7 +266,7 @@ FixedArray<TYPE>::operator==(const FixedArray<TYPE>& rhs) const
     }
     else
     {
-        #if NEBULA3_BOUNDSCHECKS
+        #if NEBULA_BOUNDSCHECKS
         n_assert(this->elements && rhs.elements);
         #endif
         IndexT i;
@@ -326,7 +375,7 @@ FixedArray<TYPE>::Fill(const TYPE& val)
 template<class TYPE> void
 FixedArray<TYPE>::Fill(IndexT first, SizeT num, const TYPE& val)
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert((first + num) < this->size);
     n_assert(0 != this->elements);
     #endif

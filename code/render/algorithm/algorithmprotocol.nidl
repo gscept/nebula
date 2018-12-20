@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Nebula3>
+<Nebula>
     <Protocol namespace="Algorithm" name="AlgorithmProtocol">
 	<Dependency header="resources/resourceid.h"/>
 	<Dependency header="graphics/abstractlightentity.h"/>
@@ -50,4 +50,4 @@
 	
 		
     </Protocol>
-</Nebula3>    
+</Nebula>    

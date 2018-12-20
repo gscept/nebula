@@ -4,7 +4,7 @@
 	A model resource consists of nodes, each of which inhibit some information
 	read from an .n3 file. 
 	
-	(C) 2017 Individual contributors, see AUTHORS file
+	(C)2017-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "ids/id.h"
@@ -23,11 +23,11 @@ ID_32_32_NAMED_TYPE(ModelInstanceId, model, instance);
 enum NodeType
 {
 	CharacterNodeType,
-	NodeHasTransform = CharacterNodeType + 1, // all nodes above inherit from TransformNode
 	TransformNodeType,
+	NodeHasTransform = TransformNodeType, // all nodes above and equals has a transform
 	ShaderStateNodeType,
-	NodeHasShaderState = ShaderStateNodeType + 1, // all nodes above inherit from ShaderStateNode
-	PrimtiveNodeType,
+	NodeHasShaderState = ShaderStateNodeType, // all nodes above and equals has a shader state
+	PrimitiveNodeType,
 	ParticleSystemNodeType,
 	CharacterSkinNodeType,
 

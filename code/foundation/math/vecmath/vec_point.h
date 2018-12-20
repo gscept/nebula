@@ -7,7 +7,7 @@
     and has its W component set to 1.0.
     
     (C) 2007 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file	
+    (C) 2013-2018 Individual contributors, see AUTHORS file	
 */
 #include "math/float4.h"
 #include "math/vector.h"
@@ -27,7 +27,7 @@ typedef const point& __PointArg;
 #endif
 
 
-class NEBULA3_ALIGN16 point : public float4
+class NEBULA_ALIGN16 point : public float4
 {
 public:
     /// default constructor

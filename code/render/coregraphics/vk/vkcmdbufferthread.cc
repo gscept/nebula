@@ -1,10 +1,11 @@
 //------------------------------------------------------------------------------
 // vkcmdbufferthread.cc
-// (C) 2016 Individual contributors, see AUTHORS file
+// (C) 2016-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "vkcmdbufferthread.h"
 #include "threading/event.h"
+#include "coregraphics/vk/vkgraphicsdevice.h"
 
 namespace Vulkan
 {
@@ -42,7 +43,7 @@ void
 VkCmdBufferThread::DoWork()
 {
 	Util::Array<Command> curCommands;
-	curCommands.Reserve(1000);
+	curCommands.Reserve(100000);
 	while (!this->ThreadStopRequested())
 	{
 		// dequeue all commands, this ensures we don't gain any new commands this thread loop
@@ -58,6 +59,12 @@ VkCmdBufferThread::DoWork()
 			{
 			case BeginCommand:
 				this->commandBuffer = cmd.bgCmd.buf;
+#if NEBULA_GRAPHICS_DEBUG
+				{
+					Util::String name = Util::String::Sprintf("%s Generate draws", this->GetMyThreadName());
+					Vulkan::CmdBufBeginMarker(this->commandBuffer, Math::float4(0.8f, 0.6f, 0.6f, 1.0f), name.AsCharPtr());
+				}
+#endif
 				n_assert(vkBeginCommandBuffer(this->commandBuffer, &cmd.bgCmd.info) == VK_SUCCESS);
 				break;
 			case ResetCommands:
@@ -65,14 +72,21 @@ VkCmdBufferThread::DoWork()
 				break;
 			case EndCommand:
 				n_assert(vkEndCommandBuffer(this->commandBuffer) == VK_SUCCESS);
+
+#if NEBULA_GRAPHICS_DEBUG
+				Vulkan::CmdBufEndMarker(this->commandBuffer);
+#endif
 				this->commandBuffer = VK_NULL_HANDLE;
+				this->pipelineLayout = VK_NULL_HANDLE;
 				break;
 			case GraphicsPipeline:
 				n_assert(this->commandBuffer != VK_NULL_HANDLE);
+				this->pipelineLayout = cmd.pipe.layout;
 				vkCmdBindPipeline(this->commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, cmd.pipe.pipeline);
 				break;
 			case ComputePipeline:
 				n_assert(this->commandBuffer != VK_NULL_HANDLE);
+				this->pipelineLayout = cmd.pipe.layout;
 				vkCmdBindPipeline(this->commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, cmd.pipe.pipeline);
 				break;
 			case InputAssemblyVertex:
@@ -94,11 +108,13 @@ VkCmdBufferThread::DoWork()
 				break;
 			case BindDescriptors:
 				n_assert(this->commandBuffer != VK_NULL_HANDLE);
-				vkCmdBindDescriptorSets(this->commandBuffer, cmd.descriptor.type, cmd.descriptor.layout, cmd.descriptor.baseSet, cmd.descriptor.numSets, cmd.descriptor.sets, cmd.descriptor.numOffsets, cmd.descriptor.offsets);
+				n_assert(this->pipelineLayout != VK_NULL_HANDLE);
+				vkCmdBindDescriptorSets(this->commandBuffer, cmd.descriptor.type, this->pipelineLayout, cmd.descriptor.baseSet, cmd.descriptor.numSets, cmd.descriptor.sets, cmd.descriptor.numOffsets, cmd.descriptor.offsets);
 				break;
 			case PushRange:
 				n_assert(this->commandBuffer != VK_NULL_HANDLE);
-				vkCmdPushConstants(this->commandBuffer, cmd.pushranges.layout, cmd.pushranges.stages, cmd.pushranges.offset, cmd.pushranges.size, cmd.pushranges.data);
+				n_assert(this->pipelineLayout != VK_NULL_HANDLE);
+				vkCmdPushConstants(this->commandBuffer, this->pipelineLayout, cmd.pushranges.stages, cmd.pushranges.offset, cmd.pushranges.size, cmd.pushranges.data);
 				Memory::Free(Memory::ScratchHeap, cmd.pushranges.data);
 				break;
 			case Viewport:

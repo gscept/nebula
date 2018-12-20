@@ -3,7 +3,7 @@
 /**
 	An event is a signal and wait type object which is used for in-queue GPU sync.
 
-	(C) 2017 Individual contributors, see AUTHORS file
+	(C)2017-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "ids/id.h"
@@ -27,9 +27,9 @@ struct EventCreateInfo
 
 	BarrierStage leftDependency;
 	BarrierStage rightDependency;
-	Util::Array<std::tuple<RenderTextureId, ImageSubresourceInfo, ImageLayout, ImageLayout, BarrierAccess, BarrierAccess>> renderTextures;
+	Util::Array<std::tuple<RenderTextureId, ImageSubresourceInfo, CoreGraphicsImageLayout, CoreGraphicsImageLayout, BarrierAccess, BarrierAccess>> renderTextures;
 	Util::Array<std::tuple<ShaderRWBufferId, BarrierAccess, BarrierAccess>> shaderRWBuffers;
-	Util::Array<std::tuple<ShaderRWTextureId, ImageSubresourceInfo, ImageLayout, ImageLayout, BarrierAccess, BarrierAccess>> shaderRWTextures;
+	Util::Array<std::tuple<ShaderRWTextureId, ImageSubresourceInfo, CoreGraphicsImageLayout, CoreGraphicsImageLayout, BarrierAccess, BarrierAccess>> shaderRWTextures;
 };
 
 /// create new event

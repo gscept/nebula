@@ -14,21 +14,25 @@
 #include "messaging/messagecallbackhandler.h"
 #include "system/nebulasettings.h"
 #include "io/fswrapper.h"
+#include "basegamefeature/debug/gamepagehandler.h"
 
 namespace App
 {
-using namespace Util;
-
 __ImplementSingleton(App::GameApplication);
 
 using namespace Util;
 using namespace Core;
 using namespace IO;
+using namespace Http;
+using namespace Debug;
 
 //------------------------------------------------------------------------------
 /**
 */
 GameApplication::GameApplication()
+#if __NEBULA_HTTP__
+	:defaultTcpPort(2100)
+#endif
 {
     __ConstructSingleton;
 }
@@ -54,7 +58,7 @@ GameApplication::Open()
         // setup from cmd line args
         this->SetupAppFromCmdLineArgs();
                
-        // setup basic Nebula3 runtime system
+        // setup basic Nebula runtime system
         this->coreServer = CoreServer::Create();
         this->coreServer->SetCompanyName(Application::Instance()->GetCompanyName());
         this->coreServer->SetAppName(Application::Instance()->GetAppTitle());
@@ -71,6 +75,10 @@ GameApplication::Open()
 		{
 			root = System::NebulaSettings::ReadString("gscept", "ToolkitShared", "workdir");
 		}
+        if (System::NebulaSettings::Exists("gscept", "ToolkitShared", "path"))
+        {
+            this->coreServer->SetToolDirectory(System::NebulaSettings::ReadString("gscept", "ToolkitShared", "path"));
+        }
 #endif
 				
 		//n_assert2(System::NebulaSettings::ReadString("gscept", "ToolkitShared", "workdir"), "No working directory defined!");
@@ -95,6 +103,31 @@ GameApplication::Open()
 #if __WIN32__
         Ptr<LogFileConsoleHandler> logFileHandler = LogFileConsoleHandler::Create();
         Console::Instance()->AttachHandler(logFileHandler.upcast<ConsoleHandler>());
+#endif
+
+#if __NEBULA_HTTP_FILESYSTEM__
+		// setup http subsystem
+		this->httpClientRegistry = Http::HttpClientRegistry::Create();
+		this->httpClientRegistry->Setup();
+#endif
+
+#if __NEBULA_HTTP__
+		// setup http subsystem
+		this->httpInterface = Http::HttpInterface::Create();
+		this->httpInterface->SetTcpPort(this->defaultTcpPort);
+		this->httpInterface->Open();
+		this->httpServerProxy = Http::HttpServerProxy::Create();
+		this->httpServerProxy->Open();
+		this->httpServerProxy->AttachRequestHandler(Debug::CorePageHandler::Create());
+		this->httpServerProxy->AttachRequestHandler(Debug::ThreadPageHandler::Create());
+		this->httpServerProxy->AttachRequestHandler(Debug::MemoryPageHandler::Create());
+		this->httpServerProxy->AttachRequestHandler(Debug::ConsolePageHandler::Create());
+		this->httpServerProxy->AttachRequestHandler(Debug::IoPageHandler::Create());
+		this->httpServerProxy->AttachRequestHandler(Debug::GamePageHandler::Create());
+
+		// setup debug subsystem
+		this->debugInterface = DebugInterface::Create();
+		this->debugInterface->Open();
 #endif
 
         // create our game server and open it
@@ -122,7 +155,7 @@ GameApplication::Close()
 
     _discard_timer(GameApplicationFrameTimeAll);
 
-    // shutdown basic Nebula3 runtime
+    // shutdown basic Nebula runtime
     this->CleanupGameFeatures();
     this->gameServer->Close();
     this->gameServer = nullptr;
@@ -133,6 +166,21 @@ GameApplication::Close()
     this->ioInterface->Close();
     this->ioInterface = nullptr;
     this->ioServer = nullptr;
+
+#if __NEBULA_HTTP__
+	this->debugInterface->Close();
+	this->debugInterface = nullptr;
+
+	this->httpServerProxy->Close();
+	this->httpServerProxy = nullptr;
+	this->httpInterface->Close();
+	this->httpInterface = nullptr;
+#endif
+
+#if __NEBULA_HTTP_FILESYSTEM__
+	this->httpClientRegistry->Discard();
+	this->httpClientRegistry = nullptr;
+#endif
 
     this->coreServer->Close();
     this->coreServer = nullptr;
@@ -152,20 +200,7 @@ GameApplication::Run()
     {
         _start_timer(GameApplicationFrameTimeAll);
 
-        // trigger core server
-        this->coreServer->Trigger();
-
-        // trigger beginning of frame for feature units
-        this->gameServer->OnBeginFrame();
-
-		// trigger frame for feature units
-		this->gameServer->OnFrame();
-
-        // call the app's Run() method
-        Application::Run();
-
-		// trigger end of frame for feature units
-		this->gameServer->OnEndFrame();
+		this->StepFrame();
 
         _stop_timer(GameApplicationFrameTimeAll);
     }
@@ -177,7 +212,9 @@ GameApplication::Run()
 void
 GameApplication::StepFrame()
 {
-	_start_timer(GameApplicationFrameTimeAll);
+#if __NEBULA_HTTP__
+	this->httpServerProxy->HandlePendingRequests();
+#endif
 
 	// trigger core server
 	this->coreServer->Trigger();
@@ -193,8 +230,6 @@ GameApplication::StepFrame()
 
 	// trigger end of frame for feature units
 	this->gameServer->OnEndFrame();
-
-	_stop_timer(GameApplicationFrameTimeAll);
 }
 
 //------------------------------------------------------------------------------

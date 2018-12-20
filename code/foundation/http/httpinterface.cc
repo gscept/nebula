@@ -1,9 +1,9 @@
 //------------------------------------------------------------------------------
 //  httpinterface.cc
 //  (C) 2008 Radon Labs GmbH
-//  (C) 2013-2016 Individual contributors, see AUTHORS file
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "foundation/stdneb.h"
 #include "http/httpinterface.h"
 #include "http/httpmessagehandler.h"
 #include "messaging/runthroughhandlerthread.h"
@@ -42,10 +42,11 @@ HttpInterface::Open()
     // setup runthrough handler thread
     Ptr<RunThroughHandlerThread> handlerThread = RunThroughHandlerThread::Create();
     handlerThread->SetName("HttpInterface Thread");
-    handlerThread->SetCoreId(System::Cpu::MiscThreadCore);
-#if __WII_
-    handlerThread->SetPriority(Thread::NormalBoost);
-#endif    
+	
+	// This has been renamed to SetThreadAffinity
+    // handlerThread->SetCoreId(System::Cpu::::MiscThreadCore); 
+	handlerThread->SetThreadAffinity(System::Cpu::Core4);
+
 	Ptr<HttpMessageHandler> handler = HttpMessageHandler::Create();
 	handler->SetTcpPort(this->tcpPort);
 	handlerThread->AttachHandler(handler.cast<Messaging::Handler>());

@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 // shaderstatenode.cc
-// (C) 2017 Individual contributors, see AUTHORS file
+// (C)2017-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "shaderstatenode.h"
@@ -18,7 +18,7 @@ namespace Models
 */
 ShaderStateNode::ShaderStateNode()
 {
-	// empty
+	this->type = ShaderStateNodeType;
 }
 
 //------------------------------------------------------------------------------
@@ -43,14 +43,14 @@ ShaderStateNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, c
 	}
 	else if (FourCC('MATE') == fourcc)
 	{
-		this->materialName = reader->ReadString() + NEBULAT_SURFACE_EXTENSION;
+		this->materialName = reader->ReadString() + NEBULA_SURFACE_EXTENSION;
 	}
 	else if (FourCC('STXT') == fourcc)
 	{
 		// ShaderTexture
 		StringAtom paramName = reader->ReadString();
 		StringAtom paramValue = reader->ReadString();
-		String fullTexResId = String(paramValue.AsString() + NEBULAT_TEXTURE_EXTENSION);
+		String fullTexResId = String(paramValue.AsString() + NEBULA_TEXTURE_EXTENSION);
 	}
 	else if (FourCC('SINT') == fourcc)
 	{
@@ -113,18 +113,21 @@ ShaderStateNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, c
 void
 ShaderStateNode::OnFinishedLoading()
 {
-	this->sharedShader = CoreGraphics::ShaderServer::Instance()->GetSharedShader();
-	this->material = Resources::CreateResource(this->materialName, "", nullptr, nullptr, false);
-}
+	this->sharedShader = CoreGraphics::ShaderServer::Instance()->GetShader("shd:shared.fxb"_atm);
+	this->surRes = Resources::CreateResource(this->materialName, this->tag, nullptr, nullptr, true);
+	this->materialType = Materials::surfacePool->GetType(this->surRes);
+	this->surface = Materials::surfacePool->GetId(this->surRes);
+	this->cbo = CoreGraphics::ShaderCreateConstantBuffer(this->sharedShader, "ObjectBlock");
+	this->cboIndex = CoreGraphics::ShaderGetResourceSlot(this->sharedShader, "ObjectBlock");
+	this->resourceTable = CoreGraphics::ShaderCreateResourceTable(this->sharedShader, NEBULA_DYNAMIC_OFFSET_GROUP);
+	CoreGraphics::ResourceTableSetConstantBuffer(this->resourceTable, { this->cbo, this->cboIndex, 0, true, false, -1, 0 });
+	CoreGraphics::ResourceTableCommitChanges(this->resourceTable);
 
-//------------------------------------------------------------------------------
-/**
-*/
-void
-ShaderStateNode::ApplyNodeState()
-{
-	// apply material
-	Materials::MaterialApply(this->material);
+	this->modelVar = CoreGraphics::ShaderGetConstantBinding(this->sharedShader, "Model");
+	this->invModelVar = CoreGraphics::ShaderGetConstantBinding(this->sharedShader, "InvModel");
+	this->modelViewProjVar = CoreGraphics::ShaderGetConstantBinding(this->sharedShader, "ModelViewProjection");
+	this->modelViewVar = CoreGraphics::ShaderGetConstantBinding(this->sharedShader, "ModelView");
+	this->objectIdVar = CoreGraphics::ShaderGetConstantBinding(this->sharedShader, "ObjectId");
 }
 
 //------------------------------------------------------------------------------
@@ -133,14 +136,18 @@ ShaderStateNode::ApplyNodeState()
 void
 ShaderStateNode::Instance::ApplyNodeInstanceState()
 {
+	TransformNode::Instance::ApplyNodeInstanceState();
 	CoreGraphics::TransformDevice* transformDevice = CoreGraphics::TransformDevice::Instance();
 
 	// okay, in cases like this, we would benefit shittons if we could just do one set for the entire struct...
-	CoreGraphics::ShaderConstantSet(this->modelVar, this->sharedShader, transformDevice->GetModelTransform());
-	CoreGraphics::ShaderConstantSet(this->invModelVar, this->sharedShader, transformDevice->GetInvModelTransform());
-	CoreGraphics::ShaderConstantSet(this->modelViewProjVar, this->sharedShader, transformDevice->GetModelViewProjTransform());
-	CoreGraphics::ShaderConstantSet(this->modelViewVar, this->sharedShader, transformDevice->GetModelViewTransform());
-	CoreGraphics::ShaderConstantSet(this->objectIdVar, this->sharedShader, transformDevice->GetObjectId());
+	CoreGraphics::ConstantBufferUpdateInstance(this->cbo, transformDevice->GetModelTransform(), this->instance, this->modelVar);
+	CoreGraphics::ConstantBufferUpdateInstance(this->cbo, transformDevice->GetInvModelTransform(), this->instance, this->invModelVar);
+	CoreGraphics::ConstantBufferUpdateInstance(this->cbo, transformDevice->GetModelViewProjTransform(), this->instance, this->modelViewProjVar);
+	CoreGraphics::ConstantBufferUpdateInstance(this->cbo, transformDevice->GetModelViewTransform(), this->instance, this->modelViewVar);
+	CoreGraphics::ConstantBufferUpdateInstance(this->cbo, transformDevice->GetObjectId(), this->instance, this->objectIdVar);
+
+	// apply with offsets
+	CoreGraphics::SetResourceTable(this->resourceTable, NEBULA_DYNAMIC_OFFSET_GROUP, CoreGraphics::GraphicsPipeline, this->offsets);
 }
 
 } // namespace Models

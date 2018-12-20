@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 //  OGL4RenderDevice.cc
 //  (C) 2007 Radon Labs GmbH
-//  (C)2013 - 2016 Individual contributors, see AUTHORS file
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "coregraphics/config.h"
@@ -224,11 +224,11 @@ OGL4RenderTarget::SetupMultiSampleType()
     n_assert(0 != this->ogl4ColorBufferFormat);
     OGL4RenderDevice* renderDevice = OGL4RenderDevice::Instance();
 
-    #if NEBULA3_DIRECT3D_DEBUG
+    #if NEBULA_DIRECT3D_DEBUG
         this->msCount = 0;
         this->msQuality = 0;
     #else
-        // convert Nebula3 antialias quality into D3D type
+        // convert Nebula antialias quality into D3D type
         this->msCount = OGL4Types::AsOGL4MultiSampleType(this->antiAliasQuality);
 
 		if ( this->msCount > 0)
@@ -277,9 +277,9 @@ OGL4RenderTarget::BeginPass()
 
     // set display dimensions
 	Ptr<Shader> shader = RenderDevice::Instance()->GetPassShader();
-    if (shader.isvalid() && shader->HasVariableByName(NEBULA3_SEMANTIC_RENDERTARGETDIMENSIONS))
+    if (shader.isvalid() && shader->HasVariableByName(NEBULA_SEMANTIC_RENDERTARGETDIMENSIONS))
 	{
-        Ptr<ShaderVariable> var = shader->GetVariableByName(NEBULA3_SEMANTIC_RENDERTARGETDIMENSIONS);
+        Ptr<ShaderVariable> var = shader->GetVariableByName(NEBULA_SEMANTIC_RENDERTARGETDIMENSIONS);
         uint width = this->width;
         uint height = this->height; 
 		float xRatio = 1 / float(width);

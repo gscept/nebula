@@ -9,6 +9,7 @@
     production code!
 
     (C) 2012 Gustav Sterbrant
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */    
 #include "core/config.h"
 #include "io/streamreader.h"
@@ -89,7 +90,7 @@ private:
     /// setup the index buffer object (not called in raw mode)
     void SetupIndexBuffer();
 
-    /// Nebula3 vertex components, see Nebula3's class for details
+    /// Nebula vertex components, see Nebula's class for details
     enum N3VertexComponent
     {
         N3Coord        = (1<<0),      // 3 floats

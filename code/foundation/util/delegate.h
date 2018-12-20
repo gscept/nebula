@@ -3,14 +3,14 @@
 /**
     @class Util::Delegate
     
-    Nebula3 delegate class, allows to store a method call into a C++ object
+    Nebula delegate class, allows to store a method call into a C++ object
     for later execution.
 
     See http://www.codeproject.com/KB/cpp/ImpossiblyFastCppDelegate.aspx
     for details.
     
     (C) 2008 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 

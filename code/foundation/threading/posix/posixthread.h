@@ -8,7 +8,7 @@
     Posix implementation of thread class.
     
     (C) 2006 Radon Labs GmbH
-    (C) 2013 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/refcounted.h"
 #include "threading/posix/posixevent.h"
@@ -40,6 +40,8 @@ public:
     Priority GetPriority() const;
     /// set thread affinity
     void SetThreadAffinity(uint mask);
+	/// get thread affinity
+	uint GetThreadAffinity();
     /// set stack size in bytes (default is 4 KByte)
     void SetStackSize(unsigned int s);
     /// get stack size

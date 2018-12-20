@@ -4,7 +4,7 @@
 	A frame pass prepares a rendering sequence, draws and subpasses must reside
 	within one of these objects.
 	
-	(C) 2016 Individual contributors, see AUTHORS file
+	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "frameop.h"
@@ -39,6 +39,9 @@ public:
 		void CrossQueuePreSync() override;
 		void CrossQueuePostSync() override;
 
+#if NEBULA_GRAPHICS_DEBUG
+		Util::StringAtom name;
+#endif
 		Util::Array<FrameOp::Compiled*> subpasses;
 		CoreGraphics::PassId pass;
 	};

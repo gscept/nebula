@@ -3,7 +3,7 @@
 /**
 	Implements a Vulkan implementation of a render texture
 	
-	(C) 2016 Individual contributors, see AUTHORS file
+	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "ids/idallocator.h"
@@ -73,7 +73,7 @@ typedef Ids::IdAllocator<
 	VkRenderTextureRuntimeInfo,
 	VkRenderTextureMappingInfo,
 	VkRenderTextureWindowInfo,
-	ImageLayout
+	CoreGraphicsImageLayout
 > VkRenderTextureAllocator;
 extern VkRenderTextureAllocator renderTextureAllocator;
 } // namespace Vulkan

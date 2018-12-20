@@ -3,7 +3,7 @@
 /**
 	A subpass batch performs batch rendering of geometry.
 	
-	(C) 2016 Individual contributors, see AUTHORS file
+	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "frameop.h"
@@ -26,7 +26,6 @@ public:
 	};
 
 	FrameOp::Compiled* AllocCompiled(Memory::ChunkAllocator<BIG_CHUNK>& allocator);
-
 	CoreGraphics::BatchGroup::Code batch;
 };
 

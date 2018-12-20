@@ -1,12 +1,14 @@
 //------------------------------------------------------------------------------
-//  debug.cc
+// debug.cc
 //  (C) 2002 RadonLabs GmbH
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "core/types.h"
 #include "core/sysfunc.h"
 #include "io/console.h"
 #include "util/string.h"
+#include "debugbreak.h"
 
 //------------------------------------------------------------------------------
 /**
@@ -22,7 +24,7 @@ n_barf(const char* exp, const char* file, int line)
     else
     {
     	Util::String msg;
-    	msg.Format("*** NEBULA ASSERTION ***\nexpression: %s\nfile: %s\nline: %d\n", exp, file, line);
+    	msg.Format("*** NEBULA ASSERTION ***\n%s(%d): expression: %s\n", file, line, exp);
         Core::SysFunc::Error(msg.AsCharPtr());
     }
 }
@@ -187,9 +189,5 @@ n_sleep(double sec)
 void
 n_break()
 {
-#ifndef __WIN32__
-    n_error("Break not implemented\n");
-#else
-    _CrtDbgBreak();
-#endif
+    debug_break();
 }

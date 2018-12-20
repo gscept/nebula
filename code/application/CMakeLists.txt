@@ -2,9 +2,9 @@
 # Game
 #-------------------------------------------------------------------------------
 
-fips_begin_module(application)
-	fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/foundation)	
-	fips_deps(foundation)
+nebula_begin_module(application)
+	fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/foundation ${CODE_ROOT}/render ${CODE_ROOT}/resource)
+	fips_deps(foundation render resource)
 	fips_dir(.)
 		fips_files(
 			stdneb.h
@@ -25,12 +25,12 @@ fips_begin_module(application)
 		)
 	fips_dir(game/component)
 		fips_files(
-			basecomponent.h
-			basecomponent.cc
-			componentdata.h
-			componentdata.cc
+			componentinterface.h
+			componentinterface.cc
 			componentplugin.h
 			componentplugin.cc
+			component.h
+			componentserialization.h
 		)
 	fips_dir(game/attr)
 		fips_files(
@@ -43,6 +43,11 @@ fips_begin_module(application)
 			attrid.h
 			attrid.cc
 			valuetype.h
+		)
+	fips_dir(game/messaging)
+		fips_files(
+			message.h
+			message.cc
 		)
 	fips_dir(basegamefeature)
 		fips_files(
@@ -57,15 +62,17 @@ fips_begin_module(application)
 			componentmanager.cc
 		)
 	fips_dir(basegamefeature/components)
+		nebula_add_nidl(transformdata.nidl tagdata.nidl)
 		fips_files(
 			transformcomponent.h
 			transformcomponent.cc
+			tagcomponent.h
+			tagcomponent.cc
 		)
-	
+	fips_dir(basegamefeature/messages)
+		nebula_add_nidl(basegameprotocol.nidl)
 	fips_dir(basegamefeature/loader)
 		fips_files(
-			blueprintloader.h
-			blueprintloader.cc
 			entityloaderbase.h
 			entityloaderbase.cc
 			levelloader.h
@@ -74,17 +81,34 @@ fips_begin_module(application)
 			loaderserver.cc
 			userprofile.h
 			userprofile.cc
+			scenecompiler.h
+			scenecompiler.cc
+		)
+	fips_dir(graphicsfeature)
+		fips_files(
+			graphicsfeatureunit.h
+			graphicsfeatureunit.cc
 		)
 	fips_dir(graphicsfeature/components)
-		fips_generate(FROM lightcomponentbase.nidl TYPE NIDL)
+		nebula_add_nidl(lightdata.nidl graphicsdata.nidl)
 		fips_files(
-			pointlightcomponent.h
-			pointlightcomponent.cc
+			graphicscomponent.h
+			graphicscomponent.cc
 		)
+	fips_dir(graphicsfeature/messages)
+		nebula_add_nidl(graphicsprotocol.nidl)
 	fips_dir(appgame)
 		fips_files(
 			gameapplication.h
 			gameapplication.cc
 		)
-	fips_dir(.)	
-fips_end_module()
+	fips_dir(basegamefeature/debug)
+		fips_files(
+			gamepagehandler.h
+			gamepagehandler.cc
+		)
+	fips_dir(.)
+nebula_end_module()
+
+target_link_options(application PUBLIC "/WHOLEARCHIVE:application")
+target_include_directories(application PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

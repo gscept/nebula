@@ -3,7 +3,7 @@
 /**
     @class App::GameApplication
 
-    Nebula3's default game application. It creates and triggers the GameServer.
+    Nebula's default game application. It creates and triggers the GameServer.
     For game features it creates the core and graphicsfeature which is used in every
     gamestate (such as level gamestates or only gui gamestates).
 
@@ -20,6 +20,9 @@
 #include "io/ioserver.h"
 #include "io/iointerface.h"
 #include "io/gamecontentserver.h"
+#include "http/httpinterface.h"
+#include "http/httpserverproxy.h"     
+#include "http/httpclientregistry.h"
 
 //------------------------------------------------------------------------------
 namespace App
@@ -54,6 +57,18 @@ protected:
     Ptr<IO::GameContentServer> gameContentServer;
     Ptr<IO::IoServer> ioServer;
     Ptr<IO::IoInterface> ioInterface;  
+
+#if __NEBULA_HTTP__
+	Ptr<Debug::DebugInterface> debugInterface;
+	Ptr<Http::HttpInterface> httpInterface;
+	Ptr<Http::HttpServerProxy> httpServerProxy;
+
+	ushort defaultTcpPort;
+#endif
+
+#if __NEBULA_HTTP_FILESYSTEM__
+	Ptr<Http::HttpClientRegistry> httpClientRegistry;
+#endif      
 
     // game server
     Ptr<Game::GameServer> gameServer;

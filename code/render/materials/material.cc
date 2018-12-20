@@ -5,32 +5,57 @@
 #include "stdneb.h"
 #include "material.h"
 #include "materialtype.h"
-#include "materialpool.h"
+#include "surfacepool.h"
 namespace Materials
 {
 
-MaterialPool* materialPool = nullptr;
+SurfacePool* surfacePool = nullptr;
 MaterialType* currentType = nullptr;
+SurfaceId currentSurface = SurfaceId::Invalid();
 
 //------------------------------------------------------------------------------
 /**
 */
-void
+bool
 MaterialBeginBatch(MaterialType* type, CoreGraphics::BatchGroup::Code batch)
 {
 	n_assert(type != nullptr);
 	currentType = type;
-	currentType->BeginBatch(batch);
+	return currentType->BeginBatch(batch);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-void
-MaterialApply(const Resources::ResourceId& mat)
+bool 
+MaterialBeginSurface(const SurfaceId id)
 {
-	n_assert(materialPool != nullptr);
-	currentType->ApplyInstance(materialPool->GetId(mat));
+	n_assert(currentType != nullptr);
+	n_assert(id != SurfaceId::Invalid());
+	currentSurface = id;
+	return currentType->BeginSurface(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+MaterialApplySurfaceInstance(const SurfaceInstanceId id)
+{
+	n_assert(currentType != nullptr);
+	n_assert(currentSurface != SurfaceId::Invalid());
+	currentType->ApplyInstance(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+MaterialEndSurface()
+{
+	n_assert(currentSurface != SurfaceId::Invalid());
+	currentType->EndSurface();
+	currentSurface = SurfaceId::Invalid();
 }
 
 //------------------------------------------------------------------------------

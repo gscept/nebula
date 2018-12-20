@@ -5,7 +5,7 @@
     
     Transform based on an __mm256 which stores an quaternion and position.
     
-    (C) 2017 Individual contributors, see AUTHORS file
+    (C)2017-2018 Individual contributors, see AUTHORS file
 */
 
 #include "core/types.h"
@@ -17,7 +17,7 @@
 namespace Math
 {
 // it appears that this is not required according to vs2015
-//NEBULA3_ALIGN16
+//NEBULA_ALIGN16
 class transform
 {
 public:

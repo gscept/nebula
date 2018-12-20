@@ -6,7 +6,7 @@
     A lookup table for pre-sampled envelope curves.
     
     (C) 2008 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "particles/envelopecurve.h"
 #include "particles/emitterattrs.h"
@@ -71,7 +71,7 @@ EnvelopeSampleBuffer::AsSampleIndex(float t) const
 inline float*
 EnvelopeSampleBuffer::LookupSamples(IndexT sampleIndex) const
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert((sampleIndex >= 0) && (sampleIndex < this->numSamples));
     n_assert(0 != buffer);
     #endif

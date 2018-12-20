@@ -8,7 +8,7 @@
 
 	Use the DeclareRegistration macro in the header and DefineRegistration in the implementation
 	
-	(C) 2017 Individual contributors, see AUTHORS file
+	(C)2017-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
@@ -16,9 +16,11 @@
 #include "ids/id.h"
 #include "ids/idallocator.h"			// include this here since it will be used by all contexts
 #include "ids/idgenerationpool.h"
+#include "util/stringatom.h"
+#include "util/arraystack.h"
 #include "graphicsentity.h"
 
-#define DeclareContext() \
+#define _DeclareContext() \
 private:\
 	static Graphics::GraphicsContext::State __state;\
 	static Graphics::GraphicsContextFunctionBundle __bundle;\
@@ -27,9 +29,11 @@ public:\
 	static void DeregisterEntity(const Graphics::GraphicsEntityId id);\
 	static bool IsEntityRegistered(const Graphics::GraphicsEntityId id);\
 	static void Destroy(); \
-	static Graphics::ContextEntityId GetContextId(const Graphics::GraphicsEntityId id);
+	static Graphics::ContextEntityId GetContextId(const Graphics::GraphicsEntityId id); \
+	static void BeginBulkRegister(); \
+	static void EndBulkRegister();
 
-#define ImplementContext(ctx) \
+#define _ImplementContext(ctx) \
 Graphics::GraphicsContext::State ctx::__state; \
 Graphics::GraphicsContextFunctionBundle ctx::__bundle; \
 void ctx::RegisterEntity(const Graphics::GraphicsEntityId id) \
@@ -43,8 +47,15 @@ void ctx::DeregisterEntity(const Graphics::GraphicsEntityId id)\
 {\
 	IndexT i = __state.entitySliceMap.FindIndex(id);\
 	n_assert(i != InvalidIndex);\
-	__state.Dealloc(__state.entitySliceMap.ValueAtIndex(id, i));\
-	__state.entitySliceMap.Erase(i);\
+	if (__state.allowedRemoveStages & __state.currentStage) \
+	{ \
+		__state.Dealloc(__state.entitySliceMap.ValueAtIndex(id, i));\
+		__state.entitySliceMap.Erase(i);\
+	} \
+	else \
+	{ \
+		__state.delayedRemoveQueue.Append(id); \
+	} \
 }\
 \
 bool ctx::IsEntityRegistered(const Graphics::GraphicsEntityId id)\
@@ -57,31 +68,75 @@ void ctx::Destroy()\
 }\
 Graphics::ContextEntityId ctx::GetContextId(const Graphics::GraphicsEntityId id)\
 {\
-	return __state.entitySliceMap[id];\
+	IndexT idx = __state.entitySliceMap.FindIndex(id); \
+	if (idx == InvalidIndex) return Graphics::ContextEntityId::Invalid(); \
+	else return __state.entitySliceMap.ValueAtIndex(id, idx); \
+}\
+void ctx::BeginBulkRegister()\
+{\
+	__state.entitySliceMap.BeginBulkAdd();\
+}\
+void ctx::EndBulkRegister()\
+{\
+	__state.entitySliceMap.EndBulkAdd();\
 }
 
-#define CreateContext() \
+#define _CreateContext() \
 	__state.Alloc = Alloc; \
 	__state.Dealloc = Dealloc; \
-	__state.entitySliceMap = Util::HashTable<Graphics::GraphicsEntityId, Graphics::ContextEntityId>(512);
-
+	__state.currentStage = __state.allowedRemoveStages = Graphics::NoStage;
 
 namespace Graphics
 {
 
 class View;
+class Stage;
+
+enum StageBits
+{
+	NoStage,
+	OnBeforeFrameStage,
+	OnWaitForWorkStage,
+	OnBeforeViewStage,
+	OnAfterViewStage,
+	OnAfterFrameStage,
+
+	AllStages = OnBeforeFrameStage | OnWaitForWorkStage | OnBeforeViewStage | OnAfterViewStage | OnAfterFrameStage
+};
+__ImplementEnumBitOperators(StageBits);
+
 struct GraphicsContextFunctionBundle
 {
+	// frame stages
 	void(*OnBeforeFrame)(const IndexT frameIndex, const Timing::Time frameTime);
 	void(*OnWaitForWork)(const IndexT frameIndex, const Timing::Time frameTime);
 	void(*OnBeforeView)(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime);
 	void(*OnAfterView)(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime);
 	void(*OnAfterFrame)(const IndexT frameIndex, const Timing::Time frameTime);
 
-	GraphicsContextFunctionBundle() : OnBeforeFrame(nullptr), OnWaitForWork(nullptr), OnBeforeView(nullptr), OnAfterView(nullptr), OnAfterFrame(nullptr)
+    // debug callbacks
+    void(*OnRenderDebug)(uint32_t flags);
+
+	// change callbacks
+    void(*OnStageCreated)(const Ptr<Graphics::Stage>& stage);
+    void(*OnDiscardStage)(const Ptr<Graphics::Stage>& stage);
+    void(*OnViewCreated)(const Ptr<Graphics::View>& view);
+    void(*OnDiscardView)(const Ptr<Graphics::View>& view);
+    void(*OnAttachEntity)(Graphics::GraphicsEntityId entity);
+    void(*OnRemoveEntity)(Graphics::GraphicsEntityId entity);
+    void(*OnWindowResized)(IndexT windowId, SizeT width, SizeT height);
+
+	// frame script callbacks
+    void(*OnRenderAsPlugin)(const IndexT frameIndex, const Timing::Time frameTime, const Util::StringAtom& filter);
+
+	StageBits* StageBits;
+	GraphicsContextFunctionBundle() : OnBeforeFrame(nullptr), OnWaitForWork(nullptr), OnBeforeView(nullptr), OnAfterView(nullptr), OnAfterFrame(nullptr),
+        OnStageCreated(nullptr), OnDiscardStage(nullptr), OnViewCreated(nullptr), OnDiscardView(nullptr), OnAttachEntity(nullptr), OnRemoveEntity(nullptr), OnWindowResized(nullptr), OnRenderAsPlugin(nullptr),
+		StageBits(nullptr), OnRenderDebug(nullptr)
 	{
 	};
 };
+
 
 ID_32_TYPE(ContextEntityId)
 
@@ -94,23 +149,19 @@ public:
 	/// destructor
 	virtual ~GraphicsContext();
 
-	// gcc doesnt like these at all.
-	/// create context
-	//virtual void Create() = 0;
-	/// destroy context
-	//virtual void Destroy() = 0;
-
 protected:
 	friend class GraphicsServer;
 
-
 	struct State
 	{
-		Util::HashTable<GraphicsEntityId, ContextEntityId> entitySliceMap;
+		StageBits currentStage;	// used by the GraphicsServer to set the state
+		StageBits allowedRemoveStages;	// if a delete is done while not in one of these stages, it will be added as a deferred delete
+		Util::ArrayStack<GraphicsEntityId, 8> delayedRemoveQueue;
+
+		Util::HashTable<GraphicsEntityId, ContextEntityId, 128, 64> entitySliceMap;
 		ContextEntityId(*Alloc)();
 		void(*Dealloc)(ContextEntityId id);
-
-	}* state;
+	};
 };
 
 } // namespace Graphics

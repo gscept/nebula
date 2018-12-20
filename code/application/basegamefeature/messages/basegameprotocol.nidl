@@ -1,0 +1,35 @@
+"namespace": "Msg"
+"messages": {
+    "SetLocalTransform": {
+        "fourcc": "SLTM"
+        "description": "Set the local transform of an entity."
+        "args": {
+            "entity": "entity"
+            "value": "matrix44"
+        }
+    }
+	"SetWorldTransform": {
+        "fourcc": "SWTM"
+        "description": "Set the world transform on an entity"
+        "args": {
+            "entity": "entity"
+            "value": "matrix44"
+        }
+    }
+    "UpdateTransform": {
+        "fourcc": "UpdT"
+        "export": false
+        "args": {
+            "entity": "entity"
+            "value": "matrix44"
+        }
+    }
+    "SetParent": {
+        "fourcc": "SetP"
+        "args": {
+            "entity": "entity"
+            "parent": "entity"
+        }
+        "export": false
+    }
+}

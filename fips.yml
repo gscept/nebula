@@ -2,24 +2,40 @@
 imports:
     fips-zlib:
         git: https://github.com/floooh/fips-zlib.git
+        group: misc
     fips-directxmath:
         git: ssh://git@git.ikplus.de:4715/nebula/fips-directxmath.git
+        group: misc
     fips-glfw:
         git: https://github.com/gscept/fips-glfw.git
+        group: gfx
     fips-anyfx:
         git: https://github.com/Duttenheim/fips-anyfx.git
+        group: gfx
     fips-devil:
-        git: https://github.com/gscept/fips-devil.git
-    fips-flatbuffers:
-        git: ssh://git@git.ikplus.de:4715/nebula/fips-flatbuffers.git
+        git: https://github.com/gscept/fips-devil.git        
+        group: gfx    
     fips-stackwalker:
         git: https://github.com/gscept/fips-stackwalker.git
         cond: "FIPS_WINDOWS"
+        group: misc
     fips-bullet:
-        git: https://github.com/floooh/fips-bullet.git
+        git: https://github.com/fips-libs/fips-bullet.git  
+        cond: "DISABLE_FOR_NOW"
     fips-cjson:
         git: https://github.com/floooh/fips-cjson.git
         cond: "FIPS_LINUX"
+        group: misc
+    fips-imgui:
+        git: ssh://git@git.ikplus.de:4715/nebula/fips-imgui.git    
+    fips-pybind11:
+        git: ssh://git@git.ikplus.de:4715/nebula/fips-pybind11.git
+    fips-stb:
+        git: https://github.com/fips-libs/fips-stb.git
+        group: misc
+    nebula-libs:
+        git: ssh://git@git.ikplus.de:4715/nebula/nebula-libs
+        group: misc
 
 exports:
     header-dirs : 
@@ -29,9 +45,10 @@ exports:
         - code/resource
         - code/application
         - code/physics
-        - extlibs/mixed
+        - code/addons
     modules:
         foundation: code/foundation
         render: code/render
         resource: code/resource
-        corelibs: extlibs/mixed
+        application: code/application        
+        addons: code/addons

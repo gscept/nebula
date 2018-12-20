@@ -9,6 +9,7 @@
     a variant variable can most of the time be used like a normal C++ variable.
     
     (C) 2006 RadonLabs GmbH.
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "math/float2.h"
 #include "math/float4.h"
@@ -107,6 +108,8 @@ public:
     Variant(Core::RefCounted* ptr);
     /// void pointer constructor
     Variant(void* ptr);
+	/// null pointer construction
+	Variant(nullptr_t);
     /// int array constructor
     Variant(const Util::Array<int>& rhs);
     /// float array constructor
@@ -404,13 +407,21 @@ public:
     /// get blob array content
     const Util::Array<Util::Blob>& GetBlobArray() const;
 
+	/// Templated get method.
+	template <typename TYPE>
+	TYPE Get() const;
+
     /// convert value to string
     Util::String ToString() const;
     /// set value from string, if type doesn't match, returns false
     bool SetParseString(const Util::String& string);
+	/// get size
+	const SizeT Size() const;
+	/// get pointer to data (use void pointer union)
+	const void* AsVoidPtr() const;
+
     /// create from string
     static Variant FromString(const Util::String& string);
-
     /// convert type to string
     static Util::String TypeToString(Type t);
     /// convert string to type
@@ -880,6 +891,16 @@ Variant::Variant(void* ptr) :
     type(VoidPtr)
 {
     this->voidPtr = ptr;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline 
+Variant::Variant(nullptr_t)	:
+	type(VoidPtr)
+{
+	this->voidPtr = nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -2785,6 +2806,278 @@ Variant::GetBlobArray() const
 
 //------------------------------------------------------------------------------
 /**
+*/
+template <typename TYPE>
+inline TYPE
+Variant::Get() const
+{
+	static_assert(true, "Get method for TYPE is not implemented!");
+	TYPE ret;
+	return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline byte
+Variant::Get() const
+{
+	return this->GetByte();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline short
+Variant::Get() const
+{
+	return this->GetShort();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline int
+Variant::Get() const
+{
+	return this->GetInt();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline uint
+Variant::Get() const
+{
+	return this->GetUInt();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline int64_t
+Variant::Get() const
+{
+	return this->GetInt64();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline uint64_t
+Variant::Get() const
+{
+	return this->GetUInt64();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline bool
+Variant::Get() const
+{
+	return this->GetBool();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline double
+Variant::Get() const
+{
+	return this->GetDouble();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline float
+Variant::Get() const
+{
+	return this->GetFloat();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline Math::float2
+Variant::Get() const
+{
+	return this->GetFloat2();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline Math::float4
+Variant::Get() const
+{
+	return this->GetFloat4();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline Math::quaternion
+Variant::Get() const
+{
+	return this->GetQuaternion();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline Math::matrix44
+Variant::Get() const
+{
+	return this->GetMatrix44();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline Math::transform44
+Variant::Get() const
+{
+	return this->GetTransform44();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline Util::String
+Variant::Get() const
+{
+	return this->GetString();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline Util::Guid
+Variant::Get() const
+{
+	return this->GetGuid();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline Util::Blob
+Variant::Get() const
+{
+	return this->GetBlob();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline Util::Array<int>
+Variant::Get() const
+{
+	return this->GetIntArray();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline Util::Array<float>
+Variant::Get() const
+{
+	return this->GetFloatArray();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline Util::Array<bool>
+Variant::Get() const
+{
+	return this->GetBoolArray();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline Util::Array<Math::float2>
+Variant::Get() const
+{
+	return this->GetFloat2Array();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline Util::Array<Math::float4>
+Variant::Get() const
+{
+	return this->GetFloat4Array();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline Util::Array<Math::matrix44>
+Variant::Get() const
+{
+	return this->GetMatrix44Array();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline Util::Array<Util::String>
+Variant::Get() const
+{
+	return this->GetStringArray();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline Util::Array<Util::Guid>
+Variant::Get() const
+{
+	return this->GetGuidArray();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline Util::Array<Util::Blob>
+Variant::Get() const
+{
+	return this->GetBlobArray();
+}
+
+//------------------------------------------------------------------------------
+/**
     Todo: Handle array types.
     Note:
         Doesn't handle float2, float4 and matrix44 on purpose, since they are indistinguishable from float arrays
@@ -2901,6 +3194,61 @@ Util::Variant::SetParseString(const Util::String& string)
             }
     }
     return retval;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline 
+const SizeT 
+Variant::Size() const
+{
+	switch (this->type)
+	{
+	case Void:          return 0;
+	case Byte:          return sizeof(uint8);
+	case Short:         return sizeof(uint16);
+	case UShort:        return sizeof(uint16);
+	case Int:           return sizeof(uint32);
+	case UInt:          return sizeof(uint32);
+	case Int64:         return sizeof(uint64);
+	case UInt64:        return sizeof(uint64);
+	case Float:         return sizeof(float);
+	case Double:        return sizeof(double);
+	case Bool:          return sizeof(bool);
+	case Float2:		return sizeof(float) * 2;
+	case Float4:        return sizeof(float) * 4;
+	case Quaternion:    return sizeof(float) * 4;
+	case String:        return sizeof(void*);
+	case Matrix44:      return sizeof(void*);
+	case Transform44:   return sizeof(void*);
+	case Blob:          return sizeof(void*);
+	case Guid:          return sizeof(void*);
+	case Object:        return sizeof(void*);
+	case VoidPtr:       return sizeof(void*);
+	case IntArray:      return sizeof(void*);
+	case FloatArray:    return sizeof(void*);
+	case BoolArray:     return sizeof(void*);
+	case Float2Array:	return sizeof(void*);
+	case Float4Array:   return sizeof(void*);
+	case Matrix44Array: return sizeof(void*);
+	case StringArray:   return sizeof(void*);
+	case GuidArray:     return sizeof(void*);
+	case BlobArray:     return sizeof(void*);
+	default:
+		n_error("Variant::Size(): invalid type enum '%d'!", t);
+		return 0;
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline 
+const void*
+Variant::AsVoidPtr() const
+{
+	return &this->i8;
 }
 
 //------------------------------------------------------------------------------

@@ -4,75 +4,116 @@
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "transformcomponent.h"
-
-namespace Attr
-{
-	DefineMatrix44WithDefault(LocalTransform, 'TFLT', Attr::ReadWrite, Math::matrix44::identity())
-	DefineMatrix44WithDefault(WorldTransform, 'TRWT', Attr::ReadWrite, Math::matrix44::identity());
-	DefineUIntWithDefault(Parent, 'TRPT', Attr::ReadOnly, uint(-1));
-	DefineUIntWithDefault(FirstChild, 'TRFC', Attr::ReadOnly, uint(-1));
-	DefineUIntWithDefault(NextSibling, 'TRNS', Attr::ReadOnly, uint(-1));
-	DefineUIntWithDefault(PreviousSibling, 'TRPS', Attr::ReadOnly, uint(-1));
-} // namespace Attr
-
-__ImplementClass(Game::TransformComponent, 'TRCM', Game::BaseComponent);
+#include "basegamefeature/managers/componentmanager.h"
+#include "basegamefeature/components/transformdata.h"
 
 namespace Game
 {
 
+static TransformComponentAllocator data;
+static Msg::UpdateTransform::MessageQueueId messageQueue;
+
 //------------------------------------------------------------------------------
 /**
+	Default implementations
 */
-TransformComponent::TransformComponent()
-{
-	this->attributeIds.SetSize(7);
-	this->attributeIds[0] = Attr::Owner;
-	this->attributeIds[1] = Attr::LocalTransform;
-	this->attributeIds[2] = Attr::WorldTransform;
-	this->attributeIds[3] = Attr::Parent;
-	this->attributeIds[4] = Attr::FirstChild;
-	this->attributeIds[5] = Attr::NextSibling;
-	this->attributeIds[6] = Attr::PreviousSibling;
-}
+__ImplementComponent_woSerialization(TransformComponent, data);
 
 //------------------------------------------------------------------------------
 /**
 */
-TransformComponent::~TransformComponent()
+void
+TransformComponent::Create()
 {
-	// Empty
+	data = TransformComponentAllocator();
+
+	__SetupDefaultComponentBundle(data);
+	data.functions.OnDeactivate = OnDeactivate;
+	data.functions.OnInstanceMoved = OnInstanceMoved;
+	data.functions.SetParents = SetParents;
+	__RegisterComponent(&data, "TransformComponent"_atm);
+
+	SetupAcceptedMessages();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-TransformComponent::SetLocalTransform(const uint32_t& i, const Math::matrix44& val)
+TransformComponent::Discard()
 {
-	this->LocalTransform(i) = val;
-	uint32_t parent = this->Parent(i);
+
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TransformComponent::SetupAcceptedMessages()
+{
+	// SetLocalTransform message will be handled by ::SetLocalTransform(...)
+	data.messageListeners.Append(__RegisterMsg(Msg::SetLocalTransform, SetLocalTransform));
+	data.messageListeners.Append(__RegisterMsg(Msg::SetWorldTransform, SetWorldTransform));
+	data.messageListeners.Append(__RegisterMsg(Msg::SetParent, SetParent));
+	messageQueue = Msg::UpdateTransform::AllocateMessageQueue();
+	
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TransformComponent::SetLocalTransform(uint32_t i, const Math::matrix44& val)
+{
+	data.LocalTransform(i) = val;
+	uint32_t parent = data.Parent(i);
 	uint32_t child;
 	Math::matrix44 transform;
-	// First of, transform this with parent transform if any
-	if (parent != InvalidIndex)
+	if (parent == InvalidIndex)
 	{
-		transform = this->WorldTransform(parent);
-		this->WorldTransform(i) = Math::matrix44::multiply(this->LocalTransform(i), transform);
+		data.WorldTransform(i) = val;
+		Msg::UpdateTransform::Defer(messageQueue, data.GetOwner(i), val);
 	}
-	child = this->FirstChild(i);
+	else
+	{
+		// First of, transform this with parent transform if any
+		transform = data.WorldTransform(parent);
+		data.WorldTransform(i) = Math::matrix44::multiply(data.LocalTransform(i), transform);
+		Msg::UpdateTransform::Defer(messageQueue, data.GetOwner(i), data.WorldTransform(i));
+	}
+	
+	child = data.FirstChild(i);
 	parent = i;
 	// Transform every child and their siblings.
 	while (parent != InvalidIndex)
 	{
 		while (child != InvalidIndex)
 		{
-			transform = this->WorldTransform(parent);
-			this->WorldTransform(child) = Math::matrix44::multiply(this->LocalTransform(parent), transform);
+			transform = data.WorldTransform(parent);
+			data.WorldTransform(child) = Math::matrix44::multiply(data.LocalTransform(child), transform);
+			Msg::UpdateTransform::Defer(messageQueue, data.GetOwner(child), data.WorldTransform(child));
 			parent = child;
-			child = this->FirstChild(child);
+			child = data.FirstChild(child);
 		}
-		child = this->NextSibling(parent);
-		parent = this->Parent(parent);
+		child = data.NextSibling(parent);
+		parent = data.Parent(parent);
+	}
+
+	// Dispatch all world transform update messages sequentially at the end of the method.
+	// Keeps it cache friendly(er)
+	Msg::UpdateTransform::DispatchMessageQueue(messageQueue);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TransformComponent::SetLocalTransform(Game::Entity entity, const Math::matrix44& val)
+{
+	uint32_t instance = data.GetInstance(entity);
+	if (instance != InvalidIndex)
+	{
+		SetLocalTransform(instance, val);
 	}
 }
 
@@ -80,38 +121,178 @@ TransformComponent::SetLocalTransform(const uint32_t& i, const Math::matrix44& v
 /**
 */
 void
-TransformComponent::SetParents(const uint32_t & start, const uint32_t & end, const Util::Array<Entity>& entities, const Util::Array<uint32_t>& parentIndices)
+TransformComponent::SetWorldTransform(uint32_t instance, const Math::matrix44& val)
+{
+	n_assert(data.data.Size() > instance);
+	if (data.data.Size() <= instance)
+	{
+		return;
+	}
+
+	uint32_t parentInstance = data.Parent(instance);
+	if (parentInstance != InvalidIndex)
+	{
+		Math::matrix44& parentWorld = data.WorldTransform(parentInstance);
+		Math::matrix44 parentInverse = Math::matrix44::inverse(parentWorld);
+		Math::matrix44 local = Math::matrix44::multiply(val, parentInverse);
+		SetLocalTransform(instance, local);
+	}
+	else
+	{
+		// world transform is same as local if we have no parent
+		SetLocalTransform(instance, val);
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TransformComponent::SetWorldTransform(Game::Entity entity, const Math::matrix44& val)
+{
+	uint32_t instance = data.GetInstance(entity);
+	if (instance != InvalidIndex)
+	{
+		SetWorldTransform(instance, val);
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::matrix44
+TransformComponent::GetLocalTransform(uint32_t instance)
+{
+	if (instance < data.data.Size())
+		return data.LocalTransform(instance);
+
+	return Math::matrix44::identity();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::matrix44
+TransformComponent::GetLocalTransform(Game::Entity entity)
+{
+	return GetLocalTransform(data.GetInstance(entity));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::matrix44
+TransformComponent::GetWorldTransform(uint32_t instance)
+{
+	if (instance < data.data.Size())
+		return data.WorldTransform(instance);
+
+	return Math::matrix44::identity();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::matrix44
+TransformComponent::GetWorldTransform(Game::Entity entity)
+{
+	return GetWorldTransform(data.GetInstance(entity));
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+InternalSetParent(uint32_t instance, uint32_t parentInstance)
+{
+	if (instance == InvalidIndex ||
+		instance == parentInstance
+		)
+	{
+		return;
+	}
+
+	if (parentInstance != InvalidIndex &&
+		data.Parent(parentInstance) == instance
+		)
+	{
+		return;
+	}
+
+	// Update all old nearest neighbor relationships
+	{
+		uint32_t prevParent = data.Parent(instance);
+		uint32_t nextSibling = data.NextSibling(instance);
+		uint32_t previousSibling = data.NextSibling(instance);
+
+		if (prevParent != InvalidIndex && data.FirstChild(prevParent) == instance)
+			data.FirstChild(prevParent) = nextSibling;
+
+		if (nextSibling != InvalidIndex)
+			data.PreviousSibling(nextSibling) = previousSibling;
+
+		if (previousSibling != InvalidIndex)
+			data.NextSibling(previousSibling) = nextSibling;
+	}
+
+	// Update all new nearest neighbor relationships
+	data.Parent(instance) = parentInstance;
+
+	if (parentInstance != InvalidIndex)
+	{
+		uint32_t child = data.FirstChild(parentInstance);
+		if (child == InvalidIndex)
+		{
+			data.FirstChild(parentInstance) = instance;
+		}
+		else
+		{
+			// Find last child and make this a sibling to that instance
+			uint32_t sibling = data.NextSibling(child);
+			while (sibling != InvalidIndex)
+			{
+				child = sibling;
+				sibling = data.NextSibling(child);
+			}
+
+			data.NextSibling(child) = instance;
+			data.PreviousSibling(instance) = child;
+		}
+	}
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TransformComponent::SetParents(uint32_t start, uint32_t end, const Util::Array<Entity>& entities, const Util::Array<uint32_t>& parentIndices)
 {
 	SizeT i = 0;
 	for (SizeT instance = start; instance < end; instance++)
 	{
-		this->Parent(i) = this->GetInstance(entities[parentIndices[i]]);
-		// TODO: Implement this entire function. Needs to recalculate relationships and transforms.
+		if (parentIndices[i] == InvalidIndex)
+		{
+			InternalSetParent(instance, -1); // Instance has no parent :'(
+		}
+		else
+		{
+			auto e = entities[parentIndices[i]];
+			auto p = GetInstance(entities[parentIndices[i]]);
+			InternalSetParent(instance, GetInstance(entities[parentIndices[i]]));
+		}
 		i++;
 	}
-}
 
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-TransformComponent::RegisterEntity(const Entity& entity)
-{
-	this->data.RegisterEntity(entity);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-TransformComponent::DeregisterEntity(const Entity& entity)
-{
-	uint32_t index = this->data.GetInstance(entity);
-	if (index != InvalidIndex)
+	// Update transforms after updating all parent, child and sibling indices.
+	for (SizeT instance = start; instance < end; instance++)
 	{
-		this->data.DeregisterEntity(entity);
-		return;
+		// Only need to update from root
+		if (GetParent(instance) == InvalidIndex)
+		{
+			UpdateHierarchy(instance);
+		}
 	}
 }
 
@@ -119,195 +300,198 @@ TransformComponent::DeregisterEntity(const Entity& entity)
 /**
 */
 void
-TransformComponent::DeregisterAll()
+TransformComponent::SetParent(Game::Entity entity, Game::Entity parent)
 {
-	this->data.DeregisterAll();
+	uint32_t instance = data.GetInstance(entity);
+	if (instance == InvalidIndex)
+		return;
+	uint32_t parentInstance = data.GetInstance(parent);
+
+	SetParent(instance, parentInstance);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-TransformComponent::DeregisterAllDead()
+TransformComponent::SetParent(uint32_t instance, uint32_t parentInstance)
 {
-	this->data.DeregisterAllInactive();
-}
+	n_assert(instance < data.NumRegistered() && instance != InvalidIndex);
 
-//------------------------------------------------------------------------------
-/**
-*/
-void
-TransformComponent::CleanData()
-{
-	this->data.Clean();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-TransformComponent::DestroyAll()
-{
-	this->data.DestroyAll();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-bool
-TransformComponent::IsRegistered(const Entity& entity) const
-{
-	return this->data.GetInstance(entity) != InvalidIndex;
+	InternalSetParent(instance, parentInstance);
+	UpdateHierarchy(instance);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 uint32_t
-TransformComponent::GetInstance(const Entity& entity) const
+TransformComponent::GetParent(uint32_t instance)
 {
-	return this->data.GetInstance(entity);
+	return data.Parent(instance);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-Entity
-TransformComponent::GetOwner(const uint32_t& instance) const
+Game::Entity
+TransformComponent::GetOwner(uint32_t instance)
 {
-	return this->data.GetOwner(instance);
+	return data.GetOwner(instance);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-SizeT
-TransformComponent::Optimize()
+uint32_t
+TransformComponent::GetFirstChild(uint32_t instance)
 {
-	// TODO: We need to update relationships.
-	return this->data.Optimize();
+	return data.FirstChild(instance);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-Util::Variant
-TransformComponent::GetAttributeValue(uint32_t instance, IndexT attributeIndex) const
+uint32_t
+TransformComponent::GetNextSibling(uint32_t instance)
 {
-	switch (attributeIndex)
+	return data.NextSibling(instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint32_t
+TransformComponent::GetPreviousSibling(uint32_t instance)
+{
+	return data.PreviousSibling(instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Util::FourCC
+TransformComponent::GetFourCC()
+{
+	return data.GetRtti()->GetFourCC();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TransformComponent::OnDeactivate(uint32_t instance)
+{
+	// update sibling relationships
+	uint32_t previousSibling = data.PreviousSibling(instance);
+	uint32_t nextSibling = data.NextSibling(instance);
+	uint32_t child = data.FirstChild(instance);
+	uint32_t parentInstance = data.Parent(instance);
+
+	if(parentInstance != InvalidIndex && data.FirstChild(parentInstance) == instance)
+		data.FirstChild(parentInstance) = child;
+
+	if (previousSibling != InvalidIndex)
 	{
-	case 0:
-		return Util::Variant(this->data.data.Get<0>(instance).id);
-	case 1:
-		return Util::Variant(this->data.data.Get<1>(instance));
-	case 2:
-		return Util::Variant(this->data.data.Get<2>(instance));
-	case 3:
-		return Util::Variant(this->data.data.Get<3>(instance));
-	case 4:
-		return Util::Variant(this->data.data.Get<4>(instance));
-	case 5:
-		return Util::Variant(this->data.data.Get<5>(instance));
-	case 6:
-		return Util::Variant(this->data.data.Get<6>(instance));
-	default:
-		n_assert2(false, "Component doesn't contain this attribute!\n");
-		return Util::Variant();
+		if (child != InvalidIndex)
+		{
+			data.PreviousSibling(child) = previousSibling;
+			data.NextSibling(previousSibling) = child;
+		}
+		else
+		{
+			data.NextSibling(previousSibling) = nextSibling;
+		}
+	}
+
+	// Each child needs to update their parent to this instance's parent
+	uint32_t lastChild = InvalidIndex;
+	while (child != InvalidIndex)
+	{
+		data.Parent(child) = parentInstance;
+		UpdateHierarchy(child);
+		lastChild = child;
+		child = data.NextSibling(child);
+	}
+
+	if (nextSibling != InvalidIndex)
+	{
+		if (lastChild != InvalidIndex)
+		{
+			data.NextSibling(lastChild) = nextSibling;
+			data.PreviousSibling(nextSibling) = lastChild;
+		}
+		else
+		{
+			data.PreviousSibling(nextSibling) = previousSibling;
+		}
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+	Update all instance relationships since the instance index has changed
+*/
+void
+TransformComponent::OnInstanceMoved(uint32_t instance, uint32_t oldIndex)
+{
+	uint32_t parent = data.Parent(instance);
+	uint32_t nextSibling = data.NextSibling(instance);
+	uint32_t previousSibling = data.PreviousSibling(instance);
+	uint32_t child = data.FirstChild(instance);
+	
+	if (parent != InvalidIndex && data.FirstChild(parent) == oldIndex)
+	{
+		data.FirstChild(parent) = instance;
+	}
+
+	if (nextSibling != InvalidIndex)
+	{
+		data.PreviousSibling(nextSibling) = instance;
+	}
+
+	if (previousSibling != InvalidIndex)
+	{
+		data.NextSibling(previousSibling) = instance;
+	}
+
+	while (child != InvalidIndex)
+	{
+		data.Parent(child) = instance;
+		child = data.NextSibling(child);
 	}
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-Util::Variant
-TransformComponent::GetAttributeValue(uint32_t instance, Attr::AttrId attributeId) const
+void
+TransformComponent::UpdateHierarchy(uint32_t instance)
 {
-	if (attributeId == Attr::Owner)
-	{
-		return Util::Variant(this->data.data.Get<0>(instance).id);
-	}
-	else if (attributeId == Attr::LocalTransform)
-	{
-		return Util::Variant(this->data.data.Get<1>(instance));
-	}
-	else if (attributeId == Attr::WorldTransform)
-	{
-		return Util::Variant(this->data.data.Get<2>(instance));
-	}
-	else if (attributeId == Attr::Parent)
-	{
-		return Util::Variant(this->data.data.Get<3>(instance));
-	}
-	else if (attributeId == Attr::FirstChild)
-	{
-		return Util::Variant(this->data.data.Get<4>(instance));
-	}
-	else if (attributeId == Attr::NextSibling)
-	{
-		return Util::Variant(this->data.data.Get<5>(instance));
-	}
-	else if (attributeId == Attr::PreviousSibling)
-	{
-		return Util::Variant(this->data.data.Get<6>(instance));
-	}
-
-	n_assert2(false, "Component doesn't contain this attribute!\n");
-	return Util::Variant();
-}
-
-
-//------------------------------------------------------------------------------
-/**
-*/
-Math::matrix44&
-TransformComponent::LocalTransform(const uint32_t& instance)
-{
-	return this->data.data.Get<1>(instance);
+	// TODO: There are more elegant ways for this.	
+	SetLocalTransform(instance, data.LocalTransform(instance));
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-Math::matrix44&
-TransformComponent::WorldTransform(const uint32_t& instance)
+void
+TransformComponent::Serialize(const Ptr<IO::BinaryWriter>& writer)
 {
-	return this->data.data.Get<2>(instance);
+	// Only serialize the ones we want.
+	Game::Serialize(writer, data.data.GetArray<TransformComponentAllocator::LOCALTRANSFORM>());
+	Game::Serialize(writer, data.data.GetArray<TransformComponentAllocator::WORLDTRANSFORM>());
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-uint32_t&
-TransformComponent::Parent(const uint32_t& instance)
+void
+TransformComponent::Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances)
 {
-	return this->data.data.Get<3>(instance);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-uint32_t&
-TransformComponent::FirstChild(const uint32_t& instance)
-{
-	return this->data.data.Get<4>(instance);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-uint32_t&
-TransformComponent::NextSibling(const uint32_t& instance)
-{
-	return this->data.data.Get<5>(instance);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-uint32_t&
-TransformComponent::PrevSibling(const uint32_t& instance)
-{
-	return this->data.data.Get<6>(instance);
+	// Only serialize the ones we want.
+	Game::Deserialize(reader, data.data.GetArray<TransformComponentAllocator::LOCALTRANSFORM>(), offset, numInstances);
+	Game::Deserialize(reader, data.data.GetArray<TransformComponentAllocator::WORLDTRANSFORM>(), offset, numInstances);
 }
 
 } // namespace Game

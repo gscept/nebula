@@ -8,6 +8,7 @@
     @todo lost/reset device handling
     
     (C) 2013 Gustav Sterbrant
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "util/blob.h"
 #include "coregraphics/base/shaderbase.h"

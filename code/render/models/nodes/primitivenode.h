@@ -4,7 +4,7 @@
 	A primitive node contains a mesh resource and a primitive group id.
 
 	
-	(C) 2017 Individual contributors, see AUTHORS file
+	(C)2017-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "modelnode.h"
@@ -25,11 +25,11 @@ public:
 
 	struct Instance : public ShaderStateNode::Instance
 	{
-		void Setup(const Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
+		void Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
 	};
 
 	/// create instance
-	virtual ModelNode::Instance* CreateInstance(byte* memory, const Models::ModelNode::Instance* parent) const;
+	virtual ModelNode::Instance* CreateInstance(byte** memory, const Models::ModelNode::Instance* parent) override;
 	/// get size of instance
 	virtual const SizeT GetInstanceSize() const { return sizeof(Instance); }
 
@@ -41,9 +41,6 @@ protected:
 	/// apply state
 	void ApplyNodeState() override;
 
-#if NEBULA_DEBUG
-	Resources::ResourceName meshName;
-#endif
 	CoreGraphics::MeshId res;
 	uint32_t primitiveGroupIndex;
 };
@@ -54,10 +51,9 @@ ModelNodeInstanceCreator(PrimitiveNode)
 /**
 */
 inline void
-PrimitiveNode::Instance::Setup(const Models::ModelNode* node, const Models::ModelNode::Instance* parent)
+PrimitiveNode::Instance::Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent)
 {
 	ShaderStateNode::Instance::Setup(node, parent);
-	this->type = PrimtiveNodeType;
 }
 
 

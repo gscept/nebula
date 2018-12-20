@@ -6,6 +6,7 @@
     Implements a DirectX 11 instance renderer.
     
     (C) 2012 Gustav Sterbrant
+	(C) 2013-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "instancing/base/instancerendererbase.h"

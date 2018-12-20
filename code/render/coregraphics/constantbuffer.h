@@ -10,7 +10,7 @@
 	buffer to be bound to the graphics device but still be able to accomodate
 	new objects with new unique constants.
 
-	(C) 2017 Individual contributors, see AUTHORS file
+	(C)2017-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "ids/id.h"
@@ -44,73 +44,84 @@ const ConstantBufferId CreateConstantBuffer(const ConstantBufferCreateInfo& info
 /// destroy constant buffer
 void DestroyConstantBuffer(const ConstantBufferId id);
 /// allocate an instance of this buffer
-ConstantBufferSliceId ConstantBufferAllocateInstance(const ConstantBufferId id);
+bool ConstantBufferAllocateInstance(const ConstantBufferId id, uint& offset, uint& slice);
 /// free an instance
-void ConstantBufferFreeInstance(const ConstantBufferId id, ConstantBufferSliceId slice);
+void ConstantBufferFreeInstance(const ConstantBufferId id, uint slice);
 /// reset instances in constant buffer
 void ConstantBufferResetInstances(const ConstantBufferId id);
 
 /// get constant buffer slot from reflection
 IndexT ConstantBufferGetSlot(const ConstantBufferId id);
 
-/// update constant buffer
-void ConstantBufferUpdate(const ConstantBufferId id, const void* data, const uint offset, const uint size);
-/// update constant buffer using array of objects
-void ConstantBufferArrayUpdate(const ConstantBufferId id, const void* data, const uint offset, const uint size, const uint count);
-/// update constant buffer
-template<class TYPE> void ConstantBufferUpdate(const ConstantBufferId id, const TYPE* data, const uint offset);
-/// update constant buffer using array of objects
-template<class TYPE> void ConstantBufferArrayUpdate(const ConstantBufferId id, const TYPE* data, const uint offset, const uint count);
-/// update constant buffer
-void ConstantBufferUpdate(const ConstantBufferId id, const ShaderConstantId cid, const uint size, const void* data);
-/// update constant buffer using array of objects
-void ConstantBufferArrayUpdate(const ConstantBufferId id, const ShaderConstantId cid, const void* data, const uint size, const uint count);
-/// update constant buffer
-template<class TYPE> void ConstantBufferUpdate(const ConstantBufferId id, const ShaderConstantId cid, const TYPE* data);
-/// update constant buffer using array of objects
-template<class TYPE> void ConstantBufferArrayUpdate(const ConstantBufferId id, const ShaderConstantId cid, const TYPE* data, const uint count);
-/// set base offset for constant buffer
-void ConstantBufferSetBaseOffset(const ConstantBufferId id, const uint offset);
-
-/// create variable directly on this constant buffer
-const ShaderConstantId ConstantBufferCreateShaderVariable(const ConstantBufferId id, const ConstantBufferSliceId slice, const Util::StringAtom& name);
-/// destroy variable on this constant buffer
-void ConstantBufferDestroyShaderVariable(const ConstantBufferId id, const ShaderConstantId var);
+/// update constant buffer data
+void ConstantBufferUpdate(const ConstantBufferId id, const void* data, const uint size, ConstantBinding bind);
+/// update constant buffer data as array
+void ConstantBufferUpdateArray(const ConstantBufferId id, const void* data, const uint size, const uint count, ConstantBinding bind);
+/// update constant buffer data
+template<class TYPE> void ConstantBufferUpdate(const ConstantBufferId id, const TYPE& data, ConstantBinding bind);
+/// update constant buffer data as array
+template<class TYPE> void ConstantBufferUpdateArray(const ConstantBufferId id, const TYPE* data, const uint count, ConstantBinding bind);
+/// update constant buffer data instanced
+void ConstantBufferUpdateInstance(const ConstantBufferId id, const void* data, const uint size, const uint instance, ConstantBinding bind);
+/// update constant buffer data as array instanced
+void ConstantBufferUpdateArrayInstance(const ConstantBufferId id, const void* data, const uint size, const uint count, const uint instance, ConstantBinding bind);
+/// update constant buffer data instanced
+template<class TYPE> void ConstantBufferUpdateInstance(const ConstantBufferId id, const TYPE& data, const uint instance, ConstantBinding bind);
+/// update constant buffer data as array instanced
+template<class TYPE> void ConstantBufferUpdateArrayInstance(const ConstantBufferId id, const TYPE* data, const uint count, const uint instance, ConstantBinding bind);
 
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE> void
-ConstantBufferUpdate(const ConstantBufferId id, const TYPE* data, const uint offset)
+template<>
+inline void ConstantBufferUpdate(const ConstantBufferId id, const Util::Variant& data, ConstantBinding bind)
 {
-	ConstantBufferUpdate(id, data, offset, sizeof(TYPE));
+	ConstantBufferUpdate(id, data.AsVoidPtr(), data.Size(), bind);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE> void
-ConstantBufferArrayUpdate(const ConstantBufferId id, const TYPE* data, const uint offset, const uint count)
+template<>
+inline void ConstantBufferUpdateInstance(const ConstantBufferId id, const Util::Variant& data, const uint instance, ConstantBinding bind)
 {
-	ConstantBufferArrayUpdate(id, data, offset, sizeof(TYPE), count);
+	ConstantBufferUpdateInstance(id, data.AsVoidPtr(), data.Size(), instance, bind);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE> void
-ConstantBufferUpdate(const ConstantBufferId id, const ShaderConstantId cid, const TYPE* data)
+template<class TYPE>
+void ConstantBufferUpdate(const ConstantBufferId id, const TYPE& data, ConstantBinding bind)
 {
-	ConstantBufferUpdate(id, cid, data, sizeof(TYPE));
+	ConstantBufferUpdate(id, &data, sizeof(TYPE), bind);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE> void
-ConstantBufferArrayUpdate(const ConstantBufferId id, const ShaderConstantId cid, const TYPE* data, const uint count)
+template<class TYPE>
+void ConstantBufferUpdateArray(const ConstantBufferId id, const TYPE* data, const uint count, ConstantBinding bind)
 {
-	ConstantBufferArrayUpdate(id, cid, data, sizeof(TYPE), count);
+	ConstantBufferUpdateArray(id, data, sizeof(TYPE), count, bind);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+void ConstantBufferUpdateInstance(const ConstantBufferId id, const TYPE& data, const uint instance, ConstantBinding bind)
+{
+	ConstantBufferUpdateInstance(id, &data, sizeof(TYPE), instance, bind);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+void ConstantBufferUpdateArrayInstance(const ConstantBufferId id, const TYPE* data, const uint count, const uint instance, ConstantBinding bind)
+{
+	ConstantBufferUpdateArrayInstance(id, data, sizeof(TYPE), count, instance, bind);
 }
 
 } // CoreGraphics

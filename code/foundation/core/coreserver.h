@@ -3,13 +3,13 @@
 /**
     @class Core::CoreServer
     
-    The central core server object initializes a minimal Nebula3 runtime
-    environment necessary to boot up the rest of Nebula3. It should be the
-    first object a Nebula3 application creates, and the last to destroy
+    The central core server object initializes a minimal Nebula runtime
+    environment necessary to boot up the rest of Nebula. It should be the
+    first object a Nebula application creates, and the last to destroy
     before shutdown.
     
     (C) 2006 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */    
 #include "core/ptr.h"
 #include "core/refcounted.h"
@@ -42,6 +42,11 @@ public:
     /// get the root directory of the application
     const Util::StringAtom& GetRootDirectory() const;
 
+    /// set the tools directory ("tool:")
+    void SetToolDirectory(const Util::StringAtom& s);
+    /// get the tools directory
+    const Util::StringAtom& GetToolDirectory() const;
+
     /// open the core server
     void Open();
     /// close the core server
@@ -56,6 +61,7 @@ private:
     Util::StringAtom companyName;
     Util::StringAtom appName;
     Util::StringAtom rootDirectory;
+    Util::StringAtom toolDirectory;
     bool isOpen;
 };
 
@@ -120,6 +126,24 @@ inline const Util::StringAtom&
 CoreServer::GetRootDirectory() const
 {
     return this->rootDirectory;
+}
+
+//------------------------------------------------------------------------------
+/*
+*/
+inline void
+CoreServer::SetToolDirectory(const Util::StringAtom& s)
+{
+    this->toolDirectory = s;
+}
+
+//------------------------------------------------------------------------------
+/*
+*/
+inline const Util::StringAtom&
+CoreServer::GetToolDirectory() const
+{
+    return this->toolDirectory;
 }
 
 } // namespace Core

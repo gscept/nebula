@@ -8,7 +8,7 @@
     (and the compiler knows how to handle this stuff).
 
     (C) 2007 Radon Labs GmbH
-    (C) 2013-2014 Individual contributors, see AUTHORS file	
+    (C) 2013-2018 Individual contributors, see AUTHORS file	
 */
 #include "core/types.h"
 #include "math/scalar.h"
@@ -29,7 +29,7 @@ typedef const float4& __Float4Arg;
 #endif
 
 
-NEBULA3_ALIGN16
+NEBULA_ALIGN16
 #if __XBOX360__
 __declspec(passinreg)
 #endif
@@ -120,6 +120,8 @@ public:
     scalar z() const;
     /// read-only access to w component
     scalar w() const;
+    /// read access to indexed component
+    const scalar& operator[](const int index)const;
 	/// read/write access to indexed component
 	scalar& operator[](const int index);
     /// return length of vector
@@ -169,6 +171,12 @@ public:
     static scalar angle(__Float4Arg v0, __Float4Arg v1);
 	/// returns vector of boolean values where the values of v1 or v2 corresponds to control
 	static float4 select(const float4& v0, const float4& v1, const float4& control);
+	/// returns vector of boolean values where the values of v1 or v2 corresponds to control
+	static float4 select(const float4& v0, const float4& v1, const uint i0, const uint i1, const uint i2, const uint i3);
+	/// swizzle vector using indices
+	template<uint i0, uint i1, uint i2, uint i3> static float4 swizzle(const float4& v0);
+	/// shuffle elements from two floats in two vectors into one
+	template<uint a0, uint a1, uint b0, uint b1> static float4 shuffle(const float4& a, const float4& b);
 	/// returns a zero vector
 	static float4 zerovector();
     /// return vector divided by w
@@ -566,6 +574,16 @@ __forceinline scalar
 float4::w() const
 {
     return float4::unpack_w(this->vec);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline const scalar&
+float4::operator[](const int index)const 
+{
+    n_assert(index < 4);
+    return this->vec.m128_f32[index];
 }
 
 //------------------------------------------------------------------------------
@@ -1135,6 +1153,27 @@ float4
 float4::splat_w(const float4 &v)
 {
     return float4(DirectX::XMVectorSplatW(v.vec));
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<uint i0, uint i1, uint i2, uint i3>
+__forceinline float4
+float4::swizzle(const float4& v0)
+{
+	return _mm_shuffle_ps(v0.vec, v0.vec, _MM_SHUFFLE(i0, i1, i2, i3));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<uint a0, uint a1, uint b0, uint b1>
+__forceinline float4
+float4::shuffle(const float4& a, const float4& b)
+{
+	return _mm_shuffle_ps(a.vec, b.vec, _MM_SHUFFLE(a0, a1, b0, b1));
 }
 
 //------------------------------------------------------------------------------

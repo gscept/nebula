@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 // vkvertexsignaturepool.cc
-// (C) 2017 Individual contributors, see AUTHORS file
+// (C)2017-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "vkvertexsignaturepool.h"
@@ -68,18 +68,10 @@ VkVertexSignaturePool::LoadFromMemory(const Resources::ResourceId id, const void
 	SizeT strides[CoreGraphics::MaxNumVertexStreams] = { 0 };
 
 	uint32_t numUsedStreams = 0;
-	IndexT streamIndex;
-	for (streamIndex = 0; streamIndex < CoreGraphics::MaxNumVertexStreams; streamIndex++)
-	{
-		if (vertexLayoutInfo->usedStreams[streamIndex])
-		{
-			bindInfo.binds[numUsedStreams].binding = numUsedStreams;
-			bindInfo.binds[numUsedStreams].inputRate = numUsedStreams > 0 ? VK_VERTEX_INPUT_RATE_INSTANCE : VK_VERTEX_INPUT_RATE_VERTEX;
-			bindInfo.binds[numUsedStreams].stride = 0;
-			numUsedStreams++;
-		}
-	}
-	IndexT curOffset[CoreGraphics::MaxNumVertexStreams] = { 0 };
+	IndexT curOffset[CoreGraphics::MaxNumVertexStreams];
+	bool usedStreams[CoreGraphics::MaxNumVertexStreams];
+	Memory::Fill(curOffset, CoreGraphics::MaxNumVertexStreams * sizeof(IndexT), 0);
+	Memory::Fill(usedStreams, CoreGraphics::MaxNumVertexStreams * sizeof(bool), 0);
 
 	IndexT compIndex;
 	for (compIndex = 0; compIndex < vertexLayoutInfo->comps.Size(); compIndex++)
@@ -91,8 +83,19 @@ VkVertexSignaturePool::LoadFromMemory(const Resources::ResourceId id, const void
 		attr->binding = component.GetStreamIndex();
 		attr->format = VkTypes::AsVkVertexType(component.GetFormat());
 		attr->offset = curOffset[component.GetStreamIndex()];
+
+		if (usedStreams[attr->binding])
+			bindInfo.binds[attr->binding].stride += component.GetByteSize();
+		else
+		{
+			bindInfo.binds[attr->binding].stride = component.GetByteSize();
+			usedStreams[attr->binding] = true;
+			numUsedStreams++;
+		}
+
+		bindInfo.binds[attr->binding].binding = component.GetStreamIndex();
+		bindInfo.binds[attr->binding].inputRate = component.GetStrideType() == CoreGraphics::VertexComponent::PerVertex ? VK_VERTEX_INPUT_RATE_VERTEX : VK_VERTEX_INPUT_RATE_INSTANCE;
 		curOffset[component.GetStreamIndex()] += component.GetByteSize();
-		bindInfo.binds[attr->binding].stride += component.GetByteSize();
 	}
 
 	vertexInfo =
@@ -141,13 +144,15 @@ VkVertexSignaturePool::GetDerivativeLayout(const CoreGraphics::VertexLayoutId la
 	const BindInfo& bindInfo = this->Get<2>(layout.allocId);
 	const VkPipelineVertexInputStateCreateInfo& baseInfo = this->Get<1>(layout.allocId);
 	const Ids::Id64 shaderHash = shader.HashCode64();
-	if (hashTable.Contains(shaderHash))
+	IndexT i = hashTable.FindIndex(shaderHash);
+	if (i != InvalidIndex)
 	{
-		return &hashTable[shaderHash].info;
+		return &hashTable.ValueAtIndex(shaderHash, i).info;
 	}
 	else
 	{
-		DerivativeLayout layout;
+		IndexT index = hashTable.Add(shaderHash, {});
+		DerivativeLayout& layout = hashTable.ValueAtIndex(shaderHash, index);
 		AnyFX::VkProgram* program = CoreGraphics::shaderPool->GetProgram(shader);
 		layout.info = baseInfo;
 
@@ -169,8 +174,7 @@ VkVertexSignaturePool::GetDerivativeLayout(const CoreGraphics::VertexLayoutId la
 
 		layout.info.vertexAttributeDescriptionCount = layout.attrs.Size();
 		layout.info.pVertexAttributeDescriptions = layout.attrs.Begin();
-		hashTable.Add(shaderHash, layout);
-		return &hashTable[shaderHash].info;
+		return &layout.info;
 	}
 }
 

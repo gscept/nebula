@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 //  binaryreader.cc
 //  (C) 2006 Radon Labs GmbH
-//  (C) 2013-2016 Individual contributors, see AUTHORS file
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "io/binaryreader.h"
@@ -335,7 +335,7 @@ BinaryReader::ReadString()
         Util::String str;
         if (length > 0)
         {
-            str.Reserve(length + 1);
+			str.Fill(length, 0);
             char* buf = (char*) str.AsCharPtr();
             Memory::Copy(this->mapCursor, buf, length);
             this->mapCursor += length;
@@ -349,7 +349,7 @@ BinaryReader::ReadString()
         Util::String str;
         if (length > 0)
         {
-            str.Reserve(length + 1);
+            str.Fill(length, 0);
             char* buf = (char*) str.AsCharPtr();
             this->stream->Read((void*)buf, length);
             buf[length] = 0;
@@ -564,6 +564,38 @@ BinaryReader::ReadIntArray()
     for (i = 0; i < size; i++) val[i] = buf[i];
     Memory::Free(Memory::ScratchHeap, (void*)buf);
     return val;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Util::Array<uint>
+BinaryReader::ReadUIntArray()
+{
+	uint size = this->ReadInt();
+	Util::Array<uint> val(size, 0, 0);
+	if (size == 0)
+	{
+		//Early out if size is 0
+		return val;
+	}
+
+	uint* buf = (uint*)Memory::Alloc(Memory::ScratchHeap, sizeof(uint) * size);
+	if (this->isMapped)
+	{
+		// note: the memory copy is necessary to circumvent alignment problem on some CPUs
+		n_assert((this->mapCursor + sizeof(Math::matrix44)) <= this->mapEnd);
+		Memory::Copy(this->mapCursor, buf, sizeof(uint) * size);
+		this->mapCursor += sizeof(uint) * size;
+	}
+	else
+	{
+		this->stream->Read(buf, sizeof(uint) * size);
+	}
+	uint i;
+	for (i = 0; i < size; i++) val[i] = buf[i];
+	Memory::Free(Memory::ScratchHeap, (void*)buf);
+	return val;
 }
 
 //------------------------------------------------------------------------------

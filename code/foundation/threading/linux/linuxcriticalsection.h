@@ -5,10 +5,10 @@
 
     On Linux, pthread mutexes are used for critical sections.
  
-    @todo: Add debugging asserts? If yes wrap with new __NEBULA3-define
+    @todo: Add debugging asserts? If yes wrap with new __NEBULA-define
  
     (C) 2010 Radon Labs GmbH
-    (C) 2013 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 

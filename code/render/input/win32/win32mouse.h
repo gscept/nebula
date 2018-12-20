@@ -9,7 +9,7 @@
     Windows WM_MOUSEMOVE messages stop at the screen border.
     
     (C) 2007 Radon Labs GmbH
-    (C) 2013 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "input/base/mousebase.h"
 #include "input/win32/win32inputserver.h"

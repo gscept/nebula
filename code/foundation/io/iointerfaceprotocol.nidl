@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Nebula3>
+<Nebula>
     <Protocol namespace="IO" name="IoInterfaceProtocol">
 
         <!-- dependencies -->
@@ -45,5 +45,5 @@
         
     </Protocol>
     
-</Nebula3>    
+</Nebula>    
     

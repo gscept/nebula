@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 // vkstreammeshloader.cc
-// (C) 2016 Individual contributors, see AUTHORS file
+// (C) 2016-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "streammeshpool.h"
@@ -45,7 +45,7 @@ StreamMeshPool::LoadFromStream(const Resources::ResourceId id, const Util::Strin
 	n_assert(id != Ids::InvalidId24);
 	String resIdExt = this->GetName(id.poolId).AsString().GetFileExtension();
 
-#if NEBULA3_LEGACY_SUPPORT
+#if NEBULA_LEGACY_SUPPORT
 	if (resIdExt == "nvx2")
 	{
 		return this->SetupMeshFromNvx2(stream, id);
@@ -77,7 +77,9 @@ StreamMeshPool::Unload(const Resources::ResourceId id)
 	const MeshCreateInfo& msh = meshPool->GetSafe<0>(id.allocId);
 
 	if (msh.indexBuffer != IndexBufferId::Invalid()) CoreGraphics::iboPool->Unload(msh.indexBuffer.AllocId());
-	if (msh.vertexBuffer != VertexBufferId::Invalid()) CoreGraphics::vboPool->Unload(msh.vertexBuffer.AllocId());
+	IndexT i;
+	for (i = 0; i < msh.streams.Size(); i++)
+		CoreGraphics::vboPool->Unload(msh.streams[i].vertexBuffer.AllocId());
 }
 
 //------------------------------------------------------------------------------
@@ -102,7 +104,7 @@ StreamMeshPool::DeallocObject(const Resources::ResourceUnknownId id)
 /**
 	Setup the mesh resource from legacy nvx2 file (Nebula2 binary mesh format).
 */
-#if NEBULA3_LEGACY_SUPPORT
+#if NEBULA_LEGACY_SUPPORT
 Resources::ResourcePool::LoadStatus
 StreamMeshPool::SetupMeshFromNvx2(const Ptr<Stream>& stream, const Resources::ResourceId res)
 {
@@ -119,10 +121,16 @@ StreamMeshPool::SetupMeshFromNvx2(const Ptr<Stream>& stream, const Resources::Re
 		meshPool->EnterGet();
 		MeshCreateInfo& msh = meshPool->Get<0>(res);
 		n_assert(this->GetState(res) == Resources::Resource::Pending);
-		msh.vertexBuffer = nvx2Reader->GetVertexBuffer();
+		auto vertexLayout = CreateVertexLayout({ nvx2Reader->GetVertexComponents() });
+		msh.streams.Append({ nvx2Reader->GetVertexBuffer(), 0 });
 		msh.indexBuffer = nvx2Reader->GetIndexBuffer();
 		msh.topology = PrimitiveTopology::TriangleList;
 		msh.primitiveGroups = nvx2Reader->GetPrimitiveGroups();
+        // nvx2 does not have per primitive layouts, we apply them to all
+        for (auto & i : msh.primitiveGroups)
+        {
+            i.SetVertexLayout(vertexLayout);
+        }
 		meshPool->LeaveGet();
 
 		nvx2Reader->Close();
@@ -134,7 +142,7 @@ StreamMeshPool::SetupMeshFromNvx2(const Ptr<Stream>& stream, const Resources::Re
 
 //------------------------------------------------------------------------------
 /**
-	Setup the mesh resource from a nvx3 file (Nebula3's
+	Setup the mesh resource from a nvx3 file (Nebula's
 	native binary mesh file format).
 */
 Resources::ResourcePool::LoadStatus
@@ -147,7 +155,7 @@ StreamMeshPool::SetupMeshFromNvx3(const Ptr<Stream>& stream, const Resources::Re
 
 //------------------------------------------------------------------------------
 /**
-	Setup the mesh resource from a n3d3 file (Nebula3's
+	Setup the mesh resource from a n3d3 file (Nebula's
 	native ascii mesh file format).
 */
 Resources::ResourcePool::LoadStatus
@@ -168,9 +176,12 @@ StreamMeshPool::MeshBind(const Resources::ResourceId id)
 	const MeshCreateInfo& msh = meshPool->Get<0>(id);
 
 	// bind vbo, and optional ibo
-	CoreGraphics::SetPrimitiveTopology(msh.topology);
-	CoreGraphics::SetVertexLayout(msh.vertexLayout);
-	CoreGraphics::SetStreamVertexBuffer(0, msh.vertexBuffer, 0);
+	CoreGraphics::SetPrimitiveTopology(msh.topology);	
+
+	IndexT i;
+	for (i = 0; i < msh.streams.Size(); i++)
+		CoreGraphics::SetStreamVertexBuffer(msh.streams[i].index, msh.streams[i].vertexBuffer, 0);
+
 	if (msh.indexBuffer != Ids::InvalidId64)
 		CoreGraphics::SetIndexBuffer(msh.indexBuffer, 0);
 
@@ -188,6 +199,7 @@ StreamMeshPool::BindPrimitiveGroup(const IndexT primgroup)
 	meshPool->EnterGet();
 	const MeshCreateInfo& msh = meshPool->Get<0>(this->activeMesh);
 	CoreGraphics::SetPrimitiveGroup(msh.primitiveGroups[primgroup]);
+    CoreGraphics::SetVertexLayout(msh.primitiveGroups[primgroup].GetVertexLayout());
 	meshPool->LeaveGet();
 }
 

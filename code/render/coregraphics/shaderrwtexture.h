@@ -3,7 +3,7 @@
 /**
 	The shader read-write texture works like any read/write GPU resource, however it is meant to be used as a texture
 
-	(C) 2017 Individual contributors, see AUTHORS file
+	(C)2017-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "ids/id.h"
@@ -23,10 +23,12 @@ struct ShaderRWTextureCreateInfo
 	Resources::ResourceName name;
 	CoreGraphics::TextureType type;
 	CoreGraphics::PixelFormat::Code format;
+	CoreGraphicsImageLayout layout;
 	float width, height, depth;
 	SizeT layers, mips;
 	bool window : 1;
 	bool relativeSize : 1;
+	bool registerBindless : 1; // true if texture should be accessible in other than compute shaders
 };
 
 struct ShaderRWTextureInfo
@@ -66,6 +68,10 @@ ShaderRWTextureInfo ShaderRWTextureInfoSetupHelper(const ShaderRWTextureCreateIn
 /// get size
 const TextureDimensions ShaderRWTextureGetDimensions(const ShaderRWTextureId id);
 /// get layout
-const ImageLayout ShaderRWTextureGetLayout(const ShaderRWTextureId id);
+const CoreGraphicsImageLayout ShaderRWTextureGetLayout(const ShaderRWTextureId id);
+
+/// get bindless texture handle
+uint ShaderRWTextureGetBindlessHandle(const ShaderRWTextureId id);
+
 
 } // CoreGraphics

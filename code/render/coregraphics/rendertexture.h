@@ -3,7 +3,7 @@
 /**
 	RenderTexture is a texture which can be attached to the render device when rendering
 
-	(C) 2017 Individual contributors, see AUTHORS file
+	(C)2017-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "ids/id.h"
@@ -82,7 +82,10 @@ const CoreGraphics::PixelFormat::Code RenderTextureGetPixelFormat(const RenderTe
 /// get msaa
 const bool RenderTextureGetMSAA(const RenderTextureId id);
 /// get layout
-const ImageLayout RenderTextureGetLayout(const RenderTextureId id);
+const CoreGraphicsImageLayout RenderTextureGetLayout(const RenderTextureId id);
+
+/// get bindless texture handle
+uint RenderTextureGetBindlessHandle(const RenderTextureId id);
 
 /// helper function to setup RenderTextureInfo, already implemented
 RenderTextureInfo RenderTextureInfoSetupHelper(const RenderTextureCreateInfo& info);

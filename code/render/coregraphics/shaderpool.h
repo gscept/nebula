@@ -6,7 +6,7 @@
     Resource loader to setup a Shader object from a stream.
     
     (C) 2007 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #if __DX11__
 #include "coregraphics/d3d11/d3d11streamshaderloader.h"
@@ -47,29 +47,5 @@ class ShaderPool : public Direct3D9::D3D9StreamShaderLoader
 #else
 #error "StreamShaderLoader class not implemented on this platform!"
 #endif
-
-namespace CoreGraphics
-{
-//------------------------------------------------------------------------------
-/**
-*/
-template<class TYPE>
-void
-ShaderConstantSet(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ShaderStateId state, const TYPE& value)
-{
-	shaderPool->ShaderConstantSet<TYPE>(var, state, value);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-template<class TYPE>
-void
-ShaderConstantSetArray(const CoreGraphics::ShaderConstantId var, const CoreGraphics::ShaderStateId state, const TYPE* value, uint32_t count)
-{
-	shaderPool->ShaderConstantSetArray<TYPE>(var, state, value, count);
-}
-//------------------------------------------------------------------------------
-}
 
     

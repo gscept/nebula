@@ -1,6 +1,9 @@
 before_script:
     - call ./fips fetch
     - call ./fips update
+    - call ./fips nebula set work ../fips-deploy/
+    - call ./fips nebula set toolkit .
+    - call ./fips nebula cleannidl    
     
 stages:
     - build

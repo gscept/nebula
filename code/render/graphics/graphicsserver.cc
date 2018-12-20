@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 // graphicsserver.cc
-// (C) 2017 Individual contributors, see AUTHORS file
+// (C)2017-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "graphicsserver.h"
@@ -52,12 +52,12 @@ GraphicsServer::Open()
 	this->isOpen = true;
 
 	this->debugHandler = Debug::DebugHandler::Create();
-	this->debugHandler->Open();
+	//this->debugHandler->Open();
 
 	this->displayDevice = CoreGraphics::DisplayDevice::Create();
 	this->displayDevice->Open();
 
-	CoreGraphics::GraphicsDeviceCreateInfo gfxInfo;
+	CoreGraphics::GraphicsDeviceCreateInfo gfxInfo{false};
 	this->graphicsDevice = CoreGraphics::CreateGraphicsDevice(gfxInfo);
 	if (this->graphicsDevice)
 	{
@@ -73,7 +73,7 @@ GraphicsServer::Open()
 		Resources::ResourceManager::Instance()->RegisterStreamPool("shd", CoreGraphics::ShaderPool::RTTI);
 		Resources::ResourceManager::Instance()->RegisterStreamPool("n3", Models::StreamModelPool::RTTI);
 		Resources::ResourceManager::Instance()->RegisterStreamPool("nvx2", CoreGraphics::StreamMeshPool::RTTI);
-		Resources::ResourceManager::Instance()->RegisterStreamPool("sur", Materials::MaterialPool::RTTI);
+		Resources::ResourceManager::Instance()->RegisterStreamPool("sur", Materials::SurfacePool::RTTI);
 
 		// setup internal pool pointers for convenient access (note, will also assert if texture, shader, model or mesh pools is not registered yet!)
 		CoreGraphics::vboPool = Resources::GetMemoryPool<CoreGraphics::MemoryVertexBufferPool>();
@@ -84,7 +84,7 @@ GraphicsServer::Open()
 
 		CoreGraphics::shaderPool = Resources::GetStreamPool<CoreGraphics::ShaderPool>();
 		Models::modelPool = Resources::GetStreamPool<Models::StreamModelPool>();
-		Materials::materialPool = Resources::GetStreamPool<Materials::MaterialPool>();
+		Materials::surfacePool = Resources::GetStreamPool<Materials::SurfacePool>();
 
 		this->shaderServer = CoreGraphics::ShaderServer::Create();
 		this->shaderServer->Open();
@@ -121,11 +121,8 @@ GraphicsServer::Close()
 {
 	n_assert(this->isOpen);
 	this->visServer = nullptr;
-	this->timer = nullptr;
-	this->isOpen = false;
-
-	this->debugHandler->Close();
-	this->debugHandler = nullptr;
+	
+	this->isOpen = false;	
 
 	this->textRenderer->Close();
 	this->textRenderer = nullptr;
@@ -149,9 +146,12 @@ GraphicsServer::Close()
 	this->displayDevice = nullptr;
 
 	this->timer->StopTime();
+    this->timer = nullptr;
 
 	if (this->graphicsDevice) CoreGraphics::DestroyGraphicsDevice();
 
+    this->debugHandler->Close();
+    this->debugHandler = nullptr;
 	// clear transforms pool
 }
 
@@ -233,15 +233,18 @@ void
 GraphicsServer::BeginFrame()
 {
 	this->timer->UpdateTimePolling();
-	const IndexT frameIndex = this->timer->GetFrameIndex();
-	const Timing::Time time = this->timer->GetFrameTime();
+	this->frameIndex = this->timer->GetFrameIndex();
+	this->frameTime = this->timer->GetFrameTime();
+	this->time = this->timer->GetTime();
 
 	// begin updating visibility
 	IndexT i;
 	for (i = 0; i < this->contexts.Size(); i++)
 	{
+		if (this->contexts[i]->StageBits)
+			*this->contexts[i]->StageBits = Graphics::OnBeforeFrameStage;
 		if (this->contexts[i]->OnBeforeFrame != nullptr)
-			this->contexts[i]->OnBeforeFrame(frameIndex, time);
+			this->contexts[i]->OnBeforeFrame(this->frameIndex, this->frameTime);
 	}
 }
 
@@ -251,29 +254,34 @@ GraphicsServer::BeginFrame()
 void 
 GraphicsServer::BeforeViews()
 {
-	const IndexT frameIndex = this->timer->GetFrameIndex();
-	const Timing::Time time = this->timer->GetFrameTime();
-
 	// begin updating visibility
 	IndexT i;
 	for (i = 0; i < this->contexts.Size(); i++)
 	{
+		if (this->contexts[i]->StageBits)
+			*this->contexts[i]->StageBits = Graphics::OnWaitForWorkStage;
 		if (this->contexts[i]->OnWaitForWork != nullptr)
-			this->contexts[i]->OnWaitForWork(frameIndex, time);
+			this->contexts[i]->OnWaitForWork(this->frameIndex, this->frameTime);
 	}
 
 	// go through views and call before view
 	for (i = 0; i < this->views.Size(); i++)
 	{
 		const Ptr<View>& view = this->views[i];
+		
+		if (!view->enabled)
+			continue;
+
 		this->currentView = view;
 
 		// begin updating visibility
 		IndexT j;
 		for (j = 0; j < this->contexts.Size(); j++)
 		{
+			if (this->contexts[i]->StageBits)
+				*this->contexts[i]->StageBits = Graphics::OnBeforeViewStage;
 			if (this->contexts[j]->OnBeforeView != nullptr)
-				this->contexts[j]->OnBeforeView(view, frameIndex, time);
+				this->contexts[j]->OnBeforeView(view, this->frameIndex, this->frameTime);
 		}
 	}
 }
@@ -284,17 +292,18 @@ GraphicsServer::BeforeViews()
 void
 GraphicsServer::RenderViews()
 {
-	const IndexT frameIndex = this->timer->GetFrameIndex();
-	const Timing::Time time = this->timer->GetFrameTime();
-
 	// begin updating visibility
 	IndexT i;
 	// go through views and call before view
 	for (i = 0; i < this->views.Size(); i++)
 	{
 		const Ptr<View>& view = this->views[i];
+
+		if (!view->enabled)
+			continue;
+
 		this->currentView = view;
-		view->Render(frameIndex, time);
+		view->Render(this->frameIndex, this->frameTime);
 	}
 }
 
@@ -304,22 +313,25 @@ GraphicsServer::RenderViews()
 void 
 GraphicsServer::EndViews()
 {
-	const IndexT frameIndex = this->timer->GetFrameIndex();
-	const Timing::Time time = this->timer->GetFrameTime();
-
 	// go through views and call before view
 	IndexT i;
 	for (i = 0; i < this->views.Size(); i++)
 	{
 		const Ptr<View>& view = this->views[i];
+
+		if (!view->enabled)
+			continue;
+
 		this->currentView = view;
 
 		// begin updating visibility
 		IndexT j;
 		for (j = 0; j < this->contexts.Size(); j++)
 		{
+			if (this->contexts[i]->StageBits)
+				*this->contexts[i]->StageBits = Graphics::OnAfterViewStage;
 			if (this->contexts[j]->OnAfterView != nullptr)
-				this->contexts[j]->OnAfterView(view, frameIndex, time);
+				this->contexts[j]->OnAfterView(view, this->frameIndex, this->frameTime);
 		}
 	}
 }
@@ -330,16 +342,30 @@ GraphicsServer::EndViews()
 void 
 GraphicsServer::EndFrame()
 {
-	const IndexT frameIndex = this->timer->GetFrameIndex();
-	const Timing::Time time = this->timer->GetFrameTime();
-
 	// finish frame and prepare for the next one
 	IndexT i;
 	for (i = 0; i < this->contexts.Size(); i++)
 	{
+		if (this->contexts[i]->StageBits) 
+			*this->contexts[i]->StageBits = Graphics::OnAfterFrameStage;
 		if (this->contexts[i]->OnAfterFrame != nullptr)
-			this->contexts[i]->OnAfterFrame(frameIndex, time);
+			this->contexts[i]->OnAfterFrame(this->frameIndex, this->frameTime);
 	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+GraphicsServer::RenderPlugin(const Util::StringAtom & filter)
+{
+    // finish frame and prepare for the next one
+    IndexT i;
+    for (i = 0; i < this->contexts.Size(); i++)
+    {
+        if (this->contexts[i]->OnRenderAsPlugin != nullptr)
+            this->contexts[i]->OnRenderAsPlugin(this->frameIndex, this->frameTime, filter);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -351,8 +377,20 @@ GraphicsServer::CreateView(const Util::StringAtom& name, const IO::URI& framescr
 	Ptr<View> view = View::Create();
 	Ptr<Frame::FrameScript> frameScript = Frame::FrameServer::Instance()->LoadFrameScript(name.AsString() + "_framescript", framescript);
 	frameScript->Build();
+
+	// setup gbuffer bindings after frame script is loaded
+	this->shaderServer->SetupGBufferConstants();
+
 	view->script = frameScript;
 	this->views.Append(view);
+
+    // invoke all interested contexts
+    IndexT i;
+    for (i = 0; i < this->contexts.Size(); i++)
+    {
+        if (this->contexts[i]->OnViewCreated != nullptr)
+            this->contexts[i]->OnViewCreated(view);
+    }
 	return view;
 }
 
@@ -362,11 +400,30 @@ GraphicsServer::CreateView(const Util::StringAtom& name, const IO::URI& framescr
 void
 GraphicsServer::DiscardView(const Ptr<View>& view)
 {
-	IndexT i = this->views.FindIndex(view);
-	n_assert(i != InvalidIndex);
-	this->views.EraseIndex(i);
+	IndexT idx = this->views.FindIndex(view);
+	n_assert(idx != InvalidIndex);
+	this->views.EraseIndex(idx);
+    // invoke all interested contexts    
+    for (IndexT i = 0; i < this->contexts.Size(); i++)
+    {
+        if (this->contexts[i]->OnDiscardView != nullptr)
+            this->contexts[i]->OnDiscardView(view);
+    }
 	view->script->Discard();
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GraphicsServer::RenderDebug(uint32_t flags)
+{    
+    IndexT i;
+    for (i = 0; i < this->contexts.Size(); i++)
+    {
+        if (this->contexts[i]->OnRenderDebug != nullptr)
+            this->contexts[i]->OnRenderDebug(flags);
+    }
+}
 
 } // namespace Graphics

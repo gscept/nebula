@@ -13,7 +13,7 @@
       jobs which start earlier)
 
     (C) 2008 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */    
 #include "core/refcounted.h"
 #include "animation/animjob.h"
@@ -95,7 +95,7 @@ private:
     /// FIXME FIXME FIXME: helper method, for determining dominating job
     IndexT FindDominatingAnimJobIndex(Timing::Tick startTime, Timing::Tick endTime) const;
 
-    #if NEBULA3_ANIMATIONSYSTEM_FRAMEDUMP
+    #if NEBULA_ANIMATIONSYSTEM_FRAMEDUMP
     /// dump debug information for the current frame
     void DumpFrameDebugInfo(Timing::Tick time);
     #endif

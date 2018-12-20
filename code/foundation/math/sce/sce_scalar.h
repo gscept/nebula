@@ -8,6 +8,7 @@
     Scalar typedef and math functions for SCE math functions.
     
     (C) 2007 Radon Labs GmbH
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 

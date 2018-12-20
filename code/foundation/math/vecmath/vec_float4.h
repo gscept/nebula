@@ -5,7 +5,7 @@
 
     VectorMath implementation of float4.
 
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 #include "math/scalar.h"
@@ -27,7 +27,7 @@ typedef const float4& __Float4Arg;
 //#endif
 
 
-typedef NEBULA3_ALIGN16 struct mm128_vec {
+typedef NEBULA_ALIGN16 struct mm128_vec {
   union {
       float f[4];
       unsigned int u[4];
@@ -36,7 +36,7 @@ typedef NEBULA3_ALIGN16 struct mm128_vec {
   inline operator __m128() const { return vec;}
 } mm128_vec;
 
- typedef NEBULA3_ALIGN16 struct mm128_ivec {
+ typedef NEBULA_ALIGN16 struct mm128_ivec {
      union {
          int u[4];
          mm128_vec vec;
@@ -44,7 +44,7 @@ typedef NEBULA3_ALIGN16 struct mm128_vec {
      inline operator __m128() const { return vec.vec;}
  } mm128_ivec;
 
- typedef NEBULA3_ALIGN16 struct mm128_uivec {
+ typedef NEBULA_ALIGN16 struct mm128_uivec {
      union {
          unsigned int u[4];
          mm128_vec vec;
@@ -58,12 +58,12 @@ const mm128_vec _id_w =  {0.0f, 0.0f, 0.0f, 1.0f};
 const mm128_vec _minus1 = {-1.0f, -1.0f, -1.0f, -1.0f};
 const mm128_vec _plus1 = {1.0f, 1.0f, 1.0f, 1.0f};
 const mm128_uivec _sign = {0x80000000, 0x80000000, 0x80000000, 0x80000000};
+const mm128_uivec _mask_xyz = { 0xFFFFFFFF ,0xFFFFFFFF ,0xFFFFFFFF,0 };
 
 
 
 
-
-class NEBULA3_ALIGN16 float4
+class NEBULA_ALIGN16 float4
 {
 public:
     /// default constructor, NOTE: does NOT setup components!
@@ -212,6 +212,8 @@ public:
     static scalar angle(const float4 & v0, const float4 & v1);
     /// returns vector of boolean values where the values of v1 or v2 corresponds to control
     static float4 select(const float4& v0, const float4& v1, const float4& control);
+    /// returns vector of boolean values where the values of v1 or v2 corresponds to control
+    static float4 select(const float4& v0, const float4& v1, const uint i0, const uint i1, const uint i2, const uint i3);
     /// returns a zero vector
     static float4 zerovector();
     /// return vector divided by w
@@ -1362,13 +1364,22 @@ float4::splat_w(const float4 &v)
 //------------------------------------------------------------------------------
 /**
 */
+__forceinline float4
+float4::select(const float4& v0, const float4& v1, const uint i0, const uint i1, const uint i2, const uint i3)
+{
+	//FIXME this should be converted to something similiar as XMVectorSelect
+	return float::permute(v0, v1, i0, i1, i2, i3);
+}
 
+//------------------------------------------------------------------------------
+/**
+*/
 __forceinline float4
 float4::permute(const float4& v0, const float4& v1, unsigned int i0, unsigned int i1, unsigned int i2, unsigned int i3)
 {
 	static mm128_ivec three = {3,3,3,3};
 
-	NEBULA3_ALIGN16 unsigned int elem[4] = { i0, i1, i2, i3 };
+	NEBULA_ALIGN16 unsigned int elem[4] = { i0, i1, i2, i3 };
 	__m128i vControl = _mm_load_si128( reinterpret_cast<const __m128i *>(&elem[0]) );
 
 	__m128i vSelect = _mm_cmpgt_epi32( vControl, (reinterpret_cast<const __m128i *>(&three)[0]));

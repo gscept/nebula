@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 //  memorymeshloader.cc
 //  (C) 2007 Radon Labs GmbH
-//  (C) 2013-2016 Individual contributors, see AUTHORS file
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "coregraphics/memorymeshpool.h"
@@ -63,10 +63,24 @@ MemoryMeshPool::BindMesh(const MeshId id, const IndexT prim)
 #if _DEBUG
 	n_assert(id.allocType == MeshIdType);
 #endif
+	this->allocator.EnterGet();
 	MeshCreateInfo& inf = this->allocator.Get<0>(id.allocId);
-	CoreGraphics::SetStreamVertexBuffer(0, inf.vertexBuffer, inf.primitiveGroups[prim].GetBaseVertex());
+
+	// setup pipeline (a bit ugly)
+	CoreGraphics::SetVertexLayout(inf.primitiveGroups[prim].GetVertexLayout());
+	CoreGraphics::SetPrimitiveTopology(inf.topology);
+
+	// set input
+	CoreGraphics::SetPrimitiveGroup(inf.primitiveGroups[prim]);
+
+	// bind vertex buffers
+	IndexT i;
+	for (i = 0; i < inf.streams.Size(); i++)
+		CoreGraphics::SetStreamVertexBuffer(inf.streams[i].index, inf.streams[i].vertexBuffer, inf.primitiveGroups[prim].GetBaseVertex());
+
 	if (inf.indexBuffer != CoreGraphics::IndexBufferId::Invalid())
 		CoreGraphics::SetIndexBuffer(inf.indexBuffer, inf.primitiveGroups[prim].GetBaseIndex());
+	this->allocator.LeaveGet();
 }
 
 //------------------------------------------------------------------------------
@@ -83,20 +97,10 @@ MemoryMeshPool::GetPrimitiveGroups(const MeshId id) const
 /**
 */
 const VertexBufferId
-MemoryMeshPool::GetVertexBuffer(const MeshId id) const
+MemoryMeshPool::GetVertexBuffer(const MeshId id, const IndexT stream) const
 {
 	const MeshCreateInfo& inf = this->allocator.Get<0>(id.allocId);
-	return inf.vertexBuffer;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const VertexLayoutId
-MemoryMeshPool::GetVertexLayout(const MeshId id) const
-{
-	const MeshCreateInfo& inf = this->allocator.Get<0>(id.allocId);
-	return inf.vertexLayout;
+	return inf.streams[stream].vertexBuffer;
 }
 
 //------------------------------------------------------------------------------

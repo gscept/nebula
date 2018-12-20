@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 // view.cc
-// (C) 2017 Individual contributors, see AUTHORS file
+// (C)2017-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "view.h"
@@ -21,7 +21,8 @@ __ImplementClass(Graphics::View, 'VIEW', Core::RefCounted);
 View::View() :
 	script(nullptr),
 	camera(GraphicsEntityId::Invalid()),
-	stage(nullptr)
+	stage(nullptr),
+	enabled(true)
 {
 	// empty
 }

@@ -3,7 +3,7 @@
 /**
 	Texture related functions
 
-	(C) 2017 Individual contributors, see AUTHORS file
+	(C)2017-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "coregraphics/gpubuffertypes.h"
@@ -18,7 +18,7 @@ RESOURCE_ID_TYPE(TextureId);
 /// texture types
 enum TextureType
 {
-	InvalidType,
+	InvalidTextureType,
 
 	Texture1D,		//> a 1-dimensional texture
 	Texture2D,      //> a 2-dimensional texture
@@ -94,9 +94,12 @@ CoreGraphics::PixelFormat::Code TextureGetPixelFormat(const TextureId id);
 /// get texture type
 TextureType TextureGetType(const TextureId id);
 /// get layout of texture
-ImageLayout TextureGetLayout(const TextureId id);
+CoreGraphicsImageLayout TextureGetLayout(const TextureId id);
 /// get number of mips
 uint TextureGetNumMips(const TextureId id);
+
+/// get bindless texture handle
+uint TextureGetBindlessHandle(const TextureId id);
 
 /// map GPU memory
 TextureMapInfo TextureMap(const TextureId id, IndexT mip, const CoreGraphics::GpuBufferTypes::MapType type);

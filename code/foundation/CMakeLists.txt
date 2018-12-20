@@ -8,7 +8,7 @@ fips_begin_module(foundation)
 	endif()
 	fips_vs_warning_level(3)
 	fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-	fips_deps(corelibs zlib)
+	fips_deps(nebula-libs zlib tinyxml)
 	if(FIPS_WINDOWS)
 		fips_deps(StackWalker)
 	endif()
@@ -49,8 +49,7 @@ fips_begin_module(foundation)
 			memorypool.h
 			poolarrayallocator.cc
 			poolarrayallocator.h
-			ringallocator.h
-			win360/win360memorypool.h
+			ringallocator.h	
 			debug/memorypagehandler.cc
 			debug/memorypagehandler.h
 		)
@@ -76,6 +75,7 @@ fips_begin_module(foundation)
 		fips_files(
 			array.h
 			arrayallocator.h
+			arraystack.h
 			bit.h
 			bitfield.h
 			blob.cc
@@ -101,6 +101,7 @@ fips_begin_module(foundation)
 			priorityarray.h
 			quadtree.h
 			queue.h
+			arrayqueue.h
 			random.h
 			random.cc
 			randomnumbertable.cc
@@ -121,8 +122,10 @@ fips_begin_module(foundation)
 			stringatomtablebase.h
 			stringbuffer.cc
 			stringbuffer.h
+			trivialarray.h
 			typepunning.h
 			variant.h
+			tupleutility.h
 		)
 		fips_dir(interface)
 		fips_files(
@@ -166,6 +169,12 @@ fips_begin_module(foundation)
 			iointerfacehandler.h
 			logfileconsolehandler.cc
 			logfileconsolehandler.h
+            jsonreader.cc
+            jsonreader.h
+			jsonwriter.cc
+            jsonwriter.h
+            filedialog.cc
+            filedialog.h
 			mediatype.h
 			memorystream.cc
 			memorystream.h
@@ -379,6 +388,10 @@ fips_begin_module(foundation)
 			httpstatus.h
 			httpstream.cc
 			httpstream.h
+			httpinterface.h
+			httpinterface.cc
+			httpmessagehandler.h
+			httpmessagehandler.cc
 			debug/helloworldrequesthandler.cc
 			debug/helloworldrequesthandler.h
 			debug/svgtestpagehandler.cc
@@ -432,6 +445,7 @@ fips_begin_module(foundation)
 				win360/win360memoryconfig.cc
 				win360/win360memoryconfig.h
 				win360/win360memorypool.cc
+				win360/win360memorypool.h
 			)
 		fips_dir(debug GROUP "debug/win32")
 			fips_files(
@@ -590,3 +604,6 @@ fips_begin_module(foundation)
 		)
 	endif()
 fips_end_module()
+target_include_directories(foundation PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+#FIXME cant add python include dir globally as it clashes with antlr4
+target_include_directories(foundation PUBLIC ${PYTHON_INCLUDE_DIRS})

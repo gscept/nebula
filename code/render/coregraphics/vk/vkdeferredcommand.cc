@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 // vkdeferreddelegate.cc
-// (C) 2016 Individual contributors, see AUTHORS file
+// (C) 2016-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "vkdeferredcommand.h"
@@ -55,11 +55,11 @@ VkDeferredCommand::RunDelegate()
 	case BindDescriptorSets:
 		if (this->del.descSetBind.type == VK_PIPELINE_BIND_POINT_GRAPHICS)
 		{
-			Vulkan::BindDescriptorsGraphics(this->del.descSetBind.sets, this->del.descSetBind.layout, this->del.descSetBind.baseSet, this->del.descSetBind.numSets, this->del.descSetBind.offsets, this->del.descSetBind.numOffsets);
+			Vulkan::BindDescriptorsGraphics(this->del.descSetBind.sets, this->del.descSetBind.baseSet, this->del.descSetBind.numSets, this->del.descSetBind.offsets, this->del.descSetBind.numOffsets);
 		}
 		else
 		{
-			Vulkan::BindDescriptorsCompute(this->del.descSetBind.sets, this->del.descSetBind.layout, this->del.descSetBind.baseSet, this->del.descSetBind.numSets, this->del.descSetBind.offsets, this->del.descSetBind.numOffsets);
+			Vulkan::BindDescriptorsCompute(this->del.descSetBind.sets, this->del.descSetBind.baseSet, this->del.descSetBind.numSets, this->del.descSetBind.offsets, this->del.descSetBind.numOffsets);
 		}
 		break;
 	

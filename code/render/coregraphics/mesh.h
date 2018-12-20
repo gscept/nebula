@@ -3,7 +3,7 @@
 /**
 	Mesh collects vertex and index buffers with primitive groups which can be used to render with
 
-	(C) 2017 Individual contributors, see AUTHORS file
+	(C)2017-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "config.h"
@@ -12,7 +12,6 @@
 #include "ids/idallocator.h"
 #include "coregraphics/vertexbuffer.h"
 #include "coregraphics/indexbuffer.h"
-#include "coregraphics/vertexlayout.h"
 #include "coregraphics/primitivetopology.h"
 #include "coregraphics/primitivegroup.h"
 namespace CoreGraphics
@@ -22,11 +21,16 @@ RESOURCE_ID_TYPE(MeshId);
 
 struct MeshCreateInfo
 {
+	struct Stream
+	{
+		VertexBufferId vertexBuffer;
+		IndexT index;
+	};
+
 	Resources::ResourceName name;
 	Util::StringAtom tag;
-	VertexBufferId vertexBuffer;
-	IndexBufferId indexBuffer;
-	VertexLayoutId vertexLayout;
+	Util::Array<Stream> streams;
+    IndexBufferId indexBuffer;
 	CoreGraphics::PrimitiveTopology::Code topology;
 	Util::Array<CoreGraphics::PrimitiveGroup> primitiveGroups;
 };
@@ -41,9 +45,7 @@ void MeshBind(const MeshId id, const IndexT prim);
 /// get number of primitive groups
 const Util::Array<CoreGraphics::PrimitiveGroup>& MeshGetPrimitiveGroups(const MeshId id);
 /// get vertex buffer
-const VertexBufferId MeshGetVertexBuffer(const MeshId id);
-/// get vertex layout
-const VertexLayoutId MeshGetVertexLayout(const MeshId id);
+const VertexBufferId MeshGetVertexBuffer(const MeshId id, const IndexT stream);
 /// get index buffer
 const IndexBufferId MeshGetIndexBuffer(const MeshId id);
 /// get topology

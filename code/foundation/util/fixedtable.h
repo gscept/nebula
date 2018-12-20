@@ -6,7 +6,7 @@
     A fixed-size 2-dimensional array.
     
     (C) 2006 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 
@@ -24,10 +24,14 @@ public:
     FixedTable(SizeT w, SizeT h, const TYPE& val);
     /// copy constructor
     FixedTable(const FixedTable<TYPE>& rhs);
+    /// move constructor
+    FixedTable(FixedTable<TYPE>&& rhs);
     /// destructor
     ~FixedTable();
     /// assignment operator
     void operator=(const FixedTable<TYPE>& rhs);
+    /// move assignment operator
+    void operator=(FixedTable<TYPE>&& rhs);
     /// equality operator
     bool operator==(const FixedTable<TYPE>& rhs) const;
     /// inequality operator
@@ -95,7 +99,7 @@ template<class TYPE>
 void
 FixedTable<TYPE>::Allocate(SizeT w, SizeT h)
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert(0 == this->elements);
     #endif
     if ((w > 0) && (h > 0))
@@ -190,6 +194,20 @@ FixedTable<TYPE>::FixedTable(const FixedTable<TYPE>& rhs) :
 /**
 */
 template<class TYPE>
+FixedTable<TYPE>::FixedTable(FixedTable<TYPE>&& rhs) :
+    width(rhs.width),
+    height(rhs.height),
+    elements(rhs.height)
+{
+    rhs.elements = nullptr;
+    rhs.width = 0;
+    rhs.height = 0;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
 FixedTable<TYPE>::~FixedTable()
 {
     this->Delete();
@@ -204,6 +222,25 @@ FixedTable<TYPE>::operator=(const FixedTable<TYPE>& rhs)
 {
     this->Delete();
     this->Copy(rhs);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+void
+FixedTable<TYPE>::operator=(FixedTable<TYPE>&& rhs)
+{
+    if (*this != rhs)
+    {
+        this->Delete();
+        this->elements = rhs.elements;
+        this->height = rhs.height;
+        this->width = rhs.width;
+        rhs.elements = nullptr;
+        rhs.width = 0;
+        rhs.height = 0;
+    }    
 }
 
 //------------------------------------------------------------------------------
@@ -286,7 +323,7 @@ template<class TYPE>
 void
 FixedTable<TYPE>::Set(IndexT x, IndexT y, const TYPE& val)
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert((x >= 0) && (x < this->width));
     n_assert(y < this->height);
     n_assert(0 != this->elements);    
@@ -302,7 +339,7 @@ template<class TYPE>
 TYPE&
 FixedTable<TYPE>::At(IndexT x, IndexT y) const
 {
-    #if NEBULA3_BOUNDSCHECKS
+    #if NEBULA_BOUNDSCHECKS
     n_assert((x >= 0) && (x < this->width));
     n_assert(y < this->height);
     n_assert(0 != this->elements);

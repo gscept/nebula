@@ -1,7 +1,7 @@
 /**
 @namespace Math
 
-Nebula3's Math subsystem offers a standalone library of C++ math classes.
+Nebula's Math subsystem offers a standalone library of C++ math classes.
 Nothing unusual about them ;)
 
 FIXME: make math code less object oriented and more like HLSL for better 

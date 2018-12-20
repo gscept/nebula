@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<Nebula3 version="4">
+<Nebula version="4">
     <Model name="system/sphere" bboxcenter="0.000000,0.000000,-0.000008,1.000000" bboxextents="0.744965,0.744965,0.744957,0.000000">
         <ShapeNodes>
             <ShapeNode name="pSphere1" type="static" path="root/pSphere1" useLOD="false" primitive="0" position="0.000000,0.000000,0.000000,1.000000" rotation="0.000000,0.000000,0.000000,1.000000" scale="2.000000,2.000000,2.000000,0.000000" mesh="msh:system/sphere.nvx2" bboxcenter="0.000000,0.000000,-0.000008,1.000000" bboxextents="0.744965,0.744965,0.744957,0.000000" />
         </ShapeNodes>
     </Model>
-</Nebula3>
+</Nebula>

@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 // vkstreamtextureloader.cc
-// (C) 2016 Individual contributors, see AUTHORS file
+// (C) 2016-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "vkstreamtexturepool.h"
@@ -231,7 +231,6 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 	scheduler->PushImageOwnershipChange(TransferQueueType, CoreGraphics::BarrierStage::Transfer, CoreGraphics::BarrierStage::Transfer, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, TransferQueueType, GraphicsQueueType, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
 	scheduler->PushImageLayoutTransition(GraphicsQueueType, CoreGraphics::BarrierStage::Transfer, CoreGraphics::BarrierStage::AllGraphicsShaders, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
 		
-
 	ilDeleteImage(image);
 
 	// create view
@@ -276,6 +275,11 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 	runtimeInfo.bind = VkShaderServer::Instance()->RegisterTexture(TextureId(res), runtimeInfo.type);
 
 	stream->Unmap();
+
+#if NEBULA_GRAPHICS_DEBUG
+	ObjectSetName((TextureId)res, stream->GetURI().LocalPath().AsCharPtr());
+#endif
+
 	return ResourcePool::Success;
 }
 

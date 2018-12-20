@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 //  meshpagehandler.cc
 //  (C) 2007 Radon Labs GmbH
-//  (C) 2013-2016 Individual contributors, see AUTHORS file
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "coregraphics/debug/meshpagehandler.h"
@@ -58,7 +58,7 @@ MeshPageHandler::HandleRequest(const Ptr<HttpRequest>& request)
 	// no command, send the home page
 	Ptr<HtmlPageWriter> htmlWriter = HtmlPageWriter::Create();
 	htmlWriter->SetStream(request->GetResponseContentStream());
-	htmlWriter->SetTitle("NebulaT Meshes");
+	htmlWriter->SetTitle("Nebula Meshes");
 	if (htmlWriter->Open())
 	{
 		htmlWriter->Element(HtmlElement::Heading1, "Shared Mesh Resources");
@@ -136,7 +136,7 @@ MeshPageHandler::HandleMeshInfoRequest(const Util::String& resId, const Ptr<Stre
 
 	Ptr<HtmlPageWriter> htmlWriter = HtmlPageWriter::Create();
 	htmlWriter->SetStream(responseContentStream);
-	htmlWriter->SetTitle("NebulaT Mesh Info");
+	htmlWriter->SetTitle("Nebula Mesh Info");
 	if (htmlWriter->Open())
 	{
 		const Resources::ResourceName& name = resManager->GetName(id);
@@ -169,10 +169,10 @@ MeshPageHandler::HandleMeshInfoRequest(const Util::String& resId, const Ptr<Stre
 
 		// write vertex buffer info
 		htmlWriter->Element(HtmlElement::Heading3, "Vertices");
-		VertexBufferId vbo = MeshGetVertexBuffer(id);
+		VertexBufferId vbo = MeshGetVertexBuffer(id, 0);
 		if (vbo != VertexBufferId::Invalid())
 		{
-			VertexLayoutId vlo = MeshGetVertexLayout(id);
+            VertexLayoutId vlo = MeshGetPrimitiveGroups(id)[0].GetVertexLayout();
 			htmlWriter->Begin(HtmlElement::Table);
 				htmlWriter->Begin(HtmlElement::TableRow);
 					htmlWriter->Element(HtmlElement::TableData, "Num Vertices: ");
@@ -295,8 +295,9 @@ MeshPageHandler::HandleVertexDumpRequest(const Util::String& resId, IndexT minVe
 		return HttpStatus::NotFound;
 	}
 	
-	const VertexBufferId vb = MeshGetVertexBuffer(id);
-	const VertexLayoutId vl = MeshGetVertexLayout(id);
+	const VertexBufferId vb = MeshGetVertexBuffer(id, 0);
+    //FIXME does not deal with different primitivegroup vertex layouts
+	const VertexLayoutId vl = MeshGetPrimitiveGroups(id)[0].GetVertexLayout();
 
 	// clip to valid range
 	SizeT numverts = VertexBufferGetNumVertices(vb);
@@ -311,7 +312,7 @@ MeshPageHandler::HandleVertexDumpRequest(const Util::String& resId, IndexT minVe
 	
 	Ptr<HtmlPageWriter> htmlWriter = HtmlPageWriter::Create();
 	htmlWriter->SetStream(responseContentStream);
-	htmlWriter->SetTitle("NebulaT Mesh Dump");
+	htmlWriter->SetTitle("Nebula Mesh Dump");
 	if (htmlWriter->Open())
 	{
 		// write header

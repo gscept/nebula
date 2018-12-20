@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 // vkpass.cc
-// (C) 2016 Individual contributors, see AUTHORS file
+// (C) 2016-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "vkpass.h"
@@ -94,6 +94,7 @@ CreatePass(const PassCreateInfo& info)
 	loadInfo.clearValues.Resize(images.Size());
 	loadInfo.rects.Resize(images.Size());
 	loadInfo.viewports.Resize(images.Size());
+	loadInfo.name = info.name;
 
 	IndexT i;
 	for (i = 0; i < info.colorAttachments.Size(); i++)
@@ -222,30 +223,34 @@ CreatePass(const PassCreateInfo& info)
 			if (subpass.resolve) resolves[j] = ref;
 		}
 
-		for (; j < info.colorAttachments.Size(); j++)
-		{
-			VkAttachmentReference& ref = references[j];
-			ref.attachment = VK_ATTACHMENT_UNUSED;
-			ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-			preserves[preserveAttachments] = allAttachments[preserveAttachments];
-			preserveAttachments++;
-		}
-
 		for (j = 0; j < subpass.inputs.Size(); j++)
 		{
 			VkAttachmentReference& ref = inputs[j];
 			ref.attachment = subpass.inputs[j];
 			ref.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+			IndexT index = allAttachments.FindIndex(ref.attachment);
+			n_assert_fmt(index != InvalidIndex, "Input attachment %d is already being used as an output attachment", ref.attachment);
+			allAttachments.EraseIndex(index);
+		}
+
+		for (j = 0; j < allAttachments.Size(); j++)
+		{
+			VkAttachmentReference& ref = references[allAttachments[j]];
+			ref.attachment = allAttachments[j];
+			ref.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			preserves[preserveAttachments] = allAttachments[j];
+			preserveAttachments++;
 		}
 
 		for (j = 0; j < subpass.dependencies.Size(); j++)
 		{
 			VkSubpassDependency dep;
 			dep.srcSubpass = subpass.dependencies[j];
-			dep.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+			dep.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 			dep.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 			dep.dstSubpass = i;
-			dep.dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+			dep.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 			dep.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
 			dep.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 			subpassDeps.Append(dep);
@@ -269,7 +274,7 @@ CreatePass(const PassCreateInfo& info)
 		// the rest are automatically preserve
 		if (preserves.Size() > 0)
 		{
-			vksubpass.preserveAttachmentCount = preserves.Size();
+			vksubpass.preserveAttachmentCount = preserveAttachments;
 			vksubpass.pPreserveAttachments = preserves.IsEmpty() ? nullptr : preserves.Begin();
 		}
 		else
@@ -389,9 +394,9 @@ CreatePass(const PassCreateInfo& info)
 	// setup uniform buffer for render target information
 	ConstantBufferCreateInfo cbinfo = { true, sid, "PassBlock", 0, 1 };
 	loadInfo.passBlockBuffer = CreateConstantBuffer(cbinfo);
-	loadInfo.renderTargetDimensionsVar = ConstantBufferCreateShaderVariable(loadInfo.passBlockBuffer, 0, "RenderTargetDimensions");
+	loadInfo.renderTargetDimensionsVar = ShaderGetConstantBinding(sid, "RenderTargetDimensions");
 
-	CoreGraphics::ResourceTableLayoutId tableLayout = ShaderGetResourceTableLayout(sid, NEBULAT_PASS_GROUP);
+	CoreGraphics::ResourceTableLayoutId tableLayout = ShaderGetResourceTableLayout(sid, NEBULA_PASS_GROUP);
 	runtimeInfo.passDescriptorSet = CreateResourceTable(ResourceTableCreateInfo{ tableLayout });
 	runtimeInfo.passPipelineLayout = ShaderGetResourcePipeline(sid);
 
@@ -429,7 +434,7 @@ CreatePass(const PassCreateInfo& info)
 		dims.z() = 1 / dims.x();
 		dims.w() = 1 / dims.y();
 	}
-	ConstantBufferArrayUpdate(loadInfo.passBlockBuffer, loadInfo.renderTargetDimensionsVar, dimensions.Begin(), dimensions.Size());
+	ConstantBufferUpdateArray(loadInfo.passBlockBuffer, dimensions.Begin(), dimensions.Size(), loadInfo.renderTargetDimensionsVar);
 	ResourceTableCommitChanges(runtimeInfo.passDescriptorSet);
 
 	// create framebuffer
@@ -474,7 +479,7 @@ CreatePass(const PassCreateInfo& info)
 /**
 */
 void
-DiscardPass(const PassId& id)
+DiscardPass(const PassId id)
 {
 	VkPassLoadInfo& loadInfo = passAllocator.Get<0>(id.id24);
 	VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<1>(id.id24);
@@ -491,20 +496,12 @@ DiscardPass(const PassId& id)
 /**
 */
 void
-PassBegin(const PassId& id)
+PassBegin(const PassId id)
 {
 	VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<1>(id.id24);
 
 	// bind descriptor set
-	static const uint32_t offset = 0;
-	BindDescriptorsGraphics(
-		&ResourceTableGetVkDescriptorSet(runtimeInfo.passDescriptorSet),
-		ResourcePipelineGetVk(runtimeInfo.passPipelineLayout), 
-		NEBULAT_PASS_GROUP, 
-		1, 
-		nullptr, 
-		0, 
-		true);
+	CoreGraphics::SetResourceTable(runtimeInfo.passDescriptorSet, NEBULA_PASS_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
 
 	// update framebuffer pipeline info to next subpass
 	runtimeInfo.currentSubpassIndex = 0;
@@ -512,10 +509,9 @@ PassBegin(const PassId& id)
 	runtimeInfo.framebufferPipelineInfo.pViewportState = &runtimeInfo.subpassPipelineInfo[0];
 
 	const Util::FixedArray<VkViewport>& viewports = runtimeInfo.subpassViewports[0];
-	SetViewports(viewports.Begin(), viewports.Size());
-
+	CoreGraphics::SetViewports(viewports.Begin(), viewports.Size());
 	const Util::FixedArray<VkRect2D>& scissors = runtimeInfo.subpassRects[0];
-	SetScissorRects(scissors.Begin(), scissors.Size());
+	CoreGraphics::SetScissorRects(scissors.Begin(), scissors.Size());
 
 	CoreGraphics::BeginPass(id);
 }
@@ -524,22 +520,55 @@ PassBegin(const PassId& id)
 /**
 */
 void
-PassBeginBatch(const PassId& id, Frame::FrameBatchType::Code batch)
+PassBeginBatch(const PassId id, Frame::FrameBatchType::Code batch)
 {
-
+	// empty
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-PassNextSubpass(const PassId& id)
+PassNextSubpass(const PassId id)
 {
 	VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<1>(id.id24);
 	runtimeInfo.currentSubpassIndex++;
 	runtimeInfo.framebufferPipelineInfo.subpass = runtimeInfo.currentSubpassIndex;
 	runtimeInfo.framebufferPipelineInfo.pViewportState = &runtimeInfo.subpassPipelineInfo[runtimeInfo.currentSubpassIndex];
 
+	const Util::FixedArray<VkViewport>& viewports = runtimeInfo.subpassViewports[runtimeInfo.currentSubpassIndex];
+	CoreGraphics::SetViewports(viewports.Begin(), viewports.Size());
+	const Util::FixedArray<VkRect2D>& scissors = runtimeInfo.subpassRects[runtimeInfo.currentSubpassIndex];
+	CoreGraphics::SetScissorRects(scissors.Begin(), scissors.Size());
+
+	CoreGraphics::SetToNextSubpass();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+PassEndBatch(const PassId id)
+{
+	// empty
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+PassEnd(const PassId id)
+{
+	CoreGraphics::EndPass();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+PassApplyClipSettings(const PassId id)
+{
+	VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<1>(id.id24);
 	const Util::FixedArray<VkViewport>& viewports = runtimeInfo.subpassViewports[runtimeInfo.currentSubpassIndex];
 	SetViewports(viewports.Begin(), viewports.Size());
 
@@ -551,25 +580,7 @@ PassNextSubpass(const PassId& id)
 /**
 */
 void
-PassEndBatch(const PassId& id)
-{
-	
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-PassEnd(const PassId& id)
-{
-	CoreGraphics::EndPass();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-PassWindowResizeCallback(const PassId& id)
+PassWindowResizeCallback(const PassId id)
 {
 	VkPassLoadInfo& loadInfo = passAllocator.Get<0>(id.id24);
 	VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<1>(id.id24);
@@ -646,14 +657,14 @@ PassWindowResizeCallback(const PassId& id)
 		dims.z() = 1 / dims.x();
 		dims.w() = 1 / dims.y();
 	}
-	ConstantBufferArrayUpdate(loadInfo.passBlockBuffer, loadInfo.renderTargetDimensionsVar, dimensions.Begin(), dimensions.Size());
+	ConstantBufferUpdateArray(loadInfo.passBlockBuffer, dimensions.Begin(), dimensions.Size(), loadInfo.renderTargetDimensionsVar);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 const Util::Array<CoreGraphics::RenderTextureId>&
-PassGetAttachments(const CoreGraphics::PassId& id)
+PassGetAttachments(const CoreGraphics::PassId id)
 {
 	return passAllocator.Get<0>(id.id24).colorAttachments;
 }
@@ -662,9 +673,18 @@ PassGetAttachments(const CoreGraphics::PassId& id)
 /**
 */
 const uint32_t
-PassGetNumSubpassAttachments(const CoreGraphics::PassId & id, const IndexT subpass)
+PassGetNumSubpassAttachments(const CoreGraphics::PassId id, const IndexT subpass)
 {
 	return passAllocator.Get<3>(id.id24)[subpass];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::StringAtom 
+PassGetName(const CoreGraphics::PassId id)
+{
+	return passAllocator.Get<0>(id.id24).name;
 }
 
 } // namespace Vulkan

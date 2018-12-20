@@ -3,7 +3,7 @@
 /**
 	Performs an image copy without any filtering or image conversion.
 	
-	(C) 2016 Individual contributors, see AUTHORS file
+	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "frameop.h"
@@ -23,6 +23,10 @@ public:
 		void Run(const IndexT frameIndex);
 
 		CoreGraphics::RenderTextureId from, to;
+
+#if NEBULA_GRAPHICS_DEBUG
+		Util::StringAtom name;
+#endif
 	};
 
 	FrameOp::Compiled* AllocCompiled(Memory::ChunkAllocator<BIG_CHUNK>& allocator);

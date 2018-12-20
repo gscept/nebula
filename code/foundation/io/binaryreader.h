@@ -10,7 +10,7 @@
     @todo convert endianess!
     
     (C) 2006 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "io/streamreader.h"
 #if !__OSX__
@@ -91,6 +91,8 @@ public:
     Util::Array<float> ReadFloatArray();
     /// read an int array from the stream
     Util::Array<int> ReadIntArray();
+	/// read an int array from the stream
+	Util::Array<uint> ReadUIntArray();
     /// read a bool array from the stream
     Util::Array<bool> ReadBoolArray();
     /// read a guid

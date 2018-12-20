@@ -3,7 +3,7 @@
 /**
 	Implements a shader variation (shader program within effect) in Vulkan.
 	
-	(C) 2016 Individual contributors, see AUTHORS file
+	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
@@ -16,13 +16,6 @@
 
 namespace Vulkan
 {
-
-enum VkShaderProgramPipelineType
-{
-	InvalidType,
-	ComputePipeline,
-	GraphicsPipeline
-};
 
 struct VkShaderProgramSetupInfo
 {
@@ -45,7 +38,7 @@ struct VkShaderProgramRuntimeInfo
 	VkShaderModule vs, hs, ds, gs, ps, cs;
 	VkPipeline pipeline;
 	VkPipelineLayout layout;
-	VkShaderProgramPipelineType type;
+	CoreGraphics::ShaderPipeline type;
 	uint32_t uniqueId;
 };
 
@@ -57,18 +50,16 @@ typedef Ids::IdAllocator<
 > VkShaderProgramAllocator;
 
 
-/// applies program
-void VkShaderProgramApply(VkShaderProgramRuntimeInfo& info);
 /// discard variation
 void VkShaderProgramDiscard(VkShaderProgramSetupInfo& info, VkShaderProgramRuntimeInfo& rt, VkPipeline& computePipeline);
 
 /// setup from AnyFX program
-void VkShaderProgramSetup(const Ids::Id24 id, AnyFX::VkProgram* program, const CoreGraphics::ResourcePipelineId& pipelineLayout, VkShaderProgramAllocator& allocator);
+void VkShaderProgramSetup(const Ids::Id24 id, const Resources::ResourceName& shaderName, AnyFX::VkProgram* program, const CoreGraphics::ResourcePipelineId& pipelineLayout, VkShaderProgramAllocator& allocator);
 
 /// create shader object
 void VkShaderProgramCreateShader(const VkDevice dev, VkShaderModule* shader, unsigned binarySize, char* binary);
 /// create this program as a graphics program
-void VkShaderProgramSetupAsGraphics(AnyFX::VkProgram* program, VkShaderProgramRuntimeInfo& runtime);
+void VkShaderProgramSetupAsGraphics(AnyFX::VkProgram* program, const Resources::ResourceName& shaderName, VkShaderProgramRuntimeInfo& runtime);
 /// create this program as a compute program (can be done immediately)
 void VkShaderProgramSetupAsCompute(VkShaderProgramSetupInfo& setup, VkShaderProgramRuntimeInfo& runtime);
 } // namespace Vulkan

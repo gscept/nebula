@@ -1,7 +1,7 @@
 //-------------------------------------------------------------------------------
 //  osxthread.cc
 //  (C) 2010 Radon Labs GmbH
-//  (C) 2013 Individual contributors, see AUTHORS file
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //-------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "osxthread.h"
@@ -22,7 +22,7 @@ OSXThread::OSXThread() :
     threadState(Initial)
 {
     // register with thread list
-    #if NEBULA3_DEBUG
+    #if NEBULA_DEBUG
     OSXThread::criticalSection.Enter();
     this->threadListIterator = ThreadList.AddBack(this);
     OSXThread::criticalSection.Leave();
@@ -40,7 +40,7 @@ OSXThread::~OSXThread()
     }
     
     // unregister from thread list
-    #if NEBULA3_DEBUG
+    #if NEBULA_DEBUG
     n_assert(0 != this->threadListIterator);
     PS3Thread::criticalSection.Enter();
     ThreadList.Remove(this->threadListIterator);
@@ -134,7 +134,7 @@ OSXThread::YieldThread()
 /**
     Returns an array with infos about all currently existing thread objects.
 */
-#if NEBULA3_DEBUG
+#if NEBULA_DEBUG
 Array<OSXThread::ThreadDebugInfo>
 OSXThread::GetRunningThreadDebugInfos()
 {

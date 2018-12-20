@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 //  loader/LoaderServer.cc
 //  (C) 2003 RadonLabs GmbH
-//  (C)2013 - 2018 Individual contributors, see AUTHORS file
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "loaderserver.h"
@@ -108,6 +108,17 @@ LoaderServer::LoadLevel(const Util::String& levelName)
     n_assert(levelName.IsValid());
     bool success = LevelLoader::Load(levelName);
     return success;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+LoaderServer::SaveLevel(const Util::String & levelName)
+{
+	n_assert(levelName.IsValid());
+	bool success = LevelLoader::Save(levelName);
+	return success;
 }
 
 //------------------------------------------------------------------------------

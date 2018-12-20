@@ -5,7 +5,7 @@
 
 	For the actual loader code, see VkStreamTextureLoader and VkMemoryTextureLoader.
 	
-	(C) 2017 Individual contributors, see AUTHORS file
+	(C)2017-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
@@ -48,7 +48,7 @@ typedef Ids::IdAllocatorSafe<
 	VkTextureRuntimeInfo,					// 0 runtime info (for binding)
 	VkTextureLoadInfo,						// 1 loading info (mostly used during the load/unload phase)
 	VkTextureMappingInfo,					// 2 used when image is mapped to memory
-	ImageLayout								// 3 used to keep track of image layout (use only when necessary)
+	CoreGraphicsImageLayout								// 3 used to keep track of image layout (use only when necessary)
 > VkTextureAllocator;
 extern VkTextureAllocator textureAllocator;
 

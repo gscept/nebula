@@ -3,7 +3,7 @@
 /**
 	Implements a deferred delegate, which is used to perform an action whenever a fence object is done.
 	
-	(C) 2016 Individual contributors, see AUTHORS file
+	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "util/fixedarray.h"
@@ -127,7 +127,6 @@ struct VkDeferredCommand
 			struct // BindDescriptorSets
 			{
 				VkPipelineBindPoint type;
-				VkPipelineLayout layout;
 				uint32_t baseSet;
 				uint32_t numSets;
 				const VkDescriptorSet* sets;

@@ -3,7 +3,7 @@
 /**
 	Implements a resource loader for models
 	
-	(C) 2017 Individual contributors, see AUTHORS file
+	(C)2017-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
@@ -52,6 +52,12 @@ public:
 	/// get bounding box of model which we can change
 	Math::bbox& GetModelInstanceBoundingBox(const ModelInstanceId id);
 
+	/// Get the object id of model instance
+	uint GetModelInstanceObjectId(const ModelInstanceId id) const;
+	
+	/// Get reference to objectid for assignment
+	uint& GetModelInstanceObjectId(const ModelInstanceId id);
+
 private:
 	friend class PrimitiveNode;
 	friend class CharacterNode;
@@ -61,7 +67,7 @@ private:
 	friend class Visibility::VisibilityContext;
 
 	/// create an instance of a model recursively
-	void CreateModelInstanceRecursive(Models::ModelNode* node, Models::ModelNode::Instance* parentInstance, byte* memory, Util::Array<Models::ModelNode::Instance*>& instances);
+	void CreateModelInstanceRecursive(Models::ModelNode* node, Models::ModelNode::Instance* parentInstance, byte** memory, Util::Array<Models::ModelNode::Instance*>& instances, Util::Array<Models::NodeType>& types);
 
 	/// perform actual load, override in subclass
 	LoadStatus LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream);
@@ -71,6 +77,17 @@ private:
 	///
 	Util::Stack<Models::ModelNode*> nodeStack;
 	Util::Dictionary<Util::FourCC, Ids::Id8> nodeFourCCMapping;
+
+	enum
+	{
+		ModelBoundingBox,
+		ModelNodeAllocator,
+		ModelNodes,
+		RootNode,
+		InstanceCount,
+		InstanceAllocSize,
+		InstanceNodeAllocator
+	};
 
 	Ids::IdAllocator<
 		Math::bbox,													// 0 - total bounding box
@@ -86,10 +103,22 @@ private:
 	Util::Array<std::function<Models::ModelNode*(Memory::ChunkAllocator<MODEL_MEMORY_CHUNK_SIZE>&)>> nodeConstructors;
 	Util::Array<std::function<Models::ModelNode::Instance*(Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>&)>> nodeInstanceConstructors;
 
+	enum
+	{
+		NodeInstances,
+		NodeTypes,
+		InstanceMemory,
+		InstanceTransform,
+		InstanceBoundingBox,
+		ObjectId
+	};
 	Ids::IdAllocator<
 		Util::Array<Models::ModelNode::Instance*>,					// list of node instances
+		Util::Array<Models::NodeType>,								// node instance types
+		byte*,														// allocated memory
 		Math::matrix44,												// transform
-		Math::bbox													// transformed bounding box
+		Math::bbox,													// transformed bounding box
+		uint														// objectid
 	> modelInstanceAllocator;
 
 	static Ids::Id8 NodeMappingCounter;

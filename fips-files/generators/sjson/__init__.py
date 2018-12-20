@@ -1,14 +1,15 @@
 """Module to parse SJSON files."""
 # coding=utf8
-# @author: Matthaus G. Chajdas
+# @author: MatthÃ¤us G. Chajdas
 # @license: 3-clause BSD
 
+import collections.abc
 import collections
 import numbers
 import string
 import io
 
-__version__ = 'N.2.0.3'
+__version__ = '2.0.3'
 
 
 class MemoryInputStream:
@@ -264,7 +265,7 @@ def _decode_string(stream, allow_identifier=False):
                 result += next_char
                 stream.skip()
 
-    return str(result)
+    return str(result, encoding='utf-8')
 
 _NUMBER_SEPARATOR_SET = _WHITESPACE_SET.union(set({b',', b']', b'}', None}))
 
@@ -453,14 +454,11 @@ def _encode(obj, separators=(', ', '\n', ' = '), indent=0, level=0):
         yield str(obj)
     # Strings are also Sequences, but we don't want to encode as lists
     elif isinstance(obj, str):
-        for temp in _escape_string(obj):
-            yield temp
+        yield from _escape_string(obj)
     elif isinstance(obj, collections.abc.Sequence):
-        for temp in _encode_list(obj, separators, indent, level):
-            yield temp
+        yield from _encode_list(obj, separators, indent, level)
     elif isinstance(obj, collections.abc.Mapping):
-        for temp in _encode_dict(obj, separators, indent, level):
-            yield temp
+        yield from _encode_dict(obj, separators, indent, level)
     else:
         raise RuntimeError("Unsupported object type")
 
@@ -470,8 +468,8 @@ def _indent(level, indent):
 
 
 def _encode_key(k):
-    for temp in _escape_string(k, False):
-        yield temp
+    yield from _escape_string(k, False)
+
 
 def _encode_list(obj, separators, indent, level):
     yield '['
@@ -481,9 +479,7 @@ def _encode_list(obj, separators, indent, level):
             first = False
         else:
             yield separators[0]
-        for temp in _encode(element, separators, indent, level+1):
-            yield temp
-
+        yield from _encode(element, separators, indent, level+1)
     yield ']'
 
 
@@ -497,11 +493,9 @@ def _encode_dict(obj, separators, indent, level):
         else:
             yield '\n'
         yield _indent(level, indent)
-        for temp in _encode_key(key):
-            yield temp
+        yield from _encode_key(key)
         yield separators[2]
-        for temp in _encode(value, separators, indent, level+1):
-            yield temp
+        yield from _encode(value, separators, indent, level+1)
     yield '\n'
     yield _indent(level-1, indent)
     if level > 0:

@@ -1,14 +1,14 @@
 //------------------------------------------------------------------------------
 // framesubpasssystem.cc
-// (C) 2016 Individual contributors, see AUTHORS file
+// (C) 2016-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "framesubpasssystem.h"
-#include "rendermodules/rt/rtpluginregistry.h"
 #include "coregraphics/textrenderer.h"
 #include "coregraphics/shaperenderer.h"
 #include "coregraphics/graphicsdevice.h"
 #include "frame/framebatchtype.h"
+#include "lighting/lightcontext.h"
 
 using namespace CoreGraphics;
 namespace Frame
@@ -52,9 +52,7 @@ FrameSubpassSystem::CompiledImpl::Run(const IndexT frameIndex)
 	switch (this->call)
 	{
 	case Lights:
-		CoreGraphics::BeginBatch(FrameBatchType::System);
-		//LightServer::Instance()->RenderLights();
-		CoreGraphics::EndBatch();
+		Lighting::LightContext::RenderLights();
 		break;
 	case LightProbes:
 		CoreGraphics::BeginBatch(FrameBatchType::System);

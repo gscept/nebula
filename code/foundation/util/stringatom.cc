@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 //  stringatom.cc
 //  (C) 2009 Radon Labs GmbH
-//  (C) 2013-2016 Individual contributors, see AUTHORS file
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "util/stringatom.h"
@@ -29,7 +29,7 @@ namespace Util
 void
 StringAtom::Setup(const char* str)
 {
-    #if NEBULA3_ENABLE_THREADLOCAL_STRINGATOM_TABLES
+    #if NEBULA_ENABLE_THREADLOCAL_STRINGATOM_TABLES
         // first check our thread-local string atom table whether the string
         // is already registered there, this does not require any thread
         // synchronisation
@@ -54,7 +54,7 @@ StringAtom::Setup(const char* str)
     }
     globalTable->Unlock();
 
-    #if NEBULA3_ENABLE_THREADLOCAL_STRINGATOM_TABLES
+    #if NEBULA_ENABLE_THREADLOCAL_STRINGATOM_TABLES
         // finally, add the new string to our local table as well, so the
         // next lookup from our thread of this string will be faster
         localTable->Add(this->content);
@@ -68,7 +68,7 @@ StringAtom::Setup(const char* str)
 bool
 StringAtom::operator==(const char* rhs) const
 {
-    if (0 == this->content)
+    if (nullptr == this->content)
     {
         return false;
     }
@@ -80,12 +80,21 @@ StringAtom::operator==(const char* rhs) const
 
 //------------------------------------------------------------------------------
 /**
+*/
+bool 
+StringAtom::operator==(nullptr_t) const
+{
+	return this->content == nullptr;
+}
+
+//------------------------------------------------------------------------------
+/**
     Compare with raw string. Careful, slow!
 */
 bool
 StringAtom::operator!=(const char* rhs) const
 {
-    if (0 == this->content)
+    if (nullptr == this->content)
     {
         return false;
     }
@@ -95,7 +104,11 @@ StringAtom::operator!=(const char* rhs) const
     }
 }
 
-Util::StringAtom operator""_atm(const char * c)
+//------------------------------------------------------------------------------
+/**
+*/
+Util::StringAtom
+operator""_atm(const char* c)
 {
 	return Util::StringAtom();
 }

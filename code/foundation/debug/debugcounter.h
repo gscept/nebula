@@ -6,7 +6,7 @@
     A debug counter for counting events.
       
     (C) 2008 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/refcounted.h"
 #include "util/stringatom.h"
@@ -14,7 +14,7 @@
 #include "threading/criticalsection.h"
 
 //------------------------------------------------------------------------------
-#if NEBULA3_ENABLE_PROFILING
+#if NEBULA_ENABLE_PROFILING
 #define _declare_counter(counter) Ptr<Debug::DebugCounter> counter;
 #define _setup_counter(counter) counter = Debug::DebugCounter::Create(); counter->Setup(Util::StringAtom(#counter));
 #define _setup_grouped_counter(counter, group) counter = Debug::DebugCounter::Create(); counter->Setup(Util::StringAtom(#counter), group);

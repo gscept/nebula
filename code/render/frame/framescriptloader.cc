@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 // framescriptloader.cc
-// (C) 2016 Individual contributors, see AUTHORS file
+// (C) 2016-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "framescriptloader.h"
@@ -74,7 +74,7 @@ FrameScriptLoader::LoadFrameScript(const IO::URI& path)
 		JzonValue* node = jzon_get(json, "version");
 		n_assert(node->int_value >= 2);
 		node = jzon_get(json, "engine");
-		n_assert(Util::String(node->string_value) == "NebulaTrifid");
+		n_assert(Util::String(node->string_value) == "Nebula");
 
 
 #define CONSTRUCTOR_MACRO(type) \
@@ -297,8 +297,10 @@ FrameScriptLoader::ParseImageReadWriteTextureList(const Ptr<Frame::FrameScript>&
 			name->string_value,
 			Texture2D,	// fixme, not only 2D textures!
 			CoreGraphics::PixelFormat::FromString(format->string_value),
+			CoreGraphicsImageLayout::General,		// also guarantee it's in the general state
 			(float)width->float_value, (float)height->float_value, 1,
-			1
+			1, 1,
+			false, false, true
 		};
 
 		if (jzon_get(cur, "relative")) info.relativeSize = jzon_get(cur, "relative")->bool_value;
@@ -327,7 +329,7 @@ FrameScriptLoader::ParseImageReadWriteBufferList(const Ptr<Frame::FrameScript>& 
 		// create shader buffer 
 		ShaderRWBufferCreateInfo info =
 		{
-			size->int_value, 1
+			name->string_value, size->int_value, 1
 		};
 
 		bool relativeSize = false;
@@ -412,8 +414,8 @@ FrameScriptLoader::ParseGlobalState(const Ptr<Frame::FrameScript>& script, JzonV
 	op->SetName(name->string_value);
 
 	// create shared state, this will be set while running the script and update the shared state
-	CoreGraphics::ShaderStateId state = ShaderServer::Instance()->ShaderCreateSharedState("shd:shared.fxb", { NEBULAT_FRAME_GROUP });
-	op->state = state;
+	//CoreGraphics::ShaderStateId state = ShaderServer::Instance()->ShaderCreateSharedState("shd:shared.fxb", { NEBULA_FRAME_GROUP });
+	//op->state = state;
 
 	// setup variables
 	JzonValue* variables = jzon_get(node, "variables");
@@ -432,6 +434,7 @@ FrameScriptLoader::ParseGlobalState(const Ptr<Frame::FrameScript>& script, JzonV
 			Util::String valStr(val->string_value);
 
 			// get variable
+			/*
 			ShaderConstantId varid = ShaderStateGetConstant(state, sem->string_value);
 			ShaderConstantType type = ShaderConstantGetType(varid, state);
 			switch (type)
@@ -476,6 +479,8 @@ FrameScriptLoader::ParseGlobalState(const Ptr<Frame::FrameScript>& script, JzonV
 
 			// add variable to op
 			op->constants.Append(varid);
+			*/
+
 		}
 	}
 
@@ -588,17 +593,11 @@ FrameScriptLoader::ParseCompute(const Ptr<Frame::FrameScript>& script, JzonValue
 	// create shader state
 	JzonValue* shader = jzon_get(node, "shaderState");
 	n_assert(shader != NULL);
-
-	CoreGraphics::ShaderStateId state;
-	ParseShaderState(script, shader, state);
-	op->state = state;
+	ParseShaderState(script, shader, op->shader, op->resourceTable, op->constantBuffers);
 
 	JzonValue* variation = jzon_get(node, "variation");
 	n_assert(variation != NULL);
-	ShaderId fakeShd;
-	fakeShd.allocId = state.shaderId;
-	fakeShd.allocType = state.shaderType;
-	op->program = ShaderGetProgram(fakeShd, ShaderServer::Instance()->FeatureStringToMask(variation->string_value));
+	op->program = ShaderGetProgram(op->shader, ShaderServer::Instance()->FeatureStringToMask(variation->string_value));
 
 	// dimensions, must be 3
 	JzonValue* dims = jzon_get(node, "dimensions");
@@ -1077,10 +1076,7 @@ FrameScriptLoader::ParseSubpassFullscreenEffect(const Ptr<Frame::FrameScript>& s
 	// create shader state
 	JzonValue* shaderState = jzon_get(node, "shaderState");
 	n_assert(shaderState != NULL);
-
-	CoreGraphics::ShaderStateId state;
-	ParseShaderState(script, shaderState, state);
-	op->shaderState = state;
+	ParseShaderState(script, shaderState, op->shader, op->resourceTable, op->constantBuffers);
 
 	// get texture
 	JzonValue* texture = jzon_get(node, "sizeFromTexture");
@@ -1159,7 +1155,7 @@ FrameScriptLoader::ParseSubpassPlugins(const Ptr<Frame::FrameScript>& script, Fr
 /**
 */
 void
-FrameScriptLoader::ParseShaderState(const Ptr<Frame::FrameScript>& script, JzonValue* node, CoreGraphics::ShaderStateId& state)
+FrameScriptLoader::ParseShaderState(const Ptr<Frame::FrameScript>& script, JzonValue* node, CoreGraphics::ShaderId& shd, CoreGraphics::ResourceTableId& table, Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBufferId>& constantBuffers)
 {
 	bool createResources = false;
 	JzonValue* create = jzon_get(node, "createResourceSet");
@@ -1168,18 +1164,19 @@ FrameScriptLoader::ParseShaderState(const Ptr<Frame::FrameScript>& script, JzonV
 	JzonValue* shader = jzon_get(node, "shader");
 	n_assert(shader != NULL);
     Util::String shaderRes = "shd:" + Util::String(shader->string_value) + ".fxb";
-	state = ShaderServer::Instance()->ShaderCreateState(shaderRes, { NEBULAT_BATCH_GROUP }, createResources);
+	shd = ShaderGet(shaderRes);
+	table = ShaderCreateResourceTable(shd, NEBULA_BATCH_GROUP);
 
 	JzonValue* vars = jzon_get(node, "variables");
-	if (vars != NULL) ParseShaderVariables(script, state, vars);
-	CoreGraphics::ShaderStateCommit(state);
+	if (vars != NULL) ParseShaderVariables(script, shd, table, constantBuffers, vars);
+	CoreGraphics::ResourceTableCommitChanges(table);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-FrameScriptLoader::ParseShaderVariables(const Ptr<Frame::FrameScript>& script, const CoreGraphics::ShaderStateId& state, JzonValue* node)
+FrameScriptLoader::ParseShaderVariables(const Ptr<Frame::FrameScript>& script, const CoreGraphics::ShaderId& shd, CoreGraphics::ResourceTableId& table, Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBufferId>& constantBuffers, JzonValue* node)
 {
 	uint i;
 	for (i = 0; i < node->size; i++)
@@ -1194,57 +1191,107 @@ FrameScriptLoader::ParseShaderVariables(const Ptr<Frame::FrameScript>& script, c
 		Util::String valStr(val->string_value);
 
 		// get variable
-		ShaderConstantId varid = ShaderStateGetConstant(state, sem->string_value);
-		ShaderConstantType type = ShaderConstantGetType(varid, state);
-		switch (type)
+		ShaderConstantType type = ShaderGetConstantType(shd, sem->string_value);
+		ConstantBufferId cbo = ConstantBufferId::Invalid();
+		ConstantBinding bind = { -1 };
+		if (type != SamplerVariableType && type != TextureVariableType && type != ImageReadWriteVariableType && type != BufferReadWriteVariableType)
 		{
-		case IntVariableType:
-			ShaderConstantSet(varid, state, valStr.AsInt());
-			break;
-		case FloatVariableType:
-			ShaderConstantSet(varid, state, valStr.AsFloat());
-			break;
-		case VectorVariableType:
-			ShaderConstantSet(varid, state, valStr.AsFloat4());
-			break;
-		case Vector2VariableType:
-			ShaderConstantSet(varid, state, valStr.AsFloat2());
-			break;
-		case MatrixVariableType:
-			ShaderConstantSet(varid, state, valStr.AsMatrix44());
-			break;
-		case BoolVariableType:
-			ShaderConstantSet(varid, state, valStr.AsBool());
-			break;
-		case SamplerVariableType:
-		case TextureVariableType:
-		{
-			if (script->GetColorTexture(valStr) != CoreGraphics::RenderTextureId::Invalid())
+			Util::StringAtom block = ShaderGetConstantBlockName(shd, sem->string_value);
+			IndexT bufferIndex = constantBuffers.FindIndex(block);
+			if (bufferIndex == InvalidIndex)
 			{
-				ShaderResourceSetRenderTexture(varid, state, script->GetColorTexture(valStr));
-			}
-			else if (script->GetReadWriteTexture(valStr) != CoreGraphics::ShaderRWTextureId::Invalid())
-			{
-				ShaderResourceSetReadWriteTexture(varid, state, script->GetReadWriteTexture(valStr));
+				cbo = ShaderCreateConstantBuffer(shd, block);
+				constantBuffers.Add(block, cbo);
 			}
 			else
 			{
-				const Ptr<Resources::ResourceManager>& resManager = Resources::ResourceManager::Instance();
-				Resources::ResourceId id = resManager->CreateResource(valStr, nullptr, nullptr, true);
-				if (id != Resources::ResourceId::Invalid())
+				cbo = constantBuffers.ValueAtIndex(bufferIndex);
+			}
+			bind = ShaderGetConstantBinding(shd, sem->string_value);
+			IndexT slot = ShaderGetResourceSlot(shd, block);
+			ResourceTableSetConstantBuffer(table, { cbo, slot, 0, false, false, -1, 0 });
+		}
+		switch (type)
+		{
+		case IntVariableType:
+			ConstantBufferUpdate(cbo, valStr.AsInt(), bind);
+			break;
+		case FloatVariableType:
+			ConstantBufferUpdate(cbo, valStr.AsFloat(), bind);
+			break;
+		case VectorVariableType:
+			ConstantBufferUpdate(cbo, valStr.AsFloat4(), bind);
+			break;
+		case Vector2VariableType:
+			ConstantBufferUpdate(cbo, valStr.AsFloat2(), bind);
+			break;
+		case MatrixVariableType:
+			ConstantBufferUpdate(cbo, valStr.AsMatrix44(), bind);
+			break;
+		case BoolVariableType:
+			ConstantBufferUpdate(cbo, valStr.AsBool(), bind);
+			break;
+		case SamplerHandleType:
+		case ImageHandleType:
+		case TextureHandleType:
+		{
+			CoreGraphics::RenderTextureId rtid = script->GetColorTexture(valStr);
+			if (rtid != CoreGraphics::RenderTextureId::Invalid())
+				ConstantBufferUpdate(cbo, CoreGraphics::RenderTextureGetBindlessHandle(rtid), bind);
+			else
+			{
+				CoreGraphics::ShaderRWTextureId swid = script->GetReadWriteTexture(valStr);
+				if (swid != CoreGraphics::ShaderRWTextureId::Invalid())
+					ConstantBufferUpdate(cbo, CoreGraphics::ShaderRWTextureGetBindlessHandle(swid), bind);
+				else
 				{
-					TextureId tex = id;
-					ShaderResourceSetTexture(varid, state, tex);
+					const Ptr<Resources::ResourceManager>& resManager = Resources::ResourceManager::Instance();
+					CoreGraphics::TextureId id = resManager->CreateResource(valStr, nullptr, nullptr, true).As<CoreGraphics::TextureId>();
+					if (id != CoreGraphics::TextureId::Invalid())
+						ConstantBufferUpdate(cbo, CoreGraphics::TextureGetBindlessHandle(id), bind);
+					else
+						n_error("Unknown resource %s!", valStr.AsCharPtr());
+				}
+			}
+			break;
+		}
+		case SamplerVariableType:
+		case TextureVariableType:
+		{
+			IndexT slot = ShaderGetResourceSlot(shd, sem->string_value);
+
+			CoreGraphics::RenderTextureId rtid = script->GetColorTexture(valStr);
+			if (rtid != CoreGraphics::RenderTextureId::Invalid())
+				ResourceTableSetTexture(table, { rtid, slot, 0, CoreGraphics::SamplerId::Invalid(), false });
+			else
+			{
+				CoreGraphics::ShaderRWTextureId swid = script->GetReadWriteTexture(valStr);
+				if (swid != CoreGraphics::ShaderRWTextureId::Invalid())
+					ResourceTableSetShaderRWTexture(table, { swid, slot, 0, CoreGraphics::SamplerId::Invalid() });
+				else
+				{
+					const Ptr<Resources::ResourceManager>& resManager = Resources::ResourceManager::Instance();
+					CoreGraphics::TextureId id = resManager->CreateResource(valStr, nullptr, nullptr, true).As<CoreGraphics::TextureId>();
+					if (id != CoreGraphics::TextureId::Invalid())
+						ResourceTableSetTexture(table, { id, slot, 0, CoreGraphics::SamplerId::Invalid(), false });
+					else
+						n_error("Unknown resource %s!", valStr.AsCharPtr());
 				}
 			}
 			break;
 		}
 		case ImageReadWriteVariableType:
-			ShaderResourceSetReadWriteTexture(varid, state, script->GetReadWriteTexture(valStr));
+		{
+			IndexT slot = ShaderGetResourceSlot(shd, sem->string_value);
+			ResourceTableSetShaderRWTexture(table, { script->GetReadWriteTexture(valStr), slot, 0, CoreGraphics::SamplerId::Invalid() });
 			break;
+		}
 		case BufferReadWriteVariableType:
-			ShaderResourceSetReadWriteBuffer(varid, state, script->GetReadWriteBuffer(valStr));
+		{
+			IndexT slot = ShaderGetResourceSlot(shd, sem->string_value);
+			ResourceTableSetShaderRWBuffer(table, { script->GetReadWriteBuffer(valStr), slot, 0 });
 			break;
+		}
 		}
 	}
 
@@ -1265,7 +1312,7 @@ FrameScriptLoader::ParseResourceDependencies(const Ptr<Frame::FrameScript>& scri
 		
 		if (script->readWriteTexturesByName.Contains(valstr))
 		{
-			ImageLayout layout = ImageLayoutFromString(jzon_get(dep, "layout")->string_value);
+			CoreGraphicsImageLayout layout = ImageLayoutFromString(jzon_get(dep, "layout")->string_value);
 			CoreGraphics::ImageSubresourceInfo subres;
 			JzonValue* nd = nullptr;
 			if ((nd = jzon_get(dep, "aspect")) != nullptr) subres.aspect			= ImageAspectFromString(nd->string_value);
@@ -1284,7 +1331,7 @@ FrameScriptLoader::ParseResourceDependencies(const Ptr<Frame::FrameScript>& scri
 		}
 		else if (script->colorTexturesByName.Contains(valstr))
 		{
-			ImageLayout layout = ImageLayoutFromString(jzon_get(dep, "layout")->string_value);
+			CoreGraphicsImageLayout layout = ImageLayoutFromString(jzon_get(dep, "layout")->string_value);
 			CoreGraphics::ImageSubresourceInfo subres;
 			JzonValue* nd = nullptr;
 			if ((nd = jzon_get(dep, "aspect")) != nullptr) subres.aspect = ImageAspectFromString(nd->string_value);

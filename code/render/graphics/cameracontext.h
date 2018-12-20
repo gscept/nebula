@@ -8,12 +8,13 @@
 //------------------------------------------------------------------------------
 #include "graphics/graphicscontext.h"
 #include "camerasettings.h"
+#include "math/scalar.h"
 namespace Graphics
 {
 
 class CameraContext : public Graphics::GraphicsContext
 {
-	DeclareContext();
+	_DeclareContext();
 public:
 
 	/// constructor

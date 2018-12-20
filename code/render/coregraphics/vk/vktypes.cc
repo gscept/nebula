@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 // vktypes.cc
-// (C) 2016 Individual contributors, see AUTHORS file
+// (C) 2016-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "vktypes.h"
@@ -645,33 +645,33 @@ VkTypes::AsVkResourceAccessFlags(const CoreGraphics::BarrierAccess access)
 /**
 */
 VkImageAspectFlags
-VkTypes::AsVkImageAspectFlags(const ImageAspect aspect)
+VkTypes::AsVkImageAspectFlags(const CoreGraphicsImageAspect aspect)
 {
 	VkImageAspectFlags flags = 0;
 	uint32_t bit;
 	for (bit = 1; aspect >= bit; bit *= 2)
 	{
-		if ((aspect & bit) == bit) switch ((ImageAspect)bit)
+		if ((aspect & bit) == bit) switch ((CoreGraphicsImageAspect)bit)
 		{
-		case ImageAspect::ColorBits:
+		case CoreGraphicsImageAspect::ColorBits:
 			flags |= VK_IMAGE_ASPECT_COLOR_BIT;
 			break;
-		case ImageAspect::DepthBits:
+		case CoreGraphicsImageAspect::DepthBits:
 			flags |= VK_IMAGE_ASPECT_DEPTH_BIT;
 			break;
-		case ImageAspect::StencilBits:
+		case CoreGraphicsImageAspect::StencilBits:
 			flags |= VK_IMAGE_ASPECT_STENCIL_BIT;
 			break;
-		case ImageAspect::MetaBits:
+		case CoreGraphicsImageAspect::MetaBits:
 			flags |= VK_IMAGE_ASPECT_METADATA_BIT;
 			break;
-		case ImageAspect::Plane0Bits:
+		case CoreGraphicsImageAspect::Plane0Bits:
 			flags |= VK_IMAGE_ASPECT_PLANE_0_BIT;
 			break;
-		case ImageAspect::Plane1Bits:
+		case CoreGraphicsImageAspect::Plane1Bits:
 			flags |= VK_IMAGE_ASPECT_PLANE_1_BIT;
 			break;
-		case ImageAspect::Plane2Bits:
+		case CoreGraphicsImageAspect::Plane2Bits:
 			flags |= VK_IMAGE_ASPECT_PLANE_2_BIT;
 			break;
 		}
@@ -686,12 +686,12 @@ VkShaderStageFlags
 VkTypes::AsVkShaderVisibility(const CoreGraphicsShaderVisibility vis)
 {
 	VkShaderStageFlags ret = 0;
-	if ((vis & VertexShaderVisibility) == VertexShaderVisibility)		ret |= VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
-	if ((vis & HullShaderVisibility) == HullShaderVisibility)			ret |= VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT;
-	if ((vis & DomainShaderVisibility) == DomainShaderVisibility)		ret |= VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT;
-	if ((vis & GeometryShaderVisibility) == GeometryShaderVisibility)	ret |= VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT;
-	if ((vis & PixelShaderVisibility) == PixelShaderVisibility)			ret |= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-	if ((vis & ComputeShaderVisibility) == ComputeShaderVisibility)		ret |= VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+	if ((vis & VertexShaderVisibility) == VertexShaderVisibility)		ret |= VK_SHADER_STAGE_VERTEX_BIT;
+	if ((vis & HullShaderVisibility) == HullShaderVisibility)			ret |= VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+	if ((vis & DomainShaderVisibility) == DomainShaderVisibility)		ret |= VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+	if ((vis & GeometryShaderVisibility) == GeometryShaderVisibility)	ret |= VK_SHADER_STAGE_GEOMETRY_BIT;
+	if ((vis & PixelShaderVisibility) == PixelShaderVisibility)			ret |= VK_SHADER_STAGE_FRAGMENT_BIT;
+	if ((vis & ComputeShaderVisibility) == ComputeShaderVisibility)		ret |= VK_SHADER_STAGE_COMPUTE_BIT;
 	return ret;
 }
 
@@ -699,20 +699,20 @@ VkTypes::AsVkShaderVisibility(const CoreGraphicsShaderVisibility vis)
 /**
 */
 VkImageLayout
-VkTypes::AsVkImageLayout(const ImageLayout layout)
+VkTypes::AsVkImageLayout(const CoreGraphicsImageLayout layout)
 {
 	switch (layout)
 	{
-		case ImageLayout::Undefined:					return VK_IMAGE_LAYOUT_UNDEFINED;
-		case ImageLayout::General:						return VK_IMAGE_LAYOUT_GENERAL;
-		case ImageLayout::ColorRenderTexture:			return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-		case ImageLayout::DepthStencilRenderTexture:	return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-		case ImageLayout::DepthStencilRead:				return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-		case ImageLayout::ShaderRead:					return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		case ImageLayout::TransferSource:				return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-		case ImageLayout::TransferDestination:			return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		case ImageLayout::Preinitialized:				return VK_IMAGE_LAYOUT_PREINITIALIZED;
-		case ImageLayout::Present:						return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		case CoreGraphicsImageLayout::Undefined:					return VK_IMAGE_LAYOUT_UNDEFINED;
+		case CoreGraphicsImageLayout::General:						return VK_IMAGE_LAYOUT_GENERAL;
+		case CoreGraphicsImageLayout::ColorRenderTexture:			return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		case CoreGraphicsImageLayout::DepthStencilRenderTexture:	return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		case CoreGraphicsImageLayout::DepthStencilRead:				return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+		case CoreGraphicsImageLayout::ShaderRead:					return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		case CoreGraphicsImageLayout::TransferSource:				return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		case CoreGraphicsImageLayout::TransferDestination:			return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		case CoreGraphicsImageLayout::Preinitialized:				return VK_IMAGE_LAYOUT_PREINITIALIZED;
+		case CoreGraphicsImageLayout::Present:						return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 	}
 	return VK_IMAGE_LAYOUT_UNDEFINED;
 }

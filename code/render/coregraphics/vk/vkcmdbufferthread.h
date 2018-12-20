@@ -3,7 +3,7 @@
 /**
 	This thread records commands to a Vulkan Command Buffer in its own thread.
 	
-	(C) 2016 Individual contributors, see AUTHORS file
+	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include <vulkan/vulkan.h>
@@ -67,6 +67,10 @@ public:
 			struct // Pipeline bind
 			{
 				VkPipeline pipeline;
+				VkPipelineLayout layout;
+#if NEBULA_GRAPHICS_DEBUG
+				const char* name;
+#endif
 			} pipe;
 
 			struct // BeginCmd
@@ -109,7 +113,6 @@ public:
 			struct // Descriptors
 			{
 				VkPipelineBindPoint type;
-				VkPipelineLayout layout;
 				uint32_t baseSet;
 				uint32_t numSets;
 				const VkDescriptorSet* sets;
@@ -223,11 +226,10 @@ private:
 	friend struct GraphicsDeviceState;
 
 
-
-
 	VkCommandBuffer commandBuffer;
+	VkPipelineLayout pipelineLayout;
 	Threading::SafeQueue<Command> commands;
-#if NEBULA3_ENABLE_PROFILING
+#if NEBULA_ENABLE_PROFILING
 	_declare_timer(debugTimer);
 #endif
 };

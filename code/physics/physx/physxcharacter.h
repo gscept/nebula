@@ -5,7 +5,7 @@
 
     A physics entity for a controllable actor.
 
-    (C) 2016 Individual contributors, see AUTHORS file
+    (C) 2016-2018 Individual contributors, see AUTHORS file
 */
 #include "physics/base/basecharacter.h"
 #include "timing/time.h"

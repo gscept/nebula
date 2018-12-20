@@ -5,7 +5,7 @@
     
     Provide information about the system we're running on.
     
-    (C) 2013 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "system/base/systeminfobase.h"
 

@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 //  httprequesthandler.cc
 //  (C) 2007 Radon Labs GmbH
-//  (C) 2013-2016 Individual contributors, see AUTHORS file
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "http/httprequesthandler.h"
@@ -50,6 +50,7 @@ HttpRequestHandler::PutRequest(const Ptr<HttpRequest>& httpRequest)
 void
 HttpRequestHandler::HandlePendingRequests()
 {
+	this->curWorkRequests.Reserve(this->pendingRequests.Size());
     this->pendingRequests.DequeueAll(this->curWorkRequests);
     IndexT i;
     for (i = 0; i < this->curWorkRequests.Size(); i++)

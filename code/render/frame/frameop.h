@@ -4,7 +4,7 @@
 	A frame op is a base class for frame operations, use as base class for runnable
 	sequences within a frame script.
 	
-	(C) 2016 Individual contributors, see AUTHORS file
+	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
@@ -53,6 +53,13 @@ protected:
 	// inherit this class to implement the compiled runtime for the frame operation
 	struct Compiled
 	{
+		Compiled() :
+			numWaitEvents(0),
+			numSignalEvents(0),
+			numBarriers(0),
+			numWaitSemaphores(0),
+			numSignalSemaphores(0){};
+
 		virtual void Run(const IndexT frameIndex) = 0;
 		virtual void Discard();
 
@@ -95,7 +102,7 @@ protected:
 	{
 		FrameOp::Compiled* op;
 		CoreGraphicsQueueType queue;
-		ImageLayout layout;
+		CoreGraphicsImageLayout layout;
 		CoreGraphics::BarrierStage stage;
 		CoreGraphics::BarrierAccess access;
 		DependencyIntent intent;
@@ -128,8 +135,8 @@ protected:
 
 	CoreGraphics::BarrierDomain domain;
 	CoreGraphicsQueueType queue;
-	Util::Dictionary<CoreGraphics::ShaderRWTextureId, std::tuple<CoreGraphics::BarrierAccess, CoreGraphics::BarrierStage, CoreGraphics::ImageSubresourceInfo, ImageLayout>> rwTextureDeps;
-	Util::Dictionary<CoreGraphics::RenderTextureId, std::tuple<CoreGraphics::BarrierAccess, CoreGraphics::BarrierStage, CoreGraphics::ImageSubresourceInfo, ImageLayout>> renderTextureDeps;
+	Util::Dictionary<CoreGraphics::ShaderRWTextureId, std::tuple<CoreGraphics::BarrierAccess, CoreGraphics::BarrierStage, CoreGraphics::ImageSubresourceInfo, CoreGraphicsImageLayout>> rwTextureDeps;
+	Util::Dictionary<CoreGraphics::RenderTextureId, std::tuple<CoreGraphics::BarrierAccess, CoreGraphics::BarrierStage, CoreGraphics::ImageSubresourceInfo, CoreGraphicsImageLayout>> renderTextureDeps;
 	Util::Dictionary<CoreGraphics::ShaderRWBufferId, std::tuple<CoreGraphics::BarrierAccess, CoreGraphics::BarrierStage>> rwBufferDeps;
 
 	Compiled* compiled;

@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<Nebula3 version="4">
+<Nebula version="4">
     <Model name="system/globallightshape" bboxcenter="0.010693,0.050985,0.005790,1.000000" bboxextents="0.339767,0.302411,0.998739,0.000000">
         <ShapeNodes>
             <ShapeNode name="directionalLight" type="static" path="root/directionalLight" useLOD="false" primitive="0" position="0.000000,0.000000,0.000000,1.000000" rotation="0.000000,0.000000,0.000000,1.000000" scale="1.000000,1.000000,1.000000,0.000000" mesh="msh:system/globallightshape.nvx2" bboxcenter="0.010693,0.050985,0.005790,1.000000" bboxextents="0.339767,0.302411,0.998739,0.000000" />
         </ShapeNodes>
     </Model>
-</Nebula3>
+</Nebula>

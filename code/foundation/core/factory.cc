@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 //  factory.cc
 //  (C) 2006 Radon Labs GmbH
-//  (C) 2013-2016 Individual contributors, see AUTHORS file
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "core/factory.h"
@@ -51,8 +51,7 @@ Factory::Destroy()
     The factory's constructor is private so that it may only be called 
     by Factory::Instance().
 */
-Factory::Factory() :
-    nameTable(1024)
+Factory::Factory()
 {
     // empty
 }

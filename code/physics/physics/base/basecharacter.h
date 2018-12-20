@@ -5,7 +5,7 @@
 
     A physics entity for a controllable actor.
 
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "physics/physicsobject.h"
 

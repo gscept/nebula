@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 //  binarywriter.cc
 //  (C) 2006 Radon Labs GmbH
-//  (C) 2013-2016 Individual contributors, see AUTHORS file
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "io/binarywriter.h"
@@ -544,6 +544,39 @@ BinaryWriter::WriteIntArray(const Util::Array<int>& arr)
     }
     Memory::Free(Memory::ScratchHeap, (void*)buf);
 }
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+BinaryWriter::WriteUIntArray(const Util::Array<uint>& arr)
+{
+	const SizeT writeSize = sizeof(uint) * arr.Size();
+	uint* buf = (uint*)Memory::Alloc(Memory::ScratchHeap, writeSize);
+
+	IndexT i;
+	for (i = 0; i < arr.Size(); i++)
+	{
+		buf[i] = this->byteOrder.Convert<uint>(arr[i]);
+	}
+
+	// first write size
+	this->WriteUInt(arr.Size());
+
+	if (this->isMapped)
+	{
+		// note: the memory copy is necessary to circumvent alignment problem on some CPUs
+		n_assert((this->mapCursor + writeSize) <= this->mapEnd);
+		Memory::Copy(buf, this->mapCursor, writeSize);
+		this->mapCursor += writeSize;
+	}
+	else
+	{
+		this->stream->Write(buf, writeSize);
+	}
+	Memory::Free(Memory::ScratchHeap, (void*)buf);
+}
+
 
 //------------------------------------------------------------------------------
 /**

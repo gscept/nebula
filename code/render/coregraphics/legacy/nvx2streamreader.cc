@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 //  nvx2streamreader.cc
 //  (C) 2007 Radon Labs GmbH
-//  (C) 2013-2016 Individual contributors, see AUTHORS file
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "coregraphics/legacy/nvx2streamreader.h"
@@ -11,7 +11,7 @@
 #include "resources/resourcemanager.h"
 #include "coregraphics/config.h"
 
-#if NEBULA3_LEGACY_SUPPORT
+#if NEBULA_LEGACY_SUPPORT
 namespace Legacy
 {
 __ImplementClass(Legacy::Nvx2StreamReader, 'N2SR', IO::StreamReader);
@@ -320,4 +320,4 @@ Nvx2StreamReader::SetupIndexBuffer(const Resources::ResourceName& name)
 
 } // namespace Legacy
 
-#endif // NEBULA3_LEGACY_SUPPORT
+#endif // NEBULA_LEGACY_SUPPORT

@@ -431,7 +431,7 @@ AttributeDefinitionBase::CheckCreateNameRegistry()
 {
     if (0 == NameRegistry)
     {
-        NameRegistry = new Util::HashTable<Util::String, const AttributeDefinitionBase*>(4096);
+        NameRegistry = new Util::HashTable<Util::String, const AttributeDefinitionBase*>();
     }
 }
 //------------------------------------------------------------------------------
@@ -469,7 +469,7 @@ AttributeDefinitionBase::Register()
     // only non-dynamic attributes has a valid fourcc code
     n_assert(this->fourCC.IsValid());
 
-#if NEBULA3_DEBUG
+#if NEBULA_DEBUG
     // check if attribute fourcc already exists
     if (FourCCRegistry->Contains(this->fourCC))
     {

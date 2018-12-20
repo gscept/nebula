@@ -1,6 +1,7 @@
 //------------------------------------------------------------------------------
 //	linuxthreadlocaldata.cc
 //	(C) 2011 A.Weissflog
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "linuxthreadlocaldata.h"

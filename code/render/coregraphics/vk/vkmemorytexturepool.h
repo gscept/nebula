@@ -18,7 +18,7 @@
 	Also be careful when to call Unload, since we might have in-flight texture updates through Update, operating on a texture which may
 	have been deleted.
 	
-	(C) 2016 Individual contributors, see AUTHORS file
+	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
@@ -84,9 +84,11 @@ public:
 	/// get texture type
 	CoreGraphics::TextureType GetType(const CoreGraphics::TextureId id);
 	/// get texture creation layout
-	ImageLayout GetLayout(const CoreGraphics::TextureId id);
+	CoreGraphicsImageLayout GetLayout(const CoreGraphics::TextureId id);
 	/// get number of mips
 	uint GetNumMips(const CoreGraphics::TextureId id);
+	/// get bindless handle
+	uint GetBindlessHandle(const CoreGraphics::TextureId id);
 private:
 	friend class VkStreamTexturePool;
 	__ImplementResourceAllocatorTypedSafe(textureAllocator, TextureIdType);

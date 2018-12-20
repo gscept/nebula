@@ -7,7 +7,7 @@
 	creating a texture, simply fetch the texture from the frame server.
 	Use this mechanic to switch which window to render to.
 	
-	(C) 2016 Individual contributors, see AUTHORS file
+	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"

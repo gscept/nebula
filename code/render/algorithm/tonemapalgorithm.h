@@ -3,12 +3,13 @@
 /**
 	Implements tonemapping as a script algorithm
 	
-	(C) 2016 Individual contributors, see AUTHORS file
+	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "algorithm.h"
 #include "coregraphics/rendertexture.h"
 #include "coregraphics/shader.h"
+#include "coregraphics/resourcetable.h"
 #include "renderutil/drawfullscreenquad.h"
 namespace Algorithms
 {
@@ -31,12 +32,13 @@ private:
 	CoreGraphics::RenderTextureId copy;
 
 	CoreGraphics::ShaderId shader;
-	CoreGraphics::ShaderStateId tonemapShader;
+	CoreGraphics::ResourceTableId tonemapTable;
+	IndexT constantsSlot, colorSlot, prevSlot;
+
 	CoreGraphics::ShaderProgramId program;
 
-	CoreGraphics::ShaderConstantId timevar;
-	CoreGraphics::ShaderConstantId colorvar;
-	CoreGraphics::ShaderConstantId prevvar;
+	CoreGraphics::ConstantBinding timevar;
+	CoreGraphics::ConstantBufferId constants;
 	RenderUtil::DrawFullScreenQuad fsq;
 };
 

@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 //  poolarrayallocator.cc
 //  (C) 2009 Radon Labs GmbH
-//  (C) 2013-2016 Individual contributors, see AUTHORS file
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "memory/poolarrayallocator.h"
@@ -26,7 +26,7 @@ PoolArrayAllocator::PoolArrayAllocator() :
 PoolArrayAllocator::~PoolArrayAllocator()
 {
     // check for mem leaks
-    #if NEBULA3_MEMORY_STATS
+    #if NEBULA_MEMORY_STATS
     this->Dump();
     #endif
 }
@@ -155,7 +155,7 @@ PoolArrayAllocator::GetMemoryPool(IndexT index) const
 //------------------------------------------------------------------------------
 /**
 */
-#if NEBULA3_MEMORY_STATS
+#if NEBULA_MEMORY_STATS
 void
 PoolArrayAllocator::Dump()
 {

@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 // framescript.cc
-// (C) 2016 Individual contributors, see AUTHORS file
+// (C) 2016-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "framescript.h"
@@ -180,13 +180,13 @@ FrameScript::Build()
 	}
 
 	// setup a post-frame barrier to reset the resource state of all resources back to their created original (ShaderRead for RenderTexture, General for RWTexture
-	Util::Array<std::tuple<CoreGraphics::RenderTextureId, CoreGraphics::ImageSubresourceInfo, ImageLayout, ImageLayout, CoreGraphics::BarrierAccess, CoreGraphics::BarrierAccess>> renderTexturesBarr;
-	Util::Array<std::tuple<CoreGraphics::ShaderRWTextureId, CoreGraphics::ImageSubresourceInfo, ImageLayout, ImageLayout, CoreGraphics::BarrierAccess, CoreGraphics::BarrierAccess>> shaderRWTexturesBarr;
+	Util::Array<std::tuple<CoreGraphics::RenderTextureId, CoreGraphics::ImageSubresourceInfo, CoreGraphicsImageLayout, CoreGraphicsImageLayout, CoreGraphics::BarrierAccess, CoreGraphics::BarrierAccess>> renderTexturesBarr;
+	Util::Array<std::tuple<CoreGraphics::ShaderRWTextureId, CoreGraphics::ImageSubresourceInfo, CoreGraphicsImageLayout, CoreGraphicsImageLayout, CoreGraphics::BarrierAccess, CoreGraphics::BarrierAccess>> shaderRWTexturesBarr;
 
 	for (i = 0; i < rwTextures.Size(); i++)
 	{
 		const CoreGraphics::ShaderRWTextureId& res = rwTextures.KeyAtIndex(i);
-		ImageLayout layout = CoreGraphics::ShaderRWTextureGetLayout(res);
+		CoreGraphicsImageLayout layout = CoreGraphics::ShaderRWTextureGetLayout(res);
 		const Util::Array<std::tuple<CoreGraphics::ImageSubresourceInfo, FrameOp::TextureDependency>>& deps = rwTextures.ValueAtIndex(i);
 		for (IndexT j = 0; j < deps.Size(); j++)
 		{
@@ -202,7 +202,7 @@ FrameScript::Build()
 	for (i = 0; i < renderTextures.Size(); i++)
 	{
 		const CoreGraphics::RenderTextureId& res = renderTextures.KeyAtIndex(i);
-		ImageLayout layout = CoreGraphics::RenderTextureGetLayout(res);
+		CoreGraphicsImageLayout layout = CoreGraphics::RenderTextureGetLayout(res);
 		const Util::Array<std::tuple<CoreGraphics::ImageSubresourceInfo, FrameOp::TextureDependency>>& deps = renderTextures.ValueAtIndex(i);
 		for (IndexT j = 0; j < deps.Size(); j++)
 		{

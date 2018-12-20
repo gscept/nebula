@@ -5,7 +5,7 @@
 
 	Updating the GraphicsServer will progress the rendering process by one frame. 
 	
-	(C) 2017 Individual contributors, see AUTHORS file
+	(C)2017-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
@@ -77,6 +77,19 @@ public:
 	/// call when ending the frame
 	void EndFrame();
 
+	/// get total time
+	const Timing::Time GetTime() const;
+	/// get frame time
+	const Timing::Time GetFrameTime() const;
+	/// get frame index
+	const IndexT GetFrameIndex() const;
+
+    /// debug rendering
+    void RenderDebug(uint32_t flags);
+
+    /// call when plugin is rendered
+    void RenderPlugin(const Util::StringAtom& filter);
+
 	/// register function bundle from graphics context, see GraphicsContextType::Create
 	void RegisterGraphicsContext(GraphicsContextFunctionBundle* context);
 	/// unregister function bundle
@@ -88,6 +101,10 @@ private:
 	Ids::IdGenerationPool entityPool;
 
 	Ptr<FrameSync::FrameSyncTimer> timer;
+	Timing::Time time;
+	Timing::Time frameTime;
+	IndexT frameIndex;
+
 	Util::Array<GraphicsContextFunctionBundle*> contexts;
 	Ptr<Visibility::VisibilityServer> visServer;
 
@@ -123,7 +140,8 @@ CreateEntity()
 //------------------------------------------------------------------------------
 /**
 */
-static void DestroyEntity(const GraphicsEntityId id)
+static void
+DestroyEntity(const GraphicsEntityId id)
 {
 	GraphicsServer::Instance()->DiscardGraphicsEntity(id);
 }
@@ -136,4 +154,32 @@ GraphicsServer::GetCurrentView() const
 {
 	return this->currentView;
 }
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const Timing::Time 
+GraphicsServer::GetTime() const
+{
+	return this->time;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const Timing::Time
+GraphicsServer::GetFrameTime() const
+{
+	return this->frameTime;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const IndexT
+GraphicsServer::GetFrameIndex() const
+{
+	return this->frameIndex;
+}
+
 } // namespace Graphics

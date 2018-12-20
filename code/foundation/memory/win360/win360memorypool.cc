@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 //  win360memorypool.cc
 //  (C) 2009 Radon Labs GmbH
-//  (C) 2013-2016 Individual contributors, see AUTHORS file
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "memory/win360/win360memorypool.h"
@@ -20,7 +20,7 @@ Win360MemoryPool::Win360MemoryPool() :
     alignedBlockSize(0),
     poolSize(0),
     numBlocks(0),
-    #if NEBULA3_MEMORY_STATS
+    #if NEBULA_MEMORY_STATS
     allocCount(0),
     #endif
     poolStart(0),
@@ -34,7 +34,7 @@ Win360MemoryPool::Win360MemoryPool() :
 */
 Win360MemoryPool::~Win360MemoryPool()
 {
-    #if NEBULA3_MEMORY_STATS
+    #if NEBULA_MEMORY_STATS
     if (this->allocCount != 0)
     {
         String str;
@@ -62,7 +62,7 @@ Win360MemoryPool::Setup(Memory::HeapType heapType_, uint blockSize_, uint numBlo
     this->numBlocks = numBlocks_;
     this->heapType = heapType_;
 
-    #if NEBULA3_MEMORY_STATS
+    #if NEBULA_MEMORY_STATS
     this->allocCount = 0;
     #endif
 
@@ -93,7 +93,7 @@ Win360MemoryPool::Setup(Memory::HeapType heapType_, uint blockSize_, uint numBlo
 void*
 Win360MemoryPool::Alloc()
 {
-    #if NEBULA3_MEMORY_STATS
+    #if NEBULA_MEMORY_STATS
     _InterlockedIncrement(&this->allocCount);
     #endif
     // get the next free block from the free list and fixup the free list
@@ -118,7 +118,7 @@ Win360MemoryPool::Alloc()
 void
 Win360MemoryPool::Free(void* ptr)
 {
-    #if NEBULA3_MEMORY_STATS
+    #if NEBULA_MEMORY_STATS
     n_assert(this->allocCount > 0);
     _InterlockedDecrement(&this->allocCount);
     #endif

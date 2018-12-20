@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //  particlesystemmaterialnode.cc
-//  (C) 2011-2016 Individual contributors, see AUTHORS file
+//  (C) 2011-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "particlesystemnode.h"
@@ -27,7 +27,7 @@ ParticleSystemNode::ParticleSystemNode() :
     primGroupIndex(InvalidIndex),
 	mesh(Ids::InvalidId64)
 {
-    // empty
+	this->type = ParticleSystemNodeType;
 }
 
 //------------------------------------------------------------------------------
@@ -69,6 +69,18 @@ ParticleSystemNode::OnFinishedLoading()
 	box.extend(this->boundingBox);
 
 	this->shader = CoreGraphics::ShaderServer::Instance()->GetShader("shd:particle.fxb");
+	this->cbo = CoreGraphics::ShaderCreateConstantBuffer(this->shader, "ParticleObjectBlock");
+	this->cboIndex = CoreGraphics::ShaderGetResourceSlot(this->shader, "ParticleObjectBlock");
+	this->resourceTable = CoreGraphics::ShaderCreateResourceTable(this->shader, NEBULA_DYNAMIC_OFFSET_GROUP);
+	CoreGraphics::ResourceTableSetConstantBuffer(this->resourceTable, { this->cbo, this->cboIndex, 0, true, false, -1, 0 });
+	CoreGraphics::ResourceTableCommitChanges(this->resourceTable);
+
+	this->emitterOrientationVar = CoreGraphics::ShaderGetConstantBinding(this->shader, "EmitterTransform");
+	this->billboardVar = CoreGraphics::ShaderGetConstantBinding(this->shader, "Billboard");
+	this->bboxCenterVar = CoreGraphics::ShaderGetConstantBinding(this->shader, "BBoxCenter");
+	this->bboxSizeVar = CoreGraphics::ShaderGetConstantBinding(this->shader, "BBoxSize");
+	this->animPhasesVar = CoreGraphics::ShaderGetConstantBinding(this->shader, "NumAnimPhases");
+	this->animsPerSecVar = CoreGraphics::ShaderGetConstantBinding(this->shader, "AnimFramesPerSecond");
 }
 
 //------------------------------------------------------------------------------

@@ -10,7 +10,7 @@
 	On DX12 and Vulkan, the compile process serves to insert proper barriers, events
 	and semaphore operations such that shader resources are not stomped or read prematurely.
 	
-	(C) 2016 Individual contributors, see AUTHORS file
+	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
@@ -167,7 +167,7 @@ inline const CoreGraphics::RenderTextureId
 FrameScript::GetDepthStencilTexture(const Util::StringAtom& name)
 {
 	IndexT i = this->depthStencilTexturesByName.FindIndex(name);
-	return i == InvalidIndex ? CoreGraphics::RenderTextureId::Invalid() : this->colorTexturesByName.ValueAtIndex(i);
+	return i == InvalidIndex ? CoreGraphics::RenderTextureId::Invalid() : this->depthStencilTexturesByName.ValueAtIndex(i);
 }
 
 //------------------------------------------------------------------------------

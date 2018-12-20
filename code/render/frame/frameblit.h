@@ -3,7 +3,7 @@
 /**
 	A frame blit performs an image copy with optional filtering and image type conversions.
 	
-	(C) 2016 Individual contributors, see AUTHORS file
+	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "frameop.h"
@@ -22,6 +22,10 @@ public:
 	{
 		void Run(const IndexT frameIndex);
 		void Discard();
+
+#if NEBULA_GRAPHICS_DEBUG
+		Util::StringAtom name;
+#endif
 
 		CoreGraphics::RenderTextureId from, to;
 	};

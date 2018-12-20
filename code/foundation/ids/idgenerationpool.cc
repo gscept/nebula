@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //  idgenerationpool.cc
-//  (C) 2017 Individual contributors, see AUTHORS file
+//  (C) 2017-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "idgenerationpool.h"
@@ -11,9 +11,10 @@ namespace Ids
 //------------------------------------------------------------------------------
 /**
 */
-IdGenerationPool::IdGenerationPool()
+IdGenerationPool::IdGenerationPool() :
+	freeIdsSize(0)
 {
-    this->freeIds.Reserve(1024);
+	// this->freeIds.Reserve(2048);
     this->generations.Reserve(1024);
 }
 
@@ -31,7 +32,7 @@ IdGenerationPool::~IdGenerationPool()
 bool
 IdGenerationPool::Allocate(Id32& id)
 {
-	if (this->freeIds.Size() < 1024)
+	if (this->freeIdsSize < 1024)
     {
         this->generations.Append(0);
 		id = CreateId(this->generations.Size() - 1, 0);
@@ -39,6 +40,7 @@ IdGenerationPool::Allocate(Id32& id)
     }
     else
     {
+		this->freeIdsSize--;        
         id = this->freeIds.Dequeue();
         id = CreateId(id, this->generations[id]);
 		return true;
@@ -52,6 +54,7 @@ void
 IdGenerationPool::Deallocate(Id32 id)
 {
     n_assert2(this->IsValid(id), "Tried to delete invalid/destroyed id");
+	this->freeIdsSize++;        
     this->freeIds.Enqueue(Index(id));
     this->generations[Index(id)]++;
 }

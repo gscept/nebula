@@ -10,7 +10,7 @@
     seems generally suitable for most C++ applications.
     
     (C) 2006 Radon Labs GmbH
-    (C) 2013 Individual contributors, see AUTHORS file    
+    (C) 2013-2018 Individual contributors, see AUTHORS file    
 */
 #include "core/types.h"
 #include "threading/interlocked.h"
@@ -39,7 +39,7 @@ public:
     /// free a block of memory which has been allocated from this heap
     void Free(void* ptr);
 
-    #if NEBULA3_MEMORY_STATS
+    #if NEBULA_MEMORY_STATS
     /// heap stats structure
     struct Stats
     {
@@ -65,7 +65,7 @@ private:
 
     const char* name;
 
-    #if NEBULA3_MEMORY_STATS
+    #if NEBULA_MEMORY_STATS
     int volatile allocCount;
     int volatile allocSize;
     static Threading::CriticalSection*  criticalSection;
@@ -90,7 +90,7 @@ PosixHeap::GetName() const
 __forceinline void*
 PosixHeap::Alloc(size_t size)
 {
-    #if NEBULA3_MEMORY_STATS
+    #if NEBULA_MEMORY_STATS
     Threading::Interlocked::Increment(this->allocCount);
     Threading::Interlocked::Add(this->allocSize, int(size));
     #endif
@@ -103,7 +103,7 @@ PosixHeap::Alloc(size_t size)
 __forceinline void*
 PosixHeap::Realloc(void* ptr, size_t size)
 {
-    #if NEBULA3_MEMORY_STATS
+    #if NEBULA_MEMORY_STATS
     size_t curSize = HeapSize(this->heap, 0, ptr);
     Threading::Interlocked::Add(this->allocSize, int(size - curSize));
     #endif
@@ -117,7 +117,7 @@ __forceinline void
 PosixHeap::Free(void* ptr)
 {
     n_assert(0 != ptr);
-    #if NEBULA3_MEMORY_STATS
+    #if NEBULA_MEMORY_STATS
     size_t size = HeapSize(this->heap, 0, ptr);
     Threading::Interlocked::Add(this->allocSize, -int(size));
     Threading::Interlocked::Decrement(this->allocCount);

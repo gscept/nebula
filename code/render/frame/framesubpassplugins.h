@@ -3,11 +3,11 @@
 /**
 	Executes RT plugins within a subpass
 	
-	(C) 2016 Individual contributors, see AUTHORS file
+	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "frameop.h"
-//#include "rendermodules/rt/rtpluginregistry.h"
+
 namespace Frame
 {
 class FrameSubpassPlugins : public FrameOp
@@ -30,13 +30,12 @@ public:
 	{
 		void Run(const IndexT frameIndex);
 
-		Util::StringAtom pluginFilter;
+		Util::StringAtom pluginFilter;		
 	};
 
 	FrameOp::Compiled* AllocCompiled(Memory::ChunkAllocator<BIG_CHUNK>& allocator);
 private:
-	Util::StringAtom pluginFilter;
-	//Ptr<RenderModules::RTPluginRegistry> pluginRegistry;
+	Util::StringAtom pluginFilter;	
 };
 
 //------------------------------------------------------------------------------

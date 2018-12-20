@@ -3,7 +3,7 @@
 /**
 	Utility functions to convert from Nebula enums to Vulkan values.
 	
-	(C) 2016 Individual contributors, see AUTHORS file
+	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/types.h"
@@ -60,11 +60,11 @@ public:
 	/// convert dependency flags to vulkan
 	static VkPipelineStageFlags AsVkResourceAccessFlags(const CoreGraphics::BarrierAccess access);
 	/// convert image aspects to Vulkan
-	static VkImageAspectFlags AsVkImageAspectFlags(const ImageAspect aspect);
+	static VkImageAspectFlags AsVkImageAspectFlags(const CoreGraphicsImageAspect aspect);
 	/// convert shader visibility to vulkan
 	static VkShaderStageFlags AsVkShaderVisibility(const CoreGraphicsShaderVisibility vis);
 	/// convert image layout to vulkan
-	static VkImageLayout AsVkImageLayout(const ImageLayout layout);
+	static VkImageLayout AsVkImageLayout(const CoreGraphicsImageLayout layout);
 
 #pragma endregion
 

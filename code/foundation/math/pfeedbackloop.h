@@ -15,7 +15,7 @@
     See Game Developer Mag issue June/July 2004.
 
     (C) 2007 RadonLabs GmbH
-	(C) 2013-2016 Individual contributors, see AUTHORS file
+	(C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 #include "timing/time.h"

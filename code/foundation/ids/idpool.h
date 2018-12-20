@@ -13,7 +13,7 @@
 
 	Maximum amount of bits produced by this system is 32.
 	
-	(C) 2017 Individual contributors, see AUTHORS file
+	(C) 2017-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include <cstdint>

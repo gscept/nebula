@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 //  posixfswrapper.cc
 //  (C) 2006 Radon Labs GmbH
-//  (C) 2013 Individual contributors, see AUTHORS file
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "io/posix/posixfswrapper.h"
@@ -516,7 +516,7 @@ PosixFSWrapper::GetBinDirectory()
 //------------------------------------------------------------------------------
 /**
     This method should return the installation directory of the
-    application. Under Nebula3, this is either the directory where the
+    application. Under Nebula, this is either the directory where the
     executable is located, or 2 levels above the executable (if it is in 
     home:bin/posix).
 */

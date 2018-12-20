@@ -9,7 +9,7 @@
     Game::SaveGameManager.
 
     (C) 2003 RadonLabs GmbH
-	(C) 2013-2016 Individual contributors, see AUTHORS file
+	(C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/ptr.h"
 #include "core/singleton.h"
@@ -53,6 +53,8 @@ public:
     
     /// load a new level, this method is usually called by Game::SetupManager
 	virtual bool LoadLevel(const Util::String& levelName);
+
+	virtual bool SaveLevel(const Util::String& levelName);
 
     /// attach loader
     void AttachEntityLoader(const Ptr<EntityLoaderBase>& loader);

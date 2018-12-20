@@ -3,14 +3,14 @@
 /**
     @class Core::Factory
 
-    Provides the central object factory mechanism for Nebula3. Classes
+    Provides the central object factory mechanism for Nebula. Classes
     which are derived from RefCounted register themselves automatically
     to the central Factory object through the __DeclareClass and
     __ImplementClass macros.
 
 
     (C) 2005 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "util/array.h"
 #include "util/string.h"
@@ -62,7 +62,7 @@ private:
     ~Factory();
 
     static Factory* Singleton;
-    Util::HashTable<Util::String, const Rtti*> nameTable;		// for fast lookup by class name
+    Util::HashTable<Util::String, const Rtti*, 1024> nameTable;	// for fast lookup by class name
     Util::Dictionary<Util::FourCC, const Rtti*> fourccTable;	// for fast lookup by fourcc code
 };
 

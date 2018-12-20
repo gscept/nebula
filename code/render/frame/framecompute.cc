@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 // framecompute.cc
-// (C) 2016 Individual contributors, see AUTHORS file
+// (C) 2016-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "framecompute.h"
@@ -13,8 +13,7 @@ namespace Frame
 //------------------------------------------------------------------------------
 /**
 */
-FrameCompute::FrameCompute() :
-	state(NULL)
+FrameCompute::FrameCompute()
 {
 	// empty
 }
@@ -33,8 +32,12 @@ FrameCompute::~FrameCompute()
 void 
 FrameCompute::Discard()
 {
-	ShaderDestroyState(this->state);
 	this->program = ShaderProgramId::Invalid();
+
+	DestroyResourceTable(this->resourceTable);
+	IndexT i;
+	for (i = 0; i < this->constantBuffers.Size(); i++)
+		DestroyConstantBuffer(this->constantBuffers.ValueAtIndex(i));
 }
 
 //------------------------------------------------------------------------------
@@ -45,7 +48,7 @@ FrameCompute::AllocCompiled(Memory::ChunkAllocator<BIG_CHUNK>& allocator)
 {
 	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
 	ret->program = this->program;
-	ret->state = this->state;
+	ret->resourceTable = this->resourceTable;
 	ret->x = this->x;
 	ret->y = this->y;
 	ret->z = this->z;
@@ -59,12 +62,11 @@ void
 FrameCompute::CompiledImpl::Run(const IndexT frameIndex)
 {
 	n_assert(this->program != ShaderProgramId::Invalid());
-	n_assert(this->state != ShaderStateId::Invalid());
 
 	CoreGraphics::SetShaderProgram(this->program);
-	CoreGraphics::SetShaderState(this->state);
 
 	// compute
+	CoreGraphics::SetResourceTable(this->resourceTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
 	CoreGraphics::Compute(this->x, this->y, this->z);
 }
 

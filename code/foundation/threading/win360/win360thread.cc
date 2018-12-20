@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 //  win360thread.cc
 //  (C) 2006 Radon Labs GmbH
-//  (C) 2013-2016 Individual contributors, see AUTHORS file
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "threading/win360/win360thread.h"
@@ -31,7 +31,7 @@ Win360Thread::Win360Thread() :
     threadHandle(0),
 	affinityMask(0),
     priority(Normal),
-    stackSize(NEBULA3_THREAD_DEFAULTSTACKSIZE)
+    stackSize(NEBULA_THREAD_DEFAULTSTACKSIZE)
 {
     // register with thread list
     #if NEBULA_DEBUG
@@ -210,7 +210,7 @@ Win360Thread::ThreadProc(LPVOID self)
 {
     n_assert(0 != self);
     
-    #if NEBULA3_ENABLE_THREADLOCAL_STRINGATOM_TABLES
+    #if NEBULA_ENABLE_THREADLOCAL_STRINGATOM_TABLES
     // setup thread-local string atom table (will be discarded when thread terminates)
     LocalStringAtomTable localStringAtomTable;
     #endif
@@ -315,6 +315,7 @@ Win360Thread::GetRunningThreadDebugInfos()
             info.threadName = cur->GetName();
             info.threadPriority = cur->GetPriority();
             info.threadStackSize = cur->GetStackSize();
+			info.threadCoreId = (System::Cpu::CoreId)cur->GetThreadAffinity();
             infos.Append(info);
         }
     }

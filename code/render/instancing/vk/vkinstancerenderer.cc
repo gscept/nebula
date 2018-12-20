@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 // vkinstancerenderer.cc
-// (C) 2016 Individual contributors, see AUTHORS file
+// (C) 2016-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "vkinstancerenderer.h"
@@ -38,7 +38,7 @@ VkInstanceRenderer::Setup()
 {
 	InstanceRendererBase::Setup();
 
-	this->shaderState = CoreGraphics::ShaderServer::Instance()->CreateShaderState("shd:shared", { NEBULAT_OBJECT_GROUP });
+	this->shaderState = CoreGraphics::ShaderServer::Instance()->CreateShaderState("shd:shared", { NEBULA_OBJECT_GROUP });
 	this->instancingBuffer = ConstantBuffer::Create();
 	this->instancingBuffer->SetupFromBlockInShader(this->shaderState, "InstancingBlock", 16);
 	this->instancingBlockVar = this->shaderState->GetVariableByName("InstancingBlock");

@@ -12,13 +12,14 @@
 #include "visibility/systems/visibilitysystem.h"
 #include "models/model.h"
 #include "models/nodes/modelnode.h"
+#include "materials/surfacepool.h"
 #include "materials/materialtype.h"
 namespace Visibility
 {
 
 class ObserverContext : public Graphics::GraphicsContext
 {
-	DeclareContext();
+	_DeclareContext();
 public:
 
 	/// setup entity
@@ -44,21 +45,18 @@ public:
 	/// wait for all visibility jobs
 	static void WaitForVisibility(const IndexT frameIndex, const Timing::Time frameTime);
 
+	typedef Ids::Id32 ModelAllocId;
+	typedef Util::HashTable<Materials::MaterialType*,
+		Util::HashTable<Models::ModelNode*,
+		Util::Array<Models::ModelNode::Instance*>>>
+		VisibilityDrawList;
+
+	/// get visibility draw list
+	static const VisibilityDrawList* GetVisibilityDrawList(const Graphics::GraphicsEntityId id);
+
 	static Jobs::JobPortId jobPort;
 	static Threading::SafeQueue<Jobs::JobId> runningJobs;
 
-	template <class KEY, class T>
-	using VisibilityBucketTier = Util::HashTable<KEY, std::pair<bool, T>>;
-
-	template <class KEY>
-	using VisibilityBucketLeaf = Util::HashTable<KEY, Util::Array<Models::ModelNode::Instance*>>;
-
-	typedef 						VisibilityBucketTier<
-		Models::ModelId,			VisibilityBucketTier<
-		Models::ModelNode*,			VisibilityBucketTier<
-		Materials::MaterialType*,	VisibilityBucketTier<
-		Materials::MaterialId,		VisibilityBucketLeaf<
-		Models::ModelNode::Instance*>>>>>	VisibilityBuckets;
 private:
 
 	friend class ObservableContext;
@@ -72,7 +70,7 @@ private:
 		Graphics::GraphicsEntityId, 		// entity id
 		VisibilityEntityType,				// type of object so we know how to get the transform
 		VisibilityResultAllocator,			// visibility lookup table
-		VisibilityBuckets					// per-frame sorted entities
+		VisibilityDrawList					// draw list
 	> ObserverAllocator;
 	static ObserverAllocator observerAllocator;
 
@@ -87,7 +85,7 @@ private:
 
 class ObservableContext : public Graphics::GraphicsContext
 {
-	DeclareContext();
+	_DeclareContext();
 public:
 
 	/// setup entity

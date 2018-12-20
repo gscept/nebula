@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 //  runthroughhandlerthread.cc
 //  (C) 2009 Radon Labs GmbH
-//  (C) 2013-2016 Individual contributors, see AUTHORS file
+//  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "messaging/runthroughhandlerthread.h"
@@ -65,6 +65,7 @@ RunThroughHandlerThread::DoWork()
         if (!this->msgQueue.IsEmpty())
         {
             Util::Array<Ptr<Message> > msgArray;
+			msgArray.Reserve(this->msgQueue.Size());
             this->msgQueue.DequeueAll(msgArray);
             msgHandled |= this->ThreadHandleMessages(msgArray);
         }

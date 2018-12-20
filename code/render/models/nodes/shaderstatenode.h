@@ -4,7 +4,7 @@
 	The shader state node wraps the shader associated with a certain primitive node,
 	or group of primitive nodes.
 	
-	(C) 2017 Individual contributors, see AUTHORS file
+	(C)2017-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "modelnode.h"
@@ -12,6 +12,15 @@
 #include "coregraphics/shader.h"
 #include "materials/materialserver.h"
 #include "transformnode.h"
+#include "jobs/jobs.h"
+#include "coregraphics/constantbuffer.h"
+#include "coregraphics/resourcetable.h"
+
+namespace Visibility
+{
+void VisibilitySortJob(const Jobs::JobFuncContext& ctx);
+}
+
 namespace Models
 {
 class ShaderStateNode : public TransformNode
@@ -24,36 +33,56 @@ public:
 
 	struct Instance : public TransformNode::Instance
 	{
-		CoreGraphics::ShaderStateId sharedShader;
-		CoreGraphics::ShaderConstantId modelVar;
-		CoreGraphics::ShaderConstantId invModelVar;
-		CoreGraphics::ShaderConstantId modelViewProjVar;
-		CoreGraphics::ShaderConstantId modelViewVar;
-		CoreGraphics::ShaderConstantId objectIdVar;
-		IndexT bufferIndex;
+		CoreGraphics::ConstantBufferId cbo;
+		CoreGraphics::ResourceTableId resourceTable;
+		CoreGraphics::ConstantBinding modelVar;
+		CoreGraphics::ConstantBinding invModelVar;
+		CoreGraphics::ConstantBinding modelViewProjVar;
+		CoreGraphics::ConstantBinding modelViewVar;
+		CoreGraphics::ConstantBinding objectIdVar;
+
+		uint32 instance;
+		Materials::SurfaceInstanceId surfaceInstance;
+		Util::FixedArray<uint32> offsets;
 
 		void ApplyNodeInstanceState() override;
-		void Setup(const Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
+		void Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
+
+		const Materials::SurfaceInstanceId GetSurfaceInstance() const { return this->surfaceInstance; };
 	};
 
 	/// create instance
-	virtual ModelNode::Instance* CreateInstance(byte* memory, const Models::ModelNode::Instance* parent) const;
+	virtual ModelNode::Instance* CreateInstance(byte** memory, const Models::ModelNode::Instance* parent) override;
 	/// get size of instance
 	virtual const SizeT GetInstanceSize() const { return sizeof(Instance); }
-	/// apply node-level state
-	virtual void ApplyNodeState();
+
+	/// get surface
+	const Materials::SurfaceId GetSurface() const { return this->surface; };
 
 protected:
 	friend class StreamModelPool;
+
+	friend void Visibility::VisibilitySortJob(const Jobs::JobFuncContext& ctx);
 
 	/// load shader state
 	bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader);
 	/// called when loading finished
 	virtual void OnFinishedLoading();
+	
+	Materials::MaterialType* materialType;
+	Materials::SurfaceId surface;
+	Materials::SurfaceResourceId surRes;
+	Resources::ResourceName materialName;
 
 	CoreGraphics::ShaderId sharedShader;
-	Resources::ResourceId material;
-	Resources::ResourceName materialName;
+	CoreGraphics::ConstantBufferId cbo;
+	IndexT cboIndex;
+	CoreGraphics::ResourceTableId resourceTable;
+	CoreGraphics::ConstantBinding modelVar;
+	CoreGraphics::ConstantBinding invModelVar;
+	CoreGraphics::ConstantBinding modelViewProjVar;
+	CoreGraphics::ConstantBinding modelViewVar;
+	CoreGraphics::ConstantBinding objectIdVar;
 };
 
 ModelNodeInstanceCreator(ShaderStateNode)
@@ -62,16 +91,30 @@ ModelNodeInstanceCreator(ShaderStateNode)
 /**
 */
 inline void
-ShaderStateNode::Instance::Setup(const Models::ModelNode* node, const Models::ModelNode::Instance* parent)
+ShaderStateNode::Instance::Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent)
 {
 	TransformNode::Instance::Setup(node, parent);
-	this->sharedShader = CoreGraphics::ShaderCreateState(static_cast<const ShaderStateNode*>(node)->sharedShader, { NEBULAT_DYNAMIC_OFFSET_GROUP }, false);
-	this->modelVar = CoreGraphics::ShaderStateGetConstant(this->sharedShader, "Model");
-	this->invModelVar = CoreGraphics::ShaderStateGetConstant(this->sharedShader, "InvModel");
-	this->modelViewProjVar = CoreGraphics::ShaderStateGetConstant(this->sharedShader, "ModelViewProjection");
-	this->modelViewVar = CoreGraphics::ShaderStateGetConstant(this->sharedShader, "ModelView");
-	this->objectIdVar = CoreGraphics::ShaderStateGetConstant(this->sharedShader, "ObjectId");
-	this->type = ShaderStateNodeType;
+	ShaderStateNode* sparent = static_cast<ShaderStateNode*>(node);
+	CoreGraphics::ConstantBufferId cbo = sparent->cbo;
+	this->cbo = cbo;
+	this->resourceTable = sparent->resourceTable;
+	this->offsets.Resize(3); // object data, instance data, skinning data
+	bool rebind = CoreGraphics::ConstantBufferAllocateInstance(cbo, this->offsets[0], this->instance);
+	this->offsets[1] = 0; // instancing offset
+	this->offsets[2] = 0; // skinning offset
+	if (rebind)
+	{
+		CoreGraphics::ResourceTableSetConstantBuffer(sparent->resourceTable, { sparent->cbo, sparent->cboIndex, 0, true, false, -1, 0 });
+		CoreGraphics::ResourceTableCommitChanges(sparent->resourceTable);
+	}
+	this->modelVar = sparent->modelVar;
+	this->invModelVar = sparent->invModelVar;
+	this->modelViewProjVar = sparent->modelViewProjVar;
+	this->modelViewVar = sparent->modelViewVar;
+	this->objectIdVar = sparent->objectIdVar;
+
+	// create surface instance
+	this->surfaceInstance = sparent->materialType->CreateSurfaceInstance(sparent->surface);
 }
 
 } // namespace Models

@@ -1,0 +1,28 @@
+"namespace": "GraphicsFeature"
+"attributes": {
+    "graphicsEntity": {
+        "type": "uint"
+        "fourcc": "gEnt"
+        "access": "R"
+		"default": -1
+    }
+	"modelResource": {
+        "type": "string"
+        "fourcc": "mdlR"
+        "access": "RW"
+		"default": "mdl:Buildings/castle_tower.n3"
+    }
+}
+"components": {
+    "GraphicsComponent": {
+        "fourcc": "GFXC"
+        "attributes": [
+            "graphicsEntity"
+			"modelResource"
+        ]
+        "events": [
+            "OnActivate"
+            "OnDeactivate"
+        ]
+    }
+}

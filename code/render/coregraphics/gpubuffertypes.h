@@ -5,7 +5,7 @@
 	
 	Types used for buffers, how they are created and their intended usage.
 
-	(C) 2017 Individual contributors, see AUTHORS file
+	(C)2017-2018 Individual contributors, see AUTHORS file
 */
 #include "resources/resource.h"
 
@@ -48,6 +48,7 @@ namespace GpuBufferTypes
 		SyncingPersistent,			// buffer is persistently mapped, no need to unmap
 		SyncingCoherent				// resource is coherent on GPU and CPU when mapped
 	};
+	
 
 	struct SetupFlags
 	{
@@ -56,6 +57,8 @@ namespace GpuBufferTypes
 		CoreGraphics::GpuBufferTypes::Syncing syncing;
 	};
 };
+
+__ImplementEnumBitOperators(GpuBufferTypes::Syncing)
 
 } // namespace CoreGraphics
 //------------------------------------------------------------------------------

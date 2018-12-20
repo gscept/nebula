@@ -3,7 +3,7 @@
 /**
 	Implements a read/write image in Vulkan.
 	
-	(C) 2016 Individual contributors, see AUTHORS file
+	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "ids/idallocator.h"
@@ -28,7 +28,7 @@ struct VkShaderRWTextureRuntimeInfo
 typedef Ids::IdAllocator<
 	VkShaderRWTextureLoadInfo,
 	VkShaderRWTextureRuntimeInfo,
-	ImageLayout
+	CoreGraphicsImageLayout
 > ShaderRWTextureAllocator;
 extern ShaderRWTextureAllocator shaderRWTextureAllocator;
 
