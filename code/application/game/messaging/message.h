@@ -51,6 +51,9 @@ class NAME : public Game::Message<NAME, __VA_ARGS__> \
 #define __RegisterMsg(MSGTYPE, FUNCTION) \
 	MSGTYPE::Register(MSGTYPE::Delegate::FromFunction<FUNCTION>())
 
+#define __this_RegisterMsg(MSGTYPE, METHOD) \
+	MSGTYPE::Register(MSGTYPE::Delegate::FromMethod<std::remove_pointer<decltype(this)>::type, &std::remove_pointer<decltype(this)>::type::METHOD>(this))
+
 /// Removes const reference from T.
 template<class T>
 using UnqualifiedType = typename std::remove_const<typename std::remove_reference<T>::type>::type;

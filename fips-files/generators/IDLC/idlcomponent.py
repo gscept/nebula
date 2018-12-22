@@ -74,7 +74,7 @@ public:
     }};
 
     /// Registers an entity to this component.
-    uint32_t RegisterEntity(Game::Entity entity);
+    Game::InstanceId RegisterEntity(Game::Entity entity);
 
     /// Deregister Entity.
     void DeregisterEntity(Game::Entity entity);
@@ -113,7 +113,7 @@ public:
                 returnType = IDLTypes.GetTypeString(self.document["attributes"][attributeName]["type"])
                 attributeName = Capitalize(attributeName)
 
-                self.f.WriteLine("{retval}& {attributeName}(uint32_t instance);".format(retval=returnType, attributeName=attributeName))
+                self.f.WriteLine("{retval}& {attributeName}(Game::InstanceId instance);".format(retval=returnType, attributeName=attributeName))
 
     #------------------------------------------------------------------------------
     ##
@@ -128,7 +128,7 @@ public:
                 attributeName = Capitalize(attributeName)
 
                 self.f.InsertNebulaDivider()
-                self.f.WriteLine("{retval}& {className}::{attributeName}(uint32_t instance)".format(retval=returnType, className=self.className, attributeName=attributeName))
+                self.f.WriteLine("{retval}& {className}::{attributeName}(Game::InstanceId instance)".format(retval=returnType, className=self.className, attributeName=attributeName))
                 self.f.WriteLine("{")
                 self.f.IncreaseIndent()
                 self.f.WriteLine("return this->data.Get<{}>(instance);".format(i + 1))
@@ -199,7 +199,7 @@ public:
     #
     def WriteRegisterEntityImplementation(self):
         self.f.InsertNebulaDivider()
-        self.f.WriteLine("uint32_t")
+        self.f.WriteLine("Game::InstanceId")
         self.f.WriteLine("{}::RegisterEntity(Game::Entity entity)".format(self.className))
         self.f.WriteLine("{")
         self.f.IncreaseIndent()
@@ -225,7 +225,7 @@ public:
         self.f.WriteLine("{}::DeregisterEntity(Game::Entity entity)".format(self.className))
         self.f.WriteLine("{")
         self.f.IncreaseIndent()
-        self.f.WriteLine("uint32_t index = this->GetInstance(entity);")
+        self.f.WriteLine("Game::InstanceId index = this->GetInstance(entity);")
         self.f.WriteLine("if (index != InvalidIndex)")
         self.f.WriteLine("{")
         self.f.IncreaseIndent()
@@ -256,7 +256,7 @@ public:
             self.f.WriteLine("{")
             self.f.IncreaseIndent()
             if not self.useDelayedRemoval:
-                self.f.WriteLine("uint32_t index = this->GetInstance(entity);")
+                self.f.WriteLine("Game::InstanceId index = this->GetInstance(entity);")
                 self.f.WriteLine("if (index != InvalidIndex)")
                 self.f.WriteLine("{")
                 self.f.IncreaseIndent()

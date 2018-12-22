@@ -60,7 +60,7 @@ GraphicsComponent::SetupAcceptedMessages()
 /**
 */
 void
-GraphicsComponent::OnActivate(uint32_t instance)
+GraphicsComponent::OnActivate(Game::InstanceId instance)
 {
 	auto gfxEntity = Graphics::CreateEntity();
 	component.GraphicsEntity(instance) = gfxEntity.id;
@@ -76,7 +76,7 @@ GraphicsComponent::OnActivate(uint32_t instance)
 /**
 */
 void
-GraphicsComponent::OnDeactivate(uint32_t instance)
+GraphicsComponent::OnDeactivate(Game::InstanceId instance)
 {
 	Graphics::GraphicsEntityId gfxEntity = { component.GraphicsEntity(instance) };
 	Models::ModelContext::DeregisterEntity(gfxEntity);

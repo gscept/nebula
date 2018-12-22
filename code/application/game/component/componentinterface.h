@@ -41,6 +41,8 @@
 namespace Game
 {
 
+typedef Ids::Id32 InstanceId;
+
 enum ComponentEvent
 {
 	OnBeginFrame	= 0,
@@ -64,7 +66,7 @@ public:
 	const Util::StringAtom& GetName() const;
 
 	/// register an Id. Will create new mapping and allocate instance data. Returns index of new instance data
-	virtual uint32_t RegisterEntity(Entity e) = 0;
+	virtual InstanceId RegisterEntity(Entity e) = 0;
 
 	/// deregister an Id. will only remove the id and zero the block
 	virtual void DeregisterEntity(Entity e) = 0;
@@ -89,25 +91,25 @@ public:
 	virtual SizeT NumRegistered() const = 0;
 
 	/// Returns the owner (entity) of an instance
-	virtual Game::Entity GetOwner(uint instance) const = 0;
+	virtual Game::Entity GetOwner(InstanceId instance) const = 0;
 
 	/// Sets the owner of an instance. This should be used cautiously.
-	virtual void SetOwner(uint32_t i, Game::Entity entity) = 0;
+	virtual void SetOwner(InstanceId i, Game::Entity entity) = 0;
 
 	/// Get an attribute value as a variant type
-	virtual Util::Variant GetAttributeValue(uint32_t i, IndexT attributeIndex) = 0;
+	virtual Util::Variant GetAttributeValue(InstanceId i, IndexT attributeIndex) = 0;
 	
 	/// Get an attribute value as a variant type
-	virtual Util::Variant GetAttributeValue(uint32_t i, Attr::AttrId attributeId) = 0;
+	virtual Util::Variant GetAttributeValue(InstanceId i, Attr::AttrId attributeId) = 0;
 	
 	/// Set an attribute value from a variant type
-	virtual void SetAttributeValue(uint32_t i, IndexT attributeIndex, const Util::Variant& value) = 0;
+	virtual void SetAttributeValue(InstanceId i, IndexT attributeIndex, const Util::Variant& value) = 0;
 	
 	/// Set an attribute value from a variant type
-	virtual void SetAttributeValue(uint32_t i, Attr::AttrId attributeId, const Util::Variant& value) = 0;
+	virtual void SetAttributeValue(InstanceId i, Attr::AttrId attributeId, const Util::Variant& value) = 0;
 
 	/// Returns the instance of an entity; or InvalidIndex if not registered.
-	virtual uint32_t GetInstance(Entity e) const = 0;
+	virtual InstanceId GetInstance(Entity e) const = 0;
 
 	/// Subsequently calls functionbundle serialize.
 	virtual void SerializeOwners(const Ptr<IO::BinaryWriter>& writer) const = 0;
@@ -124,10 +126,10 @@ public:
 	struct FunctionBundle
 	{
 		/// Called upon activation of component instance
-		void(*OnActivate)(uint32_t instance);
+		void(*OnActivate)(InstanceId instance);
 
 		/// Called upon deactivation of component instance
-		void(*OnDeactivate)(uint32_t instance);
+		void(*OnDeactivate)(InstanceId instance);
 
 		/// called at beginning of frame
 		void(*OnBeginFrame)();
@@ -142,10 +144,10 @@ public:
 		void(*OnRenderDebug)();
 
 		/// called after an entity has been loaded from file.
-		void(*OnLoad)(uint32_t instance);
+		void(*OnLoad)(InstanceId instance);
 
 		/// called after an entity has been save to a file.
-		void(*OnSave)(uint32_t instance);
+		void(*OnSave)(InstanceId instance);
 
 		/// Serialize the components attributes (excluding owners)
 		void(*Serialize)(const Ptr<IO::BinaryWriter>& writer);
@@ -159,10 +161,10 @@ public:
 		/// Called after an instance has been moved from one index to another.
 		/// Used in very special cases when you rely on for example instance id relations
 		/// within your components.
-		void(*OnInstanceMoved)(uint32_t instance, uint32_t oldIndex);
+		void(*OnInstanceMoved)(InstanceId instance, InstanceId oldIndex);
 
 		/// Callback for when entities has been loaded and you need to hook into the hierarchy update.
-		void(*SetParents)(uint32_t start, uint32_t end, const Util::Array<Entity>& entities, const Util::Array<uint32_t>& parentIndices);
+		void(*SetParents)(InstanceId start, InstanceId end, const Util::Array<Entity>& entities, const Util::Array<uint32_t>& parentIndices);
 	} functions;
 
 	Util::Array<MessageListener> messageListeners;
