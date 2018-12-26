@@ -3,6 +3,7 @@
 //  (C) 2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
+#include "util/variant.h"
 #include "io/jsonwriter.h"
 #ifdef min
 #undef min
@@ -194,7 +195,6 @@ template<> void JsonWriter::Add(const bool & value, const Util::String & name)
 
 //------------------------------------------------------------------------------
 /**
-
 */
 template<> void JsonWriter::Add(const int & value, const Util::String & name)
 {
@@ -209,9 +209,26 @@ template<> void JsonWriter::Add(const int & value, const Util::String & name)
         this->hierarchy.Peek()->add_key_value(name.AsCharPtr(), val, alloc);
     }
 }
+
 //------------------------------------------------------------------------------
 /**
+*/
+template<> void JsonWriter::Add(const unsigned int & value, const Util::String & name)
+{
+	auto & alloc = this->document->get_allocator();
+	pjson::value_variant val(value);
+	if (name.IsEmpty())
+	{
+		this->hierarchy.Peek()->add_value(val, alloc);
+	}
+	else
+	{
+		this->hierarchy.Peek()->add_key_value(name.AsCharPtr(), val, alloc);
+	}
+}
 
+//------------------------------------------------------------------------------
+/**
 */
 template<> void JsonWriter::Add(const float & value, const Util::String & name)
 {
@@ -330,6 +347,43 @@ template<> void JsonWriter::Add(const Math::transform44 & value, const Util::Str
     {
         this->hierarchy.Peek()->add_key_value(name.AsCharPtr(), val, alloc);
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<> void JsonWriter::Add(const Util::Variant& value, const Util::String & name)
+{
+	switch (value.GetType())
+	{
+	case Util::Variant::Type::Bool:
+		this->Add(value.GetBool(), name);
+		break;
+	case Util::Variant::Type::Int:
+		this->Add(value.GetInt(), name);
+		break;
+	case Util::Variant::Type::Float:
+		this->Add(value.GetFloat(), name);
+		break;
+	case Util::Variant::Type::Matrix44:
+		this->Add(value.GetMatrix44(), name);
+		break;
+	case Util::Variant::Type::Float4:
+		this->Add(value.GetFloat4(), name);
+		break;
+	case Util::Variant::Type::UInt:
+		this->Add(value.GetUInt(), name);
+		break;
+	case Util::Variant::Type::Guid:
+		this->Add(value.GetGuid().AsString(), name);
+		break;
+	case Util::Variant::Type::String:
+		this->Add(value.GetString(), name);
+		break;
+	default:
+		n_error("Variant type \"%s\" not yet supported!", Util::Variant::TypeToString(value.GetType()).AsCharPtr());
+		return;
+	}
 }
 
 //------------------------------------------------------------------------------

@@ -11,6 +11,7 @@
 #endif
 #include "pjson/pjson.h"
 #include "io/jsonreader.h"
+#include "util/variant.h"
 
 namespace IO
 {
@@ -483,6 +484,21 @@ JsonReader::GetInt(const char* name) const
 
 //------------------------------------------------------------------------------
 /**
+	Return the provided attribute as float2. If the attribute does not exist
+	the method will fail hard (use HasAttr() to check for its existance).
+*/
+uint
+JsonReader::GetUInt(const char * attr) const
+{
+	const value_variant * node = this->GetChild(attr);
+	
+	n_assert(node);
+	n_assert(node->is_int());
+	return (uint)node->as_int32();
+}
+
+//------------------------------------------------------------------------------
+/**
     Return the provided attribute as float. If the attribute does not exist
     the method will fail hard (use HasAttr() to check for its existance).
 */
@@ -797,6 +813,48 @@ template<> void JsonReader::Get<float>(float & ret, const char* attr)
 
     n_assert(node->is_numeric());
     ret = node->as_float();
+}
+
+//------------------------------------------------------------------------------
+/**
+	Returns the attribute as variant type.
+	This checks what type the variant is and returns the value type that it indicates.
+	Will most likely assert if type is incorrect, so use with caution!
+*/
+template<> void JsonReader::Get<Util::Variant>(Util::Variant & ret, const char* attr)
+{
+	const value_variant * node = this->GetChild(attr);
+
+	switch (ret.GetType())
+	{
+	case Util::Variant::Type::Bool:
+		ret.SetBool(this->GetBool(attr));
+		break;
+	case Util::Variant::Type::Float:
+		ret.SetFloat(this->GetFloat(attr));
+		break;
+	case Util::Variant::Type::Float4:
+		ret.SetFloat4(this->GetFloat4(attr));
+		break;
+	case Util::Variant::Type::Matrix44:
+		ret.SetMatrix44(this->GetMatrix44(attr));
+		break;
+	case Util::Variant::Type::UInt:
+		ret.SetUInt(this->GetUInt(attr));
+		break;
+	case Util::Variant::Type::String:
+		ret.SetString(this->GetString(attr));
+		break;
+	case Util::Variant::Type::Int:
+		ret.SetInt(this->GetInt(attr));
+		break;
+	case Util::Variant::Type::Guid:
+		ret.SetGuid(Util::Guid::FromString(this->GetString()));
+		break;
+	default:
+		n_error("Could not resolve variant type!");
+		break;
+	}
 }
 
 //------------------------------------------------------------------------------

@@ -76,6 +76,8 @@ public:
     bool GetBool(const char* attr = 0) const;
     /// get int attribute value from current node
     int GetInt(const char* attr = 0) const;
+	/// get unsigned int attribute value from current node
+	uint GetUInt(const char* attr = 0) const;
     /// get float attribute value from current node
     float GetFloat(const char* attr = 0) const;
     /// get float2 attribute value from current node
@@ -123,6 +125,21 @@ private:
     // 0 terminated buffer containing the raw json file
     char * buffer = nullptr;
 };
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<typename T>
+inline bool
+JsonReader::GetOpt(T& target, const char* attr)
+{
+	if (this->HasAttr(attr))
+	{
+		this->Get(target, attr);
+		return true;
+	}
+	return false;
+}
 
 //------------------------------------------------------------------------------
 /**
