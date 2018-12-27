@@ -819,6 +819,7 @@ template<> void JsonReader::Get<float>(float & ret, const char* attr)
 /**
 	Returns the attribute as variant type.
 	This checks what type the variant is and returns the value type that it indicates.
+	If incoming variant type is void, the reader will automatically detect type from the attribute.
 	Will most likely assert if type is incorrect, so use with caution!
 */
 template<> void JsonReader::Get<Util::Variant>(Util::Variant & ret, const char* attr)
@@ -827,6 +828,37 @@ template<> void JsonReader::Get<Util::Variant>(Util::Variant & ret, const char* 
 
 	switch (ret.GetType())
 	{
+	case Util::Variant::Type::Void:
+	{
+		// Special case: No type has been assigned, let the parser decide the type.
+		const value_variant * node = this->GetChild(attr);
+
+		if (node->is_bool())
+		{
+			ret.SetType(Util::Variant::Type::Bool);
+			ret.SetBool(node->as_bool());
+		}
+		if (node->is_int())
+		{
+			ret.SetType(Util::Variant::Type::Int);
+			ret.SetInt(node->as_int32());
+		}
+		else if (node->is_double())
+		{
+			ret.SetType(Util::Variant::Type::Double);
+			ret.SetDouble(node->as_double());
+		}
+		else if (node->is_string())
+		{
+			ret.SetType(Util::Variant::Type::String);
+			ret.SetString(node->as_string_ptr());
+		}
+		else
+		{
+			n_error("Could not resolve variant type!");
+		}
+		break;
+	}
 	case Util::Variant::Type::Bool:
 		ret.SetBool(this->GetBool(attr));
 		break;
@@ -849,7 +881,7 @@ template<> void JsonReader::Get<Util::Variant>(Util::Variant & ret, const char* 
 		ret.SetInt(this->GetInt(attr));
 		break;
 	case Util::Variant::Type::Guid:
-		ret.SetGuid(Util::Guid::FromString(this->GetString()));
+		ret.SetGuid(Util::Guid::FromString(this->GetString(attr)));
 		break;
 	default:
 		n_error("Could not resolve variant type!");
@@ -867,7 +899,6 @@ template<> void JsonReader::Get<Util::String>(Util::String & ret, const char* at
     n_assert(node->is_string());
     ret = node->as_string_ptr();
 }
-
 
 //------------------------------------------------------------------------------
 /**
