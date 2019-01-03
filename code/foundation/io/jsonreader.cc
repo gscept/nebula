@@ -165,7 +165,7 @@ JsonReader::SetToRoot()
     conventions. Separator is a slash. 
     Arrays or objects with children can be indexed with []
 */
-void
+bool
 JsonReader::SetToNode(const String& path)
 {
     n_assert(this->IsOpen());
@@ -174,22 +174,12 @@ JsonReader::SetToNode(const String& path)
     bool absPath = (path[0] == '/');
     Array<String> tokens = path.Tokenize("/");
 
-    // get starting node (either root or current node)
-    const value_variant* node;
+    // get starting node (either root or current node)    
     if (absPath)
     {
-        node = this->document;       
-        this->parents.Clear();        
-        this->parentIdx.Clear();
-    }
-    else
-    {
-        n_assert(0 != this->curNode);
-        node = this->curNode;
-    }
-    this->parents.Push(node);
-    this->parentIdx.Push(-1);
-    this->curNode = 0;
+        this->SetToRoot();        
+    }    
+    n_assert(0 != this->curNode);    
 
     // iterate through path components
     int i;
@@ -204,34 +194,25 @@ JsonReader::SetToNode(const String& path)
             Util::String num = cur;
             num.Trim("[]");
             unsigned int idx = num.AsInt();
-            n_assert(node->is_object_or_array());
-            n_assert(idx < node->size());
-            node = &node->get_value_at_index(idx);
-            this->parents.Push(node);
-            this->parentIdx.Push(-1);
+            if (!this->curNode->is_object_or_array()) goto fail;
+            if (!(idx < this->curNode->size())) goto fail;
+
+            const value_variant* node = &this->curNode->get_value_at_index(idx);
+            this->parents.Push(this->curNode);
+            this->parentIdx.Push(this->childIdx);
+            this->curNode = node;
+            this->childIdx = idx;
         }
         else
         {
-            n_assert(node->is_object());
-            node = node->find_value_variant(cur.AsCharPtr());
-            if (0 == node)
-            {
-                this->parents.Clear();
-                this->parentIdx.Clear();
-                break;
-            }
-            else
-            {
-                this->parents.Push(node);
-                this->parentIdx.Push(-1);
-            }
+            if (!this->SetToFirstChild(cur)) goto fail;            
         }
-    }
-    if (this->parents.Size() > 1)
-    {
-        this->curNode = this->parents.Pop();
-        this->childIdx = this->parentIdx.Pop();
-    }    
+    }        
+    return true;
+fail:
+    this->parents.Clear();
+    this->parentIdx.Clear();
+    return false;
 }
 
 //------------------------------------------------------------------------------
@@ -947,6 +928,26 @@ template<> bool JsonReader::GetOpt<uint16_t>(uint16_t & ret, const char* attr)
     return false;
 }
 
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<> bool JsonReader::GetOpt<Math::point>(Math::point & ret, const char* attr)
+{
+    //FIXME this searches twice
+    const value_variant * node = this->GetChild(attr);
+    if (node)
+    {
+        NEBULA_ALIGN16 float v[4];
+        for (int i = 0; i < 3; i++)
+        {
+            v[i] = node->get_value_at_index(i).as_float();
+        }
+        ret.load(v);
+        return true;
+    }
+    return false;
+}
 //------------------------------------------------------------------------------
 /**
 */

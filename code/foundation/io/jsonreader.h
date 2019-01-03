@@ -45,7 +45,7 @@ public:
     /// sets the current node to root
     void SetToRoot();
     /// set current node as path, accepts / as separator and [number] to access array/object elements
-    void SetToNode(const Util::String& path);        
+    bool SetToNode(const Util::String& path);        
     
     /// set current node to first child, false if none exists
     bool SetToFirstChild(const Util::String& name = "");
