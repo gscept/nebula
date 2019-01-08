@@ -142,6 +142,14 @@ private:
 
 //------------------------------------------------------------------------------
 /**
+	@todo	Biggest performance hog right now is that listeners
+			themselves need to check if, for example, an entity is
+			registered or not. Although this is potentially O(1) per lookup,
+			it can probably be improved by adding some registry over which
+			entities are registered to which component systems.
+			This will however add a lot of memory overhead that is not
+			necessarily needed for anything else.
+			In the end, the api will (hopefully) most likely to stay the same.
 */
 template <class MSG, class ... TYPES>
 class Message
