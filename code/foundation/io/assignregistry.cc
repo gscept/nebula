@@ -7,6 +7,7 @@
 #include "io/assignregistry.h"
 #include "io/fswrapper.h"
 #include "core/coreserver.h"
+#include "system/nebulasettings.h"
 
 namespace IO
 {
@@ -192,6 +193,16 @@ AssignRegistry::SetupProjectAssigns()
 
     // tools assigns
     this->SetAssign(Assign("tool", Core::CoreServer::Instance()->GetToolDirectory().AsString()));    
+    // project assign from registry
+    if (System::NebulaSettings::Exists("gscept", "ToolkitShared", "workdir"))
+    {
+        this->SetAssign(Assign("proj", System::NebulaSettings::ReadString("gscept", "ToolkitShared", "workdir")));
+    }
+    else
+    {
+        this->SetAssign(Assign("proj", "root:"));
+    }
+    
 
     this->critSect.Leave();
 }
