@@ -1,0 +1,54 @@
+---
+imports:
+    fips-zlib:
+        git: https://github.com/floooh/fips-zlib.git
+        group: misc
+    fips-directxmath:
+        git: https://github.com/gscept/fips-directxmath.git
+        group: misc
+    fips-glfw:
+        git: https://github.com/gscept/fips-glfw.git
+        group: gfx
+    fips-anyfx:
+        git: https://github.com/Duttenheim/fips-anyfx.git
+        group: gfx
+    fips-devil:
+        git: https://github.com/gscept/fips-devil.git        
+        group: gfx    
+    fips-stackwalker:
+        git: https://github.com/gscept/fips-stackwalker.git
+        cond: "FIPS_WINDOWS"
+        group: misc
+    fips-bullet:
+        git: https://github.com/fips-libs/fips-bullet.git  
+        cond: "DISABLE_FOR_NOW"
+    fips-cjson:
+        git: https://github.com/floooh/fips-cjson.git
+        cond: "FIPS_LINUX"
+        group: misc
+    fips-imgui:
+        git: https://github.com/gscept/fips-imgui.git   
+    fips-pybind11:
+        git: https://github.com/gscept/fips-pybind11.git
+    fips-stb:
+        git: https://github.com/fips-libs/fips-stb.git
+        group: misc
+    nebula-libs:
+        git: https://github.com/gscept/nebula/nebula-libs
+        group: misc
+
+exports:
+    header-dirs : 
+        - .
+        - code/foundation
+        - code/render        
+        - code/resource
+        - code/application
+        - code/physics
+        - code/addons
+    modules:
+        foundation: code/foundation
+        render: code/render
+        resource: code/resource
+        application: code/application        
+        addons: code/addons
