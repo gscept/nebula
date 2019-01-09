@@ -4,7 +4,7 @@ configs/.selected
 CMakeLists.txt.user*
 .fips-*
 .vscode
-
+*.patch
 fips-generators/*.pyc
 /fips-files/verbs/*.pyc
 /fips-files/generators/**/*.pyc
