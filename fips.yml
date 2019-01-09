@@ -1,0 +1,4 @@
+---
+imports:
+     nebula:
+        git: https://github.com/gscept/nebula.git       
