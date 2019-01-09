@@ -8,23 +8,15 @@
     (C) 2008 Radon Labs GmbH
 */
 
-#define USE_HTTP                                1
-
 
 #include "util/array.h"
 #include "core/ptr.h"
 #include "input/inputserver.h"
 #include "timing/timer.h"
 #include "core/coreserver.h"
-#if USE_HTTP
-#include "http/httpinterface.h"
-#include "debug/debuginterface.h"
-#include "http/httpserverproxy.h"
-#endif
 #include "io/gamecontentserver.h"
 #include "io/assignregistry.h"
 #include "io/ioserver.h"
-#include "scripting/scriptserver.h"
 
 
 //------------------------------------------------------------------------------
@@ -34,7 +26,7 @@ class ScriptTestApplication
 {
 public:
     /// constructor
-    ScriptTestApplication();
+    ScriptTestApplication(int argc, char ** argv);
     /// destructor
     virtual ~ScriptTestApplication();
     /// open the application
@@ -49,16 +41,10 @@ private:
 
 private:
 	Ptr<Core::CoreServer> coreServer;
-
-#if USE_HTTP
-    Ptr<Http::HttpInterface> httpInterface;
-	Ptr<Http::HttpServerProxy> httpServerProxy;
-	Ptr<Debug::DebugInterface> debugInterface;
-#endif
+    int argc;
+    char**argv;
     Timing::Timer masterTime;
 
-	Ptr<Scripting::ScriptServer> scriptServer;
-	
 };
 
 } // namespace Test

@@ -6,7 +6,7 @@
 #include "scripttestapplication.h"
 #include "system/appentry.h"
 
-ImplementNebulaApplication();
+//ImplementNebulaApplication();
 
 using namespace Test;
 using namespace Util;
@@ -14,10 +14,9 @@ using namespace Util;
 //------------------------------------------------------------------------------
 /**
 */
-void
-NebulaMain(const CommandLineArgs& args)
+int main(int argc,char**argv)
 {
-    ScriptTestApplication app;
+    ScriptTestApplication app(argc, argv);
     
     if (app.Open())
     {
