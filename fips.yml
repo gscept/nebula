@@ -34,7 +34,7 @@ imports:
         git: https://github.com/fips-libs/fips-stb.git
         group: misc
     nebula-libs:
-        git: https://github.com/gscept/nebula/nebula-libs
+        git: https://github.com/gscept/nebula-libs
         group: misc
 
 exports:
