@@ -42,14 +42,16 @@ public:
     /// get the character's animation resource
     const Resources::ResourceId GetAnimationResourceId() const;
 
-
 	struct Instance : public ModelNode::Instance
 	{
 		Ids::Id32 characterId;
 		IndexT updateFrame;
 		bool updateThisFrame;
+		Util::HashTable<Util::StringAtom, Models::ModelNode::Instance*, 8> activeSkinInstances;
 
 		void Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
+		void ApplySkin(const Util::StringAtom& skinName);
+		void RemoveSkin(const Util::StringAtom& skinName);
 	};
 
 	/// create instance
@@ -58,15 +60,29 @@ public:
 	/// get size of instance
 	virtual const SizeT GetInstanceSize() const { return sizeof(Instance); }
 
+	/// character nodes should not create the hierarchy implicitly
+	bool GetImplicitHierarchyActivation() const override;
+
 private:
     /// recursively create model node instance and child model node instances
     //virtual Ptr<Models::ModelNodeInstance> RecurseCreateNodeInstanceHierarchy(const Ptr<Models::ModelInstance>& modelInst, const Ptr<Models::ModelNodeInstance>& parentNodeInst=0);
 
 protected:
 
+	struct SkinList
+	{
+		Util::StringAtom name;
+		Util::FixedArray<Util::StringAtom> skinNames;
+		Util::FixedArray<Models::ModelNode*> skinNodes;
+	};
+
+	Util::FixedArray<SkinList> skinLists;
+	IndexT skinListIndex;
+
+	Util::HashTable<Util::StringAtom, IndexT, 8> skinNodes;
     Resources::ResourceName animResId;
+	Resources::ResourceName skeletonResId;
     Resources::ResourceName variationResId;
-    //Ptr<Character> character;
 	Util::StringAtom tag;
     Resources::ResourceId managedAnimResource;
     Resources::ResourceId managedVariationResource;
@@ -97,6 +113,15 @@ inline const Resources::ResourceId
 CharacterNode::GetAnimationResourceId() const
 {
     return this->managedAnimResource;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline bool 
+CharacterNode::GetImplicitHierarchyActivation() const
+{
+	return false;
 }
 
 ModelNodeInstanceCreator(CharacterNode)

@@ -6,7 +6,10 @@
 	A graphics context is a resource which holds a contextual representation for
 	a graphics entity.
 
-	Use the DeclareRegistration macro in the header and DefineRegistration in the implementation
+	Use the DeclareRegistration macro in the header and DefineRegistration in the implementation.
+
+	The reason for why the function bundle and state are implemented through macros, is because
+	they have to be static, and thus implemented explicitly once per each context.
 	
 	(C)2017-2018 Individual contributors, see AUTHORS file
 */
@@ -108,7 +111,7 @@ __ImplementEnumBitOperators(StageBits);
 struct GraphicsContextFunctionBundle
 {
 	// frame stages
-	void(*OnBeforeFrame)(const IndexT frameIndex, const Timing::Time frameTime);
+	void(*OnBeforeFrame)(const IndexT frameIndex, const Timing::Time frameTime, const Timing::Time time, const Timing::Tick ticks);
 	void(*OnWaitForWork)(const IndexT frameIndex, const Timing::Time frameTime);
 	void(*OnBeforeView)(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime);
 	void(*OnAfterView)(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime);

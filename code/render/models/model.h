@@ -34,17 +34,8 @@ enum NodeType
 	NumNodeTypes
 };
 
-struct ModelCreateInfo
-{
-	Resources::ResourceName resource;
-	Util::StringAtom tag;
-	std::function<void(const Resources::ResourceId)> successCallback;
-	std::function<void(const Resources::ResourceId)> failCallback;
-	bool async;
-};
-
 /// create model (resource)
-const ModelId CreateModel(const ModelCreateInfo& info);
+const ModelId CreateModel(const ResourceCreateInfo& info);
 /// discard model (resource)
 void DestroyModel(const ModelId id);
 

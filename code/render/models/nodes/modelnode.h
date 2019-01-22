@@ -40,8 +40,10 @@ class ModelNode
 public:
 	struct Instance
 	{
-		const ModelNode::Instance* parent;	// pointer to parent
-		ModelNode* node;				// pointer to resource-level node
+		const ModelNode::Instance* parent;			// pointer to parent
+		ModelNode* node;							// pointer to resource-level node
+		Util::FixedArray<Instance*> children;		// children
+		bool active : 1;
 
 		virtual void ApplyNodeInstanceState();
 		virtual void Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent);
@@ -59,6 +61,8 @@ public:
 
 	/// get size of instance
 	virtual const SizeT GetInstanceSize() const { return sizeof(Instance); }
+	/// return true if all children should create hierarchies upon calling CreateInstance
+	virtual bool GetImplicitHierarchyActivation() const;
 
 	/// apply node-level state
 	virtual void ApplyNodeState();
@@ -67,6 +71,7 @@ protected:
 	friend class StreamModelPool;
 	friend class ModelContext;
 	friend class ModelServer;
+	friend class CharacterNode;
 
 	/// load data
 	virtual bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader);
@@ -81,11 +86,13 @@ protected:
 	Util::StringAtom name;
 	NodeType type;
 
+	Memory::ChunkAllocator<MODEL_MEMORY_CHUNK_SIZE>* nodeAllocator;
 	Models::ModelNode* parent;
 	ModelId model;
 	Util::Array<Models::ModelNode*> children;
 	Math::bbox boundingBox;
 	Util::StringAtom tag;
+	SizeT hierarchicalInstanceSize;
 };
 
 //------------------------------------------------------------------------------

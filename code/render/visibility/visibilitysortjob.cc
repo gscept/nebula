@@ -12,7 +12,6 @@ namespace Visibility
 
 //------------------------------------------------------------------------------
 /**
-	This is essentially a single-slice job, because the bucket will be unique per observer
 */
 void
 VisibilitySortJob(const Jobs::JobFuncContext& ctx)

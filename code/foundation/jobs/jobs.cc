@@ -109,6 +109,7 @@ CreateJob(const CreateJobInfo& info)
 	jobAllocator.Get<0>(job) = info;
 	jobAllocator.Get<2>(job) = n_new(Threading::Event(true));
 	jobAllocator.Get<3>(job) = n_new(std::atomic_uint);
+	jobAllocator.Get<4>(job) = { Memory::HeapType::ScratchHeap, 0, nullptr };
 
 	JobId id;
 	id.id = job;
@@ -210,6 +211,21 @@ JobWait(const JobId& job)
 {
 	Threading::Event* completionEvent = jobAllocator.Get<2>(job.id);
 	completionEvent->Wait();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void*
+JobAllocateScratchMemory(const JobId& job, const Memory::HeapType heap, const SizeT size)
+{
+	// setup scratch memory
+	n_assert(jobAllocator.Get<4>(job.id).memory == nullptr);
+	void* ret = Memory::Alloc(heap, size);
+	jobAllocator.Get<4>(job.id) = { heap, size, ret };
+
+	// return pointer in case we want to fill it
+	return ret;
 }
 
 __ImplementClass(Jobs::JobThread, 'JBTH', Threading::Thread);

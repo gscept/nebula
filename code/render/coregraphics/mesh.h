@@ -29,8 +29,9 @@ struct MeshCreateInfo
 
 	Resources::ResourceName name;
 	Util::StringAtom tag;
-	Util::Array<Stream> streams;
-    IndexBufferId indexBuffer;
+	Util::ArrayStack<Stream, 16> streams;
+	IndexBufferId indexBuffer;
+	VertexLayoutId vertexLayout;
 	CoreGraphics::PrimitiveTopology::Code topology;
 	Util::Array<CoreGraphics::PrimitiveGroup> primitiveGroups;
 };
