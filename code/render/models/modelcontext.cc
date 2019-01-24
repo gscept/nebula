@@ -184,6 +184,16 @@ ModelContext::GetTransform(const Graphics::GraphicsEntityId id)
 //------------------------------------------------------------------------------
 /**
 */
+Math::matrix44
+ModelContext::GetTransform(const Graphics::ContextEntityId id)
+{
+	ModelInstanceId& inst = modelContextAllocator.Get<1>(id.id);
+	return modelContextAllocator.Get<2>(id.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 const Util::Array<Models::ModelNode::Instance*>& 
 ModelContext::GetModelNodeInstances(const Graphics::GraphicsEntityId id)
 {

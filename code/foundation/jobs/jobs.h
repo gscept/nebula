@@ -170,6 +170,14 @@ void JobPortWait(const JobPortId& id);
 /// insert synchronization point for other jobs to wait on
 void JobPortSync(const JobPortId& id);
 
+enum
+{
+	PortName,
+	PortThreads,
+	NextThreadIndex,
+	LastJobId
+};
+
 typedef Ids::IdAllocator<
 	Util::StringAtom,						// 0 - name
 	Util::FixedArray<Ptr<JobThread>>,		// 1 - threads
@@ -184,11 +192,24 @@ JobId CreateJob(const CreateJobInfo& info);
 void DestroyJob(const JobId& id);
 
 /// schedule job to be executed
-void JobSchedule(const JobId& job, const JobPortId& port, const JobContext& ctx);
+void JobSchedule(const JobId& job, const JobPortId& port, const JobContext& ctx, const bool cycleThreads = true);
 /// schedule job with callback when finished
-void JobSchedule(const JobId& job, const JobPortId& port, const JobContext& ctx, const std::function<void()>& callback);
+void JobSchedule(const JobId& job, const JobPortId& port, const JobContext& ctx, const std::function<void()>& callback, const bool cycleThreads = true);
+/// schedule a sequence of jobs
+void JobScheduleSequence(const Util::Array<JobId>& jobs, const JobPortId& port, const Util::Array<JobContext>& contexts);
+/// schedule a sequence of jobs
+void JobScheduleSequence(const Util::Array<JobId>& jobs, const JobPortId& port, const Util::Array<JobContext>& contexts, const std::function<void()>& callback);
 /// wait for the job
 void JobWait(const JobId& job);
+
+enum
+{
+	CreateInfo,
+	CallbackFunc,
+	CompletionEvent,
+	CompletionCounter,
+	ScratchMemory
+};
 
 typedef Ids::IdAllocator<
 	CreateJobInfo,				// 0 - job info

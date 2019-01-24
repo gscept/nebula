@@ -51,7 +51,7 @@ public:
     /// called if the window size has changed
     static void OnWindowResized(IndexT windowId, SizeT width, SizeT height);
     /// called before frame
-    static void OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime);
+    static void OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime, const Timing::Time time, const Timing::Tick frameTicks);
 
 private:
 	struct ImguiState

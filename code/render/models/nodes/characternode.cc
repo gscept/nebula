@@ -7,6 +7,7 @@
 #include "characternode.h"
 #include "resources/resourcemanager.h"
 #include "models/modelpool.h"
+#include "coregraphics/shaderserver.h"
 //#include "characterjointmask.h"
 
 namespace Models
@@ -79,10 +80,10 @@ void
 CharacterNode::OnFinishedLoading()
 {
 	// setup the managed resource
-	this->managedAnimResource = Resources::CreateResource(this->animResId, this->tag, [this](Resources::ResourceId) { this->OnResourcesLoaded(); }, nullptr, false);
+	//this->managedAnimResource = Resources::CreateResource(this->animResId, this->tag, [this](Resources::ResourceId) { this->OnResourcesLoaded(); }, nullptr, false);
 
 	//	ResourceManager::Instance()->CreateManagedResource(AnimResource::RTTI, this->animResId, 0, sync).downcast<ManagedAnimResource>();
-	n_assert(this->managedAnimResource != Resources::ResourceId::Invalid());
+	//n_assert(this->managedAnimResource != Resources::ResourceId::Invalid());
 
 	// setup the character's skin library from our children
 	// (every child node represents one character skin)
@@ -99,6 +100,11 @@ CharacterNode::OnFinishedLoading()
 	this->character->SkinLibrary().AddSkin(skin);
 	}
 
+	this->sharedShader = CoreGraphics::ShaderServer::Instance()->GetShader("shd:shared.fxb"_atm);
+	this->cbo = CoreGraphics::ShaderCreateConstantBuffer(this->sharedShader, "JointBlock");
+	this->cboIndex = CoreGraphics::ShaderGetResourceSlot(this->sharedShader, "JointBlock");
+
+	/*
 	if (this->variationResId.IsValid())
 	{
 	// setup the managed resource for variations
@@ -168,6 +174,13 @@ CharacterNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, con
 	}
 	else if (FourCC('JOMS') == fourcc)
 	{
+		StringAtom maskName = reader->ReadString();
+		SizeT num = reader->ReadInt();
+		IndexT i;
+		for (i = 0; i < num; i++)
+		{
+			reader->ReadFloat();
+		}
 		/*
 		CharacterJointMask mask;
 		StringAtom maskName = reader->ReadString();
@@ -199,20 +212,16 @@ CharacterNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, con
     }
     else if (FourCC('SKNL') == fourcc)
     {
-        // SkinList
-		/*
-        CharacterSkinList skinList;
-        skinList.SetName(reader->ReadString());
-        SizeT num = reader->ReadInt();
-        IndexT i;
-        Array<StringAtom> skins;
-        for (i = 0; i < num; i++)
-        {
-            skins.Append(reader->ReadString());
-        }
-        skinList.SetSkins(skins);
-        this->character->SkinLibrary().AddSkinList(skinList);
-		*/
+		const Util::StringAtom skinListName = reader->ReadString();
+		SizeT num = reader->ReadInt();
+		this->skinLists[this->skinListIndex].name = skinListName;
+		this->skinLists[this->skinListIndex].skinNames.Resize(num);
+		this->skinLists[this->skinListIndex].skinNodes.Resize(num);
+
+		// add skins to list
+		IndexT i;
+		for (i = 0; i < num; i++)
+			this->skinLists[this->skinListIndex].skinNames[i] = reader->ReadString();
     }
     else
     {

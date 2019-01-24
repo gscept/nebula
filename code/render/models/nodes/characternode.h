@@ -43,7 +43,6 @@ public:
     const Resources::ResourceId GetAnimationResourceId() const;
 
 	struct Instance : public TransformNode::Instance
-
 	{
 		Ids::Id32 characterId;
 		IndexT updateFrame;

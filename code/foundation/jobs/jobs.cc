@@ -27,8 +27,8 @@ CreateJobPort(const CreateJobPortInfo& info)
 		thread->SetThreadAffinity(info.affinity);
 		threads[i] = thread;
 	}
-	jobPortAllocator.Get<1>(port) = threads;
-	jobPortAllocator.Get<2>(port) = 0;
+	jobPortAllocator.Get<PortThreads>(port) = threads;
+	jobPortAllocator.Get<NextThreadIndex>(port) = 0;
 
 	// we limit the id count to be ushort max
 	JobPortId id;
@@ -42,7 +42,7 @@ CreateJobPort(const CreateJobPortInfo& info)
 void
 DestroyJobPort(const JobPortId& id)
 {
-	Util::FixedArray<Ptr<JobThread>>& threads = jobPortAllocator.Get<1>((Ids::Id32)id.id);
+	Util::FixedArray<Ptr<JobThread>>& threads = jobPortAllocator.Get<PortThreads>((Ids::Id32)id.id);
 	for (IndexT i = 0; i < threads.Size(); i++)
 	{
 		threads[i]->Stop();
@@ -55,7 +55,7 @@ DestroyJobPort(const JobPortId& id)
 bool
 JobPortBusy(const JobPortId& id)
 {
-	const JobId job = jobPortAllocator.Get<3>((Ids::Id32)id.id);
+	const JobId job = jobPortAllocator.Get<LastJobId>((Ids::Id32)id.id);
 	if (job != JobId::Invalid())
 	{
 		const Threading::Event* ev = jobAllocator.Get<2>(job.id);
@@ -70,8 +70,8 @@ JobPortBusy(const JobPortId& id)
 void
 JobPortSync(const JobPortId& id)
 {
-	const JobId job = jobPortAllocator.Get<3>((Ids::Id32)id.id);
-	const Util::FixedArray<Ptr<JobThread>>& threads = jobPortAllocator.Get<1>((Ids::Id32)id.id);
+	const JobId job = jobPortAllocator.Get<LastJobId>((Ids::Id32)id.id);
+	const Util::FixedArray<Ptr<JobThread>>& threads = jobPortAllocator.Get<PortThreads>((Ids::Id32)id.id);
 	if (job != JobId::Invalid())
 	{
 		JobThread::JobThreadCommand cmd;
@@ -91,7 +91,7 @@ JobPortSync(const JobPortId& id)
 void
 JobPortWait(const JobPortId& id)
 {
-	const JobId job = jobPortAllocator.Get<3>((Ids::Id32)id.id);
+	const JobId job = jobPortAllocator.Get<LastJobId>((Ids::Id32)id.id);
 	if (job != JobId::Invalid())
 	{
 		const Threading::Event* ev = jobAllocator.Get<2>(job.id);
@@ -132,26 +132,26 @@ DestroyJob(const JobId& id)
 /**
 */
 void
-JobSchedule(const JobId& job, const JobPortId& port, const JobContext& ctx)
+JobSchedule(const JobId& job, const JobPortId& port, const JobContext& ctx, const bool cycleThreads)
 {
-	JobSchedule(job, port, ctx, nullptr);
+	JobSchedule(job, port, ctx, nullptr, cycleThreads);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-JobSchedule(const JobId& job, const JobPortId& port, const JobContext& ctx, const std::function<void()>& callback)
+JobSchedule(const JobId& job, const JobPortId& port, const JobContext& ctx, const std::function<void()>& callback, const bool cycleThreads)
 {
 	n_assert(ctx.input.numBuffers > 0);
 	n_assert(ctx.output.numBuffers > 0);
 
 	// set this job to be the last pushed one
-	jobPortAllocator.Get<3>((Ids::Id32)port.id) = job;
+	jobPortAllocator.Get<LastJobId>((Ids::Id32)port.id) = job;
 
 	// port related stuff
-	Util::FixedArray<Ptr<JobThread>>& threads = jobPortAllocator.Get<1>((Ids::Id32)port.id);
-	uint& threadIndex = jobPortAllocator.Get<2>((Ids::Id32)port.id);
+	Util::FixedArray<Ptr<JobThread>>& threads = jobPortAllocator.Get<PortThreads>((Ids::Id32)port.id);
+	uint& threadIndex = jobPortAllocator.Get<NextThreadIndex>((Ids::Id32)port.id);
 
 	// job related stuff
 	const CreateJobInfo& info = jobAllocator.Get<0>(job.id);	
@@ -197,9 +197,54 @@ JobSchedule(const JobId& job, const JobPortId& port, const JobContext& ctx, cons
 			cmd.run.completionEvent = completionEvent;
 			cmd.run.callback = callback ? &callback : nullptr;
 			threads[threadIndex]->PushCommand(cmd);
-			threadIndex = (threadIndex + 1) % threads.Size();
+
+			// if we cycle threads (default) put work slices on different threads
+			if (cycleThreads)
+				threadIndex = (threadIndex + 1) % threads.Size();
 		}
 	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+JobScheduleSequence(const Util::Array<JobId>& jobs, const JobPortId& port, const Util::Array<JobContext>& contexts)
+{
+	// push jobs to same thread
+	IndexT i;
+	for (i = 0; i < jobs.Size(); i++)
+	{
+		n_assert(contexts[i].input.numBuffers > 0);
+		n_assert(contexts[i].output.numBuffers > 0);
+		JobSchedule(jobs[i], port, contexts[i], false);
+	}
+
+	// cycle thread index after all jobs are pushed, this guarantees the sequence will run in order
+	uint& threadIndex = jobPortAllocator.Get<NextThreadIndex>((Ids::Id32)port.id);
+	const SizeT numThreads = jobPortAllocator.Get<PortThreads>((Ids::Id32)port.id).Size();
+	threadIndex = (threadIndex + 1) % numThreads;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+JobScheduleSequence(const Util::Array<JobId>& jobs, const JobPortId & port, const Util::Array<JobContext>& contexts, const std::function<void()>& callback)
+{
+	// push jobs to same thread
+	IndexT i;
+	for (i = 0; i < jobs.Size(); i++)
+	{
+		n_assert(contexts[i].input.numBuffers > 0);
+		n_assert(contexts[i].output.numBuffers > 0);
+		JobSchedule(jobs[i], port, contexts[i], callback, false);
+	}
+	
+	// cycle thread index after all jobs are pushed
+	uint& threadIndex = jobPortAllocator.Get<NextThreadIndex>((Ids::Id32)port.id);
+	const SizeT numThreads = jobPortAllocator.Get<PortThreads>((Ids::Id32)port.id).Size();
+	threadIndex = (threadIndex + 1) % numThreads;
 }
 
 //------------------------------------------------------------------------------

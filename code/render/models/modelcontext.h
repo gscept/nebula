@@ -51,6 +51,8 @@ public:
 	static void SetTransform(const Graphics::GraphicsEntityId id, const Math::matrix44& transform);
 	/// get the transform for a model
 	static Math::matrix44 GetTransform(const Graphics::GraphicsEntityId id);
+	/// get the transform for a model
+	static Math::matrix44 GetTransform(const Graphics::ContextEntityId id);
 
 	/// get model node instances
 	static const Util::Array<Models::ModelNode::Instance*>& GetModelNodeInstances(const Graphics::GraphicsEntityId id);

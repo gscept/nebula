@@ -106,6 +106,14 @@ ParticleServer::Open()
 		n_error("ParticleServer::Open: Failed to setup default emitter mesh");
 	}
 
+	// TODO: Add per instance vertex components
+
+	VertexLayoutCreateInfo vloInfo = 
+	{
+		emitterComponents
+	};
+	VertexLayoutId vlo = CreateVertexLayout(vloInfo);
+
 	PrimitiveGroup group;
 	group.SetBaseIndex(0);
 	group.SetBaseVertex(0);
@@ -119,7 +127,7 @@ ParticleServer::Open()
 	{
 		"Default_Emitter_Mesh",
 		"rendersystem",
-		{ { vbo, 0 } }, ibo, CoreGraphics::PrimitiveTopology::PointList, groups
+		{ { vbo, 0 } }, ibo, vlo, CoreGraphics::PrimitiveTopology::PointList, groups
 	};
 	this->defaultEmitterMesh = CreateMesh(info);
 }
