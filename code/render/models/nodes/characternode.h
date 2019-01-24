@@ -42,12 +42,14 @@ public:
     /// get the character's animation resource
     const Resources::ResourceId GetAnimationResourceId() const;
 
+	struct Instance : public TransformNode::Instance
 
-	struct Instance : public ModelNode::Instance
 	{
 		Ids::Id32 characterId;
 		IndexT updateFrame;
 		bool updateThisFrame;
+		Util::HashTable<Util::StringAtom, Models::ModelNode::Instance*, 8> activeSkinInstances;
+		Util::FixedArray<Math::matrix44> joints;
 
 		void Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
 	};
@@ -70,6 +72,10 @@ protected:
 	Util::StringAtom tag;
     Resources::ResourceId managedAnimResource;
     Resources::ResourceId managedVariationResource;
+
+	CoreGraphics::ShaderId sharedShader;
+	CoreGraphics::ConstantBufferId cbo;
+	IndexT cboIndex;
 };
 
 //------------------------------------------------------------------------------
@@ -97,6 +103,15 @@ inline const Resources::ResourceId
 CharacterNode::GetAnimationResourceId() const
 {
     return this->managedAnimResource;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline bool 
+CharacterNode::GetImplicitHierarchyActivation() const
+{
+	return true;
 }
 
 ModelNodeInstanceCreator(CharacterNode)
