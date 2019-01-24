@@ -12,6 +12,7 @@
 #include "models/nodes/transformnode.h"
 //#include "characters/character.h"
 #include "models/model.h"
+#include "coregraphics/shader.h"
 
 //------------------------------------------------------------------------------
 namespace Models
