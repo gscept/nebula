@@ -10,9 +10,9 @@
     (C) 2013-2018 Individual contributors, see AUTHORS file
 */  
 #include "models/nodes/transformnode.h"
-//#include "characters/character.h"
 #include "models/model.h"
 #include "coregraphics/shader.h"
+#include "coregraphics/constantbuffer.h"
 
 //------------------------------------------------------------------------------
 namespace Models
