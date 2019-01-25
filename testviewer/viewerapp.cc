@@ -16,6 +16,7 @@
 #include "math/point.h"
 #include "dynui/imguicontext.h"
 #include "lighting/lightcontext.h"
+#include "characters/charactercontext.h"
 #include "imgui.h"
 #include "dynui/im3d/im3dcontext.h"
 #include "dynui/im3d/im3d.h"
@@ -94,6 +95,7 @@ SimpleViewerApplication::Open()
         ObserverContext::Create();
         ObservableContext::Create();
 		Lighting::LightContext::Create();
+		Characters::CharacterContext::Create();
         Dynui::ImguiContext::Create();
         Im3d::Im3dContext::Create();
 
@@ -167,7 +169,7 @@ SimpleViewerApplication::Open()
 
         this->entity = Graphics::CreateEntity();
         ModelContext::RegisterEntity(this->entity);
-        ModelContext::Setup(this->entity, "mdl:Buildings/castle_tower.n3", "Viewer");
+        ModelContext::Setup(this->entity, "mdl:Units/Unit_Archer.n3", "Viewer");
         ModelContext::SetTransform(this->entity, Math::matrix44::translation(Math::float4(0, 0, 0, 1)));
         this->entities.Append(this->entity);
 
@@ -186,6 +188,10 @@ SimpleViewerApplication::Open()
 		ObservableContext::Setup(this->ground, VisibilityEntityType::Model);
         ObserverContext::RegisterEntity(this->cam);
         ObserverContext::Setup(this->cam, VisibilityEntityType::Camera);
+
+		Characters::CharacterContext::RegisterEntity(this->entity);
+		Characters::CharacterContext::Setup(this->entity, "ske:Units/Unit_Archer.nsk3", "ani:Units/Unit_Archer.nax3", "Viewer");
+		Characters::CharacterContext::PlayClip(this->entity, nullptr, 0, 0, Characters::Append);
 
 		Util::Array<Graphics::GraphicsEntityId> models;
 		ModelContext::BeginBulkRegister();
@@ -317,7 +323,8 @@ GraphicsEntityToName(GraphicsEntityId id)
 void
 SimpleViewerApplication::RenderEntityUI()
 {
-    ImGui::Begin("Entities", nullptr, ImVec2(240, 400), 0.6f, 0);
+    ImGui::Begin("Entities", nullptr, 0);
+	ImGui::SetWindowSize(ImVec2(240, 400));
     ImGui::BeginChild("##entities", ImVec2(0, 300), true);
     static int selected = 0;
     for (int i = 0 ; i < this->entities.Size();i++)
@@ -355,8 +362,9 @@ SimpleViewerApplication::RenderEntityUI()
 void 
 SimpleViewerApplication::RenderUI()
 {
-    ImGui::Begin("Viewer", nullptr, ImVec2(240, 400), 0.25, 0);
-    if (ImGui::CollapsingHeader("Camera mode","camMode",true, true))    
+    ImGui::Begin("Viewer", nullptr, 0);
+	ImGui::SetWindowSize(ImVec2(240, 400));
+    if (ImGui::CollapsingHeader("Camera mode", ImGuiTreeNodeFlags_DefaultOpen))
     {
         if (ImGui::RadioButton("Maya", &this->cameraMode, 0))this->ToMaya();
         ImGui::SameLine();
