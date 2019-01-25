@@ -69,7 +69,7 @@ struct JobUniformData
 	static const SizeT MaxNumBuffers = 4;
 
 	SizeT numBuffers;
-	void* data[MaxNumBuffers];			// pointers to data
+	const void* data[MaxNumBuffers];	// pointers to data
 	SizeT dataSize[MaxNumBuffers];		// size of entire array
 	SizeT scratchSize;					// scratch memory
 };
@@ -201,6 +201,15 @@ void JobScheduleSequence(const Util::Array<JobId>& jobs, const JobPortId& port, 
 void JobScheduleSequence(const Util::Array<JobId>& jobs, const JobPortId& port, const Util::Array<JobContext>& contexts, const std::function<void()>& callback);
 /// wait for the job
 void JobWait(const JobId& job);
+/// allocate memory for job
+void* JobAllocateScratchMemory(const JobId& job, const Memory::HeapType heap, const SizeT size);
+
+struct PrivateMemory
+{
+	Memory::HeapType heapType;
+	SizeT size;
+	void* memory;
+};
 
 enum
 {
@@ -215,7 +224,8 @@ typedef Ids::IdAllocator<
 	CreateJobInfo,				// 0 - job info
 	std::function<void()>,		// 1 - callback
 	Threading::Event*,			// 2 - event to trigger when job is done
-	std::atomic_uint*			// 3 - completion counter
+	std::atomic_uint*,			// 3 - completion counter
+	PrivateMemory				// 4 - private buffer, destroyed when job is finished
 > JobAllocator;
 extern JobAllocator jobAllocator;
 

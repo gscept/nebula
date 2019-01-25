@@ -8,8 +8,6 @@
 #include "animresource.h"
 namespace CoreAnimation
 {
-__ImplementClass(CoreAnimation::AnimSampleBuffer, 'ASBF', Core::RefCounted);
-
 using namespace Math;
 
 //------------------------------------------------------------------------------

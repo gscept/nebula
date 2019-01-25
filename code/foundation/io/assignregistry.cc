@@ -157,6 +157,7 @@ AssignRegistry::SetupProjectAssigns()
     // setup content assigns
     this->SetAssign(Assign("msh", "export:meshes"));
     this->SetAssign(Assign("ani", "export:anims"));
+	this->SetAssign(Assign("ske", "export:skeletons"));
     this->SetAssign(Assign("data", "export:data"));        
     this->SetAssign(Assign("video", "export:video"));
     this->SetAssign(Assign("db", "export:db"));

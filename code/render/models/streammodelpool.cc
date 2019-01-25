@@ -96,7 +96,7 @@ StreamModelPool::CreateModelInstance(const ModelId id)
 
 		// root node(s)
 		if (node->parent == nullptr)
-			this->CreateModelInstanceRecursive(node, nullptr, &mem, nodeInstances, nodeTypes);
+			this->CreateModelInstanceRecursive(node, 0, nullptr, &mem, nodeInstances, nodeTypes);
 	}
 
 	return miid;
@@ -112,7 +112,6 @@ StreamModelPool::DestroyModelInstance(const ModelInstanceId id)
 	SizeT& instances = this->modelAllocator.Get<InstanceCount>(id.model);
 	instances--;
 	this->modelInstanceAllocator.Get<NodeInstances>(id.instance).Clear();
-	this->modelInstanceAllocator.Get<NodeTypes>(id.instance).Clear();
 	this->modelInstanceAllocator.DeallocObject(id.instance);
 }
 
@@ -175,16 +174,29 @@ uint
 	Create model instance breadth first
 */
 void
-StreamModelPool::CreateModelInstanceRecursive(Models::ModelNode* node, Models::ModelNode::Instance* parentInstance, byte** memory, Util::Array<Models::ModelNode::Instance*>& instances, Util::Array<Models::NodeType>& types)
+StreamModelPool::CreateModelInstanceRecursive(Models::ModelNode* node, const IndexT childIndex, Models::ModelNode::Instance* parentInstance, byte** memory, Util::Array<Models::ModelNode::Instance*>& instances, Util::Array<Models::NodeType>& types)
 {
 	Models::ModelNode::Instance* inst = node->CreateInstance(memory, parentInstance);
 	instances.Append(inst);
 	types.Append(node->type);
 
+	// setup child
+	if (parentInstance)
+		parentInstance->children[childIndex] = inst;
+
+	// only activate nodes if they should be activated implicitly
+	if (node->GetImplicitHierarchyActivation())
+		inst->active = true;
+	else
+		inst->active = false;
+
+	// reserve size for children
+	inst->children.Resize(node->children.Size());
+
 	// continue recursion
 	IndexT i;
 	for (i = 0; i < node->children.Size(); i++)
-		CreateModelInstanceRecursive(node->children[i], inst, memory, instances, types);
+		CreateModelInstanceRecursive(node->children[i], i, inst, memory, instances, types);
 }
 
 //------------------------------------------------------------------------------
@@ -197,11 +209,17 @@ StreamModelPool::LoadFromStream(const Resources::ResourceId id, const Util::Stri
 	Math::bbox& boundingBox = this->Get<ModelBoundingBox>(id);
 	SizeT& instanceSize = this->Get<InstanceAllocSize>(id);
 	instanceSize = 0;
+	SizeT hierarchicalInstanceSize = 0;
 	boundingBox.set(Math::point(0), Math::vector(0));
 	Memory::ChunkAllocator<MODEL_MEMORY_CHUNK_SIZE>& allocator = this->Get<ModelNodeAllocator>(id);
 	Util::Dictionary<Util::StringAtom, Models::ModelNode*>& nodes = this->Get<ModelNodes>(id);
 	Models::ModelNode*& root = this->Get<RootNode>(id);
 	Ptr<BinaryReader> reader = BinaryReader::Create();
+
+	// setup stack for loading nodes
+	Util::Stack<Models::ModelNode*> nodeStack;
+	Util::Stack<SizeT> nodeInstanceSize;
+
 	reader->SetStream(stream);
 	if (reader->Open())
 	{
@@ -261,33 +279,39 @@ StreamModelPool::LoadFromStream(const Resources::ResourceId id, const Util::Stri
 				node->model = id;
 				node->name = name;
 				node->tag = tag;
+				node->nodeAllocator = &allocator;
 				instanceSize += node->GetInstanceSize();
-				if (!this->nodeStack.IsEmpty())
+				hierarchicalInstanceSize += node->GetInstanceSize();
+				if (!nodeStack.IsEmpty())
 				{
-					Models::ModelNode* parent = this->nodeStack.Peek();
+					Models::ModelNode* parent = nodeStack.Peek();
 					parent->children.Append(node);
 					node->parent = parent;
 				}
-				this->nodeStack.Push(node);
+				nodeStack.Push(node);
+				nodeInstanceSize.Push(hierarchicalInstanceSize);
 				nodes.Add(name, node);
 			}
 			else if (fourCC == FourCC('<MND'))
 			{
 				// end of current ModelNode
-				n_assert(!this->nodeStack.IsEmpty());
-				Models::ModelNode* node = this->nodeStack.Pop();
+				n_assert(!nodeStack.IsEmpty());
+				Models::ModelNode* node = nodeStack.Pop();
+				node->hierarchicalInstanceSize = hierarchicalInstanceSize;
+				hierarchicalInstanceSize = 0;
 				node->OnFinishedLoading();
 			}
 			else
 			{
 				// if not opening or closing a node, assume it's a data tag
-				ModelNode* node = this->nodeStack.Peek();
+				ModelNode* node = nodeStack.Peek();
 				if (!node->Load(fourCC, tag, reader))
 				{
 					break;
 				}
 			}
 		}
+		n_assert(nodeStack.IsEmpty());
 		reader->Close();
 	}
 	return Success;

@@ -102,6 +102,7 @@ private:
 
 	Ptr<FrameSync::FrameSyncTimer> timer;
 	Timing::Time time;
+	Timing::Tick ticks;
 	Timing::Time frameTime;
 	IndexT frameIndex;
 

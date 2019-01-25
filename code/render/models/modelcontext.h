@@ -60,7 +60,7 @@ public:
 	static const Util::Array<Models::NodeType>& GetModelNodeTypes(const Graphics::GraphicsEntityId id);
 
 	/// runs before frame is updated
-	static void OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime);
+	static void OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime, const Timing::Time time, const Timing::Tick ticks);
 	/// runs when visibility has finished processing 
 	static void OnWaitForWork(const IndexT frameIndex, const Timing::Time frameTime);
 	/// runs before a specific view
@@ -117,6 +117,5 @@ ModelContext::Dealloc(Graphics::ContextEntityId id)
 {
 	modelContextAllocator.DeallocObject(id.id);
 }
-
 
 } // namespace Models

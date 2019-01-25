@@ -243,6 +243,7 @@ GraphicsServer::BeginFrame()
 	this->frameIndex = this->timer->GetFrameIndex();
 	this->frameTime = this->timer->GetFrameTime();
 	this->time = this->timer->GetTime();
+	this->ticks = this->timer->GetTicks();
 
 	// begin updating visibility
 	IndexT i;
@@ -251,7 +252,7 @@ GraphicsServer::BeginFrame()
 		if (this->contexts[i]->StageBits)
 			*this->contexts[i]->StageBits = Graphics::OnBeforeFrameStage;
 		if (this->contexts[i]->OnBeforeFrame != nullptr)
-			this->contexts[i]->OnBeforeFrame(this->frameIndex, this->frameTime);
+			this->contexts[i]->OnBeforeFrame(this->frameIndex, this->frameTime, this->time, this->ticks);
 	}
 }
 

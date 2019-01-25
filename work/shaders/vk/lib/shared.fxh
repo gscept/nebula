@@ -167,7 +167,7 @@ group(DYNAMIC_OFFSET_GROUP) shared varblock ObjectBlock [ string Visibility = "V
 	uint3 __pad;
 };
 
-// define how many objects we can render simultaneously 
+// define how many objects we can render simultaneously https://helpx.adobe.com/se/contact/support.html#support-anchor
 #define MAX_BATCH_SIZE 256
 group(DYNAMIC_OFFSET_GROUP) shared varblock InstancingBlock [ string Visibility = "VS"; ]
 {

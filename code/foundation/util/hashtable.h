@@ -76,6 +76,8 @@ public:
 	void Merge(const HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>& rhs);
 	/// erase an entry
 	void Erase(const KEYTYPE& key);
+	/// erase an entry with known index
+	void EraseIndex(const KEYTYPE& key, IndexT i);
 	/// return true if key exists in the array
 	bool Contains(const KEYTYPE& key) const;
 	/// find index in bucket
@@ -507,6 +509,25 @@ HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::Erase(const KEYTYPE& key)
 	n_assert(InvalidIndex != hashElementIndex); // key doesn't exist
 	#endif
 	hashElements.EraseIndex(hashElementIndex);
+	this->size--;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class KEYTYPE, class VALUETYPE, int TABLE_SIZE, int STACK_SIZE>
+void
+HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::EraseIndex(const KEYTYPE& key, const IndexT index)
+{
+#if NEBULA_BOUNDSCHECKS
+	n_assert(this->size > 0);
+#endif
+	IndexT hashIndex = GetHashCode<KEYTYPE>(key);
+	ArrayStack<KeyValuePair<KEYTYPE, VALUETYPE>, STACK_SIZE>& hashElements = this->hashArray[hashIndex];
+#if NEBULA_BOUNDSCHECKS
+	n_assert(InvalidIndex != index); // key doesn't exist
+#endif
+	hashElements.EraseIndex(index);
 	this->size--;
 }
 
