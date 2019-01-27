@@ -7,6 +7,7 @@
 #include "characternode.h"
 #include "resources/resourcemanager.h"
 #include "models/modelpool.h"
+#include "coregraphics/shaderserver.h"
 //#include "characterjointmask.h"
 
 namespace Models
@@ -79,26 +80,23 @@ void
 CharacterNode::OnFinishedLoading()
 {
 	// setup the managed resource
-	this->managedAnimResource = Resources::CreateResource(this->animResId, this->tag, [this](Resources::ResourceId) { this->OnResourcesLoaded(); }, nullptr, false);
+	//this->managedAnimResource = Resources::CreateResource(this->animResId, this->tag, [this](Resources::ResourceId) { this->OnResourcesLoaded(); }, nullptr, false);
 
 	//	ResourceManager::Instance()->CreateManagedResource(AnimResource::RTTI, this->animResId, 0, sync).downcast<ManagedAnimResource>();
-	n_assert(this->managedAnimResource != Resources::ResourceId::Invalid());
+	//n_assert(this->managedAnimResource != Resources::ResourceId::Invalid());
 
-	// setup the character's skin library from our children
-	// (every child node represents one character skin)
-	// FIXME: handle skin category!
-	/*
-	CharacterSkinLibrary& skinLib = this->character->SkinLibrary();
-	StringAtom category("UnknownCategory");
-	SizeT numSkins = this->children.Size();
+	// setup all skinlist -> model node bindings
 	IndexT skinIndex;
-	skinLib.ReserveSkins(numSkins);
-	for (skinIndex = 0; skinIndex < numSkins; skinIndex++)
+	for (skinIndex = 0; skinIndex < this->children.Size(); skinIndex++)
 	{
-	CharacterSkin skin(this->children[skinIndex], category, this->children[skinIndex]->GetName());
-	this->character->SkinLibrary().AddSkin(skin);
+		this->skinNodes.Add(this->children[skinIndex]->name, skinIndex);
 	}
 
+	this->sharedShader = CoreGraphics::ShaderServer::Instance()->GetShader("shd:shared.fxb"_atm);
+	this->cbo = CoreGraphics::ShaderCreateConstantBuffer(this->sharedShader, "JointBlock");
+	this->cboIndex = CoreGraphics::ShaderGetResourceSlot(this->sharedShader, "JointBlock");
+
+	/*
 	if (this->variationResId.IsValid())
 	{
 	// setup the managed resource for variations
@@ -133,34 +131,17 @@ bool
 CharacterNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader)
 {
     bool retval = true;
+	this->tag = tag;
+
     if (FourCC('ANIM') == fourcc)
     {
         // Animation
         this->animResId = reader->ReadString();
-		this->tag = tag;
     }
-    else if (FourCC('NJNT') == fourcc)
-    {
-        // NumJoints
-        SizeT numJoints = reader->ReadInt();
-        //this->character->Skeleton().Setup(numJoints);
-    }
-    else if (FourCC('JONT') == fourcc)
-    {
-        // Joint
-        IndexT jointIndex       = reader->ReadInt();
-        IndexT parentJointIndex = reader->ReadInt();
-        vector poseTranslation  = reader->ReadFloat4();
-        quaternion poseRotation = quaternion(reader->ReadFloat4());
-        vector poseScale        = reader->ReadFloat4();
-        StringAtom jointName    = reader->ReadString();
-
-        // FIXME: Maya likes to return quaternions with de-normalized numbers in it,
-        // this should better be fixed by the asset pipeline!
-        // poseRotation.undenormalize();
-
-        //this->character->Skeleton().SetupJoint(jointIndex, parentJointIndex, poseTranslation, poseRotation, poseScale, jointName);
-    }
+	else if (FourCC('SKEL') == fourcc)
+	{
+		this->skeletonResId = reader->ReadString();
+	}
 	else if (FourCC('NJMS') == fourcc)
 	{
 		SizeT numMasks = reader->ReadInt();
@@ -168,6 +149,13 @@ CharacterNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, con
 	}
 	else if (FourCC('JOMS') == fourcc)
 	{
+		StringAtom maskName = reader->ReadString();
+		SizeT num = reader->ReadInt();
+		IndexT i;
+		for (i = 0; i < num; i++)
+		{
+			reader->ReadFloat();
+		}
 		/*
 		CharacterJointMask mask;
 		StringAtom maskName = reader->ReadString();
@@ -194,25 +182,21 @@ CharacterNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, con
     }
     else if (FourCC('NSKL') == fourcc)
     {
-        // NumSkinLists
-        //this->character->SkinLibrary().ReserveSkinLists(reader->ReadInt());
+		this->skinLists.Resize(reader->ReadInt());
+		this->skinListIndex = 0;
     }
     else if (FourCC('SKNL') == fourcc)
     {
-        // SkinList
-		/*
-        CharacterSkinList skinList;
-        skinList.SetName(reader->ReadString());
-        SizeT num = reader->ReadInt();
-        IndexT i;
-        Array<StringAtom> skins;
-        for (i = 0; i < num; i++)
-        {
-            skins.Append(reader->ReadString());
-        }
-        skinList.SetSkins(skins);
-        this->character->SkinLibrary().AddSkinList(skinList);
-		*/
+		const Util::StringAtom skinListName = reader->ReadString();
+		SizeT num = reader->ReadInt();
+		this->skinLists[this->skinListIndex].name = skinListName;
+		this->skinLists[this->skinListIndex].skinNames.Resize(num);
+		this->skinLists[this->skinListIndex].skinNodes.Resize(num);
+
+		// add skins to list
+		IndexT i;
+		for (i = 0; i < num; i++)
+			this->skinLists[this->skinListIndex].skinNames[i] = reader->ReadString();
     }
     else
     {
@@ -221,5 +205,39 @@ CharacterNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, con
     return retval;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+CharacterNode::Instance::ApplySkin(const Util::StringAtom& skinName)
+{
+	IndexT skinIndex = this->activeSkinInstances.FindIndex(skinName);
+
+	// avoid adding the same skin again
+	if (skinIndex == InvalidIndex)
+	{
+		CharacterNode* cnode = (CharacterNode*)this->node;
+		IndexT idx = cnode->skinNodes[skinName];
+
+		// activate node and add to the active skin dictionary
+		CharacterSkinNode::Instance* snode = (CharacterSkinNode::Instance*)this->children[idx];
+		snode->active = true;
+		this->activeSkinInstances.Add(skinName, snode);
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+CharacterNode::Instance::RemoveSkin(const Util::StringAtom& skinName)
+{
+	IndexT skinIndex = this->activeSkinInstances.FindIndex(skinName);
+	n_assert(skinIndex != InvalidIndex);
+
+	// deactivate node
+	this->activeSkinInstances.ValueAtIndex(skinName, skinIndex)->active = false;
+	this->activeSkinInstances.EraseIndex(skinName, skinIndex);
+}
 
 } // namespace Characters

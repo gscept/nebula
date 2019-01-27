@@ -24,8 +24,17 @@ RESOURCE_ID_TYPE(AnimResourceId)
 class StreamAnimationPool;
 extern StreamAnimationPool* animPool;
 
+/// create animation resource
+const AnimResourceId CreateAnimation(const ResourceCreateInfo& info);
+/// destroy animation resource
+void DestroyAnimation(const AnimResourceId id);
+
 /// get clips
 const Util::FixedArray<AnimClip>& AnimGetClips(const AnimResourceId& id);
+/// get single clip
+const AnimClip& AnimGetClip(const AnimResourceId& id, const IndexT index);
+/// compute key slice pointer and memory size
+void AnimComputeSlice(const AnimResourceId& id, IndexT clipIndex, IndexT keyIndex, SizeT& outSliceByteSize, const Math::float4*& ptr);
 
 } // namespace CoreAnimation
 //------------------------------------------------------------------------------

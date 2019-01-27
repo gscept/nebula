@@ -34,6 +34,8 @@ public:
     StringAtom(const unsigned char* ptr);
     /// construct from string object
     StringAtom(const String& str);
+	/// constructor from nullptr
+	StringAtom(nullptr_t);
 
     /// assignment
     void operator=(const StringAtom& rhs);
@@ -89,7 +91,7 @@ private:
 */
 __forceinline
 StringAtom::StringAtom() :
-    content(0)
+    content(nullptr)
 {
     // empty
 }
@@ -110,13 +112,13 @@ StringAtom::StringAtom(const StringAtom& rhs) :
 inline
 StringAtom::StringAtom(char* str)
 {
-    if (0 != str)
+    if (nullptr != str)
     {
         this->Setup(str);
     }
     else
     {
-        this->content = 0;
+        this->content = nullptr;
     }
 }
 
@@ -126,13 +128,13 @@ StringAtom::StringAtom(char* str)
 inline
 StringAtom::StringAtom(const char* str)
 {
-    if (0 != str)
+    if (nullptr != str)
     {
         this->Setup(str);
     }
     else
     {
-        this->content = 0;
+        this->content = nullptr;
     }
 }
 
@@ -142,13 +144,13 @@ StringAtom::StringAtom(const char* str)
 inline
 StringAtom::StringAtom(unsigned char* str)
 {
-    if (0 != str)
+    if (nullptr != str)
     {
         this->Setup((const char*)str);
     }
     else
     {
-        this->content = 0;
+        this->content = nullptr;
     }
 }
 
@@ -158,13 +160,13 @@ StringAtom::StringAtom(unsigned char* str)
 inline
 StringAtom::StringAtom(const unsigned char* str)
 {
-    if (0 != str)
+    if (nullptr != str)
     {
         this->Setup((const char*)str);
     }
     else
     {
-        this->content = 0;
+        this->content = nullptr;
     }
 }
 
@@ -175,6 +177,15 @@ inline
 StringAtom::StringAtom(const String& str)
 {
     this->Setup(str.AsCharPtr());   
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline 
+StringAtom::StringAtom(nullptr_t)
+{
+	this->content = nullptr;
 }
 
 //------------------------------------------------------------------------------

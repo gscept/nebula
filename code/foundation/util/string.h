@@ -771,8 +771,9 @@ String::String(String&& rhs) :
     {
         if (this->strLen > 0)
         {
-            Memory::Copy(rhs.localBuffer, this->localBuffer, this->strLen + 1);
+            Memory::Copy(rhs.localBuffer, this->localBuffer, this->strLen);
         }
+		this->localBuffer[this->strLen] = 0;
     }
 }
 
@@ -834,8 +835,9 @@ String::operator=(String&& rhs)
         {
             if (this->strLen > 0)
             {
-                Memory::Copy(rhs.localBuffer, this->localBuffer, this->strLen + 1);
+                Memory::Copy(rhs.localBuffer, this->localBuffer, this->strLen);
             } 
+			this->localBuffer[this->strLen] = 0;
         }
     }
 }
@@ -862,7 +864,7 @@ String::Append(const String& str)
 /**
 */
 inline void
-String::operator += (const String& rhs)
+String::operator+=(const String& rhs)
 {
     this->Append(rhs);    
 }

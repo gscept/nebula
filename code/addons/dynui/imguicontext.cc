@@ -451,7 +451,7 @@ ImguiContext::OnWindowResized(IndexT windowId, SizeT width, SizeT height)
 /**
 */
 void 
-ImguiContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime)
+ImguiContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime, const Timing::Time time, const Timing::Tick frameTicks)
 {
 	ImGuiIO& io = ImGui::GetIO();
 	io.DeltaTime = frameTime;

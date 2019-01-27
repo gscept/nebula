@@ -26,12 +26,14 @@ class StreamAnimationPool : public Resources::ResourceStreamPool
 
 public:
 	/// get clips
-	const Util::FixedArray<AnimClip>& GetClips(const AnimResourceId& id);
-	/// name-to-clip map
-	const Util::Dictionary<Util::StringAtom, IndexT>& GetClipIndexMap(const AnimResourceId& id);
+	const Util::FixedArray<AnimClip>& GetClips(const AnimResourceId id);
+	/// get clip by index
+	const AnimClip& GetClip(const AnimResourceId id, const IndexT index);
+	/// get clip index based on name
+	const IndexT GetClipIndex(const AnimResourceId id, const Util::StringAtom& name);
 	/// get anim key buffer
-	const Ptr<AnimKeyBuffer>& GetKeyBuffer(const AnimResourceId& id);
-protected:
+	const Ptr<AnimKeyBuffer>& GetKeyBuffer(const AnimResourceId id);
+private:
 	friend class AnimSampleBuffer;
 
 	/// perform actual load, override in subclass
@@ -41,7 +43,7 @@ protected:
 
 	Ids::IdAllocator<
 		Util::FixedArray<AnimClip>,
-		Util::Dictionary<Util::StringAtom, IndexT>,
+		Util::HashTable<Util::StringAtom, IndexT, 32>,
 		Ptr<AnimKeyBuffer>
 	> animAllocator;
 

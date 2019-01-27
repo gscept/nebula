@@ -93,7 +93,16 @@ ModelNode::Discard()
 //------------------------------------------------------------------------------
 /**
 */
- void
+bool 
+ModelNode::GetImplicitHierarchyActivation() const
+{
+	return true;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 ModelNode::ApplyNodeState()
 {
 	// empty
