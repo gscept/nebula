@@ -326,7 +326,11 @@ void Component<TYPES...>::Allocate(uint num, std::index_sequence<Is...>)
 template <class ... TYPES> InstanceId
 Component<TYPES ...>::RegisterEntity(Entity e)
 {
-	n_assert2(!this->idMap.Contains(e.id), "ID has already been registered.");
+	IndexT i = this->idMap.FindIndex(e.id);
+	if (i != InvalidIndex)
+	{
+		return this->idMap.ValueAtIndex(e.id, i);
+	}
 
 	InstanceId index;
 
