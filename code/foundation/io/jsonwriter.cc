@@ -388,6 +388,14 @@ template<> void JsonWriter::Add(const Util::Variant& value, const Util::String &
 
 //------------------------------------------------------------------------------
 /**
+*/
+template<> void JsonWriter::Add(const Util::Guid& value, const Util::String & name)
+{
+	this->Add(value.AsString(), name);
+}
+
+//------------------------------------------------------------------------------
+/**
 
 */
 template<> void JsonWriter::Add(const Util::Array<int> & value, const Util::String & name)

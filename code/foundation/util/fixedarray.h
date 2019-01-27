@@ -64,7 +64,7 @@ public:
     Iterator Begin() const;
     /// get iterator past last element
     Iterator End() const;
-    /// find identical element in unsorted array (slow)
+	/// find identical element in unsorted array (slow)
     Iterator Find(const TYPE& val) const;
     /// find index of identical element in unsorted array (slow)
     IndexT FindIndex(const TYPE& val) const;
@@ -75,6 +75,11 @@ public:
     /// return content as Array (slow!)
     Array<TYPE> AsArray() const;
 
+	/// for range-based iteration
+	Iterator begin() const;
+	Iterator end() const;
+	size_t size() const;
+	void resize(size_t size);
 private:
     /// delete content
     void Delete();
@@ -83,7 +88,7 @@ private:
     /// copy content
     void Copy(const FixedArray<TYPE>& src);
 
-    SizeT size;
+    SizeT _size;
     TYPE* elements;
 };
 
@@ -92,7 +97,7 @@ private:
 */
 template<class TYPE>
 FixedArray<TYPE>::FixedArray() :
-    size(0),
+    _size(0),
     elements(0)
 {
     // empty
@@ -109,7 +114,7 @@ FixedArray<TYPE>::Delete()
         n_delete_array(this->elements);
         this->elements = 0;
     }
-    this->size = 0;
+    this->_size = 0;
 }
 
 //------------------------------------------------------------------------------
@@ -125,7 +130,7 @@ FixedArray<TYPE>::Alloc(SizeT s)
     {
         this->elements = n_new_array(TYPE, s);
     }
-    this->size = s;
+    this->_size = s;
 }
 
 //------------------------------------------------------------------------------
@@ -137,9 +142,9 @@ FixedArray<TYPE>::Copy(const FixedArray<TYPE>& rhs)
 {
     if (this != &rhs)
     {
-        this->Alloc(rhs.size);
+        this->Alloc(rhs._size);
         IndexT i;
-        for (i = 0; i < this->size; i++)
+        for (i = 0; i < this->_size; i++)
         {
             this->elements[i] = rhs.elements[i];
         }
@@ -151,7 +156,7 @@ FixedArray<TYPE>::Copy(const FixedArray<TYPE>& rhs)
 */
 template<class TYPE>
 FixedArray<TYPE>::FixedArray(SizeT s) :
-    size(0),
+    _size(0),
     elements(0)
 {
     this->Alloc(s);
@@ -162,7 +167,7 @@ FixedArray<TYPE>::FixedArray(SizeT s) :
 */
 template<class TYPE>
 FixedArray<TYPE>::FixedArray(SizeT s, const TYPE& initialValue) :
-    size(0),
+    _size(0),
     elements(0)
 {
     this->Alloc(s);
@@ -174,7 +179,7 @@ FixedArray<TYPE>::FixedArray(SizeT s, const TYPE& initialValue) :
 */
 template<class TYPE>
 FixedArray<TYPE>::FixedArray(const FixedArray<TYPE>& rhs) :
-    size(0),
+    _size(0),
     elements(0)
 {
     this->Copy(rhs);
@@ -185,10 +190,10 @@ FixedArray<TYPE>::FixedArray(const FixedArray<TYPE>& rhs) :
 */
 template<class TYPE>
 FixedArray<TYPE>::FixedArray(FixedArray<TYPE>&& rhs) :
-    size(rhs.size),
+    _size(rhs._size),
     elements(rhs.elements)
 {
-    rhs.size = 0;
+    rhs._size = 0;
     rhs.elements = nullptr;
 }
 
@@ -197,7 +202,7 @@ FixedArray<TYPE>::FixedArray(FixedArray<TYPE>&& rhs) :
 */
 template<class TYPE>
 FixedArray<TYPE>::FixedArray(std::nullptr_t) :
-	size(0),
+	_size(0),
 	elements(0)
 {
 }
@@ -235,9 +240,9 @@ FixedArray<TYPE>::operator=(FixedArray<TYPE>&& rhs)
     {
         this->Delete();
         this->elements = rhs.elements;
-        this->size = rhs.size;
+        this->_size = rhs._size;
         rhs.elements = nullptr;
-        rhs.size = 0;
+        rhs._size = 0;
     }
    
 }
@@ -249,7 +254,7 @@ template<class TYPE> TYPE&
 FixedArray<TYPE>::operator[](IndexT index) const
 {
     #if NEBULA_BOUNDSCHECKS
-    n_assert(this->elements && (index < this->size));
+    n_assert(this->elements && (index < this->_size));
     #endif
     return this->elements[index];
 }
@@ -260,7 +265,7 @@ FixedArray<TYPE>::operator[](IndexT index) const
 template<class TYPE> bool
 FixedArray<TYPE>::operator==(const FixedArray<TYPE>& rhs) const
 {
-    if (this->size != rhs.size)
+    if (this->_size != rhs._size)
     {
         return false;
     }
@@ -270,7 +275,7 @@ FixedArray<TYPE>::operator==(const FixedArray<TYPE>& rhs) const
         n_assert(this->elements && rhs.elements);
         #endif
         IndexT i;
-        SizeT num = this->size;
+        SizeT num = this->_size;
         for (i = 0; i < num; i++)
         {
             if (this->elements[i] != rhs.elements[i])
@@ -312,7 +317,7 @@ FixedArray<TYPE>::Resize(SizeT newSize)
     if (newSize > 0)
     {
         newElements = n_new_array(TYPE, newSize);
-        SizeT numCopy = this->size;
+        SizeT numCopy = this->_size;
         if (numCopy > newSize) numCopy = newSize;
         IndexT i;
         for (i = 0; i < numCopy; i++)
@@ -326,7 +331,7 @@ FixedArray<TYPE>::Resize(SizeT newSize)
 
     // set content to new elements
     this->elements = newElements;
-    this->size = newSize;
+    this->_size = newSize;
 }
 
 //------------------------------------------------------------------------------
@@ -335,7 +340,7 @@ FixedArray<TYPE>::Resize(SizeT newSize)
 template<class TYPE> SizeT
 FixedArray<TYPE>::Size() const
 {
-    return this->size;
+    return this->_size;
 }
 
 //------------------------------------------------------------------------------
@@ -344,7 +349,7 @@ FixedArray<TYPE>::Size() const
 template<class TYPE> bool
 FixedArray<TYPE>::IsEmpty() const
 {
-    return 0 == this->size;
+    return 0 == this->_size;
 }
 
 //------------------------------------------------------------------------------
@@ -363,7 +368,7 @@ template<class TYPE> void
 FixedArray<TYPE>::Fill(const TYPE& val)
 {
     IndexT i;
-    for (i = 0; i < this->size; i++)
+    for (i = 0; i < this->_size; i++)
     {
         this->elements[i] = val;
     }
@@ -376,7 +381,7 @@ template<class TYPE> void
 FixedArray<TYPE>::Fill(IndexT first, SizeT num, const TYPE& val)
 {
     #if NEBULA_BOUNDSCHECKS
-    n_assert((first + num) < this->size);
+    n_assert((first + num) < this->_size);
     n_assert(0 != this->elements);
     #endif
     IndexT i;
@@ -401,7 +406,7 @@ FixedArray<TYPE>::Begin() const
 template<class TYPE> typename FixedArray<TYPE>::Iterator
 FixedArray<TYPE>::End() const
 {
-    return this->elements + this->size;
+    return this->elements + this->_size;
 }
 
 //------------------------------------------------------------------------------
@@ -411,7 +416,7 @@ template<class TYPE> typename FixedArray<TYPE>::Iterator
 FixedArray<TYPE>::Find(const TYPE& elm) const
 {
     IndexT i;
-    for (i = 0; i < this->size; i++)
+    for (i = 0; i < this->_size; i++)
     {
         if (elm == this->elements[i])
         {
@@ -428,7 +433,7 @@ template<class TYPE> IndexT
 FixedArray<TYPE>::FindIndex(const TYPE& elm) const
 {
     IndexT i;
-    for (i = 0; i < this->size; i++)
+    for (i = 0; i < this->_size; i++)
     {
         if (elm == this->elements[i])
         {
@@ -508,13 +513,53 @@ template<class TYPE> Array<TYPE>
 FixedArray<TYPE>::AsArray() const
 {
     Array<TYPE> result;
-    result.Reserve(this->size);
+    result.Reserve(this->_size);
     IndexT i;
-    for (i = 0; i < this->size; i++)
+    for (i = 0; i < this->_size; i++)
     {
         result.Append(this->elements[i]);
     }
     return result;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE> typename FixedArray<TYPE>::Iterator
+FixedArray<TYPE>::begin() const
+{
+	return this->elements;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE> typename FixedArray<TYPE>::Iterator
+FixedArray<TYPE>::end() const
+{
+	return this->elements + this->_size;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE> void
+FixedArray<TYPE>::resize(size_t s)
+{
+	if (s > this->capacity)
+	{
+		this->GrowTo(s);
+	}
+	this->_size = s;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE> size_t
+FixedArray<TYPE>::size() const
+{
+	return this->_size;
 }
 
 } // namespace Util
