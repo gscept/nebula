@@ -129,6 +129,7 @@ FrameScriptLoader::ParseFrameScript(const Ptr<Frame::FrameScript>& script, JzonV
 		else if (name == "computeAlgorithm")	ParseComputeAlgorithm(script, cur);
 		else if (name == "swapbuffers")			ParseSwapbuffers(script, cur);
 		else if (name == "pass")				ParsePass(script, cur);
+		else if (name == "barrier")				ParseBarrier(script, cur);
 		
 		else
 		{
@@ -297,10 +298,10 @@ FrameScriptLoader::ParseImageReadWriteTextureList(const Ptr<Frame::FrameScript>&
 			name->string_value,
 			Texture2D,	// fixme, not only 2D textures!
 			CoreGraphics::PixelFormat::FromString(format->string_value),
-			CoreGraphicsImageLayout::General,		// also guarantee it's in the general state
+			CoreGraphicsImageLayout::ShaderRead,		// texture must be in shader read state if it's going to go into the bindless structure
 			(float)width->float_value, (float)height->float_value, 1,
 			1, 1,
-			false, false, true
+			false, false, false
 		};
 
 		if (jzon_get(cur, "relative")) info.relativeSize = jzon_get(cur, "relative")->bool_value;
@@ -669,6 +670,29 @@ FrameScriptLoader::ParseSwapbuffers(const Ptr<Frame::FrameScript>& script, JzonV
 	op->tex = tex;
 
 	// add operation
+	script->AddOp(op);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+FrameScriptLoader::ParseBarrier(const Ptr<Frame::FrameScript>& script, JzonValue* node)
+{
+	FrameBarrier* op = script->GetAllocator().Alloc<FrameBarrier>();
+
+	// get function and name
+	JzonValue* name = jzon_get(node, "name");
+	n_assert(name != NULL);
+	op->SetName(name->string_value);
+
+	JzonValue* resources = jzon_get(node, "resources");
+	if (resources != nullptr)
+	{
+		ParseResourceDependencies(script, op, resources);
+	}
+
+	// add operation to script
 	script->AddOp(op);
 }
 
@@ -1303,6 +1327,7 @@ FrameScriptLoader::ParseShaderVariables(const Ptr<Frame::FrameScript>& script, c
 void
 FrameScriptLoader::ParseResourceDependencies(const Ptr<Frame::FrameScript>& script, Frame::FrameOp* op, JzonValue* node)
 {
+	n_assert(node->is_array);
 	for (uint i = 0; i < node->size; i++)
 	{
 		JzonValue* dep = node->array_values[i];

@@ -107,6 +107,9 @@ void PushConstants(ShaderPipeline pipeline, uint offset, uint size, byte* data);
 /// set pipeline using current layout, shader and pass
 void SetGraphicsPipeline();
 
+/// trigger reloading a shader
+void ReloadShaderProgram(const CoreGraphics::ShaderProgramId& pro);
+
 /// insert execution barrier
 void InsertBarrier(const CoreGraphics::BarrierId barrier, const CoreGraphicsQueueType queue);
 /// signals an event

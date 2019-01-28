@@ -158,17 +158,6 @@ version: 2, engine: "Nebula", framescript: {
     name: "HBAO-Prepare",
     algorithm: "HBAO",
     function: "Prepare"
-    resources: [
-      {
-        name: "HBAOBuffer",
-        access: "ShaderWrite",
-        layout: "General",
-        stage: "ComputeShader",
-        mip: 0,
-        layer: 0,
-        aspect: "Color"
-      }
-    ]
   },
 
   pass: {
@@ -357,7 +346,7 @@ version: 2, engine: "Nebula", framescript: {
         mip: 0,
         layer: 0,
         aspect: "Color"
-      }
+      },
       {
         name: "__WINDOW__",
         access: "TransferWrite",
@@ -371,5 +360,19 @@ version: 2, engine: "Nebula", framescript: {
     name: "CopyToWindow",
     from: "ScreenBuffer",
     to: "__WINDOW__"
+  }
+  barrier: {
+    name: "TransitionToPresent",
+    resources: [
+      {
+        name: "__WINDOW__",
+        access: "TransferRead",
+        layout: "Present",
+        stage: "Transfer",
+        mip: 0,
+        layer: 0,
+        aspect: "Color"
+      }
+    ]
   }
 }

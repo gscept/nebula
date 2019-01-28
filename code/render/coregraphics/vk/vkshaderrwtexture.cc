@@ -220,6 +220,15 @@ ShaderRWTextureGetDimensions(const ShaderRWTextureId id)
 //------------------------------------------------------------------------------
 /**
 */
+const IndexT 
+ShaderRWTextureGetNumMips(const ShaderRWTextureId id)
+{
+	return 1;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 const CoreGraphicsImageLayout
 ShaderRWTextureGetLayout(const ShaderRWTextureId id)
 {

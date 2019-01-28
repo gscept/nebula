@@ -80,6 +80,10 @@ TonemapAlgorithm::Setup()
 	// this pass calculates tonemapping from 2x2 cluster down to single pixel, called from the script
 	this->AddFunction("AverageLum", Algorithm::Graphics, [this](IndexT)
 	{
+#if NEBULA_GRAPHICS_DEBUG
+		CoreGraphics::CmdBufBeginMarker(GraphicsQueueType, NEBULA_MARKER_ORANGE, "Tonemapping");
+#endif
+
 		Timing::Time time = FrameSync::FrameSyncTimer::Instance()->GetFrameTime();
 		CoreGraphics::SetShaderProgram(this->program);
 		CoreGraphics::BeginBatch(Frame::FrameBatchType::System);
@@ -88,6 +92,10 @@ TonemapAlgorithm::Setup()
 		CoreGraphics::SetResourceTable(this->tonemapTable, NEBULA_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
 		this->fsq.Draw();
 		CoreGraphics::EndBatch();
+
+#if NEBULA_GRAPHICS_DEBUG
+		CoreGraphics::CmdBufEndMarker(GraphicsQueueType);
+#endif
 	});
 
 	// last pass, copy from render target to copy

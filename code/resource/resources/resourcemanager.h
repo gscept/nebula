@@ -50,6 +50,8 @@ public:
 	void DiscardResources(const Util::StringAtom& tag);
 	/// returns true if there are pending resources in-flight
 	bool HasPendingResources();
+	/// reload resource
+	void ReloadResource(const ResourceName& res, std::function<void(const Resources::ResourceId)> success = nullptr, std::function<void(const Resources::ResourceId)> failed = nullptr);
 
 	/// reserve resource (for self-managed resources)
 	Resources::ResourceId ReserveResource(const ResourceName& res, const Util::StringAtom& tag, const Core::Rtti& type);
@@ -120,6 +122,22 @@ Resources::ResourceManager::CreateResource(const ResourceName& res, const Util::
 	// create container and cast to actual resource type
 	Resources::ResourceId id = loader->CreateResource(res, tag, success, failed, immediate);
 	return id;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+ResourceManager::ReloadResource(const ResourceName& res, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed)
+{
+	// get resource loader by extension
+	Util::String ext = res.AsString().GetFileExtension();
+	IndexT i = this->extensionMap.FindIndex(ext);
+	n_assert_fmt(i != InvalidIndex, "No resource loader is associated with file extension '%s'", ext.AsCharPtr());
+	const Ptr<ResourceStreamPool>& loader = this->pools[this->extensionMap.ValueAtIndex(i)].downcast<ResourceStreamPool>();
+
+	// create container and cast to actual resource type
+	loader->ReloadResource(res, success, failed);
 }
 
 //------------------------------------------------------------------------------

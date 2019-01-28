@@ -67,6 +67,8 @@ ShaderRWTextureInfo ShaderRWTextureInfoSetupHelper(const ShaderRWTextureCreateIn
 
 /// get size
 const TextureDimensions ShaderRWTextureGetDimensions(const ShaderRWTextureId id);
+/// get mips
+const IndexT ShaderRWTextureGetNumMips(const ShaderRWTextureId id);
 /// get layout
 const CoreGraphicsImageLayout ShaderRWTextureGetLayout(const ShaderRWTextureId id);
 

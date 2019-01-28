@@ -45,6 +45,8 @@ private:
 	static void ParseComputeAlgorithm(const Ptr<Frame::FrameScript>& script, JzonValue* node);
 	/// parse swapbuffer
 	static void ParseSwapbuffers(const Ptr<Frame::FrameScript>& script, JzonValue* node);
+	/// parse barrier
+	static void ParseBarrier(const Ptr<Frame::FrameScript>& script, JzonValue* node);
 
 	/// parse pass
 	static void ParsePass(const Ptr<Frame::FrameScript>& script, JzonValue* node);
