@@ -1510,6 +1510,7 @@ DestroyGraphicsDevice()
 	_end_counter(state.NumPipelinesBuilt);
 	_discard_counter(state.NumPipelinesBuilt);
 
+	// save pipeline cache
 	size_t size;
 	vkGetPipelineCacheData(state.devices[0], state.cache, &size, nullptr);
 	uint8_t* data = (uint8_t*)Memory::Alloc(Memory::ScratchHeap, size);
@@ -1523,20 +1524,12 @@ DestroyGraphicsDevice()
 		cachedData->Close();
 	}
 
-	// wait for all commands to be done first
-	state.subcontextHandler.WaitIdle(GraphicsQueueType);
-	state.subcontextHandler.WaitIdle(ComputeQueueType);
-	state.subcontextHandler.WaitIdle(TransferQueueType);
-	state.subcontextHandler.WaitIdle(SparseQueueType);
-
 	IndexT i;
 	for (i = 0; i < state.NumDrawThreads; i++)
 	{
 		state.drawThreads[i]->Stop();
 		state.drawThreads[i] = nullptr;
 		n_delete(state.drawCompletionEvents[i]);
-
-		vkDestroyCommandPool(state.devices[state.currentDevice], state.dispatchableCmdDrawBufferPool[i], nullptr);
 	}
 
 	for (i = 0; i < state.NumTransferThreads; i++)
@@ -1544,8 +1537,6 @@ DestroyGraphicsDevice()
 		state.transThreads[i]->Stop();
 		state.transThreads[i] = nullptr;
 		n_delete(state.transCompletionEvents[i]);
-
-		vkDestroyCommandPool(state.devices[state.currentDevice], state.dispatchableCmdTransBufferPool[i], nullptr);
 	}
 
 	for (i = 0; i < state.NumComputeThreads; i++)
@@ -1553,20 +1544,34 @@ DestroyGraphicsDevice()
 		state.compThreads[i]->Stop();
 		state.compThreads[i] = nullptr;
 		n_delete(state.compCompletionEvents[i]);
-
-		vkDestroyCommandPool(state.devices[state.currentDevice], state.dispatchableCmdCompBufferPool[i], nullptr);
 	}
 
+	// wait for all commands to be done first
+	state.subcontextHandler.WaitIdle(GraphicsQueueType);
+	state.subcontextHandler.WaitIdle(ComputeQueueType);
+	state.subcontextHandler.WaitIdle(TransferQueueType);
+	state.subcontextHandler.WaitIdle(SparseQueueType);
+
+	// wait for queues and run all pending commands
 	state.subcontextHandler.Discard();
 	state.scheduler.Discard();
 
+	// destroy command pools
+	for (i = 0; i < state.NumDrawThreads; i++)
+		vkDestroyCommandPool(state.devices[state.currentDevice], state.dispatchableCmdDrawBufferPool[i], nullptr);
+	for (i = 0; i < state.NumTransferThreads; i++)
+		vkDestroyCommandPool(state.devices[state.currentDevice], state.dispatchableCmdTransBufferPool[i], nullptr);
+	for (i = 0; i < state.NumComputeThreads; i++)
+		vkDestroyCommandPool(state.devices[state.currentDevice], state.dispatchableCmdCompBufferPool[i], nullptr);
+
+	// destroy descriptor pool for main command buffers
 	for (i = 0; i < state.descriptorPools.Size(); i++)
-	{
 		vkDestroyDescriptorPool(state.devices[state.currentDevice], state.descriptorPools[i], nullptr);
-	}
+
+	state.database.Discard();
 	state.descriptorPools.Clear();
 
-
+	// destroy pipeline
 	vkDestroyPipelineCache(state.devices[state.currentDevice], state.cache, nullptr);
 
 	// free our main buffers, our secondary buffers should be fine so the pools should be free to destroy
@@ -1998,6 +2003,15 @@ SetGraphicsPipeline()
 /**
 */
 void 
+ReloadShaderProgram(const CoreGraphics::ShaderProgramId& pro)
+{
+	state.database.Reload(pro);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
 InsertBarrier(const CoreGraphics::BarrierId barrier, const CoreGraphicsQueueType queue)
 {
 	VkBarrierInfo& info = barrierAllocator.Get<0>(barrier.id24);
@@ -2370,7 +2384,7 @@ EndFrame(IndexT frameIndex)
 	CmdBufferEndRecord(state.mainCmdSparseBuffer);
 
 #if NEBULA_GRAPHICS_DEBUG
-	CoreGraphics::QueueBeginMarker(TransferQueueType, Math::float4(0.6f, 0.6f, 1.0f, 1.0f), "End of frame transfer queue submission");
+	CoreGraphics::QueueBeginMarker(TransferQueueType, NEBULA_MARKER_BLUE, "End of frame transfer queue submission");
 #endif
 
 	// kick transfer commands
@@ -2384,7 +2398,7 @@ EndFrame(IndexT frameIndex)
 
 #if NEBULA_GRAPHICS_DEBUG
 	CoreGraphics::QueueEndMarker(TransferQueueType);
-	CoreGraphics::QueueBeginMarker(ComputeQueueType, Math::float4(0.6f, 0.6f, 1.0f, 1.0f), "End of frame compute queue submission");
+	CoreGraphics::QueueBeginMarker(ComputeQueueType, NEBULA_MARKER_BLUE, "End of frame compute queue submission");
 #endif
 
 	// submit compute stuff
@@ -2396,7 +2410,7 @@ EndFrame(IndexT frameIndex)
 
 #if NEBULA_GRAPHICS_DEBUG
 	CoreGraphics::QueueEndMarker(ComputeQueueType);
-	CoreGraphics::QueueBeginMarker(GraphicsQueueType, Math::float4(0.6f, 0.6f, 1.0f, 1.0f), "End of frame graphics queue submission");
+	CoreGraphics::QueueBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "End of frame graphics queue submission");
 #endif
 
 	// submit draw stuff

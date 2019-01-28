@@ -137,6 +137,13 @@ CoreGraphicsQueueTypeFromString(const Util::String& str)
 
 #if !PUBLIC_BUILD
 #define NEBULA_GRAPHICS_DEBUG 1
+#define NEBULA_MARKER_BLUE Math::float4(0.8f, 0.8f, 1.0f, 1.0f)
+#define NEBULA_MARKER_RED Math::float4(1.0f, 0.8f, 0.8f, 1.0f)
+#define NEBULA_MARKER_GREEN Math::float4(0.8f, 1.0f, 0.8f, 1.0f)
+#define NEBULA_MARKER_PURPLE Math::float4(1.0f, 0.8f, 0.9f, 1.0f)
+#define NEBULA_MARKER_ORANGE Math::float4(1.0f, 0.9f, 0.8f, 1.0f)
+#define NEBULA_MARKER_TURQOISE Math::float4(0.8f, 0.9f, 1.0f, 1.0f)
+#define NEBULA_MARKER_GRAY Math::float4(0.8f, 0.8f, 0.8f, 1.0f)
 #endif
 
 //------------------------------------------------------------------------------

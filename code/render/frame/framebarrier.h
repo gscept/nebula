@@ -1,7 +1,7 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	Implements a barrier between frame operations.
+	This is just a container
 	
 	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
@@ -18,11 +18,18 @@ public:
 	/// destructor
 	virtual ~FrameBarrier();
 
-	/// run operation
-	void Run(const IndexT frameIndex);
+	struct CompiledImpl : public FrameOp::Compiled
+	{
+#if NEBULA_GRAPHICS_DEBUG
+		Util::StringAtom name;
+#endif
+		/// running does nothing
+		void Run(const IndexT frameIndex) override;
+		void Discard();
+	};
 
-	CoreGraphics::BarrierId barrier;
-	CoreGraphicsQueueType queue;
+private:
+	virtual FrameOp::Compiled* AllocCompiled(Memory::ChunkAllocator<BIG_CHUNK>& allocator);
 };
 
 } // namespace Frame2

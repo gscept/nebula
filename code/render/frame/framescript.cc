@@ -174,6 +174,50 @@ FrameScript::Build()
 	Util::Dictionary<CoreGraphics::ShaderRWBufferId, FrameOp::BufferDependency> rwBuffers;
 	Util::Dictionary<CoreGraphics::RenderTextureId, Util::Array<std::tuple<CoreGraphics::ImageSubresourceInfo, FrameOp::TextureDependency>>> renderTextures;
 
+	// setup initial layout for resources
+	for (i = 0; i < this->colorTextures.Size(); i++)
+	{
+		auto tex = this->colorTextures[i];
+		CoreGraphicsImageLayout layout = CoreGraphics::RenderTextureGetLayout(tex);
+		CoreGraphics::ImageSubresourceInfo subres;
+		subres.aspect = CoreGraphicsImageAspect::ColorBits;
+		subres.layer = 0;
+		subres.layerCount = 1;
+		subres.mip = 0;
+		subres.mipCount = CoreGraphics::RenderTextureGetNumMips(tex);
+		auto& arr = renderTextures.AddUnique(tex);
+		arr.Append(std::make_tuple(subres, FrameOp::TextureDependency{ nullptr, CoreGraphicsQueueType::GraphicsQueueType, layout, CoreGraphics::BarrierStage::PassOutput, CoreGraphics::BarrierAccess::ColorAttachmentWrite, DependencyIntent::Write, 0 }));
+	}
+
+	for (i = 0; i < this->depthStencilTextures.Size(); i++)
+	{
+		auto tex = this->depthStencilTextures[i];
+		CoreGraphicsImageLayout layout = CoreGraphics::RenderTextureGetLayout(tex);
+		CoreGraphics::ImageSubresourceInfo subres;
+		subres.aspect = CoreGraphicsImageAspect::DepthBits | CoreGraphicsImageAspect::StencilBits;
+		subres.layer = 0;
+		subres.layerCount = 1;
+		subres.mip = 0;
+		subres.mipCount = CoreGraphics::RenderTextureGetNumMips(tex);
+		auto& arr = renderTextures.AddUnique(tex);
+		arr.Append(std::make_tuple(subres, FrameOp::TextureDependency{ nullptr, CoreGraphicsQueueType::GraphicsQueueType, layout, CoreGraphics::BarrierStage::PassOutput, CoreGraphics::BarrierAccess::DepthAttachmentWrite, DependencyIntent::Write, 0 }));
+	}
+
+	for (i = 0; i < this->readWriteTextures.Size(); i++)
+	{
+		auto tex = this->readWriteTextures[i];
+		CoreGraphicsImageLayout layout = CoreGraphics::ShaderRWTextureGetLayout(tex);
+		CoreGraphics::TextureDimensions dims = CoreGraphics::ShaderRWTextureGetDimensions(tex);
+		CoreGraphics::ImageSubresourceInfo subres;
+		subres.aspect = CoreGraphicsImageAspect::ColorBits;
+		subres.layer = 0;
+		subres.layerCount = dims.depth;
+		subres.mip = 0;
+		subres.mipCount = CoreGraphics::ShaderRWTextureGetNumMips(tex);
+		auto& arr = rwTextures.AddUnique(tex);
+		arr.Append(std::make_tuple(subres, FrameOp::TextureDependency{ nullptr, CoreGraphicsQueueType::GraphicsQueueType, layout, CoreGraphics::BarrierStage::ComputeShader, CoreGraphics::BarrierAccess::ShaderWrite, DependencyIntent::Write, 0 }));
+	}
+
 	for (i = 0; i < this->ops.Size(); i++)
 	{
 		this->ops[i]->Build(this->buildAllocator, this->compiled, this->events, this->barriers, this->semaphores, rwTextures, rwBuffers, renderTextures);

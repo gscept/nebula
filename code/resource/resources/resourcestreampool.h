@@ -65,6 +65,11 @@ public:
 	/// discard all resources associated with a tag
 	void DiscardByTag(const Util::StringAtom& tag);
 
+	/// reload resource using resource name
+	void ReloadResource(const Resources::ResourceName& res, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed);
+	/// reload resource using resource id
+	void ReloadResource(const Resources::ResourceId& id, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed);
+
 protected:
 	friend class ResourceManager;
 
@@ -95,6 +100,8 @@ protected:
 
 	/// perform actual load, override in subclass
 	virtual LoadStatus LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream) = 0;
+	/// perform a reload
+	virtual LoadStatus ReloadFromStream(const Resources::ResourceId id, const Ptr<IO::Stream>& stream);
 
 	/// update the resource loader, this is done every frame
 	void Update(IndexT frameIndex);

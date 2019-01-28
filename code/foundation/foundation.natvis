@@ -44,7 +44,7 @@
       <Item Name="[Count]">count</Item>
       <Item Name="[Capacity]">capacity</Item>
       <ArrayItems>
-        <Size>size</Size>
+        <Size>count</Size>
         <ValuePointer>elements</ValuePointer>
       </ArrayItems>
     </Expand>
@@ -55,7 +55,7 @@
       <Item Name="[Count]">count</Item>
       <Item Name="[Capacity]">capacity</Item>
       <ArrayItems>
-        <Size>size</Size>
+        <Size>count</Size>
         <ValuePointer>elements</ValuePointer>
       </ArrayItems>
     </Expand>

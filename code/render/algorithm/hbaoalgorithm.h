@@ -32,7 +32,7 @@ private:
 	CoreGraphics::ShaderId hbaoShader, blurShader;
 	CoreGraphics::ShaderProgramId xDirectionHBAO, yDirectionHBAO, xDirectionBlur, yDirectionBlur;
 
-	CoreGraphics::ResourceTableId hbaoTable, blurTable;
+	CoreGraphics::ResourceTableId hbaoTable, blurTableX, blurTableY;
 	CoreGraphics::ConstantBufferId hbaoConstants, blurConstants;
 	IndexT hbao0, hbao1, hbaoX, hbaoY, hbaoBlurRG, hbaoBlurR, hbaoC, blurC;
 
@@ -43,7 +43,7 @@ private:
 	// read-write textures
 	CoreGraphics::ShaderRWTextureId internalTargets[2];
 
-	CoreGraphics::BarrierId barriers[3];
+	CoreGraphics::BarrierId barriers[4];
 
 	struct AOVariables
 	{

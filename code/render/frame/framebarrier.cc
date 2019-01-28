@@ -29,10 +29,38 @@ FrameBarrier::~FrameBarrier()
 //------------------------------------------------------------------------------
 /**
 */
-void
-FrameBarrier::Run(const IndexT frameIndex)
+FrameOp::Compiled* 
+FrameBarrier::AllocCompiled(Memory::ChunkAllocator<BIG_CHUNK>& allocator)
 {
-	CoreGraphics::BarrierInsert(this->barrier, this->queue);
+	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
+
+#if NEBULA_GRAPHICS_DEBUG
+	ret->name = this->name;
+#endif
+
+	return ret;
 }
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+FrameBarrier::CompiledImpl::Run(const IndexT frameIndex)
+{
+#if NEBULA_GRAPHICS_DEBUG
+	CoreGraphics::CmdBufBeginMarker(GraphicsQueueType, NEBULA_MARKER_GRAY, this->name.Value());
+#endif
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+FrameBarrier::CompiledImpl::Discard()
+{
+	// empty 
+}
+
 
 } // namespace Frame2

@@ -49,6 +49,8 @@ public:
 
 	/// setup database
 	void Setup(const VkDevice dev, const VkPipelineCache cache);
+	/// discard database
+	void Discard();
 
 	/// set pass
 	void SetPass(const CoreGraphics::PassId pass);
@@ -64,6 +66,9 @@ public:
 	VkPipeline GetCompiledPipeline();
 	/// resets all iterators
 	void Reset();
+
+	/// re-creates all pipelines for the given shader program id
+	void Reload(const CoreGraphics::ShaderProgramId id);
 private:
 	
 	VkDevice dev;

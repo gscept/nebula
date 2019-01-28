@@ -531,11 +531,12 @@ CharacterContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time fram
 					}
 					else if (pending.enqueueMode == Characters::Append && IsInfinite(playing))
 					{
-						// this means we should wait, so do nothing
+						
 #if NEBULA_DEBUG
 						n_error("CharacterContext: Can't insert anim job '%s' because track is blocked by an infinite clip\n", playing.name.AsCharPtr());
 #endif
 					}
+					// if none of the above, we have to wait for our current animation to finish
 				}
 
 				// if we started a new clip, erase the current pending, and quit the loop
@@ -647,6 +648,7 @@ CharacterContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time fram
 					ctx[0].uniform.dataSize[1] = sizeof(AnimSampleMixInfo);
 					ctx[0].uniform.data[2] = (const void*)playing.mask; 
 					ctx[0].uniform.dataSize[2] = sizeof(AnimSampleMask*);
+					ctx[0].uniform.scratchSize = 0;
 				}
 
 				{

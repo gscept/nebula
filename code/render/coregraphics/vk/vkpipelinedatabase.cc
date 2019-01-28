@@ -44,6 +44,14 @@ VkPipelineDatabase::Setup(const VkDevice dev, const VkPipelineCache cache)
 //------------------------------------------------------------------------------
 /**
 */
+void 
+VkPipelineDatabase::Discard()
+{
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 VkPipelineDatabase::SetPass(const CoreGraphics::PassId pass)
 {
@@ -220,6 +228,72 @@ VkPipelineDatabase::Reset()
 	this->ct3 = NULL;
 	this->ct4 = NULL;
 	this->ct5 = NULL;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+VkPipelineDatabase::Reload(const CoreGraphics::ShaderProgramId id)
+{
+	// save initial state
+	Tier1Node* tmp1 = this->ct1;
+	Tier2Node* tmp2 = this->ct2;
+	Tier3Node* tmp3 = this->ct3;
+	Tier4Node* tmp4 = this->ct4;
+	Tier5Node* tmp5 = this->ct5;
+
+	// walk through the tree and update every pipeline using the shader
+	IndexT i;
+	for (i = 0; i < this->tier1.Size(); i++)
+	{
+		Tier1Node* t1 = this->tier1.ValueAtIndex(i);
+		
+		IndexT j;
+		for (j = 0; j < t1->children.Size(); j++)
+		{
+			Tier2Node* t2 = t1->children.ValueAtIndex(j);
+
+			IndexT k;
+			for (k = 0; k < t2->children.Size(); k++)
+			{
+				const CoreGraphics::ShaderProgramId& prog = t2->children.KeyAtIndex(k);
+				Tier3Node* t3 = t2->children.ValueAtIndex(k);
+				// shaders match, so start a reload!
+				if (prog == id)
+				{
+					t3->initial = true;
+					
+					IndexT l;
+					for (l = 0; l < t3->children.Size(); l++)
+					{
+						Tier4Node* t4 = t3->children.ValueAtIndex(l);
+
+						IndexT m;
+						for (m = 0; m < t4->children.Size(); m++)
+						{
+							Tier5Node* t5 = t4->children.ValueAtIndex(m);
+							this->ct1 = t1;
+							this->ct2 = t2;
+							this->ct3 = t3;
+							this->ct4 = t4;
+							this->ct5 = t5;
+
+							// since t3 is initial, we will create a new pipeline
+							this->GetCompiledPipeline();
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// reset old state
+	this->ct1 = tmp1;
+	this->ct2 = tmp2;
+	this->ct3 = tmp3;
+	this->ct4 = tmp4;
+	this->ct5 = tmp5;
 }
 
 } // namespace $NAMESPACE$

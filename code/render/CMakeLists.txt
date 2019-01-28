@@ -379,8 +379,8 @@ ENDIF()
 
 		fips_dir(frame)
 			fips_files(
-				#framebarrier.cc
-				#framebarrier.h
+				framebarrier.cc
+				framebarrier.h
 				framebatchtype.h
 				frameblit.cc
 				frameblit.h
