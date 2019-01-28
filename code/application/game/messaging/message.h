@@ -164,7 +164,7 @@ public:
 	void operator=(const Message<MSG, TYPES...>&) = delete;
 
 	/// Type definition for this message's delegate
-	using Delegate = Util::Delegate<TYPES...>;
+	using Delegate = Util::Delegate<void(TYPES...)>;
 
 	/// Register a listener to this message. Returns an ID for the listener so that we can associate it.
 	static MessageListener Register(Delegate&& callback);

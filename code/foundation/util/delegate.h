@@ -10,24 +10,42 @@
     for details.
     
     (C) 2008 Radon Labs GmbH
-    (C) 2013-2018 Individual contributors, see AUTHORS file
+    (C) 2013-2019 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 
 //------------------------------------------------------------------------------
 namespace Util
 {
-template<class ... ARGTYPES> class Delegate
+
+template<typename T>
+class Delegate; // This is soooo dirty.
+
+template<typename RETTYPE, typename ... ARGTYPES>
+class Delegate<RETTYPE(ARGTYPES...)>
 {
 public:
     /// constructor
     Delegate();
+	
+	/// lambda constructor
+	template <typename LAMBDA>
+	Delegate(const LAMBDA& lambda);
+	
+	/// lambda assignment operator
+	template <typename LAMBDA>
+	Delegate<RETTYPE(ARGTYPES ...)>& operator=(const LAMBDA& instance);
+	
 	/// invokation operator
-    void operator()(ARGTYPES ... args) const;
+    RETTYPE operator()(ARGTYPES ... args) const;
+
     /// setup a new delegate from a method call
-    template<class CLASS, void (CLASS::*METHOD)(ARGTYPES ...)> static Delegate<ARGTYPES ...> FromMethod(CLASS* objPtr);
+    template<class CLASS, RETTYPE (CLASS::*METHOD)(ARGTYPES ...)> static Delegate<RETTYPE(ARGTYPES ...)> FromMethod(CLASS* objPtr);
     /// setup a new delegate from a function call
-    template<void(*FUNCTION)(ARGTYPES ...)> static Delegate<ARGTYPES ...> FromFunction();
+    template<RETTYPE(*FUNCTION)(ARGTYPES ...)> static Delegate<RETTYPE(ARGTYPES ...)> FromFunction();
+	/// setup a new delegate from lambda
+	template <typename LAMBDA> static Delegate<RETTYPE(ARGTYPES ...)> FromLambda(const LAMBDA & instance);
+
 	/// get object pointer
 	template<class CLASS> const CLASS* GetObject() const;
 
@@ -36,12 +54,19 @@ public:
 
 private:
     /// method pointer typedef
-    typedef void (*StubType)(void*, ARGTYPES ...);
-    /// static method-call stub 
-    template<class CLASS, void(CLASS::*METHOD)(ARGTYPES ...)> static void MethodStub(void* objPtr, ARGTYPES ... args);
-    /// static function-call stub
-    template<void(*FUNCTION)(ARGTYPES ... )> static void FunctionStub(void* dummyPtr, ARGTYPES ... args);
+	using StubType = RETTYPE(*)(void*, ARGTYPES...);
+    //typedef void (*StubType)(void*, ARGTYPES ...);
 
+    /// static method-call stub 
+    template<class CLASS, RETTYPE(CLASS::*METHOD)(ARGTYPES ...)> static RETTYPE MethodStub(void* objPtr, ARGTYPES ... args);
+    /// static function-call stub
+    template<RETTYPE(*FUNCTION)(ARGTYPES ... )> static RETTYPE FunctionStub(void* dummyPtr, ARGTYPES ... args);
+	/// static lambda-call stub
+	template <typename LAMBDA> static RETTYPE LambdaStub(void* objPtr, ARGTYPES... arg);
+	
+	/// assignment method
+	void Assign(void* obj, typename Delegate<RETTYPE(ARGTYPES...)>::StubType stub);
+	
     void* objPtr;
     StubType stubPtr;
 };
@@ -49,8 +74,8 @@ private:
 //------------------------------------------------------------------------------
 /**
 */
-template<class ... ARGTYPES>
-Delegate<ARGTYPES ...>::Delegate() :
+template<typename RETTYPE, typename ... ARGTYPES>
+Delegate<RETTYPE(ARGTYPES ...)>::Delegate() :
     objPtr(0),
     stubPtr(0)
 {
@@ -60,21 +85,43 @@ Delegate<ARGTYPES ...>::Delegate() :
 //------------------------------------------------------------------------------
 /**
 */
-template<class ... ARGTYPES> void
-Delegate<ARGTYPES ...>::operator()(ARGTYPES ... args) const
+template<typename RETTYPE, typename ... ARGTYPES>
+template <typename LAMBDA>
+Delegate<RETTYPE(ARGTYPES...)>::Delegate(const LAMBDA& lambda)
 {
-    (*this->stubPtr)(this->objPtr, args...);
+	Assign((void*)(&lambda), LambdaStub<LAMBDA>);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-template<class ... ARGTYPES>
-template<class CLASS, void (CLASS::*METHOD)(ARGTYPES ...)>
-Delegate<ARGTYPES ...>
-Delegate<ARGTYPES ...>::FromMethod(CLASS* objPtr_)
+template<typename RETTYPE, typename ... ARGTYPES>
+template <typename LAMBDA>
+Delegate<RETTYPE(ARGTYPES...)>&
+Delegate<RETTYPE(ARGTYPES...)>::operator=(const LAMBDA& instance)
 {
-    Delegate<ARGTYPES ...> del;
+	Assign((void*)(&instance), LambdaStub<LAMBDA>);
+	return *this;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<typename RETTYPE, typename ... ARGTYPES> RETTYPE
+Delegate<RETTYPE(ARGTYPES...)>::operator()(ARGTYPES ... args) const
+{
+    return (*this->stubPtr)(this->objPtr, args...);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<typename RETTYPE, typename ... ARGTYPES>
+template<class CLASS, RETTYPE (CLASS::*METHOD)(ARGTYPES ...)>
+Delegate<RETTYPE(ARGTYPES...)>
+Delegate<RETTYPE(ARGTYPES...)>::FromMethod(CLASS* objPtr_)
+{
+    Delegate<RETTYPE(ARGTYPES...)> del;
     del.objPtr = objPtr_;
     del.stubPtr = &MethodStub<CLASS,METHOD>;
     return del;
@@ -83,12 +130,12 @@ Delegate<ARGTYPES ...>::FromMethod(CLASS* objPtr_)
 //------------------------------------------------------------------------------
 /**
 */
-template<class ... ARGTYPES>
-template<void(*FUNCTION)(ARGTYPES ...)>
-Delegate<ARGTYPES ...>
-Delegate<ARGTYPES ...>::FromFunction()
+template<typename RETTYPE, typename ... ARGTYPES>
+template<RETTYPE(*FUNCTION)(ARGTYPES ...)>
+Delegate<RETTYPE(ARGTYPES...)>
+Delegate<RETTYPE(ARGTYPES...)>::FromFunction()
 {
-    Delegate<ARGTYPES ...> del;
+    Delegate<RETTYPE(ARGTYPES...)> del;
     del.objPtr = 0;
     del.stubPtr = &FunctionStub<FUNCTION>;
     return del;
@@ -97,33 +144,56 @@ Delegate<ARGTYPES ...>::FromFunction()
 //------------------------------------------------------------------------------
 /**
 */
-template<class ... ARGTYPES>
-template<class CLASS, void (CLASS::*METHOD)(ARGTYPES ...)>
-void
-Delegate<ARGTYPES ...>::MethodStub(void* objPtr_, ARGTYPES ... arg_)
+template<typename RETTYPE, typename ... ARGTYPES>
+template<typename LAMBDA>
+Delegate<RETTYPE(ARGTYPES...)>
+Delegate<RETTYPE(ARGTYPES...)>::FromLambda(const LAMBDA & instance)
+{
+	return ((void*)(&instance), LambdaStub<LAMBDA>);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<typename RETTYPE, typename ... ARGTYPES>
+template<class CLASS, RETTYPE (CLASS::*METHOD)(ARGTYPES ...)>
+RETTYPE
+Delegate<RETTYPE(ARGTYPES...)>::MethodStub(void* objPtr_, ARGTYPES ... arg_)
 {
     CLASS* obj = static_cast<CLASS*>(objPtr_);
-    (obj->*METHOD)(arg_...);
+    return (obj->*METHOD)(arg_...);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-template<class ... ARGTYPES>
-template<void(*FUNCTION)(ARGTYPES ...)>
-void
-Delegate<ARGTYPES ...>::FunctionStub(void* dummyPtr, ARGTYPES ... arg_)
+template<typename RETTYPE, typename ... ARGTYPES>
+template<RETTYPE(*FUNCTION)(ARGTYPES ...)>
+RETTYPE
+Delegate<RETTYPE(ARGTYPES...)>::FunctionStub(void* dummyPtr, ARGTYPES ... arg_)
 {
-    (*FUNCTION)(arg_...);
+    return (*FUNCTION)(arg_...);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-template<class ... ARGTYPES>
+template<typename RETTYPE, typename ... ARGTYPES>
+template<typename LAMBDA>
+RETTYPE
+Delegate<RETTYPE(ARGTYPES...)>::LambdaStub(void* objPtr, ARGTYPES ... arg_)
+{
+	LAMBDA* p = static_cast<LAMBDA*>(objPtr);
+	return (p->operator())(arg_...);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<typename RETTYPE, typename ... ARGTYPES>
 template<class CLASS>
 inline const CLASS* 
-Delegate<ARGTYPES ...>::GetObject() const
+Delegate<RETTYPE(ARGTYPES...)>::GetObject() const
 {
 	return (CLASS*)this->objPtr;
 }
@@ -131,11 +201,22 @@ Delegate<ARGTYPES ...>::GetObject() const
 //------------------------------------------------------------------------------
 /**
 */
-template<class ... ARGTYPES>
+template<typename RETTYPE, typename ... ARGTYPES>
 bool 
-Util::Delegate<ARGTYPES ...>::IsValid()
+Util::Delegate<RETTYPE(ARGTYPES...)>::IsValid()
 {
 	return (0 != this->stubPtr);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<typename RETTYPE, typename ... ARGTYPES>
+void
+Delegate<RETTYPE(ARGTYPES...)>::Assign(void* obj, typename Delegate<RETTYPE(ARGTYPES...)>::StubType stub)
+{
+	this->objPtr = obj;
+	this->stubPtr = stub;
 }
 
 } // namespace Util
