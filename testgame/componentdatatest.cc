@@ -60,7 +60,7 @@ TestComponent::Create()
 		Attr::FloatTest
 	};
 
-	__RegisterComponent(&component);
+	__RegisterComponent(&component, "TestComponent");
 }
 
 //------------------------------------------------------------------------------

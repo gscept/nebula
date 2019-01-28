@@ -16,6 +16,7 @@
 #include "matrix44multiply.h"
 #include "mempoolbenchmark.h"
 #include "containerbenchmark.h"
+#include "delegates.h"
 
 using namespace Core;
 using namespace Benchmarking;
@@ -38,6 +39,7 @@ main()
     runner->AttachBenchmark(CreateObjectsByFourCC::Create());
     runner->AttachBenchmark(CreateObjectsByClassName::Create());
     runner->AttachBenchmark(ContainerBench::Create());
+	runner->AttachBenchmark(DelegateBench::Create());
     runner->Run();
     
     // shutdown Nebula runtime
