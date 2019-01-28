@@ -16,6 +16,8 @@
 #include "coregraphics/memorymeshpool.h"
 #include "coregraphics/shaderpool.h"
 #include "coregraphics/streammeshpool.h"
+#include "coreanimation/streamanimationpool.h"
+#include "characters/streamskeletonpool.h"
 #include "models/modelpool.h"
 
 namespace Graphics
@@ -52,7 +54,7 @@ GraphicsServer::Open()
 	this->isOpen = true;
 
 	this->debugHandler = Debug::DebugHandler::Create();
-	//this->debugHandler->Open();
+	this->debugHandler->Open();
 
 	this->displayDevice = CoreGraphics::DisplayDevice::Create();
 	this->displayDevice->Open();
@@ -70,10 +72,12 @@ GraphicsServer::Open()
 		Resources::ResourceManager::Instance()->RegisterMemoryPool(CoreGraphics::MemoryMeshPool::RTTI);
 
 		Resources::ResourceManager::Instance()->RegisterStreamPool("dds", CoreGraphics::StreamTexturePool::RTTI);
-		Resources::ResourceManager::Instance()->RegisterStreamPool("shd", CoreGraphics::ShaderPool::RTTI);
+		Resources::ResourceManager::Instance()->RegisterStreamPool("fxb", CoreGraphics::ShaderPool::RTTI);
 		Resources::ResourceManager::Instance()->RegisterStreamPool("n3", Models::StreamModelPool::RTTI);
 		Resources::ResourceManager::Instance()->RegisterStreamPool("nvx2", CoreGraphics::StreamMeshPool::RTTI);
 		Resources::ResourceManager::Instance()->RegisterStreamPool("sur", Materials::SurfacePool::RTTI);
+		Resources::ResourceManager::Instance()->RegisterStreamPool("nax3", CoreAnimation::StreamAnimationPool::RTTI);
+		Resources::ResourceManager::Instance()->RegisterStreamPool("nsk3", Characters::StreamSkeletonPool::RTTI);
 
 		// setup internal pool pointers for convenient access (note, will also assert if texture, shader, model or mesh pools is not registered yet!)
 		CoreGraphics::vboPool = Resources::GetMemoryPool<CoreGraphics::MemoryVertexBufferPool>();
@@ -85,6 +89,9 @@ GraphicsServer::Open()
 		CoreGraphics::shaderPool = Resources::GetStreamPool<CoreGraphics::ShaderPool>();
 		Models::modelPool = Resources::GetStreamPool<Models::StreamModelPool>();
 		Materials::surfacePool = Resources::GetStreamPool<Materials::SurfacePool>();
+
+		CoreAnimation::animPool = Resources::GetStreamPool<CoreAnimation::StreamAnimationPool>();
+		Characters::skeletonPool = Resources::GetStreamPool<Characters::StreamSkeletonPool>();
 
 		this->shaderServer = CoreGraphics::ShaderServer::Create();
 		this->shaderServer->Open();
@@ -236,6 +243,7 @@ GraphicsServer::BeginFrame()
 	this->frameIndex = this->timer->GetFrameIndex();
 	this->frameTime = this->timer->GetFrameTime();
 	this->time = this->timer->GetTime();
+	this->ticks = this->timer->GetTicks();
 
 	// begin updating visibility
 	IndexT i;
@@ -244,7 +252,7 @@ GraphicsServer::BeginFrame()
 		if (this->contexts[i]->StageBits)
 			*this->contexts[i]->StageBits = Graphics::OnBeforeFrameStage;
 		if (this->contexts[i]->OnBeforeFrame != nullptr)
-			this->contexts[i]->OnBeforeFrame(this->frameIndex, this->frameTime);
+			this->contexts[i]->OnBeforeFrame(this->frameIndex, this->frameTime, this->time, this->ticks);
 	}
 }
 

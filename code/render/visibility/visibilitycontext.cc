@@ -63,7 +63,7 @@ ObserverContext::Setup(const Graphics::GraphicsEntityId id, VisibilityEntityType
 /**
 */
 void 
-ObserverContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime)
+ObserverContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime, const Timing::Time time, const Timing::Tick ticks)
 {
 	const Util::Array<VisibilityEntityType>& observerTypes = observerAllocator.GetArray<2>();
 	const Util::Array<VisibilityEntityType>& observeeTypes = ObservableContext::observeeAllocator.GetArray<2>();
@@ -229,7 +229,6 @@ ObserverContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frame
 		// add to delete list
 		ObserverContext::runningJobs.Enqueue(job);
 	}
-
 }
 
 //------------------------------------------------------------------------------
@@ -245,13 +244,12 @@ ObserverContext::Create()
 	__bundle.OnAfterFrame = nullptr;
 	__bundle.StageBits = &ObservableContext::__state.currentStage;
 	ObserverContext::__state.allowedRemoveStages = Graphics::OnBeforeFrameStage;
-
 	Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle);
 
 	Jobs::CreateJobPortInfo info =
 	{
 		"VisibilityJobPort",
-		8,
+		4,
 		System::Cpu::Core1 | System::Cpu::Core2 | System::Cpu::Core3 | System::Cpu::Core4,
 		UINT_MAX
 	};
@@ -326,18 +324,21 @@ ObserverContext::CreateBruteforceSystem(const BruteforceSystemLoadInfo& info)
 void
 ObserverContext::WaitForVisibility(const IndexT frameIndex, const Timing::Time frameTime)
 {
-	Util::Array<Jobs::JobId> jobs;
-	jobs.Reserve(100);
-	ObserverContext::runningJobs.DequeueAll(jobs);
-
-	// wait for all jobs to finish
-	Jobs::JobPortWait(ObserverContext::jobPort);
-
-	// destroy jobs
-	IndexT i;
-	for (i = 0; i < jobs.Size(); i++)
+	if (ObserverContext::runningJobs.Size() > 0)
 	{
-		Jobs::DestroyJob(jobs[i]);
+		Util::Array<Jobs::JobId> jobs;
+		jobs.Reserve(100);
+		ObserverContext::runningJobs.DequeueAll(jobs);
+
+		// wait for all jobs to finish
+		Jobs::JobPortWait(ObserverContext::jobPort);
+
+		// destroy jobs
+		IndexT i;
+		for (i = 0; i < jobs.Size(); i++)
+		{
+			Jobs::DestroyJob(jobs[i]);
+		}
 	}
 }
 

@@ -64,6 +64,7 @@ ResourceManager::Close()
 #if NEBULA_DEBUG
 	// report any resources which have not been unloaded
 	bool hasLeaks = false;
+	Core::SysFunc::DebugOut("\n\n******** NEBULA T RESOURCE MANAGER ********\n Beginning of resource leak report:");
 	for (IndexT i = 0; i < this->pools.Size(); i++)
 	{
 		ResourcePool* pool = this->pools[i];
@@ -72,7 +73,7 @@ ResourceManager::Close()
 			if (pool->usage[j] != 0)
 			{
 				const Resources::ResourceName& name = pool->names[j];
-				Util::String msg = Util::String::Sprintf("\n\n******** NEBULA T RESOURCE MANAGER ********\n Resource <%s> (id %d) from pool %d is not unloaded, usage is %d!\n\n", name.Value(), j, pool->uniqueId, pool->usage[j]);
+				Util::String msg = Util::String::Sprintf("Resource <%s> (id %d) from pool %d is not unloaded, usage is '%d'\n", name.Value(), j, pool->uniqueId, pool->usage[j]);
 				Core::SysFunc::DebugOut(msg.AsCharPtr());
 				hasLeaks = true;
 			}
@@ -81,7 +82,7 @@ ResourceManager::Close()
 
 	if (!hasLeaks)
 	{
-		Util::String msg = Util::String::Sprintf("\n\n******** NEBULA T RESOURCE MANAGER ********\n All resources are properly freed!\n\n");
+		Util::String msg = Util::String::Sprintf("\n\n******** NEBULA T RESOURCE MANAGER ********\n All resources were properly freed!\n\n");
 		Core::SysFunc::DebugOut(msg.AsCharPtr());
 	}
 

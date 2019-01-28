@@ -59,8 +59,8 @@ enum class BarrierAccess
 	ShaderWrite = (1 << 7),				// shader writes (compute?)
 	ColorAttachmentRead = (1 << 8),		// color attachments (render textures) are read
 	ColorAttachmentWrite = (1 << 9),	// color attachments (render textures) are written
-	DepthRead = (1 << 10),				// depth-stencil attachments are read
-	DepthWrite = (1 << 11),				// depth-stencil attachments are written
+	DepthAttachmentRead = (1 << 10),	// depth-stencil attachments are read
+	DepthAttachmentWrite = (1 << 11),	// depth-stencil attachments are written
 	TransferRead = (1 << 12),			// transfers are read
 	TransferWrite = (1 << 13),			// transfers are written
 	HostRead = (1 << 14),				// host reads
@@ -167,8 +167,8 @@ BarrierAccessFromString(const Util::String& str)
 	else if (str == "ShaderWrite")				return BarrierAccess::ShaderWrite;
 	else if (str == "ColorAttachmentRead")		return BarrierAccess::ColorAttachmentRead;
 	else if (str == "ColorAttachmentWrite")		return BarrierAccess::ColorAttachmentWrite;
-	else if (str == "DepthRead")				return BarrierAccess::DepthRead;
-	else if (str == "DepthWrite")				return BarrierAccess::DepthWrite;
+	else if (str == "DepthAttachmentRead")				return BarrierAccess::DepthAttachmentRead;
+	else if (str == "DepthAttachmentWrite")				return BarrierAccess::DepthAttachmentWrite;
 	else if (str == "TransferRead")				return BarrierAccess::TransferRead;
 	else if (str == "TransferWrite")			return BarrierAccess::TransferWrite;
 	else if (str == "HostRead")					return BarrierAccess::HostRead;

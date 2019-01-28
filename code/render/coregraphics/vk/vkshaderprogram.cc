@@ -51,7 +51,7 @@ VkShaderProgramSetup(const Ids::Id24 id, const Resources::ResourceName& shaderNa
 		VkShaderProgramSetupAsCompute(setup, runtime);
 	}
 	else if (runtime.vs)	VkShaderProgramSetupAsGraphics(program, shaderName, runtime);
-	else				runtime.type = CoreGraphics::InvalidPipeline;
+	else					runtime.type = CoreGraphics::InvalidPipeline;
 }
 
 //------------------------------------------------------------------------------

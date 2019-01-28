@@ -64,16 +64,16 @@ void
 ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::ResourceName& name, const Util::StringAtom& tag)
 {
 	const ContextEntityId cid = GetContextId(gfxId);
-	ModelId& rid = modelContextAllocator.Get<0>(cid.id);
 	modelContextAllocator.Get<1>(cid.id) = ModelInstanceId::Invalid();
 	
-	ModelCreateInfo info;
+	ResourceCreateInfo info;
 	info.resource = name;
 	info.tag = tag;
 	info.async = false;
 	info.failCallback = nullptr;
 	info.successCallback = [cid, gfxId](Resources::ResourceId id)
 	{
+		modelContextAllocator.Get<0>(cid.id) = id;
 		ModelInstanceId& mdl = modelContextAllocator.Get<1>(cid.id);
 		mdl = Models::CreateModelInstance(id);
 		const Math::matrix44& pending = modelContextAllocator.Get<2>(cid.id);
@@ -81,7 +81,7 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
 		Models::modelPool->modelInstanceAllocator.Get<StreamModelPool::ObjectId>(mdl.instance) = gfxId.id;
 	};
 
-	rid = Models::CreateModel(info);
+	modelContextAllocator.Get<0>(cid.id) = Models::CreateModel(info);
 }
 
 //------------------------------------------------------------------------------
@@ -102,7 +102,7 @@ ModelContext::ChangeModel(const Graphics::GraphicsEntityId gfxId, const Resource
 		Models::DestroyModel(rid);
 	mdl = ModelInstanceId::Invalid();
 
-	ModelCreateInfo info;
+	ResourceCreateInfo info;
 	info.resource = name;
 	info.tag = tag;
 	info.async = false;
@@ -184,6 +184,16 @@ ModelContext::GetTransform(const Graphics::GraphicsEntityId id)
 //------------------------------------------------------------------------------
 /**
 */
+Math::matrix44
+ModelContext::GetTransform(const Graphics::ContextEntityId id)
+{
+	ModelInstanceId& inst = modelContextAllocator.Get<1>(id.id);
+	return modelContextAllocator.Get<2>(id.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 const Util::Array<Models::ModelNode::Instance*>& 
 ModelContext::GetModelNodeInstances(const Graphics::GraphicsEntityId id)
 {
@@ -228,7 +238,7 @@ ModelContext::GetModelNodeTypes(const Graphics::ContextEntityId id)
 	Go through all models and apply their transforms
 */
 void
-ModelContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime)
+ModelContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime, const Timing::Time time, const Timing::Tick ticks)
 {
 	const Util::Array<ModelInstanceId>& instances = modelContextAllocator.GetArray<1>();
 	const Util::Array<Math::matrix44>& transforms = Models::modelPool->modelInstanceAllocator.GetArray<StreamModelPool::InstanceTransform>();
@@ -263,11 +273,16 @@ ModelContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTim
 
 			Util::Array<Models::ModelNode::Instance*>& nodes = Models::modelPool->modelInstanceAllocator.Get<0>(instance.instance);
 			Util::Array<Models::NodeType>& types = Models::modelPool->modelInstanceAllocator.Get<1>(instance.instance);
+
 			// nodes are allocated breadth first, so just going through the list will guarantee the hierarchy is traversed in proper order
 			SizeT j;
 			for (j = 0; j < nodes.Size(); j++)
 			{
 				Models::ModelNode::Instance* node = nodes[j];
+
+				if (!node->active)
+					continue;
+
 				Math::matrix44& parentTransform = transform;
 				if (node->parent != nullptr && node->parent->node->type >= NodeHasTransform)
 					parentTransform = static_cast<const TransformNode::Instance*>(node->parent)->modelTransform;

@@ -15,13 +15,13 @@ using namespace Util;
 /**
 */
 void
-DelegateTable::AddDelegate(const Id& msgId, const Delegate<const Ptr<Message>&>& del)
+DelegateTable::AddDelegate(const Id& msgId, const Delegate<void(const Ptr<Message>&)>& del)
 {
     IndexT index = this->idIndexMap.FindIndex(&msgId);
     if (InvalidIndex == index)
     {
         // this is the first delegate for this message id
-        Array<Delegate<const Ptr<Message>&> > emptyArray;
+        Array<Delegate<void(const Ptr<Message>&)> > emptyArray;
         this->delegateArray.Append(emptyArray);
         index = this->delegateArray.Size() - 1;
         this->idIndexMap.Add(&msgId, index);
@@ -42,7 +42,7 @@ DelegateTable::Invoke(const Ptr<Message>& msg)
     if (InvalidIndex != index)    
     {
         // call delegates for this message
-        const Array<Delegate<const Ptr<Message>&> > delegates = this->delegateArray[index];
+        const Array<Delegate<void(const Ptr<Message>&)> > delegates = this->delegateArray[index];
         IndexT delegateIndex;
         for (delegateIndex = 0; delegateIndex < delegates.Size(); delegateIndex++)
         {

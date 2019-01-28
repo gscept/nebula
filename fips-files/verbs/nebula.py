@@ -84,7 +84,9 @@ def help():
     """print 'nebula' help"""
     log.info(log.YELLOW +
              "fips nebula [set|get]\n"
-             "      work [working directory]\n"
-             "      toolkit [nebula root/toolkit directory]\n"
+             "  work [working directory]\n"
+             "  toolkit [nebula root/toolkit directory]\n"
              "fips nebula\n"
-             "  prints current configuration")
+             "  prints current configuration"
+             "fips cleannidl\n"
+             "  cleans all nidl files which forces a regeneration upon compilation")

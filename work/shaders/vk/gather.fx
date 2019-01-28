@@ -15,8 +15,9 @@ varblock GatherBlock
 	textureHandle DepthTexture;
 	textureHandle EmissiveTexture;
 	textureHandle SSSTexture;
-	textureHandle SSAOTexture;
 };
+
+texture2D SSAOTexture;
 
 samplerstate GatherSampler
 {
@@ -72,7 +73,7 @@ psMain(in vec2 UV,
 	vec4 sssLight = DecodeHDR(sample2DLod(SSSTexture, GatherSampler, UV, 0));
 	vec4 light = DecodeHDR(sample2DLod(LightTexture, GatherSampler, UV, 0));
 	vec4 emissiveColor = sample2DLod(EmissiveTexture, GatherSampler, UV, 0);
-	float ssao = sample2DLod(SSAOTexture, GatherSampler, UV, 0).r;
+	float ssao = textureLod(sampler2D(SSAOTexture, GatherSampler), UV, 0).r;
 	
 	// blend non-blurred light with SSS light
 	light.rgb = lerp(light.rgb + emissiveColor.rgb, sssLight.rgb, sssLight.a) * (1.0f - ssao);	

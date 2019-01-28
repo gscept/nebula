@@ -57,7 +57,7 @@ public:
 	void DeregisterDeletionCallback(const Entity& e, ComponentInterface* component);
 private:
 	/// Register a deletion callback to when a specific entity is deleted
-	void RegisterDeletionCallback(const Entity& e, const Util::Delegate<Entity>& callback);
+	void RegisterDeletionCallback(const Entity& e, const Util::Delegate<void(Entity)>& callback);
 
 	/// Generation pool
 	Ids::IdGenerationPool pool;
@@ -66,7 +66,7 @@ private:
 	SizeT numEntities;
 
 	/// Contains all callbacks for deletion to components for each entity
-	Util::HashTable<Entity, Util::Array<Util::Delegate<Entity>>> deletionCallbacks;
+	Util::HashTable<Entity, Util::Array<Util::Delegate<void(Entity)>>> deletionCallbacks;
 };
 
 } // namespace Game
