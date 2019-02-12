@@ -11,9 +11,6 @@
 #include "basegamefeature/managers/componentmanager.h"
 #include "basegamefeature/components/transformcomponent.h"
 
-#include <chrono>
-#include <ctime>
-
 namespace BaseGameFeature
 {
 
@@ -23,8 +20,6 @@ namespace BaseGameFeature
 bool
 LevelLoader::Save(const Util::String& levelName)
 {
-	auto tstart = std::chrono::system_clock::now();
-
 	auto numEntities = Game::EntityManager::Instance()->GetNumEntities();
 	SceneCompiler scene;
 	uint indexHash = 0;
@@ -115,10 +110,6 @@ LevelLoader::Save(const Util::String& levelName)
 
 	scene.Compile(levelName);
 	
-	auto tend = std::chrono::system_clock::now();
-	std::chrono::duration<double> elapsed_seconds = tend - tstart;
-	n_printf("Save time: %f\n", elapsed_seconds.count());
-
 	return true;
 }
 
@@ -135,7 +126,6 @@ struct Listener
 bool
 LevelLoader::Load(const Util::String& levelName)
 {
-	auto tstart = std::chrono::system_clock::now();
 	SceneCompiler scene;
 
     if (!scene.Decompile(levelName))
@@ -221,10 +211,6 @@ LevelLoader::Load(const Util::String& levelName)
 			listener.component->functions.OnActivate(i);
 		}
 	}
-
-	auto tend = std::chrono::system_clock::now();
-	std::chrono::duration<double> elapsed_seconds = tend - tstart;
-	n_printf("Load time: %f\n", elapsed_seconds.count());
 
 	return true;
 }

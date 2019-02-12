@@ -25,7 +25,7 @@
 	to messages with delegates.
 	@see	game/messaging/message.h
 
-	(C) 2018 Individual contributors, see AUTHORS file
+	(C) 2018-2019 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "game/entity.h"
