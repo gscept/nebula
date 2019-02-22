@@ -33,6 +33,9 @@ imports:
     fips-stb:
         git: https://github.com/fips-libs/fips-stb.git
         group: misc
+    fips-soloud:
+        git: https://github.com/fLindahl/fips-soloud.git
+        group: audio
     nebula-libs:
         git: https://github.com/gscept/nebula-libs
         group: misc
@@ -46,9 +49,11 @@ exports:
         - code/application
         - code/physics
         - code/addons
+        - code/audio
     modules:
         foundation: code/foundation
         render: code/render
         resource: code/resource
         application: code/application        
         addons: code/addons
+        audio: code/audio
