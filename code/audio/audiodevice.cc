@@ -109,6 +109,9 @@ AudioDevice::CreateAudioEmitter(Resources::ResourceName const& name)
 	this->emitterAllocator.Get<EmitterSlot::VOLUME>(aeid.id) = 1.0f;
 	this->emitterAllocator.Get<EmitterSlot::MINDISTANCE>(aeid.id) = 1.0f;
 	this->emitterAllocator.Get<EmitterSlot::MAXDISTANCE>(aeid.id) = 1000000.0f;
+	this->emitterAllocator.Get<EmitterSlot::PAN>(aeid.id) = 0.0f;
+	this->emitterAllocator.Get<EmitterSlot::SPATIALIZE>(aeid.id) = true;
+	this->emitterAllocator.Get<EmitterSlot::CLOCK>(aeid.id) = 0.0f;
 
 	return aeid;
 }
