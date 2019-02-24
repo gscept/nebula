@@ -210,7 +210,7 @@ private:
 	/// contains free id's that we reuse as soon as possible.
 	Util::Stack<InstanceId> freeIds;
 
-	const static int STACK_SIZE = 4;
+	const static int STACK_SIZE = 1;
 	const static int TABLE_SIZE = 1024;
 	/// Contains the link between InstanceData and Entity Id
 	Util::HashTable<Ids::Id32, InstanceId, TABLE_SIZE, STACK_SIZE> idMap;

@@ -178,8 +178,8 @@ protected:
 	/// This should be adjacent to the data/tuple the values are in.
 	Util::FixedArray<Attr::AttrId> attributeIds;
 
-	/// Determines whether the component manager will execute this components
-	/// update methods (activation, load and such methods will still be called).
+	/// Determines whether the component manager will execute this components update methods.
+	/// activation, load and such methods will still be called.
 	bool enabled;
 
 	/// name of component
