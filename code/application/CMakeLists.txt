@@ -97,6 +97,19 @@ nebula_begin_module(application)
 		)
 	fips_dir(graphicsfeature/messages)
 		nebula_add_nidl(graphicsprotocol.nidl)
+	fips_dir(audiofeature)
+		fips_files(
+			audiofeatureunit.h
+			audiofeatureunit.cc
+		)
+	fips_dir(audiofeature/components)
+		nebula_add_nidl(audioemitterallocator.nidl)
+		fips_files(
+			audioemittercomponent.h
+			audioemittercomponent.cc
+		)
+	fips_dir(audiofeature/messages)
+		nebula_add_nidl(audioprotocol.nidl)
 	fips_dir(appgame)
 		fips_files(
 			gameapplication.h

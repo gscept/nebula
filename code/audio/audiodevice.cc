@@ -80,6 +80,11 @@ void AudioDevice::OnFrame()
 AudioEmitterId
 AudioDevice::CreateAudioEmitter(Resources::ResourceName const& name)
 {
+	if (!name.IsValid())
+	{
+		return AudioEmitterId::Invalid();
+	}
+
 	ClipId clip;
 	
 	// first, load resource if we haven't already.

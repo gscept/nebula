@@ -30,7 +30,6 @@ public:
 	bool IsOpen() const;
 	/// called per-frame 
 	void OnFrame();
-	
 
 private:
 	bool isOpen;
@@ -46,8 +45,5 @@ AudioServer::IsOpen() const
 	return this->isOpen;
 }
 
-inline void AudioServer::OnFrame()
-{
-}
 
 } // namespace Audio
