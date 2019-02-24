@@ -11,6 +11,7 @@
 #include "coregraphics/shaderserver.h"
 #include "coregraphics/displaydevice.h"
 #include "input/inputserver.h"
+#include "io/ioserver.h"
 
 using namespace Math;
 using namespace CoreGraphics;
@@ -371,6 +372,10 @@ ImguiContext::Create()
 
 	// load settings from disk. If we don't do this here we	need to
 	// run an entire frame before being able to create or load settings
+	if (!IO::IoServer::Instance()->FileExists("imgui.ini"))
+	{
+		ImGui::SaveIniSettingsToDisk("imgui.ini");
+	}
 	ImGui::LoadIniSettingsFromDisk("imgui.ini");
 }
 
