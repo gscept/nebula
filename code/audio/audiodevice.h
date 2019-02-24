@@ -1,7 +1,16 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	Audio::SoloudAudioDevice
+	Audio::AudioDevice
+
+	Central class of the core audio subsystem.
+	Currently implements Soloud as the audio engine.
+
+	Uses which ever audio backend that it is compiled with
+	and that initializes properly.
+
+	Audio clips/resources are loaded and shared between audio emitters until
+	their reference count is 0, upon which they are unloaded.
 
 	(C) 2019 Individual contributors, see AUTHORS file
 */

@@ -3,6 +3,11 @@
 /**
     @class AudioFeature::AudioFeatureUnit
 
+	Feature unit for the audio subsystem.
+
+	Creates and registers all related components and makes sure that the
+	audio server's frame callbacks are called.
+
     (C) 2019 Individual contributors, see AUTHORS file
 */
 #include "game/featureunit.h"
