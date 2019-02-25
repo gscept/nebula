@@ -83,6 +83,8 @@ nebula_begin_module(application)
 			userprofile.cc
 			scenecompiler.h
 			scenecompiler.cc
+			jsonentityloader.h
+			jsonentityloader.cc
 		)
 	fips_dir(graphicsfeature)
 		fips_files(
