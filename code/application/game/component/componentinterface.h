@@ -71,6 +71,12 @@ public:
 	/// deregister an Id. will only remove the id and zero the block
 	virtual void DeregisterEntity(Entity e) = 0;
 
+	/// Deregister all inactive entities.
+	virtual void DeregisterAllInactive() = 0;
+
+	/// Free up all non-reserved by entity data.
+	virtual void Clean() = 0;
+
 	/// Returns a bitfield containing the events this component is subscribed to.
 	const Util::BitField<ComponentEvent::NumEvents>& SubscribedEvents() const;
 
