@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //  levelloader.cc
-//  (C) 2018 Individual contributors, see AUTHORS file
+//  (C) 2018-2019 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "levelloader.h"
@@ -40,6 +40,10 @@ LevelLoader::Save(const Util::String& levelName)
 			// Skip this component
 			continue;
 		}
+
+		// We need to clean up and optimize any potential garbage.
+		component->Clean();
+
 		// this component is part of scene.
 		scene.numComponents++;
 
