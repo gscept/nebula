@@ -11,6 +11,7 @@
         "entities": {
             "Util::Guid": {
                 "name": String,
+				"transform": [1.0, 0.0, 2.3422, ...]
                 "components": {
                     "ComponentName": {
                         "active": Boolean,
@@ -34,13 +35,14 @@
     (C) 2019 Individual contributors, see AUTHORS file
 */
 #include "util/string.h"
-#include "core/refcounted.h"
+#include "entityloaderbase.h"
 
 //------------------------------------------------------------------------------
 namespace BaseGameFeature
 {
-class JsonEntityLoader : public Core::RefCounted
+class JsonEntityLoader : public EntityLoaderBase
 {
+	__DeclareClass(JsonEntityLoader);
 public:
     /// constructor
     JsonEntityLoader();

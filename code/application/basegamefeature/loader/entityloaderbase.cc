@@ -9,7 +9,10 @@
 namespace BaseGameFeature
 {
 
-    bool EntityLoaderBase::insideLoading = false;
+__ImplementClass(BaseGameFeature::EntityLoaderBase, 'elbs', Core::RefCounted);
+
+bool EntityLoaderBase::insideLoading = false;
+
 //------------------------------------------------------------------------------
 /**
 */
