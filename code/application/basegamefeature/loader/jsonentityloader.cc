@@ -129,6 +129,8 @@ JsonEntityLoader::Load(const Util::String& file)
 				listener.component->functions.OnActivate(listener.instance);
 			}
 
+			Msg::SetLocalTransform::Send(entity, transform);
+
 		} while (reader->SetToNextChild());
         reader->Close();
         return true;
