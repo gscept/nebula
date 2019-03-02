@@ -35,6 +35,8 @@ TextEditCallback(ImGuiInputTextCallbackData* data)
 {
 	Dynui::ImguiConsole* console = (Dynui::ImguiConsole*)data->UserData;
 
+	completions.Clear();
+
 	switch (data->EventFlag)
 	{
 	case ImGuiInputTextFlags_CallbackCompletion:
@@ -121,7 +123,7 @@ TextEditCallback(ImGuiInputTextCallbackData* data)
                 std::string rest = (std::string)py::str(pcompletions[0].attr("complete"));
                 data->InsertChars(data->CursorPos, rest.c_str(), rest.c_str() + rest.size());                
             }
-            else if (pcompletions.size() > 0 && pcompletions.size() < 10)
+            else if (pcompletions.size() > 0)
             {
                 open_autocomplete = true;
                 IndexT j = 0;
@@ -132,6 +134,8 @@ TextEditCallback(ImGuiInputTextCallbackData* data)
                     Util::String tooltip = ((std::string)py::str(pcompletions[j].attr("docstring")())).c_str();
                     completions.Append({ name,complete,tooltip });
                     ++j;
+					if (j == 10)
+						break;
                 }
                 
             }            
