@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 //  memorymeshloader.cc
 //  (C) 2007 Radon Labs GmbH
-//  (C) 2013-2018 Individual contributors, see AUTHORS file
+//  (C) 2013-2019 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "coregraphics/memorymeshpool.h"
@@ -116,10 +116,29 @@ MemoryMeshPool::GetIndexBuffer(const MeshId id) const
 //------------------------------------------------------------------------------
 /**
 */
-const CoreGraphics::PrimitiveTopology::Code MemoryMeshPool::GetPrimitiveTopology(const MeshId id) const
+const CoreGraphics::PrimitiveTopology::Code
+MemoryMeshPool::GetPrimitiveTopology(const MeshId id) const
 {
 	const MeshCreateInfo& inf = this->allocator.Get<0>(id.allocId);
 	return inf.topology;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+MemoryMeshPool::BeginGet()
+{
+	this->allocator.EnterGet();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+MemoryMeshPool::EndGet()
+{
+	this->allocator.LeaveGet();
 }
 
 } // namespace CoreGraphics
