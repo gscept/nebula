@@ -166,9 +166,10 @@ GraphicsServer::Close()
 /**
 */
 void
-GraphicsServer::RegisterGraphicsContext(GraphicsContextFunctionBundle* context)
+GraphicsServer::RegisterGraphicsContext(GraphicsContextFunctionBundle* context, GraphicsContextState* state)
 {
 	this->contexts.Append(context);
+	this->states.Append(state);
 }
 
 //------------------------------------------------------------------------------
@@ -180,6 +181,7 @@ GraphicsServer::UnregisterGraphicsContext(GraphicsContextFunctionBundle* context
 	IndexT i = this->contexts.FindIndex(context);
 	n_assert(i != InvalidIndex);
 	this->contexts.EraseIndex(i);
+	this->states.EraseIndex(i);
 }
 
 //------------------------------------------------------------------------------
@@ -245,12 +247,28 @@ GraphicsServer::BeginFrame()
 	this->time = this->timer->GetTime();
 	this->ticks = this->timer->GetTicks();
 
-	// begin updating visibility
+	// Collect garbage
 	IndexT i;
+	for (i = 0; i < this->contexts.Size(); i++)
+	{
+		auto state = this->states[i];
+		while (!state->delayedRemoveQueue.IsEmpty())
+		{
+			Graphics::GraphicsEntityId eid = state->delayedRemoveQueue[0];
+			IndexT index = state->entitySliceMap.FindIndex(eid);
+			n_assert(index != InvalidIndex);
+			auto cid = state->entitySliceMap.ValueAtIndex(eid.id, index);
+			state->Dealloc(cid);
+			state->entitySliceMap.EraseIndex(eid, index);
+			state->delayedRemoveQueue.EraseIndexSwap(0);
+		}
+	}
+
 	for (i = 0; i < this->contexts.Size(); i++)
 	{
 		if (this->contexts[i]->StageBits)
 			*this->contexts[i]->StageBits = Graphics::OnBeforeFrameStage;
+
 		if (this->contexts[i]->OnBeforeFrame != nullptr)
 			this->contexts[i]->OnBeforeFrame(this->frameIndex, this->frameTime, this->time, this->ticks);
 	}

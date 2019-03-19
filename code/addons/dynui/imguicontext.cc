@@ -176,7 +176,7 @@ ImguiContext::Create()
 {
     __bundle.OnRenderAsPlugin = ImguiContext::OnRenderAsPlugin;
     __bundle.OnBeforeFrame = ImguiContext::OnBeforeFrame;
-    Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle);
+    Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
 	// allocate imgui shader
 	state.uiShader = ShaderServer::Instance()->GetShader("shd:imgui.fxb");

@@ -25,9 +25,8 @@
 
 #define _DeclareContext() \
 private:\
-	static Graphics::GraphicsContext::State __state;\
+	static Graphics::GraphicsContextState __state;\
 	static Graphics::GraphicsContextFunctionBundle __bundle;\
-	static void GarbageCollect();\
 public:\
 	static void RegisterEntity(const Graphics::GraphicsEntityId id);\
 	static void DeregisterEntity(const Graphics::GraphicsEntityId id);\
@@ -37,21 +36,10 @@ public:\
 	static void BeginBulkRegister(); \
 	static void EndBulkRegister();
 
+
 #define _ImplementContext(ctx) \
-Graphics::GraphicsContext::State ctx::__state; \
+Graphics::GraphicsContextState ctx::__state; \
 Graphics::GraphicsContextFunctionBundle ctx::__bundle; \
-void ctx::GarbageCollect() \
-{\
-	while (!ctx::__state.delayedRemoveQueue.IsEmpty())\
-	{\
-		Graphics::GraphicsEntityId eid = ctx::__state.delayedRemoveQueue[0];\
-		IndexT index = __state.entitySliceMap.FindIndex(eid);\
-		n_assert(index != InvalidIndex);\
-		__state.Dealloc(__state.entitySliceMap.ValueAtIndex(eid.id, index));\
-		__state.entitySliceMap.EraseIndex(eid, index);\
-		ctx::__state.delayedRemoveQueue.EraseIndexSwap(0);\
-	}\
-}\
 void ctx::RegisterEntity(const Graphics::GraphicsEntityId id) \
 {\
 	n_assert(!__state.entitySliceMap.Contains(id));\
@@ -100,8 +88,7 @@ void ctx::EndBulkRegister()\
 #define _CreateContext() \
 	__state.Alloc = Alloc; \
 	__state.Dealloc = Dealloc; \
-	__state.currentStage = Graphics::NoStage; \
-	__bundle.GarbageCollect = GarbageCollect;
+	__state.currentStage = Graphics::NoStage;
 
 namespace Graphics
 {
@@ -143,22 +130,29 @@ struct GraphicsContextFunctionBundle
     void(*OnRemoveEntity)(Graphics::GraphicsEntityId entity);
     void(*OnWindowResized)(IndexT windowId, SizeT width, SizeT height);
 
-	// Called before frame
-	void(*GarbageCollect)();
-
 	// frame script callbacks
     void(*OnRenderAsPlugin)(const IndexT frameIndex, const Timing::Time frameTime, const Util::StringAtom& filter);
 
 	StageBits* StageBits;
 	GraphicsContextFunctionBundle() : OnBeforeFrame(nullptr), OnWaitForWork(nullptr), OnBeforeView(nullptr), OnAfterView(nullptr), OnAfterFrame(nullptr),
         OnStageCreated(nullptr), OnDiscardStage(nullptr), OnViewCreated(nullptr), OnDiscardView(nullptr), OnAttachEntity(nullptr), OnRemoveEntity(nullptr), OnWindowResized(nullptr), OnRenderAsPlugin(nullptr),
-		StageBits(nullptr), OnRenderDebug(nullptr), GarbageCollect(nullptr)
+		StageBits(nullptr), OnRenderDebug(nullptr)
 	{
 	};
 };
 
-
 ID_32_TYPE(ContextEntityId)
+
+struct GraphicsContextState
+{
+	StageBits currentStage;	// used by the GraphicsServer to set the state
+	StageBits allowedRemoveStages = StageBits::NoStage;	// if a delete is done while not in one of these stages, it will be added as a deferred delete
+	Util::ArrayStack<GraphicsEntityId, 8> delayedRemoveQueue;
+
+	Util::HashTable<GraphicsEntityId, ContextEntityId, 128, 64> entitySliceMap;
+	ContextEntityId(*Alloc)();
+	void(*Dealloc)(ContextEntityId id);
+};
 
 class GraphicsContext
 {
@@ -171,17 +165,6 @@ public:
 
 protected:
 	friend class GraphicsServer;
-
-	struct State
-	{
-		StageBits currentStage;	// used by the GraphicsServer to set the state
-		StageBits allowedRemoveStages = StageBits::NoStage;	// if a delete is done while not in one of these stages, it will be added as a deferred delete
-		Util::ArrayStack<GraphicsEntityId, 8> delayedRemoveQueue;
-
-		Util::HashTable<GraphicsEntityId, ContextEntityId, 128, 64> entitySliceMap;
-		ContextEntityId(*Alloc)();
-		void(*Dealloc)(ContextEntityId id);
-	};
 };
 
 } // namespace Graphics

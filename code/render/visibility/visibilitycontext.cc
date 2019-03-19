@@ -246,7 +246,7 @@ ObserverContext::Create()
 	__bundle.OnAfterFrame = nullptr;
 	__bundle.StageBits = &ObservableContext::__state.currentStage;
 	ObserverContext::__state.allowedRemoveStages = Graphics::OnBeforeFrameStage;
-	Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle);
+	Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
 	Jobs::CreateJobPortInfo info =
 	{

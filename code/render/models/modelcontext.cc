@@ -54,7 +54,7 @@ ModelContext::Create()
     __bundle.OnRenderDebug = ModelContext::OnRenderDebug;
 #endif
 	ModelContext::__state.allowedRemoveStages = Graphics::OnBeforeFrameStage;
-	Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle);
+	Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 }
 
 //------------------------------------------------------------------------------

@@ -37,7 +37,7 @@ CameraContext::Create()
 	_CreateContext();
 
 	__bundle.OnBeforeFrame = CameraContext::OnBeforeFrame;
-	Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle);
+	Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 }
 
 //------------------------------------------------------------------------------
