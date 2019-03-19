@@ -237,6 +237,8 @@ ObserverContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frame
 void
 ObserverContext::Create()
 {
+	_CreateContext();
+
 	__bundle.OnBeforeFrame = ObserverContext::OnBeforeFrame;
 	__bundle.OnWaitForWork = ObserverContext::WaitForVisibility;
 	__bundle.OnBeforeView = nullptr;
@@ -254,8 +256,6 @@ ObserverContext::Create()
 		UINT_MAX
 	};
 	ObserverContext::jobPort = Jobs::CreateJobPort(info);
-
-	_CreateContext();
 }
 
 //------------------------------------------------------------------------------
@@ -423,6 +423,7 @@ void
 ObservableContext::Create()
 {
 	_CreateContext();
+	ObservableContext::__state.allowedRemoveStages = Graphics::OnBeforeFrameStage;
 }
 
 //------------------------------------------------------------------------------

@@ -49,6 +49,8 @@ CharacterContext::~CharacterContext()
 void 
 CharacterContext::Create()
 {
+	_CreateContext();
+
 	__bundle.OnBeforeFrame = CharacterContext::OnBeforeFrame;
 	__bundle.OnWaitForWork = nullptr;
 	__bundle.OnBeforeView = nullptr;
@@ -69,8 +71,6 @@ CharacterContext::Create()
 		UINT_MAX
 	};
 	CharacterContext::jobPort = Jobs::CreateJobPort(info);
-
-	_CreateContext();
 }
 
 //------------------------------------------------------------------------------

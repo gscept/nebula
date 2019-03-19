@@ -92,6 +92,8 @@ LightContext::~LightContext()
 void 
 LightContext::Create()
 {
+	_CreateContext();
+
 	__bundle.OnBeforeFrame = nullptr;
 	__bundle.OnWaitForWork = nullptr;
 	__bundle.OnBeforeView = LightContext::OnBeforeView;
@@ -153,8 +155,6 @@ LightContext::Create()
 
 	DisplayMode mode = WindowGetDisplayMode(DisplayDevice::Instance()->GetCurrentWindow());
 	lightServerState.fsq.Setup(mode.GetWidth(), mode.GetHeight());
-
-	_CreateContext();
 }
 
 //------------------------------------------------------------------------------
