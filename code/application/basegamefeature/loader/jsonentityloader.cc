@@ -58,7 +58,6 @@ JsonEntityLoader::Load(const Util::String& file)
 			// We need to save each component and enitity start index so that we can call activate after
 			// all components has been loaded
 			Util::Array<Listener> activateListeners;
-			Util::Array<Listener> loadListeners;
 
 			if (reader->HasNode("components"))
 			{
@@ -97,11 +96,7 @@ JsonEntityLoader::Load(const Util::String& file)
 
 					if (component->SubscribedEvents().IsSet(Game::ComponentEvent::OnLoad) && component->functions.OnLoad != nullptr)
 					{
-						// Add to list to that we can call OnLoad for all instances in this component later.
-						Listener listener;
-						listener.component = component;
-						listener.instance = instance;
-						loadListeners.Append(listener);
+						component->functions.OnLoad(instance);
 					}
 
 					if (component->SubscribedEvents().IsSet(Game::ComponentEvent::OnActivate) && component->functions.OnActivate != nullptr)
@@ -117,11 +112,6 @@ JsonEntityLoader::Load(const Util::String& file)
 
 				reader->SetToParent();
 				reader->SetToParent();
-			}
-
-			for (auto& listener : loadListeners)
-			{
-				listener.component->functions.OnLoad(listener.instance);
 			}
 
 			for (auto& listener : activateListeners)

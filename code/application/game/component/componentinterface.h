@@ -131,7 +131,9 @@ public:
 
 	struct FunctionBundle
 	{
-		/// Called upon activation of component instance
+		/// Called upon activation of component instance.
+		/// When loading an entity from file, this is called after
+		/// all components have been loaded.
 		void(*OnActivate)(InstanceId instance);
 
 		/// Called upon deactivation of component instance
@@ -149,7 +151,8 @@ public:
 		/// called when game debug visualization is on
 		void(*OnRenderDebug)();
 
-		/// called after an entity has been loaded from file.
+		/// called when the component has been loaded from file.
+		/// this does not guarantee that all components have been loaded.
 		void(*OnLoad)(InstanceId instance);
 
 		/// called after an entity has been save to a file.

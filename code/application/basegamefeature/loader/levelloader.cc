@@ -142,7 +142,6 @@ LevelLoader::Load(const Util::String& levelName)
 	// We need to save each component and enitity start index so that we can call activate after
 	// all components has been loaded
 	Util::Array<Listener> activateListeners;
-	Util::Array<Listener> loadListeners;
 
 	for (auto component : scene.components)
 	{
@@ -178,12 +177,11 @@ LevelLoader::Load(const Util::String& levelName)
 
 			if (c->SubscribedEvents().IsSet(Game::ComponentEvent::OnLoad) && c->functions.OnLoad != nullptr)
 			{
-				// Add to list to that we can call OnLoad for all instances in this component later.
-				Listener listener;
-				listener.component = c;
-				listener.firstInstance = start;
-				listener.numInstances = component.numInstances;
-				loadListeners.Append(listener);
+				SizeT end = start + component.numInstances;
+				for (SizeT i = start; i < end; i++)
+				{
+					c->functions.OnLoad(i);
+				}
 			}
 
 			if (c->SubscribedEvents().IsSet(Game::ComponentEvent::OnActivate) && c->functions.OnActivate != nullptr)
@@ -195,15 +193,6 @@ LevelLoader::Load(const Util::String& levelName)
 				listener.numInstances = component.numInstances;
 				activateListeners.Append(listener);
 			}
-		}
-	}
-
-	for (auto listener : loadListeners)
-	{
-		SizeT end = listener.firstInstance + listener.numInstances;
-		for (SizeT i = listener.firstInstance; i < end; i++)
-		{
-			listener.component->functions.OnLoad(i);
 		}
 	}
 
