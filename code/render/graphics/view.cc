@@ -48,9 +48,11 @@ View::Render(const IndexT frameIndex, const Timing::Time time)
 	{
 		n_assert(this->stage.isvalid());
 		n_assert(this->script.isvalid());
+		auto settings = CameraContext::GetSettings(this->camera);
 		transDev->SetViewTransform(CameraContext::GetTransform(this->camera));
 		transDev->SetProjTransform(CameraContext::GetProjection(this->camera));
-		transDev->SetFocalLength(CameraContext::GetSettings(this->camera).GetFocalLength());
+		transDev->SetFocalLength(settings.GetFocalLength());
+		transDev->SetNearFarPlane(Math::float2(settings.GetZNear(), settings.GetZFar()));
 		transDev->ApplyViewSettings();
 		this->script->Run(frameIndex);
 		CoreGraphics::EndFrame(frameIndex);

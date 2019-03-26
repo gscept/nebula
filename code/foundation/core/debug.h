@@ -42,6 +42,7 @@ void n_break();
 #define n_assert(exp) { if (!(exp)) n_barf(#exp,__FILE__,__LINE__); }
 #define n_assert2(exp, msg) { if (!(exp)) n_barf2(#exp,msg,__FILE__,__LINE__); }
 #define n_assert_fmt(exp, msg, ...) { if (!(exp)) n_barf_fmt(#exp,msg,__FILE__,__LINE__, __VA_ARGS__); }
+#define n_warn(exp,  msg, ...) { if (!(exp)) n_warning(msg, __VA_ARGS__); }
 #define n_static_assert(exp) { int _x[ 2*((exp) != 0)-1 ]; (void)(_x[0]=0);}
 #if __WIN32__
 // dx9 specific: check HRESULT and display DX9 specific message box

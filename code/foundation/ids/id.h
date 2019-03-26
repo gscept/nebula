@@ -99,6 +99,7 @@ namespace Ids
 	Ids::Id24 id24_name : 24;\
 	Ids::Id8 id8_name: 8;\
 	constexpr x() : id32_name(Ids::InvalidId32), id24_name(Ids::InvalidId24), id8_name(Ids::InvalidId8) {};\
+	constexpr x(const Ids::Id32 id32, const Ids::Id24 id24, const Ids::Id8 id8) : id32_name(id32), id24_name(id24), id8_name(id8){} \
 	constexpr x(const Ids::Id64 id) : id32_name(Ids::Id::GetHigh(id)), id24_name(Ids::Id::GetBig(Ids::Id::GetLow(id))), id8_name(Ids::Id::GetTiny(Ids::Id::GetLow(id))) {};\
 	explicit constexpr operator Ids::Id64() const { return Ids::Id::MakeId32_24_8(id32_name, id24_name, id8_name); }\
 	static constexpr x Invalid() { return Ids::Id::MakeId32_24_8(Ids::InvalidId32, Ids::InvalidId24, Ids::InvalidId8); }\
@@ -117,6 +118,7 @@ namespace Ids
 	Ids::Id16 id16_0_name : 16;\
 	Ids::Id16 id16_1_name : 16;\
 	constexpr x() : id32_name(Ids::InvalidId32), id16_0_name(Ids::InvalidId16), id16_1_name(Ids::InvalidId16) {};\
+	constexpr x(const Ids::Id32 id32_0, const Ids::Id16 id16_0, const Ids::Id16 id16_1) : id32_name(id32_0), id16_0_name(id16_0), id16_1_name(id16_1){} \
 	constexpr x(const Ids::Id64 id) : id32_name(Ids::Id::GetHigh(id)), id16_0_name(Ids::Id::GetHigh(Ids::Id::GetLow(id))), id16_1_name(Ids::Id::GetLow(Ids::Id::GetLow(id))) {};\
 	explicit constexpr operator Ids::Id64() const { return Ids::Id::MakeId32_16_16(id32_name, id16_0_name, id16_1_name); }\
 	static constexpr x Invalid() { return Ids::Id::MakeId32_16_16(Ids::InvalidId32, Ids::InvalidId16, Ids::InvalidId16); }\
@@ -136,6 +138,7 @@ namespace Ids
 	Ids::Id24 id24_1_name : 24;\
 	Ids::Id8 id8_1_name : 8;\
 	constexpr x() : id24_0_name(Ids::InvalidId24), id8_0_name(Ids::InvalidId8), id24_1_name(Ids::InvalidId24), id8_1_name(Ids::InvalidId8) {};\
+	constexpr x(const Ids::Id24 id24_0, const Ids::Id8 id8_0, const Ids::Id24 id24_1, const Ids::Id8 id8_1) : id24_0_name(id24_0), id8_0_name(id8_0), id24_1_name(id24_1), id8_1_name(id8_1) {} \
 	constexpr x(const Ids::Id64 id) : id24_0_name(Ids::Id::GetBig(Ids::Id::GetHigh(id))), id8_0_name(Ids::Id::GetTiny(Ids::Id::GetHigh(id))), id24_1_name(Ids::Id::GetBig(Ids::Id::GetLow(id))), id8_1_name(Ids::Id::GetTiny(Ids::Id::GetLow(id))) {};\
 	explicit constexpr operator Ids::Id64() const { return Ids::Id::MakeId24_8_24_8(id24_0_name, id8_0_name, id24_1_name, id8_1_name); }\
 	static constexpr x Invalid() { return Ids::Id::MakeId24_8_24_8(Ids::InvalidId24, Ids::InvalidId8, Ids::InvalidId24, Ids::InvalidId8); }\
@@ -154,6 +157,7 @@ namespace Ids
 	Ids::Id32 id32_0_name; \
 	Ids::Id32 id32_1_name; \
 	constexpr x() : id32_0_name(Ids::InvalidId32), id32_1_name(Ids::InvalidId32) {} \
+	constexpr x(const Ids::Id32 id0, const Ids::Id32 id1) : id32_0_name(id0), id32_1_name(id1) {} \
 	constexpr x(const Ids::Id64 id) : id32_0_name(Ids::Id::GetHigh(id)), id32_1_name(Ids::Id::GetLow(id)) {};\
 	explicit constexpr operator Ids::Id64() const  { return Ids::Id::MakeId64(id32_0_name, id32_1_name); }\
 	static constexpr x Invalid() { return Ids::Id::MakeId64(Ids::InvalidId32, Ids::InvalidId32); }\
@@ -170,7 +174,8 @@ namespace Ids
 #define ID_24_8_NAMED_TYPE(x, id24_name, id8_name) struct x { \
 	Ids::Id24 id24_name : 24; \
 	Ids::Id8 id8_name: 8; \
-	constexpr x() : id24_name(Ids::InvalidId24), id8_name(Ids::InvalidId8) {}  \
+	constexpr x() : id24_name(Ids::InvalidId24), id8_name(Ids::InvalidId8) {} \
+	constexpr x(const Ids::Id24 id0, const Ids::Id8 id1) : id24_name(id0), id8_name(id1) {} \
 	constexpr x(const Ids::Id32 id) : id24_name(Ids::Id::GetBig(id)), id8_name(Ids::Id::GetTiny(id)) {};\
 	explicit constexpr operator Ids::Id32() const { return Ids::Id::MakeId24_8(id24_name, id8_name); }\
 	static constexpr x Invalid() { return Ids::Id::MakeId24_8(Ids::InvalidId24, Ids::InvalidId8); }\

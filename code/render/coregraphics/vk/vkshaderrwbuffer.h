@@ -6,7 +6,6 @@
 	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "coregraphics/stretchybuffer.h"
 #include "coregraphics/shaderrwbuffer.h"
 #include "ids/idallocator.h"
 namespace Vulkan
@@ -35,18 +34,10 @@ struct VkShaderRWBufferMapInfo
 	SizeT baseOffset;
 };
 
-struct ShaderRWBufferStretchInterface
-{
-	CoreGraphics::StretchyBuffer<ShaderRWBufferStretchInterface> resizer;
-	CoreGraphics::ShaderRWBufferId obj;
-	SizeT Grow(const SizeT capacity, const SizeT numInstances, SizeT& newCapacity);
-};
-
 typedef Ids::IdAllocator<
 	VkShaderRWBufferLoadInfo,
 	VkShaderRWBufferRuntimeInfo,
-	VkShaderRWBufferMapInfo,
-	ShaderRWBufferStretchInterface
+	VkShaderRWBufferMapInfo
 > ShaderRWBufferAllocator;
 extern ShaderRWBufferAllocator shaderRWBufferAllocator;
 

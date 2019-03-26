@@ -18,7 +18,7 @@ namespace Characters
 void
 SkeletonEvalJob(const Jobs::JobFuncContext& ctx)
 {
-	float4 finalScale, parentFinalScale, variationTranslation(0.0f, 0.0f, 0.0f, 0.0f);
+	float4 finalScale, parentFinalScale, variationTranslation;
 	float4 translate(0.0f, 0.0f, 0.0f, 1.0f);
 	float4 scale(1.0f, 1.0f, 1.0f, 0.0f);
 	float4 parentScale(1.0f, 1.0f, 1.0f, 0.0f);
@@ -71,6 +71,7 @@ SkeletonEvalJob(const Jobs::JobFuncContext& ctx)
 		unscaledMatrix = matrix44::rotationquaternion(rotate);
 
 		// load variation translation
+		variationTranslation.load(&comps.varTranslationX);
 		unscaledMatrix.translate(translate + variationTranslation);
 
 		// add mix pose if the pointer is set

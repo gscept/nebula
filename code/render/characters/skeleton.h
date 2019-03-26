@@ -23,7 +23,6 @@ struct CharacterJoint
 	Math::quaternion poseRotation;
 	Math::vector poseScale;
 	Math::matrix44 poseMatrix;
-	Math::matrix44* invPoseMatrixPtr;
 	IndexT parentJointIndex;
 	const CharacterJoint* parentJoint;
 #if NEBULA_DEBUG

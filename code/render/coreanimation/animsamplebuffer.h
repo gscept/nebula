@@ -24,6 +24,15 @@ public:
     AnimSampleBuffer();
     /// destructor
     virtual ~AnimSampleBuffer();
+
+	/// move operator
+	AnimSampleBuffer(AnimSampleBuffer&& rhs);
+	/// copy operator
+	AnimSampleBuffer(const AnimSampleBuffer& rhs);
+	/// assign move operator
+	void operator=(AnimSampleBuffer&& rhs);
+	/// assign move operator
+	void operator=(const AnimSampleBuffer& rhs);
     
     /// setup the object from an animation resource
     void Setup(const AnimResourceId& animResource);

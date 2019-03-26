@@ -9,8 +9,9 @@ FIND_PROGRAM(SHADERC
        )
        
 
-fips_begin_module(render)
+nebula_begin_module(render)
 	add_nebula_shaders()
+	set(target_has_shaders 1)
 	fips_vs_warning_level(3)
 	fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/resource ${CODE_ROOT}/foundation ${CODE_ROOT}/addons)	
 	fips_deps(foundation resource anyfx libpng libjpeg DevIL)
@@ -192,7 +193,6 @@ ENDIF()
 				streamtexturepool.cc
 				streamtexturepool.h
 				streamtexturesaver.h
-				stretchybuffer.h
 				textelement.cc
 				textelement.h
 				textrenderer.cc
@@ -577,57 +577,33 @@ ENDIF()
 				streammodelpool.h
 			)
 
-		fips_dir(particles/base GROUP "particles/base")
-			fips_files(
-					particlerendererbase.cc
-					particlerendererbase.h
-					particlerenderinfobase.h
-					particlesysteminstancebase.cc
-					particlesysteminstancebase.h
-			)
-	if (N_USE_VULKAN)
-		fips_dir(particles/vk GROUP "particles/vk")
-			fips_files(
-				vkparticlerenderer.cc
-				vkparticlerenderer.h
-				vkparticlesysteminstance.cc
-				vkparticlesysteminstance.h
-			)
-	endif()
-
-	fips_dir(renderutil)
-	fips_files(
-		drawfullscreenquad.cc
-		drawfullscreenquad.h
-		freecamerautil.cc
-		freecamerautil.h
-		mayacamerautil.cc
-		mayacamerautil.h
-		mouserayutil.cc
-		mouserayutil.h
-	)
-	fips_dir(particles)
+		fips_dir(renderutil)
 		fips_files(
-			emitterattrs.cc
-			emitterattrs.h
-			emittermesh.cc
-			emittermesh.h
-			envelopecurve.cc
-			envelopecurve.h
-			envelopesamplebuffer.cc
-			envelopesamplebuffer.h
-			particle.h
-			particlerenderer.cc
-			particlerenderer.h
-			particlerenderinfo.h
-			particleserver.cc
-			particleserver.h
-			particlesystem.cc
-			particlesystem.h
-			particlesysteminstance.cc
-			particlesysteminstance.h
-			particlesystemstate.h
+			drawfullscreenquad.cc
+			drawfullscreenquad.h
+			freecamerautil.cc
+			freecamerautil.h
+			mayacamerautil.cc
+			mayacamerautil.h
+			mouserayutil.cc
+			mouserayutil.h
 		)
+		fips_dir(particles)
+			fips_files(
+				emitterattrs.cc
+				emitterattrs.h
+				emittermesh.cc
+				emittermesh.h
+				envelopecurve.cc
+				envelopecurve.h
+				envelopesamplebuffer.cc
+				envelopesamplebuffer.h
+				particle.h
+				particlecontext.cc
+				particlecontext.h
+				particlejob.cc
+				particlerenderinfo.h
+			)
 
 	IF(FALSE)
 		fips_dir(picking)
@@ -669,8 +645,7 @@ ENDIF()
 				visibilitysystem.h
 				visibilitysystem.cc
 			)
-fips_end_module()
-# FIXME
+nebula_end_module()
 if(N_USE_VULKAN)		
 		target_include_directories(render PUBLIC ${Vulkan_INCLUDE_DIR})        
 endif()

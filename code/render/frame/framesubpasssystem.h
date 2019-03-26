@@ -15,6 +15,7 @@ public:
 	enum Subsystem
 	{
 		Lights,
+		LightClassification,
 		LightProbes,
 		LocalShadowsSpot,
 		LocalShadowsPoint,

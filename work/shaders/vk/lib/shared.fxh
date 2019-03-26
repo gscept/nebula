@@ -91,7 +91,11 @@ group(TICK_GROUP) shared varblock PerTickParams
 
 	float GlobalBackLightOffset;
 	textureHandle GlobalLightShadowBuffer;
-	uint2 __padpertick;
+	int NumEnvMips = 10;
+	textureHandle EnvironmentMap;
+
+	textureHandle IrradianceMap;
+	uvec3 _padpertick;
 	
 	// these params are for the Preetham sky model
 	vec4 A;
@@ -115,7 +119,7 @@ group(TICK_GROUP) shared varblock PerTickParams
 	textureHandle AlbedoBuffer;
 	textureHandle EmissiveBuffer;
 	textureHandle LightBuffer;
-	uint	      __padframe;
+	uvec2	      _padframe;
 };
 
 group(TICK_GROUP) shared varblock ForwardLightBlock
@@ -143,7 +147,7 @@ group(FRAME_GROUP) shared varblock FrameBlock
 	mat4 InvProjection;
 	mat4 InvViewProjection;
 	vec4 EyePos;	
-	vec4 FocalLength;
+	vec4 FocalLengthNearFar; // x, y is focal length x/y, z, w is near/far planes
 	vec4 TimeAndRandom;
 };
 
@@ -164,10 +168,10 @@ group(DYNAMIC_OFFSET_GROUP) shared varblock ObjectBlock [ string Visibility = "V
 	mat4 ModelViewProjection;
 	mat4 ModelView;
 	int ObjectId; 
-	uint3 __pad;
+	uint3 _padobject;
 };
 
-// define how many objects we can render simultaneously https://helpx.adobe.com/se/contact/support.html#support-anchor
+// define how many objects we can render with instancing
 #define MAX_BATCH_SIZE 256
 group(DYNAMIC_OFFSET_GROUP) shared varblock InstancingBlock [ string Visibility = "VS"; ]
 {
@@ -177,7 +181,7 @@ group(DYNAMIC_OFFSET_GROUP) shared varblock InstancingBlock [ string Visibility 
 	int IdArray[MAX_BATCH_SIZE];
 };
 
-group(DYNAMIC_OFFSET_GROUP) shared varblock JointBlock [ bool DynamicOffset = true; string Visibility = "VS"; ]
+group(DYNAMIC_OFFSET_GROUP) shared varblock JointBlock [ string Visibility = "VS"; ]
 {
 	mat4 JointPalette[256];
 };
@@ -185,8 +189,7 @@ group(DYNAMIC_OFFSET_GROUP) shared varblock JointBlock [ bool DynamicOffset = tr
 group(PASS_GROUP) inputAttachment InputAttachments[8];
 group(PASS_GROUP) shared varblock PassBlock [ bool System = true; ]
 {
-	// render target dimensions are size (xy) inversed size (zw)
-	vec4 RenderTargetDimensions[8];
+	vec4 RenderTargetDimensions[8]; // render target dimensions are size (xy) inversed size (zw)
 };
 
 

@@ -69,8 +69,8 @@ StreamModelPool::CreateModelInstance(const ModelId id)
 	instances++;
 
 	// get all template nodes
-	Util::Array<Models::ModelNode::Instance*>& nodeInstances = this->modelInstanceAllocator.Get<NodeInstances>(mnid);
-	Util::Array<Models::NodeType>& nodeTypes = this->modelInstanceAllocator.Get<NodeTypes>(mnid);
+	Util::Array<Models::ModelNode::Instance*>& nodeInstances = this->modelInstanceAllocator.Get<ModelNodeInstances>(mnid);
+	Util::Array<Models::NodeType>& nodeTypes = this->modelInstanceAllocator.Get<ModelNodeTypes>(mnid);
 	Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& alloc = this->modelAllocator.Get<InstanceNodeAllocator>(id.allocId);
 
 	// allocate memory
@@ -111,8 +111,26 @@ StreamModelPool::DestroyModelInstance(const ModelInstanceId id)
 	// release allocator memory, and return index to pool
 	SizeT& instances = this->modelAllocator.Get<InstanceCount>(id.model);
 	instances--;
-	this->modelInstanceAllocator.Get<NodeInstances>(id.instance).Clear();
+	this->modelInstanceAllocator.Get<ModelNodeInstances>(id.instance).Clear();
 	this->modelInstanceAllocator.DeallocObject(id.instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::Dictionary<Util::StringAtom, Models::ModelNode*>&
+StreamModelPool::GetModelNodes(const ModelId id)
+{
+	return this->modelAllocator.Get<ModelNodes>(id.allocId);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::Array<Models::ModelNode::Instance*>&
+StreamModelPool::GetModelNodeInstances(const ModelInstanceId id)
+{
+	return this->modelInstanceAllocator.Get<ModelNodeInstances>(id.instance);
 }
 
 //------------------------------------------------------------------------------
@@ -332,6 +350,24 @@ StreamModelPool::Unload(const Resources::ResourceId id)
 	this->Get<ModelNodeAllocator>(id).Release();
 	this->Get<InstanceNodeAllocator>(id).Release();
 	this->Get<RootNode>(id) = nullptr;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::Dictionary<Util::StringAtom, Models::ModelNode*>&
+ModelGetNodes(const ModelId id)
+{
+	return modelPool->GetModelNodes(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::Array<Models::ModelNode::Instance*>&
+ModelInstanceGetNodes(const ModelInstanceId id)
+{
+	return modelPool->GetModelNodeInstances(id);
 }
 
 } // namespace Models

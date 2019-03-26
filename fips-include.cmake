@@ -121,7 +121,7 @@ macro(add_shaders_intern)
             # create it the first time by force, after that with dependencies
             # since custom command does not want to play ball atm, we just generate it every time
             if(NOT EXISTS ${depoutput} OR ${shd} IS_NEWER_THAN ${depoutput})
-                execute_process(COMMAND ${SHADERC} -M -i ${shd} -I ${NROOT}/work/shaders/vk -I ${foldername} -o ${CMAKE_BINARY_DIR} -t shader)
+                execute_process(COMMAND ${SHADERC} -M -i ${shd} -I ${NROOT}/work/shaders/vk -I ${foldername} -o ${CMAKE_BINARY_DIR} -h ${CMAKE_BINARY_DIR}/shaders/${CurTargetName} -t shader)
             endif()
             
             # sadly this doesnt work for some reason
@@ -138,7 +138,7 @@ macro(add_shaders_intern)
 
             set(output ${EXPORT_DIR}/shaders/${basename}.fxb)           
             add_custom_command(OUTPUT ${output}
-                COMMAND ${SHADERC} -i ${shd} -I ${NROOT}/work/shaders/vk -I ${foldername} -o ${EXPORT_DIR} -t shader ${shader_debug}                
+                COMMAND ${SHADERC} -i ${shd} -I ${NROOT}/work/shaders/vk -I ${foldername} -o ${EXPORT_DIR} -h ${CMAKE_BINARY_DIR}/shaders/${CurTargetName} -t shader ${shader_debug}                
                 MAIN_DEPENDENCY ${shd}
                 DEPENDS ${SHADERC} ${deps}
                 WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
@@ -279,6 +279,7 @@ endmacro()
 macro(nebula_begin_app name type)
     fips_begin_app(${name} ${type})
     set(target_has_nidl 0)
+    set(target_has_shaders 0)
 endmacro()
 
 macro(nebula_end_app)
@@ -287,11 +288,15 @@ macro(nebula_end_app)
     if(target_has_nidl)
         target_include_directories(${curtarget} PUBLIC "${CMAKE_BINARY_DIR}/nidl/${CurTargetName}")
     endif()
+    if (target_has_shaders)
+        target_include_directories(${curtarget} PUBLIC "${CMAKE_BINARY_DIR}/shaders/${CurTargetName}")
+    endif()
 endmacro()
 
 macro(nebula_begin_module name)
     fips_begin_module(${name})
     set(target_has_nidl 0)
+    set(target_has_shaders 0)
 endmacro()
 
 macro(nebula_end_module)
@@ -300,11 +305,15 @@ macro(nebula_end_module)
     if(target_has_nidl)
         target_include_directories(${curtarget} PUBLIC "${CMAKE_BINARY_DIR}/nidl/${CurTargetName}")
     endif()
+    if (target_has_shaders)
+        target_include_directories(${curtarget} PUBLIC "${CMAKE_BINARY_DIR}/shaders/${CurTargetName}")
+    endif()
 endmacro()
 
 macro(nebula_begin_lib name)
     fips_begin_lib(${name})
     set(target_has_nidl 0)
+    set(target_has_shaders 0)
 endmacro()
 
 macro(nebula_end_lib)
@@ -312,5 +321,8 @@ macro(nebula_end_lib)
     fips_end_lib()
     if(target_has_nidl)
         target_include_directories(${curtarget} PUBLIC "${CMAKE_BINARY_DIR}/nidl/${CurTargetName}")
+    endif()
+    if (target_has_shaders)
+        target_include_directories(${curtarget} PUBLIC "${CMAKE_BINARY_DIR}/shaders/${CurTargetName}")
     endif()
 endmacro()

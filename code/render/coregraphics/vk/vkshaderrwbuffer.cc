@@ -13,60 +13,6 @@ namespace Vulkan
 
 ShaderRWBufferAllocator shaderRWBufferAllocator(0x00FFFFFF);
 
-SizeT ShaderRWBufferStretchInterface::Grow(const SizeT capacity, const SizeT numInstances, SizeT & newCapacity)
-{
-	VkShaderRWBufferLoadInfo& setupInfo = shaderRWBufferAllocator.Get<0>(this->obj.id24);
-	VkShaderRWBufferRuntimeInfo& runtimeInfo = shaderRWBufferAllocator.Get<1>(this->obj.id24);
-	VkShaderRWBufferMapInfo& mapInfo = shaderRWBufferAllocator.Get<2>(this->obj.id24);
-#if NEBULA_DEBUG
-	n_assert(this->obj.id8 == ConstantBufferIdType);
-#endif
-	// new capacity is the old one, plus the number of elements we wish to allocate, although never allocate fewer than grow
-	SizeT increment = capacity >> 1;
-	increment = Math::n_iclamp(increment, setupInfo.grow, 65535);
-	n_assert(increment >= numInstances);
-	newCapacity = capacity + increment;
-
-	// create new buffer
-	const Util::Set<uint32_t>& queues = Vulkan::GetQueueFamilies();
-	setupInfo.info.pQueueFamilyIndices = queues.KeysAsArray().Begin();
-	setupInfo.info.queueFamilyIndexCount = (uint32_t)queues.Size();
-	setupInfo.info.size = newCapacity * setupInfo.stride;
-
-	VkBuffer newBuf;
-	VkResult res = vkCreateBuffer(setupInfo.dev, &setupInfo.info, nullptr, &newBuf);
-	n_assert(res == VK_SUCCESS);
-
-	// allocate new instance memory, alignedSize is the aligned size of a single buffer
-	VkDeviceMemory newMem;
-	uint32_t alignedSize;
-	VkUtilities::AllocateBufferMemory(setupInfo.dev, newBuf, newMem, VkMemoryPropertyFlagBits(VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT), alignedSize);
-
-	// bind to buffer, this is the reason why we must destroy and create the buffer again
-	res = vkBindBufferMemory(setupInfo.dev, newBuf, newMem, 0);
-	n_assert(res == VK_SUCCESS);
-
-	// copy old to new, old memory is already mapped
-	void* dstData;
-
-	// map new memory with new capacity, avoids a second map
-	res = vkMapMemory(setupInfo.dev, newMem, 0, alignedSize, 0, &dstData);
-	n_assert(res == VK_SUCCESS);
-	memcpy(dstData, mapInfo.data, setupInfo.size);
-	vkUnmapMemory(setupInfo.dev, setupInfo.mem);
-
-	// clean up old data	
-	vkDestroyBuffer(setupInfo.dev, runtimeInfo.buf, nullptr);
-	vkFreeMemory(setupInfo.dev, setupInfo.mem, nullptr);
-
-	// replace old device memory and size
-	setupInfo.size = alignedSize;
-	runtimeInfo.buf = newBuf;
-	setupInfo.mem = newMem;
-	mapInfo.data = dstData;
-	return alignedSize;
-}
-
 //------------------------------------------------------------------------------
 /**
 */
@@ -93,7 +39,6 @@ CreateShaderRWBuffer(const ShaderRWBufferCreateInfo& info)
 	VkShaderRWBufferLoadInfo& setupInfo = shaderRWBufferAllocator.Get<0>(id);
 	VkShaderRWBufferRuntimeInfo& runtimeInfo = shaderRWBufferAllocator.Get<1>(id);
 	VkShaderRWBufferMapInfo& mapInfo = shaderRWBufferAllocator.Get<2>(id);
-	ShaderRWBufferStretchInterface& stretch = shaderRWBufferAllocator.Get<3>(id);
 
 	VkPhysicalDeviceProperties props = Vulkan::GetCurrentProperties();
 	setupInfo.dev = Vulkan::GetCurrentDevice();
@@ -129,9 +74,6 @@ CreateShaderRWBuffer(const ShaderRWBufferCreateInfo& info)
 	ShaderRWBufferId ret;
 	ret.id24 = id;
 	ret.id8 = ShaderRWBufferIdType;
-	stretch.obj = ret;
-	stretch.resizer.Setup(setupInfo.stride, (SizeT)props.limits.minStorageBufferOffsetAlignment, setupInfo.numBuffers);
-	stretch.resizer.SetTarget(&stretch);
 
 	// map memory so we can use it later
 	res = vkMapMemory(setupInfo.dev, setupInfo.mem, 0, alignedSize, 0, &mapInfo.data);
@@ -160,6 +102,19 @@ DestroyShaderRWBuffer(const ShaderRWBufferId id)
 	vkFreeMemory(setupInfo.dev, setupInfo.mem, nullptr);
 
 	shaderRWBufferAllocator.DeallocObject(id.id24);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+ShaderRWBufferUpdate(const ShaderRWBufferId id, void* data, SizeT bytes)
+{
+	VkShaderRWBufferLoadInfo& setupInfo = shaderRWBufferAllocator.Get<0>(id.id24);
+#if NEBULA_DEBUG
+	n_assert(setupInfo.size >= bytes);
+#endif
+	memcpy(setupInfo.mem, data, bytes);
 }
 
 } // namespace CoreGraphics

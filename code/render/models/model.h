@@ -14,6 +14,8 @@
 namespace Models
 {
 
+class ModelNode;
+
 RESOURCE_ID_TYPE(ModelId);
 ID_32_32_NAMED_TYPE(ModelInstanceId, model, instance);
 
@@ -43,6 +45,7 @@ void DestroyModel(const ModelId id);
 const ModelInstanceId CreateModelInstance(const ModelId mdl);
 /// destroy model instance
 void DestroyModelInstance(const ModelInstanceId id);
+
 
 class StreamModelPool;
 extern StreamModelPool* modelPool;

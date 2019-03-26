@@ -152,6 +152,8 @@ public:
     scalar w() const;
     /// read-only access to indexed component
     scalar& operator[](const int index);
+	/// read-only access to indexed component
+	scalar operator[](const int index) const;
 
     /// return length of vector
     scalar length() const;
@@ -637,6 +639,17 @@ float4::w() const
 */
 __forceinline scalar&
 float4::operator[]( const int index )
+{
+	n_assert(index < 4);
+	return this->vec.f[index];
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline scalar
+float4::operator[](const int index) const
 {
 	n_assert(index < 4);
 	return this->vec.f[index];
@@ -1368,7 +1381,7 @@ __forceinline float4
 float4::select(const float4& v0, const float4& v1, const uint i0, const uint i1, const uint i2, const uint i3)
 {
 	//FIXME this should be converted to something similiar as XMVectorSelect
-	return float::permute(v0, v1, i0, i1, i2, i3);
+	return float4::permute(v0, v1, i0, i1, i2, i3);
 }
 
 //------------------------------------------------------------------------------

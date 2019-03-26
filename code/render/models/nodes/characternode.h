@@ -49,7 +49,7 @@ public:
 		IndexT updateFrame;
 		bool updateThisFrame;
 		Util::HashTable<Util::StringAtom, Models::ModelNode::Instance*, 8> activeSkinInstances;
-		Util::FixedArray<Math::matrix44> joints;
+		const Util::FixedArray<Math::matrix44>* joints;
 
 		void Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
 		void ApplySkin(const Util::StringAtom& skinName);
@@ -105,15 +105,6 @@ CharacterNode::GetAnimResource() const
 
 //------------------------------------------------------------------------------
 /**
-inline const Ptr<Character>&
-CharacterNode::GetCharacter() const
-{
-    return this->character;
-}
-*/
-
-//------------------------------------------------------------------------------
-/**
 */
 inline const Resources::ResourceId 
 CharacterNode::GetAnimationResourceId() const
@@ -138,7 +129,7 @@ ModelNodeInstanceCreator(CharacterNode)
 inline void
 CharacterNode::Instance::Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent)
 {
-	ModelNode::Instance::Setup(node, parent);
+	TransformNode::Instance::Setup(node, parent);
 }
 
 } // namespace Characters

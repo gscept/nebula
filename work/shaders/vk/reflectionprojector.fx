@@ -23,11 +23,11 @@ shared varblock ReflectionProjectorBlock
 	vec4 BBoxCenter;
 	float FalloffDistance = 0.2f;
 	float FalloffPower = 16.0f;
-	int NumEnvMips = 9;
+	int LocalNumEnvMips = 9;
 };
 
-samplerCube EnvironmentMap;
-samplerCube IrradianceMap;
+samplerCube LocalEnvironmentMap;
+samplerCube LocalIrradianceMap;
 
 samplerstate GeometrySampler
 {
@@ -41,7 +41,7 @@ samplerstate GeometrySampler
 
 samplerstate EnvironmentSampler
 {
-	Samplers = { EnvironmentMap, IrradianceMap };
+	Samplers = { LocalEnvironmentMap, LocalIrradianceMap };
 	Filter = MinMagMipLinear;
 	AddressU = Wrap;
 	AddressV = Wrap;
@@ -177,8 +177,8 @@ psMain(in vec3 viewSpacePosition,
 		// calculate reflection and irradiance
 		float x =  dot(viewSpaceNormal, -viewVec);
 		vec3 rim = FresnelSchlickGloss(spec.rgb, x, spec.a);
-		vec3 refl = textureLod(EnvironmentMap, reflectVec, oneMinusSpec.a * NumEnvMips).rgb * rim;
-		vec3 irr = textureLod(IrradianceMap, worldNormal.xyz, 0).rgb;
+		vec3 refl = textureLod(LocalEnvironmentMap, reflectVec, oneMinusSpec.a * LocalNumEnvMips).rgb * rim;
+		vec3 irr = textureLod(LocalIrradianceMap, worldNormal.xyz, 0).rgb;
 		Color = vec4(irr * albedo + refl, diff);
 	}
 	else

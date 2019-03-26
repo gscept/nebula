@@ -19,6 +19,10 @@
 
 #include "system/cpu.h"
 
+#ifndef PUBLIC_BUILD
+#include "imgui.h"
+#endif
+
 namespace Visibility
 {
 
@@ -27,6 +31,8 @@ ObservableContext::ObserveeAllocator ObservableContext::observeeAllocator;
 
 Util::Array<VisibilitySystem*> ObserverContext::systems;
 Jobs::JobPortId ObserverContext::jobPort;
+Jobs::JobSyncId ObserverContext::jobInternalSync;
+Jobs::JobSyncId ObserverContext::jobHostSync;
 Threading::SafeQueue<Jobs::JobId> ObserverContext::runningJobs;
 
 extern void VisibilitySortJob(const Jobs::JobFuncContext& ctx);
@@ -85,7 +91,7 @@ ObserverContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frame
 		switch (type)
 		{
 		case Model:
-			observeeTransforms[i] = Models::ModelContext::GetTransform(id);
+			observeeTransforms[i] = Models::ModelContext::GetBoundingBox(id).to_matrix44();
 			break;
 		case Light:
 			observeeTransforms[i] = Lighting::LightContext::GetTransform(id);
@@ -195,9 +201,10 @@ ObserverContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frame
 		}
 
 	// put a sync point for the jobs
-	Jobs::JobPortSync(ObserverContext::jobPort);
+	Jobs::JobSyncSignal(ObserverContext::jobInternalSync, ObserverContext::jobPort);
+	Jobs::JobSyncThreadWait(ObserverContext::jobInternalSync, ObserverContext::jobPort);
 
-	if (vis.Size() > 0) for (i = 0; i < vis.Size(); i++)
+	for (i = 0; i < vis.Size(); i++)
 	{
 		Util::Array<bool>& flags = vis[i].GetArray<0>();
 		Util::Array<Graphics::ContextEntityId>& entities = vis[i].GetArray<1>();
@@ -225,6 +232,9 @@ ObserverContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frame
 		// schedule job
 		Jobs::JobId job = Jobs::CreateJob({ VisibilitySortJob });
 		Jobs::JobSchedule(job, ObserverContext::jobPort, ctx);
+		
+		// insert sync
+		Jobs::JobSyncSignal(ObserverContext::jobHostSync, ObserverContext::jobPort);
 
 		// add to delete list
 		ObserverContext::runningJobs.Enqueue(job);
@@ -243,6 +253,10 @@ ObserverContext::Create()
 	__bundle.OnAfterView = nullptr;
 	__bundle.OnAfterFrame = nullptr;
 	__bundle.StageBits = &ObservableContext::__state.currentStage;
+#ifndef PUBLIC_BUILD
+	__bundle.OnRenderDebug = ObserverContext::OnRenderDebug;
+#endif 
+
 	ObserverContext::__state.allowedRemoveStages = Graphics::OnBeforeFrameStage;
 	Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle);
 
@@ -255,7 +269,26 @@ ObserverContext::Create()
 	};
 	ObserverContext::jobPort = Jobs::CreateJobPort(info);
 
+	Jobs::CreateJobSyncInfo sinfo =
+	{
+		nullptr
+	};
+	ObserverContext::jobInternalSync = Jobs::CreateJobSync(sinfo);
+	ObserverContext::jobHostSync = Jobs::CreateJobSync(sinfo);
+
 	_CreateContext();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+ObserverContext::Discard()
+{
+	Jobs::DestroyJobPort(ObserverContext::jobPort);
+	Jobs::DestroyJobSync(ObserverContext::jobInternalSync);
+	Jobs::DestroyJobSync(ObserverContext::jobHostSync);
+	Graphics::GraphicsServer::Instance()->UnregisterGraphicsContext(&__bundle);
 }
 
 //------------------------------------------------------------------------------
@@ -331,7 +364,7 @@ ObserverContext::WaitForVisibility(const IndexT frameIndex, const Timing::Time f
 		ObserverContext::runningJobs.DequeueAll(jobs);
 
 		// wait for all jobs to finish
-		Jobs::JobPortWait(ObserverContext::jobPort);
+		Jobs::JobSyncHostWait(ObserverContext::jobHostSync);
 
 		// destroy jobs
 		IndexT i;
@@ -341,6 +374,35 @@ ObserverContext::WaitForVisibility(const IndexT frameIndex, const Timing::Time f
 		}
 	}
 }
+
+#ifndef PUBLIC_BUILD
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+ObserverContext::OnRenderDebug(uint32_t flags)
+{
+	// wait for all jobs to finish
+	Jobs::JobSyncHostWait(ObserverContext::jobHostSync);
+
+	Util::Array<VisibilityResultAllocator>& vis = observerAllocator.GetArray<3>();
+	Util::FixedArray<SizeT> visCounters(vis.Size(), 0);
+	for (IndexT i = 0; i < vis.Size(); i++)
+	{
+		auto res = vis[i].GetArray<0>();
+		for (IndexT j = 0; j < res.Size(); j++)
+			if (res[j])
+				visCounters[i]++;
+	}
+	ImGui::Begin("Visibility", nullptr, 0);
+	ImGui::SetWindowSize(ImVec2(240, 100));
+	for (IndexT i = 0; i < vis.Size(); i++)
+	{
+		ImGui::Text("Entities visible for observer %d: [%d]", i, visCounters[i]);
+	}
+	ImGui::End();
+}
+#endif
 
 //------------------------------------------------------------------------------
 /**

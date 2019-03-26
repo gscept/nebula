@@ -194,6 +194,17 @@ ModelContext::GetTransform(const Graphics::ContextEntityId id)
 //------------------------------------------------------------------------------
 /**
 */
+Math::bbox 
+ModelContext::GetBoundingBox(const Graphics::GraphicsEntityId id)
+{
+	const ContextEntityId cid = GetContextId(id);
+	ModelInstanceId& inst = modelContextAllocator.Get<1>(cid.id);
+	return Models::modelPool->modelInstanceAllocator.Get<4>(inst.instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 const Util::Array<Models::ModelNode::Instance*>& 
 ModelContext::GetModelNodeInstances(const Graphics::GraphicsEntityId id)
 {
@@ -280,8 +291,8 @@ ModelContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTim
 			{
 				Models::ModelNode::Instance* node = nodes[j];
 
-				if (!node->active)
-					continue;
+				//if (!node->active)
+				//	continue;
 
 				Math::matrix44& parentTransform = transform;
 				if (node->parent != nullptr && node->parent->node->type >= NodeHasTransform)

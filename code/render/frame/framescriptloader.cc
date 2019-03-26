@@ -1131,14 +1131,15 @@ FrameScriptLoader::ParseSubpassSystem(const Ptr<Frame::FrameScript>& script, Fra
 	}
 
 	Util::String subsystem(node->string_value);
-	if (subsystem == "Lights")					op->SetSubsystem(FrameSubpassSystem::Lights);
-	else if (subsystem == "LightProbes")		op->SetSubsystem(FrameSubpassSystem::LightProbes);
-	else if (subsystem == "LocalShadowsSpot")	op->SetSubsystem(FrameSubpassSystem::LocalShadowsSpot);
-	else if (subsystem == "LocalShadowsPoint")	op->SetSubsystem(FrameSubpassSystem::LocalShadowsPoint);
-	else if (subsystem == "GlobalShadows")		op->SetSubsystem(FrameSubpassSystem::GlobalShadows);
-	else if (subsystem == "UI")					op->SetSubsystem(FrameSubpassSystem::UI);
-	else if (subsystem == "Text")				op->SetSubsystem(FrameSubpassSystem::Text);
-	else if (subsystem == "Shapes")				op->SetSubsystem(FrameSubpassSystem::Shapes);
+	if (subsystem == "Lights")						op->SetSubsystem(FrameSubpassSystem::Lights);
+	else if (subsystem == "LightClassification")	op->SetSubsystem(FrameSubpassSystem::LightClassification);
+	else if (subsystem == "LightProbes")			op->SetSubsystem(FrameSubpassSystem::LightProbes);
+	else if (subsystem == "LocalShadowsSpot")		op->SetSubsystem(FrameSubpassSystem::LocalShadowsSpot);
+	else if (subsystem == "LocalShadowsPoint")		op->SetSubsystem(FrameSubpassSystem::LocalShadowsPoint);
+	else if (subsystem == "GlobalShadows")			op->SetSubsystem(FrameSubpassSystem::GlobalShadows);
+	else if (subsystem == "UI")						op->SetSubsystem(FrameSubpassSystem::UI);
+	else if (subsystem == "Text")					op->SetSubsystem(FrameSubpassSystem::Text);
+	else if (subsystem == "Shapes")					op->SetSubsystem(FrameSubpassSystem::Shapes);
 	else
 	{
 		n_error("No subsystem called '%s' exists", subsystem.AsCharPtr());

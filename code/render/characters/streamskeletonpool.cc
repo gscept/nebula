@@ -92,6 +92,7 @@ StreamSkeletonPool::LoadFromStream(const Resources::ResourceId id, const Util::S
 void 
 StreamSkeletonPool::Unload(const Resources::ResourceId id)
 {
+	this->skeletonAllocator.DeallocObject(id.allocId);
 }
 
 //------------------------------------------------------------------------------

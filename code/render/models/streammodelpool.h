@@ -42,6 +42,11 @@ public:
 	/// destroy an instance of a model
 	void DestroyModelInstance(const ModelInstanceId id);
 
+	/// get node instances
+	const Util::Dictionary<Util::StringAtom, Models::ModelNode*>& GetModelNodes(const ModelId id);
+	/// get node instances
+	const Util::Array<Models::ModelNode::Instance*>& GetModelNodeInstances(const ModelInstanceId id);
+
 	/// get bounding box of model
 	const Math::bbox& GetModelBoundingBox(const ModelId id) const;
 	/// get bounding box of model
@@ -104,8 +109,8 @@ private:
 
 	enum
 	{
-		NodeInstances,
-		NodeTypes,
+		ModelNodeInstances,
+		ModelNodeTypes,
 		InstanceMemory,
 		InstanceTransform,
 		InstanceBoundingBox,
@@ -127,4 +132,10 @@ private:
 	nodeInstanceConstructors.Append([this](Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& alloc) -> Models::ModelNode::Instance* { return alloc.Alloc<Models::Type::Instance>(); }); \
 	this->nodeFourCCMapping.Add(FourCC, NodeMappingCounter++);
 };
+
+/// get node instances
+const Util::Dictionary<Util::StringAtom, Models::ModelNode*>& ModelGetNodes(const ModelId id);
+/// get node instances
+const Util::Array<Models::ModelNode::Instance*>& ModelInstanceGetNodes(const ModelInstanceId id);
+
 } // namespace Models

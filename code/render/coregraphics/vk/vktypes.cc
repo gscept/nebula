@@ -837,8 +837,10 @@ VkTypes::AsVkVertexType(CoreGraphics::VertexComponent::Format f)
 	case VertexComponent::Byte4N:	return VK_FORMAT_R8G8B8A8_SNORM;
 	case VertexComponent::Short2N:  return VK_FORMAT_R16G16_SNORM;
 	case VertexComponent::Short4N:  return VK_FORMAT_R16G16B16A16_SNORM;
+	case VertexComponent::UShort2N:  return VK_FORMAT_R16G16_UNORM;
+	case VertexComponent::UShort4N:  return VK_FORMAT_R16G16B16A16_UNORM;
 	default:
-		n_error("OGL4Types::AsOGL4SymbolicType(): invalid input parameter!");
+		n_error("VkTypes::AsVkVertexType(): invalid input parameter!");
 		return VK_FORMAT_R32G32B32A32_SFLOAT;
 	}
 }

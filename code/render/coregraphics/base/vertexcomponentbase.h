@@ -50,6 +50,8 @@ public:
 		Byte4N,		//> four-component normalized signed byte (value / 127.0f)
         Short2N,    //> two-component normalized signed short (value / 32767.0f)
         Short4N,    //> four-component normalized signed short (value / 32767.0f)
+		UShort2N,	//> two-component unnormalized signed short
+		UShort4N,	//> four-component unnormalized signed short
 
         // PS3-specific
         Float16,

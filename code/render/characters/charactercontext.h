@@ -45,6 +45,7 @@ namespace Characters
 {
 
 extern void	SkeletonEvalJob(const Jobs::JobFuncContext& ctx);
+extern void SkeletonEvalJobWithVariation(const Jobs::JobFuncContext& ctx);
 enum EnqueueMode
 {
 	Append,				// adds clip to the queue to play after current on the track
@@ -109,6 +110,8 @@ public:
 
 	/// runs before frame is updated
 	static void OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime, const Timing::Time time, const Timing::Tick ticks);
+	/// run after frame
+	static void OnAfterFrame(const IndexT frameIndex, const Timing::Time frameTime);
 
 	/// register anim sample mask, and return pointer
 	static CoreAnimation::AnimSampleMask* CreateAnimSampleMask(const Util::StringAtom& name, const Util::FixedArray<Math::scalar>& weights);
@@ -198,6 +201,7 @@ private:
 	static void Dealloc(Graphics::ContextEntityId id);
 
 	static Jobs::JobPortId jobPort;
+	static Jobs::JobSyncId jobSync;
 	static Threading::SafeQueue<Jobs::JobId> runningJobs;
 	static Util::HashTable<Util::StringAtom, CoreAnimation::AnimSampleMask> masks;
 };
