@@ -25,7 +25,7 @@
 
 #define _DeclareContext() \
 private:\
-	static Graphics::GraphicsContext::State __state;\
+	static Graphics::GraphicsContextState __state;\
 	static Graphics::GraphicsContextFunctionBundle __bundle;\
 public:\
 	static void RegisterEntity(const Graphics::GraphicsEntityId id);\
@@ -36,8 +36,9 @@ public:\
 	static void BeginBulkRegister(); \
 	static void EndBulkRegister();
 
+
 #define _ImplementContext(ctx) \
-Graphics::GraphicsContext::State ctx::__state; \
+Graphics::GraphicsContextState ctx::__state; \
 Graphics::GraphicsContextFunctionBundle ctx::__bundle; \
 void ctx::RegisterEntity(const Graphics::GraphicsEntityId id) \
 {\
@@ -53,7 +54,7 @@ void ctx::DeregisterEntity(const Graphics::GraphicsEntityId id)\
 	if (__state.allowedRemoveStages & __state.currentStage) \
 	{ \
 		__state.Dealloc(__state.entitySliceMap.ValueAtIndex(id, i));\
-		__state.entitySliceMap.Erase(i);\
+		__state.entitySliceMap.EraseIndex(id, i);\
 	} \
 	else \
 	{ \
@@ -87,7 +88,7 @@ void ctx::EndBulkRegister()\
 #define _CreateContext() \
 	__state.Alloc = Alloc; \
 	__state.Dealloc = Dealloc; \
-	__state.currentStage = __state.allowedRemoveStages = Graphics::NoStage;
+	__state.currentStage = Graphics::NoStage;
 
 namespace Graphics
 {
@@ -140,8 +141,18 @@ struct GraphicsContextFunctionBundle
 	};
 };
 
-
 ID_32_TYPE(ContextEntityId)
+
+struct GraphicsContextState
+{
+	StageBits currentStage;	// used by the GraphicsServer to set the state
+	StageBits allowedRemoveStages = StageBits::NoStage;	// if a delete is done while not in one of these stages, it will be added as a deferred delete
+	Util::ArrayStack<GraphicsEntityId, 8> delayedRemoveQueue;
+
+	Util::HashTable<GraphicsEntityId, ContextEntityId, 128, 64> entitySliceMap;
+	ContextEntityId(*Alloc)();
+	void(*Dealloc)(ContextEntityId id);
+};
 
 class GraphicsContext
 {
@@ -154,17 +165,6 @@ public:
 
 protected:
 	friend class GraphicsServer;
-
-	struct State
-	{
-		StageBits currentStage;	// used by the GraphicsServer to set the state
-		StageBits allowedRemoveStages;	// if a delete is done while not in one of these stages, it will be added as a deferred delete
-		Util::ArrayStack<GraphicsEntityId, 8> delayedRemoveQueue;
-
-		Util::HashTable<GraphicsEntityId, ContextEntityId, 128, 64> entitySliceMap;
-		ContextEntityId(*Alloc)();
-		void(*Dealloc)(ContextEntityId id);
-	};
 };
 
 } // namespace Graphics

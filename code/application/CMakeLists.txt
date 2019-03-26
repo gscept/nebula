@@ -3,8 +3,8 @@
 #-------------------------------------------------------------------------------
 
 nebula_begin_module(application)
-	fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/foundation ${CODE_ROOT}/render ${CODE_ROOT}/resource)
-	fips_deps(foundation render resource)
+	fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/foundation ${CODE_ROOT}/render ${CODE_ROOT}/resource ${CODE_ROOT}/audio)
+	fips_deps(foundation render audio resource)
 	fips_dir(.)
 		fips_files(
 			stdneb.h
@@ -83,6 +83,8 @@ nebula_begin_module(application)
 			userprofile.cc
 			scenecompiler.h
 			scenecompiler.cc
+			jsonentityloader.h
+			jsonentityloader.cc
 		)
 	fips_dir(graphicsfeature)
 		fips_files(
@@ -97,6 +99,19 @@ nebula_begin_module(application)
 		)
 	fips_dir(graphicsfeature/messages)
 		nebula_add_nidl(graphicsprotocol.nidl)
+	fips_dir(audiofeature)
+		fips_files(
+			audiofeatureunit.h
+			audiofeatureunit.cc
+		)
+	fips_dir(audiofeature/components)
+		nebula_add_nidl(audioemitterallocator.nidl)
+		fips_files(
+			audioemittercomponent.h
+			audioemittercomponent.cc
+		)
+	fips_dir(audiofeature/messages)
+		nebula_add_nidl(audioprotocol.nidl)
 	fips_dir(appgame)
 		fips_files(
 			gameapplication.h

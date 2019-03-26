@@ -121,6 +121,8 @@ LightContext::~LightContext()
 void 
 LightContext::Create()
 {
+	_CreateContext();
+
 	__bundle.OnBeforeFrame = nullptr;
 	__bundle.OnWaitForWork = nullptr;
 	__bundle.OnBeforeView = LightContext::OnBeforeView;
@@ -130,7 +132,7 @@ LightContext::Create()
 #ifndef PUBLIC_BUILD
     __bundle.OnRenderDebug = LightContext::OnRenderDebug;
 #endif
-	Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle);
+	Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
 	using namespace CoreGraphics;
 

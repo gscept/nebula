@@ -42,6 +42,8 @@ ModelContext::~ModelContext()
 void
 ModelContext::Create()
 {
+	_CreateContext();
+
 	__bundle.OnBeforeFrame = ModelContext::OnBeforeFrame;
 	__bundle.OnWaitForWork = nullptr;
 	__bundle.OnBeforeView = ModelContext::OnBeforeView;
@@ -52,9 +54,7 @@ ModelContext::Create()
     __bundle.OnRenderDebug = ModelContext::OnRenderDebug;
 #endif
 	ModelContext::__state.allowedRemoveStages = Graphics::OnBeforeFrameStage;
-	Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle);
-
-	_CreateContext();
+	Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 }
 
 //------------------------------------------------------------------------------

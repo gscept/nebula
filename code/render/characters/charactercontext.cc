@@ -53,6 +53,8 @@ CharacterContext::~CharacterContext()
 void 
 CharacterContext::Create()
 {
+	_CreateContext();
+
 	__bundle.OnBeforeFrame = CharacterContext::OnBeforeFrame;
 	__bundle.OnWaitForWork = nullptr;
 	__bundle.OnBeforeView = nullptr;
@@ -63,7 +65,7 @@ CharacterContext::Create()
 	__bundle.OnRenderDebug = CharacterContext::OnRenderDebug;
 #endif
 	CharacterContext::__state.allowedRemoveStages = Graphics::OnBeforeFrameStage;
-	Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle);
+	Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
 	Jobs::CreateJobPortInfo info =
 	{

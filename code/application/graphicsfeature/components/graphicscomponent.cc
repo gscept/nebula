@@ -27,7 +27,7 @@ __ImplementComponent_woSerialization(GraphicsFeature::GraphicsComponent, compone
 void
 GraphicsComponent::Create()
 {
-	component = GraphicsComponentAllocator();
+	component.DestroyAll();
 
 	__SetupDefaultComponentBundle(component);
 	component.functions.OnActivate = OnActivate;

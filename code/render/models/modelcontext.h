@@ -118,6 +118,16 @@ ModelContext::Alloc()
 inline void
 ModelContext::Dealloc(Graphics::ContextEntityId id)
 {
+	// clean up old stuff, but don't deallocate entity
+	ModelId& rid = modelContextAllocator.Get<0>(id.id);
+	ModelInstanceId& mdl = modelContextAllocator.Get<1>(id.id);
+
+	if (mdl != ModelInstanceId::Invalid()) // actually deallocate current instance
+		Models::DestroyModelInstance(mdl);
+	if (rid != ModelId::Invalid()) // decrement model resource
+		Models::DestroyModel(rid);
+	mdl = ModelInstanceId::Invalid();
+
 	modelContextAllocator.DeallocObject(id.id);
 }
 

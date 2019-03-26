@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //  levelloader.cc
-//  (C) 2018 Individual contributors, see AUTHORS file
+//  (C) 2018-2019 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "levelloader.h"
@@ -11,9 +11,6 @@
 #include "basegamefeature/managers/componentmanager.h"
 #include "basegamefeature/components/transformcomponent.h"
 
-#include <chrono>
-#include <ctime>
-
 namespace BaseGameFeature
 {
 
@@ -23,8 +20,6 @@ namespace BaseGameFeature
 bool
 LevelLoader::Save(const Util::String& levelName)
 {
-	auto tstart = std::chrono::system_clock::now();
-
 	auto numEntities = Game::EntityManager::Instance()->GetNumEntities();
 	SceneCompiler scene;
 	uint indexHash = 0;
@@ -45,6 +40,10 @@ LevelLoader::Save(const Util::String& levelName)
 			// Skip this component
 			continue;
 		}
+
+		// We need to clean up and optimize any potential garbage.
+		component->Clean();
+
 		// this component is part of scene.
 		scene.numComponents++;
 
@@ -115,10 +114,6 @@ LevelLoader::Save(const Util::String& levelName)
 
 	scene.Compile(levelName);
 	
-	auto tend = std::chrono::system_clock::now();
-	std::chrono::duration<double> elapsed_seconds = tend - tstart;
-	n_printf("Save time: %f\n", elapsed_seconds.count());
-
 	return true;
 }
 
@@ -135,7 +130,6 @@ struct Listener
 bool
 LevelLoader::Load(const Util::String& levelName)
 {
-	auto tstart = std::chrono::system_clock::now();
 	SceneCompiler scene;
 
     if (!scene.Decompile(levelName))
@@ -148,7 +142,6 @@ LevelLoader::Load(const Util::String& levelName)
 	// We need to save each component and enitity start index so that we can call activate after
 	// all components has been loaded
 	Util::Array<Listener> activateListeners;
-	Util::Array<Listener> loadListeners;
 
 	for (auto component : scene.components)
 	{
@@ -184,12 +177,11 @@ LevelLoader::Load(const Util::String& levelName)
 
 			if (c->SubscribedEvents().IsSet(Game::ComponentEvent::OnLoad) && c->functions.OnLoad != nullptr)
 			{
-				// Add to list to that we can call OnLoad for all instances in this component later.
-				Listener listener;
-				listener.component = c;
-				listener.firstInstance = start;
-				listener.numInstances = component.numInstances;
-				loadListeners.Append(listener);
+				SizeT end = start + component.numInstances;
+				for (SizeT i = start; i < end; i++)
+				{
+					c->functions.OnLoad(i);
+				}
 			}
 
 			if (c->SubscribedEvents().IsSet(Game::ComponentEvent::OnActivate) && c->functions.OnActivate != nullptr)
@@ -204,15 +196,6 @@ LevelLoader::Load(const Util::String& levelName)
 		}
 	}
 
-	for (auto listener : loadListeners)
-	{
-		SizeT end = listener.firstInstance + listener.numInstances;
-		for (SizeT i = listener.firstInstance; i < end; i++)
-		{
-			listener.component->functions.OnLoad(i);
-		}
-	}
-
 	for (auto listener : activateListeners)
 	{
 		SizeT end = listener.firstInstance + listener.numInstances;
@@ -221,10 +204,6 @@ LevelLoader::Load(const Util::String& levelName)
 			listener.component->functions.OnActivate(i);
 		}
 	}
-
-	auto tend = std::chrono::system_clock::now();
-	std::chrono::duration<double> elapsed_seconds = tend - tstart;
-	n_printf("Load time: %f\n", elapsed_seconds.count());
 
 	return true;
 }

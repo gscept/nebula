@@ -20,7 +20,7 @@ __ImplementComponent(TagComponent, data);
 void
 TagComponent::Create()
 {
-	data = TagComponentAllocator();
+	data.DestroyAll();
 
 	__SetupDefaultComponentBundle(data);
 	__RegisterComponent(&data, "TagComponent"_atm);

@@ -25,7 +25,7 @@
 	to messages with delegates.
 	@see	game/messaging/message.h
 
-	(C) 2018 Individual contributors, see AUTHORS file
+	(C) 2018-2019 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "game/entity.h"
@@ -70,6 +70,12 @@ public:
 
 	/// deregister an Id. will only remove the id and zero the block
 	virtual void DeregisterEntity(Entity e) = 0;
+
+	/// Deregister all inactive entities.
+	virtual void DeregisterAllInactive() = 0;
+
+	/// Free up all non-reserved by entity data.
+	virtual void Clean() = 0;
 
 	/// Returns a bitfield containing the events this component is subscribed to.
 	const Util::BitField<ComponentEvent::NumEvents>& SubscribedEvents() const;
@@ -125,7 +131,9 @@ public:
 
 	struct FunctionBundle
 	{
-		/// Called upon activation of component instance
+		/// Called upon activation of component instance.
+		/// When loading an entity from file, this is called after
+		/// all components have been loaded.
 		void(*OnActivate)(InstanceId instance);
 
 		/// Called upon deactivation of component instance
@@ -143,7 +151,8 @@ public:
 		/// called when game debug visualization is on
 		void(*OnRenderDebug)();
 
-		/// called after an entity has been loaded from file.
+		/// called when the component has been loaded from file.
+		/// this does not guarantee that all components have been loaded.
 		void(*OnLoad)(InstanceId instance);
 
 		/// called after an entity has been save to a file.
@@ -178,8 +187,8 @@ protected:
 	/// This should be adjacent to the data/tuple the values are in.
 	Util::FixedArray<Attr::AttrId> attributeIds;
 
-	/// Determines whether the component manager will execute this components
-	/// update methods (activation, load and such methods will still be called).
+	/// Determines whether the component manager will execute this components update methods.
+	/// activation, load and such methods will still be called.
 	bool enabled;
 
 	/// name of component

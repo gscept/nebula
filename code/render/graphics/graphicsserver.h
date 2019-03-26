@@ -31,6 +31,7 @@ namespace Graphics
 
 class GraphicsContext;
 struct GraphicsContextFunctionBundle;
+struct GraphicsContextState;
 class View;
 class GraphicsServer : public Core::RefCounted
 {
@@ -91,7 +92,7 @@ public:
     void RenderPlugin(const Util::StringAtom& filter);
 
 	/// register function bundle from graphics context, see GraphicsContextType::Create
-	void RegisterGraphicsContext(GraphicsContextFunctionBundle* context);
+	void RegisterGraphicsContext(GraphicsContextFunctionBundle* context, GraphicsContextState* state);
 	/// unregister function bundle
 	void UnregisterGraphicsContext(GraphicsContextFunctionBundle* context);
 private:
@@ -107,6 +108,7 @@ private:
 	IndexT frameIndex;
 
 	Util::Array<GraphicsContextFunctionBundle*> contexts;
+	Util::Array<GraphicsContextState*> states;
 	Ptr<Visibility::VisibilityServer> visServer;
 
 	Util::Array<Ptr<Stage>> stages;

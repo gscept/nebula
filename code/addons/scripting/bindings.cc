@@ -59,6 +59,9 @@ PYBIND11_EMBEDDED_MODULE(foundation, m)
         else throw(std::exception("unknown class"));
         return false;
     });
+
+	py::class_<Util::Variant>(m, "variant")
+		.def(py::init<>());
 }
 
 PYBIND11_EMBEDDED_MODULE(game, m)

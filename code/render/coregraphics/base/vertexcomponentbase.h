@@ -58,6 +58,8 @@ public:
         Float16_2,
         Float16_3,
         Float16_4,
+
+        InvalidFormat,
     };
     
     /// access type hint, this is only relevant on the Wii

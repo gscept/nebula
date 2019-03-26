@@ -121,7 +121,7 @@ Im3dContext::Create()
 {
     __bundle.OnRenderAsPlugin = Im3dContext::OnRenderAsPlugin;
     __bundle.OnBeforeView = Im3dContext::OnBeforeView;
-    Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle);
+    Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
 
     imState.inputHandler = Im3dInputHandler::Create();

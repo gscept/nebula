@@ -1,0 +1,11 @@
+"namespace": "Msg"
+"messages": {
+    "SetAudioResource": {
+        "fourcc": "SARM"
+        "description": "Set the audio resource."
+        "args": {
+            "entity": "entity"
+            "value": "string"
+        }
+    }
+}

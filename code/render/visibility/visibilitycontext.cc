@@ -247,6 +247,8 @@ ObserverContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frame
 void
 ObserverContext::Create()
 {
+	_CreateContext();
+
 	__bundle.OnBeforeFrame = ObserverContext::OnBeforeFrame;
 	__bundle.OnWaitForWork = ObserverContext::WaitForVisibility;
 	__bundle.OnBeforeView = nullptr;
@@ -258,7 +260,7 @@ ObserverContext::Create()
 #endif 
 
 	ObserverContext::__state.allowedRemoveStages = Graphics::OnBeforeFrameStage;
-	Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle);
+	Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
 	Jobs::CreateJobPortInfo info =
 	{
@@ -485,6 +487,7 @@ void
 ObservableContext::Create()
 {
 	_CreateContext();
+	ObservableContext::__state.allowedRemoveStages = Graphics::OnBeforeFrameStage;
 }
 
 //------------------------------------------------------------------------------

@@ -169,12 +169,14 @@ fips_begin_module(foundation)
 			iointerfacehandler.h
 			logfileconsolehandler.cc
 			logfileconsolehandler.h
-            jsonreader.cc
-            jsonreader.h
+			jsonreader.cc
+			jsonreader.h
 			jsonwriter.cc
-            jsonwriter.h
-            filedialog.cc
-            filedialog.h
+			jsonwriter.h
+			filedialog.cc
+			filedialog.h
+			filewatcher.cc
+			filewatcher.h
 			mediatype.h
 			memorystream.cc
 			memorystream.h
@@ -196,8 +198,6 @@ fips_begin_module(foundation)
 			xmlreader.h
 			xmlwriter.cc
 			xmlwriter.h
-			base/gamecontentserverbase.cc
-			base/gamecontentserverbase.h	
 			zipfs/ziparchive.cc
 			zipfs/ziparchive.h
 			zipfs/zipdirentry.cc
@@ -225,6 +225,11 @@ fips_begin_module(foundation)
 			util/bxmlloaderutil.h
 			#fixme. these have to be nidld
 			iointerfaceprotocol.cc
+		)
+		fips_dir(io/base)
+		fips_files(			
+			gamecontentserverbase.cc
+			gamecontentserverbase.h
 		)
 		fips_dir(math)
 		fips_files(
@@ -465,10 +470,12 @@ fips_begin_module(foundation)
 			fips_files(
 				win32/win32consolehandler.cc
 				win32/win32consolehandler.h
+				win32/win32filewatcher.cc
+				win32/win32filewatcher.h
 				win360/win360filetime.cc
 				win360/win360filetime.h
 				win360/win360fswrapper.cc
-				win360/win360fswrapper.h
+				win360/win360fswrapper.h				
 			)
 		fips_dir(timing GROUP "timing/win32")
 			fips_files(
@@ -515,6 +522,8 @@ fips_begin_module(foundation)
 			io/posix/posixconsolehandler.cc
 			io/posix/posixconsolehandler.h	
 			io/posix/posixfiletime.h
+			io/posix/linuxfilewatcher.cc
+			io/posix/linuxfilewatcher.h
 			io/posix/posixfswrapper.cc
 			io/posix/posixfswrapper.h
 			timing/posix/posixtimer.cc

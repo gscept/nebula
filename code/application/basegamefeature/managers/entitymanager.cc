@@ -65,7 +65,7 @@ EntityManager::DeleteEntity(const Entity & e)
 	// Call deletion callbacks for this entity
 	if (this->deletionCallbacks.Contains(e))
 	{
-		Util::Array<Util::Delegate<Entity>>& delegates = this->deletionCallbacks[e];
+		Util::Array<Util::Delegate<void(Entity)>>& delegates = this->deletionCallbacks[e];
 		for (SizeT i = 0; i < delegates.Size(); ++i)
 		{
 			n_assert2(delegates[i].IsValid(), "Deletion callback is not valid!");
@@ -122,7 +122,7 @@ EntityManager::InvalidateAllEntities()
 void
 EntityManager::RegisterDeletionCallback(const Entity & e, ComponentInterface* component)
 {
-	this->RegisterDeletionCallback(e, Util::Delegate<Entity>::FromMethod<ComponentInterface, &ComponentInterface::OnEntityDeleted>(component));
+	this->RegisterDeletionCallback(e, Util::Delegate<void(Entity)>::FromMethod<ComponentInterface, &ComponentInterface::OnEntityDeleted>(component));
 }
 
 //------------------------------------------------------------------------------
@@ -131,7 +131,7 @@ EntityManager::RegisterDeletionCallback(const Entity & e, ComponentInterface* co
 			keep track of callbacks with some listener id or similar.
 */
 void
-EntityManager::RegisterDeletionCallback(const Entity & e, const Util::Delegate<Entity>& callback)
+EntityManager::RegisterDeletionCallback(const Entity & e, const Util::Delegate<void(Entity)>& callback)
 {
 	if (this->deletionCallbacks.Contains(e))
 	{
@@ -141,7 +141,7 @@ EntityManager::RegisterDeletionCallback(const Entity & e, const Util::Delegate<E
 	}
 
 	// Add new entry
-	Util::Array<Util::Delegate<Entity>> delArray;
+	Util::Array<Util::Delegate<void(Entity)>> delArray;
 	delArray.Append(callback);
 	this->deletionCallbacks.Add(e, delArray);
 }
@@ -154,7 +154,7 @@ EntityManager::DeregisterDeletionCallback(const Entity & e, ComponentInterface* 
 {
 	n_assert2(this->deletionCallbacks.Contains(e), "Entity does not have a deletion callback registered for this component!");
 
-	Util::Array<Util::Delegate<Entity>>& delegates = this->deletionCallbacks[e];
+	Util::Array<Util::Delegate<void(Entity)>>& delegates = this->deletionCallbacks[e];
 	for (SizeT i = 0; i < delegates.Size(); ++i)
 	{
 		if (delegates[i].GetObject<ComponentInterface>() == component)

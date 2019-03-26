@@ -1,0 +1,7 @@
+The authors of Nebula in no particular order
+
+Radon Labs GmbH, Berlin/Germany
+
+Johannes Hirche
+Gustav Sterbrant
+Fredrik Lindahl

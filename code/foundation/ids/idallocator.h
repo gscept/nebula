@@ -70,7 +70,11 @@ public:
 	}
 
 	/// recycle id
-	void DeallocObject(const Ids::Id32 id) { this->pool.Dealloc(id); }
+	void DeallocObject(const Ids::Id32 id)
+	{ 
+		this->pool.Dealloc(id);
+		this->size--;
+	}
 
 	/// defragment allocator to make data tightly organized
 	void Defragment(Util::Array<Ids::Id32>& usedIds)
@@ -141,6 +145,7 @@ public:
 	{
 		return pool.GetNumUsed();
 	}
+
 private:
 
 	Ids::IdPool pool;

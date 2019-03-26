@@ -11,6 +11,7 @@
 #include "coregraphics/shaderserver.h"
 #include "coregraphics/displaydevice.h"
 #include "input/inputserver.h"
+#include "io/ioserver.h"
 
 using namespace Math;
 using namespace CoreGraphics;
@@ -175,7 +176,7 @@ ImguiContext::Create()
 {
     __bundle.OnRenderAsPlugin = ImguiContext::OnRenderAsPlugin;
     __bundle.OnBeforeFrame = ImguiContext::OnBeforeFrame;
-    Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle);
+    Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
 	// allocate imgui shader
 	state.uiShader = ShaderServer::Instance()->GetShader("shd:imgui.fxb");
@@ -243,13 +244,31 @@ ImguiContext::Create()
 	//io.RenderDrawListsFn = ImguiDrawFunction;
 
 	ImGuiStyle& style = ImGui::GetStyle();
-	style.FrameRounding = 2.5f;
-	style.GrabRounding = 2.5f;
-	style.ChildRounding = 2.5f;
-	//style.WindowTitleAlign = ImGuiAlign_Center;
-	//style.WindowRounding = 1.0f;
+	
+	style.FrameRounding = 0.0f;
+	style.GrabRounding = 0.0f;
+	style.ChildRounding = 0.0f;
+	style.WindowRounding = 2.0f;
+	style.PopupRounding = 0.0f;
 
+	style.WindowTitleAlign = { 0.01f, 0.38f };
+
+	style.WindowPadding = { 8.0f, 8.0f };
+	style.FramePadding = { 4, 3 };
+	style.ItemInnerSpacing = { 4, 2 };
+	style.ItemSpacing = { 10, 5 };
+	style.IndentSpacing = 20.0f;
+	style.GrabMinSize = 14.0f;
+
+	style.FrameBorderSize = 0.0f;
+	style.WindowBorderSize = 0.0f;
+	style.PopupBorderSize = 0.0f;
+	style.ChildBorderSize = 0.0f;
+
+	style.ScrollbarRounding = 0.0f;
+	
 	ImVec4 nebulaOrange(1.0f, 0.30f, 0.0f, 1.0f);
+	ImVec4 nebulaOrangeActive(0.9f, 0.20f, 0.05f, 1.0f);
 	nebulaOrange.w = 0.3f;
 	style.Colors[ImGuiCol_TitleBg] = nebulaOrange;
 	nebulaOrange.w = 0.6f;
@@ -282,9 +301,9 @@ ImguiContext::Create()
 	style.Colors[ImGuiCol_CheckMark] = nebulaOrange;
 	style.Colors[ImGuiCol_PopupBg] = ImVec4(0.05f, 0.05f, 0.05f, 0.95f);
 
-	style.Colors[ImGuiCol_Button] = ImVec4(0.3f, 0.3f, 0.33f, 1.0f);
-	style.Colors[ImGuiCol_WindowBg] = ImVec4(0.0f, 0.0f, 0.0f, 0.7f);
-	style.Colors[ImGuiCol_FrameBg] = ImVec4(0.2f, 0.25f, 0.25f, 1.0f);
+	style.Colors[ImGuiCol_Button] = ImVec4(0.2f, 0.2f, 0.2f, 1.0f);
+	style.Colors[ImGuiCol_WindowBg] = ImVec4(0.0f, 0.0f, 0.0f, 0.85f);
+	style.Colors[ImGuiCol_FrameBg] = ImVec4(1.0f, 1.0f, 1.0f, 0.25f);
 	style.Colors[ImGuiCol_FrameBgActive] = ImVec4(0.3f, 0.33f, 0.33f, 1.0f);
 	style.Colors[ImGuiCol_FrameBgHovered] = ImVec4(0.3f, 0.33f, 0.33f, 1.0f);
 	style.Colors[ImGuiCol_Text] = ImVec4(0.73f, 0.73f, 0.73f, 1.0f);
@@ -293,7 +312,12 @@ ImguiContext::Create()
 	style.Colors[ImGuiCol_CheckMark] = ImVec4(1.0f, 0.47f, 0.0f, 1.0f);
 	style.Colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.13f, 0.13f, 0.13f, 1.0f);
 	style.Colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.3f, 0.33f, 0.33f, 1.0f);
-	
+
+	style.Colors[ImGuiCol_Separator] = ImVec4(0.33f, 0.33f, 0.33f, 0.3f);
+	style.Colors[ImGuiCol_SeparatorHovered] = nebulaOrange;
+	style.Colors[ImGuiCol_SeparatorActive] = nebulaOrangeActive;
+
+
 
 	// Keyboard mapping. ImGui will use those indices to peek into the io.KeyDown[] array.
 	io.KeyMap[ImGuiKey_Tab] = Key::Tab;             
@@ -348,6 +372,10 @@ ImguiContext::Create()
 
 	// load settings from disk. If we don't do this here we	need to
 	// run an entire frame before being able to create or load settings
+	if (!IO::IoServer::Instance()->FileExists("imgui.ini"))
+	{
+		ImGui::SaveIniSettingsToDisk("imgui.ini");
+	}
 	ImGui::LoadIniSettingsFromDisk("imgui.ini");
 }
 

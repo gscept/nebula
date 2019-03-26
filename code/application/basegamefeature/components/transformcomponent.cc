@@ -25,7 +25,7 @@ __ImplementComponent_woSerialization(TransformComponent, data);
 void
 TransformComponent::Create()
 {
-	data = TransformComponentAllocator();
+	data.DestroyAll();
 
 	__SetupDefaultComponentBundle(data);
 	data.functions.OnDeactivate = OnDeactivate;

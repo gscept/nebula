@@ -270,7 +270,12 @@ inline ArrayStack<TYPE, STACK_SIZE>::ArrayStack(ArrayStack<TYPE, STACK_SIZE>&& r
 	}
 	else
 	{
-		memcpy(this->smallVector, rhs.smallVector, sizeof(TYPE) * rhs.count);
+		for (IndexT i = 0; i < rhs.count; ++i)
+		{
+			this->smallVector[i] = rhs.smallVector[i];
+		}
+
+		this->elements = this->smallVector;
 	}
 	rhs.count = 0;
 	rhs.capacity = 0;

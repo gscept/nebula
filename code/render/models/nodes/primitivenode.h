@@ -35,6 +35,10 @@ public:
 	virtual ModelNode::Instance* CreateInstance(byte** memory, const Models::ModelNode::Instance* parent) override;
 	/// get size of instance
 	virtual const SizeT GetInstanceSize() const { return sizeof(Instance); }
+	/// get the nodes primitive group index
+	uint32_t GetPrimitiveGroupIndex() const { return this->primitiveGroupIndex; }
+	/// get primitives mesh id
+	CoreGraphics::MeshId GetMeshId() const { return this->res; }
 
 protected:
 	friend class StreamModelPool;

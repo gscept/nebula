@@ -6,7 +6,7 @@
     Setup a Mesh object from a given vertex, index buffer and primitive group.
     
     (C) 2008 Radon Labs GmbH
-    (C) 2013-2018 Individual contributors, see AUTHORS file
+    (C) 2013-2019 Individual contributors, see AUTHORS file
 */
 #include "resources/resourcememorypool.h"
 #include "coregraphics/vertexbuffer.h"
@@ -41,6 +41,10 @@ public:
 	const IndexBufferId GetIndexBuffer(const MeshId id) const;
 	/// get topology
 	const CoreGraphics::PrimitiveTopology::Code GetPrimitiveTopology(const MeshId id) const;
+	/// enter thread-safe get mode
+	void BeginGet();
+	/// exit thread-safe get mode
+	void EndGet();
 private:
 	friend class StreamMeshPool;
 

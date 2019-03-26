@@ -13,6 +13,16 @@
 namespace BaseGameFeature
 {
 
+
+//------------------------------------------------------------------------------
+/**
+	@class	ComponentBuildData
+
+	Contains build data for components.
+
+	mStream contains the raw data that will be written to the buffer.
+	Note that the component instance owner needs to be correctly indexed.
+*/
 class ComponentBuildData
 {
 public:
@@ -26,6 +36,12 @@ public:
 	Ptr<IO::MemoryStream> mStream;
 };
 
+//------------------------------------------------------------------------------
+/**
+	@class	SceneCompiler
+	
+	Contains build data for an entire scene.
+*/
 class SceneCompiler
 {
 public:
