@@ -9,7 +9,7 @@
 
 namespace AudioFeature
 {
-__ImplementClass(AudioFeatureUnit, 'AUFU' , Game::FeatureUnit);
+__ImplementClass(AudioFeature::AudioFeatureUnit, 'AUFU' , Game::FeatureUnit);
 __ImplementSingleton(AudioFeatureUnit);
 
 //------------------------------------------------------------------------------

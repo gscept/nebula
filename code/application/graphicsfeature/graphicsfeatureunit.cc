@@ -7,7 +7,7 @@
 
 namespace GraphicsFeature
 {
-__ImplementClass(GraphicsFeatureUnit, 'FXFU' , Game::FeatureUnit);
+__ImplementClass(GraphicsFeature::GraphicsFeatureUnit, 'FXFU' , Game::FeatureUnit);
 __ImplementSingleton(GraphicsFeatureUnit);
 
 //------------------------------------------------------------------------------
