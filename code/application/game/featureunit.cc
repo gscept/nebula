@@ -220,9 +220,34 @@ FeatureUnit::RemoveManager(const Ptr<Manager>& manager)
 /**
 */
 void
+FeatureUnit::WriteMetadata(Ptr<IO::JsonWriter> const& writer) const
+{
+	writer->BeginObject();
+	writer->Add(this->GetClassNameA(), "name");
+
+	this->WriteAdditionalMetadata(writer);
+
+	writer->End();
+}
+
+//------------------------------------------------------------------------------
+/**
+	Override in subclass if needed.
+	This method is called inside an active JSON object and should be treated as such.
+*/
+void 
+FeatureUnit::WriteAdditionalMetadata(Ptr<IO::JsonWriter> const& writer) const
+{
+	// override in subclass if needed
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 FeatureUnit::OnBeforeLoad()
 {
-	// overwrite in subclass if needed
+	// override in subclass if needed
 }
 
 //------------------------------------------------------------------------------
@@ -231,7 +256,7 @@ FeatureUnit::OnBeforeLoad()
 void
 FeatureUnit::OnBeforeCleanup()
 {
-	// overwrite in subclass if needed
+	// override in subclass if needed
 }
 
 }; // namespace Game

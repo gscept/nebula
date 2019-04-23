@@ -75,8 +75,9 @@ public:
     /// is feature attached
     bool IsFeatureAttached(const Util::String& stringName) const;
 
+	Util::Array<Ptr<FeatureUnit>> const& GetGameFeatures() const;
+
 protected:
-	
     bool isOpen;
     bool isStarted;
     Util::Array<Ptr<FeatureUnit> > gameFeatures;

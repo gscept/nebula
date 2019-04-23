@@ -56,6 +56,17 @@ enum ComponentEvent
 	NumEvents		= 10
 };
 
+static constexpr const char* ComponentEventNames[] = {
+	"OnBeginFrame",
+	"OnRender",
+	"OnEndFrame",
+	"OnRenderDebug",
+	"OnActivate",
+	"OnDeactivate",
+	"OnLoad",
+	"OnSave"
+};
+
 class ComponentInterface
 {
 	__DeclareClass(ComponentInterface)

@@ -15,6 +15,9 @@
 #include "system/nebulasettings.h"
 #include "io/fswrapper.h"
 #include "basegamefeature/debug/gamepagehandler.h"
+#include "io/jsonwriter.h"
+#include "basegamefeature/basegamefeatureunit.h"
+#include "basegamefeature/managers/componentmanager.h"
 
 namespace App
 {
@@ -137,6 +140,14 @@ GameApplication::Open()
         // create and add new game features
         this->SetupGameFeatures();
 
+		if (this->args.GetBoolFlag("-export-metadata"))
+		{
+			this->ExportMetadata();
+			this->Exit();
+			return false;
+		}
+
+
         // setup profiling stuff
         _setup_timer(GameApplicationFrameTimeAll);
 
@@ -235,7 +246,10 @@ GameApplication::StepFrame()
 //------------------------------------------------------------------------------
 /**
     Setup new game features which should be used by this application.
-    Overwrite for all features which have to be used.
+    Overwride for all features which have to be used.
+
+	Make sure that features are setup ONLY in this method, since other
+	systems might not expect otherwise.
 */
 void
 GameApplication::SetupGameFeatures()
@@ -266,4 +280,36 @@ GameApplication::SetupAppFromCmdLineArgs()
         this->SetAppTitle(args.GetString("-appname"));
     }
 }
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GameApplication::ExportMetadata()
+{
+	Util::String filename("bin:metadata.json");
+	
+	Ptr<IO::JsonWriter> writer = IO::JsonWriter::Create();
+	writer->SetStream(IO::IoServer::Instance()->CreateStream(filename));
+
+	if (writer->Open())
+	{
+		writer->BeginObject("NebulaMetadata");
+		writer->Add(this->appName.AsCharPtr(), "appName");
+		writer->Add(this->appVersion.AsCharPtr(), "appVersion");
+		writer->Add(this->appID.AsCharPtr(), "appId");
+		writer->Add(this->companyName.AsCharPtr(), "company");
+		
+		writer->BeginArray("features");
+		for (auto const& feature : this->gameServer->GetGameFeatures())
+		{
+			feature->WriteMetadata(writer);
+		}
+		writer->End();
+
+		writer->End();
+		writer->Close();
+	}
+}
+
 } // namespace App

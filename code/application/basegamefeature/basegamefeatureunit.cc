@@ -135,4 +135,77 @@ BaseGameFeatureUnit::OnFrame()
     FeatureUnit::OnFrame();
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+void
+BaseGameFeatureUnit::WriteAdditionalMetadata(Ptr<IO::JsonWriter> const& writer) const
+{
+	writer->BeginArray("components");
+	SizeT numComponents = Game::ComponentManager::Instance()->GetNumComponents();
+	for (IndexT i = 0; i < numComponents; ++i)
+	{
+		auto const& component = Game::ComponentManager::Instance()->GetComponentAtIndex(i);
+		Util::String componentName = component->GetName().AsString();
+
+		writer->BeginObject();
+
+		writer->Add(componentName.AsCharPtr(), "name");
+		Util::FourCC fourcc = component->GetRtti()->GetFourCC();
+		writer->Add(fourcc.AsString(), "fourcc");
+		// writer->Add(component->GetEvents())
+		
+		
+		writer->BeginArray("events");
+		auto events = component->SubscribedEvents();
+		{
+			for (IndexT e = 0; e < Game::ComponentEvent::NumEvents; ++e)
+			{
+				if (events.IsSet(e))
+				{
+					writer->Add(Game::ComponentEventNames[e]);
+				}
+			}
+		}
+		writer->End();
+
+		writer->BeginArray("attributes");
+
+		for (auto const& attr : component->GetAttributeIds())
+		{
+			writer->BeginObject();
+			writer->Add(attr.GetName(), "name");
+			writer->Add(attr.GetFourCC().AsString(), "fourcc");
+
+			if (attr.GetValueType() == Attr::ValueType::EntityType)
+			{
+				/// @todo	this should be not be hardcoded.
+				writer->Add("entity", "type");
+			}
+			else
+			{
+				writer->Add(Util::Variant::TypeToString((Util::Variant::Type)attr.GetValueType()), "type");
+			}
+
+			Util::String accessMode;
+			if (attr.GetAccessMode() == Attr::AccessMode::ReadOnly)
+			{
+				accessMode = "R";
+			}
+			else
+			{
+				accessMode = "RW";
+			}
+
+			writer->Add(accessMode, "access");
+			writer->Add(attr.GetDefaultValue().ToString(), "default");
+			writer->End();
+		}
+
+		writer->End();
+		writer->End();
+	}
+	writer->End();
+}
+
 } // namespace Game
