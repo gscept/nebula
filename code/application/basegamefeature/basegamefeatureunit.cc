@@ -15,7 +15,7 @@
 
 namespace BaseGameFeature
 {
-__ImplementClass(BaseGameFeatureUnit, 'GAGF' , Game::FeatureUnit);
+__ImplementClass(BaseGameFeature::BaseGameFeatureUnit, 'GAGF' , Game::FeatureUnit);
 __ImplementSingleton(BaseGameFeatureUnit);
 
 using namespace App;
