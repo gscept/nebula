@@ -140,13 +140,15 @@ GameApplication::Open()
         // create and add new game features
         this->SetupGameFeatures();
 
+#ifndef NEBULA_PUBLIC_BUILD
+		// export metadata by setting -export-metadata flag in exec arguments
 		if (this->args.GetBoolFlag("-export-metadata"))
 		{
 			this->ExportMetadata();
 			this->Exit();
 			return false;
 		}
-
+#endif
 
         // setup profiling stuff
         _setup_timer(GameApplicationFrameTimeAll);

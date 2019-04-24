@@ -198,7 +198,32 @@ BaseGameFeatureUnit::WriteAdditionalMetadata(Ptr<IO::JsonWriter> const& writer) 
 			}
 
 			writer->Add(accessMode, "access");
-			writer->Add(attr.GetDefaultValue().ToString(), "default");
+			
+			const char* key = "default";
+
+			switch (attr.GetValueType())
+			{
+			//case Attr::ValueType::IntType:			writer->Add(attr.GetDefaultValue().GetInt(), key);			break;
+			//case Attr::ValueType::Int64Type:		writer->Add(attr.GetDefaultValue().GetInt64(), key);		break;
+			//case Attr::ValueType::UIntType:			writer->Add(attr.GetDefaultValue().GetUInt(), key);			break;
+			//case Attr::ValueType::UInt64Type:		writer->Add(attr.GetDefaultValue().GetUInt64(), key);		break;
+			//case Attr::ValueType::FloatType:		writer->Add(attr.GetDefaultValue().GetFloat(), key);		break;
+			//case Attr::ValueType::DoubleType:		writer->Add(attr.GetDefaultValue().GetDouble(), key);		break;
+			//case Attr::ValueType::BoolType:			writer->Add(attr.GetDefaultValue().GetBool(), key);			break;
+			//case Attr::ValueType::ShortType:		writer->Add(attr.GetDefaultValue().GetShort(), key);		break;
+			//case Attr::ValueType::UShortType:		writer->Add(attr.GetDefaultValue().GetUShort(), key);		break;
+			//case Attr::ValueType::ByteType:			writer->Add(attr.GetDefaultValue().GetByte(), key);			break;
+			//case Attr::ValueType::GuidType:			writer->Add(attr.GetDefaultValue().GetGuid(), key);			break;
+			//case Attr::ValueType::Float2Type:		writer->Add(attr.GetDefaultValue().GetFloat2(), key);		break;
+			//case Attr::ValueType::Float4Type:		writer->Add(attr.GetDefaultValue().GetFloat4(), key);		break;
+			//case Attr::ValueType::QuaternionType:	writer->Add(attr.GetDefaultValue().GetQuaternion(), key);	break;
+			//case Attr::ValueType::Matrix44Type:		writer->Add(attr.GetDefaultValue().GetMatrix44(), key);		break;
+			//case Attr::ValueType::EntityType:		writer->Add(attr.GetDefaultValue().GetUInt(), key);			break;
+			default:
+				n_warning("Attribute type %i not fully supported. Check basegamefeatureunit and add it to the list!", attr.GetValueType());
+				writer->Add(attr.GetDefaultValue().ToString(), "default");
+				break;
+			}
 			writer->End();
 		}
 
