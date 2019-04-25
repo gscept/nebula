@@ -20,7 +20,7 @@ public:
     /// default constructor
     FourCC();
     /// construct from 32-bit-value (e.g. FourCC('ABCD'))
-    FourCC(uint f);
+    constexpr FourCC(uint f);
     /// construct from string
     FourCC(const String& s);
     /// equality operator
@@ -69,7 +69,7 @@ FourCC::FourCC() :
 //------------------------------------------------------------------------------
 /**
 */
-inline
+constexpr
 FourCC::FourCC(uint f) :
     fourCC(f)
 {

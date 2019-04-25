@@ -63,19 +63,19 @@ ComponentInterface::SubscribedEvents() const
 //------------------------------------------------------------------------------
 /**
 */
-const Attr::AttrId&
-ComponentInterface::GetAttributeId(IndexT index) const
+const Attr::Attribute&
+ComponentInterface::GetAttribute(IndexT index) const
 {
-	return this->attributeIds[index];
+	return this->attributes[index];
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-const Util::FixedArray<Attr::AttrId>&
-ComponentInterface::GetAttributeIds() const
+const Util::FixedArray<Attr::Attribute>&
+ComponentInterface::GetAttributes() const
 {
-	return this->attributeIds;
+	return this->attributes;
 }
 
 //------------------------------------------------------------------------------

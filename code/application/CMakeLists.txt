@@ -31,7 +31,6 @@ nebula_begin_module(application)
 			componentplugin.cc
 			component.h
 			componentserialization.h
-			c_component.h
 			attribute.h
 		)
 	fips_dir(game/attr)

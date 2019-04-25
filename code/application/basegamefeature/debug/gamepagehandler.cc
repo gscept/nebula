@@ -93,7 +93,7 @@ GamePageHandler::HandleRequest(const Ptr<HttpRequest>& request)
 				htmlWriter->Element(HtmlElement::Anchor, component->GetRtti()->GetName());
 				htmlWriter->End(HtmlElement::TableData);
 				htmlWriter->Element(HtmlElement::TableData, String::FromInt(component->NumRegistered()));
-				htmlWriter->Element(HtmlElement::TableData, String::FromInt(component->GetAttributeIds().Size()));
+				htmlWriter->Element(HtmlElement::TableData, String::FromInt(component->GetAttributes().Size()));
 				htmlWriter->End(HtmlElement::TableRow);
 			}
 			htmlWriter->End(HtmlElement::Table);
@@ -149,7 +149,7 @@ void GamePageHandler::InspectComponent(const Util::FourCC& fourcc, const Ptr<Htt
 				htmlWriter->End(HtmlElement::TableRow);
 				htmlWriter->Begin(HtmlElement::TableRow);
 				htmlWriter->Element(HtmlElement::TableData, "Attribute Count:");
-				htmlWriter->Element(HtmlElement::TableData, String::FromUInt(component->GetAttributeIds().Size()));
+				htmlWriter->Element(HtmlElement::TableData, String::FromUInt(component->GetAttributes().Size()));
 				htmlWriter->End(HtmlElement::TableRow);
 				htmlWriter->End(HtmlElement::Table);
 
@@ -161,10 +161,10 @@ void GamePageHandler::InspectComponent(const Util::FourCC& fourcc, const Ptr<Htt
 				htmlWriter->Begin(HtmlElement::TableRow);
 				htmlWriter->Element(HtmlElement::TableHeader, "Instance Id");
 				htmlWriter->Element(HtmlElement::TableHeader, "Entity Id");
-				const auto& attributes = component->GetAttributeIds();
+				const auto& attributes = component->GetAttributes();
 				for (SizeT i = 1; i < attributes.Size(); i++)
 				{
-					htmlWriter->Element(HtmlElement::TableHeader, attributes[i].GetName());
+					htmlWriter->Element(HtmlElement::TableHeader, attributes[i].name);
 				}
 				htmlWriter->End(HtmlElement::TableRow);
 				
@@ -182,7 +182,7 @@ void GamePageHandler::InspectComponent(const Util::FourCC& fourcc, const Ptr<Htt
 						htmlWriter->Begin(HtmlElement::TableHeader);
 						String str = "";
 						Util::Variant value = component->GetAttributeValue(instance, i);
-						switch (attributes[i].GetValueType())
+						switch (attributes[i].type)
 						{
 						case Attr::ValueType::Matrix44Type:
 						{

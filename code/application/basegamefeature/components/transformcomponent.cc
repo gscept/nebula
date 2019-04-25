@@ -5,12 +5,20 @@
 #include "stdneb.h"
 #include "transformcomponent.h"
 #include "basegamefeature/managers/componentmanager.h"
-#include "basegamefeature/components/transformdata.h"
 
 namespace Game
 {
 
-static TransformComponentAllocator data;
+// static TransformComponentAllocator data;
+static Component<
+	Attr::LocalTransform,
+	Attr::WorldTransform,
+	Attr::Parent,
+	Attr::FirstChild,
+	Attr::NextSibling,
+	Attr::PreviousSibling,
+> data;
+
 static Msg::UpdateTransform::MessageQueueId messageQueue;
 
 //------------------------------------------------------------------------------

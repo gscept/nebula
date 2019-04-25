@@ -171,7 +171,7 @@ BaseGameFeatureUnit::WriteAdditionalMetadata(Ptr<IO::JsonWriter> const& writer) 
 
 		writer->BeginArray("attributes");
 
-		for (auto const& attr : component->GetAttributeIds())
+		for (auto const& attr : component->GetAttributes())
 		{
 			writer->BeginObject();
 			writer->Add(attr.GetName(), "name");
