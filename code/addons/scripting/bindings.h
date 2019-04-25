@@ -7,129 +7,6 @@
 #include "util/dictionary.h"
 #include "util/variant.h"
 
-namespace Util
-{
-
-//------------------------------------------------------------------------------
-/**
-	TYPE should be a python object or similar
-*/
-template<typename TYPE>
-Util::Variant ConvertPyType(TYPE const& value, Util::Variant::Type type)
-{
-	try
-	{
-		if (type == Util::Variant::Type::Byte)
-		{
-			return Util::Variant(py::cast<byte>(value));
-		}
-		else if (type == Util::Variant::Type::Short)
-		{
-			return Util::Variant(py::cast<short>(value));
-		}
-		else if (type == Util::Variant::Type::UShort)
-		{
-			return Util::Variant(py::cast<ushort>(value));
-		}
-		else if (type == Util::Variant::Type::Int)
-		{
-			return Util::Variant(py::cast<int>(value));
-		}
-		else if (type == Util::Variant::Type::UInt)
-		{
-			return Util::Variant(py::cast<uint>(value));
-		}
-		else if (type == Util::Variant::Type::Int64)
-		{
-			return Util::Variant(py::cast<int64>(value));
-		}
-		else if (type == Util::Variant::Type::UInt64)
-		{
-			return Util::Variant(py::cast<uint64>(value));
-		}
-		else if (type == Util::Variant::Type::Float)
-		{
-			return Util::Variant(py::cast<float>(value));
-		}
-		else if (type == Util::Variant::Type::Double)
-		{
-			return Util::Variant(py::cast<double>(value));
-		}
-		else if (type == Util::Variant::Type::Bool)
-		{
-			return Util::Variant(py::cast<bool>(value));
-		}
-		else if (type == Util::Variant::Type::Float2)
-		{
-			return Util::Variant(py::cast<Math::float2>(value));
-		}
-		else if (type == Util::Variant::Type::Float4)
-		{
-			return Util::Variant(py::cast<Math::float4>(value));
-		}
-		else if (type == Util::Variant::Type::Quaternion)
-		{
-			return Util::Variant(py::cast<Math::quaternion>(value));
-		}
-		else if (type == Util::Variant::Type::String)
-		{
-			return Util::Variant(py::cast<Util::String>(value));
-		}
-		else if (type == Util::Variant::Type::Matrix44)
-		{
-			return Util::Variant(py::cast<Math::matrix44>(value));
-		}
-		else if (type == Util::Variant::Type::Transform44)
-		{
-			return Util::Variant(py::cast<Math::transform44>(value));
-		}
-		else if (type == Util::Variant::Type::Guid)
-		{
-			return Util::Variant(py::cast<Util::Guid>(value));
-		}
-		else if (type == Util::Variant::Type::IntArray)
-		{
-			return Util::Variant(py::cast<Util::Array<int>>(value));
-		}
-		else if (type == Util::Variant::Type::FloatArray)
-		{
-			return Util::Variant(py::cast<Util::Array<int>>(value));
-		}
-		else if (type == Util::Variant::Type::BoolArray)
-		{
-			return Util::Variant(py::cast<Util::Array<bool>>(value));
-		}
-		else if (type == Util::Variant::Type::Float2Array)
-		{
-			return Util::Variant(py::cast<Util::Array<Math::float2>>(value));
-		}
-		else if (type == Util::Variant::Type::Float4Array)
-		{
-			return Util::Variant(py::cast<Util::Array<Math::float4>>(value));
-		}
-		else if (type == Util::Variant::Type::StringArray)
-		{
-			return Util::Variant(py::cast<Util::Array<Util::String>>(value));
-		}
-		else if (type == Util::Variant::Type::Matrix44Array)
-		{
-			return Util::Variant(py::cast<Util::Array<Math::matrix44>>(value));
-		}
-		else if (type == Util::Variant::Type::GuidArray)
-		{
-			return Util::Variant(py::cast<Util::Array<Util::Guid>>(value));
-		}
-	}
-	catch (py::cast_error e)
-	{
-		n_warning("Could not convert python type to correct variant type.");
-	}
-
-	return Util::Variant();
-}
-
-} // namespace Util
-
 namespace pybind11
 {
     namespace detail
@@ -190,10 +67,9 @@ namespace pybind11
         template <typename Key, typename Value> struct type_caster<Util::Dictionary<Key, Value>>
             : map_caster<Util::Dictionary<Key, Value>, Key, Value> { };
         template <typename Type> struct type_caster<Util::Array<Type>>
-            : array_caster<Util::Array<Type>, Type, true> { };
+            : array_caster<Util::Array<Type>, Type, true> { };   
+    }
 
-        
-    };
     class nstr : public str
     {
     public:
