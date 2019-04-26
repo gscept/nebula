@@ -39,8 +39,8 @@
 	Shorthand for registering to the component manager.
 	Remember to include componentmanager.h!
 */
-#define __RegisterComponent(ALLOCATOR, COMPONENTNAME) \
-	Game::ComponentManager::Instance()->RegisterComponent(ALLOCATOR, ##COMPONENTNAME);
+#define __RegisterComponent(ALLOCATOR, COMPONENTNAME, FOURCC) \
+	Game::ComponentManager::Instance()->RegisterComponent(ALLOCATOR, ##COMPONENTNAME, FOURCC);
 
 //------------------------------------------------------------------------------
 /**
@@ -139,6 +139,14 @@ public:
 	/// Allocate multiple instances
 	void Allocate(uint num);
 
+	/// get single item from resource,
+	template <typename ATTR>
+	typename ATTR::InnerType& Get(const InstanceId instance);
+
+	/// const version of get
+	template <typename ATTR>
+	const typename ATTR::InnerType& Get(const InstanceId instance) const;
+
 	/// Reset instance to default values.
 	void SetToDefault(InstanceId instance);
 
@@ -154,6 +162,10 @@ public:
 	/// perform garbage collection. Returns number of erased instances.
 	SizeT Optimize();
 
+	/// Returns the attribute index of a specific attribute type
+	template<typename ATTR>
+	static constexpr std::size_t GetAttributeIndex();
+
 	/// Get attribute value as a variant. This is generally quite slow, so use with care!
 	Util::Variant GetAttributeValue(InstanceId instance, IndexT attributeIndex);
 
@@ -164,7 +176,7 @@ public:
 	void SetAttributeValue(InstanceId instance, IndexT attributeIndex, const Util::Variant& value);
 
 	/// Set attribute value as a variant. This is generally quite slow and won't propagate to other components, so use with care!
-	constexpr void SetAttributeValue(InstanceId instance, Util::FourCC attribute, const Util::Variant& value);
+	void SetAttributeValue(InstanceId instance, Util::FourCC attribute, const Util::Variant& value);
 
 	/// Write owners into writer.
 	void SerializeOwners(const Ptr<IO::BinaryWriter>& writer) const;
@@ -181,6 +193,7 @@ protected:
 	/// short hand for getting the component with template arguments filled
 	using component_templated_t = Component<TYPES...>;
 private:
+	
 	/// Initialize attribute list.
 	template<std::size_t...Is>
 	void Init(std::index_sequence<Is...>);
@@ -227,9 +240,9 @@ private:
 template <class ... TYPES>
 Component<TYPES...>::Component()
 {
-	this->attributeIds.SetSize(sizeof...(TYPES) + 1);
+	this->attributes.SetSize(sizeof...(TYPES) + 1);
 	// We always have an owner
-	this->attributeIds[0] = Attr::Owner;
+	this->attributes[0] = Attr::Owner(0);
 
 	this->Init(std::make_index_sequence<sizeof...(TYPES)>());
 }
@@ -300,6 +313,29 @@ template <class ... TYPES>
 void Component<TYPES...>::Allocate(uint num)
 {
 	this->Allocate(num, std::make_index_sequence<sizeof...(TYPES)>());
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class ... TYPES>
+template<typename ATTR>
+inline typename ATTR::InnerType&
+Component<TYPES...>::Get(const InstanceId instance)
+{
+	constexpr std::size_t n = GetAttributeIndex<ATTR>();
+	return this->data.Get<n>(instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class ... TYPES>
+template<typename ATTR>
+inline const typename ATTR::InnerType&
+Component<TYPES...>::Get(const InstanceId instance) const
+{
+	return this->data.Get<GetAttributeIndex<ATTR>()>(instance);
 }
 
 //------------------------------------------------------------------------------
@@ -471,6 +507,28 @@ Component<TYPES ...>::Optimize()
 	return numErased;
 }
 
+
+// Dirty c++ ahead
+template <typename T, typename... Ts>
+struct Index;
+
+template <typename T, typename... Ts>
+struct Index<T, T, Ts...> : std::integral_constant<std::size_t, 0> {};
+
+template <typename T, typename U, typename... Ts>
+struct Index<T, U, Ts...> : std::integral_constant<std::size_t, 1 + Index<T, Ts...>::value> {};
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<typename ... TYPES>
+template<typename ATTR>
+constexpr std::size_t
+Component<TYPES...>::GetAttributeIndex()
+{
+	return Index<ATTR, Attr::Owner, TYPES...>::value;
+}
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -541,7 +599,7 @@ Component<TYPES...>::SetAttributeValue(InstanceId instance, IndexT attributeInde
 /**
 */
 template<typename ... TYPES>
-constexpr void
+void
 Component<TYPES...>::SetAttributeValue(InstanceId instance, Util::FourCC attribute, const Util::Variant & value)
 {
 	n_assert2(instance < this->data.Size(), "Invalid instance id");

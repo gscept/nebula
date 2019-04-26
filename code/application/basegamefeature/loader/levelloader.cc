@@ -49,7 +49,7 @@ LevelLoader::Save(const Util::String& levelName)
 
 		ComponentBuildData c;
 
-		c.fourcc = component->GetRtti()->GetFourCC();
+		c.fourcc = component->GetIdentifier();
 		c.numInstances = component->NumRegistered();
 
 		// TODO: Add description of component so that we can make sure we're not reading incorrect or outdated data later.

@@ -16,7 +16,7 @@
 	reflected outward since if you ask for the world transform it will return
 	the correct one that is used internally no matter what.
 
-	(C) 2018 Individual contributors, see AUTHORS file
+	(C) 2018-2019 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "game/component/component.h"

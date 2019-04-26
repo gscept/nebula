@@ -5,12 +5,11 @@
 #include "stdneb.h"
 #include "tagcomponent.h"
 #include "basegamefeature/managers/componentmanager.h"
-#include "basegamefeature/components/tagdata.h"
 
 namespace Game
 {
 
-static TagComponentAllocator data;
+static Component<Attr::Tag> data;
 
 __ImplementComponent(TagComponent, data);
 
@@ -23,7 +22,7 @@ TagComponent::Create()
 	data.DestroyAll();
 
 	__SetupDefaultComponentBundle(data);
-	__RegisterComponent(&data, "TagComponent"_atm);
+	__RegisterComponent(&data, "TagComponent"_atm, 'tagc');
 }
 
 //------------------------------------------------------------------------------

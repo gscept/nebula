@@ -54,6 +54,15 @@ ComponentInterface::GetName() const
 //------------------------------------------------------------------------------
 /**
 */
+Util::FourCC
+ComponentInterface::GetIdentifier() const
+{
+	return this->fourcc;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 const Util::BitField<ComponentEvent::NumEvents>&
 ComponentInterface::SubscribedEvents() const
 {
@@ -81,6 +90,11 @@ ComponentInterface::GetAttributes() const
 //------------------------------------------------------------------------------
 /**
 */
+void ComponentInterface::EnableEvent(ComponentEvent eventId)
+{
+	this->events.SetBit(eventId);
+}
+
 bool
 ComponentInterface::Enabled() const
 {

@@ -29,7 +29,7 @@ class matrix44
 {
 public:
     /// default constructor, NOTE: does NOT setup components!
-    constexpr matrix44();
+    matrix44();
     /// construct from components
     matrix44(float4 const &row0, float4 const &row1, float4 const &row2, float4 const &row3);
     /// copy constructor

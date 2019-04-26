@@ -7,6 +7,12 @@
 */
 //------------------------------------------------------------------------------
 #include "game/component/component.h"
+#include "game/component/attribute.h"
+
+namespace Attr
+{
+	__DeclareAttribute(Tag, Util::Guid, 'TAG!', Attr::ReadWrite, Util::Guid());
+}
 
 namespace Game
 {

@@ -75,6 +75,8 @@ public:
 
 	const Util::StringAtom& GetName() const;
 
+	Util::FourCC GetIdentifier() const;
+
 	/// register an Id. Will create new mapping and allocate instance data. Returns index of new instance data
 	virtual InstanceId RegisterEntity(Entity e) = 0;
 
@@ -135,6 +137,9 @@ public:
 
 	/// Garbage collect
 	virtual SizeT Optimize() = 0;
+
+	/// Enable an event listener
+	void EnableEvent(ComponentEvent eventId);
 
 	/// Returns whether a component container is enabled.
 	bool Enabled() const;
@@ -203,6 +208,9 @@ protected:
 
 	/// name of component
 	Util::StringAtom componentName;
+
+	/// Identifier
+	Util::FourCC fourcc;
 };
 
 } // namespace Game
