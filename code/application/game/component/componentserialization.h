@@ -27,6 +27,11 @@ Serialize(const Ptr<IO::BinaryWriter>& writer, const Util::Array<X>& data)
 
 //------------------------------------------------------------------------------
 /**
+
+	offset is starting offset into data
+	numInstances is amount of X type values.
+	total size needed in data is at least offset + numInstances.
+
 */
 template<class X>
 __forceinline typename std::enable_if<std::is_trivial<X>::value == false, void>::type

@@ -1,0 +1,49 @@
+"namespace": "AudioFeature"
+"attributes": {
+    "audioEmitter": {
+        "type": "uint"
+        "fourcc": "aemi"
+        "access": "R"
+		"default": -1
+    }
+	"audioResource": {
+        "type": "string"
+        "fourcc": "anme"
+        "access": "RW"
+		"default": "audio:test.wav"
+    }
+	"autoplay":	{
+		"type": "bool"
+		"fourcc": "aupl"
+		"access": "RW"
+		"default": false
+	}
+	"loop":	{
+		"type": "bool"
+		"fourcc": "Loop"
+		"access": "RW"
+		"default": false
+	}
+	"spatialize": {
+		"type": "bool"
+		"fourcc": "spaz"
+		"access": "RW"
+		"default": true
+	}
+}
+"components": {
+    "AudioEmitterComponent": {
+        "fourcc": "AUDC"
+        "attributes": [
+            "audioEmitter"
+			"audioResource"
+			"autoplay"
+			"loop"
+			"spatialize"
+        ]
+        "events": [
+            "OnActivate"
+            "OnDeactivate"
+        ]
+    }
+}

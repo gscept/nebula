@@ -58,7 +58,19 @@ IF(FALSE) # incrementally enable modules as they get written
 				viewerapplication.h
 			)
 ENDIF()
-
+		fips_dir(characters)
+			fips_files(
+				charactercontext.cc
+				charactercontext.h
+				nskfileformatstructs.h
+				skeleton.cc
+				skeleton.h
+				skeletonevaljob.cc
+				skeletonjoint.h
+				streamskeletonpool.cc
+				streamskeletonpool.h
+			)
+			
 		fips_dir(coreanimation)
 			fips_files(
 				animclip.cc
@@ -73,6 +85,8 @@ ENDIF()
 				animresource.h
 				animsamplebuffer.cc
 				animsamplebuffer.h
+				animsamplejob.cc
+				animsamplemask.h
 				animsamplemixinfo.h
 				#animutil.cc
 				#animutil.h
@@ -365,8 +379,8 @@ ENDIF()
 
 		fips_dir(frame)
 			fips_files(
-				#framebarrier.cc
-				#framebarrier.h
+				framebarrier.cc
+				framebarrier.h
 				framebatchtype.h
 				frameblit.cc
 				frameblit.h

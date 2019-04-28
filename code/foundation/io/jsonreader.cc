@@ -11,6 +11,7 @@
 #endif
 #include "pjson/pjson.h"
 #include "io/jsonreader.h"
+#include "util/variant.h"
 
 namespace IO
 {
@@ -164,7 +165,7 @@ JsonReader::SetToRoot()
     conventions. Separator is a slash. 
     Arrays or objects with children can be indexed with []
 */
-void
+bool
 JsonReader::SetToNode(const String& path)
 {
     n_assert(this->IsOpen());
@@ -173,22 +174,12 @@ JsonReader::SetToNode(const String& path)
     bool absPath = (path[0] == '/');
     Array<String> tokens = path.Tokenize("/");
 
-    // get starting node (either root or current node)
-    const value_variant* node;
+    // get starting node (either root or current node)    
     if (absPath)
     {
-        node = this->document;       
-        this->parents.Clear();        
-        this->parentIdx.Clear();
-    }
-    else
-    {
-        n_assert(0 != this->curNode);
-        node = this->curNode;
-    }
-    this->parents.Push(node);
-    this->parentIdx.Push(-1);
-    this->curNode = 0;
+        this->SetToRoot();        
+    }    
+    n_assert(0 != this->curNode);    
 
     // iterate through path components
     int i;
@@ -203,34 +194,25 @@ JsonReader::SetToNode(const String& path)
             Util::String num = cur;
             num.Trim("[]");
             unsigned int idx = num.AsInt();
-            n_assert(node->is_object_or_array());
-            n_assert(idx < node->size());
-            node = &node->get_value_at_index(idx);
-            this->parents.Push(node);
-            this->parentIdx.Push(-1);
+            if (!this->curNode->is_object_or_array()) goto fail;
+            if (!(idx < this->curNode->size())) goto fail;
+
+            const value_variant* node = &this->curNode->get_value_at_index(idx);
+            this->parents.Push(this->curNode);
+            this->parentIdx.Push(this->childIdx);
+            this->curNode = node;
+            this->childIdx = idx;
         }
         else
         {
-            n_assert(node->is_object());
-            node = node->find_value_variant(cur.AsCharPtr());
-            if (0 == node)
-            {
-                this->parents.Clear();
-                this->parentIdx.Clear();
-                break;
-            }
-            else
-            {
-                this->parents.Push(node);
-                this->parentIdx.Push(-1);
-            }
+            if (!this->SetToFirstChild(cur)) goto fail;            
         }
-    }
-    if (this->parents.Size() > 1)
-    {
-        this->curNode = this->parents.Pop();
-        this->childIdx = this->parentIdx.Pop();
-    }    
+    }        
+    return true;
+fail:
+    this->parents.Clear();
+    this->parentIdx.Clear();
+    return false;
 }
 
 //------------------------------------------------------------------------------
@@ -479,6 +461,21 @@ JsonReader::GetInt(const char* name) const
     n_assert(node);
     n_assert(node->is_int());
     return node->as_int32();
+}
+
+//------------------------------------------------------------------------------
+/**
+	Return the provided attribute as float2. If the attribute does not exist
+	the method will fail hard (use HasAttr() to check for its existance).
+*/
+uint
+JsonReader::GetUInt(const char * attr) const
+{
+	const value_variant * node = this->GetChild(attr);
+	
+	n_assert(node);
+	n_assert(node->is_int());
+	return (uint)node->as_int32();
 }
 
 //------------------------------------------------------------------------------
@@ -801,6 +798,80 @@ template<> void JsonReader::Get<float>(float & ret, const char* attr)
 
 //------------------------------------------------------------------------------
 /**
+	Returns the attribute as variant type.
+	This checks what type the variant is and returns the value type that it indicates.
+	If incoming variant type is void, the reader will automatically detect type from the attribute.
+	Will most likely assert if type is incorrect, so use with caution!
+*/
+template<> void JsonReader::Get<Util::Variant>(Util::Variant & ret, const char* attr)
+{
+	const value_variant * node = this->GetChild(attr);
+
+	switch (ret.GetType())
+	{
+	case Util::Variant::Type::Void:
+	{
+		// Special case: No type has been assigned, let the parser decide the type.
+		const value_variant * node = this->GetChild(attr);
+
+		if (node->is_bool())
+		{
+			ret.SetType(Util::Variant::Type::Bool);
+			ret.SetBool(node->as_bool());
+		}
+		if (node->is_int())
+		{
+			ret.SetType(Util::Variant::Type::Int);
+			ret.SetInt(node->as_int32());
+		}
+		else if (node->is_double())
+		{
+			ret.SetType(Util::Variant::Type::Double);
+			ret.SetDouble(node->as_double());
+		}
+		else if (node->is_string())
+		{
+			ret.SetType(Util::Variant::Type::String);
+			ret.SetString(node->as_string_ptr());
+		}
+		else
+		{
+			n_error("Could not resolve variant type!");
+		}
+		break;
+	}
+	case Util::Variant::Type::Bool:
+		ret.SetBool(this->GetBool(attr));
+		break;
+	case Util::Variant::Type::Float:
+		ret.SetFloat(this->GetFloat(attr));
+		break;
+	case Util::Variant::Type::Float4:
+		ret.SetFloat4(this->GetFloat4(attr));
+		break;
+	case Util::Variant::Type::Matrix44:
+		ret.SetMatrix44(this->GetMatrix44(attr));
+		break;
+	case Util::Variant::Type::UInt:
+		ret.SetUInt(this->GetUInt(attr));
+		break;
+	case Util::Variant::Type::String:
+		ret.SetString(this->GetString(attr));
+		break;
+	case Util::Variant::Type::Int:
+		ret.SetInt(this->GetInt(attr));
+		break;
+	case Util::Variant::Type::Guid:
+		ret.SetGuid(Util::Guid::FromString(this->GetString(attr)));
+		break;
+	default:
+		n_error("Could not resolve variant type!");
+		break;
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
 */
 template<> void JsonReader::Get<Util::String>(Util::String & ret, const char* attr)
 {
@@ -809,7 +880,6 @@ template<> void JsonReader::Get<Util::String>(Util::String & ret, const char* at
     n_assert(node->is_string());
     ret = node->as_string_ptr();
 }
-
 
 //------------------------------------------------------------------------------
 /**
@@ -889,6 +959,26 @@ template<> bool JsonReader::GetOpt<uint16_t>(uint16_t & ret, const char* attr)
     return false;
 }
 
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<> bool JsonReader::GetOpt<Math::point>(Math::point & ret, const char* attr)
+{
+    //FIXME this searches twice
+    const value_variant * node = this->GetChild(attr);
+    if (node)
+    {
+        NEBULA_ALIGN16 float v[4];
+        for (int i = 0; i < 3; i++)
+        {
+            v[i] = node->get_value_at_index(i).as_float();
+        }
+        ret.load(v);
+        return true;
+    }
+    return false;
+}
 //------------------------------------------------------------------------------
 /**
 */

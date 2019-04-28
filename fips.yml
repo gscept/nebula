@@ -4,7 +4,7 @@ imports:
         git: https://github.com/floooh/fips-zlib.git
         group: misc
     fips-directxmath:
-        git: ssh://git@git.ikplus.de:4715/nebula/fips-directxmath.git
+        git: https://github.com/gscept/fips-directxmath.git
         group: misc
     fips-glfw:
         git: https://github.com/gscept/fips-glfw.git
@@ -27,15 +27,21 @@ imports:
         cond: "FIPS_LINUX"
         group: misc
     fips-imgui:
-        git: ssh://git@git.ikplus.de:4715/nebula/fips-imgui.git    
+        git: https://github.com/gscept/fips-imgui.git   
     fips-pybind11:
-        git: ssh://git@git.ikplus.de:4715/nebula/fips-pybind11.git
+        git: https://github.com/gscept/fips-pybind11.git
     fips-stb:
         git: https://github.com/fips-libs/fips-stb.git
         group: misc
+    fips-soloud:
+        git: https://github.com/fLindahl/fips-soloud.git
+        group: audio
     nebula-libs:
-        git: ssh://git@git.ikplus.de:4715/nebula/nebula-libs
+        git: https://github.com/gscept/nebula-libs
         group: misc
+    physx:
+        git: https://github.com/NVIDIAGameWorks/PhysX.git
+        branch: 4.1
 
 exports:
     header-dirs : 
@@ -46,9 +52,11 @@ exports:
         - code/application
         - code/physics
         - code/addons
+        - code/audio
     modules:
         foundation: code/foundation
         render: code/render
         resource: code/resource
         application: code/application        
         addons: code/addons
+        audio: code/audio

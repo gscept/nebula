@@ -51,6 +51,9 @@ class NAME : public Game::Message<NAME, __VA_ARGS__> \
 #define __RegisterMsg(MSGTYPE, FUNCTION) \
 	MSGTYPE::Register(MSGTYPE::Delegate::FromFunction<FUNCTION>())
 
+#define __this_RegisterMsg(MSGTYPE, METHOD) \
+	MSGTYPE::Register(MSGTYPE::Delegate::FromMethod<std::remove_pointer<decltype(this)>::type, &std::remove_pointer<decltype(this)>::type::METHOD>(this))
+
 /// Removes const reference from T.
 template<class T>
 using UnqualifiedType = typename std::remove_const<typename std::remove_reference<T>::type>::type;
@@ -139,6 +142,14 @@ private:
 
 //------------------------------------------------------------------------------
 /**
+	@todo	Biggest performance hog right now is that listeners
+			themselves need to check if, for example, an entity is
+			registered or not. Although this is potentially O(1) per lookup,
+			it can probably be improved by adding some registry over which
+			entities are registered to which component systems.
+			This will however add a lot of memory overhead that is not
+			necessarily needed for anything else.
+			In the end, the api will (hopefully) most likely to stay the same.
 */
 template <class MSG, class ... TYPES>
 class Message
@@ -153,7 +164,7 @@ public:
 	void operator=(const Message<MSG, TYPES...>&) = delete;
 
 	/// Type definition for this message's delegate
-	using Delegate = Util::Delegate<TYPES...>;
+	using Delegate = Util::Delegate<void(TYPES...)>;
 
 	/// Register a listener to this message. Returns an ID for the listener so that we can associate it.
 	static MessageListener Register(Delegate&& callback);

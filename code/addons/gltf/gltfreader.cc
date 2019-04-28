@@ -60,8 +60,7 @@ ReadExtensionsAndExtras(Gltf::GltfBase& base, const pjson::value_variant * objec
 template<> void
 IO::JsonReader::Get<Gltf::Accessor::Type>(Gltf::Accessor::Type & item, const char * key)
 {
-    Util::String type = this->GetString(key);
-    unsigned int foo = chash(type.AsCharPtr());
+    Util::String type = this->GetString(key);    
     switch (chash(type.AsCharPtr()))
     {
         case chash("SCALAR"): item = Gltf::Accessor::Type::Scalar; break;
@@ -125,6 +124,61 @@ IO::JsonReader::GetOpt<Gltf::Accessor::Sparse>(Gltf::Accessor::Sparse& item, con
 //------------------------------------------------------------------------------
 /**
 */
+Base::VertexComponentBase::Format
+AccessorTypeToNebula(Gltf::Accessor::ComponentType component, Gltf::Accessor::Type type)
+{
+    using Type = Gltf::Accessor::Type;
+    using Component = Gltf::Accessor::ComponentType;
+    Base::VertexComponentBase::Format format = Base::VertexComponentBase::Format::InvalidFormat;
+    switch (type)
+    {    
+        case Type::Scalar:
+        {
+            switch (component)
+            {
+            case Component::Float: return Base::VertexComponentBase::Float;
+            }
+        }
+        break;
+        case Type::Vec2:
+        {
+            switch (component)
+            {
+                case Component::Float: return Base::VertexComponentBase::Float2;
+                case Component::Short: return Base::VertexComponentBase::Short2;                
+            }
+        }
+        break;
+        case Type::Vec3:
+        {
+            switch (component)
+            {
+                case Component::Float: return Base::VertexComponentBase::Float3;
+            }
+        }
+        break;
+        case Type::Vec4:
+        {
+            switch (component)
+            {
+                case Component::Byte: return Base::VertexComponentBase::Byte4;
+                case Component::UnsignedByte: return Base::VertexComponentBase::UByte4;
+                case Component::Float: return Base::VertexComponentBase::Float4;
+                case Component::Short: return Base::VertexComponentBase::Short4;
+            }
+        }
+        break;
+        case Type::Mat2:
+        case Type::Mat3:
+        case Type::Mat4:
+        case Type::None: n_error("undefined component type");
+    }
+    n_assert2(format != Base::VertexComponentBase::Format::InvalidFormat, "undefined component type");
+    return format;
+}
+//------------------------------------------------------------------------------
+/**
+*/
 template<> bool
 IO::JsonReader::GetOpt<Util::Array<Gltf::Accessor>>(Util::Array<Gltf::Accessor> & items, const char* key)
 {    
@@ -140,7 +194,7 @@ IO::JsonReader::GetOpt<Util::Array<Gltf::Accessor>>(Util::Array<Gltf::Accessor> 
             item.componentType = static_cast<Gltf::Accessor::ComponentType>(this->GetInt("componentType"));
             this->Get(item.count, "count");
             this->Get(item.type, "type");
-
+            item.format = AccessorTypeToNebula(item.componentType, item.type);
             this->GetOpt(item.bufferView, "bufferView", -1);
             this->GetOpt(item.byteOffset, "byteOffset");
             this->GetOpt(item.max, "max");
@@ -594,6 +648,29 @@ StringToPrimAttribute(const Util::String & attr)
 //------------------------------------------------------------------------------
 /**
 */
+static
+Base::VertexComponentBase::SemanticName
+AttributeToNebula(Gltf::Primitive::Attribute attr)
+{
+    switch (attr)
+    {
+        case Gltf::Primitive::Attribute::Position: return Base::VertexComponentBase::Position;
+        case Gltf::Primitive::Attribute::Normal: return Base::VertexComponentBase::Normal;
+        case Gltf::Primitive::Attribute::Tangent: return Base::VertexComponentBase::Tangent;        
+        case Gltf::Primitive::Attribute::TexCoord0: return Base::VertexComponentBase::TexCoord1;
+        case Gltf::Primitive::Attribute::TexCoord1: return Base::VertexComponentBase::TexCoord2;
+        case Gltf::Primitive::Attribute::Color0: return Base::VertexComponentBase::Color;
+        case Gltf::Primitive::Attribute::Weights0: return Base::VertexComponentBase::SkinWeights;
+        default:
+            n_warning("unhandled primitive attribute type");
+        
+    }
+    return Base::VertexComponentBase::Invalid;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 template<> void
 IO::JsonReader::Get<Util::Dictionary<Gltf::Primitive::Attribute, uint32_t>>(Util::Dictionary<Gltf::Primitive::Attribute, uint32_t> & items, const char* key)
 {
@@ -624,9 +701,23 @@ IO::JsonReader::Get<Util::Array<Gltf::Primitive>>(Util::Array<Gltf::Primitive> &
     do {
         auto & item = items[i++];
         this->Get(item.attributes, "attributes");
+        for (auto const& a : item.attributes)
+        {
+            item.nebulaAttributes.Add(AttributeToNebula(a.first), a.second);
+        }
         this->GetOpt(item.indices, "indices");
         this->GetOpt(item.material, "material");
         item.mode = static_cast<Gltf::Primitive::Mode>(this->GetOptInt("mode", (int)Gltf::Primitive::Mode::Triangles));
+        switch (item.mode)
+        {
+            case Gltf::Primitive::Mode::Points: item.nebulaMode = CoreGraphics::PrimitiveTopology::Code::PointList; break;
+            case Gltf::Primitive::Mode::Lines: item.nebulaMode = CoreGraphics::PrimitiveTopology::Code::LineList; break;
+            case Gltf::Primitive::Mode::LineLoop:  item.nebulaMode = CoreGraphics::PrimitiveTopology::Code::InvalidPrimitiveTopology; n_warning("unsupported primitive topology");  break;
+            case Gltf::Primitive::Mode::LineStrip: item.nebulaMode = CoreGraphics::PrimitiveTopology::Code::InvalidPrimitiveTopology; n_warning("unsupported primitive topology");  break;
+            case Gltf::Primitive::Mode::Triangles: item.nebulaMode = CoreGraphics::PrimitiveTopology::Code::TriangleList; break;
+            case Gltf::Primitive::Mode::TriangleStrip: item.nebulaMode = CoreGraphics::PrimitiveTopology::Code::TriangleStrip; break;
+            case Gltf::Primitive::Mode::TriangleFan:  item.nebulaMode = CoreGraphics::PrimitiveTopology::Code::InvalidPrimitiveTopology; n_warning("unsupported primitive topology");  break;
+        }
         if (this->SetToFirstChild("targets"))
         {
             IndexT j = 0;
@@ -696,15 +787,30 @@ IO::JsonReader::GetOpt<Util::Array<Gltf::Node>>(Util::Array<Gltf::Node> & items,
         this->SetToFirstChild();
         do {
             auto & item = items[i++];
-            this->GetOpt(item.camera, "camera");
-            this->GetOpt(item.children, "children");
-            this->GetOpt(item.matrix, "matrix");
-            this->GetOpt(item.mesh, "mesh");
+            item.type = Gltf::Node::Type::Transform;
             this->GetOpt(item.name, "name");
-            this->GetOpt(item.rotation, "rotation");
-            this->GetOpt(item.scale, "scale");
-            this->GetOpt(item.skin, "skin");
-            this->GetOpt(item.translation, "translation");
+
+            if (this->GetOpt(item.camera, "camera"))
+            {
+                item.type = Gltf::Node::Type::Camera;
+            }
+            if (this->GetOpt(item.mesh, "mesh"))
+            {
+                item.type = Gltf::Node::Type::Mesh;
+            }
+            if (this->GetOpt(item.skin, "skin"))
+            {
+                item.type = Gltf::Node::Type::Skin;
+            }
+
+            this->GetOpt(item.children, "children");
+
+            this->GetOpt(item.matrix, "matrix");
+                        
+            item.hasTRS |= this->GetOpt(item.rotation, "rotation");
+            item.hasTRS |= this->GetOpt(item.scale, "scale");
+            item.hasTRS |= this->GetOpt(item.translation, "translation");
+
             ReadExtensionsAndExtras(item, this->curNode);
         } while (this->SetToNextChild());
         this->SetToParent();
@@ -947,16 +1053,22 @@ bool
 Document::Deserialize(const IO::URI & uri)
 {
     Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(uri);
-    Ptr<IO::JsonReader> reader = IO::JsonReader::Create();
+    return this->Deserialize(stream);    
+}
+//------------------------------------------------------------------------------
+/**
+*/
+bool 
+Document::Deserialize(Ptr<IO::Stream> const& stream)
+{
+    Ptr<IO::JsonReader> reader = IO::JsonReader::Create();    
     reader->SetStream(stream);
     if (reader->Open())
-    {        
-        Util::String foo = stream->GetURI().AsString();
+    {
         reader->Get(*this);
         reader->Close();
         return true;
     }
     return false;
 }
-
 }

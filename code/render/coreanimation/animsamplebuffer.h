@@ -17,9 +17,8 @@
 //------------------------------------------------------------------------------
 namespace CoreAnimation
 {
-class AnimSampleBuffer : public Core::RefCounted
+class AnimSampleBuffer
 {
-    __DeclareClass(AnimSampleBuffer);
 public:
     /// constructor
     AnimSampleBuffer();

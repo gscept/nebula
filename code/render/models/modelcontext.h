@@ -51,6 +51,8 @@ public:
 	static void SetTransform(const Graphics::GraphicsEntityId id, const Math::matrix44& transform);
 	/// get the transform for a model
 	static Math::matrix44 GetTransform(const Graphics::GraphicsEntityId id);
+	/// get the transform for a model
+	static Math::matrix44 GetTransform(const Graphics::ContextEntityId id);
 
 	/// get model node instances
 	static const Util::Array<Models::ModelNode::Instance*>& GetModelNodeInstances(const Graphics::GraphicsEntityId id);
@@ -58,7 +60,7 @@ public:
 	static const Util::Array<Models::NodeType>& GetModelNodeTypes(const Graphics::GraphicsEntityId id);
 
 	/// runs before frame is updated
-	static void OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime);
+	static void OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime, const Timing::Time time, const Timing::Tick ticks);
 	/// runs when visibility has finished processing 
 	static void OnWaitForWork(const IndexT frameIndex, const Timing::Time frameTime);
 	/// runs before a specific view
@@ -113,8 +115,17 @@ ModelContext::Alloc()
 inline void
 ModelContext::Dealloc(Graphics::ContextEntityId id)
 {
+	// clean up old stuff, but don't deallocate entity
+	ModelId& rid = modelContextAllocator.Get<0>(id.id);
+	ModelInstanceId& mdl = modelContextAllocator.Get<1>(id.id);
+
+	if (mdl != ModelInstanceId::Invalid()) // actually deallocate current instance
+		Models::DestroyModelInstance(mdl);
+	if (rid != ModelId::Invalid()) // decrement model resource
+		Models::DestroyModel(rid);
+	mdl = ModelInstanceId::Invalid();
+
 	modelContextAllocator.DeallocObject(id.id);
 }
-
 
 } // namespace Models

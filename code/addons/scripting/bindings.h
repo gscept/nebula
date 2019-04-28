@@ -5,6 +5,7 @@
 #include "pybind11/stl.h"
 #include "util/string.h"
 #include "util/dictionary.h"
+#include "util/variant.h"
 
 namespace pybind11
 {
@@ -66,10 +67,9 @@ namespace pybind11
         template <typename Key, typename Value> struct type_caster<Util::Dictionary<Key, Value>>
             : map_caster<Util::Dictionary<Key, Value>, Key, Value> { };
         template <typename Type> struct type_caster<Util::Array<Type>>
-            : array_caster<Util::Array<Type>, Type, true> { };
+            : array_caster<Util::Array<Type>, Type, true> { };   
+    }
 
-        
-    };
     class nstr : public str
     {
     public:

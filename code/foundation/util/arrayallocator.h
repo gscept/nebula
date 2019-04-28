@@ -8,7 +8,9 @@
 	Note that this is not a container for multiple arrays, but a object allocator that uses
 	multiple arrays to store their variables parallelly, and should be treated as such.
 
-	(C) 2018 Individual contributors, see AUTHORS file
+	@todo	We should remove the arrays from the tuple and just use plain buffer pointers instead.
+
+	(C) 2019 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "types.h"

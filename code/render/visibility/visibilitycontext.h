@@ -26,7 +26,7 @@ public:
 	static void Setup(const Graphics::GraphicsEntityId id, VisibilityEntityType entityType);
 
 	/// runs before frame is updated
-	static void OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime);
+	static void OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime, const Timing::Time time, const Timing::Tick ticks);
 
 	/// create context
 	static void Create();

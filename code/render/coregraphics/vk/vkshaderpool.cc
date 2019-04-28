@@ -58,7 +58,7 @@ VkShaderPool::LoadFromStream(const Resources::ResourceId id, const Util::StringA
 	// catch any potential error coming from AnyFX
 	if (!effect)
 	{
-		n_error("VkStreamShaderLoader::SetupResourceFromStream(): failed to load shader '%s'!",
+		n_error("VkShaderPool::LoadFromStream(): failed to load shader '%s'!",
 			this->GetName(id).Value());
 		return ResourcePool::Failed;
 	}
@@ -113,6 +113,51 @@ VkShaderPool::LoadFromStream(const Resources::ResourceId id, const Util::StringA
 #if __NEBULA_HTTP__
 	//res->debugState = res->CreateState();
 #endif
+	return ResourcePool::Success;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Resources::ResourceStreamPool::LoadStatus 
+VkShaderPool::ReloadFromStream(const Resources::ResourceId id, const Ptr<IO::Stream>& stream)
+{
+	void* srcData = stream->Map();
+	uint srcDataSize = stream->GetSize();
+
+	// load effect from memory
+	AnyFX::ShaderEffect* effect = AnyFX::EffectFactory::Instance()->CreateShaderEffectFromMemory(srcData, srcDataSize);
+
+	// catch any potential error coming from AnyFX
+	if (!effect)
+	{
+		n_error("VkStreamShaderLoader::ReloadFromStream(): failed to load shader '%s'!",
+			this->GetName(id).Value());
+		return ResourcePool::Failed;
+	}
+
+	VkShaderSetupInfo& setupInfo = this->shaderAlloc.Get<1>(id.allocId);
+	VkShaderRuntimeInfo& runtimeInfo = this->shaderAlloc.Get<2>(id.allocId);
+
+	// setup shader variations from existing programs
+	const std::vector<AnyFX::ProgramBase*> programs = effect->GetPrograms();
+	for (IndexT i = 0; i < runtimeInfo.programMap.Size(); i++)
+	{
+		// get program object from shader subsystem
+		VkShaderProgramAllocator& programAllocator = this->shaderAlloc.Get<3>(id.allocId);
+		AnyFX::VkProgram* program = static_cast<AnyFX::VkProgram*>(programs[i]);
+
+		// allocate new program object and set it up
+		ShaderProgramId programId = runtimeInfo.programMap.ValueAtIndex(i);
+		VkShaderProgramSetup(programId.programId, this->GetName(id), program, setupInfo.pipelineLayout, this->shaderAlloc.Get<3>(id.allocId));
+
+		// trigger a reload in the graphics device
+		CoreGraphics::ReloadShaderProgram(programId);
+	}
+
+	// delete the effect after we are done reloading
+	delete effect;
+
 	return ResourcePool::Success;
 }
 

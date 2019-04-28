@@ -40,3 +40,13 @@ ID_24_8_TYPE(ResourceUnknownId);
 		constexpr type() {};\
 		constexpr type(const Resources::ResourceId& res) : Resources::ResourceId(res) {};\
 	};
+
+// use this struct to pass a loading package through to a subsystem, like skeleton, animation, etc
+struct ResourceCreateInfo
+{
+	Resources::ResourceName resource;
+	Util::StringAtom tag;
+	std::function<void(const Resources::ResourceId)> successCallback;
+	std::function<void(const Resources::ResourceId)> failCallback;
+	bool async;
+};

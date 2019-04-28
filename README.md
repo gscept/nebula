@@ -16,7 +16,10 @@
         1. Correct architecture (64-bit if you're building for 64-bit systems)
         2. Installed for all users
         3. Added to PATH
-        4. Installed with debugging symbols and binaries.
+        4. Installed with debugging symbols and binaries
 
 ## Setup
+1. `./fips set config vulkan-win64-vstudio-debug` in your project directory
+
 Remember to run `fips nebula` verb to set work and toolkit directory registry variables.
+

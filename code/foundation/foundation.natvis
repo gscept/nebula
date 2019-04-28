@@ -39,23 +39,23 @@
     </Expand>
   </Type>
   <Type Name="Util::Array&lt;*&gt;">    
-    <DisplayString>Size={size}, Capacity={capacity}</DisplayString>
+    <DisplayString>Count={count}, Capacity={capacity}</DisplayString>
     <Expand>
-      <Item Name="[Size]">size</Item>
+      <Item Name="[Count]">count</Item>
       <Item Name="[Capacity]">capacity</Item>
       <ArrayItems>
-        <Size>size</Size>
+        <Size>count</Size>
         <ValuePointer>elements</ValuePointer>
       </ArrayItems>
     </Expand>
   </Type>
   <Type Name="Util::ArrayStack&lt;*&gt;">
-    <DisplayString>Size={size}, Capacity={capacity}</DisplayString>
+    <DisplayString>Count={count}, Capacity={capacity}</DisplayString>
     <Expand>
-      <Item Name="[Size]">size</Item>
+      <Item Name="[Count]">count</Item>
       <Item Name="[Capacity]">capacity</Item>
       <ArrayItems>
-        <Size>size</Size>
+        <Size>count</Size>
         <ValuePointer>elements</ValuePointer>
       </ArrayItems>
     </Expand>
@@ -69,9 +69,9 @@
     </Expand>
   </Type>
   <Type Name="Util::Array&lt;Util::KeyValuePair&lt;*,*&gt;&gt;">
-    <DisplayString>Size={size}, Capacity={capacity}</DisplayString>
+    <DisplayString>Count={count}, Capacity={capacity}</DisplayString>
     <Expand>
-      <Item Name="[Size]">size</Item>
+      <Item Name="[Count]">count</Item>
       <Item Name="[Capacity]">capacity</Item>
       <CustomListItems>
         <Variable Name="j" InitialValue="0" />

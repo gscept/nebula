@@ -4,11 +4,12 @@ configs/.selected
 CMakeLists.txt.user*
 .fips-*
 .vscode
-
+*.patch
 fips-generators/*.pyc
 /fips-files/verbs/*.pyc
 /fips-files/generators/**/*.pyc
 export_win32/*
+export_linux/*
 /code/render/coregraphics/attic
 /code/foundation/jobs/attic
 /code/render/coregraphics/mesh_old.h
@@ -17,3 +18,4 @@ export_win32/*
 /code/render/models_old
 /code/render/visibility/jobs_old
 /code/render/visibility/visibilitysystems_old
+*.pyc

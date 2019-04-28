@@ -611,10 +611,10 @@ VkTypes::AsVkResourceAccessFlags(const CoreGraphics::BarrierAccess access)
 		case CoreGraphics::BarrierAccess::ColorAttachmentWrite:
 			flags |= VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 			break;
-		case CoreGraphics::BarrierAccess::DepthRead:
+		case CoreGraphics::BarrierAccess::DepthAttachmentRead:
 			flags |= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
 			break;
-		case CoreGraphics::BarrierAccess::DepthWrite:
+		case CoreGraphics::BarrierAccess::DepthAttachmentWrite:
 			flags |= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 			break;
 		case CoreGraphics::BarrierAccess::TransferRead:

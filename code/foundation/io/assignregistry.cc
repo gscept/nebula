@@ -7,6 +7,7 @@
 #include "io/assignregistry.h"
 #include "io/fswrapper.h"
 #include "core/coreserver.h"
+#include "system/nebulasettings.h"
 
 namespace IO
 {
@@ -156,6 +157,7 @@ AssignRegistry::SetupProjectAssigns()
     // setup content assigns
     this->SetAssign(Assign("msh", "export:meshes"));
     this->SetAssign(Assign("ani", "export:anims"));
+	this->SetAssign(Assign("ske", "export:skeletons"));
     this->SetAssign(Assign("data", "export:data"));        
     this->SetAssign(Assign("video", "export:video"));
     this->SetAssign(Assign("db", "export:db"));
@@ -192,6 +194,16 @@ AssignRegistry::SetupProjectAssigns()
 
     // tools assigns
     this->SetAssign(Assign("tool", Core::CoreServer::Instance()->GetToolDirectory().AsString()));    
+    // project assign from registry
+    if (System::NebulaSettings::Exists("gscept", "ToolkitShared", "workdir"))
+    {
+        this->SetAssign(Assign("proj", System::NebulaSettings::ReadString("gscept", "ToolkitShared", "workdir")));
+    }
+    else
+    {
+        this->SetAssign(Assign("proj", "root:"));
+    }
+    
 
     this->critSect.Leave();
 }

@@ -77,6 +77,8 @@ void RenderTextureWindowResized(const RenderTextureId id);
 
 /// get texture dimensions
 const CoreGraphics::TextureDimensions RenderTextureGetDimensions(const RenderTextureId id);
+/// get texture mips
+const IndexT RenderTextureGetNumMips(const RenderTextureId id);
 /// get pixel format
 const CoreGraphics::PixelFormat::Code RenderTextureGetPixelFormat(const RenderTextureId id);
 /// get msaa

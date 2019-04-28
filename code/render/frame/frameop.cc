@@ -90,7 +90,7 @@ FrameOp::Build(
 			{
 			case CoreGraphics::BarrierAccess::ShaderWrite:
 			case CoreGraphics::BarrierAccess::ColorAttachmentWrite:
-			case CoreGraphics::BarrierAccess::DepthWrite:
+			case CoreGraphics::BarrierAccess::DepthAttachmentWrite:
 			case CoreGraphics::BarrierAccess::HostWrite:
 			case CoreGraphics::BarrierAccess::MemoryWrite:
 			case CoreGraphics::BarrierAccess::TransferWrite:
@@ -204,7 +204,7 @@ FrameOp::Build(
 			{
 			case CoreGraphics::BarrierAccess::ShaderWrite:
 			case CoreGraphics::BarrierAccess::ColorAttachmentWrite:
-			case CoreGraphics::BarrierAccess::DepthWrite:
+			case CoreGraphics::BarrierAccess::DepthAttachmentWrite:
 			case CoreGraphics::BarrierAccess::HostWrite:
 			case CoreGraphics::BarrierAccess::MemoryWrite:
 			case CoreGraphics::BarrierAccess::TransferWrite:
@@ -221,8 +221,8 @@ FrameOp::Build(
 				bool createNew = true;
 				for (IndexT j = 0; j < deps.Size(); j++)
 				{
-					const CoreGraphics::ImageSubresourceInfo& info = std::get<0>(deps[i]);
-					TextureDependency& dep = std::get<1>(deps[i]);
+					const CoreGraphics::ImageSubresourceInfo& info = std::get<0>(deps[j]);
+					TextureDependency& dep = std::get<1>(deps[j]);
 
 					if (info.Overlaps(subres))
 					{
@@ -314,7 +314,7 @@ FrameOp::Build(
 			{
 			case CoreGraphics::BarrierAccess::ShaderWrite:
 			case CoreGraphics::BarrierAccess::ColorAttachmentWrite:
-			case CoreGraphics::BarrierAccess::DepthWrite:
+			case CoreGraphics::BarrierAccess::DepthAttachmentWrite:
 			case CoreGraphics::BarrierAccess::HostWrite:
 			case CoreGraphics::BarrierAccess::MemoryWrite:
 			case CoreGraphics::BarrierAccess::TransferWrite:
@@ -340,8 +340,8 @@ FrameOp::Build(
 					}
 					else
 					{
-						// create event
-						if (dep.index - this->index > 1)
+						// create event if distance is more than 1 op and if there is an op dependency
+						if (dep.index - this->index > 1 && dep.op != nullptr)
 						{
 							CoreGraphics::EventCreateInfo& info = waitEvents.AddUnique(pair);
 							info.createSignaled = false;

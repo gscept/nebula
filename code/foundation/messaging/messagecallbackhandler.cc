@@ -9,7 +9,7 @@
 namespace Messaging
 {
 Util::Array<Ptr<Messaging::Message> >  MessageCallbackHandler::Messages;
-Util::Array<Util::Delegate<const Ptr<Messaging::Message>& > >  MessageCallbackHandler::Callbacks;
+Util::Array<Util::Delegate<void(const Ptr<Messaging::Message>&)> >  MessageCallbackHandler::Callbacks;
 
 //------------------------------------------------------------------------------
 /**
@@ -20,7 +20,7 @@ MessageCallbackHandler::Update()
 	IndexT i;
 	for (i = 0; i < Messages.Size(); i++)
 	{
-		const Util::Delegate<const Ptr<Messaging::Message>& >& del = Callbacks[i];
+		const Util::Delegate<void(const Ptr<Messaging::Message>&)>& del = Callbacks[i];
 		const Ptr<Messaging::Message>& msg = Messages[i];
 
 		// if the message is handled, invoke delegate

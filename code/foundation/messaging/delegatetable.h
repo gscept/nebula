@@ -28,9 +28,9 @@ public:
     
 private:
     /// add a delegate
-    void AddDelegate(const Id& msgId, const Util::Delegate<const Ptr<Message>&>& del);
+    void AddDelegate(const Id& msgId, const Util::Delegate<void(const Ptr<Message>&)>& del);
 
-    Util::Array<Util::Array<Util::Delegate<const Ptr<Message>&> > > delegateArray;
+    Util::Array<Util::Array<Util::Delegate<void(const Ptr<Message>&)> > > delegateArray;
     Util::Dictionary<const Id*, IndexT> idIndexMap;
 };
 
@@ -42,7 +42,7 @@ void
 DelegateTable::Bind(const Id& msgId, CLASS* obj)
 {
     // setup a new delegate
-    Util::Delegate<const Ptr<Message>&> del = Util::Delegate<const Ptr<Message>&>::FromMethod<CLASS,METHOD>(obj);
+    Util::Delegate<void(const Ptr<Message>&)> del = Util::Delegate<void(const Ptr<Message>&)>::FromMethod<CLASS,METHOD>(obj);
     this->AddDelegate(msgId, del);
 }
 

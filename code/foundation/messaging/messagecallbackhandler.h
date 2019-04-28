@@ -42,7 +42,7 @@ public:
 	static void Update();
 private:
 	static Util::Array<Ptr<Messaging::Message> > Messages;
-	static Util::Array<Util::Delegate<const Ptr<Messaging::Message>& > > Callbacks;
+	static Util::Array<Util::Delegate<void(const Ptr<Messaging::Message>&)> > Callbacks;
 }; 
 
 //------------------------------------------------------------------------------

@@ -17,7 +17,9 @@
 #include "math/vector.h"
 #include "util/string.h"
 #include "util/blob.h"
-
+#include "io/stream.h"
+#include "coregraphics/vertexcomponent.h"
+#include "coregraphics/primitivetopology.h"
 namespace pjson
 {
     class value_variant;
@@ -95,6 +97,8 @@ struct Accessor : GltfBase
 
     ComponentType componentType{ ComponentType::None };
     Type type{ Type::None };
+
+    Base::VertexComponentBase::Format format;
     Sparse sparse;
 
     Util::String name;
@@ -307,9 +311,12 @@ struct Primitive : GltfBase
     int32_t material{ -1 };
 
     Mode mode{ Mode::Triangles };
+    CoreGraphics::PrimitiveTopology::Code nebulaMode;
+
 
     // dictionary with attribute to accessor index mapping
     Util::Dictionary<Attribute,uint32_t> attributes;
+    Util::Dictionary<Base::VertexComponentBase::SemanticName, uint32_t> nebulaAttributes;
     Util::Array<Util::Dictionary<Attribute, uint32_t>> targets;
 };
 
@@ -325,14 +332,23 @@ struct Node : GltfBase
 {
     Util::String name;
 
+    enum class Type : uint8_t
+    {
+        Transform,
+        Camera,
+        Mesh,
+        Skin
+    };
+    Type type;
     int32_t camera{ -1 };
     int32_t mesh{ -1 };
     int32_t skin{ -1 };
 
+    bool hasTRS{ false };
     Math::matrix44 matrix;
     Math::quaternion rotation;
     Math::vector scale{ Math::vector(1.0f) };
-    Math::vector translation;
+    Math::point translation;
 
     Util::Array<int32_t> children;
     Util::Array<float> weights;    
@@ -436,6 +452,7 @@ struct Document : public GltfBase
     void SerializeText(const IO::URI & uri) const;
     void SerializeBinary(const IO::URI & uri) const;
     bool Deserialize(const IO::URI & uri);
+    bool Deserialize(Ptr<IO::Stream> const & stream);
 };
 
 }

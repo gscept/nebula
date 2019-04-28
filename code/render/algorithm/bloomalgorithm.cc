@@ -107,6 +107,9 @@ BloomAlgorithm::Setup()
 
 	this->AddFunction("BrightnessBlur", Algorithm::Compute, [this, dims](IndexT)
 	{
+#if NEBULA_GRAPHICS_DEBUG
+		CoreGraphics::CmdBufBeginMarker(GraphicsQueueType, NEBULA_MARKER_ORANGE, "Bloom");
+#endif
 
 #define TILE_WIDTH 320
 #define DivAndRoundUp(a, b) (a % b != 0) ? (a / b + 1) : (a / b)
@@ -128,6 +131,9 @@ BloomAlgorithm::Setup()
 		CoreGraphics::SetResourceTable(this->blurTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
 		CoreGraphics::Compute(numGroupsY1, numGroupsX2, 1);
 
+#if NEBULA_GRAPHICS_DEBUG
+		CoreGraphics::CmdBufEndMarker(GraphicsQueueType);
+#endif
 	});
 }
 

@@ -419,6 +419,14 @@ RenderTextureGetDimensions(const RenderTextureId id)
 //------------------------------------------------------------------------------
 /**
 */
+const IndexT RenderTextureGetNumMips(const RenderTextureId id)
+{
+	return renderTextureAllocator.Get<0>(id.id24).mips;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 const CoreGraphics::PixelFormat::Code
 RenderTextureGetPixelFormat(const RenderTextureId id)
 {

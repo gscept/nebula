@@ -16,6 +16,7 @@ namespace BaseGameFeature
 {
 class EntityLoaderBase : public Core::RefCounted
 {
+	__DeclareClass(EntityLoaderBase);
 public:
     /// construtcor
     EntityLoaderBase();
