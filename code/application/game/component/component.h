@@ -40,7 +40,7 @@
 	Remember to include componentmanager.h!
 */
 #define __RegisterComponent(ALLOCATOR, COMPONENTNAME) \
-	Game::ComponentManager::Instance()->RegisterComponent(ALLOCATOR, ##COMPONENTNAME, ALLOCATOR->GetRtti()->GetFourCC());
+	Game::ComponentManager::Instance()->RegisterComponent(ALLOCATOR, ##COMPONENTNAME, ALLOCATOR->GetIdentifier());
 
 //------------------------------------------------------------------------------
 /**
@@ -103,6 +103,9 @@ template <typename ... TYPES>
 class Component : public ComponentInterface
 {
 protected:
+	/// short hand for getting the component with template arguments filled
+	using component_templated_t = Component<TYPES...>;
+
 	ComponentCreateInfo settings;
 public:
 	Component();
@@ -197,9 +200,6 @@ public:
 	/// @note	attribute types need to be in exactly the same order as in the attribute ids list.
 	Util::ArrayAllocator<Entity, typename TYPES::InnerType...> data;
 
-protected:
-	/// short hand for getting the component with template arguments filled
-	using component_templated_t = Component<TYPES...>;
 private:
 	
 	/// Initialize attribute list.

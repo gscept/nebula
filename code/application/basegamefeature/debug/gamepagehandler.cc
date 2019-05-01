@@ -89,8 +89,8 @@ GamePageHandler::HandleRequest(const Ptr<HttpRequest>& request)
 				ComponentInterface* component = componentManager->GetComponentAtIndex(componentIndex);
 				htmlWriter->Begin(HtmlElement::TableRow);
 				htmlWriter->Begin(HtmlElement::TableData);
-				htmlWriter->AddAttr("href", "/game?component=" + component->GetRtti()->GetFourCC().AsString());
-				htmlWriter->Element(HtmlElement::Anchor, component->GetRtti()->GetName());
+				htmlWriter->AddAttr("href", "/game?component=" + component->GetIdentifier().AsString());
+				htmlWriter->Element(HtmlElement::Anchor, component->GetName().AsString());
 				htmlWriter->End(HtmlElement::TableData);
 				htmlWriter->Element(HtmlElement::TableData, String::FromInt(component->NumRegistered()));
 				htmlWriter->Element(HtmlElement::TableData, String::FromInt(component->GetAttributes().Size()));
@@ -141,7 +141,7 @@ void GamePageHandler::InspectComponent(const Util::FourCC& fourcc, const Ptr<Htt
 			else
 			{
 				SizeT numInstances = component->NumRegistered();
-				htmlWriter->Element(HtmlElement::Heading3, component->GetRtti()->GetName());
+				htmlWriter->Element(HtmlElement::Heading3, component->GetName().AsString());
 				htmlWriter->Begin(HtmlElement::Table);
 				htmlWriter->Begin(HtmlElement::TableRow);
 				htmlWriter->Element(HtmlElement::TableData, "Registered Entities:");

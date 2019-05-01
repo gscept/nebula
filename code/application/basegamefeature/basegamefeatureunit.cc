@@ -151,7 +151,7 @@ BaseGameFeatureUnit::WriteAdditionalMetadata(Ptr<IO::JsonWriter> const& writer) 
 		writer->BeginObject();
 
 		writer->Add(componentName.AsCharPtr(), "name");
-		Util::FourCC fourcc = component->GetRtti()->GetFourCC();
+		Util::FourCC fourcc = component->GetIdentifier();
 		writer->Add(fourcc.AsString(), "fourcc");
 		// writer->Add(component->GetEvents())
 		

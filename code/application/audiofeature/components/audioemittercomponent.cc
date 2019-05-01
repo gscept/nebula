@@ -26,7 +26,14 @@ using namespace Audio;
 void
 AudioEmitterComponent::Create()
 {
-	component->DestroyAll();
+	if (component != nullptr)
+	{
+		component->DestroyAll();
+	}
+	else
+	{
+		component = n_new(AudioEmitterComponentAllocator());
+	}
 
 	__SetupDefaultComponentBundle(component);
 	component->functions.OnActivate = OnActivate;

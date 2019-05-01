@@ -68,7 +68,6 @@ static constexpr const char* ComponentEventNames[] = {
 
 class ComponentInterface
 {
-	__DeclareClass(ComponentInterface)
 public:
 	ComponentInterface();
 	~ComponentInterface();
@@ -191,7 +190,6 @@ public:
 		void(*SetParents)(InstanceId start, InstanceId end, const Util::Array<Entity>& entities, const Util::Array<uint32_t>& parentIndices);
 	} functions;
 
-	Util::Array<MessageListener> messageListeners;
 protected:
 	friend class ComponentManager;
 

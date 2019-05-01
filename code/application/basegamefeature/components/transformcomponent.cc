@@ -41,7 +41,7 @@ TransformComponent::Create()
 	}
 	else
 	{
-		data = new ComponentData({ true	});
+		data = n_new(ComponentData({ true }));
 	}
 
 	data->EnableEvent(Game::ComponentEvent::OnDeactivate);
@@ -50,7 +50,7 @@ TransformComponent::Create()
 	data->functions.OnDeactivate = OnDeactivate;
 	data->functions.OnInstanceMoved = OnInstanceMoved;
 	data->functions.SetParents = SetParents;
-	Game::ComponentManager::Instance()->RegisterComponent(data, "TransformComponent"_atm, data->GetRtti()->GetFourCC());
+	Game::ComponentManager::Instance()->RegisterComponent(data, "TransformComponent"_atm, data->GetIdentifier());
 
 	SetupAcceptedMessages();
 }
@@ -73,9 +73,9 @@ void
 TransformComponent::SetupAcceptedMessages()
 {
 	// SetLocalTransform message will be handled by ::SetLocalTransform(...)
-	data->messageListeners.Append(__RegisterMsg(Msg::SetLocalTransform, SetLocalTransform));
-	data->messageListeners.Append(__RegisterMsg(Msg::SetWorldTransform, SetWorldTransform));
-	data->messageListeners.Append(__RegisterMsg(Msg::SetParent, SetParent));
+	__RegisterMsg(Msg::SetLocalTransform, SetLocalTransform);
+	__RegisterMsg(Msg::SetWorldTransform, SetWorldTransform);
+	__RegisterMsg(Msg::SetParent, SetParent);
 	messageQueue = Msg::UpdateTransform::AllocateMessageQueue();
 	
 }

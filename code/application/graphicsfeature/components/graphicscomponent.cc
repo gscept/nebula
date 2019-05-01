@@ -148,7 +148,7 @@ GraphicsComponent::Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset,
 Util::FourCC
 GraphicsComponent::GetFourCC()
 {
-	return component->GetRtti()->GetFourCC();
+	return component->GetIdentifier();
 }
 
 } // namespace GraphicsFeature

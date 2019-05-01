@@ -10,8 +10,6 @@
 namespace Game
 {
 
-__ImplementAbstractRootClass(ComponentInterface, 'BsCm')
-
 //------------------------------------------------------------------------------
 /**
 */

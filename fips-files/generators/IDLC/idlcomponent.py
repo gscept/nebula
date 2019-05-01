@@ -59,15 +59,21 @@ class {className} : public Game::Component<
     {componentTemplateArguments}
 >
 {{
-    __DeclareClass({className});
 public:
     /// Default constructor
     {className}();
     /// Default destructor
     ~{className}();
-    
+
+    /// Returns the components fourcc
+    static Util::FourCC GetIdentifier()
+    {{
+        return '{fourcc}';
+    }}
+
         """.format(
             className=self.className,
+            fourcc=self.fourcc,
             componentTemplateArguments=self.componentTemplateArguments
         )
         self.f.WriteLine(headerTemplate)
@@ -119,8 +125,8 @@ public:
         if self.hasAttributes:
             numAttributes += len(self.component["attributes"])
 
-        self.f.WriteLine("__ImplementWeakClass({}::{}, '{}', Game::ComponentInterface);".format(self.namespace, self.className, self.fourcc))
-        self.f.WriteLine("__RegisterClass({})".format(self.className))
+        # self.f.WriteLine("__ImplementWeakClass({}::{}, '{}', Game::ComponentInterface);".format(self.namespace, self.className, self.fourcc))
+        # self.f.WriteLine("__RegisterClass({})".format(self.className))
 
         self.f.InsertNebulaDivider()
         self.f.WriteLine("{className}::{className}()".format(className=self.className))

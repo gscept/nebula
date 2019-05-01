@@ -88,6 +88,8 @@ public:
     explicit AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode, const Util::Array<Util::Guid>& defVal);
 	/// Constructor with default entity value
     explicit AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode, const Game::Entity& defVal);
+	/// Constructor with default variant value
+	explicit AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode, const Util::Variant& defVal, ValueType type);
 
     /// destructor
     ~AttributeDefinitionBase();
@@ -143,7 +145,7 @@ AttributeDefinitionBase::FindByName(const Util::String& n)
     n_assert(0 != NameRegistry);
     if (!NameRegistry->Contains(n))
     {
-        return 0;
+        return nullptr;
     }
     else
     {
@@ -161,7 +163,7 @@ AttributeDefinitionBase::FindByFourCC(const Util::FourCC& fcc)
     n_assert(0 != FourCCRegistry);
     if (!FourCCRegistry->Contains(fcc))
     {
-        return 0;
+        return nullptr;
     }
     else
     {
