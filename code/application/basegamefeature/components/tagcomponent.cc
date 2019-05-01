@@ -9,7 +9,8 @@
 namespace Game
 {
 
-static Component<Attr::Tag> data;
+typedef Component<Attr::Tag> ComponentData;
+static ComponentData* data;
 
 __ImplementComponent(TagComponent, data);
 
@@ -19,10 +20,17 @@ __ImplementComponent(TagComponent, data);
 void
 TagComponent::Create()
 {
-	data.DestroyAll();
+	if (data != nullptr)
+	{
+		data->DestroyAll();
+	}
+	else
+	{
+		data = new ComponentData({ true });
+	}
 
 	__SetupDefaultComponentBundle(data);
-	__RegisterComponent(&data, "TagComponent"_atm, 'tagc');
+	Game::ComponentManager::Instance()->RegisterComponent(data, "TagComponent"_atm, 'tagc');
 }
 
 //------------------------------------------------------------------------------

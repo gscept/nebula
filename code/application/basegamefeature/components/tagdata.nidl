@@ -12,6 +12,6 @@
         "attributes": [
             "Tag"
         ]
-        "useDelayedRemoval": true
+        "incrementalDeletion": true
     }
 }

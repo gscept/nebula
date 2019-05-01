@@ -16,12 +16,6 @@
 namespace AudioFeature
 {
 
-__DeclareAttribute(AudioEmitter, uint, 'aemi', Attr::ReadOnly, uint(-1));
-__DeclareAttribute(AudioResource, Util::String, 'anme', Attr::ReadWrite, "");
-__DeclareAttribute(Autoplay, bool, 'aupl', Attr::ReadWrite, false);
-__DeclareAttribute(Loop, bool, 'Loop', Attr::ReadWrite, false);
-__DeclareAttribute(Spatialize, bool, 'spaz', Attr::ReadWrite, true);
-
 class AudioEmitterComponent
 {
 	__DeclareComponent(AudioEmitterComponent)

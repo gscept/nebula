@@ -9,11 +9,12 @@
 #include "basegamefeature/managers/componentmanager.h"
 #include "audiodevice.h"
 #include "audiofeature/messages/audioprotocol.h"
+#include "audiofeature/components/audioemitterallocator.h"
 
 namespace AudioFeature
 {
 
-static Game::Component<AudioEmitter, AudioResource, Autoplay, Loop, Spatialize> component;
+static AudioEmitterComponentAllocator* component;
 
 __ImplementComponent(AudioFeature::AudioEmitterComponent, component)
 
@@ -25,12 +26,12 @@ using namespace Audio;
 void
 AudioEmitterComponent::Create()
 {
-	component.DestroyAll();
+	component->DestroyAll();
 
 	__SetupDefaultComponentBundle(component);
-	component.functions.OnActivate = OnActivate;
-	component.functions.OnDeactivate = OnDeactivate;
-	__RegisterComponent(&component, "AudioEmitterComponent"_atm, 'audc');
+	component->functions.OnActivate = OnActivate;
+	component->functions.OnDeactivate = OnDeactivate;
+	__RegisterComponent(component, "AudioEmitterComponent"_atm);
 
 	SetupAcceptedMessages();
 }
@@ -60,14 +61,14 @@ AudioEmitterComponent::SetupAcceptedMessages()
 void
 AudioEmitterComponent::OnActivate(Game::InstanceId instance)
 {
-	Resources::ResourceName resource = component.Get<AudioResource>(instance);
+	Resources::ResourceName resource = component->Get<Attr::AudioResource>(instance);
 	SetAudioResource(instance, resource);
-	auto const& emitter = component.Get<AudioEmitter>(instance);
-	AudioDevice::Instance()->SetSpatialize(emitter, component.Get<Spatialize>(instance));
+	auto const& emitter = component->Get<Attr::AudioEmitter>(instance);
+	AudioDevice::Instance()->SetSpatialize(emitter, component->Get<Attr::Spatialize>(instance));
 
-	if (component.Get<Autoplay>(instance))
+	if (component->Get<Attr::Autoplay>(instance))
 	{
-		AudioDevice::Instance()->Play(emitter, component.Get<Loop>(instance));
+		AudioDevice::Instance()->Play(emitter, component->Get<Attr::Loop>(instance));
 	}
 }
 
@@ -77,7 +78,7 @@ AudioEmitterComponent::OnActivate(Game::InstanceId instance)
 void
 AudioEmitterComponent::OnDeactivate(Game::InstanceId instance)
 {
-	AudioEmitterId emitter = { component.Get<AudioEmitter>(instance) };
+	AudioEmitterId emitter = { component->Get<Attr::AudioEmitter>(instance) };
 	AudioDevice::Instance()->DestroyAudioEmitter(emitter);
 }
 
@@ -87,10 +88,10 @@ AudioEmitterComponent::OnDeactivate(Game::InstanceId instance)
 void
 AudioEmitterComponent::UpdateTransform(Game::Entity entity, const Math::matrix44 & transform)
 {
-	auto instance = component.GetInstance(entity);
+	auto instance = component->GetInstance(entity);
 	if (instance != InvalidIndex)
 	{
-		AudioEmitterId emitter = { component.Get<AudioEmitter>(instance) };
+		AudioEmitterId emitter = { component->Get<Attr::AudioEmitter>(instance) };
 		AudioDevice::Instance()->SetPosition(emitter, transform.get_position());
 	}
 }
@@ -101,7 +102,7 @@ AudioEmitterComponent::UpdateTransform(Game::Entity entity, const Math::matrix44
 void
 AudioEmitterComponent::SetAudioResource(Game::Entity entity, Util::String const & resource)
 {
-	auto instance = component.GetInstance(entity);
+	auto instance = component->GetInstance(entity);
 	if (instance != InvalidIndex)
 	{
 		Resources::ResourceName resourceName = resource;
@@ -116,19 +117,19 @@ AudioEmitterComponent::SetAudioResource(Game::Entity entity, Util::String const 
 void
 AudioEmitterComponent::SetAudioResource(Game::InstanceId instance, Resources::ResourceName const & resource)
 {
-	AudioEmitterId audioEmitter = component.Get<AudioEmitter>(instance);
+	AudioEmitterId audioEmitter = component->Get<Attr::AudioEmitter>(instance);
 	if (audioEmitter != AudioEmitterId::Invalid())
 	{
 		AudioDevice::Instance()->DestroyAudioEmitter(audioEmitter);
 	}
 
-	component.Get<AudioResource>(instance) = resource.Value();
+	component->Get<Attr::AudioResource>(instance) = resource.Value();
 	audioEmitter = AudioDevice::Instance()->CreateAudioEmitter(resource);
-	component.Get<AudioEmitter>(instance) = audioEmitter.id;
+	component->Get<Attr::AudioEmitter>(instance) = audioEmitter.id;
 
 	if (audioEmitter != AudioEmitterId::Invalid())
 	{
-		auto transform = Game::TransformComponent::GetWorldTransform(component.GetOwner(instance));
+		auto transform = Game::TransformComponent::GetWorldTransform(component->GetOwner(instance));
 		AudioDevice::Instance()->SetPosition(audioEmitter, transform.get_position());
 	}
 }

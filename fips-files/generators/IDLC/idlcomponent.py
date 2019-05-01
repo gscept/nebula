@@ -27,7 +27,7 @@ class ComponentClassWriter:
             util.fmtError('Component does contain a FourCC')
 
         self.fourcc = component["fourcc"]
-        self.useDelayedRemoval = "useDelayedRemoval" in component and component["useDelayedRemoval"] == True
+        self.incrementalDeletion = "incrementalDeletion" in component and component["incrementalDeletion"] == True
 
         self.hasEvents = "events" in component
         if self.hasEvents:
@@ -46,7 +46,7 @@ class ComponentClassWriter:
             for i, attributeName in enumerate(self.component["attributes"]):
                 if not attributeName in self.document["attributes"]:
                     util.fmtError(AttributeNotFoundError.format(attributeName))
-                self.componentTemplateArguments += "decltype(Attr::{})".format(Capitalize(attributeName))
+                self.componentTemplateArguments += "Attr::{}".format(Capitalize(attributeName))
                 if i != (numAttributes - 1):
                     self.componentTemplateArguments += ",\n    "
 
@@ -65,33 +65,9 @@ public:
     {className}();
     /// Default destructor
     ~{className}();
-
-    enum AttributeIndex
-    {{
-        OWNER,
-{enumAttributeList}
-        NumAttributes
-    }};
-
-    /// Registers an entity to this component.
-    Game::InstanceId RegisterEntity(Game::Entity entity);
-
-    /// Deregister Entity.
-    void DeregisterEntity(Game::Entity entity);
-
-    /// Destroys all instances of this component, and deregisters every entity.
-    void DestroyAll();
-
-    /// Optimize data array and pack data
-    SizeT Optimize();
-
-    /// Called from entitymanager if this component is registered with a deletion callback.
-    /// Removes entity immediately from component instances.
-    void OnEntityDeleted(Game::Entity entity);
-
+    
         """.format(
             className=self.className,
-            enumAttributeList=self.GetEnumAttributeList(),
             componentTemplateArguments=self.componentTemplateArguments
         )
         self.f.WriteLine(headerTemplate)
@@ -138,18 +114,6 @@ public:
     #------------------------------------------------------------------------------
     ##
     #
-    def GetEnumAttributeList(self):
-        retval = ""
-        if self.hasAttributes:
-            for attributeName in self.component["attributes"]:
-                if not attributeName in self.document["attributes"]:
-                    util.fmtError(AttributeNotFoundError.format(attributeName))
-                retval += "        {},\n".format(attributeName.upper())
-        return retval
-
-    #------------------------------------------------------------------------------
-    ##
-    #
     def WriteConstructorImplementation(self):
         numAttributes = 0
         if self.hasAttributes:
@@ -159,26 +123,17 @@ public:
         self.f.WriteLine("__RegisterClass({})".format(self.className))
 
         self.f.InsertNebulaDivider()
-        self.f.WriteLine("{className}::{className}() :".format(className=self.className))
-        self.f.IncreaseIndent()
-        self.f.WriteLine("component_templated_t({")
-        self.f.IncreaseIndent()
-        if self.hasAttributes:
-            for i, attributeName in enumerate(self.component["attributes"]):
-                self.f.Write("Attr::{}".format(Capitalize(attributeName)))
-                if i != numAttributes:
-                    self.f.WriteLine(",")
-                else:
-                    self.f.WriteLine("")
-        self.f.DecreaseIndent()
-        self.f.WriteLine("})")
-        self.f.DecreaseIndent()
+        self.f.WriteLine("{className}::{className}()".format(className=self.className))
         self.f.WriteLine("{")
         self.f.IncreaseIndent()
         if self.hasEvents:
             for event in self.component["events"]:
                 self.f.WriteLine("this->events.SetBit({});".format(IDLTypes.GetEventEnum(event)))
             self.f.WriteLine("")
+
+        if self.incrementalDeletion:
+            self.f.WriteLine("this->settings.incrementalDeletion = true;")
+        
         self.f.DecreaseIndent()
         self.f.WriteLine("}")
 
@@ -197,131 +152,7 @@ public:
     #------------------------------------------------------------------------------
     ##
     #
-    def WriteRegisterEntityImplementation(self):
-        self.f.InsertNebulaDivider()
-        self.f.WriteLine("Game::InstanceId")
-        self.f.WriteLine("{}::RegisterEntity(Game::Entity entity)".format(self.className))
-        self.f.WriteLine("{")
-        self.f.IncreaseIndent()
-        self.f.WriteLine("auto instance = component_templated_t::RegisterEntity(entity);")
-
-        if not self.useDelayedRemoval:
-            self.f.WriteLine("Game::EntityManager::Instance()->RegisterDeletionCallback(entity, this);")
-
-        if self.hasEvents and "onactivate" in self.events:
-            self.f.WriteLine("")
-            self.f.WriteLine("this->functions.OnActivate(instance);")
-
-        self.f.WriteLine("return instance;")
-        self.f.DecreaseIndent()
-        self.f.WriteLine("}")
-
-    #------------------------------------------------------------------------------
-    ##
-    #
-    def WriteDeregisterEntityImplementation(self):
-        self.f.InsertNebulaDivider()
-        self.f.WriteLine("void")
-        self.f.WriteLine("{}::DeregisterEntity(Game::Entity entity)".format(self.className))
-        self.f.WriteLine("{")
-        self.f.IncreaseIndent()
-        self.f.WriteLine("Game::InstanceId index = this->GetInstance(entity);")
-        self.f.WriteLine("if (index != InvalidIndex)")
-        self.f.WriteLine("{")
-        self.f.IncreaseIndent()
-
-        if self.hasEvents and "ondeactivate" in self.events:
-            self.f.WriteLine("this->functions.OnDeactivate(index);")
-            self.f.WriteLine("")
-
-        if self.useDelayedRemoval:
-            self.f.WriteLine("component_templated_t::DeregisterEntity(entity);")
-        else:
-            self.f.WriteLine("this->DeregisterEntityImmediate(entity);")
-            self.f.WriteLine("Game::EntityManager::Instance()->DeregisterDeletionCallback(entity, this);")
-
-        self.f.WriteLine("return;")
-        self.f.DecreaseIndent()
-        self.f.WriteLine("}")
-        self.f.DecreaseIndent()
-        self.f.WriteLine("}")
-
-    #------------------------------------------------------------------------------
-    ##
-    #
-    def WriteOnEntityDeletedImplementation(self):
-            self.f.InsertNebulaDivider()
-            self.f.WriteLine("void")
-            self.f.WriteLine("{}::OnEntityDeleted(Game::Entity entity)".format(self.className))
-            self.f.WriteLine("{")
-            self.f.IncreaseIndent()
-            if not self.useDelayedRemoval:
-                self.f.WriteLine("Game::InstanceId index = this->GetInstance(entity);")
-                self.f.WriteLine("if (index != InvalidIndex)")
-                self.f.WriteLine("{")
-                self.f.IncreaseIndent()
-                if self.hasEvents and "ondeactivate" in self.events:
-                    self.f.WriteLine("this->functions.OnDeactivate(index);")
-                    self.f.WriteLine("")
-                self.f.WriteLine("this->DeregisterEntityImmediate(entity);")
-                self.f.WriteLine("return;")
-                self.f.DecreaseIndent()
-                self.f.WriteLine("}")
-            else:
-                self.f.WriteLine("return;")
-            self.f.DecreaseIndent()
-            self.f.WriteLine("}")
-
-    #------------------------------------------------------------------------------
-    ##
-    #
-    def WriteOptimizeImplementation(self):
-        self.f.InsertNebulaDivider()
-        self.f.WriteLine("SizeT")
-        self.f.WriteLine("{}::Optimize()".format(self.className))
-        self.f.WriteLine("{")
-        self.f.IncreaseIndent()
-
-        if self.useDelayedRemoval:
-            self.f.WriteLine("return component_templated_t::Optimize();")
-        else:
-            self.f.WriteLine("return 0;")
-
-        self.f.DecreaseIndent()
-        self.f.WriteLine("}")
-
-    #------------------------------------------------------------------------------
-    ##
-    #
-    def WriteDestroyAllImplementation(self):
-        self.f.InsertNebulaDivider()
-        self.f.WriteLine("void")
-        self.f.WriteLine("{}::DestroyAll()".format(self.className))
-        self.f.WriteLine("{")
-        self.f.IncreaseIndent()
-        if not self.useDelayedRemoval:
-            self.f.WriteLine("SizeT length = this->data.Size();")
-            self.f.WriteLine("for (SizeT i = 0; i < length; i++)")
-            self.f.WriteLine("{")
-            self.f.WriteLine("    Game::EntityManager::Instance()->DeregisterDeletionCallback(this->GetOwner(i), this);")
-            self.f.WriteLine("}")
-        
-        self.f.WriteLine("component_templated_t::DestroyAll();")
-        self.f.DecreaseIndent()
-        self.f.WriteLine("}")
-        
-
-
-
-    #------------------------------------------------------------------------------
-    ##
-    #
     def WriteClassImplementation(self):
         self.WriteConstructorImplementation()
         self.WriteDestructorImplementation()
-        self.WriteRegisterEntityImplementation()
-        self.WriteDeregisterEntityImplementation()
-        self.WriteDestroyAllImplementation()
-        self.WriteOptimizeImplementation()
-        self.WriteOnEntityDeletedImplementation()
         self.WriteAttributeAccessImplementation()

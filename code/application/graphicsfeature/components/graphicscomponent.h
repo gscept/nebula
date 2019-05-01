@@ -12,9 +12,6 @@
 namespace GraphicsFeature
 {
 
-__DeclareAttribute(GraphicsEntity, uint, 'gEnt', Attr::ReadOnly, uint(-1));
-__DeclareAttribute(ModelResource, Util::String, 'mdlR', Attr::ReadWrite, Util::String("mdl:Buildings/castle_tower.n3"));
-
 class GraphicsComponent
 {
 	__DeclareComponent(GraphicsComponent)

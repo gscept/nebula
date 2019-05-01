@@ -63,7 +63,7 @@ nebula_begin_module(application)
 			componentmanager.cc
 		)
 	fips_dir(basegamefeature/components)
-		# nebula_add_nidl(transformdata.nidl tagdata.nidl)
+		nebula_add_nidl(transformdata.nidl tagdata.nidl)
 		fips_files(
 			transformcomponent.h
 			transformcomponent.cc
@@ -93,7 +93,7 @@ nebula_begin_module(application)
 			graphicsfeatureunit.cc
 		)
 	fips_dir(graphicsfeature/components)
-		# nebula_add_nidl(lightdata.nidl graphicsdata.nidl)
+		nebula_add_nidl(lightdata.nidl graphicsdata.nidl)
 		fips_files(
 			graphicscomponent.h
 			graphicscomponent.cc
@@ -106,7 +106,7 @@ nebula_begin_module(application)
 			audiofeatureunit.cc
 		)
 	fips_dir(audiofeature/components)
-		# nebula_add_nidl(audioemitterallocator.nidl)
+		nebula_add_nidl(audioemitterallocator.nidl)
 		fips_files(
 			audioemittercomponent.h
 			audioemittercomponent.cc

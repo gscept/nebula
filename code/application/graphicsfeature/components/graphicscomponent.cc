@@ -12,11 +12,12 @@
 #include "basegamefeature/components/transformcomponent.h"
 #include "basegamefeature/managers/componentmanager.h"
 #include "game/component/componentserialization.h"
+#include "graphicsfeature/components/graphicsdata.h"
 
 namespace GraphicsFeature
 {
 
-static Game::Component<GraphicsEntity, ModelResource> component;
+static GraphicsComponentAllocator* component;
 
 __ImplementComponent_woSerialization(GraphicsFeature::GraphicsComponent, component)
 
@@ -26,12 +27,21 @@ __ImplementComponent_woSerialization(GraphicsFeature::GraphicsComponent, compone
 void
 GraphicsComponent::Create()
 {
-	component.DestroyAll();
+	if (component != nullptr)
+	{
+		component->DestroyAll();
+	}
+	else
+	{
+		component = new GraphicsComponentAllocator();
+	}
+
+	component->DestroyAll();
 
 	__SetupDefaultComponentBundle(component);
-	component.functions.OnActivate = OnActivate;
-	component.functions.OnDeactivate = OnDeactivate;
-	__RegisterComponent(&component, "GraphicsComponent"_atm, GetFourCC());
+	component->functions.OnActivate = OnActivate;
+	component->functions.OnDeactivate = OnDeactivate;
+	__RegisterComponent(component, "GraphicsComponent"_atm);
 
 	SetupAcceptedMessages();
 }
@@ -62,10 +72,10 @@ void
 GraphicsComponent::OnActivate(Game::InstanceId instance)
 {
 	auto gfxEntity = Graphics::CreateEntity();
-	component.Get<GraphicsEntity>(instance) = gfxEntity.id;
+	component->Get<Attr::GraphicsEntity>(instance) = gfxEntity.id;
 	Models::ModelContext::RegisterEntity(gfxEntity);
-	Models::ModelContext::Setup(gfxEntity, component.Get<ModelResource>(instance), "NONE");
-	auto transform = Game::TransformComponent::GetWorldTransform(component.GetOwner(instance));
+	Models::ModelContext::Setup(gfxEntity, component->Get<Attr::ModelResource>(instance), "NONE");
+	auto transform = Game::TransformComponent::GetWorldTransform(component->GetOwner(instance));
 	Models::ModelContext::SetTransform(gfxEntity, transform);
 	Visibility::ObservableContext::RegisterEntity(gfxEntity);
 	Visibility::ObservableContext::Setup(gfxEntity, Visibility::VisibilityEntityType::Model);
@@ -77,7 +87,7 @@ GraphicsComponent::OnActivate(Game::InstanceId instance)
 void
 GraphicsComponent::OnDeactivate(Game::InstanceId instance)
 {
-	Graphics::GraphicsEntityId gfxEntity = { component.Get<GraphicsEntity>(instance) };
+	Graphics::GraphicsEntityId gfxEntity = { component->Get<Attr::GraphicsEntity>(instance) };
 	Models::ModelContext::DeregisterEntity(gfxEntity);
 	Visibility::ObservableContext::DeregisterEntity(gfxEntity);
 	Graphics::DestroyEntity(gfxEntity);
@@ -89,10 +99,10 @@ GraphicsComponent::OnDeactivate(Game::InstanceId instance)
 void
 GraphicsComponent::UpdateTransform(Game::Entity entity, const Math::matrix44 & transform)
 {
-	auto instance = component.GetInstance(entity);
+	auto instance = component->GetInstance(entity);
 	if (instance != InvalidIndex)
 	{
-		Graphics::GraphicsEntityId gfxEntity = { component.Get<GraphicsEntity>(instance) };
+		Graphics::GraphicsEntityId gfxEntity = { component->Get<Attr::GraphicsEntity>(instance) };
 		Models::ModelContext::SetTransform(gfxEntity, transform);
 	}
 }
@@ -103,13 +113,13 @@ GraphicsComponent::UpdateTransform(Game::Entity entity, const Math::matrix44 & t
 void
 GraphicsComponent::SetModel(Game::Entity entity, const Util::String & path)
 {
-	auto instance = component.GetInstance(entity);
+	auto instance = component->GetInstance(entity);
 	if (instance != InvalidIndex)
 	{
-		Graphics::GraphicsEntityId gfxEntity = { component.Get<GraphicsEntity>(instance) };
+		Graphics::GraphicsEntityId gfxEntity = { component->Get<Attr::GraphicsEntity>(instance) };
 		Models::ModelContext::ChangeModel(gfxEntity, path, "NONE");
-		component.Get<ModelResource>(instance) = path;
-		auto transform = Game::TransformComponent::GetWorldTransform(component.GetOwner(instance));
+		component->Get<Attr::ModelResource>(instance) = path;
+		auto transform = Game::TransformComponent::GetWorldTransform(component->GetOwner(instance));
 		Models::ModelContext::SetTransform(gfxEntity, transform);
 	}
 }
@@ -120,7 +130,7 @@ GraphicsComponent::SetModel(Game::Entity entity, const Util::String & path)
 void
 GraphicsComponent::Serialize(const Ptr<IO::BinaryWriter>& writer)
 {
-	Game::Serialize(writer, component.data.GetArray<component.GetAttributeIndex<ModelResource>()>());
+	Game::Serialize(writer, component->data.GetArray<GraphicsComponentAllocator::GetAttributeIndex<Attr::ModelResource>()>());
 }
 
 //------------------------------------------------------------------------------
@@ -129,7 +139,7 @@ GraphicsComponent::Serialize(const Ptr<IO::BinaryWriter>& writer)
 void
 GraphicsComponent::Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances)
 {
-	Game::Deserialize(reader, component.data.GetArray<component.GetAttributeIndex<ModelResource>()>(), offset, numInstances);
+	Game::Deserialize(reader, component->data.GetArray<GraphicsComponentAllocator::GetAttributeIndex<Attr::ModelResource>()>(), offset, numInstances);
 }
 
 //------------------------------------------------------------------------------
@@ -138,7 +148,7 @@ GraphicsComponent::Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset,
 Util::FourCC
 GraphicsComponent::GetFourCC()
 {
-	return 'grpc';
+	return component->GetRtti()->GetFourCC();
 }
 
 } // namespace GraphicsFeature

@@ -30,17 +30,17 @@
 	to the component manager to implement default behaviour
 */
 #define __SetupDefaultComponentBundle(ALLOCATOR) \
-	ALLOCATOR.functions.DestroyAll = DestroyAll; \
-	ALLOCATOR.functions.Serialize = Serialize; \
-	ALLOCATOR.functions.Deserialize = Deserialize; 
+	ALLOCATOR->functions.DestroyAll = DestroyAll; \
+	ALLOCATOR->functions.Serialize = Serialize; \
+	ALLOCATOR->functions.Deserialize = Deserialize; 
 
 //------------------------------------------------------------------------------
 /**
 	Shorthand for registering to the component manager.
 	Remember to include componentmanager.h!
 */
-#define __RegisterComponent(ALLOCATOR, COMPONENTNAME, FOURCC) \
-	Game::ComponentManager::Instance()->RegisterComponent(ALLOCATOR, ##COMPONENTNAME, FOURCC);
+#define __RegisterComponent(ALLOCATOR, COMPONENTNAME) \
+	Game::ComponentManager::Instance()->RegisterComponent(ALLOCATOR, ##COMPONENTNAME, ALLOCATOR->GetRtti()->GetFourCC());
 
 //------------------------------------------------------------------------------
 /**
@@ -68,13 +68,13 @@
 	Remember to write implementations for Create() and Discard()!
 */
 #define __ImplementComponent(COMPONENTTYPE, ALLOCATOR) \
-	Game::InstanceId COMPONENTTYPE::RegisterEntity(Game::Entity entity) { return ALLOCATOR.RegisterEntity(entity); } \
-	void COMPONENTTYPE::DeregisterEntity(Game::Entity entity) { ALLOCATOR.DeregisterEntity(entity); } \
-	void COMPONENTTYPE::DestroyAll() { ALLOCATOR.DestroyAll(); } \
-	SizeT COMPONENTTYPE::NumRegistered() { return ALLOCATOR.NumRegistered(); } \
-	void COMPONENTTYPE::Serialize(const Ptr<IO::BinaryWriter>& writer) { ALLOCATOR.Serialize(writer); } \
-	void COMPONENTTYPE::Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances) { ALLOCATOR.Deserialize(reader, offset, numInstances); } \
-	Game::InstanceId COMPONENTTYPE::GetInstance(Game::Entity entity) { return ALLOCATOR.GetInstance(entity); } 
+	Game::InstanceId COMPONENTTYPE::RegisterEntity(Game::Entity entity) { return ALLOCATOR->RegisterEntity(entity); } \
+	void COMPONENTTYPE::DeregisterEntity(Game::Entity entity) { ALLOCATOR->DeregisterEntity(entity); } \
+	void COMPONENTTYPE::DestroyAll() { ALLOCATOR->DestroyAll(); } \
+	SizeT COMPONENTTYPE::NumRegistered() { return ALLOCATOR->NumRegistered(); } \
+	void COMPONENTTYPE::Serialize(const Ptr<IO::BinaryWriter>& writer) { ALLOCATOR->Serialize(writer); } \
+	void COMPONENTTYPE::Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances) { ALLOCATOR->Deserialize(reader, offset, numInstances); } \
+	Game::InstanceId COMPONENTTYPE::GetInstance(Game::Entity entity) { return ALLOCATOR->GetInstance(entity); } 
 
 //------------------------------------------------------------------------------
 /**
@@ -85,29 +85,37 @@
 	Remember to write implementations for Create() and Discard()!
 */
 #define __ImplementComponent_woSerialization(COMPONENTTYPE, ALLOCATOR) \
-	Game::InstanceId COMPONENTTYPE::RegisterEntity(Game::Entity entity) { return ALLOCATOR.RegisterEntity(entity); } \
-	void COMPONENTTYPE::DeregisterEntity(Game::Entity entity) { ALLOCATOR.DeregisterEntity(entity); } \
-	void COMPONENTTYPE::DestroyAll() { ALLOCATOR.DestroyAll(); } \
-	SizeT COMPONENTTYPE::NumRegistered() { return ALLOCATOR.NumRegistered(); } \
-	Game::InstanceId COMPONENTTYPE::GetInstance(Game::Entity entity) { return ALLOCATOR.GetInstance(entity); } 
+	Game::InstanceId COMPONENTTYPE::RegisterEntity(Game::Entity entity) { return ALLOCATOR->RegisterEntity(entity); } \
+	void COMPONENTTYPE::DeregisterEntity(Game::Entity entity) { ALLOCATOR->DeregisterEntity(entity); } \
+	void COMPONENTTYPE::DestroyAll() { ALLOCATOR->DestroyAll(); } \
+	SizeT COMPONENTTYPE::NumRegistered() { return ALLOCATOR->NumRegistered(); } \
+	Game::InstanceId COMPONENTTYPE::GetInstance(Game::Entity entity) { return ALLOCATOR->GetInstance(entity); } 
 
 namespace Game
 {
 
+struct ComponentCreateInfo
+{
+	bool incrementalDeletion = false;
+};
+
 template <typename ... TYPES>
 class Component : public ComponentInterface
 {
+protected:
+	ComponentCreateInfo settings;
 public:
 	Component();
+	Component(ComponentCreateInfo const& settings);
 	~Component();
 
 	SizeT NumRegistered() const;
 
 	/// register an Id. Will create new mapping and allocate instance data. Returns index of new instance data
-	virtual InstanceId RegisterEntity(Entity e);
+	InstanceId RegisterEntity(Entity e);
 
 	/// deregister an Id. will only remove the id and zero the block
-	virtual void DeregisterEntity(Entity e);
+	void DeregisterEntity(Entity e);
 	
 	/// Destroys all instances and sets all memory used free.
 	void DestroyAll();
@@ -240,10 +248,16 @@ private:
 template <class ... TYPES>
 Component<TYPES...>::Component()
 {
-	this->attributes.SetSize(sizeof...(TYPES) + 1);
-	// We always have an owner
-	this->attributes[0] = Attr::Owner(0);
+	this->Init(std::make_index_sequence<sizeof...(TYPES)>());
+}
 
+//------------------------------------------------------------------------------
+/**
+*/
+template <class ... TYPES>
+Component<TYPES...>::Component(ComponentCreateInfo const& settings) :
+	settings(settings)
+{
 	this->Init(std::make_index_sequence<sizeof...(TYPES)>());
 }
 
@@ -254,6 +268,10 @@ template <class ... TYPES>
 template <std::size_t...Is>
 void Component<TYPES...>::Init(std::index_sequence<Is...>)
 {
+	this->attributes.SetSize(sizeof...(TYPES) + 1);
+	// We always have an owner
+	this->attributes[0] = Attr::Owner(0);
+
 	using expander = int[];
 	(void)expander
 	{
@@ -388,6 +406,17 @@ Component<TYPES ...>::RegisterEntity(Entity e)
 	this->SetToDefault(index, std::make_index_sequence<sizeof...(TYPES)>());
 
 	this->idMap.Add(e.id, index);
+
+	if (this->events.IsSet<ComponentEvent::OnActivate>())
+	{
+		this->functions.OnActivate(index);
+	}
+
+	if (!this->settings.incrementalDeletion)
+	{
+		Game::EntityManager::Instance()->RegisterDeletionCallback(e, this);
+	}
+
 	return index;
 }
 
@@ -403,6 +432,16 @@ Component<TYPES ...>::DeregisterEntity(Entity e)
 	if (index == InvalidIndex)
 		return;
 
+	if (this->events.IsSet<ComponentEvent::OnDeactivate>())
+	{
+		this->functions.OnDeactivate(index);
+	}
+
+	if (!this->settings.incrementalDeletion)
+	{
+		Game::EntityManager::Instance()->DeregisterDeletionCallback(e, this);
+	}
+
 	this->idMap.Erase(e.id);
 	this->freeIds.Push(index);
 }
@@ -416,6 +455,11 @@ Component<TYPES ...>::OnEntityDeleted(Game::Entity entity)
 	InstanceId index = this->GetInstance(entity);
 	if (index != InvalidIndex)
 	{
+		if (this->events.IsSet<ComponentEvent::OnDeactivate>())
+		{
+			this->functions.OnDeactivate(index);
+		}
+
 		this->DeregisterEntityImmediate(entity, index);
 		return;
 	}
@@ -487,21 +531,24 @@ Component<TYPES ...>::Optimize()
 		++numErased;
 	}
 
-	// garbage collection
-	// Runs until it hits four entities that are alive.
-	while (this->data.Size() > 0 && numAlive < 4)
+	if (this->settings.incrementalDeletion)
 	{
-		index = Util::FastRandom() % this->data.Size();
-		if (entityManager->IsAlive(this->data.Get<0>(index)))
+		// garbage collection
+		// Runs until it hits four entities that are alive.
+		while (this->data.Size() > 0 && numAlive < 4)
 		{
-			++numAlive;
-			continue;
+			index = Util::FastRandom() % this->data.Size();
+			if (entityManager->IsAlive(this->data.Get<0>(index)))
+			{
+				++numAlive;
+				continue;
+			}
+			numAlive = 0;
+			// Deregister entity and make sure it's removed from the list
+			// so that we don't accidentally try to delete it again.
+			this->DeregisterEntityImmediate(this->data.Get<0>(index), index);
+			++numErased;
 		}
-		numAlive = 0;
-		// Deregister entity and make sure it's removed from the list
-		// so that we don't accidentally try to delete it again.
-		this->DeregisterEntityImmediate(this->data.Get<0>(index), index);
-		++numErased;
 	}
 
 	return numErased;
@@ -526,6 +573,7 @@ template<typename ATTR>
 constexpr std::size_t
 Component<TYPES...>::GetAttributeIndex()
 {
+	// Index<...> calculates during compiletime at which index the first occurence of ATTR is.
 	return Index<ATTR, Attr::Owner, TYPES...>::value;
 }
 
@@ -648,6 +696,15 @@ Component<TYPES...>::SetAttributeValueDynamic(InstanceId instance, Util::FourCC 
 template <class ... TYPES> void
 Component<TYPES ...>::DestroyAll()
 {
+	if (!this->settings.incrementalDeletion)
+	{
+		SizeT length = this->data.Size();
+		for (SizeT i = 0; i < length; i++)
+		{
+			Game::EntityManager::Instance()->DeregisterDeletionCallback(this->GetOwner(i), this);
+		}
+	}
+
 	this->freeIds.Clear();
 	this->data.Clear();
 	this->idMap.Clear();
