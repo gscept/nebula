@@ -461,6 +461,16 @@ AttributeDefinitionBase::CheckCreateFourCCRegistry()
 
 //------------------------------------------------------------------------------
 /**
+*/
+void
+AttributeDefinitionBase::InitializeRegistry()
+{
+	CheckCreateFourCCRegistry();
+	CheckCreateNameRegistry();
+}
+
+//------------------------------------------------------------------------------
+/**
     Register this static attribute definition in the name and fourcc registries.
     Since the order of initialization is not defined for static 
     objects we need to use pointers and creation-on-demand for the registry

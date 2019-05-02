@@ -111,6 +111,9 @@ public:
     /// find by FourCC
     static const AttributeDefinitionBase* FindByFourCC(const Util::FourCC& fcc);
 
+	/// setup registry if it doesn't exist
+	static void InitializeRegistry();
+
 protected:
     /// register an attribute definition
     void Register();

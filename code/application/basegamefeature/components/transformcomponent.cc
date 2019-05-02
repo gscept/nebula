@@ -50,7 +50,7 @@ TransformComponent::Create()
 	data->functions.OnDeactivate = OnDeactivate;
 	data->functions.OnInstanceMoved = OnInstanceMoved;
 	data->functions.SetParents = SetParents;
-	Game::ComponentManager::Instance()->RegisterComponent(data, "TransformComponent"_atm, data->GetIdentifier());
+	Game::ComponentManager::Instance()->RegisterComponent(data, "TransformComponent"_atm, GetFourCC());
 
 	SetupAcceptedMessages();
 }
