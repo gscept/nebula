@@ -9,9 +9,10 @@
 	(C) 2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "attr/attrid.h"
+#include "game/entity.h"
+#include "game/component/attribute.h"
 
 namespace Attr
 {
-	DeclareEntity(Owner, 'OWNR', Attr::ReadOnly);
+	__DeclareAttribute(Owner, Game::Entity, 'OWNR', Attr::ReadOnly, uint(-1));
 } // namespace Attr

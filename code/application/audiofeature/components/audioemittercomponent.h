@@ -10,6 +10,7 @@
 */
 //------------------------------------------------------------------------------
 #include "game/component/component.h"
+#include "game/component/attribute.h"
 #include "resources/resourceid.h"
 
 namespace AudioFeature

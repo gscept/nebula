@@ -22,7 +22,7 @@ def GetTypeCamelNotation(attributeName, attribute, document):
 #
 def WriteAttributeHeaderDeclarations(f, document):
     for attributeName, attribute in document["attributes"].items():
-        typeString = GetTypeCamelNotation(attributeName, attribute, document)
+        typeString = IDLTypes.GetTypeString(attribute["type"])
 
         if not "fourcc" in attribute:
             util.fmtError('Attribute FourCC is required. Attribute "{}" does not have a fourcc!'.format(attributeName))
@@ -32,33 +32,13 @@ def WriteAttributeHeaderDeclarations(f, document):
         if "access" in attribute:
             accessMode = IDLTypes.AccessModeToClassString(attribute["access"])
         
-        f.WriteLine('Declare{}({}, \'{}\', {});'.format(typeString, Capitalize(attributeName), fourcc, accessMode))
-
-#------------------------------------------------------------------------------
-##
-#
-def WriteAttributeDefinitions(f, document):
-    for attributeName, attribute in document["attributes"].items():
-        typeString = GetTypeCamelNotation(attributeName, attribute, document)
-        
-        if not "fourcc" in attribute:
-            util.fmtError('Attribute FourCC is required. Attribute "{}" does not have a fourcc!'.format(attributeName))
-        fourcc = attribute["fourcc"]
-
-        accessMode = "rw"
-        if "access" in attribute:
-            accessMode = IDLTypes.AccessModeToClassString(attribute["access"])
-        
-        defVal = None
+        defVal = IDLTypes.DefaultValue(attribute["type"])
         if "default" in attribute:
             default = IDLTypes.DefaultToString(attribute["default"])
             defVal = "{}({})".format(IDLTypes.GetTypeString(attribute["type"]), default)
 
-        if defVal != None:
-            f.WriteLine('Define{}WithDefault({}, \'{}\', {}, {});'.format(typeString, Capitalize(attributeName), fourcc, accessMode, defVal))
-        else:
-            f.WriteLine('Define{}({}, \'{}\', {});'.format(typeString, Capitalize(attributeName), fourcc, accessMode))
-        
+        f.WriteLine('__DeclareAttribute({}, {}, \'{}\', {}, {});'.format(Capitalize(attributeName), typeString, fourcc, accessMode, defVal))
+
 #------------------------------------------------------------------------------
 ##
 #

@@ -413,6 +413,18 @@ AttributeDefinitionBase::AttributeDefinitionBase(const Util::String& name, const
     this->Register();
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+AttributeDefinitionBase::AttributeDefinitionBase(const Util::String& name, const Util::FourCC& fourCC, AccessMode accessMode, const Util::Variant& defVal, ValueType type) :
+	name(name),
+	fourCC(fourCC),
+	accessMode(accessMode),
+	defaultValue(defVal),
+	valueType(type)
+{
+	this->Register();
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -445,6 +457,16 @@ AttributeDefinitionBase::CheckCreateFourCCRegistry()
     {
         FourCCRegistry = new Util::Dictionary<Util::FourCC, const AttributeDefinitionBase*>;
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+AttributeDefinitionBase::InitializeRegistry()
+{
+	CheckCreateFourCCRegistry();
+	CheckCreateNameRegistry();
 }
 
 //------------------------------------------------------------------------------

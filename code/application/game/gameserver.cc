@@ -277,4 +277,13 @@ GameServer::IsFeatureAttached(const Util::String& stringName) const
     return false;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+Util::Array<Ptr<FeatureUnit>> const&
+GameServer::GetGameFeatures() const
+{
+	return this->gameFeatures;
+}
+
 } // namespace Game

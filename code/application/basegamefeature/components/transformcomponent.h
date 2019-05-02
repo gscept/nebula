@@ -16,11 +16,23 @@
 	reflected outward since if you ask for the world transform it will return
 	the correct one that is used internally no matter what.
 
-	(C) 2018 Individual contributors, see AUTHORS file
+	(C) 2018-2019 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "game/component/component.h"
 #include "basegamefeature/messages/basegameprotocol.h"
+
+//------------------------------------------------------------------------------
+namespace Attr
+{
+	__DeclareAttribute(LocalTransform, Math::matrix44, 'TFLT', Attr::AccessMode::ReadWrite, Math::matrix44::identity());
+	__DeclareAttribute(WorldTransform, Math::matrix44, 'TFWT', Attr::ReadOnly, Math::matrix44::identity());
+	__DeclareAttribute(Parent, uint, 'TFPT', Attr::ReadOnly, uint(-1));
+	__DeclareAttribute(FirstChild, uint, 'TFFC', Attr::ReadOnly, uint(-1));
+	__DeclareAttribute(NextSibling, uint, 'TFNS', Attr::ReadOnly, uint(-1));
+	__DeclareAttribute(PreviousSibling, uint, 'TFPS', Attr::ReadOnly, uint(-1));
+} // namespace Attr
+
 
 namespace Game
 {

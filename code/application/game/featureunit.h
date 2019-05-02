@@ -20,6 +20,7 @@
 #include "game/manager.h"
 #include "core/singleton.h"
 #include "util/commandlineargs.h"
+#include "io/jsonwriter.h"
 
 //------------------------------------------------------------------------------
 namespace Game
@@ -72,6 +73,11 @@ public:
     void SetCmdLineArgs(const Util::CommandLineArgs& a);
     /// get command line args
     const Util::CommandLineArgs& GetCmdLineArgs() const;
+	/// write metadata about the feature unit.
+	void WriteMetadata(Ptr<IO::JsonWriter> const& writer) const;
+	/// override this method in subclass to write additional information to project metadata file
+	/// this is called automatically from the WriteMetadata() method.
+	virtual void WriteAdditionalMetadata(Ptr<IO::JsonWriter> const& writer) const;
 
 protected:
     Util::Array<Ptr<Manager> > managers;

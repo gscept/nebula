@@ -18,31 +18,39 @@ template<unsigned int NUMBITS> class BitField
 public:
     /// constructor
     BitField();
+	/// constructs a bitfield based on multiple values
+	constexpr BitField(std::initializer_list<unsigned int> list);
     /// copy constructor
     BitField(const BitField<NUMBITS>& rhs);
     
     /// assignment operator
     void operator=(const BitField<NUMBITS>& rhs);
     /// equality operator
-    bool operator==(const BitField<NUMBITS>& rhs) const;
+	constexpr bool operator==(const BitField<NUMBITS>& rhs) const;
     /// inequality operator
-    bool operator!=(const BitField<NUMBITS>& rhs) const;
+	constexpr bool operator!=(const BitField<NUMBITS>& rhs) const;
     
 	/// Check if single bit is set
-	bool IsSet(IndexT bitIndex) const;
+	constexpr bool IsSet(const IndexT bitIndex) const;
+	/// Check if single bit is set
+	template<unsigned int bitIndex>
+	constexpr bool IsSet() const;
     /// clear content
     void Clear();
     /// return true if all bits are 0
     bool IsNull() const;
     /// set a bit by index
-    void SetBit(IndexT bitIndex);
+    constexpr void SetBit(const IndexT bitIndex);
+	/// set a bit by index
+	template<unsigned int bitIndex>
+	constexpr void SetBit();
     /// clear a bit by index
-    void ClearBit(IndexT bitIndex);
+    void ClearBit(const IndexT bitIndex);
     
     /// set bitfield to OR combination
-    static BitField<NUMBITS> Or(const BitField<NUMBITS>& b0, const BitField<NUMBITS>& b1);
+    static constexpr BitField<NUMBITS> Or(const BitField<NUMBITS>& b0, const BitField<NUMBITS>& b1);
     /// set bitfield to AND combination
-    static BitField<NUMBITS> And(const BitField<NUMBITS>& b0, const BitField<NUMBITS>& b1);
+    static constexpr BitField<NUMBITS> And(const BitField<NUMBITS>& b0, const BitField<NUMBITS>& b1);
 
 private:
     static const int size = ((NUMBITS + 31) / 32);
@@ -60,6 +68,25 @@ BitField<NUMBITS>::BitField()
     {
         this->bits[i] = 0;
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<unsigned int NUMBITS>
+constexpr
+BitField<NUMBITS>::BitField(std::initializer_list<unsigned int> list)
+{
+	IndexT i;
+	for (i = 0; i < size; i++)
+	{
+		this->bits[i] = 0;
+	}
+
+	for (auto bit : list)
+	{
+		this->SetBit(bit);
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -91,7 +118,7 @@ BitField<NUMBITS>::operator=(const BitField<NUMBITS>& rhs)
 //------------------------------------------------------------------------------
 /**
 */
-template<unsigned int NUMBITS> bool
+template<unsigned int NUMBITS> constexpr bool
 BitField<NUMBITS>::operator==(const BitField<NUMBITS>& rhs) const
 {
     IndexT i;
@@ -108,7 +135,7 @@ BitField<NUMBITS>::operator==(const BitField<NUMBITS>& rhs) const
 //------------------------------------------------------------------------------
 /**
 */
-template<unsigned int NUMBITS> bool
+template<unsigned int NUMBITS> constexpr bool
 BitField<NUMBITS>::operator!=(const BitField<NUMBITS>& rhs) const
 {
     return !(*this == rhs);
@@ -117,12 +144,27 @@ BitField<NUMBITS>::operator!=(const BitField<NUMBITS>& rhs) const
 //------------------------------------------------------------------------------
 /**
 */
-template<unsigned int NUMBITS> bool
-BitField<NUMBITS>::IsSet(IndexT bitIndex) const
-{
+template<unsigned int NUMBITS> constexpr bool
+BitField<NUMBITS>::IsSet(const IndexT bitIndex) const
+ {
 	n_assert(bitIndex < NUMBITS);
 	const uint i = (1 << (bitIndex % 32));
-	return (this->bits[bitIndex / 32] & i) == i;
+	const uint index = bitIndex / 32;
+	return (this->bits[index] & i) == i;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<unsigned int NUMBITS>
+template<unsigned int bitIndex>
+constexpr bool
+BitField<NUMBITS>::IsSet() const
+{
+	n_assert(bitIndex < NUMBITS);
+	constexpr uint i = (1 << (bitIndex % 32));
+	constexpr uint index = bitIndex / 32;
+	return (this->bits[index] & i) == i;
 }
 
 //------------------------------------------------------------------------------
@@ -158,27 +200,45 @@ BitField<NUMBITS>::IsNull() const
 //------------------------------------------------------------------------------
 /**
 */
-template<unsigned int NUMBITS> void
-BitField<NUMBITS>::SetBit(IndexT i)
+template<unsigned int NUMBITS> constexpr void
+BitField<NUMBITS>::SetBit(const IndexT i)
 {
     n_assert(i < NUMBITS);
-    this->bits[i / 32] |= (1 << (i % 32));
+	const uint index = i / 32;
+	const uint bit = (1 << (i % 32));
+    this->bits[index] |= bit;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<unsigned int NUMBITS>
+template<unsigned int i>
+constexpr void
+BitField<NUMBITS>::SetBit()
+{
+	n_assert(i < NUMBITS);
+	constexpr uint index = i / 32;
+	constexpr uint bit = (1 << (i % 32));
+	this->bits[index] |= bit;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 template<unsigned int NUMBITS> void
-BitField<NUMBITS>::ClearBit(IndexT i)
+BitField<NUMBITS>::ClearBit(const IndexT i)
 {
     n_assert(i < NUMBITS);
-    this->bits[i / 32] &= ~(1 << (i % 32));
+	constexpr uint index = i / 32;
+	constexpr uint bit = ~(1 << (i % 32));
+    this->bits[index] &= bit;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-template<unsigned int NUMBITS> BitField<NUMBITS>
+template<unsigned int NUMBITS> constexpr BitField<NUMBITS>
 BitField<NUMBITS>::Or(const BitField<NUMBITS>& b0, const BitField<NUMBITS>& b1)
 {
     BitField<NUMBITS> res;
@@ -193,7 +253,7 @@ BitField<NUMBITS>::Or(const BitField<NUMBITS>& b0, const BitField<NUMBITS>& b1)
 //------------------------------------------------------------------------------
 /**
 */
-template<unsigned int NUMBITS> BitField<NUMBITS>
+template<unsigned int NUMBITS> constexpr BitField<NUMBITS>
 BitField<NUMBITS>::And(const BitField<NUMBITS>& b0, const BitField<NUMBITS>& b1)
 {
     BitField<NUMBITS> res;

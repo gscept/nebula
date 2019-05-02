@@ -32,7 +32,7 @@ ComponentManager::~ComponentManager()
 /**
 */
 void
-ComponentManager::RegisterComponent(ComponentInterface* component, const Util::StringAtom& name)
+ComponentManager::RegisterComponent(ComponentInterface* component, const Util::StringAtom& name, Util::FourCC fourcc)
 {
 	// Check if each event is actually setup.
 	auto events = component->SubscribedEvents();
@@ -53,9 +53,10 @@ ComponentManager::RegisterComponent(ComponentInterface* component, const Util::S
 	CHECKEVENT(OnSave);
 
 	component->componentName = name;
+	component->fourcc = fourcc;
 
 	this->components.Append(component);
-	this->componentByFourcc.Add(component->GetRtti()->GetFourCC(), component);
+	this->componentByFourcc.Add(fourcc, component);
 	this->componentByName.Add(name, component);
 }
 

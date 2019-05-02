@@ -5,12 +5,12 @@
 #include "stdneb.h"
 #include "tagcomponent.h"
 #include "basegamefeature/managers/componentmanager.h"
-#include "basegamefeature/components/tagdata.h"
 
 namespace Game
 {
 
-static TagComponentAllocator data;
+typedef Component<Attr::Tag> ComponentData;
+static ComponentData* data;
 
 __ImplementComponent(TagComponent, data);
 
@@ -20,10 +20,17 @@ __ImplementComponent(TagComponent, data);
 void
 TagComponent::Create()
 {
-	data.DestroyAll();
+	if (data != nullptr)
+	{
+		data->DestroyAll();
+	}
+	else
+	{
+		data = new ComponentData({ true });
+	}
 
 	__SetupDefaultComponentBundle(data);
-	__RegisterComponent(&data, "TagComponent"_atm);
+	Game::ComponentManager::Instance()->RegisterComponent(data, "TagComponent"_atm, 'tagc');
 }
 
 //------------------------------------------------------------------------------

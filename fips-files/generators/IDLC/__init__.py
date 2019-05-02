@@ -136,11 +136,6 @@ class IDLCodeGenerator:
         if hasMessages:            
             IDLDocument.AddInclude(f, "scripting/bindings.h")
 
-        if "attributes" in self.document:
-            IDLDocument.BeginNamespaceOverride(f, self.document, "Attr")
-            IDLAttribute.WriteAttributeDefinitions(f, self.document)
-            IDLDocument.EndNamespaceOverride(f, self.document, "Attr")
-
         # Add additional dependencies to document.
         if "dependencies" in self.document:
             for dependency in self.document["dependencies"]:
