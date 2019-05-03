@@ -2,6 +2,8 @@
 
 nebula work [working directory]
 nebula toolkit [toolkit directory]
+physx [win-vs15,winvs16]
+cleannidl
 """
 
 from mod import log, util, settings
@@ -93,7 +95,7 @@ if sys.platform == "win32" :
             elif noun == 'cleannidl' :
                 proj = util.get_project_name_from_dir(proj_dir)
                 cfg = settings.get(proj_dir, 'config')
-                path = util.get_build_dir(fips_dir,proj,cfg)+"/nidl"
+                path = util.get_build_dir(fips_dir,proj,cfg)+"/nidl"                
                 shutil.rmtree(path,True)
         else :
             try:
