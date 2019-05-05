@@ -79,18 +79,18 @@ JsonEntityLoader::Load(const Util::String& file)
 					component->SetOwner(instance, entity);
 
 
-					auto const& attrids = component->GetAttributeIds();
+					auto const& attrids = component->GetAttributes();
 					for (SizeT i = 0; i < attrids.Size(); ++i)
 					{
-						Attr::AttrId attr = attrids[i];
+						Attr::Attribute const& attr = attrids[i];
 
-						auto attrName = attr.GetName();
+						auto attrName = attr.name;
 						Util::Variant value;
-						value.SetType(attr.GetDefaultValue().GetType());
+						value.SetType(attr.defaultValue.GetType());
 						// Retrieve the value. Reader parses the type that is provided.
-						if (reader->GetOpt(value, attrName.AsCharPtr(), attr.GetDefaultValue()))
+						if (reader->GetOpt(value, attrName.AsCharPtr(), attr.defaultValue))
 						{
-							component->SetAttributeValue(instance, attr, value);
+							component->SetAttributeValue(instance, attr.fourcc, value);
 						}
 					}
 

@@ -57,6 +57,8 @@ public:
     virtual void SetupEmptyWorld();
     /// cleanup the game world
     virtual void CleanupWorld();
+	/// write components info into metadata file.
+	void WriteAdditionalMetadata(Ptr<IO::JsonWriter> const& writer) const override;
 
 protected:
     

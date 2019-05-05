@@ -49,6 +49,6 @@
             "LocalTransform"
             "WorldTransform"
         ]
-        "useDelayedRemoval": true
+        "incrementalDeletion": true
     }
 }

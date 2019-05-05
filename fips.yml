@@ -39,6 +39,9 @@ imports:
     nebula-libs:
         git: https://github.com/gscept/nebula-libs
         group: misc
+    physx:
+        git: https://github.com/NVIDIAGameWorks/PhysX.git
+        branch: 4.1
 
 exports:
     header-dirs : 

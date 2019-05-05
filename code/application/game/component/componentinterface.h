@@ -31,8 +31,7 @@
 #include "game/entity.h"
 #include "core/refcounted.h"
 #include "util/bitfield.h"
-#include "game/attr/attrid.h"
-#include "game/attr/attributedefinition.h"
+#include "game/component/attribute.h"
 #include "game/entityattr.h"
 #include "io/binaryreader.h"
 #include "io/binarywriter.h"
@@ -56,14 +55,26 @@ enum ComponentEvent
 	NumEvents		= 10
 };
 
+static constexpr const char* ComponentEventNames[] = {
+	"OnBeginFrame",
+	"OnRender",
+	"OnEndFrame",
+	"OnRenderDebug",
+	"OnActivate",
+	"OnDeactivate",
+	"OnLoad",
+	"OnSave"
+};
+
 class ComponentInterface
 {
-	__DeclareClass(ComponentInterface)
 public:
 	ComponentInterface();
 	~ComponentInterface();
 
 	const Util::StringAtom& GetName() const;
+
+	Util::FourCC GetIdentifier() const;
 
 	/// register an Id. Will create new mapping and allocate instance data. Returns index of new instance data
 	virtual InstanceId RegisterEntity(Entity e) = 0;
@@ -81,10 +92,10 @@ public:
 	const Util::BitField<ComponentEvent::NumEvents>& SubscribedEvents() const;
 
 	/// Returns attribute id at index.
-	const Attr::AttrId& GetAttributeId(IndexT index) const;
+	const Attr::Attribute& GetAttribute(IndexT index) const;
 
 	/// Returns an array with all attribute ids for this component
-	const Util::FixedArray<Attr::AttrId>& GetAttributeIds() const;
+	const Util::FixedArray<Attr::Attribute>& GetAttributes() const;
 
 	/// Callback for when an entity has been deleted.
 	/// This in only used when immediate instance deletion is required.
@@ -106,13 +117,13 @@ public:
 	virtual Util::Variant GetAttributeValue(InstanceId i, IndexT attributeIndex) = 0;
 	
 	/// Get an attribute value as a variant type
-	virtual Util::Variant GetAttributeValue(InstanceId i, Attr::AttrId attributeId) = 0;
+	virtual Util::Variant GetAttributeValue(InstanceId i, Util::FourCC attributeId) = 0;
 	
 	/// Set an attribute value from a variant type
 	virtual void SetAttributeValue(InstanceId i, IndexT attributeIndex, const Util::Variant& value) = 0;
 	
 	/// Set an attribute value from a variant type
-	virtual void SetAttributeValue(InstanceId i, Attr::AttrId attributeId, const Util::Variant& value) = 0;
+	virtual void SetAttributeValue(InstanceId i, Util::FourCC attributeId, const Util::Variant& value) = 0;
 
 	/// Returns the instance of an entity; or InvalidIndex if not registered.
 	virtual InstanceId GetInstance(Entity e) const = 0;
@@ -125,6 +136,9 @@ public:
 
 	/// Garbage collect
 	virtual SizeT Optimize() = 0;
+
+	/// Enable an event listener
+	void EnableEvent(ComponentEvent eventId);
 
 	/// Returns whether a component container is enabled.
 	bool Enabled() const;
@@ -176,16 +190,15 @@ public:
 		void(*SetParents)(InstanceId start, InstanceId end, const Util::Array<Entity>& entities, const Util::Array<uint32_t>& parentIndices);
 	} functions;
 
-	Util::Array<MessageListener> messageListeners;
 protected:
 	friend class ComponentManager;
 
 	/// Holds all events this component is subscribed to.
 	Util::BitField<ComponentEvent::NumEvents> events;
 	
-	/// Holds all attributedefinitions that this components has available.
+	/// Holds all attributes that this components has available.
 	/// This should be adjacent to the data/tuple the values are in.
-	Util::FixedArray<Attr::AttrId> attributeIds;
+	Util::FixedArray<Attr::Attribute> attributes;
 
 	/// Determines whether the component manager will execute this components update methods.
 	/// activation, load and such methods will still be called.
@@ -193,6 +206,9 @@ protected:
 
 	/// name of component
 	Util::StringAtom componentName;
+
+	/// Identifier
+	Util::FourCC fourcc;
 };
 
 } // namespace Game

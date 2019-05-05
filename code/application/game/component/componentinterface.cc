@@ -10,8 +10,6 @@
 namespace Game
 {
 
-__ImplementAbstractRootClass(ComponentInterface, 'BsCm')
-
 //------------------------------------------------------------------------------
 /**
 */
@@ -54,6 +52,15 @@ ComponentInterface::GetName() const
 //------------------------------------------------------------------------------
 /**
 */
+Util::FourCC
+ComponentInterface::GetIdentifier() const
+{
+	return this->fourcc;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 const Util::BitField<ComponentEvent::NumEvents>&
 ComponentInterface::SubscribedEvents() const
 {
@@ -63,24 +70,29 @@ ComponentInterface::SubscribedEvents() const
 //------------------------------------------------------------------------------
 /**
 */
-const Attr::AttrId&
-ComponentInterface::GetAttributeId(IndexT index) const
+const Attr::Attribute&
+ComponentInterface::GetAttribute(IndexT index) const
 {
-	return this->attributeIds[index];
+	return this->attributes[index];
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-const Util::FixedArray<Attr::AttrId>&
-ComponentInterface::GetAttributeIds() const
+const Util::FixedArray<Attr::Attribute>&
+ComponentInterface::GetAttributes() const
 {
-	return this->attributeIds;
+	return this->attributes;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
+void ComponentInterface::EnableEvent(ComponentEvent eventId)
+{
+	this->events.SetBit(eventId);
+}
+
 bool
 ComponentInterface::Enabled() const
 {

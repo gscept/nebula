@@ -15,7 +15,7 @@
 
 namespace BaseGameFeature
 {
-__ImplementClass(BaseGameFeatureUnit, 'GAGF' , Game::FeatureUnit);
+__ImplementClass(BaseGameFeature::BaseGameFeatureUnit, 'GAGF' , Game::FeatureUnit);
 __ImplementSingleton(BaseGameFeatureUnit);
 
 using namespace App;
@@ -133,6 +133,104 @@ void
 BaseGameFeatureUnit::OnFrame()
 {    
     FeatureUnit::OnFrame();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+BaseGameFeatureUnit::WriteAdditionalMetadata(Ptr<IO::JsonWriter> const& writer) const
+{
+	writer->BeginArray("components");
+	SizeT numComponents = Game::ComponentManager::Instance()->GetNumComponents();
+	for (IndexT i = 0; i < numComponents; ++i)
+	{
+		auto const& component = Game::ComponentManager::Instance()->GetComponentAtIndex(i);
+		Util::String componentName = component->GetName().AsString();
+
+		writer->BeginObject();
+
+		writer->Add(componentName.AsCharPtr(), "name");
+		Util::FourCC fourcc = component->GetIdentifier();
+		writer->Add(fourcc.AsString(), "fourcc");
+		// writer->Add(component->GetEvents())
+		
+		
+		writer->BeginArray("events");
+		auto events = component->SubscribedEvents();
+		{
+			for (IndexT e = 0; e < Game::ComponentEvent::NumEvents; ++e)
+			{
+				if (events.IsSet(e))
+				{
+					writer->Add(Game::ComponentEventNames[e]);
+				}
+			}
+		}
+		writer->End();
+
+		writer->BeginArray("attributes");
+
+		for (auto const& attr : component->GetAttributes())
+		{
+			writer->BeginObject();
+			writer->Add(attr.name, "name");
+			writer->Add(attr.fourcc.AsString(), "fourcc");
+
+			if (attr.type == Attr::ValueType::EntityType)
+			{
+				/// @todo	this should be not be hardcoded.
+				writer->Add("entity", "type");
+			}
+			else
+			{
+				writer->Add(Util::Variant::TypeToString((Util::Variant::Type)attr.type), "type");
+			}
+
+			Util::String accessMode;
+			if (attr.accessMode == Attr::AccessMode::ReadOnly)
+			{
+				accessMode = "R";
+			}
+			else
+			{
+				accessMode = "RW";
+			}
+
+			writer->Add(accessMode, "access");
+			
+			const char* key = "default";
+
+			switch (attr.type)
+			{
+			//case Attr::ValueType::IntType:			writer->Add(attr.GetDefaultValue().GetInt(), key);			break;
+			//case Attr::ValueType::Int64Type:		writer->Add(attr.GetDefaultValue().GetInt64(), key);		break;
+			//case Attr::ValueType::UIntType:			writer->Add(attr.GetDefaultValue().GetUInt(), key);			break;
+			//case Attr::ValueType::UInt64Type:		writer->Add(attr.GetDefaultValue().GetUInt64(), key);		break;
+			//case Attr::ValueType::FloatType:		writer->Add(attr.GetDefaultValue().GetFloat(), key);		break;
+			//case Attr::ValueType::DoubleType:		writer->Add(attr.GetDefaultValue().GetDouble(), key);		break;
+			//case Attr::ValueType::BoolType:			writer->Add(attr.GetDefaultValue().GetBool(), key);			break;
+			//case Attr::ValueType::ShortType:		writer->Add(attr.GetDefaultValue().GetShort(), key);		break;
+			//case Attr::ValueType::UShortType:		writer->Add(attr.GetDefaultValue().GetUShort(), key);		break;
+			//case Attr::ValueType::ByteType:			writer->Add(attr.GetDefaultValue().GetByte(), key);			break;
+			//case Attr::ValueType::GuidType:			writer->Add(attr.GetDefaultValue().GetGuid(), key);			break;
+			//case Attr::ValueType::Float2Type:		writer->Add(attr.GetDefaultValue().GetFloat2(), key);		break;
+			//case Attr::ValueType::Float4Type:		writer->Add(attr.GetDefaultValue().GetFloat4(), key);		break;
+			//case Attr::ValueType::QuaternionType:	writer->Add(attr.GetDefaultValue().GetQuaternion(), key);	break;
+			//case Attr::ValueType::Matrix44Type:		writer->Add(attr.GetDefaultValue().GetMatrix44(), key);		break;
+			//case Attr::ValueType::EntityType:		writer->Add(attr.GetDefaultValue().GetUInt(), key);			break;
+			default:
+				n_warning("Attribute type %i not fully supported. Check basegamefeatureunit and add it to the list!", attr.type);
+				writer->Add(attr.defaultValue.ToString(), "default");
+				break;
+			}
+			writer->End();
+		}
+
+		writer->End();
+		writer->End();
+	}
+	writer->End();
 }
 
 } // namespace Game

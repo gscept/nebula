@@ -199,6 +199,61 @@ def GetArgumentType(attrType):
 #------------------------------------------------------------------------------
 ##
 #
+def DefaultValue(attrType):
+    T = attrType.lower()
+    if (T == "byte"):
+        return "byte(0)"
+    elif (T == "short"):
+        return "short(0)"
+    elif (T == "ushort"):
+        return "ushort(0)"
+    elif (T == "int"):
+        return "int(0)"
+    elif (T == "uint"):
+        return "uint(0)"
+    elif (T == "float"):
+        return "float(0)"
+    elif (T == "int64"):
+        return "int64_t(0)"
+    elif (T == "uint64"):
+        return "uint64_t(0)"
+    elif (T == "double"):
+        return "double(0.0)"
+    elif (T == "bool"):
+        return "bool(false)"
+    elif (T == "float2"):
+        return "Math::float2(0, 0)"
+    elif (T == "float4"):
+        return "Math::float4(0, 0, 0, 0)"
+    elif (T == "vector"):
+        return "Math::vector(0, 0, 0)"
+    elif (T == "point"):
+        return "Math::point(0, 0, 0)"
+    elif (T == "quaternion"):
+        return "Math::quaternion::identity()"
+    elif (T == "matrix44"):
+        return "Math::matrix44::identity()"
+    elif (T == "string"):
+        return "Util::String()"
+    elif (T == "resource"):
+        return "Util::String()"
+    elif (T == "blob"):
+        return "Util::Blob()"
+    elif (T == "guid"):
+        return "Util::Guid()"
+    elif (T == "void*"):
+        return "void*"
+    elif (T == "entity"):
+        return "Game::Entity(-1)"
+    elif (T == "variant"):
+        return "Util::Variant()"
+    else:
+        # try to use just regular constructor
+        return attrType + "()"
+
+#------------------------------------------------------------------------------
+##
+#
 def DefaultToString(default):
     if type(default) is int:
         return str(default)

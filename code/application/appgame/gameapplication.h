@@ -52,6 +52,9 @@ protected:
     virtual void CleanupGameFeatures(); 
     /// setup app from cmd lines
     virtual void SetupAppFromCmdLineArgs();
+	/// export metadata json
+	void ExportMetadata();
+
 
     Ptr<Core::CoreServer> coreServer;   
     Ptr<IO::GameContentServer> gameContentServer;
