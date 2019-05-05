@@ -234,7 +234,7 @@ private:
 	void NotifyOnInstanceMoved(InstanceId index, InstanceId oldIndex);
 
 	/// contains free id's that we reuse as soon as possible.
-	Util::Stack<InstanceId> freeIds;
+	Util::Array<InstanceId> freeIds;
 
 	const static int STACK_SIZE = 1;
 	const static int TABLE_SIZE = 1024;
@@ -395,7 +395,8 @@ Component<TYPES ...>::RegisterEntity(Entity e)
 
 	if (this->freeIds.Size() > 0)
 	{
-		index = this->freeIds.Pop();
+		index = this->freeIds.Back();
+		this->freeIds.EraseBack();
 	}
 	else
 	{
@@ -443,7 +444,8 @@ Component<TYPES ...>::DeregisterEntity(Entity e)
 	}
 
 	this->idMap.Erase(e.id);
-	this->freeIds.Push(index);
+	// TODO: We could possibly get better performance when defragging if we insert it in reverse order (high to low)
+	this->freeIds.InsertSorted(index);
 }
 
 //------------------------------------------------------------------------------
@@ -515,9 +517,10 @@ Component<TYPES ...>::Optimize()
 
 	// Pack arrays
 	SizeT size = this->freeIds.Size();
-	for (SizeT i = 0; i < size; ++i)
+	for (SizeT i = size - 1; i >= 0; --i)
 	{
-		index = this->freeIds.Pop();
+		index = this->freeIds.Back();
+		this->freeIds.EraseBack();
 		oldIndex = this->data.Size() - 1;
 		lastId = this->data.Get<0>(oldIndex).id;
 		this->data.EraseIndexSwap(index);
@@ -530,6 +533,7 @@ Component<TYPES ...>::Optimize()
 		this->NotifyOnInstanceMoved(index, oldIndex);
 		++numErased;
 	}
+	this->freeIds.Clear();
 
 	if (this->settings.incrementalDeletion)
 	{
@@ -722,7 +726,7 @@ Component<TYPES ...>::DeregisterAllInactive()
 		Entity e = this->data.Get<0>(i);
 		if (!manager->IsAlive(e))
 		{
-			this->freeIds.Push(this->idMap.ValueAtIndex(e.id, i));
+			this->freeIds.InsertSorted(this->idMap.ValueAtIndex(e.id, i));
 			this->idMap.Erase(e.id);
 		}
 	}
