@@ -18,7 +18,7 @@ using namespace Util;
 void
 HashTableTest::Run()
 {
-    const int capacity = 64;
+    constexpr int capacity = 64;
 
     Array<String> titles;
     titles.Append("Nausicaä of the Valley of Wind");
@@ -29,7 +29,7 @@ HashTableTest::Run()
     titles.Append("Princess Mononoke");
 
     // create a hashtable with string keys and IndexT value
-    HashTable<String, IndexT> table(capacity);
+    HashTable<String, IndexT, capacity> table;
     VERIFY(table.Size() == 0);
     VERIFY(table.IsEmpty());
     VERIFY(table.Capacity() == capacity);
@@ -51,7 +51,7 @@ HashTableTest::Run()
     }
 
     // check copy constructor
-    HashTable<String, IndexT> copy = table;
+    HashTable<String, IndexT, capacity> copy = table;
     for (i = 0; i < num; i++)
     {
         VERIFY(copy.Contains(titles[i]));
