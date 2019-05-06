@@ -48,13 +48,13 @@ DelegateTest::Run()
     // create a few delegate objects
     TestClass testObj;
     TestSubClass testSubObj;
-    Delegate<int> del0 = Delegate<int>::FromMethod<TestClass,&TestClass::TestMethodInt>(&testObj);
-    Delegate<float> del1 = Delegate<float>::FromMethod<TestClass,&TestClass::TestMethodFloat>(&testObj);
-    Delegate<int> del2 = Delegate<int>::FromMethod<TestClass,&TestClass::TestMethodVirtual>(&testObj);    
-    Delegate<int> del3 = Delegate<int>::FromMethod<TestClass,&TestClass::TestMethodVirtual>(&testSubObj);
-    Delegate<int> del4 = Delegate<int>::FromMethod<TestSubClass,&TestSubClass::TestMethodVirtual>(&testSubObj);
-    Delegate<int> del5 = Delegate<int>::FromFunction<&TestClass::TestMethodStatic>();
-    Delegate<float> del6 = Delegate<float>::FromFunction<&GlobalTestFunction>();
+    Delegate<void(int)> del0 = Delegate<void(int)>::FromMethod<TestClass,&TestClass::TestMethodInt>(&testObj);
+    Delegate<void(float)> del1 = Delegate<void(float)>::FromMethod<TestClass,&TestClass::TestMethodFloat>(&testObj);
+    Delegate<void(int)> del2 = Delegate<void(int)>::FromMethod<TestClass,&TestClass::TestMethodVirtual>(&testObj);    
+    Delegate<void(int)> del3 = Delegate<void(int)>::FromMethod<TestClass,&TestClass::TestMethodVirtual>(&testSubObj);
+    Delegate<void(int)> del4 = Delegate<void(int)>::FromMethod<TestSubClass,&TestSubClass::TestMethodVirtual>(&testSubObj);
+    Delegate<void(int)> del5 = Delegate<void(int)>::FromFunction<&TestClass::TestMethodStatic>();
+    Delegate<void(float)> del6 = Delegate<void(float)>::FromFunction<&GlobalTestFunction>();
 
     // invoke delegates
     del0(10);
