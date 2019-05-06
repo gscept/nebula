@@ -22,4 +22,3 @@
 1. `./fips set config vulkan-win64-vstudio-debug` in your project directory
 
 Remember to run `fips nebula` verb to set work and toolkit directory registry variables.
-
