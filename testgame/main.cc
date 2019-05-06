@@ -63,15 +63,16 @@ NebulaMain(const Util::CommandLineArgs& args)
 	// setup and run test runner
     Ptr<TestRunner> testRunner = TestRunner::Create();
     testRunner->AttachTestCase(IdTest::Create());
-    testRunner->AttachTestCase(CompDataTest::Create());
-
+    
 	Ptr<ComponentSystemTest> compSysTest = ComponentSystemTest::Create();
 	compSysTest->gameApp = &gameApp;
 	testRunner->AttachTestCase(compSysTest); 
-
-	testRunner->AttachTestCase(MessageTest::Create());
+	
 	testRunner->AttachTestCase(LoaderTest::Create());
 
+	testRunner->AttachTestCase(CompDataTest::Create());
+	testRunner->AttachTestCase(MessageTest::Create());
+	
     testRunner->Run(); 
 
     testRunner = nullptr;
