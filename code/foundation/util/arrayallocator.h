@@ -42,7 +42,7 @@ public:
 	/// move operator
 	void operator=(ArrayAllocator<TYPES...>&& rhs);
 
-	/// allocate a new resource, and generate new entries if required
+	/// allocate a new resource
 	uint32_t Alloc();
 
 	/// Erase element for each

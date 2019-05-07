@@ -18,8 +18,9 @@ using namespace Resources;
 namespace Models
 {
 
-_ImplementContext(ModelContext);
 ModelContext::ModelContextAllocator ModelContext::modelContextAllocator;
+_ImplementContext(ModelContext, ModelContext::modelContextAllocator);
+
 //------------------------------------------------------------------------------
 /**
 */

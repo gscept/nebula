@@ -262,6 +262,10 @@ GraphicsServer::BeginFrame()
 			state->entitySliceMap.EraseIndex(eid, index);
 			state->delayedRemoveQueue.EraseIndexSwap(0);
 		}
+
+		// give contexts a chance to defragment their data
+		if (state->Defragment != nullptr)
+			state->Defragment();
 	}
 
 	for (i = 0; i < this->contexts.Size(); i++)

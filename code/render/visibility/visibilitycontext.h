@@ -102,6 +102,7 @@ private:
 		Graphics::GraphicsEntityId,		// entity id
 		VisibilityEntityType			// type of object so we know how to get the transform
 	> ObserveeAllocator;
+
 	static ObserveeAllocator observeeAllocator;
 
 	/// allocate a new slice for this context

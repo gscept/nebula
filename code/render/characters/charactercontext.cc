@@ -21,8 +21,8 @@ using namespace Resources;
 namespace Characters
 {
 
-_ImplementContext(CharacterContext);
 CharacterContext::CharacterContextAllocator CharacterContext::characterContextAllocator;
+_ImplementContext(CharacterContext, CharacterContext::characterContextAllocator);
 
 Jobs::JobPortId CharacterContext::jobPort;
 Threading::SafeQueue<Jobs::JobId> CharacterContext::runningJobs;

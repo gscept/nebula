@@ -71,7 +71,7 @@ const PassId
 CreatePass(const PassCreateInfo& info)
 {
 	n_assert(info.subpasses.Size() > 0);
-	Ids::Id32 id = passAllocator.AllocObject();
+	Ids::Id32 id = passAllocator.Alloc();
 	VkPassLoadInfo& loadInfo = passAllocator.Get<0>(id);
 	VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<1>(id);
 	VkRenderPassBeginInfo& beginInfo = passAllocator.Get<2>(id);

@@ -103,7 +103,7 @@ using namespace Vulkan;
 const ConstantBufferId
 CreateConstantBuffer(const ConstantBufferCreateInfo& info)
 {
-	Ids::Id32 id = constantBufferAllocator.AllocObject();
+	Ids::Id32 id = constantBufferAllocator.Alloc();
 	VkConstantBufferRuntimeInfo& runtime = constantBufferAllocator.Get<0>(id);
 	VkConstantBufferSetupInfo& setup = constantBufferAllocator.Get<1>(id);
 	VkConstantBufferMapInfo& map = constantBufferAllocator.Get<2>(id);

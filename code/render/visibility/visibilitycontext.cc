@@ -31,7 +31,8 @@ Threading::SafeQueue<Jobs::JobId> ObserverContext::runningJobs;
 
 extern void VisibilitySortJob(const Jobs::JobFuncContext& ctx);
 
-_ImplementContext(ObserverContext);
+_ImplementContext(ObserverContext, ObserverContext::observerAllocator);
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -47,7 +48,7 @@ ObserverContext::Setup(const Graphics::GraphicsEntityId id, VisibilityEntityType
 	for (IndexT i = 0; i < ids.Size(); i++)
 	{
 		
-		Ids::Id32 res = observerAllocator.Get<3>(cid.id).AllocObject();
+		Ids::Id32 res = observerAllocator.Get<3>(cid.id).Alloc();
 		Graphics::ContextEntityId cid2 = ObservableContext::__state.entitySliceMap[ids[i].id];
 		n_assert(res == cid2.id);
 		observerAllocator.Get<3>(cid.id).Get<0>(res) = true;
@@ -65,6 +66,9 @@ ObserverContext::Setup(const Graphics::GraphicsEntityId id, VisibilityEntityType
 void 
 ObserverContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime, const Timing::Time time, const Timing::Tick ticks)
 {
+	// Defragment observable context data
+	ObservableContext::Defragment();
+
 	const Util::Array<VisibilityEntityType>& observerTypes = observerAllocator.GetArray<2>();
 	const Util::Array<VisibilityEntityType>& observeeTypes = ObservableContext::observeeAllocator.GetArray<2>();
 
@@ -359,7 +363,7 @@ ObserverContext::GetVisibilityDrawList(const Graphics::GraphicsEntityId id)
 Graphics::ContextEntityId
 ObserverContext::Alloc()
 {
-	return observerAllocator.AllocObject();
+	return observerAllocator.Alloc();
 }
 
 //------------------------------------------------------------------------------
@@ -389,11 +393,11 @@ ObserverContext::Dealloc(Graphics::ContextEntityId id)
 			it1++;
 		}
 	}
-	observerAllocator.DeallocObject(id.id);
+	observerAllocator.Dealloc(id.id);
 }
 
+_ImplementContext(ObservableContext, ObservableContext::observeeAllocator);
 
-_ImplementContext(ObservableContext);
 //------------------------------------------------------------------------------
 /**
 */
@@ -409,7 +413,7 @@ ObservableContext::Setup(const Graphics::GraphicsEntityId id, VisibilityEntityTy
 	for (IndexT i = 0; i < visAllocators.Size(); i++)
 	{
 		ObserverContext::VisibilityResultAllocator& alloc = visAllocators[i];
-		Ids::Id32 obj = alloc.AllocObject();
+		Ids::Id32 obj = alloc.Alloc();
 		n_assert(cid == obj);
 		alloc.Get<0>(obj) = true;
 		alloc.Get<1>(obj) = Models::ModelContext::GetContextId(id); // get context Id since model can be loaded later...
@@ -432,7 +436,7 @@ ObservableContext::Create()
 Graphics::ContextEntityId 
 ObservableContext::Alloc()
 {
-	return observeeAllocator.AllocObject();
+	return observeeAllocator.Alloc();
 }
 
 //------------------------------------------------------------------------------
@@ -441,7 +445,7 @@ ObservableContext::Alloc()
 void 
 ObservableContext::Dealloc(Graphics::ContextEntityId id)
 {
-	observeeAllocator.DeallocObject(id.id);
+	observeeAllocator.Dealloc(id.id);
 }
 
 } // namespace Visibility

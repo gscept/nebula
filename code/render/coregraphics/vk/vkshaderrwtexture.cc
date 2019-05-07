@@ -48,7 +48,7 @@ using namespace Vulkan;
 const ShaderRWTextureId
 CreateShaderRWTexture(const ShaderRWTextureCreateInfo& info)
 {
-	Ids::Id32 id = shaderRWTextureAllocator.AllocObject();
+	Ids::Id32 id = shaderRWTextureAllocator.Alloc();
 
 	VkShaderRWTextureLoadInfo& loadInfo = shaderRWTextureAllocator.Get<0>(id);
 	VkShaderRWTextureRuntimeInfo& runtimeInfo = shaderRWTextureAllocator.Get<1>(id);
@@ -156,7 +156,7 @@ DestroyShaderRWTexture(const ShaderRWTextureId id)
 	vkDestroyImage(loadInfo.dev, loadInfo.img, nullptr);
 	vkFreeMemory(loadInfo.dev, loadInfo.mem, nullptr);
 
-	shaderRWTextureAllocator.DeallocObject(id.id24);
+	shaderRWTextureAllocator.Dealloc(id.id24);
 }
 
 //------------------------------------------------------------------------------

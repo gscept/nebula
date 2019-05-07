@@ -79,7 +79,7 @@ MaterialType::Setup()
 SurfaceId
 MaterialType::CreateSurface()
 {
-	Ids::Id32 sur = this->surfaceAllocator.AllocObject();
+	Ids::Id32 sur = this->surfaceAllocator.Alloc();
 
 	// resize all arrays
 	this->surfaceAllocator.Get<SurfaceTable>(sur).Resize(this->batchToIndexMap.Size()); // surface tables
@@ -232,7 +232,7 @@ MaterialType::CreateSurface()
 void
 MaterialType::DestroySurface(SurfaceId sur)
 {
-	this->surfaceAllocator.DeallocObject(sur.id);
+	this->surfaceAllocator.Dealloc(sur.id);
 }
 
 //------------------------------------------------------------------------------
@@ -241,7 +241,7 @@ MaterialType::DestroySurface(SurfaceId sur)
 SurfaceInstanceId 
 MaterialType::CreateSurfaceInstance(const SurfaceId id)
 {
-	Ids::Id32 inst = this->surfaceInstanceAllocator.AllocObject();
+	Ids::Id32 inst = this->surfaceInstanceAllocator.Alloc();
 
 	this->surfaceInstanceAllocator.Get<SurfaceInstanceConstants>(inst).Resize(this->batchToIndexMap.Size());
 	this->surfaceInstanceAllocator.Get<ConstantBufferOffsets>(inst).Resize(this->batchToIndexMap.Size());
@@ -313,7 +313,7 @@ MaterialType::CreateSurfaceInstance(const SurfaceId id)
 void 
 MaterialType::DestroySurfaceInstance(const SurfaceInstanceId id)
 {
-	this->surfaceInstanceAllocator.DeallocObject(id.instance);
+	this->surfaceInstanceAllocator.Dealloc(id.instance);
 }
 
 //------------------------------------------------------------------------------

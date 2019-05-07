@@ -23,11 +23,11 @@ const uint USE_PROJECTION_TEX_BITFLAG = 0x2;
 namespace Lighting
 {
 
-_ImplementContext(LightContext);
 LightContext::GenericLightAllocator LightContext::genericLightAllocator;
 LightContext::PointLightAllocator LightContext::pointLightAllocator;
 LightContext::SpotLightAllocator LightContext::spotLightAllocator;
 LightContext::GlobalLightAllocator LightContext::globalLightAllocator;
+_ImplementContext(LightContext, LightContext::genericLightAllocator);
 
 struct LightServerState
 {
@@ -172,7 +172,7 @@ LightContext::SetupGlobalLight(const Graphics::GraphicsEntityId id, const Math::
 	genericLightAllocator.Get<Intensity>(cid.id) = intensity;
 	genericLightAllocator.Get<ShadowCaster>(cid.id) = castShadows;
 
-	auto lid = globalLightAllocator.AllocObject();
+	auto lid = globalLightAllocator.Alloc();
 
 	SetGlobalLightDirection(cid, direction);
 	globalLightAllocator.Get<GlobalLightBacklight>(lid) = backlight;
@@ -203,7 +203,7 @@ LightContext::SetupPointLight(const Graphics::GraphicsEntityId id,
 	genericLightAllocator.Get<ShadowCaster>(cid.id) = castShadows;
 
 	const Math::matrix44 scaleMatrix = Math::matrix44::scaling(range, range, range);
-	auto pli = pointLightAllocator.AllocObject();
+	auto pli = pointLightAllocator.Alloc();
 
 	SetPointLightTransform(cid, Math::matrix44::multiply(scaleMatrix, transform));
 	pointLightAllocator.Get<PointLightDynamicOffsets>(pli).Resize(2);
@@ -260,7 +260,7 @@ LightContext::SetupSpotLight(const Graphics::GraphicsEntityId id,
 	genericLightAllocator.Get<Intensity>(cid.id) = intensity;
 	genericLightAllocator.Get<ShadowCaster>(cid.id) = castShadows;
 
-	auto sli = spotLightAllocator.AllocObject();
+	auto sli = spotLightAllocator.Alloc();
 	spotLightAllocator.Get<SpotLightDynamicOffsets>(sli).Resize(2);
 	genericLightAllocator.Get<TypedLightId>(cid.id) = sli;
 
@@ -622,7 +622,7 @@ LightContext::UpdatePointShadows()
 Graphics::ContextEntityId
 LightContext::Alloc()
 {
-	return genericLightAllocator.AllocObject();
+	return genericLightAllocator.Alloc();
 }
 
 //------------------------------------------------------------------------------
@@ -631,7 +631,7 @@ LightContext::Alloc()
 void
 LightContext::Dealloc(Graphics::ContextEntityId id)
 {
-	genericLightAllocator.DeallocObject(id.id);
+	genericLightAllocator.Dealloc(id.id);
 }
 
 //------------------------------------------------------------------------------

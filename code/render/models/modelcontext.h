@@ -106,7 +106,7 @@ private:
 inline Graphics::ContextEntityId
 ModelContext::Alloc()
 {
-	return modelContextAllocator.AllocObject();
+	return modelContextAllocator.Alloc();
 }
 
 //------------------------------------------------------------------------------
@@ -125,7 +125,7 @@ ModelContext::Dealloc(Graphics::ContextEntityId id)
 		Models::DestroyModel(rid);
 	mdl = ModelInstanceId::Invalid();
 
-	modelContextAllocator.DeallocObject(id.id);
+	modelContextAllocator.Dealloc(id.id);
 }
 
 } // namespace Models

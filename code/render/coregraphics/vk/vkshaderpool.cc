@@ -95,7 +95,7 @@ VkShaderPool::LoadFromStream(const Resources::ResourceId id, const Util::StringA
 		AnyFX::VkProgram* program = static_cast<AnyFX::VkProgram*>(programs[i]);
 
 		// allocate new program object and set it up
-		Ids::Id32 programId = programAllocator.AllocObject();
+		Ids::Id32 programId = programAllocator.Alloc();
 		VkShaderProgramSetup(programId, this->GetName(id), program, setupInfo.pipelineLayout, this->shaderAlloc.Get<3>(id.allocId));
 
 		// make an ID which is the shader id and program id

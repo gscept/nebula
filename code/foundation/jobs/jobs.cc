@@ -15,7 +15,7 @@ JobAllocator jobAllocator(0xFFFFFFFF);
 JobPortId
 CreateJobPort(const CreateJobPortInfo& info)
 {
-	Ids::Id32 port = jobPortAllocator.AllocObject();
+	Ids::Id32 port = jobPortAllocator.Alloc();
 	jobPortAllocator.Get<0>(port) = info.name;
 	
 	Util::FixedArray<Ptr<JobThread>> threads(info.numThreads);
@@ -105,7 +105,7 @@ JobPortWait(const JobPortId& id)
 JobId
 CreateJob(const CreateJobInfo& info)
 {
-	Ids::Id32 job = jobAllocator.AllocObject();
+	Ids::Id32 job = jobAllocator.Alloc();
 	jobAllocator.Get<0>(job) = info;
 	jobAllocator.Get<2>(job) = n_new(Threading::Event(true));
 	jobAllocator.Get<3>(job) = n_new(std::atomic_uint);
@@ -126,7 +126,7 @@ DestroyJob(const JobId& id)
 	jobAllocator.Get<2>(id.id)->Wait();
 	n_assert(jobAllocator.Get<3>(id.id)->load() == 0);
 	n_delete(jobAllocator.Get<3>(id.id));
-	jobAllocator.DeallocObject(id.id);
+	jobAllocator.Dealloc(id.id);
 }
 
 //------------------------------------------------------------------------------

@@ -88,7 +88,7 @@ using namespace Vulkan;
 const ShaderRWBufferId
 CreateShaderRWBuffer(const ShaderRWBufferCreateInfo& info)
 {
-	Ids::Id32 id = shaderRWBufferAllocator.AllocObject();
+	Ids::Id32 id = shaderRWBufferAllocator.Alloc();
 
 	VkShaderRWBufferLoadInfo& setupInfo = shaderRWBufferAllocator.Get<0>(id);
 	VkShaderRWBufferRuntimeInfo& runtimeInfo = shaderRWBufferAllocator.Get<1>(id);
@@ -159,7 +159,7 @@ DestroyShaderRWBuffer(const ShaderRWBufferId id)
 	vkDestroyBuffer(setupInfo.dev, runtimeInfo.buf, nullptr);
 	vkFreeMemory(setupInfo.dev, setupInfo.mem, nullptr);
 
-	shaderRWBufferAllocator.DeallocObject(id.id24);
+	shaderRWBufferAllocator.Dealloc(id.id24);
 }
 
 } // namespace CoreGraphics
