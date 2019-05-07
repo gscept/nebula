@@ -65,8 +65,8 @@
 	template<int MEMBER> inline auto& Get(const Resources::ResourceId id) { return name.Get<MEMBER>(id.allocId); }
 
 #define __ImplementResourceAllocatorTypedSafe(name, idtype) \
-	inline Resources::ResourceUnknownId AllocObject() { return Ids::Id::MakeId24_8(name.AllocObject(), idtype); } \
-	inline void DeallocObject(const Resources::ResourceUnknownId id) { name.DeallocObject(id.id24); } \
+	inline Resources::ResourceUnknownId AllocObject() { return Ids::Id::MakeId24_8(name.Alloc(), idtype); } \
+	inline void DeallocObject(const Resources::ResourceUnknownId id) { name.Dealloc(id.id24); } \
 	inline void EnterGet() { name.EnterGet(); } \
 	inline void LeaveGet() { name.LeaveGet(); } \
 	template<int MEMBER> inline auto& Get(const Ids::Id24 id) { return name.Get<MEMBER>(id); } \

@@ -75,6 +75,7 @@ fips_begin_module(foundation)
 		fips_files(
 			array.h
 			arrayallocator.h
+			arrayallocatorsafe.h
 			arraystack.h
 			bit.h
 			bitfield.h

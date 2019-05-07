@@ -1,7 +1,7 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	The ArrayAllocator provides a variadic list of types which is to be contained in the allocator
+	The ArrayAllocatorSafe provides a thread safe variadic list of types which is to be contained in the allocator
 	and fetching each value by providing the index into the list of types, which means the members
 	are nameless.
 
@@ -12,9 +12,9 @@
 	in the same way.
 
 	The thread safe allocator requires the Get-methods to be within an Enter/Leave
-	lockstep phase.
+	lockstep phase. 
 
-	@see	arrayallocatorsafe.h
+	@see	arrayallocator.h
 
 	(C) 2019 Individual contributors, see AUTHORS file
 */
@@ -23,30 +23,32 @@
 #include "util/array.h"
 #include <tuple>
 #include "tupleutility.h"
+#include "ids/id.h"
+
 namespace Util
 {
 
 template <class ... TYPES>
-class ArrayAllocator
+class ArrayAllocatorSafe
 {
 public:
 	/// constructor
-	ArrayAllocator();
+	ArrayAllocatorSafe();
 
 	/// move constructor
-	ArrayAllocator(ArrayAllocator<TYPES...>&& rhs);
+	ArrayAllocatorSafe(ArrayAllocatorSafe<TYPES...>&& rhs);
 
 	/// copy constructor
-	ArrayAllocator(const ArrayAllocator<TYPES...>& rhs);
+	ArrayAllocatorSafe(const ArrayAllocatorSafe<TYPES...>& rhs);
 
 	/// destructor
-	~ArrayAllocator();
+	~ArrayAllocatorSafe();
 
 	/// assign operator
-	void operator=(const ArrayAllocator<TYPES...>& rhs);
+	void operator=(const ArrayAllocatorSafe<TYPES...>& rhs);
 
 	/// move operator
-	void operator=(ArrayAllocator<TYPES...>&& rhs);
+	void operator=(ArrayAllocatorSafe<TYPES...>&& rhs);
 
 	/// allocate a new resource
 	uint32_t Alloc();
@@ -89,7 +91,27 @@ public:
 	/// This will update the size to reflect the first member array size in objects.
 	void UpdateSize();
 
-private:
+	/// enter thread safe get-mode
+	void EnterGet();
+	/// leave thread safe get-mode
+	void LeaveGet();
+
+	/// get single item safely 
+	template<int MEMBER>
+	Util::tuple_array_t<MEMBER, TYPES...>& GetSafe(const Ids::Id32 index);
+	/// get single item safely 
+	template<int MEMBER>
+	Util::tuple_array_t<MEMBER, TYPES...>& GetSafe(const Ids::Id64 index);
+	/// get single item unsafe (use with extreme caution)
+	template<int MEMBER>
+	Util::tuple_array_t<MEMBER, TYPES...>& GetUnsafe(const Ids::Id32 index);
+	/// get single item unsafe (use with extreme caution)
+	template<int MEMBER>
+	Util::tuple_array_t<MEMBER, TYPES...>& GetUnsafe(const Ids::Id64 index);
+
+protected:
+	bool inBeginGet;
+	Threading::CriticalSection sect;
 	uint32_t size;
 	std::tuple<Util::Array<TYPES>...> objects;
 };
@@ -98,8 +120,9 @@ private:
 /**
 */
 template<class ... TYPES>
-inline ArrayAllocator<TYPES...>::ArrayAllocator() :
-	size(0)
+inline ArrayAllocatorSafe<TYPES...>::ArrayAllocatorSafe() :
+	size(0),
+	inBeginGet(false)
 {
 	// empty
 }
@@ -108,7 +131,7 @@ inline ArrayAllocator<TYPES...>::ArrayAllocator() :
 /**
 */
 template<class ...TYPES>
-inline ArrayAllocator<TYPES...>::ArrayAllocator(ArrayAllocator<TYPES...>&& rhs)
+inline ArrayAllocatorSafe<TYPES...>::ArrayAllocatorSafe(ArrayAllocatorSafe<TYPES...>&& rhs)
 {
 	this->objects = rhs.objects;
 	this->size = rhs.size;
@@ -119,7 +142,7 @@ inline ArrayAllocator<TYPES...>::ArrayAllocator(ArrayAllocator<TYPES...>&& rhs)
 /**
 */
 template<class ...TYPES>
-inline ArrayAllocator<TYPES...>::ArrayAllocator(const ArrayAllocator<TYPES...>& rhs)
+inline ArrayAllocatorSafe<TYPES...>::ArrayAllocatorSafe(const ArrayAllocatorSafe<TYPES...>& rhs)
 {
 	this->objects = rhs.objects;
 	this->size = rhs.size;
@@ -129,7 +152,7 @@ inline ArrayAllocator<TYPES...>::ArrayAllocator(const ArrayAllocator<TYPES...>& 
 /**
 */
 template<class ...TYPES>
-inline ArrayAllocator<TYPES...>::~ArrayAllocator()
+inline ArrayAllocatorSafe<TYPES...>::~ArrayAllocatorSafe()
 {
 	// empty
 }
@@ -139,7 +162,7 @@ inline ArrayAllocator<TYPES...>::~ArrayAllocator()
 */
 template<class ...TYPES>
 inline void
-ArrayAllocator<TYPES...>::operator=(const ArrayAllocator<TYPES...>& rhs)
+ArrayAllocatorSafe<TYPES...>::operator=(const ArrayAllocatorSafe<TYPES...>& rhs)
 {
 	this->objects = rhs.objects;
 	this->size = rhs.size;
@@ -150,7 +173,7 @@ ArrayAllocator<TYPES...>::operator=(const ArrayAllocator<TYPES...>& rhs)
 */
 template<class ...TYPES>
 inline void
-ArrayAllocator<TYPES...>::operator=(ArrayAllocator<TYPES...>&& rhs)
+ArrayAllocatorSafe<TYPES...>::operator=(ArrayAllocatorSafe<TYPES...>&& rhs)
 {
 	this->objects = rhs.objects;
 	this->size = rhs.size;
@@ -161,30 +184,37 @@ ArrayAllocator<TYPES...>::operator=(ArrayAllocator<TYPES...>&& rhs)
 /**
 */
 template<class ...TYPES>
-inline uint32_t ArrayAllocator<TYPES...>::Alloc()
+inline uint32_t ArrayAllocatorSafe<TYPES...>::Alloc()
 {
+	this->sect.Enter();
 	alloc_for_each_in_tuple(this->objects);
-	return this->size++;
+	auto i = this->size++;
+	this->sect.Leave();
+	return i;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 template<class ...TYPES>
-inline void ArrayAllocator<TYPES...>::EraseIndex(const uint32_t id)
+inline void ArrayAllocatorSafe<TYPES...>::EraseIndex(const uint32_t id)
 {
+	this->sect.Enter();
 	erase_index_for_each_in_tuple(this->objects, id);
 	this->size--;
+	this->sect.Leave();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 template<class ...TYPES>
-inline void ArrayAllocator<TYPES...>::EraseIndexSwap(const uint32_t id)
+inline void ArrayAllocatorSafe<TYPES...>::EraseIndexSwap(const uint32_t id)
 {
+	this->sect.Enter();
 	erase_index_swap_for_each_in_tuple(this->objects, id);
 	this->size--;
+	this->sect.Leave();
 }
 
 //------------------------------------------------------------------------------
@@ -192,9 +222,11 @@ inline void ArrayAllocator<TYPES...>::EraseIndexSwap(const uint32_t id)
 */
 template<class ...TYPES>
 inline const uint32_t
-ArrayAllocator<TYPES...>::Size() const
+ArrayAllocatorSafe<TYPES...>::Size() const
 {
+	this->sect.Enter();
 	return this->size;
+	this->sect.Leave();
 }
 
 //------------------------------------------------------------------------------
@@ -202,9 +234,11 @@ ArrayAllocator<TYPES...>::Size() const
 */
 template<class ...TYPES>
 inline void
-ArrayAllocator<TYPES...>::Reserve(uint32_t num)
+ArrayAllocatorSafe<TYPES...>::Reserve(uint32_t num)
 {
+	this->sect.Enter();
 	reserve_for_each_in_tuple(this->objects, num);
+	this->sect.Leave();
 	// Size is still the same.
 }
 
@@ -213,9 +247,11 @@ ArrayAllocator<TYPES...>::Reserve(uint32_t num)
 */
 template<class ...TYPES>
 inline void
-ArrayAllocator<TYPES...>::Clear()
+ArrayAllocatorSafe<TYPES...>::Clear()
 {
+	this->sect.Enter();
 	clear_for_each_in_tuple(this->objects);
+	this->sect.Leave();
 	this->size = 0;
 }
 
@@ -225,8 +261,9 @@ ArrayAllocator<TYPES...>::Clear()
 template<class ...TYPES>
 template<int MEMBER>
 inline tuple_array_t<MEMBER, TYPES...>&
-ArrayAllocator<TYPES...>::Get(const uint32_t index)
+ArrayAllocatorSafe<TYPES...>::Get(const uint32_t index)
 {
+	n_assert(this->inBeginGet);
 	return std::get<MEMBER>(this->objects)[index];
 }
 
@@ -236,8 +273,9 @@ ArrayAllocator<TYPES...>::Get(const uint32_t index)
 template<class ...TYPES>
 template<int MEMBER>
 inline const tuple_array_t<MEMBER, TYPES...>&
-ArrayAllocator<TYPES...>::Get(const uint32_t index) const
+ArrayAllocatorSafe<TYPES...>::Get(const uint32_t index) const
 {
+	n_assert(this->inBeginGet);
 	return std::get<MEMBER>(this->objects)[index];
 }
 
@@ -247,8 +285,9 @@ ArrayAllocator<TYPES...>::Get(const uint32_t index) const
 template<class ...TYPES>
 template<int MEMBER>
 inline const Util::Array<tuple_array_t<MEMBER, TYPES...>>&
-ArrayAllocator<TYPES...>::GetArray() const
+ArrayAllocatorSafe<TYPES...>::GetArray() const
 {
+	n_assert(this->inBeginGet);
 	return std::get<MEMBER>(this->objects);
 }
 
@@ -258,8 +297,9 @@ ArrayAllocator<TYPES...>::GetArray() const
 template<class ...TYPES>
 template<int MEMBER>
 inline Util::Array<tuple_array_t<MEMBER, TYPES...>>&
-ArrayAllocator<TYPES...>::GetArray()
+ArrayAllocatorSafe<TYPES...>::GetArray()
 {
+	n_assert(this->inBeginGet);
 	return std::get<MEMBER>(this->objects);
 }
 
@@ -267,8 +307,9 @@ ArrayAllocator<TYPES...>::GetArray()
 /**
 */
 template<class ...TYPES> void
-ArrayAllocator<TYPES...>::Set(const uint32_t index, TYPES... values)
+ArrayAllocatorSafe<TYPES...>::Set(const uint32_t index, TYPES... values)
 {
+	n_assert(this->inBeginGet);
 	set_for_each_in_tuple(this->objects, index, values...);
 }
 
@@ -276,9 +317,69 @@ ArrayAllocator<TYPES...>::Set(const uint32_t index, TYPES... values)
 /**
 */
 template<class ...TYPES> void
-ArrayAllocator<TYPES...>::UpdateSize()
+ArrayAllocatorSafe<TYPES...>::UpdateSize()
 {
 	this->size = this->GetArray<0>().Size();
+}
+
+template<class ... TYPES> void
+ArrayAllocatorSafe<TYPES...>::EnterGet()
+{
+	n_assert(!this->inBeginGet);
+	this->sect.Enter();
+	this->inBeginGet = true;
+}
+
+template<class ... TYPES> void
+ArrayAllocatorSafe<TYPES...>::LeaveGet()
+{
+	n_assert(this->inBeginGet);
+	this->sect.Leave();
+	this->inBeginGet = false;
+}
+
+/// get single item safely 
+template<class ... TYPES>
+template<int MEMBER>
+Util::tuple_array_t<MEMBER, TYPES...>&
+ArrayAllocatorSafe<TYPES...>::GetSafe(const Ids::Id32 index)
+{
+	this->sect.Enter();
+	Util::tuple_array_t<MEMBER, TYPES...>& res = std::get<MEMBER>(this->objects)[index];
+	this->sect.Leave();
+	return res;
+}
+
+/// get single item safely 
+template<class ... TYPES>
+template<int MEMBER>
+Util::tuple_array_t<MEMBER, TYPES...>&
+ArrayAllocatorSafe<TYPES...>::GetSafe(const Ids::Id64 index)
+{
+	Ids::Id24 resId = Ids::Id::GetBig(Ids::Id::GetLow(index));
+	this->sect.Enter();
+	Util::tuple_array_t<MEMBER, TYPES...>& res = std::get<MEMBER>(this->objects)[resId];
+	this->sect.Leave();
+	return res;
+}
+
+/// get single item unsafe (use with extreme caution)
+template<class ... TYPES>
+template<int MEMBER>
+Util::tuple_array_t<MEMBER, TYPES...>&
+ArrayAllocatorSafe<TYPES...>::GetUnsafe(const Ids::Id32 index)
+{
+	return std::get<MEMBER>(this->objects)[index];
+}
+
+/// get single item unsafe (use with extreme caution)
+template<class ... TYPES>
+template<int MEMBER>
+Util::tuple_array_t<MEMBER, TYPES...>&
+ArrayAllocatorSafe<TYPES...>::GetUnsafe(const Ids::Id64 index)
+{
+	Ids::Id24 resId = Ids::Id::GetBig(Ids::Id::GetLow(index));
+	return std::get<MEMBER>(this->objects)[resId];
 }
 
 } // namespace Util
