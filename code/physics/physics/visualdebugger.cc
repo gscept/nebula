@@ -2,7 +2,7 @@
 //  VisualDebugger.cc
 //  (C) 2013-2019 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "foundation/stdneb.h"
 #include "visualdebugger.h"
 
 namespace Physics
