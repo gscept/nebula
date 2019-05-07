@@ -31,7 +31,7 @@
 #include "coregraphics/barrier.h"
 #include "algorithm/algorithms.h"
 #include "coregraphics/displaydevice.h"
-#include "memory/chunkallocator.h"
+#include "memory/arenaallocator.h"
 #include <mutex>
 
 using namespace CoreGraphics;
@@ -78,7 +78,7 @@ FrameScriptLoader::LoadFrameScript(const IO::URI& path)
 
 
 #define CONSTRUCTOR_MACRO(type) \
-		constructors.Add(("Algorithms::" #type ##_str).HashCode(), [](Memory::ChunkAllocator<BIG_CHUNK>& alloc) -> Algorithms::Algorithm* { \
+		constructors.Add(("Algorithms::" #type ##_str).HashCode(), [](Memory::ArenaAllocator<BIG_CHUNK>& alloc) -> Algorithms::Algorithm* { \
 			void* mem = alloc.Alloc(sizeof(Algorithms::type));\
 			n_new_inplace(Algorithms::type, mem);\
 			return (Algorithms::Algorithm*)mem;\

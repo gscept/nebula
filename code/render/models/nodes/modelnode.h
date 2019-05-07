@@ -19,7 +19,7 @@
 #include "io/binaryreader.h"
 #include "math/bbox.h"
 #include "ids/id.h"
-#include "memory/chunkallocator.h"
+#include "memory/arenaallocator.h"
 #include "models/model.h"
 
 #define ModelNodeInstanceCreator(type) \
@@ -86,7 +86,7 @@ protected:
 	Util::StringAtom name;
 	NodeType type;
 
-	Memory::ChunkAllocator<MODEL_MEMORY_CHUNK_SIZE>* nodeAllocator;
+	Memory::ArenaAllocator<MODEL_MEMORY_CHUNK_SIZE>* nodeAllocator;
 	Models::ModelNode* parent;
 	ModelId model;
 	Util::Array<Models::ModelNode*> children;

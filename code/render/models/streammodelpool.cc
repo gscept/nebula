@@ -71,7 +71,7 @@ StreamModelPool::CreateModelInstance(const ModelId id)
 	// get all template nodes
 	Util::Array<Models::ModelNode::Instance*>& nodeInstances = this->modelInstanceAllocator.Get<NodeInstances>(mnid);
 	Util::Array<Models::NodeType>& nodeTypes = this->modelInstanceAllocator.Get<NodeTypes>(mnid);
-	Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& alloc = this->modelAllocator.Get<InstanceNodeAllocator>(id.allocId);
+	Memory::ArenaAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& alloc = this->modelAllocator.Get<InstanceNodeAllocator>(id.allocId);
 
 	// allocate memory
 	byte* mem = nullptr;
@@ -211,7 +211,7 @@ StreamModelPool::LoadFromStream(const Resources::ResourceId id, const Util::Stri
 	instanceSize = 0;
 	SizeT hierarchicalInstanceSize = 0;
 	boundingBox.set(Math::point(0), Math::vector(0));
-	Memory::ChunkAllocator<MODEL_MEMORY_CHUNK_SIZE>& allocator = this->Get<ModelNodeAllocator>(id);
+	Memory::ArenaAllocator<MODEL_MEMORY_CHUNK_SIZE>& allocator = this->Get<ModelNodeAllocator>(id);
 	Util::Dictionary<Util::StringAtom, Models::ModelNode*>& nodes = this->Get<ModelNodes>(id);
 	Models::ModelNode*& root = this->Get<RootNode>(id);
 	Ptr<BinaryReader> reader = BinaryReader::Create();

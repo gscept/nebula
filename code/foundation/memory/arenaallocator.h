@@ -26,23 +26,23 @@ namespace Memory
 
 
 template <int ChunkSize>
-class ChunkAllocator
+class ArenaAllocator
 {
 public:
 	/// constructor
-	ChunkAllocator();
+	ArenaAllocator();
 	/// destructor
-	~ChunkAllocator();
+	~ArenaAllocator();
 
 	/// copy constructor
-	ChunkAllocator(const ChunkAllocator& rhs);
+	ArenaAllocator(const ArenaAllocator& rhs);
 	/// assignment operator
-	void operator=(const ChunkAllocator& rhs);
+	void operator=(const ArenaAllocator& rhs);
 
 	/// move constructor
-	ChunkAllocator(ChunkAllocator&& rhs);
+	ArenaAllocator(ArenaAllocator&& rhs);
 	/// move operator
-	void operator=(ChunkAllocator&& rhs);
+	void operator=(ArenaAllocator&& rhs);
 	
 	/// allocate new object, and calls constructor, but beware because this allocator does not run the destructors
 	template <typename T> T* Alloc();
@@ -64,7 +64,7 @@ private:
 */
 template <int ChunkSize>
 inline
-ChunkAllocator<ChunkSize>::ChunkAllocator() :
+ArenaAllocator<ChunkSize>::ArenaAllocator() :
 	currentChunk(nullptr),
 	iterator(nullptr)
 {
@@ -76,7 +76,7 @@ ChunkAllocator<ChunkSize>::ChunkAllocator() :
 */
 template <int ChunkSize>
 inline
-ChunkAllocator<ChunkSize>::~ChunkAllocator()
+ArenaAllocator<ChunkSize>::~ArenaAllocator()
 {
 	this->currentChunk = nullptr;
 	this->iterator = nullptr;
@@ -89,7 +89,7 @@ ChunkAllocator<ChunkSize>::~ChunkAllocator()
 */
 template<int ChunkSize>
 inline
-ChunkAllocator<ChunkSize>::ChunkAllocator(ChunkAllocator&& rhs)
+ArenaAllocator<ChunkSize>::ArenaAllocator(ArenaAllocator&& rhs)
 {
 	this->retiredChunks = rhs.retiredChunks;
 	this->currentChunk = rhs.currentChunk;
@@ -105,7 +105,7 @@ ChunkAllocator<ChunkSize>::ChunkAllocator(ChunkAllocator&& rhs)
 */
 template<int ChunkSize>
 inline
-ChunkAllocator<ChunkSize>::ChunkAllocator(const ChunkAllocator& rhs)
+ArenaAllocator<ChunkSize>::ArenaAllocator(const ArenaAllocator& rhs)
 {
 	// copy chunk
 	this->retiredChunks = rhs.retiredChunks;
@@ -139,7 +139,7 @@ ChunkAllocator<ChunkSize>::ChunkAllocator(const ChunkAllocator& rhs)
 */
 template<int ChunkSize>
 inline void
-ChunkAllocator<ChunkSize>::operator=(ChunkAllocator&& rhs)
+ArenaAllocator<ChunkSize>::operator=(ArenaAllocator&& rhs)
 {
 	this->retiredChunks = rhs.retiredChunks;
 	this->currentChunk = rhs.currentChunk;
@@ -155,7 +155,7 @@ ChunkAllocator<ChunkSize>::operator=(ChunkAllocator&& rhs)
 */
 template<int ChunkSize>
 inline void
-ChunkAllocator<ChunkSize>::operator=(const ChunkAllocator& rhs)
+ArenaAllocator<ChunkSize>::operator=(const ArenaAllocator& rhs)
 {
 	this->retiredChunks = rhs.retiredChunks;
 	this->currentChunk = rhs.currentChunk;
@@ -188,7 +188,7 @@ ChunkAllocator<ChunkSize>::operator=(const ChunkAllocator& rhs)
 */
 template <int ChunkSize>
 inline void
-ChunkAllocator<ChunkSize>::NewChunk()
+ArenaAllocator<ChunkSize>::NewChunk()
 {
 	if (this->currentChunk != nullptr)
 		this->retiredChunks.Append(this->currentChunk);
@@ -200,7 +200,7 @@ ChunkAllocator<ChunkSize>::NewChunk()
 /**
 */
 template<int ChunkSize>
-inline void ChunkAllocator<ChunkSize>::Release()
+inline void ArenaAllocator<ChunkSize>::Release()
 {
 	IndexT i;
 	for (i = 0; i < this->retiredChunks.Size(); i++)
@@ -219,7 +219,7 @@ inline void ChunkAllocator<ChunkSize>::Release()
 template <int ChunkSize>
 template<typename T>
 inline T*
-ChunkAllocator<ChunkSize>::Alloc()
+ArenaAllocator<ChunkSize>::Alloc()
 {
 	static_assert(sizeof(T) <= ChunkSize, "Size of type is bigger than the chunk size!");
 	// pad up to next multiple of 16 to avoid alignment issues
@@ -246,7 +246,7 @@ ChunkAllocator<ChunkSize>::Alloc()
 */
 template <int ChunkSize>
 inline void*
-ChunkAllocator<ChunkSize>::Alloc(SizeT size)
+ArenaAllocator<ChunkSize>::Alloc(SizeT size)
 {
 	// pad to next alignment.
 	size = Math::n_align(size, 16);

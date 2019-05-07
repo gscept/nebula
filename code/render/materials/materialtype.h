@@ -9,7 +9,7 @@
 #include "util/hashtable.h"
 #include "coregraphics/batchgroup.h"
 #include "coregraphics/shader.h"
-#include "memory/chunkallocator.h"
+#include "memory/arenaallocator.h"
 #include "util/variant.h"
 #include "util/fixedarray.h"
 #include "util/arraystack.h"
