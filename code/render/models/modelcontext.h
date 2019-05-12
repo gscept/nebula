@@ -87,6 +87,8 @@ private:
 	static Graphics::ContextEntityId Alloc();
 	/// deallocate a slice
 	static void Dealloc(Graphics::ContextEntityId id);
+    /// move instance
+    static void OnInstanceMoved(uint32_t toIndex, uint32_t fromIndex);
 
 	friend void Visibility::VisibilitySortJob(const Jobs::JobFuncContext& ctx);
 

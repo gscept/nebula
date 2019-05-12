@@ -123,6 +123,10 @@ void ctx::Defragment()\
 		{\
 			__state.entitySliceMap.ValueAtIndex(lastId, mapIndex) = index;\
 		}\
+        if (__state.OnInstanceMoved != nullptr) \
+        {\
+            __state.OnInstanceMoved(index, oldIndex);\
+        }\
 	}\
 	freeIds.Clear();\
 }
@@ -200,6 +204,8 @@ struct GraphicsContextState
 	ContextEntityId(*Alloc)();
 	void(*Dealloc)(ContextEntityId id);
 	void(*Defragment)();
+    /// called after a context entity has moved index
+    void(*OnInstanceMoved)(uint32_t toIndex, uint32_t fromIndex);
 };
 
 class GraphicsContext
