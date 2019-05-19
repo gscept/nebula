@@ -29,7 +29,7 @@ public:
 	};
 
 private:
-	virtual FrameOp::Compiled* AllocCompiled(Memory::ChunkAllocator<BIG_CHUNK>& allocator);
+	virtual FrameOp::Compiled* AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator);
 };
 
 } // namespace Frame2

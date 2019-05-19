@@ -30,7 +30,7 @@ FrameBarrier::~FrameBarrier()
 /**
 */
 FrameOp::Compiled* 
-FrameBarrier::AllocCompiled(Memory::ChunkAllocator<BIG_CHUNK>& allocator)
+FrameBarrier::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 {
 	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
 

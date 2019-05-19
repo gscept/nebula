@@ -95,17 +95,17 @@ private:
 
 	Ids::IdAllocator<
 		Math::bbox,													// 0 - total bounding box
-		Memory::ChunkAllocator<MODEL_MEMORY_CHUNK_SIZE>,			// 1 - memory allocator
+		Memory::ArenaAllocator<MODEL_MEMORY_CHUNK_SIZE>,			// 1 - memory allocator
 		Util::Dictionary<Util::StringAtom, Models::ModelNode*>,		// 2 - nodes
 		Models::ModelNode*,											// 3 - root
 		SizeT,														// 4 - instances
 		SizeT,														// 5 - instance size
-		Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>	// 6 - instance allocator
+		Memory::ArenaAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>	// 6 - instance allocator
 	> modelAllocator;
 	__ImplementResourceAllocator(modelAllocator);
 
-	Util::Array<std::function<Models::ModelNode*(Memory::ChunkAllocator<MODEL_MEMORY_CHUNK_SIZE>&)>> nodeConstructors;
-	Util::Array<std::function<Models::ModelNode::Instance*(Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>&)>> nodeInstanceConstructors;
+	Util::Array<std::function<Models::ModelNode*(Memory::ArenaAllocator<MODEL_MEMORY_CHUNK_SIZE>&)>> nodeConstructors;
+	Util::Array<std::function<Models::ModelNode::Instance*(Memory::ArenaAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>&)>> nodeInstanceConstructors;
 
 	enum
 	{
@@ -128,8 +128,8 @@ private:
 	static Ids::Id8 NodeMappingCounter;
 
 #define IMPLEMENT_NODE_ALLOCATOR(FourCC, Type, NodeList, NodeInstanceList) \
-	nodeConstructors.Append([this](Memory::ChunkAllocator<MODEL_MEMORY_CHUNK_SIZE>& alloc) -> Models::ModelNode* { return alloc.Alloc<Models::Type>(); }); \
-	nodeInstanceConstructors.Append([this](Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& alloc) -> Models::ModelNode::Instance* { return alloc.Alloc<Models::Type::Instance>(); }); \
+	nodeConstructors.Append([this](Memory::ArenaAllocator<MODEL_MEMORY_CHUNK_SIZE>& alloc) -> Models::ModelNode* { return alloc.Alloc<Models::Type>(); }); \
+	nodeInstanceConstructors.Append([this](Memory::ArenaAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& alloc) -> Models::ModelNode::Instance* { return alloc.Alloc<Models::Type::Instance>(); }); \
 	this->nodeFourCCMapping.Add(FourCC, NodeMappingCounter++);
 };
 

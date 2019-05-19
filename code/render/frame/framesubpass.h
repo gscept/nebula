@@ -42,12 +42,12 @@ public:
 		Util::Array<Math::rectangle<int>> scissors;
 	};
 
-	FrameOp::Compiled* AllocCompiled(Memory::ChunkAllocator<BIG_CHUNK>& allocator);
+	FrameOp::Compiled* AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator);
 
 protected:
 	friend class FramePass;
 	void Build(
-		Memory::ChunkAllocator<BIG_CHUNK>& allocator,
+		Memory::ArenaAllocator<BIG_CHUNK>& allocator,
 		Util::Array<FrameOp::Compiled*>& compiledOps,
 		Util::Array<CoreGraphics::EventId>& events,
 		Util::Array<CoreGraphics::BarrierId>& barriers,

@@ -49,7 +49,7 @@ FrameSubpassBatch::~FrameSubpassBatch()
 /**
 */
 FrameOp::Compiled* 
-FrameSubpassBatch::AllocCompiled(Memory::ChunkAllocator<BIG_CHUNK>& allocator)
+FrameSubpassBatch::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 {
 	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
 	ret->batch = this->batch;

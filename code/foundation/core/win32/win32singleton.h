@@ -22,7 +22,7 @@
 //------------------------------------------------------------------------------
 #define __DeclareSingleton(type) \
 public: \
-    ThreadLocal static type * Singleton; \
+    thread_local static type * Singleton; \
     static type * Instance() { n_assert(0 != Singleton); return Singleton; }; \
     static bool HasInstance() { return 0 != Singleton; }; \
 private:
@@ -35,7 +35,7 @@ public: \
 private:
 
 #define __ImplementSingleton(type) \
-    ThreadLocal type * type::Singleton = 0;
+    thread_local type * type::Singleton = 0;
 
 #define __ImplementInterfaceSingleton(type) \
     type * type::Singleton = 0;

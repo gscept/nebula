@@ -22,7 +22,7 @@
 #include "algorithm/algorithm.h"
 #include "frame/frameop.h"
 #include "frame/framepass.h"
-#include "memory/chunkallocator.h"
+#include "memory/arenaallocator.h"
 namespace Graphics
 {
 	class View;
@@ -39,7 +39,7 @@ public:
 	virtual ~FrameScript();
 
 	/// get allocator
-	Memory::ChunkAllocator<BIG_CHUNK>& GetAllocator();
+	Memory::ArenaAllocator<BIG_CHUNK>& GetAllocator();
 
 	/// set name
 	void SetResourceName(const Resources::ResourceName& name);
@@ -90,12 +90,12 @@ private:
 	void OnWindowResized();
 
 	CoreGraphics::WindowId window;
-	Memory::ChunkAllocator<BIG_CHUNK> allocator;
+	Memory::ArenaAllocator<BIG_CHUNK> allocator;
 
 	Util::Array<CoreGraphics::EventId> events;
 	Util::Array<CoreGraphics::BarrierId> barriers;
 	Util::Array<CoreGraphics::SemaphoreId> semaphores;
-	Memory::ChunkAllocator<BIG_CHUNK> buildAllocator;
+	Memory::ArenaAllocator<BIG_CHUNK> buildAllocator;
 
 	Resources::ResourceName resId;
 	Util::Array<CoreGraphics::RenderTextureId> colorTextures;
@@ -135,7 +135,7 @@ FrameScript::GetResourceName() const
 //------------------------------------------------------------------------------
 /**
 */
-inline Memory::ChunkAllocator<BIG_CHUNK>&
+inline Memory::ArenaAllocator<BIG_CHUNK>&
 FrameScript::GetAllocator()
 {
 	return this->allocator;
