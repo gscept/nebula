@@ -69,8 +69,8 @@ StreamModelPool::CreateModelInstance(const ModelId id)
 	instances++;
 
 	// get all template nodes
-	Util::Array<Models::ModelNode::Instance*>& nodeInstances = this->modelInstanceAllocator.Get<NodeInstances>(mnid);
-	Util::Array<Models::NodeType>& nodeTypes = this->modelInstanceAllocator.Get<NodeTypes>(mnid);
+	Util::Array<Models::ModelNode::Instance*>& nodeInstances = this->modelInstanceAllocator.Get<ModelNodeInstances>(mnid);
+	Util::Array<Models::NodeType>& nodeTypes = this->modelInstanceAllocator.Get<ModelNodeTypes>(mnid);
 	Memory::ArenaAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& alloc = this->modelAllocator.Get<InstanceNodeAllocator>(id.allocId);
 
 	// allocate memory

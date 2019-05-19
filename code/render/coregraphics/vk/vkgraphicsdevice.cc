@@ -1736,7 +1736,7 @@ SetStreamVertexBuffer(IndexT streamIndex, const CoreGraphics::VertexBufferId& vb
 void 
 SetVertexLayout(const CoreGraphics::VertexLayoutId& vl)
 {
-	n_assert(state.currentProgram != -1);
+	n_assert(state.currentShaderProgram != CoreGraphics::ShaderProgramId::Invalid());
 	VkPipelineVertexInputStateCreateInfo* info = CoreGraphics::layoutPool->GetDerivativeLayout(vl, state.currentShaderProgram);
 	SetVertexLayoutPipelineInfo(info);
 }

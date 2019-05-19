@@ -354,6 +354,8 @@ CollectByFilter(ShaderProgramId const & shader, PrimitiveTopology::Code topology
 {
     CoreGraphics::SetShaderProgram(shader);
     CoreGraphics::SetPrimitiveTopology(topology);
+	CoreGraphics::SetVertexLayout(CoreGraphics::VertexBufferGetLayout(imState.vbo));
+
     CoreGraphics::SetGraphicsPipeline();
     // setup input buffers
     CoreGraphics::SetStreamVertexBuffer(0, imState.vbo, 0);    
@@ -414,7 +416,6 @@ Im3dContext::OnRenderAsPlugin(const IndexT frameIndex, const Timing::Time frameT
         VertexBufferId vbo = imState.vbo;                
 
         // setup device
-        CoreGraphics::SetVertexLayout(CoreGraphics::VertexBufferGetLayout(vbo));        
         IndexT vertexCount = 0;
         IndexT vertexBufferOffset = 0;
         // collect draws and loop a couple of times instead
