@@ -21,7 +21,7 @@ BruteforceSystemJobFunc(const Jobs::JobFuncContext& ctx)
 	bool* flags = (bool*)ctx.outputs[0];
 
 	const Math::bbox& box = transforms[0];
-	const Math::ClipStatus::Type status = box.clipstatus_soa(*camera);
+	const Math::ClipStatus::Type status = box.clipstatus(*camera);
 
 	// if clip status is outside, unset visibility
 	if (status == Math::ClipStatus::Outside)

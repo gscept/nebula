@@ -17,7 +17,6 @@ namespace Vulkan
 struct VkPassLoadInfo
 {
 	VkDevice dev;
-	VkDescriptorPool pool;
 	Util::StringAtom name;
 
 	// these hold the per-pass shader state

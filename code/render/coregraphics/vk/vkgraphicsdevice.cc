@@ -138,10 +138,6 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 	Util::FixedArray<Util::FixedArray<const char*>> deviceFeatureStrings;
 	IndexT currentDevice;
 
-	VkDescriptorPoolSize poolSizes[11];
-	Util::Array<VkDescriptorPool> descriptorPools;
-	IndexT currentPool;
-
 	CoreGraphics::ShaderProgramId currentShaderProgram;
 	CoreGraphics::ShaderFeature::Mask currentShaderMask;
 
@@ -297,15 +293,6 @@ GetCurrentFeatures()
 //------------------------------------------------------------------------------
 /**
 */
-VkDescriptorPool
-GetCurrentDescriptorPool()
-{
-	return state.descriptorPools[state.currentPool];
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 VkPipelineCache 
 GetPipelineCache()
 {
@@ -335,29 +322,6 @@ GetMainBuffer(const CoreGraphicsQueueType queue)
 	case SparseQueueType: return CommandBufferGetVk(state.mainCmdSparseBuffer);
 	}
 	return VK_NULL_HANDLE;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-RequestDescriptorPool()
-{
-	VkDescriptorPoolCreateInfo poolInfo =
-	{
-		VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-		nullptr,
-		VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
-		2048,
-		11,
-		state.poolSizes
-	};
-
-	VkDescriptorPool pool;
-	VkResult res = vkCreateDescriptorPool(state.devices[state.currentDevice], &poolInfo, nullptr, &pool);
-	n_assert(res == VK_SUCCESS);
-	state.currentPool++;
-	state.descriptorPools.Append(pool);
 }
 
 //------------------------------------------------------------------------------
@@ -1291,31 +1255,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	state.database.Setup(state.devices[state.currentDevice], state.cache);
 
 	// setup the empty descriptor set
-	SetupEmptyDescriptorSet();
-
-	std::tuple<VkDescriptorType, uint32_t> descCounts[] =
-	{
-		std::make_pair(VK_DESCRIPTOR_TYPE_SAMPLER, 256),
-		std::make_pair(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 256),
-		std::make_pair(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 262140),
-		std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 512),
-		std::make_pair(VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 32),
-		std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 32),
-		std::make_pair(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 65535),
-		std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 32),
-		std::make_pair(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 128),
-		std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 256),
-		std::make_pair(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 512),
-	};
-
-	for (i = 0; i < 11; i++)
-	{
-		state.poolSizes[i].descriptorCount = std::get<1>(descCounts[i]);
-		state.poolSizes[i].type = std::get<0>(descCounts[i]);
-	}
-
-	RequestDescriptorPool();
-	state.currentPool = 0;
+	SetupEmptyDescriptorSetLayout();
 
 	// setup pools (from VkCmdBuffer.h)
 	SetupVkPools(state.devices[state.currentDevice], state.drawQueueFamily, state.computeQueueFamily, state.transferQueueFamily, state.sparseQueueFamily);
@@ -1564,12 +1504,7 @@ DestroyGraphicsDevice()
 	for (i = 0; i < state.NumComputeThreads; i++)
 		vkDestroyCommandPool(state.devices[state.currentDevice], state.dispatchableCmdCompBufferPool[i], nullptr);
 
-	// destroy descriptor pool for main command buffers
-	for (i = 0; i < state.descriptorPools.Size(); i++)
-		vkDestroyDescriptorPool(state.devices[state.currentDevice], state.descriptorPools[i], nullptr);
-
 	state.database.Discard();
-	state.descriptorPools.Clear();
 
 	// destroy pipeline
 	vkDestroyPipelineCache(state.devices[state.currentDevice], state.cache, nullptr);

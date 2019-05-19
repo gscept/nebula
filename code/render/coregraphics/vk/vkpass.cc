@@ -83,7 +83,6 @@ CreatePass(const PassCreateInfo& info)
 	loadInfo.colorAttachmentClears = info.colorAttachmentClears;
 	loadInfo.depthStencilAttachment = info.depthStencilAttachment;
 	loadInfo.dev = Vulkan::GetCurrentDevice();
-	loadInfo.pool = Vulkan::GetCurrentDescriptorPool();
 
 	// gather image views
 	uint32_t width = 0;

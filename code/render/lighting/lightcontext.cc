@@ -585,7 +585,7 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIn
 				auto trans = pointLightAllocator.Get<PointLightTransform>(typeIds[i]);
 				Math::float4 posAndRange = Math::matrix44::transform(trans.get_position(), viewTransform);
 				posAndRange.w() = 1 / trans.get_zaxis().length();
-				posAndRange.store(clusterState.lights[i].position);
+				posAndRange.storeu(clusterState.lights[i].position);
 			}
 			break;
 
@@ -594,7 +594,7 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIn
 				auto trans = spotLightAllocator.Get<SpotLightTransform>(typeIds[i]);
 				Math::float4 posAndRange = Math::matrix44::transform(trans.get_position(), viewTransform);
 				posAndRange.w() = 1 / trans.get_zaxis().length();
-				posAndRange.store(clusterState.lights[i].position);
+				posAndRange.storeu(clusterState.lights[i].position);
 				trans.get_zaxis().store3(clusterState.lights[i].forward);
 			}
 			break;

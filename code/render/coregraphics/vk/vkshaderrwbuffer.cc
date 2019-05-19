@@ -110,11 +110,12 @@ DestroyShaderRWBuffer(const ShaderRWBufferId id)
 void 
 ShaderRWBufferUpdate(const ShaderRWBufferId id, void* data, SizeT bytes)
 {
-	VkShaderRWBufferLoadInfo& setupInfo = shaderRWBufferAllocator.Get<0>(id.id24);
+	VkShaderRWBufferMapInfo& mapInfo = shaderRWBufferAllocator.Get<2>(id.id24);
 #if NEBULA_DEBUG
+	VkShaderRWBufferLoadInfo& setupInfo = shaderRWBufferAllocator.Get<0>(id.id24);
 	n_assert(setupInfo.size >= bytes);
 #endif
-	memcpy(setupInfo.mem, data, bytes);
+	memcpy(mapInfo.data, data, bytes);
 }
 
 } // namespace CoreGraphics
