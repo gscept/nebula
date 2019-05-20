@@ -66,9 +66,6 @@ ObserverContext::Setup(const Graphics::GraphicsEntityId id, VisibilityEntityType
 void 
 ObserverContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime, const Timing::Time time, const Timing::Tick ticks)
 {
-	// Defragment observable context data
-	ObservableContext::Defragment();
-
 	const Util::Array<VisibilityEntityType>& observerTypes = observerAllocator.GetArray<2>();
 	const Util::Array<VisibilityEntityType>& observeeTypes = ObservableContext::observeeAllocator.GetArray<2>();
 
@@ -431,6 +428,7 @@ ObservableContext::Create()
 	_CreateContext();
     ObservableContext::__state.OnInstanceMoved = OnInstanceMoved;
 	ObservableContext::__state.allowedRemoveStages = Graphics::OnBeforeFrameStage;
+    Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&ObservableContext::__bundle, &ObservableContext::__state);
 }
 
 //------------------------------------------------------------------------------
@@ -457,15 +455,15 @@ ObservableContext::Dealloc(Graphics::ContextEntityId id)
 void
 ObservableContext::OnInstanceMoved(uint32_t toIndex, uint32_t fromIndex)
 {
-    n_assert2(fromIndex < observeeAllocator.Size(), "Instance is assumed to be erased but wasn't!\n");
+    n_assert2(fromIndex >= observeeAllocator.Size(), "Instance is assumed to be erased but wasn't!\n");
     
+    auto size = observeeAllocator.Size();
     // go through observers and deallocate visibility slot for this object
     const Util::Array<ObserverContext::VisibilityResultAllocator>& visAllocators = ObserverContext::observerAllocator.GetArray<3>();
     for (IndexT i = 0; i < visAllocators.Size(); i++)
     {
         ObserverContext::VisibilityResultAllocator& alloc = visAllocators[i];
         alloc.EraseIndexSwap(toIndex);
-        // Let model context update the modelcontextid
     }
 }
 

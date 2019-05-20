@@ -88,8 +88,8 @@ void
 GraphicsComponent::OnDeactivate(Game::InstanceId instance)
 {
 	Graphics::GraphicsEntityId gfxEntity = { component->Get<Attr::GraphicsEntity>(instance) };
-	Models::ModelContext::DeregisterEntity(gfxEntity);
 	Visibility::ObservableContext::DeregisterEntity(gfxEntity);
+	Models::ModelContext::DeregisterEntity(gfxEntity);
 	Graphics::DestroyEntity(gfxEntity);
 }
 

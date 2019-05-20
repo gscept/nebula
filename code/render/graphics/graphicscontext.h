@@ -206,6 +206,20 @@ struct GraphicsContextState
 	void(*Defragment)();
     /// called after a context entity has moved index
     void(*OnInstanceMoved)(uint32_t toIndex, uint32_t fromIndex);
+
+    void CleanupDelayedRemoveQueue()
+    {
+        while (!this->delayedRemoveQueue.IsEmpty())
+        {
+            Graphics::GraphicsEntityId eid = this->delayedRemoveQueue[0];
+            IndexT index = this->entitySliceMap.FindIndex(eid);
+            n_assert(index != InvalidIndex);
+            auto cid = this->entitySliceMap.ValueAtIndex(eid.id, index);
+            this->Dealloc(cid);
+            this->entitySliceMap.EraseIndex(eid, index);
+            this->delayedRemoveQueue.EraseIndexSwap(0);
+        }
+    }
 };
 
 class GraphicsContext

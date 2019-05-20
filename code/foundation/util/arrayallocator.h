@@ -82,6 +82,9 @@ public:
 	/// grow capacity of arrays to size
 	void Reserve(uint32_t size);
 
+    /// set size of arrays to param size
+    void SetSize(uint32_t size);
+
 	/// clear entire allocator and start from scratch.
 	void Clear();
 
@@ -206,6 +209,17 @@ ArrayAllocator<TYPES...>::Reserve(uint32_t num)
 {
 	reserve_for_each_in_tuple(this->objects, num);
 	// Size is still the same.
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class ...TYPES>
+inline void
+ArrayAllocator<TYPES...>::SetSize(uint32_t size)
+{
+    set_size_for_each_in_tuple(this->objects, size);
+    this->size = size;
 }
 
 //------------------------------------------------------------------------------
