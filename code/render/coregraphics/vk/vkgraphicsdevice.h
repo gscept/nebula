@@ -39,9 +39,6 @@ VkPhysicalDeviceMemoryProperties GetMemoryProperties();
 /// get main command buffer
 VkCommandBuffer GetMainBuffer(const CoreGraphicsQueueType queue);
 
-/// request a new pool, but only use this is if the previous pool is full
-void RequestDescriptorPool();
-
 /// get queue families
 const Util::Set<uint32_t>& GetQueueFamilies();
 /// get specific queue family

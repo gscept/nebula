@@ -9,10 +9,20 @@
     (C) 2011-2018 Individual contributors, see AUTHORS file
 */    
 #include "shaderstatenode.h"
-#include "particles/particlesystem.h"
 #include "particles/emitterattrs.h"
+#include "particles/envelopesamplebuffer.h"
+#include "particles/emittermesh.h"
 #include "coregraphics/constantbuffer.h"
 #include "coregraphics/resourcetable.h"
+
+namespace Particles
+{
+
+/// number of samples in envelope curves
+static const SizeT ParticleSystemNumEnvelopeSamples = 192;
+static const SizeT MaxNumRenderedParticles = 65535;
+
+}
 
 //------------------------------------------------------------------------------
 namespace Models
@@ -38,6 +48,14 @@ public:
 
 	struct Instance : public TransformNode::Instance
 	{
+		enum DynamicOffsetType
+		{
+			ObjectTransforms,
+			InstancingTransforms,
+			Skinning,
+			Particle
+		};
+
 		Ids::Id32 particleSystemId;
 		
 		CoreGraphics::ResourceTableId resourceTable;
@@ -48,11 +66,17 @@ public:
 		CoreGraphics::ConstantBinding bboxSizeVar;
 		CoreGraphics::ConstantBinding animPhasesVar;
 		CoreGraphics::ConstantBinding animsPerSecVar;
-		
+
 		uint32 instance;
 		Util::FixedArray<uint32> offsets;
+		Math::bbox boundingBox;
 
+		/// apply instance shader stuff
+		void ApplyNodeInstanceState() override;
+		/// setup instance
 		void Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
+		/// draw instance
+		void Draw() override;
 	};
 
 	/// create instance
@@ -69,8 +93,12 @@ protected:
 	/// parse data tag (called by loader code)
 	virtual bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader);
 
+	/// apply state
+	void ApplyNodeState() override;
 	
+	Particles::EnvelopeSampleBuffer sampleBuffer;
 	Particles::EmitterAttrs emitterAttrs;
+	Particles::EmitterMesh emitterMesh;
     Resources::ResourceName meshResId;
 	Util::StringAtom tag;
     IndexT primGroupIndex;
@@ -137,9 +165,11 @@ ParticleSystemNode::Instance::Setup(Models::ModelNode* node, const Models::Model
 	CoreGraphics::ConstantBufferId cbo = pparent->cbo;
 	this->cbo = cbo;
 	this->resourceTable = pparent->resourceTable;
-	this->offsets.Resize(2);
-	bool rebind = CoreGraphics::ConstantBufferAllocateInstance(cbo, this->offsets[0], this->instance);
-	this->offsets[1] = 0; // instancing offset
+	this->offsets.Resize(4);
+	bool rebind = CoreGraphics::ConstantBufferAllocateInstance(cbo, this->offsets[Particle], this->instance);
+	this->offsets[InstancingTransforms] = 0;
+	this->offsets[ObjectTransforms] = 0;
+	this->offsets[Skinning] = 0;
 	if (rebind)
 	{
 		CoreGraphics::ResourceTableSetConstantBuffer(pparent->resourceTable, { pparent->cbo, pparent->cboIndex, 0, true, false, -1, 0 });

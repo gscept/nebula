@@ -53,13 +53,10 @@ GraphicsServer::Open()
 	this->timer = FrameSync::FrameSyncTimer::Create();
 	this->isOpen = true;
 
-	this->debugHandler = Debug::DebugHandler::Create();
-	this->debugHandler->Open();
-
 	this->displayDevice = CoreGraphics::DisplayDevice::Create();
 	this->displayDevice->Open();
 
-	CoreGraphics::GraphicsDeviceCreateInfo gfxInfo{false};
+	CoreGraphics::GraphicsDeviceCreateInfo gfxInfo{true};
 	this->graphicsDevice = CoreGraphics::CreateGraphicsDevice(gfxInfo);
 	if (this->graphicsDevice)
 	{

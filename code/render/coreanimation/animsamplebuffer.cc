@@ -37,6 +37,66 @@ AnimSampleBuffer::~AnimSampleBuffer()
 //------------------------------------------------------------------------------
 /**
 */
+AnimSampleBuffer::AnimSampleBuffer(AnimSampleBuffer&& rhs) :
+	numSamples(rhs.numSamples),
+	samples(rhs.samples),
+	sampleCounts(rhs.sampleCounts),
+	samplesMapped(rhs.samplesMapped),
+	sampleCountsMapped(rhs.sampleCountsMapped),
+	animResource(rhs.animResource)
+{
+	rhs.samples = nullptr;
+	rhs.animResource = AnimResourceId::Invalid();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+AnimSampleBuffer::AnimSampleBuffer(const AnimSampleBuffer& rhs) :
+	numSamples(rhs.numSamples),
+	sampleCounts(rhs.sampleCounts),
+	samplesMapped(rhs.samplesMapped),
+	sampleCountsMapped(rhs.sampleCountsMapped),
+	animResource(rhs.animResource),
+	samples(rhs.samples)
+{
+	// empty
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+AnimSampleBuffer::operator=(AnimSampleBuffer&& rhs)
+{
+	this->numSamples = rhs.numSamples;
+	this->samples = rhs.samples;
+	this->sampleCounts = rhs.sampleCounts;
+	this->samplesMapped = rhs.samplesMapped;
+	this->sampleCountsMapped = rhs.sampleCountsMapped;
+	this->animResource = rhs.animResource;
+	rhs.samples = nullptr;
+	rhs.animResource = AnimResourceId::Invalid();
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+AnimSampleBuffer::operator=(const AnimSampleBuffer& rhs)
+{
+	this->numSamples = rhs.numSamples;
+	this->sampleCounts = rhs.sampleCounts;
+	this->samplesMapped = rhs.samplesMapped;
+	this->sampleCountsMapped = rhs.sampleCountsMapped;
+	this->animResource = rhs.animResource;
+	this->samples = rhs.samples;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 AnimSampleBuffer::Setup(const AnimResourceId& animRes)
 {

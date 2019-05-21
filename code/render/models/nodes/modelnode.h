@@ -19,7 +19,7 @@
 #include "io/binaryreader.h"
 #include "math/bbox.h"
 #include "ids/id.h"
-#include "memory/chunkallocator.h"
+#include "memory/arenaallocator.h"
 #include "models/model.h"
 
 #define ModelNodeInstanceCreator(type) \
@@ -31,9 +31,20 @@ inline ModelNode::Instance* type::CreateInstance(byte** memory, const ModelNode:
 	return node;\
 }
 
+namespace Characters
+{
+class CharacterContext;
+}
+
+namespace Particles
+{
+class ParticleContext;
+}
+
 namespace Models
 {
 
+struct ModelId;
 class StreamModelPool;
 class ModelNode
 {
@@ -45,8 +56,13 @@ public:
 		Util::FixedArray<Instance*> children;		// children
 		bool active : 1;
 
+		/// apply the state for this instance
 		virtual void ApplyNodeInstanceState();
+		/// setup new instance
 		virtual void Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent);
+
+		/// draw instance
+		virtual void Draw();
 	};
 
 	/// constructor
@@ -72,6 +88,9 @@ protected:
 	friend class ModelContext;
 	friend class ModelServer;
 	friend class CharacterNode;
+	friend class CharacterSkinNode;
+	friend class Characters::CharacterContext;
+	friend class Particles::ParticleContext;
 
 	/// load data
 	virtual bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader);
@@ -86,7 +105,7 @@ protected:
 	Util::StringAtom name;
 	NodeType type;
 
-	Memory::ChunkAllocator<MODEL_MEMORY_CHUNK_SIZE>* nodeAllocator;
+	Memory::ArenaAllocator<MODEL_MEMORY_CHUNK_SIZE>* nodeAllocator;
 	Models::ModelNode* parent;
 	ModelId model;
 	Util::Array<Models::ModelNode*> children;

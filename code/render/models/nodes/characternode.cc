@@ -35,28 +35,7 @@ CharacterNode::~CharacterNode()
 {
     n_assert(this->managedAnimResource == Ids::InvalidId64);
     n_assert(this->managedVariationResource == Ids::InvalidId64);
-    //n_assert(this->character.isvalid());
 }
-
-//------------------------------------------------------------------------------
-/**
-    Recursively create node instances and attach them to the provided
-    model instance. The character node will not initially create node
-    instances for the skins, but will only create skin node instances
-    when they are actually set to visible. This eliminates a lot of
-    dead weight for invisible skins!
-Ptr<ModelNodeInstance>
-CharacterNode::RecurseCreateNodeInstanceHierarchy(const Ptr<ModelInstance>& modelInst, const Ptr<ModelNodeInstance>& parentNodeInst)
-{
-    // create a ModelNodeInstance of myself
-    Ptr<ModelNodeInstance> myNodeInst = this->CreateNodeInstance();
-    myNodeInst->Setup(modelInst, this, parentNodeInst);
-
-    // DO NOT recurse into children (the child nodes represent the
-    // skin model nodes)
-    return myNodeInst;
-}
-*/
 
 //------------------------------------------------------------------------------
 /**
@@ -79,31 +58,12 @@ CharacterNode::Discard()
 void
 CharacterNode::OnFinishedLoading()
 {
-	// setup the managed resource
-	//this->managedAnimResource = Resources::CreateResource(this->animResId, this->tag, [this](Resources::ResourceId) { this->OnResourcesLoaded(); }, nullptr, false);
-
-	//	ResourceManager::Instance()->CreateManagedResource(AnimResource::RTTI, this->animResId, 0, sync).downcast<ManagedAnimResource>();
-	//n_assert(this->managedAnimResource != Resources::ResourceId::Invalid());
-
 	// setup all skinlist -> model node bindings
 	IndexT skinIndex;
 	for (skinIndex = 0; skinIndex < this->children.Size(); skinIndex++)
 	{
 		this->skinNodes.Add(this->children[skinIndex]->name, skinIndex);
 	}
-
-	this->sharedShader = CoreGraphics::ShaderServer::Instance()->GetShader("shd:shared.fxb"_atm);
-	this->cbo = CoreGraphics::ShaderCreateConstantBuffer(this->sharedShader, "JointBlock");
-	this->cboIndex = CoreGraphics::ShaderGetResourceSlot(this->sharedShader, "JointBlock");
-
-	/*
-	if (this->variationResId.IsValid())
-	{
-	// setup the managed resource for variations
-	this->managedVariationResource = ResourceManager::Instance()->CreateManagedResource(AnimResource::RTTI, this->variationResId, 0, sync).downcast<ManagedAnimResource>();
-	n_assert(this->managedVariationResource.isvalid());
-	}
-	*/
 }
 
 //------------------------------------------------------------------------------

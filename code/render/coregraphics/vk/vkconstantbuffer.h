@@ -16,7 +16,6 @@
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
 #include "coregraphics/constantbuffer.h"
-#include "coregraphics/stretchybuffer.h"
 #include <lowlevel/afxapi.h>
 namespace Vulkan
 {
@@ -45,26 +44,26 @@ struct VkConstantBufferMapInfo
 	SizeT baseOffset;
 };
 
-struct ConstantBufferStretchInterface
+struct VkConstantBufferPool
 {
-	CoreGraphics::StretchyBuffer<ConstantBufferStretchInterface> resizer;
-	CoreGraphics::ConstantBufferId obj;
-	SizeT Grow(const SizeT capacity, const SizeT numInstances, SizeT& newCapacity);
+	Util::Array<CoreGraphics::ConstantBufferAllocId> freeAllocs;
+	SizeT size;
+	SizeT capacity;
+};
 
-	// when we copy from arrays, we might have to reset the pointer...
-	void operator=(const ConstantBufferStretchInterface& rhs)
-	{
-		this->resizer = rhs.resizer;
-		this->obj = rhs.obj;
-		this->resizer.SetTarget(this);
-	}
+enum
+{
+	RuntimeInfo,
+	SetupInfo,
+	MapInfo,
+	AllocPool
 };
 
 typedef Ids::IdAllocator<
 	VkConstantBufferRuntimeInfo,
 	VkConstantBufferSetupInfo,
 	VkConstantBufferMapInfo,
-	ConstantBufferStretchInterface
+	VkConstantBufferPool
 > VkConstantBufferAllocator;
 extern VkConstantBufferAllocator constantBufferAllocator;
 

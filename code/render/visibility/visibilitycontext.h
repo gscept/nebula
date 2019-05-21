@@ -30,6 +30,8 @@ public:
 
 	/// create context
 	static void Create();
+	/// discard context
+	static void Discard();
 
 	/// create a box system
 	static VisibilitySystem* CreateBoxSystem(const BoxSystemLoadInfo& info);
@@ -45,6 +47,11 @@ public:
 	/// wait for all visibility jobs
 	static void WaitForVisibility(const IndexT frameIndex, const Timing::Time frameTime);
 
+#ifndef PUBLIC_BUILD
+	/// render debug
+	static void OnRenderDebug(uint32_t flags);
+#endif
+
 	typedef Ids::Id32 ModelAllocId;
 	typedef Util::HashTable<Materials::MaterialType*,
 		Util::HashTable<Models::ModelNode*,
@@ -55,6 +62,8 @@ public:
 	static const VisibilityDrawList* GetVisibilityDrawList(const Graphics::GraphicsEntityId id);
 
 	static Jobs::JobPortId jobPort;
+	static Jobs::JobSyncId jobInternalSync;
+	static Jobs::JobSyncId jobHostSync;
 	static Threading::SafeQueue<Jobs::JobId> runningJobs;
 
 private:

@@ -42,7 +42,7 @@ FrameSubpassPlugins::Discard()
 /**
 */
 FrameOp::Compiled*
-FrameSubpassPlugins::AllocCompiled(Memory::ChunkAllocator<BIG_CHUNK>& allocator)
+FrameSubpassPlugins::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 {
 	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
 	ret->pluginFilter = this->pluginFilter;	

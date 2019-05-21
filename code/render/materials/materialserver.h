@@ -43,7 +43,7 @@ public:
 private:
 	friend class SurfacePool;
 
-	Memory::ChunkAllocator<0x400> surfaceAllocator;
+	Memory::ArenaAllocator<0x400> surfaceAllocator;
 	Util::Dictionary<Resources::ResourceName, MaterialType*> materialTypesByName;
 	Util::HashTable<CoreGraphics::BatchGroup::Code, Util::Array<MaterialType*>> materialTypesByBatch;
 	Util::Array<MaterialType*> materialTypes;

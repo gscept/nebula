@@ -43,7 +43,7 @@ fips_begin_module(foundation)
 			)
 		fips_dir(memory)
 		fips_files(
-			chunkallocator.h
+			arenaallocator.h
 			heap.h
 			memory.h
 			memorypool.h

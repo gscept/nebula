@@ -26,4 +26,7 @@ const ShaderRWBufferId CreateShaderRWBuffer(const ShaderRWBufferCreateInfo& info
 /// destroy shader RW buffer
 void DestroyShaderRWBuffer(const ShaderRWBufferId id);
 
+/// update data in buffer
+void ShaderRWBufferUpdate(const ShaderRWBufferId id, void* data, SizeT bytes);
+
 } // CoreGraphics

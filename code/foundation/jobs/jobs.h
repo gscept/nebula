@@ -10,9 +10,15 @@
 	The job ports are then updated every frame to schedule work packages.
 
 	A job is not single-threaded, but spreads its work by chunking its slices and scheduling
-	an equal amount of work on several threads. 
+	an equal amount of work on several threads. If you require the jobs to execute in sequence,
+	you can execute a sequence of jobs which will be guaranteed to run on the same thread.
+
+	To synchronize, you have to create a job synchronization primitive, and it allows
+	for signaling, waiting on the host-side, and waiting on the threads between jobs.
 
 	How to setup a job:
+		Create port, create a job when required, use the function context to provide the
+		job with inputs, outputs and uniform data.
 		
 
 	(C) 2018 Individual contributors, see AUTHORS file
@@ -29,9 +35,9 @@
 namespace Jobs
 {
 
-#define JOBFUNCCONTEXT_MAXINPUTS 8
+// these values could be bigger if we need it
+#define JOBFUNCCONTEXT_MAXIO 8
 #define JOBFUNCCONTEXT_MAXUNIFORMS 4
-#define JOBFUNCCONTEXT_MAXOUTPUTS 8
 
 //------------------------------------------------------------------------------
 /**
@@ -46,17 +52,17 @@ struct JobFuncContext
 	uint uniformSizes[JOBFUNCCONTEXT_MAXUNIFORMS];
 
 	uint numInputs;									// number of used slots (max 4)
-	ubyte* inputs[JOBFUNCCONTEXT_MAXINPUTS];
-	uint inputSizes[JOBFUNCCONTEXT_MAXINPUTS];
+	ubyte* inputs[JOBFUNCCONTEXT_MAXIO];
+	uint inputSizes[JOBFUNCCONTEXT_MAXIO];
 
 	uint numOutputs;								// number of used slots (max 4)
-	ubyte* outputs[JOBFUNCCONTEXT_MAXOUTPUTS];
-	uint outputSizes[JOBFUNCCONTEXT_MAXOUTPUTS];
+	ubyte* outputs[JOBFUNCCONTEXT_MAXIO];
+	uint outputSizes[JOBFUNCCONTEXT_MAXIO];
 };
 
 struct JobIOData
 {
-	static const SizeT MaxNumBuffers = 8;
+	static const SizeT MaxNumBuffers = JOBFUNCCONTEXT_MAXIO;
 
 	SizeT numBuffers;
 	void* data[MaxNumBuffers];			// pointers to data
@@ -66,7 +72,7 @@ struct JobIOData
 
 struct JobUniformData
 {
-	static const SizeT MaxNumBuffers = 4;
+	static const SizeT MaxNumBuffers = JOBFUNCCONTEXT_MAXUNIFORMS;
 
 	SizeT numBuffers;
 	const void* data[MaxNumBuffers];	// pointers to data
@@ -81,11 +87,6 @@ struct JobContext
 	JobUniformData uniform;
 };
 
-struct CreateJobInfo
-{
-	void(*JobFunc)(const JobFuncContext& ctx);
-};
-
 class JobThread : public Threading::Thread
 {
 	__DeclareClass(JobThread);
@@ -94,6 +95,7 @@ public:
 	enum JobThreadCommandType
 	{
 		RunJob,
+		Signal,
 		Wait
 	};
 
@@ -109,14 +111,14 @@ public:
 				uint stride;
 				JobContext context;
 				void(*JobFunc)(const JobFuncContext& ctx);
-				std::atomic_uint* completionCounter;
-				Threading::Event* completionEvent;
 				const std::function<void()>* callback;
 			} run;
 
 			struct // synchronize
 			{
 				Threading::Event* ev;
+				std::atomic_uint* completionCounter;
+				const std::function<void()>* callback;
 			} sync;
 		};
 	};
@@ -130,9 +132,11 @@ public:
 	void EmitWakeupSignal();
 	/// this method runs in the thread context
 	void DoWork();
+	/// returns true if thread has work
+	bool HasWork();
 
 	/// push a set of job slices
-	void PushJobSlices(uint sliceIndex, uint numSlices, uint stride, const JobContext ctx, void(*JobFunc)(const JobFuncContext& ctx), std::atomic_uint* completionCounter, Threading::Event* completionEvent, const std::function<void()>* callback);
+	void PushJobSlices(uint sliceIndex, uint numSlices, uint stride, const JobContext ctx, void(*JobFunc)(const JobFuncContext& ctx), const std::function<void()>* callback);
 	/// push command buffer work
 	void PushCommand(const JobThreadCommand& command);
 	/// push command buffer work
@@ -146,9 +150,11 @@ private:
 	ubyte* scratchBuffer;
 };
 
+//------------------------------------------------------------------------------
 
 ID_32_TYPE(JobId);
 ID_16_TYPE(JobPortId);
+ID_32_TYPE(JobSyncId);
 
 struct CreateJobPortInfo
 {
@@ -165,17 +171,13 @@ void DestroyJobPort(const JobPortId& id);
 
 /// check to see if port is idle
 bool JobPortBusy(const JobPortId& id);
-/// wait for pending jobs to finish
-void JobPortWait(const JobPortId& id);
-/// insert synchronization point for other jobs to wait on
-void JobPortSync(const JobPortId& id);
 
 enum
 {
 	PortName,
 	PortThreads,
-	NextThreadIndex,
-	LastJobId
+	PortNextThreadIndex,
+	PortLastJobId
 };
 
 typedef Ids::IdAllocator<
@@ -185,6 +187,13 @@ typedef Ids::IdAllocator<
 	JobId									// 3 - last pushed job
 > JobPortAllocator;
 extern JobPortAllocator jobPortAllocator;
+
+//------------------------------------------------------------------------------
+
+struct CreateJobInfo
+{
+	void(*JobFunc)(const JobFuncContext& ctx);
+};
 
 /// create job
 JobId CreateJob(const CreateJobInfo& info);
@@ -213,21 +222,55 @@ struct PrivateMemory
 
 enum
 {
-	CreateInfo,
-	CallbackFunc,
-	CompletionEvent,
-	CompletionCounter,
-	ScratchMemory
+	JobCreateInfo,
+	JobCallbackFunc,
+	JobScratchMemory
 };
 
 typedef Ids::IdAllocator<
 	CreateJobInfo,				// 0 - job info
 	std::function<void()>,		// 1 - callback
-	Threading::Event*,			// 2 - event to trigger when job is done
-	std::atomic_uint*,			// 3 - completion counter
 	PrivateMemory				// 4 - private buffer, destroyed when job is finished
 > JobAllocator;
 extern JobAllocator jobAllocator;
 
+
+//------------------------------------------------------------------------------
+
+struct CreateJobSyncInfo
+{
+	std::function<void()> callback;
+};
+
+enum
+{
+	SyncCallback,
+	SyncCompletionEvent,
+	SyncCompletionCounter,
+	SyncPendingSignal
+};
+
+/// create job sync
+JobSyncId CreateJobSync(const CreateJobSyncInfo& info);
+/// destroy job sync
+void DestroyJobSync(const JobSyncId id);
+
+/// put job sync on port
+void JobSyncSignal(const JobSyncId id, const JobPortId port);
+/// wait for job on host side
+void JobSyncHostWait(const JobSyncId id);
+/// wait for job on thread side
+void JobSyncThreadWait(const JobSyncId id, const JobPortId port);
+
+/// returns true if sync object has been signaled
+bool JobSyncSignaled(const JobSyncId id);
+
+typedef Ids::IdAllocator<
+	std::function<void()>,		// 0 - callback
+	Threading::Event*,			// 1 - event
+	std::atomic_uint*,			// 2 - completion counter
+	bool						// 3 - pending signal
+> JobSyncAllocator;
+extern JobSyncAllocator jobSyncAllocator;
 
 } // namespace Jobs

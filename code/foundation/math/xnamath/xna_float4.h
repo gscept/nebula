@@ -83,6 +83,10 @@ public:
     void store(scalar* ptr) const;
     /// write content to unaligned memory through the write cache
     void storeu(scalar* ptr) const;
+	/// write content to 16 byte aligned unsigned integer pointer
+	void storeui(uint* ptr) const;
+	/// write content to 16 byte aligned integer pointer
+	void storesi(int* ptr) const;
     /// stream content to 16-byte-aligned memory circumventing the write-cache
     void stream(scalar* ptr) const;
 
@@ -92,6 +96,11 @@ public:
     void load_ubyte4n_signed(const void* ptr, float w);
 	/// load from Byte4N packed vector
 	void load_byte4n(const void* ptr, float w);
+
+	/// write content to 16-byte-aligned memory through the write cache
+	void store3(scalar* ptr) const;
+	/// write content to unaligned memory through the write cache
+	void storeu3(scalar* ptr) const;
 
     /// set content
     void set(scalar x, scalar y, scalar z, scalar w);
@@ -181,6 +190,8 @@ public:
 	static float4 zerovector();
     /// return vector divided by w
     static float4 perspective_div(const float4& v);
+	/// returns sum of vector components
+	static float4 sum(const float4& v);
 
     /// return true if any XYZ component is less-then
     static bool less3_any(const float4 &v0, const float4 &v1);
@@ -262,7 +273,11 @@ public:
 	/// ceil
 	static float4 ceiling(const float4 &v);
 
-	DirectX::XMVECTOR vec;
+	union
+	{
+		DirectX::XMVECTOR vec;
+		float f32[4];
+	};
 };
 
 //------------------------------------------------------------------------------
@@ -376,6 +391,42 @@ __forceinline void
 float4::storeu(scalar* ptr) const
 {
 	DirectX::XMStoreFloat4((DirectX::XMFLOAT4*)ptr, this->vec);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline void 
+float4::storeui(uint* ptr) const
+{
+	DirectX::XMStoreUInt4((DirectX::XMUINT4*)ptr, this->vec);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline void
+float4::storesi(int* ptr) const
+{
+	DirectX::XMStoreSInt4((DirectX::XMINT4*)ptr, this->vec);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline void
+float4::store3(scalar* ptr) const
+{
+	DirectX::XMStoreFloat3A((DirectX::XMFLOAT3A*)ptr, this->vec);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline void
+float4::storeu3(scalar* ptr) const
+{
+	DirectX::XMStoreFloat3((DirectX::XMFLOAT3*)ptr, this->vec);
 }
 
 //------------------------------------------------------------------------------
@@ -497,7 +548,7 @@ float4::x()
 #if __XBOX360__ || defined(_XM_NO_INTRINSICS_)
     return this->vec.x;
 #elif __WIN32__
-    return this->vec.m128_f32[0];
+    return this->f32[0];
 #endif
 }
 
@@ -519,7 +570,7 @@ float4::y()
 #if __XBOX360__ || defined(_XM_NO_INTRINSICS_)
     return this->vec.y;
 #elif __WIN32__
-    return this->vec.m128_f32[1];
+    return this->f32[1];
 #endif
 }
 
@@ -541,7 +592,7 @@ float4::z()
 #if __XBOX360__ || defined(_XM_NO_INTRINSICS_)
     return this->vec.z;
 #elif __WIN32__
-    return this->vec.m128_f32[2];
+    return this->f32[2];
 #endif
 }
 
@@ -563,7 +614,7 @@ float4::w()
 #if __XBOX360__ || defined(_XM_NO_INTRINSICS_)
     return this->vec.w;
 #elif __WIN32__
-    return this->vec.m128_f32[3];
+    return this->f32[3];
 #endif
 }
 
@@ -811,6 +862,16 @@ float4::perspective_div(const float4 &v)
 {
     __m128 d = _mm_set_ps1(1.0f / v.vec.m128_f32[3]);
     return _mm_mul_ps(v.vec, d);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline float4 
+float4::sum(const float4 & v)
+{
+	__m128 v0 = _mm_hadd_ps(v.vec, v.vec);
+	return _mm_hadd_ps(v0, v0);
 }
 
 //------------------------------------------------------------------------------

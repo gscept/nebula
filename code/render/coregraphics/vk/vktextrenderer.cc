@@ -7,6 +7,7 @@
 #include "coregraphics/graphicsdevice.h"
 #include "coregraphics/displaydevice.h"
 #include "threading/thread.h"
+#include "io/ioserver.h"
 
 #define STB_TRUETYPE_IMPLEMENTATION 
 #include "stb_truetype.h"
@@ -81,14 +82,30 @@ VkTextRenderer::Open()
 	this->group.SetBaseIndex(0);
 	this->group.SetBaseVertex(0);
 
-	// read font buffer
-	this->ttf_buffer = n_new_array(unsigned char, 1 << 25);
 #if __WIN32__
-	// read font from windows
-	fread(this->ttf_buffer, 1, 1 << 25, fopen("c:/windows/fonts/segoeui.ttf", "rb"));
+	// find windows font
+	const char* fontPath = "c:/windows/fonts/segoeui.ttf";
 #else
-	fread(this->ttf_buffer, 1, 1 << 25, fopen("/usr/share/fonts/truetype/freefont/FreeSans.ttf", "rb"));
+	// find linux
+	const char* fontPath = "/usr/share/fonts/truetype/freefont/FreeSans.ttf";
 #endif
+
+	// load font
+	Ptr<IO::Stream> fontStream = IO::IoServer::Instance()->CreateStream(fontPath);
+	fontStream->SetAccessMode(IO::Stream::ReadAccess);
+	if (fontStream->Open())
+	{
+		this->ttf_buffer = n_new_array(unsigned char, fontStream->GetSize());
+		void* buf = fontStream->Map();
+		memcpy(this->ttf_buffer, buf, fontStream->GetSize());
+		fontStream->Unmap();
+		fontStream->Close();
+	}
+	else
+	{
+		n_error("Failed to load font %s!", fontPath);
+	}
+
 	this->bitmap = n_new_array(unsigned char, GLYPH_TEXTURE_SIZE*GLYPH_TEXTURE_SIZE);
 	int charCount = 96;
 	this->cdata = n_new_array(stbtt_packedchar, charCount);
@@ -105,8 +122,6 @@ VkTextRenderer::Open()
 	}
 	stbtt_PackEnd(&context);
 	stbtt_InitFont(&this->font, this->ttf_buffer, 0);
-	//stbtt_GetCodepointBitmap(&this->font, 0, stbtt_ScaleForPixelHeight(&this->font, 48.0f), )
-	//stbtt_BakeFontBitmap(this->ttf_buffer, stbtt_GetFontOffsetForIndex(this->ttf_buffer, 0), 48.0f, bitmap, GLYPH_TEXTURE_SIZE, GLYPH_TEXTURE_SIZE, 32, 96, cdata);
 
 	// setup random texture
 	TextureCreateInfo texInfo =

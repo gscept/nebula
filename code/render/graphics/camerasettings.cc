@@ -106,7 +106,6 @@ CameraSettings::SetProjectionMatrix(const Math::matrix44 & proj, float fov, floa
     this->isPersp = true;
     this->invProjMatrix = matrix44::inverse(this->projMatrix);
 
-
     this->nearWidth = 2.0f * this->zNear / this->projMatrix.getrow0().x();
     this->nearHeight = 2.0f * this->zNear / this->projMatrix.getrow1().y();
     this->farWidth = (this->nearWidth / this->zNear) * this->zFar;

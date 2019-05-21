@@ -29,7 +29,7 @@ public:
 #endif
 	};
 
-	FrameOp::Compiled* AllocCompiled(Memory::ChunkAllocator<BIG_CHUNK>& allocator);
+	FrameOp::Compiled* AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator);
 
 	CoreGraphics::RenderTextureId from, to;
 };

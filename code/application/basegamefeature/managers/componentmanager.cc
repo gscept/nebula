@@ -64,6 +64,49 @@ ComponentManager::RegisterComponent(ComponentInterface* component, const Util::S
 /**
 */
 void
+ComponentManager::DeregisterComponent(ComponentInterface * component)
+{
+	IndexT index = this->components.FindIndex(component);
+	if (index != InvalidIndex)
+	{
+		this->components.EraseIndex(index);
+	}
+
+	auto it = this->componentByFourcc.Begin();
+	while (true)
+	{
+		if (*it.val == component)
+		{
+			this->componentByFourcc.Erase(*it.key);
+			break;
+		}
+
+		if (it == this->componentByFourcc.End())
+			break;
+
+		it++;
+	}
+
+	auto itName = this->componentByName.Begin();
+	while (true)
+	{
+		if (*itName.val == component)
+		{
+			this->componentByName.Erase(*itName.key);
+			break;
+		}
+
+		if (itName == this->componentByName.End())
+			break;
+
+		itName++;
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 ComponentManager::DeregisterAll()
 {
 	this->componentByFourcc.Clear();

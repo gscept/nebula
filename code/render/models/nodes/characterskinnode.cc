@@ -68,6 +68,30 @@ CharacterSkinNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag,
 //------------------------------------------------------------------------------
 /**
 */
+void 
+CharacterSkinNode::OnFinishedLoading()
+{
+	PrimitiveNode::OnFinishedLoading();
+	this->cboSkin = CoreGraphics::ShaderCreateConstantBuffer(this->sharedShader, "JointBlock");
+	this->cboSkinIndex = CoreGraphics::ShaderGetResourceSlot(this->sharedShader, "JointBlock");
+	CoreGraphics::ResourceTableSetConstantBuffer(this->resourceTable, { this->cboSkin, this->cboSkinIndex, 0, true, false, -1, 0 });
+	CoreGraphics::ResourceTableCommitChanges(this->resourceTable);
+	this->skinningPaletteVar = CoreGraphics::ShaderGetConstantBinding(this->sharedShader, "JointPalette");
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+CharacterSkinNode::ApplyNodeState()
+{
+	ShaderStateNode::ApplyNodeState(); // intentionally circumvent PrimitiveNode since we set the skin fragments explicitly
+	CoreGraphics::MeshBind(this->res, this->skinFragments[0].primGroupIndex);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 CharacterSkinNode::ReserveFragments(SizeT numFragments)
 {
@@ -89,27 +113,31 @@ CharacterSkinNode::AddFragment(IndexT primGroupIndex, const Util::Array<IndexT>&
 
 //------------------------------------------------------------------------------
 /**
-void
-CharacterSkinNode::ApplySharedState(IndexT frameIndex)
-{
-    n_assert(this->managedMesh.isvalid());
-    
-    // apply render states, skip ShapeNode class, because the skinned character renderer manages this itself
-    StateNode::ApplySharedState(frameIndex);
-
-    // set the Skinned shader feature bit so that the shader
-    // variation for skinned geometry is used instead of static geometry
-	if (SkinningTechnique::GPUSkinning == Characters::CharacterServer::Instance()->GetSkinningTechnique())
-	{
-		//ShaderServer::Instance()->SetFeatureBits(this->skinnedShaderFeatureBits);
-	}
-
-	const Ptr<Mesh>& mesh = this->managedMesh->GetMesh();
-	mesh->ApplySharedMesh();
-
-    // primitives must be applied in node instance, since each 
-    // node may render several skin fragments!
-}
 */
+void
+CharacterSkinNode::Instance::ApplyNodeInstanceState()
+{
+	const CharacterNode::Instance* cparent = static_cast<const CharacterNode::Instance*>(this->parent);
+	CharacterSkinNode* sparent = static_cast<CharacterSkinNode*>(this->node);
+	const Util::Array<IndexT>& usedIndices = sparent->skinFragments[0].jointPalette;
+	Util::FixedArray<Math::matrix44> usedMatrices(usedIndices.Size());
+
+	// if we haven't loaded yet
+	if (cparent->joints == nullptr)
+		return;
+
+	// copy active matrix palette
+	IndexT i;
+	for (i = 0; i < usedIndices.Size(); i++)
+	{
+		usedMatrices[i] = (*cparent->joints)[usedIndices[i]];
+	}
+	
+	// update skinning palette
+	CoreGraphics::ConstantBufferUpdate(this->cboSkin, this->cboSkinAlloc, usedMatrices.Begin(), sizeof(Math::matrix44) * usedMatrices.Size(), this->skinningPaletteVar);
+
+	// apply original state
+	PrimitiveNode::Instance::ApplyNodeInstanceState();
+}
 
 } // namespace Characters

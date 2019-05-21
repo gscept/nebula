@@ -69,6 +69,7 @@ struct ResourceTableLayoutCreateInfo
 	Util::Array<ResourceTableLayoutShaderRWBuffer> rwBuffers;
 	Util::Array<ResourceTableLayoutSampler> samplers;
 	Util::Array<ResourceTableLayoutInputAttachment> inputAttachments;
+	uint32_t descriptorPoolInitialGrow = 1;
 };
 
 /// create resource table layout

@@ -12,7 +12,7 @@
 #include "coregraphics/barrier.h"
 #include "coregraphics/event.h"
 #include "coregraphics/semaphore.h"
-#include "memory/chunkallocator.h"
+#include "memory/arenaallocator.h"
 namespace Frame
 {
 
@@ -120,11 +120,11 @@ protected:
 	};
 
 	/// allocate instance of compiled
-	virtual Compiled* AllocCompiled(Memory::ChunkAllocator<BIG_CHUNK>& allocator) = 0;
+	virtual Compiled* AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator) = 0;
 
 	/// build operation
 	virtual void Build(
-		Memory::ChunkAllocator<BIG_CHUNK>& allocator,
+		Memory::ArenaAllocator<BIG_CHUNK>& allocator,
 		Util::Array<FrameOp::Compiled*>& compiledOps,
 		Util::Array<CoreGraphics::EventId>& events,
 		Util::Array<CoreGraphics::BarrierId>& barriers,

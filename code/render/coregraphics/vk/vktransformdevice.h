@@ -51,9 +51,10 @@ private:
 	CoreGraphics::ConstantBinding projVar;
 	CoreGraphics::ConstantBinding invProjVar;
 	CoreGraphics::ConstantBinding eyePosVar;
-	CoreGraphics::ConstantBinding focalLengthVar;
+	CoreGraphics::ConstantBinding focalLengthNearFarVar;
 	CoreGraphics::ConstantBinding viewMatricesVar;
 	CoreGraphics::ConstantBinding timeAndRandomVar;
+	CoreGraphics::ConstantBinding nearFarPlaneVar;
 
 	CoreGraphics::ConstantBinding shadowCameraBlockVar;
 	CoreGraphics::ConstantBufferId viewConstants;

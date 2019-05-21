@@ -42,6 +42,11 @@ public:
 	/// destroy an instance of a model
 	void DestroyModelInstance(const ModelInstanceId id);
 
+	/// get node instances
+	const Util::Dictionary<Util::StringAtom, Models::ModelNode*>& GetModelNodes(const ModelId id);
+	/// get node instances
+	const Util::Array<Models::ModelNode::Instance*>& GetModelNodeInstances(const ModelInstanceId id);
+
 	/// get bounding box of model
 	const Math::bbox& GetModelBoundingBox(const ModelId id) const;
 	/// get bounding box of model
@@ -90,22 +95,22 @@ private:
 
 	Ids::IdAllocator<
 		Math::bbox,													// 0 - total bounding box
-		Memory::ChunkAllocator<MODEL_MEMORY_CHUNK_SIZE>,			// 1 - memory allocator
+		Memory::ArenaAllocator<MODEL_MEMORY_CHUNK_SIZE>,			// 1 - memory allocator
 		Util::Dictionary<Util::StringAtom, Models::ModelNode*>,		// 2 - nodes
 		Models::ModelNode*,											// 3 - root
 		SizeT,														// 4 - instances
 		SizeT,														// 5 - instance size
-		Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>	// 6 - instance allocator
+		Memory::ArenaAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>	// 6 - instance allocator
 	> modelAllocator;
 	__ImplementResourceAllocator(modelAllocator);
 
-	Util::Array<std::function<Models::ModelNode*(Memory::ChunkAllocator<MODEL_MEMORY_CHUNK_SIZE>&)>> nodeConstructors;
-	Util::Array<std::function<Models::ModelNode::Instance*(Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>&)>> nodeInstanceConstructors;
+	Util::Array<std::function<Models::ModelNode*(Memory::ArenaAllocator<MODEL_MEMORY_CHUNK_SIZE>&)>> nodeConstructors;
+	Util::Array<std::function<Models::ModelNode::Instance*(Memory::ArenaAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>&)>> nodeInstanceConstructors;
 
 	enum
 	{
-		NodeInstances,
-		NodeTypes,
+		ModelNodeInstances,
+		ModelNodeTypes,
 		InstanceMemory,
 		InstanceTransform,
 		InstanceBoundingBox,
@@ -123,8 +128,14 @@ private:
 	static Ids::Id8 NodeMappingCounter;
 
 #define IMPLEMENT_NODE_ALLOCATOR(FourCC, Type, NodeList, NodeInstanceList) \
-	nodeConstructors.Append([this](Memory::ChunkAllocator<MODEL_MEMORY_CHUNK_SIZE>& alloc) -> Models::ModelNode* { return alloc.Alloc<Models::Type>(); }); \
-	nodeInstanceConstructors.Append([this](Memory::ChunkAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& alloc) -> Models::ModelNode::Instance* { return alloc.Alloc<Models::Type::Instance>(); }); \
+	nodeConstructors.Append([this](Memory::ArenaAllocator<MODEL_MEMORY_CHUNK_SIZE>& alloc) -> Models::ModelNode* { return alloc.Alloc<Models::Type>(); }); \
+	nodeInstanceConstructors.Append([this](Memory::ArenaAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& alloc) -> Models::ModelNode::Instance* { return alloc.Alloc<Models::Type::Instance>(); }); \
 	this->nodeFourCCMapping.Add(FourCC, NodeMappingCounter++);
 };
+
+/// get node instances
+const Util::Dictionary<Util::StringAtom, Models::ModelNode*>& ModelGetNodes(const ModelId id);
+/// get node instances
+const Util::Array<Models::ModelNode::Instance*>& ModelInstanceGetNodes(const ModelInstanceId id);
+
 } // namespace Models

@@ -82,6 +82,10 @@ public:
     void SetFocalLength(const Math::float2& len);
     /// get focal length
     const Math::float2& GetFocalLength() const;
+	/// set depth planes
+	void SetNearFarPlane(const Math::float2& planes);
+	/// get depth planes
+	const Math::float2& GetNearFarPlane() const;
 
 
 private:
@@ -127,6 +131,7 @@ private:
     Util::FixedArray<Math::matrix44> transforms;    // index is transform type
 	uint id;										// id of current object
     Math::float2 focalLength;
+	Math::float2 nearFarPlane;
 };
 
 //------------------------------------------------------------------------------
@@ -317,6 +322,24 @@ inline const Math::float2&
 TransformDeviceBase::GetFocalLength() const
 {
     return this->focalLength;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void 
+TransformDeviceBase::SetNearFarPlane(const Math::float2& planes)
+{
+	this->nearFarPlane = planes;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const Math::float2&
+TransformDeviceBase::GetNearFarPlane() const
+{
+	return this->nearFarPlane;
 }
 
 } // namespace Base

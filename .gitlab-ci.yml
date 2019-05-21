@@ -12,7 +12,7 @@ build:
    only:
     - master
    script:
-    - call ./fips set config vulkan-win64-vstudio-debug
+    - call ./fips set config vulkan-win64-vs2017-debug
     - call ./fips nebula cleannidl
     - call ./fips gen
     - call ./fips build

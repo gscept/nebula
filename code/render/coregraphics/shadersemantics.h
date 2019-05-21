@@ -26,7 +26,7 @@
 #define NEBULA_SEMANTIC_INVMODELVIEW               "InvModelView"
 #define NEBULA_SEMANTIC_VIEWPROJECTION             "ViewProjection"
 #define NEBULA_SEMANTIC_EYEPOS                     "EyePos"
-#define NEBULA_SEMANTIC_FOCALLENGTH                "FocalLength"
+#define NEBULA_SEMANTIC_FOCALLENGTHNEARFAR                "FocalLengthNearFar"
 #define NEBULA_SEMANTIC_PROJECTION                 "Projection"
 #define NEBULA_SEMANTIC_INVPROJECTION              "InvProjection"
 #define NEBULA_SEMANTIC_VIEWMATRIXARRAY			"ViewMatrixArray"

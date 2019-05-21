@@ -6,7 +6,6 @@
 #ifndef DEFAULTSAMPLERS_FXH
 #define DEFAULTSAMPLERS_FXH
 
-
 group(BATCH_GROUP) shared varblock DefaultSamplers [ string Visibility = "VS|PS"; ]
 {
 	textureHandle AlbedoMap;
@@ -16,11 +15,6 @@ group(BATCH_GROUP) shared varblock DefaultSamplers [ string Visibility = "VS|PS"
 	textureHandle NormalMap;
 	textureHandle RoughnessMap;
 	textureHandle CavityMap;
-	
-	// textures
-	int NumEnvMips = 10;
-	textureHandle EnvironmentMap;
-	textureHandle IrradianceMap;
 
 	uint		  __paddfsmpl;
 };

@@ -22,7 +22,7 @@ namespace CoreGraphics
 {
 
 ID_24_8_TYPE(ConstantBufferId);
-ID_32_TYPE(ConstantBufferSliceId);
+ID_32_32_NAMED_TYPE(ConstantBufferAllocId, offset, size);
 
 struct ConstantBufferCreateInfo
 {
@@ -43,12 +43,16 @@ struct ConstantBufferInfo
 const ConstantBufferId CreateConstantBuffer(const ConstantBufferCreateInfo& info);
 /// destroy constant buffer
 void DestroyConstantBuffer(const ConstantBufferId id);
-/// allocate an instance of this buffer
+
+/// allocate memory for the constant buffer, use needsRebind to determine if you need to rebind this to a resource table
+ConstantBufferAllocId ConstantBufferAllocate(const ConstantBufferId id, const SizeT size, bool& needsRebind);
+/// free allocation
+void ConstantBufferFree(const ConstantBufferId id, const ConstantBufferAllocId alloc);
+
+/// short-hand for allocating, which uses the size provided in the create info to allocate a new instance
 bool ConstantBufferAllocateInstance(const ConstantBufferId id, uint& offset, uint& slice);
 /// free an instance
 void ConstantBufferFreeInstance(const ConstantBufferId id, uint slice);
-/// reset instances in constant buffer
-void ConstantBufferResetInstances(const ConstantBufferId id);
 
 /// get constant buffer slot from reflection
 IndexT ConstantBufferGetSlot(const ConstantBufferId id);
@@ -69,6 +73,9 @@ void ConstantBufferUpdateArrayInstance(const ConstantBufferId id, const void* da
 template<class TYPE> void ConstantBufferUpdateInstance(const ConstantBufferId id, const TYPE& data, const uint instance, ConstantBinding bind);
 /// update constant buffer data as array instanced
 template<class TYPE> void ConstantBufferUpdateArrayInstance(const ConstantBufferId id, const TYPE* data, const uint count, const uint instance, ConstantBinding bind);
+
+/// update constant buffer using range of memory
+void ConstantBufferUpdate(const ConstantBufferId id, const ConstantBufferAllocId alloc, const void* data, const uint size, ConstantBinding bind);
 
 //------------------------------------------------------------------------------
 /**

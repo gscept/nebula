@@ -15,6 +15,7 @@ public:
 	enum Subsystem
 	{
 		Lights,
+		LightClassification,
 		LightProbes,
 		LocalShadowsSpot,
 		LocalShadowsPoint,
@@ -39,7 +40,7 @@ public:
 		Subsystem call;
 	};
 
-	FrameOp::Compiled* AllocCompiled(Memory::ChunkAllocator<BIG_CHUNK>& allocator);
+	FrameOp::Compiled* AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator);
 private:
 	Subsystem call;
 };

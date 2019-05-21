@@ -103,7 +103,7 @@ csMain()
 	vec4 Spec = sample2DLod(SpecularBuffer, LinearState, UV, 0);
 	
 	// create view vector into frustum
-	vec3 viewVec = normalize(vec3(UV * FocalLength.xy, -1));
+	vec3 viewVec = normalize(vec3(UV * FocalLengthNearFar.xy, -1));
 	
 	// calculate surface position so we know where to start tracing the ray
 	vec3 surfacePos = viewVec * Depth;

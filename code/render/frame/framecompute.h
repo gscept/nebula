@@ -31,7 +31,7 @@ public:
 		SizeT x, y, z;
 	};
 
-	FrameOp::Compiled* AllocCompiled(Memory::ChunkAllocator<BIG_CHUNK>& allocator);
+	FrameOp::Compiled* AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator);
 
 	Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBufferId> constantBuffers;
 	CoreGraphics::ResourceTableId resourceTable;

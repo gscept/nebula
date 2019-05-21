@@ -49,7 +49,7 @@ FrameSubpassBatch::~FrameSubpassBatch()
 /**
 */
 FrameOp::Compiled* 
-FrameSubpassBatch::AllocCompiled(Memory::ChunkAllocator<BIG_CHUNK>& allocator)
+FrameSubpassBatch::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 {
 	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
 	ret->batch = this->batch;
@@ -89,7 +89,6 @@ FrameSubpassBatch::CompiledImpl::Run(const IndexT frameIndex)
 				{
 					Models::ModelNode* node = *it.key;
 					Models::ShaderStateNode* stateNode = static_cast<Models::ShaderStateNode*>(node);
-					//if (MaterialBeginSurface(type, stateNode->sur
 
 					const Util::Array<Models::ModelNode::Instance*>& instances = *it.val;
 					if (instances.Size() > 0)
@@ -105,6 +104,9 @@ FrameSubpassBatch::CompiledImpl::Run(const IndexT frameIndex)
 							IndexT i;
 							for (i = 0; i < instances.Size(); i++)
 							{
+								//if (!instances[i]->active)
+								//	continue;
+
 								Models::ShaderStateNode::Instance* instance = static_cast<Models::ShaderStateNode::Instance*>(instances[i]);
 
 								// apply instance state
@@ -112,6 +114,7 @@ FrameSubpassBatch::CompiledImpl::Run(const IndexT frameIndex)
 								if (surfaceInstance != Materials::SurfaceInstanceId::Invalid())
 									Materials::MaterialApplySurfaceInstance(instance->GetSurfaceInstance());
 								instance->ApplyNodeInstanceState();
+								instance->Draw();
 								CoreGraphics::Draw();
 							}
 

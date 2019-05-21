@@ -28,14 +28,12 @@ BruteforceSystem::Run()
 		Jobs::JobContext ctx;
 
 		ctx.uniform.numBuffers = 1;
-
 		ctx.uniform.data[0] = (unsigned char*)&this->obs.transforms[i];
 		ctx.uniform.dataSize[0] = sizeof(Math::matrix44);
 		ctx.uniform.scratchSize = 0;
 
 		// first buffer is all the transforms, second is the id, and third is the bool flags
 		ctx.input.numBuffers = 2;
-
 		ctx.input.data[0] = (unsigned char*)this->ent.transforms;
 		ctx.input.dataSize[0] = sizeof(Math::matrix44) * this->ent.count;
 		ctx.input.sliceSize[0] = sizeof(Math::matrix44);

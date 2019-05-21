@@ -431,7 +431,7 @@ Array<TYPE>::GrowTo(SizeT newCapacity)
         IndexT i;
         for (i = 0; i < this->count; i++)
         {
-            newArray[i] = this->elements[i];
+            newArray[i] = std::move(this->elements[i]);
         }
 
         // discard old array
