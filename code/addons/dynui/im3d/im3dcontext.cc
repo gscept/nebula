@@ -348,8 +348,7 @@ Im3dContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameInd
 /**
 */
 template<typename filterFunc>
-static inline 
-void
+static inline void
 CollectByFilter(ShaderProgramId const & shader, PrimitiveTopology::Code topology, IndexT &vertexBufferOffset, IndexT & vertexCount, filterFunc && filter)
 {
     CoreGraphics::SetShaderProgram(shader);
