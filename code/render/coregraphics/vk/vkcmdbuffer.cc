@@ -190,7 +190,7 @@ CreateCmdBuffer(const CmdBufferCreateInfo& info)
 		info.subBuffer ? VK_COMMAND_BUFFER_LEVEL_SECONDARY : VK_COMMAND_BUFFER_LEVEL_PRIMARY,
 		1
 	};
-	Ids::Id32 id = commandBuffers.AllocObject();
+	Ids::Id32 id = commandBuffers.Alloc();
 	VkResult res = vkAllocateCommandBuffers(pools.dev, &vkInfo, &commandBuffers.Get<0>(id));
 	n_assert(res == VK_SUCCESS);
 	commandBuffers.Get<1>(id) = pool;

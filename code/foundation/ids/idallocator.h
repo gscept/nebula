@@ -11,7 +11,7 @@
 	The thread safe allocator requires the Get-methods to be within an Enter/Leave
 	lockstep phase. 
 	
-	(C) 2017-2018 Individual contributors, see AUTHORS file
+	(C) 2017-2019 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "id.h"
@@ -21,324 +21,108 @@
 #include <tuple>
 #include <utility>
 #include "util/tupleutility.h"
+#include "util/arrayallocator.h"
+#include "util/arrayallocatorsafe.h"
 
 namespace Ids
 {
 
-template <class ... TYPES>
-class IdAllocator
+template<class ... TYPES>
+class IdAllocator : public Util::ArrayAllocator<TYPES...>
 {
 public:
 	/// constructor
-	IdAllocator(uint32_t maxid = 0xFFFFFFFF, uint32_t grow = 512) : pool(maxid, grow), size(0) {};
-	/// move constructor
-	IdAllocator(IdAllocator<TYPES...>&& rhs)
+	IdAllocator(uint32_t maxid = 0xFFFFFFFF) : maxId(maxid) {};
+	
+	/// Allocate an object. 
+	uint32_t Alloc()
 	{
-		this->objects = rhs.objects;
-		Util::clear_for_each_in_tuple(rhs.objects);
-	}
-	/// copy constructor
-	IdAllocator(const IdAllocator<TYPES...>& rhs)
-	{
-		this->objects = rhs.objects;
-	}
-	/// destructor
-	~IdAllocator() {};
-
-	/// assign operator
-	void operator=(const IdAllocator<TYPES...>& rhs)
-	{
-		this->objects = rhs.objects;
-	}
-	/// move operator
-	void operator=(IdAllocator<TYPES...>&& rhs)
-	{
-		this->objects = rhs.objects;
-		Util::clear_for_each_in_tuple(rhs.objects);
-	}
-
-	/// allocate a new resource, and generate new entries if required
-	Ids::Id32 AllocObject()
-	{
-		Ids::Id32 id = this->pool.Alloc();
-		if (id >= this->size)
+		/// @note	This purposefully hides the default allocation method and should definetly not be virtual!
+		
+		uint32_t index;
+		if (this->freeIds.Size() > 0)
 		{
-			Util::alloc_for_each_in_tuple(this->objects);
-			this->size++;
+			index = this->freeIds.Back();
+			this->freeIds.EraseBack();
 		}
-		return id;
-	}
-
-	/// recycle id
-	void DeallocObject(const Ids::Id32 id)
-	{ 
-		this->pool.Dealloc(id);
-		this->size--;
-	}
-
-	/// defragment allocator to make data tightly organized
-	void Defragment(Util::Array<Ids::Id32>& usedIds)
-	{
-		// go through free, and run callback for every free index
-		this->pool.ForEachFree([&usedIds, this](uint32_t idx, uint32_t i)
+		else
 		{
-			Ids::Id32 elem = usedIds.Back();
-			this->pool.Move(i, elem);
-			Util::move_for_each_in_tuple(this->objects, idx, elem);
-			usedIds.Erase(usedIds.End()-1);
-		}, usedIds.Size());
+			index = Util::ArrayAllocator<TYPES...>::Alloc();
+			n_assert2(this->maxId > index, "max amount of allocations exceeded!\n");
+		}
+
+		return index;
 	}
 
-	/// get single item from resource, template expansion might give you cancer
-	template <int MEMBER>
-	inline Util::tuple_array_t<MEMBER, TYPES...>&
-	Get(const Ids::Id32 index)
+	/// Deallocate an object. Just places it in freeids array for recycling
+	void Dealloc(uint32_t index)
 	{
-		return std::get<MEMBER>(this->objects)[index];
+		// TODO: We could possibly get better performance when defragging if we insert it in reverse order (high to low)
+		this->freeIds.InsertSorted(index);
 	}
 
-	/// same as 32 bit get, but const
-	template <int MEMBER>
-	const inline Util::tuple_array_t<MEMBER, TYPES...>&
-	Get(const Ids::Id32 index) const
+	/// Returns the list of free ids.
+	Util::Array<uint32_t>& FreeIds()
 	{
-		return std::get<MEMBER>(this->objects)[index];
-	}
-
-	/// get using 64 bit id
-	template <int MEMBER>
-	inline Util::tuple_array_t<MEMBER, TYPES...>&
-	Get(const Ids::Id64 index)
-	{
-		Ids::Id24 resId = Ids::Id::GetLow(Ids::Id::GetBig(index));
-		return std::get<MEMBER>(this->objects)[resId];
-	}
-
-	/// same as 64 bit get, but const
-	template <int MEMBER>
-	const inline Util::tuple_array_t<MEMBER, TYPES...>&
-	Get(const Ids::Id64 index) const
-	{
-		Ids::Id24 resId = Ids::Id::GetLow(Ids::Id::GetBig(index));
-		return std::get<MEMBER>(this->objects)[resId];
-	}
-
-	/// get array const reference
-	template <int MEMBER>
-	const inline Util::Array<Util::tuple_array_t<MEMBER, TYPES...>>&
-	GetArray() const
-	{
-		return std::get<MEMBER>(this->objects);
-	}
-
-	/// get array
-	template <int MEMBER>
-	inline Util::Array<Util::tuple_array_t<MEMBER, TYPES...>>&
-	GetArray()
-	{
-		return std::get<MEMBER>(this->objects);
-	}
-
-	/// get number of used indices
-	const inline uint32_t
-	GetNumUsed() const
-	{
-		return pool.GetNumUsed();
+		return this->freeIds;
 	}
 
 private:
-
-	Ids::IdPool pool;
-	uint32_t size;
-	std::tuple<Util::Array<TYPES>...> objects;
+	uint32_t maxId = 0xFFFFFFFF;
+	Util::Array<uint32_t> freeIds;
 };
 
-template <class ... TYPES>
-class IdAllocatorSafe
+template<class ... TYPES>
+class IdAllocatorSafe : public Util::ArrayAllocatorSafe<TYPES...>
 {
 public:
 	/// constructor
-	IdAllocatorSafe(uint32_t maxid = 0xFFFFFFFF, uint32_t grow = 512) : pool(maxid, grow), size(0), inBeginGet(false) {};
-	/// copy constructor
-	IdAllocatorSafe(const IdAllocatorSafe<TYPES...>& rhs)
+	IdAllocatorSafe(uint32_t maxid = 0xFFFFFFFF) : maxId(maxid)
 	{
-		this->objects = rhs.objects;
-	}
-	/// move operator
-	IdAllocatorSafe(IdAllocatorSafe<TYPES...>&& rhs)
-	{
-		this->objects = rhs.objects;
-		Util::clear_for_each_in_tuple(rhs.objects);
-	}
-	/// destructor
-	~IdAllocatorSafe() {};
+	};
 
-	/// assign operator
-	void
-	operator=(const IdAllocatorSafe<TYPES...>& rhs)
+	/// Allocate an object. 
+	uint32_t Alloc()
 	{
-		this->objects = rhs.objects;
-	}
-	/// move operator
-	void
-	operator=(IdAllocatorSafe<TYPES...>&& rhs)
-	{
-		this->objects = rhs.objects;
-		Util::clear_for_each_in_tuple(rhs.objects);
-	}
-
-	/// allocate a new resource, and generate new entries if required
-	Ids::Id32
-	AllocObject()
-	{
+		/// @note	This purposefully hides the default allocation method and should definetly not be virtual!
+		
 		this->sect.Enter();
-		Ids::Id32 id = this->pool.Alloc();
-		if (id >= this->size)
+		uint32_t index;
+		if (this->freeIds.Size() > 0)
 		{
-			Util::alloc_for_each_in_tuple(this->objects);
-			this->size++;
+			index = this->freeIds.Back();
+			this->freeIds.EraseBack();
+		}
+		else
+		{
+			alloc_for_each_in_tuple(this->objects);
+			index = this->size++;
+			n_assert2(this->maxId > index, "max amount of allocations exceeded!\n");
 		}
 		this->sect.Leave();
-		return id;
+
+		return index;
 	}
 
-	/// recycle id
-	void
-	DeallocObject(const Ids::Id32 id) 
-	{ 
+	/// Deallocate an object. Just places it in freeids array for recycling
+	void Dealloc(uint32_t index)
+	{
+		// TODO: We could possibly get better performance when defragging if we insert it in reverse order (high to low)
 		this->sect.Enter();
-		this->pool.Dealloc(id);
+		this->freeIds.InsertSorted(index);
 		this->sect.Leave();
 	}
 
-	/// enter thread safe get-mode
-	void
-	EnterGet()
-	{
-		n_assert(!this->inBeginGet);
-		this->sect.Enter();
-		this->inBeginGet = true;		
-	}
-
-	/// get single item from within Enter/Leave phase
-	template <int MEMBER>
-	inline Util::tuple_array_t<MEMBER, TYPES...>&
-	Get(const Ids::Id32 index)
+	/// Returns the list of free ids.
+	Util::Array<uint32_t>& FreeIds()
 	{
 		n_assert(this->inBeginGet);
-		return std::get<MEMBER>(this->objects)[index];
-	}
-
-	/// get const
-	template <int MEMBER>
-	const inline Util::tuple_array_t<MEMBER, TYPES...>&
-	Get(const Ids::Id32 index) const
-	{
-		n_assert(this->inBeginGet);
-		return std::get<MEMBER>(this->objects)[index];
-	}
-
-	/// get single item from within Enter/Leave phase
-	template <int MEMBER>
-	inline Util::tuple_array_t<MEMBER, TYPES...>&
-	Get(const Ids::Id64 index)
-	{
-		n_assert(this->inBeginGet);
-		Ids::Id24 resId = Ids::Id::GetBig(Ids::Id::GetLow(index));
-		return std::get<MEMBER>(this->objects)[resId];
-	}
-
-	/// 64 bit get const
-	template <int MEMBER>
-	const inline Util::tuple_array_t<MEMBER, TYPES...>&
-	Get(const Ids::Id64 index) const
-	{
-		n_assert(this->inBeginGet);
-		Ids::Id24 resId = Ids::Id::GetBig(Ids::Id::GetLow(index));
-		return std::get<MEMBER>(this->objects)[resId];
-	}
-
-	/// get array const
-	template <int MEMBER>
-	const inline Util::Array<Util::tuple_array_t<MEMBER, TYPES...>>&
-	GetArray() const
-	{
-		n_assert(this->inBeginGet);
-		return std::get<MEMBER>(this->objects);
-	}
-
-	/// get array
-	template <int MEMBER>
-	inline Util::Array<Util::tuple_array_t<MEMBER, TYPES...>>&
-	GetArray()
-	{
-		n_assert(this->inBeginGet);
-		return std::get<MEMBER>(this->objects);
-	}
-
-	/// leave thread safe get-mode
-	void
-	LeaveGet()
-	{
-		n_assert(this->inBeginGet);
-		this->sect.Leave();
-		this->inBeginGet = false;
-	}
-
-	/// get single item safely 
-	template <int MEMBER>
-	inline Util::tuple_array_t<MEMBER, TYPES...>&
-	GetSafe(const Ids::Id32 index)
-	{
-		this->sect.Enter();
-		Util::tuple_array_t<MEMBER, TYPES...>& res = std::get<MEMBER>(this->objects)[index];
-		this->sect.Leave();
-		return res;
-	}
-
-	/// get single item safely 
-	template <int MEMBER>
-	inline Util::tuple_array_t<MEMBER, TYPES...>&
-	GetSafe(const Ids::Id64 index)
-	{
-		Ids::Id24 resId = Ids::Id::GetBig(Ids::Id::GetLow(index));
-		this->sect.Enter();
-		Util::tuple_array_t<MEMBER, TYPES...>& res = std::get<MEMBER>(this->objects)[resId];
-		this->sect.Leave();
-		return res;
-	}
-
-	/// get single item unsafe (use with extreme caution)
-	template <int MEMBER>
-	inline Util::tuple_array_t<MEMBER, TYPES...>&
-	GetUnsafe(const Ids::Id32 index)
-	{
-		return std::get<MEMBER>(this->objects)[index];
-	}
-
-	/// get single item unsafe (use with extreme caution)
-	template <int MEMBER>
-	inline Util::tuple_array_t<MEMBER, TYPES...>&
-	GetUnsafe(const Ids::Id64 index)
-	{
-		Ids::Id24 resId = Ids::Id::GetBig(Ids::Id::GetLow(index));
-		return std::get<MEMBER>(this->objects)[resId];
-	}
-
-	/// get number of used indices
-	const inline uint32_t
-	GetNumUsed() const
-	{
-		return pool.GetNumUsed();
+		return this->freeIds;
 	}
 
 private:
-
-	bool inBeginGet;
-	Threading::CriticalSection sect;
-	Ids::IdPool pool;
-	uint32_t size;
-	std::tuple<Util::Array<TYPES>...> objects;
+	uint32_t maxId = 0xFFFFFFFF;
+	Util::Array<uint32_t> freeIds;
 };
 
 } // namespace Ids

@@ -249,16 +249,11 @@ GraphicsServer::BeginFrame()
 	for (i = 0; i < this->contexts.Size(); i++)
 	{
 		auto state = this->states[i];
-		while (!state->delayedRemoveQueue.IsEmpty())
-		{
-			Graphics::GraphicsEntityId eid = state->delayedRemoveQueue[0];
-			IndexT index = state->entitySliceMap.FindIndex(eid);
-			n_assert(index != InvalidIndex);
-			auto cid = state->entitySliceMap.ValueAtIndex(eid.id, index);
-			state->Dealloc(cid);
-			state->entitySliceMap.EraseIndex(eid, index);
-			state->delayedRemoveQueue.EraseIndexSwap(0);
-		}
+        state->CleanupDelayedRemoveQueue();
+
+		// give contexts a chance to defragment their data
+		if (state->Defragment != nullptr)
+			state->Defragment();
 	}
 
 	for (i = 0; i < this->contexts.Size(); i++)
@@ -277,7 +272,7 @@ GraphicsServer::BeginFrame()
 void 
 GraphicsServer::BeforeViews()
 {
-	// begin updating visibility
+	// wait for visibility
 	IndexT i;
 	for (i = 0; i < this->contexts.Size(); i++)
 	{
@@ -297,7 +292,6 @@ GraphicsServer::BeforeViews()
 
 		this->currentView = view;
 
-		// begin updating visibility
 		IndexT j;
 		for (j = 0; j < this->contexts.Size(); j++)
 		{
@@ -315,7 +309,6 @@ GraphicsServer::BeforeViews()
 void
 GraphicsServer::RenderViews()
 {
-	// begin updating visibility
 	IndexT i;
 	// go through views and call before view
 	for (i = 0; i < this->views.Size(); i++)
@@ -347,7 +340,6 @@ GraphicsServer::EndViews()
 
 		this->currentView = view;
 
-		// begin updating visibility
 		IndexT j;
 		for (j = 0; j < this->contexts.Size(); j++)
 		{

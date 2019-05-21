@@ -31,7 +31,7 @@ using namespace Vulkan;
 RenderTextureId
 CreateRenderTexture(const RenderTextureCreateInfo& info)
 {
-	Ids::Id32 id = renderTextureAllocator.AllocObject();
+	Ids::Id32 id = renderTextureAllocator.Alloc();
 	RenderTextureInfo adjustedInfo = RenderTextureInfoSetupHelper(info);
 	VkRenderTextureLoadInfo& loadInfo = renderTextureAllocator.Get<0>(id);
 	VkRenderTextureRuntimeInfo& runtimeInfo = renderTextureAllocator.Get<1>(id);
@@ -244,7 +244,7 @@ DestroyRenderTexture(const RenderTextureId id)
 		vkDestroyImage(loadInfo.dev, loadInfo.img, nullptr);		
 		vkDestroyImageView(loadInfo.dev, runtimeInfo.view, nullptr);
 	}
-	renderTextureAllocator.DeallocObject(id.id24);
+	renderTextureAllocator.Dealloc(id.id24);
 }
 
 //------------------------------------------------------------------------------

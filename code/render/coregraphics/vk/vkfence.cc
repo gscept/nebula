@@ -24,7 +24,7 @@ using namespace Vulkan;
 FenceId
 CreateFence(const FenceCreateInfo& info)
 {
-	Ids::Id32 id = fenceAllocator.AllocObject();
+	Ids::Id32 id = fenceAllocator.Alloc();
 	VkFenceCreateInfo inf =
 	{
 		VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
@@ -57,7 +57,7 @@ DestroyFence(const FenceId id)
 	VkFenceInfo& vkInfo = fenceAllocator.Get<1>(id.id24);
 	const VkDevice& dev = fenceAllocator.Get<0>(id.id24);
 	vkDestroyFence(dev, vkInfo.fence, nullptr);
-	fenceAllocator.DeallocObject(id.id24);
+	fenceAllocator.Dealloc(id.id24);
 }
 
 //------------------------------------------------------------------------------

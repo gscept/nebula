@@ -63,7 +63,7 @@ StreamModelPool::CreateModelInstance(const ModelId id)
 	SizeT& instances = this->modelAllocator.Get<InstanceCount>(id.allocId);
 
 	// alloc a new instance of this model
-	Ids::Id32 mnid = this->modelInstanceAllocator.AllocObject();
+	Ids::Id32 mnid = this->modelInstanceAllocator.Alloc();
 	miid.model = id.allocId;
 	miid.instance = mnid;
 	instances++;
@@ -112,7 +112,7 @@ StreamModelPool::DestroyModelInstance(const ModelInstanceId id)
 	SizeT& instances = this->modelAllocator.Get<InstanceCount>(id.model);
 	instances--;
 	this->modelInstanceAllocator.Get<ModelNodeInstances>(id.instance).Clear();
-	this->modelInstanceAllocator.DeallocObject(id.instance);
+	this->modelInstanceAllocator.Dealloc(id.instance);
 }
 
 //------------------------------------------------------------------------------

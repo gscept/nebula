@@ -214,7 +214,7 @@ __ImplementEnumBitOperators(CharacterContext::LoadState);
 inline Graphics::ContextEntityId
 CharacterContext::Alloc()
 {
-	return characterContextAllocator.AllocObject();
+	return characterContextAllocator.Alloc();
 }
 
 //------------------------------------------------------------------------------
@@ -223,7 +223,7 @@ CharacterContext::Alloc()
 inline void
 CharacterContext::Dealloc(Graphics::ContextEntityId id)
 {
-	characterContextAllocator.DeallocObject(id.id);
+	characterContextAllocator.Dealloc(id.id);
 }
 
 } // namespace Characters

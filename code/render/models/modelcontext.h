@@ -98,6 +98,8 @@ private:
 	static Graphics::ContextEntityId Alloc();
 	/// deallocate a slice
 	static void Dealloc(Graphics::ContextEntityId id);
+    /// move instance
+    static void OnInstanceMoved(uint32_t toIndex, uint32_t fromIndex);
 
 	friend void Visibility::VisibilitySortJob(const Jobs::JobFuncContext& ctx);
 
@@ -109,7 +111,7 @@ private:
 inline Graphics::ContextEntityId
 ModelContext::Alloc()
 {
-	return modelContextAllocator.AllocObject();
+	return modelContextAllocator.Alloc();
 }
 
 //------------------------------------------------------------------------------
@@ -128,7 +130,7 @@ ModelContext::Dealloc(Graphics::ContextEntityId id)
 		Models::DestroyModel(rid);
 	mdl = ModelInstanceId::Invalid();
 
-	modelContextAllocator.DeallocObject(id.id);
+	modelContextAllocator.Dealloc(id.id);
 }
 
 } // namespace Models

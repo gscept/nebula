@@ -38,7 +38,7 @@ CreateEvent(const EventCreateInfo& info)
 		nullptr,
 		0
 	};
-	Ids::Id32 id = eventAllocator.AllocObject();
+	Ids::Id32 id = eventAllocator.Alloc();
 	VkEventInfo& vkInfo = eventAllocator.Get<1>(id);
 
 	VkDevice dev = Vulkan::GetCurrentDevice();
@@ -133,7 +133,7 @@ DestroyEvent(const EventId id)
 	VkEventInfo& vkInfo = eventAllocator.Get<1>(id.id24);
 	const VkDevice& dev = eventAllocator.Get<0>(id.id24);
 	vkDestroyEvent(dev, vkInfo.event, nullptr);
-	eventAllocator.DeallocObject(id.id24);
+	eventAllocator.Dealloc(id.id24);
 }
 
 //------------------------------------------------------------------------------

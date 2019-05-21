@@ -9,8 +9,8 @@
 namespace Graphics
 {
 
-_ImplementContext(CameraContext);
 CameraContext::CameraAllocator CameraContext::cameraAllocator;
+_ImplementContext(CameraContext, CameraContext::cameraAllocator);
 
 //------------------------------------------------------------------------------
 /**

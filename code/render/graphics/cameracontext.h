@@ -67,7 +67,7 @@ private:
 inline Graphics::ContextEntityId
 CameraContext::Alloc()
 {
-	return cameraAllocator.AllocObject();
+	return cameraAllocator.Alloc();
 }
 
 //------------------------------------------------------------------------------
@@ -76,7 +76,7 @@ CameraContext::Alloc()
 inline void
 CameraContext::Dealloc(const Graphics::ContextEntityId id)
 {
-	cameraAllocator.DeallocObject(id.id);
+	cameraAllocator.Dealloc(id.id);
 }
 
 } // namespace Graphics

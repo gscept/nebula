@@ -95,11 +95,11 @@ AudioDevice::CreateAudioEmitter(Resources::ResourceName const& name)
 	}
 	else
 	{
-		clip = this->wavs.AllocObject();
+		clip = this->wavs.Alloc();
 		auto result = this->wavs.Get<WavAllocator::WAV>(clip.id).load(name.Value());
 		if (result != SoLoud::SOLOUD_ERRORS::SO_NO_ERROR)
 		{
-			this->wavs.DeallocObject(clip.id);
+			this->wavs.Dealloc(clip.id);
 			return AudioEmitterId::Invalid();
 		}
 
@@ -107,7 +107,7 @@ AudioDevice::CreateAudioEmitter(Resources::ResourceName const& name)
 		this->wavs.Get<WavAllocator::REFCOUNT>(clip.id) = 0;
 	}
 
-	AudioEmitterId aeid = this->emitterAllocator.AllocObject();
+	AudioEmitterId aeid = this->emitterAllocator.Alloc();
 	this->wavs.Get<WavAllocator::REFCOUNT>(clip.id)++;
 	this->wavs.Get<WavAllocator::WAV>(clip.id).set3dAttenuation(SoLoud::AudioSource::ATTENUATION_MODELS::LINEAR_DISTANCE, 1.0f);
 	this->emitterAllocator.Get<EmitterSlot::CLIPID>(aeid.id) = clip;
@@ -132,10 +132,10 @@ AudioDevice::DestroyAudioEmitter(AudioEmitterId const id)
 	refCount--;
 	if (refCount == 0)
 	{
-		this->wavs.DeallocObject(clip.id);
+		this->wavs.Dealloc(clip.id);
 	}
 	
-	this->emitterAllocator.DeallocObject(id.id);
+	this->emitterAllocator.Dealloc(id.id);
 }
 
 //------------------------------------------------------------------------------

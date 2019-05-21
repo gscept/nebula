@@ -16,7 +16,7 @@ JobSyncAllocator jobSyncAllocator(0xFFFFFFFF);
 JobPortId
 CreateJobPort(const CreateJobPortInfo& info)
 {
-	Ids::Id32 port = jobPortAllocator.AllocObject();
+	Ids::Id32 port = jobPortAllocator.Alloc();
 	jobPortAllocator.Get<0>(port) = info.name;
 	
 	Util::FixedArray<Ptr<JobThread>> threads(info.numThreads);
@@ -56,7 +56,7 @@ DestroyJobPort(const JobPortId& id)
 JobId
 CreateJob(const CreateJobInfo& info)
 {
-	Ids::Id32 job = jobAllocator.AllocObject();
+	Ids::Id32 job = jobAllocator.Alloc();
 	jobAllocator.Get<0>(job) = info;
 
 	// ugh, so ugly, would rather have these in the allocator, but atomic_uint is not copyable, and events don't implement copy constructors or moves yet
@@ -77,7 +77,7 @@ DestroyJob(const JobId& id)
 	PrivateMemory& mem = jobAllocator.Get<JobScratchMemory>(id.id);
 	if (mem.memory != nullptr)
 		Memory::Free(mem.heapType, mem.memory);
-	jobAllocator.DeallocObject(id.id);
+	jobAllocator.Dealloc(id.id);
 }
 
 //------------------------------------------------------------------------------
@@ -212,7 +212,7 @@ JobAllocateScratchMemory(const JobId& job, const Memory::HeapType heap, const Si
 JobSyncId 
 CreateJobSync(const CreateJobSyncInfo& info)
 {
-	Ids::Id32 id = jobSyncAllocator.AllocObject();
+	Ids::Id32 id = jobSyncAllocator.Alloc();
 	jobSyncAllocator.Get<SyncCallback>(id) = info.callback;
 	jobSyncAllocator.Get<SyncCompletionEvent>(id) = n_new(Threading::Event(true));
 	jobSyncAllocator.Get<SyncCompletionCounter>(id) = n_new(std::atomic_uint);
@@ -233,7 +233,7 @@ DestroyJobSync(const JobSyncId id)
 {
 	n_delete(jobSyncAllocator.Get<SyncCompletionEvent>(id.id));
 	n_delete(jobSyncAllocator.Get<SyncCompletionCounter>(id.id));
-	jobSyncAllocator.DeallocObject(id.id);
+	jobSyncAllocator.Dealloc(id.id);
 }
 
 //------------------------------------------------------------------------------
