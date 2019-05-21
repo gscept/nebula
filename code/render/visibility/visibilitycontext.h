@@ -87,7 +87,7 @@ private:
 	static Graphics::ContextEntityId Alloc();
 	/// deallocate a slice
 	static void Dealloc(Graphics::ContextEntityId id);
-
+    
 	/// keep as ordinary array of pointers, no need to have them cache aligned
 	static Util::Array<VisibilitySystem*> systems;
 };
@@ -106,17 +106,23 @@ private:
 
 	friend class ObserverContext;
 	friend class VisibilityContex;
+    friend class Models::ModelContext;
 	typedef Ids::IdAllocator<
 		Math::matrix44,					// transform
 		Graphics::GraphicsEntityId,		// entity id
 		VisibilityEntityType			// type of object so we know how to get the transform
 	> ObserveeAllocator;
+
 	static ObserveeAllocator observeeAllocator;
 
 	/// allocate a new slice for this context
 	static Graphics::ContextEntityId Alloc();
 	/// deallocate a slice
 	static void Dealloc(Graphics::ContextEntityId id);
+    /// move instance
+    static void OnInstanceMoved(uint32_t toIndex, uint32_t fromIndex);
+    /// update model context id in visiblity results allocators.
+    static void UpdateModelContextId(Graphics::GraphicsEntityId id, Graphics::ContextEntityId modelCid);
 };
 
 } // namespace Visibility

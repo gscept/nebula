@@ -96,7 +96,7 @@ struct Im3dState
 };
 static Im3dState imState;
 
-_ImplementContext(Im3dContext);
+_ImplementPluginContext(Im3dContext);
 //------------------------------------------------------------------------------
 /**
 */

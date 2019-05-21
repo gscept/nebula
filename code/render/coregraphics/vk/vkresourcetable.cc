@@ -132,7 +132,7 @@ using namespace Vulkan;
 ResourceTableId
 CreateResourceTable(const ResourceTableCreateInfo& info)
 {
-	Ids::Id32 id = resourceTableAllocator.AllocObject();
+	Ids::Id32 id = resourceTableAllocator.Alloc();
 
 	VkDevice& dev = resourceTableAllocator.Get<0>(id);
 	VkDescriptorSet& set = resourceTableAllocator.Get<1>(id);
@@ -192,7 +192,7 @@ DestroyResourceTable(const ResourceTableId& id)
 	VkDescriptorPool& pool = resourceTableAllocator.Get<2>(id.id24);
 	vkFreeDescriptorSets(dev, pool, 1, &set);
 
-	resourceTableAllocator.DeallocObject(id.id24);
+	resourceTableAllocator.Dealloc(id.id24);
 }
 
 //------------------------------------------------------------------------------
@@ -686,7 +686,7 @@ ResourceTableCommitChanges(const ResourceTableId& id)
 ResourceTableLayoutId
 CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
 {
-	Ids::Id32 id = resourceTableLayoutAllocator.AllocObject();
+	Ids::Id32 id = resourceTableLayoutAllocator.Alloc();
 
 	VkDevice& dev = resourceTableLayoutAllocator.Get<ResourceTableLayoutDevice>(id);
 	VkDescriptorSetLayout& layout = resourceTableLayoutAllocator.Get<ResourceTableLayoutSetLayout>(id);
@@ -941,7 +941,7 @@ DestroyResourceTableLayout(const ResourceTableLayoutId& id)
 
 	pools.Clear();
 
-	resourceTableLayoutAllocator.DeallocObject(id.id24);
+	resourceTableLayoutAllocator.Dealloc(id.id24);
 }
 
 //------------------------------------------------------------------------------
@@ -950,7 +950,7 @@ DestroyResourceTableLayout(const ResourceTableLayoutId& id)
 ResourcePipelineId
 CreateResourcePipeline(const ResourcePipelineCreateInfo& info)
 {
-	Ids::Id32 id = resourcePipelineAllocator.AllocObject();
+	Ids::Id32 id = resourcePipelineAllocator.Alloc();
 
 	VkDevice& dev = resourcePipelineAllocator.Get<0>(id);
 	VkPipelineLayout& layout = resourcePipelineAllocator.Get<1>(id);
@@ -1007,7 +1007,7 @@ DestroyResourcePipeline(const ResourcePipelineId& id)
 	VkPipelineLayout& layout = resourcePipelineAllocator.Get<1>(id.id24);
 	vkDestroyPipelineLayout(dev, layout, nullptr);
 
-	resourcePipelineAllocator.DeallocObject(id.id24);
+	resourcePipelineAllocator.Dealloc(id.id24);
 }
 
 } // namespace CoreGraphics

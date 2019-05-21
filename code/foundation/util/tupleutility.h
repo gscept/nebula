@@ -224,6 +224,31 @@ reserve_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t size)
 
 //------------------------------------------------------------------------------
 /**
+    Entry point for reserving in each array
+*/
+template <class...Ts, std::size_t...Is> void
+set_size_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t size, std::index_sequence<Is...>)
+{
+    using expander = int[];
+    (void)expander
+    {
+        0,
+            (std::get<Is>(tuple).SetSize(size), 0)...
+    };
+}
+
+//------------------------------------------------------------------------------
+/**
+    Entry point for reserving in each array
+*/
+template <class...Ts> void
+set_size_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t size)
+{
+    set_size_for_each_in_tuple(tuple, size, std::make_index_sequence<sizeof...(Ts)>());
+}
+
+//------------------------------------------------------------------------------
+/**
 	Get type of contained element in Util::Array stored in std::tuple
 */
 template <int MEMBER, class ... TYPES>

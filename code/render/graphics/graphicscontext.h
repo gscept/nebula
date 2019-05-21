@@ -23,7 +23,7 @@
 #include "util/arraystack.h"
 #include "graphicsentity.h"
 
-#define _DeclareContext() \
+#define _DeclarePluginContext() \
 private:\
 	static Graphics::GraphicsContextState __state;\
 	static Graphics::GraphicsContextFunctionBundle __bundle;\
@@ -34,10 +34,15 @@ public:\
 	static void Destroy(); \
 	static Graphics::ContextEntityId GetContextId(const Graphics::GraphicsEntityId id); \
 	static void BeginBulkRegister(); \
-	static void EndBulkRegister();
+	static void EndBulkRegister(); \
+private:
+
+#define _DeclareContext() \
+	_DeclarePluginContext(); \
+	static void Defragment();
 
 
-#define _ImplementContext(ctx) \
+#define _ImplementPluginContext(ctx) \
 Graphics::GraphicsContextState ctx::__state; \
 Graphics::GraphicsContextFunctionBundle ctx::__bundle; \
 void ctx::RegisterEntity(const Graphics::GraphicsEntityId id) \
@@ -45,6 +50,15 @@ void ctx::RegisterEntity(const Graphics::GraphicsEntityId id) \
 	n_assert(!__state.entitySliceMap.Contains(id));\
 	Graphics::ContextEntityId allocId = __state.Alloc();\
 	__state.entitySliceMap.Add(id, allocId);\
+	if ((unsigned)__state.entities.Size() <= allocId.id)\
+	{\
+		if ((unsigned)__state.entities.Capacity() <= allocId.id)\
+		{\
+			__state.entities.Grow();\
+		}\
+		__state.entities.resize(allocId.id + 1);\
+	}\
+	__state.entities[allocId.id] = id;\
 }\
 \
 void ctx::DeregisterEntity(const Graphics::GraphicsEntityId id)\
@@ -85,10 +99,46 @@ void ctx::EndBulkRegister()\
 	__state.entitySliceMap.EndBulkAdd();\
 }
 
-#define _CreateContext() \
+#define _ImplementContext(ctx, idAllocator) \
+_ImplementPluginContext(ctx);\
+void ctx::Defragment()\
+{\
+	auto& freeIds = idAllocator.FreeIds();\
+	uint32_t index;\
+	uint32_t oldIndex;\
+	Graphics::GraphicsEntityId lastId;\
+	IndexT mapIndex;\
+	\
+	SizeT size = freeIds.Size();\
+	for (SizeT i = size - 1; i >= 0; --i)\
+	{\
+		index = freeIds.Back();\
+		freeIds.EraseBack();\
+		oldIndex = idAllocator.Size() - 1;\
+		lastId = __state.entities[oldIndex].id;\
+		idAllocator.EraseIndexSwap(index);\
+		__state.entities.EraseIndexSwap(index);\
+		mapIndex = __state.entitySliceMap.FindIndex(lastId);\
+		if (mapIndex != InvalidIndex)\
+		{\
+			__state.entitySliceMap.ValueAtIndex(lastId, mapIndex) = index;\
+		}\
+        if (__state.OnInstanceMoved != nullptr) \
+        {\
+            __state.OnInstanceMoved(index, oldIndex);\
+        }\
+	}\
+	freeIds.Clear();\
+}
+
+#define _CreatePluginContext() \
 	__state.Alloc = Alloc; \
 	__state.Dealloc = Dealloc; \
 	__state.currentStage = Graphics::NoStage;
+
+#define _CreateContext() \
+	_CreatePluginContext() \
+	__state.Defragment = Defragment;
 
 namespace Graphics
 {
@@ -149,9 +199,27 @@ struct GraphicsContextState
 	StageBits allowedRemoveStages = StageBits::NoStage;	// if a delete is done while not in one of these stages, it will be added as a deferred delete
 	Util::ArrayStack<GraphicsEntityId, 8> delayedRemoveQueue;
 
+	Util::Array<GraphicsEntityId> entities; // ContextEntityId -> GraphicsEntityId. kept adjacent to allocator data.
 	Util::HashTable<GraphicsEntityId, ContextEntityId, 128, 64> entitySliceMap;
 	ContextEntityId(*Alloc)();
 	void(*Dealloc)(ContextEntityId id);
+	void(*Defragment)();
+    /// called after a context entity has moved index
+    void(*OnInstanceMoved)(uint32_t toIndex, uint32_t fromIndex);
+
+    void CleanupDelayedRemoveQueue()
+    {
+        while (!this->delayedRemoveQueue.IsEmpty())
+        {
+            Graphics::GraphicsEntityId eid = this->delayedRemoveQueue[0];
+            IndexT index = this->entitySliceMap.FindIndex(eid);
+            n_assert(index != InvalidIndex);
+            auto cid = this->entitySliceMap.ValueAtIndex(eid.id, index);
+            this->Dealloc(cid);
+            this->entitySliceMap.EraseIndex(eid, index);
+            this->delayedRemoveQueue.EraseIndexSwap(0);
+        }
+    }
 };
 
 class GraphicsContext

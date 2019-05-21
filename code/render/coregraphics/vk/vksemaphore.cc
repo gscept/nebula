@@ -33,7 +33,7 @@ CreateSemaphore(const SemaphoreCreateInfo& info)
 		0
 	};
 
-	Ids::Id32 id = semaphoreAllocator.AllocObject();
+	Ids::Id32 id = semaphoreAllocator.Alloc();
 	VkDevice dev = Vulkan::GetCurrentDevice();
 	semaphoreAllocator.Get<0>(id) = dev;
 
@@ -52,7 +52,7 @@ void
 DestroySemaphore(const SemaphoreId& semaphore)
 {
 	vkDestroySemaphore(semaphoreAllocator.Get<0>(semaphore.id24), semaphoreAllocator.Get<1>(semaphore.id24), nullptr);
-	semaphoreAllocator.DeallocObject(semaphore.id24);
+	semaphoreAllocator.Dealloc(semaphore.id24);
 }
 
 //------------------------------------------------------------------------------

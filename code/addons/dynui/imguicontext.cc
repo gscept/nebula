@@ -151,7 +151,7 @@ ImguiContext::ImguiDrawFunction()
 	CoreGraphics::ResetClipSettings();
 }
 
-_ImplementContext(ImguiContext);
+_ImplementPluginContext(ImguiContext);
 //------------------------------------------------------------------------------
 /**
 */

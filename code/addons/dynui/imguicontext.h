@@ -29,7 +29,7 @@ struct ImguiRendererParams
 
 class ImguiContext : public Graphics::GraphicsContext
 {
-    _DeclareContext();
+	_DeclarePluginContext();
 public:
 	/// constructor
     ImguiContext();

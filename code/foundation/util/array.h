@@ -149,6 +149,9 @@ public:
 	Iterator end() const;
     size_t size() const;
     void resize(size_t size);
+
+	/// grow array
+    void Grow();
 protected:
     /// destroy an element (call destructor without freeing memory)
     void Destroy(TYPE* elm);
@@ -156,8 +159,6 @@ protected:
     void Copy(const Array<TYPE>& src);
     /// delete content
     void Delete();
-    /// grow array
-    void Grow();
     /// grow array to target size
     void GrowTo(SizeT newCapacity);
     /// move elements, grows array if needed
@@ -1110,11 +1111,11 @@ Array<TYPE>::end() const
 template<class TYPE> void
 Array<TYPE>::resize(size_t s)
 {
-    if (s > this->capacity)
+    if (static_cast<SizeT>(s) > this->capacity)
     {
-        this->GrowTo(s);
+        this->GrowTo(static_cast<SizeT>(s));
     }
-    this->count = s;    
+    this->count = static_cast<SizeT>(s);
 }
 
 
