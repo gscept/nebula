@@ -161,7 +161,7 @@ VisibilityTest::Run()
 
 		gfxServer->BeginFrame();
 		
-		ImGui::Begin("VisibilityTest", NULL, ImVec2(200, 200));
+		ImGui::Begin("VisibilityTest", NULL);
 		ImGui::Text("FPS: %.2f", 1 / (previousTime /1000.0f));
 		ImGui::End();
 		// put game code which doesn't need visibility data or animation here

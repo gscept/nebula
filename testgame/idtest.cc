@@ -118,13 +118,13 @@ IdTest::Run()
 		const int numAllocs = 1024;
 		for (SizeT i = 0; i < numAllocs; i++)
 		{
-			Id32 id = allocator.AllocObject();
+			Id32 id = allocator.Alloc();
 			ids.Append(id);
 			allocator.Get<0>(id) = i;
 			allocator.Get<1>(id) = 2.0f;
 			allocator.Get<2>(id) = "Test";
 		}
-		VERIFY(allocator.GetNumUsed() == numAllocs);
+		VERIFY(allocator.Size() == numAllocs);
 
 		VERIFY(allocator.Get<1>(Id32(0)) == 2.0f);
 		VERIFY(allocator.Get<2>(Id32(0)) == "Test");
@@ -136,10 +136,10 @@ IdTest::Run()
 
 		for (SizeT i = 0; i < numAllocs; i++)
 		{
-			allocator.DeallocObject(ids[i]);
+			allocator.Dealloc(ids[i]);
 		}
 
-		VERIFY(allocator.GetNumUsed() == 0);
+		VERIFY(allocator.Size() == 0);
 	}
 }
 
