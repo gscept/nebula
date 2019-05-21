@@ -98,7 +98,7 @@ private:
 Graphics::ContextEntityId 
 ParticleContext::Alloc()
 {
-	return particleContextAllocator.AllocObject();
+	return particleContextAllocator.Alloc();
 }
 
 //------------------------------------------------------------------------------
@@ -107,7 +107,7 @@ ParticleContext::Alloc()
 void 
 ParticleContext::Dealloc(Graphics::ContextEntityId id)
 {
-	particleContextAllocator.DeallocObject(id.id);
+	particleContextAllocator.Dealloc(id.id);
 }
 
 } // namespace Particles

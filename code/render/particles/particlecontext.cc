@@ -12,8 +12,8 @@ using namespace Models;
 namespace Particles
 {
 
-_ImplementContext(ParticleContext);
 ParticleContext::ParticleContextAllocator ParticleContext::particleContextAllocator;
+_ImplementContext(ParticleContext, ParticleContext::particleContextAllocator);
 
 Jobs::JobPortId ParticleContext::jobPort;
 Jobs::JobSyncId ParticleContext::jobSync;
