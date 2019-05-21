@@ -10,16 +10,18 @@
 #include "testbase/testrunner.h"
 #include "basegamefeature/managers/entitymanager.h"
 #include "basegamefeature/managers/componentmanager.h"
+#include "game/component/attribute.h"
+#include "game/component/component.h"
 
 using namespace Game;
 using namespace Core;
 
 namespace Attr
 {
-    __DeclareAttribute(GuidTest, Util::Guid, 'gTst', Attr::ReadWrite, Util::Guid());
-    __DeclareAttribute(StringTest, Util::String, 'sTst', Attr::ReadWrite, "Default string");
-    __DeclareAttribute(IntTest, int, 'iTst', Attr::ReadWrite, 1337);
-    __DeclareAttribute(FloatTest, float, 'fTst', Attr::ReadWrite, 10.0f);
+	__DeclareAttribute(GuidTest, Util::Guid, 'gTst', Attr::ReadWrite, Util::Guid());
+	__DeclareAttribute(StringTest, Util::String, 'sTst', Attr::ReadWrite, "Default string");
+	__DeclareAttribute(IntTest, int, 'iTst', Attr::ReadWrite, int(1337));
+	__DeclareAttribute(FloatTest, float, 'fTst', Attr::ReadWrite, float(10.0f));
 } // namespace Attr
 
 
@@ -29,13 +31,13 @@ namespace Test
 __ImplementClass(Test::CompDataTest, 'CDTS', Test::TestCase);
 
 typedef Game::Component<
-    Attr::GuidTest,
-    Attr::StringTest,
-    Attr::IntTest,
-    Attr::FloatTest
-> TestComponentAllocator;
+	Attr::GuidTest,
+	Attr::StringTest,
+	Attr::IntTest,
+	Attr::FloatTest
+> ComponentAllocator;
 
-static TestComponentAllocator* component;
+static ComponentAllocator* component;
 
 enum AttributeNames
 {
@@ -55,9 +57,9 @@ __ImplementComponent(TestComponent, component);
 void
 TestComponent::Create()
 {
-    component = new TestComponentAllocator({});
+	component = new ComponentAllocator();
+	Game::ComponentManager::Instance()->RegisterComponent(component, "TestComponent", 'TSTC');
 
-    Game::ComponentManager::Instance()->RegisterComponent(component, "TestComponent", 'tstc');
 }
 
 //------------------------------------------------------------------------------
@@ -66,7 +68,8 @@ TestComponent::Create()
 void
 TestComponent::Discard()
 {
-    delete component;
+	Game::ComponentManager::Instance()->DeregisterComponent(component);
+	// delete later, since we want to verify that deregister works properly first.
 }
 
 //------------------------------------------------------------------------------
@@ -106,10 +109,10 @@ CompDataTest::Run()
 		VERIFY(component->data.Get<INT>(0) == 7331);
 		VERIFY(component->data.Get<FLOAT>(0) == 12345.6f);
 		// make sure we don't set every single instance.
-		VERIFY(component->data.Get<OWNER>(1).id != previd);
-		VERIFY(component->data.Get<STRING>(1) != "TESTING SET");
-		VERIFY(component->data.Get<INT>(1) != 7331);
-		VERIFY(component->data.Get<FLOAT>(1) != 12345.6f);
+		VERIFY(component->Get<Attr::Owner>(1).id != previd);
+		VERIFY(component->Get<Attr::StringTest>(1) != "TESTING SET");
+		VERIFY(component->Get<Attr::IntTest>(1) != 7331);
+		VERIFY(component->Get<Attr::FloatTest>(1) != 12345.6f);
 
 		// Testing second iteration of entities inserted in old positions
 		for (size_t i = 0; i < 5000; i++)
@@ -192,6 +195,13 @@ CompDataTest::Run()
 		component->DestroyAll();
 
 		VERIFY(component->NumRegistered() == 0);
+
+		TestComponent::Discard();
+
+		VERIFY(Game::ComponentManager::Instance()->GetComponentByFourCC('TSTC') == nullptr);
+		VERIFY(Game::ComponentManager::Instance()->GetComponentByName("TestComponent") == nullptr);
+
+		delete component;
 	}
 }
 }

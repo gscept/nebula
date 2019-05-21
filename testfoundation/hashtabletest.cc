@@ -18,7 +18,7 @@ using namespace Util;
 void
 HashTableTest::Run()
 {
-    const int capacity = 64;
+    constexpr int capacity = 64;
 
     Array<String> titles;
     titles.Append("Nausicaä of the Valley of Wind");
