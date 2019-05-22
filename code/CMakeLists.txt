@@ -1,7 +1,7 @@
 fips_add_subdirectory(foundation)
 fips_add_subdirectory(resource)
 fips_add_subdirectory(render)
-fips_add_subdirectory(physics)
+#fips_add_subdirectory(physics)
 fips_add_subdirectory(application)
 fips_add_subdirectory(addons)
 fips_add_subdirectory(audio)
