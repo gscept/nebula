@@ -2,10 +2,13 @@
 //------------------------------------------------------------------------------
 //  callbacks.cc
 //  (C) 2019 Individual contributors, see AUTHORS file
-//-
+//------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "PxPhysicsAPI.h"
 #include "callbacks.h"
+#include "util/string.h"
+
+using namespace physx;
 
 namespace Physics
 {

@@ -88,7 +88,7 @@ class PhysxState : public physx::PxSimulationEventCallback
 */
 PhysxState::PhysxState() : foundation(nullptr), physics(nullptr), cooking(nullptr), pvd(nullptr), transport(nullptr)
 {
-
+    // empty
 }
 //------------------------------------------------------------------------------
 /**

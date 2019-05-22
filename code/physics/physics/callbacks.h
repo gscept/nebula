@@ -8,8 +8,12 @@
 //------------------------------------------------------------------------------
 
 #include "memory/memory.h"
+
+//------------------------------------------------------------------------------
 namespace Physics
 {
+
+//------------------------------------------------------------------------------
 class Allocator: public physx::PxAllocatorCallback
 {
 public:
@@ -21,10 +25,13 @@ public:
     void deallocate(void* ptr);
 };
 
-/// error callback channeling px messages to nebula log system
+
+//------------------------------------------------------------------------------
+
 class ErrorCallback : public physx::PxErrorCallback
 {
 public:
+    /// error callback channeling px messages to nebula log system
     void reportError(physx::PxErrorCode::Enum code, const char* message, const char* file, int line);
 };
 

@@ -25,6 +25,12 @@ enum CollisionFeedbackFlag
 	CollisionSingle			= 2
 };
 
+struct Material
+{
+    physx::PxMaterial * material;
+    float density;
+};
+
 /// physx scene classes, foundation and physics are duplicated here for convenience
 /// instead of static getters, might be removed later on
 struct Scene
@@ -48,14 +54,14 @@ void Update(Timing::Time delta);
 IndexT CreateScene();
 
 ///
-Physics::Scene& GetScene(IndexT idx);
+Physics::Scene& GetScene(IndexT idx = 0);
 
 /// render a debug visualization of the level
 void RenderDebug();
 ///
 void HandleCollisions();
 ///
-physx::PxMaterial * GetMaterial(IndexT idx);
+Material & GetMaterial(IndexT idx);
 /// 
 SizeT GetNrMaterials();
 }
