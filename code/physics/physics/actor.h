@@ -16,22 +16,20 @@ namespace Physics
 {
 
 //------------------------------------------------------------------------------
-class Actor
+namespace Actors
 {
-public:
-
     /// helper functions for creating shapes
     ///
-    static Actor* CreateBox(Math::vector const& extends, IndexT material, bool dynamic, Math::matrix44 const & transform, IndexT scene = 0);
+    ActorId CreateBox(Math::vector const& extends, IndexT material, bool dynamic, Math::matrix44 const & transform, IndexT scene = 0);
     ///
-    static Actor* CreateSphere(float radius, IndexT material, bool dynamic, Math::matrix44 const & transform, IndexT scene = 0);
+    ActorId CreateSphere(float radius, IndexT material, bool dynamic, Math::matrix44 const & transform, IndexT scene = 0);
     ///
-    static Actor* CreatePlane(Math::plane const& plane, IndexT material, bool dynamic, Math::matrix44 const & transform, IndexT scene = 0);
+    ActorId CreatePlane(Math::plane const& plane, IndexT material, bool dynamic, IndexT scene = 0);
     ///
-    static Actor* CreateCapsule(float radius, float halfHeight, IndexT material, bool dynamic, Math::matrix44 const & transform, IndexT scene = 0);
+    ActorId CreateCapsule(float radius, float halfHeight, IndexT material, bool dynamic, Math::matrix44 const & transform, IndexT scene = 0);
 
-    physx::PxRigidActor* actor;
-
+    ///
+    Actor& GetActor(ActorId id);
 };
 
 

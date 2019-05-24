@@ -3,8 +3,10 @@
 #include "pvd/PxPvd.h"
 #include "pvd/PxPvdTransport.h"
 #include "PxSimulationEventCallback.h"
+#include "ids/idgenerationpool.h"
 #include "physicsinterface.h"
 #include "physics/callbacks.h"
+#include "physics/utils.h"
 #include "math/scalar.h"
 #include "timing/time.h"
 
@@ -51,7 +53,11 @@ class PhysxState : public physx::PxSimulationEventCallback
     physx::PxPvd *pvd;
     physx::PxPvdTransport *transport;
     Util::ArrayStack<Physics::Scene,8> activeScenes;
-    Util::ArrayStack<physx::PxMaterial*,16> materials;
+    Util::ArrayStack<Physics::Material,16> materials;
+
+    Util::Array<Actor> actors;
+    Ids::IdGenerationPool actorPool;
+
     Physics::Allocator allocator;
     Physics::ErrorCallback errorCallback;
     physx::PxOverlapHit overlapBuffer[MAX_SHAPE_OVERLAPS];
@@ -115,6 +121,9 @@ PhysxState::Setup()
         n_error("PxInitExtensions failed!");
     }
 
+    // preallocate actors
+    this->actors.Reserve(1024);
+
     this->time = 0.0;
 }
 
@@ -174,13 +183,19 @@ GetScene(IndexT idx)
     return state.activeScenes[idx];
 }
 
-physx::PxMaterial *
+//------------------------------------------------------------------------------
+/**
+*/
+Physics::Material&
 GetMaterial(IndexT idx)
 {
     n_assert2(idx < state.materials.Size(), "unkown material");
     return state.materials[idx];
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 void
 Update(Timing::Time delta)
 {
@@ -198,4 +213,144 @@ Update(Timing::Time delta)
         state.time += PHYSICS_RATE;
     }    
 }
+
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+static inline
+PxRigidActor* 
+CreateActor(PxPhysics* physics, bool dynamic, Math::matrix44 const & transform)
+{
+    if (dynamic)
+    {
+        return physics->createRigidDynamic(Neb2PxTrans(transform));
+    }
+    else
+    {
+        return physics->createRigidStatic(Neb2PxTrans(transform));
+    }
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+static ActorId
+AllocateActorId(PxRigidActor* pxActor)
+{
+    ActorId id;
+    bool reused = state.actorPool.Allocate(id.id);
+    Ids::Id24 idx = Ids::Index(id.id);
+    if (!reused)
+    {
+        state.actors.Append(Physics::Actor());
+        n_assert(idx == state.actors.Size() - 1);
+    }
+        
+    Actor& actor = state.actors[idx];
+    actor.id = id;
+    actor.actor = pxActor;
+    return id;
+}
+
+namespace Actors
+{
+//------------------------------------------------------------------------------
+/**
+*/
+ActorId
+CreateBox(Math::vector const& extends, IndexT materialId, bool dynamic, Math::matrix44 const & transform, IndexT sceneId)
+{
+    Scene & scene = Physics::GetScene(sceneId);
+
+    PxRigidActor* newActor = CreateActor(scene.physics, dynamic, transform);
+
+    Material const & material = Physics::GetMaterial(materialId);
+    PxShape * shape = PxRigidActorExt::createExclusiveShape(*newActor, PxBoxGeometry(Neb2PxVec(extends)), *material.material);
+    if (dynamic)
+    {
+        PxRigidBodyExt::updateMassAndInertia(*static_cast<PxRigidDynamic*>(newActor), material.density);
+    }
+    scene.scene->addActor(*newActor);    
+    return AllocateActorId(newActor);        
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+ActorId
+CreateSphere(float radius, IndexT materialId, bool dynamic, Math::matrix44 const & transform, IndexT sceneId)
+{
+    Scene & scene = Physics::GetScene(sceneId);
+
+    PxRigidActor* newActor = CreateActor(scene.physics, dynamic, transform);
+
+    Material const & material = Physics::GetMaterial(materialId);
+    PxShape * shape = PxRigidActorExt::createExclusiveShape(*newActor, PxSphereGeometry(radius), *material.material);
+    if (dynamic)
+    {
+        PxRigidBodyExt::updateMassAndInertia(*static_cast<PxRigidDynamic*>(newActor), material.density);
+    }
+    scene.scene->addActor(*newActor);    
+    return AllocateActorId(newActor);    
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+ActorId
+CreateCapsule(float radius, float halfHeight, IndexT materialId, bool dynamic, Math::matrix44 const & transform, IndexT sceneId)
+{
+    Scene & scene = Physics::GetScene(sceneId);
+
+    PxRigidActor* newActor = CreateActor(scene.physics, dynamic, transform);
+
+    Material const & material = Physics::GetMaterial(materialId);
+    PxShape * shape = PxRigidActorExt::createExclusiveShape(*newActor, PxCapsuleGeometry(radius, halfHeight), *material.material);
+    if (dynamic)
+    {
+        PxRigidBodyExt::updateMassAndInertia(*static_cast<PxRigidDynamic*>(newActor), material.density);
+    }
+    scene.scene->addActor(*newActor);
+    return AllocateActorId(newActor);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+ActorId
+CreatePlane(Math::plane const& plane, IndexT materialId, IndexT sceneId)
+{
+    Scene & scene = Physics::GetScene(sceneId);
+
+    PxPlane pxPlane(Neb2PxVec(plane.get_normal()), Neb2PxVec(plane.get_point()));
+    PxTransform transform = PxTransformFromPlaneEquation(pxPlane);
+
+    PxRigidActor* newActor = scene.physics->createRigidStatic(transform);
+     
+    Material const & material = Physics::GetMaterial(materialId);
+    
+    PxShape * shape = PxRigidActorExt::createExclusiveShape(*newActor, PxPlaneGeometry(), *material.material);
+   
+    scene.scene->addActor(*newActor);
+    return AllocateActorId(newActor);
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+Actor& 
+GetActor(ActorId id)
+{
+    n_assert(state.actorPool.IsValid(id.id));
+    return state.actors[Ids::Index(id.id)];
+}
+
+}
+
 }

@@ -6,6 +6,7 @@
 
     (C) 2019 Individual contributors, see AUTHORS file
 */
+#include "ids/id.h"
 #include "util/dictionary.h"
 #include "timing/time.h"
 #include "math/float2.h"
@@ -29,6 +30,17 @@ struct Material
 {
     physx::PxMaterial * material;
     float density;
+};
+
+struct ActorId
+{
+    Ids::Id32 id;
+};
+
+struct Actor
+{
+    physx::PxActor* actor;
+    ActorId id;
 };
 
 /// physx scene classes, foundation and physics are duplicated here for convenience
