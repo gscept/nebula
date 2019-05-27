@@ -49,6 +49,8 @@ public:
     void Reserve(SizeT numElements);
     /// begin a bulk insert (array will be sorted at End)
     void BeginBulkAdd();
+    /// add a value while in bulk, wont check for duplicates
+    void BulkAdd(const KEYTYPE& value);
     /// add a unique value to set, won't get added twice
     void Add(const KEYTYPE& value);
     /// end a bulk insert (this will sort the internal array)
@@ -157,9 +159,9 @@ Set<KEYTYPE>::Reserve(SizeT numElements)
 template<class KEYTYPE> void
 Set<KEYTYPE>::BeginBulkAdd()
 {
-    #if NEBULA_BOUNDSCHECKS
+#if NEBULA_BOUNDSCHECKS
     n_assert(!this->inBulkInsert);
-    #endif
+#endif
     this->inBulkInsert = true;
 }
 
@@ -169,11 +171,27 @@ Set<KEYTYPE>::BeginBulkAdd()
 template<class KEYTYPE> void
 Set<KEYTYPE>::EndBulkAdd()
 {
-    #if NEBULA_BOUNDSCHECKS
+#if NEBULA_BOUNDSCHECKS
     n_assert(this->inBulkInsert);
-    #endif
-	this->values.Sort();
+#endif
+	this->values.Sort();    
     this->inBulkInsert = false;
+#if NEBULA_BOUNDSCHECKS
+    n_assert(this->values.IsSorted());
+#endif
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class KEYTYPE> void
+Set<KEYTYPE>::BulkAdd(const KEYTYPE& key)
+{
+#if NEBULA_BOUNDSCHECKS
+    n_assert(this->inBulkInsert);
+#endif
+    this->values.Append(key);    
 }
 
 //------------------------------------------------------------------------------
@@ -181,18 +199,13 @@ Set<KEYTYPE>::EndBulkAdd()
 */
 template<class KEYTYPE> void
 Set<KEYTYPE>::Add(const KEYTYPE& key)
-{
-    //n_assert(!this->Contains(key));
+{   
+#if NEBULA_BOUNDSCHECKS
+    n_assert(!this->inBulkInsert);
+#endif
 	if (!this->Contains(key))
 	{
-		if (this->inBulkInsert)
-		{
-			this->values.Append(key);
-		}
-		else
-		{
-			this->values.InsertSorted(key);
-		}
+	    this->values.InsertSorted(key);
 	}    
 }
 
