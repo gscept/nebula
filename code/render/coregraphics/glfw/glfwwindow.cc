@@ -363,7 +363,7 @@ InternalSetupFunction(const WindowCreateInfo& info, const Util::Blob& windowData
 								info.aa == AntiAliasQuality::High ? 8 : 0);
 
 
-	Ids::Id32 windowId = glfwWindowAllocator.AllocObject();
+	Ids::Id32 windowId = glfwWindowAllocator.Alloc();
 	WindowId id;
 	id.id24 = windowId;
 	id.id8 = WindowIdType;
@@ -503,7 +503,7 @@ DestroyWindow(const WindowId id)
 	// close event
 	GLFW::GLFWDisplayDevice::Instance()->NotifyEventHandlers(DisplayEvent(DisplayEvent::WindowClose, id));
 
-	glfwWindowAllocator.DeallocObject(id.id24);
+	glfwWindowAllocator.Dealloc(id.id24);
 }
 
 //------------------------------------------------------------------------------

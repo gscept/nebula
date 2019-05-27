@@ -71,7 +71,7 @@ const PassId
 CreatePass(const PassCreateInfo& info)
 {
 	n_assert(info.subpasses.Size() > 0);
-	Ids::Id32 id = passAllocator.AllocObject();
+	Ids::Id32 id = passAllocator.Alloc();
 	VkPassLoadInfo& loadInfo = passAllocator.Get<0>(id);
 	VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<1>(id);
 	VkRenderPassBeginInfo& beginInfo = passAllocator.Get<2>(id);
@@ -83,7 +83,6 @@ CreatePass(const PassCreateInfo& info)
 	loadInfo.colorAttachmentClears = info.colorAttachmentClears;
 	loadInfo.depthStencilAttachment = info.depthStencilAttachment;
 	loadInfo.dev = Vulkan::GetCurrentDevice();
-	loadInfo.pool = Vulkan::GetCurrentDescriptorPool();
 
 	// gather image views
 	uint32_t width = 0;

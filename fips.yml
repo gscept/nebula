@@ -50,7 +50,6 @@ exports:
         - code/render        
         - code/resource
         - code/application
-        - code/physics
         - code/addons
         - code/audio
     modules:

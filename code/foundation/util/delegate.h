@@ -6,6 +6,14 @@
     Nebula delegate class, allows to store a method call into a C++ object
     for later execution.
 
+	Usage:
+	// 'Foo' can be a function or static method
+	Util::Delegate<int(int, float)> funcDelegate = Delegate<int(int, float)>::FromFunction<Foo>();
+	// Requires an object
+    Util::Delegate<int()> methodDelegate = Delegate<int()>::FromMethod<MyClass, MyMethod>(MyObject);
+	// Can utilize closures!
+    Util::Delegate<void(int)> lambdaDelegate = [a](int b) { return a + b; };
+
     See http://www.codeproject.com/KB/cpp/ImpossiblyFastCppDelegate.aspx
     for details.
     

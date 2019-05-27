@@ -213,7 +213,6 @@ AnimSampleJob(const Jobs::JobFuncContext& ctx)
 	const AnimCurve* animCurves = (const AnimCurve*)ctx.uniforms[0];
 	int numCurves = ctx.uniformSizes[0] / sizeof(AnimCurve);
 	const AnimSampleMixInfo* info = (const AnimSampleMixInfo*)ctx.uniforms[1];
-	//const Characters::CharacterJointMask* mask = (const Characters::CharacterJointMask*)ctx.uniforms[2];
 	const float4* src0SamplePtr = (const float4*)ctx.inputs[0];
 	const float4* src1SamplePtr = (const float4*)ctx.inputs[1];
 	float4* outSamplePtr = (float4*)ctx.outputs[0];

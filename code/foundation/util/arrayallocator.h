@@ -8,7 +8,13 @@
 	Note that this is not a container for multiple arrays, but a object allocator that uses
 	multiple arrays to store their variables parallelly, and should be treated as such.
 
-	@todo	We should remove the arrays from the tuple and just use plain buffer pointers instead.
+	There are two versions of this type, an unsafe and a safe one. Both are implemented
+	in the same way.
+
+	The thread safe allocator requires the Get-methods to be within an Enter/Leave
+	lockstep phase.
+
+	@see	arrayallocatorsafe.h
 
 	(C) 2019 Individual contributors, see AUTHORS file
 */
@@ -42,7 +48,7 @@ public:
 	/// move operator
 	void operator=(ArrayAllocator<TYPES...>&& rhs);
 
-	/// allocate a new resource, and generate new entries if required
+	/// allocate a new resource
 	uint32_t Alloc();
 
 	/// Erase element for each
@@ -75,6 +81,9 @@ public:
 
 	/// grow capacity of arrays to size
 	void Reserve(uint32_t size);
+
+    /// set size of arrays to param size
+    void SetSize(uint32_t size);
 
 	/// clear entire allocator and start from scratch.
 	void Clear();
@@ -200,6 +209,17 @@ ArrayAllocator<TYPES...>::Reserve(uint32_t num)
 {
 	reserve_for_each_in_tuple(this->objects, num);
 	// Size is still the same.
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class ...TYPES>
+inline void
+ArrayAllocator<TYPES...>::SetSize(uint32_t size)
+{
+    set_size_for_each_in_tuple(this->objects, size);
+    this->size = size;
 }
 
 //------------------------------------------------------------------------------

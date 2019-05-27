@@ -82,10 +82,12 @@ VkShaderServer::Open()
 	this->emissiveBufferTextureVar = ShaderGetConstantBinding(shader, "EmissiveBuffer");
 	this->lightBufferTextureVar = ShaderGetConstantBinding(shader, "LightBuffer");
 
-	// update constant buffer with gbuffer handles
-	/*
+	this->environmentMapVar = ShaderGetConstantBinding(shader, "EnvironmentMap");
+	this->irradianceMapVar = ShaderGetConstantBinding(shader, "IrradianceMap");
+	this->numEnvMipsVar = ShaderGetConstantBinding(shader, "NumEnvMips");
 
-	*/
+	// update default mips, which is 10 for the cubemap
+	ConstantBufferUpdate(this->tickParams, 10, this->numEnvMipsVar);
 
 	return true;
 }
@@ -247,6 +249,16 @@ VkShaderServer::UnregisterTexture(const uint32_t id, const CoreGraphics::Texture
 	}
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+VkShaderServer::SetGlobalEnvironmentTextures(const CoreGraphics::TextureId& env, const CoreGraphics::TextureId& irr, const SizeT numMips)
+{
+	CoreGraphics::ConstantBufferUpdate(this->tickParams, CoreGraphics::TextureGetBindlessHandle(env), this->environmentMapVar);
+	CoreGraphics::ConstantBufferUpdate(this->tickParams, CoreGraphics::TextureGetBindlessHandle(irr), this->irradianceMapVar);
+	CoreGraphics::ConstantBufferUpdate(this->tickParams, numMips, this->numEnvMipsVar);
+}
 
 //------------------------------------------------------------------------------
 /**

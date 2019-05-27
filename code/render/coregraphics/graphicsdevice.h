@@ -92,8 +92,6 @@ const CoreGraphics::PrimitiveTopology::Code& GetPrimitiveTopology();
 void SetPrimitiveGroup(const CoreGraphics::PrimitiveGroup& pg);
 /// get current primitive group
 const CoreGraphics::PrimitiveGroup& GetPrimitiveGroup();
-/// bake the current state of the render device (only used on DX12 and Vulkan renderers where pipeline creation is required)
-void BuildRenderPipeline();
 /// set shader program
 void SetShaderProgram(const CoreGraphics::ShaderProgramId& pro);
 /// set shader program

@@ -8,7 +8,7 @@
 
 #include "lib/std.fxh"
 #include "lib/util.fxh"
- 
+
 #define MAX_2D_TEXTURES 2048
 #define MAX_2D_MS_TEXTURES 64
 #define MAX_2D_ARRAY_TEXTURES 1
@@ -49,13 +49,13 @@ group(TICK_GROUP) samplerstate		PosteffectSampler { Filter = Point; };
 
 #define MAX_NUM_LIGHTS 16
 
-// The number of CSM cascades 
+// The number of CSM cascades
 #ifndef CASCADE_COUNT_FLAG
 #define CASCADE_COUNT_FLAG 4
 #endif
 
 group(TICK_GROUP) sampler2D LightShadowTexture;
-group(TICK_GROUP) sampler2D ShadowProjMap;   
+group(TICK_GROUP) sampler2D ShadowProjMap;
 
 // these parameters are updated once per application tick
 group(TICK_GROUP) shared varblock PerTickParams
@@ -66,21 +66,21 @@ group(TICK_GROUP) shared varblock PerTickParams
 	float WindSpeed = 0.0f;
 	float WindIntensity = 0.0f;
 	float WindForce = 0.0f;
-	
+
 	float Saturation = float(1.0f);
 	float MaxLuminance = 1.0f;
 	float FadeValue = float(1.0f);
 	uint UseDof = 1;
 
-	vec4 Balance = vec4(1.0f, 1.0f, 1.0f, 1.0f);	
+	vec4 Balance = vec4(1.0f, 1.0f, 1.0f, 1.0f);
 
-	vec3 DoFDistances = vec3(0,0,0);	
+	vec3 DoFDistances = vec3(0,0,0);
 	float HDRBrightPassThreshold = float(1.0f);
 
 	vec4 HDRBloomColor = vec4(1.0f, 1.0f, 1.0f, 1.0f);
 	vec4 FogDistances = vec4(0.0, 2500.0, 0.0, 1.0);
 	vec4 FogColor = vec4(0.5, 0.5, 0.63, 0.0);
-	
+
 	// global light stuff
 	vec4 GlobalLightDirWorldspace;
 	vec4 GlobalLightDir;
@@ -91,8 +91,12 @@ group(TICK_GROUP) shared varblock PerTickParams
 
 	float GlobalBackLightOffset;
 	textureHandle GlobalLightShadowBuffer;
-	uint2 __padpertick;
-	
+	int NumEnvMips = 10;
+	textureHandle EnvironmentMap;
+
+	textureHandle IrradianceMap;
+	uvec3 _padpertick;
+
 	// these params are for the Preetham sky model
 	vec4 A;
 	vec4 B;
@@ -104,9 +108,9 @@ group(TICK_GROUP) shared varblock PerTickParams
 	// CSM params
 	vec4 CascadeOffset[CASCADE_COUNT_FLAG];
 	vec4 CascadeScale[CASCADE_COUNT_FLAG];
-	float MinBorderPadding;     
+	float MinBorderPadding;
 	float MaxBorderPadding;
-	float ShadowPartitionSize; 
+	float ShadowPartitionSize;
 	float GlobalLightShadowBias = 0.0f;
 
 	textureHandle NormalBuffer;
@@ -115,13 +119,14 @@ group(TICK_GROUP) shared varblock PerTickParams
 	textureHandle AlbedoBuffer;
 	textureHandle EmissiveBuffer;
 	textureHandle LightBuffer;
-	uint	      __padframe;
+	uvec2	      _padframe;
 };
 
 group(TICK_GROUP) shared varblock ForwardLightBlock
 {
 	// forward lighting
 	int		NumActiveLights = 0;
+  uint3 _padlight0;
 	vec4	LightPositionsArray[MAX_NUM_LIGHTS];
 	mat4	LightProjTransformArray[MAX_NUM_LIGHTS];
 	vec4	LightColorArray[MAX_NUM_LIGHTS];
@@ -131,6 +136,7 @@ group(TICK_GROUP) shared varblock ForwardLightBlock
 	float	LightInvRangeArray[MAX_NUM_LIGHTS];
 	int		LightTypeArray[MAX_NUM_LIGHTS];
 	uint	LightCastsShadowsArray[MAX_NUM_LIGHTS];
+  uint _padlight;
 };
 
 // contains the state of the camera (and time)
@@ -142,8 +148,8 @@ group(FRAME_GROUP) shared varblock FrameBlock
 	mat4 Projection;
 	mat4 InvProjection;
 	mat4 InvViewProjection;
-	vec4 EyePos;	
-	vec4 FocalLength;
+	vec4 EyePos;
+	vec4 FocalLengthNearFar; // x, y is focal length x/y, z, w is near/far planes
 	vec4 TimeAndRandom;
 };
 
@@ -155,7 +161,7 @@ group(FRAME_GROUP) shared varblock ShadowMatrixBlock [ bool DynamicOffset = true
 #define FLT_MAX     3.40282347E+38F
 #define FLT_MIN     -3.40282347E+38F
 
-         
+
 // contains variables which are guaranteed to be unique per object.
 group(DYNAMIC_OFFSET_GROUP) shared varblock ObjectBlock [ string Visibility = "VS|PS"; ]
 {
@@ -163,11 +169,11 @@ group(DYNAMIC_OFFSET_GROUP) shared varblock ObjectBlock [ string Visibility = "V
 	mat4 InvModel;
 	mat4 ModelViewProjection;
 	mat4 ModelView;
-	int ObjectId; 
-	uint3 __pad;
+	int ObjectId;
+	uint3 _padobject;
 };
 
-// define how many objects we can render simultaneously https://helpx.adobe.com/se/contact/support.html#support-anchor
+// define how many objects we can render with instancing
 #define MAX_BATCH_SIZE 256
 group(DYNAMIC_OFFSET_GROUP) shared varblock InstancingBlock [ string Visibility = "VS"; ]
 {
@@ -177,7 +183,7 @@ group(DYNAMIC_OFFSET_GROUP) shared varblock InstancingBlock [ string Visibility 
 	int IdArray[MAX_BATCH_SIZE];
 };
 
-group(DYNAMIC_OFFSET_GROUP) shared varblock JointBlock [ bool DynamicOffset = true; string Visibility = "VS"; ]
+group(DYNAMIC_OFFSET_GROUP) shared varblock JointBlock [ string Visibility = "VS"; ]
 {
 	mat4 JointPalette[256];
 };
@@ -185,8 +191,7 @@ group(DYNAMIC_OFFSET_GROUP) shared varblock JointBlock [ bool DynamicOffset = tr
 group(PASS_GROUP) inputAttachment InputAttachments[8];
 group(PASS_GROUP) shared varblock PassBlock [ bool System = true; ]
 {
-	// render target dimensions are size (xy) inversed size (zw)
-	vec4 RenderTargetDimensions[8];
+	vec4 RenderTargetDimensions[8]; // render target dimensions are size (xy) inversed size (zw)
 };
 
 

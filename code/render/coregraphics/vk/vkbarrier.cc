@@ -27,7 +27,7 @@ using namespace Vulkan;
 BarrierId
 CreateBarrier(const BarrierCreateInfo& info)
 {
-	Ids::Id32 id = barrierAllocator.AllocObject();
+	Ids::Id32 id = barrierAllocator.Alloc();
 	VkBarrierInfo& vkInfo = barrierAllocator.Get<0>(id);
 	Util::Array<CoreGraphics::RenderTextureId>& rts = barrierAllocator.Get<1>(id);
 	Util::Array<CoreGraphics::ShaderRWTextureId>& rws = barrierAllocator.Get<2>(id);
@@ -124,7 +124,7 @@ CreateBarrier(const BarrierCreateInfo& info)
 void
 DestroyBarrier(const BarrierId id)
 {
-	barrierAllocator.DeallocObject(id.id24);
+	barrierAllocator.Dealloc(id.id24);
 }
 
 //------------------------------------------------------------------------------

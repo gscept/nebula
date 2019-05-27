@@ -30,7 +30,7 @@ FrameBlit::~FrameBlit()
 /**
 */
 FrameOp::Compiled*
-FrameBlit::AllocCompiled(Memory::ChunkAllocator<BIG_CHUNK>& allocator)
+FrameBlit::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 {
 	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
 

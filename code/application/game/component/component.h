@@ -21,6 +21,8 @@
 #include "game/component/componentinterface.h"
 #include "game/attr/attrid.h"
 #include "componentserialization.h"
+#include "game/component/attribute.h"
+#include <tuple>
 
 //------------------------------------------------------------------------------
 /**
@@ -28,9 +30,9 @@
 	to the component manager to implement default behaviour
 */
 #define __SetupDefaultComponentBundle(ALLOCATOR) \
-	ALLOCATOR.functions.DestroyAll = DestroyAll; \
-	ALLOCATOR.functions.Serialize = Serialize; \
-	ALLOCATOR.functions.Deserialize = Deserialize; 
+	ALLOCATOR->functions.DestroyAll = DestroyAll; \
+	ALLOCATOR->functions.Serialize = Serialize; \
+	ALLOCATOR->functions.Deserialize = Deserialize; 
 
 //------------------------------------------------------------------------------
 /**
@@ -38,7 +40,7 @@
 	Remember to include componentmanager.h!
 */
 #define __RegisterComponent(ALLOCATOR, COMPONENTNAME) \
-	Game::ComponentManager::Instance()->RegisterComponent(ALLOCATOR, ##COMPONENTNAME);
+	Game::ComponentManager::Instance()->RegisterComponent(ALLOCATOR, ##COMPONENTNAME, ALLOCATOR->GetIdentifier());
 
 //------------------------------------------------------------------------------
 /**
@@ -66,13 +68,13 @@
 	Remember to write implementations for Create() and Discard()!
 */
 #define __ImplementComponent(COMPONENTTYPE, ALLOCATOR) \
-	Game::InstanceId COMPONENTTYPE::RegisterEntity(Game::Entity entity) { return ALLOCATOR.RegisterEntity(entity); } \
-	void COMPONENTTYPE::DeregisterEntity(Game::Entity entity) { ALLOCATOR.DeregisterEntity(entity); } \
-	void COMPONENTTYPE::DestroyAll() { ALLOCATOR.DestroyAll(); } \
-	SizeT COMPONENTTYPE::NumRegistered() { return ALLOCATOR.NumRegistered(); } \
-	void COMPONENTTYPE::Serialize(const Ptr<IO::BinaryWriter>& writer) { ALLOCATOR.Serialize(writer); } \
-	void COMPONENTTYPE::Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances) { ALLOCATOR.Deserialize(reader, offset, numInstances); } \
-	Game::InstanceId COMPONENTTYPE::GetInstance(Game::Entity entity) { return ALLOCATOR.GetInstance(entity); } 
+	Game::InstanceId COMPONENTTYPE::RegisterEntity(Game::Entity entity) { return ALLOCATOR->RegisterEntity(entity); } \
+	void COMPONENTTYPE::DeregisterEntity(Game::Entity entity) { ALLOCATOR->DeregisterEntity(entity); } \
+	void COMPONENTTYPE::DestroyAll() { ALLOCATOR->DestroyAll(); } \
+	SizeT COMPONENTTYPE::NumRegistered() { return ALLOCATOR->NumRegistered(); } \
+	void COMPONENTTYPE::Serialize(const Ptr<IO::BinaryWriter>& writer) { ALLOCATOR->Serialize(writer); } \
+	void COMPONENTTYPE::Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances) { ALLOCATOR->Deserialize(reader, offset, numInstances); } \
+	Game::InstanceId COMPONENTTYPE::GetInstance(Game::Entity entity) { return ALLOCATOR->GetInstance(entity); } 
 
 //------------------------------------------------------------------------------
 /**
@@ -83,30 +85,40 @@
 	Remember to write implementations for Create() and Discard()!
 */
 #define __ImplementComponent_woSerialization(COMPONENTTYPE, ALLOCATOR) \
-	Game::InstanceId COMPONENTTYPE::RegisterEntity(Game::Entity entity) { return ALLOCATOR.RegisterEntity(entity); } \
-	void COMPONENTTYPE::DeregisterEntity(Game::Entity entity) { ALLOCATOR.DeregisterEntity(entity); } \
-	void COMPONENTTYPE::DestroyAll() { ALLOCATOR.DestroyAll(); } \
-	SizeT COMPONENTTYPE::NumRegistered() { return ALLOCATOR.NumRegistered(); } \
-	Game::InstanceId COMPONENTTYPE::GetInstance(Game::Entity entity) { return ALLOCATOR.GetInstance(entity); } 
+	Game::InstanceId COMPONENTTYPE::RegisterEntity(Game::Entity entity) { return ALLOCATOR->RegisterEntity(entity); } \
+	void COMPONENTTYPE::DeregisterEntity(Game::Entity entity) { ALLOCATOR->DeregisterEntity(entity); } \
+	void COMPONENTTYPE::DestroyAll() { ALLOCATOR->DestroyAll(); } \
+	SizeT COMPONENTTYPE::NumRegistered() { return ALLOCATOR->NumRegistered(); } \
+	Game::InstanceId COMPONENTTYPE::GetInstance(Game::Entity entity) { return ALLOCATOR->GetInstance(entity); } 
 
 namespace Game
 {
 
-template <typename ... TYPES>
-class Component : public Game::ComponentInterface
+struct ComponentCreateInfo
 {
+	bool incrementalDeletion = false;
+};
+
+template <typename ... TYPES>
+class Component : public ComponentInterface
+{
+protected:
+	/// short hand for getting the component with template arguments filled
+	using component_templated_t = Component<TYPES...>;
+
+	ComponentCreateInfo settings;
 public:
 	Component();
-	Component(std::initializer_list<Attr::AttrId> list);
+	Component(ComponentCreateInfo const& settings);
 	~Component();
 
 	SizeT NumRegistered() const;
 
 	/// register an Id. Will create new mapping and allocate instance data. Returns index of new instance data
-	virtual InstanceId RegisterEntity(Entity e);
+	InstanceId RegisterEntity(Entity e);
 
 	/// deregister an Id. will only remove the id and zero the block
-	virtual void DeregisterEntity(Entity e);
+	void DeregisterEntity(Entity e);
 	
 	/// Destroys all instances and sets all memory used free.
 	void DestroyAll();
@@ -127,7 +139,7 @@ public:
 	InstanceId GetInstance(Entity e) const;
 
 	/// Shortcut to set all instances values to provided values.
-	void SetInstanceData(InstanceId index, typename TYPES::AttrDeclType...);
+	void SetInstanceData(InstanceId index, typename TYPES::InnerType...);
 
 	/// Write data into writer.
 	void Serialize(const Ptr<IO::BinaryWriter>& writer) const;
@@ -137,6 +149,14 @@ public:
 		
 	/// Allocate multiple instances
 	void Allocate(uint num);
+
+	/// get single item from resource,
+	template <typename ATTR>
+	typename ATTR::InnerType& Get(const InstanceId instance);
+
+	/// const version of get
+	template <typename ATTR>
+	const typename ATTR::InnerType& Get(const InstanceId instance) const;
 
 	/// Reset instance to default values.
 	void SetToDefault(InstanceId instance);
@@ -153,17 +173,21 @@ public:
 	/// perform garbage collection. Returns number of erased instances.
 	SizeT Optimize();
 
+	/// Returns the attribute index of a specific attribute type
+	template<typename ATTR>
+	static constexpr std::size_t GetAttributeIndex();
+
 	/// Get attribute value as a variant. This is generally quite slow, so use with care!
 	Util::Variant GetAttributeValue(InstanceId instance, IndexT attributeIndex);
 
 	/// Get attribute value as a variant. This is generally quite slow, so use with care!
-	Util::Variant GetAttributeValue(InstanceId instance, Attr::AttrId attributeId);
+	Util::Variant GetAttributeValue(InstanceId instance, Util::FourCC attribute);
 
 	/// Set attribute value as a variant. This is generally quite slow and won't propagate to other components, so use with care!
 	void SetAttributeValue(InstanceId instance, IndexT attributeIndex, const Util::Variant& value);
 
 	/// Set attribute value as a variant. This is generally quite slow and won't propagate to other components, so use with care!
-	void SetAttributeValue(InstanceId instance, Attr::AttrId attributeId, const Util::Variant& value);
+	void SetAttributeValue(InstanceId instance, Util::FourCC attribute, const Util::Variant& value);
 
 	/// Write owners into writer.
 	void SerializeOwners(const Ptr<IO::BinaryWriter>& writer) const;
@@ -174,12 +198,14 @@ public:
 	/// Contains all data for all instances of this component.
 	/// @note	The 0th type is always the owner Entity!
 	/// @note	attribute types need to be in exactly the same order as in the attribute ids list.
-	Util::ArrayAllocator<Entity, typename TYPES::AttrDeclType...> data;
+	Util::ArrayAllocator<Entity, typename TYPES::InnerType...> data;
 
-protected:
-	/// short hand for getting the component with template arguments filled
-	using component_templated_t = Component<TYPES...>;
 private:
+	
+	/// Initialize attribute list.
+	template<std::size_t...Is>
+	void Init(std::index_sequence<Is...>);
+
 	/// Expansion method for setting default values of all types of an instance.
 	template<std::size_t...Is>
 	void SetToDefault(InstanceId instance, std::index_sequence<Is...>);
@@ -190,25 +216,25 @@ private:
 
 	/// Get attribute value expansion method
 	template<std::size_t n>
-	Util::Variant GetAttributeValueDynamic(InstanceId instance, IndexT attributeIndex);
+	constexpr Util::Variant GetAttributeValueDynamic(InstanceId instance, IndexT attributeIndex);
 	
 	/// Get attribute value expansion method
 	template<std::size_t n>
-	Util::Variant GetAttributeValueDynamic(InstanceId instance, Attr::AttrId attributeId);
+	constexpr Util::Variant GetAttributeValueDynamic(InstanceId instance, Util::FourCC attribute);
 
 	/// Set attribute value expansion method
 	template<std::size_t n>
-	void SetAttributeValueDynamic(InstanceId instance, IndexT attributeIndex, const Util::Variant& value);
+	constexpr void SetAttributeValueDynamic(InstanceId instance, IndexT attributeIndex, const Util::Variant& value);
 
 	/// Set attribute value expansion method
 	template<std::size_t n>
-	void SetAttributeValueDynamic(InstanceId instance, Attr::AttrId attributeId, const Util::Variant& value);
+	constexpr void SetAttributeValueDynamic(InstanceId instance, Util::FourCC attribute, const Util::Variant& value);
 
 	/// notify callback if certain requirements are met
 	void NotifyOnInstanceMoved(InstanceId index, InstanceId oldIndex);
 
 	/// contains free id's that we reuse as soon as possible.
-	Util::Stack<InstanceId> freeIds;
+	Util::Array<InstanceId> freeIds;
 
 	const static int STACK_SIZE = 1;
 	const static int TABLE_SIZE = 1024;
@@ -222,27 +248,37 @@ private:
 template <class ... TYPES>
 Component<TYPES...>::Component()
 {
-	// Empty
+	this->Init(std::make_index_sequence<sizeof...(TYPES)>());
 }
-
 
 //------------------------------------------------------------------------------
 /**
-	@todo	idMap hashtable needs to be configured depending on the amount of entities we expect to be registered.
 */
 template <class ... TYPES>
-Component<TYPES ...>::Component(std::initializer_list<Attr::AttrId> list)
+Component<TYPES...>::Component(ComponentCreateInfo const& settings) :
+	settings(settings)
 {
-	this->attributeIds.SetSize(list.size() + 1);
+	this->Init(std::make_index_sequence<sizeof...(TYPES)>());
+}
 
+//------------------------------------------------------------------------------
+/**
+*/
+template <class ... TYPES>
+template <std::size_t...Is>
+void Component<TYPES...>::Init(std::index_sequence<Is...>)
+{
+	this->attributes.SetSize(sizeof...(TYPES) + 1);
 	// We always have an owner
-	this->attributeIds[0] = Attr::Owner;
+	this->attributes[0] = Attr::Owner(0);
 
-	int i = 1; // note the 1!
-	for (auto it : list)
+	using expander = int[];
+	(void)expander
 	{
-		this->attributeIds[i++] = it;
-	}
+		0, (
+			this->attributes[Is + 1] = TYPES(Is + 1),
+		0)...
+	};
 }
 
 //------------------------------------------------------------------------------
@@ -283,7 +319,7 @@ void Component<TYPES...>::SetToDefault(InstanceId instance, std::index_sequence<
 	(void)expander
 	{
 		0, (
-		this->data.Get<Is + 1>(instance) = this->attributeIds[Is + 1].GetDefaultValue().Get<typename TYPES::AttrDeclType>(),
+		this->data.Get<Is + 1>(instance) = TYPES::DefaultValue(),
 		0)...
 	};
 }
@@ -295,6 +331,29 @@ template <class ... TYPES>
 void Component<TYPES...>::Allocate(uint num)
 {
 	this->Allocate(num, std::make_index_sequence<sizeof...(TYPES)>());
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class ... TYPES>
+template<typename ATTR>
+inline typename ATTR::InnerType&
+Component<TYPES...>::Get(const InstanceId instance)
+{
+	constexpr std::size_t n = GetAttributeIndex<ATTR>();
+	return this->data.Get<n>(instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class ... TYPES>
+template<typename ATTR>
+inline const typename ATTR::InnerType&
+Component<TYPES...>::Get(const InstanceId instance) const
+{
+	return this->data.Get<GetAttributeIndex<ATTR>()>(instance);
 }
 
 //------------------------------------------------------------------------------
@@ -312,7 +371,7 @@ void Component<TYPES...>::Allocate(uint num, std::index_sequence<Is...>)
 	{
 		0, (
 		this->data.GetArray<Is + 1>().SetSize(first + num),
-		this->data.GetArray<Is + 1>().Fill(first, num, this->attributeIds[Is + 1].GetDefaultValue().Get<typename TYPES::AttrDeclType>()),
+		this->data.GetArray<Is + 1>().Fill(first, num, TYPES::DefaultValue()),
 		0)...
 	};
 
@@ -336,7 +395,8 @@ Component<TYPES ...>::RegisterEntity(Entity e)
 
 	if (this->freeIds.Size() > 0)
 	{
-		index = this->freeIds.Pop();
+		index = this->freeIds.Back();
+		this->freeIds.EraseBack();
 	}
 	else
 	{
@@ -347,6 +407,17 @@ Component<TYPES ...>::RegisterEntity(Entity e)
 	this->SetToDefault(index, std::make_index_sequence<sizeof...(TYPES)>());
 
 	this->idMap.Add(e.id, index);
+
+	if (this->events.IsSet<ComponentEvent::OnActivate>())
+	{
+		this->functions.OnActivate(index);
+	}
+
+	if (!this->settings.incrementalDeletion)
+	{
+		Game::EntityManager::Instance()->RegisterDeletionCallback(e, this);
+	}
+
 	return index;
 }
 
@@ -362,8 +433,19 @@ Component<TYPES ...>::DeregisterEntity(Entity e)
 	if (index == InvalidIndex)
 		return;
 
+	if (this->events.IsSet<ComponentEvent::OnDeactivate>())
+	{
+		this->functions.OnDeactivate(index);
+	}
+
+	if (!this->settings.incrementalDeletion)
+	{
+		Game::EntityManager::Instance()->DeregisterDeletionCallback(e, this);
+	}
+
 	this->idMap.Erase(e.id);
-	this->freeIds.Push(index);
+	// TODO: We could possibly get better performance when defragging if we insert it in reverse order (high to low)
+	this->freeIds.InsertSorted(index);
 }
 
 //------------------------------------------------------------------------------
@@ -375,6 +457,11 @@ Component<TYPES ...>::OnEntityDeleted(Game::Entity entity)
 	InstanceId index = this->GetInstance(entity);
 	if (index != InvalidIndex)
 	{
+		if (this->events.IsSet<ComponentEvent::OnDeactivate>())
+		{
+			this->functions.OnDeactivate(index);
+		}
+
 		this->DeregisterEntityImmediate(entity, index);
 		return;
 	}
@@ -430,9 +517,10 @@ Component<TYPES ...>::Optimize()
 
 	// Pack arrays
 	SizeT size = this->freeIds.Size();
-	for (SizeT i = 0; i < size; ++i)
+	for (SizeT i = size - 1; i >= 0; --i)
 	{
-		index = this->freeIds.Pop();
+		index = this->freeIds.Back();
+		this->freeIds.EraseBack();
 		oldIndex = this->data.Size() - 1;
 		lastId = this->data.Get<0>(oldIndex).id;
 		this->data.EraseIndexSwap(index);
@@ -445,25 +533,52 @@ Component<TYPES ...>::Optimize()
 		this->NotifyOnInstanceMoved(index, oldIndex);
 		++numErased;
 	}
+	this->freeIds.Clear();
 
-	// garbage collection
-	// Runs until it hits four entities that are alive.
-	while (this->data.Size() > 0 && numAlive < 4)
+	if (this->settings.incrementalDeletion)
 	{
-		index = Util::FastRandom() % this->data.Size();
-		if (entityManager->IsAlive(this->data.Get<0>(index)))
+		// garbage collection
+		// Runs until it hits four entities that are alive.
+		while (this->data.Size() > 0 && numAlive < 4)
 		{
-			++numAlive;
-			continue;
+			index = Util::FastRandom() % this->data.Size();
+			if (entityManager->IsAlive(this->data.Get<0>(index)))
+			{
+				++numAlive;
+				continue;
+			}
+			numAlive = 0;
+			// Deregister entity and make sure it's removed from the list
+			// so that we don't accidentally try to delete it again.
+			this->DeregisterEntityImmediate(this->data.Get<0>(index), index);
+			++numErased;
 		}
-		numAlive = 0;
-		// Deregister entity and make sure it's removed from the list
-		// so that we don't accidentally try to delete it again.
-		this->DeregisterEntityImmediate(this->data.Get<0>(index), index);
-		++numErased;
 	}
 
 	return numErased;
+}
+
+
+// Dirty c++ ahead
+template <typename T, typename... Ts>
+struct Index;
+
+template <typename T, typename... Ts>
+struct Index<T, T, Ts...> : std::integral_constant<std::size_t, 0> {};
+
+template <typename T, typename U, typename... Ts>
+struct Index<T, U, Ts...> : std::integral_constant<std::size_t, 1 + Index<T, Ts...>::value> {};
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<typename ... TYPES>
+template<typename ATTR>
+constexpr std::size_t
+Component<TYPES...>::GetAttributeIndex()
+{
+	// Index<...> calculates during compiletime at which index the first occurence of ATTR is.
+	return Index<ATTR, Attr::Owner, TYPES...>::value;
 }
 
 //------------------------------------------------------------------------------
@@ -484,10 +599,10 @@ Component<TYPES...>::GetAttributeValue(InstanceId instance, IndexT attributeInde
 */
 template<typename ... TYPES>
 inline Util::Variant
-Component<TYPES...>::GetAttributeValue(InstanceId instance, Attr::AttrId attributeId)
+Component<TYPES...>::GetAttributeValue(InstanceId instance, Util::FourCC attribute)
 {
 	n_assert2(instance < this->data.Size(), "Invalid instance id");
-	return this->GetAttributeValueDynamic<1>(instance, attributeId);
+	return this->GetAttributeValueDynamic<1>(instance, attribute);
 }
 
 //------------------------------------------------------------------------------
@@ -495,7 +610,7 @@ Component<TYPES...>::GetAttributeValue(InstanceId instance, Attr::AttrId attribu
 */
 template <class ... TYPES>
 template <std::size_t n>
-Util::Variant
+constexpr Util::Variant
 Component<TYPES...>::GetAttributeValueDynamic(InstanceId instance, IndexT attributeIndex)
 {
 	if (attributeIndex == n)
@@ -509,13 +624,14 @@ Component<TYPES...>::GetAttributeValueDynamic(InstanceId instance, IndexT attrib
 */
 template <class ... TYPES>
 template <std::size_t n>
-Util::Variant
-Component<TYPES...>::GetAttributeValueDynamic(InstanceId instance, Attr::AttrId attributeId)
+constexpr Util::Variant
+Component<TYPES...>::GetAttributeValueDynamic(InstanceId instance, Util::FourCC attribute)
 {
-	if (attributeId == this->attributeIds[n])
+	using T = typename std::tuple_element<n, std::tuple<Game::Entity, TYPES...> >::type;
+	if (attribute == T::FourCC())
 		return this->data.Get<n>(instance);
 	else // Recurse and increase n by 1
-		return GetAttributeValueDynamic<(n < sizeof...(TYPES) ? n + 1 : 1)>(instance, attributeId);
+		return GetAttributeValueDynamic<(n < sizeof...(TYPES) ? n + 1 : 1)>(instance, attribute);
 }
 
 //------------------------------------------------------------------------------
@@ -527,8 +643,7 @@ Component<TYPES...>::SetAttributeValue(InstanceId instance, IndexT attributeInde
 {
 	n_assert2(attributeIndex <= sizeof...(TYPES), "Index out of range");
 	n_assert2(instance < this->data.Size(), "Invalid instance id");
-	n_assert2(value.GetType() == attributeIds[attributeIndex].GetValueType(), "Trying to set an attribute value with incorrect variant type!");
-
+	
 	this->SetAttributeValueDynamic<1>(instance, attributeIndex, value);
 }
 
@@ -536,13 +651,12 @@ Component<TYPES...>::SetAttributeValue(InstanceId instance, IndexT attributeInde
 /**
 */
 template<typename ... TYPES>
-inline void
-Component<TYPES...>::SetAttributeValue(InstanceId instance, Attr::AttrId attributeId, const Util::Variant & value)
+void
+Component<TYPES...>::SetAttributeValue(InstanceId instance, Util::FourCC attribute, const Util::Variant & value)
 {
 	n_assert2(instance < this->data.Size(), "Invalid instance id");
-	n_assert2(value.GetType() == attributeId.GetValueType(), "Trying to set an attribute value with incorrect variant type!");
 
-	this->SetAttributeValueDynamic<1>(instance, attributeId, value);
+	this->SetAttributeValueDynamic<1>(instance, attribute, value);
 }
 
 //------------------------------------------------------------------------------
@@ -550,7 +664,7 @@ Component<TYPES...>::SetAttributeValue(InstanceId instance, Attr::AttrId attribu
 */
 template <class ... TYPES>
 template <std::size_t n>
-void
+constexpr void
 Component<TYPES...>::SetAttributeValueDynamic(InstanceId instance, IndexT attributeIndex, const Util::Variant& value)
 {
 	if (attributeIndex == n)
@@ -567,16 +681,17 @@ Component<TYPES...>::SetAttributeValueDynamic(InstanceId instance, IndexT attrib
 */
 template <class ... TYPES>
 template <std::size_t n>
-void
-Component<TYPES...>::SetAttributeValueDynamic(InstanceId instance, Attr::AttrId attributeId, const Util::Variant& value)
+constexpr void
+Component<TYPES...>::SetAttributeValueDynamic(InstanceId instance, Util::FourCC attribute, const Util::Variant& value)
 {
-	if (attributeId == this->attributeIds[n])
+	using T = typename std::tuple_element<n, std::tuple<Game::Entity, TYPES...>>::type;
+	if (attribute == T::FourCC())
 	{
 		auto& val = this->data.Get<n>(instance);
-		val = value.Get<std::remove_reference<decltype(val)>::type>();
+		val = value.Get<T::InnerType>();
 	}
 	else // Recurse and increase n by 1
-		SetAttributeValueDynamic<(n < sizeof...(TYPES) ? n + 1 : 1)>(instance, attributeId, value);
+		SetAttributeValueDynamic<(n < sizeof...(TYPES) ? n + 1 : 1)>(instance, attribute, value);
 }
 
 //------------------------------------------------------------------------------
@@ -585,6 +700,15 @@ Component<TYPES...>::SetAttributeValueDynamic(InstanceId instance, Attr::AttrId 
 template <class ... TYPES> void
 Component<TYPES ...>::DestroyAll()
 {
+	if (!this->settings.incrementalDeletion)
+	{
+		SizeT length = this->data.Size();
+		for (SizeT i = 0; i < length; i++)
+		{
+			Game::EntityManager::Instance()->DeregisterDeletionCallback(this->GetOwner(i), this);
+		}
+	}
+
 	this->freeIds.Clear();
 	this->data.Clear();
 	this->idMap.Clear();
@@ -602,7 +726,7 @@ Component<TYPES ...>::DeregisterAllInactive()
 		Entity e = this->data.Get<0>(i);
 		if (!manager->IsAlive(e))
 		{
-			this->freeIds.Push(this->idMap.ValueAtIndex(e.id, i));
+			this->freeIds.InsertSorted(this->idMap.ValueAtIndex(e.id, i));
 			this->idMap.Erase(e.id);
 		}
 	}
@@ -675,7 +799,7 @@ Component<TYPES ...>::GetInstance(Entity e) const
 /**
 */
 template<class ... TYPES> void
-Component<TYPES...>::SetInstanceData(InstanceId index, typename TYPES::AttrDeclType ... values)
+Component<TYPES...>::SetInstanceData(InstanceId index, typename TYPES::InnerType ... values)
 {
 	this->data.Set(index, this->data.Get<0>(index), values...);
 }

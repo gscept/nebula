@@ -15,16 +15,18 @@
 #include "coreanimation/animsamplebuffer.h"
 #include "util/round.h"
 #include "dynui/im3d/im3dcontext.h"
+#include "models/nodes/characternode.h"
 
 using namespace Graphics;
 using namespace Resources;
 namespace Characters
 {
 
-_ImplementContext(CharacterContext);
 CharacterContext::CharacterContextAllocator CharacterContext::characterContextAllocator;
+_ImplementContext(CharacterContext, CharacterContext::characterContextAllocator);
 
 Jobs::JobPortId CharacterContext::jobPort;
+Jobs::JobSyncId CharacterContext::jobSync;
 Threading::SafeQueue<Jobs::JobId> CharacterContext::runningJobs;
 Util::HashTable<Util::StringAtom, CoreAnimation::AnimSampleMask> CharacterContext::masks;
 
@@ -34,6 +36,7 @@ Util::HashTable<Util::StringAtom, CoreAnimation::AnimSampleMask> CharacterContex
 */
 CharacterContext::CharacterContext()
 {
+	// empty
 }
 
 //------------------------------------------------------------------------------
@@ -41,6 +44,7 @@ CharacterContext::CharacterContext()
 */
 CharacterContext::~CharacterContext()
 {
+	// empty
 }
 
 //------------------------------------------------------------------------------
@@ -55,7 +59,7 @@ CharacterContext::Create()
 	__bundle.OnWaitForWork = nullptr;
 	__bundle.OnBeforeView = nullptr;
 	__bundle.OnAfterView = nullptr;
-	__bundle.OnAfterFrame = nullptr;
+	__bundle.OnAfterFrame = CharacterContext::OnAfterFrame;
 	__bundle.StageBits = &CharacterContext::__state.currentStage;
 #ifndef PUBLIC_BUILD
 	__bundle.OnRenderDebug = CharacterContext::OnRenderDebug;
@@ -67,10 +71,18 @@ CharacterContext::Create()
 	{
 		"CharacterJobPort",
 		2,
-		System::Cpu::Core1 | System::Cpu::Core2 | System::Cpu::Core3 | System::Cpu::Core4,
+		System::Cpu::Core3 | System::Cpu::Core4,
 		UINT_MAX
 	};
 	CharacterContext::jobPort = Jobs::CreateJobPort(info);
+
+	Jobs::CreateJobSyncInfo sinfo =
+	{
+		nullptr
+	};
+	CharacterContext::jobSync = Jobs::CreateJobSync(sinfo);
+
+	_CreateContext();
 }
 
 //------------------------------------------------------------------------------
@@ -82,6 +94,16 @@ CharacterContext::Setup(const Graphics::GraphicsEntityId id, const Resources::Re
 	const ContextEntityId cid = GetContextId(id);
 	n_assert_fmt(cid != ContextEntityId::Invalid(), "Entity %d is not registered in CharacterContext", id.HashCode());
 	characterContextAllocator.Get<Loaded>(cid.id) = NoneLoaded;
+
+	// check to make sure we registered this entity for observation, then get the visibility context
+	const ContextEntityId visId = Visibility::ObservableContext::GetContextId(id);
+	n_assert_fmt(visId != ContextEntityId::Invalid(), "Entity %d needs to be setup as observerable before character!", id.HashCode());
+	characterContextAllocator.Get<VisibilityContextId>(cid.id) = visId;
+
+	// get model context
+	const ContextEntityId mdlId = Models::ModelContext::GetContextId(id);
+	n_assert_fmt(mdlId != ContextEntityId::Invalid(), "Entity %d needs to be setup as a model before character!", id.HashCode());
+	characterContextAllocator.Get<ModelContextId>(cid.id) = visId;
 
 	// create skeleton
 	ResourceCreateInfo info;
@@ -132,15 +154,6 @@ CharacterContext::Setup(const Graphics::GraphicsEntityId id, const Resources::Re
 		memset(&characterContextAllocator.Get<TrackController>(cid.id).playingAnimations[i], 0, sizeof(AnimationRuntime));
 		characterContextAllocator.Get<TrackController>(cid.id).playingAnimations[i].clip = -1;
 	}
-
-	// check to make sure we registered this entity for observation, then get the 
-	const ContextEntityId visId = Visibility::ObservableContext::GetContextId(id);
-	n_assert_fmt(visId != ContextEntityId::Invalid(), "Entity %d needs to be setup as observerable before character!", id.HashCode());
-	characterContextAllocator.Get<VisibilityContextId>(cid.id) = visId;
-
-	const ContextEntityId mdlId = Models::ModelContext::GetContextId(id);
-	n_assert_fmt(mdlId != ContextEntityId::Invalid(), "Entity %d needs to be setup as a model before character!", id.HashCode());
-	characterContextAllocator.Get<ModelContextId>(cid.id) = visId;
 }
 
 //------------------------------------------------------------------------------
@@ -466,6 +479,7 @@ CharacterContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time fram
 	const Util::Array<Util::FixedArray<Math::matrix44>>& jointPalettes = characterContextAllocator.GetArray<JointPalette>();
 	const Util::Array<Util::FixedArray<Math::matrix44>>& scaledJointPalettes = characterContextAllocator.GetArray<JointPaletteScaled>();
 	const Util::Array<Util::FixedArray<Math::matrix44>>& userJoints = characterContextAllocator.GetArray<UserControlledJoint>();
+	const Util::Array<Graphics::ContextEntityId>& models = characterContextAllocator.GetArray<ModelContextId>();
 
 	// update times and animations
 	IndexT i;
@@ -482,6 +496,7 @@ CharacterContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time fram
 		const Util::FixedArray<Math::matrix44>& jointPalette = jointPalettes[i];
 		const Util::FixedArray<Math::matrix44>& scaledJointPalette = scaledJointPalettes[i];
 		const CoreAnimation::AnimSampleBuffer& sampleBuffer = sampleBuffers[i];
+		const Graphics::ContextEntityId& model = models[i];
 
 		// loop over all tracks, and update the playing clip on each respective track
 		bool firstAnimTrack = true;
@@ -653,7 +668,7 @@ CharacterContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time fram
 
 				{
 					// create skeleton eval job
-					jobs[1] = Jobs::CreateJob({ SkeletonEvalJob });
+					jobs[1] = Jobs::CreateJob({ SkeletonEvalJobWithVariation });
 
 					const SizeT elmSize = sizeof(Math::matrix44);
 					const SizeT numElements = jobJoint.Size();
@@ -698,6 +713,46 @@ CharacterContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time fram
 				firstAnimTrack = false;
 			}
 		}
+
+		// get all character node instances, so we can set their skeleton
+		const Util::Array<Models::ModelNode::Instance*>& nodeInstances = Models::ModelContext::GetModelNodeInstances(model);
+		for (j = 0; j < nodeInstances.Size(); j++)
+		{
+			// if type is character node, set the joint palette pointer to this instance of the characater
+			// this bridges the gap between the model node and this character instance
+			if (nodeInstances[j]->node->type == Models::NodeType::CharacterNodeType)
+			{
+				Models::CharacterNode::Instance* cinst = static_cast<Models::CharacterNode::Instance*>(nodeInstances[j]);
+				cinst->joints = &jointPalette;
+			}
+		}
+	}
+
+	// put sync object
+	Jobs::JobSyncSignal(CharacterContext::jobSync, CharacterContext::jobPort);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+CharacterContext::OnAfterFrame(const IndexT frameIndex, const Timing::Time frameTime)
+{
+	if (CharacterContext::runningJobs.Size() > 0)
+	{
+		Util::Array<Jobs::JobId> jobs;
+		jobs.Reserve(500);
+		CharacterContext::runningJobs.DequeueAll(jobs);
+
+		// wait for all jobs to finish
+		Jobs::JobSyncHostWait(CharacterContext::jobSync);
+
+		// destroy jobs
+		IndexT i;
+		for (i = 0; i < jobs.Size(); i++)
+		{
+			Jobs::DestroyJob(jobs[i]);
+		}
 	}
 }
 
@@ -730,7 +785,7 @@ void
 CharacterContext::OnRenderDebug(uint32 flags)
 {
 	// wait for jobs to finish
-	Jobs::JobPortWait(CharacterContext::jobPort);
+	Jobs::JobSyncHostWait(CharacterContext::jobSync);
 
 	const Util::Array<Util::FixedArray<Math::matrix44>>& jointPalettes = characterContextAllocator.GetArray<JointPaletteScaled>();
 	const Util::Array<Graphics::ContextEntityId>& modelContexts = characterContextAllocator.GetArray<ModelContextId>();

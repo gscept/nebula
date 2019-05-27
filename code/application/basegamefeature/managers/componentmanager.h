@@ -30,7 +30,10 @@ public:
 	~ComponentManager();
 
 	/// Register a component and setup all event delegates for it.
-	void RegisterComponent(ComponentInterface* component, const Util::StringAtom& name);
+	void RegisterComponent(ComponentInterface* component, const Util::StringAtom& name, Util::FourCC fourcc);
+	
+	/// Deregister a component and all event delegates for it.
+	void DeregisterComponent(ComponentInterface* component);
 
 	/// Deregister all components. Removes all event delegates too.
 	void DeregisterAll();

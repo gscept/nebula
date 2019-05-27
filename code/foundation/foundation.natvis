@@ -97,10 +97,10 @@
     </Expand>
   </Type>
   <Type Name="Util::FixedArray&lt;*&gt;">
-    <DisplayString>Values={size}</DisplayString>
+    <DisplayString>Values={count}</DisplayString>
     <Expand>
       <ArrayItems>
-        <Size>size</Size>
+        <Size>count</Size>
         <ValuePointer>elements</ValuePointer>
       </ArrayItems>
     </Expand>

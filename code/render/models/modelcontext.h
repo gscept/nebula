@@ -53,6 +53,8 @@ public:
 	static Math::matrix44 GetTransform(const Graphics::GraphicsEntityId id);
 	/// get the transform for a model
 	static Math::matrix44 GetTransform(const Graphics::ContextEntityId id);
+	/// get the bounding box
+	static Math::bbox GetBoundingBox(const Graphics::GraphicsEntityId id);
 
 	/// get model node instances
 	static const Util::Array<Models::ModelNode::Instance*>& GetModelNodeInstances(const Graphics::GraphicsEntityId id);
@@ -74,6 +76,15 @@ public:
 	static void OnRenderDebug(uint32_t flags);
 #endif
 
+	/// get model
+	static const Models::ModelId GetModel(const Graphics::ContextEntityId id);
+	/// get model instance
+	static const Models::ModelInstanceId GetModelInstance(const Graphics::ContextEntityId id);
+	/// get model node instances
+	static const Util::Array<Models::ModelNode::Instance*>& GetModelNodeInstances(const Graphics::ContextEntityId id);
+	/// get model node instances
+	static const Util::Array<Models::NodeType>& GetModelNodeTypes(const Graphics::ContextEntityId id);
+
 private:
 	typedef Ids::IdAllocator<
 		ModelId,
@@ -87,17 +98,11 @@ private:
 	static Graphics::ContextEntityId Alloc();
 	/// deallocate a slice
 	static void Dealloc(Graphics::ContextEntityId id);
+    /// move instance
+    static void OnInstanceMoved(uint32_t toIndex, uint32_t fromIndex);
 
 	friend void Visibility::VisibilitySortJob(const Jobs::JobFuncContext& ctx);
 
-	/// get model
-	static const Models::ModelId GetModel(const Graphics::ContextEntityId id);
-	/// get model instance
-	static const Models::ModelInstanceId GetModelInstance(const Graphics::ContextEntityId id);
-	/// get model node instances
-	static const Util::Array<Models::ModelNode::Instance*>& GetModelNodeInstances(const Graphics::ContextEntityId id);
-	/// get model node instances
-	static const Util::Array<Models::NodeType>& GetModelNodeTypes(const Graphics::ContextEntityId id);
 };
 
 //------------------------------------------------------------------------------
@@ -106,7 +111,7 @@ private:
 inline Graphics::ContextEntityId
 ModelContext::Alloc()
 {
-	return modelContextAllocator.AllocObject();
+	return modelContextAllocator.Alloc();
 }
 
 //------------------------------------------------------------------------------
@@ -125,7 +130,7 @@ ModelContext::Dealloc(Graphics::ContextEntityId id)
 		Models::DestroyModel(rid);
 	mdl = ModelInstanceId::Invalid();
 
-	modelContextAllocator.DeallocObject(id.id);
+	modelContextAllocator.Dealloc(id.id);
 }
 
 } // namespace Models

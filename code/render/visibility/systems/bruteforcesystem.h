@@ -15,7 +15,6 @@ extern void BruteforceSystemJobFunc(const Jobs::JobFuncContext& ctx);
 
 class BruteforceSystem : public VisibilitySystem
 {
-public:
 private:
 	friend class ObserverContext;
 
@@ -24,8 +23,6 @@ private:
 
 	/// run system
 	void Run();
-
-
 };
 
 } // namespace Visibility

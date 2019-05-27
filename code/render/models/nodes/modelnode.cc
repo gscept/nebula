@@ -127,4 +127,13 @@ ModelNode::Instance::Setup(Models::ModelNode* node, const Models::ModelNode::Ins
 	this->parent = parent;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+ModelNode::Instance::Draw()
+{
+	// implement in subclass
+}
+
 } // namespace Models

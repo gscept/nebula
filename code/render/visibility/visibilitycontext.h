@@ -30,6 +30,8 @@ public:
 
 	/// create context
 	static void Create();
+	/// discard context
+	static void Discard();
 
 	/// create a box system
 	static VisibilitySystem* CreateBoxSystem(const BoxSystemLoadInfo& info);
@@ -45,6 +47,11 @@ public:
 	/// wait for all visibility jobs
 	static void WaitForVisibility(const IndexT frameIndex, const Timing::Time frameTime);
 
+#ifndef PUBLIC_BUILD
+	/// render debug
+	static void OnRenderDebug(uint32_t flags);
+#endif
+
 	typedef Ids::Id32 ModelAllocId;
 	typedef Util::HashTable<Materials::MaterialType*,
 		Util::HashTable<Models::ModelNode*,
@@ -55,6 +62,8 @@ public:
 	static const VisibilityDrawList* GetVisibilityDrawList(const Graphics::GraphicsEntityId id);
 
 	static Jobs::JobPortId jobPort;
+	static Jobs::JobSyncId jobInternalSync;
+	static Jobs::JobSyncId jobHostSync;
 	static Threading::SafeQueue<Jobs::JobId> runningJobs;
 
 private:
@@ -78,7 +87,7 @@ private:
 	static Graphics::ContextEntityId Alloc();
 	/// deallocate a slice
 	static void Dealloc(Graphics::ContextEntityId id);
-
+    
 	/// keep as ordinary array of pointers, no need to have them cache aligned
 	static Util::Array<VisibilitySystem*> systems;
 };
@@ -97,17 +106,23 @@ private:
 
 	friend class ObserverContext;
 	friend class VisibilityContex;
+    friend class Models::ModelContext;
 	typedef Ids::IdAllocator<
 		Math::matrix44,					// transform
 		Graphics::GraphicsEntityId,		// entity id
 		VisibilityEntityType			// type of object so we know how to get the transform
 	> ObserveeAllocator;
+
 	static ObserveeAllocator observeeAllocator;
 
 	/// allocate a new slice for this context
 	static Graphics::ContextEntityId Alloc();
 	/// deallocate a slice
 	static void Dealloc(Graphics::ContextEntityId id);
+    /// move instance
+    static void OnInstanceMoved(uint32_t toIndex, uint32_t fromIndex);
+    /// update model context id in visiblity results allocators.
+    static void UpdateModelContextId(Graphics::GraphicsEntityId id, Graphics::ContextEntityId modelCid);
 };
 
 } // namespace Visibility

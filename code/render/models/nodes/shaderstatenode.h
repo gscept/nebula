@@ -33,6 +33,12 @@ public:
 
 	struct Instance : public TransformNode::Instance
 	{
+		enum DynamicOffsetType
+		{
+			ObjectTransforms,
+			InstancingTransforms,
+			Skinning
+		};
 		CoreGraphics::ConstantBufferId cbo;
 		CoreGraphics::ResourceTableId resourceTable;
 		CoreGraphics::ConstantBinding modelVar;
@@ -45,9 +51,11 @@ public:
 		Materials::SurfaceInstanceId surfaceInstance;
 		Util::FixedArray<uint32> offsets;
 
+		/// apply instance shader stuff
 		void ApplyNodeInstanceState() override;
+		/// setup instance
 		void Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
-
+		/// get surface instance
 		const Materials::SurfaceInstanceId GetSurfaceInstance() const { return this->surfaceInstance; };
 	};
 
@@ -99,9 +107,9 @@ ShaderStateNode::Instance::Setup(Models::ModelNode* node, const Models::ModelNod
 	this->cbo = cbo;
 	this->resourceTable = sparent->resourceTable;
 	this->offsets.Resize(3); // object data, instance data, skinning data
-	bool rebind = CoreGraphics::ConstantBufferAllocateInstance(cbo, this->offsets[0], this->instance);
-	this->offsets[1] = 0; // instancing offset
-	this->offsets[2] = 0; // skinning offset
+	bool rebind = CoreGraphics::ConstantBufferAllocateInstance(this->cbo, this->offsets[ObjectTransforms], this->instance);
+	this->offsets[InstancingTransforms] = 0; // instancing offset
+	this->offsets[Skinning] = 0; // skinning offset
 	if (rebind)
 	{
 		CoreGraphics::ResourceTableSetConstantBuffer(sparent->resourceTable, { sparent->cbo, sparent->cboIndex, 0, true, false, -1, 0 });

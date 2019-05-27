@@ -139,6 +139,31 @@ private:
         RefCounted::criticalSection.Leave(); \
         return newObject; \
     }
+
+//------------------------------------------------------------------------------
+/**
+*/
+#define __ImplementClassVariadicTemplate(type, baseType) \
+	template <class ... TEMP> \
+    inline type<TEMP...>* type<TEMP...>::Create() \
+    { \
+        RefCounted::criticalSection.Enter(); \
+        RefCounted::isInCreate = true; \
+        type<TEMP...>* newObject = n_new(type<TEMP...>); \
+        RefCounted::isInCreate = false; \
+        RefCounted::criticalSection.Leave(); \
+        return newObject; \
+    } \
+	template <class ... TEMP> \
+    inline type<TEMP...>* type<TEMP...>::CreateArray(SizeT num) \
+    { \
+        RefCounted::criticalSection.Enter(); \
+        RefCounted::isInCreate = true; \
+        type<TEMP...>* newObject = n_new_array(type<TEMP...>, num); \
+        RefCounted::isInCreate = false; \
+        RefCounted::criticalSection.Leave(); \
+        return newObject; \
+    }
 #else
 //------------------------------------------------------------------------------
 /**
@@ -182,6 +207,23 @@ private:
     inline type<TEMP>* type<TEMP>::CreateArray(SizeT num) \
     { \
         type<TEMP>* newObject = n_new_array(type<TEMP>, num); \
+        return newObject; \
+    }
+
+//------------------------------------------------------------------------------
+/**
+*/
+#define __ImplementClassVariadicTemplate(type, baseType) \
+	template <class ... TEMP> \
+    inline type<TEMP...>* type<TEMP...>::Create() \
+    { \
+        type<TEMP...>* newObject = n_new(type<TEMP...>); \
+        return newObject; \
+    } \
+	template <class ... TEMP> \
+    inline type<TEMP...>* type<TEMP...>::CreateArray(SizeT num) \
+    { \
+        type<TEMP...>* newObject = n_new_array(type<TEMP...>, num); \
         return newObject; \
     }
 #endif

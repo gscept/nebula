@@ -85,7 +85,7 @@ private:
 	static void ParseResourceDependencies(const Ptr<Frame::FrameScript>& script, Frame::FrameOp* op, JzonValue* node);
 	
 
-	typedef Algorithms::Algorithm* (*Fn)(Memory::ChunkAllocator<BIG_CHUNK>&);
+	typedef Algorithms::Algorithm* (*Fn)(Memory::ArenaAllocator<BIG_CHUNK>&);
 	static Util::HashTable<uint, Fn> constructors;
 };
 } // namespace Frame2

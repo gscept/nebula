@@ -46,7 +46,7 @@ FrameComputeAlgorithm::CompiledImpl::Discard()
 /**
 */
 FrameOp::Compiled* 
-FrameComputeAlgorithm::AllocCompiled(Memory::ChunkAllocator<BIG_CHUNK>& allocator)
+FrameComputeAlgorithm::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 {
 	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
 	ret->func = this->alg->GetFunction(this->funcName);

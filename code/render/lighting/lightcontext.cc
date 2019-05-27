@@ -16,6 +16,9 @@
 #include "dynui/im3d/im3dcontext.h"
 #endif
 
+#include "lights_cluster_classification.h"
+
+
 // match these in lights.fx
 const uint USE_SHADOW_BITFLAG = 0x1;
 const uint USE_PROJECTION_TEX_BITFLAG = 0x2;
@@ -23,13 +26,13 @@ const uint USE_PROJECTION_TEX_BITFLAG = 0x2;
 namespace Lighting
 {
 
-_ImplementContext(LightContext);
 LightContext::GenericLightAllocator LightContext::genericLightAllocator;
 LightContext::PointLightAllocator LightContext::pointLightAllocator;
 LightContext::SpotLightAllocator LightContext::spotLightAllocator;
 LightContext::GlobalLightAllocator LightContext::globalLightAllocator;
+_ImplementContext(LightContext, LightContext::genericLightAllocator);
 
-struct LightServerState
+struct
 {
 	CoreGraphics::ShaderId lightShader;
 
@@ -69,6 +72,32 @@ struct LightServerState
 
 	IndexT localLightsSlot, localLightShadowSlot;
 } lightServerState;
+
+struct
+{
+	CoreGraphics::ShaderId classificationShader;
+	CoreGraphics::ShaderProgramId classificationProgram;
+	CoreGraphics::ShaderRWBufferId clusterIndexBuffer;
+	CoreGraphics::ShaderRWBufferId clusterLightBuffer;
+	CoreGraphics::ResourceTableId clusterResourceTable;
+
+	enum DepthDivisionMode
+	{
+		Linear,
+		Exponential
+	};
+
+	DepthDivisionMode divMode;
+
+	static const SizeT ClusterSubdivsX = 16;
+	static const SizeT ClusterSubdivsY = 16;
+	static const SizeT ClusterSubdivsZ = 8;
+	static const SizeT IndicesPerCluster = 32;
+
+	// these are used to update the light clustering
+	alignas(16) LightsClusterClassification::Light lights[2048];
+
+} clusterState;
 
 //------------------------------------------------------------------------------
 /**
@@ -155,6 +184,30 @@ LightContext::Create()
 
 	DisplayMode mode = WindowGetDisplayMode(DisplayDevice::Instance()->GetCurrentWindow());
 	lightServerState.fsq.Setup(mode.GetWidth(), mode.GetHeight());
+
+	ShaderRWBufferCreateInfo rwbInfo =
+	{
+		"LightClusterIndexBuffer",
+		clusterState.ClusterSubdivsX * clusterState.ClusterSubdivsY * clusterState.ClusterSubdivsZ * clusterState.IndicesPerCluster * sizeof(IndexT),
+		1,
+		false
+	};
+	clusterState.clusterIndexBuffer = CreateShaderRWBuffer(rwbInfo);
+
+	ShaderRWBufferCreateInfo rwb2Info = 
+	{
+		"LightClusterInputBuffer",
+		2048 * sizeof(LightsClusterClassification::Light),
+		1,
+		false
+	};
+	clusterState.clusterLightBuffer = CreateShaderRWBuffer(rwb2Info);
+
+	clusterState.classificationShader = ShaderServer::Instance()->GetShader("shd:lights_cluster_classification.fxb");
+	clusterState.classificationProgram = ShaderGetProgram(clusterState.classificationShader, 0);
+	clusterState.clusterResourceTable = ShaderCreateResourceTable(clusterState.classificationShader, NEBULA_BATCH_GROUP);
+
+	_CreateContext();
 }
 
 //------------------------------------------------------------------------------
@@ -172,7 +225,7 @@ LightContext::SetupGlobalLight(const Graphics::GraphicsEntityId id, const Math::
 	genericLightAllocator.Get<Intensity>(cid.id) = intensity;
 	genericLightAllocator.Get<ShadowCaster>(cid.id) = castShadows;
 
-	auto lid = globalLightAllocator.AllocObject();
+	auto lid = globalLightAllocator.Alloc();
 
 	SetGlobalLightDirection(cid, direction);
 	globalLightAllocator.Get<GlobalLightBacklight>(lid) = backlight;
@@ -203,7 +256,7 @@ LightContext::SetupPointLight(const Graphics::GraphicsEntityId id,
 	genericLightAllocator.Get<ShadowCaster>(cid.id) = castShadows;
 
 	const Math::matrix44 scaleMatrix = Math::matrix44::scaling(range, range, range);
-	auto pli = pointLightAllocator.AllocObject();
+	auto pli = pointLightAllocator.Alloc();
 
 	SetPointLightTransform(cid, Math::matrix44::multiply(scaleMatrix, transform));
 	pointLightAllocator.Get<PointLightDynamicOffsets>(pli).Resize(2);
@@ -260,7 +313,7 @@ LightContext::SetupSpotLight(const Graphics::GraphicsEntityId id,
 	genericLightAllocator.Get<Intensity>(cid.id) = intensity;
 	genericLightAllocator.Get<ShadowCaster>(cid.id) = castShadows;
 
-	auto sli = spotLightAllocator.AllocObject();
+	auto sli = spotLightAllocator.Alloc();
 	spotLightAllocator.Get<SpotLightDynamicOffsets>(sli).Resize(2);
 	genericLightAllocator.Get<TypedLightId>(cid.id) = sli;
 
@@ -521,7 +574,46 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIn
 		break;
 
 		}
+
+		// update cluster state
+		clusterState.lights[i].type = types[i];
+		
+		switch (types[i])
+		{
+			case PointLightType:
+			{
+				auto trans = pointLightAllocator.Get<PointLightTransform>(typeIds[i]);
+				Math::float4 posAndRange = Math::matrix44::transform(trans.get_position(), viewTransform);
+				posAndRange.w() = 1 / trans.get_zaxis().length();
+				posAndRange.storeu(clusterState.lights[i].position);
+			}
+			break;
+
+			case SpotLightType:
+			{
+				auto trans = spotLightAllocator.Get<SpotLightTransform>(typeIds[i]);
+				Math::float4 posAndRange = Math::matrix44::transform(trans.get_position(), viewTransform);
+				posAndRange.w() = 1 / trans.get_zaxis().length();
+				posAndRange.storeu(clusterState.lights[i].position);
+				trans.get_zaxis().store3(clusterState.lights[i].forward);
+			}
+			break;
+		}
 	}
+
+	// update lights buffer which will be used for the light culling pass
+	ShaderRWBufferUpdate(clusterState.clusterLightBuffer, clusterState.lights, sizeof(LightsClusterClassification::Light) * types.Size());	
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+LightContext::UpdateLightClassification()
+{
+	CoreGraphics::SetShaderProgram(clusterState.classificationProgram);
+	CoreGraphics::SetResourceTable(clusterState.clusterResourceTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+	CoreGraphics::Compute(15, 15, 7); // we have 16 x 16 x 8 cells, so the indices naturally become 15, 15, 7
 }
 
 //------------------------------------------------------------------------------
@@ -622,7 +714,7 @@ LightContext::UpdatePointShadows()
 Graphics::ContextEntityId
 LightContext::Alloc()
 {
-	return genericLightAllocator.AllocObject();
+	return genericLightAllocator.Alloc();
 }
 
 //------------------------------------------------------------------------------
@@ -631,7 +723,7 @@ LightContext::Alloc()
 void
 LightContext::Dealloc(Graphics::ContextEntityId id)
 {
-	genericLightAllocator.DeallocObject(id.id);
+	genericLightAllocator.Dealloc(id.id);
 }
 
 //------------------------------------------------------------------------------

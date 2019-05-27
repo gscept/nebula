@@ -2,6 +2,8 @@
 
 nebula work [working directory]
 nebula toolkit [toolkit directory]
+physx [win-vs15,winvs16]
+cleannidl
 """
 
 from mod import log, util, settings
@@ -74,8 +76,8 @@ if sys.platform == "win32" :
                     log.error("could not detect visual studio installation")
                 log.info("Using Visual Studio from" + devenvPath)
                 log.info("Compiling PhysX, this might take a while")
-                log.info("Building checked version")
-                subprocess.call(devenvPath + " " + proj_dir+"/../physx/physx/compiler/fips" + args[1] +"/PhysXSDK.sln /Build checked /Project INSTALL")
+                log.info("Building debug version")
+                subprocess.call(devenvPath + " " + proj_dir+"/../physx/physx/compiler/fips" + args[1] +"/PhysXSDK.sln /Build debug /Project INSTALL")
                 log.info("Building release version")
                 subprocess.call(devenvPath + " " + proj_dir+"/../physx/physx/compiler/fips" + args[1] +"/PhysXSDK.sln /Build release /Project INSTALL")                
             elif noun == 'get' :
@@ -93,7 +95,7 @@ if sys.platform == "win32" :
             elif noun == 'cleannidl' :
                 proj = util.get_project_name_from_dir(proj_dir)
                 cfg = settings.get(proj_dir, 'config')
-                path = util.get_build_dir(fips_dir,proj,cfg)+"/nidl"
+                path = util.get_build_dir(fips_dir,proj,cfg)+"/nidl"                
                 shutil.rmtree(path,True)
         else :
             try:

@@ -3,5 +3,4 @@
 
 namespace Attr
 {
-	DefineEntity(Owner, 'OWNR', Attr::ReadOnly);
 }

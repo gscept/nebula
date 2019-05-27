@@ -6,10 +6,10 @@
 #include "particlesystemnode.h"
 #include "resources/resourcemanager.h"
 #include "models/model.h"
-#include "particles/particlerenderer.h"
 #include "models/streammodelpool.h"
 #include "coregraphics/mesh.h"
 #include "coregraphics/shaderserver.h"
+#include "coregraphics/transformdevice.h"
 
 namespace Models
 {
@@ -44,14 +44,15 @@ ParticleSystemNode::~ParticleSystemNode()
 void
 ParticleSystemNode::UpdateMeshResource(const Resources::ResourceName& resName)
 {
-	n_assert(resName != this->meshResId);
-
 	// discard old mesh
-	if (this->mesh != CoreGraphics::MeshId::Invalid()) Resources::DiscardResource(this->mesh);
+	if (this->mesh != CoreGraphics::MeshId::Invalid())
+		Resources::DiscardResource(this->mesh);
 	
 	// load new mesh
 	this->meshResId = resName;
-	this->mesh = Resources::CreateResource(this->meshResId, this->tag, [this](const Resources::ResourceId) { this->OnFinishedLoading(); }, nullptr, false);
+
+	if (!this->meshResId.IsValid())
+		this->mesh = Resources::CreateResource(this->meshResId, this->tag, nullptr, nullptr, false);
 }
 
 //------------------------------------------------------------------------------
@@ -81,6 +82,10 @@ ParticleSystemNode::OnFinishedLoading()
 	this->bboxSizeVar = CoreGraphics::ShaderGetConstantBinding(this->shader, "BBoxSize");
 	this->animPhasesVar = CoreGraphics::ShaderGetConstantBinding(this->shader, "NumAnimPhases");
 	this->animsPerSecVar = CoreGraphics::ShaderGetConstantBinding(this->shader, "AnimFramesPerSecond");
+
+	// setup sample buffer and emitter mesh
+	this->sampleBuffer.Setup(this->emitterAttrs, ParticleSystemNumEnvelopeSamples);
+	this->emitterMesh.Setup(this->mesh, this->primGroupIndex);
 }
 
 //------------------------------------------------------------------------------
@@ -279,18 +284,57 @@ ParticleSystemNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag
     return retval;    
 }
 
+
 //------------------------------------------------------------------------------
 /**
-void
-ParticleSystemNode::ApplySharedState(IndexT frameIndex)
-{
-	// apply base class shared state
-	StateNode::ApplySharedState(frameIndex);
-
-	// bind particle mesh
-	ParticleRenderer::Instance()->ApplyParticleMesh();
-	
-}
 */
+void
+ParticleSystemNode::ApplyNodeState()
+{
+	TransformNode::ApplyNodeState();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ParticleSystemNode::Instance::ApplyNodeInstanceState()
+{
+	TransformNode::Instance::ApplyNodeInstanceState();
+
+	ParticleSystemNode* pnode = static_cast<ParticleSystemNode*>(this->node);
+
+	bool billboard = pnode->emitterAttrs.GetBool(EmitterAttrs::Billboard);
+
+	// apply transforms
+	if (billboard)
+	{
+		const Math::matrix44 billboardTransform = Math::matrix44::multiply(this->modelTransform, CoreGraphics::TransformDevice::Instance()->GetInvViewTransform());
+		CoreGraphics::ConstantBufferUpdateInstance(this->cbo, billboardTransform, this->instance, this->emitterOrientationVar);
+	}
+	else
+	{
+		CoreGraphics::ConstantBufferUpdateInstance(this->cbo, this->modelTransform, this->instance, this->emitterOrientationVar);
+	}
+
+	// update parameters
+	CoreGraphics::ConstantBufferUpdateInstance(this->cbo, this->boundingBox.center(), this->instance, this->bboxCenterVar);
+	CoreGraphics::ConstantBufferUpdateInstance(this->cbo, this->boundingBox.extents(), this->instance, this->bboxSizeVar);
+	CoreGraphics::ConstantBufferUpdateInstance(this->cbo, pnode->emitterAttrs.GetInt(EmitterAttrs::AnimPhases), this->instance, this->animPhasesVar);
+	CoreGraphics::ConstantBufferUpdateInstance(this->cbo, pnode->emitterAttrs.GetFloat(EmitterAttrs::PhasesPerSecond), this->instance, this->animsPerSecVar);
+	CoreGraphics::ConstantBufferUpdateInstance(this->cbo, billboard, this->instance, this->billboardVar);
+
+	// apply with offsets
+	CoreGraphics::SetResourceTable(this->resourceTable, NEBULA_DYNAMIC_OFFSET_GROUP, CoreGraphics::GraphicsPipeline, this->offsets);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ParticleSystemNode::Instance::Draw()
+{
+
+}
 
 } // namespace Particles

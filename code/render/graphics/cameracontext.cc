@@ -9,8 +9,8 @@
 namespace Graphics
 {
 
-_ImplementContext(CameraContext);
 CameraContext::CameraAllocator CameraContext::cameraAllocator;
+_ImplementContext(CameraContext, CameraContext::cameraAllocator);
 
 //------------------------------------------------------------------------------
 /**
@@ -53,7 +53,7 @@ CameraContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTi
 	IndexT i;
 	for (i = 0; i < viewproj.Size(); i++)
 	{
-		viewproj[i] = Math::matrix44::multiply(proj[i], views[i]);
+		viewproj[i] = Math::matrix44::multiply(views[i], proj[i]);
 	}
 }
 

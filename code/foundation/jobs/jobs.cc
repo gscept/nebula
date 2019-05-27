@@ -9,13 +9,14 @@ namespace Jobs
 
 JobPortAllocator jobPortAllocator(0xFFFF);
 JobAllocator jobAllocator(0xFFFFFFFF);
+JobSyncAllocator jobSyncAllocator(0xFFFFFFFF);
 //------------------------------------------------------------------------------
 /**
 */
 JobPortId
 CreateJobPort(const CreateJobPortInfo& info)
 {
-	Ids::Id32 port = jobPortAllocator.AllocObject();
+	Ids::Id32 port = jobPortAllocator.Alloc();
 	jobPortAllocator.Get<0>(port) = info.name;
 	
 	Util::FixedArray<Ptr<JobThread>> threads(info.numThreads);
@@ -28,7 +29,7 @@ CreateJobPort(const CreateJobPortInfo& info)
 		threads[i] = thread;
 	}
 	jobPortAllocator.Get<PortThreads>(port) = threads;
-	jobPortAllocator.Get<NextThreadIndex>(port) = 0;
+	jobPortAllocator.Get<PortNextThreadIndex>(port) = 0;
 
 	// we limit the id count to be ushort max
 	JobPortId id;
@@ -52,64 +53,14 @@ DestroyJobPort(const JobPortId& id)
 //------------------------------------------------------------------------------
 /**
 */
-bool
-JobPortBusy(const JobPortId& id)
-{
-	const JobId job = jobPortAllocator.Get<LastJobId>((Ids::Id32)id.id);
-	if (job != JobId::Invalid())
-	{
-		const Threading::Event* ev = jobAllocator.Get<2>(job.id);
-		return !ev->Peek();
-	}
-	return false;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-JobPortSync(const JobPortId& id)
-{
-	const JobId job = jobPortAllocator.Get<LastJobId>((Ids::Id32)id.id);
-	const Util::FixedArray<Ptr<JobThread>>& threads = jobPortAllocator.Get<PortThreads>((Ids::Id32)id.id);
-	if (job != JobId::Invalid())
-	{
-		JobThread::JobThreadCommand cmd;
-		cmd.ev = JobThread::Wait;
-		cmd.sync.ev = jobAllocator.Get<2>(job.id);
-
-		// push to all threads
-		IndexT i;
-		for (i = 0; i < threads.Size(); i++)
-			threads[i]->PushCommand(cmd);
-	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-JobPortWait(const JobPortId& id)
-{
-	const JobId job = jobPortAllocator.Get<LastJobId>((Ids::Id32)id.id);
-	if (job != JobId::Invalid())
-	{
-		const Threading::Event* ev = jobAllocator.Get<2>(job.id);
-		ev->Wait();
-	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 JobId
 CreateJob(const CreateJobInfo& info)
 {
-	Ids::Id32 job = jobAllocator.AllocObject();
+	Ids::Id32 job = jobAllocator.Alloc();
 	jobAllocator.Get<0>(job) = info;
-	jobAllocator.Get<2>(job) = n_new(Threading::Event(true));
-	jobAllocator.Get<3>(job) = n_new(std::atomic_uint);
-	jobAllocator.Get<4>(job) = { Memory::HeapType::ScratchHeap, 0, nullptr };
+
+	// ugh, so ugly, would rather have these in the allocator, but atomic_uint is not copyable, and events don't implement copy constructors or moves yet
+	jobAllocator.Get<JobScratchMemory>(job) = { Memory::HeapType::ScratchHeap, 0, nullptr };
 
 	JobId id;
 	id.id = job;
@@ -123,10 +74,10 @@ void
 DestroyJob(const JobId& id)
 {
 	// wait for job to finish before deleting
-	jobAllocator.Get<2>(id.id)->Wait();
-	n_assert(jobAllocator.Get<3>(id.id)->load() == 0);
-	n_delete(jobAllocator.Get<3>(id.id));
-	jobAllocator.DeallocObject(id.id);
+	PrivateMemory& mem = jobAllocator.Get<JobScratchMemory>(id.id);
+	if (mem.memory != nullptr)
+		Memory::Free(mem.heapType, mem.memory);
+	jobAllocator.Dealloc(id.id);
 }
 
 //------------------------------------------------------------------------------
@@ -148,16 +99,14 @@ JobSchedule(const JobId& job, const JobPortId& port, const JobContext& ctx, cons
 	n_assert(ctx.output.numBuffers > 0);
 
 	// set this job to be the last pushed one
-	jobPortAllocator.Get<LastJobId>((Ids::Id32)port.id) = job;
+	jobPortAllocator.Get<PortLastJobId>((Ids::Id32)port.id) = job;
 
 	// port related stuff
 	Util::FixedArray<Ptr<JobThread>>& threads = jobPortAllocator.Get<PortThreads>((Ids::Id32)port.id);
-	uint& threadIndex = jobPortAllocator.Get<NextThreadIndex>((Ids::Id32)port.id);
+	uint& threadIndex = jobPortAllocator.Get<PortNextThreadIndex>((Ids::Id32)port.id);
 
 	// job related stuff
 	const CreateJobInfo& info = jobAllocator.Get<0>(job.id);	
-	Threading::Event* completionEvent = jobAllocator.Get<2>(job.id);
-	std::atomic_uint* completionCounter = jobAllocator.Get<3>(job.id);
 
 	SizeT numInputSlices = (ctx.input.dataSize[0] + (ctx.input.sliceSize[0] - 1)) / ctx.input.sliceSize[0];
 	SizeT numOutputSlices = (ctx.output.dataSize[0] + (ctx.output.sliceSize[0] - 1)) / ctx.output.sliceSize[0];
@@ -177,10 +126,6 @@ JobSchedule(const JobId& job, const JobPortId& port, const JobContext& ctx, cons
 		numWorkUnitSlices[i] += 1;
 	}
 
-	// reset completion counter to number of slices and event to unset
-	completionCounter->exchange(numInputSlices);
-	completionEvent->Reset();
-
 	for (IndexT i = 0; i < threads.Size(); i++)
 	{
 		// go through slices and send jobs to threads
@@ -194,8 +139,6 @@ JobSchedule(const JobId& job, const JobPortId& port, const JobContext& ctx, cons
 			cmd.run.stride = stride;
 			cmd.run.context = ctx;
 			cmd.run.JobFunc = info.JobFunc;
-			cmd.run.completionCounter = completionCounter;
-			cmd.run.completionEvent = completionEvent;
 			cmd.run.callback = callback ? &callback : nullptr;
 			threads[threadIndex]->PushCommand(cmd);
 
@@ -222,7 +165,7 @@ JobScheduleSequence(const Util::Array<JobId>& jobs, const JobPortId& port, const
 	}
 
 	// cycle thread index after all jobs are pushed, this guarantees the sequence will run in order
-	uint& threadIndex = jobPortAllocator.Get<NextThreadIndex>((Ids::Id32)port.id);
+	uint& threadIndex = jobPortAllocator.Get<PortNextThreadIndex>((Ids::Id32)port.id);
 	const SizeT numThreads = jobPortAllocator.Get<PortThreads>((Ids::Id32)port.id).Size();
 	threadIndex = (threadIndex + 1) % numThreads;
 }
@@ -243,19 +186,9 @@ JobScheduleSequence(const Util::Array<JobId>& jobs, const JobPortId & port, cons
 	}
 	
 	// cycle thread index after all jobs are pushed
-	uint& threadIndex = jobPortAllocator.Get<NextThreadIndex>((Ids::Id32)port.id);
+	uint& threadIndex = jobPortAllocator.Get<PortNextThreadIndex>((Ids::Id32)port.id);
 	const SizeT numThreads = jobPortAllocator.Get<PortThreads>((Ids::Id32)port.id).Size();
 	threadIndex = (threadIndex + 1) % numThreads;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-JobWait(const JobId& job)
-{
-	Threading::Event* completionEvent = jobAllocator.Get<2>(job.id);
-	completionEvent->Wait();
 }
 
 //------------------------------------------------------------------------------
@@ -265,12 +198,119 @@ void*
 JobAllocateScratchMemory(const JobId& job, const Memory::HeapType heap, const SizeT size)
 {
 	// setup scratch memory
-	n_assert(jobAllocator.Get<4>(job.id).memory == nullptr);
+	n_assert(jobAllocator.Get<JobScratchMemory>(job.id).memory == nullptr);
 	void* ret = Memory::Alloc(heap, size);
-	jobAllocator.Get<4>(job.id) = { heap, size, ret };
+	jobAllocator.Get<JobScratchMemory>(job.id) = { heap, size, ret };
 
 	// return pointer in case we want to fill it
 	return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+JobSyncId 
+CreateJobSync(const CreateJobSyncInfo& info)
+{
+	Ids::Id32 id = jobSyncAllocator.Alloc();
+	jobSyncAllocator.Get<SyncCallback>(id) = info.callback;
+	jobSyncAllocator.Get<SyncCompletionEvent>(id) = n_new(Threading::Event(true));
+	jobSyncAllocator.Get<SyncCompletionCounter>(id) = n_new(std::atomic_uint);
+	jobSyncAllocator.Get<SyncPendingSignal>(id) = false;
+
+	// start with it signaled
+	jobSyncAllocator.Get<SyncCompletionEvent>(id)->Signal();
+	JobSyncId ret;
+	ret.id = id;
+	return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+DestroyJobSync(const JobSyncId id)
+{
+	n_delete(jobSyncAllocator.Get<SyncCompletionEvent>(id.id));
+	n_delete(jobSyncAllocator.Get<SyncCompletionCounter>(id.id));
+	jobSyncAllocator.Dealloc(id.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+JobSyncSignal(const JobSyncId id, const JobPortId port)
+{
+	Util::FixedArray<Ptr<JobThread>>& threads = jobPortAllocator.Get<PortThreads>((Ids::Id32)port.id);
+	Threading::Event* event = jobSyncAllocator.Get<SyncCompletionEvent>(id.id);
+	std::atomic_uint* counter = jobSyncAllocator.Get<SyncCompletionCounter>(id.id);
+	const std::function<void()>& callback = jobSyncAllocator.Get<SyncCallback>(id.id);
+	jobSyncAllocator.Get<SyncPendingSignal>(id.id) = true;
+	uint completionCount = threads.Size();
+
+	// set counter and issue sync points if the jobs haven't finished yet
+	if (completionCount > 0)
+	{
+		// set the counter to finish all threads, and reset the event
+		counter->exchange(completionCount);
+		event->Reset();
+
+		IndexT i;
+		for (i = 0; i < threads.Size(); i++)
+		{
+			// setup job
+			auto thread = threads[i];
+			JobThread::JobThreadCommand cmd;
+			cmd.ev = JobThread::Signal;
+			cmd.sync.completionCounter = counter;
+			cmd.sync.ev = event;
+			cmd.sync.callback = callback ? &callback : nullptr;
+			thread->PushCommand(cmd);
+		}
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+JobSyncHostWait(const JobSyncId id)
+{
+	Threading::Event* event = jobSyncAllocator.Get<SyncCompletionEvent>(id.id);
+	event->Wait();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+JobSyncThreadWait(const JobSyncId id, const JobPortId port)
+{
+	Util::FixedArray<Ptr<JobThread>>& threads = jobPortAllocator.Get<PortThreads>((Ids::Id32)port.id);
+	Threading::Event* event = jobSyncAllocator.Get<SyncCompletionEvent>(id.id);
+	
+	IndexT i;
+	for (i = 0; i < threads.Size(); i++)
+	{
+		// setup job
+		auto thread = threads[i];
+		JobThread::JobThreadCommand cmd;
+		cmd.ev = JobThread::Wait;
+		cmd.sync.completionCounter = nullptr;
+		cmd.sync.ev = event;
+		thread->PushCommand(cmd);
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool 
+JobSyncSignaled(const JobSyncId id)
+{
+	Threading::Event* event = jobSyncAllocator.Get<SyncCompletionEvent>(id.id);
+	return event->Peek();
 }
 
 __ImplementClass(Jobs::JobThread, 'JBTH', Threading::Thread);
@@ -311,7 +351,7 @@ JobThread::DoWork()
 	this->scratchBuffer = (ubyte*)Memory::Alloc(Memory::ScratchHeap, MaxScratchSize);
 
 	Util::Array<JobThreadCommand> curCommands;
-	curCommands.Reserve(100);
+	curCommands.Reserve(500);
 	while (!this->ThreadStopRequested())
 	{
 		// dequeue all commands, this ensures we don't gain any new commands this thread loop
@@ -325,8 +365,20 @@ JobThread::DoWork()
 			switch (cmd.ev)
 			{
 			case RunJob:
-				this->PushJobSlices(cmd.run.slice, cmd.run.numSlices, cmd.run.stride, cmd.run.context, cmd.run.JobFunc, cmd.run.completionCounter, cmd.run.completionEvent, cmd.run.callback);
+				this->PushJobSlices(cmd.run.slice, cmd.run.numSlices, cmd.run.stride, cmd.run.context, cmd.run.JobFunc, cmd.run.callback);
 				break;
+			case Signal:
+			{
+				// subtract 1 from completion counter
+				uint prev = cmd.sync.completionCounter->fetch_sub(1);
+				if (prev == 1)
+				{
+					cmd.sync.ev->Signal();
+					if (cmd.sync.callback)
+						(*cmd.sync.callback)();
+				}
+				break;
+			}
 			case Wait:
 				cmd.sync.ev->Wait();
 				break;
@@ -345,8 +397,17 @@ JobThread::DoWork()
 //------------------------------------------------------------------------------
 /**
 */
+bool 
+JobThread::HasWork()
+{
+	return this->commands.Size() > 0;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
-JobThread::PushJobSlices(uint firstSliceIndex, uint numSlices, uint stride, const JobContext ctx, void(*JobFunc)(const JobFuncContext& ctx), std::atomic_uint* completionCounter, Threading::Event* completionEvent, const std::function<void()>* callback)
+JobThread::PushJobSlices(uint firstSliceIndex, uint numSlices, uint stride, const JobContext ctx, void(*JobFunc)(const JobFuncContext& ctx), const std::function<void()>* callback)
 {
 	uint sliceIndex = firstSliceIndex;
 
@@ -402,18 +463,6 @@ JobThread::PushJobSlices(uint firstSliceIndex, uint numSlices, uint stride, cons
 
 		// offset slice index by calculated stride
 		sliceIndex += stride;
-	}
-
-	// add number of slices to completion counter
-	uint prev = completionCounter->fetch_sub(numSlices);
-	prev -= numSlices;
-	n_assert(prev >= 0);
-	if (prev == 0)
-	{
-		// signal event and run callback (if present) once count hits 0
-		completionEvent->Signal();
-		if (callback)
-			(*callback)();
 	}
 }
 

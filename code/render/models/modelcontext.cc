@@ -8,6 +8,7 @@
 #include "nodes/modelnode.h"
 #include "streammodelpool.h"
 #include "graphics/graphicsserver.h"
+#include "visibility/visibilitycontext.h"
 
 #ifndef PUBLIC_BUILD
 #include "dynui/im3d/im3dcontext.h"
@@ -18,8 +19,9 @@ using namespace Resources;
 namespace Models
 {
 
-_ImplementContext(ModelContext);
 ModelContext::ModelContextAllocator ModelContext::modelContextAllocator;
+_ImplementContext(ModelContext, ModelContext::modelContextAllocator);
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -54,6 +56,7 @@ ModelContext::Create()
     __bundle.OnRenderDebug = ModelContext::OnRenderDebug;
 #endif
 	ModelContext::__state.allowedRemoveStages = Graphics::OnBeforeFrameStage;
+    ModelContext::__state.OnInstanceMoved = OnInstanceMoved;
 	Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 }
 
@@ -64,7 +67,7 @@ void
 ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::ResourceName& name, const Util::StringAtom& tag)
 {
 	const ContextEntityId cid = GetContextId(gfxId);
-	modelContextAllocator.Get<1>(cid.id) = ModelInstanceId::Invalid();
+    modelContextAllocator.Get<1>(cid.id) = ModelInstanceId::Invalid();
 	
 	ResourceCreateInfo info;
 	info.resource = name;
@@ -194,6 +197,17 @@ ModelContext::GetTransform(const Graphics::ContextEntityId id)
 //------------------------------------------------------------------------------
 /**
 */
+Math::bbox 
+ModelContext::GetBoundingBox(const Graphics::GraphicsEntityId id)
+{
+	const ContextEntityId cid = GetContextId(id);
+	ModelInstanceId& inst = modelContextAllocator.Get<1>(cid.id);
+	return Models::modelPool->modelInstanceAllocator.Get<4>(inst.instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 const Util::Array<Models::ModelNode::Instance*>& 
 ModelContext::GetModelNodeInstances(const Graphics::GraphicsEntityId id)
 {
@@ -280,8 +294,8 @@ ModelContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTim
 			{
 				Models::ModelNode::Instance* node = nodes[j];
 
-				if (!node->active)
-					continue;
+				//if (!node->active)
+				//	continue;
 
 				Math::matrix44& parentTransform = transform;
 				if (node->parent != nullptr && node->parent->node->type >= NodeHasTransform)
@@ -351,6 +365,18 @@ ModelContext::OnRenderDebug(uint32_t flags)
         if (instance == ModelInstanceId::Invalid()) continue;
         Im3d::Im3dContext::DrawBox(instanceBoxes[instance.instance], white, Im3d::CheckDepth|Im3d::Wireframe);
         Im3d::Im3dContext::DrawOrientedBox(transforms[instance.instance], modelBoxes[instance.model], gray, Im3d::CheckDepth);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ModelContext::OnInstanceMoved(uint32_t toIndex, uint32_t fromIndex)
+{
+    if ((uint32_t)ModelContext::__state.entities.Size() > toIndex)
+    {
+        Visibility::ObservableContext::UpdateModelContextId(ModelContext::__state.entities[toIndex], toIndex);
     }
 }
 

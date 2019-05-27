@@ -10,6 +10,7 @@
 #include "coregraphics/shader.h"
 #include "coregraphics/constantbuffer.h"
 #include "frame/framesubpasssystem.h"
+
 namespace Lighting
 {
 class LightContext : public Graphics::GraphicsContext
@@ -78,7 +79,9 @@ private:
 	/// set global light direction
 	static void SetGlobalLightDirection(const Graphics::ContextEntityId id, const Math::vector& direction);
 
-	/// render global lights
+	/// run light classification compute
+	static void UpdateLightClassification();
+	/// render lights
 	static void RenderLights();
 
 	/// update global shadows

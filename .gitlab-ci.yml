@@ -3,7 +3,6 @@ before_script:
     - call ./fips update
     - call ./fips nebula set work ../fips-deploy/
     - call ./fips nebula set toolkit .
-    - call ./fips nebula cleannidl    
     
 stages:
     - build
@@ -13,6 +12,7 @@ build:
    only:
     - master
    script:
-    - call ./fips set config vulkan-win64-vstudio-debug
+    - call ./fips set config vulkan-win64-vs2017-debug
+    - call ./fips nebula cleannidl
     - call ./fips gen
     - call ./fips build

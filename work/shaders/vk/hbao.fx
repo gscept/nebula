@@ -254,7 +254,7 @@ psMain(in vec2 UV,
 	vec3 P = FetchEyePos(UV);
 	vec4 rand = textureLod(RandomMap, gl_FragCoord.xy / RANDOM_TEXTURE_WIDTH, 0);
 	
-	vec2 rayRadiusUv = 0.5 * R * FocalLength.xy / P.z;
+	vec2 rayRadiusUv = 0.5 * R * FocalLengthNearFar.xy / P.z;
 	float rayRadiusPix = rayRadiusUv.x * AOResolution.x;
 	if (rayRadiusPix < 1)
 	{

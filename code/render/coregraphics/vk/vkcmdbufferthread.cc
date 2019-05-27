@@ -43,7 +43,7 @@ void
 VkCmdBufferThread::DoWork()
 {
 	Util::Array<Command> curCommands;
-	curCommands.Reserve(100000);
+	curCommands.Reserve(1000);
 	while (!this->ThreadStopRequested())
 	{
 		// dequeue all commands, this ensures we don't gain any new commands this thread loop

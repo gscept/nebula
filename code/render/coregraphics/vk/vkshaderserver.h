@@ -40,6 +40,9 @@ public:
 	/// unregister texture
 	void UnregisterTexture(const uint32_t id, const CoreGraphics::TextureType type);
 
+	/// set global irradiance and cubemaps
+	void SetGlobalEnvironmentTextures(const CoreGraphics::TextureId& env, const CoreGraphics::TextureId& irr, const SizeT numMips);
+
 	/// get tick params constant buffer
 	const CoreGraphics::ConstantBufferId GetTickParams() const;
 
@@ -87,6 +90,10 @@ private:
 	CoreGraphics::ConstantBinding albedoBufferTextureVar;
 	CoreGraphics::ConstantBinding emissiveBufferTextureVar;
 	CoreGraphics::ConstantBinding lightBufferTextureVar;
+
+	CoreGraphics::ConstantBinding environmentMapVar;
+	CoreGraphics::ConstantBinding irradianceMapVar;
+	CoreGraphics::ConstantBinding numEnvMipsVar;
 
 	IndexT csmBufferTextureVar;
 	IndexT spotlightAtlasShadowBufferTextureVar;

@@ -30,7 +30,7 @@ FrameCopy::~FrameCopy()
 /**
 */
 FrameOp::Compiled*
-FrameCopy::AllocCompiled(Memory::ChunkAllocator<BIG_CHUNK>& allocator)
+FrameCopy::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 {
 	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
 

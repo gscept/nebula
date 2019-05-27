@@ -7,6 +7,7 @@
 #include "models/modelpool.h"
 #include "resources/resourcemanager.h"
 #include "coregraphics/mesh.h"
+#include "coregraphics/graphicsdevice.h"
 
 using namespace Util;
 namespace Models
@@ -64,6 +65,15 @@ PrimitiveNode::ApplyNodeState()
 {
 	ShaderStateNode::ApplyNodeState();
 	CoreGraphics::MeshBind(this->res, this->primitiveGroupIndex);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+PrimitiveNode::Instance::Draw()
+{
+	CoreGraphics::Draw();
 }
 
 } // namespace Models

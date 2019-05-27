@@ -223,7 +223,7 @@ FromVkBorderMode(VkBorderColor mode)
 SamplerId
 CreateSampler(const SamplerCreateInfo& info)
 {
-	Ids::Id32 id = samplerAllocator.AllocObject();
+	Ids::Id32 id = samplerAllocator.Alloc();
 
 	VkDevice& dev = samplerAllocator.Get<0>(id);
 	VkSampler& sampler = samplerAllocator.Get<1>(id);
@@ -269,7 +269,7 @@ DestroySampler(const SamplerId& id)
 	VkSampler& sampler = samplerAllocator.Get<1>(id.id24);
 	vkDestroySampler(dev, sampler, nullptr);
 
-	samplerAllocator.DeallocObject(id.id24);
+	samplerAllocator.Dealloc(id.id24);
 }
 
 //------------------------------------------------------------------------------

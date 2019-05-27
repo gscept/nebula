@@ -60,7 +60,7 @@ VkTransformDevice::Open()
 	this->projVar = ShaderGetConstantBinding(shader, NEBULA_SEMANTIC_PROJECTION);
 	this->invProjVar = ShaderGetConstantBinding(shader, NEBULA_SEMANTIC_INVPROJECTION);
 	this->eyePosVar = ShaderGetConstantBinding(shader, NEBULA_SEMANTIC_EYEPOS);
-	this->focalLengthVar = ShaderGetConstantBinding(shader, NEBULA_SEMANTIC_FOCALLENGTH);
+	this->focalLengthNearFarVar = ShaderGetConstantBinding(shader, NEBULA_SEMANTIC_FOCALLENGTHNEARFAR);
 	this->timeAndRandomVar = ShaderGetConstantBinding(shader, NEBULA_SEMANTIC_TIMEANDRANDOM);
 
 	return TransformDeviceBase::Open();
@@ -102,7 +102,7 @@ VkTransformDevice::ApplyViewSettings()
 	ConstantBufferUpdate(this->viewConstants, this->GetProjTransform(), this->projVar);
 	ConstantBufferUpdate(this->viewConstants, this->GetInvProjTransform(), this->invProjVar);
 	ConstantBufferUpdate(this->viewConstants, this->GetInvViewTransform().getrow3(), this->eyePosVar);
-	ConstantBufferUpdate(this->viewConstants, float4(this->GetFocalLength().x(), this->GetFocalLength().y(), 0, 0), this->focalLengthVar);
+	ConstantBufferUpdate(this->viewConstants, float4(this->GetFocalLength().x(), this->GetFocalLength().y(), this->GetNearFarPlane().x(), this->GetNearFarPlane().y()), this->focalLengthNearFarVar);
 	ConstantBufferUpdate(this->viewConstants, float4((float)FrameSync::FrameSyncTimer::Instance()->GetTime(), Math::n_rand(0, 1), (float)FrameSync::FrameSyncTimer::Instance()->GetFrameTime(), 0), this->timeAndRandomVar);
 }
 

@@ -7,6 +7,7 @@
 */
 //------------------------------------------------------------------------------
 #include "game/component/component.h"
+#include "game/component/attribute.h"
 
 namespace GraphicsFeature
 {
@@ -23,6 +24,8 @@ public:
 	static void UpdateTransform(Game::Entity, const Math::matrix44&);
 	static void SetModel(Game::Entity, const Util::String&);
 
+	/// Return this components fourcc
+	static Util::FourCC GetFourCC();
 private:
 
 };
