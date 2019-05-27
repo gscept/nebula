@@ -49,6 +49,31 @@ set(${N_QT} ON)
 
 find_package(PythonLibs 3.5 REQUIRED)
 
+#physx 
+
+if(NOT PX_TARGET)
+    MESSAGE(FATAL_ERROR "PX_TARGET undefined, select a physx build folder (eg. win.x86_64.vs141)")
+endif()
+
+SET(PX_DIR_DEBUG ${FIPS_DEPLOY_DIR}/physx/bin/${PX_TARGET}/debug/)
+SET(PX_DIR_RELEASE ${FIPS_DEPLOY_DIR}/physx/bin/${PX_TARGET}/release/)
+
+SET(PX_LIBRARY_NAMES PhysX_64  PhysXCommon_64 PhysXCooking_64  PhysXFoundation_64  PhysXCharacterKinematic_static_64 PhysXExtensions_static_64 PhysXPvdSDK_static_64  PhysXTask_static_64 PhysXVehicle_static_64)
+SET(PX_STATIC_NAMES PhysXCharacterKinematic_static_64 PhysXExtensions_static_64 PhysXPvdSDK_static_64  PhysXTask_static_64 PhysXVehicle_static_64)
+SET(PX_DEBUG_LIBRARIES) 
+SET(PX_RELEASE_LIBRARIES)
+
+foreach(CUR_LIB ${PX_LIBRARY_NAMES})
+    find_library(PX_DBG_${CUR_LIB} ${CUR_LIB} PATHS ${PX_DIR_DEBUG})
+    LIST(APPEND PX_DEBUG_LIBRARIES ${PX_DBG_${CUR_LIB}})
+    find_library(PX_REL_${CUR_LIB} ${CUR_LIB} PATHS ${PX_DIR_RELEASE})
+    LIST(APPEND PX_RELEASE_LIBRARIES ${PX_REL_${CUR_LIB}})
+endforeach()
+
+add_library(PxLibs INTERFACE)
+target_link_libraries(PxLibs INTERFACE $<$<CONFIG:Debug>:${PX_DEBUG_LIBRARIES}> $<$<CONFIG:Release>:${PX_RELASE_LIBRARIES}>)
+target_include_directories(PxLibs INTERFACE ${FIPS_DEPLOY_DIR}/physx/include)
+
 set(DEF_RENDERER "N_RENDERER_VULKAN")
 set(N_RENDERER ${DEF_RENDERER} CACHE STRING "Nebula 3D Render Device")
 set_property(CACHE N_RENDERER PROPERTY STRINGS "N_RENDERER_VULKAN" "N_RENDERER_D3D11" "N_RENDERER_OGL4")

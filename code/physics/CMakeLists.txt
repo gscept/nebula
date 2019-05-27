@@ -19,3 +19,4 @@ fips_files(
             visualdebugger.h
             )
 fips_end_module()
+target_link_libraries(physics PxLibs) 

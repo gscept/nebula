@@ -9,6 +9,7 @@
 #include "physics/utils.h"
 #include "math/scalar.h"
 #include "timing/time.h"
+#include "util/set.h"
 
 #define PHYSX_MEMORY_ALLOCATION_DEBUG false
 #define PHYSX_THREADS 2
@@ -58,6 +59,8 @@ class PhysxState : public physx::PxSimulationEventCallback
     Util::Array<Actor> actors;
     Ids::IdGenerationPool actorPool;
 
+    Util::Set<Ids::Id32> awakeActors;
+
     Physics::Allocator allocator;
     Physics::ErrorCallback errorCallback;
     physx::PxOverlapHit overlapBuffer[MAX_SHAPE_OVERLAPS];
@@ -74,16 +77,16 @@ class PhysxState : public physx::PxSimulationEventCallback
     ///
     void onConstraintBreak(physx::PxConstraintInfo* constraints, physx::PxU32 count) {}
     ///
-    void onWake(physx::PxActor** actors, physx::PxU32 count) {}
+    void onWake(physx::PxActor** actors, physx::PxU32 count);
     ///
-    void onSleep(physx::PxActor** actors, physx::PxU32 count) {}
+    void onSleep(physx::PxActor** actors, physx::PxU32 count);
     ///
-    void onContact(const physx::PxContactPairHeader& pairHeader, const physx::PxContactPair* pairs, physx::PxU32 nbPairs);
+    void onContact(const physx::PxContactPairHeader& pairHeader, const physx::PxContactPair* pairs, physx::PxU32 nbPairs) {}
     ///
-    void onTrigger(physx::PxTriggerPair* pairs, physx::PxU32 count);
+    void onTrigger(physx::PxTriggerPair* pairs, physx::PxU32 count) {}
     ///
     
-    void onAdvance(const PxRigidBody*const* bodyBuffer, const PxTransform* poseBuffer, const PxU32 count);
+    void onAdvance(const PxRigidBody*const* bodyBuffer, const PxTransform* poseBuffer, const PxU32 count) {}
     
 };
 
@@ -107,7 +110,7 @@ PhysxState::Setup()
     n_assert2(this->foundation, "PxCreateFoundation failed!");
 
     this->pvd = PxCreatePvd(*this->foundation);
-    this->transport = PxDefaultPvdSocketTransportCreate("127.0.0.1",5424,10);
+    this->transport = PxDefaultPvdSocketTransportCreate("127.0.0.1",5425,100);
     this->pvd->connect(*this->transport, PxPvdInstrumentationFlag::eALL);
 
     this->physics = PxCreatePhysics(PX_PHYSICS_VERSION, *this->foundation, PxTolerancesScale(), false, this->pvd);
@@ -127,7 +130,37 @@ PhysxState::Setup()
     this->time = 0.0;
 }
 
+// avoid warning about truncating the void
+#pragma warning(push)
+#pragma warning(disable: 4311)
+//------------------------------------------------------------------------------
+/**
+*/
+void
+PhysxState::onWake(physx::PxActor** actors, physx::PxU32 count)
+{
+    this->awakeActors.BeginBulkAdd();
+    for (physx::PxU32 i = 0; i < count; i++)
+    {
+        Ids::Id32 id = (Ids::Id32)actors[i]->userData;
+        this->awakeActors.BulkAdd(id);
+    }
+    this->awakeActors.EndBulkAdd();
+}
 
+//------------------------------------------------------------------------------
+/**
+*/
+void
+PhysxState::onSleep(physx::PxActor** actors, physx::PxU32 count)
+{    
+    for (physx::PxU32 i = 0; i < count; i++)
+    {
+        Ids::Id32 id = (Ids::Id32)actors[i]->userData;
+        this->awakeActors.Erase(id);
+    }    
+}
+#pragma warning(pop)
 
 static PhysxState state;
 
@@ -196,12 +229,39 @@ GetMaterial(IndexT idx)
 //------------------------------------------------------------------------------
 /**
 */
+IndexT 
+CreateMaterial(float staticFriction, float dynamicFriction, float restition, float density)
+{
+    n_assert(state.physics);
+    PxMaterial* newMat = state.physics->createMaterial(staticFriction, dynamicFriction, restition);
+    state.materials.Append(Material());
+    IndexT newIdx = state.materials.Size() - 1;
+    Material & mat = state.materials[newIdx];
+    mat.material = newMat;
+    mat.density = density;
+    return newIdx;
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+SizeT
+GetNrMaterials()
+{
+    return state.materials.Size();
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 Update(Timing::Time delta)
 {
     state.time -= delta;
     // we limit the simulation to 5 frames
-    state.time = Math::n_max(state.time, 5.0 * PHYSICS_RATE);
+    state.time = Math::n_max(state.time, -5.0 * PHYSICS_RATE);
     while (state.time < 0.0)
     {
         for(auto & scene : state.activeScenes)
@@ -212,6 +272,16 @@ Update(Timing::Time delta)
         }
         state.time += PHYSICS_RATE;
     }    
+    
+    for (IndexT i = 0; i < state.awakeActors.Size(); i++)
+    {
+        Actor& actor = state.actors[Ids::Index(state.awakeActors.KeyAtIndex(i))];
+        if (actor.moveCallback)//.IsValid())
+        {
+            Math::matrix44 trans = Px2NebMat(static_cast<PxRigidActor*>(actor.actor)->getGlobalPose());
+            actor.moveCallback(trans);
+        }
+    }
 }
 
 
@@ -225,7 +295,9 @@ CreateActor(PxPhysics* physics, bool dynamic, Math::matrix44 const & transform)
 {
     if (dynamic)
     {
-        return physics->createRigidDynamic(Neb2PxTrans(transform));
+        PxRigidActor * actor =  physics->createRigidDynamic(Neb2PxTrans(transform));
+        actor->setActorFlag(physx::PxActorFlag::eSEND_SLEEP_NOTIFIES, true);
+        return actor;
     }
     else
     {
@@ -252,6 +324,10 @@ AllocateActorId(PxRigidActor* pxActor)
     Actor& actor = state.actors[idx];
     actor.id = id;
     actor.actor = pxActor;
+#pragma warning(push)
+#pragma warning(disable: 4312)
+    pxActor->userData = (void*)id.id;
+#pragma warning(pop)
     return id;
 }
 
@@ -327,7 +403,7 @@ CreatePlane(Math::plane const& plane, IndexT materialId, IndexT sceneId)
 {
     Scene & scene = Physics::GetScene(sceneId);
 
-    PxPlane pxPlane(Neb2PxVec(plane.get_normal()), Neb2PxVec(plane.get_point()));
+    PxPlane pxPlane(Neb2PxVec(plane.get_point()), Neb2PxVec(plane.get_normal()));
     PxTransform transform = PxTransformFromPlaneEquation(pxPlane);
 
     PxRigidActor* newActor = scene.physics->createRigidStatic(transform);

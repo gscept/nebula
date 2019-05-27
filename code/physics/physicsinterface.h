@@ -8,10 +8,12 @@
 */
 #include "ids/id.h"
 #include "util/dictionary.h"
+#include "util/delegate.h"
 #include "timing/time.h"
 #include "math/float2.h"
 #include "math/line.h"
 #include "debug/debugtimer.h"
+#include "PxPhysicsAPI.h"
 
 //------------------------------------------------------------------------------
 
@@ -41,6 +43,9 @@ struct Actor
 {
     physx::PxActor* actor;
     ActorId id;
+// FIXME delegate doesnt seem to work here (see testviewer for example)
+    std::function<void(Math::matrix44 const&)> moveCallback;
+    //Util::Delegate<void(Math::matrix44 const&)> moveCallback;
 };
 
 /// physx scene classes, foundation and physics are duplicated here for convenience
@@ -72,6 +77,9 @@ Physics::Scene& GetScene(IndexT idx = 0);
 void RenderDebug();
 ///
 void HandleCollisions();
+
+///
+IndexT CreateMaterial(float staticFriction, float dynamicFriction, float restition, float density);
 ///
 Material & GetMaterial(IndexT idx);
 /// 
