@@ -95,7 +95,7 @@ struct
 	static const SizeT IndicesPerCluster = 32;
 
 	// these are used to update the light clustering
-	LightsClusterClassification::Light lights[2048];
+	alignas(16) LightsClusterClassification::Light lights[2048];
 
 } clusterState;
 
