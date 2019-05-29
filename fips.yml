@@ -50,11 +50,13 @@ exports:
         - code/render        
         - code/resource
         - code/application
+        - code/physics
         - code/addons
         - code/audio
     modules:
         foundation: code/foundation
         render: code/render
+        physics: code/physics
         resource: code/resource
         application: code/application        
         addons: code/addons

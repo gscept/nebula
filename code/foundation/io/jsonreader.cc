@@ -788,6 +788,17 @@ template<> void JsonReader::Get<uint32_t>(uint32_t & ret, const char* attr)
 //------------------------------------------------------------------------------
 /**
 */
+template<> void JsonReader::Get<uint16_t>(uint16_t & ret, const char* attr)
+{
+    const value_variant * node = this->GetChild(attr);
+
+    n_assert(node->is_int());
+    ret = (uint16_t)node->as_int32();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 template<> void JsonReader::Get<float>(float & ret, const char* attr)
 {
     const value_variant * node = this->GetChild(attr);

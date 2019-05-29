@@ -7,12 +7,14 @@
     (C) 2019 Individual contributors, see AUTHORS file
 */
 #include "ids/id.h"
-#include "util/dictionary.h"
-#include "util/delegate.h"
 #include "timing/time.h"
-#include "math/float2.h"
-#include "math/line.h"
-#include "debug/debugtimer.h"
+#include "util/delegate.h"
+#include "util/set.h"
+#include "util/arraystack.h"
+#include "util/stringatom.h"
+#include "math/matrix44.h"
+
+#include <functional>
 #include "PxPhysicsAPI.h"
 
 //------------------------------------------------------------------------------
@@ -31,6 +33,9 @@ enum CollisionFeedbackFlag
 struct Material
 {
     physx::PxMaterial * material;
+    Util::StringAtom name;
+    uint64_t serialId;
+    // for actors created via streamactorpool this is ignored as it can have multiple materials in it
     float density;
 };
 
@@ -79,9 +84,11 @@ void RenderDebug();
 void HandleCollisions();
 
 ///
-IndexT CreateMaterial(float staticFriction, float dynamicFriction, float restition, float density);
+IndexT CreateMaterial(Util::StringAtom name, float staticFriction, float dynamicFriction, float restition, float density);
 ///
 Material & GetMaterial(IndexT idx);
+///
+IndexT LookupMaterial(Util::StringAtom name);
 /// 
 SizeT GetNrMaterials();
 }

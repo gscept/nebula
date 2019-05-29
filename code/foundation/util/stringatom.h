@@ -79,6 +79,8 @@ public:
 
 	/// calculate hash code for Util::HashTable (basically just the adress)
 	IndexT HashCode() const;
+    /// calculate persistent hash code (based on string content)
+    IndexT StringHashCode() const;
 private:
     /// setup the string atom from a string pointer
     void Setup(const char* str);

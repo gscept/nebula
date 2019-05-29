@@ -10,13 +10,19 @@ fips_dir(physics)
 fips_files( 
             shapes.cc
             shapes.h
-            actor.cc
-            actor.h
+            actorcontext.cc
+            actorcontext.h
+            streamactorpool.cc
+            streamactorpool.h
+            streamcolliderpool.cc
+            streamcolliderpool.h
             callbacks.cc
             callbacks.h
             utils.h
             visualdebugger.cc
             visualdebugger.h
+            physxstate.cc
+            physxstate.h
             )
 fips_end_module()
 target_link_libraries(physics PxLibs) 
