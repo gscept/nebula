@@ -60,8 +60,8 @@ ResourceMemoryPool::ReserveResource(const ResourceName& res, const Util::StringA
 
 		ret.poolId = instanceId;
 		ret.poolIndex = this->uniqueId;
-		ret.allocId = resourceId.id24;
-		ret.allocType = resourceId.id8;
+		ret.resourceId = resourceId.id24;
+		ret.resourceType = resourceId.id8;
 		
 		if (res.IsValid()) this->ids.Add(res, ret);
 	}
@@ -110,8 +110,8 @@ ResourceMemoryPool::DiscardByTag(const Util::StringAtom& tag)
 			const ResourceId& id = this->ids[this->names[i]];
 
 			// unload
-			this->Unload(id.allocId);
-			this->DeallocObject(id.allocId);
+			this->Unload(id.resourceId);
+			this->DeallocObject(id.resourceId);
 			this->resourceInstanceIndexPool.Dealloc(id.poolId);
 			this->tags[i] = "";
 		}

@@ -50,6 +50,9 @@ StreamModelPool::Setup()
 	IMPLEMENT_NODE_ALLOCATOR('CHSN', CharacterSkinNode, this->characterSkinNodes, this->characterSkinNodeInstances);
 	IMPLEMENT_NODE_ALLOCATOR('CHRN', CharacterNode, this->characterNodes, this->characterNodeInstances);
 	IMPLEMENT_NODE_ALLOCATOR('PSND', ParticleSystemNode, this->particleSystemNodes, this->particleSystemNodeInstances);
+
+	// never forget to run this
+	ResourceStreamPool::Setup();
 }
 
 //------------------------------------------------------------------------------
@@ -59,33 +62,33 @@ ModelInstanceId
 StreamModelPool::CreateModelInstance(const ModelId id)
 {
 	ModelInstanceId miid;
-	const Util::Dictionary<Util::StringAtom, Models::ModelNode*>& nodes = this->modelAllocator.Get<ModelNodes>(id.allocId);
-	SizeT& instances = this->modelAllocator.Get<InstanceCount>(id.allocId);
+	const Util::Dictionary<Util::StringAtom, Models::ModelNode*>& nodes = this->modelAllocator.Get<ModelNodes>(id.resourceId);
+	SizeT& instances = this->modelAllocator.Get<InstanceCount>(id.resourceId);
 
 	// alloc a new instance of this model
 	Ids::Id32 mnid = this->modelInstanceAllocator.Alloc();
-	miid.model = id.allocId;
+	miid.model = id.resourceId;
 	miid.instance = mnid;
 	instances++;
 
 	// get all template nodes
 	Util::Array<Models::ModelNode::Instance*>& nodeInstances = this->modelInstanceAllocator.Get<ModelNodeInstances>(mnid);
 	Util::Array<Models::NodeType>& nodeTypes = this->modelInstanceAllocator.Get<ModelNodeTypes>(mnid);
-	Memory::ArenaAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& alloc = this->modelAllocator.Get<InstanceNodeAllocator>(id.allocId);
+	Memory::ArenaAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& alloc = this->modelAllocator.Get<InstanceNodeAllocator>(id.resourceId);
 
 	// allocate memory
 	byte* mem = nullptr;
 	if (this->modelInstanceAllocator.Get<InstanceMemory>(mnid) == nullptr)
 	{
 		// id is new, allocate new buffer
-		mem = (byte*)alloc.Alloc(this->modelAllocator.Get<InstanceAllocSize>(id.allocId));
+		mem = (byte*)alloc.Alloc(this->modelAllocator.Get<InstanceAllocSize>(id.resourceId));
 		this->modelInstanceAllocator.Get<InstanceMemory>(mnid) = mem;
 	}
 	else
 	{
 		// id is old, reuse old memory but reset it to 0
 		mem = this->modelInstanceAllocator.Get<InstanceMemory>(mnid);
-		memset(mem, 0x0, this->modelAllocator.Get<InstanceAllocSize>(id.allocId));
+		memset(mem, 0x0, this->modelAllocator.Get<InstanceAllocSize>(id.resourceId));
 	}
 
 	SizeT i;
@@ -121,7 +124,7 @@ StreamModelPool::DestroyModelInstance(const ModelInstanceId id)
 const Util::Dictionary<Util::StringAtom, Models::ModelNode*>&
 StreamModelPool::GetModelNodes(const ModelId id)
 {
-	return this->modelAllocator.Get<ModelNodes>(id.allocId);
+	return this->modelAllocator.Get<ModelNodes>(id.resourceId);
 }
 
 //------------------------------------------------------------------------------
@@ -139,7 +142,7 @@ StreamModelPool::GetModelNodeInstances(const ModelInstanceId id)
 const Math::bbox&
 StreamModelPool::GetModelBoundingBox(const ModelId id) const
 {
-	return this->modelAllocator.Get<ModelBoundingBox>(id.allocId);
+	return this->modelAllocator.Get<ModelBoundingBox>(id.resourceId);
 }
 
 //------------------------------------------------------------------------------
@@ -148,7 +151,7 @@ StreamModelPool::GetModelBoundingBox(const ModelId id) const
 Math::bbox&
 StreamModelPool::GetModelBoundingBox(const ModelId id)
 {
-	return this->modelAllocator.Get<ModelBoundingBox>(id.allocId);
+	return this->modelAllocator.Get<ModelBoundingBox>(id.resourceId);
 }
 
 //------------------------------------------------------------------------------

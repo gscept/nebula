@@ -24,7 +24,7 @@ using namespace Math;
 const Util::FixedArray<AnimClip>&
 StreamAnimationPool::GetClips(const AnimResourceId id)
 {
-	return this->Get<0>(id.allocId);
+	return this->Get<0>(id.resourceId);
 }
 
 //------------------------------------------------------------------------------
@@ -33,7 +33,7 @@ StreamAnimationPool::GetClips(const AnimResourceId id)
 const AnimClip&
 StreamAnimationPool::GetClip(const AnimResourceId id, const IndexT index)
 {
-	return this->Get<0>(id.allocId)[index];
+	return this->Get<0>(id.resourceId)[index];
 }
 
 //------------------------------------------------------------------------------
@@ -41,7 +41,7 @@ StreamAnimationPool::GetClip(const AnimResourceId id, const IndexT index)
 */
 const IndexT StreamAnimationPool::GetClipIndex(const AnimResourceId id, const Util::StringAtom& name)
 {
-	return this->Get<1>(id.allocId)[name];
+	return this->Get<1>(id.resourceId)[name];
 }
 
 //------------------------------------------------------------------------------
@@ -50,7 +50,7 @@ const IndexT StreamAnimationPool::GetClipIndex(const AnimResourceId id, const Ut
 const Ptr<AnimKeyBuffer>&
 StreamAnimationPool::GetKeyBuffer(const AnimResourceId id)
 {
-	return this->Get<2>(id.allocId);
+	return this->Get<2>(id.resourceId);
 }
 
 //------------------------------------------------------------------------------
@@ -59,9 +59,9 @@ StreamAnimationPool::GetKeyBuffer(const AnimResourceId id)
 Resources::ResourcePool::LoadStatus
 StreamAnimationPool::LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream)
 {
-	Util::FixedArray<AnimClip>& clips = this->Get<0>(id.allocId);
-	Util::HashTable<Util::StringAtom, IndexT, 32>& clipIndices = this->Get<1>(id.allocId);
-	Ptr<AnimKeyBuffer>& keyBuffer = this->Get<2>(id.allocId);
+	Util::FixedArray<AnimClip>& clips = this->Get<0>(id.resourceId);
+	Util::HashTable<Util::StringAtom, IndexT, 32>& clipIndices = this->Get<1>(id.resourceId);
+	Ptr<AnimKeyBuffer>& keyBuffer = this->Get<2>(id.resourceId);
 	
 	// map buffer
 	uchar* ptr = (uchar*)stream->Map();
@@ -164,9 +164,9 @@ StreamAnimationPool::LoadFromStream(const Resources::ResourceId id, const Util::
 void
 StreamAnimationPool::Unload(const Resources::ResourceId id)
 {
-	Util::FixedArray<AnimClip>& clips = this->Get<0>(id.allocId);
-	Util::HashTable<Util::StringAtom, IndexT, 32>& clipIndices = this->Get<1>(id.allocId);
-	Ptr<AnimKeyBuffer>& keyBuffer = this->Get<2>(id.allocId);
+	Util::FixedArray<AnimClip>& clips = this->Get<0>(id.resourceId);
+	Util::HashTable<Util::StringAtom, IndexT, 32>& clipIndices = this->Get<1>(id.resourceId);
+	Ptr<AnimKeyBuffer>& keyBuffer = this->Get<2>(id.resourceId);
 
 	if (keyBuffer.isvalid())
 	{

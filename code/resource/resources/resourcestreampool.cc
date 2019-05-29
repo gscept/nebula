@@ -32,13 +32,12 @@ ResourceStreamPool::~ResourceStreamPool()
 
 //------------------------------------------------------------------------------
 /**
+
 */
 void
 ResourceStreamPool::Setup()
 {
 	// implement loader-specific setups, such as placeholder and error resource ids, as well as the acceptable resource class
-	this->placeholderResourceName = "";
-	this->errorResourceName = "";
 	this->uniqueResourceId = 0;
 }
 
@@ -49,6 +48,41 @@ void
 ResourceStreamPool::Discard()
 {
 	// empty
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+ResourceStreamPool::LoadFallbackResources()
+{
+	// load placeholder
+	if (this->placeholderResourceName.IsValid())
+	{
+		this->CreateResource(this->placeholderResourceName, "system"_atm,
+			[this](Resources::ResourceId id)
+			{
+				this->placeholderResourceId = id;
+			},
+			[this](Resources::ResourceId id)
+			{
+				n_error("Could not load placeholder resource %s!", this->placeholderResourceName.Value());
+			}, true);
+	}
+
+	// load error
+	if (this->errorResourceName.IsValid())
+	{
+		this->CreateResource(this->errorResourceName, "system"_atm,
+			[this](Resources::ResourceId id)
+			{
+				this->errorResourceId = id;
+			},
+			[this](Resources::ResourceId id)
+			{
+				n_error("Could not load error resource %s!", this->errorResourceName.Value());
+			}, true);
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -118,12 +152,12 @@ ResourceStreamPool::Update(IndexT frameIndex)
 			if (this->states[unload.resourceId.poolId] == Resource::Loaded)
 			{
 				// unload if loaded
-				this->Unload(unload.resourceId.allocId);
+				this->Unload(unload.resourceId.resourceId);
 				this->states[unload.resourceId.poolId] = Resource::Unloaded;
 			}
 
 			// give up the resource id
-			this->DeallocObject(unload.resourceId.allocId);
+			this->DeallocObject(unload.resourceId.resourceId);
 			this->resourceInstanceIndexPool.Dealloc(unload.resourceId.poolId);
 			
 			// remove pending unload if not Pending or Loaded (so explicitly Unloaded or Failed)
@@ -144,8 +178,14 @@ ResourceStreamPool::RunCallbacks(LoadStatus status, const Resources::ResourceId 
 	for (i = 0; i < cbls.Size(); i++)
 	{
 		const _Callbacks& cbl = cbls[i];
-		if (status == Success && cbl.success != nullptr)	cbl.success(id);
-		else if (status == Failed && cbl.failed != nullptr) cbl.failed(id);
+		if (status == Success && cbl.success != nullptr)	
+			cbl.success(id);
+		else if (status == Failed && cbl.failed != nullptr)
+		{
+			Resources::ResourceId fail = id;
+			fail.resourceId = this->errorResourceId.resourceId;
+			cbl.failed(fail);
+		}
 	}
 }
 
@@ -176,11 +216,13 @@ ResourceStreamPool::PrepareLoad(_PendingResourceLoad& res)
 			// enter critical section
 			if (stream->Open())
 			{
-				LoadStatus stat = this->LoadFromStream(res.id.allocId, res.tag, stream);
+				LoadStatus stat = this->LoadFromStream(res.id.resourceId, res.tag, stream);
 				this->asyncSection.Enter();
 				this->RunCallbacks(stat, res.id);
-				if (stat == Success)		this->states[res.id.poolId] = Resource::Loaded;
-				else if (stat == Failed)	this->states[res.id.poolId] = Resource::Failed;
+				if (stat == Success)		
+					this->states[res.id.poolId] = Resource::Loaded;
+				else if (stat == Failed)	
+					this->states[res.id.poolId] = Resource::Failed;
 				this->asyncSection.Leave();
 
 				// close stream
@@ -268,9 +310,10 @@ Resources::ResourceStreamPool::CreateResource(const ResourceName& res, const Uti
 		// also add as pending resource
 		ret.poolId = instanceId;
 		ret.poolIndex = this->uniqueId;
-		ret.allocId = resourceId.id24;
-		ret.allocType = resourceId.id8;
+		ret.resourceId = resourceId.id24;
+		ret.resourceType = resourceId.id8;
 		
+		// add mapping between resource name and resource being loaded
 		this->ids.Add(res, ret);
 
 		Ids::Id32 pendingId = this->pendingLoadPool.Alloc();
@@ -288,12 +331,18 @@ Resources::ResourceStreamPool::CreateResource(const ResourceName& res, const Uti
 			pending = _PendingResourceLoad();
 			if (status == Success)
 			{
-				if (success != nullptr) success(ret);
+				if (success != nullptr) 
+					success(ret);
 				this->states[instanceId] = Resource::Loaded;
 			}
 			else if (status == Failed)
 			{
-				if (failed != nullptr) failed(ret);
+				if (failed != nullptr)
+				{
+					Resources::ResourceId fail = ret;
+					fail.resourceId = this->errorResourceId.resourceId;
+					failed(fail);
+				}
 				this->states[instanceId] = Resource::Failed;
 			}
 		}
@@ -306,6 +355,9 @@ Resources::ResourceStreamPool::CreateResource(const ResourceName& res, const Uti
 			}
 
 			this->pendingLoadMap.Add(res, pendingId);
+
+			// set to placeholder while waiting
+			ret.resourceId = placeholderResourceId.resourceId;
 		}
 	}
 	else // this means the resource container is already created, and it may or may not be pending
@@ -326,11 +378,13 @@ Resources::ResourceStreamPool::CreateResource(const ResourceName& res, const Uti
 			const Resource::State state = this->states[ret.poolId];
 			if (state == Resource::Loaded)
 			{
-				if (success != nullptr) success(ret);
+				if (success != nullptr) 
+					success(ret);
 			}
 			else if (state == Resource::Failed)
 			{
-				if (failed != nullptr) failed(ret);
+				if (failed != nullptr) 
+					failed(ret);
 			}
 			else if (state == Resource::Pending)
 			{
@@ -348,6 +402,9 @@ Resources::ResourceStreamPool::CreateResource(const ResourceName& res, const Uti
 
 				// since we are pending and inside the async section, it means the resource is not loaded yet, which means its safe to add the callback
 				this->callbacks[ret.poolId].Append({ ret, success, failed });
+
+				// set to placeholder while waiting
+				ret.resourceId = placeholderResourceId.resourceId;
 			}
 
 			// leave async section
@@ -461,7 +518,7 @@ ResourceStreamPool::ReloadResource(const Resources::ResourceId& id, std::functio
 	// enter critical section
 	if (stream->Open())
 	{
-		LoadStatus stat = this->ReloadFromStream(id.allocId, stream);
+		LoadStatus stat = this->ReloadFromStream(id.resourceId, stream);
 		this->asyncSection.Enter();
 		if (stat == Success)		success(id);
 		else if (stat == Failed)	failed(id);

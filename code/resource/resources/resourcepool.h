@@ -44,7 +44,7 @@
 	inline Resources::ResourceUnknownId AllocObject() { return Ids::Id::MakeId24_8(name.Alloc(), 0xFF); } \
 	inline void DeallocObject(const Resources::ResourceUnknownId id) { name.Dealloc(id.id24); } \
 	template<int MEMBER> inline auto& Get(const Ids::Id24 id) { return name.Get<MEMBER>(id); } \
-	template<int MEMBER> inline auto& Get(const Resources::ResourceId id) { return name.Get<MEMBER>(id.allocId); }
+	template<int MEMBER> inline auto& Get(const Resources::ResourceId id) { return name.Get<MEMBER>(id.resourceId); }
 
 #define __ImplementResourceAllocatorSafe(name) \
 	inline Resources::ResourceUnknownId AllocObject() { return Ids::Id::MakeId24_8(name.AllocObject(), 0xFF); } \
@@ -52,17 +52,17 @@
 	inline void EnterGet() { name.EnterGet(); } \
 	inline void LeaveGet() { name.LeaveGet(); } \
 	template<int MEMBER> inline auto& Get(const Ids::Id24 id) { return name.Get<MEMBER>(id); } \
-	template<int MEMBER> inline auto& Get(const Resources::ResourceId id) { return name.Get<MEMBER>(id.allocId); } \
+	template<int MEMBER> inline auto& Get(const Resources::ResourceId id) { return name.Get<MEMBER>(id.resourceId); } \
 	template<int MEMBER> inline auto& GetUnsafe(const Ids::Id24 id) { return name.GetUnsafe<MEMBER>(id); } \
-	template<int MEMBER> inline auto& GetUnsafe(const Resources::ResourceId id) { return name.GetUnsafe<MEMBER>(id.allocId); } \
+	template<int MEMBER> inline auto& GetUnsafe(const Resources::ResourceId id) { return name.GetUnsafe<MEMBER>(id.resourceId); } \
 	template<int MEMBER> inline auto& GetSafe(const Ids::Id24 id) { return name.GetSafe<MEMBER>(id); } \
-	template<int MEMBER> inline auto& GetSafe(const Resources::ResourceId id) { return name.GetSafe<MEMBER>(id.allocId); }
+	template<int MEMBER> inline auto& GetSafe(const Resources::ResourceId id) { return name.GetSafe<MEMBER>(id.resourceId); }
 
 #define __ImplementResourceAllocatorTyped(name, idtype) \
 	inline Resources::ResourceUnknownId AllocObject() { return Ids::Id::MakeId24_8(name.Alloc(), idtype); } \
 	inline void DeallocObject(const Resources::ResourceUnknownId id) { name.Dealloc(id.id24); } \
 	template<int MEMBER> inline auto& Get(const Ids::Id24 id) { return name.Get<MEMBER>(id); } \
-	template<int MEMBER> inline auto& Get(const Resources::ResourceId id) { return name.Get<MEMBER>(id.allocId); }
+	template<int MEMBER> inline auto& Get(const Resources::ResourceId id) { return name.Get<MEMBER>(id.resourceId); }
 
 #define __ImplementResourceAllocatorTypedSafe(name, idtype) \
 	inline Resources::ResourceUnknownId AllocObject() { return Ids::Id::MakeId24_8(name.Alloc(), idtype); } \
@@ -70,11 +70,11 @@
 	inline void EnterGet() { name.EnterGet(); } \
 	inline void LeaveGet() { name.LeaveGet(); } \
 	template<int MEMBER> inline auto& Get(const Ids::Id24 id) { return name.Get<MEMBER>(id); } \
-	template<int MEMBER> inline auto& Get(const Resources::ResourceId id) { return name.Get<MEMBER>(id.allocId); } \
+	template<int MEMBER> inline auto& Get(const Resources::ResourceId id) { return name.Get<MEMBER>(id.resourceId); } \
 	template<int MEMBER> inline auto& GetUnsafe(const Ids::Id24 id) { return name.GetUnsafe<MEMBER>(id); } \
-	template<int MEMBER> inline auto& GetUnsafe(const Resources::ResourceId id) { return name.GetUnsafe<MEMBER>(id.allocId); } \
+	template<int MEMBER> inline auto& GetUnsafe(const Resources::ResourceId id) { return name.GetUnsafe<MEMBER>(id.resourceId); } \
 	template<int MEMBER> inline auto& GetSafe(const Ids::Id24 id) { return name.GetSafe<MEMBER>(id); } \
-	template<int MEMBER> inline auto& GetSafe(const Resources::ResourceId id) { return name.GetSafe<MEMBER>(id.allocId); }
+	template<int MEMBER> inline auto& GetSafe(const Resources::ResourceId id) { return name.GetSafe<MEMBER>(id.resourceId); }
 
 namespace Resources
 {
@@ -87,10 +87,13 @@ public:
 	/// destructor
 	virtual ~ResourcePool();
 
-	/// setup resource loader, initiates the placeholder and error resources if valid
+	/// setup resource loader
 	virtual void Setup();
 	/// discard resource loader
 	virtual void Discard();
+
+	/// loads error and placeholder resources if valid
+	virtual void LoadFallbackResources();
 
 	/// discard resource instance
 	virtual void DiscardResource(const Resources::ResourceId id);

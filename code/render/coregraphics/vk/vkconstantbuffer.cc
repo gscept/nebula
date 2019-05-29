@@ -56,7 +56,7 @@ CreateConstantBuffer(const ConstantBufferCreateInfo& info)
 	// if we setup from reflection, then fetch the size from the shader
 	if (info.setupFromReflection)
 	{
-		AnyFX::ShaderEffect* effect = shaderPool->shaderAlloc.Get<0>(info.shader.allocId);
+		AnyFX::ShaderEffect* effect = shaderPool->shaderAlloc.Get<0>(info.shader.resourceId);
 		AnyFX::VkVarblock* varblock = static_cast<AnyFX::VkVarblock*>(effect->GetVarblock(info.name.Value()));
 
 		// setup buffer from other buffer

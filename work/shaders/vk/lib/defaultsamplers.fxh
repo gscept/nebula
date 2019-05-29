@@ -15,8 +15,6 @@ group(BATCH_GROUP) shared varblock DefaultSamplers [ string Visibility = "VS|PS"
 	textureHandle NormalMap;
 	textureHandle RoughnessMap;
 	textureHandle CavityMap;
-
-	uint		  __paddfsmpl;
 };
 
 

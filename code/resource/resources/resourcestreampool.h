@@ -53,10 +53,13 @@ public:
 	/// destructor
 	virtual ~ResourceStreamPool();
 
-	/// setup resource loader, initiates the placeholder and error resources if valid
-	virtual void Setup();
+	/// setup resource loader, initiates the placeholder and error resources if valid, so don't forget to run!
+	virtual void Setup() override;
 	/// discard resource loader
-	virtual void Discard();
+	virtual void Discard() override;
+
+	/// load placeholder and error resources
+	virtual void LoadFallbackResources() override;
 
 	/// create a container with a tag associated with it, if no tag is provided, the resource will be untagged
 	Resources::ResourceId CreateResource(const Resources::ResourceName& res, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed, bool immediate);
@@ -115,8 +118,8 @@ protected:
 	Util::StringAtom placeholderResourceName;
 	Util::StringAtom errorResourceName;
 
-	Ids::Id32 placeholderResourceId;
-	Ids::Id32 errorResourceId;
+	Resources::ResourceId placeholderResourceId;
+	Resources::ResourceId errorResourceId;
 
 	bool async;
 

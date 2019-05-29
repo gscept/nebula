@@ -280,7 +280,7 @@ TexturePageHandler::HandleImageRequest(const Dictionary<String,String>& query, c
         return HttpStatus::NotFound;
     }
 
-    if (id.allocType != TextureIdType)
+    if (id.resourceType != TextureIdType)
     {
         // resource exists but is not a texture
         return HttpStatus::NotFound;
@@ -313,7 +313,7 @@ TexturePageHandler::HandleTextureInfoRequest(const Util::String& resId, const Pt
         return HttpStatus::NotFound;
     }
 
-	if (id.allocType != TextureIdType)
+	if (id.resourceType != TextureIdType)
 	{
 		// resource exists but is not a texture
 		return HttpStatus::NotFound;
