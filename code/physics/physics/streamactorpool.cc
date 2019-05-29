@@ -71,13 +71,9 @@ StreamActorPool::CreateActorInstance(ActorResourceId id, Math::matrix44 const & 
 Resources::ResourcePool::LoadStatus 
 StreamActorPool::LoadFromStream(const Resources::ResourceId res, const Util::StringAtom & tag, const Ptr<IO::Stream>& stream)
 {
-    n_assert(stream.isvalid());
-    n_assert(stream->CanBeMapped());
+    n_assert(stream.isvalid());    
     n_assert(this->GetState(res) == Resources::Resource::Pending);
-
-    void* srcData = stream->Map();
-    uint srcDataSize = stream->GetSize();
-
+    
     /// during the load-phase, we can safetly get the structs
     this->EnterGet();    
     ActorInfo &actorInfo = this->allocator.Get<0>(res.allocId);       
@@ -91,7 +87,8 @@ StreamActorPool::LoadFromStream(const Resources::ResourceId res, const Util::Str
             actorInfo.feedbackFlag = (Physics::CollisionFeedbackFlag)reader->GetInt("feedback");
             reader->Get(actorInfo.dynamic, "dynamic");
             reader->Get(actorInfo.density, "density");
-            reader->SetToFirstChild("Colliders");
+            reader->SetToFirstChild("colliders");
+            reader->SetToFirstChild();
             do
             {
                 Util::String name = reader->GetString("name");
@@ -110,6 +107,10 @@ StreamActorPool::LoadFromStream(const Resources::ResourceId res, const Util::Str
                 if (collider.IsValid())
                 {
                     colliderid = Resources::CreateResource(collider, tag, nullptr, nullptr, true);
+                    if (colliderPool->GetState(colliderid) == Resources::Resource::Failed)
+                    {
+                        return Resources::ResourcePool::Failed;
+                    }
                 }
                 else
                 {
@@ -120,9 +121,7 @@ StreamActorPool::LoadFromStream(const Resources::ResourceId res, const Util::Str
                 newShape->setLocalPose(Neb2PxTrans(trans));
                 actorInfo.shapes.Append(newShape);
 
-            } while (reader->SetToNextChild());
-                
-            reader->Close();
+            } while (reader->SetToNextChild());                            
             return Resources::ResourcePool::Success;                                    
         }
     }    

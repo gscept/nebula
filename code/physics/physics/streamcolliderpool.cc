@@ -61,12 +61,8 @@ StreamColliderPool::GetGeometry(ColliderId id)
 Resources::ResourcePool::LoadStatus
 StreamColliderPool::LoadFromStream(const Resources::ResourceId res, const Util::StringAtom & tag, const Ptr<IO::Stream>& stream)
 {
-    n_assert(stream.isvalid());
-    n_assert(stream->CanBeMapped());
-    n_assert(this->GetState(res) == Resources::Resource::Pending);
-
-    void* srcData = stream->Map();
-    uint srcDataSize = stream->GetSize();
+    n_assert(stream.isvalid());    
+    n_assert(this->GetState(res) == Resources::Resource::Pending);    
 
     /// during the load-phase, we can safetly get the structs
     this->EnterGet();
@@ -115,11 +111,9 @@ StreamColliderPool::LoadFromStream(const Resources::ResourceId res, const Util::
                 break;
                 default:
                     n_assert("unknown collider type");
-            }
-            reader->Close();
+            }            
             return Resources::ResourcePool::Success;
-        }
-        reader->Close();
+        }        
     }
     return Resources::ResourcePool::Failed;
 }

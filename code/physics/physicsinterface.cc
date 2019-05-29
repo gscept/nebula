@@ -9,6 +9,7 @@
 #include "physics/streamactorpool.h"
 #include "physics/streamcolliderpool.h"
 #include "resources/resourcemanager.h"
+#include "io/assignregistry.h"
 
 #define PHYSX_MEMORY_ALLOCATION_DEBUG false
 #define PHYSX_THREADS 2
@@ -56,7 +57,8 @@ Setup()
 {
     state.Setup();
     Resources::ResourceManager::Instance()->RegisterStreamPool("np", Physics::StreamActorPool::RTTI);
-    Resources::ResourceManager::Instance()->RegisterStreamPool("npc", Physics::StreamColliderPool::RTTI);
+    Resources::ResourceManager::Instance()->RegisterStreamPool("npc", Physics::StreamColliderPool::RTTI);    
+    IO::AssignRegistry::Instance()->SetAssign(IO::Assign("phy","export:physics"));
 
     Physics::actorPool = Resources::GetStreamPool<Physics::StreamActorPool>();
     Physics::colliderPool = Resources::GetStreamPool<Physics::StreamColliderPool>();
