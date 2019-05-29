@@ -3,7 +3,7 @@
 #-------------------------------------------------------------------------------
 
 nebula_begin_module(application)
-	fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/foundation ${CODE_ROOT}/render ${CODE_ROOT}/resource ${CODE_ROOT}/audio)
+	fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/audio)
 	fips_deps(foundation render audio resource)
 	fips_dir(.)
 		fips_files(

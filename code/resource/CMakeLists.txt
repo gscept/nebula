@@ -27,3 +27,4 @@ fips_begin_module(resource)
 				rttiarray.h
 			)
 fips_end_module()
+target_include_directories(resource PUBLIC ${CODE_ROOT}/resource)

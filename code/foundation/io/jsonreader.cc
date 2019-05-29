@@ -777,6 +777,30 @@ template<> void JsonReader::Get<int>(int & ret, const char* attr)
 //------------------------------------------------------------------------------
 /**
 */
+template<> void JsonReader::Get<Math::matrix44>(Math::matrix44 & ret, const char* attr)
+{        
+    ret = this->GetMatrix44(attr);
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<> void JsonReader::Get<Math::vector>(Math::vector & ret, const char* attr)
+{
+    //FIXME this searches twice
+    const value_variant * node = this->GetChild(attr);
+    NEBULA_ALIGN16 float v[4];
+    for (int i = 0; i < 3; i++)
+    {
+        v[i] = node->get_value_at_index(i).as_float();
+    }
+    ret.load(v);    
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 template<> void JsonReader::Get<uint32_t>(uint32_t & ret, const char* attr)
 {
     const value_variant * node = this->GetChild(attr);
