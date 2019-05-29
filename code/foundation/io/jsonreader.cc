@@ -93,8 +93,7 @@ JsonReader::Close()
     n_assert(0 != this->document);
     this->document->clear();    
     n_delete(this->document);
-    this->curNode = 0;
-    this->stream->Close();
+    this->curNode = 0;    
     Memory::Free(Memory::StreamDataHeap, this->buffer);
     this->buffer = nullptr;
     StreamReader::Close();
