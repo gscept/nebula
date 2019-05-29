@@ -55,7 +55,7 @@ inline const SurfaceId
 SurfacePool::GetId(const SurfaceResourceId id)
 {
 	allocator.EnterGet();
-	const SurfaceId ret = allocator.Get<0>(id.allocId).id;
+	const SurfaceId ret = allocator.Get<0>(id.resourceId).id;
 	allocator.LeaveGet();
 	return ret;
 }
@@ -67,7 +67,7 @@ inline MaterialType* const
 SurfacePool::GetType(const SurfaceResourceId id)
 {
 	allocator.EnterGet();
-	MaterialType* const ret = allocator.Get<0>(id.allocId).type;
+	MaterialType* const ret = allocator.Get<0>(id.resourceId).type;
 	allocator.LeaveGet();
 	return ret;
 }

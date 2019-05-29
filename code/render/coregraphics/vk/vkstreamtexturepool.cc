@@ -47,8 +47,8 @@ void
 VkStreamTexturePool::Setup()
 {
 	ResourceStreamPool::Setup();
-	this->placeholderResourceName = "mdl:system/placeholder.dds";
-	this->errorResourceName = "mdl:system/error.dds";
+	this->placeholderResourceName = "tex:system/placeholder.dds";
+	this->errorResourceName = "tex:system/error.dds";
 }
 
 //------------------------------------------------------------------------------
@@ -84,8 +84,8 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 
 	/// during the load-phase, we can safetly get the structs
 	texturePool->EnterGet();
-	VkTextureRuntimeInfo& runtimeInfo = texturePool->Get<0>(res.allocId);
-	VkTextureLoadInfo& loadInfo = texturePool->Get<1>(res.allocId);
+	VkTextureRuntimeInfo& runtimeInfo = texturePool->Get<0>(res.resourceId);
+	VkTextureLoadInfo& loadInfo = texturePool->Get<1>(res.resourceId);
 	loadInfo.dev = Vulkan::GetCurrentDevice();
 	texturePool->LeaveGet();
 

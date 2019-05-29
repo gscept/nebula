@@ -37,7 +37,7 @@ VkVertexSignaturePool::~VkVertexSignaturePool()
 const SizeT
 VkVertexSignaturePool::GetVertexLayoutSize(const CoreGraphics::VertexLayoutId id)
 {
-	return this->Get<3>(id.allocId).vertexByteSize;
+	return this->Get<3>(id.resourceId).vertexByteSize;
 }
 
 //------------------------------------------------------------------------------
@@ -46,7 +46,7 @@ VkVertexSignaturePool::GetVertexLayoutSize(const CoreGraphics::VertexLayoutId id
 const Util::Array<CoreGraphics::VertexComponent>&
 VkVertexSignaturePool::GetVertexComponents(const CoreGraphics::VertexLayoutId id)
 {
-	return this->Get<3>(id.allocId).comps;
+	return this->Get<3>(id.resourceId).comps;
 }
 
 //------------------------------------------------------------------------------
@@ -56,10 +56,10 @@ Resources::ResourcePool::LoadStatus
 VkVertexSignaturePool::LoadFromMemory(const Resources::ResourceId id, const void* info)
 {
 	const CoreGraphics::VertexLayoutInfo* vertexLayoutInfo = static_cast<const CoreGraphics::VertexLayoutInfo*>(info);
-	Util::HashTable<uint64_t, DerivativeLayout>& hashTable = this->Get<0>(id.allocId);
-	VkPipelineVertexInputStateCreateInfo& vertexInfo = this->Get<1>(id.allocId);
-	BindInfo& bindInfo = this->Get<2>(id.allocId);
-	this->Get<3>(id.allocId) = *vertexLayoutInfo;
+	Util::HashTable<uint64_t, DerivativeLayout>& hashTable = this->Get<0>(id.resourceId);
+	VkPipelineVertexInputStateCreateInfo& vertexInfo = this->Get<1>(id.resourceId);
+	BindInfo& bindInfo = this->Get<2>(id.resourceId);
+	this->Get<3>(id.resourceId) = *vertexLayoutInfo;
 
 	// create binds
 	bindInfo.binds.Resize(CoreGraphics::MaxNumVertexStreams);
@@ -122,11 +122,11 @@ void
 VkVertexSignaturePool::Unload(const Resources::ResourceId id)
 {
 	// clear the table as it may not be reused by the next layout
-	Util::HashTable<uint64_t, DerivativeLayout>& hashTable = this->Get<0>(id.allocId);
+	Util::HashTable<uint64_t, DerivativeLayout>& hashTable = this->Get<0>(id.resourceId);
 	hashTable.Clear();
 
 	// also clear bind info
-	BindInfo& bindInfo = this->Get<2>(id.allocId);
+	BindInfo& bindInfo = this->Get<2>(id.resourceId);
 	bindInfo.binds.Clear();
 	bindInfo.attrs.Clear();
 }
@@ -139,10 +139,10 @@ VkVertexSignaturePool::Unload(const Resources::ResourceId id)
 VkPipelineVertexInputStateCreateInfo*
 VkVertexSignaturePool::GetDerivativeLayout(const CoreGraphics::VertexLayoutId layout, const CoreGraphics::ShaderProgramId shader)
 {
-	Util::HashTable<uint64_t, DerivativeLayout>& hashTable = this->Get<0>(layout.allocId);
+	Util::HashTable<uint64_t, DerivativeLayout>& hashTable = this->Get<0>(layout.resourceId);
 	AnyFX::VkProgram* program = CoreGraphics::shaderPool->GetProgram(shader);
-	const BindInfo& bindInfo = this->Get<2>(layout.allocId);
-	const VkPipelineVertexInputStateCreateInfo& baseInfo = this->Get<1>(layout.allocId);
+	const BindInfo& bindInfo = this->Get<2>(layout.resourceId);
+	const VkPipelineVertexInputStateCreateInfo& baseInfo = this->Get<1>(layout.resourceId);
 	const Ids::Id64 shaderHash = shader.HashCode64();
 	IndexT i = hashTable.FindIndex(shaderHash);
 	if (i != InvalidIndex)

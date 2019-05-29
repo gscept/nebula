@@ -32,9 +32,9 @@ VkMemoryVertexBufferPool::LoadFromMemory(const Resources::ResourceId id, const v
 		n_assert(0 < vboInfo->dataSize);
 	}
 
-	VkVertexBufferLoadInfo& loadInfo = this->Get<0>(id.allocId);
-	VkVertexBufferRuntimeInfo& runtimeInfo = this->Get<1>(id.allocId);
-	uint32_t& mapCount = this->Get<2>(id.allocId);
+	VkVertexBufferLoadInfo& loadInfo = this->Get<0>(id.resourceId);
+	VkVertexBufferRuntimeInfo& runtimeInfo = this->Get<1>(id.resourceId);
+	uint32_t& mapCount = this->Get<2>(id.resourceId);
 
 	loadInfo.dev = Vulkan::GetCurrentDevice();
 
@@ -108,9 +108,9 @@ VkMemoryVertexBufferPool::LoadFromMemory(const Resources::ResourceId id, const v
 void
 VkMemoryVertexBufferPool::Unload(const Resources::ResourceId id)
 {
-	VkVertexBufferLoadInfo& loadInfo = this->Get<0>(id.allocId);
-	VkVertexBufferRuntimeInfo& runtimeInfo = this->Get<1>(id.allocId);
-	uint32_t& mapCount = this->Get<2>(id.allocId);
+	VkVertexBufferLoadInfo& loadInfo = this->Get<0>(id.resourceId);
+	VkVertexBufferRuntimeInfo& runtimeInfo = this->Get<1>(id.resourceId);
+	uint32_t& mapCount = this->Get<2>(id.resourceId);
 
 	n_assert(mapCount == 0);
 	vkFreeMemory(loadInfo.dev, loadInfo.mem, nullptr);
@@ -123,7 +123,7 @@ VkMemoryVertexBufferPool::Unload(const Resources::ResourceId id)
 const SizeT
 VkMemoryVertexBufferPool::GetNumVertices(const CoreGraphics::VertexBufferId id)
 {
-	VkVertexBufferLoadInfo& loadInfo = this->Get<0>(id.allocId);
+	VkVertexBufferLoadInfo& loadInfo = this->Get<0>(id.resourceId);
 	return loadInfo.vertexCount;
 }
 
@@ -133,7 +133,7 @@ VkMemoryVertexBufferPool::GetNumVertices(const CoreGraphics::VertexBufferId id)
 const CoreGraphics::VertexLayoutId
 VkMemoryVertexBufferPool::GetLayout(const CoreGraphics::VertexBufferId id)
 {
-	return this->Get<1>(id.allocId).layout;
+	return this->Get<1>(id.resourceId).layout;
 }
 
 //------------------------------------------------------------------------------
@@ -143,8 +143,8 @@ void*
 VkMemoryVertexBufferPool::Map(const CoreGraphics::VertexBufferId id, CoreGraphics::GpuBufferTypes::MapType mapType)
 {
 	void* buf;
-	VkVertexBufferLoadInfo& loadInfo = this->Get<0>(id.allocId);
-	uint32_t& mapCount = this->Get<2>(id.allocId);
+	VkVertexBufferLoadInfo& loadInfo = this->Get<0>(id.resourceId);
+	uint32_t& mapCount = this->Get<2>(id.resourceId);
 	VkResult res = vkMapMemory(loadInfo.dev, loadInfo.mem, 0, VK_WHOLE_SIZE, 0, &buf);
 	n_assert(res == VK_SUCCESS);
 	mapCount++;
@@ -157,8 +157,8 @@ VkMemoryVertexBufferPool::Map(const CoreGraphics::VertexBufferId id, CoreGraphic
 void
 VkMemoryVertexBufferPool::Unmap(const CoreGraphics::VertexBufferId id)
 {
-	VkVertexBufferLoadInfo& loadInfo = this->Get<0>(id.allocId);
-	uint32_t& mapCount = this->Get<2>(id.allocId);
+	VkVertexBufferLoadInfo& loadInfo = this->Get<0>(id.resourceId);
+	uint32_t& mapCount = this->Get<2>(id.resourceId);
 	n_assert(mapCount > 0);
 	vkUnmapMemory(loadInfo.dev, loadInfo.mem);
 	mapCount--;

@@ -42,7 +42,7 @@ SaveTexture(const Resources::ResourceId& id, const IO::URI& path, IndexT mip, Co
 */
 bool SaveTexture(const Resources::ResourceId& id, const Ptr<IO::Stream>& stream, IndexT mip, CoreGraphics::ImageFileFormat::Code code)
 {
-	n_assert(id.allocType == TextureIdType);
+	n_assert(id.resourceType == TextureIdType);
 	TextureId tid = id;
 	const TextureType type = TextureGetType(tid);
 

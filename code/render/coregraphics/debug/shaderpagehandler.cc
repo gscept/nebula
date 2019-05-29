@@ -117,7 +117,7 @@ ShaderPageHandler::HandleShaderInfoRequest(const Util::String& resId, const Ptr<
         return HttpStatus::NotFound;
     }
 
-	if (id.allocType != ShaderIdType)
+	if (id.resourceType != ShaderIdType)
 	{
 		// id is not a shader type!
 		return HttpStatus::NotFound;

@@ -107,11 +107,11 @@ ImguiContext::ImguiDrawFunction()
 				Resources::ResourceId resourceId = *(Resources::ResourceId*)command->TextureId;
 				uint64 imageHandle;
 
-				if (resourceId.allocType == RenderTextureIdType)
+				if (resourceId.resourceType == RenderTextureIdType)
 				{
 					imageHandle = CoreGraphics::RenderTextureGetBindlessHandle(*((CoreGraphics::RenderTextureId*)command->TextureId));
 				}
-				else if (resourceId.allocType == TextureIdType)
+				else if (resourceId.resourceType == TextureIdType)
 				{
 					imageHandle = CoreGraphics::TextureGetBindlessHandle(*((CoreGraphics::TextureId*)command->TextureId));
 				}

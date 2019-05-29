@@ -128,7 +128,7 @@ MeshPageHandler::HandleMeshInfoRequest(const Util::String& resId, const Ptr<Stre
 		return HttpStatus::NotFound;
 	}
 
-	if (id.allocType != MeshIdType)
+	if (id.resourceType != MeshIdType)
 	{
 		// resource exists but is not a mesh
 		return HttpStatus::NotFound;
@@ -289,7 +289,7 @@ MeshPageHandler::HandleVertexDumpRequest(const Util::String& resId, IndexT minVe
 	{
 		return HttpStatus::NotFound;
 	}
-	if (id.allocType != MeshIdType)
+	if (id.resourceType != MeshIdType)
 	{
 		// resource exists but is not a mesh
 		return HttpStatus::NotFound;

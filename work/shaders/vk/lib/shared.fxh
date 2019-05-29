@@ -94,9 +94,6 @@ group(TICK_GROUP) shared varblock PerTickParams
 	int NumEnvMips = 10;
 	textureHandle EnvironmentMap;
 
-	textureHandle IrradianceMap;
-	uvec3 _padpertick;
-
 	// these params are for the Preetham sky model
 	vec4 A;
 	vec4 B;
@@ -119,14 +116,12 @@ group(TICK_GROUP) shared varblock PerTickParams
 	textureHandle AlbedoBuffer;
 	textureHandle EmissiveBuffer;
 	textureHandle LightBuffer;
-	uvec2	      _padframe;
+	textureHandle IrradianceMap;
 };
 
 group(TICK_GROUP) shared varblock ForwardLightBlock
 {
 	// forward lighting
-	int		NumActiveLights = 0;
-  uint3 _padlight0;
 	vec4	LightPositionsArray[MAX_NUM_LIGHTS];
 	mat4	LightProjTransformArray[MAX_NUM_LIGHTS];
 	vec4	LightColorArray[MAX_NUM_LIGHTS];
@@ -136,7 +131,7 @@ group(TICK_GROUP) shared varblock ForwardLightBlock
 	float	LightInvRangeArray[MAX_NUM_LIGHTS];
 	int		LightTypeArray[MAX_NUM_LIGHTS];
 	uint	LightCastsShadowsArray[MAX_NUM_LIGHTS];
-  uint _padlight;
+	int		NumActiveLights = 0;
 };
 
 // contains the state of the camera (and time)
@@ -170,7 +165,6 @@ group(DYNAMIC_OFFSET_GROUP) shared varblock ObjectBlock [ string Visibility = "V
 	mat4 ModelViewProjection;
 	mat4 ModelView;
 	int ObjectId;
-	uint3 _padobject;
 };
 
 // define how many objects we can render with instancing
