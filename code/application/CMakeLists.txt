@@ -104,18 +104,18 @@ nebula_begin_module(application)
 		fips_files(
 			audiofeatureunit.h
 			audiofeatureunit.cc
-		)
-    fips_dir(physicsfeature)
-        fips_files(
-            physicsfeatureunit.cc
-            physicsfeatureunit.h
-        )
-    fips_dir(physicsfeature/components)
-        nebula_add_nidl(physicsdata.nidl)
-        fips_files(
-            physicscomponents.cc
-            physicscomponents.h
-        )
+		)        
+    #fips_dir(physicsfeature)
+    #    fips_files(
+    #        physicsfeatureunit.cc
+    #        physicsfeatureunit.h
+    #    )
+    #fips_dir(physicsfeature/components)
+    #    nebula_add_nidl(physicsdata.nidl)
+    #    fips_files(
+    #       physicscomponents.cc
+    #        physicscomponents.h
+    #    )
 	fips_dir(audiofeature/components)
 		nebula_add_nidl(audioemitterallocator.nidl)
 		fips_files(
