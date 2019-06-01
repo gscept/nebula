@@ -15,6 +15,7 @@
 #include "math/matrix44.h"
 #include "util/stack.h"
 #include "util/array.h"
+#include "util/stringatom.h"
 
 
 namespace pjson
@@ -72,6 +73,8 @@ public:
 
     /// get string attribute value from current node
     Util::String GetString(const char* attr =  0) const;
+    /// get stringatom attribute value from current node
+    Util::StringAtom GetStringAtom(const char* attr = 0) const;
     /// get bool attribute value from current node
     bool GetBool(const char* attr = 0) const;
     /// get int attribute value from current node

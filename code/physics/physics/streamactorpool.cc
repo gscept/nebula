@@ -92,9 +92,7 @@ StreamActorPool::LoadFromStream(const Resources::ResourceId res, const Util::Str
             do
             {
                 Util::String name = reader->GetString("name");
-                Util::String matString;
-                reader->Get(matString, "material");
-                Util::StringAtom matAtom = matString;
+                Util::StringAtom matAtom = reader->GetStringAtom("material");                
                 IndexT material = LookupMaterial(matAtom);
 
                 Resources::ResourceName collider = name;

@@ -16,10 +16,10 @@ enum CollsionGroups
 
 enum MeshTopologyType
 {
-    MeshConvex = 0,
-    MeshConcave = 1,
-    MeshConvexHull = 2,
-    MeshStatic = 4
+    Convex = 0,    
+    ConvexHull = 1,
+    Triangles = 2,
+    HeightField = 3,
 };
 
 enum ColliderType

@@ -20,12 +20,14 @@ enum PhysicsIdType
 {
     ActorIdType,
     ColliderIdType,
+    MeshIdType,
 };
 
 
 
 RESOURCE_ID_TYPE(ActorResourceId);
 RESOURCE_ID_TYPE(ColliderId);
+RESOURCE_ID_TYPE(MeshIdType);
 
 struct ActorInfo
 {

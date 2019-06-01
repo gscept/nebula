@@ -4,6 +4,10 @@
 #include "physics/utils.h"
 #include "resources/resourcemanager.h"
 #include "io/jsonreader.h"
+#include "io/ioserver.h"
+#include "io/uri.h"
+#include "coregraphics/legacy/nvx2streamreader.h"
+#include "coregraphics/primitivegroup.h"
 
 __ImplementClass(Physics::StreamColliderPool, 'PCRP', Resources::ResourceStreamPool);
 
@@ -11,6 +15,26 @@ using namespace physx;
 
 namespace Physics
 {
+
+//------------------------------------------------------------------------------
+/**
+*/
+Ptr<Legacy::Nvx2StreamReader> 
+OpenNvx2(Util::StringAtom res)
+{
+    Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(IO::URI(res.AsString()));
+    Ptr<Legacy::Nvx2StreamReader> nvx2Reader = Legacy::Nvx2StreamReader::Create();
+    nvx2Reader->SetStream(stream);
+    nvx2Reader->SetUsage(CoreGraphics::GpuBufferTypes::UsageImmutable);
+    nvx2Reader->SetAccess(CoreGraphics::GpuBufferTypes::AccessNone);
+    nvx2Reader->SetRawMode(true);
+
+    if (nvx2Reader->Open(nullptr))
+    {
+        return nvx2Reader;
+    }
+    return nullptr;
+}
 
 StreamColliderPool * colliderPool = nullptr;
 
@@ -54,7 +78,71 @@ StreamColliderPool::GetGeometry(ColliderId id)
     return info.geometry;
 }
 
+static physx::PxGeometryHolder
+CreateMeshFromResource(MeshTopologyType type, Util::StringAtom resource, int primGroup)
+{
+    physx::PxGeometryHolder holder;
 
+    Ptr<Legacy::Nvx2StreamReader> nvx = OpenNvx2(resource);
+    
+    if (nvx.isvalid())
+    {        
+
+        switch (type)
+        {
+            // FIXME, cooking doesnt seem to like our meshes,
+            // always create convex hull, even if already convex
+            case Convex:
+            case ConvexHull:
+            {
+                const CoreGraphics::PrimitiveGroup& group = nvx->GetPrimitiveGroups()[primGroup];
+
+                PxConvexMeshDesc convexDesc;
+                convexDesc.points.count = nvx->GetNumVertices();
+                convexDesc.points.stride = nvx->GetVertexWidth() * sizeof(float);
+                convexDesc.points.data = nvx->GetVertexData();            
+                convexDesc.flags = PxConvexFlag::eCOMPUTE_CONVEX;
+            
+                PxDefaultMemoryOutputStream buf;
+                PxConvexMeshCookingResult::Enum result;
+                state.cooking->cookConvexMesh(convexDesc, buf, &result);
+                PxDefaultMemoryInputData input(buf.getData(), buf.getSize());
+                holder = PxConvexMeshGeometry(state.physics->createConvexMesh(input));
+            }
+            break;        
+            case Triangles:
+            {
+                PxTolerancesScale scale;
+                PxCookingParams params(scale);
+                // disable mesh cleaning - perform mesh validation on development configurations
+                //params.meshPreprocessParams |= PxMeshPreprocessingFlag::eDISABLE_CLEAN_MESH;
+                // disable edge precompute, edges are set for each triangle, slows contact generation
+                params.meshPreprocessParams |= PxMeshPreprocessingFlag::eDISABLE_ACTIVE_EDGES_PRECOMPUTE;
+
+                state.cooking->setParams(params);
+
+                const CoreGraphics::PrimitiveGroup& group = nvx->GetPrimitiveGroups()[primGroup];
+
+                PxTriangleMeshDesc meshDesc;
+                meshDesc.points.count = nvx->GetNumVertices();
+                meshDesc.points.stride = nvx->GetVertexWidth() * sizeof(float);
+                meshDesc.points.data = nvx->GetVertexData();
+
+                meshDesc.triangles.count = group.GetNumPrimitives(CoreGraphics::PrimitiveTopology::TriangleList);
+                meshDesc.triangles.stride = 3 * sizeof(unsigned short);
+                meshDesc.triangles.data = (void*)&(nvx->GetIndexData()[group.GetBaseIndex()]);            
+    #if NEBULA_DEBUG
+                state.cooking->validateTriangleMesh(meshDesc);
+    #endif
+                PxTriangleMesh* aTriangleMesh = state.cooking->createTriangleMesh(meshDesc, state.physics->getPhysicsInsertionCallback());
+                holder = PxTriangleMeshGeometry(aTriangleMesh);
+            }
+            break;
+        }
+        nvx->Close();
+    }
+    return holder;
+}
 //------------------------------------------------------------------------------
 /**
 */
@@ -106,7 +194,11 @@ StreamColliderPool::LoadFromStream(const Resources::ResourceId res, const Util::
                 break;
                 case ColliderMesh:
                 {
+                    MeshTopologyType type = (MeshTopologyType)reader->GetInt("meshType");
+                    int primgroup = reader->GetInt("primGroup");
 
+                    Util::StringAtom resource = reader->GetStringAtom("file");
+                    colliderInfo.geometry = CreateMeshFromResource(type, resource, primgroup);
                 }
                 break;
                 default:
