@@ -80,6 +80,7 @@ FrameSubpassBatch::CompiledImpl::Run(const IndexT frameIndex)
 		IndexT idx = drawList->FindIndex(type);
 		if (idx != InvalidIndex)
 		{
+			// if BeginBatch returns true if this material type has a shader for this batch
 			if (Materials::MaterialBeginBatch(type, this->batch))
 			{
 				auto& model = drawList->ValueAtIndex(type, idx);
@@ -90,6 +91,7 @@ FrameSubpassBatch::CompiledImpl::Run(const IndexT frameIndex)
 					Models::ModelNode* node = *it.key;
 					Models::ShaderStateNode* stateNode = static_cast<Models::ShaderStateNode*>(node);
 
+					// only continue if we have instances
 					const Util::Array<Models::ModelNode::Instance*>& instances = *it.val;
 					if (instances.Size() > 0)
 					{
@@ -115,7 +117,6 @@ FrameSubpassBatch::CompiledImpl::Run(const IndexT frameIndex)
 									Materials::MaterialApplySurfaceInstance(instance->GetSurfaceInstance());
 								instance->ApplyNodeInstanceState();
 								instance->Draw();
-								CoreGraphics::Draw();
 							}
 
 							// end surface

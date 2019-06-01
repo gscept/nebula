@@ -224,7 +224,7 @@ StreamModelPool::CreateModelInstanceRecursive(Models::ModelNode* node, const Ind
 /**
 */
 Resources::ResourceStreamPool::LoadStatus
-StreamModelPool::LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream)
+StreamModelPool::LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
 {
 	// a model is a list of resources, a bounding box, and a dictionary of nodes
 	Math::bbox& boundingBox = this->Get<ModelBoundingBox>(id);
@@ -326,7 +326,7 @@ StreamModelPool::LoadFromStream(const Resources::ResourceId id, const Util::Stri
 			{
 				// if not opening or closing a node, assume it's a data tag
 				ModelNode* node = nodeStack.Peek();
-				if (!node->Load(fourCC, tag, reader))
+				if (!node->Load(fourCC, tag, reader, immediate))
 				{
 					break;
 				}

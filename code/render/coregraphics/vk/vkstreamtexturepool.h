@@ -27,7 +27,7 @@ public:
 
 private:
 	/// load shader
-	LoadStatus LoadFromStream(const Resources::ResourceId res, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream) override;
+	LoadStatus LoadFromStream(const Resources::ResourceId res, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate = false) override;
 	/// unload shader
 	void Unload(const Resources::ResourceId id);
 

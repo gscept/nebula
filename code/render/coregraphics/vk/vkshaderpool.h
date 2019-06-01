@@ -122,7 +122,7 @@ private:
 	/// get shader program
 	AnyFX::VkProgram* GetProgram(const CoreGraphics::ShaderProgramId shaderProgramId);
 	/// load shader
-	LoadStatus LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream) override;
+	LoadStatus LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate = false) override;
 	/// reload shader
 	LoadStatus ReloadFromStream(const Resources::ResourceId id, const Ptr<IO::Stream>& stream) override;
 	

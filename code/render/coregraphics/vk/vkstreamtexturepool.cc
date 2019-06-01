@@ -73,7 +73,7 @@ VkStreamTexturePool::DeallocObject(const Resources::ResourceUnknownId id)
 /**
 */
 ResourcePool::LoadStatus
-VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream)
+VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
 {
 	n_assert(stream.isvalid());
 	n_assert(stream->CanBeMapped());

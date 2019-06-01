@@ -73,7 +73,7 @@ protected:
 	friend void Visibility::VisibilitySortJob(const Jobs::JobFuncContext& ctx);
 
 	/// load shader state
-	bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader);
+	bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader, bool immediate) override;
 	/// called when loading finished
 	virtual void OnFinishedLoading();
 	

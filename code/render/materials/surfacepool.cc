@@ -16,8 +16,21 @@ __ImplementClass(Materials::SurfacePool, 'MAPO', Resources::ResourceStreamPool);
 //------------------------------------------------------------------------------
 /**
 */
+void 
+SurfacePool::Setup()
+{
+	this->placeholderResourceName = "sur:system/placeholder.sur";
+	this->errorResourceName = "sur:system/error.sur";
+
+	// never forget to run this
+	ResourceStreamPool::Setup();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 Resources::ResourcePool::LoadStatus
-SurfacePool::LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream)
+SurfacePool::LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
 {
 	Ptr<IO::BXmlReader> reader = IO::BXmlReader::Create();
 	reader->SetStream(stream);

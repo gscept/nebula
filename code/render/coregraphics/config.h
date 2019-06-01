@@ -136,7 +136,7 @@ CoreGraphicsQueueTypeFromString(const Util::String& str)
 #define SHADER_POSTEFFECT_DEFAULT_FEATURE_MASK "Alt0"
 
 #if !PUBLIC_BUILD
-#define NEBULA_GRAPHICS_DEBUG 0
+#define NEBULA_GRAPHICS_DEBUG 1
 #define NEBULA_MARKER_BLUE Math::float4(0.8f, 0.8f, 1.0f, 1.0f)
 #define NEBULA_MARKER_RED Math::float4(1.0f, 0.8f, 0.8f, 1.0f)
 #define NEBULA_MARKER_GREEN Math::float4(0.8f, 1.0f, 0.8f, 1.0f)

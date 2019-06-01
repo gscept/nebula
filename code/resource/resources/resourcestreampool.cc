@@ -76,7 +76,7 @@ ResourceStreamPool::LoadFallbackResources()
 		this->CreateResource(this->errorResourceName, "system"_atm,
 			[this](Resources::ResourceId id)
 			{
-				this->errorResourceId = id;
+				this->failResourceId = id;
 			},
 			[this](Resources::ResourceId id)
 			{
@@ -183,7 +183,7 @@ ResourceStreamPool::RunCallbacks(LoadStatus status, const Resources::ResourceId 
 		else if (status == Failed && cbl.failed != nullptr)
 		{
 			Resources::ResourceId fail = id;
-			fail.resourceId = this->errorResourceId.resourceId;
+			fail.resourceId = this->failResourceId.resourceId;
 			cbl.failed(fail);
 		}
 	}
@@ -258,7 +258,7 @@ ResourceStreamPool::PrepareLoad(_PendingResourceLoad& res)
 		stream->SetAccessMode(Stream::ReadAccess);
 		if (stream->Open())
 		{
-			ret = this->LoadFromStream(res.id, res.tag, stream);
+			ret = this->LoadFromStream(res.id, res.tag, stream, res.immediate);
 			stream->Close();
 		}
 		else
@@ -337,11 +337,12 @@ Resources::ResourceStreamPool::CreateResource(const ResourceName& res, const Uti
 			}
 			else if (status == Failed)
 			{
+				// change return resource id to be fail resource
+				ret.resourceId = this->failResourceId.resourceId;
+
 				if (failed != nullptr)
 				{
-					Resources::ResourceId fail = ret;
-					fail.resourceId = this->errorResourceId.resourceId;
-					failed(fail);
+					failed(ret);
 				}
 				this->states[instanceId] = Resource::Failed;
 			}
@@ -385,6 +386,9 @@ Resources::ResourceStreamPool::CreateResource(const ResourceName& res, const Uti
 			{
 				if (failed != nullptr) 
 					failed(ret);
+
+				// set to error immediately
+				ret.resourceId = failResourceId.resourceId;
 			}
 			else if (state == Resource::Pending)
 			{

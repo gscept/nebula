@@ -93,7 +93,7 @@ protected:
 	friend class Particles::ParticleContext;
 
 	/// load data
-	virtual bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader);
+	virtual bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader, bool immediate);
 	/// unload data
 	virtual void Unload();
 	/// call when model node data is finished loading (not accounting for secondary resources)
