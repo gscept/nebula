@@ -10,6 +10,8 @@
 #include "util/variant.h"
 #include "math/quaternion.h"
 #include "math/transform44.h"
+#include "pybind11/embed.h"
+#include "pybind11/detail/class.h"
 
 namespace Python
 {

@@ -32,6 +32,11 @@ samplerstate MaterialSampler
 
 };
 
+samplerstate NormalSampler
+{
+	Filter = MinMagLinearMipPoint;
+};
+
 samplerstate CubeSampler
 {
 	Filter = MinMagMipLinear;

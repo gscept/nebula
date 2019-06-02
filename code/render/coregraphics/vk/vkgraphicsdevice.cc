@@ -1010,24 +1010,24 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 
 	const char* layers[] = { "VK_LAYER_LUNARG_standard_validation", "VK_LAYER_LUNARG_object_tracker" };
 	int numLayers = 0;
-	const char* usedLayers = nullptr;
+	const char** usedLayers = nullptr;
 
 #if NEBULA_GRAPHICS_DEBUG
 	if (info.enableValidation)
 	{
-		usedLayers = layers[0];
+		usedLayers = &layers[0];
 		numLayers = 1;
 	}
 	else
 	{
-		usedLayers = layers[1];
+		usedLayers = &layers[1];
 		numLayers = 1;
 	}
 	state.extensions[state.usedExtensions++] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
 #else
 	if (info.enableValidation)
 	{
-		usedLayers = layers[0];
+		usedLayers = &layers[0];
 		numLayers = 1;
 		state.extensions[state.usedExtensions++] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
 	}
@@ -1041,7 +1041,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		0,											// flags
 		&appInfo,									// application
 		numLayers,
-		layers,
+		usedLayers,
 		state.usedExtensions,
 		state.extensions
 	};
