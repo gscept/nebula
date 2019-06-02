@@ -128,6 +128,20 @@ ResourceManager::RegisterMemoryPool(const Core::Rtti& loaderClass)
 //------------------------------------------------------------------------------
 /**
 */
+void 
+ResourceManager::LoadDefaultResources()
+{
+	n_assert(this->open);
+	IndexT i;
+	for (i = 0; i < this->pools.Size(); i++)
+	{
+		this->pools[i]->LoadFallbackResources();
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 ResourceManager::Update(IndexT frameIndex)
 {

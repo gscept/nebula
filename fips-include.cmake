@@ -33,9 +33,9 @@ if(FIPS_WINDOWS)
 endif()
 if(N_MATH_DIRECTX)
     add_definitions(-D__USE_MATH_DIRECTX)
-else()	
+else()
     add_definitions(-D__USE_VECMATH)
-    OPTION(N_USE_AVX "Use AVX instructionset" OFF)	
+    OPTION(N_USE_AVX "Use AVX instructionset" OFF)
 endif()
 
 add_definitions(-DIL_STATIC_LIB=1)
@@ -49,10 +49,10 @@ set(${N_QT} ON)
 
 find_package(PythonLibs 3.5 REQUIRED)
 
-#physx 
+#physx
 
 if(NOT PX_TARGET)
-    MESSAGE(FATAL_ERROR "PX_TARGET undefined, select a physx build folder (eg. win.x86_64.vs141)")
+    MESSAGE(WARNING "PX_TARGET undefined, select a physx build folder (eg. win.x86_64.vs141)")
 endif()
 
 SET(PX_DIR_DEBUG ${FIPS_DEPLOY_DIR}/physx/bin/${PX_TARGET}/debug/)
@@ -60,7 +60,7 @@ SET(PX_DIR_RELEASE ${FIPS_DEPLOY_DIR}/physx/bin/${PX_TARGET}/release/)
 
 SET(PX_LIBRARY_NAMES PhysX_64  PhysXCommon_64 PhysXCooking_64  PhysXFoundation_64  PhysXCharacterKinematic_static_64 PhysXExtensions_static_64 PhysXPvdSDK_static_64  PhysXTask_static_64 PhysXVehicle_static_64)
 SET(PX_STATIC_NAMES PhysXCharacterKinematic_static_64 PhysXExtensions_static_64 PhysXPvdSDK_static_64  PhysXTask_static_64 PhysXVehicle_static_64)
-SET(PX_DEBUG_LIBRARIES) 
+SET(PX_DEBUG_LIBRARIES)
 SET(PX_RELEASE_LIBRARIES)
 
 foreach(CUR_LIB ${PX_LIBRARY_NAMES})
@@ -121,15 +121,15 @@ option(N_BUILD_NVTT "use NVTT" OFF)
 
 option(N_NEBULA_DEBUG_SHADERS "Compile shaders with debug flag" OFF)
 
-macro(add_shaders_intern)    
-    if(SHADERC)           
+macro(add_shaders_intern)
+    if(SHADERC)
         if(N_NEBULA_DEBUG_SHADERS)
             set(shader_debug "-debug")
-        endif()                       
-        
-        foreach(shd ${ARGN})        
-            get_filename_component(basename ${shd} NAME_WE)        
-            get_filename_component(foldername ${shd} DIRECTORY)        
+        endif()
+
+        foreach(shd ${ARGN})
+            get_filename_component(basename ${shd} NAME_WE)
+            get_filename_component(foldername ${shd} DIRECTORY)
 
             # first calculate dependencies
             set(depoutput ${CMAKE_BINARY_DIR}/shaders/${basename}.dep)
@@ -138,7 +138,7 @@ macro(add_shaders_intern)
             if(NOT EXISTS ${depoutput} OR ${shd} IS_NEWER_THAN ${depoutput})
                 execute_process(COMMAND ${SHADERC} -M -i ${shd} -I ${NROOT}/work/shaders/vk -I ${foldername} -o ${CMAKE_BINARY_DIR} -h ${CMAKE_BINARY_DIR}/shaders/${CurTargetName} -t shader)
             endif()
-            
+
             # sadly this doesnt work for some reason
             #add_custom_command(OUTPUT ${depoutput}
             #COMMAND ${SHADERC} -M -i ${shd} -I ${NROOT}/work/shaders -I ${foldername} -o ${CMAKE_BINARY_DIR} -t shader
@@ -146,55 +146,55 @@ macro(add_shaders_intern)
             #WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
             #COMMENT ""
             #VERBATIM
-            #)                        
+            #)
             if(EXISTS ${depoutput})
                 file(READ ${depoutput} deps)
             endif()
 
-            set(output ${EXPORT_DIR}/shaders/${basename}.fxb)           
+            set(output ${EXPORT_DIR}/shaders/${basename}.fxb)
             add_custom_command(OUTPUT ${output}
-                COMMAND ${SHADERC} -i ${shd} -I ${NROOT}/work/shaders/vk -I ${foldername} -o ${EXPORT_DIR} -h ${CMAKE_BINARY_DIR}/shaders/${CurTargetName} -t shader ${shader_debug}                
+                COMMAND ${SHADERC} -i ${shd} -I ${NROOT}/work/shaders/vk -I ${foldername} -o ${EXPORT_DIR} -h ${CMAKE_BINARY_DIR}/shaders/${CurTargetName} -t shader ${shader_debug}
                 MAIN_DEPENDENCY ${shd}
                 DEPENDS ${SHADERC} ${deps}
                 WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
                 COMMENT ""
                 VERBATIM
-                )        
+                )
             fips_files(${shd})
 
-            SOURCE_GROUP("res\\shaders" FILES ${shd})        
-        endforeach()             
+            SOURCE_GROUP("res\\shaders" FILES ${shd})
+        endforeach()
     endif()
 endmacro()
 
-macro(nebula_add_nidl)    
+macro(nebula_add_nidl)
     SOURCE_GROUP("NIDL Files" FILES ${ARGN})
     set(target_has_nidl 1)
-    foreach(nidl ${ARGN})        
+    foreach(nidl ${ARGN})
         get_filename_component(f_abs ${CurDir}${nidl} ABSOLUTE)
         get_filename_component(f_dir ${f_abs} PATH)
-        STRING(REPLACE ".nidl" ".cc" out_source ${nidl}) 
+        STRING(REPLACE ".nidl" ".cc" out_source ${nidl})
         STRING(REPLACE ".nidl" ".h" out_header ${nidl})
         STRING(FIND "${CMAKE_CURRENT_SOURCE_DIR}"  "/" last REVERSE)
-        STRING(SUBSTRING "${CMAKE_CURRENT_SOURCE_DIR}" ${last}+1 -1 folder)         
-        set(abs_output_folder "${CMAKE_BINARY_DIR}/nidl/${CurTargetName}/${CurDir}")        
+        STRING(SUBSTRING "${CMAKE_CURRENT_SOURCE_DIR}" ${last}+1 -1 folder)
+        set(abs_output_folder "${CMAKE_BINARY_DIR}/nidl/${CurTargetName}/${CurDir}")
         add_custom_command(OUTPUT "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_header}"
-            PRE_BUILD COMMAND ${PYTHON} ${NROOT}/fips-files/generators/NIDL.py "${f_abs}" "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_header}" 
-            WORKING_DIRECTORY "${NROOT}" 
+            PRE_BUILD COMMAND ${PYTHON} ${NROOT}/fips-files/generators/NIDL.py "${f_abs}" "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_header}"
+            WORKING_DIRECTORY "${NROOT}"
             MAIN_DEPENDENCY "${f_abs}"
             DEPENDS ${NROOT}/fips-files/generators/NIDL.py
             VERBATIM PRE_BUILD)
         SOURCE_GROUP("${CurGroup}\\Generated" FILES "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_header}" )
-        source_group("${CurGroup}" FILES ${f_abs})        
-        list(APPEND CurSources "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_header}")        
+        source_group("${CurGroup}" FILES ${f_abs})
+        list(APPEND CurSources "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_header}")
     endforeach()
 endmacro()
-    
+
 macro(add_frameshader)
     if(SHADERC)
-    foreach(frm ${ARGN})        
-            get_filename_component(basename ${frm} NAME)                   
-            set(output ${EXPORT_DIR}/frame/${basename})                              
+    foreach(frm ${ARGN})
+            get_filename_component(basename ${frm} NAME)
+            set(output ${EXPORT_DIR}/frame/${basename})
             add_custom_command(OUTPUT ${output}
                 COMMAND ${SHADERC} -i ${frm} -o ${EXPORT_DIR} -t frame
                 MAIN_DEPENDENCY ${frm}
@@ -202,17 +202,17 @@ macro(add_frameshader)
                 WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
                 COMMENT ""
                 VERBATIM
-                )        
+                )
             fips_files(${frm})
             SOURCE_GROUP("res\\frameshaders" FILES ${frm})
-        endforeach()             
+        endforeach()
     endif()
 endmacro()
 
 macro(add_material)
     if(SHADERC)
-    foreach(mat ${ARGN})        
-            get_filename_component(basename ${mat} NAME)                   
+    foreach(mat ${ARGN})
+            get_filename_component(basename ${mat} NAME)
             set(output ${EXPORT_DIR}/materials/${basename})
             add_custom_command(OUTPUT ${output}
                 COMMAND ${SHADERC} -i ${mat} -o ${EXPORT_DIR} -t material
@@ -221,19 +221,19 @@ macro(add_material)
                 WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
                 COMMENT ""
                 VERBATIM
-                )        
+                )
             fips_files(${mat})
             SOURCE_GROUP("res\\materials" FILES ${mat})
-        endforeach()             
+        endforeach()
     endif()
 endmacro()
 
-macro(add_nebula_shaders)                
+macro(add_nebula_shaders)
     if(NOT SHADERC)
         MESSAGE(WARNING "Not compiling shaders, ShaderC not found, did you compile nebula-toolkit?")
-    else()    
+    else()
         if(FIPS_WINDOWS)
-            
+
             get_filename_component(workdir "[HKEY_CURRENT_USER\\SOFTWARE\\gscept\\ToolkitShared;workdir]" ABSOLUTE)
             # get_filename_component returns /registry when a key is not found...
             if(${workdir} STREQUAL "/registry")
@@ -245,34 +245,34 @@ macro(add_nebula_shaders)
             # use environment
             set(EXPORT_DIR $ENV{NEBULA_WORK}/export_win32)
         endif()
-        
-        file(GLOB_RECURSE FXH "${NROOT}/work/shaders/vk/*.fxh")        
+
+        file(GLOB_RECURSE FXH "${NROOT}/work/shaders/vk/*.fxh")
         SOURCE_GROUP("res\\shaders\\headers" FILES ${FXH})
         fips_files(${FXH})
-        file(GLOB_RECURSE FX "${NROOT}/work/shaders/vk/*.fx")    
-        foreach(shd ${FX})        
+        file(GLOB_RECURSE FX "${NROOT}/work/shaders/vk/*.fx")
+        foreach(shd ${FX})
             add_shaders_intern(${shd})
-        endforeach()        
-        
-        file(GLOB_RECURSE FRM "${NROOT}/work/frame/win32/*.json")    
-        foreach(shd ${FRM})        
+        endforeach()
+
+        file(GLOB_RECURSE FRM "${NROOT}/work/frame/win32/*.json")
+        foreach(shd ${FRM})
             add_frameshader(${shd})
-        endforeach()        
-        
-         file(GLOB_RECURSE MAT "${NROOT}/work/materials/*.xml")    
-        foreach(shd ${MAT})        
+        endforeach()
+
+         file(GLOB_RECURSE MAT "${NROOT}/work/materials/*.xml")
+        foreach(shd ${MAT})
             add_material(${shd})
-        endforeach()        
-        
+        endforeach()
+
     endif()
 endmacro()
-    
-macro(add_shaders)                
+
+macro(add_shaders)
     if(NOT SHADERC)
         MESSAGE(WARNING "Not compiling shaders, ShaderC not found, did you compile nebula-toolkit?")
-    else()    
+    else()
         if(FIPS_WINDOWS)
-            
+
             get_filename_component(workdir "[HKEY_CURRENT_USER\\SOFTWARE\\gscept\\ToolkitShared;workdir]" ABSOLUTE)
             # get_filename_component returns /registry when a key is not found...
             if(${workdir} STREQUAL "/registry")
@@ -284,13 +284,13 @@ macro(add_shaders)
             # use environment
             set(EXPORT_DIR $ENV{NEBULA_WORK}/export_win32)
         endif()
-        foreach(shd ${ARGN})         
+        foreach(shd ${ARGN})
             add_shaders_intern(${CMAKE_CURRENT_SOURCE_DIR}/${shd})
-        endforeach()        
-        
+        endforeach()
+
     endif()
 endmacro()
-    
+
 macro(nebula_begin_app name type)
     fips_begin_app(${name} ${type})
     set(target_has_nidl 0)

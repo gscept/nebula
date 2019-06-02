@@ -91,7 +91,7 @@ protected:
 	/// called once when all pending resource have been loaded
 	virtual void OnFinishedLoading();
 	/// parse data tag (called by loader code)
-	virtual bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader);
+	virtual bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader, bool immediate) override;
 
 	/// apply state
 	void ApplyNodeState() override;

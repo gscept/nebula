@@ -45,7 +45,7 @@ protected:
 	friend class ModelContext;
 
 	/// load transform
-	virtual bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader);
+	virtual bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader, bool immediate) override;
 
 	Math::point position;
 	Math::quaternion rotate;

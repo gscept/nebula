@@ -30,9 +30,9 @@ VkMemoryTexturePool::LoadFromMemory(const Resources::ResourceId id, const void* 
 
 	/// during the load-phase, we can safetly get the structs
 	this->EnterGet();
-	VkTextureRuntimeInfo& runtimeInfo = this->Get<0>(id.allocId);
-	VkTextureLoadInfo& loadInfo = this->Get<1>(id.allocId);
-	CoreGraphicsImageLayout& layout = this->Get<3>(id.allocId);
+	VkTextureRuntimeInfo& runtimeInfo = this->Get<0>(id.resourceId);
+	VkTextureLoadInfo& loadInfo = this->Get<1>(id.resourceId);
+	CoreGraphicsImageLayout& layout = this->Get<3>(id.resourceId);
 
 	VkFormat vkformat = VkTypes::AsVkFormat(data->format);
 	uint32_t size = PixelFormat::ToSize(data->format);
@@ -169,9 +169,9 @@ bool
 VkMemoryTexturePool::Map(const CoreGraphics::TextureId id, IndexT mipLevel, CoreGraphics::GpuBufferTypes::MapType mapType, CoreGraphics::TextureMapInfo & outMapInfo)
 {
 	textureAllocator.EnterGet();
-	VkTextureRuntimeInfo& runtime = textureAllocator.Get<0>(id.allocId);
-	VkTextureLoadInfo& load = textureAllocator.Get<1>(id.allocId);
-	VkTextureMappingInfo& map = textureAllocator.Get<2>(id.allocId);
+	VkTextureRuntimeInfo& runtime = textureAllocator.Get<0>(id.resourceId);
+	VkTextureLoadInfo& load = textureAllocator.Get<1>(id.resourceId);
+	VkTextureMappingInfo& map = textureAllocator.Get<2>(id.resourceId);
 
 	bool retval = false;
 	if (Texture2D == runtime.type)
@@ -240,9 +240,9 @@ void
 VkMemoryTexturePool::Unmap(const CoreGraphics::TextureId id, IndexT mipLevel)
 {
 	textureAllocator.EnterGet();
-	VkTextureRuntimeInfo& runtime = textureAllocator.Get<0>(id.allocId);
-	VkTextureLoadInfo& load = textureAllocator.Get<1>(id.allocId);
-	VkTextureMappingInfo& map = textureAllocator.Get<2>(id.allocId);
+	VkTextureRuntimeInfo& runtime = textureAllocator.Get<0>(id.resourceId);
+	VkTextureLoadInfo& load = textureAllocator.Get<1>(id.resourceId);
+	VkTextureMappingInfo& map = textureAllocator.Get<2>(id.resourceId);
 
 	// unmap and dealloc
 	vkUnmapMemory(load.dev, load.mem);
@@ -264,9 +264,9 @@ bool
 VkMemoryTexturePool::MapCubeFace(const CoreGraphics::TextureId id, CoreGraphics::TextureCubeFace face, IndexT mipLevel, CoreGraphics::GpuBufferTypes::MapType mapType, CoreGraphics::TextureMapInfo & outMapInfo)
 {
 	textureAllocator.EnterGet();
-	VkTextureRuntimeInfo& runtime = textureAllocator.Get<0>(id.allocId);
-	VkTextureLoadInfo& load = textureAllocator.Get<1>(id.allocId);
-	VkTextureMappingInfo& map = textureAllocator.Get<2>(id.allocId);
+	VkTextureRuntimeInfo& runtime = textureAllocator.Get<0>(id.resourceId);
+	VkTextureLoadInfo& load = textureAllocator.Get<1>(id.resourceId);
+	VkTextureMappingInfo& map = textureAllocator.Get<2>(id.resourceId);
 
 	bool retval = false;
 
@@ -307,9 +307,9 @@ void
 VkMemoryTexturePool::UnmapCubeFace(const CoreGraphics::TextureId id, CoreGraphics::TextureCubeFace face, IndexT mipLevel)
 {
 	textureAllocator.EnterGet();
-	VkTextureRuntimeInfo& runtime = textureAllocator.Get<0>(id.allocId);
-	VkTextureLoadInfo& load = textureAllocator.Get<1>(id.allocId);
-	VkTextureMappingInfo& map = textureAllocator.Get<2>(id.allocId);
+	VkTextureRuntimeInfo& runtime = textureAllocator.Get<0>(id.resourceId);
+	VkTextureLoadInfo& load = textureAllocator.Get<1>(id.resourceId);
+	VkTextureMappingInfo& map = textureAllocator.Get<2>(id.resourceId);
 
 	// unmap and dealloc
 	vkUnmapMemory(load.dev, load.mem);
@@ -433,8 +433,8 @@ VkMemoryTexturePool::Copy(const CoreGraphics::TextureId from, const CoreGraphics
 
 	copy.extent = { (uint32_t)width, (uint32_t)height, (uint32_t)depth };
 
-	VkTextureLoadInfo& fromLoad = textureAllocator.Get<1>(from.allocId);
-	VkTextureLoadInfo& toLoad = textureAllocator.Get<1>(to.allocId);
+	VkTextureLoadInfo& fromLoad = textureAllocator.Get<1>(from.resourceId);
+	VkTextureLoadInfo& toLoad = textureAllocator.Get<1>(to.resourceId);
 
 	// begin immediate action, this might actually be delayed but we can't really know from here
 	CoreGraphics::CmdBufferId cmdBuf = VkUtilities::BeginImmediateTransfer();
@@ -448,7 +448,7 @@ VkMemoryTexturePool::Copy(const CoreGraphics::TextureId from, const CoreGraphics
 CoreGraphics::TextureDimensions
 VkMemoryTexturePool::GetDimensions(const CoreGraphics::TextureId id)
 {
-	return textureAllocator.Get<1>(id.allocId).dims;
+	return textureAllocator.Get<1>(id.resourceId).dims;
 }
 
 //------------------------------------------------------------------------------
@@ -457,7 +457,7 @@ VkMemoryTexturePool::GetDimensions(const CoreGraphics::TextureId id)
 CoreGraphics::PixelFormat::Code
 VkMemoryTexturePool::GetPixelFormat(const CoreGraphics::TextureId id)
 {
-	return textureAllocator.Get<1>(id.allocId).format;
+	return textureAllocator.Get<1>(id.resourceId).format;
 }
 
 //------------------------------------------------------------------------------
@@ -466,7 +466,7 @@ VkMemoryTexturePool::GetPixelFormat(const CoreGraphics::TextureId id)
 CoreGraphics::TextureType
 VkMemoryTexturePool::GetType(const CoreGraphics::TextureId id)
 {
-	return textureAllocator.Get<0>(id.allocId).type;
+	return textureAllocator.Get<0>(id.resourceId).type;
 }
 
 //------------------------------------------------------------------------------
@@ -475,7 +475,7 @@ VkMemoryTexturePool::GetType(const CoreGraphics::TextureId id)
 CoreGraphicsImageLayout
 VkMemoryTexturePool::GetLayout(const CoreGraphics::TextureId id)
 {
-	return textureAllocator.Get<3>(id.allocId);
+	return textureAllocator.Get<3>(id.resourceId);
 }
 
 //------------------------------------------------------------------------------
@@ -484,7 +484,7 @@ VkMemoryTexturePool::GetLayout(const CoreGraphics::TextureId id)
 uint
 VkMemoryTexturePool::GetNumMips(const CoreGraphics::TextureId id)
 {
-	return textureAllocator.Get<1>(id.allocId).mips;
+	return textureAllocator.Get<1>(id.resourceId).mips;
 }
 
 //------------------------------------------------------------------------------
@@ -494,7 +494,7 @@ uint
 VkMemoryTexturePool::GetBindlessHandle(const CoreGraphics::TextureId id)
 {
 	textureAllocator.EnterGet();
-	auto ret = textureAllocator.Get<0>(id.allocId).bind;
+	auto ret = textureAllocator.Get<0>(id.resourceId).bind;
 	textureAllocator.LeaveGet();
 	return ret;
 }

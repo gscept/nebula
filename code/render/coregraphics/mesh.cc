@@ -19,7 +19,7 @@ const MeshId
 CreateMesh(const MeshCreateInfo& info)
 {
 	MeshId id = meshPool->ReserveResource(info.name, info.tag);
-	n_assert(id.allocType == MeshIdType);
+	n_assert(id.resourceType == MeshIdType);
 	meshPool->LoadFromMemory(id, &info);
 	return id;
 }

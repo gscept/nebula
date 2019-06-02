@@ -16,25 +16,38 @@ __ImplementClass(Materials::SurfacePool, 'MAPO', Resources::ResourceStreamPool);
 //------------------------------------------------------------------------------
 /**
 */
+void 
+SurfacePool::Setup()
+{
+	this->placeholderResourceName = "sur:system/placeholder.sur";
+	this->errorResourceName = "sur:system/error.sur";
+
+	// never forget to run this
+	ResourceStreamPool::Setup();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 Resources::ResourcePool::LoadStatus
-SurfacePool::LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream)
+SurfacePool::LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
 {
 	Ptr<IO::BXmlReader> reader = IO::BXmlReader::Create();
 	reader->SetStream(stream);
 	if (reader->Open())
 	{
 		// make sure it's a valid frame shader file
-		if (!reader->HasNode("/NebulaT/Surface"))
+		if (!reader->HasNode("/Nebula/Surface"))
 		{
 			n_error("StreamSurfaceMaterialLoader: '%s' is not a valid surface!", stream->GetURI().AsString().AsCharPtr());
 			return Failed;
 		}
 
 		// send to first node
-		reader->SetToNode("/NebulaT/Surface");
+		reader->SetToNode("/Nebula/Surface");
 
 		this->EnterGet();
-		SurfaceRuntime& info = this->Get<0>(id.allocId);
+		SurfaceRuntime& info = this->Get<0>(id.resourceId);
 
 		// load surface
 		Resources::ResourceName materialType = reader->GetString("template");
@@ -121,7 +134,7 @@ SurfacePool::LoadFromStream(const Resources::ResourceId id, const Util::StringAt
 void
 SurfacePool::Unload(const Resources::ResourceId id)
 {
-	const SurfaceRuntime& runtime = this->Get<0>(id.allocId);
+	const SurfaceRuntime& runtime = this->Get<0>(id.resourceId);
 	const SurfaceId mid = runtime.id;
 	MaterialType* type = runtime.type;
 	type->DestroySurface(mid);

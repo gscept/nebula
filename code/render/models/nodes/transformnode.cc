@@ -40,7 +40,7 @@ TransformNode::~TransformNode()
 /**
 */
 bool
-TransformNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader)
+TransformNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader, bool immediate)
 {
 	bool retval = true;
 	if (FourCC('POSI') == fourcc)
@@ -84,7 +84,7 @@ TransformNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, con
 	}
 	else
 	{
-		retval = ModelNode::Load(fourcc, tag, reader);
+		retval = ModelNode::Load(fourcc, tag, reader, immediate);
 	}
 	return retval;
 }

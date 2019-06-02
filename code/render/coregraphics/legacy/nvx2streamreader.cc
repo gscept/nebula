@@ -276,7 +276,7 @@ Nvx2StreamReader::SetupVertexBuffer(const Resources::ResourceName& name)
 
 	// create vertex buffer
 	Resources::ResourceId id = vboPool->ReserveResource(name, this->tag);
-	n_assert(id.allocType == VertexBufferIdType);
+	n_assert(id.resourceType == VertexBufferIdType);
 
 	VertexBufferCreateInfo vboInfo;
 	vboInfo.access = this->access;
@@ -304,7 +304,7 @@ Nvx2StreamReader::SetupIndexBuffer(const Resources::ResourceName& name)
     
 	// create index buffer
 	Resources::ResourceId id = iboPool->ReserveResource(name, this->tag);
-	n_assert(id.allocType == IndexBufferIdType);
+	n_assert(id.resourceType == IndexBufferIdType);
 
 	IndexBufferCreateInfo iboInfo;
 	iboInfo.access = this->access;

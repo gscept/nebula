@@ -33,7 +33,7 @@ ShaderStateNode::~ShaderStateNode()
 /**
 */
 bool
-ShaderStateNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader)
+ShaderStateNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader, bool immediate)
 {
 	bool retval = true;
 	if (FourCC('MNMT') == fourcc)
@@ -102,7 +102,7 @@ ShaderStateNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, c
 	}
 	else
 	{
-		retval = TransformNode::Load(fourcc, tag, reader);
+		retval = TransformNode::Load(fourcc, tag, reader, immediate);
 	}
 	return retval;
 }

@@ -19,7 +19,7 @@ class StreamSkeletonPool : public Resources::ResourceStreamPool
 public:
 
 	/// load character definition from stream
-	Resources::ResourcePool::LoadStatus LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream);
+	Resources::ResourcePool::LoadStatus LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate = false) override;
 	/// unload resource
 	void Unload(const Resources::ResourceId id);
 

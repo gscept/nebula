@@ -30,7 +30,7 @@ public:
 	/// called when resources have loaded
 	void OnResourcesLoaded();
     /// parse data tag (called by loader code)
-    bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader);
+    bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader, bool immediate) override;
 
 	/// discard node
 	void Discard();

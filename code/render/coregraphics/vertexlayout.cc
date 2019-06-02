@@ -49,7 +49,7 @@ CreateVertexLayout(const VertexLayoutCreateInfo& info)
 void
 DestroyVertexLayout(const VertexLayoutId id)
 {
-	layoutPool->Unload(id.allocId);
+	layoutPool->Unload(id.resourceId);
 }
 
 //------------------------------------------------------------------------------

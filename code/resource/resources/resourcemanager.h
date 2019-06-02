@@ -82,6 +82,9 @@ public:
 	void RegisterMemoryPool(const Core::Rtti& loaderClass);
 	/// get memory pool for later use
 	template <class POOL_TYPE> POOL_TYPE* GetMemoryPool() const;
+
+	/// goes through all pools and sets up their default resources
+	void LoadDefaultResources();
 private:
 	friend class ResourceStreamPool;
 
@@ -180,7 +183,7 @@ inline Resources::ResourcePool::LoadStatus
 ResourceManager::LoadFromMemory(const Resources::ResourceId id, void* info)
 {
 	const Ptr<ResourceMemoryPool>& loader = this->pools[id.poolIndex].downcast<ResourceMemoryPool>();
-	return loader->LoadFromMemory(id.allocId, info);
+	return loader->LoadFromMemory(id.resourceId, info);
 }
 
 //------------------------------------------------------------------------------

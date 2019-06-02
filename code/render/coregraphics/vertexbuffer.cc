@@ -21,7 +21,7 @@ const VertexBufferId
 CreateVertexBuffer(VertexBufferCreateInfo info)
 {
 	VertexBufferId id = vboPool->ReserveResource(info.name, info.tag);
-	n_assert(id.allocType == VertexBufferIdType);
+	n_assert(id.resourceType == VertexBufferIdType);
 	if (vboPool->GetState(id) == Resources::Resource::Pending)
 		vboPool->LoadFromMemory(id, &info);
 	return id;

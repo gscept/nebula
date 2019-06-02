@@ -645,7 +645,7 @@ psUber(in vec3 ViewSpacePos,
 	vec4 specColor =	sample2D(SpecularMap, MaterialSampler, UV) * MatSpecularIntensity;
 	float cavity = 		sample2D(CavityMap, MaterialSampler, UV).r;
 	
-	vec4 normals = 		sample2D(NormalMap, MaterialSampler, UV);
+	vec4 normals = 		sample2D(NormalMap, NormalSampler, UV);
 	vec3 bumpNormal = normalize(calcBump(Tangent, Binormal, Normal, normals));
 
 	mat2x3 env = calcEnv(specColor, bumpNormal, ViewSpacePos, WorldViewVec, InvView, roughness);
@@ -685,7 +685,7 @@ psUberAlphaTest(in vec3 ViewSpacePos,
 	vec4 specColor = 	sample2D(SpecularMap, MaterialSampler, UV) * MatSpecularIntensity;
 	float cavity = 		sample2D(CavityMap, MaterialSampler, UV).r;
 	
-	vec4 normals = 		sample2D(NormalMap, MaterialSampler, UV);
+	vec4 normals = 		sample2D(NormalMap, NormalSampler, UV);
 	vec3 bumpNormal = calcBump(Tangent, Binormal, Normal, normals);
 	
 	mat2x3 env = calcEnv(specColor, bumpNormal, ViewSpacePos, WorldViewVec, InvView, roughness);
@@ -724,7 +724,7 @@ psUberVertexColor(in vec3 ViewSpacePos,
 	vec4 specColor = 	sample2D(SpecularMap, MaterialSampler, UV) * MatSpecularIntensity;
 	float cavity = 		sample2D(CavityMap, MaterialSampler, UV).r;
 	
-	vec4 normals = 		sample2D(NormalMap, MaterialSampler, UV);
+	vec4 normals = 		sample2D(NormalMap, NormalSampler, UV);
 	vec3 bumpNormal = calcBump(Tangent, Binormal, Normal, normals);
 	
 	mat2x3 env = calcEnv(specColor, bumpNormal, ViewSpacePos, WorldViewVec, InvView, roughness);
@@ -767,7 +767,7 @@ psDefault(in vec3 ViewSpacePos,
 	Emissive = emsvColor;
 	mat3 tangentViewMatrix = mat3(normalize(Tangent), normalize(Binormal), normalize(Normal));        
 	vec3 tNormal = vec3(0,0,0);
-	tNormal.xy = (sample2D(NormalMap, MaterialSampler, UV).ag * 2.0f) - 1.0f;
+	tNormal.xy = (sample2D(NormalMap, NormalSampler, UV).ag * 2.0f) - 1.0f;
 	tNormal.z = saturate(sqrt(1.0f - dot(tNormal.xy, tNormal.xy)));
 	
 	Normals = PackViewSpaceNormal(tangentViewMatrix * tNormal);
@@ -801,7 +801,7 @@ psTranslucent(in vec3 ViewSpacePos,
 	vec3 normal = Normal;
 	mat3 tangentViewMatrix = mat3(normalize(Tangent), normalize(Binormal), normalize(normal));        
 	vec3 tNormal = vec3(0,0,0);
-	tNormal.xy = (sample2D(NormalMap, MaterialSampler, UV).ag * 2.0f) - 1.0f;
+	tNormal.xy = (sample2D(NormalMap, NormalSampler, UV).ag * 2.0f) - 1.0f;
 	
 	// fake z to look at camera, gives a semi-decent translucent effect
 	tNormal.z = 1;
@@ -836,7 +836,7 @@ psAlpha(in vec3 ViewSpacePos,
 	Depth = length(ViewSpacePos);
 	mat3 tangentViewMatrix = mat3(normalize(Tangent.xyz), normalize(Binormal.xyz), normalize(Normal.xyz));        
 	vec3 tNormal = vec3(0,0,0);
-	tNormal.xy = (sample2D(NormalMap, MaterialSampler, UV).ag * 2.0f) - 1.0f;
+	tNormal.xy = (sample2D(NormalMap, NormalSampler, UV).ag * 2.0f) - 1.0f;
 	tNormal.z = saturate(sqrt(1.0f - dot(tNormal.xy, tNormal.xy)));
 	
 	Normals = PackViewSpaceNormal(tangentViewMatrix * tNormal);
@@ -866,7 +866,7 @@ psEnvironment(in vec3 ViewSpacePos,
 	Depth = length(ViewSpacePos.xyz);
 	mat3 tangentViewMatrix = mat3(normalize(Tangent.xyz), normalize(Binormal.xyz), normalize(Normal.xyz));        
 	vec3 tNormal = vec3(0,0,0);
-	tNormal.xy = (sample2D(NormalMap, MaterialSampler, UV).ag * 2.0f) - 1.0f;
+	tNormal.xy = (sample2D(NormalMap, NormalSampler, UV).ag * 2.0f) - 1.0f;
 	tNormal.z = saturate(sqrt(1.0f - dot(tNormal.xy, tNormal.xy)));
 	
 	vec3 viewSpaceNormal = (tangentViewMatrix * tNormal).xyz;
@@ -904,7 +904,7 @@ psVertexColor(in vec3 ViewSpacePos,
 	
 	mat3 tangentViewMatrix = mat3(normalize(Tangent.xyz), normalize(Binormal.xyz), normalize(Normal.xyz));        
 	vec3 tNormal = vec3(0,0,0);
-	tNormal.xy = (sample2D(NormalMap, MaterialSampler, UV).ag * 2.0f) - 1.0f;
+	tNormal.xy = (sample2D(NormalMap, NormalSampler, UV).ag * 2.0f) - 1.0f;
 	tNormal.z = saturate(sqrt(1.0f - dot(tNormal.xy, tNormal.xy)));
 	Normals = PackViewSpaceNormal(tangentViewMatrix * tNormal);
 	

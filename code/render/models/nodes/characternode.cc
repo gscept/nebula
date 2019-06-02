@@ -88,7 +88,7 @@ CharacterNode::OnResourcesLoaded()
 /**
 */
 bool
-CharacterNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader)
+CharacterNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader, bool immediate)
 {
     bool retval = true;
 	this->tag = tag;
@@ -160,7 +160,7 @@ CharacterNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, con
     }
     else
     {
-        retval = TransformNode::Load(fourcc, tag, reader);
+        retval = TransformNode::Load(fourcc, tag, reader, immediate);
     }
     return retval;
 }

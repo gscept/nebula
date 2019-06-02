@@ -29,7 +29,7 @@
 namespace Resources
 {
 typedef Util::StringAtom ResourceName;
-ID_24_8_24_8_NAMED_TYPE(ResourceId, poolId, poolIndex, allocId, allocType);				// 24 bits: pool-resource id, 8 bits: pool id, 24 bits: allocator id, 8 bits: allocator type
+ID_24_8_24_8_NAMED_TYPE(ResourceId, poolId, poolIndex, resourceId, resourceType);				// 24 bits: pool-resource id, 8 bits: pool id, 24 bits: allocator id, 8 bits: allocator type
 
 // define a generic typed ResourceId, this is so we can have specialized allocators, but have a common pool implementation...
 ID_24_8_TYPE(ResourceUnknownId);

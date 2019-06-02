@@ -29,7 +29,7 @@ public:
 private:
 	
 	/// perform load
-	LoadStatus LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream) override;
+	LoadStatus LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate = false) override;
 	/// unload resource (overload to implement resource deallocation)
 	void Unload(const Resources::ResourceId id) override;
 

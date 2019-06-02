@@ -38,7 +38,7 @@ ResourcePool::LoadStatus
 MemoryMeshPool::LoadFromMemory(const Resources::ResourceId id, const void* info)
 {
 	MeshCreateInfo* data = (MeshCreateInfo*)info;
-	MeshCreateInfo& mesh = this->Get<0>(id.allocId);
+	MeshCreateInfo& mesh = this->Get<0>(id.resourceId);
 	mesh = *data;
 
 	this->states[id.poolId] = Resource::Loaded;
@@ -61,10 +61,10 @@ void
 MemoryMeshPool::BindMesh(const MeshId id, const IndexT prim)
 {
 #if _DEBUG
-	n_assert(id.allocType == MeshIdType);
+	n_assert(id.resourceType == MeshIdType);
 #endif
 	this->allocator.EnterGet();
-	MeshCreateInfo& inf = this->allocator.Get<0>(id.allocId);
+	MeshCreateInfo& inf = this->allocator.Get<0>(id.resourceId);
 
 	// setup pipeline (a bit ugly)
 	CoreGraphics::SetVertexLayout(inf.primitiveGroups[prim].GetVertexLayout());
@@ -89,7 +89,7 @@ MemoryMeshPool::BindMesh(const MeshId id, const IndexT prim)
 const Util::Array<CoreGraphics::PrimitiveGroup>&
 MemoryMeshPool::GetPrimitiveGroups(const MeshId id) const
 {
-	const MeshCreateInfo& inf = this->allocator.Get<0>(id.allocId);
+	const MeshCreateInfo& inf = this->allocator.Get<0>(id.resourceId);
 	return inf.primitiveGroups;
 }
 
@@ -99,7 +99,7 @@ MemoryMeshPool::GetPrimitiveGroups(const MeshId id) const
 const VertexBufferId
 MemoryMeshPool::GetVertexBuffer(const MeshId id, const IndexT stream) const
 {
-	const MeshCreateInfo& inf = this->allocator.Get<0>(id.allocId);
+	const MeshCreateInfo& inf = this->allocator.Get<0>(id.resourceId);
 	return inf.streams[stream].vertexBuffer;
 }
 
@@ -109,7 +109,7 @@ MemoryMeshPool::GetVertexBuffer(const MeshId id, const IndexT stream) const
 const IndexBufferId
 MemoryMeshPool::GetIndexBuffer(const MeshId id) const
 {
-	const MeshCreateInfo& inf = this->allocator.Get<0>(id.allocId);
+	const MeshCreateInfo& inf = this->allocator.Get<0>(id.resourceId);
 	return inf.indexBuffer;
 }
 
@@ -119,7 +119,7 @@ MemoryMeshPool::GetIndexBuffer(const MeshId id) const
 const CoreGraphics::PrimitiveTopology::Code
 MemoryMeshPool::GetPrimitiveTopology(const MeshId id) const
 {
-	const MeshCreateInfo& inf = this->allocator.Get<0>(id.allocId);
+	const MeshCreateInfo& inf = this->allocator.Get<0>(id.resourceId);
 	return inf.topology;
 }
 

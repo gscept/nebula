@@ -168,10 +168,10 @@ ObserverContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frame
 			auto it2 = it1.val->Begin();
 			while (it2 != it1.val->End())
 			{
-				it2.val->Clear();
+				it2.val->Reset();
 				it2++;
 			}
-			it1.val->Clear();
+			it1.val->Reset();
 			it1++;
 		}
 	}

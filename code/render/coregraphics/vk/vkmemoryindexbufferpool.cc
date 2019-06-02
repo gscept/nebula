@@ -95,9 +95,9 @@ VkMemoryIndexBufferPool::LoadFromMemory(const Resources::ResourceId id, const vo
 void
 VkMemoryIndexBufferPool::Unload(const Resources::ResourceId id)
 {
-	VkIndexBufferLoadInfo& loadInfo = this->Get<0>(id.allocId);
-	VkIndexBufferRuntimeInfo& runtimeInfo = this->Get<1>(id.allocId);
-	uint32_t& mapCount = this->Get<2>(id.allocId);
+	VkIndexBufferLoadInfo& loadInfo = this->Get<0>(id.resourceId);
+	VkIndexBufferRuntimeInfo& runtimeInfo = this->Get<1>(id.resourceId);
+	uint32_t& mapCount = this->Get<2>(id.resourceId);
 
 	n_assert(mapCount == 0);
 	vkFreeMemory(loadInfo.dev, loadInfo.mem, nullptr);
@@ -110,7 +110,7 @@ VkMemoryIndexBufferPool::Unload(const Resources::ResourceId id)
 CoreGraphics::IndexType::Code
 VkMemoryIndexBufferPool::GetIndexType(const CoreGraphics::IndexBufferId id)
 {
-	VkIndexBufferRuntimeInfo& runtimeInfo = this->Get<1>(id.allocId);
+	VkIndexBufferRuntimeInfo& runtimeInfo = this->Get<1>(id.resourceId);
 	return runtimeInfo.type;
 }
 
@@ -120,7 +120,7 @@ VkMemoryIndexBufferPool::GetIndexType(const CoreGraphics::IndexBufferId id)
 const SizeT
 VkMemoryIndexBufferPool::GetNumIndices(const CoreGraphics::IndexBufferId id)
 {
-	VkIndexBufferLoadInfo& loadInfo = this->Get<0>(id.allocId);
+	VkIndexBufferLoadInfo& loadInfo = this->Get<0>(id.resourceId);
 	return loadInfo.indexCount;
 }
 
@@ -131,8 +131,8 @@ void*
 VkMemoryIndexBufferPool::Map(const CoreGraphics::IndexBufferId id, CoreGraphics::GpuBufferTypes::MapType mapType)
 {
 	void* buf;
-	VkIndexBufferLoadInfo& loadInfo = this->Get<0>(id.allocId);
-	uint32_t& mapCount = this->Get<2>(id.allocId);
+	VkIndexBufferLoadInfo& loadInfo = this->Get<0>(id.resourceId);
+	uint32_t& mapCount = this->Get<2>(id.resourceId);
 	VkResult res = vkMapMemory(loadInfo.dev, loadInfo.mem, 0, VK_WHOLE_SIZE, 0, &buf);
 	n_assert(res == VK_SUCCESS);
 	mapCount++;
@@ -145,8 +145,8 @@ VkMemoryIndexBufferPool::Map(const CoreGraphics::IndexBufferId id, CoreGraphics:
 void
 VkMemoryIndexBufferPool::Unmap(const CoreGraphics::IndexBufferId id)
 {
-	VkIndexBufferLoadInfo& loadInfo = this->Get<0>(id.allocId);
-	uint32_t& mapCount = this->Get<2>(id.allocId);
+	VkIndexBufferLoadInfo& loadInfo = this->Get<0>(id.resourceId);
+	uint32_t& mapCount = this->Get<2>(id.resourceId);
 	vkUnmapMemory(loadInfo.dev, loadInfo.mem);
 	mapCount--;
 }

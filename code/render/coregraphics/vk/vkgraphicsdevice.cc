@@ -1010,24 +1010,24 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 
 	const char* layers[] = { "VK_LAYER_LUNARG_standard_validation", "VK_LAYER_LUNARG_object_tracker" };
 	int numLayers = 0;
-	const char* usedLayers = nullptr;
+	const char** usedLayers = nullptr;
 
 #if NEBULA_GRAPHICS_DEBUG
 	if (info.enableValidation)
 	{
-		usedLayers = layers[0];
+		usedLayers = &layers[0];
 		numLayers = 1;
 	}
 	else
 	{
-		usedLayers = layers[1];
+		usedLayers = &layers[1];
 		numLayers = 1;
 	}
 	state.extensions[state.usedExtensions++] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
 #else
 	if (info.enableValidation)
 	{
-		usedLayers = layers[0];
+		usedLayers = &layers[0];
 		numLayers = 1;
 		state.extensions[state.usedExtensions++] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
 	}
@@ -1041,7 +1041,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		0,											// flags
 		&appInfo,									// application
 		numLayers,
-		layers,
+		usedLayers,
 		state.usedExtensions,
 		state.extensions
 	};
@@ -1719,14 +1719,14 @@ SetStreamVertexBuffer(IndexT streamIndex, const CoreGraphics::VertexBufferId& vb
 	{
 		VkCmdBufferThread::Command cmd;
 		cmd.type = VkCmdBufferThread::InputAssemblyVertex;
-		cmd.vbo.buffer = CoreGraphics::vboPool->allocator.Get<1>(vb.allocId).buf;
+		cmd.vbo.buffer = CoreGraphics::vboPool->allocator.Get<1>(vb.resourceId).buf;
 		cmd.vbo.index = streamIndex;
 		cmd.vbo.offset = offsetVertexIndex;
 		PushToThread(cmd, state.currentDrawThread);
 	}
 	else
 	{
-		vkCmdBindVertexBuffers(CommandBufferGetVk(state.mainCmdDrawBuffer), streamIndex, 1, &CoreGraphics::vboPool->allocator.Get<1>(vb.allocId).buf, (VkDeviceSize*)&offsetVertexIndex);
+		vkCmdBindVertexBuffers(CommandBufferGetVk(state.mainCmdDrawBuffer), streamIndex, 1, &CoreGraphics::vboPool->allocator.Get<1>(vb.resourceId).buf, (VkDeviceSize*)&offsetVertexIndex);
 	}
 }
 
@@ -1751,14 +1751,14 @@ SetIndexBuffer(const CoreGraphics::IndexBufferId& ib, IndexT offsetIndex)
 	{
 		VkCmdBufferThread::Command cmd;
 		cmd.type = VkCmdBufferThread::InputAssemblyIndex;
-		cmd.ibo.buffer = CoreGraphics::iboPool->allocator.Get<1>(ib.allocId).buf;
-		cmd.ibo.indexType = CoreGraphics::iboPool->allocator.Get<1>(ib.allocId).type == IndexType::Index16 ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32;
+		cmd.ibo.buffer = CoreGraphics::iboPool->allocator.Get<1>(ib.resourceId).buf;
+		cmd.ibo.indexType = CoreGraphics::iboPool->allocator.Get<1>(ib.resourceId).type == IndexType::Index16 ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32;
 		cmd.ibo.offset = offsetIndex;
 		PushToThread(cmd, state.currentDrawThread);
 	}
 	else
 	{
-		vkCmdBindIndexBuffer(CommandBufferGetVk(state.mainCmdDrawBuffer), CoreGraphics::iboPool->allocator.Get<1>(ib.allocId).buf, offsetIndex, CoreGraphics::iboPool->allocator.Get<1>(ib.allocId).type == IndexType::Index16 ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32);
+		vkCmdBindIndexBuffer(CommandBufferGetVk(state.mainCmdDrawBuffer), CoreGraphics::iboPool->allocator.Get<1>(ib.resourceId).buf, offsetIndex, CoreGraphics::iboPool->allocator.Get<1>(ib.resourceId).type == IndexType::Index16 ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32);
 	}
 }
 
@@ -1853,9 +1853,9 @@ SetShaderProgram(const CoreGraphics::ShaderProgramId& pro)
 void 
 SetShaderProgram(const CoreGraphics::ShaderId shaderId, const CoreGraphics::ShaderFeature::Mask mask)
 {
-	VkShaderPool::VkShaderRuntimeInfo& runtime = CoreGraphics::shaderPool->shaderAlloc.Get<2>(shaderId.allocId);
+	VkShaderPool::VkShaderRuntimeInfo& runtime = CoreGraphics::shaderPool->shaderAlloc.Get<2>(shaderId.resourceId);
 	ShaderProgramId& programId = runtime.activeShaderProgram;
-	VkShaderProgramAllocator& programs = CoreGraphics::shaderPool->shaderAlloc.Get<3>(shaderId.allocId);
+	VkShaderProgramAllocator& programs = CoreGraphics::shaderPool->shaderAlloc.Get<3>(shaderId.resourceId);
 
 	// change variation if it's actually changed
 	if (state.currentShaderProgram != programId && runtime.activeMask != mask)

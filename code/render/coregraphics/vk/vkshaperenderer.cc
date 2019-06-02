@@ -420,7 +420,7 @@ void
 VkShapeRenderer::CreateBoxShape()
 {
 	this->shapeMeshResources[RenderShape::Box] = CreateResource("msh:system/box.nvx2", "render_system", nullptr, nullptr, true);
-	this->shapeMeshes[RenderShape::Box] = MeshId(this->shapeMeshResources[RenderShape::Box].allocId);
+	this->shapeMeshes[RenderShape::Box] = MeshId(this->shapeMeshResources[RenderShape::Box].resourceId);
 }
 
 //------------------------------------------------------------------------------
@@ -430,7 +430,7 @@ void
 VkShapeRenderer::CreateSphereShape()
 {
 	this->shapeMeshResources[RenderShape::Sphere] = CreateResource("msh:system/sphere.nvx2", "render_system", nullptr, nullptr, true);
-	this->shapeMeshes[RenderShape::Sphere] = MeshId(this->shapeMeshResources[RenderShape::Sphere].allocId);
+	this->shapeMeshes[RenderShape::Sphere] = MeshId(this->shapeMeshResources[RenderShape::Sphere].resourceId);
 }
 
 //------------------------------------------------------------------------------
@@ -440,7 +440,7 @@ void
 VkShapeRenderer::CreateCylinderShape()
 {
 	this->shapeMeshResources[RenderShape::Cylinder] = CreateResource("msh:system/cylinder.nvx2", "render_system", nullptr, nullptr, true);
-	this->shapeMeshes[RenderShape::Cylinder] = MeshId(this->shapeMeshResources[RenderShape::Cylinder].allocId);
+	this->shapeMeshes[RenderShape::Cylinder] = MeshId(this->shapeMeshResources[RenderShape::Cylinder].resourceId);
 }
 
 //------------------------------------------------------------------------------
@@ -450,7 +450,7 @@ void
 VkShapeRenderer::CreateTorusShape()
 {
 	this->shapeMeshResources[RenderShape::Torus] = CreateResource("msh:system/torus.nvx2", "render_system", nullptr, nullptr, true);
-	this->shapeMeshes[RenderShape::Torus] = MeshId(this->shapeMeshResources[RenderShape::Torus].allocId);
+	this->shapeMeshes[RenderShape::Torus] = MeshId(this->shapeMeshResources[RenderShape::Torus].resourceId);
 }
 
 //------------------------------------------------------------------------------
@@ -460,7 +460,7 @@ void
 VkShapeRenderer::CreateConeShape()
 {
 	this->shapeMeshResources[RenderShape::Cone] = CreateResource("msh:system/cone.nvx2", "render_system", nullptr, nullptr, true);
-	this->shapeMeshes[RenderShape::Cone] = MeshId(this->shapeMeshResources[RenderShape::Cone].allocId);
+	this->shapeMeshes[RenderShape::Cone] = MeshId(this->shapeMeshResources[RenderShape::Cone].resourceId);
 }
 
 } // namespace Vulkan

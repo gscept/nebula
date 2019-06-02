@@ -16,12 +16,12 @@ __ImplementClass(Characters::StreamSkeletonPool, 'SSKP', Resources::ResourceStre
 /**
 */
 Resources::ResourcePool::LoadStatus 
-StreamSkeletonPool::LoadFromStream(const Resources::ResourceId id, const Util::StringAtom & tag, const Ptr<IO::Stream>& stream)
+StreamSkeletonPool::LoadFromStream(const Resources::ResourceId id, const Util::StringAtom & tag, const Ptr<IO::Stream>& stream, bool immediate)
 {
-	Util::FixedArray<CharacterJoint>& joints = this->Get<Joints>(id.allocId);
-	Util::FixedArray<Math::matrix44>& bindPoses = this->Get<BindPose>(id.allocId);
-	Util::HashTable<Util::StringAtom, IndexT>& jointIndexMap = this->Get<JointNameMap>(id.allocId);
-	Util::FixedArray<Math::float4>& idleSamples = this->Get<IdleSamples>(id.allocId);
+	Util::FixedArray<CharacterJoint>& joints = this->Get<Joints>(id.resourceId);
+	Util::FixedArray<Math::matrix44>& bindPoses = this->Get<BindPose>(id.resourceId);
+	Util::HashTable<Util::StringAtom, IndexT>& jointIndexMap = this->Get<JointNameMap>(id.resourceId);
+	Util::FixedArray<Math::float4>& idleSamples = this->Get<IdleSamples>(id.resourceId);
 
 	// map buffer
 	byte* ptr = (byte*)stream->Map();
@@ -92,7 +92,7 @@ StreamSkeletonPool::LoadFromStream(const Resources::ResourceId id, const Util::S
 void 
 StreamSkeletonPool::Unload(const Resources::ResourceId id)
 {
-	this->skeletonAllocator.Dealloc(id.allocId);
+	this->skeletonAllocator.Dealloc(id.resourceId);
 }
 
 //------------------------------------------------------------------------------
@@ -101,7 +101,7 @@ StreamSkeletonPool::Unload(const Resources::ResourceId id)
 const Util::FixedArray<Math::matrix44>&
 StreamSkeletonPool::GetBindPose(const SkeletonId id) const
 {
-	return this->skeletonAllocator.Get<BindPose>(id.allocId);
+	return this->skeletonAllocator.Get<BindPose>(id.resourceId);
 }
 
 //------------------------------------------------------------------------------
@@ -110,9 +110,9 @@ StreamSkeletonPool::GetBindPose(const SkeletonId id) const
 const IndexT 
 StreamSkeletonPool::GetJointIndex(const SkeletonId id, const Util::StringAtom& name) const
 {
-	const IndexT idx = this->skeletonAllocator.Get<JointNameMap>(id.allocId).FindIndex(name);
+	const IndexT idx = this->skeletonAllocator.Get<JointNameMap>(id.resourceId).FindIndex(name);
 	n_assert(idx != InvalidIndex);
-	return this->skeletonAllocator.Get<JointNameMap>(id.allocId).ValueAtIndex(name, idx);
+	return this->skeletonAllocator.Get<JointNameMap>(id.resourceId).ValueAtIndex(name, idx);
 }
 
 //------------------------------------------------------------------------------
@@ -121,7 +121,7 @@ StreamSkeletonPool::GetJointIndex(const SkeletonId id, const Util::StringAtom& n
 const SizeT 
 StreamSkeletonPool::GetNumJoints(const SkeletonId id) const
 {
-	return this->skeletonAllocator.Get<Joints>(id.allocId).Size();
+	return this->skeletonAllocator.Get<Joints>(id.resourceId).Size();
 }
 
 //------------------------------------------------------------------------------
@@ -130,7 +130,7 @@ StreamSkeletonPool::GetNumJoints(const SkeletonId id) const
 const Util::FixedArray<CharacterJoint>& 
 StreamSkeletonPool::GetJoints(const SkeletonId id) const
 {
-	return this->skeletonAllocator.Get<Joints>(id.allocId);
+	return this->skeletonAllocator.Get<Joints>(id.resourceId);
 }
 
 } // namespace Characters

@@ -36,7 +36,7 @@ CharacterSkinNode::~CharacterSkinNode()
 /**
 */
 bool
-CharacterSkinNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader)
+CharacterSkinNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader, bool immediate)
 {
     bool retval = true;
     if (FourCC('NSKF') == fourcc)
@@ -60,7 +60,7 @@ CharacterSkinNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag,
     }
     else
     {
-        retval = PrimitiveNode::Load(fourcc, tag, reader);
+        retval = PrimitiveNode::Load(fourcc, tag, reader, immediate);
     }
     return retval;
 }
@@ -118,23 +118,24 @@ void
 CharacterSkinNode::Instance::ApplyNodeInstanceState()
 {
 	const CharacterNode::Instance* cparent = static_cast<const CharacterNode::Instance*>(this->parent);
-	CharacterSkinNode* sparent = static_cast<CharacterSkinNode*>(this->node);
-	const Util::Array<IndexT>& usedIndices = sparent->skinFragments[0].jointPalette;
-	Util::FixedArray<Math::matrix44> usedMatrices(usedIndices.Size());
 
-	// if we haven't loaded yet
-	if (cparent->joints == nullptr)
-		return;
-
-	// copy active matrix palette
-	IndexT i;
-	for (i = 0; i < usedIndices.Size(); i++)
+	// if parent doesn't have joints, don't continue
+	if (cparent->joints != nullptr)
 	{
-		usedMatrices[i] = (*cparent->joints)[usedIndices[i]];
-	}
-	
-	// update skinning palette
-	CoreGraphics::ConstantBufferUpdate(this->cboSkin, this->cboSkinAlloc, usedMatrices.Begin(), sizeof(Math::matrix44) * usedMatrices.Size(), this->skinningPaletteVar);
+		CharacterSkinNode* sparent = static_cast<CharacterSkinNode*>(this->node);
+		const Util::Array<IndexT>& usedIndices = sparent->skinFragments[0].jointPalette;
+		Util::FixedArray<Math::matrix44> usedMatrices(usedIndices.Size());
+
+		// copy active matrix palette, or set identity
+		IndexT i;
+		for (i = 0; i < usedIndices.Size(); i++)
+		{
+			usedMatrices[i] = (*cparent->joints)[usedIndices[i]];
+		}
+
+		// update skinning palette
+		CoreGraphics::ConstantBufferUpdate(this->cboSkin, this->cboSkinAlloc, usedMatrices.Begin(), sizeof(Math::matrix44) * usedMatrices.Size(), this->skinningPaletteVar);
+	}	
 
 	// apply original state
 	PrimitiveNode::Instance::ApplyNodeInstanceState();

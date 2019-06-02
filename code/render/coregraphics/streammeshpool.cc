@@ -39,7 +39,7 @@ StreamMeshPool::~StreamMeshPool()
 /**
 */
 Resources::ResourcePool::LoadStatus
-StreamMeshPool::LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream)
+StreamMeshPool::LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
 {
 	n_assert(stream.isvalid());
 	n_assert(id != Ids::InvalidId24);
@@ -74,7 +74,7 @@ void
 StreamMeshPool::Unload(const Resources::ResourceId id)
 {
 	n_assert(id != Ids::InvalidId24);
-	const MeshCreateInfo& msh = meshPool->GetSafe<0>(id.allocId);
+	const MeshCreateInfo& msh = meshPool->GetSafe<0>(id.resourceId);
 
 	if (msh.indexBuffer != IndexBufferId::Invalid()) CoreGraphics::iboPool->Unload(msh.indexBuffer.AllocId());
 	IndexT i;
