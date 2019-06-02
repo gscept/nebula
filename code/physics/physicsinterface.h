@@ -13,6 +13,7 @@
 #include "util/arraystack.h"
 #include "util/stringatom.h"
 #include "math/matrix44.h"
+#include "resources/resourceid.h"
 
 #include <functional>
 #include "PxPhysicsAPI.h"
@@ -21,6 +22,10 @@
 
 namespace Physics
 {
+
+RESOURCE_ID_TYPE(ActorResourceId);
+RESOURCE_ID_TYPE(ColliderId);
+
 
 enum CollisionFeedbackFlag
 {

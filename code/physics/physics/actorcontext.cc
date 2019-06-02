@@ -142,16 +142,86 @@ void ActorContext::SetTransform(ActorId id, Math::matrix44 const & transform)
     GET_DYNAMIC(id)->setGlobalPose(Neb2PxTrans(transform));
 }
 
-Math::matrix44 ActorContext::GetTransform(ActorId id)
+//------------------------------------------------------------------------------
+/**
+*/
+Math::matrix44 
+ActorContext::GetTransform(ActorId id)
 {
     n_assert(ActorContext::actorPool.IsValid(id.id));
     return Px2NebMat(GET_DYNAMIC(id)->getGlobalPose());
 }
 
-physx::PxRigidActor * ActorContext::GetPxActor(ActorId id)
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ActorContext::SetLinearVelocity(ActorId id, Math::vector speed)
+{
+    n_assert(ActorContext::actorPool.IsValid(id.id));
+    GET_DYNAMIC(id)->setLinearVelocity(Neb2PxVec(speed));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::vector 
+ActorContext::GetLinearVelocity(ActorId id)
+{
+    n_assert(ActorContext::actorPool.IsValid(id.id));
+    return Px2NebVec(GET_DYNAMIC(id)->getLinearVelocity());
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ActorContext::SetAngularVelocity(ActorId id, Math::vector speed)
+{
+    n_assert(ActorContext::actorPool.IsValid(id.id));
+    GET_DYNAMIC(id)->setAngularVelocity(Neb2PxVec(speed));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::vector
+ActorContext::GetAngularVelocity(ActorId id)
+{
+    n_assert(ActorContext::actorPool.IsValid(id.id));
+    return Px2NebVec(GET_DYNAMIC(id)->getAngularVelocity());
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ActorContext::ApplyImpulseAtPos(ActorId id, const Math::vector& impulse, const Math::point& pos)
+{
+    n_assert(ActorContext::actorPool.IsValid(id.id));
+    PxRigidDynamic* actor = GET_DYNAMIC(id);    
+    PxRigidBodyExt::addForceAtPos(*actor, Neb2PxVec(impulse), Neb2PxVec(pos));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+physx::PxRigidActor * 
+ActorContext::GetPxActor(ActorId id)
 {
     n_assert(ActorContext::actorPool.IsValid(id.id));
     return static_cast<physx::PxRigidActor*>(GET_ACTOR(id).actor);
 }
+
+//------------------------------------------------------------------------------
+/**
+*/
+physx::PxRigidDynamic* 
+ActorContext::GetPxDynamic(ActorId id)
+{
+    n_assert(ActorContext::actorPool.IsValid(id.id));
+    return GET_DYNAMIC(id);
+}
+
 
 }

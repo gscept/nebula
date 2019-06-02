@@ -23,12 +23,6 @@ enum PhysicsIdType
     MeshIdType,
 };
 
-
-
-RESOURCE_ID_TYPE(ActorResourceId);
-RESOURCE_ID_TYPE(ColliderId);
-RESOURCE_ID_TYPE(MeshIdType);
-
 struct ActorInfo
 {
     Util::Array<physx::PxShape*> shapes;
@@ -70,5 +64,14 @@ private:
 };
 
 extern StreamActorPool *actorPool;
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline ActorId
+CreateActorInstance(Physics::ActorResourceId id, Math::matrix44 const & trans, IndexT scene)
+{
+    return Physics::actorPool->CreateActorInstance(id, trans, scene);
+}
 
 } // namespace Physics

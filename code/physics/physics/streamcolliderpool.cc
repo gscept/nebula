@@ -129,7 +129,7 @@ CreateMeshFromResource(MeshTopologyType type, Util::StringAtom resource, int pri
                 meshDesc.points.data = nvx->GetVertexData();
 
                 meshDesc.triangles.count = group.GetNumPrimitives(CoreGraphics::PrimitiveTopology::TriangleList);
-                meshDesc.triangles.stride = 3 * sizeof(unsigned short);
+                meshDesc.triangles.stride = 3 * sizeof(unsigned int);
                 meshDesc.triangles.data = (void*)&(nvx->GetIndexData()[group.GetBaseIndex()]);            
     #if NEBULA_DEBUG
                 state.cooking->validateTriangleMesh(meshDesc);
