@@ -38,8 +38,25 @@ public:
     static void SetTransform(ActorId id, Math::matrix44 const & transform);
     ///
     static Math::matrix44 GetTransform(ActorId id);
+
+    ///
+    static void SetLinearVelocity(ActorId id, Math::vector speed);
+    ///
+    static Math::vector GetLinearVelocity(ActorId id);
+
+    ///
+    static void SetAngularVelocity(ActorId id, Math::vector speed);
+    ///
+    static Math::vector GetAngularVelocity(ActorId id);
+
+    /// apply a global impulse vector at the next time step at a global position
+    void ApplyImpulseAtPos(ActorId id, const Math::vector& impulse, const Math::point& pos);
+
+
     /// shortcut for getting the pxactor object
     static physx::PxRigidActor* GetPxActor(ActorId id);
+    /// shortcut for getting the pxactor object
+    static physx::PxRigidDynamic* GetPxDynamic(ActorId id);
 
 
 
@@ -51,4 +68,9 @@ private:
     ///
     static ActorId ActorContext::AllocateActorId(physx::PxRigidActor* pxActor);
 };
+
+///
+ActorId CreateActorInstance(ActorResourceId id, Math::matrix44 const & trans, bool dynamic, IndexT scene = 0);
+
+
 }

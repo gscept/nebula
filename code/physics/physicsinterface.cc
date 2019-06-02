@@ -67,6 +67,17 @@ Setup()
 //------------------------------------------------------------------------------
 /**
 */
+void ShutDown()
+{
+    PxCloseExtensions();
+    state.cooking->release();
+    state.physics->release();
+    state.foundation->release();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 IndexT
 CreateScene()
 {
@@ -102,6 +113,13 @@ GetScene(IndexT idx)
 {
     n_assert(idx < state.activeScenes.Size());
     return state.activeScenes[idx];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void RenderDebug()
+{
 }
 
 //------------------------------------------------------------------------------

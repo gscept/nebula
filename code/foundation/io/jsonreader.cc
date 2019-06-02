@@ -434,6 +434,21 @@ JsonReader::GetString(const char* name) const
 
 //------------------------------------------------------------------------------
 /**
+    Return the provided attribute as stringatom. If the attribute does not exist
+    the method will fail hard (use HasAttr() to check for its existance).
+*/
+StringAtom
+JsonReader::GetStringAtom(const char* name) const
+{
+    const value_variant * node = this->GetChild(name);
+
+    n_assert(node);
+    n_assert(node->is_string());
+    return node->as_string_ptr();
+}
+
+//------------------------------------------------------------------------------
+/**
     Return the provided attribute as a bool. If the attribute does not exist
     the method will fail hard (use HasAttr() to check for its existance).
 */
@@ -908,6 +923,17 @@ template<> void JsonReader::Get<Util::Variant>(Util::Variant & ret, const char* 
 /**
 */
 template<> void JsonReader::Get<Util::String>(Util::String & ret, const char* attr)
+{
+    const value_variant * node = this->GetChild(attr);
+
+    n_assert(node->is_string());
+    ret = node->as_string_ptr();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<> void JsonReader::Get<Util::StringAtom>(Util::StringAtom & ret, const char* attr)
 {
     const value_variant * node = this->GetChild(attr);
 

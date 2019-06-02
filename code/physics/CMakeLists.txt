@@ -4,7 +4,7 @@
 
 fips_begin_module(physics)
 fips_include_directories(${FIPS_DEPLOY_DIR}/physx/include ${CMAKE_CURRENT_SOURCE_DIR})
-fips_deps(foundation resource)
+fips_deps(foundation resource render)
 fips_files(physicsinterface.h physicsinterface.cc)
 fips_dir(physics)
 fips_files( 

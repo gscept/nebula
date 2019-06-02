@@ -124,10 +124,10 @@ PhysxState::Update(Timing::Time delta)
     for (IndexT i = 0; i < this->awakeActors.Size(); i++)
     {
         Actor& actor = ActorContext::actors[Ids::Index(this->awakeActors.KeyAtIndex(i))];
-        if (actor.moveCallback)//.IsValid())
+        if (actor.moveCallback.IsValid())
         {
             Math::matrix44 trans = Px2NebMat(static_cast<PxRigidActor*>(actor.actor)->getGlobalPose());
-            actor.moveCallback(trans);
+            actor.moveCallback(actor.id, trans);
         }
     }
 }
