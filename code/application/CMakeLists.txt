@@ -4,7 +4,7 @@
 
 nebula_begin_module(application)
 	fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/audio)
-	fips_deps(foundation render audio resource)
+	fips_deps(foundation render audio resource physics)
 	fips_dir(.)
 		fips_files(
 			stdneb.h
@@ -105,17 +105,17 @@ nebula_begin_module(application)
 			audiofeatureunit.h
 			audiofeatureunit.cc
 		)        
-    #fips_dir(physicsfeature)
-    #    fips_files(
-    #        physicsfeatureunit.cc
-    #        physicsfeatureunit.h
-    #    )
-    #fips_dir(physicsfeature/components)
-    #    nebula_add_nidl(physicsdata.nidl)
-    #    fips_files(
-    #       physicscomponents.cc
-    #        physicscomponents.h
-    #    )
+    fips_dir(physicsfeature)
+        fips_files(
+            physicsfeatureunit.cc
+            physicsfeatureunit.h
+        )
+    fips_dir(physicsfeature/components)
+        nebula_add_nidl(physicsdata.nidl)
+        fips_files(
+           physicscomponents.cc
+            physicscomponents.h
+        )
 	fips_dir(audiofeature/components)
 		nebula_add_nidl(audioemitterallocator.nidl)
 		fips_files(

@@ -47,15 +47,18 @@ struct Material
 struct ActorId
 {
     Ids::Id32 id;
+    ActorId() :id(Ids::InvalidId32) {}
+    ActorId(uint32_t i) : id(i) {}
 };
 
 struct Actor
 {
     physx::PxActor* actor;
     ActorId id;
-// FIXME delegate doesnt seem to work here (see testviewer for example)
-    std::function<void(Math::matrix44 const&)> moveCallback;
-    //Util::Delegate<void(Math::matrix44 const&)> moveCallback;
+    uint64_t userData;
+    // FIXME delegate doesnt seem to work here (see testviewer for example)
+    //std::function<void(ActorId id, Math::matrix44 const&)> moveCallback;
+    Util::Delegate<void(ActorId id, Math::matrix44 const&)> moveCallback;
 };
 
 /// physx scene classes, foundation and physics are duplicated here for convenience

@@ -44,19 +44,19 @@ StreamActorPool::Setup()
 /**
 */
 ActorId 
-StreamActorPool::CreateActorInstance(ActorResourceId id, Math::matrix44 const & trans, IndexT scene)
+StreamActorPool::CreateActorInstance(ActorResourceId id, Math::matrix44 const & trans, bool dynamic, IndexT scene)
 {
     this->allocator.EnterGet();
     ActorInfo& info = this->allocator.Get<0>(id.allocId);
     this->allocator.LeaveGet();
 
-    physx::PxRigidActor * newActor = state.CreateActor(info.dynamic, trans);
+    physx::PxRigidActor * newActor = state.CreateActor(dynamic, trans);
     
     for (IndexT i = 0; i < info.shapes.Size(); i++)
     {        
         newActor->attachShape(*info.shapes[i]);        
     }
-    if (info.dynamic)
+    if (dynamic)
     {
         physx::PxRigidBodyExt::updateMassAndInertia(*static_cast<physx::PxRigidDynamic*>(newActor), info.density);
     }
@@ -84,8 +84,7 @@ StreamActorPool::LoadFromStream(const Resources::ResourceId res, const Util::Str
     {
         if (reader->SetToNode("/actor"))
         {
-            actorInfo.feedbackFlag = (Physics::CollisionFeedbackFlag)reader->GetInt("feedback");
-            reader->Get(actorInfo.dynamic, "dynamic");
+            actorInfo.feedbackFlag = (Physics::CollisionFeedbackFlag)reader->GetInt("feedback");            
             reader->Get(actorInfo.density, "density");
             reader->SetToFirstChild("colliders");
             reader->SetToFirstChild();

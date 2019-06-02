@@ -1,0 +1,35 @@
+"namespace": "PhysicsFeature"
+"attributes": {
+    "actor": {
+        "type": "uint"
+        "fourcc": "phac"
+        "access": "R"
+        "default": -1
+    }
+    "physicsResource": {
+        "type": "string"
+        "fourcc": "pmdl"
+        "access": "R"
+		"default": ""
+    }
+    "dynamic": {
+        "type": "bool"
+        "fourcc": "dynm"
+        "access": "RW"
+        "default": "true"
+    }
+}
+"components": {
+    "PhysicsComponent": {
+        "fourcc": "PHXC"
+        "attributes": [
+            "actor"
+			"physicsResource"
+            "dynamic"
+        ]
+        "events": [
+            "OnActivate"
+            "OnDeactivate"
+        ]
+    }
+}

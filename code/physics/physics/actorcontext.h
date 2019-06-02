@@ -70,7 +70,7 @@ private:
 };
 
 ///
-ActorId CreateActorInstance(ActorResourceId id, Math::matrix44 const & trans, IndexT scene = 0);
+ActorId CreateActorInstance(ActorResourceId id, Math::matrix44 const & trans, bool dynamic, IndexT scene = 0);
 
 
 }

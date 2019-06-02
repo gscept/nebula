@@ -28,8 +28,7 @@ struct ActorInfo
     Util::Array<physx::PxShape*> shapes;
     CollisionFeedbackFlag feedbackFlag;
     uint16_t collisionGroup;
-    float density;
-    bool dynamic;
+    float density;    
 };
 
     
@@ -46,7 +45,7 @@ public:
     void Setup();
 
     ///
-    ActorId CreateActorInstance(ActorResourceId id, Math::matrix44 const & trans, IndexT scene = 0);
+    ActorId CreateActorInstance(ActorResourceId id, Math::matrix44 const & trans, bool dynamic, IndexT scene = 0);
       
 
 private:
@@ -69,9 +68,9 @@ extern StreamActorPool *actorPool;
 /**
 */
 inline ActorId
-CreateActorInstance(Physics::ActorResourceId id, Math::matrix44 const & trans, IndexT scene)
+CreateActorInstance(Physics::ActorResourceId id, Math::matrix44 const & trans, bool dynamic, IndexT scene)
 {
-    return Physics::actorPool->CreateActorInstance(id, trans, scene);
+    return Physics::actorPool->CreateActorInstance(id, trans, dynamic, scene);
 }
 
 } // namespace Physics
