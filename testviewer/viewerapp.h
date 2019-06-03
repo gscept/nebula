@@ -16,7 +16,7 @@
 #include "models/modelcontext.h"
 #include "input/inputserver.h"
 #include "io/ioserver.h"
-
+#include "debug/debuginterface.h"
 
 namespace Tests
 {
@@ -69,8 +69,10 @@ protected:
     int selectedFile = 0;
 
     Math::transform44 transform;
+	float prevAverageFrameTime = 0.0f;
+	float averageFrameTime = 0.0f;
 
-    bool renderDebug = true;
+    bool renderDebug = false;
     int cameraMode = 0;
     float zoomIn = 0.0f;
     float zoomOut = 0.0f;
@@ -80,6 +82,13 @@ protected:
     RenderUtil::FreeCameraUtil freeCamUtil;        
     Math::point defaultViewPoint;
     Util::Array<Graphics::GraphicsEntityId> entities;
+	Util::Array<Util::String> entityNames;
+
+#if __NEBULA_HTTP__
+	Ptr<Debug::DebugInterface> debugInterface;
+
+	ushort defaultTcpPort;
+#endif
 };
 
 }

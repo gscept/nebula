@@ -47,6 +47,17 @@ const char* stateToString(Resources::Resource::State state)
 //------------------------------------------------------------------------------
 /**
 */
+static const char*
+GraphicsEntityToName(GraphicsEntityId id)
+{
+	if (ModelContext::IsEntityRegistered(id)) return "Model";
+	if (Lighting::LightContext::IsEntityRegistered(id)) return "Light";
+	return "Entity";
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 SimpleViewerApplication::SimpleViewerApplication()
 {
     this->SetAppTitle("Viewer App");
@@ -69,6 +80,14 @@ SimpleViewerApplication::Open()
 {
     if (Application::Open())
     {
+
+#if __NEBULA_HTTP__
+
+		// setup debug subsystem
+		this->debugInterface = Debug::DebugInterface::Create();
+		this->debugInterface->Open();
+#endif
+
         this->gfxServer = GraphicsServer::Create();
         this->resMgr = Resources::ResourceManager::Create();
         this->inputServer = Input::InputServer::Create();
@@ -189,9 +208,10 @@ SimpleViewerApplication::Open()
         ObserverContext::RegisterEntity(this->cam);
         ObserverContext::Setup(this->cam, VisibilityEntityType::Camera);
 
-		Characters::CharacterContext::RegisterEntity(this->entity);
-		Characters::CharacterContext::Setup(this->entity, "ske:Units/Unit_Archer.nsk3", "ani:Units/Unit_Archer.nax3", "Viewer");
-		Characters::CharacterContext::PlayClip(this->entity, nullptr, 0, 0, Characters::Append);
+		//const Util::StringAtom modelRes[] = { "mdl:Units/Unit_Archer.n3",  "mdl:Units/Unit_Footman.n3",  "mdl:Units/Unit_Spearman.n3" };
+		const Util::StringAtom modelRes[] = { "mdl:Buildings/castle_tower.n3",  "mdl:Buildings/castle_tower.n3",  "mdl:Buildings/castle_tower.n3" };
+		const Util::StringAtom skeletonRes[] = { "ske:Units/Unit_Archer.nsk3",  "ske:Units/Unit_Footman.nsk3",  "ske:Units/Unit_Spearman.nsk3" };
+		const Util::StringAtom animationRes[] = { "ani:Units/Unit_Archer.nax3",  "ani:Units/Unit_Footman.nax3",  "ani:Units/Unit_Spearman.nax3" };
 
 		Util::Array<Graphics::GraphicsEntityId> models;
 		ModelContext::BeginBulkRegister();
@@ -203,14 +223,27 @@ SimpleViewerApplication::Open()
 			{
 				Graphics::GraphicsEntityId ent = Graphics::CreateEntity();
                 this->entities.Append(ent);
+				Util::String sid;
+				sid.Format("%s: %d", GraphicsEntityToName(ent), ent);
+				this->entityNames.Append(sid);
+				
+				const IndexT resourceIndex = ((i + NumModels) * NumModels + (j + NumModels)) % 3;
+				const float timeOffset = (((i + NumModels) * NumModels + (j + NumModels)) % 4) / 3.0f;
 
 				// create model and move it to the front
 				ModelContext::RegisterEntity(ent);
-				ModelContext::Setup(ent, "mdl:Buildings/castle_tower.n3", "NotA");
-				ModelContext::SetTransform(ent, Math::matrix44::translation(Math::float4(i * 10, 0, -j * 10, 1)));
+				ModelContext::Setup(ent, modelRes[resourceIndex], "NotA");
+				ModelContext::SetTransform(ent, Math::matrix44::translation(Math::float4(i * 2, 0, -j * 2, 1)));
 
 				ObservableContext::RegisterEntity(ent);
 				ObservableContext::Setup(ent, VisibilityEntityType::Model);
+
+				/*
+				Characters::CharacterContext::RegisterEntity(ent);
+				Characters::CharacterContext::Setup(ent, skeletonRes[resourceIndex], animationRes[resourceIndex], "Viewer");
+				Characters::CharacterContext::PlayClip(ent, nullptr, 0, 0, Characters::Append, 1.0f, 1, Math::n_rand() * 100.0f, 0.0f, 0.0f, Math::n_rand() * 100.0f);
+				*/
+
 				models.Append(ent);
 			}
 		}
@@ -229,6 +262,7 @@ SimpleViewerApplication::Open()
 void 
 SimpleViewerApplication::Close()
 {
+	App::Application::Close();
     DestroyWindow(this->wnd);
     this->gfxServer->DiscardStage(this->stage);
     this->gfxServer->DiscardView(this->view);
@@ -236,7 +270,6 @@ SimpleViewerApplication::Close()
     this->gfxServer->Close();
     this->inputServer->Close();
     this->resMgr->Close();
-    this->Close();
 }
 
 //------------------------------------------------------------------------------
@@ -297,25 +330,17 @@ SimpleViewerApplication::Run()
         WindowPresent(wnd, frameIndex);
         if (this->inputServer->GetDefaultKeyboard()->KeyPressed(Input::Key::Escape)) run = false;        
                 
-        if(this->inputServer->GetDefaultKeyboard()->KeyPressed(Input::Key::LeftMenu))
+        if (this->inputServer->GetDefaultKeyboard()->KeyPressed(Input::Key::LeftMenu))
             this->UpdateCamera();
         
+		if (this->inputServer->GetDefaultKeyboard()->KeyPressed(Input::Key::F8))
+			Resources::ResourceManager::Instance()->ReloadResource("shd:imgui.fxb");
 
         frameIndex++;             
         this->inputServer->EndFrame();
     }
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-static const char * 
-GraphicsEntityToName(GraphicsEntityId id)
-{
-    if (ModelContext::IsEntityRegistered(id)) return "Model";
-    if (Lighting::LightContext::IsEntityRegistered(id)) return "Light";
-    return "Entity";
-}
 
 //------------------------------------------------------------------------------
 /**
@@ -329,9 +354,7 @@ SimpleViewerApplication::RenderEntityUI()
     static int selected = 0;
     for (int i = 0 ; i < this->entities.Size();i++)
     {
-        Util::String sid;
-        sid.Format("%s: %d", GraphicsEntityToName(this->entities[i]), this->entities[i]);
-        if (ImGui::Selectable(sid.AsCharPtr(), i == selected))
+        if (ImGui::Selectable(this->entityNames[i].AsCharPtr(), i == selected))
         {
             selected = i;
         }        
@@ -362,7 +385,14 @@ SimpleViewerApplication::RenderEntityUI()
 void 
 SimpleViewerApplication::RenderUI()
 {
+	this->averageFrameTime += (float)this->gfxServer->GetFrameTime();
+	if (this->gfxServer->GetFrameIndex() % 35 == 0)
+	{
+		this->prevAverageFrameTime = this->averageFrameTime / 35.0f;
+		this->averageFrameTime = 0.0f;
+	}
     ImGui::Begin("Viewer", nullptr, 0);
+	ImGui::Text("FPS: %.2f", 1 / this->prevAverageFrameTime);
 	ImGui::SetWindowSize(ImVec2(240, 400));
     if (ImGui::CollapsingHeader("Camera mode", ImGuiTreeNodeFlags_DefaultOpen))
     {
