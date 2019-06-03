@@ -69,8 +69,4 @@ private:
     static ActorId ActorContext::AllocateActorId(physx::PxRigidActor* pxActor);
 };
 
-///
-ActorId CreateActorInstance(ActorResourceId id, Math::matrix44 const & trans, bool dynamic, IndexT scene = 0);
-
-
 }

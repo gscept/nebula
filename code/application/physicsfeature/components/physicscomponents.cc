@@ -10,6 +10,7 @@
 #include "game/component/componentserialization.h"
 #include "physicsfeature/components/physicsdata.h"
 #include "physicsinterface.h"
+#include "physics/streamactorpool.h"
 #include "physics/actorcontext.h"
 #include "resources/resourcemanager.h"
 

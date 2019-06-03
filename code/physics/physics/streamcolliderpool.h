@@ -44,7 +44,7 @@ private:
 
 
     /// perform actual load, override in subclass
-    LoadStatus LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream);
+    LoadStatus LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate);
     /// unload resource
     void Unload(const Resources::ResourceId id);
 

@@ -52,7 +52,7 @@ private:
     
 
     /// perform actual load, override in subclass
-    LoadStatus LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream);
+    LoadStatus LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate);
     /// unload resource
     void Unload(const Resources::ResourceId id);
 
@@ -68,7 +68,7 @@ extern StreamActorPool *actorPool;
 /**
 */
 inline ActorId
-CreateActorInstance(Physics::ActorResourceId id, Math::matrix44 const & trans, bool dynamic, IndexT scene)
+CreateActorInstance(Physics::ActorResourceId id, Math::matrix44 const & trans, bool dynamic, IndexT scene = 0)
 {
     return Physics::actorPool->CreateActorInstance(id, trans, dynamic, scene);
 }

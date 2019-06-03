@@ -47,7 +47,7 @@ ActorId
 StreamActorPool::CreateActorInstance(ActorResourceId id, Math::matrix44 const & trans, bool dynamic, IndexT scene)
 {
     this->allocator.EnterGet();
-    ActorInfo& info = this->allocator.Get<0>(id.allocId);
+    ActorInfo& info = this->allocator.Get<0>(id.resourceId);
     this->allocator.LeaveGet();
 
     physx::PxRigidActor * newActor = state.CreateActor(dynamic, trans);
@@ -69,14 +69,14 @@ StreamActorPool::CreateActorInstance(ActorResourceId id, Math::matrix44 const & 
 /**
 */
 Resources::ResourcePool::LoadStatus 
-StreamActorPool::LoadFromStream(const Resources::ResourceId res, const Util::StringAtom & tag, const Ptr<IO::Stream>& stream)
+StreamActorPool::LoadFromStream(const Resources::ResourceId res, const Util::StringAtom & tag, const Ptr<IO::Stream>& stream, bool immediate)
 {
     n_assert(stream.isvalid());    
     n_assert(this->GetState(res) == Resources::Resource::Pending);
     
     /// during the load-phase, we can safetly get the structs
     this->EnterGet();    
-    ActorInfo &actorInfo = this->allocator.Get<0>(res.allocId);       
+    ActorInfo &actorInfo = this->allocator.Get<0>(res.resourceId);       
     this->LeaveGet();
     Ptr<IO::JsonReader> reader = IO::JsonReader::Create();
     reader->SetStream(stream);
