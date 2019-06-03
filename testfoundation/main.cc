@@ -22,6 +22,7 @@
 #include "memorystreamtest.h"
 #include "guidtest.h"
 #include "fileservertest.h"
+#include "filewatchertest.h"
 #include "uritest.h"
 #include "textreaderwritertest.h"
 #include "messagereaderwritertest.h"
@@ -75,13 +76,14 @@ __cdecl main()
     testRunner->AttachTestCase(DelegateTableTest::Create());
     testRunner->AttachTestCase(DelegateTest::Create());
     testRunner->AttachTestCase(BlobTest::Create());
-    testRunner->AttachTestCase(ExcelXmlReaderTest::Create());
+    //testRunner->AttachTestCase(ExcelXmlReaderTest::Create());
     testRunner->AttachTestCase(RingBufferTest::Create());
     testRunner->AttachTestCase(RunLengthCodecTest::Create());
     testRunner->AttachTestCase(MemoryPoolTest::Create());
     testRunner->AttachTestCase(Matrix44Test::Create());
     testRunner->AttachTestCase(Float4Test::Create());
     testRunner->AttachTestCase(ZipFSTest::Create());
+    testRunner->AttachTestCase(FileWatcherTest::Create());
     testRunner->AttachTestCase(LuaServerTest::Create());
     testRunner->AttachTestCase(StreamServerTest::Create());
     testRunner->AttachTestCase(CmdLineArgsTest::Create());
