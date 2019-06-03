@@ -1021,7 +1021,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	else
 	{
 		usedLayers = &layers[1];
-		numLayers = 1;
+		numLayers = 0;
 	}
 	state.extensions[state.usedExtensions++] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
 #else

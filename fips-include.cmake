@@ -71,7 +71,7 @@ foreach(CUR_LIB ${PX_LIBRARY_NAMES})
 endforeach()
 
 add_library(PxLibs INTERFACE)
-target_link_libraries(PxLibs INTERFACE $<$<CONFIG:Debug>:${PX_DEBUG_LIBRARIES}> $<$<CONFIG:Release>:${PX_RELASE_LIBRARIES}>)
+target_link_libraries(PxLibs INTERFACE $<$<CONFIG:Debug>:${PX_DEBUG_LIBRARIES}> $<$<CONFIG:Release>:${PX_RELEASE_LIBRARIES}>)
 target_include_directories(PxLibs INTERFACE ${FIPS_DEPLOY_DIR}/physx/include)
 
 set(DEF_RENDERER "N_RENDERER_VULKAN")

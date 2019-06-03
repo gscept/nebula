@@ -43,8 +43,8 @@ VisibilitySortJob(const Jobs::JobFuncContext& ctx)
 			// only treat renderable nodes
 			if (types[j] >= Models::NodeHasShaderState)
 			{
-				Models::ShaderStateNode::Instance* const shdNodeInst = static_cast<Models::ShaderStateNode::Instance*>(inst);
-				Models::ShaderStateNode* const shdNode = static_cast<Models::ShaderStateNode*>(inst->node);
+				Models::ShaderStateNode::Instance* const shdNodeInst = reinterpret_cast<Models::ShaderStateNode::Instance*>(inst);
+				Models::ShaderStateNode* const shdNode = reinterpret_cast<Models::ShaderStateNode*>(inst->node);
 				auto& bucket = buckets->AddUnique(shdNode->materialType);
 				if (!bucket.IsBulkAdd())
 					bucket.BeginBulkAdd();

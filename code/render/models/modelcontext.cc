@@ -299,11 +299,11 @@ ModelContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTim
 
 				Math::matrix44& parentTransform = transform;
 				if (node->parent != nullptr && node->parent->node->type >= NodeHasTransform)
-					parentTransform = static_cast<const TransformNode::Instance*>(node->parent)->modelTransform;
+					parentTransform = reinterpret_cast<const TransformNode::Instance*>(node->parent)->modelTransform;
 
 				if (types[j] >= NodeHasTransform)
 				{
-					TransformNode::Instance* tnode = static_cast<TransformNode::Instance*>(node);
+					TransformNode::Instance* tnode = reinterpret_cast<TransformNode::Instance*>(node);
 					tnode->modelTransform = Math::matrix44::multiply(tnode->transform.getmatrix(), parentTransform);
 					parentTransform = tnode->modelTransform;
 					tnode->objectId = objectId;
