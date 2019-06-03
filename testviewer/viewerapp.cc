@@ -216,7 +216,7 @@ SimpleViewerApplication::Open()
 		Util::Array<Graphics::GraphicsEntityId> models;
 		ModelContext::BeginBulkRegister();
 		ObservableContext::BeginBulkRegister();
-		static const int NumModels = 1;
+		static const int NumModels = 50;
 		for (IndexT i = -NumModels; i < NumModels; i++)
 		{
 			for (IndexT j = -NumModels; j < NumModels; j++)
@@ -352,7 +352,7 @@ SimpleViewerApplication::RenderEntityUI()
 	ImGui::SetWindowSize(ImVec2(240, 400));
     ImGui::BeginChild("##entities", ImVec2(0, 300), true);
     static int selected = 0;
-    for (int i = 0 ; i < this->entities.Size();i++)
+    for (int i = 0 ; i < this->entityNames.Size();i++)
     {
         if (ImGui::Selectable(this->entityNames[i].AsCharPtr(), i == selected))
         {
@@ -392,7 +392,7 @@ SimpleViewerApplication::RenderUI()
 		this->averageFrameTime = 0.0f;
 	}
     ImGui::Begin("Viewer", nullptr, 0);
-	ImGui::Text("FPS: %.2f", 1 / this->prevAverageFrameTime);
+	ImGui::Text("ms - %.2f\nFPS - %.2f", this->prevAverageFrameTime * 1000, 1 / this->prevAverageFrameTime);
 	ImGui::SetWindowSize(ImVec2(240, 400));
     if (ImGui::CollapsingHeader("Camera mode", ImGuiTreeNodeFlags_DefaultOpen))
     {
