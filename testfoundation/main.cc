@@ -27,7 +27,7 @@
 #include "textreaderwritertest.h"
 #include "messagereaderwritertest.h"
 #include "xmlreaderwritertest.h"
-#include "jsonreaderwritertest.h"
+// #include "jsonreaderwritertest.h"
 #include "binaryreaderwritertest.h"
 #include "uritest.h"
 #include "mediatypetest.h"
@@ -105,7 +105,7 @@ __cdecl main()
     testRunner->AttachTestCase(TextReaderWriterTest::Create());
     testRunner->AttachTestCase(MessageReaderWriterTest::Create());
     testRunner->AttachTestCase(XmlReaderWriterTest::Create());
-    testRunner->AttachTestCase(JSonReaderWriterTest::Create());
+    // testRunner->AttachTestCase(JSonReaderWriterTest::Create());
     testRunner->AttachTestCase(BinaryReaderWriterTest::Create());
     testRunner->AttachTestCase(VariantTest::Create());
     testRunner->AttachTestCase(IOInterfaceTest::Create());

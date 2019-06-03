@@ -12,17 +12,6 @@
 #include "game/component/component.h"
 #include "game/entity.h"
 
-
-//------------------------------------------------------------------------------
-namespace Attr
-{
-	DeclareGuid(GuidTest, 'gTst', Attr::ReadWrite);
-	DeclareString(StringTest, 'sTst', Attr::ReadWrite);
-	DeclareInt(IntTest, 'iTst', Attr::ReadWrite);
-	DeclareFloat(FloatTest, 'fTst', Attr::ReadWrite);
-};
-//------------------------------------------------------------------------------
-
 //------------------------------------------------------------------------------
 namespace Test
 {
@@ -30,8 +19,6 @@ namespace Test
 class TestComponent
 {
 	__DeclareComponent(TestComponent)
-private:
-	bool immediate_deletion = false;
 };
 
 class CompDataTest : public TestCase
