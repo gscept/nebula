@@ -50,7 +50,7 @@ const char* stateToString(Resources::Resource::State state)
 //------------------------------------------------------------------------------
 /**
 */
-SimpleViewerApplication::SimpleViewerApplication()
+SimpleViewerApplication::SimpleViewerApplication() : fpsGraph("FPS", 512)
 {
     this->SetAppTitle("Physics App");
     this->SetCompanyName("Nebula");
@@ -104,10 +104,11 @@ SimpleViewerApplication::Open()
 		Characters::CharacterContext::Create();
         Dynui::ImguiContext::Create();
         Im3d::Im3dContext::Create();
+        this->fpsGraph.SetLimits(20.0f, 500.0f);
 
         Physics::Setup();
         this->physicsScene = Physics::CreateScene();
-        IndexT dummyMaterial = Physics::CreateMaterial("dummy"_atm, 0.5, 0.4, 0.7, 1.0);
+        IndexT dummyMaterial = Physics::CreateMaterial("dummy"_atm, 0.8, 0.6, 0.3, 1.0);
 
         Im3d::Im3dContext::SetGridStatus(true);
         Im3d::Im3dContext::SetGridSize(1.0f, 25);
@@ -280,6 +281,7 @@ SimpleViewerApplication::Run()
     {                             
         const Timing::Time delta = this->gfxServer->GetFrameTime();
         Physics::Update(delta);
+        this->fpsGraph.AddValue(1.0f / delta);
         this->inputServer->BeginFrame();
         this->inputServer->OnFrame();
 
@@ -395,8 +397,12 @@ SimpleViewerApplication::RenderEntityUI()
 void 
 SimpleViewerApplication::RenderUI()
 {
+    ImGui::Begin("fps", nullptr, 0);
+    this->fpsGraph.Draw();
+    ImGui::End();
     ImGui::Begin("Viewer", nullptr, 0);
 	ImGui::SetWindowSize(ImVec2(240, 400));
+    ImGui::Text("%f fps", 1.0f / this->gfxServer->GetFrameTime());
     if (ImGui::CollapsingHeader("Camera mode", ImGuiTreeNodeFlags_DefaultOpen))
     {
         if (ImGui::RadioButton("Maya", &this->cameraMode, 0))this->ToMaya();
@@ -594,7 +600,7 @@ SimpleViewerApplication::Shoot()
 {
     static Timing::Time last = 0.0;
     Timing::Time now = this->gfxServer->GetTime();
-    if (now - last > 0.1) 
+    if (now - last > 0.05) 
     {
         last = now;
 
@@ -611,6 +617,7 @@ SimpleViewerApplication::Shoot()
 
         ObservableContext::RegisterEntity(ent);
         ObservableContext::Setup(ent, VisibilityEntityType::Model);
+        this->entities.Append(ent);
 
         Physics::ActorId actor = Physics::CreateActorInstance(this->ballResource, trans, true);
         this->idMap.Add(actor.id, ent);

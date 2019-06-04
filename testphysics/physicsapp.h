@@ -16,6 +16,7 @@
 #include "models/modelcontext.h"
 #include "input/inputserver.h"
 #include "io/ioserver.h"
+#include "dynui/graph/imguigraph.h"
 #include "debug/debuginterface.h"
 #include "physicsinterface.h"
 
@@ -89,6 +90,7 @@ protected:
     Math::point defaultViewPoint;
     Util::Array<Graphics::GraphicsEntityId> entities;    
     Util::HashTable<Ids::Id32, Graphics::GraphicsEntityId> idMap;
+    Dynui::Graph fpsGraph;
 };
 
 }
