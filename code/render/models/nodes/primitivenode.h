@@ -27,6 +27,7 @@ public:
 	{
 		/// setup instance
 		void Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
+
 		/// draw instance
 		void Draw() override;
 	};
@@ -64,6 +65,7 @@ PrimitiveNode::Instance::Setup(Models::ModelNode* node, const Models::ModelNode:
 {
 	ShaderStateNode::Instance::Setup(node, parent);
 }
+
 
 
 } // namespace Models

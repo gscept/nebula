@@ -31,8 +31,11 @@ public:
 		/// @todo	Should be moved to a per-model-instance resource since it's the same for every model instance
 		uint objectId;
 
-		void ApplyNodeInstanceState() override;
+		/// setup new instace
 		virtual void Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
+
+		/// update prior to drawing
+		virtual void Update() override;
 	};
 
 	/// create instance

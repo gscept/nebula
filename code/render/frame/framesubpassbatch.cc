@@ -112,6 +112,7 @@ FrameSubpassBatch::CompiledImpl::Run(const IndexT frameIndex)
 								const Materials::SurfaceInstanceId surfaceInstance = instance->GetSurfaceInstance();
 								if (surfaceInstance != Materials::SurfaceInstanceId::Invalid())
 									Materials::MaterialApplySurfaceInstance(instance->GetSurfaceInstance());
+								instance->Update();
 								instance->ApplyNodeInstanceState();
 								instance->Draw();
 							}

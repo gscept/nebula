@@ -61,6 +61,9 @@ public:
 		/// setup new instance
 		virtual void Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent);
 
+		/// update prior to drawing
+		virtual void Update();
+
 		/// draw instance
 		virtual void Draw();
 	};

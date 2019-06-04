@@ -148,9 +148,9 @@ ShaderStateNode::OnFinishedLoading()
 /**
 */
 void
-ShaderStateNode::Instance::ApplyNodeInstanceState()
+ShaderStateNode::Instance::Update()
 {
-	TransformNode::Instance::ApplyNodeInstanceState();
+	TransformNode::Instance::Update();
 	CoreGraphics::TransformDevice* transformDevice = CoreGraphics::TransformDevice::Instance();
 
 	// okay, in cases like this, we would benefit shittons if we could just do one set for the entire struct...
@@ -159,6 +159,15 @@ ShaderStateNode::Instance::ApplyNodeInstanceState()
 	CoreGraphics::ConstantBufferUpdateInstance(this->cbo, transformDevice->GetModelViewProjTransform(), this->instance, this->modelViewProjVar);
 	CoreGraphics::ConstantBufferUpdateInstance(this->cbo, transformDevice->GetModelViewTransform(), this->instance, this->modelViewVar);
 	CoreGraphics::ConstantBufferUpdateInstance(this->cbo, transformDevice->GetObjectId(), this->instance, this->objectIdVar);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ShaderStateNode::Instance::ApplyNodeInstanceState()
+{
+	TransformNode::Instance::ApplyNodeInstanceState();
 
 	// apply with offsets
 	CoreGraphics::SetResourceTable(this->resourceTable, NEBULA_DYNAMIC_OFFSET_GROUP, CoreGraphics::GraphicsPipeline, this->offsets);

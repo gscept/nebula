@@ -55,6 +55,10 @@ public:
 		void ApplyNodeInstanceState() override;
 		/// setup instance
 		void Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
+
+		/// update prior to drawing
+		void Update() override;
+
 		/// get surface instance
 		const Materials::SurfaceInstanceId GetSurfaceInstance() const { return this->surfaceInstance; };
 	};
@@ -126,5 +130,4 @@ ShaderStateNode::Instance::Setup(Models::ModelNode* node, const Models::ModelNod
 	// create surface instance
 	this->surfaceInstance = sparent->materialType->CreateSurfaceInstance(sparent->surface);
 }
-
 } // namespace Models
