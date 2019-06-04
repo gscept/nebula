@@ -11,6 +11,7 @@
     (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
+#include "util/array.h"
 
 //------------------------------------------------------------------------------
 namespace Util
