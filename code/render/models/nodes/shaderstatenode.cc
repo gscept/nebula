@@ -110,6 +110,20 @@ ShaderStateNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, c
 //------------------------------------------------------------------------------
 /**
 */
+void 
+ShaderStateNode::Unload()
+{
+	// free material
+	Resources::DiscardResource(this->surRes);
+
+	// destroy table and constant buffer
+	CoreGraphics::DestroyResourceTable(this->resourceTable);
+	CoreGraphics::DestroyConstantBuffer(this->cbo);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 ShaderStateNode::OnFinishedLoading()
 {

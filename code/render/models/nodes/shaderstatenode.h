@@ -74,6 +74,8 @@ protected:
 
 	/// load shader state
 	bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader, bool immediate) override;
+	/// unload data
+	virtual void Unload() override;
 	/// called when loading finished
 	virtual void OnFinishedLoading();
 	

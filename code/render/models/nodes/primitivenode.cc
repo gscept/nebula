@@ -60,6 +60,15 @@ PrimitiveNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, con
 //------------------------------------------------------------------------------
 /**
 */
+void 
+PrimitiveNode::Unload()
+{
+	Resources::DiscardResource(this->res);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 PrimitiveNode::ApplyNodeState()
 {

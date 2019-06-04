@@ -62,7 +62,7 @@ StreamColliderPool::Setup()
 {
     ResourceStreamPool::Setup();
     this->placeholderResourceName = "phy:system/box.npc";
-    this->errorResourceName = "phy:system/box.npc";
+    this->failResourceName = "phy:system/box.npc";
 }
 
 
