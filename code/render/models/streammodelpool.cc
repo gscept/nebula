@@ -42,7 +42,7 @@ void
 StreamModelPool::Setup()
 {
 	this->placeholderResourceName = "mdl:system/placeholder.n3";
-	this->errorResourceName = "mdl:system/error.n3";
+	this->failResourceName = "mdl:system/error.n3";
 
 	IMPLEMENT_NODE_ALLOCATOR('TRFN', TransformNode, this->transformNodes, this->transformNodeInstances);
 	IMPLEMENT_NODE_ALLOCATOR('SPND', PrimitiveNode, this->primitiveNodes, this->primitiveNodeInstances);
@@ -224,7 +224,7 @@ StreamModelPool::CreateModelInstanceRecursive(Models::ModelNode* node, const Ind
 /**
 */
 Resources::ResourceStreamPool::LoadStatus
-StreamModelPool::LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream)
+StreamModelPool::LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
 {
 	// a model is a list of resources, a bounding box, and a dictionary of nodes
 	Math::bbox& boundingBox = this->Get<ModelBoundingBox>(id);
@@ -326,7 +326,7 @@ StreamModelPool::LoadFromStream(const Resources::ResourceId id, const Util::Stri
 			{
 				// if not opening or closing a node, assume it's a data tag
 				ModelNode* node = nodeStack.Peek();
-				if (!node->Load(fourCC, tag, reader))
+				if (!node->Load(fourCC, tag, reader, immediate))
 				{
 					break;
 				}
@@ -348,6 +348,12 @@ StreamModelPool::Unload(const Resources::ResourceId id)
 	if (instances > 0)
 		n_error("Model '%s' still has active instances!", this->names[id.poolId].Value());
 	Util::Dictionary<Util::StringAtom, Models::ModelNode*>& nodes = this->Get<ModelNodes>(id);
+
+	// unload nodes
+	for (IndexT i = 0; i < nodes.Size(); i++)
+	{
+		nodes.ValueAtIndex(i)->Unload();
+	}
 	nodes.Clear();
 
 	this->Get<ModelNodeAllocator>(id).Release();

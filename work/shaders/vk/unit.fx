@@ -22,6 +22,8 @@ samplerstate TeamSampler
 	AddressV = Wrap;
 };
 
+
+
 //------------------------------------------------------------------------------
 /**
 	Not a ubershader
@@ -48,7 +50,7 @@ psNotaUnit(in vec3 ViewSpacePos,
 	float teamMask = sample2D(TeamColorMask, TeamSampler, UV).r;
 	vec4 maskColor = TeamColor * teamMask;
 	
-	vec4 normals = sample2D(NormalMap, TeamSampler, UV);
+	vec4 normals = sample2D(NormalMap, NormalSampler, UV);
 	vec3 bumpNormal = normalize(calcBump(Tangent, Binormal, Normal, normals));
 
 	mat4x4 invView = InvView;

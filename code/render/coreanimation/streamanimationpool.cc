@@ -57,7 +57,7 @@ StreamAnimationPool::GetKeyBuffer(const AnimResourceId id)
 /**
 */
 Resources::ResourcePool::LoadStatus
-StreamAnimationPool::LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream)
+StreamAnimationPool::LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
 {
 	Util::FixedArray<AnimClip>& clips = this->Get<0>(id.resourceId);
 	Util::HashTable<Util::StringAtom, IndexT, 32>& clipIndices = this->Get<1>(id.resourceId);

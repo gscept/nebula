@@ -55,6 +55,10 @@ public:
 		void ApplyNodeInstanceState() override;
 		/// setup instance
 		void Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
+
+		/// update prior to drawing
+		void Update() override;
+
 		/// get surface instance
 		const Materials::SurfaceInstanceId GetSurfaceInstance() const { return this->surfaceInstance; };
 	};
@@ -73,7 +77,9 @@ protected:
 	friend void Visibility::VisibilitySortJob(const Jobs::JobFuncContext& ctx);
 
 	/// load shader state
-	bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader);
+	bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader, bool immediate) override;
+	/// unload data
+	virtual void Unload() override;
 	/// called when loading finished
 	virtual void OnFinishedLoading();
 	
@@ -124,5 +130,4 @@ ShaderStateNode::Instance::Setup(Models::ModelNode* node, const Models::ModelNod
 	// create surface instance
 	this->surfaceInstance = sparent->materialType->CreateSurfaceInstance(sparent->surface);
 }
-
 } // namespace Models

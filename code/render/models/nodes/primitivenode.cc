@@ -34,7 +34,7 @@ PrimitiveNode::~PrimitiveNode()
 /**
 */
 bool
-PrimitiveNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader)
+PrimitiveNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader, bool immediate)
 {
 	bool retval = true;
 	if (FourCC('MESH') == fourcc)
@@ -43,7 +43,7 @@ PrimitiveNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, con
 		Resources::ResourceName meshName = reader->ReadString();
 
 		// add as pending resource in loader
-		this->res = Resources::CreateResource(meshName, tag, nullptr, nullptr, false);
+		this->res = Resources::CreateResource(meshName, tag, nullptr, nullptr, immediate);
 	}
 	else if (FourCC('PGRI') == fourcc)
 	{
@@ -52,9 +52,18 @@ PrimitiveNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, con
 	}
 	else
 	{
-		retval = ShaderStateNode::Load(fourcc, tag, reader);
+		retval = ShaderStateNode::Load(fourcc, tag, reader, immediate);
 	}
 	return retval;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+PrimitiveNode::Unload()
+{
+	Resources::DiscardResource(this->res);
 }
 
 //------------------------------------------------------------------------------

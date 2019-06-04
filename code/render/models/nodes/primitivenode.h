@@ -27,6 +27,7 @@ public:
 	{
 		/// setup instance
 		void Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
+
 		/// draw instance
 		void Draw() override;
 	};
@@ -44,7 +45,9 @@ protected:
 	friend class StreamModelPool;
 
 	/// load primitive
-	virtual bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader);
+	virtual bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader, bool immediate) override;
+	/// unload data
+	virtual void Unload() override;
 	/// apply state
 	void ApplyNodeState() override;
 
@@ -62,6 +65,7 @@ PrimitiveNode::Instance::Setup(Models::ModelNode* node, const Models::ModelNode:
 {
 	ShaderStateNode::Instance::Setup(node, parent);
 }
+
 
 
 } // namespace Models

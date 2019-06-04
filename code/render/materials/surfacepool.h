@@ -32,8 +32,11 @@ class SurfacePool : public Resources::ResourceStreamPool
 	__DeclareClass(SurfacePool);
 public:
 
+	/// setup resource loader, initiates the placeholder and error resources if valid, so don't forget to run!
+	virtual void Setup() override;
+
 	/// update reserved resource, the info struct is loader dependent (overload to implement resource deallocation, remember to set resource state!)
-	Resources::ResourcePool::LoadStatus LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream);
+	Resources::ResourcePool::LoadStatus LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate = false) override;
 
 	/// get material id
 	const SurfaceId GetId(const SurfaceResourceId id);

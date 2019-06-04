@@ -113,6 +113,8 @@ public:
 	void SortWithFunc(bool (*func)(const TYPE& lhs, const TYPE& rhs));
     /// do a binary search, requires a sorted array
     IndexT BinarySearchIndex(const TYPE& elm) const;
+	/// do binary search with explicit typed element
+	template <typename KEYTYPE> IndexT BinarySearchIndex(const KEYTYPE& elm) const;
 
 	/// returns true if the stack is used
 	const bool IsStackUsed() const;
@@ -1036,6 +1038,61 @@ ArrayStack<TYPE, STACK_SIZE>::BinarySearchIndex(const TYPE& elm) const
     }
     return InvalidIndex;
 }
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE, int STACK_SIZE>
+template<typename KEYTYPE> inline IndexT
+ArrayStack<TYPE, STACK_SIZE>::BinarySearchIndex(const KEYTYPE& elm) const
+{
+	SizeT num = this->Size();
+	if (num > 0)
+	{
+		IndexT half;
+		IndexT lo = 0;
+		IndexT hi = num - 1;
+		IndexT mid;
+		while (lo <= hi)
+		{
+			if (0 != (half = num / 2))
+			{
+				mid = lo + ((num & 1) ? half : (half - 1));
+				if (this->elements[mid] > elm)
+				{
+					hi = mid - 1;
+					num = num & 1 ? half : half - 1;
+				}
+				else if (this->elements[mid] < elm)
+				{
+					lo = mid + 1;
+					num = half;
+				}
+				else
+				{
+					return mid;
+				}
+			}
+			else if (0 != num)
+			{
+				if (this->elements[lo] != elm)
+				{
+					return InvalidIndex;
+				}
+				else
+				{
+					return lo;
+				}
+			}
+			else
+			{
+				break;
+			}
+		}
+	}
+	return InvalidIndex;
+}
+
 
 //------------------------------------------------------------------------------
 /**

@@ -22,7 +22,7 @@ public:
     /// constructor with key and value
     KeyValuePair(const KEYTYPE& k, const VALUETYPE& v);
     /// constructor with key and undefined value
-    KeyValuePair(const KEYTYPE& k);
+    explicit KeyValuePair(const KEYTYPE& k);
     /// copy constructor
     KeyValuePair(const KeyValuePair<KEYTYPE, VALUETYPE>& rhs);
     /// move constructor
@@ -43,6 +43,18 @@ public:
     bool operator<(const KeyValuePair<KEYTYPE, VALUETYPE>& rhs) const;
     /// lesser-or-equal operator
     bool operator<=(const KeyValuePair<KEYTYPE, VALUETYPE>& rhs) const;
+	/// equality operator
+	bool operator==(const KEYTYPE& rhs) const;
+	/// inequality operator
+	bool operator!=(const KEYTYPE& rhs) const;
+	/// greater operator
+	bool operator>(const KEYTYPE& rhs) const;
+	/// greater-or-equal operator
+	bool operator>=(const KEYTYPE& rhs) const;
+	/// lesser operator
+	bool operator<(const KEYTYPE& rhs) const;
+	/// lesser-or-equal operator
+	bool operator<=(const KEYTYPE& rhs) const;
     /// read/write access to value
     VALUETYPE& Value();
     /// read access to key
@@ -194,6 +206,67 @@ KeyValuePair<KEYTYPE, VALUETYPE>::operator<=(const KeyValuePair<KEYTYPE, VALUETY
 {
     return (this->keyData <= rhs.keyData);
 }
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class KEYTYPE, class VALUETYPE>
+bool
+KeyValuePair<KEYTYPE, VALUETYPE>::operator==(const KEYTYPE& rhs) const
+{
+	return (this->keyData == rhs);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class KEYTYPE, class VALUETYPE>
+bool
+KeyValuePair<KEYTYPE, VALUETYPE>::operator!=(const KEYTYPE& rhs) const
+{
+	return (this->keyData != rhs);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class KEYTYPE, class VALUETYPE>
+bool
+KeyValuePair<KEYTYPE, VALUETYPE>::operator>(const KEYTYPE& rhs) const
+{
+	return (this->keyData > rhs);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class KEYTYPE, class VALUETYPE>
+bool
+KeyValuePair<KEYTYPE, VALUETYPE>::operator>=(const KEYTYPE& rhs) const
+{
+	return (this->keyData >= rhs);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class KEYTYPE, class VALUETYPE>
+bool
+KeyValuePair<KEYTYPE, VALUETYPE>::operator<(const KEYTYPE& rhs) const
+{
+	return (this->keyData < rhs);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class KEYTYPE, class VALUETYPE>
+bool
+KeyValuePair<KEYTYPE, VALUETYPE>::operator<=(const KEYTYPE& rhs) const
+{
+	return (this->keyData <= rhs);
+}
+
 
 //------------------------------------------------------------------------------
 /**

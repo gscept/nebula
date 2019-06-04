@@ -7,18 +7,25 @@
     (C) 2019 Individual contributors, see AUTHORS file
 */
 #include "ids/id.h"
-#include "util/dictionary.h"
-#include "util/delegate.h"
 #include "timing/time.h"
-#include "math/float2.h"
-#include "math/line.h"
-#include "debug/debugtimer.h"
+#include "util/delegate.h"
+#include "util/set.h"
+#include "util/arraystack.h"
+#include "util/stringatom.h"
+#include "math/matrix44.h"
+#include "resources/resourceid.h"
+
+#include <functional>
 #include "PxPhysicsAPI.h"
 
 //------------------------------------------------------------------------------
 
 namespace Physics
 {
+
+RESOURCE_ID_TYPE(ActorResourceId);
+RESOURCE_ID_TYPE(ColliderId);
+
 
 enum CollisionFeedbackFlag
 {
@@ -31,21 +38,27 @@ enum CollisionFeedbackFlag
 struct Material
 {
     physx::PxMaterial * material;
+    Util::StringAtom name;
+    uint64_t serialId;
+    // for actors created via streamactorpool this is ignored as it can have multiple materials in it
     float density;
 };
 
 struct ActorId
 {
     Ids::Id32 id;
+    ActorId() :id(Ids::InvalidId32) {}
+    ActorId(uint32_t i) : id(i) {}
 };
 
 struct Actor
 {
     physx::PxActor* actor;
     ActorId id;
-// FIXME delegate doesnt seem to work here (see testviewer for example)
-    std::function<void(Math::matrix44 const&)> moveCallback;
-    //Util::Delegate<void(Math::matrix44 const&)> moveCallback;
+    uint64_t userData;
+    // FIXME delegate doesnt seem to work here (see testviewer for example)
+    //std::function<void(ActorId id, Math::matrix44 const&)> moveCallback;
+    Util::Delegate<void(ActorId id, Math::matrix44 const&)> moveCallback;
 };
 
 /// physx scene classes, foundation and physics are duplicated here for convenience
@@ -79,9 +92,11 @@ void RenderDebug();
 void HandleCollisions();
 
 ///
-IndexT CreateMaterial(float staticFriction, float dynamicFriction, float restition, float density);
+IndexT CreateMaterial(Util::StringAtom name, float staticFriction, float dynamicFriction, float restition, float density);
 ///
 Material & GetMaterial(IndexT idx);
+///
+IndexT LookupMaterial(Util::StringAtom name);
 /// 
 SizeT GetNrMaterials();
 }

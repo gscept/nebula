@@ -16,7 +16,7 @@ __ImplementClass(Characters::StreamSkeletonPool, 'SSKP', Resources::ResourceStre
 /**
 */
 Resources::ResourcePool::LoadStatus 
-StreamSkeletonPool::LoadFromStream(const Resources::ResourceId id, const Util::StringAtom & tag, const Ptr<IO::Stream>& stream)
+StreamSkeletonPool::LoadFromStream(const Resources::ResourceId id, const Util::StringAtom & tag, const Ptr<IO::Stream>& stream, bool immediate)
 {
 	Util::FixedArray<CharacterJoint>& joints = this->Get<Joints>(id.resourceId);
 	Util::FixedArray<Math::matrix44>& bindPoses = this->Get<BindPose>(id.resourceId);

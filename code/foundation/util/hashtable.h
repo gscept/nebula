@@ -58,6 +58,8 @@ public:
 	SizeT Capacity() const;
 	/// clear the hashtable
 	void Clear();
+	/// reset the hashtable arrays to 0 size, but don't run destructor
+	void Reset();
 	/// return true if empty
 	bool IsEmpty() const;
 	/// begin bulk adding to the hashtable, which will amortize the cost of sorting the hash buckets upon end
@@ -316,7 +318,7 @@ HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::operator[](const KEYTYPE&
 	{
 		// here's a hash collision, find the right key
 		// with a binary search
-		IndexT hashElementIndex = hashElements.BinarySearchIndex(key);
+		IndexT hashElementIndex = hashElements.BinarySearchIndex<KEYTYPE>(key);
 		#if NEBULA_BOUNDSCHECKS
 		n_assert(InvalidIndex != hashElementIndex);
 		#endif
@@ -356,6 +358,22 @@ HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::Clear()
 	for (i = 0; i < num; i++)
 	{
 		this->hashArray[i].Clear();
+	}
+	this->size = 0;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class KEYTYPE, class VALUETYPE, int TABLE_SIZE, int STACK_SIZE>
+void
+HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::Reset()
+{
+	IndexT i;
+	SizeT num = this->hashArray.Size();
+	for (i = 0; i < num; i++)
+	{
+		this->hashArray[i].Reset();
 	}
 	this->size = 0;
 }
@@ -446,7 +464,7 @@ HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::AddUnique(const KEYTYPE& 
 	}
 	else
 	{
-		elementIndex = hashElements.BinarySearchIndex(key);
+		elementIndex = hashElements.BinarySearchIndex<KEYTYPE>(key);
 		if (elementIndex == InvalidIndex)
 		{
 			elementIndex = this->Add(key, VALUETYPE());
@@ -504,7 +522,7 @@ HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::Erase(const KEYTYPE& key)
 	#endif
 	IndexT hashIndex = GetHashCode<KEYTYPE>(key);
 	ArrayStack<KeyValuePair<KEYTYPE, VALUETYPE>, STACK_SIZE>& hashElements = this->hashArray[hashIndex];
-	IndexT hashElementIndex = hashElements.BinarySearchIndex(key);
+	IndexT hashElementIndex = hashElements.BinarySearchIndex<KEYTYPE>(key);
 	#if NEBULA_BOUNDSCHECKS
 	n_assert(InvalidIndex != hashElementIndex); // key doesn't exist
 	#endif
@@ -545,7 +563,7 @@ HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::Contains(const KEYTYPE& k
 		if (hashElements.Size() == 0) return false;
 		else
 		{
-			IndexT hashElementIndex = hashElements.BinarySearchIndex(key);
+			IndexT hashElementIndex = hashElements.BinarySearchIndex<KEYTYPE>(key);
 			return (InvalidIndex != hashElementIndex);
 		}
 	}
@@ -564,7 +582,7 @@ HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::FindIndex(const KEYTYPE& 
 {
 	IndexT hashIndex = GetHashCode<KEYTYPE>(key);
 	ArrayStack<KeyValuePair<KEYTYPE, VALUETYPE>, STACK_SIZE>& hashElements = this->hashArray[hashIndex];
-	IndexT hashElementIndex = hashElements.BinarySearchIndex(key);
+	IndexT hashElementIndex = hashElements.BinarySearchIndex<KEYTYPE>(key);
 	return hashElementIndex;
 }
 

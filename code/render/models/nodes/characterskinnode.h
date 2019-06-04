@@ -67,7 +67,7 @@ private:
 protected:
 
 	/// parse data tag (called by loader code)
-	virtual bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader);
+	virtual bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader, bool immediate) override;
 	/// called when loading finished
 	virtual void OnFinishedLoading();
 	/// apply state
@@ -129,6 +129,18 @@ CharacterSkinNode::Instance::Setup(Models::ModelNode* node, const Models::ModelN
 		CoreGraphics::ResourceTableSetConstantBuffer(sparent->resourceTable, { this->cboSkin, sparent->cboSkinIndex, 0, true, false, -1, 0 });
 		CoreGraphics::ResourceTableCommitChanges(sparent->resourceTable);
 	}
+
+	// initialize skinning palette
+	Util::FixedArray<Math::matrix44> usedMatrices(sparent->skinFragments[0].jointPalette.Size());
+
+	// set all matrices to identity
+	IndexT i;
+	for (i = 0; i < usedMatrices.Size(); i++)
+	{
+		usedMatrices[i] = Math::matrix44::identity();
+	}
+	CoreGraphics::ConstantBufferUpdate(this->cboSkin, this->cboSkinAlloc, usedMatrices.Begin(), sizeof(Math::matrix44) * usedMatrices.Size(), this->skinningPaletteVar);
+
 	this->skinningPaletteVar = sparent->skinningPaletteVar;
 }
 

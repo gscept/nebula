@@ -78,9 +78,9 @@ public:
 	/// call when ending the frame
 	void EndFrame();
 
-	/// get total time
+	/// get total time in seconds
 	const Timing::Time GetTime() const;
-	/// get frame time
+	/// get frame time in seconds
 	const Timing::Time GetFrameTime() const;
 	/// get frame index
 	const IndexT GetFrameIndex() const;

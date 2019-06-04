@@ -13,21 +13,21 @@ imports:
         git: https://github.com/Duttenheim/fips-anyfx.git
         group: gfx
     fips-devil:
-        git: https://github.com/gscept/fips-devil.git        
-        group: gfx    
+        git: https://github.com/gscept/fips-devil.git
+        group: gfx
     fips-stackwalker:
         git: https://github.com/gscept/fips-stackwalker.git
         cond: "FIPS_WINDOWS"
         group: misc
     fips-bullet:
-        git: https://github.com/fips-libs/fips-bullet.git  
+        git: https://github.com/fips-libs/fips-bullet.git
         cond: "DISABLE_FOR_NOW"
     fips-cjson:
         git: https://github.com/floooh/fips-cjson.git
         cond: "FIPS_LINUX"
         group: misc
     fips-imgui:
-        git: https://github.com/gscept/fips-imgui.git   
+        git: https://github.com/gscept/fips-imgui.git
     fips-pybind11:
         git: https://github.com/gscept/fips-pybind11.git
     fips-stb:
@@ -44,18 +44,20 @@ imports:
         branch: 4.1
 
 exports:
-    header-dirs : 
+    header-dirs :
         - .
         - code/foundation
-        - code/render        
+        - code/render
         - code/resource
         - code/application
+        - code/physics
         - code/addons
         - code/audio
     modules:
         foundation: code/foundation
         render: code/render
+        physics: code/physics
         resource: code/resource
-        application: code/application        
+        application: code/application
         addons: code/addons
         audio: code/audio

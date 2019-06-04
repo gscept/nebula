@@ -43,7 +43,7 @@ VkShaderPool::~VkShaderPool()
 /**
 */
 Resources::ResourcePool::LoadStatus
-VkShaderPool::LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream)
+VkShaderPool::LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
 {
 	n_assert(stream.isvalid());
 	n_assert(stream->CanBeMapped());

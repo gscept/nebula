@@ -93,8 +93,7 @@ JsonReader::Close()
     n_assert(0 != this->document);
     this->document->clear();    
     n_delete(this->document);
-    this->curNode = 0;
-    this->stream->Close();
+    this->curNode = 0;    
     Memory::Free(Memory::StreamDataHeap, this->buffer);
     this->buffer = nullptr;
     StreamReader::Close();
@@ -431,6 +430,21 @@ JsonReader::GetString(const char* name) const
     n_assert(node);
     n_assert(node->is_string());
     return node->as_string_ptr();    
+}
+
+//------------------------------------------------------------------------------
+/**
+    Return the provided attribute as stringatom. If the attribute does not exist
+    the method will fail hard (use HasAttr() to check for its existance).
+*/
+StringAtom
+JsonReader::GetStringAtom(const char* name) const
+{
+    const value_variant * node = this->GetChild(name);
+
+    n_assert(node);
+    n_assert(node->is_string());
+    return node->as_string_ptr();
 }
 
 //------------------------------------------------------------------------------
@@ -777,12 +791,47 @@ template<> void JsonReader::Get<int>(int & ret, const char* attr)
 //------------------------------------------------------------------------------
 /**
 */
+template<> void JsonReader::Get<Math::matrix44>(Math::matrix44 & ret, const char* attr)
+{        
+    ret = this->GetMatrix44(attr);
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<> void JsonReader::Get<Math::vector>(Math::vector & ret, const char* attr)
+{
+    //FIXME this searches twice
+    const value_variant * node = this->GetChild(attr);
+    NEBULA_ALIGN16 float v[4];
+    for (int i = 0; i < 3; i++)
+    {
+        v[i] = node->get_value_at_index(i).as_float();
+    }
+    ret.load(v);    
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 template<> void JsonReader::Get<uint32_t>(uint32_t & ret, const char* attr)
 {
     const value_variant * node = this->GetChild(attr);
 
     n_assert(node->is_int());
     ret = node->as_int32();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<> void JsonReader::Get<uint16_t>(uint16_t & ret, const char* attr)
+{
+    const value_variant * node = this->GetChild(attr);
+
+    n_assert(node->is_int());
+    ret = (uint16_t)node->as_int32();
 }
 
 //------------------------------------------------------------------------------
@@ -874,6 +923,17 @@ template<> void JsonReader::Get<Util::Variant>(Util::Variant & ret, const char* 
 /**
 */
 template<> void JsonReader::Get<Util::String>(Util::String & ret, const char* attr)
+{
+    const value_variant * node = this->GetChild(attr);
+
+    n_assert(node->is_string());
+    ret = node->as_string_ptr();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<> void JsonReader::Get<Util::StringAtom>(Util::StringAtom & ret, const char* attr)
 {
     const value_variant * node = this->GetChild(attr);
 

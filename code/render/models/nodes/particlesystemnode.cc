@@ -115,7 +115,7 @@ ParticleSystemNode::ParseEnvelopeCurveData(const Ptr<IO::BinaryReader>& reader) 
 /**
 */
 bool
-ParticleSystemNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader)
+ParticleSystemNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader, bool immediate)
 {
     bool retval = true;
     if (FourCC('EFRQ') == fourcc)
@@ -279,7 +279,7 @@ ParticleSystemNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag
     }
     else
     {
-        retval = TransformNode::Load(fourcc, tag, reader);
+        retval = TransformNode::Load(fourcc, tag, reader, immediate);
     }   
     return retval;    
 }

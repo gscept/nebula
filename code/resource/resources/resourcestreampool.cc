@@ -71,16 +71,16 @@ ResourceStreamPool::LoadFallbackResources()
 	}
 
 	// load error
-	if (this->errorResourceName.IsValid())
+	if (this->failResourceName.IsValid())
 	{
-		this->CreateResource(this->errorResourceName, "system"_atm,
+		this->CreateResource(this->failResourceName, "system"_atm,
 			[this](Resources::ResourceId id)
 			{
-				this->errorResourceId = id;
+				this->failResourceId = id;
 			},
 			[this](Resources::ResourceId id)
 			{
-				n_error("Could not load error resource %s!", this->errorResourceName.Value());
+				n_error("Could not load error resource %s!", this->failResourceName.Value());
 			}, true);
 	}
 }
@@ -183,7 +183,7 @@ ResourceStreamPool::RunCallbacks(LoadStatus status, const Resources::ResourceId 
 		else if (status == Failed && cbl.failed != nullptr)
 		{
 			Resources::ResourceId fail = id;
-			fail.resourceId = this->errorResourceId.resourceId;
+			fail.resourceId = this->failResourceId.resourceId;
 			cbl.failed(fail);
 		}
 	}
@@ -258,7 +258,7 @@ ResourceStreamPool::PrepareLoad(_PendingResourceLoad& res)
 		stream->SetAccessMode(Stream::ReadAccess);
 		if (stream->Open())
 		{
-			ret = this->LoadFromStream(res.id, res.tag, stream);
+			ret = this->LoadFromStream(res.id, res.tag, stream, res.immediate);
 			stream->Close();
 		}
 		else
@@ -337,11 +337,12 @@ Resources::ResourceStreamPool::CreateResource(const ResourceName& res, const Uti
 			}
 			else if (status == Failed)
 			{
+				// change return resource id to be fail resource
+				ret.resourceId = this->failResourceId.resourceId;
+
 				if (failed != nullptr)
 				{
-					Resources::ResourceId fail = ret;
-					fail.resourceId = this->errorResourceId.resourceId;
-					failed(fail);
+					failed(ret);
 				}
 				this->states[instanceId] = Resource::Failed;
 			}
@@ -385,6 +386,9 @@ Resources::ResourceStreamPool::CreateResource(const ResourceName& res, const Uti
 			{
 				if (failed != nullptr) 
 					failed(ret);
+
+				// set to error immediately
+				ret.resourceId = failResourceId.resourceId;
 			}
 			else if (state == Resource::Pending)
 			{
@@ -421,24 +425,33 @@ Resources::ResourceStreamPool::CreateResource(const ResourceName& res, const Uti
 void
 Resources::ResourceStreamPool::DiscardResource(const Resources::ResourceId id)
 {
-	ResourcePool::DiscardResource(id);
-
-	// if usage reaches 0, add it to the list of pending unloads
-	if (this->usage[id.poolId] == 0)
+	if (id != this->placeholderResourceId && id != this->failResourceId)
 	{
-		if (this->async)
+		ResourcePool::DiscardResource(id);
+
+		// if usage reaches 0, add it to the list of pending unloads
+		if (this->usage[id.poolId] == 0)
 		{
-			// add pending unload, it will be unloaded once loaded
-			this->pendingUnloads.Append({ id });
+			if (this->async)
+			{
+				// add pending unload, it will be unloaded once loaded
+				this->pendingUnloads.Append({ id });
 			
+			}
+			else
+			{
+				this->Unload(id);
+				this->DeallocObject(id.AllocId());
+			}
+			this->resourceInstanceIndexPool.Dealloc(id.poolId);
 		}
-		else
-		{
-			this->Unload(id);
-			this->DeallocObject(id.AllocId());
-		}
-		this->resourceInstanceIndexPool.Dealloc(id.poolId);
 	}
+#if N_DEBUG
+	else
+	{
+		n_warning("Trying to delete placeholder or fail resource!\n");
+	}
+#endif
 }
 
 //------------------------------------------------------------------------------

@@ -102,7 +102,7 @@ protected:
 	};
 
 	/// perform actual load, override in subclass
-	virtual LoadStatus LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream) = 0;
+	virtual LoadStatus LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate = false) = 0;
 	/// perform a reload
 	virtual LoadStatus ReloadFromStream(const Resources::ResourceId id, const Ptr<IO::Stream>& stream);
 
@@ -116,10 +116,10 @@ protected:
 
 	/// these types need to be properly initiated in a subclass Setup function
 	Util::StringAtom placeholderResourceName;
-	Util::StringAtom errorResourceName;
+	Util::StringAtom failResourceName;
 
 	Resources::ResourceId placeholderResourceId;
-	Resources::ResourceId errorResourceId;
+	Resources::ResourceId failResourceId;
 
 	bool async;
 

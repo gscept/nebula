@@ -30,7 +30,7 @@ ModelNode::~ModelNode()
 /**
 */
 bool
-ModelNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader)
+ModelNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader, bool immediate)
 {
 	if (FourCC('LBOX') == fourcc)
 	{
@@ -113,6 +113,16 @@ ModelNode::ApplyNodeState()
 */
 void
 ModelNode::Instance::ApplyNodeInstanceState()
+{
+	// empty
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ModelNode::Instance::Update()
 {
 	// empty
 }
