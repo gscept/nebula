@@ -945,12 +945,13 @@ NebulaVulkanDebugCallback(
 {
 	const int32_t ignore[] =
 	{
-		61
+		61 // unused descriptors 
 	};
 
 	for (IndexT i = 0; i < sizeof(ignore) / sizeof(int32_t); i++)
 	{
-		if (callbackData->messageIdNumber == ignore[i]) return VK_FALSE;
+		if (callbackData->messageIdNumber == ignore[i]) 
+			return VK_FALSE;
 	}
 
 	if (severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
@@ -1008,7 +1009,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		state.extensions[state.usedExtensions++] = requiredExtensions[i];
 	}
 
-	const char* layers[] = { "VK_LAYER_LUNARG_standard_validation", "VK_LAYER_LUNARG_object_tracker" };
+	const char* layers[] = { "VK_LAYER_KHRONOS_validation" };
 	int numLayers = 0;
 	const char** usedLayers = nullptr;
 
@@ -1020,7 +1021,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	}
 	else
 	{
-		usedLayers = &layers[1];
+		// don't use any layers, but still load the debug utils so we can put markers
 		numLayers = 0;
 	}
 	state.extensions[state.usedExtensions++] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;

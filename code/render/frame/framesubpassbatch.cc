@@ -89,7 +89,7 @@ FrameSubpassBatch::CompiledImpl::Run(const IndexT frameIndex)
 				while (it != end)
 				{
 					Models::ModelNode* node = *it.key;
-					Models::ShaderStateNode* stateNode = static_cast<Models::ShaderStateNode*>(node);
+					Models::ShaderStateNode* stateNode = reinterpret_cast<Models::ShaderStateNode*>(node);
 
 					// only continue if we have instances
 					const Util::Array<Models::ModelNode::Instance*>& instances = *it.val;
@@ -106,10 +106,7 @@ FrameSubpassBatch::CompiledImpl::Run(const IndexT frameIndex)
 							IndexT i;
 							for (i = 0; i < instances.Size(); i++)
 							{
-								//if (!instances[i]->active)
-								//	continue;
-
-								Models::ShaderStateNode::Instance* instance = static_cast<Models::ShaderStateNode::Instance*>(instances[i]);
+								Models::ShaderStateNode::Instance* instance = reinterpret_cast<Models::ShaderStateNode::Instance*>(instances[i]);
 
 								// apply instance state
 								const Materials::SurfaceInstanceId surfaceInstance = instance->GetSurfaceInstance();
@@ -129,103 +126,6 @@ FrameSubpassBatch::CompiledImpl::Run(const IndexT frameIndex)
 			Materials::MaterialEndBatch();
 		}
 	}
-	/*
-
-	if (matServer->HasMaterialsByBatchGroup(this->batch))
-	{
-		// get materials matching the batch type
-		const Util::Array<Ptr<Material>>& materials = matServer->GetMaterialsByBatchGroup(this->batch);
-
-		IndexT materialIndex;
-		for (materialIndex = 0; materialIndex < materials.Size(); materialIndex++)
-		{
-			// get material
-			const Ptr<Material>& material = materials[materialIndex];
-			const Util::Array<Material::MaterialPass>& passes = material->GetPassesByCode(this->batch);
-
-			IndexT passIndex;
-			for (passIndex = 0; passIndex < passes.Size(); passIndex++)
-			{
-				// get pass
-				const Material::MaterialPass& pass = passes[passIndex];
-				const Ptr<Shader>& shader = pass.shader;
-				const Util::Array<Ptr<Surface>>& surfaces = material->GetSurfaces();
-
-				IndexT surfaceIndex;
-				for (surfaceIndex = 0; surfaceIndex < surfaces.Size(); surfaceIndex++)
-				{
-					const Ptr<Surface>& surface = surfaces[surfaceIndex];
-
-					// get models based on material, if we can't see any models, just ignore this surface...
-					// hmm, would love to do this earlier so we can just skip unused materials
-					const Array<Ptr<Model>>& models = visResolver->GetVisibleModels(surface->GetSurfaceCode());
-					if (models.IsEmpty()) continue;
-
-					// set the this shader to be the main active shader
-					shaderServer->SetActiveShader(shader);
-
-					// reset features, then set the features implemented by the material
-					shaderServer->ResetFeatureBits();
-					shaderServer->SetFeatureBits(pass.featureMask);
-
-					// apply shared model state (mesh)
-					//modelNode->ApplySharedState(frameIndex);
-
-					// apply shader 
-					shader->SelectActiveVariation(shaderServer->GetFeatureBits());
-					shader->Apply();
-
-					IndexT modelIndex;
-					for (modelIndex = 0; modelIndex < models.Size(); modelIndex++)
-					{
-						FRAME_LOG("      FrameBatch::RenderBatch() model: %s", models[modelIndex]->GetResourceId().Value());
-
-						// for each visible model node of the model...
-						const Array<Ptr<ModelNode>>& modelNodes = visResolver->GetVisibleModelNodes(surface->GetSurfaceCode(), models[modelIndex]);
-						IndexT modelNodeIndex;
-						for (modelNodeIndex = 0; modelNodeIndex < modelNodes.Size(); modelNodeIndex++)
-						{
-							// render instances
-							const Ptr<ModelNode>& modelNode = modelNodes[modelNodeIndex];
-							const Array<Ptr<ModelNodeInstance>>& nodeInstances = visResolver->GetVisibleModelNodeInstances(surface->GetSurfaceCode(), modelNode);
-							if (nodeInstances.IsEmpty()) continue;
-
-							// apply shared model state (mesh)
-							modelNode->ApplySharedState(frameIndex);
-							FRAME_LOG("        FrameBatch::RenderBatch() node: %s", modelNode->GetName().Value());
-
-#if NEBULA_ENABLE_PROFILING
-							modelNode->StartTimer();
-#endif
-							IndexT nodeInstIndex;
-							for (nodeInstIndex = 0; nodeInstIndex < nodeInstances.Size(); nodeInstIndex++)
-							{
-								const Ptr<ModelNodeInstance>& nodeInstance = nodeInstances[nodeInstIndex];
-								const Ptr<StateNodeInstance>& stateNode = nodeInstance.downcast<StateNodeInstance>();
-#if NEBULA_ENABLE_PROFILING
-								nodeInstance->StartDebugTimer();
-#endif  
-								// render the node instance
-								nodeInstance->ApplyState(frameIndex, pass.index);
-
-								// render single
-								nodeInstance->Render();
-#if NEBULA_ENABLE_PROFILING
-								modelNode->IncrementDraws();
-								nodeInstance->StopDebugTimer();
-#endif  
-							}
-
-#if NEBULA_ENABLE_PROFILING
-							modelNode->StopTimer();
-#endif
-						}
-					}
-				}
-			}
-		}
-	}
-	*/
 
 	// end batch
 	CoreGraphics::EndBatch();
