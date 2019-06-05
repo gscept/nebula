@@ -62,6 +62,7 @@ ActorContext::DiscardActor(ActorId id)
     {
         scene->removeActor(*actor.actor);
     }
+    state.DiscardActor(id);
     actor.actor->release();    
     ActorContext::actorPool.Deallocate(id.id);
 }
