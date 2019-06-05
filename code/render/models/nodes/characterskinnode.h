@@ -126,7 +126,7 @@ CharacterSkinNode::Instance::Setup(Models::ModelNode* node, const Models::ModelN
 	this->offsets[Skinning] = this->cboSkinAlloc.offset;
 	if (rebind)
 	{
-		CoreGraphics::ResourceTableSetConstantBuffer(sparent->resourceTable, { this->cboSkin, sparent->cboSkinIndex, 0, true, false, -1, 0 });
+		CoreGraphics::ResourceTableSetConstantBuffer(sparent->resourceTable, { this->cboSkin, sparent->cboSkinIndex, 0, true, false, 256 * sizeof(Math::matrix44), 0 });
 		CoreGraphics::ResourceTableCommitChanges(sparent->resourceTable);
 	}
 

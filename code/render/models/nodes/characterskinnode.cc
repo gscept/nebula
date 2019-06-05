@@ -74,7 +74,7 @@ CharacterSkinNode::OnFinishedLoading()
 	PrimitiveNode::OnFinishedLoading();
 	this->cboSkin = CoreGraphics::ShaderCreateConstantBuffer(this->sharedShader, "JointBlock");
 	this->cboSkinIndex = CoreGraphics::ShaderGetResourceSlot(this->sharedShader, "JointBlock");
-	CoreGraphics::ResourceTableSetConstantBuffer(this->resourceTable, { this->cboSkin, this->cboSkinIndex, 0, true, false, -1, 0 });
+	CoreGraphics::ResourceTableSetConstantBuffer(this->resourceTable, { this->cboSkin, this->cboSkinIndex, 0, true, false, 256 * sizeof(Math::matrix44), 0 });
 	CoreGraphics::ResourceTableCommitChanges(this->resourceTable);
 	this->skinningPaletteVar = CoreGraphics::ShaderGetConstantBinding(this->sharedShader, "JointPalette");
 }
@@ -110,7 +110,6 @@ CharacterSkinNode::AddFragment(IndexT primGroupIndex, const Util::Array<IndexT>&
     this->skinFragments.Back().primGroupIndex = primGroupIndex;
     this->skinFragments.Back().jointPalette = jointPalette;
 }
-
 
 //------------------------------------------------------------------------------
 /**
