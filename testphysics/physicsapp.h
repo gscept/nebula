@@ -42,13 +42,21 @@ public:
 protected:
     void RenderUI();
     void RenderEntityUI();
+    void RenderObjectsUI();
+    void RenderObjectUI(IndexT id);
     void UpdateCamera();
     void ResetCamera();
     void ToMaya();
     void ToFree();
     void Browse();
     void Shoot();
+    void Spawn(const Math::matrix44& trans, Math::vector linvel, Math::vector angvel);
     void UpdateTransform(Physics::ActorId id, Math::matrix44 const& trans);
+    
+
+    void SpawnRandom(int amount);
+    void DeleteRandom(int amount);
+
 
     Ptr<Graphics::GraphicsServer> gfxServer;
     Ptr<Resources::ResourceManager> resMgr;
@@ -91,8 +99,19 @@ protected:
     RenderUtil::FreeCameraUtil freeCamUtil;        
     Math::point defaultViewPoint;
     Util::Array<Graphics::GraphicsEntityId> entities;    
-    Util::HashTable<Ids::Id32, Graphics::GraphicsEntityId> idMap;
+    
     Dynui::Graph fpsGraph;
+
+    struct TestObject
+    {
+        Graphics::GraphicsEntityId model;
+        Physics::ActorId actor;
+    };
+
+
+
+    Util::Array<TestObject> objects;
+
 };
 
 }

@@ -191,10 +191,12 @@ SimpleViewerApplication::Open()
 
         this->groundResource = Resources::CreateResource("phy:test/groundplane.np", "Viewer", nullptr, nullptr, true);        
         this->groundActor = Physics::CreateActorInstance(groundResource, Math::matrix44::identity(),false);
-        this->ballResource = Resources::CreateResource("phy:test/tower.np", "Viewer", nullptr, nullptr, true);
-        //this->ballResource = Resources::CreateResource("phy:test/sphere.np", "Viewer", nullptr, nullptr, true);
 
-        //Physics::ActorContext::CreatePlane(Math::plane(Math::point(0.0, 0.0, 0.0), Math::vector(0.0, 1.0, 0.0)), dummyMaterial);        
+        this->objects.Append(TestObject{ this->ground,this->groundActor });
+
+        this->ballResource = Resources::CreateResource("phy:test/tower.np", "Viewer", nullptr, nullptr, true);
+        
+        
         // register visibility system
         ObserverContext::CreateBruteforceSystem({});
 
@@ -211,15 +213,14 @@ SimpleViewerApplication::Open()
 
 		Util::Array<Graphics::GraphicsEntityId> models;
 		ModelContext::BeginBulkRegister();
-		ObservableContext::BeginBulkRegister();        
-        Resources::ResourceId foo = Resources::CreateResource("phy:test/tower.np", "Viewer", nullptr, nullptr, true);
+		ObservableContext::BeginBulkRegister();                
 		static const int NumModels = 1;
 		for (IndexT i = -NumModels; i < NumModels; i++)
 		{
 			for (IndexT j = -NumModels; j < NumModels; j++)
 			{
 				Graphics::GraphicsEntityId ent = Graphics::CreateEntity();
-                this->entities.Append(ent);
+                
 
 				// create model and move it to the front
 				ModelContext::RegisterEntity(ent);
@@ -231,10 +232,13 @@ SimpleViewerApplication::Open()
 				ObservableContext::Setup(ent, VisibilityEntityType::Model);
 				models.Append(ent);
                                                                 
-                Physics::ActorId actor = Physics::CreateActorInstance(foo, trans, true);
-                this->idMap.Add(actor.id, ent);
-                Physics::ActorContext::GetActor(actor).moveCallback = 
+                Physics::ActorId actor = Physics::CreateActorInstance(this->ballResource, trans, true);
+                
+                auto & pactor = Physics::ActorContext::GetActor(actor);
+                pactor.moveCallback =
                     Util::Delegate<void(Physics::ActorId, Math::matrix44 const&)>::FromMethod<SimpleViewerApplication,&SimpleViewerApplication::UpdateTransform>(this);
+                pactor.userData = (uint64_t)ent.id;
+                this->objects.Append(TestObject{ ent,actor });
 			}
 		}
 		ModelContext::EndBulkRegister();
@@ -390,6 +394,51 @@ SimpleViewerApplication::RenderEntityUI()
         }
     }
 }
+void SimpleViewerApplication::RenderObjectsUI()
+{
+    //Util::String count = Util::String::Sprintf("Total OBjects: %d", this->objects.Size());
+    ImGui::Begin("OBjects", nullptr, 0);
+    ImGui::SetWindowSize(ImVec2(240, 400));
+    ImGui::Text("Total Objects %d", this->objects.Size());
+    static int count = 100;
+    ImGui::SliderInt("Objects to add/kill", &count, 1, 1000);     
+    if (ImGui::Button("Spawn!"))
+    {
+        this->SpawnRandom(count);
+    }
+    if (ImGui::Button("Destroy!"))
+    {
+        this->DeleteRandom(count);
+    }
+
+    ImGui::BeginChild("##objects", ImVec2(0, 300), true);
+    static int selected = -1;
+    for (int i = 0; i < this->objects.Size(); i++)
+    {
+        Util::String sid;
+        sid.Format("%s: %d", GraphicsEntityToName(this->objects[i].model), this->objects[i].model);
+        if (ImGui::Selectable(sid.AsCharPtr(), i == selected))
+        {
+            selected = i;
+        }
+    }
+    ImGui::EndChild();
+    ImGui::End();
+    if (selected >= 0)
+    {
+        this->RenderObjectUI(selected);
+    }        
+}
+void SimpleViewerApplication::RenderObjectUI(IndexT sid)
+{
+    auto id = this->objects[sid];
+    
+    Im3d::Mat4 trans = Physics::ActorContext::GetTransform(id.actor);
+    if (Im3d::Gizmo("GizmoObj", trans))
+    {
+            Physics::ActorContext::SetTransform(id.actor, trans);            
+    }
+}
 //------------------------------------------------------------------------------
 /**
 */
@@ -463,6 +512,7 @@ SimpleViewerApplication::RenderUI()
     }            
     ImGui::End();
     this->RenderEntityUI();
+    this->RenderObjectsUI();
 }
 
 //------------------------------------------------------------------------------
@@ -610,28 +660,36 @@ SimpleViewerApplication::Shoot()
 
         Math::matrix44 trans = Math::matrix44::inverse(CameraContext::GetTransform(this->cam));
 
+        this->Spawn(trans, trans.get_zaxis() * -50.0f, Math::vector(Math::n_rand(-10.0f, 10.0f)));
 
 
-        Graphics::GraphicsEntityId ent = Graphics::CreateEntity();
-
-        ModelContext::RegisterEntity(ent);
-        ModelContext::Setup(ent, "mdl:Buildings/castle_tower.n3", "NotA");
-        //ModelContext::Setup(ent, "mdl:system/sphere.n3", "NotA");
-        ModelContext::SetTransform(ent, trans);
-
-        ObservableContext::RegisterEntity(ent);
-        ObservableContext::Setup(ent, VisibilityEntityType::Model);
-        this->entities.Append(ent);
-
-        Physics::ActorId actor = Physics::CreateActorInstance(this->ballResource, trans, true);
-        this->idMap.Add(actor.id, ent);
-        
-        Physics::ActorContext::GetActor(actor).moveCallback = Util::Delegate<void(Physics::ActorId, Math::matrix44 const&)>::FromMethod<SimpleViewerApplication, &SimpleViewerApplication::UpdateTransform>(this);
-        
-        Physics::ActorContext::SetLinearVelocity(actor, trans.get_zaxis() * -50.0f);
-        Physics::ActorContext::SetAngularVelocity(actor, Math::vector(Math::n_rand(-10.0f, 10.0f)));
     }
 
+}
+
+void SimpleViewerApplication::Spawn(const Math::matrix44 & trans, Math::vector linvel, Math::vector angvel)
+{
+
+    Graphics::GraphicsEntityId ent = Graphics::CreateEntity();
+
+    ModelContext::RegisterEntity(ent);
+    ModelContext::Setup(ent, "mdl:Buildings/castle_tower.n3", "NotA");
+    //ModelContext::Setup(ent, "mdl:system/sphere.n3", "NotA");
+    ModelContext::SetTransform(ent, trans);
+
+    ObservableContext::RegisterEntity(ent);
+    ObservableContext::Setup(ent, VisibilityEntityType::Model);
+
+    Physics::ActorId actor = Physics::CreateActorInstance(this->ballResource, trans, true);
+
+
+    auto & pactor = Physics::ActorContext::GetActor(actor);
+    pactor.moveCallback = Util::Delegate<void(Physics::ActorId, Math::matrix44 const&)>::FromMethod<SimpleViewerApplication, &SimpleViewerApplication::UpdateTransform>(this);
+    pactor.userData = (uint64_t)ent.id;
+
+    Physics::ActorContext::SetLinearVelocity(actor, linvel);
+    Physics::ActorContext::SetAngularVelocity(actor, angvel);
+    this->objects.Append(TestObject{ ent, actor });
 }
 
 //------------------------------------------------------------------------------
@@ -640,6 +698,38 @@ SimpleViewerApplication::Shoot()
 void
 SimpleViewerApplication::UpdateTransform(Physics::ActorId id, Math::matrix44 const & trans)
 {
-    ModelContext::SetTransform(this->idMap[id.id], trans);
+    ModelContext::SetTransform(Graphics::GraphicsEntityId{ (Ids::Id32)Physics::ActorContext::GetActor(id).userData}, trans);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+SimpleViewerApplication::SpawnRandom(int amount)
+{
+    for(int i = 0 ; i<amount;i++)
+    {
+        Math::matrix44 trans = Math::matrix44::translation(Math::point(Math::n_rand(-200.0f, 200.0f), 150.0f, Math::n_rand(-200.00f, 200.0f)));
+        this->Spawn(trans, Math::vector(0.0), Math::vector(Math::n_rand(-3.0f, 3.0f)));
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+SimpleViewerApplication::DeleteRandom(int amount)
+{    
+    amount = Math::n_min(amount, this->objects.Size());
+    for (int i = 0; i < amount; i++)
+    {
+        IndexT f = Math::n_rand(0, this->objects.Size() -1);
+        auto & obj = this->objects[f];
+        ObservableContext::DeregisterEntity(obj.model);
+        ModelContext::DeregisterEntity(obj.model);
+        Graphics::DestroyEntity(obj.model);
+        Physics::DestroyActorInstance(obj.actor);
+        this->objects.EraseIndexSwap(f);
+    }
 }
 }
