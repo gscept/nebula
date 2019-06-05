@@ -154,8 +154,8 @@ ShaderStateNode::Instance::GetDrawPacketSize() const
 	// the size of the data field should be multiplied by the amount of resource tables we use
 	return sizeof(DrawPacket) + // base size
 		sizeof(Materials::SurfaceInstanceId) + // surface instance
+		sizeof(SizeT) + // number of tables (only 1, but if more, all subsequent members require a multiplier of the number of tables)
 		sizeof(CoreGraphics::ResourceTableId) + // only one table
-		sizeof(SizeT) + // number of tables (only 1)
 		this->offsets.Size() * sizeof(uint32) + // offsets
 		sizeof(uint32) + // amount of offsets
 		sizeof(IndexT) + // only one slot
@@ -171,50 +171,45 @@ ShaderStateNode::Instance::UpdateDrawPacket(void* mem)
 {
 	char* buf = (char*) mem;
 
+	// first write header
 	Models::ModelNode::DrawPacket* ret = (Models::ModelNode::DrawPacket*)buf;
 	buf += sizeof(Models::ModelNode::DrawPacket);
 
-	// copy surface instance
+	// setup struct offsets
 	ret->surfaceInstance = (Materials::SurfaceInstanceId*)buf;
-	memcpy(buf, &this->surfaceInstance, sizeof(this->surfaceInstance));
 	buf += sizeof(this->surfaceInstance);
-
-	// copy tables
-	ret->tables = (CoreGraphics::ResourceTableId*)buf;
-	memcpy(buf, &this->resourceTable, sizeof(this->resourceTable));
-	buf += sizeof(this->resourceTable);
-
-	// copy num tables
 	ret->numTables = (SizeT*) buf;
-	const SizeT numTables = 1;
-	memcpy(buf, &numTables, sizeof(SizeT));
 	buf += sizeof(SizeT);
-
-	// copy offsets
+	ret->tables = (CoreGraphics::ResourceTableId*)buf;
+	buf += sizeof(this->resourceTable);
 	ret->offsets = (uint32*) buf;
-	for (IndexT i = 0; i < this->offsets.Size(); i++)
-	{
-		memcpy(buf, &this->offsets[i], sizeof(uint32));
-		buf += sizeof(uint32);
-	}
-	
-	// copy number of offsets
+	buf += sizeof(uint32) * this->offsets.Size();
 	ret->numOffsets = (uint32*) buf;
-	const uint32 tmp = this->offsets.Size();
-	memcpy(buf, &tmp, sizeof(uint32));
 	buf += sizeof(uint32);
-
-	// copy slots
 	ret->slots = (IndexT*) buf;
-	const IndexT slot = NEBULA_DYNAMIC_OFFSET_GROUP;
-	memcpy(buf, &slot, sizeof(IndexT));
 	buf += sizeof(IndexT);
-
-	// copy pipeline 
 	ret->pipelines = (CoreGraphics::ShaderPipeline*) buf;
-	const CoreGraphics::ShaderPipeline pipeline = CoreGraphics::GraphicsPipeline;
-	memcpy(buf, &pipeline, sizeof(CoreGraphics::ShaderPipeline));
 	buf += sizeof(CoreGraphics::ShaderPipeline);
+
+	// start copying data
+	*ret->surfaceInstance = this->surfaceInstance;
+	*ret->numTables = 1;
+
+	// this information should all be per table
+	for (IndexT j = 0; j < *ret->numTables; j++)
+	{
+		ret->tables[j] = this->resourceTable;
+	
+		// copy offsets
+		for (IndexT i = 0; i < this->offsets.Size(); i++)
+		{
+			ret->offsets[i + j * this->offsets.Size()] = this->offsets[i];
+		}
+
+		ret->numOffsets[j] = this->offsets.Size();
+		ret->slots[j] = NEBULA_DYNAMIC_OFFSET_GROUP;
+		ret->pipelines[j] = CoreGraphics::GraphicsPipeline;
+	}
 
 	return ret;
 }

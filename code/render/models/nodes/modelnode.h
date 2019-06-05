@@ -62,9 +62,10 @@ public:
 	{
 		Materials::SurfaceInstanceId* surfaceInstance;
 		CoreGraphics::ResourceTableId* tables = nullptr;
-		SizeT* numTables;
+		SizeT* numTables = nullptr;
+		uint32* numOffsets = nullptr;
 		uint32* offsets = nullptr;
-		uint32* numOffsets;
+		
 		IndexT* slots = nullptr;
 		CoreGraphics::ShaderPipeline* pipelines = nullptr;
 
