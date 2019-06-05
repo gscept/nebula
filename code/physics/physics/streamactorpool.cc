@@ -51,7 +51,7 @@ StreamActorPool::CreateActorInstance(ActorResourceId id, Math::matrix44 const & 
     this->allocator.LeaveGet();
 
     physx::PxRigidActor * newActor = state.CreateActor(dynamic, trans);
-    
+    info.instanceCount++;
     for (IndexT i = 0; i < info.shapes.Size(); i++)
     {        
         newActor->attachShape(*info.shapes[i]);        
@@ -62,7 +62,25 @@ StreamActorPool::CreateActorInstance(ActorResourceId id, Math::matrix44 const & 
     }
     GetScene(scene).scene->addActor(*newActor);
     
-    return ActorContext::AllocateActorId(newActor);
+    return ActorContext::AllocateActorId(newActor, id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+StreamActorPool::DiscardActorInstance(ActorId id)
+{
+    n_assert(ActorContext::IsValid(id));
+    Actor& actor = ActorContext::GetActor(id);
+    if (actor.res != ActorResourceId::Invalid())
+    {
+        this->allocator.EnterGet();
+        ActorInfo& info = this->allocator.Get<0>(actor.res.resourceId);
+        this->allocator.LeaveGet();
+        info.instanceCount--;
+    }
+    ActorContext::DiscardActor(id);
 }
 
 //------------------------------------------------------------------------------
@@ -76,7 +94,8 @@ StreamActorPool::LoadFromStream(const Resources::ResourceId res, const Util::Str
     
     /// during the load-phase, we can safetly get the structs
     this->EnterGet();    
-    ActorInfo &actorInfo = this->allocator.Get<0>(res.resourceId);       
+    ActorInfo &actorInfo = this->allocator.Get<0>(res.resourceId);
+    actorInfo.instanceCount = 0;
     this->LeaveGet();
     Ptr<IO::JsonReader> reader = IO::JsonReader::Create();
     reader->SetStream(stream);
@@ -103,7 +122,7 @@ StreamActorPool::LoadFromStream(const Resources::ResourceId res, const Util::Str
                 ColliderId colliderid;
                 if (collider.IsValid())
                 {
-                    colliderid = Resources::CreateResource(collider, tag, nullptr, nullptr, true);
+                    colliderid = Resources::CreateResource(collider, "", nullptr, nullptr, true);
                     if (colliderPool->GetState(colliderid) == Resources::Resource::Failed)
                     {
                         return Resources::ResourcePool::Failed;
@@ -113,6 +132,7 @@ StreamActorPool::LoadFromStream(const Resources::ResourceId res, const Util::Str
                 {
                     return Resources::ResourcePool::Failed;
                 }
+                actorInfo.colliders.Append(colliderid);
                 physx::PxGeometryHolder & geom = colliderPool->GetGeometry(colliderid);
                 physx::PxShape *newShape = state.physics->createShape(geom.any(), *state.materials[material].material);
                 newShape->setLocalPose(Neb2PxTrans(trans));
@@ -131,6 +151,20 @@ StreamActorPool::LoadFromStream(const Resources::ResourceId res, const Util::Str
 void
 StreamActorPool::Unload(const Resources::ResourceId id)
 {
+    this->EnterGet();
+    ActorInfo& info = this->allocator.Get<0>(id.resourceId);
+    this->LeaveGet();
+    n_assert2(info.instanceCount == 0, "Actor has active Instances");
+    const Util::StringAtom tag = this->GetTag(id);
+    
+    for (auto i : info.colliders)
+    {
+            colliderPool->DiscardResource(i);
+    }
+    for (auto s : info.shapes)
+    {
+        s->release();        
+    }    
 }
 
 }
