@@ -71,6 +71,8 @@ protected:
     IndexT frameIndex = -1;
 
     Resources::ResourceId ballResource;
+    Physics::ActorId groundActor;
+    Resources::ResourceId groundResource;
 
     Util::Array<Util::String> folders;
     int selectedFolder = 0;

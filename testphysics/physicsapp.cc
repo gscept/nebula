@@ -104,8 +104,7 @@ SimpleViewerApplication::Open()
 		Characters::CharacterContext::Create();
         Dynui::ImguiContext::Create();
         Im3d::Im3dContext::Create();
-        this->fpsGraph.SetLimits(20.0f, 500.0f);
-
+        
         Physics::Setup();
         this->physicsScene = Physics::CreateScene();
         IndexT dummyMaterial = Physics::CreateMaterial("dummy"_atm, 0.8, 0.6, 0.3, 1.0);
@@ -190,8 +189,8 @@ SimpleViewerApplication::Open()
 		ModelContext::SetTransform(this->ground, Math::matrix44::translation(Math::float4(0, 0, 0, 1)));
         this->entities.Append(this->ground);
 
-        Resources::ResourceId ground = Resources::CreateResource("phy:test/groundplane.np", "Viewer", nullptr, nullptr, true);        
-        Physics::ActorId groundactor = Physics::CreateActorInstance(ground, Math::matrix44::identity(),false);
+        this->groundResource = Resources::CreateResource("phy:test/groundplane.np", "Viewer", nullptr, nullptr, true);        
+        this->groundActor = Physics::CreateActorInstance(groundResource, Math::matrix44::identity(),false);
         this->ballResource = Resources::CreateResource("phy:test/tower.np", "Viewer", nullptr, nullptr, true);
         //this->ballResource = Resources::CreateResource("phy:test/sphere.np", "Viewer", nullptr, nullptr, true);
 
@@ -410,6 +409,11 @@ SimpleViewerApplication::RenderUI()
         if (ImGui::RadioButton("Free", &this->cameraMode, 1))this->ToFree();
         ImGui::SameLine();
         if (ImGui::Button("Reset")) this->ResetCamera();
+    }
+    if (ImGui::Button("DeleteGround"))
+    {
+        Physics::DestroyActorInstance(this->groundActor);
+        Resources::DiscardResource(this->groundResource);
     }
     ImGui::Checkbox("Debug Rendering", &this->renderDebug);
     Models::ModelId model = ModelContext::GetModel(this->entity);
