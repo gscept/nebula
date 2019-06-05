@@ -1895,6 +1895,30 @@ SetResourceTable(const CoreGraphics::ResourceTableId table, const IndexT slot, S
 //------------------------------------------------------------------------------
 /**
 */
+void
+SetResourceTable(const CoreGraphics::ResourceTableId table, const IndexT slot, ShaderPipeline pipeline, uint32 numOffsets, uint32* offsets)
+{
+	switch (pipeline)
+	{
+		case GraphicsPipeline:
+		Vulkan::BindDescriptorsGraphics(&ResourceTableGetVkDescriptorSet(table),
+										slot,
+										1,
+										offsets,
+										numOffsets);
+		break;
+		case ComputePipeline:
+		Vulkan::BindDescriptorsCompute(&ResourceTableGetVkDescriptorSet(table),
+									   slot,
+									   1,
+									   offsets,
+									   numOffsets);
+		break;
+	}
+}
+//------------------------------------------------------------------------------
+/**
+*/
 void 
 SetResourceTablePipeline(const CoreGraphics::ResourcePipelineId layout)
 {

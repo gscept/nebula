@@ -98,6 +98,8 @@ void SetShaderProgram(const CoreGraphics::ShaderProgramId& pro);
 void SetShaderProgram(const CoreGraphics::ShaderId shaderId, const CoreGraphics::ShaderFeature::Mask mask);
 /// set resource table
 void SetResourceTable(const CoreGraphics::ResourceTableId table, const IndexT slot, ShaderPipeline pipeline, const Util::FixedArray<uint>& offsets);
+/// set resource table using raw offsets
+void SetResourceTable(const CoreGraphics::ResourceTableId table, const IndexT slot, ShaderPipeline pipeline, uint32 numOffsets, uint32* offsets);
 /// set resoure table layout
 void SetResourceTablePipeline(const CoreGraphics::ResourcePipelineId layout);
 /// push constants

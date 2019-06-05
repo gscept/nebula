@@ -111,11 +111,12 @@ CharacterSkinNode::AddFragment(IndexT primGroupIndex, const Util::Array<IndexT>&
     this->skinFragments.Back().jointPalette = jointPalette;
 }
 
+
 //------------------------------------------------------------------------------
 /**
 */
 void
-CharacterSkinNode::Instance::ApplyNodeInstanceState()
+CharacterSkinNode::Instance::Update()
 {
 	const CharacterNode::Instance* cparent = static_cast<const CharacterNode::Instance*>(this->parent);
 
@@ -135,10 +136,10 @@ CharacterSkinNode::Instance::ApplyNodeInstanceState()
 
 		// update skinning palette
 		CoreGraphics::ConstantBufferUpdate(this->cboSkin, this->cboSkinAlloc, usedMatrices.Begin(), sizeof(Math::matrix44) * usedMatrices.Size(), this->skinningPaletteVar);
-	}	
+	}
 
 	// apply original state
-	PrimitiveNode::Instance::ApplyNodeInstanceState();
+	PrimitiveNode::Instance::Update();
 }
 
 } // namespace Characters

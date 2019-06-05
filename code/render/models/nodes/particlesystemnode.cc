@@ -298,10 +298,9 @@ ParticleSystemNode::ApplyNodeState()
 /**
 */
 void
-ParticleSystemNode::Instance::ApplyNodeInstanceState()
+ParticleSystemNode::Instance::Update()
 {
-	TransformNode::Instance::ApplyNodeInstanceState();
-
+	TransformNode::Instance::Update();
 	ParticleSystemNode* pnode = static_cast<ParticleSystemNode*>(this->node);
 
 	bool billboard = pnode->emitterAttrs.GetBool(EmitterAttrs::Billboard);
@@ -326,15 +325,6 @@ ParticleSystemNode::Instance::ApplyNodeInstanceState()
 
 	// apply with offsets
 	CoreGraphics::SetResourceTable(this->resourceTable, NEBULA_DYNAMIC_OFFSET_GROUP, CoreGraphics::GraphicsPipeline, this->offsets);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-ParticleSystemNode::Instance::Draw()
-{
-
 }
 
 } // namespace Particles

@@ -51,10 +51,13 @@ public:
 		Materials::SurfaceInstanceId surfaceInstance;
 		Util::FixedArray<uint32> offsets;
 
-		/// apply instance shader stuff
-		void ApplyNodeInstanceState() override;
 		/// setup instance
 		void Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
+
+		/// return size of draw packet for allocation
+		virtual SizeT GetDrawPacketSize() const override;
+		/// fill draw packet
+		virtual Models::ModelNode::DrawPacket* UpdateDrawPacket(void* mem) override;
 
 		/// update prior to drawing
 		void Update() override;

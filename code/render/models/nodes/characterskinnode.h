@@ -42,7 +42,7 @@ public:
 		CoreGraphics::ConstantBufferAllocId cboSkinAlloc;
 
 		/// apply skinning palette
-		void ApplyNodeInstanceState() override;
+		void Update() override;
 		/// setup
 		void Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
 	};

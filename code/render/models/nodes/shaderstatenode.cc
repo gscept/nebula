@@ -144,33 +144,96 @@ ShaderStateNode::OnFinishedLoading()
 	this->objectIdVar = CoreGraphics::ShaderGetConstantBinding(this->sharedShader, "ObjectId");
 }
 
+
 //------------------------------------------------------------------------------
 /**
 */
-void
-ShaderStateNode::Instance::Update()
+SizeT
+ShaderStateNode::Instance::GetDrawPacketSize() const
 {
-	TransformNode::Instance::Update();
-	CoreGraphics::TransformDevice* transformDevice = CoreGraphics::TransformDevice::Instance();
+	// the size of the data field should be multiplied by the amount of resource tables we use
+	return sizeof(DrawPacket) + // base size
+		sizeof(Materials::SurfaceInstanceId) + // surface instance
+		sizeof(CoreGraphics::ResourceTableId) + // only one table
+		sizeof(SizeT) + // number of tables (only 1)
+		this->offsets.Size() * sizeof(uint32) + // offsets
+		sizeof(uint32) + // amount of offsets
+		sizeof(IndexT) + // only one slot
+		sizeof(CoreGraphics::ShaderPipeline) // only one pipeline
+		;
+}
 
-	// okay, in cases like this, we would benefit shittons if we could just do one set for the entire struct...
-	CoreGraphics::ConstantBufferUpdateInstance(this->cbo, transformDevice->GetModelTransform(), this->instance, this->modelVar);
-	CoreGraphics::ConstantBufferUpdateInstance(this->cbo, transformDevice->GetInvModelTransform(), this->instance, this->invModelVar);
-	CoreGraphics::ConstantBufferUpdateInstance(this->cbo, transformDevice->GetModelViewProjTransform(), this->instance, this->modelViewProjVar);
-	CoreGraphics::ConstantBufferUpdateInstance(this->cbo, transformDevice->GetModelViewTransform(), this->instance, this->modelViewVar);
-	CoreGraphics::ConstantBufferUpdateInstance(this->cbo, transformDevice->GetObjectId(), this->instance, this->objectIdVar);
+//------------------------------------------------------------------------------
+/**
+*/
+Models::ModelNode::DrawPacket*
+ShaderStateNode::Instance::UpdateDrawPacket(void* mem)
+{
+	char* buf = (char*) mem;
+
+	Models::ModelNode::DrawPacket* ret = (Models::ModelNode::DrawPacket*)buf;
+	buf += sizeof(Models::ModelNode::DrawPacket);
+
+	// copy surface instance
+	ret->surfaceInstance = (Materials::SurfaceInstanceId*)buf;
+	memcpy(buf, &this->surfaceInstance, sizeof(this->surfaceInstance));
+	buf += sizeof(this->surfaceInstance);
+
+	// copy tables
+	ret->tables = (CoreGraphics::ResourceTableId*)buf;
+	memcpy(buf, &this->resourceTable, sizeof(this->resourceTable));
+	buf += sizeof(this->resourceTable);
+
+	// copy num tables
+	ret->numTables = (SizeT*) buf;
+	const SizeT numTables = 1;
+	memcpy(buf, &numTables, sizeof(SizeT));
+	buf += sizeof(SizeT);
+
+	// copy offsets
+	ret->offsets = (uint32*) buf;
+	for (IndexT i = 0; i < this->offsets.Size(); i++)
+	{
+		memcpy(buf, &this->offsets[i], sizeof(uint32));
+		buf += sizeof(uint32);
+	}
+	
+	// copy number of offsets
+	ret->numOffsets = (uint32*) buf;
+	const uint32 tmp = this->offsets.Size();
+	memcpy(buf, &tmp, sizeof(uint32));
+	buf += sizeof(uint32);
+
+	// copy slots
+	ret->slots = (IndexT*) buf;
+	const IndexT slot = NEBULA_DYNAMIC_OFFSET_GROUP;
+	memcpy(buf, &slot, sizeof(IndexT));
+	buf += sizeof(IndexT);
+
+	// copy pipeline 
+	ret->pipelines = (CoreGraphics::ShaderPipeline*) buf;
+	const CoreGraphics::ShaderPipeline pipeline = CoreGraphics::GraphicsPipeline;
+	memcpy(buf, &pipeline, sizeof(CoreGraphics::ShaderPipeline));
+	buf += sizeof(CoreGraphics::ShaderPipeline);
+
+	return ret;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-ShaderStateNode::Instance::ApplyNodeInstanceState()
+ShaderStateNode::Instance::Update()
 {
-	TransformNode::Instance::ApplyNodeInstanceState();
+	//TransformNode::Instance::Update();
+	//CoreGraphics::TransformDevice* transformDevice = CoreGraphics::TransformDevice::Instance();
 
-	// apply with offsets
-	CoreGraphics::SetResourceTable(this->resourceTable, NEBULA_DYNAMIC_OFFSET_GROUP, CoreGraphics::GraphicsPipeline, this->offsets);
+	// okay, in cases like this, we would benefit shittons if we could just do one set for the entire struct...
+	CoreGraphics::ConstantBufferUpdateInstance(this->cbo, this->modelTransform, this->instance, this->modelVar);
+	CoreGraphics::ConstantBufferUpdateInstance(this->cbo, Math::matrix44::inverse(this->modelTransform), this->instance, this->invModelVar);
+	//CoreGraphics::ConstantBufferUpdateInstance(this->cbo, transformDevice->GetModelViewProjTransform(), this->instance, this->modelViewProjVar);
+	//CoreGraphics::ConstantBufferUpdateInstance(this->cbo, transformDevice->GetModelViewTransform(), this->instance, this->modelViewVar);
+	//CoreGraphics::ConstantBufferUpdateInstance(this->cbo, transformDevice->GetObjectId(), this->instance, this->objectIdVar);
 }
 
 } // namespace Models

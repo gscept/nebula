@@ -4,6 +4,8 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "modelnode.h"
+#include "coregraphics/graphicsdevice.h"
+#include "coregraphics/resourcetable.h"
 
 using namespace Util;
 using namespace Math;
@@ -111,12 +113,22 @@ ModelNode::ApplyNodeState()
 //------------------------------------------------------------------------------
 /**
 */
-void
-ModelNode::Instance::ApplyNodeInstanceState()
+SizeT
+ModelNode::Instance::GetDrawPacketSize() const
 {
-	// empty
+	// implement in sublcass
+	return 0;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+Models::ModelNode::DrawPacket*
+ModelNode::Instance::UpdateDrawPacket(void* mem)
+{
+	// implement in sublcass
+	return nullptr;
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -144,6 +156,22 @@ void
 ModelNode::Instance::Draw()
 {
 	// implement in subclass
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+ModelNode::DrawPacket::Apply()
+{
+	// apply surface
+	if (*this->surfaceInstance != Materials::SurfaceInstanceId::Invalid())
+		Materials::MaterialApplySurfaceInstance(*this->surfaceInstance);
+
+	// set resource tables
+	for (IndexT i = 0; i < *this->numTables; i++)
+		CoreGraphics::SetResourceTable(this->tables[i], this->slots[i], this->pipelines[i], *this->numOffsets, &this->offsets[i]);
 }
 
 } // namespace Models
