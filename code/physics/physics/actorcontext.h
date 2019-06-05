@@ -58,7 +58,7 @@ public:
     /// shortcut for getting the pxactor object
     static physx::PxRigidDynamic* GetPxDynamic(ActorId id);
 
-
+    static bool IsValid(ActorId id);
 
     friend class PhysxState;
     friend class StreamActorPool;
@@ -66,7 +66,22 @@ private:
     static Util::Array<Actor> actors;
     static Ids::IdGenerationPool actorPool;
     ///
-    static ActorId ActorContext::AllocateActorId(physx::PxRigidActor* pxActor);
+    static ActorId AllocateActorId(physx::PxRigidActor* pxActor);
+    ///
+    static ActorId AllocateActorId(physx::PxRigidActor* pxActor, ActorResourceId res);
+    ///
+    static void DiscardActor(ActorId id);
 };
+
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline bool
+ActorContext::IsValid(ActorId id)
+{
+    return ActorContext::actorPool.IsValid(id.id);
+}
 
 }

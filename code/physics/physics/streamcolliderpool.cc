@@ -216,5 +216,27 @@ StreamColliderPool::LoadFromStream(const Resources::ResourceId res, const Util::
 void 
 StreamColliderPool::Unload(const Resources::ResourceId id)
 {
+    this->EnterGet();
+    ColliderInfo &colliderInfo = this->allocator.Get<0>(id.resourceId);
+    this->LeaveGet();
+
+    if(colliderInfo.type == ColliderMesh)
+    {
+        auto pxType = colliderInfo.geometry.getType();
+        switch (pxType)
+        {
+        case physx::PxGeometryType::eCONVEXMESH:
+            colliderInfo.geometry.convexMesh().convexMesh->release();
+            break;
+        case physx::PxGeometryType::eTRIANGLEMESH:
+            colliderInfo.geometry.triangleMesh().triangleMesh->release();
+            break;
+        case physx::PxGeometryType::eHEIGHTFIELD:
+            colliderInfo.geometry.heightField().heightField->release();
+            break;
+        default:
+            break;
+        }
+    }
 }
 }

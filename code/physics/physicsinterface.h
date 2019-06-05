@@ -26,7 +26,6 @@ namespace Physics
 RESOURCE_ID_TYPE(ActorResourceId);
 RESOURCE_ID_TYPE(ColliderId);
 
-
 enum CollisionFeedbackFlag
 {
 	/// callbacks for begin, persist, and end collision
@@ -55,6 +54,7 @@ struct Actor
 {
     physx::PxActor* actor;
     ActorId id;
+    ActorResourceId res;
     uint64_t userData;
     // FIXME delegate doesnt seem to work here (see testviewer for example)
     //std::function<void(ActorId id, Math::matrix44 const&)> moveCallback;
@@ -99,5 +99,10 @@ Material & GetMaterial(IndexT idx);
 IndexT LookupMaterial(Util::StringAtom name);
 /// 
 SizeT GetNrMaterials();
+
+///
+ActorId CreateActorInstance(Physics::ActorResourceId id, Math::matrix44 const & trans, bool dynamic, IndexT scene = 0);
+///
+void DestroyActorInstance(Physics::ActorId id);
 }
 //------------------------------------------------------------------------------
