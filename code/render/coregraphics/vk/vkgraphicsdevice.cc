@@ -1008,7 +1008,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		state.extensions[state.usedExtensions++] = requiredExtensions[i];
 	}
 
-	const char* layers[] = { "VK_LAYER_LUNARG_standard_validation", "VK_LAYER_LUNARG_object_tracker" };
+	const char* layers[] = { "VK_LAYER_KHRONOS_validation", "VK_LAYER_LUNARG_assistant_layer" };
 	int numLayers = 0;
 	const char** usedLayers = nullptr;
 
@@ -1021,7 +1021,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	else
 	{
 		usedLayers = &layers[1];
-		numLayers = 0;
+		numLayers = 1;
 	}
 	state.extensions[state.usedExtensions++] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
 #else
@@ -1086,7 +1086,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	}
 
 #if NEBULA_GRAPHICS_DEBUG
-	VkDebugObjectName = (PFN_vkSetDebugUtilsObjectNameEXT)vkGetInstanceProcAddr(state.instance, "vkSetDebugUtilsObjectNameEXT");
+	VkDebugObjectName = (PFN_vkSetDebugUtilsObjectNameEXT)vkGetInstanceProcAddr(state.instance, "vkSetDebugUtilsObjectTagEXT");
 	VkDebugObjectTag = (PFN_vkSetDebugUtilsObjectTagEXT)vkGetInstanceProcAddr(state.instance, "vkSetDebugUtilsObjectTagEXT");
 	VkQueueBeginLabel = (PFN_vkQueueBeginDebugUtilsLabelEXT)vkGetInstanceProcAddr(state.instance, "vkQueueBeginDebugUtilsLabelEXT");
 	VkQueueEndLabel = (PFN_vkQueueEndDebugUtilsLabelEXT)vkGetInstanceProcAddr(state.instance, "vkQueueEndDebugUtilsLabelEXT");
