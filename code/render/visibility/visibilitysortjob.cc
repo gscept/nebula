@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-//  boxsystemjob.cc
+//  visibilitysortjob.cc
 //  (C) 2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
@@ -17,6 +17,7 @@ void
 VisibilitySortJob(const Jobs::JobFuncContext& ctx)
 {
 	ObserverContext::VisibilityDrawList* buckets = (ObserverContext::VisibilityDrawList*)ctx.outputs[0];
+	Memory::ArenaAllocator<1024>* packetAllocator = (Memory::ArenaAllocator<1024>*)ctx.uniforms[0];
 
 	bool* results = (bool*)ctx.inputs[0];
 	Graphics::ContextEntityId* entities = (Graphics::ContextEntityId*)ctx.inputs[1];
@@ -49,8 +50,18 @@ VisibilitySortJob(const Jobs::JobFuncContext& ctx)
 				if (!bucket.IsBulkAdd())
 					bucket.BeginBulkAdd();
 
+				// add an array if non existant, or return reference to one if it exists
 				auto& draw = bucket.AddUnique(inst->node);
-				draw.Append(inst);
+
+				// update the shader node state
+				shdNodeInst->Update();
+
+				// allocate memory for draw packet
+				void* mem = packetAllocator->Alloc(shdNodeInst->GetDrawPacketSize());
+
+				// update packet and add to list
+				Models::ModelNode::DrawPacket* packet = shdNodeInst->UpdateDrawPacket(mem);
+				draw.Append(packet);
 			}
 		}
 	}
