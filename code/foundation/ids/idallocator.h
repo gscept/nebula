@@ -58,7 +58,7 @@ public:
 	void Dealloc(uint32_t index)
 	{
 		// TODO: We could possibly get better performance when defragging if we insert it in reverse order (high to low)
-		this->freeIds.InsertSorted(index);
+		this->freeIds.Append(index);
 	}
 
 	/// Returns the list of free ids.
@@ -109,7 +109,7 @@ public:
 	{
 		// TODO: We could possibly get better performance when defragging if we insert it in reverse order (high to low)
 		this->sect.Enter();
-		this->freeIds.InsertSorted(index);
+		this->freeIds.Append(index);
 		this->sect.Leave();
 	}
 
