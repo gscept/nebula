@@ -104,6 +104,20 @@ PhysxState::CreateActor(bool dynamic, Math::matrix44 const & transform)
 //------------------------------------------------------------------------------
 /**
 */
+void 
+PhysxState::DiscardActor(ActorId id)
+{
+    IndexT idx = this->awakeActors.FindIndex(id.id);
+
+    if (idx != InvalidIndex)
+    {
+        this->awakeActors.EraseAtIndex(idx);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 PhysxState::Update(Timing::Time delta)
 {    

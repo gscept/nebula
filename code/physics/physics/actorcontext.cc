@@ -20,6 +20,15 @@ Ids::IdGenerationPool ActorContext::actorPool;
 ActorId
 ActorContext::AllocateActorId(PxRigidActor* pxActor)
 {
+    return ActorContext::AllocateActorId(pxActor, ActorResourceId::Invalid());
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+ActorId
+ActorContext::AllocateActorId(PxRigidActor* pxActor, ActorResourceId res)
+{
     ActorId id;
     bool reused = ActorContext::actorPool.Allocate(id.id);
     Ids::Id24 idx = Ids::Index(id.id);
@@ -32,11 +41,30 @@ ActorContext::AllocateActorId(PxRigidActor* pxActor)
     Actor& actor = ActorContext::actors[idx];
     actor.id = id;
     actor.actor = pxActor;
+    actor.res = res;
 #pragma warning(push)
 #pragma warning(disable: 4312)
     pxActor->userData = (void*)id.id;
 #pragma warning(pop)
     return id;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+ActorContext::DiscardActor(ActorId id)
+{
+    n_assert(ActorContext::actorPool.IsValid(id.id));
+    Actor& actor = GET_ACTOR(id);
+    auto scene = actor.actor->getScene();
+    if (scene)
+    {
+        scene->removeActor(*actor.actor);
+    }
+    state.DiscardActor(id);
+    actor.actor->release();    
+    ActorContext::actorPool.Deallocate(id.id);
 }
 
 //------------------------------------------------------------------------------

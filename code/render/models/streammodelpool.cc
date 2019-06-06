@@ -42,7 +42,7 @@ void
 StreamModelPool::Setup()
 {
 	this->placeholderResourceName = "mdl:system/placeholder.n3";
-	this->errorResourceName = "mdl:system/error.n3";
+	this->failResourceName = "mdl:system/error.n3";
 
 	IMPLEMENT_NODE_ALLOCATOR('TRFN', TransformNode, this->transformNodes, this->transformNodeInstances);
 	IMPLEMENT_NODE_ALLOCATOR('SPND', PrimitiveNode, this->primitiveNodes, this->primitiveNodeInstances);
@@ -348,6 +348,12 @@ StreamModelPool::Unload(const Resources::ResourceId id)
 	if (instances > 0)
 		n_error("Model '%s' still has active instances!", this->names[id.poolId].Value());
 	Util::Dictionary<Util::StringAtom, Models::ModelNode*>& nodes = this->Get<ModelNodes>(id);
+
+	// unload nodes
+	for (IndexT i = 0; i < nodes.Size(); i++)
+	{
+		nodes.ValueAtIndex(i)->Unload();
+	}
 	nodes.Clear();
 
 	this->Get<ModelNodeAllocator>(id).Release();

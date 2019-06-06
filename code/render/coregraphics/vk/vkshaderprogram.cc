@@ -45,7 +45,7 @@ VkShaderProgramSetup(const Ids::Id24 id, const Resources::ResourceName& shaderNa
 	if (runtime.cs)
 	{
 #if NEBULA_GRAPHICS_DEBUG
-		CoreGraphics::ObjectSetName(runtime.cs, Util::String::Sprintf("%s - Program: %s - Shader: %s", shaderName.Value(), program->name.c_str(), program->shaderBlock.cs->name.c_str()));
+		CoreGraphics::ObjectSetName(runtime.cs, Util::String::Sprintf("%s - Program: %s - CS", shaderName.Value(), program->name.c_str()));
 #endif
 
 		VkShaderProgramSetupAsCompute(setup, runtime);
@@ -101,7 +101,7 @@ VkShaderProgramSetupAsGraphics(AnyFX::VkProgram* program, const Resources::Resou
 		shaderIdx++;
 
 #if NEBULA_GRAPHICS_DEBUG
-		CoreGraphics::ObjectSetName(runtime.vs, Util::String::Sprintf("%s - Program: %s - Shader: %s", shaderName.Value(), program->name.c_str(), program->shaderBlock.vs->name.c_str()));
+		CoreGraphics::ObjectSetName(runtime.vs, Util::String::Sprintf("%s - Program: %s - VS", shaderName.Value(), program->name.c_str()));
 #endif
 	}
 
@@ -117,7 +117,7 @@ VkShaderProgramSetupAsGraphics(AnyFX::VkProgram* program, const Resources::Resou
 		shaderIdx++;
 
 #if NEBULA_GRAPHICS_DEBUG
-		CoreGraphics::ObjectSetName(runtime.hs, Util::String::Sprintf("%s - Program: %s - Shader: %s", shaderName.Value(), program->name.c_str(), program->shaderBlock.hs->name.c_str()));
+		CoreGraphics::ObjectSetName(runtime.hs, Util::String::Sprintf("%s - Program: %s - HS", shaderName.Value(), program->name.c_str()));
 #endif
 	}
 
@@ -133,7 +133,7 @@ VkShaderProgramSetupAsGraphics(AnyFX::VkProgram* program, const Resources::Resou
 		shaderIdx++;
 
 #if NEBULA_GRAPHICS_DEBUG
-		CoreGraphics::ObjectSetName(runtime.ds, Util::String::Sprintf("%s - Program: %s - Shader: %s", shaderName.Value(), program->name.c_str(), program->shaderBlock.ds->name.c_str()));
+		CoreGraphics::ObjectSetName(runtime.ds, Util::String::Sprintf("%s - Program: %s - DS", shaderName.Value(), program->name.c_str()));
 #endif
 	}
 
@@ -149,7 +149,7 @@ VkShaderProgramSetupAsGraphics(AnyFX::VkProgram* program, const Resources::Resou
 		shaderIdx++;
 
 #if NEBULA_GRAPHICS_DEBUG
-		CoreGraphics::ObjectSetName(runtime.gs, Util::String::Sprintf("%s - Program: %s - Shader: %s", shaderName.Value(), program->name.c_str(), program->shaderBlock.gs->name.c_str()));
+		CoreGraphics::ObjectSetName(runtime.gs, Util::String::Sprintf("%s - Program: %s - GS", shaderName.Value(), program->name.c_str()));
 #endif
 	}
 
@@ -165,7 +165,7 @@ VkShaderProgramSetupAsGraphics(AnyFX::VkProgram* program, const Resources::Resou
 		shaderIdx++;
 
 #if NEBULA_GRAPHICS_DEBUG
-		CoreGraphics::ObjectSetName(runtime.ps, Util::String::Sprintf("%s - Program: %s - Shader: %s", shaderName.Value(), program->name.c_str(), program->shaderBlock.ps->name.c_str()));
+		CoreGraphics::ObjectSetName(runtime.ps, Util::String::Sprintf("%s - Program: %s - PS", shaderName.Value(), program->name.c_str()));
 #endif
 	}
 

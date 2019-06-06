@@ -30,6 +30,8 @@ ObserverContext::ObserverAllocator ObserverContext::observerAllocator;
 ObservableContext::ObserveeAllocator ObservableContext::observeeAllocator;
 
 Util::Array<VisibilitySystem*> ObserverContext::systems;
+Memory::ArenaAllocator<1024> ObserverContext::drawPacketAllocator;
+
 Jobs::JobPortId ObserverContext::jobPort;
 Jobs::JobSyncId ObserverContext::jobInternalSync;
 Jobs::JobSyncId ObserverContext::jobHostSync;
@@ -205,6 +207,9 @@ ObserverContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frame
 	Jobs::JobSyncSignal(ObserverContext::jobInternalSync, ObserverContext::jobPort);
 	Jobs::JobSyncThreadWait(ObserverContext::jobInternalSync, ObserverContext::jobPort);
 
+	// free up draw packet allocator
+	drawPacketAllocator.Release();
+
 	for (i = 0; i < vis.Size(); i++)
 	{
 		Util::Array<bool>& flags = vis[i].GetArray<0>();
@@ -214,7 +219,7 @@ ObserverContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frame
 		// then execute sort job, which only runs the function once
 		Jobs::JobContext ctx;
 		ctx.uniform.scratchSize = 0;
-		ctx.uniform.numBuffers = 0;
+		ctx.uniform.numBuffers = 1;
 		ctx.input.numBuffers = 2;
 		ctx.output.numBuffers = 1;
 
@@ -229,6 +234,9 @@ ObserverContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frame
 		ctx.output.data[0] = &visibilities;
 		ctx.output.dataSize[0] = sizeof(VisibilityDrawList);
 		ctx.output.sliceSize[0] = sizeof(VisibilityDrawList);
+
+		ctx.uniform.data[0] = &drawPacketAllocator;
+		ctx.uniform.dataSize[0] = sizeof(drawPacketAllocator);
 
 		// schedule job
 		Jobs::JobId job = Jobs::CreateJob({ VisibilitySortJob });

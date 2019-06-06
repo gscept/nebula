@@ -26,6 +26,8 @@ enum PhysicsIdType
 struct ActorInfo
 {
     Util::Array<physx::PxShape*> shapes;
+    Util::Array<ColliderId> colliders;
+    SizeT instanceCount;
     CollisionFeedbackFlag feedbackFlag;
     uint16_t collisionGroup;
     float density;    
@@ -46,6 +48,9 @@ public:
 
     ///
     ActorId CreateActorInstance(ActorResourceId id, Math::matrix44 const & trans, bool dynamic, IndexT scene = 0);
+    /// destroys an actor, if the actor was created from a resource it also
+    /// reduces use count of resource
+    void DiscardActorInstance(ActorId id);
       
 
 private:
@@ -63,14 +68,5 @@ private:
 };
 
 extern StreamActorPool *actorPool;
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline ActorId
-CreateActorInstance(Physics::ActorResourceId id, Math::matrix44 const & trans, bool dynamic, IndexT scene = 0)
-{
-    return Physics::actorPool->CreateActorInstance(id, trans, dynamic, scene);
-}
 
 } // namespace Physics

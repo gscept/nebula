@@ -71,12 +71,10 @@ public:
 		Util::FixedArray<uint32> offsets;
 		Math::bbox boundingBox;
 
-		/// apply instance shader stuff
-		void ApplyNodeInstanceState() override;
+		/// update prior to drawing
+		void Update() override;
 		/// setup instance
 		void Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
-		/// draw instance
-		void Draw() override;
 	};
 
 	/// create instance
