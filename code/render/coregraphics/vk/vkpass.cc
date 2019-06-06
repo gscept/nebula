@@ -391,8 +391,7 @@ CreatePass(const PassCreateInfo& info)
 	runtimeInfo.viewportInfo.pViewports = loadInfo.viewports.Size() > 0 ? loadInfo.viewports.Begin() : 0;
 
 	// setup uniform buffer for render target information
-	ConstantBufferCreateInfo cbinfo = { true, sid, "PassBlock", 0, 1 };
-	loadInfo.passBlockBuffer = CreateConstantBuffer(cbinfo);
+	loadInfo.passBlockBuffer = CoreGraphics::ShaderCreateConstantBuffer(sid, "PassBlock");
 	loadInfo.renderTargetDimensionsVar = ShaderGetConstantBinding(sid, "RenderTargetDimensions");
 
 	CoreGraphics::ResourceTableLayoutId tableLayout = ShaderGetResourceTableLayout(sid, NEBULA_PASS_GROUP);
