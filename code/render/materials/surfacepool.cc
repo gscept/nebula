@@ -20,7 +20,7 @@ void
 SurfacePool::Setup()
 {
 	this->placeholderResourceName = "sur:system/placeholder.sur";
-	this->errorResourceName = "sur:system/error.sur";
+	this->failResourceName = "sur:system/error.sur";
 
 	// never forget to run this
 	ResourceStreamPool::Setup();

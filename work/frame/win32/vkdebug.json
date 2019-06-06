@@ -325,6 +325,7 @@ version: 2, engine: "Nebula", framescript: {
       depth: true,
       attachments: [ "ScreenBuffer", "DepthBuffer" ],
 
+      batch: "DirectToColor",
       plugins: {
         name: "ImGui",
         filter: "IMGUI"

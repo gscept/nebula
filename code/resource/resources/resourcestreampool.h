@@ -116,7 +116,7 @@ protected:
 
 	/// these types need to be properly initiated in a subclass Setup function
 	Util::StringAtom placeholderResourceName;
-	Util::StringAtom errorResourceName;
+	Util::StringAtom failResourceName;
 
 	Resources::ResourceId placeholderResourceId;
 	Resources::ResourceId failResourceId;

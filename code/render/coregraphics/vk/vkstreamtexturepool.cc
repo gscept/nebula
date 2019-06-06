@@ -48,7 +48,7 @@ VkStreamTexturePool::Setup()
 {
 	ResourceStreamPool::Setup();
 	this->placeholderResourceName = "tex:system/placeholder.dds";
-	this->errorResourceName = "tex:system/error.dds";
+	this->failResourceName = "tex:system/error.dds";
 }
 
 //------------------------------------------------------------------------------

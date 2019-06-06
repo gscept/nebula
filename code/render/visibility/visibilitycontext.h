@@ -14,6 +14,7 @@
 #include "models/nodes/modelnode.h"
 #include "materials/surfacepool.h"
 #include "materials/materialtype.h"
+#include "memory/arenaallocator.h"
 namespace Visibility
 {
 
@@ -55,7 +56,7 @@ public:
 	typedef Ids::Id32 ModelAllocId;
 	typedef Util::HashTable<Materials::MaterialType*,
 		Util::HashTable<Models::ModelNode*,
-		Util::Array<Models::ModelNode::Instance*>>>
+		Util::Array<Models::ModelNode::DrawPacket*>>>
 		VisibilityDrawList;
 
 	/// get visibility draw list
@@ -90,6 +91,8 @@ private:
     
 	/// keep as ordinary array of pointers, no need to have them cache aligned
 	static Util::Array<VisibilitySystem*> systems;
+
+	static Memory::ArenaAllocator<1024> drawPacketAllocator;
 };
 
 class ObservableContext : public Graphics::GraphicsContext

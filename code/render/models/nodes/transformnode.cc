@@ -93,7 +93,7 @@ TransformNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, con
 /**
 */
 void
-TransformNode::Instance::ApplyNodeInstanceState()
+TransformNode::Instance::Update()
 {
 	CoreGraphics::TransformDevice* transformDevice = CoreGraphics::TransformDevice::Instance();
 	transformDevice->SetModelTransform(this->modelTransform);

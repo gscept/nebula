@@ -60,20 +60,20 @@ PrimitiveNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, con
 //------------------------------------------------------------------------------
 /**
 */
-void
-PrimitiveNode::ApplyNodeState()
+void 
+PrimitiveNode::Unload()
 {
-	ShaderStateNode::ApplyNodeState();
-	CoreGraphics::MeshBind(this->res, this->primitiveGroupIndex);
+	Resources::DiscardResource(this->res);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-PrimitiveNode::Instance::Draw()
+PrimitiveNode::ApplyNodeState()
 {
-	CoreGraphics::Draw();
+	ShaderStateNode::ApplyNodeState();
+	CoreGraphics::MeshBind(this->res, this->primitiveGroupIndex);
 }
 
 } // namespace Models

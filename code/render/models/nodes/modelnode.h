@@ -21,6 +21,8 @@
 #include "ids/id.h"
 #include "memory/arenaallocator.h"
 #include "models/model.h"
+#include "materials/material.h"
+
 
 #define ModelNodeInstanceCreator(type) \
 inline ModelNode::Instance* type::CreateInstance(byte** memory, const ModelNode::Instance* parent)\
@@ -41,6 +43,12 @@ namespace Particles
 class ParticleContext;
 }
 
+namespace CoreGraphics
+{
+struct ResourceTableId;
+enum ShaderPipeline;
+}
+
 namespace Models
 {
 
@@ -49,6 +57,22 @@ class StreamModelPool;
 class ModelNode
 {
 public:
+
+	struct DrawPacket
+	{
+		Materials::SurfaceInstanceId* surfaceInstance;
+		CoreGraphics::ResourceTableId* tables = nullptr;
+		SizeT* numTables = nullptr;
+		uint32* numOffsets = nullptr;
+		uint32* offsets = nullptr;
+		
+		IndexT* slots = nullptr;
+		CoreGraphics::ShaderPipeline* pipelines = nullptr;
+
+		/// apply the resource tables and offsets
+		void Apply();
+	};
+
 	struct Instance
 	{
 		const ModelNode::Instance* parent;			// pointer to parent
@@ -56,10 +80,16 @@ public:
 		Util::FixedArray<Instance*> children;		// children
 		bool active : 1;
 
-		/// apply the state for this instance
-		virtual void ApplyNodeInstanceState();
 		/// setup new instance
 		virtual void Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent);
+
+		/// return size of draw packet for allocation
+		virtual SizeT GetDrawPacketSize() const;
+		/// fill draw packet
+		virtual Models::ModelNode::DrawPacket* UpdateDrawPacket(void* mem);
+
+		/// update prior to drawing
+		virtual void Update();
 
 		/// draw instance
 		virtual void Draw();
@@ -82,6 +112,7 @@ public:
 
 	/// apply node-level state
 	virtual void ApplyNodeState();
+
 
 protected:
 	friend class StreamModelPool;

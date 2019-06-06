@@ -52,7 +52,8 @@ public:
 
     /// create new empty actor
     physx::PxRigidActor* CreateActor(bool dynamic, Math::matrix44 const & transform);
-
+    /// deregister an actor
+    void DiscardActor(ActorId id);
 
     /// these are implementations of PxSimulationEventCallback
     ///
