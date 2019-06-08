@@ -158,7 +158,6 @@ ModelNode::Instance::Draw()
 	// implement in subclass
 }
 
-
 //------------------------------------------------------------------------------
 /**
 */
@@ -171,7 +170,7 @@ ModelNode::DrawPacket::Apply()
 
 	// set resource tables
 	for (IndexT i = 0; i < *this->numTables; i++)
-		CoreGraphics::SetResourceTable(this->tables[i], this->slots[i], this->pipelines[i], *this->numOffsets, &this->offsets[i]);
+		CoreGraphics::SetResourceTable(this->tables[i], this->slots[i], this->pipelines[i], this->numOffsets[i], &this->offsets[i]);
 }
 
 } // namespace Models

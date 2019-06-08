@@ -108,13 +108,15 @@ void ctx::Defragment()\
 	uint32_t oldIndex;\
 	Graphics::GraphicsEntityId lastId;\
 	IndexT mapIndex;\
-	\
+	uint32_t dataSize;\
 	SizeT size = freeIds.Size();\
 	for (SizeT i = size - 1; i >= 0; --i)\
 	{\
 		index = freeIds.Back();\
 		freeIds.EraseBack();\
-		oldIndex = idAllocator.Size() - 1;\
+		dataSize = (uint32_t)idAllocator.Size();\
+		if (index >= dataSize) { continue; }\
+		oldIndex = dataSize - 1;\
 		lastId = __state.entities[oldIndex].id;\
 		idAllocator.EraseIndexSwap(index);\
 		__state.entities.EraseIndexSwap(index);\
@@ -122,6 +124,11 @@ void ctx::Defragment()\
 		if (mapIndex != InvalidIndex)\
 		{\
 			__state.entitySliceMap.ValueAtIndex(lastId, mapIndex) = index;\
+		}\
+		else\
+		{\
+			freeIds.Append(index);\
+			i++;\
 		}\
         if (__state.OnInstanceMoved != nullptr) \
         {\

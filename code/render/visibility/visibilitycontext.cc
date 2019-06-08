@@ -116,7 +116,7 @@ ObserverContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frame
 		IndexT j;
 		for (j = 0; j < observeeIds.Size(); j++)
 		{
-			const VisibilityEntityType type = observeeTypes[i];
+			const VisibilityEntityType type = observeeTypes[j];
 			Util::Array<Graphics::ContextEntityId>& contextIds = result.GetArray<1>();
 
 			switch (type)

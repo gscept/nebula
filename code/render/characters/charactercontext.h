@@ -168,8 +168,8 @@ private:
 #endif
 	};
 
-	friend bool	IsExpired(const CharacterContext::AnimationRuntime& runtime, const Timing::Time time);
-	friend bool	IsInfinite(const CharacterContext::AnimationRuntime& runtime);
+	friend const bool IsExpired(const CharacterContext::AnimationRuntime& runtime, const Timing::Time time);
+	friend const bool IsInfinite(const CharacterContext::AnimationRuntime& runtime);
 	friend Timing::Tick	GetAbsoluteStopTime(const CharacterContext::AnimationRuntime& runtime);
 
 	static const SizeT MaxNumTracks = 16;

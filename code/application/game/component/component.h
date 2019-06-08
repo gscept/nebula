@@ -551,21 +551,40 @@ Component<TYPES ...>::Optimize()
 
 	// Pack arrays
 	SizeT size = this->freeIds.Size();
+	SizeT dataSize = this->data.Size();
+
 	for (SizeT i = size - 1; i >= 0; --i)
 	{
 		index = this->freeIds.Back();
 		this->freeIds.EraseBack();
-		oldIndex = this->data.Size() - 1;
+		
+		if (index >= dataSize)
+		{
+			// This might happen if we've swapped out an instance that is also in the freeids array.
+			// Just ignore it, since its new index should already be added to the array.
+			continue;
+		}
+
+		oldIndex = --dataSize;
 		lastId = this->data.Get<0>(oldIndex).id;
 		this->data.EraseIndexSwap(index);
+		++numErased;
+
 		mapIndex = this->idMap.FindIndex(lastId);
 		if (mapIndex != InvalidIndex)
 		{
 			this->idMap.ValueAtIndex(lastId, mapIndex) = index;
 		}
+		else
+		{
+			// last instance seems to also have been deleted.
+			// append the id to freeIds, and run the loop again with the new index
+			this->freeIds.Append(index);
+			i++;
+			continue;
+		}
 
 		this->NotifyOnInstanceMoved(index, oldIndex);
-		++numErased;
 	}
 	this->freeIds.Clear();
 

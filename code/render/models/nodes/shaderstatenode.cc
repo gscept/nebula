@@ -134,7 +134,7 @@ ShaderStateNode::OnFinishedLoading()
 	this->cbo = CoreGraphics::ShaderCreateConstantBuffer(this->sharedShader, "ObjectBlock");
 	this->cboIndex = CoreGraphics::ShaderGetResourceSlot(this->sharedShader, "ObjectBlock");
 	this->resourceTable = CoreGraphics::ShaderCreateResourceTable(this->sharedShader, NEBULA_DYNAMIC_OFFSET_GROUP);
-	CoreGraphics::ResourceTableSetConstantBuffer(this->resourceTable, { this->cbo, this->cboIndex, 0, true, false, -1, 0 });
+	CoreGraphics::ResourceTableSetConstantBuffer(this->resourceTable, { this->cbo, this->cboIndex, 0, true, false, sizeof(Math::matrix44) * 2, 0 });
 	CoreGraphics::ResourceTableCommitChanges(this->resourceTable);
 
 	this->modelVar = CoreGraphics::ShaderGetConstantBinding(this->sharedShader, "Model");
@@ -220,15 +220,9 @@ ShaderStateNode::Instance::UpdateDrawPacket(void* mem)
 void
 ShaderStateNode::Instance::Update()
 {
-	//TransformNode::Instance::Update();
-	//CoreGraphics::TransformDevice* transformDevice = CoreGraphics::TransformDevice::Instance();
-
 	// okay, in cases like this, we would benefit shittons if we could just do one set for the entire struct...
 	CoreGraphics::ConstantBufferUpdateInstance(this->cbo, this->modelTransform, this->instance, this->modelVar);
 	CoreGraphics::ConstantBufferUpdateInstance(this->cbo, Math::matrix44::inverse(this->modelTransform), this->instance, this->invModelVar);
-	//CoreGraphics::ConstantBufferUpdateInstance(this->cbo, transformDevice->GetModelViewProjTransform(), this->instance, this->modelViewProjVar);
-	//CoreGraphics::ConstantBufferUpdateInstance(this->cbo, transformDevice->GetModelViewTransform(), this->instance, this->modelViewVar);
-	//CoreGraphics::ConstantBufferUpdateInstance(this->cbo, transformDevice->GetObjectId(), this->instance, this->objectIdVar);
 }
 
 } // namespace Models
