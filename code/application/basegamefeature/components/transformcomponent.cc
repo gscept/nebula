@@ -10,16 +10,7 @@
 namespace Game
 {
 
-typedef Game::Component <
-	Attr::LocalTransform,
-	Attr::WorldTransform,
-	Attr::Parent,
-	Attr::FirstChild,
-	Attr::NextSibling,
-	Attr::PreviousSibling
-> ComponentData;
-
-static ComponentData* data;
+static TransformComponentAllocator* data;
 
 static Msg::UpdateTransform::MessageQueueId messageQueue;
 
@@ -41,7 +32,7 @@ TransformComponent::Create()
 	}
 	else
 	{
-		data = n_new(ComponentData({ true }));
+        data = n_new(TransformComponentAllocator);
 	}
 
 	data->EnableEvent(Game::ComponentEvent::OnDeactivate);

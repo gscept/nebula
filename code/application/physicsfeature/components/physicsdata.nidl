@@ -20,7 +20,7 @@
     }
 }
 "components": {
-    "PhysicsComponent": {
+    "ActorComponent": {
         "fourcc": "PHXC"
         "attributes": [
             "actor"

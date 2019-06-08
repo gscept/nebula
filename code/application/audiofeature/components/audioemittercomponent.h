@@ -12,6 +12,8 @@
 #include "game/component/component.h"
 #include "game/component/attribute.h"
 #include "resources/resourceid.h"
+#include "audiofeature/components/audioemitterallocator.h"
+
 
 namespace AudioFeature
 {
