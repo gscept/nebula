@@ -18,6 +18,29 @@
 namespace Visibility
 {
 
+enum ObserverAllocatorMembers
+{
+	ObserverMatrix,
+	ObserverEntityId,
+	ObserverEntityType,
+	ObserverResultAllocator,
+	ObserverDrawList
+};
+
+enum VisibilityResultAllocatorMembers
+{
+	VisibilityResultFlag,
+	VisibilityResultCtxId
+};
+
+// enum for the ObserveeAllocator
+enum ObserveeAllocatorMembers
+{
+	ObservableTransform,
+	ObservableEntityId,
+	ObservableEntityType
+};
+
 class ObserverContext : public Graphics::GraphicsContext
 {
 	_DeclareContext();
@@ -70,6 +93,8 @@ public:
 private:
 
 	friend class ObservableContext;
+
+
 	typedef Ids::IdAllocator<
 		bool,                               // visibility result
 		Graphics::ContextEntityId			// model context id
@@ -110,6 +135,8 @@ private:
 	friend class ObserverContext;
 	friend class VisibilityContex;
     friend class Models::ModelContext;
+
+
 	typedef Ids::IdAllocator<
 		Math::matrix44,					// transform
 		Graphics::GraphicsEntityId,		// entity id

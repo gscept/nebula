@@ -152,6 +152,26 @@ DestroyEntity(const GraphicsEntityId id)
 //------------------------------------------------------------------------------
 /**
 */
+template<typename ... CONTEXTS>
+static void
+RegisterEntity(const GraphicsEntityId id)
+{
+	(CONTEXTS::RegisterEntity(id), ...);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<typename ... CONTEXTS>
+static void
+DeregisterEntity(const GraphicsEntityId id)
+{
+	(CONTEXTS::DeregisterEntity(id), ...);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 inline const Ptr<View>&
 GraphicsServer::GetCurrentView() const
 {

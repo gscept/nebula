@@ -43,6 +43,7 @@ CreateConstantBuffer(const ConstantBufferCreateInfo& info)
 	VkConstantBufferRuntimeInfo& runtime = constantBufferAllocator.Get<RuntimeInfo>(id);
 	VkConstantBufferSetupInfo& setup = constantBufferAllocator.Get<SetupInfo>(id);
 	VkConstantBufferMapInfo& map = constantBufferAllocator.Get<MapInfo>(id);
+	VkConstantBufferPool& pool = constantBufferAllocator.Get<AllocPool>(id);
 
 	VkDevice dev = Vulkan::GetCurrentDevice();
 	VkPhysicalDeviceProperties props = Vulkan::GetCurrentProperties();
@@ -78,6 +79,7 @@ CreateConstantBuffer(const ConstantBufferCreateInfo& info)
 	// size and stride for a single buffer are equal
 	setup.size = alignedSize;
 	setup.stride = alignedSize / setup.numBuffers;
+	pool.capacity = setup.size;
 
 	// map memory so we can use it later
 	res = vkMapMemory(setup.dev, setup.mem, 0, setup.size, 0, &map.data);
@@ -212,6 +214,7 @@ ConstantBufferAllocate(const ConstantBufferId id, const SizeT size, bool& needsR
 		runtimeInfo.buf = newBuf;
 		setupInfo.mem = newMem;
 		mapInfo.data = dstData;
+		pool.capacity = setupInfo.size;
 
 		// update pool and get the offset
 		ret.offset = pool.size;
