@@ -213,6 +213,11 @@ ObserverContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frame
 		Util::Array<Graphics::ContextEntityId>& entities = vis[i].GetArray<VisibilityResultCtxId>();
 		VisibilityDrawList& visibilities = observerAllocator.GetArray<ObserverDrawList>()[i];
 
+        if(entities.Size() == 0)
+        {
+            continue;
+        }
+
 		// then execute sort job, which only runs the function once
 		Jobs::JobContext ctx;
 		ctx.uniform.scratchSize = 0;

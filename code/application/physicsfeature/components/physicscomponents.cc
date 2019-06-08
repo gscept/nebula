@@ -17,7 +17,7 @@
 namespace PhysicsFeature
 {
 
-static PhysicsComponentAllocator* component;
+static ActorComponentAllocator* component;
 
 __ImplementComponent(PhysicsFeature::ActorComponent, component)
 
@@ -33,7 +33,7 @@ ActorComponent::Create()
 	}
 	else
 	{
-		component = new PhysicsComponentAllocator();
+        component = n_new(ActorComponentAllocator);
 	}
 
 	component->DestroyAll();

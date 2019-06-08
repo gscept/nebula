@@ -22,6 +22,7 @@
 namespace App
 {
 __ImplementSingleton(App::GameApplication);
+IndexT GameApplication::FrameIndex = 0;
 
 using namespace Util;
 using namespace Core;
@@ -101,6 +102,9 @@ GameApplication::Open()
         this->ioServer->MountStandardArchives();
         this->ioInterface = IoInterface::Create();
         this->ioInterface->Open();
+
+        this->resourceManager = Resources::ResourceManager::Create();
+        this->resourceManager->Open();        
 
         // attach a log file console handler
 #if __WIN32__
@@ -214,7 +218,7 @@ GameApplication::Run()
         _start_timer(GameApplicationFrameTimeAll);
 
 		this->StepFrame();
-
+        GameApplication::FrameIndex++;
         _stop_timer(GameApplicationFrameTimeAll);
     }
 }
@@ -232,6 +236,8 @@ GameApplication::StepFrame()
 	// trigger core server
 	this->coreServer->Trigger();
 
+    // update resources
+    this->resourceManager->Update(GameApplication::FrameIndex);
 	// trigger beginning of frame for feature units
 	this->gameServer->OnBeginFrame();
 

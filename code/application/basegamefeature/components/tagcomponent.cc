@@ -9,8 +9,7 @@
 namespace Game
 {
 
-typedef Component<Attr::Tag> ComponentData;
-static ComponentData* data;
+static TagComponentAllocator* data;
 
 __ImplementComponent(TagComponent, data);
 
@@ -26,7 +25,7 @@ TagComponent::Create()
 	}
 	else
 	{
-		data = new ComponentData({ true });
+        data = n_new(TagComponentAllocator);
 	}
 
 	__SetupDefaultComponentBundle(data);

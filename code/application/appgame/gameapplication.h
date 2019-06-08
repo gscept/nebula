@@ -20,6 +20,7 @@
 #include "io/ioserver.h"
 #include "io/iointerface.h"
 #include "io/gamecontentserver.h"
+#include "resources/resourcemanager.h"
 #include "http/httpinterface.h"
 #include "http/httpserverproxy.h"     
 #include "http/httpclientregistry.h"
@@ -45,6 +46,8 @@ public:
 	/// step one frame, mainly for debugging purposes
 	virtual void StepFrame();
 
+    static IndexT FrameIndex;
+
 protected:
     /// setup game features
     virtual void SetupGameFeatures();
@@ -58,9 +61,11 @@ protected:
 
     Ptr<Core::CoreServer> coreServer;   
     Ptr<IO::GameContentServer> gameContentServer;
+    Ptr<Resources::ResourceManager> resourceManager;
     Ptr<IO::IoServer> ioServer;
     Ptr<IO::IoInterface> ioInterface;  
 
+    
 #if __NEBULA_HTTP__
 	Ptr<Debug::DebugInterface> debugInterface;
 	Ptr<Http::HttpInterface> httpInterface;

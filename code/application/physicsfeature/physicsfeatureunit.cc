@@ -37,6 +37,8 @@ PhysicsFeatureUnit::OnActivate()
 	FeatureUnit::OnActivate();
     Physics::Setup();
     Physics::CreateScene();
+	//FIXME
+    IndexT dummyMaterial = Physics::CreateMaterial("dummy"_atm, 0.8, 0.6, 0.3, 1.0);
 	ActorComponent::Create();
 }
 

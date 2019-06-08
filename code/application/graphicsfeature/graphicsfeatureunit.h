@@ -7,6 +7,10 @@
 */
 #include "game/featureunit.h"
 #include "graphicsfeature/components/graphicscomponent.h"
+#include "graphics/graphicsserver.h"
+#include "graphics/view.h"
+#include "graphics/stage.h"
+#include "input/inputserver.h"
 
 //------------------------------------------------------------------------------
 namespace GraphicsFeature
@@ -28,6 +32,26 @@ public:
 	void OnActivate();
 	/// Called upon deactivation of feature unit
 	void OnDeactivate();
+
+    /// called on begin of frame
+    void OnBeginFrame();
+    /// called in the middle of the feature trigger cycle
+    void OnFrame();
+    /// called at the end of the feature trigger cycle
+    void OnEndFrame();
+
+    /// called when game debug visualization is on
+    void OnRenderDebug();
+
+
+    Ptr<Graphics::GraphicsServer> gfxServer;
+    Ptr<Graphics::View> defaultView;
+    Ptr<Graphics::Stage> defaultStage;
+    Ptr<Input::InputServer> inputServer;
+    CoreGraphics::WindowId wnd;
+    //FIXME
+    Graphics::GraphicsEntityId globalLight;
+    Graphics::GraphicsEntityId camera;
 };
 
 } // namespace GraphicsFeature
