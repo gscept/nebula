@@ -519,8 +519,8 @@ void
 TransformComponent::Serialize(const Ptr<IO::BinaryWriter>& writer)
 {
 	// Only serialize the ones we want.
-	Game::Serialize(writer, data->data.GetArray<ComponentData::GetAttributeIndex<Attr::LocalTransform>()>());
-	Game::Serialize(writer, data->data.GetArray<ComponentData::GetAttributeIndex<Attr::WorldTransform>()>());
+	Game::Serialize(writer, data->data.GetArray<TransformComponentAllocator::GetAttributeIndex<Attr::LocalTransform>()>());
+	Game::Serialize(writer, data->data.GetArray<TransformComponentAllocator::GetAttributeIndex<Attr::WorldTransform>()>());
 }
 
 //------------------------------------------------------------------------------
@@ -530,8 +530,8 @@ void
 TransformComponent::Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances)
 {
 	// Only serialize the ones we want.
-	Game::Deserialize(reader, data->data.GetArray<ComponentData::GetAttributeIndex<Attr::LocalTransform>()>(), offset, numInstances);
-	Game::Deserialize(reader, data->data.GetArray<ComponentData::GetAttributeIndex<Attr::WorldTransform>()>(), offset, numInstances);
+	Game::Deserialize(reader, data->data.GetArray<TransformComponentAllocator::GetAttributeIndex<Attr::LocalTransform>()>(), offset, numInstances);
+	Game::Deserialize(reader, data->data.GetArray<TransformComponentAllocator::GetAttributeIndex<Attr::WorldTransform>()>(), offset, numInstances);
 }
 
 } // namespace Game
