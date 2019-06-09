@@ -97,6 +97,8 @@ nebula_begin_module(application)
 		fips_files(
 			graphicscomponent.h
 			graphicscomponent.cc
+            utilcameracomponent.h
+            utilcameracomponent.cc
 		)
 	fips_dir(graphicsfeature/messages)
 		nebula_add_nidl(graphicsprotocol.nidl)

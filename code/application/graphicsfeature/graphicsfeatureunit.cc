@@ -82,11 +82,11 @@ GraphicsFeatureUnit::OnActivate()
     this->defaultView->SetStage(this->defaultStage);
 
     //FIXME
-    this->camera = Graphics::CreateEntity();
-    CameraContext::RegisterEntity(this->camera);
-    CameraContext::SetupProjectionFov(this->camera, width / (float)height, 45.f, 0.01f, 1000.0f);
+    this->defaultCamera = Graphics::CreateEntity();
+    CameraContext::RegisterEntity(this->defaultCamera);
+    CameraContext::SetupProjectionFov(this->defaultCamera, width / (float)height, 45.f, 0.01f, 1000.0f);
 
-    this->defaultView->SetCamera(this->camera);
+    this->defaultView->SetCamera(this->defaultCamera);
 
     this->globalLight = Graphics::CreateEntity();
     Lighting::LightContext::RegisterEntity(this->globalLight);
@@ -94,8 +94,8 @@ GraphicsFeatureUnit::OnActivate()
 
     ObserverContext::CreateBruteforceSystem({});
 
-    ObserverContext::RegisterEntity(this->camera);
-    ObserverContext::Setup(this->camera, VisibilityEntityType::Camera);
+    ObserverContext::RegisterEntity(this->defaultCamera);
+    ObserverContext::Setup(this->defaultCamera, VisibilityEntityType::Camera);
 
 
 

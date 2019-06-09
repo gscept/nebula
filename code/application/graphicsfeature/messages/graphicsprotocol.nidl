@@ -1,4 +1,5 @@
 "namespace": "Msg"
+"includes": ["graphicsfeature/components/utilcameracomponent.h"]
 "messages": {
     "SetModel": {
         "fourcc": "SMDL"
@@ -7,5 +8,13 @@
             "entity": "entity"
             "value": "string"
         }
+    }
+    "SetCameraMode": {
+        "fourcc": "SCMD"
+        "description": "Sets the Utility Camera mode."
+        "args": {
+            "entity": "entity"
+            "mode": "GraphicsFeature::CameraMode"
+        }        
     }
 }

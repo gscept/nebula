@@ -44,14 +44,17 @@ public:
     void OnRenderDebug();
 
 
-    Ptr<Graphics::GraphicsServer> gfxServer;
+    
     Ptr<Graphics::View> defaultView;
     Ptr<Graphics::Stage> defaultStage;
+    Graphics::GraphicsEntityId defaultCamera;
+
+    Ptr<Graphics::GraphicsServer> gfxServer;
     Ptr<Input::InputServer> inputServer;
     CoreGraphics::WindowId wnd;
     //FIXME
     Graphics::GraphicsEntityId globalLight;
-    Graphics::GraphicsEntityId camera;
+    
 };
 
 } // namespace GraphicsFeature
