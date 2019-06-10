@@ -125,7 +125,7 @@ SimpleViewerApplication::Open()
         this->view = gfxServer->CreateView("mainview", "frame:vkdebug.json");
         this->stage = gfxServer->CreateStage("stage1", true);
         this->cam = Graphics::CreateEntity();
-        CameraContext::RegisterEntity(this->cam);
+		Graphics::RegisterEntity<CameraContext, ObserverContext>(this->cam);
         CameraContext::SetupProjectionFov(this->cam, width / (float)height, 45.f, 0.01f, 1000.0f);
 
 		this->globalLight = Graphics::CreateEntity();
@@ -187,13 +187,13 @@ SimpleViewerApplication::Open()
         this->view->SetStage(this->stage);
 
         this->entity = Graphics::CreateEntity();
-        ModelContext::RegisterEntity(this->entity);
+		Graphics::RegisterEntity<ModelContext, ObservableContext>(this->entity);
         ModelContext::Setup(this->entity, "mdl:Units/Unit_Archer.n3", "Viewer");
         ModelContext::SetTransform(this->entity, Math::matrix44::translation(Math::float4(0, 0, 0, 1)));
         this->entities.Append(this->entity);
 
 		this->ground = Graphics::CreateEntity();
-		ModelContext::RegisterEntity(this->ground);
+		Graphics::RegisterEntity<ModelContext, ObservableContext>(this->ground);
 		ModelContext::Setup(this->ground, "mdl:environment/Groundplane.n3", "Viewer");
 		ModelContext::SetTransform(this->ground, Math::matrix44::translation(Math::float4(0, 0, 0, 1)));
         this->entities.Append(this->ground);
@@ -201,49 +201,44 @@ SimpleViewerApplication::Open()
         // register visibility system
         ObserverContext::CreateBruteforceSystem({});
 
-        ObservableContext::RegisterEntity(this->entity);
+		// setup visibility
         ObservableContext::Setup(this->entity, VisibilityEntityType::Model);
-		ObservableContext::RegisterEntity(this->ground);
 		ObservableContext::Setup(this->ground, VisibilityEntityType::Model);
-        ObserverContext::RegisterEntity(this->cam);
         ObserverContext::Setup(this->cam, VisibilityEntityType::Camera);
 
 		//const Util::StringAtom modelRes[] = { "mdl:Units/Unit_Archer.n3",  "mdl:Units/Unit_Footman.n3",  "mdl:Units/Unit_Spearman.n3" };
-		const Util::StringAtom modelRes[] = { "mdl:Buildings/castle_tower.n3",  "mdl:Buildings/castle_tower.n3",  "mdl:Buildings/castle_tower.n3" };
+		//const Util::StringAtom modelRes[] = { "mdl:Buildings/castle_tower.n3",  "mdl:Buildings/castle_tower.n3",  "mdl:Buildings/castle_tower.n3" };
+		const Util::StringAtom modelRes[] = { "mdl:system/placeholder.n3",  "mdl:system/placeholder.n3",  "mdl:system/placeholder.n3" };
 		const Util::StringAtom skeletonRes[] = { "ske:Units/Unit_Archer.nsk3",  "ske:Units/Unit_Footman.nsk3",  "ske:Units/Unit_Spearman.nsk3" };
 		const Util::StringAtom animationRes[] = { "ani:Units/Unit_Archer.nax3",  "ani:Units/Unit_Footman.nax3",  "ani:Units/Unit_Spearman.nax3" };
 
 		Util::Array<Graphics::GraphicsEntityId> models;
 		ModelContext::BeginBulkRegister();
 		ObservableContext::BeginBulkRegister();
-		static const int NumModels = 50;
+		static const int NumModels = 75;
 		for (IndexT i = -NumModels; i < NumModels; i++)
 		{
 			for (IndexT j = -NumModels; j < NumModels; j++)
 			{
 				Graphics::GraphicsEntityId ent = Graphics::CreateEntity();
+				Graphics::RegisterEntity<ModelContext, ObservableContext>(ent);
                 this->entities.Append(ent);
 				Util::String sid;
 				sid.Format("%s: %d", GraphicsEntityToName(ent), ent);
 				this->entityNames.Append(sid);
 				
 				const IndexT resourceIndex = ((i + NumModels) * NumModels + (j + NumModels)) % 3;
-				const float timeOffset = (((i + NumModels) * NumModels + (j + NumModels)) % 4) / 3.0f;
+				const float timeOffset = Math::n_rand();// (((i + NumModels)* NumModels + (j + NumModels)) % 4) / 3.0f;
 
 				// create model and move it to the front
-				ModelContext::RegisterEntity(ent);
 				ModelContext::Setup(ent, modelRes[resourceIndex], "NotA");
 				ModelContext::SetTransform(ent, Math::matrix44::translation(Math::float4(i * 2, 0, -j * 2, 1)));
-
-				ObservableContext::RegisterEntity(ent);
 				ObservableContext::Setup(ent, VisibilityEntityType::Model);
 
 				/*
-				Characters::CharacterContext::RegisterEntity(ent);
 				Characters::CharacterContext::Setup(ent, skeletonRes[resourceIndex], animationRes[resourceIndex], "Viewer");
 				Characters::CharacterContext::PlayClip(ent, nullptr, 0, 0, Characters::Append, 1.0f, 1, Math::n_rand() * 100.0f, 0.0f, 0.0f, Math::n_rand() * 100.0f);
 				*/
-
 				models.Append(ent);
 			}
 		}
