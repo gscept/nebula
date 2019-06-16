@@ -218,7 +218,7 @@ GameApplication::Run()
         _start_timer(GameApplicationFrameTimeAll);
 
 		this->StepFrame();
-        GameApplication::FrameIndex++;
+        
         _stop_timer(GameApplicationFrameTimeAll);
     }
 }
@@ -249,6 +249,8 @@ GameApplication::StepFrame()
 
 	// trigger end of frame for feature units
 	this->gameServer->OnEndFrame();
+    
+    GameApplication::FrameIndex++;
 }
 
 //------------------------------------------------------------------------------

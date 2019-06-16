@@ -16,7 +16,7 @@
 namespace GraphicsFeature
 {
 
-class GraphicsFeatureUnit : public Game::FeatureUnit    
+class GraphicsFeatureUnit : public Game::FeatureUnit
 {
 	__DeclareClass(GraphicsFeatureUnit)
 	__DeclareSingleton(GraphicsFeatureUnit)
@@ -44,17 +44,16 @@ public:
     void OnRenderDebug();
 
 
-    
+
     Ptr<Graphics::View> defaultView;
     Ptr<Graphics::Stage> defaultStage;
-    Graphics::GraphicsEntityId defaultCamera;
 
     Ptr<Graphics::GraphicsServer> gfxServer;
     Ptr<Input::InputServer> inputServer;
     CoreGraphics::WindowId wnd;
     //FIXME
     Graphics::GraphicsEntityId globalLight;
-    
+
 };
 
 } // namespace GraphicsFeature

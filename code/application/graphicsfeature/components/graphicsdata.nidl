@@ -18,25 +18,19 @@
         "fourcc": "cMod"
         "access": "RW"
         "default": 0
-    }    
+    }
     "cameraMoveSpeed": {
         "type": "float"
         "fourcc": "cmsp"
         "access": "RW"
         "default": 1.0
         }
-    "defaultCamera": {
-        "type": "bool"
-        "fourcc": "dflC"
-        "access": "RW"
-        "default": true
-    }
     "cameraProjection": {
         "type": "float4"
         "fourcc": "camP"
         "access": "RW"
         "default": [ 1.3333  45.0 0.01 1000.0]
-    }    
+    }
 }
 "components": {
     "GraphicsComponent": {
@@ -56,8 +50,7 @@
         "graphicsEntity"
         "cameraMode"
         "cameraMoveSpeed"
-        "defaultCamera"
-        "cameraProjection"        
+        "cameraProjection"
         ]
         "events": [
             "OnActivate"

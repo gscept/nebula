@@ -27,7 +27,7 @@ namespace GraphicsFeature
 struct InstanceData
 {
     RenderUtil::MayaCameraUtil maya;
-    RenderUtil::FreeCameraUtil free;    
+    RenderUtil::FreeCameraUtil free;
 };
 static Util::HashTable<Ids::Id32, InstanceData> instanceData;
 
@@ -67,7 +67,7 @@ UtilCameraComponent::Create()
 void
 UtilCameraComponent::Discard()
 {
-	
+
 }
 
 //------------------------------------------------------------------------------
@@ -87,26 +87,15 @@ UtilCameraComponent::OnActivate(Game::InstanceId instance)
 {
     InstanceData data;
     instanceData.Add(instance, data);
-    if (component->Get<Attr::DefaultCamera>(instance))
-    {
-        // default cam is already initialized, we just take over control of it
-        Graphics::GraphicsEntityId cam = GraphicsFeature::GraphicsFeatureUnit::Instance()->defaultCamera;
-        component->Get<Attr::GraphicsEntity>(instance) = cam.id;
-        Math::float4 camProj = component->Get<Attr::CameraProjection>(instance);
-        CameraContext::SetupProjectionFov(cam, camProj.x(), camProj.y(), camProj.z(), camProj.w());
-    }
-    else
-    {
-        auto gfxEntity = Graphics::CreateEntity();
-        component->Get<Attr::GraphicsEntity>(instance) = gfxEntity.id;
-        CameraContext::RegisterEntity(gfxEntity);
-        Math::float4 camProj = component->Get<Attr::CameraProjection>(instance);
-        CameraContext::SetupProjectionFov(gfxEntity, camProj.x(), camProj.y(), camProj.z(), camProj.w());
-        Visibility::ObserverContext::RegisterEntity(gfxEntity);
-        Visibility::ObservableContext::Setup(gfxEntity, Visibility::VisibilityEntityType::Camera);
-    }
-        
-    UpdateCamera(instance);   	
+    auto gfxEntity = Graphics::CreateEntity();
+    component->Get<Attr::GraphicsEntity>(instance) = gfxEntity.id;
+    CameraContext::RegisterEntity(gfxEntity);
+    Math::float4 camProj = component->Get<Attr::CameraProjection>(instance);
+    CameraContext::SetupProjectionFov(gfxEntity, camProj.x(), camProj.y(), camProj.z(), camProj.w());
+    Visibility::ObserverContext::RegisterEntity(gfxEntity);
+    Visibility::ObservableContext::Setup(gfxEntity, Visibility::VisibilityEntityType::Camera);
+
+    UpdateCamera(instance);
 }
 
 //------------------------------------------------------------------------------
@@ -115,7 +104,7 @@ UtilCameraComponent::OnActivate(Game::InstanceId instance)
 void
 UtilCameraComponent::OnDeactivate(Game::InstanceId instance)
 {
-    //FIXME   
+    //FIXME
 }
 
 //------------------------------------------------------------------------------
@@ -143,7 +132,7 @@ UtilCameraComponent::SetMode(Game::Entity entity, CameraMode mode)
         freeCamUtil.Setup(pos, Math::float4::normalize(pos - mayaCameraUtil.GetCenterOfInterest()));
     }
     break;
-    }        
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -164,7 +153,7 @@ UtilCameraComponent::OnBeginFrame()
 */
 void
 UtilCameraComponent::UpdateCamera(Game::InstanceId instance)
-{       
+{
     Graphics::GraphicsEntityId cam = component->Get<Attr::GraphicsEntity>(instance);
 
     if (cam == Graphics::GraphicsEntityId::Invalid())
@@ -218,7 +207,7 @@ UtilCameraComponent::UpdateCamera(Game::InstanceId instance)
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 UtilCameraComponent::SetView(Game::Entity entity, Ptr<Graphics::View> const& view)
 {
     auto instance = component->GetInstance(entity);
