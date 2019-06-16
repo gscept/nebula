@@ -87,6 +87,7 @@ nebula_begin_module(application)
 			jsonentityloader.h
 			jsonentityloader.cc
 		)
+		flatc(level.fbs)
 	fips_dir(graphicsfeature)
 		fips_files(
 			graphicsfeatureunit.h

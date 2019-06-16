@@ -10,6 +10,10 @@
 #include "io/memorystream.h"
 #include "basegamefeature/managers/componentmanager.h"
 #include "basegamefeature/components/transformcomponent.h"
+#include "io/filestream.h"
+
+// Generated Flatbuffer header
+#include "level.h"
 
 namespace BaseGameFeature
 {
@@ -20,19 +24,28 @@ namespace BaseGameFeature
 bool
 LevelLoader::Save(const Util::String& levelName)
 {
-	auto numEntities = Game::EntityManager::Instance()->GetNumEntities();
-	SceneCompiler scene;
+    flatbuffers::FlatBufferBuilder builder(1024);
+    Game::Serialization::LevelBuilder sceneBuilder(builder);
+
+    Game::Serialization::EntityBundleBuilder entitiesBuilder(builder);
+    
+    auto numEntities = Game::EntityManager::Instance()->GetNumEntities();
+	// SceneCompiler scene;
 	uint indexHash = 0;
 	Util::HashTable<Game::Entity, uint, 1024> entityToIndex;
 
-	scene.numEntities = numEntities;
+	// scene.numEntities = numEntities;
+    entitiesBuilder.add_numEntities(numEntities);
 
 	// Fill components
 
 	Ptr<Game::ComponentManager> manager = Game::ComponentManager::Instance();
-	scene.numComponents = 0;
-	uint numComponents = manager->GetNumComponents();
-	for (SizeT i = 0; i < numComponents; i++)
+    uint numComponents = 0;
+	uint numGameComponents = manager->GetNumComponents();
+
+    Util::Array<flatbuffers::Offset<Game::Serialization::ComponentBuildData>> componentsData;
+
+	for (SizeT i = 0; i < numGameComponents; i++)
 	{
 		Game::ComponentInterface* component = manager->GetComponentAtIndex(i);
 		if (component->NumRegistered() == 0)
@@ -45,21 +58,22 @@ LevelLoader::Save(const Util::String& levelName)
 		component->Clean();
 
 		// this component is part of scene.
-		scene.numComponents++;
+		numComponents++;
 
-		ComponentBuildData c;
+		// ComponentBuildData c;
+        Game::Serialization::ComponentBuildDataBuilder c(builder);
 
-		c.fourcc = component->GetIdentifier();
-		c.numInstances = component->NumRegistered();
+        auto numInstances = component->NumRegistered();
+		c.add_fourcc(component->GetIdentifier().AsUInt());
+		c.add_numInstances(numInstances);
 
 		// TODO: Add description of component so that we can make sure we're not reading incorrect or outdated data later.
 		// ex. c.description = Util::String(for each attribute: { return attributeDefinition.ToString() })
 
 		// Serialize the component data into builddata local stream
 		Ptr<IO::BinaryWriter> bWriter = IO::BinaryWriter::Create();
-
-		c.InitializeStream();
-		bWriter->SetStream(c.mStream);
+        Ptr<IO::MemoryStream> mStream = IO::MemoryStream::Create();
+		bWriter->SetStream(mStream);
 		bWriter->Open();
 		component->SerializeOwners(bWriter);
 
@@ -67,14 +81,16 @@ LevelLoader::Save(const Util::String& levelName)
 			component->functions.Serialize(bWriter);
 
 		bWriter->Close();
-		 
+		
 		// We know the owner is always the first attribute
 		// so we can easily update owner of each instance
 		{
-			Game::Entity* owners = (Game::Entity*)c.mStream->GetRawPointer();
+			Game::Entity* owners = (Game::Entity*)mStream->GetRawPointer();
 			
 			// update owner to the entity index
-			for (uint instance = 0; instance < c.numInstances; instance++)
+            // when the buffer is loaded later on, the owners will be in the 0...numInstances range
+            // this means that later on when we load the data, we need to convert the owner ids to the newly allocated entity ids.
+			for (uint instance = 0; instance < numInstances; instance++)
 			{
 				Game::Entity owner = owners[instance];
 				if (entityToIndex.Contains(owner))
@@ -91,10 +107,18 @@ LevelLoader::Save(const Util::String& levelName)
 			}
 		}
 
-		scene.components.Append(c);
-	}
+        // Add the components data stream to the builder
+        c.add_dataStream(builder.CreateVector((ubyte*)mStream->GetRawPointer(), mStream->GetSize()));
 
-	// Create the scene hierarchy parent indices list
+        componentsData.Append(c.Finish());
+	}
+    entitiesBuilder.add_components(builder.CreateVector(componentsData.Begin(), componentsData.Size()));
+
+    entitiesBuilder.add_numComponents(numComponents);
+
+    Util::Array<uint> parentIndices;
+    // Create the scene hierarchy parent indices list
+    // These will be modified to the correct instance ids (relative to the newly allocated instances ids) upon load.
 	{
 		SizeT numRegisteredTransforms = Game::TransformComponent::NumRegistered();
 		for (int i = 0; i < numRegisteredTransforms; ++i)
@@ -102,18 +126,33 @@ LevelLoader::Save(const Util::String& levelName)
 			uint32_t parentInstance = Game::TransformComponent::GetParent(i);
 			if (parentInstance == InvalidIndex)
 			{
-				scene.parentIndices.Append(-1);
+				parentIndices.Append(-1);
 			}
 			else
 			{
 				Game::Entity parentEntity = Game::TransformComponent::GetOwner(parentInstance);
-				scene.parentIndices.Append(entityToIndex[parentEntity]);
+				parentIndices.Append(entityToIndex[parentEntity]);
 			}
 		}
 	}
+    entitiesBuilder.add_parentIndices(builder.CreateVector(parentIndices.Begin(), parentIndices.Size()));
 
-	scene.Compile(levelName);
+    sceneBuilder.add_entities(entitiesBuilder.Finish());
+
+    sceneBuilder.Finish();
+
+    auto uri = IO::URI(levelName);
+    Ptr<IO::BinaryWriter> fileWriter = IO::BinaryWriter::Create();
+    Ptr<IO::FileStream> fileStream = IO::FileStream::Create();
+    fileStream->SetAccessMode(IO::Stream::AccessMode::WriteAccess);
+    fileStream->SetURI(uri);
+    fileStream->Open();
+    fileWriter->SetStream(fileStream);
 	
+    fileWriter->WriteRawData(builder.GetBufferPointer(), builder.GetSize());
+
+    fileStream->Close();
+
 	return true;
 }
 

@@ -1,0 +1,23 @@
+namespace Game.Serialization;
+
+/*
+    Contains build data for components.
+
+    Note that the component instance owner needs to be correctly indexed. 
+*/
+table ComponentBuildData {
+    fourcc:uint; // component identifier
+    numInstances:uint; // number of instances for this component.
+    dataStream:[ubyte]; // contains a custom data blob format that each component defines.
+}
+
+table EntityBundle {
+    numEntities:uint;
+    numComponents:uint;
+    parentIndices:[uint];
+    components:[ComponentBuildData];
+}
+
+table Level {
+    entities:EntityBundle;
+}

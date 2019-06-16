@@ -42,6 +42,8 @@ imports:
     physx:
         git: https://github.com/NVIDIAGameWorks/PhysX.git
         branch: 4.1
+    fips-flatbuffers:
+        git: https://git.ikplus.de/nebula/fips-flatbuffers.git
 
 exports:
     header-dirs :
