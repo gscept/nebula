@@ -1,5 +1,7 @@
 namespace Game.Serialization;
 
+file_identifier "LVLB";
+
 /*
     Contains build data for components.
 
@@ -21,3 +23,5 @@ table EntityBundle {
 table Level {
     entities:EntityBundle;
 }
+
+root_type Level;
