@@ -92,7 +92,7 @@ public:
 	/// This will update the size to reflect the first member array size in objects.
 	void UpdateSize();
 
-private:
+protected:
 	uint32_t size;
 	std::tuple<Util::Array<TYPES>...> objects;
 };
