@@ -388,7 +388,10 @@ Array<TYPE>::operator=(const Array<TYPE>& rhs)
             n_assert(0 != this->elements);
 
 			this->CopyRange(this->elements, rhs.elements, rhs.count);
-			this->DestroyRange(rhs.count, this->count);
+            if (rhs.count < this->count)
+            {
+			    this->DestroyRange(rhs.count, this->count);
+            }
             this->grow = rhs.grow;
             this->count = rhs.count;
         }
