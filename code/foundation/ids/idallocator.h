@@ -67,6 +67,12 @@ public:
 		return this->freeIds;
 	}
 
+    /// return number of allocated ids
+    const uint32_t Size() const
+    {
+        return this->size - freeIds.Size();
+    }
+
 private:
 	uint32_t maxId = 0xFFFFFFFF;
 	Util::Array<uint32_t> freeIds;
