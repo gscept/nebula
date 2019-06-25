@@ -41,7 +41,8 @@ enum CoreGraphicsIdType
 	ResourceTableLayoutIdType,
 	ResourcePipelineIdType,
 	SamplerIdType,
-	MaterialIdType
+	MaterialIdType,
+	SubmissionContextIdType
 };
 
 enum CoreGraphicsQueueType
