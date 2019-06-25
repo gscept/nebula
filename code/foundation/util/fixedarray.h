@@ -143,11 +143,16 @@ FixedArray<TYPE>::Copy(const FixedArray<TYPE>& rhs)
     if (this != &rhs)
     {
         this->Alloc(rhs.count);
-        IndexT i;
-        for (i = 0; i < this->count; i++)
-        {
-            this->elements[i] = rhs.elements[i];
-        }
+		if constexpr (!std::is_trivially_copyable<TYPE>::value)
+		{
+			IndexT i;
+			for (i = 0; i < this->count; i++)
+			{
+				this->elements[i] = rhs.elements[i];
+			}
+		}
+		else
+			memcpy(this->elements, rhs.elements, this->count * sizeof(TYPE));
     }
 }
 
@@ -319,11 +324,16 @@ FixedArray<TYPE>::Resize(SizeT newSize)
         newElements = n_new_array(TYPE, newSize);
         SizeT numCopy = this->count;
         if (numCopy > newSize) numCopy = newSize;
-        IndexT i;
-        for (i = 0; i < numCopy; i++)
-        {
-            newElements[i] = this->elements[i];
-        }
+		if constexpr (!std::is_trivially_copyable<TYPE>::value)
+		{
+			IndexT i;
+			for (i = 0; i < numCopy; i++)
+			{
+				newElements[i] = this->elements[i];
+			}
+		}
+		else
+			memcpy(newElements, this->elements, numCopy * sizeof(TYPE));
     }
 
     // delete old elements
