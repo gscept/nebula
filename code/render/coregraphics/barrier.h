@@ -129,7 +129,7 @@ void BarrierReset(const BarrierId id);
 /**
 */
 inline BarrierStage
-BarrierDependencyFromString(const Util::String& str)
+BarrierStageFromString(const Util::String& str)
 {
 	if (str == "VertexShader")			return BarrierStage::VertexShader;
 	else if (str == "HullShader")		return BarrierStage::HullShader;

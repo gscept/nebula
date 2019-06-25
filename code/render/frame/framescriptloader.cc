@@ -1334,7 +1334,7 @@ FrameScriptLoader::ParseResourceDependencies(const Ptr<Frame::FrameScript>& scri
 		JzonValue* dep = node->array_values[i];
 		const Util::String valstr = jzon_get(dep, "name")->string_value;
 		CoreGraphics::BarrierAccess access = BarrierAccessFromString(jzon_get(dep, "access")->string_value);
-		CoreGraphics::BarrierStage dependency = BarrierDependencyFromString(jzon_get(dep, "stage")->string_value);
+		CoreGraphics::BarrierStage dependency = BarrierStageFromString(jzon_get(dep, "stage")->string_value);
 		
 		if (script->readWriteTexturesByName.Contains(valstr))
 		{
