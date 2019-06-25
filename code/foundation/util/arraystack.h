@@ -151,7 +151,7 @@ private:
 template<class TYPE, int STACK_SIZE>
 ArrayStack<TYPE, STACK_SIZE>::ArrayStack() :
     grow(8),
-    capacity(0),
+    capacity(STACK_SIZE),
     count(0),
     elements(smallVector)
 {
@@ -175,11 +175,15 @@ ArrayStack<TYPE, STACK_SIZE>::ArrayStack(SizeT _capacity, SizeT _grow) :
     {
 		if (this->capacity > STACK_SIZE)
 			this->elements = n_new_array(TYPE, this->capacity);
-		else
+        else
+        {
+            this->capacity = STACK_SIZE;
 			this->elements = smallVector;
+        }
     }
     else
     {
+        this->capacity = STACK_SIZE;
         this->elements = smallVector;
     }
 }
@@ -197,21 +201,25 @@ ArrayStack<TYPE, STACK_SIZE>::ArrayStack(SizeT initialSize, SizeT _grow, const T
     {
         this->grow = 16;
     }
-    if (initialSize > 0)
+    if (this->capacity > 0)
     {
-		if (this->initialSize > STACK_SIZE)
+		if (this->capacity > STACK_SIZE)
 			this->elements = n_new_array(TYPE, this->capacity);
-		else
+        else
+        {
+            this->capacity = STACK_SIZE;
 			this->elements = smallVector;
+        }
 
         IndexT i;
-        for (i = 0; i < initialSize; i++)
+        for (i = 0; i < this->capacity; i++)
         {
             this->elements[i] = initialValue;
         }
     }
     else
     {
+        this->capacity = STACK_SIZE;
         this->elements = smallVector;
     }
 }
@@ -229,8 +237,11 @@ ArrayStack<TYPE, STACK_SIZE>::ArrayStack(std::initializer_list<TYPE> list) :
 	{
 		if (this->capacity > STACK_SIZE)
 			this->elements = n_new_array(TYPE, this->capacity);
-		else
+        else
+        {
+            this->capacity = STACK_SIZE;
 			this->elements = smallVector;
+        }
 
 		IndexT i;
 		for (i = 0; i < this->count; i++)
@@ -240,6 +251,7 @@ ArrayStack<TYPE, STACK_SIZE>::ArrayStack(std::initializer_list<TYPE> list) :
 	}
 	else
 	{
+        this->capacity = STACK_SIZE;
 		this->elements = smallVector;
 	}
 }

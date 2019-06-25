@@ -43,7 +43,7 @@ public:
     virtual void Close();
     /// run the application
     virtual void Run();
-	/// step one frame, mainly for debugging purposes
+	/// step one frame
 	virtual void StepFrame();
 
     static IndexT FrameIndex;

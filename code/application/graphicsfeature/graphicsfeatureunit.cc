@@ -77,27 +77,15 @@ GraphicsFeatureUnit::OnActivate()
     Dynui::ImguiContext::Create();
     Im3d::Im3dContext::Create();
 
-    this->defaultView = gfxServer->CreateView("mainview", "frame:vkdebug.json");    
+    this->defaultView = gfxServer->CreateView("mainview", "frame:vkdebug.json");
     this->defaultStage = gfxServer->CreateStage("defaultStage", true);
     this->defaultView->SetStage(this->defaultStage);
-
-    //FIXME
-    this->defaultCamera = Graphics::CreateEntity();
-    CameraContext::RegisterEntity(this->defaultCamera);
-    CameraContext::SetupProjectionFov(this->defaultCamera, width / (float)height, 45.f, 0.01f, 1000.0f);
-
-    this->defaultView->SetCamera(this->defaultCamera);
 
     this->globalLight = Graphics::CreateEntity();
     Lighting::LightContext::RegisterEntity(this->globalLight);
     Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::float4(1, 1, 1, 0), 1.0f, Math::float4(0, 0, 0, 0), Math::float4(0, 0, 0, 0), 0.0f, Math::vector(1, 1, 1), false);
 
     ObserverContext::CreateBruteforceSystem({});
-
-    ObserverContext::RegisterEntity(this->defaultCamera);
-    ObserverContext::Setup(this->defaultCamera, VisibilityEntityType::Camera);
-
-
 
 	GraphicsComponent::Create();
 }
@@ -107,7 +95,7 @@ GraphicsFeatureUnit::OnActivate()
 */
 void
 GraphicsFeatureUnit::OnDeactivate()
-{	
+{
     FeatureUnit::OnDeactivate();
 
 	GraphicsComponent::Discard();

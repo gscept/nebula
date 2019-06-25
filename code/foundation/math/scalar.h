@@ -174,7 +174,7 @@ n_sgn(scalar a)
 //------------------------------------------------------------------------------
 /**
 */
-__forceinline scalar
+__forceinline constexpr scalar
 n_deg2rad(scalar d)
 {
     return (scalar)((d * PI) / 180.0f);
@@ -183,7 +183,7 @@ n_deg2rad(scalar d)
 //------------------------------------------------------------------------------
 /**
 */
-__forceinline scalar
+__forceinline constexpr scalar
 n_rad2deg(scalar r)
 {
     return (scalar)((r * 180.0f) / PI);

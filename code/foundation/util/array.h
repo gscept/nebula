@@ -388,7 +388,10 @@ Array<TYPE>::operator=(const Array<TYPE>& rhs)
             n_assert(0 != this->elements);
 
 			this->CopyRange(this->elements, rhs.elements, rhs.count);
-			this->DestroyRange(rhs.count, this->count);
+            if (rhs.count < this->count)
+            {
+			    this->DestroyRange(rhs.count, this->count);
+            }
             this->grow = rhs.grow;
             this->count = rhs.count;
         }
@@ -501,8 +504,8 @@ Array<TYPE>::Move(IndexT fromIndex, IndexT toIndex)
     if (fromIndex > toIndex)
     {
         // this is a backward move
-		this->CopyRange(&this->elements[toIndex], &this->elements[fromIndex], num);
-		this->DestroyRange(fromIndex + num - 1, this->count);
+        this->MoveRange(&this->elements[toIndex], &this->elements[fromIndex], num);
+        this->DestroyRange(fromIndex + num - 1, this->count);
     }
     else
     {
@@ -513,8 +516,8 @@ Array<TYPE>::Move(IndexT fromIndex, IndexT toIndex)
             this->elements[toIndex + i] = this->elements[fromIndex + i];
         }
 
-		// destroy freed elements
-		this->DestroyRange(fromIndex, toIndex);
+        // destroy freed elements
+        this->DestroyRange(fromIndex, toIndex);
     }
 
     // adjust array _size
@@ -527,7 +530,7 @@ Array<TYPE>::Move(IndexT fromIndex, IndexT toIndex)
 template<class TYPE>
 inline void 
 Array<TYPE>::DestroyRange(IndexT fromIndex, IndexT toIndex)
-{
+{    
 	if constexpr (!std::is_trivially_destructible<TYPE>::value)
 	{
 		for (IndexT i = fromIndex; i < toIndex; i++)
@@ -538,7 +541,7 @@ Array<TYPE>::DestroyRange(IndexT fromIndex, IndexT toIndex)
 #if NEBULA_DEBUG
 	else
 	{
-		memset(&this->elements[fromIndex], 0x0, sizeof(TYPE) * toIndex);
+        Memory::Clear(&this->elements[fromIndex], sizeof(TYPE) * (toIndex - fromIndex));		
 	}
 #endif
 }
@@ -559,8 +562,10 @@ Array<TYPE>::CopyRange(TYPE* to, TYPE* from, SizeT num)
 			to[i] = from[i];
 		}
 	}
-	else
-		memcpy(to, from, num * sizeof(TYPE));
+    else
+    {
+        Memory::Copy(from, to, num * sizeof(TYPE));
+    }		
 }
 
 //------------------------------------------------------------------------------
@@ -574,13 +579,15 @@ Array<TYPE>::MoveRange(TYPE* to, TYPE* from, SizeT num)
 	if constexpr (!std::is_trivially_copyable<TYPE>::value)
 	{
 		IndexT i;
-		for (i = 0; i < this->count; i++)
+		for (i = 0; i < num; i++)
 		{
 			to[i] = std::move(from[i]);
 		}
 	}
-	else
-		memcpy(to, from, this->count * sizeof(TYPE));
+    else
+    {
+        Memory::Move(from, to, num * sizeof(TYPE));
+    }
 }
 
 //------------------------------------------------------------------------------
