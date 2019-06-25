@@ -3,8 +3,8 @@
 #-------------------------------------------------------------------------------
 
 FIND_PROGRAM(SHADERC 
-       NAMES shaderc.exe shaderc
-       PATHS ${FIPS_DEPLOY_DIR}/nebula-toolkit/${FIPS_CONFIG}/
+       NAMES anyfxcompiler.exe anyfxcompiler
+       PATHS ${FIPS_DEPLOY_DIR}/fips-anyfx/anyfxcompiler-windows ${FIPS_DEPLOY_DIR}/fips-anyfx/anyfxcompiler-linux
        NO_DEFAULT_PATH
        )
        
