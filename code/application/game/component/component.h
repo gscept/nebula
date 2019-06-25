@@ -53,12 +53,15 @@
 		static void Create(); \
 		static void Discard(); \
 		static Game::InstanceId RegisterEntity(Game::Entity entity); \
+        static Game::InstanceId AllocateInstance(); \
+        static void RegisterInstance(Game::Entity entity, Game::InstanceId); \
 		static void DeregisterEntity(Game::Entity entity); \
 		static void DestroyAll(); \
 		static SizeT NumRegistered(); \
 		static void Serialize(const Ptr<IO::BinaryWriter>& writer); \
 		static void Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances); \
 		static Game::InstanceId GetInstance(Game::Entity entity); \
+        static COMPONENT ## Allocator * Data();\
 	private:
 
 //------------------------------------------------------------------------------
@@ -69,12 +72,15 @@
 */
 #define __ImplementComponent(COMPONENTTYPE, ALLOCATOR) \
 	Game::InstanceId COMPONENTTYPE::RegisterEntity(Game::Entity entity) { return ALLOCATOR->RegisterEntity(entity); } \
+    Game::InstanceId COMPONENTTYPE::AllocateInstance() { return ALLOCATOR->AllocateInstance();} \
+    void COMPONENTTYPE::RegisterInstance(Game::Entity entity, Game::InstanceId inst) { ALLOCATOR->RegisterInstance(entity, inst); } \
 	void COMPONENTTYPE::DeregisterEntity(Game::Entity entity) { ALLOCATOR->DeregisterEntity(entity); } \
 	void COMPONENTTYPE::DestroyAll() { ALLOCATOR->DestroyAll(); } \
 	SizeT COMPONENTTYPE::NumRegistered() { return ALLOCATOR->NumRegistered(); } \
 	void COMPONENTTYPE::Serialize(const Ptr<IO::BinaryWriter>& writer) { ALLOCATOR->Serialize(writer); } \
 	void COMPONENTTYPE::Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances) { ALLOCATOR->Deserialize(reader, offset, numInstances); } \
-	Game::InstanceId COMPONENTTYPE::GetInstance(Game::Entity entity) { return ALLOCATOR->GetInstance(entity); } 
+	Game::InstanceId COMPONENTTYPE::GetInstance(Game::Entity entity) { return ALLOCATOR->GetInstance(entity); } \
+    COMPONENTTYPE ## Allocator* COMPONENTTYPE::Data() {return ALLOCATOR;}
 
 //------------------------------------------------------------------------------
 /**
@@ -86,10 +92,13 @@
 */
 #define __ImplementComponent_woSerialization(COMPONENTTYPE, ALLOCATOR) \
 	Game::InstanceId COMPONENTTYPE::RegisterEntity(Game::Entity entity) { return ALLOCATOR->RegisterEntity(entity); } \
+    Game::InstanceId COMPONENTTYPE::AllocateInstance() { return ALLOCATOR->AllocateInstance();} \
+    void COMPONENTTYPE::RegisterInstance(Game::Entity entity, Game::InstanceId inst) { ALLOCATOR->RegisterInstance(entity, inst); } \
 	void COMPONENTTYPE::DeregisterEntity(Game::Entity entity) { ALLOCATOR->DeregisterEntity(entity); } \
 	void COMPONENTTYPE::DestroyAll() { ALLOCATOR->DestroyAll(); } \
 	SizeT COMPONENTTYPE::NumRegistered() { return ALLOCATOR->NumRegistered(); } \
-	Game::InstanceId COMPONENTTYPE::GetInstance(Game::Entity entity) { return ALLOCATOR->GetInstance(entity); } 
+	Game::InstanceId COMPONENTTYPE::GetInstance(Game::Entity entity) { return ALLOCATOR->GetInstance(entity); } \
+    COMPONENTTYPE ## Allocator* COMPONENTTYPE::Data() {return ALLOCATOR;}
 
 namespace Game
 {
@@ -116,6 +125,12 @@ public:
 
 	/// register an Id. Will create new mapping and allocate instance data. Returns index of new instance data
 	InstanceId RegisterEntity(Entity e);
+
+    /// allocates a new instance without registering it
+    InstanceId AllocateInstance();
+
+    /// register a previously allocated instance, creates mapping
+    void RegisterInstance(Entity e, InstanceId id);
 
 	/// deregister an Id. will only remove the id and zero the block
 	void DeregisterEntity(Entity e);
@@ -391,36 +406,55 @@ Component<TYPES ...>::RegisterEntity(Entity e)
 		return this->idMap.ValueAtIndex(e.id, i);
 	}
 
-	InstanceId index;
-
-	if (this->freeIds.Size() > 0)
-	{
-		index = this->freeIds.Back();
-		this->freeIds.EraseBack();
-	}
-	else
-	{
-		index = this->data.Alloc();
-	}
-
-	this->data.Get<0>(index) = e;
-	this->SetToDefault(index, std::make_index_sequence<sizeof...(TYPES)>());
-
-	this->idMap.Add(e.id, index);
-
-	if (this->events.IsSet<ComponentEvent::OnActivate>())
-	{
-		this->functions.OnActivate(index);
-	}
-
-	if (!this->settings.incrementalDeletion)
-	{
-		Game::EntityManager::Instance()->RegisterDeletionCallback(e, this);
-	}
-
+    InstanceId index = this->AllocateInstance();
+	
+    this->RegisterInstance(e, index);    
 	return index;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+template <class ... TYPES> InstanceId
+Component<TYPES ...>::AllocateInstance()
+{
+    InstanceId index;
+
+    if (this->freeIds.Size() > 0)
+    {
+        index = this->freeIds.Back();
+        this->freeIds.EraseBack();
+    }
+    else
+    {
+        index = this->data.Alloc();
+    }
+
+    this->SetToDefault(index, std::make_index_sequence<sizeof...(TYPES)>());
+    return index;
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <class ... TYPES> void
+Component<TYPES ...>::RegisterInstance(Entity e, InstanceId index)
+{    
+    this->data.Get<0>(index) = e;
+
+    this->idMap.Add(e.id, index);
+
+    if (this->events.IsSet<ComponentEvent::OnActivate>())
+    {
+        this->functions.OnActivate(index);
+    }
+
+    if (!this->settings.incrementalDeletion)
+    {
+        Game::EntityManager::Instance()->RegisterDeletionCallback(e, this);
+    } 
+}
 //------------------------------------------------------------------------------
 /**
 */
@@ -517,21 +551,40 @@ Component<TYPES ...>::Optimize()
 
 	// Pack arrays
 	SizeT size = this->freeIds.Size();
+	SizeT dataSize = this->data.Size();
+
 	for (SizeT i = size - 1; i >= 0; --i)
 	{
 		index = this->freeIds.Back();
 		this->freeIds.EraseBack();
-		oldIndex = this->data.Size() - 1;
+		
+		if (index >= dataSize)
+		{
+			// This might happen if we've swapped out an instance that is also in the freeids array.
+			// Just ignore it, since its new index should already be added to the array.
+			continue;
+		}
+
+		oldIndex = --dataSize;
 		lastId = this->data.Get<0>(oldIndex).id;
 		this->data.EraseIndexSwap(index);
+		++numErased;
+
 		mapIndex = this->idMap.FindIndex(lastId);
 		if (mapIndex != InvalidIndex)
 		{
 			this->idMap.ValueAtIndex(lastId, mapIndex) = index;
 		}
+		else
+		{
+			// last instance seems to also have been deleted.
+			// append the id to freeIds, and run the loop again with the new index
+			this->freeIds.Append(index);
+			i++;
+			continue;
+		}
 
 		this->NotifyOnInstanceMoved(index, oldIndex);
-		++numErased;
 	}
 	this->freeIds.Clear();
 

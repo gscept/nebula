@@ -42,7 +42,7 @@ public:
 		CoreGraphics::ConstantBufferAllocId cboSkinAlloc;
 
 		/// apply skinning palette
-		void ApplyNodeInstanceState() override;
+		void Update() override;
 		/// setup
 		void Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
 	};
@@ -126,7 +126,7 @@ CharacterSkinNode::Instance::Setup(Models::ModelNode* node, const Models::ModelN
 	this->offsets[Skinning] = this->cboSkinAlloc.offset;
 	if (rebind)
 	{
-		CoreGraphics::ResourceTableSetConstantBuffer(sparent->resourceTable, { this->cboSkin, sparent->cboSkinIndex, 0, true, false, -1, 0 });
+		CoreGraphics::ResourceTableSetConstantBuffer(sparent->resourceTable, { this->cboSkin, sparent->cboSkinIndex, 0, true, false, (SizeT)(sizeof(Math::matrix44) * sparent->skinFragments[0].jointPalette.Size()), 0 });
 		CoreGraphics::ResourceTableCommitChanges(sparent->resourceTable);
 	}
 

@@ -134,7 +134,7 @@ ShaderStateNode::OnFinishedLoading()
 	this->cbo = CoreGraphics::ShaderCreateConstantBuffer(this->sharedShader, "ObjectBlock");
 	this->cboIndex = CoreGraphics::ShaderGetResourceSlot(this->sharedShader, "ObjectBlock");
 	this->resourceTable = CoreGraphics::ShaderCreateResourceTable(this->sharedShader, NEBULA_DYNAMIC_OFFSET_GROUP);
-	CoreGraphics::ResourceTableSetConstantBuffer(this->resourceTable, { this->cbo, this->cboIndex, 0, true, false, -1, 0 });
+	CoreGraphics::ResourceTableSetConstantBuffer(this->resourceTable, { this->cbo, this->cboIndex, 0, true, false, sizeof(Math::matrix44) * 2, 0 });
 	CoreGraphics::ResourceTableCommitChanges(this->resourceTable);
 
 	this->modelVar = CoreGraphics::ShaderGetConstantBinding(this->sharedShader, "Model");
@@ -144,33 +144,85 @@ ShaderStateNode::OnFinishedLoading()
 	this->objectIdVar = CoreGraphics::ShaderGetConstantBinding(this->sharedShader, "ObjectId");
 }
 
+
 //------------------------------------------------------------------------------
 /**
 */
-void
-ShaderStateNode::Instance::Update()
+SizeT
+ShaderStateNode::Instance::GetDrawPacketSize() const
 {
-	TransformNode::Instance::Update();
-	CoreGraphics::TransformDevice* transformDevice = CoreGraphics::TransformDevice::Instance();
+	// the size of the data field should be multiplied by the amount of resource tables we use
+	return sizeof(DrawPacket) + // base size
+		sizeof(Materials::SurfaceInstanceId) + // surface instance
+		sizeof(SizeT) + // number of tables (only 1, but if more, all subsequent members require a multiplier of the number of tables)
+		sizeof(CoreGraphics::ResourceTableId) + // only one table
+		this->offsets.Size() * sizeof(uint32) + // offsets
+		sizeof(uint32) + // amount of offsets
+		sizeof(IndexT) + // only one slot
+		sizeof(CoreGraphics::ShaderPipeline) // only one pipeline
+		;
+}
 
-	// okay, in cases like this, we would benefit shittons if we could just do one set for the entire struct...
-	CoreGraphics::ConstantBufferUpdateInstance(this->cbo, transformDevice->GetModelTransform(), this->instance, this->modelVar);
-	CoreGraphics::ConstantBufferUpdateInstance(this->cbo, transformDevice->GetInvModelTransform(), this->instance, this->invModelVar);
-	CoreGraphics::ConstantBufferUpdateInstance(this->cbo, transformDevice->GetModelViewProjTransform(), this->instance, this->modelViewProjVar);
-	CoreGraphics::ConstantBufferUpdateInstance(this->cbo, transformDevice->GetModelViewTransform(), this->instance, this->modelViewVar);
-	CoreGraphics::ConstantBufferUpdateInstance(this->cbo, transformDevice->GetObjectId(), this->instance, this->objectIdVar);
+//------------------------------------------------------------------------------
+/**
+*/
+Models::ModelNode::DrawPacket*
+ShaderStateNode::Instance::UpdateDrawPacket(void* mem)
+{
+	char* buf = (char*) mem;
+
+	// first write header
+	Models::ModelNode::DrawPacket* ret = (Models::ModelNode::DrawPacket*)buf;
+	buf += sizeof(Models::ModelNode::DrawPacket);
+
+	// setup struct offsets
+	ret->surfaceInstance = (Materials::SurfaceInstanceId*)buf;
+	buf += sizeof(this->surfaceInstance);
+	ret->numTables = (SizeT*) buf;
+	buf += sizeof(SizeT);
+	ret->tables = (CoreGraphics::ResourceTableId*)buf;
+	buf += sizeof(this->resourceTable);
+	ret->offsets = (uint32*) buf;
+	buf += sizeof(uint32) * this->offsets.Size();
+	ret->numOffsets = (uint32*) buf;
+	buf += sizeof(uint32);
+	ret->slots = (IndexT*) buf;
+	buf += sizeof(IndexT);
+	ret->pipelines = (CoreGraphics::ShaderPipeline*) buf;
+	buf += sizeof(CoreGraphics::ShaderPipeline);
+
+	// start copying data
+	*ret->surfaceInstance = this->surfaceInstance;
+	*ret->numTables = 1;
+
+	// this information should all be per table
+	for (IndexT j = 0; j < *ret->numTables; j++)
+	{
+		ret->tables[j] = this->resourceTable;
+	
+		// copy offsets
+		for (IndexT i = 0; i < this->offsets.Size(); i++)
+		{
+			ret->offsets[i + j * this->offsets.Size()] = this->offsets[i];
+		}
+
+		ret->numOffsets[j] = this->offsets.Size();
+		ret->slots[j] = NEBULA_DYNAMIC_OFFSET_GROUP;
+		ret->pipelines[j] = CoreGraphics::GraphicsPipeline;
+	}
+
+	return ret;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-ShaderStateNode::Instance::ApplyNodeInstanceState()
+ShaderStateNode::Instance::Update()
 {
-	TransformNode::Instance::ApplyNodeInstanceState();
-
-	// apply with offsets
-	CoreGraphics::SetResourceTable(this->resourceTable, NEBULA_DYNAMIC_OFFSET_GROUP, CoreGraphics::GraphicsPipeline, this->offsets);
+	// okay, in cases like this, we would benefit shittons if we could just do one set for the entire struct...
+	CoreGraphics::ConstantBufferUpdateInstance(this->cbo, this->modelTransform, this->instance, this->modelVar);
+	CoreGraphics::ConstantBufferUpdateInstance(this->cbo, Math::matrix44::inverse(this->modelTransform), this->instance, this->invModelVar);
 }
 
 } // namespace Models

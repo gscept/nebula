@@ -167,8 +167,8 @@ LightContext::Create()
 	// setup buffers, copy tick params from shader server (but only update global light stuff)
 	lightServerState.tickParamsBuffer = ShaderServer::Instance()->GetTickParams();
 	lightServerState.localLightsResourceTable = ShaderCreateResourceTable(lightServerState.lightShader, NEBULA_INSTANCE_GROUP);
-	lightServerState.localLightsConstantBuffer = CreateConstantBuffer({ true, lightServerState.lightShader, "LocalLightBlock", 0, 1 });
-	lightServerState.localLightsShadowConstantBuffer = CreateConstantBuffer({ true, lightServerState.lightShader, "LocalLightShadowBlock", 0, 1 });
+	lightServerState.localLightsConstantBuffer = ShaderCreateConstantBuffer( lightServerState.lightShader, "LocalLightBlock" );
+	lightServerState.localLightsShadowConstantBuffer = ShaderCreateConstantBuffer( lightServerState.lightShader, "LocalLightShadowBlock" );
 	lightServerState.localLightsSlot = ShaderGetResourceSlot(lightServerState.lightShader, "LocalLightBlock");
 	lightServerState.localLightShadowSlot = ShaderGetResourceSlot(lightServerState.lightShader, "LocalLightShadowBlock");
 	ResourceTableSetConstantBuffer(lightServerState.localLightsResourceTable, { lightServerState.localLightsConstantBuffer, lightServerState.localLightsSlot, 0, true, false, -1, 0});

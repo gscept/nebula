@@ -180,5 +180,24 @@ Update(Timing::Time delta)
     state.Update(delta);    
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+ActorId
+CreateActorInstance(Physics::ActorResourceId id, Math::matrix44 const & trans, bool dynamic, IndexT scene)
+{
+    return Physics::actorPool->CreateActorInstance(id, trans, dynamic, scene);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+DestroyActorInstance(Physics::ActorId id)
+{
+    Physics::actorPool->DiscardActorInstance(id);
+}
+
+
 
 }

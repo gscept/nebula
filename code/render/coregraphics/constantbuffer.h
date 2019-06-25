@@ -26,11 +26,9 @@ ID_32_32_NAMED_TYPE(ConstantBufferAllocId, offset, size);
 
 struct ConstantBufferCreateInfo
 {
-	bool setupFromReflection;			// use if created outside a shader state, and is supposed to be attached to a shader within said state
-
-	ShaderId shader;					// the shader state to bind to
-	Util::StringAtom name;				// name in shader state for the block
-	SizeT size;							// if setupFromReflection is true, this is the number of backing buffers, otherwise, it is the byte size
+	Util::StringAtom name;				// name of the constant buffer block
+	IndexT binding;						// binding slot of the constant buffer
+	SizeT size;							// allocation size of the buffer
 	SizeT numBuffers;					// declare the amount of buffer rings (double, triple, quadruple buffering...)
 };
 

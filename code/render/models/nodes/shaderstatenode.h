@@ -51,16 +51,16 @@ public:
 		Materials::SurfaceInstanceId surfaceInstance;
 		Util::FixedArray<uint32> offsets;
 
-		/// apply instance shader stuff
-		void ApplyNodeInstanceState() override;
 		/// setup instance
 		void Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
 
+		/// return size of draw packet for allocation
+		virtual SizeT GetDrawPacketSize() const override;
+		/// fill draw packet
+		virtual Models::ModelNode::DrawPacket* UpdateDrawPacket(void* mem) override;
+
 		/// update prior to drawing
 		void Update() override;
-
-		/// get surface instance
-		const Materials::SurfaceInstanceId GetSurfaceInstance() const { return this->surfaceInstance; };
 	};
 
 	/// create instance
@@ -118,7 +118,7 @@ ShaderStateNode::Instance::Setup(Models::ModelNode* node, const Models::ModelNod
 	this->offsets[Skinning] = 0; // skinning offset
 	if (rebind)
 	{
-		CoreGraphics::ResourceTableSetConstantBuffer(sparent->resourceTable, { sparent->cbo, sparent->cboIndex, 0, true, false, -1, 0 });
+		CoreGraphics::ResourceTableSetConstantBuffer(sparent->resourceTable, { sparent->cbo, sparent->cboIndex, 0, true, false, sizeof(Math::matrix44) * 2, 0 });
 		CoreGraphics::ResourceTableCommitChanges(sparent->resourceTable);
 	}
 	this->modelVar = sparent->modelVar;

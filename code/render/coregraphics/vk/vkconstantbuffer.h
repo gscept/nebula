@@ -32,10 +32,10 @@ struct VkConstantBufferSetupInfo
 	VkBufferCreateInfo info;
 	VkDeviceMemory mem;
 	SizeT size;
+	IndexT binding;
 	SizeT stride;
 	SizeT numBuffers;
 	SizeT grow;
-	AnyFX::VarblockBase* reflection;
 };
 
 struct VkConstantBufferMapInfo

@@ -29,6 +29,7 @@
 #include "coregraphics/vertexsignaturepool.h"
 #include "coregraphics/glfw/glfwwindow.h"
 #include "coregraphics/displaydevice.h"
+#include "coregraphics/vk/vkconstantbuffer.h"
 namespace Vulkan
 {
 
@@ -1087,7 +1088,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	}
 
 #if NEBULA_GRAPHICS_DEBUG
-	VkDebugObjectName = (PFN_vkSetDebugUtilsObjectNameEXT)vkGetInstanceProcAddr(state.instance, "vkSetDebugUtilsObjectNameEXT");
+	VkDebugObjectName = (PFN_vkSetDebugUtilsObjectNameEXT)vkGetInstanceProcAddr(state.instance, "vkSetDebugUtilsObjectTagEXT");
 	VkDebugObjectTag = (PFN_vkSetDebugUtilsObjectTagEXT)vkGetInstanceProcAddr(state.instance, "vkSetDebugUtilsObjectTagEXT");
 	VkQueueBeginLabel = (PFN_vkQueueBeginDebugUtilsLabelEXT)vkGetInstanceProcAddr(state.instance, "vkQueueBeginDebugUtilsLabelEXT");
 	VkQueueEndLabel = (PFN_vkQueueEndDebugUtilsLabelEXT)vkGetInstanceProcAddr(state.instance, "vkQueueEndDebugUtilsLabelEXT");
@@ -1895,6 +1896,30 @@ SetResourceTable(const CoreGraphics::ResourceTableId table, const IndexT slot, S
 //------------------------------------------------------------------------------
 /**
 */
+void
+SetResourceTable(const CoreGraphics::ResourceTableId table, const IndexT slot, ShaderPipeline pipeline, uint32 numOffsets, uint32* offsets)
+{
+	switch (pipeline)
+	{
+		case GraphicsPipeline:
+		Vulkan::BindDescriptorsGraphics(&ResourceTableGetVkDescriptorSet(table),
+										slot,
+										1,
+										offsets,
+										numOffsets);
+		break;
+		case ComputePipeline:
+		Vulkan::BindDescriptorsCompute(&ResourceTableGetVkDescriptorSet(table),
+									   slot,
+									   1,
+									   offsets,
+									   numOffsets);
+		break;
+	}
+}
+//------------------------------------------------------------------------------
+/**
+*/
 void 
 SetResourceTablePipeline(const CoreGraphics::ResourcePipelineId layout)
 {
@@ -2645,6 +2670,26 @@ GetShaderRWBuffer(const Util::StringAtom& name)
 */
 template<>
 void
+ObjectSetName(const CoreGraphics::ConstantBufferId id, const Util::String& name)
+{
+	VkDebugUtilsObjectNameInfoEXT info =
+	{
+		VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
+		nullptr,
+		VK_OBJECT_TYPE_IMAGE,
+		(uint64_t)Vulkan::ConstantBufferGetVk(id),
+		name.AsCharPtr()
+	};
+	VkDevice dev = GetCurrentDevice();
+	VkResult res = VkDebugObjectName(dev, &info);
+	n_assert(res == VK_SUCCESS);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<>
+void
 ObjectSetName(const CoreGraphics::TextureId id, const Util::String& name)
 {
 	VkDebugUtilsObjectNameInfoEXT info =
@@ -2656,13 +2701,15 @@ ObjectSetName(const CoreGraphics::TextureId id, const Util::String& name)
 		name.AsCharPtr()
 	};
 	VkDevice dev = GetCurrentDevice();
-	n_assert(VkDebugObjectName(dev, &info) == VK_SUCCESS);
+	VkResult res = VkDebugObjectName(dev, &info);
+	n_assert(res == VK_SUCCESS);
 
 	info.objectHandle = (uint64_t)Vulkan::TextureGetVkImageView(id);
 	info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
 	Util::String str = Util::String::Sprintf("%s - View", name.AsCharPtr());
 	info.pObjectName = str.AsCharPtr();
-	n_assert(VkDebugObjectName(dev, &info) == VK_SUCCESS);
+	res = VkDebugObjectName(dev, &info);
+	n_assert(res == VK_SUCCESS);
 }
 
 //------------------------------------------------------------------------------
@@ -2681,13 +2728,15 @@ ObjectSetName(const CoreGraphics::RenderTextureId id, const Util::String& name)
 		name.AsCharPtr()
 	};
 	VkDevice dev = GetCurrentDevice();
-	n_assert(VkDebugObjectName(dev, &info) == VK_SUCCESS);
+	VkResult res = VkDebugObjectName(dev, &info);
+	n_assert(res == VK_SUCCESS);
 
 	info.objectHandle = (uint64_t)Vulkan::RenderTextureGetVkImageView(id);
 	info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
 	Util::String str = Util::String::Sprintf("%s - View", name.AsCharPtr());
 	info.pObjectName = str.AsCharPtr();
-	n_assert(VkDebugObjectName(dev, &info) == VK_SUCCESS);
+	res = VkDebugObjectName(dev, &info);
+	n_assert(res == VK_SUCCESS);
 }
 
 //------------------------------------------------------------------------------
@@ -2706,13 +2755,15 @@ ObjectSetName(const CoreGraphics::ShaderRWTextureId id, const Util::String& name
 		name.AsCharPtr()
 	};
 	VkDevice dev = GetCurrentDevice();
-	n_assert(VkDebugObjectName(dev, &info) == VK_SUCCESS);
+	VkResult res = VkDebugObjectName(dev, &info);
+	n_assert(res == VK_SUCCESS);
 
 	info.objectHandle = (uint64_t)Vulkan::ShaderRWTextureGetVkImageView(id);
 	info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
 	Util::String str = Util::String::Sprintf("%s - View", name.AsCharPtr());
 	info.pObjectName = str.AsCharPtr();
-	n_assert(VkDebugObjectName(dev, &info) == VK_SUCCESS);
+	res = VkDebugObjectName(dev, &info);
+	n_assert(res == VK_SUCCESS);
 }
 
 //------------------------------------------------------------------------------
@@ -2731,7 +2782,8 @@ ObjectSetName(const CoreGraphics::ShaderRWBufferId id, const Util::String& name)
 		name.AsCharPtr()
 	};
 	VkDevice dev = GetCurrentDevice();
-	n_assert(VkDebugObjectName(dev, &info) == VK_SUCCESS);
+	VkResult res = VkDebugObjectName(dev, &info);
+	n_assert(res == VK_SUCCESS);
 }
 
 //------------------------------------------------------------------------------
@@ -2750,7 +2802,8 @@ ObjectSetName(const CoreGraphics::ResourceTableLayoutId id, const Util::String& 
 		name.AsCharPtr()
 	};
 	VkDevice dev = GetCurrentDevice();
-	n_assert(VkDebugObjectName(dev, &info) == VK_SUCCESS);
+	VkResult res = VkDebugObjectName(dev, &info);
+	n_assert(res == VK_SUCCESS);
 }
 
 //------------------------------------------------------------------------------
@@ -2769,7 +2822,8 @@ ObjectSetName(const CoreGraphics::ResourcePipelineId id, const Util::String& nam
 		name.AsCharPtr()
 	};
 	VkDevice dev = GetCurrentDevice();
-	n_assert(VkDebugObjectName(dev, &info) == VK_SUCCESS);
+	VkResult res = VkDebugObjectName(dev, &info);
+	n_assert(res == VK_SUCCESS);
 }
 
 //------------------------------------------------------------------------------
@@ -2788,7 +2842,8 @@ ObjectSetName(const CoreGraphics::CmdBufferId id, const Util::String& name)
 		name.AsCharPtr()
 	};
 	VkDevice dev = GetCurrentDevice();
-	n_assert(VkDebugObjectName(dev, &info) == VK_SUCCESS);
+	VkResult res = VkDebugObjectName(dev, &info);
+	n_assert(res == VK_SUCCESS);
 }
 
 //------------------------------------------------------------------------------
@@ -2807,7 +2862,8 @@ ObjectSetName(const VkShaderModule id, const Util::String& name)
 		name.AsCharPtr()
 	};
 	VkDevice dev = GetCurrentDevice();
-	n_assert(VkDebugObjectName(dev, &info) == VK_SUCCESS);
+	VkResult res = VkDebugObjectName(dev, &info);
+	n_assert(res == VK_SUCCESS);
 }
 
 //------------------------------------------------------------------------------

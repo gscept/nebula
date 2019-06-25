@@ -92,7 +92,7 @@ FrameSubpassBatch::CompiledImpl::Run(const IndexT frameIndex)
 					Models::ShaderStateNode* stateNode = reinterpret_cast<Models::ShaderStateNode*>(node);
 
 					// only continue if we have instances
-					const Util::Array<Models::ModelNode::Instance*>& instances = *it.val;
+					const Util::Array<Models::ModelNode::DrawPacket*>& instances = *it.val;
 					if (instances.Size() > 0)
 					{
 						// apply node-wide state
@@ -106,15 +106,12 @@ FrameSubpassBatch::CompiledImpl::Run(const IndexT frameIndex)
 							IndexT i;
 							for (i = 0; i < instances.Size(); i++)
 							{
-								Models::ShaderStateNode::Instance* instance = reinterpret_cast<Models::ShaderStateNode::Instance*>(instances[i]);
+								Models::ModelNode::DrawPacket* instance = instances[i];
 
 								// apply instance state
-								const Materials::SurfaceInstanceId surfaceInstance = instance->GetSurfaceInstance();
-								if (surfaceInstance != Materials::SurfaceInstanceId::Invalid())
-									Materials::MaterialApplySurfaceInstance(instance->GetSurfaceInstance());
-								instance->Update();
-								instance->ApplyNodeInstanceState();
-								instance->Draw();
+								instance->Apply();
+								//instance->Update();
+								CoreGraphics::Draw();
 							}
 
 							// end surface

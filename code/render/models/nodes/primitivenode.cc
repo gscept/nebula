@@ -76,13 +76,4 @@ PrimitiveNode::ApplyNodeState()
 	CoreGraphics::MeshBind(this->res, this->primitiveGroupIndex);
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-void
-PrimitiveNode::Instance::Draw()
-{
-	CoreGraphics::Draw();
-}
-
 } // namespace Models

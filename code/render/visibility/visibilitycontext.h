@@ -14,8 +14,32 @@
 #include "models/nodes/modelnode.h"
 #include "materials/surfacepool.h"
 #include "materials/materialtype.h"
+#include "memory/arenaallocator.h"
 namespace Visibility
 {
+
+enum ObserverAllocatorMembers
+{
+	ObserverMatrix,
+	ObserverEntityId,
+	ObserverEntityType,
+	ObserverResultAllocator,
+	ObserverDrawList
+};
+
+enum VisibilityResultAllocatorMembers
+{
+	VisibilityResultFlag,
+	VisibilityResultCtxId
+};
+
+// enum for the ObserveeAllocator
+enum ObserveeAllocatorMembers
+{
+	ObservableTransform,
+	ObservableEntityId,
+	ObservableEntityType
+};
 
 class ObserverContext : public Graphics::GraphicsContext
 {
@@ -55,7 +79,7 @@ public:
 	typedef Ids::Id32 ModelAllocId;
 	typedef Util::HashTable<Materials::MaterialType*,
 		Util::HashTable<Models::ModelNode*,
-		Util::Array<Models::ModelNode::Instance*>>>
+		Util::Array<Models::ModelNode::DrawPacket*>>>
 		VisibilityDrawList;
 
 	/// get visibility draw list
@@ -69,6 +93,8 @@ public:
 private:
 
 	friend class ObservableContext;
+
+
 	typedef Ids::IdAllocator<
 		bool,                               // visibility result
 		Graphics::ContextEntityId			// model context id
@@ -90,6 +116,8 @@ private:
     
 	/// keep as ordinary array of pointers, no need to have them cache aligned
 	static Util::Array<VisibilitySystem*> systems;
+
+	static Memory::ArenaAllocator<1024> drawPacketAllocator;
 };
 
 class ObservableContext : public Graphics::GraphicsContext
@@ -107,6 +135,8 @@ private:
 	friend class ObserverContext;
 	friend class VisibilityContex;
     friend class Models::ModelContext;
+
+
 	typedef Ids::IdAllocator<
 		Math::matrix44,					// transform
 		Graphics::GraphicsEntityId,		// entity id

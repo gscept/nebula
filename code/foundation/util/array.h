@@ -165,6 +165,12 @@ protected:
     void GrowTo(SizeT newCapacity);
     /// move elements, grows array if needed
     void Move(IndexT fromIndex, IndexT toIndex);
+	/// destroy range of elements
+	void DestroyRange(IndexT fromIndex, IndexT toIndex);
+	/// copy range
+	void CopyRange(TYPE* to, TYPE* from, SizeT num);
+	/// move range
+	void MoveRange(TYPE* to, TYPE* from, SizeT num);
 
     static const SizeT MinGrowSize = 16;
     static const SizeT MaxGrowSize = 65536; // FIXME: big grow size needed for mesh tools
@@ -380,16 +386,11 @@ Array<TYPE>::operator=(const Array<TYPE>& rhs)
         {
             // source array fits into our capacity, copy in place
             n_assert(0 != this->elements);
-            IndexT i;
-            for (i = 0; i < rhs.count; i++)
-            {
-                this->elements[i] = rhs.elements[i];
-            }
 
-            // properly destroy remaining original elements
-            for (; i < this->count; i++)
+			this->CopyRange(this->elements, rhs.elements, rhs.count);
+            if (rhs.count < this->count)
             {
-                this->Destroy(&(this->elements[i]));
+			    this->DestroyRange(rhs.count, this->count);
             }
             this->grow = rhs.grow;
             this->count = rhs.count;
@@ -430,12 +431,7 @@ Array<TYPE>::GrowTo(SizeT newCapacity)
     TYPE* newArray = n_new_array(TYPE, newCapacity);
     if (this->elements)
     {
-        // copy over contents
-        IndexT i;
-        for (i = 0; i < this->count; i++)
-        {
-            newArray[i] = std::move(this->elements[i]);
-        }
+		this->MoveRange(newArray, this->elements, this->count);
 
         // discard old array
 		n_delete_array(this->elements);
@@ -508,17 +504,8 @@ Array<TYPE>::Move(IndexT fromIndex, IndexT toIndex)
     if (fromIndex > toIndex)
     {
         // this is a backward move
-        IndexT i;
-        for (i = 0; i < num; i++)
-        {
-            this->elements[toIndex + i] = this->elements[fromIndex + i];
-        }
-
-        // destroy remaining elements
-        for (i = (fromIndex + i) - 1; i < this->count; i++)
-        {
-            this->Destroy(&(this->elements[i]));
-        }
+        this->MoveRange(&this->elements[toIndex], &this->elements[fromIndex], num);
+        this->DestroyRange(fromIndex + num - 1, this->count);
     }
     else
     {
@@ -530,14 +517,77 @@ Array<TYPE>::Move(IndexT fromIndex, IndexT toIndex)
         }
 
         // destroy freed elements
-        for (i = int(fromIndex); i < int(toIndex); i++)
-        {
-            this->Destroy(&(this->elements[i]));
-        }
+        this->DestroyRange(fromIndex, toIndex);
     }
 
     // adjust array _size
     this->count = toIndex + num;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+inline void 
+Array<TYPE>::DestroyRange(IndexT fromIndex, IndexT toIndex)
+{    
+	if constexpr (!std::is_trivially_destructible<TYPE>::value)
+	{
+		for (IndexT i = fromIndex; i < toIndex; i++)
+		{
+			this->Destroy(&(this->elements[i]));
+		}
+	}
+#if NEBULA_DEBUG
+	else
+	{
+        Memory::Clear(&this->elements[fromIndex], sizeof(TYPE) * (toIndex - fromIndex));		
+	}
+#endif
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+inline void 
+Array<TYPE>::CopyRange(TYPE* to, TYPE* from, SizeT num)
+{
+	// this is a backward move
+	if constexpr (!std::is_trivially_copyable<TYPE>::value)
+	{
+		IndexT i;
+		for (i = 0; i < num; i++)
+		{
+			to[i] = from[i];
+		}
+	}
+    else
+    {
+        Memory::Copy(from, to, num * sizeof(TYPE));
+    }		
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+inline void 
+Array<TYPE>::MoveRange(TYPE* to, TYPE* from, SizeT num)
+{
+	// copy over contents
+	if constexpr (!std::is_trivially_copyable<TYPE>::value)
+	{
+		IndexT i;
+		for (i = 0; i < num; i++)
+		{
+			to[i] = std::move(from[i]);
+		}
+	}
+    else
+    {
+        Memory::Move(from, to, num * sizeof(TYPE));
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -749,7 +799,8 @@ Array<TYPE>::EraseIndexSwap(IndexT index)
     {
         this->elements[index] = this->elements[lastElementIndex];
     }
-    this->Destroy(&(this->elements[lastElementIndex]));
+	if constexpr (!std::is_trivially_destructible<TYPE>::value)
+		this->Destroy(&(this->elements[lastElementIndex]));
     this->count--;
 }
 
@@ -787,7 +838,8 @@ template<class TYPE> void
 Array<TYPE>::EraseBack()
 {
 	n_assert(this->count > 0);
-	this->Destroy(&(this->elements[this->count - 1]));
+	if constexpr (!std::is_trivially_destructible<TYPE>::value)
+		this->Destroy(&(this->elements[this->count - 1]));
 	this->count--;
 }
 
@@ -829,11 +881,7 @@ Array<TYPE>::Insert(IndexT index, const TYPE& elm)
 template<class TYPE> void
 Array<TYPE>::Clear()
 {
-    IndexT i;
-    for (i = 0; i < this->count; i++)
-    {
-        this->Destroy(&(this->elements[i]));
-    }
+	this->DestroyRange(0, this->count);
     this->count = 0;
 }
 
@@ -1041,7 +1089,9 @@ Array<TYPE>::BinarySearchIndex(const TYPE& elm) const
     return InvalidIndex;
 }
 
-
+//------------------------------------------------------------------------------
+/**
+*/
 template<class TYPE>
 template<typename KEYTYPE> inline IndexT 
 Array<TYPE>::BinarySearchIndex(const KEYTYPE& elm) const
@@ -1101,10 +1151,7 @@ Array<TYPE>::SetSize(SizeT num)
 {
 	if (num < this->count)
 	{
-		for (SizeT i = num; i < this->count; i++)
-		{
-			this->Destroy(this->elements + i);
-		}
+		this->DestroyRange(num, this->count);
 	}
 	else if (num > capacity)
 	{

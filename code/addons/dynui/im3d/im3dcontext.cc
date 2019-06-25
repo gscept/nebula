@@ -120,6 +120,7 @@ void
 Im3dContext::Create()
 {
     __bundle.OnRenderAsPlugin = Im3dContext::OnRenderAsPlugin;
+    __bundle.OnBeforeFrame = Im3dContext::OnBeforeFrame;
     __bundle.OnBeforeView = Im3dContext::OnBeforeView;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
@@ -277,6 +278,15 @@ Im3dContext::DrawSphere(const Math::matrix44& modelTransform, const Math::float4
 /**
 */
 void
+Im3dContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime, const Timing::Time time, const Timing::Tick ticks)
+{
+    Im3d::NewFrame();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 Im3dContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime)
 {
     AppData& ad = GetAppData();
@@ -295,7 +305,7 @@ Im3dContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameInd
 
     auto const& settings = CameraContext::GetSettings(cam);
     // m_projScaleY controls how gizmos are scaled in world space to maintain a constant screen height
-    ad.m_projScaleY = tanf(Math::n_deg2rad(settings.GetFov()) * 0.5f) * 2.0f; // or vertical fov for a perspective projection
+    ad.m_projScaleY = tanf(settings.GetFov() * 0.5f) * 2.0f; // or vertical fov for a perspective projection
     
     auto const& mouse = Input::InputServer::Instance()->GetDefaultMouse();
     
@@ -341,7 +351,6 @@ Im3dContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameInd
     ad.m_snapTranslation = ctrlDown ? 0.5f : 0.0f;
     ad.m_snapRotation = ctrlDown ? Math::n_deg2rad(30.0f) : 0.0f;
     ad.m_snapScale = ctrlDown ? 0.5f : 0.0f;
-    Im3d::NewFrame();
 }
 
 //------------------------------------------------------------------------------

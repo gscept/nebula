@@ -8,6 +8,7 @@
 //------------------------------------------------------------------------------
 #include "game/component/component.h"
 #include "game/component/attribute.h"
+#include "physicsfeature/components/physicsdata.h"
 
 namespace PhysicsFeature
 {

@@ -43,26 +43,16 @@ CreateConstantBuffer(const ConstantBufferCreateInfo& info)
 	VkConstantBufferRuntimeInfo& runtime = constantBufferAllocator.Get<RuntimeInfo>(id);
 	VkConstantBufferSetupInfo& setup = constantBufferAllocator.Get<SetupInfo>(id);
 	VkConstantBufferMapInfo& map = constantBufferAllocator.Get<MapInfo>(id);
+	VkConstantBufferPool& pool = constantBufferAllocator.Get<AllocPool>(id);
 
 	VkDevice dev = Vulkan::GetCurrentDevice();
 	VkPhysicalDeviceProperties props = Vulkan::GetCurrentProperties();
 
-	setup.reflection = nullptr;
+	setup.binding = info.binding;
 	setup.dev = dev;
 	setup.numBuffers = info.numBuffers;
 	setup.grow = 16;
 	SizeT size = info.size;
-
-	// if we setup from reflection, then fetch the size from the shader
-	if (info.setupFromReflection)
-	{
-		AnyFX::ShaderEffect* effect = shaderPool->shaderAlloc.Get<0>(info.shader.resourceId);
-		AnyFX::VkVarblock* varblock = static_cast<AnyFX::VkVarblock*>(effect->GetVarblock(info.name.Value()));
-
-		// setup buffer from other buffer
-		setup.reflection = varblock;
-		size = varblock->alignedSize;
-	}
 
 	const Util::Set<uint32_t>& queues = Vulkan::GetQueueFamilies();
 	setup.info =
@@ -89,6 +79,7 @@ CreateConstantBuffer(const ConstantBufferCreateInfo& info)
 	// size and stride for a single buffer are equal
 	setup.size = alignedSize;
 	setup.stride = alignedSize / setup.numBuffers;
+	pool.capacity = setup.size;
 
 	// map memory so we can use it later
 	res = vkMapMemory(setup.dev, setup.mem, 0, setup.size, 0, &map.data);
@@ -97,6 +88,10 @@ CreateConstantBuffer(const ConstantBufferCreateInfo& info)
 	ConstantBufferId ret;
 	ret.id24 = id;
 	ret.id8 = ConstantBufferIdType;
+
+#if NEBULA_GRAPHICS_DEBUG
+	ObjectSetName(ret, info.name.AsString());
+#endif
 
 	return ret;
 }
@@ -219,6 +214,7 @@ ConstantBufferAllocate(const ConstantBufferId id, const SizeT size, bool& needsR
 		runtimeInfo.buf = newBuf;
 		setupInfo.mem = newMem;
 		mapInfo.data = dstData;
+		pool.capacity = setupInfo.size;
 
 		// update pool and get the offset
 		ret.offset = pool.size;
@@ -249,8 +245,7 @@ IndexT
 ConstantBufferGetSlot(const ConstantBufferId id)
 {
 	VkConstantBufferSetupInfo& setup = constantBufferAllocator.Get<SetupInfo>(id.id24);
-	n_assert(setup.reflection != nullptr);
-	return setup.reflection->binding;
+	return setup.binding;
 }
 
 //------------------------------------------------------------------------------

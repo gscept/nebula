@@ -435,7 +435,7 @@ InbetweenTicks(Timing::Tick sampleTime, const CoreAnimation::AnimClip& clip)
 //------------------------------------------------------------------------------
 /**
 */
-bool
+const bool
 IsExpired(const CharacterContext::AnimationRuntime& runtime, const Timing::Time time)
 {
 	if (runtime.duration == 0)
@@ -447,7 +447,7 @@ IsExpired(const CharacterContext::AnimationRuntime& runtime, const Timing::Time 
 //------------------------------------------------------------------------------
 /**
 */
-bool
+const bool
 IsInfinite(const CharacterContext::AnimationRuntime& runtime)
 {
 	return runtime.duration == 0;

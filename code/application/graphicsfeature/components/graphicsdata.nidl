@@ -1,4 +1,5 @@
 "namespace": "GraphicsFeature"
+"includes": ["renderutil/mayacamerautil.h"]
 "attributes": {
     "graphicsEntity": {
         "type": "uint"
@@ -12,6 +13,24 @@
         "access": "RW"
 		"default": "mdl:Buildings/castle_tower.n3"
     }
+    "cameraMode": {
+        "type": "uint"
+        "fourcc": "cMod"
+        "access": "RW"
+        "default": 0
+    }
+    "cameraMoveSpeed": {
+        "type": "float"
+        "fourcc": "cmsp"
+        "access": "RW"
+        "default": 1.0
+        }
+    "cameraProjection": {
+        "type": "float4"
+        "fourcc": "camP"
+        "access": "RW"
+        "default": [ 1.3333  45.0 0.01 1000.0]
+    }
 }
 "components": {
     "GraphicsComponent": {
@@ -23,6 +42,20 @@
         "events": [
             "OnActivate"
             "OnDeactivate"
+        ]
+    }
+    "UtilCameraComponent": {
+        "fourcc": "UCam"
+        "attributes": [
+        "graphicsEntity"
+        "cameraMode"
+        "cameraMoveSpeed"
+        "cameraProjection"
+        ]
+        "events": [
+            "OnActivate"
+            "OnDeactivate"
+            "BeginFrame"
         ]
     }
 }

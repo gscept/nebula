@@ -162,8 +162,6 @@ group(DYNAMIC_OFFSET_GROUP) shared varblock ObjectBlock [ string Visibility = "V
 {
 	mat4 Model;
 	mat4 InvModel;
-	mat4 ModelViewProjection;
-	mat4 ModelView;
 	int ObjectId;
 };
 
