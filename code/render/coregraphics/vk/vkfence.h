@@ -19,5 +19,4 @@ struct VkFenceInfo
 typedef Ids::IdAllocator<VkDevice, VkFenceInfo> VkFenceAllocator;
 extern VkFenceAllocator fenceAllocator;
 
-
 } // namespace Vulkan
