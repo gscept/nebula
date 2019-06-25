@@ -274,6 +274,7 @@ JsonReader::SetToNextChild()
             return true;
         }
     }
+	this->SetToParent();
     return false;    
 }
 
