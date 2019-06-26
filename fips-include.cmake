@@ -231,7 +231,7 @@ endmacro()
 
 macro(add_nebula_shaders)
     if(NOT SHADERC)
-        MESSAGE(WARNING "Not compiling shaders, ShaderC not found, did you compile nebula-toolkit?")
+        MESSAGE(WARNING "Not compiling shaders, anyfxcompiler not found, did you run fips anyfx setup?")
     else()
         if(FIPS_WINDOWS)
 

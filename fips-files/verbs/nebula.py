@@ -49,37 +49,7 @@ if sys.platform == "win32" :
                 if len(args) > 2 :
                     setKey(args[1], args[2])
                 else :
-                    log.error("expected setting and value")
-            elif noun == 'physx' :
-            
-                # FIXME all of this only works on windows at the moment and is super hacky
-            
-                if len(args) != 2 :
-                    log.error("expected compiler target (win-vs15, win-vs16)")
-                
-                
-                preset = util.fix_path(os.path.dirname(os.path.abspath(__file__))) + "/physx-presets/" +"fips" + args[1] + ".xml"
-                if not os.path.isfile(preset) :
-                    log.error("unrecognized compiler target")                                
-                shutil.copy2(preset, proj_dir + "/../physx/physx/buildtools/presets/")
-                subprocess.call(proj_dir+"/../physx/physx/generate_projects.bat fips" + args[1])
-                
-                # figure out a version number for vswhere
-                version = args[1][6:]
-                version_next = str(int(version) +1)                
-                version = version+".0,"+version_next+".0"                
-                #use vswhere to figure out where vs is
-                devenvPath = subprocess.check_output(proj_dir+"/../physx/externals/vswhere/vswhere -version [" + version + "] -property productPath").decode("utf-8").rstrip()
-                
-                devenvPath = util.fix_path(devenvPath)                
-                if not os.path.isfile(devenvPath) :
-                    log.error("could not detect visual studio installation")
-                log.info("Using Visual Studio from" + devenvPath)
-                log.info("Compiling PhysX, this might take a while")
-                log.info("Building debug version")
-                subprocess.call(devenvPath + " " + proj_dir+"/../physx/physx/compiler/fips" + args[1] +"/PhysXSDK.sln /Build debug /Project INSTALL")
-                log.info("Building release version")
-                subprocess.call(devenvPath + " " + proj_dir+"/../physx/physx/compiler/fips" + args[1] +"/PhysXSDK.sln /Build release /Project INSTALL")                
+                    log.error("expected setting and value")            
             elif noun == 'get' :
                 if len(args) > 1 :
                     key = argToKey(args[1])
