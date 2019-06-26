@@ -109,8 +109,7 @@ JsonEntityLoader::Load(const Util::String& file)
 					}
 
 				} while (reader->SetToNextChild());
-
-				reader->SetToParent();
+				
 				reader->SetToParent();
 			}
 
