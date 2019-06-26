@@ -2,20 +2,20 @@
 # Render
 #-------------------------------------------------------------------------------
 
-FIND_PROGRAM(SHADERC 
+FIND_PROGRAM(SHADERC
        NAMES shaderc.exe shaderc
        PATHS ${FIPS_DEPLOY_DIR}/nebula-toolkit/${FIPS_CONFIG}/
        NO_DEFAULT_PATH
        )
-       
+
 
 nebula_begin_module(render)
 	add_nebula_shaders()
 	set(target_has_shaders 1)
 	fips_vs_warning_level(3)
-	fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/addons)	
+	fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/addons)
 	fips_deps(foundation resource anyfx libpng libjpeg DevIL)
-	
+
 	if(N_USE_VULKAN)
 		#include(FindVulkan)
 		FIND_PACKAGE(Vulkan)
@@ -71,7 +71,7 @@ ENDIF()
 				streamskeletonpool.cc
 				streamskeletonpool.h
 			)
-			
+
 		fips_dir(coreanimation)
 			fips_files(
 				animclip.cc
@@ -102,7 +102,7 @@ ENDIF()
 				streamanimationpool.h
 			)
 		fips_dir(coregraphics/base GROUP "coregraphics/base")
-			fips_files(				
+			fips_files(
 				displaydevicebase.cc
 				displaydevicebase.h
 				#renderdevicebase.cc
@@ -137,7 +137,7 @@ ENDIF()
 				displayeventhandler.h
 				displaymode.h
 				event.h
-                fence.h
+        fence.h
 				graphicsdevice.h
 				imagefileformat.cc
 				imagefileformat.h
@@ -160,8 +160,6 @@ ENDIF()
 				primitivegroup.h
 				primitivetopology.cc
 				primitivetopology.h
-				#renderdevice.cc
-				#renderdevice.h
 				renderevent.h
 				rendereventhandler.cc
 				rendereventhandler.h
@@ -171,7 +169,7 @@ ENDIF()
 				rendertexture.h
 				resourcetable.h
 				sampler.h
-                semaphore.h
+        semaphore.h
 				shader.cc
 				shader.h
 				shaderfeature.cc
@@ -189,10 +187,12 @@ ENDIF()
 				streammeshpool.cc
 				streammeshpool.h
 				shaderpool.cc
-                shaderpool.h
+        shaderpool.h
 				streamtexturepool.cc
 				streamtexturepool.h
 				streamtexturesaver.h
+        submissioncontext.cc
+        submissioncontext.h
 				textelement.cc
 				textelement.h
 				textrenderer.cc
@@ -421,7 +421,7 @@ ENDIF()
 				frameswapbuffers.cc
 				frameswapbuffers.h
 			)
-			
+
 		fips_dir(graphics)
 			fips_files(
 				cameracontext.cc
@@ -477,7 +477,7 @@ ENDIF()
 				mousebutton.cc
 				mousebutton.h
 			)
-	
+
 	fips_dir(lighting)
 		fips_files(
 			csmutil.cc
@@ -529,7 +529,7 @@ IF(FALSE)
 			#../visibility/jobs/visibilityboxsystemjob.cc
 			#../visibility/jobs/visibilityquadtreejob.cc
 			../particles/jobs/particlejob.cc
-			)			
+			)
 
 		fips_dir(lighting/handlers GROUP "lighting/handlers")
 			fips_files(
@@ -614,7 +614,7 @@ ENDIF()
 
 
 		fips_dir(skinning)
-		
+
 ENDIF()
 		fips_dir(visibility)
 			fips_files(
@@ -646,7 +646,7 @@ ENDIF()
 				visibilitysystem.cc
 			)
 nebula_end_module()
-if(N_USE_VULKAN)		
-		target_include_directories(render PUBLIC ${Vulkan_INCLUDE_DIR})        
+if(N_USE_VULKAN)
+		target_include_directories(render PUBLIC ${Vulkan_INCLUDE_DIR})
 endif()
 target_include_directories(render PUBLIC ${CODE_ROOT}/render)
