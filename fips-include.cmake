@@ -27,6 +27,7 @@ endif()
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+set(FIPS_WINDOWS_LTCG OFF)
 
 if(FIPS_WINDOWS)
 	option(N_MATH_DIRECTX "Use DirectXMath" ON)
@@ -58,15 +59,15 @@ endif()
 SET(PX_DIR_DEBUG ${FIPS_DEPLOY_DIR}/physx/bin/${PX_TARGET}/debug/)
 SET(PX_DIR_RELEASE ${FIPS_DEPLOY_DIR}/physx/bin/${PX_TARGET}/release/)
 
-SET(PX_LIBRARY_NAMES PhysX_64  PhysXCommon_64 PhysXCooking_64  PhysXFoundation_64  PhysXCharacterKinematic_static_64 PhysXExtensions_static_64 PhysXPvdSDK_static_64  PhysXTask_static_64 PhysXVehicle_static_64)
+SET(PX_LIBRARY_NAMES PhysX PhysXCommon PhysXCooking  PhysXFoundation  PhysXCharacterKinematic_static PhysXExtensions_static PhysXPvdSDK_static  PhysXTask_static PhysXVehicle_static)
 SET(PX_STATIC_NAMES PhysXCharacterKinematic_static_64 PhysXExtensions_static_64 PhysXPvdSDK_static_64  PhysXTask_static_64 PhysXVehicle_static_64)
 SET(PX_DEBUG_LIBRARIES)
 SET(PX_RELEASE_LIBRARIES)
 
 foreach(CUR_LIB ${PX_LIBRARY_NAMES})
-    find_library(PX_DBG_${CUR_LIB} ${CUR_LIB} PATHS ${PX_DIR_DEBUG})
+    find_library(PX_DBG_${CUR_LIB} ${CUR_LIB}DEBUG_64 PATHS ${PX_DIR_DEBUG})
     LIST(APPEND PX_DEBUG_LIBRARIES ${PX_DBG_${CUR_LIB}})
-    find_library(PX_REL_${CUR_LIB} ${CUR_LIB} PATHS ${PX_DIR_RELEASE})
+    find_library(PX_REL_${CUR_LIB} ${CUR_LIB}_64 PATHS ${PX_DIR_RELEASE})
     LIST(APPEND PX_RELEASE_LIBRARIES ${PX_REL_${CUR_LIB}})
 endforeach()
 
@@ -190,47 +191,41 @@ macro(nebula_add_nidl)
     endforeach()
 endmacro()
 
-macro(add_frameshader)
-    if(SHADERC)
+macro(add_frameshader)    
     foreach(frm ${ARGN})
             get_filename_component(basename ${frm} NAME)
             set(output ${EXPORT_DIR}/frame/${basename})
-            add_custom_command(OUTPUT ${output}
-                COMMAND ${SHADERC} -i ${frm} -o ${EXPORT_DIR} -t frame
-                MAIN_DEPENDENCY ${frm}
-                DEPENDS ${SHADERC}
+            add_custom_command(OUTPUT ${output}                
+                COMMAND ${CMAKE_COMMAND} -E copy ${frm} ${EXPORT_DIR}
+                MAIN_DEPENDENCY ${frm}                
                 WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
-                COMMENT ""
+                COMMENT "Copying Frameshader ${frm} to ${EXPORT_DIR}"
                 VERBATIM
                 )
             fips_files(${frm})
             SOURCE_GROUP("res\\frameshaders" FILES ${frm})
-        endforeach()
-    endif()
+        endforeach()    
 endmacro()
 
 macro(add_material)
-    if(SHADERC)
     foreach(mat ${ARGN})
             get_filename_component(basename ${mat} NAME)
             set(output ${EXPORT_DIR}/materials/${basename})
-            add_custom_command(OUTPUT ${output}
-                COMMAND ${SHADERC} -i ${mat} -o ${EXPORT_DIR} -t material
-                MAIN_DEPENDENCY ${mat}
-                DEPENDS ${SHADERC}
+            add_custom_command(OUTPUT ${output}                
+                COMMAND ${CMAKE_COMMAND} -E copy ${mat} ${EXPORT_DIR}
+                MAIN_DEPENDENCY ${mat}                
                 WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
-                COMMENT ""
+                COMMENT "Copying material ${mat} to ${EXPORT_DIR}"
                 VERBATIM
                 )
             fips_files(${mat})
             SOURCE_GROUP("res\\materials" FILES ${mat})
-        endforeach()
-    endif()
+        endforeach()    
 endmacro()
 
 macro(add_nebula_shaders)
     if(NOT SHADERC)
-        MESSAGE(WARNING "Not compiling shaders, ShaderC not found, did you compile nebula-toolkit?")
+        MESSAGE(WARNING "Not compiling shaders, anyfxcompiler not found, did you run fips anyfx setup?")
     else()
         if(FIPS_WINDOWS)
 
@@ -259,7 +254,7 @@ macro(add_nebula_shaders)
             add_frameshader(${shd})
         endforeach()
 
-         file(GLOB_RECURSE MAT "${NROOT}/work/materials/*.xml")
+         file(GLOB_RECURSE MAT "${NROOT}/work/materials/*.json")
         foreach(shd ${MAT})
             add_material(${shd})
         endforeach()
