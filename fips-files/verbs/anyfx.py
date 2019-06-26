@@ -23,9 +23,7 @@ def run(fips_dir, proj_dir, args) :
                 if sys.platform == "win32" :
                     subprocess.call(proj_dir + "/../fips-anyfx/anyfxcompiler/build.bat")
                 else :
-                    subprocess.call(proj_dir + "/../fips-anyfx/anyfxcompiler/build.sh")
-                # remove fips import file as it causes double cmake targets at the moment
-                os.remove(proj_dir + "/../fips-anyfx/.fips-imports.cmake")
+                    subprocess.call(proj_dir + "/../fips-anyfx/anyfxcompiler/build.sh")                
             else :
                 log.info(log.YELLOW + "anyfxcompiler already built, skipping")
 
