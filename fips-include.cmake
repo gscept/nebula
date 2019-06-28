@@ -191,42 +191,36 @@ macro(nebula_add_nidl)
     endforeach()
 endmacro()
 
-macro(add_frameshader)
-    if(SHADERC)
+macro(add_frameshader)    
     foreach(frm ${ARGN})
             get_filename_component(basename ${frm} NAME)
             set(output ${EXPORT_DIR}/frame/${basename})
-            add_custom_command(OUTPUT ${output}
-                COMMAND ${SHADERC} -i ${frm} -o ${EXPORT_DIR} -t frame
-                MAIN_DEPENDENCY ${frm}
-                DEPENDS ${SHADERC}
+            add_custom_command(OUTPUT ${output}                
+                COMMAND ${CMAKE_COMMAND} -E copy ${frm} ${EXPORT_DIR}
+                MAIN_DEPENDENCY ${frm}                
                 WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
-                COMMENT ""
+                COMMENT "Copying Frameshader ${frm} to ${EXPORT_DIR}"
                 VERBATIM
                 )
             fips_files(${frm})
             SOURCE_GROUP("res\\frameshaders" FILES ${frm})
-        endforeach()
-    endif()
+        endforeach()    
 endmacro()
 
 macro(add_material)
-    if(SHADERC)
     foreach(mat ${ARGN})
             get_filename_component(basename ${mat} NAME)
             set(output ${EXPORT_DIR}/materials/${basename})
-            add_custom_command(OUTPUT ${output}
-                COMMAND ${SHADERC} -i ${mat} -o ${EXPORT_DIR} -t material
-                MAIN_DEPENDENCY ${mat}
-                DEPENDS ${SHADERC}
+            add_custom_command(OUTPUT ${output}                
+                COMMAND ${CMAKE_COMMAND} -E copy ${mat} ${EXPORT_DIR}
+                MAIN_DEPENDENCY ${mat}                
                 WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
-                COMMENT ""
+                COMMENT "Copying material ${mat} to ${EXPORT_DIR}"
                 VERBATIM
                 )
             fips_files(${mat})
             SOURCE_GROUP("res\\materials" FILES ${mat})
-        endforeach()
-    endif()
+        endforeach()    
 endmacro()
 
 macro(add_nebula_shaders)
@@ -260,7 +254,7 @@ macro(add_nebula_shaders)
             add_frameshader(${shd})
         endforeach()
 
-         file(GLOB_RECURSE MAT "${NROOT}/work/materials/*.xml")
+         file(GLOB_RECURSE MAT "${NROOT}/work/materials/*.json")
         foreach(shd ${MAT})
             add_material(${shd})
         endforeach()
