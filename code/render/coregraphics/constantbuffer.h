@@ -16,7 +16,7 @@
 #include "ids/id.h"
 #include "ids/idpool.h"
 #include "util/stringatom.h"
-#include "coregraphics/shader.h"
+#include "util/variant.h"
 
 namespace CoreGraphics
 {
@@ -24,17 +24,19 @@ namespace CoreGraphics
 ID_24_8_TYPE(ConstantBufferId);
 ID_32_32_NAMED_TYPE(ConstantBufferAllocId, offset, size);
 
+typedef uint ConstantBinding; // defined again!
+enum ConstantBufferUpdateMode
+{
+	CoherentlyMappedMemory,		// memory will be written to the GPU when it is time to get the address
+	ManualFlush					// memory has to be flushed manually
+};
+
 struct ConstantBufferCreateInfo
 {
 	Util::StringAtom name;				// name of the constant buffer block
 	IndexT binding;						// binding slot of the constant buffer
 	SizeT size;							// allocation size of the buffer
-	SizeT numBuffers;					// declare the amount of buffer rings (double, triple, quadruple buffering...)
-};
-
-struct ConstantBufferInfo
-{
-	SizeT offset;
+	ConstantBufferUpdateMode mode;
 };
 
 /// create new constant buffer

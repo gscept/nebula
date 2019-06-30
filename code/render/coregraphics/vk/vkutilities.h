@@ -41,9 +41,9 @@ public:
 	/// perform image depth stencil clear
 	static void ImageDepthStencilClear(const VkImage& image, const CoreGraphicsQueueType queue, VkImageLayout layout, VkClearDepthStencilValue clearValue, VkImageSubresourceRange subres);
 
-	/// allocate a buffer memory storage, num is a multiplier for how many times the size needs to be duplicated
+	/// allocate a buffer memory storage
 	static void AllocateBufferMemory(const VkDevice dev, const VkBuffer& buf, VkDeviceMemory& bufmem, VkMemoryPropertyFlagBits flags, uint32_t& bufsize);
-	/// allocate an image memory storage, num is a multiplier for how many times the size needs to be duplicated
+	/// allocate an image memory storage
 	static void AllocateImageMemory(const VkDevice dev, const VkImage& img, VkDeviceMemory& imgmem, VkMemoryPropertyFlagBits flags, uint32_t& imgsize);
 	/// figure out which memory type fits given memory bits and required properties
 	static VkResult GetMemoryType(uint32_t bits, VkMemoryPropertyFlags flags, uint32_t& index);

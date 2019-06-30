@@ -58,9 +58,9 @@ public:
 	/// create resource table 
 	CoreGraphics::ResourceTableId CreateResourceTable(const CoreGraphics::ShaderId id, const IndexT group);
 	/// create constant buffer from name
-	CoreGraphics::ConstantBufferId CreateConstantBuffer(const CoreGraphics::ShaderId id, const Util::StringAtom& name, const SizeT numBuffers);
+	CoreGraphics::ConstantBufferId CreateConstantBuffer(const CoreGraphics::ShaderId id, const Util::StringAtom& name, CoreGraphics::ConstantBufferUpdateMode mode);
 	/// create constant buffer from id
-	CoreGraphics::ConstantBufferId CreateConstantBuffer(const CoreGraphics::ShaderId id, const IndexT cbIndex, const SizeT numBuffers);
+	CoreGraphics::ConstantBufferId CreateConstantBuffer(const CoreGraphics::ShaderId id, const IndexT cbIndex, CoreGraphics::ConstantBufferUpdateMode mode);
 
 	/// get constant buffer binding from name
 	const CoreGraphics::ConstantBinding GetConstantBinding(const CoreGraphics::ShaderId id, const Util::StringAtom& name) const;

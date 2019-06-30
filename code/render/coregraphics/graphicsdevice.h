@@ -22,6 +22,9 @@ namespace CoreGraphics
 
 struct GraphicsDeviceCreateInfo
 {
+	uint globalGraphicsConstantBufferMemorySize;
+	uint globalComputeConstantBufferMemorySize;
+	byte numBufferedFrames : 3;
 	bool enableValidation : 1;		// enables validation layer and writes output to console
 };
 
@@ -102,8 +105,18 @@ void SetResourceTable(const CoreGraphics::ResourceTableId table, const IndexT sl
 void SetResourceTable(const CoreGraphics::ResourceTableId table, const IndexT slot, ShaderPipeline pipeline, uint32 numOffsets, uint32* offsets);
 /// set resoure table layout
 void SetResourceTablePipeline(const CoreGraphics::ResourcePipelineId layout);
+
 /// push constants
 void PushConstants(ShaderPipeline pipeline, uint offset, uint size, byte* data);
+/// reserve range of graphics constant buffer memory and return offset
+uint AllocateGraphicsConstantBufferMemory(uint size);
+/// return id to global graphics constant buffer
+CoreGraphics::ConstantBufferId GetGraphicsConstantBuffer();
+/// reserve range of compute constant buffer memory and return offset
+uint AllocateComputeConstantBufferMemory(uint size);
+/// return id to global compute constant buffer
+CoreGraphics::ConstantBufferId GetComputeConstantBuffer();
+
 /// set pipeline using current layout, shader and pass
 void SetGraphicsPipeline();
 
@@ -126,6 +139,7 @@ bool PeekFence(const CoreGraphics::FenceId fe);
 void ResetFence(const CoreGraphics::FenceId fe);
 /// wait for a fence indefinitely (using UINT_MAX) or with a timeout, returns bool if fence was encountered
 bool WaitFence(const CoreGraphics::FenceId fe, uint64 wait);
+
 /// draw current primitives
 void Draw();
 /// draw indexed, instanced primitives

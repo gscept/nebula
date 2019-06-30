@@ -34,8 +34,8 @@ struct VkConstantBufferSetupInfo
 	SizeT size;
 	IndexT binding;
 	SizeT stride;
-	SizeT numBuffers;
 	SizeT grow;
+	CoreGraphics::ConstantBufferUpdateMode mode;
 };
 
 struct VkConstantBufferMapInfo

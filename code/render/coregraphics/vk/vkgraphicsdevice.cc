@@ -102,6 +102,37 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 	CoreGraphics::CmdBufferId mainCmdTransferBuffer;
 	CoreGraphics::CmdBufferId mainCmdSparseBuffer;
 
+	struct FrameSubmission
+	{
+		CoreGraphics::CmdBufferId gfxCmdBuffer;
+		CoreGraphics::SemaphoreId gfxSemaphore;
+
+		CoreGraphics::CmdBufferId computeCmdBuffer;
+		CoreGraphics::SemaphoreId computeSemaphore;
+
+		CoreGraphics::CmdBufferId transferCmdBuffer;
+		CoreGraphics::SemaphoreId transferSemaphore;
+
+		CoreGraphics::CmdBufferId sparseCmdBuffer;
+		CoreGraphics::SemaphoreId sparseSemaphore;
+
+		// handle global constant memory
+		uint32_t cboGfxStartAddress;
+		uint32_t cboGfxEndAddress;
+		uint32_t cboComputeStartAddress;
+		uint32_t cboComputeEndAddress;
+		CoreGraphics::FenceId fence;
+
+	};
+	Util::FixedArray<FrameSubmission> frameSubmissions;
+	uint maxNumFrameSubmissions;
+	uint32_t currentFrameSubmission;
+
+	uint globalGraphicsConstantBufferMaxValue;
+	CoreGraphics::ConstantBufferId globalGraphicsConstantBuffer;
+	uint globalComputeConstantBufferMaxValue;
+	CoreGraphics::ConstantBufferId globalComputeConstantBuffer;
+
 	VkExtensionProperties physicalExtensions[64];
 
 	uint32_t usedPhysicalExtensions;
@@ -1281,6 +1312,58 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	cmdCreateInfo.usage = CmdSparse;
 	state.mainCmdSparseBuffer = CreateCmdBuffer(cmdCreateInfo);
 
+	state.frameSubmissions.Resize(info.numBufferedFrames);
+
+#ifdef CreateSemaphore
+#pragma push_macro("CreateSemaphore")
+#undef CreateSemaphore
+#endif
+
+	for (i = 0; i < info.numBufferedFrames; i++)
+	{
+		Vulkan::GraphicsDeviceState::FrameSubmission& sub = state.frameSubmissions[i];
+
+		SemaphoreCreateInfo semInfo;
+
+		cmdCreateInfo.usage = CmdDraw;
+		sub.gfxCmdBuffer = CreateCmdBuffer(cmdCreateInfo);
+		semInfo.dependency = CoreGraphics::BarrierStage::AllGraphicsShaders;
+		sub.gfxSemaphore = CreateSemaphore(semInfo);
+
+		cmdCreateInfo.usage = CmdCompute;
+		sub.computeCmdBuffer = CreateCmdBuffer(cmdCreateInfo);
+		semInfo.dependency = CoreGraphics::BarrierStage::ComputeShader;
+		sub.computeSemaphore = CreateSemaphore(semInfo);
+
+		cmdCreateInfo.usage = CmdTransfer;
+		sub.transferCmdBuffer = CreateCmdBuffer(cmdCreateInfo);
+		semInfo.dependency = CoreGraphics::BarrierStage::Transfer;
+		sub.transferSemaphore = CreateSemaphore(semInfo);
+
+		cmdCreateInfo.usage = CmdSparse;
+		sub.sparseCmdBuffer = CreateCmdBuffer(cmdCreateInfo);
+		sub.sparseSemaphore = CreateSemaphore(semInfo);
+	}
+
+#pragma pop_macro("CreateSemaphore")
+
+	ConstantBufferCreateInfo cboInfo = 
+	{
+		"SharedConstantBuffer"_atm,
+		-1,
+		info.globalGraphicsConstantBufferMemorySize,
+		CoreGraphics::ConstantBufferUpdateMode::ManualFlush
+	};
+	state.globalGraphicsConstantBuffer = CreateConstantBuffer(cboInfo);
+	state.globalGraphicsConstantBufferMaxValue = info.globalGraphicsConstantBufferMemorySize;
+
+	cboInfo.size = info.globalComputeConstantBufferMemorySize;
+	state.globalComputeConstantBuffer = CreateConstantBuffer(cboInfo);
+	state.globalComputeConstantBufferMaxValue = info.globalComputeConstantBufferMemorySize;
+
+	state.maxNumFrameSubmissions = info.numBufferedFrames;
+
+
 #if NEBULA_GRAPHICS_DEBUG
 	ObjectSetName(state.mainCmdDrawBuffer, "Main Draw Command Buffer");
 	ObjectSetName(state.mainCmdComputeBuffer, "Main Compute Command Buffer");
@@ -1592,6 +1675,21 @@ BeginFrame(IndexT frameIndex)
 		_begin_counter(state.GraphicsDeviceNumDrawCalls);
 	}
 	state.inBeginFrame = true;
+
+	// update current state submission
+	Vulkan::GraphicsDeviceState::FrameSubmission& sub = state.frameSubmissions[state.currentFrameSubmission];
+	uint nextGfxCboStart = sub.cboGfxEndAddress;
+	uint nextComputeCboStart = sub.cboComputeEndAddress;
+
+	// set to next frame submission
+	state.currentFrameSubmission = (state.currentFrameSubmission + 1) % state.maxNumFrameSubmissions;
+
+	// update initial state of the new frame submission
+	Vulkan::GraphicsDeviceState::FrameSubmission& nextSub = state.frameSubmissions[state.currentFrameSubmission];
+	nextSub.cboGfxStartAddress = nextGfxCboStart;
+	nextSub.cboGfxEndAddress = nextGfxCboStart;
+	nextSub.cboComputeStartAddress = nextComputeCboStart;
+	nextSub.cboComputeEndAddress = nextComputeCboStart;
 
 	VkShaderServer::Instance()->SubmitTextureDescriptorChanges();
 
@@ -1944,6 +2042,93 @@ PushConstants(ShaderPipeline pipeline, uint offset, uint size, byte* data)
 	}
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+uint 
+AllocateGraphicsConstantBufferMemory(uint size)
+{
+	Vulkan::GraphicsDeviceState::FrameSubmission& sub = state.frameSubmissions[state.currentFrameSubmission];
+	Vulkan::GraphicsDeviceState::FrameSubmission& nextSub = state.frameSubmissions[(state.currentFrameSubmission + 1) % state.maxNumFrameSubmissions];
+
+	// no matter how we spin it
+	uint ret = sub.cboGfxEndAddress;
+
+	// if we have to wrap around, or we are fingering on the range of the next frame submission buffer...
+	if (sub.cboGfxEndAddress + size > state.globalGraphicsConstantBufferMaxValue)
+	{
+		// wait for the oldest frame to complete
+		CoreGraphics::FenceWait(nextSub.fence, UINT64_MAX);
+
+		// now, because we are starting again in a new buffer, reset ret to 0
+		ret = 0;
+	}
+	else if (sub.cboGfxEndAddress + size > nextSub.cboGfxStartAddress)
+	{
+		// wait for the oldest frame to complete, don't change ret since we are not outside the buffer limits
+		CoreGraphics::FenceWait(nextSub.fence, UINT64_MAX);
+	}
+	else
+	{
+		// just bump the current frame submission pointer
+		sub.cboGfxEndAddress += size;
+	}
+
+	return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CoreGraphics::ConstantBufferId 
+GetGraphicsConstantBuffer()
+{
+	return state.globalGraphicsConstantBuffer;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint 
+AllocateComputeConstantBufferMemory(uint size)
+{
+	Vulkan::GraphicsDeviceState::FrameSubmission& sub = state.frameSubmissions[state.currentFrameSubmission];
+	Vulkan::GraphicsDeviceState::FrameSubmission& nextSub = state.frameSubmissions[(state.currentFrameSubmission + 1) % state.maxNumFrameSubmissions];
+
+	// no matter how we spin it
+	uint ret = sub.cboComputeEndAddress;
+
+	// if we have to wrap around, or we are fingering on the range of the next frame submission buffer...
+	if (sub.cboComputeEndAddress + size > state.globalComputeConstantBufferMaxValue)
+	{
+		// wait for the oldest frame to complete
+		CoreGraphics::FenceWait(nextSub.fence, UINT64_MAX);
+
+		// now, because we are starting again in a new buffer, reset ret to 0
+		ret = 0;
+	}
+	else if (sub.cboComputeEndAddress + size > nextSub.cboComputeStartAddress)
+	{
+		// wait for the oldest frame to complete, don't change ret since we are not outside the buffer limits
+		CoreGraphics::FenceWait(nextSub.fence, UINT64_MAX);
+	}
+	else
+	{
+		// just bump the current frame submission pointer
+		sub.cboComputeEndAddress += size;
+	}
+
+	return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CoreGraphics::ConstantBufferId 
+GetComputeConstantBuffer()
+{
+	return state.globalComputeConstantBuffer;
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -2343,6 +2528,8 @@ EndFrame(IndexT frameIndex)
 	CmdBufferEndRecord(state.mainCmdComputeBuffer);
 	CmdBufferEndRecord(state.mainCmdDrawBuffer);
 	CmdBufferEndRecord(state.mainCmdSparseBuffer);
+
+	
 
 #if NEBULA_GRAPHICS_DEBUG
 	CoreGraphics::QueueBeginMarker(TransferQueueType, NEBULA_MARKER_BLUE, "End of frame transfer queue submission");

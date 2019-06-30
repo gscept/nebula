@@ -1218,7 +1218,7 @@ FrameScriptLoader::ParseShaderVariables(const Ptr<Frame::FrameScript>& script, c
 		// get variable
 		ShaderConstantType type = ShaderGetConstantType(shd, sem->string_value);
 		ConstantBufferId cbo = ConstantBufferId::Invalid();
-		ConstantBinding bind = { -1 };
+		ConstantBinding bind = -1;
 		if (type != SamplerVariableType && type != TextureVariableType && type != ImageReadWriteVariableType && type != BufferReadWriteVariableType)
 		{
 			Util::StringAtom block = ShaderGetConstantBlockName(shd, sem->string_value);
