@@ -39,7 +39,7 @@ LevelLoader::Save(const Util::String& levelName)
     uint numComponents = 0;
 	uint numGameComponents = manager->GetNumComponents();
 
-    Util::Array<flatbuffers::Offset<Game::Serialization::ComponentBuildData>> componentsData;
+    Util::Array<flatbuffers::Offset<Game::Serialization::ComponentData>> componentsData;
 
 	for (SizeT i = 0; i < numGameComponents; i++)
 	{
@@ -58,17 +58,34 @@ LevelLoader::Save(const Util::String& levelName)
 
 		auto numInstances = component->NumRegistered();
         
-        // TODO: Add description of component so that we can make sure we're not reading incorrect or outdated data later.
-		// ex. c.description = Util::String(for each attribute: { return attributeDefinition.ToString() })
+        // Add description of component so that we can make sure we're not reading incorrect or outdated data later.
+		Util::Array<flatbuffers::Offset<Game::Serialization::AttributeDefinition>> attributeDefinitions;
+        auto const& attrs = component->GetAttributes();
+
+        for (auto attr : attrs)
+        {
+            attributeDefinitions.Append(
+                Game::Serialization::CreateAttributeDefinitionDirect(
+                    builder,
+                    attr.fourcc.AsUInt(),
+                    attr.name.AsCharPtr(),
+                    attr.typeName.AsCharPtr()
+                )
+            );
+        }
+
+        auto attributes = builder.CreateVector(attributeDefinitions.Begin(), attributeDefinitions.Size());
+
+        static_assert(sizeof(Game::Entity) == sizeof(uint32_t), "Flatbuffer owner array inner type is not the same size as Game::Entity. Adjust the flatbuffer file!");
+        auto owners = builder.CreateVector(reinterpret_cast<uint32_t*>(component->GetOwners().Begin()), component->NumRegistered());
 
 		// Serialize the component data into builddata local stream
 		Ptr<IO::BinaryWriter> bWriter = IO::BinaryWriter::Create();
         Ptr<IO::MemoryStream> mStream = IO::MemoryStream::Create();
 		bWriter->SetStream(mStream);
 		bWriter->Open();
-		component->SerializeOwners(bWriter);
 
-		if (component->functions.Serialize != nullptr)
+        if (component->functions.Serialize != nullptr)
 			component->functions.Serialize(bWriter);
 
 		bWriter->Close();
@@ -100,9 +117,11 @@ LevelLoader::Save(const Util::String& levelName)
 
         auto dataStream = builder.CreateVector((ubyte*)mStream->GetRawPointer(), mStream->GetSize());
 
-        Game::Serialization::ComponentBuildDataBuilder c(builder);
+        Game::Serialization::ComponentDataBuilder c(builder);
         c.add_fourcc(component->GetIdentifier().AsUInt());
         c.add_numInstances(numInstances);
+        c.add_attributes(attributes);
+        c.add_owners(owners);
         c.add_dataStream(dataStream);
 
         componentsData.Append(c.Finish());
