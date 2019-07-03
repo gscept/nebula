@@ -38,9 +38,16 @@ JobsTest::Run()
 	// create a job port
 	CreateJobPortInfo portInfo;
 	portInfo.name = "TestJobPort";
-	portInfo.numThreads = 12;
+	portInfo.numThreads = 2;
 	portInfo.priority = FLT_MAX;
 	JobPortId port = CreateJobPort(portInfo);
+
+    // create a job sync
+    Jobs::CreateJobSyncInfo sinfo =
+    {
+        nullptr
+    };
+    JobSyncId jobSync = Jobs::CreateJobSync(sinfo);
 
 	// create a job
 	CreateJobInfo jobInfo;
@@ -86,13 +93,20 @@ JobsTest::Run()
 	// run job
 	JobSchedule(job, port, ctx);
 
-	// wait for job to finish
-	JobWait(job);
+    JobSyncSignal(jobSync, port);
 
+	// wait for job to finish
+    JobSyncHostWait(jobSync);
+
+    bool result = true;
 	for (uint i = 0; i < NumInputs; i++)
 	{
-		VERIFY(outputs[i] == Math::float4(-4, 8, -4, 0));
+	    result &= (outputs[i] == Math::float4(-4, 8, -4, 0));
 	}
+    VERIFY(result);
+    DestroyJob(job);
+    DestroyJobPort(port);
+    DestroyJobSync(jobSync);
 
 	app.Close();
 }

@@ -62,11 +62,11 @@ NebulaMain(const Util::CommandLineArgs& args)
 	testRunner->AttachTestCase(PointTest::Create());
     testRunner->AttachTestCase(PlaneTest::Create());
 
-    testRunner->Run(); 
+    bool result = testRunner->Run(); 
 
     coreServer->Close();
     testRunner = nullptr;
     coreServer = nullptr;
     
-    Core::SysFunc::Exit(0);
+    Core::SysFunc::Exit(result ? 0 : -1);
 }

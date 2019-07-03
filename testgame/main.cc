@@ -73,9 +73,9 @@ NebulaMain(const Util::CommandLineArgs& args)
 	testRunner->AttachTestCase(CompDataTest::Create());
 	testRunner->AttachTestCase(MessageTest::Create());
 	
-    testRunner->Run(); 
+    bool result = testRunner->Run(); 
 
     testRunner = nullptr;
 
-    Core::SysFunc::Exit(0);
+    Core::SysFunc::Exit(result?0:-1);
 }

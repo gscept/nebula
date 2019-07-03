@@ -90,12 +90,13 @@ IdTest::Run()
 			secondGenIds.Append(temp);
 		}
 
-		bool failed = false;
+		bool success = true;
+
 		for (SizeT i = 0; i < numIds; i++)
 		{
-			VERIFY(firstGenIds[i] != secondGenIds[i]);
+			success &= (firstGenIds[i] != secondGenIds[i]);
 		}
-
+        VERIFY(success);
 		firstGenIds.Clear();
 
 		for (SizeT i = 0; i < numIds; i++)
@@ -103,11 +104,12 @@ IdTest::Run()
 			pool.Allocate(temp);
 			firstGenIds.Append(temp);
 		}
-
+        success = true;
 		for (SizeT i = 0; i < numIds; i++)
 		{
-			VERIFY(firstGenIds[i] != secondGenIds[i]);
+			success &= (firstGenIds[i] != secondGenIds[i]);
 		}
+        VERIFY(success);
 	}
 
 	{
@@ -129,10 +131,12 @@ IdTest::Run()
 		VERIFY(allocator.Get<1>(Id32(0)) == 2.0f);
 		VERIFY(allocator.Get<2>(Id32(0)) == "Test");
 
+        bool success = true;
 		for (SizeT i = 0; i < numAllocs; i++)
 		{
-			VERIFY(allocator.Get<0>(ids[i]) == i);
+			success &= (allocator.Get<0>(ids[i]) == i);
 		}
+        VERIFY(success);
 
 		for (SizeT i = 0; i < numAllocs; i++)
 		{

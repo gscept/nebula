@@ -26,11 +26,11 @@ __cdecl main()
     // setup and run test runner
     Ptr<TestRunner> testRunner = TestRunner::Create();
     testRunner->AttachTestCase(Win32RegistryTest::Create());    
-    testRunner->Run(); 
+    bool result = testRunner->Run(); 
 
     coreServer->Close();
     testRunner = nullptr;
     coreServer = nullptr;
     
-    Core::SysFunc::Exit(0);
+    Core::SysFunc::Exit(result ? 0 : -1);
 }

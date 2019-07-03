@@ -26,11 +26,11 @@ __cdecl main()
 	// setup and run test runner
 	Ptr<TestRunner> testRunner = TestRunner::Create();
 	testRunner->AttachTestCase(ThreadStressTest::Create());
-	testRunner->Run();	
+	bool result = testRunner->Run();	
 
 	coreServer->Close();
 	coreServer = nullptr;
 	testRunner = nullptr;
 
-	Core::SysFunc::Exit(0);
+    Core::SysFunc::Exit(result ? 0 : -1);
 }

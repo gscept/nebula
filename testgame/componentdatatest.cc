@@ -3,6 +3,7 @@
 //  (C) 2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
+#include "game/entity.h"
 #include "componentdatatest.h"
 #include "foundation.h"
 #include "core/coreserver.h"
@@ -16,13 +17,6 @@
 using namespace Game;
 using namespace Core;
 
-namespace Attr
-{
-	__DeclareAttribute(GuidTest, Util::Guid, 'gTst', Attr::ReadWrite, Util::Guid());
-	__DeclareAttribute(StringTest, Util::String, 'sTst', Attr::ReadWrite, "Default string");
-	__DeclareAttribute(IntTest, int, 'iTst', Attr::ReadWrite, int(1337));
-	__DeclareAttribute(FloatTest, float, 'fTst', Attr::ReadWrite, float(10.0f));
-} // namespace Attr
 
 
 namespace Test
@@ -30,14 +24,7 @@ namespace Test
 
 __ImplementClass(Test::CompDataTest, 'CDTS', Test::TestCase);
 
-typedef Game::Component<
-	Attr::GuidTest,
-	Attr::StringTest,
-	Attr::IntTest,
-	Attr::FloatTest
-> ComponentAllocator;
-
-static ComponentAllocator* component;
+static TestComponentAllocator* component;
 
 enum AttributeNames
 {
@@ -57,9 +44,9 @@ __ImplementComponent(TestComponent, component);
 void
 TestComponent::Create()
 {
-	component = new ComponentAllocator();
+	component = new TestComponentAllocator();
 	Game::ComponentManager::Instance()->RegisterComponent(component, "TestComponent", 'TSTC');
-
+    
 }
 
 //------------------------------------------------------------------------------
@@ -98,7 +85,7 @@ CompDataTest::Run()
 			instance = component->GetInstance(entity);
 			component->data.Get<STRING>(instance) = "First iteration of entities";
 			component->data.Get<INT>(instance) = 1;
-			component->data.Get<FLOAT>(instance) = float(i * 4);
+			component->data.Get<FLOAT>(instance) = float(i * 4);            
 		}
 
 		uint32_t previd = component->GetOwner(0).id;

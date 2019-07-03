@@ -111,7 +111,7 @@ __cdecl main()
     testRunner->AttachTestCase(IOInterfaceTest::Create());
     testRunner->AttachTestCase(ThreadTest::Create());
 	testRunner->AttachTestCase(ArrayAllocatorTest::Create());
-    testRunner->Run(); 
+    bool result = testRunner->Run(); 
 
     gameContentServer->Discard();
     gameContentServer = nullptr;
@@ -119,5 +119,5 @@ __cdecl main()
     testRunner = nullptr;
     coreServer = nullptr;
     
-    Core::SysFunc::Exit(0);
+    Core::SysFunc::Exit(result ? 0 : -1);
 }
