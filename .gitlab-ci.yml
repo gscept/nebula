@@ -16,11 +16,8 @@ build:
     - call ./fips build
 
 test:
-   state: test
+   stage: test
    script:
     - call ./fips run testfoundation
     - call ./fips run testmath
     - call ./fips run testgame
-    
-
-    
