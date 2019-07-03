@@ -6,6 +6,7 @@ before_script:
     
 stages:
     - build
+    - test
 
 build:
    stage: build
@@ -13,6 +14,13 @@ build:
     - call ./fips set config vulkan-win64-vs2017-debug
     - call ./fips gen
     - call ./fips build
-    - call ../fips-deploy/nebula-tests/vulkan-win64-vs2017-debug/testfoundation
-    - call ../fips-deploy/nebula-tests/vulkan-win64-vs2017-debug/testgame
-    - call ../fips-deploy/nebula-tests/vulkan-win64-vs2017-debug/testmath
+
+test:
+   state: test
+   script:
+    - call ./fips run testfoundation
+    - call ./fips run testmath
+    - call ./fips run testgame
+    
+
+    
