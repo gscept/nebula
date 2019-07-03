@@ -1,9 +1,3 @@
-before_script:
-    - call ./fips fetch
-    - call ./fips update
-    - call ./fips nebula set work ../fips-deploy/
-    - call ./fips nebula set toolkit .
-    
 stages:
     - build
     - test
@@ -11,6 +5,10 @@ stages:
 build:
    stage: build
    script:
+    - call ./fips fetch
+    - call ./fips update
+    - call ./fips nebula set work ../fips-deploy/
+    - call ./fips nebula set toolkit .
     - call ./fips set config vulkan-win64-vs2017-debug
     - call ./fips gen
     - call ./fips build
@@ -18,6 +16,7 @@ build:
 test:
    stage: test
    script:
+    - call ./fips set config vulkan-win64-vs2017-debug
     - call ./fips run testfoundation
     - call ./fips run testmath
     - call ./fips run testgame
