@@ -40,12 +40,17 @@ public:
 	void Discard();
 	/// set to next context of type
 	void SetToNextContext(const CoreGraphicsQueueType type);
-	/// insert dependency between the current two queues of given types
-	void InsertDependency(const Util::FixedArray<CoreGraphicsQueueType> dependers, const CoreGraphicsQueueType dependee, VkPipelineStageFlags waitFlags);
-	/// insert command buffer
-	void InsertCommandBuffer(const CoreGraphicsQueueType type, const VkCommandBuffer buf);
-	/// submit commands to subcontext, also consumes the dependencies put on this queue
-	void Submit(const CoreGraphicsQueueType type, VkFence fence, bool waitImmediately);
+
+	/// add submission to context, but don't really execute
+	void AddSubmission(CoreGraphicsQueueType type, VkCommandBuffer cmds, VkSemaphore waitSemaphore, VkPipelineStageFlags waitFlag, VkSemaphore signalSemaphore);
+	/// add another wait to the previous submission
+	void AddWaitSemaphore(CoreGraphicsQueueType type, VkSemaphore waitSemaphore, VkPipelineStageFlags waitFlag);
+	/// flush submissions and send to GPU as one submit call
+	void FlushSubmissions(CoreGraphicsQueueType type, VkFence fence, bool waitImmediately, VkSemaphore queueSemaphore = VK_NULL_HANDLE, VkPipelineStageFlags queueWaitFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM);
+
+	/// submit immediately
+	void SubmitImmediate(CoreGraphicsQueueType type, VkCommandBuffer cmds, VkSemaphore waitSemaphore, VkPipelineStageFlags waitFlags, VkSemaphore signalSemaphore, VkFence fence, bool waitImmediately);
+
 	/// wait for a queue to finish working
 	void WaitIdle(const CoreGraphicsQueueType type);
 
@@ -70,14 +75,11 @@ private:
 	uint currentSparseQueue;
 	uint queueFamilies[NumQueueTypes];
 
-
-	Util::FixedArray<Util::FixedArray<VkSemaphore>> semaphoreCache;
-
 	Util::FixedArray<Util::Array<VkCommandBuffer>> buffers;
 	Util::FixedArray<Util::Array<VkSemaphore>> waitSemaphores;
 	Util::FixedArray<Util::Array<VkPipelineStageFlags>> waitFlags;
 	Util::FixedArray<Util::Array<VkSemaphore>> signalSemaphores;
-	Util::FixedArray<Util::Array<VkPipelineStageFlags>> signalFlags;
+	Util::FixedArray<Util::Array<VkSubmitInfo>> submitInfos;
 };
 
 } // namespace Vulkan

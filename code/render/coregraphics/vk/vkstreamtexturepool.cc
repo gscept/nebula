@@ -12,10 +12,10 @@
 #include <vulkan/vulkan.h>
 #include "vkgraphicsdevice.h"
 #include "vkutilities.h"
-#include "vkscheduler.h"
 #include "math/scalar.h"
 #include "vkshaderserver.h"
 #include "coregraphics/memorytexturepool.h"
+#include "vksubmissioncontext.h"
 namespace Vulkan
 {
 
@@ -152,8 +152,6 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 	VkUtilities::AllocateImageMemory(loadInfo.dev, loadInfo.img, loadInfo.mem, VkMemoryPropertyFlagBits(0), alignedSize);
 	vkBindImageMemory(dev, loadInfo.img, loadInfo.mem, 0);
 
-	VkScheduler* scheduler = VkScheduler::Instance();
-
 	// transition into transfer mode
 	VkImageSubresourceRange subres;
 	subres.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -161,7 +159,16 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 	subres.baseMipLevel = 0;
 	subres.layerCount = info.arrayLayers;
 	subres.levelCount = info.mipLevels;
-	scheduler->PushImageLayoutTransition(TransferQueueType, CoreGraphics::BarrierStage::Host, CoreGraphics::BarrierStage::Transfer, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
+
+	// use resource submission
+	CoreGraphics::SubmissionContextId sub = CoreGraphics::GetResourceSubmissionContext();
+
+	// transition to transfer
+	VkUtilities::ImageBarrier(CoreGraphics::SubmissionContextGetCmdBuffer(sub),
+		CoreGraphics::BarrierStage::Host,
+		CoreGraphics::BarrierStage::Transfer,
+		VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
+	
 	uint32_t remainingBytes = alignedSize;
 
 	// now load texture by walking through all images and mips
@@ -186,6 +193,10 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 				n_assert(remainingBytes >= 0);
 				ILubyte* buf = ilGetData();
 
+				// copy buffer, will be deleted later
+				char* bufferCopy = new char[size];
+				memcpy(bufferCopy, buf, size);
+
 				int32_t mipWidth = (int32_t)Math::n_max(1.0f, Math::n_floor(width / Math::n_pow(2, (float)j)));
 				int32_t mipHeight = (int32_t)Math::n_max(1.0f, Math::n_floor(height / Math::n_pow(2, (float)j)));
 				int32_t mipDepth = (int32_t)Math::n_max(1.0f, Math::n_floor(depth / Math::n_pow(2, (float)j)));
@@ -194,8 +205,14 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 				info.extent.height = mipHeight;
 				info.extent.depth = 1;
 
-				// push a deferred image update, since we may not be within a frame
-				scheduler->PushImageUpdate(loadInfo.img, info, j, i, size, (uint32_t*)buf);
+				VkBuffer outBuf;
+				VkDeviceMemory outMem;
+				VkUtilities::ImageUpdate(dev, CoreGraphics::SubmissionContextGetCmdBuffer(sub), TransferQueueType, loadInfo.img, info, j, i, size, (uint32_t*)bufferCopy, outBuf, outMem);
+
+				// add host memory buffer, intermediate device memory, and intermediate device buffer to delete queue
+				SubmissionContextFreeHostMemory(sub, bufferCopy);
+				SubmissionContextFreeDeviceMemory(sub, dev, outMem);
+				SubmissionContextFreeBuffer(sub, dev, outBuf);
 			}
 		}
 	}
@@ -212,6 +229,10 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 			n_assert(remainingBytes >= 0);
 			ILubyte* buf = ilGetData();
 
+			// copy buffer, will be deleted later
+			char* bufferCopy = new char[size];
+			memcpy(bufferCopy, buf, size);
+
 			int32_t mipWidth = (int32_t)Math::n_max(1.0f, Math::n_floor(width / Math::n_pow(2, (float)j)));
 			int32_t mipHeight = (int32_t)Math::n_max(1.0f, Math::n_floor(height / Math::n_pow(2, (float)j)));
 			int32_t mipDepth = (int32_t)Math::n_max(1.0f, Math::n_floor(depth / Math::n_pow(2, (float)j)));
@@ -221,15 +242,22 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 			info.extent.height = mipHeight;
 			info.extent.depth = 1;
 
-			// push a deferred image update, since we may not be within a frame
-			scheduler->PushImageUpdate(loadInfo.img, info, j, 0, size, (uint32_t*)buf);
+			VkBuffer outBuf;
+			VkDeviceMemory outMem;
+			VkUtilities::ImageUpdate(dev, CoreGraphics::SubmissionContextGetCmdBuffer(sub), TransferQueueType, loadInfo.img, info, j, 0, size, (uint32_t*)bufferCopy, outBuf, outMem);
+
+			// add host memory buffer, intermediate device memory, and intermediate device buffer to delete queue
+			SubmissionContextFreeHostMemory(sub, bufferCopy);
+			SubmissionContextFreeDeviceMemory(sub, dev, outMem);
+			SubmissionContextFreeBuffer(sub, dev, outBuf);
 		}
 	}
 
-	// transition to something readable by shaders
-	VkClearColorValue val = { 1, 0, 0, 1 };
-	scheduler->PushImageOwnershipChange(TransferQueueType, CoreGraphics::BarrierStage::Transfer, CoreGraphics::BarrierStage::Transfer, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, TransferQueueType, GraphicsQueueType, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
-	scheduler->PushImageLayoutTransition(GraphicsQueueType, CoreGraphics::BarrierStage::Transfer, CoreGraphics::BarrierStage::AllGraphicsShaders, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+	// transition image to be used for rendering
+	VkUtilities::ImageBarrier(CoreGraphics::SubmissionContextGetCmdBuffer(sub),
+		CoreGraphics::BarrierStage::Host,
+		CoreGraphics::BarrierStage::AllGraphicsShaders,
+		VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, TransferQueueType, GraphicsQueueType, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
 		
 	ilDeleteImage(image);
 

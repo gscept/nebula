@@ -328,7 +328,7 @@ JobThread::JobThread() :
 */
 JobThread::~JobThread()
 {
-	// empty
+	this->commands.Clear();
 }
 
 //------------------------------------------------------------------------------

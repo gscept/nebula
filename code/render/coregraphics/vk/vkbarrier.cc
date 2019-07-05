@@ -5,7 +5,7 @@
 #include "render/stdneb.h"
 #include "vkbarrier.h"
 #include "coregraphics/config.h"
-#include "vkcmdbuffer.h"
+#include "vkcommandbuffer.h"
 #include "vktypes.h"
 #include "vkrendertexture.h"
 #include "vkshaderrwtexture.h"

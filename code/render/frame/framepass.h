@@ -36,9 +36,6 @@ public:
 		void Run(const IndexT frameIndex);
 		void Discard();
 
-		void CrossQueuePreSync() override;
-		void CrossQueuePostSync() override;
-
 #if NEBULA_GRAPHICS_DEBUG
 		Util::StringAtom name;
 #endif

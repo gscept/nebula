@@ -24,12 +24,10 @@ FenceId CreateFence(const FenceCreateInfo& info);
 /// destroy a fence
 void DestroyFence(const FenceId id);
 
-/// insert fence into queue
-void FenceInsert(const FenceId id, const CoreGraphicsQueueType queue);
 /// peek fence status
 bool FencePeek(const FenceId id);
 /// reset fence status
-void FenceReset(const FenceId id);
+bool FenceReset(const FenceId id);
 /// wait for fence
 bool FenceWait(const FenceId id, const uint64 time);
 

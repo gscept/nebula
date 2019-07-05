@@ -208,8 +208,6 @@ void JobSchedule(const JobId& job, const JobPortId& port, const JobContext& ctx,
 void JobScheduleSequence(const Util::Array<JobId>& jobs, const JobPortId& port, const Util::Array<JobContext>& contexts);
 /// schedule a sequence of jobs
 void JobScheduleSequence(const Util::Array<JobId>& jobs, const JobPortId& port, const Util::Array<JobContext>& contexts, const std::function<void()>& callback);
-/// wait for the job
-void JobWait(const JobId& job);
 /// allocate memory for job
 void* JobAllocateScratchMemory(const JobId& job, const Memory::HeapType heap, const SizeT size);
 

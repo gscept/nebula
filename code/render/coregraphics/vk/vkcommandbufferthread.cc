@@ -3,18 +3,18 @@
 // (C) 2016-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
-#include "vkcmdbufferthread.h"
+#include "vkcommandbufferthread.h"
 #include "threading/event.h"
 #include "coregraphics/vk/vkgraphicsdevice.h"
 
 namespace Vulkan
 {
 
-__ImplementClass(Vulkan::VkCmdBufferThread, 'VCBT', Threading::Thread);
+__ImplementClass(Vulkan::VkCommandBufferThread, 'VCBT', Threading::Thread);
 //------------------------------------------------------------------------------
 /**
 */
-VkCmdBufferThread::VkCmdBufferThread()
+VkCommandBufferThread::VkCommandBufferThread()
 {
 	// empty
 }
@@ -22,7 +22,7 @@ VkCmdBufferThread::VkCmdBufferThread()
 //------------------------------------------------------------------------------
 /**
 */
-VkCmdBufferThread::~VkCmdBufferThread()
+VkCommandBufferThread::~VkCommandBufferThread()
 {
 	// empty
 }
@@ -31,7 +31,7 @@ VkCmdBufferThread::~VkCmdBufferThread()
 /**
 */
 void
-VkCmdBufferThread::EmitWakeupSignal()
+VkCommandBufferThread::EmitWakeupSignal()
 {
 	this->commands.Signal();
 }
@@ -40,7 +40,7 @@ VkCmdBufferThread::EmitWakeupSignal()
 /**
 */
 void
-VkCmdBufferThread::DoWork()
+VkCommandBufferThread::DoWork()
 {
 	Util::Array<Command> curCommands;
 	curCommands.Reserve(1000);
@@ -62,7 +62,7 @@ VkCmdBufferThread::DoWork()
 #if NEBULA_GRAPHICS_DEBUG
 				{
 					Util::String name = Util::String::Sprintf("%s Generate draws", this->GetMyThreadName());
-					Vulkan::CmdBufBeginMarker(this->commandBuffer, Math::float4(0.8f, 0.6f, 0.6f, 1.0f), name.AsCharPtr());
+					Vulkan::CommandBufferBeginMarker(this->commandBuffer, Math::float4(0.8f, 0.6f, 0.6f, 1.0f), name.AsCharPtr());
 				}
 #endif
 				n_assert(vkBeginCommandBuffer(this->commandBuffer, &cmd.bgCmd.info) == VK_SUCCESS);
@@ -74,7 +74,7 @@ VkCmdBufferThread::DoWork()
 				n_assert(vkEndCommandBuffer(this->commandBuffer) == VK_SUCCESS);
 
 #if NEBULA_GRAPHICS_DEBUG
-				Vulkan::CmdBufEndMarker(this->commandBuffer);
+				Vulkan::CommandBufferEndMarker(this->commandBuffer);
 #endif
 				this->commandBuffer = VK_NULL_HANDLE;
 				this->pipelineLayout = VK_NULL_HANDLE;

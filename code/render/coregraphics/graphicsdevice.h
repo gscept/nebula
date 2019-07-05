@@ -16,6 +16,7 @@
 #include "fence.h"
 #include "debug/debugcounter.h"
 #include "coregraphics/rendereventhandler.h"
+#include "coregraphics/submissioncontext.h"
 
 namespace CoreGraphics
 {
@@ -38,6 +39,17 @@ struct GraphicsDeviceState
 	Util::Dictionary<Util::StringAtom, CoreGraphics::RenderTextureId> renderTextures;
 	Util::Dictionary<Util::StringAtom, CoreGraphics::ShaderRWTextureId> shaderRWTextures;
 	Util::Dictionary<Util::StringAtom, CoreGraphics::ShaderRWBufferId> shaderRWBuffers;
+
+	CoreGraphics::SubmissionContextId resourceSubmissionContext;
+	CoreGraphics::CommandBufferId resourceSubmissionCmdBuffer;
+	CoreGraphics::SemaphoreId resourceSubmissionSemaphore;
+	CoreGraphics::FenceId resourceSubmissionFence;
+
+	CoreGraphics::SubmissionContextId setupSubmissionContext;
+	CoreGraphics::CommandBufferId setupSubmissionCmdBuffer;
+	CoreGraphics::SemaphoreId setupSubmissionSemaphore;
+	CoreGraphics::FenceId setupSubmissionFence;
+
 	Util::Array<Ptr<CoreGraphics::RenderEventHandler> > eventHandlers;
 	CoreGraphics::PrimitiveTopology::Code primitiveTopology;
 	CoreGraphics::PrimitiveGroup primitiveGroup;
@@ -69,6 +81,8 @@ bool NotifyEventHandlers(const CoreGraphics::RenderEvent& e);
 
 /// begin complete frame
 bool BeginFrame(IndexT frameIndex);
+/// start a new submission, with an optional argument for waiting for another queue
+void BeginSubmission(CoreGraphicsQueueType queue);
 /// begin a rendering pass
 void BeginPass(const CoreGraphics::PassId pass);
 /// progress to next subpass
@@ -116,6 +130,14 @@ CoreGraphics::ConstantBufferId GetGraphicsConstantBuffer();
 uint AllocateComputeConstantBufferMemory(uint size);
 /// return id to global compute constant buffer
 CoreGraphics::ConstantBufferId GetComputeConstantBuffer();
+/// return resource submission context
+CoreGraphics::SubmissionContextId GetResourceSubmissionContext();
+/// return setup submission context
+CoreGraphics::SubmissionContextId GetSetupSubmissionContext();
+/// return command buffer for current frame graphics submission
+CoreGraphics::CommandBufferId GetGfxCommandBuffer();
+/// return command buffer for current frame async compute submission
+CoreGraphics::CommandBufferId GetComputeCommandBuffer();
 
 /// set pipeline using current layout, shader and pass
 void SetGraphicsPipeline();
@@ -150,6 +172,8 @@ void Compute(int dimX, int dimY, int dimZ);
 void EndBatch();
 /// end current pass
 void EndPass();
+/// end the current submission, 
+void EndSubmission(CoreGraphicsQueueType queue, CoreGraphicsQueueType waitQueue);
 /// end current frame
 void EndFrame(IndexT frameIndex);
 /// check if inside BeginFrame
@@ -212,11 +236,11 @@ void QueueEndMarker(const CoreGraphicsQueueType queue);
 /// insert marker
 void QueueInsertMarker(const CoreGraphicsQueueType queue, const Math::float4& color, const Util::String& name);
 /// begin debug marker region
-void CmdBufBeginMarker(const CoreGraphicsQueueType queue, const Math::float4& color, const Util::String& name);
+void CommandBufferBeginMarker(const CoreGraphicsQueueType queue, const Math::float4& color, const Util::String& name);
 /// end debug marker region
-void CmdBufEndMarker(const CoreGraphicsQueueType queue);
+void CommandBufferEndMarker(const CoreGraphicsQueueType queue);
 /// insert marker
-void CmdBufInsertMarker(const CoreGraphicsQueueType queue, const Math::float4& color, const Util::String& name);
+void CommandBufferInsertMarker(const CoreGraphicsQueueType queue, const Math::float4& color, const Util::String& name);
 #endif
 
 

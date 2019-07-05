@@ -12,7 +12,7 @@
 #include "coregraphics/rendertexture.h"
 #include "coregraphics/shaderrwtexture.h"
 #include "coregraphics/shaderrwbuffer.h"
-#include "coregraphics/cmdbuffer.h"
+#include "coregraphics/commandbuffer.h"
 #include "coregraphics/config.h"
 #include <tuple>
 namespace CoreGraphics

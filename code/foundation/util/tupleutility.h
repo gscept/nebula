@@ -46,12 +46,7 @@ using get_template_type_t = typename get_template_type<C>::type;
 template<class...Ts, std::size_t...Is> void
 alloc_for_each_in_tuple(std::tuple<Ts...>& tuple, std::index_sequence<Is...>)
 {
-	using expander = int[];
-	(void)expander
-	{
-		0,
-			(std::get<Is>(tuple).Append(typename get_template_type<Ts>::type()), 0)...
-	};
+	(std::get<Is>(tuple).Append(typename get_template_type<Ts>::type()), ...);
 }
 
 //------------------------------------------------------------------------------
@@ -71,12 +66,7 @@ alloc_for_each_in_tuple(std::tuple<Ts...>& tuple)
 template<class...Ts, std::size_t...Is> void
 clear_for_each_in_tuple(std::tuple<Ts...>& tuple, std::index_sequence<Is...>)
 {
-	using expander = int[];
-	(void)expander
-	{
-		0,
-			(std::get<Is>(tuple).Clear(), 0)...
-	};
+	(std::get<Is>(tuple).Clear(), ...);
 }
 
 //------------------------------------------------------------------------------
@@ -96,12 +86,7 @@ clear_for_each_in_tuple(std::tuple<Ts...>& tuple)
 template <class...Ts, std::size_t...Is> void
 move_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t to, uint32_t from, std::index_sequence<Is...>)
 {
-	using expander = int[];
-	(void)expander
-	{
-		0,
-			(std::get<Is>(tuple)[to] = std::get<Is>(tuple)[from], 0)...
-	};
+	(std::get<Is>(tuple)[to] = std::get<Is>(tuple)[from], ...);
 }
 
 //------------------------------------------------------------------------------
@@ -122,12 +107,7 @@ move_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t to, uint32_t from)
 template <class...Ts, std::size_t...Is> void
 erase_index_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t i, std::index_sequence<Is...>)
 {
-	using expander = int[];
-	(void)expander
-	{
-		0,
-			(std::get<Is>(tuple).EraseIndex(i), 0)...
-	};
+	(std::get<Is>(tuple).EraseIndex(i), ...);
 }
 
 //------------------------------------------------------------------------------
@@ -151,12 +131,7 @@ erase_index_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t i)
 template <class...Ts, std::size_t...Is> void
 erase_index_swap_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t i, std::index_sequence<Is...>)
 {
-	using expander = int[];
-	(void)expander
-	{
-		0,
-			(std::get<Is>(tuple).EraseIndexSwap(i), 0)...
-	};
+	(std::get<Is>(tuple).EraseIndexSwap(i), ...);
 }
 
 //------------------------------------------------------------------------------
@@ -179,12 +154,7 @@ erase_index_swap_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t i)
 template <class...Ts, std::size_t...Is, class...TYPES> void
 set_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t i, std::index_sequence<Is...>, TYPES const& ... values)
 {
-	using expander = int[];
-	(void)expander
-	{
-		0,
-			(std::get<Is>(tuple)[i] = values, 0)...
-	};
+	((std::get<Is>(tuple)[i] = values), ...);
 }
 
 //------------------------------------------------------------------------------
@@ -204,12 +174,7 @@ set_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t i, TYPES const& ... val
 template <class...Ts, std::size_t...Is> void
 reserve_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t size, std::index_sequence<Is...>)
 {
-	using expander = int[];
-	(void)expander
-	{
-		0,
-			(std::get<Is>(tuple).Reserve(size), 0)...
-	};
+	(std::get<Is>(tuple).Reserve(size), ...);
 }
 
 //------------------------------------------------------------------------------
@@ -229,12 +194,7 @@ reserve_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t size)
 template <class...Ts, std::size_t...Is> void
 set_size_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t size, std::index_sequence<Is...>)
 {
-    using expander = int[];
-    (void)expander
-    {
-        0,
-            (std::get<Is>(tuple).SetSize(size), 0)...
-    };
+	(std::get<Is>(tuple).SetSize(size), ...);
 }
 
 //------------------------------------------------------------------------------

@@ -59,7 +59,7 @@ FramePass::CompiledImpl::Run(const IndexT frameIndex)
 {
 
 #if NEBULA_GRAPHICS_DEBUG
-	CoreGraphics::CmdBufBeginMarker(GraphicsQueueType, NEBULA_MARKER_GREEN, this->name.Value());
+	CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_GREEN, this->name.Value());
 #endif
 
 	// begin pass
@@ -83,7 +83,7 @@ FramePass::CompiledImpl::Run(const IndexT frameIndex)
 	PassEnd(this->pass);
 
 #if NEBULA_GRAPHICS_DEBUG
-	CoreGraphics::CmdBufEndMarker(GraphicsQueueType);
+	CoreGraphics::CommandBufferEndMarker(GraphicsQueueType);
 #endif
 }
 
@@ -95,26 +95,6 @@ FramePass::CompiledImpl::Discard()
 {
 	for (IndexT i = 0; i < this->subpasses.Size(); i++)
 		this->subpasses[i]->Discard();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-FramePass::CompiledImpl::CrossQueuePreSync()
-{
-	for (IndexT i = 0; i < this->subpasses.Size(); i++)
-		this->subpasses[i]->CrossQueuePreSync();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-FramePass::CompiledImpl::CrossQueuePostSync()
-{
-	for (IndexT i = 0; i < this->subpasses.Size(); i++)
-		this->subpasses[i]->CrossQueuePostSync();
 }
 
 //------------------------------------------------------------------------------

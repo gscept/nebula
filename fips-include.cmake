@@ -191,36 +191,36 @@ macro(nebula_add_nidl)
     endforeach()
 endmacro()
 
-macro(add_frameshader)    
+macro(add_frameshader)
     foreach(frm ${ARGN})
             get_filename_component(basename ${frm} NAME)
             set(output ${EXPORT_DIR}/frame/${basename})
-            add_custom_command(OUTPUT ${output}                
-                COMMAND ${CMAKE_COMMAND} -E copy ${frm} ${EXPORT_DIR}
-                MAIN_DEPENDENCY ${frm}                
+            add_custom_command(OUTPUT ${output}
+                COMMAND ${CMAKE_COMMAND} -E copy ${frm} ${EXPORT_DIR}/frame
+                MAIN_DEPENDENCY ${frm}
                 WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
-                COMMENT "Copying Frameshader ${frm} to ${EXPORT_DIR}"
+                COMMENT "Copying Frameshader ${frm} to ${EXPORT_DIR}/frame"
                 VERBATIM
                 )
             fips_files(${frm})
             SOURCE_GROUP("res\\frameshaders" FILES ${frm})
-        endforeach()    
+        endforeach()
 endmacro()
 
 macro(add_material)
     foreach(mat ${ARGN})
             get_filename_component(basename ${mat} NAME)
             set(output ${EXPORT_DIR}/materials/${basename})
-            add_custom_command(OUTPUT ${output}                
-                COMMAND ${CMAKE_COMMAND} -E copy ${mat} ${EXPORT_DIR}
-                MAIN_DEPENDENCY ${mat}                
+            add_custom_command(OUTPUT ${output}
+                COMMAND ${CMAKE_COMMAND} -E copy ${mat} ${EXPORT_DIR}/materials
+                MAIN_DEPENDENCY ${mat}
                 WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
-                COMMENT "Copying material ${mat} to ${EXPORT_DIR}"
+                COMMENT "Copying material ${mat} to ${EXPORT_DIR}/materials"
                 VERBATIM
                 )
             fips_files(${mat})
             SOURCE_GROUP("res\\materials" FILES ${mat})
-        endforeach()    
+        endforeach()
 endmacro()
 
 macro(add_nebula_shaders)

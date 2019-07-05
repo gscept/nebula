@@ -3,14 +3,15 @@
 /**
 	Implements some Vulkan related utilities
 	
-	(C)2017-2018 Individual contributors, see AUTHORS file
+	(C) 2017-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "vkdeferredcommand.h"
 #include "coregraphics/gpubuffertypes.h"
 #include "coregraphics/pixelformat.h"
 #include "coregraphics/texture.h"
-#include "coregraphics/cmdbuffer.h"
+#include "coregraphics/commandbuffer.h"
+#include "math/rectangle.h"
 namespace Vulkan
 {
 class VkTexture;
@@ -22,24 +23,28 @@ public:
 	/// destructor
 	virtual ~VkUtilities();
 
-	/// perform image layout transition immediately
-	static void ImageLayoutTransition(CoreGraphicsQueueType queue, VkPipelineStageFlags left, VkPipelineStageFlags right, VkImageMemoryBarrier barrier);
-	/// perform image layout transition immediately
-	static void ImageLayoutTransition(VkCommandBuffer buf, VkPipelineStageFlags left, VkPipelineStageFlags right, VkImageMemoryBarrier barrier);
+	/// image transition on a constant buffer
+	static void ImageBarrier(CoreGraphics::CommandBufferId cmd, CoreGraphics::BarrierStage left, CoreGraphics::BarrierStage right, VkImageMemoryBarrier barrier);
+	/// update buffer memory from CPU
+	static void BufferUpdate(CoreGraphics::CommandBufferId cmd, VkBuffer buf, VkDeviceSize offset, VkDeviceSize size, const void* data);
+	/// update image memory from CPU
+	static void ImageUpdate(VkDevice dev, CoreGraphics::CommandBufferId cmd, CoreGraphicsQueueType queue, VkImage img, const VkImageCreateInfo& info, uint32_t mip, uint32_t face, VkDeviceSize size, uint32_t* data, VkBuffer& outIntermediateBuffer, VkDeviceMemory& outIntermediateMemory);
+	/// perform image color clear
+	static void ImageColorClear(CoreGraphics::CommandBufferId cmd, const VkImage& image, VkImageLayout layout, VkClearColorValue clearValue, VkImageSubresourceRange subres);
+	/// perform image depth stencil clear
+	static void ImageDepthStencilClear(CoreGraphics::CommandBufferId cmd, const VkImage& image, VkImageLayout layout, VkClearDepthStencilValue clearValue, VkImageSubresourceRange subres);
+	/// do actual copy (see coregraphics namespace for helper functions)
+	static void Copy(CoreGraphics::CommandBufferId cmd, const VkImage from, Math::rectangle<SizeT> fromRegion, const VkImage to, Math::rectangle<SizeT> toRegion);
+	/// perform actual blit (see coregraphics namespace for helper functions)
+	static void Blit(CoreGraphics::CommandBufferId cmd, const VkImage from, Math::rectangle<SizeT> fromRegion, IndexT fromMip, const VkImage to, Math::rectangle<SizeT> toRegion, IndexT toMip);
+
+
 	/// create image memory barrier
 	static VkImageMemoryBarrier ImageMemoryBarrier(const VkImage& img, VkImageSubresourceRange subres, VkAccessFlags left, VkAccessFlags right, VkImageLayout oldLayout, VkImageLayout newLayout);
 	/// create image ownership change
 	static VkImageMemoryBarrier ImageMemoryBarrier(const VkImage& img, VkImageSubresourceRange subres, CoreGraphicsQueueType fromQueue, CoreGraphicsQueueType toQueue, VkAccessFlags left, VkAccessFlags right, VkImageLayout oldLayout, VkImageLayout newLayout);
 	/// create buffer memory barrier
 	static VkBufferMemoryBarrier BufferMemoryBarrier(const VkBuffer& buf, VkDeviceSize offset, VkDeviceSize size, VkAccessFlags srcAccess, VkAccessFlags dstAccess);
-	/// transition image between layouts
-	static void ChangeImageLayout(const VkImageMemoryBarrier& barrier, const CoreGraphicsQueueType type);
-	/// transition image ownership
-	static void ImageOwnershipChange(CoreGraphicsQueueType queue, VkPipelineStageFlags left, VkPipelineStageFlags right, VkImageMemoryBarrier barrier);
-	/// perform image color clear
-	static void ImageColorClear(const VkImage& image, const CoreGraphicsQueueType queue, VkImageLayout layout, VkClearColorValue clearValue, VkImageSubresourceRange subres);
-	/// perform image depth stencil clear
-	static void ImageDepthStencilClear(const VkImage& image, const CoreGraphicsQueueType queue, VkImageLayout layout, VkClearDepthStencilValue clearValue, VkImageSubresourceRange subres);
 
 	/// allocate a buffer memory storage
 	static void AllocateBufferMemory(const VkDevice dev, const VkBuffer& buf, VkDeviceMemory& bufmem, VkMemoryPropertyFlagBits flags, uint32_t& bufsize);
@@ -48,20 +53,13 @@ public:
 	/// figure out which memory type fits given memory bits and required properties
 	static VkResult GetMemoryType(uint32_t bits, VkMemoryPropertyFlags flags, uint32_t& index);
 
-	/// update buffer memory from CPU
-	static void BufferUpdate(const VkBuffer& buf, VkDeviceSize offset, VkDeviceSize size, const void* data);
-	/// update buffer memory from CPU
-	static void BufferUpdate(VkCommandBuffer cmd, const VkBuffer& buf, VkDeviceSize offset, VkDeviceSize size, const void* data);
-	/// update image memory from CPU
-	static void ImageUpdate(const VkImage& img, const VkImageCreateInfo& info, uint32_t mip, uint32_t face, VkDeviceSize size, uint32_t* data);
-
 	/// perform image read-back, and saves to buffer (SLOW!)
 	static void ReadImage(const VkImage tex, CoreGraphics::PixelFormat::Code format, CoreGraphics::TextureDimensions dims, CoreGraphics::TextureType type, VkImageCopy copy, uint32_t& outMemSize, VkDeviceMemory& outMem, VkBuffer& outBuffer);
 	/// perform image write-back, transitions data from buffer to image (SLOW!)
 	static void WriteImage(const VkBuffer& srcImg, const VkImage& dstImg, VkImageCopy copy);
 	/// helper to begin immediate transfer
-	static CoreGraphics::CmdBufferId BeginImmediateTransfer();
+	static CoreGraphics::CommandBufferId BeginImmediateTransfer();
 	/// helper to end immediate transfer
-	static void EndImmediateTransfer(CoreGraphics::CmdBufferId cmdBuf);
+	static void EndImmediateTransfer(CoreGraphics::CommandBufferId cmdBuf);
 };
 } // namespace Vulkan
