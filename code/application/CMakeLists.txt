@@ -82,8 +82,6 @@ nebula_begin_module(application)
 			loaderserver.cc
 			userprofile.h
 			userprofile.cc
-			scenecompiler.h
-			scenecompiler.cc
 			jsonentityloader.h
 			jsonentityloader.cc
 		)

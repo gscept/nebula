@@ -5,7 +5,6 @@
 #include "stdneb.h"
 #include "levelloader.h"
 #include "util/hashtable.h"
-#include "scenecompiler.h"
 #include "basegamefeature/managers/entitymanager.h"
 #include "io/memorystream.h"
 #include "basegamefeature/managers/componentmanager.h"
@@ -27,13 +26,8 @@ LevelLoader::Save(const Util::String& levelName)
     flatbuffers::FlatBufferBuilder builder(1024);
     
     auto numEntities = Game::EntityManager::Instance()->GetNumEntities();
-	// SceneCompiler scene;
 	uint indexHash = 0;
 	Util::HashTable<Game::Entity, uint, 1024> entityToIndex;
-
-	// scene.numEntities = numEntities;
-
-	// Fill components
 
 	Ptr<Game::ComponentManager> manager = Game::ComponentManager::Instance();
     uint numComponents = 0;
