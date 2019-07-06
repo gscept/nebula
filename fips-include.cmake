@@ -196,7 +196,7 @@ macro(add_frameshader)
             get_filename_component(basename ${frm} NAME)
             set(output ${EXPORT_DIR}/frame/${basename})
             add_custom_command(OUTPUT ${output}                
-                COMMAND ${CMAKE_COMMAND} -E copy ${frm} ${EXPORT_DIR}
+                COMMAND ${CMAKE_COMMAND} -E copy ${frm} ${EXPORT_DIR}/frame/
                 MAIN_DEPENDENCY ${frm}                
                 WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
                 COMMENT "Copying Frameshader ${frm} to ${EXPORT_DIR}"
@@ -212,7 +212,7 @@ macro(add_material)
             get_filename_component(basename ${mat} NAME)
             set(output ${EXPORT_DIR}/materials/${basename})
             add_custom_command(OUTPUT ${output}                
-                COMMAND ${CMAKE_COMMAND} -E copy ${mat} ${EXPORT_DIR}
+                COMMAND ${CMAKE_COMMAND} -E copy ${mat} ${EXPORT_DIR}/materials/
                 MAIN_DEPENDENCY ${mat}                
                 WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
                 COMMENT "Copying material ${mat} to ${EXPORT_DIR}"
