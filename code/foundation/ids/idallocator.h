@@ -67,10 +67,11 @@ public:
 		return this->freeIds;
 	}
 
-    /// return number of allocated ids
+    /// return number of in-use allocated ids
     const uint32_t Size() const
     {
-        return this->size - freeIds.Size();
+        const uint32_t frees = static_cast<uint32_t>(freeIds.Size());
+        return frees > this->size ? 0 : this->size - frees;
     }
 
 private:
