@@ -76,8 +76,29 @@ LevelLoader::Save(const Util::String& levelName)
 
         auto attributes = builder.CreateVector(attributeDefinitions.Begin(), attributeDefinitions.Size());
 
+        Util::Array<Game::Entity> instanceOwners = component->GetOwners();
+
+        // update owner to the entity index
+        // when the buffer is loaded later on, the owners will be in the 0...numInstances range
+        // this means that later on when we load the data, we need to convert the owner ids to the newly allocated entity ids.
+        for (uint instance = 0; instance < numInstances; instance++)
+        {
+            Game::Entity owner = instanceOwners[instance];
+            if (entityToIndex.Contains(owner))
+            {
+                instanceOwners[instance] = entityToIndex[owner];
+            }
+            else
+            {
+                // hash entity
+                entityToIndex.Add(owner, indexHash);
+                instanceOwners[instance] = indexHash;
+                indexHash++;
+            }
+        }
+
         static_assert(sizeof(Game::Entity) == sizeof(uint32_t), "Flatbuffer owner array inner type is not the same size as Game::Entity. Adjust the flatbuffer file!");
-        auto owners = builder.CreateVector(reinterpret_cast<uint32_t*>(component->GetOwners().Begin()), component->NumRegistered());
+        auto owners = builder.CreateVector(reinterpret_cast<uint32_t*>(instanceOwners.Begin()), instanceOwners.Size());
 
 		// Serialize the component data into builddata local stream
 		Ptr<IO::BinaryWriter> bWriter = IO::BinaryWriter::Create();
@@ -90,32 +111,7 @@ LevelLoader::Save(const Util::String& levelName)
 
 		bWriter->Close();
 		
-		// We know the owner is always the first attribute
-		// so we can easily update owner of each instance
-		{
-			Game::Entity* owners = (Game::Entity*)mStream->GetRawPointer();
-			
-			// update owner to the entity index
-            // when the buffer is loaded later on, the owners will be in the 0...numInstances range
-            // this means that later on when we load the data, we need to convert the owner ids to the newly allocated entity ids.
-			for (uint instance = 0; instance < numInstances; instance++)
-			{
-				Game::Entity owner = owners[instance];
-				if (entityToIndex.Contains(owner))
-				{
-					owners[instance] = entityToIndex[owner];
-				}
-				else
-				{
-					// hash entity
-					entityToIndex.Add(owner, indexHash);
-					owners[instance] = indexHash;
-					indexHash++;
-				}
-			}
-		}
-
-        auto dataStream = builder.CreateVector((ubyte*)mStream->GetRawPointer(), mStream->GetSize());
+		auto dataStream = builder.CreateVector((ubyte*)mStream->GetRawPointer(), mStream->GetSize());
 
         Game::Serialization::ComponentDataBuilder c(builder);
         c.add_fourcc(component->GetIdentifier().AsUInt());
@@ -245,18 +241,20 @@ LevelLoader::Load(const Util::String& levelName)
             bReader->SetStream(mStream);
 			bReader->Open();
 			
-			c->DeserializeOwners(bReader, start, numInstances);
 			if (c->functions.Deserialize != nullptr)
 				c->functions.Deserialize(bReader, start, numInstances);
 			
 			bReader->Close(); // automatically closes the memory stream. The copied memory will be freed when the destructor is called (end of scope)
 
-			// update owner and id maps
-			for (uint j = start; j < end; j++)
-			{
-				c->SetOwner(j, entities[c->GetOwner(j).id]);
-			}
+            Util::Array<Game::Entity> newOwners((Game::Entity*)component->owners()->data(), component->owners()->size());
+            c->SetOwners(start, newOwners);
 
+			// update owner and id maps
+            for (uint j = start; j < end; j++)
+            {
+                c->SetOwner(j, entities[c->GetOwner(j).id]);
+            }
+			
 			if (c->functions.SetParents != nullptr && parentIndices.Size() > 0)
 			{
 				c->functions.SetParents(start, end, entities, parentIndices);
