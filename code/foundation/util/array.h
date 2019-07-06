@@ -53,6 +53,8 @@ public:
     Array(Array<TYPE>&& rhs);
 	/// constructor from initializer list
 	Array(std::initializer_list<TYPE> list);
+    /// constructor from TYPE pointer and size. @note copies the buffer.
+    Array(const TYPE* const buf, SizeT num);
     /// destructor
     ~Array();
 
@@ -242,6 +244,21 @@ Array<TYPE>::Array(SizeT initialSize, SizeT _grow, const TYPE& initialValue) :
     {
         this->elements = 0;
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+Array<TYPE>::Array(const TYPE* const buf, SizeT num) :
+    grow(16),
+    capacity(num),
+    count(num)
+{
+    static_assert(std::is_trivially_copyable<TYPE>::value, "TYPE is not trivially copyable; Util::Array cannot be constructed from pointer of TYPE.");
+    this->elements = n_new_array(TYPE, this->capacity);
+    const SizeT bytes = num * sizeof(TYPE);
+    Memory::Copy(buf, this->elements, bytes);
 }
 
 //------------------------------------------------------------------------------

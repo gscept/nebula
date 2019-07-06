@@ -82,11 +82,10 @@ nebula_begin_module(application)
 			loaderserver.cc
 			userprofile.h
 			userprofile.cc
-			scenecompiler.h
-			scenecompiler.cc
 			jsonentityloader.h
 			jsonentityloader.cc
 		)
+		flatc(level.fbs)
 	fips_dir(graphicsfeature)
 		fips_files(
 			graphicsfeatureunit.h
