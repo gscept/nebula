@@ -51,6 +51,7 @@ enum CoreGraphicsQueueType
 	ComputeQueueType,
 	TransferQueueType,
 	SparseQueueType,
+	InvalidQueueType,
 
 	NumQueueTypes
 };

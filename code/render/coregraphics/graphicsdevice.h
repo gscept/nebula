@@ -97,7 +97,7 @@ bool BeginFrame(IndexT frameIndex);
 void BeginSubmission(CoreGraphicsQueueType queue);
 /// begin a rendering pass
 void BeginPass(const CoreGraphics::PassId pass);
-/// progress to next subpass
+/// progress to next subpass	
 void SetToNextSubpass();
 /// begin rendering a batch
 void BeginBatch(Frame::FrameBatchType::Code batchType);

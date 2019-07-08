@@ -74,24 +74,28 @@ CreateSubmissionContext(const SubmissionContextCreateInfo& info)
 	SubmissionContextId ret;
 	Ids::Id32 id = submissionContextAllocator.Alloc();
 
+	submissionContextAllocator.Get<SubmissionContextNumCycles>(id) = info.numBuffers;
 	submissionContextAllocator.Get<SubmissionContextCmdBuffer>(id).Resize(info.numBuffers);
 	submissionContextAllocator.Get<SubmissionContextSemaphore>(id).Resize(info.numBuffers);
 	submissionContextAllocator.Get<SubmissionContextRetiredCmdBuffer>(id).Resize(info.numBuffers);
 	submissionContextAllocator.Get<SubmissionContextRetiredSemaphore>(id).Resize(info.numBuffers);
-	submissionContextAllocator.Get<SubmissionContextFence>(id).Resize(info.numBuffers);
 	submissionContextAllocator.Get<SubmissionContextCmdCreateInfo>(id) = info.cmdInfo;
 #if NEBULA_GRAPHICS_DEBUG
 	submissionContextAllocator.Get<SubmissionContextName>(id) = info.name;
 #endif
 
 	// create fences
-	for (uint i = 0; i < info.numBuffers; i++)
+	if (info.useFence)
 	{
-		FenceId& fence = submissionContextAllocator.Get<SubmissionContextFence>(id)[i];
+		submissionContextAllocator.Get<SubmissionContextFence>(id).Resize(info.numBuffers);
+		for (uint i = 0; i < info.numBuffers; i++)
+		{
+			FenceId& fence = submissionContextAllocator.Get<SubmissionContextFence>(id)[i];
 
-		FenceCreateInfo fenceInfo{ true };
-		fence = CreateFence(fenceInfo);
-	}
+			FenceCreateInfo fenceInfo{ true };
+			fence = CreateFence(fenceInfo);
+		}
+	}	
 
 	submissionContextAllocator.Get<SubmissionContextCurrentIndex>(id) = 0;
 
@@ -199,12 +203,17 @@ SubmissionContextNextCycle(const SubmissionContextId id)
 	IndexT& currentIndex = submissionContextAllocator.Get<SubmissionContextCurrentIndex>(id.id24);
 
 	// cycle index and update
-	currentIndex = (currentIndex + 1) % submissionContextAllocator.Get<SubmissionContextFence>(id.id24).Size();
+	currentIndex = (currentIndex + 1) % submissionContextAllocator.Get<SubmissionContextNumCycles>(id.id24);
 
 	// get next fence and wait for it to finish
-	FenceId nextFence = submissionContextAllocator.Get<SubmissionContextFence>(id.id24)[currentIndex];
-	bool res = FenceWait(nextFence, UINT64_MAX);
-	n_assert(res);
+	auto& fences = submissionContextAllocator.Get<SubmissionContextFence>(id.id24);
+	FenceId nextFence = FenceId::Invalid();
+	if (fences.Size() > 0)
+	{
+		nextFence = submissionContextAllocator.Get<SubmissionContextFence>(id.id24)[currentIndex];
+		bool res = FenceWait(nextFence, UINT64_MAX);
+		n_assert(res);
+	}	
 
 	// clean up retired buffers and semaphores
 	Util::Array<CommandBufferId>& bufs = submissionContextAllocator.Get<SubmissionContextRetiredCmdBuffer>(id.id24)[currentIndex];

@@ -1294,12 +1294,12 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	}
 
 	cmdCreateInfo.usage = CommandGfx;
-	state.gfxSubmission = CreateSubmissionContext({ info.numBufferedFrames, cmdCreateInfo });
+	state.gfxSubmission = CreateSubmissionContext({ cmdCreateInfo, info.numBufferedFrames, true });
 	state.gfxCmdBuffer = CommandBufferId::Invalid();
 	state.gfxSemaphore = SemaphoreId::Invalid();
 
 	cmdCreateInfo.usage = CommandCompute;
-	state.computeSubmission = CreateSubmissionContext({ info.numBufferedFrames, cmdCreateInfo });
+	state.computeSubmission = CreateSubmissionContext({ cmdCreateInfo, info.numBufferedFrames, true });
 	state.computeCmdBuffer = CommandBufferId::Invalid();
 	state.computeSemaphore = SemaphoreId::Invalid();
 
@@ -1307,7 +1307,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 
 	// create setup submission and transfer submission
 	cmdCreateInfo.usage = CommandTransfer;
-	state.resourceSubmissionContext = CreateSubmissionContext({ info.numBufferedFrames, cmdCreateInfo });
+	state.resourceSubmissionContext = CreateSubmissionContext({ cmdCreateInfo, info.numBufferedFrames, true });
 	state.resourceSubmissionFence = SubmissionContextNextCycle(state.resourceSubmissionContext);
 	SubmissionContextNewBuffer(state.resourceSubmissionContext, state.resourceSubmissionCmdBuffer, state.resourceSubmissionSemaphore);
 
@@ -1315,7 +1315,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	CommandBufferBeginRecord(state.resourceSubmissionCmdBuffer, beginInfo);
 
 	cmdCreateInfo.usage = CommandGfx;
-	state.setupSubmissionContext = CreateSubmissionContext({ info.numBufferedFrames, cmdCreateInfo });
+	state.setupSubmissionContext = CreateSubmissionContext({ cmdCreateInfo, 1, false });
 	state.setupSubmissionFence = SubmissionContextNextCycle(state.setupSubmissionContext);
 	SubmissionContextNewBuffer(state.setupSubmissionContext, state.setupSubmissionCmdBuffer, state.setupSubmissionSemaphore);
 
@@ -1648,6 +1648,7 @@ BeginFrame(IndexT frameIndex)
 	BeginSubmission(GraphicsQueueType);
 	BeginSubmission(ComputeQueueType);
 
+	// update bindless texture descriptors
 	VkShaderServer::Instance()->SubmitTextureDescriptorChanges();
 
 	// reset current thread
@@ -1676,6 +1677,7 @@ BeginSubmission(CoreGraphicsQueueType queue)
 			true, false, false
 		};
 		CommandBufferBeginRecord(state.gfxCmdBuffer, cmdInfo);
+		state.gfxPrevSemaphore = SemaphoreId::Invalid();
 	}
 	else if (queue == ComputeQueueType)
 	{
@@ -1688,6 +1690,7 @@ BeginSubmission(CoreGraphicsQueueType queue)
 			true, false, false
 		};
 		CommandBufferBeginRecord(state.computeCmdBuffer, cmdInfo);
+		state.computePrevSemaphore = SemaphoreId::Invalid();
 	}
 }
 
@@ -2417,24 +2420,11 @@ EndPass()
 void 
 EndSubmission(CoreGraphicsQueueType queue, CoreGraphicsQueueType waitQueue)
 {
-	if (queue == ComputeQueueType)
+	if (queue == GraphicsQueueType)
 	{
-		// submit to compute
-		state.subcontextHandler.AddSubmission(ComputeQueueType,
-			CommandBufferGetVk(state.computeCmdBuffer),
-			SemaphoreGetVk(state.computePrevSemaphore), VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-			SemaphoreGetVk(state.computeSemaphore));
+		// stop recording
+		CommandBufferEndRecord(state.gfxCmdBuffer);
 
-		// if we should wait for the graphics, add a semaphore
-		if (waitQueue == GraphicsQueueType)
-			state.subcontextHandler.AddWaitSemaphore(ComputeQueueType, SemaphoreGetVk(state.gfxSemaphore), VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-
-		// set prev to current semaphore and create new buffer/semaphore pair
-		state.computePrevSemaphore = state.computeSemaphore;
-		SubmissionContextNewBuffer(state.computeSubmission, state.computeCmdBuffer, state.computeSemaphore);
-	}
-	else if (queue == GraphicsQueueType)
-	{
 		// submit to graphics
 		state.subcontextHandler.AddSubmission(GraphicsQueueType,
 			CommandBufferGetVk(state.gfxCmdBuffer),
@@ -2445,9 +2435,26 @@ EndSubmission(CoreGraphicsQueueType queue, CoreGraphicsQueueType waitQueue)
 		if (waitQueue == ComputeQueueType)
 			state.subcontextHandler.AddWaitSemaphore(GraphicsQueueType, SemaphoreGetVk(state.computeSemaphore), VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
 
-		// set prev to current semaphore and create new buffer/semaphore pair
+		// set prev to current semaphore
 		state.gfxPrevSemaphore = state.gfxSemaphore;
-		SubmissionContextNewBuffer(state.gfxSubmission, state.gfxCmdBuffer, state.gfxSemaphore);
+	}
+	else if (queue == ComputeQueueType)
+	{
+		// stop recording
+		CommandBufferEndRecord(state.computeCmdBuffer);
+
+		// submit to compute
+		state.subcontextHandler.AddSubmission(ComputeQueueType,
+			CommandBufferGetVk(state.computeCmdBuffer),
+			SemaphoreGetVk(state.computePrevSemaphore), VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			SemaphoreGetVk(state.computeSemaphore));
+
+		// if we should wait for the graphics, add a semaphore
+		if (waitQueue == GraphicsQueueType)
+			state.subcontextHandler.AddWaitSemaphore(ComputeQueueType, SemaphoreGetVk(state.gfxSemaphore), VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+
+		// set previous semaphore
+		state.computePrevSemaphore = state.computeSemaphore;
 	}
 }
 
@@ -2468,10 +2475,6 @@ EndFrame(IndexT frameIndex)
 	}
 
 	state.inBeginFrame = false;
-
-	// finish gfx and compute buffers
-	CommandBufferEndRecord(state.gfxCmdBuffer);
-	CommandBufferEndRecord(state.computeCmdBuffer);
 
 	// wait for resource manager first, since it will write to the transfer cmd buffer
 	Resources::WaitForLoaderThread();
@@ -2507,13 +2510,15 @@ EndFrame(IndexT frameIndex)
 
 #if NEBULA_GRAPHICS_DEBUG
 	CoreGraphics::QueueEndMarker(TransferQueueType);
-	CoreGraphics::QueueBeginMarker(ComputeQueueType, NEBULA_MARKER_BLUE, "Compute frame commands submission");
 #endif
 
-	state.subcontextHandler.AddSubmission(ComputeQueueType, 
-		CommandBufferGetVk(state.computeCmdBuffer),
-		SemaphoreGetVk(state.computePrevSemaphore), VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-		SemaphoreGetVk(state.computeSemaphore));
+	// finish gfx and compute buffers
+	EndSubmission(GraphicsQueueType, InvalidQueueType);
+	EndSubmission(ComputeQueueType, InvalidQueueType);
+
+#if NEBULA_GRAPHICS_DEBUG
+	CoreGraphics::QueueBeginMarker(ComputeQueueType, NEBULA_MARKER_BLUE, "Compute frame commands submission");
+#endif
 
 	// submit compute, wait for this frames resource submissions
 	state.subcontextHandler.FlushSubmissions(ComputeQueueType, 
@@ -2525,13 +2530,8 @@ EndFrame(IndexT frameIndex)
 	CoreGraphics::QueueBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "Graphics frame commands submission");
 #endif
 
-	state.subcontextHandler.AddSubmission(GraphicsQueueType,
-		CommandBufferGetVk(state.gfxCmdBuffer),
-		SemaphoreGetVk(state.gfxPrevSemaphore), VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
-		SemaphoreGetVk(state.gfxSemaphore));
-
 	// add waits for setup and resource, correct place to put this is for the first submission in this frame
-	state.subcontextHandler.AddWaitSemaphore(GraphicsQueueType, SemaphoreGetVk(state.resourceSubmissionSemaphore), VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
+	//state.subcontextHandler.AddWaitSemaphore(GraphicsQueueType, SemaphoreGetVk(state.resourceSubmissionSemaphore), VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
 	state.subcontextHandler.AddWaitSemaphore(GraphicsQueueType, SemaphoreGetVk(state.setupSubmissionSemaphore), VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
 
 	// submit graphics, wait for this frames resource submissions
@@ -2547,12 +2547,12 @@ EndFrame(IndexT frameIndex)
 	state.resourceSubmissionFence = SubmissionContextNextCycle(state.resourceSubmissionContext);
 	SubmissionContextNewBuffer(state.resourceSubmissionContext, state.resourceSubmissionCmdBuffer, state.resourceSubmissionSemaphore);
 
+	// we don't need to sync, because the beginning of the frame will have waited for the previous fence for the setup
 	state.setupSubmissionFence = SubmissionContextNextCycle(state.setupSubmissionContext);
 	SubmissionContextNewBuffer(state.setupSubmissionContext, state.setupSubmissionCmdBuffer, state.setupSubmissionSemaphore);
 
-	CommandBufferBeginInfo beginInfo{ true, false, false };
-
 	// start recording 
+	CommandBufferBeginInfo beginInfo{ true, false, false };
 	CommandBufferBeginRecord(state.resourceSubmissionCmdBuffer, beginInfo);
 	CommandBufferBeginRecord(state.setupSubmissionCmdBuffer, beginInfo);
 

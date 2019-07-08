@@ -31,8 +31,9 @@ ID_24_8_TYPE(SubmissionContextId);
 
 struct SubmissionContextCreateInfo
 {
-	uint numBuffers : 3; // number of buffers it should keep track of
-	CommandBufferCreateInfo cmdInfo; // creation info for the cmd buffers
+	CommandBufferCreateInfo cmdInfo;	// creation info for the cmd buffers
+	uint numBuffers : 3;				// number of buffers it should keep track of
+	bool useFence : 1;					// set if a fence should be used when we cycle				
 #if NEBULA_GRAPHICS_DEBUG
 	Util::String name;
 #endif

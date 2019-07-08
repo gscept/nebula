@@ -18,6 +18,7 @@ namespace Vulkan
 
 enum
 {
+	SubmissionContextNumCycles,
 	SubmissionContextCmdBuffer,
 	SubmissionContextSemaphore,
 	SubmissionContextRetiredCmdBuffer,
@@ -34,6 +35,7 @@ enum
 };
 
 typedef Ids::IdAllocator<
+	SizeT,
 	Util::FixedArray<CoreGraphics::CommandBufferId>,
 	Util::FixedArray<CoreGraphics::SemaphoreId>,
 	Util::FixedArray<Util::Array<CoreGraphics::CommandBufferId>>,

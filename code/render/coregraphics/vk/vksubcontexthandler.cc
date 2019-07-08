@@ -72,7 +72,7 @@ VkSubContextHandler::Setup(VkDevice dev, const Util::FixedArray<uint> indexMap, 
 void
 VkSubContextHandler::Discard()
 {
-
+	this->submissions.Clear();
 }
 
 //------------------------------------------------------------------------------

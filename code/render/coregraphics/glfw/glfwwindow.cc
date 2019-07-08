@@ -914,7 +914,7 @@ Present(const CoreGraphics::WindowId& id)
 	};
 
 #if NEBULA_GRAPHICS_DEBUG
-	CoreGraphics::QueueBeginMarker(GraphicsQueueType, NEBULA_MARKER_PURPLE, "Presentation");
+	CoreGraphics::QueueBeginMarker(GraphicsQueueType, NEBULA_MARKER_PINK, "Presentation");
 #endif
 
 	// submit a sync point for the display, transfer bit is viable since we blit to the texture
