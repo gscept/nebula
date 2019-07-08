@@ -31,6 +31,7 @@
 #include "coregraphics/vk/vkconstantbuffer.h"
 #include "coregraphics/vk/vksemaphore.h"
 #include "coregraphics/vk/vkfence.h"
+#include "coregraphics/vk/vksubmissioncontext.h"
 #include "coregraphics/submissioncontext.h"
 #include "resources/resourcemanager.h"
 namespace Vulkan
@@ -100,50 +101,23 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 	VkViewport* passViewports;
 	uint32_t numVsInputs;
 
-	struct FrameSubmission
+	struct ConstantsRingBuffer
 	{
-		CoreGraphics::SubmissionContextId gfxSubmission;
-		CoreGraphics::SubmissionContextId computeSubmission;
-
-		CoreGraphics::CommandBufferId gfxCmdBuffer;
-		CoreGraphics::SemaphoreId gfxPrevSemaphore;
-		CoreGraphics::SemaphoreId gfxSemaphore;
-
-		CoreGraphics::CommandBufferId computeCmdBuffer;
-		CoreGraphics::SemaphoreId computePrevSemaphore;
-		CoreGraphics::SemaphoreId computeSemaphore;
+		uint globalGraphicsConstantBufferMaxValue;
+		CoreGraphics::ConstantBufferId globalGraphicsConstantBuffer;
+		uint globalComputeConstantBufferMaxValue;
+		CoreGraphics::ConstantBufferId globalComputeConstantBuffer;
 
 		// handle global constant memory
 		uint32_t cboGfxStartAddress;
 		uint32_t cboGfxEndAddress;
 		uint32_t cboComputeStartAddress;
 		uint32_t cboComputeEndAddress;
-		CoreGraphics::FenceId gfxFence;
-		CoreGraphics::FenceId computeFence;
-
-		// struct holding the resources to release upon fence encounter
-		struct FreeContext
-		{
-			Util::Array<std::tuple<VkDevice, VkCommandPool, VkCommandBuffer>> cmdBuffers;
-			Util::Array<std::tuple<VkDevice, VkBuffer>> buffers;
-			Util::Array<std::tuple<VkDevice, VkDeviceMemory>> memories;
-			Util::Array<std::tuple<VkDevice, VkImage>> images;
-		};		
-		FreeContext gfxFreeContext;
-		FreeContext computeFreeContext;
 	};
 
-	// free up accumulated allocations
-	void FreePendingResources(FrameSubmission::FreeContext& context);
-
-	Util::FixedArray<FrameSubmission> frameSubmissions;
+	Util::FixedArray<ConstantsRingBuffer> frameSubmissions;
 	uint maxNumFrameSubmissions;
 	uint32_t currentFrameSubmission;
-
-	uint globalGraphicsConstantBufferMaxValue;
-	CoreGraphics::ConstantBufferId globalGraphicsConstantBuffer;
-	uint globalComputeConstantBufferMaxValue;
-	CoreGraphics::ConstantBufferId globalComputeConstantBuffer;
 
 	VkExtensionProperties physicalExtensions[64];
 
@@ -357,13 +331,21 @@ GetMemoryProperties()
 VkCommandBuffer 
 GetMainBuffer(const CoreGraphicsQueueType queue)
 {
-	Vulkan::GraphicsDeviceState::FrameSubmission& sub = state.frameSubmissions[state.currentFrameSubmission];
 	switch (queue)
 	{
-	case GraphicsQueueType: return CommandBufferGetVk(sub.gfxCmdBuffer);
-	case ComputeQueueType: return CommandBufferGetVk(sub.computeCmdBuffer);
+	case GraphicsQueueType: return CommandBufferGetVk(state.gfxCmdBuffer);
+	case ComputeQueueType: return CommandBufferGetVk(state.computeCmdBuffer);
 	}
 	return VK_NULL_HANDLE;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+VkSemaphore 
+GetGraphicsSemaphore()
+{
+	return SemaphoreGetVk(state.gfxSemaphore);
 }
 
 //------------------------------------------------------------------------------
@@ -862,13 +844,13 @@ EndDrawThreads()
 		vkCmdExecuteCommands(GetMainBuffer(GraphicsQueueType), state.numActiveThreads, state.dispatchableDrawCmdBuffers);
 
 		// get current submission
-		Vulkan::GraphicsDeviceState::FrameSubmission& sub = state.frameSubmissions[state.currentFrameSubmission];
+		Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.frameSubmissions[state.currentFrameSubmission];
 		VkDevice dev = state.devices[state.currentDevice];
 
 		// destroy command buffers
 		for (i = 0; i < state.numActiveThreads; i++)
 		{
-			sub.gfxFreeContext.cmdBuffers.Append(std::make_tuple(dev, state.dispatchableCmdDrawBufferPool[i], state.dispatchableDrawCmdBuffers[i]));
+			Vulkan::SubmissionContextFreeCommandBuffer(state.gfxSubmission, dev, state.dispatchableCmdDrawBufferPool[i], state.dispatchableDrawCmdBuffers[i]);
 		}
 		state.currentDrawThread = state.NumDrawThreads - 1;
 		state.numActiveThreads = 0;
@@ -948,49 +930,6 @@ CommandBufferEndMarker(VkCommandBuffer buf)
 }
 #endif
 
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-GraphicsDeviceState::FreePendingResources(FrameSubmission::FreeContext& context)
-{
-	IndexT i;
-
-	// clear command buffers
-	for (i = 0; i < context.cmdBuffers.Size(); i++)
-	{
-		vkFreeCommandBuffers(
-			std::get<0>(context.cmdBuffers[i]),
-			std::get<1>(context.cmdBuffers[i]),
-			1, &std::get<2>(context.cmdBuffers[i]));
-	}
-	context.cmdBuffers.Clear();
-
-	// clear buffers
-	for (i = 0; i < context.buffers.Size(); i++)
-	{
-		vkDestroyBuffer(std::get<0>(context.buffers[i]),
-			std::get<1>(context.buffers[i]), nullptr);
-	}
-	context.buffers.Clear();
-
-	// clear images
-	for (i = 0; i < context.images.Size(); i++)
-	{
-		vkDestroyImage(std::get<0>(context.images[i]),
-			std::get<1>(context.images[i]), nullptr);
-	}
-	context.images.Clear();
-
-	// free up memory
-	for (i = 0; i < context.memories.Size(); i++)
-	{
-		vkFreeMemory(std::get<0>(context.memories[i]),
-			std::get<1>(context.memories[i]), nullptr);
-	}
-	context.memories.Clear();
-}
-
 } // namespace Vulkan
 
 //------------------------------------------------------------------------------
@@ -1057,7 +996,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		2,																// application version
 		"Nebula Trifid",												// engine name
 		2,																// engine version
-		VK_MAKE_VERSION(1, 0, VK_HEADER_VERSION)						// API version
+		VK_MAKE_VERSION(1, 1, VK_HEADER_VERSION)						// API version
 	};
 
 	state.usedExtensions = 0;
@@ -1147,7 +1086,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	}
 
 #if NEBULA_GRAPHICS_DEBUG
-	VkDebugObjectName = (PFN_vkSetDebugUtilsObjectNameEXT)vkGetInstanceProcAddr(state.instance, "vkSetDebugUtilsObjectTagEXT");
+	VkDebugObjectName = (PFN_vkSetDebugUtilsObjectNameEXT)vkGetInstanceProcAddr(state.instance, "vkSetDebugUtilsObjectNameEXT");
 	VkDebugObjectTag = (PFN_vkSetDebugUtilsObjectTagEXT)vkGetInstanceProcAddr(state.instance, "vkSetDebugUtilsObjectTagEXT");
 	VkQueueBeginLabel = (PFN_vkQueueBeginDebugUtilsLabelEXT)vkGetInstanceProcAddr(state.instance, "vkQueueBeginDebugUtilsLabelEXT");
 	VkQueueEndLabel = (PFN_vkQueueEndDebugUtilsLabelEXT)vkGetInstanceProcAddr(state.instance, "vkQueueEndDebugUtilsLabelEXT");
@@ -1335,24 +1274,40 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 
 	for (i = 0; i < info.numBufferedFrames; i++)
 	{
-		Vulkan::GraphicsDeviceState::FrameSubmission& sub = state.frameSubmissions[i];
+		Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.frameSubmissions[i];
+		sub.cboComputeStartAddress = sub.cboComputeEndAddress = 0;
+		sub.cboGfxStartAddress = sub.cboGfxEndAddress = 0;
 
-		cmdCreateInfo.usage = CommandGfx;
-		sub.gfxSubmission = CreateSubmissionContext({ 3, cmdCreateInfo });
-		sub.gfxCmdBuffer = CommandBufferId::Invalid();
-		sub.gfxSemaphore = SemaphoreId::Invalid();
+		ConstantBufferCreateInfo cboInfo =
+		{
+			"SharedConstantBuffer"_atm,
+			-1,
+			info.globalGraphicsConstantBufferMemorySize,
+			CoreGraphics::ConstantBufferUpdateMode::ManualFlush
+		};
+		sub.globalGraphicsConstantBuffer = CreateConstantBuffer(cboInfo);
+		sub.globalGraphicsConstantBufferMaxValue = info.globalGraphicsConstantBufferMemorySize;
 
-		cmdCreateInfo.usage = CommandCompute;
-		sub.computeSubmission = CreateSubmissionContext({ 3, cmdCreateInfo });
-		sub.computeCmdBuffer = CommandBufferId::Invalid();
-		sub.computeSemaphore = SemaphoreId::Invalid();
+		cboInfo.size = info.globalComputeConstantBufferMemorySize;
+		sub.globalComputeConstantBuffer = CreateConstantBuffer(cboInfo);
+		sub.globalComputeConstantBufferMaxValue = info.globalComputeConstantBufferMemorySize;
 	}
+
+	cmdCreateInfo.usage = CommandGfx;
+	state.gfxSubmission = CreateSubmissionContext({ info.numBufferedFrames, cmdCreateInfo });
+	state.gfxCmdBuffer = CommandBufferId::Invalid();
+	state.gfxSemaphore = SemaphoreId::Invalid();
+
+	cmdCreateInfo.usage = CommandCompute;
+	state.computeSubmission = CreateSubmissionContext({ info.numBufferedFrames, cmdCreateInfo });
+	state.computeCmdBuffer = CommandBufferId::Invalid();
+	state.computeSemaphore = SemaphoreId::Invalid();
 
 	CommandBufferBeginInfo beginInfo{ true, false, false };
 
 	// create setup submission and transfer submission
 	cmdCreateInfo.usage = CommandTransfer;
-	state.resourceSubmissionContext = CreateSubmissionContext({ 1, cmdCreateInfo });
+	state.resourceSubmissionContext = CreateSubmissionContext({ info.numBufferedFrames, cmdCreateInfo });
 	state.resourceSubmissionFence = SubmissionContextNextCycle(state.resourceSubmissionContext);
 	SubmissionContextNewBuffer(state.resourceSubmissionContext, state.resourceSubmissionCmdBuffer, state.resourceSubmissionSemaphore);
 
@@ -1360,7 +1315,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	CommandBufferBeginRecord(state.resourceSubmissionCmdBuffer, beginInfo);
 
 	cmdCreateInfo.usage = CommandGfx;
-	state.setupSubmissionContext = CreateSubmissionContext({ 1, cmdCreateInfo });
+	state.setupSubmissionContext = CreateSubmissionContext({ info.numBufferedFrames, cmdCreateInfo });
 	state.setupSubmissionFence = SubmissionContextNextCycle(state.setupSubmissionContext);
 	SubmissionContextNewBuffer(state.setupSubmissionContext, state.setupSubmissionCmdBuffer, state.setupSubmissionSemaphore);
 
@@ -1369,19 +1324,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 
 #pragma pop_macro("CreateSemaphore")
 
-	ConstantBufferCreateInfo cboInfo = 
-	{
-		"SharedConstantBuffer"_atm,
-		-1,
-		info.globalGraphicsConstantBufferMemorySize,
-		CoreGraphics::ConstantBufferUpdateMode::ManualFlush
-	};
-	state.globalGraphicsConstantBuffer = CreateConstantBuffer(cboInfo);
-	state.globalGraphicsConstantBufferMaxValue = info.globalGraphicsConstantBufferMemorySize;
 
-	cboInfo.size = info.globalComputeConstantBufferMemorySize;
-	state.globalComputeConstantBuffer = CreateConstantBuffer(cboInfo);
-	state.globalComputeConstantBufferMaxValue = info.globalComputeConstantBufferMemorySize;
 
 	state.maxNumFrameSubmissions = info.numBufferedFrames;
 
@@ -1685,7 +1628,7 @@ BeginFrame(IndexT frameIndex)
 	state.inBeginFrame = true;
 
 	// update current state submission
-	Vulkan::GraphicsDeviceState::FrameSubmission& sub = state.frameSubmissions[state.currentFrameSubmission];
+	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.frameSubmissions[state.currentFrameSubmission];
 	uint nextGfxCboStart = sub.cboGfxEndAddress;
 	uint nextComputeCboStart = sub.cboComputeEndAddress;
 
@@ -1693,17 +1636,13 @@ BeginFrame(IndexT frameIndex)
 	state.currentFrameSubmission = (state.currentFrameSubmission + 1) % state.maxNumFrameSubmissions;
 
 	// cycle submissions, will wait for the fence to finish
-	Vulkan::GraphicsDeviceState::FrameSubmission& nextSub = state.frameSubmissions[state.currentFrameSubmission];
-	nextSub.gfxFence = CoreGraphics::SubmissionContextNextCycle(nextSub.gfxSubmission);
-	nextSub.computeFence = CoreGraphics::SubmissionContextNextCycle(nextSub.computeSubmission);
+	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& nextSub = state.frameSubmissions[state.currentFrameSubmission];
+	state.gfxFence = CoreGraphics::SubmissionContextNextCycle(state.gfxSubmission);
+	state.computeFence = CoreGraphics::SubmissionContextNextCycle(state.computeSubmission);
 	nextSub.cboGfxStartAddress = 0;
 	nextSub.cboGfxEndAddress = 0;
 	nextSub.cboComputeStartAddress = 0;
 	nextSub.cboComputeEndAddress = 0;
-
-	// after waiting for the fence, make sure to clear the pending resources
-	state.FreePendingResources(nextSub.gfxFreeContext);
-	state.FreePendingResources(nextSub.computeFreeContext);
 
 	// begin new submissions implicitly
 	BeginSubmission(GraphicsQueueType);
@@ -1725,31 +1664,30 @@ void
 BeginSubmission(CoreGraphicsQueueType queue)
 {
 	n_assert(state.inBeginFrame);
-	Vulkan::GraphicsDeviceState::FrameSubmission& sub = state.frameSubmissions[state.currentFrameSubmission];
 
 	if (queue == GraphicsQueueType)
 	{
 		// generate new buffer and semaphore
-		CoreGraphics::SubmissionContextNewBuffer(sub.gfxSubmission, sub.gfxCmdBuffer, sub.gfxSemaphore);
+		CoreGraphics::SubmissionContextNewBuffer(state.gfxSubmission, state.gfxCmdBuffer, state.gfxSemaphore);
 
 		// begin recording the new buffer
 		const CommandBufferBeginInfo cmdInfo =
 		{
 			true, false, false
 		};
-		CommandBufferBeginRecord(sub.gfxCmdBuffer, cmdInfo);
+		CommandBufferBeginRecord(state.gfxCmdBuffer, cmdInfo);
 	}
 	else if (queue == ComputeQueueType)
 	{
 		// generate new buffer and semaphore
-		CoreGraphics::SubmissionContextNewBuffer(sub.computeSubmission, sub.computeCmdBuffer, sub.computeSemaphore);
+		CoreGraphics::SubmissionContextNewBuffer(state.computeSubmission, state.computeCmdBuffer, state.computeSemaphore);
 
 		// begin recording the new buffer
 		const CommandBufferBeginInfo cmdInfo =
 		{
 			true, false, false
 		};
-		CommandBufferBeginRecord(sub.computeCmdBuffer, cmdInfo);
+		CommandBufferBeginRecord(state.computeCmdBuffer, cmdInfo);
 	}
 }
 
@@ -2081,13 +2019,13 @@ PushConstants(ShaderPipeline pipeline, uint offset, uint size, byte* data)
 uint 
 AllocateGraphicsConstantBufferMemory(uint size)
 {
-	Vulkan::GraphicsDeviceState::FrameSubmission& sub = state.frameSubmissions[state.currentFrameSubmission];
+	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.frameSubmissions[state.currentFrameSubmission];
 
 	// no matter how we spin it
 	uint ret = sub.cboGfxEndAddress;
 
 	// if we have to wrap around, or we are fingering on the range of the next frame submission buffer...
-	if (sub.cboGfxEndAddress + size > state.globalGraphicsConstantBufferMaxValue)
+	if (sub.cboGfxEndAddress + size > sub.globalGraphicsConstantBufferMaxValue)
 	{
 		n_warning("Over allocation of graphics constant memory! Memory will be overwritten!");
 
@@ -2107,7 +2045,8 @@ AllocateGraphicsConstantBufferMemory(uint size)
 CoreGraphics::ConstantBufferId 
 GetGraphicsConstantBuffer()
 {
-	return state.globalGraphicsConstantBuffer;
+	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.frameSubmissions[state.currentFrameSubmission];
+	return sub.globalGraphicsConstantBuffer;
 }
 
 //------------------------------------------------------------------------------
@@ -2116,13 +2055,13 @@ GetGraphicsConstantBuffer()
 uint 
 AllocateComputeConstantBufferMemory(uint size)
 {
-	Vulkan::GraphicsDeviceState::FrameSubmission& sub = state.frameSubmissions[state.currentFrameSubmission];
+	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.frameSubmissions[state.currentFrameSubmission];
 
 	// no matter how we spin it
 	uint ret = sub.cboComputeEndAddress;
 
 	// if we have to wrap around, or we are fingering on the range of the next frame submission buffer...
-	if (sub.cboComputeEndAddress + size > state.globalComputeConstantBufferMaxValue)
+	if (sub.cboComputeEndAddress + size > sub.globalComputeConstantBufferMaxValue)
 	{
 		n_warning("Over allocation of compute constant memory! Memory will be overwritten!");
 
@@ -2142,7 +2081,8 @@ AllocateComputeConstantBufferMemory(uint size)
 CoreGraphics::ConstantBufferId 
 GetComputeConstantBuffer()
 {
-	return state.globalComputeConstantBuffer;
+	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.frameSubmissions[state.currentFrameSubmission];
+	return sub.globalComputeConstantBuffer;
 }
 
 //------------------------------------------------------------------------------
@@ -2169,8 +2109,7 @@ GetSetupSubmissionContext()
 CoreGraphics::CommandBufferId 
 GetGfxCommandBuffer()
 {
-	Vulkan::GraphicsDeviceState::FrameSubmission& sub = state.frameSubmissions[state.currentFrameSubmission];
-	return sub.gfxCmdBuffer;
+	return state.gfxCmdBuffer;
 }
 
 //------------------------------------------------------------------------------
@@ -2179,8 +2118,7 @@ GetGfxCommandBuffer()
 CoreGraphics::CommandBufferId 
 GetComputeCommandBuffer()
 {
-	Vulkan::GraphicsDeviceState::FrameSubmission& sub = state.frameSubmissions[state.currentFrameSubmission];
-	return sub.computeCmdBuffer;
+	return state.computeCmdBuffer;
 }
 
 //------------------------------------------------------------------------------
@@ -2479,39 +2417,37 @@ EndPass()
 void 
 EndSubmission(CoreGraphicsQueueType queue, CoreGraphicsQueueType waitQueue)
 {
-	Vulkan::GraphicsDeviceState::FrameSubmission& sub = state.frameSubmissions[state.currentFrameSubmission];
-
 	if (queue == ComputeQueueType)
 	{
 		// submit to compute
 		state.subcontextHandler.AddSubmission(ComputeQueueType,
-			CommandBufferGetVk(sub.computeCmdBuffer),
-			SemaphoreGetVk(sub.computePrevSemaphore), VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-			SemaphoreGetVk(sub.computeSemaphore));
+			CommandBufferGetVk(state.computeCmdBuffer),
+			SemaphoreGetVk(state.computePrevSemaphore), VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			SemaphoreGetVk(state.computeSemaphore));
 
 		// if we should wait for the graphics, add a semaphore
 		if (waitQueue == GraphicsQueueType)
-			state.subcontextHandler.AddWaitSemaphore(ComputeQueueType, SemaphoreGetVk(sub.gfxSemaphore), VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+			state.subcontextHandler.AddWaitSemaphore(ComputeQueueType, SemaphoreGetVk(state.gfxSemaphore), VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 
 		// set prev to current semaphore and create new buffer/semaphore pair
-		sub.computePrevSemaphore = sub.computeSemaphore;
-		SubmissionContextNewBuffer(sub.computeSubmission, sub.computeCmdBuffer, sub.computeSemaphore);
+		state.computePrevSemaphore = state.computeSemaphore;
+		SubmissionContextNewBuffer(state.computeSubmission, state.computeCmdBuffer, state.computeSemaphore);
 	}
 	else if (queue == GraphicsQueueType)
 	{
 		// submit to graphics
 		state.subcontextHandler.AddSubmission(GraphicsQueueType,
-			CommandBufferGetVk(sub.gfxCmdBuffer),
-			SemaphoreGetVk(sub.gfxPrevSemaphore), VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
-			SemaphoreGetVk(sub.gfxSemaphore));
+			CommandBufferGetVk(state.gfxCmdBuffer),
+			SemaphoreGetVk(state.gfxPrevSemaphore), VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+			SemaphoreGetVk(state.gfxSemaphore));
 
 		// if we should wait for the compute, add a semaphore
 		if (waitQueue == ComputeQueueType)
-			state.subcontextHandler.AddWaitSemaphore(GraphicsQueueType, SemaphoreGetVk(sub.computeSemaphore), VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
+			state.subcontextHandler.AddWaitSemaphore(GraphicsQueueType, SemaphoreGetVk(state.computeSemaphore), VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
 
 		// set prev to current semaphore and create new buffer/semaphore pair
-		sub.gfxPrevSemaphore = sub.gfxSemaphore;
-		SubmissionContextNewBuffer(sub.gfxSubmission, sub.gfxCmdBuffer, sub.gfxSemaphore);
+		state.gfxPrevSemaphore = state.gfxSemaphore;
+		SubmissionContextNewBuffer(state.gfxSubmission, state.gfxCmdBuffer, state.gfxSemaphore);
 	}
 }
 
@@ -2533,11 +2469,12 @@ EndFrame(IndexT frameIndex)
 
 	state.inBeginFrame = false;
 
-	Vulkan::GraphicsDeviceState::FrameSubmission& sub = state.frameSubmissions[state.currentFrameSubmission];
-
 	// finish gfx and compute buffers
-	CommandBufferEndRecord(sub.gfxCmdBuffer);
-	CommandBufferEndRecord(sub.computeCmdBuffer);
+	CommandBufferEndRecord(state.gfxCmdBuffer);
+	CommandBufferEndRecord(state.computeCmdBuffer);
+
+	// wait for resource manager first, since it will write to the transfer cmd buffer
+	Resources::WaitForLoaderThread();
 
 	// finish up the resource submission and setup submissions
 	CommandBufferEndRecord(state.resourceSubmissionCmdBuffer);
@@ -2547,20 +2484,16 @@ EndFrame(IndexT frameIndex)
 	CoreGraphics::QueueBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "Graphics setup submission");
 #endif
 
-	// submit the setup stuff, and wait immediately
-	state.subcontextHandler.SubmitImmediate(GraphicsQueueType,
+	// submit the setup stuff, but allow the graphics queue to submit the fence
+	state.subcontextHandler.AddSubmission(GraphicsQueueType,
 		CommandBufferGetVk(state.setupSubmissionCmdBuffer),
 		VK_NULL_HANDLE, VK_PIPELINE_STAGE_TRANSFER_BIT,
-		SemaphoreGetVk(state.setupSubmissionSemaphore),
-		FenceGetVk(state.setupSubmissionFence), true);
+		SemaphoreGetVk(state.setupSubmissionSemaphore));
 
 #if NEBULA_GRAPHICS_DEBUG
 	CoreGraphics::QueueEndMarker(GraphicsQueueType);
-	CoreGraphics::QueueBeginMarker(TransferQueueType, NEBULA_MARKER_BLUE, "Transfer frame commands submission");
+	CoreGraphics::QueueBeginMarker(TransferQueueType, NEBULA_MARKER_BLUE, "Resource transfer submission");
 #endif
-
-	// wait for resource manager first, since it will write to the transfer cmd buffer
-	Resources::WaitForLoaderThread();
 
 	// submit resource stuff
 	state.subcontextHandler.AddSubmission(TransferQueueType,
@@ -2568,7 +2501,9 @@ EndFrame(IndexT frameIndex)
 		VK_NULL_HANDLE, VK_PIPELINE_STAGE_TRANSFER_BIT,
 		SemaphoreGetVk(state.resourceSubmissionSemaphore));
 
-	state.subcontextHandler.FlushSubmissions(TransferQueueType, FenceGetVk(state.resourceSubmissionFence), false);
+	state.subcontextHandler.FlushSubmissions(TransferQueueType, 
+		FenceGetVk(state.resourceSubmissionFence), 
+		false);
 
 #if NEBULA_GRAPHICS_DEBUG
 	CoreGraphics::QueueEndMarker(TransferQueueType);
@@ -2576,15 +2511,14 @@ EndFrame(IndexT frameIndex)
 #endif
 
 	state.subcontextHandler.AddSubmission(ComputeQueueType, 
-		CommandBufferGetVk(sub.computeCmdBuffer),
-		SemaphoreGetVk(sub.computePrevSemaphore), VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 
-		SemaphoreGetVk(sub.computeSemaphore));
+		CommandBufferGetVk(state.computeCmdBuffer),
+		SemaphoreGetVk(state.computePrevSemaphore), VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+		SemaphoreGetVk(state.computeSemaphore));
 
 	// submit compute, wait for this frames resource submissions
 	state.subcontextHandler.FlushSubmissions(ComputeQueueType, 
-		FenceGetVk(sub.computeFence), 
-		false, 
-		SemaphoreGetVk(state.resourceSubmissionSemaphore), VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+		FenceGetVk(state.computeFence),
+		false);
 
 #if NEBULA_GRAPHICS_DEBUG
 	CoreGraphics::QueueEndMarker(ComputeQueueType);
@@ -2592,25 +2526,28 @@ EndFrame(IndexT frameIndex)
 #endif
 
 	state.subcontextHandler.AddSubmission(GraphicsQueueType,
-		CommandBufferGetVk(sub.gfxCmdBuffer),
-		SemaphoreGetVk(sub.gfxPrevSemaphore), VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
-		SemaphoreGetVk(sub.gfxSemaphore));
+		CommandBufferGetVk(state.gfxCmdBuffer),
+		SemaphoreGetVk(state.gfxPrevSemaphore), VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+		SemaphoreGetVk(state.gfxSemaphore));
+
+	// add waits for setup and resource, correct place to put this is for the first submission in this frame
+	state.subcontextHandler.AddWaitSemaphore(GraphicsQueueType, SemaphoreGetVk(state.resourceSubmissionSemaphore), VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
+	state.subcontextHandler.AddWaitSemaphore(GraphicsQueueType, SemaphoreGetVk(state.setupSubmissionSemaphore), VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
 
 	// submit graphics, wait for this frames resource submissions
 	state.subcontextHandler.FlushSubmissions(GraphicsQueueType, 
-		FenceGetVk(sub.gfxFence), 
-		false,
-		SemaphoreGetVk(state.resourceSubmissionSemaphore), VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
+		FenceGetVk(state.gfxFence),
+		false);
 
 #if NEBULA_GRAPHICS_DEBUG
 	CoreGraphics::QueueEndMarker(GraphicsQueueType);
 #endif
 
 	// cycle the resource and setup submissions, no need to get the fence again since we use 1 buffer
-	SubmissionContextNextCycle(state.resourceSubmissionContext);
+	state.resourceSubmissionFence = SubmissionContextNextCycle(state.resourceSubmissionContext);
 	SubmissionContextNewBuffer(state.resourceSubmissionContext, state.resourceSubmissionCmdBuffer, state.resourceSubmissionSemaphore);
 
-	SubmissionContextNextCycle(state.setupSubmissionContext);
+	state.setupSubmissionFence = SubmissionContextNextCycle(state.setupSubmissionContext);
 	SubmissionContextNewBuffer(state.setupSubmissionContext, state.setupSubmissionCmdBuffer, state.setupSubmissionSemaphore);
 
 	CommandBufferBeginInfo beginInfo{ true, false, false };
@@ -3078,6 +3015,26 @@ ObjectSetName(const VkShaderModule id, const Util::String& name)
 		nullptr,
 		VK_OBJECT_TYPE_SHADER_MODULE,
 		(uint64_t)id,
+		name.AsCharPtr()
+	};
+	VkDevice dev = GetCurrentDevice();
+	VkResult res = VkDebugObjectName(dev, &info);
+	n_assert(res == VK_SUCCESS);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<>
+void
+ObjectSetName(const SemaphoreId id, const Util::String& name)
+{
+	VkDebugUtilsObjectNameInfoEXT info =
+	{
+		VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
+		nullptr,
+		VK_OBJECT_TYPE_SHADER_MODULE,
+		(uint64_t)SemaphoreGetVk(id.id24),
 		name.AsCharPtr()
 	};
 	VkDevice dev = GetCurrentDevice();

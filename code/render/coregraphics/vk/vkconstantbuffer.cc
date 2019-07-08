@@ -196,7 +196,7 @@ ConstantBufferAllocate(const ConstantBufferId id, const SizeT size, bool& needsR
 		VkMemoryPropertyFlagBits flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
 		if (setupInfo.mode == CoherentlyMappedMemory)
 			flags = VkMemoryPropertyFlagBits(flags | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-		VkUtilities::AllocateBufferMemory(setupInfo.dev, runtimeInfo.buf, newMem, flags, alignedSize);
+		VkUtilities::AllocateBufferMemory(setupInfo.dev, newBuf, newMem, flags, alignedSize);
 
 		// bind to buffer, this is the reason why we must destroy and create the buffer again
 		res = vkBindBufferMemory(setupInfo.dev, newBuf, newMem, 0);

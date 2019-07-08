@@ -62,6 +62,8 @@ VkSubContextHandler::Setup(VkDevice dev, const Util::FixedArray<uint> indexMap, 
 	this->currentComputeQueue = 0;
 	this->currentTransferQueue = 0;
 	this->currentSparseQueue = 0;
+
+	this->submissions.Resize(NumQueueTypes);
 }
 
 //------------------------------------------------------------------------------
@@ -111,11 +113,11 @@ VkSubContextHandler::SetToNextContext(const CoreGraphicsQueueType type)
 void 
 VkSubContextHandler::AddSubmission(CoreGraphicsQueueType type, VkCommandBuffer cmds, VkSemaphore waitSemaphore, VkPipelineStageFlags waitFlag, VkSemaphore signalSemaphore)
 {
-	Util::Array<VkCommandBuffer>& buffers = this->buffers[type];
-	Util::Array<VkSemaphore>& waitSemaphores = this->waitSemaphores[type];
-	Util::Array<VkPipelineStageFlags>& waitFlags = this->waitFlags[type];
-	Util::Array<VkSemaphore>& signalSemaphores = this->signalSemaphores[type];
-	Util::Array<VkSubmitInfo>& submitInfos = this->submitInfos[type];
+	Util::Array<Submission>& submissions = this->submissions[type];
+
+	// append new submission
+	submissions.Append(Submission{});
+	Submission& sub = submissions.Back();
 
 	VkSubmitInfo info =
 	{
@@ -129,32 +131,31 @@ VkSubContextHandler::AddSubmission(CoreGraphicsQueueType type, VkCommandBuffer c
 	// if command buffer is present, add to 
 	if (cmds != VK_NULL_HANDLE)
 	{
-		buffers.Append(cmds);
-		info.commandBufferCount = 1;
-		info.pCommandBuffers = &buffers.Back();
+		sub.buffers.Append(cmds);
+		info.commandBufferCount = sub.buffers.Size();
+		info.pCommandBuffers = sub.buffers.Begin();
 	}
 		
 	// if we have wait semaphores, add both flags and the semaphore it self
 	if (waitSemaphore != VK_NULL_HANDLE)
 	{
-		waitSemaphores.Append(waitSemaphore);
-		waitFlags.Append(waitFlag);
-		info.waitSemaphoreCount = 1;
-		info.pWaitSemaphores = &waitSemaphores.Back();
-		info.pWaitDstStageMask = &waitFlags.Back();
+		sub.waitSemaphores.Append(waitSemaphore);
+		sub.waitFlags.Append(waitFlag);
+		info.waitSemaphoreCount = sub.waitSemaphores.Size();
+		info.pWaitSemaphores = sub.waitSemaphores.Begin();
+		info.pWaitDstStageMask = sub.waitFlags.Begin();
 	}
 
 	// finally add signal semaphore if present
 	if (signalSemaphore != VK_NULL_HANDLE)
 	{
-		signalSemaphores.Append(signalSemaphore);
-		info.signalSemaphoreCount = 1;
-		info.pSignalSemaphores = &signalSemaphores.Back();
+		sub.signalSemaphores.Append(signalSemaphore);
+		info.signalSemaphoreCount = sub.signalSemaphores.Size();
+		info.pSignalSemaphores = sub.signalSemaphores.Begin();
 	}
 
-	// finally, add submission
-	submitInfos.Append(info);
-	
+	// finally copy submission struct
+	sub.submit = info;
 }
 
 //------------------------------------------------------------------------------
@@ -163,22 +164,20 @@ VkSubContextHandler::AddSubmission(CoreGraphicsQueueType type, VkCommandBuffer c
 void 
 VkSubContextHandler::AddWaitSemaphore(CoreGraphicsQueueType type, VkSemaphore waitSemaphore, VkPipelineStageFlags waitFlag)
 {
-	Util::Array<VkSemaphore>& waitSemaphores = this->waitSemaphores[type];
-	Util::Array<VkPipelineStageFlags>& waitFlags = this->waitFlags[type];
-	Util::Array<VkSubmitInfo>& submitInfos = this->submitInfos[type];
-	VkSubmitInfo& info = submitInfos.Back();
+	Util::Array<Submission>& submissions = this->submissions[type];
+	Submission& sub = submissions.Back();
 
-	// if we have wait semaphores, add both flags and the semaphore it self
+	// if we have wait semaphores, add both flags and the semaphore itself
 	if (waitSemaphore != VK_NULL_HANDLE)
 	{
-		waitSemaphores.Append(waitSemaphore);
-		waitFlags.Append(waitFlag);
+		sub.waitSemaphores.Insert(0, waitSemaphore);
+		sub.waitFlags.Insert(0, waitFlag);
 
 		// get pointer to previous item using the count to offset the value
-		info.pWaitSemaphores = &waitSemaphores.Back() - info.waitSemaphoreCount; 
-		info.pWaitDstStageMask = &waitFlags.Back() - info.waitSemaphoreCount;
+		sub.submit.pWaitSemaphores = sub.waitSemaphores.Begin();
+		sub.submit.pWaitDstStageMask = sub.waitFlags.Begin();
 
-		info.waitSemaphoreCount++; // add 1 more to the semaphore count
+		sub.submit.waitSemaphoreCount = sub.waitSemaphores.Size(); // add 1 more to the semaphore count
 	}
 }
 
@@ -186,11 +185,11 @@ VkSubContextHandler::AddWaitSemaphore(CoreGraphicsQueueType type, VkSemaphore wa
 /**
 */
 void 
-VkSubContextHandler::FlushSubmissions(CoreGraphicsQueueType type, VkFence fence, bool waitImmediately, VkSemaphore queueSemaphore, VkPipelineStageFlags queueWaitFlags)
+VkSubContextHandler::FlushSubmissions(CoreGraphicsQueueType type, VkFence fence, bool waitImmediately)
 {
-	Util::Array<VkSubmitInfo>& submitInfos = this->submitInfos[type];
+	Util::Array<Submission>& submissions = this->submissions[type];
 
-	if (submitInfos.Size() > 0)
+	if (submissions.Size() > 0)
 	{
 		VkQueue queue = VK_NULL_HANDLE;
 		switch (type)
@@ -209,18 +208,9 @@ VkSubContextHandler::FlushSubmissions(CoreGraphicsQueueType type, VkFence fence,
 			break;
 		}
 
-		// if we have an end-to-end cross-queue semaphore, add it to the beginning of the first submission
-		if (queueSemaphore != VK_NULL_HANDLE)
-		{
-			Util::Array<VkSemaphore>& waitSemaphores = this->waitSemaphores[type];
-			Util::Array<VkPipelineStageFlags>& waitFlags = this->waitFlags[type];
-			waitSemaphores.Insert(0, queueSemaphore);
-			waitFlags.Insert(0, queueWaitFlags);
-
-			// set the initial submit semaphore
-			submitInfos[0].waitSemaphoreCount = waitSemaphores.Size();
-			submitInfos[0].pWaitSemaphores = waitSemaphores.Begin();
-		}		
+		Util::FixedArray<VkSubmitInfo> submitInfos(submissions.Size());
+		for (IndexT i = 0; i < submissions.Size(); i++)
+			submitInfos[i] = submissions[i].submit;
 
 		VkResult res = vkQueueSubmit(queue, submitInfos.Size(), submitInfos.Begin(), fence);
 		n_assert(res == VK_SUCCESS);
@@ -229,15 +219,14 @@ VkSubContextHandler::FlushSubmissions(CoreGraphicsQueueType type, VkFence fence,
 		{
 			res = vkWaitForFences(this->device, 1, &fence, true, UINT64_MAX);
 			n_assert(res == VK_SUCCESS);
+
+			// reset fence
+			vkResetFences(this->device, 1, &fence);
 		}
 	}
 
 	// clear the submit infos
-	buffers.Clear();
-	waitSemaphores.Clear();
-	waitFlags.Clear();
-	signalSemaphores.Clear();
-	submitInfos.Clear();
+	this->submissions[type].Clear();
 }
 
 //------------------------------------------------------------------------------

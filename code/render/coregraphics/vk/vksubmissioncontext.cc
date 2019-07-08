@@ -125,8 +125,8 @@ void
 SubmissionContextNewBuffer(const SubmissionContextId id, CommandBufferId& outBuf, SemaphoreId& outSem)
 {
 	const IndexT currentIndex = submissionContextAllocator.Get<SubmissionContextCurrentIndex>(id.id24);
-	CommandBufferId oldBuf = submissionContextAllocator.Get<SubmissionContextCmdBuffer>(id.id24)[currentIndex];
-	SemaphoreId oldSem = submissionContextAllocator.Get<SubmissionContextSemaphore>(id.id24)[currentIndex];
+	CommandBufferId& oldBuf = submissionContextAllocator.Get<SubmissionContextCmdBuffer>(id.id24)[currentIndex];
+	SemaphoreId& oldSem = submissionContextAllocator.Get<SubmissionContextSemaphore>(id.id24)[currentIndex];
 
 	// append to retired buffers
 	if (oldBuf != CommandBufferId::Invalid())
@@ -137,10 +137,10 @@ SubmissionContextNewBuffer(const SubmissionContextId id, CommandBufferId& outBuf
 	// create new buffer and semaphore, we will delete the retired buffers upon next cycle when we come back
 	CommandBufferCreateInfo cmdInfo = submissionContextAllocator.Get<SubmissionContextCmdCreateInfo>(id.id24);
 	outBuf = CreateCommandBuffer(cmdInfo);
-	submissionContextAllocator.Get<SubmissionContextCmdBuffer>(id.id24)[currentIndex] = outBuf;
+	oldBuf = outBuf;
 	SemaphoreCreateInfo semInfo{};
 	outSem = CreateSemaphore(semInfo);
-	submissionContextAllocator.Get<SubmissionContextSemaphore>(id.id24)[currentIndex] = outSem;
+	oldSem = outSem;
 
 #if NEBULA_GRAPHICS_DEBUG
 	ObjectSetName(outBuf, Util::String::Sprintf("%s Buffer %d", submissionContextAllocator.Get<SubmissionContextName>(id.id24).AsCharPtr(), currentIndex));
@@ -203,7 +203,7 @@ SubmissionContextNextCycle(const SubmissionContextId id)
 
 	// get next fence and wait for it to finish
 	FenceId nextFence = submissionContextAllocator.Get<SubmissionContextFence>(id.id24)[currentIndex];
-	bool res = FenceWait(nextFence, UINT_MAX);
+	bool res = FenceWait(nextFence, UINT64_MAX);
 	n_assert(res);
 
 	// clean up retired buffers and semaphores
@@ -219,12 +219,18 @@ SubmissionContextNextCycle(const SubmissionContextId id)
 	sems.Clear();
 
 	// also destroy current buffers
-	const CommandBufferId buf = submissionContextAllocator.Get<SubmissionContextCmdBuffer>(id.id24)[currentIndex];
-	const SemaphoreId sem = submissionContextAllocator.Get<SubmissionContextSemaphore>(id.id24)[currentIndex];
+	CommandBufferId& buf = submissionContextAllocator.Get<SubmissionContextCmdBuffer>(id.id24)[currentIndex];
+	SemaphoreId& sem = submissionContextAllocator.Get<SubmissionContextSemaphore>(id.id24)[currentIndex];
 	if (buf != CommandBufferId::Invalid())
+	{
 		DestroyCommandBuffer(buf);
+		buf = CommandBufferId::Invalid();
+	}
 	if (sem != SemaphoreId::Invalid())
+	{
 		DestroySemaphore(sem);
+		sem = SemaphoreId::Invalid();
+	}
 
 	// delete any pending resources this context has allocated
 	Util::Array<std::tuple<VkDevice, VkBuffer>>& buffers = submissionContextAllocator.Get<SubmissionContextFreeBuffers>(id.id24);

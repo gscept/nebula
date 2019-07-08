@@ -109,7 +109,7 @@ VkMemoryTexturePool::LoadFromMemory(const Resources::ResourceId id, const void* 
 
 	// transition image to be used for rendering
 	VkUtilities::ImageBarrier(CoreGraphics::SubmissionContextGetCmdBuffer(sub),
-		CoreGraphics::BarrierStage::Host,
+		CoreGraphics::BarrierStage::Transfer,
 		CoreGraphics::BarrierStage::AllGraphicsShaders,
 		VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, TransferQueueType, GraphicsQueueType, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
 	

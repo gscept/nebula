@@ -907,16 +907,26 @@ Present(const CoreGraphics::WindowId& id)
 {
 	const VkWindowSwapInfo& wndInfo = glfwWindowAllocator.Get<GLFWWindowSwapInfoField>(id.id24);
 
+	VkSemaphore semaphores[2] =
+	{
+		wndInfo.displaySemaphore,
+		Vulkan::GetGraphicsSemaphore() // this will be the final semaphore of the graphics command buffer that finishes the frame
+	};
+
+#if NEBULA_GRAPHICS_DEBUG
+	CoreGraphics::QueueBeginMarker(GraphicsQueueType, NEBULA_MARKER_PURPLE, "Presentation");
+#endif
+
 	// submit a sync point for the display, transfer bit is viable since we blit to the texture
 	VkPipelineStageFlags flags = VK_PIPELINE_STAGE_TRANSFER_BIT;
 	const VkSubmitInfo submitInfo =
 	{
 		VK_STRUCTURE_TYPE_SUBMIT_INFO,
 		nullptr,
-		1,
-		&wndInfo.displaySemaphore,
+		2,
+		semaphores,
 		&flags,
-		0,
+		0, 
 		nullptr,
 		0,
 		nullptr
@@ -952,6 +962,10 @@ Present(const CoreGraphics::WindowId& id)
 	{
 		n_assert(res == VK_SUCCESS);
 	}
+
+#if NEBULA_GRAPHICS_DEBUG
+	CoreGraphics::QueueEndMarker(GraphicsQueueType);
+#endif
 }
 
 } // namespace Vulkan

@@ -117,7 +117,7 @@ CreateShaderRWTexture(const ShaderRWTextureCreateInfo& info)
 	n_assert(stat == VK_SUCCESS);
 
 	// use resource submission
-	CoreGraphics::SubmissionContextId sub = CoreGraphics::GetResourceSubmissionContext();
+	CoreGraphics::SubmissionContextId sub = CoreGraphics::GetSetupSubmissionContext();
 
 	// insert barrier to transition into a useable state
 	VkUtilities::ImageBarrier(CoreGraphics::SubmissionContextGetCmdBuffer(sub),

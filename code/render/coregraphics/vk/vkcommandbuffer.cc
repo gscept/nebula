@@ -159,7 +159,8 @@ CommandBufferGetVk(const CoreGraphics::CommandBufferId id)
 #if NEBULA_DEBUG
 	n_assert(id.id8 == CommandBufferIdType);
 #endif
-	return commandBuffers.Get<0>(id.id24);
+	if (id == CoreGraphics::CommandBufferId::Invalid()) return VK_NULL_HANDLE;
+	else												return commandBuffers.Get<0>(id.id24);
 }
 
 } // Vulkan

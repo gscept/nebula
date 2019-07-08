@@ -50,6 +50,18 @@ struct GraphicsDeviceState
 	CoreGraphics::SemaphoreId setupSubmissionSemaphore;
 	CoreGraphics::FenceId setupSubmissionFence;
 
+	CoreGraphics::SubmissionContextId gfxSubmission;
+	CoreGraphics::CommandBufferId gfxCmdBuffer;
+	CoreGraphics::SemaphoreId gfxPrevSemaphore;
+	CoreGraphics::SemaphoreId gfxSemaphore;
+	CoreGraphics::FenceId gfxFence;
+
+	CoreGraphics::SubmissionContextId computeSubmission;
+	CoreGraphics::CommandBufferId computeCmdBuffer;
+	CoreGraphics::SemaphoreId computePrevSemaphore;
+	CoreGraphics::SemaphoreId computeSemaphore;
+	CoreGraphics::FenceId computeFence;
+
 	Util::Array<Ptr<CoreGraphics::RenderEventHandler> > eventHandlers;
 	CoreGraphics::PrimitiveTopology::Code primitiveTopology;
 	CoreGraphics::PrimitiveGroup primitiveGroup;

@@ -34,6 +34,15 @@ class VkSubContextHandler
 {
 public:
 
+	struct Submission
+	{
+		Util::Array<VkCommandBuffer> buffers;
+		Util::Array<VkSemaphore> waitSemaphores;
+		Util::Array<VkPipelineStageFlags> waitFlags;
+		Util::Array<VkSemaphore> signalSemaphores;
+		VkSubmitInfo submit;
+	};
+
 	/// setup subcontext handler
 	void Setup(VkDevice dev, const Util::FixedArray<uint> indexMap, const Util::FixedArray<uint> families);
 	/// discard
@@ -46,7 +55,7 @@ public:
 	/// add another wait to the previous submission
 	void AddWaitSemaphore(CoreGraphicsQueueType type, VkSemaphore waitSemaphore, VkPipelineStageFlags waitFlag);
 	/// flush submissions and send to GPU as one submit call
-	void FlushSubmissions(CoreGraphicsQueueType type, VkFence fence, bool waitImmediately, VkSemaphore queueSemaphore = VK_NULL_HANDLE, VkPipelineStageFlags queueWaitFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM);
+	void FlushSubmissions(CoreGraphicsQueueType type, VkFence fence, bool waitImmediately);
 
 	/// submit immediately
 	void SubmitImmediate(CoreGraphicsQueueType type, VkCommandBuffer cmds, VkSemaphore waitSemaphore, VkPipelineStageFlags waitFlags, VkSemaphore signalSemaphore, VkFence fence, bool waitImmediately);
@@ -75,11 +84,7 @@ private:
 	uint currentSparseQueue;
 	uint queueFamilies[NumQueueTypes];
 
-	Util::FixedArray<Util::Array<VkCommandBuffer>> buffers;
-	Util::FixedArray<Util::Array<VkSemaphore>> waitSemaphores;
-	Util::FixedArray<Util::Array<VkPipelineStageFlags>> waitFlags;
-	Util::FixedArray<Util::Array<VkSemaphore>> signalSemaphores;
-	Util::FixedArray<Util::Array<VkSubmitInfo>> submitInfos;
+	Util::FixedArray<Util::Array<Submission>> submissions;
 };
 
 } // namespace Vulkan

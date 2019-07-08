@@ -19,7 +19,8 @@ namespace Vulkan
 VkFence 
 FenceGetVk(const CoreGraphics::FenceId id)
 {
-	return fenceAllocator.Get<1>(id.id24).fence;
+	if (id == CoreGraphics::FenceId::Invalid()) return VK_NULL_HANDLE;
+	else										return fenceAllocator.Get<1>(id.id24).fence;
 }
 
 }

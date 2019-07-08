@@ -21,7 +21,8 @@ VkSemaphoreAllocator semaphoreAllocator(0x00FFFFFF);
 VkSemaphore
 SemaphoreGetVk(const CoreGraphics::SemaphoreId& id)
 {
-	return semaphoreAllocator.Get<1>(id.id24);
+	if (id == CoreGraphics::SemaphoreId::Invalid()) return VK_NULL_HANDLE;
+	else											return semaphoreAllocator.Get<1>(id.id24);
 }
 }
 
