@@ -277,7 +277,7 @@ ConstantBufferUpdate(const ConstantBufferId id, const void* data, const uint siz
 
 #if NEBULA_DEBUG
 	VkConstantBufferSetupInfo& setup = constantBufferAllocator.Get<SetupInfo>(id.id24);
-	n_assert(size + bind.offset <= (uint)setup.size);
+	n_assert(size + bind <= (uint)setup.size);
 #endif
 	byte* buf = (byte*)map.data + bind;
 	memcpy(buf, data, size);
@@ -293,7 +293,7 @@ ConstantBufferUpdateArray(const ConstantBufferId id, const void* data, const uin
 
 #if NEBULA_DEBUG
 	VkConstantBufferSetupInfo& setup = constantBufferAllocator.Get<SetupInfo>(id.id24);
-	n_assert(size + bind.offset <= (uint)setup.size);
+	n_assert(size + bind <= (uint)setup.size);
 #endif
 	byte* buf = (byte*)map.data + bind;
 	memcpy(buf, data, size * count);
@@ -309,7 +309,7 @@ ConstantBufferUpdateInstance(const ConstantBufferId id, const void* data, const 
 	VkConstantBufferSetupInfo& setup = constantBufferAllocator.Get<SetupInfo>(id.id24);
 
 #if NEBULA_DEBUG
-	n_assert(size + bind.offset + setup.stride * instance <= (uint)setup.size);
+	n_assert(size + bind + setup.stride * instance <= (uint)setup.size);
 #endif
 	byte* buf = (byte*)map.data + bind + setup.stride * instance;
 	memcpy(buf, data, size);
@@ -325,7 +325,7 @@ ConstantBufferUpdateArrayInstance(const ConstantBufferId id, const void* data, c
 	VkConstantBufferSetupInfo& setup = constantBufferAllocator.Get<SetupInfo>(id.id24);
 
 #if NEBULA_DEBUG
-	n_assert(size + bind.offset + setup.stride * instance <= (uint)setup.size);
+	n_assert(size + bind + setup.stride * instance <= (uint)setup.size);
 #endif
 	byte* buf = (byte*)map.data + bind + setup.stride * instance;
 	memcpy(buf, data, size * count);
@@ -342,7 +342,7 @@ ConstantBufferUpdate(const ConstantBufferId id, const ConstantBufferAllocId allo
 
 #if NEBULA_DEBUG
 	n_assert(size >= alloc.size);
-	n_assert(size + bind.offset + alloc.offset <= (uint)setup.size);
+	n_assert(size + bind + alloc.offset <= (uint)setup.size);
 #endif
 	byte* buf = (byte*)map.data + bind + alloc.offset;
 	memcpy(buf, data, size);
