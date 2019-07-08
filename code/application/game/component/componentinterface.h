@@ -128,6 +128,12 @@ public:
 	/// Returns the instance of an entity; or InvalidIndex if not registered.
 	virtual InstanceId GetInstance(Entity e) const = 0;
 
+    /// return the owner map
+    virtual Util::Array<Game::Entity> const& GetOwners() const = 0;
+
+    /// sets owners of offset -> (newOwners.Size() + offset) to newOwners.
+    virtual void SetOwners(uint offset, Util::Array<Game::Entity> const& newOwners) = 0;
+
 	/// Subsequently calls functionbundle serialize.
 	virtual void SerializeOwners(const Ptr<IO::BinaryWriter>& writer) const = 0;
 

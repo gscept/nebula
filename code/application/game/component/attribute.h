@@ -42,11 +42,12 @@ public:
 		// empty
 	}
 
-	Attribute(uint index, Util::FourCC fourcc, const char* name, ValueType type, AccessMode accessMode, Util::Variant const& defaultValue) :
+	Attribute(uint index, Util::FourCC fourcc, const char* name, ValueType type, const char* typeName, AccessMode accessMode, Util::Variant const& defaultValue) :
 		attrIndex(index),
 		fourcc(fourcc),
 		name(name),
 		type(type),
+        typeName(typeName),
 		accessMode(accessMode),
 		defaultValue(defaultValue)
 	{
@@ -58,30 +59,36 @@ public:
 	uint attrIndex;
 	Util::FourCC fourcc;
 	Util::String name;
+    Util::String typeName;
 	ValueType type;
 	Util::Variant defaultValue;
 	AccessMode accessMode;
 
-	// static constexpr Util::FourCC FourCC()
-	// {
-	// 	return Util::FourCC('FOUR');
-	// }
-	// static constexpr const char* Name()
-	// {
-	// 	return "AttributeName";
-	// }
-	// static constexpr const char* TypeName()
-	// {
-	// 	return "uint";
-	// }
-	// static constexpr ValueType Type()
-	// {
-	// 	return TypeToValueType<uint>();
-	// }
-	// static constexpr uint DefaultValue()
-	// {
-	// 	return uint(-1);
-	// }
+    /*
+        These static functions are implemented by each attribute when using
+        the __DeclareAttribute macro.
+        
+	static constexpr Util::FourCC FourCC()
+	{
+		return Util::FourCC('FOUR');
+	}
+	static constexpr const char* Name()
+	{
+		return "AttributeName";
+	}
+	static constexpr const char* TypeName()
+	{
+		return "uint";
+	}
+	static constexpr ValueType Type()
+	{
+		return TypeToValueType<uint>();
+	}
+	static constexpr uint DefaultValue()
+	{
+		return uint(-1);
+	}
+    */
 };
 
 //------------------------------------------------------------------------------
@@ -92,7 +99,7 @@ public:
 class ATTRIBUTENAME : public Attr::Attribute\
 {\
 public:\
-	ATTRIBUTENAME(uint index) : Attribute(index, FOURCC, #ATTRIBUTENAME, Attr::TypeToValueType<TYPE>(), ACCESSMODE, Util::Variant(DEFAULTVALUE)) {};\
+	ATTRIBUTENAME(uint index) : Attribute(index, FOURCC, #ATTRIBUTENAME, Attr::TypeToValueType<TYPE>(), #TYPE, ACCESSMODE, Util::Variant(DEFAULTVALUE)) {};\
 	using InnerType = TYPE;\
 	static constexpr uint FourCC()\
 	{\

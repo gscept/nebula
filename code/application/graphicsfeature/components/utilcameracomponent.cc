@@ -93,8 +93,8 @@ UtilCameraComponent::OnActivate(Game::InstanceId instance)
     Math::float4 camProj = component->Get<Attr::CameraProjection>(instance);
     CameraContext::SetupProjectionFov(gfxEntity, camProj.x(), camProj.y(), camProj.z(), camProj.w());
     Visibility::ObserverContext::RegisterEntity(gfxEntity);
-    Visibility::ObserverContext::Setup(gfxEntity, Visibility::VisibilityEntityType::Camera);
-    GraphicsFeature::GraphicsFeatureUnit::Instance()->defaultView->SetCamera(gfxEntity);
+    Visibility::ObservableContext::Setup(gfxEntity, Visibility::VisibilityEntityType::Camera);
+
     UpdateCamera(instance);
 }
 
