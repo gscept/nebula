@@ -39,7 +39,7 @@ using namespace IO;
 namespace Frame
 {
 
-Frame::FrameSubmission* FrameScriptLoader::LastSubmission;
+Frame::FrameSubmission* FrameScriptLoader::LastSubmission = nullptr;
 Util::HashTable<uint, FrameScriptLoader::Fn> FrameScriptLoader::constructors;
 //------------------------------------------------------------------------------
 /**
