@@ -111,7 +111,7 @@ VkSubContextHandler::SetToNextContext(const CoreGraphicsQueueType type)
 /**
 */
 void 
-VkSubContextHandler::AddSubmission(CoreGraphicsQueueType type, VkCommandBuffer cmds, VkSemaphore waitSemaphore, VkPipelineStageFlags waitFlag, VkSemaphore signalSemaphore)
+VkSubContextHandler::AppendSubmission(CoreGraphicsQueueType type, VkCommandBuffer cmds, VkSemaphore waitSemaphore, VkPipelineStageFlags waitFlag, VkSemaphore signalSemaphore)
 {
 	Util::Array<Submission>& submissions = this->submissions[type];
 

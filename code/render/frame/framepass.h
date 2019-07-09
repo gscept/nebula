@@ -43,6 +43,7 @@ public:
 		CoreGraphics::PassId pass;
 	};
 
+	/// allocate new instance
 	FrameOp::Compiled* AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator);
 
 	CoreGraphics::PassId pass;

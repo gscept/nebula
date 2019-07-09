@@ -54,12 +54,14 @@ struct GraphicsDeviceState
 	CoreGraphics::CommandBufferId gfxCmdBuffer;
 	CoreGraphics::SemaphoreId gfxPrevSemaphore;
 	CoreGraphics::SemaphoreId gfxSemaphore;
+	CoreGraphics::SemaphoreId gfxWaitSemaphore;
 	CoreGraphics::FenceId gfxFence;
 
 	CoreGraphics::SubmissionContextId computeSubmission;
 	CoreGraphics::CommandBufferId computeCmdBuffer;
 	CoreGraphics::SemaphoreId computePrevSemaphore;
 	CoreGraphics::SemaphoreId computeSemaphore;
+	CoreGraphics::SemaphoreId computeWaitSemaphore;
 	CoreGraphics::FenceId computeFence;
 
 	Util::Array<Ptr<CoreGraphics::RenderEventHandler> > eventHandlers;
@@ -94,7 +96,7 @@ bool NotifyEventHandlers(const CoreGraphics::RenderEvent& e);
 /// begin complete frame
 bool BeginFrame(IndexT frameIndex);
 /// start a new submission, with an optional argument for waiting for another queue
-void BeginSubmission(CoreGraphicsQueueType queue);
+void BeginSubmission(CoreGraphicsQueueType queue, CoreGraphicsQueueType waitQueue);
 /// begin a rendering pass
 void BeginPass(const CoreGraphics::PassId pass);
 /// progress to next subpass	
@@ -185,7 +187,7 @@ void EndBatch();
 /// end current pass
 void EndPass();
 /// end the current submission, 
-void EndSubmission(CoreGraphicsQueueType queue, CoreGraphicsQueueType waitQueue);
+void EndSubmission(CoreGraphicsQueueType queue, bool endOfFrame = false);
 /// end current frame
 void EndFrame(IndexT frameIndex);
 /// check if inside BeginFrame

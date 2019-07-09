@@ -399,6 +399,8 @@ ENDIF()
 				framescriptloader.h
 				frameserver.cc
 				frameserver.h
+                framesubmission.cc
+                framesubmission.h
 				framesubpass.cc
 				framesubpass.h
 				framesubpassalgorithm.cc

@@ -51,7 +51,7 @@ public:
 	void SetToNextContext(const CoreGraphicsQueueType type);
 
 	/// add submission to context, but don't really execute
-	void AddSubmission(CoreGraphicsQueueType type, VkCommandBuffer cmds, VkSemaphore waitSemaphore, VkPipelineStageFlags waitFlag, VkSemaphore signalSemaphore);
+	void AppendSubmission(CoreGraphicsQueueType type, VkCommandBuffer cmds, VkSemaphore waitSemaphore, VkPipelineStageFlags waitFlag, VkSemaphore signalSemaphore);
 	/// add another wait to the previous submission
 	void AddWaitSemaphore(CoreGraphicsQueueType type, VkSemaphore waitSemaphore, VkPipelineStageFlags waitFlag);
 	/// flush submissions and send to GPU as one submit call

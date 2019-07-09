@@ -39,7 +39,7 @@ using namespace IO;
 namespace Frame
 {
 
-
+Frame::FrameSubmission* FrameScriptLoader::LastSubmission;
 Util::HashTable<uint, FrameScriptLoader::Fn> FrameScriptLoader::constructors;
 //------------------------------------------------------------------------------
 /**
@@ -117,18 +117,20 @@ FrameScriptLoader::ParseFrameScript(const Ptr<Frame::FrameScript>& script, JzonV
 	{
 		JzonValue* cur = node->array_values[i];
 		Util::String name(cur->key);
-		if (name == "renderTextures")			ParseColorTextureList(script, cur);
-		else if (name == "depthStencils")		ParseDepthStencilTextureList(script, cur);
-		else if (name == "readWriteTextures")	ParseImageReadWriteTextureList(script, cur);
-		else if (name == "readWriteBuffers")	ParseImageReadWriteBufferList(script, cur);
+		if (name == "render_textures")			ParseColorTextureList(script, cur);
+		else if (name == "depth_stencils")		ParseDepthStencilTextureList(script, cur);
+		else if (name == "read_write_textures")	ParseImageReadWriteTextureList(script, cur);
+		else if (name == "read_write_buffers")	ParseImageReadWriteBufferList(script, cur);
 		else if (name == "algorithms")			ParseAlgorithmList(script, cur);
-		else if (name == "globalState")			ParseGlobalState(script, cur);
+		else if (name == "global_state")		ParseGlobalState(script, cur);
 		else if (name == "blit")				ParseBlit(script, cur);
 		else if (name == "copy")				ParseCopy(script, cur);
 		else if (name == "compute")				ParseCompute(script, cur);
-		else if (name == "computeAlgorithm")	ParseComputeAlgorithm(script, cur);
+		else if (name == "compute_algorithm")	ParseComputeAlgorithm(script, cur);
 		else if (name == "swapbuffers")			ParseSwapbuffers(script, cur);
 		else if (name == "pass")				ParsePass(script, cur);
+		else if (name == "begin_submission")	ParseFrameSubmission(script, 0, cur); // 0 means begin
+		else if (name == "end_submission")		ParseFrameSubmission(script, 1, cur); // 1 means end
 		else if (name == "barrier")				ParseBarrier(script, cur);
 		
 		else
@@ -136,8 +138,11 @@ FrameScriptLoader::ParseFrameScript(const Ptr<Frame::FrameScript>& script, JzonV
 			n_error("Frame script operation '%s' is unrecognized.\n", name.AsCharPtr());
 		}
 	}
-}
 
+	// set end of frame barrier
+	n_assert_fmt(FrameScriptLoader::LastSubmission != nullptr, "Frame script '%s' must contain an end submission, otherwise the script is invalid!", script->GetResourceName().Value());
+	FrameScriptLoader::LastSubmission->endOfFrameBarrier = &script->endOfFrameBarrier;
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -362,7 +367,7 @@ FrameScriptLoader::ParseAlgorithmList(const Ptr<Frame::FrameScript>& script, Jzo
 		// create algorithm
 		Algorithms::Algorithm* alg = (constructors[Util::String(clazz->string_value).HashCode()](script->GetAllocator()));
 
-		JzonValue* textures = jzon_get(cur, "renderTextures");
+		JzonValue* textures = jzon_get(cur, "render_textures");
 		if (textures != NULL)
 		{
 			uint j;
@@ -373,7 +378,7 @@ FrameScriptLoader::ParseAlgorithmList(const Ptr<Frame::FrameScript>& script, Jzo
 			}
 		}
 
-		JzonValue* buffers = jzon_get(cur, "readWriteBuffers");
+		JzonValue* buffers = jzon_get(cur, "read_write_buffers");
 		if (buffers != NULL)
 		{
 			uint j;
@@ -384,7 +389,7 @@ FrameScriptLoader::ParseAlgorithmList(const Ptr<Frame::FrameScript>& script, Jzo
 			}
 		}
 
-		JzonValue* images = jzon_get(cur, "readWriteTextures");
+		JzonValue* images = jzon_get(cur, "read_write_textures");
 		if (images != NULL)
 		{
 			uint j;
@@ -592,7 +597,7 @@ FrameScriptLoader::ParseCompute(const Ptr<Frame::FrameScript>& script, JzonValue
 	}
 
 	// create shader state
-	JzonValue* shader = jzon_get(node, "shaderState");
+	JzonValue* shader = jzon_get(node, "shader_state");
 	n_assert(shader != NULL);
 	ParseShaderState(script, shader, op->shader, op->resourceTable, op->constantBuffers);
 
@@ -676,7 +681,7 @@ FrameScriptLoader::ParseSwapbuffers(const Ptr<Frame::FrameScript>& script, JzonV
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 FrameScriptLoader::ParseBarrier(const Ptr<Frame::FrameScript>& script, JzonValue* node)
 {
 	FrameBarrier* op = script->GetAllocator().Alloc<FrameBarrier>();
@@ -691,6 +696,39 @@ FrameScriptLoader::ParseBarrier(const Ptr<Frame::FrameScript>& script, JzonValue
 	{
 		ParseResourceDependencies(script, op, resources);
 	}
+
+	// add operation to script
+	script->AddOp(op);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+FrameScriptLoader::ParseFrameSubmission(const Ptr<Frame::FrameScript>& script, char startOrEnd, JzonValue* node)
+{
+	FrameSubmission* op = script->GetAllocator().Alloc<FrameSubmission>();
+	op->startOrEnd = startOrEnd;
+
+	// get function and name
+	JzonValue* name = jzon_get(node, "name");
+	n_assert(name != NULL);
+	op->SetName(name->string_value);
+
+	JzonValue* queue = jzon_get(node, "queue");
+	op->queue = CoreGraphicsQueueTypeFromString(queue->string_value);
+
+	// if we are starting a new submission, also look for the queue wait flag
+	if (startOrEnd == 0)
+	{
+		JzonValue* waitQueue = jzon_get(node, "wait_for_queue");
+		if (waitQueue)
+			op->waitQueue = CoreGraphicsQueueTypeFromString(waitQueue->string_value);
+	}
+
+	// update last submission
+	if (startOrEnd == 1)
+		FrameScriptLoader::LastSubmission = op;
 
 	// add operation to script
 	script->AddOp(op);
@@ -721,7 +759,7 @@ FrameScriptLoader::ParsePass(const Ptr<Frame::FrameScript>& script, JzonValue* n
 		Util::String name(cur->key);
 		if (name == "name")					op->SetName(cur->string_value);
 		else if (name == "attachments")		ParseAttachmentList(script, info, attachmentNames, cur);
-		else if (name == "depthStencil")
+		else if (name == "depth_stencil")
 		{
 			float clearDepth = 1;
 			uint clearStencil = 0;
@@ -733,7 +771,7 @@ FrameScriptLoader::ParsePass(const Ptr<Frame::FrameScript>& script, JzonValue* n
 				info.clearDepth = (float)cd->float_value;
 			}
 
-			JzonValue* cs = jzon_get(cur, "clearStencil");
+			JzonValue* cs = jzon_get(cur, "clear_stencil");
 			if (cs != NULL)
 			{
 				depthStencilClearFlags |= ClearStencil;
@@ -747,7 +785,7 @@ FrameScriptLoader::ParsePass(const Ptr<Frame::FrameScript>& script, JzonValue* n
 				depthStencilClearFlags |= Load;
 			}
 
-			JzonValue* ls = jzon_get(cur, "loadStencil");
+			JzonValue* ls = jzon_get(cur, "load_stencil");
 			if (ls != NULL && ls->bool_value)
 			{
 				// can't really load and store
@@ -761,7 +799,7 @@ FrameScriptLoader::ParsePass(const Ptr<Frame::FrameScript>& script, JzonValue* n
 				depthStencilClearFlags |= Store;
 			}
 
-			JzonValue* ss = jzon_get(cur, "storeStencil");
+			JzonValue* ss = jzon_get(cur, "store_stencil");
 			if (ss != NULL && ss->bool_value)
 			{
 				depthStencilClearFlags |= StoreStencil;
@@ -865,10 +903,10 @@ FrameScriptLoader::ParseSubpass(const Ptr<Frame::FrameScript>& script, CoreGraph
 		else if (name == "resources")			ParseResourceDependencies(script, framePass, cur);
 		else if (name == "viewports")			ParseSubpassViewports(script, frameSubpass, cur);
 		else if (name == "scissors")			ParseSubpassScissors(script, frameSubpass, cur);
-		else if (name == "subpassAlgorithm")	ParseSubpassAlgorithm(script, frameSubpass, cur);
+		else if (name == "subpass_algorithm")	ParseSubpassAlgorithm(script, frameSubpass, cur);
 		else if (name == "batch")				ParseSubpassBatch(script, frameSubpass, cur);
-		else if (name == "sortedBatch")			ParseSubpassSortedBatch(script, frameSubpass, cur);
-		else if (name == "fullscreenEffect")	ParseSubpassFullscreenEffect(script, frameSubpass, cur);
+		else if (name == "sorted_batch")		ParseSubpassSortedBatch(script, frameSubpass, cur);
+		else if (name == "fullscreen_effect")	ParseSubpassFullscreenEffect(script, frameSubpass, cur);
 		else if (name == "system")				ParseSubpassSystem(script, frameSubpass, cur);
 		else if (name == "plugins")				ParseSubpassPlugins(script, frameSubpass, cur);
 		else
@@ -1098,12 +1136,12 @@ FrameScriptLoader::ParseSubpassFullscreenEffect(const Ptr<Frame::FrameScript>& s
 	}
 
 	// create shader state
-	JzonValue* shaderState = jzon_get(node, "shaderState");
+	JzonValue* shaderState = jzon_get(node, "shader_state");
 	n_assert(shaderState != NULL);
 	ParseShaderState(script, shaderState, op->shader, op->resourceTable, op->constantBuffers);
 
 	// get texture
-	JzonValue* texture = jzon_get(node, "sizeFromTexture");
+	JzonValue* texture = jzon_get(node, "size_from_texture");
 	n_assert(texture != NULL);
 	op->tex = script->GetColorTexture(texture->string_value);
 	
@@ -1183,7 +1221,7 @@ void
 FrameScriptLoader::ParseShaderState(const Ptr<Frame::FrameScript>& script, JzonValue* node, CoreGraphics::ShaderId& shd, CoreGraphics::ResourceTableId& table, Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBufferId>& constantBuffers)
 {
 	bool createResources = false;
-	JzonValue* create = jzon_get(node, "createResourceSet");
+	JzonValue* create = jzon_get(node, "create_resource_set");
 	if (create != NULL) createResources = create->bool_value;
 
 	JzonValue* shader = jzon_get(node, "shader");
@@ -1343,9 +1381,9 @@ FrameScriptLoader::ParseResourceDependencies(const Ptr<Frame::FrameScript>& scri
 			JzonValue* nd = nullptr;
 			if ((nd = jzon_get(dep, "aspect")) != nullptr) subres.aspect			= ImageAspectFromString(nd->string_value);
 			if ((nd = jzon_get(dep, "mip")) != nullptr) subres.mip					= nd->int_value;
-			if ((nd = jzon_get(dep, "mipCount")) != nullptr) subres.mipCount		= nd->int_value;
+			if ((nd = jzon_get(dep, "mip_count")) != nullptr) subres.mipCount		= nd->int_value;
 			if ((nd = jzon_get(dep, "layer")) != nullptr) subres.layer				= nd->int_value;
-			if ((nd = jzon_get(dep, "layerCount")) != nullptr) subres.layerCount	= nd->int_value;
+			if ((nd = jzon_get(dep, "layer_count")) != nullptr) subres.layerCount	= nd->int_value;
 			
 			ShaderRWTextureId tex = script->readWriteTexturesByName[valstr];
 			op->rwTextureDeps.Add(tex, std::make_tuple(access, dependency, subres, layout));
@@ -1362,9 +1400,9 @@ FrameScriptLoader::ParseResourceDependencies(const Ptr<Frame::FrameScript>& scri
 			JzonValue* nd = nullptr;
 			if ((nd = jzon_get(dep, "aspect")) != nullptr) subres.aspect = ImageAspectFromString(nd->string_value);
 			if ((nd = jzon_get(dep, "mip")) != nullptr) subres.mip = nd->int_value;
-			if ((nd = jzon_get(dep, "mipCount")) != nullptr) subres.mipCount = nd->int_value;
+			if ((nd = jzon_get(dep, "mip_count")) != nullptr) subres.mipCount = nd->int_value;
 			if ((nd = jzon_get(dep, "layer")) != nullptr) subres.layer = nd->int_value;
-			if ((nd = jzon_get(dep, "layerCount")) != nullptr) subres.layerCount = nd->int_value;
+			if ((nd = jzon_get(dep, "layer_count")) != nullptr) subres.layerCount = nd->int_value;
 
 			RenderTextureId tex = script->colorTexturesByName[valstr];
 			op->renderTextureDeps.Add(tex, std::make_tuple(access, dependency, subres, layout));

@@ -131,7 +131,6 @@ FrameScript::Discard()
 void
 FrameScript::Run(const IndexT frameIndex)
 {
-	
 	IndexT i;
 	for (i = 0; i < this->compiled.Size(); i++)
 	{
@@ -139,10 +138,6 @@ FrameScript::Run(const IndexT frameIndex)
 		this->compiled[i]->Run(frameIndex);
 		this->compiled[i]->QueuePostSync();			// signal within queue
 	}
-
-	// make sure to transition resources back to their original state in preparation for the next frame
-	CoreGraphics::BarrierReset(this->endOfFrameBarrier);
-	CoreGraphics::BarrierInsert(this->endOfFrameBarrier, CoreGraphicsQueueType::GraphicsQueueType);
 }
 
 //------------------------------------------------------------------------------
