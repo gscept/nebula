@@ -1315,7 +1315,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	CommandBufferBeginRecord(state.resourceSubmissionCmdBuffer, beginInfo);
 
 	cmdCreateInfo.usage = CommandGfx;
-	state.setupSubmissionContext = CreateSubmissionContext({ cmdCreateInfo, 1, false });
+	state.setupSubmissionContext = CreateSubmissionContext({ cmdCreateInfo, info.numBufferedFrames, true });
 	state.setupSubmissionFence = SubmissionContextNextCycle(state.setupSubmissionContext);
 	SubmissionContextNewBuffer(state.setupSubmissionContext, state.setupSubmissionCmdBuffer, state.setupSubmissionSemaphore);
 
@@ -2556,6 +2556,7 @@ EndFrame(IndexT frameIndex)
 	state.subcontextHandler.FlushSubmissions(GraphicsQueueType, 
 		FenceGetVk(state.gfxFence),
 		false);
+	state.subcontextHandler.SubmitFence(GraphicsQueueType, FenceGetVk(state.setupSubmissionFence));
 
 #if NEBULA_GRAPHICS_DEBUG
 	CoreGraphics::QueueEndMarker(GraphicsQueueType);

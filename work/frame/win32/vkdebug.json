@@ -171,7 +171,7 @@
 
     begin_submission: {
       name: "Beginning of frame compute submission",
-      queue: "Compute"
+      queue: "Compute",
       _comment: "Mandatory start of compute submission, must be met with a matching end_submission"
     }
 

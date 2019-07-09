@@ -57,6 +57,9 @@ public:
 	/// flush submissions and send to GPU as one submit call
 	void FlushSubmissions(CoreGraphicsQueueType type, VkFence fence, bool waitImmediately);
 
+	/// submit only a fence
+	void SubmitFence(CoreGraphicsQueueType type, VkFence fence);
+
 	/// submit immediately
 	void SubmitImmediate(CoreGraphicsQueueType type, VkCommandBuffer cmds, VkSemaphore waitSemaphore, VkPipelineStageFlags waitFlags, VkSemaphore signalSemaphore, VkFence fence, bool waitImmediately);
 

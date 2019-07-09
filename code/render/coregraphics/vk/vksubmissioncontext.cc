@@ -25,7 +25,9 @@ SubmissionContextAllocator submissionContextAllocator;
 void 
 SubmissionContextFreeBuffer(const CoreGraphics::SubmissionContextId id, VkDevice dev, VkBuffer buf)
 {
-	Util::Array<std::tuple<VkDevice, VkBuffer>>& buffers = submissionContextAllocator.Get<SubmissionContextFreeBuffers>(id.id24);
+	// get fence so we can wait for it
+	const IndexT currentIndex = submissionContextAllocator.Get<SubmissionContextCurrentIndex>(id.id24);
+	Util::Array<std::tuple<VkDevice, VkBuffer>>& buffers = submissionContextAllocator.Get<SubmissionContextFreeBuffers>(id.id24)[currentIndex];
 	buffers.Append(std::make_tuple(dev, buf));
 }
 
@@ -35,7 +37,9 @@ SubmissionContextFreeBuffer(const CoreGraphics::SubmissionContextId id, VkDevice
 void 
 SubmissionContextFreeDeviceMemory(const CoreGraphics::SubmissionContextId id, VkDevice dev, VkDeviceMemory mem)
 {
-	Util::Array<std::tuple<VkDevice, VkDeviceMemory>>& memories = submissionContextAllocator.Get<SubmissionContextFreeDeviceMemories>(id.id24);
+	// get fence so we can wait for it
+	const IndexT currentIndex = submissionContextAllocator.Get<SubmissionContextCurrentIndex>(id.id24);
+	Util::Array<std::tuple<VkDevice, VkDeviceMemory>>& memories = submissionContextAllocator.Get<SubmissionContextFreeDeviceMemories>(id.id24)[currentIndex];
 	memories.Append(std::make_tuple(dev, mem));
 }
 
@@ -45,7 +49,9 @@ SubmissionContextFreeDeviceMemory(const CoreGraphics::SubmissionContextId id, Vk
 void 
 SubmissionContextFreeImage(const CoreGraphics::SubmissionContextId id, VkDevice dev, VkImage img)
 {
-	Util::Array<std::tuple<VkDevice, VkImage>>& images = submissionContextAllocator.Get<SubmissionContextFreeImages>(id.id24);
+	// get fence so we can wait for it
+	const IndexT currentIndex = submissionContextAllocator.Get<SubmissionContextCurrentIndex>(id.id24);
+	Util::Array<std::tuple<VkDevice, VkImage>>& images = submissionContextAllocator.Get<SubmissionContextFreeImages>(id.id24)[currentIndex];
 	images.Append(std::make_tuple(dev, img));
 }
 
@@ -55,7 +61,9 @@ SubmissionContextFreeImage(const CoreGraphics::SubmissionContextId id, VkDevice 
 void 
 SubmissionContextFreeCommandBuffer(const CoreGraphics::SubmissionContextId id, VkDevice dev, VkCommandPool pool, VkCommandBuffer buf)
 {
-	Util::Array<std::tuple<VkDevice, VkCommandPool, VkCommandBuffer>>& buffers = submissionContextAllocator.Get<SubmissionContextFreeCommandBuffers>(id.id24);
+	// get fence so we can wait for it
+	const IndexT currentIndex = submissionContextAllocator.Get<SubmissionContextCurrentIndex>(id.id24);
+	Util::Array<std::tuple<VkDevice, VkCommandPool, VkCommandBuffer>>& buffers = submissionContextAllocator.Get<SubmissionContextFreeCommandBuffers>(id.id24)[currentIndex];
 	buffers.Append(std::make_tuple(dev, pool, buf));
 }
 
@@ -98,6 +106,10 @@ CreateSubmissionContext(const SubmissionContextCreateInfo& info)
 	}	
 
 	submissionContextAllocator.Get<SubmissionContextCurrentIndex>(id) = 0;
+	submissionContextAllocator.Get<SubmissionContextFreeBuffers>(id).Resize(info.numBuffers);
+	submissionContextAllocator.Get<SubmissionContextFreeDeviceMemories>(id).Resize(info.numBuffers);
+	submissionContextAllocator.Get<SubmissionContextFreeImages>(id).Resize(info.numBuffers);
+	submissionContextAllocator.Get<SubmissionContextFreeCommandBuffers>(id).Resize(info.numBuffers);
 
 	ret.id24 = id;
 	ret.id8 = SubmissionContextIdType;
@@ -242,22 +254,22 @@ SubmissionContextNextCycle(const SubmissionContextId id)
 	}
 
 	// delete any pending resources this context has allocated
-	Util::Array<std::tuple<VkDevice, VkBuffer>>& buffers = submissionContextAllocator.Get<SubmissionContextFreeBuffers>(id.id24);
+	Util::Array<std::tuple<VkDevice, VkBuffer>>& buffers = submissionContextAllocator.Get<SubmissionContextFreeBuffers>(id.id24)[currentIndex];
 	for (IndexT i = 0; i < buffers.Size(); i++)
 		vkDestroyBuffer(std::get<0>(buffers[i]), std::get<1>(buffers[i]), nullptr);
 	buffers.Clear();
 
-	Util::Array<std::tuple<VkDevice, VkDeviceMemory>>& memories = submissionContextAllocator.Get<SubmissionContextFreeDeviceMemories>(id.id24);
+	Util::Array<std::tuple<VkDevice, VkDeviceMemory>>& memories = submissionContextAllocator.Get<SubmissionContextFreeDeviceMemories>(id.id24)[currentIndex];
 	for (IndexT i = 0; i < memories.Size(); i++)
 		vkFreeMemory(std::get<0>(memories[i]), std::get<1>(memories[i]), nullptr);
 	memories.Clear();
 
-	Util::Array<std::tuple<VkDevice, VkImage>>& images = submissionContextAllocator.Get<SubmissionContextFreeImages>(id.id24);
+	Util::Array<std::tuple<VkDevice, VkImage>>& images = submissionContextAllocator.Get<SubmissionContextFreeImages>(id.id24)[currentIndex];
 	for (IndexT i = 0; i < images.Size(); i++)
 		vkDestroyImage(std::get<0>(images[i]), std::get<1>(images[i]), nullptr);
 	images.Clear();
 
-	Util::Array<std::tuple<VkDevice, VkCommandPool, VkCommandBuffer>>& commandBuffers = submissionContextAllocator.Get<SubmissionContextFreeCommandBuffers>(id.id24);
+	Util::Array<std::tuple<VkDevice, VkCommandPool, VkCommandBuffer>>& commandBuffers = submissionContextAllocator.Get<SubmissionContextFreeCommandBuffers>(id.id24)[currentIndex];
 	for (IndexT i = 0; i < commandBuffers.Size(); i++)
 		vkFreeCommandBuffers(std::get<0>(commandBuffers[i]), std::get<1>(commandBuffers[i]), 1, &std::get<2>(commandBuffers[i]));
 	commandBuffers.Clear();
