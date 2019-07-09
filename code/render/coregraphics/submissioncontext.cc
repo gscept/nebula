@@ -74,8 +74,8 @@ void
 SubmissionContextNewBuffer(const SubmissionContextId id, CmdBufferId& outBuf, SemaphoreId& outSem)
 {
 	const IndexT currentIndex = submissionContextAllocator.Get<SubmissionContextCurrentIndex>(id.id24);
-	CmdBufferId oldBuf = submissionContextAllocator.Get<SubmissionContextCmdBuffer>(id.id24)[currentIndex];
-	SemaphoreId oldSem = submissionContextAllocator.Get<SubmissionContextSemaphore>(id.id24)[currentIndex];
+	CmdBufferId& oldBuf = submissionContextAllocator.Get<SubmissionContextCmdBuffer>(id.id24)[currentIndex];
+	SemaphoreId& oldSem = submissionContextAllocator.Get<SubmissionContextSemaphore>(id.id24)[currentIndex];
 
 	// append to retired buffers
 	if (oldBuf != CmdBufferId::Invalid())
@@ -86,10 +86,10 @@ SubmissionContextNewBuffer(const SubmissionContextId id, CmdBufferId& outBuf, Se
 	// create new buffer and semaphore, we will delete the retired buffers upon next cycle when we come back
 	CmdBufferCreateInfo cmdInfo = submissionContextAllocator.Get<SubmissionContextCmdCreateInfo>(id.id24);
 	outBuf = CreateCmdBuffer(cmdInfo);
-	submissionContextAllocator.Get<SubmissionContextCmdBuffer>(id.id24)[currentIndex] = outBuf;
+	oldBuf = outBuf;
 	SemaphoreCreateInfo semInfo{};
 	outSem = CreateSemaphore(semInfo);
-	submissionContextAllocator.Get<SubmissionContextSemaphore>(id.id24)[currentIndex] = outSem;
+	oldSem = outSem;
 }
 
 //------------------------------------------------------------------------------
