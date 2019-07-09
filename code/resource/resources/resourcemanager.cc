@@ -202,4 +202,13 @@ ResourceManager::GetType(const Resources::ResourceId id)
 	return loader->GetRtti();
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+ResourceManager::WaitForLoaderThread()
+{
+	this->loaderThread->Wait();
+}
+
 } // namespace Resources

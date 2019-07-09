@@ -7,7 +7,6 @@
 #include "vkgraphicsdevice.h"
 #include "vktypes.h"
 #include "vkutilities.h"
-#include "vkscheduler.h"
 #include "coregraphics/config.h"
 #include "coregraphics/shaderserver.h"
 #include <array>
@@ -117,8 +116,14 @@ CreateShaderRWTexture(const ShaderRWTextureCreateInfo& info)
 	stat = vkCreateImageView(loadInfo.dev, &viewCreate, NULL, &runtimeInfo.view);
 	n_assert(stat == VK_SUCCESS);
 
-	// transition to a useable state
-	VkScheduler::Instance()->PushImageLayoutTransition(GraphicsQueueType, CoreGraphics::BarrierStage::Host, CoreGraphics::BarrierStage::AllGraphicsShaders, VkUtilities::ImageMemoryBarrier(loadInfo.img, viewRange, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VkTypes::AsVkImageLayout(info.layout)));
+	// use resource submission
+	CoreGraphics::SubmissionContextId sub = CoreGraphics::GetSetupSubmissionContext();
+
+	// insert barrier to transition into a useable state
+	VkUtilities::ImageBarrier(CoreGraphics::SubmissionContextGetCmdBuffer(sub),
+		CoreGraphics::BarrierStage::Host,
+		CoreGraphics::BarrierStage::AllGraphicsShaders,
+		VkUtilities::ImageMemoryBarrier(loadInfo.img, viewRange, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VkTypes::AsVkImageLayout(info.layout)));
 
 	layout = info.layout;
 	ShaderRWTextureId ret;
@@ -205,7 +210,10 @@ ShaderRWTextureClear(const ShaderRWTextureId id, const Math::float4& color)
 	viewRange.levelCount = 1;
 	viewRange.baseArrayLayer = 0;
 	viewRange.layerCount = 1;
-	VkUtilities::ImageColorClear(loadInfo.img, GraphicsQueueType, VK_IMAGE_LAYOUT_GENERAL, clear, viewRange);
+
+	// use resource submission to clear
+	CoreGraphics::SubmissionContextId sub = CoreGraphics::GetResourceSubmissionContext();
+	VkUtilities::ImageColorClear(CoreGraphics::SubmissionContextGetCmdBuffer(sub), loadInfo.img, VK_IMAGE_LAYOUT_GENERAL, clear, viewRange);
 }
 
 //------------------------------------------------------------------------------

@@ -1,18 +1,24 @@
-before_script:
-    - call ./fips fetch
-    - call ./fips update
-    - call ./fips nebula set work ../fips-deploy/
-    - call ./fips nebula set toolkit .
-    
+   
 stages:
     - build
+    - test
 
 build:
    stage: build
    only:
     - master
    script:
+    - call ./fips fetch
+    - call ./fips update
+    - call ./fips nebula set work ../fips-deploy/
+    - call ./fips nebula set toolkit .
     - call ./fips set config vulkan-win64-vs2017-debug
     - call ./fips nebula cleannidl
     - call ./fips gen
     - call ./fips build
+
+tests:
+    stage: test
+    only:
+     - master
+    trigger: nebula/nebula-tests

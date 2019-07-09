@@ -63,8 +63,6 @@ protected:
 		virtual void Run(const IndexT frameIndex) = 0;
 		virtual void Discard();
 
-		virtual void CrossQueuePreSync();
-		virtual void CrossQueuePostSync();
 		virtual void QueuePreSync();
 		virtual void QueuePostSync();
 

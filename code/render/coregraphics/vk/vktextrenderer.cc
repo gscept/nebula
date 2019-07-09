@@ -182,7 +182,7 @@ VkTextRenderer::DrawTextElements()
 
 	// apply shader and apply state
 	CoreGraphics::SetShaderProgram(this->program);
-	CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->modelVar.offset, sizeof(proj), (byte*)&proj);
+	CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->modelVar, sizeof(proj), (byte*)&proj);
 	CoreGraphics::SetResourceTable(this->textTable, NEBULA_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
 
 	uint screenWidth, screenHeight;

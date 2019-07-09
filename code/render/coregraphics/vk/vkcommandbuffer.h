@@ -8,7 +8,7 @@
 //------------------------------------------------------------------------------
 #include "ids/idallocator.h"
 #include "vulkan/vulkan.h"
-#include "coregraphics/cmdbuffer.h"
+#include "coregraphics/commandbuffer.h"
 
 namespace Vulkan
 {
@@ -17,8 +17,8 @@ static const uint NumPoolTypes = 4;
 struct CommandBufferPools
 {
 
-	VkCommandPool pools[CoreGraphics::NumCmdBufferUsages][NumPoolTypes];
-	uint queueFamilies[CoreGraphics::NumCmdBufferUsages];
+	VkCommandPool pools[CoreGraphics::NumCommandBufferUsages][NumPoolTypes];
+	uint queueFamilies[CoreGraphics::NumCommandBufferUsages];
 	VkDevice dev;
 };
 
@@ -28,10 +28,10 @@ void SetupVkPools(VkDevice dev, uint32_t drawQueue, uint32_t computeQueue, uint3
 void DestroyVkPools(VkDevice dev);
 
 /// get pool based on flags
-const VkCommandPool CommandBufferGetVkPool(CoreGraphics::CmdBufferUsage usage, VkCommandPoolCreateFlags flags);
+const VkCommandPool CommandBufferGetVkPool(CoreGraphics::CommandBufferUsage usage, VkCommandPoolCreateFlags flags);
 
 /// get vk command buffer
-const VkCommandBuffer CommandBufferGetVk(const CoreGraphics::CmdBufferId id);
+const VkCommandBuffer CommandBufferGetVk(const CoreGraphics::CommandBufferId id);
 
 typedef Ids::IdAllocator<VkCommandBuffer, VkCommandPool> VkCommandBufferAllocator;
 extern CommandBufferPools pools;

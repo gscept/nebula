@@ -9,6 +9,7 @@
 #include "framescript.h" 
 #include "framepass.h"
 #include "framesubpass.h"
+#include "framesubmission.h"
 #include "resources/resourceid.h"
 #include "io/uri.h"
 #include "jzon-c/jzon.h"
@@ -45,6 +46,8 @@ private:
 	static void ParseComputeAlgorithm(const Ptr<Frame::FrameScript>& script, JzonValue* node);
 	/// parse swapbuffer
 	static void ParseSwapbuffers(const Ptr<Frame::FrameScript>& script, JzonValue* node);
+	/// parse frame submission phase
+	static void ParseFrameSubmission(const Ptr<Frame::FrameScript>& script, char startOrEnd, JzonValue* node);
 	/// parse barrier
 	static void ParseBarrier(const Ptr<Frame::FrameScript>& script, JzonValue* node);
 
@@ -84,7 +87,7 @@ private:
 	/// helper to parse resources
 	static void ParseResourceDependencies(const Ptr<Frame::FrameScript>& script, Frame::FrameOp* op, JzonValue* node);
 	
-
+	static Frame::FrameSubmission* LastSubmission;
 	typedef Algorithms::Algorithm* (*Fn)(Memory::ArenaAllocator<BIG_CHUNK>&);
 	static Util::HashTable<uint, Fn> constructors;
 };

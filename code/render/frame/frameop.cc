@@ -443,32 +443,6 @@ FrameOp::Compiled::Discard()
 /**
 */
 void
-FrameOp::Compiled::CrossQueuePreSync()
-{
-	IndexT i;
-	for (i = 0; i < this->numWaitSemaphores; i++)
-	{
-		CoreGraphics::SemaphoreWait(this->waitSemaphores[i]);
-	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-FrameOp::Compiled::CrossQueuePostSync()
-{
-	IndexT i;
-	for (i = 0; i < this->numSignalSemaphores; i++)
-	{
-		CoreGraphics::SemaphoreWait(this->signalSemaphores[i]);
-	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
 FrameOp::Compiled::QueuePreSync()
 {
 	IndexT i;

@@ -127,7 +127,7 @@ ENDIF()
 				batchgroup.cc
 				batchgroup.h
 				gpubuffertypes.h
-				cmdbuffer.h
+				commandbuffer.h
 				config.h
 				constantbuffer.h
 				displaydevice.cc
@@ -191,8 +191,7 @@ ENDIF()
 				streamtexturepool.cc
 				streamtexturepool.h
 				streamtexturesaver.h
-        submissioncontext.cc
-        submissioncontext.h
+                submissioncontext.h
 				textelement.cc
 				textelement.h
 				textrenderer.cc
@@ -306,18 +305,16 @@ ENDIF()
 			fips_files(
 				vkbarrier.cc
 				vkbarrier.h
-				vkcmdbuffer.cc
-				vkcmdbuffer.h
-				vkcmdbufferthread.cc
-				vkcmdbufferthread.h
+				vkcommandbuffer.cc
+				vkcommandbuffer.h
+				vkcommandbufferthread.cc
+				vkcommandbufferthread.h
 				vkevent.cc
 				vkevent.h
 				vkfence.cc
 				vkfence.h
 				vkgraphicsdevice.h
 				vkgraphicsdevice.cc
-				vkdeferredcommand.cc
-				vkdeferredcommand.h
 				vkmemoryindexbufferpool.cc
 				vkmemoryindexbufferpool.h
 				vkmemorytexturepool.cc
@@ -328,16 +325,12 @@ ENDIF()
 				vkpass.h
 				vkpipelinedatabase.cc
 				vkpipelinedatabase.h
-				#vkrenderdevice.cc
-				#vkrenderdevice.h
 				vkrendertexture.cc
 				vkrendertexture.h
 				vkresourcetable.cc
 				vkresourcetable.h
 				vksampler.cc
 				vksampler.h
-				vkscheduler.cc
-				vkscheduler.h
 				vksemaphore.cc
                 vksemaphore.h
 				vkshader.cc
@@ -354,6 +347,8 @@ ENDIF()
 				vkshaperenderer.h
 				vkshaderpool.cc
 				vkshaderpool.h
+                vksubmissioncontext.cc
+                vksubmissioncontext.h
 				vkstreamtexturepool.cc
 				vkstreamtexturepool.h
 				vkstreamtexturesaver.cc
@@ -404,6 +399,8 @@ ENDIF()
 				framescriptloader.h
 				frameserver.cc
 				frameserver.h
+                framesubmission.cc
+                framesubmission.h
 				framesubpass.cc
 				framesubpass.h
 				framesubpassalgorithm.cc

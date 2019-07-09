@@ -1,14 +1,13 @@
 //------------------------------------------------------------------------------
 // vkutilities.cc
-// (C)2017-2018 Individual contributors, see AUTHORS file
+// (C) 2017-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "vkutilities.h"
 #include "vkgraphicsdevice.h"
 #include "coregraphics/config.h"
-#include "vkcmdbuffer.h"
+#include "vkcommandbuffer.h"
 #include "vktypes.h"
-#include "vkscheduler.h"
 
 namespace Vulkan
 {
@@ -29,18 +28,15 @@ VkUtilities::~VkUtilities()
 	// empty
 }
 
-
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkUtilities::ImageLayoutTransition(CoreGraphicsQueueType queue, VkPipelineStageFlags left, VkPipelineStageFlags right, VkImageMemoryBarrier barrier)
+VkUtilities::ImageBarrier(CoreGraphics::CommandBufferId cmd, CoreGraphics::BarrierStage left, CoreGraphics::BarrierStage right, VkImageMemoryBarrier barrier)
 {
-	VkCommandBuffer buf = Vulkan::GetMainBuffer(queue);
-
 	// execute command
-	vkCmdPipelineBarrier(buf,
-		left, right,
+	vkCmdPipelineBarrier(CommandBufferGetVk(cmd),
+		VkTypes::AsVkPipelineFlags(left), VkTypes::AsVkPipelineFlags(right),
 		0,
 		0, VK_NULL_HANDLE,
 		0, VK_NULL_HANDLE,
@@ -50,16 +46,117 @@ VkUtilities::ImageLayoutTransition(CoreGraphicsQueueType queue, VkPipelineStageF
 //------------------------------------------------------------------------------
 /**
 */
-void
-VkUtilities::ImageLayoutTransition(VkCommandBuffer buf, VkPipelineStageFlags left, VkPipelineStageFlags right, VkImageMemoryBarrier barrier)
+void 
+VkUtilities::BufferUpdate(CoreGraphics::CommandBufferId cmd, VkBuffer buf, VkDeviceSize offset, VkDeviceSize size, const void* data)
 {
-	// execute command
-	vkCmdPipelineBarrier(buf,
-		left, right,
+	VkDeviceSize totalSize = size;
+	VkDeviceSize totalOffset = offset;
+	while (totalSize > 0)
+	{
+		const uint8_t* ptr = (const uint8_t*)data + totalOffset;
+		VkDeviceSize uploadSize = totalSize < 65536 ? totalSize : 65536;
+		vkCmdUpdateBuffer(CommandBufferGetVk(cmd), buf, totalOffset, uploadSize, (const uint32_t*)ptr);
+		totalSize -= uploadSize;
+		totalOffset += uploadSize;
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+VkUtilities::ImageUpdate(VkDevice dev, CoreGraphics::CommandBufferId cmd, CoreGraphicsQueueType queue, VkImage img, const VkImageCreateInfo& info, uint32_t mip, uint32_t face, VkDeviceSize size, uint32_t* data, VkBuffer& outIntermediateBuffer, VkDeviceMemory& outIntermediateMemory)
+{
+	// create transfer buffer
+	const uint32_t qfamily = Vulkan::GetQueueFamily(queue);
+	VkBufferCreateInfo bufInfo =
+	{
+		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+		NULL,
 		0,
-		0, VK_NULL_HANDLE,
-		0, VK_NULL_HANDLE,
-		1, &barrier);
+		size,
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+		VK_SHARING_MODE_EXCLUSIVE,
+		1,
+		&qfamily
+	};
+	VkBuffer buf;
+	vkCreateBuffer(dev, &bufInfo, NULL, &buf);
+
+	// allocate memory
+	VkDeviceMemory bufMem;
+	uint32_t bufsize;
+	VkUtilities::AllocateBufferMemory(dev, buf, bufMem, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, bufsize);
+	vkBindBufferMemory(dev, buf, bufMem, 0);
+
+	// map memory
+	void* mapped;
+	VkResult res = vkMapMemory(dev, bufMem, 0, size, 0, &mapped);
+	n_assert(res == VK_SUCCESS);
+	memcpy(mapped, data, VK_DEVICE_SIZE_CONV(size));
+	vkUnmapMemory(dev, bufMem);
+
+	// perform update of buffer, and stage a copy of buffer data to image
+	VkBufferImageCopy copy;
+	copy.bufferOffset = 0;
+	copy.bufferImageHeight = 0;
+	copy.bufferRowLength = 0;
+	copy.imageExtent = info.extent;
+	copy.imageOffset = { 0, 0, 0 };
+	copy.imageSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, mip, face, 1 };
+	vkCmdCopyBufferToImage(CommandBufferGetVk(cmd), buf, img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
+
+	outIntermediateBuffer = buf;
+	outIntermediateMemory = bufMem;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+VkUtilities::ImageColorClear(CoreGraphics::CommandBufferId cmd, const VkImage& image, VkImageLayout layout, VkClearColorValue clearValue, VkImageSubresourceRange subres)
+{
+	vkCmdClearColorImage(CommandBufferGetVk(cmd), image, layout, &clearValue, 1, &subres);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+VkUtilities::ImageDepthStencilClear(CoreGraphics::CommandBufferId cmd, const VkImage& image, VkImageLayout layout, VkClearDepthStencilValue clearValue, VkImageSubresourceRange subres)
+{
+	vkCmdClearDepthStencilImage(CommandBufferGetVk(cmd), image, layout, &clearValue, 1, &subres);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+VkUtilities::Copy(CoreGraphics::CommandBufferId cmd, const VkImage from, Math::rectangle<SizeT> fromRegion, const VkImage to, Math::rectangle<SizeT> toRegion)
+{
+	VkImageCopy region;
+	region.dstOffset = { fromRegion.left, fromRegion.top, 0 };
+	region.dstSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
+	region.extent = { (uint32_t)toRegion.width(), (uint32_t)toRegion.height(), 1 };
+	region.srcOffset = { toRegion.left, toRegion.top, 0 };
+	region.srcSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
+	vkCmdCopyImage(CommandBufferGetVk(cmd), from, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, to, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+VkUtilities::Blit(CoreGraphics::CommandBufferId cmd, const VkImage from, Math::rectangle<SizeT> fromRegion, IndexT fromMip, const VkImage to, Math::rectangle<SizeT> toRegion, IndexT toMip)
+{
+	VkImageBlit blit;
+	blit.srcOffsets[0] = { fromRegion.left, fromRegion.top, 0 };
+	blit.srcOffsets[1] = { fromRegion.right, fromRegion.bottom, 1 };
+	blit.srcSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, (uint32_t)fromMip, 0, 1 };
+	blit.dstOffsets[0] = { toRegion.left, toRegion.top, 0 };
+	blit.dstOffsets[1] = { toRegion.right, toRegion.bottom, 1 };
+	blit.dstSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, (uint32_t)toMip, 0, 1 };
+	vkCmdBlitImage(CommandBufferGetVk(cmd), from, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, to, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit, VK_FILTER_LINEAR);
 }
 
 //------------------------------------------------------------------------------
@@ -122,52 +219,6 @@ VkUtilities::BufferMemoryBarrier(const VkBuffer& buf, VkDeviceSize offset, VkDev
 	barrier.size = size;
 	barrier.offset = offset;
 	return barrier;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-VkUtilities::ChangeImageLayout(const VkImageMemoryBarrier& barrier, const CoreGraphicsQueueType type)
-{
-
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-VkUtilities::ImageOwnershipChange(CoreGraphicsQueueType queue, VkPipelineStageFlags left, VkPipelineStageFlags right, VkImageMemoryBarrier barrier)
-{
-	VkCommandBuffer buf = Vulkan::GetMainBuffer(queue);
-
-	// execute command
-	vkCmdPipelineBarrier(buf,
-		left, right,
-		0,
-		0, VK_NULL_HANDLE,
-		0, VK_NULL_HANDLE,
-		1, &barrier);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-VkUtilities::ImageColorClear(const VkImage& image, const CoreGraphicsQueueType queue, VkImageLayout layout, VkClearColorValue clearValue, VkImageSubresourceRange subres)
-{
-	VkCommandBuffer buf = Vulkan::GetMainBuffer(queue);
-	vkCmdClearColorImage(buf, image, layout, &clearValue, 1, &subres);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-VkUtilities::ImageDepthStencilClear(const VkImage& image, const CoreGraphicsQueueType queue, VkImageLayout layout, VkClearDepthStencilValue clearValue, VkImageSubresourceRange subres)
-{
-	VkCommandBuffer buf = Vulkan::GetMainBuffer(queue);
-	vkCmdClearDepthStencilImage(buf, image, layout, &clearValue, 1, &subres);
 }
 
 //------------------------------------------------------------------------------
@@ -267,114 +318,10 @@ VkUtilities::GetMemoryType(uint32_t bits, VkMemoryPropertyFlags flags, uint32_t&
 /**
 */
 void
-VkUtilities::BufferUpdate(const VkBuffer& buf, VkDeviceSize offset, VkDeviceSize size, const void* data)
-{
-	VkDeviceSize totalSize = size;
-	VkDeviceSize totalOffset = offset;
-	while (totalSize > 0)
-	{
-		const uint8_t* ptr = (const uint8_t*)data + totalOffset;
-		VkDeviceSize uploadSize = totalSize < 65536 ? totalSize : 65536;
-		vkCmdUpdateBuffer(Vulkan::GetMainBuffer(TransferQueueType), buf, totalOffset, uploadSize, (const uint32_t*)ptr);
-		totalSize -= uploadSize;
-		totalOffset += uploadSize;
-	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-VkUtilities::BufferUpdate(VkCommandBuffer cmd, const VkBuffer& buf, VkDeviceSize offset, VkDeviceSize size, const void* data)
-{
-	VkDeviceSize totalSize = size;
-	VkDeviceSize totalOffset = offset;
-	while (totalSize > 0)
-	{
-		const uint8_t* ptr = (const uint8_t*)data + totalOffset;
-		VkDeviceSize uploadSize = totalSize < 65536 ? totalSize : 65536;
-		vkCmdUpdateBuffer(cmd, buf, totalOffset, uploadSize, (const uint32_t*)ptr);
-		totalSize -= uploadSize;
-		totalOffset += uploadSize;
-	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-VkUtilities::ImageUpdate(const VkImage& img, const VkImageCreateInfo& info, uint32_t mip, uint32_t face, VkDeviceSize size, uint32_t* data)
-{
-	VkDevice dev = Vulkan::GetCurrentDevice();
-
-	// create transfer buffer
-	const uint32_t qfamily = Vulkan::GetQueueFamily(TransferQueueType);
-	VkBufferCreateInfo bufInfo =
-	{
-		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-		NULL,
-		0,
-		size,
-		VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-		VK_SHARING_MODE_EXCLUSIVE,
-		1,
-		&qfamily
-	};
-	VkBuffer buf;
-	vkCreateBuffer(dev, &bufInfo, NULL, &buf);
-
-	// allocate memory
-	VkDeviceMemory bufMem;
-	uint32_t bufsize;
-	VkUtilities::AllocateBufferMemory(dev, buf, bufMem, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, bufsize);
-	vkBindBufferMemory(dev, buf, bufMem, 0);
-
-	// map memory
-	void* mapped;
-	VkResult res = vkMapMemory(dev, bufMem, 0, size, 0, &mapped);
-	n_assert(res == VK_SUCCESS);
-	memcpy(mapped, data, VK_DEVICE_SIZE_CONV(size));
-	vkUnmapMemory(dev, bufMem);
-
-	// perform update of buffer, and stage a copy of buffer data to image
-	VkBufferImageCopy copy;
-	copy.bufferOffset = 0;
-	copy.bufferImageHeight = 0;
-	copy.bufferRowLength = 0;
-	copy.imageExtent = info.extent;
-	copy.imageOffset = { 0, 0, 0 };
-	copy.imageSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, mip, face, 1 };
-	vkCmdCopyBufferToImage(Vulkan::GetMainBuffer(TransferQueueType), buf, img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
-	
-	// get scheduler
-	VkScheduler* scheduler = VkScheduler::Instance();
-
-	// finally push delegates to dealloc all our staging data
-	VkDeferredCommand del;
-	del.del.type = VkDeferredCommand::FreeBuffer;
-	del.del.buffer.buf = buf;
-	del.del.buffer.mem = bufMem;
-	del.del.queue = TransferQueueType;
-	del.dev = dev;
-	scheduler->PushCommand(del, VkScheduler::OnHandleTransferFences);
-
-	// finally push delegates to dealloc all our staging data
-	VkDeferredCommand del2;
-	del2.del.type = VkDeferredCommand::FreeMemory;
-	del2.del.memory.data = data;
-	del2.del.queue = TransferQueueType;
-	del2.dev = dev;
-	scheduler->PushCommand(del2, VkScheduler::OnHandleTransferFences);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
 VkUtilities::ReadImage(const VkImage tex, CoreGraphics::PixelFormat::Code format, CoreGraphics::TextureDimensions dims, CoreGraphics::TextureType type, VkImageCopy copy, uint32_t& outMemSize, VkDeviceMemory& outMem, VkBuffer& outBuffer)
 {
 	VkDevice dev = Vulkan::GetCurrentDevice();
-	CoreGraphics::CmdBufferId cmdBuf = VkUtilities::BeginImmediateTransfer();
+	CoreGraphics::CommandBufferId cmdBuf = VkUtilities::BeginImmediateTransfer();
 
 	// find format of equal size so that we can decompress later
 	VkFormat fmt = VkTypes::AsVkFormat(format);
@@ -436,11 +383,11 @@ VkUtilities::ReadImage(const VkImage tex, CoreGraphics::PixelFormat::Code format
 
 	// perform update of buffer, and stage a copy of buffer data to image
 	VkCommandBuffer cbuf = CommandBufferGetVk(cmdBuf);
-	VkUtilities::ImageLayoutTransition(cbuf, VkTypes::AsVkPipelineFlags(CoreGraphics::BarrierStage::Host), VkTypes::AsVkPipelineFlags(CoreGraphics::BarrierStage::Transfer), VkUtilities::ImageMemoryBarrier(img, dstSubres, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
-	VkUtilities::ImageLayoutTransition(cbuf, VkTypes::AsVkPipelineFlags(CoreGraphics::BarrierStage::AllGraphicsShaders), VkTypes::AsVkPipelineFlags(CoreGraphics::BarrierStage::Transfer), VkUtilities::ImageMemoryBarrier(tex, srcSubres, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL));
+	VkUtilities::ImageBarrier(cmdBuf, CoreGraphics::BarrierStage::Host, CoreGraphics::BarrierStage::Transfer, VkUtilities::ImageMemoryBarrier(img, dstSubres, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
+	VkUtilities::ImageBarrier(cmdBuf, CoreGraphics::BarrierStage::AllGraphicsShaders, CoreGraphics::BarrierStage::Transfer, VkUtilities::ImageMemoryBarrier(tex, srcSubres, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL));
 	vkCmdCopyImage(cbuf, tex, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
-	VkUtilities::ImageLayoutTransition(cbuf, VkTypes::AsVkPipelineFlags(CoreGraphics::BarrierStage::Transfer), VkTypes::AsVkPipelineFlags(CoreGraphics::BarrierStage::AllGraphicsShaders), VkUtilities::ImageMemoryBarrier(tex, srcSubres, VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_COLOR_ATTACHMENT_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
-	VkUtilities::ImageLayoutTransition(cbuf, VkTypes::AsVkPipelineFlags(CoreGraphics::BarrierStage::Transfer), VkTypes::AsVkPipelineFlags(CoreGraphics::BarrierStage::Transfer), VkUtilities::ImageMemoryBarrier(img, dstSubres, VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL));
+	VkUtilities::ImageBarrier(cmdBuf, CoreGraphics::BarrierStage::Transfer, CoreGraphics::BarrierStage::AllGraphicsShaders, VkUtilities::ImageMemoryBarrier(tex, srcSubres, VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_COLOR_ATTACHMENT_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+	VkUtilities::ImageBarrier(cmdBuf, CoreGraphics::BarrierStage::Transfer, CoreGraphics::BarrierStage::Transfer, VkUtilities::ImageMemoryBarrier(img, dstSubres, VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL));
 
 	VkBufferCreateInfo bufInfo =
 	{
@@ -495,15 +442,15 @@ VkUtilities::WriteImage(const VkBuffer& srcImg, const VkImage& dstImg, VkImageCo
 //------------------------------------------------------------------------------
 /**
 */
-CoreGraphics::CmdBufferId
+CoreGraphics::CommandBufferId
 VkUtilities::BeginImmediateTransfer()
 {
 	using namespace CoreGraphics;
-	CmdBufferCreateInfo info =
+	CommandBufferCreateInfo info =
 	{
-		false, false, true, CmdTransfer
+		false, false, true, CommandTransfer
 	};
-	CmdBufferId cmdBuf = CreateCmdBuffer(info);
+	CommandBufferId cmdBuf = CreateCommandBuffer(info);
 
 	// this is why this is slow, we must perform a begin-end-submit of the command buffer for this to work
 	VkCommandBufferBeginInfo begin =
@@ -521,7 +468,7 @@ VkUtilities::BeginImmediateTransfer()
 /**
 */
 void
-VkUtilities::EndImmediateTransfer(CoreGraphics::CmdBufferId cmdBuf)
+VkUtilities::EndImmediateTransfer(CoreGraphics::CommandBufferId cmdBuf)
 {
 	// end command
 	const VkCommandBuffer buf = CommandBufferGetVk(cmdBuf);
@@ -557,7 +504,7 @@ VkUtilities::EndImmediateTransfer(CoreGraphics::CmdBufferId cmdBuf)
 	res = vkWaitForFences(dev, 1, &sync, true, UINT_MAX);
 	n_assert(res == VK_SUCCESS);
 
-	DestroyCmdBuffer(cmdBuf);
+	DestroyCommandBuffer(cmdBuf);
 
 	// cleanup fence, buffer and buffer memory
 	vkDestroyFence(dev, sync, nullptr);

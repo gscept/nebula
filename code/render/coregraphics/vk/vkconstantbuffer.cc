@@ -50,7 +50,7 @@ CreateConstantBuffer(const ConstantBufferCreateInfo& info)
 
 	setup.binding = info.binding;
 	setup.dev = dev;
-	setup.numBuffers = info.numBuffers;
+	setup.mode = info.mode;
 	setup.grow = 16;
 	SizeT size = info.size;
 
@@ -60,7 +60,7 @@ CreateConstantBuffer(const ConstantBufferCreateInfo& info)
 		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
 		NULL,
 		0,
-		(VkDeviceSize)(size * setup.numBuffers),
+		(VkDeviceSize)size,
 		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 		VK_SHARING_MODE_CONCURRENT,
 		(uint32_t)queues.Size(),
@@ -70,7 +70,10 @@ CreateConstantBuffer(const ConstantBufferCreateInfo& info)
 	n_assert(res == VK_SUCCESS);
 
 	uint32_t alignedSize;
-	VkUtilities::AllocateBufferMemory(setup.dev, runtime.buf, setup.mem, VkMemoryPropertyFlagBits(VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT), alignedSize);
+	VkMemoryPropertyFlagBits flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+	if (info.mode == CoherentlyMappedMemory)
+		flags = VkMemoryPropertyFlagBits(flags | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+	VkUtilities::AllocateBufferMemory(setup.dev, runtime.buf, setup.mem, flags, alignedSize);
 
 	// bind to buffer
 	res = vkBindBufferMemory(setup.dev, runtime.buf, setup.mem, 0);
@@ -78,10 +81,10 @@ CreateConstantBuffer(const ConstantBufferCreateInfo& info)
 
 	// size and stride for a single buffer are equal
 	setup.size = alignedSize;
-	setup.stride = alignedSize / setup.numBuffers;
+	setup.stride = alignedSize;
 	pool.capacity = setup.size;
 
-	// map memory so we can use it later
+	// map memory so we can use it later, if we are using coherently mapping
 	res = vkMapMemory(setup.dev, setup.mem, 0, setup.size, 0, &map.data);
 	n_assert(res == VK_SUCCESS);
 
@@ -190,7 +193,10 @@ ConstantBufferAllocate(const ConstantBufferId id, const SizeT size, bool& needsR
 		// allocate new instance memory, alignedSize is the aligned size of a single buffer
 		VkDeviceMemory newMem;
 		uint32_t alignedSize;
-		VkUtilities::AllocateBufferMemory(setupInfo.dev, newBuf, newMem, VkMemoryPropertyFlagBits(VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT), alignedSize);
+		VkMemoryPropertyFlagBits flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+		if (setupInfo.mode == CoherentlyMappedMemory)
+			flags = VkMemoryPropertyFlagBits(flags | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+		VkUtilities::AllocateBufferMemory(setupInfo.dev, newBuf, newMem, flags, alignedSize);
 
 		// bind to buffer, this is the reason why we must destroy and create the buffer again
 		res = vkBindBufferMemory(setupInfo.dev, newBuf, newMem, 0);
@@ -204,6 +210,19 @@ ConstantBufferAllocate(const ConstantBufferId id, const SizeT size, bool& needsR
 		n_assert(res == VK_SUCCESS);
 		memcpy(dstData, mapInfo.data, setupInfo.size);
 		vkUnmapMemory(setupInfo.dev, setupInfo.mem);
+
+		// if we do manual flushing, do it immediately
+		if (setupInfo.mode == ManualFlush)
+		{
+			VkMappedMemoryRange range;
+			range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+			range.pNext = nullptr;
+			range.memory = newMem;
+			range.offset = 0;
+			range.size = setupInfo.size;
+			res = vkFlushMappedMemoryRanges(setupInfo.dev, 1, &range);
+			n_assert(res == VK_SUCCESS);
+		}
 
 		// clean up old data	
 		vkDestroyBuffer(setupInfo.dev, runtimeInfo.buf, nullptr);
@@ -258,9 +277,9 @@ ConstantBufferUpdate(const ConstantBufferId id, const void* data, const uint siz
 
 #if NEBULA_DEBUG
 	VkConstantBufferSetupInfo& setup = constantBufferAllocator.Get<SetupInfo>(id.id24);
-	n_assert(size + bind.offset <= (uint)setup.size);
+	n_assert(size + bind <= (uint)setup.size);
 #endif
-	byte* buf = (byte*)map.data + bind.offset;
+	byte* buf = (byte*)map.data + bind;
 	memcpy(buf, data, size);
 }
 
@@ -274,9 +293,9 @@ ConstantBufferUpdateArray(const ConstantBufferId id, const void* data, const uin
 
 #if NEBULA_DEBUG
 	VkConstantBufferSetupInfo& setup = constantBufferAllocator.Get<SetupInfo>(id.id24);
-	n_assert(size + bind.offset <= (uint)setup.size);
+	n_assert(size + bind <= (uint)setup.size);
 #endif
-	byte* buf = (byte*)map.data + bind.offset;
+	byte* buf = (byte*)map.data + bind;
 	memcpy(buf, data, size * count);
 }
 
@@ -290,9 +309,9 @@ ConstantBufferUpdateInstance(const ConstantBufferId id, const void* data, const 
 	VkConstantBufferSetupInfo& setup = constantBufferAllocator.Get<SetupInfo>(id.id24);
 
 #if NEBULA_DEBUG
-	n_assert(size + bind.offset + setup.stride * instance <= (uint)setup.size);
+	n_assert(size + bind + setup.stride * instance <= (uint)setup.size);
 #endif
-	byte* buf = (byte*)map.data + bind.offset + setup.stride * instance;
+	byte* buf = (byte*)map.data + bind + setup.stride * instance;
 	memcpy(buf, data, size);
 }
 
@@ -306,9 +325,9 @@ ConstantBufferUpdateArrayInstance(const ConstantBufferId id, const void* data, c
 	VkConstantBufferSetupInfo& setup = constantBufferAllocator.Get<SetupInfo>(id.id24);
 
 #if NEBULA_DEBUG
-	n_assert(size + bind.offset + setup.stride * instance <= (uint)setup.size);
+	n_assert(size + bind + setup.stride * instance <= (uint)setup.size);
 #endif
-	byte* buf = (byte*)map.data + bind.offset + setup.stride * instance;
+	byte* buf = (byte*)map.data + bind + setup.stride * instance;
 	memcpy(buf, data, size * count);
 }
 
@@ -323,9 +342,9 @@ ConstantBufferUpdate(const ConstantBufferId id, const ConstantBufferAllocId allo
 
 #if NEBULA_DEBUG
 	n_assert(size >= alloc.size);
-	n_assert(size + bind.offset + alloc.offset <= (uint)setup.size);
+	n_assert(size + bind + alloc.offset <= (uint)setup.size);
 #endif
-	byte* buf = (byte*)map.data + bind.offset + alloc.offset;
+	byte* buf = (byte*)map.data + bind + alloc.offset;
 	memcpy(buf, data, size);
 }
 

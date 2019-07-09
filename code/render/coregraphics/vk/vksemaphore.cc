@@ -14,6 +14,16 @@
 namespace Vulkan
 {
 VkSemaphoreAllocator semaphoreAllocator(0x00FFFFFF);
+
+//------------------------------------------------------------------------------
+/**
+*/
+VkSemaphore
+SemaphoreGetVk(const CoreGraphics::SemaphoreId& id)
+{
+	if (id == CoreGraphics::SemaphoreId::Invalid()) return VK_NULL_HANDLE;
+	else											return semaphoreAllocator.Get<1>(id.id24);
+}
 }
 
 namespace CoreGraphics
@@ -55,21 +65,6 @@ DestroySemaphore(const SemaphoreId& semaphore)
 	semaphoreAllocator.Dealloc(semaphore.id24);
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-void
-SemaphoreWait(const SemaphoreId& semaphore)
-{
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-SemaphoreSignal(const SemaphoreId& semaphore)
-{
-}
 
 } // namespace Vulkan
 

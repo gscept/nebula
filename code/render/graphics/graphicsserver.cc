@@ -56,7 +56,7 @@ GraphicsServer::Open()
 	this->displayDevice = CoreGraphics::DisplayDevice::Create();
 	this->displayDevice->Open();
 
-	CoreGraphics::GraphicsDeviceCreateInfo gfxInfo{false};
+	CoreGraphics::GraphicsDeviceCreateInfo gfxInfo{10 * 1024 * 1024, 1 * 1024 * 1024, 3, false}; // 10/1 MB worth of constant buffer memory ought to be enough
 	this->graphicsDevice = CoreGraphics::CreateGraphicsDevice(gfxInfo);
 	if (this->graphicsDevice)
 	{

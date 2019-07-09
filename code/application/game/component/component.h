@@ -204,6 +204,12 @@ public:
 	/// Set attribute value as a variant. This is generally quite slow and won't propagate to other components, so use with care!
 	void SetAttributeValue(InstanceId instance, Util::FourCC attribute, const Util::Variant& value);
 
+    /// return the owner map
+    Util::Array<Game::Entity> const& GetOwners() const;
+
+    /// sets owners of offset -> (newOwners.Size() + offset) to newOwners.
+    void SetOwners(uint offset, Util::Array<Game::Entity> const& newOwners);
+
 	/// Write owners into writer.
 	void SerializeOwners(const Ptr<IO::BinaryWriter>& writer) const;
 
@@ -875,6 +881,28 @@ inline void
 Component<TYPES...>::Deserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances)
 {
 	ReadDataSequenced(this->data, reader, offset, numInstances, std::make_index_sequence<sizeof...(TYPES)>());
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <class ... TYPES>
+inline Util::Array<Game::Entity> const&
+Component<TYPES...>::GetOwners() const
+{
+    return this->data.GetArray<0>();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <class ... TYPES>
+inline void
+Component<TYPES...>::SetOwners(uint offset, Util::Array<Game::Entity> const& newOwners)
+{
+    auto& owners = this->data.GetArray<0>();
+    n_assert(owners.Size() + offset >= newOwners.Size());
+    Memory::Copy((void*)newOwners.Begin(), (void*)(owners.Begin() + offset), newOwners.Size() * sizeof(Game::Entity));
 }
 
 //------------------------------------------------------------------------------

@@ -10,8 +10,9 @@
 #include "vkutilities.h"
 #include "resources/resourcemanager.h"
 #include "vkshaderserver.h"
-#include "vkscheduler.h"
-#include "vkcmdbuffer.h"
+#include "vkcommandbuffer.h"
+#include "coregraphics/submissioncontext.h"
+#include "vksubmissioncontext.h"
 
 using namespace CoreGraphics;
 using namespace Resources;
@@ -75,7 +76,8 @@ VkMemoryTexturePool::LoadFromMemory(const Resources::ResourceId id, const void* 
 	VkUtilities::AllocateImageMemory(loadInfo.dev, loadInfo.img, loadInfo.mem, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, alignedSize);
 	vkBindImageMemory(dev, loadInfo.img, loadInfo.mem, 0);
 
-	VkScheduler* scheduler = VkScheduler::Instance();
+	// use resource submission
+	CoreGraphics::SubmissionContextId sub = CoreGraphics::GetResourceSubmissionContext();
 
 	// transition into transfer mode
 	VkImageSubresourceRange subres;
@@ -84,28 +86,32 @@ VkMemoryTexturePool::LoadFromMemory(const Resources::ResourceId id, const void* 
 	subres.baseMipLevel = 0;
 	subres.layerCount = 1;
 	subres.levelCount = 1;
-	scheduler->PushImageLayoutTransition(TransferQueueType, CoreGraphics::BarrierStage::Host, CoreGraphics::BarrierStage::Transfer, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
 
-	VkBufferImageCopy copy;
-	copy.bufferOffset = 0;
-	copy.bufferImageHeight = data->height;
-	copy.bufferRowLength = data->width * size;
-	copy.imageExtent.width = data->width;
-	copy.imageExtent.height = data->height;
-	copy.imageExtent.depth = 1;
-	copy.imageOffset = { 0, 0, 0 };
-	copy.imageSubresource.baseArrayLayer = 0;
-	copy.imageSubresource.layerCount = 1;
-	copy.imageSubresource.mipLevel = 0;
-	copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	// insert barrier
+	VkUtilities::ImageBarrier(CoreGraphics::SubmissionContextGetCmdBuffer(sub),
+		CoreGraphics::BarrierStage::Host,
+		CoreGraphics::BarrierStage::Transfer,
+		VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
 
-	// update image while in transfer optimal
-	scheduler->PushImageUpdate(loadInfo.img, imgInfo, 0, 0, data->width * data->height * size, (uint32_t*)data->buffer);
+	// copy buffer, will be deleted later
+	char* bufferCopy = new char[data->width * data->height * size];
+	memcpy(bufferCopy, data->buffer, data->width * data->height * size);
 
-	// transition image to shader variable
-	scheduler->PushImageOwnershipChange(TransferQueueType, CoreGraphics::BarrierStage::Transfer, CoreGraphics::BarrierStage::Transfer, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, TransferQueueType, GraphicsQueueType, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
-	scheduler->PushImageLayoutTransition(GraphicsQueueType, CoreGraphics::BarrierStage::Transfer, CoreGraphics::BarrierStage::AllGraphicsShaders, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
-	
+	// add image update, take the output buffer and memory and add to delayed delete
+	VkBuffer outBuf;
+	VkDeviceMemory outMem;
+	VkUtilities::ImageUpdate(dev, CoreGraphics::SubmissionContextGetCmdBuffer(sub), TransferQueueType, loadInfo.img, imgInfo, 0, 0, data->width * data->height * size, (uint32_t*)bufferCopy, outBuf, outMem);
+
+	// add host memory buffer, intermediate device memory, and intermediate device buffer to delete queue
+	SubmissionContextFreeHostMemory(sub, bufferCopy);
+	SubmissionContextFreeDeviceMemory(sub, dev, outMem);
+	SubmissionContextFreeBuffer(sub, dev, outBuf);
+
+	// transition image to be used for rendering
+	VkUtilities::ImageBarrier(CoreGraphics::SubmissionContextGetCmdBuffer(sub),
+		CoreGraphics::BarrierStage::Transfer,
+		CoreGraphics::BarrierStage::AllGraphicsShaders,
+		VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, TransferQueueType, GraphicsQueueType, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
 	
 	// create view
 	VkImageViewType viewType = VK_IMAGE_VIEW_TYPE_2D;
@@ -437,7 +443,7 @@ VkMemoryTexturePool::Copy(const CoreGraphics::TextureId from, const CoreGraphics
 	VkTextureLoadInfo& toLoad = textureAllocator.Get<1>(to.resourceId);
 
 	// begin immediate action, this might actually be delayed but we can't really know from here
-	CoreGraphics::CmdBufferId cmdBuf = VkUtilities::BeginImmediateTransfer();
+	CoreGraphics::CommandBufferId cmdBuf = VkUtilities::BeginImmediateTransfer();
 	vkCmdCopyImage(CommandBufferGetVk(cmdBuf), fromLoad.img, VK_IMAGE_LAYOUT_GENERAL, toLoad.img, VK_IMAGE_LAYOUT_GENERAL, 1, &copy);
 	VkUtilities::EndImmediateTransfer(cmdBuf);
 }

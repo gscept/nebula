@@ -81,7 +81,7 @@ TonemapAlgorithm::Setup()
 	this->AddFunction("AverageLum", Algorithm::Graphics, [this](IndexT)
 	{
 #if NEBULA_GRAPHICS_DEBUG
-		CoreGraphics::CmdBufBeginMarker(GraphicsQueueType, NEBULA_MARKER_ORANGE, "Tonemapping");
+		CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_ORANGE, "Tonemapping");
 #endif
 
 		Timing::Time time = FrameSync::FrameSyncTimer::Instance()->GetFrameTime();
@@ -94,7 +94,7 @@ TonemapAlgorithm::Setup()
 		CoreGraphics::EndBatch();
 
 #if NEBULA_GRAPHICS_DEBUG
-		CoreGraphics::CmdBufEndMarker(GraphicsQueueType);
+		CoreGraphics::CommandBufferEndMarker(GraphicsQueueType);
 #endif
 	});
 

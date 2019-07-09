@@ -18,43 +18,26 @@
 #include "coregraphics/config.h"
 #include "util/fixedarray.h"
 #include "ids/idallocator.h"
-#include "coregraphics/cmdbuffer.h"
+#include "coregraphics/commandbuffer.h"
 
 //------------------------------------------------------------------------------
 namespace CoreGraphics
 {
 
+struct TextureId;
 struct SemaphoreId;
 struct FenceId;
 ID_24_8_TYPE(SubmissionContextId);
 
 struct SubmissionContextCreateInfo
 {
-	uint numBuffers : 3; // number of buffers it should keep track of
-	CmdBufferCreateInfo cmdInfo; // creation info for the cmd buffers
+	CommandBufferCreateInfo cmdInfo;	// creation info for the cmd buffers
+	uint numBuffers : 3;				// number of buffers it should keep track of
+	bool useFence : 1;					// set if a fence should be used when we cycle				
+#if NEBULA_GRAPHICS_DEBUG
+	Util::String name;
+#endif
 };
-
-enum
-{
-	SubmissionContextCmdBuffer,
-	SubmissionContextSemaphore,
-	SubmissionContextRetiredCmdBuffer,
-	SubmissionContextRetiredSemaphore,
-	SubmissionContextFence,
-	SubmissionContextCurrentIndex,
-	SubmissionContextCmdCreateInfo
-};
-
-typedef Ids::IdAllocator <
-	Util::FixedArray<CmdBufferId>,
-	Util::FixedArray<SemaphoreId>,
-	Util::FixedArray<Util::Array<CmdBufferId>>,
-	Util::FixedArray<Util::Array<SemaphoreId>>,
-	Util::FixedArray<FenceId>,
-	IndexT,
-	CmdBufferCreateInfo
-> SubmissionContextAllocator;
-extern SubmissionContextAllocator submissionContextAllocator;
 
 /// create new submission context
 SubmissionContextId CreateSubmissionContext(const SubmissionContextCreateInfo& info);
@@ -62,7 +45,14 @@ SubmissionContextId CreateSubmissionContext(const SubmissionContextCreateInfo& i
 void DestroySubmissionContext(const SubmissionContextId id);
 
 /// create new buffer and retire the old, outputs the new buffer and semaphore to be used for recording
-void SubmissionContextNewBuffer(const SubmissionContextId id, CmdBufferId& outBuf, SemaphoreId& outSem);
+void SubmissionContextNewBuffer(const SubmissionContextId id, CommandBufferId& outBuf, SemaphoreId& outSem);
+/// get current buffer
+CommandBufferId SubmissionContextGetCmdBuffer(const SubmissionContextId id);
+/// get current semaphore
+SemaphoreId SubmissionContextGetSemaphore(const SubmissionContextId id);
+
+/// add void* to memory free upon completion
+void SubmissionContextFreeHostMemory(const SubmissionContextId id, void* buf);
 
 /// get current fence object
 const FenceId SubmissionContextGetFence(const SubmissionContextId id);

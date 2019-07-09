@@ -65,7 +65,7 @@ ImguiContext::ImguiDrawFunction()
 	CoreGraphics::SetIndexBuffer(state.ibo, 0);
 
 	// set projection
-	CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, state.textProjectionConstant.offset, sizeof(proj), (byte*)&proj);
+	CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, state.textProjectionConstant, sizeof(proj), (byte*)&proj);
 
 	IndexT vertexOffset = 0;
 	IndexT indexOffset = 0;
@@ -120,7 +120,7 @@ ImguiContext::ImguiDrawFunction()
 					n_error("ResourceId alloc type unknown or not implemented!\n");
 				}
 				
-				CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, state.textureConstant.offset, sizeof(uint64), (byte*)&imageHandle);
+				CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, state.textureConstant, sizeof(uint64), (byte*)&imageHandle);
 
 				// setup primitive
 				CoreGraphics::PrimitiveGroup primitive;

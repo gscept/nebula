@@ -12,7 +12,7 @@
 #include "coregraphics/graphicsdevice.h"
 #include "util/set.h"
 #include "vksubcontexthandler.h"
-#include "vkcmdbufferthread.h"
+#include "vkcommandbufferthread.h"
 
 namespace Vulkan
 {
@@ -38,6 +38,8 @@ VkPipelineCache GetPipelineCache();
 VkPhysicalDeviceMemoryProperties GetMemoryProperties();
 /// get main command buffer
 VkCommandBuffer GetMainBuffer(const CoreGraphicsQueueType queue);
+/// get final graphics semaphore
+VkSemaphore GetGraphicsSemaphore();
 
 /// get queue families
 const Util::Set<uint32_t>& GetQueueFamilies();
@@ -91,7 +93,7 @@ void BeginDrawThread();
 /// finish current draw threads
 void EndDrawThreads();
 /// add command to thread
-void PushToThread(const VkCmdBufferThread::Command& cmd, const IndexT& index, bool allowStaging = true);
+void PushToThread(const VkCommandBufferThread::Command& cmd, const IndexT& index, bool allowStaging = true);
 /// flush remaining staging thread commands
 void FlushToThread(const IndexT& index);
 
@@ -99,8 +101,8 @@ void FlushToThread(const IndexT& index);
 void BindSharedDescriptorSets();
 
 /// begin command buffer marker (directly on vkcommandbuffer)
-void CmdBufBeginMarker(VkCommandBuffer buf, const Math::float4& color, const char* name);
+void CommandBufferBeginMarker(VkCommandBuffer buf, const Math::float4& color, const char* name);
 /// end command buffer marker (directly on vkcommandbuffer)
-void CmdBufEndMarker(VkCommandBuffer buf);
+void CommandBufferEndMarker(VkCommandBuffer buf);
 
 } // namespace Vulkan
