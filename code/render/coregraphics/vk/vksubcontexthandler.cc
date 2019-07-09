@@ -232,6 +232,34 @@ VkSubContextHandler::FlushSubmissions(CoreGraphicsQueueType type, VkFence fence,
 //------------------------------------------------------------------------------
 /**
 */
+void 
+VkSubContextHandler::SubmitFence(CoreGraphicsQueueType type, VkFence fence)
+{
+	VkQueue queue = VK_NULL_HANDLE;
+	switch (type)
+	{
+		case GraphicsQueueType:
+		queue = this->drawQueues[this->currentDrawQueue];
+		break;
+		case ComputeQueueType:
+		queue = this->computeQueues[this->currentComputeQueue];
+		break;
+		case TransferQueueType:
+		queue = this->transferQueues[this->currentTransferQueue];
+		break;
+		case SparseQueueType:
+		queue = this->sparseQueues[this->currentSparseQueue];
+		break;
+	}
+
+	VkResult res = vkQueueSubmit(queue, 0, nullptr, fence);
+	n_assert(res == VK_SUCCESS);
+
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void VkSubContextHandler::SubmitImmediate(CoreGraphicsQueueType type, VkCommandBuffer cmds, VkSemaphore waitSemaphore, VkPipelineStageFlags waitFlags, VkSemaphore signalSemaphore, VkFence fence, bool waitImmediately)
 {
 	VkQueue queue = VK_NULL_HANDLE;
