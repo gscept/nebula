@@ -2447,13 +2447,16 @@ EndSubmission(CoreGraphicsQueueType queue, bool endOfFrame)
 			SemaphoreGetVk(state.gfxPrevSemaphore), VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
 			SemaphoreGetVk(state.gfxSemaphore));
 
-		// if we should wait for the compute, add a semaphore
-		if (state.gfxWaitSemaphore != SemaphoreId::Invalid())
-			state.subcontextHandler.AddWaitSemaphore(GraphicsQueueType, SemaphoreGetVk(state.gfxWaitSemaphore), VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
-
 		// add wait semaphore for the last command buffer
 		if (endOfFrame)
 			state.subcontextHandler.AddWaitSemaphore(GraphicsQueueType, SemaphoreGetVk(state.setupSubmissionSemaphore), VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
+
+		// if we should wait for the compute, add a semaphore
+		if (state.gfxWaitSemaphore != SemaphoreId::Invalid())
+		{
+			state.subcontextHandler.AddWaitSemaphore(GraphicsQueueType, SemaphoreGetVk(state.gfxWaitSemaphore), VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
+			state.subcontextHandler.FlushSubmissions(GraphicsQueueType, VK_NULL_HANDLE, false);
+		}
 
 		// set prev to current semaphore
 		state.gfxPrevSemaphore = state.gfxSemaphore;
@@ -2482,13 +2485,16 @@ EndSubmission(CoreGraphicsQueueType queue, bool endOfFrame)
 			SemaphoreGetVk(state.computePrevSemaphore), VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
 			SemaphoreGetVk(state.computeSemaphore));
 
-		// if we should wait for the graphics, add a semaphore
-		if (state.computeWaitSemaphore == GraphicsQueueType)
-			state.subcontextHandler.AddWaitSemaphore(ComputeQueueType, SemaphoreGetVk(state.computeWaitSemaphore), VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-	
 		// add wait semaphore for the last command buffer
 		if (endOfFrame)
 			state.subcontextHandler.AddWaitSemaphore(ComputeQueueType, SemaphoreGetVk(state.setupSubmissionSemaphore), VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+
+		// if we should wait for the graphics, add a semaphore
+		if (state.computeWaitSemaphore == GraphicsQueueType)
+		{
+			state.subcontextHandler.AddWaitSemaphore(ComputeQueueType, SemaphoreGetVk(state.computeWaitSemaphore), VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+			state.subcontextHandler.FlushSubmissions(ComputeQueueType, VK_NULL_HANDLE, false);
+		}
 
 		// set previous semaphore
 		state.computePrevSemaphore = state.computeSemaphore;
@@ -2552,10 +2558,13 @@ EndFrame(IndexT frameIndex)
 	CoreGraphics::QueueBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "Graphics frame commands submission");
 #endif
 
+	state.subcontextHandler.AddWaitSemaphore(GraphicsQueueType, SemaphoreGetVk(state.resourceSubmissionSemaphore), VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
+
 	// submit graphics, wait for this frames resource submissions
 	state.subcontextHandler.FlushSubmissions(GraphicsQueueType, 
 		FenceGetVk(state.gfxFence),
 		false);
+
 	state.subcontextHandler.SubmitFence(GraphicsQueueType, FenceGetVk(state.setupSubmissionFence));
 
 #if NEBULA_GRAPHICS_DEBUG
