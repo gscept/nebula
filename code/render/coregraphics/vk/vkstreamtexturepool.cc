@@ -139,7 +139,7 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 		VK_SAMPLE_COUNT_1_BIT,
 		forceLinear ? VK_IMAGE_TILING_LINEAR : VK_IMAGE_TILING_OPTIMAL,
 		VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-		VK_SHARING_MODE_EXCLUSIVE,
+		VK_SHARING_MODE_CONCURRENT,
 		0,
 		NULL,
 		VK_IMAGE_LAYOUT_UNDEFINED
@@ -255,9 +255,9 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 
 	// transition image to be used for rendering
 	VkUtilities::ImageBarrier(CoreGraphics::SubmissionContextGetCmdBuffer(sub),
-		CoreGraphics::BarrierStage::Host,
+		CoreGraphics::BarrierStage::Transfer,
 		CoreGraphics::BarrierStage::AllGraphicsShaders,
-		VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, TransferQueueType, GraphicsQueueType, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+		VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
 		
 	ilDeleteImage(image);
 
