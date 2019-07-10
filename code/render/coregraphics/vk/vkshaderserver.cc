@@ -269,7 +269,6 @@ VkShaderServer::GetTickParams() const
 	return this->tickParams;
 }
 
-
 //------------------------------------------------------------------------------
 /**
 */

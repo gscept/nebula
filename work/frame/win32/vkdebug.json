@@ -245,20 +245,22 @@
       name: "HBAO-Run",
       algorithm: "HBAO",
       function: "HBAOAndBlur",
-      resources: [
-        {
-          name: "HBAOBuffer",
-          access: "ShaderWrite",
-          layout: "General",
-          stage: "ComputeShader",
-          mip: 0,
-          layer: 0,
-          aspect: "Color"
-        },
+      inputs: [
         {
           name: "DepthBuffer",
           access: "ShaderRead",
           layout: "ShaderRead",
+          stage: "ComputeShader",
+          mip: 0,
+          layer: 0,
+          aspect: "Color"
+        }
+      ],
+      outputs: [
+        {
+          name: "HBAOBuffer",
+          access: "ShaderWrite",
+          layout: "General",
           stage: "ComputeShader",
           mip: 0,
           layer: 0,
@@ -269,7 +271,6 @@
 
     pass: {
       name: "ScreenPass",
-
       attachments: [
         {
           name: "ScreenBuffer",
@@ -290,7 +291,7 @@
         attachments: [ "ScreenBuffer" ],
         depth: false,
 
-        resources: [
+        inputs: [
           {
             name: "HBAOBuffer",
             access: "ShaderRead",
@@ -352,7 +353,7 @@
       texture: "__WINDOW__"
     },
     blit: {
-      resources: [
+      inputs: [
         {
           name: "ScreenBuffer",
           access: "TransferRead",
@@ -361,7 +362,9 @@
           mip: 0,
           layer: 0,
           aspect: "Color"
-        },
+        }
+      ],
+      outputs: [
         {
           name: "__WINDOW__",
           access: "TransferWrite",
@@ -378,7 +381,7 @@
     },
     barrier: {
       name: "TransitionToPresent",
-      resources: [
+      inputs: [
         {
           name: "__WINDOW__",
           access: "TransferRead",

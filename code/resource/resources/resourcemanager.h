@@ -345,6 +345,15 @@ LoadFromMemory(const Resources::ResourceId id, void* info)
 //------------------------------------------------------------------------------
 /**
 */
+inline void 
+ReloadResource(const ResourceName& res)
+{
+	return ResourceManager::Instance()->ReloadResource(res);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 inline void
 WaitForLoaderThread()
 {

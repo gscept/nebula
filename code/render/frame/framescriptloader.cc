@@ -512,12 +512,18 @@ FrameScriptLoader::ParseBlit(const Ptr<Frame::FrameScript>& script, JzonValue* n
 	else
 		op->queue = CoreGraphicsQueueTypeFromString(queue->string_value);
 
-	JzonValue* resources = jzon_get(node, "resources");
-	if (resources != nullptr)
+	JzonValue* inputs = jzon_get(node, "inputs");
+	if (inputs != nullptr)
 	{
-		ParseResourceDependencies(script, op, resources);
+		ParseResourceDependencies(script, op, inputs);
 	}
 
+	JzonValue* outputs = jzon_get(node, "outputs");
+	if (outputs != nullptr)
+	{
+		ParseResourceDependencies(script, op, outputs);
+	}
+	
 	JzonValue* from = jzon_get(node, "from");
 	n_assert(from != NULL);
 	const CoreGraphics::RenderTextureId& fromTex = script->GetColorTexture(from->string_value);
@@ -551,10 +557,16 @@ FrameScriptLoader::ParseCopy(const Ptr<Frame::FrameScript>& script, JzonValue* n
 	else
 		op->queue = CoreGraphicsQueueTypeFromString(queue->string_value);
 
-	JzonValue* resources = jzon_get(node, "resources");
-	if (resources != nullptr)
+	JzonValue* inputs = jzon_get(node, "inputs");
+	if (inputs != nullptr)
 	{
-		ParseResourceDependencies(script, op, resources);
+		ParseResourceDependencies(script, op, inputs);
+	}
+
+	JzonValue* outputs = jzon_get(node, "outputs");
+	if (outputs != nullptr)
+	{
+		ParseResourceDependencies(script, op, outputs);
 	}
 
 	JzonValue* from = jzon_get(node, "from");
@@ -590,10 +602,16 @@ FrameScriptLoader::ParseCompute(const Ptr<Frame::FrameScript>& script, JzonValue
 	else
 		op->queue = CoreGraphicsQueueTypeFromString(queue->string_value);
 
-	JzonValue* resources = jzon_get(node, "resources");
-	if (resources != nullptr)
+	JzonValue* inputs = jzon_get(node, "inputs");
+	if (inputs != nullptr)
 	{
-		ParseResourceDependencies(script, op, resources);
+		ParseResourceDependencies(script, op, inputs);
+	}
+
+	JzonValue* outputs = jzon_get(node, "outputs");
+	if (outputs != nullptr)
+	{
+		ParseResourceDependencies(script, op, outputs);
 	}
 
 	// create shader state
@@ -636,10 +654,16 @@ FrameScriptLoader::ParseComputeAlgorithm(const Ptr<Frame::FrameScript>& script, 
 	else
 		op->queue = CoreGraphicsQueueTypeFromString(queue->string_value);
 
-	JzonValue* resources = jzon_get(node, "resources");
-	if (resources != nullptr)
+	JzonValue* inputs = jzon_get(node, "inputs");
+	if (inputs != nullptr)
 	{
-		ParseResourceDependencies(script, op, resources);
+		ParseResourceDependencies(script, op, inputs);
+	}
+
+	JzonValue* outputs = jzon_get(node, "outputs");
+	if (outputs != nullptr)
+	{
+		ParseResourceDependencies(script, op, outputs);
 	}
 
 	JzonValue* alg = jzon_get(node, "algorithm");
@@ -691,10 +715,16 @@ FrameScriptLoader::ParseBarrier(const Ptr<Frame::FrameScript>& script, JzonValue
 	n_assert(name != NULL);
 	op->SetName(name->string_value);
 
-	JzonValue* resources = jzon_get(node, "resources");
-	if (resources != nullptr)
+	JzonValue* inputs = jzon_get(node, "inputs");
+	if (inputs != nullptr)
 	{
-		ParseResourceDependencies(script, op, resources);
+		ParseResourceDependencies(script, op, inputs);
+	}
+
+	JzonValue* outputs = jzon_get(node, "outputs");
+	if (outputs != nullptr)
+	{
+		ParseResourceDependencies(script, op, outputs);
 	}
 
 	// add operation to script
@@ -901,6 +931,8 @@ FrameScriptLoader::ParseSubpass(const Ptr<Frame::FrameScript>& script, CoreGraph
 		else if (name == "depth")				subpass.bindDepth = cur->bool_value;
 		else if (name == "resolve")				subpass.resolve = cur->bool_value;
 		else if (name == "resources")			ParseResourceDependencies(script, framePass, cur);
+		else if (name == "inputs")				ParseResourceDependencies(script, framePass, cur);
+		else if (name == "outputs")				ParseResourceDependencies(script, framePass, cur);
 		else if (name == "viewports")			ParseSubpassViewports(script, frameSubpass, cur);
 		else if (name == "scissors")			ParseSubpassScissors(script, frameSubpass, cur);
 		else if (name == "subpass_algorithm")	ParseSubpassAlgorithm(script, frameSubpass, cur);
@@ -1053,10 +1085,16 @@ FrameScriptLoader::ParseSubpassAlgorithm(const Ptr<Frame::FrameScript>& script, 
 	op->domain = BarrierDomain::Pass;
 	op->queue = CoreGraphicsQueueType::GraphicsQueueType;
 
-	JzonValue* resources = jzon_get(node, "resources");
-	if (resources != nullptr)
+	JzonValue* inputs = jzon_get(node, "inputs");
+	if (inputs != nullptr)
 	{
-		ParseResourceDependencies(script, op, resources);
+		ParseResourceDependencies(script, op, inputs);
+	}
+
+	JzonValue* outputs = jzon_get(node, "outputs");
+	if (outputs != nullptr)
+	{
+		ParseResourceDependencies(script, op, outputs);
 	}
 
 	JzonValue* alg = jzon_get(node, "algorithm");
@@ -1084,10 +1122,16 @@ FrameScriptLoader::ParseSubpassBatch(const Ptr<Frame::FrameScript>& script, Fram
 	op->domain = BarrierDomain::Pass;
 	op->queue = CoreGraphicsQueueType::GraphicsQueueType;
 
-	JzonValue* resources = jzon_get(node, "resources");
-	if (resources != nullptr)
+	JzonValue* inputs = jzon_get(node, "inputs");
+	if (inputs != nullptr)
 	{
-		ParseResourceDependencies(script, op, resources);
+		ParseResourceDependencies(script, op, inputs);
+	}
+
+	JzonValue* outputs = jzon_get(node, "outputs");
+	if (outputs != nullptr)
+	{
+		ParseResourceDependencies(script, op, outputs);
 	}
 
 	op->batch = CoreGraphics::BatchGroup::FromName(node->string_value);
@@ -1104,11 +1148,18 @@ FrameScriptLoader::ParseSubpassSortedBatch(const Ptr<Frame::FrameScript>& script
 	op->domain = BarrierDomain::Pass;
 	op->queue = CoreGraphicsQueueType::GraphicsQueueType;
 
-	JzonValue* resources = jzon_get(node, "resources");
-	if (resources != nullptr)
+	JzonValue* inputs = jzon_get(node, "inputs");
+	if (inputs != nullptr)
 	{
-		ParseResourceDependencies(script, op, resources);
+		ParseResourceDependencies(script, op, inputs);
 	}
+
+	JzonValue* outputs = jzon_get(node, "outputs");
+	if (outputs != nullptr)
+	{
+		ParseResourceDependencies(script, op, outputs);
+	}
+
 	op->batch = CoreGraphics::BatchGroup::FromName(node->string_value);
 	subpass->AddOp(op);
 }
@@ -1129,10 +1180,16 @@ FrameScriptLoader::ParseSubpassFullscreenEffect(const Ptr<Frame::FrameScript>& s
 	op->domain = BarrierDomain::Pass;
 	op->queue = CoreGraphicsQueueType::GraphicsQueueType;
 
-	JzonValue* resources = jzon_get(node, "resources");
-	if (resources != nullptr)
+	JzonValue* inputs = jzon_get(node, "inputs");
+	if (inputs != nullptr)
 	{
-		ParseResourceDependencies(script, op, resources);
+		ParseResourceDependencies(script, op, inputs);
+	}
+
+	JzonValue* outputs = jzon_get(node, "outputs");
+	if (outputs != nullptr)
+	{
+		ParseResourceDependencies(script, op, outputs);
 	}
 
 	// create shader state
@@ -1162,10 +1219,16 @@ FrameScriptLoader::ParseSubpassSystem(const Ptr<Frame::FrameScript>& script, Fra
 	op->domain = BarrierDomain::Pass;
 	op->queue = CoreGraphicsQueueType::GraphicsQueueType;
 
-	JzonValue* resources = jzon_get(node, "resources");
-	if (resources != nullptr)
+	JzonValue* inputs = jzon_get(node, "inputs");
+	if (inputs != nullptr)
 	{
-		ParseResourceDependencies(script, op, resources);
+		ParseResourceDependencies(script, op, inputs);
+	}
+
+	JzonValue* outputs = jzon_get(node, "outputs");
+	if (outputs != nullptr)
+	{
+		ParseResourceDependencies(script, op, outputs);
 	}
 
 	Util::String subsystem(node->string_value);
@@ -1201,10 +1264,16 @@ FrameScriptLoader::ParseSubpassPlugins(const Ptr<Frame::FrameScript>& script, Fr
 	op->domain = BarrierDomain::Pass;
 	op->queue = CoreGraphicsQueueType::GraphicsQueueType;
 
-	JzonValue* resources = jzon_get(node, "resources");
-	if (resources != nullptr)
+	JzonValue* inputs = jzon_get(node, "inputs");
+	if (inputs != nullptr)
 	{
-		ParseResourceDependencies(script, op, resources);
+		ParseResourceDependencies(script, op, inputs);
+	}
+
+	JzonValue* outputs = jzon_get(node, "outputs");
+	if (outputs != nullptr)
+	{
+		ParseResourceDependencies(script, op, outputs);
 	}
 
 	JzonValue* filter = jzon_get(node, "filter");

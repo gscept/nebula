@@ -28,10 +28,22 @@
 #include "coregraphics/shader.h"
 #include "coregraphics/shaderidentifier.h"
 #include "coregraphics/shaderpool.h"
+#include "threading/safequeue.h"
+
+namespace Threading
+{
+class Thread;
+}
+
+namespace IO
+{
+class FileWatcher;
+class FileWatcherThread;
+}
 
 namespace CoreGraphics
 {
-    class Shader;
+class Shader;
 }
 
 //------------------------------------------------------------------------------
@@ -89,6 +101,9 @@ public:
 	/// explicitly loads a shader by resource id
 	void LoadShader(const Resources::ResourceName& shdName);
 
+	/// update shader server
+	void Update();
+
 protected:
     friend class CoreGraphics::ShaderIdentifier;
     friend class ShaderBase;
@@ -97,6 +112,9 @@ protected:
     CoreGraphics::ShaderFeature shaderFeature;
     CoreGraphics::ShaderFeature::Mask curShaderFeatureBits;
 	Util::Dictionary<Resources::ResourceName, CoreGraphics::ShaderId> shaders;
+	Ptr<IO::FileWatcherThread> fileWatcherThread;
+	Ptr<IO::FileWatcher> shaderFileWatcher;
+	Threading::SafeQueue<Resources::ResourceName> pendingShaderReloads;
 	CoreGraphics::ShaderId sharedVariableShader;
     Ids::Id32 objectIdShaderVar;
 	CoreGraphics::ShaderId activeShader;

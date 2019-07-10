@@ -18,7 +18,7 @@ namespace IO
         HANDLE dirHandle;
         OVERLAPPED overlapped;
         DWORD notifyFilter;
-        BYTE buffer[32 * 1024];
+        BYTE buffer[16 * 1024];
         bool recursive;        
     };
 

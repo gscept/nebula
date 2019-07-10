@@ -35,7 +35,7 @@ fips_begin_module(foundation)
 				singleton.h
 				sysfunc.h
 				types.h
-				weakptr.h	
+				weakptr.h
 				debug/corepagehandler.cc
 				debug/corepagehandler.h
 				debug/stringatompagehandler.cc
@@ -49,7 +49,7 @@ fips_begin_module(foundation)
 			memorypool.h
 			poolarrayallocator.cc
 			poolarrayallocator.h
-			ringallocator.h	
+			ringallocator.h
 			debug/memorypagehandler.cc
 			debug/memorypagehandler.h
 		)
@@ -115,7 +115,7 @@ fips_begin_module(foundation)
 			simpletree.h
 			sparsetable.h
 			stack.h
-			string.cc	
+			string.cc
 			string.h
 			stringatom.cc
 			stringatom.h
@@ -155,7 +155,7 @@ fips_begin_module(foundation)
 			filestream.cc
 			filestream.h
 			safefilestream.cc
-			safefilestream.h	
+			safefilestream.h
 			filetime.h
 			fswrapper.h
 			gamecontentserver.cc
@@ -228,7 +228,7 @@ fips_begin_module(foundation)
 			iointerfaceprotocol.cc
 		)
 		fips_dir(io/base)
-		fips_files(			
+		fips_files(
 			gamecontentserverbase.cc
 			gamecontentserverbase.h
 		)
@@ -351,8 +351,10 @@ fips_begin_module(foundation)
 			appentry.h
 			byteorder.h
 			cpu.h
+			process.h
 			systeminfo.h
 			nebulasettings.h
+			base/processbase.h
 			base/systeminfobase.cc
 			base/systeminfobase.h
 		)
@@ -373,7 +375,7 @@ fips_begin_module(foundation)
 			httpclientregistry.h
 			httpmethod.h
 			httpnzstream.cc
-			httpnzstream.h	
+			httpnzstream.h
 			httprequest.cc
 			httprequest.h
 			httprequesthandler.cc
@@ -430,7 +432,7 @@ fips_begin_module(foundation)
 		fips_files(
 			framesynctimer.cc
 			framesynctimer.h
-		)	
+		)
 	fips_dir(.)
 	if (FIPS_WINDOWS)
 		fips_files(foundation.natvis)
@@ -476,7 +478,7 @@ fips_begin_module(foundation)
 				win360/win360filetime.cc
 				win360/win360filetime.h
 				win360/win360fswrapper.cc
-				win360/win360fswrapper.h				
+				win360/win360fswrapper.h
 			)
 		fips_dir(timing GROUP "timing/win32")
 			fips_files(
@@ -497,11 +499,13 @@ fips_begin_module(foundation)
 				win32/win32cpu.h
 				win32/win32environment.cc
 				win32/win32environment.h
+				win32/win32process.cc
+				win32/win32process.h
 				win32/win32registry.cc
 				win32/win32registry.h
 				win32/win32systeminfo.cc
 				win32/win32systeminfo.h
-			)		
+			)
 		fips_dir(.)
 	endif()
 	if (FIPS_POSIX)
@@ -517,11 +521,11 @@ fips_begin_module(foundation)
 			memory/posix/posixmemory.h
 			memory/posix/posixmemoryconfig.cc
 			memory/posix/posixmemoryconfig.h
-			memory/posix/posixmemorypool.cc	
+			memory/posix/posixmemorypool.cc
 			util/posix/posixguid.cc
 			util/posix/posixguid.h
 			io/posix/posixconsolehandler.cc
-			io/posix/posixconsolehandler.h	
+			io/posix/posixconsolehandler.h
 			io/posix/posixfiletime.h
 			io/posix/linuxfilewatcher.cc
 			io/posix/linuxfilewatcher.h
@@ -582,7 +586,7 @@ fips_begin_module(foundation)
 
 	if(FIPS_WINDOWS)
 		fips_dir(threading/win360 GROUP "threading/win32")
-		fips_files(		
+		fips_files(
 			win360barrier.h
 			win360criticalsection.cc
 			win360criticalsection.h

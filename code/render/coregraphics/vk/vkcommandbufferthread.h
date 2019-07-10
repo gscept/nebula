@@ -213,9 +213,9 @@ public:
 	virtual ~VkCommandBufferThread();
 
 	/// called if thread needs a wakeup call before stopping
-	void EmitWakeupSignal();
+	void EmitWakeupSignal() override;
 	/// this method runs in the thread context
-	void DoWork();
+	void DoWork() override;
 	/// push command buffer work
 	void PushCommand(const Command& command);
 	/// push command buffer work

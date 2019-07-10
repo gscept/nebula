@@ -259,6 +259,9 @@ GraphicsServer::BeginFrame()
 			state->Defragment();
 	}
 
+	// update shader server
+	this->shaderServer->Update();
+
 	for (i = 0; i < this->contexts.Size(); i++)
 	{
 		if (this->contexts[i]->StageBits)
