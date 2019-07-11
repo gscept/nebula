@@ -93,7 +93,7 @@ Set<KEYTYPE>::Set() :
 */
 template<class KEYTYPE>
 Set<KEYTYPE>::Set(const Set<KEYTYPE>& rhs) :
-    values(rhs.keyValuePairs),
+    values(rhs.values),
     inBulkInsert(false)
 {
     #if NEBULA_BOUNDSCHECKS

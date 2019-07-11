@@ -2077,7 +2077,8 @@ AllocateGraphicsConstantBufferMemory(CoreGraphicsGlobalConstantBufferType type, 
 	}
 
 	// just bump the current frame submission pointer
-	sub.cboGfxEndAddress[type] = ret + size;
+	;
+	sub.cboGfxEndAddress[type] = Math::n_align(ret + size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
 
 	return ret;
 }
@@ -2112,7 +2113,7 @@ AllocateComputeConstantBufferMemory(CoreGraphicsGlobalConstantBufferType type, u
 	}
 
 	// just bump the current frame submission pointer
-	sub.cboComputeEndAddress[type] = ret + size;
+	sub.cboComputeEndAddress[type] = Math::n_align(ret + size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
 
 	return ret;
 }
@@ -2490,7 +2491,17 @@ EndSubmission(CoreGraphicsQueueType queue, bool endOfFrame)
 		if (state.gfxWaitSemaphore != SemaphoreId::Invalid())
 		{
 			state.subcontextHandler.AddWaitSemaphore(GraphicsQueueType, SemaphoreGetVk(state.gfxWaitSemaphore), VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
+
+#if NEBULA_GRAPHICS_DEBUG
+			CoreGraphics::QueueBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "Graphics-Compute Sync Submission");
+#endif
+
 			state.subcontextHandler.FlushSubmissions(GraphicsQueueType, VK_NULL_HANDLE, false);
+
+#if NEBULA_GRAPHICS_DEBUG
+			CoreGraphics::QueueEndMarker(GraphicsQueueType);
+#endif
+			
 		}
 
 		// set prev to current semaphore
@@ -2528,7 +2539,17 @@ EndSubmission(CoreGraphicsQueueType queue, bool endOfFrame)
 		if (state.computeWaitSemaphore == GraphicsQueueType)
 		{
 			state.subcontextHandler.AddWaitSemaphore(ComputeQueueType, SemaphoreGetVk(state.computeWaitSemaphore), VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+
+#if NEBULA_GRAPHICS_DEBUG
+			CoreGraphics::QueueBeginMarker(ComputeQueueType, NEBULA_MARKER_BLUE, "Compute-Graphics Sync Submission");
+#endif
+
 			state.subcontextHandler.FlushSubmissions(ComputeQueueType, VK_NULL_HANDLE, false);
+
+#if NEBULA_GRAPHICS_DEBUG
+			CoreGraphics::QueueEndMarker(ComputeQueueType);
+#endif
+
 		}
 
 		// set previous semaphore
@@ -2592,7 +2613,8 @@ EndFrame(IndexT frameIndex)
 		}	
 
 		// be sure to flush all constant memory before we submit the command buffers with the data
-		vkFlushMappedMemoryRanges(dev, flushIndex, flushMapRanges);
+		if (flushIndex > 0)
+			vkFlushMappedMemoryRanges(dev, flushIndex, flushMapRanges);
 	}
 
 	// wait for resource manager first, since it will write to the transfer cmd buffer
@@ -2602,7 +2624,7 @@ EndFrame(IndexT frameIndex)
 	CommandBufferEndRecord(state.resourceSubmissionCmdBuffer);
 
 #if NEBULA_GRAPHICS_DEBUG
-	CoreGraphics::QueueBeginMarker(TransferQueueType, NEBULA_MARKER_BLUE, "Resource transfer submission");
+	CoreGraphics::QueueBeginMarker(TransferQueueType, NEBULA_MARKER_BLUE, "Resource Transfer Submission");
 #endif
 
 	// submit resource stuff
@@ -2620,7 +2642,7 @@ EndFrame(IndexT frameIndex)
 #endif
 
 #if NEBULA_GRAPHICS_DEBUG
-	CoreGraphics::QueueBeginMarker(ComputeQueueType, NEBULA_MARKER_BLUE, "Compute frame commands submission");
+	CoreGraphics::QueueBeginMarker(ComputeQueueType, NEBULA_MARKER_BLUE, "Compute Commands Submission");
 #endif
 
 	// submit compute, wait for this frames resource submissions
@@ -2630,7 +2652,7 @@ EndFrame(IndexT frameIndex)
 
 #if NEBULA_GRAPHICS_DEBUG
 	CoreGraphics::QueueEndMarker(ComputeQueueType);
-	CoreGraphics::QueueBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "Graphics frame commands submission");
+	CoreGraphics::QueueBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "Graphics Commands Submission");
 #endif
 
 	state.subcontextHandler.AddWaitSemaphore(GraphicsQueueType, SemaphoreGetVk(state.resourceSubmissionSemaphore), VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
