@@ -97,6 +97,15 @@ enum class CoreGraphicsImageLayout
 	Present
 };
 
+
+enum CoreGraphicsGlobalConstantBufferType
+{
+	MainThreadConstantBuffer,
+	VisibilityThreadConstantBuffer, // perform constant updates from the visibility thread (shader state node instance update for example...)
+
+	NumConstantBufferTypes
+};
+
 //------------------------------------------------------------------------------
 /**
 */

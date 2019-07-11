@@ -26,6 +26,16 @@ ConstantBufferGetVk(const CoreGraphics::ConstantBufferId id)
 	return runtime.buf;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+VkDeviceMemory 
+ConstantBufferGetVkMemory(const CoreGraphics::ConstantBufferId id)
+{
+	VkConstantBufferSetupInfo& setup = constantBufferAllocator.Get<SetupInfo>(id.id24);
+	return setup.mem;
+}
+
 } // namespace Vulkan
 
 

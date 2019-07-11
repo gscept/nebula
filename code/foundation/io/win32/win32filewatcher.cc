@@ -61,30 +61,34 @@ FileWatcherImpl::Update(EventHandlerData& data)
 	FILE_NOTIFY_INFORMATION* ev = (FILE_NOTIFY_INFORMATION*)p.buffer;
 	do
 	{
-		Util::String file = Win32::Win32StringConverter::WideToUTF8((ushort*)ev->FileName, ev->FileNameLength / 2);
-		switch (ev->Action)
+		if (ev->FileNameLength > 0)
 		{
-		case FILE_ACTION_ADDED:
-		{
-			data.callback({ Created, data.folder, file });
-		}
-		break;
-		case FILE_ACTION_MODIFIED:
-		{
-			data.callback({ Modified, data.folder, file });
-		}
-		break;
-		case FILE_ACTION_REMOVED:
-		{
-			data.callback({ Deleted, data.folder, file });
-		}
-		break;
-		case FILE_ACTION_RENAMED_NEW_NAME:
-		{
-			data.callback({ NameChange, data.folder, file });
+			Util::String file = Win32::Win32StringConverter::WideToUTF8((ushort*)ev->FileName, ev->FileNameLength / 2);
+			switch (ev->Action)
+			{
+			case FILE_ACTION_ADDED:
+			{
+				data.callback({ Created, data.folder, file });
+			}
+			break;
+			case FILE_ACTION_MODIFIED:
+			{
+				data.callback({ Modified, data.folder, file });
+			}
+			break;
+			case FILE_ACTION_REMOVED:
+			{
+				data.callback({ Deleted, data.folder, file });
+			}
+			break;
+			case FILE_ACTION_RENAMED_NEW_NAME:
+			{
+				data.callback({ NameChange, data.folder, file });
+			}
+
+			}
 		}
 
-		}
 		if (ev->NextEntryOffset == 0)
 			break;
 		ev = (FILE_NOTIFY_INFORMATION*)((char*)ev + ev->NextEntryOffset);

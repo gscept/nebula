@@ -4,6 +4,7 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "io/filewatcher.h"
+#include "io/ioserver.h"
 
 namespace IO
 {
@@ -92,6 +93,7 @@ FileWatcherThread::~FileWatcherThread()
 void 
 FileWatcherThread::DoWork()
 {
+	Ptr<IO::IoServer> serv = IO::IoServer::Create();
 	while (!this->ThreadStopRequested())
 	{
 		this->watcher->Update();

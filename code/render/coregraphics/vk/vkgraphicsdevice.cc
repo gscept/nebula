@@ -103,16 +103,11 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 
 	struct ConstantsRingBuffer
 	{
-		uint globalGraphicsConstantBufferMaxValue;
-		CoreGraphics::ConstantBufferId globalGraphicsConstantBuffer;
-		uint globalComputeConstantBufferMaxValue;
-		CoreGraphics::ConstantBufferId globalComputeConstantBuffer;
-
 		// handle global constant memory
-		uint32_t cboGfxStartAddress;
-		uint32_t cboGfxEndAddress;
-		uint32_t cboComputeStartAddress;
-		uint32_t cboComputeEndAddress;
+		uint32_t cboGfxStartAddress[CoreGraphicsGlobalConstantBufferType::NumConstantBufferTypes];
+		uint32_t cboGfxEndAddress[CoreGraphicsGlobalConstantBufferType::NumConstantBufferTypes];
+		uint32_t cboComputeStartAddress[CoreGraphicsGlobalConstantBufferType::NumConstantBufferTypes];
+		uint32_t cboComputeEndAddress[CoreGraphicsGlobalConstantBufferType::NumConstantBufferTypes];
 	};
 
 	Util::FixedArray<ConstantsRingBuffer> frameSubmissions;
@@ -1275,23 +1270,44 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	for (i = 0; i < info.numBufferedFrames; i++)
 	{
 		Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.frameSubmissions[i];
-		sub.cboComputeStartAddress = sub.cboComputeEndAddress = 0;
-		sub.cboGfxStartAddress = sub.cboGfxEndAddress = 0;
 
+		IndexT j;
+		for (j = 0; j < NumConstantBufferTypes; j++)
+		{
+			sub.cboComputeStartAddress[j] = sub.cboComputeEndAddress[j] = 0;
+			sub.cboGfxStartAddress[j] = sub.cboGfxEndAddress[j] = 0;
+		}
+	}
+
+	for (i = 0; i < NumConstantBufferTypes; i++)
+	{
+		static const Util::String threadName[] = { "Main Thread ", "Visibility Thread " };
+		static const Util::String queueName[] = { "Graphics Constant Buffer", "Compute Constant Buffer" };
 		ConstantBufferCreateInfo cboInfo =
 		{
-			"SharedConstantBuffer"_atm,
+			"",
 			-1,
-			info.globalGraphicsConstantBufferMemorySize,
+			0,
 			CoreGraphics::ConstantBufferUpdateMode::ManualFlush
 		};
-		sub.globalGraphicsConstantBuffer = CreateConstantBuffer(cboInfo);
-		sub.globalGraphicsConstantBufferMaxValue = info.globalGraphicsConstantBufferMemorySize;
 
-		cboInfo.size = info.globalComputeConstantBufferMemorySize;
-		sub.globalComputeConstantBuffer = CreateConstantBuffer(cboInfo);
-		sub.globalComputeConstantBufferMaxValue = info.globalComputeConstantBufferMemorySize;
+		cboInfo.name = threadName[i] + queueName[0];
+		cboInfo.size = info.globalGraphicsConstantBufferMemorySize[i] * info.numBufferedFrames;
+		if (cboInfo.size > 0)
+		{
+			state.globalGraphicsConstantBuffer[i] = CreateConstantBuffer(cboInfo);
+			state.globalGraphicsConstantBufferMaxValue[i] = info.globalGraphicsConstantBufferMemorySize[i];
+		}	
+
+		cboInfo.name = threadName[i] + queueName[1];
+		cboInfo.size = info.globalComputeConstantBufferMemorySize[i] * info.numBufferedFrames;
+		if (cboInfo.size > 0)
+		{
+			state.globalComputeConstantBuffer[i] = CreateConstantBuffer(cboInfo);
+			state.globalComputeConstantBufferMaxValue[i] = info.globalComputeConstantBufferMemorySize[i];
+		}	
 	}
+
 
 	cmdCreateInfo.usage = CommandGfx;
 	state.gfxSubmission = CreateSubmissionContext({ cmdCreateInfo, info.numBufferedFrames, true });
@@ -1567,6 +1583,24 @@ DestroyGraphicsDevice()
 //------------------------------------------------------------------------------
 /**
 */
+SizeT 
+GetNumBufferedFrames()
+{
+	return state.maxNumFrameSubmissions;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+IndexT 
+GetBufferedFrameIndex()
+{
+	return state.currentFrameSubmission;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void 
 AttachEventHandler(const Ptr<CoreGraphics::RenderEventHandler>& h)
 {
@@ -1629,8 +1663,6 @@ BeginFrame(IndexT frameIndex)
 
 	// update current state submission
 	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.frameSubmissions[state.currentFrameSubmission];
-	uint nextGfxCboStart = sub.cboGfxEndAddress;
-	uint nextComputeCboStart = sub.cboComputeEndAddress;
 
 	// set to next frame submission
 	state.currentFrameSubmission = (state.currentFrameSubmission + 1) % state.maxNumFrameSubmissions;
@@ -1639,10 +1671,15 @@ BeginFrame(IndexT frameIndex)
 	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& nextSub = state.frameSubmissions[state.currentFrameSubmission];
 	state.gfxFence = CoreGraphics::SubmissionContextNextCycle(state.gfxSubmission);
 	state.computeFence = CoreGraphics::SubmissionContextNextCycle(state.computeSubmission);
-	nextSub.cboGfxStartAddress = 0;
-	nextSub.cboGfxEndAddress = 0;
-	nextSub.cboComputeStartAddress = 0;
-	nextSub.cboComputeEndAddress = 0;
+
+	IndexT i;
+	for (i = 0; i < CoreGraphicsGlobalConstantBufferType::NumConstantBufferTypes; i++)
+	{
+		nextSub.cboGfxStartAddress[i] = state.globalGraphicsConstantBufferMaxValue[i] * state.currentFrameSubmission;
+		nextSub.cboGfxEndAddress[i] = state.globalGraphicsConstantBufferMaxValue[i] * state.currentFrameSubmission;
+		nextSub.cboComputeStartAddress[i] = state.globalComputeConstantBufferMaxValue[i] * state.currentFrameSubmission;
+		nextSub.cboComputeEndAddress[i] = state.globalComputeConstantBufferMaxValue[i] * state.currentFrameSubmission;
+	}
 
 	state.gfxPrevSemaphore = SemaphoreId::Invalid();
 	state.computePrevSemaphore = SemaphoreId::Invalid();
@@ -2023,24 +2060,24 @@ PushConstants(ShaderPipeline pipeline, uint offset, uint size, byte* data)
 /**
 */
 uint 
-AllocateGraphicsConstantBufferMemory(uint size)
+AllocateGraphicsConstantBufferMemory(CoreGraphicsGlobalConstantBufferType type, uint size)
 {
 	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.frameSubmissions[state.currentFrameSubmission];
 
 	// no matter how we spin it
-	uint ret = sub.cboGfxEndAddress;
+	uint ret = sub.cboGfxEndAddress[type];
 
 	// if we have to wrap around, or we are fingering on the range of the next frame submission buffer...
-	if (sub.cboGfxEndAddress + size > sub.globalGraphicsConstantBufferMaxValue)
+	if (sub.cboGfxEndAddress[type] + size > state.globalGraphicsConstantBufferMaxValue[type] * (state.currentFrameSubmission + 1))
 	{
-		n_warning("Over allocation of graphics constant memory! Memory will be overwritten!");
+		n_warning("Over allocation of graphics constant memory! Memory will be overwritten!\n");
 
 		// return the beginning of the buffer, will definitely stomp the memory!
 		ret = 0;
 	}
 
 	// just bump the current frame submission pointer
-	sub.cboGfxEndAddress = ret + size;
+	sub.cboGfxEndAddress[type] = ret + size;
 
 	return ret;
 }
@@ -2049,34 +2086,33 @@ AllocateGraphicsConstantBufferMemory(uint size)
 /**
 */
 CoreGraphics::ConstantBufferId 
-GetGraphicsConstantBuffer()
+GetGraphicsConstantBuffer(CoreGraphicsGlobalConstantBufferType type)
 {
-	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.frameSubmissions[state.currentFrameSubmission];
-	return sub.globalGraphicsConstantBuffer;
+	return state.globalGraphicsConstantBuffer[type];
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 uint 
-AllocateComputeConstantBufferMemory(uint size)
+AllocateComputeConstantBufferMemory(CoreGraphicsGlobalConstantBufferType type, uint size)
 {
 	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.frameSubmissions[state.currentFrameSubmission];
 
 	// no matter how we spin it
-	uint ret = sub.cboComputeEndAddress;
+	uint ret = sub.cboComputeEndAddress[type];
 
 	// if we have to wrap around, or we are fingering on the range of the next frame submission buffer...
-	if (sub.cboComputeEndAddress + size > sub.globalComputeConstantBufferMaxValue)
+	if (sub.cboComputeEndAddress[type] + size > state.globalComputeConstantBufferMaxValue[type] * (state.currentFrameSubmission + 1))
 	{
-		n_warning("Over allocation of compute constant memory! Memory will be overwritten!");
+		n_warning("Over allocation of compute constant memory! Memory will be overwritten!\n");
 
 		// return the beginning of the buffer, will definitely stomp the memory!
 		ret = 0;
 	}
 
 	// just bump the current frame submission pointer
-	sub.cboComputeEndAddress = ret + size;
+	sub.cboComputeEndAddress[type] = ret + size;
 
 	return ret;
 }
@@ -2085,10 +2121,9 @@ AllocateComputeConstantBufferMemory(uint size)
 /**
 */
 CoreGraphics::ConstantBufferId 
-GetComputeConstantBuffer()
+GetComputeConstantBuffer(CoreGraphicsGlobalConstantBufferType type)
 {
-	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.frameSubmissions[state.currentFrameSubmission];
-	return sub.globalComputeConstantBuffer;
+	return state.globalComputeConstantBuffer[type];
 }
 
 //------------------------------------------------------------------------------
@@ -2520,6 +2555,46 @@ EndFrame(IndexT frameIndex)
 
 	state.inBeginFrame = false;
 
+	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.frameSubmissions[state.currentFrameSubmission];
+	VkDevice dev = state.devices[state.currentDevice];
+
+	// flush constant buffer memory
+	VkMappedMemoryRange flushMapRanges[2];
+	flushMapRanges[0] =
+	{
+		VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
+		nullptr,
+		VK_NULL_HANDLE,
+		0, 0
+	};
+
+	IndexT i;
+	for (i = 0; i < NumConstantBufferTypes; i++)
+	{
+		uint size = sub.cboGfxEndAddress[i] - sub.cboGfxStartAddress[i];
+		uint flushIndex = 0;
+		if (size > 0)
+		{
+			flushMapRanges[flushIndex].memory = ConstantBufferGetVkMemory(state.globalGraphicsConstantBuffer[i]);
+			flushMapRanges[flushIndex].offset = sub.cboGfxStartAddress[i];
+			flushMapRanges[flushIndex].size = size;
+			flushIndex++;
+		}
+		
+		size = sub.cboComputeEndAddress[i] - sub.cboComputeStartAddress[i];
+		if (size > 0)
+		{
+			flushMapRanges[flushIndex] = flushMapRanges[0];
+			flushMapRanges[flushIndex].memory = ConstantBufferGetVkMemory(state.globalComputeConstantBuffer[i]);
+			flushMapRanges[flushIndex].offset = sub.cboComputeStartAddress[i];
+			flushMapRanges[flushIndex].size = size;
+			flushIndex++;
+		}	
+
+		// be sure to flush all constant memory before we submit the command buffers with the data
+		vkFlushMappedMemoryRanges(dev, flushIndex, flushMapRanges);
+	}
+
 	// wait for resource manager first, since it will write to the transfer cmd buffer
 	Resources::WaitForLoaderThread();
 
@@ -2598,6 +2673,27 @@ bool
 IsInBeginFrame()
 {
 	return state.inBeginFrame;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+WaitForQueue(CoreGraphicsQueueType queue)
+{
+	state.subcontextHandler.WaitIdle(queue);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+WaitForAllQueues()
+{
+	state.subcontextHandler.WaitIdle(GraphicsQueueType);
+	state.subcontextHandler.WaitIdle(ComputeQueueType);
+	state.subcontextHandler.WaitIdle(TransferQueueType);
+	state.subcontextHandler.WaitIdle(SparseQueueType);
 }
 
 //------------------------------------------------------------------------------

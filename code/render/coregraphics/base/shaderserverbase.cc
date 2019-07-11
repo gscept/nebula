@@ -6,6 +6,7 @@
 #include "render/stdneb.h"
 #include "coregraphics/base/shaderserverbase.h"
 #include "coregraphics/shaderpool.h"
+#include "coregraphics/graphicsdevice.h"
 #include "io/ioserver.h"
 #include "io/textreader.h"
 #include "io/filewatcher.h"
@@ -97,40 +98,52 @@ ShaderServerBase::Open()
 	this->shaderFileWatcher = IO::FileWatcher::Create();
 	this->shaderFileWatcher->Watch("home:work/shaders/vk", true, IO::WatchFlags(NameChanged | SizeChanged | Write), [this](IO::WatchEvent const& event)
 		{
-			if (event.type == WatchEventType::Modified || event.type == WatchEventType::NameChange && 
+			if (event.type == WatchEventType::Modified || event.type == WatchEventType::NameChange &&
 				!event.file.EndsWithString("TMP") &&
 				!event.file.EndsWithString("~"))
 			{
-				System::Process process;
-				process.SetWorkingDirectory("G:/fips-deploy/fips-anyfx/anyfxcompiler-windows/");
-				process.SetExecutable("G:/fips-deploy/fips-anyfx/anyfxcompiler-windows/anyfxcompiler.exe");
-				Util::String path = IO::AssignRegistry::Instance()->ResolveAssigns("home:work/shaders/vk/").LocalPath() + "/" + event.file;
-				process.SetArguments(Util::String::Sprintf("-i %s -I G:/nebula/work/shaders/vk -I G:/nebula/work/shaders/vk -o G:/nebula/export_win32 -h G:/fips-build/nebula-tests/vulkan-win64-vstudio-release/shaders/render -t shader", path.AsCharPtr()));
-				process.SetNoConsoleWindow(false);
-				Ptr<IO::MemoryStream> stream = IO::MemoryStream::Create();
-				process.SetStderrCaptureStream(stream);
+				// remove file extension
+				Util::String out = event.file;
+				out.StripFileExtension();
 
-				// launch process
-				bool res = process.LaunchWait();
-				if (res)
+				// find argument in export folder
+				Ptr<IO::Stream> file = IO::IoServer::Instance()->CreateStream(Util::String::Sprintf("bin:shaders/%s.txt", out.AsCharPtr()));
+				if (file->Open())
 				{
-					Ptr<TextReader> reader = TextReader::Create();
-					reader->SetStream(stream);
-					reader->Open();
+					System::Process process;
 
-					// write output from compilation
-					while (!reader->Eof())
+					void* buf = file->Map();
+					SizeT size = file->GetSize();
+
+					// run process
+					Util::String cmd;
+					cmd.Set((const char*)buf, size);
+					process.SetWorkingDirectory(file->GetURI().LocalPath().ExtractDirName());
+					process.SetExecutable(cmd);
+					process.SetNoConsoleWindow(false);
+					Ptr<IO::MemoryStream> stream = IO::MemoryStream::Create();
+					process.SetStderrCaptureStream(stream);
+
+					// launch process
+					bool res = process.LaunchWait();
+					if (res)
 					{
-						n_printf(reader->ReadLine().AsCharPtr());
+						Ptr<TextReader> reader = TextReader::Create();
+						reader->SetStream(stream);
+						reader->Open();
+
+						// write output from compilation
+						while (!reader->Eof())
+						{
+							n_printf(reader->ReadLine().AsCharPtr());
+						}
+
+						// close reader
+						reader->Close();
+
+						// reload shader
+						this->pendingShaderReloads.Enqueue(Util::String::Sprintf("shd:%s.fxb", out.AsCharPtr()));
 					}
-
-					// close reader
-					reader->Close();
-
-					// reload shader
-					Util::String out = event.file;
-					out.StripFileExtension();
-					this->pendingShaderReloads.Enqueue(Util::String::Sprintf("shd:%s.fxb", out.AsCharPtr()));
 				}
 			}
 		});
@@ -231,13 +244,20 @@ ShaderServerBase::LoadShader(const Resources::ResourceName& shdName)
 void 
 ShaderServerBase::Update()
 {
-	Util::Array<Resources::ResourceName> shaders;
-	this->pendingShaderReloads.DequeueAll(shaders);
+	if (this->pendingShaderReloads.Size() > 0)
+	{
+		// wait for all graphics commands to finish first
+		CoreGraphics::WaitForAllQueues();
 
-	// reload shaders
-	IndexT i;
-	for (i = 0; i < shaders.Size(); i++)
-		Resources::ReloadResource(shaders[i]);
+		Util::Array<Resources::ResourceName> shaders;
+		shaders.Reserve(4);
+		this->pendingShaderReloads.DequeueAll(shaders);
+
+		// reload shaders
+		IndexT i;
+		for (i = 0; i < shaders.Size(); i++)
+			Resources::ReloadResource(shaders[i]);
+	}
 }
 
 } // namespace Base

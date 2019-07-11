@@ -56,7 +56,12 @@ GraphicsServer::Open()
 	this->displayDevice = CoreGraphics::DisplayDevice::Create();
 	this->displayDevice->Open();
 
-	CoreGraphics::GraphicsDeviceCreateInfo gfxInfo{10 * 1024 * 1024, 1 * 1024 * 1024, 3, false}; // 10/1 MB worth of constant buffer memory ought to be enough
+	static const SizeT MB = 1024 * 1024;
+	CoreGraphics::GraphicsDeviceCreateInfo gfxInfo{ 
+		{ 1 * MB, 100 * MB },		// Graphics - main threads get 1 MB of constant memory, visibility thread (objects) gets 100
+		{ 1 * MB, 0 * MB},			// Compute - main threads get 1 MB of constant memory, visibility thread (objects) gets 0
+		3,							// We have 3 frames running simultaneously
+		false}; // 10/1 MB worth of constant buffer memory ought to be enough
 	this->graphicsDevice = CoreGraphics::CreateGraphicsDevice(gfxInfo);
 	if (this->graphicsDevice)
 	{

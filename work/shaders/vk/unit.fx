@@ -22,8 +22,6 @@ samplerstate TeamSampler
 	AddressV = Wrap;
 };
 
-
-
 //------------------------------------------------------------------------------
 /**
 	Not a ubershader

@@ -3,7 +3,7 @@ SET(NROOT ${CMAKE_CURRENT_LIST_DIR})
 SET(CODE_ROOT ${CMAKE_CURRENT_LIST_DIR}/code)
 
 option(N_USE_PRECOMPILED_HEADERS "Use precompiled headers" OFF)
-option(N_ENABLE_SHADER_COMMAND_GENERATION "Generate shader compile file for live shader reload" OFF)
+option(N_ENABLE_SHADER_COMMAND_GENERATION "Generate shader compile file for live shader reload" ON)
 
 if(FIPS_WINDOWS)
 	option(N_STATIC_BUILD "Use static runtime in windows builds" ON)

@@ -72,7 +72,7 @@ void
 CharacterSkinNode::OnFinishedLoading()
 {
 	PrimitiveNode::OnFinishedLoading();
-	this->cboSkin = CoreGraphics::ShaderCreateConstantBuffer(this->sharedShader, "JointBlock");
+	this->cboSkin = CoreGraphics::GetGraphicsConstantBuffer(CoreGraphicsGlobalConstantBufferType::VisibilityThreadConstantBuffer);
 	this->cboSkinIndex = CoreGraphics::ShaderGetResourceSlot(this->sharedShader, "JointBlock");
 	CoreGraphics::ResourceTableSetConstantBuffer(this->resourceTable, { this->cboSkin, this->cboSkinIndex, 0, true, false, (SizeT)(sizeof(Math::matrix44) * this->skinFragments[0].jointPalette.Size()), 0 });
 	CoreGraphics::ResourceTableCommitChanges(this->resourceTable);
@@ -120,22 +120,32 @@ CharacterSkinNode::Instance::Update()
 	const CharacterNode::Instance* cparent = static_cast<const CharacterNode::Instance*>(this->parent);
 
 	// if parent doesn't have joints, don't continue
+	CharacterSkinNode* sparent = static_cast<CharacterSkinNode*>(this->node);
+	const Util::Array<IndexT>& usedIndices = sparent->skinFragments[0].jointPalette;
+	Util::FixedArray<Math::matrix44> usedMatrices(usedIndices.Size());
 	if (cparent->joints != nullptr)
 	{
-		CharacterSkinNode* sparent = static_cast<CharacterSkinNode*>(this->node);
-		const Util::Array<IndexT>& usedIndices = sparent->skinFragments[0].jointPalette;
-		Util::FixedArray<Math::matrix44> usedMatrices(usedIndices.Size());
-
 		// copy active matrix palette, or set identity
 		IndexT i;
 		for (i = 0; i < usedIndices.Size(); i++)
 		{
 			usedMatrices[i] = (*cparent->joints)[usedIndices[i]];
 		}
-
-		// update skinning palette
-		CoreGraphics::ConstantBufferUpdate(this->cboSkin, this->cboSkinAlloc, usedMatrices.Begin(), sizeof(Math::matrix44) * usedMatrices.Size(), this->skinningPaletteVar);
 	}
+	else
+	{
+		// copy active matrix palette, or set identity
+		IndexT i;
+		for (i = 0; i < usedIndices.Size(); i++)
+		{
+			usedMatrices[i] = Math::matrix44::identity();
+		}
+	}
+
+	// update skinning palette
+	uint offset = CoreGraphics::AllocateGraphicsConstantBufferMemory(CoreGraphicsGlobalConstantBufferType::VisibilityThreadConstantBuffer, sizeof(Math::matrix44) * usedMatrices.Size());
+	CoreGraphics::ConstantBufferUpdate(this->cboSkin, usedMatrices.Begin(), sizeof(Math::matrix44) * usedMatrices.Size(), offset);
+	this->offsets[Skinning] = offset;
 
 	// apply original state
 	PrimitiveNode::Instance::Update();

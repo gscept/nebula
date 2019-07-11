@@ -9,6 +9,7 @@
 */
 #include "primitivenode.h"
 #include "characternode.h"
+#include "coregraphics/graphicsdevice.h"
 
 //------------------------------------------------------------------------------
 namespace Models
@@ -39,7 +40,6 @@ public:
 		Ids::Id32 characterId;
 		CoreGraphics::ConstantBufferId cboSkin;
 		CoreGraphics::ConstantBinding skinningPaletteVar;
-		CoreGraphics::ConstantBufferAllocId cboSkinAlloc;
 
 		/// apply skinning palette
 		void Update() override;
@@ -119,28 +119,6 @@ CharacterSkinNode::Instance::Setup(Models::ModelNode* node, const Models::ModelN
 	CharacterSkinNode* sparent = static_cast<CharacterSkinNode*>(node);
 	const CharacterNode::Instance* cparent = static_cast<const CharacterNode::Instance*>(this->parent);
 	this->cboSkin = sparent->cboSkin;
-	bool rebind = false;
-
-	// the constant block can take 256 matrices, but we should only allocate sparsely
-	this->cboSkinAlloc = CoreGraphics::ConstantBufferAllocate(this->cboSkin, sizeof(Math::matrix44) * sparent->skinFragments[0].jointPalette.Size(), rebind);
-	this->offsets[Skinning] = this->cboSkinAlloc.offset;
-	if (rebind)
-	{
-		CoreGraphics::ResourceTableSetConstantBuffer(sparent->resourceTable, { this->cboSkin, sparent->cboSkinIndex, 0, true, false, (SizeT)(sizeof(Math::matrix44) * sparent->skinFragments[0].jointPalette.Size()), 0 });
-		CoreGraphics::ResourceTableCommitChanges(sparent->resourceTable);
-	}
-
-	// initialize skinning palette
-	Util::FixedArray<Math::matrix44> usedMatrices(sparent->skinFragments[0].jointPalette.Size());
-
-	// set all matrices to identity
-	IndexT i;
-	for (i = 0; i < usedMatrices.Size(); i++)
-	{
-		usedMatrices[i] = Math::matrix44::identity();
-	}
-	CoreGraphics::ConstantBufferUpdate(this->cboSkin, this->cboSkinAlloc, usedMatrices.Begin(), sizeof(Math::matrix44) * usedMatrices.Size(), this->skinningPaletteVar);
-
 	this->skinningPaletteVar = sparent->skinningPaletteVar;
 }
 

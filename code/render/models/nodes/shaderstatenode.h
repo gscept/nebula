@@ -112,15 +112,11 @@ ShaderStateNode::Instance::Setup(Models::ModelNode* node, const Models::ModelNod
 	CoreGraphics::ConstantBufferId cbo = sparent->cbo;
 	this->cbo = cbo;
 	this->resourceTable = sparent->resourceTable;
+
 	this->offsets.Resize(3); // object data, instance data, skinning data
-	bool rebind = CoreGraphics::ConstantBufferAllocateInstance(this->cbo, this->offsets[ObjectTransforms], this->instance);
 	this->offsets[InstancingTransforms] = 0; // instancing offset
 	this->offsets[Skinning] = 0; // skinning offset
-	if (rebind)
-	{
-		CoreGraphics::ResourceTableSetConstantBuffer(sparent->resourceTable, { sparent->cbo, sparent->cboIndex, 0, true, false, sizeof(Math::matrix44) * 2, 0 });
-		CoreGraphics::ResourceTableCommitChanges(sparent->resourceTable);
-	}
+
 	this->modelVar = sparent->modelVar;
 	this->invModelVar = sparent->invModelVar;
 	this->modelViewProjVar = sparent->modelViewProjVar;

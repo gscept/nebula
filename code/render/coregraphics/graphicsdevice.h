@@ -23,8 +23,8 @@ namespace CoreGraphics
 
 struct GraphicsDeviceCreateInfo
 {
-	uint globalGraphicsConstantBufferMemorySize;
-	uint globalComputeConstantBufferMemorySize;
+	uint globalGraphicsConstantBufferMemorySize[NumConstantBufferTypes];
+	uint globalComputeConstantBufferMemorySize[NumConstantBufferTypes];
 	byte numBufferedFrames : 3;
 	bool enableValidation : 1;		// enables validation layer and writes output to console
 };
@@ -33,6 +33,12 @@ struct GraphicsDeviceCreateInfo
 bool CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info);
 /// destroy graphics device
 void DestroyGraphicsDevice();
+
+/// get number of buffered frames
+SizeT GetNumBufferedFrames();
+/// get current frame index, which is between 0 and GetNumBufferedFrames
+IndexT GetBufferedFrameIndex();
+
 
 struct GraphicsDeviceState
 {
@@ -63,6 +69,11 @@ struct GraphicsDeviceState
 	CoreGraphics::SemaphoreId computeSemaphore;
 	CoreGraphics::SemaphoreId computeWaitSemaphore;
 	CoreGraphics::FenceId computeFence;
+
+	uint globalGraphicsConstantBufferMaxValue[NumConstantBufferTypes];
+	CoreGraphics::ConstantBufferId globalGraphicsConstantBuffer[NumConstantBufferTypes];
+	uint globalComputeConstantBufferMaxValue[NumConstantBufferTypes];
+	CoreGraphics::ConstantBufferId globalComputeConstantBuffer[NumConstantBufferTypes];
 
 	Util::Array<Ptr<CoreGraphics::RenderEventHandler> > eventHandlers;
 	CoreGraphics::PrimitiveTopology::Code primitiveTopology;
@@ -137,13 +148,13 @@ void SetResourceTablePipeline(const CoreGraphics::ResourcePipelineId layout);
 /// push constants
 void PushConstants(ShaderPipeline pipeline, uint offset, uint size, byte* data);
 /// reserve range of graphics constant buffer memory and return offset
-uint AllocateGraphicsConstantBufferMemory(uint size);
+uint AllocateGraphicsConstantBufferMemory(CoreGraphicsGlobalConstantBufferType type, uint size);
 /// return id to global graphics constant buffer
-CoreGraphics::ConstantBufferId GetGraphicsConstantBuffer();
+CoreGraphics::ConstantBufferId GetGraphicsConstantBuffer(CoreGraphicsGlobalConstantBufferType type);
 /// reserve range of compute constant buffer memory and return offset
-uint AllocateComputeConstantBufferMemory(uint size);
+uint AllocateComputeConstantBufferMemory(CoreGraphicsGlobalConstantBufferType type, uint size);
 /// return id to global compute constant buffer
-CoreGraphics::ConstantBufferId GetComputeConstantBuffer();
+CoreGraphics::ConstantBufferId GetComputeConstantBuffer(CoreGraphicsGlobalConstantBufferType type);
 /// return resource submission context
 CoreGraphics::SubmissionContextId GetResourceSubmissionContext();
 /// return setup submission context
@@ -194,6 +205,12 @@ void EndFrame(IndexT frameIndex);
 bool IsInBeginFrame();
 /// present the rendered scene
 void Present();
+/// wait for an individual queue to finish
+void WaitForQueue(CoreGraphicsQueueType queue);
+/// wait for all queues to finish
+void WaitForAllQueues();
+
+
 /// save a screenshot to the provided stream
 CoreGraphics::ImageFileFormat::Code SaveScreenshot(CoreGraphics::ImageFileFormat::Code fmt, const Ptr<IO::Stream>& outStream);
 /// save a region of the screen to the provided stream
