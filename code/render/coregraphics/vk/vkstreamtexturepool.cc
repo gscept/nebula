@@ -126,6 +126,7 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 	extents.width = width;
 	extents.height = height;
 	extents.depth = 1;
+	auto queues = Vulkan::GetQueueFamilies();
 	VkImageCreateInfo info =
 	{
 		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -140,8 +141,8 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 		forceLinear ? VK_IMAGE_TILING_LINEAR : VK_IMAGE_TILING_OPTIMAL,
 		VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
 		VK_SHARING_MODE_CONCURRENT,
-		0,
-		NULL,
+		(uint32_t)queues.Size(),
+		queues.KeysAsArray().Begin(),
 		VK_IMAGE_LAYOUT_UNDEFINED
 	};
 	VkResult stat = vkCreateImage(dev, &info, NULL, &loadInfo.img);

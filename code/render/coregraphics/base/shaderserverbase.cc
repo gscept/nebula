@@ -214,16 +214,6 @@ ShaderServerBase::ApplyObjectId(IndexT i)
 
 //------------------------------------------------------------------------------
 /**
-	Implemented in subclass
-*/
-void
-ShaderServerBase::ReloadShader(const Resources::ResourceId shader)
-{
-	n_assert(shader != Ids::InvalidId64);
-}
-
-//------------------------------------------------------------------------------
-/**
 */
 void
 ShaderServerBase::LoadShader(const Resources::ResourceName& shdName)
@@ -242,7 +232,25 @@ ShaderServerBase::LoadShader(const Resources::ResourceName& shdName)
 /**
 */
 void 
-ShaderServerBase::Update()
+ShaderServerBase::BeforeView()
+{
+	// implement in subclass
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ShaderServerBase::AfterView()
+{
+	// implement in subclass
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+ShaderServerBase::BeforeFrame()
 {
 	if (this->pendingShaderReloads.Size() > 0)
 	{

@@ -54,9 +54,6 @@ VkTransformDevice::Open()
 		this->viewTables[i] = ShaderCreateResourceTable(shader, NEBULA_FRAME_GROUP);
 	}
 
-	//this->viewTable = ShaderCreateResourceTable(shader, NEBULA_FRAME_GROUP);
-
-	//this->viewConstants = ShaderCreateConstantBuffer(shader, "FrameBlock");
 	this->viewConstants = CoreGraphics::GetGraphicsConstantBuffer(MainThreadConstantBuffer);
 	this->viewConstantsSlot = ShaderGetResourceSlot(shader, "FrameBlock");
 	this->tableLayout = ShaderGetResourcePipeline(shader);
@@ -125,7 +122,7 @@ VkTransformDevice::ApplyViewSettings()
 
 	// update resource table
 	IndexT bufferedFrameIndex = GetBufferedFrameIndex();
-	ResourceTableSetConstantBuffer(this->viewTables[bufferedFrameIndex], { this->viewConstants, this->viewConstantsSlot, 0, false, false, sizeof(Math::matrix44) * 6 + sizeof(Math::float4) * 3, (SizeT)offset });
+	ResourceTableSetConstantBuffer(this->viewTables[bufferedFrameIndex], { this->viewConstants, this->viewConstantsSlot, 0, false, false, sizeof(Shared::FrameBlock), (SizeT)offset });
 	ResourceTableCommitChanges(this->viewTables[bufferedFrameIndex]);
 }
 

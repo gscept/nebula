@@ -58,10 +58,10 @@ GraphicsServer::Open()
 
 	static const SizeT MB = 1024 * 1024;
 	CoreGraphics::GraphicsDeviceCreateInfo gfxInfo{ 
-		{ 1 * MB, 100 * MB },		// Graphics - main threads get 1 MB of constant memory, visibility thread (objects) gets 100
+		{ 1 * MB, 10 * MB },		// Graphics - main threads get 1 MB of constant memory, visibility thread (objects) gets 100
 		{ 1 * MB, 0 * MB},			// Compute - main threads get 1 MB of constant memory, visibility thread (objects) gets 0
 		3,							// We have 3 frames running simultaneously
-		false}; // 10/1 MB worth of constant buffer memory ought to be enough
+		false }; // validation
 	this->graphicsDevice = CoreGraphics::CreateGraphicsDevice(gfxInfo);
 	if (this->graphicsDevice)
 	{
@@ -252,6 +252,9 @@ GraphicsServer::BeginFrame()
 	this->time = this->timer->GetTime();
 	this->ticks = this->timer->GetTicks();
 
+	// update shader server
+	this->shaderServer->BeforeFrame();
+
 	// Collect garbage
 	IndexT i;
 	for (i = 0; i < this->contexts.Size(); i++)
@@ -263,9 +266,6 @@ GraphicsServer::BeginFrame()
 		if (state->Defragment != nullptr)
 			state->Defragment();
 	}
-
-	// update shader server
-	this->shaderServer->Update();
 
 	for (i = 0; i < this->contexts.Size(); i++)
 	{
@@ -302,6 +302,10 @@ GraphicsServer::BeforeViews()
 			continue;
 
 		this->currentView = view;
+
+		// begin frame
+		this->currentView->BeginFrame(this->frameIndex, this->frameTime);
+		this->shaderServer->BeforeView();
 
 		IndexT j;
 		for (j = 0; j < this->contexts.Size(); j++)
@@ -350,6 +354,8 @@ GraphicsServer::EndViews()
 			continue;
 
 		this->currentView = view;
+		this->shaderServer->AfterView();
+		this->currentView->EndFrame(this->frameIndex, this->frameTime);
 
 		IndexT j;
 		for (j = 0; j < this->contexts.Size(); j++)

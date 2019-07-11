@@ -96,13 +96,15 @@ public:
     /// apply an object id
     void ApplyObjectId(IndexT i);
 
-	/// reloads a shader
-	void ReloadShader(const Resources::ResourceId shader);
 	/// explicitly loads a shader by resource id
 	void LoadShader(const Resources::ResourceName& shdName);
 
-	/// update shader server
-	void Update();
+	/// update shader server outside of frame
+	void BeforeFrame();
+	/// begin frame
+	void BeforeView();
+	/// end frame
+	void AfterView();
 
 protected:
     friend class CoreGraphics::ShaderIdentifier;

@@ -49,7 +49,6 @@ struct
 		CoreGraphics::ConstantBinding dirWorldSpace, dir, color, backlightColor, ambientColor, backlightFactor, shadowMatrix, shadowHandle;
 	} global;
 
-	CoreGraphics::ConstantBufferId tickParamsBuffer;		// contains lighting constants
 	Graphics::GraphicsEntityId globalLightEntity = Graphics::GraphicsEntityId::Invalid();
 	RenderUtil::DrawFullScreenQuad fsq;
 
@@ -166,7 +165,6 @@ LightContext::Create()
 	lightServerState.local.shadowMap = ShaderGetConstantBinding(lightServerState.lightShader, "ShadowMap");
 
 	// setup buffers, copy tick params from shader server (but only update global light stuff)
-	lightServerState.tickParamsBuffer = ShaderServer::Instance()->GetTickParams();
 	lightServerState.localLightsResourceTable = ShaderCreateResourceTable(lightServerState.lightShader, NEBULA_INSTANCE_GROUP);
 	lightServerState.localLightsConstantBuffer = CoreGraphics::GetGraphicsConstantBuffer(MainThreadConstantBuffer);
 	lightServerState.localLightsShadowConstantBuffer = CoreGraphics::GetGraphicsConstantBuffer(MainThreadConstantBuffer);
@@ -437,12 +435,13 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIn
 
 	// update constant buffer
 	Ids::Id32 globalLightId = genericLightAllocator.Get<TypedLightId>(cid.id);
-	ConstantBufferUpdate(lightServerState.tickParamsBuffer, genericLightAllocator.Get<Color>(cid.id) * genericLightAllocator.Get<Intensity>(cid.id), lightServerState.global.color);
-	ConstantBufferUpdate(lightServerState.tickParamsBuffer, Math::matrix44::transform(globalLightAllocator.Get<GlobalLightDirection>(globalLightId), viewTransform), lightServerState.global.dir);
-	ConstantBufferUpdate(lightServerState.tickParamsBuffer, globalLightAllocator.Get<GlobalLightDirection>(globalLightId), lightServerState.global.dirWorldSpace);
-	ConstantBufferUpdate(lightServerState.tickParamsBuffer, globalLightAllocator.Get<GlobalLightBacklight>(globalLightId), lightServerState.global.backlightColor);
-	ConstantBufferUpdate(lightServerState.tickParamsBuffer, globalLightAllocator.Get<GlobalLightBacklightOffset>(globalLightId), lightServerState.global.backlightFactor);
-	ConstantBufferUpdate(lightServerState.tickParamsBuffer, globalLightAllocator.Get<GlobalLightAmbient>(globalLightId), lightServerState.global.ambientColor);
+	Shared::PerTickParams& params = ShaderServer::Instance()->GetTickParams();
+	(genericLightAllocator.Get<Color>(cid.id) * genericLightAllocator.Get<Intensity>(cid.id)).store(params.GlobalLightColor);
+	Math::matrix44::transform(globalLightAllocator.Get<GlobalLightDirection>(globalLightId), viewTransform).store(params.GlobalLightDir);
+	globalLightAllocator.Get<GlobalLightDirection>(globalLightId).store(params.GlobalLightDirWorldspace);
+	globalLightAllocator.Get<GlobalLightBacklight>(globalLightId).store(params.GlobalBackLightColor);
+	params.GlobalBackLightOffset = globalLightAllocator.Get<GlobalLightBacklightOffset>(globalLightId);
+	globalLightAllocator.Get<GlobalLightAmbient>(globalLightId).store(params.GlobalAmbientLightColor);
 
 	// go through and update local lights
 	const Util::Array<LightType>& types = genericLightAllocator.GetArray<Type>();
@@ -488,8 +487,8 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIn
 			block.Flags = flags;
 
 			// update buffer
-			ConstantBufferUpdate(lightServerState.localLightsConstantBuffer, block, offset);
 			pointLightAllocator.Get<PointLightDynamicOffsets>(typeIds[i])[0] = offset;
+			ConstantBufferUpdate(lightServerState.localLightsConstantBuffer, block, offset);
 
 		}
 		break;
@@ -525,8 +524,8 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIn
 			block.Flags = flags;
 
 			// update buffer
-			ConstantBufferUpdate(lightServerState.localLightsConstantBuffer, block, offset);
 			spotLightAllocator.Get<SpotLightDynamicOffsets>(typeIds[i])[0] = offset;
+			ConstantBufferUpdate(lightServerState.localLightsConstantBuffer, block, offset);
 		}
 		break;
 
@@ -645,7 +644,8 @@ LightContext::RenderLights()
 /**
 */
 
-void LightContext::UpdateGlobalShadowMap()
+void 
+LightContext::UpdateGlobalShadowMap()
 {
 }
 

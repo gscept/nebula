@@ -13,6 +13,7 @@
 #include "effectfactory.h"
 #include "vkshaderpool.h"
 #include "coregraphics/graphicsdevice.h"
+#include "shared.h"
 
 namespace Vulkan
 {
@@ -44,7 +45,7 @@ public:
 	void SetGlobalEnvironmentTextures(const CoreGraphics::TextureId& env, const CoreGraphics::TextureId& irr, const SizeT numMips);
 
 	/// get tick params constant buffer
-	const CoreGraphics::ConstantBufferId GetTickParams() const;
+	Shared::PerTickParams& GetTickParams();
 
 	/// submit resource changes
 	void SubmitTextureDescriptorChanges();
@@ -55,6 +56,11 @@ public:
 
 	/// setup gbuffer bindings
 	void SetupGBufferConstants();
+
+	/// begin frame
+	void BeforeView();
+	/// end frame
+	void AfterView();
 
 private:
 
@@ -72,7 +78,7 @@ private:
 	Util::FixedPool<uint32_t> image3DPool;
 	Util::FixedPool<uint32_t> imageCubePool;
 
-	CoreGraphics::ResourceTableId resourceTable;
+	Util::FixedArray<CoreGraphics::ResourceTableId> resourceTables;
 	CoreGraphics::ResourcePipelineId tableLayout;
 	IndexT texture2DTextureVar;
 	IndexT texture2DMSTextureVar;
@@ -98,7 +104,10 @@ private:
 	IndexT csmBufferTextureVar;
 	IndexT spotlightAtlasShadowBufferTextureVar;
 
-	CoreGraphics::ConstantBufferId tickParams;
+	alignas(16) Shared::PerTickParams tickParams;
+	CoreGraphics::ConstantBufferId ticksCbo;
+	IndexT cboOffset;
+	IndexT cboSlot;
 
 	AnyFX::EffectFactory* factory;
 };
@@ -109,7 +118,8 @@ private:
 inline void
 VkShaderServer::SubmitTextureDescriptorChanges()
 {
-	ResourceTableCommitChanges(this->resourceTable);
+	IndexT bufferedFrameIndex = CoreGraphics::GetBufferedFrameIndex();
+	ResourceTableCommitChanges(this->resourceTables[bufferedFrameIndex]);
 }
 
 //------------------------------------------------------------------------------
@@ -118,7 +128,8 @@ VkShaderServer::SubmitTextureDescriptorChanges()
 inline void
 VkShaderServer::BindTextureDescriptorSetsGraphics()
 {
-	CoreGraphics::SetResourceTable(this->resourceTable, NEBULA_TICK_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
+	IndexT bufferedFrameIndex = CoreGraphics::GetBufferedFrameIndex();
+	CoreGraphics::SetResourceTable(this->resourceTables[bufferedFrameIndex], NEBULA_TICK_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
 }
 
 //------------------------------------------------------------------------------
@@ -127,7 +138,17 @@ VkShaderServer::BindTextureDescriptorSetsGraphics()
 inline void 
 VkShaderServer::BindTextureDescriptorSetsCompute()
 {
-	CoreGraphics::SetResourceTable(this->resourceTable, NEBULA_TICK_GROUP, CoreGraphics::ComputePipeline, nullptr);
+	IndexT bufferedFrameIndex = CoreGraphics::GetBufferedFrameIndex();
+	CoreGraphics::SetResourceTable(this->resourceTables[bufferedFrameIndex], NEBULA_TICK_GROUP, CoreGraphics::ComputePipeline, nullptr);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline Shared::PerTickParams&
+VkShaderServer::GetTickParams()
+{
+	return this->tickParams;
 }
 
 } // namespace Vulkan

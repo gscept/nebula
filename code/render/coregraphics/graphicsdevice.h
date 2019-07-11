@@ -203,8 +203,6 @@ void EndSubmission(CoreGraphicsQueueType queue, bool endOfFrame = false);
 void EndFrame(IndexT frameIndex);
 /// check if inside BeginFrame
 bool IsInBeginFrame();
-/// present the rendered scene
-void Present();
 /// wait for an individual queue to finish
 void WaitForQueue(CoreGraphicsQueueType queue);
 /// wait for all queues to finish
