@@ -12,7 +12,7 @@
 #include "io/filestream.h"
 
 // Generated Flatbuffer header
-#include "level.h"
+#include "basegamefeature/loader/level_generated.h"
 
 namespace BaseGameFeature
 {
