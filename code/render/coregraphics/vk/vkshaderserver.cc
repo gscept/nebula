@@ -67,13 +67,17 @@ VkShaderServer::Open()
 	this->texture2DArrayTextureVar = ShaderGetResourceSlot(shader, "Textures2DArray");
 	this->textureCubeTextureVar = ShaderGetResourceSlot(shader, "TexturesCube");
 	this->texture3DTextureVar = ShaderGetResourceSlot(shader, "Textures3D");
-	this->resourceTable = ShaderCreateResourceTable(shader, NEBULA_TICK_GROUP);
 	this->tableLayout = ShaderGetResourcePipeline(shader);
+	
+	this->ticksCbo = CoreGraphics::GetGraphicsConstantBuffer(MainThreadConstantBuffer);
+	this->cboSlot = ShaderGetResourceSlot(shader, "PerTickParams");
 
-	this->tickParams = ShaderCreateConstantBuffer(shader, "PerTickParams");
-	IndexT slot = ShaderGetResourceSlot(shader, "PerTickParams");
-	ResourceTableSetConstantBuffer(this->resourceTable, { this->tickParams, slot, 0, false, false, -1, 0 });
-	ResourceTableCommitChanges(this->resourceTable);
+	this->resourceTables.Resize(CoreGraphics::GetNumBufferedFrames());
+	IndexT i;
+	for (i = 0; i < this->resourceTables.Size(); i++)
+	{
+		this->resourceTables[i] = ShaderCreateResourceTable(shader, NEBULA_TICK_GROUP);
+	}
 
 	this->normalBufferTextureVar = ShaderGetConstantBinding(shader, "NormalBuffer");
 	this->depthBufferTextureVar = ShaderGetConstantBinding(shader, "DepthBuffer");
@@ -86,9 +90,7 @@ VkShaderServer::Open()
 	this->irradianceMapVar = ShaderGetConstantBinding(shader, "IrradianceMap");
 	this->numEnvMipsVar = ShaderGetConstantBinding(shader, "NumEnvMips");
 
-	// update default mips, which is 10 for the cubemap
-	ConstantBufferUpdate(this->tickParams, 10, this->numEnvMipsVar);
-
+	this->tickParams.NumEnvMips = 10;
 	return true;
 }
 
@@ -100,7 +102,11 @@ VkShaderServer::Close()
 {
 	n_assert(this->IsOpen());
 	n_delete(this->factory);
-	DestroyResourceTable(this->resourceTable);
+	IndexT i;
+	for (i = 0; i < this->resourceTables.Size(); i++)
+	{
+		DestroyResourceTable(this->resourceTables[i]);
+	}
 	ShaderServerBase::Close();
 }
 
@@ -141,7 +147,13 @@ VkShaderServer::RegisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics
 	info.sampler = SamplerId::Invalid();
 	info.isDepth = false;
 	info.slot = var;
-	ResourceTableSetTexture(this->resourceTable, info);
+
+	// update textures for all tables
+	IndexT i;
+	for (i = 0; i < this->resourceTables.Size(); i++)
+	{
+		ResourceTableSetTexture(this->resourceTables[i], info);
+	}
 
 	return idx;
 }
@@ -183,7 +195,13 @@ VkShaderServer::RegisterTexture(const CoreGraphics::RenderTextureId& tex, bool d
 	info.sampler = SamplerId::Invalid();
 	info.isDepth = depth;
 	info.slot = var;
-	ResourceTableSetTexture(this->resourceTable, info);
+
+	// update textures for all tables
+	IndexT i;
+	for (i = 0; i < this->resourceTables.Size(); i++)
+	{
+		ResourceTableSetTexture(this->resourceTables[i], info);
+	}
 
 	return idx;
 }
@@ -224,7 +242,13 @@ VkShaderServer::RegisterTexture(const CoreGraphics::ShaderRWTextureId& tex, Core
 	info.index = idx;
 	info.sampler = SamplerId::Invalid();
 	info.slot = var;
-	ResourceTableSetTexture(this->resourceTable, info);
+
+	// update textures for all tables
+	IndexT i;
+	for (i = 0; i < this->resourceTables.Size(); i++)
+	{
+		ResourceTableSetTexture(this->resourceTables[i], info);
+	}
 
 	return idx;
 }
@@ -255,18 +279,9 @@ VkShaderServer::UnregisterTexture(const uint32_t id, const CoreGraphics::Texture
 void 
 VkShaderServer::SetGlobalEnvironmentTextures(const CoreGraphics::TextureId& env, const CoreGraphics::TextureId& irr, const SizeT numMips)
 {
-	CoreGraphics::ConstantBufferUpdate(this->tickParams, CoreGraphics::TextureGetBindlessHandle(env), this->environmentMapVar);
-	CoreGraphics::ConstantBufferUpdate(this->tickParams, CoreGraphics::TextureGetBindlessHandle(irr), this->irradianceMapVar);
-	CoreGraphics::ConstantBufferUpdate(this->tickParams, numMips, this->numEnvMipsVar);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const CoreGraphics::ConstantBufferId 
-VkShaderServer::GetTickParams() const
-{
-	return this->tickParams;
+	this->tickParams.EnvironmentMap = CoreGraphics::TextureGetBindlessHandle(env);
+	this->tickParams.IrradianceMap = CoreGraphics::TextureGetBindlessHandle(irr);
+	this->tickParams.NumEnvMips = numMips;
 }
 
 //------------------------------------------------------------------------------
@@ -275,12 +290,37 @@ VkShaderServer::GetTickParams() const
 void 
 VkShaderServer::SetupGBufferConstants()
 {
-	ConstantBufferUpdate(this->tickParams, RenderTextureGetBindlessHandle(CoreGraphics::GetRenderTexture("NormalBuffer")), this->normalBufferTextureVar);
-	ConstantBufferUpdate(this->tickParams, RenderTextureGetBindlessHandle(CoreGraphics::GetRenderTexture("DepthBuffer")), this->depthBufferTextureVar);
-	ConstantBufferUpdate(this->tickParams, RenderTextureGetBindlessHandle(CoreGraphics::GetRenderTexture("SpecularBuffer")), this->specularBufferTextureVar);
-	ConstantBufferUpdate(this->tickParams, RenderTextureGetBindlessHandle(CoreGraphics::GetRenderTexture("AlbedoBuffer")), this->albedoBufferTextureVar);
-	ConstantBufferUpdate(this->tickParams, RenderTextureGetBindlessHandle(CoreGraphics::GetRenderTexture("EmissiveBuffer")), this->emissiveBufferTextureVar);
-	ConstantBufferUpdate(this->tickParams, RenderTextureGetBindlessHandle(CoreGraphics::GetRenderTexture("LightBuffer")), this->lightBufferTextureVar);
+	this->tickParams.NormalBuffer = RenderTextureGetBindlessHandle(CoreGraphics::GetRenderTexture("NormalBuffer"));
+	this->tickParams.DepthBuffer = RenderTextureGetBindlessHandle(CoreGraphics::GetRenderTexture("DepthBuffer"));
+	this->tickParams.SpecularBuffer = RenderTextureGetBindlessHandle(CoreGraphics::GetRenderTexture("SpecularBuffer"));
+	this->tickParams.AlbedoBuffer = RenderTextureGetBindlessHandle(CoreGraphics::GetRenderTexture("AlbedoBuffer"));
+	this->tickParams.EmissiveBuffer = RenderTextureGetBindlessHandle(CoreGraphics::GetRenderTexture("EmissiveBuffer"));
+	this->tickParams.LightBuffer = RenderTextureGetBindlessHandle(CoreGraphics::GetRenderTexture("LightBuffer"));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+VkShaderServer::BeforeView()
+{
+	// just allocate the memory
+	this->cboOffset = CoreGraphics::AllocateGraphicsConstantBufferMemory(MainThreadConstantBuffer, sizeof(Shared::PerTickParams));
+	IndexT bufferedFrameIndex = GetBufferedFrameIndex();
+
+	// update resource table
+	ResourceTableSetConstantBuffer(this->resourceTables[bufferedFrameIndex], { this->ticksCbo, this->cboSlot, 0, false, false, sizeof(Shared::PerTickParams), (SizeT)this->cboOffset });
+	ResourceTableCommitChanges(this->resourceTables[bufferedFrameIndex]);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+VkShaderServer::AfterView()
+{
+	// update the constant buffer with the data accumulated in this frame
+	ConstantBufferUpdate(this->ticksCbo, this->tickParams, this->cboOffset);
 }
 
 } // namespace Vulkan

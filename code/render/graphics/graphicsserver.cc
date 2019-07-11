@@ -252,6 +252,9 @@ GraphicsServer::BeginFrame()
 	this->time = this->timer->GetTime();
 	this->ticks = this->timer->GetTicks();
 
+	// update shader server
+	this->shaderServer->BeforeFrame();
+
 	// Collect garbage
 	IndexT i;
 	for (i = 0; i < this->contexts.Size(); i++)
@@ -263,9 +266,6 @@ GraphicsServer::BeginFrame()
 		if (state->Defragment != nullptr)
 			state->Defragment();
 	}
-
-	// update shader server
-	this->shaderServer->Update();
 
 	for (i = 0; i < this->contexts.Size(); i++)
 	{
@@ -302,6 +302,10 @@ GraphicsServer::BeforeViews()
 			continue;
 
 		this->currentView = view;
+
+		// begin frame
+		this->currentView->BeginFrame(this->frameIndex, this->frameTime);
+		this->shaderServer->BeforeView();
 
 		IndexT j;
 		for (j = 0; j < this->contexts.Size(); j++)
@@ -350,6 +354,8 @@ GraphicsServer::EndViews()
 			continue;
 
 		this->currentView = view;
+		this->shaderServer->AfterView();
+		this->currentView->EndFrame(this->frameIndex, this->frameTime);
 
 		IndexT j;
 		for (j = 0; j < this->contexts.Size(); j++)

@@ -2721,16 +2721,6 @@ WaitForAllQueues()
 //------------------------------------------------------------------------------
 /**
 */
-void 
-Present()
-{
-	n_assert(!state.inBeginFrame);
-	state.frameId++;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 CoreGraphics::ImageFileFormat::Code
 SaveScreenshot(CoreGraphics::ImageFileFormat::Code fmt, const Ptr<IO::Stream>& outStream)
 {

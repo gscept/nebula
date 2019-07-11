@@ -950,9 +950,6 @@ Present(const CoreGraphics::WindowId& id)
 	res = vkQueuePresentKHR(wndInfo.presentQueue, &info);
 	n_assert(res == VK_SUCCESS);
 
-	// yeah, we probably don't need this...
-	CoreGraphics::Present();
-
 	if (res == VK_ERROR_OUT_OF_DATE_KHR)
 	{
 		// window has been resized!
