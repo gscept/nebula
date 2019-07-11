@@ -2668,13 +2668,13 @@ EndFrame(IndexT frameIndex)
 	CoreGraphics::QueueEndMarker(GraphicsQueueType);
 #endif
 
-	// cycle the resource and setup submissions, no need to get the fence again since we use 1 buffer
-	state.resourceSubmissionFence = SubmissionContextNextCycle(state.resourceSubmissionContext);
-	SubmissionContextNewBuffer(state.resourceSubmissionContext, state.resourceSubmissionCmdBuffer, state.resourceSubmissionSemaphore);
-
 	// we don't need to sync, because the beginning of the frame will have waited for the previous fence for the setup
 	state.setupSubmissionFence = SubmissionContextNextCycle(state.setupSubmissionContext);
 	SubmissionContextNewBuffer(state.setupSubmissionContext, state.setupSubmissionCmdBuffer, state.setupSubmissionSemaphore);
+
+	// cycle the resource and setup submissions, no need to get the fence again since we use 1 buffer
+	state.resourceSubmissionFence = SubmissionContextNextCycle(state.resourceSubmissionContext);
+	SubmissionContextNewBuffer(state.resourceSubmissionContext, state.resourceSubmissionCmdBuffer, state.resourceSubmissionSemaphore);
 
 	// start recording 
 	CommandBufferBeginInfo beginInfo{ true, false, false };
