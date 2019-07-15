@@ -1308,7 +1308,6 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		}	
 	}
 
-
 	cmdCreateInfo.usage = CommandGfx;
 	state.gfxSubmission = CreateSubmissionContext({ cmdCreateInfo, info.numBufferedFrames, true });
 	state.gfxCmdBuffer = CommandBufferId::Invalid();
@@ -1339,8 +1338,6 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	CommandBufferBeginRecord(state.setupSubmissionCmdBuffer, beginInfo);
 
 #pragma pop_macro("CreateSemaphore")
-
-
 
 	state.maxNumFrameSubmissions = info.numBufferedFrames;
 
@@ -2066,19 +2063,20 @@ AllocateGraphicsConstantBufferMemory(CoreGraphicsGlobalConstantBufferType type, 
 
 	// no matter how we spin it
 	uint ret = sub.cboGfxEndAddress[type];
+	uint newEnd = Math::n_align(ret + size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
 
 	// if we have to wrap around, or we are fingering on the range of the next frame submission buffer...
-	if (sub.cboGfxEndAddress[type] + size > state.globalGraphicsConstantBufferMaxValue[type] * (state.currentFrameSubmission + 1))
+	if (newEnd > state.globalGraphicsConstantBufferMaxValue[type] * (state.currentFrameSubmission + 1))
 	{
-		n_warning("Over allocation of graphics constant memory! Memory will be overwritten!\n");
+		n_error("Over allocation of graphics constant memory! Memory will be overwritten!\n");
 
 		// return the beginning of the buffer, will definitely stomp the memory!
-		ret = 0;
+		ret = state.globalGraphicsConstantBufferMaxValue[type] * state.currentFrameSubmission;
+		newEnd = Math::n_align(ret + size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
 	}
 
 	// just bump the current frame submission pointer
-	;
-	sub.cboGfxEndAddress[type] = Math::n_align(ret + size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
+	sub.cboGfxEndAddress[type] = newEnd;
 
 	return ret;
 }
@@ -2102,18 +2100,20 @@ AllocateComputeConstantBufferMemory(CoreGraphicsGlobalConstantBufferType type, u
 
 	// no matter how we spin it
 	uint ret = sub.cboComputeEndAddress[type];
+	uint newEnd = Math::n_align(ret + size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
 
 	// if we have to wrap around, or we are fingering on the range of the next frame submission buffer...
-	if (sub.cboComputeEndAddress[type] + size > state.globalComputeConstantBufferMaxValue[type] * (state.currentFrameSubmission + 1))
+	if (newEnd > state.globalComputeConstantBufferMaxValue[type] * (state.currentFrameSubmission + 1))
 	{
-		n_warning("Over allocation of compute constant memory! Memory will be overwritten!\n");
+		n_error("Over allocation of compute constant memory! Memory will be overwritten!\n");
 
 		// return the beginning of the buffer, will definitely stomp the memory!
-		ret = 0;
+		ret = state.globalComputeConstantBufferMaxValue[type] * state.currentFrameSubmission;
+		newEnd = Math::n_align(ret + size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
 	}
 
 	// just bump the current frame submission pointer
-	sub.cboComputeEndAddress[type] = Math::n_align(ret + size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
+	sub.cboComputeEndAddress[type] = newEnd;
 
 	return ret;
 }
@@ -2485,7 +2485,11 @@ EndSubmission(CoreGraphicsQueueType queue, bool endOfFrame)
 
 		// add wait semaphore for the last command buffer
 		if (endOfFrame)
+		{
+			// add wait semaphore and add this semaphore to free
 			state.subcontextHandler.AddWaitSemaphore(GraphicsQueueType, SemaphoreGetVk(state.setupSubmissionSemaphore), VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
+			SubmissionContextFreeSemaphore(state.gfxSubmission, state.setupSubmissionSemaphore);
+		}
 
 		// if we should wait for the compute, add a semaphore
 		if (state.gfxWaitSemaphore != SemaphoreId::Invalid())
@@ -2496,13 +2500,19 @@ EndSubmission(CoreGraphicsQueueType queue, bool endOfFrame)
 			CoreGraphics::QueueBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "Graphics-Compute Sync Submission");
 #endif
 
+			// flush submissions
 			state.subcontextHandler.FlushSubmissions(GraphicsQueueType, VK_NULL_HANDLE, false);
 
 #if NEBULA_GRAPHICS_DEBUG
 			CoreGraphics::QueueEndMarker(GraphicsQueueType);
 #endif
 			
+			// make sure to add this semaphore for deletion
+			SubmissionContextFreeSemaphore(state.gfxSubmission, state.gfxWaitSemaphore);
 		}
+
+		// add previous semaphore to deletion
+		SubmissionContextFreeSemaphore(state.gfxSubmission, state.gfxPrevSemaphore);
 
 		// set prev to current semaphore
 		state.gfxPrevSemaphore = state.gfxSemaphore;
@@ -2533,7 +2543,11 @@ EndSubmission(CoreGraphicsQueueType queue, bool endOfFrame)
 
 		// add wait semaphore for the last command buffer
 		if (endOfFrame)
+		{
+			// add wait semaphore and add this semaphore to free
 			state.subcontextHandler.AddWaitSemaphore(ComputeQueueType, SemaphoreGetVk(state.setupSubmissionSemaphore), VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+			SubmissionContextFreeSemaphore(state.computeSubmission, state.setupSubmissionSemaphore);
+		}
 
 		// if we should wait for the graphics, add a semaphore
 		if (state.computeWaitSemaphore == GraphicsQueueType)
@@ -2544,13 +2558,19 @@ EndSubmission(CoreGraphicsQueueType queue, bool endOfFrame)
 			CoreGraphics::QueueBeginMarker(ComputeQueueType, NEBULA_MARKER_BLUE, "Compute-Graphics Sync Submission");
 #endif
 
+			// flush submissions
 			state.subcontextHandler.FlushSubmissions(ComputeQueueType, VK_NULL_HANDLE, false);
 
 #if NEBULA_GRAPHICS_DEBUG
 			CoreGraphics::QueueEndMarker(ComputeQueueType);
 #endif
 
+			// make sure to delete this semaphore later
+			SubmissionContextFreeSemaphore(state.computeSubmission, state.computeWaitSemaphore);
 		}
+
+		// add previous semaphore to deletion
+		SubmissionContextFreeSemaphore(state.computeSubmission, state.computePrevSemaphore);
 
 		// set previous semaphore
 		state.computePrevSemaphore = state.computeSemaphore;
@@ -2663,10 +2683,18 @@ EndFrame(IndexT frameIndex)
 		false);
 
 	state.subcontextHandler.SubmitFence(GraphicsQueueType, FenceGetVk(state.setupSubmissionFence));
+	state.subcontextHandler.SubmitFence(GraphicsQueueType, FenceGetVk(state.resourceSubmissionFence));
 
 #if NEBULA_GRAPHICS_DEBUG
 	CoreGraphics::QueueEndMarker(GraphicsQueueType);
 #endif
+
+	// add free semaphores to the graphics submission, so they can be deleted later
+	SubmissionContextFreeSemaphore(state.gfxSubmission, state.resourceSubmissionSemaphore);
+
+	// free the gfx and compute semaphores
+	SubmissionContextFreeSemaphore(state.gfxSubmission, state.gfxSemaphore);
+	SubmissionContextFreeSemaphore(state.gfxSubmission, state.computeSemaphore);
 
 	// we don't need to sync, because the beginning of the frame will have waited for the previous fence for the setup
 	state.setupSubmissionFence = SubmissionContextNextCycle(state.setupSubmissionContext);

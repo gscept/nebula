@@ -29,6 +29,7 @@ enum
 	SubmissionContextFreeImages,
 	SubmissionContextFreeCommandBuffers,
 	SubmissionContextFreeHostMemories,
+	SubmissionContextFreeSemaphores,
 	SubmissionContextCurrentIndex,
 	SubmissionContextCmdCreateInfo,
 	SubmissionContextName
@@ -45,7 +46,8 @@ typedef Ids::IdAllocator<
 	Util::FixedArray<Util::Array<std::tuple<VkDevice, VkDeviceMemory>>>,
 	Util::FixedArray<Util::Array<std::tuple<VkDevice, VkImage>>>,
 	Util::FixedArray<Util::Array<std::tuple<VkDevice, VkCommandPool, VkCommandBuffer>>>,
-	Util::Array<void*>,
+	Util::FixedArray<Util::Array<void*>>,
+	Util::FixedArray<Util::Array<CoreGraphics::SemaphoreId>>,
 	IndexT,
 	CoreGraphics::CommandBufferCreateInfo,
 	Util::String

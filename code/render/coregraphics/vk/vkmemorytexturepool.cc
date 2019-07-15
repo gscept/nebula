@@ -94,7 +94,7 @@ VkMemoryTexturePool::LoadFromMemory(const Resources::ResourceId id, const void* 
 		VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
 
 	// copy buffer, will be deleted later
-	char* bufferCopy = new char[data->width * data->height * size];
+	char* bufferCopy = (char*)Memory::Alloc(Memory::ScratchHeap, data->width * data->height * size);
 	memcpy(bufferCopy, data->buffer, data->width * data->height * size);
 
 	// add image update, take the output buffer and memory and add to delayed delete

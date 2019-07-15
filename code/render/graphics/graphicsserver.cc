@@ -58,7 +58,7 @@ GraphicsServer::Open()
 
 	static const SizeT MB = 1024 * 1024;
 	CoreGraphics::GraphicsDeviceCreateInfo gfxInfo{ 
-		{ 1 * MB, 10 * MB },		// Graphics - main threads get 1 MB of constant memory, visibility thread (objects) gets 100
+		{ 1 * MB, 50 * MB },		// Graphics - main threads get 1 MB of constant memory, visibility thread (objects) gets 100
 		{ 1 * MB, 0 * MB},			// Compute - main threads get 1 MB of constant memory, visibility thread (objects) gets 0
 		3,							// We have 3 frames running simultaneously
 		false }; // validation

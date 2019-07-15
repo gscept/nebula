@@ -53,6 +53,8 @@ SemaphoreId SubmissionContextGetSemaphore(const SubmissionContextId id);
 
 /// add void* to memory free upon completion
 void SubmissionContextFreeHostMemory(const SubmissionContextId id, void* buf);
+/// add semaphore to delete
+void SubmissionContextFreeSemaphore(const SubmissionContextId id, const SemaphoreId sem);
 
 /// get current fence object
 const FenceId SubmissionContextGetFence(const SubmissionContextId id);

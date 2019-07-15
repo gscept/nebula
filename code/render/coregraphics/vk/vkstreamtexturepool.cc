@@ -195,7 +195,7 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 				ILubyte* buf = ilGetData();
 
 				// copy buffer, will be deleted later
-				char* bufferCopy = new char[size];
+				char* bufferCopy = (char*)Memory::Alloc(Memory::ScratchHeap, size);
 				memcpy(bufferCopy, buf, size);
 
 				int32_t mipWidth = (int32_t)Math::n_max(1.0f, Math::n_floor(width / Math::n_pow(2, (float)j)));
@@ -231,7 +231,7 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 			ILubyte* buf = ilGetData();
 
 			// copy buffer, will be deleted later
-			char* bufferCopy = new char[size];
+			char* bufferCopy = (char*)Memory::Alloc(Memory::ScratchHeap, size);
 			memcpy(bufferCopy, buf, size);
 
 			int32_t mipWidth = (int32_t)Math::n_max(1.0f, Math::n_floor(width / Math::n_pow(2, (float)j)));

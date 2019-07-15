@@ -110,6 +110,8 @@ CreateSubmissionContext(const SubmissionContextCreateInfo& info)
 	submissionContextAllocator.Get<SubmissionContextFreeDeviceMemories>(id).Resize(info.numBuffers);
 	submissionContextAllocator.Get<SubmissionContextFreeImages>(id).Resize(info.numBuffers);
 	submissionContextAllocator.Get<SubmissionContextFreeCommandBuffers>(id).Resize(info.numBuffers);
+	submissionContextAllocator.Get<SubmissionContextFreeSemaphores>(id).Resize(info.numBuffers);
+	submissionContextAllocator.Get<SubmissionContextFreeHostMemories>(id).Resize(info.numBuffers);
 
 	ret.id24 = id;
 	ret.id8 = SubmissionContextIdType;
@@ -191,8 +193,23 @@ SubmissionContextGetSemaphore(const SubmissionContextId id)
 void 
 SubmissionContextFreeHostMemory(const SubmissionContextId id, void* buf)
 {
-	Util::Array<void*>& memories = submissionContextAllocator.Get<SubmissionContextFreeHostMemories>(id.id24);
+	const IndexT currentIndex = submissionContextAllocator.Get<SubmissionContextCurrentIndex>(id.id24);
+	Util::Array<void*>& memories = submissionContextAllocator.Get<SubmissionContextFreeHostMemories>(id.id24)[currentIndex];
 	memories.Append(buf);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+SubmissionContextFreeSemaphore(const SubmissionContextId id, const SemaphoreId sem)
+{
+	if (sem != SemaphoreId::Invalid())
+	{
+		const IndexT currentIndex = submissionContextAllocator.Get<SubmissionContextCurrentIndex>(id.id24);
+		Util::Array<CoreGraphics::SemaphoreId>& semaphores = submissionContextAllocator.Get<SubmissionContextFreeSemaphores>(id.id24)[currentIndex];
+		semaphores.Append(sem);
+	}	
 }
 
 //------------------------------------------------------------------------------
@@ -229,29 +246,32 @@ SubmissionContextNextCycle(const SubmissionContextId id)
 
 	// clean up retired buffers and semaphores
 	Util::Array<CommandBufferId>& bufs = submissionContextAllocator.Get<SubmissionContextRetiredCmdBuffer>(id.id24)[currentIndex];
-	Util::Array<SemaphoreId>& sems = submissionContextAllocator.Get<SubmissionContextRetiredSemaphore>(id.id24)[currentIndex];
+	//Util::Array<SemaphoreId>& sems = submissionContextAllocator.Get<SubmissionContextRetiredSemaphore>(id.id24)[currentIndex];
 
 	for (IndexT i = 0; i < bufs.Size(); i++)
 	{
 		DestroyCommandBuffer(bufs[i]);
-		DestroySemaphore(sems[i]);
+		//DestroySemaphore(sems[i]);
 	}
 	bufs.Clear();
-	sems.Clear();
+	//sems.Clear();
 
 	// also destroy current buffers
 	CommandBufferId& buf = submissionContextAllocator.Get<SubmissionContextCmdBuffer>(id.id24)[currentIndex];
-	SemaphoreId& sem = submissionContextAllocator.Get<SubmissionContextSemaphore>(id.id24)[currentIndex];
 	if (buf != CommandBufferId::Invalid())
 	{
 		DestroyCommandBuffer(buf);
 		buf = CommandBufferId::Invalid();
 	}
+
+	/*
+	SemaphoreId& sem = submissionContextAllocator.Get<SubmissionContextSemaphore>(id.id24)[currentIndex];
 	if (sem != SemaphoreId::Invalid())
 	{
 		DestroySemaphore(sem);
 		sem = SemaphoreId::Invalid();
 	}
+	*/
 
 	// delete any pending resources this context has allocated
 	Util::Array<std::tuple<VkDevice, VkBuffer>>& buffers = submissionContextAllocator.Get<SubmissionContextFreeBuffers>(id.id24)[currentIndex];
@@ -273,6 +293,16 @@ SubmissionContextNextCycle(const SubmissionContextId id)
 	for (IndexT i = 0; i < commandBuffers.Size(); i++)
 		vkFreeCommandBuffers(std::get<0>(commandBuffers[i]), std::get<1>(commandBuffers[i]), 1, &std::get<2>(commandBuffers[i]));
 	commandBuffers.Clear();
+
+	Util::Array<CoreGraphics::SemaphoreId>& semaphores = submissionContextAllocator.Get<SubmissionContextFreeSemaphores>(id.id24)[currentIndex];
+	for (IndexT i = 0; i < semaphores.Size(); i++)
+		DestroySemaphore(semaphores[i]);
+	semaphores.Clear();
+
+	Util::Array<void*>& hostMemories = submissionContextAllocator.Get<SubmissionContextFreeHostMemories>(id.id24)[currentIndex];
+	for (IndexT i = 0; i < hostMemories.Size(); i++)
+		Memory::Free(Memory::ScratchHeap, hostMemories[i]);
+	hostMemories.Clear();
 
 	return nextFence;
 }
