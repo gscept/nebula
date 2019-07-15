@@ -1471,7 +1471,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	state.currentDrawThread = 0;
 	state.numActiveThreads = 0;
 
-	_setup_timer(state.DebugTimer);
+	_setup_grouped_timer(state.DebugTimer, "GraphicsDevice");
 	_setup_grouped_counter(state.NumImageBytesAllocated, "GraphicsDevice");
 	_begin_counter(state.NumImageBytesAllocated);
 	_setup_grouped_counter(state.NumBufferBytesAllocated, "GraphicsDevice");

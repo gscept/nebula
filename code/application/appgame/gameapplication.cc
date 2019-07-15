@@ -155,7 +155,7 @@ GameApplication::Open()
 #endif
 
         // setup profiling stuff
-	    _setup_grouped_timer(GameApplicationFrameTimeAll, "Audio Subsystem");
+	    _setup_grouped_timer(GameApplicationFrameTimeAll, "Game Subsystem");
         
 
         return true;
