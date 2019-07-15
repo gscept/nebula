@@ -917,37 +917,38 @@ Present(const CoreGraphics::WindowId& id)
 	CoreGraphics::QueueBeginMarker(GraphicsQueueType, NEBULA_MARKER_PINK, "Presentation");
 #endif
 
-	// submit a sync point for the display, transfer bit is viable since we blit to the texture
-	VkPipelineStageFlags flags[] = { VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT };
-	const VkSubmitInfo submitInfo =
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,
-		nullptr,
-		2,
-		semaphores,
-		flags,
-		0, 
-		nullptr,
-		0,
-		nullptr
-	};
-	VkResult res = vkQueueSubmit(wndInfo.presentQueue, 1, &submitInfo, Vulkan::GetPresentFence());
-	n_assert(res == VK_SUCCESS);
-
-	// present
+	VkResult res;
 	VkResult presentResults;
 	const VkPresentInfoKHR info =
 	{
 		VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
 		nullptr,
-		0,
-		nullptr,
+		2,
+		semaphores,
 		1,
 		&wndInfo.swapchain,
 		&wndInfo.currentBackbuffer,
 		&presentResults
 	};
+
+	// present
 	res = vkQueuePresentKHR(wndInfo.presentQueue, &info);
+	n_assert(res == VK_SUCCESS);
+
+	// submit the present fence so we can wait for it later
+	const VkSubmitInfo submitInfo =
+	{
+		VK_STRUCTURE_TYPE_SUBMIT_INFO,
+		nullptr,
+		0,
+		nullptr,
+		nullptr,
+		0,
+		nullptr,
+		0,
+		nullptr
+	};
+	res = vkQueueSubmit(wndInfo.presentQueue, 1, &submitInfo, Vulkan::GetPresentFence());
 	n_assert(res == VK_SUCCESS);
 
 	if (res == VK_ERROR_OUT_OF_DATE_KHR)
