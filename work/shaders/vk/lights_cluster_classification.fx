@@ -22,7 +22,6 @@ struct Light
 {
 	int type;		// type of light, look at above definitions for a mapping
     float radius;	// radius of sphere (pointlight) or cone angle (spotlight)
-    vec2 _pad;
 	vec4 position;	// world space position of light
 	vec4 forward;	// forward vector of light (spotlight and arealights)
 };
