@@ -19,6 +19,24 @@
         4. Installed with debugging symbols and binaries
 
 ## Setup
-1. `./fips set config vulkan-win64-vstudio-debug` in your project directory
 
-Remember to run `fips nebula` verb to set work and toolkit directory registry variables.
+#### Setup config and toolkit
+
+1. `./fips set config vulkan-win64-vstudio-debug` in your project directory and `nebula-toolkit` directory
+2. Build `nebula-toolkit` (external library) with the same config as your project (`$ fips build`).
+
+#### Build project
+
+In your project directory:
+
+  1. `fips physx build`
+  2. `fips anyfx setup`
+  3. `fips build`
+  4. `fips physx deploy`
+
+#### Set environment variables
+
+Remember to run `fips nebula` verb to set work and toolkit directory registry variables:
+
+  * `fips nebula set work {PATH}`
+  * `fips nebula set toolkit {PATH}`
