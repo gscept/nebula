@@ -321,7 +321,7 @@ float4::float4(DirectX::XMVECTOR rhs) :
 /**
 */
 __forceinline void
-float4::operator=(const float4 &rhs)
+float4::operator=(const float4& rhs)
 {
     this->vec = rhs.vec;
 }

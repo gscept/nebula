@@ -338,9 +338,18 @@ GetMainBuffer(const CoreGraphicsQueueType queue)
 /**
 */
 VkSemaphore 
-GetGraphicsSemaphore()
+GetPresentSemaphore()
 {
 	return SemaphoreGetVk(state.gfxSemaphore);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+VkFence 
+GetPresentFence()
+{
+	return FenceGetVk(state.gfxFence);
 }
 
 //------------------------------------------------------------------------------
@@ -2488,7 +2497,6 @@ EndSubmission(CoreGraphicsQueueType queue, bool endOfFrame)
 		{
 			// add wait semaphore and add this semaphore to free
 			state.subcontextHandler.AddWaitSemaphore(GraphicsQueueType, SemaphoreGetVk(state.setupSubmissionSemaphore), VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
-			SubmissionContextFreeSemaphore(state.gfxSubmission, state.setupSubmissionSemaphore);
 		}
 
 		// if we should wait for the compute, add a semaphore
@@ -2507,12 +2515,7 @@ EndSubmission(CoreGraphicsQueueType queue, bool endOfFrame)
 			CoreGraphics::QueueEndMarker(GraphicsQueueType);
 #endif
 			
-			// make sure to add this semaphore for deletion
-			SubmissionContextFreeSemaphore(state.gfxSubmission, state.gfxWaitSemaphore);
 		}
-
-		// add previous semaphore to deletion
-		SubmissionContextFreeSemaphore(state.gfxSubmission, state.gfxPrevSemaphore);
 
 		// set prev to current semaphore
 		state.gfxPrevSemaphore = state.gfxSemaphore;
@@ -2546,7 +2549,6 @@ EndSubmission(CoreGraphicsQueueType queue, bool endOfFrame)
 		{
 			// add wait semaphore and add this semaphore to free
 			state.subcontextHandler.AddWaitSemaphore(ComputeQueueType, SemaphoreGetVk(state.setupSubmissionSemaphore), VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-			SubmissionContextFreeSemaphore(state.computeSubmission, state.setupSubmissionSemaphore);
 		}
 
 		// if we should wait for the graphics, add a semaphore
@@ -2565,12 +2567,7 @@ EndSubmission(CoreGraphicsQueueType queue, bool endOfFrame)
 			CoreGraphics::QueueEndMarker(ComputeQueueType);
 #endif
 
-			// make sure to delete this semaphore later
-			SubmissionContextFreeSemaphore(state.computeSubmission, state.computeWaitSemaphore);
 		}
-
-		// add previous semaphore to deletion
-		SubmissionContextFreeSemaphore(state.computeSubmission, state.computePrevSemaphore);
 
 		// set previous semaphore
 		state.computePrevSemaphore = state.computeSemaphore;
@@ -2677,24 +2674,16 @@ EndFrame(IndexT frameIndex)
 
 	state.subcontextHandler.AddWaitSemaphore(GraphicsQueueType, SemaphoreGetVk(state.resourceSubmissionSemaphore), VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
 
-	// submit graphics, wait for this frames resource submissions
+	// submit graphics, wait for this frames resource submissions, if we decide to use the compute queue for presentation, we have to change this
 	state.subcontextHandler.FlushSubmissions(GraphicsQueueType, 
-		FenceGetVk(state.gfxFence),
+		VK_NULL_HANDLE, // use no fence, it will be used by the present queue
 		false);
 
 	state.subcontextHandler.SubmitFence(GraphicsQueueType, FenceGetVk(state.setupSubmissionFence));
-	state.subcontextHandler.SubmitFence(GraphicsQueueType, FenceGetVk(state.resourceSubmissionFence));
 
 #if NEBULA_GRAPHICS_DEBUG
 	CoreGraphics::QueueEndMarker(GraphicsQueueType);
 #endif
-
-	// add free semaphores to the graphics submission, so they can be deleted later
-	SubmissionContextFreeSemaphore(state.gfxSubmission, state.resourceSubmissionSemaphore);
-
-	// free the gfx and compute semaphores
-	SubmissionContextFreeSemaphore(state.gfxSubmission, state.gfxSemaphore);
-	SubmissionContextFreeSemaphore(state.gfxSubmission, state.computeSemaphore);
 
 	// we don't need to sync, because the beginning of the frame will have waited for the previous fence for the setup
 	state.setupSubmissionFence = SubmissionContextNextCycle(state.setupSubmissionContext);

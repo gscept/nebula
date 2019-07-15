@@ -444,11 +444,11 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIn
 	globalLightAllocator.Get<GlobalLightAmbient>(globalLightId).store(params.GlobalAmbientLightColor);
 
 	// go through and update local lights
-	const Util::Array<LightType>& types = genericLightAllocator.GetArray<Type>();
+	const Util::Array<LightType>& types    = genericLightAllocator.GetArray<Type>();
 	const Util::Array<Math::float4>& color = genericLightAllocator.GetArray<Color>();
-	const Util::Array<float>& intensity = genericLightAllocator.GetArray<Intensity>();
-	const Util::Array<bool>& castShadow = genericLightAllocator.GetArray<ShadowCaster>();
-	const Util::Array<Ids::Id32>& typeIds = genericLightAllocator.GetArray<TypedLightId>();
+	const Util::Array<float>& intensity    = genericLightAllocator.GetArray<Intensity>();
+	const Util::Array<bool>& castShadow    = genericLightAllocator.GetArray<ShadowCaster>();
+	const Util::Array<Ids::Id32>& typeIds  = genericLightAllocator.GetArray<TypedLightId>();
 
 	IndexT i;
 	for (i = 0; i < types.Size(); i++)

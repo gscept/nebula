@@ -39,7 +39,9 @@ VkPhysicalDeviceMemoryProperties GetMemoryProperties();
 /// get main command buffer
 VkCommandBuffer GetMainBuffer(const CoreGraphicsQueueType queue);
 /// get final graphics semaphore
-VkSemaphore GetGraphicsSemaphore();
+VkSemaphore GetPresentSemaphore();
+/// get graphics fence
+VkFence GetPresentFence();
 
 /// get queue families
 const Util::Set<uint32_t>& GetQueueFamilies();

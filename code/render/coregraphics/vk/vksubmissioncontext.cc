@@ -246,15 +246,15 @@ SubmissionContextNextCycle(const SubmissionContextId id)
 
 	// clean up retired buffers and semaphores
 	Util::Array<CommandBufferId>& bufs = submissionContextAllocator.Get<SubmissionContextRetiredCmdBuffer>(id.id24)[currentIndex];
-	//Util::Array<SemaphoreId>& sems = submissionContextAllocator.Get<SubmissionContextRetiredSemaphore>(id.id24)[currentIndex];
+	Util::Array<SemaphoreId>& sems = submissionContextAllocator.Get<SubmissionContextRetiredSemaphore>(id.id24)[currentIndex];
 
 	for (IndexT i = 0; i < bufs.Size(); i++)
 	{
 		DestroyCommandBuffer(bufs[i]);
-		//DestroySemaphore(sems[i]);
+		DestroySemaphore(sems[i]);
 	}
 	bufs.Clear();
-	//sems.Clear();
+	sems.Clear();
 
 	// also destroy current buffers
 	CommandBufferId& buf = submissionContextAllocator.Get<SubmissionContextCmdBuffer>(id.id24)[currentIndex];
@@ -264,14 +264,12 @@ SubmissionContextNextCycle(const SubmissionContextId id)
 		buf = CommandBufferId::Invalid();
 	}
 
-	/*
 	SemaphoreId& sem = submissionContextAllocator.Get<SubmissionContextSemaphore>(id.id24)[currentIndex];
 	if (sem != SemaphoreId::Invalid())
 	{
 		DestroySemaphore(sem);
 		sem = SemaphoreId::Invalid();
 	}
-	*/
 
 	// delete any pending resources this context has allocated
 	Util::Array<std::tuple<VkDevice, VkBuffer>>& buffers = submissionContextAllocator.Get<SubmissionContextFreeBuffers>(id.id24)[currentIndex];

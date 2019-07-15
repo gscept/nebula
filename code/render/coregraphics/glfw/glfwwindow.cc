@@ -910,7 +910,7 @@ Present(const CoreGraphics::WindowId& id)
 	VkSemaphore semaphores[2] =
 	{
 		wndInfo.displaySemaphore,
-		Vulkan::GetGraphicsSemaphore() // this will be the final semaphore of the graphics command buffer that finishes the frame
+		Vulkan::GetPresentSemaphore() // this will be the final semaphore of the graphics command buffer that finishes the frame
 	};
 
 #if NEBULA_GRAPHICS_DEBUG
@@ -931,7 +931,7 @@ Present(const CoreGraphics::WindowId& id)
 		0,
 		nullptr
 	};
-	VkResult res = vkQueueSubmit(wndInfo.presentQueue, 1, &submitInfo, VK_NULL_HANDLE);
+	VkResult res = vkQueueSubmit(wndInfo.presentQueue, 1, &submitInfo, Vulkan::GetPresentFence());
 	n_assert(res == VK_SUCCESS);
 
 	// present

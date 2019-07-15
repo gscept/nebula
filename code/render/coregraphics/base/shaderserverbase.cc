@@ -135,7 +135,7 @@ ShaderServerBase::Open()
 						// write output from compilation
 						while (!reader->Eof())
 						{
-							n_printf(reader->ReadLine().AsCharPtr());
+							Core::SysFunc::DebugOut(reader->ReadLine().AsCharPtr());
 						}
 
 						// close reader
