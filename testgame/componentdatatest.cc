@@ -10,34 +10,17 @@
 #include "testbase/testrunner.h"
 #include "basegamefeature/managers/entitymanager.h"
 #include "basegamefeature/managers/componentmanager.h"
-#include "game/component/attribute.h"
 #include "game/component/component.h"
 
 using namespace Game;
 using namespace Core;
-
-namespace Attr
-{
-	__DeclareAttribute(GuidTest, Util::Guid, 'gTst', Attr::ReadWrite, Util::Guid());
-	__DeclareAttribute(StringTest, Util::String, 'sTst', Attr::ReadWrite, "Default string");
-	__DeclareAttribute(IntTest, int, 'iTst', Attr::ReadWrite, int(1337));
-	__DeclareAttribute(FloatTest, float, 'fTst', Attr::ReadWrite, float(10.0f));
-} // namespace Attr
-
 
 namespace Test
 {
 
 __ImplementClass(Test::CompDataTest, 'CDTS', Test::TestCase);
 
-typedef Game::Component<
-	Attr::GuidTest,
-	Attr::StringTest,
-	Attr::IntTest,
-	Attr::FloatTest
-> ComponentAllocator;
-
-static ComponentAllocator* component;
+static TestComponentAllocator* component;
 
 enum AttributeNames
 {
@@ -57,7 +40,7 @@ __ImplementComponent(TestComponent, component);
 void
 TestComponent::Create()
 {
-	component = new ComponentAllocator();
+	component = new TestComponentAllocator();
 	Game::ComponentManager::Instance()->RegisterComponent(component, "TestComponent", 'TSTC');
 
 }
@@ -137,7 +120,7 @@ CompDataTest::Run()
 		}
 
 		// Third iteration register
-		for (size_t i = 0; i < 5000; i++)
+		for (size_t i = 5000; i < 10000; i++)
 		{
 			entity = manager->NewEntity();
 			entities.Append(entity);
@@ -195,6 +178,34 @@ CompDataTest::Run()
 		component->DestroyAll();
 
 		VERIFY(component->NumRegistered() == 0);
+
+        // Make sure that the order of deregistrations does not matter
+        entities.Clear();
+        for (size_t i = 0; i < 5; i++)
+        {
+            entities.Append(EntityManager::Instance()->NewEntity());
+            component->RegisterEntity(entities[i]);
+        }
+        
+        component->DeregisterEntity(entities[0]);
+        component->DeregisterEntity(entities[2]);
+        component->DeregisterEntity(entities[4]);
+
+        // Clear freeids list
+        // Might crash here if we don't handle it correctly
+        component->Optimize();
+
+        component->DeregisterEntity(entities[3]);
+        component->Optimize();
+        component->DeregisterEntity(entities[1]);
+        component->Optimize();
+
+        // Passed crashtest!
+        VERIFY(true);
+
+        component->Clean();
+        component->DeregisterAllInactive();
+        component->DestroyAll();
 
 		TestComponent::Discard();
 
