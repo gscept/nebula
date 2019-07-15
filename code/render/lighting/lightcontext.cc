@@ -203,8 +203,16 @@ LightContext::Create()
 	clusterState.clusterLightBuffer = CreateShaderRWBuffer(rwb2Info);
 
 	clusterState.classificationShader = ShaderServer::Instance()->GetShader("shd:lights_cluster_classification.fxb");
+	IndexT indexBufferSlot = ShaderGetResourceSlot(clusterState.classificationShader, "Output");
+	IndexT lightsBufferSlot = ShaderGetResourceSlot(clusterState.classificationShader, "Input");
+
 	clusterState.classificationProgram = ShaderGetProgram(clusterState.classificationShader, 0);
 	clusterState.clusterResourceTable = ShaderCreateResourceTable(clusterState.classificationShader, NEBULA_BATCH_GROUP);
+
+	// update resource table
+	ResourceTableSetShaderRWBuffer(clusterState.clusterResourceTable, { clusterState.clusterIndexBuffer, indexBufferSlot, 0, false, false, -1, 0 });
+	ResourceTableSetShaderRWBuffer(clusterState.clusterResourceTable, { clusterState.clusterLightBuffer, lightsBufferSlot, 0, false, false, -1, 0 });
+	ResourceTableCommitChanges(clusterState.clusterResourceTable);
 
 	_CreateContext();
 }
