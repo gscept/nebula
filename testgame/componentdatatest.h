@@ -13,6 +13,15 @@
 #include "game/component/component.h"
 #include "game/entity.h"
 
+
+namespace Attr
+{
+    __DeclareAttribute(GuidTest, Util::Guid, 'gTst', Attr::ReadWrite, Util::Guid());
+    __DeclareAttribute(StringTest, Util::String, 'sTst', Attr::ReadWrite, "Default string");
+    __DeclareAttribute(IntTest, int, 'iTst', Attr::ReadWrite, int(1337));
+    __DeclareAttribute(FloatTest, float, 'fTst', Attr::ReadWrite, float(10.0f));
+} // namespace Attr
+
 //------------------------------------------------------------------------------
 namespace Attr
 {
@@ -24,6 +33,12 @@ namespace Attr
 
 namespace Test
 {
+typedef Game::Component<
+        Attr::GuidTest,
+        Attr::StringTest,
+        Attr::IntTest,
+        Attr::FloatTest
+> TestComponentAllocator;
 
 
 class TestComponentAllocator : public Game::Component<
@@ -39,7 +54,7 @@ class TestComponentAllocator : public Game::Component<
 
 class TestComponent
 {
-	__DeclareComponent(TestComponent)
+    __DeclareComponent(TestComponent)
 };
 
 class CompDataTest : public TestCase

@@ -27,7 +27,7 @@ TestRunner::AttachTestCase(TestCase* testCase)
 //------------------------------------------------------------------------------
 /**
 */
-void
+bool
 TestRunner::Run()
 {
     IndexT i;
@@ -72,6 +72,7 @@ TestRunner::Run()
         }
     }
     DUMP_STACK_CHECKPOINTS;
+    return numFailed == 0;
 }
 
 }; // namespace Test

@@ -3,6 +3,7 @@
 //  (C) 2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
+#include "game/entity.h"
 #include "componentdatatest.h"
 #include "foundation.h"
 #include "core/coreserver.h"
@@ -42,7 +43,7 @@ TestComponent::Create()
 {
 	component = new TestComponentAllocator();
 	Game::ComponentManager::Instance()->RegisterComponent(component, "TestComponent", 'TSTC');
-
+    
 }
 
 //------------------------------------------------------------------------------
@@ -81,7 +82,7 @@ CompDataTest::Run()
 			instance = component->GetInstance(entity);
 			component->data.Get<STRING>(instance) = "First iteration of entities";
 			component->data.Get<INT>(instance) = 1;
-			component->data.Get<FLOAT>(instance) = float(i * 4);
+			component->data.Get<FLOAT>(instance) = float(i * 4);            
 		}
 
 		uint32_t previd = component->GetOwner(0).id;

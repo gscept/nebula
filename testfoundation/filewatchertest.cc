@@ -35,7 +35,7 @@ FileWatcherTest::Run()
     bool fileAdded = false;
     bool fileModified = false;
     bool fileDeleted = false;
-    watcher->Watch("temp", false, [&fileAdded,&fileModified,&fileDeleted](IO::WatchEvent const& ev)
+    watcher->Watch("temp", false, WatchFlags(WatchFlags::Creation | WatchFlags::Write), [&fileAdded,&fileModified,&fileDeleted](IO::WatchEvent const& ev)
     {
         switch(ev.type)
         {

@@ -24,7 +24,7 @@ public:
     /// attach a test
     void AttachTestCase(TestCase* testCase);
     /// run the tests
-    void Run();
+    bool Run();
 
 private:
     Util::Array<Ptr<TestCase> > testCases;
