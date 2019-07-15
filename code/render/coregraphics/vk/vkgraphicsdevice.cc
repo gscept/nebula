@@ -1472,19 +1472,19 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	state.numActiveThreads = 0;
 
 	_setup_timer(state.DebugTimer);
-	_setup_counter(state.NumImageBytesAllocated);
+	_setup_grouped_counter(state.NumImageBytesAllocated, "GraphicsDevice");
 	_begin_counter(state.NumImageBytesAllocated);
-	_setup_counter(state.NumBufferBytesAllocated);
+	_setup_grouped_counter(state.NumBufferBytesAllocated, "GraphicsDevice");
 	_begin_counter(state.NumBufferBytesAllocated);
-	_setup_counter(state.NumBytesAllocated);
+	_setup_grouped_counter(state.NumBytesAllocated, "GraphicsDevice");
 	_begin_counter(state.NumBytesAllocated);
-	_setup_counter(state.NumPipelinesBuilt);
+	_setup_grouped_counter(state.NumPipelinesBuilt, "GraphicsDevice");
 	_begin_counter(state.NumPipelinesBuilt);
-    _setup_counter(state.GraphicsDeviceNumComputes);
+    _setup_grouped_counter(state.GraphicsDeviceNumComputes, "GraphicsDevice");
     _begin_counter(state.GraphicsDeviceNumComputes);
-    _setup_counter(state.GraphicsDeviceNumPrimitives);
+    _setup_grouped_counter(state.GraphicsDeviceNumPrimitives, "GraphicsDevice");
     _begin_counter(state.GraphicsDeviceNumPrimitives);
-    _setup_counter(state.GraphicsDeviceNumDrawCalls);
+    _setup_grouped_counter(state.GraphicsDeviceNumDrawCalls, "GraphicsDevice");
     _begin_counter(state.GraphicsDeviceNumDrawCalls);
 
 	// yay, Vulkan!
