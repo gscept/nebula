@@ -238,7 +238,6 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 			int32_t mipHeight = (int32_t)Math::n_max(1.0f, Math::n_floor(height / Math::n_pow(2, (float)j)));
 			int32_t mipDepth = (int32_t)Math::n_max(1.0f, Math::n_floor(depth / Math::n_pow(2, (float)j)));
 
-			//memcpy((uint8_t*)mappedData + layout.offset, buf, size);
 			info.extent.width = mipWidth;
 			info.extent.height = mipHeight;
 			info.extent.depth = 1;

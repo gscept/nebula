@@ -31,7 +31,6 @@ group(INSTANCE_GROUP) shared varblock LocalLightBlock [ string Visibility = "VS|
 	
 	textureHandle ProjectionTexture;
 	uint Flags;
-	uint2 _pad0;
 };
 
 group(INSTANCE_GROUP) shared varblock LocalLightShadowBlock [string Visibility = "VS|PS"; ]
@@ -40,10 +39,8 @@ group(INSTANCE_GROUP) shared varblock LocalLightShadowBlock [string Visibility =
 	vec4 ShadowConstants = vec4(100.0f, 100.0f, 0.003f, 1024.0f);
 	float ShadowBias;
 	float ShadowIntensity = 1.0f;
-	vec2 _pad1;
-	mat4 ShadowProjTransform;
 	textureHandle ShadowMap; // for spot-lights, an atlas of shadows, for point-lights, a cube of shadows
-	vec3 _pad3;
+	mat4 ShadowProjTransform;	
 };
 
 samplerstate PointLightTextureSampler

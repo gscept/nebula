@@ -918,14 +918,14 @@ Present(const CoreGraphics::WindowId& id)
 #endif
 
 	// submit a sync point for the display, transfer bit is viable since we blit to the texture
-	VkPipelineStageFlags flags = VK_PIPELINE_STAGE_TRANSFER_BIT;
+	VkPipelineStageFlags flags[] = { VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT };
 	const VkSubmitInfo submitInfo =
 	{
 		VK_STRUCTURE_TYPE_SUBMIT_INFO,
 		nullptr,
 		2,
 		semaphores,
-		&flags,
+		flags,
 		0, 
 		nullptr,
 		0,
