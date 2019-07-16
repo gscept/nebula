@@ -69,10 +69,6 @@ private:
 	Util::FixedPool<uint32_t> texture3DPool;
 	Util::FixedPool<uint32_t> textureCubePool;
 
-	VkDescriptorImageInfo texture2DDescriptors[MAX_2D_TEXTURES];
-	VkDescriptorImageInfo texture2DMSDescriptors[MAX_2D_MS_TEXTURES];
-	VkDescriptorImageInfo texture3DDescriptors[MAX_3D_TEXTURES];
-	VkDescriptorImageInfo textureCubeDescriptors[MAX_CUBE_TEXTURES];
 	Util::FixedPool<uint32_t> image2DPool;
 	Util::FixedPool<uint32_t> image2DMSPool;
 	Util::FixedPool<uint32_t> image3DPool;

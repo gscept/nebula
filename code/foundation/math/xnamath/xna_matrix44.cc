@@ -83,4 +83,5 @@ matrix44::ispointinside(const float4& p, const matrix44& m)
             float4::less4_any(float4(p1.z(), p1.w(), 0, 0), 
             float4(-p1.w(), p1.z(), 0, 0)));
 }
+
 } // namespace Math

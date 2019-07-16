@@ -1012,7 +1012,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		state.extensions[state.usedExtensions++] = requiredExtensions[i];
 	}
 
-	const char* layers[] = { "VK_LAYER_KHRONOS_validation" };
+	const char* layers[] = { "VK_LAYER_KHRONOS_validation", "VK_LAYER_LUNARG_assistant_layer" };
 	int numLayers = 0;
 	const char** usedLayers = nullptr;
 
@@ -1020,7 +1020,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	if (info.enableValidation)
 	{
 		usedLayers = &layers[0];
-		numLayers = 1;
+		numLayers = 2;
 	}
 	else
 	{
@@ -1032,7 +1032,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	if (info.enableValidation)
 	{
 		usedLayers = &layers[0];
-		numLayers = 1;
+		numLayers = 2;
 		state.extensions[state.usedExtensions++] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
 	}
 #endif

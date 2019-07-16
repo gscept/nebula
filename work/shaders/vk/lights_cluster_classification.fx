@@ -96,7 +96,7 @@ void csTileCulling()
         int il = int(gl_LocalInvocationIndex + i);
 		if (il < NumInputLights)
 		{
-            	const Light light = lights[il]; 
+            const Light light = lights[il]; 
         }
     }
 }

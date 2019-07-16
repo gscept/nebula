@@ -95,7 +95,7 @@ struct
 	static const SizeT IndicesPerCluster = 32;
 
 	// these are used to update the light clustering
-	alignas(16) LightsClusterClassification::Light lights[2048];
+	LightsClusterClassification::Light lights[2048];
 
 } clusterState;
 
@@ -444,12 +444,12 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIn
 	// update constant buffer
 	Ids::Id32 globalLightId = genericLightAllocator.Get<TypedLightId>(cid.id);
 	Shared::PerTickParams& params = ShaderServer::Instance()->GetTickParams();
-	(genericLightAllocator.Get<Color>(cid.id) * genericLightAllocator.Get<Intensity>(cid.id)).store(params.GlobalLightColor);
-	Math::matrix44::transform(globalLightAllocator.Get<GlobalLightDirection>(globalLightId), viewTransform).store(params.GlobalLightDir);
-	globalLightAllocator.Get<GlobalLightDirection>(globalLightId).store(params.GlobalLightDirWorldspace);
-	globalLightAllocator.Get<GlobalLightBacklight>(globalLightId).store(params.GlobalBackLightColor);
+	Math::float4::storeu(genericLightAllocator.Get<Color>(cid.id) * genericLightAllocator.Get<Intensity>(cid.id), params.GlobalLightColor);
+	Math::float4::storeu(globalLightAllocator.Get<GlobalLightDirection>(globalLightId), params.GlobalLightDirWorldspace);
+	Math::float4::storeu(globalLightAllocator.Get<GlobalLightBacklight>(globalLightId), params.GlobalBackLightColor);
+	Math::float4::storeu(globalLightAllocator.Get<GlobalLightAmbient>(globalLightId), params.GlobalAmbientLightColor);
+	Math::float4::storeu(Math::matrix44::transform(globalLightAllocator.Get<GlobalLightDirection>(globalLightId), viewTransform), params.GlobalLightDir);
 	params.GlobalBackLightOffset = globalLightAllocator.Get<GlobalLightBacklightOffset>(globalLightId);
-	globalLightAllocator.Get<GlobalLightAmbient>(globalLightId).store(params.GlobalAmbientLightColor);
 
 	// go through and update local lights
 	const Util::Array<LightType>& types    = genericLightAllocator.GetArray<Type>();
@@ -489,9 +489,10 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIn
 			// allocate memory
 			uint offset = CoreGraphics::AllocateGraphicsConstantBufferMemory(MainThreadConstantBuffer, sizeof(Lights::LocalLightBlock));
 			alignas(16) Lights::LocalLightBlock block;
-			(color[i] * intensity[i]).store(block.LightColor);
-			trans.store(block.LightTransform);
-			posAndRange.store(block.LightPosRange);
+			Math::float4::storeu(color[i] * intensity[i], block.LightColor);
+			Math::float4::storeu(posAndRange, block.LightPosRange);
+			Math::matrix44::storeu(trans, block.LightTransform);
+			block.ProjectionTexture = tex != TextureId::Invalid() ? TextureGetBindlessHandle(tex) : 0;
 			block.Flags = flags;
 
 			// update buffer
@@ -507,7 +508,7 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIn
 			auto tex = spotLightAllocator.Get<SpotLightProjectionTexture>(typeIds[i]);
 			auto invViewProj = spotLightAllocator.Get<SpotLightInvViewProjection>(typeIds[i]);
 
-			uint flags = USE_PROJECTION_TEX_BITFLAG;
+			uint flags = 0;
 
 			Math::float4 posAndRange = Math::matrix44::transform(trans.get_position(), viewTransform);
 			posAndRange.w() = 1 / trans.get_zaxis().length();
@@ -518,17 +519,23 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIn
 				flags |= USE_SHADOW_BITFLAG;
 			}
 
+			// check if we should use projection
+			if (tex != TextureId::Invalid())
+			{
+				flags |= USE_PROJECTION_TEX_BITFLAG;
+			}
+
 			// update projection transform
 			Math::matrix44 fromViewToLightProj = Math::matrix44::multiply(invViewTransform, invViewProj);
 
 			// allocate memory
 			uint offset = CoreGraphics::AllocateGraphicsConstantBufferMemory(MainThreadConstantBuffer, sizeof(Lights::LocalLightBlock));
 			alignas(16) Lights::LocalLightBlock block;
-			(color[i] * intensity[i]).store(block.LightColor);
-			trans.store(block.LightTransform);
-			posAndRange.store(block.LightPosRange);
-			fromViewToLightProj.store(block.LightProjTransform);
-			block.ProjectionTexture = TextureGetBindlessHandle(tex);
+			Math::float4::storeu(color[i] * intensity[i], block.LightColor);
+			Math::float4::storeu(posAndRange, block.LightPosRange);
+			Math::matrix44::storeu(trans, block.LightTransform);
+			Math::matrix44::storeu(fromViewToLightProj, block.LightProjTransform);
+			block.ProjectionTexture = tex != TextureId::Invalid() ? TextureGetBindlessHandle(tex) : 0;
 			block.Flags = flags;
 
 			// update buffer
@@ -549,7 +556,7 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIn
 				auto trans = pointLightAllocator.Get<PointLightTransform>(typeIds[i]);
 				Math::float4 posAndRange = Math::matrix44::transform(trans.get_position(), viewTransform);
 				posAndRange.w() = 1 / trans.get_zaxis().length();
-				posAndRange.storeu(clusterState.lights[i].position);
+				Math::float4::storeu(posAndRange, clusterState.lights[i].position);
 			}
 			break;
 
@@ -558,8 +565,8 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIn
 				auto trans = spotLightAllocator.Get<SpotLightTransform>(typeIds[i]);
 				Math::float4 posAndRange = Math::matrix44::transform(trans.get_position(), viewTransform);
 				posAndRange.w() = 1 / trans.get_zaxis().length();
-				posAndRange.storeu(clusterState.lights[i].position);
-				trans.get_zaxis().store3(clusterState.lights[i].forward);
+				Math::float4::storeu(posAndRange, clusterState.lights[i].position);
+				Math::float4::store3u(trans.get_zaxis(), clusterState.lights[i].forward);
 			}
 			break;
 		}
