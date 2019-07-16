@@ -1458,14 +1458,20 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	state.currentPipelineInfo.pColorBlendState = &state.blendInfo;
 
 	// construct queues
-	VkQueryPoolCreateInfo queryInfos[NumCoreGraphicsQueryTypes] = 
-	{ 
-		VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, 
-		nullptr, 
-		0, 
-		VK_QUERY_TYPE_MAX_ENUM, 
-		1000 * info.numBufferedFrames,  // create 1000 queries per frame
-		0 };
+	VkQueryPoolCreateInfo queryInfos[NumCoreGraphicsQueryTypes]; 
+	
+	for (i = 0; i < NumCoreGraphicsQueryTypes; i++)
+	{
+		queryInfos[i] = { 
+			VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, 
+			nullptr, 
+			0, 
+			VK_QUERY_TYPE_MAX_ENUM, 
+			1000u * info.numBufferedFrames,  // create 1000 queries per frame
+			0
+		};
+	}
+	
 	queryInfos[CoreGraphicsQueryType::OcclusionQuery].queryType = VK_QUERY_TYPE_OCCLUSION;
 	queryInfos[CoreGraphicsQueryType::Timestamp].queryType = VK_QUERY_TYPE_TIMESTAMP;
 	queryInfos[CoreGraphicsQueryType::PipelineStatisticsGraphics].queryType = VK_QUERY_TYPE_PIPELINE_STATISTICS;
@@ -1728,6 +1734,9 @@ BeginFrame(IndexT frameIndex)
 	for (i = 0; i < CoreGraphicsQueryType::NumCoreGraphicsQueryTypes; i++)
 	{
 		queries.queryStartIndex[i] = 1000 * state.currentBufferedFrameIndex;
+
+		// reset query pools
+		// vkCmdResetQueryPool(GetMainBuffer(GraphicsQueueType), state.queryPools[i], queries.queryStartIndex[i], 1000);
 	}
 
 	state.gfxPrevSemaphore = SemaphoreId::Invalid();
@@ -2863,6 +2872,7 @@ BeginQuery(CoreGraphicsQueueType queue, CoreGraphicsQueryType type)
 	// get current query, and get the index
 	Vulkan::GraphicsDeviceState::QueryRingBuffer& queries = state.queryIndices[state.currentBufferedFrameIndex];
 	IndexT idx = queries.queryStartIndex[type]++;
+	n_assert(idx < 1000);
 
 	// start query
 	VkCommandBuffer buf = GetMainBuffer(queue);
