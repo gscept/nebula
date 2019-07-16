@@ -106,6 +106,16 @@ enum CoreGraphicsGlobalConstantBufferType
 	NumConstantBufferTypes
 };
 
+enum CoreGraphicsQueryType
+{
+	OcclusionQuery,
+	Timestamp,
+	PipelineStatisticsGraphics,
+	PipelineStatisticsCompute,
+
+	NumCoreGraphicsQueryTypes
+};
+
 //------------------------------------------------------------------------------
 /**
 */
