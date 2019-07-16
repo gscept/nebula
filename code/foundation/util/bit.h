@@ -19,7 +19,7 @@ namespace Util
 constexpr uint64 
 SetBit(uint64 mask, uint8 bit)
 {
-	return mask | (1 << bit);
+	return mask | (1ULL << bit);
 }
 
 //------------------------------------------------------------------------------
@@ -28,7 +28,7 @@ SetBit(uint64 mask, uint8 bit)
 constexpr bool
 HasBit(uint64 mask, uint8 bit)
 {
-	return mask & (1 << bit);
+	return mask & (1ULL << bit);
 }
 
 //------------------------------------------------------------------------------
@@ -73,7 +73,7 @@ HasBit(uint16 mask, uint8 bit)
 constexpr int64
 SetBit(int64 mask, uint8 bit)
 {
-	return mask | (1 << bit);
+	return mask | (1LL << bit);
 }
 
 //------------------------------------------------------------------------------
@@ -82,7 +82,7 @@ SetBit(int64 mask, uint8 bit)
 constexpr bool
 HasBit(int64 mask, uint8 bit)
 {
-	return mask & (1 << bit);
+	return mask & (1LL << bit);
 }
 
 //------------------------------------------------------------------------------
@@ -119,6 +119,17 @@ constexpr bool
 HasBit(int16 mask, uint8 bit)
 {
 	return mask & (1 << bit);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+constexpr uint32
+CountBits(uint32 i)
+{
+	i = i - ((i >> 1) & 0x55555555);
+	i = (i & 0x33333333) + ((i >> 2) & 0x33333333);
+	return (((i + (i >> 4)) & 0x0F0F0F0F) * 0x01010101) >> 24;
 }
 
 } // namespace Util

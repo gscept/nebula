@@ -353,6 +353,7 @@
       texture: "__WINDOW__"
     },
     blit: {
+      name: "CopyToWindow",
       inputs: [
         {
           name: "ScreenBuffer",
@@ -375,7 +376,6 @@
           aspect: "Color"
         }
       ],
-      name: "CopyToWindow",
       from: "ScreenBuffer",
       to: "__WINDOW__"
     },

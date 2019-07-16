@@ -79,6 +79,13 @@ public:
     void load(const scalar* ptr);
     /// load content from unaligned memory
     void loadu(const scalar* ptr);
+	/// load 3 floats into x,y,z from unaligned memory
+	void load_float3(const void* ptr, float w);
+	/// load from UByte4N packed vector, move range to -1..+1
+	void load_ubyte4n_signed(const void* ptr, float w);
+	/// load from Byte4N packed vector
+	void load_byte4n(const void* ptr, float w);
+
     /// write content to 16-byte-aligned memory through the write cache
     void store(scalar* ptr) const;
     /// write content to unaligned memory through the write cache
@@ -89,18 +96,23 @@ public:
 	void storesi(int* ptr) const;
     /// stream content to 16-byte-aligned memory circumventing the write-cache
     void stream(scalar* ptr) const;
-
-    /// load 3 floats into x,y,z from unaligned memory
-    void load_float3(const void* ptr, float w);
-    /// load from UByte4N packed vector, move range to -1..+1
-    void load_ubyte4n_signed(const void* ptr, float w);
-	/// load from Byte4N packed vector
-	void load_byte4n(const void* ptr, float w);
-
 	/// write content to 16-byte-aligned memory through the write cache
 	void store3(scalar* ptr) const;
 	/// write content to unaligned memory through the write cache
 	void storeu3(scalar* ptr) const;
+
+	/// store vector to pointer
+	static void store(const float4& vec, scalar* dst);
+	/// store vector to unaligned pointer
+	static void storeu(const float4& vec, scalar* dst);
+	/// store 3 components of vector to pointer
+	static void store3(const float4& vec, scalar* dst);
+	/// store 3 components of vector to unaligned pointer
+	static void store3u(const float4& vec, scalar* dst);
+	/// store vector as uint to pointer
+	static void storeui(const float4& vec, uint* dst);
+	/// store vector as sint to pointer
+	static void storesi(const float4& vec, int* dst);
 
     /// set content
     void set(scalar x, scalar y, scalar z, scalar w);
@@ -427,6 +439,60 @@ __forceinline void
 float4::storeu3(scalar* ptr) const
 {
 	DirectX::XMStoreFloat3((DirectX::XMFLOAT3*)ptr, this->vec);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline void
+float4::store(const float4& vec, scalar* dst)
+{
+	DirectX::XMStoreFloat4A((DirectX::XMFLOAT4A*)dst, vec.vec);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline void
+float4::storeu(const float4& vec, scalar* dst)
+{
+	DirectX::XMStoreFloat4((DirectX::XMFLOAT4*)dst, vec.vec);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline void
+float4::store3(const float4& vec, scalar* dst)
+{
+	DirectX::XMStoreFloat3A((DirectX::XMFLOAT3A*)dst, vec.vec);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline void
+float4::store3u(const float4& vec, scalar* dst)
+{
+	DirectX::XMStoreFloat3((DirectX::XMFLOAT3*)dst, vec.vec);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline void
+float4::storeui(const float4& vec, uint* dst)
+{
+	DirectX::XMStoreUInt4((DirectX::XMUINT4*)dst, vec.vec);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline void
+float4::storesi(const float4& vec, int* dst)
+{
+	DirectX::XMStoreSInt4((DirectX::XMINT4*)dst, vec.vec);
 }
 
 //------------------------------------------------------------------------------

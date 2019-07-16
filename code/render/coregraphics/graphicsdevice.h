@@ -222,6 +222,13 @@ bool GetRenderWireframe();
 /// set the render as wireframe flag
 void SetRenderWireframe(bool b);
 
+/// insert timestamp, returns handle to timestamp, which can be retreived on the next N'th frame where N is the number of buffered frames
+IndexT Timestamp(CoreGraphicsQueueType queue, const CoreGraphics::BarrierStage stage);
+/// start query
+IndexT BeginQuery(CoreGraphicsQueryType type);
+/// end query
+void EndQuery(CoreGraphicsQueueType queue, CoreGraphicsQueryType type, IndexT query);
+
 /// copy data between textures
 void Copy(const CoreGraphics::TextureId from, Math::rectangle<SizeT> fromRegion, const CoreGraphics::TextureId to, Math::rectangle<SizeT> toRegion);
 /// copy data between render textures
