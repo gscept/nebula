@@ -20,9 +20,9 @@ GameServer::GameServer() :
     isStarted(false)
 {
     __ConstructSingleton;
-	_setup_timer(GameServerOnBeginFrame);
-    _setup_timer(GameServerOnFrame);
-	_setup_timer(GameServerOnEndFrame);
+	_setup_grouped_timer(GameServerOnBeginFrame, "Game Subsystem");
+	_setup_grouped_timer(GameServerOnFrame, "Game Subsystem");
+	_setup_grouped_timer(GameServerOnEndFrame, "Game Subsystem");
 }
 
 //------------------------------------------------------------------------------

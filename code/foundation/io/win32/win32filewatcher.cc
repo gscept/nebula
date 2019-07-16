@@ -11,6 +11,7 @@ static void
 QueryDirectoryChanges(IO::EventHandlerData& data)
 {
     IO::FileWatcherPlatform& p = data.data;
+    Memory::Clear(&p.overlapped, sizeof(p.overlapped));
     bool res = ReadDirectoryChangesW(p.dirHandle, p.buffer, sizeof(p.buffer), p.recursive, p.notifyFilter, NULL, &p.overlapped, NULL);
     n_assert(res);
 }
@@ -24,7 +25,7 @@ namespace IO
 void
 FileWatcherImpl::CreateWatcher(EventHandlerData& data)
 {
-    Util::String local = IO::AssignRegistry::Instance()->ResolveAssigns(data.folder).LocalPath();
+    Util::String local = IO::AssignRegistry::Instance()->ResolveAssigns(data.folder.AsString()).LocalPath();
     FileWatcherPlatform& p = data.data;
 
     ushort widePath[1024];
@@ -38,13 +39,13 @@ FileWatcherImpl::CreateWatcher(EventHandlerData& data)
         FILE_FLAG_BACKUP_SEMANTICS| FILE_FLAG_OVERLAPPED, 
         NULL);
     n_assert(p.dirHandle != INVALID_HANDLE_VALUE);
-    p.overlapped.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+    //p.overlapped.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 	p.notifyFilter = 0;
 	p.notifyFilter |= data.flags & NameChanged ? FILE_NOTIFY_CHANGE_DIR_NAME | FILE_NOTIFY_CHANGE_FILE_NAME : 0;
 	p.notifyFilter |= data.flags & SizeChanged ? FILE_NOTIFY_CHANGE_SIZE : 0;
 	p.notifyFilter |= data.flags & Write ? FILE_NOTIFY_CHANGE_LAST_WRITE : 0;
 	p.notifyFilter |= data.flags & Access ? FILE_NOTIFY_CHANGE_LAST_ACCESS : 0;
-	p.notifyFilter |= data.flags & Creation ? FILE_NOTIFY_CHANGE_CREATION : 0;
+	p.notifyFilter |= data.flags & Creation ? FILE_NOTIFY_CHANGE_CREATION | FILE_NOTIFY_CHANGE_FILE_NAME : 0;
     QueryDirectoryChanges(data);
 }
 
@@ -55,9 +56,12 @@ void
 FileWatcherImpl::Update(EventHandlerData& data)
 {
 	FileWatcherPlatform& p = data.data;
-	QueryDirectoryChanges(data);
+    DWORD bytes;
+    bool res = GetOverlappedResult(p.dirHandle, &p.overlapped, &bytes, false);
+	
+    if (!res) return;
 
-	WaitForSingleObject(p.overlapped.hEvent, INFINITE);
+    	
 	FILE_NOTIFY_INFORMATION* ev = (FILE_NOTIFY_INFORMATION*)p.buffer;
 	do
 	{
@@ -93,6 +97,7 @@ FileWatcherImpl::Update(EventHandlerData& data)
 			break;
 		ev = (FILE_NOTIFY_INFORMATION*)((char*)ev + ev->NextEntryOffset);
 	} while (true);
+    QueryDirectoryChanges(data);
 }
 
 //------------------------------------------------------------------------------

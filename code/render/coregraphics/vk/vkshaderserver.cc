@@ -118,26 +118,22 @@ VkShaderServer::RegisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics
 {
 	uint32_t idx;
 	IndexT var;
-	VkDescriptorImageInfo* img;
 	switch (type)
 	{
 	case Texture2D:
 		n_assert(!this->texture2DPool.IsFull());
 		idx = this->texture2DPool.Alloc();
 		var = this->texture2DTextureVar;
-		img = &this->texture2DDescriptors[idx];
 		break;
 	case Texture3D:
 		n_assert(!this->texture3DPool.IsFull());
 		idx = this->texture3DPool.Alloc();
 		var = this->texture3DTextureVar;
-		img = &this->texture3DDescriptors[idx];
 		break;
 	case TextureCube:
 		n_assert(!this->textureCubePool.IsFull());
 		idx = this->textureCubePool.Alloc();
 		var = this->textureCubeTextureVar;
-		img = &this->textureCubeDescriptors[idx];
 		break;
 	}
 
@@ -166,26 +162,22 @@ VkShaderServer::RegisterTexture(const CoreGraphics::RenderTextureId& tex, bool d
 {
 	uint32_t idx;
 	IndexT var;
-	VkDescriptorImageInfo* img;
 	switch (type)
 	{
 	case Texture2D:
 		n_assert(!this->texture2DPool.IsFull());
 		idx = this->texture2DPool.Alloc();
 		var = this->texture2DTextureVar;
-		img = &this->texture2DDescriptors[idx];
 		break;
 	case Texture3D:
 		n_assert(!this->texture3DPool.IsFull());
 		idx = this->texture3DPool.Alloc();
 		var = this->texture3DTextureVar;
-		img = &this->texture3DDescriptors[idx];
 		break;
 	case TextureCube:
 		n_assert(!this->textureCubePool.IsFull());
 		idx = this->textureCubePool.Alloc();
 		var = this->textureCubeTextureVar;
-		img = &this->textureCubeDescriptors[idx];
 		break;
 	}
 
@@ -214,26 +206,22 @@ VkShaderServer::RegisterTexture(const CoreGraphics::ShaderRWTextureId& tex, Core
 {
 	uint32_t idx;
 	IndexT var;
-	VkDescriptorImageInfo* img;
 	switch (type)
 	{
 	case Texture2D:
 		n_assert(!this->texture2DPool.IsFull());
 		idx = this->texture2DPool.Alloc();
 		var = this->texture2DTextureVar;
-		img = &this->texture2DDescriptors[idx];
 		break;
 	case Texture3D:
 		n_assert(!this->texture3DPool.IsFull());
 		idx = this->texture3DPool.Alloc();
 		var = this->texture3DTextureVar;
-		img = &this->texture3DDescriptors[idx];
 		break;
 	case TextureCube:
 		n_assert(!this->textureCubePool.IsFull());
 		idx = this->textureCubePool.Alloc();
 		var = this->textureCubeTextureVar;
-		img = &this->textureCubeDescriptors[idx];
 		break;
 	}
 

@@ -19,6 +19,7 @@
 #include "vkbarrier.h"
 #include "coregraphics/displaydevice.h"
 #include "app/application.h"
+#include "util/bit.h"
 #include "io/ioserver.h"
 #include "vkevent.h"
 #include "vkfence.h"
@@ -111,8 +112,8 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 	};
 
 	Util::FixedArray<ConstantsRingBuffer> frameSubmissions;
-	uint maxNumFrameSubmissions;
-	uint32_t currentFrameSubmission;
+	uint maxNumBufferedFrames;
+	uint32_t currentBufferedFrameIndex;
 
 	VkExtensionProperties physicalExtensions[64];
 
@@ -157,6 +158,14 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 	VkPipelineLayout currentPipelineLayout;
 	VkPipeline currentPipeline;
 	VkPipelineInfoBits currentPipelineBits;
+
+	VkQueryPool queryPools[NumCoreGraphicsQueryTypes];
+	VkQueryPool timestampPool;
+	struct QueryRingBuffer
+	{
+		IndexT queryStartIndex[CoreGraphicsQueryType::NumCoreGraphicsQueryTypes];
+	};
+	Util::FixedArray<QueryRingBuffer> queryIndices;
 
 	static const SizeT MaxClipSettings = 8;
 	uint32_t numViewports;
@@ -848,7 +857,7 @@ EndDrawThreads()
 		vkCmdExecuteCommands(GetMainBuffer(GraphicsQueueType), state.numActiveThreads, state.dispatchableDrawCmdBuffers);
 
 		// get current submission
-		Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.frameSubmissions[state.currentFrameSubmission];
+		Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.frameSubmissions[state.currentBufferedFrameIndex];
 		VkDevice dev = state.devices[state.currentDevice];
 
 		// destroy command buffers
@@ -1012,7 +1021,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		state.extensions[state.usedExtensions++] = requiredExtensions[i];
 	}
 
-	const char* layers[] = { "VK_LAYER_KHRONOS_validation" };
+	const char* layers[] = { "VK_LAYER_KHRONOS_validation", "VK_LAYER_LUNARG_assistant_layer" };
 	int numLayers = 0;
 	const char** usedLayers = nullptr;
 
@@ -1020,7 +1029,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	if (info.enableValidation)
 	{
 		usedLayers = &layers[0];
-		numLayers = 1;
+		numLayers = 2;
 	}
 	else
 	{
@@ -1032,7 +1041,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	if (info.enableValidation)
 	{
 		usedLayers = &layers[0];
-		numLayers = 1;
+		numLayers = 2;
 		state.extensions[state.usedExtensions++] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
 	}
 #endif
@@ -1340,7 +1349,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 
 #pragma pop_macro("CreateSemaphore")
 
-	state.maxNumFrameSubmissions = info.numBufferedFrames;
+	state.maxNumBufferedFrames = info.numBufferedFrames;
 
 	Util::String threadName;
 	for (i = 0; i < state.NumDrawThreads; i++)
@@ -1440,6 +1449,40 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	state.currentPipelineInfo.basePipelineIndex = -1;
 	state.currentPipelineInfo.pColorBlendState = &state.blendInfo;
 
+	// construct queues
+	VkQueryPoolCreateInfo queryInfos[NumCoreGraphicsQueryTypes]; 
+	
+	for (i = 0; i < NumCoreGraphicsQueryTypes; i++)
+	{
+		queryInfos[i] = { 
+			VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, 
+			nullptr, 
+			0, 
+			VK_QUERY_TYPE_MAX_ENUM, 
+			1000u * info.numBufferedFrames,  // create 1000 queries per frame
+			0
+		};
+	}
+	
+	queryInfos[CoreGraphicsQueryType::OcclusionQuery].queryType = VK_QUERY_TYPE_OCCLUSION;
+	queryInfos[CoreGraphicsQueryType::Timestamp].queryType = VK_QUERY_TYPE_TIMESTAMP;
+	queryInfos[CoreGraphicsQueryType::PipelineStatisticsGraphics].queryType = VK_QUERY_TYPE_PIPELINE_STATISTICS;
+	queryInfos[CoreGraphicsQueryType::PipelineStatisticsGraphics].pipelineStatistics =
+		VK_QUERY_PIPELINE_STATISTIC_VERTEX_SHADER_INVOCATIONS_BIT |
+		VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT |
+		VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT |
+		VK_QUERY_PIPELINE_STATISTIC_FRAGMENT_SHADER_INVOCATIONS_BIT;
+	queryInfos[CoreGraphicsQueryType::PipelineStatisticsCompute].queryType = VK_QUERY_TYPE_PIPELINE_STATISTICS;
+	queryInfos[CoreGraphicsQueryType::PipelineStatisticsCompute].pipelineStatistics =
+		VK_QUERY_PIPELINE_STATISTIC_COMPUTE_SHADER_INVOCATIONS_BIT;
+
+	for (i = 0; i < NumCoreGraphicsQueryTypes; i++)
+	{
+		VkResult res = vkCreateQueryPool(state.devices[state.currentDevice], &queryInfos[i], nullptr, &state.queryPools[i]);
+		n_assert(res == VK_SUCCESS);
+	}
+	state.queryIndices.Resize(info.numBufferedFrames);
+
 	state.inputInfo.pNext = nullptr;
 	state.inputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
 	state.inputInfo.flags = 0;
@@ -1463,20 +1506,20 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	state.currentDrawThread = 0;
 	state.numActiveThreads = 0;
 
-	_setup_timer(state.DebugTimer);
-	_setup_counter(state.NumImageBytesAllocated);
+	_setup_grouped_timer(state.DebugTimer, "GraphicsDevice");
+	_setup_grouped_counter(state.NumImageBytesAllocated, "GraphicsDevice");
 	_begin_counter(state.NumImageBytesAllocated);
-	_setup_counter(state.NumBufferBytesAllocated);
+	_setup_grouped_counter(state.NumBufferBytesAllocated, "GraphicsDevice");
 	_begin_counter(state.NumBufferBytesAllocated);
-	_setup_counter(state.NumBytesAllocated);
+	_setup_grouped_counter(state.NumBytesAllocated, "GraphicsDevice");
 	_begin_counter(state.NumBytesAllocated);
-	_setup_counter(state.NumPipelinesBuilt);
+	_setup_grouped_counter(state.NumPipelinesBuilt, "GraphicsDevice");
 	_begin_counter(state.NumPipelinesBuilt);
-    _setup_counter(state.GraphicsDeviceNumComputes);
+    _setup_grouped_counter(state.GraphicsDeviceNumComputes, "GraphicsDevice");
     _begin_counter(state.GraphicsDeviceNumComputes);
-    _setup_counter(state.GraphicsDeviceNumPrimitives);
+    _setup_grouped_counter(state.GraphicsDeviceNumPrimitives, "GraphicsDevice");
     _begin_counter(state.GraphicsDeviceNumPrimitives);
-    _setup_counter(state.GraphicsDeviceNumDrawCalls);
+    _setup_grouped_counter(state.GraphicsDeviceNumDrawCalls, "GraphicsDevice");
     _begin_counter(state.GraphicsDeviceNumDrawCalls);
 
 	// yay, Vulkan!
@@ -1584,7 +1627,7 @@ DestroyGraphicsDevice()
 SizeT 
 GetNumBufferedFrames()
 {
-	return state.maxNumFrameSubmissions;
+	return state.maxNumBufferedFrames;
 }
 
 //------------------------------------------------------------------------------
@@ -1593,7 +1636,7 @@ GetNumBufferedFrames()
 IndexT 
 GetBufferedFrameIndex()
 {
-	return state.currentFrameSubmission;
+	return state.currentBufferedFrameIndex;
 }
 
 //------------------------------------------------------------------------------
@@ -1660,23 +1703,32 @@ BeginFrame(IndexT frameIndex)
 	state.inBeginFrame = true;
 
 	// update current state submission
-	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.frameSubmissions[state.currentFrameSubmission];
+	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.frameSubmissions[state.currentBufferedFrameIndex];
 
 	// set to next frame submission
-	state.currentFrameSubmission = (state.currentFrameSubmission + 1) % state.maxNumFrameSubmissions;
+	state.currentBufferedFrameIndex = (state.currentBufferedFrameIndex + 1) % state.maxNumBufferedFrames;
 
 	// cycle submissions, will wait for the fence to finish
-	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& nextSub = state.frameSubmissions[state.currentFrameSubmission];
+	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& nextSub = state.frameSubmissions[state.currentBufferedFrameIndex];
 	state.gfxFence = CoreGraphics::SubmissionContextNextCycle(state.gfxSubmission);
 	state.computeFence = CoreGraphics::SubmissionContextNextCycle(state.computeSubmission);
 
 	IndexT i;
 	for (i = 0; i < CoreGraphicsGlobalConstantBufferType::NumConstantBufferTypes; i++)
 	{
-		nextSub.cboGfxStartAddress[i] = state.globalGraphicsConstantBufferMaxValue[i] * state.currentFrameSubmission;
-		nextSub.cboGfxEndAddress[i] = state.globalGraphicsConstantBufferMaxValue[i] * state.currentFrameSubmission;
-		nextSub.cboComputeStartAddress[i] = state.globalComputeConstantBufferMaxValue[i] * state.currentFrameSubmission;
-		nextSub.cboComputeEndAddress[i] = state.globalComputeConstantBufferMaxValue[i] * state.currentFrameSubmission;
+		nextSub.cboGfxStartAddress[i] = state.globalGraphicsConstantBufferMaxValue[i] * state.currentBufferedFrameIndex;
+		nextSub.cboGfxEndAddress[i] = state.globalGraphicsConstantBufferMaxValue[i] * state.currentBufferedFrameIndex;
+		nextSub.cboComputeStartAddress[i] = state.globalComputeConstantBufferMaxValue[i] * state.currentBufferedFrameIndex;
+		nextSub.cboComputeEndAddress[i] = state.globalComputeConstantBufferMaxValue[i] * state.currentBufferedFrameIndex;
+	}
+
+	Vulkan::GraphicsDeviceState::QueryRingBuffer& queries = state.queryIndices[state.currentBufferedFrameIndex];
+	for (i = 0; i < CoreGraphicsQueryType::NumCoreGraphicsQueryTypes; i++)
+	{
+		queries.queryStartIndex[i] = 1000 * state.currentBufferedFrameIndex;
+
+		// reset query pools
+		// vkCmdResetQueryPool(GetMainBuffer(GraphicsQueueType), state.queryPools[i], queries.queryStartIndex[i], 1000);
 	}
 
 	state.gfxPrevSemaphore = SemaphoreId::Invalid();
@@ -2077,19 +2129,19 @@ PushConstants(ShaderPipeline pipeline, uint offset, uint size, byte* data)
 uint 
 AllocateGraphicsConstantBufferMemory(CoreGraphicsGlobalConstantBufferType type, uint size)
 {
-	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.frameSubmissions[state.currentFrameSubmission];
+	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.frameSubmissions[state.currentBufferedFrameIndex];
 
 	// no matter how we spin it
 	uint ret = sub.cboGfxEndAddress[type];
 	uint newEnd = Math::n_align(ret + size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
 
 	// if we have to wrap around, or we are fingering on the range of the next frame submission buffer...
-	if (newEnd >= state.globalGraphicsConstantBufferMaxValue[type] * (state.currentFrameSubmission + 1))
+	if (newEnd >= state.globalGraphicsConstantBufferMaxValue[type] * (state.currentBufferedFrameIndex + 1))
 	{
 		n_error("Over allocation of graphics constant memory! Memory will be overwritten!\n");
 
 		// return the beginning of the buffer, will definitely stomp the memory!
-		ret = state.globalGraphicsConstantBufferMaxValue[type] * state.currentFrameSubmission;
+		ret = state.globalGraphicsConstantBufferMaxValue[type] * state.currentBufferedFrameIndex;
 		newEnd = Math::n_align(ret + size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
 	}
 
@@ -2114,19 +2166,19 @@ GetGraphicsConstantBuffer(CoreGraphicsGlobalConstantBufferType type)
 uint 
 AllocateComputeConstantBufferMemory(CoreGraphicsGlobalConstantBufferType type, uint size)
 {
-	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.frameSubmissions[state.currentFrameSubmission];
+	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.frameSubmissions[state.currentBufferedFrameIndex];
 
 	// no matter how we spin it
 	uint ret = sub.cboComputeEndAddress[type];
 	uint newEnd = Math::n_align(ret + size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
 
 	// if we have to wrap around, or we are fingering on the range of the next frame submission buffer...
-	if (newEnd > state.globalComputeConstantBufferMaxValue[type] * (state.currentFrameSubmission + 1))
+	if (newEnd > state.globalComputeConstantBufferMaxValue[type] * (state.currentBufferedFrameIndex + 1))
 	{
 		n_error("Over allocation of compute constant memory! Memory will be overwritten!\n");
 
 		// return the beginning of the buffer, will definitely stomp the memory!
-		ret = state.globalComputeConstantBufferMaxValue[type] * state.currentFrameSubmission;
+		ret = state.globalComputeConstantBufferMaxValue[type] * state.currentBufferedFrameIndex;
 		newEnd = Math::n_align(ret + size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
 	}
 
@@ -2587,7 +2639,7 @@ EndFrame(IndexT frameIndex)
 
 	state.inBeginFrame = false;
 
-	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.frameSubmissions[state.currentFrameSubmission];
+	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.frameSubmissions[state.currentBufferedFrameIndex];
 	VkDevice dev = state.devices[state.currentDevice];
 
 	// flush constant buffer memory
@@ -2778,6 +2830,61 @@ void
 SetRenderWireframe(bool b)
 {
 	state.renderWireframe = b;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+IndexT 
+Timestamp(CoreGraphicsQueueType queue, const CoreGraphics::BarrierStage stage)
+{
+	// convert to vulkan flags, force bits set to only be 1
+	VkPipelineStageFlags flags = VkTypes::AsVkPipelineFlags(stage);
+	n_assert(Util::CountBits(flags) == 1);
+
+	// get current query, and get the index
+	Vulkan::GraphicsDeviceState::QueryRingBuffer& queries = state.queryIndices[state.currentBufferedFrameIndex];
+	IndexT idx = queries.queryStartIndex[CoreGraphicsQueryType::Timestamp]++;
+
+	// write time stamp
+	VkCommandBuffer buf = GetMainBuffer(queue);
+	vkCmdWriteTimestamp(buf, (VkPipelineStageFlagBits)flags, state.queryPools[CoreGraphicsQueryType::Timestamp], idx);
+	return idx;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+IndexT 
+BeginQuery(CoreGraphicsQueueType queue, CoreGraphicsQueryType type)
+{
+	n_assert(type != CoreGraphicsQueryType::Timestamp);
+
+	// get current query, and get the index
+	Vulkan::GraphicsDeviceState::QueryRingBuffer& queries = state.queryIndices[state.currentBufferedFrameIndex];
+	IndexT idx = queries.queryStartIndex[type]++;
+	n_assert(idx < 1000);
+
+	// start query
+	VkCommandBuffer buf = GetMainBuffer(queue);
+	vkCmdBeginQuery(buf, state.queryPools[type], idx, VK_QUERY_CONTROL_PRECISE_BIT);
+	return idx;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+EndQuery(CoreGraphicsQueueType queue, CoreGraphicsQueryType type, IndexT query)
+{
+	n_assert(type != CoreGraphicsQueryType::Timestamp);
+
+	// get current query, and get the index
+	Vulkan::GraphicsDeviceState::QueryRingBuffer& queries = state.queryIndices[state.currentBufferedFrameIndex];
+
+	// start query
+	VkCommandBuffer buf = GetMainBuffer(queue);
+	vkCmdEndQuery(buf, state.queryPools[type], query);
 }
 
 //------------------------------------------------------------------------------

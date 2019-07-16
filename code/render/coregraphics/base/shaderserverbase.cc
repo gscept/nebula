@@ -95,8 +95,7 @@ ShaderServerBase::Open()
 #endif
 
 	// create file watcher
-	this->shaderFileWatcher = IO::FileWatcher::Create();
-	this->shaderFileWatcher->Watch("home:work/shaders/vk", true, IO::WatchFlags(NameChanged | SizeChanged | Write), [this](IO::WatchEvent const& event)
+    FileWatcher::Instance()->Watch("home:work/shaders/vk", true, IO::WatchFlags(NameChanged | SizeChanged | Write), [this](IO::WatchEvent const& event)
 		{
 			if (event.type == WatchEventType::Modified || event.type == WatchEventType::NameChange &&
 				!event.file.EndsWithString("TMP") &&
@@ -147,15 +146,7 @@ ShaderServerBase::Open()
 				}
 			}
 		});
-
-	// start file watcher thread
-	this->fileWatcherThread = IO::FileWatcherThread::Create();
-	this->fileWatcherThread->SetWatcher(this->shaderFileWatcher);
-	this->fileWatcherThread->SetPriority(Threading::Thread::Low);
-	this->fileWatcherThread->SetThreadAffinity(System::Cpu::Core1);
-	this->fileWatcherThread->SetName("Shader File Watcher Thread");
-	this->fileWatcherThread->Start();
-
+	
     // create standard shader for access to shared variables
     if (this->shaders.Contains(ResourceName("shd:shared.fxb")))
     {

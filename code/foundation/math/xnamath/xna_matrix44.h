@@ -57,6 +57,11 @@ public:
     /// stream content to 16-byte-aligned memory circumventing the write-cache
     void stream(scalar* ptr) const;
 
+	/// write to pointer
+	static void store(const matrix44& mat, scalar* ptr);
+	/// write to unaligned pointer
+	static void storeu(const matrix44& mat, scalar* ptr);
+
     /// set content
     void set(float4 const &row0, float4 const &row1, float4 const &row2, float4 const &row3);
     /// write access to x component
@@ -323,6 +328,30 @@ matrix44::storeu(scalar* ptr) const
     DirectX::XMStoreFloat4((DirectX::XMFLOAT4*)(ptr + 4), this->mx.r[1]);
     DirectX::XMStoreFloat4((DirectX::XMFLOAT4*)(ptr + 8), this->mx.r[2]);
     DirectX::XMStoreFloat4((DirectX::XMFLOAT4*)(ptr + 12), this->mx.r[3]);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline void
+matrix44::store(const matrix44 & mat, scalar * ptr)
+{
+	DirectX::XMStoreFloat4A((DirectX::XMFLOAT4A*)ptr, mat.mx.r[0]);
+	DirectX::XMStoreFloat4A((DirectX::XMFLOAT4A*)(ptr + 4), mat.mx.r[1]);
+	DirectX::XMStoreFloat4A((DirectX::XMFLOAT4A*)(ptr + 8), mat.mx.r[2]);
+	DirectX::XMStoreFloat4A((DirectX::XMFLOAT4A*)(ptr + 12), mat.mx.r[3]);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline void
+matrix44::storeu(const matrix44& mat, scalar* ptr)
+{
+	DirectX::XMStoreFloat4((DirectX::XMFLOAT4*)ptr, mat.mx.r[0]);
+	DirectX::XMStoreFloat4((DirectX::XMFLOAT4*)(ptr + 4), mat.mx.r[1]);
+	DirectX::XMStoreFloat4((DirectX::XMFLOAT4*)(ptr + 8), mat.mx.r[2]);
+	DirectX::XMStoreFloat4((DirectX::XMFLOAT4*)(ptr + 12), mat.mx.r[3]);
 }
 
 //------------------------------------------------------------------------------
