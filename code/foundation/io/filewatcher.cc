@@ -122,9 +122,7 @@ FileWatcher::CheckQueue()
 */
 void 
 FileWatcher::DoWork()
-{
-	Ptr<IO::IoServer> serv = IO::IoServer::Create();
-    
+{	   
 	while (!this->ThreadStopRequested())
 	{        
         this->CheckQueue();
