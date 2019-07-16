@@ -155,7 +155,8 @@ GameApplication::Open()
 #endif
 
         // setup profiling stuff
-        _setup_timer(GameApplicationFrameTimeAll);
+	    _setup_grouped_timer(GameApplicationFrameTimeAll, "Game Subsystem");
+        
 
         return true;
     }
@@ -215,11 +216,7 @@ GameApplication::Run()
 {
     while (true)
     {
-        _start_timer(GameApplicationFrameTimeAll);
-
 		this->StepFrame();
-        
-        _stop_timer(GameApplicationFrameTimeAll);
     }
 }
 
@@ -229,6 +226,8 @@ GameApplication::Run()
 void
 GameApplication::StepFrame()
 {
+    _start_timer(GameApplicationFrameTimeAll);
+
 #if __NEBULA_HTTP__
 	this->httpServerProxy->HandlePendingRequests();
 #endif
@@ -251,6 +250,8 @@ GameApplication::StepFrame()
 	this->gameServer->OnEndFrame();
     
     GameApplication::FrameIndex++;
+
+    _stop_timer(GameApplicationFrameTimeAll);
 }
 
 //------------------------------------------------------------------------------
