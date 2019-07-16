@@ -9,6 +9,7 @@
 */
 #include "testbase/testcase.h"
 #include "game/attr/attrid.h"
+#include "game/component/attribute.h"
 #include "game/component/component.h"
 #include "game/entity.h"
 
@@ -22,6 +23,14 @@ namespace Attr
 } // namespace Attr
 
 //------------------------------------------------------------------------------
+namespace Attr
+{
+    __DeclareAttribute(GuidTest, Util::Guid, 'gTst', Attr::ReadWrite, Util::Guid());
+    __DeclareAttribute(StringTest, Util::String, 'sTst', Attr::ReadWrite, "Default string");
+    __DeclareAttribute(IntTest, int, 'iTst', Attr::ReadWrite, int(1337));
+    __DeclareAttribute(FloatTest, float, 'fTst', Attr::ReadWrite, float(10.0f));
+} // namespace Attr
+
 namespace Test
 {
 typedef Game::Component<
@@ -30,6 +39,18 @@ typedef Game::Component<
         Attr::IntTest,
         Attr::FloatTest
 > TestComponentAllocator;
+
+
+class TestComponentAllocator : public Game::Component<
+    Attr::GuidTest,
+    Attr::StringTest,
+    Attr::IntTest,
+    Attr::FloatTest
+>
+{
+
+};
+
 
 class TestComponent
 {
