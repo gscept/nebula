@@ -10,7 +10,7 @@
 #include "core/types.h"
 #include "core/refcounted.h"
 #include "core/singleton.h"
-#include "util/string.h"
+#include "util/stringatom.h"
 #include "util/dictionary.h"
 #include "io/uri.h"
 #include "util/delegate.h"
@@ -50,7 +50,7 @@ enum WatchFlags
 struct WatchEvent
 {
     WatchEventType type;
-    Util::String folder;
+    Util::StringAtom folder;
     Util::String file;
 };
 using WatchDelegate = std::function<void(WatchEvent const&)>;
@@ -59,61 +59,44 @@ using WatchDelegate = std::function<void(WatchEvent const&)>;
 struct EventHandlerData
 {
     WatchDelegate callback;
-    Util::String folder;
+    Util::StringAtom folder;
 	WatchFlags flags;
     FileWatcherPlatform data;
 };
 
 //------------------------------------------------------------------------------
-class FileWatcher : public Core::RefCounted
+class FileWatcher : public Threading::Thread
 {
     __DeclareClass(FileWatcher);
-    __DeclareSingleton(FileWatcher);
+    __DeclareInterfaceSingleton(FileWatcher);
 
 public:
     /// constructor
     FileWatcher();
     /// destructor
     virtual ~FileWatcher();
+
+    /// starts watcher thread
+    void Setup();
+
+    void SetSpeed(double speed);
+    
+    /// Register Folder
+    void Watch(Util::StringAtom const& folder, bool recursive, WatchFlags flags, WatchDelegate const& callback);
+    /// unregister
+    void Unwatch(Util::StringAtom const& folder);
+        
+private:
     /// checks for file modifications and calls registered callbacks
     void Update();
-    /// Register Folder
-    void Watch(Util::String const& folder, bool recursive, WatchFlags flags, WatchDelegate const& callback);
-    /// unregister
-    void Unwatch(Util::String const& folder);
-
-private:
-   
-	WatchFlags watcherFlags;
-    Util::Dictionary<Util::String, EventHandlerData> watchers;    
+    ///
+    void CheckQueue();
+    ///
+    void DoWork();
+   	
+    Util::Dictionary<Util::StringAtom, EventHandlerData> watchers;    
+    Threading::SafeQueue< EventHandlerData> watcherQueue;
+    double interval;
 };
-
-//------------------------------------------------------------------------------
-class FileWatcherThread : public Threading::Thread
-{
-	__DeclareClass(FileWatcherThread);
-public:
-	/// constructor
-	FileWatcherThread();
-	/// destructor
-	virtual ~FileWatcherThread();
-
-	/// set file watcher object
-	void SetWatcher(const Ptr<FileWatcher>& watcher);
-private:
-	/// this method runs in the thread context
-	void DoWork() override;
-
-	Ptr<FileWatcher> watcher;
-};
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void 
-FileWatcherThread::SetWatcher(const Ptr<FileWatcher>& watcher)
-{
-	this->watcher = watcher;
-}
 
 } // namespace IO

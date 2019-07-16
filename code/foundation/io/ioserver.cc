@@ -74,6 +74,9 @@ IoServer::IoServer() :
         this->archiveFileSystem = ArchiveFileSystem::Instance();
     }
     ArchiveCriticalSection.Leave();
+
+    this->watcher = FileWatcher::Create();
+    this->watcher->Setup();
 }
 
 //------------------------------------------------------------------------------
@@ -81,6 +84,7 @@ IoServer::IoServer() :
 */
 IoServer::~IoServer()
 {
+    this->watcher = nullptr;
     // unmount standard archives if this is the last instance
     if (StandardArchivesMounted && (this->archiveFileSystem->GetRefCount() == 1))
     {

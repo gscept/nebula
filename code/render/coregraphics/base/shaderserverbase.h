@@ -113,9 +113,7 @@ protected:
     CoreGraphics::ShaderIdentifier shaderIdentifierRegistry;
     CoreGraphics::ShaderFeature shaderFeature;
     CoreGraphics::ShaderFeature::Mask curShaderFeatureBits;
-	Util::Dictionary<Resources::ResourceName, CoreGraphics::ShaderId> shaders;
-	Ptr<IO::FileWatcherThread> fileWatcherThread;
-	Ptr<IO::FileWatcher> shaderFileWatcher;
+	Util::Dictionary<Resources::ResourceName, CoreGraphics::ShaderId> shaders;		
 	Threading::SafeQueue<Resources::ResourceName> pendingShaderReloads;
 	CoreGraphics::ShaderId sharedVariableShader;
     Ids::Id32 objectIdShaderVar;

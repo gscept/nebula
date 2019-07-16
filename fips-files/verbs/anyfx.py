@@ -17,8 +17,12 @@ def run(fips_dir, proj_dir, args) :
     if len(args) > 0 :
         noun = args[0]
         if noun == 'setup' :
+            force = False
+            if len(args) > 1 :
+                if args[1] == 'force' :
+                    force = True
             target = util.fix_path(proj_dir + "/../fips-deploy/fips-anyfx/" + target)
-            if not os.path.isfile(target) :
+            if not os.path.isfile(target) or force:
                 log.info(log.YELLOW + "Compiling anyfxcompiler")
                 if sys.platform == "win32" :
                     subprocess.call(proj_dir + "/../fips-anyfx/anyfxcompiler/build.bat")
