@@ -95,58 +95,60 @@ ShaderServerBase::Open()
 #endif
 
 	// create file watcher
-    FileWatcher::Instance()->Watch("home:work/shaders/vk", true, IO::WatchFlags(NameChanged | SizeChanged | Write), [this](IO::WatchEvent const& event)
-		{
-			if (event.type == WatchEventType::Modified || event.type == WatchEventType::NameChange &&
-				!event.file.EndsWithString("TMP") &&
-				!event.file.EndsWithString("~"))
-			{
-				// remove file extension
-				Util::String out = event.file;
-				out.StripFileExtension();
+    if (IO::IoServer::Instance()->DirectoryExists("home:work/shaders/vk"))
+    {
+        FileWatcher::Instance()->Watch("home:work/shaders/vk", true, IO::WatchFlags(NameChanged | SizeChanged | Write), [this](IO::WatchEvent const& event)
+        {
+            if (event.type == WatchEventType::Modified || event.type == WatchEventType::NameChange &&
+                !event.file.EndsWithString("TMP") &&
+                !event.file.EndsWithString("~"))
+            {
+                // remove file extension
+                Util::String out = event.file;
+                out.StripFileExtension();
 
-				// find argument in export folder
-				Ptr<IO::Stream> file = IO::IoServer::Instance()->CreateStream(Util::String::Sprintf("bin:shaders/%s.txt", out.AsCharPtr()));
-				if (file->Open())
-				{
-					System::Process process;
+                // find argument in export folder
+                Ptr<IO::Stream> file = IO::IoServer::Instance()->CreateStream(Util::String::Sprintf("bin:shaders/%s.txt", out.AsCharPtr()));
+                if (file->Open())
+                {
+                    System::Process process;
 
-					void* buf = file->Map();
-					SizeT size = file->GetSize();
+                    void* buf = file->Map();
+                    SizeT size = file->GetSize();
 
-					// run process
-					Util::String cmd;
-					cmd.Set((const char*)buf, size);
-					process.SetWorkingDirectory(file->GetURI().LocalPath().ExtractDirName());
-					process.SetExecutable(cmd);
-					process.SetNoConsoleWindow(false);
-					Ptr<IO::MemoryStream> stream = IO::MemoryStream::Create();
-					process.SetStderrCaptureStream(stream);
+                    // run process
+                    Util::String cmd;
+                    cmd.Set((const char*)buf, size);
+                    process.SetWorkingDirectory(file->GetURI().LocalPath().ExtractDirName());
+                    process.SetExecutable(cmd);
+                    process.SetNoConsoleWindow(false);
+                    Ptr<IO::MemoryStream> stream = IO::MemoryStream::Create();
+                    process.SetStderrCaptureStream(stream);
 
-					// launch process
-					bool res = process.LaunchWait();
-					if (res)
-					{
-						Ptr<TextReader> reader = TextReader::Create();
-						reader->SetStream(stream);
-						reader->Open();
+                    // launch process
+                    bool res = process.LaunchWait();
+                    if (res)
+                    {
+                        Ptr<TextReader> reader = TextReader::Create();
+                        reader->SetStream(stream);
+                        reader->Open();
 
-						// write output from compilation
-						while (!reader->Eof())
-						{
-							Core::SysFunc::DebugOut(reader->ReadLine().AsCharPtr());
-						}
+                        // write output from compilation
+                        while (!reader->Eof())
+                        {
+                            Core::SysFunc::DebugOut(reader->ReadLine().AsCharPtr());
+                        }
 
-						// close reader
-						reader->Close();
+                        // close reader
+                        reader->Close();
 
-						// reload shader
-						this->pendingShaderReloads.Enqueue(Util::String::Sprintf("shd:%s.fxb", out.AsCharPtr()));
-					}
-				}
-			}
-		});
-	
+                        // reload shader
+                        this->pendingShaderReloads.Enqueue(Util::String::Sprintf("shd:%s.fxb", out.AsCharPtr()));
+                    }
+                }
+            }
+        });
+    }
     // create standard shader for access to shared variables
     if (this->shaders.Contains(ResourceName("shd:shared.fxb")))
     {
@@ -171,6 +173,11 @@ void
 ShaderServerBase::Close()
 {
     n_assert(this->isOpen);
+    // unwatch 
+    if (IO::IoServer::Instance()->DirectoryExists("home:work/shaders/vk"))
+    {
+        IO::FileWatcher::Instance()->Unwatch("home:work/shaders/vk");
+    }
 
     // unload all currently loaded shaders
     IndexT i;
