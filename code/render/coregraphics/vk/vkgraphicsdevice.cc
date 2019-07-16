@@ -2084,7 +2084,7 @@ AllocateGraphicsConstantBufferMemory(CoreGraphicsGlobalConstantBufferType type, 
 	uint newEnd = Math::n_align(ret + size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
 
 	// if we have to wrap around, or we are fingering on the range of the next frame submission buffer...
-	if (newEnd > state.globalGraphicsConstantBufferMaxValue[type] * (state.currentFrameSubmission + 1))
+	if (newEnd >= state.globalGraphicsConstantBufferMaxValue[type] * (state.currentFrameSubmission + 1))
 	{
 		n_error("Over allocation of graphics constant memory! Memory will be overwritten!\n");
 
