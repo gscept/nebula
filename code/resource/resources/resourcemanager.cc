@@ -68,16 +68,16 @@ ResourceManager::Close()
 	for (IndexT i = 0; i < this->pools.Size(); i++)
 	{
 		ResourcePool* pool = this->pools[i];
-		for (IndexT j = 0; j < pool->usage.Size(); j++)
-		{
-			if (pool->usage[j] != 0)
-			{
-				const Resources::ResourceName& name = pool->names[j];
-				Util::String msg = Util::String::Sprintf("Resource <%s> (id %d) from pool %d is not unloaded, usage is '%d'\n", name.Value(), j, pool->uniqueId, pool->usage[j]);
-				Core::SysFunc::DebugOut(msg.AsCharPtr());
-				hasLeaks = true;
-			}
-		}
+        for (auto & kvp : pool->ids)
+        {
+            if (pool->GetUsage(kvp.second) != 0)
+            {
+                const Resources::ResourceName& name = kvp.first;
+                Util::String msg = Util::String::Sprintf("Resource <%s> (id %d) from pool %d is not unloaded, usage is '%d'\n", name.Value(), kvp.second.resourceId, pool->uniqueId, pool->GetUsage(kvp.second));
+                Core::SysFunc::DebugOut(msg.AsCharPtr());
+                hasLeaks = true;
+            }
+        }		
 	}
 
 	if (!hasLeaks)
