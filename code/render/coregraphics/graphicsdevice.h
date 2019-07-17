@@ -50,11 +50,13 @@ struct GraphicsDeviceState
 	CoreGraphics::CommandBufferId resourceSubmissionCmdBuffer;
 	CoreGraphics::SemaphoreId resourceSubmissionSemaphore;
 	CoreGraphics::FenceId resourceSubmissionFence;
+	Threading::CriticalSection resourceSubmissionCriticalSection;
+	bool resourceSubmissionActive;
 
 	CoreGraphics::SubmissionContextId setupSubmissionContext;
 	CoreGraphics::CommandBufferId setupSubmissionCmdBuffer;
 	CoreGraphics::SemaphoreId setupSubmissionSemaphore;
-	CoreGraphics::FenceId setupSubmissionFence;
+	bool setupSubmissionActive;
 
 	CoreGraphics::SubmissionContextId gfxSubmission;
 	CoreGraphics::CommandBufferId gfxCmdBuffer;

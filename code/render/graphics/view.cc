@@ -44,7 +44,7 @@ View::BeginFrame(const IndexT frameIndex, const Timing::Time time)
 {
 	n_assert(!inBeginFrame);
 	DisplayDevice* displayDevice = DisplayDevice::Instance();
-	if (this->camera != GraphicsEntityId::Invalid() && CoreGraphics::BeginFrame(frameIndex))
+	if (this->camera != GraphicsEntityId::Invalid())
 	{
 		n_assert(this->stage.isvalid());
 		n_assert(this->script.isvalid());
@@ -80,7 +80,6 @@ void
 View::EndFrame(const IndexT frameIndex, const Timing::Time time)
 {
 	n_assert(inBeginFrame);
-	CoreGraphics::EndFrame(frameIndex);
 	inBeginFrame = false;
 }
 
