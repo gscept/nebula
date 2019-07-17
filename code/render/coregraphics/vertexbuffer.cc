@@ -33,6 +33,8 @@ CreateVertexBuffer(VertexBufferCreateInfo info)
 void
 DestroyVertexBuffer(const VertexBufferId id)
 {
+    // FIXME: shutdownrace, needs different approach
+    if(vboPool->GetRefCount())
 	vboPool->DiscardResource(id);
 }
 

@@ -331,6 +331,10 @@ JobThread::JobThread() :
 JobThread::~JobThread()
 {
 	this->commands.Clear();
+    if (this->IsRunning())
+    {
+        this->Stop();
+    }
 }
 
 //------------------------------------------------------------------------------
