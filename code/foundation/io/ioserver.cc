@@ -19,9 +19,10 @@ namespace IO
 __ImplementClass(IO::IoServer, 'IOSV', Core::RefCounted);
 __ImplementSingleton(IO::IoServer);
 
-Threading::CriticalSection IoServer::AssignCriticalSection;
-Threading::CriticalSection IoServer::SchemeCriticalSection;
-Threading::CriticalSection IoServer::ArchiveCriticalSection;
+Threading::CriticalSection IoServer::assignCriticalSection;
+Threading::CriticalSection IoServer::schemeCriticalSection;
+Threading::CriticalSection IoServer::archiveCriticalSection;
+Threading::CriticalSection IoServer::watcherCriticalSection;
 bool IoServer::StandardArchivesMounted = false;
 
 using namespace Core;
@@ -36,7 +37,7 @@ IoServer::IoServer() :
     __ConstructSingleton;
 
     // the first IoServer created sets up the global assign registry
-    AssignCriticalSection.Enter();
+    this->assignCriticalSection.Enter();
     if (!AssignRegistry::HasInstance())
     {
         this->assignRegistry = AssignRegistry::Create();
@@ -47,10 +48,10 @@ IoServer::IoServer() :
         // global assign registry already exists
         this->assignRegistry = AssignRegistry::Instance();
     }
-    AssignCriticalSection.Leave();
+    this->assignCriticalSection.Leave();
 
     // the first IoServer sets up the global scheme registry
-    SchemeCriticalSection.Enter();
+    this->schemeCriticalSection.Enter();
     if (!SchemeRegistry::HasInstance())
     {
         this->schemeRegistry = SchemeRegistry::Create();
@@ -60,9 +61,9 @@ IoServer::IoServer() :
     {
         this->schemeRegistry = SchemeRegistry::Instance();
     }    
-    SchemeCriticalSection.Leave();
+    this->schemeCriticalSection.Leave();
 
-    ArchiveCriticalSection.Enter();
+    this->archiveCriticalSection.Enter();
     if (!ArchiveFileSystem::HasInstance())
     {
         n_assert(!StandardArchivesMounted);
@@ -73,10 +74,19 @@ IoServer::IoServer() :
     {
         this->archiveFileSystem = ArchiveFileSystem::Instance();
     }
-    ArchiveCriticalSection.Leave();
+    this->archiveCriticalSection.Leave();
 
-    this->watcher = FileWatcher::Create();
-    this->watcher->Setup();
+    this->watcherCriticalSection.Enter();
+    if (!FileWatcher::HasInstance())
+    {
+        this->watcher = FileWatcher::Create();
+        this->watcher->Setup();
+    }
+    else
+    {
+        this->watcher = FileWatcher::Instance();
+    }
+    this->watcherCriticalSection.Leave();
 }
 
 //------------------------------------------------------------------------------
@@ -157,7 +167,7 @@ IoServer::IsArchiveMounted(const URI& uri) const
 void
 IoServer::MountStandardArchives()
 {
-    ArchiveCriticalSection.Enter();
+    this->archiveCriticalSection.Enter();
     n_assert(!StandardArchivesMounted);
     StandardArchivesMounted = true;
 
@@ -175,7 +185,7 @@ IoServer::MountStandardArchives()
 		this->MountArchive(platformArchivePath);
 	}
 
-    ArchiveCriticalSection.Leave();
+    this->archiveCriticalSection.Leave();
 }
 
 //------------------------------------------------------------------------------
@@ -184,7 +194,7 @@ IoServer::MountStandardArchives()
 void
 IoServer::UnmountStandardArchives()
 {
-    ArchiveCriticalSection.Enter();
+    this->archiveCriticalSection.Enter();
     n_assert(StandardArchivesMounted);
     StandardArchivesMounted = false;
 
@@ -197,7 +207,7 @@ IoServer::UnmountStandardArchives()
         this->UnmountArchive(platformArchivePath);
     }
 
-    ArchiveCriticalSection.Leave();
+    this->archiveCriticalSection.Leave();
 }
 
 //------------------------------------------------------------------------------
