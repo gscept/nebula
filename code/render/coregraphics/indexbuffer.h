@@ -29,8 +29,21 @@ struct IndexBufferCreateInfo
 	PtrDiff dataSize;
 };
 
-/// create new Index buffer with intended usage, access and CPU syncing parameters, together with size of buffer
-const IndexBufferId CreateIndexBuffer(IndexBufferCreateInfo info);
+struct IndexBufferCreateDirectInfo
+{
+	Resources::ResourceName name;
+	Util::StringAtom tag;
+	CoreGraphics::GpuBufferTypes::Access access;
+	CoreGraphics::GpuBufferTypes::Usage usage;
+	CoreGraphics::GpuBufferTypes::Syncing sync;
+	CoreGraphics::IndexType::Code type;
+	SizeT size;
+};
+
+/// create new index buffer with intended usage, access and CPU syncing parameters, together with size of buffer
+const IndexBufferId CreateIndexBuffer(const IndexBufferCreateInfo& info);
+/// create new index buffer directly
+const IndexBufferId CreateIndexBuffer(const IndexBufferCreateDirectInfo& info);
 /// destroy Index buffer
 void DestroyIndexBuffer(const IndexBufferId id);
 

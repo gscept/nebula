@@ -15,7 +15,9 @@
 enum CoreGraphicsIdType
 {
 	VertexBufferIdType,
+	VertexBufferDirectIdType,
 	IndexBufferIdType,
+	IndexBufferDirectIdType,
 	TextureIdType,
 	VertexLayoutIdType,
 	ConstantBufferIdType,
@@ -97,13 +99,20 @@ enum class CoreGraphicsImageLayout
 	Present
 };
 
-
 enum CoreGraphicsGlobalConstantBufferType
 {
 	MainThreadConstantBuffer,
 	VisibilityThreadConstantBuffer, // perform constant updates from the visibility thread (shader state node instance update for example...)
 
 	NumConstantBufferTypes
+};
+
+enum CoreGraphicsVertexBufferMemoryType
+{
+	MainThreadVertexMemoryPool,
+	VisibilityThreadVertexMemoryPool,
+
+	NumVertexBufferMemoryTypes
 };
 
 enum CoreGraphicsQueryType

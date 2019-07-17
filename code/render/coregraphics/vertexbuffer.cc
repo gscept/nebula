@@ -18,12 +18,23 @@ using namespace Ids;
 /**
 */
 const VertexBufferId
-CreateVertexBuffer(VertexBufferCreateInfo info)
+CreateVertexBuffer(const VertexBufferCreateInfo& info)
 {
 	VertexBufferId id = vboPool->ReserveResource(info.name, info.tag);
 	n_assert(id.resourceType == VertexBufferIdType);
-	if (vboPool->GetState(id) == Resources::Resource::Pending)
-		vboPool->LoadFromMemory(id, &info);
+	vboPool->LoadFromMemory(id, &info);
+	return id;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const VertexBufferId 
+CreateVertexBuffer(const VertexBufferCreateDirectInfo& info)
+{
+	VertexBufferId id = vboPool->ReserveResource(info.name, info.tag);
+	n_assert(id.resourceType == VertexBufferIdType);
+	id = vboPool->CreateVertexBufferDirect(id, info);
 	return id;
 }
 
@@ -33,7 +44,12 @@ CreateVertexBuffer(VertexBufferCreateInfo info)
 void
 DestroyVertexBuffer(const VertexBufferId id)
 {
-	vboPool->DiscardResource(id);
+	if (id.resourceType == VertexBufferIdType)
+		vboPool->DiscardResource(id);
+	else if (id.resourceType == VertexBufferDirectIdType)
+		vboPool->DestroyVertexBufferDirect(id);
+	else
+		n_error("Vertex buffer type incorrect!");
 }
 
 //------------------------------------------------------------------------------

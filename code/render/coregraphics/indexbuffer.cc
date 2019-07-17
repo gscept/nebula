@@ -26,10 +26,27 @@ CreateIndexBuffer(IndexBufferCreateInfo info)
 //------------------------------------------------------------------------------
 /**
 */
+const IndexBufferId 
+CreateIndexBuffer(const IndexBufferCreateDirectInfo& info)
+{
+	IndexBufferId id = iboPool->ReserveResource(info.name, info.tag);
+	n_assert(id.resourceType == IndexBufferIdType);
+	iboPool->LoadFromMemory(id, &info);
+	return id;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 DestroyIndexBuffer(const IndexBufferId id)
 {
-	iboPool->DiscardResource(id);
+	if (id.resourceType == IndexBufferIdType)
+		iboPool->DiscardResource(id);
+	else if (id.resourceType == IndexBufferDirectIdType)
+		iboPool->DestroyIndexBufferDirect(id);
+	else
+		n_error("Index buffer type incorrect!");
 }
 
 //------------------------------------------------------------------------------

@@ -36,6 +36,11 @@ public:
 	/// unload resource
 	void Unload(const Resources::ResourceId id);
 
+	/// create vertex buffer directly
+	CoreGraphics::IndexBufferId CreateIndexBufferDirect(const Resources::ResourceId id, const CoreGraphics::IndexBufferCreateDirectInfo& info);
+	/// destroy direct allocated vertex buffer
+	void DestroyIndexBufferDirect(const Resources::ResourceId id);
+
 	/// get index type for buffer
 	CoreGraphics::IndexType::Code GetIndexType(const CoreGraphics::IndexBufferId id);
 	/// get number of indices for buffer
@@ -43,6 +48,7 @@ public:
 private:
 
 	friend void	CoreGraphics::SetIndexBuffer(const CoreGraphics::IndexBufferId& ib, IndexT offsetIndex);
+	friend void CoreGraphics::SetIndexBuffer(const CoreGraphics::IndexBufferId& ib, IndexT offsetIndex, CoreGraphics::IndexType::Code type);
 
 	struct VkIndexBufferLoadInfo
 	{

@@ -32,8 +32,20 @@ struct VertexBufferCreateInfo
 	PtrDiff dataSize;
 };
 
+struct VertexBufferCreateDirectInfo
+{
+	Resources::ResourceName name;
+	Util::StringAtom tag;
+	CoreGraphics::GpuBufferTypes::Access access;
+	CoreGraphics::GpuBufferTypes::Usage usage;
+	CoreGraphics::GpuBufferTypes::Syncing sync;
+	SizeT size;
+};
+
 /// create new vertex buffer with intended usage, access and CPU syncing parameters, together with size of buffer
-const VertexBufferId CreateVertexBuffer(VertexBufferCreateInfo info);
+const VertexBufferId CreateVertexBuffer(const VertexBufferCreateInfo& info);
+/// create a new vertex buffer to be used directly (not as a resource)
+const VertexBufferId CreateVertexBuffer(const VertexBufferCreateDirectInfo& info);
 /// destroy vertex buffer
 void DestroyVertexBuffer(const VertexBufferId id);
 

@@ -35,6 +35,12 @@ public:
 	/// unload resource
 	void Unload(const Resources::ResourceId id) override;
 
+	/// create vertex buffer directly
+	CoreGraphics::VertexBufferId CreateVertexBufferDirect(const Resources::ResourceId id, const CoreGraphics::VertexBufferCreateDirectInfo& info);
+	/// destroy direct allocated vertex buffer
+	void DestroyVertexBufferDirect(const Resources::ResourceId id);
+
+
 	/// get number of vertices
 	const SizeT GetNumVertices(const CoreGraphics::VertexBufferId id);
 	/// get layout

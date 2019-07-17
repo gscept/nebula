@@ -223,7 +223,7 @@ ImguiContext::Create()
 
 	CoreGraphics::IndexBufferCreateInfo iboInfo = 
 	{
-		"imgui_ibo"_atm,
+		""_atm,
 		"system",
 		CoreGraphics::GpuBufferTypes::AccessWrite,
 		CoreGraphics::GpuBufferTypes::UsageDynamic,

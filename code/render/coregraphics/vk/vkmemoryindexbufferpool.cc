@@ -107,6 +107,70 @@ VkMemoryIndexBufferPool::Unload(const Resources::ResourceId id)
 //------------------------------------------------------------------------------
 /**
 */
+CoreGraphics::IndexBufferId 
+VkMemoryIndexBufferPool::CreateIndexBufferDirect(const Resources::ResourceId id, const CoreGraphics::IndexBufferCreateDirectInfo& info)
+{
+	n_assert(info.type != IndexType::None);
+	n_assert(CoreGraphics::GpuBufferTypes::UsageImmutable != info.usage);
+
+	VkIndexBufferLoadInfo& loadInfo = this->Get<0>(id);
+	VkIndexBufferRuntimeInfo& runtimeInfo = this->Get<1>(id);
+	uint32_t& mapCount = this->Get<2>(id);
+
+	loadInfo.dev = Vulkan::GetCurrentDevice();
+	uint32_t qfamily = Vulkan::GetQueueFamily(GraphicsQueueType);
+
+	// start by creating buffer
+	VkBufferCreateInfo bufinfo =
+	{
+		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+		NULL,
+		0,					// use for sparse buffers
+		info.size,
+		VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+		VK_SHARING_MODE_EXCLUSIVE,						// can only be accessed from the creator queue,
+		0,												// number of queues in family
+		nullptr											// array of queues belonging to family
+	};
+
+	VkResult err = vkCreateBuffer(loadInfo.dev, &bufinfo, NULL, &runtimeInfo.buf);
+	n_assert(err == VK_SUCCESS);
+
+	// allocate a device memory backing for this
+	uint32_t alignedSize;
+	uint32_t flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+	flags |= info.sync == CoreGraphics::GpuBufferTypes::SyncingCoherent ? VK_MEMORY_PROPERTY_HOST_COHERENT_BIT : 0;
+	VkUtilities::AllocateBufferMemory(loadInfo.dev, runtimeInfo.buf, loadInfo.mem, VkMemoryPropertyFlagBits(flags), alignedSize);
+
+	// now bind memory to buffer
+	err = vkBindBufferMemory(loadInfo.dev, runtimeInfo.buf, loadInfo.mem, 0);
+	n_assert(err == VK_SUCCESS);
+
+	// setup resource
+	loadInfo.gpuResInfo = { info.usage, info.access, info.sync };
+	loadInfo.indexCount = info.size; // fake size
+	runtimeInfo.type = info.type;
+	mapCount = 0;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+VkMemoryIndexBufferPool::DestroyIndexBufferDirect(const Resources::ResourceId id)
+{
+	VkIndexBufferLoadInfo& loadInfo = this->Get<0>(id.resourceId);
+	VkIndexBufferRuntimeInfo& runtimeInfo = this->Get<1>(id.resourceId);
+	uint32_t& mapCount = this->Get<2>(id.resourceId);
+
+	n_assert(mapCount == 0);
+	vkFreeMemory(loadInfo.dev, loadInfo.mem, nullptr);
+	vkDestroyBuffer(loadInfo.dev, runtimeInfo.buf, nullptr);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 CoreGraphics::IndexType::Code
 VkMemoryIndexBufferPool::GetIndexType(const CoreGraphics::IndexBufferId id)
 {

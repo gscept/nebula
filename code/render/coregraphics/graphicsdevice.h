@@ -25,6 +25,8 @@ struct GraphicsDeviceCreateInfo
 {
 	uint globalGraphicsConstantBufferMemorySize[NumConstantBufferTypes];
 	uint globalComputeConstantBufferMemorySize[NumConstantBufferTypes];
+	uint globalVertexBufferMemorySize[NumVertexBufferMemoryTypes];
+	uint globalIndexBufferMemorySize[NumVertexBufferMemoryTypes];
 	byte numBufferedFrames : 3;
 	bool enableValidation : 1;		// enables validation layer and writes output to console
 };
@@ -77,6 +79,13 @@ struct GraphicsDeviceState
 	uint globalComputeConstantBufferMaxValue[NumConstantBufferTypes];
 	CoreGraphics::ConstantBufferId globalComputeConstantBuffer[NumConstantBufferTypes];
 
+	uint globalVertexBufferMaxValue[NumVertexBufferMemoryTypes];
+	CoreGraphics::VertexBufferId globalVertexBuffer[NumVertexBufferMemoryTypes];
+	byte* mappedVertexBuffer[NumVertexBufferMemoryTypes];
+	uint globalIndexBufferMaxValue[NumVertexBufferMemoryTypes];
+	CoreGraphics::IndexBufferId globalIndexBuffer[NumVertexBufferMemoryTypes];
+	byte* mappedIndexBuffer[NumVertexBufferMemoryTypes];
+
 	Util::Array<Ptr<CoreGraphics::RenderEventHandler> > eventHandlers;
 	CoreGraphics::PrimitiveTopology::Code primitiveTopology;
 	CoreGraphics::PrimitiveGroup primitiveGroup;
@@ -128,6 +137,8 @@ void SetStreamVertexBuffer(IndexT streamIndex, const CoreGraphics::VertexBufferI
 void SetVertexLayout(const CoreGraphics::VertexLayoutId& vl);
 /// set current index buffer
 void SetIndexBuffer(const CoreGraphics::IndexBufferId& ib, IndexT offsetIndex);
+/// set current index buffer with index type override
+void SetIndexBuffer(const CoreGraphics::IndexBufferId& ib, IndexT offsetIndex, CoreGraphics::IndexType::Code type);
 /// set the type of topology used
 void SetPrimitiveTopology(const CoreGraphics::PrimitiveTopology::Code topo);
 /// get the type of topology used
@@ -149,6 +160,7 @@ void SetResourceTablePipeline(const CoreGraphics::ResourcePipelineId layout);
 
 /// push constants
 void PushConstants(ShaderPipeline pipeline, uint offset, uint size, byte* data);
+
 /// reserve range of graphics constant buffer memory and return offset
 uint AllocateGraphicsConstantBufferMemory(CoreGraphicsGlobalConstantBufferType type, uint size);
 /// return id to global graphics constant buffer
@@ -157,6 +169,15 @@ CoreGraphics::ConstantBufferId GetGraphicsConstantBuffer(CoreGraphicsGlobalConst
 uint AllocateComputeConstantBufferMemory(CoreGraphicsGlobalConstantBufferType type, uint size);
 /// return id to global compute constant buffer
 CoreGraphics::ConstantBufferId GetComputeConstantBuffer(CoreGraphicsGlobalConstantBufferType type);
+/// reserve range of vertex buffer memory
+uint AllocateVertexBufferMemory(CoreGraphicsVertexBufferMemoryType type, uint size);
+/// get global vertex buffer
+CoreGraphics::VertexBufferId GetVertexBuffer(CoreGraphicsVertexBufferMemoryType type);
+/// reserve range of index buffer memory
+uint AllocateIndexBufferMemory(CoreGraphicsVertexBufferMemoryType type, uint size);
+/// get global index buffer
+CoreGraphics::IndexBufferId GetIndexBuffer(CoreGraphicsVertexBufferMemoryType type);
+
 /// return resource submission context
 CoreGraphics::SubmissionContextId GetResourceSubmissionContext();
 /// return setup submission context
@@ -180,14 +201,6 @@ void SignalEvent(const CoreGraphics::EventId ev, const CoreGraphicsQueueType que
 void WaitEvent(const CoreGraphics::EventId ev, const CoreGraphicsQueueType queue);
 /// signals an event
 void ResetEvent(const CoreGraphics::EventId ev, const CoreGraphicsQueueType queue);
-/// insert a fence to be signaled in the selected queue
-void SignalFence(const CoreGraphics::FenceId fe, const CoreGraphicsQueueType queue);
-/// peek fence, returns true if fence is signaled
-bool PeekFence(const CoreGraphics::FenceId fe);
-/// reset fence
-void ResetFence(const CoreGraphics::FenceId fe);
-/// wait for a fence indefinitely (using UINT_MAX) or with a timeout, returns bool if fence was encountered
-bool WaitFence(const CoreGraphics::FenceId fe, uint64 wait);
 
 /// draw current primitives
 void Draw();
@@ -227,7 +240,7 @@ void SetRenderWireframe(bool b);
 /// insert timestamp, returns handle to timestamp, which can be retreived on the next N'th frame where N is the number of buffered frames
 IndexT Timestamp(CoreGraphicsQueueType queue, const CoreGraphics::BarrierStage stage);
 /// start query
-IndexT BeginQuery(CoreGraphicsQueryType type);
+IndexT BeginQuery(CoreGraphicsQueueType queue, CoreGraphicsQueryType type);
 /// end query
 void EndQuery(CoreGraphicsQueueType queue, CoreGraphicsQueryType type, IndexT query);
 
