@@ -122,7 +122,7 @@ FileWatcher::CheckQueue()
 */
 void 
 FileWatcher::DoWork()
-{
+{	   
 	while (!this->ThreadStopRequested())
 	{        
         this->CheckQueue();
