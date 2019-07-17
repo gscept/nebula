@@ -143,7 +143,7 @@ IdTest::Run()
 			allocator.Dealloc(ids[i]);
 		}
 
-		VERIFY(allocator.Size() == 0);
+		VERIFY(allocator.Size() - allocator.FreeIds().Size() == 0);
 	}
 }
 
