@@ -267,7 +267,7 @@ GraphicsServer::BeginFrame()
 			state->Defragment();
 	}
 
-	// begin frame, but don't really do anything yet
+	// begin frame
 	CoreGraphics::BeginFrame(this->frameIndex);
 
 	for (i = 0; i < this->contexts.Size(); i++)
@@ -378,7 +378,7 @@ void
 GraphicsServer::EndFrame()
 {
 
-	// finish the frame
+	// stop the graphics side frame
 	CoreGraphics::EndFrame(this->frameIndex);
 
 	// finish frame and prepare for the next one
