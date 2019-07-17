@@ -1352,7 +1352,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		// create VBO
 		CoreGraphics::VertexBufferCreateDirectInfo vboInfo =
 		{
-			"Global VBO"_atm,
+			Util::String::Sprintf("%s Global Vertex Buffer %d", threadName[i], i),
 			CoreGraphics::GpuBufferTypes::AccessWrite,
 			CoreGraphics::GpuBufferTypes::UsageDynamic,
 			CoreGraphics::GpuBufferTypes::SyncingCoherent | CoreGraphics::GpuBufferTypes::SyncingPersistent,
@@ -2319,7 +2319,7 @@ GetComputeConstantBuffer(CoreGraphicsGlobalConstantBufferType type)
 //------------------------------------------------------------------------------
 /**
 */
-uint 
+byte*
 AllocateVertexBufferMemory(CoreGraphicsVertexBufferMemoryType type, uint size)
 {
 	Vulkan::GraphicsDeviceState::VertexRingBuffer& sub = state.vertexBufferRings[state.currentBufferedFrameIndex];
@@ -2340,8 +2340,17 @@ AllocateVertexBufferMemory(CoreGraphicsVertexBufferMemoryType type, uint size)
 
 	// just bump the current frame submission pointer
 	sub.vboEndAddress[type] = newEnd;
+	return state.mappedVertexBuffer[type] + ret;
+}
 
-	return ret;
+//------------------------------------------------------------------------------
+/**
+*/
+uint 
+GetVertexBufferOffset(CoreGraphicsVertexBufferMemoryType type)
+{
+	Vulkan::GraphicsDeviceState::VertexRingBuffer& sub = state.vertexBufferRings[state.currentBufferedFrameIndex];
+	return sub.vboEndAddress[type];
 }
 
 //------------------------------------------------------------------------------
@@ -2356,7 +2365,7 @@ GetVertexBuffer(CoreGraphicsVertexBufferMemoryType type)
 //------------------------------------------------------------------------------
 /**
 */
-uint 
+byte*
 AllocateIndexBufferMemory(CoreGraphicsVertexBufferMemoryType type, uint size)
 {
 	Vulkan::GraphicsDeviceState::VertexRingBuffer& sub = state.vertexBufferRings[state.currentBufferedFrameIndex];
@@ -2368,7 +2377,7 @@ AllocateIndexBufferMemory(CoreGraphicsVertexBufferMemoryType type, uint size)
 	// if we have to wrap around, or we are fingering on the range of the next frame submission buffer...
 	if (newEnd >= state.globalIndexBufferMaxValue[type] * (state.currentBufferedFrameIndex + 1))
 	{
-		n_error("Over allocation of vertex buffer memory! Memory will be overwritten!\n");
+		n_error("Over allocation of index buffer memory! Memory will be overwritten!\n");
 
 		// return the beginning of the buffer, will definitely stomp the memory!
 		ret = state.globalIndexBufferMaxValue[type] * state.currentBufferedFrameIndex;
@@ -2377,8 +2386,17 @@ AllocateIndexBufferMemory(CoreGraphicsVertexBufferMemoryType type, uint size)
 
 	// just bump the current frame submission pointer
 	sub.iboEndAddress[type] = newEnd;
+	return state.mappedIndexBuffer[type] + ret;
+}
 
-	return ret;
+//------------------------------------------------------------------------------
+/**
+*/
+uint 
+GetIndexBufferOffset(CoreGraphicsVertexBufferMemoryType type)
+{
+	Vulkan::GraphicsDeviceState::VertexRingBuffer& sub = state.vertexBufferRings[state.currentBufferedFrameIndex];
+	return sub.iboEndAddress[type];
 }
 
 //------------------------------------------------------------------------------

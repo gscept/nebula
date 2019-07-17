@@ -107,8 +107,8 @@ enum CoreGraphicsGlobalConstantBufferType
 
 enum CoreGraphicsVertexBufferMemoryType
 {
-	MainThreadVertexMemoryPool,
-	VisibilityThreadVertexMemoryPool,
+	MainThreadVertexMemory,
+	VisibilityThreadVertexMemory,
 
 	NumVertexBufferMemoryTypes
 };

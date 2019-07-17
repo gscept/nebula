@@ -170,11 +170,15 @@ uint AllocateComputeConstantBufferMemory(CoreGraphicsGlobalConstantBufferType ty
 /// return id to global compute constant buffer
 CoreGraphics::ConstantBufferId GetComputeConstantBuffer(CoreGraphicsGlobalConstantBufferType type);
 /// reserve range of vertex buffer memory
-uint AllocateVertexBufferMemory(CoreGraphicsVertexBufferMemoryType type, uint size);
+byte* AllocateVertexBufferMemory(CoreGraphicsVertexBufferMemoryType type, uint size);
+/// get current offset into vertex buffer
+uint GetVertexBufferOffset(CoreGraphicsVertexBufferMemoryType type);
 /// get global vertex buffer
 CoreGraphics::VertexBufferId GetVertexBuffer(CoreGraphicsVertexBufferMemoryType type);
 /// reserve range of index buffer memory
-uint AllocateIndexBufferMemory(CoreGraphicsVertexBufferMemoryType type, uint size);
+byte* AllocateIndexBufferMemory(CoreGraphicsVertexBufferMemoryType type, uint size);
+/// get current offset into index buffer
+uint GetIndexBufferOffset(CoreGraphicsVertexBufferMemoryType type);
 /// get global index buffer
 CoreGraphics::IndexBufferId GetIndexBuffer(CoreGraphicsVertexBufferMemoryType type);
 
