@@ -158,8 +158,6 @@ GraphicsServer::Close()
 
 	if (this->graphicsDevice) CoreGraphics::DestroyGraphicsDevice();
 
-    this->debugHandler->Close();
-    this->debugHandler = nullptr;
 	// clear transforms pool
 }
 

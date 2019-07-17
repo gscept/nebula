@@ -60,8 +60,7 @@ private:
 	CoreGraphics::ConstantBinding shadowCameraBlockVar;
 	CoreGraphics::ConstantBufferId viewConstants;
 
-	Util::FixedArray<CoreGraphics::ResourceTableId> viewTables;
-	CoreGraphics::ResourceTableId viewTable;
+	Util::FixedArray<CoreGraphics::ResourceTableId> viewTables;	
 	IndexT viewConstantsSlot;
 	CoreGraphics::ResourcePipelineId tableLayout;
 };

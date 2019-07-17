@@ -71,7 +71,7 @@ StreamMeshPool::LoadFromStream(const Resources::ResourceId id, const Util::Strin
 void
 StreamMeshPool::Unload(const Resources::ResourceId id)
 {
-	n_assert(id != Ids::InvalidId24);
+	n_assert(id.resourceId != Ids::InvalidId24);
 	const MeshCreateInfo& msh = meshPool->GetSafe<0>(id.resourceId);
 
 	if (msh.indexBuffer != IndexBufferId::Invalid())

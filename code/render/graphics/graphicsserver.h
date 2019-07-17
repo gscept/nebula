@@ -125,8 +125,7 @@ private:
 	Ptr<CoreGraphics::TransformDevice> transformDevice;
 	Ptr<CoreGraphics::ShapeRenderer> shapeRenderer;
 	Ptr<CoreGraphics::TextRenderer> textRenderer;
-	Ptr<Frame::FrameServer> frameServer;
-	Ptr<Debug::DebugHandler> debugHandler;
+	Ptr<Frame::FrameServer> frameServer;	
 
 	bool isOpen;
 };

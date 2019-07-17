@@ -78,7 +78,6 @@ VkTransformDevice::Open()
 void
 VkTransformDevice::Close()
 {
-	DestroyResourceTable(this->viewTable);
 	DestroyConstantBuffer(this->viewConstants);
 }
 

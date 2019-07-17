@@ -187,6 +187,7 @@ CreateResourceTable(const ResourceTableCreateInfo& info)
 void
 DestroyResourceTable(const ResourceTableId& id)
 {
+    n_assert(id != ResourceTableId::Invalid());
 	VkDevice& dev = resourceTableAllocator.Get<0>(id.id24);
 	VkDescriptorSet& set = resourceTableAllocator.Get<1>(id.id24);
 	VkDescriptorPool& pool = resourceTableAllocator.Get<2>(id.id24);
