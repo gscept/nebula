@@ -83,7 +83,7 @@ __cdecl main()
     testRunner->AttachTestCase(Matrix44Test::Create());
     testRunner->AttachTestCase(Float4Test::Create());
     testRunner->AttachTestCase(ZipFSTest::Create());
-    testRunner->AttachTestCase(FileWatcherTest::Create());
+    //testRunner->AttachTestCase(FileWatcherTest::Create());
     testRunner->AttachTestCase(LuaServerTest::Create());
     testRunner->AttachTestCase(StreamServerTest::Create());
     testRunner->AttachTestCase(CmdLineArgsTest::Create());
