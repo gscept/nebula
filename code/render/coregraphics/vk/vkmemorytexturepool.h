@@ -107,6 +107,7 @@ VkMemoryTexturePool::Unload(const Resources::ResourceId id)
 	vkDestroyImage(loadInfo.dev, loadInfo.img, nullptr);
 	vkDestroyImageView(loadInfo.dev, runtimeInfo.view, nullptr);
 	VkShaderServer::Instance()->UnregisterTexture(runtimeInfo.bind, runtimeInfo.type);
+	this->states[id.poolId] = Resources::Resource::State::Unloaded;
 	this->LeaveGet();
 }
 

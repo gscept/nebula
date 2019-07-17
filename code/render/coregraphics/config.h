@@ -15,9 +15,7 @@
 enum CoreGraphicsIdType
 {
 	VertexBufferIdType,
-	VertexBufferDirectIdType,
 	IndexBufferIdType,
-	IndexBufferDirectIdType,
 	TextureIdType,
 	VertexLayoutIdType,
 	ConstantBufferIdType,

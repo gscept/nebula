@@ -14,7 +14,8 @@
 namespace CoreGraphics
 {
 
-RESOURCE_ID_TYPE(IndexBufferId);
+ID_24_8_TYPE(IndexBufferId);
+//RESOURCE_ID_TYPE(IndexBufferId);
 
 struct IndexBufferCreateInfo
 {
@@ -62,8 +63,5 @@ void IndexBufferUnmap(const IndexBufferId id);
 const CoreGraphics::IndexType::Code IndexBufferGetType(const IndexBufferId id);
 /// get number of indices
 const SizeT IndexBufferGetNumIndices(const IndexBufferId id);
-
-class MemoryIndexBufferPool;
-extern MemoryIndexBufferPool* iboPool;
 
 } // CoreGraphics

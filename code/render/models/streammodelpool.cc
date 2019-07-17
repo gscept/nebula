@@ -359,6 +359,8 @@ StreamModelPool::Unload(const Resources::ResourceId id)
 	this->Get<ModelNodeAllocator>(id).Release();
 	this->Get<InstanceNodeAllocator>(id).Release();
 	this->Get<RootNode>(id) = nullptr;
+
+	this->states[id.poolId] = Resources::Resource::State::Unloaded;
 }
 
 //------------------------------------------------------------------------------

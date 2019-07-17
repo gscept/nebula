@@ -17,6 +17,8 @@
 #include "vkshaderrwtexture.h"
 #include "vkshaderrwbuffer.h"
 #include "vkbarrier.h"
+#include "vkvertexbuffer.h"
+#include "vkindexbuffer.h"
 #include "coregraphics/displaydevice.h"
 #include "app/application.h"
 #include "util/bit.h"
@@ -24,8 +26,6 @@
 #include "vkevent.h"
 #include "vkfence.h"
 #include "vktypes.h"
-#include "coregraphics/memoryindexbufferpool.h"
-#include "coregraphics/memoryvertexbufferpool.h"
 #include "coregraphics/vertexsignaturepool.h"
 #include "coregraphics/glfw/glfwwindow.h"
 #include "coregraphics/displaydevice.h"
@@ -1352,8 +1352,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		// create VBO
 		CoreGraphics::VertexBufferCreateDirectInfo vboInfo =
 		{
-			Util::String::Sprintf("%s Global Vertex Buffer %d", threadName[i], i),
-			"system",
+			"Global VBO"_atm,
 			CoreGraphics::GpuBufferTypes::AccessWrite,
 			CoreGraphics::GpuBufferTypes::UsageDynamic,
 			CoreGraphics::GpuBufferTypes::SyncingCoherent | CoreGraphics::GpuBufferTypes::SyncingPersistent,
@@ -1998,14 +1997,15 @@ SetStreamVertexBuffer(IndexT streamIndex, const CoreGraphics::VertexBufferId& vb
 	{
 		VkCommandBufferThread::Command cmd;
 		cmd.type = VkCommandBufferThread::InputAssemblyVertex;
-		cmd.vbo.buffer = CoreGraphics::vboPool->allocator.Get<1>(vb.resourceId).buf;
+		cmd.vbo.buffer = VertexBufferGetVk(vb);
 		cmd.vbo.index = streamIndex;
 		cmd.vbo.offset = offsetVertexIndex;
 		PushToThread(cmd, state.currentDrawThread);
 	}
 	else
 	{
-		vkCmdBindVertexBuffers(GetMainBuffer(GraphicsQueueType), streamIndex, 1, &CoreGraphics::vboPool->allocator.Get<1>(vb.resourceId).buf, (VkDeviceSize*)&offsetVertexIndex);
+		VkBuffer buf = VertexBufferGetVk(vb);
+		vkCmdBindVertexBuffers(GetMainBuffer(GraphicsQueueType), streamIndex, 1, &buf, (VkDeviceSize*)&offsetVertexIndex);
 	}
 }
 
@@ -2030,14 +2030,14 @@ SetIndexBuffer(const CoreGraphics::IndexBufferId& ib, IndexT offsetIndex)
 	{
 		VkCommandBufferThread::Command cmd;
 		cmd.type = VkCommandBufferThread::InputAssemblyIndex;
-		cmd.ibo.buffer = CoreGraphics::iboPool->allocator.Get<1>(ib.resourceId).buf;
-		cmd.ibo.indexType = CoreGraphics::iboPool->allocator.Get<1>(ib.resourceId).type == IndexType::Index16 ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32;
+		cmd.ibo.buffer = IndexBufferGetVk(ib);
+		cmd.ibo.indexType = IndexBufferGetVkType(ib);
 		cmd.ibo.offset = offsetIndex;
 		PushToThread(cmd, state.currentDrawThread);
 	}
 	else
 	{
-		vkCmdBindIndexBuffer(GetMainBuffer(GraphicsQueueType), CoreGraphics::iboPool->allocator.Get<1>(ib.resourceId).buf, offsetIndex, CoreGraphics::iboPool->allocator.Get<1>(ib.resourceId).type == IndexType::Index16 ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32);
+		vkCmdBindIndexBuffer(GetMainBuffer(GraphicsQueueType), IndexBufferGetVk(ib), offsetIndex, IndexBufferGetVkType(ib));
 	}
 }
 
@@ -2045,20 +2045,20 @@ SetIndexBuffer(const CoreGraphics::IndexBufferId& ib, IndexT offsetIndex)
 /**
 */
 void 
-SetIndexBuffer(const CoreGraphics::IndexBufferId& ib, IndexT offsetIndex, CoreGraphics::IndexType type)
+SetIndexBuffer(const CoreGraphics::IndexBufferId& ib, IndexT offsetIndex, CoreGraphics::IndexType::Code type)
 {
 	if (state.inBeginBatch)
 	{
 		VkCommandBufferThread::Command cmd;
 		cmd.type = VkCommandBufferThread::InputAssemblyIndex;
-		cmd.ibo.buffer = CoreGraphics::iboPool->allocator.Get<1>(ib.resourceId).buf;
-		cmd.ibo.indexType = type == IndexType::Index16 ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32;
+		cmd.ibo.buffer = iboAllocator.Get<1>(ib.id24).buf;
+		cmd.ibo.indexType = IndexBufferGetVkType(ib);
 		cmd.ibo.offset = offsetIndex;
 		PushToThread(cmd, state.currentDrawThread);
 	}
 	else
 	{
-		vkCmdBindIndexBuffer(GetMainBuffer(GraphicsQueueType), CoreGraphics::iboPool->allocator.Get<1>(ib.resourceId).buf, offsetIndex, CoreGraphics::iboPool->allocator.Get<1>(ib.resourceId).type == IndexType::Index16 ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32);
+		vkCmdBindIndexBuffer(GetMainBuffer(GraphicsQueueType), IndexBufferGetVk(ib), offsetIndex, IndexBufferGetVkType(ib));
 	}
 }
 
@@ -3278,6 +3278,47 @@ ObjectSetName(const CoreGraphics::ConstantBufferId id, const Util::String& name)
 		nullptr,
 		VK_OBJECT_TYPE_IMAGE,
 		(uint64_t)Vulkan::ConstantBufferGetVk(id),
+		name.AsCharPtr()
+	};
+	VkDevice dev = GetCurrentDevice();
+	VkResult res = VkDebugObjectName(dev, &info);
+	n_assert(res == VK_SUCCESS);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<>
+void
+ObjectSetName(const CoreGraphics::VertexBufferId id, const Util::String& name)
+{
+	VkDebugUtilsObjectNameInfoEXT info =
+	{
+		VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
+		nullptr,
+		VK_OBJECT_TYPE_IMAGE,
+		(uint64_t)Vulkan::VertexBufferGetVk(id),
+		name.AsCharPtr()
+	};
+	VkDevice dev = GetCurrentDevice();
+	VkResult res = VkDebugObjectName(dev, &info);
+	n_assert(res == VK_SUCCESS);
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<>
+void
+ObjectSetName(const CoreGraphics::IndexBufferId id, const Util::String& name)
+{
+	VkDebugUtilsObjectNameInfoEXT info =
+	{
+		VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
+		nullptr,
+		VK_OBJECT_TYPE_IMAGE,
+		(uint64_t)Vulkan::IndexBufferGetVk(id),
 		name.AsCharPtr()
 	};
 	VkDevice dev = GetCurrentDevice();

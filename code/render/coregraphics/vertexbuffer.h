@@ -17,12 +17,11 @@
 namespace CoreGraphics
 {
 
-RESOURCE_ID_TYPE(VertexBufferId);
+ID_24_8_TYPE(VertexBufferId);
 
 struct VertexBufferCreateInfo
 {
-	Resources::ResourceName name;
-	Util::StringAtom tag;
+	Util::StringAtom name;
 	CoreGraphics::GpuBufferTypes::Access access;
 	CoreGraphics::GpuBufferTypes::Usage usage;
 	CoreGraphics::GpuBufferTypes::Syncing sync;
@@ -34,8 +33,7 @@ struct VertexBufferCreateInfo
 
 struct VertexBufferCreateDirectInfo
 {
-	Resources::ResourceName name;
-	Util::StringAtom tag;
+	Util::StringAtom name;
 	CoreGraphics::GpuBufferTypes::Access access;
 	CoreGraphics::GpuBufferTypes::Usage usage;
 	CoreGraphics::GpuBufferTypes::Syncing sync;

@@ -52,6 +52,7 @@ MemoryMeshPool::LoadFromMemory(const Resources::ResourceId id, const void* info)
 void
 MemoryMeshPool::Unload(const Resources::ResourceId id)
 {
+	this->states[id.poolId] = Resource::State::Unloaded;
 }
 
 //------------------------------------------------------------------------------
