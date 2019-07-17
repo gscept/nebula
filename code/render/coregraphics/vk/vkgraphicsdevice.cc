@@ -857,7 +857,6 @@ EndDrawThreads()
 		vkCmdExecuteCommands(GetMainBuffer(GraphicsQueueType), state.numActiveThreads, state.dispatchableDrawCmdBuffers);
 
 		// get current submission
-		Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.frameSubmissions[state.currentBufferedFrameIndex];
 		VkDevice dev = state.devices[state.currentDevice];
 
 		// destroy command buffers
@@ -2173,7 +2172,7 @@ AllocateComputeConstantBufferMemory(CoreGraphicsGlobalConstantBufferType type, u
 	uint newEnd = Math::n_align(ret + size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
 
 	// if we have to wrap around, or we are fingering on the range of the next frame submission buffer...
-	if (newEnd > state.globalComputeConstantBufferMaxValue[type] * (state.currentBufferedFrameIndex + 1))
+	if (newEnd >= state.globalComputeConstantBufferMaxValue[type] * (state.currentBufferedFrameIndex + 1))
 	{
 		n_error("Over allocation of compute constant memory! Memory will be overwritten!\n");
 

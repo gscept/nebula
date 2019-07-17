@@ -267,6 +267,9 @@ GraphicsServer::BeginFrame()
 			state->Defragment();
 	}
 
+	// begin frame, but don't really do anything yet
+	CoreGraphics::BeginFrame(this->frameIndex);
+
 	for (i = 0; i < this->contexts.Size(); i++)
 	{
 		if (this->contexts[i]->StageBits)
@@ -374,6 +377,10 @@ GraphicsServer::EndViews()
 void 
 GraphicsServer::EndFrame()
 {
+
+	// finish the frame
+	CoreGraphics::EndFrame(this->frameIndex);
+
 	// finish frame and prepare for the next one
 	IndexT i;
 	for (i = 0; i < this->contexts.Size(); i++)
