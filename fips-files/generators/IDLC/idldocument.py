@@ -35,7 +35,6 @@ def WriteIncludes(f, document):
 ## Write attribute library declarations to file.
 #
 def WriteAttributeLibraryDeclaration(f):
-    f.WriteLine("#include \"game/attr/attrid.h\"")
     f.WriteLine("")
 
 #------------------------------------------------------------------------------

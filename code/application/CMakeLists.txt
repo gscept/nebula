@@ -32,17 +32,7 @@ nebula_begin_module(application)
 			component.h
 			componentserialization.h
 			attribute.h
-		)
-	fips_dir(game/attr)
-		fips_files(
 			accessmode.h
-			attrexithandler.h
-			attrexithandler.cc
-			attributedefinition.h
-			attributedefinitionbase.h
-			attributedefinitionbase.cc
-			attrid.h
-			attrid.cc
 			valuetype.h
 		)
 	fips_dir(game/messaging)
