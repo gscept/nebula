@@ -64,7 +64,7 @@ CreateConstantBuffer(const ConstantBufferCreateInfo& info)
 	setup.grow = 16;
 	SizeT size = info.size;
 
-	const Util::Set<uint32_t>& queues = Vulkan::GetQueueFamilies();
+	const Util::FixedArray<uint32_t> queues = { Vulkan::GetQueueFamily(CoreGraphicsQueueType::GraphicsQueueType), Vulkan::GetQueueFamily(CoreGraphicsQueueType::ComputeQueueType) };
 	setup.info =
 	{
 		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
@@ -74,7 +74,7 @@ CreateConstantBuffer(const ConstantBufferCreateInfo& info)
 		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 		VK_SHARING_MODE_CONCURRENT,
 		(uint32_t)queues.Size(),
-		queues.KeysAsArray().Begin()
+		queues.Begin()
 	};
 	VkResult res = vkCreateBuffer(setup.dev, &setup.info, NULL, &runtime.buf);
 	n_assert(res == VK_SUCCESS);
