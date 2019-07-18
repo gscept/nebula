@@ -90,6 +90,6 @@ def help():
              "  work [working directory]\n"
              "  toolkit [nebula root/toolkit directory]\n"
              "fips nebula\n"
-             "  prints current configuration"
+             "  prints current configuration\n"
              "fips cleannidl\n"
-             "  cleans all nidl files which forces a regeneration upon compilation")
+             "  cleans all nidl files which forces a regeneration upon compilation\n")

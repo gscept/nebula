@@ -65,5 +65,5 @@ def help():
     log.info(log.YELLOW +
              "fips physx build [win-vs15,winvs16]\n"             
              "  builds physx dlls with the given toolchain\n"
-             "fips physx deploy [win-vs15,winvs16]\n"
+             "fips physx deploy\n"
              "  copys physx dlls to the projects deploy dir")
