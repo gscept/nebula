@@ -3,16 +3,20 @@
 /**
     @class Util::Delegate
     
-    Nebula delegate class, allows to store a method call into a C++ object
+    Nebula delegate class, allows to store a function, method or lambda call into a C++ object
     for later execution.
+
+    Note that this does not store any objects or capture, meaning these are extremely volatile to dangling pointers.
+    This is by design, since it allows us to have much better performance than for example std::function that does
+    expensive runtime heap allocations for storing objects and lambda capture.
 
 	Usage:
 	// 'Foo' can be a function or static method
 	Util::Delegate<int(int, float)> funcDelegate = Delegate<int(int, float)>::FromFunction<Foo>();
 	// Requires an object
     Util::Delegate<int()> methodDelegate = Delegate<int()>::FromMethod<MyClass, MyMethod>(MyObject);
-	// Can utilize closures!
-    Util::Delegate<void(int)> lambdaDelegate = [a](int b) { return a + b; };
+	// Can not utilize closures!
+    Util::Delegate<void(int)> lambdaDelegate = [](int a, int b) { return a + b; };
 
     See http://www.codeproject.com/KB/cpp/ImpossiblyFastCppDelegate.aspx
     for details.
@@ -35,14 +39,22 @@ class Delegate<RETTYPE(ARGTYPES...)>
 public:
     /// constructor
     Delegate();
-	
-	/// lambda constructor
+    /// copy constructor
+    Delegate(Delegate<RETTYPE(ARGTYPES...)> const& rhs);
+    /// move constructor
+    Delegate(Delegate<RETTYPE(ARGTYPES...)>&& rhs);
+    /// lambda constructor
 	template <typename LAMBDA>
-	Delegate(const LAMBDA& lambda);
+	Delegate(LAMBDA const& lambda);
 	
+    /// assignment operator
+    void operator=(Delegate<RETTYPE(ARGTYPES...)> const& rhs);
+    /// move operator
+    void operator=(Delegate<RETTYPE(ARGTYPES...)>&& rhs);
+
 	/// lambda assignment operator
 	template <typename LAMBDA>
-	Delegate<RETTYPE(ARGTYPES ...)>& operator=(const LAMBDA& instance);
+	Delegate<RETTYPE(ARGTYPES ...)>& operator=(LAMBDA const& instance);
 	
 	/// invokation operator
     RETTYPE operator()(ARGTYPES ... args) const;
@@ -63,7 +75,6 @@ public:
 private:
     /// method pointer typedef
 	using StubType = RETTYPE(*)(void*, ARGTYPES...);
-    //typedef void (*StubType)(void*, ARGTYPES ...);
 
     /// static method-call stub 
     template<class CLASS, RETTYPE(CLASS::*METHOD)(ARGTYPES ...)> static RETTYPE MethodStub(void* objPtr, ARGTYPES ... args);
@@ -94,10 +105,64 @@ Delegate<RETTYPE(ARGTYPES ...)>::Delegate() :
 /**
 */
 template<typename RETTYPE, typename ... ARGTYPES>
-template <typename LAMBDA>
-Delegate<RETTYPE(ARGTYPES...)>::Delegate(const LAMBDA& lambda)
+Delegate<RETTYPE(ARGTYPES ...)>::Delegate(Delegate<RETTYPE(ARGTYPES...)> const& rhs) :
+    objPtr(rhs.objPtr),
+    stubPtr(rhs.stubPtr)
 {
+
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<typename RETTYPE, typename ... ARGTYPES>
+Delegate<RETTYPE(ARGTYPES ...)>::Delegate(Delegate<RETTYPE(ARGTYPES...)>&& rhs) :
+    objPtr(rhs.objPtr),
+    stubPtr(rhs.stubPtr)
+{
+    rhs.objPtr = nullptr;
+    rhs.stubPtr = nullptr;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<typename RETTYPE, typename ... ARGTYPES>
+template <typename LAMBDA>
+Delegate<RETTYPE(ARGTYPES...)>::Delegate(LAMBDA const& lambda)
+{
+    static_assert(sizeof(LAMBDA) == 1Ui64, "Util::Delegate does accept lambdas carrying capture variables! Read the description of at the top of util/delegate.h");
 	Assign((void*)(&lambda), LambdaStub<LAMBDA>);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<typename RETTYPE, typename ... ARGTYPES>
+void
+Delegate<RETTYPE(ARGTYPES...)>::operator=(Delegate<RETTYPE(ARGTYPES...)> const& rhs)
+{
+    if (this != &rhs)
+    {
+        this->objPtr = rhs.objPtr;
+        this->stubPtr = rhs.stubPtr;
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<typename RETTYPE, typename ... ARGTYPES>
+void
+Delegate<RETTYPE(ARGTYPES...)>::operator=(Delegate<RETTYPE(ARGTYPES...)>&& rhs)
+{
+    if (this != &rhs)
+    {
+        this->objPtr = rhs.objPtr;
+        this->stubPtr = rhs.stubPtr;
+        rhs.objPtr = nullptr;
+        rhs.stubPtr = nullptr;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -106,8 +171,9 @@ Delegate<RETTYPE(ARGTYPES...)>::Delegate(const LAMBDA& lambda)
 template<typename RETTYPE, typename ... ARGTYPES>
 template <typename LAMBDA>
 Delegate<RETTYPE(ARGTYPES...)>&
-Delegate<RETTYPE(ARGTYPES...)>::operator=(const LAMBDA& instance)
+Delegate<RETTYPE(ARGTYPES...)>::operator=(LAMBDA const& instance)
 {
+    static_assert(sizeof(LAMBDA) == 1Ui64, "Util::Delegate does accept lambdas carrying capture variables! Read the description of at the top of util/delegate.h");
 	Assign((void*)(&instance), LambdaStub<LAMBDA>);
 	return *this;
 }
@@ -157,6 +223,7 @@ template<typename LAMBDA>
 Delegate<RETTYPE(ARGTYPES...)>
 Delegate<RETTYPE(ARGTYPES...)>::FromLambda(const LAMBDA & instance)
 {
+    static_assert(sizeof(LAMBDA) == 1Ui64, "Util::Delegate does accept lambdas carrying capture variables! Read the description of at the top of util/delegate.h");
 	return ((void*)(&instance), LambdaStub<LAMBDA>);
 }
 
