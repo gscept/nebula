@@ -17,8 +17,6 @@
 #include "resources/resourceid.h"
 #include "resources/resourcemanager.h"
 #include "coregraphics/shadersemantics.h"
-#include "coregraphics/memoryvertexbufferpool.h"
-#include "coregraphics/memoryindexbufferpool.h"
 
 using namespace Base;
 using namespace Threading;
@@ -84,8 +82,7 @@ VkShapeRenderer::Open()
 	comps.Append(VertexComponent(VertexComponent::Color, 0, VertexComponent::Float4, 0));
 	VertexBufferCreateInfo vboInfo = 
 	{
-		"shape_renderer_vbo",
-		"render_system"_atm,
+		"ShapeRenderer VBO"_atm,
 		CoreGraphics::GpuBufferTypes::AccessWrite,
 		CoreGraphics::GpuBufferTypes::UsageDynamic,
 		CoreGraphics::GpuBufferTypes::SyncingCoherent,

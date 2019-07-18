@@ -141,17 +141,12 @@ ENDIF()
 				graphicsdevice.h
 				imagefileformat.cc
 				imagefileformat.h
-				indexbuffer.cc
 				indexbuffer.h
 				indextype.h
-				memoryindexbufferpool.cc
-				memoryindexbufferpool.h
 				memorymeshpool.cc
 				memorymeshpool.h
 				memorytexturepool.cc
 				memorytexturepool.h
-				memoryvertexbufferpool.cc
-				memoryvertexbufferpool.h
 				mesh.cc
 				mesh.h
 				pass.h
@@ -169,7 +164,7 @@ ENDIF()
 				rendertexture.h
 				resourcetable.h
 				sampler.h
-        semaphore.h
+                semaphore.h
 				shader.cc
 				shader.h
 				shaderfeature.cc
@@ -187,7 +182,7 @@ ENDIF()
 				streammeshpool.cc
 				streammeshpool.h
 				shaderpool.cc
-        shaderpool.h
+                shaderpool.h
 				streamtexturepool.cc
 				streamtexturepool.h
 				streamtexturesaver.h
@@ -200,7 +195,6 @@ ENDIF()
 				texture.h
 				transformdevice.cc
 				transformdevice.h
-				vertexbuffer.cc
 				vertexbuffer.h
 				vertexcomponent.h
 				vertexlayout.cc
@@ -313,14 +307,12 @@ ENDIF()
 				vkevent.h
 				vkfence.cc
 				vkfence.h
+                vkgraphicsdevice.cc
 				vkgraphicsdevice.h
-				vkgraphicsdevice.cc
-				vkmemoryindexbufferpool.cc
-				vkmemoryindexbufferpool.h
+				vkindexbuffer.cc
+                vkindexbuffer.h
 				vkmemorytexturepool.cc
 				vkmemorytexturepool.h
-				vkmemoryvertexbufferpool.cc
-				vkmemoryvertexbufferpool.h
 				vkpass.cc
 				vkpass.h
 				vkpipelinedatabase.cc
@@ -367,6 +359,8 @@ ENDIF()
 				vkconstantbuffer.h
 				vkutilities.cc
 				vkutilities.h
+                vkvertexbuffer.cc
+                vkvertexbuffer.h
 				vkvertexsignaturepool.cc
 				vkvertexsignaturepool.h
 			)

@@ -17,6 +17,8 @@
 #include "vkshaderrwtexture.h"
 #include "vkshaderrwbuffer.h"
 #include "vkbarrier.h"
+#include "vkvertexbuffer.h"
+#include "vkindexbuffer.h"
 #include "coregraphics/displaydevice.h"
 #include "app/application.h"
 #include "util/bit.h"
@@ -24,8 +26,6 @@
 #include "vkevent.h"
 #include "vkfence.h"
 #include "vktypes.h"
-#include "coregraphics/memoryindexbufferpool.h"
-#include "coregraphics/memoryvertexbufferpool.h"
 #include "coregraphics/vertexsignaturepool.h"
 #include "coregraphics/glfw/glfwwindow.h"
 #include "coregraphics/displaydevice.h"
@@ -110,8 +110,18 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 		uint32_t cboComputeStartAddress[CoreGraphicsGlobalConstantBufferType::NumConstantBufferTypes];
 		uint32_t cboComputeEndAddress[CoreGraphicsGlobalConstantBufferType::NumConstantBufferTypes];
 	};
+	Util::FixedArray<ConstantsRingBuffer> constantBufferRings;
 
-	Util::FixedArray<ConstantsRingBuffer> frameSubmissions;
+	struct VertexRingBuffer
+	{
+		uint32_t vboStartAddress[CoreGraphicsVertexBufferMemoryType::NumVertexBufferMemoryTypes];
+		uint32_t vboEndAddress[CoreGraphicsVertexBufferMemoryType::NumVertexBufferMemoryTypes];
+
+		uint32_t iboStartAddress[CoreGraphicsVertexBufferMemoryType::NumVertexBufferMemoryTypes];
+		uint32_t iboEndAddress[CoreGraphicsVertexBufferMemoryType::NumVertexBufferMemoryTypes];
+	};
+	Util::FixedArray<VertexRingBuffer> vertexBufferRings;
+
 	uint maxNumBufferedFrames;
 	uint32_t currentBufferedFrameIndex;
 
@@ -1277,7 +1287,8 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		InvalidCommandUsage
 	};
 
-	state.frameSubmissions.Resize(info.numBufferedFrames);
+	state.constantBufferRings.Resize(info.numBufferedFrames);
+	state.vertexBufferRings.Resize(info.numBufferedFrames);
 
 #ifdef CreateSemaphore
 #pragma push_macro("CreateSemaphore")
@@ -1286,13 +1297,20 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 
 	for (i = 0; i < info.numBufferedFrames; i++)
 	{
-		Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.frameSubmissions[i];
+		Vulkan::GraphicsDeviceState::ConstantsRingBuffer& cboRing = state.constantBufferRings[i];
 
 		IndexT j;
 		for (j = 0; j < NumConstantBufferTypes; j++)
 		{
-			sub.cboComputeStartAddress[j] = sub.cboComputeEndAddress[j] = 0;
-			sub.cboGfxStartAddress[j] = sub.cboGfxEndAddress[j] = 0;
+			cboRing.cboComputeStartAddress[j] = cboRing.cboComputeEndAddress[j] = 0;
+			cboRing.cboGfxStartAddress[j] = cboRing.cboGfxEndAddress[j] = 0;
+		}
+
+		Vulkan::GraphicsDeviceState::VertexRingBuffer& vboRing = state.vertexBufferRings[i];
+		for (j = 0; j < NumVertexBufferMemoryTypes; j++)
+		{
+			vboRing.vboStartAddress[j] = vboRing.vboEndAddress[j] = 0;
+			vboRing.iboStartAddress[j] = vboRing.iboEndAddress[j] = 0;
 		}
 	}
 
@@ -1323,6 +1341,47 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 			state.globalComputeConstantBuffer[i] = CreateConstantBuffer(cboInfo);
 			state.globalComputeConstantBufferMaxValue[i] = info.globalComputeConstantBufferMemorySize[i];
 		}	
+	}
+
+	for (i = 0; i < NumVertexBufferMemoryTypes; i++)
+	{
+		Util::Array<CoreGraphics::VertexComponent> components = { VertexComponent((VertexComponent::SemanticName)0, 0, VertexComponent::Float, 0) };
+
+		static const Util::String threadName[] = { "Main Thread ", "Visibility Thread " };
+
+		// create VBO
+		CoreGraphics::VertexBufferCreateDirectInfo vboInfo =
+		{
+			Util::String::Sprintf("%s Global Vertex Buffer %d", threadName[i], i),
+			CoreGraphics::GpuBufferTypes::AccessWrite,
+			CoreGraphics::GpuBufferTypes::UsageDynamic,
+			CoreGraphics::GpuBufferTypes::SyncingCoherent | CoreGraphics::GpuBufferTypes::SyncingPersistent,
+			info.globalVertexBufferMemorySize[i] * info.numBufferedFrames, // memory size should be divided by 4
+		};
+		state.globalVertexBufferMaxValue[i] = info.globalVertexBufferMemorySize[i];
+		if (state.globalVertexBufferMaxValue[i] > 0)
+		{
+			state.globalVertexBuffer[i] = CreateVertexBuffer(vboInfo);
+			state.mappedVertexBuffer[i] = (byte*)VertexBufferMap(state.globalVertexBuffer[i], GpuBufferTypes::MapWrite);
+		}	
+
+		// create IBO
+		CoreGraphics::IndexBufferCreateDirectInfo iboInfo =
+		{
+			Util::String::Sprintf("%s Global Index Buffer %d", threadName[i], i),
+			"system",
+			CoreGraphics::GpuBufferTypes::AccessWrite,
+			CoreGraphics::GpuBufferTypes::UsageDynamic,
+			CoreGraphics::GpuBufferTypes::SyncingCoherent | CoreGraphics::GpuBufferTypes::SyncingPersistent,
+			IndexType::Index32,
+			info.globalIndexBufferMemorySize[i] * info.numBufferedFrames / 4,
+		};
+		state.globalIndexBufferMaxValue[i] = info.globalIndexBufferMemorySize[i];
+		if (state.globalIndexBufferMaxValue[i])
+		{
+			state.globalIndexBuffer[i] = CreateIndexBuffer(iboInfo);
+			state.mappedIndexBuffer[i] = (byte*)IndexBufferMap(state.globalIndexBuffer[i], GpuBufferTypes::MapWrite);
+		}		
 	}
 
 	cmdCreateInfo.usage = CommandGfx;
@@ -1592,6 +1651,38 @@ DestroyGraphicsDevice()
 	// wait for queues and run all pending commands
 	state.subcontextHandler.Discard();
 
+	// clean up global constant buffers
+	for (i = 0; i < NumConstantBufferTypes; i++)
+	{
+		if (state.globalGraphicsConstantBufferMaxValue[i] > 0)
+			DestroyConstantBuffer(state.globalGraphicsConstantBuffer[i]);
+		state.globalGraphicsConstantBuffer[i] = ConstantBufferId::Invalid();
+
+		if (state.globalComputeConstantBufferMaxValue[i] > 0)
+			DestroyConstantBuffer(state.globalComputeConstantBuffer[i]);
+		state.globalComputeConstantBuffer[i] = ConstantBufferId::Invalid();
+	}
+
+	// clean up global vertex and index buffers
+	for (i = 0; i < NumVertexBufferMemoryTypes; i++)
+	{
+		if (state.globalVertexBufferMaxValue[i] > 0)
+		{
+			VertexBufferUnmap(state.globalVertexBuffer[i]);
+			DestroyVertexBuffer(state.globalVertexBuffer[i]);
+		}
+		state.globalVertexBuffer[i] = VertexBufferId::Invalid();
+		state.mappedVertexBuffer[i] = nullptr;
+
+		if (state.globalIndexBufferMaxValue[i] > 0)
+		{
+			IndexBufferUnmap(state.globalIndexBuffer[i]);
+			DestroyIndexBuffer(state.globalIndexBuffer[i]);
+		}
+		state.globalIndexBuffer[i] = IndexBufferId::Invalid();
+		state.mappedIndexBuffer[i] = nullptr;
+	}
+
 	// destroy command pools
 	for (i = 0; i < state.NumDrawThreads; i++)
 		vkDestroyCommandPool(state.devices[state.currentDevice], state.dispatchableCmdDrawBufferPool[i], nullptr);
@@ -1701,28 +1792,35 @@ BeginFrame(IndexT frameIndex)
 	}
 	state.inBeginFrame = true;
 
-	// update current state submission
-	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.frameSubmissions[state.currentBufferedFrameIndex];
-
 	// set to next frame submission
 	state.currentBufferedFrameIndex = (state.currentBufferedFrameIndex + 1) % state.maxNumBufferedFrames;
 
 	// cycle submissions, will wait for the fence to finish
-	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& nextSub = state.frameSubmissions[state.currentBufferedFrameIndex];
 	state.gfxFence = CoreGraphics::SubmissionContextNextCycle(state.gfxSubmission);
 	state.computeFence = CoreGraphics::SubmissionContextNextCycle(state.computeSubmission);
 
-	IndexT i;
-	for (i = 0; i < CoreGraphicsGlobalConstantBufferType::NumConstantBufferTypes; i++)
+	// update constant buffer offsets
+	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& nextCboRing = state.constantBufferRings[state.currentBufferedFrameIndex];
+	for (IndexT i = 0; i < CoreGraphicsGlobalConstantBufferType::NumConstantBufferTypes; i++)
 	{
-		nextSub.cboGfxStartAddress[i] = state.globalGraphicsConstantBufferMaxValue[i] * state.currentBufferedFrameIndex;
-		nextSub.cboGfxEndAddress[i] = state.globalGraphicsConstantBufferMaxValue[i] * state.currentBufferedFrameIndex;
-		nextSub.cboComputeStartAddress[i] = state.globalComputeConstantBufferMaxValue[i] * state.currentBufferedFrameIndex;
-		nextSub.cboComputeEndAddress[i] = state.globalComputeConstantBufferMaxValue[i] * state.currentBufferedFrameIndex;
+		nextCboRing.cboGfxStartAddress[i] = state.globalGraphicsConstantBufferMaxValue[i] * state.currentBufferedFrameIndex;
+		nextCboRing.cboGfxEndAddress[i] = state.globalGraphicsConstantBufferMaxValue[i] * state.currentBufferedFrameIndex;
+		nextCboRing.cboComputeStartAddress[i] = state.globalComputeConstantBufferMaxValue[i] * state.currentBufferedFrameIndex;
+		nextCboRing.cboComputeEndAddress[i] = state.globalComputeConstantBufferMaxValue[i] * state.currentBufferedFrameIndex;
+	}
+
+	// update vertex buffer offsets
+	Vulkan::GraphicsDeviceState::VertexRingBuffer& nextVboRing = state.vertexBufferRings[state.currentBufferedFrameIndex];
+	for (IndexT i = 0; i < CoreGraphicsVertexBufferMemoryType::NumVertexBufferMemoryTypes; i++)
+	{
+		nextVboRing.vboStartAddress[i] = state.globalVertexBufferMaxValue[i] * state.currentBufferedFrameIndex;
+		nextVboRing.vboEndAddress[i] = state.globalVertexBufferMaxValue[i] * state.currentBufferedFrameIndex;
+		nextVboRing.iboStartAddress[i] = state.globalIndexBufferMaxValue[i] * state.currentBufferedFrameIndex;
+		nextVboRing.iboEndAddress[i] = state.globalIndexBufferMaxValue[i] * state.currentBufferedFrameIndex;
 	}
 
 	Vulkan::GraphicsDeviceState::QueryRingBuffer& queries = state.queryIndices[state.currentBufferedFrameIndex];
-	for (i = 0; i < CoreGraphicsQueryType::NumCoreGraphicsQueryTypes; i++)
+	for (IndexT i = 0; i < CoreGraphicsQueryType::NumCoreGraphicsQueryTypes; i++)
 	{
 		queries.queryStartIndex[i] = 1000 * state.currentBufferedFrameIndex;
 
@@ -1899,14 +1997,15 @@ SetStreamVertexBuffer(IndexT streamIndex, const CoreGraphics::VertexBufferId& vb
 	{
 		VkCommandBufferThread::Command cmd;
 		cmd.type = VkCommandBufferThread::InputAssemblyVertex;
-		cmd.vbo.buffer = CoreGraphics::vboPool->allocator.Get<1>(vb.resourceId).buf;
+		cmd.vbo.buffer = VertexBufferGetVk(vb);
 		cmd.vbo.index = streamIndex;
 		cmd.vbo.offset = offsetVertexIndex;
 		PushToThread(cmd, state.currentDrawThread);
 	}
 	else
 	{
-		vkCmdBindVertexBuffers(GetMainBuffer(GraphicsQueueType), streamIndex, 1, &CoreGraphics::vboPool->allocator.Get<1>(vb.resourceId).buf, (VkDeviceSize*)&offsetVertexIndex);
+		VkBuffer buf = VertexBufferGetVk(vb);
+		vkCmdBindVertexBuffers(GetMainBuffer(GraphicsQueueType), streamIndex, 1, &buf, (VkDeviceSize*)&offsetVertexIndex);
 	}
 }
 
@@ -1931,14 +2030,35 @@ SetIndexBuffer(const CoreGraphics::IndexBufferId& ib, IndexT offsetIndex)
 	{
 		VkCommandBufferThread::Command cmd;
 		cmd.type = VkCommandBufferThread::InputAssemblyIndex;
-		cmd.ibo.buffer = CoreGraphics::iboPool->allocator.Get<1>(ib.resourceId).buf;
-		cmd.ibo.indexType = CoreGraphics::iboPool->allocator.Get<1>(ib.resourceId).type == IndexType::Index16 ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32;
+		cmd.ibo.buffer = IndexBufferGetVk(ib);
+		cmd.ibo.indexType = IndexBufferGetVkType(ib);
 		cmd.ibo.offset = offsetIndex;
 		PushToThread(cmd, state.currentDrawThread);
 	}
 	else
 	{
-		vkCmdBindIndexBuffer(GetMainBuffer(GraphicsQueueType), CoreGraphics::iboPool->allocator.Get<1>(ib.resourceId).buf, offsetIndex, CoreGraphics::iboPool->allocator.Get<1>(ib.resourceId).type == IndexType::Index16 ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32);
+		vkCmdBindIndexBuffer(GetMainBuffer(GraphicsQueueType), IndexBufferGetVk(ib), offsetIndex, IndexBufferGetVkType(ib));
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+SetIndexBuffer(const CoreGraphics::IndexBufferId& ib, IndexT offsetIndex, CoreGraphics::IndexType::Code type)
+{
+	if (state.inBeginBatch)
+	{
+		VkCommandBufferThread::Command cmd;
+		cmd.type = VkCommandBufferThread::InputAssemblyIndex;
+		cmd.ibo.buffer = iboAllocator.Get<1>(ib.id24).buf;
+		cmd.ibo.indexType = IndexBufferGetVkType(ib);
+		cmd.ibo.offset = offsetIndex;
+		PushToThread(cmd, state.currentDrawThread);
+	}
+	else
+	{
+		vkCmdBindIndexBuffer(GetMainBuffer(GraphicsQueueType), IndexBufferGetVk(ib), offsetIndex, IndexBufferGetVkType(ib));
 	}
 }
 
@@ -2128,7 +2248,7 @@ PushConstants(ShaderPipeline pipeline, uint offset, uint size, byte* data)
 uint 
 AllocateGraphicsConstantBufferMemory(CoreGraphicsGlobalConstantBufferType type, uint size)
 {
-	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.frameSubmissions[state.currentBufferedFrameIndex];
+	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.constantBufferRings[state.currentBufferedFrameIndex];
 
 	// no matter how we spin it
 	uint ret = sub.cboGfxEndAddress[type];
@@ -2165,7 +2285,7 @@ GetGraphicsConstantBuffer(CoreGraphicsGlobalConstantBufferType type)
 uint 
 AllocateComputeConstantBufferMemory(CoreGraphicsGlobalConstantBufferType type, uint size)
 {
-	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.frameSubmissions[state.currentBufferedFrameIndex];
+	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.constantBufferRings[state.currentBufferedFrameIndex];
 
 	// no matter how we spin it
 	uint ret = sub.cboComputeEndAddress[type];
@@ -2194,6 +2314,98 @@ CoreGraphics::ConstantBufferId
 GetComputeConstantBuffer(CoreGraphicsGlobalConstantBufferType type)
 {
 	return state.globalComputeConstantBuffer[type];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+byte*
+AllocateVertexBufferMemory(CoreGraphicsVertexBufferMemoryType type, uint size)
+{
+	Vulkan::GraphicsDeviceState::VertexRingBuffer& sub = state.vertexBufferRings[state.currentBufferedFrameIndex];
+
+	// no matter how we spin it
+	uint ret = sub.vboEndAddress[type];
+	uint newEnd = ret + size;
+
+	// if we have to wrap around, or we are fingering on the range of the next frame submission buffer...
+	if (newEnd >= state.globalVertexBufferMaxValue[type] * (state.currentBufferedFrameIndex + 1))
+	{
+		n_error("Over allocation of vertex buffer memory! Memory will be overwritten!\n");
+
+		// return the beginning of the buffer, will definitely stomp the memory!
+		ret = state.globalVertexBufferMaxValue[type] * state.currentBufferedFrameIndex;
+		newEnd = ret + size;
+	}
+
+	// just bump the current frame submission pointer
+	sub.vboEndAddress[type] = newEnd;
+	return state.mappedVertexBuffer[type] + ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint 
+GetVertexBufferOffset(CoreGraphicsVertexBufferMemoryType type)
+{
+	Vulkan::GraphicsDeviceState::VertexRingBuffer& sub = state.vertexBufferRings[state.currentBufferedFrameIndex];
+	return sub.vboEndAddress[type];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CoreGraphics::VertexBufferId 
+GetVertexBuffer(CoreGraphicsVertexBufferMemoryType type)
+{
+	return state.globalVertexBuffer[type];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+byte*
+AllocateIndexBufferMemory(CoreGraphicsVertexBufferMemoryType type, uint size)
+{
+	Vulkan::GraphicsDeviceState::VertexRingBuffer& sub = state.vertexBufferRings[state.currentBufferedFrameIndex];
+
+	// no matter how we spin it
+	uint ret = sub.iboEndAddress[type];
+	uint newEnd = ret + size;
+
+	// if we have to wrap around, or we are fingering on the range of the next frame submission buffer...
+	if (newEnd >= state.globalIndexBufferMaxValue[type] * (state.currentBufferedFrameIndex + 1))
+	{
+		n_error("Over allocation of index buffer memory! Memory will be overwritten!\n");
+
+		// return the beginning of the buffer, will definitely stomp the memory!
+		ret = state.globalIndexBufferMaxValue[type] * state.currentBufferedFrameIndex;
+		newEnd = ret + size;
+	}
+
+	// just bump the current frame submission pointer
+	sub.iboEndAddress[type] = newEnd;
+	return state.mappedIndexBuffer[type] + ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint 
+GetIndexBufferOffset(CoreGraphicsVertexBufferMemoryType type)
+{
+	Vulkan::GraphicsDeviceState::VertexRingBuffer& sub = state.vertexBufferRings[state.currentBufferedFrameIndex];
+	return sub.iboEndAddress[type];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CoreGraphics::IndexBufferId 
+GetIndexBuffer(CoreGraphicsVertexBufferMemoryType type)
+{
+	return state.globalIndexBuffer[type];
 }
 
 //------------------------------------------------------------------------------
@@ -2638,7 +2850,7 @@ EndFrame(IndexT frameIndex)
 
 	state.inBeginFrame = false;
 
-	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.frameSubmissions[state.currentBufferedFrameIndex];
+	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.constantBufferRings[state.currentBufferedFrameIndex];
 	VkDevice dev = state.devices[state.currentDevice];
 
 	// flush constant buffer memory
@@ -3084,6 +3296,47 @@ ObjectSetName(const CoreGraphics::ConstantBufferId id, const Util::String& name)
 		nullptr,
 		VK_OBJECT_TYPE_IMAGE,
 		(uint64_t)Vulkan::ConstantBufferGetVk(id),
+		name.AsCharPtr()
+	};
+	VkDevice dev = GetCurrentDevice();
+	VkResult res = VkDebugObjectName(dev, &info);
+	n_assert(res == VK_SUCCESS);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<>
+void
+ObjectSetName(const CoreGraphics::VertexBufferId id, const Util::String& name)
+{
+	VkDebugUtilsObjectNameInfoEXT info =
+	{
+		VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
+		nullptr,
+		VK_OBJECT_TYPE_IMAGE,
+		(uint64_t)Vulkan::VertexBufferGetVk(id),
+		name.AsCharPtr()
+	};
+	VkDevice dev = GetCurrentDevice();
+	VkResult res = VkDebugObjectName(dev, &info);
+	n_assert(res == VK_SUCCESS);
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<>
+void
+ObjectSetName(const CoreGraphics::IndexBufferId id, const Util::String& name)
+{
+	VkDebugUtilsObjectNameInfoEXT info =
+	{
+		VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
+		nullptr,
+		VK_OBJECT_TYPE_IMAGE,
+		(uint64_t)Vulkan::IndexBufferGetVk(id),
 		name.AsCharPtr()
 	};
 	VkDevice dev = GetCurrentDevice();

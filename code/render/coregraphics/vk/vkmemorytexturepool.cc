@@ -93,17 +93,12 @@ VkMemoryTexturePool::LoadFromMemory(const Resources::ResourceId id, const void* 
 		CoreGraphics::BarrierStage::Transfer,
 		VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
 
-	// copy buffer, will be deleted later
-	char* bufferCopy = (char*)Memory::Alloc(Memory::ScratchHeap, data->width * data->height * size);
-	memcpy(bufferCopy, data->buffer, data->width * data->height * size);
-
 	// add image update, take the output buffer and memory and add to delayed delete
 	VkBuffer outBuf;
 	VkDeviceMemory outMem;
-	VkUtilities::ImageUpdate(dev, CoreGraphics::SubmissionContextGetCmdBuffer(sub), TransferQueueType, loadInfo.img, imgInfo, 0, 0, data->width * data->height * size, (uint32_t*)bufferCopy, outBuf, outMem);
+	VkUtilities::ImageUpdate(dev, CoreGraphics::SubmissionContextGetCmdBuffer(sub), TransferQueueType, loadInfo.img, imgInfo, 0, 0, data->width * data->height * size, (uint32_t*)data->buffer, outBuf, outMem);
 
 	// add host memory buffer, intermediate device memory, and intermediate device buffer to delete queue
-	SubmissionContextFreeHostMemory(sub, bufferCopy);
 	SubmissionContextFreeDeviceMemory(sub, dev, outMem);
 	SubmissionContextFreeBuffer(sub, dev, outBuf);
 

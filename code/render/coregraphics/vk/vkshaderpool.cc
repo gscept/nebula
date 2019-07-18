@@ -179,6 +179,8 @@ VkShaderPool::Unload(const Resources::ResourceId res)
 		VkShaderProgramDiscard(progSetup, progRuntime, progRuntime.pipeline);
 	}
 	runtime.programMap.Clear();
+
+	this->states[res.poolId] = Resources::Resource::State::Unloaded;
 }
 
 //------------------------------------------------------------------------------

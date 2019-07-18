@@ -203,8 +203,7 @@ ImguiContext::Create()
 
 	CoreGraphics::VertexBufferCreateInfo vboInfo =
 	{
-		"",
-		"system",
+		"ImGUI VBO"_atm,
 		CoreGraphics::GpuBufferTypes::AccessWrite,
 		CoreGraphics::GpuBufferTypes::UsageDynamic,
 		CoreGraphics::GpuBufferTypes::SyncingCoherent | CoreGraphics::GpuBufferTypes::SyncingPersistent,
@@ -217,13 +216,12 @@ ImguiContext::Create()
 	IndexT i;
 	for (i = 0; i < numBuffers; i++)
 	{
-		vboInfo.name = Util::String::Sprintf("imgui_vbo_%d", i);
 		state.vbos[i] = CoreGraphics::CreateVertexBuffer(vboInfo);
 	}
 
 	CoreGraphics::IndexBufferCreateInfo iboInfo = 
 	{
-		"imgui_ibo"_atm,
+		""_atm,
 		"system",
 		CoreGraphics::GpuBufferTypes::AccessWrite,
 		CoreGraphics::GpuBufferTypes::UsageDynamic,
