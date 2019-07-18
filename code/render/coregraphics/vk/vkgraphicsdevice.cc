@@ -1835,21 +1835,6 @@ BeginFrame(IndexT frameIndex)
 	state.gfxSemaphore         = SemaphoreId::Invalid();
 	state.computeSemaphore     = SemaphoreId::Invalid();
 
-	// if we have an active setup submission, add it and unset it
-	if (state.setupSubmissionActive)
-	{
-		// end recording and add this command buffer for submission
-		CommandBufferEndRecord(state.setupSubmissionCmdBuffer);
-		state.subcontextHandler.AppendSubmission(GraphicsQueueType,
-			CommandBufferGetVk(state.setupSubmissionCmdBuffer),
-			VK_NULL_HANDLE, VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM,
-			SemaphoreGetVk(state.setupSubmissionSemaphore));
-
-		// set graphics previous semaphore immediately, this will effectively append a submission this frame
-		state.gfxPrevSemaphore = state.setupSubmissionSemaphore;
-		state.setupSubmissionActive = false;
-	}
-
 	// update bindless texture descriptors
 	VkShaderServer::Instance()->SubmitTextureDescriptorChanges();
 
@@ -2774,6 +2759,21 @@ EndSubmission(CoreGraphicsQueueType queue, bool endOfFrame)
 {
 	if (queue == GraphicsQueueType)
 	{
+		// if we have an active setup submission, add it to be submitted and throw around the setup submission semaphore
+		if (state.setupSubmissionActive)
+		{
+			// end recording and add this command buffer for submission
+			CommandBufferEndRecord(state.setupSubmissionCmdBuffer);
+			state.subcontextHandler.AppendSubmission(GraphicsQueueType,
+													 CommandBufferGetVk(state.setupSubmissionCmdBuffer),
+													 SemaphoreGetVk(state.gfxPrevSemaphore), VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+													 SemaphoreGetVk(state.setupSubmissionSemaphore));
+
+			// set graphics previous semaphore immediately, this will effectively append a submission this frame
+			state.gfxPrevSemaphore = state.setupSubmissionSemaphore;
+			state.setupSubmissionActive = false;
+		}
+
 		// stop recording
 		CommandBufferEndRecord(state.gfxCmdBuffer);
 
