@@ -1828,10 +1828,12 @@ BeginFrame(IndexT frameIndex)
 		// vkCmdResetQueryPool(GetMainBuffer(GraphicsQueueType), state.queryPools[i], queries.queryStartIndex[i], 1000);
 	}
 
-	state.gfxPrevSemaphore = SemaphoreId::Invalid();
+	state.gfxPrevSemaphore     = SemaphoreId::Invalid();
 	state.computePrevSemaphore = SemaphoreId::Invalid();
-	state.gfxWaitSemaphore = SemaphoreId::Invalid();
+	state.gfxWaitSemaphore     = SemaphoreId::Invalid();
 	state.computeWaitSemaphore = SemaphoreId::Invalid();
+	state.gfxSemaphore         = SemaphoreId::Invalid();
+	state.computeSemaphore     = SemaphoreId::Invalid();
 
 	// if we have an active setup submission, add it and unset it
 	if (state.setupSubmissionActive)
@@ -1868,6 +1870,9 @@ BeginSubmission(CoreGraphicsQueueType queue, CoreGraphicsQueueType waitQueue)
 
 	if (queue == GraphicsQueueType)
 	{
+		// save previous semaphore
+		state.gfxPrevSemaphore = state.gfxSemaphore;
+
 		// generate new buffer and semaphore
 		CoreGraphics::SubmissionContextNewBuffer(state.gfxSubmission, state.gfxCmdBuffer, state.gfxSemaphore);
 
@@ -1883,6 +1888,9 @@ BeginSubmission(CoreGraphicsQueueType queue, CoreGraphicsQueueType waitQueue)
 	}
 	else if (queue == ComputeQueueType)
 	{
+		// save previous semaphore
+		state.computePrevSemaphore = state.computeSemaphore;
+
 		// generate new buffer and semaphore
 		CoreGraphics::SubmissionContextNewBuffer(state.computeSubmission, state.computeCmdBuffer, state.computeSemaphore);
 
@@ -2794,7 +2802,7 @@ EndSubmission(CoreGraphicsQueueType queue, bool endOfFrame)
 		}
 
 		// set prev to current semaphore
-		state.gfxPrevSemaphore = state.gfxSemaphore;
+		state.gfxPrevSemaphore = SemaphoreId::Invalid();
 		state.gfxWaitSemaphore = SemaphoreId::Invalid();
 	}
 	else if (queue == ComputeQueueType)
@@ -2809,7 +2817,7 @@ EndSubmission(CoreGraphicsQueueType queue, bool endOfFrame)
 			SemaphoreGetVk(state.computeSemaphore));
 
 		// if we should wait for the graphics, add a semaphore
-		if (state.computeWaitSemaphore == GraphicsQueueType)
+		if (state.computeWaitSemaphore != SemaphoreId::Invalid())
 		{
 			state.subcontextHandler.AddWaitSemaphore(ComputeQueueType, SemaphoreGetVk(state.computeWaitSemaphore), VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 
@@ -2827,7 +2835,7 @@ EndSubmission(CoreGraphicsQueueType queue, bool endOfFrame)
 		}
 
 		// set previous semaphore
-		state.computePrevSemaphore = state.computeSemaphore;
+		state.computePrevSemaphore = SemaphoreId::Invalid();
 		state.computeWaitSemaphore = SemaphoreId::Invalid();
 	}
 }
@@ -2850,13 +2858,11 @@ EndFrame(IndexT frameIndex)
 
 	state.inBeginFrame = false;
 
+	// flush constant buffer memory
+	/*
 	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.constantBufferRings[state.currentBufferedFrameIndex];
 	VkDevice dev = state.devices[state.currentDevice];
 
-	// flush constant buffer memory
-
-
-	/*
 	VkMappedMemoryRange flushMapRanges[2];
 	flushMapRanges[0] =
 	{
@@ -2945,7 +2951,7 @@ EndFrame(IndexT frameIndex)
 
 	// submit graphics, we wait for the fence when we present (change to compute queue if we change the present queue in the future)
 	state.subcontextHandler.FlushSubmissions(GraphicsQueueType, 
-		VK_NULL_HANDLE, // use no fence, it will be used by the present queue
+		FenceGetVk(state.gfxFence), // use no fence, it will be used by the present queue
 		false);
 
 #if NEBULA_GRAPHICS_DEBUG

@@ -40,7 +40,6 @@ public:
 		Util::Array<VkSemaphore> waitSemaphores;
 		Util::Array<VkPipelineStageFlags> waitFlags;
 		Util::Array<VkSemaphore> signalSemaphores;
-		VkSubmitInfo submit;
 	};
 
 	/// setup subcontext handler
