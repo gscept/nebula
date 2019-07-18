@@ -2850,13 +2850,11 @@ EndFrame(IndexT frameIndex)
 
 	state.inBeginFrame = false;
 
+	// flush constant buffer memory
+	/*
 	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.constantBufferRings[state.currentBufferedFrameIndex];
 	VkDevice dev = state.devices[state.currentDevice];
 
-	// flush constant buffer memory
-
-
-	/*
 	VkMappedMemoryRange flushMapRanges[2];
 	flushMapRanges[0] =
 	{
@@ -2945,7 +2943,7 @@ EndFrame(IndexT frameIndex)
 
 	// submit graphics, we wait for the fence when we present (change to compute queue if we change the present queue in the future)
 	state.subcontextHandler.FlushSubmissions(GraphicsQueueType, 
-		VK_NULL_HANDLE, // use no fence, it will be used by the present queue
+		FenceGetVk(state.gfxFence), // use no fence, it will be used by the present queue
 		false);
 
 #if NEBULA_GRAPHICS_DEBUG
