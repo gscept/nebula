@@ -110,6 +110,7 @@ FrameSubpassBatch::CompiledImpl::Run(const IndexT frameIndex)
 
 								// apply instance state
 								instance->Apply();
+
 								//instance->Update();
 								CoreGraphics::Draw();
 							}

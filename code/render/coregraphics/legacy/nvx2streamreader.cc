@@ -6,8 +6,6 @@
 #include "render/stdneb.h"
 #include "coregraphics/legacy/nvx2streamreader.h"
 #include "coregraphics/legacy/nvx2fileformatstructs.h"
-#include "coregraphics/memoryvertexbufferpool.h"
-#include "coregraphics/memoryindexbufferpool.h"
 #include "resources/resourcemanager.h"
 #include "coregraphics/config.h"
 
@@ -29,8 +27,8 @@ Nvx2StreamReader::Nvx2StreamReader() :
     access(CoreGraphics::GpuBufferTypes::AccessNone),
     rawMode(false),
     mapPtr(0),
-	ibo(Ids::InvalidId64),
-	vbo(Ids::InvalidId64),
+	ibo(IndexBufferId::Invalid()),
+	vbo(VertexBufferId::Invalid()),
     groupDataPtr(nullptr),
     vertexDataPtr(nullptr),
     indexDataPtr(nullptr),
@@ -267,7 +265,7 @@ Nvx2StreamReader::UpdateGroupBoundingBoxes()
 void
 Nvx2StreamReader::SetupVertexBuffer(const Resources::ResourceName& name)
 {
-	n_assert(this->vbo == Ids::InvalidId64);
+	n_assert(this->vbo == VertexBufferId::Invalid());
     n_assert(!this->rawMode);
     n_assert(0 != this->vertexDataPtr);
     n_assert(this->vertexDataSize > 0);
@@ -275,19 +273,15 @@ Nvx2StreamReader::SetupVertexBuffer(const Resources::ResourceName& name)
     n_assert(this->vertexComponents.Size() > 0);
 
 	// create vertex buffer
-	Resources::ResourceId id = vboPool->ReserveResource(name, this->tag);
-	n_assert(id.resourceType == VertexBufferIdType);
-
 	VertexBufferCreateInfo vboInfo;
+	vboInfo.name = name;
 	vboInfo.access = this->access;
 	vboInfo.numVerts = this->numVertices;
 	vboInfo.usage = this->usage;
 	vboInfo.comps = this->vertexComponents;
 	vboInfo.data = this->vertexDataPtr;
 	vboInfo.dataSize = this->vertexDataSize;
-	this->vbo = id;
-	ResourcePool::LoadStatus stat = vboPool->LoadFromMemory(this->vbo, &vboInfo);
-    n_assert(stat == ResourcePool::Success);
+	this->vbo = CreateVertexBuffer(vboInfo);
 }
 
 //------------------------------------------------------------------------------
@@ -296,26 +290,22 @@ Nvx2StreamReader::SetupVertexBuffer(const Resources::ResourceName& name)
 void
 Nvx2StreamReader::SetupIndexBuffer(const Resources::ResourceName& name)
 {
-	n_assert(this->ibo == Ids::InvalidId64);
+	n_assert(this->ibo == IndexBufferId::Invalid());
     n_assert(!this->rawMode);
     n_assert(0 != this->indexDataPtr);
     n_assert(this->indexDataSize > 0);
     n_assert(this->numIndices > 0);
     
 	// create index buffer
-	Resources::ResourceId id = iboPool->ReserveResource(name, this->tag);
-	n_assert(id.resourceType == IndexBufferIdType);
-
 	IndexBufferCreateInfo iboInfo;
+	iboInfo.name = name;
 	iboInfo.access = this->access;
 	iboInfo.numIndices = this->numIndices;
 	iboInfo.usage = this->usage;
 	iboInfo.type = IndexType::Index32;
 	iboInfo.data = this->indexDataPtr;
 	iboInfo.dataSize = this->indexDataSize;
-	this->ibo = id;
-	ResourcePool::LoadStatus stat = iboPool->LoadFromMemory(this->ibo, &iboInfo);
-	n_assert(stat == ResourcePool::Success);
+	this->ibo = CreateIndexBuffer(iboInfo);
 }
 
 } // namespace Legacy

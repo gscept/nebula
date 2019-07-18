@@ -5,7 +5,6 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "renderutil/drawfullscreenquad.h"
-#include "coregraphics/memoryvertexbufferpool.h"
 #include "coregraphics/graphicsdevice.h"
 
 namespace RenderUtil
@@ -85,7 +84,7 @@ DrawFullScreenQuad::Setup(SizeT rtWidth, SizeT rtHeight)
     // load vertex buffer
 	VertexBufferCreateInfo info =
 	{
-		"fsq_vbo", "render_system",
+		"FullScreen Quad VBO"_atm,
 		GpuBufferTypes::AccessNone, GpuBufferTypes::UsageImmutable, GpuBufferTypes::SyncingFlush,
 		3, vertexComponents, v, sizeof(v)
 	};

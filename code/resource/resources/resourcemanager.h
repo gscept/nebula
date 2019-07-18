@@ -61,6 +61,9 @@ public:
 	/// get type of resource pool this resource was allocated with
 	Core::Rtti* GetType(const Resources::ResourceId id);
 
+	/// wait for resource thread to finish the current job, and then pause the thread
+	void WaitForLoaderThread();
+
 	/// get resource name
 	const Resources::ResourceName GetName(const Resources::ResourceId id) const;
 	/// get tag resource was first registered with
@@ -337,6 +340,24 @@ inline ResourcePool::LoadStatus
 LoadFromMemory(const Resources::ResourceId id, void* info)
 {
 	return ResourceManager::Instance()->LoadFromMemory(id, info);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void 
+ReloadResource(const ResourceName& res)
+{
+	return ResourceManager::Instance()->ReloadResource(res);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+WaitForLoaderThread()
+{
+	ResourceManager::Instance()->WaitForLoaderThread();
 }
 
 //------------------------------------------------------------------------------

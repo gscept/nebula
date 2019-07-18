@@ -144,8 +144,7 @@ Im3dContext::Create()
 
     CoreGraphics::VertexBufferCreateInfo vboInfo =
     {
-        "im3d_vbo"_atm,
-        "system",
+		"Im3D VBO"_atm,
         CoreGraphics::GpuBufferTypes::AccessWrite,
         CoreGraphics::GpuBufferTypes::UsageDynamic,
         CoreGraphics::GpuBufferTypes::SyncingCoherent | CoreGraphics::GpuBufferTypes::SyncingPersistent,

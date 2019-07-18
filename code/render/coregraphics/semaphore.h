@@ -29,11 +29,6 @@ SemaphoreId CreateSemaphore(const SemaphoreCreateInfo& info);
 /// destroy semaphore
 void DestroySemaphore(const SemaphoreId& semaphore);
 
-/// wait for semaphore
-void SemaphoreWait(const SemaphoreId& semaphore);
-/// signal semaphore
-void SemaphoreSignal(const SemaphoreId& semaphore);
-
 } // namespace CoreGraphics
 
 #pragma pop_macro("CreateSemaphore")

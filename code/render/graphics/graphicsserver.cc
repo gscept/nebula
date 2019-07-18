@@ -7,8 +7,6 @@
 #include "graphicscontext.h"
 #include "view.h"
 #include "stage.h"
-#include "coregraphics/memoryvertexbufferpool.h"
-#include "coregraphics/memoryindexbufferpool.h"
 #include "resources/resourcemanager.h"
 #include "coregraphics/vertexsignaturepool.h"
 #include "coregraphics/streamtexturepool.h"
@@ -56,14 +54,19 @@ GraphicsServer::Open()
 	this->displayDevice = CoreGraphics::DisplayDevice::Create();
 	this->displayDevice->Open();
 
-	CoreGraphics::GraphicsDeviceCreateInfo gfxInfo{false};
+	static const SizeT MB = 1024 * 1024;
+	CoreGraphics::GraphicsDeviceCreateInfo gfxInfo{ 
+		{ 1 * MB, 50 * MB },		// Graphics - main threads get 1 MB of constant memory, visibility thread (objects) gets 100
+		{ 1 * MB, 0 * MB },			// Compute - main threads get 1 MB of constant memory, visibility thread (objects) gets 0
+		{ 10 * MB, 1 * MB },        // Vertex memory - main thread gets 10 MB for UI, Text etc, visibility thread (objects doing soft cloths and such) get 1 MB
+		{ 5 * MB, 1 * MB },         // Index memory - main thread gets 10 MB for UI, Text etc, visibility thread (objects doing soft cloths and such) get 1 MB
+		3,							// We have 3 frames running simultaneously
+		false }; // validation
 	this->graphicsDevice = CoreGraphics::CreateGraphicsDevice(gfxInfo);
 	if (this->graphicsDevice)
 	{
 
 		// register graphics context pools
-		Resources::ResourceManager::Instance()->RegisterMemoryPool(CoreGraphics::MemoryVertexBufferPool::RTTI);
-		Resources::ResourceManager::Instance()->RegisterMemoryPool(CoreGraphics::MemoryIndexBufferPool::RTTI);
 		Resources::ResourceManager::Instance()->RegisterMemoryPool(CoreGraphics::VertexSignaturePool::RTTI);
 		Resources::ResourceManager::Instance()->RegisterMemoryPool(CoreGraphics::MemoryTexturePool::RTTI);
 		Resources::ResourceManager::Instance()->RegisterMemoryPool(CoreGraphics::MemoryMeshPool::RTTI);
@@ -77,8 +80,6 @@ GraphicsServer::Open()
 		Resources::ResourceManager::Instance()->RegisterStreamPool("n3", Models::StreamModelPool::RTTI);
 
 		// setup internal pool pointers for convenient access (note, will also assert if texture, shader, model or mesh pools is not registered yet!)
-		CoreGraphics::vboPool = Resources::GetMemoryPool<CoreGraphics::MemoryVertexBufferPool>();
-		CoreGraphics::iboPool = Resources::GetMemoryPool<CoreGraphics::MemoryIndexBufferPool>();
 		CoreGraphics::layoutPool = Resources::GetMemoryPool<CoreGraphics::VertexSignaturePool>();
 		CoreGraphics::texturePool = Resources::GetMemoryPool<CoreGraphics::MemoryTexturePool>();
 		CoreGraphics::meshPool = Resources::GetMemoryPool<CoreGraphics::MemoryMeshPool>();
@@ -157,8 +158,6 @@ GraphicsServer::Close()
 
 	if (this->graphicsDevice) CoreGraphics::DestroyGraphicsDevice();
 
-    this->debugHandler->Close();
-    this->debugHandler = nullptr;
 	// clear transforms pool
 }
 
@@ -247,6 +246,9 @@ GraphicsServer::BeginFrame()
 	this->time = this->timer->GetTime();
 	this->ticks = this->timer->GetTicks();
 
+	// update shader server
+	this->shaderServer->BeforeFrame();
+
 	// Collect garbage
 	IndexT i;
 	for (i = 0; i < this->contexts.Size(); i++)
@@ -258,6 +260,9 @@ GraphicsServer::BeginFrame()
 		if (state->Defragment != nullptr)
 			state->Defragment();
 	}
+
+	// begin frame
+	CoreGraphics::BeginFrame(this->frameIndex);
 
 	for (i = 0; i < this->contexts.Size(); i++)
 	{
@@ -294,6 +299,10 @@ GraphicsServer::BeforeViews()
 			continue;
 
 		this->currentView = view;
+
+		// begin frame
+		this->currentView->BeginFrame(this->frameIndex, this->frameTime);
+		this->shaderServer->BeforeView();
 
 		IndexT j;
 		for (j = 0; j < this->contexts.Size(); j++)
@@ -342,6 +351,8 @@ GraphicsServer::EndViews()
 			continue;
 
 		this->currentView = view;
+		this->shaderServer->AfterView();
+		this->currentView->EndFrame(this->frameIndex, this->frameTime);
 
 		IndexT j;
 		for (j = 0; j < this->contexts.Size(); j++)
@@ -360,6 +371,10 @@ GraphicsServer::EndViews()
 void 
 GraphicsServer::EndFrame()
 {
+
+	// stop the graphics side frame
+	CoreGraphics::EndFrame(this->frameIndex);
+
 	// finish frame and prepare for the next one
 	IndexT i;
 	for (i = 0; i < this->contexts.Size(); i++)

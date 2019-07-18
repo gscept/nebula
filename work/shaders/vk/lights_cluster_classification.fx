@@ -22,7 +22,6 @@ struct Light
 {
 	int type;		// type of light, look at above definitions for a mapping
     float radius;	// radius of sphere (pointlight) or cone angle (spotlight)
-    vec2 _pad;
 	vec4 position;	// world space position of light
 	vec4 forward;	// forward vector of light (spotlight and arealights)
 };
@@ -97,7 +96,7 @@ void csTileCulling()
         int il = int(gl_LocalInvocationIndex + i);
 		if (il < NumInputLights)
 		{
-            	const Light light = lights[il]; 
+            const Light light = lights[il]; 
         }
     }
 }

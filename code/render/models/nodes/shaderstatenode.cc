@@ -9,6 +9,8 @@
 #include "coregraphics/transformdevice.h"
 #include "resources/resourcemanager.h"
 
+#include "shared.h"
+
 using namespace Util;
 using namespace Math;
 namespace Models
@@ -131,19 +133,17 @@ ShaderStateNode::OnFinishedLoading()
 	this->surRes = Resources::CreateResource(this->materialName, this->tag, nullptr, nullptr, true);
 	this->materialType = Materials::surfacePool->GetType(this->surRes);
 	this->surface = Materials::surfacePool->GetId(this->surRes);
-	this->cbo = CoreGraphics::ShaderCreateConstantBuffer(this->sharedShader, "ObjectBlock");
+	//this->cbo = CoreGraphics::ShaderCreateConstantBuffer(this->sharedShader, "ObjectBlock");
+	this->cbo = CoreGraphics::GetGraphicsConstantBuffer(CoreGraphicsGlobalConstantBufferType::VisibilityThreadConstantBuffer);
 	this->cboIndex = CoreGraphics::ShaderGetResourceSlot(this->sharedShader, "ObjectBlock");
 	this->resourceTable = CoreGraphics::ShaderCreateResourceTable(this->sharedShader, NEBULA_DYNAMIC_OFFSET_GROUP);
-	CoreGraphics::ResourceTableSetConstantBuffer(this->resourceTable, { this->cbo, this->cboIndex, 0, true, false, sizeof(Math::matrix44) * 2, 0 });
+	CoreGraphics::ResourceTableSetConstantBuffer(this->resourceTable, { this->cbo, this->cboIndex, 0, true, false, sizeof(Shared::ObjectBlock), 0 });
 	CoreGraphics::ResourceTableCommitChanges(this->resourceTable);
 
 	this->modelVar = CoreGraphics::ShaderGetConstantBinding(this->sharedShader, "Model");
 	this->invModelVar = CoreGraphics::ShaderGetConstantBinding(this->sharedShader, "InvModel");
-	this->modelViewProjVar = CoreGraphics::ShaderGetConstantBinding(this->sharedShader, "ModelViewProjection");
-	this->modelViewVar = CoreGraphics::ShaderGetConstantBinding(this->sharedShader, "ModelView");
 	this->objectIdVar = CoreGraphics::ShaderGetConstantBinding(this->sharedShader, "ObjectId");
 }
-
 
 //------------------------------------------------------------------------------
 /**
@@ -220,9 +220,12 @@ ShaderStateNode::Instance::UpdateDrawPacket(void* mem)
 void
 ShaderStateNode::Instance::Update()
 {
-	// okay, in cases like this, we would benefit shittons if we could just do one set for the entire struct...
-	CoreGraphics::ConstantBufferUpdateInstance(this->cbo, this->modelTransform, this->instance, this->modelVar);
-	CoreGraphics::ConstantBufferUpdateInstance(this->cbo, Math::matrix44::inverse(this->modelTransform), this->instance, this->invModelVar);
+	uint offset = CoreGraphics::AllocateGraphicsConstantBufferMemory(CoreGraphicsGlobalConstantBufferType::VisibilityThreadConstantBuffer, sizeof(Shared::ObjectBlock));
+	Shared::ObjectBlock block;
+	Math::matrix44::storeu(this->modelTransform, block.Model);
+	Math::matrix44::storeu(Math::matrix44::inverse(this->modelTransform), block.InvModel);
+	CoreGraphics::ConstantBufferUpdate(this->cbo, block, offset);
+	this->offsets[ObjectTransforms] = offset;
 }
 
 } // namespace Models

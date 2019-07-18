@@ -5,11 +5,10 @@
 #include "render/stdneb.h"
 #include "coregraphics/config.h"
 #include "vkgraphicsdevice.h"
-#include "coregraphics/cmdbuffer.h"
+#include "coregraphics/commandbuffer.h"
 #include "vkshaderprogram.h"
-#include "vkscheduler.h"
 #include "vkpipelinedatabase.h"
-#include "vkcmdbuffer.h"
+#include "vkcommandbuffer.h"
 #include "vktransformdevice.h"
 #include "vkresourcetable.h"
 #include "vkshaderserver.h"
@@ -18,18 +17,24 @@
 #include "vkshaderrwtexture.h"
 #include "vkshaderrwbuffer.h"
 #include "vkbarrier.h"
+#include "vkvertexbuffer.h"
+#include "vkindexbuffer.h"
 #include "coregraphics/displaydevice.h"
 #include "app/application.h"
+#include "util/bit.h"
 #include "io/ioserver.h"
 #include "vkevent.h"
 #include "vkfence.h"
 #include "vktypes.h"
-#include "coregraphics/memoryindexbufferpool.h"
-#include "coregraphics/memoryvertexbufferpool.h"
 #include "coregraphics/vertexsignaturepool.h"
 #include "coregraphics/glfw/glfwwindow.h"
 #include "coregraphics/displaydevice.h"
 #include "coregraphics/vk/vkconstantbuffer.h"
+#include "coregraphics/vk/vksemaphore.h"
+#include "coregraphics/vk/vkfence.h"
+#include "coregraphics/vk/vksubmissioncontext.h"
+#include "coregraphics/submissioncontext.h"
+#include "resources/resourcemanager.h"
 namespace Vulkan
 {
 
@@ -68,25 +73,25 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 	IndexT currentDrawThread;
 	VkCommandPool dispatchableCmdDrawBufferPool[NumDrawThreads];
 	VkCommandBuffer dispatchableDrawCmdBuffers[NumDrawThreads];
-	Ptr<VkCmdBufferThread> drawThreads[NumDrawThreads];
+	Ptr<VkCommandBufferThread> drawThreads[NumDrawThreads];
 	Threading::Event* drawCompletionEvents[NumDrawThreads];
 
 	static const SizeT NumTransferThreads = 1;
 	IndexT currentTransThread;
 	VkCommandPool dispatchableCmdTransBufferPool[NumTransferThreads];
 	VkCommandBuffer dispatchableTransCmdBuffers[NumTransferThreads];
-	Ptr<VkCmdBufferThread> transThreads[NumTransferThreads];
+	Ptr<VkCommandBufferThread> transThreads[NumTransferThreads];
 	Threading::Event* transCompletionEvents[NumTransferThreads];
 
 	static const SizeT NumComputeThreads = 1;
 	IndexT currentComputeThread;
 	VkCommandPool dispatchableCmdCompBufferPool[NumComputeThreads];
 	VkCommandBuffer dispatchableCompCmdBuffers[NumComputeThreads];
-	Ptr<VkCmdBufferThread> compThreads[NumComputeThreads];
+	Ptr<VkCommandBufferThread> compThreads[NumComputeThreads];
 	Threading::Event* compCompletionEvents[NumComputeThreads];
 
-	Util::Array<VkCmdBufferThread::Command> propagateDescriptorSets;
-	Util::Array<VkCmdBufferThread::Command> threadCmds[NumDrawThreads];
+	Util::Array<VkCommandBufferThread::Command> propagateDescriptorSets;
+	Util::Array<VkCommandBufferThread::Command> threadCmds[NumDrawThreads];
 	SizeT numCallsLastFrame;
 	SizeT numActiveThreads;
 	SizeT numUsedThreads;
@@ -97,10 +102,28 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 	VkViewport* passViewports;
 	uint32_t numVsInputs;
 
-	CoreGraphics::CmdBufferId mainCmdDrawBuffer;
-	CoreGraphics::CmdBufferId mainCmdComputeBuffer;
-	CoreGraphics::CmdBufferId mainCmdTransferBuffer;
-	CoreGraphics::CmdBufferId mainCmdSparseBuffer;
+	struct ConstantsRingBuffer
+	{
+		// handle global constant memory
+		uint32_t cboGfxStartAddress[CoreGraphicsGlobalConstantBufferType::NumConstantBufferTypes];
+		uint32_t cboGfxEndAddress[CoreGraphicsGlobalConstantBufferType::NumConstantBufferTypes];
+		uint32_t cboComputeStartAddress[CoreGraphicsGlobalConstantBufferType::NumConstantBufferTypes];
+		uint32_t cboComputeEndAddress[CoreGraphicsGlobalConstantBufferType::NumConstantBufferTypes];
+	};
+	Util::FixedArray<ConstantsRingBuffer> constantBufferRings;
+
+	struct VertexRingBuffer
+	{
+		uint32_t vboStartAddress[CoreGraphicsVertexBufferMemoryType::NumVertexBufferMemoryTypes];
+		uint32_t vboEndAddress[CoreGraphicsVertexBufferMemoryType::NumVertexBufferMemoryTypes];
+
+		uint32_t iboStartAddress[CoreGraphicsVertexBufferMemoryType::NumVertexBufferMemoryTypes];
+		uint32_t iboEndAddress[CoreGraphicsVertexBufferMemoryType::NumVertexBufferMemoryTypes];
+	};
+	Util::FixedArray<VertexRingBuffer> vertexBufferRings;
+
+	uint maxNumBufferedFrames;
+	uint32_t currentBufferedFrameIndex;
 
 	VkExtensionProperties physicalExtensions[64];
 
@@ -125,7 +148,6 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 	Util::FixedArray<uint32_t> queueFamilyMap;
 
 	// setup management classes
-	VkScheduler scheduler;
 	VkSubContextHandler subcontextHandler;
 	VkPipelineDatabase database;
 
@@ -146,6 +168,14 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 	VkPipelineLayout currentPipelineLayout;
 	VkPipeline currentPipeline;
 	VkPipelineInfoBits currentPipelineBits;
+
+	VkQueryPool queryPools[NumCoreGraphicsQueryTypes];
+	VkQueryPool timestampPool;
+	struct QueryRingBuffer
+	{
+		IndexT queryStartIndex[CoreGraphicsQueryType::NumCoreGraphicsQueryTypes];
+	};
+	Util::FixedArray<QueryRingBuffer> queryIndices;
 
 	static const SizeT MaxClipSettings = 8;
 	uint32_t numViewports;
@@ -317,12 +347,28 @@ GetMainBuffer(const CoreGraphicsQueueType queue)
 {
 	switch (queue)
 	{
-	case GraphicsQueueType: return CommandBufferGetVk(state.mainCmdDrawBuffer);
-	case TransferQueueType: return CommandBufferGetVk(state.mainCmdTransferBuffer);
-	case ComputeQueueType: return CommandBufferGetVk(state.mainCmdComputeBuffer);
-	case SparseQueueType: return CommandBufferGetVk(state.mainCmdSparseBuffer);
+	case GraphicsQueueType: return CommandBufferGetVk(state.gfxCmdBuffer);
+	case ComputeQueueType: return CommandBufferGetVk(state.computeCmdBuffer);
 	}
 	return VK_NULL_HANDLE;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+VkSemaphore 
+GetPresentSemaphore()
+{
+	return SemaphoreGetVk(state.gfxSemaphore);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+VkFence 
+GetPresentFence()
+{
+	return FenceGetVk(state.gfxFence);
 }
 
 //------------------------------------------------------------------------------
@@ -389,7 +435,7 @@ Copy(const VkImage from, Math::rectangle<SizeT> fromRegion, const VkImage to, Ma
 	region.extent = { (uint32_t)toRegion.width(), (uint32_t)toRegion.height(), 1 };
 	region.srcOffset = { toRegion.left, toRegion.top, 0 };
 	region.srcSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
-	vkCmdCopyImage(CommandBufferGetVk(state.mainCmdDrawBuffer), from, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, to, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+	vkCmdCopyImage(GetMainBuffer(GraphicsQueueType), from, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, to, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 }
 
 //------------------------------------------------------------------------------
@@ -406,7 +452,7 @@ Blit(const VkImage from, Math::rectangle<SizeT> fromRegion, IndexT fromMip, cons
 	blit.dstOffsets[0] = { toRegion.left, toRegion.top, 0 };
 	blit.dstOffsets[1] = { toRegion.right, toRegion.bottom, 1 };
 	blit.dstSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, (uint32_t)toMip, 0, 1 };
-	vkCmdBlitImage(CommandBufferGetVk(state.mainCmdDrawBuffer), from, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, to, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit, VK_FILTER_LINEAR);
+	vkCmdBlitImage(GetMainBuffer(GraphicsQueueType), from, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, to, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit, VK_FILTER_LINEAR);
 }
 
 //------------------------------------------------------------------------------
@@ -418,8 +464,8 @@ BindDescriptorsGraphics(const VkDescriptorSet* descriptors, uint32_t baseSet, ui
 	// if we are setting descriptors before we have a pipeline, add them for later submission
 	if (state.currentProgram == -1)
 	{
-		VkCmdBufferThread::Command cmd;
-		cmd.type = VkCmdBufferThread::BindDescriptors;
+		VkCommandBufferThread::Command cmd;
+		cmd.type = VkCommandBufferThread::BindDescriptors;
 		cmd.descriptor.baseSet = baseSet;
 		cmd.descriptor.numSets = setCount;
 		cmd.descriptor.sets = descriptors;
@@ -434,8 +480,8 @@ BindDescriptorsGraphics(const VkDescriptorSet* descriptors, uint32_t baseSet, ui
 		n_assert(state.currentProgram != -1);
 		if (state.inBeginBatch)
 		{
-			VkCmdBufferThread::Command cmd;
-			cmd.type = VkCmdBufferThread::BindDescriptors;
+			VkCommandBufferThread::Command cmd;
+			cmd.type = VkCommandBufferThread::BindDescriptors;
 			cmd.descriptor.baseSet = baseSet;
 			cmd.descriptor.numSets = setCount;
 			cmd.descriptor.sets = descriptors;
@@ -447,7 +493,7 @@ BindDescriptorsGraphics(const VkDescriptorSet* descriptors, uint32_t baseSet, ui
 		else
 		{
 			// otherwise they go on the main draw
-			vkCmdBindDescriptorSets(CommandBufferGetVk(state.mainCmdDrawBuffer), VK_PIPELINE_BIND_POINT_GRAPHICS, state.currentPipelineLayout, baseSet, setCount, descriptors, offsetCount, offsets);
+			vkCmdBindDescriptorSets(GetMainBuffer(GraphicsQueueType), VK_PIPELINE_BIND_POINT_GRAPHICS, state.currentPipelineLayout, baseSet, setCount, descriptors, offsetCount, offsets);
 		}
 	}
 }
@@ -458,23 +504,8 @@ BindDescriptorsGraphics(const VkDescriptorSet* descriptors, uint32_t baseSet, ui
 void 
 BindDescriptorsCompute(const VkDescriptorSet* descriptors, uint32_t baseSet, uint32_t setCount, const uint32_t* offsets, uint32_t offsetCount)
 {
-	if (state.inBeginFrame)
-	{
-		vkCmdBindDescriptorSets(CommandBufferGetVk(state.mainCmdDrawBuffer), VK_PIPELINE_BIND_POINT_COMPUTE, state.currentPipelineLayout, baseSet, setCount, descriptors, offsetCount, offsets);
-	}
-	else
-	{
-		VkDeferredCommand cmd;
-		cmd.del.type = VkDeferredCommand::BindDescriptorSets;
-		cmd.del.descSetBind.baseSet = baseSet;
-		cmd.del.descSetBind.numOffsets = offsetCount;
-		cmd.del.descSetBind.offsets = offsets;
-		cmd.del.descSetBind.numSets = setCount;
-		cmd.del.descSetBind.sets = descriptors;
-		cmd.del.descSetBind.type = VK_PIPELINE_BIND_POINT_COMPUTE;
-		cmd.dev = state.devices[state.currentDevice];
-		state.scheduler.PushCommand(cmd, VkScheduler::OnBindComputePipeline);
-	}
+	n_assert(state.inBeginFrame);
+	vkCmdBindDescriptorSets(GetMainBuffer(GraphicsQueueType), VK_PIPELINE_BIND_POINT_COMPUTE, state.currentPipelineLayout, baseSet, setCount, descriptors, offsetCount, offsets);
 }
 
 //------------------------------------------------------------------------------
@@ -485,8 +516,8 @@ UpdatePushRanges(const VkShaderStageFlags& stages, const VkPipelineLayout& layou
 {
 	if (state.inBeginBatch)
 	{
-		VkCmdBufferThread::Command cmd;
-		cmd.type = VkCmdBufferThread::PushRange;
+		VkCommandBufferThread::Command cmd;
+		cmd.type = VkCommandBufferThread::PushRange;
 		cmd.pushranges.layout = layout;
 		cmd.pushranges.offset = offset;
 		cmd.pushranges.size = size;
@@ -499,7 +530,7 @@ UpdatePushRanges(const VkShaderStageFlags& stages, const VkPipelineLayout& layou
 	}
 	else
 	{
-		vkCmdPushConstants(CommandBufferGetVk(state.mainCmdDrawBuffer), layout, stages, offset, size, data);
+		vkCmdPushConstants(GetMainBuffer(GraphicsQueueType), layout, stages, offset, size, data);
 	}
 	
 }
@@ -588,10 +619,10 @@ CreateAndBindGraphicsPipeline()
 
 	if (state.inBeginBatch)
 	{ 
-		VkCmdBufferThread::Command cmd;
+		VkCommandBufferThread::Command cmd;
 
 		// send pipeline bind command, this is the first step in our procedure, so we use this as a trigger to switch threads
-		cmd.type = VkCmdBufferThread::GraphicsPipeline;
+		cmd.type = VkCommandBufferThread::GraphicsPipeline;
 		cmd.pipe.pipeline = pipeline;
 		cmd.pipe.layout = state.currentPipelineLayout;
 		PushToThread(cmd, state.currentDrawThread);
@@ -607,7 +638,7 @@ CreateAndBindGraphicsPipeline()
 		uint32_t i;
 		for (i = 0; i < state.numScissors; i++)
 		{
-			cmd.type = VkCmdBufferThread::ScissorRect;
+			cmd.type = VkCommandBufferThread::ScissorRect;
 			cmd.scissorRect.sc = state.scissors[i];
 			cmd.scissorRect.index = i;
 			PushToThread(cmd, state.currentDrawThread);
@@ -615,19 +646,17 @@ CreateAndBindGraphicsPipeline()
 
 		for (i = 0; i < state.numViewports; i++)
 		{
-			cmd.type = VkCmdBufferThread::Viewport;
+			cmd.type = VkCommandBufferThread::Viewport;
 			cmd.viewport.vp = state.viewports[i];
 			cmd.viewport.index = i;
 			PushToThread(cmd, state.currentDrawThread);
 		}
 		state.viewportsDirty[state.currentDrawThread] = false;
-		state.scheduler.ExecuteCommandPass(VkScheduler::OnBindGraphicsPipeline);
 	}
 	else
 	{
 		// bind pipeline
-		vkCmdBindPipeline(CommandBufferGetVk(state.mainCmdDrawBuffer), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-		state.scheduler.ExecuteCommandPass(VkScheduler::OnBindGraphicsPipeline);
+		vkCmdBindPipeline(GetMainBuffer(GraphicsQueueType), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 	}
 	
 }
@@ -642,14 +671,11 @@ BindComputePipeline(const VkPipeline& pipeline, const VkPipelineLayout& layout)
 	state.currentBindPoint = CoreGraphics::ComputePipeline;
 
 	// bind pipeline
-	vkCmdBindPipeline(CommandBufferGetVk(state.mainCmdDrawBuffer), VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
+	vkCmdBindPipeline(GetMainBuffer(GraphicsQueueType), VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
 
 	// bind shared descriptors
 	VkShaderServer::Instance()->BindTextureDescriptorSetsCompute();
 	VkTransformDevice::Instance()->BindCameraDescriptorSetsCompute();
-
-	// run command pass
-	state.scheduler.ExecuteCommandPass(VkScheduler::OnBindComputePipeline);
 }
 
 //------------------------------------------------------------------------------
@@ -675,8 +701,8 @@ SetViewports(VkViewport* viewports, SizeT num)
 	{
 		if (state.inBeginBatch)
 		{
-			VkCmdBufferThread::Command cmd;
-			cmd.type = VkCmdBufferThread::ViewportArray;
+			VkCommandBufferThread::Command cmd;
+			cmd.type = VkCommandBufferThread::ViewportArray;
 			cmd.viewportArray.first = 0;
 			cmd.viewportArray.num = num;
 			cmd.viewportArray.vps = viewports;
@@ -703,8 +729,8 @@ SetScissorRects(VkRect2D* scissors, SizeT num)
 	{
 		if (state.inBeginBatch)
 		{
-			VkCmdBufferThread::Command cmd;
-			cmd.type = VkCmdBufferThread::ScissorRectArray;
+			VkCommandBufferThread::Command cmd;
+			cmd.type = VkCommandBufferThread::ScissorRectArray;
 			cmd.scissorRectArray.first = 0;
 			cmd.scissorRectArray.num = num;
 			cmd.scissorRectArray.scs = scissors;
@@ -801,14 +827,13 @@ BeginDrawThread()
 		&state.passInfo
 	};
 
-	VkCmdBufferThread::Command cmd;
-	cmd.type = VkCmdBufferThread::BeginCommand;
+	VkCommandBufferThread::Command cmd;
+	cmd.type = VkCommandBufferThread::BeginCommand;
 	cmd.bgCmd.buf = state.dispatchableDrawCmdBuffers[state.currentDrawThread];
 	cmd.bgCmd.info = begin;
 	PushToThread(cmd, state.currentDrawThread);
 
 	// run begin command buffer pass
-	state.scheduler.ExecuteCommandPass(VkScheduler::OnBeginDrawThread);
 	state.numActiveThreads++;
 }
 
@@ -827,33 +852,27 @@ EndDrawThreads()
 			FlushToThread(i);
 
 			// end thread
-			VkCmdBufferThread::Command cmd;
-			cmd.type = VkCmdBufferThread::EndCommand;
+			VkCommandBufferThread::Command cmd;
+			cmd.type = VkCommandBufferThread::EndCommand;
 			PushToThread(cmd, i, false);
 
-			cmd.type = VkCmdBufferThread::Sync;
+			cmd.type = VkCommandBufferThread::Sync;
 			cmd.syncEvent = state.drawCompletionEvents[i];
 			PushToThread(cmd, i, false);
 			state.drawCompletionEvents[i]->Wait();
 			state.drawCompletionEvents[i]->Reset();
 		}
 
-		// run end-of-threads pass
-		state.scheduler.ExecuteCommandPass(VkScheduler::OnDrawThreadsSubmitted);
-
 		// execute commands
-		vkCmdExecuteCommands(CommandBufferGetVk(state.mainCmdDrawBuffer), state.numActiveThreads, state.dispatchableDrawCmdBuffers);
+		vkCmdExecuteCommands(GetMainBuffer(GraphicsQueueType), state.numActiveThreads, state.dispatchableDrawCmdBuffers);
+
+		// get current submission
+		VkDevice dev = state.devices[state.currentDevice];
 
 		// destroy command buffers
 		for (i = 0; i < state.numActiveThreads; i++)
 		{
-			VkDeferredCommand cmd;
-			cmd.del.type = VkDeferredCommand::FreeCmdBuffers;
-			cmd.del.cmdbufferfree.buffers[0] = state.dispatchableDrawCmdBuffers[i];
-			cmd.del.cmdbufferfree.numBuffers = 1;
-			cmd.del.cmdbufferfree.pool = state.dispatchableCmdDrawBufferPool[i];
-			cmd.dev = state.devices[state.currentDevice];
-			state.scheduler.PushCommand(cmd, VkScheduler::OnHandleDrawFences);
+			Vulkan::SubmissionContextFreeCommandBuffer(state.gfxSubmission, dev, state.dispatchableCmdDrawBufferPool[i], state.dispatchableDrawCmdBuffers[i]);
 		}
 		state.currentDrawThread = state.NumDrawThreads - 1;
 		state.numActiveThreads = 0;
@@ -864,7 +883,7 @@ EndDrawThreads()
 /**
 */
 void 
-PushToThread(const VkCmdBufferThread::Command& cmd, const IndexT& index, bool allowStaging)
+PushToThread(const VkCommandBufferThread::Command& cmd, const IndexT& index, bool allowStaging)
 {
 	//this->threadCmds[index].Append(cmd);
 	if (allowStaging)
@@ -909,7 +928,7 @@ BindSharedDescriptorSets()
 /**
 */
 void 
-CmdBufBeginMarker(VkCommandBuffer buf, const Math::float4& color, const char* name)
+CommandBufferBeginMarker(VkCommandBuffer buf, const Math::float4& color, const char* name)
 {
 	alignas(16) float col[4];
 	color.store(col);
@@ -927,11 +946,12 @@ CmdBufBeginMarker(VkCommandBuffer buf, const Math::float4& color, const char* na
 /**
 */
 void 
-CmdBufEndMarker(VkCommandBuffer buf)
+CommandBufferEndMarker(VkCommandBuffer buf)
 {
 	VkCmdDebugMarkerEnd(buf);
 }
 #endif
+
 } // namespace Vulkan
 
 //------------------------------------------------------------------------------
@@ -972,7 +992,7 @@ namespace CoreGraphics
 using namespace Vulkan;
 
 #if NEBULA_GRAPHICS_DEBUG
-template<> void ObjectSetName(const CoreGraphics::CmdBufferId id, const Util::String& name);
+template<> void ObjectSetName(const CoreGraphics::CommandBufferId id, const Util::String& name);
 #endif
 
 //------------------------------------------------------------------------------
@@ -998,7 +1018,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		2,																// application version
 		"Nebula Trifid",												// engine name
 		2,																// engine version
-		VK_MAKE_VERSION(1, 0, VK_HEADER_VERSION)						// API version
+		VK_MAKE_VERSION(1, 1, VK_HEADER_VERSION)						// API version
 	};
 
 	state.usedExtensions = 0;
@@ -1010,7 +1030,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		state.extensions[state.usedExtensions++] = requiredExtensions[i];
 	}
 
-	const char* layers[] = { "VK_LAYER_KHRONOS_validation" };
+	const char* layers[] = { "VK_LAYER_KHRONOS_validation", "VK_LAYER_LUNARG_assistant_layer" };
 	int numLayers = 0;
 	const char** usedLayers = nullptr;
 
@@ -1018,7 +1038,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	if (info.enableValidation)
 	{
 		usedLayers = &layers[0];
-		numLayers = 1;
+		numLayers = 2;
 	}
 	else
 	{
@@ -1030,7 +1050,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	if (info.enableValidation)
 	{
 		usedLayers = &layers[0];
-		numLayers = 1;
+		numLayers = 2;
 		state.extensions[state.usedExtensions++] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
 	}
 #endif
@@ -1088,7 +1108,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	}
 
 #if NEBULA_GRAPHICS_DEBUG
-	VkDebugObjectName = (PFN_vkSetDebugUtilsObjectNameEXT)vkGetInstanceProcAddr(state.instance, "vkSetDebugUtilsObjectTagEXT");
+	VkDebugObjectName = (PFN_vkSetDebugUtilsObjectNameEXT)vkGetInstanceProcAddr(state.instance, "vkSetDebugUtilsObjectNameEXT");
 	VkDebugObjectTag = (PFN_vkSetDebugUtilsObjectTagEXT)vkGetInstanceProcAddr(state.instance, "vkSetDebugUtilsObjectTagEXT");
 	VkQueueBeginLabel = (PFN_vkQueueBeginDebugUtilsLabelEXT)vkGetInstanceProcAddr(state.instance, "vkQueueBeginDebugUtilsLabelEXT");
 	VkQueueEndLabel = (PFN_vkQueueEndDebugUtilsLabelEXT)vkGetInstanceProcAddr(state.instance, "vkQueueEndDebugUtilsLabelEXT");
@@ -1237,9 +1257,6 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	state.queueFamilyMap[TransferQueueType] = state.transferQueueFamily;
 	state.queueFamilyMap[SparseQueueType] = state.sparseQueueFamily;
 
-	// hmm, a bit inflexible, if we implement some 'cycle device' feature, or switch device feature, we should make sure we have schedulers for all devices...
-	state.scheduler.SetDevice(state.devices[state.currentDevice]);
-
 	VkPipelineCacheCreateInfo cacheInfo =
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,
@@ -1262,38 +1279,141 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	// setup pools (from VkCmdBuffer.h)
 	SetupVkPools(state.devices[state.currentDevice], state.drawQueueFamily, state.computeQueueFamily, state.transferQueueFamily, state.sparseQueueFamily);
 
-	CmdBufferCreateInfo cmdCreateInfo =
+	CommandBufferCreateInfo cmdCreateInfo =
 	{
 		false,
-		true,
 		false,
-		InvalidCmdUsage
+		true,
+		InvalidCommandUsage
 	};
-	cmdCreateInfo.usage = CmdDraw;
-	state.mainCmdDrawBuffer = CreateCmdBuffer(cmdCreateInfo);
 
-	cmdCreateInfo.usage = CmdCompute;
-	state.mainCmdComputeBuffer = CreateCmdBuffer(cmdCreateInfo);
+	state.constantBufferRings.Resize(info.numBufferedFrames);
+	state.vertexBufferRings.Resize(info.numBufferedFrames);
 
-	cmdCreateInfo.usage = CmdTransfer;
-	state.mainCmdTransferBuffer = CreateCmdBuffer(cmdCreateInfo);
-
-	cmdCreateInfo.usage = CmdSparse;
-	state.mainCmdSparseBuffer = CreateCmdBuffer(cmdCreateInfo);
-
-#if NEBULA_GRAPHICS_DEBUG
-	ObjectSetName(state.mainCmdDrawBuffer, "Main Draw Command Buffer");
-	ObjectSetName(state.mainCmdComputeBuffer, "Main Compute Command Buffer");
-	ObjectSetName(state.mainCmdTransferBuffer, "Main Transfer Command Buffer");
-	ObjectSetName(state.mainCmdSparseBuffer, "Main Sparse Bind Command Buffer");
+#ifdef CreateSemaphore
+#pragma push_macro("CreateSemaphore")
+#undef CreateSemaphore
 #endif
 
-	// setup draw threads
+	for (i = 0; i < info.numBufferedFrames; i++)
+	{
+		Vulkan::GraphicsDeviceState::ConstantsRingBuffer& cboRing = state.constantBufferRings[i];
+
+		IndexT j;
+		for (j = 0; j < NumConstantBufferTypes; j++)
+		{
+			cboRing.cboComputeStartAddress[j] = cboRing.cboComputeEndAddress[j] = 0;
+			cboRing.cboGfxStartAddress[j] = cboRing.cboGfxEndAddress[j] = 0;
+		}
+
+		Vulkan::GraphicsDeviceState::VertexRingBuffer& vboRing = state.vertexBufferRings[i];
+		for (j = 0; j < NumVertexBufferMemoryTypes; j++)
+		{
+			vboRing.vboStartAddress[j] = vboRing.vboEndAddress[j] = 0;
+			vboRing.iboStartAddress[j] = vboRing.iboEndAddress[j] = 0;
+		}
+	}
+
+	for (i = 0; i < NumConstantBufferTypes; i++)
+	{
+		static const Util::String threadName[] = { "Main Thread ", "Visibility Thread " };
+		static const Util::String queueName[] = { "Graphics Constant Buffer", "Compute Constant Buffer" };
+		ConstantBufferCreateInfo cboInfo =
+		{
+			"",
+			-1,
+			0,
+			CoreGraphics::ConstantBufferUpdateMode::ManualFlush
+		};
+
+		cboInfo.name = threadName[i] + queueName[0];
+		cboInfo.size = info.globalGraphicsConstantBufferMemorySize[i] * info.numBufferedFrames;
+		if (cboInfo.size > 0)
+		{
+			state.globalGraphicsConstantBuffer[i] = CreateConstantBuffer(cboInfo);
+			state.globalGraphicsConstantBufferMaxValue[i] = info.globalGraphicsConstantBufferMemorySize[i];
+		}	
+
+		cboInfo.name = threadName[i] + queueName[1];
+		cboInfo.size = info.globalComputeConstantBufferMemorySize[i] * info.numBufferedFrames;
+		if (cboInfo.size > 0)
+		{
+			state.globalComputeConstantBuffer[i] = CreateConstantBuffer(cboInfo);
+			state.globalComputeConstantBufferMaxValue[i] = info.globalComputeConstantBufferMemorySize[i];
+		}	
+	}
+
+	for (i = 0; i < NumVertexBufferMemoryTypes; i++)
+	{
+		Util::Array<CoreGraphics::VertexComponent> components = { VertexComponent((VertexComponent::SemanticName)0, 0, VertexComponent::Float, 0) };
+
+		static const Util::String threadName[] = { "Main Thread ", "Visibility Thread " };
+
+		// create VBO
+		CoreGraphics::VertexBufferCreateDirectInfo vboInfo =
+		{
+			Util::String::Sprintf("%s Global Vertex Buffer %d", threadName[i], i),
+			CoreGraphics::GpuBufferTypes::AccessWrite,
+			CoreGraphics::GpuBufferTypes::UsageDynamic,
+			CoreGraphics::GpuBufferTypes::SyncingCoherent | CoreGraphics::GpuBufferTypes::SyncingPersistent,
+			info.globalVertexBufferMemorySize[i] * info.numBufferedFrames, // memory size should be divided by 4
+		};
+		state.globalVertexBufferMaxValue[i] = info.globalVertexBufferMemorySize[i];
+		if (state.globalVertexBufferMaxValue[i] > 0)
+		{
+			state.globalVertexBuffer[i] = CreateVertexBuffer(vboInfo);
+			state.mappedVertexBuffer[i] = (byte*)VertexBufferMap(state.globalVertexBuffer[i], GpuBufferTypes::MapWrite);
+		}	
+
+		// create IBO
+		CoreGraphics::IndexBufferCreateDirectInfo iboInfo =
+		{
+			Util::String::Sprintf("%s Global Index Buffer %d", threadName[i], i),
+			"system",
+			CoreGraphics::GpuBufferTypes::AccessWrite,
+			CoreGraphics::GpuBufferTypes::UsageDynamic,
+			CoreGraphics::GpuBufferTypes::SyncingCoherent | CoreGraphics::GpuBufferTypes::SyncingPersistent,
+			IndexType::Index32,
+			info.globalIndexBufferMemorySize[i] * info.numBufferedFrames / 4,
+		};
+		state.globalIndexBufferMaxValue[i] = info.globalIndexBufferMemorySize[i];
+		if (state.globalIndexBufferMaxValue[i])
+		{
+			state.globalIndexBuffer[i] = CreateIndexBuffer(iboInfo);
+			state.mappedIndexBuffer[i] = (byte*)IndexBufferMap(state.globalIndexBuffer[i], GpuBufferTypes::MapWrite);
+		}		
+	}
+
+	cmdCreateInfo.usage = CommandGfx;
+	state.gfxSubmission = CreateSubmissionContext({ cmdCreateInfo, info.numBufferedFrames, true });
+	state.gfxCmdBuffer = CommandBufferId::Invalid();
+	state.gfxSemaphore = SemaphoreId::Invalid();
+
+	cmdCreateInfo.usage = CommandCompute;
+	state.computeSubmission = CreateSubmissionContext({ cmdCreateInfo, info.numBufferedFrames, true });
+	state.computeCmdBuffer = CommandBufferId::Invalid();
+	state.computeSemaphore = SemaphoreId::Invalid();
+
+	CommandBufferBeginInfo beginInfo{ true, false, false };
+
+	// create setup submission and transfer submission
+	cmdCreateInfo.usage = CommandTransfer;
+	state.resourceSubmissionContext = CreateSubmissionContext({ cmdCreateInfo, info.numBufferedFrames, true });
+	state.resourceSubmissionActive = false;
+
+	cmdCreateInfo.usage = CommandGfx;
+	state.setupSubmissionContext = CreateSubmissionContext({ cmdCreateInfo, info.numBufferedFrames, true });
+	state.setupSubmissionActive = false;
+
+#pragma pop_macro("CreateSemaphore")
+
+	state.maxNumBufferedFrames = info.numBufferedFrames;
+
 	Util::String threadName;
 	for (i = 0; i < state.NumDrawThreads; i++)
 	{
 		threadName.Format("DrawCmdBufferThread%d", i);
-		state.drawThreads[i] = VkCmdBufferThread::Create();
+		state.drawThreads[i] = VkCommandBufferThread::Create();
 		state.drawThreads[i]->SetPriority(Threading::Thread::High);
 		state.drawThreads[i]->SetThreadAffinity(System::Cpu::Core5);
 		state.drawThreads[i]->SetName(threadName);
@@ -1316,7 +1436,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	for (i = 0; i < state.NumComputeThreads; i++)
 	{
 		threadName.Format("ComputeCmdBufferThread%d", i);
-		state.compThreads[i] = VkCmdBufferThread::Create();
+		state.compThreads[i] = VkCommandBufferThread::Create();
 		state.compThreads[i]->SetPriority(Threading::Thread::Low);
 		state.compThreads[i]->SetThreadAffinity(System::Cpu::Core5);
 		state.compThreads[i]->SetName(threadName);
@@ -1339,7 +1459,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	for (i = 0; i < state.NumTransferThreads; i++)
 	{
 		threadName.Format("TransferCmdBufferThread%d", i);
-		state.transThreads[i] = VkCmdBufferThread::Create();
+		state.transThreads[i] = VkCommandBufferThread::Create();
 		state.transThreads[i]->SetPriority(Threading::Thread::Low);
 		state.transThreads[i]->SetThreadAffinity(System::Cpu::Core5);
 		state.transThreads[i]->SetName(threadName);
@@ -1387,6 +1507,40 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	state.currentPipelineInfo.basePipelineIndex = -1;
 	state.currentPipelineInfo.pColorBlendState = &state.blendInfo;
 
+	// construct queues
+	VkQueryPoolCreateInfo queryInfos[NumCoreGraphicsQueryTypes]; 
+	
+	for (i = 0; i < NumCoreGraphicsQueryTypes; i++)
+	{
+		queryInfos[i] = { 
+			VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, 
+			nullptr, 
+			0, 
+			VK_QUERY_TYPE_MAX_ENUM, 
+			1000u * info.numBufferedFrames,  // create 1000 queries per frame
+			0
+		};
+	}
+	
+	queryInfos[CoreGraphicsQueryType::OcclusionQuery].queryType = VK_QUERY_TYPE_OCCLUSION;
+	queryInfos[CoreGraphicsQueryType::Timestamp].queryType = VK_QUERY_TYPE_TIMESTAMP;
+	queryInfos[CoreGraphicsQueryType::PipelineStatisticsGraphics].queryType = VK_QUERY_TYPE_PIPELINE_STATISTICS;
+	queryInfos[CoreGraphicsQueryType::PipelineStatisticsGraphics].pipelineStatistics =
+		VK_QUERY_PIPELINE_STATISTIC_VERTEX_SHADER_INVOCATIONS_BIT |
+		VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT |
+		VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT |
+		VK_QUERY_PIPELINE_STATISTIC_FRAGMENT_SHADER_INVOCATIONS_BIT;
+	queryInfos[CoreGraphicsQueryType::PipelineStatisticsCompute].queryType = VK_QUERY_TYPE_PIPELINE_STATISTICS;
+	queryInfos[CoreGraphicsQueryType::PipelineStatisticsCompute].pipelineStatistics =
+		VK_QUERY_PIPELINE_STATISTIC_COMPUTE_SHADER_INVOCATIONS_BIT;
+
+	for (i = 0; i < NumCoreGraphicsQueryTypes; i++)
+	{
+		VkResult res = vkCreateQueryPool(state.devices[state.currentDevice], &queryInfos[i], nullptr, &state.queryPools[i]);
+		n_assert(res == VK_SUCCESS);
+	}
+	state.queryIndices.Resize(info.numBufferedFrames);
+
 	state.inputInfo.pNext = nullptr;
 	state.inputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
 	state.inputInfo.flags = 0;
@@ -1410,20 +1564,20 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	state.currentDrawThread = 0;
 	state.numActiveThreads = 0;
 
-	_setup_timer(state.DebugTimer);
-	_setup_counter(state.NumImageBytesAllocated);
+	_setup_grouped_timer(state.DebugTimer, "GraphicsDevice");
+	_setup_grouped_counter(state.NumImageBytesAllocated, "GraphicsDevice");
 	_begin_counter(state.NumImageBytesAllocated);
-	_setup_counter(state.NumBufferBytesAllocated);
+	_setup_grouped_counter(state.NumBufferBytesAllocated, "GraphicsDevice");
 	_begin_counter(state.NumBufferBytesAllocated);
-	_setup_counter(state.NumBytesAllocated);
+	_setup_grouped_counter(state.NumBytesAllocated, "GraphicsDevice");
 	_begin_counter(state.NumBytesAllocated);
-	_setup_counter(state.NumPipelinesBuilt);
+	_setup_grouped_counter(state.NumPipelinesBuilt, "GraphicsDevice");
 	_begin_counter(state.NumPipelinesBuilt);
-    _setup_counter(state.GraphicsDeviceNumComputes);
+    _setup_grouped_counter(state.GraphicsDeviceNumComputes, "GraphicsDevice");
     _begin_counter(state.GraphicsDeviceNumComputes);
-    _setup_counter(state.GraphicsDeviceNumPrimitives);
+    _setup_grouped_counter(state.GraphicsDeviceNumPrimitives, "GraphicsDevice");
     _begin_counter(state.GraphicsDeviceNumPrimitives);
-    _setup_counter(state.GraphicsDeviceNumDrawCalls);
+    _setup_grouped_counter(state.GraphicsDeviceNumDrawCalls, "GraphicsDevice");
     _begin_counter(state.GraphicsDeviceNumDrawCalls);
 
 	// yay, Vulkan!
@@ -1496,7 +1650,38 @@ DestroyGraphicsDevice()
 
 	// wait for queues and run all pending commands
 	state.subcontextHandler.Discard();
-	state.scheduler.Discard();
+
+	// clean up global constant buffers
+	for (i = 0; i < NumConstantBufferTypes; i++)
+	{
+		if (state.globalGraphicsConstantBufferMaxValue[i] > 0)
+			DestroyConstantBuffer(state.globalGraphicsConstantBuffer[i]);
+		state.globalGraphicsConstantBuffer[i] = ConstantBufferId::Invalid();
+
+		if (state.globalComputeConstantBufferMaxValue[i] > 0)
+			DestroyConstantBuffer(state.globalComputeConstantBuffer[i]);
+		state.globalComputeConstantBuffer[i] = ConstantBufferId::Invalid();
+	}
+
+	// clean up global vertex and index buffers
+	for (i = 0; i < NumVertexBufferMemoryTypes; i++)
+	{
+		if (state.globalVertexBufferMaxValue[i] > 0)
+		{
+			VertexBufferUnmap(state.globalVertexBuffer[i]);
+			DestroyVertexBuffer(state.globalVertexBuffer[i]);
+		}
+		state.globalVertexBuffer[i] = VertexBufferId::Invalid();
+		state.mappedVertexBuffer[i] = nullptr;
+
+		if (state.globalIndexBufferMaxValue[i] > 0)
+		{
+			IndexBufferUnmap(state.globalIndexBuffer[i]);
+			DestroyIndexBuffer(state.globalIndexBuffer[i]);
+		}
+		state.globalIndexBuffer[i] = IndexBufferId::Invalid();
+		state.mappedIndexBuffer[i] = nullptr;
+	}
 
 	// destroy command pools
 	for (i = 0; i < state.NumDrawThreads; i++)
@@ -1512,10 +1697,6 @@ DestroyGraphicsDevice()
 	vkDestroyPipelineCache(state.devices[state.currentDevice], state.cache, nullptr);
 
 	// free our main buffers, our secondary buffers should be fine so the pools should be free to destroy
-	DestroyCmdBuffer(state.mainCmdDrawBuffer);
-	DestroyCmdBuffer(state.mainCmdComputeBuffer);
-	DestroyCmdBuffer(state.mainCmdTransferBuffer);
-	DestroyCmdBuffer(state.mainCmdSparseBuffer);
 	DestroyVkPools(state.devices[0]);
 
 	vkDestroyFence(state.devices[0], state.mainCmdDrawFence, nullptr);
@@ -1528,6 +1709,24 @@ DestroyGraphicsDevice()
 
 	vkDestroyDevice(state.devices[0], nullptr);
 	vkDestroyInstance(state.instance, nullptr);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+SizeT 
+GetNumBufferedFrames()
+{
+	return state.maxNumBufferedFrames;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+IndexT 
+GetBufferedFrameIndex()
+{
+	return state.currentBufferedFrameIndex;
 }
 
 //------------------------------------------------------------------------------
@@ -1593,30 +1792,103 @@ BeginFrame(IndexT frameIndex)
 	}
 	state.inBeginFrame = true;
 
-	VkShaderServer::Instance()->SubmitTextureDescriptorChanges();
+	// set to next frame submission
+	state.currentBufferedFrameIndex = (state.currentBufferedFrameIndex + 1) % state.maxNumBufferedFrames;
 
-	const CmdBufferBeginInfo cmdInfo =
+	// cycle submissions, will wait for the fence to finish
+	state.gfxFence = CoreGraphics::SubmissionContextNextCycle(state.gfxSubmission);
+	state.computeFence = CoreGraphics::SubmissionContextNextCycle(state.computeSubmission);
+
+	// update constant buffer offsets
+	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& nextCboRing = state.constantBufferRings[state.currentBufferedFrameIndex];
+	for (IndexT i = 0; i < CoreGraphicsGlobalConstantBufferType::NumConstantBufferTypes; i++)
 	{
-		true, false, false
-	};
-	CmdBufferBeginRecord(state.mainCmdDrawBuffer, cmdInfo);
-	CmdBufferBeginRecord(state.mainCmdComputeBuffer, cmdInfo);
-	CmdBufferBeginRecord(state.mainCmdTransferBuffer, cmdInfo);
-	CmdBufferBeginRecord(state.mainCmdSparseBuffer, cmdInfo);
+		nextCboRing.cboGfxStartAddress[i] = state.globalGraphicsConstantBufferMaxValue[i] * state.currentBufferedFrameIndex;
+		nextCboRing.cboGfxEndAddress[i] = state.globalGraphicsConstantBufferMaxValue[i] * state.currentBufferedFrameIndex;
+		nextCboRing.cboComputeStartAddress[i] = state.globalComputeConstantBufferMaxValue[i] * state.currentBufferedFrameIndex;
+		nextCboRing.cboComputeEndAddress[i] = state.globalComputeConstantBufferMaxValue[i] * state.currentBufferedFrameIndex;
+	}
 
-	// handle fences from previous frame(s)
-	state.scheduler.ExecuteCommandPass(VkScheduler::OnHandleTransferFences);
-	state.scheduler.ExecuteCommandPass(VkScheduler::OnHandleDrawFences);
-	state.scheduler.ExecuteCommandPass(VkScheduler::OnHandleComputeFences);
+	// update vertex buffer offsets
+	Vulkan::GraphicsDeviceState::VertexRingBuffer& nextVboRing = state.vertexBufferRings[state.currentBufferedFrameIndex];
+	for (IndexT i = 0; i < CoreGraphicsVertexBufferMemoryType::NumVertexBufferMemoryTypes; i++)
+	{
+		nextVboRing.vboStartAddress[i] = state.globalVertexBufferMaxValue[i] * state.currentBufferedFrameIndex;
+		nextVboRing.vboEndAddress[i] = state.globalVertexBufferMaxValue[i] * state.currentBufferedFrameIndex;
+		nextVboRing.iboStartAddress[i] = state.globalIndexBufferMaxValue[i] * state.currentBufferedFrameIndex;
+		nextVboRing.iboEndAddress[i] = state.globalIndexBufferMaxValue[i] * state.currentBufferedFrameIndex;
+	}
 
-	state.scheduler.Begin();
-	state.scheduler.ExecuteCommandPass(VkScheduler::OnBeginFrame);
+	Vulkan::GraphicsDeviceState::QueryRingBuffer& queries = state.queryIndices[state.currentBufferedFrameIndex];
+	for (IndexT i = 0; i < CoreGraphicsQueryType::NumCoreGraphicsQueryTypes; i++)
+	{
+		queries.queryStartIndex[i] = 1000 * state.currentBufferedFrameIndex;
+
+		// reset query pools
+		// vkCmdResetQueryPool(GetMainBuffer(GraphicsQueueType), state.queryPools[i], queries.queryStartIndex[i], 1000);
+	}
+
+	state.gfxPrevSemaphore     = SemaphoreId::Invalid();
+	state.computePrevSemaphore = SemaphoreId::Invalid();
+	state.gfxWaitSemaphore     = SemaphoreId::Invalid();
+	state.computeWaitSemaphore = SemaphoreId::Invalid();
+	state.gfxSemaphore         = SemaphoreId::Invalid();
+	state.computeSemaphore     = SemaphoreId::Invalid();
+
+	// update bindless texture descriptors
+	VkShaderServer::Instance()->SubmitTextureDescriptorChanges();
 
 	// reset current thread
 	state.currentDrawThread = state.NumDrawThreads - 1;
 	state.currentPipelineBits = NoInfoSet;
 
 	return true;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+BeginSubmission(CoreGraphicsQueueType queue, CoreGraphicsQueueType waitQueue)
+{
+	n_assert(state.inBeginFrame);
+
+	if (queue == GraphicsQueueType)
+	{
+		// save previous semaphore
+		state.gfxPrevSemaphore = state.gfxSemaphore;
+
+		// generate new buffer and semaphore
+		CoreGraphics::SubmissionContextNewBuffer(state.gfxSubmission, state.gfxCmdBuffer, state.gfxSemaphore);
+
+		// begin recording the new buffer
+		const CommandBufferBeginInfo cmdInfo =
+		{
+			true, false, false
+		};
+		CommandBufferBeginRecord(state.gfxCmdBuffer, cmdInfo);
+
+		if (waitQueue == ComputeQueueType)
+			state.gfxWaitSemaphore = state.computeSemaphore;
+	}
+	else if (queue == ComputeQueueType)
+	{
+		// save previous semaphore
+		state.computePrevSemaphore = state.computeSemaphore;
+
+		// generate new buffer and semaphore
+		CoreGraphics::SubmissionContextNewBuffer(state.computeSubmission, state.computeCmdBuffer, state.computeSemaphore);
+
+		// begin recording the new buffer
+		const CommandBufferBeginInfo cmdInfo =
+		{
+			true, false, false
+		};
+		CommandBufferBeginRecord(state.computeCmdBuffer, cmdInfo);
+
+		if (waitQueue == GraphicsQueueType)
+			state.computeWaitSemaphore = state.gfxSemaphore;
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -1639,10 +1911,7 @@ BeginPass(const CoreGraphics::PassId pass)
 	state.database.SetSubpass(0);
 
 	const VkRenderPassBeginInfo& info = PassGetVkRenderPassBeginInfo(pass);
-	vkCmdBeginRenderPass(CommandBufferGetVk(state.mainCmdDrawBuffer), &info, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
-
-	// run this phase for scheduler
-	state.scheduler.ExecuteCommandPass(VkScheduler::OnBeginPass);
+	vkCmdBeginRenderPass(GetMainBuffer(GraphicsQueueType), &info, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
 	state.passInfo.framebuffer = info.framebuffer;
 	state.passInfo.renderPass = info.renderPass;
@@ -1665,7 +1934,7 @@ SetToNextSubpass()
 	SetFramebufferLayoutInfo(PassGetVkFramebufferInfo(state.pass));
 	state.database.SetSubpass(state.currentPipelineInfo.subpass);
 	state.passInfo.subpass = state.currentPipelineInfo.subpass;
-	vkCmdNextSubpass(CommandBufferGetVk(state.mainCmdDrawBuffer), VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+	vkCmdNextSubpass(GetMainBuffer(GraphicsQueueType), VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 }
 
 //------------------------------------------------------------------------------
@@ -1719,16 +1988,17 @@ SetStreamVertexBuffer(IndexT streamIndex, const CoreGraphics::VertexBufferId& vb
 {
 	if (state.inBeginBatch)
 	{
-		VkCmdBufferThread::Command cmd;
-		cmd.type = VkCmdBufferThread::InputAssemblyVertex;
-		cmd.vbo.buffer = CoreGraphics::vboPool->allocator.Get<1>(vb.resourceId).buf;
+		VkCommandBufferThread::Command cmd;
+		cmd.type = VkCommandBufferThread::InputAssemblyVertex;
+		cmd.vbo.buffer = VertexBufferGetVk(vb);
 		cmd.vbo.index = streamIndex;
 		cmd.vbo.offset = offsetVertexIndex;
 		PushToThread(cmd, state.currentDrawThread);
 	}
 	else
 	{
-		vkCmdBindVertexBuffers(CommandBufferGetVk(state.mainCmdDrawBuffer), streamIndex, 1, &CoreGraphics::vboPool->allocator.Get<1>(vb.resourceId).buf, (VkDeviceSize*)&offsetVertexIndex);
+		VkBuffer buf = VertexBufferGetVk(vb);
+		vkCmdBindVertexBuffers(GetMainBuffer(GraphicsQueueType), streamIndex, 1, &buf, (VkDeviceSize*)&offsetVertexIndex);
 	}
 }
 
@@ -1751,16 +2021,37 @@ SetIndexBuffer(const CoreGraphics::IndexBufferId& ib, IndexT offsetIndex)
 {
 	if (state.inBeginBatch)
 	{
-		VkCmdBufferThread::Command cmd;
-		cmd.type = VkCmdBufferThread::InputAssemblyIndex;
-		cmd.ibo.buffer = CoreGraphics::iboPool->allocator.Get<1>(ib.resourceId).buf;
-		cmd.ibo.indexType = CoreGraphics::iboPool->allocator.Get<1>(ib.resourceId).type == IndexType::Index16 ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32;
+		VkCommandBufferThread::Command cmd;
+		cmd.type = VkCommandBufferThread::InputAssemblyIndex;
+		cmd.ibo.buffer = IndexBufferGetVk(ib);
+		cmd.ibo.indexType = IndexBufferGetVkType(ib);
 		cmd.ibo.offset = offsetIndex;
 		PushToThread(cmd, state.currentDrawThread);
 	}
 	else
 	{
-		vkCmdBindIndexBuffer(CommandBufferGetVk(state.mainCmdDrawBuffer), CoreGraphics::iboPool->allocator.Get<1>(ib.resourceId).buf, offsetIndex, CoreGraphics::iboPool->allocator.Get<1>(ib.resourceId).type == IndexType::Index16 ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32);
+		vkCmdBindIndexBuffer(GetMainBuffer(GraphicsQueueType), IndexBufferGetVk(ib), offsetIndex, IndexBufferGetVkType(ib));
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+SetIndexBuffer(const CoreGraphics::IndexBufferId& ib, IndexT offsetIndex, CoreGraphics::IndexType::Code type)
+{
+	if (state.inBeginBatch)
+	{
+		VkCommandBufferThread::Command cmd;
+		cmd.type = VkCommandBufferThread::InputAssemblyIndex;
+		cmd.ibo.buffer = iboAllocator.Get<1>(ib.id24).buf;
+		cmd.ibo.indexType = IndexBufferGetVkType(ib);
+		cmd.ibo.offset = offsetIndex;
+		PushToThread(cmd, state.currentDrawThread);
+	}
+	else
+	{
+		vkCmdBindIndexBuffer(GetMainBuffer(GraphicsQueueType), IndexBufferGetVk(ib), offsetIndex, IndexBufferGetVkType(ib));
 	}
 }
 
@@ -1944,6 +2235,231 @@ PushConstants(ShaderPipeline pipeline, uint offset, uint size, byte* data)
 	}
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+uint 
+AllocateGraphicsConstantBufferMemory(CoreGraphicsGlobalConstantBufferType type, uint size)
+{
+	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.constantBufferRings[state.currentBufferedFrameIndex];
+
+	// no matter how we spin it
+	uint ret = sub.cboGfxEndAddress[type];
+	uint newEnd = Math::n_align(ret + size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
+
+	// if we have to wrap around, or we are fingering on the range of the next frame submission buffer...
+	if (newEnd >= state.globalGraphicsConstantBufferMaxValue[type] * (state.currentBufferedFrameIndex + 1))
+	{
+		n_error("Over allocation of graphics constant memory! Memory will be overwritten!\n");
+
+		// return the beginning of the buffer, will definitely stomp the memory!
+		ret = state.globalGraphicsConstantBufferMaxValue[type] * state.currentBufferedFrameIndex;
+		newEnd = Math::n_align(ret + size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
+	}
+
+	// just bump the current frame submission pointer
+	sub.cboGfxEndAddress[type] = newEnd;
+
+	return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CoreGraphics::ConstantBufferId 
+GetGraphicsConstantBuffer(CoreGraphicsGlobalConstantBufferType type)
+{
+	return state.globalGraphicsConstantBuffer[type];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint 
+AllocateComputeConstantBufferMemory(CoreGraphicsGlobalConstantBufferType type, uint size)
+{
+	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.constantBufferRings[state.currentBufferedFrameIndex];
+
+	// no matter how we spin it
+	uint ret = sub.cboComputeEndAddress[type];
+	uint newEnd = Math::n_align(ret + size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
+
+	// if we have to wrap around, or we are fingering on the range of the next frame submission buffer...
+	if (newEnd >= state.globalComputeConstantBufferMaxValue[type] * (state.currentBufferedFrameIndex + 1))
+	{
+		n_error("Over allocation of compute constant memory! Memory will be overwritten!\n");
+
+		// return the beginning of the buffer, will definitely stomp the memory!
+		ret = state.globalComputeConstantBufferMaxValue[type] * state.currentBufferedFrameIndex;
+		newEnd = Math::n_align(ret + size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
+	}
+
+	// just bump the current frame submission pointer
+	sub.cboComputeEndAddress[type] = newEnd;
+
+	return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CoreGraphics::ConstantBufferId 
+GetComputeConstantBuffer(CoreGraphicsGlobalConstantBufferType type)
+{
+	return state.globalComputeConstantBuffer[type];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+byte*
+AllocateVertexBufferMemory(CoreGraphicsVertexBufferMemoryType type, uint size)
+{
+	Vulkan::GraphicsDeviceState::VertexRingBuffer& sub = state.vertexBufferRings[state.currentBufferedFrameIndex];
+
+	// no matter how we spin it
+	uint ret = sub.vboEndAddress[type];
+	uint newEnd = ret + size;
+
+	// if we have to wrap around, or we are fingering on the range of the next frame submission buffer...
+	if (newEnd >= state.globalVertexBufferMaxValue[type] * (state.currentBufferedFrameIndex + 1))
+	{
+		n_error("Over allocation of vertex buffer memory! Memory will be overwritten!\n");
+
+		// return the beginning of the buffer, will definitely stomp the memory!
+		ret = state.globalVertexBufferMaxValue[type] * state.currentBufferedFrameIndex;
+		newEnd = ret + size;
+	}
+
+	// just bump the current frame submission pointer
+	sub.vboEndAddress[type] = newEnd;
+	return state.mappedVertexBuffer[type] + ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint 
+GetVertexBufferOffset(CoreGraphicsVertexBufferMemoryType type)
+{
+	Vulkan::GraphicsDeviceState::VertexRingBuffer& sub = state.vertexBufferRings[state.currentBufferedFrameIndex];
+	return sub.vboEndAddress[type];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CoreGraphics::VertexBufferId 
+GetVertexBuffer(CoreGraphicsVertexBufferMemoryType type)
+{
+	return state.globalVertexBuffer[type];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+byte*
+AllocateIndexBufferMemory(CoreGraphicsVertexBufferMemoryType type, uint size)
+{
+	Vulkan::GraphicsDeviceState::VertexRingBuffer& sub = state.vertexBufferRings[state.currentBufferedFrameIndex];
+
+	// no matter how we spin it
+	uint ret = sub.iboEndAddress[type];
+	uint newEnd = ret + size;
+
+	// if we have to wrap around, or we are fingering on the range of the next frame submission buffer...
+	if (newEnd >= state.globalIndexBufferMaxValue[type] * (state.currentBufferedFrameIndex + 1))
+	{
+		n_error("Over allocation of index buffer memory! Memory will be overwritten!\n");
+
+		// return the beginning of the buffer, will definitely stomp the memory!
+		ret = state.globalIndexBufferMaxValue[type] * state.currentBufferedFrameIndex;
+		newEnd = ret + size;
+	}
+
+	// just bump the current frame submission pointer
+	sub.iboEndAddress[type] = newEnd;
+	return state.mappedIndexBuffer[type] + ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint 
+GetIndexBufferOffset(CoreGraphicsVertexBufferMemoryType type)
+{
+	Vulkan::GraphicsDeviceState::VertexRingBuffer& sub = state.vertexBufferRings[state.currentBufferedFrameIndex];
+	return sub.iboEndAddress[type];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CoreGraphics::IndexBufferId 
+GetIndexBuffer(CoreGraphicsVertexBufferMemoryType type)
+{
+	return state.globalIndexBuffer[type];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CoreGraphics::SubmissionContextId 
+GetResourceSubmissionContext()
+{
+	// if not active, issue a new resource submission (only done once per frame)
+	state.resourceSubmissionCriticalSection.Enter();
+	if (!state.resourceSubmissionActive)
+	{
+		state.resourceSubmissionFence = SubmissionContextNextCycle(state.resourceSubmissionContext);
+		SubmissionContextNewBuffer(state.resourceSubmissionContext, state.resourceSubmissionCmdBuffer, state.resourceSubmissionSemaphore);
+
+		// begin recording
+		CommandBufferBeginInfo beginInfo{ true, false, false };
+		CommandBufferBeginRecord(state.resourceSubmissionCmdBuffer, beginInfo);
+
+		state.resourceSubmissionActive = true;
+	}
+	state.resourceSubmissionCriticalSection.Leave();
+	return state.resourceSubmissionContext;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CoreGraphics::SubmissionContextId 
+GetSetupSubmissionContext()
+{
+	// if not active, issue a new resource submission (only done once per frame)
+	if (!state.setupSubmissionActive)
+	{
+		SubmissionContextNewBuffer(state.setupSubmissionContext, state.setupSubmissionCmdBuffer, state.setupSubmissionSemaphore);
+		state.setupSubmissionActive = true;
+
+		// begin recording
+		CommandBufferBeginInfo beginInfo{ true, false, false };
+		CommandBufferBeginRecord(state.setupSubmissionCmdBuffer, beginInfo);
+	}
+	return state.setupSubmissionContext;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CoreGraphics::CommandBufferId 
+GetGfxCommandBuffer()
+{
+	return state.gfxCmdBuffer;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CoreGraphics::CommandBufferId 
+GetComputeCommandBuffer()
+{
+	return state.computeCmdBuffer;
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -1980,8 +2496,8 @@ InsertBarrier(const CoreGraphics::BarrierId barrier, const CoreGraphicsQueueType
 	{
 		if (state.inBeginBatch)
 		{
-			VkCmdBufferThread::Command cmd;
-			cmd.type = VkCmdBufferThread::Barrier;
+			VkCommandBufferThread::Command cmd;
+			cmd.type = VkCommandBufferThread::Barrier;
 			cmd.barrier.dep = info.dep;
 			cmd.barrier.srcMask = info.srcFlags;
 			cmd.barrier.dstMask = info.dstFlags;
@@ -1995,7 +2511,7 @@ InsertBarrier(const CoreGraphics::BarrierId barrier, const CoreGraphicsQueueType
 		}
 		else
 		{
-			vkCmdPipelineBarrier(CommandBufferGetVk(state.mainCmdDrawBuffer), 
+			vkCmdPipelineBarrier(GetMainBuffer(GraphicsQueueType),
 				info.srcFlags, info.dstFlags, 
 				info.dep, 
 				info.numMemoryBarriers, info.memoryBarriers, 
@@ -2005,15 +2521,7 @@ InsertBarrier(const CoreGraphics::BarrierId barrier, const CoreGraphicsQueueType
 	}
 	else
 	{
-		VkCommandBuffer buf;
-		switch (queue)
-		{
-		case GraphicsQueueType: buf = CommandBufferGetVk(state.mainCmdDrawBuffer); break;
-		case TransferQueueType: buf = CommandBufferGetVk(state.mainCmdTransferBuffer); break;
-		case ComputeQueueType: buf = CommandBufferGetVk(state.mainCmdComputeBuffer); break;
-		case SparseQueueType: buf = CommandBufferGetVk(state.mainCmdSparseBuffer); break;
-		}
-
+		VkCommandBuffer buf = GetMainBuffer(queue);
 		vkCmdPipelineBarrier(buf,
 			info.srcFlags,
 			info.dstFlags,
@@ -2035,28 +2543,20 @@ SignalEvent(const CoreGraphics::EventId ev, const CoreGraphicsQueueType queue)
 	{
 		if (state.inBeginBatch)
 		{
-			VkCmdBufferThread::Command cmd;
-			cmd.type = VkCmdBufferThread::SetEvent;
+			VkCommandBufferThread::Command cmd;
+			cmd.type = VkCommandBufferThread::SetEvent;
 			cmd.setEvent.event = info.event;
 			cmd.setEvent.stages = info.leftDependency;
 			PushToThread(cmd, state.currentDrawThread);
 		}
 		else
 		{
-			vkCmdSetEvent(CommandBufferGetVk(state.mainCmdDrawBuffer), info.event, info.leftDependency);
+			vkCmdSetEvent(GetMainBuffer(GraphicsQueueType), info.event, info.leftDependency);
 		}
 	}
 	else
 	{
-		VkCommandBuffer buf;
-		switch (queue)
-		{
-		case GraphicsQueueType: buf = CommandBufferGetVk(state.mainCmdDrawBuffer); break;
-		case TransferQueueType: buf = CommandBufferGetVk(state.mainCmdTransferBuffer); break;
-		case ComputeQueueType: buf = CommandBufferGetVk(state.mainCmdComputeBuffer); break;
-		case SparseQueueType: buf = CommandBufferGetVk(state.mainCmdSparseBuffer); break;
-		}
-
+		VkCommandBuffer buf = GetMainBuffer(queue);
 		vkCmdSetEvent(buf, info.event, info.leftDependency);
 	}
 }
@@ -2072,8 +2572,8 @@ WaitEvent(const CoreGraphics::EventId ev, const CoreGraphicsQueueType queue)
 	{
 		if (state.inBeginBatch)
 		{
-			VkCmdBufferThread::Command cmd;
-			cmd.type = VkCmdBufferThread::WaitForEvent;
+			VkCommandBufferThread::Command cmd;
+			cmd.type = VkCommandBufferThread::WaitForEvent;
 			cmd.waitEvent.events = &info.event;
 			cmd.waitEvent.numEvents = 1;
 			cmd.waitEvent.memoryBarrierCount = info.numMemoryBarriers;
@@ -2088,7 +2588,7 @@ WaitEvent(const CoreGraphics::EventId ev, const CoreGraphicsQueueType queue)
 		}
 		else
 		{
-			vkCmdWaitEvents(CommandBufferGetVk(state.mainCmdDrawBuffer), 1, &info.event,
+			vkCmdWaitEvents(GetMainBuffer(GraphicsQueueType), 1, &info.event,
 				info.leftDependency,
 				info.rightDependency,
 				info.numMemoryBarriers,
@@ -2101,15 +2601,7 @@ WaitEvent(const CoreGraphics::EventId ev, const CoreGraphicsQueueType queue)
 	}
 	else
 	{
-		VkCommandBuffer buf;
-		switch (queue)
-		{
-		case GraphicsQueueType: buf = CommandBufferGetVk(state.mainCmdDrawBuffer); break;
-		case TransferQueueType: buf = CommandBufferGetVk(state.mainCmdTransferBuffer); break;
-		case ComputeQueueType: buf = CommandBufferGetVk(state.mainCmdComputeBuffer); break;
-		case SparseQueueType: buf = CommandBufferGetVk(state.mainCmdSparseBuffer); break;
-		}
-
+		VkCommandBuffer buf = GetMainBuffer(queue);
 		vkCmdWaitEvents(buf, 1, &info.event,
 			info.leftDependency,
 			info.rightDependency,
@@ -2133,83 +2625,24 @@ ResetEvent(const CoreGraphics::EventId ev, const CoreGraphicsQueueType queue)
 	{
 		if (state.inBeginBatch)
 		{
-			VkCmdBufferThread::Command cmd;
-			cmd.type = VkCmdBufferThread::ResetEvent;
+			VkCommandBufferThread::Command cmd;
+			cmd.type = VkCommandBufferThread::ResetEvent;
 			cmd.setEvent.event = info.event;
 			cmd.setEvent.stages = info.rightDependency;
 			PushToThread(cmd, state.currentDrawThread);
 		}
 		else
 		{
-			vkCmdResetEvent(CommandBufferGetVk(state.mainCmdDrawBuffer), info.event, info.rightDependency);
+			vkCmdResetEvent(GetMainBuffer(GraphicsQueueType), info.event, info.rightDependency);
 		}
 	}
 	else
 	{
-		VkCommandBuffer buf;
-		switch (queue)
-		{
-		case GraphicsQueueType: buf = CommandBufferGetVk(state.mainCmdDrawBuffer); break;
-		case TransferQueueType: buf = CommandBufferGetVk(state.mainCmdTransferBuffer); break;
-		case ComputeQueueType: buf = CommandBufferGetVk(state.mainCmdComputeBuffer); break;
-		case SparseQueueType: buf = CommandBufferGetVk(state.mainCmdSparseBuffer); break;
-		}
-
+		VkCommandBuffer buf = GetMainBuffer(queue);
 		vkCmdResetEvent(buf, info.event, info.rightDependency);
 	}
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-SignalFence(const CoreGraphics::FenceId fe, const CoreGraphicsQueueType queue)
-{
-	n_assert2(!fenceAllocator.Get<1>(fe.id24).pending, "Fence is already waiting to be signaled!");
-	VkQueue q = state.subcontextHandler.GetQueue(queue);
-	VkResult res = vkQueueSubmit(q, 0, nullptr, fenceAllocator.Get<1>(fe.id24).fence);
-	n_assert(res == VK_SUCCESS);
-	fenceAllocator.Get<1>(fe.id24).pending = true;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-bool 
-PeekFence(const CoreGraphics::FenceId fe)
-{
-	VkResult res = vkGetFenceStatus(fenceAllocator.Get<0>(fe.id24), fenceAllocator.Get<1>(fe.id24).fence);
-	return res == VK_SUCCESS;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-ResetFence(const CoreGraphics::FenceId fe)
-{
-	VkResult res = vkResetFences(fenceAllocator.Get<0>(fe.id24), 1, &fenceAllocator.Get<1>(fe.id24).fence);
-	n_assert(res == VK_SUCCESS);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-bool 
-WaitFence(const CoreGraphics::FenceId fe, uint64 wait)
-{
-	n_assert(fenceAllocator.Get<1>(fe.id24).pending);
-	VkResult res = vkWaitForFences(fenceAllocator.Get<0>(fe.id24), 1, &fenceAllocator.Get<1>(fe.id24).fence, false, UINT_MAX);
-	if (res == VK_SUCCESS)
-	{
-		res = vkResetFences(fenceAllocator.Get<0>(fe.id24), 1, &fenceAllocator.Get<1>(fe.id24).fence);
-		n_assert(res == VK_SUCCESS);
-
-		// reset pending status
-		fenceAllocator.Get<1>(fe.id24).pending = false;
-	}
-	return res;
-}
 
 //------------------------------------------------------------------------------
 /**
@@ -2221,8 +2654,8 @@ Draw()
 
 	if (state.inBeginBatch)
 	{
-		VkCmdBufferThread::Command cmd;
-		cmd.type = VkCmdBufferThread::Draw;
+		VkCommandBufferThread::Command cmd;
+		cmd.type = VkCommandBufferThread::Draw;
 		cmd.draw.baseIndex = state.primitiveGroup.GetBaseIndex();
 		cmd.draw.baseVertex = state.primitiveGroup.GetBaseVertex();
 		cmd.draw.baseInstance = 0;
@@ -2233,7 +2666,7 @@ Draw()
 	}
 	else
 	{
-		vkCmdDraw(CommandBufferGetVk(state.mainCmdDrawBuffer), state.primitiveGroup.GetNumVertices(), 1, state.primitiveGroup.GetBaseVertex(), 0);
+		vkCmdDraw(GetMainBuffer(GraphicsQueueType), state.primitiveGroup.GetNumVertices(), 1, state.primitiveGroup.GetBaseVertex(), 0);
 	}
 
 	// go to next thread
@@ -2251,8 +2684,8 @@ DrawIndexedInstanced(SizeT numInstances, IndexT baseInstance)
 
 	if (state.inBeginBatch)
 	{
-		VkCmdBufferThread::Command cmd;
-		cmd.type = VkCmdBufferThread::Draw;
+		VkCommandBufferThread::Command cmd;
+		cmd.type = VkCommandBufferThread::Draw;
 		cmd.draw.baseIndex = state.primitiveGroup.GetBaseIndex();
 		cmd.draw.baseVertex = state.primitiveGroup.GetBaseVertex();
 		cmd.draw.baseInstance = baseInstance;
@@ -2263,7 +2696,7 @@ DrawIndexedInstanced(SizeT numInstances, IndexT baseInstance)
 	}
 	else
 	{
-		vkCmdDrawIndexed(CommandBufferGetVk(state.mainCmdDrawBuffer), state.primitiveGroup.GetNumIndices(), numInstances, state.primitiveGroup.GetBaseIndex(), state.primitiveGroup.GetBaseVertex(), baseInstance);
+		vkCmdDrawIndexed(GetMainBuffer(GraphicsQueueType), state.primitiveGroup.GetNumIndices(), numInstances, state.primitiveGroup.GetBaseIndex(), state.primitiveGroup.GetBaseVertex(), baseInstance);
 	}
 
 	// go to next thread
@@ -2278,7 +2711,7 @@ void
 Compute(int dimX, int dimY, int dimZ)
 {
 	n_assert(!state.inBeginPass);
-	vkCmdDispatch(CommandBufferGetVk(state.mainCmdDrawBuffer), dimX, dimY, dimZ);
+	vkCmdDispatch(GetMainBuffer(GraphicsQueueType), dimX, dimY, dimZ);
 }
 
 //------------------------------------------------------------------------------
@@ -2314,11 +2747,97 @@ EndPass()
 	state.propagateDescriptorSets.Clear();
 	state.currentProgram = -1;
 
-	// tell scheduler pass is ending
-	state.scheduler.ExecuteCommandPass(VkScheduler::OnEndPass);
-
 	// end render pass
-	vkCmdEndRenderPass(CommandBufferGetVk(state.mainCmdDrawBuffer));
+	vkCmdEndRenderPass(GetMainBuffer(GraphicsQueueType));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+EndSubmission(CoreGraphicsQueueType queue, bool endOfFrame)
+{
+	if (queue == GraphicsQueueType)
+	{
+		// if we have an active setup submission, add it to be submitted and throw around the setup submission semaphore
+		if (state.setupSubmissionActive)
+		{
+			// end recording and add this command buffer for submission
+			CommandBufferEndRecord(state.setupSubmissionCmdBuffer);
+			state.subcontextHandler.AppendSubmission(GraphicsQueueType,
+													 CommandBufferGetVk(state.setupSubmissionCmdBuffer),
+													 SemaphoreGetVk(state.gfxPrevSemaphore), VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+													 SemaphoreGetVk(state.setupSubmissionSemaphore));
+
+			// set graphics previous semaphore immediately, this will effectively append a submission this frame
+			state.gfxPrevSemaphore = state.setupSubmissionSemaphore;
+			state.setupSubmissionActive = false;
+		}
+
+		// stop recording
+		CommandBufferEndRecord(state.gfxCmdBuffer);
+
+		// submit to graphics
+		state.subcontextHandler.AppendSubmission(GraphicsQueueType,
+			CommandBufferGetVk(state.gfxCmdBuffer),
+			SemaphoreGetVk(state.gfxPrevSemaphore), VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+			SemaphoreGetVk(state.gfxSemaphore));
+
+		// if we should wait for the compute, add a semaphore
+		if (state.gfxWaitSemaphore != SemaphoreId::Invalid())
+		{
+			state.subcontextHandler.AddWaitSemaphore(GraphicsQueueType, SemaphoreGetVk(state.gfxWaitSemaphore), VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
+
+#if NEBULA_GRAPHICS_DEBUG
+			CoreGraphics::QueueBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "Graphics-Compute Sync Submission");
+#endif
+
+			// flush submissions
+			state.subcontextHandler.FlushSubmissions(GraphicsQueueType, VK_NULL_HANDLE, false);
+
+#if NEBULA_GRAPHICS_DEBUG
+			CoreGraphics::QueueEndMarker(GraphicsQueueType);
+#endif
+			
+		}
+
+		// set prev to current semaphore
+		state.gfxPrevSemaphore = SemaphoreId::Invalid();
+		state.gfxWaitSemaphore = SemaphoreId::Invalid();
+	}
+	else if (queue == ComputeQueueType)
+	{
+		// stop recording
+		CommandBufferEndRecord(state.computeCmdBuffer);
+
+		// submit to compute
+		state.subcontextHandler.AppendSubmission(ComputeQueueType,
+			CommandBufferGetVk(state.computeCmdBuffer),
+			SemaphoreGetVk(state.computePrevSemaphore), VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			SemaphoreGetVk(state.computeSemaphore));
+
+		// if we should wait for the graphics, add a semaphore
+		if (state.computeWaitSemaphore != SemaphoreId::Invalid())
+		{
+			state.subcontextHandler.AddWaitSemaphore(ComputeQueueType, SemaphoreGetVk(state.computeWaitSemaphore), VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+
+#if NEBULA_GRAPHICS_DEBUG
+			CoreGraphics::QueueBeginMarker(ComputeQueueType, NEBULA_MARKER_BLUE, "Compute-Graphics Sync Submission");
+#endif
+
+			// flush submissions
+			state.subcontextHandler.FlushSubmissions(ComputeQueueType, VK_NULL_HANDLE, false);
+
+#if NEBULA_GRAPHICS_DEBUG
+			CoreGraphics::QueueEndMarker(ComputeQueueType);
+#endif
+
+		}
+
+		// set previous semaphore
+		state.computePrevSemaphore = SemaphoreId::Invalid();
+		state.computeWaitSemaphore = SemaphoreId::Invalid();
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -2339,66 +2858,105 @@ EndFrame(IndexT frameIndex)
 
 	state.inBeginFrame = false;
 
-	CmdBufferEndRecord(state.mainCmdTransferBuffer);
-	CmdBufferEndRecord(state.mainCmdComputeBuffer);
-	CmdBufferEndRecord(state.mainCmdDrawBuffer);
-	CmdBufferEndRecord(state.mainCmdSparseBuffer);
+	// flush constant buffer memory
+	/*
+	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.constantBufferRings[state.currentBufferedFrameIndex];
+	VkDevice dev = state.devices[state.currentDevice];
+
+	VkMappedMemoryRange flushMapRanges[2];
+	flushMapRanges[0] =
+	{
+		VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
+		nullptr,
+		VK_NULL_HANDLE,
+		0, 0
+	};
+
+	IndexT i;
+	for (i = 0; i < NumConstantBufferTypes; i++)
+	{
+		uint size = sub.cboGfxEndAddress[i] - sub.cboGfxStartAddress[i];
+		uint flushIndex = 0;
+		if (size > 0)
+		{
+			flushMapRanges[flushIndex].memory = ConstantBufferGetVkMemory(state.globalGraphicsConstantBuffer[i]);
+			flushMapRanges[flushIndex].offset = sub.cboGfxStartAddress[i];
+			flushMapRanges[flushIndex].size = size;
+			flushIndex++;
+		}
+		
+		size = sub.cboComputeEndAddress[i] - sub.cboComputeStartAddress[i];
+		if (size > 0)
+		{
+			flushMapRanges[flushIndex] = flushMapRanges[0];
+			flushMapRanges[flushIndex].memory = ConstantBufferGetVkMemory(state.globalComputeConstantBuffer[i]);
+			flushMapRanges[flushIndex].offset = sub.cboComputeStartAddress[i];
+			flushMapRanges[flushIndex].size = size;
+			flushIndex++;
+		}	
+
+		// be sure to flush all constant memory before we submit the command buffers with the data
+		if (flushIndex > 0)
+			vkFlushMappedMemoryRanges(dev, flushIndex, flushMapRanges);
+	}
+	*/
+
+	// if we have an active resource submission, submit it!
+	state.resourceSubmissionCriticalSection.Enter();
+	if (state.resourceSubmissionActive)
+	{
+		// wait for resource manager first, since it will write to the transfer cmd buffer
+		Resources::WaitForLoaderThread();
+
+		// finish up the resource submission and setup submissions
+		CommandBufferEndRecord(state.resourceSubmissionCmdBuffer);
 
 #if NEBULA_GRAPHICS_DEBUG
-	CoreGraphics::QueueBeginMarker(TransferQueueType, NEBULA_MARKER_BLUE, "End of frame transfer queue submission");
+		CoreGraphics::QueueBeginMarker(TransferQueueType, NEBULA_MARKER_BLUE, "Resource Transfer Submission");
 #endif
 
-	// kick transfer commands
-	state.subcontextHandler.InsertCommandBuffer(TransferQueueType, CommandBufferGetVk(state.mainCmdTransferBuffer));
-	state.subcontextHandler.InsertDependency({ GraphicsQueueType, TransferQueueType }, TransferQueueType, VK_PIPELINE_STAGE_TRANSFER_BIT);
-	state.subcontextHandler.Submit(TransferQueueType, state.mainCmdTransFence, true);
+		// submit resource stuff
+		state.subcontextHandler.AppendSubmission(TransferQueueType,
+			CommandBufferGetVk(state.resourceSubmissionCmdBuffer),
+			VK_NULL_HANDLE, VK_PIPELINE_STAGE_TRANSFER_BIT,
+			SemaphoreGetVk(state.resourceSubmissionSemaphore));
 
-	// put in frame fences if needed
-	state.scheduler.ExecuteCommandPass(VkScheduler::OnMainTransferSubmitted);
-	state.scheduler.EndTransfers();
+		state.subcontextHandler.FlushSubmissions(TransferQueueType,
+			FenceGetVk(state.resourceSubmissionFence),
+			false);
 
 #if NEBULA_GRAPHICS_DEBUG
-	CoreGraphics::QueueEndMarker(TransferQueueType);
-	CoreGraphics::QueueBeginMarker(ComputeQueueType, NEBULA_MARKER_BLUE, "End of frame compute queue submission");
+		CoreGraphics::QueueEndMarker(TransferQueueType);
 #endif
 
-	// submit compute stuff
-	state.subcontextHandler.InsertCommandBuffer(ComputeQueueType, CommandBufferGetVk(state.mainCmdComputeBuffer));
-	state.subcontextHandler.Submit(ComputeQueueType, state.mainCmdCmpFence, true);
+		// make sure to allow the graphics queue to wait for this command buffer to finish
+		state.subcontextHandler.AddWaitSemaphore(GraphicsQueueType, SemaphoreGetVk(state.resourceSubmissionSemaphore), VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
+		state.resourceSubmissionActive = false;
+	}
+	state.resourceSubmissionCriticalSection.Leave();
 
-	state.scheduler.ExecuteCommandPass(VkScheduler::OnMainComputeSubmitted);
-	state.scheduler.EndComputes();
+#if NEBULA_GRAPHICS_DEBUG
+	CoreGraphics::QueueBeginMarker(ComputeQueueType, NEBULA_MARKER_BLUE, "Compute Commands Submission");
+#endif
+
+	// submit compute, wait for this frames resource submissions
+	state.subcontextHandler.FlushSubmissions(ComputeQueueType, 
+		FenceGetVk(state.computeFence),
+		false);
 
 #if NEBULA_GRAPHICS_DEBUG
 	CoreGraphics::QueueEndMarker(ComputeQueueType);
-	CoreGraphics::QueueBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "End of frame graphics queue submission");
+	CoreGraphics::QueueBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "Graphics Commands Submission");
 #endif
 
-	// submit draw stuff
-	state.subcontextHandler.InsertCommandBuffer(GraphicsQueueType, CommandBufferGetVk(state.mainCmdDrawBuffer));
-	state.subcontextHandler.Submit(GraphicsQueueType, state.mainCmdDrawFence, true);
-
-	state.scheduler.ExecuteCommandPass(VkScheduler::OnMainDrawSubmitted);
-	state.scheduler.EndDraws();
+	// submit graphics, we wait for the fence when we present (change to compute queue if we change the present queue in the future)
+	state.subcontextHandler.FlushSubmissions(GraphicsQueueType, 
+		FenceGetVk(state.gfxFence), // use no fence, it will be used by the present queue
+		false);
 
 #if NEBULA_GRAPHICS_DEBUG
 	CoreGraphics::QueueEndMarker(GraphicsQueueType);
 #endif
-
-	static VkFence fences[] = { state.mainCmdTransFence, state.mainCmdCmpFence, state.mainCmdDrawFence };
-	WaitForFences(fences, 3, true);
-
-	CmdBufferClearInfo clearInfo =
-	{
-		true
-	};
-	CmdBufferClear(state.mainCmdTransferBuffer, clearInfo);
-	CmdBufferClear(state.mainCmdComputeBuffer, clearInfo);
-	CmdBufferClear(state.mainCmdDrawBuffer, clearInfo);
-	CmdBufferClear(state.mainCmdSparseBuffer, clearInfo);
-
-	// run end-of-frame commands
-	state.scheduler.ExecuteCommandPass(VkScheduler::OnEndFrame);
 
 	// reset state
 	state.inputInfo.topology = VK_PRIMITIVE_TOPOLOGY_MAX_ENUM;
@@ -2420,10 +2978,21 @@ IsInBeginFrame()
 /**
 */
 void 
-Present()
+WaitForQueue(CoreGraphicsQueueType queue)
 {
-	n_assert(!state.inBeginFrame);
-	state.frameId++;
+	state.subcontextHandler.WaitIdle(queue);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+WaitForAllQueues()
+{
+	state.subcontextHandler.WaitIdle(GraphicsQueueType);
+	state.subcontextHandler.WaitIdle(ComputeQueueType);
+	state.subcontextHandler.WaitIdle(TransferQueueType);
+	state.subcontextHandler.WaitIdle(SparseQueueType);
 }
 
 //------------------------------------------------------------------------------
@@ -2478,6 +3047,61 @@ void
 SetRenderWireframe(bool b)
 {
 	state.renderWireframe = b;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+IndexT 
+Timestamp(CoreGraphicsQueueType queue, const CoreGraphics::BarrierStage stage)
+{
+	// convert to vulkan flags, force bits set to only be 1
+	VkPipelineStageFlags flags = VkTypes::AsVkPipelineFlags(stage);
+	n_assert(Util::CountBits(flags) == 1);
+
+	// get current query, and get the index
+	Vulkan::GraphicsDeviceState::QueryRingBuffer& queries = state.queryIndices[state.currentBufferedFrameIndex];
+	IndexT idx = queries.queryStartIndex[CoreGraphicsQueryType::Timestamp]++;
+
+	// write time stamp
+	VkCommandBuffer buf = GetMainBuffer(queue);
+	vkCmdWriteTimestamp(buf, (VkPipelineStageFlagBits)flags, state.queryPools[CoreGraphicsQueryType::Timestamp], idx);
+	return idx;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+IndexT 
+BeginQuery(CoreGraphicsQueueType queue, CoreGraphicsQueryType type)
+{
+	n_assert(type != CoreGraphicsQueryType::Timestamp);
+
+	// get current query, and get the index
+	Vulkan::GraphicsDeviceState::QueryRingBuffer& queries = state.queryIndices[state.currentBufferedFrameIndex];
+	IndexT idx = queries.queryStartIndex[type]++;
+	n_assert(idx < 1000);
+
+	// start query
+	VkCommandBuffer buf = GetMainBuffer(queue);
+	vkCmdBeginQuery(buf, state.queryPools[type], idx, VK_QUERY_CONTROL_PRECISE_BIT);
+	return idx;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+EndQuery(CoreGraphicsQueueType queue, CoreGraphicsQueryType type, IndexT query)
+{
+	n_assert(type != CoreGraphicsQueryType::Timestamp);
+
+	// get current query, and get the index
+	Vulkan::GraphicsDeviceState::QueryRingBuffer& queries = state.queryIndices[state.currentBufferedFrameIndex];
+
+	// start query
+	VkCommandBuffer buf = GetMainBuffer(queue);
+	vkCmdEndQuery(buf, state.queryPools[type], query);
 }
 
 //------------------------------------------------------------------------------
@@ -2558,15 +3182,15 @@ SetViewport(const Math::rectangle<int>& rect, int index)
 	{
 		if (state.inBeginBatch)
 		{
-			VkCmdBufferThread::Command cmd;
-			cmd.type = VkCmdBufferThread::Viewport;
+			VkCommandBufferThread::Command cmd;
+			cmd.type = VkCommandBufferThread::Viewport;
 			cmd.viewport.index = index;
 			cmd.viewport.vp = vp;
 			PushToThread(cmd, state.currentDrawThread);
 		}
 		else
 		{
-			vkCmdSetViewport(CommandBufferGetVk(state.mainCmdDrawBuffer), index, 1, &state.viewports[index]);
+			vkCmdSetViewport(GetMainBuffer(GraphicsQueueType), index, 1, &state.viewports[index]);
 		}
 	}
 }
@@ -2588,15 +3212,15 @@ SetScissorRect(const Math::rectangle<int>& rect, int index)
 	{
 		if (state.inBeginBatch)
 		{
-			VkCmdBufferThread::Command cmd;
-			cmd.type = VkCmdBufferThread::ScissorRect;
+			VkCommandBufferThread::Command cmd;
+			cmd.type = VkCommandBufferThread::ScissorRect;
 			cmd.scissorRect.index = index;
 			cmd.scissorRect.sc = sc;
 			PushToThread(cmd, state.currentDrawThread);
 		}
 		else
 		{
-			vkCmdSetScissor(CommandBufferGetVk(state.mainCmdDrawBuffer), index, 1, &state.scissors[index]);
+			vkCmdSetScissor(GetMainBuffer(GraphicsQueueType), index, 1, &state.scissors[index]);
 		}
 	}
 }
@@ -2678,6 +3302,47 @@ ObjectSetName(const CoreGraphics::ConstantBufferId id, const Util::String& name)
 		nullptr,
 		VK_OBJECT_TYPE_IMAGE,
 		(uint64_t)Vulkan::ConstantBufferGetVk(id),
+		name.AsCharPtr()
+	};
+	VkDevice dev = GetCurrentDevice();
+	VkResult res = VkDebugObjectName(dev, &info);
+	n_assert(res == VK_SUCCESS);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<>
+void
+ObjectSetName(const CoreGraphics::VertexBufferId id, const Util::String& name)
+{
+	VkDebugUtilsObjectNameInfoEXT info =
+	{
+		VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
+		nullptr,
+		VK_OBJECT_TYPE_IMAGE,
+		(uint64_t)Vulkan::VertexBufferGetVk(id),
+		name.AsCharPtr()
+	};
+	VkDevice dev = GetCurrentDevice();
+	VkResult res = VkDebugObjectName(dev, &info);
+	n_assert(res == VK_SUCCESS);
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<>
+void
+ObjectSetName(const CoreGraphics::IndexBufferId id, const Util::String& name)
+{
+	VkDebugUtilsObjectNameInfoEXT info =
+	{
+		VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
+		nullptr,
+		VK_OBJECT_TYPE_IMAGE,
+		(uint64_t)Vulkan::IndexBufferGetVk(id),
 		name.AsCharPtr()
 	};
 	VkDevice dev = GetCurrentDevice();
@@ -2831,7 +3496,7 @@ ObjectSetName(const CoreGraphics::ResourcePipelineId id, const Util::String& nam
 */
 template<>
 void
-ObjectSetName(const CoreGraphics::CmdBufferId id, const Util::String& name)
+ObjectSetName(const CoreGraphics::CommandBufferId id, const Util::String& name)
 {
 	VkDebugUtilsObjectNameInfoEXT info =
 	{
@@ -2859,6 +3524,26 @@ ObjectSetName(const VkShaderModule id, const Util::String& name)
 		nullptr,
 		VK_OBJECT_TYPE_SHADER_MODULE,
 		(uint64_t)id,
+		name.AsCharPtr()
+	};
+	VkDevice dev = GetCurrentDevice();
+	VkResult res = VkDebugObjectName(dev, &info);
+	n_assert(res == VK_SUCCESS);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<>
+void
+ObjectSetName(const SemaphoreId id, const Util::String& name)
+{
+	VkDebugUtilsObjectNameInfoEXT info =
+	{
+		VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
+		nullptr,
+		VK_OBJECT_TYPE_SHADER_MODULE,
+		(uint64_t)SemaphoreGetVk(id.id24),
 		name.AsCharPtr()
 	};
 	VkDevice dev = GetCurrentDevice();
@@ -2918,16 +3603,9 @@ QueueInsertMarker(const CoreGraphicsQueueType queue, const Math::float4& color, 
 /**
 */
 void 
-CmdBufBeginMarker(const CoreGraphicsQueueType queue, const Math::float4& color, const Util::String& name)
+CommandBufferBeginMarker(const CoreGraphicsQueueType queue, const Math::float4& color, const Util::String& name)
 {
-	VkCommandBuffer buf;
-	switch (queue)
-	{
-	case GraphicsQueueType: buf = CommandBufferGetVk(state.mainCmdDrawBuffer); break;
-	case ComputeQueueType: buf = CommandBufferGetVk(state.mainCmdComputeBuffer); break;
-	case TransferQueueType: buf = CommandBufferGetVk(state.mainCmdTransferBuffer); break;
-	case SparseQueueType: buf = CommandBufferGetVk(state.mainCmdSparseBuffer); break;
-	}
+	VkCommandBuffer buf = GetMainBuffer(queue);
 	alignas(16) float col[4];
 	color.store(col);
 	VkDebugUtilsLabelEXT info =
@@ -2944,16 +3622,9 @@ CmdBufBeginMarker(const CoreGraphicsQueueType queue, const Math::float4& color, 
 /**
 */
 void 
-CmdBufEndMarker(const CoreGraphicsQueueType queue)
+CommandBufferEndMarker(const CoreGraphicsQueueType queue)
 {
-	VkCommandBuffer buf;
-	switch (queue)
-	{
-	case GraphicsQueueType: buf = CommandBufferGetVk(state.mainCmdDrawBuffer); break;
-	case ComputeQueueType: buf = CommandBufferGetVk(state.mainCmdComputeBuffer); break;
-	case TransferQueueType: buf = CommandBufferGetVk(state.mainCmdTransferBuffer); break;
-	case SparseQueueType: buf = CommandBufferGetVk(state.mainCmdSparseBuffer); break;
-	}
+	VkCommandBuffer buf = GetMainBuffer(queue);
 	VkCmdDebugMarkerEnd(buf);
 }
 
@@ -2961,16 +3632,9 @@ CmdBufEndMarker(const CoreGraphicsQueueType queue)
 /**
 */
 void 
-CmdBufInsertMarker(const CoreGraphicsQueueType queue, const Math::float4& color, const Util::String& name)
+CommandBufferInsertMarker(const CoreGraphicsQueueType queue, const Math::float4& color, const Util::String& name)
 {
-	VkCommandBuffer buf;
-	switch (queue)
-	{
-	case GraphicsQueueType: buf = CommandBufferGetVk(state.mainCmdDrawBuffer); break;
-	case ComputeQueueType: buf = CommandBufferGetVk(state.mainCmdComputeBuffer); break;
-	case TransferQueueType: buf = CommandBufferGetVk(state.mainCmdTransferBuffer); break;
-	case SparseQueueType: buf = CommandBufferGetVk(state.mainCmdSparseBuffer); break;
-	}
+	VkCommandBuffer buf = GetMainBuffer(queue);
 	alignas(16) float col[4];
 	color.store(col);
 	VkDebugUtilsLabelEXT info =

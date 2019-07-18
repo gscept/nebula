@@ -48,6 +48,33 @@ $end$
         </Snippet>
     </CodeSnippet>
 
+    <CodeSnippet Format="1.0.0">
+    	<Header>
+    		<Title>Nebula Function</Title>
+    		<Shortcut>NebFunc</Shortcut>
+    	</Header>
+    	<Snippet>
+    		<Declarations>
+    			<Object>
+    				<ID>Classname</ID>
+    				<Type>String of text</Type>
+    				<Default>Class</Default>
+    			</Object>    			
+    		</Declarations>
+    		<Code Language="cpp">
+    			<![CDATA[//------------------------------------------------------------------------------
+/**
+*/
+void
+$Classname$::$end$()
+{
+	//FIXME: empty
+}
+
+    			]]>
+    		</Code>
+    	</Snippet>
+    </CodeSnippet>
 
 
 <!-- source  -->
@@ -95,7 +122,7 @@ $end$
 
 
 
-<!-- def header  -->
+<!-- comment  -->
     <CodeSnippet Format="1.0.0">
         <Header>
             <Title>Nebula function comment</Title>
@@ -107,6 +134,106 @@ $end$
                 <![CDATA[//------------------------------------------------------------------------------
 /**
 */$end$]]>
+            </Code>
+        </Snippet>
+    </CodeSnippet>
+
+<!-- component declaration  -->
+    <CodeSnippet Format="1.0.0">
+        <Header>
+            <Title>Nebula Component Declaration</Title>
+            <Shortcut>ncomponentdecl</Shortcut>
+        </Header>
+        <Snippet>
+            <Declarations>
+                <Object>
+                    <ID>classname</ID>
+                    <Type>String of text</Type>
+                    <ToolTip>Name of this component</ToolTip>
+                    <Default>MyComponent</Default>
+                </Object>
+            </Declarations>
+            <Code Language="cpp">
+                <![CDATA[
+// -! MOVE THIS TO INCLUDES !-
+#include "game/component/component.h"
+
+class $classname$
+{
+    __DeclareComponent($classname$);
+public:
+    // static void OnBeginFrame();
+    // static void OnActivate(Game::InstanceId instance);
+    // static void OnDeactivate(Game::InstanceId instance);
+
+private:    
+    // static void SetupAcceptedMessages();
+
+    $end$
+};]]>
+            </Code>
+        </Snippet>
+    </CodeSnippet>
+
+<!-- component definition -->
+    <CodeSnippet Format="1.0.0">
+        <Header>
+            <Title>Nebula Component Implementation</Title>
+            <Shortcut>ncomponentimpl</Shortcut>
+        </Header>
+        <Snippet>
+            <Declarations>
+                <Object>
+                    <ID>classname</ID>
+                    <Type>String of text</Type>
+                    <ToolTip>Name of this component</ToolTip>
+                    <Default>MyComponent</Default>
+                </Object>
+            </Declarations>
+            <Code Language="cpp">
+                <![CDATA[
+// -! MOVE THIS TO INCLUDES !-
+#include "basegamefeature/managers/componentmanager.h"
+
+static $classname$Allocator *allocator;
+
+__ImplementComponent($classname$, allocator);
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+$classname$::Create()
+{
+    if (allocator != nullptr)
+    {
+        allocator->DestroyAll();
+    }
+    else
+    {
+        allocator = n_new($classname$Allocator);
+    }
+
+    __SetupDefaultComponentBundle(allocator);
+
+    // allocator->functions.OnActivate = OnActivate;
+    // allocator->functions.OnDeactivate = OnDeactivate;
+    // allocator->functions.OnBeginFrame = OnBeginFrame;
+
+    Game::ComponentManager::Instance()->RegisterComponent(allocator, "$classname$"_atm, allocator->GetIdentifier());
+
+    // SetupAcceptedMessages();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+$classname$::Discard()
+{
+    n_delete(allocator);
+}
+$end$]]>
             </Code>
         </Snippet>
     </CodeSnippet>

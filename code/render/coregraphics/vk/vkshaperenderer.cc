@@ -17,8 +17,6 @@
 #include "resources/resourceid.h"
 #include "resources/resourcemanager.h"
 #include "coregraphics/shadersemantics.h"
-#include "coregraphics/memoryvertexbufferpool.h"
-#include "coregraphics/memoryindexbufferpool.h"
 
 using namespace Base;
 using namespace Threading;
@@ -84,8 +82,7 @@ VkShapeRenderer::Open()
 	comps.Append(VertexComponent(VertexComponent::Color, 0, VertexComponent::Float4, 0));
 	VertexBufferCreateInfo vboInfo = 
 	{
-		"shape_renderer_vbo",
-		"render_system"_atm,
+		"ShapeRenderer VBO"_atm,
 		CoreGraphics::GpuBufferTypes::AccessWrite,
 		CoreGraphics::GpuBufferTypes::UsageDynamic,
 		CoreGraphics::GpuBufferTypes::SyncingCoherent,
@@ -226,8 +223,8 @@ VkShapeRenderer::DrawSimpleShape(const Math::matrix44& modelTransform, CoreGraph
 	n_assert(shapeType < RenderShape::NumShapeTypes);
 
 	// resolve model-view-projection matrix and update shader
-	CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->model.offset, sizeof(modelTransform), (byte*)&modelTransform);
-	CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->diffuseColor.offset, sizeof(color), (byte*)&color);
+	CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->model, sizeof(modelTransform), (byte*)&modelTransform);
+	CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->diffuseColor, sizeof(color), (byte*)&color);
 	const SizeT numgroups = MeshGetPrimitiveGroups(this->shapeMeshes[shapeType]).Size();
 	IndexT i;
 	for (i = 0; i < numgroups; i++)
@@ -251,8 +248,8 @@ VkShapeRenderer::DrawMesh(const Math::matrix44& modelTransform, const CoreGraphi
 	TransformDevice* transDev = TransformDevice::Instance();
 
 	// resolve model-view-projection matrix and update shader
-	CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->model.offset, sizeof(modelTransform), (byte*)&modelTransform);
-	CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->diffuseColor.offset, sizeof(color), (byte*)&color);
+	CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->model, sizeof(modelTransform), (byte*)&modelTransform);
+	CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->diffuseColor, sizeof(color), (byte*)&color);
 
 	n_assert(CoreGraphics::IsInBeginFrame());
 	const SizeT numgroups = MeshGetPrimitiveGroups(mesh).Size();
@@ -363,8 +360,8 @@ VkShapeRenderer::DrawBufferedPrimitives()
 		const Math::matrix44& modelTransform = this->unindexed.transforms[i];
 		const Math::float4& color = this->unindexed.colors[i];
 
-		CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->model.offset, sizeof(modelTransform), (byte*)&modelTransform);
-		CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->diffuseColor.offset, sizeof(color), (byte*)&color);
+		CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->model, sizeof(modelTransform), (byte*)&modelTransform);
+		CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->diffuseColor, sizeof(color), (byte*)&color);
 
 		CoreGraphics::SetPrimitiveTopology(topo);
 		CoreGraphics::SetVertexLayout(this->vertexLayout);
@@ -395,8 +392,8 @@ VkShapeRenderer::DrawBufferedIndexedPrimitives()
 		const Math::matrix44& modelTransform = this->indexed.transforms[i];
 		const Math::float4& color = this->indexed.colors[i];
 
-		CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->model.offset, sizeof(modelTransform), (byte*)&modelTransform);
-		CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->diffuseColor.offset, sizeof(color), (byte*)&color);
+		CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->model, sizeof(modelTransform), (byte*)&modelTransform);
+		CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->diffuseColor, sizeof(color), (byte*)&color);
 		
 		CoreGraphics::SetPrimitiveTopology(topo);
 		CoreGraphics::SetVertexLayout(this->vertexLayout);

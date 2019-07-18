@@ -479,37 +479,42 @@ void
 ResourceStreamPool::ReloadResource(const Resources::ResourceName& res, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed)
 {
 	IndexT i = this->ids.FindIndex(res);
-	n_assert_fmt(i != InvalidIndex, "Resource '%s' has to be loaded before it can be reloaded\n", res.AsString().AsCharPtr());
-
-	// get id of resource
-	Resources::ResourceId ret = this->ids.ValueAtIndex(i);
-
-	// copy the reference
-	IoServer* ioserver = IoServer::Instance();
-
-	// construct stream
-	Ptr<Stream> stream = ioserver->CreateStream(this->names[ret.poolId].Value());
-	stream->SetAccessMode(Stream::ReadAccess);
-
-	// enter critical section
-	if (stream->Open())
+	if (i != InvalidIndex)
 	{
-		LoadStatus stat = this->ReloadFromStream(ret, stream);
-		this->asyncSection.Enter();
-		if (stat == Success && success)		success(ret);
-		else if (stat == Failed && success)	failed(ret);
-		this->asyncSection.Leave();
+		// get id of resource
+		Resources::ResourceId ret = this->ids.ValueAtIndex(i);
 
-		// close stream
-		stream->Close();
+		// copy the reference
+		IoServer* ioserver = IoServer::Instance();
+
+		// construct stream
+		Ptr<Stream> stream = ioserver->CreateStream(this->names[ret.poolId].Value());
+		stream->SetAccessMode(Stream::ReadAccess);
+
+		// enter critical section
+		if (stream->Open())
+		{
+			LoadStatus stat = this->ReloadFromStream(ret, stream);
+			this->asyncSection.Enter();
+			if (stat == Success && success)		success(ret);
+			else if (stat == Failed && success)	failed(ret);
+			this->asyncSection.Leave();
+
+			// close stream
+			stream->Close();
+		}
+		else
+		{
+			// if we fail to reload, just keep the old resource!
+			this->asyncSection.Enter();
+			if (failed) failed(ret);
+			this->asyncSection.Leave();
+			n_printf("Failed to reload resource %s\n", this->names[ret.poolId].Value());
+		}
 	}
 	else
 	{
-		// if we fail to reload, just keep the old resource!
-		this->asyncSection.Enter();
-		if (failed) failed(ret);
-		this->asyncSection.Leave();
-		n_printf("Failed to reload resource %s\n", this->names[ret.poolId].Value());
+		n_warning("Resource '%s' has to be loaded before it can be reloaded\n", res.AsString().AsCharPtr());
 	}
 }
 

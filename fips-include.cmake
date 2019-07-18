@@ -3,6 +3,7 @@ SET(NROOT ${CMAKE_CURRENT_LIST_DIR})
 SET(CODE_ROOT ${CMAKE_CURRENT_LIST_DIR}/code)
 
 option(N_USE_PRECOMPILED_HEADERS "Use precompiled headers" OFF)
+option(N_ENABLE_SHADER_COMMAND_GENERATION "Generate shader compile file for live shader reload" ON)
 
 if(FIPS_WINDOWS)
 	option(N_STATIC_BUILD "Use static runtime in windows builds" ON)
@@ -162,8 +163,11 @@ macro(add_shaders_intern)
                 VERBATIM
                 )
             fips_files(${shd})
-
             SOURCE_GROUP("res\\shaders" FILES ${shd})
+            if(N_ENABLE_SHADER_COMMAND_GENERATION)
+                # create compile flags file for live shader compile            
+                file(WRITE ${FIPS_PROJECT_DEPLOY_DIR}/shaders/${basename}.txt "${SHADERC} -i ${shd} -I ${NROOT}/work/shaders/vk -I ${foldername} -o ${EXPORT_DIR} -h ${CMAKE_BINARY_DIR}/shaders/${CurTargetName} -t shader ${shader_debug}")
+            endif()                
         endforeach()
     endif()
 endmacro()
@@ -191,20 +195,20 @@ macro(nebula_add_nidl)
     endforeach()
 endmacro()
 
-macro(add_frameshader)    
+macro(add_frameshader)
     foreach(frm ${ARGN})
             get_filename_component(basename ${frm} NAME)
             set(output ${EXPORT_DIR}/frame/${basename})
             add_custom_command(OUTPUT ${output}                
-                COMMAND ${CMAKE_COMMAND} -E copy ${frm} ${EXPORT_DIR}
+                COMMAND ${CMAKE_COMMAND} -E copy ${frm} ${EXPORT_DIR}/frame/
                 MAIN_DEPENDENCY ${frm}                
                 WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
-                COMMENT "Copying Frameshader ${frm} to ${EXPORT_DIR}"
+                COMMENT "Copying Frameshader ${frm} to ${EXPORT_DIR}/frame"
                 VERBATIM
                 )
             fips_files(${frm})
             SOURCE_GROUP("res\\frameshaders" FILES ${frm})
-        endforeach()    
+        endforeach()
 endmacro()
 
 macro(add_material)
@@ -212,15 +216,15 @@ macro(add_material)
             get_filename_component(basename ${mat} NAME)
             set(output ${EXPORT_DIR}/materials/${basename})
             add_custom_command(OUTPUT ${output}                
-                COMMAND ${CMAKE_COMMAND} -E copy ${mat} ${EXPORT_DIR}
+                COMMAND ${CMAKE_COMMAND} -E copy ${mat} ${EXPORT_DIR}/materials/
                 MAIN_DEPENDENCY ${mat}                
                 WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
-                COMMENT "Copying material ${mat} to ${EXPORT_DIR}"
+                COMMENT "Copying material ${mat} to ${EXPORT_DIR}/materials"
                 VERBATIM
                 )
             fips_files(${mat})
             SOURCE_GROUP("res\\materials" FILES ${mat})
-        endforeach()    
+
 endmacro()
 
 macro(add_nebula_shaders)
@@ -307,6 +311,7 @@ macro(nebula_begin_module name)
     fips_begin_module(${name})
     set(target_has_nidl 0)
     set(target_has_shaders 0)
+    set(target_has_flatc 0)
 endmacro()
 
 macro(nebula_end_module)
@@ -318,12 +323,16 @@ macro(nebula_end_module)
     if (target_has_shaders)
         target_include_directories(${curtarget} PUBLIC "${CMAKE_BINARY_DIR}/shaders/${CurTargetName}")
     endif()
+    if (target_has_flatc)
+        target_include_directories(${curtarget} PUBLIC "${CMAKE_BINARY_DIR}/flatbuffer/${CurTargetName}")
+    endif()
 endmacro()
 
 macro(nebula_begin_lib name)
     fips_begin_lib(${name})
     set(target_has_nidl 0)
     set(target_has_shaders 0)
+    set(target_has_flatc 0)
 endmacro()
 
 macro(nebula_end_lib)
@@ -334,5 +343,8 @@ macro(nebula_end_lib)
     endif()
     if (target_has_shaders)
         target_include_directories(${curtarget} PUBLIC "${CMAKE_BINARY_DIR}/shaders/${CurTargetName}")
+    endif()
+    if (target_has_flatc)
+        target_include_directories(${curtarget} PUBLIC "${CMAKE_BINARY_DIR}/flatbuffer/${CurTargetName}")
     endif()
 endmacro()

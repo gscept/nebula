@@ -17,6 +17,7 @@
 #endif
 
 #include "lights_cluster_classification.h"
+#include "lights.h"
 
 
 // match these in lights.fx
@@ -48,7 +49,6 @@ struct
 		CoreGraphics::ConstantBinding dirWorldSpace, dir, color, backlightColor, ambientColor, backlightFactor, shadowMatrix, shadowHandle;
 	} global;
 
-	CoreGraphics::ConstantBufferId tickParamsBuffer;		// contains lighting constants
 	Graphics::GraphicsEntityId globalLightEntity = Graphics::GraphicsEntityId::Invalid();
 	RenderUtil::DrawFullScreenQuad fsq;
 
@@ -95,7 +95,7 @@ struct
 	static const SizeT IndicesPerCluster = 32;
 
 	// these are used to update the light clustering
-	alignas(16) LightsClusterClassification::Light lights[2048];
+	LightsClusterClassification::Light lights[2048];
 
 } clusterState;
 
@@ -165,14 +165,13 @@ LightContext::Create()
 	lightServerState.local.shadowMap = ShaderGetConstantBinding(lightServerState.lightShader, "ShadowMap");
 
 	// setup buffers, copy tick params from shader server (but only update global light stuff)
-	lightServerState.tickParamsBuffer = ShaderServer::Instance()->GetTickParams();
 	lightServerState.localLightsResourceTable = ShaderCreateResourceTable(lightServerState.lightShader, NEBULA_INSTANCE_GROUP);
-	lightServerState.localLightsConstantBuffer = ShaderCreateConstantBuffer( lightServerState.lightShader, "LocalLightBlock" );
-	lightServerState.localLightsShadowConstantBuffer = ShaderCreateConstantBuffer( lightServerState.lightShader, "LocalLightShadowBlock" );
+	lightServerState.localLightsConstantBuffer = CoreGraphics::GetGraphicsConstantBuffer(MainThreadConstantBuffer);
+	lightServerState.localLightsShadowConstantBuffer = CoreGraphics::GetGraphicsConstantBuffer(MainThreadConstantBuffer);
 	lightServerState.localLightsSlot = ShaderGetResourceSlot(lightServerState.lightShader, "LocalLightBlock");
 	lightServerState.localLightShadowSlot = ShaderGetResourceSlot(lightServerState.lightShader, "LocalLightShadowBlock");
-	ResourceTableSetConstantBuffer(lightServerState.localLightsResourceTable, { lightServerState.localLightsConstantBuffer, lightServerState.localLightsSlot, 0, true, false, -1, 0});
-	ResourceTableSetConstantBuffer(lightServerState.localLightsResourceTable, { lightServerState.localLightsShadowConstantBuffer, lightServerState.localLightShadowSlot, 0, true, false, -1, 0 });
+	ResourceTableSetConstantBuffer(lightServerState.localLightsResourceTable, { lightServerState.localLightsConstantBuffer, lightServerState.localLightsSlot, 0, true, false, sizeof(Lights::LocalLightBlock), 0});
+	ResourceTableSetConstantBuffer(lightServerState.localLightsResourceTable, { lightServerState.localLightsShadowConstantBuffer, lightServerState.localLightShadowSlot, 0, true, false, sizeof(Lights::LocalLightShadowBlock), 0 });
 	ResourceTableCommitChanges(lightServerState.localLightsResourceTable);
 
 	lightServerState.spotLightMesh = Resources::CreateResource("msh:system/spotlightshape.nvx2", "system", nullptr, nullptr, true);
@@ -204,8 +203,16 @@ LightContext::Create()
 	clusterState.clusterLightBuffer = CreateShaderRWBuffer(rwb2Info);
 
 	clusterState.classificationShader = ShaderServer::Instance()->GetShader("shd:lights_cluster_classification.fxb");
+	IndexT indexBufferSlot = ShaderGetResourceSlot(clusterState.classificationShader, "Output");
+	IndexT lightsBufferSlot = ShaderGetResourceSlot(clusterState.classificationShader, "Input");
+
 	clusterState.classificationProgram = ShaderGetProgram(clusterState.classificationShader, 0);
 	clusterState.clusterResourceTable = ShaderCreateResourceTable(clusterState.classificationShader, NEBULA_BATCH_GROUP);
+
+	// update resource table
+	ResourceTableSetShaderRWBuffer(clusterState.clusterResourceTable, { clusterState.clusterIndexBuffer, indexBufferSlot, 0, false, false, -1, 0 });
+	ResourceTableSetShaderRWBuffer(clusterState.clusterResourceTable, { clusterState.clusterLightBuffer, lightsBufferSlot, 0, false, false, -1, 0 });
+	ResourceTableCommitChanges(clusterState.clusterResourceTable);
 
 	_CreateContext();
 }
@@ -262,37 +269,12 @@ LightContext::SetupPointLight(const Graphics::GraphicsEntityId id,
 	pointLightAllocator.Get<PointLightDynamicOffsets>(pli).Resize(2);
 	genericLightAllocator.Get<TypedLightId>(cid.id) = pli;
 
-	// allocate constant buffer
-	bool changes = false;
-	uint offset, slice;
-	if (ConstantBufferAllocateInstance(lightServerState.localLightsConstantBuffer, offset, slice))
-	{
-		ResourceTableSetConstantBuffer(lightServerState.localLightsResourceTable, { lightServerState.localLightsConstantBuffer, lightServerState.localLightsSlot, 0, true, false, -1, 0 });
-		changes = true;
-	}
-	pointLightAllocator.Get<PointLightConstantBufferSet>(pli) = { offset, slice };
-	pointLightAllocator.Get<PointLightDynamicOffsets>(pli)[0] = offset;
+	// set initial state
+	pointLightAllocator.Get<PointLightDynamicOffsets>(pli)[0] = 0;
+	pointLightAllocator.Get<PointLightDynamicOffsets>(pli)[1] = 0;
 	pointLightAllocator.Get<PointLightProjectionTexture>(pli) = projection;
 
 	// allocate shadow buffer slice if we cast shadows
-	offset = 0;
-	if (castShadows)
-	{
-		if (ConstantBufferAllocateInstance(lightServerState.localLightsShadowConstantBuffer, offset, slice))
-		{
-			ResourceTableSetConstantBuffer(lightServerState.localLightsResourceTable, { lightServerState.localLightsShadowConstantBuffer, lightServerState.localLightShadowSlot, 0, true, false, -1, 0 });
-			changes = true;
-		}
-		pointLightAllocator.Get<PointLightShadowConstantBufferSet>(pli) = { offset, slice };
-	}
-	else
-	{
-		pointLightAllocator.Get<PointLightShadowConstantBufferSet>(pli) = { UINT_MAX, UINT_MAX };
-	}
-	pointLightAllocator.Get<PointLightDynamicOffsets>(pli)[1] = offset;
-	
-	if (changes)
-		ResourceTableCommitChanges(lightServerState.localLightsResourceTable);
 }
 
 //------------------------------------------------------------------------------
@@ -320,37 +302,10 @@ LightContext::SetupSpotLight(const Graphics::GraphicsEntityId id,
 	// do this after we assign the typed light id
 	SetSpotLightTransform(cid, transform);
 
-	// allocate constant buffer slice
-	bool changes = false;
-	uint offset, slice;
-	if (ConstantBufferAllocateInstance(lightServerState.localLightsConstantBuffer, offset, slice))
-	{
-		ResourceTableSetConstantBuffer(lightServerState.localLightsResourceTable, { lightServerState.localLightsConstantBuffer, lightServerState.localLightsSlot, 0, true, false, -1, 0 });
-		changes = true;
-	}
-	spotLightAllocator.Get<SpotLightConstantBufferSet>(sli) = { offset, slice };
-	spotLightAllocator.Get<SpotLightDynamicOffsets>(sli)[0] = offset;
+	// set initial state
+	spotLightAllocator.Get<SpotLightDynamicOffsets>(sli)[0] = 0;
+	spotLightAllocator.Get<SpotLightDynamicOffsets>(sli)[1] = 0;
 	spotLightAllocator.Get<SpotLightProjectionTexture>(sli) = projection == CoreGraphics::TextureId::Invalid() ? lightServerState.spotLightDefaultProjection : projection;
-	offset = 0;
-
-	// allocate constant buffer for shadows if it casts them
-	if (castShadows)
-	{
-		if (ConstantBufferAllocateInstance(lightServerState.localLightsShadowConstantBuffer, offset, slice))
-		{
-			ResourceTableSetConstantBuffer(lightServerState.localLightsResourceTable, { lightServerState.localLightsShadowConstantBuffer, lightServerState.localLightShadowSlot, 0, true, false, -1, 0 });
-			changes = true;
-		}
-		spotLightAllocator.Get<SpotLightShadowConstantBufferSet>(sli) = { offset, slice };
-	}
-	else
-	{
-		spotLightAllocator.Get<SpotLightShadowConstantBufferSet>(sli) = { UINT_MAX, UINT_MAX };
-	}
-	spotLightAllocator.Get<SpotLightDynamicOffsets>(sli)[1] = offset;
-
-	if (changes)
-		ResourceTableCommitChanges(lightServerState.localLightsResourceTable);
 }
 
 //------------------------------------------------------------------------------
@@ -488,19 +443,20 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIn
 
 	// update constant buffer
 	Ids::Id32 globalLightId = genericLightAllocator.Get<TypedLightId>(cid.id);
-	ConstantBufferUpdate(lightServerState.tickParamsBuffer, genericLightAllocator.Get<Color>(cid.id) * genericLightAllocator.Get<Intensity>(cid.id), lightServerState.global.color);
-	ConstantBufferUpdate(lightServerState.tickParamsBuffer, Math::matrix44::transform(globalLightAllocator.Get<GlobalLightDirection>(globalLightId), viewTransform), lightServerState.global.dir);
-	ConstantBufferUpdate(lightServerState.tickParamsBuffer, globalLightAllocator.Get<GlobalLightDirection>(globalLightId), lightServerState.global.dirWorldSpace);
-	ConstantBufferUpdate(lightServerState.tickParamsBuffer, globalLightAllocator.Get<GlobalLightBacklight>(globalLightId), lightServerState.global.backlightColor);
-	ConstantBufferUpdate(lightServerState.tickParamsBuffer, globalLightAllocator.Get<GlobalLightBacklightOffset>(globalLightId), lightServerState.global.backlightFactor);
-	ConstantBufferUpdate(lightServerState.tickParamsBuffer, globalLightAllocator.Get<GlobalLightAmbient>(globalLightId), lightServerState.global.ambientColor);
+	Shared::PerTickParams& params = ShaderServer::Instance()->GetTickParams();
+	Math::float4::storeu(genericLightAllocator.Get<Color>(cid.id) * genericLightAllocator.Get<Intensity>(cid.id), params.GlobalLightColor);
+	Math::float4::storeu(globalLightAllocator.Get<GlobalLightDirection>(globalLightId), params.GlobalLightDirWorldspace);
+	Math::float4::storeu(globalLightAllocator.Get<GlobalLightBacklight>(globalLightId), params.GlobalBackLightColor);
+	Math::float4::storeu(globalLightAllocator.Get<GlobalLightAmbient>(globalLightId), params.GlobalAmbientLightColor);
+	Math::float4::storeu(Math::matrix44::transform(globalLightAllocator.Get<GlobalLightDirection>(globalLightId), viewTransform), params.GlobalLightDir);
+	params.GlobalBackLightOffset = globalLightAllocator.Get<GlobalLightBacklightOffset>(globalLightId);
 
 	// go through and update local lights
-	const Util::Array<LightType>& types = genericLightAllocator.GetArray<Type>();
+	const Util::Array<LightType>& types    = genericLightAllocator.GetArray<Type>();
 	const Util::Array<Math::float4>& color = genericLightAllocator.GetArray<Color>();
-	const Util::Array<float>& intensity = genericLightAllocator.GetArray<Intensity>();
-	const Util::Array<bool>& castShadow = genericLightAllocator.GetArray<ShadowCaster>();
-	const Util::Array<Ids::Id32>& typeIds = genericLightAllocator.GetArray<TypedLightId>();
+	const Util::Array<float>& intensity    = genericLightAllocator.GetArray<Intensity>();
+	const Util::Array<bool>& castShadow    = genericLightAllocator.GetArray<ShadowCaster>();
+	const Util::Array<Ids::Id32>& typeIds  = genericLightAllocator.GetArray<TypedLightId>();
 
 	IndexT i;
 	for (i = 0; i < types.Size(); i++)
@@ -510,66 +466,81 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIn
 
 		case PointLightType:
 		{
-			auto cboLight = pointLightAllocator.Get<PointLightConstantBufferSet>(typeIds[i]);
 			auto trans = pointLightAllocator.Get<PointLightTransform>(typeIds[i]);
 			auto tex = pointLightAllocator.Get<PointLightProjectionTexture>(typeIds[i]);
-			ConstantBufferUpdateInstance(lightServerState.localLightsConstantBuffer, color[i] * intensity[i], cboLight.slice, lightServerState.local.color);
-			ConstantBufferUpdateInstance(lightServerState.localLightsConstantBuffer, trans, cboLight.slice, lightServerState.local.transform);
 
 			uint flags = 0;
 
 			Math::float4 posAndRange = Math::matrix44::transform(trans.get_position(), viewTransform);
 			posAndRange.w() = 1 / trans.get_zaxis().length();
-			ConstantBufferUpdateInstance(lightServerState.localLightsConstantBuffer, posAndRange, cboLight.slice, lightServerState.local.posRange);
 
 			// update shadow stuff
 			if (castShadow[i])
 			{
-				auto cboShadow = pointLightAllocator.Get<PointLightShadowConstantBufferSet>(typeIds[i]);
 				flags |= USE_SHADOW_BITFLAG;
 			}
 
 			// bind projection
 			if (tex != TextureId::Invalid())
 			{
-				ConstantBufferUpdateInstance(lightServerState.localLightsConstantBuffer, TextureGetBindlessHandle(tex), cboLight.slice, lightServerState.local.projectionTexture);
 				flags |= USE_PROJECTION_TEX_BITFLAG;
 			}
 
-			// update flags (maybe this can be done less often...)
-			ConstantBufferUpdateInstance(lightServerState.localLightsConstantBuffer, flags, cboLight.slice, lightServerState.local.flags);
+			// allocate memory
+			uint offset = CoreGraphics::AllocateGraphicsConstantBufferMemory(MainThreadConstantBuffer, sizeof(Lights::LocalLightBlock));
+			alignas(16) Lights::LocalLightBlock block;
+			Math::float4::storeu(color[i] * intensity[i], block.LightColor);
+			Math::float4::storeu(posAndRange, block.LightPosRange);
+			Math::matrix44::storeu(trans, block.LightTransform);
+			block.ProjectionTexture = tex != TextureId::Invalid() ? TextureGetBindlessHandle(tex) : 0;
+			block.Flags = flags;
+
+			// update buffer
+			pointLightAllocator.Get<PointLightDynamicOffsets>(typeIds[i])[0] = offset;
+			ConstantBufferUpdate(lightServerState.localLightsConstantBuffer, block, offset);
+
 		}
 		break;
 
 		case SpotLightType:
 		{
-			auto cboLight = spotLightAllocator.Get<SpotLightConstantBufferSet>(typeIds[i]);
 			auto trans = spotLightAllocator.Get<SpotLightTransform>(typeIds[i]);
 			auto tex = spotLightAllocator.Get<SpotLightProjectionTexture>(typeIds[i]);
 			auto invViewProj = spotLightAllocator.Get<SpotLightInvViewProjection>(typeIds[i]);
-			ConstantBufferUpdateInstance(lightServerState.localLightsConstantBuffer, color[i] * intensity[i], cboLight.slice, lightServerState.local.color);
-			ConstantBufferUpdateInstance(lightServerState.localLightsConstantBuffer, trans, cboLight.slice, lightServerState.local.transform);
 
-			uint flags = USE_PROJECTION_TEX_BITFLAG;
+			uint flags = 0;
 
 			Math::float4 posAndRange = Math::matrix44::transform(trans.get_position(), viewTransform);
 			posAndRange.w() = 1 / trans.get_zaxis().length();
-			ConstantBufferUpdateInstance(lightServerState.localLightsConstantBuffer, posAndRange, cboLight.slice, lightServerState.local.posRange);
 
 			// update shadow data
 			if (castShadow[i])
 			{
-				auto cboShadow = spotLightAllocator.Get<SpotLightShadowConstantBufferSet>(typeIds[i]);
 				flags |= USE_SHADOW_BITFLAG;
+			}
+
+			// check if we should use projection
+			if (tex != TextureId::Invalid())
+			{
+				flags |= USE_PROJECTION_TEX_BITFLAG;
 			}
 
 			// update projection transform
 			Math::matrix44 fromViewToLightProj = Math::matrix44::multiply(invViewTransform, invViewProj);
-			ConstantBufferUpdateInstance(lightServerState.localLightsConstantBuffer, fromViewToLightProj, cboLight.slice, lightServerState.local.projectionTransform);
 
-			// update flag and projection (maybe this can be done less often...)
-			ConstantBufferUpdateInstance(lightServerState.localLightsConstantBuffer, TextureGetBindlessHandle(tex), cboLight.slice, lightServerState.local.projectionTexture);
-			ConstantBufferUpdateInstance(lightServerState.localLightsConstantBuffer, flags, cboLight.slice, lightServerState.local.flags);
+			// allocate memory
+			uint offset = CoreGraphics::AllocateGraphicsConstantBufferMemory(MainThreadConstantBuffer, sizeof(Lights::LocalLightBlock));
+			alignas(16) Lights::LocalLightBlock block;
+			Math::float4::storeu(color[i] * intensity[i], block.LightColor);
+			Math::float4::storeu(posAndRange, block.LightPosRange);
+			Math::matrix44::storeu(trans, block.LightTransform);
+			Math::matrix44::storeu(fromViewToLightProj, block.LightProjTransform);
+			block.ProjectionTexture = tex != TextureId::Invalid() ? TextureGetBindlessHandle(tex) : 0;
+			block.Flags = flags;
+
+			// update buffer
+			spotLightAllocator.Get<SpotLightDynamicOffsets>(typeIds[i])[0] = offset;
+			ConstantBufferUpdate(lightServerState.localLightsConstantBuffer, block, offset);
 		}
 		break;
 
@@ -585,7 +556,7 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIn
 				auto trans = pointLightAllocator.Get<PointLightTransform>(typeIds[i]);
 				Math::float4 posAndRange = Math::matrix44::transform(trans.get_position(), viewTransform);
 				posAndRange.w() = 1 / trans.get_zaxis().length();
-				posAndRange.storeu(clusterState.lights[i].position);
+				Math::float4::storeu(posAndRange, clusterState.lights[i].position);
 			}
 			break;
 
@@ -594,8 +565,8 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIn
 				auto trans = spotLightAllocator.Get<SpotLightTransform>(typeIds[i]);
 				Math::float4 posAndRange = Math::matrix44::transform(trans.get_position(), viewTransform);
 				posAndRange.w() = 1 / trans.get_zaxis().length();
-				posAndRange.storeu(clusterState.lights[i].position);
-				trans.get_zaxis().store3(clusterState.lights[i].forward);
+				Math::float4::storeu(posAndRange, clusterState.lights[i].position);
+				Math::float4::store3u(trans.get_zaxis(), clusterState.lights[i].forward);
 			}
 			break;
 		}
@@ -688,7 +659,8 @@ LightContext::RenderLights()
 /**
 */
 
-void LightContext::UpdateGlobalShadowMap()
+void 
+LightContext::UpdateGlobalShadowMap()
 {
 }
 

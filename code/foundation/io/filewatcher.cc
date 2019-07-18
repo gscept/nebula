@@ -4,11 +4,12 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "io/filewatcher.h"
+#include "io/ioserver.h"
 
 namespace IO
 {
-__ImplementClass(IO::FileWatcher, 'FIWT', Core::RefCounted);
-__ImplementSingleton(IO::FileWatcher);
+__ImplementClass(IO::FileWatcher, 'FIWT', Threading::Thread);
+__ImplementInterfaceSingleton(IO::FileWatcher);
 
 using namespace IO;
 using namespace Util;
@@ -16,9 +17,10 @@ using namespace Util;
 //------------------------------------------------------------------------------
 /**
 */
-FileWatcher::FileWatcher()
+FileWatcher::FileWatcher() :
+    interval(0.2)
 {
-    __ConstructSingleton;
+    __ConstructInterfaceSingleton;    
 }
 
 //------------------------------------------------------------------------------
@@ -26,9 +28,33 @@ FileWatcher::FileWatcher()
 */
 FileWatcher::~FileWatcher()
 {
-    n_assert(this->watchers.IsEmpty());
-    __DestructSingleton;
+    this->Stop();
+    n_assert(this->watchers.IsEmpty());    
+    __DestructInterfaceSingleton;
 }
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+FileWatcher::SetSpeed(double speed)
+{    
+    this->interval = speed;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+FileWatcher::Setup()
+{
+    n_assert(!this->IsRunning());
+    this->SetPriority(Threading::Thread::Low);
+    this->SetThreadAffinity(System::Cpu::Core4);
+    this->SetName("FileWatcher thread");    
+    this->Start();
+}
+
 
 
 //------------------------------------------------------------------------------
@@ -47,24 +73,64 @@ FileWatcher::Update()
 /**
 */
 void
-FileWatcher::Watch(Util::String const & folder, bool recursive, WatchDelegate const & callback)
+FileWatcher::Watch(Util::StringAtom const& folder, bool recursive, WatchFlags flags, WatchDelegate const& callback)
 {
-    n_assert(!this->watchers.Contains(folder));    
-    this->watchers.Add(folder, { callback,folder});
-    EventHandlerData& eventData = this->watchers[folder];
-    FileWatcherImpl::CreateWatcher(eventData);        
+    EventHandlerData data = { callback, folder,flags };
+    data.data.recursive = recursive;
+    this->watcherQueue.Enqueue(data);               
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-FileWatcher::Unwatch(Util::String const & folder)
+FileWatcher::Unwatch(Util::StringAtom const& folder)
 {    
-    n_assert(this->watchers.Contains(folder));
-    auto& eventData = this->watchers[folder];
-    FileWatcherImpl::DestroyWatcher(eventData);
-    this->watchers.Erase(folder);
+    EventHandlerData data;
+    data.folder = folder;
+    this->watcherQueue.Enqueue(data);
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+void
+FileWatcher::CheckQueue()
+{
+    static Util::Array<EventHandlerData> newEvents(10,10);
+    this->watcherQueue.DequeueAll(newEvents);
+    for (auto & e : newEvents)
+    {
+        if (e.callback)
+        {
+            n_assert(!this->watchers.Contains(e.folder));
+            this->watchers.Add(e.folder, e);
+            EventHandlerData& eventData = this->watchers[e.folder];
+            FileWatcherImpl::CreateWatcher(eventData);
+        }
+        else
+        {
+            n_assert(this->watchers.Contains(e.folder));
+            auto & eventData = this->watchers[e.folder];
+            FileWatcherImpl::DestroyWatcher(eventData);
+            this->watchers.Erase(e.folder);
+        }
+    }
 }
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+FileWatcher::DoWork()
+{	   
+	while (!this->ThreadStopRequested())
+	{        
+        this->CheckQueue();
+        this->Update();
+        Core::SysFunc::Sleep(this->interval);
+	}
+    // clear queue before shutting down
+    this->CheckQueue();
+}
+
+} // namespace IO

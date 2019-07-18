@@ -6,8 +6,6 @@
 #include "streammeshpool.h"
 #include "coregraphics/mesh.h"
 #include "coregraphics/legacy/nvx2streamreader.h"
-#include "coregraphics/memoryindexbufferpool.h"
-#include "coregraphics/memoryvertexbufferpool.h"
 #include "coregraphics/memorymeshpool.h"
 #include "coregraphics/graphicsdevice.h"
 #include "streammeshpool.h"
@@ -73,13 +71,17 @@ StreamMeshPool::LoadFromStream(const Resources::ResourceId id, const Util::Strin
 void
 StreamMeshPool::Unload(const Resources::ResourceId id)
 {
-	n_assert(id != Ids::InvalidId24);
+	n_assert(id.resourceId != Ids::InvalidId24);
 	const MeshCreateInfo& msh = meshPool->GetSafe<0>(id.resourceId);
 
-	if (msh.indexBuffer != IndexBufferId::Invalid()) CoreGraphics::iboPool->Unload(msh.indexBuffer.AllocId());
+	if (msh.indexBuffer != IndexBufferId::Invalid())
+		DestroyIndexBuffer(msh.indexBuffer);
+
 	IndexT i;
 	for (i = 0; i < msh.streams.Size(); i++)
-		CoreGraphics::vboPool->Unload(msh.streams[i].vertexBuffer.AllocId());
+		DestroyVertexBuffer(msh.streams[i].vertexBuffer);
+
+	this->states[id.poolId] = Resources::Resource::State::Unloaded;
 }
 
 //------------------------------------------------------------------------------
@@ -182,7 +184,7 @@ StreamMeshPool::MeshBind(const Resources::ResourceId id)
 	for (i = 0; i < msh.streams.Size(); i++)
 		CoreGraphics::SetStreamVertexBuffer(msh.streams[i].index, msh.streams[i].vertexBuffer, 0);
 
-	if (msh.indexBuffer != Ids::InvalidId64)
+	if (msh.indexBuffer != IndexBufferId::Invalid())
 		CoreGraphics::SetIndexBuffer(msh.indexBuffer, 0);
 
 	meshPool->LeaveGet();
@@ -195,7 +197,7 @@ StreamMeshPool::MeshBind(const Resources::ResourceId id)
 void
 StreamMeshPool::BindPrimitiveGroup(const IndexT primgroup)
 {
-	n_assert(this->activeMesh != Ids::InvalidId24);
+	n_assert(this->activeMesh != MeshId::Invalid());
 	meshPool->EnterGet();
 	const MeshCreateInfo& msh = meshPool->Get<0>(this->activeMesh);
 	CoreGraphics::SetPrimitiveGroup(msh.primitiveGroups[primgroup]);

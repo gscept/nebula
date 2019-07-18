@@ -48,7 +48,7 @@ void
 FrameBarrier::CompiledImpl::Run(const IndexT frameIndex)
 {
 #if NEBULA_GRAPHICS_DEBUG
-	CoreGraphics::CmdBufBeginMarker(GraphicsQueueType, NEBULA_MARKER_GRAY, this->name.Value());
+	CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_GRAY, this->name.Value());
 #endif
 }
 

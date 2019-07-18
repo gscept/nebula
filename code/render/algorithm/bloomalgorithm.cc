@@ -108,7 +108,7 @@ BloomAlgorithm::Setup()
 	this->AddFunction("BrightnessBlur", Algorithm::Compute, [this, dims](IndexT)
 	{
 #if NEBULA_GRAPHICS_DEBUG
-		CoreGraphics::CmdBufBeginMarker(GraphicsQueueType, NEBULA_MARKER_ORANGE, "Bloom");
+		CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_ORANGE, "Bloom");
 #endif
 
 #define TILE_WIDTH 320
@@ -132,7 +132,7 @@ BloomAlgorithm::Setup()
 		CoreGraphics::Compute(numGroupsY1, numGroupsX2, 1);
 
 #if NEBULA_GRAPHICS_DEBUG
-		CoreGraphics::CmdBufEndMarker(GraphicsQueueType);
+		CoreGraphics::CommandBufferEndMarker(GraphicsQueueType);
 #endif
 	});
 }

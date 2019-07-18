@@ -36,7 +36,7 @@ public:
 	CoreGraphics::EventId event;
 	CoreGraphics::BarrierStage dependency;
 	CoreGraphicsQueueType queueType; 
-	CoreGraphics::CmdBufferUsage commandBufferType;
+	CoreGraphics::CommandBufferUsage commandBufferType;
 };
 
 } // namespace Frame2

@@ -46,8 +46,10 @@ DestroyJobPort(const JobPortId& id)
 	Util::FixedArray<Ptr<JobThread>>& threads = jobPortAllocator.Get<PortThreads>((Ids::Id32)id.id);
 	for (IndexT i = 0; i < threads.Size(); i++)
 	{
-		threads[i]->Stop();
+		threads[i]->Stop();        
 	}
+    threads.Clear();
+    jobPortAllocator.Dealloc((Ids::Id32)id.id);
 }
 
 //------------------------------------------------------------------------------
@@ -328,7 +330,11 @@ JobThread::JobThread() :
 */
 JobThread::~JobThread()
 {
-	// empty
+	this->commands.Clear();
+    if (this->IsRunning())
+    {
+        this->Stop();
+    }
 }
 
 //------------------------------------------------------------------------------

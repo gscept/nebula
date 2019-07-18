@@ -12,7 +12,7 @@
 #include "coregraphics/rendertexture.h"
 #include "coregraphics/shaderrwtexture.h"
 #include "coregraphics/shaderrwbuffer.h"
-#include "coregraphics/cmdbuffer.h"
+#include "coregraphics/commandbuffer.h"
 #include "coregraphics/config.h"
 #include <tuple>
 namespace CoreGraphics
@@ -167,8 +167,8 @@ BarrierAccessFromString(const Util::String& str)
 	else if (str == "ShaderWrite")				return BarrierAccess::ShaderWrite;
 	else if (str == "ColorAttachmentRead")		return BarrierAccess::ColorAttachmentRead;
 	else if (str == "ColorAttachmentWrite")		return BarrierAccess::ColorAttachmentWrite;
-	else if (str == "DepthAttachmentRead")				return BarrierAccess::DepthAttachmentRead;
-	else if (str == "DepthAttachmentWrite")				return BarrierAccess::DepthAttachmentWrite;
+	else if (str == "DepthAttachmentRead")		return BarrierAccess::DepthAttachmentRead;
+	else if (str == "DepthAttachmentWrite")		return BarrierAccess::DepthAttachmentWrite;
 	else if (str == "TransferRead")				return BarrierAccess::TransferRead;
 	else if (str == "TransferWrite")			return BarrierAccess::TransferWrite;
 	else if (str == "HostRead")					return BarrierAccess::HostRead;

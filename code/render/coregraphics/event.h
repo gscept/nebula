@@ -3,13 +3,13 @@
 /**
 	An event is a signal and wait type object which is used for in-queue GPU sync.
 
-	(C)2017-2018 Individual contributors, see AUTHORS file
+	(C) 2017-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "ids/id.h"
 #include "ids/idpool.h"
 #include "coregraphics/barrier.h"
-#include "coregraphics/cmdbuffer.h"
+#include "coregraphics/commandbuffer.h"
 #include "coregraphics/config.h"
 
 #ifdef CreateEvent

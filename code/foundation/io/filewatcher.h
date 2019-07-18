@@ -10,10 +10,12 @@
 #include "core/types.h"
 #include "core/refcounted.h"
 #include "core/singleton.h"
-#include "util/string.h"
+#include "util/stringatom.h"
 #include "util/dictionary.h"
 #include "io/uri.h"
 #include "util/delegate.h"
+#include "threading/thread.h"
+#include "threading/safequeue.h"
 #if __WIN32__
 #include "io/win32/win32filewatcher.h"
 #elif __linux__
@@ -31,46 +33,70 @@ enum WatchEventType
 {
     Created,
     Deleted,
+	NameChange,
     Modified,
+};
+
+enum WatchFlags
+{
+	NameChanged = N_BIT(0),
+	SizeChanged = N_BIT(1),
+	Write = N_BIT(2),
+	Access = N_BIT(3),
+	Creation = N_BIT(4),
 };
 
 //------------------------------------------------------------------------------
 struct WatchEvent
 {
     WatchEventType type;
-    Util::String folder;
+    Util::StringAtom folder;
     Util::String file;
 };
-using WatchDelegate = Util::Delegate<void(WatchEvent const&)>;
+using WatchDelegate = std::function<void(WatchEvent const&)>;
 
 //------------------------------------------------------------------------------
 struct EventHandlerData
 {
     WatchDelegate callback;
-    Util::String folder;
+    Util::StringAtom folder;
+	WatchFlags flags;
     FileWatcherPlatform data;
 };
 
 //------------------------------------------------------------------------------
-class FileWatcher : public Core::RefCounted
+class FileWatcher : public Threading::Thread
 {
     __DeclareClass(FileWatcher);
-    __DeclareSingleton(FileWatcher);
+    __DeclareInterfaceSingleton(FileWatcher);
 
 public:
     /// constructor
     FileWatcher();
     /// destructor
     virtual ~FileWatcher();
+
+    /// starts watcher thread
+    void Setup();
+
+    void SetSpeed(double speed);
+    
+    /// Register Folder
+    void Watch(Util::StringAtom const& folder, bool recursive, WatchFlags flags, WatchDelegate const& callback);
+    /// unregister
+    void Unwatch(Util::StringAtom const& folder);
+        
+private:
     /// checks for file modifications and calls registered callbacks
     void Update();
-    /// Register Folder
-    void Watch(Util::String const& folder, bool recursive, WatchDelegate const& callback);
-    /// unregister
-    void Unwatch(Util::String const& folder);
-
-private:
-   
-    Util::Dictionary<Util::String, EventHandlerData> watchers;    
+    ///
+    void CheckQueue();
+    ///
+    void DoWork();
+   	
+    Util::Dictionary<Util::StringAtom, EventHandlerData> watchers;    
+    Threading::SafeQueue< EventHandlerData> watcherQueue;
+    double interval;
 };
-}
+
+} // namespace IO

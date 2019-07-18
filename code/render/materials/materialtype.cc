@@ -288,7 +288,7 @@ MaterialType::CreateSurfaceInstance(const SurfaceId id)
 			if (constant.instanceConstant)
 			{
 				CoreGraphics::ConstantBinding newBinding = constant.binding;
-				newBinding.offset += bufferOffsets[constant.bufferIndex];
+				newBinding += bufferOffsets[constant.bufferIndex];
 				instanceConstant.binding = newBinding;
 			}
 			else
@@ -377,7 +377,7 @@ MaterialType::SetSurfaceConstant(const SurfaceId sur, IndexT name, const Util::V
 	while (it != this->batchToIndexMap.End())
 	{
 		const SurfaceConstant& constant = this->surfaceAllocator.Get<Constants>(sur.id)[*it.val][name];
-		if (constant.buffer != CoreGraphics::ConstantBufferId::Invalid() && constant.binding.offset != UINT_MAX)
+		if (constant.buffer != CoreGraphics::ConstantBufferId::Invalid() && constant.binding != UINT_MAX)
 		{
 			n_assert(!constant.instanceConstant);
 			CoreGraphics::ConstantBufferUpdate(constant.buffer, value, constant.binding);
@@ -412,7 +412,7 @@ MaterialType::SetSurfaceInstanceConstant(const SurfaceInstanceId sur, const Inde
 	while (it != this->batchToIndexMap.End())
 	{
 		const SurfaceInstanceConstant& constant = this->surfaceInstanceAllocator.Get<0>(sur.instance)[*it.val][idx];
-		if (constant.buffer != CoreGraphics::ConstantBufferId::Invalid() && constant.binding.offset != UINT_MAX)
+		if (constant.buffer != CoreGraphics::ConstantBufferId::Invalid() && constant.binding != UINT_MAX)
 			CoreGraphics::ConstantBufferUpdate(constant.buffer, value, constant.binding);
 		it++;
 	}

@@ -27,10 +27,12 @@
 #include "resources/resourceid.h"
 #include "coregraphics/shaderfeature.h"
 #include "util/variant.h"
+#include "coregraphics/constantbuffer.h"
 
 namespace CoreGraphics
 {
 
+enum ConstantBufferUpdateMode;
 struct ConstantBufferId;
 struct TextureId;
 struct ShaderRWTextureId;
@@ -76,10 +78,7 @@ enum ShaderPipeline
 	ComputePipeline
 };
 
-struct ConstantBinding
-{
-	uint offset;
-};
+typedef uint ConstantBinding;
 
 /// get constant type as string
 const Util::String ConstantTypeToString(const ShaderConstantType& type);
@@ -95,9 +94,9 @@ const ShaderId ShaderGet(const Resources::ResourceName& name);
 /// create resource table from shader
 const ResourceTableId ShaderCreateResourceTable(const ShaderId id, const IndexT group);
 /// create constant buffer from shader using name (don't use too frequently)
-const ConstantBufferId ShaderCreateConstantBuffer(const ShaderId id, const Util::StringAtom& name, const SizeT numBuffers = 1);
+const ConstantBufferId ShaderCreateConstantBuffer(const ShaderId id, const Util::StringAtom& name, ConstantBufferUpdateMode mode = ConstantBufferUpdateMode::CoherentlyMappedMemory);
 /// create constant buffer from index
-const ConstantBufferId ShaderCreateConstantBuffer(const ShaderId id, const IndexT cbIndex, const SizeT numBuffers = 1);
+const ConstantBufferId ShaderCreateConstantBuffer(const ShaderId id, const IndexT cbIndex, ConstantBufferUpdateMode mode = ConstantBufferUpdateMode::CoherentlyMappedMemory);
 
 /// get the number of constants from shader
 const SizeT ShaderGetConstantCount(const ShaderId id);

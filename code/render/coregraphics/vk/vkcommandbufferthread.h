@@ -26,9 +26,9 @@ namespace CoreGraphics
 }
 namespace Vulkan
 {
-class VkCmdBufferThread : public Threading::Thread
+class VkCommandBufferThread : public Threading::Thread
 {
-	__DeclareClass(VkCmdBufferThread);
+	__DeclareClass(VkCommandBufferThread);
 
 public:
 
@@ -208,14 +208,14 @@ public:
 	};
 
 	/// constructor
-	VkCmdBufferThread();
+	VkCommandBufferThread();
 	/// destructor
-	virtual ~VkCmdBufferThread();
+	virtual ~VkCommandBufferThread();
 
 	/// called if thread needs a wakeup call before stopping
-	void EmitWakeupSignal();
+	void EmitWakeupSignal() override;
 	/// this method runs in the thread context
-	void DoWork();
+	void DoWork() override;
 	/// push command buffer work
 	void PushCommand(const Command& command);
 	/// push command buffer work
@@ -239,7 +239,7 @@ private:
 /**
 */
 inline void
-VkCmdBufferThread::SetCommandBuffer(const VkCommandBuffer& buffer)
+VkCommandBufferThread::SetCommandBuffer(const VkCommandBuffer& buffer)
 {
 	this->commandBuffer = buffer;
 }
@@ -248,7 +248,7 @@ VkCmdBufferThread::SetCommandBuffer(const VkCommandBuffer& buffer)
 /**
 */
 inline void
-VkCmdBufferThread::PushCommand(const Command& command)
+VkCommandBufferThread::PushCommand(const Command& command)
 {
 	this->commands.Enqueue(command);
 }
@@ -257,7 +257,7 @@ VkCmdBufferThread::PushCommand(const Command& command)
 /**
 */
 inline void
-VkCmdBufferThread::PushCommands(const Util::Array<Command>& commands)
+VkCommandBufferThread::PushCommands(const Util::Array<Command>& commands)
 {
 	this->commands.EnqueueArray(commands);
 }

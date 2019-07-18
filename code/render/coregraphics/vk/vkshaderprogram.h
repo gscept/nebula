@@ -13,6 +13,7 @@
 #include "resources/resourcepool.h"
 #include "coregraphics/shaderfeature.h"
 #include "coregraphics/resourcetable.h"
+#include "coregraphics/shader.h"
 
 namespace Vulkan
 {

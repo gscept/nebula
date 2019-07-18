@@ -11,6 +11,7 @@
 #include "coregraphics/shadersemantics.h"
 #include "framesync/framesynctimer.h"
 
+#include "shared.h"
 
 using namespace Util;
 using namespace CoreGraphics;
@@ -43,13 +44,18 @@ bool
 VkTransformDevice::Open()
 {
 	ShaderServer* shdServer = ShaderServer::Instance();
-	
+
+	// setup tables
 	ShaderId shader = ShaderGet("shd:shared.fxb"_atm);
-	this->viewTable = ShaderCreateResourceTable(shader, NEBULA_FRAME_GROUP);
-	this->viewConstants = ShaderCreateConstantBuffer(shader, "FrameBlock");
-	IndexT viewConstantsSlot = ShaderGetResourceSlot(shader, "FrameBlock");
-	ResourceTableSetConstantBuffer(this->viewTable, { this->viewConstants, viewConstantsSlot, 0, false, false, -1, 0});
-	ResourceTableCommitChanges(this->viewTable);
+	this->viewTables.Resize(CoreGraphics::GetNumBufferedFrames());
+	IndexT i;
+	for (i = 0; i < this->viewTables.Size(); i++)
+	{
+		this->viewTables[i] = ShaderCreateResourceTable(shader, NEBULA_FRAME_GROUP);
+	}
+
+	this->viewConstants = CoreGraphics::GetGraphicsConstantBuffer(MainThreadConstantBuffer);
+	this->viewConstantsSlot = ShaderGetResourceSlot(shader, "FrameBlock");
 	this->tableLayout = ShaderGetResourcePipeline(shader);
 
 	// setup camera block, update once per frame - no need to sync
@@ -72,7 +78,6 @@ VkTransformDevice::Open()
 void
 VkTransformDevice::Close()
 {
-	DestroyResourceTable(this->viewTable);
 	DestroyConstantBuffer(this->viewConstants);
 }
 
@@ -95,15 +100,29 @@ VkTransformDevice::ApplyViewSettings()
 {
 	TransformDeviceBase::ApplyViewSettings();
 
-	ConstantBufferUpdate(this->viewConstants, this->GetViewProjTransform(), this->viewProjVar);
-	ConstantBufferUpdate(this->viewConstants, this->GetInvViewTransform(), this->invViewProjVar);
-	ConstantBufferUpdate(this->viewConstants, this->GetViewTransform(), this->viewVar);
-	ConstantBufferUpdate(this->viewConstants, this->GetInvViewTransform(), this->invViewVar);
-	ConstantBufferUpdate(this->viewConstants, this->GetProjTransform(), this->projVar);
-	ConstantBufferUpdate(this->viewConstants, this->GetInvProjTransform(), this->invProjVar);
-	ConstantBufferUpdate(this->viewConstants, this->GetInvViewTransform().getrow3(), this->eyePosVar);
-	ConstantBufferUpdate(this->viewConstants, float4(this->GetFocalLength().x(), this->GetFocalLength().y(), this->GetNearFarPlane().x(), this->GetNearFarPlane().y()), this->focalLengthNearFarVar);
-	ConstantBufferUpdate(this->viewConstants, float4((float)FrameSync::FrameSyncTimer::Instance()->GetTime(), Math::n_rand(0, 1), (float)FrameSync::FrameSyncTimer::Instance()->GetFrameTime(), 0), this->timeAndRandomVar);
+	// allocate memory from global buffer
+	uint offset = CoreGraphics::AllocateGraphicsConstantBufferMemory(MainThreadConstantBuffer, sizeof(Shared::FrameBlock));
+
+	// update block structure
+	alignas(16) Shared::FrameBlock block;
+	Math::matrix44::storeu(this->GetViewTransform(), block.View);
+	Math::matrix44::storeu(this->GetViewProjTransform(), block.ViewProjection);
+	Math::matrix44::storeu(this->GetProjTransform(), block.Projection);
+	Math::matrix44::storeu(this->GetInvViewTransform(), block.InvView);
+	Math::matrix44::storeu(this->GetInvProjTransform(), block.InvProjection);
+	Math::matrix44::storeu(Math::matrix44::inverse(this->GetViewProjTransform()), block.InvViewProjection);
+	Math::float4::storeu(this->GetInvViewTransform().getrow3(), block.EyePos);
+	Math::float4::storeu(float4(this->GetFocalLength().x(), this->GetFocalLength().y(), this->GetNearFarPlane().x(), this->GetNearFarPlane().y()), block.FocalLengthNearFar);
+	Math::float4::storeu(float4((float)FrameSync::FrameSyncTimer::Instance()->GetTime(), Math::n_rand(0, 1), (float)FrameSync::FrameSyncTimer::Instance()->GetFrameTime(), 0), block.TimeAndRandom);
+
+	// update actual constant buffer
+	ConstantBufferUpdate(this->viewConstants, block, offset);
+	frameOffset = offset;
+
+	// update resource table
+	IndexT bufferedFrameIndex = GetBufferedFrameIndex();
+	ResourceTableSetConstantBuffer(this->viewTables[bufferedFrameIndex], { this->viewConstants, this->viewConstantsSlot, 0, false, false, sizeof(Shared::FrameBlock), (SizeT)offset });
+	ResourceTableCommitChanges(this->viewTables[bufferedFrameIndex]);
 }
 
 } // namespace Vulkan

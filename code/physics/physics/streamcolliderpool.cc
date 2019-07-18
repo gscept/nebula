@@ -238,5 +238,7 @@ StreamColliderPool::Unload(const Resources::ResourceId id)
             break;
         }
     }
+
+	this->states[id.poolId] = Resources::Resource::State::Unloaded;
 }
 }

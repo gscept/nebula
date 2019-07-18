@@ -165,6 +165,8 @@ StreamActorPool::Unload(const Resources::ResourceId id)
     {
         s->release();        
     }    
+
+	this->states[id.poolId] = Resources::Resource::State::Unloaded;
 }
 
 }

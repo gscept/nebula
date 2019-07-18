@@ -49,6 +49,8 @@ CreateVertexLayout(const VertexLayoutCreateInfo& info)
 void
 DestroyVertexLayout(const VertexLayoutId id)
 {
+    // FIXME: shutdownrace
+    if(layoutPool->GetRefCount())
 	layoutPool->Unload(id.resourceId);
 }
 

@@ -55,10 +55,13 @@ private:
 	CoreGraphics::ConstantBinding viewMatricesVar;
 	CoreGraphics::ConstantBinding timeAndRandomVar;
 	CoreGraphics::ConstantBinding nearFarPlaneVar;
+	uint32_t frameOffset;
 
 	CoreGraphics::ConstantBinding shadowCameraBlockVar;
 	CoreGraphics::ConstantBufferId viewConstants;
-	CoreGraphics::ResourceTableId viewTable;
+
+	Util::FixedArray<CoreGraphics::ResourceTableId> viewTables;	
+	IndexT viewConstantsSlot;
 	CoreGraphics::ResourcePipelineId tableLayout;
 };
 
@@ -68,7 +71,8 @@ private:
 inline void
 VkTransformDevice::BindCameraDescriptorSetsGraphics()
 {
-	CoreGraphics::SetResourceTable(this->viewTable, NEBULA_FRAME_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
+	IndexT bufferedFrameIndex = CoreGraphics::GetBufferedFrameIndex();
+	CoreGraphics::SetResourceTable(this->viewTables[bufferedFrameIndex], NEBULA_FRAME_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
 }
 
 //------------------------------------------------------------------------------
@@ -77,6 +81,7 @@ VkTransformDevice::BindCameraDescriptorSetsGraphics()
 inline void
 VkTransformDevice::BindCameraDescriptorSetsCompute()
 {
-	CoreGraphics::SetResourceTable(this->viewTable, NEBULA_FRAME_GROUP, CoreGraphics::ComputePipeline, nullptr);
+	IndexT bufferedFrameIndex = CoreGraphics::GetBufferedFrameIndex();
+	CoreGraphics::SetResourceTable(this->viewTables[bufferedFrameIndex], NEBULA_FRAME_GROUP, CoreGraphics::ComputePipeline, nullptr);
 }
 } // namespace Vulkan

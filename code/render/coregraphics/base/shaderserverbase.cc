@@ -6,11 +6,17 @@
 #include "render/stdneb.h"
 #include "coregraphics/base/shaderserverbase.h"
 #include "coregraphics/shaderpool.h"
+#include "coregraphics/graphicsdevice.h"
 #include "io/ioserver.h"
 #include "io/textreader.h"
+#include "io/filewatcher.h"
+#include "io/memorystream.h"
+#include "io/textreader.h"
+#include "io/textwriter.h"
 #include "coregraphics/shadersemantics.h"
 #include "coregraphics/config.h"
 #include "resources/resourcemanager.h"
+#include "system/process.h"
 
 namespace Base
 {
@@ -88,6 +94,61 @@ ShaderServerBase::Open()
     }
 #endif
 
+	// create file watcher
+    if (IO::IoServer::Instance()->DirectoryExists("home:work/shaders/vk"))
+    {
+        FileWatcher::Instance()->Watch("home:work/shaders/vk", true, IO::WatchFlags(NameChanged | SizeChanged | Write), [this](IO::WatchEvent const& event)
+        {
+            if (event.type == WatchEventType::Modified || event.type == WatchEventType::NameChange &&
+                !event.file.EndsWithString("TMP") &&
+                !event.file.EndsWithString("~"))
+            {
+                // remove file extension
+                Util::String out = event.file;
+                out.StripFileExtension();
+
+                // find argument in export folder
+                Ptr<IO::Stream> file = IO::IoServer::Instance()->CreateStream(Util::String::Sprintf("bin:shaders/%s.txt", out.AsCharPtr()));
+                if (file->Open())
+                {
+                    System::Process process;
+
+                    void* buf = file->Map();
+                    SizeT size = file->GetSize();
+
+                    // run process
+                    Util::String cmd;
+                    cmd.Set((const char*)buf, size);
+                    process.SetWorkingDirectory(file->GetURI().LocalPath().ExtractDirName());
+                    process.SetExecutable(cmd);
+                    process.SetNoConsoleWindow(false);
+                    Ptr<IO::MemoryStream> stream = IO::MemoryStream::Create();
+                    process.SetStderrCaptureStream(stream);
+
+                    // launch process
+                    bool res = process.LaunchWait();
+                    if (res)
+                    {
+                        Ptr<TextReader> reader = TextReader::Create();
+                        reader->SetStream(stream);
+                        reader->Open();
+
+                        // write output from compilation
+                        while (!reader->Eof())
+                        {
+                            Core::SysFunc::DebugOut(reader->ReadLine().AsCharPtr());
+                        }
+
+                        // close reader
+                        reader->Close();
+
+                        // reload shader
+                        this->pendingShaderReloads.Enqueue(Util::String::Sprintf("shd:%s.fxb", out.AsCharPtr()));
+                    }
+                }
+            }
+        });
+    }
     // create standard shader for access to shared variables
     if (this->shaders.Contains(ResourceName("shd:shared.fxb")))
     {
@@ -112,6 +173,11 @@ void
 ShaderServerBase::Close()
 {
     n_assert(this->isOpen);
+    // unwatch 
+    if (IO::IoServer::Instance()->DirectoryExists("home:work/shaders/vk"))
+    {
+        IO::FileWatcher::Instance()->Unwatch("home:work/shaders/vk");
+    }
 
     // unload all currently loaded shaders
     IndexT i;
@@ -146,16 +212,6 @@ ShaderServerBase::ApplyObjectId(IndexT i)
 
 //------------------------------------------------------------------------------
 /**
-	IMPLEMENT ME!
-*/
-void
-ShaderServerBase::ReloadShader(const Resources::ResourceId shader)
-{
-	n_assert(shader != Ids::InvalidId64);
-}
-
-//------------------------------------------------------------------------------
-/**
 */
 void
 ShaderServerBase::LoadShader(const Resources::ResourceName& shdName)
@@ -169,4 +225,45 @@ ShaderServerBase::LoadShader(const Resources::ResourceName& shdName)
 	
 	this->shaders.Add(shdName, sid);
 }
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+ShaderServerBase::BeforeView()
+{
+	// implement in subclass
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ShaderServerBase::AfterView()
+{
+	// implement in subclass
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+ShaderServerBase::BeforeFrame()
+{
+	if (this->pendingShaderReloads.Size() > 0)
+	{
+		// wait for all graphics commands to finish first
+		CoreGraphics::WaitForAllQueues();
+
+		Util::Array<Resources::ResourceName> shaders;
+		shaders.Reserve(4);
+		this->pendingShaderReloads.DequeueAll(shaders);
+
+		// reload shaders
+		IndexT i;
+		for (i = 0; i < shaders.Size(); i++)
+			Resources::ReloadResource(shaders[i]);
+	}
+}
+
 } // namespace Base

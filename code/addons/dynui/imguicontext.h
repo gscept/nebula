@@ -60,16 +60,17 @@ private:
 		CoreGraphics::ShaderId uiShader;
 		CoreGraphics::ShaderProgramId prog;
 		CoreGraphics::TextureId fontTexture;
-		CoreGraphics::VertexBufferId vbo;
-		CoreGraphics::IndexBufferId ibo;
+
+		Util::FixedArray<CoreGraphics::VertexBufferId> vbos;
+		Util::FixedArray<CoreGraphics::IndexBufferId> ibos;
 
 		CoreGraphics::ConstantBinding textureConstant;
 		CoreGraphics::ConstantBinding textProjectionConstant;
 		CoreGraphics::ResourceTableId resourceTable;
 		//Ptr<CoreGraphics::BufferLock> vboBufferLock;
 		//Ptr<CoreGraphics::BufferLock> iboBufferLock;
-		byte* vertexPtr;
-		byte* indexPtr;
+		Util::FixedArray<byte*> vertexPtrs;
+		Util::FixedArray<byte*> indexPtrs;
 
 		Ptr<ImguiInputHandler> inputHandler;
 	};

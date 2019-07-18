@@ -53,12 +53,12 @@ Win32StringConverter::UTF8ToWide(const char* src, ushort* dst, SizeT dstMaxBytes
 /**
 */
 String
-Win32StringConverter::WideToUTF8(ushort* src)
+Win32StringConverter::WideToUTF8(ushort* src, SizeT length)
 {
     n_assert(0 != src);
     String returnString;
     char dstBuf[1024];
-    int numBytesWritten = WideCharToMultiByte(CP_UTF8, 0, (LPCWSTR) src, -1, dstBuf, sizeof(dstBuf), 0, 0);
+    int numBytesWritten = WideCharToMultiByte(CP_UTF8, 0, (LPCWSTR) src, length, dstBuf, sizeof(dstBuf), 0, 0);
     if (numBytesWritten > 0)
     {
         n_assert(numBytesWritten < sizeof(dstBuf));

@@ -25,6 +25,7 @@
 #include "util/stringatom.h"
 #include "io/assignregistry.h"
 #include "io/schemeregistry.h"
+#include "io/filewatcher.h"
 
 //------------------------------------------------------------------------------
 namespace IO
@@ -103,13 +104,15 @@ private:
 
     bool archiveFileSystemEnabled;    
     Ptr<ArchiveFileSystem> archiveFileSystem;
-    static Threading::CriticalSection ArchiveCriticalSection;
+    static Threading::CriticalSection archiveCriticalSection;
     static bool StandardArchivesMounted;
     
     Ptr<AssignRegistry> assignRegistry;
     Ptr<SchemeRegistry> schemeRegistry;
-    static Threading::CriticalSection AssignCriticalSection;
-    static Threading::CriticalSection SchemeCriticalSection;
+    Ptr<FileWatcher> watcher;
+    static Threading::CriticalSection assignCriticalSection;
+    static Threading::CriticalSection schemeCriticalSection;
+    static Threading::CriticalSection watcherCriticalSection;
 };
 
 //------------------------------------------------------------------------------

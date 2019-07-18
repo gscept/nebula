@@ -138,6 +138,8 @@ SurfacePool::Unload(const Resources::ResourceId id)
 	const SurfaceId mid = runtime.id;
 	MaterialType* type = runtime.type;
 	type->DestroySurface(mid);
+
+	this->states[id.poolId] = Resources::Resource::State::Unloaded;
 }
 
 } // namespace Materials

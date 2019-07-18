@@ -36,9 +36,6 @@ public:
 		void Run(const IndexT frameIndex);
 		void Discard();
 
-		void CrossQueuePreSync() override;
-		void CrossQueuePostSync() override;
-
 #if NEBULA_GRAPHICS_DEBUG
 		Util::StringAtom name;
 #endif
@@ -46,6 +43,7 @@ public:
 		CoreGraphics::PassId pass;
 	};
 
+	/// allocate new instance
 	FrameOp::Compiled* AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator);
 
 	CoreGraphics::PassId pass;

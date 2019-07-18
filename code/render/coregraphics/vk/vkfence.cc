@@ -12,6 +12,17 @@
 namespace Vulkan
 {
 	VkFenceAllocator fenceAllocator(0x00FFFFFF);
+
+//------------------------------------------------------------------------------
+/**
+*/
+VkFence 
+FenceGetVk(const CoreGraphics::FenceId id)
+{
+	if (id == CoreGraphics::FenceId::Invalid()) return VK_NULL_HANDLE;
+	else										return fenceAllocator.Get<1>(id.id24).fence;
+}
+
 }
 
 namespace CoreGraphics
@@ -40,7 +51,6 @@ CreateFence(const FenceCreateInfo& info)
 
 	fenceAllocator.Get<0>(id) = dev;
 	fenceAllocator.Get<1>(id).fence = fence;
-	fenceAllocator.Get<1>(id).pending = false;
 	
 	FenceId ret;
 	ret.id24 = id;
@@ -63,29 +73,20 @@ DestroyFence(const FenceId id)
 //------------------------------------------------------------------------------
 /**
 */
-void
-FenceInsert(const FenceId id, const CoreGraphicsQueueType queue)
-{
-	CoreGraphics::SignalFence(id, queue);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 bool 
 FencePeek(const FenceId id)
 {
-	return CoreGraphics::PeekFence(id);
+	return vkGetFenceStatus(fenceAllocator.Get<0>(id.id24), fenceAllocator.Get<1>(id.id24).fence) == VK_SUCCESS;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 
-void 
+bool 
 FenceReset(const FenceId id)
 {
-	CoreGraphics::ResetFence(id);
+	return vkResetFences(fenceAllocator.Get<0>(id.id24), 1, &fenceAllocator.Get<1>(id.id24).fence) == VK_SUCCESS;
 }
 
 //------------------------------------------------------------------------------
@@ -94,7 +95,15 @@ FenceReset(const FenceId id)
 bool 
 FenceWait(const FenceId id, const uint64 time)
 {
-	return CoreGraphics::WaitFence(id, time);
+	VkFence fence = fenceAllocator.Get<1>(id.id24).fence;
+	VkDevice dev = fenceAllocator.Get<0>(id.id24);
+	VkResult res = vkWaitForFences(dev, 1, &fence, false, time);
+	if (res == VK_SUCCESS)
+	{
+		res = vkResetFences(dev, 1, &fence);
+		n_assert(res == VK_SUCCESS);
+	}
+	return res == VK_SUCCESS;
 }
 
 } // namespace CoreGraphics

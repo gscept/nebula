@@ -175,6 +175,8 @@ StreamAnimationPool::Unload(const Resources::ResourceId id)
 	}
 	clips.Clear();
 	clipIndices.Clear();
+
+	this->states[id.poolId] = Resources::Resource::State::Unloaded;
 }
 
 } // namespace CoreAnimation

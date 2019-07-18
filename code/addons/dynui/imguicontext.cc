@@ -40,8 +40,9 @@ ImguiContext::ImguiDrawFunction()
 	// get renderer	
 	//const Ptr<BufferLock>& vboLock = renderer->GetVertexBufferLock();
 	//const Ptr<BufferLock>& iboLock = renderer->GetIndexBufferLock();
-	VertexBufferId vbo = state.vbo;
-	IndexBufferId ibo = state.ibo;
+	IndexT currentBuffer = CoreGraphics::GetBufferedFrameIndex();
+	VertexBufferId vbo = state.vbos[currentBuffer];
+	IndexBufferId ibo = state.ibos[currentBuffer];
 	const ImguiRendererParams& params = state.params;
 
 	// apply shader
@@ -55,17 +56,17 @@ ImguiContext::ImguiDrawFunction()
 #endif
 
 	// setup device
-	CoreGraphics::SetVertexLayout(CoreGraphics::VertexBufferGetLayout(state.vbo));
+	CoreGraphics::SetVertexLayout(CoreGraphics::VertexBufferGetLayout(state.vbos[currentBuffer]));
 	CoreGraphics::SetPrimitiveTopology(CoreGraphics::PrimitiveTopology::TriangleList);
 	CoreGraphics::SetGraphicsPipeline();
 
 	// setup input buffers
 	CoreGraphics::SetResourceTable(state.resourceTable, NEBULA_BATCH_GROUP, GraphicsPipeline, nullptr);
-	CoreGraphics::SetStreamVertexBuffer(0, state.vbo, 0);
-	CoreGraphics::SetIndexBuffer(state.ibo, 0);
+	CoreGraphics::SetStreamVertexBuffer(0, state.vbos[currentBuffer], 0);
+	CoreGraphics::SetIndexBuffer(state.ibos[currentBuffer], 0);
 
 	// set projection
-	CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, state.textProjectionConstant.offset, sizeof(proj), (byte*)&proj);
+	CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, state.textProjectionConstant, sizeof(proj), (byte*)&proj);
 
 	IndexT vertexOffset = 0;
 	IndexT indexOffset = 0;
@@ -82,12 +83,12 @@ ImguiContext::ImguiDrawFunction()
 		const SizeT indexBufferSize = commandList->IdxBuffer.size() * sizeof(ImDrawIdx);					// using 16 bit indices
 
 		// if we render too many vertices, we will simply assert
-		n_assert(vertexBufferOffset + (IndexT)commandList->VtxBuffer.size() < CoreGraphics::VertexBufferGetNumVertices(state.vbo));
-		n_assert(indexBufferOffset + (IndexT)commandList->IdxBuffer.size() < CoreGraphics::IndexBufferGetNumIndices(state.ibo));
+		n_assert(vertexBufferOffset + (IndexT)commandList->VtxBuffer.size() < CoreGraphics::VertexBufferGetNumVertices(state.vbos[currentBuffer]));
+		n_assert(indexBufferOffset + (IndexT)commandList->IdxBuffer.size() < CoreGraphics::IndexBufferGetNumIndices(state.ibos[currentBuffer]));
 
 		// wait for previous draws to finish...
-		memcpy(state.vertexPtr + vertexBufferOffset, vertexBuffer, vertexBufferSize);
-		memcpy(state.indexPtr + indexBufferOffset, indexBuffer, indexBufferSize);
+		memcpy(state.vertexPtrs[currentBuffer] + vertexBufferOffset, vertexBuffer, vertexBufferSize);
+		memcpy(state.indexPtrs[currentBuffer] + indexBufferOffset, indexBuffer, indexBufferSize);
 		IndexT j;
 		IndexT primitiveIndexOffset = 0;
 		for (j = 0; j < commandList->CmdBuffer.size(); j++)
@@ -120,7 +121,7 @@ ImguiContext::ImguiDrawFunction()
 					n_error("ResourceId alloc type unknown or not implemented!\n");
 				}
 				
-				CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, state.textureConstant.offset, sizeof(uint64), (byte*)&imageHandle);
+				CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, state.textureConstant, sizeof(uint64), (byte*)&imageHandle);
 
 				// setup primitive
 				CoreGraphics::PrimitiveGroup primitive;
@@ -198,10 +199,11 @@ ImguiContext::Create()
 	components.Append(VertexComponent((VertexComponent::SemanticName)1, 0, VertexComponentBase::Float2, 0));
     components.Append(VertexComponent((VertexComponent::SemanticName)2, 0, VertexComponentBase::UByte4N, 0));
 
+	SizeT numBuffers = CoreGraphics::GetNumBufferedFrames();
+
 	CoreGraphics::VertexBufferCreateInfo vboInfo =
 	{
-		"imgui_vbo"_atm,
-		"system",
+		"ImGUI VBO"_atm,
 		CoreGraphics::GpuBufferTypes::AccessWrite,
 		CoreGraphics::GpuBufferTypes::UsageDynamic,
 		CoreGraphics::GpuBufferTypes::SyncingCoherent | CoreGraphics::GpuBufferTypes::SyncingPersistent,
@@ -210,11 +212,16 @@ ImguiContext::Create()
 		nullptr,
 		0
 	};
-    state.vbo = CoreGraphics::CreateVertexBuffer(vboInfo);
+	state.vbos.Resize(numBuffers);
+	IndexT i;
+	for (i = 0; i < numBuffers; i++)
+	{
+		state.vbos[i] = CoreGraphics::CreateVertexBuffer(vboInfo);
+	}
 
 	CoreGraphics::IndexBufferCreateInfo iboInfo = 
 	{
-		"imgui_ibo"_atm,
+		""_atm,
 		"system",
 		CoreGraphics::GpuBufferTypes::AccessWrite,
 		CoreGraphics::GpuBufferTypes::UsageDynamic,
@@ -224,11 +231,21 @@ ImguiContext::Create()
 		nullptr,
 		0
 	};
-    state.ibo = CoreGraphics::CreateIndexBuffer(iboInfo);
+	state.ibos.Resize(numBuffers);
+	for (i = 0; i < numBuffers; i++)
+	{
+		iboInfo.name = Util::String::Sprintf("imgui_ibo_%d", i);
+		state.ibos[i] = CoreGraphics::CreateIndexBuffer(iboInfo);
+	}
 
 	// map buffer
-    state.vertexPtr = (byte*)CoreGraphics::VertexBufferMap(state.vbo, CoreGraphics::GpuBufferTypes::MapWrite);
-    state.indexPtr = (byte*)CoreGraphics::IndexBufferMap(state.ibo, CoreGraphics::GpuBufferTypes::MapWrite);
+	state.vertexPtrs.Resize(numBuffers);
+	state.indexPtrs.Resize(numBuffers);
+	for (i = 0; i < numBuffers; i++)
+	{
+		state.vertexPtrs[i] = (byte*)CoreGraphics::VertexBufferMap(state.vbos[i], CoreGraphics::GpuBufferTypes::MapWrite);
+		state.indexPtrs[i] = (byte*)CoreGraphics::IndexBufferMap(state.ibos[i], CoreGraphics::GpuBufferTypes::MapWrite);
+	}    
 
 	// get display mode, this will be our default size
 	Ptr<DisplayDevice> display = DisplayDevice::Instance();
@@ -385,13 +402,20 @@ ImguiContext::Create()
 void
 ImguiContext::Discard()
 {
-	CoreGraphics::VertexBufferUnmap(state.vbo);
-	CoreGraphics::IndexBufferUnmap(state.ibo);
+	IndexT i;
+	for (i = 0; i < state.vbos.Size(); i++)
+	{
+		CoreGraphics::VertexBufferUnmap(state.vbos[i]);
+		CoreGraphics::IndexBufferUnmap(state.ibos[i]);
 
-	CoreGraphics::DestroyVertexBuffer(state.vbo);
-	CoreGraphics::DestroyIndexBuffer(state.ibo);
-    state.vertexPtr = nullptr;
-    state.indexPtr = nullptr;
+		CoreGraphics::DestroyVertexBuffer(state.vbos[i]);
+		CoreGraphics::DestroyIndexBuffer(state.ibos[i]);
+
+		state.vertexPtrs[i] = nullptr;
+		state.indexPtrs[i] = nullptr;
+	}
+	
+    
 
 	Input::InputServer::Instance()->RemoveInputHandler(state.inputHandler.upcast<InputHandler>());
 	state.inputHandler = nullptr;

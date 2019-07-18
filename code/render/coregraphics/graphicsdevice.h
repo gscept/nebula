@@ -16,12 +16,18 @@
 #include "fence.h"
 #include "debug/debugcounter.h"
 #include "coregraphics/rendereventhandler.h"
+#include "coregraphics/submissioncontext.h"
 
 namespace CoreGraphics
 {
 
 struct GraphicsDeviceCreateInfo
 {
+	uint globalGraphicsConstantBufferMemorySize[NumConstantBufferTypes];
+	uint globalComputeConstantBufferMemorySize[NumConstantBufferTypes];
+	uint globalVertexBufferMemorySize[NumVertexBufferMemoryTypes];
+	uint globalIndexBufferMemorySize[NumVertexBufferMemoryTypes];
+	byte numBufferedFrames : 3;
 	bool enableValidation : 1;		// enables validation layer and writes output to console
 };
 
@@ -30,11 +36,56 @@ bool CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info);
 /// destroy graphics device
 void DestroyGraphicsDevice();
 
+/// get number of buffered frames
+SizeT GetNumBufferedFrames();
+/// get current frame index, which is between 0 and GetNumBufferedFrames
+IndexT GetBufferedFrameIndex();
+
+
 struct GraphicsDeviceState
 {
 	Util::Dictionary<Util::StringAtom, CoreGraphics::RenderTextureId> renderTextures;
 	Util::Dictionary<Util::StringAtom, CoreGraphics::ShaderRWTextureId> shaderRWTextures;
 	Util::Dictionary<Util::StringAtom, CoreGraphics::ShaderRWBufferId> shaderRWBuffers;
+
+	CoreGraphics::SubmissionContextId resourceSubmissionContext;
+	CoreGraphics::CommandBufferId resourceSubmissionCmdBuffer;
+	CoreGraphics::SemaphoreId resourceSubmissionSemaphore;
+	CoreGraphics::FenceId resourceSubmissionFence;
+	Threading::CriticalSection resourceSubmissionCriticalSection;
+	bool resourceSubmissionActive;
+
+	CoreGraphics::SubmissionContextId setupSubmissionContext;
+	CoreGraphics::CommandBufferId setupSubmissionCmdBuffer;
+	CoreGraphics::SemaphoreId setupSubmissionSemaphore;
+	bool setupSubmissionActive;
+
+	CoreGraphics::SubmissionContextId gfxSubmission;
+	CoreGraphics::CommandBufferId gfxCmdBuffer;
+	CoreGraphics::SemaphoreId gfxPrevSemaphore;
+	CoreGraphics::SemaphoreId gfxSemaphore;
+	CoreGraphics::SemaphoreId gfxWaitSemaphore;
+	CoreGraphics::FenceId gfxFence;
+
+	CoreGraphics::SubmissionContextId computeSubmission;
+	CoreGraphics::CommandBufferId computeCmdBuffer;
+	CoreGraphics::SemaphoreId computePrevSemaphore;
+	CoreGraphics::SemaphoreId computeSemaphore;
+	CoreGraphics::SemaphoreId computeWaitSemaphore;
+	CoreGraphics::FenceId computeFence;
+
+	uint globalGraphicsConstantBufferMaxValue[NumConstantBufferTypes];
+	CoreGraphics::ConstantBufferId globalGraphicsConstantBuffer[NumConstantBufferTypes];
+	uint globalComputeConstantBufferMaxValue[NumConstantBufferTypes];
+	CoreGraphics::ConstantBufferId globalComputeConstantBuffer[NumConstantBufferTypes];
+
+	uint globalVertexBufferMaxValue[NumVertexBufferMemoryTypes];
+	CoreGraphics::VertexBufferId globalVertexBuffer[NumVertexBufferMemoryTypes];
+	byte* mappedVertexBuffer[NumVertexBufferMemoryTypes];
+	uint globalIndexBufferMaxValue[NumVertexBufferMemoryTypes];
+	CoreGraphics::IndexBufferId globalIndexBuffer[NumVertexBufferMemoryTypes];
+	byte* mappedIndexBuffer[NumVertexBufferMemoryTypes];
+
 	Util::Array<Ptr<CoreGraphics::RenderEventHandler> > eventHandlers;
 	CoreGraphics::PrimitiveTopology::Code primitiveTopology;
 	CoreGraphics::PrimitiveGroup primitiveGroup;
@@ -66,9 +117,11 @@ bool NotifyEventHandlers(const CoreGraphics::RenderEvent& e);
 
 /// begin complete frame
 bool BeginFrame(IndexT frameIndex);
+/// start a new submission, with an optional argument for waiting for another queue
+void BeginSubmission(CoreGraphicsQueueType queue, CoreGraphicsQueueType waitQueue);
 /// begin a rendering pass
 void BeginPass(const CoreGraphics::PassId pass);
-/// progress to next subpass
+/// progress to next subpass	
 void SetToNextSubpass();
 /// begin rendering a batch
 void BeginBatch(Frame::FrameBatchType::Code batchType);
@@ -84,6 +137,8 @@ void SetStreamVertexBuffer(IndexT streamIndex, const CoreGraphics::VertexBufferI
 void SetVertexLayout(const CoreGraphics::VertexLayoutId& vl);
 /// set current index buffer
 void SetIndexBuffer(const CoreGraphics::IndexBufferId& ib, IndexT offsetIndex);
+/// set current index buffer with index type override
+void SetIndexBuffer(const CoreGraphics::IndexBufferId& ib, IndexT offsetIndex, CoreGraphics::IndexType::Code type);
 /// set the type of topology used
 void SetPrimitiveTopology(const CoreGraphics::PrimitiveTopology::Code topo);
 /// get the type of topology used
@@ -102,8 +157,40 @@ void SetResourceTable(const CoreGraphics::ResourceTableId table, const IndexT sl
 void SetResourceTable(const CoreGraphics::ResourceTableId table, const IndexT slot, ShaderPipeline pipeline, uint32 numOffsets, uint32* offsets);
 /// set resoure table layout
 void SetResourceTablePipeline(const CoreGraphics::ResourcePipelineId layout);
+
 /// push constants
 void PushConstants(ShaderPipeline pipeline, uint offset, uint size, byte* data);
+
+/// reserve range of graphics constant buffer memory and return offset
+uint AllocateGraphicsConstantBufferMemory(CoreGraphicsGlobalConstantBufferType type, uint size);
+/// return id to global graphics constant buffer
+CoreGraphics::ConstantBufferId GetGraphicsConstantBuffer(CoreGraphicsGlobalConstantBufferType type);
+/// reserve range of compute constant buffer memory and return offset
+uint AllocateComputeConstantBufferMemory(CoreGraphicsGlobalConstantBufferType type, uint size);
+/// return id to global compute constant buffer
+CoreGraphics::ConstantBufferId GetComputeConstantBuffer(CoreGraphicsGlobalConstantBufferType type);
+/// reserve range of vertex buffer memory
+byte* AllocateVertexBufferMemory(CoreGraphicsVertexBufferMemoryType type, uint size);
+/// get current offset into vertex buffer
+uint GetVertexBufferOffset(CoreGraphicsVertexBufferMemoryType type);
+/// get global vertex buffer
+CoreGraphics::VertexBufferId GetVertexBuffer(CoreGraphicsVertexBufferMemoryType type);
+/// reserve range of index buffer memory
+byte* AllocateIndexBufferMemory(CoreGraphicsVertexBufferMemoryType type, uint size);
+/// get current offset into index buffer
+uint GetIndexBufferOffset(CoreGraphicsVertexBufferMemoryType type);
+/// get global index buffer
+CoreGraphics::IndexBufferId GetIndexBuffer(CoreGraphicsVertexBufferMemoryType type);
+
+/// return resource submission context
+CoreGraphics::SubmissionContextId GetResourceSubmissionContext();
+/// return setup submission context
+CoreGraphics::SubmissionContextId GetSetupSubmissionContext();
+/// return command buffer for current frame graphics submission
+CoreGraphics::CommandBufferId GetGfxCommandBuffer();
+/// return command buffer for current frame async compute submission
+CoreGraphics::CommandBufferId GetComputeCommandBuffer();
+
 /// set pipeline using current layout, shader and pass
 void SetGraphicsPipeline();
 
@@ -118,14 +205,7 @@ void SignalEvent(const CoreGraphics::EventId ev, const CoreGraphicsQueueType que
 void WaitEvent(const CoreGraphics::EventId ev, const CoreGraphicsQueueType queue);
 /// signals an event
 void ResetEvent(const CoreGraphics::EventId ev, const CoreGraphicsQueueType queue);
-/// insert a fence to be signaled in the selected queue
-void SignalFence(const CoreGraphics::FenceId fe, const CoreGraphicsQueueType queue);
-/// peek fence, returns true if fence is signaled
-bool PeekFence(const CoreGraphics::FenceId fe);
-/// reset fence
-void ResetFence(const CoreGraphics::FenceId fe);
-/// wait for a fence indefinitely (using UINT_MAX) or with a timeout, returns bool if fence was encountered
-bool WaitFence(const CoreGraphics::FenceId fe, uint64 wait);
+
 /// draw current primitives
 void Draw();
 /// draw indexed, instanced primitives
@@ -136,12 +216,18 @@ void Compute(int dimX, int dimY, int dimZ);
 void EndBatch();
 /// end current pass
 void EndPass();
+/// end the current submission, 
+void EndSubmission(CoreGraphicsQueueType queue, bool endOfFrame = false);
 /// end current frame
 void EndFrame(IndexT frameIndex);
 /// check if inside BeginFrame
 bool IsInBeginFrame();
-/// present the rendered scene
-void Present();
+/// wait for an individual queue to finish
+void WaitForQueue(CoreGraphicsQueueType queue);
+/// wait for all queues to finish
+void WaitForAllQueues();
+
+
 /// save a screenshot to the provided stream
 CoreGraphics::ImageFileFormat::Code SaveScreenshot(CoreGraphics::ImageFileFormat::Code fmt, const Ptr<IO::Stream>& outStream);
 /// save a region of the screen to the provided stream
@@ -154,6 +240,13 @@ void SetVisualizeMipMaps(bool val);
 bool GetRenderWireframe();
 /// set the render as wireframe flag
 void SetRenderWireframe(bool b);
+
+/// insert timestamp, returns handle to timestamp, which can be retreived on the next N'th frame where N is the number of buffered frames
+IndexT Timestamp(CoreGraphicsQueueType queue, const CoreGraphics::BarrierStage stage);
+/// start query
+IndexT BeginQuery(CoreGraphicsQueueType queue, CoreGraphicsQueryType type);
+/// end query
+void EndQuery(CoreGraphicsQueueType queue, CoreGraphicsQueryType type, IndexT query);
 
 /// copy data between textures
 void Copy(const CoreGraphics::TextureId from, Math::rectangle<SizeT> fromRegion, const CoreGraphics::TextureId to, Math::rectangle<SizeT> toRegion);
@@ -198,11 +291,11 @@ void QueueEndMarker(const CoreGraphicsQueueType queue);
 /// insert marker
 void QueueInsertMarker(const CoreGraphicsQueueType queue, const Math::float4& color, const Util::String& name);
 /// begin debug marker region
-void CmdBufBeginMarker(const CoreGraphicsQueueType queue, const Math::float4& color, const Util::String& name);
+void CommandBufferBeginMarker(const CoreGraphicsQueueType queue, const Math::float4& color, const Util::String& name);
 /// end debug marker region
-void CmdBufEndMarker(const CoreGraphicsQueueType queue);
+void CommandBufferEndMarker(const CoreGraphicsQueueType queue);
 /// insert marker
-void CmdBufInsertMarker(const CoreGraphicsQueueType queue, const Math::float4& color, const Util::String& name);
+void CommandBufferInsertMarker(const CoreGraphicsQueueType queue, const Math::float4& color, const Util::String& name);
 #endif
 
 

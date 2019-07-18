@@ -7,6 +7,7 @@
 */
 //------------------------------------------------------------------------------
 #include "ids/idallocator.h"
+#include "coregraphics/fence.h"
 #include "vulkan/vulkan.h"
 namespace Vulkan
 {
@@ -14,9 +15,13 @@ namespace Vulkan
 struct VkFenceInfo
 {
 	VkFence fence;
-	bool pending : 1;
 };
 typedef Ids::IdAllocator<VkDevice, VkFenceInfo> VkFenceAllocator;
 extern VkFenceAllocator fenceAllocator;
+
+//------------------------------------------------------------------------------
+/**
+*/
+VkFence FenceGetVk(const CoreGraphics::FenceId id);
 
 } // namespace Vulkan

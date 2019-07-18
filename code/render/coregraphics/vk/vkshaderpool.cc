@@ -179,6 +179,8 @@ VkShaderPool::Unload(const Resources::ResourceId res)
 		VkShaderProgramDiscard(progSetup, progRuntime, progRuntime.pipeline);
 	}
 	runtime.programMap.Clear();
+
+	this->states[res.poolId] = Resources::Resource::State::Unloaded;
 }
 
 //------------------------------------------------------------------------------
@@ -216,11 +218,11 @@ VkShaderPool::CreateResourceTable(const CoreGraphics::ShaderId id, const IndexT 
 /**
 */
 CoreGraphics::ConstantBufferId 
-VkShaderPool::CreateConstantBuffer(const CoreGraphics::ShaderId id, const Util::StringAtom& name, const SizeT numBuffers)
+VkShaderPool::CreateConstantBuffer(const CoreGraphics::ShaderId id, const Util::StringAtom& name, CoreGraphics::ConstantBufferUpdateMode mode)
 {
 	AnyFX::VarblockBase* var = this->shaderAlloc.Get<0>(id.resourceId)->GetVarblock(name.Value());
 	if (var->alignedSize > 0)
-		return CoreGraphics::CreateConstantBuffer({ name, (IndexT)var->binding, (SizeT)var->alignedSize, numBuffers });
+		return CoreGraphics::CreateConstantBuffer({ name, (IndexT)var->binding, (SizeT)var->alignedSize, mode });
 	else
 		return CoreGraphics::ConstantBufferId::Invalid();
 }
@@ -229,11 +231,11 @@ VkShaderPool::CreateConstantBuffer(const CoreGraphics::ShaderId id, const Util::
 /**
 */
 CoreGraphics::ConstantBufferId 
-VkShaderPool::CreateConstantBuffer(const CoreGraphics::ShaderId id, const IndexT cbIndex, const SizeT numBuffers)
+VkShaderPool::CreateConstantBuffer(const CoreGraphics::ShaderId id, const IndexT cbIndex, CoreGraphics::ConstantBufferUpdateMode mode)
 {
 	AnyFX::VarblockBase* var = this->shaderAlloc.Get<0>(id.resourceId)->GetVarblock(cbIndex);
 	if (var->alignedSize > 0)
-		return CoreGraphics::CreateConstantBuffer({ var->name.c_str(), (IndexT)var->binding, (SizeT)var->alignedSize, numBuffers });
+		return CoreGraphics::CreateConstantBuffer({ var->name.c_str(), (IndexT)var->binding, (SizeT)var->alignedSize, mode });
 	else
 		return CoreGraphics::ConstantBufferId::Invalid();
 }

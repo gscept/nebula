@@ -34,8 +34,8 @@ struct VkConstantBufferSetupInfo
 	SizeT size;
 	IndexT binding;
 	SizeT stride;
-	SizeT numBuffers;
 	SizeT grow;
+	CoreGraphics::ConstantBufferUpdateMode mode;
 };
 
 struct VkConstantBufferMapInfo
@@ -67,7 +67,9 @@ typedef Ids::IdAllocator<
 > VkConstantBufferAllocator;
 extern VkConstantBufferAllocator constantBufferAllocator;
 
-/// get Vulkan backing buffer
+/// get vulkan buffer buffer
 VkBuffer ConstantBufferGetVk(const CoreGraphics::ConstantBufferId id);
+/// get vulkan buffer memory
+VkDeviceMemory ConstantBufferGetVkMemory(const CoreGraphics::ConstantBufferId id);
 
 } // namespace Vulkan

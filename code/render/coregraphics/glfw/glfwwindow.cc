@@ -907,41 +907,33 @@ Present(const CoreGraphics::WindowId& id)
 {
 	const VkWindowSwapInfo& wndInfo = glfwWindowAllocator.Get<GLFWWindowSwapInfoField>(id.id24);
 
-	// submit a sync point for the display, transfer bit is viable since we blit to the texture
-	VkPipelineStageFlags flags = VK_PIPELINE_STAGE_TRANSFER_BIT;
-	const VkSubmitInfo submitInfo =
+	VkSemaphore semaphores[2] =
 	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,
-		nullptr,
-		1,
-		&wndInfo.displaySemaphore,
-		&flags,
-		0,
-		nullptr,
-		0,
-		nullptr
+		wndInfo.displaySemaphore,
+		Vulkan::GetPresentSemaphore() // this will be the final semaphore of the graphics command buffer that finishes the frame
 	};
-	VkResult res = vkQueueSubmit(wndInfo.presentQueue, 1, &submitInfo, VK_NULL_HANDLE);
-	n_assert(res == VK_SUCCESS);
 
-	// present
+#if NEBULA_GRAPHICS_DEBUG
+	CoreGraphics::QueueBeginMarker(GraphicsQueueType, NEBULA_MARKER_PINK, "Presentation");
+#endif
+
+	VkResult res;
 	VkResult presentResults;
 	const VkPresentInfoKHR info =
 	{
 		VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
 		nullptr,
-		0,
-		nullptr,
+		2,
+		semaphores,
 		1,
 		&wndInfo.swapchain,
 		&wndInfo.currentBackbuffer,
 		&presentResults
 	};
+
+	// present
 	res = vkQueuePresentKHR(wndInfo.presentQueue, &info);
 	n_assert(res == VK_SUCCESS);
-
-	// yeah, we probably don't need this...
-	CoreGraphics::Present();
 
 	if (res == VK_ERROR_OUT_OF_DATE_KHR)
 	{
@@ -952,6 +944,11 @@ Present(const CoreGraphics::WindowId& id)
 	{
 		n_assert(res == VK_SUCCESS);
 	}
+
+
+#if NEBULA_GRAPHICS_DEBUG
+	CoreGraphics::QueueEndMarker(GraphicsQueueType);
+#endif
 }
 
 } // namespace Vulkan

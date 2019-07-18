@@ -14,7 +14,6 @@
 #include "coregraphics/shaderserver.h"
 #include "coregraphics/memorytexturepool.h"
 #include "resources/resourcemanager.h"
-#include "coregraphics/memoryvertexbufferpool.h"
 
 #define FONT_SIZE 32.0f
 #define ONEOVERFONTSIZE 1/32.0f
@@ -69,7 +68,7 @@ VkTextRenderer::Open()
 
 	VertexBufferCreateInfo vboInfo = 
 	{
-		"text_vbo", "render_system", 
+		"TextRenderer VBO"_atm,
 		GpuBufferTypes::AccessWrite, GpuBufferTypes::UsageDynamic, GpuBufferTypes::SyncingCoherent,
 		MaxNumChars * 6, comps,
 		nullptr, 0
@@ -182,7 +181,7 @@ VkTextRenderer::DrawTextElements()
 
 	// apply shader and apply state
 	CoreGraphics::SetShaderProgram(this->program);
-	CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->modelVar.offset, sizeof(proj), (byte*)&proj);
+	CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->modelVar, sizeof(proj), (byte*)&proj);
 	CoreGraphics::SetResourceTable(this->textTable, NEBULA_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
 
 	uint screenWidth, screenHeight;

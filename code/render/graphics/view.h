@@ -25,8 +25,13 @@ public:
 	/// destructor
 	virtual ~View();
 	
+	/// begin frame
+	void BeginFrame(const IndexT frameIndex, const Timing::Time time);
 	/// render through view
 	void Render(const IndexT frameIndex, const Timing::Time time);
+	/// end frame
+	void EndFrame(const IndexT frameIndex, const Timing::Time time);
+
 
 	/// set camera
 	void SetCamera(const GraphicsEntityId& camera);
@@ -52,6 +57,7 @@ private:
 	Ptr<Frame::FrameScript> script;
 	GraphicsEntityId camera;
 	Ptr<Stage> stage;
+	bool inBeginFrame;
 	bool enabled;
 };
 

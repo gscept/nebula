@@ -187,6 +187,7 @@ CreateResourceTable(const ResourceTableCreateInfo& info)
 void
 DestroyResourceTable(const ResourceTableId& id)
 {
+    n_assert(id != ResourceTableId::Invalid());
 	VkDevice& dev = resourceTableAllocator.Get<0>(id.id24);
 	VkDescriptorSet& set = resourceTableAllocator.Get<1>(id.id24);
 	VkDescriptorPool& pool = resourceTableAllocator.Get<2>(id.id24);
@@ -527,7 +528,7 @@ ResourceTableSetShaderRWTexture(const ResourceTableId& id, const ResourceTableRe
 void
 ResourceTableSetConstantBuffer(const ResourceTableId& id, const ResourceTableConstantBuffer& buf)
 {
-	n_assert(!(buf.texelBuffer | buf.texelBuffer));
+	n_assert(!buf.texelBuffer);
 	VkDevice& dev = resourceTableAllocator.Get<0>(id.id24);
 	VkDescriptorSet& set = resourceTableAllocator.Get<1>(id.id24);
 	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<4>(id.id24);

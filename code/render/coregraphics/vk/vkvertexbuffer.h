@@ -7,21 +7,40 @@
 	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "core/refcounted.h"
-#include "coregraphics/base/vertexbufferbase.h"
+#include "ids/idallocator.h"
+#include "coregraphics/config.h"
+#include "coregraphics/gpubuffertypes.h"
+#include "coregraphics/vertexbuffer.h"
+#include "vulkan/vulkan.h"
 namespace Vulkan
 {
-class VkVertexBuffer
+
+struct VkVertexBufferLoadInfo
 {
-public:
-
-	struct LoadInfo
-	{
-		VkDeviceMemory mem;
-		CoreGraphics::GpuBufferTypes::SetupFlags gpuResInfo;
-		Base::VertexBufferBase::VertexBufferBaseInfo vboInfo;
-	};
-
+	VkDevice dev;
+	VkDeviceMemory mem;
+	CoreGraphics::GpuBufferTypes::SetupFlags gpuResInfo;
+	uint32_t vertexCount;
+	uint32_t vertexByteSize;
 };
+
+struct VkVertexBufferRuntimeInfo
+{
+	VkBuffer buf;
+	CoreGraphics::VertexLayoutId layout;
+};
+
+typedef Ids::IdAllocator<
+	VkVertexBufferLoadInfo,			//0 loading stage info
+	VkVertexBufferRuntimeInfo,		//1 runtime stage info
+	uint32_t						//2 mapping stage info
+> VkVertexBufferAllocator;
+extern VkVertexBufferAllocator vboAllocator;
+
+
+/// get vertex buffer object
+VkBuffer VertexBufferGetVk(const CoreGraphics::VertexBufferId id);
+/// get vertex buffer object memory
+VkDeviceMemory VertexBufferGetVkMemory(const CoreGraphics::VertexBufferId id);
 
 } // namespace Vulkan

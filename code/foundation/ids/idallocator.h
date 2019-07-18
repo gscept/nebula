@@ -70,7 +70,7 @@ public:
     /// return number of allocated ids
     const uint32_t Size() const
     {
-        return this->size - freeIds.Size();
+        return this->size;
     }
 
 private:

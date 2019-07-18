@@ -28,10 +28,22 @@
 #include "coregraphics/shader.h"
 #include "coregraphics/shaderidentifier.h"
 #include "coregraphics/shaderpool.h"
+#include "threading/safequeue.h"
+
+namespace Threading
+{
+class Thread;
+}
+
+namespace IO
+{
+class FileWatcher;
+class FileWatcherThread;
+}
 
 namespace CoreGraphics
 {
-    class Shader;
+class Shader;
 }
 
 //------------------------------------------------------------------------------
@@ -84,10 +96,15 @@ public:
     /// apply an object id
     void ApplyObjectId(IndexT i);
 
-	/// reloads a shader
-	void ReloadShader(const Resources::ResourceId shader);
 	/// explicitly loads a shader by resource id
 	void LoadShader(const Resources::ResourceName& shdName);
+
+	/// update shader server outside of frame
+	void BeforeFrame();
+	/// begin frame
+	void BeforeView();
+	/// end frame
+	void AfterView();
 
 protected:
     friend class CoreGraphics::ShaderIdentifier;
@@ -96,7 +113,8 @@ protected:
     CoreGraphics::ShaderIdentifier shaderIdentifierRegistry;
     CoreGraphics::ShaderFeature shaderFeature;
     CoreGraphics::ShaderFeature::Mask curShaderFeatureBits;
-	Util::Dictionary<Resources::ResourceName, CoreGraphics::ShaderId> shaders;
+	Util::Dictionary<Resources::ResourceName, CoreGraphics::ShaderId> shaders;		
+	Threading::SafeQueue<Resources::ResourceName> pendingShaderReloads;
 	CoreGraphics::ShaderId sharedVariableShader;
     Ids::Id32 objectIdShaderVar;
 	CoreGraphics::ShaderId activeShader;

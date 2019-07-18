@@ -2,7 +2,7 @@
 # Render
 #-------------------------------------------------------------------------------
 
-FIND_PROGRAM(SHADERC 
+FIND_PROGRAM(SHADERC
        NAMES anyfxcompiler.exe anyfxcompiler
        PATHS ${FIPS_DEPLOY_DIR}/fips-anyfx/anyfxcompiler-windows ${FIPS_DEPLOY_DIR}/fips-anyfx/anyfxcompiler-linux
        NO_DEFAULT_PATH
@@ -127,7 +127,7 @@ ENDIF()
 				batchgroup.cc
 				batchgroup.h
 				gpubuffertypes.h
-				cmdbuffer.h
+				commandbuffer.h
 				config.h
 				constantbuffer.h
 				displaydevice.cc
@@ -141,17 +141,12 @@ ENDIF()
 				graphicsdevice.h
 				imagefileformat.cc
 				imagefileformat.h
-				indexbuffer.cc
 				indexbuffer.h
 				indextype.h
-				memoryindexbufferpool.cc
-				memoryindexbufferpool.h
 				memorymeshpool.cc
 				memorymeshpool.h
 				memorytexturepool.cc
 				memorytexturepool.h
-				memoryvertexbufferpool.cc
-				memoryvertexbufferpool.h
 				mesh.cc
 				mesh.h
 				pass.h
@@ -191,8 +186,7 @@ ENDIF()
 				streamtexturepool.cc
 				streamtexturepool.h
 				streamtexturesaver.h
-        submissioncontext.cc
-        submissioncontext.h
+                submissioncontext.h
 				textelement.cc
 				textelement.h
 				textrenderer.cc
@@ -201,7 +195,6 @@ ENDIF()
 				texture.h
 				transformdevice.cc
 				transformdevice.h
-				vertexbuffer.cc
 				vertexbuffer.h
 				vertexcomponent.h
 				vertexlayout.cc
@@ -306,38 +299,30 @@ ENDIF()
 			fips_files(
 				vkbarrier.cc
 				vkbarrier.h
-				vkcmdbuffer.cc
-				vkcmdbuffer.h
-				vkcmdbufferthread.cc
-				vkcmdbufferthread.h
+				vkcommandbuffer.cc
+				vkcommandbuffer.h
+				vkcommandbufferthread.cc
+				vkcommandbufferthread.h
 				vkevent.cc
 				vkevent.h
 				vkfence.cc
 				vkfence.h
+                vkgraphicsdevice.cc
 				vkgraphicsdevice.h
-				vkgraphicsdevice.cc
-				vkdeferredcommand.cc
-				vkdeferredcommand.h
-				vkmemoryindexbufferpool.cc
-				vkmemoryindexbufferpool.h
+				vkindexbuffer.cc
+                vkindexbuffer.h
 				vkmemorytexturepool.cc
 				vkmemorytexturepool.h
-				vkmemoryvertexbufferpool.cc
-				vkmemoryvertexbufferpool.h
 				vkpass.cc
 				vkpass.h
 				vkpipelinedatabase.cc
 				vkpipelinedatabase.h
-				#vkrenderdevice.cc
-				#vkrenderdevice.h
 				vkrendertexture.cc
 				vkrendertexture.h
 				vkresourcetable.cc
 				vkresourcetable.h
 				vksampler.cc
 				vksampler.h
-				vkscheduler.cc
-				vkscheduler.h
 				vksemaphore.cc
                 vksemaphore.h
 				vkshader.cc
@@ -354,6 +339,8 @@ ENDIF()
 				vkshaperenderer.h
 				vkshaderpool.cc
 				vkshaderpool.h
+                vksubmissioncontext.cc
+                vksubmissioncontext.h
 				vkstreamtexturepool.cc
 				vkstreamtexturepool.h
 				vkstreamtexturesaver.cc
@@ -372,6 +359,8 @@ ENDIF()
 				vkconstantbuffer.h
 				vkutilities.cc
 				vkutilities.h
+                vkvertexbuffer.cc
+                vkvertexbuffer.h
 				vkvertexsignaturepool.cc
 				vkvertexsignaturepool.h
 			)
@@ -404,6 +393,8 @@ ENDIF()
 				framescriptloader.h
 				frameserver.cc
 				frameserver.h
+                framesubmission.cc
+                framesubmission.h
 				framesubpass.cc
 				framesubpass.h
 				framesubpassalgorithm.cc

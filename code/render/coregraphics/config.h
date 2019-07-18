@@ -51,6 +51,7 @@ enum CoreGraphicsQueueType
 	ComputeQueueType,
 	TransferQueueType,
 	SparseQueueType,
+	InvalidQueueType,
 
 	NumQueueTypes
 };
@@ -94,6 +95,32 @@ enum class CoreGraphicsImageLayout
 	TransferDestination,
 	Preinitialized,
 	Present
+};
+
+enum CoreGraphicsGlobalConstantBufferType
+{
+	MainThreadConstantBuffer,
+	VisibilityThreadConstantBuffer, // perform constant updates from the visibility thread (shader state node instance update for example...)
+
+	NumConstantBufferTypes
+};
+
+enum CoreGraphicsVertexBufferMemoryType
+{
+	MainThreadVertexMemory,
+	VisibilityThreadVertexMemory,
+
+	NumVertexBufferMemoryTypes
+};
+
+enum CoreGraphicsQueryType
+{
+	OcclusionQuery,
+	Timestamp,
+	PipelineStatisticsGraphics,
+	PipelineStatisticsCompute,
+
+	NumCoreGraphicsQueryTypes
 };
 
 //------------------------------------------------------------------------------
@@ -141,7 +168,8 @@ CoreGraphicsQueueTypeFromString(const Util::String& str)
 #define NEBULA_MARKER_BLUE Math::float4(0.8f, 0.8f, 1.0f, 1.0f)
 #define NEBULA_MARKER_RED Math::float4(1.0f, 0.8f, 0.8f, 1.0f)
 #define NEBULA_MARKER_GREEN Math::float4(0.8f, 1.0f, 0.8f, 1.0f)
-#define NEBULA_MARKER_PURPLE Math::float4(1.0f, 0.8f, 0.9f, 1.0f)
+#define NEBULA_MARKER_PINK Math::float4(1.0f, 0.8f, 0.9f, 1.0f)
+#define NEBULA_MARKER_PURPLE Math::float4(0.8f, 0.6f, 0.8f, 1.0f)
 #define NEBULA_MARKER_ORANGE Math::float4(1.0f, 0.9f, 0.8f, 1.0f)
 #define NEBULA_MARKER_TURQOISE Math::float4(0.8f, 0.9f, 1.0f, 1.0f)
 #define NEBULA_MARKER_GRAY Math::float4(0.8f, 0.8f, 0.8f, 1.0f)
