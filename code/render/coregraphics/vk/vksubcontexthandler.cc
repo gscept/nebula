@@ -119,21 +119,10 @@ VkSubContextHandler::AppendSubmission(CoreGraphicsQueueType type, VkCommandBuffe
 	submissions.Append(Submission{});
 	Submission& sub = submissions.Back();
 
-	VkSubmitInfo info =
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,
-		nullptr,
-		0, nullptr, nullptr,	// wait
-		0, nullptr,				// cmd buf
-		0, nullptr				// signal
-	};
-
 	// if command buffer is present, add to 
 	if (cmds != VK_NULL_HANDLE)
 	{
 		sub.buffers.Append(cmds);
-		info.commandBufferCount = sub.buffers.Size();
-		info.pCommandBuffers = sub.buffers.Begin();
 	}
 		
 	// if we have wait semaphores, add both flags and the semaphore it self
@@ -141,21 +130,13 @@ VkSubContextHandler::AppendSubmission(CoreGraphicsQueueType type, VkCommandBuffe
 	{
 		sub.waitSemaphores.Append(waitSemaphore);
 		sub.waitFlags.Append(waitFlag);
-		info.waitSemaphoreCount = sub.waitSemaphores.Size();
-		info.pWaitSemaphores = sub.waitSemaphores.Begin();
-		info.pWaitDstStageMask = sub.waitFlags.Begin();
 	}
 
 	// finally add signal semaphore if present
 	if (signalSemaphore != VK_NULL_HANDLE)
 	{
 		sub.signalSemaphores.Append(signalSemaphore);
-		info.signalSemaphoreCount = sub.signalSemaphores.Size();
-		info.pSignalSemaphores = sub.signalSemaphores.Begin();
 	}
-
-	// finally copy submission struct
-	sub.submit = info;
 }
 
 //------------------------------------------------------------------------------
@@ -172,12 +153,6 @@ VkSubContextHandler::AddWaitSemaphore(CoreGraphicsQueueType type, VkSemaphore wa
 	{
 		sub.waitSemaphores.Insert(0, waitSemaphore);
 		sub.waitFlags.Insert(0, waitFlag);
-
-		// get pointer to previous item using the count to offset the value
-		sub.submit.pWaitSemaphores = sub.waitSemaphores.Begin();
-		sub.submit.pWaitDstStageMask = sub.waitFlags.Begin();
-
-		sub.submit.waitSemaphoreCount = sub.waitSemaphores.Size(); // add 1 more to the semaphore count
 	}
 }
 
@@ -210,7 +185,21 @@ VkSubContextHandler::FlushSubmissions(CoreGraphicsQueueType type, VkFence fence,
 
 		Util::FixedArray<VkSubmitInfo> submitInfos(submissions.Size());
 		for (IndexT i = 0; i < submissions.Size(); i++)
-			submitInfos[i] = submissions[i].submit;
+		{
+			VkSubmitInfo info =
+			{
+				VK_STRUCTURE_TYPE_SUBMIT_INFO,
+				nullptr,
+				submissions[i].waitSemaphores.Size(),
+				submissions[i].waitSemaphores.Size() > 0 ? submissions[i].waitSemaphores.Begin() : nullptr,
+				submissions[i].waitFlags.Size() > 0 ? submissions[i].waitFlags.Begin() : nullptr,
+				submissions[i].buffers.Size(),
+				submissions[i].buffers.Size() > 0 ? submissions[i].buffers.Begin() : nullptr,
+				submissions[i].signalSemaphores.Size(),
+				submissions[i].signalSemaphores.Size() > 0 ? submissions[i].signalSemaphores.Begin() : nullptr
+			};
+			submitInfos[i] = info;
+		}
 
 		VkResult res = vkQueueSubmit(queue, submitInfos.Size(), submitInfos.Begin(), fence);
 		n_assert(res == VK_SUCCESS);

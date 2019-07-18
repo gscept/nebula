@@ -935,22 +935,6 @@ Present(const CoreGraphics::WindowId& id)
 	res = vkQueuePresentKHR(wndInfo.presentQueue, &info);
 	n_assert(res == VK_SUCCESS);
 
-	// submit the present fence so we can wait for it later
-	const VkSubmitInfo submitInfo =
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,
-		nullptr,
-		0,
-		nullptr,
-		nullptr,
-		0,
-		nullptr,
-		0,
-		nullptr
-	};
-	res = vkQueueSubmit(wndInfo.presentQueue, 1, &submitInfo, Vulkan::GetPresentFence());
-	n_assert(res == VK_SUCCESS);
-
 	if (res == VK_ERROR_OUT_OF_DATE_KHR)
 	{
 		// window has been resized!
@@ -960,6 +944,7 @@ Present(const CoreGraphics::WindowId& id)
 	{
 		n_assert(res == VK_SUCCESS);
 	}
+
 
 #if NEBULA_GRAPHICS_DEBUG
 	CoreGraphics::QueueEndMarker(GraphicsQueueType);

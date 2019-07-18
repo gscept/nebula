@@ -194,10 +194,6 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 				n_assert(remainingBytes >= 0);
 				ILubyte* buf = ilGetData();
 
-				// copy buffer, will be deleted later
-				char* bufferCopy = (char*)Memory::Alloc(Memory::ScratchHeap, size);
-				memcpy(bufferCopy, buf, size);
-
 				int32_t mipWidth = (int32_t)Math::n_max(1.0f, Math::n_floor(width / Math::n_pow(2, (float)j)));
 				int32_t mipHeight = (int32_t)Math::n_max(1.0f, Math::n_floor(height / Math::n_pow(2, (float)j)));
 				int32_t mipDepth = (int32_t)Math::n_max(1.0f, Math::n_floor(depth / Math::n_pow(2, (float)j)));
@@ -208,10 +204,9 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 
 				VkBuffer outBuf;
 				VkDeviceMemory outMem;
-				VkUtilities::ImageUpdate(dev, CoreGraphics::SubmissionContextGetCmdBuffer(sub), TransferQueueType, loadInfo.img, info, j, i, size, (uint32_t*)bufferCopy, outBuf, outMem);
+				VkUtilities::ImageUpdate(dev, CoreGraphics::SubmissionContextGetCmdBuffer(sub), TransferQueueType, loadInfo.img, info, j, i, size, (uint32_t*)buf, outBuf, outMem);
 
 				// add host memory buffer, intermediate device memory, and intermediate device buffer to delete queue
-				SubmissionContextFreeHostMemory(sub, bufferCopy);
 				SubmissionContextFreeDeviceMemory(sub, dev, outMem);
 				SubmissionContextFreeBuffer(sub, dev, outBuf);
 			}
@@ -230,10 +225,6 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 			n_assert(remainingBytes >= 0);
 			ILubyte* buf = ilGetData();
 
-			// copy buffer, will be deleted later
-			char* bufferCopy = (char*)Memory::Alloc(Memory::ScratchHeap, size);
-			memcpy(bufferCopy, buf, size);
-
 			int32_t mipWidth = (int32_t)Math::n_max(1.0f, Math::n_floor(width / Math::n_pow(2, (float)j)));
 			int32_t mipHeight = (int32_t)Math::n_max(1.0f, Math::n_floor(height / Math::n_pow(2, (float)j)));
 			int32_t mipDepth = (int32_t)Math::n_max(1.0f, Math::n_floor(depth / Math::n_pow(2, (float)j)));
@@ -244,10 +235,9 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 
 			VkBuffer outBuf;
 			VkDeviceMemory outMem;
-			VkUtilities::ImageUpdate(dev, CoreGraphics::SubmissionContextGetCmdBuffer(sub), TransferQueueType, loadInfo.img, info, j, 0, size, (uint32_t*)bufferCopy, outBuf, outMem);
+			VkUtilities::ImageUpdate(dev, CoreGraphics::SubmissionContextGetCmdBuffer(sub), TransferQueueType, loadInfo.img, info, j, 0, size, (uint32_t*)buf, outBuf, outMem);
 
 			// add host memory buffer, intermediate device memory, and intermediate device buffer to delete queue
-			SubmissionContextFreeHostMemory(sub, bufferCopy);
 			SubmissionContextFreeDeviceMemory(sub, dev, outMem);
 			SubmissionContextFreeBuffer(sub, dev, outBuf);
 		}
