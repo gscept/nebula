@@ -907,10 +907,9 @@ Present(const CoreGraphics::WindowId& id)
 {
 	const VkWindowSwapInfo& wndInfo = glfwWindowAllocator.Get<GLFWWindowSwapInfoField>(id.id24);
 
-	VkSemaphore semaphores[2] =
+	VkSemaphore semaphores[1] =
 	{
 		wndInfo.displaySemaphore,
-		Vulkan::GetPresentSemaphore() // this will be the final semaphore of the graphics command buffer that finishes the frame
 	};
 
 #if NEBULA_GRAPHICS_DEBUG
@@ -923,7 +922,7 @@ Present(const CoreGraphics::WindowId& id)
 	{
 		VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
 		nullptr,
-		2,
+		1,
 		semaphores,
 		1,
 		&wndInfo.swapchain,
