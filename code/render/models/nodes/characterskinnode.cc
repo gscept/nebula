@@ -143,8 +143,7 @@ CharacterSkinNode::Instance::Update()
 	}
 
 	// update skinning palette
-	uint offset = CoreGraphics::AllocateGraphicsConstantBufferMemory(CoreGraphicsGlobalConstantBufferType::VisibilityThreadConstantBuffer, sizeof(Math::matrix44) * usedMatrices.Size());
-	CoreGraphics::ConstantBufferUpdate(this->cboSkin, usedMatrices.Begin(), sizeof(Math::matrix44) * usedMatrices.Size(), offset);
+	uint offset = CoreGraphics::SetGraphicsConstants(CoreGraphicsGlobalConstantBufferType::VisibilityThreadConstantBuffer, usedMatrices.Begin(), usedMatrices.Size());
 	this->offsets[Skinning] = offset;
 
 	// apply original state

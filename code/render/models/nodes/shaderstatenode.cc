@@ -220,11 +220,14 @@ ShaderStateNode::Instance::UpdateDrawPacket(void* mem)
 void
 ShaderStateNode::Instance::Update()
 {
-	uint offset = CoreGraphics::AllocateGraphicsConstantBufferMemory(CoreGraphicsGlobalConstantBufferType::VisibilityThreadConstantBuffer, sizeof(Shared::ObjectBlock));
 	Shared::ObjectBlock block;
 	Math::matrix44::storeu(this->modelTransform, block.Model);
 	Math::matrix44::storeu(Math::matrix44::inverse(this->modelTransform), block.InvModel);
+	uint offset = CoreGraphics::SetGraphicsConstants(CoreGraphicsGlobalConstantBufferType::VisibilityThreadConstantBuffer, block);
+	/*
+	uint offset = CoreGraphics::AllocateGraphicsConstantBufferMemory(CoreGraphicsGlobalConstantBufferType::VisibilityThreadConstantBuffer, sizeof(Shared::ObjectBlock));
 	CoreGraphics::ConstantBufferUpdate(this->cbo, block, offset);
+	*/
 	this->offsets[ObjectTransforms] = offset;
 }
 

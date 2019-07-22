@@ -53,8 +53,10 @@ public:
 	void AppendSubmission(CoreGraphicsQueueType type, VkCommandBuffer cmds, VkSemaphore waitSemaphore, VkPipelineStageFlags waitFlag, VkSemaphore signalSemaphore);
 	/// add another wait to the previous submission
 	void AddWaitSemaphore(CoreGraphicsQueueType type, VkSemaphore waitSemaphore, VkPipelineStageFlags waitFlag);
+	/// add semaphore to signal
+	void AddSignalSemaphore(CoreGraphicsQueueType type, VkSemaphore signalSemaphore);
 	/// flush submissions and send to GPU as one submit call
-	void FlushSubmissions(CoreGraphicsQueueType type, VkFence fence, bool waitImmediately);
+	void FlushSubmissions(CoreGraphicsQueueType type, VkFence fence);
 
 	/// submit only a fence
 	void SubmitFence(CoreGraphicsQueueType type, VkFence fence);
