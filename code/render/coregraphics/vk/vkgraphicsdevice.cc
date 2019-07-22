@@ -1675,12 +1675,20 @@ DestroyGraphicsDevice()
 	for (i = 0; i < NumConstantBufferTypes; i++)
 	{
 		if (state.globalGraphicsConstantBufferMaxValue[i] > 0)
+		{
 			DestroyConstantBuffer(state.globalGraphicsConstantBuffer[i]);
+			DestroyConstantBuffer(state.globalGraphicsConstantStagingBuffer[i]);
+		}
 		state.globalGraphicsConstantBuffer[i] = ConstantBufferId::Invalid();
+		state.globalGraphicsConstantStagingBuffer[i] = ConstantBufferId::Invalid();
 
 		if (state.globalComputeConstantBufferMaxValue[i] > 0)
+		{
 			DestroyConstantBuffer(state.globalComputeConstantBuffer[i]);
+			DestroyConstantBuffer(state.globalComputeConstantStagingBuffer[i]);
+		}
 		state.globalComputeConstantBuffer[i] = ConstantBufferId::Invalid();
+		state.globalComputeConstantStagingBuffer[i] = ConstantBufferId::Invalid();
 	}
 
 	// clean up global vertex and index buffers
