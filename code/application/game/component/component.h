@@ -19,7 +19,6 @@
 #include "basegamefeature/managers/entitymanager.h"
 #include "util/arrayallocator.h"
 #include "game/component/componentinterface.h"
-#include "game/attr/attrid.h"
 #include "componentserialization.h"
 #include "game/component/attribute.h"
 #include <tuple>

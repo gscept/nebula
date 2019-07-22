@@ -15,7 +15,6 @@
 #include "pybind11/numpy.h"
 #include "basegamefeature/managers/componentmanager.h"
 #include "basegamefeature/components/transformcomponent.h"
-#include "game/attr/attrid.h"
 
 namespace py = pybind11;
 
@@ -66,16 +65,6 @@ PYBIND11_EMBEDDED_MODULE(foundation, m)
 
 PYBIND11_EMBEDDED_MODULE(game, m)
 {
-    py::class_<Attr::AttrId>(m, "attr")
-        .def(py::init([](uint32_t asint)
-        {            
-            return Attr::AttrId(Util::FourCC(asint));            
-        }))
-        .def(py::init([](Util::String str)
-        {
-            return Attr::AttrId(str);
-        }))
-        ;
     py::class_<Game::Entity>(m, "entity")
         .def(py::init([](Ids::Id32 id) 
         {
@@ -112,7 +101,6 @@ PYBIND11_EMBEDDED_MODULE(game, m)
                 Game::TransformComponent::SetLocalTransform(id, mat);
             }            
             );
-        //.def("get_attr",[](Game::Entity id, uint32_t component, )
 }
 
 

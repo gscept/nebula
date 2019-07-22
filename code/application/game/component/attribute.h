@@ -1,8 +1,8 @@
 #pragma once
 #include "core/types.h"
 #include "util/fourcc.h"
-#include "game/attr/accessmode.h"
-#include "game/attr/valuetype.h"
+#include "accessmode.h"
+#include "valuetype.h"
 
 namespace Attr
 {
