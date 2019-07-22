@@ -373,7 +373,9 @@ RenderTextureSwapBuffers(const CoreGraphics::RenderTextureId id)
 	VkRenderTextureRuntimeInfo& runtimeInfo = renderTextureAllocator.Get<1>(id.id24);
 	n_assert(loadInfo.isWindow);
 	VkWindowSwapInfo& swapInfo = CoreGraphics::glfwWindowAllocator.Get<5>(loadInfo.window.id24);
-	VkResult res = vkAcquireNextImageKHR(Vulkan::GetCurrentDevice(), swapInfo.swapchain, UINT64_MAX, swapInfo.displaySemaphore, VK_NULL_HANDLE, &swapInfo.currentBackbuffer);
+	VkSemaphore sem = Vulkan::GetPresentSemaphore();
+	VkResult res = vkAcquireNextImageKHR(Vulkan::GetCurrentDevice(), swapInfo.swapchain, UINT64_MAX, sem, VK_NULL_HANDLE, &swapInfo.currentBackbuffer);
+	Vulkan::WaitForPresent(sem);
 	if (res == VK_ERROR_OUT_OF_DATE_KHR)
 	{
 		// this means our swapchain needs a resize!

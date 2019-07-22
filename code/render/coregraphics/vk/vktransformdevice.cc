@@ -100,9 +100,6 @@ VkTransformDevice::ApplyViewSettings()
 {
 	TransformDeviceBase::ApplyViewSettings();
 
-	// allocate memory from global buffer
-	uint offset = CoreGraphics::AllocateGraphicsConstantBufferMemory(MainThreadConstantBuffer, sizeof(Shared::FrameBlock));
-
 	// update block structure
 	alignas(16) Shared::FrameBlock block;
 	Math::matrix44::storeu(this->GetViewTransform(), block.View);
@@ -114,9 +111,9 @@ VkTransformDevice::ApplyViewSettings()
 	Math::float4::storeu(this->GetInvViewTransform().getrow3(), block.EyePos);
 	Math::float4::storeu(float4(this->GetFocalLength().x(), this->GetFocalLength().y(), this->GetNearFarPlane().x(), this->GetNearFarPlane().y()), block.FocalLengthNearFar);
 	Math::float4::storeu(float4((float)FrameSync::FrameSyncTimer::Instance()->GetTime(), Math::n_rand(0, 1), (float)FrameSync::FrameSyncTimer::Instance()->GetFrameTime(), 0), block.TimeAndRandom);
+	uint offset = CoreGraphics::SetGraphicsConstants(MainThreadConstantBuffer, block);
 
 	// update actual constant buffer
-	ConstantBufferUpdate(this->viewConstants, block, offset);
 	frameOffset = offset;
 
 	// update resource table

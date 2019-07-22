@@ -177,11 +177,11 @@ ShaderStateNode::Instance::UpdateDrawPacket(void* mem)
 
 	// setup struct offsets
 	ret->surfaceInstance = (Materials::SurfaceInstanceId*)buf;
-	buf += sizeof(this->surfaceInstance);
+	buf += sizeof(Materials::SurfaceInstanceId);
 	ret->numTables = (SizeT*) buf;
 	buf += sizeof(SizeT);
 	ret->tables = (CoreGraphics::ResourceTableId*)buf;
-	buf += sizeof(this->resourceTable);
+	buf += sizeof(CoreGraphics::ResourceTableId);
 	ret->offsets = (uint32*) buf;
 	buf += sizeof(uint32) * this->offsets.Size();
 	ret->numOffsets = (uint32*) buf;
@@ -196,6 +196,7 @@ ShaderStateNode::Instance::UpdateDrawPacket(void* mem)
 	*ret->numTables = 1;
 
 	// this information should all be per table
+	IndexT offsetIndex = 0;
 	for (IndexT j = 0; j < *ret->numTables; j++)
 	{
 		ret->tables[j] = this->resourceTable;
@@ -203,7 +204,7 @@ ShaderStateNode::Instance::UpdateDrawPacket(void* mem)
 		// copy offsets
 		for (IndexT i = 0; i < this->offsets.Size(); i++)
 		{
-			ret->offsets[i + j * this->offsets.Size()] = this->offsets[i];
+			ret->offsets[offsetIndex++] = this->offsets[i];
 		}
 
 		ret->numOffsets[j] = this->offsets.Size();
@@ -220,11 +221,10 @@ ShaderStateNode::Instance::UpdateDrawPacket(void* mem)
 void
 ShaderStateNode::Instance::Update()
 {
-	uint offset = CoreGraphics::AllocateGraphicsConstantBufferMemory(CoreGraphicsGlobalConstantBufferType::VisibilityThreadConstantBuffer, sizeof(Shared::ObjectBlock));
 	Shared::ObjectBlock block;
 	Math::matrix44::storeu(this->modelTransform, block.Model);
 	Math::matrix44::storeu(Math::matrix44::inverse(this->modelTransform), block.InvModel);
-	CoreGraphics::ConstantBufferUpdate(this->cbo, block, offset);
+	uint offset = CoreGraphics::SetGraphicsConstants(CoreGraphicsGlobalConstantBufferType::VisibilityThreadConstantBuffer, block);
 	this->offsets[ObjectTransforms] = offset;
 }
 

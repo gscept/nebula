@@ -40,8 +40,15 @@ VkPhysicalDeviceMemoryProperties GetMemoryProperties();
 VkCommandBuffer GetMainBuffer(const CoreGraphicsQueueType queue);
 /// get final graphics semaphore
 VkSemaphore GetPresentSemaphore();
-/// get graphics fence
-VkFence GetPresentFence();
+/// get final rendering semaphore
+VkSemaphore GetRenderingSemaphore();
+/// set to wait for present semaphore this submission
+void WaitForPresent(VkSemaphore sem);
+
+/// allocate range of graphics memory and set data, return offset
+uint SetGraphicsConstants(CoreGraphicsGlobalConstantBufferType type, void* data, SizeT size);
+/// allocate range of compute memory and set data, return offset
+uint SetComputeConstants(CoreGraphicsGlobalConstantBufferType type, void* data, SizeT size);
 
 /// get queue families
 const Util::Set<uint32_t>& GetQueueFamilies();

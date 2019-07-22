@@ -67,6 +67,9 @@ struct GraphicsDeviceState
 	CoreGraphics::SemaphoreId gfxWaitSemaphore;
 	CoreGraphics::FenceId gfxFence;
 
+	CoreGraphics::SemaphoreId presentSemaphore;
+	CoreGraphics::SemaphoreId renderingFinishedSemaphore;
+
 	CoreGraphics::SubmissionContextId computeSubmission;
 	CoreGraphics::CommandBufferId computeCmdBuffer;
 	CoreGraphics::SemaphoreId computePrevSemaphore;
@@ -75,8 +78,11 @@ struct GraphicsDeviceState
 	CoreGraphics::FenceId computeFence;
 
 	uint globalGraphicsConstantBufferMaxValue[NumConstantBufferTypes];
+	CoreGraphics::ConstantBufferId globalGraphicsConstantStagingBuffer[NumConstantBufferTypes];
 	CoreGraphics::ConstantBufferId globalGraphicsConstantBuffer[NumConstantBufferTypes];
+
 	uint globalComputeConstantBufferMaxValue[NumConstantBufferTypes];
+	CoreGraphics::ConstantBufferId globalComputeConstantStagingBuffer[NumConstantBufferTypes];
 	CoreGraphics::ConstantBufferId globalComputeConstantBuffer[NumConstantBufferTypes];
 
 	uint globalVertexBufferMaxValue[NumVertexBufferMemoryTypes];
@@ -125,8 +131,6 @@ void BeginPass(const CoreGraphics::PassId pass);
 void SetToNextSubpass();
 /// begin rendering a batch
 void BeginBatch(Frame::FrameBatchType::Code batchType);
-/// go to next sub-batch
-void SetToNextSubBatch();
 
 /// reset clip settings to pass
 void ResetClipSettings();
@@ -160,6 +164,28 @@ void SetResourceTablePipeline(const CoreGraphics::ResourcePipelineId layout);
 
 /// push constants
 void PushConstants(ShaderPipeline pipeline, uint offset, uint size, byte* data);
+
+/// allocate range of graphics memory and set data, return offset
+template<class TYPE> uint SetGraphicsConstants(CoreGraphicsGlobalConstantBufferType type, const TYPE& data);
+/// allocate range of graphics memory and set data as an array of elements, return offset
+template<class TYPE> uint SetGraphicsConstants(CoreGraphicsGlobalConstantBufferType type, const TYPE* data, SizeT elements);
+/// allocate range of compute memory and set data, return offset
+template<class TYPE> uint SetComputeConstants(CoreGraphicsGlobalConstantBufferType type, const TYPE& data);
+/// allocate range of graphics memory and set data as an array of elements, return offset
+template<class TYPE> uint SetComputeConstants(CoreGraphicsGlobalConstantBufferType type, const TYPE* data, SizeT elements);
+/// set graphics constants based on pre-allocated memory
+template<class TYPE> void SetGraphicsConstants(CoreGraphicsGlobalConstantBufferType type, uint offset, const TYPE& data);
+/// set graphics constants based on pre-allocated memory
+template<class TYPE> void SetComputeConstants(CoreGraphicsGlobalConstantBufferType type, uint offset, const TYPE& data);
+
+/// allocate range of graphics memory and set data, return offset
+uint SetGraphicsConstantsInternal(CoreGraphicsGlobalConstantBufferType type, const void* data, SizeT size);
+/// allocate range of compute memory and set data, return offset
+uint SetComputeConstantsInternal(CoreGraphicsGlobalConstantBufferType type, const void* data, SizeT size);
+/// use pre-allocated range of memory to update graphics constants
+void SetGraphicsConstantsInternal(CoreGraphicsGlobalConstantBufferType type, uint offset, const void* data, SizeT size);
+/// use pre-allocated range of memory to update compute constants
+void SetComputeConstantsInternal(CoreGraphicsGlobalConstantBufferType type, uint offset, const void* data, SizeT size);
 
 /// reserve range of graphics constant buffer memory and return offset
 uint AllocateGraphicsConstantBufferMemory(CoreGraphicsGlobalConstantBufferType type, uint size);
@@ -298,6 +324,64 @@ void CommandBufferEndMarker(const CoreGraphicsQueueType queue);
 void CommandBufferInsertMarker(const CoreGraphicsQueueType queue, const Math::float4& color, const Util::String& name);
 #endif
 
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+inline uint
+SetGraphicsConstants(CoreGraphicsGlobalConstantBufferType type, const TYPE& data)
+{
+	return SetGraphicsConstantsInternal(type, &data, sizeof(TYPE));
+}
 
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+inline uint
+SetGraphicsConstants(CoreGraphicsGlobalConstantBufferType type, const TYPE* data, SizeT elements)
+{
+	return SetGraphicsConstantsInternal(type, data, sizeof(TYPE) * elements);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+inline uint
+SetComputeConstants(CoreGraphicsGlobalConstantBufferType type, const TYPE& data)
+{
+	return SetComputeConstantsInternal(type, &data, sizeof(TYPE));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE> 
+inline uint 
+SetComputeConstants(CoreGraphicsGlobalConstantBufferType type, const TYPE* data, SizeT elements)
+{
+	return SetComputeConstantsInternal(type, data, sizeof(TYPE) * elements);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+inline void 
+SetGraphicsConstants(CoreGraphicsGlobalConstantBufferType type, uint offset, const TYPE& data)
+{
+	return SetGraphicsConstantsInternal(type, offset, &data, sizeof(TYPE));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+inline void 
+SetComputeConstants(CoreGraphicsGlobalConstantBufferType type, uint offset, const TYPE& data)
+{
+	return SetComputeConstantsInternal(type, offset, &data, sizeof(TYPE));
+}
 
 } // namespace CoreGraphics

@@ -487,7 +487,6 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIn
 			}
 
 			// allocate memory
-			uint offset = CoreGraphics::AllocateGraphicsConstantBufferMemory(MainThreadConstantBuffer, sizeof(Lights::LocalLightBlock));
 			alignas(16) Lights::LocalLightBlock block;
 			Math::float4::storeu(color[i] * intensity[i], block.LightColor);
 			Math::float4::storeu(posAndRange, block.LightPosRange);
@@ -495,10 +494,11 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIn
 			block.ProjectionTexture = tex != TextureId::Invalid() ? TextureGetBindlessHandle(tex) : 0;
 			block.Flags = flags;
 
+			// update constants
+			uint offset = CoreGraphics::SetGraphicsConstants(MainThreadConstantBuffer, block);
+
 			// update buffer
 			pointLightAllocator.Get<PointLightDynamicOffsets>(typeIds[i])[0] = offset;
-			ConstantBufferUpdate(lightServerState.localLightsConstantBuffer, block, offset);
-
 		}
 		break;
 
@@ -529,7 +529,6 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIn
 			Math::matrix44 fromViewToLightProj = Math::matrix44::multiply(invViewTransform, invViewProj);
 
 			// allocate memory
-			uint offset = CoreGraphics::AllocateGraphicsConstantBufferMemory(MainThreadConstantBuffer, sizeof(Lights::LocalLightBlock));
 			alignas(16) Lights::LocalLightBlock block;
 			Math::float4::storeu(color[i] * intensity[i], block.LightColor);
 			Math::float4::storeu(posAndRange, block.LightPosRange);
@@ -538,9 +537,11 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIn
 			block.ProjectionTexture = tex != TextureId::Invalid() ? TextureGetBindlessHandle(tex) : 0;
 			block.Flags = flags;
 
+			// update constants
+			uint offset = CoreGraphics::SetGraphicsConstants(MainThreadConstantBuffer, block);
+
 			// update buffer
 			spotLightAllocator.Get<SpotLightDynamicOffsets>(typeIds[i])[0] = offset;
-			ConstantBufferUpdate(lightServerState.localLightsConstantBuffer, block, offset);
 		}
 		break;
 

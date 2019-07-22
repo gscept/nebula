@@ -27,8 +27,8 @@ ID_32_32_NAMED_TYPE(ConstantBufferAllocId, offset, size);
 typedef uint ConstantBinding; // defined again!
 enum ConstantBufferUpdateMode
 {
-	CoherentlyMappedMemory,		// memory will be written to the GPU when it is time to get the address
-	ManualFlush					// memory has to be flushed manually
+	HostWriteable,              // host can write to the buffer
+	DeviceWriteable             // only device can write to the buffer
 };
 
 struct ConstantBufferCreateInfo
