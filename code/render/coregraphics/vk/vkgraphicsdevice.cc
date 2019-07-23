@@ -118,10 +118,11 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 	};
 	Util::FixedArray<VertexRingBuffer> vertexBufferRings;
 
+	VkSemaphore waitForPresentSemaphore;
+
 	uint maxNumBufferedFrames;
 	uint32_t currentBufferedFrameIndex;
 
-	VkSemaphore waitForPresentSemaphore;
 	VkExtensionProperties physicalExtensions[64];
 
 	uint32_t usedPhysicalExtensions;
@@ -360,7 +361,7 @@ GetMainBuffer(const CoreGraphicsQueueType queue)
 VkSemaphore 
 GetPresentSemaphore()
 {
-	return SemaphoreGetVk(state.presentSemaphore);
+	return SemaphoreGetVk(state.presentSemaphores[state.currentBufferedFrameIndex]);
 }
 
 //------------------------------------------------------------------------------
@@ -369,7 +370,7 @@ GetPresentSemaphore()
 VkSemaphore 
 GetRenderingSemaphore()
 {
-	return SemaphoreGetVk(state.renderingFinishedSemaphore);
+	return SemaphoreGetVk(state.renderingFinishedSemaphores[state.currentBufferedFrameIndex]);
 }
 
 //------------------------------------------------------------------------------
@@ -1439,9 +1440,13 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 #undef CreateSemaphore
 #endif
 
-	state.waitForPresentSemaphore = VK_NULL_HANDLE;
-	state.presentSemaphore = CreateSemaphore({});
-	state.renderingFinishedSemaphore = CreateSemaphore({});
+	state.presentSemaphores.Resize(info.numBufferedFrames);
+	state.renderingFinishedSemaphores.Resize(info.numBufferedFrames);
+	for (i = 0; i < info.numBufferedFrames; i++)
+	{
+		state.presentSemaphores[i] = CreateSemaphore({});
+		state.renderingFinishedSemaphores[i] = CreateSemaphore({});
+	}
 
 #pragma pop_macro("CreateSemaphore")
 
@@ -1660,8 +1665,12 @@ DestroyGraphicsDevice()
 	// free our main buffers, our secondary buffers should be fine so the pools should be free to destroy
 	DestroyVkPools(state.devices[0]);
 
-	DestroySemaphore(state.presentSemaphore);
-	DestroySemaphore(state.renderingFinishedSemaphore);
+	for (i = 0; i < state.presentSemaphores.Size(); i++)
+	{
+		DestroySemaphore(state.presentSemaphores[i]);
+		DestroySemaphore(state.renderingFinishedSemaphores[i]);
+	}
+	
 #if NEBULA_VULKAN_DEBUG
 	VkDestroyDebugMessenger(state.instance, VkDebugMessageHandle, nullptr);
 #endif
@@ -2866,7 +2875,7 @@ EndSubmission(CoreGraphicsQueueType queue, bool endOfFrame)
 
 		if (state.waitForPresentSemaphore)
 		{
-			state.subcontextHandler.AddWaitSemaphore(GraphicsQueueType, state.waitForPresentSemaphore, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
+			state.subcontextHandler.AddWaitSemaphore(GraphicsQueueType, state.waitForPresentSemaphore, VK_PIPELINE_STAGE_TRANSFER_BIT);
 			state.waitForPresentSemaphore = VK_NULL_HANDLE;
 		}
 
@@ -2992,7 +3001,7 @@ EndFrame(IndexT frameIndex)
 #endif
 
 	// add signal semaphore to end of frame
-	state.subcontextHandler.AddSignalSemaphore(GraphicsQueueType, SemaphoreGetVk(state.renderingFinishedSemaphore));
+	state.subcontextHandler.AddSignalSemaphore(GraphicsQueueType, SemaphoreGetVk(state.renderingFinishedSemaphores[state.currentBufferedFrameIndex]));
 
 	// submit graphics, we wait for the fence when we present (change to compute queue if we change the present queue in the future)
 	state.subcontextHandler.FlushSubmissions(GraphicsQueueType, 
