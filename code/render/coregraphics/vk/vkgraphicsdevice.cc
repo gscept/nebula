@@ -543,7 +543,6 @@ UpdatePushRanges(const VkShaderStageFlags& stages, const VkPipelineLayout& layou
 	{
 		vkCmdPushConstants(GetMainBuffer(GraphicsQueueType), layout, stages, offset, size, data);
 	}
-	
 }
 
 //------------------------------------------------------------------------------
@@ -669,7 +668,6 @@ CreateAndBindGraphicsPipeline()
 		// bind pipeline
 		vkCmdBindPipeline(GetMainBuffer(GraphicsQueueType), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 	}
-	
 }
 
 //------------------------------------------------------------------------------
@@ -722,7 +720,7 @@ SetViewports(VkViewport* viewports, SizeT num)
 		else
 		{
 			// activate this code when we have main thread secondary buffers
-			//vkCmdSetViewport(CommandBufferGetVk(state.mainCmdDrawBuffer), 0, num, viewports);
+			vkCmdSetViewport(GetMainBuffer(GraphicsQueueType), 0, num, viewports);
 		}
 	}
 }
@@ -750,64 +748,9 @@ SetScissorRects(VkRect2D* scissors, SizeT num)
 		else
 		{
 			// activate this code when we have main thread secondary buffers
-			//vkCmdSetScissor(CommandBufferGetVk(state.mainCmdDrawBuffer), 0, num, scissors);
+			vkCmdSetScissor(GetMainBuffer(GraphicsQueueType), 0, num, scissors);
 		}
 	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-SubmitToQueue(VkQueue queue, VkPipelineStageFlags flags, uint32_t numBuffers, VkCommandBuffer* buffers)
-{
-	uint32_t i;
-	for (i = 0; i < numBuffers; i++)
-	{
-		VkResult res = vkEndCommandBuffer(buffers[i]);
-		n_assert(res == VK_SUCCESS);
-	}
-
-	// submit to queue
-	const VkSubmitInfo submitInfo =
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,
-		NULL,
-		0,
-		NULL,
-		&flags,
-		numBuffers,
-		buffers,
-		0,
-		NULL
-	};
-
-	// submit to queue
-	VkResult res = vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
-	n_assert(res == VK_SUCCESS);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-SubmitToQueue(VkQueue queue, VkFence fence)
-{
-	// submit to queue
-	VkResult res = vkQueueSubmit(queue, 0, VK_NULL_HANDLE, fence);
-	n_assert(res == VK_SUCCESS);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-WaitForFences(VkFence* fences, uint32_t numFences, bool waitForAll)
-{
-	VkResult res = vkWaitForFences(state.devices[state.currentDevice], numFences, fences, waitForAll, UINT_MAX);
-	n_assert(res == VK_SUCCESS);
-	res = vkResetFences(state.devices[state.currentDevice], numFences, fences);
-	n_assert(res == VK_SUCCESS);
 }
 
 //------------------------------------------------------------------------------
@@ -834,7 +777,7 @@ BeginDrawThread()
 	{
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 		NULL,
-		VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT | VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT,
+		VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT,
 		&state.passInfo
 	};
 
@@ -923,15 +866,6 @@ FlushToThread(const IndexT& index)
 		state.drawThreads[index]->PushCommands(state.threadCmds[index]);
 		state.threadCmds[index].Clear();
 	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-BindSharedDescriptorSets()
-{
-
 }
 
 #if NEBULA_GRAPHICS_DEBUG
@@ -1342,7 +1276,6 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		state.globalGraphicsConstantBufferMaxValue[i] = info.globalGraphicsConstantBufferMemorySize[i];
 		if (cboInfo.size > 0)
 		{
-
 			cboInfo.name = systemName[0] + threadName[i] + queueName[0];
 			cboInfo.mode = CoreGraphics::ConstantBufferUpdateMode::HostWriteable;
 			state.globalGraphicsConstantStagingBuffer[i] = CreateConstantBuffer(cboInfo);
@@ -1425,7 +1358,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	state.resourceSubmissionActive = false;
 
 	cmdCreateInfo.usage = CommandGfx;
-	state.setupSubmissionContext = CreateSubmissionContext({ cmdCreateInfo, info.numBufferedFrames, true });
+	state.setupSubmissionContext = CreateSubmissionContext({ cmdCreateInfo, info.numBufferedFrames, false });
 	state.setupSubmissionActive = false;
 
 #pragma pop_macro("CreateSemaphore")
