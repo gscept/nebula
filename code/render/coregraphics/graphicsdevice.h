@@ -67,8 +67,8 @@ struct GraphicsDeviceState
 	CoreGraphics::SemaphoreId gfxWaitSemaphore;
 	CoreGraphics::FenceId gfxFence;
 
-	CoreGraphics::SemaphoreId presentSemaphore;
-	CoreGraphics::SemaphoreId renderingFinishedSemaphore;
+	Util::FixedArray<CoreGraphics::SemaphoreId> presentSemaphores;
+	Util::FixedArray<CoreGraphics::SemaphoreId> renderingFinishedSemaphores;
 
 	CoreGraphics::SubmissionContextId computeSubmission;
 	CoreGraphics::CommandBufferId computeCmdBuffer;
