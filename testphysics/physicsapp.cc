@@ -266,7 +266,7 @@ SimpleViewerApplication::Close()
     this->inputServer->Close();
     this->resMgr->Close();
     this->debugInterface->Close();
-    this->Close();
+    App::Application::Close();
 }
 
 //------------------------------------------------------------------------------
