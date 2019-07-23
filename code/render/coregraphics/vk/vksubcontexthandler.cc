@@ -151,8 +151,8 @@ VkSubContextHandler::AddWaitSemaphore(CoreGraphicsQueueType type, VkSemaphore wa
 	// if we have wait semaphores, add both flags and the semaphore itself
 	if (waitSemaphore != VK_NULL_HANDLE)
 	{
-		sub.waitSemaphores.Insert(0, waitSemaphore);
-		sub.waitFlags.Insert(0, waitFlag);
+		sub.waitSemaphores.Append(waitSemaphore);
+		sub.waitFlags.Append(waitFlag);
 	}
 }
 
@@ -160,29 +160,29 @@ VkSubContextHandler::AddWaitSemaphore(CoreGraphicsQueueType type, VkSemaphore wa
 /**
 */
 void 
-VkSubContextHandler::FlushSubmissions(CoreGraphicsQueueType type, VkFence fence, bool waitImmediately)
+VkSubContextHandler::AddSignalSemaphore(CoreGraphicsQueueType type, VkSemaphore signalSemaphore)
+{
+	Util::Array<Submission>& submissions = this->submissions[type];
+	Submission& sub = submissions.Back();
+
+	// if we have wait semaphores, add both flags and the semaphore itself
+	if (signalSemaphore != VK_NULL_HANDLE)
+	{
+		sub.signalSemaphores.Append(signalSemaphore);
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+VkSubContextHandler::FlushSubmissions(CoreGraphicsQueueType type, VkFence fence)
 {
 	Util::Array<Submission>& submissions = this->submissions[type];
 
 	if (submissions.Size() > 0)
 	{
-		VkQueue queue = VK_NULL_HANDLE;
-		switch (type)
-		{
-		case GraphicsQueueType:
-			queue = this->drawQueues[this->currentDrawQueue];
-			break;
-		case ComputeQueueType:
-			queue = this->computeQueues[this->currentComputeQueue];
-			break;
-		case TransferQueueType:
-			queue = this->transferQueues[this->currentTransferQueue];
-			break;
-		case SparseQueueType:
-			queue = this->sparseQueues[this->currentSparseQueue];
-			break;
-		}
-
+		VkQueue queue = this->GetQueue(type);
 		Util::FixedArray<VkSubmitInfo> submitInfos(submissions.Size());
 		for (IndexT i = 0; i < submissions.Size(); i++)
 		{
@@ -203,15 +203,6 @@ VkSubContextHandler::FlushSubmissions(CoreGraphicsQueueType type, VkFence fence,
 
 		VkResult res = vkQueueSubmit(queue, submitInfos.Size(), submitInfos.Begin(), fence);
 		n_assert(res == VK_SUCCESS);
-
-		if (waitImmediately && fence != VK_NULL_HANDLE)
-		{
-			res = vkWaitForFences(this->device, 1, &fence, true, UINT64_MAX);
-			n_assert(res == VK_SUCCESS);
-
-			// reset fence
-			vkResetFences(this->device, 1, &fence);
-		}
 	}
 
 	// clear the submit infos
@@ -224,26 +215,9 @@ VkSubContextHandler::FlushSubmissions(CoreGraphicsQueueType type, VkFence fence,
 void 
 VkSubContextHandler::SubmitFence(CoreGraphicsQueueType type, VkFence fence)
 {
-	VkQueue queue = VK_NULL_HANDLE;
-	switch (type)
-	{
-		case GraphicsQueueType:
-		queue = this->drawQueues[this->currentDrawQueue];
-		break;
-		case ComputeQueueType:
-		queue = this->computeQueues[this->currentComputeQueue];
-		break;
-		case TransferQueueType:
-		queue = this->transferQueues[this->currentTransferQueue];
-		break;
-		case SparseQueueType:
-		queue = this->sparseQueues[this->currentSparseQueue];
-		break;
-	}
-
+	VkQueue queue = this->GetQueue(type);
 	VkResult res = vkQueueSubmit(queue, 0, nullptr, fence);
 	n_assert(res == VK_SUCCESS);
-
 }
 
 //------------------------------------------------------------------------------
@@ -251,23 +225,7 @@ VkSubContextHandler::SubmitFence(CoreGraphicsQueueType type, VkFence fence)
 */
 void VkSubContextHandler::SubmitImmediate(CoreGraphicsQueueType type, VkCommandBuffer cmds, VkSemaphore waitSemaphore, VkPipelineStageFlags waitFlags, VkSemaphore signalSemaphore, VkFence fence, bool waitImmediately)
 {
-	VkQueue queue = VK_NULL_HANDLE;
-	switch (type)
-	{
-	case GraphicsQueueType:
-		queue = this->drawQueues[this->currentDrawQueue];
-		break;
-	case ComputeQueueType:
-		queue = this->computeQueues[this->currentComputeQueue];
-		break;
-	case TransferQueueType:
-		queue = this->transferQueues[this->currentTransferQueue];
-		break;
-	case SparseQueueType:
-		queue = this->sparseQueues[this->currentSparseQueue];
-		break;
-	}
-
+	VkQueue queue = this->GetQueue(type);
 	VkSubmitInfo info =
 	{
 		VK_STRUCTURE_TYPE_SUBMIT_INFO,

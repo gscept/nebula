@@ -65,13 +65,19 @@ CreateConstantBuffer(const ConstantBufferCreateInfo& info)
 	SizeT size = info.size;
 
 	const Util::Set<uint32_t>& queues = Vulkan::GetQueueFamilies();
+	VkBufferUsageFlags usageFlags = 0;
+	if (info.mode == HostWriteable)
+		usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+	else if (info.mode == DeviceWriteable)
+		usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+
 	setup.info =
 	{
 		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
 		NULL,
 		0,
 		(VkDeviceSize)size,
-		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+		usageFlags,
 		VK_SHARING_MODE_CONCURRENT,
 		(uint32_t)queues.Size(),
 		queues.KeysAsArray().Begin()
@@ -80,9 +86,13 @@ CreateConstantBuffer(const ConstantBufferCreateInfo& info)
 	n_assert(res == VK_SUCCESS);
 
 	uint32_t alignedSize;
-	VkMemoryPropertyFlagBits flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
-	if (info.mode == CoherentlyMappedMemory)
-		flags = VkMemoryPropertyFlagBits(flags | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+	VkMemoryPropertyFlagBits flags = VkMemoryPropertyFlagBits(0);
+	if (info.mode == HostWriteable)
+		flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+	else if (info.mode == DeviceWriteable)
+		flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+	// allocate memory
 	VkUtilities::AllocateBufferMemory(setup.dev, runtime.buf, setup.mem, flags, alignedSize);
 
 	// bind to buffer
@@ -94,9 +104,13 @@ CreateConstantBuffer(const ConstantBufferCreateInfo& info)
 	setup.stride = alignedSize;
 	pool.capacity = setup.size;
 
-	// map memory so we can use it later, if we are using coherently mapping
-	res = vkMapMemory(setup.dev, setup.mem, 0, setup.size, 0, &map.data);
-	n_assert(res == VK_SUCCESS);
+	map.data = nullptr;
+	if (info.mode == HostWriteable)
+	{
+		// map memory so we can use it later, if we are using coherently mapping
+		res = vkMapMemory(setup.dev, setup.mem, 0, setup.size, 0, &map.data);
+		n_assert(res == VK_SUCCESS);
+	}
 
 	ConstantBufferId ret;
 	ret.id24 = id;
@@ -117,9 +131,11 @@ DestroyConstantBuffer(const ConstantBufferId id)
 {
 	VkConstantBufferRuntimeInfo& runtime = constantBufferAllocator.Get<RuntimeInfo>(id.id24);
 	VkConstantBufferSetupInfo& setup = constantBufferAllocator.Get<SetupInfo>(id.id24);
+	VkConstantBufferMapInfo& map = constantBufferAllocator.Get<MapInfo>(id.id24);
 
 	// unmap memory, so we can free it
-	vkUnmapMemory(setup.dev, setup.mem);
+	if (map.data != nullptr)
+		vkUnmapMemory(setup.dev, setup.mem);
 
 	vkFreeMemory(setup.dev, setup.mem, nullptr);
 	vkDestroyBuffer(setup.dev, runtime.buf, nullptr);
@@ -203,9 +219,11 @@ ConstantBufferAllocate(const ConstantBufferId id, const SizeT size, bool& needsR
 		// allocate new instance memory, alignedSize is the aligned size of a single buffer
 		VkDeviceMemory newMem;
 		uint32_t alignedSize;
-		VkMemoryPropertyFlagBits flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
-		if (setupInfo.mode == CoherentlyMappedMemory)
-			flags = VkMemoryPropertyFlagBits(flags | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+		VkMemoryPropertyFlagBits flags = VkMemoryPropertyFlagBits(0);
+		if (setupInfo.mode == HostWriteable)
+			flags = VkMemoryPropertyFlagBits(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+		else if (setupInfo.mode == DeviceWriteable)
+			flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 		VkUtilities::AllocateBufferMemory(setupInfo.dev, newBuf, newMem, flags, alignedSize);
 
 		// bind to buffer, this is the reason why we must destroy and create the buffer again
@@ -220,19 +238,6 @@ ConstantBufferAllocate(const ConstantBufferId id, const SizeT size, bool& needsR
 		n_assert(res == VK_SUCCESS);
 		memcpy(dstData, mapInfo.data, setupInfo.size);
 		vkUnmapMemory(setupInfo.dev, setupInfo.mem);
-
-		// if we do manual flushing, do it immediately
-		if (setupInfo.mode == ManualFlush)
-		{
-			VkMappedMemoryRange range;
-			range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-			range.pNext = nullptr;
-			range.memory = newMem;
-			range.offset = 0;
-			range.size = setupInfo.size;
-			res = vkFlushMappedMemoryRanges(setupInfo.dev, 1, &range);
-			n_assert(res == VK_SUCCESS);
-		}
 
 		// clean up old data	
 		vkDestroyBuffer(setupInfo.dev, runtimeInfo.buf, nullptr);

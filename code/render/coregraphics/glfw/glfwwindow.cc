@@ -777,8 +777,8 @@ SetupVulkanSwapchain(const CoreGraphics::WindowId& id, const CoreGraphics::Displ
 	}
 
 	// get the optimal set of swap chain images, the more the better
-	uint32_t numSwapchainImages = surfCaps.minImageCount+1;
-	if ((surfCaps.maxImageCount > 0) && (numSwapchainImages > surfCaps.maxImageCount)) numSwapchainImages = surfCaps.maxImageCount;
+	uint32_t numSwapchainImages = surfCaps.maxImageCount;
+	//if ((surfCaps.maxImageCount > 0) && (numSwapchainImages > surfCaps.maxImageCount)) numSwapchainImages = surfCaps.maxImageCount;
 
 	// create a transform
 	VkSurfaceTransformFlagBitsKHR transform;
@@ -907,32 +907,29 @@ Present(const CoreGraphics::WindowId& id)
 {
 	const VkWindowSwapInfo& wndInfo = glfwWindowAllocator.Get<GLFWWindowSwapInfoField>(id.id24);
 
-	VkSemaphore semaphores[2] =
+	VkSemaphore semaphores[] =
 	{
-		wndInfo.displaySemaphore,
-		Vulkan::GetPresentSemaphore() // this will be the final semaphore of the graphics command buffer that finishes the frame
+		Vulkan::GetRenderingSemaphore() // this will be the final semaphore of the graphics command buffer that finishes the frame
 	};
 
 #if NEBULA_GRAPHICS_DEBUG
 	CoreGraphics::QueueBeginMarker(GraphicsQueueType, NEBULA_MARKER_PINK, "Presentation");
 #endif
 
-	VkResult res;
-	VkResult presentResults;
 	const VkPresentInfoKHR info =
 	{
 		VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
 		nullptr,
-		2,
+		1,
 		semaphores,
 		1,
 		&wndInfo.swapchain,
 		&wndInfo.currentBackbuffer,
-		&presentResults
+		nullptr
 	};
 
 	// present
-	res = vkQueuePresentKHR(wndInfo.presentQueue, &info);
+	VkResult res = vkQueuePresentKHR(wndInfo.presentQueue, &info);
 	n_assert(res == VK_SUCCESS);
 
 	if (res == VK_ERROR_OUT_OF_DATE_KHR)
