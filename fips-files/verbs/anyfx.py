@@ -34,5 +34,5 @@ def run(fips_dir, proj_dir, args) :
 def help():
     """print 'anyfx' help"""
     log.info(log.YELLOW +
-             "fips anyfx setup\n"
+             "fips anyfx setup [force]\n"
              "  compiles anyfxcompiler for platform\n")
