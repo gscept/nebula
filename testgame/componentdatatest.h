@@ -8,7 +8,6 @@
     (C) 2018 Individual contributors, see AUTHORS file
 */
 #include "testbase/testcase.h"
-#include "game/attr/attrid.h"
 #include "game/component/attribute.h"
 #include "game/component/component.h"
 #include "game/entity.h"
