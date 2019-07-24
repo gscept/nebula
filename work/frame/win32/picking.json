@@ -1,5 +1,5 @@
 version: 2, engine: "Nebula", framescript: {
-  renderTextures: [
+  render_textures: [
     {
       name: "PickingBuffer",
       format: "R32F",
@@ -9,7 +9,7 @@ version: 2, engine: "Nebula", framescript: {
     }
   ],
 
-  depthStencils: [
+  depth_stencils: [
     {
       name: "PickingDepthBuffer",
       format: "D24S8",
@@ -29,10 +29,10 @@ version: 2, engine: "Nebula", framescript: {
       }
     ],
 
-    depthStencil: {
+    depth_stencil: {
       name: "PickingDepthBuffer",
       clear: 1,
-      clearStencil: 0,
+      clear_stencil: 0,
       store: true
     },
 
