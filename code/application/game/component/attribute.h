@@ -4,29 +4,27 @@
 #include "accessmode.h"
 #include "valuetype.h"
 
-namespace Attr
+namespace Game
 {
-
-// template <typename 
 
 template<typename T>
-constexpr ValueType TypeToValueType()
+constexpr Attr::ValueType TypeToValueType()
 {
 	static_assert(false, "Type is not implemented!");
-	return ValueType::NONE;
+	return Attr::ValueType::NONE;
 }
 
-template<> constexpr ValueType TypeToValueType<bool>()				{ return ValueType::BoolType; }
-template<> constexpr ValueType TypeToValueType<int>()				{ return ValueType::IntType; }
-template<> constexpr ValueType TypeToValueType<uint>()				{ return ValueType::UIntType; }
-template<> constexpr ValueType TypeToValueType<float>()				{ return ValueType::FloatType; }
-template<> constexpr ValueType TypeToValueType<double>()			{ return ValueType::DoubleType; }
-template<> constexpr ValueType TypeToValueType<Math::matrix44>()	{ return ValueType::Matrix44Type; }
-template<> constexpr ValueType TypeToValueType<Math::float4>()		{ return ValueType::Float4Type; }
-template<> constexpr ValueType TypeToValueType<Math::quaternion>()	{ return ValueType::QuaternionType; }
-template<> constexpr ValueType TypeToValueType<Util::String>()		{ return ValueType::StringType; }
-template<> constexpr ValueType TypeToValueType<Util::Guid>()		{ return ValueType::GuidType; }
-template<> constexpr ValueType TypeToValueType<Game::Entity>()		{ return ValueType::EntityType; }
+template<> constexpr Attr::ValueType TypeToValueType<bool>()				{ return Attr::ValueType::BoolType; }
+template<> constexpr Attr::ValueType TypeToValueType<int>()				    { return Attr::ValueType::IntType; }
+template<> constexpr Attr::ValueType TypeToValueType<uint>()				{ return Attr::ValueType::UIntType; }
+template<> constexpr Attr::ValueType TypeToValueType<float>()				{ return Attr::ValueType::FloatType; }
+template<> constexpr Attr::ValueType TypeToValueType<double>()			    { return Attr::ValueType::DoubleType; }
+template<> constexpr Attr::ValueType TypeToValueType<Math::matrix44>()	    { return Attr::ValueType::Matrix44Type; }
+template<> constexpr Attr::ValueType TypeToValueType<Math::float4>()		{ return Attr::ValueType::Float4Type; }
+template<> constexpr Attr::ValueType TypeToValueType<Math::quaternion>()	{ return Attr::ValueType::QuaternionType; }
+template<> constexpr Attr::ValueType TypeToValueType<Util::String>()		{ return Attr::ValueType::StringType; }
+template<> constexpr Attr::ValueType TypeToValueType<Util::Guid>()		    { return Attr::ValueType::GuidType; }
+template<> constexpr Attr::ValueType TypeToValueType<Game::Entity>()		{ return Attr::ValueType::EntityType; }
 
 class Attribute
 {
@@ -35,14 +33,14 @@ public:
 		attrIndex(-1),
 		fourcc(-1),
 		name(""),
-		type(ValueType::VoidType),
-		accessMode(AccessMode::ReadOnly),
+		type(Attr::ValueType::VoidType),
+		accessMode(Attr::AccessMode::ReadOnly),
 		defaultValue()
 	{
 		// empty
 	}
 
-	Attribute(uint index, Util::FourCC fourcc, const char* name, ValueType type, const char* typeName, AccessMode accessMode, Util::Variant const& defaultValue) :
+	Attribute(uint index, Util::FourCC fourcc, const char* name, Attr::ValueType type, const char* typeName, Attr::AccessMode accessMode, Util::Variant const& defaultValue) :
 		attrIndex(index),
 		fourcc(fourcc),
 		name(name),
@@ -60,9 +58,9 @@ public:
 	Util::FourCC fourcc;
 	Util::String name;
     Util::String typeName;
-	ValueType type;
+    Attr::ValueType type;
 	Util::Variant defaultValue;
-	AccessMode accessMode;
+    Attr::AccessMode accessMode;
 
     /*
         These static functions are implemented by each attribute when using
@@ -80,7 +78,7 @@ public:
 	{
 		return "uint";
 	}
-	static constexpr ValueType Type()
+	static constexpr Attr::ValueType Type()
 	{
 		return TypeToValueType<uint>();
 	}
@@ -96,10 +94,10 @@ public:
 	@note	Make sure to send an explicit type as default value (ex. uint(10), Math::matrix44::identity(), etc.)
 */
 #define __DeclareAttribute(ATTRIBUTENAME, TYPE, FOURCC, ACCESSMODE, DEFAULTVALUE) \
-class ATTRIBUTENAME : public Attr::Attribute\
+class ATTRIBUTENAME : public Game::Attribute\
 {\
 public:\
-	ATTRIBUTENAME(uint index) : Attribute(index, FOURCC, #ATTRIBUTENAME, Attr::TypeToValueType<TYPE>(), #TYPE, ACCESSMODE, Util::Variant(DEFAULTVALUE)) {};\
+	ATTRIBUTENAME(uint index) : Attribute(index, FOURCC, #ATTRIBUTENAME, Game::TypeToValueType<TYPE>(), #TYPE, ACCESSMODE, Util::Variant(DEFAULTVALUE)) {};\
 	using InnerType = TYPE;\
 	static constexpr uint FourCC()\
 	{\
@@ -115,7 +113,7 @@ public:\
 	}\
 	static constexpr Attr::ValueType Type()\
 	{\
-		return Attr::TypeToValueType<TYPE>();\
+		return Game::TypeToValueType<TYPE>();\
 	}\
 	static const TYPE DefaultValue()\
 	{\
@@ -123,7 +121,7 @@ public:\
 	}\
 };
 
-__DeclareAttribute(TestAttr, int, 'TEST', AccessMode::ReadWrite, int(12));
-__DeclareAttribute(TestFloatAttr, float, 'TFLT', AccessMode::ReadOnly, float(20));
+__DeclareAttribute(TestAttr, int, 'TEST', Attr::AccessMode::ReadWrite, int(12));
+__DeclareAttribute(TestFloatAttr, float, 'TFLT', Attr::AccessMode::ReadOnly, float(20));
 
 } // namespace Attr
