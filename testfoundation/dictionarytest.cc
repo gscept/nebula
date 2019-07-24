@@ -73,6 +73,44 @@ DictionaryTest::Run()
     VERIFY(dict.Contains("Vier"));
     VERIFY(dict.Contains("Fuenf"));
 
+    dict.Add("Eins", "One");
+    dict.Add("Sechs", "Six");
+    dict.Add("Sieben", "Seven");
+    dict.Add("Acht", "Eight");
+    dict.Add("Neun", "Nine");
+    dict.Add("Zehn", "Ten");
+    dict.Add("Elf", "Eleven");
+    dict.Add("Zwoelf", "Eleven");
+    dict.Add("Dreizehn", "Thirteen");
+    dict.Add("Vierzehn", "Fourteen");
+    dict.Add("Fuenfzehn", "Fifteen");
+    dict.Add("Sechzehn", "Sixteen");
+    dict.Add("Siebzehn", "Seventeen");
+    dict.Add("Achtzehn", "Eighteen");
+    dict.Add("Neunzehn", "Nineteen");
+    dict.Add("Zwanzig", "Twenty");
+
+    VERIFY(dict.Contains("Eins"));
+    VERIFY(dict.Contains("Zwei"));
+    VERIFY(dict.Contains("Drei"));
+    VERIFY(dict.Contains("Vier"));
+    VERIFY(dict.Contains("Fuenf"));
+    VERIFY(dict.Contains("Sechs"));
+    VERIFY(dict.Contains("Sieben"));
+    VERIFY(dict.Contains("Acht"));
+    VERIFY(dict.Contains("Neun"));
+    VERIFY(dict.Contains("Zehn"));
+    VERIFY(dict.Contains("Elf"));
+    VERIFY(dict.Contains("Zwoelf"));
+    VERIFY(dict.Contains("Dreizehn"));
+    VERIFY(dict.Contains("Vierzehn"));
+    VERIFY(dict.Contains("Fuenfzehn"));
+    VERIFY(dict.Contains("Sechzehn"));
+    VERIFY(dict.Contains("Siebzehn"));
+    VERIFY(dict.Contains("Achtzehn"));
+    VERIFY(dict.Contains("Neunzehn"));
+    VERIFY(dict.Contains("Zwanzig"));
+
     // NOTE: the following should not compile
     // dict.KeyAtIndex(0) = "Zehn";
 }
