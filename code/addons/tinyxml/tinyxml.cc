@@ -1354,6 +1354,7 @@ void TiXmlText::CopyTo( TiXmlText* target ) const
 {
 	TiXmlNode::CopyTo( target );
 	target->cdata = cdata;
+    target->raw = raw;
 }
 
 
