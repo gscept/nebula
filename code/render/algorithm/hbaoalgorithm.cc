@@ -13,6 +13,9 @@
 #include "graphics/cameracontext.h"
 #include "graphics/view.h"
 
+#include "hbao_cs.h"
+#include "hbaoblur_cs.h"
+
 using namespace CoreGraphics;
 using namespace Graphics;
 namespace Algorithms
@@ -63,6 +66,7 @@ HBAOAlgorithm::Setup()
 
 	CoreGraphics::BarrierCreateInfo binfo =
 	{
+		""_atm,
 		BarrierDomain::Global,
 		BarrierStage::ComputeShader,
 		BarrierStage::ComputeShader
@@ -71,32 +75,40 @@ HBAOAlgorithm::Setup()
 	subres.aspect = CoreGraphicsImageAspect::ColorBits;
 
 	// hbao generation barriers
+	binfo.name = "HBAO Initial transition";
 	binfo.shaderRWTextures.Append(std::make_tuple(this->internalTargets[0], subres, CoreGraphicsImageLayout::ShaderRead, CoreGraphicsImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite));
-	binfo.shaderRWTextures.Append(std::make_tuple(this->internalTargets[1], subres, CoreGraphicsImageLayout::ShaderRead, CoreGraphicsImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderRead));
+	binfo.shaderRWTextures.Append(std::make_tuple(this->readWriteTextures[0], subres, CoreGraphicsImageLayout::ShaderRead, CoreGraphicsImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite));
 	this->barriers[0] = CreateBarrier(binfo);
 	binfo.shaderRWTextures.Clear();
 
+	binfo.name = "HBAO Transition Pass 0 -> 1";
 	binfo.shaderRWTextures.Append(std::make_tuple(this->internalTargets[0], subres, CoreGraphicsImageLayout::General, CoreGraphicsImageLayout::General, BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead));
 	binfo.shaderRWTextures.Append(std::make_tuple(this->internalTargets[1], subres, CoreGraphicsImageLayout::General, CoreGraphicsImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite));
 	this->barriers[1] = CreateBarrier(binfo);
 	binfo.shaderRWTextures.Clear();
 
 	// hbao blur barriers
+	binfo.name = "HBAO Transition to Blur";
 	binfo.shaderRWTextures.Append(std::make_tuple(this->internalTargets[1], subres, CoreGraphicsImageLayout::General, CoreGraphicsImageLayout::ShaderRead, BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead));
 	binfo.shaderRWTextures.Append(std::make_tuple(this->internalTargets[0], subres, CoreGraphicsImageLayout::General, CoreGraphicsImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite));
 	this->barriers[2] = CreateBarrier(binfo);
 	binfo.shaderRWTextures.Clear();
 
+	binfo.name = "HBAO Transition to Blur Pass 0 -> 1";
 	binfo.shaderRWTextures.Append(std::make_tuple(this->internalTargets[0], subres, CoreGraphicsImageLayout::General, CoreGraphicsImageLayout::ShaderRead, BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead));
+	binfo.shaderRWTextures.Append(std::make_tuple(this->internalTargets[1], subres, CoreGraphicsImageLayout::ShaderRead, CoreGraphicsImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite));
 	this->barriers[3] = CreateBarrier(binfo);
+	binfo.shaderRWTextures.Clear();
+
+	binfo.name = "HBAO Transition to Render";
+	binfo.shaderRWTextures.Append(std::make_tuple(this->internalTargets[1], subres, CoreGraphicsImageLayout::ShaderRead, CoreGraphicsImageLayout::General, BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead));
+	binfo.shaderRWTextures.Append(std::make_tuple(this->readWriteTextures[0], subres, CoreGraphicsImageLayout::General, CoreGraphicsImageLayout::ShaderRead, BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead));
+	this->barriers[4] = CreateBarrier(binfo);
 	binfo.shaderRWTextures.Clear();
 
 	// setup shaders
 	this->hbaoShader = ShaderGet("shd:hbao_cs.fxb");
 	this->blurShader = ShaderGet("shd:hbaoblur_cs.fxb");
-	this->hbaoTable = ShaderCreateResourceTable(this->hbaoShader, NEBULA_BATCH_GROUP);
-	this->blurTableX = ShaderCreateResourceTable(this->blurShader, NEBULA_BATCH_GROUP);
-	this->blurTableY = ShaderCreateResourceTable(this->blurShader, NEBULA_BATCH_GROUP);
 	this->hbao0 = ShaderGetResourceSlot(this->hbaoShader, "HBAO0");
 	this->hbao1 = ShaderGetResourceSlot(this->hbaoShader, "HBAO1");
 	this->hbaoC = ShaderGetResourceSlot(this->hbaoShader, "HBAOBlock");
@@ -111,26 +123,33 @@ HBAOAlgorithm::Setup()
 	this->xDirectionBlur = ShaderGetProgram(this->blurShader, ShaderFeatureFromString("Alt0"));
 	this->yDirectionBlur = ShaderGetProgram(this->blurShader, ShaderFeatureFromString("Alt1"));
 
-	this->hbaoConstants = ShaderCreateConstantBuffer(this->hbaoShader, "HBAOBlock");
-	this->blurConstants = ShaderCreateConstantBuffer(this->blurShader, "HBAOBlur");
+	this->hbaoConstants = CoreGraphics::GetGraphicsConstantBuffer(MainThreadConstantBuffer);
+	this->blurConstants = CoreGraphics::GetGraphicsConstantBuffer(MainThreadConstantBuffer);
 
-	// setup hbao table
-	ResourceTableSetShaderRWTexture(this->hbaoTable, { this->internalTargets[0], this->hbao0, 0, CoreGraphics::SamplerId::Invalid() });
-	ResourceTableSetShaderRWTexture(this->hbaoTable, { this->internalTargets[1], this->hbao1, 0, CoreGraphics::SamplerId::Invalid() });
-	ResourceTableSetConstantBuffer(this->hbaoTable, { this->hbaoConstants, this->hbaoC, 0, false, false, -1, 0 });
-	ResourceTableCommitChanges(this->hbaoTable);
+	SizeT numBuffers = CoreGraphics::GetNumBufferedFrames();
+	this->hbaoTable.Resize(numBuffers);
+	this->blurTableX.Resize(numBuffers);
+	this->blurTableY.Resize(numBuffers);
+	IndexT i;
+	for (i = 0; i < numBuffers; i++)
+	{
+		this->hbaoTable[i] = ShaderCreateResourceTable(this->hbaoShader, NEBULA_BATCH_GROUP);
+		this->blurTableX[i] = ShaderCreateResourceTable(this->blurShader, NEBULA_BATCH_GROUP);
+		this->blurTableY[i] = ShaderCreateResourceTable(this->blurShader, NEBULA_BATCH_GROUP);
 
-	// setup blur table
-	ResourceTableSetTexture(this->blurTableX, { this->internalTargets[1], this->hbaoX, 0, CoreGraphics::SamplerId::Invalid() });
-	ResourceTableSetShaderRWTexture(this->blurTableX, { this->internalTargets[0], this->hbaoBlurRG, 0, CoreGraphics::SamplerId::Invalid() });
+		// setup hbao table
+		ResourceTableSetShaderRWTexture(this->hbaoTable[i], { this->internalTargets[0], this->hbao0, 0, CoreGraphics::SamplerId::Invalid() });
+		ResourceTableSetShaderRWTexture(this->hbaoTable[i], { this->internalTargets[1], this->hbao1, 0, CoreGraphics::SamplerId::Invalid() });
+		ResourceTableCommitChanges(this->hbaoTable[i]);
 
-	ResourceTableSetTexture(this->blurTableY, { this->internalTargets[0], this->hbaoY, 0, CoreGraphics::SamplerId::Invalid() });
-	ResourceTableSetShaderRWTexture(this->blurTableY, { this->readWriteTextures[0], this->hbaoBlurR, 0, CoreGraphics::SamplerId::Invalid() });
-
-	ResourceTableSetConstantBuffer(this->blurTableX, { this->blurConstants, this->blurC, 0, false, false, -1, 0 });
-	ResourceTableSetConstantBuffer(this->blurTableY, { this->blurConstants, this->blurC, 0, false, false, -1, 0 });
-	ResourceTableCommitChanges(this->blurTableX);
-	ResourceTableCommitChanges(this->blurTableY);
+		// setup blur table
+		ResourceTableSetTexture(this->blurTableX[i], { this->internalTargets[1], this->hbaoX, 0, CoreGraphics::SamplerId::Invalid() });
+		ResourceTableSetShaderRWTexture(this->blurTableX[i], { this->internalTargets[0], this->hbaoBlurRG, 0, CoreGraphics::SamplerId::Invalid() });
+		ResourceTableSetTexture(this->blurTableY[i], { this->internalTargets[0], this->hbaoY, 0, CoreGraphics::SamplerId::Invalid() });
+		ResourceTableSetShaderRWTexture(this->blurTableY[i], { this->readWriteTextures[0], this->hbaoBlurR, 0, CoreGraphics::SamplerId::Invalid() });
+		ResourceTableCommitChanges(this->blurTableX[i]);
+		ResourceTableCommitChanges(this->blurTableY[i]);
+	}
 
 	TextureDimensions dims = RenderTextureGetDimensions(this->renderTextures[0]);
 	this->vars.fullWidth = (float)dims.width;
@@ -210,17 +229,35 @@ HBAOAlgorithm::Setup()
 		vars.blurFalloff = INV_LN2 / (2.0f * blurSigma * blurSigma);
 		vars.blurThreshold = 2.0f * SQRT_LN2 * (this->vars.sceneScale / BLUR_SHARPNESS);
 
-		ConstantBufferUpdate(this->hbaoConstants, this->vars.uvToViewA, this->uvToViewAVar);
-		ConstantBufferUpdate(this->hbaoConstants, this->vars.uvToViewB, this->uvToViewBVar);
+		HbaoCs::HBAOBlock hbaoBlock;
+		hbaoBlock.AOResolution[0] = this->vars.aoResolution.x();
+		hbaoBlock.AOResolution[1] = this->vars.aoResolution.y();
+		hbaoBlock.InvAOResolution[0] = this->vars.invAOResolution.x();
+		hbaoBlock.InvAOResolution[1] = this->vars.invAOResolution.y();
+		hbaoBlock.R2 = this->vars.r2;
+		hbaoBlock.Strength = this->vars.strength;
+		hbaoBlock.TanAngleBias = this->vars.tanAngleBias;
+		hbaoBlock.UVToViewA[0] = this->vars.uvToViewA.x();
+		hbaoBlock.UVToViewA[1] = this->vars.uvToViewA.y();
+		hbaoBlock.UVToViewB[0] = this->vars.uvToViewB.x();
+		hbaoBlock.UVToViewB[1] = this->vars.uvToViewB.y();
+		uint hbaoOffset = CoreGraphics::SetGraphicsConstants(MainThreadConstantBuffer, hbaoBlock);
 
-		ConstantBufferUpdate(this->hbaoConstants, this->vars.r2, this->r2Var);
-		ConstantBufferUpdate(this->hbaoConstants, this->vars.aoResolution, this->aoResolutionVar);
-		ConstantBufferUpdate(this->hbaoConstants, this->vars.invAOResolution, this->invAOResolutionVar);
-		ConstantBufferUpdate(this->hbaoConstants, this->vars.strength, this->strengthVar);
+		IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
 
-		ConstantBufferUpdate(this->blurConstants, this->vars.blurFalloff, this->blurFalloff);
-		ConstantBufferUpdate(this->blurConstants, this->vars.blurThreshold, this->blurDepthThreshold);
-		ConstantBufferUpdate(this->blurConstants, 1.5f, this->powerExponentVar);
+		ResourceTableSetConstantBuffer(this->hbaoTable[bufferIndex], { this->hbaoConstants, this->hbaoC, 0, false, false, sizeof(HbaoCs::HBAOBlock), (SizeT)hbaoOffset });
+		ResourceTableCommitChanges(this->hbaoTable[bufferIndex]);
+
+		HbaoblurCs::HBAOBlur blurBlock;
+		blurBlock.BlurFalloff = this->vars.blurFalloff;
+		blurBlock.BlurDepthThreshold = this->vars.blurThreshold;
+		blurBlock.PowerExponent = 1.5f;
+		uint blurOffset = CoreGraphics::SetGraphicsConstants(MainThreadConstantBuffer, blurBlock);
+
+		ResourceTableSetConstantBuffer(this->blurTableX[bufferIndex], { this->blurConstants, this->blurC, 0, false, false, sizeof(HbaoblurCs::HBAOBlur), (SizeT)blurOffset });
+		ResourceTableSetConstantBuffer(this->blurTableY[bufferIndex], { this->blurConstants, this->blurC, 0, false, false, sizeof(HbaoblurCs::HBAOBlur), (SizeT)blurOffset });
+		ResourceTableCommitChanges(this->blurTableX[bufferIndex]);
+		ResourceTableCommitChanges(this->blurTableY[bufferIndex]);
 	});
 
 	// calculate HBAO and blur
@@ -240,34 +277,35 @@ HBAOAlgorithm::Setup()
 		uint numGroupsY1 = DivAndRoundUp(height, TILE_WIDTH);
 		uint numGroupsY2 = height;
 
+		IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
+
 		// we are running the SSAO on the graphics queue
 #if NEBULA_GRAPHICS_DEBUG
 		CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_ORANGE, "HBAO");
 #endif
 
 		// render AO in X
-		CoreGraphics::InsertBarrier(this->barriers[0], GraphicsQueueType); // transition from shader read to general
 		CoreGraphics::SetShaderProgram(this->xDirectionHBAO);
-		CoreGraphics::SetResourceTable(this->hbaoTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
-		CoreGraphics::Compute(numGroupsX1, numGroupsY2, 1);		
-		CoreGraphics::InsertBarrier(this->barriers[1], GraphicsQueueType); // transition from shader read to general
+		CoreGraphics::SetResourceTable(this->hbaoTable[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+		CoreGraphics::InsertBarrier(this->barriers[0], GraphicsQueueType); // transition from shader read to general
+		CoreGraphics::Compute(numGroupsX1, numGroupsY2, 1);
 
 		// now do it in Y
-		CoreGraphics::InsertBarrier(this->barriers[1], GraphicsQueueType); // transition from shader read to general
 		CoreGraphics::SetShaderProgram(this->yDirectionHBAO);
-		CoreGraphics::SetResourceTable(this->hbaoTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+		CoreGraphics::SetResourceTable(this->hbaoTable[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+		CoreGraphics::InsertBarrier(this->barriers[1], GraphicsQueueType); // transition from shader read to general
 		CoreGraphics::Compute(numGroupsY1, numGroupsX2, 1);
 		
 		// blur in X
-		CoreGraphics::InsertBarrier(this->barriers[2], GraphicsQueueType); // transition from shader read to general
 		CoreGraphics::SetShaderProgram(this->xDirectionBlur);
-		CoreGraphics::SetResourceTable(this->blurTableX, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+		CoreGraphics::SetResourceTable(this->blurTableX[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+		CoreGraphics::InsertBarrier(this->barriers[2], GraphicsQueueType); // transition from shader read to general
 		CoreGraphics::Compute(numGroupsX1, numGroupsY2, 1);
 
 		// blur in Y
-		CoreGraphics::InsertBarrier(this->barriers[3], GraphicsQueueType);
 		CoreGraphics::SetShaderProgram(this->yDirectionBlur);
-		CoreGraphics::SetResourceTable(this->blurTableY, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+		CoreGraphics::SetResourceTable(this->blurTableY[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+		CoreGraphics::InsertBarrier(this->barriers[3], GraphicsQueueType);
 		CoreGraphics::Compute(numGroupsY1, numGroupsX2, 1);
 
 #if NEBULA_GRAPHICS_DEBUG
@@ -287,9 +325,14 @@ HBAOAlgorithm::Discard()
 	CoreGraphics::DestroyShaderRWTexture(internalTargets[1]);
 	DestroyConstantBuffer(this->hbaoConstants);
 	DestroyConstantBuffer(this->blurConstants);
-	DestroyResourceTable(this->hbaoTable);
-	DestroyResourceTable(this->blurTableX);
-	DestroyResourceTable(this->blurTableY);
+	IndexT i;
+	for (i = 0; i < this->hbaoTable.Size(); i++)
+	{
+		DestroyResourceTable(this->hbaoTable[i]);
+		DestroyResourceTable(this->blurTableX[i]);
+		DestroyResourceTable(this->blurTableY[i]);
+	}
+	
 }
 
 } // namespace Algorithms

@@ -16,6 +16,7 @@ static const SizeT MaxNumBarriers = 16;
 
 struct VkBarrierInfo
 {
+	Util::StringAtom name;
 	VkPipelineStageFlags srcFlags;
 	VkPipelineStageFlags dstFlags;
 	VkDependencyFlags dep;

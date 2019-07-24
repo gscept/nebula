@@ -66,6 +66,7 @@ BloomAlgorithm::Setup()
 
 	CoreGraphics::BarrierCreateInfo binfo =
 	{
+		""_atm,
 		BarrierDomain::Global,
 		BarrierStage::ComputeShader,
 		BarrierStage::ComputeShader

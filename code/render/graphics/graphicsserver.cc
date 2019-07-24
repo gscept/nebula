@@ -60,7 +60,7 @@ GraphicsServer::Open()
 		{ 1 * MB, 0 * MB },			// Compute - main threads get 1 MB of constant memory, visibility thread (objects) gets 0
 		{ 10 * MB, 1 * MB },        // Vertex memory - main thread gets 10 MB for UI, Text etc, visibility thread (objects doing soft cloths and such) get 1 MB
 		{ 5 * MB, 1 * MB },         // Index memory - main thread gets 10 MB for UI, Text etc, visibility thread (objects doing soft cloths and such) get 1 MB
-		3,							// We have 3 frames running simultaneously
+		2,							// We have 3 frames running simultaneously
 		false }; // validation
 	this->graphicsDevice = CoreGraphics::CreateGraphicsDevice(gfxInfo);
 	if (this->graphicsDevice)

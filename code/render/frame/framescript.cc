@@ -213,7 +213,7 @@ FrameScript::Build()
 
 	for (i = 0; i < this->ops.Size(); i++)
 	{
-		this->ops[i]->Build(this->buildAllocator, this->compiled, this->events, this->barriers, this->semaphores, rwTextures, rwBuffers, renderTextures);
+		this->ops[i]->Build(this->buildAllocator, this->compiled, this->events, this->barriers, rwTextures, rwBuffers, renderTextures);
 	}
 
 	// setup a post-frame barrier to reset the resource state of all resources back to their created original (ShaderRead for RenderTexture, General for RWTexture
@@ -256,6 +256,7 @@ FrameScript::Build()
 	Util::Array<std::tuple<CoreGraphics::ShaderRWBufferId, CoreGraphics::BarrierAccess, CoreGraphics::BarrierAccess>> shaderRWBuffersBarr;
 	CoreGraphics::BarrierCreateInfo info =
 	{
+		"End of Frame Transitions",
 		CoreGraphics::BarrierDomain::Global,
 		CoreGraphics::BarrierStage::Bottom,
 		CoreGraphics::BarrierStage::Bottom,

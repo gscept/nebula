@@ -69,6 +69,7 @@ struct GraphicsDeviceState
 
 	Util::FixedArray<CoreGraphics::SemaphoreId> presentSemaphores;
 	Util::FixedArray<CoreGraphics::SemaphoreId> renderingFinishedSemaphores;
+	Util::FixedArray<CoreGraphics::SemaphoreId> lastFrameSemaphores;
 
 	CoreGraphics::SubmissionContextId computeSubmission;
 	CoreGraphics::CommandBufferId computeCmdBuffer;

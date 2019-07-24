@@ -1455,12 +1455,12 @@ FrameScriptLoader::ParseResourceDependencies(const Ptr<Frame::FrameScript>& scri
 			if ((nd = jzon_get(dep, "layer_count")) != nullptr) subres.layerCount	= nd->int_value;
 			
 			ShaderRWTextureId tex = script->readWriteTexturesByName[valstr];
-			op->rwTextureDeps.Add(tex, std::make_tuple(access, dependency, subres, layout));
+			op->rwTextureDeps.Add(tex, std::make_tuple(valstr, access, dependency, subres, layout));
 		}
 		else if (script->readWriteBuffersByName.Contains(valstr))
 		{
 			ShaderRWBufferId buf = script->readWriteBuffersByName[valstr];
-			op->rwBufferDeps.Add(buf, std::make_tuple(access, dependency));
+			op->rwBufferDeps.Add(buf, std::make_tuple(valstr, access, dependency));
 		}
 		else if (script->colorTexturesByName.Contains(valstr))
 		{
@@ -1474,7 +1474,7 @@ FrameScriptLoader::ParseResourceDependencies(const Ptr<Frame::FrameScript>& scri
 			if ((nd = jzon_get(dep, "layer_count")) != nullptr) subres.layerCount = nd->int_value;
 
 			RenderTextureId tex = script->colorTexturesByName[valstr];
-			op->renderTextureDeps.Add(tex, std::make_tuple(access, dependency, subres, layout));
+			op->renderTextureDeps.Add(tex, std::make_tuple(valstr, access, dependency, subres, layout));
 		}
 		else
 		{

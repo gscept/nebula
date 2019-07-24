@@ -119,6 +119,7 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 	Util::FixedArray<VertexRingBuffer> vertexBufferRings;
 
 	VkSemaphore waitForPresentSemaphore;
+	VkSemaphore endOfFrameSemaphore;
 
 	uint maxNumBufferedFrames;
 	uint32_t currentBufferedFrameIndex;
@@ -1442,13 +1443,18 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 
 	state.presentSemaphores.Resize(info.numBufferedFrames);
 	state.renderingFinishedSemaphores.Resize(info.numBufferedFrames);
+	state.lastFrameSemaphores.Resize(info.numBufferedFrames);
 	for (i = 0; i < info.numBufferedFrames; i++)
 	{
 		state.presentSemaphores[i] = CreateSemaphore({});
 		state.renderingFinishedSemaphores[i] = CreateSemaphore({});
+		state.lastFrameSemaphores[i] = CreateSemaphore({});
 	}
 
 #pragma pop_macro("CreateSemaphore")
+
+	state.waitForPresentSemaphore     = VK_NULL_HANDLE;
+	state.endOfFrameSemaphore         = VK_NULL_HANDLE;
 
 	state.passInfo =
 	{
@@ -2581,6 +2587,8 @@ ReloadShaderProgram(const CoreGraphics::ShaderProgramId& pro)
 void 
 InsertBarrier(const CoreGraphics::BarrierId barrier, const CoreGraphicsQueueType queue)
 {
+	n_assert(!state.inBeginBatch);
+	n_assert(!state.inBeginPass);
 	VkBarrierInfo& info = barrierAllocator.Get<0>(barrier.id24);
 	if (queue == GraphicsQueueType && state.inBeginPass)
 	{
@@ -2873,6 +2881,14 @@ EndSubmission(CoreGraphicsQueueType queue, bool endOfFrame)
 			SemaphoreGetVk(state.gfxPrevSemaphore), VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
 			SemaphoreGetVk(state.gfxSemaphore));
 
+		// add wait for previous frame
+		if (state.endOfFrameSemaphore)
+		{
+			state.subcontextHandler.AddWaitSemaphore(GraphicsQueueType, state.endOfFrameSemaphore, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
+			state.endOfFrameSemaphore = VK_NULL_HANDLE;
+		}
+
+		// add wait for previous present
 		if (state.waitForPresentSemaphore)
 		{
 			state.subcontextHandler.AddWaitSemaphore(GraphicsQueueType, state.waitForPresentSemaphore, VK_PIPELINE_STAGE_TRANSFER_BIT);
@@ -2911,6 +2927,13 @@ EndSubmission(CoreGraphicsQueueType queue, bool endOfFrame)
 			CommandBufferGetVk(state.computeCmdBuffer),
 			SemaphoreGetVk(state.computePrevSemaphore), VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
 			SemaphoreGetVk(state.computeSemaphore));
+
+		// add wait for previous frame
+		if (state.endOfFrameSemaphore)
+		{
+			state.subcontextHandler.AddWaitSemaphore(ComputeQueueType, state.endOfFrameSemaphore, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+			state.endOfFrameSemaphore = VK_NULL_HANDLE;
+		}
 
 		// if we should wait for the graphics, add a semaphore
 		if (state.computeWaitSemaphore != SemaphoreId::Invalid())
@@ -2999,6 +3022,10 @@ EndFrame(IndexT frameIndex)
 	CoreGraphics::QueueEndMarker(ComputeQueueType);
 	CoreGraphics::QueueBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "Graphics Commands Submission");
 #endif
+
+	// set end of frame semaphore, which will be waited on by the next frame
+	state.endOfFrameSemaphore = SemaphoreGetVk(state.lastFrameSemaphores[state.currentBufferedFrameIndex]);
+	state.subcontextHandler.AddSignalSemaphore(GraphicsQueueType, state.endOfFrameSemaphore);
 
 	// add signal semaphore to end of frame
 	state.subcontextHandler.AddSignalSemaphore(GraphicsQueueType, SemaphoreGetVk(state.renderingFinishedSemaphores[state.currentBufferedFrameIndex]));

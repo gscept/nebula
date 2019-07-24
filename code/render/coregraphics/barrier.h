@@ -107,6 +107,7 @@ struct ImageSubresourceInfo
 };
 struct BarrierCreateInfo
 {
+	Util::StringAtom name;
 	BarrierDomain domain;
 	BarrierStage leftDependency;
 	BarrierStage rightDependency;

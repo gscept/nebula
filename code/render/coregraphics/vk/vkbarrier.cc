@@ -32,6 +32,7 @@ CreateBarrier(const BarrierCreateInfo& info)
 	Util::Array<CoreGraphics::RenderTextureId>& rts = barrierAllocator.Get<1>(id);
 	Util::Array<CoreGraphics::ShaderRWTextureId>& rws = barrierAllocator.Get<2>(id);
 
+	vkInfo.name = info.name;
 	vkInfo.numImageBarriers = 0;
 	vkInfo.numBufferBarriers = 0;
 	vkInfo.numMemoryBarriers = 0;
@@ -133,7 +134,15 @@ DestroyBarrier(const BarrierId id)
 void
 BarrierInsert(const BarrierId id, const CoreGraphicsQueueType queue)
 {
+#if NEBULA_GRAPHICS_DEBUG
+	const Util::StringAtom& name = barrierAllocator.Get<0>(id.id24).name;
+	CommandBufferBeginMarker(queue, NEBULA_MARKER_PURPLE, name.AsString());
+#endif
 	CoreGraphics::InsertBarrier(id, queue);
+
+#if NEBULA_GRAPHICS_DEBUG
+	CommandBufferEndMarker(queue);
+#endif
 }
 
 //------------------------------------------------------------------------------
