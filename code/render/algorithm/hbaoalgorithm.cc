@@ -77,8 +77,13 @@ HBAOAlgorithm::Setup()
 	// hbao generation barriers
 	binfo.name = "HBAO Initial transition";
 	binfo.shaderRWTextures.Append(std::make_tuple(this->internalTargets[0], subres, CoreGraphicsImageLayout::ShaderRead, CoreGraphicsImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite));
-	binfo.shaderRWTextures.Append(std::make_tuple(this->readWriteTextures[0], subres, CoreGraphicsImageLayout::ShaderRead, CoreGraphicsImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite));
 	this->barriers[0] = CreateBarrier(binfo);
+	binfo.shaderRWTextures.Clear();
+
+	binfo.name ="HBAO Initial transition";
+	binfo.leftDependency = BarrierStage::AllGraphicsShaders;
+	binfo.shaderRWTextures.Append(std::make_tuple(this->readWriteTextures[0], subres, CoreGraphicsImageLayout::ShaderRead, CoreGraphicsImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite));
+	this->preBarrier = CreateBarrier(binfo);
 	binfo.shaderRWTextures.Clear();
 
 	binfo.name = "HBAO Transition Pass 0 -> 1";
@@ -98,12 +103,6 @@ HBAOAlgorithm::Setup()
 	binfo.shaderRWTextures.Append(std::make_tuple(this->internalTargets[0], subres, CoreGraphicsImageLayout::General, CoreGraphicsImageLayout::ShaderRead, BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead));
 	binfo.shaderRWTextures.Append(std::make_tuple(this->internalTargets[1], subres, CoreGraphicsImageLayout::ShaderRead, CoreGraphicsImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite));
 	this->barriers[3] = CreateBarrier(binfo);
-	binfo.shaderRWTextures.Clear();
-
-	binfo.name = "HBAO Transition to Render";
-	binfo.shaderRWTextures.Append(std::make_tuple(this->internalTargets[1], subres, CoreGraphicsImageLayout::ShaderRead, CoreGraphicsImageLayout::General, BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead));
-	binfo.shaderRWTextures.Append(std::make_tuple(this->readWriteTextures[0], subres, CoreGraphicsImageLayout::General, CoreGraphicsImageLayout::ShaderRead, BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead));
-	this->barriers[4] = CreateBarrier(binfo);
 	binfo.shaderRWTextures.Clear();
 
 	// setup shaders
@@ -288,6 +287,7 @@ HBAOAlgorithm::Setup()
 		CoreGraphics::SetShaderProgram(this->xDirectionHBAO);
 		CoreGraphics::SetResourceTable(this->hbaoTable[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
 		CoreGraphics::InsertBarrier(this->barriers[0], GraphicsQueueType); // transition from shader read to general
+		CoreGraphics::InsertBarrier(this->preBarrier, GraphicsQueueType); // transition from shader read to general
 		CoreGraphics::Compute(numGroupsX1, numGroupsY2, 1);
 
 		// now do it in Y
@@ -323,8 +323,6 @@ HBAOAlgorithm::Discard()
 	Algorithm::Discard();
 	CoreGraphics::DestroyShaderRWTexture(internalTargets[0]);
 	CoreGraphics::DestroyShaderRWTexture(internalTargets[1]);
-	DestroyConstantBuffer(this->hbaoConstants);
-	DestroyConstantBuffer(this->blurConstants);
 	IndexT i;
 	for (i = 0; i < this->hbaoTable.Size(); i++)
 	{

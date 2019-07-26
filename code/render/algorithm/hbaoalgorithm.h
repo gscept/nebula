@@ -44,7 +44,8 @@ private:
 	// read-write textures
 	CoreGraphics::ShaderRWTextureId internalTargets[2];
 
-	CoreGraphics::BarrierId barriers[5];
+	CoreGraphics::BarrierId barriers[4];
+	CoreGraphics::BarrierId preBarrier;
 
 	struct AOVariables
 	{
