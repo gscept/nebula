@@ -44,6 +44,7 @@ CreateEvent(const EventCreateInfo& info)
 	VkDevice dev = Vulkan::GetCurrentDevice();
 	vkCreateEvent(dev, &createInfo, nullptr, &vkInfo.event);
 
+	vkInfo.name = info.name;
 	vkInfo.numImageBarriers = 0;
 	vkInfo.numBufferBarriers = 0;
 	vkInfo.numMemoryBarriers = 0;
@@ -142,7 +143,15 @@ DestroyEvent(const EventId id)
 void 
 EventSignal(const EventId id, const CoreGraphicsQueueType queue)
 {
+#if NEBULA_GRAPHICS_DEBUG
+	const Util::StringAtom& name = eventAllocator.Get<1>(id.id24).name;
+	CommandBufferBeginMarker(queue, NEBULA_MARKER_PURPLE, name.AsString() + " Signal");
+#endif
 	CoreGraphics::SignalEvent(id, queue);
+
+#if NEBULA_GRAPHICS_DEBUG
+	CommandBufferEndMarker(queue);
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -151,7 +160,15 @@ EventSignal(const EventId id, const CoreGraphicsQueueType queue)
 void
 EventWait(const EventId id, const CoreGraphicsQueueType queue)
 {
+#if NEBULA_GRAPHICS_DEBUG
+	const Util::StringAtom& name = eventAllocator.Get<1>(id.id24).name;
+	CommandBufferBeginMarker(queue, NEBULA_MARKER_ORANGE, name.AsString() + " Wait");
+#endif
 	CoreGraphics::WaitEvent(id, queue);
+
+#if NEBULA_GRAPHICS_DEBUG
+	CommandBufferEndMarker(queue);
+#endif
 }
 
 //------------------------------------------------------------------------------

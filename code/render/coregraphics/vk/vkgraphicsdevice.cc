@@ -63,10 +63,6 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 	VkPipelineCache cache;
 	VkAllocationCallbacks alloc;
 
-	VkFence mainCmdDrawFence;
-	VkFence mainCmdCmpFence;
-	VkFence mainCmdTransFence;
-
 	CoreGraphics::ShaderPipeline currentBindPoint;
 
 	static const SizeT NumDrawThreads = 8;
@@ -121,6 +117,9 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 		uint32_t iboEndAddress[CoreGraphicsVertexBufferMemoryType::NumVertexBufferMemoryTypes];
 	};
 	Util::FixedArray<VertexRingBuffer> vertexBufferRings;
+
+	VkSemaphore waitForPresentSemaphore;
+	VkSemaphore endOfFrameSemaphore;
 
 	uint maxNumBufferedFrames;
 	uint32_t currentBufferedFrameIndex;
@@ -230,6 +229,7 @@ SetupAdapter()
 	state.deviceProps.Resize(gpuCount);
 	state.deviceFeatures.Resize(gpuCount);
 
+
 	if (gpuCount > 0)
 	{
 		res = vkEnumeratePhysicalDevices(state.instance, &gpuCount, state.physicalDevices.Begin());
@@ -252,17 +252,20 @@ SetupAdapter()
 				res = vkEnumerateDeviceExtensionProperties(state.physicalDevices[i], nullptr, &state.numCaps[i], state.caps[i].Begin());
 				n_assert(res == VK_SUCCESS);
 
-				uint32_t newNumCaps = 0;
-				for (uint32_t j = 0; j < state.numCaps[i]; j++)
+				static const Util::String wantedExtensions[] =
 				{
-					Util::String str(state.caps[i][j].extensionName);
+					"VK_KHR_swapchain",
+					"VK_KHR_maintenance1",
+					"VK_KHR_maintenance2",
+					"VK_KHR_maintenance3"
+				};
 
-					// only load khronos extensions
-					if (str.BeginsWithString("VK_KHR_"))
-						state.deviceFeatureStrings[i][newNumCaps++] = state.caps[i][j].extensionName;
-				}
+				uint32_t newNumCaps = 0;
+				state.deviceFeatureStrings[i][newNumCaps++] = wantedExtensions[0].AsCharPtr();
+				state.deviceFeatureStrings[i][newNumCaps++] = wantedExtensions[1].AsCharPtr();
+				state.deviceFeatureStrings[i][newNumCaps++] = wantedExtensions[2].AsCharPtr();
+				state.deviceFeatureStrings[i][newNumCaps++] = wantedExtensions[3].AsCharPtr();
 				state.numCaps[i] = newNumCaps;
-				state.deviceFeatureStrings[i].Resize(newNumCaps);
 			}
 
 			// get device props and features
@@ -359,16 +362,26 @@ GetMainBuffer(const CoreGraphicsQueueType queue)
 VkSemaphore 
 GetPresentSemaphore()
 {
-	return SemaphoreGetVk(state.gfxSemaphore);
+	return SemaphoreGetVk(state.presentSemaphores[state.currentBufferedFrameIndex]);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-VkFence 
-GetPresentFence()
+VkSemaphore 
+GetRenderingSemaphore()
 {
-	return FenceGetVk(state.gfxFence);
+	return SemaphoreGetVk(state.renderingFinishedSemaphores[state.currentBufferedFrameIndex]);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+WaitForPresent(VkSemaphore sem)
+{
+	n_assert(state.waitForPresentSemaphore == VK_NULL_HANDLE);
+	state.waitForPresentSemaphore = sem;
 }
 
 //------------------------------------------------------------------------------
@@ -532,7 +545,6 @@ UpdatePushRanges(const VkShaderStageFlags& stages, const VkPipelineLayout& layou
 	{
 		vkCmdPushConstants(GetMainBuffer(GraphicsQueueType), layout, stages, offset, size, data);
 	}
-	
 }
 
 //------------------------------------------------------------------------------
@@ -658,7 +670,6 @@ CreateAndBindGraphicsPipeline()
 		// bind pipeline
 		vkCmdBindPipeline(GetMainBuffer(GraphicsQueueType), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 	}
-	
 }
 
 //------------------------------------------------------------------------------
@@ -711,7 +722,7 @@ SetViewports(VkViewport* viewports, SizeT num)
 		else
 		{
 			// activate this code when we have main thread secondary buffers
-			//vkCmdSetViewport(CommandBufferGetVk(state.mainCmdDrawBuffer), 0, num, viewports);
+			vkCmdSetViewport(GetMainBuffer(GraphicsQueueType), 0, num, viewports);
 		}
 	}
 }
@@ -739,64 +750,9 @@ SetScissorRects(VkRect2D* scissors, SizeT num)
 		else
 		{
 			// activate this code when we have main thread secondary buffers
-			//vkCmdSetScissor(CommandBufferGetVk(state.mainCmdDrawBuffer), 0, num, scissors);
+			vkCmdSetScissor(GetMainBuffer(GraphicsQueueType), 0, num, scissors);
 		}
 	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-SubmitToQueue(VkQueue queue, VkPipelineStageFlags flags, uint32_t numBuffers, VkCommandBuffer* buffers)
-{
-	uint32_t i;
-	for (i = 0; i < numBuffers; i++)
-	{
-		VkResult res = vkEndCommandBuffer(buffers[i]);
-		n_assert(res == VK_SUCCESS);
-	}
-
-	// submit to queue
-	const VkSubmitInfo submitInfo =
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,
-		NULL,
-		0,
-		NULL,
-		&flags,
-		numBuffers,
-		buffers,
-		0,
-		NULL
-	};
-
-	// submit to queue
-	VkResult res = vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
-	n_assert(res == VK_SUCCESS);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-SubmitToQueue(VkQueue queue, VkFence fence)
-{
-	// submit to queue
-	VkResult res = vkQueueSubmit(queue, 0, VK_NULL_HANDLE, fence);
-	n_assert(res == VK_SUCCESS);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-WaitForFences(VkFence* fences, uint32_t numFences, bool waitForAll)
-{
-	VkResult res = vkWaitForFences(state.devices[state.currentDevice], numFences, fences, waitForAll, UINT_MAX);
-	n_assert(res == VK_SUCCESS);
-	res = vkResetFences(state.devices[state.currentDevice], numFences, fences);
-	n_assert(res == VK_SUCCESS);
 }
 
 //------------------------------------------------------------------------------
@@ -823,7 +779,7 @@ BeginDrawThread()
 	{
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 		NULL,
-		VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT | VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT,
+		VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT,
 		&state.passInfo
 	};
 
@@ -912,15 +868,6 @@ FlushToThread(const IndexT& index)
 		state.drawThreads[index]->PushCommands(state.threadCmds[index]);
 		state.threadCmds[index].Clear();
 	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-BindSharedDescriptorSets()
-{
-
 }
 
 #if NEBULA_GRAPHICS_DEBUG
@@ -1317,29 +1264,40 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	for (i = 0; i < NumConstantBufferTypes; i++)
 	{
 		static const Util::String threadName[] = { "Main Thread ", "Visibility Thread " };
+		static const Util::String systemName[] = { "Staging ", "Device " };
 		static const Util::String queueName[] = { "Graphics Constant Buffer", "Compute Constant Buffer" };
 		ConstantBufferCreateInfo cboInfo =
 		{
 			"",
 			-1,
 			0,
-			CoreGraphics::ConstantBufferUpdateMode::ManualFlush
+			CoreGraphics::ConstantBufferUpdateMode(0)
 		};
 
-		cboInfo.name = threadName[i] + queueName[0];
 		cboInfo.size = info.globalGraphicsConstantBufferMemorySize[i] * info.numBufferedFrames;
+		state.globalGraphicsConstantBufferMaxValue[i] = info.globalGraphicsConstantBufferMemorySize[i];
 		if (cboInfo.size > 0)
 		{
+			cboInfo.name = systemName[0] + threadName[i] + queueName[0];
+			cboInfo.mode = CoreGraphics::ConstantBufferUpdateMode::HostWriteable;
+			state.globalGraphicsConstantStagingBuffer[i] = CreateConstantBuffer(cboInfo);
+
+			cboInfo.name = systemName[1] + threadName[i] + queueName[0];
+			cboInfo.mode = CoreGraphics::ConstantBufferUpdateMode::DeviceWriteable;
 			state.globalGraphicsConstantBuffer[i] = CreateConstantBuffer(cboInfo);
-			state.globalGraphicsConstantBufferMaxValue[i] = info.globalGraphicsConstantBufferMemorySize[i];
 		}	
 
-		cboInfo.name = threadName[i] + queueName[1];
 		cboInfo.size = info.globalComputeConstantBufferMemorySize[i] * info.numBufferedFrames;
+		state.globalComputeConstantBufferMaxValue[i] = info.globalComputeConstantBufferMemorySize[i];
 		if (cboInfo.size > 0)
 		{
+			cboInfo.name = systemName[0] + threadName[i] + queueName[1];
+			cboInfo.mode = CoreGraphics::ConstantBufferUpdateMode::HostWriteable;
+			state.globalComputeConstantStagingBuffer[i] = CreateConstantBuffer(cboInfo);
+
+			cboInfo.name = systemName[1] + threadName[i] + queueName[1];
+			cboInfo.mode = CoreGraphics::ConstantBufferUpdateMode::DeviceWriteable;
 			state.globalComputeConstantBuffer[i] = CreateConstantBuffer(cboInfo);
-			state.globalComputeConstantBufferMaxValue[i] = info.globalComputeConstantBufferMemorySize[i];
 		}	
 	}
 
@@ -1402,7 +1360,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	state.resourceSubmissionActive = false;
 
 	cmdCreateInfo.usage = CommandGfx;
-	state.setupSubmissionContext = CreateSubmissionContext({ cmdCreateInfo, info.numBufferedFrames, true });
+	state.setupSubmissionContext = CreateSubmissionContext({ cmdCreateInfo, info.numBufferedFrames, false });
 	state.setupSubmissionActive = false;
 
 #pragma pop_macro("CreateSemaphore")
@@ -1478,19 +1436,25 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		n_assert(res == VK_SUCCESS);
 	}
 
-	VkFenceCreateInfo fenceInfo =
-	{
-		VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-		nullptr,
-		0
-	};
+#ifdef CreateSemaphore
+#pragma push_macro("CreateSemaphore")
+#undef CreateSemaphore
+#endif
 
-	res = vkCreateFence(state.devices[state.currentDevice], &fenceInfo, nullptr, &state.mainCmdDrawFence);
-	n_assert(res == VK_SUCCESS);
-	res = vkCreateFence(state.devices[state.currentDevice], &fenceInfo, nullptr, &state.mainCmdCmpFence);
-	n_assert(res == VK_SUCCESS);
-	res = vkCreateFence(state.devices[state.currentDevice], &fenceInfo, nullptr, &state.mainCmdTransFence);
-	n_assert(res == VK_SUCCESS);
+	state.presentSemaphores.Resize(info.numBufferedFrames);
+	state.renderingFinishedSemaphores.Resize(info.numBufferedFrames);
+	state.lastFrameSemaphores.Resize(info.numBufferedFrames);
+	for (i = 0; i < info.numBufferedFrames; i++)
+	{
+		state.presentSemaphores[i] = CreateSemaphore({});
+		state.renderingFinishedSemaphores[i] = CreateSemaphore({});
+		state.lastFrameSemaphores[i] = CreateSemaphore({});
+	}
+
+#pragma pop_macro("CreateSemaphore")
+
+	state.waitForPresentSemaphore     = VK_NULL_HANDLE;
+	state.endOfFrameSemaphore         = VK_NULL_HANDLE;
 
 	state.passInfo =
 	{
@@ -1655,12 +1619,20 @@ DestroyGraphicsDevice()
 	for (i = 0; i < NumConstantBufferTypes; i++)
 	{
 		if (state.globalGraphicsConstantBufferMaxValue[i] > 0)
+		{
 			DestroyConstantBuffer(state.globalGraphicsConstantBuffer[i]);
+			DestroyConstantBuffer(state.globalGraphicsConstantStagingBuffer[i]);
+		}
 		state.globalGraphicsConstantBuffer[i] = ConstantBufferId::Invalid();
+		state.globalGraphicsConstantStagingBuffer[i] = ConstantBufferId::Invalid();
 
 		if (state.globalComputeConstantBufferMaxValue[i] > 0)
+		{
 			DestroyConstantBuffer(state.globalComputeConstantBuffer[i]);
+			DestroyConstantBuffer(state.globalComputeConstantStagingBuffer[i]);
+		}
 		state.globalComputeConstantBuffer[i] = ConstantBufferId::Invalid();
+		state.globalComputeConstantStagingBuffer[i] = ConstantBufferId::Invalid();
 	}
 
 	// clean up global vertex and index buffers
@@ -1699,10 +1671,12 @@ DestroyGraphicsDevice()
 	// free our main buffers, our secondary buffers should be fine so the pools should be free to destroy
 	DestroyVkPools(state.devices[0]);
 
-	vkDestroyFence(state.devices[0], state.mainCmdDrawFence, nullptr);
-	vkDestroyFence(state.devices[0], state.mainCmdCmpFence, nullptr);
-	vkDestroyFence(state.devices[0], state.mainCmdTransFence, nullptr);
-
+	for (i = 0; i < state.presentSemaphores.Size(); i++)
+	{
+		DestroySemaphore(state.presentSemaphores[i]);
+		DestroySemaphore(state.renderingFinishedSemaphores[i]);
+	}
+	
 #if NEBULA_VULKAN_DEBUG
 	VkDestroyDebugMessenger(state.instance, VkDebugMessageHandle, nullptr);
 #endif
@@ -1870,6 +1844,35 @@ BeginSubmission(CoreGraphicsQueueType queue, CoreGraphicsQueueType waitQueue)
 
 		if (waitQueue == ComputeQueueType)
 			state.gfxWaitSemaphore = state.computeSemaphore;
+
+		// flush constant buffer memory
+		Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.constantBufferRings[state.currentBufferedFrameIndex];
+		VkDevice dev = state.devices[state.currentDevice];
+
+		IndexT i;
+		for (i = 0; i < NumConstantBufferTypes; i++)
+		{
+			uint size = sub.cboGfxEndAddress[i] - sub.cboGfxStartAddress[i];
+			if (size > 0)
+			{
+				VkMappedMemoryRange range;
+				range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+				range.pNext = nullptr;
+				range.offset = sub.cboGfxStartAddress[i];
+				range.size = size;
+				range.memory = ConstantBufferGetVkMemory(state.globalGraphicsConstantStagingBuffer[i]);
+				VkResult res = vkFlushMappedMemoryRanges(dev, 1, &range);
+				n_assert(res == VK_SUCCESS);
+
+				VkBufferCopy copy;
+				copy.srcOffset = copy.dstOffset = sub.cboGfxStartAddress[i];
+				copy.size = size;
+				vkCmdCopyBuffer(
+					GetMainBuffer(GraphicsQueueType),
+					ConstantBufferGetVk(state.globalGraphicsConstantStagingBuffer[i]),
+					ConstantBufferGetVk(state.globalGraphicsConstantBuffer[i]), 1, &copy);
+			}
+		}
 	}
 	else if (queue == ComputeQueueType)
 	{
@@ -1888,6 +1891,35 @@ BeginSubmission(CoreGraphicsQueueType queue, CoreGraphicsQueueType waitQueue)
 
 		if (waitQueue == GraphicsQueueType)
 			state.computeWaitSemaphore = state.gfxSemaphore;
+
+		// flush constant buffer memory
+		Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.constantBufferRings[state.currentBufferedFrameIndex];
+		VkDevice dev = state.devices[state.currentDevice];
+
+		IndexT i;
+		for (i = 0; i < NumConstantBufferTypes; i++)
+		{
+			uint size = sub.cboComputeEndAddress[i] - sub.cboComputeStartAddress[i];
+			if (size > 0)
+			{
+				VkMappedMemoryRange range;
+				range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+				range.pNext = nullptr;
+				range.offset = sub.cboComputeStartAddress[i];
+				range.size = size;
+				range.memory = ConstantBufferGetVkMemory(state.globalComputeConstantStagingBuffer[i]);
+				VkResult res = vkFlushMappedMemoryRanges(dev, 1, &range);
+				n_assert(res == VK_SUCCESS);
+
+				VkBufferCopy copy;
+				copy.srcOffset = copy.dstOffset = sub.cboComputeStartAddress[i];
+				copy.size = size;
+				vkCmdCopyBuffer(
+					GetMainBuffer(ComputeQueueType),
+					ConstantBufferGetVk(state.globalComputeConstantStagingBuffer[i]),
+					ConstantBufferGetVk(state.globalComputeConstantBuffer[i]), 1, &copy);
+			}
+		}
 	}
 }
 
@@ -1949,18 +1981,6 @@ BeginBatch(Frame::FrameBatchType::Code batchType)
 
 	state.inBeginBatch = true;
 	PassBeginBatch(state.pass, batchType);
-
-	// set to first sub-batch which starts a new draw thread
-	SetToNextSubBatch();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-SetToNextSubBatch()
-{
-	n_assert(state.inBeginBatch);
 
 	// begin new draw thread
 	state.currentDrawThread = (state.currentDrawThread + 1) % state.NumDrawThreads;
@@ -2239,6 +2259,82 @@ PushConstants(ShaderPipeline pipeline, uint offset, uint size, byte* data)
 /**
 */
 uint 
+SetGraphicsConstantsInternal(CoreGraphicsGlobalConstantBufferType type, const void* data, SizeT size)
+{
+	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.constantBufferRings[state.currentBufferedFrameIndex];
+
+	// no matter how we spin it
+	uint ret = sub.cboGfxEndAddress[type];
+	uint newEnd = Math::n_align(ret + size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
+
+	// if we have to wrap around, or we are fingering on the range of the next frame submission buffer...
+	if (newEnd >= state.globalGraphicsConstantBufferMaxValue[type] * (state.currentBufferedFrameIndex + 1))
+	{
+		n_error("Over allocation of graphics constant memory! Memory will be overwritten!\n");
+
+		// return the beginning of the buffer, will definitely stomp the memory!
+		ret = state.globalGraphicsConstantBufferMaxValue[type] * state.currentBufferedFrameIndex;
+		newEnd = Math::n_align(ret + size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
+	}
+
+	// just bump the current frame submission pointer
+	sub.cboGfxEndAddress[type] = newEnd;
+	ConstantBufferUpdate(state.globalGraphicsConstantStagingBuffer[type], data, size, ret);
+
+	return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint 
+SetComputeConstantsInternal(CoreGraphicsGlobalConstantBufferType type, const void* data, SizeT size)
+{
+	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.constantBufferRings[state.currentBufferedFrameIndex];
+
+	// no matter how we spin it
+	uint ret = sub.cboComputeEndAddress[type];
+	uint newEnd = Math::n_align(ret + size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
+
+	// if we have to wrap around, or we are fingering on the range of the next frame submission buffer...
+	if (newEnd >= state.globalComputeConstantBufferMaxValue[type] * (state.currentBufferedFrameIndex + 1))
+	{
+		n_error("Over allocation of compute constant memory! Memory will be overwritten!\n");
+
+		// return the beginning of the buffer, will definitely stomp the memory!
+		ret = state.globalComputeConstantBufferMaxValue[type] * state.currentBufferedFrameIndex;
+		newEnd = Math::n_align(ret + size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
+	}
+
+	// just bump the current frame submission pointer
+	sub.cboComputeEndAddress[type] = newEnd;
+	ConstantBufferUpdate(state.globalComputeConstantStagingBuffer[type], data, size, ret);
+
+	return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+SetGraphicsConstantsInternal(CoreGraphicsGlobalConstantBufferType type, uint offset, const void* data, SizeT size)
+{
+	ConstantBufferUpdate(state.globalGraphicsConstantStagingBuffer[type], data, size, offset);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+SetComputeConstantsInternal(CoreGraphicsGlobalConstantBufferType type, uint offset, const void* data, SizeT size)
+{
+	ConstantBufferUpdate(state.globalComputeConstantStagingBuffer[type], data, size, offset);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint 
 AllocateGraphicsConstantBufferMemory(CoreGraphicsGlobalConstantBufferType type, uint size)
 {
 	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.constantBufferRings[state.currentBufferedFrameIndex];
@@ -2306,7 +2402,7 @@ AllocateComputeConstantBufferMemory(CoreGraphicsGlobalConstantBufferType type, u
 CoreGraphics::ConstantBufferId 
 GetComputeConstantBuffer(CoreGraphicsGlobalConstantBufferType type)
 {
-	return state.globalComputeConstantBuffer[type];
+	return state.globalComputeConstantStagingBuffer[type];
 }
 
 //------------------------------------------------------------------------------
@@ -2491,6 +2587,8 @@ ReloadShaderProgram(const CoreGraphics::ShaderProgramId& pro)
 void 
 InsertBarrier(const CoreGraphics::BarrierId barrier, const CoreGraphicsQueueType queue)
 {
+	n_assert(!state.inBeginBatch);
+	n_assert(!state.inBeginPass);
 	VkBarrierInfo& info = barrierAllocator.Get<0>(barrier.id24);
 	if (queue == GraphicsQueueType && state.inBeginPass)
 	{
@@ -2783,6 +2881,20 @@ EndSubmission(CoreGraphicsQueueType queue, bool endOfFrame)
 			SemaphoreGetVk(state.gfxPrevSemaphore), VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
 			SemaphoreGetVk(state.gfxSemaphore));
 
+		// add wait for previous frame
+		if (state.endOfFrameSemaphore)
+		{
+			state.subcontextHandler.AddWaitSemaphore(GraphicsQueueType, state.endOfFrameSemaphore, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
+			state.endOfFrameSemaphore = VK_NULL_HANDLE;
+		}
+
+		// add wait for previous present
+		if (state.waitForPresentSemaphore)
+		{
+			state.subcontextHandler.AddWaitSemaphore(GraphicsQueueType, state.waitForPresentSemaphore, VK_PIPELINE_STAGE_TRANSFER_BIT);
+			state.waitForPresentSemaphore = VK_NULL_HANDLE;
+		}
+
 		// if we should wait for the compute, add a semaphore
 		if (state.gfxWaitSemaphore != SemaphoreId::Invalid())
 		{
@@ -2793,7 +2905,7 @@ EndSubmission(CoreGraphicsQueueType queue, bool endOfFrame)
 #endif
 
 			// flush submissions
-			state.subcontextHandler.FlushSubmissions(GraphicsQueueType, VK_NULL_HANDLE, false);
+			state.subcontextHandler.FlushSubmissions(GraphicsQueueType, VK_NULL_HANDLE);
 
 #if NEBULA_GRAPHICS_DEBUG
 			CoreGraphics::QueueEndMarker(GraphicsQueueType);
@@ -2816,6 +2928,13 @@ EndSubmission(CoreGraphicsQueueType queue, bool endOfFrame)
 			SemaphoreGetVk(state.computePrevSemaphore), VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
 			SemaphoreGetVk(state.computeSemaphore));
 
+		// add wait for previous frame
+		if (state.endOfFrameSemaphore)
+		{
+			state.subcontextHandler.AddWaitSemaphore(ComputeQueueType, state.endOfFrameSemaphore, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+			state.endOfFrameSemaphore = VK_NULL_HANDLE;
+		}
+
 		// if we should wait for the graphics, add a semaphore
 		if (state.computeWaitSemaphore != SemaphoreId::Invalid())
 		{
@@ -2826,7 +2945,7 @@ EndSubmission(CoreGraphicsQueueType queue, bool endOfFrame)
 #endif
 
 			// flush submissions
-			state.subcontextHandler.FlushSubmissions(ComputeQueueType, VK_NULL_HANDLE, false);
+			state.subcontextHandler.FlushSubmissions(ComputeQueueType, VK_NULL_HANDLE);
 
 #if NEBULA_GRAPHICS_DEBUG
 			CoreGraphics::QueueEndMarker(ComputeQueueType);
@@ -2858,49 +2977,6 @@ EndFrame(IndexT frameIndex)
 
 	state.inBeginFrame = false;
 
-	// flush constant buffer memory
-	/*
-	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.constantBufferRings[state.currentBufferedFrameIndex];
-	VkDevice dev = state.devices[state.currentDevice];
-
-	VkMappedMemoryRange flushMapRanges[2];
-	flushMapRanges[0] =
-	{
-		VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
-		nullptr,
-		VK_NULL_HANDLE,
-		0, 0
-	};
-
-	IndexT i;
-	for (i = 0; i < NumConstantBufferTypes; i++)
-	{
-		uint size = sub.cboGfxEndAddress[i] - sub.cboGfxStartAddress[i];
-		uint flushIndex = 0;
-		if (size > 0)
-		{
-			flushMapRanges[flushIndex].memory = ConstantBufferGetVkMemory(state.globalGraphicsConstantBuffer[i]);
-			flushMapRanges[flushIndex].offset = sub.cboGfxStartAddress[i];
-			flushMapRanges[flushIndex].size = size;
-			flushIndex++;
-		}
-		
-		size = sub.cboComputeEndAddress[i] - sub.cboComputeStartAddress[i];
-		if (size > 0)
-		{
-			flushMapRanges[flushIndex] = flushMapRanges[0];
-			flushMapRanges[flushIndex].memory = ConstantBufferGetVkMemory(state.globalComputeConstantBuffer[i]);
-			flushMapRanges[flushIndex].offset = sub.cboComputeStartAddress[i];
-			flushMapRanges[flushIndex].size = size;
-			flushIndex++;
-		}	
-
-		// be sure to flush all constant memory before we submit the command buffers with the data
-		if (flushIndex > 0)
-			vkFlushMappedMemoryRanges(dev, flushIndex, flushMapRanges);
-	}
-	*/
-
 	// if we have an active resource submission, submit it!
 	state.resourceSubmissionCriticalSection.Enter();
 	if (state.resourceSubmissionActive)
@@ -2922,8 +2998,7 @@ EndFrame(IndexT frameIndex)
 			SemaphoreGetVk(state.resourceSubmissionSemaphore));
 
 		state.subcontextHandler.FlushSubmissions(TransferQueueType,
-			FenceGetVk(state.resourceSubmissionFence),
-			false);
+			FenceGetVk(state.resourceSubmissionFence));
 
 #if NEBULA_GRAPHICS_DEBUG
 		CoreGraphics::QueueEndMarker(TransferQueueType);
@@ -2941,18 +3016,23 @@ EndFrame(IndexT frameIndex)
 
 	// submit compute, wait for this frames resource submissions
 	state.subcontextHandler.FlushSubmissions(ComputeQueueType, 
-		FenceGetVk(state.computeFence),
-		false);
+		FenceGetVk(state.computeFence));
 
 #if NEBULA_GRAPHICS_DEBUG
 	CoreGraphics::QueueEndMarker(ComputeQueueType);
 	CoreGraphics::QueueBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "Graphics Commands Submission");
 #endif
 
+	// set end of frame semaphore, which will be waited on by the next frame
+	state.endOfFrameSemaphore = SemaphoreGetVk(state.lastFrameSemaphores[state.currentBufferedFrameIndex]);
+	state.subcontextHandler.AddSignalSemaphore(GraphicsQueueType, state.endOfFrameSemaphore);
+
+	// add signal semaphore to end of frame
+	state.subcontextHandler.AddSignalSemaphore(GraphicsQueueType, SemaphoreGetVk(state.renderingFinishedSemaphores[state.currentBufferedFrameIndex]));
+
 	// submit graphics, we wait for the fence when we present (change to compute queue if we change the present queue in the future)
 	state.subcontextHandler.FlushSubmissions(GraphicsQueueType, 
-		FenceGetVk(state.gfxFence), // use no fence, it will be used by the present queue
-		false);
+		FenceGetVk(state.gfxFence));
 
 #if NEBULA_GRAPHICS_DEBUG
 	CoreGraphics::QueueEndMarker(GraphicsQueueType);

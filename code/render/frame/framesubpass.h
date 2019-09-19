@@ -51,7 +51,6 @@ protected:
 		Util::Array<FrameOp::Compiled*>& compiledOps,
 		Util::Array<CoreGraphics::EventId>& events,
 		Util::Array<CoreGraphics::BarrierId>& barriers,
-		Util::Array<CoreGraphics::SemaphoreId>& semaphores,
 		Util::Dictionary<CoreGraphics::ShaderRWTextureId, Util::Array<std::tuple<CoreGraphics::ImageSubresourceInfo, TextureDependency>>>& rwTextures,
 		Util::Dictionary<CoreGraphics::ShaderRWBufferId, BufferDependency>& rwBuffers,
 		Util::Dictionary<CoreGraphics::RenderTextureId, Util::Array<std::tuple<CoreGraphics::ImageSubresourceInfo, TextureDependency>>>& renderTextures) override;

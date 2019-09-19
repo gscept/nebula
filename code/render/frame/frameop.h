@@ -56,9 +56,9 @@ protected:
 		Compiled() :
 			numWaitEvents(0),
 			numSignalEvents(0),
-			numBarriers(0),
-			numWaitSemaphores(0),
-			numSignalSemaphores(0){};
+			numBarriers(0)
+		{
+		}
 
 		virtual void Run(const IndexT frameIndex) = 0;
 		virtual void Discard();
@@ -86,12 +86,6 @@ protected:
 			CoreGraphics::BarrierId barrier;
 			CoreGraphicsQueueType queue;
 		} *barriers;
-
-		SizeT numWaitSemaphores;
-		CoreGraphics::SemaphoreId* waitSemaphores;
-
-		SizeT numSignalSemaphores;
-		CoreGraphics::SemaphoreId* signalSemaphores;
 
 		CoreGraphicsQueueType queue;
 	};
@@ -126,16 +120,24 @@ protected:
 		Util::Array<FrameOp::Compiled*>& compiledOps,
 		Util::Array<CoreGraphics::EventId>& events,
 		Util::Array<CoreGraphics::BarrierId>& barriers,
-		Util::Array<CoreGraphics::SemaphoreId>& semaphores,
+		Util::Dictionary<CoreGraphics::ShaderRWTextureId, Util::Array<std::tuple<CoreGraphics::ImageSubresourceInfo, TextureDependency>>>& rwTextures,
+		Util::Dictionary<CoreGraphics::ShaderRWBufferId, BufferDependency>& rwBuffers,
+		Util::Dictionary<CoreGraphics::RenderTextureId, Util::Array<std::tuple<CoreGraphics::ImageSubresourceInfo, TextureDependency>>>& renderTextures);
+
+	/// setup synchronization
+	void SetupSynchronization(
+		Memory::ArenaAllocator<BIG_CHUNK>& allocator,
+		Util::Array<CoreGraphics::EventId>& events,
+		Util::Array<CoreGraphics::BarrierId>& barriers,
 		Util::Dictionary<CoreGraphics::ShaderRWTextureId, Util::Array<std::tuple<CoreGraphics::ImageSubresourceInfo, TextureDependency>>>& rwTextures,
 		Util::Dictionary<CoreGraphics::ShaderRWBufferId, BufferDependency>& rwBuffers,
 		Util::Dictionary<CoreGraphics::RenderTextureId, Util::Array<std::tuple<CoreGraphics::ImageSubresourceInfo, TextureDependency>>>& renderTextures);
 
 	CoreGraphics::BarrierDomain domain;
 	CoreGraphicsQueueType queue;
-	Util::Dictionary<CoreGraphics::ShaderRWTextureId, std::tuple<CoreGraphics::BarrierAccess, CoreGraphics::BarrierStage, CoreGraphics::ImageSubresourceInfo, CoreGraphicsImageLayout>> rwTextureDeps;
-	Util::Dictionary<CoreGraphics::RenderTextureId, std::tuple<CoreGraphics::BarrierAccess, CoreGraphics::BarrierStage, CoreGraphics::ImageSubresourceInfo, CoreGraphicsImageLayout>> renderTextureDeps;
-	Util::Dictionary<CoreGraphics::ShaderRWBufferId, std::tuple<CoreGraphics::BarrierAccess, CoreGraphics::BarrierStage>> rwBufferDeps;
+	Util::Dictionary<CoreGraphics::ShaderRWTextureId, std::tuple<Util::StringAtom, CoreGraphics::BarrierAccess, CoreGraphics::BarrierStage, CoreGraphics::ImageSubresourceInfo, CoreGraphicsImageLayout>> rwTextureDeps;
+	Util::Dictionary<CoreGraphics::RenderTextureId, std::tuple<Util::StringAtom, CoreGraphics::BarrierAccess, CoreGraphics::BarrierStage, CoreGraphics::ImageSubresourceInfo, CoreGraphicsImageLayout>> renderTextureDeps;
+	Util::Dictionary<CoreGraphics::ShaderRWBufferId, std::tuple<Util::StringAtom, CoreGraphics::BarrierAccess, CoreGraphics::BarrierStage>> rwBufferDeps;
 
 	Compiled* compiled;
 	Util::StringAtom name;

@@ -308,7 +308,7 @@ void
 VkShaderServer::AfterView()
 {
 	// update the constant buffer with the data accumulated in this frame
-	ConstantBufferUpdate(this->ticksCbo, this->tickParams, this->cboOffset);
+	CoreGraphics::SetGraphicsConstants(MainThreadConstantBuffer, this->cboOffset, this->tickParams);
 }
 
 } // namespace Vulkan

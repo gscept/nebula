@@ -101,7 +101,6 @@ FrameSubpass::Build(
 	Util::Array<FrameOp::Compiled*>& compiledOps, 
 	Util::Array<CoreGraphics::EventId>& events,
 	Util::Array<CoreGraphics::BarrierId>& barriers,
-	Util::Array<CoreGraphics::SemaphoreId>& semaphores,
 	Util::Dictionary<CoreGraphics::ShaderRWTextureId, Util::Array<std::tuple<CoreGraphics::ImageSubresourceInfo, TextureDependency>>>& rwTextures,
 	Util::Dictionary<CoreGraphics::ShaderRWBufferId, BufferDependency>& rwBuffers,
 	Util::Dictionary<CoreGraphics::RenderTextureId, Util::Array<std::tuple<CoreGraphics::ImageSubresourceInfo, TextureDependency>>>& renderTextures)
@@ -111,9 +110,10 @@ FrameSubpass::Build(
 	Util::Array<FrameOp::Compiled*> subpassOps;
 	for (IndexT i = 0; i < this->ops.Size(); i++)
 	{
-		this->ops[i]->Build(allocator, subpassOps, events, barriers, semaphores, rwTextures, rwBuffers, renderTextures);
+		this->ops[i]->Build(allocator, subpassOps, events, barriers, rwTextures, rwBuffers, renderTextures);
 	}
 	myCompiled->ops = subpassOps;
+	this->compiled = myCompiled;
 	compiledOps.Append(myCompiled);
 }
 

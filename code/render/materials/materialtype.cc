@@ -469,7 +469,7 @@ MaterialType::ApplyInstance(const SurfaceInstanceId id)
 void 
 MaterialType::EndSurface()
 {
-	this->currentSurfaceBatchIndex = -1;
+	this->currentSurfaceBatchIndex = InvalidIndex;
 }
 
 //------------------------------------------------------------------------------
