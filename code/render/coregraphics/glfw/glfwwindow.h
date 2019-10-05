@@ -21,7 +21,6 @@ struct VkWindowSwapInfo
 {
 	VkDevice dev;
 	VkSwapchainKHR swapchain;
-	VkSemaphore displaySemaphore;
 	VkQueue presentQueue;
 
 	uint32_t currentBackbuffer;
@@ -59,15 +58,15 @@ namespace CoreGraphics
 
 enum
 {
-	GLFWWindowField,
-	GLFWDisplayModeField,
-	GLFWSwapFrameField,
-	GLFWSetupInfoField,
-	RenderTextureField,
+	GLFW_Window,
+	GLFW_DisplayMode,
+	GLFW_SwapFrame,
+	GLFW_SetupInfo,
+	GLFW_RenderTexture,
 #if __VULKAN__
-	GLFWWindowSwapInfoField,
-	GLFWSwapChainField,
-	GLFWBackbufferField
+	GLFW_WindowSwapInfo,
+	GLFW_SwapChain,
+	GLFW_Backbuffer
 #endif
 };
 

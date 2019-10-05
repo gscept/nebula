@@ -10,6 +10,7 @@
 #include "coregraphics/displayevent.h"
 #include "coregraphics/displaydevice.h"
 #include "coregraphics/config.h"
+#include "math/scalar.h"
 
 
 #if __VULKAN__
@@ -221,8 +222,8 @@ MouseButtonFunc(const CoreGraphics::WindowId& id, int button, int action, int mo
 		return;
 	}
 
-	GLFWwindow* wnd = glfwWindowAllocator.Get<GLFWWindowField>(id.id24);
-	const CoreGraphics::DisplayMode& mode = glfwWindowAllocator.Get<GLFWDisplayModeField>(id.id24);
+	GLFWwindow* wnd = glfwWindowAllocator.Get<GLFW_Window>(id.id24);
+	const CoreGraphics::DisplayMode& mode = glfwWindowAllocator.Get<GLFW_DisplayMode>(id.id24);
 	double x, y;
 	glfwGetCursorPos(wnd, &x, &y);
 
@@ -237,7 +238,7 @@ MouseButtonFunc(const CoreGraphics::WindowId& id, int button, int action, int mo
 void
 MouseFunc(const CoreGraphics::WindowId& id, double xpos, double ypos)
 {
-	const CoreGraphics::DisplayMode& mode = glfwWindowAllocator.Get<GLFWDisplayModeField>(id.id24);
+	const CoreGraphics::DisplayMode& mode = glfwWindowAllocator.Get<GLFW_DisplayMode>(id.id24);
 	float2 absMousePos((float)xpos, (float)ypos);
 	float2 pos;
 	pos.set((float)xpos / float(mode.GetWidth()), (float)ypos / float(mode.GetHeight()));
@@ -290,7 +291,7 @@ ResizeFunc(const CoreGraphics::WindowId& id, int width, int height)
 	// only resize if size is not 0
 	if (width != 0 && height != 0)
 	{
-		CoreGraphics::DisplayMode& mode = glfwWindowAllocator.Get<GLFWDisplayModeField>(id.id24);
+		CoreGraphics::DisplayMode& mode = glfwWindowAllocator.Get<GLFW_DisplayMode>(id.id24);
 		mode.SetWidth(width);
 		mode.SetHeight(height);
 		mode.SetAspectRatio(width / float(height));
@@ -309,7 +310,7 @@ ResizeFunc(const CoreGraphics::WindowId& id, int width, int height)
 void
 EnableCallbacks(const CoreGraphics::WindowId & id)
 {
-	GLFWwindow* window = glfwWindowAllocator.Get<GLFWWindowField>(id.id24);
+	GLFWwindow* window = glfwWindowAllocator.Get<GLFW_Window>(id.id24);
 	glfwSetKeyCallback(window, staticKeyFunc);
 	glfwSetMouseButtonCallback(window, staticMouseButtonFunc);
 	glfwSetCursorPosCallback(window, staticMouseFunc);
@@ -327,7 +328,7 @@ EnableCallbacks(const CoreGraphics::WindowId & id)
 void
 DisableCallbacks(const CoreGraphics::WindowId & id)
 {
-	GLFWwindow* window = glfwWindowAllocator.Get<GLFWWindowField>(id.id24);
+	GLFWwindow* window = glfwWindowAllocator.Get<GLFW_Window>(id.id24);
 	glfwSetKeyCallback(window, nullptr);
 	glfwSetMouseButtonCallback(window, nullptr);
 	glfwSetCursorPosCallback(window, nullptr);
@@ -367,14 +368,14 @@ InternalSetupFunction(const WindowCreateInfo& info, const Util::Blob& windowData
 	WindowId id;
 	id.id24 = windowId;
 	id.id8 = WindowIdType;
-	glfwWindowAllocator.Get<GLFWSetupInfoField>(windowId) = info;
+	glfwWindowAllocator.Get<GLFW_SetupInfo>(windowId) = info;
 
 	// get original window, if this is the first window, then the parent window will simply be nullptr
 	GLFWwindow* wnd = nullptr;
 	const CoreGraphics::WindowId origWindow = CoreGraphics::DisplayDevice::Instance()->GetMainWindow();
-	if (origWindow != Ids::InvalidId32) wnd = glfwWindowAllocator.Get<GLFWWindowField>(origWindow.id24);
+	if (origWindow != Ids::InvalidId32) wnd = glfwWindowAllocator.Get<GLFW_Window>(origWindow.id24);
 
-	CoreGraphics::DisplayMode& mode = glfwWindowAllocator.Get<GLFWDisplayModeField>(id.id24);
+	CoreGraphics::DisplayMode& mode = glfwWindowAllocator.Get<GLFW_DisplayMode>(id.id24);
 	mode = info.mode;
 
 #if __VULKAN__
@@ -424,7 +425,7 @@ InternalSetupFunction(const WindowCreateInfo& info, const Util::Blob& windowData
 	}
 
 #if __VULKAN__
-	Vulkan::VkSwapchainInfo& swapInfo = glfwWindowAllocator.Get<GLFWSwapChainField>(id.id24);
+	Vulkan::VkSwapchainInfo& swapInfo = glfwWindowAllocator.Get<GLFW_SwapChain>(id.id24);
 	VkResult res = glfwCreateWindowSurface(Vulkan::GetInstance(), wnd, nullptr, &swapInfo.surface);
 	n_assert(res == VK_SUCCESS);
 
@@ -435,8 +436,8 @@ InternalSetupFunction(const WindowCreateInfo& info, const Util::Blob& windowData
 	Vulkan::SetupVulkanSwapchain(id, info.mode, info.title);
 #endif
 
-	glfwWindowAllocator.Get<GLFWWindowField>(windowId) = wnd;
-	glfwWindowAllocator.Get<GLFWDisplayModeField>(windowId) = info.mode;
+	glfwWindowAllocator.Get<GLFW_Window>(windowId) = wnd;
+	glfwWindowAllocator.Get<GLFW_DisplayMode>(windowId) = info.mode;
 
 	// notify window is opened
 	GLFW::GLFWDisplayDevice::Instance()->NotifyEventHandlers(DisplayEvent(DisplayEvent::WindowOpen, id));
@@ -490,7 +491,7 @@ EmbedWindow(const Util::Blob& windowData)
 void
 DestroyWindow(const WindowId id)
 {
-	GLFWwindow* wnd = glfwWindowAllocator.Get<GLFWWindowField>(id.id24);
+	GLFWwindow* wnd = glfwWindowAllocator.Get<GLFW_Window>(id.id24);
 	GLFW::DisableCallbacks(id);
 	n_delete((WindowId*)glfwGetWindowUserPointer(wnd));
 	glfwDestroyWindow(wnd);
@@ -521,7 +522,7 @@ WindowResize(const WindowId id, SizeT newWidth, SizeT newHeight)
 void
 WindowSetTitle(const WindowId id, const Util::String & title)
 {
-	GLFWwindow* wnd = glfwWindowAllocator.Get<GLFWWindowField>(id.id24);
+	GLFWwindow* wnd = glfwWindowAllocator.Get<GLFW_Window>(id.id24);
 	glfwSetWindowTitle(wnd, title.AsCharPtr());
 }
 
@@ -531,8 +532,8 @@ WindowSetTitle(const WindowId id, const Util::String & title)
 void
 WindowApplyFullscreen(const WindowId id, Adapter::Code monitor, bool b)
 {
-	GLFWwindow* wnd = glfwWindowAllocator.Get<GLFWWindowField>(id.id24);
-	const CoreGraphics::DisplayMode& mode = glfwWindowAllocator.Get<GLFWDisplayModeField>(id.id24);
+	GLFWwindow* wnd = glfwWindowAllocator.Get<GLFW_Window>(id.id24);
+	const CoreGraphics::DisplayMode& mode = glfwWindowAllocator.Get<GLFW_DisplayMode>(id.id24);
 
 	if (wnd && b)
 	{
@@ -563,7 +564,7 @@ WindowApplyFullscreen(const WindowId id, Adapter::Code monitor, bool b)
 void
 WindowSetCursorVisible(const WindowId id, bool b)
 {
-	GLFWwindow* wnd = glfwWindowAllocator.Get<GLFWWindowField>(id.id24);
+	GLFWwindow* wnd = glfwWindowAllocator.Get<GLFW_Window>(id.id24);
 	glfwSetInputMode(wnd, GLFW_CURSOR, b ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_HIDDEN);
 	
 }
@@ -574,7 +575,7 @@ WindowSetCursorVisible(const WindowId id, bool b)
 void
 WindowSetCursorLocked(const WindowId id, bool b)
 {
-	GLFWwindow* wnd = glfwWindowAllocator.Get<GLFWWindowField>(id.id24);
+	GLFWwindow* wnd = glfwWindowAllocator.Get<GLFW_Window>(id.id24);
 	glfwSetInputMode(wnd, GLFW_CURSOR, b ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_HIDDEN);
 }
 
@@ -595,13 +596,13 @@ WindowMakeCurrent(const WindowId id)
 void
 WindowPresent(const WindowId id, const IndexT frameIndex)
 {
-	IndexT& frame = glfwWindowAllocator.Get<GLFWSwapFrameField>(id.id24);
+	IndexT& frame = glfwWindowAllocator.Get<GLFW_SwapFrame>(id.id24);
 	if (frame != frameIndex)
 	{
 #if __VULKAN__
 		Vulkan::Present(id);
 #elif
-		GLFWwindow* wnd = glfwWindowAllocator.Get<GLFWWindowField>(id.id24);
+		GLFWwindow* wnd = glfwWindowAllocator.Get<GLFW_Window>(id.id24);
 		glfwSwapBuffers(wnd);
 #endif
 		frame = frameIndex;
@@ -615,7 +616,7 @@ WindowPresent(const WindowId id, const IndexT frameIndex)
 const CoreGraphics::DisplayMode
 WindowGetDisplayMode(const WindowId id)
 {
-	return glfwWindowAllocator.Get<GLFWDisplayModeField>(id.id24);
+	return glfwWindowAllocator.Get<GLFW_DisplayMode>(id.id24);
 }
 
 //------------------------------------------------------------------------------
@@ -624,7 +625,7 @@ WindowGetDisplayMode(const WindowId id)
 const CoreGraphics::AntiAliasQuality::Code
 WindowGetAAQuality(const WindowId id)
 {
-	return glfwWindowAllocator.Get<GLFWSetupInfoField>(id.id24).aa;
+	return glfwWindowAllocator.Get<GLFW_SetupInfo>(id.id24).aa;
 }
 
 //------------------------------------------------------------------------------
@@ -633,7 +634,7 @@ WindowGetAAQuality(const WindowId id)
 const bool
 WindowIsFullscreen(const WindowId id)
 {
-	return glfwWindowAllocator.Get<GLFWSetupInfoField>(id.id24).fullscreen;
+	return glfwWindowAllocator.Get<GLFW_SetupInfo>(id.id24).fullscreen;
 }
 
 //------------------------------------------------------------------------------
@@ -642,7 +643,7 @@ WindowIsFullscreen(const WindowId id)
 const bool
 WindowIsDecorated(const WindowId id)
 {
-	return glfwWindowAllocator.Get<GLFWSetupInfoField>(id.id24).decorated;
+	return glfwWindowAllocator.Get<GLFW_SetupInfo>(id.id24).decorated;
 }
 
 //------------------------------------------------------------------------------
@@ -651,7 +652,7 @@ WindowIsDecorated(const WindowId id)
 const bool
 WindowIsResizable(const WindowId id)
 {
-	return glfwWindowAllocator.Get<GLFWSetupInfoField>(id.id24).resizable;
+	return glfwWindowAllocator.Get<GLFW_SetupInfo>(id.id24).resizable;
 }
 
 //------------------------------------------------------------------------------
@@ -660,7 +661,7 @@ WindowIsResizable(const WindowId id)
 const Util::StringAtom&
 WindowGetTitle(const WindowId id)
 {
-	return glfwWindowAllocator.Get<GLFWSetupInfoField>(id.id24).title;
+	return glfwWindowAllocator.Get<GLFW_SetupInfo>(id.id24).title;
 }
 
 //------------------------------------------------------------------------------
@@ -669,7 +670,7 @@ WindowGetTitle(const WindowId id)
 const Util::StringAtom&
 WindowGetIcon(const WindowId id)
 {
-	return glfwWindowAllocator.Get<GLFWSetupInfoField>(id.id24).icon;
+	return glfwWindowAllocator.Get<GLFW_SetupInfo>(id.id24).icon;
 }
 
 //------------------------------------------------------------------------------
@@ -678,7 +679,7 @@ WindowGetIcon(const WindowId id)
 const CoreGraphics::RenderTextureId&
 WindowGetRenderTexture(const WindowId id)
 {
-	return glfwWindowAllocator.Get<RenderTextureField>(id.id24);
+	return glfwWindowAllocator.Get<GLFW_RenderTexture>(id.id24);
 }
 
 } // namespace CoreGraphics
@@ -693,7 +694,7 @@ namespace Vulkan
 const VkSurfaceKHR&
 GetSurface(const CoreGraphics::WindowId& id)
 {
-	const VkSwapchainInfo& swapInfo = glfwWindowAllocator.Get<GLFWSwapChainField>(id.id24);
+	const VkSwapchainInfo& swapInfo = glfwWindowAllocator.Get<GLFW_SwapChain>(id.id24);
 	return swapInfo.surface;
 }
 
@@ -703,9 +704,9 @@ GetSurface(const CoreGraphics::WindowId& id)
 void
 SetupVulkanSwapchain(const CoreGraphics::WindowId& id, const CoreGraphics::DisplayMode& mode, const Util::StringAtom& title)
 {
-	VkWindowSwapInfo& windowInfo = glfwWindowAllocator.Get<GLFWWindowSwapInfoField>(id.id24);
-	VkSwapchainInfo& swapInfo = glfwWindowAllocator.Get<GLFWSwapChainField>(id.id24);
-	VkBackbufferInfo& backbufferInfo = glfwWindowAllocator.Get<GLFWBackbufferField>(id.id24);
+	VkWindowSwapInfo& windowInfo = glfwWindowAllocator.Get<GLFW_WindowSwapInfo>(id.id24);
+	VkSwapchainInfo& swapInfo = glfwWindowAllocator.Get<GLFW_SwapChain>(id.id24);
+	VkBackbufferInfo& backbufferInfo = glfwWindowAllocator.Get<GLFW_Backbuffer>(id.id24);
 
 	VkPhysicalDevice physicalDev = Vulkan::GetCurrentPhysicalDevice();
 	VkDevice dev = Vulkan::GetCurrentDevice();
@@ -776,9 +777,8 @@ SetupVulkanSwapchain(const CoreGraphics::WindowId& id, const CoreGraphics::Displ
 		}
 	}
 
-	// get the optimal set of swap chain images, the more the better
-	uint32_t numSwapchainImages = surfCaps.maxImageCount;
-	//if ((surfCaps.maxImageCount > 0) && (numSwapchainImages > surfCaps.maxImageCount)) numSwapchainImages = surfCaps.maxImageCount;
+	// use at least as many swap images as we have buffered frames, if we don't have enough, the swap chain creation will fail
+	uint32_t numSwapchainImages = Math::n_min((uint32_t)CoreGraphics::GetNumBufferedFrames(), surfCaps.maxImageCount);
 
 	// create a transform
 	VkSurfaceTransformFlagBitsKHR transform;
@@ -809,6 +809,10 @@ SetupVulkanSwapchain(const CoreGraphics::WindowId& id, const CoreGraphics::Displ
 		VK_NULL_HANDLE
 	};
 
+	// create swapchain
+	res = vkCreateSwapchainKHR(dev, &swapchainInfo, nullptr, &windowInfo.swapchain);
+	n_assert(res == VK_SUCCESS);
+
 	// get present queue
 	for (IndexT i = 0; i < NumQueueTypes; i++)
 	{
@@ -822,15 +826,12 @@ SetupVulkanSwapchain(const CoreGraphics::WindowId& id, const CoreGraphics::Displ
 		}
 	}
 
-	// create swapchain
-	res = vkCreateSwapchainKHR(dev, &swapchainInfo, nullptr, &windowInfo.swapchain);
-	n_assert(res == VK_SUCCESS);
-
-	// get back buffers
 	res = vkGetSwapchainImagesKHR(dev, windowInfo.swapchain, &backbufferInfo.numBackbuffers, nullptr);
 	n_assert(res == VK_SUCCESS);
 
+	// get number of buffered frames from the graphics device, and limit the amount of backbuffers
 	backbufferInfo.backbuffers.Resize(backbufferInfo.numBackbuffers);
+
 	res = vkGetSwapchainImagesKHR(dev, windowInfo.swapchain, &backbufferInfo.numBackbuffers, backbufferInfo.backbuffers.Begin());
 	n_assert(res == VK_SUCCESS);
 
@@ -864,17 +865,10 @@ SetupVulkanSwapchain(const CoreGraphics::WindowId& id, const CoreGraphics::Displ
 		1, 1,
 		false, true, true
 	};
-	glfwWindowAllocator.Get<RenderTextureField>(id.id24) = CreateRenderTexture(rtinfo);
+	glfwWindowAllocator.Get<GLFW_RenderTexture>(id.id24) = CreateRenderTexture(rtinfo);
 
-	// create display semaphore
-	const VkSemaphoreCreateInfo semInfo =
-	{
-		VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-		nullptr,
-		0
-	};
-	res = vkCreateSemaphore(dev, &semInfo, nullptr, &windowInfo.displaySemaphore);
-	n_assert(res == VK_SUCCESS);
+	// add to graphics device for swapbuffers
+	CoreGraphics::AddBackBufferRenderTexture(glfwWindowAllocator.Get<GLFW_RenderTexture>(id.id24));
 
 	windowInfo.dev = dev;
 }
@@ -885,8 +879,8 @@ SetupVulkanSwapchain(const CoreGraphics::WindowId& id, const CoreGraphics::Displ
 void
 DiscardVulkanSwapchain(const CoreGraphics::WindowId& id)
 {
-	VkWindowSwapInfo& wndInfo = glfwWindowAllocator.Get<GLFWWindowSwapInfoField>(id.id24);
-	VkBackbufferInfo& backbufferInfo = glfwWindowAllocator.Get<GLFWBackbufferField>(id.id24);
+	VkWindowSwapInfo& wndInfo = glfwWindowAllocator.Get<GLFW_WindowSwapInfo>(id.id24);
+	VkBackbufferInfo& backbufferInfo = glfwWindowAllocator.Get<GLFW_Backbuffer>(id.id24);
 
 	uint32_t i;
 	for (i = 0; i < backbufferInfo.numBackbuffers; i++)
@@ -896,7 +890,6 @@ DiscardVulkanSwapchain(const CoreGraphics::WindowId& id)
 
 	// destroy swapchain last
 	vkDestroySwapchainKHR(wndInfo.dev, wndInfo.swapchain, nullptr);
-	vkDestroySemaphore(wndInfo.dev, wndInfo.displaySemaphore, nullptr);
 }
 
 //------------------------------------------------------------------------------
@@ -905,7 +898,7 @@ DiscardVulkanSwapchain(const CoreGraphics::WindowId& id)
 void
 Present(const CoreGraphics::WindowId& id)
 {
-	const VkWindowSwapInfo& wndInfo = glfwWindowAllocator.Get<GLFWWindowSwapInfoField>(id.id24);
+	const VkWindowSwapInfo& wndInfo = glfwWindowAllocator.Get<GLFW_WindowSwapInfo>(id.id24);
 
 	VkSemaphore semaphores[] =
 	{
@@ -913,7 +906,7 @@ Present(const CoreGraphics::WindowId& id)
 	};
 
 #if NEBULA_GRAPHICS_DEBUG
-	CoreGraphics::QueueBeginMarker(GraphicsQueueType, NEBULA_MARKER_PINK, "Presentation");
+	CoreGraphics::QueueBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLACK, "Presentation");
 #endif
 
 	const VkPresentInfoKHR info =
