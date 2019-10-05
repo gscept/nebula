@@ -75,7 +75,7 @@ public:
 	/// gets the shadow view transform (valid after Compute)
 	const Math::matrix44& GetShadowView() const;
 	/// returns raw pointer to array of cascade transforms
-	const Math::matrix44* GetCascadeTransforms() const;
+	const Math::matrix44* GetCascadeProjectionTransforms() const;
 	/// returns raw pointer to array of cascade distances
 	const float* GetCascadeDistances() const;
 
@@ -83,7 +83,7 @@ public:
 	const Math::matrix44& GetCascadeCamera(IndexT index)  const;
 
 	/// computes the splits
-	void Compute();
+	void Compute(const Graphics::GraphicsEntityId camera, const Graphics::GraphicsEntityId light);
 
 	static const SizeT NumCascades = 4;
 
@@ -198,7 +198,7 @@ CSMUtil::GetShadowView() const
 /**
 */
 inline const Math::matrix44* 
-CSMUtil::GetCascadeTransforms() const
+CSMUtil::GetCascadeProjectionTransforms() const
 {
 	return this->cascadeProjectionTransform;
 }
