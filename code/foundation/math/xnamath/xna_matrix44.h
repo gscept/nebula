@@ -12,6 +12,8 @@
 #include "math/scalar.h"
 #include "math/float4.h"
 #include "math/plane.h"
+#include "math/point.h"
+#include "math/vector.h"
 #include "math/quaternion.h"
 
 //------------------------------------------------------------------------------
@@ -73,13 +75,13 @@ public:
     /// write access to w component
     void setrow3(float4 const &row3);
     /// read-only access to x component
-    const float4& getrow0() const;
+    constexpr float4& getrow0() const;
     /// read-only access to y component
-    const float4& getrow1() const;
+	constexpr float4& getrow1() const;
     /// read-only access to z component
-    const float4& getrow2() const;
+	constexpr float4& getrow2() const;
     /// read-only access to w component
-    const float4& getrow3() const;
+	constexpr float4& getrow3() const;
 	/// read-write access to x component
 	float4& row0() const;
 	/// read-write access to y component
@@ -179,10 +181,17 @@ public:
     static matrix44 transpose(const matrix44& m);
     /// transform 4d vector by matrix44, faster inline version than float4::transform
     static float4 transform(const float4& v, const matrix44& m);
+	/// transform a point as if this were a 3x3 matrix and the float4 is 3d
+	static float4 transform3(const float4& v, const matrix44& m);
+	/// transform a point as if this were a 3x3 matrix and the point is 3d
+	static float4 transform3(const point& p, const matrix44& m);
+	/// transform a vector as if it were a 3x3 matrix and the vector is 3d
+	static float4 transform3(const vector& v, const matrix44& m);
     /// return a quaternion from rotational part of the 4x4 matrix
     static quaternion rotationmatrix(const matrix44& m);
     /// transform a plane with a matrix
     static plane transform(const plane& p, const matrix44& m);
+	
     /// check if point lies inside matrix frustum
     static bool ispointinside(const float4& p, const matrix44& m);
     /// convert to any type
@@ -390,7 +399,7 @@ matrix44::setrow0(float4 const &r)
 //------------------------------------------------------------------------------
 /**
 */
-__forceinline const float4&
+__forceinline constexpr float4&
 matrix44::getrow0() const
 {
     return *(float4*)&(this->mx.r[0]);
@@ -408,7 +417,7 @@ matrix44::setrow1(float4 const &r)
 //------------------------------------------------------------------------------
 /**
 */
-__forceinline const float4&
+__forceinline constexpr float4&
 matrix44::getrow1() const
 {
     return *(float4*)&(this->mx.r[1]);
@@ -426,7 +435,7 @@ matrix44::setrow2(float4 const &r)
 //------------------------------------------------------------------------------
 /**
 */
-__forceinline const float4&
+__forceinline constexpr float4&
 matrix44::getrow2() const
 {
     return *(float4*)&(this->mx.r[2]);
@@ -444,7 +453,7 @@ matrix44::setrow3(float4 const &r)
 //------------------------------------------------------------------------------
 /**
 */
-__forceinline const float4&
+__forceinline constexpr float4&
 matrix44::getrow3() const
 {
     return *(float4*)&(this->mx.r[3]);
@@ -654,6 +663,9 @@ matrix44::lookatlh(const point& eye, const point& at, const vector& up)
 #if NEBULA_DEBUG
     n_assert(up.length() > 0);
 #endif
+	DirectX::XMVECTOR det;
+	return DirectX::XMMatrixInverse(&det, DirectX::XMMatrixLookAtLH(eye.vec, at.vec, up.vec));
+	/*
     // hmm the DirectX::XM lookat functions are kinda pointless, because they
     // return a VIEW matrix, which is already inverse (so one would
     // need to reverse again!)
@@ -669,6 +681,7 @@ matrix44::lookatlh(const point& eye, const point& at, const vector& up)
     const float4 xaxis = float4::normalize(float4::cross3(normUp, zaxis));
     const float4 yaxis = float4::normalize(float4::cross3(zaxis, xaxis));
     return matrix44(xaxis, yaxis, zaxis, eye);
+	*/
 }
 
 //------------------------------------------------------------------------------
@@ -680,6 +693,9 @@ matrix44::lookatrh(const point& eye, const point& at, const vector& up)
 #if NEBULA_DEBUG
     n_assert(up.length() > 0);
 #endif
+	DirectX::XMVECTOR det;
+	return DirectX::XMMatrixInverse(&det, DirectX::XMMatrixLookAtRH(eye.vec, at.vec, up.vec));
+	/*
     // hmm the DirectX::XM lookat functions are kinda pointless, because they
     // return a VIEW matrix, which is already inverse (so one would
     // need to reverse again!)
@@ -695,6 +711,7 @@ matrix44::lookatrh(const point& eye, const point& at, const vector& up)
     const float4 xaxis = float4::normalize(float4::cross3(normUp, zaxis));
     const float4 yaxis = float4::normalize(float4::cross3(zaxis, xaxis));
     return matrix44(xaxis, yaxis, zaxis, eye);
+	*/
 }
 
 //------------------------------------------------------------------------------
@@ -900,6 +917,36 @@ matrix44::transform(const float4& v, const matrix44& m)
 /**
 */
 __forceinline
+float4
+matrix44::transform3(const float4& v, const matrix44& m)
+{
+	return DirectX::XMVector3Transform(v.vec, m.mx);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline 
+float4 
+matrix44::transform3(const point& p, const matrix44& m)
+{
+	return DirectX::XMVector3TransformCoord(p.vec, m.mx);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline
+float4
+matrix44::transform3(const vector& v, const matrix44& m)
+{
+	return DirectX::XMVector3TransformNormal(v.vec, m.mx);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline
 quaternion
 matrix44::rotationmatrix(const matrix44& m)
 {
@@ -911,7 +958,7 @@ matrix44::rotationmatrix(const matrix44& m)
 */
 __forceinline
 plane
-matrix44::transform(const plane &p, const matrix44& m)
+matrix44::transform(const plane& p, const matrix44& m)
 {
     return DirectX::XMPlaneTransform(p.vec, m.mx);
 }
