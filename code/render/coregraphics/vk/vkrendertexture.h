@@ -24,7 +24,9 @@ void RenderTextureGenerateMipHelper(const CoreGraphics::RenderTextureId id, Inde
 void RenderTextureBlit(const CoreGraphics::RenderTextureId id, IndexT from, IndexT to, const CoreGraphics::RenderTextureId target = CoreGraphics::RenderTextureId::Invalid());
 
 /// get vk image view
-const VkImageView RenderTextureGetVkImageView(const CoreGraphics::RenderTextureId id);
+const VkImageView RenderTextureGetVkAttachmentImageView(const CoreGraphics::RenderTextureId id);
+/// get vk image view
+const VkImageView RenderTextureGetVkSampleImageView(const CoreGraphics::RenderTextureId id);
 /// get vk image
 const VkImage RenderTextureGetVkImage(const CoreGraphics::RenderTextureId id);
 
@@ -47,11 +49,11 @@ struct VkRenderTextureLoadInfo
 
 struct VkRenderTextureRuntimeInfo
 {
-	VkImageView view;
+	VkImageView framebufferView;
+	VkImageView sampleView; // only used by depth-stencil targets to sample from
 	uint32_t bind;
-	VkImageLayout layout;
-	CoreGraphics::TextureType type : 3;
-	bool inpass : 1;
+	VkImageLayout layout; // this is just the layout we should default to
+	CoreGraphics::TextureType type;
 };
 
 struct VkRenderTextureMappingInfo
