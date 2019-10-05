@@ -58,6 +58,8 @@ VkShaderServer::Open()
 	this->texture3DPool.Resize(MAX_3D_TEXTURES);
 	this->textureCubePool.SetSetupFunc(func);
 	this->textureCubePool.Resize(MAX_CUBE_TEXTURES);
+	this->texture2DArrayPool.SetSetupFunc(func);
+	this->texture2DArrayPool.Resize(MAX_2D_ARRAY_TEXTURES);
 
 	// create shader state for textures, and fetch variables
 	ShaderId shader = VkShaderServer::Instance()->GetShader("shd:shared.fxb"_atm);
@@ -91,6 +93,13 @@ VkShaderServer::Open()
 	this->numEnvMipsVar = ShaderGetConstantBinding(shader, "NumEnvMips");
 
 	this->tickParams.NumEnvMips = 10;
+	Math::float4::store(Math::float4(100.0f), this->tickParams.HDRBloomColor);
+	this->tickParams.HDRBrightPassThreshold = 5.9f;
+	this->tickParams.MaxLuminance = 0.5f;
+	Math::float4::store(Math::float4(0.5f), this->tickParams.FogColor);
+	this->tickParams.FogDistances[0] = 10.0f;
+	this->tickParams.FogDistances[1] = 1000.0f;
+
 	return true;
 }
 
@@ -124,6 +133,11 @@ VkShaderServer::RegisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics
 		n_assert(!this->texture2DPool.IsFull());
 		idx = this->texture2DPool.Alloc();
 		var = this->texture2DTextureVar;
+		break;
+	case Texture2DArray:
+		n_assert(!this->texture2DArrayPool.IsFull());
+		idx = this->texture2DArrayPool.Alloc();
+		var = this->texture2DArrayTextureVar;
 		break;
 	case Texture3D:
 		n_assert(!this->texture3DPool.IsFull());
@@ -169,6 +183,11 @@ VkShaderServer::RegisterTexture(const CoreGraphics::RenderTextureId& tex, bool d
 		idx = this->texture2DPool.Alloc();
 		var = this->texture2DTextureVar;
 		break;
+	case Texture2DArray:
+		n_assert(!this->texture2DArrayPool.IsFull());
+		idx = this->texture2DArrayPool.Alloc();
+		var = this->texture2DArrayTextureVar;
+		break;
 	case Texture3D:
 		n_assert(!this->texture3DPool.IsFull());
 		idx = this->texture3DPool.Alloc();
@@ -213,6 +232,11 @@ VkShaderServer::RegisterTexture(const CoreGraphics::ShaderRWTextureId& tex, Core
 		idx = this->texture2DPool.Alloc();
 		var = this->texture2DTextureVar;
 		break;
+	case Texture2DArray:
+		n_assert(!this->texture2DArrayPool.IsFull());
+		idx = this->texture2DArrayPool.Alloc();
+		var = this->texture2DArrayTextureVar;
+		break;
 	case Texture3D:
 		n_assert(!this->texture3DPool.IsFull());
 		idx = this->texture3DPool.Alloc();
@@ -252,6 +276,9 @@ VkShaderServer::UnregisterTexture(const uint32_t id, const CoreGraphics::Texture
 	case Texture2D:
 		this->texture2DPool.Free(id);
 		break;
+	case Texture2DArray:
+		this->texture2DArrayPool.Free(id);
+		break;
 	case Texture3D:
 		this->texture3DPool.Free(id);
 		break;
@@ -279,7 +306,7 @@ void
 VkShaderServer::SetupGBufferConstants()
 {
 	this->tickParams.NormalBuffer = RenderTextureGetBindlessHandle(CoreGraphics::GetRenderTexture("NormalBuffer"));
-	this->tickParams.DepthBuffer = RenderTextureGetBindlessHandle(CoreGraphics::GetRenderTexture("DepthBuffer"));
+	this->tickParams.DepthBuffer = RenderTextureGetBindlessHandle(CoreGraphics::GetRenderTexture("ZBuffer"));
 	this->tickParams.SpecularBuffer = RenderTextureGetBindlessHandle(CoreGraphics::GetRenderTexture("SpecularBuffer"));
 	this->tickParams.AlbedoBuffer = RenderTextureGetBindlessHandle(CoreGraphics::GetRenderTexture("AlbedoBuffer"));
 	this->tickParams.EmissiveBuffer = RenderTextureGetBindlessHandle(CoreGraphics::GetRenderTexture("EmissiveBuffer"));
