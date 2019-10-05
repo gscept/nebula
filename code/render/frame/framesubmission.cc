@@ -12,9 +12,12 @@ namespace Frame
 /**
 */
 FrameSubmission::FrameSubmission() :
+	queue(InvalidQueueType),
 	waitQueue(InvalidQueueType),
-	endOfFrameBarrier(nullptr)
+	resourceResetBarriers(nullptr),
+	startOrEnd(0)
 {
+	// empty
 }
 
 //------------------------------------------------------------------------------
@@ -22,6 +25,7 @@ FrameSubmission::FrameSubmission() :
 */
 FrameSubmission::~FrameSubmission()
 {
+	// empty
 }
 
 //------------------------------------------------------------------------------
@@ -37,11 +41,15 @@ FrameSubmission::CompiledImpl::Run(const IndexT frameIndex)
 		break;
 	case 1:
 		// I will admit, this is a little hacky, and in the future we might put this in its own command...
-		if (this->endOfFrameBarrier && *this->endOfFrameBarrier != CoreGraphics::BarrierId::Invalid())
+		if (this->resourceResetBarriers && this->resourceResetBarriers->Size() > 0)
 		{
-			// make sure to transition resources back to their original state in preparation for the next frame
-			CoreGraphics::BarrierReset(*this->endOfFrameBarrier);
-			CoreGraphics::BarrierInsert(*this->endOfFrameBarrier, this->queue);
+			IndexT i;
+			for (i = 0; i < this->resourceResetBarriers->Size(); i++)
+			{
+				// make sure to transition resources back to their original state in preparation for the next frame
+				CoreGraphics::BarrierReset((*this->resourceResetBarriers)[i]);
+				CoreGraphics::BarrierInsert((*this->resourceResetBarriers)[i], this->queue);
+			}			
 			CoreGraphics::EndSubmission(this->queue, true);
 		}
 		else
@@ -60,7 +68,7 @@ FrameSubmission::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 	ret->queue = this->queue;
 	ret->waitQueue = this->waitQueue;
 	ret->startOrEnd = this->startOrEnd;
-	ret->endOfFrameBarrier = this->endOfFrameBarrier;
+	ret->resourceResetBarriers = this->resourceResetBarriers;
 	return ret;
 }
 
