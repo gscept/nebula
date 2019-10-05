@@ -86,7 +86,7 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 	Ptr<VkCommandBufferThread> compThreads[NumComputeThreads];
 	Threading::Event* compCompletionEvents[NumComputeThreads];
 
-	Util::Array<VkCommandBufferThread::Command> propagateDescriptorSets;
+	Util::FixedArray<VkCommandBufferThread::Command> propagateDescriptorSets;
 	Util::Array<VkCommandBufferThread::Command> threadCmds[NumDrawThreads];
 	SizeT numCallsLastFrame;
 	SizeT numActiveThreads;
@@ -184,7 +184,7 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 	bool viewportsDirty[NumDrawThreads];
 	bool scissorsDirty[NumDrawThreads];
 
-	uint32_t currentProgram;
+	CoreGraphics::ShaderProgramId currentProgram;
 
 	_declare_counter(NumImageBytesAllocated);
 	_declare_counter(NumBufferBytesAllocated);
@@ -438,6 +438,32 @@ GetCurrentQueue(const CoreGraphicsQueueType type)
 //------------------------------------------------------------------------------
 /**
 */
+void
+InsertBarrier(
+	VkPipelineStageFlags srcFlags,
+	VkPipelineStageFlags dstFlags,
+	VkDependencyFlags dep,
+	uint32_t numMemoryBarriers,
+	VkMemoryBarrier* memoryBarriers,
+	uint32_t numBufferBarriers,
+	VkBufferMemoryBarrier* bufferBarriers,
+	uint32_t numImageBarriers,
+	VkImageMemoryBarrier* imageBarriers,
+	const CoreGraphicsQueueType queue)
+{
+	VkCommandBuffer buf = GetMainBuffer(queue);
+	vkCmdPipelineBarrier(buf,
+		srcFlags,
+		dstFlags,
+		dep,
+		numMemoryBarriers, memoryBarriers,
+		numBufferBarriers, bufferBarriers,
+		numImageBarriers, imageBarriers);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void 
 Copy(const VkImage from, Math::rectangle<SizeT> fromRegion, const VkImage to, Math::rectangle<SizeT> toRegion)
 {
@@ -477,15 +503,18 @@ BindDescriptorsGraphics(const VkDescriptorSet* descriptors, uint32_t baseSet, ui
 	// if we are setting descriptors before we have a pipeline, add them for later submission
 	if (state.currentProgram == -1)
 	{
-		VkCommandBufferThread::Command cmd;
-		cmd.type = VkCommandBufferThread::BindDescriptors;
-		cmd.descriptor.baseSet = baseSet;
-		cmd.descriptor.numSets = setCount;
-		cmd.descriptor.sets = descriptors;
-		cmd.descriptor.numOffsets = offsetCount;
-		cmd.descriptor.offsets = offsets;
-		cmd.descriptor.type = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		state.propagateDescriptorSets.Append(cmd);
+		for (uint32_t i = 0; i < setCount; i++)
+		{
+			VkCommandBufferThread::Command cmd;
+			cmd.type = VkCommandBufferThread::BindDescriptors;
+			cmd.descriptor.baseSet = baseSet;
+			cmd.descriptor.numSets = 1;
+			cmd.descriptor.sets = &descriptors[i];
+			cmd.descriptor.numOffsets = offsetCount;
+			cmd.descriptor.offsets = offsets;
+			cmd.descriptor.type = VK_PIPELINE_BIND_POINT_GRAPHICS;
+			state.propagateDescriptorSets[baseSet + i] = cmd;
+		}
 	}
 	else
 	{
@@ -501,6 +530,7 @@ BindDescriptorsGraphics(const VkDescriptorSet* descriptors, uint32_t baseSet, ui
 			cmd.descriptor.numOffsets = offsetCount;
 			cmd.descriptor.offsets = offsets;
 			cmd.descriptor.type = VK_PIPELINE_BIND_POINT_GRAPHICS;
+			state.propagateDescriptorSets[baseSet].descriptor.baseSet = -1;
 			PushToThread(cmd, state.currentDrawThread);
 		}
 		else
@@ -551,7 +581,7 @@ UpdatePushRanges(const VkShaderStageFlags& stages, const VkPipelineLayout& layou
 /**
 */
 void 
-BindGraphicsPipelineInfo(const VkGraphicsPipelineCreateInfo& shader, const uint32_t programId)
+BindGraphicsPipelineInfo(const VkGraphicsPipelineCreateInfo& shader, const CoreGraphics::ShaderProgramId programId)
 {
 	if (state.currentProgram != programId || !(state.currentPipelineBits & ShaderInfoSet))
 	{
@@ -645,24 +675,20 @@ CreateAndBindGraphicsPipeline()
 
 		// push propagation descriptors
 		for (IndexT i = 0; i < state.propagateDescriptorSets.Size(); i++)
-			PushToThread(state.propagateDescriptorSets[i], state.currentDrawThread);
+			if (state.propagateDescriptorSets[i].descriptor.baseSet != -1)
+				PushToThread(state.propagateDescriptorSets[i], state.currentDrawThread);
 
-		uint32_t i;
-		for (i = 0; i < state.numScissors; i++)
-		{
-			cmd.type = VkCommandBufferThread::ScissorRect;
-			cmd.scissorRect.sc = state.scissors[i];
-			cmd.scissorRect.index = i;
-			PushToThread(cmd, state.currentDrawThread);
-		}
+		cmd.type = VkCommandBufferThread::ScissorRectArray;
+		cmd.scissorRectArray.first = 0;
+		cmd.scissorRectArray.num = state.numScissors;
+		cmd.scissorRectArray.scs = state.scissors;
+		PushToThread(cmd, state.currentDrawThread);
 
-		for (i = 0; i < state.numViewports; i++)
-		{
-			cmd.type = VkCommandBufferThread::Viewport;
-			cmd.viewport.vp = state.viewports[i];
-			cmd.viewport.index = i;
-			PushToThread(cmd, state.currentDrawThread);
-		}
+		cmd.type = VkCommandBufferThread::ViewportArray;
+		cmd.viewportArray.first = 0;
+		cmd.viewportArray.num = state.numViewports;
+		cmd.viewportArray.vps = state.viewports;
+		PushToThread(cmd, state.currentDrawThread);
 		state.viewportsDirty[state.currentDrawThread] = false;
 	}
 	else
@@ -703,7 +729,7 @@ UnbindPipeline()
 /**
 */
 void
-SetViewports(VkViewport* viewports, SizeT num)
+SetVkViewports(VkViewport* viewports, SizeT num)
 {
 	n_assert(num < state.MaxClipSettings);
 	memcpy(state.viewports, viewports, sizeof(VkViewport) * num);
@@ -731,7 +757,7 @@ SetViewports(VkViewport* viewports, SizeT num)
 /**
 */
 void
-SetScissorRects(VkRect2D* scissors, SizeT num)
+SetVkScissorRects(VkRect2D* scissors, SizeT num)
 {
 	n_assert(num < state.MaxClipSettings);
 	memcpy(state.scissors, scissors, sizeof(VkRect2D) * num);
@@ -1363,6 +1389,12 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	state.setupSubmissionContext = CreateSubmissionContext({ cmdCreateInfo, info.numBufferedFrames, false });
 	state.setupSubmissionActive = false;
 
+	state.propagateDescriptorSets.Resize(NEBULA_NUM_GROUPS);
+	for (i = 0; i < NEBULA_NUM_GROUPS; i++)
+	{
+		state.propagateDescriptorSets[i].descriptor.baseSet = -1;
+	}
+
 #pragma pop_macro("CreateSemaphore")
 
 	state.maxNumBufferedFrames = info.numBufferedFrames;
@@ -1751,6 +1783,26 @@ NotifyEventHandlers(const CoreGraphics::RenderEvent& e)
 //------------------------------------------------------------------------------
 /**
 */
+void 
+AddBackBufferRenderTexture(const CoreGraphics::RenderTextureId tex)
+{
+	state.backBuffers.Append(tex);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+RemoveBackBufferRenderTexture(const CoreGraphics::RenderTextureId tex)
+{
+	IndexT i = state.backBuffers.FindIndex(tex);
+	n_assert(i != InvalidIndex);
+	state.backBuffers.EraseIndex(i);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 bool
 BeginFrame(IndexT frameIndex)
 {
@@ -1766,8 +1818,9 @@ BeginFrame(IndexT frameIndex)
 	}
 	state.inBeginFrame = true;
 
-	// set to next frame submission
-	state.currentBufferedFrameIndex = (state.currentBufferedFrameIndex + 1) % state.maxNumBufferedFrames;
+	// slight limitation to only using one back buffer, so really we should do one begin and end frame per window...
+	n_assert(state.backBuffers.Size() == 1);
+	state.currentBufferedFrameIndex = CoreGraphics::RenderTextureSwapBuffers(state.backBuffers[0]);
 
 	// cycle submissions, will wait for the fence to finish
 	state.gfxFence = CoreGraphics::SubmissionContextNextCycle(state.gfxSubmission);
@@ -2122,9 +2175,9 @@ GetPrimitiveGroup()
 /**
 */
 void
-SetShaderProgram(const CoreGraphics::ShaderProgramId& pro)
+SetShaderProgram(const CoreGraphics::ShaderProgramId pro)
 {
-	const VkShaderProgramRuntimeInfo& info = CoreGraphics::shaderPool->shaderAlloc.Get<3>(pro.shaderId).Get<2>(pro.programId);
+	const VkShaderProgramRuntimeInfo& info = CoreGraphics::shaderPool->shaderAlloc.Get<VkShaderPool::Shader_ProgramAllocator>(pro.shaderId).Get<ShaderProgram_RuntimeInfo>(pro.programId);
 	state.currentShaderProgram = pro;
 	state.currentPipelineLayout = info.layout;
 
@@ -2154,7 +2207,7 @@ SetShaderProgram(const CoreGraphics::ShaderProgramId& pro)
 			0,
 			VK_NULL_HANDLE, 0				// base pipeline is kept as NULL too, because this is the base for all derivatives
 		};
-		Vulkan::BindGraphicsPipelineInfo(ginfo, info.uniqueId);
+		Vulkan::BindGraphicsPipelineInfo(ginfo, pro);
 	}
 	else
 		Vulkan::UnbindPipeline();
@@ -2630,6 +2683,7 @@ InsertBarrier(const CoreGraphics::BarrierId barrier, const CoreGraphicsQueueType
 	}
 }
 
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -2749,7 +2803,6 @@ void
 Draw()
 {
 	n_assert(state.inBeginPass);
-
 	if (state.inBeginBatch)
 	{
 		VkCommandBufferThread::Command cmd;
@@ -2776,7 +2829,7 @@ Draw()
 /**
 */
 void 
-DrawIndexedInstanced(SizeT numInstances, IndexT baseInstance)
+DrawInstanced(SizeT numInstances, IndexT baseInstance)
 {
 	n_assert(state.inBeginPass);
 
@@ -2842,7 +2895,8 @@ EndPass()
 	state.inBeginPass = false;
 
 	//this->currentPipelineBits = 0;
-	state.propagateDescriptorSets.Clear();
+	for (IndexT i = 0; i < NEBULA_NUM_GROUPS; i++)
+		state.propagateDescriptorSets[i].descriptor.baseSet = -1;
 	state.currentProgram = -1;
 
 	// end render pass
@@ -2901,7 +2955,7 @@ EndSubmission(CoreGraphicsQueueType queue, bool endOfFrame)
 			state.subcontextHandler.AddWaitSemaphore(GraphicsQueueType, SemaphoreGetVk(state.gfxWaitSemaphore), VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
 
 #if NEBULA_GRAPHICS_DEBUG
-			CoreGraphics::QueueBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "Graphics-Compute Sync Submission");
+			CoreGraphics::QueueBeginMarker(GraphicsQueueType, NEBULA_MARKER_ORANGE, "Graphics-Compute Sync Submission");
 #endif
 
 			// flush submissions
@@ -2941,7 +2995,7 @@ EndSubmission(CoreGraphicsQueueType queue, bool endOfFrame)
 			state.subcontextHandler.AddWaitSemaphore(ComputeQueueType, SemaphoreGetVk(state.computeWaitSemaphore), VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 
 #if NEBULA_GRAPHICS_DEBUG
-			CoreGraphics::QueueBeginMarker(ComputeQueueType, NEBULA_MARKER_BLUE, "Compute-Graphics Sync Submission");
+			CoreGraphics::QueueBeginMarker(ComputeQueueType, NEBULA_MARKER_ORANGE, "Compute-Graphics Sync Submission");
 #endif
 
 			// flush submissions
@@ -2988,7 +3042,7 @@ EndFrame(IndexT frameIndex)
 		CommandBufferEndRecord(state.resourceSubmissionCmdBuffer);
 
 #if NEBULA_GRAPHICS_DEBUG
-		CoreGraphics::QueueBeginMarker(TransferQueueType, NEBULA_MARKER_BLUE, "Resource Transfer Submission");
+		CoreGraphics::QueueBeginMarker(TransferQueueType, NEBULA_MARKER_ORANGE, "Resource Transfer Submission");
 #endif
 
 		// submit resource stuff
@@ -2997,30 +3051,28 @@ EndFrame(IndexT frameIndex)
 			VK_NULL_HANDLE, VK_PIPELINE_STAGE_TRANSFER_BIT,
 			SemaphoreGetVk(state.resourceSubmissionSemaphore));
 
-		state.subcontextHandler.FlushSubmissions(TransferQueueType,
-			FenceGetVk(state.resourceSubmissionFence));
+		state.subcontextHandler.FlushSubmissions(TransferQueueType,	FenceGetVk(state.resourceSubmissionFence));
 
 #if NEBULA_GRAPHICS_DEBUG
 		CoreGraphics::QueueEndMarker(TransferQueueType);
 #endif
 
-		// make sure to allow the graphics queue to wait for this command buffer to finish
+		// make sure to allow the graphics queue to wait for this command buffer to finish, because we might need to wait for resource ownership handovers
 		state.subcontextHandler.AddWaitSemaphore(GraphicsQueueType, SemaphoreGetVk(state.resourceSubmissionSemaphore), VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
 		state.resourceSubmissionActive = false;
 	}
 	state.resourceSubmissionCriticalSection.Leave();
 
 #if NEBULA_GRAPHICS_DEBUG
-	CoreGraphics::QueueBeginMarker(ComputeQueueType, NEBULA_MARKER_BLUE, "Compute Commands Submission");
+	CoreGraphics::QueueBeginMarker(ComputeQueueType, NEBULA_MARKER_ORANGE, "Compute Commands Submission");
 #endif
 
 	// submit compute, wait for this frames resource submissions
-	state.subcontextHandler.FlushSubmissions(ComputeQueueType, 
-		FenceGetVk(state.computeFence));
+	state.subcontextHandler.FlushSubmissions(ComputeQueueType, FenceGetVk(state.computeFence));
 
 #if NEBULA_GRAPHICS_DEBUG
 	CoreGraphics::QueueEndMarker(ComputeQueueType);
-	CoreGraphics::QueueBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "Graphics Commands Submission");
+	CoreGraphics::QueueBeginMarker(GraphicsQueueType, NEBULA_MARKER_ORANGE, "Graphics Commands Submission");
 #endif
 
 	// set end of frame semaphore, which will be waited on by the next frame
@@ -3031,8 +3083,7 @@ EndFrame(IndexT frameIndex)
 	state.subcontextHandler.AddSignalSemaphore(GraphicsQueueType, SemaphoreGetVk(state.renderingFinishedSemaphores[state.currentBufferedFrameIndex]));
 
 	// submit graphics, we wait for the fence when we present (change to compute queue if we change the present queue in the future)
-	state.subcontextHandler.FlushSubmissions(GraphicsQueueType, 
-		FenceGetVk(state.gfxFence));
+	state.subcontextHandler.FlushSubmissions(GraphicsQueueType, FenceGetVk(state.gfxFence));
 
 #if NEBULA_GRAPHICS_DEBUG
 	CoreGraphics::QueueEndMarker(GraphicsQueueType);
@@ -3305,6 +3356,43 @@ SetScissorRect(const Math::rectangle<int>& rect, int index)
 	}
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+SetViewports(Math::rectangle<int>* viewports, SizeT num)
+{
+	// copy here is on purpose, because we don't want to modify the state viewports (they are pointers to the pass)
+	IndexT i;
+	for (i = 0; i < num; i++)
+	{
+		VkViewport& vp = state.viewports[i];
+		vp.width = (float)viewports[i].width();
+		vp.height = (float)viewports[i].height();
+		vp.x = (float)viewports[i].left;
+		vp.y = (float)viewports[i].top;
+	}
+	state.numViewports = num;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+SetScissorRects(Math::rectangle<int>* scissors, SizeT num)
+{
+	// copy here is on purpose, because we don't want to modify the state viewports (they are pointers to the pass)
+	IndexT i;
+	for (i = 0; i < num; i++)
+	{
+		VkRect2D& sc = state.scissors[i];
+		sc.extent.width = (float)scissors[i].width();
+		sc.extent.height = (float)scissors[i].height();
+		sc.offset.x = (float)scissors[i].left;
+		sc.offset.y = (float)scissors[i].top;
+	}
+	state.numScissors = num;
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -3476,7 +3564,7 @@ ObjectSetName(const CoreGraphics::RenderTextureId id, const Util::String& name)
 	VkResult res = VkDebugObjectName(dev, &info);
 	n_assert(res == VK_SUCCESS);
 
-	info.objectHandle = (uint64_t)Vulkan::RenderTextureGetVkImageView(id);
+	info.objectHandle = (uint64_t)Vulkan::RenderTextureGetVkAttachmentImageView(id);
 	info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
 	Util::String str = Util::String::Sprintf("%s - View", name.AsCharPtr());
 	info.pObjectName = str.AsCharPtr();
