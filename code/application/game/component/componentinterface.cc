@@ -70,7 +70,7 @@ ComponentInterface::SubscribedEvents() const
 //------------------------------------------------------------------------------
 /**
 */
-const Attr::Attribute&
+const Game::Attribute&
 ComponentInterface::GetAttribute(IndexT index) const
 {
 	return this->attributes[index];
@@ -79,7 +79,7 @@ ComponentInterface::GetAttribute(IndexT index) const
 //------------------------------------------------------------------------------
 /**
 */
-const Util::FixedArray<Attr::Attribute>&
+const Util::FixedArray<Game::Attribute>&
 ComponentInterface::GetAttributes() const
 {
 	return this->attributes;

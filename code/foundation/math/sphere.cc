@@ -5,6 +5,7 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "math/sphere.h"
+#include "util/random.h"
 
 namespace Math
 {
@@ -60,6 +61,33 @@ sphere::intersects(const bbox& box) const
 
     return d <= r*r;
 */
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+sphere::intersects_ray(const line& ray) const
+{
+    point oc = ray.start() - p;
+    scalar a = Math::float4::dot3(ray.vec(), ray.vec());
+    scalar b = 2.0f * Math::float4::dot3(oc, ray.vec());
+    scalar c = Math::float4::dot3(oc, oc) - r * r;
+    scalar discriminant = b * b - 4.0f * a*c;
+    return (discriminant > 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+point
+sphere::random_point_on_unit_sphere()
+{
+    float x = Util::RandomFloatNTP();
+    float y = Util::RandomFloatNTP();
+    float z = Util::RandomFloatNTP();
+    vector v = { x, y, z };
+    return Math::vector::normalize(v);
 }
 
 //------------------------------------------------------------------------------

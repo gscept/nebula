@@ -14,6 +14,7 @@
 #include "math/matrix44.h"
 #include "math/rectangle.h"
 #include "math/clipstatus.h"
+#include "math/line.h"
 
 //------------------------------------------------------------------------------
 namespace Math
@@ -39,12 +40,16 @@ public:
     bool intersects(const sphere& s) const;
     /// check if sphere intersects box
     bool intersects(const bbox& box) const;
+    /// check if sphere intersects ray
+    bool intersects_ray(const line& l) const;
     /// check if 2 moving sphere have contact
     bool intersect_sweep(const vector& va, const sphere& sb, const vector& vb, scalar& u0, scalar& u1) const;
     /// project sphere to screen rectangle (right handed coordinate system)
     rectangle<scalar> project_screen_rh(const matrix44& modelView, const matrix44& projection, scalar nearZ) const;
     /// get clip status of box against sphere
     ClipStatus::Type clipstatus(const bbox& box) const;
+    /// generate a random point on a unit sphere
+    static point random_point_on_unit_sphere();
         
     point p;
     scalar r;
