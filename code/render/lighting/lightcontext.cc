@@ -3,6 +3,7 @@
 // (C) 2017 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
+#include "algorithm/algorithm.h"
 #include "lightcontext.h"
 #include "graphics/graphicsserver.h"
 #include "graphics/view.h"
@@ -11,9 +12,12 @@
 #include "csmutil.h"
 #include "math/polar.h"
 #include "frame/framebatchtype.h"
+#include "frame/framesubpassbatch.h"
 #include "resources/resourcemanager.h"
+#include "visibility/visibilitycontext.h"
 #ifndef PUBLIC_BUILD
 #include "dynui/im3d/im3dcontext.h"
+#include "debug/framescriptinspector.h"
 #endif
 
 #include "lights_cluster_classification.h"
@@ -32,6 +36,12 @@ LightContext::PointLightAllocator LightContext::pointLightAllocator;
 LightContext::SpotLightAllocator LightContext::spotLightAllocator;
 LightContext::GlobalLightAllocator LightContext::globalLightAllocator;
 _ImplementContext(LightContext, LightContext::genericLightAllocator);
+
+struct ShadowCasterState
+{
+	Graphics::GraphicsEntityId camera;
+	Ptr<Graphics::View> view;
+};
 
 struct
 {
@@ -71,6 +81,24 @@ struct
 	CoreGraphics::TextureId spotLightDefaultProjection;
 
 	IndexT localLightsSlot, localLightShadowSlot;
+
+	Ptr<Frame::FrameScript> shadowMappingFrameScript;
+	CoreGraphics::RenderTextureId spotlightShadowAtlas;
+	CoreGraphics::RenderTextureId globalLightShadowMap;
+	CoreGraphics::ShaderRWTextureId globalLightShadowMapBlurred0, globalLightShadowMapBlurred1;
+	CoreGraphics::BatchGroup::Code spotlightsBatchCode;
+	CoreGraphics::BatchGroup::Code globalLightsBatchCode;
+
+	CoreGraphics::ShaderId csmBlurShader;
+	CoreGraphics::ShaderProgramId csmBlurXProgram, csmBlurYProgram;
+	CoreGraphics::ResourceTableId csmBlurXTable, csmBlurYTable;
+	IndexT csmBlurXInputSlot, csmBlurYInputSlot;
+	IndexT csmBlurXOutputSlot, csmBlurYOutputSlot;
+
+	ShadowCasterState globalLightShadowView;
+	CSMUtil csmUtil;
+	Util::Array<ShadowCasterState> spotLightShadowViews;
+	Util::Array<ShadowCasterState> pointLightShadowViews;
 } lightServerState;
 
 struct
@@ -130,15 +158,163 @@ LightContext::Create()
 	__bundle.OnAfterFrame = nullptr;
 	__bundle.StageBits = &LightContext::__state.currentStage;
 #ifndef PUBLIC_BUILD
-    __bundle.OnRenderDebug = LightContext::OnRenderDebug;
+	__bundle.OnRenderDebug = LightContext::OnRenderDebug;
 #endif
 	Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
+	// called from main script
+	Algorithms::Algorithm::AddCallback("LightContext - Update Shadowmaps", [](IndexT frame) // trigger update
+		{
+			// run the script
+			//CoreGraphics::BarrierInsert(lightServerState.globalLightShadowBufferBarrier[0], GraphicsQueueType);
+			lightServerState.shadowMappingFrameScript->Run(frame);
+#ifndef PUBLIC_BUILD
+			Debug::FrameScriptInspector::Run(lightServerState.shadowMappingFrameScript);
+#endif
+			//CoreGraphics::BarrierInsert(lightServerState.globalLightShadowBufferBarrier[1], GraphicsQueueType);
+		});
+
+	// register shadow mapping algorithms
+	Algorithms::Algorithm::AddCallback("LightContext - Spotlight Shadows", [](IndexT frame) // graphics
+		{
+			IndexT i;
+			for (i = 0; i < lightServerState.spotLightShadowViews.Size(); i++)
+			{
+
+			}
+		});
+	Algorithms::Algorithm::AddCallback("LightContext - Spotlight Blur", [](IndexT frame) // compute
+		{
+		});
+
+	Algorithms::Algorithm::AddCallback("LightContext - Sun Shadows", [](IndexT frame) // graphics
+		{
+			if (lightServerState.globalLightEntity != Graphics::GraphicsEntityId::Invalid())
+			{
+				// draw it!
+				Frame::FrameSubpassBatch::DrawBatch(lightServerState.globalLightsBatchCode, lightServerState.globalLightEntity, 4);
+			}
+		});
+	Algorithms::Algorithm::AddCallback("LightContext - Sun Blur", [](IndexT frame) // compute
+		{
+			using namespace CoreGraphics;
+			if (lightServerState.globalLightEntity != Graphics::GraphicsEntityId::Invalid())
+			{
+				BarrierInsert(GraphicsQueueType,
+					BarrierStage::PixelShader,
+					BarrierStage::ComputeShader,
+					BarrierDomain::Global,
+					/*
+					{
+						RenderTextureBarrier
+						{
+							lightServerState.globalLightShadowMap,
+							ImageSubresourceInfo::ColorNoMip(4),
+							CoreGraphicsImageLayout::ColorRenderTexture,
+							CoreGraphicsImageLayout::ShaderRead,
+							BarrierAccess::ColorAttachmentWrite,
+							BarrierAccess::ShaderRead
+						}
+					},*/
+					nullptr, nullptr,
+					{
+						RWTextureBarrier
+						{
+							lightServerState.globalLightShadowMapBlurred0,
+							ImageSubresourceInfo::ColorNoMip(4),
+							CoreGraphicsImageLayout::ShaderRead,
+							CoreGraphicsImageLayout::General,
+							BarrierAccess::ShaderRead,
+							BarrierAccess::ShaderWrite
+						},
+						RWTextureBarrier
+						{
+							lightServerState.globalLightShadowMapBlurred1,
+							ImageSubresourceInfo::ColorNoMip(4),
+							CoreGraphicsImageLayout::ShaderRead,
+							CoreGraphicsImageLayout::General,
+							BarrierAccess::ShaderRead,
+							BarrierAccess::ShaderWrite
+						}
+					},
+					"CSM Blur Init");
+
+				TextureDimensions dims = ShaderRWTextureGetDimensions(lightServerState.globalLightShadowMapBlurred0);
+				SetShaderProgram(lightServerState.csmBlurXProgram);
+				SetResourceTable(lightServerState.csmBlurXTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+				Compute(Math::n_divandroundup(dims.width, 320), dims.height, 4);
+
+				BarrierInsert(GraphicsQueueType,
+					BarrierStage::ComputeShader,
+					BarrierStage::ComputeShader,
+					BarrierDomain::Global,
+					nullptr, nullptr,
+					{
+						RWTextureBarrier
+						{
+							lightServerState.globalLightShadowMapBlurred0,
+							ImageSubresourceInfo::ColorNoMip(4),
+							CoreGraphicsImageLayout::General,
+							CoreGraphicsImageLayout::ShaderRead,
+							BarrierAccess::ShaderWrite,
+							BarrierAccess::ShaderRead
+						},
+					},
+					"CSM Blur X Finish");
+				SetShaderProgram(lightServerState.csmBlurYProgram);
+				SetResourceTable(lightServerState.csmBlurYTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+				Compute(Math::n_divandroundup(dims.height, 320), dims.width, 4);
+
+				BarrierInsert(GraphicsQueueType,
+					BarrierStage::ComputeShader,
+					BarrierStage::PixelShader,
+					BarrierDomain::Global,
+					nullptr, nullptr,
+					{
+						RWTextureBarrier
+						{
+							lightServerState.globalLightShadowMapBlurred1,
+							ImageSubresourceInfo::ColorNoMip(4),
+							CoreGraphicsImageLayout::General,
+							CoreGraphicsImageLayout::ShaderRead,
+							BarrierAccess::ShaderWrite,
+							BarrierAccess::ShaderRead
+						},
+					},
+					"CSM Blur Y Finish");
+			}
+		});
+
+	// create shadow mapping frame script
+	lightServerState.shadowMappingFrameScript = Frame::FrameServer::Instance()->LoadFrameScript("shadowmap_framescript", "frame:vkshadowmap.json"_uri);
+	lightServerState.shadowMappingFrameScript->Build();
+	lightServerState.spotlightsBatchCode = CoreGraphics::BatchGroup::FromName("SpotLightShadow");
+	lightServerState.globalLightsBatchCode = CoreGraphics::BatchGroup::FromName("GlobalShadow");
+	lightServerState.globalLightShadowMap = lightServerState.shadowMappingFrameScript->GetColorTexture("GlobalLightShadow");
+	lightServerState.globalLightShadowMapBlurred0 = lightServerState.shadowMappingFrameScript->GetReadWriteTexture("GlobalLightShadowFiltered0");
+	lightServerState.globalLightShadowMapBlurred1 = lightServerState.shadowMappingFrameScript->GetReadWriteTexture("GlobalLightShadowFiltered1");
+	lightServerState.spotlightShadowAtlas = lightServerState.shadowMappingFrameScript->GetColorTexture("SpotLightShadowAtlas");
+
 	using namespace CoreGraphics;
+
+	lightServerState.csmBlurShader = ShaderGet("shd:csmblur.fxb");
+	lightServerState.csmBlurXProgram = ShaderGetProgram(lightServerState.csmBlurShader, ShaderFeatureFromString("Alt0"));
+	lightServerState.csmBlurYProgram = ShaderGetProgram(lightServerState.csmBlurShader, ShaderFeatureFromString("Alt1"));
+	lightServerState.csmBlurXInputSlot = ShaderGetResourceSlot(lightServerState.csmBlurShader, "InputImageX");
+	lightServerState.csmBlurYInputSlot = ShaderGetResourceSlot(lightServerState.csmBlurShader, "InputImageY");
+	lightServerState.csmBlurXOutputSlot = ShaderGetResourceSlot(lightServerState.csmBlurShader, "BlurImageX");
+	lightServerState.csmBlurYOutputSlot = ShaderGetResourceSlot(lightServerState.csmBlurShader, "BlurImageY");
+	lightServerState.csmBlurXTable = ShaderCreateResourceTable(lightServerState.csmBlurShader, NEBULA_BATCH_GROUP);
+	lightServerState.csmBlurYTable = ShaderCreateResourceTable(lightServerState.csmBlurShader, NEBULA_BATCH_GROUP);
+	ResourceTableSetTexture(lightServerState.csmBlurXTable, { lightServerState.globalLightShadowMap, lightServerState.csmBlurXInputSlot, 0, CoreGraphics::SamplerId::Invalid(), false }); // ping
+	ResourceTableSetShaderRWTexture(lightServerState.csmBlurXTable, { lightServerState.globalLightShadowMapBlurred0, lightServerState.csmBlurXOutputSlot, 0, CoreGraphics::SamplerId::Invalid() }); // pong
+	ResourceTableSetTexture(lightServerState.csmBlurYTable, { lightServerState.globalLightShadowMapBlurred0, lightServerState.csmBlurYInputSlot, 0, CoreGraphics::SamplerId::Invalid() }); // ping
+	ResourceTableSetShaderRWTexture(lightServerState.csmBlurYTable, { lightServerState.globalLightShadowMapBlurred1, lightServerState.csmBlurYOutputSlot, 0, CoreGraphics::SamplerId::Invalid() }); // pong
+	ResourceTableCommitChanges(lightServerState.csmBlurXTable);
+	ResourceTableCommitChanges(lightServerState.csmBlurYTable);
 
 	lightServerState.lightShader = ShaderServer::Instance()->GetShader("shd:lights.fxb");
 	lightServerState.globalLight = ShaderGetProgram(lightServerState.lightShader, CoreGraphics::ShaderFeatureFromString("Global"));
-	lightServerState.globalLightShadow = ShaderGetProgram(lightServerState.lightShader, CoreGraphics::ShaderFeatureFromString("Global|Alt0"));
 	lightServerState.global.dirWorldSpace = ShaderGetConstantBinding(lightServerState.lightShader, "GlobalLightDirWorldspace");
 	lightServerState.global.dir = ShaderGetConstantBinding(lightServerState.lightShader, "GlobalLightDir");
 	lightServerState.global.color = ShaderGetConstantBinding(lightServerState.lightShader, "GlobalLightColor");
@@ -234,10 +410,19 @@ LightContext::SetupGlobalLight(const Graphics::GraphicsEntityId id, const Math::
 
 	auto lid = globalLightAllocator.Alloc();
 
-	SetGlobalLightDirection(cid, direction);
+	Math::matrix44 mat = Math::matrix44::lookatrh(Math::point(0.0f), -direction, Math::vector::upvec());
+	
+	SetGlobalLightTransform(cid, mat);
 	globalLightAllocator.Get<GlobalLightBacklight>(lid) = backlight;
 	globalLightAllocator.Get<GlobalLightAmbient>(lid) = ambient;
 	globalLightAllocator.Get<GlobalLightBacklightOffset>(lid) = backlightFactor;
+
+	if (castShadows)
+	{
+		// register observer as a light
+		Visibility::ObserverContext::RegisterEntity(id);
+		Visibility::ObserverContext::Setup(id, Visibility::VisibilityEntityType::Light);
+	}
 
 	genericLightAllocator.Get<TypedLightId>(cid.id) = lid;
 	lightServerState.globalLightEntity = id;
@@ -367,7 +552,7 @@ LightContext::SetTransform(const Graphics::GraphicsEntityId id, const Math::matr
     switch (type)
     {
     case GlobalLightType:
-        SetGlobalLightDirection(cid, trans.get_yaxis());        
+        SetGlobalLightTransform(cid, trans);
         break;
     case SpotLightType:
         SetSpotLightTransform(cid, trans);        
@@ -378,6 +563,33 @@ LightContext::SetTransform(const Graphics::GraphicsEntityId id, const Math::matr
     default:    
         break;
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Math::matrix44 
+LightContext::GetViewProjTransform(const Graphics::GraphicsEntityId id)
+{
+	const Graphics::ContextEntityId cid = GetContextId(id);
+	LightType type = genericLightAllocator.Get<Type>(cid.id);
+	Ids::Id32 lightId = genericLightAllocator.Get<TypedLightId>(cid.id);
+
+	switch (type)
+	{
+	case GlobalLightType:
+		return globalLightAllocator.Get<GlobalLightViewProjTransform>(lightId);
+		break;
+	case SpotLightType:
+		return spotLightAllocator.Get<SpotLightTransform>(lightId);
+		break;
+	case PointLightType:
+		return pointLightAllocator.Get<PointLightTransform>(lightId);
+		break;
+	default:
+		return Math::matrix44::identity();
+		break;
+	}
 }
 //------------------------------------------------------------------------------
 /**
@@ -422,10 +634,21 @@ LightContext::SetPointLightTransform(const Graphics::ContextEntityId id, const M
 /**
 */
 void 
-LightContext::SetGlobalLightDirection(const Graphics::ContextEntityId id, const Math::vector& direction)
+LightContext::SetGlobalLightTransform(const Graphics::ContextEntityId id, const Math::matrix44& transform)
 {
 	auto lid = genericLightAllocator.Get<TypedLightId>(id.id);
-	globalLightAllocator.Get<GlobalLightDirection>(lid) = direction;
+	globalLightAllocator.Get<GlobalLightDirection>(lid) = -transform.get_zaxis();
+	globalLightAllocator.Get<GlobalLightTransform>(lid) = transform;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+LightContext::SetGlobalLightViewProjTransform(const Graphics::ContextEntityId id, const Math::matrix44& transform)
+{
+	auto lid = genericLightAllocator.Get<TypedLightId>(id.id);
+	globalLightAllocator.Get<GlobalLightViewProjTransform>(lid) = transform;
 }
 
 //------------------------------------------------------------------------------
@@ -448,8 +671,71 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIn
 	Math::float4::storeu(globalLightAllocator.Get<GlobalLightDirection>(globalLightId), params.GlobalLightDirWorldspace);
 	Math::float4::storeu(globalLightAllocator.Get<GlobalLightBacklight>(globalLightId), params.GlobalBackLightColor);
 	Math::float4::storeu(globalLightAllocator.Get<GlobalLightAmbient>(globalLightId), params.GlobalAmbientLightColor);
-	Math::float4::storeu(Math::matrix44::transform(globalLightAllocator.Get<GlobalLightDirection>(globalLightId), viewTransform), params.GlobalLightDir);
+	Math::float4::storeu(globalLightAllocator.Get<GlobalLightDirection>(globalLightId), params.GlobalLightDir);
 	params.GlobalBackLightOffset = globalLightAllocator.Get<GlobalLightBacklightOffset>(globalLightId);
+
+	uint flags = 0;
+
+	if (genericLightAllocator.Get<ShadowCaster>(cid.id))
+	{
+		lightServerState.csmUtil.SetCameraEntity(view->GetCamera());
+		lightServerState.csmUtil.SetGlobalLight(lightServerState.globalLightEntity);
+		lightServerState.csmUtil.SetShadowBox(Math::bbox(Math::point(0), Math::vector(500)));
+		lightServerState.csmUtil.Compute(view->GetCamera(), lightServerState.globalLightEntity);
+		SetGlobalLightViewProjTransform(cid, lightServerState.csmUtil.GetShadowView());
+
+		// update camera
+		CoreGraphics::TransformDevice* transDev = CoreGraphics::TransformDevice::Instance();
+
+		// update csm matrices
+		alignas(16) Shared::ShadowMatrixBlock block;
+		IndexT i;
+		for (i = 0; i < CSMUtil::NumCascades; i++)
+		{
+			Math::matrix44::store(lightServerState.csmUtil.GetCascadeViewProjection(i), block.ViewMatrixArray[i]);
+		}
+		transDev->ApplyCSMMatrices(block);
+
+#if __DX11__
+		Math::matrix44 textureScale = Math::matrix44::scaling(0.5f, -0.5f, 1.0f);
+#elif (__OGL4__ || __VULKAN__)
+		Math::matrix44 textureScale = Math::matrix44::scaling(0.5f, 0.5f, 1.0f);
+#endif
+		Math::matrix44 textureTranslation = Math::matrix44::translation(0.5f, 0.5f, 0);
+		const Math::matrix44* transforms = lightServerState.csmUtil.GetCascadeProjectionTransforms();
+		Math::float4 cascadeScales[CSMUtil::NumCascades];
+		Math::float4 cascadeOffsets[CSMUtil::NumCascades];
+
+		for (IndexT splitIndex = 0; splitIndex < CSMUtil::NumCascades; ++splitIndex)
+		{
+			Math::matrix44 shadowTexture = Math::matrix44::multiply(
+				transforms[splitIndex],
+				Math::matrix44::multiply(textureScale, textureTranslation));
+			Math::float4 scale;
+			scale.x() = shadowTexture.getrow0().x();
+			scale.y() = shadowTexture.getrow1().y();
+			scale.z() = shadowTexture.getrow2().z();
+			scale.w() = 1;
+			Math::float4 offset = shadowTexture.getrow3();
+			offset.w() = 0;
+			cascadeOffsets[splitIndex] = offset;
+			cascadeScales[splitIndex] = scale;
+		}
+
+		memcpy(params.CascadeOffset, cascadeOffsets, sizeof(Math::float4) * CSMUtil::NumCascades);
+		memcpy(params.CascadeScale, cascadeScales, sizeof(Math::float4) * CSMUtil::NumCascades);
+		memcpy(params.CascadeDistances, lightServerState.csmUtil.GetCascadeDistances(), sizeof(float) * CSMUtil::NumCascades);
+		params.MinBorderPadding = 1.0f / 1024.0f;
+		params.MaxBorderPadding = (1024.0f - 1.0f) / 1024.0f;
+		params.ShadowPartitionSize = 1.0f;
+		params.GlobalLightShadowBuffer = CoreGraphics::ShaderRWTextureGetBindlessHandle(lightServerState.globalLightShadowMapBlurred1);
+		Math::matrix44::store(lightServerState.csmUtil.GetShadowView(), params.CSMShadowMatrix);
+
+		flags |= USE_SHADOW_BITFLAG;
+	}
+	params.GlobalLightFlags = flags;
+	params.GlobalLightShadowBias = 0.000001f;																			 
+	params.GlobalLightShadowIntensity = 1.0f;
 
 	// go through and update local lights
 	const Util::Array<LightType>& types    = genericLightAllocator.GetArray<Type>();
@@ -471,7 +757,7 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIn
 
 			uint flags = 0;
 
-			Math::float4 posAndRange = Math::matrix44::transform(trans.get_position(), viewTransform);
+			Math::float4 posAndRange = trans.get_position();
 			posAndRange.w() = 1 / trans.get_zaxis().length();
 
 			// update shadow stuff
@@ -510,8 +796,9 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIn
 
 			uint flags = 0;
 
-			Math::float4 posAndRange = Math::matrix44::transform(trans.get_position(), viewTransform);
+			Math::float4 posAndRange = trans.get_position();
 			posAndRange.w() = 1 / trans.get_zaxis().length();
+			Math::float4 forward = trans.get_zaxis();
 
 			// update shadow data
 			if (castShadow[i])
@@ -526,7 +813,7 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIn
 			}
 
 			// update projection transform
-			Math::matrix44 fromViewToLightProj = Math::matrix44::multiply(invViewTransform, invViewProj);
+			Math::matrix44 fromViewToLightProj = invViewProj;
 
 			// allocate memory
 			alignas(16) Lights::LocalLightBlock block;
@@ -534,6 +821,9 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIn
 			Math::float4::storeu(posAndRange, block.LightPosRange);
 			Math::matrix44::storeu(trans, block.LightTransform);
 			Math::matrix44::storeu(fromViewToLightProj, block.LightProjTransform);
+			Math::float4::storeu(forward, block.LightForward);
+			block.LightCutoff[0] = 0.2f;
+			block.LightCutoff[1] = 0.1f;
 			block.ProjectionTexture = tex != TextureId::Invalid() ? TextureGetBindlessHandle(tex) : 0;
 			block.Flags = flags;
 
@@ -604,18 +894,13 @@ LightContext::RenderLights()
 	if (cid != Graphics::ContextEntityId::Invalid())
 	{
 		// select shader
-		if (genericLightAllocator.Get<ShadowCaster>(cid.id))
-			CoreGraphics::SetShaderProgram(lightServerState.globalLightShadow);
-		else
-			CoreGraphics::SetShaderProgram(lightServerState.globalLight);
+		CoreGraphics::SetShaderProgram(lightServerState.globalLight);
 
 		// draw
 		lightServerState.fsq.ApplyMesh();
 		CoreGraphics::SetResourceTable(lightServerState.lightsbatchResourceTable, NEBULA_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
 		CoreGraphics::Draw();
 	}
-
-
 
 	// first bind pointlight mesh
 	CoreGraphics::MeshBind(lightServerState.pointLightMesh, 0);
@@ -732,7 +1017,6 @@ LightContext::OnRenderDebug(uint32_t flags)
         case SpotLightType:
         {
             //FIXME            
-            /*
             Math::matrix44 unscaledTransform = spotTrans[ids[i]];
             unscaledTransform.set_xaxis(Math::float4::normalize(unscaledTransform.get_xaxis()));
             unscaledTransform.set_yaxis(Math::float4::normalize(unscaledTransform.get_yaxis()));
@@ -740,9 +1024,13 @@ LightContext::OnRenderDebug(uint32_t flags)
             Math::matrix44 frustum = Math::matrix44::multiply(spotInvProj[ids[i]], unscaledTransform);
             Math::float4 col = colours[i];
             Im3d::Im3dContext::DrawBox(frustum, col);
-            */            
         }
         break;
+		case GlobalLightType:
+		{
+
+		}
+		break;
         }
     }
 }
