@@ -124,7 +124,7 @@ private:
 	struct SurfaceInstanceConstant
 	{
 		CoreGraphics::ConstantBinding binding;
-		CoreGraphics::ConstantBufferId buffer;
+		void* mem;
 	};
 
 	struct SurfaceConstant
@@ -133,7 +133,16 @@ private:
 		IndexT bufferIndex;
 		bool instanceConstant : 1;
 		CoreGraphics::ConstantBinding binding;
-		CoreGraphics::ConstantBufferId buffer;
+		union
+		{
+			CoreGraphics::ConstantBufferId buffer;
+			void*						   mem;
+		};
+		
+		SurfaceConstant()
+			: buffer(CoreGraphics::ConstantBufferId::Invalid())
+			, mem(nullptr)
+		{}
 	};
 
 	struct SurfaceTexture
@@ -160,7 +169,7 @@ private:
 		Util::FixedArray<CoreGraphics::ResourceTableId>,										// surface level resource table, mapped batch -> table
 		Util::FixedArray<CoreGraphics::ResourceTableId>,										// instance level resource table, mapped batch -> table
 		Util::FixedArray<Util::Array<std::tuple<IndexT, CoreGraphics::ConstantBufferId>>>,		// surface level constant buffers, mapped batch -> buffers
-		Util::FixedArray<Util::Array<std::tuple<IndexT, CoreGraphics::ConstantBufferId>>>,		// instance level instance buffers, mapped batch -> buffers
+		Util::FixedArray<Util::Array<std::tuple<IndexT, void*, SizeT>>>,						// instance level instance buffers, mapped batch -> memory + size
 		Util::FixedArray<Util::Array<SurfaceTexture>>,											// textures
 		Util::FixedArray<Util::Array<SurfaceConstant>>,											// constants
 		Util::Dictionary<Util::StringAtom, IndexT>,												// name to resource map
@@ -171,13 +180,9 @@ private:
 	enum SurfaceInstanceMembers
 	{
 		SurfaceInstanceConstants,
-		ConstantBufferOffsets,
-		ConstantBufferInstance
 	};
 	Ids::IdAllocator<
-		Util::FixedArray<Util::FixedArray<SurfaceInstanceConstant>>,	// copy of surface constants
-		Util::FixedArray<Util::FixedArray<uint>>,						// offsets into descriptor
-		Util::FixedArray<Util::FixedArray<uint>>						// instance to update
+		Util::FixedArray<Util::FixedArray<SurfaceInstanceConstant>>	// copy of surface constants
 	> surfaceInstanceAllocator;
 	MaterialTypeId id;
 };
