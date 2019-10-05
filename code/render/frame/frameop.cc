@@ -121,8 +121,8 @@ FrameOp::SetupSynchronization(
 				bool createNew = true;
 				for (IndexT j = 0; j < deps.Size(); j++)
 				{
-					const CoreGraphics::ImageSubresourceInfo& info = std::get<0>(deps[i]);
-					TextureDependency& dep = std::get<1>(deps[i]);
+					const CoreGraphics::ImageSubresourceInfo& info = std::get<0>(deps[j]);
+					TextureDependency& dep = std::get<1>(deps[j]);
 
 					if (info.Overlaps(subres))
 					{
@@ -130,7 +130,7 @@ FrameOp::SetupSynchronization(
 						const std::tuple<IndexT, IndexT> pair = std::make_pair(this->index, dep.index);
 
 						// if we are reading, and the previous operation was a read, we can skip this update
-						if (dep.intent == DependencyIntent::Read && dep.intent != readOrWrite);
+						if (dep.intent == DependencyIntent::Read && readOrWrite == DependencyIntent::Read && dep.layout == layout);
 						else
 						{
 							// create semaphore
@@ -144,21 +144,21 @@ FrameOp::SetupSynchronization(
 								if (dep.index - this->index > 1)
 								{
 									CoreGraphics::EventCreateInfo& info = waitEvents.AddUnique(pair);
-									info.name = name.AsString() + " Event";
+									info.name = info.name.IsValid() ? info.name.AsString() + " + " + name.AsString() : name.AsString();
 									info.createSignaled = false;
 									info.leftDependency = dep.stage;
 									info.rightDependency = stage;
-									info.shaderRWTextures.Append(std::make_tuple(tex, subres, dep.layout, layout, dep.access, access));
+									info.rwTextures.Append(CoreGraphics::RWTextureBarrier{ tex, subres, dep.layout, layout, dep.access, access });
 									signalEvents.AddUnique(pair) = dep.op;
 								}
 								else // create barrier
 								{
 									CoreGraphics::BarrierCreateInfo& info = barriers.AddUnique(pair);
-									info.name = name.AsString() + " Barrier";
+									info.name = info.name.IsValid() ? info.name.AsString() + " + " + name.AsString() : name.AsString();
 									info.domain = this->domain;
 									info.leftDependency = dep.stage;
 									info.rightDependency = stage;
-									info.shaderRWTextures.Append(std::make_tuple(tex, subres, dep.layout, layout, dep.access, access));
+									info.rwTextures.Append(CoreGraphics::RWTextureBarrier{ tex, subres, dep.layout, layout, dep.access, access });
 								}
 							}
 						}
@@ -192,7 +192,7 @@ FrameOp::SetupSynchronization(
 					info.domain = CoreGraphics::BarrierDomain::Global;
 					info.leftDependency = CoreGraphics::BarrierStage::ComputeShader;
 					info.rightDependency = stage;
-					info.shaderRWTextures.Append(std::make_tuple(tex, subres, origLayout, layout, CoreGraphics::BarrierAccess::ShaderRead, access));
+					info.rwTextures.Append(CoreGraphics::RWTextureBarrier{ tex, subres, origLayout, layout, CoreGraphics::BarrierAccess::ShaderRead, access });
 				}
 
 				// no dependency for this resource at all, so insert one now
@@ -246,7 +246,7 @@ FrameOp::SetupSynchronization(
 						const std::tuple<IndexT, IndexT> pair = std::make_pair(this->index, dep.index);
 
 						// if we are reading, and the previous operation was a read, we can skip this update
-						if (dep.intent == DependencyIntent::Read && dep.intent != readOrWrite);
+						if (dep.intent == DependencyIntent::Read && readOrWrite == DependencyIntent::Read && dep.layout == layout);
 						else
 						{
 							// create semaphore
@@ -260,21 +260,21 @@ FrameOp::SetupSynchronization(
 								if (dep.index - this->index > 1)
 								{
 									CoreGraphics::EventCreateInfo& info = waitEvents.AddUnique(pair);
-									info.name = name.AsString() + " Event";
+									info.name = info.name.IsValid() ? info.name.AsString() + " + " + name.AsString() : name.AsString();
 									info.createSignaled = false;
 									info.leftDependency = dep.stage;
 									info.rightDependency = stage;
-									info.renderTextures.Append(std::make_tuple(tex, subres, dep.layout, layout, dep.access, access));
+									info.renderTextures.Append(CoreGraphics::RenderTextureBarrier{ tex, subres, dep.layout, layout, dep.access, access });
 									signalEvents.AddUnique(pair) = dep.op;
 								}
 								else // create barrier
 								{
 									CoreGraphics::BarrierCreateInfo& info = barriers.AddUnique(pair);
-									info.name = name.AsString() + " Barrier";
+									info.name = info.name.IsValid() ? info.name.AsString() + " + " + name.AsString() : name.AsString();
 									info.domain = this->domain;
 									info.leftDependency = dep.stage;
 									info.rightDependency = stage;
-									info.renderTextures.Append(std::make_tuple(tex, subres, dep.layout, layout, dep.access, access));
+									info.renderTextures.Append(CoreGraphics::RenderTextureBarrier{ tex, subres, dep.layout, layout, dep.access, access });
 								}
 							}
 						}
@@ -307,7 +307,7 @@ FrameOp::SetupSynchronization(
 					info.domain = CoreGraphics::BarrierDomain::Global;
 					info.leftDependency = CoreGraphics::BarrierStage::PixelShader;
 					info.rightDependency = stage;
-					info.renderTextures.Append(std::make_tuple(tex, subres, origLayout, layout, CoreGraphics::BarrierAccess::ShaderRead, access));
+					info.renderTextures.Append(CoreGraphics::RenderTextureBarrier{ tex, subres, origLayout, layout, subres.aspect == CoreGraphicsImageAspect::ColorBits ? CoreGraphics::BarrierAccess::ShaderRead : CoreGraphics::BarrierAccess::DepthAttachmentRead, access });
 				}
 
 				// no dependency for this resource at all, so insert one now
@@ -349,7 +349,7 @@ FrameOp::SetupSynchronization(
 				const std::tuple<IndexT, IndexT> pair = std::make_pair(this->index, dep.index);
 
 				// if we are reading, and the previous operation was a read, we can skip this update
-				if (dep.intent == DependencyIntent::Read && dep.intent != readOrWrite);
+				if (dep.intent == DependencyIntent::Read && readOrWrite == DependencyIntent::Read);
 				else
 				{
 					// create semaphore
@@ -363,21 +363,21 @@ FrameOp::SetupSynchronization(
 						if (dep.index - this->index > 1 && dep.op != nullptr)
 						{
 							CoreGraphics::EventCreateInfo& info = waitEvents.AddUnique(pair);
-							info.name = name.AsString() + " Event";
+							info.name = info.name.IsValid() ? info.name.AsString() + " + " + name.AsString() : name.AsString();
 							info.createSignaled = false;
 							info.leftDependency = dep.stage;
 							info.rightDependency = stage;
-							info.shaderRWBuffers.Append(std::make_tuple(buf, dep.access, access));
+							info.rwBuffers.Append(CoreGraphics::BufferBarrier{ buf, dep.access, access, 0, -1 });
 							signalEvents.AddUnique(pair) = dep.op;
 						}
 						else // create barrier
 						{
 							CoreGraphics::BarrierCreateInfo& info = barriers.AddUnique(pair);
-							info.name = name.AsString() + " Barrier";
+							info.name = info.name.IsValid() ? info.name.AsString() + " + " + name.AsString() : name.AsString();
 							info.domain = this->domain;
 							info.leftDependency = dep.stage;
 							info.rightDependency = stage;
-							info.shaderRWBuffers.Append(std::make_tuple(buf, dep.access, access));
+							info.rwBuffers.Append(CoreGraphics::BufferBarrier{ buf, dep.access, access, 0, -1 });
 						}
 					}
 				}
@@ -410,6 +410,7 @@ FrameOp::SetupSynchronization(
 		// create pre-execution events and barriers
 		for (i = 0; i < waitEvents.Size(); i++)
 		{
+			waitEvents.ValueAtIndex(i).name = waitEvents.ValueAtIndex(i).name.AsString() + " <Frame Event>";
 			CoreGraphics::EventId ev = CreateEvent(waitEvents.ValueAtIndex(i));
 			events.Append(ev);
 			this->compiled->waitEvents[i].event = ev;
@@ -423,6 +424,7 @@ FrameOp::SetupSynchronization(
 
 		for (i = 0; i < barriers.Size(); i++)
 		{
+			barriers.ValueAtIndex(i).name = barriers.ValueAtIndex(i).name.AsString() + " <Frame Barrier>";
 			CoreGraphics::BarrierId bar = CreateBarrier(barriers.ValueAtIndex(i));
 			this->compiled->barriers[i].barrier = bar;
 			this->compiled->barriers[i].queue = this->queue;

@@ -28,9 +28,18 @@ public:
 
 	FrameOp::Compiled* AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator);
 
-	Util::StringAtom funcName;
-	Algorithms::Algorithm* alg;
+	std::function<void(IndexT)> func;
 private:
+
+
+	void Build(
+		Memory::ArenaAllocator<BIG_CHUNK>& allocator,
+		Util::Array<FrameOp::Compiled*>& compiledOps,
+		Util::Array<CoreGraphics::EventId>& events,
+		Util::Array<CoreGraphics::BarrierId>& barriers,
+		Util::Dictionary<CoreGraphics::ShaderRWTextureId, Util::Array<std::tuple<CoreGraphics::ImageSubresourceInfo, TextureDependency>>>& rwTextures,
+		Util::Dictionary<CoreGraphics::ShaderRWBufferId, BufferDependency>& rwBuffers,
+		Util::Dictionary<CoreGraphics::RenderTextureId, Util::Array<std::tuple<CoreGraphics::ImageSubresourceInfo, TextureDependency>>>& renderTextures) override;
 };
 
 } // namespace Frame2
