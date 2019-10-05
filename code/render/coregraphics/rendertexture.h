@@ -68,7 +68,7 @@ RenderTextureId CreateRenderTexture(const RenderTextureCreateInfo& info);
 void DestroyRenderTexture(const RenderTextureId id);
 
 /// swap buffers, only valid if this is a window texture
-void RenderTextureSwapBuffers(const CoreGraphics::RenderTextureId id);
+IndexT RenderTextureSwapBuffers(const CoreGraphics::RenderTextureId id);
 
 /// resize the render texture
 void RenderTextureResize(const RenderTextureId id, const RenderTextureResizeInfo& info);
@@ -78,7 +78,9 @@ void RenderTextureWindowResized(const RenderTextureId id);
 /// get texture dimensions
 const CoreGraphics::TextureDimensions RenderTextureGetDimensions(const RenderTextureId id);
 /// get texture mips
-const IndexT RenderTextureGetNumMips(const RenderTextureId id);
+const SizeT RenderTextureGetNumMips(const RenderTextureId id);
+/// get texture layers
+const SizeT RenderTextureGetLayers(const RenderTextureId id);
 /// get pixel format
 const CoreGraphics::PixelFormat::Code RenderTextureGetPixelFormat(const RenderTextureId id);
 /// get msaa
