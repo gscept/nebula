@@ -55,7 +55,7 @@ typedef Ids::IdAllocator<
 	VkPassLoadInfo,
 	VkPassRuntimeInfo,
 	VkRenderPassBeginInfo,
-	Util::Array<uint32_t>			// number of subpass attachments
+	Util::Array<uint32_t>	// subpass attachments
 > VkPassAllocator;
 extern VkPassAllocator passAllocator;
 
@@ -63,6 +63,8 @@ extern VkPassAllocator passAllocator;
 const VkRenderPassBeginInfo& PassGetVkRenderPassBeginInfo(const CoreGraphics::PassId& id);
 /// get vk framebuffer info
 const VkGraphicsPipelineCreateInfo& PassGetVkFramebufferInfo(const CoreGraphics::PassId& id);
+/// get number of pass attachments
+const SizeT PassGetVkNumAttachments(const CoreGraphics::PassId& id);
 /// get scissor rects for current subpass
 const Util::FixedArray<VkRect2D>& PassGetVkRects(const CoreGraphics::PassId& id);
 /// get viewports for current subpass
