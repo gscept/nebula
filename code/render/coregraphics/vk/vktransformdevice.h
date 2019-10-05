@@ -12,6 +12,7 @@
 #include "coregraphics/graphicsdevice.h"
 #include "coregraphics/constantbuffer.h"
 #include "coregraphics/resourcetable.h"
+#include "shared.h"
 
 namespace Vulkan
 {
@@ -35,6 +36,8 @@ public:
 
 	/// updates shared shader variables dependent on view matrix
 	void ApplyViewSettings();
+	/// update the csm matrix block
+	void ApplyCSMMatrices(const Shared::ShadowMatrixBlock& block);
 
 	/// bind descriptors for view in the graphics pipeline
 	void BindCameraDescriptorSetsGraphics();
@@ -62,6 +65,7 @@ private:
 
 	Util::FixedArray<CoreGraphics::ResourceTableId> viewTables;	
 	IndexT viewConstantsSlot;
+	IndexT shadowConstantsSlot;
 	CoreGraphics::ResourcePipelineId tableLayout;
 };
 
