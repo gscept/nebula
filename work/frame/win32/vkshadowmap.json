@@ -1,0 +1,92 @@
+{
+  version: 2,
+  engine: "Nebula",
+  sub_script: true,
+  framescript: {
+    render_textures: [
+      {
+        name: "SpotLightShadowAtlas",
+        format: "R32G32F",
+        width: 1024,
+        height: 1024,
+        layers: 16,
+      },
+      {
+        name: "GlobalLightShadow",
+        format: "R32G32F",
+        width: 1024,
+        height: 1024,
+        layers: 4
+      }
+    ],
+
+    read_write_textures: [
+      {
+        name: "GlobalLightShadowFiltered0",
+        format: "R32G32F",
+        width: 1024,
+        height: 1024,
+        layers: 4
+      },
+      {
+        name: "GlobalLightShadowFiltered1",
+        format: "R32G32F",
+        width: 1024,
+        height: 1024,
+        layers: 4
+      },
+      {
+        name: "SpotLightShadowAtlasFiltered",
+        format: "R32G32F",
+        width: 1024,
+        height: 1024,
+        layers: 16,
+      }
+    ],
+
+    depth_stencils: [
+      {
+        name: "GlobalLightDepth",
+        format: "D32S8",
+        width: 1024,
+        height: 1024,
+        layers: 4
+      }
+    ],
+
+    pass: {
+      name: "ShadowMapping",
+      attachments: [
+        {
+          name: "GlobalLightShadow",
+          clear: [ 1000, 1000, 0, 0 ],
+          store: true
+        }
+      ],
+
+      depth_stencil: {
+        name: "GlobalLightDepth",
+        clear: 1,
+        clearStencil: 0
+      },
+
+      subpass: {
+        name: "GlobalLightPass",
+        dependencies: [],
+        attachments: [ "GlobalLightShadow" ],
+        depth: false,
+        subpass_algorithm: {
+          name: "LightContext - Sun Shadows"
+        }
+      }
+    },
+
+    compute_algorithm: {
+      name: "LightContext - Spotlight Blur"
+    }
+    compute_algorithm: {
+      name: "LightContext - Sun Blur"
+    }
+
+  }
+}
