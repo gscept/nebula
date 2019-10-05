@@ -45,7 +45,6 @@ private:
 	CoreGraphics::ShaderRWTextureId internalTargets[2];
 
 	CoreGraphics::BarrierId barriers[4];
-	CoreGraphics::BarrierId preBarrier;
 
 	struct AOVariables
 	{
