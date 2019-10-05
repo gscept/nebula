@@ -207,6 +207,8 @@ ResourceTableSetTexture(const ResourceTableId& id, const ResourceTableTexture& t
 	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<4>(id.id24);
 	Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<5>(id.id24);
 
+	n_assert(tex.slot != InvalidIndex);
+
 	VkWriteDescriptorSet write;
 	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 	write.pNext = nullptr;
@@ -264,6 +266,8 @@ ResourceTableSetTexture(const ResourceTableId& id, const ResourceTableRenderText
 	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<4>(id.id24);
 	Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<5>(id.id24);
 
+	n_assert(tex.slot != InvalidIndex);
+
 	VkWriteDescriptorSet write;
 	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 	write.pNext = nullptr;
@@ -297,7 +301,7 @@ ResourceTableSetTexture(const ResourceTableId& id, const ResourceTableRenderText
 	if (tex.tex == RenderTextureId::Invalid())
 		img.imageView = VK_NULL_HANDLE;
 	else
-		img.imageView = RenderTextureGetVkImageView(tex.tex);
+		img.imageView = RenderTextureGetVkSampleImageView(tex.tex);
 
 	WriteInfo inf;
 	inf.img = img;
@@ -321,6 +325,8 @@ ResourceTableSetTexture(const ResourceTableId& id, const ResourceTableShaderRWTe
 	VkDescriptorSet& set = resourceTableAllocator.Get<1>(id.id24);
 	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<4>(id.id24);
 	Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<5>(id.id24);
+
+	n_assert(tex.slot != InvalidIndex);
 
 	VkWriteDescriptorSet write;
 	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -377,6 +383,8 @@ ResourceTableSetInputAttachment(const ResourceTableId& id, const ResourceTableIn
 	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<4>(id.id24);
 	Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<5>(id.id24);
 
+	n_assert(tex.slot != InvalidIndex);
+
 	VkWriteDescriptorSet write;
 	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 	write.pNext = nullptr;
@@ -392,7 +400,7 @@ ResourceTableSetInputAttachment(const ResourceTableId& id, const ResourceTableIn
 	if (tex.tex == RenderTextureId::Invalid())
 		img.imageView = VK_NULL_HANDLE;
 	else
-		img.imageView = RenderTextureGetVkImageView(tex.tex);
+		img.imageView = RenderTextureGetVkSampleImageView(tex.tex);
 
 	WriteInfo inf;
 	inf.img = img;
@@ -415,6 +423,8 @@ ResourceTableSetShaderRWTexture(const ResourceTableId& id, const ResourceTableSh
 	VkDescriptorSet& set = resourceTableAllocator.Get<1>(id.id24);
 	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<4>(id.id24);
 	Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<5>(id.id24);
+
+	n_assert(tex.slot != InvalidIndex);
 
 	VkWriteDescriptorSet write;
 	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -455,6 +465,8 @@ ResourceTableSetShaderRWTexture(const ResourceTableId& id, const ResourceTableTe
 	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<4>(id.id24);
 	Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<5>(id.id24);
 
+	n_assert(tex.slot != InvalidIndex);
+
 	VkWriteDescriptorSet write;
 	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 	write.pNext = nullptr;
@@ -494,6 +506,8 @@ ResourceTableSetShaderRWTexture(const ResourceTableId& id, const ResourceTableRe
 	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<4>(id.id24);
 	Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<5>(id.id24);
 
+	n_assert(tex.slot != InvalidIndex);
+
 	VkWriteDescriptorSet write;
 	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 	write.pNext = nullptr;
@@ -509,7 +523,7 @@ ResourceTableSetShaderRWTexture(const ResourceTableId& id, const ResourceTableRe
 	if (tex.tex == RenderTextureId::Invalid())
 		img.imageView = VK_NULL_HANDLE;
 	else
-		img.imageView = RenderTextureGetVkImageView(tex.tex);
+		img.imageView = RenderTextureGetVkSampleImageView(tex.tex);
 
 	WriteInfo inf;
 	inf.img = img;
@@ -533,6 +547,8 @@ ResourceTableSetConstantBuffer(const ResourceTableId& id, const ResourceTableCon
 	VkDescriptorSet& set = resourceTableAllocator.Get<1>(id.id24);
 	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<4>(id.id24);
 	Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<5>(id.id24);
+
+	n_assert(buf.slot != InvalidIndex);
 
 	VkWriteDescriptorSet write;
 	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -581,6 +597,8 @@ ResourceTableSetShaderRWBuffer(const ResourceTableId& id, const ResourceTableSha
 	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<4>(id.id24);
 	Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<5>(id.id24);
 
+	n_assert(buf.slot != InvalidIndex);
+
 	VkWriteDescriptorSet write;
 	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 	write.pNext = nullptr;
@@ -625,6 +643,8 @@ ResourceTableSetSampler(const ResourceTableId& id, const ResourceTableSampler& s
 	VkDescriptorSet& set = resourceTableAllocator.Get<1>(id.id24);
 	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<4>(id.id24);
 	Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<5>(id.id24);
+
+	n_assert(samp.slot != InvalidIndex);
 
 	VkWriteDescriptorSet write;
 	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
