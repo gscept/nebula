@@ -419,6 +419,15 @@ n_align(uint alignant, uint alignment)
 	return (alignant + alignment - 1) & ~(alignment - 1);
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline uint
+n_divandroundup(uint dividend, uint divider)
+{
+	return (dividend % divider != 0) ? (dividend / divider + 1) : (dividend / divider);
+}
+
 #endif // #if !SPU
 
 } // namespace Math
