@@ -26,7 +26,7 @@
 
 namespace CoreGraphics
 {
-	void SetShaderProgram(const CoreGraphics::ShaderProgramId& pro);
+	void SetShaderProgram(const CoreGraphics::ShaderProgramId pro);
 	void SetShaderProgram(const CoreGraphics::ShaderId shaderId, const CoreGraphics::ShaderFeature::Mask mask);
 }
 
@@ -116,7 +116,7 @@ private:
 	friend class VkPipelineDatabase;
 	friend const CoreGraphics::ConstantBufferId CoreGraphics::CreateConstantBuffer(const CoreGraphics::ConstantBufferCreateInfo& info);
 
-	friend void ::CoreGraphics::SetShaderProgram(const CoreGraphics::ShaderProgramId& pro);
+	friend void ::CoreGraphics::SetShaderProgram(const CoreGraphics::ShaderProgramId pro);
 	friend void ::CoreGraphics::SetShaderProgram(const CoreGraphics::ShaderId shaderId, const CoreGraphics::ShaderFeature::Mask mask);
 
 	/// get shader program
@@ -161,6 +161,14 @@ private:
 		Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBinding> constantBindings;
 		Util::FixedArray<std::pair<uint32_t, CoreGraphics::ResourceTableLayoutId>> descriptorSetLayouts;
 		Util::Dictionary<uint32_t, uint32_t> descriptorSetLayoutMap;
+	};
+
+	enum
+	{
+		Shader_Effect,
+		Shader_SetupInfo,
+		Shader_RuntimeInfo,
+		Shader_ProgramAllocator
 	};
 
 	/// this member allocates shaders

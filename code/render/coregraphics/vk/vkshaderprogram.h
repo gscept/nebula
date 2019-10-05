@@ -44,6 +44,13 @@ struct VkShaderProgramRuntimeInfo
 };
 
 extern uint32_t UniqueIdCounter;
+
+enum
+{
+	ShaderProgram_SetupInfo,
+	ShaderProgram_AnyFXPtr,
+	ShaderProgram_RuntimeInfo
+};
 typedef Ids::IdAllocator<
 	VkShaderProgramSetupInfo,		//0 used for setup
 	AnyFX::VkProgram*,				//1 program object
