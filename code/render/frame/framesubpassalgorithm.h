@@ -31,12 +31,10 @@ public:
 	};
 
 	FrameOp::Compiled* AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator);
+	std::function<void(IndexT)> func;
 
-	Util::StringAtom funcName;
-	Algorithms::Algorithm* alg;
 private:
 	
-	std::function<void(IndexT)> func;
 };
 
 } // namespace Frame2
