@@ -133,7 +133,6 @@ JobSchedule(const JobId& job, const JobPortId& port, const JobContext& ctx, cons
 		// go through slices and send jobs to threads
 		if (numWorkUnitSlices[i] > 0)
 		{
-			const Ptr<JobThread>& thread = threads[i];
 			JobThread::JobThreadCommand cmd;
 			cmd.ev = JobThread::RunJob;
 			cmd.run.slice = i;
@@ -149,6 +148,26 @@ JobSchedule(const JobId& job, const JobPortId& port, const JobContext& ctx, cons
 				threadIndex = (threadIndex + 1) % threads.Size();
 		}
 	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+JobSchedule(const JobId& job, const JobPortId& port)
+{
+	Util::FixedArray<Ptr<JobThread>>& threads = jobPortAllocator.Get<PortThreads>((Ids::Id32)port.id);
+	const uint& threadIndex = jobPortAllocator.Get<PortNextThreadIndex>((Ids::Id32)port.id);
+	const CreateJobInfo& info = jobAllocator.Get<0>(job.id);
+	JobThread::JobThreadCommand cmd;
+	cmd.ev = JobThread::RunJob;
+	cmd.run.slice = 0;
+	cmd.run.numSlices = 1;
+	cmd.run.stride = 0;
+	cmd.run.context = Jobs::JobContext();
+	cmd.run.JobFunc = info.JobFunc;
+	cmd.run.callback = nullptr;
+	threads[threadIndex]->PushCommand(cmd);
 }
 
 //------------------------------------------------------------------------------
