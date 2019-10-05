@@ -110,17 +110,43 @@
     <Expand>
       <Item Name="[Size]">size</Item>
       <CustomListItems>
-        <Variable Name="pBucket" InitialValue="nullptr"/>
+        <Variable Name="pIt" InitialValue="nullptr"/>
         <Exec>pIt = Begin()</Exec>
         <Loop>
           <If Condition="pIt == End()">
             <Exec>break;</Exec>
           </If>
-          <Item Name="{(*it).key, na}">(*it).val</Item>
-          <Exec>it++</Exec>
+          <Item Name="{(*pIt).key, na}">(*pIt).val</Item>
+          <Exec>pIt++</Exec>
         </Loop>
       </CustomListItems>
     </Expand>
+  </Type>
+  <Type Name="Math::float4">
+    <DisplayString>{f32[0]}, {f32[1]}, {f32[2]}, {f32[3]}</DisplayString>
+    <Expand>
+      <Item Name="x">f32[0]</Item>
+      <Item Name="y">f32[1]</Item>
+      <Item Name="z">f32[2]</Item>
+      <Item Name="w">f32[3]</Item>
+    </Expand>
+  </Type>
+  <Type Name="Math::matrix44">
+    <DisplayString></DisplayString>
+    <Expand>
+      <Item Name="row0">mx.r[0]</Item>
+      <Item Name="row1">mx.r[1]</Item>
+      <Item Name="row2">mx.r[2]</Item>
+      <Item Name="row3">mx.r[3]</Item>
+    </Expand>
+  </Type>
+  <Type Name="__m128">
+    <DisplayString>{m128_f32[0]}, {m128_f32[1]}, {m128_f32[2]}, {m128_f32[3]}</DisplayString>
+    <Expand></Expand>
+  </Type>
+  <Type Name="__m128i">
+    <DisplayString>{m128_i32[0]}, {m128_i32[1]}, {m128_i32[2]}, {m128_i32[3]}</DisplayString>
+    <Expand></Expand>
   </Type>
 
   
