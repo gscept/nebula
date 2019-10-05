@@ -137,7 +137,7 @@ ENDIF()
 				displayeventhandler.h
 				displaymode.h
 				event.h
-        fence.h
+                fence.h
 				graphicsdevice.h
 				imagefileformat.cc
 				imagefileformat.h
@@ -365,7 +365,11 @@ ENDIF()
 				vkvertexsignaturepool.h
 			)
 	endif()
-
+        fips_dir(debug)
+            fips_files(
+                framescriptinspector.cc
+                framescriptinspector.h
+            )
 		fips_dir(frame)
 			fips_files(
 				framebarrier.cc
@@ -419,6 +423,8 @@ ENDIF()
 				cameracontext.h
 				camerasettings.cc
 				camerasettings.h
+                environmentcontext.cc
+                environmentcontext.h
 				graphicscontext.cc
 				graphicscontext.h
 				graphicsentity.h
