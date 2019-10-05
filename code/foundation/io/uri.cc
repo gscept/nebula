@@ -9,6 +9,17 @@
 #include "io/fswrapper.h"
 #include "core/config.h"
 
+
+//------------------------------------------------------------------------------
+/**
+	Literal constructor form string, to use "foobar"_uri will automatically construct an IO::URI
+*/
+IO::URI
+operator ""_uri(const char* c, std::size_t s)
+{
+	return IO::URI(c);
+}
+
 namespace IO
 {
 using namespace Util;
