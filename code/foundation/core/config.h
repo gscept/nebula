@@ -178,7 +178,7 @@ static const int JobMaxSliceSize = 0xFFFF;
 #elif __OGL4__
 #define NEBULA_DEFAULT_FRAMESHADER_NAME "ogl4default"
 #elif __VULKAN__
-#define NEBULA_DEFAULT_FRAMESHADER_NAME "vkdebug"
+#define NEBULA_DEFAULT_FRAMESHADER_NAME "vkdefault"
 #else
 #error "No default frameshader defined for platform"
 #endif
