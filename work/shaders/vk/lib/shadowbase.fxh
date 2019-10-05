@@ -25,16 +25,20 @@ state ShadowState
 	DepthEnabled = false;
 	DepthWrite = false;
 	BlendEnabled[0] = true;
+	SrcBlend[0] = One;
+	DstBlend[0] = One;
 	BlendOp[0] = Min;
 };
 
 state ShadowStateCSM
 {
-	CullMode = Front;
+	CullMode = Back;
 	DepthClamp = false;
 	DepthEnabled = false;
 	DepthWrite = false;
 	BlendEnabled[0] = true;
+	SrcBlend[0] = One;
+	DstBlend[0] = One;
 	BlendOp[0] = Min;
 };
 
@@ -47,7 +51,7 @@ vsStatic(
 	[slot=0] in vec3 position,
 	[slot=2] in vec2 uv,
 	out vec2 UV,
-	out vec4 ProjPos) 
+	out vec4 ProjPos)
 {
 	gl_Position = ViewMatrixArray[0] * Model * vec4(position, 1);
 	ProjPos = gl_Position;
@@ -65,7 +69,7 @@ vsSkinned(
 	[slot=7] in vec4 weights,
 	[slot=8] in uvec4 indices,
 	out vec2 UV,
-	out vec4 ProjPos)	
+	out vec4 ProjPos)
 {
 	vec4 skinnedPos = SkinnedPosition(position, weights, indices);
 	gl_Position = ViewMatrixArray[0] * Model * skinnedPos;
@@ -82,7 +86,7 @@ vsStaticInst(
 	[slot=0] in vec3 position,
 	[slot=2] in vec2 uv,
 	out vec2 UV,
-	out vec4 ProjPos) 
+	out vec4 ProjPos)
 {
 	gl_Position = ModelArray[gl_InstanceID] * vec4(position, 1);
 	ProjPos = gl_Position;
@@ -99,7 +103,7 @@ vsStaticCSM(
 	[slot=2] in vec2 uv,
 	out vec2 UV,
 	out vec4 ProjPos,
-	out int Instance) 
+	out int Instance)
 {
 	ProjPos = Model * vec4(position, 1);
 	Instance = gl_InstanceID;
@@ -118,7 +122,7 @@ vsSkinnedCSM(
 	[slot=8] in uvec4 indices,
 	out vec2 UV,
 	out vec4 ProjPos,
-	out int Instance) 
+	out int Instance)
 {
 	vec4 skinnedPos = SkinnedPosition(position, weights, indices);
 	ProjPos = Model * skinnedPos;
@@ -136,7 +140,7 @@ vsStaticInstCSM(
 	[slot=2] in vec2 uv,
 	out vec2 UV,
 	out vec4 ProjPos,
-	out int Instance) 
+	out int Instance)
 {
 	int csmStride = gl_InstanceID % 4;
 	ProjPos = ModelArray[gl_InstanceID] * vec4(position, 1);
@@ -154,7 +158,7 @@ vsStaticPoint(
 	[slot=2] in vec2 uv,
 	out vec2 UV,
 	out vec4 ProjPos,
-	out int Instance) 
+	out int Instance)
 {
 	ProjPos = Model * vec4(position, 1);
 	Instance = gl_InstanceID;
@@ -173,9 +177,9 @@ vsSkinnedPoint(
 	[slot=8] in uvec4 indices,
 	out vec2 UV,
 	out vec4 ProjPos,
-	out int Instance) 
+	out int Instance)
 {
-	vec4 skinnedPos = SkinnedPosition(position, weights, indices);	
+	vec4 skinnedPos = SkinnedPosition(position, weights, indices);
 	ProjPos = Model * skinnedPos;
 	Instance = gl_InstanceID;
 	UV = uv;
@@ -191,7 +195,7 @@ vsStaticInstPoint(
 	[slot=2] in vec2 uv,
 	out vec2 UV,
 	out vec4 ProjPos,
-	out int Instance) 
+	out int Instance)
 {
 	int csmStride = gl_InstanceID % 4;
 	ProjPos = ModelArray[gl_InstanceID] * vec4(position, 1);
@@ -204,7 +208,7 @@ vsStaticInstPoint(
 	Geometry shader for point light shadow instancing.
 	We copy the geometry and project into each direction frustum.
 	We then point to which render target we wish to write to using gl_Layer.
-	
+
 	Doesn't work though...
 */
 [inputprimitive] = triangles
@@ -212,21 +216,21 @@ vsStaticInstPoint(
 [maxvertexcount] = 3
 [instances] = 6
 shader
-void 
+void
 gsPoint(in vec2 uv[], in vec4 pos[], flat in int instance[], out vec2 UV, out vec4 ProjPos)
-{		
+{
 	UV = uv[0];
 	ProjPos = ViewMatrixArray[gl_InvocationID] * pos[0];
 	gl_Position = ProjPos;
 	gl_Layer = instance[0];
 	EmitVertex();
-	
+
 	UV = uv[1];
 	ProjPos = ViewMatrixArray[gl_InvocationID] * pos[1];
 	gl_Position = ProjPos;
 	gl_Layer = instance[0];
 	EmitVertex();
-	
+
 	UV = uv[2];
 	ProjPos = ViewMatrixArray[gl_InvocationID] * pos[2];
 	gl_Position = ProjPos;
@@ -244,26 +248,25 @@ gsPoint(in vec2 uv[], in vec4 pos[], flat in int instance[], out vec2 UV, out ve
 [inputprimitive] = triangles
 [outputprimitive] = triangle_strip
 [maxvertexcount] = 3
-[instances] = 4
 shader
-void 
+void
 gsCSM(in vec2 uv[], in vec4 pos[], flat in int instance[], out vec2 UV, out vec4 ProjPos)
 {
-	gl_ViewportIndex = gl_InvocationID;
-	
+	gl_Layer = instance[0];
+
 	// simply pass geometry straight through and set viewport
 	UV = uv[0];
-	ProjPos = ViewMatrixArray[gl_InvocationID] * pos[0];
+	ProjPos = ViewMatrixArray[instance[0]] * pos[0];
 	gl_Position = ProjPos;
 	EmitVertex();
-	
+
 	UV = uv[1];
-	ProjPos = ViewMatrixArray[gl_InvocationID] * pos[1];
+	ProjPos = ViewMatrixArray[instance[0]] * pos[1];
 	gl_Position = ProjPos;
 	EmitVertex();
-	
+
 	UV = uv[2];
-	ProjPos = ViewMatrixArray[gl_InvocationID] * pos[2];
+	ProjPos = ViewMatrixArray[instance[0]] * pos[2];
 	gl_Position = ProjPos;
 	EmitVertex();
 	EndPrimitive();
@@ -271,7 +274,7 @@ gsCSM(in vec2 uv[], in vec4 pos[], flat in int instance[], out vec2 UV, out vec4
 	for (int instance = 0; instance < 4; instance++)
 	{
 		mat4 splitMatrix = ViewMatrixArray[instance];
-		
+
 		for (int vertex = 0; vertex < 3; vertex++)
 		{
 			vec4 pos = splitMatrix * gl_in[vertex].gl_Position;
@@ -300,13 +303,13 @@ vsTess(
 	out vec3 Normal,
 	out vec2 UV,
 	out int Instance,
-	out float Distance) 
+	out float Distance)
 {
 	Position = Model * vec4(position, 1);
 	Normal = (Model * vec4(normal, 0)).xyz;
 	UV = uv;
 	Instance = gl_InstanceID;
-	
+
 	float vertexDistance = distance( Position.xyz, EyePos.xyz );
 	Distance = 1.0 - clamp( ( (vertexDistance - MinDistance) / (MaxDistance - MinDistance) ), 0.0, 1.0 - 1.0/TessellationFactor);
 }
@@ -326,13 +329,13 @@ vsTessCSM(
 	out vec3 Normal,
 	out vec2 UV,
 	out int Instance,
-	out float Distance) 
+	out float Distance)
 {
 	Position = Model * vec4(position, 1);
 	Normal = (Model * vec4(normal, 0)).xyz;
 	UV = uv;
 	Instance = gl_InstanceID;
-	
+
 	float vertexDistance = distance( Position.xyz, EyePos.xyz );
 	Distance = 1.0 - clamp( ( (vertexDistance - MinDistance) / (MaxDistance - MinDistance) ), 0.0, 1.0 - 1.0/TessellationFactor);
 }
@@ -344,7 +347,7 @@ vsTessCSM(
 [outputvertices] = 6
 
 shader
-void 
+void
 hsShadow(
 	in vec4 position[],
 	in vec3 normal[],
@@ -371,7 +374,7 @@ hsShadow(
 	UV[gl_InvocationID] = uv[gl_InvocationID];
 	Instance[gl_InvocationID] = instance[gl_InvocationID];
 	Normal[gl_InvocationID] = normal[gl_InvocationID];
-	
+
 	// perform per-patch operation
 	if (gl_InvocationID == 0)
 	{
@@ -380,7 +383,7 @@ hsShadow(
 		EdgeTessFactors.y = 0.5 * (distance[2] + distance[0]);
 		EdgeTessFactors.z = 0.5 * (distance[0] + distance[1]);
 		EdgeTessFactors *= TessellationFactor;
-	
+
 #ifdef PN_TRIANGLES
 		// compute the cubic geometry control points
 		// edge control points
@@ -413,12 +416,12 @@ hsShadow(
 
 shader
 void
-dsShadow( 
+dsShadow(
 	in vec4 position[],
 	in vec3 normal[],
 	in vec2 uv[],
 	out vec2 UV,
-	out vec4 ProjPos	
+	out vec4 ProjPos
 #ifdef PN_TRIANGLES
 	,
 	in vec3 f3B210,
@@ -435,15 +438,15 @@ dsShadow(
 	float fU = gl_TessCoord.z;
 	float fV = gl_TessCoord.x;
 	float fW = gl_TessCoord.y;
-	
-	// Precompute squares and squares * 3 
+
+	// Precompute squares and squares * 3
 	float fUU = fU * fU;
 	float fVV = fV * fV;
 	float fWW = fW * fW;
 	float fUU3 = fUU * 3.0f;
 	float fVV3 = fVV * 3.0f;
 	float fWW3 = fWW * 3.0f;
-	
+
 #ifdef PN_TRIANGLES
 	// Compute position from cubic control points and barycentric coords
 	vec3 Position = position[0] * fWW * fW + position[1] * fUU * fU + position[2] * fVV * fV +
@@ -455,11 +458,11 @@ dsShadow(
 	UV = gl_TessCoord.x * uv[0] + gl_TessCoord.y * uv[1] + gl_TessCoord.z * uv[2];
 	vec3 Norm = gl_TessCoord.x * normal[0] + gl_TessCoord.y * normal[1] + gl_TessCoord.z * normal[2];
 	float Height = 2.0f * sample2DLod(DisplacementMap, ShadowSampler, UV, 0).x - 1.0f;
-	vec3 VectorNormalized = normalize( Norm );	
+	vec3 VectorNormalized = normalize( Norm );
 	Position.xyz += VectorNormalized.xyz * HeightScale * SceneScale * Height;
 
 	gl_Position = ViewMatrixArray[0] * vec4(Position.xyz, 1);
-	ProjPos = gl_Position;	
+	ProjPos = gl_Position;
 }
 
 //------------------------------------------------------------------------------
@@ -471,7 +474,7 @@ dsShadow(
 [partition] = odd
 shader
 void
-dsCSM(	
+dsCSM(
 	in vec4 position[],
 	in vec3 normal[],
 	in vec2 uv[],
@@ -497,14 +500,14 @@ dsCSM(
 	float fV = gl_TessCoord.x;
 	float fW = gl_TessCoord.y;
 
-    // Precompute squares and squares * 3 
+    // Precompute squares and squares * 3
     float fUU = fU * fU;
     float fVV = fV * fV;
     float fWW = fW * fW;
     float fUU3 = fUU * 3.0f;
     float fVV3 = fVV * 3.0f;
     float fWW3 = fWW * 3.0f;
-	
+
 #ifdef PN_TRIANGLES
 	// Compute position from cubic control points and barycentric coords
 	vec3 Position = position[0] * fWW * fW + position[1] * fUU * fU + position[2] * fVV * fV +
@@ -518,11 +521,11 @@ dsCSM(
 	Instance = instance[0];
 	vec3 Norm = gl_TessCoord.x * normal[0] + gl_TessCoord.y * normal[1] + gl_TessCoord.z * normal[2];
 	float Height = 2.0f * sample2DLod(DisplacementMap, ShadowSampler, UV, 0).x - 1.0f;
-	vec3 VectorNormalized = normalize( Norm );	
+	vec3 VectorNormalized = normalize( Norm );
 	Position.xyz += VectorNormalized.xyz * HeightScale * SceneScale * Height;
 
 	gl_Position = vec4(Position.xyz, 1);
-	ProjPos = gl_Position;	
+	ProjPos = gl_Position;
 }
 
 //------------------------------------------------------------------------------
@@ -533,17 +536,17 @@ shader
 void
 psShadow(in vec2 UV,
 	in vec4 ProjPos,
-	[color0] out vec2 ShadowColor) 
+	[color0] out vec2 ShadowColor)
 {
 	float depth = ProjPos.z / ProjPos.w;
 	float moment1 = depth;
 	float moment2 = depth * depth;
-	
+
 	// Adjusting moments (this is sort of bias per pixel) using derivative
 	float dx = dFdx(depth);
 	float dy = dFdy(depth);
 	moment2 += 0.25f*(dx*dx+dy*dy);
-	
+
 	ShadowColor = vec2(moment1, moment2);
 }
 
@@ -554,20 +557,20 @@ shader
 void
 psShadowAlpha(in vec2 UV,
 	in vec4 ProjPos,
-	[color0] out vec2 ShadowColor) 
+	[color0] out vec2 ShadowColor)
 {
 	float alpha = sample2D(AlbedoMap, ShadowSampler, UV).a;
 	if (alpha < AlphaSensitivity) discard;
-	
+
 	float depth = ProjPos.z / ProjPos.w;
 	float moment1 = depth;
 	float moment2 = depth * depth;
-	
+
 	// Adjusting moments (this is sort of bias per pixel) using derivative
 	float dx = dFdx(depth);
 	float dy = dFdy(depth);
 	moment2 += 0.25f*(dx*dx+dy*dy);
-	
+
 	ShadowColor = vec2(moment1, moment2);
 }
 
@@ -606,17 +609,17 @@ shader
 void
 psVSM(in vec2 UV,
 	in vec4 ProjPos,
-	[color0] out vec2 ShadowColor) 
+	[color0] out vec2 ShadowColor)
 {
 	float depth = ProjPos.z / ProjPos.w;
 	float moment1 = depth;
 	float moment2 = depth * depth;
-	
+
 	// Adjusting moments (this is sort of bias per pixel) using derivative
 	//float dx = dFdx(depth);
 	//float dy = dFdy(depth);
 	//moment2 += 0.25f*(dx*dx+dy*dy);
-	
+
 	ShadowColor = vec2(moment1, moment2);
 }
 
@@ -627,20 +630,20 @@ shader
 void
 psVSMAlpha(in vec2 UV,
 	in vec4 ProjPos,
-	[color0] out vec2 ShadowColor) 
+	[color0] out vec2 ShadowColor)
 {
 	float alpha = sample2D(AlbedoMap, ShadowSampler, UV).a;
 	if (alpha < AlphaSensitivity) discard;
-	
+
 	float depth = ProjPos.z / ProjPos.w;
 	float moment1 = depth;
 	float moment2 = depth * depth;
-	
+
 	// Adjusting moments (this is sort of bias per pixel) using derivative
 	//float dx = dFdx(depth);
 	//float dy = dFdy(depth);
 	//moment2 += 0.25f*(dx*dx+dy*dy);
-	
+
 	ShadowColor = vec2(moment1, moment2);
 }
 
@@ -652,17 +655,17 @@ shader
 void
 psVSMPoint(in vec2 UV,
 	in vec4 ProjPos,
-	[color0] out vec2 ShadowColor) 
+	[color0] out vec2 ShadowColor)
 {
 	float depth = ProjPos.z / ProjPos.w;
 	float moment1 = depth;
 	float moment2 = depth * depth;
-	
+
 	// Adjusting moments (this is sort of bias per pixel) using derivative
 	//float dx = dFdx(depth);
 	//float dy = dFdy(depth);
 	//moment2 += 0.25f*(dx*dx+dy*dy);
-	
+
 	ShadowColor = vec2(moment1, moment2);
 }
 
@@ -673,31 +676,31 @@ shader
 void
 psVSMAlphaPoint(in vec2 UV,
 	in vec4 ProjPos,
-	[color0] out vec2 ShadowColor) 
+	[color0] out vec2 ShadowColor)
 {
 	float alpha = sample2D(AlbedoMap, ShadowSampler, UV).a;
 	if (alpha < AlphaSensitivity) discard;
-	
+
 	float depth = ProjPos.z / ProjPos.w;
 	float moment1 = depth;
 	float moment2 = depth * depth;
-	
+
 	// Adjusting moments (this is sort of bias per pixel) using derivative
 	//float dx = dFdx(depth);
 	//float dy = dFdy(depth);
 	//moment2 += 0.25f*(dx*dx+dy*dy);
-	
+
 	ShadowColor = vec2(moment1, moment2);
 }
 
 //---------------------------------------------------------------------------------------------------------------------------
 /**
 */
-float 
+float
 Variance(vec2 shadowSample,
 		 float lightSpaceDepth,
 		 float tolerance)
-{	
+{
 	// get average and average squared
 	float avgZ = shadowSample.x;
 	float avgZ2 = shadowSample.y;
@@ -711,11 +714,11 @@ Variance(vec2 shadowSample,
 	{
 		float variance 	= (avgZ2) - (avgZ * avgZ);
 		variance 		= min(1.0f, max(0.0f, variance + tolerance));
-		
+
 		float mean 		= avgZ;
 		float d			= lightSpaceDepth - mean;
 		float p_max		= variance / (variance + d*d);
-		
+
 		// to avoid light bleeding, change this constant
 		return max(p_max, float(lightSpaceDepth <= avgZ));
 	}
@@ -725,22 +728,22 @@ Variance(vec2 shadowSample,
 /**
 	Calculates Chebyshevs upper bound for use with VSM shadow mapping with local lights
 */
-float 
-ChebyshevUpperBound(vec2 Moments, float t, float tolerance)  
-{  
-	// One-tailed inequality valid if t > Moments.x  
+float
+ChebyshevUpperBound(vec2 Moments, float t, float tolerance)
+{
+	// One-tailed inequality valid if t > Moments.x
 	if (t <= Moments.x) return 1.0f;
-	
-	// Compute variance.  
-	float Variance = Moments.y - (Moments.x*Moments.x);  
-	Variance = max(Variance, tolerance);  
-	
-	// Compute probabilistic upper bound.  
-	float d = t - Moments.x;  
-	float p_max = Variance / (Variance + d*d);  
-	
-	return p_max;  
-} 
+
+	// Compute variance.
+	float Variance = Moments.y - (Moments.x*Moments.x);
+	Variance = max(Variance, tolerance);
+
+	// Compute probabilistic upper bound.
+	float d = t - Moments.x;
+	float p_max = Variance / (Variance + d*d);
+
+	return p_max;
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -751,7 +754,7 @@ ExponentialShadowSample(float mapDepth, float depth, float bias)
 	float receiverDepth = DepthScaling * depth - bias;
     float occluderReceiverDistance = mapDepth - receiverDepth;
 	float occlusion = saturate(exp(DarkeningFactor * occluderReceiverDistance));
-    //float occlusion = saturate(exp(DarkeningFactor * occluderReceiverDistance));  
+    //float occlusion = saturate(exp(DarkeningFactor * occluderReceiverDistance));
     return occlusion;
 }
 #endif // SHADOWBASE_FXH

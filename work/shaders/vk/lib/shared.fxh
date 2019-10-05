@@ -11,7 +11,7 @@
 
 #define MAX_2D_TEXTURES 2048
 #define MAX_2D_MS_TEXTURES 64
-#define MAX_2D_ARRAY_TEXTURES 1
+#define MAX_2D_ARRAY_TEXTURES 8
 #define MAX_CUBE_TEXTURES 128
 #define MAX_3D_TEXTURES 128
 
@@ -28,24 +28,34 @@ group(TICK_GROUP) texture2DArray	Textures2DArray[MAX_2D_ARRAY_TEXTURES];
 group(TICK_GROUP) samplerstate		Basic2DSampler {};
 group(TICK_GROUP) samplerstate		PosteffectSampler { Filter = Point; };
 
-#define sample2D(handle, sampler, uv)				texture(sampler2D(Textures2D[handle], sampler), uv)
-#define sample2DLod(handle, sampler, uv, lod)		textureLod(sampler2D(Textures2D[handle], sampler), uv, lod)
-#define sample2DMS(handle, sampler, uv)				texture(sampler2DMS(Textures2DMS[handle], sampler), uv)
-#define sample2DMSLod(handle, sampler, uv, lod)		textureLod(sampler2DMS(Textures2DMS[handle], sampler), uv, lod)
-#define sampleCube(handle, sampler, uvw)			texture(samplerCube(TexturesCube[handle], sampler), uvw)
-#define sampleCubeLod(handle, sampler, uvw, lod)	textureLod(samplerCube(TexturesCube[handle], sampler), uvw, lod)
-#define sample3D(handle, sampler, uvw)				texture(sampler3D(Textures3D[handle], sampler), uvw)
-#define sample3DLod(handle, sampler, uvw, lod)		textureLod(sampler3D(Textures3D[handle], sampler), uvw, lod)
+#define sample2D(handle, sampler, uv)						texture(sampler2D(Textures2D[handle], sampler), uv)
+#define sample2DLod(handle, sampler, uv, lod)				textureLod(sampler2D(Textures2D[handle], sampler), uv, lod)
+#define sample2DGrad(handle, sampler, uv, ddx, ddy)			textureGrad(sampler2D(Textures2D[handle], sampler), uv, ddx, ddy)
 
-#define fetch2D(handle, sampler, uv, lod)			texelFetch(sampler2D(Textures2D[handle], sampler), uv, lod)
-#define fetch2DMS(handle, sampler, uv, lod)			texelFetch(sampler2DMS(Textures2DMS[handle], sampler), uv, lod)
-#define fetchCube(handle, sampler, uvw, lod)		texelFetch(sampler2DArray(Textures2DArray[handle], sampler), uvw, lod)
-#define fetch3D(handle, sampler, uvw, lod)			texelFetch(sampler3D(Textures3D[handle], sampler), uvw, lod)
+#define sample2DMS(handle, sampler, uv)						texture(sampler2DMS(Textures2DMS[handle], sampler), uv)
+#define sample2DMSLod(handle, sampler, uv, lod)				textureLod(sampler2DMS(Textures2DMS[handle], sampler), uv, lod)
+#define sample2DMSGrad(handle, sampler, uv, ddx, ddy)		textureGrad(sampler2DMS(Textures2D[handle], sampler), uv, ddx, ddy)
 
-#define basic2D(handle)								Textures2D[handle]
-#define basic2DMS(handle)							Textures2DMS[handle]
-#define basicCube(handle)							TexturesCube[handle]
-#define basic3D(handle)								Textures3D[handle]
+#define sampleCube(handle, sampler, uvw)					texture(samplerCube(TexturesCube[handle], sampler), uvw)
+#define sampleCubeLod(handle, sampler, uvw, lod)			textureLod(samplerCube(TexturesCube[handle], sampler), uvw, lod)
+
+#define sample2DArray(handle, sampler, uvw)					texture(sampler2DArray(Textures2DArray[handle], sampler), uvw)
+#define sample2DArrayGrad(handle, sampler, uvw, ddx, ddy)	textureGrad(sampler2DArray(Textures2DArray[handle], sampler), uvw, ddx, ddy)
+#define sample2DArrayLod(handle, sampler, uvw, lod)			textureLod(sampler2DArray(Textures2DArray[handle], sampler), uvw, lod)
+
+#define sample3D(handle, sampler, uvw)						texture(sampler3D(Textures3D[handle], sampler), uvw)
+#define sample3DLod(handle, sampler, uvw, lod)				textureLod(sampler3D(Textures3D[handle], sampler), uvw, lod)
+
+#define fetch2D(handle, sampler, uv, lod)					texelFetch(sampler2D(Textures2D[handle], sampler), uv, lod)
+#define fetch2DMS(handle, sampler, uv, lod)					texelFetch(sampler2DMS(Textures2DMS[handle], sampler), uv, lod)
+#define fetchCube(handle, sampler, uvw, lod)				texelFetch(sampler2DArray(Textures2DArray[handle], sampler), uvw, lod)
+#define fetchArray(handle, sampler, uvw, lod)				texelFetch(sampler2DArray(Textures2DArray[handle], sampler), uvw, lod)
+#define fetch3D(handle, sampler, uvw, lod)					texelFetch(sampler3D(Textures3D[handle], sampler), uvw, lod)
+
+#define basic2D(handle)									Textures2D[handle]
+#define basic2DMS(handle)								Textures2DMS[handle]
+#define basicCube(handle)								TexturesCube[handle]
+#define basic3D(handle)									Textures3D[handle]
 
 #define MAX_NUM_LIGHTS 16
 
@@ -53,9 +63,6 @@ group(TICK_GROUP) samplerstate		PosteffectSampler { Filter = Point; };
 #ifndef CASCADE_COUNT_FLAG
 #define CASCADE_COUNT_FLAG 4
 #endif
-
-group(TICK_GROUP) sampler2D LightShadowTexture;
-group(TICK_GROUP) sampler2D ShadowProjMap;
 
 // these parameters are updated once per application tick
 group(TICK_GROUP) shared varblock PerTickParams
@@ -82,6 +89,8 @@ group(TICK_GROUP) shared varblock PerTickParams
 	vec4 FogColor = vec4(0.5, 0.5, 0.63, 0.0);
 
 	// global light stuff
+	uint GlobalLightFlags;
+	float GlobalLightShadowIntensity;
 	vec4 GlobalLightDirWorldspace;
 	vec4 GlobalLightDir;
 	vec4 GlobalLightColor;
@@ -105,6 +114,7 @@ group(TICK_GROUP) shared varblock PerTickParams
 	// CSM params
 	vec4 CascadeOffset[CASCADE_COUNT_FLAG];
 	vec4 CascadeScale[CASCADE_COUNT_FLAG];
+	vec4 CascadeDistances; 
 	float MinBorderPadding;
 	float MaxBorderPadding;
 	float ShadowPartitionSize;
@@ -148,7 +158,7 @@ group(FRAME_GROUP) shared varblock FrameBlock
 	vec4 TimeAndRandom;
 };
 
-group(FRAME_GROUP) shared varblock ShadowMatrixBlock [ bool DynamicOffset = true; string Visibility = "VS|GS"; ]
+group(FRAME_GROUP) shared varblock ShadowMatrixBlock [ string Visibility = "VS|GS"; ]
 {
 	mat4 ViewMatrixArray[6];
 };
@@ -180,10 +190,27 @@ group(DYNAMIC_OFFSET_GROUP) shared varblock JointBlock [ string Visibility = "VS
 	mat4 JointPalette[256];
 };
 
-group(PASS_GROUP) inputAttachment InputAttachments[8];
+group(PASS_GROUP) inputAttachment InputAttachment0;
+group(PASS_GROUP) inputAttachment InputAttachment1;
+group(PASS_GROUP) inputAttachment InputAttachment2;
+group(PASS_GROUP) inputAttachment InputAttachment3;
+group(PASS_GROUP) inputAttachment InputAttachment4;
+group(PASS_GROUP) inputAttachment InputAttachment5;
+group(PASS_GROUP) inputAttachment InputAttachment6;
+group(PASS_GROUP) inputAttachment InputAttachment7;
+group(PASS_GROUP) inputAttachment InputAttachment8;
+group(PASS_GROUP) inputAttachment InputAttachment9;
+group(PASS_GROUP) inputAttachment InputAttachment10;
+group(PASS_GROUP) inputAttachment InputAttachment11;
+group(PASS_GROUP) inputAttachment InputAttachment12;
+group(PASS_GROUP) inputAttachment InputAttachment13;
+group(PASS_GROUP) inputAttachment InputAttachment14;
+group(PASS_GROUP) inputAttachment InputAttachment15;
+group(PASS_GROUP) inputAttachment DepthAttachment;
+
 group(PASS_GROUP) shared varblock PassBlock [ bool System = true; ]
 {
-	vec4 RenderTargetDimensions[8]; // render target dimensions are size (xy) inversed size (zw)
+	vec4 RenderTargetDimensions[16]; // render target dimensions are size (xy) inversed size (zw)
 };
 
 
