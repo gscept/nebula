@@ -8,6 +8,7 @@
 //------------------------------------------------------------------------------
 #include "frameop.h"
 #include "coregraphics/batchgroup.h"
+#include "graphics/graphicsentity.h"
 namespace Frame
 {
 class FrameSubpassBatch : public FrameOp
@@ -27,6 +28,11 @@ public:
 
 	FrameOp::Compiled* AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator);
 	CoreGraphics::BatchGroup::Code batch;
+
+	/// do the actual drawing
+	static void DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphics::GraphicsEntityId id);
+	/// do the actual drawing, but with duplicate instances
+	static void DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphics::GraphicsEntityId id, SizeT numInstances);
 };
 
 } // namespace Frame2
