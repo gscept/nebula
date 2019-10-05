@@ -136,7 +136,7 @@ ObserverContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frame
 			observerTransforms[i] = Graphics::CameraContext::GetViewProjection(id);
 			break;
 		case Light:
-			observerTransforms[i] = Lighting::LightContext::GetTransform(id);
+			observerTransforms[i] = Lighting::LightContext::GetViewProjTransform(id);
 			break;
 		case LightProbe:
 			observerTransforms[i] = Graphics::LightProbeContext::GetTransform(id);
@@ -213,7 +213,7 @@ ObserverContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frame
 		Util::Array<Graphics::ContextEntityId>& entities = vis[i].GetArray<VisibilityResultCtxId>();
 		VisibilityDrawList& visibilities = observerAllocator.GetArray<ObserverDrawList>()[i];
 
-        if(entities.Size() == 0)
+        if (entities.Size() == 0)
         {
             continue;
         }
@@ -242,14 +242,14 @@ ObserverContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frame
 
 		// schedule job
 		Jobs::JobId job = Jobs::CreateJob({ VisibilitySortJob });
-		Jobs::JobSchedule(job, ObserverContext::jobPort, ctx);
-		
-		// insert sync
-		Jobs::JobSyncSignal(ObserverContext::jobHostSync, ObserverContext::jobPort);
+		Jobs::JobSchedule(job, ObserverContext::jobPort, ctx, false); // run all sort jobs on the same thread since they are using the same allocator
 
 		// add to delete list
 		ObserverContext::runningJobs.Enqueue(job);
 	}
+
+	// insert sync after all visibility systems are done
+	Jobs::JobSyncSignal(ObserverContext::jobHostSync, ObserverContext::jobPort);
 }
 
 //------------------------------------------------------------------------------
