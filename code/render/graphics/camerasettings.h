@@ -3,7 +3,7 @@
 /**
     @class Shared::CameraSettings
     
-    Wraps camera settings into an object.
+    Helper class for handling camera projection and related settings
     
     (C) 2009 Radon Labs GmbH
     (C) 2013-2018 Individual contributors, see AUTHORS file
@@ -25,21 +25,11 @@ public:
     void SetupPerspectiveFov(float fov, float aspect, float zNear, float zFar);
     /// setup an orthogonal projection transform
     void SetupOrthogonal(float w, float h, float zNear, float zFar);
-    /// setup a custom projection matrix. zNear and zFar are only used as info.
-    void SetProjectionMatrix(const Math::matrix44& proj, float fov, float aspect, float zNear, float zFar);
-    /// update view matrix
-    void UpdateViewMatrix(const Math::matrix44& m);
 
     /// get projection matrix
     const Math::matrix44& GetProjTransform() const;
     /// get the inverse projection matrix
     const Math::matrix44& GetInvProjTransform() const;
-    /// get view transform (inverse transform)
-    const Math::matrix44& GetViewTransform() const;
-    /// get view projection matrix (non-const!)
-    const Math::matrix44& GetViewProjTransform() const;
-    /// get view frustum 
-    const Math::frustum& GetViewFrustum() const;
     /// get focal length (computed from fov and aspect ratio)
     const Math::float2& GetFocalLength() const;
 
@@ -65,18 +55,9 @@ public:
     float GetFarHeight() const;
     
 private:
-    /// update the view projection matrix
-    void UpdateViewProjMatrix() const;
-    /// update the view frustum
-    void UpdateViewFrustum() const;
 
     Math::matrix44 projMatrix;
     Math::matrix44 invProjMatrix;
-    Math::matrix44 viewMatrix;
-    mutable Math::matrix44 viewProjMatrix;
-    mutable Math::frustum viewFrustum;
-    mutable bool viewProjDirty;
-    mutable bool viewFrustumDirty;
 
     bool isPersp;
     float zNear;
@@ -89,16 +70,6 @@ private:
     float farHeight;
     Math::float2 focalLength;
 };
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-CameraSettings::UpdateViewMatrix(const Math::matrix44& m)
-{
-    this->viewMatrix = m;
-    this->viewProjDirty = true;
-}
 
 //------------------------------------------------------------------------------
 /**
@@ -116,41 +87,6 @@ inline const Math::matrix44&
 CameraSettings::GetInvProjTransform() const
 {
     return this->invProjMatrix;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const Math::matrix44&
-CameraSettings::GetViewTransform() const
-{
-    return this->viewMatrix;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const Math::matrix44&
-CameraSettings::GetViewProjTransform() const
-{
-    if (this->viewProjDirty)
-    {
-        this->UpdateViewProjMatrix();
-    }
-    return this->viewProjMatrix;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const Math::frustum&
-CameraSettings::GetViewFrustum() const
-{
-    if (this->viewFrustumDirty)
-    {
-        this->UpdateViewFrustum();
-    }
-    return this->viewFrustum;
 }
 
 //------------------------------------------------------------------------------
