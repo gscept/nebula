@@ -109,5 +109,7 @@ void TextureUnmap(const TextureId id, IndexT mip);
 TextureMapInfo TextureMapFace(const TextureId id, IndexT mip, TextureCubeFace face, const CoreGraphics::GpuBufferTypes::MapType type);
 /// unmap texture face
 void TextureUnmapFace(const TextureId id, IndexT mip, TextureCubeFace face);
+/// generate mipmaps for texture
+void TextureGenerateMipmaps(const TextureId id);
 
 } // CoreGraphics
