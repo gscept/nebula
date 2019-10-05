@@ -46,8 +46,7 @@ View::BeginFrame(const IndexT frameIndex, const Timing::Time time)
 	DisplayDevice* displayDevice = DisplayDevice::Instance();
 	if (this->camera != GraphicsEntityId::Invalid())
 	{
-		n_assert(this->stage.isvalid());
-		n_assert(this->script.isvalid());
+		//n_assert(this->stage.isvalid()); // hmm, we never use stages
 		inBeginFrame = true;
 	}
 }
@@ -70,7 +69,8 @@ View::Render(const IndexT frameIndex, const Timing::Time time)
 	transDev->ApplyViewSettings();
 
 	// run the actual script
-	this->script->Run(frameIndex);
+	if (this->script != nullptr)
+		this->script->Run(frameIndex);
 }
 
 //------------------------------------------------------------------------------
