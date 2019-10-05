@@ -47,6 +47,8 @@ public:
 	static VkFormat AsVkMappableImageFormat(VkFormat fmt);
 	/// convert Nebula pixel format to Vulkan render target format
 	static VkFormat AsVkFramebufferFormat(CoreGraphics::PixelFormat::Code p);
+	/// convert Nebula pixel format to a guaranteed to be sampleable format
+	static VkFormat AsVkSampleableFormat(CoreGraphics::PixelFormat::Code p);
 	/// convert Nebula pixel format to Vulkan data format
 	static VkFormat AsVkDataFormat(CoreGraphics::PixelFormat::Code p);
 	/// convert DevIL pixel format to Vulkan component mapping
