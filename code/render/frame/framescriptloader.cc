@@ -75,6 +75,8 @@ FrameScriptLoader::LoadFrameScript(const IO::URI& path)
 		n_assert(node->int_value >= 2);
 		node = jzon_get(json, "engine");
 		n_assert(Util::String(node->string_value) == "Nebula");
+		node = jzon_get(json, "sub_script");
+		if (node) script->subScript = node->bool_value;
 
 
 #define CONSTRUCTOR_MACRO(type) \
@@ -139,9 +141,14 @@ FrameScriptLoader::ParseFrameScript(const Ptr<Frame::FrameScript>& script, JzonV
 		}
 	}
 
-	// set end of frame barrier
-	n_assert_fmt(FrameScriptLoader::LastSubmission != nullptr, "Frame script '%s' must contain an end submission, otherwise the script is invalid!", script->GetResourceName().Value());
-	FrameScriptLoader::LastSubmission->endOfFrameBarrier = &script->endOfFrameBarrier;
+	// set end of frame barrier if not a sub-script
+	if (!script->subScript)
+	{
+		n_assert_fmt(FrameScriptLoader::LastSubmission != nullptr, "Frame script '%s' must contain an end submission, otherwise the script is invalid!", script->GetResourceName().Value());
+		FrameScriptLoader::LastSubmission->resourceResetBarriers = &script->resourceResetBarriers;
+		FrameScriptLoader::LastSubmission = nullptr;
+	}
+	
 }
 
 //------------------------------------------------------------------------------
@@ -187,7 +194,15 @@ FrameScriptLoader::ParseColorTextureList(const Ptr<Frame::FrameScript>& script, 
 			};
 
 			JzonValue* layers = jzon_get(cur, "layers");
-			if (layers != nullptr) info.layers = layers->int_value;
+			if (layers != nullptr)
+			{
+				info.layers = layers->int_value;
+				info.type = Texture2DArray;
+			}
+			else
+			{
+				info.layers = 1;
+			}
 
 			// set relative, dynamic or msaa if defined
 			if (jzon_get(cur, "relative"))	info.relativeSize = jzon_get(cur, "relative")->bool_value;
@@ -249,7 +264,15 @@ FrameScriptLoader::ParseDepthStencilTextureList(const Ptr<Frame::FrameScript>& s
 		};
 
 		JzonValue* layers = jzon_get(cur, "layers");
-		if (layers != nullptr) info.layers = layers->int_value;
+		if (layers != nullptr)
+		{
+			info.layers = layers->int_value;
+			info.type = Texture2DArray;
+		}
+		else
+		{
+			info.layers = 1;
+		}
 
 		// set relative, dynamic or msaa if defined
 		if (jzon_get(cur, "relative"))	info.relativeSize = jzon_get(cur, "relative")->bool_value;
@@ -296,6 +319,7 @@ FrameScriptLoader::ParseImageReadWriteTextureList(const Ptr<Frame::FrameScript>&
 		n_assert(width != nullptr);
 		JzonValue* height = jzon_get(cur, "height");
 		n_assert(height != nullptr);
+		JzonValue* layers = jzon_get(cur, "layers");
 
 		// setup shader read-write texture
 		ShaderRWTextureCreateInfo info =
@@ -305,8 +329,8 @@ FrameScriptLoader::ParseImageReadWriteTextureList(const Ptr<Frame::FrameScript>&
 			CoreGraphics::PixelFormat::FromString(format->string_value),
 			CoreGraphicsImageLayout::ShaderRead,		// texture must be in shader read state if it's going to go into the bindless structure
 			(float)width->float_value, (float)height->float_value, 1,
-			1, 1,
-			false, false, false
+			layers ? layers->int_value : 1, 1,
+			false, false, true
 		};
 
 		if (jzon_get(cur, "relative")) info.relativeSize = jzon_get(cur, "relative")->bool_value;
@@ -360,15 +384,15 @@ FrameScriptLoader::ParseAlgorithmList(const Ptr<Frame::FrameScript>& script, Jzo
 
 		// algorithm needs name and class
 		JzonValue* name = jzon_get(cur, "name");
-		n_assert(name != NULL);
+		n_assert(name != nullptr);
 		JzonValue* clazz = jzon_get(cur, "class");
-		n_assert(clazz != NULL);
+		n_assert(clazz != nullptr);
 
 		// create algorithm
 		Algorithms::Algorithm* alg = (constructors[Util::String(clazz->string_value).HashCode()](script->GetAllocator()));
 
 		JzonValue* textures = jzon_get(cur, "render_textures");
-		if (textures != NULL)
+		if (textures != nullptr)
 		{
 			uint j;
 			for (j = 0; j < textures->size; j++)
@@ -378,8 +402,19 @@ FrameScriptLoader::ParseAlgorithmList(const Ptr<Frame::FrameScript>& script, Jzo
 			}
 		}
 
+		JzonValue* depthStencils = jzon_get(cur, "depth_stencils");
+		if (depthStencils != nullptr)
+		{
+			uint j;
+			for (j = 0; j < depthStencils->size; j++)
+			{
+				JzonValue* nd = depthStencils->array_values[j];
+				alg->AddRenderTexture(script->GetDepthStencilTexture(nd->string_value));
+			}
+		}
+
 		JzonValue* buffers = jzon_get(cur, "read_write_buffers");
-		if (buffers != NULL)
+		if (buffers != nullptr)
 		{
 			uint j;
 			for (j = 0; j < buffers->size; j++)
@@ -390,7 +425,7 @@ FrameScriptLoader::ParseAlgorithmList(const Ptr<Frame::FrameScript>& script, Jzo
 		}
 
 		JzonValue* images = jzon_get(cur, "read_write_textures");
-		if (images != NULL)
+		if (images != nullptr)
 		{
 			uint j;
 			for (j = 0; j < images->size; j++)
@@ -666,15 +701,8 @@ FrameScriptLoader::ParseComputeAlgorithm(const Ptr<Frame::FrameScript>& script, 
 		ParseResourceDependencies(script, op, outputs);
 	}
 
-	JzonValue* alg = jzon_get(node, "algorithm");
-	n_assert(alg != NULL);
-	JzonValue* function = jzon_get(node, "function");
-	n_assert(function != NULL);
-
 	// get algorithm
-	Algorithms::Algorithm* algorithm = script->GetAlgorithm(alg->string_value);
-	op->alg = algorithm;
-	op->funcName = function->string_value;
+	op->func = Algorithms::Algorithm::GetAlgorithmCallback(name->string_value);
 
 	// add to script
 	script->AddOp(op);
@@ -933,8 +961,8 @@ FrameScriptLoader::ParseSubpass(const Ptr<Frame::FrameScript>& script, CoreGraph
 		else if (name == "resources")			ParseResourceDependencies(script, framePass, cur);
 		else if (name == "inputs")				ParseResourceDependencies(script, framePass, cur);
 		else if (name == "outputs")				ParseResourceDependencies(script, framePass, cur);
-		else if (name == "viewports")			ParseSubpassViewports(script, frameSubpass, cur);
-		else if (name == "scissors")			ParseSubpassScissors(script, frameSubpass, cur);
+		else if (name == "viewports")			{ ParseSubpassViewports(script, frameSubpass, cur); subpass.numViewports = frameSubpass->viewports.Size(); }
+		else if (name == "scissors")			{ ParseSubpassScissors(script, frameSubpass, cur); subpass.numScissors = frameSubpass->scissors.Size(); }
 		else if (name == "subpass_algorithm")	ParseSubpassAlgorithm(script, frameSubpass, cur);
 		else if (name == "batch")				ParseSubpassBatch(script, frameSubpass, cur);
 		else if (name == "sorted_batch")		ParseSubpassSortedBatch(script, frameSubpass, cur);
@@ -946,6 +974,12 @@ FrameScriptLoader::ParseSubpass(const Ptr<Frame::FrameScript>& script, CoreGraph
 			n_error("Subpass operation '%s' is invalid.\n", name.AsCharPtr());
 		}
 	}
+
+	// correct amount of viewports and scissors if not set explicitly (both values default to 0)
+	if (subpass.numViewports == 0)
+		subpass.numViewports = subpass.attachments.Size();
+	if (subpass.numScissors == 0)
+		subpass.numScissors = subpass.attachments.Size();
 
 	// link together frame operations
 	pass.subpasses.Append(subpass);
@@ -1097,15 +1131,8 @@ FrameScriptLoader::ParseSubpassAlgorithm(const Ptr<Frame::FrameScript>& script, 
 		ParseResourceDependencies(script, op, outputs);
 	}
 
-	JzonValue* alg = jzon_get(node, "algorithm");
-	n_assert(alg != NULL);
-	JzonValue* function = jzon_get(node, "function");
-	n_assert(function != NULL);
-
 	// get algorithm
-	Algorithms::Algorithm* algorithm = script->GetAlgorithm(alg->string_value);
-	op->alg = algorithm;
-	op->funcName = function->string_value;
+	op->func = Algorithms::Algorithm::GetAlgorithmCallback(name->string_value);
 
 	// add to script
 	op->Setup();
@@ -1372,17 +1399,23 @@ FrameScriptLoader::ParseShaderVariables(const Ptr<Frame::FrameScript>& script, c
 				ConstantBufferUpdate(cbo, CoreGraphics::RenderTextureGetBindlessHandle(rtid), bind);
 			else
 			{
-				CoreGraphics::ShaderRWTextureId swid = script->GetReadWriteTexture(valStr);
-				if (swid != CoreGraphics::ShaderRWTextureId::Invalid())
-					ConstantBufferUpdate(cbo, CoreGraphics::ShaderRWTextureGetBindlessHandle(swid), bind);
+				CoreGraphics::RenderTextureId rtid = script->GetDepthStencilTexture(valStr);
+				if (rtid != CoreGraphics::RenderTextureId::Invalid())
+					ConstantBufferUpdate(cbo, CoreGraphics::RenderTextureGetBindlessHandle(rtid), bind);
 				else
 				{
-					const Ptr<Resources::ResourceManager>& resManager = Resources::ResourceManager::Instance();
-					CoreGraphics::TextureId id = resManager->CreateResource(valStr, nullptr, nullptr, true).As<CoreGraphics::TextureId>();
-					if (id != CoreGraphics::TextureId::Invalid())
-						ConstantBufferUpdate(cbo, CoreGraphics::TextureGetBindlessHandle(id), bind);
+					CoreGraphics::ShaderRWTextureId swid = script->GetReadWriteTexture(valStr);
+					if (swid != CoreGraphics::ShaderRWTextureId::Invalid())
+						ConstantBufferUpdate(cbo, CoreGraphics::ShaderRWTextureGetBindlessHandle(swid), bind);
 					else
-						n_error("Unknown resource %s!", valStr.AsCharPtr());
+					{
+						const Ptr<Resources::ResourceManager>& resManager = Resources::ResourceManager::Instance();
+						CoreGraphics::TextureId id = resManager->CreateResource(valStr, nullptr, nullptr, true).As<CoreGraphics::TextureId>();
+						if (id != CoreGraphics::TextureId::Invalid())
+							ConstantBufferUpdate(cbo, CoreGraphics::TextureGetBindlessHandle(id), bind);
+						else
+							n_error("Unknown resource %s!", valStr.AsCharPtr());
+					}
 				}
 			}
 			break;
@@ -1397,17 +1430,23 @@ FrameScriptLoader::ParseShaderVariables(const Ptr<Frame::FrameScript>& script, c
 				ResourceTableSetTexture(table, { rtid, slot, 0, CoreGraphics::SamplerId::Invalid(), false });
 			else
 			{
-				CoreGraphics::ShaderRWTextureId swid = script->GetReadWriteTexture(valStr);
-				if (swid != CoreGraphics::ShaderRWTextureId::Invalid())
-					ResourceTableSetShaderRWTexture(table, { swid, slot, 0, CoreGraphics::SamplerId::Invalid() });
+				CoreGraphics::RenderTextureId rtid = script->GetDepthStencilTexture(valStr);
+				if (rtid != CoreGraphics::RenderTextureId::Invalid())
+					ConstantBufferUpdate(cbo, CoreGraphics::RenderTextureGetBindlessHandle(rtid), bind);
 				else
 				{
-					const Ptr<Resources::ResourceManager>& resManager = Resources::ResourceManager::Instance();
-					CoreGraphics::TextureId id = resManager->CreateResource(valStr, nullptr, nullptr, true).As<CoreGraphics::TextureId>();
-					if (id != CoreGraphics::TextureId::Invalid())
-						ResourceTableSetTexture(table, { id, slot, 0, CoreGraphics::SamplerId::Invalid(), false });
+					CoreGraphics::ShaderRWTextureId swid = script->GetReadWriteTexture(valStr);
+					if (swid != CoreGraphics::ShaderRWTextureId::Invalid())
+						ResourceTableSetTexture(table, { swid, slot, 0, CoreGraphics::SamplerId::Invalid() });
 					else
-						n_error("Unknown resource %s!", valStr.AsCharPtr());
+					{
+						const Ptr<Resources::ResourceManager>& resManager = Resources::ResourceManager::Instance();
+						CoreGraphics::TextureId id = resManager->CreateResource(valStr, nullptr, nullptr, true).As<CoreGraphics::TextureId>();
+						if (id != CoreGraphics::TextureId::Invalid())
+							ResourceTableSetTexture(table, { id, slot, 0, CoreGraphics::SamplerId::Invalid(), false });
+						else
+							n_error("Unknown resource %s!", valStr.AsCharPtr());
+					}
 				}
 			}
 			break;
@@ -1474,6 +1513,20 @@ FrameScriptLoader::ParseResourceDependencies(const Ptr<Frame::FrameScript>& scri
 			if ((nd = jzon_get(dep, "layer_count")) != nullptr) subres.layerCount = nd->int_value;
 
 			RenderTextureId tex = script->colorTexturesByName[valstr];
+			op->renderTextureDeps.Add(tex, std::make_tuple(valstr, access, dependency, subres, layout));
+		}
+		else if (script->depthStencilTexturesByName.Contains(valstr))
+		{
+			CoreGraphicsImageLayout layout = ImageLayoutFromString(jzon_get(dep, "layout")->string_value);
+			CoreGraphics::ImageSubresourceInfo subres;
+			JzonValue* nd = nullptr;
+			if ((nd = jzon_get(dep, "aspect")) != nullptr) subres.aspect = ImageAspectFromString(nd->string_value);
+			if ((nd = jzon_get(dep, "mip")) != nullptr) subres.mip = nd->int_value;
+			if ((nd = jzon_get(dep, "mip_count")) != nullptr) subres.mipCount = nd->int_value;
+			if ((nd = jzon_get(dep, "layer")) != nullptr) subres.layer = nd->int_value;
+			if ((nd = jzon_get(dep, "layer_count")) != nullptr) subres.layerCount = nd->int_value;
+
+			RenderTextureId tex = script->depthStencilTexturesByName[valstr];
 			op->renderTextureDeps.Add(tex, std::make_tuple(valstr, access, dependency, subres, layout));
 		}
 		else

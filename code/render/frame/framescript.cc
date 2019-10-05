@@ -16,8 +16,8 @@ __ImplementClass(Frame::FrameScript, 'FRSC', Core::RefCounted);
 */
 FrameScript::FrameScript() :
 	window(Ids::InvalidId32),
-	endOfFrameBarrier(CoreGraphics::BarrierId::Invalid()),
-	frameOpCounter(0)
+	frameOpCounter(0),
+	subScript(false)
 {
 	// empty
 }
@@ -153,12 +153,15 @@ FrameScript::Build()
 		this->compiled[i]->Discard();
 	}
 
+	for (i = 0; i < this->resourceResetBarriers.Size(); i++)
+		DestroyBarrier(this->resourceResetBarriers[i]);
+	this->resourceResetBarriers.Clear();
+
 	for (i = 0; i < this->events.Size(); i++)
 		DestroyEvent(this->events[i]);
+
 	for (i = 0; i < this->barriers.Size(); i++)
 		DestroyBarrier(this->barriers[i]);
-	for (i = 0; i < this->semaphores.Size(); i++)
-		DestroySemaphore(this->semaphores[i]);
 
 	// clear old compiled result
 	this->buildAllocator.Release();
@@ -179,7 +182,7 @@ FrameScript::Build()
 		subres.mip = 0;
 		subres.mipCount = CoreGraphics::RenderTextureGetNumMips(tex);
 		auto& arr = renderTextures.AddUnique(tex);
-		arr.Append(std::make_tuple(subres, FrameOp::TextureDependency{ nullptr, CoreGraphicsQueueType::GraphicsQueueType, layout, CoreGraphics::BarrierStage::PassOutput, CoreGraphics::BarrierAccess::ColorAttachmentWrite, DependencyIntent::Write, 0 }));
+		arr.Append(std::make_tuple(subres, FrameOp::TextureDependency{ nullptr, CoreGraphicsQueueType::GraphicsQueueType, layout, CoreGraphics::BarrierStage::AllGraphicsShaders | CoreGraphics::BarrierStage::ComputeShader, CoreGraphics::BarrierAccess::ShaderRead, DependencyIntent::Read, 0 }));
 	}
 
 	for (i = 0; i < this->depthStencilTextures.Size(); i++)
@@ -193,7 +196,7 @@ FrameScript::Build()
 		subres.mip = 0;
 		subres.mipCount = CoreGraphics::RenderTextureGetNumMips(tex);
 		auto& arr = renderTextures.AddUnique(tex);
-		arr.Append(std::make_tuple(subres, FrameOp::TextureDependency{ nullptr, CoreGraphicsQueueType::GraphicsQueueType, layout, CoreGraphics::BarrierStage::PassOutput, CoreGraphics::BarrierAccess::DepthAttachmentWrite, DependencyIntent::Write, 0 }));
+		arr.Append(std::make_tuple(subres, FrameOp::TextureDependency{ nullptr, CoreGraphicsQueueType::GraphicsQueueType, layout, CoreGraphics::BarrierStage::AllGraphicsShaders, CoreGraphics::BarrierAccess::DepthAttachmentRead, DependencyIntent::Read, 0 }));
 	}
 
 	for (i = 0; i < this->readWriteTextures.Size(); i++)
@@ -208,7 +211,7 @@ FrameScript::Build()
 		subres.mip = 0;
 		subres.mipCount = CoreGraphics::ShaderRWTextureGetNumMips(tex);
 		auto& arr = rwTextures.AddUnique(tex);
-		arr.Append(std::make_tuple(subres, FrameOp::TextureDependency{ nullptr, CoreGraphicsQueueType::GraphicsQueueType, layout, CoreGraphics::BarrierStage::ComputeShader, CoreGraphics::BarrierAccess::ShaderWrite, DependencyIntent::Write, 0 }));
+		arr.Append(std::make_tuple(subres, FrameOp::TextureDependency{ nullptr, CoreGraphicsQueueType::GraphicsQueueType, layout, CoreGraphics::BarrierStage::ComputeShader, CoreGraphics::BarrierAccess::ShaderRead, DependencyIntent::Read, 0 }));
 	}
 
 	for (i = 0; i < this->ops.Size(); i++)
@@ -217,8 +220,8 @@ FrameScript::Build()
 	}
 
 	// setup a post-frame barrier to reset the resource state of all resources back to their created original (ShaderRead for RenderTexture, General for RWTexture
-	Util::Array<std::tuple<CoreGraphics::RenderTextureId, CoreGraphics::ImageSubresourceInfo, CoreGraphicsImageLayout, CoreGraphicsImageLayout, CoreGraphics::BarrierAccess, CoreGraphics::BarrierAccess>> renderTexturesBarr;
-	Util::Array<std::tuple<CoreGraphics::ShaderRWTextureId, CoreGraphics::ImageSubresourceInfo, CoreGraphicsImageLayout, CoreGraphicsImageLayout, CoreGraphics::BarrierAccess, CoreGraphics::BarrierAccess>> shaderRWTexturesBarr;
+	Util::Array<CoreGraphics::RWTextureBarrier> shaderRWTexturesBarr;
+	Util::Array<CoreGraphics::RenderTextureBarrier> renderTexturesBarr;
 
 	for (i = 0; i < rwTextures.Size(); i++)
 	{
@@ -229,10 +232,22 @@ FrameScript::Build()
 		{
 			const CoreGraphics::ImageSubresourceInfo& info = std::get<0>(deps[j]);
 			const FrameOp::TextureDependency& dep = std::get<1>(deps[j]);
+			CoreGraphics::BarrierAccess outAccess = layout == CoreGraphicsImageLayout::Present ? CoreGraphics::BarrierAccess::TransferRead : CoreGraphics::BarrierAccess::ShaderRead;
+			CoreGraphics::BarrierStage outStage = outAccess == CoreGraphics::BarrierAccess::TransferRead ? CoreGraphics::BarrierStage::Transfer : CoreGraphics::BarrierStage::AllGraphicsShaders;
 
 			// rw textures are created with general
 			if (dep.layout != layout)
-				shaderRWTexturesBarr.Append(std::make_tuple(res, info, dep.layout, layout, CoreGraphics::BarrierAccess::NoAccess, CoreGraphics::BarrierAccess::NoAccess));
+			{
+				CoreGraphics::BarrierCreateInfo inf =
+				{
+					Util::String::Sprintf("End of Frame Resource RWTexture Transition %d", res.id24),
+					CoreGraphics::BarrierDomain::Global,
+					dep.stage,
+					outStage,
+					nullptr, nullptr, { CoreGraphics::RWTextureBarrier{ res, info, dep.layout, layout, dep.access, outAccess } }
+				};
+				this->resourceResetBarriers.Append(CoreGraphics::CreateBarrier(inf));
+			}
 		}
 	}
 
@@ -245,26 +260,24 @@ FrameScript::Build()
 		{
 			const CoreGraphics::ImageSubresourceInfo& info = std::get<0>(deps[j]);
 			const FrameOp::TextureDependency& dep = std::get<1>(deps[j]);
+			CoreGraphics::BarrierAccess outAccess = layout == CoreGraphicsImageLayout::Present ? CoreGraphics::BarrierAccess::TransferRead : CoreGraphics::BarrierAccess::ShaderRead;
+			CoreGraphics::BarrierStage outStage = outAccess == CoreGraphics::BarrierAccess::TransferRead ? CoreGraphics::BarrierStage::Transfer : CoreGraphics::BarrierStage::AllGraphicsShaders;
 
 			// render textures are created as shader read
 			if (dep.layout != layout)
-				renderTexturesBarr.Append(std::make_tuple(res, info, dep.layout, layout, CoreGraphics::BarrierAccess::NoAccess, CoreGraphics::BarrierAccess::NoAccess));
+			{
+				CoreGraphics::BarrierCreateInfo inf =
+				{
+					Util::String::Sprintf("End of Frame RenderTexture Reset Transition %d", res.id24),
+					CoreGraphics::BarrierDomain::Global,
+					dep.stage,
+					outStage,
+					{ CoreGraphics::RenderTextureBarrier{ res, info, dep.layout, layout, dep.access, outAccess } }, nullptr, nullptr
+				};
+				this->resourceResetBarriers.Append(CoreGraphics::CreateBarrier(inf));
+			}
 		}
 	}
-
-	// buffers need not be transitioned
-	Util::Array<std::tuple<CoreGraphics::ShaderRWBufferId, CoreGraphics::BarrierAccess, CoreGraphics::BarrierAccess>> shaderRWBuffersBarr;
-	CoreGraphics::BarrierCreateInfo info =
-	{
-		"End of Frame Transitions",
-		CoreGraphics::BarrierDomain::Global,
-		CoreGraphics::BarrierStage::Bottom,
-		CoreGraphics::BarrierStage::Bottom,
-		renderTexturesBarr, shaderRWBuffersBarr, shaderRWTexturesBarr
-	};
-	if (this->endOfFrameBarrier != CoreGraphics::BarrierId::Invalid())
-		CoreGraphics::DestroyBarrier(this->endOfFrameBarrier);
-	this->endOfFrameBarrier = CoreGraphics::CreateBarrier(info);
 }
 
 //------------------------------------------------------------------------------

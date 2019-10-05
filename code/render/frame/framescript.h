@@ -52,14 +52,20 @@ public:
 	void AddColorTexture(const Util::StringAtom& name, const CoreGraphics::RenderTextureId tex);
 	/// get color texture
 	const CoreGraphics::RenderTextureId GetColorTexture(const Util::StringAtom& name);
+	/// get color textures
+	const Util::Dictionary<Util::StringAtom, CoreGraphics::RenderTextureId>& GetColorTextures();
 	/// add depth-stencil texture
 	void AddDepthStencilTexture(const Util::StringAtom& name, const CoreGraphics::RenderTextureId tex);
 	/// get depth-stencil texture
 	const CoreGraphics::RenderTextureId GetDepthStencilTexture(const Util::StringAtom& name);
+	/// get color textures
+	const Util::Dictionary<Util::StringAtom, CoreGraphics::RenderTextureId>& GetDepthStencilTextures();
 	/// add read-write texture
 	void AddReadWriteTexture(const Util::StringAtom& name, const CoreGraphics::ShaderRWTextureId tex);
 	/// get read-write texture
 	const CoreGraphics::ShaderRWTextureId GetReadWriteTexture(const Util::StringAtom& name);
+	/// get color textures
+	const Util::Dictionary<Util::StringAtom, CoreGraphics::ShaderRWTextureId>& GetShaderRWTextures();
 	/// add read-write buffer
 	void AddReadWriteBuffer(const Util::StringAtom& name, const CoreGraphics::ShaderRWBufferId buf);
 	/// get read-write buffer
@@ -94,7 +100,6 @@ private:
 
 	Util::Array<CoreGraphics::EventId> events;
 	Util::Array<CoreGraphics::BarrierId> barriers;
-	Util::Array<CoreGraphics::SemaphoreId> semaphores;
 	Memory::ArenaAllocator<BIG_CHUNK> buildAllocator;
 
 	Resources::ResourceName resId;
@@ -108,10 +113,12 @@ private:
 	Util::Dictionary<Util::StringAtom, CoreGraphics::ShaderRWBufferId> readWriteBuffersByName;
 	Util::Array<Frame::FrameOp*> ops;
 	Util::Array<Frame::FrameOp::Compiled*> compiled;
-	CoreGraphics::BarrierId endOfFrameBarrier;
+	Util::Array<CoreGraphics::BarrierId> resourceResetBarriers;
 	IndexT frameOpCounter;
 	Util::Array<Algorithms::Algorithm*> algorithms;
 	Util::Dictionary<Util::StringAtom, Algorithms::Algorithm*> algorithmsByName;
+
+	bool subScript; // if subscript, it means it can only be ran from within another script
 };
 
 //------------------------------------------------------------------------------
@@ -163,6 +170,15 @@ FrameScript::GetColorTexture(const Util::StringAtom& name)
 //------------------------------------------------------------------------------
 /**
 */
+inline const Util::Dictionary<Util::StringAtom, CoreGraphics::RenderTextureId>& 
+FrameScript::GetColorTextures()
+{
+	return this->colorTexturesByName;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 inline const CoreGraphics::RenderTextureId
 FrameScript::GetDepthStencilTexture(const Util::StringAtom& name)
 {
@@ -173,11 +189,29 @@ FrameScript::GetDepthStencilTexture(const Util::StringAtom& name)
 //------------------------------------------------------------------------------
 /**
 */
+inline const Util::Dictionary<Util::StringAtom, CoreGraphics::RenderTextureId>& 
+FrameScript::GetDepthStencilTextures()
+{
+	return this->depthStencilTexturesByName;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 inline const CoreGraphics::ShaderRWTextureId
 FrameScript::GetReadWriteTexture(const Util::StringAtom& name)
 {
 	IndexT i = this->readWriteTexturesByName.FindIndex(name);
 	return i == InvalidIndex ? CoreGraphics::ShaderRWTextureId::Invalid() : this->readWriteTexturesByName.ValueAtIndex(i);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const Util::Dictionary<Util::StringAtom, CoreGraphics::ShaderRWTextureId>& 
+FrameScript::GetShaderRWTextures()
+{
+	return this->readWriteTexturesByName;
 }
 
 //------------------------------------------------------------------------------
