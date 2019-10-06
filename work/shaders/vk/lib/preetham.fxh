@@ -20,19 +20,54 @@ perez(float cosTheta, float gamma, float cosGamma, vec3 A, vec3 B, vec3 C, vec3 
 
 //------------------------------------------------------------------------------
 /**
+*/
+vec3 YxyToXYZ( in vec3 Yxy )
+{
+	float Y = Yxy.r;
+	float x = Yxy.g;
+	float y = Yxy.b;
+
+	float X = x * ( Y / y );
+	float Z = ( 1.0 - x - y ) * ( Y / y );
+
+	return vec3(X,Y,Z);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+vec3 XYZToRGB( in vec3 XYZ )
+{
+	// CIE/E
+	mat3 M = mat3
+	(
+		 2.3706743, -0.9000405, -0.4706338,
+		-0.5138850,  1.4253036,  0.0885814,
+ 		 0.0052982, -0.0146949,  1.0093968
+	);
+
+	return XYZ * M;
+}
+
+
+//------------------------------------------------------------------------------
+/**
 	@param sphereDir The direction from the surface to the sky dome.
 	@param lightDir The direction of the global light (sky light) in world space (so multiply by InvView).
 */
 vec3
 Preetham(vec3 sphereDir, vec3 lightDir, vec4 A, vec4 B, vec4 C, vec4 D, vec4 E, vec4 Z)
 {
+	float cosThetaSun = dot(lightDir, vec3(0, 1, 0));
+	float thetaSun = acos(cosThetaSun);
+	vec3 zeroThetaS = perez(0.0, thetaSun, cosThetaSun, A.xyz, B.xyz, C.xyz, D.xyz, E.xyz);
+
 	float cosTheta = clamp(sphereDir.y, 0.0f, 1.0f);
 	float cosGamma = dot(sphereDir, lightDir.xyz);
 	float gamma = acos(cosGamma);
-	vec3 r_xyY = Z.xyz * perez(cosTheta, gamma, cosGamma, A.xyz, B.xyz, C.xyz, D.xyz, E.xyz);
-	vec3 r_XYZ = vec3(r_xyY.x, r_xyY.y, 1 - r_xyY.x - r_xyY.y) * r_xyY.z / r_xyY.y;
-	float red = dot(vec3( 3.240479, -1.537150, -0.498535), r_XYZ);
-	float green = dot(vec3(-0.969256,  1.875992,  0.041556), r_XYZ);
-	float blue = dot(vec3( 0.055648, -0.204043,  1.057311), r_XYZ);
-	return vec3(red, green, blue);
+	vec3 r_xyY = Z.xyz * (perez(cosTheta, gamma, cosGamma, A.xyz, B.xyz, C.xyz, D.xyz, E.xyz));
+
+	vec3 r_XYZ = YxyToXYZ(r_xyY);
+	vec3 ret = XYZToRGB(r_XYZ);
+	return ret * 0.05f;
 }

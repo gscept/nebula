@@ -9,6 +9,7 @@
 #include "lib/CSM.fxh"
 #include "lib/techniques.fxh"
 #include "lib/shadowbase.fxh"
+#include "lib/preetham.fxh"
 
 const float specPower = float(32.0f);
 const float rimLighting = float(0.2f);
@@ -124,17 +125,22 @@ psGlob([color0] out vec4 Color)
 
 	vec3 diff = GlobalAmbientLightColor.xyz;
 	diff += GlobalLightColor.xyz * saturate(NL);
-	diff += GlobalBackLightColor.xyz * saturate(-NL + GlobalBackLightOffset);
+	//diff += GlobalBackLightColor.xyz * saturate(-NL + GlobalBackLightOffset);
 
-	vec4 specColor = subpassLoad(InputAttachment3);
+	vec4 specColor = subpassLoad(InputAttachment2);
 	float specPower = ROUGHNESS_TO_SPECPOWER(specColor.a);
 
 	vec3 H = normalize(GlobalLightDir.xyz + viewVec);
 	float NH = saturate(dot(normal, H));
 	float NV = saturate(dot(normal, viewVec));
 	float HL = saturate(dot(H, GlobalLightDir.xyz));
-	vec3 spec;
+	vec3 spec;  
 	BRDFLighting(NH, NL, NV, HL, specPower, specColor.rgb, spec);
+
+	// add sky light
+	vec3 skyLight = Preetham(normal, GlobalLightDir.xyz, A, B, C, D, E, Z) * GlobalLightColor.xyz;
+	diff += skyLight;
+
 	vec3 final = (albedoColor.rgb + spec) * diff;
 
 	Color = vec4(final * shadowFactor, 1);

@@ -219,7 +219,6 @@
         depth: true,
         batch: "FlatGeometryLit",
         batch: "TesselatedGeometryLit",
-        batch: "Background"
       },
       subpass: {
         name: "LightPass",
@@ -227,7 +226,8 @@
         inputs: [ "AlbedoBuffer", "NormalBuffer", "SpecularBuffer", "EmissiveBuffer", "ZBuffer" ],
         depth: true,
         attachments: [ "LightBuffer" ],
-        system: "Lights"
+        system: "Lights",
+        batch: "Background",
       },
     },
 
