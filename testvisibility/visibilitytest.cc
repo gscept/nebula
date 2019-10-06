@@ -73,7 +73,7 @@ VisibilityTest::Run()
 
 	Dynui::ImguiContext::Create();
 	
-	Ptr<View> view = gfxServer->CreateView("mainview", "frame:vkdebug.json");
+	Ptr<View> view = gfxServer->CreateView("mainview", "frame:vkdefault.json");
 	Ptr<Stage> stage = gfxServer->CreateStage("stage1", true);
 
 	// setup camera and view

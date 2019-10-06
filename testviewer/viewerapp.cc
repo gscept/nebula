@@ -20,6 +20,7 @@
 #include "imgui.h"
 #include "dynui/im3d/im3dcontext.h"
 #include "dynui/im3d/im3d.h"
+#include "graphics/environmentcontext.h"
 
 using namespace Timing;
 using namespace Graphics;
@@ -97,8 +98,8 @@ SimpleViewerApplication::Open()
         this->inputServer->Open();
         this->gfxServer->Open();
 
-        SizeT width = this->GetCmdLineArgs().GetInt("-w", 1024);
-        SizeT height = this->GetCmdLineArgs().GetInt("-h", 768);
+        SizeT width = this->GetCmdLineArgs().GetInt("-w", 1680);
+        SizeT height = this->GetCmdLineArgs().GetInt("-h", 1050);
         
 
         CoreGraphics::WindowCreateInfo wndInfo =
@@ -115,34 +116,34 @@ SimpleViewerApplication::Open()
         ObservableContext::Create();
 		Lighting::LightContext::Create();
 		Characters::CharacterContext::Create();
-        Dynui::ImguiContext::Create();
-        Im3d::Im3dContext::Create();
+		Im3d::Im3dContext::Create();
+		Dynui::ImguiContext::Create();
 
         Im3d::Im3dContext::SetGridStatus(true);
         Im3d::Im3dContext::SetGridSize(1.0f, 25);
         Im3d::Im3dContext::SetGridColor(Math::float4(0.2f, 0.2f, 0.2f, 0.8f));
 
-        this->view = gfxServer->CreateView("mainview", "frame:vkdebug.json");
+        this->view = gfxServer->CreateView("mainview", "frame:vkdefault.json"_uri);
         this->stage = gfxServer->CreateStage("stage1", true);
         this->cam = Graphics::CreateEntity();
         CameraContext::RegisterEntity(this->cam);
-        CameraContext::SetupProjectionFov(this->cam, width / (float)height, 45.f, 0.01f, 1000.0f);
+        CameraContext::SetupProjectionFov(this->cam, width / (float)height, Math::n_deg2rad(60.f), 0.1f, 1000.0f);
 
 		this->globalLight = Graphics::CreateEntity();
 		Lighting::LightContext::RegisterEntity(this->globalLight);
-		Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::float4(1, 1, 1, 0), 1.0f, Math::float4(0, 0, 0, 0), Math::float4(0, 0, 0, 0), 0.0f, Math::vector(1, 1, 1), false);
+		Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::float4(2, 1, 1, 0), 1.0f, Math::float4(0, 0, 0, 0), Math::float4(0, 0, 0, 0), 0.0f, -Math::vector(1, 0.2f, 1), true);
 
 		this->pointLights[0] = Graphics::CreateEntity();
 		Lighting::LightContext::RegisterEntity(this->pointLights[0]);
-		Lighting::LightContext::SetupPointLight(this->pointLights[0], Math::float4(1, 0, 0, 1), 10.0f, Math::matrix44::translation(0, 0, -10), 10.0f, false);
+		Lighting::LightContext::SetupPointLight(this->pointLights[0], Math::float4(1, 0, 0, 1), 1.0f, Math::matrix44::translation(0, 0, -10), 1.0f, false);
         
 		this->pointLights[1] = Graphics::CreateEntity();
 		Lighting::LightContext::RegisterEntity(this->pointLights[1]);
-		Lighting::LightContext::SetupPointLight(this->pointLights[1], Math::float4(0, 1, 0, 1), 10.0f, Math::matrix44::translation(-10, 0, -10), 10.0f, false);
+		Lighting::LightContext::SetupPointLight(this->pointLights[1], Math::float4(0, 1, 0, 1), 1.0f, Math::matrix44::translation(-10, 0, -10), 1.0f, false);
 
 		this->pointLights[2] = Graphics::CreateEntity();
 		Lighting::LightContext::RegisterEntity(this->pointLights[2]);
-		Lighting::LightContext::SetupPointLight(this->pointLights[2], Math::float4(0, 0, 1, 1), 10.0f, Math::matrix44::translation(-10, 0, 0), 10.0f, false);
+		Lighting::LightContext::SetupPointLight(this->pointLights[2], Math::float4(0, 0, 1, 1), 1.0f, Math::matrix44::translation(-10, 0, 0), 1.0f, false);
 
         for (int i = 0; i < 3; i++)
         {
@@ -159,6 +160,7 @@ SimpleViewerApplication::Open()
 			Lighting::LightContext::SetupSpotLight(this->spotLights[0], Math::float4(1, 1, 0, 1), 1.0f, spotLightMatrix, false);
 		}
 
+		/*
 		{
 			this->spotLights[1] = Graphics::CreateEntity();
 			Lighting::LightContext::RegisterEntity(this->spotLights[1]);
@@ -178,8 +180,9 @@ SimpleViewerApplication::Open()
 			spotLightMatrix.set_position(Math::point(2, 5, 2));
 			Lighting::LightContext::SetupSpotLight(this->spotLights[2], Math::float4(1, 0, 1, 1), 1.0f, spotLightMatrix, false);
 		}
+		*/
 
-        this->defaultViewPoint = Math::point(15.0f, 15.0f, -15.0f);
+        this->defaultViewPoint = Math::point(15.0f, 15.0f, 15.0f);
         this->ResetCamera();
         CameraContext::SetTransform(this->cam, this->mayaCameraUtil.GetCameraTransform());
 
@@ -188,14 +191,14 @@ SimpleViewerApplication::Open()
 
         this->entity = Graphics::CreateEntity();
         ModelContext::RegisterEntity(this->entity);
-        ModelContext::Setup(this->entity, "mdl:Units/Unit_Archer.n3", "Viewer");
+        ModelContext::Setup(this->entity, "mdl:system/placeholder.n3", "Viewer");
         ModelContext::SetTransform(this->entity, Math::matrix44::translation(Math::float4(0, 0, 0, 1)));
         this->entities.Append(this->entity);
 
 		this->ground = Graphics::CreateEntity();
 		ModelContext::RegisterEntity(this->ground);
-		ModelContext::Setup(this->ground, "mdl:environment/Groundplane.n3", "Viewer");
-		ModelContext::SetTransform(this->ground, Math::matrix44::translation(Math::float4(0, 0, 0, 1)));
+		ModelContext::Setup(this->ground, "mdl:environment/plcholder_world.n3", "Viewer");
+		ModelContext::SetTransform(this->ground, Math::matrix44::multiply(Math::matrix44::scaling(100, 1, 100),  Math::matrix44::translation(Math::float4(0, 0, 0, 1))));
         this->entities.Append(this->ground);
 
         // register visibility system
@@ -208,15 +211,15 @@ SimpleViewerApplication::Open()
         ObserverContext::RegisterEntity(this->cam);
         ObserverContext::Setup(this->cam, VisibilityEntityType::Camera);
 
-		//const Util::StringAtom modelRes[] = { "mdl:Units/Unit_Archer.n3",  "mdl:Units/Unit_Footman.n3",  "mdl:Units/Unit_Spearman.n3" };
-		const Util::StringAtom modelRes[] = { "mdl:Buildings/castle_tower.n3",  "mdl:Buildings/castle_tower.n3",  "mdl:Buildings/castle_tower.n3" };
+		const Util::StringAtom modelRes[] = { "mdl:Units/Unit_Archer.n3",  "mdl:Units/Unit_Footman.n3",  "mdl:Units/Unit_Spearman.n3" };
+		//const Util::StringAtom modelRes[] = { "mdl:system/placeholder.n3",  "mdl:system/placeholder.n3",  "mdl:system/placeholder.n3" };
 		const Util::StringAtom skeletonRes[] = { "ske:Units/Unit_Archer.nsk3",  "ske:Units/Unit_Footman.nsk3",  "ske:Units/Unit_Spearman.nsk3" };
 		const Util::StringAtom animationRes[] = { "ani:Units/Unit_Archer.nax3",  "ani:Units/Unit_Footman.nax3",  "ani:Units/Unit_Spearman.nax3" };
 
 		Util::Array<Graphics::GraphicsEntityId> models;
 		ModelContext::BeginBulkRegister();
 		ObservableContext::BeginBulkRegister();
-		static const int NumModels = 50;
+		static const int NumModels = 1;
 		for (IndexT i = -NumModels; i < NumModels; i++)
 		{
 			for (IndexT j = -NumModels; j < NumModels; j++)
@@ -249,6 +252,11 @@ SimpleViewerApplication::Open()
 		}
 		ModelContext::EndBulkRegister();
 		ObservableContext::EndBulkRegister();
+
+		// create environment context for the atmosphere effects
+		EnvironmentContext::Create(this->globalLight);
+
+
         this->UpdateCamera();
 
         return true;
@@ -292,7 +300,7 @@ SimpleViewerApplication::Run()
 
 		// animate the spotlights
 		IndexT i;
-		for (i = 0; i < 3; i++)
+		for (i = 0; i < 0; i++)
 		{
 			Math::matrix44 spotLightTransform;
 			Math::scalar scaleFactor = i * 1.5f + 30;
@@ -302,6 +310,11 @@ SimpleViewerApplication::Run()
 			Lighting::LightContext::SetTransform(this->spotLights[i], spotLightTransform);
 		}
 
+		Math::matrix44 globalLightTransform = Lighting::LightContext::GetTransform(this->globalLight);
+		Math::matrix44 rotY = Math::matrix44::rotationy(Math::n_deg2rad(0.1f));
+		Math::matrix44 rotX = Math::matrix44::rotationz(Math::n_deg2rad(0.05f));
+		globalLightTransform = globalLightTransform * rotX * rotY;
+		Lighting::LightContext::SetTransform(this->globalLight, globalLightTransform);
         this->gfxServer->BeginFrame();
         
         // put game code which doesn't need visibility data or animation here
@@ -314,16 +327,13 @@ SimpleViewerApplication::Run()
         }
         
         // put game code which need visibility data here
-
         this->gfxServer->RenderViews();
 
         // put game code which needs rendering to be done (animation etc) here
-
         this->gfxServer->EndViews();
 
         
         // do stuff after rendering is done
-
         this->gfxServer->EndFrame();
 
         // force wait immediately
