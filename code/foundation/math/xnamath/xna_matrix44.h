@@ -294,6 +294,42 @@ matrix44::operator!=(const matrix44& rhs) const
 //------------------------------------------------------------------------------
 /**
 */
+__forceinline
+matrix44 operator*(const matrix44& lhs, const matrix44& rhs)
+{
+	return Math::matrix44::multiply(lhs, rhs);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline
+float4 operator*(const float4& lhs, const matrix44& rhs)
+{
+	return Math::matrix44::transform(lhs, rhs);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline
+float4 operator*(const point& lhs, const matrix44& rhs)
+{
+	return Math::matrix44::transform3(lhs, rhs);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline
+float4 operator*(const vector& lhs, const matrix44& rhs)
+{
+	return Math::matrix44::transform3(lhs, rhs);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 __forceinline void
 matrix44::load(const scalar* ptr)
 {
