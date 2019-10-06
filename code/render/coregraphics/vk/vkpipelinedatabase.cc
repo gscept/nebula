@@ -280,7 +280,7 @@ VkPipelineDatabase::Reload(const CoreGraphics::ShaderProgramId id)
 							this->ct5 = t5;
 
 							// since t3 is initial, we will create a new pipeline
-							this->GetCompiledPipeline();
+							//this->GetCompiledPipeline();
 						}
 					}
 				}
