@@ -53,7 +53,7 @@ RenderTest::Run()
 	};
 	CoreGraphics::WindowId wnd = CreateWindow(wndInfo);
 
-	Ptr<View> view = gfxServer->CreateView("mainview", "frame:vkdebug.json");
+	Ptr<View> view = gfxServer->CreateView("mainview", "frame:vkdefault.json");
 	Ptr<Stage> stage = gfxServer->CreateStage("stage1", true);
 	
 	GraphicsEntityId cam = Graphics::CreateEntity();
