@@ -38,7 +38,9 @@ public:
     /// constructor
     Ptr();
     /// construct from C++ pointer
-    Ptr(TYPE* p);
+    explicit Ptr(TYPE* p);
+	/// constructor from nullptr
+	Ptr(std::nullptr_t rhs);
     /// construct from smart pointer
     Ptr(const Ptr<TYPE>& p);
 	/// implement move constructor
@@ -183,10 +185,20 @@ template<class TYPE>
 Ptr<TYPE>::Ptr(TYPE* p) :
     ptr(p)
 {
+	static_assert(std::is_base_of<Core::RefCounted, TYPE>::value, "Ptr only works on RefCounted types");
     if (0 != this->ptr)
     {
         this->ptr->AddRef();
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+inline Ptr<TYPE>::Ptr(std::nullptr_t rhs) :
+	ptr(nullptr)
+{
 }
 
 //------------------------------------------------------------------------------

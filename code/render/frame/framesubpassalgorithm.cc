@@ -30,7 +30,7 @@ FrameSubpassAlgorithm::~FrameSubpassAlgorithm()
 void
 FrameSubpassAlgorithm::Setup()
 {
-	this->func = this->alg->GetFunction(this->funcName);
+	// empty
 }
 
 //------------------------------------------------------------------------------
@@ -42,7 +42,6 @@ FrameSubpassAlgorithm::Discard()
 	FrameOp::Discard();
 
 	this->func = nullptr;
-	this->alg = nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -52,7 +51,7 @@ FrameOp::Compiled*
 FrameSubpassAlgorithm::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 {
 	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
-	ret->func = this->alg->GetFunction(this->funcName);
+	ret->func = this->func;
 	return ret;
 }
 

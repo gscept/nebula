@@ -11,6 +11,7 @@
 #include "coregraphics/barrier.h"
 #include "coregraphics/commandbuffer.h"
 #include "coregraphics/config.h"
+#include "util/stringatom.h"
 
 #ifdef CreateEvent
 #pragma push_macro("CreateEvent")
@@ -23,13 +24,13 @@ ID_24_8_TYPE(EventId);
 
 struct EventCreateInfo
 {
+	Util::StringAtom name;
 	bool createSignaled : 1;
-
 	BarrierStage leftDependency;
 	BarrierStage rightDependency;
-	Util::Array<std::tuple<RenderTextureId, ImageSubresourceInfo, CoreGraphicsImageLayout, CoreGraphicsImageLayout, BarrierAccess, BarrierAccess>> renderTextures;
-	Util::Array<std::tuple<ShaderRWBufferId, BarrierAccess, BarrierAccess>> shaderRWBuffers;
-	Util::Array<std::tuple<ShaderRWTextureId, ImageSubresourceInfo, CoreGraphicsImageLayout, CoreGraphicsImageLayout, BarrierAccess, BarrierAccess>> shaderRWTextures;
+	Util::Array<RenderTextureBarrier> renderTextures;
+	Util::Array<BufferBarrier> rwBuffers;
+	Util::Array<RWTextureBarrier> rwTextures;
 };
 
 /// create new event

@@ -53,24 +53,37 @@ FrameOp::Build(
 	Util::Array<FrameOp::Compiled*>& compiledOps,
 	Util::Array<CoreGraphics::EventId>& events,
 	Util::Array<CoreGraphics::BarrierId>& barriers,
-	Util::Array<CoreGraphics::SemaphoreId>& semaphores,
 	Util::Dictionary<CoreGraphics::ShaderRWTextureId, Util::Array<std::tuple<CoreGraphics::ImageSubresourceInfo, TextureDependency>>>& rwTextures,
 	Util::Dictionary<CoreGraphics::ShaderRWBufferId, BufferDependency>& rwBuffers,
 	Util::Dictionary<CoreGraphics::RenderTextureId, Util::Array<std::tuple<CoreGraphics::ImageSubresourceInfo, TextureDependency>>>& renderTextures)
 {
 	// create compiled version of this op, FramePass and FrameSubpass implement this differently than ordinary ops
-	this->compiled = AllocCompiled(allocator);
+	this->compiled = this->AllocCompiled(allocator);
 	compiledOps.Append(this->compiled);
+
+	this->SetupSynchronization(allocator, events, barriers, rwTextures, rwBuffers, renderTextures);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+FrameOp::SetupSynchronization(
+	Memory::ArenaAllocator<BIG_CHUNK>& allocator,
+	Util::Array<CoreGraphics::EventId>& events, 
+	Util::Array<CoreGraphics::BarrierId>& barriers, 
+	Util::Dictionary<CoreGraphics::ShaderRWTextureId, Util::Array<std::tuple<CoreGraphics::ImageSubresourceInfo, TextureDependency>>>& rwTextures, 
+	Util::Dictionary<CoreGraphics::ShaderRWBufferId, BufferDependency>& rwBuffers, 
+	Util::Dictionary<CoreGraphics::RenderTextureId, Util::Array<std::tuple<CoreGraphics::ImageSubresourceInfo, TextureDependency>>>& renderTextures)
+{
+	n_assert(this->compiled != nullptr);
 	IndexT i;
 
 	if (!this->rwTextureDeps.IsEmpty() || !this->rwBufferDeps.IsEmpty() || !this->renderTextureDeps.IsEmpty())
 	{
 		Util::Dictionary<std::tuple<IndexT, IndexT>, CoreGraphics::EventCreateInfo> waitEvents;
-		Util::Dictionary<std::tuple<IndexT, IndexT>, CoreGraphics::SemaphoreCreateInfo> waitSemaphores;
 		Util::Dictionary<std::tuple<IndexT, IndexT>, CoreGraphics::BarrierCreateInfo> barriers;
-
 		Util::Dictionary<std::tuple<IndexT, IndexT>, FrameOp::Compiled*> signalEvents;
-		Util::Dictionary<std::tuple<IndexT, IndexT>, FrameOp::Compiled*> signalSemaphores;
 		uint numOutputs = 0;
 
 		// go through texture dependencies
@@ -80,20 +93,21 @@ FrameOp::Build(
 			IndexT idx = rwTextures.FindIndex(this->rwTextureDeps.KeyAtIndex(i));
 
 			// right dependency set
-			const CoreGraphics::BarrierAccess& access = std::get<0>(this->rwTextureDeps.ValueAtIndex(i));
-			const CoreGraphics::BarrierStage& stage = std::get<1>(this->rwTextureDeps.ValueAtIndex(i));
-			const CoreGraphics::ImageSubresourceInfo& subres = std::get<2>(this->rwTextureDeps.ValueAtIndex(i));
-			const CoreGraphicsImageLayout& layout = std::get<3>(this->rwTextureDeps.ValueAtIndex(i));
+			const Util::StringAtom& name = std::get<0>(this->rwTextureDeps.ValueAtIndex(i));
+			const CoreGraphics::BarrierAccess& access = std::get<1>(this->rwTextureDeps.ValueAtIndex(i));
+			const CoreGraphics::BarrierStage& stage = std::get<2>(this->rwTextureDeps.ValueAtIndex(i));
+			const CoreGraphics::ImageSubresourceInfo& subres = std::get<3>(this->rwTextureDeps.ValueAtIndex(i));
+			const CoreGraphicsImageLayout& layout = std::get<4>(this->rwTextureDeps.ValueAtIndex(i));
 
 			DependencyIntent readOrWrite = DependencyIntent::Read;
 			switch (access)
 			{
-			case CoreGraphics::BarrierAccess::ShaderWrite:
-			case CoreGraphics::BarrierAccess::ColorAttachmentWrite:
-			case CoreGraphics::BarrierAccess::DepthAttachmentWrite:
-			case CoreGraphics::BarrierAccess::HostWrite:
-			case CoreGraphics::BarrierAccess::MemoryWrite:
-			case CoreGraphics::BarrierAccess::TransferWrite:
+				case CoreGraphics::BarrierAccess::ShaderWrite:
+				case CoreGraphics::BarrierAccess::ColorAttachmentWrite:
+				case CoreGraphics::BarrierAccess::DepthAttachmentWrite:
+				case CoreGraphics::BarrierAccess::HostWrite:
+				case CoreGraphics::BarrierAccess::MemoryWrite:
+				case CoreGraphics::BarrierAccess::TransferWrite:
 				readOrWrite = DependencyIntent::Write;
 				numOutputs++;
 				break;
@@ -107,8 +121,8 @@ FrameOp::Build(
 				bool createNew = true;
 				for (IndexT j = 0; j < deps.Size(); j++)
 				{
-					const CoreGraphics::ImageSubresourceInfo& info = std::get<0>(deps[i]);
-					TextureDependency& dep = std::get<1>(deps[i]);
+					const CoreGraphics::ImageSubresourceInfo& info = std::get<0>(deps[j]);
+					TextureDependency& dep = std::get<1>(deps[j]);
 
 					if (info.Overlaps(subres))
 					{
@@ -116,13 +130,13 @@ FrameOp::Build(
 						const std::tuple<IndexT, IndexT> pair = std::make_pair(this->index, dep.index);
 
 						// if we are reading, and the previous operation was a read, we can skip this update
-						if (dep.intent == DependencyIntent::Read && dep.intent != readOrWrite);
+						if (dep.intent == DependencyIntent::Read && readOrWrite == DependencyIntent::Read && dep.layout == layout);
 						else
 						{
 							// create semaphore
 							if (dep.queue != this->queue)
 							{
-								n_error("FRAME SCRIPT BUILD ERROR: Semaphores (cross-queue synchronization) is not yet implemented\n");
+								n_error("FRAME SCRIPT BUILD ERROR: Cross queue synchronization must be done using submissions!\n");
 							}
 							else
 							{
@@ -130,19 +144,21 @@ FrameOp::Build(
 								if (dep.index - this->index > 1)
 								{
 									CoreGraphics::EventCreateInfo& info = waitEvents.AddUnique(pair);
+									info.name = info.name.IsValid() ? info.name.AsString() + " + " + name.AsString() : name.AsString();
 									info.createSignaled = false;
 									info.leftDependency = dep.stage;
 									info.rightDependency = stage;
-									info.shaderRWTextures.Append(std::make_tuple(tex, subres, dep.layout, layout, dep.access, access));
+									info.rwTextures.Append(CoreGraphics::RWTextureBarrier{ tex, subres, dep.layout, layout, dep.access, access });
 									signalEvents.AddUnique(pair) = dep.op;
 								}
 								else // create barrier
 								{
 									CoreGraphics::BarrierCreateInfo& info = barriers.AddUnique(pair);
+									info.name = info.name.IsValid() ? info.name.AsString() + " + " + name.AsString() : name.AsString();
 									info.domain = this->domain;
 									info.leftDependency = dep.stage;
 									info.rightDependency = stage;
-									info.shaderRWTextures.Append(std::make_tuple(tex, subres, dep.layout, layout, dep.access, access));
+									info.rwTextures.Append(CoreGraphics::RWTextureBarrier{ tex, subres, dep.layout, layout, dep.access, access });
 								}
 							}
 						}
@@ -176,7 +192,7 @@ FrameOp::Build(
 					info.domain = CoreGraphics::BarrierDomain::Global;
 					info.leftDependency = CoreGraphics::BarrierStage::ComputeShader;
 					info.rightDependency = stage;
-					info.shaderRWTextures.Append(std::make_tuple(tex, subres, origLayout, layout, CoreGraphics::BarrierAccess::ShaderRead, access));
+					info.rwTextures.Append(CoreGraphics::RWTextureBarrier{ tex, subres, origLayout, layout, CoreGraphics::BarrierAccess::ShaderRead, access });
 				}
 
 				// no dependency for this resource at all, so insert one now
@@ -184,7 +200,6 @@ FrameOp::Build(
 				deps.Append(std::make_tuple(subres, TextureDependency{ this->compiled, this->queue, layout, stage, access, readOrWrite, this->index }));
 				rwTextures.Add(this->rwTextureDeps.KeyAtIndex(i), deps);
 			}
-				
 		}
 
 		// go through texture dependencies
@@ -194,20 +209,21 @@ FrameOp::Build(
 			IndexT idx = renderTextures.FindIndex(this->renderTextureDeps.KeyAtIndex(i));
 
 			// right dependency set
-			const CoreGraphics::BarrierAccess& access = std::get<0>(this->renderTextureDeps.ValueAtIndex(i));
-			const CoreGraphics::BarrierStage& stage = std::get<1>(this->renderTextureDeps.ValueAtIndex(i));
-			const CoreGraphics::ImageSubresourceInfo& subres = std::get<2>(this->renderTextureDeps.ValueAtIndex(i));
-			const CoreGraphicsImageLayout& layout = std::get<3>(this->renderTextureDeps.ValueAtIndex(i));
+			const Util::StringAtom& name = std::get<0>(this->renderTextureDeps.ValueAtIndex(i));
+			const CoreGraphics::BarrierAccess& access = std::get<1>(this->renderTextureDeps.ValueAtIndex(i));
+			const CoreGraphics::BarrierStage& stage = std::get<2>(this->renderTextureDeps.ValueAtIndex(i));
+			const CoreGraphics::ImageSubresourceInfo& subres = std::get<3>(this->renderTextureDeps.ValueAtIndex(i));
+			const CoreGraphicsImageLayout& layout = std::get<4>(this->renderTextureDeps.ValueAtIndex(i));
 
 			DependencyIntent readOrWrite = DependencyIntent::Read;
 			switch (access)
 			{
-			case CoreGraphics::BarrierAccess::ShaderWrite:
-			case CoreGraphics::BarrierAccess::ColorAttachmentWrite:
-			case CoreGraphics::BarrierAccess::DepthAttachmentWrite:
-			case CoreGraphics::BarrierAccess::HostWrite:
-			case CoreGraphics::BarrierAccess::MemoryWrite:
-			case CoreGraphics::BarrierAccess::TransferWrite:
+				case CoreGraphics::BarrierAccess::ShaderWrite:
+				case CoreGraphics::BarrierAccess::ColorAttachmentWrite:
+				case CoreGraphics::BarrierAccess::DepthAttachmentWrite:
+				case CoreGraphics::BarrierAccess::HostWrite:
+				case CoreGraphics::BarrierAccess::MemoryWrite:
+				case CoreGraphics::BarrierAccess::TransferWrite:
 				readOrWrite = DependencyIntent::Write;
 				numOutputs++;
 				break;
@@ -230,13 +246,13 @@ FrameOp::Build(
 						const std::tuple<IndexT, IndexT> pair = std::make_pair(this->index, dep.index);
 
 						// if we are reading, and the previous operation was a read, we can skip this update
-						if (dep.intent == DependencyIntent::Read && dep.intent != readOrWrite);
+						if (dep.intent == DependencyIntent::Read && readOrWrite == DependencyIntent::Read && dep.layout == layout);
 						else
 						{
 							// create semaphore
 							if (dep.queue != this->queue)
 							{
-								n_error("FRAME SCRIPT BUILD ERROR: Semaphores (cross-queue synchronization) is not yet implemented\n");
+								n_error("FRAME SCRIPT BUILD ERROR: Cross queue synchronization must be done using submissions!\n");
 							}
 							else
 							{
@@ -244,19 +260,21 @@ FrameOp::Build(
 								if (dep.index - this->index > 1)
 								{
 									CoreGraphics::EventCreateInfo& info = waitEvents.AddUnique(pair);
+									info.name = info.name.IsValid() ? info.name.AsString() + " + " + name.AsString() : name.AsString();
 									info.createSignaled = false;
 									info.leftDependency = dep.stage;
 									info.rightDependency = stage;
-									info.renderTextures.Append(std::make_tuple(tex, subres, dep.layout, layout, dep.access, access));
+									info.renderTextures.Append(CoreGraphics::RenderTextureBarrier{ tex, subres, dep.layout, layout, dep.access, access });
 									signalEvents.AddUnique(pair) = dep.op;
 								}
 								else // create barrier
 								{
 									CoreGraphics::BarrierCreateInfo& info = barriers.AddUnique(pair);
+									info.name = info.name.IsValid() ? info.name.AsString() + " + " + name.AsString() : name.AsString();
 									info.domain = this->domain;
 									info.leftDependency = dep.stage;
 									info.rightDependency = stage;
-									info.renderTextures.Append(std::make_tuple(tex, subres, dep.layout, layout, dep.access, access));
+									info.renderTextures.Append(CoreGraphics::RenderTextureBarrier{ tex, subres, dep.layout, layout, dep.access, access });
 								}
 							}
 						}
@@ -289,7 +307,7 @@ FrameOp::Build(
 					info.domain = CoreGraphics::BarrierDomain::Global;
 					info.leftDependency = CoreGraphics::BarrierStage::PixelShader;
 					info.rightDependency = stage;
-					info.renderTextures.Append(std::make_tuple(tex, subres, origLayout, layout, CoreGraphics::BarrierAccess::ShaderRead, access));
+					info.renderTextures.Append(CoreGraphics::RenderTextureBarrier{ tex, subres, origLayout, layout, subres.aspect == CoreGraphicsImageAspect::ColorBits ? CoreGraphics::BarrierAccess::ShaderRead : CoreGraphics::BarrierAccess::DepthAttachmentRead, access });
 				}
 
 				// no dependency for this resource at all, so insert one now
@@ -306,18 +324,19 @@ FrameOp::Build(
 			IndexT idx = rwBuffers.FindIndex(this->rwBufferDeps.KeyAtIndex(i));
 
 			// right dependency set
-			const CoreGraphics::BarrierAccess& access = std::get<0>(this->rwBufferDeps.ValueAtIndex(i));
-			const CoreGraphics::BarrierStage& stage = std::get<1>(this->rwBufferDeps.ValueAtIndex(i));
+			const Util::StringAtom& name = std::get<0>(this->rwBufferDeps.ValueAtIndex(i));
+			const CoreGraphics::BarrierAccess& access = std::get<1>(this->rwBufferDeps.ValueAtIndex(i));
+			const CoreGraphics::BarrierStage& stage = std::get<2>(this->rwBufferDeps.ValueAtIndex(i));
 
 			DependencyIntent readOrWrite = DependencyIntent::Read;
 			switch (access)
 			{
-			case CoreGraphics::BarrierAccess::ShaderWrite:
-			case CoreGraphics::BarrierAccess::ColorAttachmentWrite:
-			case CoreGraphics::BarrierAccess::DepthAttachmentWrite:
-			case CoreGraphics::BarrierAccess::HostWrite:
-			case CoreGraphics::BarrierAccess::MemoryWrite:
-			case CoreGraphics::BarrierAccess::TransferWrite:
+				case CoreGraphics::BarrierAccess::ShaderWrite:
+				case CoreGraphics::BarrierAccess::ColorAttachmentWrite:
+				case CoreGraphics::BarrierAccess::DepthAttachmentWrite:
+				case CoreGraphics::BarrierAccess::HostWrite:
+				case CoreGraphics::BarrierAccess::MemoryWrite:
+				case CoreGraphics::BarrierAccess::TransferWrite:
 				readOrWrite = DependencyIntent::Write;
 				numOutputs++;
 				break;
@@ -330,13 +349,13 @@ FrameOp::Build(
 				const std::tuple<IndexT, IndexT> pair = std::make_pair(this->index, dep.index);
 
 				// if we are reading, and the previous operation was a read, we can skip this update
-				if (dep.intent == DependencyIntent::Read && dep.intent != readOrWrite);
+				if (dep.intent == DependencyIntent::Read && readOrWrite == DependencyIntent::Read);
 				else
 				{
 					// create semaphore
 					if (dep.queue != this->queue)
 					{
-						n_error("FRAME SCRIPT BUILD ERROR: Semaphores (cross-queue synchronization) is not yet implemented\n");
+						n_error("FRAME SCRIPT BUILD ERROR: Cross queue synchronization must be done using submissions!\n");
 					}
 					else
 					{
@@ -344,19 +363,21 @@ FrameOp::Build(
 						if (dep.index - this->index > 1 && dep.op != nullptr)
 						{
 							CoreGraphics::EventCreateInfo& info = waitEvents.AddUnique(pair);
+							info.name = info.name.IsValid() ? info.name.AsString() + " + " + name.AsString() : name.AsString();
 							info.createSignaled = false;
 							info.leftDependency = dep.stage;
 							info.rightDependency = stage;
-							info.shaderRWBuffers.Append(std::make_tuple(buf, dep.access, access));
+							info.rwBuffers.Append(CoreGraphics::BufferBarrier{ buf, dep.access, access, 0, -1 });
 							signalEvents.AddUnique(pair) = dep.op;
 						}
 						else // create barrier
 						{
 							CoreGraphics::BarrierCreateInfo& info = barriers.AddUnique(pair);
+							info.name = info.name.IsValid() ? info.name.AsString() + " + " + name.AsString() : name.AsString();
 							info.domain = this->domain;
 							info.leftDependency = dep.stage;
 							info.rightDependency = stage;
-							info.shaderRWBuffers.Append(std::make_tuple(buf, dep.access, access));
+							info.rwBuffers.Append(CoreGraphics::BufferBarrier{ buf, dep.access, access, 0, -1 });
 						}
 					}
 				}
@@ -378,21 +399,18 @@ FrameOp::Build(
 
 #pragma push_macro("CreateEvent")
 #undef CreateEvent
-#pragma push_macro("CreateSemaphore")
-#undef CreateSemaphore
 
 		// allocate inputs, which is what we wait for or if we immediately trigger a barrier _before_ we execute the command
 		this->compiled->waitEvents = waitEvents.Size() > 0 ? (decltype(this->compiled->waitEvents))allocator.Alloc(sizeof(*this->compiled->waitEvents) * waitEvents.Size()) : nullptr;
-		this->compiled->waitSemaphores = waitSemaphores.Size() > 0 ? (CoreGraphics::SemaphoreId*)allocator.Alloc(sizeof(CoreGraphics::SemaphoreId) * waitSemaphores.Size()) : nullptr;
 		this->compiled->barriers = barriers.Size() > 0 ? (decltype(this->compiled->barriers))allocator.Alloc(sizeof(*this->compiled->barriers) * barriers.Size()) : nullptr;
 
 		// allocate for possible output (this will allocate a signal event slot for each output, which can only be signaled once)
 		this->compiled->signalEvents = numOutputs > 0 ? (decltype(this->compiled->signalEvents))allocator.Alloc(sizeof(*this->compiled->signalEvents) * numOutputs) : nullptr;
-		this->compiled->signalSemaphores = numOutputs > 0 ? (CoreGraphics::SemaphoreId*)allocator.Alloc(sizeof(CoreGraphics::SemaphoreId) * numOutputs) : nullptr;
 
 		// create pre-execution events and barriers
 		for (i = 0; i < waitEvents.Size(); i++)
 		{
+			waitEvents.ValueAtIndex(i).name = waitEvents.ValueAtIndex(i).name.AsString() + " <Frame Event>";
 			CoreGraphics::EventId ev = CreateEvent(waitEvents.ValueAtIndex(i));
 			events.Append(ev);
 			this->compiled->waitEvents[i].event = ev;
@@ -404,20 +422,9 @@ FrameOp::Build(
 		}
 		this->compiled->numWaitEvents = waitEvents.Size();
 
-		for (i = 0; i < waitSemaphores.Size(); i++)
-		{
-			CoreGraphics::SemaphoreId sem = CreateSemaphore(waitSemaphores.ValueAtIndex(i));
-			semaphores.Append(sem);
-			this->compiled->waitSemaphores[i] = sem;
-
-			// get parent and add signaling semaphore to it
-			FrameOp::Compiled* parent = signalSemaphores.ValueAtIndex(i);
-			parent->signalSemaphores[parent->numSignalSemaphores++] = sem;
-		}
-		this->compiled->numWaitSemaphores = waitSemaphores.Size();
-
 		for (i = 0; i < barriers.Size(); i++)
 		{
+			barriers.ValueAtIndex(i).name = barriers.ValueAtIndex(i).name.AsString() + " <Frame Barrier>";
 			CoreGraphics::BarrierId bar = CreateBarrier(barriers.ValueAtIndex(i));
 			this->compiled->barriers[i].barrier = bar;
 			this->compiled->barriers[i].queue = this->queue;
@@ -425,7 +432,6 @@ FrameOp::Build(
 		this->compiled->numBarriers = barriers.Size();
 
 #pragma pop_macro("CreateEvent")
-#pragma pop_macro("CreateSemaphore")
 	}
 }
 

@@ -38,6 +38,8 @@ public:
     point();
     /// construct from components
     point(scalar x, scalar y, scalar z);
+	/// construct from component
+	point(scalar xyz);
     /// construct from float4
     point(const float4& rhs);
     /// !!!! copy constructor forbidden, otherwise passing point's to a function
@@ -87,6 +89,16 @@ point::point(scalar x, scalar y, scalar z) :
     float4(x, y, z, 1.0f)
 {
     // empty
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline
+point::point(scalar xyz) :
+	float4(xyz, xyz, xyz, 1.0f)
+{
+	// empty
 }
 
 //------------------------------------------------------------------------------

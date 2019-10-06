@@ -128,4 +128,12 @@ TextureUnmapFace(const TextureId id, IndexT mip, TextureCubeFace face)
 	texturePool->UnmapCubeFace(id, face, mip);
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+TextureGenerateMipmaps(const TextureId id)
+{
+}
+
 } // namespace CoreGraphics

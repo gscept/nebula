@@ -29,6 +29,8 @@ public:
     virtual ~HtmlPageWriter();
     /// set the title of the page
     void SetTitle(const Util::String& title);
+    /// set the styling of the page
+    void SetStyle(const Util::String& style);
     /// begin writing the stream
     virtual bool Open();
     /// end writing the stream
@@ -56,6 +58,7 @@ public:
 
 private:
     Util::String title;
+    Util::String style;
     Ptr<IO::XmlWriter> xmlWriter;
     Util::Array<Util::KeyValuePair<Util::String,Util::String> > attrs;
     Util::Stack<HtmlElement::Code> elementStack;
@@ -68,6 +71,15 @@ inline void
 HtmlPageWriter::SetTitle(const Util::String& t)
 {
     this->title = t;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+HtmlPageWriter::SetStyle(const Util::String& s)
+{
+    this->style = s;
 }
 
 } // namespace Http

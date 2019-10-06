@@ -77,7 +77,7 @@ GraphicsFeatureUnit::OnActivate()
     Dynui::ImguiContext::Create();
     Im3d::Im3dContext::Create();
 
-    this->defaultView = gfxServer->CreateView("mainview", "frame:vkdebug.json");
+    this->defaultView = gfxServer->CreateView("mainview", "frame:vkdefault.json"_uri);
     this->defaultStage = gfxServer->CreateStage("defaultStage", true);
     this->defaultView->SetStage(this->defaultStage);
 

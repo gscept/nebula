@@ -126,7 +126,7 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 	extents.width = width;
 	extents.height = height;
 	extents.depth = 1;
-	auto queues = Vulkan::GetQueueFamilies();
+	//auto queues = Vulkan::GetQueueFamilies();
 	VkImageCreateInfo info =
 	{
 		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -140,9 +140,9 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 		VK_SAMPLE_COUNT_1_BIT,
 		forceLinear ? VK_IMAGE_TILING_LINEAR : VK_IMAGE_TILING_OPTIMAL,
 		VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-		VK_SHARING_MODE_CONCURRENT,
-		(uint32_t)queues.Size(),
-		queues.KeysAsArray().Begin(),
+		VK_SHARING_MODE_EXCLUSIVE,
+		0,
+		nullptr,
 		VK_IMAGE_LAYOUT_UNDEFINED
 	};
 	VkResult stat = vkCreateImage(dev, &info, NULL, &loadInfo.img);
@@ -246,8 +246,15 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 	// transition image to be used for rendering
 	VkUtilities::ImageBarrier(CoreGraphics::SubmissionContextGetCmdBuffer(sub),
 		CoreGraphics::BarrierStage::Transfer,
+		CoreGraphics::BarrierStage::Transfer,
+		VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
+
+	// perform final transition on graphics queue
+	CoreGraphics::SubmissionContextId gfxSub = CoreGraphics::GetSetupSubmissionContext();
+	VkUtilities::ImageBarrier(CoreGraphics::SubmissionContextGetCmdBuffer(gfxSub),
+		CoreGraphics::BarrierStage::Transfer,
 		CoreGraphics::BarrierStage::AllGraphicsShaders,
-		VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+		VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, TransferQueueType, GraphicsQueueType, VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
 		
 	ilDeleteImage(image);
 

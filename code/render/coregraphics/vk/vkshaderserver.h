@@ -66,6 +66,7 @@ private:
 
 	Util::FixedPool<uint32_t> texture2DPool;
 	Util::FixedPool<uint32_t> texture2DMSPool;
+	Util::FixedPool<uint32_t> texture2DArrayPool;
 	Util::FixedPool<uint32_t> texture3DPool;
 	Util::FixedPool<uint32_t> textureCubePool;
 

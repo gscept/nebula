@@ -31,6 +31,8 @@ public:
     FixedArray(const FixedArray<TYPE>& rhs);
     /// move constructor
     FixedArray(FixedArray<TYPE>&& rhs);
+	/// constructor from initializer list
+	FixedArray(std::initializer_list<TYPE> list);
 	/// construct an empty fixed array
 	FixedArray(std::nullptr_t);
     /// destructor
@@ -98,7 +100,7 @@ private:
 template<class TYPE>
 FixedArray<TYPE>::FixedArray() :
     count(0),
-    elements(0)
+    elements(nullptr)
 {
     // empty
 }
@@ -162,7 +164,7 @@ FixedArray<TYPE>::Copy(const FixedArray<TYPE>& rhs)
 template<class TYPE>
 FixedArray<TYPE>::FixedArray(const SizeT s) :
     count(0),
-    elements(0)
+    elements(nullptr)
 {
     this->Alloc(s);
 }
@@ -173,7 +175,7 @@ FixedArray<TYPE>::FixedArray(const SizeT s) :
 template<class TYPE>
 FixedArray<TYPE>::FixedArray(const SizeT s, const TYPE& initialValue) :
     count(0),
-    elements(0)
+    elements(nullptr)
 {
     this->Alloc(s);
     this->Fill(initialValue);
@@ -185,7 +187,7 @@ FixedArray<TYPE>::FixedArray(const SizeT s, const TYPE& initialValue) :
 template<class TYPE>
 FixedArray<TYPE>::FixedArray(const FixedArray<TYPE>& rhs) :
     count(0),
-    elements(0)
+    elements(nullptr)
 {
     this->Copy(rhs);
 }
@@ -206,9 +208,30 @@ FixedArray<TYPE>::FixedArray(FixedArray<TYPE>&& rhs) :
 /**
 */
 template<class TYPE>
+FixedArray<TYPE>::FixedArray(std::initializer_list<TYPE> list) :
+	count(0),
+	elements(nullptr)
+{
+	this->Alloc((SizeT)list.size());
+	if constexpr (!std::is_trivially_copyable<TYPE>::value)
+	{
+		IndexT i;
+		for (i = 0; i < this->count; i++)
+		{
+			this->elements[i] = list.begin()[i];
+		}
+	}
+	else
+		memcpy(this->elements, list.begin(), this->count * sizeof(TYPE));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
 FixedArray<TYPE>::FixedArray(std::nullptr_t) :
 	count(0),
-	elements(0)
+	elements(nullptr)
 {
 }
 

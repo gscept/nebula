@@ -47,6 +47,12 @@ HtmlPageWriter::Open()
         this->Begin(HtmlElement::Title);
         this->Text(this->title);
         this->End(HtmlElement::Title);
+        if (!this->style.IsEmpty())
+        {
+            this->Begin(HtmlElement::Style);
+            this->Raw(this->style);
+            this->End(HtmlElement::Style);
+        }
         this->End(HtmlElement::Head);
 
 		this->AddAttr("style", "font-family: 'Segoe UI'");

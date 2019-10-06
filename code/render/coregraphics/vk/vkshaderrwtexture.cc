@@ -79,7 +79,7 @@ CreateShaderRWTexture(const ShaderRWTextureCreateInfo& info)
 		vkformat,
 		extents,
 		1,
-		1,
+		info.layers,
 		VK_SAMPLE_COUNT_1_BIT,
 		VK_IMAGE_TILING_OPTIMAL,
 		VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
@@ -108,7 +108,7 @@ CreateShaderRWTexture(const ShaderRWTextureCreateInfo& info)
 		NULL,
 		0,
 		loadInfo.img,
-		VK_IMAGE_VIEW_TYPE_2D,
+		info.layers > 1 ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D,
 		vkformat,
 		VkTypes::AsVkMapping(adjustedInfo.format),
 		viewRange
@@ -131,7 +131,10 @@ CreateShaderRWTexture(const ShaderRWTextureCreateInfo& info)
 	ret.id8 = ShaderRWTextureIdType;
 
 	if (info.registerBindless)
-		runtimeInfo.bind = VkShaderServer::Instance()->RegisterTexture(ret, Texture2D);
+		if (info.layers > 1)
+			runtimeInfo.bind = VkShaderServer::Instance()->RegisterTexture(ret, Texture2DArray);
+		else
+			runtimeInfo.bind = VkShaderServer::Instance()->RegisterTexture(ret, Texture2D);
 	else
 		runtimeInfo.bind = 0; // use placeholder
 

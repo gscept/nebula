@@ -16,6 +16,7 @@ push varblock ImGUI [ string Visibility = "PS|VS"; ]
 {
 	textureHandle Texture; 
 	mat4 TextProjectionModel;
+	uint PackedTextureInfo;
 };
 
 group(BATCH_GROUP) samplerstate TextureSampler
@@ -33,6 +34,17 @@ state TextState
 	CullMode = None;
 	ScissorEnabled = true;
 };
+
+//------------------------------------------------------------------------------
+/**
+*/
+void UnpackTexture(uint val, out uint id, out uint type, out uint mip, out uint layer)
+{
+	type = val & 0xF;
+	layer = (val >> 4) & 0xFF;
+	mip = (val >> 12) & 0xFF;
+	id = (val >> 20) & 0xFFF;
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -62,9 +74,16 @@ psMain(
 	in vec4 Color,
 	[color0] out vec4 FinalColor) 
 {
-	vec4 texColor = sample2D(ImGUI.Texture, TextureSampler, UV);
+	vec4 texColor;
+	uint id, type, layer, mip;
+	UnpackTexture(ImGUI.PackedTextureInfo, id, type, mip, layer);
+	if (type == 0)
+		texColor = sample2DLod(id, TextureSampler, UV, mip);
+	else
+		texColor = sample2DArrayLod(id, TextureSampler, vec3(UV, layer), mip);
 	FinalColor = Color * texColor;
 }
+
 
 //------------------------------------------------------------------------------
 /**

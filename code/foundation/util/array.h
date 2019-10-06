@@ -53,6 +53,8 @@ public:
     Array(Array<TYPE>&& rhs);
 	/// constructor from initializer list
 	Array(std::initializer_list<TYPE> list);
+	/// construct an empty fixed array
+	Array(std::nullptr_t);
     /// constructor from TYPE pointer and size. @note copies the buffer.
     Array(const TYPE* const buf, SizeT num);
     /// destructor
@@ -283,6 +285,19 @@ Array<TYPE>::Array(std::initializer_list<TYPE> list) :
 	{
 		this->elements = 0;
 	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+Array<TYPE>::Array(std::nullptr_t) :
+	grow(0),
+	capacity(0),
+	count(0),
+	elements(0)
+{
+	// empty
 }
 
 //------------------------------------------------------------------------------
@@ -866,7 +881,7 @@ Array<TYPE>::EraseBack()
 template<class TYPE> void
 Array<TYPE>::EraseFront()
 {
-	this->Erase(0);
+	this->EraseIndex(0);
 }
 
 //------------------------------------------------------------------------------

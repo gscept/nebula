@@ -58,15 +58,25 @@ FrameSubpass::CompiledImpl::Run(const IndexT frameIndex)
 {
 	IndexT i;
 
+#if NEBULA_GRAPHICS_DEBUG
+	CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_GREEN, this->name.Value());
+#endif
+
 	// bind scissors and viewports, if any
-	for (i = 0; i < this->viewports.Size(); i++) CoreGraphics::SetViewport(this->viewports[i], i);
-	for (i = 0; i < this->scissors.Size(); i++) CoreGraphics::SetScissorRect(this->scissors[i], i);
+	if (this->viewports.Size() > 0)
+		CoreGraphics::SetViewports(this->viewports.Begin(), this->viewports.Size());
+	if (this->scissors.Size() > 0)
+		CoreGraphics::SetScissorRects(this->scissors.Begin(), this->scissors.Size());
 
 	// run ops
 	for (i = 0; i < this->ops.Size(); i++)
 	{
 		this->ops[i]->Run(frameIndex);
 	}
+
+#if NEBULA_GRAPHICS_DEBUG
+	CoreGraphics::CommandBufferEndMarker(GraphicsQueueType);
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -88,6 +98,9 @@ FrameSubpass::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
 	ret->viewports = this->viewports;
 	ret->scissors = this->scissors;
+#if NEBULA_GRAPHICS_DEBUG
+	ret->name = this->name;
+#endif
 	// don't set ops here, we have to do it when we build
 	return ret;
 }
@@ -101,7 +114,6 @@ FrameSubpass::Build(
 	Util::Array<FrameOp::Compiled*>& compiledOps, 
 	Util::Array<CoreGraphics::EventId>& events,
 	Util::Array<CoreGraphics::BarrierId>& barriers,
-	Util::Array<CoreGraphics::SemaphoreId>& semaphores,
 	Util::Dictionary<CoreGraphics::ShaderRWTextureId, Util::Array<std::tuple<CoreGraphics::ImageSubresourceInfo, TextureDependency>>>& rwTextures,
 	Util::Dictionary<CoreGraphics::ShaderRWBufferId, BufferDependency>& rwBuffers,
 	Util::Dictionary<CoreGraphics::RenderTextureId, Util::Array<std::tuple<CoreGraphics::ImageSubresourceInfo, TextureDependency>>>& renderTextures)
@@ -111,9 +123,10 @@ FrameSubpass::Build(
 	Util::Array<FrameOp::Compiled*> subpassOps;
 	for (IndexT i = 0; i < this->ops.Size(); i++)
 	{
-		this->ops[i]->Build(allocator, subpassOps, events, barriers, semaphores, rwTextures, rwBuffers, renderTextures);
+		this->ops[i]->Build(allocator, subpassOps, events, barriers, rwTextures, rwBuffers, renderTextures);
 	}
 	myCompiled->ops = subpassOps;
+	this->compiled = myCompiled;
 	compiledOps.Append(myCompiled);
 }
 

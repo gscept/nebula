@@ -15,9 +15,18 @@ varblock GatherBlock
 	textureHandle DepthTexture;
 	textureHandle EmissiveTexture;
 	textureHandle SSSTexture;
+	textureHandle BloomTexture;
+	textureHandle LuminanceTexture;
+	textureHandle SSAOTexture;
 };
 
-texture2D SSAOTexture;
+samplerstate SmoothSampler
+{
+	//Samplers = { LightTexture, SSSTexture, SSAOTexture, DepthTexture };
+	AddressU = Border;
+	AddressV = Border;
+	BorderColor = { 0, 0, 0, 0 };
+};
 
 samplerstate GatherSampler
 {
@@ -70,18 +79,21 @@ void
 psMain(in vec2 UV,
 	[color0] out vec4 MergedColor) 
 {
-	vec4 sssLight = DecodeHDR(sample2DLod(SSSTexture, GatherSampler, UV, 0));
-	vec4 light = DecodeHDR(sample2DLod(LightTexture, GatherSampler, UV, 0));
+	vec4 sssLight      = sample2DLod(SSSTexture, GatherSampler, UV, 0);
+	vec4 light         = sample2DLod(LightTexture, GatherSampler, UV, 0);
 	vec4 emissiveColor = sample2DLod(EmissiveTexture, GatherSampler, UV, 0);
-	float ssao = textureLod(sampler2D(SSAOTexture, GatherSampler), UV, 0).r;
+	vec4 bloom         = sample2DLod(BloomTexture, SmoothSampler, UV, 0);
+	float ssao         = sample2DLod(SSAOTexture, GatherSampler, UV, 0).r;
+	float lum          = sample2DLod(LuminanceTexture, SmoothSampler, vec2(0.5f, 0.5f), 0).r;
 	
 	// blend non-blurred light with SSS light
 	light.rgb = lerp(light.rgb + emissiveColor.rgb, sssLight.rgb, sssLight.a) * (1.0f - ssao);	
 	vec4 color = light;
 	
 	float depth = sample2DLod(DepthTexture, GatherSampler, UV, 0).r;
-	color = psFog(depth, color);
-	MergedColor = EncodeHDR(light);	
+	color = psFog(depth, color + bloom);
+	color = ToneMap(color, vec4(lum), MaxLuminance);
+	MergedColor = color;
 }
 
 //------------------------------------------------------------------------------

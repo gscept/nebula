@@ -45,10 +45,11 @@ public:
 	virtual void Discard();
 	/// handle window resizing
 	void Resize();
-	/// get type of function name
-	const FunctionType& GetFunctionType(const Util::StringAtom& str);
-	/// get function
-	const std::function<void(IndexT)> GetFunction(const Util::StringAtom& str);
+
+	/// add function callback to global dictionary
+	static void AddCallback(const Util::StringAtom name, std::function<void(IndexT)> func);
+	/// get algorithm function call
+	static const std::function<void(IndexT)>& GetAlgorithmCallback(const Util::StringAtom& str);
 
 	/// add texture
 	void AddRenderTexture(const CoreGraphics::RenderTextureId& tex);
@@ -58,24 +59,13 @@ public:
 	void AddReadWriteImage(const CoreGraphics::ShaderRWTextureId& img);
 
 protected:
-	/// add algorithm
-	void AddFunction(const Util::StringAtom& name, const FunctionType type, const std::function<void(IndexT)>& func);
 
 	Util::Array<CoreGraphics::RenderTextureId> renderTextures;
 	Util::Array<CoreGraphics::ShaderRWBufferId> readWriteBuffers;
 	Util::Array<CoreGraphics::ShaderRWTextureId> readWriteTextures;
-	Util::Dictionary<Util::StringAtom, std::function<void(IndexT)>> functions;
-	Util::Dictionary<Util::StringAtom, FunctionType> nameToType;
-};
 
-//------------------------------------------------------------------------------
-/**
-*/
-inline const Algorithms::Algorithm::FunctionType&
-Algorithm::GetFunctionType(const Util::StringAtom& str)
-{
-	return this->nameToType[str];
-}
+	static Util::Dictionary<Util::StringAtom, std::function<void(IndexT)>> nameToFunction;
+};
 
 //------------------------------------------------------------------------------
 /**

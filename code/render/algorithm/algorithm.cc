@@ -7,6 +7,7 @@
 
 namespace Algorithms
 {
+Util::Dictionary<Util::StringAtom, std::function<void(IndexT)>> Algorithm::nameToFunction;
 
 //------------------------------------------------------------------------------
 /**
@@ -39,29 +40,25 @@ Algorithm::Setup()
 void
 Algorithm::Discard()
 {
-	this->nameToType.Clear();
-	this->functions.Clear();
 	// override in subclass for any special discard behavior
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-const std::function<void(IndexT)>
-Algorithm::GetFunction(const Util::StringAtom& str)
+const std::function<void(IndexT)>&
+Algorithm::GetAlgorithmCallback(const Util::StringAtom& str)
 {
-	std::function<void(IndexT)> func = this->functions[str];
-	return func;
+	return nameToFunction[str];
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-void
-Algorithm::AddFunction(const Util::StringAtom& name, const FunctionType type, const std::function<void(IndexT)>& func)
+void 
+Algorithm::AddCallback(const Util::StringAtom name, std::function<void(IndexT)> func)
 {
-	this->nameToType.Add(name, type);
-	this->functions.Add(name, func);
+	nameToFunction.Add(name, func);
 }
 
 //------------------------------------------------------------------------------

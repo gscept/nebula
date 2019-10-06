@@ -27,7 +27,6 @@ public:
 	void Discard();
 private:
 
-	CoreGraphics::BarrierId barriers[1];
 	CoreGraphics::ShaderRWTextureId internalTargets[1];
 	CoreGraphics::ShaderProgramId brightPassProgram;
 	CoreGraphics::ShaderProgramId blurX, blurY;

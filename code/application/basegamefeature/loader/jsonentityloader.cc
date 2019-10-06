@@ -82,7 +82,7 @@ JsonEntityLoader::Load(const Util::String& file)
 					auto const& attrids = component->GetAttributes();
 					for (SizeT i = 0; i < attrids.Size(); ++i)
 					{
-						Attr::Attribute const& attr = attrids[i];
+                        Game::Attribute const& attr = attrids[i];
 
 						auto attrName = attr.name;
 						Util::Variant value;

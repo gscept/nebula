@@ -64,18 +64,6 @@ BloomAlgorithm::Setup()
 	};
 	this->internalTargets[0] = CreateShaderRWTexture(tinfo);
 
-	CoreGraphics::BarrierCreateInfo binfo =
-	{
-		BarrierDomain::Global,
-		BarrierStage::ComputeShader,
-		BarrierStage::ComputeShader
-	};
-	ImageSubresourceInfo subres;
-	subres.aspect = CoreGraphicsImageAspect::ColorBits;
-	
-	binfo.shaderRWTextures.Append(std::make_tuple(this->internalTargets[0], subres, CoreGraphicsImageLayout::General, CoreGraphicsImageLayout::General, BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead));
-	this->barriers[0] = CreateBarrier(binfo);
-
 	ResourceTableSetTexture(this->brightPassTable, { this->renderTextures[0], this->colorSourceSlot, 0, CoreGraphics::SamplerId::Invalid() , false });
 	ResourceTableSetTexture(this->brightPassTable, { this->renderTextures[1], this->luminanceTextureSlot, 0, CoreGraphics::SamplerId::Invalid() , false });
 	ResourceTableCommitChanges(this->brightPassTable);
@@ -95,20 +83,26 @@ BloomAlgorithm::Setup()
 	// get size of target texture
 	this->fsq.Setup(dims.width, dims.height);
 
-	this->AddFunction("BrightnessLowpass", Algorithm::Graphics, [this](IndexT)
-	{
-		CoreGraphics::SetShaderProgram(this->brightPassProgram);
-		CoreGraphics::BeginBatch(Frame::FrameBatchType::System);
-		this->fsq.ApplyMesh();
-		CoreGraphics::SetResourceTable(this->brightPassTable, NEBULA_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
-		this->fsq.Draw();
-		CoreGraphics::EndBatch();
-	});
+	Algorithm::AddCallback("Bloom-BrightnessLowpass", [this](IndexT)
+		{
+#if NEBULA_GRAPHICS_DEBUG
+			CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_ORANGE, "BrightnessLowpass");
+#endif
+			CoreGraphics::SetShaderProgram(this->brightPassProgram);
+			CoreGraphics::BeginBatch(Frame::FrameBatchType::System);
+			this->fsq.ApplyMesh();
+			CoreGraphics::SetResourceTable(this->brightPassTable, NEBULA_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
+			this->fsq.Draw();
+			CoreGraphics::EndBatch();
+#if NEBULA_GRAPHICS_DEBUG
+			CoreGraphics::CommandBufferEndMarker(GraphicsQueueType);
+#endif
+		});
 
-	this->AddFunction("BrightnessBlur", Algorithm::Compute, [this, dims](IndexT)
+	Algorithm::AddCallback("Bloom-Blur", [this, dims](IndexT)
 	{
 #if NEBULA_GRAPHICS_DEBUG
-		CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_ORANGE, "Bloom");
+		CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "BloomBlur");
 #endif
 
 #define TILE_WIDTH 320
@@ -120,16 +114,38 @@ BloomAlgorithm::Setup()
 		uint numGroupsY1 = DivAndRoundUp(dims.height, TILE_WIDTH);
 		uint numGroupsY2 = dims.height;
 
+		CoreGraphics::BarrierInsert(
+			GraphicsQueueType,
+			CoreGraphics::BarrierStage::ComputeShader,
+			CoreGraphics::BarrierStage::ComputeShader,
+			CoreGraphics::BarrierDomain::Global,
+			nullptr,
+			nullptr,
+			{
+				  RWTextureBarrier{ this->internalTargets[0], ImageSubresourceInfo::ColorNoMipNoLayer(), CoreGraphicsImageLayout::General, CoreGraphicsImageLayout::General, CoreGraphics::BarrierAccess::ShaderWrite, CoreGraphics::BarrierAccess::ShaderRead }
+			},
+			"Bloom Blur Pass #1 Barrier");
+
 		CoreGraphics::SetShaderProgram(this->blurX);
 		CoreGraphics::SetResourceTable(this->blurTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
 		CoreGraphics::Compute(numGroupsX1, numGroupsY2, 1);
 
-		// insert barrier between passes
-		CoreGraphics::InsertBarrier(this->barriers[0], ComputeQueueType);
+		CoreGraphics::BarrierInsert(
+			GraphicsQueueType,
+			CoreGraphics::BarrierStage::ComputeShader,
+			CoreGraphics::BarrierStage::ComputeShader,
+			CoreGraphics::BarrierDomain::Global,
+			nullptr,
+			nullptr,
+			{
+				  RWTextureBarrier{ this->internalTargets[0], ImageSubresourceInfo::ColorNoMipNoLayer(), CoreGraphicsImageLayout::General, CoreGraphicsImageLayout::ShaderRead, CoreGraphics::BarrierAccess::ShaderRead, CoreGraphics::BarrierAccess::ShaderWrite }
+			},
+			"Bloom Blur Pass #2 Barrier");
 
 		CoreGraphics::SetShaderProgram(this->blurY);
 		CoreGraphics::SetResourceTable(this->blurTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
 		CoreGraphics::Compute(numGroupsY1, numGroupsX2, 1);
+
 
 #if NEBULA_GRAPHICS_DEBUG
 		CoreGraphics::CommandBufferEndMarker(GraphicsQueueType);
@@ -145,7 +161,6 @@ BloomAlgorithm::Discard()
 {
 	DestroyResourceTable(this->brightPassTable);
 	DestroyResourceTable(this->blurTable);
-	DestroyBarrier(this->barriers[0]);
 	DestroyShaderRWTexture(this->internalTargets[0]);
 	this->fsq.Discard();
 }

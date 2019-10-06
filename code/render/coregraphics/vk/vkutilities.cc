@@ -205,6 +205,28 @@ VkUtilities::ImageMemoryBarrier(const VkImage& img, VkImageSubresourceRange subr
 //------------------------------------------------------------------------------
 /**
 */
+VkImageMemoryBarrier
+VkUtilities::ImageMemoryBarrier(const VkImage& img, VkImageSubresourceRange subres, CoreGraphicsQueueType toQueue, VkAccessFlags left, VkAccessFlags right, VkImageLayout oldLayout, VkImageLayout newLayout)
+{
+	uint32_t to = Vulkan::GetQueueFamily(toQueue);
+
+	VkImageMemoryBarrier barrier;
+	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+	barrier.pNext = NULL;
+	barrier.image = img;
+	barrier.oldLayout = oldLayout;
+	barrier.newLayout = newLayout;
+	barrier.srcAccessMask = left;
+	barrier.dstAccessMask = right;
+	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.dstQueueFamilyIndex = to;
+	barrier.subresourceRange = subres;
+	return barrier;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 VkBufferMemoryBarrier
 VkUtilities::BufferMemoryBarrier(const VkBuffer& buf, VkDeviceSize offset, VkDeviceSize size, VkAccessFlags srcAccess, VkAccessFlags dstAccess)
 {

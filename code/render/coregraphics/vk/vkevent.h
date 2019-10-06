@@ -8,6 +8,7 @@
 //------------------------------------------------------------------------------
 #include "ids/idallocator.h"
 #include "vulkan/vulkan.h"
+#include "util/stringatom.h"
 namespace Vulkan
 {
 
@@ -15,6 +16,7 @@ static const SizeT EventMaxNumBarriers = 16;
 
 struct VkEventInfo
 {
+	Util::StringAtom name;
 	VkEvent event;
 	VkPipelineStageFlags leftDependency;
 	VkPipelineStageFlags rightDependency;

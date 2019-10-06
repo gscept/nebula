@@ -10,12 +10,23 @@
 // make sure this matches LightContext
 #define CLUSTER_SUBDIVS_X 16
 #define CLUSTER_SUBDIVS_Y 16
-#define CLUSTER_SUBDIVS_Z 8
+#define CLUSTER_SUBDIVS_Z 16
 #define MAX_LIGHTS_PER_CLUSTER 32
 
 #define LIGHT_TYPE__SPOTLIGHT 0
 #define LIGHT_TYPE__POINTLIGHT 1
 #define LIGHT_TYPE__AREALIGHT 2
+
+struct ClusterAABB
+{
+	vec4 maxPoint;
+	vec4 minPoint;
+};
+
+group(BATCH_GROUP) varbuffer AABBStepOutput
+{
+	ClusterAABB AABBs[];
+};
 
 // note, this is just the information we require from the light to perform the tiling, and doesn't contain the lights themselves
 struct Light
@@ -55,9 +66,9 @@ group(BATCH_GROUP) varblock Uniforms
 //------------------------------------------------------------------------------
 /**
 */
-[localsizex] = MAX_LIGHTS_PER_CLUSTER
+[localsizex] = CLUSTER_SUBDIVS_Z
 shader 
-void csTileCulling()
+void csClusterAABB()
 {
     // calculate pixel coordinate and tile
 	ivec2 tile = ivec2(gl_WorkGroupID.xy);
@@ -90,6 +101,14 @@ void csTileCulling()
 	cluster_begin[2] = (InvViewProjection * cluster_begin[2]);
 	cluster_begin[3] = (InvViewProjection * cluster_begin[3]);
 
+	/*
+	ClusterAABB aabb;
+	aabb.minPoint = min(cluster_begin, cluster_end);
+	aabb.maxPoint = max(cluster_begin, cluster_end);
+	AABBs[]
+	*/
+
+		/*
     const int NumThreadsPerCluster = MAX_LIGHTS_PER_CLUSTER;
 	for (uint i = 0; i < NumInputLights && i < MAX_LIGHTS_PER_CLUSTER; i += NumThreadsPerCluster)
     {
@@ -99,13 +118,14 @@ void csTileCulling()
             const Light light = lights[il]; 
         }
     }
+	*/
 }
 
 
 //------------------------------------------------------------------------------
 /**
 */
-program Tile [ string Mask = "Alt0"; ]
+program AABBGenerate [ string Mask = "Alt0"; ]
 {
-	ComputeShader = csTileCulling();
+	ComputeShader = csClusterAABB();
 };

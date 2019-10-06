@@ -28,6 +28,8 @@ public:
     line(const line& rhs);
     /// set start and end point
     void set(const point& startPoint, const point& endPoint);
+    /// set start point and direction
+    void set_point_dir(const point& startPoint, const vector& direction);
     /// get start point
     const point& start() const;
     /// get end point
@@ -92,6 +94,16 @@ line::set(const point& startPoint, const point& endPoint)
 {
     this->b = startPoint;
     this->m = endPoint - startPoint;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+line::set_point_dir(const point& startPoint, const vector& dir)
+{
+    this->b = startPoint;
+    this->m = dir;
 }
 
 //------------------------------------------------------------------------------

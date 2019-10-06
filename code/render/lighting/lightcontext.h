@@ -60,6 +60,8 @@ public:
 	static const Math::matrix44 GetTransform(const Graphics::GraphicsEntityId id);
 	/// set transform depending on type
 	static void SetTransform(const Graphics::GraphicsEntityId id, const Math::matrix44& transform);
+	/// get the view transform including projections
+	static const Math::matrix44 GetViewProjTransform(const Graphics::GraphicsEntityId id);
 
 	/// do light classification for tiled/clustered compute
 	static void OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime);
@@ -76,8 +78,10 @@ private:
 	static void SetSpotLightTransform(const Graphics::ContextEntityId id, const Math::matrix44& transform);
 	/// set transform, type must match the type the entity was created with
 	static void SetPointLightTransform(const Graphics::ContextEntityId id, const Math::matrix44& transform);
-	/// set global light direction
-	static void SetGlobalLightDirection(const Graphics::ContextEntityId id, const Math::vector& direction);
+	/// set global light transform
+	static void SetGlobalLightTransform(const Graphics::ContextEntityId id, const Math::matrix44& transform);
+	/// set global light shadow transform
+	static void SetGlobalLightViewProjTransform(const Graphics::ContextEntityId id, const Math::matrix44& transform);
 
 	/// run light classification compute
 	static void UpdateLightClassification();
@@ -160,14 +164,16 @@ private:
 		GlobalLightBacklight,
 		GlobalLightBacklightOffset,
 		GlobalLightAmbient,
-		GlobalLightTransform
+		GlobalLightTransform,
+		GlobalLightViewProjTransform,
 	};
 	typedef Ids::IdAllocator<
 		Math::float4,			// direction
 		Math::float4,			// backlight color
 		float,					// backlight offset
 		Math::float4,			// ambient
-		Math::matrix44			// transform (basically just a rotation in the direction)
+		Math::matrix44,			// transform (basically just a rotation in the direction)
+		Math::matrix44			// transform for visibility and such
 	> GlobalLightAllocator;
 	static GlobalLightAllocator globalLightAllocator;
 

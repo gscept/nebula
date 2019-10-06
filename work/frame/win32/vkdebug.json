@@ -291,7 +291,7 @@
         attachments: [ "ScreenBuffer" ],
         depth: false,
 
-        inputs: [
+        resources: [
           {
             name: "HBAOBuffer",
             access: "ShaderRead",

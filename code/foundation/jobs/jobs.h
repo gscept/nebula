@@ -204,6 +204,8 @@ void DestroyJob(const JobId& id);
 void JobSchedule(const JobId& job, const JobPortId& port, const JobContext& ctx, const bool cycleThreads = true);
 /// schedule job with callback when finished
 void JobSchedule(const JobId& job, const JobPortId& port, const JobContext& ctx, const std::function<void()>& callback, const bool cycleThreads = true);
+/// schedule job without a context
+void JobSchedule(const JobId& job, const JobPortId& port);
 /// schedule a sequence of jobs
 void JobScheduleSequence(const Util::Array<JobId>& jobs, const JobPortId& port, const Util::Array<JobContext>& contexts);
 /// schedule a sequence of jobs

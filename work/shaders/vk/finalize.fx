@@ -120,7 +120,7 @@ psMain(in vec2 UV,
 	[color0] out vec4 color) 
 {
     // get an averaged depth value        
-    float depth = subpassLoad(InputAttachments[0]).r;
+    float depth = subpassLoad(InputAttachment0).r;
 	
 	vec4 c;
 	c = psDepthOfField(depth, UV);	
@@ -130,8 +130,8 @@ psMain(in vec2 UV,
 	
 	c = ToneMap(c, vec4(fLumAvg), MaxLuminance);
 	vec4 bloom = DecodeHDR(sample2DLod(BloomTexture, UpscaleSampler, UV, 0));
-	vec4 godray = subpassLoad(InputAttachments[1]);
-	vec4 shape = subpassLoad(InputAttachments[2]);
+	vec4 godray = subpassLoad(InputAttachment1);
+	vec4 shape = subpassLoad(InputAttachment2);
 	c += bloom;   
 	c.rgb += godray.rgb;
 	//c.rgb += godray.rgb;

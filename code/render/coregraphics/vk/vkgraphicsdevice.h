@@ -30,8 +30,6 @@ VkPhysicalDevice GetCurrentPhysicalDevice();
 VkPhysicalDeviceProperties GetCurrentProperties();
 /// get the current device features
 VkPhysicalDeviceFeatures GetCurrentFeatures();
-/// get the currently free pool
-VkDescriptorPool GetCurrentDescriptorPool();
 /// get pipeline cache
 VkPipelineCache GetPipelineCache();
 /// get memory properties
@@ -45,11 +43,6 @@ VkSemaphore GetRenderingSemaphore();
 /// set to wait for present semaphore this submission
 void WaitForPresent(VkSemaphore sem);
 
-/// allocate range of graphics memory and set data, return offset
-uint SetGraphicsConstants(CoreGraphicsGlobalConstantBufferType type, void* data, SizeT size);
-/// allocate range of compute memory and set data, return offset
-uint SetComputeConstants(CoreGraphicsGlobalConstantBufferType type, void* data, SizeT size);
-
 /// get queue families
 const Util::Set<uint32_t>& GetQueueFamilies();
 /// get specific queue family
@@ -58,6 +51,19 @@ const uint32_t GetQueueFamily(const CoreGraphicsQueueType type);
 const VkQueue GetQueue(const CoreGraphicsQueueType type, const IndexT index);
 /// get currently active queue of type
 const VkQueue GetCurrentQueue(const CoreGraphicsQueueType type);
+
+/// insert barrier not created from a barrier object
+void InsertBarrier(
+	VkPipelineStageFlags srcFlags,
+	VkPipelineStageFlags dstFlags,
+	VkDependencyFlags dep,
+	uint32_t numMemoryBarriers,
+	VkMemoryBarrier* memoryBarriers,
+	uint32_t numBufferBarriers,
+	VkBufferMemoryBarrier* bufferBarriers,
+	uint32_t numImageBarriers,
+	VkImageMemoryBarrier* imageBarriers,
+	const CoreGraphicsQueueType queue);
 
 /// do actual copy (see coregraphics namespace for helper functions)
 void Copy(const VkImage from, Math::rectangle<SizeT> fromRegion, const VkImage to, Math::rectangle<SizeT> toRegion);
@@ -86,16 +92,9 @@ void BindComputePipeline(const VkPipeline& pipeline, const VkPipelineLayout& lay
 /// bind no pipeline (effectively making all descriptor binds happen on both graphics and compute)
 void UnbindPipeline();
 /// set array of viewports directly
-void SetViewports(VkViewport* viewports, SizeT num);
+void SetVkViewports(VkViewport* viewports, SizeT num);
 /// set array of scissors directly
-void SetScissorRects(VkRect2D* scissors, SizeT num);
-
-/// helper function to submit a command buffer
-void SubmitToQueue(VkQueue queue, VkPipelineStageFlags flags, uint32_t numBuffers, VkCommandBuffer* buffers);
-/// helper function to submit a fence
-void SubmitToQueue(VkQueue queue, VkFence fence);
-/// wait for queue to finish execution using fence, also resets fence
-void WaitForFences(VkFence* fences, uint32_t numFences, bool waitForAll);
+void SetVkScissorRects(VkRect2D* scissors, SizeT num);
 
 /// start up new draw thread
 void BeginDrawThread();
@@ -105,9 +104,6 @@ void EndDrawThreads();
 void PushToThread(const VkCommandBufferThread::Command& cmd, const IndexT& index, bool allowStaging = true);
 /// flush remaining staging thread commands
 void FlushToThread(const IndexT& index);
-
-/// binds common descriptors
-void BindSharedDescriptorSets();
 
 /// begin command buffer marker (directly on vkcommandbuffer)
 void CommandBufferBeginMarker(VkCommandBuffer buf, const Math::float4& color, const char* name);

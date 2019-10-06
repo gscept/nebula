@@ -28,6 +28,7 @@
 namespace IO
 {
 
+class IoServer;
 //------------------------------------------------------------------------------
 enum WatchEventType
 {
@@ -97,6 +98,8 @@ private:
     Util::Dictionary<Util::StringAtom, EventHandlerData> watchers;    
     Threading::SafeQueue< EventHandlerData> watcherQueue;
     double interval;
+	Ptr<IO::IoServer> ioServer;
+
 };
 
 } // namespace IO

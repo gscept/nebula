@@ -26,11 +26,12 @@ namespace Lighting
 CSMUtil::CSMUtil() :
 	cascadeMaxDistance(300),
 	fittingMethod(Scene),
-	clampingMethod(SceneAABB),
+	clampingMethod(AABB),
 	blurSize(1),
-	floorTexels(true)
+	floorTexels(true),
+	textureWidth(1024)
 {
-	this->cascadeDistances[0] = 5;
+	this->cascadeDistances[0] = 15;
 	this->cascadeDistances[1] = 50;
 	this->cascadeDistances[2] = 120;
 	this->cascadeDistances[3] = 300;
@@ -332,15 +333,15 @@ CSMUtil::ComputeNearAndFar(float& nearPlane, float& farPlane, const Math::float4
 /**
 */
 void 
-CSMUtil::Compute()
+CSMUtil::Compute(const Graphics::GraphicsEntityId camera, const Graphics::GraphicsEntityId light)
 {
 	n_assert(this->cameraEntity != Graphics::GraphicsEntityId::Invalid());
-	const CameraSettings& camSettings = Graphics::CameraContext::GetSettings(this->cameraEntity);
-	matrix44 cameraProjection = Graphics::CameraContext::GetProjection(this->cameraEntity);
-	matrix44 cameraView = Graphics::CameraContext::GetTransform(this->cameraEntity);	
+	const CameraSettings& camSettings = Graphics::CameraContext::GetSettings(camera);
+	matrix44 cameraProjection = Graphics::CameraContext::GetProjection(camera);
+	matrix44 cameraView = matrix44::inverse(Graphics::CameraContext::GetTransform(camera));
 
 	// get inversed shadow matrix, this is basically the global light transform, normalized and inversed
-	matrix44 lightView = Lighting::LightContext::GetTransform(this->globalLight);		
+	matrix44 lightView = matrix44::inverse(Lighting::LightContext::GetTransform(light));
 	
 	// calculate light AABB based on the AABB of the scene
 	float4 sceneCenter = this->shadowBox.center();
@@ -395,7 +396,7 @@ CSMUtil::Compute()
 			lightCameraOrthographicMax = float4::maximize(tempCornerPoint, lightCameraOrthographicMax);
 		}
 
-		if (fittingMethod == Scene)
+		if (this->fittingMethod == Scene)
 		{
 			float4 diagonal = frustumPoints[0] - frustumPoints[6];
 			float length = diagonal.length3();
@@ -410,7 +411,7 @@ CSMUtil::Compute()
 			float ratio = length / (float)this->textureWidth;
 			unitsPerTexel = float4(ratio, ratio, 0, 0);
 		}
-		else if (fittingMethod == Cascade)
+		else if (this->fittingMethod == Cascade)
 		{
 			float scaleDueto = ((float)blurSize * 2 + 1) / ((float)this->textureWidth);
 			float4 scaleDuetoBlur = float4(scaleDueto, scaleDueto, 0, 0);
@@ -429,7 +430,7 @@ CSMUtil::Compute()
 			unitsPerTexel *= normalizedBufferVector;
 		}
 
-		if (floorTexels)
+		if (this->floorTexels)
 		{
 			lightCameraOrthographicMin /= unitsPerTexel;
 			lightCameraOrthographicMin = float4::floor(lightCameraOrthographicMin);
@@ -440,10 +441,10 @@ CSMUtil::Compute()
 			lightCameraOrthographicMax *= unitsPerTexel;
 		}		
 
-		float nearPlane = 0.0f;
-		float farPlane = 10000.0f;
+		float nearPlane = -intervalEnd;
+		float farPlane = intervalEnd;
 
-		if (clampingMethod == AABB)
+		if (this->clampingMethod == AABB)
 		{
 			float4 lightSpaceAABBMinValue = float4(FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX);
 			float4 lightSpaceAABBMaxValue = float4(-FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX);
@@ -457,7 +458,7 @@ CSMUtil::Compute()
 			nearPlane = lightSpaceAABBMinValue.z();
 			farPlane = lightSpaceAABBMaxValue.z();
 		}
-		else if (clampingMethod == SceneAABB)
+		else if (this->clampingMethod == SceneAABB)
 		{
 			this->ComputeNearAndFar(nearPlane, farPlane, lightCameraOrthographicMin, lightCameraOrthographicMax, sceneAABBLightPoints);
 		}

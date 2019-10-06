@@ -8,8 +8,8 @@
 #include "coregraphics/constantbuffer.h"
 #include "effectfactory.h"
 #include "coregraphics/config.h"
-#include "coregraphics/config.h"
 #include "vkgraphicsdevice.h"
+#include "coregraphics/shaderserver.h"
 
 using namespace CoreGraphics;
 using namespace IO;
@@ -91,12 +91,12 @@ VkShaderPool::LoadFromStream(const Resources::ResourceId id, const Util::StringA
 	for (uint i = 0; i < programs.size(); i++)
 	{
 		// get program object from shader subsystem
-		VkShaderProgramAllocator& programAllocator = this->shaderAlloc.Get<3>(id.resourceId);
+		VkShaderProgramAllocator& programAllocator = this->shaderAlloc.Get<Shader_ProgramAllocator>(id.resourceId);
 		AnyFX::VkProgram* program = static_cast<AnyFX::VkProgram*>(programs[i]);
 
 		// allocate new program object and set it up
 		Ids::Id32 programId = programAllocator.Alloc();
-		VkShaderProgramSetup(programId, this->GetName(id), program, setupInfo.pipelineLayout, this->shaderAlloc.Get<3>(id.resourceId));
+		VkShaderProgramSetup(programId, this->GetName(id), program, setupInfo.pipelineLayout, this->shaderAlloc.Get<Shader_ProgramAllocator>(id.resourceId));
 
 		// make an ID which is the shader id and program id
 		ShaderProgramId shaderProgramId;
@@ -136,27 +136,30 @@ VkShaderPool::ReloadFromStream(const Resources::ResourceId id, const Ptr<IO::Str
 		return ResourcePool::Failed;
 	}
 
+	if (this->shaderAlloc.Get<0>(id.resourceId))
+		delete this->shaderAlloc.Get<0>(id.resourceId);
+
+	this->shaderAlloc.Get<0>(id.resourceId) = effect;
 	VkShaderSetupInfo& setupInfo = this->shaderAlloc.Get<1>(id.resourceId);
 	VkShaderRuntimeInfo& runtimeInfo = this->shaderAlloc.Get<2>(id.resourceId);
 
 	// setup shader variations from existing programs
 	const std::vector<AnyFX::ProgramBase*> programs = effect->GetPrograms();
-	for (IndexT i = 0; i < runtimeInfo.programMap.Size(); i++)
+	for (IndexT i = 0; i < programs.size(); i++)
 	{
 		// get program object from shader subsystem
-		VkShaderProgramAllocator& programAllocator = this->shaderAlloc.Get<3>(id.resourceId);
+		VkShaderProgramAllocator& programAllocator = this->shaderAlloc.Get<Shader_ProgramAllocator>(id.resourceId);
 		AnyFX::VkProgram* program = static_cast<AnyFX::VkProgram*>(programs[i]);
+		CoreGraphics::ShaderFeature::Mask mask = CoreGraphics::ShaderServer::Instance()->FeatureStringToMask(program->GetAnnotationString("Mask").c_str());
+
+		const ShaderProgramId& shaderProgramId = runtimeInfo.programMap[mask];
 
 		// allocate new program object and set it up
-		ShaderProgramId programId = runtimeInfo.programMap.ValueAtIndex(i);
-		VkShaderProgramSetup(programId.programId, this->GetName(id), program, setupInfo.pipelineLayout, this->shaderAlloc.Get<3>(id.resourceId));
+		VkShaderProgramSetup(shaderProgramId.programId, this->GetName(id), program, setupInfo.pipelineLayout, this->shaderAlloc.Get<Shader_ProgramAllocator>(id.resourceId));
 
 		// trigger a reload in the graphics device
-		CoreGraphics::ReloadShaderProgram(programId);
+		CoreGraphics::ReloadShaderProgram(shaderProgramId.programId);
 	}
-
-	// delete the effect after we are done reloading
-	delete effect;
 
 	return ResourcePool::Success;
 }
@@ -167,15 +170,15 @@ VkShaderPool::ReloadFromStream(const Resources::ResourceId id, const Ptr<IO::Str
 void
 VkShaderPool::Unload(const Resources::ResourceId res)
 {
-	VkShaderSetupInfo& setup = this->shaderAlloc.Get<1>(res.resourceId);
-	VkShaderProgramAllocator& programs = this->shaderAlloc.Get<3>(res.resourceId);
-	VkShaderRuntimeInfo& runtime = this->shaderAlloc.Get<2>(res.resourceId);
+	VkShaderSetupInfo& setup = this->shaderAlloc.Get<Shader_SetupInfo>(res.resourceId);
+	VkShaderProgramAllocator& programs = this->shaderAlloc.Get<Shader_ProgramAllocator>(res.resourceId);
+	VkShaderRuntimeInfo& runtime = this->shaderAlloc.Get<Shader_RuntimeInfo>(res.resourceId);
 	VkShaderCleanup(setup.dev, setup.immutableSamplers, setup.descriptorSetLayouts, setup.uniformBufferMap, setup.pipelineLayout);
 
 	for (IndexT i = 0; i < runtime.programMap.Size(); i++)
 	{
-		VkShaderProgramSetupInfo& progSetup = programs.Get<0>(runtime.programMap.ValueAtIndex(i).programId);
-		VkShaderProgramRuntimeInfo& progRuntime = programs.Get<2>(runtime.programMap.ValueAtIndex(i).programId);
+		VkShaderProgramSetupInfo& progSetup = programs.Get<ShaderProgram_SetupInfo>(runtime.programMap.ValueAtIndex(i).programId);
+		VkShaderProgramRuntimeInfo& progRuntime = programs.Get<ShaderProgram_RuntimeInfo>(runtime.programMap.ValueAtIndex(i).programId);
 		VkShaderProgramDiscard(progSetup, progRuntime, progRuntime.pipeline);
 	}
 	runtime.programMap.Clear();

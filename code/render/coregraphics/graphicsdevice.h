@@ -44,6 +44,8 @@ IndexT GetBufferedFrameIndex();
 
 struct GraphicsDeviceState
 {
+	Util::Array<CoreGraphics::RenderTextureId> backBuffers;
+
 	Util::Dictionary<Util::StringAtom, CoreGraphics::RenderTextureId> renderTextures;
 	Util::Dictionary<Util::StringAtom, CoreGraphics::ShaderRWTextureId> shaderRWTextures;
 	Util::Dictionary<Util::StringAtom, CoreGraphics::ShaderRWBufferId> shaderRWBuffers;
@@ -67,8 +69,9 @@ struct GraphicsDeviceState
 	CoreGraphics::SemaphoreId gfxWaitSemaphore;
 	CoreGraphics::FenceId gfxFence;
 
-	CoreGraphics::SemaphoreId presentSemaphore;
-	CoreGraphics::SemaphoreId renderingFinishedSemaphore;
+	Util::FixedArray<CoreGraphics::SemaphoreId> presentSemaphores;
+	Util::FixedArray<CoreGraphics::SemaphoreId> renderingFinishedSemaphores;
+	Util::FixedArray<CoreGraphics::SemaphoreId> lastFrameSemaphores;
 
 	CoreGraphics::SubmissionContextId computeSubmission;
 	CoreGraphics::CommandBufferId computeCmdBuffer;
@@ -121,6 +124,11 @@ void RemoveEventHandler(const Ptr<CoreGraphics::RenderEventHandler>& h);
 /// notify event handlers about an event
 bool NotifyEventHandlers(const CoreGraphics::RenderEvent& e);
 
+/// add a render texture used by the back buffer
+void AddBackBufferRenderTexture(const CoreGraphics::RenderTextureId tex);
+/// remove a render texture
+void RemoveBackBufferRenderTexture(const CoreGraphics::RenderTextureId tex);
+
 /// begin complete frame
 bool BeginFrame(IndexT frameIndex);
 /// start a new submission, with an optional argument for waiting for another queue
@@ -152,7 +160,7 @@ void SetPrimitiveGroup(const CoreGraphics::PrimitiveGroup& pg);
 /// get current primitive group
 const CoreGraphics::PrimitiveGroup& GetPrimitiveGroup();
 /// set shader program
-void SetShaderProgram(const CoreGraphics::ShaderProgramId& pro);
+void SetShaderProgram(const CoreGraphics::ShaderProgramId pro);
 /// set shader program
 void SetShaderProgram(const CoreGraphics::ShaderId shaderId, const CoreGraphics::ShaderFeature::Mask mask);
 /// set resource table
@@ -235,7 +243,7 @@ void ResetEvent(const CoreGraphics::EventId ev, const CoreGraphicsQueueType queu
 /// draw current primitives
 void Draw();
 /// draw indexed, instanced primitives
-void DrawIndexedInstanced(SizeT numInstances, IndexT baseInstance);
+void DrawInstanced(SizeT numInstances, IndexT baseInstance);
 /// perform computation
 void Compute(int dimX, int dimY, int dimZ);
 /// end current batch
@@ -293,6 +301,10 @@ bool GetUsePatches();
 void SetViewport(const Math::rectangle<int>& rect, int index);
 /// adds a scissor rect
 void SetScissorRect(const Math::rectangle<int>& rect, int index);
+/// set array of viewports directly
+void SetViewports(Math::rectangle<int>* viewports, SizeT num);
+/// set array of scissors directly
+void SetScissorRects(Math::rectangle<int>* scissors, SizeT num);
 
 /// register render texture
 void RegisterRenderTexture(const Util::StringAtom& name, const CoreGraphics::RenderTextureId id);

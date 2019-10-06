@@ -92,10 +92,10 @@ public:
 	const Util::BitField<ComponentEvent::NumEvents>& SubscribedEvents() const;
 
 	/// Returns attribute id at index.
-	const Attr::Attribute& GetAttribute(IndexT index) const;
+	const Game::Attribute& GetAttribute(IndexT index) const;
 
 	/// Returns an array with all attribute ids for this component
-	const Util::FixedArray<Attr::Attribute>& GetAttributes() const;
+	const Util::FixedArray<Game::Attribute>& GetAttributes() const;
 
 	/// Callback for when an entity has been deleted.
 	/// This in only used when immediate instance deletion is required.
@@ -204,7 +204,7 @@ protected:
 	
 	/// Holds all attributes that this components has available.
 	/// This should be adjacent to the data/tuple the values are in.
-	Util::FixedArray<Attr::Attribute> attributes;
+	Util::FixedArray<Game::Attribute> attributes;
 
 	/// Determines whether the component manager will execute this components update methods.
 	/// activation, load and such methods will still be called.

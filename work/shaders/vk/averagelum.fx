@@ -13,7 +13,6 @@ texture2D PreviousLum;
 
 varblock AverageLumBlock
 {
-	
 	float TimeDiff;
 };
 

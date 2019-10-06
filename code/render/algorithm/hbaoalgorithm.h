@@ -32,7 +32,8 @@ private:
 	CoreGraphics::ShaderId hbaoShader, blurShader;
 	CoreGraphics::ShaderProgramId xDirectionHBAO, yDirectionHBAO, xDirectionBlur, yDirectionBlur;
 
-	CoreGraphics::ResourceTableId hbaoTable, blurTableX, blurTableY;
+	Util::FixedArray<CoreGraphics::ResourceTableId> hbaoTable, blurTableX, blurTableY;
+	//CoreGraphics::ResourceTableId hbaoTable, blurTableX, blurTableY;
 	CoreGraphics::ConstantBufferId hbaoConstants, blurConstants;
 	IndexT hbao0, hbao1, hbaoX, hbaoY, hbaoBlurRG, hbaoBlurR, hbaoC, blurC;
 

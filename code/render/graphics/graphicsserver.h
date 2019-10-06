@@ -55,12 +55,16 @@ public:
 	/// check if graphics entity is valid
 	bool IsValidGraphicsEntity(const GraphicsEntityId id);
 
-	/// create a new view
+	/// create a new view with a new framescript
 	Ptr<View> CreateView(const Util::StringAtom& name, const IO::URI& framescript);
+	/// create a new view without a framescript
+	Ptr<View> CreateView(const Util::StringAtom& name);
 	/// discard view
 	void DiscardView(const Ptr<View>& view);
 	/// get current view
 	const Ptr<View>& GetCurrentView() const;
+	/// set current view (do not use unless you know what you are doing since this is normally handled by the graphicssserver)
+	void SetCurrentView(const Ptr<View>& view);
 
 	/// create a new stage
 	Ptr<Stage> CreateStage(const Util::StringAtom& name, bool main);
@@ -113,9 +117,7 @@ private:
 
 	Util::Array<Ptr<Stage>> stages;
 	Util::Array<Ptr<View>> views;
-	uint currentViewIdx;
 	CoreGraphics::BatchGroup batchGroupRegistry;
-
 	Ptr<View> currentView;
 
 	Ptr<CoreGraphics::DisplayDevice> displayDevice;

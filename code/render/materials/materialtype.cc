@@ -14,7 +14,11 @@ namespace Materials
 //------------------------------------------------------------------------------
 /**
 */
-MaterialType::MaterialType()
+MaterialType::MaterialType() 
+	: currentBatch(CoreGraphics::BatchGroup::InvalidBatchGroup)
+	, currentSurfaceBatchIndex(InvalidIndex)
+	, vertexType(-1)
+	, isVirtual(false)
 {
 }
 
@@ -110,7 +114,7 @@ MaterialType::CreateSurface()
 
 		// get arrays to pre-allocated buffers
 		Util::Array<std::tuple<IndexT, CoreGraphics::ConstantBufferId>>& surfaceBuffers = this->surfaceAllocator.Get<SurfaceBuffers>(sur)[*batchIt.val];
-		Util::Array<std::tuple<IndexT, CoreGraphics::ConstantBufferId>>& instanceBuffers = this->surfaceAllocator.Get<InstanceBuffers>(sur)[*batchIt.val];
+		Util::Array<std::tuple<IndexT, void*, SizeT>>& instanceBuffers = this->surfaceAllocator.Get<InstanceBuffers>(sur)[*batchIt.val];
 
 		// create instance of constant buffers
 		IndexT j;
@@ -131,13 +135,17 @@ MaterialType::CreateSurface()
 			}			
 			else if (group == NEBULA_INSTANCE_GROUP && instanceTable != CoreGraphics::ResourceTableId::Invalid())
 			{
-				CoreGraphics::ConstantBufferId buf = CoreGraphics::ShaderCreateConstantBuffer(shd, j);
+				CoreGraphics::ConstantBufferId buf = CoreGraphics::GetGraphicsConstantBuffer(MainThreadConstantBuffer);
 				if (buf != CoreGraphics::ConstantBufferId::Invalid())
 				{
-					CoreGraphics::ResourceTableSetConstantBuffer(instanceTable, { buf, slot, 0, true, false, -1, 0 });
+					SizeT bufSize = CoreGraphics::ShaderGetConstantBufferSize(shd, j);
+					CoreGraphics::ResourceTableSetConstantBuffer(instanceTable, { buf, slot, 0, true, false, bufSize, 0 });
+
+					// allocate new intermediate buffer, which will be copied to the constant memory on apply
+					byte* buf = n_new_array(byte, bufSize);
 
 					// add to surface
-					instanceBuffers.Append(std::make_tuple(slot, buf));
+					instanceBuffers.Append(std::make_tuple(slot, buf, bufSize));
 				}
 			}
 		}
@@ -176,7 +184,6 @@ MaterialType::CreateSurface()
 			surConst.binding = constant.offset;
 			surConst.bufferIndex = InvalidIndex;
 			surConst.instanceConstant = false;
-			surConst.buffer = CoreGraphics::ConstantBufferId::Invalid();
 			if (constant.group == NEBULA_BATCH_GROUP)
 			{
 				surConst.instanceConstant = false;
@@ -202,7 +209,7 @@ MaterialType::CreateSurface()
 					if (std::get<0>(instanceBuffers[k]) == constant.slot)
 					{
 						surConst.bufferIndex = k;
-						surConst.buffer = std::get<1>(instanceBuffers[k]);
+						surConst.mem = std::get<1>(instanceBuffers[k]);
 						break;
 					}
 				}
@@ -244,59 +251,22 @@ MaterialType::CreateSurfaceInstance(const SurfaceId id)
 	Ids::Id32 inst = this->surfaceInstanceAllocator.Alloc();
 
 	this->surfaceInstanceAllocator.Get<SurfaceInstanceConstants>(inst).Resize(this->batchToIndexMap.Size());
-	this->surfaceInstanceAllocator.Get<ConstantBufferOffsets>(inst).Resize(this->batchToIndexMap.Size());
-	this->surfaceInstanceAllocator.Get<ConstantBufferInstance>(inst).Resize(this->batchToIndexMap.Size());
 
 	auto batchIt = this->batchToIndexMap.Begin();
 	while (batchIt != this->batchToIndexMap.End())
 	{
 		// get surface level stuff
-		const Util::Array<std::tuple<IndexT, CoreGraphics::ConstantBufferId>>& instanceBuffers = this->surfaceAllocator.Get<InstanceBuffers>(id.id)[*batchIt.val];
 		const Util::Array<SurfaceConstant>& constants = this->surfaceAllocator.Get<Constants>(id.id)[*batchIt.val];
-		const CoreGraphics::ResourceTableId instanceTable = this->surfaceAllocator.Get<InstanceTable>(id.id)[*batchIt.val];
 
 		// get instance level stuff
 		Util::FixedArray<SurfaceInstanceConstant>& surfaceInstanceConstants = this->surfaceInstanceAllocator.Get<SurfaceInstanceConstants>(inst)[*batchIt.val];
-		Util::FixedArray<uint>& bufferOffsets = this->surfaceInstanceAllocator.Get<ConstantBufferOffsets>(inst)[*batchIt.val];
-		Util::FixedArray<uint>& bufferInstances = this->surfaceInstanceAllocator.Get<ConstantBufferInstance>(inst)[*batchIt.val];
 
 		// resize 
 		surfaceInstanceConstants.Resize(constants.Size());
-		bufferOffsets.Resize(instanceBuffers.Size());
-		bufferInstances.Resize(instanceBuffers.Size());
-
-		bool rebind = false;
-		IndexT i;
-		for (i = 0; i < instanceBuffers.Size(); i++)
+		for (IndexT i = 0; i < constants.Size(); i++)
 		{
-			if (CoreGraphics::ConstantBufferAllocateInstance(std::get<1>(instanceBuffers[i]), bufferOffsets[i], bufferInstances[i]))
-			{
-				CoreGraphics::ResourceTableSetConstantBuffer(instanceTable, { std::get<1>(instanceBuffers[i]), std::get<0>(instanceBuffers[i]), 0, true, false, -1, 0 });
-				rebind = true;
-			}
+			surfaceInstanceConstants[i] = { constants[i].binding, constants[i].mem };
 		}
-
-		// make sure to commit changes if any were applied
-		if (rebind)
-			CoreGraphics::ResourceTableCommitChanges(instanceTable);
-
-		// setup instance constants
-		for (i = 0; i < constants.Size(); i++)
-		{
-			const SurfaceConstant& constant = constants[i];
-			SurfaceInstanceConstant& instanceConstant = this->surfaceInstanceAllocator.Get<SurfaceInstanceConstants>(inst)[*batchIt.val][i];
-			if (constant.instanceConstant)
-			{
-				CoreGraphics::ConstantBinding newBinding = constant.binding;
-				newBinding += bufferOffsets[constant.bufferIndex];
-				instanceConstant.binding = newBinding;
-			}
-			else
-			{
-				instanceConstant.binding = { UINT_MAX };
-			}
-		}
-
 		batchIt++;
 	}
 	
@@ -412,8 +382,8 @@ MaterialType::SetSurfaceInstanceConstant(const SurfaceInstanceId sur, const Inde
 	while (it != this->batchToIndexMap.End())
 	{
 		const SurfaceInstanceConstant& constant = this->surfaceInstanceAllocator.Get<0>(sur.instance)[*it.val][idx];
-		if (constant.buffer != CoreGraphics::ConstantBufferId::Invalid() && constant.binding != UINT_MAX)
-			CoreGraphics::ConstantBufferUpdate(constant.buffer, value, constant.binding);
+		if (constant.binding != UINT_MAX)
+			memcpy((void*)constant.mem, value.AsVoidPtr(), value.Size());
 		it++;
 	}
 }
@@ -460,7 +430,16 @@ MaterialType::ApplyInstance(const SurfaceInstanceId id)
 	n_assert(this->currentSurfaceBatchIndex != InvalidIndex);
 	const CoreGraphics::ResourceTableId table = this->surfaceAllocator.Get<InstanceTable>(id.surface)[this->currentSurfaceBatchIndex];
 	if (table != CoreGraphics::ResourceTableId::Invalid())
-		CoreGraphics::SetResourceTable(table, NEBULA_INSTANCE_GROUP, CoreGraphics::GraphicsPipeline, this->surfaceInstanceAllocator.Get<ConstantBufferOffsets>(id.instance)[this->currentSurfaceBatchIndex]);
+	{
+		// update global buffer, save new offsets, and apply table
+		const Util::Array<std::tuple<IndexT, void*, SizeT>>& buffers = this->surfaceAllocator.Get<InstanceBuffers>(id.surface)[this->currentSurfaceBatchIndex];
+		Util::FixedArray<uint> offsets(buffers.Size());
+		for (IndexT i = 0; i < buffers.Size(); i++)
+		{
+			offsets[i] = CoreGraphics::SetGraphicsConstants(MainThreadConstantBuffer, (byte*)std::get<1>(buffers[i]), std::get<2>(buffers[i]));
+		}
+		CoreGraphics::SetResourceTable(table, NEBULA_INSTANCE_GROUP, CoreGraphics::GraphicsPipeline, offsets);
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -469,7 +448,7 @@ MaterialType::ApplyInstance(const SurfaceInstanceId id)
 void 
 MaterialType::EndSurface()
 {
-	this->currentSurfaceBatchIndex = -1;
+	this->currentSurfaceBatchIndex = InvalidIndex;
 }
 
 //------------------------------------------------------------------------------

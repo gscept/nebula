@@ -60,7 +60,7 @@ GraphicsServer::Open()
 		{ 1 * MB, 0 * MB },			// Compute - main threads get 1 MB of constant memory, visibility thread (objects) gets 0
 		{ 10 * MB, 1 * MB },        // Vertex memory - main thread gets 10 MB for UI, Text etc, visibility thread (objects doing soft cloths and such) get 1 MB
 		{ 5 * MB, 1 * MB },         // Index memory - main thread gets 10 MB for UI, Text etc, visibility thread (objects doing soft cloths and such) get 1 MB
-		3,							// We have 3 frames running simultaneously
+		2,							// We have 3 frames running simultaneously
 		false }; // validation
 	this->graphicsDevice = CoreGraphics::CreateGraphicsDevice(gfxInfo);
 	if (this->graphicsDevice)
@@ -330,7 +330,6 @@ GraphicsServer::RenderViews()
 		if (!view->enabled)
 			continue;
 
-		this->currentView = view;
 		view->Render(this->frameIndex, this->frameTime);
 	}
 }
@@ -350,7 +349,6 @@ GraphicsServer::EndViews()
 		if (!view->enabled)
 			continue;
 
-		this->currentView = view;
 		this->shaderServer->AfterView();
 		this->currentView->EndFrame(this->frameIndex, this->frameTime);
 
@@ -363,6 +361,8 @@ GraphicsServer::EndViews()
 				this->contexts[j]->OnAfterView(view, this->frameIndex, this->frameTime);
 		}
 	}
+
+	this->currentView = nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -430,6 +430,30 @@ GraphicsServer::CreateView(const Util::StringAtom& name, const IO::URI& framescr
 //------------------------------------------------------------------------------
 /**
 */
+Ptr<Graphics::View> 
+GraphicsServer::CreateView(const Util::StringAtom& name)
+{
+	Ptr<View> view = View::Create();
+
+	// setup gbuffer bindings after frame script is loaded
+	this->shaderServer->SetupGBufferConstants();
+
+	view->script = nullptr;
+	this->views.Append(view);
+
+	// invoke all interested contexts
+	IndexT i;
+	for (i = 0; i < this->contexts.Size(); i++)
+	{
+		if (this->contexts[i]->OnViewCreated != nullptr)
+			this->contexts[i]->OnViewCreated(view);
+	}
+	return view;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 GraphicsServer::DiscardView(const Ptr<View>& view)
 {
@@ -444,6 +468,17 @@ GraphicsServer::DiscardView(const Ptr<View>& view)
     }
 	view->script->Discard();
 }
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GraphicsServer::SetCurrentView(const Ptr<View>& view)
+{
+	this->currentView = view;
+}
+
 
 //------------------------------------------------------------------------------
 /**

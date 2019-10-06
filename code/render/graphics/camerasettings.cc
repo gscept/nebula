@@ -7,6 +7,7 @@
 #include "graphics/camerasettings.h"
 #include "coregraphics/displaydevice.h"
 #include "coregraphics/displaymode.h"
+#include "coregraphics/config.h"
 
 namespace Graphics
 {
@@ -15,10 +16,7 @@ using namespace CoreGraphics;
 //------------------------------------------------------------------------------
 /**
 */
-CameraSettings::CameraSettings() :
-    viewProjDirty(true),
-    viewMatrix(matrix44::identity()),
-    viewProjMatrix(matrix44::identity())
+CameraSettings::CameraSettings()
 {
 	DisplayMode mode = WindowGetDisplayMode(DisplayDevice::Instance()->GetCurrentWindow());
     this->SetupPerspectiveFov(n_deg2rad(60.0f), mode.GetHeight() / (float)mode.GetWidth(), 0.1f, 2500.0f);
@@ -39,7 +37,11 @@ CameraSettings::SetupPerspectiveFov(float fov_, float aspect_, float zNear_, flo
     this->fov     = fov_;
     this->aspect  = aspect_;
 
-    this->projMatrix = matrix44::perspfovrh(this->fov, this->aspect, this->zNear, this->zFar);
+#if PROJECTION_HANDEDNESS_LH
+	this->projMatrix = matrix44::perspfovlh(this->fov, this->aspect, this->zNear, this->zFar);
+#else
+	this->projMatrix = matrix44::perspfovrh(this->fov, this->aspect, this->zNear, this->zFar);
+#endif
     this->invProjMatrix = matrix44::inverse(this->projMatrix);
 
     this->nearWidth  = 2.0f * this->zNear / this->projMatrix.getrow0().x();
@@ -49,8 +51,6 @@ CameraSettings::SetupPerspectiveFov(float fov_, float aspect_, float zNear_, flo
     float yLen = Math::n_tan(0.5f * this->fov);
     float xLen = yLen * this->aspect;
     this->focalLength.set(xLen, yLen);
-
-    this->viewProjDirty = true;
 }
 
 //------------------------------------------------------------------------------
@@ -73,59 +73,12 @@ CameraSettings::SetupOrthogonal(float w, float h, float zNear_, float zFar_)
     this->farHeight  = h;
     this->focalLength.set(1.0f, 1.0f);
 
-    this->projMatrix = matrix44::orthorh(w, h, this->zNear, this->zFar);
+#if PROJECTION_HANDEDNESS_LH
+	this->projMatrix = matrix44::ortholh(w, h, this->zNear, this->zFar);
+#else
+	this->projMatrix = matrix44::orthorh(w, h, this->zNear, this->zFar);
+#endif
     this->invProjMatrix = matrix44::inverse(this->projMatrix);
-
-    this->viewProjDirty = true;
-}
-
-//------------------------------------------------------------------------------
-/**
-    Updates the view-projection matrix.
-*/
-void
-CameraSettings::UpdateViewProjMatrix() const
-{
-    n_assert(this->viewProjDirty);
-    this->viewProjDirty = false;
-    this->viewProjMatrix = matrix44::multiply(this->viewMatrix, this->projMatrix);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-CameraSettings::SetProjectionMatrix(const Math::matrix44 & proj, float fov, float aspect, float zNear, float zFar)
-{    
-    this->viewProjDirty = true;
-    this->zFar = zFar;
-    this->zNear = zNear;
-    this->projMatrix = proj;
-    this->aspect = aspect;
-    this->fov = fov;
-    this->isPersp = true;
-    this->invProjMatrix = matrix44::inverse(this->projMatrix);
-
-    this->nearWidth = 2.0f * this->zNear / this->projMatrix.getrow0().x();
-    this->nearHeight = 2.0f * this->zNear / this->projMatrix.getrow1().y();
-    this->farWidth = (this->nearWidth / this->zNear) * this->zFar;
-    this->farHeight = (this->nearHeight / this->zNear) * this->zFar;
-    float yLen = Math::n_tan(0.5f * this->fov);
-    float xLen = yLen * this->aspect;
-    this->focalLength.set(xLen, yLen);
-
-    this->viewProjDirty = true;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-CameraSettings::UpdateViewFrustum() const
-{
-    Math::matrix44 invViewProj = Math::matrix44::inverse(this->GetViewProjTransform());
-    this->viewFrustum.set(invViewProj);
-    this->viewFrustumDirty = false;
 }
 
 } // namespace Shared

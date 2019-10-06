@@ -40,6 +40,10 @@ public:
 		Util::Array<Frame::FrameOp::Compiled*> ops;
 		Util::Array<Math::rectangle<int>> viewports;
 		Util::Array<Math::rectangle<int>> scissors;
+
+#if NEBULA_GRAPHICS_DEBUG
+		Util::StringAtom name;
+#endif
 	};
 
 	FrameOp::Compiled* AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator);
@@ -51,14 +55,12 @@ protected:
 		Util::Array<FrameOp::Compiled*>& compiledOps,
 		Util::Array<CoreGraphics::EventId>& events,
 		Util::Array<CoreGraphics::BarrierId>& barriers,
-		Util::Array<CoreGraphics::SemaphoreId>& semaphores,
 		Util::Dictionary<CoreGraphics::ShaderRWTextureId, Util::Array<std::tuple<CoreGraphics::ImageSubresourceInfo, TextureDependency>>>& rwTextures,
 		Util::Dictionary<CoreGraphics::ShaderRWBufferId, BufferDependency>& rwBuffers,
 		Util::Dictionary<CoreGraphics::RenderTextureId, Util::Array<std::tuple<CoreGraphics::ImageSubresourceInfo, TextureDependency>>>& renderTextures) override;
 
 private:
-
-	
+	friend class FrameScriptLoader;
 
 	Util::Array<Frame::FrameOp*> ops;
 	Util::Array<Math::rectangle<int>> viewports;

@@ -27,6 +27,14 @@ struct ImguiRendererParams
 	CoreGraphics::ConstantBinding fontVar;
 };
 
+struct ImguiTextureId
+
+{
+	uint64 nebulaHandle;
+	uint8 layer;
+	uint8 mip;
+};
+
 class ImguiContext : public Graphics::GraphicsContext
 {
 	_DeclarePluginContext();
@@ -59,13 +67,16 @@ private:
 		ImguiRendererParams params;
 		CoreGraphics::ShaderId uiShader;
 		CoreGraphics::ShaderProgramId prog;
-		CoreGraphics::TextureId fontTexture;
+
+		ImguiTextureId fontTexture;
+		//CoreGraphics::TextureId fontTexture;
 
 		Util::FixedArray<CoreGraphics::VertexBufferId> vbos;
 		Util::FixedArray<CoreGraphics::IndexBufferId> ibos;
 
 		CoreGraphics::ConstantBinding textureConstant;
 		CoreGraphics::ConstantBinding textProjectionConstant;
+		CoreGraphics::ConstantBinding packedTextureInfo;
 		CoreGraphics::ResourceTableId resourceTable;
 		//Ptr<CoreGraphics::BufferLock> vboBufferLock;
 		//Ptr<CoreGraphics::BufferLock> iboBufferLock;

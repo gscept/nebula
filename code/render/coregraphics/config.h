@@ -169,10 +169,12 @@ CoreGraphicsQueueTypeFromString(const Util::String& str)
 #define NEBULA_MARKER_RED Math::float4(1.0f, 0.8f, 0.8f, 1.0f)
 #define NEBULA_MARKER_GREEN Math::float4(0.8f, 1.0f, 0.8f, 1.0f)
 #define NEBULA_MARKER_PINK Math::float4(1.0f, 0.8f, 0.9f, 1.0f)
-#define NEBULA_MARKER_PURPLE Math::float4(0.8f, 0.6f, 0.8f, 1.0f)
+#define NEBULA_MARKER_PURPLE Math::float4(0.9f, 0.7f, 0.9f, 1.0f)
 #define NEBULA_MARKER_ORANGE Math::float4(1.0f, 0.9f, 0.8f, 1.0f)
 #define NEBULA_MARKER_TURQOISE Math::float4(0.8f, 0.9f, 1.0f, 1.0f)
-#define NEBULA_MARKER_GRAY Math::float4(0.8f, 0.8f, 0.8f, 1.0f)
+#define NEBULA_MARKER_GRAY Math::float4(0.9f, 0.9f, 0.9f, 1.0f)
+#define NEBULA_MARKER_BLACK Math::float4(0.001f)
+#define NEBULA_MARKER_WHITE Math::float4(1)
 #endif
 
 //------------------------------------------------------------------------------
@@ -202,6 +204,7 @@ CoreGraphicsQueueTypeFromString(const Util::String& str)
     #else
         #define	NEBULA_OPENGL4_DEBUG (0)
     #endif
+	#define PROJECTION_HANDEDNESS_LH (1)
 #elif __VULKAN__
 	#define COREGRAPHICS_TRIANGLE_FRONT_FACE_CCW (1)
 	// define the same descriptor set slots as we do in the shaders
@@ -211,11 +214,13 @@ CoreGraphicsQueueTypeFromString(const Util::String& str)
 	#define NEBULA_BATCH_GROUP 3				// set per batch (material settings or system stuff)
 	#define NEBULA_INSTANCE_GROUP 4			// set a batch-internal copy of some specific settings
 	#define NEBULA_DYNAMIC_OFFSET_GROUP 5		// set once per shader and is offset for each instance
+	#define NEBULA_NUM_GROUPS (NEBULA_DYNAMIC_OFFSET_GROUP + 1)
 
 	#define MAX_INPUT_ATTACHMENTS 32
 
 	#define MAX_2D_TEXTURES 2048
 	#define MAX_2D_MS_TEXTURES 64
+	#define MAX_2D_ARRAY_TEXTURES 8
 	#define MAX_CUBE_TEXTURES 128
 	#define MAX_3D_TEXTURES 128
 
@@ -229,6 +234,7 @@ CoreGraphicsQueueTypeFromString(const Util::String& str)
 	#else
 		#define NEBULA_VULKAN_DEBUG (0)
 	#endif
+	#define PROJECTION_HANDEDNESS_LH (0)
 #if __X64__
 	#define VK_DEVICE_SIZE_CONV(x) uint64_t(x)
 #else

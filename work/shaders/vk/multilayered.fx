@@ -53,7 +53,6 @@ vsColored(
 	[slot=3] in vec3 tangent,
 	[slot=4] in vec3 binormal,
 	[slot=5] in vec4 color,
-	out vec3 ViewSpacePos,
 	out vec3 Tangent,
 	out vec3 Normal,
 	out vec3 Binormal,
@@ -65,12 +64,10 @@ vsColored(
 	gl_Position = ViewProjection * modelSpace;
 	UV = vec2(uv.x * NumXTiles, uv.y * NumYTiles);
 	Color = color;
-	mat4 modelView = View * Model;
 	
-	ViewSpacePos = (modelView * vec4(position, 1)).xyz;
-	Tangent = (modelView * vec4(tangent, 0)).xyz;
-	Normal = (modelView * vec4(normal, 0)).xyz;
-	Binormal = (modelView * vec4(binormal, 0)).xyz;
+	Tangent = (Model * vec4(tangent, 0)).xyz;
+	Normal = (Model * vec4(normal, 0)).xyz;
+	Binormal = (Model * vec4(binormal, 0)).xyz;
 	WorldViewVec = modelSpace.xyz - EyePos.xyz;
 }
 
@@ -251,7 +248,7 @@ gsMain(in vec2 uv[], in vec4 pos[], flat in int instance[], out vec2 UV, out vec
 */
 shader
 void
-psMultilayered(in vec3 ViewSpacePos,
+psMultilayered(
 	in vec3 Tangent,
 	in vec3 Normal,
 	in vec3 Binormal,
@@ -259,10 +256,9 @@ psMultilayered(in vec3 ViewSpacePos,
 	in vec4 Color,
 	in vec3 WorldViewVec,
 	[color0] out vec4 Albedo,
-	[color1] out vec4 Normals,
-	[color2] out float Depth,	
-	[color3] out vec4 Specular,
-	[color4] out vec4 Emissive) 
+	[color1] out vec3 Normals,
+	[color2] out vec4 Specular,
+	[color3] out vec4 Emissive) 
 {
 	vec4 blend = Color;
 	
@@ -288,7 +284,7 @@ psMultilayered(in vec3 ViewSpacePos,
 	vec3 bumpNormal = normalize(calcBump(Tangent, Binormal, Normal, normals));
 
 	mat4x4 invView = InvView;
-	mat2x3 env = PBRSpec(specColor, bumpNormal, ViewSpacePos, WorldViewVec, invView, roughness);
+	mat2x3 env = calcEnv(specColor, bumpNormal, WorldViewVec, roughness);
 	vec4 spec = calcSpec(specColor.rgb, roughness);
 	vec4 albedo = calcColor(diffColor, vec4(1), spec);	
 	vec4 emissive = vec4((env[0] * albedo.rgb + env[1]), -1);
@@ -296,8 +292,7 @@ psMultilayered(in vec3 ViewSpacePos,
 	Specular = spec;
 	Albedo = albedo;
 	Emissive = emissive;
-	Depth = calcDepth(ViewSpacePos);
-	Normals = PackViewSpaceNormal(bumpNormal);
+	Normals = bumpNormal;
 }
 
 //------------------------------------------------------------------------------

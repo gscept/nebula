@@ -68,6 +68,14 @@ ImguiContext::ImguiDrawFunction()
 	// set projection
 	CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, state.textProjectionConstant, sizeof(proj), (byte*)&proj);
 
+	struct TextureInfo
+	{
+		uint32 type : 4;
+		uint32 layer : 8;
+		uint32 mip : 8;
+		uint32 id : 12;
+	};
+
 	IndexT vertexOffset = 0;
 	IndexT indexOffset = 0;
 	IndexT vertexBufferOffset = 0;
@@ -103,25 +111,39 @@ ImguiContext::ImguiDrawFunction()
 				// setup scissor rect
 				Math::rectangle<int> scissorRect((int)command->ClipRect.x, (int)command->ClipRect.y, (int)command->ClipRect.z, (int)command->ClipRect.w);
 				CoreGraphics::SetScissorRect(scissorRect, 0);
+				ImguiTextureId tex = *(ImguiTextureId*)command->TextureId;
+
+				TextureInfo texInfo;
+				texInfo.type = 0;
 
 				// set texture in shader, we shouldn't have to put it into ImGui
-				Resources::ResourceId resourceId = *(Resources::ResourceId*)command->TextureId;
-				uint64 imageHandle;
+				Resources::ResourceId resourceId = tex.nebulaHandle;
 
 				if (resourceId.resourceType == RenderTextureIdType)
 				{
-					imageHandle = CoreGraphics::RenderTextureGetBindlessHandle(*((CoreGraphics::RenderTextureId*)command->TextureId));
+					RenderTextureId rt = resourceId.AllocId();
+					SizeT layers = CoreGraphics::RenderTextureGetLayers(rt);
+					if (layers > 1)
+					{
+						texInfo.type = 1;
+					}
+					texInfo.layer = tex.layer;
+					texInfo.mip = tex.mip;
+					texInfo.id = CoreGraphics::RenderTextureGetBindlessHandle(rt);
 				}
 				else if (resourceId.resourceType == TextureIdType)
 				{
-					imageHandle = CoreGraphics::TextureGetBindlessHandle(*((CoreGraphics::TextureId*)command->TextureId));
+					TextureId texture = resourceId.AllocId();
+					texInfo.layer = tex.layer;
+					texInfo.mip = tex.mip;
+					texInfo.id = CoreGraphics::TextureGetBindlessHandle(texture);
 				}
 				else
 				{
 					n_error("ResourceId alloc type unknown or not implemented!\n");
 				}
 				
-				CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, state.textureConstant, sizeof(uint64), (byte*)&imageHandle);
+				CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, state.packedTextureInfo, sizeof(TextureInfo), (byte*)& texInfo);
 
 				// setup primitive
 				CoreGraphics::PrimitiveGroup primitive;
@@ -189,6 +211,7 @@ ImguiContext::Create()
 
 	state.textureConstant = CoreGraphics::ShaderGetConstantBinding(state.uiShader, "Texture");
 	state.textProjectionConstant = CoreGraphics::ShaderGetConstantBinding(state.uiShader, "TextProjectionModel");
+	state.packedTextureInfo = CoreGraphics::ShaderGetConstantBinding(state.uiShader, "PackedTextureInfo");
 
 	state.inputHandler = ImguiInputHandler::Create();
 	Input::InputServer::Instance()->AttachInputHandler(Input::InputPriority::DynUi, state.inputHandler.upcast<Input::InputHandler>());
@@ -384,7 +407,9 @@ ImguiContext::Create()
 		CoreGraphics::PixelFormat::R8G8B8A8,
 		width, height, 1
 	};
-    state.fontTexture = CoreGraphics::CreateTexture(texInfo);
+    state.fontTexture.nebulaHandle = CoreGraphics::CreateTexture(texInfo).HashCode64();
+	state.fontTexture.mip = 0;
+	state.fontTexture.layer = 0;
 	io.Fonts->TexID = &state.fontTexture;
 
 	// load settings from disk. If we don't do this here we	need to
@@ -420,7 +445,7 @@ ImguiContext::Discard()
 	Input::InputServer::Instance()->RemoveInputHandler(state.inputHandler.upcast<InputHandler>());
 	state.inputHandler = nullptr;
 
-	CoreGraphics::DestroyTexture(state.fontTexture);
+	CoreGraphics::DestroyTexture((CoreGraphics::TextureId)state.fontTexture.nebulaHandle);
 	ImGui::DestroyContext();
 }
 

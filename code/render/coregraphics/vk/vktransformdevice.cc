@@ -11,7 +11,6 @@
 #include "coregraphics/shadersemantics.h"
 #include "framesync/framesynctimer.h"
 
-#include "shared.h"
 
 using namespace Util;
 using namespace CoreGraphics;
@@ -56,6 +55,7 @@ VkTransformDevice::Open()
 
 	this->viewConstants = CoreGraphics::GetGraphicsConstantBuffer(MainThreadConstantBuffer);
 	this->viewConstantsSlot = ShaderGetResourceSlot(shader, "FrameBlock");
+	this->shadowConstantsSlot = ShaderGetResourceSlot(shader, "ShadowMatrixBlock");
 	this->tableLayout = ShaderGetResourcePipeline(shader);
 
 	// setup camera block, update once per frame - no need to sync
@@ -108,7 +108,7 @@ VkTransformDevice::ApplyViewSettings()
 	Math::matrix44::storeu(this->GetInvViewTransform(), block.InvView);
 	Math::matrix44::storeu(this->GetInvProjTransform(), block.InvProjection);
 	Math::matrix44::storeu(Math::matrix44::inverse(this->GetViewProjTransform()), block.InvViewProjection);
-	Math::float4::storeu(this->GetInvViewTransform().getrow3(), block.EyePos);
+	Math::float4::storeu(this->GetInvViewTransform().get_position(), block.EyePos);
 	Math::float4::storeu(float4(this->GetFocalLength().x(), this->GetFocalLength().y(), this->GetNearFarPlane().x(), this->GetNearFarPlane().y()), block.FocalLengthNearFar);
 	Math::float4::storeu(float4((float)FrameSync::FrameSyncTimer::Instance()->GetTime(), Math::n_rand(0, 1), (float)FrameSync::FrameSyncTimer::Instance()->GetFrameTime(), 0), block.TimeAndRandom);
 	uint offset = CoreGraphics::SetGraphicsConstants(MainThreadConstantBuffer, block);
@@ -119,6 +119,19 @@ VkTransformDevice::ApplyViewSettings()
 	// update resource table
 	IndexT bufferedFrameIndex = GetBufferedFrameIndex();
 	ResourceTableSetConstantBuffer(this->viewTables[bufferedFrameIndex], { this->viewConstants, this->viewConstantsSlot, 0, false, false, sizeof(Shared::FrameBlock), (SizeT)offset });
+	ResourceTableCommitChanges(this->viewTables[bufferedFrameIndex]);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+VkTransformDevice::ApplyCSMMatrices(const Shared::ShadowMatrixBlock& block)
+{
+	uint offset = CoreGraphics::SetGraphicsConstants(MainThreadConstantBuffer, block);
+
+	IndexT bufferedFrameIndex = GetBufferedFrameIndex();
+	ResourceTableSetConstantBuffer(this->viewTables[bufferedFrameIndex], { this->viewConstants, this->shadowConstantsSlot, 0, false, false, sizeof(Shared::ShadowMatrixBlock), (SizeT)offset });
 	ResourceTableCommitChanges(this->viewTables[bufferedFrameIndex]);
 }
 

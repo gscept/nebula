@@ -58,7 +58,6 @@ CreateRenderTexture(const RenderTextureCreateInfo& info)
 	loadInfo.relativeSize = adjustedInfo.relativeSize;
 	loadInfo.msaa = adjustedInfo.msaa;
 	loadInfo.dev = Vulkan::GetCurrentDevice();
-	runtimeInfo.inpass = false;
 	runtimeInfo.type = adjustedInfo.type;
 	runtimeInfo.bind = -1;
 
@@ -68,7 +67,7 @@ CreateRenderTexture(const RenderTextureCreateInfo& info)
 	// if this is a window texture, get the backbuffers from the render device
 	if (adjustedInfo.isWindow)
 	{
-		VkBackbufferInfo& backbufferInfo = CoreGraphics::glfwWindowAllocator.Get<GLFWBackbufferField>(adjustedInfo.window.id24);
+		VkBackbufferInfo& backbufferInfo = CoreGraphics::glfwWindowAllocator.Get<GLFW_Backbuffer>(adjustedInfo.window.id24);
 		swapInfo.swapimages = backbufferInfo.backbuffers;
 		swapInfo.swapviews = backbufferInfo.backbufferViews;
 		VkClearColorValue clear = { 0, 0, 0, 0 };
@@ -99,7 +98,7 @@ CreateRenderTexture(const RenderTextureCreateInfo& info)
 		loadInfo.mem = VK_NULL_HANDLE;
 		loadInfo.window = adjustedInfo.window;
 		runtimeInfo.type = Texture2D;
-		runtimeInfo.view = backbufferInfo.backbufferViews[0];
+		runtimeInfo.framebufferView = backbufferInfo.backbufferViews[0];
 	}
 	else
 	{
@@ -165,13 +164,12 @@ CreateRenderTexture(const RenderTextureCreateInfo& info)
 		VkUtilities::AllocateImageMemory(loadInfo.dev, loadInfo.img, loadInfo.mem, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, size);
 		vkBindImageMemory(loadInfo.dev, loadInfo.img, loadInfo.mem, 0);
 
-		VkImageAspectFlags aspect = adjustedInfo.usage == ColorAttachment ? VK_IMAGE_ASPECT_COLOR_BIT : VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
 		VkImageSubresourceRange subres;
 		subres.baseArrayLayer = 0;
 		subres.baseMipLevel = 0;
-		subres.layerCount = 1;
+		subres.layerCount = loadInfo.layers;
 		subres.levelCount = 1;
-		subres.aspectMask = aspect;
+		subres.aspectMask = adjustedInfo.usage == ColorAttachment ? VK_IMAGE_ASPECT_COLOR_BIT : VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
 		VkImageViewCreateInfo viewInfo =
 		{
 			VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
@@ -184,7 +182,7 @@ CreateRenderTexture(const RenderTextureCreateInfo& info)
 			subres
 		};
 
-		res = vkCreateImageView(loadInfo.dev, &viewInfo, NULL, &runtimeInfo.view);
+		res = vkCreateImageView(loadInfo.dev, &viewInfo, NULL, &runtimeInfo.framebufferView);
 		n_assert(res == VK_SUCCESS);
 
 		if (adjustedInfo.usage == ColorAttachment)
@@ -197,6 +195,8 @@ CreateRenderTexture(const RenderTextureCreateInfo& info)
 
 			// create binding
 			layout = CoreGraphicsImageLayout::ShaderRead;
+			runtimeInfo.sampleView = runtimeInfo.framebufferView; // for color formats, these are usually the same (but are they always)?!
+
 			runtimeInfo.bind = VkShaderServer::Instance()->RegisterTexture(rtId, false, runtimeInfo.type);
 		}
 		else
@@ -207,7 +207,30 @@ CreateRenderTexture(const RenderTextureCreateInfo& info)
 			VkUtilities::ImageDepthStencilClear(SubmissionContextGetCmdBuffer(sub), loadInfo.img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, clear, subres);
 			VkUtilities::ImageBarrier(SubmissionContextGetCmdBuffer(sub), CoreGraphics::BarrierStage::Transfer, CoreGraphics::BarrierStage::PassOutput, VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
 
+			VkImageSubresourceRange subres;
+			subres.baseArrayLayer = 0;
+			subres.baseMipLevel = 0;
+			subres.layerCount = loadInfo.layers;
+			subres.levelCount = 1;
+			subres.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+			VkImageViewCreateInfo viewInfo =
+			{
+				VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+				NULL,
+				0,
+				loadInfo.img,
+				viewType,
+				VkTypes::AsVkSampleableFormat(adjustedInfo.format),
+				VkTypes::AsVkMapping(adjustedInfo.format),
+				subres
+			};
+
+			res = vkCreateImageView(loadInfo.dev, &viewInfo, NULL, &runtimeInfo.sampleView);
+			n_assert(res == VK_SUCCESS);
+
 			layout = CoreGraphicsImageLayout::DepthStencilRead;
+			runtimeInfo.bind = VkShaderServer::Instance()->RegisterTexture(rtId, true, runtimeInfo.type);
+
 		}
 	}
 
@@ -241,7 +264,8 @@ DestroyRenderTexture(const RenderTextureId id)
 	{
 		vkFreeMemory(loadInfo.dev, loadInfo.mem, nullptr);
 		vkDestroyImage(loadInfo.dev, loadInfo.img, nullptr);		
-		vkDestroyImageView(loadInfo.dev, runtimeInfo.view, nullptr);
+		vkDestroyImageView(loadInfo.dev, runtimeInfo.framebufferView, nullptr);
+		vkDestroyImageView(loadInfo.dev, runtimeInfo.sampleView, nullptr);
 	}
 	renderTextureAllocator.Dealloc(id.id24);
 }
@@ -324,7 +348,7 @@ RenderTextureResize(const RenderTextureId id, const RenderTextureResizeInfo& inf
 	VkImageSubresourceRange subres;
 	subres.baseArrayLayer = 0;
 	subres.baseMipLevel = 0;
-	subres.layerCount = 1;
+	subres.layerCount = loadInfo.layers;
 	subres.levelCount = 1;
 	subres.aspectMask = aspect;
 	VkImageViewCreateInfo viewInfo =
@@ -339,7 +363,7 @@ RenderTextureResize(const RenderTextureId id, const RenderTextureResizeInfo& inf
 		subres
 	};
 
-	res = vkCreateImageView(loadInfo.dev, &viewInfo, NULL, &runtimeInfo.view);
+	res = vkCreateImageView(loadInfo.dev, &viewInfo, NULL, &runtimeInfo.framebufferView);
 	n_assert(res == VK_SUCCESS);
 
 	// use setup submission
@@ -366,7 +390,7 @@ RenderTextureResize(const RenderTextureId id, const RenderTextureResizeInfo& inf
 //------------------------------------------------------------------------------
 /**
 */
-void
+IndexT
 RenderTextureSwapBuffers(const CoreGraphics::RenderTextureId id)
 {
 	VkRenderTextureLoadInfo& loadInfo = renderTextureAllocator.Get<0>(id.id24);
@@ -388,7 +412,8 @@ RenderTextureSwapBuffers(const CoreGraphics::RenderTextureId id)
 	VkRenderTextureWindowInfo& wnd = renderTextureAllocator.Get<3>(id.id24);
 	// set image and update texture
 	loadInfo.img = wnd.swapimages[swapInfo.currentBackbuffer];
-	runtimeInfo.view = wnd.swapviews[swapInfo.currentBackbuffer];
+	runtimeInfo.framebufferView = wnd.swapviews[swapInfo.currentBackbuffer];
+	return swapInfo.currentBackbuffer;
 	//this->texture->img = this->img;
 }
 
@@ -421,9 +446,19 @@ RenderTextureGetDimensions(const RenderTextureId id)
 //------------------------------------------------------------------------------
 /**
 */
-const IndexT RenderTextureGetNumMips(const RenderTextureId id)
+const SizeT
+RenderTextureGetNumMips(const RenderTextureId id)
 {
 	return renderTextureAllocator.Get<0>(id.id24).mips;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const SizeT 
+RenderTextureGetLayers(const RenderTextureId id)
+{
+	return renderTextureAllocator.Get<0>(id.id24).layers;
 }
 
 //------------------------------------------------------------------------------
@@ -528,9 +563,18 @@ RenderTextureBlit(const CoreGraphics::RenderTextureId id, IndexT fromMip, IndexT
 /**
 */
 const VkImageView
-RenderTextureGetVkImageView(const CoreGraphics::RenderTextureId id)
+RenderTextureGetVkAttachmentImageView(const CoreGraphics::RenderTextureId id)
 {
-	return renderTextureAllocator.Get<1>(id.id24).view;
+	return renderTextureAllocator.Get<1>(id.id24).framebufferView;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const VkImageView
+RenderTextureGetVkSampleImageView(const CoreGraphics::RenderTextureId id)
+{
+	return renderTextureAllocator.Get<1>(id.id24).sampleView;
 }
 
 //------------------------------------------------------------------------------
@@ -553,7 +597,6 @@ RenderTextureGenerateMipHelper(const CoreGraphics::RenderTextureId id, IndexT fr
 	const VkRenderTextureLoadInfo& loadInfoTo = renderTextureAllocator.Get<0>(target.id24);
 	const VkRenderTextureRuntimeInfo& rtInfo = renderTextureAllocator.Get<1>(id.id24);
 
-	n_assert(!rtInfo.inpass);
 	n_assert(loadInfoFrom.format == loadInfoTo.format);
 
 	// setup from-region

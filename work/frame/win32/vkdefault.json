@@ -1,355 +1,518 @@
-version: 2,
-engine: "Nebula",
-framescript: 
 {
-	renderTextures:
-	[
-		{ name: "NormalBuffer", 	format: "R8G8B8A8", 		relative: true,  width: 1.0, height: 1.0 },
-		{ name: "DepthBuffer", 		format: "R32F", 			relative: true,  width: 1.0, height: 1.0 },
-		{ name: "AlbedoBuffer", 	format: "R8G8B8A8", 		relative: true,  width: 1.0, height: 1.0 },
-		{ name: "SpecularBuffer", 	format: "R8G8B8A8", 		relative: true,  width: 1.0, height: 1.0 },
-		{ name: "EmissiveBuffer", 	format: "R16G16B16A16F", 	relative: true,  width: 1.0, height: 1.0 },
-		{ name: "LightBuffer", 		format: "R16G16B16A16F", 	relative: true,  width: 1.0, height: 1.0 },
-		{ name: "ColorBuffer", 		format: "R8G8B8A8", 		relative: true,  width: 1.0, height: 1.0 },
-		{ name: "ScreenBuffer", 	format: "R8G8B8A8", 		relative: true,  width: 1.0, height: 1.0 },
-		{ name: "BloomBuffer", 		format: "R16G16B16A16F", 	relative: true,  width: 0.5, height: 0.5 },
-		{ name: "GodrayBuffer", 	format: "R8G8B8A8", 		relative: true,  width: 0.5, height: 0.5 },
-		{ name: "ShapeBuffer", 		format: "R8G8B8A8", 		relative: true,  width: 1.0, height: 1.0 },
-		{ name: "AverageLumBuffer", format: "R16F", 			relative: false, width: 1.0, height: 1.0 },
-		{ name: "SSSBuffer", 		format: "R16G16B16A16F", 	relative: true,  width: 1.0, height: 1.0 },
-		{ name: "__WINDOW__" }
-	],
-	
-	readWriteTextures:
-	[
-		{ name: "HBAOBuffer", 			format: "R16F", 			relative: true, width: 1.0, height: 1.0 },
-		{ name: "BloomBufferBlurred"	format: "R16G16B16A16F", 	relative: true, width: 0.2, height: 0.2 }
-	],
-	
-	depthStencils:
-	[
-		{ name: "ZBuffer", 			format: "D32S8", 			relative: true, width: 1.0, height: 1.0 }
-	],
-	
-	algorithms:
-	[
-		{ 
-			name: 		"Tonemapping", 
-			class: 		"Algorithms::TonemapAlgorithm", 
-			renderTextures:
-			[
-				"ColorBuffer",
-				"AverageLumBuffer"
-			]
-		},
-		{
-			name:		"HBAO",
-			class: 		"Algorithms::HBAOAlgorithm",
-			renderTextures:
-			[
-				"DepthBuffer"
-			],
-			readWriteTextures:
-			[
-				"HBAOBuffer"
-			]
-		},
-		{
-			name:		"Bloom",
-			class:		"Algorithms::BloomAlgorithm",
-			renderTextures:
-			[
-				"LightBuffer",
-				"AverageLumBuffer",
-				"BloomBuffer"
-			],
-			readWriteTextures:
-			[
-				"BloomBufferBlurred"
-			]
-		}
-	],
-	
-	shaderStates:
-	[
-		{ 
-			name: 		"FinalizeState", 
-			shader:		"finalize", 
-			variables:
-			[
-				{ semantic: "ColorTexture", 		value: "ColorBuffer"},
-				{ semantic: "LuminanceTexture", 	value: "AverageLumBuffer"},
-				{ semantic: "BloomTexture", 		value: "BloomBufferBlurred"}
-			]
-		},
-		{
-			name: 		"GatherState",
-			shader: 	"gather",
-			variables:
-			[
-				{ semantic: "LightTexture", 	value: "LightBuffer"},
-				{ semantic: "SSSTexture", 		value: "SSSBuffer"},
-				{ semantic: "EmissiveTexture", 	value: "EmissiveBuffer"},
-				{ semantic: "SSAOTexture", 		value: "HBAOBuffer"},
-				{ semantic: "DepthTexture", 	value: "DepthBuffer"}
-			]
-		}
-	],
-	
-	events:
-	[
-		{
-			name: "ComputeBloomFinished", signaled: false,
-			barrier: 
-			{ 
-				leftDependency: "ComputeShader", 
-				rightDependency: "PixelShader",
-				readWriteTextures: 
-				[
-					{ name: "BloomBufferBlurred", leftAccess: "ShaderWrite", rightAccess: "ShaderRead", mask: "Color" }
-				],
-			}
-		},
-		{ 
-			name: "ComputeHBAOFinished", signaled: false 
-			barrier: 
-			{ 
-				leftDependency: "ComputeShader", 
-				rightDependency: "PixelShader",
-				readWriteTextures: 
-				[
-					{ name: "HBAOBuffer", leftAccess: "ShaderWrite", rightAccess: "ShaderRead", mask: "Color" }
-				],
-			}
-		}
-	],
-	
-	globalState:
-	{
-		name:			"DeferredTextures",
-		variables:
-		[
-			{ semantic:"AlbedoBuffer", 		value:"AlbedoBuffer" },
-			{ semantic:"DepthBuffer", 		value:"DepthBuffer" },
-			{ semantic:"NormalBuffer", 		value:"NormalBuffer" },				
-			{ semantic:"SpecularBuffer", 	value:"SpecularBuffer" },
-			{ semantic:"EmissiveBuffer", 	value:"EmissiveBuffer" },
-			{ semantic:"LightBuffer", 		value:"LightBuffer" }
-		]
-	},
-	
-	computeAlgorithm:
-	{
-		name: 		"HBAO-Prepare",
-		algorithm:	"HBAO",
-		function:	"Prepare"
-	},
-	event: 
-	{
-		name: "ComputeHBAOFinished",
-		dependency: "ComputeShader",
-		queue: "Graphics",
-		actions:
-		[
-			"set"
-		],
-	},
-	pass:
-	{
-		name: "DeferredPass",
-		attachments:
-		[
-			{ name: "AlbedoBuffer", 	clear: [0.1, 0.1, 0.1, 1], 		store: true	},
-			{ name: "NormalBuffer", 	clear: [0.5, 0.5, 0, 0], 		store: true },
-			{ name: "DepthBuffer", 		clear: [-1000, 0, 0, 0], 		store: true },
-			{ name: "SpecularBuffer", 	clear: [0, 0, 0, 0], 			store: true	},
-			{ name: "EmissiveBuffer", 	clear: [0, 0, 0, -1], 			store: true	},
-			{ name: "LightBuffer", 		clear: [0.1, 0.1, 0.1, 0.1], 	store: true	},
-			{ name: "SSSBuffer", 		clear: [0.5, 0.5, 0.5, 1], 		store: true }
-		],
-		
-		depthStencil: { name: "ZBuffer", clear: 1, clearStencil: 0, store: true },
-		
-		subpass:
-		{
-			name: "GeometryPass",
-			dependencies: [], 
-			attachments: [0, 1, 2, 3, 4],
-			depth: true,
-			batch: "FlatGeometryLit", 
-			batch: "TesselatedGeometryLit",
-			batch: "Background"
-		},
-		subpass:
-		{
-			name: "LightPass",
-			dependencies: [0],
-			inputs: [0, 1, 2, 3, 4],
-			depth: true,
-			attachments: [5],
-			system: "Lights"
-		}
-	},
-	computeAlgorithm:
-	{
-		name: 			"Downsample2x2",
-		algorithm: 		"Tonemapping",
-		function: 		"Downsample"
-	},
-	computeAlgorithm:
-	{
-		name: 			"HBAO-Compute",
-		algorithm:		"HBAO",
-		function:		"HBAOAndBlur"
-	},
-	pass:
-	{
-		name: "PostPass",
-		attachments:
-		[
-			{ name: "AverageLumBuffer", 	store: true },
-			{ name: "ColorBuffer", 			store: true },
-			{ name: "BloomBuffer", 			store: true }
-		],
-		subpass:
-		{
-			name: "GatherPass",
-			dependencies: [],
-			attachments: ["ColorBuffer"],
-			depth: false,
-			
-			event: 
-			{
-				name: "ComputeHBAOFinished",
-				dependency: "PixelShader",
-				queue: "Graphics",
-				actions:
-				[
-					"wait",
-					"reset"				
-				],
-			},
-			fullscreenEffect:
-			{
-				name: 				"GatherPostEffect",
-				shaderState: 		"GatherState",
-				sizeFromTexture: 	"ColorBuffer"
-			}
-		},
-		subpass:
-		{
-			name: "AverageLumPass",
-			dependencies: ["GatherPass"],
-			attachments: ["AverageLumBuffer"],
-			depth: false,
-			subpassAlgorithm:
-			{
-				name: 				"AverageLuminance",
-				algorithm: 			"Tonemapping",
-				function: 			"AverageLum"
-			}
-		},
-		subpass:
-		{
-			name: "BloomBrightnessThresholdPass",
-			dependencies: ["AverageLumPass"],
-			attachments: ["BloomBuffer"],
-			depth: false,
-			subpassAlgorithm:
-			{
-				name:				"Brightpass",
-				algorithm:			"Bloom",
-				function:			"BrightnessLowpass"
-			}
-		}
-	}
-	computeAlgorithm:
-	{
-			name: 			"BloomBlur",
-			algorithm:		"Bloom",
-			function:		"BrightnessBlur"
-	},
-	event: 
-	{
-		name: "ComputeBloomFinished",
-		dependency: "ComputeShader",
-		queue: "Graphics",
-		actions:
-		[
-			"set"
-		],
-	},
-	pass:
-	{
-		name: "FinalPass",
-		attachments:
-		[
-			{ name: "DepthBuffer",  		load: true },
-			{ name: "GodrayBuffer", 		clear: [0, 0, 0, 0] },
-			{ name: "ShapeBuffer", 			clear: [-1000, 0, 0, 0] },
-			{ name: "ScreenBuffer", 		store: true}
-		],
-		
-		depthStencil: { name: "ZBuffer", load: true },
-		subpass:
-		{
-			name: "UnlitPass",
-			dependencies: [],
-			attachments: ["ShapeBuffer"],
-			depth: true,
-			batch: "Unlit",
-			batch: "ParticleUnlit",
-			batch: "DirectToColor",
-			system: "Shapes"
-		},
-		subpass:
-		{
-			name: "FinishPass",
-			dependencies: ["UnlitPass"],
-			inputs: [0, 1, 2],
-			attachments: ["ScreenBuffer"],
-			depth: false,
-			event: 
-			{
-				name: "ComputeBloomFinished",
-				dependency: "PixelShader",
-				queue: "Graphics",
-				actions:
-				[
-					"wait",
-					"reset"
-				],
-			},
-			fullscreenEffect: 
-			{
-				name: 				"Finalize",
-				shaderState: 		"FinalizeState",
-				sizeFromTexture: 	"ColorBuffer"
-			},
-			plugins:
-			{
-				name:"UI",
-				filter:"UI"
-			},
-			system: "Text"
-		}
-	},
+  version: 2,
+  engine: "Nebula",
+  framescript: {
+    render_textures: [
+      {
+        name: "NormalBuffer",
+        format: "R11G11B10F",
+        relative: true,
+        width: 1.0,
+        height: 1.0
+      },
+      {
+        name: "AlbedoBuffer",
+        format: "R8G8B8A8",
+        relative: true,
+        width: 1.0,
+        height: 1.0
+      },
+      {
+        name: "SpecularBuffer",
+        format: "R8G8B8A8",
+        relative: true,
+        width: 1.0,
+        height: 1.0
+      },
+      {
+        name: "EmissiveBuffer",
+        format: "R11G11B10F",
+        relative: true,
+        width: 1.0,
+        height: 1.0
+      },
+      {
+        name: "LightBuffer",
+        format: "R11G11B10F",
+        relative: true,
+        width: 1.0,
+        height: 1.0
+      },
+      {
+        name: "ColorBuffer",
+        format: "R8G8B8A8",
+        relative: true,
+        width: 1.0,
+        height: 1.0
+      },
+      {
+        name: "ScreenBuffer",
+        format: "R11G11B10F",
+        relative: true,
+        width: 1.0,
+        height: 1.0
+      },
+      {
+        name: "BloomBuffer",
+        format: "R11G11B10F",
+        relative: true,
+        width: 0.5,
+        height: 0.5
+      },
+      {
+        name: "GodrayBuffer",
+        format: "R8G8B8A8",
+        relative: true,
+        width: 0.5,
+        height: 0.5
+      },
+      {
+        name: "ShapeBuffer",
+        format: "R8G8B8A8",
+        relative: true,
+        width: 1.0,
+        height: 1.0
+      },
+      {
+        name: "AverageLumBuffer",
+        format: "R16F",
+        relative: false,
+        width: 1.0,
+        height: 1.0
+      },
+      {
+        name: "SSSBuffer",
+        format: "R16G16B16A16F",
+        relative: true,
+        width: 1.0,
+        height: 1.0
+      },
+      { name: "__WINDOW__" }
+    ],
 
-	computeAlgorithm:
-	{
-		name: 		"CopyToNextFrame",
-		algorithm: 	"Tonemapping",
-		function: 	"Copy"
-	},
-	swapbuffers:
-	{
-		name: 		"SwapWindowBuffer",
-		texture: 	"__WINDOW__"
-	},
-	blit:
-	{
-		name: 		"CopyToWindow",
-		from: 		"ScreenBuffer",
-		to: 		"__WINDOW__"
-	}
+    read_write_textures: [
+      {
+        name: "HBAOBuffer",
+        format: "R16F",
+        relative: true,
+        width: 1.0,
+        height: 1.0
+      },
+      {
+        name: "BloomBufferBlurred",
+        format: "R16G16B16A16F",
+        relative: true,
+        width: 0.2,
+        height: 0.2
+      }
+    ],
+
+    depth_stencils: [
+      {
+        name: "ZBuffer",
+        format: "D32S8",
+        relative: true,
+        width: 1.0,
+        height: 1.0
+      }
+    ],
+
+    algorithms: [
+      {
+        name: "Tonemapping",
+        class: "Algorithms::TonemapAlgorithm",
+        render_textures: [
+          "LightBuffer",
+          "AverageLumBuffer"
+        ]
+      },
+      {
+        name: "HBAO",
+        class: "Algorithms::HBAOAlgorithm",
+        depth_stencils: [
+          "ZBuffer"
+        ],
+        read_write_textures: [
+          "HBAOBuffer"
+        ]
+      },
+      {
+        name: "Bloom",
+        class: "Algorithms::BloomAlgorithm",
+        render_textures: [
+          "LightBuffer",
+          "AverageLumBuffer",
+          "BloomBuffer"
+        ],
+        read_write_textures: [
+          "BloomBufferBlurred"
+        ]
+      }
+    ],
+
+    compute_algorithm: {
+      name: "HBAO-Prepare"
+    },
+
+    begin_submission: {
+      name: "Beginning of frame graphics submission",
+      queue: "Graphics",
+      _comment: "Mandatory start of graphics submission, must be met with a matching end_submission"
+    }
+
+    begin_submission: {
+      name: "Beginning of frame compute submission",
+      queue: "Compute",
+      _comment: "Mandatory start of compute submission, must be met with a matching end_submission"
+    }
+
+    compute_algorithm: {
+      name: "LightContext - Update Shadowmaps"
+    }
+
+    pass: {
+      name: "Deferred Lighting",
+      attachments: [
+        {
+          name: "AlbedoBuffer",
+          clear: [ 0.7, 0.7, 0.7, 1 ],
+          store: true
+        },
+        {
+          name: "NormalBuffer",
+          clear: [ 0, 0, -1, 0 ],
+          store: true
+        },
+        {
+          name: "SpecularBuffer",
+          clear: [ 0, 0, 0, 0 ],
+          store: true
+        },
+        {
+          name: "EmissiveBuffer",
+          clear: [ 0, 0, 0, -1 ],
+          store: true
+        },
+        {
+          name: "LightBuffer",
+          clear: [ 0.05, 0.05, 0.05, 0.1 ],
+          store: true
+        },
+        {
+          name: "SSSBuffer",
+          clear: [ 0.5, 0.5, 0.5, 1 ],
+          store: true
+        }
+      ],
+
+      depth_stencil: {
+        name: "ZBuffer",
+        clear: 1,
+        clear_stencil: 0,
+        store: true
+      },
+
+      subpass: {
+        name: "GeometryPass",
+        dependencies: [],
+        attachments: [ "AlbedoBuffer", "NormalBuffer", "SpecularBuffer", "EmissiveBuffer" ],
+        depth: true,
+        batch: "FlatGeometryLit",
+        batch: "TesselatedGeometryLit",
+        batch: "Background"
+      },
+      subpass: {
+        name: "LightPass",
+        dependencies: [ "GeometryPass" ],
+        inputs: [ "AlbedoBuffer", "NormalBuffer", "SpecularBuffer", "EmissiveBuffer", "ZBuffer" ],
+        depth: true,
+        attachments: [ "LightBuffer" ],
+        system: "Lights"
+      },
+    },
+
+    pass: {
+      name: "BloomPass",
+      attachments: [
+        {
+          name: "BloomBuffer",
+          store: true
+        }
+      ],
+
+      subpass: {
+        name: "BrightPass",
+        depth: false,
+        attachments: [ "BloomBuffer" ],
+        resources: [
+          {
+            name: "LightBuffer",
+            access: "ShaderRead",
+            layout: "ShaderRead",
+            stage: "PixelShader",
+            mip: 0,
+            layer: 0,
+            aspect: "Color"
+          }
+        ]
+        subpass_algorithm: {
+          name: "Bloom-BrightnessLowpass",
+        }
+      }
+    }
+
+    compute_algorithm: {
+      name: "HBAO-Run",
+      inputs: [
+        {
+          name: "ZBuffer",
+          access: "DepthAttachmentRead",
+          layout: "DepthStencilRead",
+          stage: "ComputeShader",
+          mip: 0,
+          layer: 0,
+          aspect: "Color"
+        }
+      ],
+      outputs: [
+        {
+          name: "HBAOBuffer",
+          access: "ShaderWrite",
+          layout: "General",
+          stage: "ComputeShader",
+          mip: 0,
+          layer: 0,
+          aspect: "Color"
+        }
+      ]
+    },
+
+    compute_algorithm: {
+      name: "Bloom-Blur",
+      inputs: [
+        {
+          name: "BloomBuffer",
+          access: "ShaderRead",
+          layout: "ShaderRead",
+          stage: "ComputeShader",
+          mip: 0,
+          layer: 0,
+          aspect: "Color"
+        }
+      ],
+      outputs: [
+        {
+          name: "BloomBufferBlurred",
+          access: "ShaderWrite",
+          layout: "General",
+          stage: "ComputeShader",
+          mip: 0,
+          layer: 0,
+          aspect: "Color"
+        }
+      ]
+    }
+
+    pass: {
+      name: "Luminance"
+      attachments: [
+        {
+          name: "AverageLumBuffer",
+          load: true,
+          store: true
+        },
+      ],
+
+      subpass: {
+        name: "Tonemapping",
+        dependencies: [],
+        depth: false,
+        attachments: [ "AverageLumBuffer" ],
+
+        subpass_algorithm: {
+          name: "Tonemap-AverageLum"
+        }
+      }
+    }
+
+    pass: {
+      name: "PostEffects",
+      attachments: [
+        {
+          name: "ScreenBuffer",
+          clear: [ 0.1, 1.0, 0.1, 1 ],
+          store: true
+        }
+      ],
+
+      depth_stencil: {
+        name: "ZBuffer",
+        store: true,
+        load: true
+      },
+
+      subpass: {
+        name: "ScreenPass",
+        dependencies: [],
+        attachments: [ "ScreenBuffer" ],
+        depth: false,
+
+        resources: [
+          {
+            name: "HBAOBuffer",
+            access: "ShaderRead",
+            layout: "ShaderRead",
+            stage: "PixelShader",
+            mip: 0,
+            layer: 0,
+            aspect: "Color"
+          },
+          {
+            name: "BloomBufferBlurred",
+            access: "ShaderRead",
+            layout: "ShaderRead",
+            stage: "PixelShader",
+            mip: 0,
+            layer: 0,
+            aspect: "Color"
+          }
+        ],
+
+        fullscreen_effect: {
+          name: "GatherPostEffect",
+          shader_state: {
+            shader: "gather",
+            variables: [
+              {
+                semantic: "LightTexture",
+                value: "LightBuffer"
+              },
+              {
+                semantic: "BloomTexture",
+                value: "BloomBufferBlurred"
+              },
+              {
+                semantic: "DepthTexture",
+                value: "ZBuffer"
+              },
+              {
+                semantic: "EmissiveTexture",
+                value: "EmissiveBuffer"
+              },
+              {
+                semantic: "SSSTexture",
+                value: "SSSBuffer"
+              },
+              {
+                semantic: "LuminanceTexture",
+                value: "AverageLumBuffer"
+              },
+              {
+                semantic: "SSAOTexture",
+                value: "HBAOBuffer"
+              }
+            ]
+          },
+          size_from_texture: "ScreenBuffer"
+        },
+      },
+
+      subpass: {
+        name: "UI",
+        dependencies: [ "ScreenPass" ],
+        depth: true,
+        attachments: [ "ScreenBuffer" ],
+
+        batch: "DirectToColor",
+        plugins: {
+          name: "ImGui",
+          filter: "IMGUI"
+        }
+      }
+    },
+
+    compute_algorithm: {
+      name: "Tonemap-Downsample",
+      inputs: [
+        {
+          name: "LightBuffer",
+          access: "TransferRead",
+          layout: "TransferSource",
+          stage: "Transfer",
+          mip: 0,
+          layer: 0,
+          aspect: "Color"
+        }
+      ]
+    },
+
+    compute_algorithm: {
+      name: "Tonemap-Copy",
+      inputs: [
+        {
+          name: "AverageLumBuffer",
+          access: "TransferRead",
+          layout: "TransferSource",
+          stage: "Transfer",
+          mip: 0,
+          layer: 0,
+          aspect: "Color"
+        }
+      ]
+    }
+
+    blit: {
+      name: "CopyToWindow",
+      inputs: [
+        {
+          name: "ScreenBuffer",
+          access: "TransferRead",
+          layout: "TransferSource",
+          stage: "Transfer",
+          mip: 0,
+          layer: 0,
+          aspect: "Color"
+        }
+      ],
+      outputs: [
+        {
+          name: "__WINDOW__",
+          access: "TransferWrite",
+          layout: "TransferDestination",
+          stage: "Transfer",
+          mip: 0,
+          layer: 0,
+          aspect: "Color"
+        }
+      ],
+      from: "ScreenBuffer",
+      to: "__WINDOW__"
+    },
+    barrier: {
+      name: "TransitionToPresent",
+      inputs: [
+        {
+          name: "__WINDOW__",
+          access: "TransferRead",
+          layout: "Present",
+          stage: "Transfer",
+          mip: 0,
+          layer: 0,
+          aspect: "Color"
+        }
+      ]
+    }
+
+    end_submission: {
+      name: "End of frame compute submission",
+      queue: "Compute",
+      _comment: "Mandatory end of compute submission, must be met with a matching begin_submission"
+    }
+
+    end_submission: {
+      name: "End of frame graphics submission",
+      queue: "Graphics",
+      _comment: "Mandatory end of graphics submission, must be met with a matching begin_submission"
+    }
+  }
 }

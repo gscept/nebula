@@ -48,7 +48,7 @@ RenderTextureInfoSetupHelper(const RenderTextureCreateInfo& info)
 		rt.relativeSize = info.relativeSize;
 		rt.msaa = info.msaa;
 		rt.mips = 1;
-		rt.layers = info.type == CoreGraphics::TextureCubeArray ? 6 : 1;
+		rt.layers = info.type == CoreGraphics::TextureCubeArray ? 6 : info.layers;
 		rt.width = (SizeT)info.width;
 		rt.height = (SizeT)info.height;
 		rt.depth = (SizeT)info.depth;

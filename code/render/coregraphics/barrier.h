@@ -99,20 +99,79 @@ struct ImageSubresourceInfo
 		layerCount(1)
 	{}
 
+	ImageSubresourceInfo(CoreGraphicsImageAspect aspect, uint mip, uint mipCount, uint layer, uint layerCount) :
+		aspect(aspect),
+		mip(mip),
+		mipCount(mipCount),
+		layer(layer),
+		layerCount(layerCount)
+	{}
+
+	static ImageSubresourceInfo ColorNoMipNoLayer()
+	{
+		return ImageSubresourceInfo(CoreGraphicsImageAspect::ColorBits, 0, 1, 0, 1);
+	}
+
+	static ImageSubresourceInfo ColorNoMip(uint layerCount)
+	{
+		return ImageSubresourceInfo(CoreGraphicsImageAspect::ColorBits, 0, 1, 0, layerCount);
+	}
+
+	static ImageSubresourceInfo DepthStencilNoMipNoLayer()
+	{
+		return ImageSubresourceInfo(CoreGraphicsImageAspect::DepthBits | CoreGraphicsImageAspect::StencilBits, 0, 1, 0, 1);
+	}
+
+	static ImageSubresourceInfo DepthStencilNoMip(uint layerCount)
+	{
+		return ImageSubresourceInfo(CoreGraphicsImageAspect::DepthBits | CoreGraphicsImageAspect::StencilBits, 0, 1, 0, layerCount);
+	}
+
 	const bool Overlaps(const ImageSubresourceInfo& rhs) const
 	{
 		return ((this->aspect & rhs.aspect) != 0) && (this->mip <= rhs.mip && this->mip + this->mipCount >= rhs.mip) && (this->layer <= rhs.layer && this->layer + this->layerCount >= rhs.layer);
 	}
 
 };
+
+struct RenderTextureBarrier
+{
+	RenderTextureId tex;
+	ImageSubresourceInfo subres;
+	CoreGraphicsImageLayout fromLayout;
+	CoreGraphicsImageLayout toLayout;
+	BarrierAccess fromAccess;
+	BarrierAccess toAccess;
+};
+
+struct BufferBarrier
+{
+	ShaderRWBufferId buf;
+	BarrierAccess fromAccess;
+	BarrierAccess toAccess;
+	IndexT offset;
+	SizeT size; // set to -1 to use whole buffer
+};
+
+struct RWTextureBarrier
+{
+	ShaderRWTextureId tex;
+	ImageSubresourceInfo subres;
+	CoreGraphicsImageLayout fromLayout;
+	CoreGraphicsImageLayout toLayout;
+	BarrierAccess fromAccess;
+	BarrierAccess toAccess;
+};
+
 struct BarrierCreateInfo
 {
+	Util::StringAtom name;
 	BarrierDomain domain;
 	BarrierStage leftDependency;
 	BarrierStage rightDependency;
-	Util::Array<std::tuple<RenderTextureId, ImageSubresourceInfo, CoreGraphicsImageLayout, CoreGraphicsImageLayout, BarrierAccess, BarrierAccess>> renderTextures;
-	Util::Array<std::tuple<ShaderRWBufferId, BarrierAccess, BarrierAccess>> shaderRWBuffers;
-	Util::Array<std::tuple<ShaderRWTextureId, ImageSubresourceInfo, CoreGraphicsImageLayout, CoreGraphicsImageLayout, BarrierAccess, BarrierAccess>> shaderRWTextures;
+	Util::Array<RenderTextureBarrier> renderTextures;
+	Util::Array<BufferBarrier> rwBuffers;
+	Util::Array<RWTextureBarrier> rwTextures;
 };
 
 /// create barrier object
@@ -124,6 +183,16 @@ void DestroyBarrier(const BarrierId id);
 void BarrierInsert(const BarrierId id, const CoreGraphicsQueueType queue);
 /// reset resources previously set in barrier
 void BarrierReset(const BarrierId id);
+/// create and insert a barrier immediately, without allocating an object
+void BarrierInsert(
+	const CoreGraphicsQueueType queue, 
+	CoreGraphics::BarrierStage fromStage, 
+	CoreGraphics::BarrierStage toStage, 
+	CoreGraphics::BarrierDomain domain,
+	const Util::FixedArray<RenderTextureBarrier>& renderTextures, 
+	const Util::FixedArray<BufferBarrier>& rwBuffers, 
+	const Util::FixedArray<RWTextureBarrier>& rwTextures,
+	const char* name = nullptr);
 
 //------------------------------------------------------------------------------
 /**
@@ -213,7 +282,7 @@ ImageLayoutFromString(const Util::String& str)
 	else if (str == "General")				return CoreGraphicsImageLayout::General;
 	else if (str == "ColorRenderTexture")	return CoreGraphicsImageLayout::ColorRenderTexture;
 	else if (str == "DepthRenderTexture")	return CoreGraphicsImageLayout::DepthStencilRenderTexture;
-	else if (str == "StencilRead")			return CoreGraphicsImageLayout::DepthStencilRead;
+	else if (str == "DepthStencilRead")		return CoreGraphicsImageLayout::DepthStencilRead;
 	else if (str == "ShaderRead")			return CoreGraphicsImageLayout::ShaderRead;
 	else if (str == "TransferSource")		return CoreGraphicsImageLayout::TransferSource;
 	else if (str == "TransferDestination")	return CoreGraphicsImageLayout::TransferDestination;

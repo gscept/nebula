@@ -345,11 +345,29 @@ VkTypes::AsVkFramebufferFormat(CoreGraphics::PixelFormat::Code p)
 	case PixelFormat::D24S8:            return VK_FORMAT_D24_UNORM_S8_UINT;
 	default:
 	{
-		n_error("VkTypes::AsVkFormat(): invalid pixel format '%d'", p);
+		n_error("VkTypes::AsVkFramebufferFormat(): invalid pixel format '%d'", p);
 		return VK_FORMAT_R8G8B8A8_UINT;
 	}
 	}
 }
+
+//------------------------------------------------------------------------------
+/**
+*/
+VkFormat 
+VkTypes::AsVkSampleableFormat(CoreGraphics::PixelFormat::Code p)
+{
+	switch (p)
+	{
+	case PixelFormat::D32S8:			return VK_FORMAT_D32_SFLOAT;
+	default:
+	{
+		return AsVkFramebufferFormat(p);
+	}
+	}
+
+}
+
 //------------------------------------------------------------------------------
 /**
 */
