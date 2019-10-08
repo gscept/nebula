@@ -131,7 +131,7 @@ SimpleViewerApplication::Open()
 
 		this->globalLight = Graphics::CreateEntity();
 		Lighting::LightContext::RegisterEntity(this->globalLight);
-		Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::float4(2, 1, 1, 0), 1.0f, Math::float4(0, 0, 0, 0), Math::float4(0, 0, 0, 0), 0.0f, -Math::vector(1, 0.2f, 1), true);
+		Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::float4(1, 1, 1, 0), 1.0f, Math::float4(0, 0, 0, 0), Math::float4(0, 0, 0, 0), 0.0f, -Math::vector(1, 0.2f, 1), true);
 
 		this->pointLights[0] = Graphics::CreateEntity();
 		Lighting::LightContext::RegisterEntity(this->pointLights[0]);
@@ -143,7 +143,7 @@ SimpleViewerApplication::Open()
 
 		this->pointLights[2] = Graphics::CreateEntity();
 		Lighting::LightContext::RegisterEntity(this->pointLights[2]);
-		Lighting::LightContext::SetupPointLight(this->pointLights[2], Math::float4(0, 0, 1, 1), 1.0f, Math::matrix44::translation(-10, 0, 0), 1.0f, false);
+		Lighting::LightContext::SetupPointLight(this->pointLights[2], Math::float4(0, 0, 1, 1), 5.0f, Math::matrix44::translation(-10, 0, 0), 1.0f, false);
 
         for (int i = 0; i < 3; i++)
         {
@@ -157,10 +157,9 @@ SimpleViewerApplication::Open()
 			spotLightMatrix.scale(Math::vector(30, 30, 40));
 			spotLightMatrix = Math::matrix44::multiply(spotLightMatrix, Math::matrix44::rotationyawpitchroll(0, Math::n_deg2rad(-55), 0));
 			spotLightMatrix.set_position(Math::point(0, 5, 2));
-			Lighting::LightContext::SetupSpotLight(this->spotLights[0], Math::float4(1, 1, 0, 1), 1.0f, spotLightMatrix, false);
+			Lighting::LightContext::SetupSpotLight(this->spotLights[0], Math::float4(1, 1, 0, 1), 1.0f, 0.1f, 0.8f, spotLightMatrix, false);
 		}
 
-		/*
 		{
 			this->spotLights[1] = Graphics::CreateEntity();
 			Lighting::LightContext::RegisterEntity(this->spotLights[1]);
@@ -168,7 +167,7 @@ SimpleViewerApplication::Open()
 			spotLightMatrix.scale(Math::vector(30, 30, 40));
 			spotLightMatrix = Math::matrix44::multiply(spotLightMatrix, Math::matrix44::rotationyawpitchroll(Math::n_deg2rad(60), Math::n_deg2rad(-55), 0));
 			spotLightMatrix.set_position(Math::point(2, 5, 0));
-			Lighting::LightContext::SetupSpotLight(this->spotLights[1], Math::float4(0, 1, 1, 1), 1.0f, spotLightMatrix, false);
+			Lighting::LightContext::SetupSpotLight(this->spotLights[1], Math::float4(0, 1, 1, 1), 1.0f, 0.4f, 0.8f, spotLightMatrix, false);
 		}
 
 		{
@@ -178,9 +177,8 @@ SimpleViewerApplication::Open()
 			spotLightMatrix.scale(Math::vector(30, 30, 40));
 			spotLightMatrix = Math::matrix44::multiply(spotLightMatrix, Math::matrix44::rotationyawpitchroll(Math::n_deg2rad(120), Math::n_deg2rad(-55), 0));
 			spotLightMatrix.set_position(Math::point(2, 5, 2));
-			Lighting::LightContext::SetupSpotLight(this->spotLights[2], Math::float4(1, 0, 1, 1), 1.0f, spotLightMatrix, false);
+			Lighting::LightContext::SetupSpotLight(this->spotLights[2], Math::float4(1, 0, 1, 1), 1.0f, 0.1f, 0.4f, spotLightMatrix, false);
 		}
-		*/
 
         this->ResetCamera();
         CameraContext::SetTransform(this->cam, this->mayaCameraUtil.GetCameraTransform());
@@ -293,7 +291,7 @@ SimpleViewerApplication::Run()
 
 		// animate the spotlights
 		IndexT i;
-		for (i = 0; i < 0; i++)
+		for (i = 0; i < 3; i++)
 		{
 			Math::matrix44 spotLightTransform;
 			Math::scalar scaleFactor = i * 1.5f + 30;
@@ -303,11 +301,13 @@ SimpleViewerApplication::Run()
 			Lighting::LightContext::SetTransform(this->spotLights[i], spotLightTransform);
 		}
 
+		/*
 		Math::matrix44 globalLightTransform = Lighting::LightContext::GetTransform(this->globalLight);
 		Math::matrix44 rotY = Math::matrix44::rotationy(Math::n_deg2rad(0.1f));
 		Math::matrix44 rotX = Math::matrix44::rotationz(Math::n_deg2rad(0.05f));
 		globalLightTransform = globalLightTransform * rotX * rotY;
 		Lighting::LightContext::SetTransform(this->globalLight, globalLightTransform);
+		*/
         this->gfxServer->BeginFrame();
         
         // put game code which doesn't need visibility data or animation here

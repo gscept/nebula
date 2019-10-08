@@ -80,7 +80,7 @@ protected:
     Math::float2 orbiting{ 0.0f,0.0f };    
     RenderUtil::MayaCameraUtil mayaCameraUtil;
     RenderUtil::FreeCameraUtil freeCamUtil;        
-    Math::point defaultViewPoint;
+	Math::point defaultViewPoint{ 10.0f, 10.0f, 10.0f };
     Util::Array<Graphics::GraphicsEntityId> entities;
 	Util::Array<Util::String> entityNames;
 
