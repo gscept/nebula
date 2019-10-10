@@ -17,6 +17,12 @@ struct
 {
 	Graphics::GraphicsEntityId skyBoxEntity;
 	Graphics::GraphicsEntityId sunEntity;
+	Math::float4 BloomColor;
+	float BloomThreshold;
+	float MaxEyeLuminance;
+	Math::float4 FogColor;
+	float FogDistances[2];
+	int NumGlobalEnvironmentMips;
 } envState;
 
 _ImplementPluginContext(EnvironmentContext);
@@ -45,6 +51,14 @@ EnvironmentContext::Create(const Graphics::GraphicsEntityId sun)
 	// setup both model and visibility
 	Models::ModelContext::Setup(envState.skyBoxEntity, "mdl:system/skybox.n3", "system");
 	Visibility::ObservableContext::Setup(envState.skyBoxEntity, Visibility::VisibilityEntityType::Model);
+
+	envState.BloomColor = Math::float4(1.0f);
+	envState.BloomThreshold = 6.0f;
+	envState.MaxEyeLuminance = 1.0f;
+	envState.FogColor = Math::float4(0.5f);
+	envState.FogDistances[0] = 10.0f; // near
+	envState.FogDistances[1] = 1000.0f; // far
+	envState.NumGlobalEnvironmentMips = 10;
 }
 
 //------------------------------------------------------------------------------
@@ -110,6 +124,76 @@ EnvironmentContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time fr
 	float thetaS = acos(Math::float4::dot3(sunDir, Math::vector(0, 1, 0)));
 	Z = CalculateZenithLuminanceYxy(turbidity, thetaS);
 	Math::float4::storeu(Z, tickParams.Z);
+
+	// write parameters related to atmosphere
+	Math::float4::storeu(envState.FogColor, tickParams.FogColor);
+	tickParams.FogDistances[0] = envState.FogDistances[0];
+	tickParams.FogDistances[1] = envState.FogDistances[1];
+
+	// bloom parameters
+	Math::float4::storeu(envState.BloomColor, tickParams.HDRBloomColor);
+	tickParams.HDRBrightPassThreshold = envState.BloomThreshold;
+
+	// eye adaptation parameters
+	tickParams.MaxLuminance = envState.MaxEyeLuminance;
+
+	// global resource parameters
+	tickParams.NumEnvMips = envState.NumGlobalEnvironmentMips;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+EnvironmentContext::SetFogColor(const Math::float4& fogColor)
+{
+	envState.FogColor = fogColor;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+EnvironmentContext::SetFogDistances(const float nearFog, const float farFog)
+{
+	envState.FogDistances[0] = nearFog;
+	envState.FogDistances[1] = farFog;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+EnvironmentContext::SetBloomColor(const Math::float4& bloomColor)
+{
+	envState.BloomColor = bloomColor;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+EnvironmentContext::SetBloomThreshold(const float threshold)
+{
+	envState.BloomThreshold = threshold;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+EnvironmentContext::SetMaxLuminance(const float maxLuminance)
+{
+	envState.MaxEyeLuminance = maxLuminance;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+EnvironmentContext::SetNumEnvironmentMips(const int mips)
+{
+	envState.NumGlobalEnvironmentMips = mips;
 }
 
 } // namespace Graphics

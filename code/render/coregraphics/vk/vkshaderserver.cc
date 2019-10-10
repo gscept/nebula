@@ -91,15 +91,6 @@ VkShaderServer::Open()
 	this->environmentMapVar = ShaderGetConstantBinding(shader, "EnvironmentMap");
 	this->irradianceMapVar = ShaderGetConstantBinding(shader, "IrradianceMap");
 	this->numEnvMipsVar = ShaderGetConstantBinding(shader, "NumEnvMips");
-
-	this->tickParams.NumEnvMips = 10;
-	Math::float4::store(Math::float4(100.0f), this->tickParams.HDRBloomColor);
-	this->tickParams.HDRBrightPassThreshold = 5.9f;
-	this->tickParams.MaxLuminance = 0.5f;
-	Math::float4::store(Math::float4(0.5f), this->tickParams.FogColor);
-	this->tickParams.FogDistances[0] = 10.0f;
-	this->tickParams.FogDistances[1] = 1000.0f;
-
 	return true;
 }
 
