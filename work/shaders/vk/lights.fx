@@ -9,6 +9,7 @@
 #include "lib/CSM.fxh"
 #include "lib/techniques.fxh"
 #include "lib/shadowbase.fxh"
+#include "lib/preetham.fxh"
 
 const float specPower = float(32.0f);
 const float rimLighting = float(0.2f);
@@ -124,17 +125,22 @@ psGlob([color0] out vec4 Color)
 
 	vec3 diff = GlobalAmbientLightColor.xyz;
 	diff += GlobalLightColor.xyz * saturate(NL);
-	diff += GlobalBackLightColor.xyz * saturate(-NL + GlobalBackLightOffset);
+	//diff += GlobalBackLightColor.xyz * saturate(-NL + GlobalBackLightOffset);
 
-	vec4 specColor = subpassLoad(InputAttachment3);
+	vec4 specColor = subpassLoad(InputAttachment2);
 	float specPower = ROUGHNESS_TO_SPECPOWER(specColor.a);
 
 	vec3 H = normalize(GlobalLightDir.xyz + viewVec);
 	float NH = saturate(dot(normal, H));
 	float NV = saturate(dot(normal, viewVec));
 	float HL = saturate(dot(H, GlobalLightDir.xyz));
-	vec3 spec;
+	vec3 spec;  
 	BRDFLighting(NH, NL, NV, HL, specPower, specColor.rgb, spec);
+
+	// add sky light
+	vec3 skyLight = Preetham(normal, GlobalLightDir.xyz, A, B, C, D, E, Z) * GlobalLightColor.xyz;
+	diff += skyLight;
+
 	vec3 final = (albedoColor.rgb + spec) * diff;
 
 	Color = vec4(final * shadowFactor, 1);
@@ -205,12 +211,10 @@ psSpot([color0] out vec4 Color)
 	float att = saturate(1.0 - length(lightDir) * LightPosRange.w);
 	if (att - 0.004 < 0) discard;
 	lightDir = normalize(lightDir);
-
 	
-	//vec3 forwardDir = pos - WorldSpacePosition;
 	float theta = dot(LightForward.xyz, lightDir);
-	const float innerCutoff = 0.7f;
-	const float outerCutoff = 0.9f;
+	const float innerCutoff = LightCutoff.x;
+	const float outerCutoff = LightCutoff.y;
 	float epsilon = innerCutoff - outerCutoff;
 	float intensity = clamp((outerCutoff - theta) / epsilon, 0.0f, 1.0f);
 
@@ -219,10 +223,12 @@ psSpot([color0] out vec4 Color)
 	float mipSelect = 0;
 	vec2 lightSpaceUv = vec2(((projLightPos.xy / projLightPos.ww) * vec2(0.5f, 0.5f)) + 0.5f);
 
-	vec4 lightModColor = intensity.xxxx;
+	vec4 lightModColor;
 
-	//if (FlagSet(Flags, USE_PROJECTION_TEX_BITFLAG))
-	//	lightModColor = sample2DLod(ProjectionTexture, SpotlightTextureSampler, lightSpaceUv, mipSelect);
+	if (FlagSet(Flags, USE_PROJECTION_TEX_BITFLAG))
+		lightModColor = sample2DLod(ProjectionTexture, SpotlightTextureSampler, lightSpaceUv, mipSelect);
+	else
+		lightModColor = intensity.xxxx * att;
 
 	float shadowFactor = 1.0f;
 	if (FlagSet(Flags, USE_SHADOW_BITFLAG))

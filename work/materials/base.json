@@ -68,29 +68,6 @@
                      "max": 1.0,
                      "desc": "Material roughness multiplier"
                   },
-                  {
-                     "name": "EnvironmentMap",
-                     "system": true,
-                     "type": "textureHandle",
-                     "defaultValue": "tex:system/sky_refl"
-                  },
-                  {
-                     "name": "IrradianceMap",
-                     "system": true,
-                     "type": "textureHandle",
-                     "defaultValue": "tex:system/sky_irr"
-                  },
-                  {
-                     "name": "NumEnvMips",
-                     "system": true,
-                     "type": "int",
-                     "defaultValue": 9
-                  },
-                  {
-                     "name": "EnvNumMips",
-                     "type": "int",
-                     "system": true
-                  }
                ],
                "name": "PBR + IBL",
                "inherits": "Classic rendering",
@@ -2581,42 +2558,6 @@
                      "defaultValue": 0.0,
                      "system": true
                   },
-                  {
-                     "name": "A",
-                     "type": "float4",
-                     "defaultValue": [0.0, 0.0, 0.0, 0.0],
-                     "system": true
-                  },
-                  {
-                     "name": "B",
-                     "type": "float4",
-                     "defaultValue": [0.0, 0.0, 0.0, 0.0],
-                     "system": true
-                  },
-                  {
-                     "name": "C",
-                     "type": "float4",
-                     "defaultValue": [0.0, 0.0, 0.0, 0.0],
-                     "system": true
-                  },
-                  {
-                     "name": "D",
-                     "type": "float4",
-                     "defaultValue": [0.0, 0.0, 0.0, 0.0],
-                     "system": true
-                  },
-                  {
-                     "name": "E",
-                     "type": "float4",
-                     "defaultValue": [0.0, 0.0, 0.0, 0.0],
-                     "system": true
-                  },
-                  {
-                     "name": "Z",
-                     "type": "float4",
-                     "defaultValue": [0.0, 0.0, 0.0, 0.0],
-                     "system": true
-                  }
                ],
                "name": "Skybox",
                "vertexType": "special",

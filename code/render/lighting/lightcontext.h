@@ -10,6 +10,7 @@
 #include "coregraphics/shader.h"
 #include "coregraphics/constantbuffer.h"
 #include "frame/framesubpasssystem.h"
+#include <array>
 
 namespace Lighting
 {
@@ -48,6 +49,8 @@ public:
 	static void SetupSpotLight(const Graphics::GraphicsEntityId id, 
 		const Math::float4& color, 
 		const float intensity, 
+		const float innerConeAngle,
+		const float outerConeAngle,
 		const Math::matrix44& transform,
 		bool castShadows = false, 
 		const CoreGraphics::TextureId projection = CoreGraphics::TextureId::Invalid());
@@ -84,7 +87,7 @@ private:
 	static void SetGlobalLightViewProjTransform(const Graphics::ContextEntityId id, const Math::matrix44& transform);
 
 	/// run light classification compute
-	static void UpdateLightClassification();
+	static void UpdateClustersAndCull();
 	/// render lights
 	static void RenderLights();
 
@@ -120,11 +123,11 @@ private:
 
 	enum
 	{
-		PointLightTransform,
-		PointLightConstantBufferSet,
-		PointLightShadowConstantBufferSet,
-		PointLightDynamicOffsets,
-		PointLightProjectionTexture
+		PointLight_Transform,
+		PointLight_ConstantBufferSet,
+		PointLight_ShadowConstantBufferSet,
+		PointLight_DynamicOffsets,
+		PointLight_ProjectionTexture
 	};
 
 	typedef Ids::IdAllocator<
@@ -138,13 +141,14 @@ private:
 
 	enum
 	{
-		SpotLightTransform,
-		SpotLightProjection,
-		SpotLightInvViewProjection,
-		SpotLightConstantBufferSet,
-		SpotLightShadowConstantBufferSet,
-		SpotLightDynamicOffsets,
-		SpotLightProjectionTexture
+		SpotLight_Transform,
+		SpotLight_Projection,
+		SpotLight_InvViewProjection,
+		SpotLight_ConstantBufferSet,
+		SpotLight_ShadowConstantBufferSet,
+		SpotLight_DynamicOffsets,
+		SpotLight_ConeAngles,
+		SpotLight_ProjectionTexture,
 	};
 
 	typedef Ids::IdAllocator<
@@ -154,18 +158,19 @@ private:
 		ConstantBufferSet,			// constant buffer binding for light
 		ConstantBufferSet,			// constant buffer binding for shadows
 		Util::FixedArray<uint>,		// dynamic offsets
+		std::array<float, 2>,		// cone angle
 		CoreGraphics::TextureId		// projection (if invalid, don't use)
 	> SpotLightAllocator;
 	static SpotLightAllocator spotLightAllocator;
 
 	enum
 	{
-		GlobalLightDirection,
-		GlobalLightBacklight,
-		GlobalLightBacklightOffset,
-		GlobalLightAmbient,
-		GlobalLightTransform,
-		GlobalLightViewProjTransform,
+		GlobalLight_Direction,
+		GlobalLight_Backlight,
+		GlobalLight_BacklightOffset,
+		GlobalLight_Ambient,
+		GlobalLight_Transform,
+		GlobalLight_ViewProjTransform,
 	};
 	typedef Ids::IdAllocator<
 		Math::float4,			// direction

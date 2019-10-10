@@ -8,8 +8,8 @@
 #include "lib/shared.fxh"
 
 // make sure this matches LightContext
-#define CLUSTER_SUBDIVS_X 16
-#define CLUSTER_SUBDIVS_Y 16
+#define CLUSTER_SUBDIVS_X 64
+#define CLUSTER_SUBDIVS_Y 64
 #define CLUSTER_SUBDIVS_Z 16
 #define MAX_LIGHTS_PER_CLUSTER 32
 
@@ -23,7 +23,7 @@ struct ClusterAABB
 	vec4 minPoint;
 };
 
-group(BATCH_GROUP) varbuffer AABBStepOutput
+group(BATCH_GROUP) varbuffer ClusterAABBs
 {
 	ClusterAABB AABBs[];
 };
@@ -38,7 +38,7 @@ struct Light
 };
 
 // do not modify this one, keep it the same, its being fed through the lightserver
-group(BATCH_GROUP) varbuffer Input
+group(BATCH_GROUP) varbuffer LightList
 {
 	Light lights[];
 };
@@ -50,7 +50,7 @@ struct LightTileList
 };
 
 // this is the buffer we want to modify!
-group(BATCH_GROUP) varbuffer Output
+group(BATCH_GROUP) varbuffer LightIndexList
 {
 	LightTileList list[];
 };
@@ -66,7 +66,7 @@ group(BATCH_GROUP) varblock Uniforms
 //------------------------------------------------------------------------------
 /**
 */
-[localsizex] = CLUSTER_SUBDIVS_Z
+[localsizex] = CLUSTER_SUBDIVS_X
 shader 
 void csClusterAABB()
 {
@@ -101,26 +101,36 @@ void csClusterAABB()
 	cluster_begin[2] = (InvViewProjection * cluster_begin[2]);
 	cluster_begin[3] = (InvViewProjection * cluster_begin[3]);
 
-	/*
-	ClusterAABB aabb;
-	aabb.minPoint = min(cluster_begin, cluster_end);
-	aabb.maxPoint = max(cluster_begin, cluster_end);
-	AABBs[]
-	*/
+	vec4 nearMin = min(min(cluster_begin[0], cluster_begin[1]), min(cluster_begin[2], cluster_begin[3]));
+	vec4 nearMax = max(max(cluster_begin[0], cluster_begin[1]), max(cluster_begin[2], cluster_begin[3]));
 
-		/*
-    const int NumThreadsPerCluster = MAX_LIGHTS_PER_CLUSTER;
-	for (uint i = 0; i < NumInputLights && i < MAX_LIGHTS_PER_CLUSTER; i += NumThreadsPerCluster)
-    {
-        int il = int(gl_LocalInvocationIndex + i);
-		if (il < NumInputLights)
-		{
-            const Light light = lights[il]; 
-        }
-    }
-	*/
+	vec4 farMin = min(min(cluster_end[0], cluster_end[1]), min(cluster_end[2], cluster_end[3]));
+	vec4 farMax = max(max(cluster_end[0], cluster_end[1]), max(cluster_end[2], cluster_end[3]));
+
+	ClusterAABB aabb;
+	aabb.minPoint = min(nearMin, farMin);
+	aabb.maxPoint = max(nearMax, farMax);
+	AABBs[gl_LocalInvocationIndex + gl_WorkGroupID.y * CLUSTER_SUBDIVS_X + gl_WorkGroupID.z * CLUSTER_SUBDIVS_X * gl_NumWorkGroups.y] = aabb;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+[localsizex] = CLUSTER_SUBDIVS_X
+shader
+void csLightCull()
+{
+	ClusterAABB aabb = AABBs[gl_LocalInvocationIndex + gl_WorkGroupID.y * CLUSTER_SUBDIVS_X + gl_WorkGroupID.z * CLUSTER_SUBDIVS_X * gl_NumWorkGroups.y];
+	const int NumThreadsPerCluster = MAX_LIGHTS_PER_CLUSTER;
+	for (uint i = 0; i < NumInputLights && i < MAX_LIGHTS_PER_CLUSTER; i += NumThreadsPerCluster)
+	{
+		int il = int(gl_LocalInvocationIndex + i);
+		if (il < NumInputLights)
+		{
+			const Light light = lights[il];
+		}
+	}
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -128,4 +138,12 @@ void csClusterAABB()
 program AABBGenerate [ string Mask = "Alt0"; ]
 {
 	ComputeShader = csClusterAABB();
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+program LightCull[string Mask = "Alt1"; ]
+{
+	ComputeShader = csLightCull();
 };

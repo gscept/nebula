@@ -158,7 +158,7 @@ VkShaderPool::ReloadFromStream(const Resources::ResourceId id, const Ptr<IO::Str
 		VkShaderProgramSetup(shaderProgramId.programId, this->GetName(id), program, setupInfo.pipelineLayout, this->shaderAlloc.Get<Shader_ProgramAllocator>(id.resourceId));
 
 		// trigger a reload in the graphics device
-		CoreGraphics::ReloadShaderProgram(shaderProgramId.programId);
+		CoreGraphics::ReloadShaderProgram(shaderProgramId);
 	}
 
 	return ResourcePool::Success;
