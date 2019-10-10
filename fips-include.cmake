@@ -215,16 +215,16 @@ macro(add_material)
     foreach(mat ${ARGN})
             get_filename_component(basename ${mat} NAME)
             set(output ${EXPORT_DIR}/materials/${basename})
-            add_custom_command(OUTPUT ${output}                
+            add_custom_command(OUTPUT ${output}
                 COMMAND ${CMAKE_COMMAND} -E copy ${mat} ${EXPORT_DIR}/materials/
-                MAIN_DEPENDENCY ${mat}                
+                MAIN_DEPENDENCY ${mat}
                 WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
                 COMMENT "Copying material ${mat} to ${EXPORT_DIR}/materials"
                 VERBATIM
                 )
             fips_files(${mat})
             SOURCE_GROUP("res\\materials" FILES ${mat})
-
+		endforeach()
 endmacro()
 
 macro(add_nebula_shaders)
