@@ -69,5 +69,5 @@ Preetham(vec3 sphereDir, vec3 lightDir, vec4 A, vec4 B, vec4 C, vec4 D, vec4 E, 
 
 	vec3 r_XYZ = YxyToXYZ(r_xyY);
 	vec3 ret = XYZToRGB(r_XYZ);
-	return ret * 0.05f;
+	return ret * ONE_OVER_PI;
 }
