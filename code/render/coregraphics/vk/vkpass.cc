@@ -271,18 +271,6 @@ CreatePass(const PassCreateInfo& info)
 			dep.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 			subpassDeps.Append(dep);
 		}
-		else
-		{
-			VkSubpassDependency startDependency;
-			startDependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-			startDependency.srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-			startDependency.srcAccessMask = 0;
-			startDependency.dstSubpass = i;
-			startDependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT;
-			startDependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-			startDependency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-			subpassDeps.Append(startDependency);
-		}
 
 		// set color attachments
 		vksubpass.colorAttachmentCount = usedAttachments;
@@ -311,23 +299,6 @@ CreatePass(const PassCreateInfo& info)
 		}
 
 		subpassAttachmentCounts.Append(vksubpass.colorAttachmentCount);
-	}
-
-	for (i = 0; i < subpassHasDependencies.Size(); i++)
-	{
-		if (!subpassHasDependencies[i])
-		{
-			VkSubpassDependency startDependency;
-			startDependency.srcSubpass = i;
-			startDependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
-			startDependency.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
-			startDependency.dstSubpass = VK_SUBPASS_EXTERNAL;
-			startDependency.dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-			startDependency.dstAccessMask = 0;
-			startDependency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-			subpassDeps.Append(startDependency);
-		}
-		
 	}
 
 	VkAttachmentLoadOp loadOps[] =

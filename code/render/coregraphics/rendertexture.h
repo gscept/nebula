@@ -85,7 +85,7 @@ const SizeT RenderTextureGetLayers(const RenderTextureId id);
 const CoreGraphics::PixelFormat::Code RenderTextureGetPixelFormat(const RenderTextureId id);
 /// get msaa
 const bool RenderTextureGetMSAA(const RenderTextureId id);
-/// get layout
+/// get default layout (does not update during the frame)
 const CoreGraphicsImageLayout RenderTextureGetLayout(const RenderTextureId id);
 
 /// get bindless texture handle
