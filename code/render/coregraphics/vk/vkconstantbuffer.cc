@@ -70,7 +70,7 @@ CreateConstantBuffer(const ConstantBufferCreateInfo& info)
 	else if (info.mode == DeviceWriteable)
 		usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 
-	const Util::FixedArray<uint32_t> queues = { Vulkan::GetQueueFamily(GraphicsQueueType),Vulkan::GetQueueFamily(ComputeQueueType) };
+	const Util::FixedArray<uint32_t> queues = { Vulkan::GetQueueFamily(GraphicsQueueType), Vulkan::GetQueueFamily(ComputeQueueType) };
 	setup.info =
 	{
 		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
@@ -78,7 +78,7 @@ CreateConstantBuffer(const ConstantBufferCreateInfo& info)
 		0,
 		(VkDeviceSize)size,
 		usageFlags,
-		VK_SHARING_MODE_CONCURRENT,
+		VK_SHARING_MODE_EXCLUSIVE,
 		(uint32_t)queues.Size(),
 		queues.Begin()
 	};
