@@ -20,7 +20,7 @@
 #include "debug/framescriptinspector.h"
 #endif
 
-#include "lights_cluster_classification.h"
+#include "lights_clustered.h"
 #include "lights.h"
 
 
@@ -125,7 +125,7 @@ struct
 	static const SizeT IndicesPerCluster = 32;
 
 	// these are used to update the light clustering
-	LightsClusterClassification::Light lights[2048];
+	LightsClustered::Light lights[2048];
 
 } clusterState;
 
@@ -374,7 +374,7 @@ LightContext::Create()
 	ShaderRWBufferCreateInfo rwb2Info = 
 	{
 		"LightClusterInputBuffer",
-		2048 * sizeof(LightsClusterClassification::Light),
+		2048 * sizeof(LightsClustered::Light),
 		1,
 		false
 	};
@@ -383,13 +383,13 @@ LightContext::Create()
 	ShaderRWBufferCreateInfo rwb3Info =
 	{
 		"LightsClusterAABBBuffer",
-		64*64*16*sizeof(LightsClusterClassification::ClusterAABB),
+		64*64*16*sizeof(LightsClustered::ClusterAABB),
 		1,
 		false
 	};
 	clusterState.clusterAABBBuffer = CreateShaderRWBuffer(rwb3Info);
 
-	clusterState.classificationShader = ShaderServer::Instance()->GetShader("shd:lights_cluster_classification.fxb");
+	clusterState.classificationShader = ShaderServer::Instance()->GetShader("shd:lights_clustered.fxb");
 	IndexT indexBufferSlot = ShaderGetResourceSlot(clusterState.classificationShader, "LightIndexList");
 	IndexT lightsBufferSlot = ShaderGetResourceSlot(clusterState.classificationShader, "LightList");
 	IndexT clusterAABBSlot = ShaderGetResourceSlot(clusterState.classificationShader, "ClusterAABBs");
@@ -883,7 +883,7 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIn
 	}
 
 	// update lights buffer which will be used for the light culling pass
-	ShaderRWBufferUpdate(clusterState.clusterLightBuffer, clusterState.lights, sizeof(LightsClusterClassification::Light) * types.Size());	
+	ShaderRWBufferUpdate(clusterState.clusterLightBuffer, clusterState.lights, sizeof(LightsClustered::Light) * types.Size());	
 }
 
 //------------------------------------------------------------------------------
@@ -914,6 +914,9 @@ LightContext::UpdateClustersAndCull()
 			}
 		},
 		nullptr, "AABB finish barrier");
+
+	// bind the cull shader
+	CoreGraphics::SetShaderProgram(clusterState.lightCullProgram);
 
 	// now, run through all previously created AABBs and cull the lights
 	CoreGraphics::Compute(15, 15, 7); // we have 16 x 16 x 8 cells, so the indices naturally become 15, 15, 7
