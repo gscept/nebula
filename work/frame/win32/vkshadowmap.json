@@ -85,6 +85,17 @@
       name: "LightContext - Spotlight Blur"
     }
     compute_algorithm: {
+      inputs: [
+        {
+          name: "GlobalLightShadow",
+          access: "ShaderRead",
+          layout: "ShaderRead",
+          stage: "ComputeShader",
+          layer_count: 4,
+          aspect: "Color"
+        }
+        
+      ]
       name: "LightContext - Sun Blur"
     }
 

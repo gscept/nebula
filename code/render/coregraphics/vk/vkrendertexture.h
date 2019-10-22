@@ -52,7 +52,6 @@ struct VkRenderTextureRuntimeInfo
 	VkImageView framebufferView;
 	VkImageView sampleView; // only used by depth-stencil targets to sample from
 	uint32_t bind;
-	VkImageLayout layout; // this is just the layout we should default to
 	CoreGraphics::TextureType type;
 };
 

@@ -359,7 +359,7 @@ VkTypes::AsVkSampleableFormat(CoreGraphics::PixelFormat::Code p)
 {
 	switch (p)
 	{
-	case PixelFormat::D32S8:			return VK_FORMAT_D32_SFLOAT;
+	case PixelFormat::D32S8:			return VK_FORMAT_D32_SFLOAT_S8_UINT;
 	default:
 	{
 		return AsVkFramebufferFormat(p);

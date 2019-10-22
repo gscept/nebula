@@ -809,10 +809,6 @@ SetupVulkanSwapchain(const CoreGraphics::WindowId& id, const CoreGraphics::Displ
 		VK_NULL_HANDLE
 	};
 
-	// create swapchain
-	res = vkCreateSwapchainKHR(dev, &swapchainInfo, nullptr, &windowInfo.swapchain);
-	n_assert(res == VK_SUCCESS);
-
 	// get present queue
 	for (IndexT i = 0; i < NumQueueTypes; i++)
 	{
@@ -825,6 +821,10 @@ SetupVulkanSwapchain(const CoreGraphics::WindowId& id, const CoreGraphics::Displ
 			break;
 		}
 	}
+
+    // create swapchain
+    res = vkCreateSwapchainKHR(dev, &swapchainInfo, nullptr, &windowInfo.swapchain);
+    n_assert(res == VK_SUCCESS);
 
 	res = vkGetSwapchainImagesKHR(dev, windowInfo.swapchain, &backbufferInfo.numBackbuffers, nullptr);
 	n_assert(res == VK_SUCCESS);

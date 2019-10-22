@@ -145,6 +145,26 @@ FramePass::Build(
 	myCompiled->subpasses = subpassOps;
 	this->compiled = myCompiled;
 	this->SetupSynchronization(allocator, events, barriers, rwTextures, rwBuffers, renderTextures);
+
+	// now, add all render textures used by this pass as a dependency for any future command
+	const Util::Array<CoreGraphics::RenderTextureId>& attachments = CoreGraphics::PassGetAttachments(this->pass);
+	for (IndexT i = 0; i < attachments.Size(); i++)
+	{
+		Util::Array<std::tuple<CoreGraphics::ImageSubresourceInfo, TextureDependency>>& deps = renderTextures[attachments[i]];
+		CoreGraphicsImageLayout layout = CoreGraphics::RenderTextureGetLayout(attachments[i]);
+		CoreGraphics::ImageSubresourceInfo subres{ 
+			layout == CoreGraphicsImageLayout::DepthStencilRead ? CoreGraphicsImageAspect::DepthBits : CoreGraphicsImageAspect::ColorBits, 
+			0, 1, 0, 1 };
+		TextureDependency dep{
+			this->compiled, 
+			this->queue, 
+			layout, 
+			CoreGraphics::BarrierStage::PixelShader, 
+			layout == CoreGraphicsImageLayout::DepthStencilRead ? CoreGraphics::BarrierAccess::DepthAttachmentWrite : CoreGraphics::BarrierAccess::ColorAttachmentWrite,
+			DependencyIntent::Write, 
+			this->index };
+		deps.Append(std::make_tuple(subres, dep));
+	}
 	compiledOps.Append(myCompiled);
 }
 
