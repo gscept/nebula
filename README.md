@@ -2,7 +2,7 @@
 
 ## Requirements
 1. OS: Windows or Linux
-2. Compiler with support for C++14.
+2. Compiler with support for C++17.
 3. GPU supporting Vulkan
 4. [CMake 3.13+](https://cmake.org/download/)
 5. [Vulkan SDK](https://vulkan.lunarg.com/sdk/home)
