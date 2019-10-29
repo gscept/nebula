@@ -617,10 +617,10 @@ matrix44::get_scale(float4& v) const
 	scalar yScale = yaxis.length3();
 	scalar zScale = zaxis.length3();
 
-	v.set_x(xScale);
-	v.set_y(yScale);
-	v.set_z(zScale);
-	v.set_w(1.0f);
+	v.x() = xScale;
+	v.y() = yScale;
+	v.z() = zScale;
+	v.w() = 1.0f;
 }
 
 
@@ -645,7 +645,7 @@ matrix44::scale(float4 const &s)
 {    
     // need to make sure that last column isn't erased
     float4 scl = s;
-    scl.set_w(1.0f);
+    scl.w() = 1.0f;
 
     this->mx.r[0] = float4::multiply(this->mx.r[0], scl).vec;
     this->mx.r[1] = float4::multiply(this->mx.r[1], scl).vec;

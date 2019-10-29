@@ -22,7 +22,7 @@
 namespace App
 {
 __ImplementSingleton(App::GameApplication);
-IndexT GameApplication::FrameIndex = 0;
+IndexT GameApplication::FrameIndex = -1;
 
 using namespace Util;
 using namespace Core;

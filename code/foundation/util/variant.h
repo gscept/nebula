@@ -3078,9 +3078,6 @@ Variant::Get() const
 
 //------------------------------------------------------------------------------
 /**
-    Todo: Handle array types.
-    Note:
-        Doesn't handle float2, float4 and matrix44 on purpose, since they are indistinguishable from float arrays
 */
 inline Util::String 
 Variant::ToString() const

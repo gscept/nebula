@@ -177,7 +177,7 @@ plane::setup_from_points(const float4& p0, const float4& p1, const float4& p2)
 	float d = float4::dot3(cr,p0);
 
 	this->vec = cr;
-	this->vec.set_w(-d);
+	this->vec.w() = -d;
 }
 
 //------------------------------------------------------------------------------
@@ -189,7 +189,7 @@ plane::setup_from_point_and_normal(const float4& p, const float4& n)
 
 	float d = float4::dot3(p,n);
 	this->vec = n;
-	this->vec.set_w(-d);
+	this->vec.w() = -d;
 }
 
 //------------------------------------------------------------------------------
@@ -362,7 +362,7 @@ plane::normalize(const plane& p)
 inline void
 plane::set_a(scalar a)
 {
-    this->vec.set_x(a);
+    this->vec.x() = a;
 }
 
 //------------------------------------------------------------------------------
@@ -371,7 +371,7 @@ plane::set_a(scalar a)
 inline void
 plane::set_b(scalar b)
 {
-    this->vec.set_y(b);
+    this->vec.y() = b;
 }
 
 //------------------------------------------------------------------------------
@@ -380,7 +380,7 @@ plane::set_b(scalar b)
 inline void
 plane::set_c(scalar c)
 {
-    this->vec.set_z(c);
+    this->vec.z() = c;
 }
 
 //------------------------------------------------------------------------------
@@ -389,7 +389,7 @@ plane::set_c(scalar c)
 inline void
 plane::set_d(scalar d)
 {
-    this->vec.set_w(d);
+    this->vec.w() = d;
 }
 
 //------------------------------------------------------------------------------
@@ -436,7 +436,7 @@ inline Math::float4
 plane::get_normal() const
 {
 	float4 n = this->vec;
-	n.set_w(0);
+	n.w() = 0;
 	return n;
 }
 

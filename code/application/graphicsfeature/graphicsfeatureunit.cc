@@ -12,6 +12,7 @@
 #include "characters/charactercontext.h"
 #include "dynui/im3d/im3dcontext.h"
 #include "appgame/gameapplication.h"
+#include "graphics/environmentcontext.h"
 
 using namespace Graphics;
 using namespace Visibility;
@@ -74,8 +75,8 @@ GraphicsFeatureUnit::OnActivate()
     ObservableContext::Create();
     Lighting::LightContext::Create();
     Characters::CharacterContext::Create();
-    Dynui::ImguiContext::Create();
     Im3d::Im3dContext::Create();
+    Dynui::ImguiContext::Create();
 
     this->defaultView = gfxServer->CreateView("mainview", "frame:vkdefault.json"_uri);
     this->defaultStage = gfxServer->CreateStage("defaultStage", true);
@@ -83,9 +84,12 @@ GraphicsFeatureUnit::OnActivate()
 
     this->globalLight = Graphics::CreateEntity();
     Lighting::LightContext::RegisterEntity(this->globalLight);
-    Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::float4(1, 1, 1, 0), 1.0f, Math::float4(0, 0, 0, 0), Math::float4(0, 0, 0, 0), 0.0f, Math::vector(1, 1, 1), false);
+    Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::float4(1, 1, 1, 0), 1.0f, Math::float4(0, 0, 0, 0), Math::float4(0, 0, 0, 0), 0.0f, Math::vector(1, 1, 1), true);
 
     ObserverContext::CreateBruteforceSystem({});
+
+    // create environment context for the atmosphere effects
+    EnvironmentContext::Create(this->globalLight);
 
 	GraphicsComponent::Create();
 }

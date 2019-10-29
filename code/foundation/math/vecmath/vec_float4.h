@@ -125,15 +125,7 @@ public:
     void load_byte4n(const void* ptr, float w);
     /// set content
     void set(scalar x, scalar y, scalar z, scalar w);
-    /// set the x component
-    void set_x(scalar x);
-    /// set the y component
-    void set_y(scalar y);
-    /// set the z component
-    void set_z(scalar z);
-    /// set the w component
-    void set_w(scalar w);
-
+    
     /// read/write access to x component
     scalar& x();
     /// read/write access to y component
@@ -653,46 +645,6 @@ float4::operator[](const int index) const
 {
 	n_assert(index < 4);
 	return this->vec.f[index];
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-__forceinline void
-float4::set_x(scalar x)
-{
-	__m128 temp = _mm_load_ss(&x);
-	this->vec.vec = _mm_move_ss(this->vec.vec,temp);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-__forceinline void
-float4::set_y(scalar y)
-{
-	__m128 temp2 = _mm_load_ps1(&y);
-	this->vec.vec = _mm_blend_ps(this->vec.vec, temp2, 2);	
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-__forceinline void
-float4::set_z(scalar z)
-{
-	__m128 temp2 = _mm_load_ps1(&z);
-	this->vec.vec = _mm_blend_ps(this->vec.vec, temp2, 4);	
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-__forceinline void
-float4::set_w(scalar w)
-{
-	__m128 temp2 = _mm_load_ps1(&w);
-	this->vec.vec = _mm_blend_ps(this->vec.vec, temp2, 8);
 }
 
 //------------------------------------------------------------------------------

@@ -51,7 +51,7 @@ matrix44::decompose(float4& outScale, quaternion& outRotation, float4& outTransl
 
 	// Start by extracting the translation (and/or any projection) from the given matrix
 	outTranslation = mCopy.get_position();
-	outTranslation.set_w(0.0f);
+	outTranslation.w() = 0.0f;
 	mCopy.set_position(_id_w);
 	
 	// Extract the rotation component - this is done using polar decompostion, where
@@ -83,7 +83,7 @@ matrix44::decompose(float4& outScale, quaternion& outRotation, float4& outTransl
 	// The scale is simply the removal of the rotation from the non-translated matrix
 	matrix44 scaleMatrix = matrix44::multiply(mCopy,matrix44::inverse(rotation));
 	scaleMatrix.get_scale(outScale);
-	outScale.set_w(0.0f);
+	outScale.w() = 0.0f;
 
 	// Calculate the normalized rotation matrix and take its determinant to determine whether
 	// it had a negative scale or not...
@@ -101,7 +101,7 @@ matrix44::decompose(float4& outScale, quaternion& outRotation, float4& outTransl
 	scalar determinant = nr.determinant();
 	if (determinant < 0.0) 
 	{
-		outScale.set_x(outScale.x() * -1.0f);		
+		outScale.x() = outScale.x() * -1.0f;
 	}
 }
 
@@ -117,9 +117,9 @@ matrix44::affinetransformation(scalar scaling, float4 const &rotationCenter, con
 	matrix44 scale = matrix44::scaling(scalev);
 	matrix44 rot = matrix44::rotationquaternion(rotation);
 	float4 rotc = rotationCenter;
-	rotc.set_w(0.0f);
+	rotc.w() = 0.0f;
 	float4 trans = translation;
-	trans.set_w(0.0f);
+	trans.w() = 0.0f;
 
 	matrix44 m = scale;
 	m.setrow3(m.getrow3() - rotc);
@@ -157,12 +157,12 @@ matrix44
 matrix44::transformation(float4 const &scalingCenter, const quaternion& scalingRotation, float4 const &scaling, float4 const &rotationCenter, const quaternion& rotation, float4 const &translation)
 {
 	float4 scalc = scalingCenter;
-	scalc.set_w(0.0f);
+	scalc.w() = 0.0f;
 	float4 nscalc = - scalc;
 	float4 rotc = rotationCenter;
-	rotc.set_w(0.0f);
+	rotc.w() = 0.0f;
 	float4 trans = translation;
-	trans.set_w(0.0f);
+	trans.w() = 0.0f;
 
 	matrix44 mscaletrans = matrix44::translation(nscalc);
 	matrix44 mscalerotate = matrix44::rotationquaternion(scalingRotation);

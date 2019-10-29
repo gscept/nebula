@@ -108,7 +108,7 @@ __forceinline
 point::point(const float4& rhs) :
     float4(rhs)
 {
-    this->set_w(1.0f);
+    this->w() = 1.0f;
 }
 
 //------------------------------------------------------------------------------
