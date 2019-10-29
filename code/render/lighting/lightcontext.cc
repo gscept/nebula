@@ -1050,7 +1050,7 @@ LightContext::OnRenderDebug(uint32_t flags)
             //FIXME define debug flags somewhere
             if (flags & Im3d::Solid)
             {
-                col.set_w(0.5f);
+                col.w() = 0.5f;
                 Im3d::Im3dContext::DrawSphere(trans, col, Im3d::CheckDepth | Im3d::Solid);
             }            
         }
