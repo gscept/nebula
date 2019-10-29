@@ -1499,7 +1499,11 @@ FrameScriptLoader::ParseResourceDependencies(const Ptr<Frame::FrameScript>& scri
 		else if (script->readWriteBuffersByName.Contains(valstr))
 		{
 			ShaderRWBufferId buf = script->readWriteBuffersByName[valstr];
-			op->rwBufferDeps.Add(buf, std::make_tuple(valstr, access, dependency));
+			CoreGraphics::BufferSubresourceInfo subres;
+			JzonValue* nd = nullptr;
+			if ((nd = jzon_get(dep, "offset")) != nullptr) subres.offset = nd->int_value;
+			if ((nd = jzon_get(dep, "size")) != nullptr) subres.size = nd->int_value;
+			op->rwBufferDeps.Add(buf, std::make_tuple(valstr, access, dependency, subres));
 		}
 		else if (script->colorTexturesByName.Contains(valstr))
 		{

@@ -80,7 +80,7 @@ const CoreGraphics::TextureDimensions RenderTextureGetDimensions(const RenderTex
 /// get texture mips
 const SizeT RenderTextureGetNumMips(const RenderTextureId id);
 /// get texture layers
-const SizeT RenderTextureGetLayers(const RenderTextureId id);
+const SizeT RenderTextureGetNumLayers(const RenderTextureId id);
 /// get pixel format
 const CoreGraphics::PixelFormat::Code RenderTextureGetPixelFormat(const RenderTextureId id);
 /// get msaa

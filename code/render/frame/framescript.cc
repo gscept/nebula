@@ -166,52 +166,73 @@ FrameScript::Build()
 	// clear old compiled result
 	this->buildAllocator.Release();
 	 
-	Util::Dictionary<CoreGraphics::ShaderRWTextureId, Util::Array<std::tuple<CoreGraphics::ImageSubresourceInfo, FrameOp::TextureDependency>>> rwTextures;
-	Util::Dictionary<CoreGraphics::ShaderRWBufferId, FrameOp::BufferDependency> rwBuffers;
-	Util::Dictionary<CoreGraphics::RenderTextureId, Util::Array<std::tuple<CoreGraphics::ImageSubresourceInfo, FrameOp::TextureDependency>>> renderTextures;
+	Util::Dictionary<CoreGraphics::ShaderRWTextureId, Util::Array<FrameOp::TextureDependency>> rwTextures;
+	Util::Dictionary<CoreGraphics::ShaderRWBufferId, Util::Array<FrameOp::BufferDependency>> rwBuffers;
+	Util::Dictionary<CoreGraphics::RenderTextureId, Util::Array<FrameOp::TextureDependency>> renderTextures;
 
-	// setup initial layout for resources
+	// give every resource an initial dependency
 	for (i = 0; i < this->colorTextures.Size(); i++)
 	{
-		auto tex = this->colorTextures[i];
+		CoreGraphics::RenderTextureId tex = this->colorTextures[i];
 		CoreGraphicsImageLayout layout = CoreGraphics::RenderTextureGetLayout(tex);
+		auto& arr = renderTextures.AddUnique(tex);
+
+		uint layers = CoreGraphics::RenderTextureGetNumLayers(tex);
+		uint mips = CoreGraphics::RenderTextureGetNumMips(tex);
+
 		CoreGraphics::ImageSubresourceInfo subres;
 		subres.aspect = CoreGraphicsImageAspect::ColorBits;
 		subres.layer = 0;
-		subres.layerCount = 1;
+		subres.layerCount = layers;
 		subres.mip = 0;
-		subres.mipCount = CoreGraphics::RenderTextureGetNumMips(tex);
-		auto& arr = renderTextures.AddUnique(tex);
-		arr.Append(std::make_tuple(subres, FrameOp::TextureDependency{ nullptr, CoreGraphicsQueueType::GraphicsQueueType, layout, CoreGraphics::BarrierStage::AllGraphicsShaders | CoreGraphics::BarrierStage::ComputeShader, CoreGraphics::BarrierAccess::ShaderRead, DependencyIntent::Read, 0 }));
+		subres.mipCount = mips;
+		arr.Append(FrameOp::TextureDependency{ nullptr, CoreGraphicsQueueType::GraphicsQueueType, layout, CoreGraphics::BarrierStage::AllGraphicsShaders | CoreGraphics::BarrierStage::ComputeShader, CoreGraphics::BarrierAccess::ShaderRead, DependencyIntent::Read, InvalidIndex, subres });
 	}
 
 	for (i = 0; i < this->depthStencilTextures.Size(); i++)
 	{
-		auto tex = this->depthStencilTextures[i];
+		CoreGraphics::RenderTextureId tex = this->depthStencilTextures[i];
 		CoreGraphicsImageLayout layout = CoreGraphics::RenderTextureGetLayout(tex);
-		CoreGraphics::ImageSubresourceInfo subres;
-		subres.aspect = CoreGraphicsImageAspect::DepthBits | CoreGraphicsImageAspect::StencilBits;
-		subres.layer = 0;
-		subres.layerCount = 1;
-		subres.mip = 0;
-		subres.mipCount = CoreGraphics::RenderTextureGetNumMips(tex);
 		auto& arr = renderTextures.AddUnique(tex);
-		arr.Append(std::make_tuple(subres, FrameOp::TextureDependency{ nullptr, CoreGraphicsQueueType::GraphicsQueueType, layout, CoreGraphics::BarrierStage::AllGraphicsShaders, CoreGraphics::BarrierAccess::DepthAttachmentRead, DependencyIntent::Read, 0 }));
+
+		uint layers = CoreGraphics::RenderTextureGetNumLayers(tex);
+		uint mips = CoreGraphics::RenderTextureGetNumMips(tex);		
+
+		CoreGraphics::ImageSubresourceInfo subres;
+		subres.aspect = CoreGraphicsImageAspect::ColorBits;
+		subres.layer = 0;
+		subres.layerCount = layers;
+		subres.mip = 0;
+		subres.mipCount = mips;
+		arr.Append(FrameOp::TextureDependency{ nullptr, CoreGraphicsQueueType::GraphicsQueueType, layout, CoreGraphics::BarrierStage::AllGraphicsShaders, CoreGraphics::BarrierAccess::DepthAttachmentRead, DependencyIntent::Read, InvalidIndex, subres });
 	}
 
 	for (i = 0; i < this->readWriteTextures.Size(); i++)
 	{
-		auto tex = this->readWriteTextures[i];
+		CoreGraphics::ShaderRWTextureId tex = this->readWriteTextures[i];
 		CoreGraphicsImageLayout layout = CoreGraphics::ShaderRWTextureGetLayout(tex);
 		CoreGraphics::TextureDimensions dims = CoreGraphics::ShaderRWTextureGetDimensions(tex);
+		auto& arr = rwTextures.AddUnique(tex);
+
+		uint layers = CoreGraphics::ShaderRWTextureGetNumLayers(tex);
+		uint mips = CoreGraphics::ShaderRWTextureGetNumMips(tex);
+
 		CoreGraphics::ImageSubresourceInfo subres;
 		subres.aspect = CoreGraphicsImageAspect::ColorBits;
 		subres.layer = 0;
-		subres.layerCount = dims.depth;
+		subres.layerCount = layers;
 		subres.mip = 0;
-		subres.mipCount = CoreGraphics::ShaderRWTextureGetNumMips(tex);
-		auto& arr = rwTextures.AddUnique(tex);
-		arr.Append(std::make_tuple(subres, FrameOp::TextureDependency{ nullptr, CoreGraphicsQueueType::GraphicsQueueType, layout, CoreGraphics::BarrierStage::ComputeShader, CoreGraphics::BarrierAccess::ShaderRead, DependencyIntent::Read, 0 }));
+		subres.mipCount = mips;
+		arr.Append(FrameOp::TextureDependency{ nullptr, CoreGraphicsQueueType::GraphicsQueueType, layout, CoreGraphics::BarrierStage::ComputeShader, CoreGraphics::BarrierAccess::ShaderRead, DependencyIntent::Read, InvalidIndex, subres });
+	}
+
+	for (i = 0; i < this->readWriteBuffers.Size(); i++)
+	{
+		CoreGraphics::ShaderRWBufferId buf = this->readWriteBuffers[i];
+		auto& arr = rwBuffers.AddUnique(buf);
+
+		CoreGraphics::BufferSubresourceInfo subres;
+		arr.Append(FrameOp::BufferDependency{ nullptr, CoreGraphicsQueueType::GraphicsQueueType, CoreGraphics::BarrierStage::ComputeShader, CoreGraphics::BarrierAccess::ShaderRead, DependencyIntent::Read, InvalidIndex, subres});
 	}
 
 	for (i = 0; i < this->ops.Size(); i++)
@@ -227,11 +248,10 @@ FrameScript::Build()
 	{
 		const CoreGraphics::ShaderRWTextureId& res = rwTextures.KeyAtIndex(i);
 		CoreGraphicsImageLayout layout = CoreGraphics::ShaderRWTextureGetLayout(res);
-		const Util::Array<std::tuple<CoreGraphics::ImageSubresourceInfo, FrameOp::TextureDependency>>& deps = rwTextures.ValueAtIndex(i);
+		const Util::Array<FrameOp::TextureDependency>& deps = rwTextures.ValueAtIndex(i);
 		for (IndexT j = 0; j < deps.Size(); j++)
 		{
-			const CoreGraphics::ImageSubresourceInfo& info = std::get<0>(deps[j]);
-			const FrameOp::TextureDependency& dep = std::get<1>(deps[j]);
+			const FrameOp::TextureDependency& dep = deps[j];
 			CoreGraphics::BarrierAccess outAccess = layout == CoreGraphicsImageLayout::Present ? CoreGraphics::BarrierAccess::TransferRead : CoreGraphics::BarrierAccess::ShaderRead;
 			CoreGraphics::BarrierStage outStage = outAccess == CoreGraphics::BarrierAccess::TransferRead ? CoreGraphics::BarrierStage::Transfer : CoreGraphics::BarrierStage::AllGraphicsShaders;
 
@@ -244,7 +264,7 @@ FrameScript::Build()
 					CoreGraphics::BarrierDomain::Global,
 					dep.stage,
 					outStage,
-					nullptr, nullptr, { CoreGraphics::RWTextureBarrier{ res, info, dep.layout, layout, dep.access, outAccess } }
+					nullptr, nullptr, { CoreGraphics::RWTextureBarrier{ res, dep.subres, dep.layout, layout, dep.access, outAccess } }
 				};
 				this->resourceResetBarriers.Append(CoreGraphics::CreateBarrier(inf));
 			}
@@ -255,11 +275,11 @@ FrameScript::Build()
 	{
 		const CoreGraphics::RenderTextureId& res = renderTextures.KeyAtIndex(i);
 		CoreGraphicsImageLayout layout = CoreGraphics::RenderTextureGetLayout(res);
-		const Util::Array<std::tuple<CoreGraphics::ImageSubresourceInfo, FrameOp::TextureDependency>>& deps = renderTextures.ValueAtIndex(i);
+		const Util::Array<FrameOp::TextureDependency>& deps = renderTextures.ValueAtIndex(i);
 		for (IndexT j = 0; j < deps.Size(); j++)
 		{
-			const CoreGraphics::ImageSubresourceInfo& info = std::get<0>(deps[j]);
-			const FrameOp::TextureDependency& dep = std::get<1>(deps[j]);
+			const FrameOp::TextureDependency& dep = deps[j];
+			const CoreGraphics::ImageSubresourceInfo& info = dep.subres;
 			CoreGraphics::BarrierAccess outAccess = layout == CoreGraphicsImageLayout::Present ? CoreGraphics::BarrierAccess::TransferRead : CoreGraphics::BarrierAccess::ShaderRead;
 			CoreGraphics::BarrierStage outStage = outAccess == CoreGraphics::BarrierAccess::TransferRead ? CoreGraphics::BarrierStage::Transfer : CoreGraphics::BarrierStage::AllGraphicsShaders;
 

@@ -17,6 +17,7 @@ struct VkShaderRWTextureLoadInfo
 	VkImage img;
 	VkDeviceMemory mem;
 	CoreGraphics::TextureDimensions dims;
+	SizeT layers;
 };
 
 struct VkShaderRWTextureRuntimeInfo

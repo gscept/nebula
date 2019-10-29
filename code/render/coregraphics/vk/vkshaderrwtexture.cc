@@ -58,6 +58,7 @@ CreateShaderRWTexture(const ShaderRWTextureCreateInfo& info)
 	loadInfo.dims.height = adjustedInfo.height;
 	loadInfo.dims.depth = 1;
 	loadInfo.dev = Vulkan::GetCurrentDevice();
+	loadInfo.layers = info.layers;
 
 	VkPhysicalDevice physicalDev = Vulkan::GetCurrentPhysicalDevice();
 	VkFormat vkformat = VkTypes::AsVkDataFormat(adjustedInfo.format);
@@ -79,7 +80,7 @@ CreateShaderRWTexture(const ShaderRWTextureCreateInfo& info)
 		vkformat,
 		extents,
 		1,
-		info.layers,
+		loadInfo.layers,
 		VK_SAMPLE_COUNT_1_BIT,
 		VK_IMAGE_TILING_OPTIMAL,
 		VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
@@ -235,6 +236,15 @@ const IndexT
 ShaderRWTextureGetNumMips(const ShaderRWTextureId id)
 {
 	return 1;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const SizeT
+ShaderRWTextureGetNumLayers(const ShaderRWTextureId id)
+{
+	return shaderRWTextureAllocator.Get<0>(id.id24).layers;
 }
 
 //------------------------------------------------------------------------------

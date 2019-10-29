@@ -131,7 +131,21 @@ struct ImageSubresourceInfo
 	{
 		return ((this->aspect & rhs.aspect) != 0) && (this->mip <= rhs.mip && this->mip + this->mipCount >= rhs.mip) && (this->layer <= rhs.layer && this->layer + this->layerCount >= rhs.layer);
 	}
+};
 
+struct BufferSubresourceInfo
+{
+	uint offset, size;
+
+	BufferSubresourceInfo() :
+		offset(0),
+		size(-1)
+	{}
+
+	const bool Overlaps(const BufferSubresourceInfo& rhs) const
+	{
+		return (this->offset <= rhs.offset && this->offset + this->size >= rhs.offset);
+	}
 };
 
 struct RenderTextureBarrier

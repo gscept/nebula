@@ -111,7 +111,7 @@ CreatePass(const PassCreateInfo& info)
 		const CoreGraphics::TextureDimensions dims = RenderTextureGetDimensions(info.colorAttachments[i]);
 		width = Math::n_max(width, (uint32_t)dims.width);
 		height = Math::n_max(height, (uint32_t)dims.height);
-		layers = Math::n_max(layers, (uint32_t)RenderTextureGetLayers(info.colorAttachments[i]));
+		layers = Math::n_max(layers, (uint32_t)RenderTextureGetNumLayers(info.colorAttachments[i]));
 
 		VkRect2D& rect = loadInfo.rects[i];
 		rect.offset.x = 0;

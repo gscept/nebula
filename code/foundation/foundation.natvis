@@ -84,11 +84,11 @@
     </Expand>
   </Type>
   <Type Name="Util::Dictionary&lt;*,*&gt;">
-    <DisplayString>Values={keyValuePairs.size}</DisplayString>
+    <DisplayString>Values={keyValuePairs.count}</DisplayString>
     <Expand>
       <CustomListItems>
         <Variable Name="j" InitialValue="0" />
-        <Size>keyValuePairs.size</Size>        
+        <Size>keyValuePairs.count</Size>
         <Loop>
           <Item Name="{keyValuePairs.elements[j].keyData, na}">keyValuePairs.elements[j].valueData</Item>
           <Exec>j++</Exec>

@@ -127,9 +127,9 @@ FramePass::Build(
 	Util::Array<FrameOp::Compiled*>& compiledOps, 
 	Util::Array<CoreGraphics::EventId>& events,
 	Util::Array<CoreGraphics::BarrierId>& barriers,
-	Util::Dictionary<CoreGraphics::ShaderRWTextureId, Util::Array<std::tuple<CoreGraphics::ImageSubresourceInfo, TextureDependency>>>& rwTextures,
-	Util::Dictionary<CoreGraphics::ShaderRWBufferId, BufferDependency>& rwBuffers,
-	Util::Dictionary<CoreGraphics::RenderTextureId, Util::Array<std::tuple<CoreGraphics::ImageSubresourceInfo, TextureDependency>>>& renderTextures)
+	Util::Dictionary<CoreGraphics::ShaderRWTextureId, Util::Array<TextureDependency>>& rwTextures,
+	Util::Dictionary<CoreGraphics::ShaderRWBufferId, Util::Array<BufferDependency>>& rwBuffers,
+	Util::Dictionary<CoreGraphics::RenderTextureId, Util::Array<TextureDependency>>& renderTextures)
 {
 	CompiledImpl* myCompiled = (CompiledImpl*)this->AllocCompiled(allocator);
 
@@ -150,11 +150,15 @@ FramePass::Build(
 	const Util::Array<CoreGraphics::RenderTextureId>& attachments = CoreGraphics::PassGetAttachments(this->pass);
 	for (IndexT i = 0; i < attachments.Size(); i++)
 	{
-		Util::Array<std::tuple<CoreGraphics::ImageSubresourceInfo, TextureDependency>>& deps = renderTextures[attachments[i]];
+		IndexT idx = renderTextures.FindIndex(attachments[i]);
+		n_assert(idx != InvalidIndex);
+		Util::Array<TextureDependency>& deps = renderTextures.ValueAtIndex(idx);
 		CoreGraphicsImageLayout layout = CoreGraphics::RenderTextureGetLayout(attachments[i]);
+		uint layers = CoreGraphics::RenderTextureGetNumLayers(attachments[i]);
+		uint mips = CoreGraphics::RenderTextureGetNumMips(attachments[i]);
 		CoreGraphics::ImageSubresourceInfo subres{ 
 			layout == CoreGraphicsImageLayout::DepthStencilRead ? CoreGraphicsImageAspect::DepthBits : CoreGraphicsImageAspect::ColorBits, 
-			0, 1, 0, 1 };
+			0, mips, 0, layers };
 		TextureDependency dep{
 			this->compiled, 
 			this->queue, 
@@ -162,8 +166,9 @@ FramePass::Build(
 			CoreGraphics::BarrierStage::PixelShader, 
 			layout == CoreGraphicsImageLayout::DepthStencilRead ? CoreGraphics::BarrierAccess::DepthAttachmentWrite : CoreGraphics::BarrierAccess::ColorAttachmentWrite,
 			DependencyIntent::Write, 
-			this->index };
-		deps.Append(std::make_tuple(subres, dep));
+			this->index,
+			subres};
+		deps.Append(dep);
 	}
 	compiledOps.Append(myCompiled);
 }

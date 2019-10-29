@@ -122,7 +122,7 @@ ImguiContext::ImguiDrawFunction()
 				if (resourceId.resourceType == RenderTextureIdType)
 				{
 					RenderTextureId rt = resourceId.AllocId();
-					SizeT layers = CoreGraphics::RenderTextureGetLayers(rt);
+					SizeT layers = CoreGraphics::RenderTextureGetNumLayers(rt);
 					if (layers > 1)
 					{
 						texInfo.type = 1;

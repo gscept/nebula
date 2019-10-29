@@ -456,7 +456,7 @@ RenderTextureGetNumMips(const RenderTextureId id)
 /**
 */
 const SizeT 
-RenderTextureGetLayers(const RenderTextureId id)
+RenderTextureGetNumLayers(const RenderTextureId id)
 {
 	return renderTextureAllocator.Get<0>(id.id24).layers;
 }
