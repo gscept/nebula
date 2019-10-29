@@ -14,6 +14,7 @@
 #include "componentsystemtest.h"
 #include "loadertest.h"
 #include "messagetest.h"
+#include "scriptingtest.h"
 
 ImplementNebulaApplication();
 
@@ -72,6 +73,7 @@ NebulaMain(const Util::CommandLineArgs& args)
 
 	testRunner->AttachTestCase(CompDataTest::Create());
 	testRunner->AttachTestCase(MessageTest::Create());
+	testRunner->AttachTestCase(ScriptingTest::Create());
 	
     bool result = testRunner->Run(); 
 
