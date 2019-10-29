@@ -117,10 +117,10 @@ QuaternionTest::Run()
 	VERIFY(-100.0f == q0.y());
 	VERIFY(-101.0f == q0.z());
 	VERIFY(-102.0f == q0.w());
-	q0.set_x(-199.0f);
-	q0.set_y(-1100.0f);
-	q0.set_z(-1101.0f);
-	q0.set_w(-1102.0f);
+	q0.x() = -199.0f;
+	q0.y() = -1100.0f;
+	q0.z() = -1101.0f;
+	q0.w() = -1102.0f;
 	VERIFY(-199.0f == q0.x());
 	VERIFY(-1100.0f == q0.y());
 	VERIFY(-1101.0f == q0.z());

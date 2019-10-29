@@ -74,10 +74,10 @@ Float4Test::Run()
     VERIFY(v2.z() == 4.0f);
     VERIFY(v2.w() == 5.0f);
     VERIFY(v2 == float4(2.0f, 3.0f, 4.0f, 5.0f));
-    v2.set_x(1.0f);
-    v2.set_y(2.0f);
-    v2.set_z(3.0f);
-    v2.set_w(4.0f);
+    v2.x() = 1.0f;
+    v2.y() = 2.0f;
+    v2.z() = 3.0f;
+    v2.w() = 4.0f;
     VERIFY(v2 == float4(1.0f, 2.0f, 3.0f, 4.0f));
     v2.x() = 5.0f;
     v2.y() = 6.0f;
