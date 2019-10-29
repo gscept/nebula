@@ -124,6 +124,14 @@ public:
     void set_z(scalar z);
     /// set the w component
     void set_w(scalar w);
+    /// get the x component
+    scalar get_x() const;
+    /// get the y component
+    scalar get_y() const;
+    /// get the z component
+    scalar get_z() const;
+    /// get the w component
+    scalar get_w() const;
 
     /// read/write access to x component
     scalar& x();
@@ -747,6 +755,42 @@ __forceinline void
 float4::set_w(scalar w)
 {
     this->vec = DirectX::XMVectorSetWPtr(this->vec, &w);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline scalar
+float4::get_x() const
+{
+    return float4::unpack_x(this->vec);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline scalar
+float4::get_y() const
+{
+    return float4::unpack_y(this->vec);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline scalar
+float4::get_z() const
+{
+    return float4::unpack_z(this->vec);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline scalar
+float4::get_w() const
+{
+    return float4::unpack_w(this->vec);
 }
 
 //------------------------------------------------------------------------------

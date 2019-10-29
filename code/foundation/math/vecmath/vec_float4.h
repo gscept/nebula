@@ -133,6 +133,14 @@ public:
     void set_z(scalar z);
     /// set the w component
     void set_w(scalar w);
+    /// get the x component
+    scalar get_x();
+    /// get the y component
+    scalar get_y();
+    /// get the z component
+    scalar get_z();
+    /// get the w component
+    scalar get_w();
 
     /// read/write access to x component
     scalar& x();
@@ -693,6 +701,54 @@ float4::set_w(scalar w)
 {
 	__m128 temp2 = _mm_load_ps1(&w);
 	this->vec.vec = _mm_blend_ps(this->vec.vec, temp2, 8);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline scalar
+float4::get_x() const
+{
+	scalar ret;
+	__m128 temp = _mm_shuffle_ps(this->vec.vec,this->vec.vec,_MM_SHUFFLE(0,0,0,0));
+	_mm_store_ss(&ret,temp);
+	return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline scalar
+float4::get_y() const
+{
+	scalar ret;
+	__m128 temp = _mm_shuffle_ps(this->vec.vec,this->vec.vec,_MM_SHUFFLE(1,1,1,1));
+	_mm_store_ss(&ret,temp);
+	return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline scalar
+float4::get_z() const
+{
+	scalar ret;
+	__m128 temp = _mm_shuffle_ps(this->vec.vec,this->vec.vec,_MM_SHUFFLE(2,2,2,2));
+	_mm_store_ss(&ret,temp);
+	return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline scalar
+float4::get_w() const
+{
+	scalar ret;
+	__m128 temp = _mm_shuffle_ps(this->vec.vec,this->vec.vec,_MM_SHUFFLE(3,3,3,3));
+	_mm_store_ss(&ret,temp);
+	return ret;
 }
 
 //------------------------------------------------------------------------------
