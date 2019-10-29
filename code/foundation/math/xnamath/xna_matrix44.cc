@@ -32,8 +32,8 @@ matrix44::decompose(float4& outScale, quaternion& outRotation, float4& outTransl
                         &outRotation.vec, 
                         &outTranslation.vec, 
                         this->mx);
-    outScale.set_w(0.0f);
-    outTranslation.set_w(0.0f);
+    outScale.w() = 0.0f;
+    outTranslation.w() = 0.0f;
 	return result == TRUE;
 }
 

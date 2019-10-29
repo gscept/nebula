@@ -112,7 +112,7 @@ __forceinline
 vector::vector(const float4& rhs) :
     float4(rhs)
 {
-    this->set_w(0.0f);
+    this->w() = 0.0f;
 }
 
 //------------------------------------------------------------------------------

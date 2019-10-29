@@ -71,14 +71,6 @@ public:
     void set(scalar x, scalar y, scalar z, scalar w);
     /// set from float4
     void set(float4 const &f4);
-    /// set the x component
-    void set_x(scalar x);
-    /// set the y component
-    void set_y(scalar y);
-    /// set the z component
-    void set_z(scalar z);
-    /// set the w component
-    void set_w(scalar w);
 
     /// read/write access to x component
     scalar& x();
@@ -273,42 +265,6 @@ quaternion::set(scalar x, scalar y, scalar z, scalar w)
 //------------------------------------------------------------------------------
 /**
 */
-inline void 
-quaternion::set_x(scalar x)
-{
-    this->vec = DirectX::XMVectorSetXPtr(this->vec, &x);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void 
-quaternion::set_y(scalar y)
-{
-    this->vec = DirectX::XMVectorSetYPtr(this->vec, &y);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void 
-quaternion::set_z(scalar z)
-{
-    this->vec = DirectX::XMVectorSetZPtr(this->vec, &z);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void 
-quaternion::set_w(scalar w)
-{
-    this->vec = DirectX::XMVectorSetWPtr(this->vec, &w);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 __forceinline void
 quaternion::set(float4 const &f4)
 {
@@ -439,10 +395,10 @@ quaternion::undenormalize()
     // nothing to do on the xbox, since denormal numbers are not supported by the vmx unit, 
     // it is being set to zero anyway
 #if __WIN32__
-    this->set_x(n_undenormalize(this->x()));
-    this->set_y(n_undenormalize(this->y()));
-    this->set_z(n_undenormalize(this->z()));
-    this->set_w(n_undenormalize(this->w()));
+    this->x() = (n_undenormalize(this->x()));
+    this->y() = (n_undenormalize(this->y()));
+    this->z() = (n_undenormalize(this->z()));
+    this->w() = (n_undenormalize(this->w()));
 #endif
 }
 
@@ -579,7 +535,7 @@ __forceinline void
 quaternion::to_axisangle(const quaternion& q, float4& outAxis, scalar& outAngle)
 {
     DirectX::XMQuaternionToAxisAngle(&outAxis.vec, &outAngle, q.vec);
-    outAxis.set_w(0.0f);
+    outAxis.w() = 0.0f;
 }
 
 } // namespace Math

@@ -116,22 +116,6 @@ public:
 
     /// set content
     void set(scalar x, scalar y, scalar z, scalar w);
-    /// set the x component
-    void set_x(scalar x);
-    /// set the y component
-    void set_y(scalar y);
-    /// set the z component
-    void set_z(scalar z);
-    /// set the w component
-    void set_w(scalar w);
-    /// get the x component
-    scalar get_x() const;
-    /// get the y component
-    scalar get_y() const;
-    /// get the z component
-    scalar get_z() const;
-    /// get the w component
-    scalar get_w() const;
 
     /// read/write access to x component
     scalar& x();
@@ -519,7 +503,7 @@ __forceinline void
 float4::load_float3(const void* ptr, float w)
 {
     this->vec = DirectX::XMLoadFloat3((DirectX::XMFLOAT3*)ptr);
-    this->set_w(w);
+    this->w() = w;
 }
 
 //------------------------------------------------------------------------------
@@ -719,78 +703,6 @@ float4::operator[](const int index)
 {
 	n_assert(index < 4);
 	return this->vec.m128_f32[index];
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-__forceinline void
-float4::set_x(scalar x)
-{
-    this->vec = DirectX::XMVectorSetXPtr(this->vec, &x);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-__forceinline void
-float4::set_y(scalar y)
-{
-    this->vec = DirectX::XMVectorSetYPtr(this->vec, &y);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-__forceinline void
-float4::set_z(scalar z)
-{
-    this->vec = DirectX::XMVectorSetZPtr(this->vec, &z);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-__forceinline void
-float4::set_w(scalar w)
-{
-    this->vec = DirectX::XMVectorSetWPtr(this->vec, &w);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-__forceinline scalar
-float4::get_x() const
-{
-    return float4::unpack_x(this->vec);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-__forceinline scalar
-float4::get_y() const
-{
-    return float4::unpack_y(this->vec);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-__forceinline scalar
-float4::get_z() const
-{
-    return float4::unpack_z(this->vec);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-__forceinline scalar
-float4::get_w() const
-{
-    return float4::unpack_w(this->vec);
 }
 
 //------------------------------------------------------------------------------

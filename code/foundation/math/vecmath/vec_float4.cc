@@ -92,7 +92,7 @@ float4::load_ubyte4n_signed(const void* ptr, float w)
     __m128 two = _mm_set1_ps(2.0f);
     this->vec.vec = _mm_sub_ps(_mm_mul_ps(two, fvals),_plus1);
 
-    this->set_w(w);
+    this->w() = w;
 }
 
 //------------------------------------------------------------------------------
@@ -110,7 +110,7 @@ float4::load_byte4n(const void* ptr, float w)
 	fvals = _mm_mul_ps(fvals, norm.vec);
 	this->vec.vec = fvals;
 
-	this->set_w(w);
+	this->w() = w;
 }
 
 } // namespace Math
