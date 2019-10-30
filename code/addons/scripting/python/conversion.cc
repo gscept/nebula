@@ -94,6 +94,30 @@ PYBIND11_EMBEDDED_MODULE(nmath, m)
 			);
 		});
 
+	py::class_<Math::point, Math::float4>(m, "Point", py::buffer_protocol())
+        .def(py::init<float, float, float>())
+		.def(py::init([](py::array_t<float> b)
+    	{
+    	    py::buffer_info info = b.request();
+    	    if (info.size != 4)
+				throw pybind11::value_error("Invalid number of elements!");
+			Math::float4 f;
+    	    f.loadu((float*)info.ptr);
+    	    return Math::point(f);
+    	}));
+	
+	py::class_<Math::vector, Math::float4>(m, "Vector", py::buffer_protocol())
+        .def(py::init<float, float, float>())
+		.def(py::init([](py::array_t<float> b)
+    	{
+    	    py::buffer_info info = b.request();
+    	    if (info.size != 4)
+				throw pybind11::value_error("Invalid number of elements!");
+			Math::float4 f;
+    	    f.loadu((float*)info.ptr);
+    	    return Math::vector(f);
+    	}));
+
 	py::class_<Math::matrix44>(m, "Matrix44", py::buffer_protocol())
         .def(py::init([](){return Math::matrix44();}))
 		.def(py::init<Math::float4 const&, Math::float4 const&, Math::float4 const&, Math::float4 const&>())
@@ -189,23 +213,127 @@ PYBIND11_EMBEDDED_MODULE(nmath, m)
 		.def_static("rotation_y", &Math::matrix44::rotationy)
 		.def_static("rotation_z", &Math::matrix44::rotationz)
 		.def_static("rotation_yaw_pitch_roll", &Math::matrix44::rotationyawpitchroll)
-		//.def_static("rotation_scaling", &Math::matrix44::scaling)
-		//.def_static("rotation_scaling", &Math::matrix44::scaling)
+		.def_static("scaling", py::overload_cast<Math::scalar,Math::scalar,Math::scalar>(&Math::matrix44::scaling))
+		.def_static("scaling", py::overload_cast<Math::float4 const&>(&Math::matrix44::scaling))
 		.def_static("transformation", &Math::matrix44::transformation)
-		// .def_static("translation", &Math::matrix44::translation)
-		// .def_static("translation", &Math::matrix44::translation)
+		.def_static("translation", py::overload_cast<Math::scalar,Math::scalar,Math::scalar>(&Math::matrix44::translation))
+		.def_static("translation", py::overload_cast<Math::float4 const&>(&Math::matrix44::translation))
 		.def_static("transpose", &Math::matrix44::transpose)
-		//.def_static("transform", &Math::matrix44::transform)
-		//.def_static("transform3", &Math::matrix44::transform)
-		//.def_static("transform3", &Math::matrix44::transform)
-		//.def_static("transform3", &Math::matrix44::transform)
+		.def_static("transform", py::overload_cast<const Math::float4&, const Math::matrix44&>(&Math::matrix44::transform))
+		.def_static("transform3", py::overload_cast<const Math::float4&, const Math::matrix44&>(&Math::matrix44::transform3))
+		.def_static("transform3", py::overload_cast<const Math::point&, const Math::matrix44&>(&Math::matrix44::transform3))
+		.def_static("transform3", py::overload_cast<const Math::vector&, const Math::matrix44&>(&Math::matrix44::transform3))
 		.def_static("rotation_matrix", &Math::matrix44::rotationmatrix)
-		//.def_static("transform", &Math::matrix44::transform)
+		.def_static("transform", py::overload_cast<const Math::plane&, const Math::matrix44&>(&Math::matrix44::transform))
 		.def_static("is_point_inside", &Math::matrix44::ispointinside)
 		.def_buffer([](Math::matrix44 &m) -> py::buffer_info {
 			return py::buffer_info(
 				(float*)&m.row0(),			/* Pointer to buffer */
 				{ 4, 4 },           /* Buffer dimensions */
+				{ 4 * sizeof(float),/* Strides (in bytes) for each index */
+				sizeof(float) }
+			);
+		});
+
+	py::class_<Math::quaternion>(m, "Quaternion", py::buffer_protocol())
+        .def(py::init([](){return Math::quaternion();}))
+		.def(py::init<float, float, float, float>())
+		.def(py::init([](py::array_t<float> b)
+    	{
+    	    py::buffer_info info = b.request();
+    	    if (info.size != 4)
+				throw pybind11::value_error("Invalid number of elements!");
+			Math::quaternion f;
+    	    f.loadu((float*)info.ptr);
+    	    return f;
+    	}))
+		.def("__repr__",
+            [](Math::quaternion const& val)
+            {
+                return Util::String::FromQuaternion(val);
+            }
+        )
+		.def(py::self == py::self)
+		.def(py::self != py::self)
+		.def_property("x", (Math::scalar (Math::quaternion::*)() const)&Math::quaternion::x, (Math::scalar&(Math::quaternion::*)())&Math::quaternion::x)
+		.def_property("y", (Math::scalar(Math::quaternion::*)() const)&Math::quaternion::y, (Math::scalar&(Math::quaternion::*)())&Math::quaternion::y)
+		.def_property("z", (Math::scalar (Math::quaternion::*)() const)&Math::quaternion::z, (Math::scalar&(Math::quaternion::*)())&Math::quaternion::z)
+		.def_property("w", (Math::scalar (Math::quaternion::*)() const)&Math::quaternion::w, (Math::scalar&(Math::quaternion::*)())&Math::quaternion::w)
+		.def("is_identity", &Math::quaternion::isidentity)
+		.def("length", &Math::quaternion::length)
+		.def("length_sq", &Math::quaternion::lengthsq)
+		.def("undenormalize", &Math::quaternion::undenormalize)
+		.def_static("barycentric", &Math::quaternion::barycentric)
+		.def_static("conjugate", &Math::quaternion::conjugate)
+		.def_static("dot", &Math::quaternion::dot)
+		.def_static("exp", &Math::quaternion::exp)
+		.def_static("identity", &Math::quaternion::identity)
+		.def_static("inverse", &Math::quaternion::inverse)
+		.def_static("ln", &Math::quaternion::ln)
+		.def_static("multiply", &Math::quaternion::multiply)
+		.def_static("normalize", &Math::quaternion::normalize)
+		.def_static("rotation_axis", &Math::quaternion::rotationaxis)
+		.def_static("rotation_matrix", &Math::quaternion::rotationmatrix)
+		.def_static("rotation_yaw_pitch_roll", &Math::quaternion::rotationyawpitchroll)
+		.def_static("slerp", &Math::quaternion::slerp)
+		.def_static("squad_setup", &Math::quaternion::squadsetup)
+		.def_static("squad", &Math::quaternion::squad)
+		.def_static("to_axis_angle", &Math::quaternion::to_axisangle)		
+		.def_buffer([](Math::quaternion &m) -> py::buffer_info {
+			return py::buffer_info(
+				&m.x(),				/* Pointer to buffer */
+				{ 1, 4 },           /* Buffer dimensions */
+				{ 4 * sizeof(float),/* Strides (in bytes) for each index */
+				sizeof(float) }
+			);
+		});	
+		
+	py::class_<Math::float2>(m, "Float2", py::buffer_protocol())
+        .def(py::init([](){return Math::float2();}))
+		.def(py::init<float>())
+		.def(py::init<float, float>())
+		.def(py::init([](py::array_t<float> b)
+    	{
+    	    py::buffer_info info = b.request();
+    	    if (info.size != 2)
+				throw pybind11::value_error("Invalid number of elements!");
+			Math::float2 f(b.at(0), b.at(1));
+    	    return f;
+    	}))
+		.def("__repr__",
+            [](Math::float2 const& val)
+            {
+                return Util::String::FromFloat2(val);
+            }
+        )
+		.def(py::self == py::self)
+		.def(py::self != py::self)
+		.def(py::self += py::self)
+		.def(py::self -= py::self)
+		.def(py::self *= float())
+		.def(py::self + py::self)
+		.def(py::self - py::self)
+		.def(py::self * float())
+		.def(-py::self)
+		.def_property("x", (Math::scalar (Math::float2::*)() const)&Math::float2::x, (Math::scalar&(Math::float2::*)())&Math::float2::x)
+		.def_property("y", (Math::scalar(Math::float2::*)() const)&Math::float2::y, (Math::scalar&(Math::float2::*)())&Math::float2::y)
+		.def("length", &Math::float2::length)
+		.def("length_sq", &Math::float2::lengthsq)
+		.def("abs", &Math::float2::abs)
+		.def("any", &Math::float2::any)
+		.def("all", &Math::float2::all)
+		.def_static("multiply", &Math::float2::multiply)
+		.def_static("maximize", &Math::float2::maximize)
+		.def_static("minimize", &Math::float2::minimize)
+		.def_static("normalize", &Math::float2::normalize)
+		.def_static("lt", &Math::float2::lt)
+		.def_static("le", &Math::float2::le)
+		.def_static("gt", &Math::float2::gt)
+		.def_static("ge", &Math::float2::ge)
+		.def_buffer([](Math::float2& f) -> py::buffer_info {
+			return py::buffer_info(
+				(float*)&f,				/* Pointer to buffer */
+				{ 1, 4 },           /* Buffer dimensions */
 				{ 4 * sizeof(float),/* Strides (in bytes) for each index */
 				sizeof(float) }
 			);
