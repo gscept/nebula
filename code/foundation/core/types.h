@@ -50,6 +50,24 @@ typedef uintptr PtrT;		// the ptr type
 typedef ptrdiff PtrDiff;
 static const int InvalidIndex = -1;
 
+//------------------------------------------------------------------------------
+/**
+*/
+constexpr uint64
+operator"" _KB(const uint64 val)
+{
+	return val * 1024;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+constexpr uint64
+operator"" _MB(const uint64 val)
+{
+	return val * 1024 * 1024;
+}
+
 #define N_BIT(x) (1 << x)
 
 #define N_ARGB(a,r,g,b) ((uint)((((a)&0xff)<<24)|(((r)&0xff)<<16)|(((g)&0xff)<<8)|((b)&0xff)))

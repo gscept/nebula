@@ -163,7 +163,7 @@ FramePass::Build(
 			this->compiled, 
 			this->queue, 
 			layout, 
-			CoreGraphics::BarrierStage::PixelShader, 
+			layout == CoreGraphicsImageLayout::DepthStencilRead ? CoreGraphics::BarrierStage::LateDepth : CoreGraphics::BarrierStage::PassOutput,
 			layout == CoreGraphicsImageLayout::DepthStencilRead ? CoreGraphics::BarrierAccess::DepthAttachmentWrite : CoreGraphics::BarrierAccess::ColorAttachmentWrite,
 			DependencyIntent::Write, 
 			this->index,
