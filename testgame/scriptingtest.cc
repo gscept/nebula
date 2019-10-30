@@ -230,7 +230,7 @@ ScriptingTest::Run()
     EVAL("import numpy.matlib");
     EVAL("import numpy.linalg");
     EVAL("import numpy.random");
-    
+
     EVAL("print(\"Hello world from Python!\\n\")");
     EVAL("i = test.get_integer()");
     EVAL("print(i)");
@@ -282,7 +282,30 @@ ScriptingTest::Run()
     EVAL("print(f4res[1])");
     EVAL("print(f4res[2])");
     EVAL("print(f4res[3])");
-    
+
+    // Math::point
+    EVAL("p = nmath.Point(test.get_float4());");
+    EVAL("print(type(p))");
+    EVAL("print(p)");
+    EVAL("p = nmath.Point(30,20,10)");
+    EVAL("print(p)");
+    EVAL("p = nmath.Point(npf4)");
+    EVAL("print(type(p))");
+    EVAL("print(p)");
+
+    // Math::point
+    EVAL("p = nmath.Vector(test.get_float4());");
+    EVAL("print(type(p))");
+    EVAL("print(p)");
+    EVAL("p = nmath.Vector(30,20,10)");
+    EVAL("print(p)");
+    EVAL("p = nmath.Vector(npf4)");
+    EVAL("print(type(p))");
+    EVAL("print(p)");
+
+    EVAL("p = p * 100");
+    EVAL("print(p)");
+
     // Math::matrix44
     EVAL("mat = nmath.Matrix44.identity()");
     EVAL("print(mat)");
@@ -327,6 +350,7 @@ ScriptingTest::Run()
     EVAL("pyvar = test.get_variant_int_arr()");
     EVAL("print(type(pyvar))");
     EVAL("print(pyvar)");
+
 }
 
 }
