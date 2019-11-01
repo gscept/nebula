@@ -82,15 +82,15 @@ JsonEntityLoader::Load(const Util::String& file)
 					auto const& attrids = component->GetAttributes();
 					for (SizeT i = 0; i < attrids.Size(); ++i)
 					{
-                        Game::Attribute const& attr = attrids[i];
+                        Attr::AttrId attr = attrids[i];
 
-						auto attrName = attr.name;
+						auto attrName = attr.GetName();
 						Util::Variant value;
-						value.SetType(attr.defaultValue.GetType());
+						value.SetType(attr.GetDefaultValue().GetType());
 						// Retrieve the value. Reader parses the type that is provided.
-						if (reader->GetOpt(value, attrName.AsCharPtr(), attr.defaultValue))
+						if (reader->GetOpt(value, attrName.AsCharPtr(), attr.GetDefaultValue()))
 						{
-							component->SetAttributeValue(instance, attr.fourcc, value);
+							component->SetAttributeValue(instance, attr.GetFourCC(), value);
 						}
 					}
 

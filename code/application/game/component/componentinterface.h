@@ -31,11 +31,12 @@
 #include "game/entity.h"
 #include "core/refcounted.h"
 #include "util/bitfield.h"
-#include "game/component/attribute.h"
+// #include "game/component/attribute.h"
 #include "game/entityattr.h"
 #include "io/binaryreader.h"
 #include "io/binarywriter.h"
 #include "game/messaging/message.h"
+#include "attr/attrid.h"
 
 namespace Game
 {
@@ -92,10 +93,10 @@ public:
 	const Util::BitField<ComponentEvent::NumEvents>& SubscribedEvents() const;
 
 	/// Returns attribute id at index.
-	const Game::Attribute& GetAttribute(IndexT index) const;
+	const Attr::AttrId& GetAttribute(IndexT index) const;
 
 	/// Returns an array with all attribute ids for this component
-	const Util::FixedArray<Game::Attribute>& GetAttributes() const;
+	const Util::FixedArray<Attr::AttrId>& GetAttributes() const;
 
 	/// Callback for when an entity has been deleted.
 	/// This in only used when immediate instance deletion is required.
@@ -196,15 +197,20 @@ public:
 		void(*SetParents)(InstanceId start, InstanceId end, const Util::Array<Entity>& entities, const Util::Array<uint32_t>& parentIndices);
 	} functions;
 
+    /// Special case for components that cannot use the function pointer within function bundle (heap allocated, dynamic).
+    /// Should only serialize/deserialize the component attributes, not owners
+    virtual void InternalSerialize(const Ptr<IO::BinaryWriter>& writer);
+    virtual void InternalDeserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances);
+
 protected:
 	friend class ComponentManager;
 
-	/// Holds all events this component is subscribed to.
+    /// Holds all events this component is subscribed to.
 	Util::BitField<ComponentEvent::NumEvents> events;
 	
 	/// Holds all attributes that this components has available.
 	/// This should be adjacent to the data/tuple the values are in.
-	Util::FixedArray<Game::Attribute> attributes;
+	Util::FixedArray<Attr::AttrId> attributes;
 
 	/// Determines whether the component manager will execute this components update methods.
 	/// activation, load and such methods will still be called.
