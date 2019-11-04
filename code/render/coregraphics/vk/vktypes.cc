@@ -558,6 +558,9 @@ VkTypes::AsVkPipelineFlags(const CoreGraphics::BarrierStage dep)
 		case CoreGraphics::BarrierStage::PixelShader:
 			flags |= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 			break;
+		case CoreGraphics::BarrierStage::PassOutput:
+			flags |= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+			break;
 		case CoreGraphics::BarrierStage::ComputeShader:
 			flags |= VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
 			break;
@@ -576,9 +579,7 @@ VkTypes::AsVkPipelineFlags(const CoreGraphics::BarrierStage dep)
 		case CoreGraphics::BarrierStage::Host:
 			flags |= VK_PIPELINE_STAGE_HOST_BIT;
 			break;
-		case CoreGraphics::BarrierStage::PassOutput:
-			flags |= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-			break;
+
 		case CoreGraphics::BarrierStage::Top:
 			flags |= VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 			break;

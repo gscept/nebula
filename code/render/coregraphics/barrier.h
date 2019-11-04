@@ -27,24 +27,24 @@ enum class BarrierDomain
 enum class BarrierStage
 {
 	NoDependencies = (1 << 0),
-	VertexShader = (1 << 1),	// blocks vertex shader
-	HullShader = (1 << 2),		// blocks hull (tessellation control) shader
-	DomainShader = (1 << 3),	// blocks domain (tessellation evaluation) shader
-	GeometryShader = (1 << 4),	// blocks geometry shader
-	PixelShader = (1 << 5),		// blocks pixel shader
-	ComputeShader = (1 << 6),	// blocks compute shaders to complete
-	AllGraphicsShaders	= VertexShader | HullShader | DomainShader | GeometryShader | PixelShader,
+	VertexInput = (1 << 1),				// blocks vertex input
+	VertexShader = (1 << 2),			// blocks vertex shader
+	HullShader = (1 << 3),				// blocks hull (tessellation control) shader
+	DomainShader = (1 << 4),			// blocks domain (tessellation evaluation) shader
+	GeometryShader = (1 << 5),			// blocks geometry shader
+	EarlyDepth = (1 << 6),				// blocks early fragment test
+	PixelShader = (1 << 7),				// blocks pixel shader
+	LateDepth = (1 << 8),				// blocks late fragment test
+	PassOutput = (1 << 9),				// blocks outputs from render texture attachments		
+	AllGraphicsShaders = VertexShader | HullShader | DomainShader | GeometryShader | PixelShader,
 
-	VertexInput = (1 << 7),		// blocks vertex input
-	EarlyDepth = (1 << 8),		// blocks early fragment test
-	LateDepth = (1 << 9),		// blocks late fragment test
+	ComputeShader = (1 << 10),			// blocks compute shaders to complete
 
-	Transfer = (1 << 10),		// blocks transfers
-	Host = (1 << 11),			// blocks host operations
-	PassOutput = (1 << 12),		// blocks outputs from render texture attachments		
+	Transfer = (1 << 11),				// blocks transfers
+	Host = (1 << 12),					// blocks host operations
 
-	Top = (1 << 13),			// blocks start of pipeline 
-	Bottom = (1 << 14)			// blocks end of pipeline
+	Top = (1 << 13),					// blocks start of pipeline 
+	Bottom = (1 << 14)					// blocks end of pipeline
 };
 
 enum class BarrierAccess

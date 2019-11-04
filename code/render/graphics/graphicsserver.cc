@@ -56,10 +56,10 @@ GraphicsServer::Open()
 
 	static const SizeT MB = 1024 * 1024;
 	CoreGraphics::GraphicsDeviceCreateInfo gfxInfo{ 
-		{ 1 * MB, 50 * MB },		// Graphics - main threads get 1 MB of constant memory, visibility thread (objects) gets 100
-		{ 1 * MB, 0 * MB },			// Compute - main threads get 1 MB of constant memory, visibility thread (objects) gets 0
-		{ 10 * MB, 1 * MB },        // Vertex memory - main thread gets 10 MB for UI, Text etc, visibility thread (objects doing soft cloths and such) get 1 MB
-		{ 5 * MB, 1 * MB },         // Index memory - main thread gets 10 MB for UI, Text etc, visibility thread (objects doing soft cloths and such) get 1 MB
+		{ 1_MB, 50_MB },		// Graphics - main threads get 1 MB of constant memory, visibility thread (objects) gets 50
+		{ 1_MB, 0_MB },			// Compute - main threads get 1 MB of constant memory, visibility thread (objects) gets 0
+		{ 10_MB, 1_MB },        // Vertex memory - main thread gets 10 MB for UI, Text etc, visibility thread (objects doing soft cloths and such) get 1 MB
+		{ 5_MB, 1_MB },         // Index memory - main thread gets 10 MB for UI, Text etc, visibility thread (objects doing soft cloths and such) get 1 MB
 		2,							// We have 3 frames running simultaneously
 		false }; // validation
 	this->graphicsDevice = CoreGraphics::CreateGraphicsDevice(gfxInfo);
