@@ -36,6 +36,13 @@ PYBIND11_EMBEDDED_MODULE(test, m)
         }
     );
 
+    m.def("get_string",
+        []()->Util::String
+        {
+            return "constant C++ string!"_str;
+        }
+    );
+
     m.def("generate_guid",
         []()->Util::Guid
         {
@@ -114,7 +121,7 @@ PYBIND11_EMBEDDED_MODULE(test, m)
         {
             n_printf("f4Array: ");
             for (auto val : arr)
-                n_printf("%i ", Util::String::FromFloat4(val));
+                n_printf("%s ", Util::String::FromFloat4(val).AsCharPtr());
             n_printf("\n");
         }
     );
@@ -237,6 +244,14 @@ ScriptingTest::Run()
     EVAL("i = test.get_integer2()");
     EVAL("print(i)");
     
+    // Util::String
+    EVAL("test.print_string_from_py('constant python string!')");
+    EVAL("str = test.get_string()");
+    EVAL("print(type(str))");
+    EVAL("print(str)");
+    EVAL("str = 'dynamic python string'");
+    EVAL("test.print_string_from_py(str)");
+    
     // Util::Guid
     EVAL("guid = util.Guid()");
     EVAL("guid.generate()");
@@ -321,8 +336,10 @@ ScriptingTest::Run()
     EVAL("test.print_int_arr_from_py(arr)");
     EVAL("arr = [1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,10.0]");
     EVAL("test.print_float_arr_from_py(arr)");
-    EVAL("arr = [nmath.Float4(0,1,2,3),nmath.Float4(1,2,3,4),nmath.Float4(4,3,2,1)]");
-    EVAL("test.print_float4_arr_from_py(arr)");
+    EVAL("f4arr = [nmath.Float4(0,1,2,3),nmath.Float4(1,2,3,4),nmath.Float4(4,3,2,1)]");
+    EVAL("print(type(f4arr[0]))");
+    EVAL("print(f4arr)");
+    EVAL("test.print_float4_arr_from_py(f4arr)");
     EVAL("arr = ['test1', 'test2', 'hellofrom3']");
     EVAL("test.print_str_arr_from_py(arr)");
     EVAL("arr = test.get_native_array()");
@@ -351,6 +368,24 @@ ScriptingTest::Run()
     EVAL("print(type(pyvar))");
     EVAL("print(pyvar)");
 
+    n_printf("// Game system test ---------------------------------------------------------------\n");
+
+    EVAL("entity = game.create_entity()");
+    EVAL("print(entity)");
+    EVAL("print(entity.is_valid())");
+    EVAL("print(entity.has_component(\"TransformComponent\"))");
+    EVAL("entity.register_component(\"TransformComponent\");");
+    EVAL("print(entity.has_component(\"TransformComponent\"))");
+    EVAL("print(entity.world_transform.position)");
+    EVAL("print(entity.local_transform.position)");
+    EVAL("print(entity.local_transform.forward)");
+    EVAL("m = nmath.Matrix44.translation(10,3,4);");
+    EVAL("entity.local_transform = m;");
+    EVAL("print(entity.local_transform.position)");
+    EVAL("print(entity.local_transform.forward)");
+    EVAL("entity.deregister_component(\"TransformComponent\")");
+    EVAL("print(entity.has_component(\"TransformComponent\"))");
+    EVAL("game.destroy_entity(entity)");
 }
 
 }
