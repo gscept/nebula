@@ -1,24 +1,24 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	Performs an algorithm used in a subpass, for rendering
+	Executes RT plugins within a subpass
 	
 	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "frameop.h"
-#include "algorithm/algorithm.h"
+
 namespace Frame
 {
-class FrameSubpassAlgorithm : public FrameOp
+class FrameSubpassPlugin : public FrameOp
 {
 public:
 	/// constructor
-	FrameSubpassAlgorithm();
+	FrameSubpassPlugin();
 	/// destructor
-	virtual ~FrameSubpassAlgorithm();
+	virtual ~FrameSubpassPlugin();
 
-	/// setup operation
+	/// setup plugin pass
 	void Setup();
 	/// discard operation
 	void Discard();
@@ -34,7 +34,7 @@ public:
 	std::function<void(IndexT)> func;
 
 private:
-	
+
 };
 
 } // namespace Frame2

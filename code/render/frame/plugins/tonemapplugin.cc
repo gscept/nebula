@@ -1,21 +1,21 @@
 //------------------------------------------------------------------------------
-// tonemapalgorithm.cc
+// tonemapplugin.cc
 // (C) 2016-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
-#include "tonemapalgorithm.h"
+#include "tonemapplugin.h"
 #include "coregraphics/shaderserver.h"
 #include "coregraphics/graphicsdevice.h"
 #include "framesync/framesynctimer.h"
 
 using namespace CoreGraphics;
-namespace Algorithms
+namespace Frame
 {
 
 //------------------------------------------------------------------------------
 /**
 */
-TonemapAlgorithm::TonemapAlgorithm()
+TonemapPlugin::TonemapPlugin()
 {
 	// empty
 }
@@ -23,7 +23,7 @@ TonemapAlgorithm::TonemapAlgorithm()
 //------------------------------------------------------------------------------
 /**
 */
-TonemapAlgorithm::~TonemapAlgorithm()
+TonemapPlugin::~TonemapPlugin()
 {
 	// empty
 }
@@ -32,9 +32,9 @@ TonemapAlgorithm::~TonemapAlgorithm()
 /**
 */
 void
-TonemapAlgorithm::Setup()
+TonemapPlugin::Setup()
 {
-	Algorithm::Setup();
+	FramePlugin::Setup();
 	n_assert(this->renderTextures.Size() == 2);
 
 	RenderTextureCreateInfo rtinfo = 
@@ -72,7 +72,7 @@ TonemapAlgorithm::Setup()
 	this->fsq.Setup(2, 2);
 
 	// begin by copying and mipping down to a 2x2 texture
-	Algorithm::AddCallback("Tonemap-Downsample", [this](IndexT)
+	FramePlugin::AddCallback("Tonemap-Downsample", [this](IndexT)
 	{
 #if NEBULA_GRAPHICS_DEBUG
 		CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_RED, "Tonemapping Downsample");
@@ -107,7 +107,7 @@ TonemapAlgorithm::Setup()
 	});
 
 	// this pass calculates tonemapping from 2x2 cluster down to single pixel, called from the script
-	Algorithm::AddCallback("Tonemap-AverageLum", [this](IndexT)
+	FramePlugin::AddCallback("Tonemap-AverageLum", [this](IndexT)
 	{
 #if NEBULA_GRAPHICS_DEBUG
 		CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "Tonemapping Average Luminance");
@@ -128,7 +128,7 @@ TonemapAlgorithm::Setup()
 	});
 
 	// last pass, copy from render target to copy
-	Algorithm::AddCallback("Tonemap-Copy", [this](IndexT)
+	FramePlugin::AddCallback("Tonemap-Copy", [this](IndexT)
 	{
 #if NEBULA_GRAPHICS_DEBUG
 		CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_RED, "Tonemapping Copy Previous Frame");
@@ -169,9 +169,9 @@ TonemapAlgorithm::Setup()
 /**
 */
 void
-TonemapAlgorithm::Discard()
+TonemapPlugin::Discard()
 {
-	Algorithm::Discard();
+	FramePlugin::Discard();
 	DestroyRenderTexture(this->downsample2x2);
 	DestroyRenderTexture(this->copy);
 	DestroyConstantBuffer(this->constants);

@@ -7,19 +7,19 @@
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
-#include "algorithm.h"
+#include "frameplugin.h"
 #include "coregraphics/shader.h"
 #include "coregraphics/resourcetable.h"
 #include "coregraphics/barrier.h"
-namespace Algorithms
+namespace Frame
 {
-class HBAOAlgorithm : public Algorithm
+class SSAOPlugin : public FramePlugin
 {
 public:
 	/// constructor
-	HBAOAlgorithm();
+	SSAOPlugin();
 	/// destructor
-	virtual ~HBAOAlgorithm();
+	virtual ~SSAOPlugin();
 
 	/// setup algorithm
 	void Setup();

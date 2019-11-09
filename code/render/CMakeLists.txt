@@ -23,18 +23,7 @@ nebula_begin_module(render)
 		fips_libs(${Vulkan_LIBRARY} glfw3)
 	endif()
 		fips_files(render/precompiled.h render/stdneb.h render/stdneb.cc)
-		fips_dir(algorithm)
-			fips_files(
-				algorithm.cc
-				algorithm.h
-				algorithms.h
-				bloomalgorithm.cc
-				bloomalgorithm.h
-				hbaoalgorithm.cc
-				hbaoalgorithm.h
-				tonemapalgorithm.cc
-				tonemapalgorithm.h
-			)
+
 IF(FALSE) # incrementally enable modules as they get written
 		fips_dir(animation)
 			fips_files(
@@ -379,8 +368,8 @@ ENDIF()
 				frameblit.h
 				framecompute.cc
 				framecompute.h
-				framecomputealgorithm.cc
-				framecomputealgorithm.h
+				framepluginop.cc
+				framepluginop.h
 				framecopy.cc
 				framecopy.h
 				#frameevent.cc
@@ -401,22 +390,33 @@ ENDIF()
                 framesubmission.h
 				framesubpass.cc
 				framesubpass.h
-				framesubpassalgorithm.cc
-				framesubpassalgorithm.h
+				framesubpassplugin.cc
+				framesubpassplugin.h
 				framesubpassbatch.cc
 				framesubpassbatch.h
 				framesubpassfullscreeneffect.cc
 				framesubpassfullscreeneffect.h
 				framesubpassorderedbatch.cc
 				framesubpassorderedbatch.h
-				framesubpassplugins.cc
-				framesubpassplugins.h
+				framesubpassplugin.cc
+				framesubpassplugin.h
 				framesubpasssystem.cc
 				framesubpasssystem.h
 				frameswapbuffers.cc
 				frameswapbuffers.h
 			)
-
+        fips_dir(frame/plugins)
+			fips_files(
+				frameplugin.cc
+				frameplugin.h
+				frameplugins.h
+				bloomplugin.cc
+				bloomplugin.h
+				ssaoplugin.cc
+				ssaoplugin.h
+				tonemapplugin.cc
+				tonemapplugin.h
+			)
 		fips_dir(graphics)
 			fips_files(
 				cameracontext.cc

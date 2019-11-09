@@ -1,9 +1,9 @@
 //------------------------------------------------------------------------------
-// framecomputealgorithm.cc
+// framepluginop.cc
 // (C) 2016-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
-#include "framecomputealgorithm.h"
+#include "framepluginop.h"
 
 namespace Frame
 {
@@ -11,7 +11,7 @@ namespace Frame
 //------------------------------------------------------------------------------
 /**
 */
-FrameComputeAlgorithm::FrameComputeAlgorithm()
+FramePluginOp::FramePluginOp()
 {
 	// empty
 }
@@ -19,7 +19,7 @@ FrameComputeAlgorithm::FrameComputeAlgorithm()
 //------------------------------------------------------------------------------
 /**
 */
-FrameComputeAlgorithm::~FrameComputeAlgorithm()
+FramePluginOp::~FramePluginOp()
 {
 	// empty
 }
@@ -28,7 +28,7 @@ FrameComputeAlgorithm::~FrameComputeAlgorithm()
 /**
 */
 void
-FrameComputeAlgorithm::CompiledImpl::Run(const IndexT frameIndex)
+FramePluginOp::CompiledImpl::Run(const IndexT frameIndex)
 {
 	this->func(frameIndex);
 }
@@ -37,7 +37,7 @@ FrameComputeAlgorithm::CompiledImpl::Run(const IndexT frameIndex)
 /**
 */
 void
-FrameComputeAlgorithm::CompiledImpl::Discard()
+FramePluginOp::CompiledImpl::Discard()
 {
 	this->func = nullptr;
 }
@@ -46,7 +46,7 @@ FrameComputeAlgorithm::CompiledImpl::Discard()
 /**
 */
 FrameOp::Compiled* 
-FrameComputeAlgorithm::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
+FramePluginOp::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 {
 	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
 	ret->func = this->func;
@@ -57,7 +57,7 @@ FrameComputeAlgorithm::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocato
 /**
 */
 void
-FrameComputeAlgorithm::Build(
+FramePluginOp::Build(
 	Memory::ArenaAllocator<BIG_CHUNK>& allocator,
 	Util::Array<FrameOp::Compiled*>& compiledOps,
 	Util::Array<CoreGraphics::EventId>& events,

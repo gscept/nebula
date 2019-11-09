@@ -1,12 +1,9 @@
 //------------------------------------------------------------------------------
-// framesubpassplugins.cc
+// framesubpassplugin.cc
 // (C) 2016-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
-#include "framesubpassplugins.h"
-#include "coregraphics/graphicsdevice.h"
-#include "graphics/graphicsserver.h"
-#include "frame/framebatchtype.h"
+#include "framesubpassplugin.h"
 
 using namespace CoreGraphics;
 namespace Frame
@@ -15,8 +12,7 @@ namespace Frame
 //------------------------------------------------------------------------------
 /**
 */
-FrameSubpassPlugins::FrameSubpassPlugins()// :
-	//pluginRegistry(NULL)
+FrameSubpassPlugin::FrameSubpassPlugin()
 {
 	// empty
 }
@@ -24,7 +20,7 @@ FrameSubpassPlugins::FrameSubpassPlugins()// :
 //------------------------------------------------------------------------------
 /**
 */
-FrameSubpassPlugins::~FrameSubpassPlugins()
+FrameSubpassPlugin::~FrameSubpassPlugin()
 {
 	// empty
 }
@@ -33,27 +29,7 @@ FrameSubpassPlugins::~FrameSubpassPlugins()
 /**
 */
 void
-FrameSubpassPlugins::Discard()
-{
-	FrameOp::Discard();	
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-FrameOp::Compiled*
-FrameSubpassPlugins::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
-{
-	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
-	ret->pluginFilter = this->pluginFilter;	
-	return ret;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-FrameSubpassPlugins::Setup()
+FrameSubpassPlugin::Setup()
 {
     // empty
 }
@@ -62,11 +38,31 @@ FrameSubpassPlugins::Setup()
 /**
 */
 void
-FrameSubpassPlugins::CompiledImpl::Run(const IndexT frameIndex)
+FrameSubpassPlugin::Discard()
 {
-	CoreGraphics::BeginBatch(FrameBatchType::System);
-    Graphics::GraphicsServer::Instance()->RenderPlugin(pluginFilter);	
-	CoreGraphics::EndBatch();
+	FrameOp::Discard();
+
+	this->func = nullptr;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+FrameOp::Compiled*
+FrameSubpassPlugin::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
+{
+	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
+	ret->func = this->func;
+	return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+FrameSubpassPlugin::CompiledImpl::Run(const IndexT frameIndex)
+{
+	this->func(frameIndex);
 }
 
 } // namespace Frame2
