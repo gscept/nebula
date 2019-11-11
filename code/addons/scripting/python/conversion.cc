@@ -4,7 +4,6 @@
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "conversion.h"
-#include "scripting/bindings.h"
 #include "pybind11/operators.h"
 #include "pybind11/cast.h"
 
@@ -93,7 +92,6 @@ PYBIND11_EMBEDDED_MODULE(nmath, m)
 				sizeof(float) }
 			);
 		});
-
 	py::class_<Math::point, Math::float4>(m, "Point", py::buffer_protocol())
         .def(py::init<float, float, float>())
 		.def(py::init([](py::array_t<float> b)
@@ -392,23 +390,6 @@ PYBIND11_EMBEDDED_MODULE(util, m)
 			}
 			else throw(std::exception("Unknown class!"));
 			return Util::FourCC();
-		});
-
-	py::class_<Util::Array<int>>(m, "ia", py::buffer_protocol())
-		.def(py::init([](py::array_t<int> &b) {        
-			py::buffer_info info = b.request();
-			Util::Array<int> a;
-			a.SetSize(info.size);
-			Memory::Copy(info.ptr, a.Begin(), info.size * sizeof(int));
-			return a;
-		}))
-		.def_buffer([](Util::Array<int>&a)->py::buffer_info {
-			return py::buffer_info(a.Begin(),
-				sizeof(int),
-				py::format_descriptor<int>::format(),
-				1,
-				{ a.Size() },
-				{ sizeof(int) });
 		});
 }
 

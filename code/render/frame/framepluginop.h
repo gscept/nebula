@@ -7,16 +7,16 @@
 */
 //------------------------------------------------------------------------------
 #include "frameop.h"
-#include "algorithm/algorithm.h"
+#include "frame/plugins/frameplugin.h"
 namespace Frame
 {
-class FrameComputeAlgorithm : public FrameOp
+class FramePluginOp : public FrameOp
 {
 public:
 	/// constructor
-	FrameComputeAlgorithm();
+	FramePluginOp();
 	/// destructor
-	virtual ~FrameComputeAlgorithm();
+	virtual ~FramePluginOp();
 
 	struct CompiledImpl : public FrameOp::Compiled
 	{

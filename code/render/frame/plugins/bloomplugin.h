@@ -6,20 +6,20 @@
 	(C) 2017-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "algorithm.h"
+#include "frameplugin.h"
 #include "coregraphics/shader.h"
 #include "coregraphics/resourcetable.h"
 #include "renderutil/drawfullscreenquad.h"
 #include "coregraphics/barrier.h"
-namespace Algorithms
+namespace Frame
 {
-class BloomAlgorithm : public Algorithm
+class BloomPlugin : public FramePlugin
 {
 public:
 	/// constructor
-	BloomAlgorithm ();
+	BloomPlugin();
 	/// destructor
-	virtual ~BloomAlgorithm ();
+	virtual ~BloomPlugin();
 
 	/// setup algorithm
 	void Setup();

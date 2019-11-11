@@ -948,7 +948,7 @@ NebulaVulkanDebugCallback(
 			return VK_FALSE;
 	}
 
-	if (severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
+ 	if (severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
 	{
 		n_warning("VULKAN ERROR: %s\n", callbackData->pMessage);
 	}
@@ -2817,7 +2817,10 @@ Draw()
 	}
 	else
 	{
-		vkCmdDraw(GetMainBuffer(GraphicsQueueType), state.primitiveGroup.GetNumVertices(), 1, state.primitiveGroup.GetBaseVertex(), 0);
+		if (state.primitiveGroup.GetNumIndices() > 0)
+			vkCmdDrawIndexed(GetMainBuffer(GraphicsQueueType), state.primitiveGroup.GetNumIndices(), 1, state.primitiveGroup.GetBaseIndex(), state.primitiveGroup.GetBaseVertex(), 0);
+		else
+			vkCmdDraw(GetMainBuffer(GraphicsQueueType), state.primitiveGroup.GetNumVertices(), 1, state.primitiveGroup.GetBaseVertex(), 0);
 	}
 
 	// go to next thread
@@ -2847,7 +2850,10 @@ DrawInstanced(SizeT numInstances, IndexT baseInstance)
 	}
 	else
 	{
-		vkCmdDrawIndexed(GetMainBuffer(GraphicsQueueType), state.primitiveGroup.GetNumIndices(), numInstances, state.primitiveGroup.GetBaseIndex(), state.primitiveGroup.GetBaseVertex(), baseInstance);
+		if (state.primitiveGroup.GetNumIndices() > 0)
+			vkCmdDrawIndexed(GetMainBuffer(GraphicsQueueType), state.primitiveGroup.GetNumIndices(), numInstances, state.primitiveGroup.GetBaseIndex(), state.primitiveGroup.GetBaseVertex(), baseInstance);
+		else
+			vkCmdDraw(GetMainBuffer(GraphicsQueueType), state.primitiveGroup.GetNumVertices(), numInstances, state.primitiveGroup.GetBaseVertex(), baseInstance);
 	}
 
 	// go to next thread

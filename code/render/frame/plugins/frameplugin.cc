@@ -1,26 +1,18 @@
 //------------------------------------------------------------------------------
-// algorithm.cc
+// frameplugin.cc
 // (C) 2016-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
-#include "algorithm.h"
+#include "frameplugin.h"
 
-namespace Algorithms
+namespace Frame
 {
-Util::Dictionary<Util::StringAtom, std::function<void(IndexT)>> Algorithm::nameToFunction;
+Util::Dictionary<Util::StringAtom, std::function<void(IndexT)>> FramePlugin::nameToFunction;
 
 //------------------------------------------------------------------------------
 /**
 */
-Algorithm::Algorithm()
-{
-	// empty
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-Algorithm::~Algorithm()
+FramePlugin::FramePlugin()
 {
 	// empty
 }
@@ -28,8 +20,7 @@ Algorithm::~Algorithm()
 //------------------------------------------------------------------------------
 /**
 */
-void
-Algorithm::Setup()
+FramePlugin::~FramePlugin()
 {
 	// empty
 }
@@ -38,7 +29,16 @@ Algorithm::Setup()
 /**
 */
 void
-Algorithm::Discard()
+FramePlugin::Setup()
+{
+	// empty
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+FramePlugin::Discard()
 {
 	// override in subclass for any special discard behavior
 }
@@ -47,7 +47,7 @@ Algorithm::Discard()
 /**
 */
 const std::function<void(IndexT)>&
-Algorithm::GetAlgorithmCallback(const Util::StringAtom& str)
+FramePlugin::GetCallback(const Util::StringAtom& str)
 {
 	return nameToFunction[str];
 }
@@ -56,7 +56,7 @@ Algorithm::GetAlgorithmCallback(const Util::StringAtom& str)
 /**
 */
 void 
-Algorithm::AddCallback(const Util::StringAtom name, std::function<void(IndexT)> func)
+FramePlugin::AddCallback(const Util::StringAtom name, std::function<void(IndexT)> func)
 {
 	nameToFunction.Add(name, func);
 }
@@ -66,7 +66,7 @@ Algorithm::AddCallback(const Util::StringAtom name, std::function<void(IndexT)> 
 	FIXME: implement resize
 */
 void
-Algorithm::Resize()
+FramePlugin::Resize()
 {
 	IndexT i;
 	for (i = 0; i < this->renderTextures.Size(); i++)		RenderTextureWindowResized(this->renderTextures[i]);

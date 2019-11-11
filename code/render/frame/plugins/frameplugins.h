@@ -1,18 +1,18 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @file algorithm/algorithms.h
+    @file frame/frameplugins.h
     
-    Top-level header file for Algorithms. 
-    Declare all algorithms here which should be createable through RTTI.
+    Top-level header file for Frame plugins. 
+    Declare all plugins here which should be createable through RTTI.
     
     (C) 2013 Gustav Sterbrant
     (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 
-#include "hbaoalgorithm.h"
+#include "ssaoplugin.h"
 //#include "volumetriclightalgorithm.h"
-#include "tonemapalgorithm.h"
-#include "bloomalgorithm.h"
+#include "tonemapplugin.h"
+#include "bloomplugin.h"
 
 //------------------------------------------------------------------------------

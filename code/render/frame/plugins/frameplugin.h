@@ -22,22 +22,22 @@
 #include "coregraphics/shaderrwbuffer.h"
 #include "coregraphics/shaderrwtexture.h"
 #include <functional>
-namespace Algorithms
+namespace Frame
 {
-class Algorithm
+class FramePlugin
 {
 public:
 	enum FunctionType
 	{
 		None,			// does neither rendering nor compute
-		Graphics,			// algorithm does rendering only
+		Graphics,		// algorithm does rendering only
 		Compute			// algorithm does only computations
 	};
 
 	/// constructor
-	Algorithm();
+	FramePlugin();
 	/// destructor
-	virtual ~Algorithm();
+	virtual ~FramePlugin();
 	
 	/// setup algorithm
 	virtual void Setup();
@@ -49,7 +49,7 @@ public:
 	/// add function callback to global dictionary
 	static void AddCallback(const Util::StringAtom name, std::function<void(IndexT)> func);
 	/// get algorithm function call
-	static const std::function<void(IndexT)>& GetAlgorithmCallback(const Util::StringAtom& str);
+	static const std::function<void(IndexT)>& GetCallback(const Util::StringAtom& str);
 
 	/// add texture
 	void AddRenderTexture(const CoreGraphics::RenderTextureId& tex);
@@ -71,7 +71,7 @@ protected:
 /**
 */
 inline void
-Algorithm::AddRenderTexture(const CoreGraphics::RenderTextureId& tex)
+FramePlugin::AddRenderTexture(const CoreGraphics::RenderTextureId& tex)
 {
 	this->renderTextures.Append(tex);
 }
@@ -80,7 +80,7 @@ Algorithm::AddRenderTexture(const CoreGraphics::RenderTextureId& tex)
 /**
 */
 inline void
-Algorithm::AddReadWriteBuffer(const CoreGraphics::ShaderRWBufferId& buf)
+FramePlugin::AddReadWriteBuffer(const CoreGraphics::ShaderRWBufferId& buf)
 {
 	this->readWriteBuffers.Append(buf);
 }
@@ -89,7 +89,7 @@ Algorithm::AddReadWriteBuffer(const CoreGraphics::ShaderRWBufferId& buf)
 /**
 */
 inline void
-Algorithm::AddReadWriteImage(const CoreGraphics::ShaderRWTextureId& img)
+FramePlugin::AddReadWriteImage(const CoreGraphics::ShaderRWTextureId& img)
 {
 	this->readWriteTextures.Append(img);
 }

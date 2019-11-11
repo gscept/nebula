@@ -180,7 +180,7 @@ _ImplementPluginContext(ImguiContext);
 */
 ImguiContext::ImguiContext()
 {
-	//empty;
+	// empty
 }
 
 //------------------------------------------------------------------------------
@@ -221,6 +221,14 @@ ImguiContext::Create()
     components.Append(VertexComponent((VertexComponent::SemanticName)0, 0, VertexComponentBase::Float2, 0));
 	components.Append(VertexComponent((VertexComponent::SemanticName)1, 0, VertexComponentBase::Float2, 0));
     components.Append(VertexComponent((VertexComponent::SemanticName)2, 0, VertexComponentBase::UByte4N, 0));
+
+	Frame::FramePlugin::AddCallback("ImGUI", [](const IndexT frameIndex)
+		{
+			CoreGraphics::BeginBatch(Frame::FrameBatchType::System);
+			ImGui::Render();
+			ImguiContext::ImguiDrawFunction();
+			CoreGraphics::EndBatch();
+		});
 
 	SizeT numBuffers = CoreGraphics::GetNumBufferedFrames();
 
@@ -439,8 +447,6 @@ ImguiContext::Discard()
 		state.vertexPtrs[i] = nullptr;
 		state.indexPtrs[i] = nullptr;
 	}
-	
-    
 
 	Input::InputServer::Instance()->RemoveInputHandler(state.inputHandler.upcast<InputHandler>());
 	state.inputHandler = nullptr;

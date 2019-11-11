@@ -1,9 +1,9 @@
 //------------------------------------------------------------------------------
-// hbaoalgorithm.cc
+// ssaoplugin.cc
 // (C) 2016-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
-#include "hbaoalgorithm.h"
+#include "ssaoplugin.h"
 #include "coregraphics/shaderserver.h"
 #include "coregraphics/shadersemantics.h"
 #include "coregraphics/graphicsdevice.h"
@@ -18,13 +18,13 @@
 
 using namespace CoreGraphics;
 using namespace Graphics;
-namespace Algorithms
+namespace Frame
 {
 
 //------------------------------------------------------------------------------
 /**
 */
-HBAOAlgorithm::HBAOAlgorithm()
+SSAOPlugin::SSAOPlugin()
 {
 	// empty
 }
@@ -32,7 +32,7 @@ HBAOAlgorithm::HBAOAlgorithm()
 //------------------------------------------------------------------------------
 /**
 */
-HBAOAlgorithm::~HBAOAlgorithm()
+SSAOPlugin::~SSAOPlugin()
 {
 	// empty
 }
@@ -42,9 +42,9 @@ HBAOAlgorithm::~HBAOAlgorithm()
 /**
 */
 void
-HBAOAlgorithm::Setup()
+SSAOPlugin::Setup()
 {
-	Algorithm::Setup();
+	FramePlugin::Setup();
 	n_assert(this->renderTextures.Size() == 1);
 	n_assert(this->readWriteTextures.Size() == 1);
 
@@ -170,7 +170,7 @@ HBAOAlgorithm::Setup()
 	this->blurDepthThreshold = ShaderGetConstantBinding(this->blurShader, NEBULA_SEMANTIC_DEPTHTHRESHOLD);
 
 	// calculate relevant stuff for AO
-	Algorithm::AddCallback("HBAO-Prepare", [this](IndexT)
+	FramePlugin::AddCallback("HBAO-Prepare", [this](IndexT)
 	{
 
 #if NEBULA_GRAPHICS_DEBUG
@@ -254,7 +254,7 @@ HBAOAlgorithm::Setup()
 	});
 
 	// calculate HBAO and blur
-	Algorithm::AddCallback("HBAO-Run", [this](IndexT)
+	FramePlugin::AddCallback("HBAO-Run", [this](IndexT)
 	{
 		ShaderServer* shaderServer = ShaderServer::Instance();
 
@@ -311,9 +311,9 @@ HBAOAlgorithm::Setup()
 /**
 */
 void
-HBAOAlgorithm::Discard()
+SSAOPlugin::Discard()
 {
-	Algorithm::Discard();
+	FramePlugin::Discard();
 	CoreGraphics::DestroyShaderRWTexture(internalTargets[0]);
 	CoreGraphics::DestroyShaderRWTexture(internalTargets[1]);
 	IndexT i;

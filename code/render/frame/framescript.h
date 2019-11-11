@@ -19,7 +19,7 @@
 #include "coregraphics/shaderrwbuffer.h"
 #include "coregraphics/event.h"
 #include "coregraphics/shader.h"
-#include "algorithm/algorithm.h"
+#include "frame/plugins/frameplugin.h"
 #include "frame/frameop.h"
 #include "frame/framepass.h"
 #include "memory/arenaallocator.h"
@@ -71,9 +71,9 @@ public:
 	/// get read-write buffer
 	const CoreGraphics::ShaderRWBufferId GetReadWriteBuffer(const Util::StringAtom& name);
 	/// add algorithm
-	void AddAlgorithm(const Util::StringAtom& name, Algorithms::Algorithm* alg);
+	void AddPlugin(const Util::StringAtom& name, Frame::FramePlugin* alg);
 	/// get algorithm
-	Algorithms::Algorithm* GetAlgorithm(const Util::StringAtom& name);
+	Frame::FramePlugin* GetPlugin(const Util::StringAtom& name);
 
 	/// setup script
 	void Setup();
@@ -115,8 +115,8 @@ private:
 	Util::Array<Frame::FrameOp::Compiled*> compiled;
 	Util::Array<CoreGraphics::BarrierId> resourceResetBarriers;
 	IndexT frameOpCounter;
-	Util::Array<Algorithms::Algorithm*> algorithms;
-	Util::Dictionary<Util::StringAtom, Algorithms::Algorithm*> algorithmsByName;
+	Util::Array<Frame::FramePlugin*> algorithms;
+	Util::Dictionary<Util::StringAtom, Frame::FramePlugin*> algorithmsByName;
 
 	bool subScript; // if subscript, it means it can only be ran from within another script
 };
@@ -151,8 +151,8 @@ FrameScript::GetAllocator()
 //------------------------------------------------------------------------------
 /**
 */
-inline Algorithms::Algorithm*
-FrameScript::GetAlgorithm(const Util::StringAtom& name)
+inline Frame::FramePlugin*
+FrameScript::GetPlugin(const Util::StringAtom& name)
 {
 	return this->algorithmsByName[name];
 }

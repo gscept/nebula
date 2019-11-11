@@ -11,10 +11,10 @@
 #include "frameglobalstate.h"
 #include "frameblit.h"
 #include "framecompute.h"
-#include "framecomputealgorithm.h"
+#include "framepluginop.h"
 #include "framesubpass.h"
 #include "frameevent.h"
-#include "framesubpassalgorithm.h"
+#include "framesubpassplugin.h"
 #include "framesubpassbatch.h"
 #include "framesubpassorderedbatch.h"
 #include "framesubpassfullscreeneffect.h"
@@ -26,10 +26,10 @@
 #include "resources/resourcemanager.h"
 #include "core/factory.h"
 #include "frameswapbuffers.h"
-#include "framesubpassplugins.h"
+#include "framesubpassplugin.h"
 #include "framebarrier.h"
 #include "coregraphics/barrier.h"
-#include "algorithm/algorithms.h"
+#include "frame/plugins/frameplugins.h"
 #include "coregraphics/displaydevice.h"
 #include "memory/arenaallocator.h"
 #include <mutex>
@@ -80,16 +80,16 @@ FrameScriptLoader::LoadFrameScript(const IO::URI& path)
 
 
 #define CONSTRUCTOR_MACRO(type) \
-		constructors.Add(("Algorithms::" #type ##_str).HashCode(), [](Memory::ArenaAllocator<BIG_CHUNK>& alloc) -> Algorithms::Algorithm* { \
-			void* mem = alloc.Alloc(sizeof(Algorithms::type));\
-			n_new_inplace(Algorithms::type, mem);\
-			return (Algorithms::Algorithm*)mem;\
+		constructors.Add(("Frame::" #type ##_str).HashCode(), [](Memory::ArenaAllocator<BIG_CHUNK>& alloc) -> Frame::FramePlugin* { \
+			void* mem = alloc.Alloc(sizeof(Frame::type));\
+			n_new_inplace(Frame::type, mem);\
+			return (Frame::FramePlugin*)mem;\
 		});
 
 		constructors.Clear();
-		CONSTRUCTOR_MACRO(HBAOAlgorithm);
-		CONSTRUCTOR_MACRO(BloomAlgorithm);
-		CONSTRUCTOR_MACRO(TonemapAlgorithm);
+		CONSTRUCTOR_MACRO(SSAOPlugin);
+		CONSTRUCTOR_MACRO(BloomPlugin);
+		CONSTRUCTOR_MACRO(TonemapPlugin);
 
 		// run parser entry point
 		json = jzon_get(json, "framescript");
@@ -123,12 +123,12 @@ FrameScriptLoader::ParseFrameScript(const Ptr<Frame::FrameScript>& script, JzonV
 		else if (name == "depth_stencils")		ParseDepthStencilTextureList(script, cur);
 		else if (name == "read_write_textures")	ParseImageReadWriteTextureList(script, cur);
 		else if (name == "read_write_buffers")	ParseImageReadWriteBufferList(script, cur);
-		else if (name == "algorithms")			ParseAlgorithmList(script, cur);
+		else if (name == "plugins")				ParsePluginList(script, cur);
 		else if (name == "global_state")		ParseGlobalState(script, cur);
 		else if (name == "blit")				ParseBlit(script, cur);
 		else if (name == "copy")				ParseCopy(script, cur);
 		else if (name == "compute")				ParseCompute(script, cur);
-		else if (name == "compute_algorithm")	ParseComputeAlgorithm(script, cur);
+		else if (name == "plugin")				ParsePlugin(script, cur);
 		else if (name == "swapbuffers")			ParseSwapbuffers(script, cur);
 		else if (name == "pass")				ParsePass(script, cur);
 		else if (name == "begin_submission")	ParseFrameSubmission(script, 0, cur); // 0 means begin
@@ -375,7 +375,7 @@ FrameScriptLoader::ParseImageReadWriteBufferList(const Ptr<Frame::FrameScript>& 
 /**
 */
 void
-FrameScriptLoader::ParseAlgorithmList(const Ptr<Frame::FrameScript>& script, JzonValue* node)
+FrameScriptLoader::ParsePluginList(const Ptr<Frame::FrameScript>& script, JzonValue* node)
 {
 	uint i;
 	for (i = 0; i < node->size; i++)
@@ -389,7 +389,7 @@ FrameScriptLoader::ParseAlgorithmList(const Ptr<Frame::FrameScript>& script, Jzo
 		n_assert(clazz != nullptr);
 
 		// create algorithm
-		Algorithms::Algorithm* alg = (constructors[Util::String(clazz->string_value).HashCode()](script->GetAllocator()));
+		Frame::FramePlugin* alg = (constructors[Util::String(clazz->string_value).HashCode()](script->GetAllocator()));
 
 		JzonValue* textures = jzon_get(cur, "render_textures");
 		if (textures != nullptr)
@@ -437,7 +437,7 @@ FrameScriptLoader::ParseAlgorithmList(const Ptr<Frame::FrameScript>& script, Jzo
 
 		// add algorithm to script
 		alg->Setup();
-		script->AddAlgorithm(name->string_value, alg);
+		script->AddPlugin(name->string_value, alg);
 	}
 }
 
@@ -674,9 +674,9 @@ FrameScriptLoader::ParseCompute(const Ptr<Frame::FrameScript>& script, JzonValue
 /**
 */
 void
-FrameScriptLoader::ParseComputeAlgorithm(const Ptr<Frame::FrameScript>& script, JzonValue* node)
+FrameScriptLoader::ParsePlugin(const Ptr<Frame::FrameScript>& script, JzonValue* node)
 {
-	FrameComputeAlgorithm* op = script->GetAllocator().Alloc<FrameComputeAlgorithm>();
+	FramePluginOp* op = script->GetAllocator().Alloc<FramePluginOp>();
 
 	// get function and name
 	JzonValue* name = jzon_get(node, "name");
@@ -702,7 +702,7 @@ FrameScriptLoader::ParseComputeAlgorithm(const Ptr<Frame::FrameScript>& script, 
 	}
 
 	// get algorithm
-	op->func = Algorithms::Algorithm::GetAlgorithmCallback(name->string_value);
+	op->func = Frame::FramePlugin::GetCallback(name->string_value);
 
 	// add to script
 	script->AddOp(op);
@@ -963,12 +963,11 @@ FrameScriptLoader::ParseSubpass(const Ptr<Frame::FrameScript>& script, CoreGraph
 		else if (name == "outputs")				ParseResourceDependencies(script, framePass, cur);
 		else if (name == "viewports")			{ ParseSubpassViewports(script, frameSubpass, cur); subpass.numViewports = frameSubpass->viewports.Size(); }
 		else if (name == "scissors")			{ ParseSubpassScissors(script, frameSubpass, cur); subpass.numScissors = frameSubpass->scissors.Size(); }
-		else if (name == "subpass_algorithm")	ParseSubpassAlgorithm(script, frameSubpass, cur);
+		else if (name == "plugin")				ParseSubpassPlugin(script, frameSubpass, cur);
 		else if (name == "batch")				ParseSubpassBatch(script, frameSubpass, cur);
 		else if (name == "sorted_batch")		ParseSubpassSortedBatch(script, frameSubpass, cur);
 		else if (name == "fullscreen_effect")	ParseSubpassFullscreenEffect(script, frameSubpass, cur);
 		else if (name == "system")				ParseSubpassSystem(script, frameSubpass, cur);
-		else if (name == "plugins")				ParseSubpassPlugins(script, frameSubpass, cur);
 		else
 		{
 			n_error("Subpass operation '%s' is invalid.\n", name.AsCharPtr());
@@ -1107,9 +1106,9 @@ FrameScriptLoader::ParseSubpassScissors(const Ptr<Frame::FrameScript>& script, F
 /**
 */
 void
-FrameScriptLoader::ParseSubpassAlgorithm(const Ptr<Frame::FrameScript>& script, Frame::FrameSubpass* subpass, JzonValue* node)
+FrameScriptLoader::ParseSubpassPlugin(const Ptr<Frame::FrameScript>& script, Frame::FrameSubpass* subpass, JzonValue* node)
 {
-	FrameSubpassAlgorithm* op = script->GetAllocator().Alloc<FrameSubpassAlgorithm>();
+	FrameSubpassPlugin* op = script->GetAllocator().Alloc<FrameSubpassPlugin>();
 
 	// get function and name
 	JzonValue* name = jzon_get(node, "name");
@@ -1132,10 +1131,9 @@ FrameScriptLoader::ParseSubpassAlgorithm(const Ptr<Frame::FrameScript>& script, 
 	}
 
 	// get algorithm
-	op->func = Algorithms::Algorithm::GetAlgorithmCallback(name->string_value);
+	op->func = Frame::FramePlugin::GetCallback(name->string_value);
 
 	// add to script
-	op->Setup();
 	subpass->AddOp(op);
 }
 
@@ -1272,41 +1270,6 @@ FrameScriptLoader::ParseSubpassSystem(const Ptr<Frame::FrameScript>& script, Fra
 	{
 		n_error("No subsystem called '%s' exists", subsystem.AsCharPtr());
 	}
-	subpass->AddOp(op);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-FrameScriptLoader::ParseSubpassPlugins(const Ptr<Frame::FrameScript>& script, Frame::FrameSubpass* subpass, JzonValue* node)
-{	
-	FrameSubpassPlugins* op = script->GetAllocator().Alloc<FrameSubpassPlugins>();
-
-	JzonValue* name = jzon_get(node, "name");
-	n_assert(name != NULL);
-	op->SetName(name->string_value);
-
-	// assume all of these are graphics
-	op->domain = BarrierDomain::Pass;
-	op->queue = CoreGraphicsQueueType::GraphicsQueueType;
-
-	JzonValue* inputs = jzon_get(node, "inputs");
-	if (inputs != nullptr)
-	{
-		ParseResourceDependencies(script, op, inputs);
-	}
-
-	JzonValue* outputs = jzon_get(node, "outputs");
-	if (outputs != nullptr)
-	{
-		ParseResourceDependencies(script, op, outputs);
-	}
-
-	JzonValue* filter = jzon_get(node, "filter");
-	n_assert(filter != NULL);
-	op->SetPluginFilter(filter->string_value);
-	op->Setup();
 	subpass->AddOp(op);
 }
 

@@ -1,21 +1,21 @@
 //------------------------------------------------------------------------------
-// bloomalgorithm.cc
+// bloomplugin.cc
 // (C) 2017-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
-#include "bloomalgorithm.h"
+#include "bloomplugin.h"
 #include "coregraphics/shaderserver.h"
 #include "coregraphics/graphicsdevice.h"
 #include "coregraphics/shaderrwtexture.h"
 #include "coregraphics/barrier.h"
 
 using namespace CoreGraphics;
-namespace Algorithms
+namespace Frame
 {
 //------------------------------------------------------------------------------
 /**
 */
-BloomAlgorithm::BloomAlgorithm()
+BloomPlugin::BloomPlugin()
 {
 	// empty
 }
@@ -23,7 +23,7 @@ BloomAlgorithm::BloomAlgorithm()
 //------------------------------------------------------------------------------
 /**
 */
-BloomAlgorithm::~BloomAlgorithm()
+BloomPlugin::~BloomPlugin()
 {
 	// empty
 }
@@ -32,9 +32,9 @@ BloomAlgorithm::~BloomAlgorithm()
 /**
 */
 void
-BloomAlgorithm::Setup()
+BloomPlugin::Setup()
 {
-	Algorithm::Setup();
+	FramePlugin::Setup();
 	n_assert(this->renderTextures.Size() == 3);
 	n_assert(this->readWriteTextures.Size() == 1);
 
@@ -83,7 +83,7 @@ BloomAlgorithm::Setup()
 	// get size of target texture
 	this->fsq.Setup(dims.width, dims.height);
 
-	Algorithm::AddCallback("Bloom-BrightnessLowpass", [this](IndexT)
+	FramePlugin::AddCallback("Bloom-BrightnessLowpass", [this](IndexT)
 		{
 #if NEBULA_GRAPHICS_DEBUG
 			CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_ORANGE, "BrightnessLowpass");
@@ -99,7 +99,7 @@ BloomAlgorithm::Setup()
 #endif
 		});
 
-	Algorithm::AddCallback("Bloom-Blur", [this, dims](IndexT)
+	FramePlugin::AddCallback("Bloom-Blur", [this, dims](IndexT)
 	{
 #if NEBULA_GRAPHICS_DEBUG
 		CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "BloomBlur");
@@ -157,7 +157,7 @@ BloomAlgorithm::Setup()
 /**
 */
 void
-BloomAlgorithm::Discard()
+BloomPlugin::Discard()
 {
 	DestroyResourceTable(this->brightPassTable);
 	DestroyResourceTable(this->blurTable);

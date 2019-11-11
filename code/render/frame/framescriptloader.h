@@ -33,7 +33,7 @@ private:
 	/// parse image read-write buffer list
 	static void ParseImageReadWriteBufferList(const Ptr<Frame::FrameScript>& script, JzonValue* node);
 	/// parse algorithm list
-	static void ParseAlgorithmList(const Ptr<Frame::FrameScript>& script, JzonValue* node);
+	static void ParsePluginList(const Ptr<Frame::FrameScript>& script, JzonValue* node);
 	/// parse global state
 	static void ParseGlobalState(const Ptr<Frame::FrameScript>& script, JzonValue* node);
 	/// parse blit
@@ -43,7 +43,7 @@ private:
 	/// parse compute
 	static void ParseCompute(const Ptr<Frame::FrameScript>& script, JzonValue* node);
 	/// parse compute algorithm
-	static void ParseComputeAlgorithm(const Ptr<Frame::FrameScript>& script, JzonValue* node);
+	static void ParsePlugin(const Ptr<Frame::FrameScript>& script, JzonValue* node);
 	/// parse swapbuffer
 	static void ParseSwapbuffers(const Ptr<Frame::FrameScript>& script, JzonValue* node);
 	/// parse frame submission phase
@@ -68,7 +68,7 @@ private:
 	/// parse subpass scissors
 	static void ParseSubpassScissors(const Ptr<Frame::FrameScript>& script, Frame::FrameSubpass* subpass, JzonValue* node);
 	/// parse subpass algorithm
-	static void ParseSubpassAlgorithm(const Ptr<Frame::FrameScript>& script, Frame::FrameSubpass* subpass, JzonValue* node);
+	static void ParseSubpassPlugin(const Ptr<Frame::FrameScript>& script, Frame::FrameSubpass* subpass, JzonValue* node);
 	/// parse subpass batch
 	static void ParseSubpassBatch(const Ptr<Frame::FrameScript>& script, Frame::FrameSubpass* subpass, JzonValue* node);
 	/// parse subpass sorted batch
@@ -77,8 +77,6 @@ private:
 	static void ParseSubpassFullscreenEffect(const Ptr<Frame::FrameScript>& script, Frame::FrameSubpass* subpass, JzonValue* node);
 	/// parse system in subpass
 	static void ParseSubpassSystem(const Ptr<Frame::FrameScript>& script, Frame::FrameSubpass* subpass, JzonValue* node);
-	/// parse plugins in subpass
-	static void ParseSubpassPlugins(const Ptr<Frame::FrameScript>& script, Frame::FrameSubpass* subpass, JzonValue* node);
 
 	/// helper to parse shader state
 	static void ParseShaderState(const Ptr<Frame::FrameScript>& script, JzonValue* node, CoreGraphics::ShaderId& shd, CoreGraphics::ResourceTableId& table, Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBufferId>& constantBuffers);
@@ -88,7 +86,7 @@ private:
 	static void ParseResourceDependencies(const Ptr<Frame::FrameScript>& script, Frame::FrameOp* op, JzonValue* node);
 	
 	static Frame::FrameSubmission* LastSubmission;
-	typedef Algorithms::Algorithm* (*Fn)(Memory::ArenaAllocator<BIG_CHUNK>&);
+	typedef Frame::FramePlugin* (*Fn)(Memory::ArenaAllocator<BIG_CHUNK>&);
 	static Util::HashTable<uint, Fn> constructors;
 };
 } // namespace Frame2

@@ -3,7 +3,7 @@
 // (C) 2017 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
-#include "algorithm/algorithm.h"
+#include "frame/plugins/frameplugin.h"
 #include "lightcontext.h"
 #include "graphics/graphicsserver.h"
 #include "graphics/view.h"
@@ -165,7 +165,7 @@ LightContext::Create()
 	Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
 	// called from main script
-	Algorithms::Algorithm::AddCallback("LightContext - Update Shadowmaps", [](IndexT frame) // trigger update
+	Frame::FramePlugin::AddCallback("LightContext - Update Shadowmaps", [](IndexT frame) // trigger update
 		{
 			// run the script
 			//CoreGraphics::BarrierInsert(lightServerState.globalLightShadowBufferBarrier[0], GraphicsQueueType);
@@ -177,7 +177,7 @@ LightContext::Create()
 		});
 
 	// register shadow mapping algorithms
-	Algorithms::Algorithm::AddCallback("LightContext - Spotlight Shadows", [](IndexT frame) // graphics
+	Frame::FramePlugin::AddCallback("LightContext - Spotlight Shadows", [](IndexT frame) // graphics
 		{
 			IndexT i;
 			for (i = 0; i < lightServerState.spotLightShadowViews.Size(); i++)
@@ -185,11 +185,11 @@ LightContext::Create()
 
 			}
 		});
-	Algorithms::Algorithm::AddCallback("LightContext - Spotlight Blur", [](IndexT frame) // compute
+	Frame::FramePlugin::AddCallback("LightContext - Spotlight Blur", [](IndexT frame) // compute
 		{
 		});
 
-	Algorithms::Algorithm::AddCallback("LightContext - Sun Shadows", [](IndexT frame) // graphics
+	Frame::FramePlugin::AddCallback("LightContext - Sun Shadows", [](IndexT frame) // graphics
 		{
 			if (lightServerState.globalLightEntity != Graphics::GraphicsEntityId::Invalid())
 			{
@@ -197,94 +197,9 @@ LightContext::Create()
 				Frame::FrameSubpassBatch::DrawBatch(lightServerState.globalLightsBatchCode, lightServerState.globalLightEntity, 4);
 			}
 		});
-	Algorithms::Algorithm::AddCallback("LightContext - Sun Blur", [](IndexT frame) // compute
+	Frame::FramePlugin::AddCallback("LightContext - Sun Blur", [](IndexT frame) // compute
 		{
-			using namespace CoreGraphics;
-			if (lightServerState.globalLightEntity != Graphics::GraphicsEntityId::Invalid())
-			{
-				BarrierInsert(GraphicsQueueType,
-					BarrierStage::PixelShader,
-					BarrierStage::ComputeShader,
-					BarrierDomain::Global,
-					/*
-					{
-						RenderTextureBarrier
-						{
-							lightServerState.globalLightShadowMap,
-							ImageSubresourceInfo::ColorNoMip(4),
-							CoreGraphicsImageLayout::ColorRenderTexture,
-							CoreGraphicsImageLayout::ShaderRead,
-							BarrierAccess::ColorAttachmentWrite,
-							BarrierAccess::ShaderRead
-						}
-					},*/
-					nullptr, nullptr,
-					{
-						RWTextureBarrier
-						{
-							lightServerState.globalLightShadowMapBlurred0,
-							ImageSubresourceInfo::ColorNoMip(4),
-							CoreGraphicsImageLayout::ShaderRead,
-							CoreGraphicsImageLayout::General,
-							BarrierAccess::ShaderRead,
-							BarrierAccess::ShaderWrite
-						},
-						RWTextureBarrier
-						{
-							lightServerState.globalLightShadowMapBlurred1,
-							ImageSubresourceInfo::ColorNoMip(4),
-							CoreGraphicsImageLayout::ShaderRead,
-							CoreGraphicsImageLayout::General,
-							BarrierAccess::ShaderRead,
-							BarrierAccess::ShaderWrite
-						}
-					},
-					"CSM Blur Init");
-
-				TextureDimensions dims = ShaderRWTextureGetDimensions(lightServerState.globalLightShadowMapBlurred0);
-				SetShaderProgram(lightServerState.csmBlurXProgram);
-				SetResourceTable(lightServerState.csmBlurXTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
-				Compute(Math::n_divandroundup(dims.width, 320), dims.height, 4);
-
-				BarrierInsert(GraphicsQueueType,
-					BarrierStage::ComputeShader,
-					BarrierStage::ComputeShader,
-					BarrierDomain::Global,
-					nullptr, nullptr,
-					{
-						RWTextureBarrier
-						{
-							lightServerState.globalLightShadowMapBlurred0,
-							ImageSubresourceInfo::ColorNoMip(4),
-							CoreGraphicsImageLayout::General,
-							CoreGraphicsImageLayout::ShaderRead,
-							BarrierAccess::ShaderWrite,
-							BarrierAccess::ShaderRead
-						},
-					},
-					"CSM Blur X Finish");
-				SetShaderProgram(lightServerState.csmBlurYProgram);
-				SetResourceTable(lightServerState.csmBlurYTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
-				Compute(Math::n_divandroundup(dims.height, 320), dims.width, 4);
-
-				BarrierInsert(GraphicsQueueType,
-					BarrierStage::ComputeShader,
-					BarrierStage::PixelShader,
-					BarrierDomain::Global,
-					nullptr, nullptr,
-					{
-						RWTextureBarrier
-						{
-							lightServerState.globalLightShadowMapBlurred1,
-							ImageSubresourceInfo::ColorNoMip(4),
-							CoreGraphicsImageLayout::General,
-							CoreGraphicsImageLayout::ShaderRead,
-							BarrierAccess::ShaderWrite,
-							BarrierAccess::ShaderRead
-						},
-					},
-					"CSM Blur Y Finish");
-			}
+			LightContext::BlurGlobalShadowMap();
 		});
 
 	// create shadow mapping frame script
@@ -892,6 +807,23 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIn
 void 
 LightContext::UpdateClustersAndCull()
 {
+	// make sure to sync so we don't read from data that is being written...
+	CoreGraphics::BarrierInsert(GraphicsQueueType,
+		CoreGraphics::BarrierStage::ComputeShader,
+		CoreGraphics::BarrierStage::ComputeShader,
+		CoreGraphics::BarrierDomain::Global,
+		nullptr,
+		{
+			CoreGraphics::BufferBarrier
+			{
+				clusterState.clusterAABBBuffer,
+				CoreGraphics::BarrierAccess::ShaderRead,
+				CoreGraphics::BarrierAccess::ShaderWrite,
+				0, -1
+			}
+		},
+		nullptr, "AABB begin barrier");
+
 	CoreGraphics::SetShaderProgram(clusterState.aabbGenerateProgram);
 	CoreGraphics::SetResourceTable(clusterState.clusterResourceTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
 
@@ -915,11 +847,14 @@ LightContext::UpdateClustersAndCull()
 		},
 		nullptr, "AABB finish barrier");
 
+	/*
+
 	// bind the cull shader
 	CoreGraphics::SetShaderProgram(clusterState.lightCullProgram);
 
 	// now, run through all previously created AABBs and cull the lights
 	CoreGraphics::Compute(15, 15, 7); // we have 16 x 16 x 8 cells, so the indices naturally become 15, 15, 7
+	*/
 }
 
 //------------------------------------------------------------------------------
@@ -983,6 +918,100 @@ LightContext::RenderLights()
 		CoreGraphics::Draw();
 	}
 	CoreGraphics::EndBatch();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+LightContext::BlurGlobalShadowMap()
+{
+	using namespace CoreGraphics;
+	if (lightServerState.globalLightEntity != Graphics::GraphicsEntityId::Invalid())
+	{
+		BarrierInsert(GraphicsQueueType,
+			BarrierStage::PixelShader,
+			BarrierStage::ComputeShader,
+			BarrierDomain::Global,
+			/*
+			{
+				RenderTextureBarrier
+				{
+					lightServerState.globalLightShadowMap,
+					ImageSubresourceInfo::ColorNoMip(4),
+					CoreGraphicsImageLayout::ColorRenderTexture,
+					CoreGraphicsImageLayout::ShaderRead,
+					BarrierAccess::ColorAttachmentWrite,
+					BarrierAccess::ShaderRead
+				}
+			},*/
+			nullptr, nullptr,
+			{
+				RWTextureBarrier
+				{
+					lightServerState.globalLightShadowMapBlurred0,
+					ImageSubresourceInfo::ColorNoMip(4),
+					CoreGraphicsImageLayout::ShaderRead,
+					CoreGraphicsImageLayout::General,
+					BarrierAccess::ShaderRead,
+					BarrierAccess::ShaderWrite
+				},
+				RWTextureBarrier
+				{
+					lightServerState.globalLightShadowMapBlurred1,
+					ImageSubresourceInfo::ColorNoMip(4),
+					CoreGraphicsImageLayout::ShaderRead,
+					CoreGraphicsImageLayout::General,
+					BarrierAccess::ShaderRead,
+					BarrierAccess::ShaderWrite
+				}
+			},
+			"CSM Blur Init");
+
+		TextureDimensions dims = ShaderRWTextureGetDimensions(lightServerState.globalLightShadowMapBlurred0);
+		SetShaderProgram(lightServerState.csmBlurXProgram);
+		SetResourceTable(lightServerState.csmBlurXTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+		Compute(Math::n_divandroundup(dims.width, 320), dims.height, 4);
+
+		BarrierInsert(GraphicsQueueType,
+			BarrierStage::ComputeShader,
+			BarrierStage::ComputeShader,
+			BarrierDomain::Global,
+			nullptr, nullptr,
+			{
+				RWTextureBarrier
+				{
+					lightServerState.globalLightShadowMapBlurred0,
+					ImageSubresourceInfo::ColorNoMip(4),
+					CoreGraphicsImageLayout::General,
+					CoreGraphicsImageLayout::ShaderRead,
+					BarrierAccess::ShaderWrite,
+					BarrierAccess::ShaderRead
+				},
+			},
+			"CSM Blur X Finish");
+		SetShaderProgram(lightServerState.csmBlurYProgram);
+		SetResourceTable(lightServerState.csmBlurYTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+		Compute(Math::n_divandroundup(dims.height, 320), dims.width, 4);
+
+		BarrierInsert(GraphicsQueueType,
+			BarrierStage::ComputeShader,
+			BarrierStage::PixelShader,
+			BarrierDomain::Global,
+			nullptr, nullptr,
+			{
+				RWTextureBarrier
+				{
+					lightServerState.globalLightShadowMapBlurred1,
+					ImageSubresourceInfo::ColorNoMip(4),
+					CoreGraphicsImageLayout::General,
+					CoreGraphicsImageLayout::ShaderRead,
+					BarrierAccess::ShaderWrite,
+					BarrierAccess::ShaderRead
+				},
+			},
+			"CSM Blur Y Finish");
+	}
 }
 
 //------------------------------------------------------------------------------

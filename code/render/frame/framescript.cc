@@ -78,7 +78,7 @@ FrameScript::AddReadWriteBuffer(const Util::StringAtom& name, const CoreGraphics
 /**
 */
 void
-FrameScript::AddAlgorithm(const Util::StringAtom& name, Algorithms::Algorithm* alg)
+FrameScript::AddPlugin(const Util::StringAtom& name, Frame::FramePlugin* alg)
 {
 	n_assert(!this->algorithmsByName.Contains(name));
 	this->algorithmsByName.Add(name, alg);

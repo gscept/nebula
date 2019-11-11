@@ -92,7 +92,7 @@
 
     read_write_textures: [
       {
-        name: "HBAOBuffer",
+        name: "SSAOBuffer",
         format: "R16F",
         relative: true,
         width: 1.0,
@@ -117,28 +117,28 @@
       }
     ],
 
-    algorithms: [
+    plugins: [
       {
         name: "Tonemapping",
-        class: "Algorithms::TonemapAlgorithm",
+        class: "Frame::TonemapPlugin",
         render_textures: [
           "LightBuffer",
           "AverageLumBuffer"
         ]
       },
       {
-        name: "HBAO",
-        class: "Algorithms::HBAOAlgorithm",
+        name: "SSAO",
+        class: "Frame::SSAOPlugin",
         depth_stencils: [
           "ZBuffer"
         ],
         read_write_textures: [
-          "HBAOBuffer"
+          "SSAOBuffer"
         ]
       },
       {
         name: "Bloom",
-        class: "Algorithms::BloomAlgorithm",
+        class: "Frame::BloomPlugin",
         render_textures: [
           "LightBuffer",
           "AverageLumBuffer",
@@ -150,7 +150,7 @@
       }
     ],
 
-    compute_algorithm: {
+    plugin: {
       name: "HBAO-Prepare"
     },
 
@@ -166,7 +166,7 @@
       _comment: "Mandatory start of compute submission, must be met with a matching end_submission"
     }
 
-    compute_algorithm: {
+    plugin: {
       name: "LightContext - Update Shadowmaps"
     }
 
@@ -253,13 +253,13 @@
             aspect: "Color"
           }
         ]
-        subpass_algorithm: {
+        plugin: {
           name: "Bloom-BrightnessLowpass",
         }
       }
     }
 
-    compute_algorithm: {
+    plugin: {
       name: "HBAO-Run",
       inputs: [
         {
@@ -272,7 +272,7 @@
       ],
       outputs: [
         {
-          name: "HBAOBuffer",
+          name: "SSAOBuffer",
           access: "ShaderWrite",
           layout: "General",
           stage: "ComputeShader",
@@ -281,7 +281,7 @@
       ]
     },
 
-    compute_algorithm: {
+    plugin: {
       name: "Bloom-Blur",
       inputs: [
         {
@@ -319,7 +319,7 @@
         depth: false,
         attachments: [ "AverageLumBuffer" ],
 
-        subpass_algorithm: {
+        plugin: {
           name: "Tonemap-AverageLum"
         }
       }
@@ -349,7 +349,7 @@
 
         resources: [
           {
-            name: "HBAOBuffer",
+            name: "SSAOBuffer",
             access: "ShaderRead",
             layout: "ShaderRead",
             stage: "PixelShader",
@@ -395,7 +395,7 @@
               },
               {
                 semantic: "SSAOTexture",
-                value: "HBAOBuffer"
+                value: "SSAOBuffer"
               }
             ]
           },
@@ -410,14 +410,13 @@
         attachments: [ "ScreenBuffer" ],
 
         batch: "DirectToColor",
-        plugins: {
-          name: "ImGui",
-          filter: "IMGUI"
+        plugin: {
+          name: "ImGUI",
         }
       }
     },
 
-    compute_algorithm: {
+    plugin: {
       name: "Tonemap-Downsample",
       inputs: [
         {
@@ -430,7 +429,7 @@
       ]
     },
 
-    compute_algorithm: {
+    plugin: {
       name: "Tonemap-Copy",
       inputs: [
         {

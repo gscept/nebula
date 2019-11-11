@@ -75,16 +75,16 @@
         dependencies: [],
         attachments: [ "GlobalLightShadow" ],
         depth: false,
-        subpass_algorithm: {
+        plugin: {
           name: "LightContext - Sun Shadows"
         }
       }
     },
 
-    compute_algorithm: {
+    plugin: {
       name: "LightContext - Spotlight Blur"
     }
-    compute_algorithm: {
+    plugin: {
       inputs: [
         {
           name: "GlobalLightShadow",
@@ -94,7 +94,7 @@
           layer_count: 4,
           aspect: "Color"
         }
-        
+
       ]
       name: "LightContext - Sun Blur"
     }

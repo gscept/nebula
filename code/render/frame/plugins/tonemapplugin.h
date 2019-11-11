@@ -6,20 +6,20 @@
 	(C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "algorithm.h"
+#include "frameplugin.h"
 #include "coregraphics/rendertexture.h"
 #include "coregraphics/shader.h"
 #include "coregraphics/resourcetable.h"
 #include "renderutil/drawfullscreenquad.h"
-namespace Algorithms
+namespace Frame
 {
-class TonemapAlgorithm : public Algorithm
+class TonemapPlugin : public FramePlugin
 {
 public:
 	/// constructor
-	TonemapAlgorithm();
+	TonemapPlugin();
 	/// destructor
-	virtual ~TonemapAlgorithm();
+	virtual ~TonemapPlugin();
 
 	/// setup algorithm
 	void Setup();

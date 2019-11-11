@@ -90,6 +90,8 @@ private:
 	static void UpdateClustersAndCull();
 	/// render lights
 	static void RenderLights();
+	/// run shadow map blurring
+	static void BlurGlobalShadowMap();
 
 	/// update global shadows
 	static void UpdateGlobalShadowMap();
