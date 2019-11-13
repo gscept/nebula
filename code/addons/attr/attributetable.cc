@@ -726,6 +726,7 @@ AttributeTable::AddRow()
     {
         rowIndex = this->deletedRowIndices.Back();
         this->deletedRowIndices.EraseBack();
+        this->rowDeletedBuffer[rowIndex] = 0;
     }
     else
     {

@@ -71,7 +71,7 @@ public:\
 #define __DefineAttribute(ATTRIBUTENAME, TYPE, FOURCC, ACCESSMODE, DEFAULTVALUE) \
 namespace Runtime\
 {\
-    const AttributeDefinitionBase ATTRIBUTENAME ## Id(Util::String(#ATTRIBUTENAME "Id"), #TYPE, Util::FourCC(FOURCC), ACCESSMODE, DEFAULTVALUE, false);\
+    const AttributeDefinitionBase ATTRIBUTENAME ## Id(Util::String(#ATTRIBUTENAME), #TYPE, Util::FourCC(FOURCC), ACCESSMODE, DEFAULTVALUE, false);\
 }
 
 

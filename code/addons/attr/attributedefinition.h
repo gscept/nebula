@@ -29,7 +29,7 @@ public:
 /**
 */
 template<class VALUETYPE, class TYPE>
-AttributeDefinition<VALUETYPE, TYPE>::AttributeDefinition(const Util::String& n, const Util::String& tn, const Util::FourCC& fcc, AccessMode am, TYPE defVal) :
+AttributeDefinition<VALUETYPE, TYPE>::AttributeDefinition(const Util::String& n, const Util::String& tn, const Util::FourCC& fcc, Attr::AccessMode am, TYPE defVal) :
     AttributeDefinitionBase(n, tn, fcc, am, defVal, false)
 {
     // empty
