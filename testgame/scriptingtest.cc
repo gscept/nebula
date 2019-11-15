@@ -188,6 +188,22 @@ PYBIND11_EMBEDDED_MODULE(test, m)
         }
     );
 
+    m.def("get_variant_matrix44_arr",
+        []()
+        {
+            Util::Variant v(Util::Array<Math::matrix44>({Math::matrix44::identity(),Math::matrix44::identity(),Math::matrix44({1,20,2,3},{2,3,4,5},{5,4,3,2},{7,4,5,3})}));
+            return v;
+        }
+    );
+
+    m.def("get_variant_matrix44",
+        []()
+        {
+            Util::Variant v(Math::matrix44({1,20,2,3},{2,3,4,5},{5,4,3,2},{7,4,5,3}));
+            return v;
+        }
+    );
+
     m.def("get_float4",
         []() -> Math::float4
         {
@@ -365,6 +381,12 @@ ScriptingTest::Run()
     EVAL("print(type(pyvar))");
     EVAL("print(pyvar)");
     EVAL("pyvar = test.get_variant_int_arr()");
+    EVAL("print(type(pyvar))");
+    EVAL("print(pyvar)");
+    EVAL("pyvar = test.get_variant_matrix44_arr()");
+    EVAL("print(type(pyvar))");
+    EVAL("print(pyvar)");
+    EVAL("pyvar = test.get_variant_matrix44()");
     EVAL("print(type(pyvar))");
     EVAL("print(pyvar)");
 
