@@ -40,12 +40,6 @@ PYBIND11_EMBEDDED_MODULE(game, m)
         {
             Game::Entity e = id; return e;
         }))
-        // .def("__repr__",
-        //     [](Game::Entity id)
-        //     {
-        //         return Util::String::FromUInt(id.id);
-        //     }
-        // )
         .def("is_valid", [](Game::Entity id){
             return Game::EntityManager::Instance()->IsAlive(id);
         })
