@@ -16,6 +16,14 @@
 using namespace Game;
 using namespace Core;
 
+namespace Attr
+{
+	__DefineAttribute(GuidTest, Util::Guid, 'gTst', Attr::ReadWrite, Util::Guid());
+    __DefineAttribute(StringTest, Util::String, 'sTst', Attr::ReadWrite, "Default string");
+    __DefineAttribute(IntTest, int, 'iTst', Attr::ReadWrite, int(1337));
+    __DefineAttribute(FloatTest, float, 'fTst', Attr::ReadWrite, float(10.0f));
+}
+
 namespace Test
 {
 
