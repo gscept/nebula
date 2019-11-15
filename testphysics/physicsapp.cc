@@ -147,7 +147,7 @@ SimpleViewerApplication::Open()
 			spotLightMatrix.scale(Math::vector(30, 30, 40));
 			spotLightMatrix = Math::matrix44::multiply(spotLightMatrix, Math::matrix44::rotationyawpitchroll(0, Math::n_deg2rad(-55), 0));
 			spotLightMatrix.set_position(Math::point(0, 5, 2));
-			Lighting::LightContext::SetupSpotLight(this->spotLights[0], Math::float4(1, 1, 0, 1), 1.0f, spotLightMatrix, false);
+			Lighting::LightContext::SetupSpotLight(this->spotLights[0], Math::float4(1, 1, 0, 1), 1.0f, 0.1f, 0.8f, spotLightMatrix, false);
 		}
 
 		{
@@ -157,7 +157,7 @@ SimpleViewerApplication::Open()
 			spotLightMatrix.scale(Math::vector(30, 30, 40));
 			spotLightMatrix = Math::matrix44::multiply(spotLightMatrix, Math::matrix44::rotationyawpitchroll(Math::n_deg2rad(60), Math::n_deg2rad(-55), 0));
 			spotLightMatrix.set_position(Math::point(2, 5, 0));
-			Lighting::LightContext::SetupSpotLight(this->spotLights[1], Math::float4(0, 1, 1, 1), 1.0f, spotLightMatrix, false);
+			Lighting::LightContext::SetupSpotLight(this->spotLights[1], Math::float4(0, 1, 1, 1), 1.0f, 0.4f, 0.8f, spotLightMatrix, false);
 		}
 
 		{
@@ -167,7 +167,7 @@ SimpleViewerApplication::Open()
 			spotLightMatrix.scale(Math::vector(30, 30, 40));
 			spotLightMatrix = Math::matrix44::multiply(spotLightMatrix, Math::matrix44::rotationyawpitchroll(Math::n_deg2rad(120), Math::n_deg2rad(-55), 0));
 			spotLightMatrix.set_position(Math::point(2, 5, 2));
-			Lighting::LightContext::SetupSpotLight(this->spotLights[2], Math::float4(1, 0, 1, 1), 1.0f, spotLightMatrix, false);
+			Lighting::LightContext::SetupSpotLight(this->spotLights[2], Math::float4(1, 0, 1, 1), 1.0f, 0.1f, 0.4f, spotLightMatrix, false);
 		}
 
         this->defaultViewPoint = Math::point(15.0f, 15.0f, -15.0f);
