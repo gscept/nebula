@@ -14,6 +14,7 @@
 #include "pybind11/detail/class.h"
 #include "pybind11/stl.h"
 #include "pybind11/numpy.h"
+#include "math/matrix44.h"
 
 namespace Python
 {
@@ -102,11 +103,13 @@ namespace pybind11
 					try_load<uint>(src, convert),
 					try_load<float>(src, convert),
 					try_load<Math::float4>(src, convert),
+                    try_load<Math::matrix44>(src, convert),
 					try_load<Util::String>(src, convert),
 					try_load<Util::Guid>(src, convert),
 					try_load<Util::Array<int>>(src, convert),
 					try_load<Util::Array<float>>(src, convert),
 					try_load<Util::Array<Math::float4>>(src, convert),
+					try_load<Util::Array<Math::matrix44>>(src, convert),
 					try_load<Util::Array<Util::String>>(src, convert),
 					try_load<Util::Array<Util::Guid>>(src, convert)
 				};
