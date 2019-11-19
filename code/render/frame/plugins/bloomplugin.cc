@@ -122,7 +122,7 @@ BloomPlugin::Setup()
 			nullptr,
 			nullptr,
 			{
-				  RWTextureBarrier{ this->internalTargets[0], ImageSubresourceInfo::ColorNoMipNoLayer(), CoreGraphicsImageLayout::General, CoreGraphicsImageLayout::General, CoreGraphics::BarrierAccess::ShaderWrite, CoreGraphics::BarrierAccess::ShaderRead }
+				  RWTextureBarrier{ this->internalTargets[0], ImageSubresourceInfo::ColorNoMipNoLayer(), CoreGraphicsImageLayout::ShaderRead, CoreGraphicsImageLayout::General, CoreGraphics::BarrierAccess::ShaderWrite, CoreGraphics::BarrierAccess::ShaderRead }
 			},
 			"Bloom Blur Pass #1 Barrier");
 

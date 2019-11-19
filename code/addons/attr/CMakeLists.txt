@@ -1,0 +1,31 @@
+fips_begin_lib(attr)
+fips_libs(application)
+fips_include_directories(${CODE_ROOT}/foundation)
+fips_files(
+    attrexithandler.cc
+    attrexithandler.h
+    attribute.h
+    attributecontainer.cc
+    attributecontainer.h
+    attributedefinition.h
+    attributedefinitionbase.cc
+    attributedefinitionbase.h
+    attributetable.cc
+    attributetable.h
+    attrid.cc
+    attrid.h
+    blobattrid.h
+    boolattrid.h
+    float4attrid.h
+    floatattrid.h
+    guidattrid.h
+    intattrid.h
+    uintattrid.h
+    matrix44attrid.h
+    stringattrid.h
+    commonattributes.h
+    commonattributes.cc
+    valuetype.h
+    accessmode.h
+)
+fips_end_lib()

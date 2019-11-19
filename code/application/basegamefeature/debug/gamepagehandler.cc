@@ -164,7 +164,7 @@ void GamePageHandler::InspectComponent(const Util::FourCC& fourcc, const Ptr<Htt
 				const auto& attributes = component->GetAttributes();
 				for (SizeT i = 1; i < attributes.Size(); i++)
 				{
-					htmlWriter->Element(HtmlElement::TableHeader, attributes[i].name);
+					htmlWriter->Element(HtmlElement::TableHeader, attributes[i].GetName());
 				}
 				htmlWriter->End(HtmlElement::TableRow);
 				
@@ -182,7 +182,7 @@ void GamePageHandler::InspectComponent(const Util::FourCC& fourcc, const Ptr<Htt
 						htmlWriter->Begin(HtmlElement::TableHeader);
 						String str = "";
 						Util::Variant value = component->GetAttributeValue(instance, i);
-						switch (attributes[i].type)
+						switch (attributes[i].GetValueType())
 						{
 						case Attr::ValueType::Matrix44Type:
 						{

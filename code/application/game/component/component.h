@@ -290,13 +290,13 @@ void Component<TYPES...>::Init(std::index_sequence<Is...>)
 {
 	this->attributes.SetSize(sizeof...(TYPES) + 1);
 	// We always have an owner
-	this->attributes[0] = Attr::Owner(0);
+	this->attributes[0] = Attr::Owner();
 
 	using expander = int[];
 	(void)expander
 	{
 		0, (
-			this->attributes[Is + 1] = TYPES(Is + 1),
+			this->attributes[Is + 1] = TYPES(),
 		0)...
 	};
 }

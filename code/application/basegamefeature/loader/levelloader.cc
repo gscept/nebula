@@ -61,9 +61,9 @@ LevelLoader::Save(const Util::String& levelName)
             attributeDefinitions.Append(
                 Game::Serialization::CreateAttributeDefinitionDirect(
                     builder,
-                    attr.fourcc.AsUInt(),
-                    attr.name.AsCharPtr(),
-                    attr.typeName.AsCharPtr()
+                    attr.GetFourCC().AsUInt(),
+                    attr.GetName().AsCharPtr(),
+                    attr.GetTypeName().AsCharPtr()
                 )
             );
         }
@@ -102,6 +102,8 @@ LevelLoader::Save(const Util::String& levelName)
 
         if (component->functions.Serialize != nullptr)
 			component->functions.Serialize(bWriter);
+        else
+            component->InternalSerialize(bWriter);
 
 		bWriter->Close();
 		
@@ -235,9 +237,11 @@ LevelLoader::Load(const Util::String& levelName)
             bReader->SetStream(mStream);
 			bReader->Open();
 			
-			if (c->functions.Deserialize != nullptr)
-				c->functions.Deserialize(bReader, start, numInstances);
-			
+            if (c->functions.Deserialize != nullptr)
+                c->functions.Deserialize(bReader, start, numInstances);
+            else
+                c->InternalDeserialize(bReader, start, numInstances);
+
 			bReader->Close(); // automatically closes the memory stream. The copied memory will be freed when the destructor is called (end of scope)
 
             Util::Array<Game::Entity> newOwners((Game::Entity*)component->owners()->data(), component->owners()->size());

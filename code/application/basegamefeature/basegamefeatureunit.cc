@@ -174,21 +174,21 @@ BaseGameFeatureUnit::WriteAdditionalMetadata(Ptr<IO::JsonWriter> const& writer) 
 		for (auto const& attr : component->GetAttributes())
 		{
 			writer->BeginObject();
-			writer->Add(attr.name, "name");
-			writer->Add(attr.fourcc.AsString(), "fourcc");
+			writer->Add(attr.GetName(), "name");
+			writer->Add(attr.GetFourCC().AsString(), "fourcc");
 
-			if (attr.type == Attr::ValueType::EntityType)
+			if (attr.GetValueType() == Attr::ValueType::EntityType)
 			{
 				/// @todo	this should be not be hardcoded.
 				writer->Add("entity", "type");
 			}
 			else
 			{
-				writer->Add(Util::Variant::TypeToString((Util::Variant::Type)attr.type), "type");
+				writer->Add(Util::Variant::TypeToString((Util::Variant::Type)attr.GetValueType()), "type");
 			}
 
 			Util::String accessMode;
-			if (attr.accessMode == Attr::AccessMode::ReadOnly)
+			if (attr.GetAccessMode() == Attr::AccessMode::ReadOnly)
 			{
 				accessMode = "R";
 			}
@@ -201,7 +201,7 @@ BaseGameFeatureUnit::WriteAdditionalMetadata(Ptr<IO::JsonWriter> const& writer) 
 			
 			const char* key = "default";
 
-			switch (attr.type)
+			switch (attr.GetValueType())
 			{
 			//case Attr::ValueType::IntType:			writer->Add(attr.GetDefaultValue().GetInt(), key);			break;
 			//case Attr::ValueType::Int64Type:		writer->Add(attr.GetDefaultValue().GetInt64(), key);		break;
@@ -220,8 +220,8 @@ BaseGameFeatureUnit::WriteAdditionalMetadata(Ptr<IO::JsonWriter> const& writer) 
 			//case Attr::ValueType::Matrix44Type:		writer->Add(attr.GetDefaultValue().GetMatrix44(), key);		break;
 			//case Attr::ValueType::EntityType:		writer->Add(attr.GetDefaultValue().GetUInt(), key);			break;
 			default:
-				n_warning("Attribute type %i not fully supported. Check basegamefeatureunit and add it to the list!", attr.type);
-				writer->Add(attr.defaultValue.ToString(), "default");
+				n_warning("Attribute type %i not fully supported. Check basegamefeatureunit and add it to the list!", attr.GetValueType());
+				writer->Add(attr.GetDefaultValue().ToString(), "default");
 				break;
 			}
 			writer->End();

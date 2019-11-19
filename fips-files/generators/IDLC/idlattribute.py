@@ -42,6 +42,28 @@ def WriteAttributeHeaderDeclarations(f, document):
 #------------------------------------------------------------------------------
 ##
 #
+def WriteAttributeSourceDefinitions(f, document):
+    for attributeName, attribute in document["attributes"].items():
+        typeString = IDLTypes.GetTypeString(attribute["type"])
+
+        if not "fourcc" in attribute:
+            util.fmtError('Attribute FourCC is required. Attribute "{}" does not have a fourcc!'.format(attributeName))
+        fourcc = attribute["fourcc"]
+
+        accessMode = "rw"
+        if "access" in attribute:
+            accessMode = IDLTypes.AccessModeToClassString(attribute["access"])
+        
+        defVal = IDLTypes.DefaultValue(attribute["type"])
+        if "default" in attribute:
+            default = IDLTypes.DefaultToString(attribute["default"])
+            defVal = "{}({})".format(IDLTypes.GetTypeString(attribute["type"]), default)
+
+        f.WriteLine('__DefineAttribute({}, {}, \'{}\', {}, {});'.format(Capitalize(attributeName), typeString, fourcc, accessMode, defVal))
+
+#------------------------------------------------------------------------------
+##
+#
 def WriteEnumeratedTypes(f, document):
     if "enums" in document:
         for enumName, enum in document["enums"].items():

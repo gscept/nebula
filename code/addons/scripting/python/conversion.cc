@@ -6,6 +6,7 @@
 #include "conversion.h"
 #include "pybind11/operators.h"
 #include "pybind11/cast.h"
+#include "util/random.h"
 
 namespace Python
 {
@@ -340,6 +341,22 @@ PYBIND11_EMBEDDED_MODULE(nmath, m)
 
 PYBIND11_EMBEDDED_MODULE(util, m)
 {
+	m.def("randf",
+        []()->float
+        {
+            return Util::RandomFloat();
+        },
+		"Returns a random floating point number between 0 .. 1 using XorShift128."
+    );
+
+	m.def("rand",
+        []()->uint
+        {
+            return Util::FastRandom();
+        },
+		"Returns an XorShift128 random 32-bit unsigned integer."
+    );
+
     py::class_<Util::Guid>(m, "Guid")
         .def(py::init(
             []()
@@ -402,7 +419,11 @@ pybind11::handle VariantToPyType(Util::Variant src, pybind11::return_value_polic
 	namespace py = pybind11;
 
 	auto type = src.GetType();
-	if (type == Util::Variant::Type::Byte)
+    if (type == Util::Variant::Type::Void)
+    {
+        return Py_None;
+    }
+	else if (type == Util::Variant::Type::Byte)
 	{
 		return PyLong_FromLong(src.GetByte());
 	}

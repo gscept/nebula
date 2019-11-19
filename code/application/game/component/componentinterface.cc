@@ -70,7 +70,7 @@ ComponentInterface::SubscribedEvents() const
 //------------------------------------------------------------------------------
 /**
 */
-const Game::Attribute&
+const Attr::AttrId&
 ComponentInterface::GetAttribute(IndexT index) const
 {
 	return this->attributes[index];
@@ -79,7 +79,7 @@ ComponentInterface::GetAttribute(IndexT index) const
 //------------------------------------------------------------------------------
 /**
 */
-const Util::FixedArray<Game::Attribute>&
+const Util::FixedArray<Attr::AttrId>&
 ComponentInterface::GetAttributes() const
 {
 	return this->attributes;
@@ -93,10 +93,31 @@ void ComponentInterface::EnableEvent(ComponentEvent eventId)
 	this->events.SetBit(eventId);
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 bool
 ComponentInterface::Enabled() const
 {
 	return this->enabled;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ComponentInterface::InternalSerialize(const Ptr<IO::BinaryWriter>& writer)
+{
+     // empty
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ComponentInterface::InternalDeserialize(const Ptr<IO::BinaryReader>& reader, uint offset, uint numInstances)
+{
+    // empty
 }
 
 } // namespace Game
