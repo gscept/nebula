@@ -402,7 +402,11 @@ pybind11::handle VariantToPyType(Util::Variant src, pybind11::return_value_polic
 	namespace py = pybind11;
 
 	auto type = src.GetType();
-	if (type == Util::Variant::Type::Byte)
+    if (type == Util::Variant::Type::Void)
+    {
+        return Py_None;
+    }
+	else if (type == Util::Variant::Type::Byte)
 	{
 		return PyLong_FromLong(src.GetByte());
 	}
