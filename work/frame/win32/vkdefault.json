@@ -167,6 +167,10 @@
     }
 
     plugin: {
+      name: "LightContext - Clusted Process"
+    }
+
+    plugin: {
       name: "LightContext - Update Shadowmaps"
     }
 

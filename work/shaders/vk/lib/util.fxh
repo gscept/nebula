@@ -571,5 +571,43 @@ GetPosition(mat4x4 transform)
 	return transform[2].xyz;
 }
 
+
+//------------------------------------------------------------------------------
+/**
+	Unpack a 1D index into a 3D index
+*/
+uint3 
+Unpack1DTo3D(uint index1D, uint width, uint height)
+{
+	uint i = index1D % width;
+	uint j = index1D % (width * height) / width;
+	uint k = index1D / (width * height);
+
+	return uint3(i, j, k);
+}
+
+//------------------------------------------------------------------------------
+/**
+	Pack a 3D index into a 1D array index
+*/
+uint 
+Pack3DTo1D(uint3 index3D, uint width, uint height)
+{
+	return index3D.x + (width * (index3D.y + height * index3D.z));
+}
+
+//------------------------------------------------------------------------------
+/**
+	Calculate 3D index from screen position and depth
+*/
+uint3 CalculateClusterIndex(vec2 screenPos, float depth, uvec2 blockSize, float viewNear, float fov)
+{
+	uint i = uint(screenPos.x / blockSize.x);
+	uint j = uint(screenPos.y / blockSize.y);
+	uint k = uint(log(-depth / viewNear) * fov);
+
+	return uint3(i, j, k);
+}
+
 //------------------------------------------------------------------------------
 #endif

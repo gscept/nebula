@@ -51,33 +51,49 @@ write IMAGE_FORMAT_TYPE image2D BlurImageY;
 #define SIGMA 10.0f
 #define INVSIGMA 2.0f
 
+#if !(BLUR_KERNEL_8 || BLUR_KERNEL_16 || BLUR_KERNEL_32 || BLUR_KERNEL_64)
+	#define BLUR_KERNEL_16 1
+#endif
 
-#define BLUR_KERNEL_32 1
-
-#if BLUR_KERNEL_32
-#define KERNEL_RADIUS 16
-#define KERNEL_RADIUS_FLOAT 16.0f
-#define HALF_KERNEL_RADIUS_FLOAT (KERNEL_RADIUS/2.0f)
-#define HALF_KERNEL_RADIUS (KERNEL_RADIUS/2)
-#define GAUSSIAN_KERNEL_SIZE_33 1
+#if BLUR_KERNEL_8
+	#define KERNEL_RADIUS 4
+	#define KERNEL_RADIUS_FLOAT 4.0f
+	#define HALF_KERNEL_RADIUS_FLOAT (KERNEL_RADIUS/2.0f)
+	#define HALF_KERNEL_RADIUS (KERNEL_RADIUS/2)
+	#define GAUSSIAN_KERNEL_SIZE_9 1
+#elif BLUR_KERNEL_16
+	#define KERNEL_RADIUS 8
+	#define KERNEL_RADIUS_FLOAT 8.0f
+	#define HALF_KERNEL_RADIUS_FLOAT (KERNEL_RADIUS/2.0f)
+	#define HALF_KERNEL_RADIUS (KERNEL_RADIUS/2)
+	#define GAUSSIAN_KERNEL_SIZE_17 1
+#elif BLUR_KERNEL_32
+	#define KERNEL_RADIUS 16
+	#define KERNEL_RADIUS_FLOAT 16.0f
+	#define HALF_KERNEL_RADIUS_FLOAT (KERNEL_RADIUS/2.0f)
+	#define HALF_KERNEL_RADIUS (KERNEL_RADIUS/2)
+	#define GAUSSIAN_KERNEL_SIZE_33 1
 #elif BLUR_KERNEL_64
-#define KERNEL_RADIUS 32
-#define KERNEL_RADIUS_FLOAT 32.0f
-#define HALF_KERNEL_RADIUS_FLOAT (KERNEL_RADIUS/2.0f)
-#define HALF_KERNEL_RADIUS (KERNEL_RADIUS/2)
-#define GAUSSIAN_KERNEL_SIZE_65 1
+	#define KERNEL_RADIUS 32
+	#define KERNEL_RADIUS_FLOAT 32.0f
+	#define HALF_KERNEL_RADIUS_FLOAT (KERNEL_RADIUS/2.0f)
+	#define HALF_KERNEL_RADIUS (KERNEL_RADIUS/2)
+	#define GAUSSIAN_KERNEL_SIZE_65 1
 #endif
 
 #define BLUR_TILE_WIDTH 320
 #define SHARED_MEM_SIZE (KERNEL_RADIUS + BLUR_TILE_WIDTH + KERNEL_RADIUS)
 
-
-
+// generated from http://dev.theomader.com/gaussian-kernel-calculator/ with sigma set to 10
 const float weights[] = {
 #if GAUSSIAN_KERNEL_SIZE_65
 0.00024,0.000328,0.000445,0.000598,0.000795,0.001046,0.001363,0.001759,0.002246,0.002841,0.003557,0.00441,0.005412,0.006576,0.007912,0.009423,0.011112,0.012973,0.014996,0.017162,0.019445,0.021812,0.024225,0.026637,0.028998,0.031255,0.033352,0.035236,0.036857,0.038168,0.039134,0.039725,0.039924,0.039725,0.039134,0.038168,0.036857,0.035236,0.033352,0.031255,0.028998,0.026637,0.024225,0.021812,0.019445,0.017162,0.014996,0.012973,0.011112,0.009423,0.007912,0.006576,0.005412,0.00441,0.003557,0.002841,0.002246,0.001759,0.001363,0.001046,0.000795,0.000598,0.000445,0.000328,0.00024
 #elif GAUSSIAN_KERNEL_SIZE_33
 0.000485,0.000899,0.001603,0.002745,0.004519,0.007147,0.010863,0.015864,0.022263,0.030022,0.038903,0.048441,0.05796,0.066638,0.073622,0.078159,0.079733,0.078159,0.073622,0.066638,0.05796,0.048441,0.038903,0.030022,0.022263,0.015864,0.010863,0.007147,0.004519,0.002745,0.001603,0.000899,0.000485
+#elif GAUSSIAN_KERNEL_SIZE_17
+0.047901,0.051629,0.055093,0.058206,0.060883,0.063049,0.064644,0.06562,0.065949,0.06562,0.064644,0.063049,0.060883,0.058206,0.055093,0.051629,0.047901
+#elif GAUSSIAN_KERNEL_SIZE_9
+0.106004,0.109777,0.112553,0.114253,0.114825,0.114253,0.112553,0.109777,0.106004
 #endif
 };
 groupshared IMAGE_LOAD_VEC SharedMemory[SHARED_MEM_SIZE];
@@ -106,7 +122,7 @@ csMainX()
 	
 	// load into workgroup saved memory, this allows us to use the original pixel even though 
 	// we might have replaced it with the result from this thread!
-	SharedMemory[gl_LocalInvocationID.x] = IMAGE_LOAD_SWIZZLE(textureLod(sampler2D(InputImageX, InputSampler), sampleCoord, 0));
+	SharedMemory[gl_LocalInvocationID.x] = IMAGE_LOAD_SWIZZLE(texelFetch(sampler2D(InputImageX, InputSampler), sampleIndex, 0));
 	groupMemoryBarrier();
 	
 	const uint writePos = tileStart + gl_LocalInvocationID.x;
@@ -119,7 +135,7 @@ csMainX()
 		int i;
 		int weightIndex = 0;		
 		#pragma unroll
-		for (i = 0; i < KERNEL_RADIUS * 2; ++i)
+		for (i = 0; i < KERNEL_RADIUS * 2 + 1; ++i)
 		{
 		    // Sample the pre-filtered data with step size = 2 pixels
 		    uint j = 1 * uint(i) + gl_LocalInvocationID.x;
@@ -157,7 +173,7 @@ csMainY()
 	
 	// load into workgroup saved memory, this allows us to use the original pixel even though 
 	// we might have replaced it with the result from this thread!
-	SharedMemory[gl_LocalInvocationID.x] = IMAGE_LOAD_SWIZZLE(textureLod(sampler2D(InputImageY, InputSampler), sampleCoord, 0));
+	SharedMemory[gl_LocalInvocationID.x] = IMAGE_LOAD_SWIZZLE(texelFetch(sampler2D(InputImageY, InputSampler), sampleIndex, 0));
 	groupMemoryBarrier();
 	
 	const uint writePos = tileStart + gl_LocalInvocationID.x;
@@ -170,7 +186,7 @@ csMainY()
 		int i;
 		int weightIndex = 0;
 		#pragma unroll
-		for (i = 0; i < KERNEL_RADIUS * 2; ++i)
+		for (i = 0; i < KERNEL_RADIUS * 2 + 1; ++i)
 		{
 		    // Sample the pre-filtered data with step size = 2 pixels
 		    uint j = 1 * uint(i) + gl_LocalInvocationID.x;

@@ -156,7 +156,7 @@ VkShaderSetup(
 		rwbo.visibility = AllVisibility;
 		uint32_t slotsUsed = 0;
 
-		if (buffer->size == 0) continue;
+		if (buffer->alignedSize == 0) continue;
 		ResourceTableLayoutCreateInfo& rinfo = layoutCreateInfos.AddUnique(buffer->set);
 		numsets = uint_max(numsets, buffer->set + 1);
 

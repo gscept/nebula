@@ -105,11 +105,18 @@ struct
 {
 	CoreGraphics::ShaderId classificationShader;
 	CoreGraphics::ShaderProgramId aabbGenerateProgram;
-	CoreGraphics::ShaderProgramId lightCullProgram;
+	CoreGraphics::ShaderProgramId debugProgram;
 	CoreGraphics::ShaderRWBufferId clusterAABBBuffer;
 	CoreGraphics::ShaderRWBufferId clusterIndexBuffer;
-	CoreGraphics::ShaderRWBufferId clusterLightBuffer;
+	CoreGraphics::ConstantBufferId clusterLightBuffer;
+	CoreGraphics::ConstantBufferId clusterConstants;
+	IndexT uniformsSlot;
+	IndexT lightListSlot;
 	CoreGraphics::ResourceTableId clusterResourceTable;
+
+	uint numThreadsThisFrame;
+
+	CoreGraphics::ShaderRWTextureId clusterDebugTexture;
 
 	enum DepthDivisionMode
 	{
@@ -119,9 +126,9 @@ struct
 
 	DepthDivisionMode divMode;
 
-	static const SizeT ClusterSubdivsX = 16;
-	static const SizeT ClusterSubdivsY = 16;
-	static const SizeT ClusterSubdivsZ = 8;
+	static const SizeT ClusterSubdivsX = 64;
+	static const SizeT ClusterSubdivsY = 64;
+	static const SizeT ClusterSubdivsZ = 16;
 	static const SizeT IndicesPerCluster = 32;
 
 	// these are used to update the light clustering
@@ -202,6 +209,11 @@ LightContext::Create()
 			LightContext::BlurGlobalShadowMap();
 		});
 
+	Frame::FramePlugin::AddCallback("LightContext - Clusted Process", [](IndexT frame)
+		{
+			LightContext::UpdateClustersAndCull();
+		});
+
 	// create shadow mapping frame script
 	lightServerState.shadowMappingFrameScript = Frame::FrameServer::Instance()->LoadFrameScript("shadowmap_framescript", "frame:vkshadowmap.json"_uri);
 	lightServerState.shadowMappingFrameScript->Build();
@@ -280,20 +292,11 @@ LightContext::Create()
 	ShaderRWBufferCreateInfo rwbInfo =
 	{
 		"LightClusterIndexBuffer",
-		clusterState.ClusterSubdivsX * clusterState.ClusterSubdivsY * clusterState.ClusterSubdivsZ * clusterState.IndicesPerCluster * sizeof(IndexT),
+		clusterState.ClusterSubdivsX * clusterState.ClusterSubdivsY * clusterState.ClusterSubdivsZ * sizeof(LightsClustered::LightTileList),
 		1,
 		false
 	};
 	clusterState.clusterIndexBuffer = CreateShaderRWBuffer(rwbInfo);
-
-	ShaderRWBufferCreateInfo rwb2Info = 
-	{
-		"LightClusterInputBuffer",
-		2048 * sizeof(LightsClustered::Light),
-		1,
-		false
-	};
-	clusterState.clusterLightBuffer = CreateShaderRWBuffer(rwb2Info);
 
 	ShaderRWBufferCreateInfo rwb3Info =
 	{
@@ -304,19 +307,33 @@ LightContext::Create()
 	};
 	clusterState.clusterAABBBuffer = CreateShaderRWBuffer(rwb3Info);
 
+	ShaderRWTextureCreateInfo debugTexInfo =
+	{
+		"LightClsuterDebugTexture",
+		TextureType::Texture2D,
+		PixelFormat::R16G16B16A16F,
+		CoreGraphicsImageLayout::ShaderRead,
+		1.0f, 1.0f, 1.0f, 1, 1, false, true, false
+	};
+	clusterState.clusterDebugTexture = CreateShaderRWTexture(debugTexInfo);
+
 	clusterState.classificationShader = ShaderServer::Instance()->GetShader("shd:lights_clustered.fxb");
 	IndexT indexBufferSlot = ShaderGetResourceSlot(clusterState.classificationShader, "LightIndexList");
-	IndexT lightsBufferSlot = ShaderGetResourceSlot(clusterState.classificationShader, "LightList");
 	IndexT clusterAABBSlot = ShaderGetResourceSlot(clusterState.classificationShader, "ClusterAABBs");
+	IndexT clusterDebugSlot = ShaderGetResourceSlot(clusterState.classificationShader, "DebugOutput");
+	clusterState.lightListSlot = ShaderGetResourceSlot(clusterState.classificationShader, "LightList");
+	clusterState.uniformsSlot = ShaderGetResourceSlot(clusterState.classificationShader, "Uniforms");
 
-	clusterState.aabbGenerateProgram = ShaderGetProgram(clusterState.classificationShader, 0);
-	clusterState.lightCullProgram = ShaderGetProgram(clusterState.classificationShader, 1);
+	clusterState.aabbGenerateProgram = ShaderGetProgram(clusterState.classificationShader, ShaderServer::Instance()->FeatureStringToMask("AABBAndCull"));
+	clusterState.debugProgram = ShaderGetProgram(clusterState.classificationShader, ShaderServer::Instance()->FeatureStringToMask("ClusterDebug"));
 	clusterState.clusterResourceTable = ShaderCreateResourceTable(clusterState.classificationShader, NEBULA_BATCH_GROUP);
 
 	// update resource table
 	ResourceTableSetShaderRWBuffer(clusterState.clusterResourceTable, { clusterState.clusterIndexBuffer, indexBufferSlot, 0, false, false, -1, 0 });
-	ResourceTableSetShaderRWBuffer(clusterState.clusterResourceTable, { clusterState.clusterLightBuffer, lightsBufferSlot, 0, false, false, -1, 0 });
 	ResourceTableSetShaderRWBuffer(clusterState.clusterResourceTable, { clusterState.clusterAABBBuffer, clusterAABBSlot, 0, false, false, -1, 0 });
+	ResourceTableSetShaderRWTexture(clusterState.clusterResourceTable, { clusterState.clusterDebugTexture, clusterDebugSlot, 0, CoreGraphics::SamplerId::Invalid() });
+	ResourceTableSetConstantBuffer(clusterState.clusterResourceTable, { CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.lightListSlot, 0, false, false, sizeof(LightsClustered::LightList), 0 });
+	ResourceTableSetConstantBuffer(clusterState.clusterResourceTable, { CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.uniformsSlot, 0, false, false, sizeof(LightsClustered::Uniforms), 0});
 	ResourceTableCommitChanges(clusterState.clusterResourceTable);
 
 	_CreateContext();
@@ -782,6 +799,7 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIn
 				Math::float4 posAndRange = Math::matrix44::transform(trans.get_position(), viewTransform);
 				posAndRange.w() = 1 / trans.get_zaxis().length();
 				Math::float4::storeu(posAndRange, clusterState.lights[i].position);
+				clusterState.lights[i].radius = posAndRange.w();
 			}
 			break;
 
@@ -792,13 +810,54 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIn
 				posAndRange.w() = 1 / trans.get_zaxis().length();
 				Math::float4::storeu(posAndRange, clusterState.lights[i].position);
 				Math::float4::store3u(trans.get_zaxis(), clusterState.lights[i].forward);
+				clusterState.lights[i].radius = posAndRange.w();
 			}
 			break;
 		}
 	}
 
 	// update lights buffer which will be used for the light culling pass
-	ShaderRWBufferUpdate(clusterState.clusterLightBuffer, clusterState.lights, sizeof(LightsClustered::Light) * types.Size());	
+	//ShaderRWBufferUpdate(clusterState.clusterLightBuffer, clusterState.lights, sizeof(LightsClustered::Light) * types.Size());	
+
+	// get dimensions of output texture
+	TextureDimensions dims = ShaderRWTextureGetDimensions(clusterState.clusterDebugTexture);
+
+	Graphics::GraphicsEntityId cam = Graphics::GraphicsServer::Instance()->GetCurrentView()->GetCamera();
+	CoreGraphics::DisplayMode displayMode = CoreGraphics::WindowGetDisplayMode(CoreGraphics::DisplayDevice::Instance()->GetCurrentWindow());
+	const Graphics::CameraSettings settings = Graphics::CameraContext::GetSettings(cam);
+
+	uint clusterDimensionX = Math::n_ceil(displayMode.GetWidth() / clusterState.ClusterSubdivsX);
+	uint clusterDimensionY = Math::n_ceil(displayMode.GetHeight() / clusterState.ClusterSubdivsY);
+
+	float sd = 2.0f * settings.GetFocalLength().y() / clusterDimensionY;
+	float logDist = 1.0f / Math::n_log(1.0f + sd);
+	float logDepth = Math::n_log(settings.GetZFar() / settings.GetZNear());
+	uint clusterDimensionZ = (unsigned int)Math::n_floor(logDepth * logDist);
+
+	uint numLights = types.Size();
+	LightsClustered::Uniforms uniforms;
+	uniforms.NumInputLights = numLights;
+
+	uniforms.ZPerspectiveCorrection = 1.0f + sd;
+	uniforms.InvFramebufferDimensions[0] = 1.0f / displayMode.GetWidth();
+	uniforms.InvFramebufferDimensions[1] = 1.0f / displayMode.GetHeight();
+	uniforms.NumCells[0] = clusterDimensionX;
+	uniforms.NumCells[1] = clusterDimensionY;
+	uniforms.NumCells[2] = clusterDimensionZ;
+	uniforms.BlockSize[0] = clusterState.ClusterSubdivsX;
+	uniforms.BlockSize[1] = clusterState.ClusterSubdivsY;
+	uniforms.Fov = settings.GetFov();
+
+	clusterState.numThreadsThisFrame = Math::n_ceil((clusterDimensionX * clusterDimensionY * clusterDimensionZ) / 1024.0f);
+
+	uint offset = SetComputeConstants(MainThreadConstantBuffer, uniforms);
+	ResourceTableSetConstantBuffer(clusterState.clusterResourceTable, { GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.uniformsSlot, 0, false, false, sizeof(LightsClustered::Uniforms), (SizeT)offset });
+
+	LightsClustered::LightList list;
+	memcpy(list.Lights, clusterState.lights, sizeof(LightsClustered::Light)* types.Size());
+	offset = SetComputeConstants(MainThreadConstantBuffer, list);
+	ResourceTableSetConstantBuffer(clusterState.clusterResourceTable, { GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.lightListSlot, 0, false, false, (SizeT)sizeof(LightsClustered::Light) * types.Size(), (SizeT)offset });
+
 }
 
 //------------------------------------------------------------------------------
@@ -807,46 +866,66 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIn
 void 
 LightContext::UpdateClustersAndCull()
 {
+	// update constants
+	using namespace CoreGraphics;
+
+	ResourceTableCommitChanges(clusterState.clusterResourceTable);
+
+	// begin command buffer work
+	CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "Cluster AABB Generation and Lights culling");
+
 	// make sure to sync so we don't read from data that is being written...
-	CoreGraphics::BarrierInsert(GraphicsQueueType,
-		CoreGraphics::BarrierStage::ComputeShader,
-		CoreGraphics::BarrierStage::ComputeShader,
-		CoreGraphics::BarrierDomain::Global,
+	BarrierInsert(GraphicsQueueType,
+		BarrierStage::ComputeShader,
+		BarrierStage::ComputeShader,
+		BarrierDomain::Global,
 		nullptr,
 		{
-			CoreGraphics::BufferBarrier
+			BufferBarrier
 			{
 				clusterState.clusterAABBBuffer,
-				CoreGraphics::BarrierAccess::ShaderRead,
-				CoreGraphics::BarrierAccess::ShaderWrite,
+				BarrierAccess::ShaderRead,
+				BarrierAccess::ShaderWrite,
 				0, -1
 			}
 		},
 		nullptr, "AABB begin barrier");
 
-	CoreGraphics::SetShaderProgram(clusterState.aabbGenerateProgram);
-	CoreGraphics::SetResourceTable(clusterState.clusterResourceTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+	SetShaderProgram(clusterState.aabbGenerateProgram);
+	SetResourceTable(clusterState.clusterResourceTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
 
 	// we subdivide the scene into 64x64x16 clusters, and the thread size is 64, so run a 1x64x16 job to update all aabbs
-	CoreGraphics::Compute(1, 64, 16);
+	Compute(clusterState.numThreadsThisFrame, 1, 1);
 
 	// make sure to sync so we don't read from data that is being written...
-	CoreGraphics::BarrierInsert(GraphicsQueueType,
-		CoreGraphics::BarrierStage::ComputeShader,
-		CoreGraphics::BarrierStage::ComputeShader,
-		CoreGraphics::BarrierDomain::Global,
+	BarrierInsert(GraphicsQueueType,
+		BarrierStage::ComputeShader,
+		BarrierStage::ComputeShader,
+		BarrierDomain::Global,
 		nullptr,
 		{
-			CoreGraphics::BufferBarrier
+			BufferBarrier
 			{
 				clusterState.clusterAABBBuffer,
-				CoreGraphics::BarrierAccess::ShaderWrite,
-				CoreGraphics::BarrierAccess::ShaderRead,
+				BarrierAccess::ShaderWrite,
+				BarrierAccess::ShaderRead,
 				0, -1
 			}
 		},
 		nullptr, "AABB finish barrier");
 
+	CommandBufferEndMarker(GraphicsQueueType);
+
+	CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "Cluster DEBUG");
+
+	SetShaderProgram(clusterState.debugProgram);
+	SetResourceTable(clusterState.clusterResourceTable, NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
+	
+	// perform debug output
+	TextureDimensions dims = ShaderRWTextureGetDimensions(clusterState.clusterDebugTexture);
+	Compute(Math::n_divandroundup(dims.width, 256), dims.height, 1);
+
+	CommandBufferEndMarker(GraphicsQueueType);
 	/*
 
 	// bind the cull shader
@@ -929,6 +1008,7 @@ LightContext::BlurGlobalShadowMap()
 	using namespace CoreGraphics;
 	if (lightServerState.globalLightEntity != Graphics::GraphicsEntityId::Invalid())
 	{
+		CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "CSM Blur");
 		BarrierInsert(GraphicsQueueType,
 			BarrierStage::PixelShader,
 			BarrierStage::ComputeShader,
@@ -1011,32 +1091,9 @@ LightContext::BlurGlobalShadowMap()
 				},
 			},
 			"CSM Blur Y Finish");
+
+		CoreGraphics::CommandBufferEndMarker(GraphicsQueueType);
 	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-
-void 
-LightContext::UpdateGlobalShadowMap()
-{
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-LightContext::UpdateSpotShadows()
-{
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-LightContext::UpdatePointShadows()
-{
 }
 
 //------------------------------------------------------------------------------

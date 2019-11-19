@@ -87,8 +87,6 @@ write IMAGE_FORMAT_TYPE image2D BlurImageY;
 #define BLUR_TILE_WIDTH 320
 #define SHARED_MEM_SIZE (KERNEL_RADIUS + BLUR_TILE_WIDTH + KERNEL_RADIUS)
 
-
-
 // generated from http://dev.theomader.com/gaussian-kernel-calculator/ with sigma set to 10
 const float weights[] = {
 #if GAUSSIAN_KERNEL_SIZE_65

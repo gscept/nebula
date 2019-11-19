@@ -23,7 +23,8 @@ public:
 	{
 		GlobalLightType,
 		PointLightType,
-		SpotLightType
+		SpotLightType,
+		AreaLightType
 	};
 
 	/// constructor
