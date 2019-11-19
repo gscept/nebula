@@ -107,6 +107,7 @@ csMainX()
 	// load into workgroup saved memory, this allows us to use the original pixel even though 
 	// we might have replaced it with the result from this thread!
 	SharedMemory[gl_LocalInvocationID.x] = IMAGE_LOAD_SWIZZLE(textureLod(sampler2D(InputImageX, InputSampler), sampleCoord, 0));
+    groupMemoryBarrier();
 	barrier();
 	
 	const uint writePos = tileStart + gl_LocalInvocationID.x;
@@ -158,6 +159,7 @@ csMainY()
 	// load into workgroup saved memory, this allows us to use the original pixel even though 
 	// we might have replaced it with the result from this thread!
 	SharedMemory[gl_LocalInvocationID.x] = IMAGE_LOAD_SWIZZLE(textureLod(sampler2D(InputImageY, InputSampler), sampleCoord, 0));
+    groupMemoryBarrier();
 	barrier();
 	
 	const uint writePos = tileStart + gl_LocalInvocationID.x;
