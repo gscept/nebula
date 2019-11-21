@@ -59,6 +59,16 @@ FrameSubpassFullscreenEffect::Discard()
 //------------------------------------------------------------------------------
 /**
 */
+void
+FrameSubpassFullscreenEffect::OnWindowResized()
+{
+    FrameOp::OnWindowResized();
+    RenderTextureWindowResized(this->tex);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 FrameOp::Compiled*
 FrameSubpassFullscreenEffect::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 {

@@ -24,6 +24,8 @@ public:
 	void Setup();
 	/// discard operation
 	void Discard();
+    /// Resize render texture
+    void OnWindowResized() override;
 
 	struct CompiledImpl : public FrameOp::Compiled
 	{
