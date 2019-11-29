@@ -90,6 +90,7 @@ FrameScriptLoader::LoadFrameScript(const IO::URI& path)
 		CONSTRUCTOR_MACRO(SSAOPlugin);
 		CONSTRUCTOR_MACRO(BloomPlugin);
 		CONSTRUCTOR_MACRO(TonemapPlugin);
+		CONSTRUCTOR_MACRO(SSRPlugin);
 
 		// run parser entry point
 		json = jzon_get(json, "framescript");

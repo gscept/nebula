@@ -104,6 +104,13 @@
         relative: true,
         width: 0.2,
         height: 0.2
+      },
+      {
+        name: "SSRBuffer",
+        format: "R16G16B16A16F",
+        relative: true,
+        width: 1.0,
+        height: 1.0
       }
     ],
 
@@ -146,6 +153,21 @@
         ],
         read_write_textures: [
           "BloomBufferBlurred"
+        ]
+      },
+      {
+        name: "SSR",
+        class: "Frame::SSRPlugin",
+        render_textures: [
+          "AlbedoBuffer",
+          "NormalBuffer",
+          "SpecularMap"
+        ],
+        depth_stencils: [
+          "ZBuffer"
+        ],
+        read_write_textures: [
+          "SSRBuffer"
         ]
       }
     ],
@@ -260,6 +282,49 @@
     }
 
     plugin: {
+      name: "SSR-Run",
+      inputs: [
+        {
+          name: "ZBuffer",
+          access: "DepthAttachmentRead",
+          layout: "DepthStencilRead",
+          stage: "ComputeShader",
+          aspect: "Color"
+        },
+        {
+          name: "AlbedoBuffer",
+          access: "ShaderRead",
+          layout: "ShaderRead",
+          stage: "ComputeShader",
+          aspect: "Color"
+        },
+        {
+          name: "NormalBuffer",
+          access: "ShaderRead",
+          layout: "ShaderRead",
+          stage: "ComputeShader",
+          aspect: "Color"
+        },
+        {
+          name: "SpecularBuffer",
+          access: "ShaderRead",
+          layout: "ShaderRead",
+          stage: "ComputeShader",
+          aspect: "Color"
+        }
+      ],
+      outputs: [
+        {
+          name: "SSRBuffer",
+          access: "ShaderWrite",
+          layout: "ShaderRead",
+          stage: "ComputeShader",
+          aspect: "Color"
+        }
+      ]
+    },
+
+    plugin: {
       name: "HBAO-Run",
       inputs: [
         {
@@ -356,6 +421,13 @@
             aspect: "Color"
           },
           {
+            name: "SSRBuffer",
+            access: "ShaderRead",
+            layout: "ShaderWrite",
+            stage: "PixelShader",
+            aspect: "Color"
+          },
+          {
             name: "BloomBufferBlurred",
             access: "ShaderRead",
             layout: "ShaderRead",
@@ -396,6 +468,10 @@
               {
                 semantic: "SSAOTexture",
                 value: "SSAOBuffer"
+              },
+              {
+                semantic: "SSRTexture",
+                value: "SSRBuffer"
               }
             ]
           },

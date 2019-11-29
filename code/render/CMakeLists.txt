@@ -416,6 +416,8 @@ ENDIF()
 				ssaoplugin.h
 				tonemapplugin.cc
 				tonemapplugin.h
+				ssrplugin.cc
+				ssrplugin.h
 			)
 		fips_dir(graphics)
 			fips_files(
