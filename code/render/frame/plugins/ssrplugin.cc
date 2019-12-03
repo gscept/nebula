@@ -59,28 +59,29 @@ SSRPlugin::Setup()
 
 	this->program = ShaderGetProgram(this->shader, ShaderFeatureFromString("Alt0"));
 	
-    static float alf = 0.0f;
-    
 	FramePlugin::AddCallback("SSR-Run", [this](IndexT)
 	{
         const CameraSettings& cameraSettings = CameraContext::GetSettings(Graphics::GraphicsServer::Instance()->GetCurrentView()->GetCamera());
+
+        Math::matrix44 view = CameraContext::GetTransform(Graphics::GraphicsServer::Instance()->GetCurrentView()->GetCamera());
 
 #if NEBULA_GRAPHICS_DEBUG
 		CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_RED, "Screen Space Reflections");
 #endif
         
-        const int screenSize[2] = {1680, 1050};
+        TextureDimensions dims = ShaderRWTextureGetDimensions(this->readWriteTextures[0]);
 
-        float sx = (float)screenSize[0] / 2.0f;
-        float sy = (float)screenSize[1] / 2.0f;
+        float sx = (float)dims.width / 2.0f;
+        float sy = (float)dims.height / 2.0f;
 
         const Math::matrix44 scrScale = Math::matrix44({ sx, 0.0f, 0.0f, 0.0f },
                                                        { 0.0f, sy, 0.0f, 0.0f },
                                                        { 0.0f, 0.0f, 1.0f, 0.0f },
                                                        { sx, sy, 0.0f, 1.0f });
 
-        Math::matrix44 viewToTextureSpaceMatrix = Math::matrix44::multiply(cameraSettings.GetProjTransform(), scrScale);
-
+        // TODO: for some reason, this doesn't work when passed to the shader. Maybe transpose or something similar?
+        Math::matrix44 viewToTextureSpaceMatrix = Math::matrix44::multiply(scrScale, cameraSettings.GetProjTransform());
+        
         viewToTextureSpaceMatrix.storeu(ssrBlock.ViewToTextureSpace);
         uint ssrOffset = CoreGraphics::SetComputeConstants(MainThreadConstantBuffer, ssrBlock);
 
@@ -94,8 +95,8 @@ SSRPlugin::Setup()
 
         const int TILE_SIZE = 32;
         int workGroups[2] = {
-            (screenSize[0] + (screenSize[0] % TILE_SIZE)) / TILE_SIZE,
-            (screenSize[1] + (screenSize[1] % TILE_SIZE)) / TILE_SIZE
+            (dims.width + (dims.width % TILE_SIZE)) / TILE_SIZE,
+            (dims.height + (dims.height % TILE_SIZE)) / TILE_SIZE
         };
         CoreGraphics::Compute(workGroups[0], workGroups[1], 1);
 

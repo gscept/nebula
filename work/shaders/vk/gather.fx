@@ -18,7 +18,6 @@ varblock GatherBlock
 	textureHandle BloomTexture;
 	textureHandle LuminanceTexture;
 	textureHandle SSAOTexture;
-	textureHandle SSRTexture;
 };
 
 samplerstate SmoothSampler
@@ -95,8 +94,6 @@ psMain(in vec2 UV,
 	color = psFog(depth, color + bloom);
 	color = ToneMap(color, vec4(lum), MaxLuminance);
 	MergedColor = color;
-	
-    MergedColor = vec4(sample2DLod(SSRTexture, GatherSampler, UV, 0).rgb, 1.0f);
 }
 
 //------------------------------------------------------------------------------
