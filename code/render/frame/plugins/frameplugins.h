@@ -14,6 +14,6 @@
 //#include "volumetriclightalgorithm.h"
 #include "tonemapplugin.h"
 #include "bloomplugin.h"
-//#include "ssrplugin.h"
+#include "ssrplugin.h"
 
 //------------------------------------------------------------------------------
