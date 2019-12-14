@@ -11,7 +11,7 @@
         "type": "string"
         "fourcc": "mdlR"
         "access": "RW"
-		"default": "mdl:Buildings/castle_tower.n3"
+		"default": "mdl:system/placeholder.n3"
     }
     "cameraMode": {
         "type": "uint"
@@ -42,6 +42,7 @@
         "events": [
             "OnActivate"
             "OnDeactivate"
+            "EndFrame"
         ]
     }
     "UtilCameraComponent": {

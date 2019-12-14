@@ -13,11 +13,14 @@
 #include "basegamefeature/managers/componentmanager.h"
 #include "game/component/componentserialization.h"
 #include "graphicsfeature/components/graphicsdata.h"
+#include "debug/debugtimer.h"
 
 namespace GraphicsFeature
 {
 
 static GraphicsComponentAllocator* component;
+
+_declare_static_timer(GraphicsComponentOnEndFrame);
 
 __ImplementComponent_woSerialization(GraphicsFeature::GraphicsComponent, component)
 
@@ -41,9 +44,12 @@ GraphicsComponent::Create()
 	__SetupDefaultComponentBundle(component);
 	component->functions.OnActivate = OnActivate;
 	component->functions.OnDeactivate = OnDeactivate;
+	component->functions.OnEndFrame = OnEndFrame;
 	__RegisterComponent(component, "GraphicsComponent"_atm);
 
 	SetupAcceptedMessages();
+
+    _setup_grouped_timer(GraphicsComponentOnEndFrame, "Components");
 }
 
 //------------------------------------------------------------------------------
@@ -52,7 +58,7 @@ GraphicsComponent::Create()
 void
 GraphicsComponent::Discard()
 {
-	
+    _discard_timer(GraphicsComponentOnEndFrame);
 }
 
 //------------------------------------------------------------------------------
@@ -61,7 +67,6 @@ GraphicsComponent::Discard()
 void
 GraphicsComponent::SetupAcceptedMessages()
 {
-	__RegisterMsg(Msg::UpdateTransform, UpdateTransform);
 	__RegisterMsg(Msg::SetModel, SetModel);
 }
 
@@ -97,20 +102,6 @@ GraphicsComponent::OnDeactivate(Game::InstanceId instance)
 /**
 */
 void
-GraphicsComponent::UpdateTransform(Game::Entity entity, const Math::matrix44 & transform)
-{
-	auto instance = component->GetInstance(entity);
-	if (instance != InvalidIndex)
-	{
-		Graphics::GraphicsEntityId gfxEntity = { component->Get<Attr::GraphicsEntity>(instance) };
-		Models::ModelContext::SetTransform(gfxEntity, transform);
-	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
 GraphicsComponent::SetModel(Game::Entity entity, const Util::String & path)
 {
 	auto instance = component->GetInstance(entity);
@@ -122,6 +113,23 @@ GraphicsComponent::SetModel(Game::Entity entity, const Util::String & path)
 		auto transform = Game::TransformComponent::GetWorldTransform(component->GetOwner(instance));
 		Models::ModelContext::SetTransform(gfxEntity, transform);
 	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GraphicsComponent::OnEndFrame()
+{
+    _start_timer(GraphicsComponentOnEndFrame);
+
+    for (int i = 0; i < component->NumRegistered(); ++i)
+    {
+        Graphics::GraphicsEntityId gfxEntity = { component->Get<Attr::GraphicsEntity>(i) };
+        Models::ModelContext::SetTransform(gfxEntity, Game::TransformComponent::GetWorldTransform(component->GetOwner(i)));
+    }
+
+    _stop_timer(GraphicsComponentOnEndFrame);
 }
 
 //------------------------------------------------------------------------------
