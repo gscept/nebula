@@ -83,12 +83,23 @@ public:
 	CoreGraphics::PixelFormat::Code GetPixelFormat(const CoreGraphics::TextureId id);
 	/// get texture type
 	CoreGraphics::TextureType GetType(const CoreGraphics::TextureId id);
-	/// get texture creation layout
-	CoreGraphicsImageLayout GetLayout(const CoreGraphics::TextureId id);
+	/// get texture alias
+	CoreGraphics::TextureId GetAlias(const CoreGraphics::TextureId id);
+	/// get texture usage
+	CoreGraphics::TextureUsage GetUsageBits(const CoreGraphics::TextureId id);
 	/// get number of mips
-	uint GetNumMips(const CoreGraphics::TextureId id);
+	SizeT GetNumMips(const CoreGraphics::TextureId id);
+	/// get number of layers
+	SizeT GetNumLayers(const CoreGraphics::TextureId id);
+	/// get number of samples
+	SizeT GetNumSamples(const CoreGraphics::TextureId id);
 	/// get bindless handle
 	uint GetBindlessHandle(const CoreGraphics::TextureId id);
+	/// get default layout
+	CoreGraphicsImageLayout GetDefaultLayout(const CoreGraphics::TextureId id);
+
+	/// swap buffers for texture
+	IndexT SwapBuffers(const CoreGraphics::TextureId id);
 private:
 	friend class VkStreamTexturePool;
 	__ImplementResourceAllocatorTypedSafe(textureAllocator, TextureIdType);
@@ -103,7 +114,11 @@ VkMemoryTexturePool::Unload(const Resources::ResourceId id)
 	this->EnterGet();
 	VkTextureLoadInfo& loadInfo = this->Get<1>(id);
 	VkTextureRuntimeInfo& runtimeInfo = this->Get<0>(id);
-	vkFreeMemory(loadInfo.dev, loadInfo.mem, nullptr);
+
+	// only free memory if texture is not aliased!
+	if (loadInfo.alias == CoreGraphics::TextureId::Invalid() && loadInfo.mem != VK_NULL_HANDLE)
+		vkFreeMemory(loadInfo.dev, loadInfo.mem, nullptr);
+
 	vkDestroyImage(loadInfo.dev, loadInfo.img, nullptr);
 	vkDestroyImageView(loadInfo.dev, runtimeInfo.view, nullptr);
 	VkShaderServer::Instance()->UnregisterTexture(runtimeInfo.bind, runtimeInfo.type);

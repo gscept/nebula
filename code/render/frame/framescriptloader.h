@@ -24,18 +24,12 @@ public:
 private:
 	/// main parse function
 	static void ParseFrameScript(const Ptr<Frame::FrameScript>& script, JzonValue* node);
-	/// parse color texture list
-	static void ParseColorTextureList(const Ptr<Frame::FrameScript>& script, JzonValue* node);
-	/// parse depth-stencil texture list
-	static void ParseDepthStencilTextureList(const Ptr<Frame::FrameScript>& script, JzonValue* node);
-	/// parse image read-write texture list
-	static void ParseImageReadWriteTextureList(const Ptr<Frame::FrameScript>& script, JzonValue* node);
+	/// parse texture list
+	static void ParseTextureList(const Ptr<Frame::FrameScript>& script, JzonValue* node);
 	/// parse image read-write buffer list
-	static void ParseImageReadWriteBufferList(const Ptr<Frame::FrameScript>& script, JzonValue* node);
+	static void ParseReadWriteBufferList(const Ptr<Frame::FrameScript>& script, JzonValue* node);
 	/// parse algorithm list
 	static void ParsePluginList(const Ptr<Frame::FrameScript>& script, JzonValue* node);
-	/// parse global state
-	static void ParseGlobalState(const Ptr<Frame::FrameScript>& script, JzonValue* node);
 	/// parse blit
 	static void ParseBlit(const Ptr<Frame::FrameScript>& script, JzonValue* node);
 	/// parse subpass copy
@@ -44,8 +38,6 @@ private:
 	static void ParseCompute(const Ptr<Frame::FrameScript>& script, JzonValue* node);
 	/// parse compute algorithm
 	static void ParsePlugin(const Ptr<Frame::FrameScript>& script, JzonValue* node);
-	/// parse swapbuffer
-	static void ParseSwapbuffers(const Ptr<Frame::FrameScript>& script, JzonValue* node);
 	/// parse frame submission phase
 	static void ParseFrameSubmission(const Ptr<Frame::FrameScript>& script, char startOrEnd, JzonValue* node);
 	/// parse barrier
@@ -85,7 +77,7 @@ private:
 	/// helper to parse resources
 	static void ParseResourceDependencies(const Ptr<Frame::FrameScript>& script, Frame::FrameOp* op, JzonValue* node);
 	
-	static Frame::FrameSubmission* LastSubmission;
+	static Frame::FrameSubmission* LastSubmission[CoreGraphicsQueryType::NumCoreGraphicsQueryTypes];
 	typedef Frame::FramePlugin* (*Fn)(Memory::ArenaAllocator<BIG_CHUNK>&);
 	static Util::HashTable<uint, Fn> constructors;
 };

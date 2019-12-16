@@ -228,7 +228,7 @@ void
 DisplayDeviceBase::MakeWindowCurrent(const CoreGraphics::WindowId id)
 {
 	CoreGraphics::WindowMakeCurrent(id);
-	Frame::FrameServer::Instance()->SetWindowTexture(WindowGetRenderTexture(id));
+	Frame::FrameServer::Instance()->SetWindowTexture(WindowGetTexture(id));
 	this->currentWindow = id;
 }
 

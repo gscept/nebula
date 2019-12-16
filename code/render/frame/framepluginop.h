@@ -37,9 +37,8 @@ private:
 		Util::Array<FrameOp::Compiled*>& compiledOps,
 		Util::Array<CoreGraphics::EventId>& events,
 		Util::Array<CoreGraphics::BarrierId>& barriers,
-		Util::Dictionary<CoreGraphics::ShaderRWTextureId, Util::Array<TextureDependency>>& rwTextures,
 		Util::Dictionary<CoreGraphics::ShaderRWBufferId, Util::Array<BufferDependency>>& rwBuffers,
-		Util::Dictionary<CoreGraphics::RenderTextureId, Util::Array<TextureDependency>>& renderTextures) override;
+		Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures) override;
 };
 
 } // namespace Frame2

@@ -83,8 +83,6 @@ CreateShaderRWBuffer(const ShaderRWBufferCreateInfo& info)
 	ObjectSetName(ret, info.name.Value());
 #endif
 
-	CoreGraphics::RegisterShaderRWBuffer(info.name, ret);
-
 	return ret;
 }
 

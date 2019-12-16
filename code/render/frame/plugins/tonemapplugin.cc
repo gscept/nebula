@@ -35,25 +35,20 @@ void
 TonemapPlugin::Setup()
 {
 	FramePlugin::Setup();
-	n_assert(this->renderTextures.Size() == 2);
 
-	RenderTextureCreateInfo rtinfo = 
-	{
-		"Tonemapping-Downsample2x2",
-		Texture2D,
-		RenderTextureGetPixelFormat(this->renderTextures[0]),
-		ColorAttachment,
-		2, 2, 1,
-		1, 1,
-		false, false, false
-	};
-	this->downsample2x2 = CreateRenderTexture(rtinfo);
+	TextureCreateInfo rtinfo;
+	rtinfo.name = "Tonemapping-Downsample2x2"_atm;
+	rtinfo.type = Texture2D;
+	rtinfo.format = TextureGetPixelFormat(this->textures["AverageLumBuffer"]);
+	rtinfo.width = 2;
+	rtinfo.height = 2;
+	this->downsample2x2 = CreateTexture(rtinfo);
 
 	rtinfo.name = "Tonemapping-Copy";
 	rtinfo.width = 1;
 	rtinfo.height = 1;
-	rtinfo.format = RenderTextureGetPixelFormat(this->renderTextures[1]);
-	this->copy = CreateRenderTexture(rtinfo);
+	rtinfo.format = TextureGetPixelFormat(this->textures["AverageLumBuffer"]);
+	this->copy = CreateTexture(rtinfo);
 
 	// create shader
 	this->shader = ShaderGet("shd:averagelum.fxb");
@@ -83,12 +78,11 @@ TonemapPlugin::Setup()
 			CoreGraphics::BarrierStage::Transfer,
 			CoreGraphics::BarrierDomain::Global,
 			{ 
-				  RenderTextureBarrier{ this->downsample2x2, ImageSubresourceInfo{CoreGraphicsImageAspect::ColorBits, 0, 1, 0, 1}, CoreGraphicsImageLayout::ShaderRead, CoreGraphicsImageLayout::TransferDestination, CoreGraphics::BarrierAccess::ShaderRead, CoreGraphics::BarrierAccess::TransferWrite }
+				  TextureBarrier{ this->downsample2x2, ImageSubresourceInfo{CoreGraphicsImageAspect::ColorBits, 0, 1, 0, 1}, CoreGraphicsImageLayout::ShaderRead, CoreGraphicsImageLayout::TransferDestination, CoreGraphics::BarrierAccess::ShaderRead, CoreGraphics::BarrierAccess::TransferWrite }
 			},
 			nullptr, 
-			nullptr, 
 			"Tonemapping Downscale Before Barrier");
-		CoreGraphics::Blit(this->renderTextures[0], Math::rectangle<int>(0, 0, 512, 512), 0, this->downsample2x2, Math::rectangle<int>(0, 0, 2, 2), 0);
+		CoreGraphics::Blit(this->textures["LightBuffer"], Math::rectangle<int>(0, 0, 512, 512), 0, this->downsample2x2, Math::rectangle<int>(0, 0, 2, 2), 0);
 
 		CoreGraphics::BarrierInsert(
 			GraphicsQueueType,
@@ -96,9 +90,8 @@ TonemapPlugin::Setup()
 			CoreGraphics::BarrierStage::PixelShader,
 			CoreGraphics::BarrierDomain::Global,
 			{
-				  RenderTextureBarrier{ this->downsample2x2, ImageSubresourceInfo{CoreGraphicsImageAspect::ColorBits, 0, 1, 0, 1}, CoreGraphicsImageLayout::TransferDestination, CoreGraphicsImageLayout::ShaderRead, CoreGraphics::BarrierAccess::TransferWrite, CoreGraphics::BarrierAccess::ShaderRead }
+				  TextureBarrier{ this->downsample2x2, ImageSubresourceInfo{CoreGraphicsImageAspect::ColorBits, 0, 1, 0, 1}, CoreGraphicsImageLayout::TransferDestination, CoreGraphicsImageLayout::ShaderRead, CoreGraphics::BarrierAccess::TransferWrite, CoreGraphics::BarrierAccess::ShaderRead }
 			},
-			nullptr,
 			nullptr,
 			"Tonemapping Downscale After Barrier");
 #if NEBULA_GRAPHICS_DEBUG
@@ -139,13 +132,12 @@ TonemapPlugin::Setup()
 			CoreGraphics::BarrierStage::Transfer,
 			CoreGraphics::BarrierDomain::Global,
 			{
-				  RenderTextureBarrier{ this->copy, ImageSubresourceInfo::ColorNoMipNoLayer(),	CoreGraphicsImageLayout::ShaderRead, CoreGraphicsImageLayout::TransferDestination, CoreGraphics::BarrierAccess::ShaderRead, CoreGraphics::BarrierAccess::TransferWrite }
+				  TextureBarrier{ this->copy, ImageSubresourceInfo::ColorNoMipNoLayer(),	CoreGraphicsImageLayout::ShaderRead, CoreGraphicsImageLayout::TransferDestination, CoreGraphics::BarrierAccess::ShaderRead, CoreGraphics::BarrierAccess::TransferWrite }
 			},
-			nullptr,
 			nullptr,
 			"Tonemapping Copy Last Frame Before Barrier");
 
-		CoreGraphics::Copy(this->renderTextures[1], Math::rectangle<int>(0, 0, 1, 1), this->copy, Math::rectangle<int>(0, 0, 1, 1));
+		CoreGraphics::Copy(this->textures["AverageLumBuffer"], Math::rectangle<int>(0, 0, 1, 1), this->copy, Math::rectangle<int>(0, 0, 1, 1));
 
 		CoreGraphics::BarrierInsert(
 			GraphicsQueueType,
@@ -153,9 +145,8 @@ TonemapPlugin::Setup()
 			CoreGraphics::BarrierStage::PixelShader,
 			CoreGraphics::BarrierDomain::Global,
 			{
-				  RenderTextureBarrier{ this->copy, ImageSubresourceInfo::ColorNoMipNoLayer(), CoreGraphicsImageLayout::TransferDestination, CoreGraphicsImageLayout::ShaderRead, CoreGraphics::BarrierAccess::TransferWrite, CoreGraphics::BarrierAccess::ShaderRead }
+				  TextureBarrier{ this->copy, ImageSubresourceInfo::ColorNoMipNoLayer(), CoreGraphicsImageLayout::TransferDestination, CoreGraphicsImageLayout::ShaderRead, CoreGraphics::BarrierAccess::TransferWrite, CoreGraphics::BarrierAccess::ShaderRead }
 			},
-			nullptr,
 			nullptr,
 			"Tonemapping Copy Last Frame After Barrier");
 
@@ -172,8 +163,8 @@ void
 TonemapPlugin::Discard()
 {
 	FramePlugin::Discard();
-	DestroyRenderTexture(this->downsample2x2);
-	DestroyRenderTexture(this->copy);
+	DestroyTexture(this->downsample2x2);
+	DestroyTexture(this->copy);
 	DestroyConstantBuffer(this->constants);
 	DestroyResourceTable(this->tonemapTable);
 	this->fsq.Discard();

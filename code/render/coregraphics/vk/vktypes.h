@@ -33,6 +33,8 @@ public:
 #pragma region Pixel stuff
 	/// convert Nebula pixel format to Vulkan pixel format
 	static VkFormat AsVkFormat(CoreGraphics::PixelFormat::Code p);
+	/// check if format is depth or color
+	static bool IsDepthFormat(CoreGraphics::PixelFormat::Code p);
 	/// convert DevIL pixel format to Vulkan format
 	static VkFormat AsVkFormat(ILenum p);
 	/// convert VkFormat pixel format to DevIL format
@@ -51,6 +53,8 @@ public:
 	static VkFormat AsVkSampleableFormat(CoreGraphics::PixelFormat::Code p);
 	/// convert Nebula pixel format to Vulkan data format
 	static VkFormat AsVkDataFormat(CoreGraphics::PixelFormat::Code p);
+	/// convert uint to vulkan sample count
+	static VkSampleCountFlagBits AsVkSampleFlags(const SizeT samples);
 	/// convert DevIL pixel format to Vulkan component mapping
 	static VkComponentMapping AsVkMapping(ILenum p);
 	/// convert vulkan format back to nebula format

@@ -44,11 +44,9 @@ IndexT GetBufferedFrameIndex();
 
 struct GraphicsDeviceState
 {
-	Util::Array<CoreGraphics::RenderTextureId> backBuffers;
+	Util::Array<CoreGraphics::TextureId> backBuffers;
 
-	Util::Dictionary<Util::StringAtom, CoreGraphics::RenderTextureId> renderTextures;
-	Util::Dictionary<Util::StringAtom, CoreGraphics::ShaderRWTextureId> shaderRWTextures;
-	Util::Dictionary<Util::StringAtom, CoreGraphics::ShaderRWBufferId> shaderRWBuffers;
+	Util::Dictionary<Util::StringAtom, CoreGraphics::TextureId> textures;
 
 	CoreGraphics::SubmissionContextId resourceSubmissionContext;
 	CoreGraphics::CommandBufferId resourceSubmissionCmdBuffer;
@@ -125,9 +123,9 @@ void RemoveEventHandler(const Ptr<CoreGraphics::RenderEventHandler>& h);
 bool NotifyEventHandlers(const CoreGraphics::RenderEvent& e);
 
 /// add a render texture used by the back buffer
-void AddBackBufferRenderTexture(const CoreGraphics::RenderTextureId tex);
+void AddBackBufferTexture(const CoreGraphics::TextureId tex);
 /// remove a render texture
-void RemoveBackBufferRenderTexture(const CoreGraphics::RenderTextureId tex);
+void RemoveBackBufferTexture(const CoreGraphics::TextureId tex);
 
 /// begin complete frame
 bool BeginFrame(IndexT frameIndex);
@@ -284,13 +282,8 @@ void EndQuery(CoreGraphicsQueueType queue, CoreGraphicsQueryType type, IndexT qu
 
 /// copy data between textures
 void Copy(const CoreGraphics::TextureId from, Math::rectangle<SizeT> fromRegion, const CoreGraphics::TextureId to, Math::rectangle<SizeT> toRegion);
-/// copy data between render textures
-void Copy(const CoreGraphics::RenderTextureId from, Math::rectangle<SizeT> fromRegion, const CoreGraphics::RenderTextureId to, Math::rectangle<SizeT> toRegion);
-
 /// blit between textures
 void Blit(const CoreGraphics::TextureId from, Math::rectangle<SizeT> fromRegion, IndexT fromMip, const CoreGraphics::TextureId to, Math::rectangle<SizeT> toRegion, IndexT toMip);
-/// blit between render textures
-void Blit(const CoreGraphics::RenderTextureId from, Math::rectangle<SizeT> fromRegion, IndexT fromMip, const CoreGraphics::RenderTextureId to, Math::rectangle<SizeT> toRegion, IndexT toMip);
 
 /// sets whether or not the render device should tessellate
 void SetUsePatches(bool state);
@@ -306,18 +299,10 @@ void SetViewports(Math::rectangle<int>* viewports, SizeT num);
 /// set array of scissors directly
 void SetScissorRects(Math::rectangle<int>* scissors, SizeT num);
 
-/// register render texture
-void RegisterRenderTexture(const Util::StringAtom& name, const CoreGraphics::RenderTextureId id);
-/// get render texture
-const CoreGraphics::RenderTextureId GetRenderTexture(const Util::StringAtom& name);
-/// register render texture
-void RegisterShaderRWTexture(const Util::StringAtom& name, const CoreGraphics::ShaderRWTextureId id);
-/// get render texture
-const CoreGraphics::ShaderRWTextureId GetShaderRWTexture(const Util::StringAtom& name);
-/// register render texture
-void RegisterShaderRWBuffer(const Util::StringAtom& name, const CoreGraphics::ShaderRWBufferId id);
-/// get render texture
-const CoreGraphics::ShaderRWBufferId GetShaderRWBuffer(const Util::StringAtom& name);
+/// register texture globally
+void RegisterTexture(const Util::StringAtom& name, const CoreGraphics::TextureId id);
+/// get globally registered texture
+const CoreGraphics::TextureId GetTexture(const Util::StringAtom& name);
 
 #if NEBULA_GRAPHICS_DEBUG
 /// set debug name for object

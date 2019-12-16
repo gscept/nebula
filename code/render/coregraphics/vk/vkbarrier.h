@@ -30,8 +30,7 @@ struct VkBarrierInfo
 
 typedef Ids::IdAllocator<
 	VkBarrierInfo,
-	Util::Array<CoreGraphics::RenderTextureId>,
-	Util::Array<CoreGraphics::ShaderRWTextureId>
+	Util::Array<CoreGraphics::TextureId>
 > VkBarrierAllocator;
 extern VkBarrierAllocator barrierAllocator;
 } // namespace Vulkan

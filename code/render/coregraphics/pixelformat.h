@@ -132,8 +132,10 @@ public:
 	static uint ToChannels(Code code);
 	/// convert to IL image components
 	static uint ToILComponents(Code code);
-	/// conver to IL image type
+	/// convert to IL image type
 	static uint ToILType(Code code);
+	/// return true if depth format
+	static bool IsDepthFormat(Code code);
 };
 
 } // namespace CoreGraphics

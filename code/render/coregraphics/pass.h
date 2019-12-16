@@ -11,8 +11,8 @@
 #include "ids/id.h"
 #include "ids/idpool.h"
 #include "ids/idallocator.h"
-#include "rendertexture.h"
 #include "frame/framebatchtype.h"
+#include "coregraphics/texture.h"
 
 namespace CoreGraphics
 {
@@ -47,10 +47,10 @@ struct PassCreateInfo
 {
 	Util::StringAtom name;
 
-	Util::Array<CoreGraphics::RenderTextureId> colorAttachments;
+	Util::Array<CoreGraphics::TextureId> colorAttachments;
 	Util::Array<AttachmentFlagBits> colorAttachmentFlags; 
 	Util::Array<Math::float4> colorAttachmentClears;
-	CoreGraphics::RenderTextureId depthStencilAttachment;	
+	CoreGraphics::TextureId depthStencilAttachment;
 	
 	Util::Array<Subpass> subpasses;
 	Frame::FrameBatchType::Code batchType;
@@ -83,7 +83,9 @@ void PassApplyClipSettings(const PassId id);
 void PassWindowResizeCallback(const PassId id);
 
 /// get number of color attachments for entire pass (attachment list)
-const Util::Array<CoreGraphics::RenderTextureId>& PassGetAttachments(const CoreGraphics::PassId id);
+const Util::Array<CoreGraphics::TextureId>& PassGetAttachments(const CoreGraphics::PassId id);
+/// get depth stencil attachment
+const CoreGraphics::TextureId PassGetDepthStencilAttachment(const CoreGraphics::PassId id);
 
 /// get number of color attachments for a subpass
 const uint32_t PassGetNumSubpassAttachments(const CoreGraphics::PassId id, const IndexT subpass);

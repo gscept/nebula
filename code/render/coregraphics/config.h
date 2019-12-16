@@ -224,10 +224,6 @@ CoreGraphicsQueueTypeFromString(const Util::String& str)
 	#define MAX_CUBE_TEXTURES 128
 	#define MAX_3D_TEXTURES 128
 
-	#define MAX_2D_IMAGES 64
-	#define MAX_CUBE_IMAGES 64
-	#define MAX_3D_IMAGES 64
-
 	#define SHADER_MODEL_5 (1)
 	#ifdef _DEBUG
 		#define NEBULA_VULKAN_DEBUG (1)

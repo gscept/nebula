@@ -22,10 +22,12 @@ struct VkTextureLoadInfo
 	VkDeviceMemory mem;
 	CoreGraphics::TextureDimensions dims;
 	uint32_t mips;
+	uint32_t layers;
+	uint8_t samples;
 	CoreGraphics::PixelFormat::Code format;
-	CoreGraphics::GpuBufferTypes::Usage usage;
-	CoreGraphics::GpuBufferTypes::Access access;
-	CoreGraphics::GpuBufferTypes::Syncing syncing;
+	CoreGraphics::TextureUsage texUsage;
+	CoreGraphics::TextureId alias;
+	CoreGraphicsImageLayout defaultLayout;
 };
 
 struct VkTextureRuntimeInfo
@@ -43,12 +45,27 @@ struct VkTextureMappingInfo
 	uint32_t mapCount;
 };
 
+struct VkTextureWindowInfo
+{
+	CoreGraphics::WindowId window;
+	Util::FixedArray<VkImage> swapimages;
+	Util::FixedArray<VkImageView> swapviews;
+};
+
+enum
+{
+	Texture_RuntimeInfo,
+	Texture_LoadInfo,
+	Texture_MappingInfo,
+	Texture_WindowInfo
+};
+
 /// we need a thread-safe allocator since it will be used by both the memory and stream pool
 typedef Ids::IdAllocatorSafe<
-	VkTextureRuntimeInfo,					// 0 runtime info (for binding)
-	VkTextureLoadInfo,						// 1 loading info (mostly used during the load/unload phase)
-	VkTextureMappingInfo,					// 2 used when image is mapped to memory
-	CoreGraphicsImageLayout								// 3 used to keep track of image layout (use only when necessary)
+	VkTextureRuntimeInfo,					// runtime info (for binding)
+	VkTextureLoadInfo,						// loading info (mostly used during the load/unload phase)
+	VkTextureMappingInfo,					// used when image is mapped to memory
+	VkTextureWindowInfo
 > VkTextureAllocator;
 extern VkTextureAllocator textureAllocator;
 

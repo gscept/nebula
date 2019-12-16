@@ -9,8 +9,7 @@
 //------------------------------------------------------------------------------
 #include "ids/id.h"
 #include "util/array.h"
-#include "coregraphics/rendertexture.h"
-#include "coregraphics/shaderrwtexture.h"
+#include "coregraphics/texture.h"
 #include "coregraphics/shaderrwbuffer.h"
 #include "coregraphics/commandbuffer.h"
 #include "coregraphics/config.h"
@@ -92,7 +91,7 @@ struct ImageSubresourceInfo
 	uint mip, mipCount, layer, layerCount;
 
 	ImageSubresourceInfo() :
-		aspect(CoreGraphicsImageAspect::ColorBits | CoreGraphicsImageAspect::DepthBits | CoreGraphicsImageAspect::StencilBits),
+		aspect(CoreGraphicsImageAspect::ColorBits),
 		mip(0),
 		mipCount(1),
 		layer(0),
@@ -148,9 +147,9 @@ struct BufferSubresourceInfo
 	}
 };
 
-struct RenderTextureBarrier
+struct TextureBarrier
 {
-	RenderTextureId tex;
+	TextureId tex;
 	ImageSubresourceInfo subres;
 	CoreGraphicsImageLayout fromLayout;
 	CoreGraphicsImageLayout toLayout;
@@ -167,25 +166,14 @@ struct BufferBarrier
 	SizeT size; // set to -1 to use whole buffer
 };
 
-struct RWTextureBarrier
-{
-	ShaderRWTextureId tex;
-	ImageSubresourceInfo subres;
-	CoreGraphicsImageLayout fromLayout;
-	CoreGraphicsImageLayout toLayout;
-	BarrierAccess fromAccess;
-	BarrierAccess toAccess;
-};
-
 struct BarrierCreateInfo
 {
 	Util::StringAtom name;
 	BarrierDomain domain;
 	BarrierStage leftDependency;
 	BarrierStage rightDependency;
-	Util::Array<RenderTextureBarrier> renderTextures;
+	Util::Array<TextureBarrier> textures;
 	Util::Array<BufferBarrier> rwBuffers;
-	Util::Array<RWTextureBarrier> rwTextures;
 };
 
 /// create barrier object
@@ -203,9 +191,8 @@ void BarrierInsert(
 	CoreGraphics::BarrierStage fromStage, 
 	CoreGraphics::BarrierStage toStage, 
 	CoreGraphics::BarrierDomain domain,
-	const Util::FixedArray<RenderTextureBarrier>& renderTextures, 
+	const Util::FixedArray<TextureBarrier>& textures, 
 	const Util::FixedArray<BufferBarrier>& rwBuffers, 
-	const Util::FixedArray<RWTextureBarrier>& rwTextures,
 	const char* name = nullptr);
 
 //------------------------------------------------------------------------------
@@ -271,20 +258,25 @@ BarrierAccessFromString(const Util::String& str)
 inline CoreGraphicsImageAspect
 ImageAspectFromString(const Util::String& str)
 {
-	if (str == "Color")				return CoreGraphicsImageAspect::ColorBits;
-	else if (str == "Depth")		return CoreGraphicsImageAspect::DepthBits;
-	else if (str == "Stencil")		return CoreGraphicsImageAspect::StencilBits;
-	else if (str == "Metadata")		return CoreGraphicsImageAspect::MetaBits;
-	else if (str == "Plane0")		return CoreGraphicsImageAspect::Plane0Bits;
-	else if (str == "Plane1")		return CoreGraphicsImageAspect::Plane1Bits;
-	else if (str == "Plane2")		return CoreGraphicsImageAspect::Plane2Bits;
-	else
+	Util::Array<Util::String> comps = str.Tokenize("|");
+	CoreGraphicsImageAspect aspect = CoreGraphicsImageAspect(0x0);
+	for (IndexT i = 0; i < comps.Size(); i++)
 	{
-		n_error("Invalid access string '%s'\n", str.AsCharPtr());
-		return CoreGraphicsImageAspect::ColorBits;
+		if (comps[i] == "Color")			aspect |= CoreGraphicsImageAspect::ColorBits;
+		else if (comps[i] == "Depth")		aspect |= CoreGraphicsImageAspect::DepthBits;
+		else if (comps[i] == "Stencil")		aspect |= CoreGraphicsImageAspect::StencilBits;
+		else if (comps[i] == "Metadata")	aspect |= CoreGraphicsImageAspect::MetaBits;
+		else if (comps[i] == "Plane0")		aspect |= CoreGraphicsImageAspect::Plane0Bits;
+		else if (comps[i] == "Plane1")		aspect |= CoreGraphicsImageAspect::Plane1Bits;
+		else if (comps[i] == "Plane2")		aspect |= CoreGraphicsImageAspect::Plane2Bits;
+		else
+		{
+			n_error("Invalid access string '%s'\n", comps[i].AsCharPtr());
+			return CoreGraphicsImageAspect::ColorBits;
+		}
 	}
+	return aspect;
 }
-
 
 //------------------------------------------------------------------------------
 /**

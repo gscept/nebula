@@ -18,9 +18,8 @@
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
 #include "util/stringatom.h"
-#include "coregraphics/rendertexture.h"
+#include "coregraphics/texture.h"
 #include "coregraphics/shaderrwbuffer.h"
-#include "coregraphics/shaderrwtexture.h"
 #include <functional>
 namespace Frame
 {
@@ -51,18 +50,15 @@ public:
 	/// get algorithm function call
 	static const std::function<void(IndexT)>& GetCallback(const Util::StringAtom& str);
 
-	/// add texture
-	void AddRenderTexture(const CoreGraphics::RenderTextureId& tex);
 	/// add buffer
-	void AddReadWriteBuffer(const CoreGraphics::ShaderRWBufferId& buf);
-	/// add read-write texture (image)
-	void AddReadWriteImage(const CoreGraphics::ShaderRWTextureId& img);
+	void AddReadWriteBuffer(const Util::StringAtom& name, const CoreGraphics::ShaderRWBufferId& buf);
+	/// add texture
+	void AddTexture(const Util::StringAtom& name, const CoreGraphics::TextureId& tex);
 
 protected:
 
-	Util::Array<CoreGraphics::RenderTextureId> renderTextures;
-	Util::Array<CoreGraphics::ShaderRWBufferId> readWriteBuffers;
-	Util::Array<CoreGraphics::ShaderRWTextureId> readWriteTextures;
+	Util::Dictionary<Util::StringAtom, CoreGraphics::ShaderRWBufferId> readWriteBuffers;
+	Util::Dictionary<Util::StringAtom, CoreGraphics::TextureId> textures;
 
 	static Util::Dictionary<Util::StringAtom, std::function<void(IndexT)>> nameToFunction;
 };
@@ -71,26 +67,18 @@ protected:
 /**
 */
 inline void
-FramePlugin::AddRenderTexture(const CoreGraphics::RenderTextureId& tex)
+FramePlugin::AddReadWriteBuffer(const Util::StringAtom& name, const CoreGraphics::ShaderRWBufferId& buf)
 {
-	this->renderTextures.Append(tex);
+	this->readWriteBuffers.Add(name, buf);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline void
-FramePlugin::AddReadWriteBuffer(const CoreGraphics::ShaderRWBufferId& buf)
+inline void 
+FramePlugin::AddTexture(const Util::StringAtom& name, const CoreGraphics::TextureId& tex)
 {
-	this->readWriteBuffers.Append(buf);
+	this->textures.Add(name, tex);
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-FramePlugin::AddReadWriteImage(const CoreGraphics::ShaderRWTextureId& img)
-{
-	this->readWriteTextures.Append(img);
-}
 } // namespace Base

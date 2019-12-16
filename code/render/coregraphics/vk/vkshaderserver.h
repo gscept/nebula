@@ -33,11 +33,7 @@ public:
 	void Close();
 	
 	/// register new texture
-	uint32_t RegisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics::TextureType type);
-	/// register new texture
-	uint32_t RegisterTexture(const CoreGraphics::RenderTextureId& tex, bool depth, CoreGraphics::TextureType type);
-	/// register new texture
-	uint32_t RegisterTexture(const CoreGraphics::ShaderRWTextureId& tex, CoreGraphics::TextureType type);
+	uint32_t RegisterTexture(const CoreGraphics::TextureId& tex, bool depth, CoreGraphics::TextureType type);
 	/// unregister texture
 	void UnregisterTexture(const uint32_t id, const CoreGraphics::TextureType type);
 
@@ -52,7 +48,7 @@ public:
 	/// commit texture library to graphics pipeline
 	void BindTextureDescriptorSetsGraphics();
 	/// commit texture library to compute pipeline
-	void BindTextureDescriptorSetsCompute();
+	void BindTextureDescriptorSetsCompute(const CoreGraphicsQueueType queue = GraphicsQueueType);
 
 	/// setup gbuffer bindings
 	void SetupGBufferConstants();
@@ -64,16 +60,15 @@ public:
 
 private:
 
+	Util::FixedPool<uint32_t> texture1DPool;
+	Util::FixedPool<uint32_t> texture1DArrayPool;
 	Util::FixedPool<uint32_t> texture2DPool;
 	Util::FixedPool<uint32_t> texture2DMSPool;
 	Util::FixedPool<uint32_t> texture2DArrayPool;
 	Util::FixedPool<uint32_t> texture3DPool;
 	Util::FixedPool<uint32_t> textureCubePool;
+	Util::FixedPool<uint32_t> textureCubeArrayPool;
 
-	Util::FixedPool<uint32_t> image2DPool;
-	Util::FixedPool<uint32_t> image2DMSPool;
-	Util::FixedPool<uint32_t> image3DPool;
-	Util::FixedPool<uint32_t> imageCubePool;
 
 	Util::FixedArray<CoreGraphics::ResourceTableId> resourceTables;
 	CoreGraphics::ResourcePipelineId tableLayout;
@@ -133,10 +128,10 @@ VkShaderServer::BindTextureDescriptorSetsGraphics()
 /**
 */
 inline void 
-VkShaderServer::BindTextureDescriptorSetsCompute()
+VkShaderServer::BindTextureDescriptorSetsCompute(const CoreGraphicsQueueType queue)
 {
 	IndexT bufferedFrameIndex = CoreGraphics::GetBufferedFrameIndex();
-	CoreGraphics::SetResourceTable(this->resourceTables[bufferedFrameIndex], NEBULA_TICK_GROUP, CoreGraphics::ComputePipeline, nullptr);
+	CoreGraphics::SetResourceTable(this->resourceTables[bufferedFrameIndex], NEBULA_TICK_GROUP, CoreGraphics::ComputePipeline, nullptr, queue);
 }
 
 //------------------------------------------------------------------------------

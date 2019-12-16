@@ -9,7 +9,6 @@
 #include "frameop.h"
 #include "renderutil/drawfullscreenquad.h"
 #include "coregraphics/shader.h"
-#include "coregraphics/rendertexture.h"
 #include "coregraphics/resourcetable.h"
 namespace Frame
 {
@@ -43,7 +42,7 @@ public:
 	RenderUtil::DrawFullScreenQuad fsq;
 	CoreGraphics::ShaderId shader;
 	CoreGraphics::ShaderProgramId program;
-	CoreGraphics::RenderTextureId tex;
+	CoreGraphics::TextureId tex;
 	
 };
 

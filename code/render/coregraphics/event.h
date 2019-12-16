@@ -28,9 +28,8 @@ struct EventCreateInfo
 	bool createSignaled : 1;
 	BarrierStage leftDependency;
 	BarrierStage rightDependency;
-	Util::Array<RenderTextureBarrier> renderTextures;
+	Util::Array<TextureBarrier> textures;
 	Util::Array<BufferBarrier> rwBuffers;
-	Util::Array<RWTextureBarrier> rwTextures;
 };
 
 /// create new event

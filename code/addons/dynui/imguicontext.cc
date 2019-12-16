@@ -119,21 +119,14 @@ ImguiContext::ImguiDrawFunction()
 				// set texture in shader, we shouldn't have to put it into ImGui
 				Resources::ResourceId resourceId = tex.nebulaHandle;
 
-				if (resourceId.resourceType == RenderTextureIdType)
+				if (resourceId.resourceType == TextureIdType)
 				{
-					RenderTextureId rt = resourceId.AllocId();
-					SizeT layers = CoreGraphics::RenderTextureGetNumLayers(rt);
+					TextureId texture = resourceId.AllocId();
+					SizeT layers = CoreGraphics::TextureGetNumLayers(texture);
 					if (layers > 1)
 					{
 						texInfo.type = 1;
 					}
-					texInfo.layer = tex.layer;
-					texInfo.mip = tex.mip;
-					texInfo.id = CoreGraphics::RenderTextureGetBindlessHandle(rt);
-				}
-				else if (resourceId.resourceType == TextureIdType)
-				{
-					TextureId texture = resourceId.AllocId();
 					texInfo.layer = tex.layer;
 					texInfo.mip = tex.mip;
 					texInfo.id = CoreGraphics::TextureGetBindlessHandle(texture);
@@ -407,14 +400,16 @@ ImguiContext::Create()
 	// load image using SOIL
 	// unsigned char* texData = SOIL_load_image_from_memory(buffer, width * height * channels, &width, &height, &channels, SOIL_LOAD_AUTO);
 
-	CoreGraphics::TextureCreateInfo texInfo = 
-	{
-		"imgui_font_tex"_atm,
-		"system",
-		buffer,
-		CoreGraphics::PixelFormat::R8G8B8A8,
-		width, height, 1
-	};
+	CoreGraphics::TextureCreateInfo texInfo;
+	texInfo.name = "imgui_font_tex"_atm;
+	texInfo.usage = TextureUsage::ImmutableUsage;
+	texInfo.tag = "system"_atm;
+	texInfo.buffer = buffer;
+	texInfo.type = TextureType::Texture2D;
+	texInfo.format = CoreGraphics::PixelFormat::R8G8B8A8;
+	texInfo.width = width;
+	texInfo.height = height;
+
     state.fontTexture.nebulaHandle = CoreGraphics::CreateTexture(texInfo).HashCode64();
 	state.fontTexture.mip = 0;
 	state.fontTexture.layer = 0;

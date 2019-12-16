@@ -418,4 +418,19 @@ PixelFormat::ToILType(Code code)
 		}
 	}
 }
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool 
+PixelFormat::IsDepthFormat(Code code)
+{
+	switch (code)
+	{
+	case PixelFormat::D24X8:
+	case PixelFormat::D24S8:
+	case PixelFormat::D32S8:			return true;
+	}
+	return false;
+}
 } // namespace CoreGraphics

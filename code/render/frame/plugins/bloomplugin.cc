@@ -6,7 +6,6 @@
 #include "bloomplugin.h"
 #include "coregraphics/shaderserver.h"
 #include "coregraphics/graphicsdevice.h"
-#include "coregraphics/shaderrwtexture.h"
 #include "coregraphics/barrier.h"
 
 using namespace CoreGraphics;
@@ -35,8 +34,6 @@ void
 BloomPlugin::Setup()
 {
 	FramePlugin::Setup();
-	n_assert(this->renderTextures.Size() == 3);
-	n_assert(this->readWriteTextures.Size() == 1);
 
 	// setup shaders
 	this->brightPassShader = ShaderGet("shd:brightpass.fxb");
@@ -51,34 +48,34 @@ BloomPlugin::Setup()
 	this->blurImageXSlot = ShaderGetResourceSlot(this->blurShader, "BlurImageX");
 	this->blurImageYSlot = ShaderGetResourceSlot(this->blurShader, "BlurImageY");
 
-	TextureDimensions dims = ShaderRWTextureGetDimensions(this->readWriteTextures[0]);
-	ShaderRWTextureCreateInfo tinfo = 
-	{
-		"Bloom-Internal0",
-		Texture2D,
-		CoreGraphics::PixelFormat::R16G16B16A16F,
-		CoreGraphicsImageLayout::General,
-		dims.width, dims.height, dims.depth,
-		1, 1,
-		false, false
-	};
-	this->internalTargets[0] = CreateShaderRWTexture(tinfo);
+	TextureDimensions dims = TextureGetDimensions(this->textures["BloomBuffer"]);
+	TextureCreateInfo tinfo;
+	tinfo.name = "Bloom-Internal0";
+	tinfo.type = Texture2D;
+	tinfo.format = CoreGraphics::PixelFormat::R16G16B16A16F;
+	tinfo.width = dims.width;
+	tinfo.height = dims.height;
+	tinfo.usage = TextureUsage::ReadWriteUsage;
+	this->internalTargets[0] = CreateTexture(tinfo);
 
-	ResourceTableSetTexture(this->brightPassTable, { this->renderTextures[0], this->colorSourceSlot, 0, CoreGraphics::SamplerId::Invalid() , false });
-	ResourceTableSetTexture(this->brightPassTable, { this->renderTextures[1], this->luminanceTextureSlot, 0, CoreGraphics::SamplerId::Invalid() , false });
+	ResourceTableSetTexture(this->brightPassTable, { this->textures["LightBuffer"], this->colorSourceSlot, 0, CoreGraphics::SamplerId::Invalid() });
+	ResourceTableSetTexture(this->brightPassTable, { this->textures["BloomBuffer"], this->luminanceTextureSlot, 0, CoreGraphics::SamplerId::Invalid() , false });
 	ResourceTableCommitChanges(this->brightPassTable);
 
-	ResourceTableSetTexture(this->blurTable, { this->renderTextures[2], this->inputImageXSlot, 0, CoreGraphics::SamplerId::Invalid() , false });
+	// bloom buffer goes in, internal target goes out
+	ResourceTableSetTexture(this->blurTable, { this->textures["BloomBuffer"], this->inputImageXSlot, 0, CoreGraphics::SamplerId::Invalid() , false });
+	ResourceTableSetRWTexture(this->blurTable, { this->internalTargets[0], this->blurImageXSlot, 0, CoreGraphics::SamplerId::Invalid() });
+
+	// internal target goes in, blurred buffer goes out
 	ResourceTableSetTexture(this->blurTable, { this->internalTargets[0], this->inputImageYSlot, 0, CoreGraphics::SamplerId::Invalid() });
-	ResourceTableSetShaderRWTexture(this->blurTable, { this->internalTargets[0], this->blurImageXSlot, 0, CoreGraphics::SamplerId::Invalid() });
-	ResourceTableSetShaderRWTexture(this->blurTable, { this->readWriteTextures[0], this->blurImageYSlot, 0, CoreGraphics::SamplerId::Invalid() });
+	ResourceTableSetRWTexture(this->blurTable, { this->textures["BloomBufferBlurred"], this->blurImageYSlot, 0, CoreGraphics::SamplerId::Invalid() });
 	ResourceTableCommitChanges(this->blurTable);
 
 	this->blurX = ShaderGetProgram(this->blurShader, ShaderFeatureFromString("Alt0"));
 	this->blurY = ShaderGetProgram(this->blurShader, ShaderFeatureFromString("Alt1"));
 	this->brightPassProgram = ShaderGetProgram(this->brightPassShader, ShaderFeatureFromString("Alt0"));
 
-	dims = ShaderRWTextureGetDimensions(this->readWriteTextures[0]);
+	dims = TextureGetDimensions(this->textures["BloomBuffer"]);
 
 	// get size of target texture
 	this->fsq.Setup(dims.width, dims.height);
@@ -119,11 +116,10 @@ BloomPlugin::Setup()
 			CoreGraphics::BarrierStage::ComputeShader,
 			CoreGraphics::BarrierStage::ComputeShader,
 			CoreGraphics::BarrierDomain::Global,
-			nullptr,
-			nullptr,
 			{
-				  RWTextureBarrier{ this->internalTargets[0], ImageSubresourceInfo::ColorNoMipNoLayer(), CoreGraphicsImageLayout::ShaderRead, CoreGraphicsImageLayout::General, CoreGraphics::BarrierAccess::ShaderWrite, CoreGraphics::BarrierAccess::ShaderRead }
+				  TextureBarrier{ this->internalTargets[0], ImageSubresourceInfo::ColorNoMipNoLayer(), CoreGraphicsImageLayout::ShaderRead, CoreGraphicsImageLayout::General, CoreGraphics::BarrierAccess::ShaderWrite, CoreGraphics::BarrierAccess::ShaderRead }
 			},
+			nullptr,
 			"Bloom Blur Pass #1 Barrier");
 
 		CoreGraphics::SetShaderProgram(this->blurX);
@@ -135,11 +131,10 @@ BloomPlugin::Setup()
 			CoreGraphics::BarrierStage::ComputeShader,
 			CoreGraphics::BarrierStage::ComputeShader,
 			CoreGraphics::BarrierDomain::Global,
-			nullptr,
-			nullptr,
 			{
-				  RWTextureBarrier{ this->internalTargets[0], ImageSubresourceInfo::ColorNoMipNoLayer(), CoreGraphicsImageLayout::General, CoreGraphicsImageLayout::ShaderRead, CoreGraphics::BarrierAccess::ShaderRead, CoreGraphics::BarrierAccess::ShaderWrite }
+				  TextureBarrier{ this->internalTargets[0], ImageSubresourceInfo::ColorNoMipNoLayer(), CoreGraphicsImageLayout::General, CoreGraphicsImageLayout::ShaderRead, CoreGraphics::BarrierAccess::ShaderRead, CoreGraphics::BarrierAccess::ShaderWrite }
 			},
+			nullptr,
 			"Bloom Blur Pass #2 Barrier");
 
 		CoreGraphics::SetShaderProgram(this->blurY);
@@ -161,7 +156,7 @@ BloomPlugin::Discard()
 {
 	DestroyResourceTable(this->brightPassTable);
 	DestroyResourceTable(this->blurTable);
-	DestroyShaderRWTexture(this->internalTargets[0]);
+	DestroyTexture(this->internalTargets[0]);
 	this->fsq.Discard();
 }
 

@@ -114,16 +114,15 @@ FrameSubpass::Build(
 	Util::Array<FrameOp::Compiled*>& compiledOps, 
 	Util::Array<CoreGraphics::EventId>& events,
 	Util::Array<CoreGraphics::BarrierId>& barriers,
-	Util::Dictionary<CoreGraphics::ShaderRWTextureId, Util::Array<TextureDependency>>& rwTextures,
 	Util::Dictionary<CoreGraphics::ShaderRWBufferId, Util::Array<BufferDependency>>& rwBuffers,
-	Util::Dictionary<CoreGraphics::RenderTextureId, Util::Array<TextureDependency>>& renderTextures)
+	Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures)
 {
 	CompiledImpl* myCompiled = (CompiledImpl*)this->AllocCompiled(allocator);
 	
 	Util::Array<FrameOp::Compiled*> subpassOps;
 	for (IndexT i = 0; i < this->ops.Size(); i++)
 	{
-		this->ops[i]->Build(allocator, subpassOps, events, barriers, rwTextures, rwBuffers, renderTextures);
+		this->ops[i]->Build(allocator, subpassOps, events, barriers, rwBuffers, textures);
 	}
 	myCompiled->ops = subpassOps;
 	this->compiled = myCompiled;

@@ -13,8 +13,6 @@
 #include "vkresourcetable.h"
 #include "vkshaderserver.h"
 #include "vkpass.h"
-#include "vkrendertexture.h"
-#include "vkshaderrwtexture.h"
 #include "vkshaderrwbuffer.h"
 #include "vkbarrier.h"
 #include "vkvertexbuffer.h"
@@ -1784,7 +1782,7 @@ NotifyEventHandlers(const CoreGraphics::RenderEvent& e)
 /**
 */
 void 
-AddBackBufferRenderTexture(const CoreGraphics::RenderTextureId tex)
+AddBackBufferTexture(const CoreGraphics::TextureId tex)
 {
 	state.backBuffers.Append(tex);
 }
@@ -1793,7 +1791,7 @@ AddBackBufferRenderTexture(const CoreGraphics::RenderTextureId tex)
 /**
 */
 void 
-RemoveBackBufferRenderTexture(const CoreGraphics::RenderTextureId tex)
+RemoveBackBufferTexture(const CoreGraphics::TextureId tex)
 {
 	IndexT i = state.backBuffers.FindIndex(tex);
 	n_assert(i != InvalidIndex);
@@ -1820,7 +1818,7 @@ BeginFrame(IndexT frameIndex)
 
 	// slight limitation to only using one back buffer, so really we should do one begin and end frame per window...
 	n_assert(state.backBuffers.Size() == 1);
-	state.currentBufferedFrameIndex = CoreGraphics::RenderTextureSwapBuffers(state.backBuffers[0]);
+	state.currentBufferedFrameIndex = CoreGraphics::TextureSwapBuffers(state.backBuffers[0]);
 
 	// cycle submissions, will wait for the fence to finish
 	state.gfxFence = CoreGraphics::SubmissionContextNextCycle(state.gfxSubmission);
@@ -3256,31 +3254,10 @@ Copy(const CoreGraphics::TextureId from, Math::rectangle<SizeT> fromRegion, cons
 /**
 */
 void 
-Copy(const CoreGraphics::RenderTextureId from, Math::rectangle<SizeT> fromRegion, const CoreGraphics::RenderTextureId to, Math::rectangle<SizeT> toRegion)
-{
-	n_assert(from != CoreGraphics::RenderTextureId::Invalid() && to != CoreGraphics::RenderTextureId::Invalid());
-	n_assert(!state.inBeginPass);
-	Vulkan::Copy(RenderTextureGetVkImage(from), fromRegion, RenderTextureGetVkImage(to), toRegion);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
 Blit(const CoreGraphics::TextureId from, Math::rectangle<SizeT> fromRegion, IndexT fromMip, const CoreGraphics::TextureId to, Math::rectangle<SizeT> toRegion, IndexT toMip)
 {
 	n_assert(from != CoreGraphics::TextureId::Invalid() && to != CoreGraphics::TextureId::Invalid());
 	Vulkan::Blit(TextureGetVkImage(from), fromRegion, fromMip, TextureGetVkImage(to), toRegion, toMip);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-Blit(const CoreGraphics::RenderTextureId from, Math::rectangle<SizeT> fromRegion, IndexT fromMip, const CoreGraphics::RenderTextureId to, Math::rectangle<SizeT> toRegion, IndexT toMip)
-{
-	n_assert(from != CoreGraphics::RenderTextureId::Invalid() && to != CoreGraphics::RenderTextureId::Invalid());
-	Vulkan::Blit(RenderTextureGetVkImage(from), fromRegion, fromMip, RenderTextureGetVkImage(to), toRegion, toMip);
 }
 
 //------------------------------------------------------------------------------
@@ -3404,61 +3381,20 @@ SetScissorRects(Math::rectangle<int>* scissors, SizeT num)
 /**
 */
 void 
-RegisterRenderTexture(const Util::StringAtom& name, const CoreGraphics::RenderTextureId id)
+RegisterTexture(const Util::StringAtom& name, const CoreGraphics::TextureId id)
 {
-	state.renderTextures.Add(name, id);
+	state.textures.Add(name, id);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-const CoreGraphics::RenderTextureId 
-GetRenderTexture(const Util::StringAtom & name)
+const CoreGraphics::TextureId 
+GetTexture(const Util::StringAtom& name)
 {
-	IndexT i = state.renderTextures.FindIndex(name);
-	if (i == InvalidIndex)		return CoreGraphics::RenderTextureId::Invalid();
-	else						return state.renderTextures[name];
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-RegisterShaderRWTexture(const Util::StringAtom& name, const CoreGraphics::ShaderRWTextureId id)
-{
-	state.shaderRWTextures.Add(name, id);
-}
-
-
-//------------------------------------------------------------------------------
-/**
-*/
-const CoreGraphics::ShaderRWTextureId 
-GetShaderRWTexture(const Util::StringAtom & name)
-{
-	IndexT i = state.shaderRWTextures.FindIndex(name);
-	if (i == InvalidIndex)		return CoreGraphics::ShaderRWTextureId::Invalid();
-	else						return state.shaderRWTextures[name];
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-RegisterShaderRWBuffer(const Util::StringAtom& name, const CoreGraphics::ShaderRWBufferId id)
-{
-	state.shaderRWBuffers.Add(name, id);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const CoreGraphics::ShaderRWBufferId 
-GetShaderRWBuffer(const Util::StringAtom& name)
-{
-	IndexT i = state.shaderRWBuffers.FindIndex(name);
-	if (i == InvalidIndex)		return CoreGraphics::ShaderRWBufferId::Invalid();
-	else						return state.shaderRWBuffers[name];
+	IndexT i = state.textures.FindIndex(name);
+	if (i == InvalidIndex)		return CoreGraphics::TextureId::Invalid();
+	else						return state.textures[name];
 }
 
 #if NEBULA_GRAPHICS_DEBUG
@@ -3544,60 +3480,6 @@ ObjectSetName(const CoreGraphics::TextureId id, const Util::String& name)
 	n_assert(res == VK_SUCCESS);
 
 	info.objectHandle = (uint64_t)Vulkan::TextureGetVkImageView(id);
-	info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
-	Util::String str = Util::String::Sprintf("%s - View", name.AsCharPtr());
-	info.pObjectName = str.AsCharPtr();
-	res = VkDebugObjectName(dev, &info);
-	n_assert(res == VK_SUCCESS);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-template<>
-void
-ObjectSetName(const CoreGraphics::RenderTextureId id, const Util::String& name)
-{
-	VkDebugUtilsObjectNameInfoEXT info =
-	{
-		VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
-		nullptr,
-		VK_OBJECT_TYPE_IMAGE,
-		(uint64_t)Vulkan::RenderTextureGetVkImage(id),
-		name.AsCharPtr()
-	};
-	VkDevice dev = GetCurrentDevice();
-	VkResult res = VkDebugObjectName(dev, &info);
-	n_assert(res == VK_SUCCESS);
-
-	info.objectHandle = (uint64_t)Vulkan::RenderTextureGetVkAttachmentImageView(id);
-	info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
-	Util::String str = Util::String::Sprintf("%s - View", name.AsCharPtr());
-	info.pObjectName = str.AsCharPtr();
-	res = VkDebugObjectName(dev, &info);
-	n_assert(res == VK_SUCCESS);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-template<>
-void
-ObjectSetName(const CoreGraphics::ShaderRWTextureId id, const Util::String& name)
-{
-	VkDebugUtilsObjectNameInfoEXT info =
-	{
-		VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
-		nullptr,
-		VK_OBJECT_TYPE_IMAGE,
-		(uint64_t)Vulkan::ShaderRWTextureGetVkImage(id),
-		name.AsCharPtr()
-	};
-	VkDevice dev = GetCurrentDevice();
-	VkResult res = VkDebugObjectName(dev, &info);
-	n_assert(res == VK_SUCCESS);
-
-	info.objectHandle = (uint64_t)Vulkan::ShaderRWTextureGetVkImageView(id);
 	info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
 	Util::String str = Util::String::Sprintf("%s - View", name.AsCharPtr());
 	info.pObjectName = str.AsCharPtr();

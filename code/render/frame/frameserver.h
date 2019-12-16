@@ -12,7 +12,6 @@
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
 #include "core/singleton.h"
-#include "coregraphics/rendertexture.h"
 #include "framescript.h"
 #include "io/uri.h"
 namespace Frame
@@ -42,12 +41,12 @@ public:
 	void UnloadFrameScript(const Resources::ResourceName& name);
 
 	/// set texture to be used for future loads of frame scripts
-	void SetWindowTexture(const CoreGraphics::RenderTextureId& tex);
+	void SetWindowTexture(const CoreGraphics::TextureId& tex);
 	/// get window texture
-	const CoreGraphics::RenderTextureId& GetWindowTexture() const;
+	const CoreGraphics::TextureId& GetWindowTexture() const;
 private:
 	Util::Dictionary<Resources::ResourceName, Ptr<FrameScript>> frameScripts;
-	CoreGraphics::RenderTextureId windowTexture;
+	CoreGraphics::TextureId windowTexture;
 	bool isOpen;
 };
 
@@ -55,7 +54,7 @@ private:
 /**
 */
 inline void
-FrameServer::SetWindowTexture(const CoreGraphics::RenderTextureId& tex)
+FrameServer::SetWindowTexture(const CoreGraphics::TextureId& tex)
 {
 	this->windowTexture = tex;
 }
@@ -63,7 +62,7 @@ FrameServer::SetWindowTexture(const CoreGraphics::RenderTextureId& tex)
 //------------------------------------------------------------------------------
 /**
 */
-inline const CoreGraphics::RenderTextureId&
+inline const CoreGraphics::TextureId&
 FrameServer::GetWindowTexture() const
 {
 	return this->windowTexture;

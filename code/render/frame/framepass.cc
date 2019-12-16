@@ -127,9 +127,8 @@ FramePass::Build(
 	Util::Array<FrameOp::Compiled*>& compiledOps, 
 	Util::Array<CoreGraphics::EventId>& events,
 	Util::Array<CoreGraphics::BarrierId>& barriers,
-	Util::Dictionary<CoreGraphics::ShaderRWTextureId, Util::Array<TextureDependency>>& rwTextures,
 	Util::Dictionary<CoreGraphics::ShaderRWBufferId, Util::Array<BufferDependency>>& rwBuffers,
-	Util::Dictionary<CoreGraphics::RenderTextureId, Util::Array<TextureDependency>>& renderTextures)
+	Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures)
 {
 	CompiledImpl* myCompiled = (CompiledImpl*)this->AllocCompiled(allocator);
 
@@ -140,34 +139,57 @@ FramePass::Build(
 	Util::Array<FrameOp::Compiled*> subpassOps;
 	for (IndexT i = 0; i < this->subpasses.Size(); i++)
 	{
-		this->subpasses[i]->Build(allocator, subpassOps, events, barriers, rwTextures, rwBuffers, renderTextures);
+		this->subpasses[i]->Build(allocator, subpassOps, events, barriers, rwBuffers, textures);
 	}
 	myCompiled->subpasses = subpassOps;
 	this->compiled = myCompiled;
-	this->SetupSynchronization(allocator, events, barriers, rwTextures, rwBuffers, renderTextures);
+	this->SetupSynchronization(allocator, events, barriers, rwBuffers, textures);
 
-	// now, add all render textures used by this pass as a dependency for any future command
-	const Util::Array<CoreGraphics::RenderTextureId>& attachments = CoreGraphics::PassGetAttachments(this->pass);
+	// first add dependency for color attachments
+	const Util::Array<CoreGraphics::TextureId>& attachments = CoreGraphics::PassGetAttachments(this->pass);
 	for (IndexT i = 0; i < attachments.Size(); i++)
 	{
-		IndexT idx = renderTextures.FindIndex(attachments[i]);
+		IndexT idx = textures.FindIndex(attachments[i]);
 		n_assert(idx != InvalidIndex);
-		Util::Array<TextureDependency>& deps = renderTextures.ValueAtIndex(idx);
-		CoreGraphicsImageLayout layout = CoreGraphics::RenderTextureGetLayout(attachments[i]);
-		uint layers = CoreGraphics::RenderTextureGetNumLayers(attachments[i]);
-		uint mips = CoreGraphics::RenderTextureGetNumMips(attachments[i]);
+		Util::Array<TextureDependency>& deps = textures.ValueAtIndex(idx);
+		uint layers = CoreGraphics::TextureGetNumLayers(attachments[i]);
+		uint mips = CoreGraphics::TextureGetNumMips(attachments[i]);
 		CoreGraphics::ImageSubresourceInfo subres{ 
-			layout == CoreGraphicsImageLayout::DepthStencilRead ? CoreGraphicsImageAspect::DepthBits : CoreGraphicsImageAspect::ColorBits, 
+			CoreGraphicsImageAspect::ColorBits,
 			0, mips, 0, layers };
 		TextureDependency dep{
 			this->compiled, 
 			this->queue, 
-			layout, 
-			layout == CoreGraphicsImageLayout::DepthStencilRead ? CoreGraphics::BarrierStage::LateDepth : CoreGraphics::BarrierStage::PassOutput,
-			layout == CoreGraphicsImageLayout::DepthStencilRead ? CoreGraphics::BarrierAccess::DepthAttachmentWrite : CoreGraphics::BarrierAccess::ColorAttachmentWrite,
+			CoreGraphicsImageLayout::ShaderRead,
+			CoreGraphics::BarrierStage::PassOutput,
+			CoreGraphics::BarrierAccess::ColorAttachmentWrite,
 			DependencyIntent::Write, 
 			this->index,
 			subres};
+		deps.Append(dep);
+	}
+
+	// then add potential dependency for depth-stencil attachment
+	CoreGraphics::TextureId depthStencilAttachment = CoreGraphics::PassGetDepthStencilAttachment(this->pass);
+	if (depthStencilAttachment != CoreGraphics::TextureId::Invalid())
+	{
+		IndexT idx = textures.FindIndex(depthStencilAttachment);
+		n_assert(idx != InvalidIndex);
+		Util::Array<TextureDependency>& deps = textures.ValueAtIndex(idx);
+		uint layers = CoreGraphics::TextureGetNumLayers(depthStencilAttachment);
+		uint mips = CoreGraphics::TextureGetNumMips(depthStencilAttachment);
+		CoreGraphics::ImageSubresourceInfo subres{
+			CoreGraphicsImageAspect::DepthBits | CoreGraphicsImageAspect::StencilBits,
+			0, mips, 0, layers };
+		TextureDependency dep{
+			this->compiled,
+			this->queue,
+			CoreGraphicsImageLayout::DepthStencilRead,
+			CoreGraphics::BarrierStage::LateDepth,
+			CoreGraphics::BarrierAccess::DepthAttachmentWrite,
+			DependencyIntent::Write,
+			this->index,
+			subres };
 		deps.Append(dep);
 	}
 	compiledOps.Append(myCompiled);

@@ -7,7 +7,6 @@
 */
 //------------------------------------------------------------------------------
 #include "frameplugin.h"
-#include "coregraphics/rendertexture.h"
 #include "coregraphics/shader.h"
 #include "coregraphics/resourcetable.h"
 #include "renderutil/drawfullscreenquad.h"
@@ -28,8 +27,8 @@ public:
 
 private:
 
-	CoreGraphics::RenderTextureId downsample2x2;
-	CoreGraphics::RenderTextureId copy;
+	CoreGraphics::TextureId downsample2x2;
+	CoreGraphics::TextureId copy;
 
 	CoreGraphics::ShaderId shader;
 	CoreGraphics::ResourceTableId tonemapTable;

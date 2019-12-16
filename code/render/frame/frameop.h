@@ -26,7 +26,6 @@ enum class DependencyIntent
 class FrameOp
 {
 public:
-	typedef uint ExecutionMask;
 
 	/// constructor
 	FrameOp();
@@ -114,10 +113,9 @@ protected:
 		CoreGraphics::BufferSubresourceInfo subres;
 	};
 
-	template <typename RESOURCE_TYPE>
 	static void AnalyzeAndSetupTextureBarriers(
 		struct FrameOp::Compiled* op,
-		RESOURCE_TYPE tex,
+		CoreGraphics::TextureId tex,
 		const Util::StringAtom& textureName,
 		DependencyIntent readOrWrite,
 		CoreGraphics::BarrierAccess access,
@@ -127,29 +125,9 @@ protected:
 		const CoreGraphics::ImageSubresourceInfo& subres,
 		IndexT fromIndex,
 		CoreGraphicsQueueType fromQueue,
-		Util::Dictionary<std::tuple<IndexT, IndexT>, CoreGraphics::BarrierCreateInfo>& barriers,
-		Util::Dictionary<std::tuple<IndexT, IndexT>, CoreGraphics::EventCreateInfo>& waitEvents,
-		Util::Dictionary<std::tuple<IndexT, IndexT>, struct FrameOp::Compiled*>& signalEvents,
-		Util::Array<FrameOp::TextureDependency>& renderTextureDependencies);
-
-	template <typename RESOURCE_TYPE, typename BARRIER_TYPE>
-	static void AnalyzeAndSetupTextureBarriers(
-		struct FrameOp::Compiled* op,
-		RESOURCE_TYPE tex,
-		std::function<void(CoreGraphics::EventCreateInfo& info, const BARRIER_TYPE & barrier)> eventAddFunc,
-		std::function<void(CoreGraphics::BarrierCreateInfo& info, const BARRIER_TYPE & barrier)> barrierAddFunc,
-		const Util::StringAtom& textureName,
-		DependencyIntent readOrWrite,
-		CoreGraphics::BarrierAccess access,
-		CoreGraphics::BarrierStage stage,
-		CoreGraphicsImageLayout layout,
-		CoreGraphics::BarrierDomain domain,
-		const CoreGraphics::ImageSubresourceInfo& subres,
-		IndexT fromIndex,
-		CoreGraphicsQueueType fromQueue,
-		Util::Dictionary<std::tuple<IndexT, IndexT>, CoreGraphics::BarrierCreateInfo>& barriers,
-		Util::Dictionary<std::tuple<IndexT, IndexT>, CoreGraphics::EventCreateInfo>& waitEvents,
-		Util::Dictionary<std::tuple<IndexT, IndexT>, struct FrameOp::Compiled*>& signalEvents,
+		Util::Dictionary<std::tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, CoreGraphics::BarrierCreateInfo>& barriers,
+		Util::Dictionary<std::tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, CoreGraphics::EventCreateInfo>& waitEvents,
+		Util::Dictionary<std::tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, struct FrameOp::Compiled*>& signalEvents,
 		Util::Array<FrameOp::TextureDependency>& renderTextureDependencies);
 
 	static void	AnalyzeAndSetupBufferBarriers(
@@ -163,9 +141,9 @@ protected:
 		const CoreGraphics::BufferSubresourceInfo& subres,
 		IndexT fromIndex,
 		CoreGraphicsQueueType fromQueue,
-		Util::Dictionary<std::tuple<IndexT, IndexT>, CoreGraphics::BarrierCreateInfo>& barriers,
-		Util::Dictionary<std::tuple<IndexT, IndexT>, CoreGraphics::EventCreateInfo>& waitEvents,
-		Util::Dictionary<std::tuple<IndexT, IndexT>, struct FrameOp::Compiled*>& signalEvents,
+		Util::Dictionary<std::tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, CoreGraphics::BarrierCreateInfo>& barriers,
+		Util::Dictionary<std::tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, CoreGraphics::EventCreateInfo>& waitEvents,
+		Util::Dictionary<std::tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, struct FrameOp::Compiled*>& signalEvents,
 		Util::Array<FrameOp::BufferDependency>& bufferDependencies);
 
 	/// allocate instance of compiled
@@ -177,23 +155,20 @@ protected:
 		Util::Array<FrameOp::Compiled*>& compiledOps,
 		Util::Array<CoreGraphics::EventId>& events,
 		Util::Array<CoreGraphics::BarrierId>& barriers,
-		Util::Dictionary<CoreGraphics::ShaderRWTextureId, Util::Array<TextureDependency>>& rwTextures,
 		Util::Dictionary<CoreGraphics::ShaderRWBufferId, Util::Array<BufferDependency>>& rwBuffers,
-		Util::Dictionary<CoreGraphics::RenderTextureId, Util::Array<TextureDependency>>& renderTextures);
+		Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures);
 
 	/// setup synchronization
 	void SetupSynchronization(
 		Memory::ArenaAllocator<BIG_CHUNK>& allocator,
 		Util::Array<CoreGraphics::EventId>& events,
 		Util::Array<CoreGraphics::BarrierId>& barriers,
-		Util::Dictionary<CoreGraphics::ShaderRWTextureId, Util::Array<TextureDependency>>& rwTextures,
 		Util::Dictionary<CoreGraphics::ShaderRWBufferId, Util::Array<BufferDependency>>& rwBuffers,
-		Util::Dictionary<CoreGraphics::RenderTextureId, Util::Array<TextureDependency>>& renderTextures);
+		Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures);
 
 	CoreGraphics::BarrierDomain domain;
 	CoreGraphicsQueueType queue;
-	Util::Dictionary<CoreGraphics::ShaderRWTextureId, std::tuple<Util::StringAtom, CoreGraphics::BarrierAccess, CoreGraphics::BarrierStage, CoreGraphics::ImageSubresourceInfo, CoreGraphicsImageLayout>> rwTextureDeps;
-	Util::Dictionary<CoreGraphics::RenderTextureId, std::tuple<Util::StringAtom, CoreGraphics::BarrierAccess, CoreGraphics::BarrierStage, CoreGraphics::ImageSubresourceInfo, CoreGraphicsImageLayout>> renderTextureDeps;
+	Util::Dictionary<CoreGraphics::TextureId, std::tuple<Util::StringAtom, CoreGraphics::BarrierAccess, CoreGraphics::BarrierStage, CoreGraphics::ImageSubresourceInfo, CoreGraphicsImageLayout>> textureDeps;
 	Util::Dictionary<CoreGraphics::ShaderRWBufferId, std::tuple<Util::StringAtom, CoreGraphics::BarrierAccess, CoreGraphics::BarrierStage, CoreGraphics::BufferSubresourceInfo>> rwBufferDeps;
 
 	Compiled* compiled;

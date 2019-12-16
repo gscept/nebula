@@ -50,8 +50,8 @@ void
 FrameBlit::CompiledImpl::Run(const IndexT frameIndex)
 {
 	// get dimensions
-	CoreGraphics::TextureDimensions fromDims = RenderTextureGetDimensions(this->from);
-	CoreGraphics::TextureDimensions toDims = RenderTextureGetDimensions(this->to);
+	CoreGraphics::TextureDimensions fromDims = TextureGetDimensions(this->from);
+	CoreGraphics::TextureDimensions toDims = TextureGetDimensions(this->to);
 
 	// setup regions
 	Math::rectangle<SizeT> fromRegion;
@@ -82,8 +82,8 @@ FrameBlit::CompiledImpl::Run(const IndexT frameIndex)
 void
 FrameBlit::CompiledImpl::Discard()
 {
-	this->from = RenderTextureId::Invalid();
-	this->to = RenderTextureId::Invalid();
+	this->from = TextureId::Invalid();
+	this->to = TextureId::Invalid();
 }
 
 } // namespace Frame2

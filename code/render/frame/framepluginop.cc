@@ -62,14 +62,13 @@ FramePluginOp::Build(
 	Util::Array<FrameOp::Compiled*>& compiledOps,
 	Util::Array<CoreGraphics::EventId>& events,
 	Util::Array<CoreGraphics::BarrierId>& barriers,
-	Util::Dictionary<CoreGraphics::ShaderRWTextureId, Util::Array<TextureDependency>>& rwTextures,
 	Util::Dictionary<CoreGraphics::ShaderRWBufferId, Util::Array<BufferDependency>>& rwBuffers,
-	Util::Dictionary<CoreGraphics::RenderTextureId, Util::Array<TextureDependency>>& renderTextures)
+	Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures)
 {
 	CompiledImpl* myCompiled = (CompiledImpl*)this->AllocCompiled(allocator);
 
 	this->compiled = myCompiled;
-	this->SetupSynchronization(allocator, events, barriers, rwTextures, rwBuffers, renderTextures);
+	this->SetupSynchronization(allocator, events, barriers, rwBuffers, textures);
 	compiledOps.Append(myCompiled);
 }
 

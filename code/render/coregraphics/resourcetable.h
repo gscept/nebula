@@ -10,10 +10,8 @@
 #include "ids/id.h"
 #include "ids/idpool.h"
 #include "texture.h"
-#include "shaderrwtexture.h"
 #include "shaderrwbuffer.h"
 #include "constantbuffer.h"
-#include "rendertexture.h"
 #include "sampler.h"
 #include "config.h"
 namespace CoreGraphics
@@ -92,23 +90,6 @@ struct ResourceTableTexture
 	bool isDepth : 1;
 };
 
-struct ResourceTableRenderTexture
-{
-	CoreGraphics::RenderTextureId tex;
-	IndexT slot;
-	IndexT index;
-	CoreGraphics::SamplerId sampler;
-	bool isDepth : 1;
-};
-
-struct ResourceTableShaderRWTexture
-{
-	CoreGraphics::ShaderRWTextureId tex;
-	IndexT slot;
-	IndexT index;
-	CoreGraphics::SamplerId sampler;
-};
-
 struct ResourceTableConstantBuffer
 {
 	CoreGraphics::ConstantBufferId buf;
@@ -135,7 +116,7 @@ struct ResourceTableShaderRWBuffer
 
 struct ResourceTableInputAttachment
 {
-	CoreGraphics::RenderTextureId tex;
+	CoreGraphics::TextureId tex;
 	IndexT slot;
 	IndexT index;
 	CoreGraphics::SamplerId sampler;
@@ -161,22 +142,14 @@ void DestroyResourceTable(const ResourceTableId& id);
 
 /// set resource table texture
 void ResourceTableSetTexture(const ResourceTableId& id, const ResourceTableTexture& tex);
-/// set resource table rwtexture as read-only
-void ResourceTableSetTexture(const ResourceTableId& id, const ResourceTableShaderRWTexture& tex);
-/// set resource table render texture
-void ResourceTableSetTexture(const ResourceTableId& id, const ResourceTableRenderTexture& tex);
 /// set resource table input attachment
 void ResourceTableSetInputAttachment(const ResourceTableId& id, const ResourceTableInputAttachment& tex);
-/// set resource table rw texture
-void ResourceTableSetShaderRWTexture(const ResourceTableId& id, const ResourceTableShaderRWTexture& tex);
 /// set resource table texture as read-write
-void ResourceTableSetShaderRWTexture(const ResourceTableId& id, const ResourceTableTexture& tex);
-/// set resource table render texture as read-write
-void ResourceTableSetShaderRWTexture(const ResourceTableId& id, const ResourceTableRenderTexture& tex);
+void ResourceTableSetRWTexture(const ResourceTableId& id, const ResourceTableTexture& tex);
 /// set resource table constant buffer
 void ResourceTableSetConstantBuffer(const ResourceTableId& id, const ResourceTableConstantBuffer& buf);
 /// set resource table shader rw buffer
-void ResourceTableSetShaderRWBuffer(const ResourceTableId& id, const ResourceTableShaderRWBuffer& buf);
+void ResourceTableSetRWBuffer(const ResourceTableId& id, const ResourceTableShaderRWBuffer& buf);
 /// set resource table sampler
 void ResourceTableSetSampler(const ResourceTableId& id, const ResourceTableSampler& samp);
 

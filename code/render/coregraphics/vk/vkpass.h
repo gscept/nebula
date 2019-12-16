@@ -24,9 +24,9 @@ struct VkPassLoadInfo
 	CoreGraphics::ConstantBinding renderTargetDimensionsVar;
 
 	// we need these stored for resizing
-	Util::Array<CoreGraphics::RenderTextureId> colorAttachments;
+	Util::Array<CoreGraphics::TextureId> colorAttachments;
 	Util::Array<Math::float4> colorAttachmentClears;
-	CoreGraphics::RenderTextureId depthStencilAttachment;
+	CoreGraphics::TextureId depthStencilAttachment;
 
 	// we store these so we retain the data for when we need to bind it
 	VkRect2D renderArea;

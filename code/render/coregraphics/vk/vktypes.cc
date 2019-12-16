@@ -67,6 +67,22 @@ VkTypes::AsVkFormat(CoreGraphics::PixelFormat::Code p)
 //------------------------------------------------------------------------------
 /**
 */
+bool 
+VkTypes::IsDepthFormat(CoreGraphics::PixelFormat::Code p)
+{
+	switch (p)
+	{
+	case PixelFormat::D32S8:
+	case PixelFormat::D24X8:
+	case PixelFormat::D24S8:
+		return true;
+	}
+	return false;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 VkFormat
 VkTypes::AsVkFormat(ILenum p)
 {
@@ -388,6 +404,7 @@ VkTypes::AsVkDataFormat(CoreGraphics::PixelFormat::Code p)
 		case PixelFormat::R32G32F:          return VK_FORMAT_R32G32_SFLOAT;
 		case PixelFormat::R32G32B32A32F:    return VK_FORMAT_R32G32B32A32_SFLOAT;
 		case PixelFormat::R32G32B32F:		return VK_FORMAT_R32G32B32_SFLOAT;
+		case PixelFormat::R11G11B10F:		return VK_FORMAT_B10G11R11_UFLOAT_PACK32;
 		case PixelFormat::A8:               return VK_FORMAT_R8_UINT;
 		case PixelFormat::R8:               return VK_FORMAT_R8_UINT;
 		case PixelFormat::G8:               return VK_FORMAT_R8_UINT;
@@ -398,6 +415,27 @@ VkTypes::AsVkDataFormat(CoreGraphics::PixelFormat::Code p)
 			n_error("VkTypes::AsVkFormat(): invalid pixel format '%d'", p);
 			return VK_FORMAT_R8G8B8A8_UINT;
 		}
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+VkSampleCountFlagBits
+VkTypes::AsVkSampleFlags(const SizeT samples)
+{
+	switch (samples)
+	{
+	case 1: return VK_SAMPLE_COUNT_1_BIT;
+	case 2: return VK_SAMPLE_COUNT_2_BIT;
+	case 4: return VK_SAMPLE_COUNT_4_BIT;
+	case 8: return VK_SAMPLE_COUNT_8_BIT;
+	case 16: return VK_SAMPLE_COUNT_16_BIT;
+	case 32: return VK_SAMPLE_COUNT_32_BIT;
+	case 64: return VK_SAMPLE_COUNT_64_BIT;
+	default:
+		n_error("Unknown sample bits '%d'", samples);
+		return VK_SAMPLE_COUNT_1_BIT;
 	}
 }
 

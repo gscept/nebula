@@ -7,7 +7,6 @@
 #include "io/ioserver.h"
 #include "io/stream.h"
 #include "framepass.h"
-#include "coregraphics/rendertexture.h"
 #include "frameglobalstate.h"
 #include "frameblit.h"
 #include "framecompute.h"
@@ -25,7 +24,6 @@
 #include "coregraphics/config.h"
 #include "resources/resourcemanager.h"
 #include "core/factory.h"
-#include "frameswapbuffers.h"
 #include "framesubpassplugin.h"
 #include "framebarrier.h"
 #include "coregraphics/barrier.h"
@@ -39,7 +37,7 @@ using namespace IO;
 namespace Frame
 {
 
-Frame::FrameSubmission* FrameScriptLoader::LastSubmission = nullptr;
+Frame::FrameSubmission* FrameScriptLoader::LastSubmission[CoreGraphicsQueryType::NumCoreGraphicsQueryTypes] = {nullptr, nullptr};
 Util::HashTable<uint, FrameScriptLoader::Fn> FrameScriptLoader::constructors;
 //------------------------------------------------------------------------------
 /**
@@ -119,17 +117,13 @@ FrameScriptLoader::ParseFrameScript(const Ptr<Frame::FrameScript>& script, JzonV
 	{
 		JzonValue* cur = node->array_values[i];
 		Util::String name(cur->key);
-		if (name == "render_textures")			ParseColorTextureList(script, cur);
-		else if (name == "depth_stencils")		ParseDepthStencilTextureList(script, cur);
-		else if (name == "read_write_textures")	ParseImageReadWriteTextureList(script, cur);
-		else if (name == "read_write_buffers")	ParseImageReadWriteBufferList(script, cur);
+		if (name == "textures")					ParseTextureList(script, cur);
+		else if (name == "read_write_buffers")	ParseReadWriteBufferList(script, cur);
 		else if (name == "plugins")				ParsePluginList(script, cur);
-		else if (name == "global_state")		ParseGlobalState(script, cur);
 		else if (name == "blit")				ParseBlit(script, cur);
 		else if (name == "copy")				ParseCopy(script, cur);
 		else if (name == "compute")				ParseCompute(script, cur);
 		else if (name == "plugin")				ParsePlugin(script, cur);
-		else if (name == "swapbuffers")			ParseSwapbuffers(script, cur);
 		else if (name == "pass")				ParsePass(script, cur);
 		else if (name == "begin_submission")	ParseFrameSubmission(script, 0, cur); // 0 means begin
 		else if (name == "end_submission")		ParseFrameSubmission(script, 1, cur); // 1 means end
@@ -144,9 +138,9 @@ FrameScriptLoader::ParseFrameScript(const Ptr<Frame::FrameScript>& script, JzonV
 	// set end of frame barrier if not a sub-script
 	if (!script->subScript)
 	{
-		n_assert_fmt(FrameScriptLoader::LastSubmission != nullptr, "Frame script '%s' must contain an end submission, otherwise the script is invalid!", script->GetResourceName().Value());
-		FrameScriptLoader::LastSubmission->resourceResetBarriers = &script->resourceResetBarriers;
-		FrameScriptLoader::LastSubmission = nullptr;
+		n_assert_fmt(FrameScriptLoader::LastSubmission[GraphicsQueueType] != nullptr, "Frame script '%s' must contain an end submission, otherwise the script is invalid!", script->GetResourceName().Value());
+		FrameScriptLoader::LastSubmission[GraphicsQueueType]->resourceResetBarriers = &script->resourceResetBarriers;
+		FrameScriptLoader::LastSubmission[GraphicsQueueType] = nullptr;
 	}
 	
 }
@@ -154,8 +148,8 @@ FrameScriptLoader::ParseFrameScript(const Ptr<Frame::FrameScript>& script, JzonV
 //------------------------------------------------------------------------------
 /**
 */
-void
-FrameScriptLoader::ParseColorTextureList(const Ptr<Frame::FrameScript>& script, JzonValue* node)
+void 
+FrameScriptLoader::ParseTextureList(const Ptr<Frame::FrameScript>& script, JzonValue* node)
 {
 	uint i;
 	for (i = 0; i < node->size; i++)
@@ -166,8 +160,8 @@ FrameScriptLoader::ParseColorTextureList(const Ptr<Frame::FrameScript>& script, 
 		if (Util::String(name->string_value) == "__WINDOW__")
 		{
 			// code to fetch window render texture goes here
-			CoreGraphics::RenderTextureId tex = FrameServer::Instance()->GetWindowTexture();
-			script->AddColorTexture("__WINDOW__", tex);
+			CoreGraphics::TextureId tex = FrameServer::Instance()->GetWindowTexture();
+			script->AddTexture("__WINDOW__", tex);
 
 			// save the window used for the relative dimensions used for this framescript
 			script->window = DisplayDevice::Instance()->GetCurrentWindow();
@@ -181,54 +175,49 @@ FrameScriptLoader::ParseColorTextureList(const Ptr<Frame::FrameScript>& script, 
 			JzonValue* height = jzon_get(cur, "height");
 			n_assert(height != nullptr);
 
+			JzonValue* usage = jzon_get(cur, "usage");
+			n_assert(usage != nullptr);
+			JzonValue* type = jzon_get(cur, "type");
+			n_assert(type != nullptr);
+
 			// get format
 			CoreGraphics::PixelFormat::Code fmt = CoreGraphics::PixelFormat::FromString(format->string_value);
 
 			// create texture
-			RenderTextureCreateInfo info =
-			{
-				name->string_value,
-				Texture2D,
-				fmt,
-				ColorAttachment
-			};
+			TextureCreateInfo info;
+			info.name = name->string_value;
+			info.usage = TextureUsageFromString(usage->string_value);
+			info.tag = "frame_script"_atm;
+			info.type = TextureTypeFromString(type->string_value);
+			info.format = fmt;
 
-			JzonValue* layers = jzon_get(cur, "layers");
-			if (layers != nullptr)
+			if (JzonValue* alias = jzon_get(cur, "alias"))
+				info.alias = script->GetTexture(alias->string_value);
+
+			if (JzonValue* layers = jzon_get(cur, "layers"))
 			{
+				n_assert_fmt(info.type >= Texture1DArray, "Texture format must be array type if the layers value is set");
 				info.layers = layers->int_value;
-				info.type = Texture2DArray;
 			}
-			else
-			{
-				info.layers = 1;
-			}
+
+			if (JzonValue* mips = jzon_get(cur, "mips"))
+				info.mips = mips->int_value;
+
+			if (JzonValue* depth = jzon_get(cur, "depth"))
+				info.depth = (float)depth->float_value;
 
 			// set relative, dynamic or msaa if defined
-			if (jzon_get(cur, "relative"))	info.relativeSize = jzon_get(cur, "relative")->bool_value;
-			if (jzon_get(cur, "msaa"))		info.msaa = jzon_get(cur, "msaa")->bool_value;
-
-			// if cube, use 6 layers
-			float depth = 1;
-			if (jzon_get(cur, "cube"))
-			{
-				bool isCube = jzon_get(cur, "cube")->bool_value;
-				if (isCube)
-				{
-					info.type = TextureCube;
-					depth = 6;
-				}
-			}
+			if (jzon_get(cur, "relative"))	info.windowRelative = jzon_get(cur, "relative")->bool_value;
+			if (jzon_get(cur, "samples"))	info.samples = jzon_get(cur, "samples")->int_value;
 
 			// set dimension after figuring out if the texture is a cube
 			info.width = (float)width->float_value;
 			info.height = (float)height->float_value;
-			info.depth = depth;
 
 			// add to script
-			RenderTextureId tex = CreateRenderTexture(info);
-			script->AddColorTexture(name->string_value, tex);
-		}		
+			TextureId tex = CreateTexture(info);
+			script->AddTexture(name->string_value, tex);
+		}
 	}
 }
 
@@ -236,116 +225,7 @@ FrameScriptLoader::ParseColorTextureList(const Ptr<Frame::FrameScript>& script, 
 /**
 */
 void
-FrameScriptLoader::ParseDepthStencilTextureList(const Ptr<Frame::FrameScript>& script, JzonValue* node)
-{
-	uint i;
-	for (i = 0; i < node->size; i++)
-	{
-		JzonValue* cur = node->array_values[i];
-		JzonValue* name = jzon_get(cur, "name");
-		n_assert(name != nullptr);
-		JzonValue* format = jzon_get(cur, "format");
-		n_assert(name != nullptr);
-		JzonValue* width = jzon_get(cur, "width");
-		n_assert(width != nullptr);
-		JzonValue* height = jzon_get(cur, "height");
-		n_assert(height != nullptr);
-
-		// get format
-		CoreGraphics::PixelFormat::Code fmt = CoreGraphics::PixelFormat::FromString(format->string_value);
-
-		// create texture
-		RenderTextureCreateInfo info =
-		{
-			name->string_value,
-			Texture2D,
-			fmt,
-			DepthStencilAttachment
-		};
-
-		JzonValue* layers = jzon_get(cur, "layers");
-		if (layers != nullptr)
-		{
-			info.layers = layers->int_value;
-			info.type = Texture2DArray;
-		}
-		else
-		{
-			info.layers = 1;
-		}
-
-		// set relative, dynamic or msaa if defined
-		if (jzon_get(cur, "relative"))	info.relativeSize = jzon_get(cur, "relative")->bool_value;
-		if (jzon_get(cur, "msaa"))		info.msaa = jzon_get(cur, "msaa")->bool_value;
-
-		// if cube, use 6 layers
-		float depth = 1;
-		if (jzon_get(cur, "cube"))
-		{
-			bool isCube = jzon_get(cur, "cube")->bool_value;
-			if (isCube)
-			{
-				info.type = TextureCube;
-				depth = 6;
-			}
-		}
-
-		// set dimension after figuring out if the texture is a cube
-		info.width = (float)width->float_value;
-		info.height = (float)height->float_value;
-		info.depth = depth;
-
-		// add to script
-		RenderTextureId tex = CreateRenderTexture(info);
-		script->AddDepthStencilTexture(name->string_value, tex);
-	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-FrameScriptLoader::ParseImageReadWriteTextureList(const Ptr<Frame::FrameScript>& script, JzonValue* node)
-{
-	uint i;
-	for (i = 0; i < node->size; i++)
-	{
-		JzonValue* cur = node->array_values[i];
-		JzonValue* name = jzon_get(cur, "name");
-		n_assert(name != nullptr);
-		JzonValue* format = jzon_get(cur, "format");
-		n_assert(name != nullptr);
-		JzonValue* width = jzon_get(cur, "width");
-		n_assert(width != nullptr);
-		JzonValue* height = jzon_get(cur, "height");
-		n_assert(height != nullptr);
-		JzonValue* layers = jzon_get(cur, "layers");
-
-		// setup shader read-write texture
-		ShaderRWTextureCreateInfo info =
-		{
-			name->string_value,
-			Texture2D,	// fixme, not only 2D textures!
-			CoreGraphics::PixelFormat::FromString(format->string_value),
-			CoreGraphicsImageLayout::ShaderRead,		// texture must be in shader read state if it's going to go into the bindless structure
-			(float)width->float_value, (float)height->float_value, 1,
-			layers ? layers->int_value : 1, 1,
-			false, false, true
-		};
-
-		if (jzon_get(cur, "relative")) info.relativeSize = jzon_get(cur, "relative")->bool_value;
-		ShaderRWTextureId tex = CreateShaderRWTexture(info);
-
-		// add texture
-		script->AddReadWriteTexture(name->string_value, tex);
-	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-FrameScriptLoader::ParseImageReadWriteBufferList(const Ptr<Frame::FrameScript>& script, JzonValue* node)
+FrameScriptLoader::ParseReadWriteBufferList(const Ptr<Frame::FrameScript>& script, JzonValue* node)
 {
 	uint i;
 	for (i = 0; i < node->size; i++)
@@ -391,25 +271,14 @@ FrameScriptLoader::ParsePluginList(const Ptr<Frame::FrameScript>& script, JzonVa
 		// create algorithm
 		Frame::FramePlugin* alg = (constructors[Util::String(clazz->string_value).HashCode()](script->GetAllocator()));
 
-		JzonValue* textures = jzon_get(cur, "render_textures");
+		JzonValue* textures = jzon_get(cur, "textures");
 		if (textures != nullptr)
 		{
 			uint j;
 			for (j = 0; j < textures->size; j++)
 			{
 				JzonValue* nd = textures->array_values[j];
-				alg->AddRenderTexture(script->GetColorTexture(nd->string_value));
-			}
-		}
-
-		JzonValue* depthStencils = jzon_get(cur, "depth_stencils");
-		if (depthStencils != nullptr)
-		{
-			uint j;
-			for (j = 0; j < depthStencils->size; j++)
-			{
-				JzonValue* nd = depthStencils->array_values[j];
-				alg->AddRenderTexture(script->GetDepthStencilTexture(nd->string_value));
+				alg->AddTexture(nd->string_value, script->GetTexture(nd->string_value));
 			}
 		}
 
@@ -420,18 +289,7 @@ FrameScriptLoader::ParsePluginList(const Ptr<Frame::FrameScript>& script, JzonVa
 			for (j = 0; j < buffers->size; j++)
 			{
 				JzonValue* nd = buffers->array_values[j];
-				alg->AddReadWriteBuffer(script->GetReadWriteBuffer(nd->string_value));
-			}
-		}
-
-		JzonValue* images = jzon_get(cur, "read_write_textures");
-		if (images != nullptr)
-		{
-			uint j;
-			for (j = 0; j < images->size; j++)
-			{
-				JzonValue* nd = images->array_values[j];
-				alg->AddReadWriteImage(script->GetReadWriteTexture(nd->string_value));
+				alg->AddReadWriteBuffer(nd->string_value, script->GetReadWriteBuffer(nd->string_value));
 			}
 		}
 
@@ -439,93 +297,6 @@ FrameScriptLoader::ParsePluginList(const Ptr<Frame::FrameScript>& script, JzonVa
 		alg->Setup();
 		script->AddPlugin(name->string_value, alg);
 	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-FrameScriptLoader::ParseGlobalState(const Ptr<Frame::FrameScript>& script, JzonValue* node)
-{
-	FrameGlobalState* op = script->GetAllocator().Alloc<FrameGlobalState>();
-
-	// set name of op
-	JzonValue* name = jzon_get(node, "name");
-	n_assert(name != NULL);
-	op->SetName(name->string_value);
-
-	// create shared state, this will be set while running the script and update the shared state
-	//CoreGraphics::ShaderStateId state = ShaderServer::Instance()->ShaderCreateSharedState("shd:shared.fxb", { NEBULA_FRAME_GROUP });
-	//op->state = state;
-
-	// setup variables
-	JzonValue* variables = jzon_get(node, "variables");
-	if (variables != NULL)
-	{
-		uint i;
-		for (i = 0; i < variables->size; i++)
-		{
-			JzonValue* var = variables->array_values[i];
-
-			// variables need to define both semantic and value
-			JzonValue* sem = jzon_get(var, "semantic");
-			n_assert(sem != NULL);
-			JzonValue* val = jzon_get(var, "value");
-			n_assert(val != NULL);
-			Util::String valStr(val->string_value);
-
-			// get variable
-			/*
-			ShaderConstantId varid = ShaderStateGetConstant(state, sem->string_value);
-			ShaderConstantType type = ShaderConstantGetType(varid, state);
-			switch (type)
-			{
-			case IntVariableType:
-				ShaderConstantSet(varid, state, valStr.AsInt());
-				break;
-			case FloatVariableType:
-				ShaderConstantSet(varid, state, valStr.AsFloat());
-				break;
-			case VectorVariableType:
-				ShaderConstantSet(varid, state, valStr.AsFloat4());
-				break;
-			case Vector2VariableType:
-				ShaderConstantSet(varid, state, valStr.AsFloat2());
-				break;
-			case MatrixVariableType:
-				ShaderConstantSet(varid, state, valStr.AsMatrix44());
-				break;
-			case BoolVariableType:
-				ShaderConstantSet(varid, state, valStr.AsBool());
-				break;
-			case SamplerVariableType:
-			case TextureVariableType:
-			{
-				const Ptr<Resources::ResourceManager>& resManager = Resources::ResourceManager::Instance();
-				Resources::ResourceId id = resManager->GetId(valStr);
-				if (id != Resources::ResourceId::Invalid())
-				{
-					TextureId tex = id;
-					ShaderResourceSetTexture(varid, state, tex);
-				}
-				break;
-			}
-			case ImageReadWriteVariableType:
-				ShaderResourceSetReadWriteTexture(varid, state, script->GetReadWriteTexture(valStr));
-				break;
-			case BufferReadWriteVariableType:
-				ShaderResourceSetReadWriteBuffer(varid, state, script->GetReadWriteBuffer(valStr));
-				break;
-			}
-
-			// add variable to op
-			op->constants.Append(varid);
-			*/
-
-		}
-	}
-
-	script->AddOp(op);
 }
 
 //------------------------------------------------------------------------------
@@ -561,11 +332,11 @@ FrameScriptLoader::ParseBlit(const Ptr<Frame::FrameScript>& script, JzonValue* n
 	
 	JzonValue* from = jzon_get(node, "from");
 	n_assert(from != NULL);
-	const CoreGraphics::RenderTextureId& fromTex = script->GetColorTexture(from->string_value);
+	const CoreGraphics::TextureId& fromTex = script->GetTexture(from->string_value);
 
 	JzonValue* to = jzon_get(node, "to");
 	n_assert(to != NULL);
-	const CoreGraphics::RenderTextureId& toTex = script->GetColorTexture(to->string_value);
+	const CoreGraphics::TextureId& toTex = script->GetTexture(to->string_value);
 
 	// setup blit operation
 	op->from = fromTex;
@@ -606,11 +377,11 @@ FrameScriptLoader::ParseCopy(const Ptr<Frame::FrameScript>& script, JzonValue* n
 
 	JzonValue* from = jzon_get(node, "from");
 	n_assert(from != NULL);
-	const CoreGraphics::RenderTextureId& fromTex = script->GetColorTexture(from->string_value);
+	const CoreGraphics::TextureId& fromTex = script->GetTexture(from->string_value);
 
 	JzonValue* to = jzon_get(node, "to");
 	n_assert(to != NULL);
-	const CoreGraphics::RenderTextureId& toTex = script->GetColorTexture(to->string_value);
+	const CoreGraphics::TextureId& toTex = script->GetTexture(to->string_value);
 
 	// setup copy operation
 	op->from = fromTex;
@@ -712,28 +483,6 @@ FrameScriptLoader::ParsePlugin(const Ptr<Frame::FrameScript>& script, JzonValue*
 /**
 */
 void
-FrameScriptLoader::ParseSwapbuffers(const Ptr<Frame::FrameScript>& script, JzonValue* node)
-{
-	FrameSwapbuffers* op = script->GetAllocator().Alloc<FrameSwapbuffers>();
-
-	// get function and name
-	JzonValue* name = jzon_get(node, "name");
-	n_assert(name != NULL);
-	op->SetName(name->string_value);
-
-	JzonValue* texture = jzon_get(node, "texture");
-	n_assert(texture != NULL);
-	const CoreGraphics::RenderTextureId& tex = script->GetColorTexture(texture->string_value);
-	op->tex = tex;
-
-	// add operation
-	script->AddOp(op);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
 FrameScriptLoader::ParseBarrier(const Ptr<Frame::FrameScript>& script, JzonValue* node)
 {
 	FrameBarrier* op = script->GetAllocator().Alloc<FrameBarrier>();
@@ -769,9 +518,16 @@ FrameScriptLoader::ParseFrameSubmission(const Ptr<Frame::FrameScript>& script, c
 	op->startOrEnd = startOrEnd;
 
 	// get function and name
-	JzonValue* name = jzon_get(node, "name");
-	n_assert(name != NULL);
-	op->SetName(name->string_value);
+	if (startOrEnd == 0)
+	{
+		JzonValue* name = jzon_get(node, "name");
+		n_assert(name != NULL);
+		op->SetName(name->string_value);
+	}
+	else
+	{
+		op->SetName("End");
+	}
 
 	JzonValue* queue = jzon_get(node, "queue");
 	op->queue = CoreGraphicsQueueTypeFromString(queue->string_value);
@@ -784,9 +540,13 @@ FrameScriptLoader::ParseFrameSubmission(const Ptr<Frame::FrameScript>& script, c
 			op->waitQueue = CoreGraphicsQueueTypeFromString(waitQueue->string_value);
 	}
 
+	// insert a block queue into the last submission for the opposite queue, if this queue needs to wait
+	if (op->waitQueue != InvalidQueueType)
+		FrameScriptLoader::LastSubmission[op->queue == GraphicsQueueType ? ComputeQueueType : GraphicsQueueType]->blockQueue = op->queue;
+
 	// update last submission
 	if (startOrEnd == 1)
-		FrameScriptLoader::LastSubmission = op;
+		FrameScriptLoader::LastSubmission[op->queue] = op;
 
 	// add operation to script
 	script->AddOp(op);
@@ -870,7 +630,7 @@ FrameScriptLoader::ParsePass(const Ptr<Frame::FrameScript>& script, JzonValue* n
 			// set attachment in framebuffer
 			JzonValue* ds = jzon_get(cur, "name");
 			
-			info.depthStencilAttachment = script->GetDepthStencilTexture(ds->string_value);
+			info.depthStencilAttachment = script->GetTexture(ds->string_value);
 		}
 		else if (name == "subpass")				ParseSubpass(script, info, op, attachmentNames, cur);
 		else
@@ -896,7 +656,7 @@ FrameScriptLoader::ParseAttachmentList(const Ptr<Frame::FrameScript>& script, Co
 		JzonValue* cur = node->array_values[i];
 		JzonValue* name = jzon_get(cur, "name");
 		n_assert(name != NULL);
-		pass.colorAttachments.Append(script->GetColorTexture(name->string_value));
+		pass.colorAttachments.Append(script->GetTexture(name->string_value));
 		attachmentNames.Append(name->string_value);
 
 		// set clear flag if present
@@ -1010,6 +770,10 @@ FrameScriptLoader::ParseSubpassDependencies(Frame::FramePass* pass, CoreGraphics
 					break;
 				}
 			}
+			if (j == subpasses.Size())
+			{
+				n_error("Could not find previous subpass '%s'", id.AsCharPtr());
+			}
 		}
 	}
 }
@@ -1038,6 +802,10 @@ FrameScriptLoader::ParseSubpassAttachments(Frame::FramePass* pass, CoreGraphics:
 					break;
 				}
 			}
+			if (j == attachmentNames.Size())
+			{
+				n_error("Could not find attachment '%s'", id.AsCharPtr());
+			}
 		}
 	}
 }
@@ -1056,7 +824,6 @@ FrameScriptLoader::ParseSubpassInputs(Frame::FramePass* pass, CoreGraphics::Subp
 		else if (cur->is_string)
 		{
 			Util::String id(cur->string_value);
-			
 			IndexT j;
 			for (j = 0; j < attachmentNames.Size(); j++)
 			{
@@ -1065,6 +832,10 @@ FrameScriptLoader::ParseSubpassInputs(Frame::FramePass* pass, CoreGraphics::Subp
 					subpass.inputs.Append(j);
 					break;
 				}
+			}
+			if (j == attachmentNames.Size())
+			{
+				n_error("Could not find previous attachment '%s'", id.AsCharPtr());
 			}
 		}
 	}
@@ -1225,7 +996,7 @@ FrameScriptLoader::ParseSubpassFullscreenEffect(const Ptr<Frame::FrameScript>& s
 	// get texture
 	JzonValue* texture = jzon_get(node, "size_from_texture");
 	n_assert(texture != NULL);
-	op->tex = script->GetColorTexture(texture->string_value);
+	op->tex = script->GetTexture(texture->string_value);
 	
 	// add op to subpass
 	op->Setup();
@@ -1357,30 +1128,11 @@ FrameScriptLoader::ParseShaderVariables(const Ptr<Frame::FrameScript>& script, c
 		case ImageHandleType:
 		case TextureHandleType:
 		{
-			CoreGraphics::RenderTextureId rtid = script->GetColorTexture(valStr);
-			if (rtid != CoreGraphics::RenderTextureId::Invalid())
-				ConstantBufferUpdate(cbo, CoreGraphics::RenderTextureGetBindlessHandle(rtid), bind);
+			CoreGraphics::TextureId rtid = script->GetTexture(valStr);
+			if (rtid != CoreGraphics::TextureId::Invalid())
+				ConstantBufferUpdate(cbo, CoreGraphics::TextureGetBindlessHandle(rtid), bind);
 			else
-			{
-				CoreGraphics::RenderTextureId rtid = script->GetDepthStencilTexture(valStr);
-				if (rtid != CoreGraphics::RenderTextureId::Invalid())
-					ConstantBufferUpdate(cbo, CoreGraphics::RenderTextureGetBindlessHandle(rtid), bind);
-				else
-				{
-					CoreGraphics::ShaderRWTextureId swid = script->GetReadWriteTexture(valStr);
-					if (swid != CoreGraphics::ShaderRWTextureId::Invalid())
-						ConstantBufferUpdate(cbo, CoreGraphics::ShaderRWTextureGetBindlessHandle(swid), bind);
-					else
-					{
-						const Ptr<Resources::ResourceManager>& resManager = Resources::ResourceManager::Instance();
-						CoreGraphics::TextureId id = resManager->CreateResource(valStr, nullptr, nullptr, true).As<CoreGraphics::TextureId>();
-						if (id != CoreGraphics::TextureId::Invalid())
-							ConstantBufferUpdate(cbo, CoreGraphics::TextureGetBindlessHandle(id), bind);
-						else
-							n_error("Unknown resource %s!", valStr.AsCharPtr());
-					}
-				}
-			}
+				n_error("Unknown resource %s!", valStr.AsCharPtr());
 			break;
 		}
 		case SamplerVariableType:
@@ -1388,42 +1140,23 @@ FrameScriptLoader::ParseShaderVariables(const Ptr<Frame::FrameScript>& script, c
 		{
 			IndexT slot = ShaderGetResourceSlot(shd, sem->string_value);
 
-			CoreGraphics::RenderTextureId rtid = script->GetColorTexture(valStr);
-			if (rtid != CoreGraphics::RenderTextureId::Invalid())
+			CoreGraphics::TextureId rtid = script->GetTexture(valStr);
+			if (rtid != CoreGraphics::TextureId::Invalid())
 				ResourceTableSetTexture(table, { rtid, slot, 0, CoreGraphics::SamplerId::Invalid(), false });
 			else
-			{
-				CoreGraphics::RenderTextureId rtid = script->GetDepthStencilTexture(valStr);
-				if (rtid != CoreGraphics::RenderTextureId::Invalid())
-					ConstantBufferUpdate(cbo, CoreGraphics::RenderTextureGetBindlessHandle(rtid), bind);
-				else
-				{
-					CoreGraphics::ShaderRWTextureId swid = script->GetReadWriteTexture(valStr);
-					if (swid != CoreGraphics::ShaderRWTextureId::Invalid())
-						ResourceTableSetTexture(table, { swid, slot, 0, CoreGraphics::SamplerId::Invalid() });
-					else
-					{
-						const Ptr<Resources::ResourceManager>& resManager = Resources::ResourceManager::Instance();
-						CoreGraphics::TextureId id = resManager->CreateResource(valStr, nullptr, nullptr, true).As<CoreGraphics::TextureId>();
-						if (id != CoreGraphics::TextureId::Invalid())
-							ResourceTableSetTexture(table, { id, slot, 0, CoreGraphics::SamplerId::Invalid(), false });
-						else
-							n_error("Unknown resource %s!", valStr.AsCharPtr());
-					}
-				}
-			}
+				n_error("Unknown resource %s!", valStr.AsCharPtr());
 			break;
 		}
 		case ImageReadWriteVariableType:
 		{
 			IndexT slot = ShaderGetResourceSlot(shd, sem->string_value);
-			ResourceTableSetShaderRWTexture(table, { script->GetReadWriteTexture(valStr), slot, 0, CoreGraphics::SamplerId::Invalid() });
+			ResourceTableSetRWTexture(table, { script->GetTexture(valStr), slot, 0, CoreGraphics::SamplerId::Invalid() });
 			break;
 		}
 		case BufferReadWriteVariableType:
 		{
 			IndexT slot = ShaderGetResourceSlot(shd, sem->string_value);
-			ResourceTableSetShaderRWBuffer(table, { script->GetReadWriteBuffer(valStr), slot, 0 });
+			ResourceTableSetRWBuffer(table, { script->GetReadWriteBuffer(valStr), slot, 0 });
 			break;
 		}
 		}
@@ -1444,20 +1177,20 @@ FrameScriptLoader::ParseResourceDependencies(const Ptr<Frame::FrameScript>& scri
 		const Util::String valstr = jzon_get(dep, "name")->string_value;
 		CoreGraphics::BarrierAccess access = BarrierAccessFromString(jzon_get(dep, "access")->string_value);
 		CoreGraphics::BarrierStage dependency = BarrierStageFromString(jzon_get(dep, "stage")->string_value);
-		
-		if (script->readWriteTexturesByName.Contains(valstr))
+
+		if (script->texturesByName.Contains(valstr))
 		{
 			CoreGraphicsImageLayout layout = ImageLayoutFromString(jzon_get(dep, "layout")->string_value);
 			CoreGraphics::ImageSubresourceInfo subres;
 			JzonValue* nd = nullptr;
-			if ((nd = jzon_get(dep, "aspect")) != nullptr) subres.aspect			= ImageAspectFromString(nd->string_value);
-			if ((nd = jzon_get(dep, "mip")) != nullptr) subres.mip					= nd->int_value;
-			if ((nd = jzon_get(dep, "mip_count")) != nullptr) subres.mipCount		= nd->int_value;
-			if ((nd = jzon_get(dep, "layer")) != nullptr) subres.layer				= nd->int_value;
-			if ((nd = jzon_get(dep, "layer_count")) != nullptr) subres.layerCount	= nd->int_value;
-			
-			ShaderRWTextureId tex = script->readWriteTexturesByName[valstr];
-			op->rwTextureDeps.Add(tex, std::make_tuple(valstr, access, dependency, subres, layout));
+			if ((nd = jzon_get(dep, "aspect")) != nullptr) subres.aspect = ImageAspectFromString(nd->string_value);
+			if ((nd = jzon_get(dep, "mip")) != nullptr) subres.mip = nd->int_value;
+			if ((nd = jzon_get(dep, "mip_count")) != nullptr) subres.mipCount = nd->int_value;
+			if ((nd = jzon_get(dep, "layer")) != nullptr) subres.layer = nd->int_value;
+			if ((nd = jzon_get(dep, "layer_count")) != nullptr) subres.layerCount = nd->int_value;
+
+			TextureId tex = script->texturesByName[valstr];
+			op->textureDeps.Add(tex, std::make_tuple(valstr, access, dependency, subres, layout));
 		}
 		else if (script->readWriteBuffersByName.Contains(valstr))
 		{
@@ -1467,34 +1200,6 @@ FrameScriptLoader::ParseResourceDependencies(const Ptr<Frame::FrameScript>& scri
 			if ((nd = jzon_get(dep, "offset")) != nullptr) subres.offset = nd->int_value;
 			if ((nd = jzon_get(dep, "size")) != nullptr) subres.size = nd->int_value;
 			op->rwBufferDeps.Add(buf, std::make_tuple(valstr, access, dependency, subres));
-		}
-		else if (script->colorTexturesByName.Contains(valstr))
-		{
-			CoreGraphicsImageLayout layout = ImageLayoutFromString(jzon_get(dep, "layout")->string_value);
-			CoreGraphics::ImageSubresourceInfo subres;
-			JzonValue* nd = nullptr;
-			if ((nd = jzon_get(dep, "aspect")) != nullptr) subres.aspect = ImageAspectFromString(nd->string_value);
-			if ((nd = jzon_get(dep, "mip")) != nullptr) subres.mip = nd->int_value;
-			if ((nd = jzon_get(dep, "mip_count")) != nullptr) subres.mipCount = nd->int_value;
-			if ((nd = jzon_get(dep, "layer")) != nullptr) subres.layer = nd->int_value;
-			if ((nd = jzon_get(dep, "layer_count")) != nullptr) subres.layerCount = nd->int_value;
-
-			RenderTextureId tex = script->colorTexturesByName[valstr];
-			op->renderTextureDeps.Add(tex, std::make_tuple(valstr, access, dependency, subres, layout));
-		}
-		else if (script->depthStencilTexturesByName.Contains(valstr))
-		{
-			CoreGraphicsImageLayout layout = ImageLayoutFromString(jzon_get(dep, "layout")->string_value);
-			CoreGraphics::ImageSubresourceInfo subres;
-			JzonValue* nd = nullptr;
-			if ((nd = jzon_get(dep, "aspect")) != nullptr) subres.aspect = ImageAspectFromString(nd->string_value);
-			if ((nd = jzon_get(dep, "mip")) != nullptr) subres.mip = nd->int_value;
-			if ((nd = jzon_get(dep, "mip_count")) != nullptr) subres.mipCount = nd->int_value;
-			if ((nd = jzon_get(dep, "layer")) != nullptr) subres.layer = nd->int_value;
-			if ((nd = jzon_get(dep, "layer_count")) != nullptr) subres.layerCount = nd->int_value;
-
-			RenderTextureId tex = script->depthStencilTexturesByName[valstr];
-			op->renderTextureDeps.Add(tex, std::make_tuple(valstr, access, dependency, subres, layout));
 		}
 		else
 		{

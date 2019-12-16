@@ -83,9 +83,9 @@ struct
 	IndexT localLightsSlot, localLightShadowSlot;
 
 	Ptr<Frame::FrameScript> shadowMappingFrameScript;
-	CoreGraphics::RenderTextureId spotlightShadowAtlas;
-	CoreGraphics::RenderTextureId globalLightShadowMap;
-	CoreGraphics::ShaderRWTextureId globalLightShadowMapBlurred0, globalLightShadowMapBlurred1;
+	CoreGraphics::TextureId spotlightShadowAtlas;
+	CoreGraphics::TextureId globalLightShadowMap;
+	CoreGraphics::TextureId globalLightShadowMapBlurred0, globalLightShadowMapBlurred1;
 	CoreGraphics::BatchGroup::Code spotlightsBatchCode;
 	CoreGraphics::BatchGroup::Code globalLightsBatchCode;
 
@@ -116,7 +116,7 @@ struct
 
 	uint numThreadsThisFrame;
 
-	CoreGraphics::ShaderRWTextureId clusterDebugTexture;
+	CoreGraphics::TextureId clusterDebugTexture;
 
 	enum DepthDivisionMode
 	{
@@ -236,9 +236,9 @@ LightContext::Create()
 	lightServerState.csmBlurXTable = ShaderCreateResourceTable(lightServerState.csmBlurShader, NEBULA_BATCH_GROUP);
 	lightServerState.csmBlurYTable = ShaderCreateResourceTable(lightServerState.csmBlurShader, NEBULA_BATCH_GROUP);
 	ResourceTableSetTexture(lightServerState.csmBlurXTable, { lightServerState.globalLightShadowMap, lightServerState.csmBlurXInputSlot, 0, CoreGraphics::SamplerId::Invalid(), false }); // ping
-	ResourceTableSetShaderRWTexture(lightServerState.csmBlurXTable, { lightServerState.globalLightShadowMapBlurred0, lightServerState.csmBlurXOutputSlot, 0, CoreGraphics::SamplerId::Invalid() }); // pong
+	ResourceTableSetRWTexture(lightServerState.csmBlurXTable, { lightServerState.globalLightShadowMapBlurred0, lightServerState.csmBlurXOutputSlot, 0, CoreGraphics::SamplerId::Invalid() }); // pong
 	ResourceTableSetTexture(lightServerState.csmBlurYTable, { lightServerState.globalLightShadowMapBlurred0, lightServerState.csmBlurYInputSlot, 0, CoreGraphics::SamplerId::Invalid() }); // ping
-	ResourceTableSetShaderRWTexture(lightServerState.csmBlurYTable, { lightServerState.globalLightShadowMapBlurred1, lightServerState.csmBlurYOutputSlot, 0, CoreGraphics::SamplerId::Invalid() }); // pong
+	ResourceTableSetRWTexture(lightServerState.csmBlurYTable, { lightServerState.globalLightShadowMapBlurred1, lightServerState.csmBlurYOutputSlot, 0, CoreGraphics::SamplerId::Invalid() }); // pong
 	ResourceTableCommitChanges(lightServerState.csmBlurXTable);
 	ResourceTableCommitChanges(lightServerState.csmBlurYTable);
 

@@ -50,8 +50,8 @@ void
 FrameCopy::CompiledImpl::Run(const IndexT frameIndex)
 {
 	// get dimensions
-	CoreGraphics::TextureDimensions fromDims = RenderTextureGetDimensions(this->from);
-	CoreGraphics::TextureDimensions toDims = RenderTextureGetDimensions(this->to);
+	CoreGraphics::TextureDimensions fromDims = TextureGetDimensions(this->from);
+	CoreGraphics::TextureDimensions toDims = TextureGetDimensions(this->to);
 
 	// setup regions
 	Math::rectangle<SizeT> fromRegion;

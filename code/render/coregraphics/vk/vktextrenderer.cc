@@ -123,10 +123,15 @@ VkTextRenderer::Open()
 	stbtt_InitFont(&this->font, this->ttf_buffer, 0);
 
 	// setup random texture
-	TextureCreateInfo texInfo =
-	{
-		"GlyphTexture", "render_system", this->bitmap, PixelFormat::R8, GLYPH_TEXTURE_SIZE, GLYPH_TEXTURE_SIZE, 1
-	};
+	TextureCreateInfo texInfo;
+	texInfo.name = "GlyphTexture"_atm;
+	texInfo.usage = TextureUsage::ImmutableUsage;
+	texInfo.tag = "render_system"_atm;
+	texInfo.buffer = this->bitmap;
+	texInfo.type = TextureType::Texture2D;
+	texInfo.format = PixelFormat::R8;
+	texInfo.width = GLYPH_TEXTURE_SIZE;
+	texInfo.height = GLYPH_TEXTURE_SIZE;
 	this->glyphTexture = CreateTexture(texInfo);
 
 	// create shader instance

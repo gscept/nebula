@@ -91,6 +91,54 @@ GraphicsServer::Open()
 		CoreAnimation::animPool = Resources::GetStreamPool<CoreAnimation::StreamAnimationPool>();
 		Characters::skeletonPool = Resources::GetStreamPool<Characters::StreamSkeletonPool>();
 
+		// load base textures before setting up major subsystems
+		const unsigned char white = 0xFF;
+		const unsigned char black = 0x00;
+		CoreGraphics::TextureCreateInfo texInfo;
+		texInfo.tag = "system";
+		texInfo.format = CoreGraphics::PixelFormat::R8;
+		texInfo.bindless = false;
+
+		texInfo.type = CoreGraphics::TextureType::Texture1D;
+		texInfo.name = "White1D";
+		texInfo.buffer = &white;
+		CoreGraphics::White1D = CoreGraphics::CreateTexture(texInfo);
+
+		texInfo.type = CoreGraphics::TextureType::Texture1DArray;
+		texInfo.name = "White1DArray";
+		texInfo.buffer = &white;
+		CoreGraphics::White1DArray = CoreGraphics::CreateTexture(texInfo);
+
+		texInfo.type = CoreGraphics::TextureType::Texture2D;
+		texInfo.name = "White2D";
+		texInfo.buffer = &white;
+		CoreGraphics::White2D = CoreGraphics::CreateTexture(texInfo);
+
+		texInfo.type = CoreGraphics::TextureType::Texture2D;
+		texInfo.name = "Black2D";
+		texInfo.buffer = &black;
+		CoreGraphics::Black2D = CoreGraphics::CreateTexture(texInfo);
+
+		texInfo.type = CoreGraphics::TextureType::Texture2DArray;
+		texInfo.name = "White2DArray";
+		texInfo.buffer = &white;
+		CoreGraphics::White2DArray = CoreGraphics::CreateTexture(texInfo);
+
+		texInfo.type = CoreGraphics::TextureType::Texture3D;
+		texInfo.name = "White3D";
+		texInfo.buffer = &white;
+		CoreGraphics::White3D = CoreGraphics::CreateTexture(texInfo);
+
+		texInfo.type = CoreGraphics::TextureType::TextureCube;
+		texInfo.name = "WhiteCube";
+		texInfo.buffer = &white;
+		CoreGraphics::WhiteCube = CoreGraphics::CreateTexture(texInfo);
+
+		texInfo.type = CoreGraphics::TextureType::TextureCubeArray;
+		texInfo.name = "WhiteCubeArray";
+		texInfo.buffer = &white;
+		CoreGraphics::WhiteCubeArray = CoreGraphics::CreateTexture(texInfo);
+
 		this->shaderServer = CoreGraphics::ShaderServer::Create();
 		this->shaderServer->Open();
 

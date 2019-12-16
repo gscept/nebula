@@ -7,9 +7,19 @@
 #include "config.h"
 #include "coregraphics/texture.h"
 #include "coregraphics/memorytexturepool.h"
+#include "coregraphics/displaydevice.h"
 
 namespace CoreGraphics
 {
+
+TextureId White1D;
+TextureId Black2D;
+TextureId White2D;
+TextureId WhiteCube;
+TextureId White3D;
+TextureId White1DArray;
+TextureId White2DArray;
+TextureId WhiteCubeArray;
 
 MemoryTexturePool* texturePool = nullptr;
 
@@ -64,19 +74,55 @@ TextureGetType(const TextureId id)
 //------------------------------------------------------------------------------
 /**
 */
-CoreGraphicsImageLayout
-TextureGetLayout(const TextureId id)
+SizeT
+TextureGetNumMips(const TextureId id)
 {
-	return texturePool->GetLayout(id);
+	return texturePool->GetNumMips(id);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-uint
-TextureGetNumMips(const TextureId id)
+SizeT 
+TextureGetNumLayers(const TextureId id)
 {
-	return texturePool->GetNumMips(id);
+	return texturePool->GetNumLayers(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+SizeT 
+TextureGetNumSamples(const TextureId id)
+{
+	return texturePool->GetNumSamples(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const CoreGraphics::TextureId 
+TextureGetAlias(const TextureId id)
+{
+	return texturePool->GetAlias(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const CoreGraphics::TextureUsage 
+TextureGetUsage(const TextureId id)
+{
+	return texturePool->GetUsageBits(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const CoreGraphicsImageLayout 
+TextureGetDefaultLayout(const TextureId id)
+{
+	return texturePool->GetDefaultLayout(id);
 }
 
 //------------------------------------------------------------------------------
@@ -86,6 +132,24 @@ uint
 TextureGetBindlessHandle(const TextureId id)
 {
 	return texturePool->GetBindlessHandle(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+IndexT 
+TextureSwapBuffers(const TextureId id)
+{
+	return texturePool->SwapBuffers(id);
+
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+TextureWindowResized(const TextureId id)
+{
 }
 
 //------------------------------------------------------------------------------
@@ -134,6 +198,87 @@ TextureUnmapFace(const TextureId id, IndexT mip, TextureCubeFace face)
 void 
 TextureGenerateMipmaps(const TextureId id)
 {
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+TextureCreateInfoAdjusted 
+TextureGetAdjustedInfo(const TextureCreateInfo& info)
+{
+	TextureCreateInfoAdjusted rt;
+	if (info.windowTexture)
+	{
+		n_assert_fmt(info.samples == 1, "Texture created as window may not have any multisampling enabled");
+		n_assert_fmt(info.alias == CoreGraphics::TextureId::Invalid(), "Texture created as window may not be alias");
+		n_assert_fmt(info.buffer == nullptr, "Texture created as window may not have any buffer data");
+		
+		rt.window = CoreGraphics::DisplayDevice::Instance()->GetCurrentWindow();
+		const CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(rt.window);
+		rt.name = info.name;
+		rt.usage = CoreGraphics::TextureUsage::RenderUsage | CoreGraphics::TextureUsage::CopyUsage;
+		rt.tag = info.tag;
+		rt.buffer = nullptr;
+		rt.type = CoreGraphics::Texture2D;
+		rt.format = mode.GetPixelFormat();
+		rt.width = mode.GetWidth();
+		rt.height = mode.GetHeight();
+		rt.depth = 1;
+		rt.widthScale = rt.heightScale = rt.depthScale = 1.0f;
+		rt.layers = 1;
+		rt.mips = 1;
+		rt.samples = 1;
+		rt.windowTexture = true;
+		rt.windowRelative = true;
+		rt.bindless = info.bindless;
+		rt.alias = CoreGraphics::TextureId::Invalid();
+		rt.defaultLayout = CoreGraphicsImageLayout::Present;
+	}
+	else
+	{
+		n_assert(info.width > 0 && info.height > 0 && info.depth > 0);
+
+		rt.name = info.name;
+		rt.usage = info.usage;
+		rt.tag = info.tag;
+		rt.buffer = info.buffer;
+		rt.type = info.type;
+		rt.format = info.format;
+		rt.width = (SizeT)info.width;
+		rt.height = (SizeT)info.height;
+		rt.depth = (SizeT)info.depth;
+		rt.widthScale = 0;
+		rt.heightScale = 0;
+		rt.depthScale = 0;
+		rt.mips = 1;
+		rt.layers = (info.type == CoreGraphics::TextureCubeArray || info.type == CoreGraphics::TextureCube) ? 6 : info.layers; 
+		rt.samples = info.samples;
+		rt.windowTexture = false;
+		rt.windowRelative = info.windowRelative;
+		rt.bindless = info.bindless;
+		rt.window = CoreGraphics::WindowId::Invalid();
+		rt.alias = info.alias;
+		rt.defaultLayout = info.defaultLayout;
+
+		// correct depth-stencil formats if layout is shader read
+		if (CoreGraphics::PixelFormat::IsDepthFormat(rt.format) && rt.defaultLayout == CoreGraphicsImageLayout::ShaderRead)
+			rt.defaultLayout = CoreGraphicsImageLayout::DepthStencilRead;
+
+		if (rt.windowRelative)
+		{
+			CoreGraphics::WindowId wnd = CoreGraphics::DisplayDevice::Instance()->GetCurrentWindow();
+			const CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(wnd);
+			rt.width = SizeT(mode.GetWidth() * info.width);
+			rt.height = SizeT(mode.GetHeight() * info.height);
+			rt.depth = 1;
+			rt.window = wnd;
+
+			rt.widthScale = info.width;
+			rt.heightScale = info.height;
+			rt.depthScale = info.depth;
+		}
+	}
+	return rt;
 }
 
 } // namespace CoreGraphics

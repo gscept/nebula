@@ -7,7 +7,6 @@
 #include "coregraphics/shaderserver.h"
 #include "coregraphics/shadersemantics.h"
 #include "coregraphics/graphicsdevice.h"
-#include "coregraphics/shaderrwtexture.h"
 #include "coregraphics/shaderrwbuffer.h"
 #include "graphics/graphicsserver.h"
 #include "graphics/cameracontext.h"
@@ -45,23 +44,18 @@ void
 SSAOPlugin::Setup()
 {
 	FramePlugin::Setup();
-	n_assert(this->renderTextures.Size() == 1);
-	n_assert(this->readWriteTextures.Size() == 1);
 
-	CoreGraphics::ShaderRWTextureCreateInfo tinfo =
-	{
-		"HBAO-Internal0",
-		Texture2D,
-		PixelFormat::R16G16F,
-		CoreGraphicsImageLayout::ShaderRead,
-		1.0f, 1.0f, 1.0f,
-		1, 1,				// layers and mips
-		false, true, false
-	};
+	CoreGraphics::TextureCreateInfo tinfo; 
+	tinfo.name = "HBAO-Internal0"_atm;
+	tinfo.tag = "system"_atm;
+	tinfo.type = Texture2D;
+	tinfo.format = PixelFormat::R16G16F;
+	tinfo.windowRelative = true;
+	tinfo.usage = TextureUsage::ReadWriteUsage;
 
-	this->internalTargets[0] = CreateShaderRWTexture(tinfo);
+	this->internalTargets[0] = CreateTexture(tinfo);
 	tinfo.name = "HBAO-Internal1";
-	this->internalTargets[1] = CreateShaderRWTexture(tinfo);
+	this->internalTargets[1] = CreateTexture(tinfo);
 
 	CoreGraphics::BarrierCreateInfo binfo =
 	{
@@ -75,29 +69,29 @@ SSAOPlugin::Setup()
 
 	// hbao generation barriers
 	binfo.name = "HBAO Initial transition";
-	binfo.rwTextures.Append(RWTextureBarrier{ this->internalTargets[0], subres, CoreGraphicsImageLayout::ShaderRead, CoreGraphicsImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite });
-	binfo.rwTextures.Append(RWTextureBarrier{ this->internalTargets[1], subres, CoreGraphicsImageLayout::ShaderRead, CoreGraphicsImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite });
+	binfo.textures.Append(TextureBarrier{ this->internalTargets[0], subres, CoreGraphicsImageLayout::ShaderRead, CoreGraphicsImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite });
+	binfo.textures.Append(TextureBarrier{ this->internalTargets[1], subres, CoreGraphicsImageLayout::ShaderRead, CoreGraphicsImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite });
 	this->barriers[0] = CreateBarrier(binfo);
-	binfo.rwTextures.Clear();
+	binfo.textures.Clear();
 
 	binfo.name = "HBAO Transition Pass 0 -> 1";
-	binfo.rwTextures.Append(RWTextureBarrier{this->internalTargets[0], subres, CoreGraphicsImageLayout::General, CoreGraphicsImageLayout::General, BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead});
-	binfo.rwTextures.Append(RWTextureBarrier{this->internalTargets[1], subres, CoreGraphicsImageLayout::General, CoreGraphicsImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite});
+	binfo.textures.Append(TextureBarrier{this->internalTargets[0], subres, CoreGraphicsImageLayout::General, CoreGraphicsImageLayout::General, BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead});
+	binfo.textures.Append(TextureBarrier{this->internalTargets[1], subres, CoreGraphicsImageLayout::General, CoreGraphicsImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite});
 	this->barriers[1] = CreateBarrier(binfo);
-	binfo.rwTextures.Clear();
+	binfo.textures.Clear();
 
 	// hbao blur barriers
 	binfo.name = "HBAO Transition to Blur";
-	binfo.rwTextures.Append(RWTextureBarrier{ this->internalTargets[1], subres, CoreGraphicsImageLayout::General, CoreGraphicsImageLayout::ShaderRead, BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead });
-	binfo.rwTextures.Append(RWTextureBarrier{ this->internalTargets[0], subres, CoreGraphicsImageLayout::General, CoreGraphicsImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite });
+	binfo.textures.Append(TextureBarrier{ this->internalTargets[1], subres, CoreGraphicsImageLayout::General, CoreGraphicsImageLayout::ShaderRead, BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead });
+	binfo.textures.Append(TextureBarrier{ this->internalTargets[0], subres, CoreGraphicsImageLayout::General, CoreGraphicsImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite });
 	this->barriers[2] = CreateBarrier(binfo);
-	binfo.rwTextures.Clear();
+	binfo.textures.Clear();
 
 	binfo.name = "HBAO Transition to Blur Pass 0 -> 1";
-	binfo.rwTextures.Append(RWTextureBarrier{this->internalTargets[0], subres, CoreGraphicsImageLayout::General, CoreGraphicsImageLayout::ShaderRead, BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead});
-	binfo.rwTextures.Append(RWTextureBarrier{this->internalTargets[1], subres, CoreGraphicsImageLayout::ShaderRead, CoreGraphicsImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite});
+	binfo.textures.Append(TextureBarrier{this->internalTargets[0], subres, CoreGraphicsImageLayout::General, CoreGraphicsImageLayout::ShaderRead, BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead});
+	binfo.textures.Append(TextureBarrier{this->internalTargets[1], subres, CoreGraphicsImageLayout::ShaderRead, CoreGraphicsImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite});
 	this->barriers[3] = CreateBarrier(binfo);
-	binfo.rwTextures.Clear();
+	binfo.textures.Clear();
 
 	// setup shaders
 	this->hbaoShader = ShaderGet("shd:hbao_cs.fxb");
@@ -131,20 +125,20 @@ SSAOPlugin::Setup()
 		this->blurTableY[i] = ShaderCreateResourceTable(this->blurShader, NEBULA_BATCH_GROUP);
 
 		// setup hbao table
-		ResourceTableSetShaderRWTexture(this->hbaoTable[i], { this->internalTargets[0], this->hbao0, 0, CoreGraphics::SamplerId::Invalid() });
-		ResourceTableSetShaderRWTexture(this->hbaoTable[i], { this->internalTargets[1], this->hbao1, 0, CoreGraphics::SamplerId::Invalid() });
+		ResourceTableSetRWTexture(this->hbaoTable[i], { this->internalTargets[0], this->hbao0, 0, CoreGraphics::SamplerId::Invalid() });
+		ResourceTableSetRWTexture(this->hbaoTable[i], { this->internalTargets[1], this->hbao1, 0, CoreGraphics::SamplerId::Invalid() });
 		ResourceTableCommitChanges(this->hbaoTable[i]);
 
 		// setup blur table
 		ResourceTableSetTexture(this->blurTableX[i], { this->internalTargets[1], this->hbaoX, 0, CoreGraphics::SamplerId::Invalid() });
-		ResourceTableSetShaderRWTexture(this->blurTableX[i], { this->internalTargets[0], this->hbaoBlurRG, 0, CoreGraphics::SamplerId::Invalid() });
+		ResourceTableSetRWTexture(this->blurTableX[i], { this->internalTargets[0], this->hbaoBlurRG, 0, CoreGraphics::SamplerId::Invalid() });
 		ResourceTableSetTexture(this->blurTableY[i], { this->internalTargets[0], this->hbaoY, 0, CoreGraphics::SamplerId::Invalid() });
-		ResourceTableSetShaderRWTexture(this->blurTableY[i], { this->readWriteTextures[0], this->hbaoBlurR, 0, CoreGraphics::SamplerId::Invalid() });
+		ResourceTableSetRWTexture(this->blurTableY[i], { this->textures["SSAOBuffer"], this->hbaoBlurR, 0, CoreGraphics::SamplerId::Invalid() });
 		ResourceTableCommitChanges(this->blurTableX[i]);
 		ResourceTableCommitChanges(this->blurTableY[i]);
 	}
 
-	TextureDimensions dims = RenderTextureGetDimensions(this->renderTextures[0]);
+	TextureDimensions dims = TextureGetDimensions(this->textures["SSAOBuffer"]);
 	this->vars.fullWidth = (float)dims.width;
 	this->vars.fullHeight = (float)dims.height;
 	this->vars.radius = 12.0f;
@@ -314,8 +308,8 @@ void
 SSAOPlugin::Discard()
 {
 	FramePlugin::Discard();
-	CoreGraphics::DestroyShaderRWTexture(internalTargets[0]);
-	CoreGraphics::DestroyShaderRWTexture(internalTargets[1]);
+	CoreGraphics::DestroyTexture(internalTargets[0]);
+	CoreGraphics::DestroyTexture(internalTargets[1]);
 	IndexT i;
 	for (i = 0; i < this->hbaoTable.Size(); i++)
 	{

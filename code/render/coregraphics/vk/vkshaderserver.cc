@@ -79,6 +79,25 @@ VkShaderServer::Open()
 	for (i = 0; i < this->resourceTables.Size(); i++)
 	{
 		this->resourceTables[i] = ShaderCreateResourceTable(shader, NEBULA_TICK_GROUP);
+
+		// fill up all slots with placeholders
+		IndexT j;
+		for (j = 0; j < MAX_2D_TEXTURES; j++)
+			ResourceTableSetTexture(this->resourceTables[i], {CoreGraphics::White2D, this->texture2DTextureVar, j, CoreGraphics::SamplerId::Invalid(), false});
+
+		for (j = 0; j < MAX_2D_MS_TEXTURES; j++)
+			ResourceTableSetTexture(this->resourceTables[i], { CoreGraphics::White2D, this->texture2DMSTextureVar, j, CoreGraphics::SamplerId::Invalid(), false });
+
+		for (j = 0; j < MAX_3D_TEXTURES; j++)
+			ResourceTableSetTexture(this->resourceTables[i], { CoreGraphics::White3D, this->texture3DTextureVar, j, CoreGraphics::SamplerId::Invalid(), false });
+
+		for (j = 0; j < MAX_CUBE_TEXTURES; j++)
+			ResourceTableSetTexture(this->resourceTables[i], { CoreGraphics::WhiteCube, this->textureCubeTextureVar, j, CoreGraphics::SamplerId::Invalid(), false });
+
+		for (j = 0; j < MAX_2D_ARRAY_TEXTURES; j++)
+			ResourceTableSetTexture(this->resourceTables[i], { CoreGraphics::White2DArray, this->texture2DArrayTextureVar, j, CoreGraphics::SamplerId::Invalid(), false });
+
+		ResourceTableCommitChanges(this->resourceTables[i]);
 	}
 
 	this->normalBufferTextureVar = ShaderGetConstantBinding(shader, "NormalBuffer");
@@ -114,7 +133,7 @@ VkShaderServer::Close()
 /**
 */
 uint32_t
-VkShaderServer::RegisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics::TextureType type)
+VkShaderServer::RegisterTexture(const CoreGraphics::TextureId& tex, bool depth, CoreGraphics::TextureType type)
 {
 	uint32_t idx;
 	IndexT var;
@@ -147,103 +166,6 @@ VkShaderServer::RegisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics
 	info.index = idx;
 	info.sampler = SamplerId::Invalid();
 	info.isDepth = false;
-	info.slot = var;
-
-	// update textures for all tables
-	IndexT i;
-	for (i = 0; i < this->resourceTables.Size(); i++)
-	{
-		ResourceTableSetTexture(this->resourceTables[i], info);
-	}
-
-	return idx;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-uint32_t
-VkShaderServer::RegisterTexture(const CoreGraphics::RenderTextureId& tex, bool depth, CoreGraphics::TextureType type)
-{
-	uint32_t idx;
-	IndexT var;
-	switch (type)
-	{
-	case Texture2D:
-		n_assert(!this->texture2DPool.IsFull());
-		idx = this->texture2DPool.Alloc();
-		var = this->texture2DTextureVar;
-		break;
-	case Texture2DArray:
-		n_assert(!this->texture2DArrayPool.IsFull());
-		idx = this->texture2DArrayPool.Alloc();
-		var = this->texture2DArrayTextureVar;
-		break;
-	case Texture3D:
-		n_assert(!this->texture3DPool.IsFull());
-		idx = this->texture3DPool.Alloc();
-		var = this->texture3DTextureVar;
-		break;
-	case TextureCube:
-		n_assert(!this->textureCubePool.IsFull());
-		idx = this->textureCubePool.Alloc();
-		var = this->textureCubeTextureVar;
-		break;
-	}
-
-	ResourceTableRenderTexture info;
-	info.tex = tex;
-	info.index = idx;
-	info.sampler = SamplerId::Invalid();
-	info.isDepth = depth;
-	info.slot = var;
-
-	// update textures for all tables
-	IndexT i;
-	for (i = 0; i < this->resourceTables.Size(); i++)
-	{
-		ResourceTableSetTexture(this->resourceTables[i], info);
-	}
-
-	return idx;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-uint32_t
-VkShaderServer::RegisterTexture(const CoreGraphics::ShaderRWTextureId& tex, CoreGraphics::TextureType type)
-{
-	uint32_t idx;
-	IndexT var;
-	switch (type)
-	{
-	case Texture2D:
-		n_assert(!this->texture2DPool.IsFull());
-		idx = this->texture2DPool.Alloc();
-		var = this->texture2DTextureVar;
-		break;
-	case Texture2DArray:
-		n_assert(!this->texture2DArrayPool.IsFull());
-		idx = this->texture2DArrayPool.Alloc();
-		var = this->texture2DArrayTextureVar;
-		break;
-	case Texture3D:
-		n_assert(!this->texture3DPool.IsFull());
-		idx = this->texture3DPool.Alloc();
-		var = this->texture3DTextureVar;
-		break;
-	case TextureCube:
-		n_assert(!this->textureCubePool.IsFull());
-		idx = this->textureCubePool.Alloc();
-		var = this->textureCubeTextureVar;
-		break;
-	}
-
-	ResourceTableShaderRWTexture info;
-	info.tex = tex;
-	info.index = idx;
-	info.sampler = SamplerId::Invalid();
 	info.slot = var;
 
 	// update textures for all tables
@@ -296,12 +218,12 @@ VkShaderServer::SetGlobalEnvironmentTextures(const CoreGraphics::TextureId& env,
 void 
 VkShaderServer::SetupGBufferConstants()
 {
-	this->tickParams.NormalBuffer = RenderTextureGetBindlessHandle(CoreGraphics::GetRenderTexture("NormalBuffer"));
-	this->tickParams.DepthBuffer = RenderTextureGetBindlessHandle(CoreGraphics::GetRenderTexture("ZBuffer"));
-	this->tickParams.SpecularBuffer = RenderTextureGetBindlessHandle(CoreGraphics::GetRenderTexture("SpecularBuffer"));
-	this->tickParams.AlbedoBuffer = RenderTextureGetBindlessHandle(CoreGraphics::GetRenderTexture("AlbedoBuffer"));
-	this->tickParams.EmissiveBuffer = RenderTextureGetBindlessHandle(CoreGraphics::GetRenderTexture("EmissiveBuffer"));
-	this->tickParams.LightBuffer = RenderTextureGetBindlessHandle(CoreGraphics::GetRenderTexture("LightBuffer"));
+	this->tickParams.NormalBuffer = TextureGetBindlessHandle(CoreGraphics::GetTexture("NormalBuffer"));
+	this->tickParams.DepthBuffer = TextureGetBindlessHandle(CoreGraphics::GetTexture("ZBuffer"));
+	this->tickParams.SpecularBuffer = TextureGetBindlessHandle(CoreGraphics::GetTexture("SpecularBuffer"));
+	this->tickParams.AlbedoBuffer = TextureGetBindlessHandle(CoreGraphics::GetTexture("AlbedoBuffer"));
+	this->tickParams.EmissiveBuffer = TextureGetBindlessHandle(CoreGraphics::GetTexture("EmissiveBuffer"));
+	this->tickParams.LightBuffer = TextureGetBindlessHandle(CoreGraphics::GetTexture("LightBuffer"));
 }
 
 //------------------------------------------------------------------------------

@@ -8,11 +8,9 @@
 #include "vkgraphicsdevice.h"
 #include "vktypes.h"
 #include "vksampler.h"
-#include "vkshaderrwtexture.h"
 #include "vktexture.h"
 #include "vkconstantbuffer.h"
 #include "vkshaderrwbuffer.h"
-#include "vkrendertexture.h"
 namespace Vulkan
 {
 
@@ -233,133 +231,12 @@ ResourceTableSetTexture(const ResourceTableId& id, const ResourceTableTexture& t
 	write.dstArrayElement = tex.index;
 	write.dstBinding = tex.slot;
 	write.dstSet = set;
-
-	if (tex.isDepth)
-		img.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-	else
-		img.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	img.imageLayout = tex.isDepth ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 	if (tex.tex == TextureId::Invalid())
 		img.imageView = VK_NULL_HANDLE;
 	else
 		img.imageView = TextureGetVkImageView(tex.tex);
-
-	WriteInfo inf;
-	inf.img = img;
-	infoList.Append(inf);
-
-	write.pImageInfo = &img;			// this is just provisionary, it will go out of scope immediately, but it wont be null!
-	write.pTexelBufferView = nullptr;
-	write.pBufferInfo = nullptr;
-
-	writeList.Append(write);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-ResourceTableSetTexture(const ResourceTableId& id, const ResourceTableRenderTexture& tex)
-{
-	VkDevice& dev = resourceTableAllocator.Get<0>(id.id24);
-	VkDescriptorSet& set = resourceTableAllocator.Get<1>(id.id24);
-	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<4>(id.id24);
-	Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<5>(id.id24);
-
-	n_assert(tex.slot != InvalidIndex);
-
-	VkWriteDescriptorSet write;
-	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	write.pNext = nullptr;
-		
-	write.descriptorCount = 1;
-	write.dstArrayElement = tex.index;
-	write.dstBinding = tex.slot;
-	write.dstSet = set;
-
-	const CoreGraphics::ResourceTableLayoutId& layout = resourceTableAllocator.Get<3>(id.id24);
-	const Util::HashTable<uint32_t, bool>& immutable = resourceTableLayoutAllocator.Get<ResourceTableLayoutImmutableSamplerFlags>(layout.id24);
-
-	VkDescriptorImageInfo img;
-	if (immutable[tex.slot])
-	{
-		n_assert(tex.sampler == SamplerId::Invalid());
-		write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		img.sampler = VK_NULL_HANDLE;
-	}
-	else
-	{
-		write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-		img.sampler = tex.sampler == SamplerId::Invalid() ? VK_NULL_HANDLE : SamplerGetVk(tex.sampler);
-	}
-
-	if (tex.isDepth)
-		img.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-	else
-		img.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-	if (tex.tex == RenderTextureId::Invalid())
-		img.imageView = VK_NULL_HANDLE;
-	else
-		img.imageView = RenderTextureGetVkSampleImageView(tex.tex);
-
-	WriteInfo inf;
-	inf.img = img;
-	infoList.Append(inf);
-
-	write.pImageInfo = &img;			// this is just provisionary, it will go out of scope immediately, but it wont be null!
-	write.pTexelBufferView = nullptr;
-	write.pBufferInfo = nullptr;
-
-	writeList.Append(write);
-}
-
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-ResourceTableSetTexture(const ResourceTableId& id, const ResourceTableShaderRWTexture& tex)
-{
-	VkDevice& dev = resourceTableAllocator.Get<0>(id.id24);
-	VkDescriptorSet& set = resourceTableAllocator.Get<1>(id.id24);
-	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<4>(id.id24);
-	Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<5>(id.id24);
-
-	n_assert(tex.slot != InvalidIndex);
-
-	VkWriteDescriptorSet write;
-	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	write.pNext = nullptr;
-
-	write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-	write.descriptorCount = 1;
-	write.dstArrayElement = tex.index;
-	write.dstBinding = tex.slot;
-	write.dstSet = set;
-
-	const CoreGraphics::ResourceTableLayoutId& layout = resourceTableAllocator.Get<3>(id.id24);
-	const Util::HashTable<uint32_t, bool>& immutable = resourceTableLayoutAllocator.Get<ResourceTableLayoutImmutableSamplerFlags>(layout.id24);
-
-	VkDescriptorImageInfo img;
-	if (immutable[tex.slot])
-	{
-		n_assert(tex.sampler == SamplerId::Invalid());
-		write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		img.sampler = VK_NULL_HANDLE;
-	}
-	else
-	{
-		write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-		img.sampler = tex.sampler == SamplerId::Invalid() ? VK_NULL_HANDLE : SamplerGetVk(tex.sampler);
-	}
-
-	img.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-	if (tex.tex == ShaderRWTextureId::Invalid())
-		img.imageView = VK_NULL_HANDLE;
-	else
-		img.imageView = ShaderRWTextureGetVkImageView(tex.tex);
 
 	WriteInfo inf;
 	inf.img = img;
@@ -396,11 +273,11 @@ ResourceTableSetInputAttachment(const ResourceTableId& id, const ResourceTableIn
 
 	VkDescriptorImageInfo img;
 	img.sampler = VK_NULL_HANDLE;
-	img.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	if (tex.tex == RenderTextureId::Invalid())
+	img.imageLayout = tex.isDepth ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	if (tex.tex == TextureId::Invalid())
 		img.imageView = VK_NULL_HANDLE;
 	else
-		img.imageView = RenderTextureGetVkSampleImageView(tex.tex);
+		img.imageView = TextureGetVkImageView(tex.tex);
 
 	WriteInfo inf;
 	inf.img = img;
@@ -417,48 +294,7 @@ ResourceTableSetInputAttachment(const ResourceTableId& id, const ResourceTableIn
 /**
 */
 void
-ResourceTableSetShaderRWTexture(const ResourceTableId& id, const ResourceTableShaderRWTexture& tex)
-{
-	VkDevice& dev = resourceTableAllocator.Get<0>(id.id24);
-	VkDescriptorSet& set = resourceTableAllocator.Get<1>(id.id24);
-	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<4>(id.id24);
-	Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<5>(id.id24);
-
-	n_assert(tex.slot != InvalidIndex);
-
-	VkWriteDescriptorSet write;
-	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	write.pNext = nullptr;
-	write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-	write.descriptorCount = 1;
-	write.dstArrayElement = tex.index;
-	write.dstBinding = tex.slot;
-	write.dstSet = set;
-
-	VkDescriptorImageInfo img;
-	img.sampler = VK_NULL_HANDLE;
-	img.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-	if (tex.tex == ShaderRWTextureId::Invalid())
-		img.imageView = VK_NULL_HANDLE;
-	else
-		img.imageView = ShaderRWTextureGetVkImageView(tex.tex);
-
-	WriteInfo inf;
-	inf.img = img;
-	infoList.Append(inf);
-
-	write.pImageInfo = &img;			// this is just provisionary, it will go out of scope immediately, but it wont be null!
-	write.pTexelBufferView = nullptr;
-	write.pBufferInfo = nullptr;
-
-	writeList.Append(write);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-ResourceTableSetShaderRWTexture(const ResourceTableId& id, const ResourceTableTexture& tex)
+ResourceTableSetRWTexture(const ResourceTableId& id, const ResourceTableTexture& tex)
 {
 	VkDevice& dev = resourceTableAllocator.Get<0>(id.id24);
 	VkDescriptorSet& set = resourceTableAllocator.Get<1>(id.id24);
@@ -483,47 +319,6 @@ ResourceTableSetShaderRWTexture(const ResourceTableId& id, const ResourceTableTe
 		img.imageView = VK_NULL_HANDLE;
 	else
 		img.imageView = TextureGetVkImageView(tex.tex);
-
-	WriteInfo inf;
-	inf.img = img;
-	infoList.Append(inf);
-
-	write.pImageInfo = &img;			// this is just provisionary, it will go out of scope immediately, but it wont be null!
-	write.pTexelBufferView = nullptr;
-	write.pBufferInfo = nullptr;
-
-	writeList.Append(write);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-ResourceTableSetShaderRWTexture(const ResourceTableId& id, const ResourceTableRenderTexture& tex)
-{
-	VkDevice& dev = resourceTableAllocator.Get<0>(id.id24);
-	VkDescriptorSet& set = resourceTableAllocator.Get<1>(id.id24);
-	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<4>(id.id24);
-	Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<5>(id.id24);
-
-	n_assert(tex.slot != InvalidIndex);
-
-	VkWriteDescriptorSet write;
-	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	write.pNext = nullptr;
-	write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-	write.descriptorCount = 1;
-	write.dstArrayElement = tex.index;
-	write.dstBinding = tex.slot;
-	write.dstSet = set;
-
-	VkDescriptorImageInfo img;
-	img.sampler = VK_NULL_HANDLE;
-	img.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-	if (tex.tex == RenderTextureId::Invalid())
-		img.imageView = VK_NULL_HANDLE;
-	else
-		img.imageView = RenderTextureGetVkSampleImageView(tex.tex);
 
 	WriteInfo inf;
 	inf.img = img;
@@ -589,7 +384,7 @@ ResourceTableSetConstantBuffer(const ResourceTableId& id, const ResourceTableCon
 /**
 */
 void
-ResourceTableSetShaderRWBuffer(const ResourceTableId& id, const ResourceTableShaderRWBuffer& buf)
+ResourceTableSetRWBuffer(const ResourceTableId& id, const ResourceTableShaderRWBuffer& buf)
 {
 	n_assert(!(buf.texelBuffer | buf.texelBuffer));
 	VkDevice& dev = resourceTableAllocator.Get<0>(id.id24);

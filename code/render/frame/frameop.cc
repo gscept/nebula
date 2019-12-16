@@ -53,15 +53,14 @@ FrameOp::Build(
 	Util::Array<FrameOp::Compiled*>& compiledOps,
 	Util::Array<CoreGraphics::EventId>& events,
 	Util::Array<CoreGraphics::BarrierId>& barriers,
-	Util::Dictionary<CoreGraphics::ShaderRWTextureId, Util::Array<TextureDependency>>& rwTextures,
 	Util::Dictionary<CoreGraphics::ShaderRWBufferId, Util::Array<BufferDependency>>& rwBuffers,
-	Util::Dictionary<CoreGraphics::RenderTextureId, Util::Array<TextureDependency>>& renderTextures)
+	Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures)
 {
 	// create compiled version of this op, FramePass and FrameSubpass implement this differently than ordinary ops
 	this->compiled = this->AllocCompiled(allocator);
 	compiledOps.Append(this->compiled);
 
-	this->SetupSynchronization(allocator, events, barriers, rwTextures, rwBuffers, renderTextures);
+	this->SetupSynchronization(allocator, events, barriers, rwBuffers, textures);
 }
 
 //------------------------------------------------------------------------------
@@ -80,11 +79,10 @@ ImageSubresourceHelper(
 /**
 	Analyze and setup barriers if needed
 */
-template <>
 void
 FrameOp::AnalyzeAndSetupTextureBarriers(
 	struct FrameOp::Compiled* op,
-	CoreGraphics::ShaderRWTextureId tex,
+	CoreGraphics::TextureId tex,
 	const Util::StringAtom& textureName,
 	DependencyIntent readOrWrite,
 	CoreGraphics::BarrierAccess access,
@@ -94,123 +92,15 @@ FrameOp::AnalyzeAndSetupTextureBarriers(
 	const CoreGraphics::ImageSubresourceInfo& subres,
 	IndexT toIndex,
 	CoreGraphicsQueueType toQueue,
-	Util::Dictionary<std::tuple<IndexT, IndexT>, CoreGraphics::BarrierCreateInfo>& barriers,
-	Util::Dictionary<std::tuple<IndexT, IndexT>, CoreGraphics::EventCreateInfo>& waitEvents,
-	Util::Dictionary<std::tuple<IndexT, IndexT>, struct FrameOp::Compiled*>& signalEvents,
-	Util::Array<FrameOp::TextureDependency>& renderTextureDependencies)
-{
-	using BarrierType = CoreGraphics::RWTextureBarrier;
-	auto eventInsert = [](CoreGraphics::EventCreateInfo& info, const BarrierType& barrier)
-	{
-		info.rwTextures.Append(barrier);
-	};
-	auto barrierInsert = [](CoreGraphics::BarrierCreateInfo& info, const BarrierType& barrier)
-	{
-		info.rwTextures.Append(barrier);
-	};
-
-	AnalyzeAndSetupTextureBarriers<decltype(tex), BarrierType>(
-		op,
-		tex,
-		eventInsert,
-		barrierInsert,
-		textureName,
-		readOrWrite,
-		access,
-		stage,
-		layout,
-		domain,
-		subres,
-		toIndex,
-		toQueue,
-		barriers,
-		waitEvents,
-		signalEvents,
-		renderTextureDependencies);
-}
-
-//------------------------------------------------------------------------------
-/**
-	Analyze and setup barriers if needed
-*/
-template <>
-void
-FrameOp::AnalyzeAndSetupTextureBarriers(
-	struct FrameOp::Compiled* op,
-	CoreGraphics::RenderTextureId tex,
-	const Util::StringAtom& textureName,
-	DependencyIntent readOrWrite,
-	CoreGraphics::BarrierAccess access,
-	CoreGraphics::BarrierStage stage,
-	CoreGraphicsImageLayout layout,
-	CoreGraphics::BarrierDomain domain,
-	const CoreGraphics::ImageSubresourceInfo& subres,
-	IndexT toIndex,
-	CoreGraphicsQueueType toQueue,
-	Util::Dictionary<std::tuple<IndexT, IndexT>, CoreGraphics::BarrierCreateInfo>& barriers,
-	Util::Dictionary<std::tuple<IndexT, IndexT>, CoreGraphics::EventCreateInfo>& waitEvents,
-	Util::Dictionary<std::tuple<IndexT, IndexT>, struct FrameOp::Compiled*>& signalEvents,
-	Util::Array<FrameOp::TextureDependency>& renderTextureDependencies)
-{
-	using BarrierType = CoreGraphics::RenderTextureBarrier;
-	auto eventInsert = [](CoreGraphics::EventCreateInfo& info, const BarrierType& barrier)
-	{
-		info.renderTextures.Append(barrier);
-	};
-	auto barrierInsert = [](CoreGraphics::BarrierCreateInfo& info, const BarrierType& barrier)
-	{
-		info.renderTextures.Append(barrier);
-	};
-
-	AnalyzeAndSetupTextureBarriers<decltype(tex), BarrierType>(
-		op,
-		tex,
-		eventInsert,
-		barrierInsert,
-		textureName,
-		readOrWrite,
-		access,
-		stage,
-		layout,
-		domain,
-		subres,
-		toIndex,
-		toQueue,
-		barriers,
-		waitEvents,
-		signalEvents,
-		renderTextureDependencies);
-}
-
-//------------------------------------------------------------------------------
-/**
-	Analyze and setup barriers if needed
-*/
-template <typename RESOURCE_TYPE, typename BARRIER_TYPE>
-void
-FrameOp::AnalyzeAndSetupTextureBarriers(
-	struct FrameOp::Compiled* op,
-	RESOURCE_TYPE tex,
-	std::function<void(CoreGraphics::EventCreateInfo& info, const BARRIER_TYPE& barrier)> eventAddFunc,
-	std::function<void(CoreGraphics::BarrierCreateInfo& info, const BARRIER_TYPE& barrier)> barrierAddFunc,
-	const Util::StringAtom& textureName,
-	DependencyIntent readOrWrite,
-	CoreGraphics::BarrierAccess access,
-	CoreGraphics::BarrierStage stage,
-	CoreGraphicsImageLayout layout,
-	CoreGraphics::BarrierDomain domain,
-	const CoreGraphics::ImageSubresourceInfo& subres,
-	IndexT toIndex,
-	CoreGraphicsQueueType toQueue,
-	Util::Dictionary<std::tuple<IndexT, IndexT>, CoreGraphics::BarrierCreateInfo>& barriers,
-	Util::Dictionary<std::tuple<IndexT, IndexT>, CoreGraphics::EventCreateInfo>& waitEvents,
-	Util::Dictionary<std::tuple<IndexT, IndexT>, struct FrameOp::Compiled*>& signalEvents,
+	Util::Dictionary<std::tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, CoreGraphics::BarrierCreateInfo>& barriers,
+	Util::Dictionary<std::tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, CoreGraphics::EventCreateInfo>& waitEvents,
+	Util::Dictionary<std::tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, struct FrameOp::Compiled*>& signalEvents,
 	Util::Array<FrameOp::TextureDependency>& textureDependencies)
 {
 	Util::Array<CoreGraphics::ImageSubresourceInfo> subresources{ subres };
 
 	// walk backwards in dependency list
-	for (IndexT j = textureDependencies.Size() - 1; j > 0 && subresources.Size() > 0; j--)
+	for (IndexT j = textureDependencies.Size() - 1; j >= 0 && subresources.Size() > 0; j--)
 	{
 		FrameOp::TextureDependency& dep = textureDependencies[j];
 		const CoreGraphics::ImageSubresourceInfo& currentSubres = subresources.Front();
@@ -226,7 +116,7 @@ FrameOp::AnalyzeAndSetupTextureBarriers(
 			if (dep.intent == DependencyIntent::Read			// previous invocation was just reading
 				&& readOrWrite == DependencyIntent::Read		// we are just reading
 				&& dep.layout == layout							// layouts are similar
-				&& (dep.stage & stage) == dep.stage				// previous stage was conservative
+				&& dep.stage == stage							// previous stage was conservative
 				&& dep.queue == toQueue)						// we are on the same queue
 			{
 				// do nothing
@@ -241,8 +131,8 @@ FrameOp::AnalyzeAndSetupTextureBarriers(
 				else
 				{
 					// construct pair between ops
-					const std::tuple<IndexT, IndexT> pair = std::make_pair(toIndex, dep.index);
-					BARRIER_TYPE barrier{ tex, subres, dep.layout, layout, dep.access, access };
+					const std::tuple<IndexT, IndexT, CoreGraphics::BarrierStage> tuple = std::make_tuple(toIndex, dep.index, dep.stage);
+					CoreGraphics::TextureBarrier barrier{ tex, subres, dep.layout, layout, dep.access, access };
 
 					const bool enableEvent = false;
 
@@ -250,22 +140,22 @@ FrameOp::AnalyzeAndSetupTextureBarriers(
 					if (dep.index != InvalidIndex && toIndex - dep.index > 1 && enableEvent)
 					{
 						n_assert(dep.op != nullptr);
-						CoreGraphics::EventCreateInfo& info = waitEvents.AddUnique(pair);
+						CoreGraphics::EventCreateInfo& info = waitEvents.AddUnique(tuple);
 						info.name = info.name.IsValid() ? info.name.AsString() + " + " + textureName.AsString() : textureName.AsString();
 						info.createSignaled = false;
 						info.leftDependency = dep.stage;
 						info.rightDependency = stage;
-						eventAddFunc(info, barrier);
-						signalEvents.AddUnique(pair) = dep.op;
+						info.textures.Append(barrier);
+						signalEvents.AddUnique(tuple) = dep.op;
 					}
 					else // create barrier
 					{
-						CoreGraphics::BarrierCreateInfo& info = barriers.AddUnique(pair);
+						CoreGraphics::BarrierCreateInfo& info = barriers.AddUnique(tuple);
 						info.name = info.name.IsValid() ? info.name.AsString() + " + " + textureName.AsString() : textureName.AsString();
 						info.domain = domain;
 						info.leftDependency = dep.stage;
 						info.rightDependency = stage;
-						barrierAddFunc(info, barrier);
+						info.textures.Append(barrier);
 					}
 				}
 
@@ -346,15 +236,15 @@ FrameOp::AnalyzeAndSetupBufferBarriers(
 	const CoreGraphics::BufferSubresourceInfo& subres,
 	IndexT toIndex,
 	CoreGraphicsQueueType toQueue,
-	Util::Dictionary<std::tuple<IndexT, IndexT>, CoreGraphics::BarrierCreateInfo>& barriers,
-	Util::Dictionary<std::tuple<IndexT, IndexT>, CoreGraphics::EventCreateInfo>& waitEvents,
-	Util::Dictionary<std::tuple<IndexT, IndexT>, struct FrameOp::Compiled*>& signalEvents,
+	Util::Dictionary<std::tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, CoreGraphics::BarrierCreateInfo>& barriers,
+	Util::Dictionary<std::tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, CoreGraphics::EventCreateInfo>& waitEvents,
+	Util::Dictionary<std::tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, struct FrameOp::Compiled*>& signalEvents,
 	Util::Array<FrameOp::BufferDependency>& bufferDependencies)
 {
 	Util::Array<CoreGraphics::BufferSubresourceInfo> subresources{ subres };
 
 	// left dependency set
-	for (IndexT j = bufferDependencies.Size() - 1; j > 0 && subresources.Size() > 0; j--)
+	for (IndexT j = bufferDependencies.Size() - 1; j >= 0 && subresources.Size() > 0; j--)
 	{
 		FrameOp::BufferDependency& dep = bufferDependencies[j];
 		const CoreGraphics::BufferSubresourceInfo& currentSubres = subresources.Front();
@@ -368,7 +258,7 @@ FrameOp::AnalyzeAndSetupBufferBarriers(
 			// if these criteria are met, we need no barrier
 			if (dep.intent == DependencyIntent::Read
 				&& readOrWrite == DependencyIntent::Read
-				&& (dep.stage & stage) == dep.stage // check if previous stage was conservative enough
+				&& dep.stage == stage						// check if previous stage was conservative enough
 				&& dep.queue == toQueue)
 				return; // we found a previous synch which satisfied our needs, so return
 			else
@@ -381,7 +271,7 @@ FrameOp::AnalyzeAndSetupBufferBarriers(
 				else
 				{
 					// construct pair between ops
-					const std::tuple<IndexT, IndexT> pair = std::make_pair(toIndex, dep.index);
+					const std::tuple<IndexT, IndexT, CoreGraphics::BarrierStage> tuple = std::make_tuple(toIndex, dep.index, dep.stage);
 					CoreGraphics::BufferBarrier barrier{ buf, dep.access, access, subres.offset, subres.size };
 
 					const bool enableEvent = false;
@@ -390,17 +280,17 @@ FrameOp::AnalyzeAndSetupBufferBarriers(
 					if (dep.index != InvalidIndex && toIndex - dep.index > 1 && enableEvent)
 					{
 						n_assert(dep.op != nullptr);
-						CoreGraphics::EventCreateInfo& info = waitEvents.AddUnique(pair);
+						CoreGraphics::EventCreateInfo& info = waitEvents.AddUnique(tuple);
 						info.name = info.name.IsValid() ? info.name.AsString() + " + " + bufferName.AsString() : bufferName.AsString();
 						info.createSignaled = false;
 						info.leftDependency = dep.stage;
 						info.rightDependency = stage;
 						info.rwBuffers.Append(barrier);
-						signalEvents.AddUnique(pair) = dep.op;
+						signalEvents.AddUnique(tuple) = dep.op;
 					}
 					else // create barrier
 					{
-						CoreGraphics::BarrierCreateInfo& info = barriers.AddUnique(pair);
+						CoreGraphics::BarrierCreateInfo& info = barriers.AddUnique(tuple);
 						info.name = info.name.IsValid() ? info.name.AsString() + " + " + bufferName.AsString() : bufferName.AsString();
 						info.domain = domain;
 						info.leftDependency = dep.stage;
@@ -454,32 +344,31 @@ FrameOp::SetupSynchronization(
 	Memory::ArenaAllocator<BIG_CHUNK>& allocator,
 	Util::Array<CoreGraphics::EventId>& events, 
 	Util::Array<CoreGraphics::BarrierId>& barriers, 
-	Util::Dictionary<CoreGraphics::ShaderRWTextureId, Util::Array<TextureDependency>>& rwTextures, 
 	Util::Dictionary<CoreGraphics::ShaderRWBufferId, Util::Array<BufferDependency>>& rwBuffers,
-	Util::Dictionary<CoreGraphics::RenderTextureId, Util::Array<TextureDependency>>& renderTextures)
+	Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures)
 {
 	n_assert(this->compiled != nullptr);
 	IndexT i;
 
-	if (!this->rwTextureDeps.IsEmpty() || !this->rwBufferDeps.IsEmpty() || !this->renderTextureDeps.IsEmpty())
+	if (!this->textureDeps.IsEmpty() || !this->rwBufferDeps.IsEmpty())
 	{
-		Util::Dictionary<std::tuple<IndexT, IndexT>, CoreGraphics::EventCreateInfo> waitEvents;
-		Util::Dictionary<std::tuple<IndexT, IndexT>, CoreGraphics::BarrierCreateInfo> barriers;
-		Util::Dictionary<std::tuple<IndexT, IndexT>, FrameOp::Compiled*> signalEvents;
+		Util::Dictionary<std::tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, CoreGraphics::EventCreateInfo> waitEvents;
+		Util::Dictionary<std::tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, CoreGraphics::BarrierCreateInfo> barriers;
+		Util::Dictionary<std::tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, FrameOp::Compiled*> signalEvents;
 		uint numOutputs = 0;
 
 		// go through texture dependencies
-		for (i = 0; i < this->rwTextureDeps.Size(); i++)
+		for (i = 0; i < this->textureDeps.Size(); i++)
 		{
-			const CoreGraphics::ShaderRWTextureId& tex = this->rwTextureDeps.KeyAtIndex(i);
-			IndexT idx = rwTextures.FindIndex(this->rwTextureDeps.KeyAtIndex(i));
+			const CoreGraphics::TextureId& tex = this->textureDeps.KeyAtIndex(i);
+			const CoreGraphics::TextureId& alias = TextureGetAlias(tex);
 
 			// right dependency set
-			const Util::StringAtom& name = std::get<0>(this->rwTextureDeps.ValueAtIndex(i));
-			const CoreGraphics::BarrierAccess& access = std::get<1>(this->rwTextureDeps.ValueAtIndex(i));
-			const CoreGraphics::BarrierStage& stage = std::get<2>(this->rwTextureDeps.ValueAtIndex(i));
-			const CoreGraphics::ImageSubresourceInfo& subres = std::get<3>(this->rwTextureDeps.ValueAtIndex(i));
-			const CoreGraphicsImageLayout& layout = std::get<4>(this->rwTextureDeps.ValueAtIndex(i));
+			const Util::StringAtom& name = std::get<0>(this->textureDeps.ValueAtIndex(i));
+			const CoreGraphics::BarrierAccess& access = std::get<1>(this->textureDeps.ValueAtIndex(i));
+			const CoreGraphics::BarrierStage& stage = std::get<2>(this->textureDeps.ValueAtIndex(i));
+			const CoreGraphics::ImageSubresourceInfo& subres = std::get<3>(this->textureDeps.ValueAtIndex(i));
+			const CoreGraphicsImageLayout& layout = std::get<4>(this->textureDeps.ValueAtIndex(i));
 
 			DependencyIntent readOrWrite = DependencyIntent::Read;
 			switch (access)
@@ -496,47 +385,22 @@ FrameOp::SetupSynchronization(
 			}
 
 			// dependencies currently on the texture
-			Util::Array<TextureDependency>& deps = rwTextures.ValueAtIndex(idx);
+			IndexT idx = textures.FindIndex(this->textureDeps.KeyAtIndex(i));
+			Util::Array<TextureDependency>& deps = textures.ValueAtIndex(idx);
 
 			// analyze if synchronization is required and setup appropriate barriers and/or events
 			AnalyzeAndSetupTextureBarriers(
 				this->compiled, tex, name, readOrWrite, access, stage, layout, this->domain, subres, this->index, this->queue, barriers, waitEvents, signalEvents, deps);
-		}
 
-		// go through texture dependencies
-		for (i = 0; i < this->renderTextureDeps.Size(); i++)
-		{
-			const CoreGraphics::RenderTextureId& tex = this->renderTextureDeps.KeyAtIndex(i);
-			IndexT idx = renderTextures.FindIndex(this->renderTextureDeps.KeyAtIndex(i));
-			n_assert(idx != InvalidIndex);
-
-			// dependency imposed by this operation
-			const Util::StringAtom& name = std::get<0>(this->renderTextureDeps.ValueAtIndex(i));
-			const CoreGraphics::BarrierAccess& access = std::get<1>(this->renderTextureDeps.ValueAtIndex(i));
-			const CoreGraphics::BarrierStage& stage = std::get<2>(this->renderTextureDeps.ValueAtIndex(i));
-			const CoreGraphics::ImageSubresourceInfo& subres = std::get<3>(this->renderTextureDeps.ValueAtIndex(i));
-			const CoreGraphicsImageLayout& layout = std::get<4>(this->renderTextureDeps.ValueAtIndex(i));
-
-			DependencyIntent readOrWrite = DependencyIntent::Read;
-			switch (access)
+			// if alias, also make sure to visit the alias
+			if (alias != CoreGraphics::TextureId::Invalid())
 			{
-				case CoreGraphics::BarrierAccess::ShaderWrite:
-				case CoreGraphics::BarrierAccess::ColorAttachmentWrite:
-				case CoreGraphics::BarrierAccess::DepthAttachmentWrite:
-				case CoreGraphics::BarrierAccess::HostWrite:
-				case CoreGraphics::BarrierAccess::MemoryWrite:
-				case CoreGraphics::BarrierAccess::TransferWrite:
-				readOrWrite = DependencyIntent::Write;
-				numOutputs++;
-				break;
+				IndexT idx = textures.FindIndex(alias);
+				Util::Array<TextureDependency>& deps = textures.ValueAtIndex(idx);
+				AnalyzeAndSetupTextureBarriers(
+					this->compiled, alias, name, readOrWrite, access, stage, layout, this->domain, subres, this->index, this->queue, barriers, waitEvents, signalEvents, deps);
 			}
-
-			// dependencies currently on the texture
-			Util::Array<TextureDependency>& deps = renderTextures.ValueAtIndex(idx);
-
-			// analyze if synchronization is required and setup appropriate barriers and/or events
-			AnalyzeAndSetupTextureBarriers(
-				this->compiled, tex, name, readOrWrite, access, stage, layout, this->domain, subres, this->index, this->queue, barriers, waitEvents, signalEvents, deps);
+				
 		}
 
 		// go through buffer dependencies

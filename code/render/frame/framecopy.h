@@ -7,7 +7,6 @@
 */
 //------------------------------------------------------------------------------
 #include "frameop.h"
-#include "coregraphics/rendertexture.h"
 namespace Frame
 {
 class FrameCopy : public FrameOp
@@ -22,7 +21,7 @@ public:
 	{
 		void Run(const IndexT frameIndex);
 
-		CoreGraphics::RenderTextureId from, to;
+		CoreGraphics::TextureId from, to;
 
 #if NEBULA_GRAPHICS_DEBUG
 		Util::StringAtom name;
@@ -31,7 +30,7 @@ public:
 
 	FrameOp::Compiled* AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator);
 
-	CoreGraphics::RenderTextureId from, to;
+	CoreGraphics::TextureId from, to;
 };
 
 } // namespace Frame2

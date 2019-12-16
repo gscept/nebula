@@ -149,11 +149,9 @@ ENDIF()
 				rendereventhandler.h
 				rendershape.cc
 				rendershape.h
-				rendertexture.cc
-				rendertexture.h
 				resourcetable.h
 				sampler.h
-        semaphore.h
+                semaphore.h
 				shader.cc
 				shader.h
 				shaderfeature.cc
@@ -161,8 +159,6 @@ ENDIF()
 				shaderidentifier.cc
 				shaderidentifier.h
 				shaderrwbuffer.h
-				shaderrwtexture.cc
-				shaderrwtexture.h
 				shadersemantics.h
 				shaderserver.cc
 				shaderserver.h
@@ -171,7 +167,7 @@ ENDIF()
 				streammeshpool.cc
 				streammeshpool.h
 				shaderpool.cc
-        shaderpool.h
+                shaderpool.h
 				streamtexturepool.cc
 				streamtexturepool.h
 				streamtexturesaver.h
@@ -253,8 +249,6 @@ ENDIF()
 				d3d11shader.h
 				d3d11shaderrwbuffer.cc
 				d3d11shaderrwbuffer.h
-				d3d11shaderrwtexture.cc
-				d3d11shaderrwtexture.h
 				d3d11shaderserver.cc
 				d3d11shaderserver.h
 				d3d11shaderstate.cc
@@ -306,8 +300,6 @@ ENDIF()
 				vkpass.h
 				vkpipelinedatabase.cc
 				vkpipelinedatabase.h
-				vkrendertexture.cc
-				vkrendertexture.h
 				vkresourcetable.cc
 				vkresourcetable.h
 				vksampler.cc
@@ -318,8 +310,6 @@ ENDIF()
 				vkshader.h
 				vkshaderrwbuffer.cc
 				vkshaderrwbuffer.h
-				vkshaderrwtexture.cc
-				vkshaderrwtexture.h
 				vkshaderprogram.cc
 				vkshaderprogram.h
 				vkshaderserver.cc
@@ -402,8 +392,6 @@ ENDIF()
 				framesubpassplugin.h
 				framesubpasssystem.cc
 				framesubpasssystem.h
-				frameswapbuffers.cc
-				frameswapbuffers.h
 			)
         fips_dir(frame/plugins)
 			fips_files(

@@ -676,10 +676,10 @@ WindowGetIcon(const WindowId id)
 //------------------------------------------------------------------------------
 /**
 */
-const CoreGraphics::RenderTextureId&
-WindowGetRenderTexture(const WindowId id)
+const CoreGraphics::TextureId&
+WindowGetTexture(const WindowId id)
 {
-	return glfwWindowAllocator.Get<GLFW_RenderTexture>(id.id24);
+	return glfwWindowAllocator.Get<GLFW_Texture>(id.id24);
 }
 
 } // namespace CoreGraphics
@@ -855,20 +855,19 @@ SetupVulkanSwapchain(const CoreGraphics::WindowId& id, const CoreGraphics::Displ
 	}
 	windowInfo.currentBackbuffer = 0;
 
-	RenderTextureCreateInfo rtinfo =
-	{
-		Util::String::Sprintf("__WINDOW__%s", title.Value()),
-		Texture2D,
-		VkTypes::AsNebulaPixelFormat(swapInfo.format),
-		RenderTextureUsage::ColorAttachment,
-		(float)swapchainExtent.width, (float)swapchainExtent.height, 1,
-		1, 1,
-		false, true, true
-	};
-	glfwWindowAllocator.Get<GLFW_RenderTexture>(id.id24) = CreateRenderTexture(rtinfo);
+	TextureCreateInfo rtinfo;
+	rtinfo.name = Util::String::Sprintf("__WINDOW__%s", title.Value());
+	rtinfo.usage = TextureUsage::CopyUsage;
+	rtinfo.tag = "system"_atm;
+	rtinfo.type = Texture2D;
+	rtinfo.format = VkTypes::AsNebulaPixelFormat(swapInfo.format);
+	rtinfo.width = (float)swapchainExtent.width;
+	rtinfo.height = (float)swapchainExtent.height;
+	rtinfo.windowTexture = true;
+	glfwWindowAllocator.Get<GLFW_Texture>(id.id24) = CreateTexture(rtinfo);
 
 	// add to graphics device for swapbuffers
-	CoreGraphics::AddBackBufferRenderTexture(glfwWindowAllocator.Get<GLFW_RenderTexture>(id.id24));
+	CoreGraphics::AddBackBufferTexture(glfwWindowAllocator.Get<GLFW_Texture>(id.id24));
 
 	windowInfo.dev = dev;
 }

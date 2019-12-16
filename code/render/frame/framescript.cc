@@ -34,33 +34,12 @@ FrameScript::~FrameScript()
 /**
 */
 void
-FrameScript::AddColorTexture(const Util::StringAtom& name, const CoreGraphics::RenderTextureId tex)
+FrameScript::AddTexture(const Util::StringAtom& name, const CoreGraphics::TextureId tex)
 {
-	n_assert(!this->colorTexturesByName.Contains(name));
-	this->colorTexturesByName.Add(name, tex);
-	this->colorTextures.Append(tex);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-FrameScript::AddDepthStencilTexture(const Util::StringAtom& name, const CoreGraphics::RenderTextureId tex)
-{
-	n_assert(!this->depthStencilTexturesByName.Contains(name));
-	this->depthStencilTexturesByName.Add(name, tex);
-	this->depthStencilTextures.Append(tex);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-FrameScript::AddReadWriteTexture(const Util::StringAtom& name, const CoreGraphics::ShaderRWTextureId tex)
-{
-	n_assert(!this->readWriteTexturesByName.Contains(name));
-	this->readWriteTexturesByName.Add(name, tex);
-	this->readWriteTextures.Append(tex);
+	IndexT i = this->texturesByName.FindIndex(name);
+	n_assert(i == InvalidIndex);
+	this->texturesByName.Add(name, tex);
+	this->textures.Append(tex);
 }
 
 //------------------------------------------------------------------------------
@@ -166,22 +145,22 @@ FrameScript::Build()
 	// clear old compiled result
 	this->buildAllocator.Release();
 	 
-	Util::Dictionary<CoreGraphics::ShaderRWTextureId, Util::Array<FrameOp::TextureDependency>> rwTextures;
 	Util::Dictionary<CoreGraphics::ShaderRWBufferId, Util::Array<FrameOp::BufferDependency>> rwBuffers;
-	Util::Dictionary<CoreGraphics::RenderTextureId, Util::Array<FrameOp::TextureDependency>> renderTextures;
+	Util::Dictionary<CoreGraphics::TextureId, Util::Array<FrameOp::TextureDependency>> textures;
 
 	// give every resource an initial dependency
-	for (i = 0; i < this->colorTextures.Size(); i++)
+	for (i = 0; i < this->textures.Size(); i++)
 	{
-		CoreGraphics::RenderTextureId tex = this->colorTextures[i];
-		CoreGraphicsImageLayout layout = CoreGraphics::RenderTextureGetLayout(tex);
-		auto& arr = renderTextures.AddUnique(tex);
+		CoreGraphics::TextureId tex = this->textures[i];
+		bool isDepth = CoreGraphics::PixelFormat::IsDepthFormat(CoreGraphics::TextureGetPixelFormat(tex));
+		CoreGraphicsImageLayout layout = CoreGraphics::TextureGetDefaultLayout(tex);
+		auto& arr = textures.AddUnique(tex);
 
-		uint layers = CoreGraphics::RenderTextureGetNumLayers(tex);
-		uint mips = CoreGraphics::RenderTextureGetNumMips(tex);
+		uint layers = CoreGraphics::TextureGetNumLayers(tex);
+		uint mips = CoreGraphics::TextureGetNumMips(tex);
 
 		CoreGraphics::ImageSubresourceInfo subres;
-		subres.aspect = CoreGraphicsImageAspect::ColorBits;
+		subres.aspect = isDepth ? CoreGraphicsImageAspect::DepthBits | CoreGraphicsImageAspect::StencilBits : CoreGraphicsImageAspect::ColorBits;
 		subres.layer = 0;
 		subres.layerCount = layers;
 		subres.mip = 0;
@@ -189,93 +168,19 @@ FrameScript::Build()
 		arr.Append(FrameOp::TextureDependency{ nullptr, CoreGraphicsQueueType::GraphicsQueueType, layout, CoreGraphics::BarrierStage::AllGraphicsShaders | CoreGraphics::BarrierStage::ComputeShader, CoreGraphics::BarrierAccess::ShaderRead, DependencyIntent::Read, InvalidIndex, subres });
 	}
 
-	for (i = 0; i < this->depthStencilTextures.Size(); i++)
-	{
-		CoreGraphics::RenderTextureId tex = this->depthStencilTextures[i];
-		CoreGraphicsImageLayout layout = CoreGraphics::RenderTextureGetLayout(tex);
-		auto& arr = renderTextures.AddUnique(tex);
-
-		uint layers = CoreGraphics::RenderTextureGetNumLayers(tex);
-		uint mips = CoreGraphics::RenderTextureGetNumMips(tex);		
-
-		CoreGraphics::ImageSubresourceInfo subres;
-		subres.aspect = CoreGraphicsImageAspect::ColorBits;
-		subres.layer = 0;
-		subres.layerCount = layers;
-		subres.mip = 0;
-		subres.mipCount = mips;
-		arr.Append(FrameOp::TextureDependency{ nullptr, CoreGraphicsQueueType::GraphicsQueueType, layout, CoreGraphics::BarrierStage::AllGraphicsShaders, CoreGraphics::BarrierAccess::DepthAttachmentRead, DependencyIntent::Read, InvalidIndex, subres });
-	}
-
-	for (i = 0; i < this->readWriteTextures.Size(); i++)
-	{
-		CoreGraphics::ShaderRWTextureId tex = this->readWriteTextures[i];
-		CoreGraphicsImageLayout layout = CoreGraphics::ShaderRWTextureGetLayout(tex);
-		CoreGraphics::TextureDimensions dims = CoreGraphics::ShaderRWTextureGetDimensions(tex);
-		auto& arr = rwTextures.AddUnique(tex);
-
-		uint layers = CoreGraphics::ShaderRWTextureGetNumLayers(tex);
-		uint mips = CoreGraphics::ShaderRWTextureGetNumMips(tex);
-
-		CoreGraphics::ImageSubresourceInfo subres;
-		subres.aspect = CoreGraphicsImageAspect::ColorBits;
-		subres.layer = 0;
-		subres.layerCount = layers;
-		subres.mip = 0;
-		subres.mipCount = mips;
-		arr.Append(FrameOp::TextureDependency{ nullptr, CoreGraphicsQueueType::GraphicsQueueType, layout, CoreGraphics::BarrierStage::ComputeShader, CoreGraphics::BarrierAccess::ShaderRead, DependencyIntent::Read, InvalidIndex, subres });
-	}
-
-	for (i = 0; i < this->readWriteBuffers.Size(); i++)
-	{
-		CoreGraphics::ShaderRWBufferId buf = this->readWriteBuffers[i];
-		auto& arr = rwBuffers.AddUnique(buf);
-
-		CoreGraphics::BufferSubresourceInfo subres;
-		arr.Append(FrameOp::BufferDependency{ nullptr, CoreGraphicsQueueType::GraphicsQueueType, CoreGraphics::BarrierStage::ComputeShader, CoreGraphics::BarrierAccess::ShaderRead, DependencyIntent::Read, InvalidIndex, subres});
-	}
-
 	for (i = 0; i < this->ops.Size(); i++)
 	{
-		this->ops[i]->Build(this->buildAllocator, this->compiled, this->events, this->barriers, rwTextures, rwBuffers, renderTextures);
+		this->ops[i]->Build(this->buildAllocator, this->compiled, this->events, this->barriers, rwBuffers, textures);
 	}
 
 	// setup a post-frame barrier to reset the resource state of all resources back to their created original (ShaderRead for RenderTexture, General for RWTexture
-	Util::Array<CoreGraphics::RWTextureBarrier> shaderRWTexturesBarr;
-	Util::Array<CoreGraphics::RenderTextureBarrier> renderTexturesBarr;
+	Util::Array<CoreGraphics::TextureBarrier> texturesBarr;
 
-	for (i = 0; i < rwTextures.Size(); i++)
+	for (i = 0; i < textures.Size(); i++)
 	{
-		const CoreGraphics::ShaderRWTextureId& res = rwTextures.KeyAtIndex(i);
-		CoreGraphicsImageLayout layout = CoreGraphics::ShaderRWTextureGetLayout(res);
-		const Util::Array<FrameOp::TextureDependency>& deps = rwTextures.ValueAtIndex(i);
-		for (IndexT j = 0; j < deps.Size(); j++)
-		{
-			const FrameOp::TextureDependency& dep = deps[j];
-			CoreGraphics::BarrierAccess outAccess = layout == CoreGraphicsImageLayout::Present ? CoreGraphics::BarrierAccess::TransferRead : CoreGraphics::BarrierAccess::ShaderRead;
-			CoreGraphics::BarrierStage outStage = outAccess == CoreGraphics::BarrierAccess::TransferRead ? CoreGraphics::BarrierStage::Transfer : CoreGraphics::BarrierStage::AllGraphicsShaders;
-
-			// rw textures are created with general
-			if (dep.layout != layout)
-			{
-				CoreGraphics::BarrierCreateInfo inf =
-				{
-					Util::String::Sprintf("End of Frame Resource RWTexture Transition %d", res.id24),
-					CoreGraphics::BarrierDomain::Global,
-					dep.stage,
-					outStage,
-					nullptr, nullptr, { CoreGraphics::RWTextureBarrier{ res, dep.subres, dep.layout, layout, dep.access, outAccess } }
-				};
-				this->resourceResetBarriers.Append(CoreGraphics::CreateBarrier(inf));
-			}
-		}
-	}
-
-	for (i = 0; i < renderTextures.Size(); i++)
-	{
-		const CoreGraphics::RenderTextureId& res = renderTextures.KeyAtIndex(i);
-		CoreGraphicsImageLayout layout = CoreGraphics::RenderTextureGetLayout(res);
-		const Util::Array<FrameOp::TextureDependency>& deps = renderTextures.ValueAtIndex(i);
+		const CoreGraphics::TextureId& res = textures.KeyAtIndex(i);
+		CoreGraphicsImageLayout layout = CoreGraphics::TextureGetDefaultLayout(res);
+		const Util::Array<FrameOp::TextureDependency>& deps = textures.ValueAtIndex(i);
 		for (IndexT j = 0; j < deps.Size(); j++)
 		{
 			const FrameOp::TextureDependency& dep = deps[j];
@@ -288,11 +193,11 @@ FrameScript::Build()
 			{
 				CoreGraphics::BarrierCreateInfo inf =
 				{
-					Util::String::Sprintf("End of Frame RenderTexture Reset Transition %d", res.id24),
+					Util::String::Sprintf("End of Frame Texture Reset Transition %d", res.resourceId),
 					CoreGraphics::BarrierDomain::Global,
 					dep.stage,
 					outStage,
-					{ CoreGraphics::RenderTextureBarrier{ res, info, dep.layout, layout, dep.access, outAccess } }, nullptr, nullptr
+					{ CoreGraphics::TextureBarrier{ res, info, dep.layout, layout, dep.access, outAccess } }, nullptr
 				};
 				this->resourceResetBarriers.Append(CoreGraphics::CreateBarrier(inf));
 			}
@@ -307,17 +212,9 @@ void
 FrameScript::Cleanup()
 {
 	IndexT i;
-	for (i = 0; i < this->colorTextures.Size(); i++) DestroyRenderTexture(this->colorTextures[i]);
-	this->colorTextures.Clear();
-	this->colorTexturesByName.Clear();
-
-	for (i = 0; i < this->depthStencilTextures.Size(); i++) DestroyRenderTexture(this->depthStencilTextures[i]);
-	this->depthStencilTextures.Clear();
-	this->depthStencilTexturesByName.Clear();
-
-	for (i = 0; i < this->readWriteTextures.Size(); i++) DestroyShaderRWTexture(this->readWriteTextures[i]);
-	this->readWriteTextures.Clear();
-	this->readWriteTexturesByName.Clear();
+	for (i = 0; i < this->textures.Size(); i++) DestroyTexture(this->textures[i]);
+	this->textures.Clear();
+	this->texturesByName.Clear();
 
 	for (i = 0; i < this->readWriteBuffers.Size(); i++) DestroyShaderRWBuffer(this->readWriteBuffers[i]);
 	this->readWriteBuffers.Clear();
@@ -349,8 +246,7 @@ FrameScript::OnWindowResized()
 		WindowMakeCurrent(this->window);
 
 		IndexT i;
-		for (i = 0; i < this->colorTextures.Size(); i++)		RenderTextureWindowResized(this->colorTextures[i]);
-		for (i = 0; i < this->readWriteTextures.Size(); i++)	ShaderRWTextureWindowResized(this->readWriteTextures[i]);
+		for (i = 0; i < this->textures.Size(); i++)				TextureWindowResized(this->textures[i]);
 		for (i = 0; i < this->algorithms.Size(); i++)			this->algorithms[i]->Resize();
 		for (i = 0; i < this->ops.Size(); i++)					this->ops[i]->OnWindowResized();
 

@@ -237,7 +237,6 @@ MaterialServer::LoadMaterialTypes(const IO::URI& file)
 						else if (ptype == "texturecube") texture.type = CoreGraphics::TextureCube;
 						else if (ptype == "texture1darray") texture.type = CoreGraphics::Texture1DArray;
 						else if (ptype == "texture2darray") texture.type = CoreGraphics::Texture2DArray;
-						else if (ptype == "texture3darray") texture.type = CoreGraphics::Texture3DArray;
 						else if (ptype == "texturecubearray") texture.type = CoreGraphics::TextureCubeArray;
 						else
 						{

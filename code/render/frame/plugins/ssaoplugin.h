@@ -42,7 +42,7 @@ private:
 		powerExponentVar, blurFalloff, blurDepthThreshold;
 		
 	// read-write textures
-	CoreGraphics::ShaderRWTextureId internalTargets[2];
+	CoreGraphics::TextureId internalTargets[2];
 
 	CoreGraphics::BarrierId barriers[4];
 
