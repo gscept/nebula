@@ -100,7 +100,7 @@ VkStreamTextureSaver::SaveTexture2D(CoreGraphics::TextureId tex, const Ptr<IO::S
 	format = PixelFormat::ToILComponents(pfmt);
 	type = PixelFormat::ToILType(pfmt);
 
-	TextureMapInfo mapInfo = TextureMap(tex, mipLevelToSave, GpuBufferTypes::MapRead);;
+	TextureMapInfo mapInfo = TextureMap(tex, mipLevelToSave, GpuBufferTypes::MapRead);
 
 	// create image
 	ILboolean result;

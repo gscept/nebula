@@ -62,7 +62,7 @@ enum
 	GLFW_DisplayMode,
 	GLFW_SwapFrame,
 	GLFW_SetupInfo,
-	GLFW_RenderTexture,
+	GLFW_Texture,
 #if __VULKAN__
 	GLFW_WindowSwapInfo,
 	GLFW_SwapChain,
@@ -76,7 +76,7 @@ typedef Ids::IdAllocator<
 	, CoreGraphics::DisplayMode		
 	, IndexT						
 	, WindowCreateInfo
-	, RenderTextureId
+	, TextureId
 #if __VULKAN__
 	, Vulkan::VkWindowSwapInfo		
 	, Vulkan::VkSwapchainInfo		

@@ -3,37 +3,42 @@
   engine: "Nebula",
   sub_script: true,
   framescript: {
-    render_textures: [
+    textures: [
       {
         name: "SpotLightShadowAtlas",
         format: "R32G32F",
         width: 1024,
         height: 1024,
         layers: 16,
+        usage: "Render",
+        type: "Texture2DArray"
       },
       {
         name: "GlobalLightShadow",
         format: "R32G32F",
         width: 1024,
         height: 1024,
-        layers: 4
-      }
-    ],
-
-    read_write_textures: [
+        layers: 4,
+        usage: "Render",
+        type: "Texture2DArray"
+      },
       {
         name: "GlobalLightShadowFiltered0",
         format: "R32G32F",
         width: 1024,
         height: 1024,
-        layers: 4
+        layers: 4,
+        usage: "ReadWrite",
+        type: "Texture2DArray"
       },
       {
         name: "GlobalLightShadowFiltered1",
         format: "R32G32F",
         width: 1024,
         height: 1024,
-        layers: 4
+        layers: 4,
+        usage: "ReadWrite",
+        type: "Texture2DArray"
       },
       {
         name: "SpotLightShadowAtlasFiltered",
@@ -41,18 +46,19 @@
         width: 1024,
         height: 1024,
         layers: 16,
-      }
-    ],
-
-    depth_stencils: [
+        usage: "ReadWrite",
+        type: "Texture2DArray"
+      },
       {
         name: "GlobalLightDepth",
         format: "D32S8",
         width: 1024,
         height: 1024,
-        layers: 4
+        layers: 4,
+        usage: "Render",
+        type: "Texture2DArray"
       }
-    ],
+    ]
 
     pass: {
       name: "ShadowMapping",

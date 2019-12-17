@@ -246,15 +246,15 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 	// transition image to be used for rendering
 	VkUtilities::ImageBarrier(CoreGraphics::SubmissionContextGetCmdBuffer(sub),
 		CoreGraphics::BarrierStage::Transfer,
-		CoreGraphics::BarrierStage::Transfer,
-		VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
+		CoreGraphics::BarrierStage::AllGraphicsShaders,
+		VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, TransferQueueType, GraphicsQueueType, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
 
 	// perform final transition on graphics queue
 	CoreGraphics::SubmissionContextId gfxSub = CoreGraphics::GetSetupSubmissionContext();
 	VkUtilities::ImageBarrier(CoreGraphics::SubmissionContextGetCmdBuffer(gfxSub),
 		CoreGraphics::BarrierStage::Transfer,
 		CoreGraphics::BarrierStage::AllGraphicsShaders,
-		VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, TransferQueueType, GraphicsQueueType, VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+		VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, TransferQueueType, GraphicsQueueType, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
 		
 	ilDeleteImage(image);
 
@@ -297,7 +297,7 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 	loadInfo.format = VkTypes::AsNebulaPixelFormat(vkformat);
 	loadInfo.dev = dev;
 	runtimeInfo.type = cube ? CoreGraphics::TextureCube : depth > 1 ? CoreGraphics::Texture3D : CoreGraphics::Texture2D;
-	runtimeInfo.bind = VkShaderServer::Instance()->RegisterTexture(TextureId(res), runtimeInfo.type);
+	runtimeInfo.bind = VkShaderServer::Instance()->RegisterTexture(TextureId(res), false, runtimeInfo.type);
 
 	stream->Unmap();
 

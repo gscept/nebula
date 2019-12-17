@@ -2,150 +2,171 @@
   version: 2,
   engine: "Nebula",
   framescript: {
-    render_textures: [
+    textures: [
       {
-        name: "NormalBuffer",
-        format: "R11G11B10F",
-        relative: true,
-        width: 1.0,
-        height: 1.0
-      },
-      {
-        name: "AlbedoBuffer",
-        format: "R8G8B8A8",
-        relative: true,
-        width: 1.0,
-        height: 1.0
-      },
-      {
-        name: "SpecularBuffer",
-        format: "R8G8B8A8",
-        relative: true,
-        width: 1.0,
-        height: 1.0
-      },
-      {
-        name: "EmissiveBuffer",
-        format: "R11G11B10F",
-        relative: true,
-        width: 1.0,
-        height: 1.0
-      },
-      {
-        name: "LightBuffer",
-        format: "R11G11B10F",
-        relative: true,
-        width: 1.0,
-        height: 1.0
-      },
-      {
-        name: "ColorBuffer",
-        format: "R8G8B8A8",
-        relative: true,
-        width: 1.0,
-        height: 1.0
+        name: "__WINDOW__"
       },
       {
         name: "ScreenBuffer",
         format: "R11G11B10F",
         relative: true,
+        usage: "Render|Copy",
         width: 1.0,
-        height: 1.0
+        height: 1.0,
+        type: "Texture2D"
+      },
+      {
+        name: "NormalBuffer",
+        format: "R16G16B16A16F",
+        usage: "Render",
+        relative: true,
+        width: 1.0,
+        height: 1.0,
+        type: "Texture2D"
+      },
+      {
+        name: "AlbedoBuffer",
+        format: "R8G8B8A8",
+        usage: "Render",
+        relative: true,
+        width: 1.0,
+        height: 1.0,
+        type: "Texture2D"
+      },
+      {
+        name: "SpecularBuffer",
+        format: "R8G8B8A8",
+        usage: "Render",
+        relative: true,
+        width: 1.0,
+        height: 1.0,
+        type: "Texture2D"
+      },
+      {
+        name: "EmissiveBuffer",
+        format: "R11G11B10F",
+        usage: "Render",
+        relative: true,
+        width: 1.0,
+        height: 1.0,
+        type: "Texture2D"
+      },
+      {
+        name: "ColorBuffer",
+        format: "R8G8B8A8",
+        usage: "Render",
+        relative: true,
+        width: 1.0,
+        height: 1.0,
+        type: "Texture2D"
       },
       {
         name: "BloomBuffer",
         format: "R11G11B10F",
         relative: true,
+        usage: "Render",
         width: 0.5,
-        height: 0.5
+        height: 0.5,
+        type: "Texture2D"
       },
       {
         name: "GodrayBuffer",
         format: "R8G8B8A8",
         relative: true,
+        usage: "Render",
         width: 0.5,
-        height: 0.5
+        height: 0.5,
+        type: "Texture2D"
       },
       {
         name: "ShapeBuffer",
         format: "R8G8B8A8",
         relative: true,
+        usage: "Render",
         width: 1.0,
-        height: 1.0
+        height: 1.0,
+        type: "Texture2D"
       },
       {
         name: "AverageLumBuffer",
         format: "R16F",
         relative: false,
+        usage: "Render|Copy",
         width: 1.0,
-        height: 1.0
+        height: 1.0,
+        type: "Texture2D"
       },
       {
         name: "SSSBuffer",
         format: "R16G16B16A16F",
         relative: true,
+        usage: "Render",
         width: 1.0,
-        height: 1.0
+        height: 1.0,
+        type: "Texture2D"
       },
-      { name: "__WINDOW__" }
-    ],
-
-    read_write_textures: [
       {
         name: "SSAOBuffer",
         format: "R16F",
         relative: true,
+        usage: "ReadWrite",
         width: 1.0,
-        height: 1.0
+        height: 1.0,
+        type: "Texture2D"
       },
       {
         name: "BloomBufferBlurred",
         format: "R16G16B16A16F",
         relative: true,
+        usage: "ReadWrite",
         width: 0.2,
-        height: 0.2
-      }
-    ],
-
-    depth_stencils: [
+        height: 0.2,
+        type: "Texture2D"
+      },
+      {
+        name: "LightBuffer",
+        format: "R11G11B10F",
+        relative: true,
+        usage: "ReadWrite",
+        width: 1.0,
+        height: 1.0,
+        type: "Texture2D",
+      },
       {
         name: "ZBuffer",
         format: "D32S8",
         relative: true,
+        usage: "Render",
         width: 1.0,
-        height: 1.0
+        height: 1.0,
+        type: "Texture2D"
       }
-    ],
+    ]
 
     plugins: [
       {
         name: "Tonemapping",
         class: "Frame::TonemapPlugin",
-        render_textures: [
-          "LightBuffer",
-          "AverageLumBuffer"
+        textures: [
+          "AverageLumBuffer",
+          "LightBuffer"
         ]
       },
       {
         name: "SSAO",
         class: "Frame::SSAOPlugin",
-        depth_stencils: [
-          "ZBuffer"
-        ],
-        read_write_textures: [
+        textures: [
           "SSAOBuffer"
         ]
       },
       {
         name: "Bloom",
         class: "Frame::BloomPlugin",
-        render_textures: [
-          "LightBuffer",
+        textures: [
           "AverageLumBuffer",
-          "BloomBuffer"
-        ],
-        read_write_textures: [
-          "BloomBufferBlurred"
+          "BloomBuffer",
+          "BloomBufferBlurred",
+          "LightBuffer"
         ]
       }
     ],
@@ -155,23 +176,42 @@
     },
 
     begin_submission: {
-      name: "Beginning of frame graphics submission",
+      name: "Shadow maps",
       queue: "Graphics",
-      _comment: "Mandatory start of graphics submission, must be met with a matching end_submission"
-    }
-
-    begin_submission: {
-      name: "Beginning of frame compute submission",
-      queue: "Compute",
-      _comment: "Mandatory start of compute submission, must be met with a matching end_submission"
-    }
-
-    plugin: {
-      name: "LightContext - Clusted Process"
+      _comment: "Calculate shadow maps and other heavy geometry work"
     }
 
     plugin: {
       name: "LightContext - Update Shadowmaps"
+    }
+
+    end_submission: {
+      queue: "Graphics",
+    }
+
+    begin_submission: {
+      name: "Clustering",
+      queue: "Compute",
+      _comment: "Perform clustering calculations"
+    }
+
+    plugin: {
+      name: "ClusterContext - Update Clusters"
+    }
+
+    plugin: {
+      name: "LightContext - Cull and Classify"
+    }
+
+    end_submission: {
+      queue: "Compute",
+    }
+
+    begin_submission: {
+      name: "GBuffer and Lighting",
+      wait_for_queue: "Compute",
+      queue: "Graphics",
+      _comment: "Mandatory start of graphics submission, must be met with a matching end_submission"
     }
 
     pass: {
@@ -198,11 +238,6 @@
           store: true
         },
         {
-          name: "LightBuffer",
-          clear: [ 0.05, 0.05, 0.05, 0.1 ],
-          store: true
-        },
-        {
           name: "SSSBuffer",
           clear: [ 0.5, 0.5, 0.5, 1 ],
           store: true
@@ -223,17 +258,52 @@
         depth: true,
         batch: "FlatGeometryLit",
         batch: "TesselatedGeometryLit",
-      },
-      subpass: {
-        name: "LightPass",
-        dependencies: [ "GeometryPass" ],
-        inputs: [ "AlbedoBuffer", "NormalBuffer", "SpecularBuffer", "EmissiveBuffer", "ZBuffer" ],
-        depth: true,
-        attachments: [ "LightBuffer" ],
-        system: "Lights",
-        batch: "Background",
-      },
+      }
+
     },
+
+    plugin: {
+      name: "LightContext - Deferred Cluster",
+      inputs: [
+        {
+          name: "AlbedoBuffer",
+          access: "ShaderRead",
+          layout: "ShaderRead",
+          stage: "ComputeShader",
+          aspect: "Color"
+        },
+        {
+          name: "NormalBuffer",
+          access: "ShaderRead",
+          layout: "ShaderRead",
+          stage: "ComputeShader",
+          aspect: "Color"
+        },
+        {
+          name: "SpecularBuffer",
+          access: "ShaderRead",
+          layout: "ShaderRead",
+          stage: "ComputeShader",
+          aspect: "Color"
+        },
+        {
+          name: "ZBuffer",
+          access: "ShaderRead",
+          layout: "DepthStencilRead",
+          stage: "ComputeShader",
+          aspect: "Depth|Stencil"
+        }
+      ]
+      outputs: [
+        {
+          name: "LightBuffer",
+          access: "ShaderWrite",
+          layout: "General",
+          stage: "ComputeShader",
+          aspect: "Color"
+        }
+      ]
+    }
 
     pass: {
       name: "BloomPass",
@@ -271,7 +341,7 @@
           access: "DepthAttachmentRead",
           layout: "DepthStencilRead",
           stage: "ComputeShader",
-          aspect: "Color"
+          aspect: "Depth"
         }
       ],
       outputs: [
@@ -483,13 +553,6 @@
     }
 
     end_submission: {
-      name: "End of frame compute submission",
-      queue: "Compute",
-      _comment: "Mandatory end of compute submission, must be met with a matching begin_submission"
-    }
-
-    end_submission: {
-      name: "End of frame graphics submission",
       queue: "Graphics",
       _comment: "Mandatory end of graphics submission, must be met with a matching begin_submission"
     }
