@@ -510,8 +510,7 @@ FlipY(vec2 uv)
 float
 LinearizeDepth(float depth)
 {
-	float z = depth * 2.0f - 1.0f;
-	return (2.0f * FocalLengthNearFar.z) / (FocalLengthNearFar.w + FocalLengthNearFar.z - z * (FocalLengthNearFar.w - FocalLengthNearFar.z));
+	return depth / (FocalLengthNearFar.w - depth * (FocalLengthNearFar.w - FocalLengthNearFar.z));
 }
 
 //-------------------------------------------------------------------------------------------------------------
@@ -530,8 +529,8 @@ DelinearizeDepth(float depth)
 vec4
 PixelToProjection(vec2 screenCoord, float depth)
 {
-	vec4 projectionSpace = vec4(screenCoord * 2.0f - 1.0f, depth, 1.0f);
-	return projectionSpace;
+	// we use DX depth range [0,1], for GL where depth is [-1,1], we would need depth * 2 - 1 too
+	return vec4(screenCoord * 2.0f - 1.0f, depth, 1.0f);
 }
 
 //-------------------------------------------------------------------------------------------------------------
@@ -541,7 +540,7 @@ PixelToProjection(vec2 screenCoord, float depth)
 vec4
 PixelToView(vec2 screenCoord, float depth)
 {
-	vec4 projectionSpace = vec4(screenCoord * 2.0f - 1.0f, depth, 1.0f);
+	vec4 projectionSpace = PixelToProjection(screenCoord, depth);
     vec4 viewSpace = InvProjection * projectionSpace;
     viewSpace /= viewSpace.w;
 	return viewSpace;
@@ -554,11 +553,18 @@ PixelToView(vec2 screenCoord, float depth)
 vec4
 PixelToWorld(vec2 screenCoord, float depth)
 {
-	vec4 projectionSpace = vec4((screenCoord * 2.0f - 1.0f), depth, 1.0f);
-    vec4 viewSpace = InvProjection * projectionSpace;
-    viewSpace /= viewSpace.w;
-    vec4 worldSpace = InvView * viewSpace;
-	return worldSpace;
+	vec4 viewSpace = PixelToView(screenCoord, depth);
+	return InvView * viewSpace;
+}
+
+//-------------------------------------------------------------------------------------------------------------
+/**
+	Convert view space to world space
+*/
+vec4
+ViewToWorld(const vec4 viewSpace)
+{
+	return InvView * viewSpace;
 }
 
 //------------------------------------------------------------------------------
@@ -569,44 +575,6 @@ vec3
 GetPosition(mat4x4 transform)
 {
 	return transform[2].xyz;
-}
-
-
-//------------------------------------------------------------------------------
-/**
-	Unpack a 1D index into a 3D index
-*/
-uint3 
-Unpack1DTo3D(uint index1D, uint width, uint height)
-{
-	uint i = index1D % width;
-	uint j = index1D % (width * height) / width;
-	uint k = index1D / (width * height);
-
-	return uint3(i, j, k);
-}
-
-//------------------------------------------------------------------------------
-/**
-	Pack a 3D index into a 1D array index
-*/
-uint 
-Pack3DTo1D(uint3 index3D, uint width, uint height)
-{
-	return index3D.x + (width * (index3D.y + height * index3D.z));
-}
-
-//------------------------------------------------------------------------------
-/**
-	Calculate 3D index from screen position and depth
-*/
-uint3 CalculateClusterIndex(vec2 screenPos, float depth, uvec2 blockSize, float viewNear, float fov)
-{
-	uint i = uint(screenPos.x / blockSize.x);
-	uint j = uint(screenPos.y / blockSize.y);
-	uint k = uint(log(-depth / viewNear) * fov);
-
-	return uint3(i, j, k);
 }
 
 //------------------------------------------------------------------------------
