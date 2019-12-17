@@ -72,6 +72,7 @@ csMainX()
 	const uint x = apronStart + gl_LocalInvocationID.x;
 	const uint y = gl_WorkGroupID.y;
 	SharedMemory[gl_LocalInvocationID.x] = texelFetch(sampler2D(HBAOX, LinearState), ivec2(x, y), 0).xy;
+	groupMemoryBarrier();
 	barrier();
 	
 	const uint writePos = tileStart + gl_LocalInvocationID.x;
@@ -136,6 +137,7 @@ csMainY()
 	const uint x = gl_WorkGroupID.y;
 	const uint y = apronStart + gl_LocalInvocationID.x;
 	SharedMemory[gl_LocalInvocationID.x] = texelFetch(sampler2D(HBAOY, LinearState), ivec2(x, y), 0).xy;
+	groupMemoryBarrier();
 	barrier();
 	
 	const uint writePos = tileStart + gl_LocalInvocationID.x;

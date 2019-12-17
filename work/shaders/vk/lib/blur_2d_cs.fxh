@@ -118,12 +118,12 @@ csMainX()
 	const uint x = apronStart + gl_LocalInvocationID.x;
 	const uint y = gl_WorkGroupID.y;
 	const ivec2 sampleIndex = ivec2(x, y);
-	const vec2 sampleCoord = sampleIndex / vec2(size);
 	
 	// load into workgroup saved memory, this allows us to use the original pixel even though 
 	// we might have replaced it with the result from this thread!
 	SharedMemory[gl_LocalInvocationID.x] = IMAGE_LOAD_SWIZZLE(texelFetch(sampler2D(InputImageX, InputSampler), sampleIndex, 0));
-	groupMemoryBarrier(); barrier();
+	groupMemoryBarrier();
+	barrier();
 	
 	const uint writePos = tileStart + gl_LocalInvocationID.x;
 	const uint tileEndClamped = min(tileEnd, uint(size.x));
@@ -169,7 +169,6 @@ csMainY()
 	const uint x = gl_WorkGroupID.y;
 	const uint y = apronStart + gl_LocalInvocationID.x;
 	const ivec2 sampleIndex = ivec2(x, y);
-	const vec2 sampleCoord = sampleIndex / vec2(size);
 	
 	// load into workgroup saved memory, this allows us to use the original pixel even though 
 	// we might have replaced it with the result from this thread!
