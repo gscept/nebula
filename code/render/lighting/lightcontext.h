@@ -16,6 +16,7 @@ namespace Lighting
 {
 class LightContext : public Graphics::GraphicsContext
 {
+
 	_DeclareContext();
 public:
 
@@ -88,7 +89,9 @@ private:
 	static void SetGlobalLightViewProjTransform(const Graphics::ContextEntityId id, const Math::matrix44& transform);
 
 	/// run light classification compute
-	static void UpdateClustersAndCull();
+	static void CullAndClassify();
+	/// run light deferred
+	static void ComputeLighting();
 	/// render lights
 	static void RenderLights();
 	/// run shadow map blurring

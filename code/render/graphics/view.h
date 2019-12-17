@@ -32,6 +32,8 @@ public:
 	/// end frame
 	void EndFrame(const IndexT frameIndex, const Timing::Time time);
 
+	/// get frame script
+	const Ptr<Frame::FrameScript> GetFrameScript() const;
 
 	/// set camera
 	void SetCamera(const GraphicsEntityId& camera);
@@ -122,6 +124,15 @@ inline void
 View::Disable()
 {
 	this->enabled = false;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const Ptr<Frame::FrameScript> 
+View::GetFrameScript() const
+{
+	return this->script;
 }
 
 } // namespace Graphics

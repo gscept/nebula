@@ -61,6 +61,13 @@ ENDIF()
 				streamskeletonpool.h
 			)
 
+        fips_dir(clustering)
+            fips_files(
+                clustercontext.cc
+                clustercontext.h
+                clusterutil.h
+            )
+
 		fips_dir(coreanimation)
 			fips_files(
 				animclip.cc
@@ -104,6 +111,7 @@ ENDIF()
 				textrendererbase.h
 				transformdevicebase.cc
 				transformdevicebase.h
+                vertexcomponentbase.h
 			)
 		fips_dir(coregraphics)
 			fips_files(

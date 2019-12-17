@@ -82,5 +82,4 @@ View::EndFrame(const IndexT frameIndex, const Timing::Time time)
 	n_assert(inBeginFrame);
 	inBeginFrame = false;
 }
-
 } // namespace Graphics
