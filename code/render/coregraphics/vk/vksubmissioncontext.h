@@ -20,16 +20,13 @@ enum
 {
 	SubmissionContextNumCycles,
 	SubmissionContextCmdBuffer,
-	SubmissionContextSemaphore,
 	SubmissionContextRetiredCmdBuffer,
-	SubmissionContextRetiredSemaphore,
 	SubmissionContextFence,
 	SubmissionContextFreeBuffers,
 	SubmissionContextFreeDeviceMemories,
 	SubmissionContextFreeImages,
 	SubmissionContextFreeCommandBuffers,
 	SubmissionContextFreeHostMemories,
-	SubmissionContextFreeSemaphores,
 	SubmissionContextCurrentIndex,
 	SubmissionContextCmdCreateInfo,
 	SubmissionContextName
@@ -38,16 +35,13 @@ enum
 typedef Ids::IdAllocator<
 	SizeT,
 	Util::FixedArray<CoreGraphics::CommandBufferId>,
-	Util::FixedArray<CoreGraphics::SemaphoreId>,
 	Util::FixedArray<Util::Array<CoreGraphics::CommandBufferId>>,
-	Util::FixedArray<Util::Array<CoreGraphics::SemaphoreId>>,
 	Util::FixedArray<CoreGraphics::FenceId>,
 	Util::FixedArray<Util::Array<std::tuple<VkDevice, VkBuffer>>>,
 	Util::FixedArray<Util::Array<std::tuple<VkDevice, VkDeviceMemory>>>,
 	Util::FixedArray<Util::Array<std::tuple<VkDevice, VkImage>>>,
 	Util::FixedArray<Util::Array<std::tuple<VkDevice, VkCommandPool, VkCommandBuffer>>>,
 	Util::FixedArray<Util::Array<void*>>,
-	Util::FixedArray<Util::Array<CoreGraphics::SemaphoreId>>,
 	IndexT,
 	CoreGraphics::CommandBufferCreateInfo,
 	Util::String

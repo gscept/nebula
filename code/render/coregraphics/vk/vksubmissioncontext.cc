@@ -84,9 +84,7 @@ CreateSubmissionContext(const SubmissionContextCreateInfo& info)
 
 	submissionContextAllocator.Get<SubmissionContextNumCycles>(id) = info.numBuffers;
 	submissionContextAllocator.Get<SubmissionContextCmdBuffer>(id).Resize(info.numBuffers);
-	submissionContextAllocator.Get<SubmissionContextSemaphore>(id).Resize(info.numBuffers);
 	submissionContextAllocator.Get<SubmissionContextRetiredCmdBuffer>(id).Resize(info.numBuffers);
-	submissionContextAllocator.Get<SubmissionContextRetiredSemaphore>(id).Resize(info.numBuffers);
 	submissionContextAllocator.Get<SubmissionContextCmdCreateInfo>(id) = info.cmdInfo;
 #if NEBULA_GRAPHICS_DEBUG
 	submissionContextAllocator.Get<SubmissionContextName>(id) = info.name;
@@ -110,7 +108,6 @@ CreateSubmissionContext(const SubmissionContextCreateInfo& info)
 	submissionContextAllocator.Get<SubmissionContextFreeDeviceMemories>(id).Resize(info.numBuffers);
 	submissionContextAllocator.Get<SubmissionContextFreeImages>(id).Resize(info.numBuffers);
 	submissionContextAllocator.Get<SubmissionContextFreeCommandBuffers>(id).Resize(info.numBuffers);
-	submissionContextAllocator.Get<SubmissionContextFreeSemaphores>(id).Resize(info.numBuffers);
 	submissionContextAllocator.Get<SubmissionContextFreeHostMemories>(id).Resize(info.numBuffers);
 
 	ret.id24 = id;
@@ -125,13 +122,11 @@ void
 DestroySubmissionContext(const SubmissionContextId id)
 {
 	const Util::FixedArray<CommandBufferId>& bufs = submissionContextAllocator.Get<SubmissionContextCmdBuffer>(id.id24);
-	const Util::FixedArray<SemaphoreId>& sems = submissionContextAllocator.Get<SubmissionContextSemaphore>(id.id24);
 
 	// go through buffers and semaphores and clear the ones created
 	for (IndexT i = 0; i < bufs.Size(); i++)
 	{
 		DestroyCommandBuffer(bufs[i]);
-		DestroySemaphore(sems[i]);
 	}
 	submissionContextAllocator.Dealloc(id.id24);
 }
@@ -140,25 +135,19 @@ DestroySubmissionContext(const SubmissionContextId id)
 /**
 */
 void 
-SubmissionContextNewBuffer(const SubmissionContextId id, CommandBufferId& outBuf, SemaphoreId& outSem)
+SubmissionContextNewBuffer(const SubmissionContextId id, CommandBufferId& outBuf)
 {
 	const IndexT currentIndex = submissionContextAllocator.Get<SubmissionContextCurrentIndex>(id.id24);
 	CommandBufferId& oldBuf = submissionContextAllocator.Get<SubmissionContextCmdBuffer>(id.id24)[currentIndex];
-	SemaphoreId& oldSem = submissionContextAllocator.Get<SubmissionContextSemaphore>(id.id24)[currentIndex];
 
 	// append to retired buffers
 	if (oldBuf != CommandBufferId::Invalid())
 		submissionContextAllocator.Get<SubmissionContextRetiredCmdBuffer>(id.id24)[currentIndex].Append(outBuf);
-	if (oldSem != SemaphoreId::Invalid())
-		submissionContextAllocator.Get<SubmissionContextRetiredSemaphore>(id.id24)[currentIndex].Append(outSem);
 
 	// create new buffer and semaphore, we will delete the retired buffers upon next cycle when we come back
 	CommandBufferCreateInfo cmdInfo = submissionContextAllocator.Get<SubmissionContextCmdCreateInfo>(id.id24);
 	outBuf = CreateCommandBuffer(cmdInfo);
 	oldBuf = outBuf;
-	SemaphoreCreateInfo semInfo{};
-	outSem = CreateSemaphore(semInfo);
-	oldSem = outSem;
 
 #if NEBULA_GRAPHICS_DEBUG
 	ObjectSetName(outBuf, Util::String::Sprintf("%s Buffer %d", submissionContextAllocator.Get<SubmissionContextName>(id.id24).AsCharPtr(), currentIndex));
@@ -179,37 +168,12 @@ SubmissionContextGetCmdBuffer(const SubmissionContextId id)
 //------------------------------------------------------------------------------
 /**
 */
-SemaphoreId 
-SubmissionContextGetSemaphore(const SubmissionContextId id)
-{
-	// get fence so we can wait for it
-	IndexT currentIndex = submissionContextAllocator.Get<SubmissionContextCurrentIndex>(id.id24);
-	return submissionContextAllocator.Get<SubmissionContextSemaphore>(id.id24)[currentIndex];
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 void 
 SubmissionContextFreeHostMemory(const SubmissionContextId id, void* buf)
 {
 	const IndexT currentIndex = submissionContextAllocator.Get<SubmissionContextCurrentIndex>(id.id24);
 	Util::Array<void*>& memories = submissionContextAllocator.Get<SubmissionContextFreeHostMemories>(id.id24)[currentIndex];
 	memories.Append(buf);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-SubmissionContextFreeSemaphore(const SubmissionContextId id, const SemaphoreId sem)
-{
-	if (sem != SemaphoreId::Invalid())
-	{
-		const IndexT currentIndex = submissionContextAllocator.Get<SubmissionContextCurrentIndex>(id.id24);
-		Util::Array<CoreGraphics::SemaphoreId>& semaphores = submissionContextAllocator.Get<SubmissionContextFreeSemaphores>(id.id24)[currentIndex];
-		semaphores.Append(sem);
-	}	
 }
 
 //------------------------------------------------------------------------------
@@ -246,15 +210,12 @@ SubmissionContextNextCycle(const SubmissionContextId id)
 
 	// clean up retired buffers and semaphores
 	Util::Array<CommandBufferId>& bufs = submissionContextAllocator.Get<SubmissionContextRetiredCmdBuffer>(id.id24)[currentIndex];
-	Util::Array<SemaphoreId>& sems = submissionContextAllocator.Get<SubmissionContextRetiredSemaphore>(id.id24)[currentIndex];
 
 	for (IndexT i = 0; i < bufs.Size(); i++)
 	{
 		DestroyCommandBuffer(bufs[i]);
-		DestroySemaphore(sems[i]);
 	}
 	bufs.Clear();
-	sems.Clear();
 
 	// also destroy current buffers
 	CommandBufferId& buf = submissionContextAllocator.Get<SubmissionContextCmdBuffer>(id.id24)[currentIndex];
@@ -262,13 +223,6 @@ SubmissionContextNextCycle(const SubmissionContextId id)
 	{
 		DestroyCommandBuffer(buf);
 		buf = CommandBufferId::Invalid();
-	}
-
-	SemaphoreId& sem = submissionContextAllocator.Get<SubmissionContextSemaphore>(id.id24)[currentIndex];
-	if (sem != SemaphoreId::Invalid())
-	{
-		DestroySemaphore(sem);
-		sem = SemaphoreId::Invalid();
 	}
 
 	// delete any pending resources this context has allocated
@@ -291,11 +245,6 @@ SubmissionContextNextCycle(const SubmissionContextId id)
 	for (IndexT i = 0; i < commandBuffers.Size(); i++)
 		vkFreeCommandBuffers(std::get<0>(commandBuffers[i]), std::get<1>(commandBuffers[i]), 1, &std::get<2>(commandBuffers[i]));
 	commandBuffers.Clear();
-
-	Util::Array<CoreGraphics::SemaphoreId>& semaphores = submissionContextAllocator.Get<SubmissionContextFreeSemaphores>(id.id24)[currentIndex];
-	for (IndexT i = 0; i < semaphores.Size(); i++)
-		DestroySemaphore(semaphores[i]);
-	semaphores.Clear();
 
 	Util::Array<void*>& hostMemories = submissionContextAllocator.Get<SubmissionContextFreeHostMemories>(id.id24)[currentIndex];
 	for (IndexT i = 0; i < hostMemories.Size(); i++)

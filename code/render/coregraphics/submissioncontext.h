@@ -45,16 +45,12 @@ SubmissionContextId CreateSubmissionContext(const SubmissionContextCreateInfo& i
 void DestroySubmissionContext(const SubmissionContextId id);
 
 /// create new buffer and retire the old, outputs the new buffer and semaphore to be used for recording
-void SubmissionContextNewBuffer(const SubmissionContextId id, CommandBufferId& outBuf, SemaphoreId& outSem);
+void SubmissionContextNewBuffer(const SubmissionContextId id, CommandBufferId& outBuf);
 /// get current buffer
 CommandBufferId SubmissionContextGetCmdBuffer(const SubmissionContextId id);
-/// get current semaphore
-SemaphoreId SubmissionContextGetSemaphore(const SubmissionContextId id);
 
 /// add void* to memory free upon completion
 void SubmissionContextFreeHostMemory(const SubmissionContextId id, void* buf);
-/// add semaphore to delete
-void SubmissionContextFreeSemaphore(const SubmissionContextId id, const SemaphoreId sem);
 
 /// get current fence object
 const FenceId SubmissionContextGetFence(const SubmissionContextId id);

@@ -50,32 +50,23 @@ struct GraphicsDeviceState
 
 	CoreGraphics::SubmissionContextId resourceSubmissionContext;
 	CoreGraphics::CommandBufferId resourceSubmissionCmdBuffer;
-	CoreGraphics::SemaphoreId resourceSubmissionSemaphore;
 	CoreGraphics::FenceId resourceSubmissionFence;
 	Threading::CriticalSection resourceSubmissionCriticalSection;
 	bool resourceSubmissionActive;
 
 	CoreGraphics::SubmissionContextId setupSubmissionContext;
 	CoreGraphics::CommandBufferId setupSubmissionCmdBuffer;
-	CoreGraphics::SemaphoreId setupSubmissionSemaphore;
 	bool setupSubmissionActive;
 
 	CoreGraphics::SubmissionContextId gfxSubmission;
 	CoreGraphics::CommandBufferId gfxCmdBuffer;
-	CoreGraphics::SemaphoreId gfxPrevSemaphore;
-	CoreGraphics::SemaphoreId gfxSemaphore;
-	CoreGraphics::SemaphoreId gfxWaitSemaphore;
 	CoreGraphics::FenceId gfxFence;
 
 	Util::FixedArray<CoreGraphics::SemaphoreId> presentSemaphores;
 	Util::FixedArray<CoreGraphics::SemaphoreId> renderingFinishedSemaphores;
-	Util::FixedArray<CoreGraphics::SemaphoreId> lastFrameSemaphores;
 
 	CoreGraphics::SubmissionContextId computeSubmission;
 	CoreGraphics::CommandBufferId computeCmdBuffer;
-	CoreGraphics::SemaphoreId computePrevSemaphore;
-	CoreGraphics::SemaphoreId computeSemaphore;
-	CoreGraphics::SemaphoreId computeWaitSemaphore;
 	CoreGraphics::FenceId computeFence;
 
 	uint globalGraphicsConstantBufferMaxValue[NumConstantBufferTypes];

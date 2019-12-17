@@ -22,7 +22,7 @@ VkSemaphore
 SemaphoreGetVk(const CoreGraphics::SemaphoreId& id)
 {
 	if (id == CoreGraphics::SemaphoreId::Invalid()) return VK_NULL_HANDLE;
-	else											return semaphoreAllocator.Get<1>(id.id24);
+	else											return semaphoreAllocator.Get<Semaphore_VkHandle>(id.id24);
 }
 }
 
@@ -40,7 +40,7 @@ CreateSemaphore(const SemaphoreCreateInfo& info)
 	{
 		VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO_KHR,
 		nullptr,
-		VkSemaphoreTypeKHR::VK_SEMAPHORE_TYPE_BINARY_KHR,
+		info.type == Binary ? VkSemaphoreTypeKHR::VK_SEMAPHORE_TYPE_BINARY_KHR : VkSemaphoreTypeKHR::VK_SEMAPHORE_TYPE_TIMELINE_KHR,
 		0
 	};
 	VkSemaphoreCreateInfo cinfo =
@@ -52,9 +52,10 @@ CreateSemaphore(const SemaphoreCreateInfo& info)
 
 	Ids::Id32 id = semaphoreAllocator.Alloc();
 	VkDevice dev = Vulkan::GetCurrentDevice();
-	semaphoreAllocator.Get<0>(id) = dev;
+	semaphoreAllocator.Get<Semaphore_Device>(id) = dev;
+	semaphoreAllocator.Get<Semaphore_Type>(id) = info.type;
 
-	vkCreateSemaphore(dev, &cinfo, nullptr, &semaphoreAllocator.Get<1>(id));
+	vkCreateSemaphore(dev, &cinfo, nullptr, &semaphoreAllocator.Get<Semaphore_VkHandle>(id));
 
 	SemaphoreId ret;
 	ret.id24 = id;
@@ -68,10 +69,49 @@ CreateSemaphore(const SemaphoreCreateInfo& info)
 void
 DestroySemaphore(const SemaphoreId& semaphore)
 {
-	vkDestroySemaphore(semaphoreAllocator.Get<0>(semaphore.id24), semaphoreAllocator.Get<1>(semaphore.id24), nullptr);
+	vkDestroySemaphore(semaphoreAllocator.Get<Semaphore_Device>(semaphore.id24), semaphoreAllocator.Get<Semaphore_VkHandle>(semaphore.id24), nullptr);
 	semaphoreAllocator.Dealloc(semaphore.id24);
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+uint64 
+SemaphoreGetIndex(const SemaphoreId& semaphore)
+{
+	return semaphoreAllocator.Get<Semaphore_LastIndex>(semaphore.id24);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+SemaphoreSignal(const SemaphoreId& semaphore)
+{
+	switch (semaphoreAllocator.Get<Semaphore_Type>(semaphore.id24))
+	{
+	case SemaphoreType::Binary:
+		semaphoreAllocator.Get<Semaphore_LastIndex>(semaphore.id24) = 1;
+		break;
+	case SemaphoreType::Timeline:
+		semaphoreAllocator.Get<Semaphore_LastIndex>(semaphore.id24)++;
+		break;
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+SemaphoreReset(const SemaphoreId& semaphore)
+{
+	switch (semaphoreAllocator.Get<Semaphore_Type>(semaphore.id24))
+	{
+	case SemaphoreType::Binary:
+		semaphoreAllocator.Get<Semaphore_LastIndex>(semaphore.id24) = 0;
+		break;
+	}
+}
 
 } // namespace Vulkan
 

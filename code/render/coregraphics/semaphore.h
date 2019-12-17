@@ -19,15 +19,28 @@ namespace CoreGraphics
 
 ID_24_8_TYPE(SemaphoreId);
 
+enum SemaphoreType
+{
+	Binary,			// binary semaphore means it can only be signaled or unsignaled
+	Timeline		// a timeline semaphore
+};
+
 struct SemaphoreCreateInfo
 {
-	CoreGraphics::BarrierStage dependency;
+	SemaphoreType type;
 };
 
 /// create semaphore
 SemaphoreId CreateSemaphore(const SemaphoreCreateInfo& info);
 /// destroy semaphore
 void DestroySemaphore(const SemaphoreId& semaphore);
+
+/// get semaphore index
+uint64 SemaphoreGetIndex(const SemaphoreId& semaphore);
+/// signal semaphore
+void SemaphoreSignal(const SemaphoreId& semaphore);
+/// reset semaphore
+void SemaphoreReset(const SemaphoreId& semaphore);
 
 } // namespace CoreGraphics
 

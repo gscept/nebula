@@ -13,9 +13,18 @@
 namespace Vulkan
 {
 
+enum
+{
+	Semaphore_Device,
+	Semaphore_VkHandle,
+	Semaphore_Type,
+	Semaphore_LastIndex
+};
 typedef Ids::IdAllocator<
 	VkDevice,
-	VkSemaphore
+	VkSemaphore,
+	CoreGraphics::SemaphoreType,
+	uint64
 > VkSemaphoreAllocator;
 extern VkSemaphoreAllocator semaphoreAllocator;
 

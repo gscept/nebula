@@ -1372,12 +1372,10 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	cmdCreateInfo.usage = CommandGfx;
 	state.gfxSubmission = CreateSubmissionContext({ cmdCreateInfo, info.numBufferedFrames, true });
 	state.gfxCmdBuffer = CommandBufferId::Invalid();
-	state.gfxSemaphore = SemaphoreId::Invalid();
 
 	cmdCreateInfo.usage = CommandCompute;
 	state.computeSubmission = CreateSubmissionContext({ cmdCreateInfo, info.numBufferedFrames, true });
 	state.computeCmdBuffer = CommandBufferId::Invalid();
-	state.computeSemaphore = SemaphoreId::Invalid();
 
 	CommandBufferBeginInfo beginInfo{ true, false, false };
 
@@ -1859,14 +1857,6 @@ BeginFrame(IndexT frameIndex)
 		// vkCmdResetQueryPool(GetMainBuffer(GraphicsQueueType), state.queryPools[i], queries.queryStartIndex[i], 1000);
 	}
 
-	state.gfxPrevSemaphore     = SemaphoreId::Invalid();
-	state.computePrevSemaphore = SemaphoreId::Invalid();
-	state.gfxSemaphore = SemaphoreId::Invalid();
-	state.computeSemaphore = SemaphoreId::Invalid();
-	state.gfxWaitSemaphore     = SemaphoreId::Invalid();
-	state.computeWaitSemaphore = SemaphoreId::Invalid();
-	
-
 	// update bindless texture descriptors
 	VkShaderServer::Instance()->SubmitTextureDescriptorChanges();
 
@@ -1887,11 +1877,9 @@ BeginSubmission(CoreGraphicsQueueType queue)
 
 	if (queue == GraphicsQueueType)
 	{
-		// save previous semaphore
-		state.gfxPrevSemaphore = state.gfxSemaphore;
 
 		// generate new buffer and semaphore
-		CoreGraphics::SubmissionContextNewBuffer(state.gfxSubmission, state.gfxCmdBuffer, state.gfxSemaphore);
+		CoreGraphics::SubmissionContextNewBuffer(state.gfxSubmission, state.gfxCmdBuffer);
 
 		// begin recording the new buffer
 		const CommandBufferBeginInfo cmdInfo =
@@ -1931,11 +1919,8 @@ BeginSubmission(CoreGraphicsQueueType queue)
 	}
 	else if (queue == ComputeQueueType)
 	{
-		// save previous semaphore
-		state.computePrevSemaphore = state.computeSemaphore;
-
 		// generate new buffer and semaphore
-		CoreGraphics::SubmissionContextNewBuffer(state.computeSubmission, state.computeCmdBuffer, state.computeSemaphore);
+		CoreGraphics::SubmissionContextNewBuffer(state.computeSubmission, state.computeCmdBuffer);
 
 		// begin recording the new buffer
 		const CommandBufferBeginInfo cmdInfo =
@@ -2542,7 +2527,7 @@ GetResourceSubmissionContext()
 	if (!state.resourceSubmissionActive)
 	{
 		state.resourceSubmissionFence = SubmissionContextNextCycle(state.resourceSubmissionContext);
-		SubmissionContextNewBuffer(state.resourceSubmissionContext, state.resourceSubmissionCmdBuffer, state.resourceSubmissionSemaphore);
+		SubmissionContextNewBuffer(state.resourceSubmissionContext, state.resourceSubmissionCmdBuffer);
 
 		// begin recording
 		CommandBufferBeginInfo beginInfo{ true, false, false };
@@ -2563,7 +2548,7 @@ GetSetupSubmissionContext()
 	// if not active, issue a new resource submission (only done once per frame)
 	if (!state.setupSubmissionActive)
 	{
-		SubmissionContextNewBuffer(state.setupSubmissionContext, state.setupSubmissionCmdBuffer, state.setupSubmissionSemaphore);
+		SubmissionContextNewBuffer(state.setupSubmissionContext, state.setupSubmissionCmdBuffer);
 		state.setupSubmissionActive = true;
 
 		// begin recording
