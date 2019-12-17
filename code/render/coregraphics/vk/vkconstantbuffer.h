@@ -16,6 +16,7 @@
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
 #include "coregraphics/constantbuffer.h"
+#include "ids/idallocator.h"
 #include <lowlevel/afxapi.h>
 namespace Vulkan
 {

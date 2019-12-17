@@ -24,8 +24,7 @@
 
 namespace CoreGraphics
 {
-	void SetShaderProgram(const CoreGraphics::ShaderProgramId pro);
-	void SetShaderProgram(const CoreGraphics::ShaderId shaderId, const CoreGraphics::ShaderFeature::Mask mask);
+	void SetShaderProgram(const CoreGraphics::ShaderProgramId pro, const CoreGraphicsQueueType queue);
 }
 
 namespace Vulkan
@@ -114,8 +113,7 @@ private:
 	friend class VkPipelineDatabase;
 	friend const CoreGraphics::ConstantBufferId CoreGraphics::CreateConstantBuffer(const CoreGraphics::ConstantBufferCreateInfo& info);
 
-	friend void ::CoreGraphics::SetShaderProgram(const CoreGraphics::ShaderProgramId pro);
-	friend void ::CoreGraphics::SetShaderProgram(const CoreGraphics::ShaderId shaderId, const CoreGraphics::ShaderFeature::Mask mask);
+	friend void ::CoreGraphics::SetShaderProgram(const CoreGraphics::ShaderProgramId pro, const CoreGraphicsQueueType queue);
 
 	/// get shader program
 	AnyFX::VkProgram* GetProgram(const CoreGraphics::ShaderProgramId shaderProgramId);

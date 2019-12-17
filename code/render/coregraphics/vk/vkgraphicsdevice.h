@@ -73,7 +73,7 @@ void Blit(const VkImage from, Math::rectangle<SizeT> fromRegion, IndexT fromMip,
 /// update descriptors
 void BindDescriptorsGraphics(const VkDescriptorSet* descriptors, uint32_t baseSet, uint32_t setCount, const uint32_t* offsets, uint32_t offsetCount, bool shared = false);
 /// update descriptors
-void BindDescriptorsCompute(const VkDescriptorSet* descriptors, uint32_t baseSet, uint32_t setCount, const uint32_t* offsets, uint32_t offsetCount);
+void BindDescriptorsCompute(const VkDescriptorSet* descriptors, uint32_t baseSet, uint32_t setCount, const uint32_t* offsets, uint32_t offsetCount, const CoreGraphicsQueueType queue);
 /// update push ranges
 void UpdatePushRanges(const VkShaderStageFlags& stages, const VkPipelineLayout& layout, uint32_t offset, uint32_t size, void* data);
 
@@ -88,7 +88,7 @@ void SetInputLayoutInfo(VkPipelineInputAssemblyStateCreateInfo* inputLayout);
 /// create a new pipeline (or fetch from cache) and bind to command queue
 void CreateAndBindGraphicsPipeline();
 /// bind compute pipeline
-void BindComputePipeline(const VkPipeline& pipeline, const VkPipelineLayout& layout);
+void BindComputePipeline(const VkPipeline& pipeline, const VkPipelineLayout& layout, const CoreGraphicsQueueType queue);
 /// bind no pipeline (effectively making all descriptor binds happen on both graphics and compute)
 void UnbindPipeline();
 /// set array of viewports directly

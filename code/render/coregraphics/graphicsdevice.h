@@ -130,7 +130,7 @@ void RemoveBackBufferTexture(const CoreGraphics::TextureId tex);
 /// begin complete frame
 bool BeginFrame(IndexT frameIndex);
 /// start a new submission, with an optional argument for waiting for another queue
-void BeginSubmission(CoreGraphicsQueueType queue, CoreGraphicsQueueType waitQueue);
+void BeginSubmission(CoreGraphicsQueueType queue);
 /// begin a rendering pass
 void BeginPass(const CoreGraphics::PassId pass);
 /// progress to next subpass	
@@ -158,13 +158,11 @@ void SetPrimitiveGroup(const CoreGraphics::PrimitiveGroup& pg);
 /// get current primitive group
 const CoreGraphics::PrimitiveGroup& GetPrimitiveGroup();
 /// set shader program
-void SetShaderProgram(const CoreGraphics::ShaderProgramId pro);
-/// set shader program
-void SetShaderProgram(const CoreGraphics::ShaderId shaderId, const CoreGraphics::ShaderFeature::Mask mask);
+void SetShaderProgram(const CoreGraphics::ShaderProgramId pro, const CoreGraphicsQueueType queue = GraphicsQueueType);
 /// set resource table
-void SetResourceTable(const CoreGraphics::ResourceTableId table, const IndexT slot, ShaderPipeline pipeline, const Util::FixedArray<uint>& offsets);
+void SetResourceTable(const CoreGraphics::ResourceTableId table, const IndexT slot, ShaderPipeline pipeline, const Util::FixedArray<uint>& offsets, const CoreGraphicsQueueType queue = GraphicsQueueType);
 /// set resource table using raw offsets
-void SetResourceTable(const CoreGraphics::ResourceTableId table, const IndexT slot, ShaderPipeline pipeline, uint32 numOffsets, uint32* offsets);
+void SetResourceTable(const CoreGraphics::ResourceTableId table, const IndexT slot, ShaderPipeline pipeline, uint32 numOffsets, uint32* offsets, const CoreGraphicsQueueType queue = GraphicsQueueType);
 /// set resoure table layout
 void SetResourceTablePipeline(const CoreGraphics::ResourcePipelineId layout);
 
@@ -243,13 +241,13 @@ void Draw();
 /// draw indexed, instanced primitives
 void DrawInstanced(SizeT numInstances, IndexT baseInstance);
 /// perform computation
-void Compute(int dimX, int dimY, int dimZ);
+void Compute(int dimX, int dimY, int dimZ, const CoreGraphicsQueueType queue = GraphicsQueueType);
 /// end current batch
 void EndBatch();
 /// end current pass
 void EndPass();
 /// end the current submission, 
-void EndSubmission(CoreGraphicsQueueType queue, bool endOfFrame = false);
+void EndSubmission(CoreGraphicsQueueType queue, CoreGraphicsQueueType blockQueue, bool endOfFrame = false);
 /// end current frame
 void EndFrame(IndexT frameIndex);
 /// check if inside BeginFrame

@@ -36,10 +36,17 @@ using namespace Vulkan;
 SemaphoreId
 CreateSemaphore(const SemaphoreCreateInfo& info)
 {
+	VkSemaphoreTypeCreateInfoKHR ext =
+	{
+		VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO_KHR,
+		nullptr,
+		VkSemaphoreTypeKHR::VK_SEMAPHORE_TYPE_BINARY_KHR,
+		0
+	};
 	VkSemaphoreCreateInfo cinfo =
 	{
 		VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-		nullptr,
+		&ext,
 		0
 	};
 

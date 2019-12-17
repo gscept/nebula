@@ -12,6 +12,25 @@ namespace Vulkan
 //------------------------------------------------------------------------------
 /**
 */
+VkSubContextHandler::VkSubContextHandler()
+{
+	lastSubmissions[GraphicsQueueType] = nullptr;
+	lastSubmissions[ComputeQueueType] = nullptr;
+	lastSubmissions[TransferQueueType] = nullptr;
+	lastSubmissions[SparseQueueType] = nullptr;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+VkSubContextHandler::~VkSubContextHandler()
+{
+	// empty
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 VkSubContextHandler::Setup(VkDevice dev, const Util::FixedArray<uint> indexMap, const Util::FixedArray<uint> families)
 {
@@ -56,6 +75,30 @@ VkSubContextHandler::Setup(VkDevice dev, const Util::FixedArray<uint> indexMap, 
 	{
 		vkGetDeviceQueue(dev, families[SparseQueueType], i, &this->sparseQueues[i]);
 		this->sparseQueueStages[i] = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+	}
+
+	// setup timeline semaphores
+	this->timelineSubmissions.Resize(NumQueueTypes);
+	for (IndexT i = 0; i < NumQueueTypes; i++)
+	{
+		VkSemaphoreTypeCreateInfoKHR ext =
+		{
+			VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO_KHR,
+			nullptr,
+			VkSemaphoreTypeKHR::VK_SEMAPHORE_TYPE_TIMELINE_KHR,
+			0
+		};
+		VkSemaphoreCreateInfo inf =
+		{
+			VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+			&ext,
+			0
+		};
+		VkResult res = vkCreateSemaphore(this->device, &inf, nullptr, &semaphores[i]);
+		n_assert(res == VK_SUCCESS);
+
+		semaphoreSubmissionIds[i] = 0;
+		this->queueEmpty[i] = true;
 	}
 
 	this->currentDrawQueue = 0;
@@ -111,6 +154,152 @@ VkSubContextHandler::SetToNextContext(const CoreGraphicsQueueType type)
 /**
 */
 void 
+VkSubContextHandler::AppendSubmissionTimeline(CoreGraphicsQueueType type, VkCommandBuffer cmds, VkPipelineStageFlags waitFlags, CoreGraphicsQueueType waitQueue)
+{
+	Util::Array<TimelineSubmission>& submissions = this->timelineSubmissions[type];
+	submissions.Append(TimelineSubmission());
+	TimelineSubmission& sub = submissions.Back();
+	sub.queue = type;
+
+	// if command buffer is present, add to 
+	if (cmds != VK_NULL_HANDLE)
+	{
+		sub.buffers.Append(cmds);
+	}
+
+	if (waitQueue != InvalidQueueType && !this->queueEmpty[waitQueue])
+	{
+		sub.waitIndices.Append(this->semaphoreSubmissionIds[waitQueue]);
+		sub.waitSemaphores.Append(this->semaphores[waitQueue]);
+		sub.waitFlags.Append(waitFlags);
+	}
+
+	// add signal
+	sub.signalSemaphores.Append(this->semaphores[type]);
+	this->semaphoreSubmissionIds[type]++;
+	sub.signalIndices.Append(this->semaphoreSubmissionIds[type]);
+	this->queueEmpty[type] = false;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+VkSubContextHandler::AppendWaitTimeline(CoreGraphicsQueueType type, VkPipelineStageFlags waitFlags, CoreGraphicsQueueType waitQueue)
+{
+	TimelineSubmission& sub = this->timelineSubmissions[type].Back();
+
+	n_assert(waitQueue != InvalidQueueType);
+	sub.waitIndices.Append(this->semaphoreSubmissionIds[waitQueue]-1);
+	sub.waitSemaphores.Append(this->semaphores[waitQueue]);
+	sub.waitFlags.Append(waitFlags);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+VkSubContextHandler::AppendWaitTimeline(CoreGraphicsQueueType type, VkPipelineStageFlags waitFlags, CoreGraphicsQueueType waitQueue, const uint64 index)
+{
+	TimelineSubmission& sub = this->timelineSubmissions[type].Back();
+
+	n_assert(waitQueue != InvalidQueueType);
+	sub.waitIndices.Append(index);
+	sub.waitSemaphores.Append(this->semaphores[waitQueue]);
+	sub.waitFlags.Append(waitFlags);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+VkSubContextHandler::AppendWaitTimeline(CoreGraphicsQueueType type, VkPipelineStageFlags waitFlags, VkSemaphore waitSemaphore)
+{
+	TimelineSubmission& sub = this->timelineSubmissions[type].Back();
+
+	sub.waitIndices.Append(0);
+	sub.waitSemaphores.Append(waitSemaphore);
+	sub.waitFlags.Append(waitFlags);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+VkSubContextHandler::AppendSignalTimeline(CoreGraphicsQueueType type, VkSemaphore signalSemaphore)
+{
+	TimelineSubmission& sub = this->timelineSubmissions[type].Back();
+
+	sub.signalIndices.Append(0);
+	sub.signalSemaphores.Append(signalSemaphore);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint64 
+VkSubContextHandler::FlushSubmissionsTimeline(CoreGraphicsQueueType type, VkFence fence)
+{
+	Util::Array<TimelineSubmission>& submissions = this->timelineSubmissions[type];
+	uint64 ret = UINT64_MAX;
+
+	// skip flush if submission list is empty
+	if (submissions.IsEmpty())
+		return ret;
+
+	Util::FixedArray<VkSubmitInfo> submitInfos(submissions.Size());
+	Util::FixedArray<VkTimelineSemaphoreSubmitInfoKHR> extensions(submissions.Size());
+	for (IndexT i = 0; i < submissions.Size(); i++)
+	{
+		TimelineSubmission& sub = submissions[i];
+
+		// if we have no work, return
+		if (sub.buffers.Size() == 0)
+			continue;
+
+		// save last signal index for return
+		ret = sub.signalIndices.Back();
+		VkTimelineSemaphoreSubmitInfoKHR ext =
+		{
+			VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR,
+			nullptr,
+			sub.waitIndices.Size(),
+			sub.waitIndices.Size() > 0 ? sub.waitIndices.Begin() : nullptr,
+			sub.signalIndices.Size(),
+			sub.signalIndices.Size() > 0 ? sub.signalIndices.Begin() : nullptr
+		};
+		extensions[i] = ext;
+
+		VkSubmitInfo info =
+		{
+			VK_STRUCTURE_TYPE_SUBMIT_INFO,
+			&extensions[i],
+			sub.waitSemaphores.Size(),
+			sub.waitSemaphores.Size() > 0 ? sub.waitSemaphores.Begin() : nullptr,
+			sub.waitFlags.Size() > 0 ? sub.waitFlags.Begin() : nullptr,
+			sub.buffers.Size(),
+			sub.buffers.Size() > 0 ? sub.buffers.Begin() : nullptr,
+			sub.signalSemaphores.Size(),								// if we have a finish semaphore, add it on the submit
+			sub.signalSemaphores.Size() > 0 ? sub.signalSemaphores.Begin() : nullptr
+		};
+		submitInfos[i] = info;
+	}
+
+	// execute all commands
+	VkQueue queue = this->GetQueue(type);
+	VkResult res = vkQueueSubmit(queue, submitInfos.Size(), submitInfos.Begin(), fence);
+	n_assert(res == VK_SUCCESS);
+
+	// clear submissions
+	submissions.Clear();
+
+	return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
 VkSubContextHandler::AppendSubmission(CoreGraphicsQueueType type, VkCommandBuffer cmds, VkSemaphore waitSemaphore, VkPipelineStageFlags waitFlag, VkSemaphore signalSemaphore)
 {
 	Util::Array<Submission>& submissions = this->submissions[type];
@@ -118,6 +307,8 @@ VkSubContextHandler::AppendSubmission(CoreGraphicsQueueType type, VkCommandBuffe
 	// append new submission
 	submissions.Append(Submission{});
 	Submission& sub = submissions.Back();
+	this->lastSubmissions[type] = &sub;
+	sub.queue = type;
 
 	// if command buffer is present, add to 
 	if (cmds != VK_NULL_HANDLE)
@@ -296,6 +487,8 @@ VkSubContextHandler::WaitIdle(const CoreGraphicsQueueType type)
 		VkResult res = vkQueueWaitIdle((*list)[i]);
 		n_assert(res == VK_SUCCESS);
 	}
+
+	this->queueEmpty[type] = true;
 }
 
 //------------------------------------------------------------------------------

@@ -24,6 +24,7 @@ public:
 
 		CoreGraphicsQueueType queue;
 		CoreGraphicsQueueType waitQueue;
+		CoreGraphicsQueueType blockQueue;
 		Util::Array<CoreGraphics::BarrierId>* resourceResetBarriers;
 		char startOrEnd;
 #if NEBULA_GRAPHICS_DEBUG
@@ -36,6 +37,7 @@ public:
 
 	CoreGraphicsQueueType queue;
 	CoreGraphicsQueueType waitQueue;
+	CoreGraphicsQueueType blockQueue;
 	Util::Array<CoreGraphics::BarrierId>* resourceResetBarriers;
 	char startOrEnd; // 0 if start, 1 if end
 };

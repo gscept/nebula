@@ -34,12 +34,30 @@ class VkSubContextHandler
 {
 public:
 
+	/// constructor
+	VkSubContextHandler();
+	/// destructor
+	~VkSubContextHandler();
+
 	struct Submission
 	{
+		CoreGraphicsQueueType queue;
 		Util::Array<VkCommandBuffer> buffers;
 		Util::Array<VkSemaphore> waitSemaphores;
 		Util::Array<VkPipelineStageFlags> waitFlags;
 		Util::Array<VkSemaphore> signalSemaphores;
+	};
+
+	struct TimelineSubmission
+	{
+		CoreGraphicsQueueType queue;
+		Util::Array<uint64> signalIndices;
+		Util::Array<VkSemaphore> signalSemaphores;
+		Util::Array<VkCommandBuffer> buffers;
+		Util::Array<VkPipelineStageFlags> waitFlags;
+		Util::Array<VkSemaphore> waitSemaphores;
+		Util::Array<uint64> waitIndices;
+		
 	};
 
 	/// setup subcontext handler
@@ -48,6 +66,19 @@ public:
 	void Discard();
 	/// set to next context of type
 	void SetToNextContext(const CoreGraphicsQueueType type);
+
+	/// append submission to context to execute later, supports waiting for a queue
+	void AppendSubmissionTimeline(CoreGraphicsQueueType type, VkCommandBuffer cmds, VkPipelineStageFlags waitFlags, CoreGraphicsQueueType waitQueue);
+	/// append a wait on the current submission of a specific queue
+	void AppendWaitTimeline(CoreGraphicsQueueType type, VkPipelineStageFlags waitFlags, CoreGraphicsQueueType waitQueue);
+	/// append a wait on the current submission of a specific queue and singal index
+	void AppendWaitTimeline(CoreGraphicsQueueType type, VkPipelineStageFlags waitFlags, CoreGraphicsQueueType waitQueue, const uint64 index);
+	/// append a wait on a binary semaphore
+	void AppendWaitTimeline(CoreGraphicsQueueType type, VkPipelineStageFlags waitFlags, VkSemaphore waitSemaphore);
+	/// append a binary semaphore to signal when done
+	void AppendSignalTimeline(CoreGraphicsQueueType type, VkSemaphore signalSemaphore);
+	/// flush submissions
+	uint64 FlushSubmissionsTimeline(CoreGraphicsQueueType type, VkFence fence);
 
 	/// add submission to context, but don't really execute
 	void AppendSubmission(CoreGraphicsQueueType type, VkCommandBuffer cmds, VkSemaphore waitSemaphore, VkPipelineStageFlags waitFlag, VkSemaphore signalSemaphore);
@@ -88,7 +119,14 @@ private:
 	uint currentSparseQueue;
 	uint queueFamilies[NumQueueTypes];
 
+	bool queueEmpty[NumQueueTypes];
+	VkSemaphore semaphores[NumQueueTypes];
+	uint semaphoreSubmissionIds[NumQueueTypes];
+
 	Util::FixedArray<Util::Array<Submission>> submissions;
+	Submission* lastSubmissions[CoreGraphicsQueueType::NumQueueTypes];
+
+	Util::FixedArray<Util::Array<TimelineSubmission>> timelineSubmissions;
 };
 
 } // namespace Vulkan

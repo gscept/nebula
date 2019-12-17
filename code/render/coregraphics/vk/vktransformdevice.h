@@ -42,7 +42,7 @@ public:
 	/// bind descriptors for view in the graphics pipeline
 	void BindCameraDescriptorSetsGraphics();
 	/// bind descriptors for view in the compute pipeline
-	void BindCameraDescriptorSetsCompute();
+	void BindCameraDescriptorSetsCompute(const CoreGraphicsQueueType queue = GraphicsQueueType);
 private:
 
 	Math::matrix44 viewMatrixArray[6];
@@ -83,9 +83,9 @@ VkTransformDevice::BindCameraDescriptorSetsGraphics()
 /**
 */
 inline void
-VkTransformDevice::BindCameraDescriptorSetsCompute()
+VkTransformDevice::BindCameraDescriptorSetsCompute(const CoreGraphicsQueueType queue)
 {
 	IndexT bufferedFrameIndex = CoreGraphics::GetBufferedFrameIndex();
-	CoreGraphics::SetResourceTable(this->viewTables[bufferedFrameIndex], NEBULA_FRAME_GROUP, CoreGraphics::ComputePipeline, nullptr);
+	CoreGraphics::SetResourceTable(this->viewTables[bufferedFrameIndex], NEBULA_FRAME_GROUP, CoreGraphics::ComputePipeline, nullptr, queue);
 }
 } // namespace Vulkan
