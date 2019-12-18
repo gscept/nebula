@@ -54,7 +54,7 @@ EnvironmentContext::Create(const Graphics::GraphicsEntityId sun)
 
 	envState.bloomColor = Math::float4(1.0f);
 	envState.bloomThreshold = 6.0f;
-	envState.maxEyeLuminance = 1.0f;
+	envState.maxEyeLuminance = 0.5f;
 	envState.fogColor = Math::float4(0.5f);
 	envState.fogDistances[0] = 10.0f; // near
 	envState.fogDistances[1] = 1000.0f; // far
@@ -139,6 +139,11 @@ EnvironmentContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time fr
 
 	// global resource parameters
 	tickParams.NumEnvMips = envState.numGlobalEnvironmentMips;
+
+	Math::float4 balance(1.0f);
+	Math::float4::storeu(balance, tickParams.Balance);
+	tickParams.Saturation = 1.0f;
+	tickParams.FadeValue = 1.0f;
 }
 
 //------------------------------------------------------------------------------
