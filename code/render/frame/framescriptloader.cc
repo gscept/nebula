@@ -128,7 +128,7 @@ FrameScriptLoader::ParseFrameScript(const Ptr<Frame::FrameScript>& script, JzonV
 		else if (name == "begin_submission")	ParseFrameSubmission(script, 0, cur); // 0 means begin
 		else if (name == "end_submission")		ParseFrameSubmission(script, 1, cur); // 1 means end
 		else if (name == "barrier")				ParseBarrier(script, cur);
-		
+		else if (name == "comment" || name == "_comment") continue; // just skip comments
 		else
 		{
 			n_error("Frame script operation '%s' is unrecognized.\n", name.AsCharPtr());
@@ -728,6 +728,7 @@ FrameScriptLoader::ParseSubpass(const Ptr<Frame::FrameScript>& script, CoreGraph
 		else if (name == "sorted_batch")		ParseSubpassSortedBatch(script, frameSubpass, cur);
 		else if (name == "fullscreen_effect")	ParseSubpassFullscreenEffect(script, frameSubpass, cur);
 		else if (name == "system")				ParseSubpassSystem(script, frameSubpass, cur);
+		else if (name == "comment" || name == "_comment") continue; // just skip comments
 		else
 		{
 			n_error("Subpass operation '%s' is invalid.\n", name.AsCharPtr());
