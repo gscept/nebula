@@ -34,15 +34,18 @@ FrameScriptInspector::Run(const Ptr<Frame::FrameScript>& script)
 		if (ImGui::Selectable(textures.KeyAtIndex(i).Value(), i == state.selectedTarget))
 		{
 			state.selectedTarget = i;
+			break;
 		}
 	}
 
 	CoreGraphics::TextureId textureId = textures.ValueAtIndex(state.selectedTarget);
+	CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(textureId);
 
 	using namespace CoreGraphics;
 
 	// Needs to not be nuked scope since we're sending a void*
-	static Resources::ResourceId id = textureId;
+	static CoreGraphics::TextureId id;
+	id = textureId;
 
 	auto windowSize = ImGui::GetWindowSize();
 	windowSize.y -= ImGui::GetCursorPosY();
@@ -51,6 +54,8 @@ FrameScriptInspector::Run(const Ptr<Frame::FrameScript>& script)
 	textureInfo.mip = state.selectedMip;
 	textureInfo.layer = state.selectedLayer;
 
+	windowSize.x = dims.width / 4;
+	windowSize.y = dims.height / 4;
 	ImGui::Image((void*)& textureInfo, windowSize);
 	ImGui::End();
 
