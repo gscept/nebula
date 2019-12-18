@@ -77,7 +77,7 @@ DestroySemaphore(const SemaphoreId& semaphore)
 /**
 */
 uint64 
-SemaphoreGetIndex(const SemaphoreId& semaphore)
+SemaphoreGetValue(const SemaphoreId& semaphore)
 {
 	return semaphoreAllocator.Get<Semaphore_LastIndex>(semaphore.id24);
 }
