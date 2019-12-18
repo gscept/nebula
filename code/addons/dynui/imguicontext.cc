@@ -73,7 +73,8 @@ ImguiContext::ImguiDrawFunction()
 		uint32 type : 4;
 		uint32 layer : 8;
 		uint32 mip : 8;
-		uint32 id : 12;
+		uint32 useAlpha : 1;
+		uint32 id : 11;
 	};
 
 	IndexT vertexOffset = 0;
@@ -115,26 +116,23 @@ ImguiContext::ImguiDrawFunction()
 
 				TextureInfo texInfo;
 				texInfo.type = 0;
+				texInfo.useAlpha = 1;
 
 				// set texture in shader, we shouldn't have to put it into ImGui
-				Resources::ResourceId resourceId = tex.nebulaHandle;
-
-				if (resourceId.resourceType == TextureIdType)
+				CoreGraphics::TextureId texture = tex.nebulaHandle;
+				auto usage = CoreGraphics::TextureGetUsage(texture);
+				if (usage & CoreGraphics::TextureUsage::RenderUsage || usage & CoreGraphics::TextureUsage::ReadWriteUsage)
 				{
-					TextureId texture = resourceId.AllocId();
-					SizeT layers = CoreGraphics::TextureGetNumLayers(texture);
-					if (layers > 1)
-					{
-						texInfo.type = 1;
-					}
-					texInfo.layer = tex.layer;
-					texInfo.mip = tex.mip;
-					texInfo.id = CoreGraphics::TextureGetBindlessHandle(texture);
+					texInfo.useAlpha = false;
 				}
-				else
+				SizeT layers = CoreGraphics::TextureGetNumLayers(texture);
+				if (layers > 1)
 				{
-					n_error("ResourceId alloc type unknown or not implemented!\n");
+					texInfo.type = 1;
 				}
+				texInfo.layer = tex.layer;
+				texInfo.mip = tex.mip;
+				texInfo.id = CoreGraphics::TextureGetBindlessHandle(texture);
 				
 				CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, state.packedTextureInfo, sizeof(TextureInfo), (byte*)& texInfo);
 

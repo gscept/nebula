@@ -57,7 +57,7 @@ public:
     /// called before frame
     static void OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime);
     /// called when rendering a frame batch
-    static void OnRenderAsPlugin(const IndexT frameIndex, const Timing::Time frameTime, const Util::StringAtom& filter);
+    static void Render(const IndexT frameIndex);
            
     /// handle event
     static bool HandleInput(const Input::InputEvent& event);

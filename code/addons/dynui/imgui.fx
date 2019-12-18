@@ -14,7 +14,6 @@
 // put variables in push-constant block
 push varblock ImGUI [ string Visibility = "PS|VS"; ]
 {
-	textureHandle Texture; 
 	mat4 TextProjectionModel;
 	uint PackedTextureInfo;
 };
@@ -38,12 +37,13 @@ state TextState
 //------------------------------------------------------------------------------
 /**
 */
-void UnpackTexture(uint val, out uint id, out uint type, out uint mip, out uint layer)
+void UnpackTexture(uint val, out uint id, out uint type, out uint mip, out uint layer, out uint useAlpha)
 {
 	type = val & 0xF;
 	layer = (val >> 4) & 0xFF;
 	mip = (val >> 12) & 0xFF;
-	id = (val >> 20) & 0xFFF;
+	useAlpha = (val >> 20) & 0x1;
+	id = (val >> 21) & 0xFFF;
 }
 
 //------------------------------------------------------------------------------
@@ -75,12 +75,15 @@ psMain(
 	[color0] out vec4 FinalColor) 
 {
 	vec4 texColor;
-	uint id, type, layer, mip;
-	UnpackTexture(ImGUI.PackedTextureInfo, id, type, mip, layer);
+	uint id, type, layer, mip, useAlpha;
+	UnpackTexture(ImGUI.PackedTextureInfo, id, type, mip, layer, useAlpha);
 	if (type == 0)
 		texColor = sample2DLod(id, TextureSampler, UV, mip);
 	else
 		texColor = sample2DArrayLod(id, TextureSampler, vec3(UV, layer), mip);
+
+	if (useAlpha == 0)
+		texColor.a = 1;
 	FinalColor = Color * texColor;
 }
 

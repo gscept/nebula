@@ -119,7 +119,7 @@ Im3dContext::~Im3dContext()
 void
 Im3dContext::Create()
 {
-    __bundle.OnRenderAsPlugin = Im3dContext::OnRenderAsPlugin;
+    __bundle.OnRenderAsPlugin = nullptr;
     __bundle.OnBeforeFrame = Im3dContext::OnBeforeFrame;
     __bundle.OnBeforeView = Im3dContext::OnBeforeView;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
@@ -157,6 +157,11 @@ Im3dContext::Create()
 
     // map buffer
     imState.vertexPtr = (byte*)CoreGraphics::VertexBufferMap(imState.vbo, CoreGraphics::GpuBufferTypes::MapWrite);
+
+	Frame::FramePlugin::AddCallback("Im3D", [](IndexT frameIndex)
+	{
+		Render(frameIndex);
+	});
 }
 
 //------------------------------------------------------------------------------
@@ -394,55 +399,53 @@ CollectByFilter(ShaderProgramId const & shader, PrimitiveTopology::Code topology
 /**
 */
 void
-Im3dContext::OnRenderAsPlugin(const IndexT frameIndex, const Timing::Time frameTime, const Util::StringAtom& filter)
+Im3dContext::Render(const IndexT frameIndex)
 {
-    //FIME use a better pass
-    if (filter == "IMGUI"_atm)
+	CoreGraphics::BeginBatch(Frame::FrameBatchType::System);
+    if (imState.renderGrid)
     {
-     
-        if (imState.renderGrid)
-        {
-            int gridSize = imState.gridSize;            
-            float cellSize = imState.cellSize;            
-            Im3d::SetSize(1.0f);
-            Im3d::PushLayerId(imState.depthLayerId);            
-            Im3d::BeginLines();
-            Im3d::Color col = imState.gridColor;
-            for (int x = -gridSize; x <= gridSize; ++x) {
-                Im3d::Vertex(-gridSize * cellSize, 0.0f, (float)x * cellSize, col);
-                Im3d::Vertex(gridSize * cellSize, 0.0f, (float)x * cellSize, col);
-            }
-            for (int z = -gridSize; z <= gridSize; ++z) {
-                Im3d::Vertex((float)z * cellSize, 0.0f, -gridSize * cellSize, col);
-                Im3d::Vertex((float)z * cellSize, 0.0f, gridSize* cellSize, col);
-            }
-            Im3d::End();
-            Im3d::PopLayerId();
+        int gridSize = imState.gridSize;            
+        float cellSize = imState.cellSize;            
+        Im3d::SetSize(1.0f);
+        Im3d::PushLayerId(imState.depthLayerId);            
+        Im3d::BeginLines();
+        Im3d::Color col = imState.gridColor;
+        for (int x = -gridSize; x <= gridSize; ++x) {
+            Im3d::Vertex(-gridSize * cellSize, 0.0f, (float)x * cellSize, col);
+            Im3d::Vertex(gridSize * cellSize, 0.0f, (float)x * cellSize, col);
         }
-        Im3d::EndFrame();
-        VertexBufferId vbo = imState.vbo;                
-
-        // setup device
-        IndexT vertexCount = 0;
-        IndexT vertexBufferOffset = 0;
-        // collect draws and loop a couple of times instead
-
-        CollectByFilter(imState.points, CoreGraphics::PrimitiveTopology::PointList, vertexBufferOffset, vertexCount,
-            [](Im3d::DrawList const& l) { return l.m_primType == Im3d::DrawPrimitive_Points; });
-        
-        CollectByFilter(imState.triangles, CoreGraphics::PrimitiveTopology::TriangleList, vertexBufferOffset, vertexCount,
-            [](Im3d::DrawList const& l) { return l.m_primType == Im3d::DrawPrimitive_Triangles && l.m_layerId != imState.depthLayerId; });
-        
-        CollectByFilter(imState.lines, CoreGraphics::PrimitiveTopology::LineList, vertexBufferOffset, vertexCount,
-            [](Im3d::DrawList const& l) { return l.m_primType == Im3d::DrawPrimitive_Lines && l.m_layerId != imState.depthLayerId; });     
-
-        CollectByFilter(imState.depthLines, CoreGraphics::PrimitiveTopology::LineList, vertexBufferOffset, vertexCount,
-            [](Im3d::DrawList const& l) { return l.m_primType == Im3d::DrawPrimitive_Lines && l.m_layerId == imState.depthLayerId; });
-        
-        //CollectByFilter(imState.depthTriangles, CoreGraphics::PrimitiveTopology::TriangleList, vertexBufferOffset, vertexCount,
-        CollectByFilter(imState.depthTriangles, CoreGraphics::PrimitiveTopology::TriangleList, vertexBufferOffset, vertexCount,
-            [](Im3d::DrawList const& l) { return l.m_primType == Im3d::DrawPrimitive_Triangles && l.m_layerId == imState.depthLayerId; });
+        for (int z = -gridSize; z <= gridSize; ++z) {
+            Im3d::Vertex((float)z * cellSize, 0.0f, -gridSize * cellSize, col);
+            Im3d::Vertex((float)z * cellSize, 0.0f, gridSize* cellSize, col);
+        }
+        Im3d::End();
+        Im3d::PopLayerId();
     }
+    Im3d::EndFrame();
+    VertexBufferId vbo = imState.vbo;                
+
+    // setup device
+    IndexT vertexCount = 0;
+    IndexT vertexBufferOffset = 0;
+    // collect draws and loop a couple of times instead
+
+    CollectByFilter(imState.points, CoreGraphics::PrimitiveTopology::PointList, vertexBufferOffset, vertexCount,
+        [](Im3d::DrawList const& l) { return l.m_primType == Im3d::DrawPrimitive_Points; });
+        
+    CollectByFilter(imState.triangles, CoreGraphics::PrimitiveTopology::TriangleList, vertexBufferOffset, vertexCount,
+        [](Im3d::DrawList const& l) { return l.m_primType == Im3d::DrawPrimitive_Triangles && l.m_layerId != imState.depthLayerId; });
+        
+    CollectByFilter(imState.lines, CoreGraphics::PrimitiveTopology::LineList, vertexBufferOffset, vertexCount,
+        [](Im3d::DrawList const& l) { return l.m_primType == Im3d::DrawPrimitive_Lines && l.m_layerId != imState.depthLayerId; });     
+
+    CollectByFilter(imState.depthLines, CoreGraphics::PrimitiveTopology::LineList, vertexBufferOffset, vertexCount,
+        [](Im3d::DrawList const& l) { return l.m_primType == Im3d::DrawPrimitive_Lines && l.m_layerId == imState.depthLayerId; });
+        
+    //CollectByFilter(imState.depthTriangles, CoreGraphics::PrimitiveTopology::TriangleList, vertexBufferOffset, vertexCount,
+    CollectByFilter(imState.depthTriangles, CoreGraphics::PrimitiveTopology::TriangleList, vertexBufferOffset, vertexCount,
+        [](Im3d::DrawList const& l) { return l.m_primType == Im3d::DrawPrimitive_Triangles && l.m_layerId == imState.depthLayerId; });
+
+	CoreGraphics::EndBatch();
 }
 
 //------------------------------------------------------------------------------
