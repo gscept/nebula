@@ -395,15 +395,14 @@ LightContext::SetupPointLight(const Graphics::GraphicsEntityId id,
 	genericLightAllocator.Get<Color>(cid.id) = color;
 	genericLightAllocator.Get<Intensity>(cid.id) = intensity;
 	genericLightAllocator.Get<ShadowCaster>(cid.id) = castShadows;
+	genericLightAllocator.Get<Range>(cid.id) = range;
 
-	const Math::matrix44 scaleMatrix = Math::matrix44::scaling(range, range, range);
 	auto pli = pointLightAllocator.Alloc();
-
-	SetPointLightTransform(cid, Math::matrix44::multiply(scaleMatrix, transform));
-	pointLightAllocator.Get<PointLight_DynamicOffsets>(pli).Resize(2);
+	SetPointLightTransform(cid, transform);
 	genericLightAllocator.Get<TypedLightId>(cid.id) = pli;
 
 	// set initial state
+	pointLightAllocator.Get<PointLight_DynamicOffsets>(pli).Resize(2);
 	pointLightAllocator.Get<PointLight_DynamicOffsets>(pli)[0] = 0;
 	pointLightAllocator.Get<PointLight_DynamicOffsets>(pli)[1] = 0;
 	pointLightAllocator.Get<PointLight_ProjectionTexture>(pli) = projection;
@@ -421,6 +420,7 @@ LightContext::SetupSpotLight(const Graphics::GraphicsEntityId id,
 	const float innerConeAngle,
 	const float outerConeAngle,
 	const Math::matrix44& transform,
+	const float range,
 	bool castShadows, 
 	const CoreGraphics::TextureId projection)
 {
@@ -430,6 +430,7 @@ LightContext::SetupSpotLight(const Graphics::GraphicsEntityId id,
 	genericLightAllocator.Get<Color>(cid.id) = color;
 	genericLightAllocator.Get<Intensity>(cid.id) = intensity;
 	genericLightAllocator.Get<ShadowCaster>(cid.id) = castShadows;
+	genericLightAllocator.Get<Range>(cid.id) = range;
 
 	auto sli = spotLightAllocator.Alloc();
 	spotLightAllocator.Get<SpotLight_DynamicOffsets>(sli).Resize(2);
@@ -438,11 +439,15 @@ LightContext::SetupSpotLight(const Graphics::GraphicsEntityId id,
 	// do this after we assign the typed light id
 	SetSpotLightTransform(cid, transform);
 
+	std::array<float, 2> angles = { innerConeAngle, outerConeAngle };
+	if (innerConeAngle >= outerConeAngle)
+		angles[1] = innerConeAngle + N_TINY;
+	else if (outerConeAngle <= innerConeAngle)
+		angles[0] = outerConeAngle - N_TINY;
 	// set initial state
 	spotLightAllocator.Get<SpotLight_DynamicOffsets>(sli)[0] = 0;
 	spotLightAllocator.Get<SpotLight_DynamicOffsets>(sli)[1] = 0;
 	spotLightAllocator.Get<SpotLight_ProjectionTexture>(sli) = projection;
-	std::array<float, 2> angles = { innerConeAngle, outerConeAngle };
 	spotLightAllocator.Get<SpotLight_ConeAngles>(sli) = angles;
 }
 
@@ -544,6 +549,49 @@ LightContext::GetViewProjTransform(const Graphics::GraphicsEntityId id)
 		break;
 	}
 }
+
+//------------------------------------------------------------------------------
+/**
+*/
+LightContext::LightType
+LightContext::GetType(const Graphics::GraphicsEntityId id)
+{
+	const Graphics::ContextEntityId cid = GetContextId(id);
+	return genericLightAllocator.Get<Type>(cid.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+LightContext::GetInnerOuterAngle(const Graphics::GraphicsEntityId id, float& inner, float& outer)
+{
+	const Graphics::ContextEntityId cid = GetContextId(id);
+	LightType type = genericLightAllocator.Get<Type>(cid.id);
+	n_assert(type == SpotLightType);
+	Ids::Id32 lightId = genericLightAllocator.Get<TypedLightId>(cid.id);
+	inner = spotLightAllocator.Get<SpotLight_ConeAngles>(lightId)[0];
+	outer = spotLightAllocator.Get<SpotLight_ConeAngles>(lightId)[1];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+LightContext::SetInnerOuterAngle(const Graphics::GraphicsEntityId id, float inner, float outer)
+{
+	const Graphics::ContextEntityId cid = GetContextId(id);
+	LightType type = genericLightAllocator.Get<Type>(cid.id);
+	n_assert(type == SpotLightType);
+	Ids::Id32 lightId = genericLightAllocator.Get<TypedLightId>(cid.id);
+	if (inner >= outer)
+		outer = inner + N_TINY;
+	else if (outer <= inner)
+		inner = outer - N_TINY;
+	spotLightAllocator.Get<SpotLight_ConeAngles>(lightId)[0] = inner;
+	spotLightAllocator.Get<SpotLight_ConeAngles>(lightId)[1] = outer;
+}
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -691,107 +739,18 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIn
 	params.GlobalLightShadowIntensity = 1.0f;
 
 	// go through and update local lights
-	const Util::Array<LightType>& types    = genericLightAllocator.GetArray<Type>();
-	const Util::Array<Math::float4>& color = genericLightAllocator.GetArray<Color>();
-	const Util::Array<float>& intensity    = genericLightAllocator.GetArray<Intensity>();
-	const Util::Array<bool>& castShadow    = genericLightAllocator.GetArray<ShadowCaster>();
-	const Util::Array<Ids::Id32>& typeIds  = genericLightAllocator.GetArray<TypedLightId>();
+	const Util::Array<LightType>& types		= genericLightAllocator.GetArray<Type>();
+	const Util::Array<Math::float4>& color	= genericLightAllocator.GetArray<Color>();
+	const Util::Array<float>& intensity		= genericLightAllocator.GetArray<Intensity>();
+	const Util::Array<float>& range			= genericLightAllocator.GetArray<Range>();
+	const Util::Array<bool>& castShadow		= genericLightAllocator.GetArray<ShadowCaster>();
+	const Util::Array<Ids::Id32>& typeIds	= genericLightAllocator.GetArray<TypedLightId>();
 	SizeT numPointLights = 0;
 	SizeT numSpotLights = 0;
 
 	IndexT i;
 	for (i = 0; i < types.Size(); i++)
 	{
-		switch (types[i])
-		{
-
-		case PointLightType:
-		{
-			auto trans = pointLightAllocator.Get<PointLight_Transform>(typeIds[i]);
-			auto tex = pointLightAllocator.Get<PointLight_ProjectionTexture>(typeIds[i]);
-
-			uint flags = 0;
-
-			Math::float4 posAndRange = trans.get_position();
-			posAndRange.w() = 1 / trans.get_zaxis().length();
-
-			// update shadow stuff
-			if (castShadow[i])
-			{
-				flags |= USE_SHADOW_BITFLAG;
-			}
-
-			// bind projection
-			if (tex != TextureId::Invalid())
-			{
-				flags |= USE_PROJECTION_TEX_BITFLAG;
-			}
-
-			// allocate memory
-			alignas(16) Lights::LocalLightBlock block;
-			Math::float4::storeu(color[i] * intensity[i], block.LightColor);
-			Math::float4::storeu(posAndRange, block.LightPosRange);
-			Math::matrix44::storeu(trans, block.LightTransform);
-			block.ProjectionTexture = tex != TextureId::Invalid() ? TextureGetBindlessHandle(tex) : 0;
-			block.Flags = flags;
-
-			// update constants
-			uint offset = CoreGraphics::SetGraphicsConstants(MainThreadConstantBuffer, block);
-
-			// update buffer
-			pointLightAllocator.Get<PointLight_DynamicOffsets>(typeIds[i])[0] = offset;
-		}
-		break;
-
-		case SpotLightType:
-		{
-			auto trans = spotLightAllocator.Get<SpotLight_Transform>(typeIds[i]);
-			auto tex = spotLightAllocator.Get<SpotLight_ProjectionTexture>(typeIds[i]);
-			auto invViewProj = spotLightAllocator.Get<SpotLight_InvViewProjection>(typeIds[i]);
-			auto angles = spotLightAllocator.Get<SpotLight_ConeAngles>(typeIds[i]);
-
-			uint flags = 0;
-
-			Math::float4 posAndRange = trans.get_position();
-			posAndRange.w() = 1 / trans.get_zaxis().length();
-			Math::float4 forward = Math::float4::normalize(trans.get_zaxis());
-
-			// update shadow data
-			if (castShadow[i])
-			{
-				flags |= USE_SHADOW_BITFLAG;
-			}
-
-			// check if we should use projection
-			if (tex != TextureId::Invalid())
-			{
-				flags |= USE_PROJECTION_TEX_BITFLAG;
-			}
-
-			// update projection transform
-			Math::matrix44 fromViewToLightProj = invViewProj;
-
-			// allocate memory
-			alignas(16) Lights::LocalLightBlock block;
-			Math::float4::storeu(color[i] * intensity[i], block.LightColor);
-			Math::float4::storeu(posAndRange, block.LightPosRange);
-			Math::matrix44::storeu(trans, block.LightTransform);
-			Math::matrix44::storeu(fromViewToLightProj, block.LightProjTransform);
-			Math::float4::storeu(forward, block.LightForward);
-			block.LightCutoff[0] = angles[0];
-			block.LightCutoff[1] = angles[1];
-			block.ProjectionTexture = tex != TextureId::Invalid() ? TextureGetBindlessHandle(tex) : 0;
-			block.Flags = flags;
-
-			// update constants
-			uint offset = CoreGraphics::SetGraphicsConstants(MainThreadConstantBuffer, block);
-
-			// update buffer
-			spotLightAllocator.Get<SpotLight_DynamicOffsets>(typeIds[i])[0] = offset;
-		}
-		break;
-
-		}
 
 		switch (types[i])
 		{
@@ -816,9 +775,7 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIn
 				}
 
 				Math::float4 posAndRange = Math::float4::transform(trans.get_position(), viewTransform);
-				Math::float4 scale;
-				trans.get_scale(scale);
-				posAndRange.w() = scale.length();
+				posAndRange.w() = range[i];
 				Math::float4::storeu(posAndRange, pointLight.position);
 				Math::float4::store3u(color[i], pointLight.color);
 				pointLight.flags = flags;
@@ -848,23 +805,29 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIn
 					flags |= USE_PROJECTION_TEX_BITFLAG;
 				}
 
-				Math::float4 posAndRange = Math::float4::transform(trans.get_position(), viewTransform);
-				Math::float4 forward = Math::float4::transform(trans.get_zaxis(), viewTransform);
-				posAndRange.w() = trans.get_zaxis().length3();
+				Math::matrix44 viewSpace = Math::matrix44::multiply(trans, viewTransform);
+				Math::float4 posAndRange = viewSpace.get_position();
+				posAndRange.w() = range[i];
+
+				Math::float4 forward = Math::float4::normalize(viewSpace.get_zaxis());
+				if (angles[0] == angles[1])
+					forward.w() = 1.0f;
+				else
+					forward.w() = 1.0f / (angles[1] - angles[0]);
+
 				Math::float4::storeu(posAndRange, spotLight.position);
-				Math::float4::store3u(Math::float4::normalize(forward), spotLight.forward);
+				Math::float4::storeu(forward, spotLight.forward);
 				Math::float4::store3u(color[i], spotLight.color);
-				spotLight.angle[0] = angles[0];
-				spotLight.angle[1] = angles[1];
+				
+				// calculate sine and cosine
+				spotLight.angleSinCos[0] = Math::n_sin(1.0f - angles[0] * N_PI_HALF * 0.5f);
+				spotLight.angleSinCos[1] = Math::n_cos(1.0f - angles[0] * N_PI_HALF * 0.5f);
 				spotLight.flags = flags;
 				numSpotLights++;
 			}
 			break;
 		}
 	}
-
-	// get dimensions of output texture
-	TextureDimensions dims = TextureGetDimensions(clusterState.clusterDebugTexture);
 
 	Graphics::GraphicsEntityId cam = Graphics::GraphicsServer::Instance()->GetCurrentView()->GetCamera();
 	CoreGraphics::DisplayMode displayMode = CoreGraphics::WindowGetDisplayMode(CoreGraphics::DisplayDevice::Instance()->GetCurrentWindow());

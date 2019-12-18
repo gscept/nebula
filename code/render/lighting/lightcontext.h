@@ -54,6 +54,7 @@ public:
 		const float innerConeAngle,
 		const float outerConeAngle,
 		const Math::matrix44& transform,
+		const float range,
 		bool castShadows = false, 
 		const CoreGraphics::TextureId projection = CoreGraphics::TextureId::Invalid());
 
@@ -67,6 +68,14 @@ public:
 	static void SetTransform(const Graphics::GraphicsEntityId id, const Math::matrix44& transform);
 	/// get the view transform including projections
 	static const Math::matrix44 GetViewProjTransform(const Graphics::GraphicsEntityId id);
+
+	/// get the light type
+	static LightType GetType(const Graphics::GraphicsEntityId id);
+
+	/// get inner and outer angle for spotlights
+	static void GetInnerOuterAngle(const Graphics::GraphicsEntityId id, float& inner, float& outer);
+	/// set inner and outer angle for spotlights
+	static void SetInnerOuterAngle(const Graphics::GraphicsEntityId id, float inner, float outer);
 
 	/// do light classification for tiled/clustered compute
 	static void OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime);
@@ -110,6 +119,7 @@ private:
 		Color,
 		Intensity,
 		ShadowCaster,
+		Range,
 		TypedLightId
 	};
 
@@ -118,6 +128,7 @@ private:
 		Math::float4,			// color
 		float,					// intensity
 		bool,					// shadow caster
+		float,
 		Ids::Id32				// typed light id (index into pointlights, spotlights and globallights)
 	> GenericLightAllocator;
 	static GenericLightAllocator genericLightAllocator;
