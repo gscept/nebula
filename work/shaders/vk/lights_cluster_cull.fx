@@ -11,7 +11,7 @@
 #include "lib/CSM.fxh"
 #include "lib/Preetham.fxh"
 
-#define MAX_LIGHTS_PER_CLUSTER 32
+#define MAX_LIGHTS_PER_CLUSTER 128
 
 group(BATCH_GROUP) varblock LightConstants
 {

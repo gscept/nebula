@@ -173,7 +173,7 @@ LightContext::Create()
 			// run the script
 			lightServerState.shadowMappingFrameScript->Run(frame);
 #ifndef PUBLIC_BUILD
-			Debug::FrameScriptInspector::Run(lightServerState.shadowMappingFrameScript);
+			//Debug::FrameScriptInspector::Run(lightServerState.shadowMappingFrameScript);
 #endif
 		});
 
@@ -394,8 +394,8 @@ LightContext::SetupPointLight(const Graphics::GraphicsEntityId id,
 	genericLightAllocator.Get<Range>(cid.id) = range;
 
 	auto pli = pointLightAllocator.Alloc();
-	SetPointLightTransform(cid, transform);
 	genericLightAllocator.Get<TypedLightId>(cid.id) = pli;
+	SetPointLightTransform(cid, transform);
 
 	// set initial state
 	pointLightAllocator.Get<PointLight_DynamicOffsets>(pli).Resize(2);
