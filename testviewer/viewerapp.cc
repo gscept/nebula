@@ -21,6 +21,7 @@
 #include "dynui/im3d/im3dcontext.h"
 #include "dynui/im3d/im3d.h"
 #include "graphics/environmentcontext.h"
+#include "clustering/clustercontext.h"
 
 using namespace Timing;
 using namespace Graphics;
@@ -100,7 +101,6 @@ SimpleViewerApplication::Open()
 
         SizeT width = this->GetCmdLineArgs().GetInt("-w", 1680);
         SizeT height = this->GetCmdLineArgs().GetInt("-h", 1050);
-        
 
         CoreGraphics::WindowCreateInfo wndInfo =
         {
@@ -108,46 +108,50 @@ SimpleViewerApplication::Open()
             this->GetAppTitle(), "", CoreGraphics::AntiAliasQuality::None, true, true, false
         };
         this->wnd = CreateWindow(wndInfo);
+		this->cam = Graphics::CreateEntity();
 
         // create contexts, this could and should be bundled together
         CameraContext::Create();
         ModelContext::Create();
         ObserverContext::Create();
         ObservableContext::Create();
+
+		Graphics::RegisterEntity<CameraContext, ObserverContext>(this->cam);
+		CameraContext::SetupProjectionFov(this->cam, width / (float)height, Math::n_deg2rad(60.f), 0.1f, 1000.0f);
+
+		Clustering::ClusterContext::Create(this->cam, this->wnd);
 		Lighting::LightContext::Create();
 		Characters::CharacterContext::Create();
 		Im3d::Im3dContext::Create();
 		Dynui::ImguiContext::Create();
 
+		this->view = gfxServer->CreateView("mainview", "frame:vkdefault.json"_uri);
+		this->stage = gfxServer->CreateStage("stage1", true);
+
         Im3d::Im3dContext::SetGridStatus(true);
         Im3d::Im3dContext::SetGridSize(1.0f, 25);
         Im3d::Im3dContext::SetGridColor(Math::float4(0.2f, 0.2f, 0.2f, 0.8f));
 
-        this->view = gfxServer->CreateView("mainview", "frame:vkdefault.json"_uri);
-        this->stage = gfxServer->CreateStage("stage1", true);
-        this->cam = Graphics::CreateEntity();
-        Graphics::RegisterEntity<CameraContext, ObserverContext>(this->cam);
-        CameraContext::SetupProjectionFov(this->cam, width / (float)height, Math::n_deg2rad(60.f), 0.1f, 1000.0f);
-
 		this->globalLight = Graphics::CreateEntity();
 		Lighting::LightContext::RegisterEntity(this->globalLight);
-		Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::float4(1, 1, 1, 0), 1.0f, Math::float4(0, 0, 0, 0), Math::float4(0, 0, 0, 0), 0.0f, -Math::vector(1, 0.2f, 1), true);
+		Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::float4(1, 1, 1, 0), 1.0f, Math::float4(0, 0, 0, 0), Math::float4(0, 0, 0, 0), 0.0f, -Math::vector(1, 1, 1), true);
 
 		this->pointLights[0] = Graphics::CreateEntity();
 		Lighting::LightContext::RegisterEntity(this->pointLights[0]);
-		Lighting::LightContext::SetupPointLight(this->pointLights[0], Math::float4(1, 0, 0, 1), 1.0f, Math::matrix44::translation(0, 0, -10), 1.0f, false);
+		Lighting::LightContext::SetupPointLight(this->pointLights[0], Math::float4(1, 0, 0, 1), 5.0f, Math::matrix44::translation(0, 2, -10), 10.0f, false);
         
 		this->pointLights[1] = Graphics::CreateEntity();
 		Lighting::LightContext::RegisterEntity(this->pointLights[1]);
-		Lighting::LightContext::SetupPointLight(this->pointLights[1], Math::float4(0, 1, 0, 1), 1.0f, Math::matrix44::translation(-10, 0, -10), 1.0f, false);
+		Lighting::LightContext::SetupPointLight(this->pointLights[1], Math::float4(0, 1, 0, 1), 5.0f, Math::matrix44::translation(-10, 2, -10), 10.0f, false);
 
 		this->pointLights[2] = Graphics::CreateEntity();
 		Lighting::LightContext::RegisterEntity(this->pointLights[2]);
-		Lighting::LightContext::SetupPointLight(this->pointLights[2], Math::float4(0, 0, 1, 1), 5.0f, Math::matrix44::translation(-10, 0, 0), 1.0f, false);
+		Lighting::LightContext::SetupPointLight(this->pointLights[2], Math::float4(0, 0, 1, 1), 5.0f, Math::matrix44::translation(-10, 2, 0), 10.0f, false);
 
         for (int i = 0; i < 3; i++)
         {
             this->entities.Append(this->pointLights[i]);
+			this->entityNames.Append(Util::String::Sprintf("PointLight%d", i));
         }
 
 		{
@@ -155,9 +159,11 @@ SimpleViewerApplication::Open()
 			Lighting::LightContext::RegisterEntity(this->spotLights[0]);
 			Math::matrix44 spotLightMatrix;
 			spotLightMatrix.scale(Math::vector(30, 30, 40));
-			spotLightMatrix = Math::matrix44::multiply(spotLightMatrix, Math::matrix44::rotationyawpitchroll(0, Math::n_deg2rad(-55), 0));
+			spotLightMatrix = Math::matrix44::multiply(spotLightMatrix, Math::matrix44::rotationyawpitchroll(Math::n_deg2rad(120), Math::n_deg2rad(-55), 0));
 			spotLightMatrix.set_position(Math::point(0, 5, 2));
-			Lighting::LightContext::SetupSpotLight(this->spotLights[0], Math::float4(1, 1, 0, 1), 1.0f, 0.1f, 0.8f, spotLightMatrix, false);
+			Lighting::LightContext::SetupSpotLight(this->spotLights[0], Math::float4(1, 1, 0, 1), 5.0f, 0.4f, 0.8f, spotLightMatrix, 50.0f, false);
+			this->entities.Append(this->spotLights[0]);
+			this->entityNames.Append("SpotLight0");
 		}
 
 		{
@@ -167,7 +173,9 @@ SimpleViewerApplication::Open()
 			spotLightMatrix.scale(Math::vector(30, 30, 40));
 			spotLightMatrix = Math::matrix44::multiply(spotLightMatrix, Math::matrix44::rotationyawpitchroll(Math::n_deg2rad(60), Math::n_deg2rad(-55), 0));
 			spotLightMatrix.set_position(Math::point(2, 5, 0));
-			Lighting::LightContext::SetupSpotLight(this->spotLights[1], Math::float4(0, 1, 1, 1), 1.0f, 0.4f, 0.8f, spotLightMatrix, false);
+			Lighting::LightContext::SetupSpotLight(this->spotLights[1], Math::float4(0, 1, 1, 1), 5.0f, 0.4f, 0.8f, spotLightMatrix, 50.0f, false);
+			this->entities.Append(this->spotLights[1]);
+			this->entityNames.Append("SpotLight1");
 		}
 
 		{
@@ -177,7 +185,9 @@ SimpleViewerApplication::Open()
 			spotLightMatrix.scale(Math::vector(30, 30, 40));
 			spotLightMatrix = Math::matrix44::multiply(spotLightMatrix, Math::matrix44::rotationyawpitchroll(Math::n_deg2rad(120), Math::n_deg2rad(-55), 0));
 			spotLightMatrix.set_position(Math::point(2, 5, 2));
-			Lighting::LightContext::SetupSpotLight(this->spotLights[2], Math::float4(1, 0, 1, 1), 1.0f, 0.1f, 0.4f, spotLightMatrix, false);
+			Lighting::LightContext::SetupSpotLight(this->spotLights[2], Math::float4(1, 0, 1, 1), 5.0f, 0.1f, 0.4f, spotLightMatrix, 50.0f, false);
+			this->entities.Append(this->spotLights[2]);
+			this->entityNames.Append("SpotLight2");
 		}
 
         this->ResetCamera();
@@ -191,12 +201,14 @@ SimpleViewerApplication::Open()
         ModelContext::Setup(this->entity, "mdl:system/placeholder.n3", "Viewer");
         ModelContext::SetTransform(this->entity, Math::matrix44::translation(Math::float4(0, 0, 0, 1)));
         this->entities.Append(this->entity);
+		this->entityNames.Append("Shitbox");
 
 		this->ground = Graphics::CreateEntity();
 		Graphics::RegisterEntity<ModelContext, ObservableContext>(this->ground);
 		ModelContext::Setup(this->ground, "mdl:environment/plcholder_world.n3", "Viewer");
 		ModelContext::SetTransform(this->ground, Math::matrix44::multiply(Math::matrix44::scaling(100, 1, 100),  Math::matrix44::translation(Math::float4(0, 0, 0, 1))));
         this->entities.Append(this->ground);
+		this->entityNames.Append("Ground");
 
         // register visibility system
         ObserverContext::CreateBruteforceSystem({});
@@ -214,13 +226,13 @@ SimpleViewerApplication::Open()
 		Util::Array<Graphics::GraphicsEntityId> models;
 		ModelContext::BeginBulkRegister();
 		ObservableContext::BeginBulkRegister();
-		static const int NumModels = 1;
+		static const int NumModels = 20;
 		for (IndexT i = -NumModels; i < NumModels; i++)
 		{
 			for (IndexT j = -NumModels; j < NumModels; j++)
 			{
 				Graphics::GraphicsEntityId ent = Graphics::CreateEntity();
-				Graphics::RegisterEntity<ModelContext, ObservableContext>(ent);
+				Graphics::RegisterEntity<ModelContext, ObservableContext, Characters::CharacterContext>(ent);
                 this->entities.Append(ent);
 				Util::String sid;
 				sid.Format("%s: %d", GraphicsEntityToName(ent), ent);
@@ -234,10 +246,8 @@ SimpleViewerApplication::Open()
 				ModelContext::SetTransform(ent, Math::matrix44::translation(Math::float4(i * 2, 0, -j * 2, 1)));
 				ObservableContext::Setup(ent, VisibilityEntityType::Model);
 
-				/*
 				Characters::CharacterContext::Setup(ent, skeletonRes[resourceIndex], animationRes[resourceIndex], "Viewer");
 				Characters::CharacterContext::PlayClip(ent, nullptr, 0, 0, Characters::Append, 1.0f, 1, Math::n_rand() * 100.0f, 0.0f, 0.0f, Math::n_rand() * 100.0f);
-				*/
 				models.Append(ent);
 			}
 		}
@@ -297,17 +307,18 @@ SimpleViewerApplication::Run()
 			Math::scalar scaleFactor = i * 1.5f + 30;
 			spotLightTransform.scale(Math::point(scaleFactor, scaleFactor, scaleFactor + 10));
 			spotLightTransform = Math::matrix44::multiply(spotLightTransform, Math::matrix44::rotationyawpitchroll(this->gfxServer->GetTime() * 2 * (i + 1) / 3, Math::n_deg2rad(-55), 0));
-			spotLightTransform.set_position(Lighting::LightContext::GetTransform(this->spotLights[i]).get_position());
-			Lighting::LightContext::SetTransform(this->spotLights[i], spotLightTransform);
+			//spotLightTransform.set_position(Lighting::LightContext::GetTransform(this->spotLights[i]).get_position());
+			//Lighting::LightContext::SetTransform(this->spotLights[i], spotLightTransform);
 		}
 
 		/*
-		Math::matrix44 globalLightTransform = Lighting::LightContext::GetTransform(this->globalLight);
-		Math::matrix44 rotY = Math::matrix44::rotationy(Math::n_deg2rad(0.1f));
-		Math::matrix44 rotX = Math::matrix44::rotationz(Math::n_deg2rad(0.05f));
-		globalLightTransform = globalLightTransform * rotX * rotY;
-		Lighting::LightContext::SetTransform(this->globalLight, globalLightTransform);
+			Math::matrix44 globalLightTransform = Lighting::LightContext::GetTransform(this->globalLight);
+			Math::matrix44 rotY = Math::matrix44::rotationy(Math::n_deg2rad(0.1f));
+			Math::matrix44 rotX = Math::matrix44::rotationz(Math::n_deg2rad(0.05f));
+			globalLightTransform = globalLightTransform * rotX * rotY;
+			Lighting::LightContext::SetTransform(this->globalLight, globalLightTransform);
 		*/
+
         this->gfxServer->BeginFrame();
         
         // put game code which doesn't need visibility data or animation here
@@ -354,6 +365,7 @@ SimpleViewerApplication::RenderEntityUI()
     ImGui::Begin("Entities", nullptr, 0);
 	ImGui::SetWindowSize(ImVec2(240, 400));
     ImGui::BeginChild("##entities", ImVec2(0, 300), true);
+
     static int selected = 0;
     for (int i = 0 ; i < this->entityNames.Size();i++)
     {
@@ -380,6 +392,13 @@ SimpleViewerApplication::RenderEntityUI()
         {
             Lighting::LightContext::SetTransform(id, trans);
         }
+
+		/*
+		if (Lighting::LightContext::GetType(id) == Lighting::LightContext::SpotLightType)
+		{
+			Im
+		}
+		*/
     }
 }
 //------------------------------------------------------------------------------
