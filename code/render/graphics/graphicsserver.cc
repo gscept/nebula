@@ -59,8 +59,8 @@ GraphicsServer::Open()
 		{ 1_MB, 50_MB },		// Graphics - main threads get 1 MB of constant memory, visibility thread (objects) gets 50
 		{ 1_MB, 0_MB },			// Compute - main threads get 1 MB of constant memory, visibility thread (objects) gets 0
 		{ 10_MB, 1_MB },        // Vertex memory - main thread gets 10 MB for UI, Text etc, visibility thread (objects doing soft cloths and such) get 1 MB
-		{ 5_MB, 1_MB },         // Index memory - main thread gets 10 MB for UI, Text etc, visibility thread (objects doing soft cloths and such) get 1 MB
-		2,							// We have 3 frames running simultaneously
+		{ 5_MB, 1_MB },         // Index memory - main thread gets 5 MB for UI, Text etc, visibility thread (objects doing soft cloths and such) get 1 MB
+		2,						// Number of simultaneous frames (N buffering)
 		false }; // validation
 	this->graphicsDevice = CoreGraphics::CreateGraphicsDevice(gfxInfo);
 	if (this->graphicsDevice)
@@ -307,6 +307,21 @@ GraphicsServer::BeginFrame()
 		// give contexts a chance to defragment their data
 		if (state->Defragment != nullptr)
 			state->Defragment();
+	}
+
+	// go through views and call prepare view
+	for (i = 0; i < this->views.Size(); i++)
+	{
+		const Ptr<View>& view = this->views[i];
+
+		IndexT j;
+		for (j = 0; j < this->contexts.Size(); j++)
+		{
+			if (this->contexts[j]->StageBits)
+				*this->contexts[j]->StageBits = Graphics::OnPrepareViewStage;
+			if (this->contexts[j]->OnPrepareView != nullptr)
+				this->contexts[j]->OnPrepareView(view, this->frameIndex, this->frameTime);
+		}		
 	}
 
 	// begin frame

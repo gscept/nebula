@@ -156,19 +156,21 @@ class Stage;
 enum StageBits
 {
 	NoStage,
+	OnPrepareViewStage,
 	OnBeforeFrameStage,
 	OnWaitForWorkStage,
 	OnBeforeViewStage,
 	OnAfterViewStage,
 	OnAfterFrameStage,
 
-	AllStages = OnBeforeFrameStage | OnWaitForWorkStage | OnBeforeViewStage | OnAfterViewStage | OnAfterFrameStage
+	AllStages = OnPrepareViewStage | OnBeforeFrameStage | OnWaitForWorkStage | OnBeforeViewStage | OnAfterViewStage | OnAfterFrameStage
 };
 __ImplementEnumBitOperators(StageBits);
 
 struct GraphicsContextFunctionBundle
 {
 	// frame stages
+	void(*OnPrepareView)(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime);
 	void(*OnBeforeFrame)(const IndexT frameIndex, const Timing::Time frameTime, const Timing::Time time, const Timing::Tick ticks);
 	void(*OnWaitForWork)(const IndexT frameIndex, const Timing::Time frameTime);
 	void(*OnBeforeView)(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime);
@@ -191,7 +193,7 @@ struct GraphicsContextFunctionBundle
     void(*OnRenderAsPlugin)(const IndexT frameIndex, const Timing::Time frameTime, const Util::StringAtom& filter);
 
 	StageBits* StageBits;
-	GraphicsContextFunctionBundle() : OnBeforeFrame(nullptr), OnWaitForWork(nullptr), OnBeforeView(nullptr), OnAfterView(nullptr), OnAfterFrame(nullptr),
+	GraphicsContextFunctionBundle() : OnPrepareView(nullptr), OnBeforeFrame(nullptr), OnWaitForWork(nullptr), OnBeforeView(nullptr), OnAfterView(nullptr), OnAfterFrame(nullptr),
         OnStageCreated(nullptr), OnDiscardStage(nullptr), OnViewCreated(nullptr), OnDiscardView(nullptr), OnAttachEntity(nullptr), OnRemoveEntity(nullptr), OnWindowResized(nullptr), OnRenderAsPlugin(nullptr),
 		StageBits(nullptr), OnRenderDebug(nullptr)
 	{
