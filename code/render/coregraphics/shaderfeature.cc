@@ -26,9 +26,15 @@ ShaderFeature::ShaderFeature()
 ShaderFeature::Mask
 ShaderFeature::StringToMask(const String& str)
 {
-    Mask mask = str.HashCode();
-	IndexT i = nameHash.FindIndex(mask);
-	if (i == InvalidIndex)
+	Util::Array<Util::String> features = str.Tokenize("|");
+	Mask mask = 0;
+	IndexT i;
+	for (i = 0; i < features.Size(); i++)
+	{
+		mask += features[i].HashCode();
+	}
+	n_assert(mask != 0);
+	if (!nameHash.Contains(mask))
 	{
 		nameHash.Add(mask, str);
 	}
