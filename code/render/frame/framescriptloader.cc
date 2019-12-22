@@ -9,6 +9,8 @@
 #include "framepass.h"
 #include "frameglobalstate.h"
 #include "frameblit.h"
+#include "framecopy.h"
+#include "framemipmap.h"
 #include "framecompute.h"
 #include "framepluginop.h"
 #include "framesubpass.h"
@@ -17,7 +19,6 @@
 #include "framesubpassbatch.h"
 #include "framesubpassorderedbatch.h"
 #include "framesubpassfullscreeneffect.h"
-#include "framecopy.h"
 #include "framesubpasssystem.h"
 #include "frameserver.h"
 #include "coregraphics/shaderserver.h"
@@ -122,6 +123,7 @@ FrameScriptLoader::ParseFrameScript(const Ptr<Frame::FrameScript>& script, JzonV
 		else if (name == "plugins")				ParsePluginList(script, cur);
 		else if (name == "blit")				ParseBlit(script, cur);
 		else if (name == "copy")				ParseCopy(script, cur);
+		else if (name == "mipmap")				ParseMipmap(script, cur);
 		else if (name == "compute")				ParseCompute(script, cur);
 		else if (name == "plugin")				ParsePlugin(script, cur);
 		else if (name == "pass")				ParsePass(script, cur);
@@ -201,7 +203,10 @@ FrameScriptLoader::ParseTextureList(const Ptr<Frame::FrameScript>& script, JzonV
 			}
 
 			if (JzonValue* mips = jzon_get(cur, "mips"))
-				info.mips = mips->int_value;
+				if (Util::String(mips->string_value) == "auto")
+					info.mips = TextureAutoMips;
+				else
+					info.mips = mips->int_value;
 
 			if (JzonValue* depth = jzon_get(cur, "depth"))
 				info.depth = (float)depth->float_value;
@@ -278,7 +283,11 @@ FrameScriptLoader::ParsePluginList(const Ptr<Frame::FrameScript>& script, JzonVa
 			for (j = 0; j < textures->size; j++)
 			{
 				JzonValue* nd = textures->array_values[j];
-				alg->AddTexture(nd->string_value, script->GetTexture(nd->string_value));
+				JzonValue* name = jzon_get(nd, "name");
+				n_assert(name != nullptr);
+				JzonValue* tex = jzon_get(nd, "texture");
+				n_assert(tex != nullptr);
+				alg->AddTexture(name->string_value, script->GetTexture(tex->string_value));
 			}
 		}
 
@@ -289,7 +298,11 @@ FrameScriptLoader::ParsePluginList(const Ptr<Frame::FrameScript>& script, JzonVa
 			for (j = 0; j < buffers->size; j++)
 			{
 				JzonValue* nd = buffers->array_values[j];
-				alg->AddReadWriteBuffer(nd->string_value, script->GetReadWriteBuffer(nd->string_value));
+				JzonValue* name = jzon_get(nd, "name");
+				n_assert(name != nullptr);
+				JzonValue* buf = jzon_get(nd, "buffer");
+				n_assert(buf != nullptr);
+				alg->AddReadWriteBuffer(name->string_value, script->GetReadWriteBuffer(buf->string_value));
 			}
 		}
 
@@ -318,18 +331,6 @@ FrameScriptLoader::ParseBlit(const Ptr<Frame::FrameScript>& script, JzonValue* n
 	else
 		op->queue = CoreGraphicsQueueTypeFromString(queue->string_value);
 
-	JzonValue* inputs = jzon_get(node, "inputs");
-	if (inputs != nullptr)
-	{
-		ParseResourceDependencies(script, op, inputs);
-	}
-
-	JzonValue* outputs = jzon_get(node, "outputs");
-	if (outputs != nullptr)
-	{
-		ParseResourceDependencies(script, op, outputs);
-	}
-	
 	JzonValue* from = jzon_get(node, "from");
 	n_assert(from != NULL);
 	const CoreGraphics::TextureId& fromTex = script->GetTexture(from->string_value);
@@ -337,6 +338,16 @@ FrameScriptLoader::ParseBlit(const Ptr<Frame::FrameScript>& script, JzonValue* n
 	JzonValue* to = jzon_get(node, "to");
 	n_assert(to != NULL);
 	const CoreGraphics::TextureId& toTex = script->GetTexture(to->string_value);
+
+	// add implicit barriers
+	ImageSubresourceInfo subres;
+	subres.aspect = CoreGraphicsImageAspect::ColorBits; // todo, if we need, add support depth-stencil textures
+	subres.layer = 0;
+	subres.layerCount = 1;
+	subres.mip = 0;
+	subres.mipCount = 1;
+	op->textureDeps.Add(fromTex, std::make_tuple(from->string_value, CoreGraphics::BarrierAccess::TransferRead, CoreGraphics::BarrierStage::Transfer, subres, CoreGraphicsImageLayout::TransferSource));
+	op->textureDeps.Add(toTex, std::make_tuple(to->string_value, CoreGraphics::BarrierAccess::TransferWrite, CoreGraphics::BarrierStage::Transfer, subres, CoreGraphicsImageLayout::TransferDestination));
 
 	// setup blit operation
 	op->from = fromTex;
@@ -363,18 +374,6 @@ FrameScriptLoader::ParseCopy(const Ptr<Frame::FrameScript>& script, JzonValue* n
 	else
 		op->queue = CoreGraphicsQueueTypeFromString(queue->string_value);
 
-	JzonValue* inputs = jzon_get(node, "inputs");
-	if (inputs != nullptr)
-	{
-		ParseResourceDependencies(script, op, inputs);
-	}
-
-	JzonValue* outputs = jzon_get(node, "outputs");
-	if (outputs != nullptr)
-	{
-		ParseResourceDependencies(script, op, outputs);
-	}
-
 	JzonValue* from = jzon_get(node, "from");
 	n_assert(from != NULL);
 	const CoreGraphics::TextureId& fromTex = script->GetTexture(from->string_value);
@@ -383,9 +382,56 @@ FrameScriptLoader::ParseCopy(const Ptr<Frame::FrameScript>& script, JzonValue* n
 	n_assert(to != NULL);
 	const CoreGraphics::TextureId& toTex = script->GetTexture(to->string_value);
 
+	// add implicit barriers
+	ImageSubresourceInfo subres;
+	subres.aspect = CoreGraphicsImageAspect::ColorBits; // todo, if we need, add depth-stencil bits
+	subres.layer = 0;
+	subres.layerCount = 1;
+	subres.mip = 0;
+	subres.mipCount = 1;
+	op->textureDeps.Add(fromTex, std::make_tuple(from->string_value, CoreGraphics::BarrierAccess::TransferRead, CoreGraphics::BarrierStage::Transfer, subres, CoreGraphicsImageLayout::TransferSource));
+	op->textureDeps.Add(toTex, std::make_tuple(to->string_value, CoreGraphics::BarrierAccess::TransferWrite, CoreGraphics::BarrierStage::Transfer, subres, CoreGraphicsImageLayout::TransferDestination));
+
 	// setup copy operation
 	op->from = fromTex;
 	op->to = toTex;
+	script->AddOp(op);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+FrameScriptLoader::ParseMipmap(const Ptr<Frame::FrameScript>& script, JzonValue* node)
+{
+	FrameMipmap* op = script->GetAllocator().Alloc<FrameMipmap>();
+
+	// get function and name
+	JzonValue* name = jzon_get(node, "name");
+	n_assert(name != NULL);
+	op->SetName(name->string_value);
+
+	JzonValue* queue = jzon_get(node, "queue");
+	if (queue == nullptr)
+		op->queue = CoreGraphicsQueueType::GraphicsQueueType;
+	else
+		op->queue = CoreGraphicsQueueTypeFromString(queue->string_value);
+
+	JzonValue* tex = jzon_get(node, "texture");
+	n_assert(tex != NULL);
+	const CoreGraphics::TextureId& ttex = script->GetTexture(tex->string_value);
+
+	// add implicit barriers
+	ImageSubresourceInfo subres;
+	subres.aspect = CoreGraphicsImageAspect::ColorBits; // todo, if we need, add depth-stencil bits
+	subres.layer = 0;
+	subres.layerCount = 1;
+	subres.mip = 0;
+	subres.mipCount = 1;
+	op->textureDeps.Add(ttex, std::make_tuple(tex->string_value, CoreGraphics::BarrierAccess::TransferRead, CoreGraphics::BarrierStage::Transfer, subres, CoreGraphicsImageLayout::TransferSource));
+
+	// setup copy operation
+	op->tex = ttex;
 	script->AddOp(op);
 }
 
