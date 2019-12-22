@@ -10,6 +10,7 @@
 #include "lighting/lightcontext.h"
 #include "models/modelcontext.h"
 #include "visibility/visibilitycontext.h"
+#include "resources/resourcemanager.h"
 namespace Graphics
 {
 
@@ -23,6 +24,9 @@ struct
 	Math::float4 fogColor;
 	float fogDistances[2];
 	int numGlobalEnvironmentMips;
+
+	CoreGraphics::TextureId defaultEnvironmentMap;
+	CoreGraphics::TextureId defaultIrradianceMap;
 } envState;
 
 _ImplementPluginContext(EnvironmentContext);
@@ -34,14 +38,8 @@ void
 EnvironmentContext::Create(const Graphics::GraphicsEntityId sun)
 {
 	__bundle.OnBeforeFrame = EnvironmentContext::OnBeforeFrame;
-	__bundle.OnWaitForWork = nullptr;
-	__bundle.OnBeforeView = nullptr;
-	__bundle.OnAfterView = nullptr;
-	__bundle.OnAfterFrame = nullptr;
 	__bundle.StageBits = &EnvironmentContext::__state.currentStage;
-#ifndef PUBLIC_BUILD
-	__bundle.OnRenderDebug = nullptr;
-#endif
+
 	Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 	envState.sunEntity = sun;
 
@@ -53,12 +51,24 @@ EnvironmentContext::Create(const Graphics::GraphicsEntityId sun)
 	Visibility::ObservableContext::Setup(envState.skyBoxEntity, Visibility::VisibilityEntityType::Model);
 
 	envState.bloomColor = Math::float4(1.0f);
-	envState.bloomThreshold = 6.0f;
-	envState.maxEyeLuminance = 0.5f;
-	envState.fogColor = Math::float4(0.5f);
+	envState.bloomThreshold = 25.0f;
+	envState.maxEyeLuminance = 1.5f;
+	envState.fogColor = Math::vector(0.5f);
 	envState.fogDistances[0] = 10.0f; // near
 	envState.fogDistances[1] = 1000.0f; // far
 	envState.numGlobalEnvironmentMips = 10;
+
+	envState.defaultEnvironmentMap = Resources::CreateResource("tex:system/sky_refl.dds"_atm, "system"_atm,
+		[](const Resources::ResourceId id)
+		{
+			envState.defaultEnvironmentMap = id;
+		});
+
+	envState.defaultIrradianceMap = Resources::CreateResource("tex:system/sky_irr.dds"_atm, "system"_atm,
+		[](const Resources::ResourceId id)
+		{
+			envState.defaultIrradianceMap = id;
+		});
 }
 
 //------------------------------------------------------------------------------
@@ -138,6 +148,8 @@ EnvironmentContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time fr
 	tickParams.MaxLuminance = envState.maxEyeLuminance;
 
 	// global resource parameters
+	tickParams.EnvironmentMap = CoreGraphics::TextureGetBindlessHandle(envState.defaultEnvironmentMap);
+	tickParams.IrradianceMap = CoreGraphics::TextureGetBindlessHandle(envState.defaultIrradianceMap);
 	tickParams.NumEnvMips = envState.numGlobalEnvironmentMips;
 
 	Math::float4 balance(1.0f);
