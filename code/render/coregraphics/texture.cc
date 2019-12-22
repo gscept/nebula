@@ -198,6 +198,7 @@ TextureUnmapFace(const TextureId id, IndexT mip, TextureCubeFace face)
 void 
 TextureGenerateMipmaps(const TextureId id)
 {
+	texturePool->GenerateMipmaps(id);
 }
 
 //------------------------------------------------------------------------------
@@ -238,6 +239,7 @@ TextureGetAdjustedInfo(const TextureCreateInfo& info)
 	{
 		n_assert(info.width > 0 && info.height > 0 && info.depth > 0);
 
+
 		rt.name = info.name;
 		rt.usage = info.usage;
 		rt.tag = info.tag;
@@ -250,7 +252,7 @@ TextureGetAdjustedInfo(const TextureCreateInfo& info)
 		rt.widthScale = 0;
 		rt.heightScale = 0;
 		rt.depthScale = 0;
-		rt.mips = 1;
+		rt.mips = info.mips;
 		rt.layers = (info.type == CoreGraphics::TextureCubeArray || info.type == CoreGraphics::TextureCube) ? 6 : info.layers; 
 		rt.samples = info.samples;
 		rt.windowTexture = false;
@@ -268,14 +270,33 @@ TextureGetAdjustedInfo(const TextureCreateInfo& info)
 		{
 			CoreGraphics::WindowId wnd = CoreGraphics::DisplayDevice::Instance()->GetCurrentWindow();
 			const CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(wnd);
-			rt.width = SizeT(mode.GetWidth() * info.width);
-			rt.height = SizeT(mode.GetHeight() * info.height);
+			rt.width = SizeT(Math::n_ceil(mode.GetWidth() * info.width));
+			rt.height = SizeT(Math::n_ceil(mode.GetHeight() * info.height));
 			rt.depth = 1;
 			rt.window = wnd;
 
 			rt.widthScale = info.width;
 			rt.heightScale = info.height;
 			rt.depthScale = info.depth;
+		}
+
+
+		// if the mip value is set to auto generate mips, generate mip chain
+		if (info.mips == TextureAutoMips)
+		{
+			SizeT width = rt.width;
+			SizeT height = rt.height;
+			rt.mips = 1;
+			while (true)
+			{
+				width = width >> 1;
+				height = height >> 1;
+
+				// break if any dimension reaches 0
+				if (width == 0 || height == 0)
+					break;
+				rt.mips++;
+			}
 		}
 	}
 	return rt;

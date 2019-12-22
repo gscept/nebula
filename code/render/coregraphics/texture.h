@@ -72,6 +72,8 @@ struct TextureDimensions
 	SizeT width, height, depth;
 };
 
+static const ubyte TextureAutoMips = 0xFF;
+
 struct TextureCreateInfo
 {
 	TextureCreateInfo()

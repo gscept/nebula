@@ -374,6 +374,8 @@ ENDIF()
 				#frameevent.h
 				frameglobalstate.cc
 				frameglobalstate.h
+				framemipmap.cc
+				framemipmap.h
 				frameop.cc
 				frameop.h
 				framepass.cc

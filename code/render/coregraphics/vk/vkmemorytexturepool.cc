@@ -386,7 +386,35 @@ VkMemoryTexturePool::LoadFromMemory(const Resources::ResourceId id, const void* 
 void
 VkMemoryTexturePool::GenerateMipmaps(const CoreGraphics::TextureId id)
 {
-	n_error("IMPLEMENT ME!");
+	// calculate number of mips
+	TextureDimensions dims = GetDimensions(id);
+	int mips = 0;
+	while (true)
+	{
+		TextureDimensions biggerDims = dims;
+		dims.width = dims.width >> 1;
+		dims.height = dims.height >> 1;
+
+		// break if any dimension reaches 0
+		if (dims.width == 0 || dims.height == 0)
+			break;
+
+		Math::rectangle<SizeT> fromRegion;
+		fromRegion.left = 0;
+		fromRegion.top = 0;
+		fromRegion.right = biggerDims.width;
+		fromRegion.bottom = biggerDims.height;
+
+		Math::rectangle<SizeT> toRegion;
+		toRegion.left = 0;
+		toRegion.top = 0;
+		toRegion.right = dims.width;
+		toRegion.bottom = dims.height;
+		CoreGraphics::Blit(id, fromRegion, mips, id, toRegion, mips + 1);
+		mips++;
+
+
+	}
 }
 
 //------------------------------------------------------------------------------

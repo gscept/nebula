@@ -34,6 +34,8 @@ private:
 	static void ParseBlit(const Ptr<Frame::FrameScript>& script, JzonValue* node);
 	/// parse subpass copy
 	static void ParseCopy(const Ptr<Frame::FrameScript>& script, JzonValue* node);
+	/// parse subpass copy
+	static void ParseMipmap(const Ptr<Frame::FrameScript>& script, JzonValue* node);
 	/// parse compute
 	static void ParseCompute(const Ptr<Frame::FrameScript>& script, JzonValue* node);
 	/// parse compute algorithm
