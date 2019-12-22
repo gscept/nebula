@@ -271,6 +271,8 @@ ModelContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTim
 		Math::matrix44 transform = transforms[instance.instance];
 		
 		uint objectId = Models::modelPool->modelInstanceAllocator.Get<StreamModelPool::ObjectId>(instance.instance);
+		Util::Array<Models::ModelNode::Instance*>& nodes = Models::modelPool->modelInstanceAllocator.Get<0>(instance.instance);
+		Util::Array<Models::NodeType>& types = Models::modelPool->modelInstanceAllocator.Get<1>(instance.instance);
 
 		// if we have a pending transform, apply it and transform bounding box
 		if (hasPending[i])
@@ -284,9 +286,6 @@ ModelContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTim
 
 			// update the actual transform
 			transforms[instance.instance] = transform;
-
-			Util::Array<Models::ModelNode::Instance*>& nodes = Models::modelPool->modelInstanceAllocator.Get<0>(instance.instance);
-			Util::Array<Models::NodeType>& types = Models::modelPool->modelInstanceAllocator.Get<1>(instance.instance);
 
 			// nodes are allocated breadth first, so just going through the list will guarantee the hierarchy is traversed in proper order
 			SizeT j;
@@ -308,6 +307,20 @@ ModelContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTim
 					parentTransform = tnode->modelTransform;
 					tnode->objectId = objectId;
 				}
+				
+			}
+		}
+
+		// walk through nodes with shader states and update them
+		SizeT j;
+		for (j = 0; j < nodes.Size(); j++)
+		{
+			Models::ModelNode::Instance* node = nodes[j];
+
+			if (types[j] >= NodeHasShaderState)
+			{
+				ShaderStateNode::Instance* snode = reinterpret_cast<ShaderStateNode::Instance*>(node);
+				snode->Update();
 			}
 		}
 	}

@@ -44,7 +44,7 @@ BruteforceSystem::Run()
 
 		// not really an output, but more like an in-out buffer
 		ctx.output.numBuffers = 1;
-		ctx.output.data[0] = (unsigned char*)&this->obs.vis[i];
+		ctx.output.data[0] = (unsigned char*)this->obs.vis[i];
 		ctx.output.dataSize[0] = sizeof(bool) * this->ent.count;
 		ctx.output.sliceSize[0] = sizeof(bool);
 

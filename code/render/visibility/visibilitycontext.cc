@@ -30,12 +30,11 @@ ObserverContext::ObserverAllocator ObserverContext::observerAllocator;
 ObservableContext::ObserveeAllocator ObservableContext::observeeAllocator;
 
 Util::Array<VisibilitySystem*> ObserverContext::systems;
-Memory::ArenaAllocator<1024> ObserverContext::drawPacketAllocator;
 
 Jobs::JobPortId ObserverContext::jobPort;
 Jobs::JobSyncId ObserverContext::jobInternalSync;
 Jobs::JobSyncId ObserverContext::jobHostSync;
-Threading::SafeQueue<Jobs::JobId> ObserverContext::runningJobs;
+Util::Queue<Jobs::JobId> ObserverContext::runningJobs;
 
 extern void VisibilitySortJob(const Jobs::JobFuncContext& ctx);
 
@@ -77,10 +76,11 @@ ObserverContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frame
 	const Util::Array<Graphics::GraphicsEntityId>& observerIds = observerAllocator.GetArray<ObserverEntityId>();
 	const Util::Array<Graphics::GraphicsEntityId>& observeeIds = ObservableContext::observeeAllocator.GetArray<ObservableEntityId>();
 
-	Util::Array<Math::matrix44>& observerTransforms = observerAllocator.GetArray<ObservableTransform>();
+	Util::Array<Math::matrix44>& observerTransforms = observerAllocator.GetArray<ObserverMatrix>();
 	Util::Array<Math::matrix44>& observeeTransforms = ObservableContext::observeeAllocator.GetArray<ObservableTransform>();
 
 	const Util::Array<VisibilityResultAllocator>& results = observerAllocator.GetArray<ObserverResultAllocator>();
+	Util::Array<bool*> observerResults = observerAllocator.GetArray<ObserverResults>();
 
 	IndexT i;
 	for (i = 0; i < observeeIds.Size(); i++)
@@ -153,6 +153,7 @@ ObserverContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frame
 	{
 		VisibilityResultAllocator& list = vis[i];
 		Util::Array<bool>& flags = list.GetArray<VisibilityResultFlag>();
+		observerResults[i] = flags.Begin();
 
 		for (IndexT j = 0; j < flags.Size(); j++)
 		{
@@ -179,8 +180,7 @@ ObserverContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frame
 	if (observerTransforms.Size() > 0) for (i = 0; i < ObserverContext::systems.Size(); i++)
 	{
 		VisibilitySystem* sys = ObserverContext::systems[i];
-		Util::Array<bool>& flags = vis[i].GetArray<VisibilityResultFlag>();
-		sys->PrepareObservers(observerTransforms.Begin(), flags.Begin(), observerTransforms.Size());
+		sys->PrepareObservers(observerTransforms.Begin(), observerResults.Begin(), observerTransforms.Size());
 	}
 
 	// setup observerable entities
@@ -204,14 +204,13 @@ ObserverContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frame
 	Jobs::JobSyncSignal(ObserverContext::jobInternalSync, ObserverContext::jobPort);
 	Jobs::JobSyncThreadWait(ObserverContext::jobInternalSync, ObserverContext::jobPort);
 
-	// free up draw packet allocator
-	drawPacketAllocator.Release();
-
 	for (i = 0; i < vis.Size(); i++)
 	{
-		Util::Array<bool>& flags = vis[i].GetArray<VisibilityResultFlag>();
-		Util::Array<Graphics::ContextEntityId>& entities = vis[i].GetArray<VisibilityResultCtxId>();
-		VisibilityDrawList& visibilities = observerAllocator.GetArray<ObserverDrawList>()[i];
+		const Util::Array<bool>& flags = vis[i].GetArray<VisibilityResultFlag>();
+		const Util::Array<Graphics::ContextEntityId>& entities = vis[i].GetArray<VisibilityResultCtxId>();
+		VisibilityDrawList& visibilities = observerAllocator.Get<ObserverDrawList>(i);
+		Memory::ArenaAllocator<1024>& allocator = observerAllocator.Get<ObserverDrawListAllocator>(i);
+		allocator.Release();
 
         if (entities.Size() == 0)
         {
@@ -237,12 +236,12 @@ ObserverContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frame
 		ctx.output.dataSize[0] = sizeof(VisibilityDrawList);
 		ctx.output.sliceSize[0] = sizeof(VisibilityDrawList);
 
-		ctx.uniform.data[0] = &drawPacketAllocator;
-		ctx.uniform.dataSize[0] = sizeof(drawPacketAllocator);
+		ctx.uniform.data[0] = &allocator;
+		ctx.uniform.dataSize[0] = sizeof(allocator);
 
 		// schedule job
 		Jobs::JobId job = Jobs::CreateJob({ VisibilitySortJob });
-		Jobs::JobSchedule(job, ObserverContext::jobPort, ctx, false); // run all sort jobs on the same thread since they are using the same allocator
+		Jobs::JobSchedule(job, ObserverContext::jobPort, ctx);
 
 		// add to delete list
 		ObserverContext::runningJobs.Enqueue(job);
@@ -262,9 +261,6 @@ ObserverContext::Create()
     
 	__bundle.OnBeforeFrame = ObserverContext::OnBeforeFrame;
 	__bundle.OnWaitForWork = ObserverContext::WaitForVisibility;
-	__bundle.OnBeforeView = nullptr;
-	__bundle.OnAfterView = nullptr;
-	__bundle.OnAfterFrame = nullptr;
 	__bundle.StageBits = &ObservableContext::__state.currentStage;
 #ifndef PUBLIC_BUILD
 	__bundle.OnRenderDebug = ObserverContext::OnRenderDebug;
@@ -372,19 +368,12 @@ ObserverContext::WaitForVisibility(const IndexT frameIndex, const Timing::Time f
 {
 	if (ObserverContext::runningJobs.Size() > 0)
 	{
-		Util::Array<Jobs::JobId> jobs;
-		jobs.Reserve(100);
-		ObserverContext::runningJobs.DequeueAll(jobs);
-
 		// wait for all jobs to finish
-		Jobs::JobSyncHostWait(ObserverContext::jobHostSync);
+		Jobs::JobSyncHostWait(ObserverContext::jobHostSync); 
 
 		// destroy jobs
-		IndexT i;
-		for (i = 0; i < jobs.Size(); i++)
-		{
-			Jobs::DestroyJob(jobs[i]);
-		}
+		while (!ObserverContext::runningJobs.IsEmpty())
+			Jobs::DestroyJob(ObserverContext::runningJobs.Dequeue());
 	}
 }
 

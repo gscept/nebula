@@ -11,7 +11,7 @@ namespace Visibility
 /**
 */
 void
-VisibilitySystem::PrepareObservers(const Math::matrix44* transforms, const bool* vis, const SizeT count)
+VisibilitySystem::PrepareObservers(const Math::matrix44* transforms, bool* const* vis, const SizeT count)
 {
 	this->obs.transforms = transforms;
 	this->obs.vis = vis;

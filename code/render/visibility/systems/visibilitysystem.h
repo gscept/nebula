@@ -80,7 +80,7 @@ class VisibilitySystem
 public:
 
 	/// setup observers
-	virtual void PrepareObservers(const Math::matrix44* transforms, const bool* vis, const SizeT count);
+	virtual void PrepareObservers(const Math::matrix44* transforms, bool* const* vis, const SizeT count);
 	/// prepare system with entities to insert into the structure
 	virtual void PrepareEntities(const Math::matrix44* transforms, Graphics::GraphicsEntityId* entities, const SizeT count);
 	/// run system
@@ -94,7 +94,7 @@ protected:
 	struct Observer
 	{
 		const Math::matrix44* transforms;
-		const bool* vis;
+		bool* const* vis;
 		SizeT count;
 	} obs;
 

@@ -53,9 +53,6 @@ VisibilitySortJob(const Jobs::JobFuncContext& ctx)
 				// add an array if non existant, or return reference to one if it exists
 				auto& draw = bucket.AddUnique(inst->node);
 
-				// update the shader node state
-				shdNodeInst->Update();
-
 				// allocate memory for draw packet
 				void* mem = packetAllocator->Alloc(shdNodeInst->GetDrawPacketSize());
 

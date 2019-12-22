@@ -24,7 +24,9 @@ enum ObserverAllocatorMembers
 	ObserverEntityId,
 	ObserverEntityType,
 	ObserverResultAllocator,
-	ObserverDrawList
+	ObserverResults,
+	ObserverDrawList,
+	ObserverDrawListAllocator
 };
 
 enum VisibilityResultAllocatorMembers
@@ -88,12 +90,11 @@ public:
 	static Jobs::JobPortId jobPort;
 	static Jobs::JobSyncId jobInternalSync;
 	static Jobs::JobSyncId jobHostSync;
-	static Threading::SafeQueue<Jobs::JobId> runningJobs;
+	static Util::Queue<Jobs::JobId> runningJobs;
 
 private:
 
 	friend class ObservableContext;
-
 
 	typedef Ids::IdAllocator<
 		bool,                               // visibility result
@@ -105,7 +106,9 @@ private:
 		Graphics::GraphicsEntityId, 		// entity id
 		VisibilityEntityType,				// type of object so we know how to get the transform
 		VisibilityResultAllocator,			// visibility lookup table
-		VisibilityDrawList					// draw list
+		bool*,
+		VisibilityDrawList,					// draw list
+		Memory::ArenaAllocator<1024>		// memory allocator for draw commands
 	> ObserverAllocator;
 	static ObserverAllocator observerAllocator;
 
@@ -116,8 +119,6 @@ private:
     
 	/// keep as ordinary array of pointers, no need to have them cache aligned
 	static Util::Array<VisibilitySystem*> systems;
-
-	static Memory::ArenaAllocator<1024> drawPacketAllocator;
 };
 
 class ObservableContext : public Graphics::GraphicsContext
