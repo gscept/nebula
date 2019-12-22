@@ -121,7 +121,7 @@ void RemoveBackBufferTexture(const CoreGraphics::TextureId tex);
 /// begin complete frame
 bool BeginFrame(IndexT frameIndex);
 /// start a new submission, with an optional argument for waiting for another queue
-void BeginSubmission(CoreGraphicsQueueType queue);
+void BeginSubmission(CoreGraphicsQueueType queue, CoreGraphicsQueueType waitQueue);
 /// begin a rendering pass
 void BeginPass(const CoreGraphics::PassId pass);
 /// progress to next subpass	
@@ -238,7 +238,7 @@ void EndBatch();
 /// end current pass
 void EndPass();
 /// end the current submission, 
-void EndSubmission(CoreGraphicsQueueType queue, CoreGraphicsQueueType blockQueue, bool endOfFrame = false);
+void EndSubmission(CoreGraphicsQueueType queue, CoreGraphicsQueueType waitQueue, bool endOfFrame = false);
 /// end current frame
 void EndFrame(IndexT frameIndex);
 /// check if inside BeginFrame

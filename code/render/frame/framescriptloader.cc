@@ -585,14 +585,14 @@ FrameScriptLoader::ParseFrameSubmission(const Ptr<Frame::FrameScript>& script, c
 		if (waitQueue)
 			op->waitQueue = CoreGraphicsQueueTypeFromString(waitQueue->string_value);
 	}
+	else
+	{
+		// copy wait queue from previous begin on the same queue
+		op->waitQueue = FrameScriptLoader::LastSubmission[op->queue]->waitQueue;
+	}
 
-	// insert a block queue into the last submission for the opposite queue, if this queue needs to wait
-	if (op->waitQueue != InvalidQueueType)
-		FrameScriptLoader::LastSubmission[op->queue == GraphicsQueueType ? ComputeQueueType : GraphicsQueueType]->blockQueue = op->queue;
-
-	// update last submission
-	if (startOrEnd == 1)
-		FrameScriptLoader::LastSubmission[op->queue] = op;
+	// remember the begin
+	FrameScriptLoader::LastSubmission[op->queue] = op;
 
 	// add operation to script
 	script->AddOp(op);

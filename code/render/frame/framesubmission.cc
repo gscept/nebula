@@ -14,7 +14,6 @@ namespace Frame
 FrameSubmission::FrameSubmission() :
 	queue(InvalidQueueType),
 	waitQueue(InvalidQueueType),
-	blockQueue(InvalidQueueType),
 	resourceResetBarriers(nullptr),
 	startOrEnd(0)
 {
@@ -38,7 +37,7 @@ FrameSubmission::CompiledImpl::Run(const IndexT frameIndex)
 	switch (this->startOrEnd)
 	{
 	case 0:
-		CoreGraphics::BeginSubmission(this->queue);
+		CoreGraphics::BeginSubmission(this->queue, this->waitQueue);
 		break;
 	case 1:
 		// I will admit, this is a little hacky, and in the future we might put this in its own command...
@@ -51,10 +50,10 @@ FrameSubmission::CompiledImpl::Run(const IndexT frameIndex)
 				CoreGraphics::BarrierReset((*this->resourceResetBarriers)[i]);
 				CoreGraphics::BarrierInsert((*this->resourceResetBarriers)[i], this->queue);
 			}			
-			CoreGraphics::EndSubmission(this->queue, this->blockQueue, true);
+			CoreGraphics::EndSubmission(this->queue, this->waitQueue, true);
 		}
 		else
-			CoreGraphics::EndSubmission(this->queue, this->blockQueue);
+			CoreGraphics::EndSubmission(this->queue, this->waitQueue);
 		break;
 	}
 }
@@ -68,7 +67,6 @@ FrameSubmission::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
 	ret->queue = this->queue;
 	ret->waitQueue = this->waitQueue;
-	ret->blockQueue = this->blockQueue;
 	ret->startOrEnd = this->startOrEnd;
 	ret->resourceResetBarriers = this->resourceResetBarriers;
 	return ret;

@@ -68,7 +68,7 @@ public:
 	void SetToNextContext(const CoreGraphicsQueueType type);
 
 	/// append submission to context to execute later, supports waiting for a queue
-	void AppendSubmissionTimeline(CoreGraphicsQueueType type, VkCommandBuffer cmds, VkPipelineStageFlags waitFlags, CoreGraphicsQueueType waitQueue);
+	void AppendSubmissionTimeline(CoreGraphicsQueueType type, VkCommandBuffer cmds);
 	/// append a wait on the current submission of a specific queue
 	void AppendWaitTimeline(CoreGraphicsQueueType type, VkPipelineStageFlags waitFlags, CoreGraphicsQueueType waitQueue);
 	/// append a wait on the current submission of a specific queue and singal index
@@ -79,6 +79,8 @@ public:
 	void AppendSignalTimeline(CoreGraphicsQueueType type, VkSemaphore signalSemaphore);
 	/// flush submissions
 	uint64 FlushSubmissionsTimeline(CoreGraphicsQueueType type, VkFence fence);
+	/// get timeline index
+	uint64 GetTimelineIndex(CoreGraphicsQueueType type);
 
 	/// add submission to context, but don't really execute
 	void AppendSubmission(CoreGraphicsQueueType type, VkCommandBuffer cmds, VkSemaphore waitSemaphore, VkPipelineStageFlags waitFlag, VkSemaphore signalSemaphore);
