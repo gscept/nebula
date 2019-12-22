@@ -510,7 +510,7 @@ FlipY(vec2 uv)
 float
 LinearizeDepth(float depth)
 {
-	return depth / (FocalLengthNearFar.w - depth * (FocalLengthNearFar.w - FocalLengthNearFar.z));
+	return (FocalLengthNearFar.z * FocalLengthNearFar.w) / (depth * (FocalLengthNearFar.z - FocalLengthNearFar.w) + FocalLengthNearFar.w);
 }
 
 //-------------------------------------------------------------------------------------------------------------

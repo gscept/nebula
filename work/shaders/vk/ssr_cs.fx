@@ -1,6 +1,9 @@
 //------------------------------------------------------------------------------
 //  ssr_cs.fx
-//  (C) 2015 Gustav Sterbrant
+//  (C) 2015 - 2019 Fredrik Lindahl & Gustav Sterbrant
+//
+// TraceScreenSpaceRay is inspired by the work by
+// Morgan McGuire and Michael Mara, Efficient GPU Screen-Space Ray Tracing, Journal of Computer Graphics Techniques (JCGT), vol. 3, no. 4, 73-85, 2014
 //------------------------------------------------------------------------------
 
 #include "lib/std.fxh"
@@ -8,80 +11,230 @@
 #include "lib/techniques.fxh"
 #include "lib/shared.fxh"
 
-sampler2D ColorBuffer;
-readwrite rgba16f image2D EmissiveImage;
+write rgba16f image2D ReflectionBuffer;
 
-const float SearchDist = 5.0f;
-const float SearchDistInv = 0.2f;
-const int MaxBinarySearchSteps = 5;
-const int MaxSteps = 50;
-const float RayStep = 0.25f;
-const float MinRayStep = 0.001f;
-vec2 Resolution;
-vec2 InvResolution;
+varblock SSRBlock
+{
+	mat4 ViewToTextureSpace = mat4(1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1);
+};
+
+const float zThickness = 0.35; // How thick is each depth fragment? higher value yields some wierd smudging at edges of reflection, but thinner z means we might miss some geometry. This should essentially be the average thickness of the geometry. to do dynamically would be a nightmare however...
+
+// DDA tracing constants
+const float pixelStride = 1; // lets you skip pixels during iteration. Larger stride means longer rays with same number of samples.
+const float maxSteps = 500.0f; //Less steps means shorter reflections, but better performance
+const float maxDistance = 100; //Not orthogonal to max steps. reflection of surfaces far away in world space are prone to rapid shifts with only a slight change in camera positioning, which can lead to objectionable temporal flicker. Setting this parameter can help mitigate that.
+const float jitter = 0.30; // Number between 0 and 1 for how far to bump the ray in stride units to conceal banding artifacts
+
+// Raymarching constants
+const float maxMarchingSteps = 80;
+const float maxMarchingDistance = 100;
+const float marchingStepSize = 0.10;
+const float rayOffset = 0.5;
+const float distanceCutoff = 200; // Rays won't be evaluated beyond this distance from the camera
 
 samplerstate LinearState
 {
-	//Samplers = {DepthBuffer, SpecularBuffer, NormalBuffer};
+	//Samplers = {DepthBuffer, SpecularBuffer, NormalBuffer, AlbedoBuffer};
+	Filter = Linear;
+	BorderColor = {0,0,0,0};
+	AddressU = Border;
+	AddressV = Border;
+};
+
+samplerstate NoFilterState
+{
+	//Samplers = {DepthBuffer, SpecularBuffer, NormalBuffer, AlbedoBuffer};
 	Filter = Point;
 	BorderColor = {0,0,0,0};
 	AddressU = Border;
 	AddressV = Border;
 };
 
-samplerstate ColorState
+float DistanceSquared(vec2 a, vec2 b)
 {
-	Samplers = {ColorBuffer};
-	BorderColor = {1,0,0,0};
-	AddressU = Border;
-	AddressV = Border;
-};
-
-#define KERNEL_RADIUS 16
-#define HALF_KERNEL_RADIUS (KERNEL_RADIUS/2.0f)
-
-#define SSR_TILE_WIDTH 320
-#define SHARED_MEM_SIZE (KERNEL_RADIUS + SSR_TILE_WIDTH + KERNEL_RADIUS)
-//groupshared vec4 SharedMemory[SSR_TILE_WIDTH];
-groupshared float SharedDepth[32*32];
-
-//------------------------------------------------------------------------------
-/**
-*/
-vec2 
-ConvertProjToTexCoord(in vec4 projCoord)
-{
-	vec2 res;
-	res.xy = (projCoord.xy / projCoord.ww);
-	//res.y = 1 - res.y;
-	return res;
+	a -= b;
+	return dot(a, a);
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-vec2
-RayTrace2D(in vec3 startDir, in vec3 startPos, in float startDepth, in ivec2 UV)
+bool TraceScreenSpaceRay(in vec3 rayOrigin,
+						 in vec3 rayDirection,
+						 out vec2 hitTexCoord
+						 )
 {
-	mat4 trans;
-	vec3 reflection = startPos;
-	vec2 projCoord = ConvertProjToTexCoord(trans * vec4(reflection, 1.0f));
-	float bufferDepth = sample2DLod(DepthBuffer, LinearState, projCoord, 0).r;
-	float reflectionDepth = length(reflection);
+	const float nearPlane = -FocalLengthNearFar.z;
+
+	// Clip to the near plane
+	const float rayLength = ((rayOrigin.z + rayDirection.z * maxDistance) > nearPlane) ? (nearPlane - rayOrigin.z) / rayDirection.z : maxDistance;
+
+	const vec3 rayEnd = rayOrigin + rayDirection * rayLength;
 	
-	for (int i = 0; i < MaxSteps; i++)
+	// TEMP: the screen-pixel-projection matrix should be precomputed
+	const vec2 ScreenSize = imageSize(ReflectionBuffer);
+	const vec2 InvScreenSize = vec2(1.0f) / ScreenSize;
+
+	const float sx = ScreenSize[0] / 2.0f;
+	const float sy = ScreenSize[1] / 2.0f;
+
+	const mat4 scrScale = mat4(sx,   0.0,  0.0,  0.0,
+							   0.0,  sy,   0.0,  0.0,
+							   0.0,  0.0,  1.0,  0.0,
+							   sx,   sy,   0.0,  1.0 );
+
+	const mat4 proj = scrScale * Projection;
+
+	// Project into homogeneous clip space
+	const vec4 H0 = proj * vec4( rayOrigin, 1.0f);
+	const vec4 H1 = proj * vec4( rayEnd, 1.0f);
+	
+	float k0 = 1.0 / H0.w;
+	const float k1 = 1.0 / H1.w;
+
+	// The interpolated homogeneous version of the camera-space points
+	vec3 Q0 = rayOrigin * k0;
+	vec3 Q1 = rayEnd * k1;
+
+	// Screen-space endpoints
+	vec2 P0 = (H0.xy * k0);
+    vec2 P1 = (H1.xy * k1);
+
+    // If the line is degenerate, make it cover at least one pixel
+    // to avoid handling zero-pixel extent as a special case later
+    P1 += (DistanceSquared(P0, P1) < 0.0001) ? 0.01 : 0.0;
+
+	vec2 delta = P1 - P0;
+
+	// Permute so that the primary iteration is in x to collapse
+	// all quadrant-specific DDA cases later
+	const bool permute = abs(delta.x) < abs(delta.y);
+	
+    if (permute)
 	{
-		if (bufferDepth < reflectionDepth)
-		{
-			float delta = bufferDepth - reflectionDepth;
-			if (delta < 0.03f)	break;
-		}
-		reflection += startDir;
-		projCoord = ConvertProjToTexCoord(trans * vec4(reflection, 1.0f));
-		bufferDepth = sample2DLod(DepthBuffer, LinearState, projCoord, 0).r;
-		reflectionDepth = length(reflection);
+		// This is a more-vertical line
+		delta = delta.yx;
+		P0 = P0.yx;
+		P1 = P1.yx;
 	}
-	return vec2(-1);
+
+	const float stepDir = sign(delta.x);
+	const float invdx = stepDir / delta.x;
+
+	// Track the derivatives of Q and k
+	vec3  dQ = (Q1 - Q0) * invdx;
+	float dk = (k1 - k0) * invdx;
+	vec2  dP = vec2(stepDir, delta.y * invdx);
+
+	// Scale derivatives by the desired pixel stride and then
+	// offset the starting values by the jitter fraction
+    const float stride = 1.0f + pixelStride;
+	dP *= stride;
+	dQ *= stride;
+	dk *= stride;
+
+	P0 += dP * jitter;
+	Q0 += dQ * jitter;
+	k0 += dk * jitter;
+
+	// Track ray step and derivatives in a float4 to parallelize
+	vec4 PQk = vec4( P0.xy, Q0.z, k0);
+	vec4 dPQk = vec4( dP.xy, dQ.z, dk);
+	
+    const float end = P1.x * stepDir;
+	
+    const float zBoundsMin = min(rayEnd.z, rayOrigin.z);
+    const float zBoundsMax = max(rayEnd.z, rayOrigin.z);
+
+	float i;
+	float prevZMax = (dPQk.z * 0.5 + PQk.z) / (dPQk.w * 0.5 + PQk.w);
+	float zMin = prevZMax;
+    float zMax = prevZMax;
+    float depth = prevZMax + 1e4;
+
+	PQk += dPQk;
+
+	for(i = 0;
+	    ((PQk.x * stepDir) <= end) &&
+	    (i < maxSteps) &&
+	    ((zMax < depth - zThickness) || (zMin > depth));
+	   i += 1.0f)
+	{
+		PQk += dPQk;
+		
+		zMin = prevZMax;
+		zMax = (dPQk.z * 0.5 + PQk.z) / (dPQk.w * 0.5 + PQk.w);
+		zMax = clamp(zMax, zBoundsMin, zBoundsMax);
+		prevZMax = zMax;
+		if (zMin > zMax)
+		{
+			//Swap
+			float t = zMin;
+			zMin = zMax;
+			zMax = t;
+		}
+
+		hitTexCoord = permute ? PQk.yx : PQk.xy;
+
+		float pixelDepth = fetch2D(DepthBuffer, Basic2DSampler, ivec2(hitTexCoord), 0).r;
+        depth = -LinearizeDepth(pixelDepth);
+	}
+
+	// viewspace hitpoint
+	// PQk -= dPQk;
+	// i -= 1.0f;
+	// Q0.xy += dQ.xy * i;
+	// Q0.z = PQk.z;
+	// hitPoint = Q0 / PQk.w;
+
+	return (i < maxSteps) &&
+		   (zMax >= depth - zThickness) && (zMin < depth);
+}
+
+bool RaymarchScreenSpace(in vec3 rayOrigin,
+						 in vec3 rayDirection,
+						 out vec2 hitTexCoord)
+{
+	if (rayOrigin.z < -distanceCutoff)
+		return false;
+
+	vec3 reflection = (rayDirection * rayOffset) + rayOrigin;
+	float rayLength = length(((rayDirection * marchingStepSize) * maxMarchingSteps) + reflection);
+
+	const vec2 ScreenSize = imageSize(ReflectionBuffer);
+
+	// calculate amount of steps to take
+	float numSteps = maxMarchingSteps;
+	if( rayLength > maxMarchingDistance)
+	{
+		float ratio = min(rayLength, maxMarchingDistance) / maxMarchingDistance;
+		numSteps *= ratio; // No need to floor!
+	}
+	
+	vec4 clip;
+	vec2 projCoord;
+	float bufferDepth = 0;
+	float reflectionDepth = 0;
+
+	for (float i = 0; i < numSteps; i++)
+	{
+		reflection += rayDirection * marchingStepSize;
+		clip = Projection * vec4(reflection, 1);
+		clip /= clip.w;
+		projCoord = (clip.xy + 1.0) / 2.0;
+		bufferDepth = LinearizeDepth(fetch2D(DepthBuffer, Basic2DSampler, ivec2(projCoord * ScreenSize), 0).r);
+		reflectionDepth = -reflection.z;
+
+
+		if (bufferDepth < reflectionDepth - zThickness)
+		{
+			float delta = reflectionDepth - bufferDepth;
+			if (delta < length(rayDirection))
+			{
+				hitTexCoord = projCoord * ScreenSize;
+				return true;
+			}
+		}
+	}
+	return false;
 }
 
 //------------------------------------------------------------------------------
@@ -94,35 +247,36 @@ shader
 void
 csMain()
 {
-	ivec2 PixelCoord = ivec2(gl_GlobalInvocationID.xy);
-	vec2 ScreenCoord = PixelCoord * InvResolution;
-	vec2 UV = ScreenCoord + vec2(0.5f) * InvResolution;
-	//UV.y = 1 - UV.y;
-	
-	float Depth = sample2DLod(DepthBuffer, LinearState, UV, 0).r;
-	vec4 Spec = sample2DLod(SpecularBuffer, LinearState, UV, 0);
-	
-	// create view vector into frustum
-	vec3 viewVec = normalize(vec3(UV * FocalLengthNearFar.xy, -1));
-	
-	// calculate surface position so we know where to start tracing the ray
-	vec3 surfacePos = viewVec * Depth;
-	
-	// calculate reflection vector
-	vec3 viewSpaceNormal = UnpackViewSpaceNormal(sample2DLod(NormalBuffer, LinearState, UV, 0));
-	vec3 reflection = normalize(reflect(viewVec, viewSpaceNormal));
-	
-	// trace ray
-	vec2 coord = RayTrace2D(-reflection * MinRayStep, surfacePos, Depth, PixelCoord);
-	float modulate = saturate(dot(-reflection, viewVec));
-	//float modulate = 0.1f;
+	ivec2 location = ivec2(gl_GlobalInvocationID.xy);
+	const vec2 screenSize = imageSize(ReflectionBuffer);
+	if (location.x >= screenSize.x || location.y > screenSize.y)
+		return;
 
-	// blend with already existing emissive
-	vec4 color = textureLod(ColorBuffer, coord, 0) * Spec;
-	vec4 emissive = imageLoad(EmissiveImage, PixelCoord);
-	groupMemoryBarrier();
-	imageStore(EmissiveImage, PixelCoord, lerp(emissive, color, modulate) + vec4(reflection.xyz / 10, 0));
-	//imageStore(EmissiveImage, PixelCoord, textureLod(ColorBuffer, UV, 0) * modulate);
+	vec2 invScreenSize = vec2(1.0/screenSize.x, 1.0/screenSize.y);
+
+	vec2 UV = location * invScreenSize;
+
+	vec4 n = sample2DLod(NormalBuffer, LinearState, UV, 0);
+	vec3 viewSpaceNormal = normalize((transpose(inverse(mat3(View))) * normalize(n.xyz)).xyz);
+	float pixelDepth = fetch2D(DepthBuffer, Basic2DSampler, location, 0).r;
+	
+	vec3 rayOrigin = PixelToView(UV, pixelDepth).xyz;
+
+	vec3 viewDir = normalize(rayOrigin);
+	vec3 reflectionDir = (reflect(viewDir, viewSpaceNormal));
+
+	vec2 hitTexCoord = vec2(0.0,0.0);
+	vec4 reflectionColor = vec4(0, 0, 0, 0);
+	if (TraceScreenSpaceRay(rayOrigin, reflectionDir, hitTexCoord))
+	{
+		reflectionColor = sample2DLod(AlbedoBuffer, LinearState, (hitTexCoord * invScreenSize), 0);
+	}
+	else
+	{
+		//TODO: Get fall-back value.
+	}
+	
+	imageStore(ReflectionBuffer, location, reflectionColor);
 }
 
 //------------------------------------------------------------------------------

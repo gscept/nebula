@@ -195,6 +195,21 @@
             texture: "LightBuffer"
           }
         ]
+      },
+      {
+        name: "SSR",
+        class: "Frame::SSRPlugin",
+        render_textures: [
+          "AlbedoBuffer",
+          "NormalBuffer",
+          "SpecularMap"
+        ],
+        depth_stencils: [
+          "ZBuffer"
+        ],
+        read_write_textures: [
+          "SSRBuffer"
+        ]
       }
     ],
 
@@ -243,7 +258,7 @@
         },
         {
           name: "NormalBuffer",
-          clear: [ 0, 0, -1, 0 ],
+          clear: [ 0, 0, 0, 0 ],
           store: true
         },
         {
@@ -309,6 +324,49 @@
       ]
     },
 
+    plugin: {
+      name: "SSR-Run",
+      inputs: [
+        {
+          name: "ZBuffer",
+          access: "DepthAttachmentRead",
+          layout: "DepthStencilRead",
+          stage: "ComputeShader",
+          aspect: "Color"
+        },
+        {
+          name: "AlbedoBuffer",
+          access: "ShaderRead",
+          layout: "ShaderRead",
+          stage: "ComputeShader",
+          aspect: "Color"
+        },
+        {
+          name: "NormalBuffer",
+          access: "ShaderRead",
+          layout: "ShaderRead",
+          stage: "ComputeShader",
+          aspect: "Color"
+        },
+        {
+          name: "SpecularBuffer",
+          access: "ShaderRead",
+          layout: "ShaderRead",
+          stage: "ComputeShader",
+          aspect: "Color"
+        }
+      ],
+      outputs: [
+        {
+          name: "SSRBuffer",
+          access: "ShaderWrite",
+          layout: "ShaderRead",
+          stage: "ComputeShader",
+          aspect: "Color"
+        }
+      ]
+    },
+
     _comment: "------------ CLUSTERING DEFERRED ------------",
     plugin: {
       name: "LightContext - Deferred Cluster",
@@ -347,7 +405,14 @@
           layout: "ShaderRead",
           stage: "ComputeShader",
           aspect: "Color"
-        }
+        },
+        {
+          name: "SSRBuffer",
+          access: "ShaderRead",
+          layout: "ShaderRead",
+          stage: "PixelShader",
+          aspect: "Color"
+        },
       ]
       outputs: [
         {
@@ -394,7 +459,7 @@
           name: "Bloom-BrightnessLowpass",
         }
       }
-    }
+    },
 
     _comment: "------------ BLOOM BLUR ------------",
 
