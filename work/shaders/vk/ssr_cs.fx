@@ -22,7 +22,7 @@ const float zThickness = 0.35; // How thick is each depth fragment? higher value
 
 // DDA tracing constants
 const float pixelStride = 1; // lets you skip pixels during iteration. Larger stride means longer rays with same number of samples.
-const float maxSteps = 500.0f; //Less steps means shorter reflections, but better performance
+const float maxSteps = 16.0f; //Less steps means shorter reflections, but better performance
 const float maxDistance = 100; //Not orthogonal to max steps. reflection of surfaces far away in world space are prone to rapid shifts with only a slight change in camera positioning, which can lead to objectionable temporal flicker. Setting this parameter can help mitigate that.
 const float jitter = 0.30; // Number between 0 and 1 for how far to bump the ray in stride units to conceal banding artifacts
 

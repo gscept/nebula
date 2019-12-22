@@ -53,7 +53,7 @@ SSRPlugin::Setup()
     for (IndexT i = 0; i < numFrames; ++i)
     {
         this->ssrTables[i] = ShaderCreateResourceTable(this->shader, NEBULA_BATCH_GROUP);
-        ResourceTableSetShaderRWTexture(this->ssrTables[i], { this->readWriteTextures[0], this->ssrBufferSlot, 0, SamplerId::Invalid() });
+        ResourceTableSetRWTexture(this->ssrTables[i], { this->textures["SSRBuffer"], this->ssrBufferSlot, 0, SamplerId::Invalid() });
         ResourceTableCommitChanges(this->ssrTables[i]);
     }
 
@@ -66,10 +66,10 @@ SSRPlugin::Setup()
         Math::matrix44 view = CameraContext::GetTransform(Graphics::GraphicsServer::Instance()->GetCurrentView()->GetCamera());
 
 #if NEBULA_GRAPHICS_DEBUG
-		CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_RED, "Screen Space Reflections");
+		CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "Screen Space Reflections");
 #endif
         
-        TextureDimensions dims = ShaderRWTextureGetDimensions(this->readWriteTextures[0]);
+        TextureDimensions dims = TextureGetDimensions(this->textures["SSRBuffer"]);
 
         float sx = (float)dims.width / 2.0f;
         float sy = (float)dims.height / 2.0f;

@@ -7,7 +7,6 @@
 */
 //------------------------------------------------------------------------------
 #include "frameplugin.h"
-#include "coregraphics/rendertexture.h"
 #include "coregraphics/shader.h"
 #include "coregraphics/resourcetable.h"
 // #include "renderutil/drawfullscreenquad.h"

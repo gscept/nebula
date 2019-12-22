@@ -131,7 +131,7 @@
         usage: "ReadWrite",
         width: 1.0,
         height: 1.0,
-        type: "Texture2D",
+        type: "Texture2D"
       },
       {
         name: "LightDebugBuffer",
@@ -140,7 +140,16 @@
         usage: "ReadWrite",
         width: 1.0,
         height: 1.0,
-        type: "Texture2D",
+        type: "Texture2D"
+      },
+      {
+        name: "SSRBuffer",
+        format: "R16G16B16A16F",
+        relative: true,
+        usage: "ReadWrite",
+        width: 1.0,
+        height: 1.0,
+        type: "Texture2D"
       },
       {
         name: "ZBuffer",
@@ -199,17 +208,13 @@
       {
         name: "SSR",
         class: "Frame::SSRPlugin",
-        render_textures: [
-          "AlbedoBuffer",
-          "NormalBuffer",
-          "SpecularMap"
+        textures: [
+          {
+            name: "SSRBuffer",
+            texture: "SSRBuffer"
+          },
+          
         ],
-        depth_stencils: [
-          "ZBuffer"
-        ],
-        read_write_textures: [
-          "SSRBuffer"
-        ]
       }
     ],
 
