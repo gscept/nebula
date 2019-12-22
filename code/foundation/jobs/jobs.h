@@ -108,7 +108,6 @@ public:
 			{
 				uint slice;
 				uint numSlices;
-				uint stride;
 				JobContext context;
 				void(*JobFunc)(const JobFuncContext& ctx);
 				const std::function<void()>* callback;
@@ -136,7 +135,7 @@ public:
 	bool HasWork();
 
 	/// push a set of job slices
-	void PushJobSlices(uint sliceIndex, uint numSlices, uint stride, const JobContext ctx, void(*JobFunc)(const JobFuncContext& ctx), const std::function<void()>* callback);
+	void RunJobSlices(uint sliceIndex, uint numSlices, const JobContext ctx, void(*JobFunc)(const JobFuncContext& ctx), const std::function<void()>* callback);
 	/// push command buffer work
 	void PushCommand(const JobThreadCommand& command);
 	/// push command buffer work

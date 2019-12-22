@@ -128,6 +128,7 @@ JobSchedule(const JobId& job, const JobPortId& port, const JobContext& ctx, cons
 		numWorkUnitSlices[i] += 1;
 	}
 
+	uint offset = 0;
 	for (IndexT i = 0; i < threads.Size(); i++)
 	{
 		// go through slices and send jobs to threads
@@ -135,13 +136,14 @@ JobSchedule(const JobId& job, const JobPortId& port, const JobContext& ctx, cons
 		{
 			JobThread::JobThreadCommand cmd;
 			cmd.ev = JobThread::RunJob;
-			cmd.run.slice = i;
+			cmd.run.slice = offset;
 			cmd.run.numSlices = numWorkUnitSlices[i];
-			cmd.run.stride = stride;
 			cmd.run.context = ctx;
 			cmd.run.JobFunc = info.JobFunc;
 			cmd.run.callback = callback ? &callback : nullptr;
 			threads[threadIndex]->PushCommand(cmd);
+
+			offset += numWorkUnitSlices[i];
 
 			// if we cycle threads (default) put work slices on different threads
 			if (cycleThreads)
@@ -163,7 +165,6 @@ JobSchedule(const JobId& job, const JobPortId& port)
 	cmd.ev = JobThread::RunJob;
 	cmd.run.slice = 0;
 	cmd.run.numSlices = 1;
-	cmd.run.stride = 0;
 	cmd.run.context = Jobs::JobContext();
 	cmd.run.JobFunc = info.JobFunc;
 	cmd.run.callback = nullptr;
@@ -320,6 +321,7 @@ JobSyncThreadWait(const JobSyncId id, const JobPortId port)
 		cmd.ev = JobThread::Wait;
 		cmd.sync.completionCounter = nullptr;
 		cmd.sync.ev = event;
+		cmd.sync.callback = nullptr;
 		thread->PushCommand(cmd);
 	}
 }
@@ -390,7 +392,7 @@ JobThread::DoWork()
 			switch (cmd.ev)
 			{
 			case RunJob:
-				this->PushJobSlices(cmd.run.slice, cmd.run.numSlices, cmd.run.stride, cmd.run.context, cmd.run.JobFunc, cmd.run.callback);
+				this->RunJobSlices(cmd.run.slice, cmd.run.numSlices, cmd.run.context, cmd.run.JobFunc, cmd.run.callback);
 				break;
 			case Signal:
 			{
@@ -432,7 +434,7 @@ JobThread::HasWork()
 /**
 */
 void
-JobThread::PushJobSlices(uint firstSliceIndex, uint numSlices, uint stride, const JobContext ctx, void(*JobFunc)(const JobFuncContext& ctx), const std::function<void()>* callback)
+JobThread::RunJobSlices(uint firstSliceIndex, uint numSlices, const JobContext ctx, void(*JobFunc)(const JobFuncContext& ctx), const std::function<void()>* callback)
 {
 	uint sliceIndex = firstSliceIndex;
 
@@ -487,7 +489,7 @@ JobThread::PushJobSlices(uint firstSliceIndex, uint numSlices, uint stride, cons
 		JobFunc(tctx);
 
 		// offset slice index by calculated stride
-		sliceIndex += stride;
+		sliceIndex++;
 	}
 }
 
