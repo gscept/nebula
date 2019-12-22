@@ -62,6 +62,7 @@
 #define Texture3D sampler3D
 #define TextureCube samplerCube
 #define TextureCubeArray samplerCubeArray
+#define mad(x,y,z) fma(x,y,z)
 
 void sincos(float angle, out float sinus, out float cosinus)
 {
@@ -69,12 +70,12 @@ void sincos(float angle, out float sinus, out float cosinus)
 	cosinus = cos(angle);
 }
 
-#define ddx dFdx
-#define ddy dFdy
-#define lerp mix
-#define frac fract
+#define ddx(x) dFdx(x)
+#define ddy(x) dFdy(x)
+#define lerp(x,y,z) mix(x,y,z)
+#define frac(x) fract(x)
 #define rsqrt(x) inversesqrt(x)
-#define fmod mod
+#define fmod(x,y) mod(x,y)
 #define saturate(x) clamp(x, 0.0f, 1.0f)
 #define mul(x, y) y * x
 

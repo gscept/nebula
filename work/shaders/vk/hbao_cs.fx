@@ -21,7 +21,7 @@ varblock HBAOBlock
 
 // Step size in number of pixels
 #ifndef STEP_SIZE
-#define STEP_SIZE 2
+#define STEP_SIZE 16
 #endif
 
 // Number of shared-memory samples per direction
@@ -57,7 +57,7 @@ groupshared vec2 SharedMemory[SHARED_MEM_SIZE];
 float Tangent(float2 V)
 {
     // Add an epsilon to avoid any division by zero.
-    return -V.y / (abs(V.x) + 1.e-6f);
+    return V.y / (abs(V.x) + 1.e-6f);
 }
 
 //----------------------------------------------------------------------------------
@@ -97,9 +97,9 @@ vec2 SharedMemoryLoad(int centerId, int x)
 vec2 LoadXZFromTexture(uint x, uint y)
 { 
     vec2 uv = (vec2(x, y) + 0.5f) * InvAOResolution;
-    float z_eye = sample2DLod(DepthBuffer, ClampSampler, uv, 0).r;
-    float x_eye = (UVToViewA.x * uv.x + UVToViewB.x) * z_eye;
-    return vec2(x_eye, z_eye);
+    float z_eye = fetch2D(DepthBuffer, ClampSampler, ivec2(x, y), 0).r;
+	vec4 viewSpace = PixelToView(uv, z_eye);
+    return vec2(viewSpace.x, viewSpace.z);
 }
 
 //----------------------------------------------------------------------------------
@@ -108,9 +108,9 @@ vec2 LoadXZFromTexture(uint x, uint y)
 vec2 LoadYZFromTexture(uint x, uint y)
 {
     vec2 uv = (vec2(x, y) + 0.5f) * InvAOResolution;
-    float z_eye = sample2DLod(DepthBuffer, ClampSampler, uv, 0).r;
-    float y_eye = (UVToViewA.y * uv.y + UVToViewB.y) * z_eye;
-    return vec2(y_eye, z_eye);
+    float z_eye = fetch2D(DepthBuffer, ClampSampler, ivec2(x, y), 0).r;
+	vec4 viewSpace = PixelToView(uv, z_eye);
+    return vec2(viewSpace.y, viewSpace.z);
 }
 
 //----------------------------------------------------------------------------------
@@ -239,16 +239,16 @@ csMainY()
         uint oy = writePos;
 
         // Fetch the 2D coordinates of the center point and its nearest neighbors
-        float2 P = 	SharedMemoryLoad(centerId, 0);
-        float2 Pt = SharedMemoryLoad(centerId, 1);
-        float2 Pb = SharedMemoryLoad(centerId, -1);
+        vec2 P =  SharedMemoryLoad(centerId, 0);
+		vec2 Pt = SharedMemoryLoad(centerId, 1);
+		vec2 Pb = SharedMemoryLoad(centerId, -1);
 
         // Compute tangent vector using central differences
-        float2 T = MinDiff(P, Pt, Pb);
+		vec2 T = MinDiff(P, Pt, Pb);
 
         float aoy = ComputeHBAO(P, T, centerId);
         float aox = imageLoad(HBAO0, int2(gl_WorkGroupID.y, writePos)).x;
-        float ao = (aox + aoy) * 0.25f;
+        float ao = (aox + aoy) * 0.5f;
 		groupMemoryBarrier();
         ao = saturate(ao * Strength);
 		imageStore(HBAO1, int2(ox, oy), vec4(ao, P.y, 0, 0));

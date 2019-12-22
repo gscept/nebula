@@ -421,6 +421,7 @@ n_align(uint alignant, uint alignment)
 
 //------------------------------------------------------------------------------
 /**
+	Integer division with rounding
 */
 __forceinline uint
 n_divandroundup(uint dividend, uint divider)
