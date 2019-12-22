@@ -213,7 +213,7 @@
             name: "SSRBuffer",
             texture: "SSRBuffer"
           },
-          
+
         ],
       }
     ],
@@ -329,6 +329,7 @@
       ]
     },
 
+    _comment: "------------ Screen-Space Reflections ------------",
     plugin: {
       name: "SSR-Run",
       inputs: [

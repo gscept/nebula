@@ -340,9 +340,11 @@ FrameScriptLoader::ParseBlit(const Ptr<Frame::FrameScript>& script, JzonValue* n
 	n_assert(to != NULL);
 	const CoreGraphics::TextureId& toTex = script->GetTexture(to->string_value);
 
+	bool isDepth = CoreGraphics::PixelFormat::IsDepthFormat(CoreGraphics::TextureGetPixelFormat(fromTex));
+
 	// add implicit barriers
 	ImageSubresourceInfo subres;
-	subres.aspect = CoreGraphicsImageAspect::ColorBits; // todo, if we need, add support depth-stencil textures
+	subres.aspect = isDepth ? CoreGraphicsImageAspect::DepthBits | CoreGraphicsImageAspect::StencilBits : CoreGraphicsImageAspect::ColorBits;
 	subres.layer = 0;
 	subres.layerCount = 1;
 	subres.mip = 0;
@@ -383,9 +385,11 @@ FrameScriptLoader::ParseCopy(const Ptr<Frame::FrameScript>& script, JzonValue* n
 	n_assert(to != NULL);
 	const CoreGraphics::TextureId& toTex = script->GetTexture(to->string_value);
 
+	bool isDepth = CoreGraphics::PixelFormat::IsDepthFormat(CoreGraphics::TextureGetPixelFormat(fromTex));
+
 	// add implicit barriers
 	ImageSubresourceInfo subres;
-	subres.aspect = CoreGraphicsImageAspect::ColorBits; // todo, if we need, add depth-stencil bits
+	subres.aspect = isDepth ? CoreGraphicsImageAspect::DepthBits | CoreGraphicsImageAspect::StencilBits : CoreGraphicsImageAspect::ColorBits;
 	subres.layer = 0;
 	subres.layerCount = 1;
 	subres.mip = 0;
@@ -421,10 +425,11 @@ FrameScriptLoader::ParseMipmap(const Ptr<Frame::FrameScript>& script, JzonValue*
 	JzonValue* tex = jzon_get(node, "texture");
 	n_assert(tex != NULL);
 	const CoreGraphics::TextureId& ttex = script->GetTexture(tex->string_value);
+	bool isDepth = CoreGraphics::PixelFormat::IsDepthFormat(CoreGraphics::TextureGetPixelFormat(ttex));
 
 	// add implicit barriers
 	ImageSubresourceInfo subres;
-	subres.aspect = CoreGraphicsImageAspect::ColorBits; // todo, if we need, add depth-stencil bits
+	subres.aspect = isDepth ? CoreGraphicsImageAspect::DepthBits | CoreGraphicsImageAspect::StencilBits : CoreGraphicsImageAspect::ColorBits;
 	subres.layer = 0;
 	subres.layerCount = 1;
 	subres.mip = 0;
