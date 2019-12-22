@@ -133,12 +133,12 @@ SSAOPlugin::Setup()
 		ResourceTableSetTexture(this->blurTableX[i], { this->internalTargets[1], this->hbaoX, 0, CoreGraphics::SamplerId::Invalid() });
 		ResourceTableSetRWTexture(this->blurTableX[i], { this->internalTargets[0], this->hbaoBlurRG, 0, CoreGraphics::SamplerId::Invalid() });
 		ResourceTableSetTexture(this->blurTableY[i], { this->internalTargets[0], this->hbaoY, 0, CoreGraphics::SamplerId::Invalid() });
-		ResourceTableSetRWTexture(this->blurTableY[i], { this->textures["SSAOBuffer"], this->hbaoBlurR, 0, CoreGraphics::SamplerId::Invalid() });
+		ResourceTableSetRWTexture(this->blurTableY[i], { this->textures["SSAO"], this->hbaoBlurR, 0, CoreGraphics::SamplerId::Invalid() });
 		ResourceTableCommitChanges(this->blurTableX[i]);
 		ResourceTableCommitChanges(this->blurTableY[i]);
 	}
 
-	TextureDimensions dims = TextureGetDimensions(this->textures["SSAOBuffer"]);
+	TextureDimensions dims = TextureGetDimensions(this->textures["SSAO"]);
 	this->vars.fullWidth = (float)dims.width;
 	this->vars.fullHeight = (float)dims.height;
 	this->vars.radius = 12.0f;
@@ -146,7 +146,7 @@ SSAOPlugin::Setup()
 	this->vars.sceneScale = 1.0f;
 
 	this->vars.maxRadiusPixels = MAX_RADIUS_PIXELS * Math::n_min(this->vars.fullWidth, this->vars.fullHeight);
-	this->vars.tanAngleBias = tanf(Math::n_deg2rad(10.0));
+	this->vars.tanAngleBias = tanf(Math::n_deg2rad(15.0));
 	this->vars.strength = 2.0f;
 
 	// setup hbao params

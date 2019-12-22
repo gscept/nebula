@@ -48,36 +48,35 @@ BloomPlugin::Setup()
 	this->blurImageXSlot = ShaderGetResourceSlot(this->blurShader, "BlurImageX");
 	this->blurImageYSlot = ShaderGetResourceSlot(this->blurShader, "BlurImageY");
 
-	TextureDimensions dims = TextureGetDimensions(this->textures["BloomBuffer"]);
 	TextureCreateInfo tinfo;
 	tinfo.name = "Bloom-Internal0";
 	tinfo.type = Texture2D;
 	tinfo.format = CoreGraphics::PixelFormat::R16G16B16A16F;
-	tinfo.width = dims.width;
-	tinfo.height = dims.height;
+	tinfo.width = 0.25f;
+	tinfo.height = 0.25f;
 	tinfo.usage = TextureUsage::ReadWriteUsage;
+	tinfo.windowRelative = true;
 	this->internalTargets[0] = CreateTexture(tinfo);
 
-	ResourceTableSetTexture(this->brightPassTable, { this->textures["LightBuffer"], this->colorSourceSlot, 0, CoreGraphics::SamplerId::Invalid() });
-	ResourceTableSetTexture(this->brightPassTable, { this->textures["BloomBuffer"], this->luminanceTextureSlot, 0, CoreGraphics::SamplerId::Invalid() , false });
+	ResourceTableSetTexture(this->brightPassTable, { this->textures["Color"], this->colorSourceSlot, 0, CoreGraphics::SamplerId::Invalid() });
+	ResourceTableSetTexture(this->brightPassTable, { this->textures["Luminance"], this->luminanceTextureSlot, 0, CoreGraphics::SamplerId::Invalid() , false });
 	ResourceTableCommitChanges(this->brightPassTable);
 
 	// bloom buffer goes in, internal target goes out
-	ResourceTableSetTexture(this->blurTable, { this->textures["BloomBuffer"], this->inputImageXSlot, 0, CoreGraphics::SamplerId::Invalid() , false });
+	ResourceTableSetTexture(this->blurTable, { this->textures["BlurredBloom"], this->inputImageXSlot, 0, CoreGraphics::SamplerId::Invalid() , false });
 	ResourceTableSetRWTexture(this->blurTable, { this->internalTargets[0], this->blurImageXSlot, 0, CoreGraphics::SamplerId::Invalid() });
 
 	// internal target goes in, blurred buffer goes out
 	ResourceTableSetTexture(this->blurTable, { this->internalTargets[0], this->inputImageYSlot, 0, CoreGraphics::SamplerId::Invalid() });
-	ResourceTableSetRWTexture(this->blurTable, { this->textures["BloomBufferBlurred"], this->blurImageYSlot, 0, CoreGraphics::SamplerId::Invalid() });
+	ResourceTableSetRWTexture(this->blurTable, { this->textures["BlurredBloom"], this->blurImageYSlot, 0, CoreGraphics::SamplerId::Invalid() });
 	ResourceTableCommitChanges(this->blurTable);
 
 	this->blurX = ShaderGetProgram(this->blurShader, ShaderFeatureFromString("Alt0"));
 	this->blurY = ShaderGetProgram(this->blurShader, ShaderFeatureFromString("Alt1"));
 	this->brightPassProgram = ShaderGetProgram(this->brightPassShader, ShaderFeatureFromString("Alt0"));
 
-	dims = TextureGetDimensions(this->textures["BloomBuffer"]);
-
 	// get size of target texture
+	TextureDimensions dims = TextureGetDimensions(this->internalTargets[0]);
 	this->fsq.Setup(dims.width, dims.height);
 
 	FramePlugin::AddCallback("Bloom-BrightnessLowpass", [this](IndexT)
@@ -96,19 +95,19 @@ BloomPlugin::Setup()
 #endif
 		});
 
-	FramePlugin::AddCallback("Bloom-Blur", [this, dims](IndexT)
+	FramePlugin::AddCallback("Bloom-Blur", [this](IndexT)
 	{
 #if NEBULA_GRAPHICS_DEBUG
 		CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "BloomBlur");
 #endif
 
 #define TILE_WIDTH 320
-#define DivAndRoundUp(a, b) (a % b != 0) ? (a / b + 1) : (a / b)
+		TextureDimensions dims = TextureGetDimensions(this->internalTargets[0]);
 
 		// calculate execution dimensions
-		uint numGroupsX1 = DivAndRoundUp(dims.width, TILE_WIDTH);
+		uint numGroupsX1 = Math::n_divandroundup(dims.width, TILE_WIDTH);
 		uint numGroupsX2 = dims.width;
-		uint numGroupsY1 = DivAndRoundUp(dims.height, TILE_WIDTH);
+		uint numGroupsY1 = Math::n_divandroundup(dims.height, TILE_WIDTH);
 		uint numGroupsY2 = dims.height;
 
 		CoreGraphics::BarrierInsert(
@@ -117,10 +116,10 @@ BloomPlugin::Setup()
 			CoreGraphics::BarrierStage::ComputeShader,
 			CoreGraphics::BarrierDomain::Global,
 			{
-				  TextureBarrier{ this->internalTargets[0], ImageSubresourceInfo::ColorNoMipNoLayer(), CoreGraphicsImageLayout::ShaderRead, CoreGraphicsImageLayout::General, CoreGraphics::BarrierAccess::ShaderWrite, CoreGraphics::BarrierAccess::ShaderRead }
+				  TextureBarrier{ this->internalTargets[0], ImageSubresourceInfo::ColorNoMipNoLayer(), CoreGraphicsImageLayout::ShaderRead, CoreGraphicsImageLayout::General, CoreGraphics::BarrierAccess::ShaderRead, CoreGraphics::BarrierAccess::ShaderWrite }
 			},
 			nullptr,
-			"Bloom Blur Pass #1 Barrier");
+			"Bloom Blur Pass #1 Begin");
 
 		CoreGraphics::SetShaderProgram(this->blurX);
 		CoreGraphics::SetResourceTable(this->blurTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
@@ -132,14 +131,26 @@ BloomPlugin::Setup()
 			CoreGraphics::BarrierStage::ComputeShader,
 			CoreGraphics::BarrierDomain::Global,
 			{
-				  TextureBarrier{ this->internalTargets[0], ImageSubresourceInfo::ColorNoMipNoLayer(), CoreGraphicsImageLayout::General, CoreGraphicsImageLayout::ShaderRead, CoreGraphics::BarrierAccess::ShaderRead, CoreGraphics::BarrierAccess::ShaderWrite }
+				  TextureBarrier{ this->internalTargets[0], ImageSubresourceInfo::ColorNoMipNoLayer(), CoreGraphicsImageLayout::General, CoreGraphicsImageLayout::ShaderRead, CoreGraphics::BarrierAccess::ShaderWrite, CoreGraphics::BarrierAccess::ShaderRead },
+				  TextureBarrier{ this->textures["BlurredBloom"], ImageSubresourceInfo::ColorNoMipNoLayer(), CoreGraphicsImageLayout::ShaderRead, CoreGraphicsImageLayout::General, CoreGraphics::BarrierAccess::ShaderRead, CoreGraphics::BarrierAccess::ShaderWrite }
 			},
 			nullptr,
-			"Bloom Blur Pass #2 Barrier");
+			"Bloom Blur Pass #2 Mid");
 
 		CoreGraphics::SetShaderProgram(this->blurY);
 		CoreGraphics::SetResourceTable(this->blurTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
 		CoreGraphics::Compute(numGroupsY1, numGroupsX2, 1);
+
+		CoreGraphics::BarrierInsert(
+			GraphicsQueueType,
+			CoreGraphics::BarrierStage::ComputeShader,
+			CoreGraphics::BarrierStage::PixelShader,
+			CoreGraphics::BarrierDomain::Global,
+			{
+				  TextureBarrier{ this->textures["BlurredBloom"], ImageSubresourceInfo::ColorNoMipNoLayer(), CoreGraphicsImageLayout::General, CoreGraphicsImageLayout::ShaderRead, CoreGraphics::BarrierAccess::ShaderWrite, CoreGraphics::BarrierAccess::ShaderRead }
+			},
+			nullptr,
+			"Bloom Blur Pass #2 End");
 
 
 #if NEBULA_GRAPHICS_DEBUG
