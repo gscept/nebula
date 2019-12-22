@@ -53,20 +53,11 @@
       },
       {
         name: "ColorBuffer",
-        format: "R8G8B8A8",
+        format: "SRGBA8",
         usage: "Render",
         relative: true,
         width: 1.0,
         height: 1.0,
-        type: "Texture2D"
-      },
-      {
-        name: "BloomBuffer",
-        format: "R11G11B10F",
-        relative: true,
-        usage: "Render",
-        width: 0.5,
-        height: 0.5,
         type: "Texture2D"
       },
       {
@@ -115,17 +106,36 @@
         type: "Texture2D"
       },
       {
-        name: "BloomBufferBlurred",
-        format: "R16G16B16A16F",
+        name: "BloomBuffer",
+        format: "R11G11B10F",
         relative: true,
-        usage: "ReadWrite",
-        width: 0.2,
-        height: 0.2,
+        usage: "Render|Copy",
+        width: 0.5,
+        height: 0.5,
+        type: "Texture2D"
+      },
+      {
+        name: "BloomBufferBlurred",
+        format: "R11G11B10F",
+        relative: true,
+        usage: "ReadWrite|Copy",
+        width: 0.25,
+        height: 0.25,
+        mips: "auto",
         type: "Texture2D"
       },
       {
         name: "LightBuffer",
         format: "R11G11B10F",
+        relative: true,
+        usage: "ReadWrite",
+        width: 1.0,
+        height: 1.0,
+        type: "Texture2D",
+      },
+      {
+        name: "LightDebugBuffer",
+        format: "R16G16B16A16F",
         relative: true,
         usage: "ReadWrite",
         width: 1.0,
@@ -148,49 +158,53 @@
         name: "Tonemapping",
         class: "Frame::TonemapPlugin",
         textures: [
-          "AverageLumBuffer",
-          "LightBuffer"
+          {
+            name: "Luminance",
+            texture: "AverageLumBuffer"
+          },
+          {
+            name: "Color",
+            texture: "LightBuffer"
+          }
         ]
       },
       {
         name: "SSAO",
         class: "Frame::SSAOPlugin",
         textures: [
-          "SSAOBuffer"
+          {
+            name: "SSAO",
+            texture: "SSAOBuffer"
+          }
         ]
       },
       {
         name: "Bloom",
         class: "Frame::BloomPlugin",
         textures: [
-          "AverageLumBuffer",
-          "BloomBuffer",
-          "BloomBufferBlurred",
-          "LightBuffer"
+          {
+            name: "Luminance",
+            texture: "AverageLumBuffer"
+          },
+          {
+            name: "BlurredBloom",
+            texture: "BloomBufferBlurred"
+          },
+          {
+            name: "Color",
+            texture: "LightBuffer"
+          }
         ]
       }
     ],
 
     plugin: {
       name: "HBAO-Prepare"
-    },
-
-    begin_submission: {
-      name: "Shadow maps",
-      queue: "Graphics",
-      _comment: "Calculate shadow maps and other heavy geometry work"
-    }
-
-    plugin: {
-      name: "LightContext - Update Shadowmaps"
-    }
-
-    end_submission: {
-      queue: "Graphics",
     }
 
     begin_submission: {
       name: "Clustering",
+      wait_for_queue: "Graphics",
       queue: "Compute",
       _comment: "Perform clustering calculations"
     }
@@ -208,14 +222,19 @@
     }
 
     begin_submission: {
-      name: "GBuffer and Lighting",
-      wait_for_queue: "Compute",
+      name: "Shadow maps and GBuffer",
       queue: "Graphics",
-      _comment: "Mandatory start of graphics submission, must be met with a matching end_submission"
+      _comment: "Calculate shadow maps and other heavy geometry work"
     }
 
+    _comment: "------------ SHADOWS ------------",
+    plugin: {
+      name: "LightContext - Update Shadowmaps"
+    }
+
+    _comment: "------------ GBUFFER UPDATES ------------",
     pass: {
-      name: "Deferred Lighting",
+      name: "GBuffer",
       attachments: [
         {
           name: "AlbedoBuffer",
@@ -230,11 +249,6 @@
         {
           name: "SpecularBuffer",
           clear: [ 0, 0, 0, 0 ],
-          store: true
-        },
-        {
-          name: "EmissiveBuffer",
-          clear: [ 0, 0, 0, -1 ],
           store: true
         },
         {
@@ -254,14 +268,48 @@
       subpass: {
         name: "GeometryPass",
         dependencies: [],
-        attachments: [ "AlbedoBuffer", "NormalBuffer", "SpecularBuffer", "EmissiveBuffer" ],
+        attachments: [ "AlbedoBuffer", "NormalBuffer", "SpecularBuffer" ],
         depth: true,
         batch: "FlatGeometryLit",
         batch: "TesselatedGeometryLit",
-      }
+      },
+    }
 
+    end_submission: {
+      queue: "Graphics",
+    }
+
+    begin_submission: {
+      name: "Lighting and post effects",
+      wait_for_queue: "Compute",
+      queue: "Graphics",
+      _comment: "Mandatory start of graphics submission, must be met with a matching end_submission"
+    }
+
+    _comment: "------------ SSAO ------------",
+    plugin: {
+      name: "HBAO-Run",
+      inputs: [
+        {
+          name: "ZBuffer",
+          access: "DepthAttachmentRead",
+          layout: "DepthStencilRead",
+          stage: "ComputeShader",
+          aspect: "Depth"
+        }
+      ],
+      outputs: [
+        {
+          name: "SSAOBuffer",
+          access: "ShaderWrite",
+          layout: "General",
+          stage: "ComputeShader",
+          aspect: "Color"
+        }
+      ]
     },
 
+    _comment: "------------ CLUSTERING DEFERRED ------------",
     plugin: {
       name: "LightContext - Deferred Cluster",
       inputs: [
@@ -292,6 +340,13 @@
           layout: "DepthStencilRead",
           stage: "ComputeShader",
           aspect: "Depth|Stencil"
+        },
+        {
+          name: "SSAOBuffer",
+          access: "ShaderRead",
+          layout: "ShaderRead",
+          stage: "ComputeShader",
+          aspect: "Color"
         }
       ]
       outputs: [
@@ -305,6 +360,7 @@
       ]
     }
 
+    _comment: "------------ BLOOM ------------",
     pass: {
       name: "BloomPass",
       attachments: [
@@ -325,7 +381,14 @@
             layout: "ShaderRead",
             stage: "PixelShader",
             aspect: "Color"
-          }
+          },
+          {
+            name: "AverageLumBuffer",
+            access: "ShaderRead",
+            layout: "ShaderRead",
+            stage: "PixelShader",
+            aspect: "Color"
+          },
         ]
         plugin: {
           name: "Bloom-BrightnessLowpass",
@@ -333,22 +396,21 @@
       }
     }
 
+    _comment: "------------ BLOOM BLUR ------------",
+
+    blit: {
+      name: "Bloom Downsample"
+      from: "BloomBuffer",
+      to: "BloomBufferBlurred"
+    },
+
     plugin: {
-      name: "HBAO-Run",
-      inputs: [
-        {
-          name: "ZBuffer",
-          access: "DepthAttachmentRead",
-          layout: "DepthStencilRead",
-          stage: "ComputeShader",
-          aspect: "Depth"
-        }
-      ],
+      name: "Bloom-Blur",
       outputs: [
         {
-          name: "SSAOBuffer",
-          access: "ShaderWrite",
-          layout: "General",
+          name: "BloomBufferBlurred",
+          access: "ShaderRead",
+          layout: "ShaderRead",
           stage: "ComputeShader",
           aspect: "Color"
         }
@@ -356,33 +418,25 @@
     },
 
     plugin: {
-      name: "Bloom-Blur",
+      name: "Tonemap-Downsample",
       inputs: [
         {
-          name: "BloomBuffer",
-          access: "ShaderRead",
-          layout: "ShaderRead",
-          stage: "ComputeShader",
-          aspect: "Color"
-        }
-      ],
-      outputs: [
-        {
-          name: "BloomBufferBlurred",
-          access: "ShaderWrite",
-          layout: "General",
-          stage: "ComputeShader",
+          name: "LightBuffer",
+          access: "TransferRead",
+          layout: "TransferSource",
+          stage: "Transfer",
           aspect: "Color"
         }
       ]
-    }
+    },
 
+    _comment: "------------ EYE ADAPTATION ------------",
     pass: {
-      name: "Luminance"
+      name: "Luminance",
       attachments: [
         {
           name: "AverageLumBuffer",
-          load: true,
+          load: false,
           store: true
         },
       ],
@@ -399,12 +453,13 @@
       }
     }
 
+    _comment: "------------ POST EFFECTS ------------",
     pass: {
       name: "PostEffects",
       attachments: [
         {
-          name: "ScreenBuffer",
-          clear: [ 0.1, 1.0, 0.1, 1 ],
+          name: "ColorBuffer",
+          load: true,
           store: true
         }
       ],
@@ -416,19 +471,12 @@
       },
 
       subpass: {
-        name: "ScreenPass",
+        name: "FinalizePass",
         dependencies: [],
-        attachments: [ "ScreenBuffer" ],
+        attachments: [ "ColorBuffer" ],
         depth: false,
 
         resources: [
-          {
-            name: "SSAOBuffer",
-            access: "ShaderRead",
-            layout: "ShaderRead",
-            stage: "PixelShader",
-            aspect: "Color"
-          },
           {
             name: "BloomBufferBlurred",
             access: "ShaderRead",
@@ -439,70 +487,50 @@
         ],
 
         fullscreen_effect: {
-          name: "GatherPostEffect",
+          name: "Finalize",
           shader_state: {
-            shader: "gather",
+            shader: "finalize",
             variables: [
               {
-                semantic: "LightTexture",
-                value: "LightBuffer"
-              },
-              {
-                semantic: "BloomTexture",
-                value: "BloomBufferBlurred"
+                semantic: "LuminanceTexture",
+                value: "AverageLumBuffer"
               },
               {
                 semantic: "DepthTexture",
                 value: "ZBuffer"
               },
               {
-                semantic: "EmissiveTexture",
-                value: "EmissiveBuffer"
+                semantic: "ColorTexture",
+                value: "LightBuffer"
               },
               {
-                semantic: "SSSTexture",
-                value: "SSSBuffer"
+                semantic: "BloomTexture",
+                value: "BloomBufferBlurred"
               },
-              {
-                semantic: "LuminanceTexture",
-                value: "AverageLumBuffer"
-              },
-              {
-                semantic: "SSAOTexture",
-                value: "SSAOBuffer"
-              }
             ]
           },
-          size_from_texture: "ScreenBuffer"
+          size_from_texture: "ColorBuffer"
         },
+
       },
 
       subpass: {
         name: "UI",
-        dependencies: [ "ScreenPass" ],
+        dependencies: [ "FinalizePass" ],
         depth: true,
-        attachments: [ "ScreenBuffer" ],
+        attachments: [ "ColorBuffer" ],
 
         batch: "DirectToColor",
+        plugin: {
+          name: "Im3D",
+        },
         plugin: {
           name: "ImGUI",
         }
       }
     },
 
-    plugin: {
-      name: "Tonemap-Downsample",
-      inputs: [
-        {
-          name: "LightBuffer",
-          access: "TransferRead",
-          layout: "TransferSource",
-          stage: "Transfer",
-          aspect: "Color"
-        }
-      ]
-    },
-
+    _comment: "------------ LUMINANCE COPY ------------",
     plugin: {
       name: "Tonemap-Copy",
       inputs: [
@@ -516,27 +544,10 @@
       ]
     }
 
+    _comment: "------------ COPY TO BACKBUFFER ------------",
     blit: {
-      name: "CopyToWindow",
-      inputs: [
-        {
-          name: "ScreenBuffer",
-          access: "TransferRead",
-          layout: "TransferSource",
-          stage: "Transfer",
-          aspect: "Color"
-        }
-      ],
-      outputs: [
-        {
-          name: "__WINDOW__",
-          access: "TransferWrite",
-          layout: "TransferDestination",
-          stage: "Transfer",
-          aspect: "Color"
-        }
-      ],
-      from: "ScreenBuffer",
+      name: "Copy To Backbuffer"
+      from: "ColorBuffer",
       to: "__WINDOW__"
     },
     barrier: {

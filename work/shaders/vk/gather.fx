@@ -82,17 +82,17 @@ psMain(in vec2 UV,
 	vec4 sssLight      = sample2DLod(SSSTexture, GatherSampler, UV, 0);
 	vec4 light         = sample2DLod(LightTexture, GatherSampler, UV, 0);
 	vec4 emissiveColor = sample2DLod(EmissiveTexture, GatherSampler, UV, 0);
-	vec4 bloom         = sample2DLod(BloomTexture, SmoothSampler, UV, 0);
-	float ssao         = sample2DLod(SSAOTexture, GatherSampler, UV, 0).r;
+	//vec4 bloom         = sample2DLod(BloomTexture, SmoothSampler, UV, 0);
+	//float ssao         = sample2DLod(SSAOTexture, GatherSampler, UV, 0).r;
 	float lum          = sample2DLod(LuminanceTexture, SmoothSampler, vec2(0.5f, 0.5f), 0).r;
 	
 	// blend non-blurred light with SSS light
-	light.rgb = lerp(light.rgb + emissiveColor.rgb, sssLight.rgb, sssLight.a) * (1.0f - ssao);	
+	light.rgb = lerp(light.rgb, sssLight.rgb, sssLight.a);// *(1.0f - ssao);
 	vec4 color = light;
 	
 	float depth = sample2DLod(DepthTexture, GatherSampler, UV, 0).r;
-	color = psFog(depth, color + bloom);
-	color = ToneMap(color, vec4(lum), MaxLuminance);
+	color = psFog(depth, color);
+	//color = ToneMap(color, vec4(lum), MaxLuminance);
 	MergedColor = color;
 }
 

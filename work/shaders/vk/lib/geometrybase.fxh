@@ -138,7 +138,8 @@ subroutine (CalculateEnvironment) mat2x3 PBR(
 {
 	mat2x3 ret;
 	vec3 reflectVec = reflect(worldViewVec, worldNormal.xyz);
-	float x = dot(worldNormal, normalize(worldViewVec));
+	vec3 viewNorm = (View * vec4(worldNormal, 0)).xyz;
+	float x = dot(-viewNorm, normalize(worldViewVec));
 	vec3 rim = FresnelSchlickGloss(specularColor.rgb, x, roughness);
 	ret[1] = sampleCubeLod(EnvironmentMap, CubeSampler, reflectVec, (1.0f - roughness) * NumEnvMips).rgb * rim;
 	ret[0] = sampleCubeLod(IrradianceMap, CubeSampler, worldNormal.xyz, 0).rgb;
@@ -153,7 +154,8 @@ subroutine (CalculateEnvironment) mat2x3 ReflectionOnly(
 {
 	mat2x3 ret;
 	vec3 reflectVec = reflect(worldViewVec, worldNormal.xyz);
-	float x = dot(worldNormal, normalize(worldViewVec));
+	vec3 viewNorm = (View * vec4(worldNormal, 0)).xyz;
+	float x = dot(-viewNorm, normalize(worldViewVec));
 	vec3 rim = FresnelSchlickGloss(specularColor.rgb, x, roughness);
 	ret[1] = sampleCubeLod(EnvironmentMap, CubeSampler, reflectVec, (1.0f - pow(roughness, 2)) * NumEnvMips).rgb * rim;
 	ret[0] = vec3(0);
@@ -189,19 +191,19 @@ CalculateEnvironment calcEnv;
 
 mat2x3 PBRSpec(
 	in vec4 specularColor,
-	in vec3 viewSpaceNormal,
+	in vec3 worldNormal,
 	in vec3 viewSpacePos,
 	in vec3 worldViewVec,
-	in mat4 invView,
+	in mat4 view,
 	in float roughness)
 {
 	mat2x3 ret;
-	vec4 worldNorm = (invView * vec4(viewSpaceNormal, 0));
-	vec3 reflectVec = reflect(worldViewVec, worldNorm.xyz);
-	float x = dot(-viewSpaceNormal, normalize(viewSpacePos));
+	vec3 viewNorm = (view * vec4(worldNormal, 0)).xyz;
+	vec3 reflectVec = reflect(worldViewVec, worldNormal.xyz);
+	float x = dot(-viewNorm, normalize(viewSpacePos));
 	vec3 rim = FresnelSchlickGloss(specularColor.rgb, x, roughness);
 	ret[1] = sampleCubeLod(EnvironmentMap, CubeSampler, reflectVec, (1.0f - pow(roughness, 2)) * NumEnvMips).rgb * rim;
-	ret[0] = sampleCubeLod(IrradianceMap, CubeSampler, worldNorm.xyz, 0).rgb;
+	ret[0] = sampleCubeLod(IrradianceMap, CubeSampler, worldNormal.xyz, 0).rgb;
 	return ret;
 }
 
@@ -235,7 +237,7 @@ vsStatic(
 	Tangent 	= (Model * vec4(tangent, 0)).xyz;
 	Normal 		= (Model * vec4(normal, 0)).xyz;
 	Binormal 	= (Model * vec4(binormal, 0)).xyz;
-	WorldViewVec = modelSpace.xyz - EyePos.xyz;
+	WorldViewVec = EyePos.xyz - modelSpace.xyz;
 }
 
 //------------------------------------------------------------------------------
@@ -262,7 +264,7 @@ vsStaticInstanced(
 	Tangent = (Model * vec4(tangent, 0)).xyz;
 	Normal = (Model * vec4(normal, 0)).xyz;
 	Binormal = (Model * vec4(binormal, 0)).xyz;
-	WorldViewVec = modelSpace.xyz - EyePos.xyz;
+	WorldViewVec = EyePos.xyz - modelSpace.xyz;
 }
 
 //------------------------------------------------------------------------------
@@ -321,7 +323,7 @@ vsStaticColored(
 	Tangent = (Model * vec4(tangent, 0)).xyz;
 	Normal = (Model * vec4(normal, 0)).xyz;
 	Binormal = (Model * vec4(binormal, 0)).xyz;
-	WorldViewVec = modelSpace.xyz - EyePos.xyz;
+	WorldViewVec = EyePos.xyz - modelSpace.xyz;
 }
 
 //------------------------------------------------------------------------------
@@ -389,7 +391,7 @@ vsSkinned(
 	Tangent = (Model * skinnedTangent).xyz;
 	Normal = (Model * skinnedNormal).xyz;
 	Binormal = (Model * skinnedBinormal).xyz;
-	WorldViewVec = modelSpace.xyz - EyePos.xyz;
+	WorldViewVec = EyePos.xyz - modelSpace.xyz;
 }
 
 //------------------------------------------------------------------------------
@@ -594,8 +596,7 @@ psUber(
 	in vec3 WorldViewVec,
 	[color0] out vec4 Albedo,
 	[color1] out vec3 Normals,
-	[color2] out vec4 Specular,
-	[color3] out vec4 Emissive)
+	[color2] out vec4 Material)
 {
 	vec4 diffColor = 	sample2D(AlbedoMap, MaterialSampler, UV) * MatAlbedoIntensity;
 	float roughness =	sample2D(RoughnessMap, MaterialSampler, UV).r * MatRoughnessIntensity;
@@ -605,14 +606,11 @@ psUber(
 	vec4 normals = 		sample2D(NormalMap, NormalSampler, UV);
 	vec3 bumpNormal = normalize(calcBump(Tangent, Binormal, Normal, normals));
 
-	mat2x3 env = calcEnv(specColor, bumpNormal, WorldViewVec, roughness);
 	vec4 spec = calcSpec(specColor.rgb, roughness);
 	vec4 albedo = calcColor(diffColor, vec4(1), spec);
-	vec4 emissive = vec4((env[0] * albedo.rgb + env[1]) * cavity, -1);
 
-	Specular = spec;
+	Material = spec;
 	Albedo = albedo;
-	Emissive = emissive;
 	Normals = bumpNormal;
 }
 
@@ -631,8 +629,7 @@ psUberAlphaTest(
 	in vec3 WorldViewVec,
 	[color0] out vec4 Albedo,
 	[color1] out vec3 Normals,
-	[color2] out vec4 Specular,
-	[color3] out vec4 Emissive)
+	[color2] out vec4 Material)
 {
 	vec4 diffColor = 	sample2D(AlbedoMap, MaterialSampler, UV) * MatAlbedoIntensity;
 	if (diffColor.a < AlphaSensitivity) { discard; return; }
@@ -643,14 +640,11 @@ psUberAlphaTest(
 	vec4 normals = 		sample2D(NormalMap, NormalSampler, UV);
 	vec3 bumpNormal = calcBump(Tangent, Binormal, Normal, normals);
 
-	mat2x3 env = calcEnv(specColor, bumpNormal, WorldViewVec, roughness);
 	vec4 spec = calcSpec(specColor.rgb, roughness);
 	vec4 albedo = calcColor(diffColor, vec4(1), spec);
-	vec4 emissive = vec4((env[0] * albedo.rgb + env[1]) * cavity, -1);
 
-	Specular = spec;
+	Material = spec;
 	Albedo = albedo;
-	Emissive = emissive;
 	Normals = bumpNormal;
 }
 
@@ -669,8 +663,7 @@ psUberVertexColor(
 	in vec3 WorldViewVec,
 	[color0] out vec4 Albedo,
 	[color1] out vec3 Normals,
-	[color2] out vec4 Specular,
-	[color3] out vec4 Emissive)
+	[color2] out vec4 Material)
 {
 	vec4 diffColor = 	sample2D(AlbedoMap, MaterialSampler, UV) * MatAlbedoIntensity * Color;
 	float roughness = 	sample2D(RoughnessMap, MaterialSampler, UV).r * MatRoughnessIntensity;
@@ -680,14 +673,11 @@ psUberVertexColor(
 	vec4 normals = 		sample2D(NormalMap, NormalSampler, UV);
 	vec3 bumpNormal = calcBump(Tangent, Binormal, Normal, normals);
 
-	mat2x3 env = calcEnv(specColor, bumpNormal, WorldViewVec, roughness);
 	vec4 spec = calcSpec(specColor.rgb, roughness);
 	vec4 albedo = calcColor(diffColor, Color, spec);
-	vec4 emissive = vec4((env[0] * albedo.rgb + env[1]) * cavity, -1);
 
-	Specular = spec;
+	Material = spec;
 	Albedo = albedo;
-	Emissive = emissive;
 	Normals = bumpNormal;
 }
 
@@ -703,8 +693,7 @@ psDefault(in vec3 ViewSpacePos,
 	in vec2 UV,
 	[color0] out vec4 Albedo,
 	[color1] out vec3 Normals,
-	[color2] out vec4 Specular,
-	[color3] out vec4 Emissive)
+	[color2] out vec4 Material)
 {
 	vec4 diffColor = 	sample2D(AlbedoMap, MaterialSampler, UV);
 	if (diffColor.a < AlphaSensitivity) { discard; return; }
@@ -712,9 +701,8 @@ psDefault(in vec3 ViewSpacePos,
 	vec4 specColor = 	sample2D(SpecularMap, MaterialSampler, UV);
 	float roughness = 	sample2D(RoughnessMap, MaterialSampler, UV).r;
 
-	Specular = vec4(specColor.rgb * MatSpecularIntensity.rgb, roughness);
+	Material = vec4(specColor.rgb * MatSpecularIntensity.rgb, roughness);
 	Albedo = diffColor;
-	Emissive = emsvColor;
 	mat3 tangentViewMatrix = mat3(normalize(Tangent), normalize(Binormal), normalize(Normal));
 	vec3 tNormal = vec3(0,0,0);
 	tNormal.xy = (sample2D(NormalMap, NormalSampler, UV).ag * 2.0f) - 1.0f;
@@ -735,7 +723,7 @@ psTranslucent(in vec3 ViewSpacePos,
 	in vec2 UV,
 	[color0] out vec4 Albedo,
 	[color1] out vec3 Normals,
-	[color2] out vec4 Specular)
+	[color2] out vec4 Material)
 {
 	vec4 diffColor = 	sample2D(AlbedoMap, MaterialSampler, UV);
 	if (diffColor.a < AlphaSensitivity) { discard; return; }
@@ -743,7 +731,7 @@ psTranslucent(in vec3 ViewSpacePos,
 	vec4 specColor = 	sample2D(SpecularMap, MaterialSampler, UV);
 	float roughness = 	sample2D(RoughnessMap, MaterialSampler, UV).r;
 
-	Specular = vec4(specColor.rgb * MatSpecularIntensity, roughness);
+	Material = vec4(specColor.rgb * MatSpecularIntensity, roughness);
 	Albedo = diffColor;
 
 	vec3 normal = Normal;
@@ -770,7 +758,7 @@ psAlpha(in vec3 ViewSpacePos,
 	in vec2 UV,
 	[color0] out vec4 Albedo,
 	[color1] out vec3 Normals,
-	[color2] out vec4 Specular)
+	[color2] out vec4 Material)
 {
 	vec4 diffColor = 	sample2D(AlbedoMap, MaterialSampler, UV);
 	if (diffColor.a < AlphaSensitivity) { discard; return; }
@@ -778,7 +766,7 @@ psAlpha(in vec3 ViewSpacePos,
 	vec4 specColor = 	sample2D(SpecularMap, MaterialSampler, UV);
 	float roughness = 	sample2D(RoughnessMap, MaterialSampler, UV).r;
 
-	Specular = vec4(specColor.rgb * MatSpecularIntensity, roughness);
+	Material = vec4(specColor.rgb * MatSpecularIntensity, roughness);
 	Albedo = vec4(diffColor.rgb, diffColor.a * AlphaBlendFactor);
 	mat3 tangentViewMatrix = mat3(normalize(Tangent.xyz), normalize(Binormal.xyz), normalize(Normal.xyz));
 	vec3 tNormal = vec3(0,0,0);
@@ -800,7 +788,7 @@ psEnvironment(in vec3 ViewSpacePos,
 	in vec2 UV,
 	[color0] out vec4 Albedo,
 	[color1] out vec3 Normals,
-	[color2] out vec4 Specular)
+	[color2] out vec4 Material)
 {
 	vec4 diffColor = 	sample2D(AlbedoMap, MaterialSampler, UV);
 	if (diffColor.a < AlphaSensitivity) { discard; return; }
@@ -820,7 +808,7 @@ psEnvironment(in vec3 ViewSpacePos,
 	vec4 rim = vec4(specColor.rgb + (1 - specColor.rgb) * (pow((1 - x), 5) / (4 - 3 * roughness)), 1) * 1000;
 	vec4 envColor = sampleCubeLod(EnvironmentMap, CubeSampler, reflectVec, (1 - roughness) * 9) * saturate(rim);
 
-	Specular = vec4(specColor.rgb * MatSpecularIntensity * envColor.rgb, roughness);
+	Material = vec4(specColor.rgb * MatSpecularIntensity * envColor.rgb, roughness);
 	Albedo = diffColor * lerp(vec4(1), envColor, roughness);
 	Normals = viewSpaceNormal;
 }
@@ -838,7 +826,7 @@ psVertexColor(in vec3 ViewSpacePos,
 	in vec4 Color,
 	[color0] out vec4 Albedo,
 	[color1] out vec3 Normals,
-	[color2] out vec4 Specular)
+	[color2] out vec4 Material)
 {
 	vec4 diffColor = 	sample2D(AlbedoMap, MaterialSampler, UV);
 	vec4 emsvColor = 	sample2D(EmissiveMap, MaterialSampler, UV);
@@ -857,7 +845,7 @@ psVertexColor(in vec3 ViewSpacePos,
 	vec3 rim = specColor.rgb + (1 - specColor.rgb) * (pow((1 - x), 5) / (4 - 3 * roughness));
 	vec3 environment = sampleCubeLod(EnvironmentMap, CubeSampler, reflectVec, (1 - roughness) * 9).rgb * saturate(rim);
 
-	Specular = vec4(specColor.rgb * MatSpecularIntensity * environment, roughness);
+	Material = vec4(specColor.rgb * MatSpecularIntensity * environment, roughness);
 	Albedo = vec4(diffColor.rgb * lerp(vec3(1), environment, roughness), diffColor.a);
 }
 

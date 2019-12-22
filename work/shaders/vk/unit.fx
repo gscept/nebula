@@ -37,8 +37,7 @@ psNotaUnit(
 	in vec3 WorldViewVec,
 	[color0] out vec4 Albedo,
 	[color1] out vec3 Normals,
-	[color2] out vec4 Specular,
-	[color3] out vec4 Emissive)
+	[color2] out vec4 Material)
 {
 	vec4 diffColor = sample2D(AlbedoMap, TeamSampler, UV) * vec4(MatAlbedoIntensity.rgb, 1);
 	float roughness = sample2D(RoughnessMap, TeamSampler, UV).r * MatRoughnessIntensity;
@@ -50,15 +49,11 @@ psNotaUnit(
 	vec4 normals = sample2D(NormalMap, NormalSampler, UV);
 	vec3 bumpNormal = normalize(calcBump(Tangent, Binormal, Normal, normals));
 
-	mat4x4 invView = InvView;
-	mat2x3 env = calcEnv(specColor, bumpNormal, WorldViewVec, roughness);
 	vec4 spec = calcSpec(specColor.rgb, roughness);
 	vec4 albedo = calcColor(diffColor + vec4(Overlay(diffColor.rgb, maskColor.rgb), 0), vec4(1), spec);
-	vec4 emissive = vec4((env[0] * albedo.rgb + env[1]) * cavity, 1);
 
-	Specular = spec;
+	Material = spec;
 	Albedo = albedo;
-	Emissive = emissive;
 	Normals = bumpNormal;
 }
 
