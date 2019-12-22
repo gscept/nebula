@@ -9,7 +9,7 @@ struct SpotLight
 	vec4 position;			// view space position of light, w is range
 	vec4 forward;			// forward vector of light (spotlight and arealights)
 
-	vec2 angle;				// angle cutoffs
+	vec2 angleSinCos;		// angle cutoffs
 
 	vec3 color;				// light color
 	uint flags;				// feature flags (shadows, projection texture, etc)
@@ -128,20 +128,20 @@ CalculatePointLight(
 	vec3 lightDir = (light.position.xyz - viewPos);
 	vec3 projDir = (InvView * vec4(-lightDir, 0)).xyz;
 
-	float specPower = ROUGHNESS_TO_SPECPOWER(material.a);	// magic formulae to calculate specular power from color in the range [0..1]
-
 	float att = saturate(1.0 - length(lightDir) * 1/light.position.w);
 	if (att - 0.004 < 0) return vec3(0, 0, 0);
-	att *= att;
+	//att *= att;
 	lightDir = normalize(lightDir);
 
-	float NL = dot(lightDir, normal);
-	vec3 diff = light.color * saturate(NL) * att;
+	float specPower = ROUGHNESS_TO_SPECPOWER(material.a);	// magic formulae to calculate specular power from color in the range [0..1]
 
-	vec3 H = normalize(-lightDir + viewVec);
+	float NL = saturate(dot(lightDir, normal));
+	vec3 diff = light.color * saturate(NL);
+
+	vec3 H = normalize(lightDir + viewVec);
 	float NH = saturate(dot(normal, H));
-	float NV = saturate(dot(normal, -viewVec));
-	float HL = saturate(dot(H, -lightDir));
+	float NV = saturate(dot(normal, viewVec));
+	float HL = saturate(dot(H, lightDir));
 	vec3 spec;
 	BRDFLighting(NH, NL, NV, HL, specPower, material.rgb, spec);
 	vec3 final = (albedo.rgb + spec) * diff;
@@ -154,7 +154,7 @@ CalculatePointLight(
 		shadowFactor = saturate(lerp(1.0f, saturate(shadowFactor), ext.shadowIntensity));
 	}
 
-	return final * shadowFactor;
+	return final * shadowFactor * att;
 }
 
 //------------------------------------------------------------------------------
@@ -175,17 +175,14 @@ CalculateSpotLight(
 	vec3 lightDir = (light.position.xyz - viewPos);
 	float att = saturate(1.0 - length(lightDir) * 1 / light.position.w);
 	if (att - 0.004 < 0) return vec3(0, 0, 0);
-	att *= att;
+	//att *= att;
 	lightDir = normalize(lightDir);
 
 	float theta = dot(light.forward.xyz, lightDir);
-	const float innerCutoff = light.angle.x;
-	const float outerCutoff = light.angle.y;
-	float epsilon = innerCutoff - outerCutoff;
-	float intensity = clamp((outerCutoff - theta) / epsilon, 0.0f, 1.0f);
+	float intensity = saturate((theta - light.angleSinCos.y) * light.forward.w);
 
 	vec4 projLightPos = vec4(0, 0, 0, 0);
-	vec4 lightModColor = intensity.xxxx;
+	vec4 lightModColor = intensity.xxxx * att;
 	if (FlagSet(light.flags, USE_PROJECTION_TEX_BITFLAG) || FlagSet(light.flags, USE_SHADOW_BITFLAG))
 		projLightPos = projExt.projection * vec4(viewPos, 1.0f);
 	
@@ -209,13 +206,13 @@ CalculateSpotLight(
 
 	float specPower = ROUGHNESS_TO_SPECPOWER(material.a);
 
-	float NL = dot(lightDir, normal);
-	vec3 diff = light.color.xyz * saturate(NL) * att;
+	float NL = saturate(dot(lightDir, normal));
+	vec3 diff = light.color.xyz * saturate(NL);
 
-	vec3 H = normalize(-lightDir + viewVec);
+	vec3 H = normalize(lightDir + viewVec);
 	float NH = saturate(dot(normal, H));
-	float NV = saturate(dot(normal, -viewVec));
-	float HL = saturate(dot(H, -lightDir));
+	float NV = saturate(dot(normal, viewVec));
+	float HL = saturate(dot(H, lightDir));
 	vec3 spec;
 	BRDFLighting(NH, NL, NV, HL, specPower, material.rgb, spec);
 	vec3 final = (albedo.rgb + spec) * diff;

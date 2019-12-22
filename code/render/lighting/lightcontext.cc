@@ -115,14 +115,18 @@ struct
 
 	IndexT clusterUniformsSlot;
 	IndexT lightCullUniformsSlot;
+	IndexT lightingUniformsSlot;
 	IndexT pointLightListSlot;
 	IndexT spotLightListSlot;
 	IndexT lightShadingTextureSlot;
+	IndexT lightShadingDebugTextureSlot;
 	Util::FixedArray<CoreGraphics::ResourceTableId> clusterResourceTables;
 
 	uint numThreadsThisFrame;
 
+#ifdef CLUSTERED_LIGHTING_DEBUG
 	CoreGraphics::TextureId clusterDebugTexture;
+#endif
 	CoreGraphics::TextureId clusterLightingTexture;
 
 	// these are used to update the light clustering
@@ -155,11 +159,8 @@ LightContext::Create()
 {
 	_CreateContext();
 
-	__bundle.OnBeforeFrame = nullptr;
-	__bundle.OnWaitForWork = nullptr;
+	__bundle.OnPrepareView = LightContext::OnPrepareView;
 	__bundle.OnBeforeView = LightContext::OnBeforeView;
-	__bundle.OnAfterView = nullptr;
-	__bundle.OnAfterFrame = nullptr;
 	__bundle.StageBits = &LightContext::__state.currentStage;
 #ifndef PUBLIC_BUILD
 	__bundle.OnRenderDebug = LightContext::OnRenderDebug;
@@ -298,28 +299,24 @@ LightContext::Create()
 	rwbInfo.name = "PointLightClusterIndexBuffer"_atm;
 	clusterState.clusterPointLightIndices = CreateShaderRWBuffer(rwbInfo);
 
-	TextureCreateInfo debugTexInfo;
-	debugTexInfo.name = "LightClusterDebugTexture"_atm;
-	debugTexInfo.tag = "system";
-	debugTexInfo.type = TextureType::Texture2D;
-	debugTexInfo.format = PixelFormat::R16G16B16A16F;
-	debugTexInfo.usage = TextureUsage::ReadWriteUsage;
-	debugTexInfo.windowRelative = true;
-	clusterState.clusterDebugTexture = CreateTexture(debugTexInfo);
-
 	clusterState.classificationShader = ShaderServer::Instance()->GetShader("shd:lights_cluster_cull.fxb");
 	IndexT pointLightIndexSlot = ShaderGetResourceSlot(clusterState.classificationShader, "PointLightIndexLists");
 	IndexT spotLightIndexSlot = ShaderGetResourceSlot(clusterState.classificationShader, "SpotLightIndexLists");
 	IndexT clusterAABBSlot = ShaderGetResourceSlot(clusterState.classificationShader, "ClusterAABBs");
-	IndexT clusterDebugSlot = ShaderGetResourceSlot(clusterState.classificationShader, "DebugOutput");
+#ifdef CLUSTERED_LIGHTING_DEBUG
+	clusterState.lightShadingDebugTextureSlot = ShaderGetResourceSlot(clusterState.classificationShader, "DebugOutput");
+#endif
 	clusterState.lightShadingTextureSlot = ShaderGetResourceSlot(clusterState.classificationShader, "Lighting");
 	clusterState.pointLightListSlot = ShaderGetResourceSlot(clusterState.classificationShader, "PointLightList");
 	clusterState.spotLightListSlot = ShaderGetResourceSlot(clusterState.classificationShader, "SpotLightList");
 	clusterState.clusterUniformsSlot = ShaderGetResourceSlot(clusterState.classificationShader, "ClusterUniforms");
 	clusterState.lightCullUniformsSlot = ShaderGetResourceSlot(clusterState.classificationShader, "LightCullUniforms");
+	clusterState.lightingUniformsSlot = ShaderGetResourceSlot(clusterState.classificationShader, "LightConstants");
 
 	clusterState.cullProgram = ShaderGetProgram(clusterState.classificationShader, ShaderServer::Instance()->FeatureStringToMask("Cull"));
+#ifdef CLUSTERED_LIGHTING_DEBUG
 	clusterState.debugProgram = ShaderGetProgram(clusterState.classificationShader, ShaderServer::Instance()->FeatureStringToMask("ClusterDebug"));
+#endif
 	clusterState.lightingProgram = ShaderGetProgram(clusterState.classificationShader, ShaderServer::Instance()->FeatureStringToMask("Lighting"));
 
 	clusterState.clusterResourceTables.Resize(CoreGraphics::GetNumBufferedFrames());
@@ -331,7 +328,6 @@ LightContext::Create()
 		ResourceTableSetRWBuffer(clusterState.clusterResourceTables[i], { clusterState.clusterPointLightIndices, pointLightIndexSlot, 0, false, false, -1, 0 });
 		ResourceTableSetRWBuffer(clusterState.clusterResourceTables[i], { clusterState.clusterSpotLightIndices, spotLightIndexSlot, 0, false, false, -1, 0 });
 		ResourceTableSetRWBuffer(clusterState.clusterResourceTables[i], { Clustering::ClusterContext::GetClusterBuffer(), clusterAABBSlot, 0, false, false, -1, 0 });
-		ResourceTableSetRWTexture(clusterState.clusterResourceTables[i], { clusterState.clusterDebugTexture, clusterDebugSlot, 0, CoreGraphics::SamplerId::Invalid() });
 		ResourceTableSetConstantBuffer(clusterState.clusterResourceTables[i], { CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.pointLightListSlot, 0, false, false, sizeof(LightsClusterCull::PointLightList), 0 });
 		ResourceTableSetConstantBuffer(clusterState.clusterResourceTables[i], { CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.spotLightListSlot, 0, false, false, sizeof(LightsClusterCull::SpotLightList), 0 });
 		ResourceTableSetConstantBuffer(clusterState.clusterResourceTables[i], { CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.clusterUniformsSlot, 0, false, false, sizeof(LightsClusterCull::ClusterUniforms), 0 });
@@ -595,6 +591,26 @@ LightContext::SetInnerOuterAngle(const Graphics::GraphicsEntityId id, float inne
 //------------------------------------------------------------------------------
 /**
 */
+void 
+LightContext::OnPrepareView(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime)
+{
+	const Graphics::ContextEntityId cid = GetContextId(lightServerState.globalLightEntity);
+
+	/// setup global light visibility
+	if (genericLightAllocator.Get<ShadowCaster>(cid.id))
+	{
+		lightServerState.csmUtil.SetCameraEntity(view->GetCamera());
+		lightServerState.csmUtil.SetGlobalLight(lightServerState.globalLightEntity);
+		lightServerState.csmUtil.SetShadowBox(Math::bbox(Math::point(0), Math::vector(500)));
+		lightServerState.csmUtil.Compute(view->GetCamera(), lightServerState.globalLightEntity);
+		//SetGlobalLightViewProjTransform(cid, lightServerState.csmUtil.GetCascadeViewProjection(CSMUtil::NumCascades - 1));
+		SetGlobalLightViewProjTransform(cid, lightServerState.csmUtil.GetCascadeViewProjection(CSMUtil::NumCascades - 1));
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 LightContext::SetSpotLightTransform(const Graphics::ContextEntityId id, const Math::matrix44& transform)
 {
@@ -638,7 +654,7 @@ void
 LightContext::SetGlobalLightTransform(const Graphics::ContextEntityId id, const Math::matrix44& transform)
 {
 	auto lid = genericLightAllocator.Get<TypedLightId>(id.id);
-	globalLightAllocator.Get<GlobalLight_Direction>(lid) = -transform.get_zaxis();
+	globalLightAllocator.Get<GlobalLight_Direction>(lid) = -Math::float4::normalize(Math::vector(transform.get_zaxis()));
 	globalLightAllocator.Get<GlobalLight_Transform>(lid) = transform;
 }
 
@@ -669,22 +685,17 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIn
 	Ids::Id32 globalLightId = genericLightAllocator.Get<TypedLightId>(cid.id);
 	Shared::PerTickParams& params = ShaderServer::Instance()->GetTickParams();
 	Math::float4::storeu(genericLightAllocator.Get<Color>(cid.id) * genericLightAllocator.Get<Intensity>(cid.id), params.GlobalLightColor);
-	Math::float4::storeu(globalLightAllocator.Get<GlobalLight_Direction>(globalLightId), params.GlobalLightDirWorldspace);
+	Math::float4::store3u(globalLightAllocator.Get<GlobalLight_Direction>(globalLightId), params.GlobalLightDirWorldspace);
 	Math::float4::storeu(globalLightAllocator.Get<GlobalLight_Backlight>(globalLightId), params.GlobalBackLightColor);
 	Math::float4::storeu(globalLightAllocator.Get<GlobalLight_Ambient>(globalLightId), params.GlobalAmbientLightColor);
-	Math::float4::storeu(globalLightAllocator.Get<GlobalLight_Direction>(globalLightId), params.GlobalLightDir);
+	Math::float4 viewSpaceLightDir = Math::matrix44::transform3(Math::vector(globalLightAllocator.Get<GlobalLight_Direction>(globalLightId)), invViewTransform);
+	Math::float4::store3u(Math::float4::normalize(viewSpaceLightDir), params.GlobalLightDir);
 	params.GlobalBackLightOffset = globalLightAllocator.Get<GlobalLight_BacklightOffset>(globalLightId);
 
 	uint flags = 0;
 
 	if (genericLightAllocator.Get<ShadowCaster>(cid.id))
 	{
-		lightServerState.csmUtil.SetCameraEntity(view->GetCamera());
-		lightServerState.csmUtil.SetGlobalLight(lightServerState.globalLightEntity);
-		lightServerState.csmUtil.SetShadowBox(Math::bbox(Math::point(0), Math::vector(500)));
-		lightServerState.csmUtil.Compute(view->GetCamera(), lightServerState.globalLightEntity);
-		SetGlobalLightViewProjTransform(cid, lightServerState.csmUtil.GetShadowView());
-
 		// update camera
 		CoreGraphics::TransformDevice* transDev = CoreGraphics::TransformDevice::Instance();
 
@@ -777,7 +788,7 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIn
 				Math::float4 posAndRange = Math::float4::transform(trans.get_position(), viewTransform);
 				posAndRange.w() = range[i];
 				Math::float4::storeu(posAndRange, pointLight.position);
-				Math::float4::store3u(color[i], pointLight.color);
+				Math::float4::store3u(color[i] * intensity[i], pointLight.color);
 				pointLight.flags = flags;
 				numPointLights++;
 			}
@@ -817,7 +828,7 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIn
 
 				Math::float4::storeu(posAndRange, spotLight.position);
 				Math::float4::storeu(forward, spotLight.forward);
-				Math::float4::store3u(color[i], spotLight.color);
+				Math::float4::store3u(color[i] * intensity[i], spotLight.color);
 				
 				// calculate sine and cosine
 				spotLight.angleSinCos[0] = Math::n_sin(1.0f - angles[0] * N_PI_HALF * 0.5f);
@@ -858,9 +869,21 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIn
 	ResourceTableSetConstantBuffer(clusterState.clusterResourceTables[CoreGraphics::GetBufferedFrameIndex()], { GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.spotLightListSlot, 0, false, false, (SizeT)sizeof(LightsClusterCull::SpotLight) * types.Size(), (SizeT)offset });
 
 	// a little ugly, but since the view can change the script, this has to adopt
-	const CoreGraphics::TextureId tex = view->GetFrameScript()->GetTexture("LightBuffer");
-	clusterState.clusterLightingTexture = tex;
+	const CoreGraphics::TextureId shadingTex = view->GetFrameScript()->GetTexture("LightBuffer");
+	clusterState.clusterLightingTexture = shadingTex;
 	ResourceTableSetRWTexture(clusterState.clusterResourceTables[CoreGraphics::GetBufferedFrameIndex()], { clusterState.clusterLightingTexture, clusterState.lightShadingTextureSlot, 0, CoreGraphics::SamplerId::Invalid() });
+
+#ifdef CLUSTERED_LIGHTING_DEBUG
+	const CoreGraphics::TextureId debugTex = view->GetFrameScript()->GetTexture("LightDebugBuffer");
+	clusterState.clusterDebugTexture = debugTex;
+	ResourceTableSetRWTexture(clusterState.clusterResourceTables[CoreGraphics::GetBufferedFrameIndex()], { clusterState.clusterDebugTexture, clusterState.lightShadingDebugTextureSlot, 0, CoreGraphics::SamplerId::Invalid() });
+#endif
+
+	const CoreGraphics::TextureId ssaoTex = view->GetFrameScript()->GetTexture("SSAOBuffer");
+	LightsClusterCull::LightConstants consts;
+	consts.SSAOBuffer = CoreGraphics::TextureGetBindlessHandle(ssaoTex);
+	offset = SetComputeConstants(MainThreadConstantBuffer, consts);
+	ResourceTableSetConstantBuffer(clusterState.clusterResourceTables[CoreGraphics::GetBufferedFrameIndex()], { GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.lightingUniformsSlot, 0, false, false, sizeof(LightsClusterCull::LightConstants), (SizeT)offset });
 }
 
 //------------------------------------------------------------------------------
@@ -940,16 +963,19 @@ void
 LightContext::ComputeLighting()
 {
 	using namespace CoreGraphics;
+	TextureDimensions dims = TextureGetDimensions(clusterState.clusterLightingTexture);
+
+#ifdef CLUSTERED_LIGHTING_DEBUG
 	CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "Cluster DEBUG");
 
 	SetShaderProgram(clusterState.debugProgram, GraphicsQueueType);
 	SetResourceTable(clusterState.clusterResourceTables[CoreGraphics::GetBufferedFrameIndex()], NEBULA_BATCH_GROUP, ComputePipeline, nullptr, GraphicsQueueType);
 
 	// perform debug output
-	TextureDimensions dims = TextureGetDimensions(clusterState.clusterDebugTexture);
 	Compute(Math::n_divandroundup(dims.width, 64), dims.height, 1, GraphicsQueueType);
 
 	CommandBufferEndMarker(GraphicsQueueType);
+#endif
 
 	CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "Clustered Shading");
 

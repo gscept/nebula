@@ -77,7 +77,10 @@ public:
 	/// set inner and outer angle for spotlights
 	static void SetInnerOuterAngle(const Graphics::GraphicsEntityId id, float inner, float outer);
 
-	/// do light classification for tiled/clustered compute
+	/// prepare light visibility
+	static void OnPrepareView(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime);
+
+	/// prepare light lists
 	static void OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime);
 #ifndef PUBLIC_BUILD
 	//
