@@ -21,7 +21,7 @@ varblock HBAOBlock
 
 // Step size in number of pixels
 #ifndef STEP_SIZE
-#define STEP_SIZE 16
+#define STEP_SIZE 8
 #endif
 
 // Number of shared-memory samples per direction
