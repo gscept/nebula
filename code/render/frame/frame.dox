@@ -1,0 +1,240 @@
+/**
+@page frame Frame Subsystem
+
+@section Resource Declarations
+The Nebula frame script system allows rendering to be scripted, rather than it being hard-coded. Frame scripts allows us to create resources needed for rendering, them being:
+
+- Textures, either used for rendering, or shader writing, or for sampling.
+- ReadWrite Buffers, used for non-texture type data reads and writes.
+- Plugins, code hooks which allows explicit code to be run at some point during the frame.
+
+Textures are declared like so:
+@code
+textures: [
+	{...}
+]
+@endcode
+
+And contains a series of texture objects. A texture object has a certain set of fields, these are:
+
+- \b name 							- Name.\n
+- \b format 						- Pixel format, available options can be found in CoreGrapics::PixelFormat.\n
+- \b usage 							- List of flags, combined with |, allowed values are: Render, ReadWrite, Copy, Immutable and Mapable found in CoreGraphics::TextureUsage.\n
+- \b relative						- Bool value, true means the texture will scale with the window the script is attached to, false means it wont.\n
+- \b width, \b height, \b depth		- Texture dimensions, percent of screen size if relative is true, otherwise absolute size in pixels.\n
+- \b mips, \b layers				- Specify how many mips a texture has, and how many layers. Layers are only relevant if the texture is of an array \a type.\n
+- \b type							- Textures can be different types, Texture1D, Texture1DArray, Texture2D, Texture2DArray, TextureCube, TextureCubeArray and Texture3D CoreGraphics::TextureType.\n
+
+An example texture declaration would look like this:
+
+@code
+{
+  name: "AlbedoBuffer",
+  format: "R8G8B8A8",
+  usage: "Render",
+  relative: true,
+  width: 1.0,
+  height: 1.0,
+  type: "Texture2D"
+}
+@endcode
+
+Read write buffers can also be created in the framescript, although there is usually very little reason to do so, since they don't necessarily map very well to frame operations. However, if wanted, one can do it like so:
+
+@code
+read_write_buffers: [
+	{...}
+]
+@endcode
+
+And each buffer will have the following fields:
+
+- \b name			- Name of buffer.\n
+- \b size			- Size of buffer in bytes, absolute size if relative is false, otherwise the size will be a % of the screen size.\n
+- \b relative 		- True if buffer should scale with the size of the screen.\n
+
+An example can look like this:
+
+@code
+{
+	name: "ClusterBuffer",
+	size: "4096",
+	relative: true
+}
+@endcode
+
+This will make the buffer 4096 * screen width * screen height in size.
+
+@section Operations
+The operations allowed in the 'global' scope of a frame script are:
+
+- \b blit copies a texture to another with a filtering and/or image conversion method, such as like RGB -> sRGB, BGR->RGB.
+- \b copy performs a flat copy without any filtering or conversion.
+- \b mipmap generates a mip chain on a texture, be sure to specify the 'mips' field with the value 'auto' first.
+- \b compute runs a compute kernel using a non-optional shader state.
+- \b plugin performs an algorithm outside of a render pass.
+- \b pass triggers a rendering pass, within which only subpasses and subpass-related operations are allowed. In a pass, we are inside a 'render' scope, wherein only and exclusively render related commands are allowed.
+- \b barrier puts an explicit synchronization point in the script, which has some rare uses, for example when synchronizing a texture before presenting, as the present system knows nothing of the layout changes from the framescript.
+
+@subsection frame_dependency Dependencies
+
+Operations may and usually should define a set of resources which they need to be in a certain state before being operated on. This is a necessity since Vulkan, DX12 and Metal requires explicit synchronization for resources, and texture require a transition of layouts depending on their intended usage. Therefore, all operations share two fields which are to be used for this type of behavior. The benefits are that if two operations are rearranged, the frame script system will ensure the synchronization is kept valid, which would otherwise require a lot of hassle.
+
+@code
+inputs: [
+	{...}
+],
+outputs: [
+	{...}
+]
+@endcode
+
+The inputs and outputs actually behave the same way, but the point of their declarations is to know what resources are actually being written by the operation, and which ones are only being read. An example resource dependency can look like this:
+
+@code
+inputs: [
+	{
+		name: "ZBuffer",
+		access: "DepthAttachmentRead",
+		layout: "DepthStencilRead",
+		stage: "ComputeShader",
+		aspect: "Depth"
+	}
+]
+@endcode
+
+This requires the operation to wait for the ZBuffer to finish any operation leading up to being able to read depth attachments, and will transition the resource to the state where the depth values can be read. It will do so for the computer shader stage, and it will only wait for depth data to finish. Here are the possible values and what they mean:
+
+- \b access - The resource stage in the pipeline, CoreGraphics::BarrierAccess.\n
+- \b layout - The image layout, CoreGraphics::ImageLayout.
+- \b stage - The execution stage in the pipeline, CoreGraphics::BarrierStage.\n
+- \b aspect - The image bits, CoreGraphics::ImageAspect.\n
+- \b mip - The start mip level being used
+- \b mip_count - The amount of mips to depend on
+- \b layer - The start layer being used
+- \b layer_count - The amount of layers to depend on
+
+@section Pass
+Within a pass, we must list some color-renderable textures and a single (or none) depth-stencil renderable texture. If a clear value is provided for any of these textures, the texture will be cleared with said value when the pass begins. We call color or depth-stencil renderable textures inside passes as attachments, since they are used for attaching to a fragment shader in order to receive color outputs.
+
+Attachments are by default considered to NOT be stored when the pass ends, meaning that the implementation may decide that the result of an attachment is null and void after the pass is done. To avoid this, an attachment must be provided with a store flag, making sure the implementation knows this attachment will be needed after the render pass is done. Try avoid using store as much as possible, since it could improve performance for high-resolution images if the implementation doesn't need to perform a write-back on every attachment.
+
+Likewise, if an attachment should be retained and loaded when the pass enters, the load flag must be provided. Otherwise every attachment is considered to be made up of invalid data, which the implementation may chose to reallocate, resulting in no guarantee the old data can be read.
+
+A typical pass would look like this:
+
+@code
+pass: {
+	name: "GBuffer",
+	attachments: [
+		{
+			name: "AlbedoBuffer",
+			clear: [ 0.7, 0.7, 0.7, 1 ],
+			store: true
+		},
+		{
+			name: "NormalBuffer",
+			clear: [ 0, 0, 0, 0 ],
+			store: true
+		},
+		{
+			name: "SpecularBuffer",
+			clear: [ 0, 0, 0, 0 ],
+			store: true
+		},
+		{
+			name: "SSSBuffer",
+			clear: [ 0.5, 0.5, 0.5, 1 ],
+			store: true
+		}
+	],
+
+	depth_stencil: {
+	  name: "ZBuffer",
+	  clear: 1,
+	  clear_stencil: 0,
+	  store: true
+	},
+
+	...
+}
+@endcode
+
+After this pass initial setup, of attachments and optional depth_stencil, we add elements of type \b subpass. More about that later.
+In this example, we declare that we will update AlbedoBuffer, NormalBuffer, SpecularBuffer and SSSBuffer \a at \a any \a time during the pass. This means some subpass might write to, for example AlbedoBuffer, and some to SpecularBuffer. This syntax allows for subpasses to communicate dependencies and do rendering operations independently! The values accepted for attachments, which are supposed to be color attachments, are:
+
+- \b name - Name of the attachment to be used by subpasses.
+- \b clear - If specified, is a FLOAT4 clear color value, if not specified, no clear will be done.
+- \b store - If true, the pixel values will be kept after this pass ends, otherwise, there is no such guarantee.
+- \b load - If true, the pass operations may load values, and perform blending on this attachment.
+
+For \b depth_stencil, the following fields are accepted:
+
+- \b name - Name of the attachment to be used by subpasses.
+- \b clear - If specified, is a single FLOAT clear depth value, otherwise, depth will not be cleared.
+- \b clear_stencil - If specified, is a single INT clear stencil value, if not, stencil will not be cleared.
+- \b store - If true, the pixel values will be kept after this pass ends, otherwise, there is no such guarantee.
+- \b load - If true, the pass operations may load values, and perform blending on this attachment.
+
+@subsection Subpass
+Subpasses use a subset of the color attachments, and optionally the depth-stencil attachment in the pass. Only within a subpass is it legal to perform rendering calls. The following list of operations are available in a subpass:
+
+- \b name - Name of the subpass, this is important to remember, because it is used to setup subpass dependencies.
+- \b dependencies - A STRING LIST of other subpasses this subpass dependends on, which means this subpass has to wait on some other subpass to finish.
+- \b attachments - A STRING LIST of textures to render to.
+- \b inputs - A STRING LIST of attachments from previous subpasses to read from, these will be InputAttachments in the shading system.
+- \b depth - If true, this subpass will use Z-testing, otherwise the shaders in this subpass can't use z-testing.
+- \b resolve - If true, this subpass will resolve any multisampling attachments being used.
+- \b resources - Just like \b inputs and \b outputs from ordinary operations, this subpass declares dependencies on resources using the same syntax as in @ref frame_dependency
+- \b viewports - A FLOAT4 LIST of viewports to use instead of the viewport inferred from the attachments.
+- \b scissors - A FLOAT4 LIST of scissor rectangles to use instead of the viewport inferred from the attachments.
+- \b plugin - A plugin callback for rendering.
+- \b batch - A material sorted rendering batch, only takes a single string as the material name to render.
+- \b sorted_batch - An unsorted rendering batch, which allows for arbitrary sorting. Not yet implemented.
+- \b fullscreen_effect - A full screen quad using a specific shader, and texture to inherit its size from.
+
+Full screen effects provide an additional piece of syntax, an example can look like this:
+
+@code
+fullscreen_effect: {
+	name: "Finalize",
+	shader_state: {
+		shader: "finalize",
+		variables: [
+			{
+				semantic: "LuminanceTexture",
+				value: "AverageLumBuffer"
+			},
+			{
+				semantic: "DepthTexture",
+				value: "ZBuffer"
+			},
+			{
+				semantic: "ColorTexture",
+				value: "LightBuffer"
+			},
+			{
+				semantic: "BloomTexture",
+				value: "BloomBufferBlurred"
+			},
+		]
+	},
+	size_from_texture: "ColorBuffer"
+},
+@endcode
+
+The \b shader_state member defines an object encapsulating a shader and a set of variables to apply when rendering. The \b semantic corresponds to a shader variable name, and the \b value is the texture or buffer from the frame script. \b size_from_texture determines the size to use when rendering the post effect.
+
+@section frame_interface Script Interface
+A frame script then executes actions, and all actions are inherited from the class FrameOp. FrameOp provides a couple of default functions used to handle rendering.
+FrameOp is the base class, and is meant as the template from which a FrameOp::Compiled is constructed. Compiled frame ops are the finished product, constructed automatically when we run FrameScript::Compile, and will construct Compiled operations only for the operations which are enabled. This allows for the frame script to always run a minimal update, and arrange the internal synchronization correctly.
+
+@code
+/// run frame operation for current frame
+virtual void Run(const IndexT frameIndex);
+/// handle display resizing
+virtual void OnWindowResized();
+@endcode
+
+
+*/

@@ -1,0 +1,8 @@
+/**
+@page render Render System
+
+At the moment of writing this documentation, the Nebula engine uses Vulkan as its primary renderer.
+
+@subpage frame
+
+*/

@@ -1,0 +1,11 @@
+/**
+@page foundation Foundation Libraries
+
+The foundation libraries contain support functionality such as containers, strings, threading, app bootstrap, file management, and much more.
+
+@subpage IO
+@subpage Threading
+@subpage Util
+@subpage Memory
+
+*/
