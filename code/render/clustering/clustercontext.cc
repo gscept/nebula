@@ -32,8 +32,9 @@ struct
 
 	CoreGraphics::ResourceTableId resourceTable;
 
-	static const SizeT ClusterSubdivsX = 96;
-	static const SizeT ClusterSubdivsY = 96;
+	static const SizeT ClusterSubdivsX = 64;
+	static const SizeT ClusterSubdivsY = 64;
+	static const SizeT ClusterSubdivsZ = 16;
 } state;
 
 _ImplementPluginContext(ClusterContext);
@@ -81,7 +82,7 @@ ClusterContext::Create(const Graphics::GraphicsEntityId camera, const CoreGraphi
 
 	state.clusterDimensions[0] = Math::n_divandroundup(displayMode.GetWidth(), state.ClusterSubdivsX);
 	state.clusterDimensions[1] = Math::n_divandroundup(displayMode.GetHeight(), state.ClusterSubdivsY);
-	state.clusterDimensions[2] = 16;
+	state.clusterDimensions[2] = state.ClusterSubdivsZ;
 
 	state.zDistribution = settings.GetZFar() / settings.GetZNear();
 	state.zInvScale = float(state.clusterDimensions[2]) / Math::n_log2(state.zDistribution);

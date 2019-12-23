@@ -1,3 +1,4 @@
+
 //------------------------------------------------------------------------------
 //  lights_clustered.fxh
 //  (C) 2019 Gustav Sterbrant
@@ -128,10 +129,9 @@ CalculatePointLight(
 	vec3 lightDir = (light.position.xyz - viewPos);
 	vec3 projDir = (InvView * vec4(-lightDir, 0)).xyz;
 
-	float att = saturate(1.0 - length(lightDir) * 1/light.position.w);
-	if (att - 0.004 < 0) return vec3(0, 0, 0);
-	//att *= att;
-	lightDir = normalize(lightDir);
+	float lightDirLen = length(lightDir);
+	float att = saturate(1.0 - lightDirLen * 1/light.position.w);
+	lightDir = lightDir * (1 / lightDirLen);
 
 	float specPower = ROUGHNESS_TO_SPECPOWER(material.a);	// magic formulae to calculate specular power from color in the range [0..1]
 
@@ -173,10 +173,9 @@ CalculateSpotLight(
 	in vec4 albedo)
 {
 	vec3 lightDir = (light.position.xyz - viewPos);
-	float att = saturate(1.0 - length(lightDir) * 1 / light.position.w);
-	if (att - 0.004 < 0) return vec3(0, 0, 0);
-	//att *= att;
-	lightDir = normalize(lightDir);
+	float lightDirLen = length(lightDir);
+	float att = saturate(1.0 - lightDirLen * 1 / light.position.w);
+	lightDir = lightDir * (1 / lightDirLen);
 
 	float theta = dot(light.forward.xyz, lightDir);
 	float intensity = saturate((theta - light.angleSinCos.y) * light.forward.w);

@@ -24,6 +24,7 @@
 #include "lights_cluster_cull.h"
 #include "lights.h"
 
+#define CLUSTERED_LIGHTING_DEBUG 0
 
 // match these in lights.fx
 const uint USE_SHADOW_BITFLAG = 0x1;
@@ -110,6 +111,8 @@ struct
 	CoreGraphics::ShaderProgramId lightingProgram;
 	CoreGraphics::ShaderRWBufferId clusterPointLightIndices;
 	CoreGraphics::ShaderRWBufferId clusterSpotLightIndices;
+	CoreGraphics::ShaderRWBufferId clusterPointLightCounts;
+	CoreGraphics::ShaderRWBufferId clusterSpotLightCounts;
 	CoreGraphics::ConstantBufferId clusterPointLights;
 	CoreGraphics::ConstantBufferId clusterSpotLights;
 
@@ -299,9 +302,18 @@ LightContext::Create()
 	rwbInfo.name = "PointLightClusterIndexBuffer"_atm;
 	clusterState.clusterPointLightIndices = CreateShaderRWBuffer(rwbInfo);
 
+	rwbInfo.name = "SpotLightClusterCountBuffer";
+	rwbInfo.size = Clustering::ClusterContext::GetNumClusters() * sizeof(uint32);
+	clusterState.clusterSpotLightCounts = CreateShaderRWBuffer(rwbInfo);
+
+	rwbInfo.name = "PointLightClusterCountBuffer";
+	clusterState.clusterPointLightCounts = CreateShaderRWBuffer(rwbInfo);
+
 	clusterState.classificationShader = ShaderServer::Instance()->GetShader("shd:lights_cluster_cull.fxb");
 	IndexT pointLightIndexSlot = ShaderGetResourceSlot(clusterState.classificationShader, "PointLightIndexLists");
+	IndexT pointLightCountSlot = ShaderGetResourceSlot(clusterState.classificationShader, "PointLightCountLists");
 	IndexT spotLightIndexSlot = ShaderGetResourceSlot(clusterState.classificationShader, "SpotLightIndexLists");
+	IndexT spotLightCountSlot = ShaderGetResourceSlot(clusterState.classificationShader, "SpotLightCountLists");
 	IndexT clusterAABBSlot = ShaderGetResourceSlot(clusterState.classificationShader, "ClusterAABBs");
 #ifdef CLUSTERED_LIGHTING_DEBUG
 	clusterState.lightShadingDebugTextureSlot = ShaderGetResourceSlot(clusterState.classificationShader, "DebugOutput");
@@ -326,7 +338,9 @@ LightContext::Create()
 
 		// update resource table
 		ResourceTableSetRWBuffer(clusterState.clusterResourceTables[i], { clusterState.clusterPointLightIndices, pointLightIndexSlot, 0, false, false, -1, 0 });
+		ResourceTableSetRWBuffer(clusterState.clusterResourceTables[i], { clusterState.clusterPointLightCounts, pointLightCountSlot, 0, false, false, -1, 0 });
 		ResourceTableSetRWBuffer(clusterState.clusterResourceTables[i], { clusterState.clusterSpotLightIndices, spotLightIndexSlot, 0, false, false, -1, 0 });
+		ResourceTableSetRWBuffer(clusterState.clusterResourceTables[i], { clusterState.clusterSpotLightCounts, spotLightCountSlot, 0, false, false, -1, 0 });
 		ResourceTableSetRWBuffer(clusterState.clusterResourceTables[i], { Clustering::ClusterContext::GetClusterBuffer(), clusterAABBSlot, 0, false, false, -1, 0 });
 		ResourceTableSetConstantBuffer(clusterState.clusterResourceTables[i], { CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.pointLightListSlot, 0, false, false, sizeof(LightsClusterCull::PointLightList), 0 });
 		ResourceTableSetConstantBuffer(clusterState.clusterResourceTables[i], { CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.spotLightListSlot, 0, false, false, sizeof(LightsClusterCull::SpotLightList), 0 });
@@ -847,6 +861,7 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIn
 	LightsClusterCull::LightCullUniforms uniforms;
 	uniforms.NumSpotLights = numSpotLights;
 	uniforms.NumPointLights = numPointLights;
+	uniforms.NumClusters = Clustering::ClusterContext::GetNumClusters();
 
 	uint offset = SetComputeConstants(MainThreadConstantBuffer, uniforms);
 	ResourceTableSetConstantBuffer(clusterState.clusterResourceTables[CoreGraphics::GetBufferedFrameIndex()], { GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.lightCullUniformsSlot, 0, false, false, sizeof(LightsClusterCull::LightCullUniforms), (SizeT)offset });

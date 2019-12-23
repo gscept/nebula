@@ -11,6 +11,7 @@
 #include "lib/CSM.fxh"
 #include "lib/Preetham.fxh"
 
+// increase if we need more lights in close proximity, for now, 128 is more than enough
 #define MAX_LIGHTS_PER_CLUSTER 128
 
 group(BATCH_GROUP) varblock LightConstants
@@ -33,23 +34,33 @@ group(BATCH_GROUP) varblock LightCullUniforms
 {
 	uint NumPointLights;
 	uint NumSpotLights;
+	uint NumClusters;
 };
 
 // contains amount of lights, and the index of the light (pointing to the indices in PointLightList and SpotLightList), to output
 struct LightTileList
 {
-	uint numLights;
 	uint lightIndex[MAX_LIGHTS_PER_CLUSTER];
 };
 
 group(BATCH_GROUP) varbuffer PointLightIndexLists
 {
-	LightTileList PointLightIndexList[];
+	uint PointLightIndexList[];
+};
+
+group(BATCH_GROUP) varbuffer PointLightCountLists
+{
+	uint PointLightCountList[];
 };
 
 group(BATCH_GROUP) varbuffer SpotLightIndexLists
 {
-	LightTileList SpotLightIndexList[];
+	uint SpotLightIndexList[];
+};
+
+group(BATCH_GROUP) varbuffer SpotLightCountLists
+{
+	uint SpotLightCountList[];
 };
 
 write r11g11b10f image2D Lighting;
@@ -105,33 +116,34 @@ shader
 void csCull()
 {
 	uint index1D = gl_GlobalInvocationID.x;
+
+	if (index1D > NumClusters)
+		return;
+
 	ClusterAABB aabb = AABBs[index1D];
 
 	uint flags = 0;
 
 	// update pointlights
-	LightTileList pointCell;
-	pointCell.numLights = 0;
-	for (uint i = 0; i < NumPointLights && pointCell.numLights < MAX_LIGHTS_PER_CLUSTER; i++)
+	uint numLights = 0;
+	for (uint i = 0; i < NumPointLights; i++)
 	{
 		const PointLight light = PointLights[i];
 		if (TestAABBSphere(aabb, light.position.xyz, light.position.w))
 		{
-			pointCell.lightIndex[pointCell.numLights] = i;
-			pointCell.numLights++;
+			PointLightIndexList[index1D * MAX_LIGHTS_PER_CLUSTER + numLights] = i;
+			numLights++;
 		}
 	}
-	PointLightIndexList[index1D] = pointCell;
+	PointLightCountList[index1D] = numLights;
 
 	// update feature flags if we have any lights
-	if (pointCell.numLights > 0)
+	if (numLights > 0)
 		flags |= CLUSTER_POINTLIGHT_BIT;
 
 	// update spotlights
-	LightTileList spotCell;
-	spotCell.numLights = 0;
-
-	for (uint i = 0; i < NumSpotLights && spotCell.numLights < MAX_LIGHTS_PER_CLUSTER; i++)
+	numLights = 0;
+	for (uint i = 0; i < NumSpotLights; i++)
 	{
 		const SpotLight light = SpotLights[i];
 
@@ -141,15 +153,15 @@ void csCull()
 			// then do more refined cone test, if previous test passed
 			if (TestAABBCone(aabb, light.position.xyz, light.forward.xyz, light.position.w, light.angleSinCos))
 			{
-				spotCell.lightIndex[spotCell.numLights] = i;
-				spotCell.numLights++;
+				SpotLightIndexList[index1D * MAX_LIGHTS_PER_CLUSTER + numLights] = i;
+				numLights++;
 			}
 		}		
 	}
-	SpotLightIndexList[index1D] = spotCell;
+	SpotLightCountList[index1D] = numLights;
 
 	// update feature flags if we have any lights
-	if (spotCell.numLights > 0)
+	if (numLights > 0)
 		flags |= CLUSTER_SPOTLIGHT_BIT;
 
 	atomicOr(AABBs[index1D].featureFlags, flags);
@@ -171,17 +183,17 @@ void csLightDebug()
 	uint3 index3D = CalculateClusterIndex(coord / BlockSize, viewPos.z, InvZScale, InvZBias);
 	uint idx = Pack3DTo1D(index3D, NumCells.x, NumCells.y);
 
-	uint flag = atomicAdd(AABBs[idx].featureFlags, 0); // add 0 so we can read the value
+	uint flag = AABBs[idx].featureFlags; // add 0 so we can read the value
 	vec4 color = vec4(0, 0, 0, 0);
 	if (CHECK_FLAG(flag, CLUSTER_POINTLIGHT_BIT))
 	{
-		LightTileList cell = PointLightIndexList[idx];
-		color.r = cell.numLights / 7.0f;
+		uint count = PointLightCountList[idx];
+		color.r = count / float(NumPointLights);
 	}
 	if (CHECK_FLAG(flag, CLUSTER_SPOTLIGHT_BIT))
 	{
-		LightTileList cell = SpotLightIndexList[idx];
-		color.g = cell.numLights / 7.0f;
+		uint count = SpotLightCountList[idx];
+		color.g = count / float(NumSpotLights);
 	}
 	
 	imageStore(DebugOutput, int2(coord), color);
@@ -241,11 +253,11 @@ LocalLights(uint idx, vec4 viewPos, vec3 viewVec, vec3 normal, float depth, vec4
 	if (CHECK_FLAG(flag, CLUSTER_POINTLIGHT_BIT))
 	{
 		// shade point lights
-		LightTileList cell = PointLightIndexList[idx];
+		uint count = PointLightCountList[idx];
 		PointLightShadowExtension ext;
-		for (int i = 0; i < cell.numLights; i++)
+		for (int i = 0; i < count; i++)
 		{
-			uint lidx = cell.lightIndex[i];
+			uint lidx = PointLightIndexList[idx * MAX_LIGHTS_PER_CLUSTER + i];
 			PointLight li = PointLights[lidx];
 			light += CalculatePointLight(
 				li,
@@ -261,12 +273,12 @@ LocalLights(uint idx, vec4 viewPos, vec3 viewVec, vec3 normal, float depth, vec4
 	}
 	if (CHECK_FLAG(flag, CLUSTER_SPOTLIGHT_BIT))
 	{
-		LightTileList cell = SpotLightIndexList[idx];
+		uint count = SpotLightCountList[idx];
 		SpotLightShadowExtension shadowExt;
 		SpotLightProjectionExtension projExt;
-		for (int i = 0; i < cell.numLights; i++)
+		for (int i = 0; i < count; i++)
 		{
-			uint lidx = cell.lightIndex[i];
+			uint lidx = SpotLightIndexList[idx * MAX_LIGHTS_PER_CLUSTER + i];
 			SpotLight li = SpotLights[lidx];
 			light += CalculateSpotLight(
 				li,

@@ -3,10 +3,6 @@
 //  (C) 2019 Gustav Sterbrant
 //------------------------------------------------------------------------------
 
-// make sure this matches ClusterContext
-#define CLUSTER_SUBDIVS_X 64
-#define CLUSTER_SUBDIVS_Y 64
-
 struct ClusterAABB
 {
 	vec4 maxPoint;
