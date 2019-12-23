@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 /**
-    @file core/stdneb.h
+    @file resource/stdneb.h
 
     Precompiled header. Put platform-specific headers which rarely change
     in here (e.g. windows.h).

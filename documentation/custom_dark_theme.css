@@ -207,6 +207,16 @@ dl.reflist {
 
 }
 
+dl.reflist dt {
+    background-color: #5f606d;
+}
+
+dl.reflist dd {
+    background-color: #4f4f4f;
+	border-color: #5f606d;
+	color: white;
+}
+
 
 /*********************************************/
 /**               Note, warning             **/
