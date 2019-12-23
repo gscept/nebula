@@ -131,6 +131,7 @@ CalculatePointLight(
 
 	float lightDirLen = length(lightDir);
 	float att = saturate(1.0 - lightDirLen * 1/light.position.w);
+	if (att < 0.04) return vec3(0, 0, 0);
 	lightDir = lightDir * (1 / lightDirLen);
 
 	float specPower = ROUGHNESS_TO_SPECPOWER(material.a);	// magic formulae to calculate specular power from color in the range [0..1]
@@ -175,6 +176,7 @@ CalculateSpotLight(
 	vec3 lightDir = (light.position.xyz - viewPos);
 	float lightDirLen = length(lightDir);
 	float att = saturate(1.0 - lightDirLen * 1 / light.position.w);
+	if (att < 0.04) return vec3(0, 0, 0);
 	lightDir = lightDir * (1 / lightDirLen);
 
 	float theta = dot(light.forward.xyz, lightDir);
