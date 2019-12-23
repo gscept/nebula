@@ -400,8 +400,6 @@ ENDIF()
 				framesubpassorderedbatch.h
 				framesubpassplugin.cc
 				framesubpassplugin.h
-				framesubpasssystem.cc
-				framesubpasssystem.h
 			)
         fips_dir(frame/plugins)
 			fips_files(
@@ -618,8 +616,6 @@ ENDIF()
 				visibility.h
 				visibilitycontext.cc
 				visibilitycontext.h
-				visibilityserver.cc
-				visibilityserver.h
 				visibilitysortjob.cc
 			)
 		fips_dir(visibility/systems)

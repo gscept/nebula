@@ -42,7 +42,7 @@ public:
 	/// bind descriptors for view in the graphics pipeline
 	void BindCameraDescriptorSetsGraphics();
 	/// bind descriptors for view in the compute pipeline
-	void BindCameraDescriptorSetsCompute(const CoreGraphicsQueueType queue = GraphicsQueueType);
+	void BindCameraDescriptorSetsCompute(const CoreGraphics::QueueType queue = CoreGraphics::GraphicsQueueType);
 private:
 
 	Math::matrix44 viewMatrixArray[6];
@@ -83,7 +83,7 @@ VkTransformDevice::BindCameraDescriptorSetsGraphics()
 /**
 */
 inline void
-VkTransformDevice::BindCameraDescriptorSetsCompute(const CoreGraphicsQueueType queue)
+VkTransformDevice::BindCameraDescriptorSetsCompute(const CoreGraphics::QueueType queue)
 {
 	IndexT bufferedFrameIndex = CoreGraphics::GetBufferedFrameIndex();
 	CoreGraphics::SetResourceTable(this->viewTables[bufferedFrameIndex], NEBULA_FRAME_GROUP, CoreGraphics::ComputePipeline, nullptr, queue);

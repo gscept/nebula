@@ -80,7 +80,7 @@ TonemapPlugin::Setup()
 			CoreGraphics::BarrierStage::Transfer,
 			CoreGraphics::BarrierDomain::Global,
 			{ 
-				  TextureBarrier{ this->downsample2x2, ImageSubresourceInfo{CoreGraphicsImageAspect::ColorBits, 0, 1, 0, 1}, CoreGraphicsImageLayout::ShaderRead, CoreGraphicsImageLayout::TransferDestination, CoreGraphics::BarrierAccess::ShaderRead, CoreGraphics::BarrierAccess::TransferWrite }
+				  TextureBarrier{ this->downsample2x2, ImageSubresourceInfo{CoreGraphics::ImageAspect::ColorBits, 0, 1, 0, 1}, CoreGraphics::ImageLayout::ShaderRead, CoreGraphics::ImageLayout::TransferDestination, CoreGraphics::BarrierAccess::ShaderRead, CoreGraphics::BarrierAccess::TransferWrite }
 			},
 			nullptr, 
 			"Tonemapping Downscale Begin");
@@ -94,7 +94,7 @@ TonemapPlugin::Setup()
 			CoreGraphics::BarrierStage::PixelShader,
 			CoreGraphics::BarrierDomain::Global,
 			{
-				  TextureBarrier{ this->downsample2x2, ImageSubresourceInfo{CoreGraphicsImageAspect::ColorBits, 0, 1, 0, 1}, CoreGraphicsImageLayout::TransferDestination, CoreGraphicsImageLayout::ShaderRead, CoreGraphics::BarrierAccess::TransferWrite, CoreGraphics::BarrierAccess::ShaderRead }
+				  TextureBarrier{ this->downsample2x2, ImageSubresourceInfo{CoreGraphics::ImageAspect::ColorBits, 0, 1, 0, 1}, CoreGraphics::ImageLayout::TransferDestination, CoreGraphics::ImageLayout::ShaderRead, CoreGraphics::BarrierAccess::TransferWrite, CoreGraphics::BarrierAccess::ShaderRead }
 			},
 			nullptr,
 			"Tonemapping Downscale End");
@@ -136,7 +136,7 @@ TonemapPlugin::Setup()
 			CoreGraphics::BarrierStage::Transfer,
 			CoreGraphics::BarrierDomain::Global,
 			{
-				  TextureBarrier{ this->copy, ImageSubresourceInfo::ColorNoMipNoLayer(),	CoreGraphicsImageLayout::ShaderRead, CoreGraphicsImageLayout::TransferDestination, CoreGraphics::BarrierAccess::ShaderRead, CoreGraphics::BarrierAccess::TransferWrite }
+				  TextureBarrier{ this->copy, ImageSubresourceInfo::ColorNoMipNoLayer(),	CoreGraphics::ImageLayout::ShaderRead, CoreGraphics::ImageLayout::TransferDestination, CoreGraphics::BarrierAccess::ShaderRead, CoreGraphics::BarrierAccess::TransferWrite }
 			},
 			nullptr,
 			"Tonemapping Copy Last Frame Begin");
@@ -149,7 +149,7 @@ TonemapPlugin::Setup()
 			CoreGraphics::BarrierStage::PixelShader,
 			CoreGraphics::BarrierDomain::Global,
 			{
-				  TextureBarrier{ this->copy, ImageSubresourceInfo::ColorNoMipNoLayer(), CoreGraphicsImageLayout::TransferDestination, CoreGraphicsImageLayout::ShaderRead, CoreGraphics::BarrierAccess::TransferWrite, CoreGraphics::BarrierAccess::ShaderRead }
+				  TextureBarrier{ this->copy, ImageSubresourceInfo::ColorNoMipNoLayer(), CoreGraphics::ImageLayout::TransferDestination, CoreGraphics::ImageLayout::ShaderRead, CoreGraphics::BarrierAccess::TransferWrite, CoreGraphics::BarrierAccess::ShaderRead }
 			},
 			nullptr,
 			"Tonemapping Copy Last Frame End");

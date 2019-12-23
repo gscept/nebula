@@ -28,7 +28,7 @@ public:
 	/// update buffer memory from CPU
 	static void BufferUpdate(CoreGraphics::CommandBufferId cmd, VkBuffer buf, VkDeviceSize offset, VkDeviceSize size, const void* data);
 	/// update image memory from CPU
-	static void ImageUpdate(VkDevice dev, CoreGraphics::CommandBufferId cmd, CoreGraphicsQueueType queue, VkImage img, const VkImageCreateInfo& info, uint32_t mip, uint32_t face, VkDeviceSize size, uint32_t* data, VkBuffer& outIntermediateBuffer, VkDeviceMemory& outIntermediateMemory);
+	static void ImageUpdate(VkDevice dev, CoreGraphics::CommandBufferId cmd, CoreGraphics::QueueType queue, VkImage img, const VkImageCreateInfo& info, uint32_t mip, uint32_t face, VkDeviceSize size, uint32_t* data, VkBuffer& outIntermediateBuffer, VkDeviceMemory& outIntermediateMemory);
 	/// perform image color clear
 	static void ImageColorClear(CoreGraphics::CommandBufferId cmd, const VkImage& image, VkImageLayout layout, VkClearColorValue clearValue, VkImageSubresourceRange subres);
 	/// perform image depth stencil clear
@@ -42,9 +42,9 @@ public:
 	/// create image memory barrier
 	static VkImageMemoryBarrier ImageMemoryBarrier(const VkImage& img, VkImageSubresourceRange subres, VkAccessFlags left, VkAccessFlags right, VkImageLayout oldLayout, VkImageLayout newLayout);
 	/// create image memory barrier with an explicit ownership change
-	static VkImageMemoryBarrier ImageMemoryBarrier(const VkImage& img, VkImageSubresourceRange subres, CoreGraphicsQueueType fromQueue, CoreGraphicsQueueType toQueue, VkAccessFlags left, VkAccessFlags right, VkImageLayout oldLayout, VkImageLayout newLayout);
+	static VkImageMemoryBarrier ImageMemoryBarrier(const VkImage& img, VkImageSubresourceRange subres, CoreGraphics::QueueType fromQueue, CoreGraphics::QueueType toQueue, VkAccessFlags left, VkAccessFlags right, VkImageLayout oldLayout, VkImageLayout newLayout);
 	/// create image memory barrier with an implicit ownership change
-	static VkImageMemoryBarrier ImageMemoryBarrier(const VkImage& img, VkImageSubresourceRange subres, CoreGraphicsQueueType toQueue, VkAccessFlags left, VkAccessFlags right, VkImageLayout oldLayout, VkImageLayout newLayout);
+	static VkImageMemoryBarrier ImageMemoryBarrier(const VkImage& img, VkImageSubresourceRange subres, CoreGraphics::QueueType toQueue, VkAccessFlags left, VkAccessFlags right, VkImageLayout oldLayout, VkImageLayout newLayout);
 	/// create buffer memory barrier
 	static VkBufferMemoryBarrier BufferMemoryBarrier(const VkBuffer& buf, VkDeviceSize offset, VkDeviceSize size, VkAccessFlags srcAccess, VkAccessFlags dstAccess);
 

@@ -17,8 +17,6 @@
 #include "coregraphics/vertexbuffer.h"
 #include "coregraphics/indexbuffer.h"
 #include "coregraphics/primitivegroup.h"
-#include "coregraphics/base/vertexbufferbase.h"
-#include "coregraphics/base/indexbufferbase.h"
 
 //------------------------------------------------------------------------------
 namespace Legacy

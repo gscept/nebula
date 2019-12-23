@@ -69,31 +69,31 @@ protected:
 		struct
 		{
 			CoreGraphics::EventId event;
-			CoreGraphicsQueueType queue;
+			CoreGraphics::QueueType queue;
 		} *waitEvents;
 
 		SizeT numSignalEvents;
 		struct
 		{
 			CoreGraphics::EventId event;
-			CoreGraphicsQueueType queue;
+			CoreGraphics::QueueType queue;
 		} *signalEvents;
 
 		SizeT numBarriers;
 		struct
 		{
 			CoreGraphics::BarrierId barrier;
-			CoreGraphicsQueueType queue;
+			CoreGraphics::QueueType queue;
 		} *barriers;
 
-		CoreGraphicsQueueType queue;
+		CoreGraphics::QueueType queue;
 	};
 
 	struct TextureDependency
 	{
 		FrameOp::Compiled* op;
-		CoreGraphicsQueueType queue;
-		CoreGraphicsImageLayout layout;
+		CoreGraphics::QueueType queue;
+		CoreGraphics::ImageLayout layout;
 		CoreGraphics::BarrierStage stage;
 		CoreGraphics::BarrierAccess access;
 		DependencyIntent intent;
@@ -104,7 +104,7 @@ protected:
 	struct BufferDependency
 	{
 		FrameOp::Compiled* op;
-		CoreGraphicsQueueType queue;
+		CoreGraphics::QueueType queue;
 		CoreGraphics::BarrierStage stage;
 		CoreGraphics::BarrierAccess access;
 		DependencyIntent intent;
@@ -120,11 +120,11 @@ protected:
 		DependencyIntent readOrWrite,
 		CoreGraphics::BarrierAccess access,
 		CoreGraphics::BarrierStage stage,
-		CoreGraphicsImageLayout layout,
+		CoreGraphics::ImageLayout layout,
 		CoreGraphics::BarrierDomain domain,
 		const CoreGraphics::ImageSubresourceInfo& subres,
 		IndexT fromIndex,
-		CoreGraphicsQueueType fromQueue,
+		CoreGraphics::QueueType fromQueue,
 		Util::Dictionary<std::tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, CoreGraphics::BarrierCreateInfo>& barriers,
 		Util::Dictionary<std::tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, CoreGraphics::EventCreateInfo>& waitEvents,
 		Util::Dictionary<std::tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, struct FrameOp::Compiled*>& signalEvents,
@@ -140,7 +140,7 @@ protected:
 		CoreGraphics::BarrierDomain domain,
 		const CoreGraphics::BufferSubresourceInfo& subres,
 		IndexT fromIndex,
-		CoreGraphicsQueueType fromQueue,
+		CoreGraphics::QueueType fromQueue,
 		Util::Dictionary<std::tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, CoreGraphics::BarrierCreateInfo>& barriers,
 		Util::Dictionary<std::tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, CoreGraphics::EventCreateInfo>& waitEvents,
 		Util::Dictionary<std::tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, struct FrameOp::Compiled*>& signalEvents,
@@ -167,8 +167,8 @@ protected:
 		Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures);
 
 	CoreGraphics::BarrierDomain domain;
-	CoreGraphicsQueueType queue;
-	Util::Dictionary<CoreGraphics::TextureId, std::tuple<Util::StringAtom, CoreGraphics::BarrierAccess, CoreGraphics::BarrierStage, CoreGraphics::ImageSubresourceInfo, CoreGraphicsImageLayout>> textureDeps;
+	CoreGraphics::QueueType queue;
+	Util::Dictionary<CoreGraphics::TextureId, std::tuple<Util::StringAtom, CoreGraphics::BarrierAccess, CoreGraphics::BarrierStage, CoreGraphics::ImageSubresourceInfo, CoreGraphics::ImageLayout>> textureDeps;
 	Util::Dictionary<CoreGraphics::ShaderRWBufferId, std::tuple<Util::StringAtom, CoreGraphics::BarrierAccess, CoreGraphics::BarrierStage, CoreGraphics::BufferSubresourceInfo>> rwBufferDeps;
 
 	Compiled* compiled;

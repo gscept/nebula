@@ -41,7 +41,7 @@ public:
 
 	struct Submission
 	{
-		CoreGraphicsQueueType queue;
+		CoreGraphics::QueueType queue;
 		Util::Array<VkCommandBuffer> buffers;
 		Util::Array<VkSemaphore> waitSemaphores;
 		Util::Array<VkPipelineStageFlags> waitFlags;
@@ -50,7 +50,7 @@ public:
 
 	struct TimelineSubmission
 	{
-		CoreGraphicsQueueType queue;
+		CoreGraphics::QueueType queue;
 		Util::Array<uint64> signalIndices;
 		Util::Array<VkSemaphore> signalSemaphores;
 		Util::Array<VkCommandBuffer> buffers;
@@ -65,46 +65,46 @@ public:
 	/// discard
 	void Discard();
 	/// set to next context of type
-	void SetToNextContext(const CoreGraphicsQueueType type);
+	void SetToNextContext(const CoreGraphics::QueueType type);
 
 	/// append submission to context to execute later, supports waiting for a queue
-	void AppendSubmissionTimeline(CoreGraphicsQueueType type, VkCommandBuffer cmds);
+	void AppendSubmissionTimeline(CoreGraphics::QueueType type, VkCommandBuffer cmds);
 	/// append a wait on the current submission of a specific queue
-	void AppendWaitTimeline(CoreGraphicsQueueType type, VkPipelineStageFlags waitFlags, CoreGraphicsQueueType waitQueue);
+	void AppendWaitTimeline(CoreGraphics::QueueType type, VkPipelineStageFlags waitFlags, CoreGraphics::QueueType waitQueue);
 	/// append a wait on the current submission of a specific queue and singal index
-	void AppendWaitTimeline(CoreGraphicsQueueType type, VkPipelineStageFlags waitFlags, CoreGraphicsQueueType waitQueue, const uint64 index);
+	void AppendWaitTimeline(CoreGraphics::QueueType type, VkPipelineStageFlags waitFlags, CoreGraphics::QueueType waitQueue, const uint64 index);
 	/// append a wait on a binary semaphore
-	void AppendWaitTimeline(CoreGraphicsQueueType type, VkPipelineStageFlags waitFlags, VkSemaphore waitSemaphore);
+	void AppendWaitTimeline(CoreGraphics::QueueType type, VkPipelineStageFlags waitFlags, VkSemaphore waitSemaphore);
 	/// append a binary semaphore to signal when done
-	void AppendSignalTimeline(CoreGraphicsQueueType type, VkSemaphore signalSemaphore);
+	void AppendSignalTimeline(CoreGraphics::QueueType type, VkSemaphore signalSemaphore);
 	/// flush submissions
-	uint64 FlushSubmissionsTimeline(CoreGraphicsQueueType type, VkFence fence);
+	uint64 FlushSubmissionsTimeline(CoreGraphics::QueueType type, VkFence fence);
 	/// get timeline index
-	uint64 GetTimelineIndex(CoreGraphicsQueueType type);
+	uint64 GetTimelineIndex(CoreGraphics::QueueType type);
 
 	/// add submission to context, but don't really execute
-	void AppendSubmission(CoreGraphicsQueueType type, VkCommandBuffer cmds, VkSemaphore waitSemaphore, VkPipelineStageFlags waitFlag, VkSemaphore signalSemaphore);
+	void AppendSubmission(CoreGraphics::QueueType type, VkCommandBuffer cmds, VkSemaphore waitSemaphore, VkPipelineStageFlags waitFlag, VkSemaphore signalSemaphore);
 	/// add another wait to the previous submission
-	void AddWaitSemaphore(CoreGraphicsQueueType type, VkSemaphore waitSemaphore, VkPipelineStageFlags waitFlag);
+	void AddWaitSemaphore(CoreGraphics::QueueType type, VkSemaphore waitSemaphore, VkPipelineStageFlags waitFlag);
 	/// add semaphore to signal
-	void AddSignalSemaphore(CoreGraphicsQueueType type, VkSemaphore signalSemaphore);
+	void AddSignalSemaphore(CoreGraphics::QueueType type, VkSemaphore signalSemaphore);
 	/// flush submissions and send to GPU as one submit call
-	void FlushSubmissions(CoreGraphicsQueueType type, VkFence fence);
+	void FlushSubmissions(CoreGraphics::QueueType type, VkFence fence);
 
 	/// submit only a fence
-	void SubmitFence(CoreGraphicsQueueType type, VkFence fence);
+	void SubmitFence(CoreGraphics::QueueType type, VkFence fence);
 
 	/// submit immediately
-	void SubmitImmediate(CoreGraphicsQueueType type, VkCommandBuffer cmds, VkSemaphore waitSemaphore, VkPipelineStageFlags waitFlags, VkSemaphore signalSemaphore, VkFence fence, bool waitImmediately);
+	void SubmitImmediate(CoreGraphics::QueueType type, VkCommandBuffer cmds, VkSemaphore waitSemaphore, VkPipelineStageFlags waitFlags, VkSemaphore signalSemaphore, VkFence fence, bool waitImmediately);
 
 	/// wait for a queue to finish working
-	void WaitIdle(const CoreGraphicsQueueType type);
+	void WaitIdle(const CoreGraphics::QueueType type);
 
 	/// get current queue
-	VkQueue GetQueue(const CoreGraphicsQueueType type);
+	VkQueue GetQueue(const CoreGraphics::QueueType type);
 
 private:
-	friend const VkQueue GetQueue(const CoreGraphicsQueueType type, const IndexT index);
+	friend const VkQueue GetQueue(const CoreGraphics::QueueType type, const IndexT index);
 
 	VkDevice device;
 	Util::FixedArray<VkQueue> drawQueues;
@@ -119,14 +119,14 @@ private:
 	uint currentComputeQueue;
 	uint currentTransferQueue;
 	uint currentSparseQueue;
-	uint queueFamilies[NumQueueTypes];
+	uint queueFamilies[CoreGraphics::NumQueueTypes];
 
-	bool queueEmpty[NumQueueTypes];
-	VkSemaphore semaphores[NumQueueTypes];
-	uint semaphoreSubmissionIds[NumQueueTypes];
+	bool queueEmpty[CoreGraphics::NumQueueTypes];
+	VkSemaphore semaphores[CoreGraphics::NumQueueTypes];
+	uint semaphoreSubmissionIds[CoreGraphics::NumQueueTypes];
 
 	Util::FixedArray<Util::Array<Submission>> submissions;
-	Submission* lastSubmissions[CoreGraphicsQueueType::NumQueueTypes];
+	Submission* lastSubmissions[CoreGraphics::NumQueueTypes];
 
 	Util::FixedArray<Util::Array<TimelineSubmission>> timelineSubmissions;
 };

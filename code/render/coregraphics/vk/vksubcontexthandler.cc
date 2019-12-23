@@ -14,10 +14,10 @@ namespace Vulkan
 */
 VkSubContextHandler::VkSubContextHandler()
 {
-	lastSubmissions[GraphicsQueueType] = nullptr;
-	lastSubmissions[ComputeQueueType] = nullptr;
-	lastSubmissions[TransferQueueType] = nullptr;
-	lastSubmissions[SparseQueueType] = nullptr;
+	lastSubmissions[CoreGraphics::GraphicsQueueType] = nullptr;
+	lastSubmissions[CoreGraphics::ComputeQueueType] = nullptr;
+	lastSubmissions[CoreGraphics::TransferQueueType] = nullptr;
+	lastSubmissions[CoreGraphics::SparseQueueType] = nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -38,48 +38,48 @@ VkSubContextHandler::Setup(VkDevice dev, const Util::FixedArray<uint> indexMap, 
 	this->device = dev;
 
 	// get all queues related to their respective family (we can have more draw queues than 1, for example)
-	this->drawQueues.Resize(indexMap[families[GraphicsQueueType]]);
-	this->drawQueueStages.Resize(indexMap[families[GraphicsQueueType]]);
-	this->computeQueues.Resize(indexMap[families[ComputeQueueType]]);
-	this->computeQueueStages.Resize(indexMap[families[ComputeQueueType]]);
-	this->transferQueues.Resize(indexMap[families[TransferQueueType]]);
-	this->transferQueueStages.Resize(indexMap[families[TransferQueueType]]);
-	this->sparseQueues.Resize(indexMap[families[SparseQueueType]]);
-	this->sparseQueueStages.Resize(indexMap[families[SparseQueueType]]);
+	this->drawQueues.Resize(indexMap[families[CoreGraphics::GraphicsQueueType]]);
+	this->drawQueueStages.Resize(indexMap[families[CoreGraphics::GraphicsQueueType]]);
+	this->computeQueues.Resize(indexMap[families[CoreGraphics::ComputeQueueType]]);
+	this->computeQueueStages.Resize(indexMap[families[CoreGraphics::ComputeQueueType]]);
+	this->transferQueues.Resize(indexMap[families[CoreGraphics::TransferQueueType]]);
+	this->transferQueueStages.Resize(indexMap[families[CoreGraphics::TransferQueueType]]);
+	this->sparseQueues.Resize(indexMap[families[CoreGraphics::SparseQueueType]]);
+	this->sparseQueueStages.Resize(indexMap[families[CoreGraphics::SparseQueueType]]);
 
-	this->queueFamilies[GraphicsQueueType] = families[GraphicsQueueType];
-	this->queueFamilies[ComputeQueueType] = families[ComputeQueueType];
-	this->queueFamilies[TransferQueueType] = families[TransferQueueType];
-	this->queueFamilies[SparseQueueType] = families[SparseQueueType];
+	this->queueFamilies[CoreGraphics::GraphicsQueueType] = families[CoreGraphics::GraphicsQueueType];
+	this->queueFamilies[CoreGraphics::ComputeQueueType] = families[CoreGraphics::ComputeQueueType];
+	this->queueFamilies[CoreGraphics::TransferQueueType] = families[CoreGraphics::TransferQueueType];
+	this->queueFamilies[CoreGraphics::SparseQueueType] = families[CoreGraphics::SparseQueueType];
 
 	uint i;
-	for (i = 0; i < indexMap[families[GraphicsQueueType]]; i++)
+	for (i = 0; i < indexMap[families[CoreGraphics::GraphicsQueueType]]; i++)
 	{
-		vkGetDeviceQueue(dev, families[GraphicsQueueType], i, &this->drawQueues[i]);
+		vkGetDeviceQueue(dev, families[CoreGraphics::GraphicsQueueType], i, &this->drawQueues[i]);
 		this->drawQueueStages[i] = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 	}
 
-	for (i = 0; i < indexMap[families[ComputeQueueType]]; i++)
+	for (i = 0; i < indexMap[families[CoreGraphics::ComputeQueueType]]; i++)
 	{
-		vkGetDeviceQueue(dev, families[ComputeQueueType], i, &this->computeQueues[i]);
+		vkGetDeviceQueue(dev, families[CoreGraphics::ComputeQueueType], i, &this->computeQueues[i]);
 		this->computeQueueStages[i] = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 	}
 
-	for (i = 0; i < indexMap[families[TransferQueueType]]; i++)
+	for (i = 0; i < indexMap[families[CoreGraphics::TransferQueueType]]; i++)
 	{
-		vkGetDeviceQueue(dev, families[TransferQueueType], i, &this->transferQueues[i]);
+		vkGetDeviceQueue(dev, families[CoreGraphics::TransferQueueType], i, &this->transferQueues[i]);
 		this->transferQueueStages[i] = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 	}
 
-	for (i = 0; i < indexMap[families[SparseQueueType]]; i++)
+	for (i = 0; i < indexMap[families[CoreGraphics::SparseQueueType]]; i++)
 	{
-		vkGetDeviceQueue(dev, families[SparseQueueType], i, &this->sparseQueues[i]);
+		vkGetDeviceQueue(dev, families[CoreGraphics::SparseQueueType], i, &this->sparseQueues[i]);
 		this->sparseQueueStages[i] = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 	}
 
 	// setup timeline semaphores
-	this->timelineSubmissions.Resize(NumQueueTypes);
-	for (IndexT i = 0; i < NumQueueTypes; i++)
+	this->timelineSubmissions.Resize(CoreGraphics::NumQueueTypes);
+	for (IndexT i = 0; i < CoreGraphics::NumQueueTypes; i++)
 	{
 		VkSemaphoreTypeCreateInfoKHR ext =
 		{
@@ -106,7 +106,7 @@ VkSubContextHandler::Setup(VkDevice dev, const Util::FixedArray<uint> indexMap, 
 	this->currentTransferQueue = 0;
 	this->currentSparseQueue = 0;
 
-	this->submissions.Resize(NumQueueTypes);
+	this->submissions.Resize(CoreGraphics::NumQueueTypes);
 }
 
 //------------------------------------------------------------------------------
@@ -122,25 +122,25 @@ VkSubContextHandler::Discard()
 /**
 */
 void
-VkSubContextHandler::SetToNextContext(const CoreGraphicsQueueType type)
+VkSubContextHandler::SetToNextContext(const CoreGraphics::QueueType type)
 {
 	Util::FixedArray<VkQueue>* list = nullptr;
 	uint* currentQueue = nullptr;
 	switch (type)
 	{
-	case GraphicsQueueType:
+	case CoreGraphics::GraphicsQueueType:
 		list = &this->drawQueues;
 		currentQueue = &this->currentDrawQueue;
 		break;
-	case ComputeQueueType:
+	case CoreGraphics::ComputeQueueType:
 		list = &this->computeQueues;
 		currentQueue = &this->currentComputeQueue;
 		break;
-	case TransferQueueType:
+	case CoreGraphics::TransferQueueType:
 		list = &this->transferQueues;
 		currentQueue = &this->currentTransferQueue;
 		break;
-	case SparseQueueType:
+	case CoreGraphics::SparseQueueType:
 		list = &this->sparseQueues;
 		currentQueue = &this->currentSparseQueue;
 		break;
@@ -154,7 +154,7 @@ VkSubContextHandler::SetToNextContext(const CoreGraphicsQueueType type)
 /**
 */
 void 
-VkSubContextHandler::AppendSubmissionTimeline(CoreGraphicsQueueType type, VkCommandBuffer cmds)
+VkSubContextHandler::AppendSubmissionTimeline(CoreGraphics::QueueType type, VkCommandBuffer cmds)
 {
 	n_assert(cmds != VK_NULL_HANDLE);
 	Util::Array<TimelineSubmission>& submissions = this->timelineSubmissions[type];
@@ -176,11 +176,11 @@ VkSubContextHandler::AppendSubmissionTimeline(CoreGraphicsQueueType type, VkComm
 /**
 */
 void 
-VkSubContextHandler::AppendWaitTimeline(CoreGraphicsQueueType type, VkPipelineStageFlags waitFlags, CoreGraphicsQueueType waitQueue)
+VkSubContextHandler::AppendWaitTimeline(CoreGraphics::QueueType type, VkPipelineStageFlags waitFlags, CoreGraphics::QueueType waitQueue)
 {
 	TimelineSubmission& sub = this->timelineSubmissions[type].Back();
 
-	n_assert(waitQueue != InvalidQueueType);
+	n_assert(waitQueue != CoreGraphics::InvalidQueueType);
 	sub.waitIndices.Append(this->semaphoreSubmissionIds[waitQueue]);
 	sub.waitSemaphores.Append(this->semaphores[waitQueue]);
 	sub.waitFlags.Append(waitFlags);
@@ -190,11 +190,11 @@ VkSubContextHandler::AppendWaitTimeline(CoreGraphicsQueueType type, VkPipelineSt
 /**
 */
 void 
-VkSubContextHandler::AppendWaitTimeline(CoreGraphicsQueueType type, VkPipelineStageFlags waitFlags, CoreGraphicsQueueType waitQueue, const uint64 index)
+VkSubContextHandler::AppendWaitTimeline(CoreGraphics::QueueType type, VkPipelineStageFlags waitFlags, CoreGraphics::QueueType waitQueue, const uint64 index)
 {
 	TimelineSubmission& sub = this->timelineSubmissions[type].Back();
 
-	n_assert(waitQueue != InvalidQueueType);
+	n_assert(waitQueue != CoreGraphics::InvalidQueueType);
 	sub.waitIndices.Append(index);
 	sub.waitSemaphores.Append(this->semaphores[waitQueue]);
 	sub.waitFlags.Append(waitFlags);
@@ -204,7 +204,7 @@ VkSubContextHandler::AppendWaitTimeline(CoreGraphicsQueueType type, VkPipelineSt
 /**
 */
 void 
-VkSubContextHandler::AppendWaitTimeline(CoreGraphicsQueueType type, VkPipelineStageFlags waitFlags, VkSemaphore waitSemaphore)
+VkSubContextHandler::AppendWaitTimeline(CoreGraphics::QueueType type, VkPipelineStageFlags waitFlags, VkSemaphore waitSemaphore)
 {
 	TimelineSubmission& sub = this->timelineSubmissions[type].Back();
 
@@ -217,7 +217,7 @@ VkSubContextHandler::AppendWaitTimeline(CoreGraphicsQueueType type, VkPipelineSt
 /**
 */
 void 
-VkSubContextHandler::AppendSignalTimeline(CoreGraphicsQueueType type, VkSemaphore signalSemaphore)
+VkSubContextHandler::AppendSignalTimeline(CoreGraphics::QueueType type, VkSemaphore signalSemaphore)
 {
 	TimelineSubmission& sub = this->timelineSubmissions[type].Back();
 
@@ -229,7 +229,7 @@ VkSubContextHandler::AppendSignalTimeline(CoreGraphicsQueueType type, VkSemaphor
 /**
 */
 uint64 
-VkSubContextHandler::FlushSubmissionsTimeline(CoreGraphicsQueueType type, VkFence fence)
+VkSubContextHandler::FlushSubmissionsTimeline(CoreGraphics::QueueType type, VkFence fence)
 {
 	Util::Array<TimelineSubmission>& submissions = this->timelineSubmissions[type];
 	uint64 ret = UINT64_MAX;
@@ -291,7 +291,7 @@ VkSubContextHandler::FlushSubmissionsTimeline(CoreGraphicsQueueType type, VkFenc
 /**
 */
 uint64 
-VkSubContextHandler::GetTimelineIndex(CoreGraphicsQueueType type)
+VkSubContextHandler::GetTimelineIndex(CoreGraphics::QueueType type)
 {
 	return this->semaphoreSubmissionIds[type];
 }
@@ -300,7 +300,7 @@ VkSubContextHandler::GetTimelineIndex(CoreGraphicsQueueType type)
 /**
 */
 void 
-VkSubContextHandler::AppendSubmission(CoreGraphicsQueueType type, VkCommandBuffer cmds, VkSemaphore waitSemaphore, VkPipelineStageFlags waitFlag, VkSemaphore signalSemaphore)
+VkSubContextHandler::AppendSubmission(CoreGraphics::QueueType type, VkCommandBuffer cmds, VkSemaphore waitSemaphore, VkPipelineStageFlags waitFlag, VkSemaphore signalSemaphore)
 {
 	Util::Array<Submission>& submissions = this->submissions[type];
 
@@ -334,7 +334,7 @@ VkSubContextHandler::AppendSubmission(CoreGraphicsQueueType type, VkCommandBuffe
 /**
 */
 void 
-VkSubContextHandler::AddWaitSemaphore(CoreGraphicsQueueType type, VkSemaphore waitSemaphore, VkPipelineStageFlags waitFlag)
+VkSubContextHandler::AddWaitSemaphore(CoreGraphics::QueueType type, VkSemaphore waitSemaphore, VkPipelineStageFlags waitFlag)
 {
 	Util::Array<Submission>& submissions = this->submissions[type];
 	Submission& sub = submissions.Back();
@@ -351,7 +351,7 @@ VkSubContextHandler::AddWaitSemaphore(CoreGraphicsQueueType type, VkSemaphore wa
 /**
 */
 void 
-VkSubContextHandler::AddSignalSemaphore(CoreGraphicsQueueType type, VkSemaphore signalSemaphore)
+VkSubContextHandler::AddSignalSemaphore(CoreGraphics::QueueType type, VkSemaphore signalSemaphore)
 {
 	Util::Array<Submission>& submissions = this->submissions[type];
 	Submission& sub = submissions.Back();
@@ -367,7 +367,7 @@ VkSubContextHandler::AddSignalSemaphore(CoreGraphicsQueueType type, VkSemaphore 
 /**
 */
 void 
-VkSubContextHandler::FlushSubmissions(CoreGraphicsQueueType type, VkFence fence)
+VkSubContextHandler::FlushSubmissions(CoreGraphics::QueueType type, VkFence fence)
 {
 	Util::Array<Submission>& submissions = this->submissions[type];
 
@@ -404,7 +404,7 @@ VkSubContextHandler::FlushSubmissions(CoreGraphicsQueueType type, VkFence fence)
 /**
 */
 void 
-VkSubContextHandler::SubmitFence(CoreGraphicsQueueType type, VkFence fence)
+VkSubContextHandler::SubmitFence(CoreGraphics::QueueType type, VkFence fence)
 {
 	VkQueue queue = this->GetQueue(type);
 	VkResult res = vkQueueSubmit(queue, 0, nullptr, fence);
@@ -414,7 +414,7 @@ VkSubContextHandler::SubmitFence(CoreGraphicsQueueType type, VkFence fence)
 //------------------------------------------------------------------------------
 /**
 */
-void VkSubContextHandler::SubmitImmediate(CoreGraphicsQueueType type, VkCommandBuffer cmds, VkSemaphore waitSemaphore, VkPipelineStageFlags waitFlags, VkSemaphore signalSemaphore, VkFence fence, bool waitImmediately)
+void VkSubContextHandler::SubmitImmediate(CoreGraphics::QueueType type, VkCommandBuffer cmds, VkSemaphore waitSemaphore, VkPipelineStageFlags waitFlags, VkSemaphore signalSemaphore, VkFence fence, bool waitImmediately)
 {
 	VkQueue queue = this->GetQueue(type);
 	VkSubmitInfo info =
@@ -464,21 +464,21 @@ void VkSubContextHandler::SubmitImmediate(CoreGraphicsQueueType type, VkCommandB
 /**
 */
 void
-VkSubContextHandler::WaitIdle(const CoreGraphicsQueueType type)
+VkSubContextHandler::WaitIdle(const CoreGraphics::QueueType type)
 {
 	Util::FixedArray<VkQueue>* list = nullptr;
 	switch (type)
 	{
-	case GraphicsQueueType:
+	case CoreGraphics::GraphicsQueueType:
 		list = &this->drawQueues;
 		break;
-	case ComputeQueueType:
+	case CoreGraphics::ComputeQueueType:
 		list = &this->computeQueues;
 		break;
-	case TransferQueueType:
+	case CoreGraphics::TransferQueueType:
 		list = &this->transferQueues;
 		break;
-	case SparseQueueType:
+	case CoreGraphics::SparseQueueType:
 		list = &this->sparseQueues;
 		break;
 	}
@@ -495,17 +495,17 @@ VkSubContextHandler::WaitIdle(const CoreGraphicsQueueType type)
 /**
 */
 VkQueue
-VkSubContextHandler::GetQueue(const CoreGraphicsQueueType type)
+VkSubContextHandler::GetQueue(const CoreGraphics::QueueType type)
 {
 	switch (type)
 	{
-	case GraphicsQueueType:
+	case CoreGraphics::GraphicsQueueType:
 		return this->drawQueues[this->currentDrawQueue];
-	case ComputeQueueType:
+	case CoreGraphics::ComputeQueueType:
 		return this->computeQueues[this->currentComputeQueue];
-	case TransferQueueType:
+	case CoreGraphics::TransferQueueType:
 		return this->transferQueues[this->currentTransferQueue];
-	case SparseQueueType:
+	case CoreGraphics::SparseQueueType:
 		return this->sparseQueues[this->currentSparseQueue];
 	default:
 		n_error("Invalid queue type %d", type);

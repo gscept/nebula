@@ -72,7 +72,7 @@ void
 CharacterSkinNode::OnFinishedLoading()
 {
 	PrimitiveNode::OnFinishedLoading();
-	this->cboSkin = CoreGraphics::GetGraphicsConstantBuffer(CoreGraphicsGlobalConstantBufferType::VisibilityThreadConstantBuffer);
+	this->cboSkin = CoreGraphics::GetGraphicsConstantBuffer(CoreGraphics::GlobalConstantBufferType::VisibilityThreadConstantBuffer);
 	this->cboSkinIndex = CoreGraphics::ShaderGetResourceSlot(this->sharedShader, "JointBlock");
 	CoreGraphics::ResourceTableSetConstantBuffer(this->resourceTable, { this->cboSkin, this->cboSkinIndex, 0, true, false, (SizeT)(sizeof(Math::matrix44) * this->skinFragments[0].jointPalette.Size()), 0 });
 	CoreGraphics::ResourceTableCommitChanges(this->resourceTable);
@@ -143,7 +143,7 @@ CharacterSkinNode::Instance::Update()
 	}
 
 	// update skinning palette
-	uint offset = CoreGraphics::SetGraphicsConstants(CoreGraphicsGlobalConstantBufferType::VisibilityThreadConstantBuffer, usedMatrices.Begin(), usedMatrices.Size());
+	uint offset = CoreGraphics::SetGraphicsConstants(CoreGraphics::GlobalConstantBufferType::VisibilityThreadConstantBuffer, usedMatrices.Begin(), usedMatrices.Size());
 	this->offsets[Skinning] = offset;
 
 	// apply original state

@@ -47,7 +47,7 @@ private:
 		Ptr<AnimKeyBuffer>
 	> animAllocator;
 
-	__ImplementResourceAllocatorTyped(animAllocator, AnimResourceIdType);
+	__ImplementResourceAllocatorTyped(animAllocator, CoreGraphics::AnimResourceIdType);
 };
 
 } // namespace CoreAnimation

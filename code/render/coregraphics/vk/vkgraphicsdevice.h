@@ -35,7 +35,7 @@ VkPipelineCache GetPipelineCache();
 /// get memory properties
 VkPhysicalDeviceMemoryProperties GetMemoryProperties();
 /// get main command buffer
-VkCommandBuffer GetMainBuffer(const CoreGraphicsQueueType queue);
+VkCommandBuffer GetMainBuffer(const CoreGraphics::QueueType queue);
 /// get final graphics semaphore
 VkSemaphore GetPresentSemaphore();
 /// get final rendering semaphore
@@ -46,11 +46,11 @@ void WaitForPresent(VkSemaphore sem);
 /// get queue families
 const Util::Set<uint32_t>& GetQueueFamilies();
 /// get specific queue family
-const uint32_t GetQueueFamily(const CoreGraphicsQueueType type);
+const uint32_t GetQueueFamily(const CoreGraphics::QueueType type);
 /// get queue from index and family
-const VkQueue GetQueue(const CoreGraphicsQueueType type, const IndexT index);
+const VkQueue GetQueue(const CoreGraphics::QueueType type, const IndexT index);
 /// get currently active queue of type
-const VkQueue GetCurrentQueue(const CoreGraphicsQueueType type);
+const VkQueue GetCurrentQueue(const CoreGraphics::QueueType type);
 
 /// insert barrier not created from a barrier object
 void InsertBarrier(
@@ -63,7 +63,7 @@ void InsertBarrier(
 	VkBufferMemoryBarrier* bufferBarriers,
 	uint32_t numImageBarriers,
 	VkImageMemoryBarrier* imageBarriers,
-	const CoreGraphicsQueueType queue);
+	const CoreGraphics::QueueType queue);
 
 /// do actual copy (see coregraphics namespace for helper functions)
 void Copy(const VkImage from, Math::rectangle<SizeT> fromRegion, const VkImage to, Math::rectangle<SizeT> toRegion);
@@ -73,7 +73,7 @@ void Blit(const VkImage from, Math::rectangle<SizeT> fromRegion, IndexT fromMip,
 /// update descriptors
 void BindDescriptorsGraphics(const VkDescriptorSet* descriptors, uint32_t baseSet, uint32_t setCount, const uint32_t* offsets, uint32_t offsetCount, bool shared = false);
 /// update descriptors
-void BindDescriptorsCompute(const VkDescriptorSet* descriptors, uint32_t baseSet, uint32_t setCount, const uint32_t* offsets, uint32_t offsetCount, const CoreGraphicsQueueType queue);
+void BindDescriptorsCompute(const VkDescriptorSet* descriptors, uint32_t baseSet, uint32_t setCount, const uint32_t* offsets, uint32_t offsetCount, const CoreGraphics::QueueType queue);
 /// update push ranges
 void UpdatePushRanges(const VkShaderStageFlags& stages, const VkPipelineLayout& layout, uint32_t offset, uint32_t size, void* data);
 
@@ -88,7 +88,7 @@ void SetInputLayoutInfo(VkPipelineInputAssemblyStateCreateInfo* inputLayout);
 /// create a new pipeline (or fetch from cache) and bind to command queue
 void CreateAndBindGraphicsPipeline();
 /// bind compute pipeline
-void BindComputePipeline(const VkPipeline& pipeline, const VkPipelineLayout& layout, const CoreGraphicsQueueType queue);
+void BindComputePipeline(const VkPipeline& pipeline, const VkPipelineLayout& layout, const CoreGraphics::QueueType queue);
 /// bind no pipeline (effectively making all descriptor binds happen on both graphics and compute)
 void UnbindPipeline();
 /// set array of viewports directly

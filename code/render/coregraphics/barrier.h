@@ -87,18 +87,18 @@ ID_24_8_TYPE(BarrierId);
 
 struct ImageSubresourceInfo
 {
-	CoreGraphicsImageAspect aspect;
+	CoreGraphics::ImageAspect aspect;
 	uint mip, mipCount, layer, layerCount;
 
 	ImageSubresourceInfo() :
-		aspect(CoreGraphicsImageAspect::ColorBits),
+		aspect(CoreGraphics::ImageAspect::ColorBits),
 		mip(0),
 		mipCount(1),
 		layer(0),
 		layerCount(1)
 	{}
 
-	ImageSubresourceInfo(CoreGraphicsImageAspect aspect, uint mip, uint mipCount, uint layer, uint layerCount) :
+	ImageSubresourceInfo(CoreGraphics::ImageAspect aspect, uint mip, uint mipCount, uint layer, uint layerCount) :
 		aspect(aspect),
 		mip(mip),
 		mipCount(mipCount),
@@ -108,22 +108,22 @@ struct ImageSubresourceInfo
 
 	static ImageSubresourceInfo ColorNoMipNoLayer()
 	{
-		return ImageSubresourceInfo(CoreGraphicsImageAspect::ColorBits, 0, 1, 0, 1);
+		return ImageSubresourceInfo(CoreGraphics::ImageAspect::ColorBits, 0, 1, 0, 1);
 	}
 
 	static ImageSubresourceInfo ColorNoMip(uint layerCount)
 	{
-		return ImageSubresourceInfo(CoreGraphicsImageAspect::ColorBits, 0, 1, 0, layerCount);
+		return ImageSubresourceInfo(CoreGraphics::ImageAspect::ColorBits, 0, 1, 0, layerCount);
 	}
 
 	static ImageSubresourceInfo DepthStencilNoMipNoLayer()
 	{
-		return ImageSubresourceInfo(CoreGraphicsImageAspect::DepthBits | CoreGraphicsImageAspect::StencilBits, 0, 1, 0, 1);
+		return ImageSubresourceInfo(CoreGraphics::ImageAspect::DepthBits | CoreGraphics::ImageAspect::StencilBits, 0, 1, 0, 1);
 	}
 
 	static ImageSubresourceInfo DepthStencilNoMip(uint layerCount)
 	{
-		return ImageSubresourceInfo(CoreGraphicsImageAspect::DepthBits | CoreGraphicsImageAspect::StencilBits, 0, 1, 0, layerCount);
+		return ImageSubresourceInfo(CoreGraphics::ImageAspect::DepthBits | CoreGraphics::ImageAspect::StencilBits, 0, 1, 0, layerCount);
 	}
 
 	const bool Overlaps(const ImageSubresourceInfo& rhs) const
@@ -151,8 +151,8 @@ struct TextureBarrier
 {
 	TextureId tex;
 	ImageSubresourceInfo subres;
-	CoreGraphicsImageLayout fromLayout;
-	CoreGraphicsImageLayout toLayout;
+	CoreGraphics::ImageLayout fromLayout;
+	CoreGraphics::ImageLayout toLayout;
 	BarrierAccess fromAccess;
 	BarrierAccess toAccess;
 };
@@ -182,12 +182,12 @@ BarrierId CreateBarrier(const BarrierCreateInfo& info);
 void DestroyBarrier(const BarrierId id);
 
 /// insert barrier into command buffer
-void BarrierInsert(const BarrierId id, const CoreGraphicsQueueType queue);
+void BarrierInsert(const BarrierId id, const CoreGraphics::QueueType queue);
 /// reset resources previously set in barrier
 void BarrierReset(const BarrierId id);
 /// create and insert a barrier immediately, without allocating an object
 void BarrierInsert(
-	const CoreGraphicsQueueType queue, 
+	const CoreGraphics::QueueType queue, 
 	CoreGraphics::BarrierStage fromStage, 
 	CoreGraphics::BarrierStage toStage, 
 	CoreGraphics::BarrierDomain domain,
@@ -255,24 +255,24 @@ BarrierAccessFromString(const Util::String& str)
 //------------------------------------------------------------------------------
 /**
 */
-inline CoreGraphicsImageAspect
+inline CoreGraphics::ImageAspect
 ImageAspectFromString(const Util::String& str)
 {
 	Util::Array<Util::String> comps = str.Tokenize("|");
-	CoreGraphicsImageAspect aspect = CoreGraphicsImageAspect(0x0);
+	CoreGraphics::ImageAspect aspect = CoreGraphics::ImageAspect(0x0);
 	for (IndexT i = 0; i < comps.Size(); i++)
 	{
-		if (comps[i] == "Color")			aspect |= CoreGraphicsImageAspect::ColorBits;
-		else if (comps[i] == "Depth")		aspect |= CoreGraphicsImageAspect::DepthBits;
-		else if (comps[i] == "Stencil")		aspect |= CoreGraphicsImageAspect::StencilBits;
-		else if (comps[i] == "Metadata")	aspect |= CoreGraphicsImageAspect::MetaBits;
-		else if (comps[i] == "Plane0")		aspect |= CoreGraphicsImageAspect::Plane0Bits;
-		else if (comps[i] == "Plane1")		aspect |= CoreGraphicsImageAspect::Plane1Bits;
-		else if (comps[i] == "Plane2")		aspect |= CoreGraphicsImageAspect::Plane2Bits;
+		if (comps[i] == "Color")			aspect |= CoreGraphics::ImageAspect::ColorBits;
+		else if (comps[i] == "Depth")		aspect |= CoreGraphics::ImageAspect::DepthBits;
+		else if (comps[i] == "Stencil")		aspect |= CoreGraphics::ImageAspect::StencilBits;
+		else if (comps[i] == "Metadata")	aspect |= CoreGraphics::ImageAspect::MetaBits;
+		else if (comps[i] == "Plane0")		aspect |= CoreGraphics::ImageAspect::Plane0Bits;
+		else if (comps[i] == "Plane1")		aspect |= CoreGraphics::ImageAspect::Plane1Bits;
+		else if (comps[i] == "Plane2")		aspect |= CoreGraphics::ImageAspect::Plane2Bits;
 		else
 		{
 			n_error("Invalid access string '%s'\n", comps[i].AsCharPtr());
-			return CoreGraphicsImageAspect::ColorBits;
+			return CoreGraphics::ImageAspect::ColorBits;
 		}
 	}
 	return aspect;
@@ -281,19 +281,19 @@ ImageAspectFromString(const Util::String& str)
 //------------------------------------------------------------------------------
 /**
 */
-inline CoreGraphicsImageLayout
+inline CoreGraphics::ImageLayout
 ImageLayoutFromString(const Util::String& str)
 {
-	if (str == "Undefined")					return CoreGraphicsImageLayout::Undefined;
-	else if (str == "General")				return CoreGraphicsImageLayout::General;
-	else if (str == "ColorRenderTexture")	return CoreGraphicsImageLayout::ColorRenderTexture;
-	else if (str == "DepthRenderTexture")	return CoreGraphicsImageLayout::DepthStencilRenderTexture;
-	else if (str == "DepthStencilRead")		return CoreGraphicsImageLayout::DepthStencilRead;
-	else if (str == "ShaderRead")			return CoreGraphicsImageLayout::ShaderRead;
-	else if (str == "TransferSource")		return CoreGraphicsImageLayout::TransferSource;
-	else if (str == "TransferDestination")	return CoreGraphicsImageLayout::TransferDestination;
-	else if (str == "Preinitialized")		return CoreGraphicsImageLayout::Preinitialized;
-	else if (str == "Present")				return CoreGraphicsImageLayout::Present;
-	return CoreGraphicsImageLayout::Undefined;
+	if (str == "Undefined")					return CoreGraphics::ImageLayout::Undefined;
+	else if (str == "General")				return CoreGraphics::ImageLayout::General;
+	else if (str == "ColorRenderTexture")	return CoreGraphics::ImageLayout::ColorRenderTexture;
+	else if (str == "DepthRenderTexture")	return CoreGraphics::ImageLayout::DepthStencilRenderTexture;
+	else if (str == "DepthStencilRead")		return CoreGraphics::ImageLayout::DepthStencilRead;
+	else if (str == "ShaderRead")			return CoreGraphics::ImageLayout::ShaderRead;
+	else if (str == "TransferSource")		return CoreGraphics::ImageLayout::TransferSource;
+	else if (str == "TransferDestination")	return CoreGraphics::ImageLayout::TransferDestination;
+	else if (str == "Preinitialized")		return CoreGraphics::ImageLayout::Preinitialized;
+	else if (str == "Present")				return CoreGraphics::ImageLayout::Present;
+	return CoreGraphics::ImageLayout::Undefined;
 }
 } // namespace CoreGraphics

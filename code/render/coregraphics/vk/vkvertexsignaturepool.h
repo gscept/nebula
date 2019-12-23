@@ -9,7 +9,6 @@
 #include "resources/resourcememorypool.h"
 #include "util/hashtable.h"
 #include "resources/resourceid.h"
-#include "coregraphics/base/vertexlayoutbase.h"
 #include "coregraphics/vertexlayout.h"
 #include "coregraphics/config.h"
 
@@ -103,6 +102,6 @@ private:
 		BindInfo,											//2 setup info
 		CoreGraphics::VertexLayoutInfo						//3 base info
 	> allocator;
-	__ImplementResourceAllocatorTyped(allocator, VertexLayoutIdType);
+	__ImplementResourceAllocatorTyped(allocator, CoreGraphics::VertexLayoutIdType);
 };
 } // namespace Vulkan

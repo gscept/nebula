@@ -23,7 +23,7 @@ struct ResourceTableLayoutTexture
 {
 	IndexT slot;
 	SizeT num;
-	CoreGraphicsShaderVisibility visibility;
+	CoreGraphics::ShaderVisibility visibility;
 	CoreGraphics::SamplerId immutableSampler;
 };
 
@@ -31,7 +31,7 @@ struct ResourceTableLayoutConstantBuffer
 {
 	IndexT slot;
 	SizeT num;
-	CoreGraphicsShaderVisibility visibility;
+	CoreGraphics::ShaderVisibility visibility;
 	
 	bool dynamicOffset;
 };
@@ -40,7 +40,7 @@ struct ResourceTableLayoutShaderRWBuffer
 {
 	IndexT slot;
 	SizeT num;
-	CoreGraphicsShaderVisibility visibility;
+	CoreGraphics::ShaderVisibility visibility;
 
 	bool dynamicOffset;
 };
@@ -48,7 +48,7 @@ struct ResourceTableLayoutShaderRWBuffer
 struct ResourceTableLayoutSampler
 {
 	IndexT slot;
-	CoreGraphicsShaderVisibility visibility;
+	CoreGraphics::ShaderVisibility visibility;
 	CoreGraphics::SamplerId sampler;
 };
 
@@ -56,7 +56,7 @@ struct ResourceTableLayoutInputAttachment
 {
 	IndexT slot;
 	SizeT num;
-	CoreGraphicsShaderVisibility visibility;
+	CoreGraphics::ShaderVisibility visibility;
 };
 
 struct ResourceTableLayoutCreateInfo
@@ -166,7 +166,7 @@ struct ResourcePipelinePushConstantRange
 {
 	SizeT size;
 	SizeT offset;
-	CoreGraphicsShaderVisibility vis;
+	CoreGraphics::ShaderVisibility vis;
 };
 
 struct ResourcePipelineCreateInfo

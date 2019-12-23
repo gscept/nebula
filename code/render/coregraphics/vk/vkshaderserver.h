@@ -48,7 +48,7 @@ public:
 	/// commit texture library to graphics pipeline
 	void BindTextureDescriptorSetsGraphics();
 	/// commit texture library to compute pipeline
-	void BindTextureDescriptorSetsCompute(const CoreGraphicsQueueType queue = GraphicsQueueType);
+	void BindTextureDescriptorSetsCompute(const CoreGraphics::QueueType queue = CoreGraphics::GraphicsQueueType);
 
 	/// setup gbuffer bindings
 	void SetupGBufferConstants();
@@ -128,7 +128,7 @@ VkShaderServer::BindTextureDescriptorSetsGraphics()
 /**
 */
 inline void 
-VkShaderServer::BindTextureDescriptorSetsCompute(const CoreGraphicsQueueType queue)
+VkShaderServer::BindTextureDescriptorSetsCompute(const CoreGraphics::QueueType queue)
 {
 	IndexT bufferedFrameIndex = CoreGraphics::GetBufferedFrameIndex();
 	CoreGraphics::SetResourceTable(this->resourceTables[bufferedFrameIndex], NEBULA_TICK_GROUP, CoreGraphics::ComputePipeline, nullptr, queue);

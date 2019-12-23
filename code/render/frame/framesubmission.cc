@@ -12,8 +12,8 @@ namespace Frame
 /**
 */
 FrameSubmission::FrameSubmission() :
-	queue(InvalidQueueType),
-	waitQueue(InvalidQueueType),
+	queue(CoreGraphics::InvalidQueueType),
+	waitQueue(CoreGraphics::InvalidQueueType),
 	resourceResetBarriers(nullptr),
 	startOrEnd(0)
 {

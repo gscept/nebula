@@ -247,7 +247,7 @@ VkMemoryTexturePool::LoadFromMemory(const Resources::ResourceId id, const void* 
 					formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT);
 			}
 			else
-				loadInfo.defaultLayout = CoreGraphicsImageLayout::DepthStencilRead;
+				loadInfo.defaultLayout = CoreGraphics::ImageLayout::DepthStencilRead;
 		}
 
 		// create view
@@ -781,7 +781,7 @@ VkMemoryTexturePool::GetBindlessHandle(const CoreGraphics::TextureId id)
 //------------------------------------------------------------------------------
 /**
 */
-CoreGraphicsImageLayout 
+CoreGraphics::ImageLayout 
 VkMemoryTexturePool::GetDefaultLayout(const CoreGraphics::TextureId id)
 {
 	return textureAllocator.GetSafe<Texture_LoadInfo>(id.resourceId).defaultLayout;

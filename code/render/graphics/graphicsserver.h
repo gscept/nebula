@@ -15,7 +15,6 @@
 #include "coregraphics/batchgroup.h"
 #include "stage.h"
 #include "graphicsentity.h"
-#include "visibility/visibilityserver.h"
 #include "coregraphics/graphicsdevice.h"
 #include "coregraphics/displaydevice.h"
 #include "coregraphics/shaderserver.h"
@@ -113,7 +112,6 @@ private:
 
 	Util::Array<GraphicsContextFunctionBundle*> contexts;
 	Util::Array<GraphicsContextState*> states;
-	Ptr<Visibility::VisibilityServer> visServer;
 
 	Util::Array<Ptr<Stage>> stages;
 	Util::Array<Ptr<View>> views;

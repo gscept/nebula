@@ -153,19 +153,19 @@ FrameScript::Build()
 	{
 		CoreGraphics::TextureId tex = this->textures[i];
 		bool isDepth = CoreGraphics::PixelFormat::IsDepthFormat(CoreGraphics::TextureGetPixelFormat(tex));
-		CoreGraphicsImageLayout layout = CoreGraphics::TextureGetDefaultLayout(tex);
+		CoreGraphics::ImageLayout layout = CoreGraphics::TextureGetDefaultLayout(tex);
 		auto& arr = textures.AddUnique(tex);
 
 		uint layers = CoreGraphics::TextureGetNumLayers(tex);
 		uint mips = CoreGraphics::TextureGetNumMips(tex);
 
 		CoreGraphics::ImageSubresourceInfo subres;
-		subres.aspect = isDepth ? CoreGraphicsImageAspect::DepthBits | CoreGraphicsImageAspect::StencilBits : CoreGraphicsImageAspect::ColorBits;
+		subres.aspect = isDepth ? CoreGraphics::ImageAspect::DepthBits | CoreGraphics::ImageAspect::StencilBits : CoreGraphics::ImageAspect::ColorBits;
 		subres.layer = 0;
 		subres.layerCount = layers;
 		subres.mip = 0;
 		subres.mipCount = mips;
-		arr.Append(FrameOp::TextureDependency{ nullptr, CoreGraphicsQueueType::GraphicsQueueType, layout, CoreGraphics::BarrierStage::AllGraphicsShaders | CoreGraphics::BarrierStage::ComputeShader, CoreGraphics::BarrierAccess::ShaderRead, DependencyIntent::Read, InvalidIndex, subres });
+		arr.Append(FrameOp::TextureDependency{ nullptr, CoreGraphics::QueueType::GraphicsQueueType, layout, CoreGraphics::BarrierStage::AllGraphicsShaders | CoreGraphics::BarrierStage::ComputeShader, CoreGraphics::BarrierAccess::ShaderRead, DependencyIntent::Read, InvalidIndex, subres });
 	}
 
 	for (i = 0; i < this->ops.Size(); i++)
@@ -179,13 +179,13 @@ FrameScript::Build()
 	for (i = 0; i < textures.Size(); i++)
 	{
 		const CoreGraphics::TextureId& res = textures.KeyAtIndex(i);
-		CoreGraphicsImageLayout layout = CoreGraphics::TextureGetDefaultLayout(res);
+		CoreGraphics::ImageLayout layout = CoreGraphics::TextureGetDefaultLayout(res);
 		const Util::Array<FrameOp::TextureDependency>& deps = textures.ValueAtIndex(i);
 		for (IndexT j = 0; j < deps.Size(); j++)
 		{
 			const FrameOp::TextureDependency& dep = deps[j];
 			const CoreGraphics::ImageSubresourceInfo& info = dep.subres;
-			CoreGraphics::BarrierAccess outAccess = layout == CoreGraphicsImageLayout::Present ? CoreGraphics::BarrierAccess::TransferRead : CoreGraphics::BarrierAccess::ShaderRead;
+			CoreGraphics::BarrierAccess outAccess = layout == CoreGraphics::ImageLayout::Present ? CoreGraphics::BarrierAccess::TransferRead : CoreGraphics::BarrierAccess::ShaderRead;
 			CoreGraphics::BarrierStage outStage = outAccess == CoreGraphics::BarrierAccess::TransferRead ? CoreGraphics::BarrierStage::Transfer : CoreGraphics::BarrierStage::AllGraphicsShaders;
 
 			// render textures are created as shader read

@@ -65,31 +65,31 @@ SSAOPlugin::Setup()
 		BarrierStage::ComputeShader
 	};
 	ImageSubresourceInfo subres;
-	subres.aspect = CoreGraphicsImageAspect::ColorBits;
+	subres.aspect = CoreGraphics::ImageAspect::ColorBits;
 
 	// hbao generation barriers
 	binfo.name = "HBAO Initial transition";
-	binfo.textures.Append(TextureBarrier{ this->internalTargets[0], subres, CoreGraphicsImageLayout::ShaderRead, CoreGraphicsImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite });
-	binfo.textures.Append(TextureBarrier{ this->internalTargets[1], subres, CoreGraphicsImageLayout::ShaderRead, CoreGraphicsImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite });
+	binfo.textures.Append(TextureBarrier{ this->internalTargets[0], subres, CoreGraphics::ImageLayout::ShaderRead, CoreGraphics::ImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite });
+	binfo.textures.Append(TextureBarrier{ this->internalTargets[1], subres, CoreGraphics::ImageLayout::ShaderRead, CoreGraphics::ImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite });
 	this->barriers[0] = CreateBarrier(binfo);
 	binfo.textures.Clear();
 
 	binfo.name = "HBAO Transition Pass 0 -> 1";
-	binfo.textures.Append(TextureBarrier{this->internalTargets[0], subres, CoreGraphicsImageLayout::General, CoreGraphicsImageLayout::General, BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead});
-	binfo.textures.Append(TextureBarrier{this->internalTargets[1], subres, CoreGraphicsImageLayout::General, CoreGraphicsImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite});
+	binfo.textures.Append(TextureBarrier{this->internalTargets[0], subres, CoreGraphics::ImageLayout::General, CoreGraphics::ImageLayout::General, BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead});
+	binfo.textures.Append(TextureBarrier{this->internalTargets[1], subres, CoreGraphics::ImageLayout::General, CoreGraphics::ImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite});
 	this->barriers[1] = CreateBarrier(binfo);
 	binfo.textures.Clear();
 
 	// hbao blur barriers
 	binfo.name = "HBAO Transition to Blur";
-	binfo.textures.Append(TextureBarrier{ this->internalTargets[1], subres, CoreGraphicsImageLayout::General, CoreGraphicsImageLayout::ShaderRead, BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead });
-	binfo.textures.Append(TextureBarrier{ this->internalTargets[0], subres, CoreGraphicsImageLayout::General, CoreGraphicsImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite });
+	binfo.textures.Append(TextureBarrier{ this->internalTargets[1], subres, CoreGraphics::ImageLayout::General, CoreGraphics::ImageLayout::ShaderRead, BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead });
+	binfo.textures.Append(TextureBarrier{ this->internalTargets[0], subres, CoreGraphics::ImageLayout::General, CoreGraphics::ImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite });
 	this->barriers[2] = CreateBarrier(binfo);
 	binfo.textures.Clear();
 
 	binfo.name = "HBAO Transition to Blur Pass 0 -> 1";
-	binfo.textures.Append(TextureBarrier{this->internalTargets[0], subres, CoreGraphicsImageLayout::General, CoreGraphicsImageLayout::ShaderRead, BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead});
-	binfo.textures.Append(TextureBarrier{this->internalTargets[1], subres, CoreGraphicsImageLayout::ShaderRead, CoreGraphicsImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite});
+	binfo.textures.Append(TextureBarrier{this->internalTargets[0], subres, CoreGraphics::ImageLayout::General, CoreGraphics::ImageLayout::ShaderRead, BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead});
+	binfo.textures.Append(TextureBarrier{this->internalTargets[1], subres, CoreGraphics::ImageLayout::ShaderRead, CoreGraphics::ImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite});
 	this->barriers[3] = CreateBarrier(binfo);
 	binfo.textures.Clear();
 

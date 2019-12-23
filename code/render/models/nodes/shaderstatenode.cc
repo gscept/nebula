@@ -134,7 +134,7 @@ ShaderStateNode::OnFinishedLoading()
 	this->materialType = Materials::surfacePool->GetType(this->surRes);
 	this->surface = Materials::surfacePool->GetId(this->surRes);
 	//this->cbo = CoreGraphics::ShaderCreateConstantBuffer(this->sharedShader, "ObjectBlock");
-	this->cbo = CoreGraphics::GetGraphicsConstantBuffer(CoreGraphicsGlobalConstantBufferType::VisibilityThreadConstantBuffer);
+	this->cbo = CoreGraphics::GetGraphicsConstantBuffer(CoreGraphics::GlobalConstantBufferType::VisibilityThreadConstantBuffer);
 	this->cboIndex = CoreGraphics::ShaderGetResourceSlot(this->sharedShader, "ObjectBlock");
 	this->resourceTable = CoreGraphics::ShaderCreateResourceTable(this->sharedShader, NEBULA_DYNAMIC_OFFSET_GROUP);
 	CoreGraphics::ResourceTableSetConstantBuffer(this->resourceTable, { this->cbo, this->cboIndex, 0, true, false, sizeof(Shared::ObjectBlock), 0 });
@@ -224,7 +224,7 @@ ShaderStateNode::Instance::Update()
 	Shared::ObjectBlock block;
 	Math::matrix44::storeu(this->modelTransform, block.Model);
 	Math::matrix44::storeu(Math::matrix44::inverse(this->modelTransform), block.InvModel);
-	uint offset = CoreGraphics::SetGraphicsConstants(CoreGraphicsGlobalConstantBufferType::VisibilityThreadConstantBuffer, block);
+	uint offset = CoreGraphics::SetGraphicsConstants(CoreGraphics::GlobalConstantBufferType::VisibilityThreadConstantBuffer, block);
 	this->offsets[ObjectTransforms] = offset;
 }
 

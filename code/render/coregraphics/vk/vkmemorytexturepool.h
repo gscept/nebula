@@ -96,13 +96,13 @@ public:
 	/// get bindless handle
 	uint GetBindlessHandle(const CoreGraphics::TextureId id);
 	/// get default layout
-	CoreGraphicsImageLayout GetDefaultLayout(const CoreGraphics::TextureId id);
+	CoreGraphics::ImageLayout GetDefaultLayout(const CoreGraphics::TextureId id);
 
 	/// swap buffers for texture
 	IndexT SwapBuffers(const CoreGraphics::TextureId id);
 private:
 	friend class VkStreamTexturePool;
-	__ImplementResourceAllocatorTypedSafe(textureAllocator, TextureIdType);
+	__ImplementResourceAllocatorTypedSafe(textureAllocator, CoreGraphics::TextureIdType);
 };
 
 //------------------------------------------------------------------------------

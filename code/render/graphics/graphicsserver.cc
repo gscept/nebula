@@ -47,7 +47,6 @@ void
 GraphicsServer::Open()
 {
 	n_assert(!this->isOpen);
-	this->visServer = Visibility::VisibilityServer::Create();
 	this->timer = FrameSync::FrameSyncTimer::Create();
 	this->isOpen = true;
 
@@ -176,7 +175,6 @@ void
 GraphicsServer::Close()
 {
 	n_assert(this->isOpen);
-	this->visServer = nullptr;
 	
 	this->isOpen = false;	
 

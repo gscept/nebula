@@ -99,27 +99,27 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 	struct ConstantsRingBuffer
 	{
 		// handle global constant memory
-		uint32_t cboGfxStartAddress[CoreGraphicsGlobalConstantBufferType::NumConstantBufferTypes];
-		uint32_t cboGfxEndAddress[CoreGraphicsGlobalConstantBufferType::NumConstantBufferTypes];
-		uint32_t cboComputeStartAddress[CoreGraphicsGlobalConstantBufferType::NumConstantBufferTypes];
-		uint32_t cboComputeEndAddress[CoreGraphicsGlobalConstantBufferType::NumConstantBufferTypes];
+		uint32_t cboGfxStartAddress[CoreGraphics::GlobalConstantBufferType::NumConstantBufferTypes];
+		uint32_t cboGfxEndAddress[CoreGraphics::GlobalConstantBufferType::NumConstantBufferTypes];
+		uint32_t cboComputeStartAddress[CoreGraphics::GlobalConstantBufferType::NumConstantBufferTypes];
+		uint32_t cboComputeEndAddress[CoreGraphics::GlobalConstantBufferType::NumConstantBufferTypes];
 	};
 	Util::FixedArray<ConstantsRingBuffer> constantBufferRings;
 
 	struct VertexRingBuffer
 	{
-		uint32_t vboStartAddress[CoreGraphicsVertexBufferMemoryType::NumVertexBufferMemoryTypes];
-		uint32_t vboEndAddress[CoreGraphicsVertexBufferMemoryType::NumVertexBufferMemoryTypes];
+		uint32_t vboStartAddress[CoreGraphics::VertexBufferMemoryType::NumVertexBufferMemoryTypes];
+		uint32_t vboEndAddress[CoreGraphics::VertexBufferMemoryType::NumVertexBufferMemoryTypes];
 
-		uint32_t iboStartAddress[CoreGraphicsVertexBufferMemoryType::NumVertexBufferMemoryTypes];
-		uint32_t iboEndAddress[CoreGraphicsVertexBufferMemoryType::NumVertexBufferMemoryTypes];
+		uint32_t iboStartAddress[CoreGraphics::VertexBufferMemoryType::NumVertexBufferMemoryTypes];
+		uint32_t iboEndAddress[CoreGraphics::VertexBufferMemoryType::NumVertexBufferMemoryTypes];
 	};
 	Util::FixedArray<VertexRingBuffer> vertexBufferRings;
 
 	VkSemaphore waitForPresentSemaphore;
 
-	CoreGraphicsQueueType mainSubmitQueue;
-	bool mainSubmitQueueWait[CoreGraphicsQueueType::NumQueueTypes];
+	CoreGraphics::QueueType mainSubmitQueue;
+	bool mainSubmitQueueWait[CoreGraphics::QueueType::NumQueueTypes];
 	uint64 mainSubmitLastFrameIndex;
 
 	uint maxNumBufferedFrames;
@@ -169,11 +169,11 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 	VkPipeline currentPipeline;
 	VkPipelineInfoBits currentPipelineBits;
 
-	VkQueryPool queryPools[NumCoreGraphicsQueryTypes];
+	VkQueryPool queryPools[CoreGraphics::NumQueryTypes];
 	VkQueryPool timestampPool;
 	struct QueryRingBuffer
 	{
-		IndexT queryStartIndex[CoreGraphicsQueryType::NumCoreGraphicsQueryTypes];
+		IndexT queryStartIndex[CoreGraphics::NumQueryTypes];
 	};
 	Util::FixedArray<QueryRingBuffer> queryIndices;
 
@@ -347,12 +347,12 @@ GetMemoryProperties()
 /**
 */
 VkCommandBuffer 
-GetMainBuffer(const CoreGraphicsQueueType queue)
+GetMainBuffer(const CoreGraphics::QueueType queue)
 {
 	switch (queue)
 	{
-	case GraphicsQueueType: return CommandBufferGetVk(state.gfxCmdBuffer);
-	case ComputeQueueType: return CommandBufferGetVk(state.computeCmdBuffer);
+	case CoreGraphics::GraphicsQueueType: return CommandBufferGetVk(state.gfxCmdBuffer);
+	case CoreGraphics::ComputeQueueType: return CommandBufferGetVk(state.computeCmdBuffer);
 	}
 	return VK_NULL_HANDLE;
 }
@@ -398,7 +398,7 @@ GetQueueFamilies()
 /**
 */
 const uint32_t 
-GetQueueFamily(const CoreGraphicsQueueType type)
+GetQueueFamily(const CoreGraphics::QueueType type)
 {
 	return state.queueFamilyMap[type];
 }
@@ -407,20 +407,20 @@ GetQueueFamily(const CoreGraphicsQueueType type)
 /**
 */
 const VkQueue 
-GetQueue(const CoreGraphicsQueueType type, const IndexT index)
+GetQueue(const CoreGraphics::QueueType type, const IndexT index)
 {
 	switch (type)
 	{
-	case GraphicsQueueType:
+	case CoreGraphics::GraphicsQueueType:
 		return state.subcontextHandler.drawQueues[index];
 		break;
-	case ComputeQueueType:
+	case CoreGraphics::ComputeQueueType:
 		return state.subcontextHandler.computeQueues[index];
 		break;
-	case TransferQueueType:
+	case CoreGraphics::TransferQueueType:
 		return state.subcontextHandler.transferQueues[index];
 		break;
-	case SparseQueueType:
+	case CoreGraphics::SparseQueueType:
 		return state.subcontextHandler.sparseQueues[index];
 		break;
 	}
@@ -431,7 +431,7 @@ GetQueue(const CoreGraphicsQueueType type, const IndexT index)
 /**
 */
 const VkQueue 
-GetCurrentQueue(const CoreGraphicsQueueType type)
+GetCurrentQueue(const CoreGraphics::QueueType type)
 {
 	return state.subcontextHandler.GetQueue(type);
 }
@@ -450,7 +450,7 @@ InsertBarrier(
 	VkBufferMemoryBarrier* bufferBarriers,
 	uint32_t numImageBarriers,
 	VkImageMemoryBarrier* imageBarriers,
-	const CoreGraphicsQueueType queue)
+	const CoreGraphics::QueueType queue)
 {
 	VkCommandBuffer buf = GetMainBuffer(queue);
 	vkCmdPipelineBarrier(buf,
@@ -475,7 +475,7 @@ Copy(const VkImage from, Math::rectangle<SizeT> fromRegion, const VkImage to, Ma
 	region.extent = { (uint32_t)toRegion.width(), (uint32_t)toRegion.height(), 1 };
 	region.srcOffset = { toRegion.left, toRegion.top, 0 };
 	region.srcSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
-	vkCmdCopyImage(GetMainBuffer(GraphicsQueueType), from, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, to, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+	vkCmdCopyImage(GetMainBuffer(CoreGraphics::GraphicsQueueType), from, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, to, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 }
 
 //------------------------------------------------------------------------------
@@ -492,7 +492,7 @@ Blit(const VkImage from, Math::rectangle<SizeT> fromRegion, IndexT fromMip, cons
 	blit.dstOffsets[0] = { toRegion.left, toRegion.top, 0 };
 	blit.dstOffsets[1] = { toRegion.right, toRegion.bottom, 1 };
 	blit.dstSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, (uint32_t)toMip, 0, 1 };
-	vkCmdBlitImage(GetMainBuffer(GraphicsQueueType), from, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, to, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit, VK_FILTER_LINEAR);
+	vkCmdBlitImage(GetMainBuffer(CoreGraphics::GraphicsQueueType), from, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, to, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit, VK_FILTER_LINEAR);
 }
 
 //------------------------------------------------------------------------------
@@ -537,7 +537,7 @@ BindDescriptorsGraphics(const VkDescriptorSet* descriptors, uint32_t baseSet, ui
 		else
 		{
 			// otherwise they go on the main draw
-			vkCmdBindDescriptorSets(GetMainBuffer(GraphicsQueueType), VK_PIPELINE_BIND_POINT_GRAPHICS, state.currentPipelineLayout, baseSet, setCount, descriptors, offsetCount, offsets);
+			vkCmdBindDescriptorSets(GetMainBuffer(CoreGraphics::GraphicsQueueType), VK_PIPELINE_BIND_POINT_GRAPHICS, state.currentPipelineLayout, baseSet, setCount, descriptors, offsetCount, offsets);
 		}
 	}
 }
@@ -546,7 +546,7 @@ BindDescriptorsGraphics(const VkDescriptorSet* descriptors, uint32_t baseSet, ui
 /**
 */
 void 
-BindDescriptorsCompute(const VkDescriptorSet* descriptors, uint32_t baseSet, uint32_t setCount, const uint32_t* offsets, uint32_t offsetCount, const CoreGraphicsQueueType queue)
+BindDescriptorsCompute(const VkDescriptorSet* descriptors, uint32_t baseSet, uint32_t setCount, const uint32_t* offsets, uint32_t offsetCount, const CoreGraphics::QueueType queue)
 {
 	n_assert(state.inBeginFrame);
 	vkCmdBindDescriptorSets(GetMainBuffer(queue), VK_PIPELINE_BIND_POINT_COMPUTE, state.currentPipelineLayout, baseSet, setCount, descriptors, offsetCount, offsets);
@@ -574,7 +574,7 @@ UpdatePushRanges(const VkShaderStageFlags& stages, const VkPipelineLayout& layou
 	}
 	else
 	{
-		vkCmdPushConstants(GetMainBuffer(GraphicsQueueType), layout, stages, offset, size, data);
+		vkCmdPushConstants(GetMainBuffer(CoreGraphics::GraphicsQueueType), layout, stages, offset, size, data);
 	}
 }
 
@@ -695,7 +695,7 @@ CreateAndBindGraphicsPipeline()
 	else
 	{
 		// bind pipeline
-		vkCmdBindPipeline(GetMainBuffer(GraphicsQueueType), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+		vkCmdBindPipeline(GetMainBuffer(CoreGraphics::GraphicsQueueType), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 	}
 }
 
@@ -703,7 +703,7 @@ CreateAndBindGraphicsPipeline()
 /**
 */
 void 
-BindComputePipeline(const VkPipeline& pipeline, const VkPipelineLayout& layout, const CoreGraphicsQueueType queue)
+BindComputePipeline(const VkPipeline& pipeline, const VkPipelineLayout& layout, const CoreGraphics::QueueType queue)
 {
 	// bind compute pipeline
 	state.currentBindPoint = CoreGraphics::ComputePipeline;
@@ -749,7 +749,7 @@ SetVkViewports(VkViewport* viewports, SizeT num)
 		else
 		{
 			// activate this code when we have main thread secondary buffers
-			vkCmdSetViewport(GetMainBuffer(GraphicsQueueType), 0, num, viewports);
+			vkCmdSetViewport(GetMainBuffer(CoreGraphics::GraphicsQueueType), 0, num, viewports);
 		}
 	}
 }
@@ -777,7 +777,7 @@ SetVkScissorRects(VkRect2D* scissors, SizeT num)
 		else
 		{
 			// activate this code when we have main thread secondary buffers
-			vkCmdSetScissor(GetMainBuffer(GraphicsQueueType), 0, num, scissors);
+			vkCmdSetScissor(GetMainBuffer(CoreGraphics::GraphicsQueueType), 0, num, scissors);
 		}
 	}
 }
@@ -847,7 +847,7 @@ EndDrawThreads()
 		}
 
 		// execute commands
-		vkCmdExecuteCommands(GetMainBuffer(GraphicsQueueType), state.numActiveThreads, state.dispatchableDrawCmdBuffers);
+		vkCmdExecuteCommands(GetMainBuffer(CoreGraphics::GraphicsQueueType), state.numActiveThreads, state.dispatchableDrawCmdBuffers);
 
 		// get current submission
 		VkDevice dev = state.devices[state.currentDevice];
@@ -1483,7 +1483,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 #pragma pop_macro("CreateSemaphore")
 
 	state.waitForPresentSemaphore = VK_NULL_HANDLE;
-	state.mainSubmitQueue = CoreGraphicsQueueType::GraphicsQueueType; // main queue to submit is on graphics
+	state.mainSubmitQueue = CoreGraphics::QueueType::GraphicsQueueType; // main queue to submit is on graphics
 	state.mainSubmitLastFrameIndex = -1;
 	state.mainSubmitQueueWait[GraphicsQueueType] = false;
 	state.mainSubmitQueueWait[ComputeQueueType] = false;
@@ -1506,9 +1506,9 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	state.currentPipelineInfo.pColorBlendState = &state.blendInfo;
 
 	// construct queues
-	VkQueryPoolCreateInfo queryInfos[NumCoreGraphicsQueryTypes];
+	VkQueryPoolCreateInfo queryInfos[CoreGraphics::NumQueryTypes];
 
-	for (i = 0; i < NumCoreGraphicsQueryTypes; i++)
+	for (i = 0; i < CoreGraphics::NumQueryTypes; i++)
 	{
 		queryInfos[i] = {
 			VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,
@@ -1520,19 +1520,19 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		};
 	}
 
-	queryInfos[CoreGraphicsQueryType::OcclusionQuery].queryType = VK_QUERY_TYPE_OCCLUSION;
-	queryInfos[CoreGraphicsQueryType::Timestamp].queryType = VK_QUERY_TYPE_TIMESTAMP;
-	queryInfos[CoreGraphicsQueryType::PipelineStatisticsGraphics].queryType = VK_QUERY_TYPE_PIPELINE_STATISTICS;
-	queryInfos[CoreGraphicsQueryType::PipelineStatisticsGraphics].pipelineStatistics =
+	queryInfos[CoreGraphics::QueryType::OcclusionQuery].queryType = VK_QUERY_TYPE_OCCLUSION;
+	queryInfos[CoreGraphics::QueryType::TimestampQuery].queryType = VK_QUERY_TYPE_TIMESTAMP;
+	queryInfos[CoreGraphics::QueryType::PipelineStatisticsGraphicsQuery].queryType = VK_QUERY_TYPE_PIPELINE_STATISTICS;
+	queryInfos[CoreGraphics::QueryType::PipelineStatisticsGraphicsQuery].pipelineStatistics =
 		VK_QUERY_PIPELINE_STATISTIC_VERTEX_SHADER_INVOCATIONS_BIT |
 		VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT |
 		VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT |
 		VK_QUERY_PIPELINE_STATISTIC_FRAGMENT_SHADER_INVOCATIONS_BIT;
-	queryInfos[CoreGraphicsQueryType::PipelineStatisticsCompute].queryType = VK_QUERY_TYPE_PIPELINE_STATISTICS;
-	queryInfos[CoreGraphicsQueryType::PipelineStatisticsCompute].pipelineStatistics =
+	queryInfos[CoreGraphics::QueryType::PipelineStatisticsComputeQuery].queryType = VK_QUERY_TYPE_PIPELINE_STATISTICS;
+	queryInfos[CoreGraphics::QueryType::PipelineStatisticsComputeQuery].pipelineStatistics =
 		VK_QUERY_PIPELINE_STATISTIC_COMPUTE_SHADER_INVOCATIONS_BIT;
 
-	for (i = 0; i < NumCoreGraphicsQueryTypes; i++)
+	for (i = 0; i < CoreGraphics::NumQueryTypes; i++)
 	{
 		VkResult res = vkCreateQueryPool(state.devices[state.currentDevice], &queryInfos[i], nullptr, &state.queryPools[i]);
 		n_assert(res == VK_SUCCESS);
@@ -1830,7 +1830,7 @@ BeginFrame(IndexT frameIndex)
 
 	// update constant buffer offsets
 	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& nextCboRing = state.constantBufferRings[state.currentBufferedFrameIndex];
-	for (IndexT i = 0; i < CoreGraphicsGlobalConstantBufferType::NumConstantBufferTypes; i++)
+	for (IndexT i = 0; i < CoreGraphics::GlobalConstantBufferType::NumConstantBufferTypes; i++)
 	{
 		nextCboRing.cboGfxStartAddress[i] = state.globalGraphicsConstantBufferMaxValue[i] * state.currentBufferedFrameIndex;
 		nextCboRing.cboGfxEndAddress[i] = state.globalGraphicsConstantBufferMaxValue[i] * state.currentBufferedFrameIndex;
@@ -1840,7 +1840,7 @@ BeginFrame(IndexT frameIndex)
 
 	// update vertex buffer offsets
 	Vulkan::GraphicsDeviceState::VertexRingBuffer& nextVboRing = state.vertexBufferRings[state.currentBufferedFrameIndex];
-	for (IndexT i = 0; i < CoreGraphicsVertexBufferMemoryType::NumVertexBufferMemoryTypes; i++)
+	for (IndexT i = 0; i < CoreGraphics::VertexBufferMemoryType::NumVertexBufferMemoryTypes; i++)
 	{
 		nextVboRing.vboStartAddress[i] = state.globalVertexBufferMaxValue[i] * state.currentBufferedFrameIndex;
 		nextVboRing.vboEndAddress[i] = state.globalVertexBufferMaxValue[i] * state.currentBufferedFrameIndex;
@@ -1849,7 +1849,7 @@ BeginFrame(IndexT frameIndex)
 	}
 
 	Vulkan::GraphicsDeviceState::QueryRingBuffer& queries = state.queryIndices[state.currentBufferedFrameIndex];
-	for (IndexT i = 0; i < CoreGraphicsQueryType::NumCoreGraphicsQueryTypes; i++)
+	for (IndexT i = 0; i < CoreGraphics::NumQueueTypes; i++)
 	{
 		queries.queryStartIndex[i] = 1000 * state.currentBufferedFrameIndex;
 
@@ -1871,7 +1871,7 @@ BeginFrame(IndexT frameIndex)
 /**
 */
 void
-BeginSubmission(CoreGraphicsQueueType queue, CoreGraphicsQueueType waitQueue)
+BeginSubmission(CoreGraphics::QueueType queue, CoreGraphics::QueueType waitQueue)
 {
 	n_assert(state.inBeginFrame);
 	n_assert(queue == GraphicsQueueType || queue == ComputeQueueType);
@@ -2151,7 +2151,7 @@ GetPrimitiveGroup()
 /**
 */
 void
-SetShaderProgram(const CoreGraphics::ShaderProgramId pro, const CoreGraphicsQueueType queue)
+SetShaderProgram(const CoreGraphics::ShaderProgramId pro, const CoreGraphics::QueueType queue)
 {
 	n_assert(pro != CoreGraphics::ShaderProgramId::Invalid());
 	const VkShaderProgramRuntimeInfo& info = CoreGraphics::shaderPool->shaderAlloc.Get<VkShaderPool::Shader_ProgramAllocator>(pro.shaderId).Get<ShaderProgram_RuntimeInfo>(pro.programId);
@@ -2194,7 +2194,7 @@ SetShaderProgram(const CoreGraphics::ShaderProgramId pro, const CoreGraphicsQueu
 /**
 */
 void
-SetResourceTable(const CoreGraphics::ResourceTableId table, const IndexT slot, ShaderPipeline pipeline, const Util::FixedArray<uint>& offsets, const CoreGraphicsQueueType queue)
+SetResourceTable(const CoreGraphics::ResourceTableId table, const IndexT slot, ShaderPipeline pipeline, const Util::FixedArray<uint>& offsets, const CoreGraphics::QueueType queue)
 {
 	switch (pipeline)
 	{
@@ -2219,7 +2219,7 @@ SetResourceTable(const CoreGraphics::ResourceTableId table, const IndexT slot, S
 /**
 */
 void
-SetResourceTable(const CoreGraphics::ResourceTableId table, const IndexT slot, ShaderPipeline pipeline, uint32 numOffsets, uint32* offsets, const CoreGraphicsQueueType queue)
+SetResourceTable(const CoreGraphics::ResourceTableId table, const IndexT slot, ShaderPipeline pipeline, uint32 numOffsets, uint32* offsets, const CoreGraphics::QueueType queue)
 {
 	switch (pipeline)
 	{
@@ -2270,7 +2270,7 @@ PushConstants(ShaderPipeline pipeline, uint offset, uint size, byte* data)
 /**
 */
 uint 
-SetGraphicsConstantsInternal(CoreGraphicsGlobalConstantBufferType type, const void* data, SizeT size)
+SetGraphicsConstantsInternal(CoreGraphics::GlobalConstantBufferType type, const void* data, SizeT size)
 {
 	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.constantBufferRings[state.currentBufferedFrameIndex];
 
@@ -2298,7 +2298,7 @@ SetGraphicsConstantsInternal(CoreGraphicsGlobalConstantBufferType type, const vo
 /**
 */
 uint 
-SetComputeConstantsInternal(CoreGraphicsGlobalConstantBufferType type, const void* data, SizeT size)
+SetComputeConstantsInternal(CoreGraphics::GlobalConstantBufferType type, const void* data, SizeT size)
 {
 	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.constantBufferRings[state.currentBufferedFrameIndex];
 
@@ -2326,7 +2326,7 @@ SetComputeConstantsInternal(CoreGraphicsGlobalConstantBufferType type, const voi
 /**
 */
 void
-SetGraphicsConstantsInternal(CoreGraphicsGlobalConstantBufferType type, uint offset, const void* data, SizeT size)
+SetGraphicsConstantsInternal(CoreGraphics::GlobalConstantBufferType type, uint offset, const void* data, SizeT size)
 {
 	ConstantBufferUpdate(state.globalGraphicsConstantStagingBuffer[type], data, size, offset);
 }
@@ -2335,7 +2335,7 @@ SetGraphicsConstantsInternal(CoreGraphicsGlobalConstantBufferType type, uint off
 /**
 */
 void 
-SetComputeConstantsInternal(CoreGraphicsGlobalConstantBufferType type, uint offset, const void* data, SizeT size)
+SetComputeConstantsInternal(CoreGraphics::GlobalConstantBufferType type, uint offset, const void* data, SizeT size)
 {
 	ConstantBufferUpdate(state.globalComputeConstantStagingBuffer[type], data, size, offset);
 }
@@ -2344,7 +2344,7 @@ SetComputeConstantsInternal(CoreGraphicsGlobalConstantBufferType type, uint offs
 /**
 */
 uint 
-AllocateGraphicsConstantBufferMemory(CoreGraphicsGlobalConstantBufferType type, uint size)
+AllocateGraphicsConstantBufferMemory(CoreGraphics::GlobalConstantBufferType type, uint size)
 {
 	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.constantBufferRings[state.currentBufferedFrameIndex];
 
@@ -2372,7 +2372,7 @@ AllocateGraphicsConstantBufferMemory(CoreGraphicsGlobalConstantBufferType type, 
 /**
 */
 CoreGraphics::ConstantBufferId 
-GetGraphicsConstantBuffer(CoreGraphicsGlobalConstantBufferType type)
+GetGraphicsConstantBuffer(CoreGraphics::GlobalConstantBufferType type)
 {
 	return state.globalGraphicsConstantBuffer[type];
 }
@@ -2381,7 +2381,7 @@ GetGraphicsConstantBuffer(CoreGraphicsGlobalConstantBufferType type)
 /**
 */
 uint 
-AllocateComputeConstantBufferMemory(CoreGraphicsGlobalConstantBufferType type, uint size)
+AllocateComputeConstantBufferMemory(CoreGraphics::GlobalConstantBufferType type, uint size)
 {
 	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.constantBufferRings[state.currentBufferedFrameIndex];
 
@@ -2409,7 +2409,7 @@ AllocateComputeConstantBufferMemory(CoreGraphicsGlobalConstantBufferType type, u
 /**
 */
 CoreGraphics::ConstantBufferId 
-GetComputeConstantBuffer(CoreGraphicsGlobalConstantBufferType type)
+GetComputeConstantBuffer(CoreGraphics::GlobalConstantBufferType type)
 {
 	return state.globalComputeConstantBuffer[type];
 }
@@ -2418,7 +2418,7 @@ GetComputeConstantBuffer(CoreGraphicsGlobalConstantBufferType type)
 /**
 */
 byte*
-AllocateVertexBufferMemory(CoreGraphicsVertexBufferMemoryType type, uint size)
+AllocateVertexBufferMemory(CoreGraphics::VertexBufferMemoryType type, uint size)
 {
 	Vulkan::GraphicsDeviceState::VertexRingBuffer& sub = state.vertexBufferRings[state.currentBufferedFrameIndex];
 
@@ -2445,7 +2445,7 @@ AllocateVertexBufferMemory(CoreGraphicsVertexBufferMemoryType type, uint size)
 /**
 */
 uint 
-GetVertexBufferOffset(CoreGraphicsVertexBufferMemoryType type)
+GetVertexBufferOffset(CoreGraphics::VertexBufferMemoryType type)
 {
 	Vulkan::GraphicsDeviceState::VertexRingBuffer& sub = state.vertexBufferRings[state.currentBufferedFrameIndex];
 	return sub.vboEndAddress[type];
@@ -2455,7 +2455,7 @@ GetVertexBufferOffset(CoreGraphicsVertexBufferMemoryType type)
 /**
 */
 CoreGraphics::VertexBufferId 
-GetVertexBuffer(CoreGraphicsVertexBufferMemoryType type)
+GetVertexBuffer(CoreGraphics::VertexBufferMemoryType type)
 {
 	return state.globalVertexBuffer[type];
 }
@@ -2464,7 +2464,7 @@ GetVertexBuffer(CoreGraphicsVertexBufferMemoryType type)
 /**
 */
 byte*
-AllocateIndexBufferMemory(CoreGraphicsVertexBufferMemoryType type, uint size)
+AllocateIndexBufferMemory(CoreGraphics::VertexBufferMemoryType type, uint size)
 {
 	Vulkan::GraphicsDeviceState::VertexRingBuffer& sub = state.vertexBufferRings[state.currentBufferedFrameIndex];
 
@@ -2491,7 +2491,7 @@ AllocateIndexBufferMemory(CoreGraphicsVertexBufferMemoryType type, uint size)
 /**
 */
 uint 
-GetIndexBufferOffset(CoreGraphicsVertexBufferMemoryType type)
+GetIndexBufferOffset(CoreGraphics::VertexBufferMemoryType type)
 {
 	Vulkan::GraphicsDeviceState::VertexRingBuffer& sub = state.vertexBufferRings[state.currentBufferedFrameIndex];
 	return sub.iboEndAddress[type];
@@ -2501,7 +2501,7 @@ GetIndexBufferOffset(CoreGraphicsVertexBufferMemoryType type)
 /**
 */
 CoreGraphics::IndexBufferId 
-GetIndexBuffer(CoreGraphicsVertexBufferMemoryType type)
+GetIndexBuffer(CoreGraphics::VertexBufferMemoryType type)
 {
 	return state.globalIndexBuffer[type];
 }
@@ -2594,7 +2594,7 @@ ReloadShaderProgram(const CoreGraphics::ShaderProgramId& pro)
 /**
 */
 void 
-InsertBarrier(const CoreGraphics::BarrierId barrier, const CoreGraphicsQueueType queue)
+InsertBarrier(const CoreGraphics::BarrierId barrier, const CoreGraphics::QueueType queue)
 {
 	n_assert(!state.inBeginBatch);
 	n_assert(!state.inBeginPass);
@@ -2644,7 +2644,7 @@ InsertBarrier(const CoreGraphics::BarrierId barrier, const CoreGraphicsQueueType
 /**
 */
 void 
-SignalEvent(const CoreGraphics::EventId ev, const CoreGraphicsQueueType queue)
+SignalEvent(const CoreGraphics::EventId ev, const CoreGraphics::QueueType queue)
 {
 	VkEventInfo& info = eventAllocator.Get<1>(ev.id24);
 	if (queue == GraphicsQueueType && state.inBeginPass)
@@ -2673,7 +2673,7 @@ SignalEvent(const CoreGraphics::EventId ev, const CoreGraphicsQueueType queue)
 /**
 */
 void 
-WaitEvent(const CoreGraphics::EventId ev, const CoreGraphicsQueueType queue)
+WaitEvent(const CoreGraphics::EventId ev, const CoreGraphics::QueueType queue)
 {
 	VkEventInfo& info = eventAllocator.Get<1>(ev.id24);
 	if (queue == GraphicsQueueType && state.inBeginPass)
@@ -2726,7 +2726,7 @@ WaitEvent(const CoreGraphics::EventId ev, const CoreGraphicsQueueType queue)
 /**
 */
 void 
-ResetEvent(const CoreGraphics::EventId ev, const CoreGraphicsQueueType queue)
+ResetEvent(const CoreGraphics::EventId ev, const CoreGraphics::QueueType queue)
 {
 	VkEventInfo& info = eventAllocator.Get<1>(ev.id24);
 	if (queue == GraphicsQueueType && state.inBeginPass)	
@@ -2821,7 +2821,7 @@ DrawInstanced(SizeT numInstances, IndexT baseInstance)
 /**
 */
 void 
-Compute(int dimX, int dimY, int dimZ, const CoreGraphicsQueueType queue)
+Compute(int dimX, int dimY, int dimZ, const CoreGraphics::QueueType queue)
 {
 	n_assert(!state.inBeginPass);
 	vkCmdDispatch(GetMainBuffer(queue), dimX, dimY, dimZ);
@@ -2869,7 +2869,7 @@ EndPass()
 /**
 */
 void 
-EndSubmission(CoreGraphicsQueueType queue, CoreGraphicsQueueType waitQueue, bool endOfFrame)
+EndSubmission(CoreGraphics::QueueType queue, CoreGraphics::QueueType waitQueue, bool endOfFrame)
 {
 	n_assert(waitQueue != queue);
 
@@ -3021,7 +3021,7 @@ IsInBeginFrame()
 /**
 */
 void 
-WaitForQueue(CoreGraphicsQueueType queue)
+WaitForQueue(CoreGraphics::QueueType queue)
 {
 	state.subcontextHandler.WaitIdle(queue);
 }
@@ -3096,7 +3096,7 @@ SetRenderWireframe(bool b)
 /**
 */
 IndexT 
-Timestamp(CoreGraphicsQueueType queue, const CoreGraphics::BarrierStage stage)
+Timestamp(CoreGraphics::QueueType queue, const CoreGraphics::BarrierStage stage)
 {
 	// convert to vulkan flags, force bits set to only be 1
 	VkPipelineStageFlags flags = VkTypes::AsVkPipelineFlags(stage);
@@ -3104,11 +3104,11 @@ Timestamp(CoreGraphicsQueueType queue, const CoreGraphics::BarrierStage stage)
 
 	// get current query, and get the index
 	Vulkan::GraphicsDeviceState::QueryRingBuffer& queries = state.queryIndices[state.currentBufferedFrameIndex];
-	IndexT idx = queries.queryStartIndex[CoreGraphicsQueryType::Timestamp]++;
+	IndexT idx = queries.queryStartIndex[CoreGraphics::QueryType::TimestampQuery]++;
 
 	// write time stamp
 	VkCommandBuffer buf = GetMainBuffer(queue);
-	vkCmdWriteTimestamp(buf, (VkPipelineStageFlagBits)flags, state.queryPools[CoreGraphicsQueryType::Timestamp], idx);
+	vkCmdWriteTimestamp(buf, (VkPipelineStageFlagBits)flags, state.queryPools[CoreGraphics::QueryType::TimestampQuery], idx);
 	return idx;
 }
 
@@ -3116,9 +3116,9 @@ Timestamp(CoreGraphicsQueueType queue, const CoreGraphics::BarrierStage stage)
 /**
 */
 IndexT 
-BeginQuery(CoreGraphicsQueueType queue, CoreGraphicsQueryType type)
+BeginQuery(CoreGraphics::QueueType queue, CoreGraphics::QueryType type)
 {
-	n_assert(type != CoreGraphicsQueryType::Timestamp);
+	n_assert(type != CoreGraphics::QueryType::TimestampQuery);
 
 	// get current query, and get the index
 	Vulkan::GraphicsDeviceState::QueryRingBuffer& queries = state.queryIndices[state.currentBufferedFrameIndex];
@@ -3135,9 +3135,9 @@ BeginQuery(CoreGraphicsQueueType queue, CoreGraphicsQueryType type)
 /**
 */
 void 
-EndQuery(CoreGraphicsQueueType queue, CoreGraphicsQueryType type, IndexT query)
+EndQuery(CoreGraphics::QueueType queue, CoreGraphics::QueryType type, IndexT query)
 {
-	n_assert(type != CoreGraphicsQueryType::Timestamp);
+	n_assert(type != CoreGraphics::QueryType::TimestampQuery);
 
 	// get current query, and get the index
 	Vulkan::GraphicsDeviceState::QueryRingBuffer& queries = state.queryIndices[state.currentBufferedFrameIndex];
@@ -3519,7 +3519,7 @@ ObjectSetName(const SemaphoreId id, const Util::String& name)
 /**
 */
 void 
-QueueBeginMarker(const CoreGraphicsQueueType queue, const Math::float4& color, const Util::String& name)
+QueueBeginMarker(const CoreGraphics::QueueType queue, const Math::float4& color, const Util::String& name)
 {
 	VkQueue vkqueue = state.subcontextHandler.GetQueue(queue);
 	alignas(16) float col[4];
@@ -3538,7 +3538,7 @@ QueueBeginMarker(const CoreGraphicsQueueType queue, const Math::float4& color, c
 /**
 */
 void 
-QueueEndMarker(const CoreGraphicsQueueType queue)
+QueueEndMarker(const CoreGraphics::QueueType queue)
 {
 	VkQueue vkqueue = state.subcontextHandler.GetQueue(queue);
 	VkQueueEndLabel(vkqueue);
@@ -3548,7 +3548,7 @@ QueueEndMarker(const CoreGraphicsQueueType queue)
 /**
 */
 void 
-QueueInsertMarker(const CoreGraphicsQueueType queue, const Math::float4& color, const Util::String& name)
+QueueInsertMarker(const CoreGraphics::QueueType queue, const Math::float4& color, const Util::String& name)
 {
 	VkQueue vkqueue = state.subcontextHandler.GetQueue(queue);
 	alignas(16) float col[4];
@@ -3567,7 +3567,7 @@ QueueInsertMarker(const CoreGraphicsQueueType queue, const Math::float4& color, 
 /**
 */
 void 
-CommandBufferBeginMarker(const CoreGraphicsQueueType queue, const Math::float4& color, const Util::String& name)
+CommandBufferBeginMarker(const CoreGraphics::QueueType queue, const Math::float4& color, const Util::String& name)
 {
 	VkCommandBuffer buf = GetMainBuffer(queue);
 	alignas(16) float col[4];
@@ -3586,7 +3586,7 @@ CommandBufferBeginMarker(const CoreGraphicsQueueType queue, const Math::float4& 
 /**
 */
 void 
-CommandBufferEndMarker(const CoreGraphicsQueueType queue)
+CommandBufferEndMarker(const CoreGraphics::QueueType queue)
 {
 	VkCommandBuffer buf = GetMainBuffer(queue);
 	VkCmdDebugMarkerEnd(buf);
@@ -3596,7 +3596,7 @@ CommandBufferEndMarker(const CoreGraphicsQueueType queue)
 /**
 */
 void 
-CommandBufferInsertMarker(const CoreGraphicsQueueType queue, const Math::float4& color, const Util::String& name)
+CommandBufferInsertMarker(const CoreGraphics::QueueType queue, const Math::float4& color, const Util::String& name)
 {
 	VkCommandBuffer buf = GetMainBuffer(queue);
 	alignas(16) float col[4];

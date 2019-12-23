@@ -13,7 +13,7 @@ namespace Frame
 /**
 */
 FrameOp::FrameOp() :
-	queue(CoreGraphicsQueueType::GraphicsQueueType),
+	queue(CoreGraphics::QueueType::GraphicsQueueType),
 	domain(CoreGraphics::BarrierDomain::Global)
 {
 	// empty
@@ -87,11 +87,11 @@ FrameOp::AnalyzeAndSetupTextureBarriers(
 	DependencyIntent readOrWrite,
 	CoreGraphics::BarrierAccess access,
 	CoreGraphics::BarrierStage stage,
-	CoreGraphicsImageLayout layout,
+	CoreGraphics::ImageLayout layout,
 	CoreGraphics::BarrierDomain domain,
 	const CoreGraphics::ImageSubresourceInfo& subres,
 	IndexT toIndex,
-	CoreGraphicsQueueType toQueue,
+	CoreGraphics::QueueType toQueue,
 	Util::Dictionary<std::tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, CoreGraphics::BarrierCreateInfo>& barriers,
 	Util::Dictionary<std::tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, CoreGraphics::EventCreateInfo>& waitEvents,
 	Util::Dictionary<std::tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, struct FrameOp::Compiled*>& signalEvents,
@@ -235,7 +235,7 @@ FrameOp::AnalyzeAndSetupBufferBarriers(
 	CoreGraphics::BarrierDomain domain,
 	const CoreGraphics::BufferSubresourceInfo& subres,
 	IndexT toIndex,
-	CoreGraphicsQueueType toQueue,
+	CoreGraphics::QueueType toQueue,
 	Util::Dictionary<std::tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, CoreGraphics::BarrierCreateInfo>& barriers,
 	Util::Dictionary<std::tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, CoreGraphics::EventCreateInfo>& waitEvents,
 	Util::Dictionary<std::tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, struct FrameOp::Compiled*>& signalEvents,
@@ -368,7 +368,7 @@ FrameOp::SetupSynchronization(
 			const CoreGraphics::BarrierAccess& access = std::get<1>(this->textureDeps.ValueAtIndex(i));
 			const CoreGraphics::BarrierStage& stage = std::get<2>(this->textureDeps.ValueAtIndex(i));
 			const CoreGraphics::ImageSubresourceInfo& subres = std::get<3>(this->textureDeps.ValueAtIndex(i));
-			const CoreGraphicsImageLayout& layout = std::get<4>(this->textureDeps.ValueAtIndex(i));
+			const CoreGraphics::ImageLayout& layout = std::get<4>(this->textureDeps.ValueAtIndex(i));
 
 			DependencyIntent readOrWrite = DependencyIntent::Read;
 			switch (access)

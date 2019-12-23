@@ -135,7 +135,7 @@ MaterialType::CreateSurface()
 			}			
 			else if (group == NEBULA_INSTANCE_GROUP && instanceTable != CoreGraphics::ResourceTableId::Invalid())
 			{
-				CoreGraphics::ConstantBufferId buf = CoreGraphics::GetGraphicsConstantBuffer(MainThreadConstantBuffer);
+				CoreGraphics::ConstantBufferId buf = CoreGraphics::GetGraphicsConstantBuffer(CoreGraphics::MainThreadConstantBuffer);
 				if (buf != CoreGraphics::ConstantBufferId::Invalid())
 				{
 					SizeT bufSize = CoreGraphics::ShaderGetConstantBufferSize(shd, j);
@@ -436,7 +436,7 @@ MaterialType::ApplyInstance(const SurfaceInstanceId id)
 		Util::FixedArray<uint> offsets(buffers.Size());
 		for (IndexT i = 0; i < buffers.Size(); i++)
 		{
-			offsets[i] = CoreGraphics::SetGraphicsConstants(MainThreadConstantBuffer, (byte*)std::get<1>(buffers[i]), std::get<2>(buffers[i]));
+			offsets[i] = CoreGraphics::SetGraphicsConstants(CoreGraphics::MainThreadConstantBuffer, (byte*)std::get<1>(buffers[i]), std::get<2>(buffers[i]));
 		}
 		CoreGraphics::SetResourceTable(table, NEBULA_INSTANCE_GROUP, CoreGraphics::GraphicsPipeline, offsets);
 	}

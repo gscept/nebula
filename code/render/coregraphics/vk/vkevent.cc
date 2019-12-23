@@ -128,7 +128,7 @@ DestroyEvent(const EventId id)
 /**
 */
 void 
-EventSignal(const EventId id, const CoreGraphicsQueueType queue)
+EventSignal(const EventId id, const CoreGraphics::QueueType queue)
 {
 #if NEBULA_GRAPHICS_DEBUG
 	const Util::StringAtom& name = eventAllocator.Get<1>(id.id24).name;
@@ -145,7 +145,7 @@ EventSignal(const EventId id, const CoreGraphicsQueueType queue)
 /**
 */
 void
-EventWait(const EventId id, const CoreGraphicsQueueType queue)
+EventWait(const EventId id, const CoreGraphics::QueueType queue)
 {
 #if NEBULA_GRAPHICS_DEBUG
 	const Util::StringAtom& name = eventAllocator.Get<1>(id.id24).name;
@@ -162,7 +162,7 @@ EventWait(const EventId id, const CoreGraphicsQueueType queue)
 /**
 */
 void
-EventReset(const EventId id, const CoreGraphicsQueueType queue)
+EventReset(const EventId id, const CoreGraphics::QueueType queue)
 {
 	CoreGraphics::ResetEvent(id, queue);
 }
@@ -171,7 +171,7 @@ EventReset(const EventId id, const CoreGraphicsQueueType queue)
 /**
 */
 void
-EventWaitAndReset(const EventId id, const CoreGraphicsQueueType queue)
+EventWaitAndReset(const EventId id, const CoreGraphics::QueueType queue)
 {
 	CoreGraphics::WaitEvent(id, queue);
 	CoreGraphics::ResetEvent(id, queue);

@@ -12,7 +12,11 @@
 #include "util/string.h"
 #include "core/rttimacros.h"
 
-enum CoreGraphicsIdType
+
+namespace CoreGraphics
+{
+
+enum IdType
 {
 	VertexBufferIdType,
 	IndexBufferIdType,
@@ -20,15 +24,12 @@ enum CoreGraphicsIdType
 	VertexLayoutIdType,
 	ConstantBufferIdType,
 	ShaderRWBufferIdType,
-	ShaderRWTextureIdType,
-	ShaderStorageBufferIdType,
 	ShaderIdType,
 	ShaderProgramIdType,
 	ShaderStateIdType,
 	ShaderInstanceIdType,
 	ShaderConstantIdType,
 	CommandBufferIdType,
-	RenderTextureIdType,
 	MeshIdType,
 	EventIdType,
 	BarrierIdType,
@@ -45,7 +46,7 @@ enum CoreGraphicsIdType
 	SubmissionContextIdType
 };
 
-enum CoreGraphicsQueueType
+enum QueueType
 {
 	GraphicsQueueType,
 	ComputeQueueType,
@@ -56,7 +57,7 @@ enum CoreGraphicsQueueType
 	NumQueueTypes
 };
 
-enum CoreGraphicsShaderVisibility
+enum ShaderVisibility
 {
 	InvalidVisibility			= 0,
 	VertexShaderVisibility		= 1 << 0,
@@ -68,9 +69,9 @@ enum CoreGraphicsShaderVisibility
 	ComputeShaderVisibility		= 1 << 6,
 	AllVisibility				= VertexShaderVisibility | HullShaderVisibility | DomainShaderVisibility | GeometryShaderVisibility | PixelShaderVisibility | ComputeShaderVisibility
 };
-__ImplementEnumBitOperators(CoreGraphicsShaderVisibility);
+__ImplementEnumBitOperators(CoreGraphics::ShaderVisibility);
 
-enum class CoreGraphicsImageAspect
+enum class ImageAspect
 {
 	ColorBits = (1 << 0),
 	DepthBits = (1 << 1),
@@ -80,10 +81,10 @@ enum class CoreGraphicsImageAspect
 	Plane1Bits = (1 << 5),
 	Plane2Bits = (1 << 6)
 };
-__ImplementEnumBitOperators(CoreGraphicsImageAspect);
-__ImplementEnumComparisonOperators(CoreGraphicsImageAspect);
+__ImplementEnumBitOperators(CoreGraphics::ImageAspect);
+__ImplementEnumComparisonOperators(CoreGraphics::ImageAspect);
 
-enum class CoreGraphicsImageLayout
+enum class ImageLayout
 {
 	Undefined,
 	General,
@@ -97,7 +98,7 @@ enum class CoreGraphicsImageLayout
 	Present
 };
 
-enum CoreGraphicsGlobalConstantBufferType
+enum GlobalConstantBufferType
 {
 	MainThreadConstantBuffer,
 	VisibilityThreadConstantBuffer, // perform constant updates from the visibility thread (shader state node instance update for example...)
@@ -105,7 +106,7 @@ enum CoreGraphicsGlobalConstantBufferType
 	NumConstantBufferTypes
 };
 
-enum CoreGraphicsVertexBufferMemoryType
+enum VertexBufferMemoryType
 {
 	MainThreadVertexMemory,
 	VisibilityThreadVertexMemory,
@@ -113,24 +114,24 @@ enum CoreGraphicsVertexBufferMemoryType
 	NumVertexBufferMemoryTypes
 };
 
-enum CoreGraphicsQueryType
+enum QueryType
 {
 	OcclusionQuery,
-	Timestamp,
-	PipelineStatisticsGraphics,
-	PipelineStatisticsCompute,
+	TimestampQuery,
+	PipelineStatisticsGraphicsQuery,
+	PipelineStatisticsComputeQuery,
 
-	NumCoreGraphicsQueryTypes
+	NumQueryTypes
 };
 
 //------------------------------------------------------------------------------
 /**
 */
-inline CoreGraphicsShaderVisibility
+inline ShaderVisibility
 ShaderVisibilityFromString(const Util::String& str)
 {
 	Util::Array<Util::String> components = str.Tokenize("|");
-	CoreGraphicsShaderVisibility ret = InvalidVisibility;
+	CoreGraphics::ShaderVisibility ret = InvalidVisibility;
 	IndexT i;
 	for (i = 0; i < components.Size(); i++)
 	{
@@ -149,8 +150,8 @@ ShaderVisibilityFromString(const Util::String& str)
 //------------------------------------------------------------------------------
 /**
 */
-inline CoreGraphicsQueueType
-CoreGraphicsQueueTypeFromString(const Util::String& str)
+inline QueueType
+QueueTypeFromString(const Util::String& str)
 {
 	if (str == "Graphics")		return GraphicsQueueType;
 	else if (str == "Compute")	return ComputeQueueType;
@@ -159,6 +160,7 @@ CoreGraphicsQueueTypeFromString(const Util::String& str)
 	return GraphicsQueueType;
 }
 
+} // namespace CoreGraphics
 
 
 #define SHADER_POSTEFFECT_DEFAULT_FEATURE_MASK "Alt0"

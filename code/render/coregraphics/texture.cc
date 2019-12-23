@@ -119,7 +119,7 @@ TextureGetUsage(const TextureId id)
 //------------------------------------------------------------------------------
 /**
 */
-const CoreGraphicsImageLayout 
+const CoreGraphics::ImageLayout 
 TextureGetDefaultLayout(const TextureId id)
 {
 	return texturePool->GetDefaultLayout(id);
@@ -233,7 +233,7 @@ TextureGetAdjustedInfo(const TextureCreateInfo& info)
 		rt.windowRelative = true;
 		rt.bindless = info.bindless;
 		rt.alias = CoreGraphics::TextureId::Invalid();
-		rt.defaultLayout = CoreGraphicsImageLayout::Present;
+		rt.defaultLayout = CoreGraphics::ImageLayout::Present;
 	}
 	else
 	{
@@ -263,8 +263,8 @@ TextureGetAdjustedInfo(const TextureCreateInfo& info)
 		rt.defaultLayout = info.defaultLayout;
 
 		// correct depth-stencil formats if layout is shader read
-		if (CoreGraphics::PixelFormat::IsDepthFormat(rt.format) && rt.defaultLayout == CoreGraphicsImageLayout::ShaderRead)
-			rt.defaultLayout = CoreGraphicsImageLayout::DepthStencilRead;
+		if (CoreGraphics::PixelFormat::IsDepthFormat(rt.format) && rt.defaultLayout == CoreGraphics::ImageLayout::ShaderRead)
+			rt.defaultLayout = CoreGraphics::ImageLayout::DepthStencilRead;
 
 		if (rt.windowRelative)
 		{

@@ -120,7 +120,7 @@ DestroyBarrier(const BarrierId id)
 /**
 */
 void
-BarrierInsert(const BarrierId id, const CoreGraphicsQueueType queue)
+BarrierInsert(const BarrierId id, const CoreGraphics::QueueType queue)
 {
 #if NEBULA_BARRIER_INSERT_MARKER
 	const Util::StringAtom& name = barrierAllocator.Get<0>(id.id24).name;
@@ -154,7 +154,7 @@ BarrierReset(const BarrierId id)
 */
 void 
 BarrierInsert(
-	const CoreGraphicsQueueType queue, 
+	const CoreGraphics::QueueType queue, 
 	CoreGraphics::BarrierStage fromStage,
 	CoreGraphics::BarrierStage toStage,
 	CoreGraphics::BarrierDomain domain,

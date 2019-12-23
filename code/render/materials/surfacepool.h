@@ -48,7 +48,7 @@ private:
 	void Unload(const Resources::ResourceId id);
 
 	Ids::IdAllocatorSafe<SurfaceRuntime> allocator;
-	__ImplementResourceAllocatorTypedSafe(allocator, MaterialIdType);
+	__ImplementResourceAllocatorTypedSafe(allocator, CoreGraphics::MaterialIdType);
 };
 
 //------------------------------------------------------------------------------

@@ -116,7 +116,7 @@ BloomPlugin::Setup()
 			CoreGraphics::BarrierStage::ComputeShader,
 			CoreGraphics::BarrierDomain::Global,
 			{
-				  TextureBarrier{ this->internalTargets[0], ImageSubresourceInfo::ColorNoMipNoLayer(), CoreGraphicsImageLayout::ShaderRead, CoreGraphicsImageLayout::General, CoreGraphics::BarrierAccess::ShaderRead, CoreGraphics::BarrierAccess::ShaderWrite }
+				  TextureBarrier{ this->internalTargets[0], ImageSubresourceInfo::ColorNoMipNoLayer(), CoreGraphics::ImageLayout::ShaderRead, CoreGraphics::ImageLayout::General, CoreGraphics::BarrierAccess::ShaderRead, CoreGraphics::BarrierAccess::ShaderWrite }
 			},
 			nullptr,
 			"Bloom Blur Pass #1 Begin");
@@ -131,8 +131,8 @@ BloomPlugin::Setup()
 			CoreGraphics::BarrierStage::ComputeShader,
 			CoreGraphics::BarrierDomain::Global,
 			{
-				  TextureBarrier{ this->internalTargets[0], ImageSubresourceInfo::ColorNoMipNoLayer(), CoreGraphicsImageLayout::General, CoreGraphicsImageLayout::ShaderRead, CoreGraphics::BarrierAccess::ShaderWrite, CoreGraphics::BarrierAccess::ShaderRead },
-				  TextureBarrier{ this->textures["BlurredBloom"], ImageSubresourceInfo::ColorNoMipNoLayer(), CoreGraphicsImageLayout::ShaderRead, CoreGraphicsImageLayout::General, CoreGraphics::BarrierAccess::ShaderRead, CoreGraphics::BarrierAccess::ShaderWrite }
+				  TextureBarrier{ this->internalTargets[0], ImageSubresourceInfo::ColorNoMipNoLayer(), CoreGraphics::ImageLayout::General, CoreGraphics::ImageLayout::ShaderRead, CoreGraphics::BarrierAccess::ShaderWrite, CoreGraphics::BarrierAccess::ShaderRead },
+				  TextureBarrier{ this->textures["BlurredBloom"], ImageSubresourceInfo::ColorNoMipNoLayer(), CoreGraphics::ImageLayout::ShaderRead, CoreGraphics::ImageLayout::General, CoreGraphics::BarrierAccess::ShaderRead, CoreGraphics::BarrierAccess::ShaderWrite }
 			},
 			nullptr,
 			"Bloom Blur Pass #2 Mid");
@@ -147,7 +147,7 @@ BloomPlugin::Setup()
 			CoreGraphics::BarrierStage::PixelShader,
 			CoreGraphics::BarrierDomain::Global,
 			{
-				  TextureBarrier{ this->textures["BlurredBloom"], ImageSubresourceInfo::ColorNoMipNoLayer(), CoreGraphicsImageLayout::General, CoreGraphicsImageLayout::ShaderRead, CoreGraphics::BarrierAccess::ShaderWrite, CoreGraphics::BarrierAccess::ShaderRead }
+				  TextureBarrier{ this->textures["BlurredBloom"], ImageSubresourceInfo::ColorNoMipNoLayer(), CoreGraphics::ImageLayout::General, CoreGraphics::ImageLayout::ShaderRead, CoreGraphics::BarrierAccess::ShaderWrite, CoreGraphics::BarrierAccess::ShaderRead }
 			},
 			nullptr,
 			"Bloom Blur Pass #2 End");

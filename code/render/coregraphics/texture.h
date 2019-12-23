@@ -14,6 +14,7 @@
 namespace CoreGraphics
 {
 
+/// texture type
 RESOURCE_ID_TYPE(TextureId);
 
 /// texture types
@@ -93,7 +94,7 @@ struct TextureCreateInfo
 		, windowTexture(false)
 		, bindless(true)
 		, alias(CoreGraphics::TextureId::Invalid())
-		, defaultLayout(CoreGraphicsImageLayout::ShaderRead)
+		, defaultLayout(CoreGraphics::ImageLayout::ShaderRead)
 	{};
 
 	Resources::ResourceName name;
@@ -109,7 +110,7 @@ struct TextureCreateInfo
 	bool windowTexture : 1;						// texture is supposed to be a backbuffer target
 	bool bindless : 1;
 	CoreGraphics::TextureId alias;
-	CoreGraphicsImageLayout defaultLayout;
+	CoreGraphics::ImageLayout defaultLayout;
 };
 
 struct TextureCreateInfoAdjusted
@@ -129,7 +130,7 @@ struct TextureCreateInfoAdjusted
 	bool bindless : 1;
 	CoreGraphics::WindowId window;
 	CoreGraphics::TextureId alias;
-	CoreGraphicsImageLayout defaultLayout;
+	CoreGraphics::ImageLayout defaultLayout;
 };
 
 class MemoryTexturePool;
@@ -157,7 +158,7 @@ const CoreGraphics::TextureId TextureGetAlias(const TextureId id);
 /// get texture usage
 const CoreGraphics::TextureUsage TextureGetUsage(const TextureId id);
 /// get default texture layout
-const CoreGraphicsImageLayout TextureGetDefaultLayout(const TextureId id);
+const CoreGraphics::ImageLayout TextureGetDefaultLayout(const TextureId id);
 
 /// get bindless texture handle
 uint TextureGetBindlessHandle(const TextureId id);

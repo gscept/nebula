@@ -69,8 +69,6 @@ private:
 	static void ParseSubpassSortedBatch(const Ptr<Frame::FrameScript>& script, Frame::FrameSubpass* subpass, JzonValue* node);
 	/// parse subpass post effect
 	static void ParseSubpassFullscreenEffect(const Ptr<Frame::FrameScript>& script, Frame::FrameSubpass* subpass, JzonValue* node);
-	/// parse system in subpass
-	static void ParseSubpassSystem(const Ptr<Frame::FrameScript>& script, Frame::FrameSubpass* subpass, JzonValue* node);
 
 	/// helper to parse shader state
 	static void ParseShaderState(const Ptr<Frame::FrameScript>& script, JzonValue* node, CoreGraphics::ShaderId& shd, CoreGraphics::ResourceTableId& table, Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBufferId>& constantBuffers);
@@ -79,7 +77,7 @@ private:
 	/// helper to parse resources
 	static void ParseResourceDependencies(const Ptr<Frame::FrameScript>& script, Frame::FrameOp* op, JzonValue* node);
 	
-	static Frame::FrameSubmission* LastSubmission[CoreGraphicsQueryType::NumCoreGraphicsQueryTypes];
+	static Frame::FrameSubmission* LastSubmission[CoreGraphics::NumQueryTypes];
 	typedef Frame::FramePlugin* (*Fn)(Memory::ArenaAllocator<BIG_CHUNK>&);
 	static Util::HashTable<uint, Fn> constructors;
 };

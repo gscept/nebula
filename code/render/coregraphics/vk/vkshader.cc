@@ -85,7 +85,7 @@ VkShaderSetup(
 
 		if (block->HasAnnotation("Visibility"))
 		{
-			CoreGraphicsShaderVisibility vis = ShaderVisibilityFromString(block->GetAnnotationString("Visibility").c_str());
+			CoreGraphics::ShaderVisibility vis = ShaderVisibilityFromString(block->GetAnnotationString("Visibility").c_str());
 			cbo.visibility = vis;
 			if ((vis & VertexShaderVisibility) == VertexShaderVisibility)		slotsUsed++;
 			if ((vis & HullShaderVisibility) == HullShaderVisibility)			slotsUsed++;
@@ -162,7 +162,7 @@ VkShaderSetup(
 
 		if (buffer->HasAnnotation("Visibility"))
 		{
-			CoreGraphicsShaderVisibility vis = ShaderVisibilityFromString(buffer->GetAnnotationString("Visibility").c_str());
+			CoreGraphics::ShaderVisibility vis = ShaderVisibilityFromString(buffer->GetAnnotationString("Visibility").c_str());
 			rwbo.visibility = vis;
 			if ((vis & VertexShaderVisibility) == VertexShaderVisibility)		slotsUsed++;
 			if ((vis & HullShaderVisibility) == HullShaderVisibility)			slotsUsed++;
@@ -226,7 +226,7 @@ VkShaderSetup(
 
 			if (sampler->HasAnnotation("Visibility"))
 			{
-				CoreGraphicsShaderVisibility vis = ShaderVisibilityFromString(sampler->GetAnnotationString("Visibility").c_str());
+				CoreGraphics::ShaderVisibility vis = ShaderVisibilityFromString(sampler->GetAnnotationString("Visibility").c_str());
 				smla.visibility = vis;
 			}
 			smla.slot = sampler->bindingLayout.binding;
@@ -276,7 +276,7 @@ VkShaderSetup(
 			
 			if (variable->HasAnnotation("Visibility"))
 			{
-				CoreGraphicsShaderVisibility vis = ShaderVisibilityFromString(variable->GetAnnotationString("Visibility").c_str());
+				CoreGraphics::ShaderVisibility vis = ShaderVisibilityFromString(variable->GetAnnotationString("Visibility").c_str());
 				tex.visibility = vis;
 			}
 

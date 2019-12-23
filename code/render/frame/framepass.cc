@@ -155,12 +155,12 @@ FramePass::Build(
 		uint layers = CoreGraphics::TextureGetNumLayers(attachments[i]);
 		uint mips = CoreGraphics::TextureGetNumMips(attachments[i]);
 		CoreGraphics::ImageSubresourceInfo subres{ 
-			CoreGraphicsImageAspect::ColorBits,
+			CoreGraphics::ImageAspect::ColorBits,
 			0, mips, 0, layers };
 		TextureDependency dep{
 			this->compiled, 
 			this->queue, 
-			CoreGraphicsImageLayout::ShaderRead,
+			CoreGraphics::ImageLayout::ShaderRead,
 			CoreGraphics::BarrierStage::PassOutput,
 			CoreGraphics::BarrierAccess::ColorAttachmentWrite,
 			DependencyIntent::Write, 
@@ -179,12 +179,12 @@ FramePass::Build(
 		uint layers = CoreGraphics::TextureGetNumLayers(depthStencilAttachment);
 		uint mips = CoreGraphics::TextureGetNumMips(depthStencilAttachment);
 		CoreGraphics::ImageSubresourceInfo subres{
-			CoreGraphicsImageAspect::DepthBits | CoreGraphicsImageAspect::StencilBits,
+			CoreGraphics::ImageAspect::DepthBits | CoreGraphics::ImageAspect::StencilBits,
 			0, mips, 0, layers };
 		TextureDependency dep{
 			this->compiled,
 			this->queue,
-			CoreGraphicsImageLayout::DepthStencilRead,
+			CoreGraphics::ImageLayout::DepthStencilRead,
 			CoreGraphics::BarrierStage::LateDepth,
 			CoreGraphics::BarrierAccess::DepthAttachmentWrite,
 			DependencyIntent::Write,

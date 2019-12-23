@@ -66,11 +66,11 @@ public:
 	/// convert dependency flags to vulkan
 	static VkPipelineStageFlags AsVkResourceAccessFlags(const CoreGraphics::BarrierAccess access);
 	/// convert image aspects to Vulkan
-	static VkImageAspectFlags AsVkImageAspectFlags(const CoreGraphicsImageAspect aspect);
+	static VkImageAspectFlags AsVkImageAspectFlags(const CoreGraphics::ImageAspect aspect);
 	/// convert shader visibility to vulkan
-	static VkShaderStageFlags AsVkShaderVisibility(const CoreGraphicsShaderVisibility vis);
+	static VkShaderStageFlags AsVkShaderVisibility(const CoreGraphics::ShaderVisibility vis);
 	/// convert image layout to vulkan
-	static VkImageLayout AsVkImageLayout(const CoreGraphicsImageLayout layout);
+	static VkImageLayout AsVkImageLayout(const CoreGraphics::ImageLayout layout);
 
 #pragma endregion
 

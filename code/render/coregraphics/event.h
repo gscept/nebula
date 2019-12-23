@@ -38,13 +38,13 @@ EventId CreateEvent(const EventCreateInfo& info);
 void DestroyEvent(const EventId id);
 
 /// insert event in command buffer to be signaled
-void EventSignal(const EventId id, const CoreGraphicsQueueType queue);
+void EventSignal(const EventId id, const CoreGraphics::QueueType queue);
 /// insert wait event in command buffer to wait for
-void EventWait(const EventId id, const CoreGraphicsQueueType queue);
+void EventWait(const EventId id, const CoreGraphics::QueueType queue);
 /// insert reset event
-void EventReset(const EventId id, const CoreGraphicsQueueType queue);
+void EventReset(const EventId id, const CoreGraphics::QueueType queue);
 /// insert both a wait and reset
-void EventWaitAndReset(const EventId id, const CoreGraphicsQueueType queue);
+void EventWaitAndReset(const EventId id, const CoreGraphics::QueueType queue);
 
 } // CoreGraphics
 

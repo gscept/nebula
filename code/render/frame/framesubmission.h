@@ -22,8 +22,8 @@ public:
 	{
 		void Run(const IndexT frameIndex);
 
-		CoreGraphicsQueueType queue;
-		CoreGraphicsQueueType waitQueue;
+		CoreGraphics::QueueType queue;
+		CoreGraphics::QueueType waitQueue;
 		Util::Array<CoreGraphics::BarrierId>* resourceResetBarriers;
 		char startOrEnd;
 #if NEBULA_GRAPHICS_DEBUG
@@ -34,8 +34,8 @@ public:
 	/// allocate new instance
 	FrameOp::Compiled* AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator);
 
-	CoreGraphicsQueueType queue;
-	CoreGraphicsQueueType waitQueue;
+	CoreGraphics::QueueType queue;
+	CoreGraphics::QueueType waitQueue;
 	Util::Array<CoreGraphics::BarrierId>* resourceResetBarriers;
 	char startOrEnd; // 0 if start, 1 if end
 };

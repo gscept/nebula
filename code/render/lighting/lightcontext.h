@@ -9,7 +9,6 @@
 #include "graphics/graphicscontext.h"
 #include "coregraphics/shader.h"
 #include "coregraphics/constantbuffer.h"
-#include "frame/framesubpasssystem.h"
 #include <array>
 
 namespace Lighting
@@ -88,8 +87,6 @@ public:
 #endif
 
 private:
-
-	friend struct Frame::FrameSubpassSystem::CompiledImpl;
 
 	/// set transform, type must match the type the entity was created with
 	static void SetSpotLightTransform(const Graphics::ContextEntityId id, const Math::matrix44& transform);

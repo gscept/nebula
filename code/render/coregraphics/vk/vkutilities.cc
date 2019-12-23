@@ -65,7 +65,7 @@ VkUtilities::BufferUpdate(CoreGraphics::CommandBufferId cmd, VkBuffer buf, VkDev
 /**
 */
 void 
-VkUtilities::ImageUpdate(VkDevice dev, CoreGraphics::CommandBufferId cmd, CoreGraphicsQueueType queue, VkImage img, const VkImageCreateInfo& info, uint32_t mip, uint32_t face, VkDeviceSize size, uint32_t* data, VkBuffer& outIntermediateBuffer, VkDeviceMemory& outIntermediateMemory)
+VkUtilities::ImageUpdate(VkDevice dev, CoreGraphics::CommandBufferId cmd, CoreGraphics::QueueType queue, VkImage img, const VkImageCreateInfo& info, uint32_t mip, uint32_t face, VkDeviceSize size, uint32_t* data, VkBuffer& outIntermediateBuffer, VkDeviceMemory& outIntermediateMemory)
 {
 	// create transfer buffer
 	const uint32_t qfamily = Vulkan::GetQueueFamily(queue);
@@ -183,7 +183,7 @@ VkUtilities::ImageMemoryBarrier(const VkImage& img, VkImageSubresourceRange subr
 /**
 */
 VkImageMemoryBarrier
-VkUtilities::ImageMemoryBarrier(const VkImage& img, VkImageSubresourceRange subres, CoreGraphicsQueueType fromQueue, CoreGraphicsQueueType toQueue, VkAccessFlags left, VkAccessFlags right, VkImageLayout oldLayout, VkImageLayout newLayout)
+VkUtilities::ImageMemoryBarrier(const VkImage& img, VkImageSubresourceRange subres, CoreGraphics::QueueType fromQueue, CoreGraphics::QueueType toQueue, VkAccessFlags left, VkAccessFlags right, VkImageLayout oldLayout, VkImageLayout newLayout)
 {
 	uint32_t from = Vulkan::GetQueueFamily(fromQueue);
 	uint32_t to = Vulkan::GetQueueFamily(toQueue);
@@ -206,7 +206,7 @@ VkUtilities::ImageMemoryBarrier(const VkImage& img, VkImageSubresourceRange subr
 /**
 */
 VkImageMemoryBarrier
-VkUtilities::ImageMemoryBarrier(const VkImage& img, VkImageSubresourceRange subres, CoreGraphicsQueueType toQueue, VkAccessFlags left, VkAccessFlags right, VkImageLayout oldLayout, VkImageLayout newLayout)
+VkUtilities::ImageMemoryBarrier(const VkImage& img, VkImageSubresourceRange subres, CoreGraphics::QueueType toQueue, VkAccessFlags left, VkAccessFlags right, VkImageLayout oldLayout, VkImageLayout newLayout)
 {
 	uint32_t to = Vulkan::GetQueueFamily(toQueue);
 
@@ -519,7 +519,7 @@ VkUtilities::EndImmediateTransfer(CoreGraphics::CommandBufferId cmdBuf)
 	VkFence sync;
 	res = vkCreateFence(dev, &fence, nullptr, &sync);
 	n_assert(res == VK_SUCCESS);
-	res = vkQueueSubmit(Vulkan::GetCurrentQueue(GraphicsQueueType), 1, &submit, sync);
+	res = vkQueueSubmit(Vulkan::GetCurrentQueue(CoreGraphics::GraphicsQueueType), 1, &submit, sync);
 	n_assert(res == VK_SUCCESS);
 
 	// wait for fences, this waits for our commands to finish

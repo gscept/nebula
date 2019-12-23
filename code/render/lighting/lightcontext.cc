@@ -1086,8 +1086,8 @@ LightContext::BlurGlobalShadowMap()
 				{
 					lightServerState.globalLightShadowMapBlurred0,
 					ImageSubresourceInfo::ColorNoMip(4),
-					CoreGraphicsImageLayout::ShaderRead,
-					CoreGraphicsImageLayout::General,
+					CoreGraphics::ImageLayout::ShaderRead,
+					CoreGraphics::ImageLayout::General,
 					BarrierAccess::ShaderRead,
 					BarrierAccess::ShaderWrite
 				},
@@ -1095,8 +1095,8 @@ LightContext::BlurGlobalShadowMap()
 				{
 					lightServerState.globalLightShadowMapBlurred1,
 					ImageSubresourceInfo::ColorNoMip(4),
-					CoreGraphicsImageLayout::ShaderRead,
-					CoreGraphicsImageLayout::General,
+					CoreGraphics::ImageLayout::ShaderRead,
+					CoreGraphics::ImageLayout::General,
 					BarrierAccess::ShaderRead,
 					BarrierAccess::ShaderWrite
 				}
@@ -1118,8 +1118,8 @@ LightContext::BlurGlobalShadowMap()
 				{
 					lightServerState.globalLightShadowMapBlurred0,
 					ImageSubresourceInfo::ColorNoMip(4),
-					CoreGraphicsImageLayout::General,
-					CoreGraphicsImageLayout::ShaderRead,
+					CoreGraphics::ImageLayout::General,
+					CoreGraphics::ImageLayout::ShaderRead,
 					BarrierAccess::ShaderWrite,
 					BarrierAccess::ShaderRead
 				},
@@ -1139,8 +1139,8 @@ LightContext::BlurGlobalShadowMap()
 				{
 					lightServerState.globalLightShadowMapBlurred1,
 					ImageSubresourceInfo::ColorNoMip(4),
-					CoreGraphicsImageLayout::General,
-					CoreGraphicsImageLayout::ShaderRead,
+					CoreGraphics::ImageLayout::General,
+					CoreGraphics::ImageLayout::ShaderRead,
 					BarrierAccess::ShaderWrite,
 					BarrierAccess::ShaderRead
 				},

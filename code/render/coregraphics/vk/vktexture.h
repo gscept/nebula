@@ -27,7 +27,7 @@ struct VkTextureLoadInfo
 	CoreGraphics::PixelFormat::Code format;
 	CoreGraphics::TextureUsage texUsage;
 	CoreGraphics::TextureId alias;
-	CoreGraphicsImageLayout defaultLayout;
+	CoreGraphics::ImageLayout defaultLayout;
 };
 
 struct VkTextureRuntimeInfo

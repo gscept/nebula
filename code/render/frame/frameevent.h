@@ -35,7 +35,7 @@ public:
 	Util::Array<Action> actions;
 	CoreGraphics::EventId event;
 	CoreGraphics::BarrierStage dependency;
-	CoreGraphicsQueueType queueType; 
+	CoreGraphics::QueueType queueType; 
 	CoreGraphics::CommandBufferUsage commandBufferType;
 };
 

@@ -817,7 +817,7 @@ SetupVulkanSwapchain(const CoreGraphics::WindowId& id, const CoreGraphics::Displ
 		n_assert(res == VK_SUCCESS);
 		if (canPresent)
 		{
-			windowInfo.presentQueue = Vulkan::GetQueue((CoreGraphicsQueueType)i, 0);
+			windowInfo.presentQueue = Vulkan::GetQueue((CoreGraphics::QueueType)i, 0);
 			break;
 		}
 	}

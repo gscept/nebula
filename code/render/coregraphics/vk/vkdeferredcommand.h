@@ -43,7 +43,7 @@ struct VkDeferredCommand
 	struct Delegate
 	{
 		DelegateType type;
-		CoreGraphicsQueueType queue;
+		CoreGraphics::QueueType queue;
 		VkFence fence;
 		union
 		{

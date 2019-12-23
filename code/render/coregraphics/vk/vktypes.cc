@@ -702,33 +702,33 @@ VkTypes::AsVkResourceAccessFlags(const CoreGraphics::BarrierAccess access)
 /**
 */
 VkImageAspectFlags
-VkTypes::AsVkImageAspectFlags(const CoreGraphicsImageAspect aspect)
+VkTypes::AsVkImageAspectFlags(const CoreGraphics::ImageAspect aspect)
 {
 	VkImageAspectFlags flags = 0;
 	uint32_t bit;
 	for (bit = 1; aspect >= bit; bit *= 2)
 	{
-		if ((aspect & bit) == bit) switch ((CoreGraphicsImageAspect)bit)
+		if ((aspect & bit) == bit) switch ((CoreGraphics::ImageAspect)bit)
 		{
-		case CoreGraphicsImageAspect::ColorBits:
+		case CoreGraphics::ImageAspect::ColorBits:
 			flags |= VK_IMAGE_ASPECT_COLOR_BIT;
 			break;
-		case CoreGraphicsImageAspect::DepthBits:
+		case CoreGraphics::ImageAspect::DepthBits:
 			flags |= VK_IMAGE_ASPECT_DEPTH_BIT;
 			break;
-		case CoreGraphicsImageAspect::StencilBits:
+		case CoreGraphics::ImageAspect::StencilBits:
 			flags |= VK_IMAGE_ASPECT_STENCIL_BIT;
 			break;
-		case CoreGraphicsImageAspect::MetaBits:
+		case CoreGraphics::ImageAspect::MetaBits:
 			flags |= VK_IMAGE_ASPECT_METADATA_BIT;
 			break;
-		case CoreGraphicsImageAspect::Plane0Bits:
+		case CoreGraphics::ImageAspect::Plane0Bits:
 			flags |= VK_IMAGE_ASPECT_PLANE_0_BIT;
 			break;
-		case CoreGraphicsImageAspect::Plane1Bits:
+		case CoreGraphics::ImageAspect::Plane1Bits:
 			flags |= VK_IMAGE_ASPECT_PLANE_1_BIT;
 			break;
-		case CoreGraphicsImageAspect::Plane2Bits:
+		case CoreGraphics::ImageAspect::Plane2Bits:
 			flags |= VK_IMAGE_ASPECT_PLANE_2_BIT;
 			break;
 		}
@@ -740,7 +740,7 @@ VkTypes::AsVkImageAspectFlags(const CoreGraphicsImageAspect aspect)
 /**
 */
 VkShaderStageFlags
-VkTypes::AsVkShaderVisibility(const CoreGraphicsShaderVisibility vis)
+VkTypes::AsVkShaderVisibility(const CoreGraphics::ShaderVisibility vis)
 {
 	VkShaderStageFlags ret = 0;
 	if ((vis & VertexShaderVisibility) == VertexShaderVisibility)		ret |= VK_SHADER_STAGE_VERTEX_BIT;
@@ -756,20 +756,20 @@ VkTypes::AsVkShaderVisibility(const CoreGraphicsShaderVisibility vis)
 /**
 */
 VkImageLayout
-VkTypes::AsVkImageLayout(const CoreGraphicsImageLayout layout)
+VkTypes::AsVkImageLayout(const CoreGraphics::ImageLayout layout)
 {
 	switch (layout)
 	{
-		case CoreGraphicsImageLayout::Undefined:					return VK_IMAGE_LAYOUT_UNDEFINED;
-		case CoreGraphicsImageLayout::General:						return VK_IMAGE_LAYOUT_GENERAL;
-		case CoreGraphicsImageLayout::ColorRenderTexture:			return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-		case CoreGraphicsImageLayout::DepthStencilRenderTexture:	return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-		case CoreGraphicsImageLayout::DepthStencilRead:				return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-		case CoreGraphicsImageLayout::ShaderRead:					return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		case CoreGraphicsImageLayout::TransferSource:				return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-		case CoreGraphicsImageLayout::TransferDestination:			return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		case CoreGraphicsImageLayout::Preinitialized:				return VK_IMAGE_LAYOUT_PREINITIALIZED;
-		case CoreGraphicsImageLayout::Present:						return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		case CoreGraphics::ImageLayout::Undefined:					return VK_IMAGE_LAYOUT_UNDEFINED;
+		case CoreGraphics::ImageLayout::General:						return VK_IMAGE_LAYOUT_GENERAL;
+		case CoreGraphics::ImageLayout::ColorRenderTexture:			return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		case CoreGraphics::ImageLayout::DepthStencilRenderTexture:	return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		case CoreGraphics::ImageLayout::DepthStencilRead:				return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+		case CoreGraphics::ImageLayout::ShaderRead:					return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		case CoreGraphics::ImageLayout::TransferSource:				return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		case CoreGraphics::ImageLayout::TransferDestination:			return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		case CoreGraphics::ImageLayout::Preinitialized:				return VK_IMAGE_LAYOUT_PREINITIALIZED;
+		case CoreGraphics::ImageLayout::Present:						return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 	}
 	return VK_IMAGE_LAYOUT_UNDEFINED;
 }
