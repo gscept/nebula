@@ -1,0 +1,10 @@
+/**
+@page graphics Graphics High-level Interface
+
+The Graphics Interface is supposed to provide a high-level interaction with the rendering systems.
+
+All graphics related entities are the same type, but they can be registered in different \b Graphics::GraphicsContext classes. A Graphics::GraphicsContext implements some rendering component, for example we have the Visibility::ObserverContext, which handles visibility resolution, or the Models::ModelContext, which sets an Graphics::GraphicsEntityId up with a model. As such, the Graphics namespace is quite small, however there are many other namespaces which are entirely Graphics-level APIs, such as Lighting::LightContext and Particles::ParticleContext.
+
+A Graphics::View corresponds to a camera, Frame::FrameScript, and CoreGraphics::WindowId tuple, combining these three to produce a frame fit for a window. Use View when you need to render the scene again, from another angle, or for example in VR, where you need to render through another eye. Use with caution however, since it will cause the scene to be rendered once per view.
+
+*/
