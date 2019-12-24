@@ -109,10 +109,10 @@ This requires the operation to wait for the ZBuffer to finish any operation lead
 - \b layout - The image layout, CoreGraphics::ImageLayout.
 - \b stage - The execution stage in the pipeline, CoreGraphics::BarrierStage.\n
 - \b aspect - The image bits, CoreGraphics::ImageAspect.\n
-- \b mip - The start mip level being used
-- \b mip_count - The amount of mips to depend on
-- \b layer - The start layer being used
-- \b layer_count - The amount of layers to depend on
+- \b mip - The start mip level being used.
+- \b mip_count - The amount of mips to depend on.
+- \b layer - The start layer being used.
+- \b layer_count - The amount of layers to depend on.
 
 @section Pass
 Within a pass, we must list some color-renderable textures and a single (or none) depth-stencil renderable texture. If a clear value is provided for any of these textures, the texture will be cleared with said value when the pass begins. We call color or depth-stencil renderable textures inside passes as attachments, since they are used for attaching to a fragment shader in order to receive color outputs.
