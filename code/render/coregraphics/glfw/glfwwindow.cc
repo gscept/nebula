@@ -11,11 +11,12 @@
 #include "coregraphics/displaydevice.h"
 #include "coregraphics/config.h"
 #include "math/scalar.h"
-
+#include "frame/frameserver.h"
 
 #if __VULKAN__
 #include "coregraphics/vk/vkgraphicsdevice.h"
 #include "coregraphics/vk/vktypes.h"
+#include "coregraphics/vk/vkpipelinedatabase.h"
 #endif
 
 namespace CoreGraphics
@@ -286,28 +287,6 @@ FocusFunc(const CoreGraphics::WindowId& id, int focus)
 /**
 */
 void
-ResizeFunc(const CoreGraphics::WindowId& id, int width, int height)
-{
-	// only resize if size is not 0
-	if (width != 0 && height != 0)
-	{
-		CoreGraphics::DisplayMode& mode = glfwWindowAllocator.Get<GLFW_DisplayMode>(id.id24);
-		mode.SetWidth(width);
-		mode.SetHeight(height);
-		mode.SetAspectRatio(width / float(height));
-
-		// resize default render target
-		//WindowResize(id, width, height);
-
-		// notify event listeners we resized
-		GLFW::GLFWDisplayDevice::Instance()->NotifyEventHandlers(DisplayEvent(DisplayEvent::WindowResized, id));
-	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
 EnableCallbacks(const CoreGraphics::WindowId & id)
 {
 	GLFWwindow* window = glfwWindowAllocator.Get<GLFW_Window>(id.id24);
@@ -456,6 +435,34 @@ InternalSetupFunction(const WindowCreateInfo& info, const Util::Blob& windowData
 	DisplayDevice::Instance()->MakeWindowCurrent(id);
 	return id;
 }
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ResizeFunc(const CoreGraphics::WindowId& id, int width, int height)
+{
+    // only resize if size is not 0
+    if (width != 0 && height != 0)
+    {
+        CoreGraphics::DisplayMode& mode = glfwWindowAllocator.Get<GLFW_DisplayMode>(id.id24);
+        mode.SetWidth(width);
+        mode.SetHeight(height);
+        mode.SetAspectRatio(width / float(height));
+
+        // resize default render target
+        // WindowResize(id, width, height);
+#if __VULKAN__
+        // recreate swapchain
+        Vulkan::RecreateVulkanSwapchain(id, mode, "RESIZED"_atm);
+#endif
+
+        // notify event listeners we resized
+        GLFW::GLFWDisplayDevice::Instance()->NotifyEventHandlers(DisplayEvent(DisplayEvent::WindowResized, id));
+    }
+}
+
 
 } // namespace GLFW
 
@@ -889,6 +896,35 @@ DiscardVulkanSwapchain(const CoreGraphics::WindowId& id)
 
 	// destroy swapchain last
 	vkDestroySwapchainKHR(wndInfo.dev, wndInfo.swapchain, nullptr);
+    // TODO: destroy display semaphore?
+
+    CoreGraphics::RemoveBackBufferRenderTexture(glfwWindowAllocator.Get<GLFW_RenderTexture>(id.id24));
+
+    // destroy __WINDOW__ render texture
+    DestroyRenderTexture(glfwWindowAllocator.Get<GLFW_RenderTexture>(id.id24));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+RecreateVulkanSwapchain(const CoreGraphics::WindowId & id, const CoreGraphics::DisplayMode& mode, const Util::StringAtom& title)
+{
+    VkWindowSwapInfo& wndInfo = glfwWindowAllocator.Get<GLFW_WindowSwapInfo>(id.id24);
+    // wait until GPU is idle
+    CoreGraphics::WaitForAllQueues();
+    vkDeviceWaitIdle(wndInfo.dev);
+
+    DiscardVulkanSwapchain(id);
+
+    // TODO: Do we need to pass the old swapchain to the new one?
+    SetupVulkanSwapchain(id, mode, title);
+
+    Frame::FrameServer::Instance()->OnWindowResize();
+    Vulkan::VkPipelineDatabase::Instance()->RecreatePipelines();
+
+    CoreGraphics::WaitForAllQueues();
+    vkDeviceWaitIdle(wndInfo.dev);
 }
 
 //------------------------------------------------------------------------------

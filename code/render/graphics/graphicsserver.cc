@@ -229,6 +229,23 @@ GraphicsServer::UnregisterGraphicsContext(GraphicsContextFunctionBundle* context
 	this->states.EraseIndex(i);
 }
 
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GraphicsServer::OnWindowResized(CoreGraphics::WindowId wndId)
+{
+    CoreGraphics::DisplayMode const mode = CoreGraphics::WindowGetDisplayMode(wndId);
+    for (IndexT i = 0; i < this->contexts.Size(); ++i)
+    {
+        if (this->contexts[i]->OnWindowResized != nullptr)
+        {
+            this->contexts[i]->OnWindowResized(wndId.id24, mode.GetWidth(), mode.GetHeight());
+        }
+    }
+}
+
 //------------------------------------------------------------------------------
 /**
 */

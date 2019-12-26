@@ -296,4 +296,51 @@ VkPipelineDatabase::Reload(const CoreGraphics::ShaderProgramId id)
 	this->ct5 = tmp5;
 }
 
-} // namespace $NAMESPACE$
+//------------------------------------------------------------------------------
+/**
+*/
+void
+VkPipelineDatabase::RecreatePipelines()
+{
+    IndexT i;
+    for (i = 0; i < this->tier1.Size(); i++)
+    {
+        Tier1Node* t1 = this->tier1.ValueAtIndex(i);
+
+        IndexT j;
+        for (j = 0; j < t1->children.Size(); j++)
+        {
+            Tier2Node* t2 = t1->children.ValueAtIndex(j);
+
+            IndexT k;
+            for (k = 0; k < t2->children.Size(); k++)
+            {
+                Tier3Node* t3 = t2->children.ValueAtIndex(k);
+
+                IndexT l;
+                for (l = 0; l < t3->children.Size(); l++)
+                {
+                    Tier4Node* t4 = t3->children.ValueAtIndex(l);
+
+                    IndexT m;
+                    for (m = 0; m < t4->children.Size(); m++)
+                    {
+                        Tier5Node* t5 = t4->children.ValueAtIndex(m);
+
+                        if (t5->pipeline != VK_NULL_HANDLE)
+                        {
+                            // destroy any existing pipeline
+                            vkDestroyPipeline(this->dev, t5->pipeline, nullptr);
+                            t5->pipeline = VK_NULL_HANDLE;
+                        }
+
+                        // set t5 to initial, so that the next time we try to get compiled pipeline, it gets recreated
+                        t5->initial = true;
+                    }
+                }
+            }
+        }
+    }
+}
+
+} // namespace Vulkan

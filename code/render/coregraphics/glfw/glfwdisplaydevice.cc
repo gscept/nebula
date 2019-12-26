@@ -73,9 +73,12 @@ GLFWDisplayDevice::Open()
 	if (DisplayDeviceBase::Open())
 	{
 		// setup event handler for input when we created the display
-		this->eventHandler = GLFWInputDisplayEventHandler::Create();
-		this->AttachEventHandler(this->eventHandler.upcast<DisplayEventHandler>());
+        this->inputEventHandler = GLFWInputDisplayEventHandler::Create();
+        this->AttachEventHandler(this->inputEventHandler.upcast<DisplayEventHandler>());
 
+        // setup event handler for graphics related events, such as resizing, minimizing etc.
+        this->graphicsEventHandler = GLFWGraphicsDisplayEventHandler::Create();
+        this->AttachEventHandler(this->graphicsEventHandler.upcast<DisplayEventHandler>());
 		return true;
 	}
 	return false;
@@ -89,8 +92,10 @@ void
 GLFWDisplayDevice::Close()
 {
 	n_assert(this->IsOpen());
-	this->RemoveEventHandler(this->eventHandler.upcast<DisplayEventHandler>());
-	this->eventHandler = nullptr;
+    this->RemoveEventHandler(this->inputEventHandler.upcast<DisplayEventHandler>());
+    this->inputEventHandler = nullptr;
+    this->RemoveEventHandler(this->graphicsEventHandler.upcast<DisplayEventHandler>());
+    this->graphicsEventHandler = nullptr;
 	DisplayDeviceBase::Close();
 }
 

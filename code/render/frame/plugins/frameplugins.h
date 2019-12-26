@@ -1,7 +1,7 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @file frame/frameplugins.h
+    @file frame/plugins/frameplugins.h
     
     Top-level header file for Frame plugins. 
     Declare all plugins here which should be createable through RTTI.

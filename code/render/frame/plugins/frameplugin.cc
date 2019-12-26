@@ -69,7 +69,8 @@ void
 FramePlugin::Resize()
 {
 	IndexT i;
-	for (i = 0; i < this->textures.Size(); i++)				TextureWindowResized(this->textures.ValueAtIndex(i));
+	for (i = 0; i < this->textures.Size(); i++)
+		TextureWindowResized(this->textures.ValueAtIndex(i));
 }
 
 } // namespace Base

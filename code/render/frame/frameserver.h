@@ -32,6 +32,8 @@ public:
 	bool IsOpen() const;
 	/// close server, discards all remaining scripts
 	void Close();
+    /// propagate resize to all in all scripts
+    void OnWindowResize();
 
 	/// load frame script and save with name
 	Ptr<FrameScript> LoadFrameScript(const Resources::ResourceName& name, const IO::URI& path);
@@ -44,6 +46,9 @@ public:
 	void SetWindowTexture(const CoreGraphics::TextureId& tex);
 	/// get window texture
 	const CoreGraphics::TextureId& GetWindowTexture() const;
+
+	/// update frame server when window resized
+	void OnWindowResized(const CoreGraphics::WindowId window);
 private:
 	Util::Dictionary<Resources::ResourceName, Ptr<FrameScript>> frameScripts;
 	CoreGraphics::TextureId windowTexture;
@@ -66,6 +71,20 @@ inline const CoreGraphics::TextureId&
 FrameServer::GetWindowTexture() const
 {
 	return this->windowTexture;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void 
+FrameServer::OnWindowResized(const CoreGraphics::WindowId window)
+{
+	IndexT i;
+	for (i = 0; i < this->frameScripts.Size(); i++)
+	{
+		if (this->frameScripts.ValueAtIndex(i)->window == window)
+			this->frameScripts.ValueAtIndex(i)->OnWindowResized();
+	}
 }
 
 //------------------------------------------------------------------------------

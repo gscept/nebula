@@ -69,6 +69,8 @@ public:
 
 	/// re-creates all pipelines for the given shader program id
 	void Reload(const CoreGraphics::ShaderProgramId id);
+    /// re-creates all pipelines for all shader programs
+    void RecreatePipelines();
 private:
 	
 	VkDevice dev;
@@ -95,6 +97,7 @@ private:
 	};
 	struct Tier1Node : public BaseNode
 	{
+        // IndexT == subpass id
 		Util::Dictionary<IndexT, Tier2Node*> children;
 	};
 	struct Tier2Node : public BaseNode
@@ -111,7 +114,7 @@ private:
 	};
 	struct Tier5Node : public BaseNode
 	{
-		VkPipeline pipeline;
+		VkPipeline pipeline = VK_NULL_HANDLE;
 	};
 
 	Util::Dictionary<CoreGraphics::PassId, Tier1Node*> tier1;

@@ -27,6 +27,9 @@ struct VkPassLoadInfo
 	Util::Array<CoreGraphics::TextureId> colorAttachments;
 	Util::Array<Math::float4> colorAttachmentClears;
 	CoreGraphics::TextureId depthStencilAttachment;
+    Util::Array<CoreGraphics::AttachmentFlagBits> colorAttachmentFlags;
+    Util::Array<CoreGraphics::Subpass> subpasses;
+    CoreGraphics::AttachmentFlagBits depthStencilFlags;
 
 	// we store these so we retain the data for when we need to bind it
 	VkRect2D renderArea;

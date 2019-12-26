@@ -100,7 +100,7 @@ private:
 	Util::Array<Frame::FrameOp::Compiled*> compiled;
 	Util::Array<CoreGraphics::BarrierId> resourceResetBarriers;
 	IndexT frameOpCounter;
-	Util::Array<Frame::FramePlugin*> algorithms;
+	Util::Array<Frame::FramePlugin*> plugins;
 	Util::Dictionary<Util::StringAtom, Frame::FramePlugin*> algorithmsByName;
 
 	bool subScript; // if subscript, it means it can only be ran from within another script

@@ -433,6 +433,11 @@ ENDIF()
 				view.cc
 				view.h
 			)
+        fips_dir(graphics/glfw)
+				fips_files(
+					glfwgraphicsdisplayeventhandler.h
+					glfwgraphicsdisplayeventhandler.cc
+				)
 		fips_dir(input/base GROUP "input/base")
 			fips_files(
 				gamepadbase.cc

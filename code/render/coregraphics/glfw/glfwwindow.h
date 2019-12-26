@@ -46,6 +46,8 @@ const VkSurfaceKHR& GetSurface(const CoreGraphics::WindowId& id);
 void SetupVulkanSwapchain(const CoreGraphics::WindowId& id, const CoreGraphics::DisplayMode& mode, const Util::StringAtom& title);
 /// destroy Vulkan swapchain
 void DiscardVulkanSwapchain(const CoreGraphics::WindowId& id);
+/// recreate Vulkan swapchain (used when swapchain is no longer valid due to resize of window or similar)
+void RecreateVulkanSwapchain(const CoreGraphics::WindowId& id, const CoreGraphics::DisplayMode& mode, const Util::StringAtom& title);
 /// perform a present
 void Present(const CoreGraphics::WindowId& id);
 

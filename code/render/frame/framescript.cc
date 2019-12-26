@@ -61,7 +61,7 @@ FrameScript::AddPlugin(const Util::StringAtom& name, Frame::FramePlugin* alg)
 {
 	n_assert(!this->algorithmsByName.Contains(name));
 	this->algorithmsByName.Add(name, alg);
-	this->algorithms.Append(alg);
+	this->plugins.Append(alg);
 }
 
 //------------------------------------------------------------------------------
@@ -223,8 +223,8 @@ FrameScript::Cleanup()
 	for (i = 0; i < this->events.Size(); i++) DestroyEvent(this->events[i]);
 	this->events.Clear();
 
-	for (i = 0; i < this->algorithms.Size(); i++) this->algorithms[i]->Discard();
-	this->algorithms.Clear();
+	for (i = 0; i < this->plugins.Size(); i++) this->plugins[i]->Discard();
+	this->plugins.Clear();
 	this->algorithmsByName.Clear();
 
 	for (i = 0; i < this->ops.Size(); i++) this->ops[i]->Discard();
@@ -246,9 +246,9 @@ FrameScript::OnWindowResized()
 		WindowMakeCurrent(this->window);
 
 		IndexT i;
-		for (i = 0; i < this->textures.Size(); i++)				TextureWindowResized(this->textures[i]);
-		for (i = 0; i < this->algorithms.Size(); i++)			this->algorithms[i]->Resize();
-		for (i = 0; i < this->ops.Size(); i++)					this->ops[i]->OnWindowResized();
+		for (i = 0; i < this->textures.Size(); i++)			TextureWindowResized(this->textures[i]);
+		for (i = 0; i < this->plugins.Size(); i++)			this->plugins[i]->Resize();
+		for (i = 0; i < this->ops.Size(); i++)				this->ops[i]->OnWindowResized();
 
 		// reset old window
 		WindowMakeCurrent(prev);

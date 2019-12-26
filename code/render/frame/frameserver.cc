@@ -51,6 +51,18 @@ FrameServer::Close()
 //------------------------------------------------------------------------------
 /**
 */
+void
+FrameServer::OnWindowResize()
+{
+    for (IndexT i = 0; i < this->frameScripts.Size(); ++i)
+    {
+        this->frameScripts.ValueAtIndex(i)->OnWindowResized();
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 Ptr<Frame::FrameScript>
 FrameServer::LoadFrameScript(const Resources::ResourceName& name, const IO::URI& path)
 {

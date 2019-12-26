@@ -98,6 +98,9 @@ public:
 	void RegisterGraphicsContext(GraphicsContextFunctionBundle* context, GraphicsContextState* state);
 	/// unregister function bundle
 	void UnregisterGraphicsContext(GraphicsContextFunctionBundle* context);
+    
+    /// call when the window has been resized
+    void OnWindowResized(CoreGraphics::WindowId wndId);
 private:
 	friend class GraphicsEntity;
 	friend class CoreGraphics::BatchGroup;
