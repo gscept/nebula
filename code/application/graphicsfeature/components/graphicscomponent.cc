@@ -96,6 +96,7 @@ GraphicsComponent::OnDeactivate(Game::InstanceId instance)
 	Visibility::ObservableContext::DeregisterEntity(gfxEntity);
 	Models::ModelContext::DeregisterEntity(gfxEntity);
 	Graphics::DestroyEntity(gfxEntity);
+    component->Get<Attr::GraphicsEntity>(instance) = Graphics::GraphicsEntityId::Invalid().id;
 }
 
 //------------------------------------------------------------------------------
@@ -126,7 +127,10 @@ GraphicsComponent::OnEndFrame()
     for (int i = 0; i < component->NumRegistered(); ++i)
     {
         Graphics::GraphicsEntityId gfxEntity = { component->Get<Attr::GraphicsEntity>(i) };
-        Models::ModelContext::SetTransform(gfxEntity, Game::TransformComponent::GetWorldTransform(component->GetOwner(i)));
+        if (gfxEntity != Graphics::GraphicsEntityId::Invalid())
+        {
+            Models::ModelContext::SetTransform(gfxEntity, Game::TransformComponent::GetWorldTransform(component->GetOwner(i)));
+        }
     }
 
     _stop_timer(GraphicsComponentOnEndFrame);
