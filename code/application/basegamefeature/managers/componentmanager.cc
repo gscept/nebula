@@ -17,7 +17,13 @@ __ImplementSingleton(Game::ComponentManager);
 */
 ComponentManager::ComponentManager()
 {
-	__ConstructSingleton;
+    __ConstructSingleton;
+
+    _setup_grouped_timer(OnBeginFrameTimer, "ComponentManager");
+    _setup_grouped_timer(OnRenderTimer, "ComponentManager");
+    _setup_grouped_timer(OnEndFrameTimer, "ComponentManager");
+    _setup_grouped_timer(OnRenderDebugTimer, "ComponentManager");
+    _setup_grouped_timer(GarbageCollection, "ComponentManager");
 }
 
 //------------------------------------------------------------------------------
@@ -25,6 +31,12 @@ ComponentManager::ComponentManager()
 */
 ComponentManager::~ComponentManager()
 {
+    _discard_timer(OnBeginFrameTimer);
+    _discard_timer(OnRenderTimer);
+    _discard_timer(OnEndFrameTimer);
+    _discard_timer(OnRenderDebugTimer);
+    _discard_timer(GarbageCollection);
+
 	__DestructSingleton;
 }
 
@@ -204,11 +216,14 @@ ComponentManager::OnBeginFrame()
 	// We need to clean up any erased components, no matter if they're registered to this event.
 	// TODO: Can we do this in a better way?
 	SizeT size = this->components.Size();
+    _start_timer(GarbageCollection);
 	for (SizeT i = 0; i < size; ++i)
 	{
 		this->components[i]->Optimize();
 	}
+    _stop_timer(GarbageCollection);
 
+    _start_timer(OnBeginFrameTimer);
 	ComponentInterface* component;
 	for (SizeT i = 0; i < size; ++i)
 	{
@@ -216,6 +231,7 @@ ComponentManager::OnBeginFrame()
 		if (component->Enabled() == true && component->functions.OnBeginFrame != nullptr)
 			component->functions.OnBeginFrame();
 	}
+    _stop_timer(OnBeginFrameTimer);
 }
 
 //------------------------------------------------------------------------------
@@ -224,6 +240,7 @@ ComponentManager::OnBeginFrame()
 void
 ComponentManager::OnRender()
 {
+    _start_timer(OnRenderTimer);
 	SizeT length = this->components.Size();
 	ComponentInterface* component;
 	for (SizeT i = 0; i < length; ++i)
@@ -232,6 +249,7 @@ ComponentManager::OnRender()
 		if (component->Enabled() && component->functions.OnRender != nullptr)
 			component->functions.OnRender();
 	}
+    _stop_timer(OnRenderTimer);
 }
 
 //------------------------------------------------------------------------------
@@ -240,6 +258,7 @@ ComponentManager::OnRender()
 void
 ComponentManager::OnEndFrame()
 {
+    _start_timer(OnEndFrameTimer);
 	SizeT length = this->components.Size();
 	ComponentInterface* component;
 	for (SizeT i = 0; i < length; ++i)
@@ -248,6 +267,7 @@ ComponentManager::OnEndFrame()
 		if (component->Enabled() && component->functions.OnEndFrame != nullptr)
 			component->functions.OnEndFrame();
 	}
+    _stop_timer(OnEndFrameTimer);
 }
 
 //------------------------------------------------------------------------------
@@ -256,12 +276,14 @@ ComponentManager::OnEndFrame()
 void
 ComponentManager::OnRenderDebug()
 {
+    _start_timer(OnRenderDebugTimer);
 	SizeT length = this->components.Size();
 	for (SizeT i = 0; i < length; ++i)
 	{
 		if (this->components[i]->functions.OnRenderDebug != nullptr)
 			this->components[i]->functions.OnRenderDebug();
 	}
+    _stop_timer(OnRenderDebugTimer);
 }
 
 } // namespace Game

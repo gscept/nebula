@@ -157,7 +157,7 @@ const VkCommandBuffer
 CommandBufferGetVk(const CoreGraphics::CommandBufferId id)
 {
 #if NEBULA_DEBUG
-	n_assert(id.id8 == CoreGraphics::CommandBufferIdType);
+	n_assert(id.id8 == CoreGraphics::IdType::CommandBufferIdType);
 #endif
 	if (id == CoreGraphics::CommandBufferId::Invalid()) return VK_NULL_HANDLE;
 	else												return commandBuffers.Get<0>(id.id24);

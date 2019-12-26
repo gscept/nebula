@@ -22,8 +22,9 @@ public:
 	static void OnActivate(Game::InstanceId instance);
 	static void OnDeactivate(Game::InstanceId instance);
 
-	static void UpdateTransform(Game::Entity, const Math::matrix44&);
 	static void SetModel(Game::Entity, const Util::String&);
+
+    static void OnEndFrame();
 
 	/// Return this components fourcc
 	static Util::FourCC GetFourCC();

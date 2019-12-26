@@ -16,6 +16,7 @@
 #include "util/stringatom.h"
 #include "ids/id.h"
 #include "util/fourcc.h"
+#include "debug/debugtimer.h"
 
 namespace Game
 {
@@ -76,6 +77,12 @@ private:
 	Util::HashTable<Util::StringAtom, ComponentInterface*, 64> componentByName;
 	Util::HashTable<Util::FourCC, ComponentInterface*, 64> componentByFourcc;
 	Util::Array<ComponentInterface*> components;
+
+    _declare_timer(OnBeginFrameTimer);
+    _declare_timer(OnRenderTimer);
+    _declare_timer(OnEndFrameTimer);
+    _declare_timer(OnRenderDebugTimer);
+    _declare_timer(GarbageCollection);
 };
 
 } // namespace Game

@@ -166,6 +166,9 @@ public:
 	/// Type definition for this message's delegate
 	using Delegate = Util::Delegate<void(TYPES...)>;
 
+    /// Type definition for this message's queues
+    using MessageQueue = typename Util::ArrayAllocator<UnqualifiedType<TYPES> ...>;
+
 	/// Register a listener to this message. Returns an ID for the listener so that we can associate it.
 	static MessageListener Register(Delegate&& callback);
 
@@ -199,6 +202,10 @@ public:
 	/// Returns whether a MessageListenerId is still registered or not.
 	static bool IsValid(MessageListenerId listener);
 
+    /// Returns a message queue by id
+    /// Can be used to manually dispatch queues
+    static MessageQueue& GetMessageQueue(MessageQueueId id);
+
 protected:
 	friend MSG;
 
@@ -223,13 +230,11 @@ protected:
 	Ids::IdGenerationPool messageQueueIdPool;
 
 	/// Deferred messages
-	Util::Array<Util::ArrayAllocator<UnqualifiedType<TYPES> ...>> messageQueues;
+	Util::Array<MessageQueue> messageQueues;
 
 	/// Contains the arguments of a recieved distributed message.
 	/// @todo	This should be updated by some NetworkMessageManager-y object.
-	Util::ArrayAllocator<
-		UnqualifiedType<TYPES> ...
-	> distributedMessages;
+    MessageQueue distributedMessages;
 
 protected:
 	Util::StringAtom name;
@@ -239,14 +244,14 @@ protected:
 
 private:
 	template<std::size_t...Is>
-	void send_expander(Util::ArrayAllocator<UnqualifiedType<TYPES> ...>& data, const SizeT& index, std::index_sequence<Is...>)
+	void send_expander(MessageQueue& data, const IndexT cid, const SizeT index, std::index_sequence<Is...>)
 	{
-		Send(data.Get<Is>(index)...);
+		this->callbacks.Get<1>(cid)(data.Get<Is>(index)...);
 	}
 
-	void send_expander(Util::ArrayAllocator<UnqualifiedType<TYPES>...>& data, const SizeT& index)
+	void send_expander(MessageQueue& data, const IndexT cid, const SizeT index)
 	{
-		this->send_expander(data, index, std::make_index_sequence<sizeof...(TYPES)>());
+		this->send_expander(data, cid, index, std::make_index_sequence<sizeof...(TYPES)>());
 	}
 };
 
@@ -371,10 +376,15 @@ Message<MSG, TYPES...>::DispatchMessageQueue(MessageQueueId id)
 	auto& data = instance->messageQueues[Ids::Index(id.id)];
 
 	SizeT size = data.Size();
-	for (SizeT i = 0; i < size; i++)
-	{
-		instance->send_expander(data, i);
-	}
+    SizeT cidSize = instance->callbacks.Size();
+
+    for (SizeT cid = 0; cid < cidSize; ++cid)
+    {
+	    for (SizeT i = 0; i < size; i++)
+	    {
+		    instance->send_expander(data, cid, i);
+	    }
+    }
 
 	// TODO:	Should we call reset here instead?
 	data.Clear();
@@ -440,6 +450,16 @@ inline bool
 Message<MSG, TYPES...>::IsValid(MessageListenerId listener)
 {
 	return Instance()->listenerPool.IsValid(listener.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <typename MSG, class ... TYPES>
+inline typename Message<MSG, TYPES...>::MessageQueue&
+Message<MSG, TYPES...>::GetMessageQueue(MessageQueueId id)
+{
+    return Instance()->messageQueues[id.id];
 }
 
 } // namespace Msg
