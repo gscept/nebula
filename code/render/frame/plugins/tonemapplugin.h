@@ -21,9 +21,11 @@ public:
 	virtual ~TonemapPlugin();
 
 	/// setup algorithm
-	void Setup();
+	void Setup() override;
 	/// discard algorithm
-	void Discard();
+	void Discard() override;
+    /// resize
+    void Resize() override;
 
 private:
 
@@ -41,4 +43,4 @@ private:
 	RenderUtil::DrawFullScreenQuad fsq;
 };
 
-} // namespace Algorithms
+} // namespace Frame

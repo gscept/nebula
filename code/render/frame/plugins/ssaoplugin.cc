@@ -320,4 +320,36 @@ SSAOPlugin::Discard()
 	
 }
 
-} // namespace Algorithms
+//------------------------------------------------------------------------------
+/**
+*/
+void
+SSAOPlugin::Resize()
+{
+    FramePlugin::Resize();
+    for (auto target : this->internalTargets)
+    {
+        TextureWindowResized(target);
+    }
+
+	SizeT numBuffers = CoreGraphics::GetNumBufferedFrames();
+	IndexT i;
+	for (i = 0; i < numBuffers; i++)
+	{
+		// setup hbao table
+		ResourceTableSetRWTexture(this->hbaoTable[i], { this->internalTargets[0], this->hbao0, 0, CoreGraphics::SamplerId::Invalid() });
+		ResourceTableSetRWTexture(this->hbaoTable[i], { this->internalTargets[1], this->hbao1, 0, CoreGraphics::SamplerId::Invalid() });
+		ResourceTableCommitChanges(this->hbaoTable[i]);
+
+		// setup blur table
+		ResourceTableSetTexture(this->blurTableX[i], { this->internalTargets[1], this->hbaoX, 0, CoreGraphics::SamplerId::Invalid() });
+		ResourceTableSetRWTexture(this->blurTableX[i], { this->internalTargets[0], this->hbaoBlurRG, 0, CoreGraphics::SamplerId::Invalid() });
+		ResourceTableCommitChanges(this->blurTableX[i]);
+
+		ResourceTableSetTexture(this->blurTableY[i], { this->internalTargets[0], this->hbaoY, 0, CoreGraphics::SamplerId::Invalid() });
+		ResourceTableSetRWTexture(this->blurTableY[i], { this->textures["SSAO"], this->hbaoBlurR, 0, CoreGraphics::SamplerId::Invalid() });
+		ResourceTableCommitChanges(this->blurTableY[i]);
+	}
+}
+
+} // namespace Frame

@@ -22,9 +22,11 @@ public:
 	virtual ~SSAOPlugin();
 
 	/// setup algorithm
-	void Setup();
+	void Setup() override;
 	/// discard algorithm
-	void Discard();
+	void Discard() override;
+    /// resize algorithm
+    void Resize() override;
 
 private:
 
@@ -67,4 +69,4 @@ private:
 		float blurFalloff;
 	} vars;
 };
-} // namespace Algorithms
+} // namespace Frame

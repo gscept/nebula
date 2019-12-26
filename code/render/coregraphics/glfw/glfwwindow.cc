@@ -17,6 +17,7 @@
 #include "coregraphics/vk/vkgraphicsdevice.h"
 #include "coregraphics/vk/vktypes.h"
 #include "coregraphics/vk/vkpipelinedatabase.h"
+#include "coregraphics/vk/vkshaderserver.h"
 #endif
 
 namespace CoreGraphics
@@ -896,12 +897,11 @@ DiscardVulkanSwapchain(const CoreGraphics::WindowId& id)
 
 	// destroy swapchain last
 	vkDestroySwapchainKHR(wndInfo.dev, wndInfo.swapchain, nullptr);
-    // TODO: destroy display semaphore?
-
-    CoreGraphics::RemoveBackBufferRenderTexture(glfwWindowAllocator.Get<GLFW_RenderTexture>(id.id24));
+    
+    CoreGraphics::RemoveBackBufferTexture(glfwWindowAllocator.Get<GLFW_Texture>(id.id24));
 
     // destroy __WINDOW__ render texture
-    DestroyRenderTexture(glfwWindowAllocator.Get<GLFW_RenderTexture>(id.id24));
+    DestroyTexture(glfwWindowAllocator.Get<GLFW_Texture>(id.id24));
 }
 
 //------------------------------------------------------------------------------
@@ -917,7 +917,7 @@ RecreateVulkanSwapchain(const CoreGraphics::WindowId & id, const CoreGraphics::D
 
     DiscardVulkanSwapchain(id);
 
-    // TODO: Do we need to pass the old swapchain to the new one?
+    // TODO: We could pass the old swapchain when creating the new one, allowing any pending drawing to be finished before changing
     SetupVulkanSwapchain(id, mode, title);
 
     Frame::FrameServer::Instance()->OnWindowResize();

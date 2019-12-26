@@ -1,15 +1,15 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	An algorithm is a frame script triggered piece of code which can run
+	A plugin is a frame script triggered piece of code which can run
 	in sequences.
 
-	An algorithm can be purely compute, in which case they may not execute within 
+	A plugin can be purely compute, in which case they may not execute within 
 	a pass. They can be purely render, which means they must execute within
 	a pass. They can also be mixed, in which case the right function has to 
 	be executed within the correct scope. 
 
-	An actual algorithm inherits this class and statically binds StringAtom objects
+	An actual plugin inherits this class and statically binds StringAtom objects
 	with functions, and registers them with a certain type, which can be retrieved
 	when performing frame script validation. 
 	
@@ -43,7 +43,7 @@ public:
 	/// discard operation
 	virtual void Discard();
 	/// handle window resizing
-	void Resize();
+	virtual void Resize();
 
 	/// add function callback to global dictionary
 	static void AddCallback(const Util::StringAtom name, std::function<void(IndexT)> func);

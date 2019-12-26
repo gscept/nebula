@@ -26,6 +26,9 @@ public:
 	/// discard
 	void Discard();
 
+	/// handle window resizing
+	void Resize();
+
 private:
     CoreGraphics::ShaderId shader;
 	Util::FixedArray<CoreGraphics::ResourceTableId> ssrTables;

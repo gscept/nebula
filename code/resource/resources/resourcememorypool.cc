@@ -69,6 +69,8 @@ ResourceMemoryPool::ReserveResource(const ResourceName& res, const Util::StringA
 	{
 		// get id of resource
 		ret = this->ids.ValueAtIndex(i);
+		if (this->states[ret.poolId] == Resource::Unloaded)
+			this->states[ret.poolId] = Resource::Pending;
 
 		// bump usage
 		this->usage[ret.poolId]++;

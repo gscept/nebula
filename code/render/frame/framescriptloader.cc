@@ -474,7 +474,7 @@ FrameScriptLoader::ParseCompute(const Ptr<Frame::FrameScript>& script, JzonValue
 	// create shader state
 	JzonValue* shader = jzon_get(node, "shader_state");
 	n_assert(shader != NULL);
-	ParseShaderState(script, shader, op->shader, op->resourceTable, op->constantBuffers);
+	ParseShaderState(script, shader, op->shader, op->resourceTable, op->constantBuffers, op->textures);
 
 	JzonValue* variation = jzon_get(node, "variation");
 	n_assert(variation != NULL);
@@ -1040,7 +1040,7 @@ FrameScriptLoader::ParseSubpassFullscreenEffect(const Ptr<Frame::FrameScript>& s
 	// create shader state
 	JzonValue* shaderState = jzon_get(node, "shader_state");
 	n_assert(shaderState != NULL);
-	ParseShaderState(script, shaderState, op->shader, op->resourceTable, op->constantBuffers);
+	ParseShaderState(script, shaderState, op->shader, op->resourceTable, op->constantBuffers, op->textures);
 
 	// get texture
 	JzonValue* texture = jzon_get(node, "size_from_texture");
@@ -1056,7 +1056,14 @@ FrameScriptLoader::ParseSubpassFullscreenEffect(const Ptr<Frame::FrameScript>& s
 /**
 */
 void
-FrameScriptLoader::ParseShaderState(const Ptr<Frame::FrameScript>& script, JzonValue* node, CoreGraphics::ShaderId& shd, CoreGraphics::ResourceTableId& table, Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBufferId>& constantBuffers)
+FrameScriptLoader::ParseShaderState(
+	const Ptr<Frame::FrameScript>& script, 
+	JzonValue* node, 
+	CoreGraphics::ShaderId& shd, 
+	CoreGraphics::ResourceTableId& table, 
+	Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBufferId>& constantBuffers,
+	Util::Array<std::tuple<IndexT, CoreGraphics::ConstantBufferId, CoreGraphics::TextureId>>& textures
+)
 {
 	bool createResources = false;
 	JzonValue* create = jzon_get(node, "create_resource_set");
@@ -1069,7 +1076,8 @@ FrameScriptLoader::ParseShaderState(const Ptr<Frame::FrameScript>& script, JzonV
 	table = ShaderCreateResourceTable(shd, NEBULA_BATCH_GROUP);
 
 	JzonValue* vars = jzon_get(node, "variables");
-	if (vars != NULL) ParseShaderVariables(script, shd, table, constantBuffers, vars);
+	if (vars != NULL)
+		ParseShaderVariables(script, shd, table, constantBuffers, textures, vars);
 	CoreGraphics::ResourceTableCommitChanges(table);
 }
 
@@ -1077,7 +1085,12 @@ FrameScriptLoader::ParseShaderState(const Ptr<Frame::FrameScript>& script, JzonV
 /**
 */
 void
-FrameScriptLoader::ParseShaderVariables(const Ptr<Frame::FrameScript>& script, const CoreGraphics::ShaderId& shd, CoreGraphics::ResourceTableId& table, Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBufferId>& constantBuffers, JzonValue* node)
+FrameScriptLoader::ParseShaderVariables(
+	const Ptr<Frame::FrameScript>& script,
+	const CoreGraphics::ShaderId& shd, 
+	CoreGraphics::ResourceTableId& table, 
+	Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBufferId>& constantBuffers, 
+	Util::Array<std::tuple<IndexT, CoreGraphics::ConstantBufferId, CoreGraphics::TextureId>>& textures, JzonValue* node)
 {
 	uint i;
 	for (i = 0; i < node->size; i++)
@@ -1137,6 +1150,7 @@ FrameScriptLoader::ParseShaderVariables(const Ptr<Frame::FrameScript>& script, c
 		case TextureHandleType:
 		{
 			CoreGraphics::TextureId rtid = script->GetTexture(valStr);
+			textures.Append(std::make_tuple(bind, cbo, rtid));
 			if (rtid != CoreGraphics::TextureId::Invalid())
 				ConstantBufferUpdate(cbo, CoreGraphics::TextureGetBindlessHandle(rtid), bind);
 			else
@@ -1147,8 +1161,9 @@ FrameScriptLoader::ParseShaderVariables(const Ptr<Frame::FrameScript>& script, c
 		case TextureVariableType:
 		{
 			IndexT slot = ShaderGetResourceSlot(shd, sem->string_value);
-
 			CoreGraphics::TextureId rtid = script->GetTexture(valStr);
+
+			textures.Append(std::make_tuple(slot, ConstantBufferId::Invalid(), rtid));
 			if (rtid != CoreGraphics::TextureId::Invalid())
 				ResourceTableSetTexture(table, { rtid, slot, 0, CoreGraphics::SamplerId::Invalid(), false });
 			else
@@ -1158,13 +1173,23 @@ FrameScriptLoader::ParseShaderVariables(const Ptr<Frame::FrameScript>& script, c
 		case ImageReadWriteVariableType:
 		{
 			IndexT slot = ShaderGetResourceSlot(shd, sem->string_value);
-			ResourceTableSetRWTexture(table, { script->GetTexture(valStr), slot, 0, CoreGraphics::SamplerId::Invalid() });
+			CoreGraphics::TextureId rtid = script->GetTexture(valStr);
+
+			textures.Append(std::make_tuple(slot, ConstantBufferId::Invalid(), rtid));
+			if (rtid != CoreGraphics::TextureId::Invalid())
+				ResourceTableSetRWTexture(table, { rtid, slot, 0, CoreGraphics::SamplerId::Invalid() });
+			else
+				n_error("Unknown resource %s!", valStr.AsCharPtr());
 			break;
 		}
 		case BufferReadWriteVariableType:
 		{
 			IndexT slot = ShaderGetResourceSlot(shd, sem->string_value);
-			ResourceTableSetRWBuffer(table, { script->GetReadWriteBuffer(valStr), slot, 0 });
+			CoreGraphics::ShaderRWBufferId rtid = script->GetReadWriteBuffer(valStr);
+			if (rtid != CoreGraphics::ShaderRWBufferId::Invalid())
+				ResourceTableSetRWBuffer(table, { rtid, slot, 0 });
+			else
+				n_error("Unknown resource %s!", valStr.AsCharPtr());
 			break;
 		}
 		}

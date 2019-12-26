@@ -63,7 +63,21 @@ void
 FrameSubpassFullscreenEffect::OnWindowResized()
 {
     FrameOp::OnWindowResized();
-    RenderTextureWindowResized(this->tex);
+    TextureWindowResized(this->tex);
+
+	IndexT i;
+	for (i = 0; i < this->textures.Size(); i++)
+	{
+		const std::tuple<IndexT, CoreGraphics::ConstantBufferId, CoreGraphics::TextureId>& tuple = this->textures[i];
+		if (std::get<1>(tuple) != CoreGraphics::ConstantBufferId::Invalid())
+		{
+			CoreGraphics::ConstantBufferUpdate(std::get<1>(tuple), CoreGraphics::TextureGetBindlessHandle(std::get<2>(tuple)), std::get<0>(tuple));
+		}
+		else
+		{
+			ResourceTableSetTexture(this->resourceTable, { std::get<2>(tuple), std::get<0>(tuple), 0, CoreGraphics::SamplerId::Invalid(), false });
+		}
+	}
 }
 
 //------------------------------------------------------------------------------

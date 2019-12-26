@@ -1,7 +1,7 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	Implements a three-phase bloom algorithm
+	Implements a three-phase bloom plugin
 	
 	(C) 2017-2018 Individual contributors, see AUTHORS file
 */
@@ -21,10 +21,13 @@ public:
 	/// destructor
 	virtual ~BloomPlugin();
 
-	/// setup algorithm
-	void Setup();
-	/// discard algorithm
-	void Discard();
+	/// setup plugin
+	void Setup() override;
+	/// discard plugin
+	void Discard() override;
+    /// resize plugin
+    void Resize() override;
+
 private:
 
 	CoreGraphics::TextureId internalTargets[1];
@@ -37,4 +40,4 @@ private:
 	
 	RenderUtil::DrawFullScreenQuad fsq;
 };
-} // namespace Algorithm
+} // namespace Frame

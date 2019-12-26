@@ -63,7 +63,6 @@ FramePlugin::AddCallback(const Util::StringAtom name, std::function<void(IndexT)
 
 //------------------------------------------------------------------------------
 /**
-	FIXME: implement resize
 */
 void
 FramePlugin::Resize()
@@ -73,4 +72,4 @@ FramePlugin::Resize()
 		TextureWindowResized(this->textures.ValueAtIndex(i));
 }
 
-} // namespace Base
+} // namespace Frame

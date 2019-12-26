@@ -174,4 +174,20 @@ TonemapPlugin::Discard()
 	this->fsq.Discard();
 }
 
-} // namespace Algorithms
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TonemapPlugin::Resize()
+{
+    FramePlugin::Resize();
+    TextureWindowResized(this->downsample2x2);
+    TextureWindowResized(this->copy);
+
+	// reset resource table
+	ResourceTableSetTexture(this->tonemapTable, { this->copy, this->prevSlot, 0, SamplerId::Invalid(), false });
+	ResourceTableSetTexture(this->tonemapTable, { this->downsample2x2, this->colorSlot, 0, SamplerId::Invalid(), false });
+	ResourceTableCommitChanges(this->tonemapTable);
+}
+
+} // namespace Frame

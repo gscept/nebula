@@ -121,4 +121,18 @@ SSRPlugin::Discard()
     }
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+SSRPlugin::Resize()
+{
+	SizeT numFrames = CoreGraphics::GetNumBufferedFrames();
+	for (IndexT i = 0; i < numFrames; ++i)
+	{
+		ResourceTableSetRWTexture(this->ssrTables[i], { this->textures["SSRBuffer"], this->ssrBufferSlot, 0, SamplerId::Invalid() });
+		ResourceTableCommitChanges(this->ssrTables[i]);
+	}
+}
+
 } // namespace Algorithms

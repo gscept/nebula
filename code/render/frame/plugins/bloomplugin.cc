@@ -171,4 +171,30 @@ BloomPlugin::Discard()
 	this->fsq.Discard();
 }
 
-} // namespace Algorithm
+//------------------------------------------------------------------------------
+/**
+*/
+void
+BloomPlugin::Resize()
+{
+    FramePlugin::Resize();
+    for (auto target : this->internalTargets)
+    {
+        TextureWindowResized(target);
+    }
+
+	ResourceTableSetTexture(this->brightPassTable, { this->textures["Color"], this->colorSourceSlot, 0, CoreGraphics::SamplerId::Invalid() });
+	ResourceTableSetTexture(this->brightPassTable, { this->textures["Luminance"], this->luminanceTextureSlot, 0, CoreGraphics::SamplerId::Invalid() , false });
+	ResourceTableCommitChanges(this->brightPassTable);
+
+	// bloom buffer goes in, internal target goes out
+	ResourceTableSetTexture(this->blurTable, { this->textures["BlurredBloom"], this->inputImageXSlot, 0, CoreGraphics::SamplerId::Invalid() , false });
+	ResourceTableSetRWTexture(this->blurTable, { this->internalTargets[0], this->blurImageXSlot, 0, CoreGraphics::SamplerId::Invalid() });
+
+	// internal target goes in, blurred buffer goes out
+	ResourceTableSetTexture(this->blurTable, { this->internalTargets[0], this->inputImageYSlot, 0, CoreGraphics::SamplerId::Invalid() });
+	ResourceTableSetRWTexture(this->blurTable, { this->textures["BlurredBloom"], this->blurImageYSlot, 0, CoreGraphics::SamplerId::Invalid() });
+	ResourceTableCommitChanges(this->blurTable);
+}
+
+} // namespace Frame
