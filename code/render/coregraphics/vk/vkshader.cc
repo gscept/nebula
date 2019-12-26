@@ -119,7 +119,7 @@ VkShaderSetup(
 		else											{ cbo.dynamicOffset = false; numUniform += slotsUsed; }
 
 		rinfo.constantBuffers.Append(cbo);
-		n_assert(block->alignedSize < maxUniformBufferRange);
+		n_assert(block->alignedSize <= maxUniformBufferRange);
 
 		skipbuffer:
 

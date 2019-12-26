@@ -58,7 +58,7 @@ Setup()
     state.Setup();
     Resources::ResourceManager::Instance()->RegisterStreamPool("np", Physics::StreamActorPool::RTTI);
     Resources::ResourceManager::Instance()->RegisterStreamPool("npc", Physics::StreamColliderPool::RTTI);    
-    IO::AssignRegistry::Instance()->SetAssign(IO::Assign("phy","export:physics"));
+    IO::AssignRegistry::Instance()->SetAssign(IO::Assign("phys","export:physics"));
 
     Physics::actorPool = Resources::GetStreamPool<Physics::StreamActorPool>();
     Physics::colliderPool = Resources::GetStreamPool<Physics::StreamColliderPool>();

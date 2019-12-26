@@ -748,8 +748,17 @@ Component<TYPES...>::SetAttributeValueDynamic(InstanceId instance, Util::FourCC 
 		auto& val = this->data.Get<n>(instance);
 		val = value.Get<T::InnerType>();
 	}
-	else // Recurse and increase n by 1
-		SetAttributeValueDynamic<(n < sizeof...(TYPES) ? n + 1 : 1)>(instance, attribute, value);
+    else // Recurse and increase n by 1
+    {
+        if constexpr (n + 1 >= sizeof...(TYPES))
+        {
+            return;
+        }
+        else
+        {
+		    SetAttributeValueDynamic<(n < sizeof...(TYPES) ? n + 1 : 1)>(instance, attribute, value);
+        }
+    }
 }
 
 //------------------------------------------------------------------------------

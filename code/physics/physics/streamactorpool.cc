@@ -36,8 +36,8 @@ void
 StreamActorPool::Setup()
 {
     ResourceStreamPool::Setup();
-    this->placeholderResourceName = "phy:system/box.np";
-    this->failResourceName = "phy:system/box.np";
+    this->placeholderResourceName = "phys:system/box.np";
+    this->failResourceName = "phys:system/box.np";
 }
 
 //------------------------------------------------------------------------------
