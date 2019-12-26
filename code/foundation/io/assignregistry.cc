@@ -168,6 +168,7 @@ AssignRegistry::SetupProjectAssigns()
     this->SetAssign(Assign("tex", "export:textures"));
     this->SetAssign(Assign("frame", "export:frame"));
     this->SetAssign(Assign("mdl", "export:models"));
+    this->SetAssign(Assign("phys", "export:physics"));
     this->SetAssign(Assign("audio", "export:audio"));    
     this->SetAssign(Assign("sui", "export:sui"));       
     this->SetAssign(Assign("mat", "export:materials"));
