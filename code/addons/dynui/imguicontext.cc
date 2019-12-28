@@ -518,7 +518,7 @@ ImguiContext::OnRenderAsPlugin(const IndexT frameIndex, const Timing::Time frame
 /**
 */
 void
-ImguiContext::OnWindowResized(IndexT windowId, SizeT width, SizeT height)
+ImguiContext::OnWindowResized(const CoreGraphics::WindowId windowId, SizeT width, SizeT height)
 {
 	ImGuiIO& io = ImGui::GetIO();
 	io.DisplaySize = ImVec2((float)width, (float)height);

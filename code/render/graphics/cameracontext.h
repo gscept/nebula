@@ -45,7 +45,18 @@ public:
 	/// get settings
 	static const CameraSettings& GetSettings(const Graphics::GraphicsEntityId id);
 
+	/// called if the window size has changed
+	static void OnWindowResized(const CoreGraphics::WindowId windowId, SizeT width, SizeT height);
+
 private:
+
+	enum
+	{
+		Camera_Settings,
+		Camera_Projection,
+		Camera_View,
+		Camera_ViewProjection
+	};
 	typedef Ids::IdAllocator<
 		Graphics::CameraSettings,
 		Math::matrix44,				// projection
