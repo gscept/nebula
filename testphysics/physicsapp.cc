@@ -23,6 +23,8 @@
 #include "physics/actorcontext.h"
 #include "physics/streamactorpool.h"
 #include "physics/utils.h"
+#include "graphics/environmentcontext.h"
+#include "clustering/clustercontext.h"
 
 using namespace Timing;
 using namespace Graphics;
@@ -100,6 +102,12 @@ SimpleViewerApplication::Open()
         ModelContext::Create();
         ObserverContext::Create();
         ObservableContext::Create();
+
+        this->cam = Graphics::CreateEntity();
+        Graphics::RegisterEntity<CameraContext, ObserverContext>(this->cam);
+        CameraContext::SetupProjectionFov(this->cam, width / (float)height, 45.f, 0.01f, 1000.0f);
+
+        Clustering::ClusterContext::Create(this->cam, this->wnd);
 		Lighting::LightContext::Create();
 		Characters::CharacterContext::Create();
         Dynui::ImguiContext::Create();
@@ -113,15 +121,13 @@ SimpleViewerApplication::Open()
         Im3d::Im3dContext::SetGridSize(1.0f, 25);
         Im3d::Im3dContext::SetGridColor(Math::float4(0.2f, 0.2f, 0.2f, 0.8f));
 
-        this->view = gfxServer->CreateView("mainview", "frame:vkdebug.json");
+        this->view = gfxServer->CreateView("mainview", "frame:vkdefault.json"_uri);
         this->stage = gfxServer->CreateStage("stage1", true);
-        this->cam = Graphics::CreateEntity();
-        CameraContext::RegisterEntity(this->cam);
-        CameraContext::SetupProjectionFov(this->cam, width / (float)height, 45.f, 0.01f, 1000.0f);
+
 
 		this->globalLight = Graphics::CreateEntity();
 		Lighting::LightContext::RegisterEntity(this->globalLight);
-		Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::float4(1, 1, 1, 0), 1.0f, Math::float4(0, 0, 0, 0), Math::float4(0, 0, 0, 0), 0.0f, Math::vector(1, 1, 1), false);
+		Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::float4(1, 1, 1, 0), 1.0f, Math::float4(0, 0, 0, 0), Math::float4(0, 0, 0, 0), 0.0f, -Math::vector(1, 1, 1), true);
 
 		this->pointLights[0] = Graphics::CreateEntity();
 		Lighting::LightContext::RegisterEntity(this->pointLights[0]);
@@ -138,6 +144,7 @@ SimpleViewerApplication::Open()
         for (int i = 0; i < 3; i++)
         {
             this->entities.Append(this->pointLights[i]);
+            this->entityNames.Append(Util::String::Sprintf("PointLight%d", i));
         }
 
 		{
@@ -148,6 +155,8 @@ SimpleViewerApplication::Open()
 			spotLightMatrix = Math::matrix44::multiply(spotLightMatrix, Math::matrix44::rotationyawpitchroll(0, Math::n_deg2rad(-55), 0));
 			spotLightMatrix.set_position(Math::point(0, 5, 2));
 			Lighting::LightContext::SetupSpotLight(this->spotLights[0], Math::float4(1, 1, 0, 1), 1.0f, 0.1f, 0.8f, spotLightMatrix, false);
+            this->entities.Append(this->spotLights[0]);
+            this->entityNames.Append("SpotLight0");
 		}
 
 		{
@@ -158,6 +167,8 @@ SimpleViewerApplication::Open()
 			spotLightMatrix = Math::matrix44::multiply(spotLightMatrix, Math::matrix44::rotationyawpitchroll(Math::n_deg2rad(60), Math::n_deg2rad(-55), 0));
 			spotLightMatrix.set_position(Math::point(2, 5, 0));
 			Lighting::LightContext::SetupSpotLight(this->spotLights[1], Math::float4(0, 1, 1, 1), 1.0f, 0.4f, 0.8f, spotLightMatrix, false);
+            this->entities.Append(this->spotLights[1]);
+            this->entityNames.Append("SpotLight1");
 		}
 
 		{
@@ -168,6 +179,8 @@ SimpleViewerApplication::Open()
 			spotLightMatrix = Math::matrix44::multiply(spotLightMatrix, Math::matrix44::rotationyawpitchroll(Math::n_deg2rad(120), Math::n_deg2rad(-55), 0));
 			spotLightMatrix.set_position(Math::point(2, 5, 2));
 			Lighting::LightContext::SetupSpotLight(this->spotLights[2], Math::float4(1, 0, 1, 1), 1.0f, 0.1f, 0.4f, spotLightMatrix, false);
+            this->entities.Append(this->spotLights[2]);
+            this->entityNames.Append("SpotLight2");
 		}
 
         this->defaultViewPoint = Math::point(15.0f, 15.0f, -15.0f);
@@ -177,75 +190,38 @@ SimpleViewerApplication::Open()
         this->view->SetCamera(this->cam);
         this->view->SetStage(this->stage);
 
-        this->entity = Graphics::CreateEntity();
-        ModelContext::RegisterEntity(this->entity);        
-        ModelContext::Setup(this->entity, "mdl:Units/Unit_Archer.n3", "Viewer");
-        ModelContext::SetTransform(this->entity, Math::matrix44::translation(Math::float4(0, 0, 0, 1)));
-        this->entities.Append(this->entity);
+
+        //this->entity = Graphics::CreateEntity();
+        //Graphics::RegisterEntity<ModelContext, ObservableContext, Characters::CharacterContext>(this->entity);
+        //ModelContext::Setup(this->entity, "mdl:Units/Unit_Archer.n3", "Viewer");
+        //ModelContext::SetTransform(this->entity, Math::matrix44::translation(Math::float4(0, 0, 0, 1)));
+        //this->entities.Append(this->entity);
+        //this->entityNames.Append("Archer");
 
 		this->ground = Graphics::CreateEntity();
-		ModelContext::RegisterEntity(this->ground);
+        Graphics::RegisterEntity<ModelContext, ObservableContext>(this->ground);
 		ModelContext::Setup(this->ground, "mdl:environment/Groundplane.n3", "Viewer");
 		ModelContext::SetTransform(this->ground, Math::matrix44::translation(Math::float4(0, 0, 0, 1)));
         this->entities.Append(this->ground);
+        this->entityNames.Append("Groundplane");
 
-        this->groundResource = Resources::CreateResource("phy:test/groundplane.np", "Viewer", nullptr, nullptr, true);        
+        this->groundResource = Resources::CreateResource("phys:test/groundplane.np", "Viewer", nullptr, nullptr, true);        
         this->groundActor = Physics::CreateActorInstance(groundResource, Math::matrix44::identity(),false);
 
         this->objects.Append(TestObject{ this->ground,this->groundActor });
 
-        this->ballResource = Resources::CreateResource("phy:test/tower.np", "Viewer", nullptr, nullptr, true);
-        
+        this->ballResource = Resources::CreateResource("phys:test/tower.np", "Viewer", nullptr, nullptr, true);
         
         // register visibility system
         ObserverContext::CreateBruteforceSystem({});
 
-        ObservableContext::RegisterEntity(this->entity);
-        ObservableContext::Setup(this->entity, VisibilityEntityType::Model);
-		ObservableContext::RegisterEntity(this->ground);
+        //ObservableContext::Setup(this->entity, VisibilityEntityType::Model);
 		ObservableContext::Setup(this->ground, VisibilityEntityType::Model);
-        ObserverContext::RegisterEntity(this->cam);
         ObserverContext::Setup(this->cam, VisibilityEntityType::Camera);
 
-		Characters::CharacterContext::RegisterEntity(this->entity);
-		Characters::CharacterContext::Setup(this->entity, "ske:Units/Unit_Archer.nsk3", "ani:Units/Unit_Archer.nax3", "Viewer");
-		Characters::CharacterContext::PlayClip(this->entity, nullptr, 0, 0, Characters::Append);
-
-		Util::Array<Graphics::GraphicsEntityId> models;
-		ModelContext::BeginBulkRegister();
-		ObservableContext::BeginBulkRegister();                
-		static const int NumModels = 1;
-		for (IndexT i = -NumModels; i < NumModels; i++)
-		{
-			for (IndexT j = -NumModels; j < NumModels; j++)
-			{
-				Graphics::GraphicsEntityId ent = Graphics::CreateEntity();
-                
-
-				// create model and move it to the front
-				ModelContext::RegisterEntity(ent);
-				ModelContext::Setup(ent, "mdl:Buildings/castle_tower.n3", "NotA");
-                Math::matrix44 trans = Math::matrix44::translation(Math::float4(i * 10, 10, -j * 10, 1));
-				ModelContext::SetTransform(ent, trans);
-
-				ObservableContext::RegisterEntity(ent);
-				ObservableContext::Setup(ent, VisibilityEntityType::Model);
-				models.Append(ent);
-                                                                
-                Physics::ActorId actor = Physics::CreateActorInstance(this->ballResource, trans, true);
-                
-                auto & pactor = Physics::ActorContext::GetActor(actor);
-                pactor.moveCallback =
-                    Util::Delegate<void(Physics::ActorId, Math::matrix44 const&)>::FromMethod<SimpleViewerApplication,&SimpleViewerApplication::UpdateTransform>(this);
-                pactor.userData = (uint64_t)ent.id;
-                this->objects.Append(TestObject{ ent,actor });
-			}
-		}
-		ModelContext::EndBulkRegister();
-		ObservableContext::EndBulkRegister();
+        // create environment context for the atmosphere effects
+        EnvironmentContext::Create(this->globalLight);
         this->UpdateCamera();
-
-        
 
         return true;
     }
@@ -465,7 +441,7 @@ SimpleViewerApplication::RenderUI()
         Resources::DiscardResource(this->groundResource);
     }
     ImGui::Checkbox("Debug Rendering", &this->renderDebug);
-    Models::ModelId model = ModelContext::GetModel(this->entity);
+    Models::ModelId model = ModelContext::GetModel(this->ground);
     auto modelPool = Resources::GetStreamPool<Models::StreamModelPool>();
     auto resource = modelPool->GetName(model);    
     ImGui::Separator();

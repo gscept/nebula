@@ -99,7 +99,7 @@ protected:
     RenderUtil::FreeCameraUtil freeCamUtil;        
     Math::point defaultViewPoint;
     Util::Array<Graphics::GraphicsEntityId> entities;    
-    
+    Util::Array<Util::String> entityNames;
     Dynui::Graph fpsGraph;
 
     struct TestObject
