@@ -2,7 +2,7 @@
 # dynui module
 #-------------------------------------------------------------------------------
 
-fips_begin_module(dynui)
+nebula_begin_module(dynui)
 fips_deps(render imgui scripting)
 fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/resource ${CODE_ROOT}/render ${CODE_ROOT}/foundation)	
 add_shaders(im3d/im3d.fx imgui.fx)
@@ -21,4 +21,4 @@ fips_dir(im3d)
 fips_dir(graph)
 	fips_files(imguigraph.h imguigraph.cc)
 
-fips_end_module()
+nebula_end_module()

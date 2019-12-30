@@ -95,6 +95,7 @@ private:
 //------------------------------------------------------------------------------
 /**
 */
+inline 
 Graphics::ContextEntityId 
 ParticleContext::Alloc()
 {
@@ -104,6 +105,7 @@ ParticleContext::Alloc()
 //------------------------------------------------------------------------------
 /**
 */
+inline
 void 
 ParticleContext::Dealloc(Graphics::ContextEntityId id)
 {

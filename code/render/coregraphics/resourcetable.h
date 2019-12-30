@@ -13,7 +13,7 @@
 #include "shaderrwbuffer.h"
 #include "constantbuffer.h"
 #include "sampler.h"
-#include "config.h"
+#include "coregraphics/config.h"
 namespace CoreGraphics
 {
 

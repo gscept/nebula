@@ -9,7 +9,6 @@
 #include "input/key.h"
 #include "coregraphics/displayevent.h"
 #include "coregraphics/displaydevice.h"
-#include "coregraphics/config.h"
 #include "math/scalar.h"
 #include "frame/frameserver.h"
 

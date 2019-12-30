@@ -197,23 +197,6 @@ static const int JobMaxSliceSize = 0xFFFF;
 #ifdef _MSC_VER
 #define __VC__ (1)
 #endif
-#ifdef __VC__
-#pragma warning( disable : 4251 )       // class XX needs DLL interface to be used...
-#pragma warning( disable : 4355 )       // initialization list uses 'this'
-#pragma warning( disable : 4275 )       // base class has not dll interface...
-#pragma warning( disable : 4786 )       // symbol truncated to 255 characters
-#pragma warning( disable : 4530 )       // C++ exception handler used, but unwind semantics not enabled
-#pragma warning( disable : 4995 )       // _OLD_IOSTREAMS_ARE_DEPRECATED
-#pragma warning( disable : 4996 )       // _CRT_INSECURE_DEPRECATE, VS8: old string routines are deprecated
-#pragma warning( disable : 4512 )       // 'class' : assignment operator could not be generated
-#pragma warning( disable : 4610 )       // object 'class' can never be instantiated - user-defined constructor required
-#pragma warning( disable : 4510 )       // 'class' : default constructor could not be generated
-#pragma warning( disable : 4316 )		// disable warnings for potential memory alignment issues as vs12 cant possibly figure them out correctly
-#pragma warning( disable : 4838 )		// disable warnings for narrowing conversions
-#ifdef __WIN64__
-#pragma warning( disable : 4267 )
-#endif
-#endif
 
 // GCC settings
 #if defined __GNUC__

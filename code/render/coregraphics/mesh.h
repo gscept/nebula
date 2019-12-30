@@ -6,7 +6,7 @@
 	(C)2017-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "config.h"
+#include "coregraphics/config.h"
 #include "resources/resourceid.h"
 #include "ids/id.h"
 #include "ids/idallocator.h"

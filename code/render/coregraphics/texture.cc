@@ -4,7 +4,7 @@
 //  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
-#include "config.h"
+#include "coregraphics/config.h"
 #include "coregraphics/texture.h"
 #include "coregraphics/memorytexturepool.h"
 #include "coregraphics/displaydevice.h"

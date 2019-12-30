@@ -2,7 +2,7 @@
 // resourcemanager.cc
 // (C)2017-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "foundation/stdneb.h"
 #include "resourcemanager.h"
 
 #if NEBULA_DEBUG
