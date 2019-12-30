@@ -4,7 +4,6 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "primitivenode.h"
-#include "models/modelpool.h"
 #include "resources/resourcemanager.h"
 #include "coregraphics/mesh.h"
 #include "coregraphics/graphicsdevice.h"

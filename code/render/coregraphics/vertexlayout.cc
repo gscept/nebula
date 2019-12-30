@@ -3,7 +3,7 @@
 //  (C)2017-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
-#include "config.h"
+#include "coregraphics/config.h"
 #include "vertexlayout.h"
 #include "vertexsignaturepool.h"
 namespace CoreGraphics

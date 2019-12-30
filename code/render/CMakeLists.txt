@@ -17,7 +17,6 @@ nebula_begin_module(render)
 	fips_deps(foundation resource anyfx libpng libjpeg DevIL)
 
 	if(N_USE_VULKAN)
-		#include(FindVulkan)
 		FIND_PACKAGE(Vulkan)
 		fips_include_directories(${Vulkan_INCLUDE_DIR})
 		fips_libs(${Vulkan_LIBRARY} glfw3)

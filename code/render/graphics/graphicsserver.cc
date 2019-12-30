@@ -16,7 +16,7 @@
 #include "coregraphics/streammeshpool.h"
 #include "coreanimation/streamanimationpool.h"
 #include "characters/streamskeletonpool.h"
-#include "models/modelpool.h"
+#include "models/streammodelpool.h"
 
 namespace Graphics
 {

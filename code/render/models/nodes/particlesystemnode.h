@@ -15,15 +15,6 @@
 #include "coregraphics/constantbuffer.h"
 #include "coregraphics/resourcetable.h"
 
-namespace Particles
-{
-
-/// number of samples in envelope curves
-static const SizeT ParticleSystemNumEnvelopeSamples = 192;
-static const SizeT MaxNumRenderedParticles = 65535;
-
-}
-
 //------------------------------------------------------------------------------
 namespace Models
 {

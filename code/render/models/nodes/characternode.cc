@@ -6,7 +6,6 @@
 #include "render/stdneb.h"
 #include "characternode.h"
 #include "resources/resourcemanager.h"
-#include "models/modelpool.h"
 #include "coregraphics/shaderserver.h"
 //#include "characterjointmask.h"
 
