@@ -22,6 +22,7 @@
 #include "dynui/im3d/im3d.h"
 #include "graphics/environmentcontext.h"
 #include "clustering/clustercontext.h"
+#include "scenes/scenes.h"
 
 using namespace Timing;
 using namespace Graphics;
@@ -49,17 +50,6 @@ const char* stateToString(Resources::Resource::State state)
 //------------------------------------------------------------------------------
 /**
 */
-static const char*
-GraphicsEntityToName(GraphicsEntityId id)
-{
-	if (ModelContext::IsEntityRegistered(id)) return "Model";
-	if (Lighting::LightContext::IsEntityRegistered(id)) return "Light";
-	return "Entity";
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 SimpleViewerApplication::SimpleViewerApplication()
 {
     this->SetAppTitle("Viewer App");
@@ -82,7 +72,6 @@ SimpleViewerApplication::Open()
 {
     if (Application::Open())
     {
-
 #if __NEBULA_HTTP__
 
 		// setup debug subsystem
@@ -136,113 +125,19 @@ SimpleViewerApplication::Open()
 		Lighting::LightContext::RegisterEntity(this->globalLight);
 		Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::float4(1, 1, 1, 0), 1.0f, Math::float4(0, 0, 0, 0), Math::float4(0, 0, 0, 0), 0.0f, -Math::vector(1, 1, 1), true);
 
-		static const int NumPointLights = 15;
-		for (int i = -NumPointLights; i < NumPointLights; i++)
-		{
-			for (int j = -NumPointLights; j < NumPointLights; j++)
-			{
-				auto id = Graphics::CreateEntity();
-				this->entities.Append(id);
-				int index = (j + NumPointLights) + (i + NumPointLights) * NumPointLights * 2;
-				this->entityNames.Append(Util::String::Sprintf("PointLight%d", index));
-				const float red = Math::n_rand();
-				const float green = Math::n_rand();
-				const float blue = Math::n_rand();
-				Lighting::LightContext::RegisterEntity(id);
-				Lighting::LightContext::SetupPointLight(id, Math::float4(red, green, blue, 1), 5.0f, Math::matrix44::translation(i * 16, 5, j * 16), 10.0f, false);
-				this->pointLights.Append(id);
-			}
-		}
-
-		static const int NumSpotLights = 15;
-		for (int i = -NumSpotLights; i < NumSpotLights; i++)
-		{
-			for (int j = -NumSpotLights; j < NumSpotLights; j++)
-			{
-				auto id = Graphics::CreateEntity();
-				this->entities.Append(id);
-				int index = (j + NumSpotLights) + (i + NumSpotLights) * NumSpotLights * 2;
-				this->entityNames.Append(Util::String::Sprintf("SpotLight%d", index));
-				const float red = Math::n_rand();
-				const float green = Math::n_rand();
-				const float blue = Math::n_rand();
-
-				Math::matrix44 spotLightMatrix;
-				spotLightMatrix.scale(Math::vector(30, 30, 40));	
-				spotLightMatrix = Math::matrix44::multiply(spotLightMatrix, Math::matrix44::rotationyawpitchroll(Math::n_deg2rad(120), Math::n_deg2rad(-55), 0));
-				spotLightMatrix.set_position(Math::point(i*16, 5, j*16));
-
-				Lighting::LightContext::RegisterEntity(id);
-				Lighting::LightContext::SetupSpotLight(id, Math::float4(red, green, blue, 1), 5.0f, 0.4f, 0.8f, spotLightMatrix, 10.0f, false);
-				this->spotLights.Append(id);
-			}
-		}
-		
         this->ResetCamera();
         CameraContext::SetTransform(this->cam, this->mayaCameraUtil.GetCameraTransform());
 
         this->view->SetCamera(this->cam);
         this->view->SetStage(this->stage);
 
-        this->entity = Graphics::CreateEntity();
-        Graphics::RegisterEntity<ModelContext, ObservableContext>(this->entity);
-        ModelContext::Setup(this->entity, "mdl:system/placeholder.n3", "Viewer");
-        ModelContext::SetTransform(this->entity, Math::matrix44::translation(Math::float4(0, 0, 0, 1)));
-        this->entities.Append(this->entity);
-		this->entityNames.Append("Shitbox");
-
-		this->ground = Graphics::CreateEntity();
-		Graphics::RegisterEntity<ModelContext, ObservableContext>(this->ground);
-		ModelContext::Setup(this->ground, "mdl:environment/Groundplane.n3", "Viewer");
-		ModelContext::SetTransform(this->ground, Math::matrix44::multiply(Math::matrix44::scaling(1, 1, 1),  Math::matrix44::translation(Math::float4(0, 0, 0, 1))));
-        this->entities.Append(this->ground);
-		this->entityNames.Append("Ground");
-
         // register visibility system
         ObserverContext::CreateBruteforceSystem({});
 
-		// setup visibility
-        ObservableContext::Setup(this->entity, VisibilityEntityType::Model);
-		ObservableContext::Setup(this->ground, VisibilityEntityType::Model);
         ObserverContext::Setup(this->cam, VisibilityEntityType::Camera);
 
-		const Util::StringAtom modelRes[] = { "mdl:Units/Unit_Archer.n3",  "mdl:Units/Unit_Footman.n3",  "mdl:Units/Unit_Spearman.n3" };
-		//const Util::StringAtom modelRes[] = { "mdl:system/placeholder.n3",  "mdl:system/placeholder.n3",  "mdl:system/placeholder.n3" };
-		const Util::StringAtom skeletonRes[] = { "ske:Units/Unit_Archer.nsk3",  "ske:Units/Unit_Footman.nsk3",  "ske:Units/Unit_Spearman.nsk3" };
-		const Util::StringAtom animationRes[] = { "ani:Units/Unit_Archer.nax3",  "ani:Units/Unit_Footman.nax3",  "ani:Units/Unit_Spearman.nax3" };
-
-		ModelContext::BeginBulkRegister();
-		ObservableContext::BeginBulkRegister();
-		static const int NumModels = 15;
-		for (IndexT i = -NumModels; i < NumModels; i++)
-		{
-			for (IndexT j = -NumModels; j < NumModels; j++)
-			{
-				Graphics::GraphicsEntityId ent = Graphics::CreateEntity();
-				Graphics::RegisterEntity<ModelContext, ObservableContext, Characters::CharacterContext>(ent);
-                this->entities.Append(ent);
-				Util::String sid;
-				sid.Format("%s: %d", GraphicsEntityToName(ent), ent);
-				this->entityNames.Append(sid);
-				
-				const IndexT resourceIndex = ((i + NumModels) * NumModels + (j + NumModels)) % 3;
-				const float timeOffset = Math::n_rand();// (((i + NumModels)* NumModels + (j + NumModels)) % 4) / 3.0f;
-
-				// create model and move it to the front
-				ModelContext::Setup(ent, modelRes[resourceIndex], "NotA");
-				ModelContext::SetTransform(ent, Math::matrix44::translation(Math::float4(i * 16, 0, j * 16, 1)));
-				ObservableContext::Setup(ent, VisibilityEntityType::Model);
-
-				Characters::CharacterContext::Setup(ent, skeletonRes[resourceIndex], animationRes[resourceIndex], "Viewer");
-				Characters::CharacterContext::PlayClip(ent, nullptr, 0, 0, Characters::Append, 1.0f, 1, Math::n_rand() * 100.0f, 0.0f, 0.0f, Math::n_rand() * 100.0f);
-			}
-		}
-		ModelContext::EndBulkRegister();
-		ObservableContext::EndBulkRegister();
-
-		// create environment context for the atmosphere effects
+        // create environment context for the atmosphere effects
 		EnvironmentContext::Create(this->globalLight);
-
 
         this->UpdateCamera();
 
@@ -278,6 +173,8 @@ SimpleViewerApplication::Run()
     const Ptr<Input::Keyboard>& keyboard = inputServer->GetDefaultKeyboard();
     const Ptr<Input::Mouse>& mouse = inputServer->GetDefaultMouse();
     
+    scenes[currentScene]->Open();
+
     while (run && !inputServer->IsQuitRequested())
     {                     
         this->inputServer->BeginFrame();
@@ -285,26 +182,10 @@ SimpleViewerApplication::Run()
 
         this->resMgr->Update(this->frameIndex);
 
-		// animate the spotlights
-		IndexT i;
-		for (i = 0; i < this->spotLights.Size(); i++)
-		{
-			Math::matrix44 spotLightTransform;
-			spotLightTransform = Math::matrix44::rotationyawpitchroll(this->gfxServer->GetTime() * 2 + i, Math::n_deg2rad(-55), 0);
-			spotLightTransform.set_position(Lighting::LightContext::GetTransform(this->spotLights[i]).get_position());
-			Lighting::LightContext::SetTransform(this->spotLights[i], spotLightTransform);
-		}
-
-		/*
-			Math::matrix44 globalLightTransform = Lighting::LightContext::GetTransform(this->globalLight);
-			Math::matrix44 rotY = Math::matrix44::rotationy(Math::n_deg2rad(0.1f));
-			Math::matrix44 rotX = Math::matrix44::rotationz(Math::n_deg2rad(0.05f));
-			globalLightTransform = globalLightTransform * rotX * rotY;
-			Lighting::LightContext::SetTransform(this->globalLight, globalLightTransform);
-		*/
-
-        this->gfxServer->BeginFrame();
+		this->gfxServer->BeginFrame();
         
+        scenes[currentScene]->Run();
+
         // put game code which doesn't need visibility data or animation here
         this->gfxServer->BeforeViews();
         this->RenderUI();             
@@ -320,7 +201,6 @@ SimpleViewerApplication::Run()
         // put game code which needs rendering to be done (animation etc) here
         this->gfxServer->EndViews();
 
-        
         // do stuff after rendering is done
         this->gfxServer->EndFrame();
 
@@ -339,52 +219,6 @@ SimpleViewerApplication::Run()
     }
 }
 
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-SimpleViewerApplication::RenderEntityUI()
-{
-    ImGui::Begin("Entities", nullptr, 0);
-	ImGui::SetWindowSize(ImVec2(240, 400));
-    ImGui::BeginChild("##entities", ImVec2(0, 300), true);
-
-    static int selected = 0;
-    for (int i = 0 ; i < this->entityNames.Size();i++)
-    {
-        if (ImGui::Selectable(this->entityNames[i].AsCharPtr(), i == selected))
-        {
-            selected = i;
-        }        
-    }
-    ImGui::EndChild();
-    ImGui::End();
-    auto id = this->entities[selected];
-    if (ModelContext::IsEntityRegistered(id))
-    {
-        Im3d::Mat4 trans = ModelContext::GetTransform(id);
-        if (Im3d::Gizmo("GizmoEntity", trans))
-        {            
-            ModelContext::SetTransform(id, trans);
-        }
-    }            
-    else if (Lighting::LightContext::IsEntityRegistered(id))
-    {
-        Im3d::Mat4 trans = Lighting::LightContext::GetTransform(id);
-        if (Im3d::Gizmo("GizmoEntity", trans))
-        {
-            Lighting::LightContext::SetTransform(id, trans);
-        }
-
-		/*
-		if (Lighting::LightContext::GetType(id) == Lighting::LightContext::SpotLightType)
-		{
-			Im
-		}
-		*/
-    }
-}
 //------------------------------------------------------------------------------
 /**
 */
@@ -409,53 +243,35 @@ SimpleViewerApplication::RenderUI()
         if (ImGui::Button("Reset")) this->ResetCamera();
     }
     ImGui::Checkbox("Debug Rendering", &this->renderDebug);
-    Models::ModelId model = ModelContext::GetModel(this->entity);
-    auto modelPool = Resources::GetStreamPool<Models::StreamModelPool>();
-    auto resource = modelPool->GetName(model);    
-    ImGui::Separator();
-    ImGui::Text("Resource: %s", resource.AsString().AsCharPtr());
-    ImGui::Text("State: %s", stateToString(modelPool->GetState(model)));
-    if (ImGui::Button("Browse"))
-    {
-        ImGui::OpenPopup("Browse for Model");        
-        this->Browse();
-    }
-    if (ImGui::BeginPopupModal("Browse for Model"))
-    {
-        ImGui::BeginChild("##browserheader", ImVec2(0, 300), true);// ImGui::GetTextLineHeightWithSpacing() + ImGui::GetStyle().ItemSpacing.y));
-        ImGui::Columns(2);
-        ImGui::Text("Folder");
-        for (int i = 0; i < this->folders.Size(); i++)
-        {
-            if (ImGui::Selectable(this->folders[i].AsCharPtr(), i == this->selectedFolder))
-            {
-                this->selectedFolder = i;
-                this->files = IO::IoServer::Instance()->ListFiles("mdl:" + this->folders[i], "*");
-            }
-        }
-        ImGui::NextColumn();
-        ImGui::Text("Files");
-            
-        for (int i = 0; i < this->files.Size(); i++)
-        {
-            if (ImGui::Selectable(this->files[i].AsCharPtr(), i == this->selectedFile))
-            {
-                this->selectedFile = i;                    
-            }
-        }
-        ImGui::EndChild();
-        if (ImGui::Button("OK",ImVec2(120, 40))) 
-        {
-            ImGui::CloseCurrentPopup(); 
-            Util::String file = "mdl:" + this->folders[this->selectedFolder] + "/" + this->files[this->selectedFile];                                   
-            ModelContext::ChangeModel(this->entity, file, "Viewer");
-        }
-        ImGui::SameLine();
-        if (ImGui::Button("Cancel",ImVec2(120, 40))) { ImGui::CloseCurrentPopup(); }
-        ImGui::EndPopup();
-    }            
+    
     ImGui::End();
-    this->RenderEntityUI();
+    scenes[currentScene]->RenderUI();
+
+    ImGui::PushStyleColor(ImGuiCol_MenuBarBg, { 0,0,0,0.15f });
+    if (ImGui::BeginMainMenuBar())
+    {
+        if (ImGui::BeginMenu("Scenes"))
+        {
+            int i = 0;
+            for (auto scene : scenes)
+            {
+                bool isSelected = (i == currentScene);
+                if (ImGui::MenuItem(scene->name, nullptr, &isSelected))
+                {
+                    if (i != currentScene)
+                    {
+                        scenes[currentScene]->Close();
+                        currentScene = i;
+                        scenes[currentScene]->Open();
+                    }
+                }
+                i++;
+            }
+            ImGui::EndMenu();
+        }
+        ImGui::EndMainMenuBar();
+    }
+    ImGui::PopStyleColor();
 }
 
 //------------------------------------------------------------------------------

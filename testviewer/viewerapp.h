@@ -38,7 +38,6 @@ public:
 
 protected:
     void RenderUI();
-    void RenderEntityUI();
     void UpdateCamera();
     void ResetCamera();
     void ToMaya();
@@ -54,14 +53,9 @@ protected:
     Ptr<Graphics::View> view;
     Ptr<Graphics::Stage> stage;
 
-	Util::Array<Graphics::GraphicsEntityId> spotLights;
-	Util::Array<Graphics::GraphicsEntityId> pointLights;
-
     Graphics::GraphicsEntityId cam;
-    Graphics::GraphicsEntityId entity;
-
-	Graphics::GraphicsEntityId ground;
-	Graphics::GraphicsEntityId globalLight;
+    
+    Graphics::GraphicsEntityId globalLight;
     IndexT frameIndex = -1;
 
     Util::Array<Util::String> folders;
@@ -82,9 +76,7 @@ protected:
     RenderUtil::MayaCameraUtil mayaCameraUtil;
     RenderUtil::FreeCameraUtil freeCamUtil;        
 	Math::point defaultViewPoint{ 10.0f, 10.0f, 10.0f };
-    Util::Array<Graphics::GraphicsEntityId> entities;
-	Util::Array<Util::String> entityNames;
-
+    
 #if __NEBULA_HTTP__
 	Ptr<Debug::DebugInterface> debugInterface;
 
