@@ -312,21 +312,21 @@ Matrix44Test::Run()
 										   float4(  0.0f, -1.123711f, -1.439683f, 0.0f),
 										   float4(-43.0f, 17.853806f, 18.134460f, 1.0f))));
 
-	const point eye(3.0f, 10.0f, -2.0f);
-	const point at(3.0f, 2.0f, -2.0f);
+	const point eye(3.0f, 2.0f, 10.0f);
+	const point at(3.0f, 2.0f, 2.0f);
 	const vector up(0.0f, 1.0f, 0.0f);
 	// lookatlh
 	matrix44 tmp = matrix44::lookatlh(eye, at, up);
-	VERIFY(matrix44equal(tmp, matrix44(float4(  0.0f,  0.0f,  -1.0f, 0.0f),
-										     float4(  1.0f,  0.0f,  0.0f, 0.0f),
-										     float4(  0.0f, -1.0f,  0.0f, 0.0f),
-										     float4(  3.0f, 10.0f, -2.0f, 1.0f))));
+	VERIFY(matrix44equal(tmp, matrix44(float4(  -1.0f,  0.0f,  0.0f, 0.0f),
+										     float4(  0.0f,  1.0f,  0.0f, 0.0f),
+										     float4(  0.0f, 0.0f,  -1.0f, 0.0f),
+										     float4(  3.0f, 2.0f, 10.0f, 1.0f))));
 	// lookatrh
 	tmp = matrix44::lookatrh(eye, at, up);
-	VERIFY(matrix44equal(tmp, matrix44(float4(  0.0f,  0.0f,  1.0f, 0.0f),
-										     float4(  1.0f,  0.0f,  0.0f, 0.0f),
+	VERIFY(matrix44equal(tmp, matrix44(float4(  1.0f,  0.0f,  0.0f, 0.0f),
 										     float4(  0.0f,  1.0f,  0.0f, 0.0f),
-										     float4(  3.0f, 10.0f, -2.0f, 1.0f))));
+										     float4(  0.0f,  0.0f,  1.0f, 0.0f),
+										     float4(  3.0f, 2.0f, 10.0f, 1.0f))));
 	// ortholh
 	tmp = matrix44::ortholh(1280.0f, 1024.0f, 0.1f, 100.0f);
 	VERIFY(matrix44equal(tmp, matrix44(float4( 0.001563f,      0.0f,       0.0f, 0.0f),
