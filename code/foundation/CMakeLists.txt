@@ -2,7 +2,7 @@
 # Foundation
 #-------------------------------------------------------------------------------
 
-fips_begin_module(foundation)
+nebula_begin_module(foundation)
 	if(FIPS_LINUX)
 		fips_libs(uuid cjson)
 	endif()
@@ -617,7 +617,7 @@ fips_begin_module(foundation)
 			threading/posix/posixthread.h
 		)
 	endif()
-fips_end_module()
+nebula_end_module()
 target_include_directories(foundation PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 #FIXME cant add python include dir globally as it clashes with antlr4
 target_include_directories(foundation PUBLIC ${PYTHON_INCLUDE_DIRS})

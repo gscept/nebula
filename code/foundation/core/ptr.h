@@ -38,7 +38,7 @@ public:
     /// constructor
     Ptr();
     /// construct from C++ pointer
-    explicit Ptr(TYPE* p);
+    Ptr(TYPE* p);
 	/// constructor from nullptr
 	Ptr(std::nullptr_t rhs);
     /// construct from smart pointer
@@ -82,6 +82,7 @@ public:
 		TYPE* p = reinterpret_cast<TYPE*>(rhs.ptr);
 		this->ptr = p;
 		rhs.ptr = nullptr;
+		if (this->ptr != nullptr) this->ptr->AddRef();
 	}
     /// destructor
     ~Ptr();
@@ -208,7 +209,7 @@ template<class TYPE>
 Ptr<TYPE>::Ptr(const Ptr<TYPE>& p) :
     ptr(p.ptr)
 {
-    if (0 != this->ptr)
+     if (0 != this->ptr)
     {
         this->ptr->AddRef();
     }

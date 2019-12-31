@@ -7,6 +7,7 @@
 #include "characternode.h"
 #include "resources/resourcemanager.h"
 #include "coregraphics/shaderserver.h"
+#include "models/nodes/characterskinnode.h"
 //#include "characterjointmask.h"
 
 namespace Models

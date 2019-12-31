@@ -1,3 +1,4 @@
+#pragma once
 #ifndef UTIL_RANDOMNUMBERTABLE_H
 #define UTIL_RANDOMNUMNERTABLE_H
 //------------------------------------------------------------------------------
