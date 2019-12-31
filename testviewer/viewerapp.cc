@@ -136,60 +136,48 @@ SimpleViewerApplication::Open()
 		Lighting::LightContext::RegisterEntity(this->globalLight);
 		Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::float4(1, 1, 1, 0), 1.0f, Math::float4(0, 0, 0, 0), Math::float4(0, 0, 0, 0), 0.0f, -Math::vector(1, 1, 1), true);
 
-		this->pointLights[0] = Graphics::CreateEntity();
-		Lighting::LightContext::RegisterEntity(this->pointLights[0]);
-		Lighting::LightContext::SetupPointLight(this->pointLights[0], Math::float4(1, 0, 0, 1), 5.0f, Math::matrix44::translation(0, 2, -10), 10.0f, false);
-        
-		this->pointLights[1] = Graphics::CreateEntity();
-		Lighting::LightContext::RegisterEntity(this->pointLights[1]);
-		Lighting::LightContext::SetupPointLight(this->pointLights[1], Math::float4(0, 1, 0, 1), 5.0f, Math::matrix44::translation(-10, 2, -10), 10.0f, false);
-
-		this->pointLights[2] = Graphics::CreateEntity();
-		Lighting::LightContext::RegisterEntity(this->pointLights[2]);
-		Lighting::LightContext::SetupPointLight(this->pointLights[2], Math::float4(0, 0, 1, 1), 5.0f, Math::matrix44::translation(-10, 2, 0), 10.0f, false);
-
-        for (int i = 0; i < 3; i++)
-        {
-            this->entities.Append(this->pointLights[i]);
-			this->entityNames.Append(Util::String::Sprintf("PointLight%d", i));
-        }
-
+		static const int NumPointLights = 15;
+		for (int i = -NumPointLights; i < NumPointLights; i++)
 		{
-			this->spotLights[0] = Graphics::CreateEntity();
-			Lighting::LightContext::RegisterEntity(this->spotLights[0]);
-			Math::matrix44 spotLightMatrix;
-			spotLightMatrix.scale(Math::vector(30, 30, 40));
-			spotLightMatrix = Math::matrix44::multiply(spotLightMatrix, Math::matrix44::rotationyawpitchroll(Math::n_deg2rad(120), Math::n_deg2rad(-55), 0));
-			spotLightMatrix.set_position(Math::point(0, 5, 2));
-			Lighting::LightContext::SetupSpotLight(this->spotLights[0], Math::float4(1, 1, 0, 1), 5.0f, 0.4f, 0.8f, spotLightMatrix, 50.0f, false);
-			this->entities.Append(this->spotLights[0]);
-			this->entityNames.Append("SpotLight0");
+			for (int j = -NumPointLights; j < NumPointLights; j++)
+			{
+				auto id = Graphics::CreateEntity();
+				this->entities.Append(id);
+				int index = (j + NumPointLights) + (i + NumPointLights) * NumPointLights * 2;
+				this->entityNames.Append(Util::String::Sprintf("PointLight%d", index));
+				const float red = Math::n_rand();
+				const float green = Math::n_rand();
+				const float blue = Math::n_rand();
+				Lighting::LightContext::RegisterEntity(id);
+				Lighting::LightContext::SetupPointLight(id, Math::float4(red, green, blue, 1), 5.0f, Math::matrix44::translation(i * 16, 5, j * 16), 10.0f, false);
+				this->pointLights.Append(id);
+			}
 		}
 
+		static const int NumSpotLights = 15;
+		for (int i = -NumSpotLights; i < NumSpotLights; i++)
 		{
-			this->spotLights[1] = Graphics::CreateEntity();
-			Lighting::LightContext::RegisterEntity(this->spotLights[1]);
-			Math::matrix44 spotLightMatrix;
-			spotLightMatrix.scale(Math::vector(30, 30, 40));
-			spotLightMatrix = Math::matrix44::multiply(spotLightMatrix, Math::matrix44::rotationyawpitchroll(Math::n_deg2rad(60), Math::n_deg2rad(-55), 0));
-			spotLightMatrix.set_position(Math::point(2, 5, 0));
-			Lighting::LightContext::SetupSpotLight(this->spotLights[1], Math::float4(0, 1, 1, 1), 5.0f, 0.4f, 0.8f, spotLightMatrix, 50.0f, false);
-			this->entities.Append(this->spotLights[1]);
-			this->entityNames.Append("SpotLight1");
-		}
+			for (int j = -NumSpotLights; j < NumSpotLights; j++)
+			{
+				auto id = Graphics::CreateEntity();
+				this->entities.Append(id);
+				int index = (j + NumSpotLights) + (i + NumSpotLights) * NumSpotLights * 2;
+				this->entityNames.Append(Util::String::Sprintf("SpotLight%d", index));
+				const float red = Math::n_rand();
+				const float green = Math::n_rand();
+				const float blue = Math::n_rand();
 
-		{
-			this->spotLights[2] = Graphics::CreateEntity();
-			Lighting::LightContext::RegisterEntity(this->spotLights[2]);
-			Math::matrix44 spotLightMatrix;
-			spotLightMatrix.scale(Math::vector(30, 30, 40));
-			spotLightMatrix = Math::matrix44::multiply(spotLightMatrix, Math::matrix44::rotationyawpitchroll(Math::n_deg2rad(120), Math::n_deg2rad(-55), 0));
-			spotLightMatrix.set_position(Math::point(2, 5, 2));
-			Lighting::LightContext::SetupSpotLight(this->spotLights[2], Math::float4(1, 0, 1, 1), 5.0f, 0.1f, 0.4f, spotLightMatrix, 50.0f, false);
-			this->entities.Append(this->spotLights[2]);
-			this->entityNames.Append("SpotLight2");
-		}
+				Math::matrix44 spotLightMatrix;
+				spotLightMatrix.scale(Math::vector(30, 30, 40));	
+				spotLightMatrix = Math::matrix44::multiply(spotLightMatrix, Math::matrix44::rotationyawpitchroll(Math::n_deg2rad(120), Math::n_deg2rad(-55), 0));
+				spotLightMatrix.set_position(Math::point(i*16, 5, j*16));
 
+				Lighting::LightContext::RegisterEntity(id);
+				Lighting::LightContext::SetupSpotLight(id, Math::float4(red, green, blue, 1), 5.0f, 0.4f, 0.8f, spotLightMatrix, 10.0f, false);
+				this->spotLights.Append(id);
+			}
+		}
+		
         this->ResetCamera();
         CameraContext::SetTransform(this->cam, this->mayaCameraUtil.GetCameraTransform());
 
@@ -205,8 +193,8 @@ SimpleViewerApplication::Open()
 
 		this->ground = Graphics::CreateEntity();
 		Graphics::RegisterEntity<ModelContext, ObservableContext>(this->ground);
-		ModelContext::Setup(this->ground, "mdl:environment/plcholder_world.n3", "Viewer");
-		ModelContext::SetTransform(this->ground, Math::matrix44::multiply(Math::matrix44::scaling(100, 1, 100),  Math::matrix44::translation(Math::float4(0, 0, 0, 1))));
+		ModelContext::Setup(this->ground, "mdl:environment/Groundplane.n3", "Viewer");
+		ModelContext::SetTransform(this->ground, Math::matrix44::multiply(Math::matrix44::scaling(1, 1, 1),  Math::matrix44::translation(Math::float4(0, 0, 0, 1))));
         this->entities.Append(this->ground);
 		this->entityNames.Append("Ground");
 
@@ -223,10 +211,9 @@ SimpleViewerApplication::Open()
 		const Util::StringAtom skeletonRes[] = { "ske:Units/Unit_Archer.nsk3",  "ske:Units/Unit_Footman.nsk3",  "ske:Units/Unit_Spearman.nsk3" };
 		const Util::StringAtom animationRes[] = { "ani:Units/Unit_Archer.nax3",  "ani:Units/Unit_Footman.nax3",  "ani:Units/Unit_Spearman.nax3" };
 
-		Util::Array<Graphics::GraphicsEntityId> models;
 		ModelContext::BeginBulkRegister();
 		ObservableContext::BeginBulkRegister();
-		static const int NumModels = 20;
+		static const int NumModels = 15;
 		for (IndexT i = -NumModels; i < NumModels; i++)
 		{
 			for (IndexT j = -NumModels; j < NumModels; j++)
@@ -243,12 +230,11 @@ SimpleViewerApplication::Open()
 
 				// create model and move it to the front
 				ModelContext::Setup(ent, modelRes[resourceIndex], "NotA");
-				ModelContext::SetTransform(ent, Math::matrix44::translation(Math::float4(i * 2, 0, -j * 2, 1)));
+				ModelContext::SetTransform(ent, Math::matrix44::translation(Math::float4(i * 16, 0, j * 16, 1)));
 				ObservableContext::Setup(ent, VisibilityEntityType::Model);
 
 				Characters::CharacterContext::Setup(ent, skeletonRes[resourceIndex], animationRes[resourceIndex], "Viewer");
 				Characters::CharacterContext::PlayClip(ent, nullptr, 0, 0, Characters::Append, 1.0f, 1, Math::n_rand() * 100.0f, 0.0f, 0.0f, Math::n_rand() * 100.0f);
-				models.Append(ent);
 			}
 		}
 		ModelContext::EndBulkRegister();
@@ -301,14 +287,12 @@ SimpleViewerApplication::Run()
 
 		// animate the spotlights
 		IndexT i;
-		for (i = 0; i < 3; i++)
+		for (i = 0; i < this->spotLights.Size(); i++)
 		{
 			Math::matrix44 spotLightTransform;
-			Math::scalar scaleFactor = i * 1.5f + 30;
-			spotLightTransform.scale(Math::point(scaleFactor, scaleFactor, scaleFactor + 10));
-			spotLightTransform = Math::matrix44::multiply(spotLightTransform, Math::matrix44::rotationyawpitchroll(this->gfxServer->GetTime() * 2 * (i + 1) / 3, Math::n_deg2rad(-55), 0));
-			//spotLightTransform.set_position(Lighting::LightContext::GetTransform(this->spotLights[i]).get_position());
-			//Lighting::LightContext::SetTransform(this->spotLights[i], spotLightTransform);
+			spotLightTransform = Math::matrix44::rotationyawpitchroll(this->gfxServer->GetTime() * 2 + i, Math::n_deg2rad(-55), 0);
+			spotLightTransform.set_position(Lighting::LightContext::GetTransform(this->spotLights[i]).get_position());
+			Lighting::LightContext::SetTransform(this->spotLights[i], spotLightTransform);
 		}
 
 		/*
