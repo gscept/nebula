@@ -3,7 +3,7 @@
 /**
 	A shader read-write buffer can be both read and written from within a shader.
 
-	(C)2017-2018 Individual contributors, see AUTHORS file
+	(C)2017-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "ids/id.h"

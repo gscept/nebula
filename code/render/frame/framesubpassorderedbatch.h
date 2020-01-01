@@ -4,7 +4,7 @@
 	A subpass sorted batch renders the same geometry as the ordinary batch, however
 	it prioritizes Z-order instead shader, making it potentially detrimental for performance.
 	
-	(C) 2016-2018 Individual contributors, see AUTHORS file
+	(C) 2016-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "frameop.h"

@@ -4,7 +4,7 @@
 	A character encapsulates a skeleton resource, an animation resource, and the ability
 	to instantiate such and drive animations.
 
-	(C) 2018 Individual contributors, see AUTHORS file
+	(C) 2018-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "resources/resourceid.h"

@@ -18,7 +18,7 @@
 	template with the subclass as the first template argument. The rest of the
 	template arguments are the callbacks parameters.
 
-	(C) 2018 Individual contributors, see AUTHORS file
+	(C) 2018-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "ids/id.h"

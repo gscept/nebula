@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 //  win32process.cc
 //  (C) 2008 Radon Labs GmbH
-//  (C) 2013-2016 Individual contributors, see AUTHORS file
+//  (C) 2013-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "win32process.h"

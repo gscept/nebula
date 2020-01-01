@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //  imguiconsolehandler.cc
-//  (C) 2015-2016 Individual contributors, see AUTHORS file
+//  (C) 2015-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "imguiconsolehandler.h"

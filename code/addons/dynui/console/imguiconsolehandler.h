@@ -5,7 +5,7 @@
 	
 	consolehandler that prints its output to the imgui console
 	
-	(C) 2015-2016 Individual contributors, see AUTHORS file
+	(C) 2015-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"

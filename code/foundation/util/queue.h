@@ -6,7 +6,7 @@
     Faster queue class that apart from Enqueue has constant time operations.
     Assumes that items can be trivially moved by using memmove.
                 
-    (C) 2018 Individual contributors, see AUTHORS file
+    (C) 2018-2020 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 #include "math/scalar.h"

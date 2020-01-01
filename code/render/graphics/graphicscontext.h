@@ -11,7 +11,7 @@
 	The reason for why the function bundle and state are implemented through macros, is because
 	they have to be static, and thus implemented explicitly once per each context.
 	
-	(C)2017-2018 Individual contributors, see AUTHORS file
+	(C)2017-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"

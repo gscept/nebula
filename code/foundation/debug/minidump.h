@@ -7,7 +7,7 @@
     created when n_assert() or n_error() triggers.
     
     (C) 2007 Radon Labs GmbH
-    (C) 2013-2018 Individual contributors, see AUTHORS file
+    (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #if __WIN32__
 #include "debug/win32/win32minidump.h"

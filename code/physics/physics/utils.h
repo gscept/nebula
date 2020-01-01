@@ -3,7 +3,7 @@
 /**
 	PhysX utils for conversion of datatypes
 
-	(C) 2016-2019 Individual contributors, see AUTHORS file
+	(C) 2016-2020 Individual contributors, see AUTHORS file
 */
 
 #include "foundation/PxVec3.h"

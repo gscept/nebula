@@ -7,7 +7,7 @@
 		program. Holds utility methods to easily display stuff such as arrow and 
 		text in the debugger.
 		    
-    (C) 2013-2019 Individual contributors, see AUTHORS file
+    (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 

@@ -5,7 +5,7 @@
     
     Helper class for creating and rendering Cascading Shadow Maps
     
-    (C) 2012-2018 Individual contributors, see AUTHORS file
+    (C) 2012-2020 Individual contributors, see AUTHORS file
 */
 #include "core/refcounted.h"
 #include "math/frustum.h"

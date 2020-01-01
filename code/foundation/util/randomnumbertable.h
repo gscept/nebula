@@ -9,7 +9,7 @@
     for a given key.
     
     (C) 2008 Radon Labs GmbH
-    (C) 2013-2018 Individual contributors, see AUTHORS file
+    (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
     

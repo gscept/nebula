@@ -5,7 +5,7 @@
 	
 	This input handler passes input events to Imgui.
 	
-	(C) 2012-2016 Individual contributors, see AUTHORS file
+	(C) 2012-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"

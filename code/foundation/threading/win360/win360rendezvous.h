@@ -6,7 +6,7 @@
     A thread barrier for 2 threads using semaphores.
     
     (C) 2010 Radon Labs GmbH
-    (C) 2013-2018 Individual contributors, see AUTHORS file
+    (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 

@@ -9,7 +9,7 @@
 	This implements a single instance component, which means you cannot
 	have multiple instances of this component registered to the same entity.
 
-	(C) 2018 Individual contributors, see AUTHORS file
+	(C) 2018-2020 Individual contributors, see AUTHORS file
 */
 //-----------------------------------------------------------------------------
 #include "util/hashtable.h"

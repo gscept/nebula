@@ -4,7 +4,7 @@
     Platform-wrapper for memory texture loader
     
     (C) 2012 Johannes Hirche
-	(C) 2012-2018 Individual contributors, see AUTHORS file
+	(C) 2012-2020 Individual contributors, see AUTHORS file
 */
 #if __DX11__
 #include "coregraphics/d3d11/d3d11memorytextureloader.h"

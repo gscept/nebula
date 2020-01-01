@@ -3,7 +3,7 @@
 /**
 	A model context bind a ModelInstance to a model, which allows it to be rendered using an .n3 file.
 	
-	(C)2017-2018 Individual contributors, see AUTHORS file
+	(C)2017-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "graphics/graphicscontext.h"

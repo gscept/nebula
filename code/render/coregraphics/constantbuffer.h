@@ -10,7 +10,7 @@
 	buffer to be bound to the graphics device but still be able to accomodate
 	new objects with new unique constants.
 
-	(C)2017-2018 Individual contributors, see AUTHORS file
+	(C)2017-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "ids/id.h"

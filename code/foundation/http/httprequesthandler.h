@@ -15,7 +15,7 @@
     and return with a HttpStatus code.
 
     (C) 2007 Radon Labs GmbH
-    (C) 2013-2018 Individual contributors, see AUTHORS file
+    (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "core/refcounted.h"
 #include "http/httprequest.h"

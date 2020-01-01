@@ -5,7 +5,7 @@
 	
 	The ImGui console uses ImGui to produce a live interactive console.
 	
-	(C) 2012-2016 Individual contributors, see AUTHORS file
+	(C) 2012-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"

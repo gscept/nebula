@@ -6,7 +6,7 @@
     Defines a clipping frustum made of 6 planes.
     
     (C) 2010 Radon Labs GmbH
-    (C) 2013-2018 Individual contributors, see AUTHORS file
+    (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "math/plane.h"
 #include "math/matrix44.h"

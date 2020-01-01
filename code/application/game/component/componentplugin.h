@@ -7,7 +7,7 @@
 
 	Plugins can be ex. lua scripts or reloadable shared libraries.
 
-	(C) 2018 Individual contributors, see AUTHORS file
+	(C) 2018-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "util/string.h"

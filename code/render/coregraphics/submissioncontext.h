@@ -12,7 +12,7 @@
 	incur a synchronization, and should only be done after the context has been submitted.
 
 
-	(C) 2019 Individual contributors, see AUTHORS file
+	(C) 2019-2020 Individual contributors, see AUTHORS file
 */
 #include "ids/id.h"
 #include "coregraphics/config.h"

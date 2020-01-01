@@ -7,7 +7,7 @@
     Declare all plugins here which should be createable through RTTI.
     
     (C) 2013 Gustav Sterbrant
-    (C) 2013-2019 Individual contributors, see AUTHORS file
+    (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 
 #include "ssaoplugin.h"

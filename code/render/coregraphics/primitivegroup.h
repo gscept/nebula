@@ -7,7 +7,7 @@
     buffer plus the primitive topology (triangle list, etc...).
     
     (C) 2006 Radon Labs GmbH
-    (C) 2013-2018 Individual contributors, see AUTHORS file
+    (C) 2013-2020 Individual contributors, see AUTHORS file
 */    
 #include "coregraphics/primitivetopology.h"
 #include "coregraphics/vertexlayout.h"

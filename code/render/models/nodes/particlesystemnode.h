@@ -6,7 +6,7 @@
     The ParticleSystemNode wraps a ParticleSystem object into a 
     ModelNode for rendering using materials.
     
-    (C) 2011-2018 Individual contributors, see AUTHORS file
+    (C) 2011-2020 Individual contributors, see AUTHORS file
 */    
 #include "shaderstatenode.h"
 #include "particles/emitterattrs.h"

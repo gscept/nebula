@@ -5,7 +5,7 @@
 	
 	Nebula renderer for  the IMGUI dynamic UI library.
 	
-	(C) 2012-2016 Individual contributors, see AUTHORS file
+	(C) 2012-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "coregraphics/texture.h"

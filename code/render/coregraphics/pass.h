@@ -5,7 +5,7 @@
   
     A pass describe a set of textures used for rendering
     
-    (C) 2015-2018 Individual contributors, see AUTHORS file
+    (C) 2015-2020 Individual contributors, see AUTHORS file
 */    
 //------------------------------------------------------------------------------
 #include "ids/id.h"

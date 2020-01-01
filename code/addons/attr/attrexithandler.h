@@ -7,7 +7,7 @@
     definitions before shutdown.
     
     (C) 2008 Radon Labs
-	(C) 2013-2016 Individual contributors, see AUTHORS file
+	(C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "core/exithandler.h"
 

@@ -8,7 +8,7 @@
     A proportional feedback loop with correct angular interpolation.
     
     (C) 2004 RadonLabs GmbH
-	(C) 2013-2018 Individual contributors, see AUTHORS file
+	(C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 #include "timing/time.h"

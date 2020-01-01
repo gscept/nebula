@@ -10,7 +10,7 @@
 	This type of loader exists to provide code-local data, like a const float* mesh, or texture,
 	or for example font data loaded as a const char* from some foreign library. 
 
-	(C)2017-2018 Individual contributors, see AUTHORS file
+	(C)2017-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "resourcepool.h"

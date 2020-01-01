@@ -4,7 +4,7 @@
 	A barrier is a memory barrier between two GPU operations, 
 	and thus allows for a guarantee of concurrency.
 
-	(C)2017-2018 Individual contributors, see AUTHORS file
+	(C)2017-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "ids/id.h"

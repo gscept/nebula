@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //  levelloader.cc
-//  (C) 2018-2019 Individual contributors, see AUTHORS file
+//  (C) 2018-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "levelloader.h"

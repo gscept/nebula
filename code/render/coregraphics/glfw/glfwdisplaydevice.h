@@ -5,7 +5,7 @@
 
 	GLFW based OpenGL implementation of DisplayDevice class.
 
-	(C) 2013-2018 Individual contributors, see AUTHORS file
+	(C) 2013-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "GLFW/glfw3.h"

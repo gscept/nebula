@@ -16,7 +16,7 @@
     with GetMessages.
 
     (C) 2009 Radon Labs
-	(C) 2013-2018 Individual contributors, see AUTHORS file
+	(C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "io/memorystream.h"
 #include "io/binaryreader.h"

@@ -3,7 +3,7 @@
 /**
 	Implements the shader server used by Vulkan.
 	
-	(C) 2016-2018 Individual contributors, see AUTHORS file
+	(C) 2016-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"

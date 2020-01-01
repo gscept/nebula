@@ -6,7 +6,7 @@
 	All functions in the Vulkan namespace are internal helper functions specifically for Vulkan,
 	the other functions implement the abstraction layer.
 
-	(C) 2018 Individual contributors, see AUTHORS file
+	(C) 2018-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "coregraphics/graphicsdevice.h"
