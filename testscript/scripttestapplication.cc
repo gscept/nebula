@@ -81,7 +81,7 @@ ScriptTestApplication::Open()
     //PyRun_SimpleString("import FooMod");
     PyRun_SimpleString("print('a')");
 
-    //PyRun_SimpleString("import FooMod");
+    PyRun_SimpleString("import FooMod");
     py::module main = py::module::import("__main__");
     foo f;
     main.attr("f") = &f;    
