@@ -2,7 +2,7 @@
 //  charactercontext.cc
 //  (C) 2018-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "render/stdneb.h"
 #include "charactercontext.h"
 #include "skeleton.h"
 #include "characters/streamskeletonpool.h"

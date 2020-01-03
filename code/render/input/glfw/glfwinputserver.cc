@@ -2,7 +2,7 @@
 //  glfwinputserver.cc
 //  (C) 2013-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "render/stdneb.h"
 #include "input/glfw/glfwinputserver.h"
 #include "coregraphics/displaydevice.h"
 #include "input/keyboard.h"

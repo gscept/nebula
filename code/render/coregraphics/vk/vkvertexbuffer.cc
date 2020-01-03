@@ -2,7 +2,7 @@
 //  vkvertexbuffer.cc
 //  (C) 2019-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "render/stdneb.h"
 #include "coregraphics/vk/vkgraphicsdevice.h"
 #include "coregraphics/vk/vkutilities.h"
 #include "vkvertexbuffer.h"

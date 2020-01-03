@@ -2,7 +2,7 @@
 //  streamskeletonpool.cc
 //  (C) 2018-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "render/stdneb.h"
 #include "streamskeletonpool.h"
 #include "nskfileformatstructs.h"
 #include "util/fourcc.h"

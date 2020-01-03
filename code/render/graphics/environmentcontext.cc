@@ -2,7 +2,7 @@
 //  environmentcontext.cc
 //  (C) 2018-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "render/stdneb.h"
 #include "environmentcontext.h"
 #include "shared.h"
 #include "coregraphics/shaderserver.h"

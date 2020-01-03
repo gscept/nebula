@@ -12,7 +12,7 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 
-#define _WIN32_WINNT 0x0503
+#define _WIN32_WINNT 0x0601
 
 #define NOGDICAPMASKS
 #define OEMRESOURCE

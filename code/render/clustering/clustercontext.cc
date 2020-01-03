@@ -2,7 +2,7 @@
 //  clustercontext.cc
 //  (C) 2019-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "render/stdneb.h"
 #include "clustercontext.h"
 #include "coregraphics/shader.h"
 #include "coregraphics/shaderrwbuffer.h"
