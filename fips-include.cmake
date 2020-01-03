@@ -53,7 +53,7 @@ set(N_QT ${DEFQT} CACHE STRING "Qt Version")
 set_property(CACHE N_QT PROPERTY STRINGS "N_QT4" "N_QT5")
 set(${N_QT} ON)
 
-find_package(PythonLibs 3.5 REQUIRED)
+find_package(Python 3.5 COMPONENTS Development REQUIRED)
 
 #physx
 

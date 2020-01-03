@@ -2,7 +2,7 @@
 //  componentmanager.cc
 //  (C) 2018-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "application/stdneb.h"
 #include "game/component/componentinterface.h"
 #include "componentmanager.h"
 

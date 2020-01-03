@@ -3,7 +3,7 @@
 //  (C) 2007 Radon Labs GmbH
 //  (C) 2013-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "application/stdneb.h"
 #include "userprofile.h"
 #include "loaderserver.h"
 #include "io/ioserver.h"

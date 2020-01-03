@@ -2,7 +2,7 @@
 //  componentinterface.cc
 //  (C) 2018-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "application/stdneb.h"
 #include "componentinterface.h"
 #include "io/binaryreader.h"
 #include "io/binarywriter.h"

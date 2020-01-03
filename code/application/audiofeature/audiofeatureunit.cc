@@ -2,7 +2,7 @@
 //  audiofeature/audiofeatureunit.cc
 //  (C) 2019-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "application/stdneb.h"
 #include "audiofeature/audiofeatureunit.h"
 #include "audioserver.h"
 #include "audiofeature/components/audioemittercomponent.h"

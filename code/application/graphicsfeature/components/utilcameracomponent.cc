@@ -2,7 +2,7 @@
 //  utilcameracomponent.cc
 //  (C) 2019-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "application/stdneb.h"
 #include "utilcameracomponent.h"
 #include "basegamefeature/managers/componentmanager.h"
 #include "game/component/componentserialization.h"

@@ -4,11 +4,11 @@
 
 nebula_begin_module(application)
 	fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/audio)
-	fips_deps(foundation render audio resource physics attr)
+	fips_deps(foundation render audio resource physics attr scripting)
 	fips_dir(.)
 		fips_files(
-			stdneb.h
-			stdneb.cc
+			application/stdneb.h
+			application/stdneb.cc
 		)
 	fips_dir(game)
 		fips_files(

@@ -2,7 +2,7 @@
 //  imguiconsole.cc
 //  (C) 2012-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "foundation/stdneb.h"
+#include "render/stdneb.h"
 #include "imguiconsole.h"
 #include "imgui.h"
 #include "imgui_internal.h"

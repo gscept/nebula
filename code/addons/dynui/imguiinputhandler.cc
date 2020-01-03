@@ -2,7 +2,7 @@
 //  imguiinputhandler.cc
 //  (C) 2012-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "render/stdneb.h"
 #include "imguiinputhandler.h"
 #include "input/inputserver.h"
 #include "imguicontext.h"
