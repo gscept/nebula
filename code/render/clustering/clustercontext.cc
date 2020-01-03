@@ -57,7 +57,7 @@ ClusterContext::~ClusterContext()
 /**
 */
 void 
-ClusterContext::Create(const Graphics::GraphicsEntityId camera, const CoreGraphics::WindowId window)
+ClusterContext::Create(float ZNear, float ZFar, const CoreGraphics::WindowId window)
 {
 	__bundle.OnBeforeFrame = nullptr;
 	__bundle.OnWaitForWork = nullptr;
@@ -78,15 +78,14 @@ ClusterContext::Create(const Graphics::GraphicsEntityId camera, const CoreGraphi
 	IndexT clusterAABBSlot = ShaderGetResourceSlot(state.clusterShader, "ClusterAABBs");
 
 	CoreGraphics::DisplayMode displayMode = CoreGraphics::WindowGetDisplayMode(window);
-	const Graphics::CameraSettings settings = Graphics::CameraContext::GetSettings(camera);
 
 	state.clusterDimensions[0] = Math::n_divandroundup(displayMode.GetWidth(), state.ClusterSubdivsX);
 	state.clusterDimensions[1] = Math::n_divandroundup(displayMode.GetHeight(), state.ClusterSubdivsY);
 	state.clusterDimensions[2] = state.ClusterSubdivsZ;
 
-	state.zDistribution = settings.GetZFar() / settings.GetZNear();
+	state.zDistribution = ZFar / ZNear;
 	state.zInvScale = float(state.clusterDimensions[2]) / Math::n_log2(state.zDistribution);
-	state.zInvBias = -(float(state.clusterDimensions[2]) * Math::n_log2(settings.GetZNear()) / Math::n_log2(state.zDistribution));
+	state.zInvBias = -(float(state.clusterDimensions[2]) * Math::n_log2(ZNear) / Math::n_log2(state.zDistribution));
 	state.invXResolution = 1.0f / displayMode.GetWidth();
 	state.invYResolution = 1.0f / displayMode.GetHeight();
 

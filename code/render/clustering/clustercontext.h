@@ -24,8 +24,8 @@ public:
 	/// destructor
 	virtual ~ClusterContext();
 
-	/// setup light context
-	static void Create(const Graphics::GraphicsEntityId camera, const CoreGraphics::WindowId window);
+	/// setup light context using CameraSettings
+	static void Create(float ZNear, float ZFar, const CoreGraphics::WindowId window);
 
 	/// get cluster buffer
 	static const CoreGraphics::ShaderRWBufferId GetClusterBuffer();
