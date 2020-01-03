@@ -89,6 +89,8 @@ SimpleViewerApplication::Open()
         SizeT width = this->GetCmdLineArgs().GetInt("-w", 1024);
         SizeT height = this->GetCmdLineArgs().GetInt("-h", 768);
         
+        const float zNear = 0.01f;
+        const float zFar = 1000.0f;
 
         CoreGraphics::WindowCreateInfo wndInfo =
         {
@@ -105,9 +107,9 @@ SimpleViewerApplication::Open()
 
         this->cam = Graphics::CreateEntity();
         Graphics::RegisterEntity<CameraContext, ObserverContext>(this->cam);
-        CameraContext::SetupProjectionFov(this->cam, width / (float)height, 45.f, 0.01f, 1000.0f);
+        CameraContext::SetupProjectionFov(this->cam, width / (float)height, 45.f, zNear, zFar);
 
-        Clustering::ClusterContext::Create(this->cam, this->wnd);
+        Clustering::ClusterContext::Create(zNear, zFar, this->wnd);
 		Lighting::LightContext::Create();
 		Characters::CharacterContext::Create();
         Dynui::ImguiContext::Create();
