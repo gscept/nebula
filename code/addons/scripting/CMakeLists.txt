@@ -13,7 +13,6 @@ fips_dir(python)
     fips_files(
         pythonserver.cc
         pythonserver.h
-        deargui.cpp
         conversion.h
         conversion.cc
     )
@@ -30,5 +29,3 @@ if (CMAKE_VERSION VERSION_EQUAL 3.16 OR
 else()
     target_include_directories(scripting PUBLIC ${Python_INCLUDE_DIR})
 endif()
-
-target_compile_options(scripting PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/bigobj>)

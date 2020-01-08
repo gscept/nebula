@@ -261,7 +261,7 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     deargui.def("set_scroll_y", &ImGui::SetScrollY
     , py::arg("scroll_y")
     , py::return_value_policy::automatic_reference);
-    deargui.def("set_scroll_here", &ImGui::SetScrollHere
+    deargui.def("set_scroll_here", &ImGui::SetScrollHereY
     , py::arg("center_y_ratio") = 0.5f
     , py::return_value_policy::automatic_reference);
     deargui.def("set_scroll_from_pos_y", &ImGui::SetScrollFromPosY
