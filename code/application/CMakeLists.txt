@@ -123,6 +123,11 @@ nebula_begin_module(application)
 			gamepagehandler.h
 			gamepagehandler.cc
 		)
+	fips_dir(scripting)
+		fips_files(
+			bindings.h
+			bindings.cc
+		)
 	fips_dir(.)
 nebula_end_module()
 

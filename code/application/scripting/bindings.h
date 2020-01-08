@@ -6,7 +6,7 @@
 #include "util/string.h"
 #include "util/dictionary.h"
 #include "util/variant.h"
-#include "python/conversion.h"
+#include "scripting/python/conversion.h"
 
 namespace pybind11
 {
