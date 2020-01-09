@@ -185,6 +185,7 @@ csMainX()
     SharedMemory[gl_LocalInvocationID.x] = LoadXZFromTexture(x,y);
     SharedMemory[min(2 * KERNEL_RADIUS + int(gl_LocalInvocationID.x), SHARED_MEM_SIZE - 1)] = LoadXZFromTexture(2 * KERNEL_RADIUS + x, y);
     groupMemoryBarrier();
+    barrier();
 
     const uint writePos = tileStart + uint(gl_LocalInvocationID.x);
     const uint tileEndClamped = min(tileEnd, uint(AOResolution.x));
@@ -228,6 +229,7 @@ csMainY()
     SharedMemory[gl_LocalInvocationID.x] = LoadYZFromTexture(x,y);
     SharedMemory[min(2 * KERNEL_RADIUS + int(gl_LocalInvocationID.x), SHARED_MEM_SIZE - 1)] = LoadYZFromTexture(x, 2 * KERNEL_RADIUS + y);
     groupMemoryBarrier();
+    barrier();
 
     const uint writePos = tileStart + gl_LocalInvocationID.x;
     const uint tileEndClamped = min(tileEnd, uint(AOResolution.y));
