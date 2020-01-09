@@ -1195,10 +1195,18 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	VkPhysicalDeviceProperties props;
 	vkGetPhysicalDeviceProperties(state.physicalDevices[state.currentDevice], &props);
 
+	// enable timeline semaphore extension
+	VkPhysicalDeviceTimelineSemaphoreFeaturesKHR timelineSemaphoreFeature =
+	{
+		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES_KHR,
+		nullptr,
+		true
+	};
+
 	VkDeviceCreateInfo deviceInfo =
 	{
 		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-		NULL,
+		&timelineSemaphoreFeature,
 		0,
 		(uint32_t)queueInfos.Size(),
 		&queueInfos[0],
@@ -1476,8 +1484,8 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	state.renderingFinishedSemaphores.Resize(info.numBufferedFrames);
 	for (i = 0; i < info.numBufferedFrames; i++)
 	{
-		state.presentSemaphores[i] = CreateSemaphore({});
-		state.renderingFinishedSemaphores[i] = CreateSemaphore({});
+		state.presentSemaphores[i] = CreateSemaphore({ SemaphoreType::Binary });
+		state.renderingFinishedSemaphores[i] = CreateSemaphore({ SemaphoreType::Binary });
 	}
 
 #pragma pop_macro("CreateSemaphore")
