@@ -186,26 +186,24 @@ FrameScript::Build()
 		const CoreGraphics::TextureId& res = textures.KeyAtIndex(i);
 		CoreGraphics::ImageLayout layout = CoreGraphics::TextureGetDefaultLayout(res);
 		const Util::Array<FrameOp::TextureDependency>& deps = textures.ValueAtIndex(i);
-		for (IndexT j = 0; j < deps.Size(); j++)
-		{
-			const FrameOp::TextureDependency& dep = deps[j];
-			const CoreGraphics::ImageSubresourceInfo& info = dep.subres;
-			CoreGraphics::BarrierAccess outAccess = layout == CoreGraphics::ImageLayout::Present ? CoreGraphics::BarrierAccess::TransferRead : CoreGraphics::BarrierAccess::ShaderRead;
-			CoreGraphics::BarrierStage outStage = outAccess == CoreGraphics::BarrierAccess::TransferRead ? CoreGraphics::BarrierStage::Transfer : CoreGraphics::BarrierStage::AllGraphicsShaders;
 
-			// render textures are created as shader read
-			if (dep.layout != layout)
+		const FrameOp::TextureDependency& dep = deps.Back();
+		const CoreGraphics::ImageSubresourceInfo& info = dep.subres;
+		CoreGraphics::BarrierAccess outAccess = dep.layout == CoreGraphics::ImageLayout::Present ? CoreGraphics::BarrierAccess::TransferRead : CoreGraphics::BarrierAccess::ShaderRead;
+		CoreGraphics::BarrierStage outStage = outAccess == CoreGraphics::BarrierAccess::TransferRead ? CoreGraphics::BarrierStage::Transfer : CoreGraphics::BarrierStage::AllGraphicsShaders;
+
+		// render textures are created as shader read
+		if (dep.layout != layout)
+		{
+			CoreGraphics::BarrierCreateInfo inf =
 			{
-				CoreGraphics::BarrierCreateInfo inf =
-				{
-					Util::String::Sprintf("End of Frame Texture Reset Transition %d", res.resourceId),
-					CoreGraphics::BarrierDomain::Global,
-					dep.stage,
-					outStage,
-					{ CoreGraphics::TextureBarrier{ res, info, dep.layout, layout, dep.access, outAccess } }, nullptr
-				};
-				this->resourceResetBarriers.Append(CoreGraphics::CreateBarrier(inf));
-			}
+				Util::String::Sprintf("End of Frame Texture Reset Transition %d", res.resourceId),
+				CoreGraphics::BarrierDomain::Global,
+				dep.stage,
+				outStage,
+				{ CoreGraphics::TextureBarrier{ res, info, dep.layout, layout, dep.access, outAccess } }, nullptr
+			};
+			this->resourceResetBarriers.Append(CoreGraphics::CreateBarrier(inf));
 		}
 	}
 }
