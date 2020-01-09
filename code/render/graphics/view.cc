@@ -10,6 +10,10 @@
 #include "cameracontext.h"
 #include "stage.h"
 
+#ifndef PUBLIC_BUILD
+#include "debug/framescriptinspector.h"
+#endif
+
 using namespace CoreGraphics;
 namespace Graphics
 {
@@ -70,7 +74,13 @@ View::Render(const IndexT frameIndex, const Timing::Time time)
 
 	// run the actual script
 	if (this->script != nullptr)
+	{
+#ifndef PUBLIC_BUILD
+		Debug::FrameScriptInspector::Run(this->script);
+#endif
+
 		this->script->Run(frameIndex);
+	}
 }
 
 //------------------------------------------------------------------------------
