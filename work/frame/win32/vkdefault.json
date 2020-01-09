@@ -54,7 +54,7 @@
 			{
 				name: "ColorBuffer",
 				format: "SRGBA8",
-				usage: "Render",
+				usage: "Render|Copy",
 				relative: true,
 				width: 1.0,
 				height: 1.0,
@@ -128,7 +128,7 @@
 				name: "LightBuffer",
 				format: "R11G11B10F",
 				relative: true,
-				usage: "ReadWrite",
+				usage: "ReadWrite|Copy",
 				width: 1.0,
 				height: 1.0,
 				type: "Texture2D"
