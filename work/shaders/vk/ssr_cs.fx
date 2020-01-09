@@ -11,18 +11,18 @@
 #include "lib/techniques.fxh"
 #include "lib/shared.fxh"
 
-write rgba16f image2D ReflectionBuffer;
+write rg16f image2D ReflectionBuffer;
 
 varblock SSRBlock
 {
-	mat4 ViewToTextureSpace = mat4(1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1);
+	mat4 ViewToTextureSpace;
 };
 
 const float zThickness = 0.35; // How thick is each depth fragment? higher value yields some wierd smudging at edges of reflection, but thinner z means we might miss some geometry. This should essentially be the average thickness of the geometry. to do dynamically would be a nightmare however...
 
 // DDA tracing constants
 const float pixelStride = 1; // lets you skip pixels during iteration. Larger stride means longer rays with same number of samples.
-const float maxSteps = 16.0f; //Less steps means shorter reflections, but better performance
+const float maxSteps = 320.0f; //Less steps means shorter reflections, but better performance
 const float maxDistance = 100; //Not orthogonal to max steps. reflection of surfaces far away in world space are prone to rapid shifts with only a slight change in camera positioning, which can lead to objectionable temporal flicker. Setting this parameter can help mitigate that.
 const float jitter = 0.30; // Number between 0 and 1 for how far to bump the ray in stride units to conceal banding artifacts
 
@@ -70,7 +70,7 @@ bool TraceScreenSpaceRay(in vec3 rayOrigin,
 	const vec3 rayEnd = rayOrigin + rayDirection * rayLength;
 	
 	// TEMP: the screen-pixel-projection matrix should be precomputed
-	const vec2 ScreenSize = imageSize(ReflectionBuffer);
+	const vec2 ScreenSize = imageSize(ReflectionBuffer) * 2;
 	const vec2 InvScreenSize = vec2(1.0f) / ScreenSize;
 
 	const float sx = ScreenSize[0] / 2.0f;
@@ -199,7 +199,7 @@ bool RaymarchScreenSpace(in vec3 rayOrigin,
 	vec3 reflection = (rayDirection * rayOffset) + rayOrigin;
 	float rayLength = length(((rayDirection * marchingStepSize) * maxMarchingSteps) + reflection);
 
-	const vec2 ScreenSize = imageSize(ReflectionBuffer);
+	const vec2 ScreenSize = imageSize(ReflectionBuffer) * 2;
 
 	// calculate amount of steps to take
 	float numSteps = maxMarchingSteps;
@@ -248,7 +248,7 @@ void
 csMain()
 {
 	ivec2 location = ivec2(gl_GlobalInvocationID.xy);
-	const vec2 screenSize = imageSize(ReflectionBuffer);
+    const vec2 screenSize = imageSize(ReflectionBuffer);
 	if (location.x >= screenSize.x || location.y > screenSize.y)
 		return;
 
@@ -258,22 +258,20 @@ csMain()
 
 	vec4 n = sample2DLod(NormalBuffer, LinearState, UV, 0);
 	vec3 viewSpaceNormal = normalize((transpose(inverse(mat3(View))) * normalize(n.xyz)).xyz);
-	float pixelDepth = fetch2D(DepthBuffer, Basic2DSampler, location, 0).r;
+	float pixelDepth = fetch2D(DepthBuffer, Basic2DSampler, location * 2, 0).r;
 	
 	vec3 rayOrigin = PixelToView(UV, pixelDepth).xyz;
 
 	vec3 viewDir = normalize(rayOrigin);
 	vec3 reflectionDir = (reflect(viewDir, viewSpaceNormal));
 
-	vec2 hitTexCoord = vec2(0.0,0.0);
-	vec4 reflectionColor = vec4(0, 0, 0, 0);
+    // initialize off screen
+	vec2 hitTexCoord = vec2(0,0);
+	vec4 reflectionColor = vec4(-1.0, -1.0, 0, 0);
 	if (TraceScreenSpaceRay(rayOrigin, reflectionDir, hitTexCoord))
 	{
-		reflectionColor = sample2DLod(AlbedoBuffer, LinearState, (hitTexCoord * invScreenSize), 0);
-	}
-	else
-	{
-		//TODO: Get fall-back value.
+        // xy is screen uvs of hit
+        reflectionColor = vec4((hitTexCoord * invScreenSize), 0, 0);
 	}
 	
 	imageStore(ReflectionBuffer, location, reflectionColor);

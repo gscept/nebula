@@ -53,13 +53,13 @@ SSRPlugin::Setup()
     for (IndexT i = 0; i < numFrames; ++i)
     {
         this->ssrTables[i] = ShaderCreateResourceTable(this->shader, NEBULA_BATCH_GROUP);
-        ResourceTableSetRWTexture(this->ssrTables[i], { this->textures["SSRBuffer"], this->ssrBufferSlot, 0, SamplerId::Invalid() });
+        ResourceTableSetRWTexture(this->ssrTables[i], { this->textures["SSRTraceBuffer"], this->ssrBufferSlot, 0, SamplerId::Invalid() });
         ResourceTableCommitChanges(this->ssrTables[i]);
     }
 
 	this->program = ShaderGetProgram(this->shader, ShaderFeatureFromString("Alt0"));
 	
-	FramePlugin::AddCallback("SSR-Run", [this](IndexT)
+	FramePlugin::AddCallback("SSR-Trace", [this](IndexT)
 	{
         const CameraSettings& cameraSettings = CameraContext::GetSettings(Graphics::GraphicsServer::Instance()->GetCurrentView()->GetCamera());
 
@@ -69,7 +69,7 @@ SSRPlugin::Setup()
 		CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "Screen Space Reflections");
 #endif
         
-        TextureDimensions dims = TextureGetDimensions(this->textures["SSRBuffer"]);
+        TextureDimensions dims = TextureGetDimensions(this->textures["SSRTraceBuffer"]);
 
         float sx = (float)dims.width / 2.0f;
         float sy = (float)dims.height / 2.0f;
@@ -104,6 +104,41 @@ SSRPlugin::Setup()
 		CoreGraphics::CommandBufferEndMarker(GraphicsQueueType);
 #endif
 	});
+    /*
+    FramePlugin::AddCallback("SSR-Resolve", [this](IndexT)
+    {
+        const CameraSettings& cameraSettings = CameraContext::GetSettings(Graphics::GraphicsServer::Instance()->GetCurrentView()->GetCamera());
+
+        Math::matrix44 view = CameraContext::GetTransform(Graphics::GraphicsServer::Instance()->GetCurrentView()->GetCamera());
+
+#if NEBULA_GRAPHICS_DEBUG
+        CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "Screen Space Reflections");
+#endif
+
+        TextureDimensions dims = TextureGetDimensions(this->textures["ReflectionBuffer"]);
+
+        uint ssrOffset = CoreGraphics::SetComputeConstants(MainThreadConstantBuffer, ssrBlock);
+
+        IndexT frameIndex = CoreGraphics::GetBufferedFrameIndex();
+
+        ResourceTableSetConstantBuffer(this->ssrTables[frameIndex], { this->constants, this->constantsSlot, 0, false, false, sizeof(SsrCs::SSRBlock), (SizeT)ssrOffset });
+        ResourceTableCommitChanges(this->ssrTables[frameIndex]);
+
+        CoreGraphics::SetShaderProgram(this->program);
+        CoreGraphics::SetResourceTable(this->ssrTables[frameIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+
+        const int TILE_SIZE = 32;
+        int workGroups[2] = {
+            (dims.width + (dims.width % TILE_SIZE)) / TILE_SIZE,
+            (dims.height + (dims.height % TILE_SIZE)) / TILE_SIZE
+        };
+        CoreGraphics::Compute(workGroups[0], workGroups[1], 1);
+
+#if NEBULA_GRAPHICS_DEBUG
+        CoreGraphics::CommandBufferEndMarker(GraphicsQueueType);
+#endif
+    });
+    */
 }
 
 //------------------------------------------------------------------------------
