@@ -22,6 +22,7 @@
 #include "util/stringatom.h"
 #include "util/arraystack.h"
 #include "graphicsentity.h"
+#include "coregraphics/window.h"
 
 #define _DeclarePluginContext() \
 private:\
@@ -187,7 +188,7 @@ struct GraphicsContextFunctionBundle
     void(*OnDiscardView)(const Ptr<Graphics::View>& view);
     void(*OnAttachEntity)(Graphics::GraphicsEntityId entity);
     void(*OnRemoveEntity)(Graphics::GraphicsEntityId entity);
-    void(*OnWindowResized)(IndexT windowId, SizeT width, SizeT height);
+    void(*OnWindowResized)(const CoreGraphics::WindowId windowId, SizeT width, SizeT height);
 
 	// frame script callbacks
     void(*OnRenderAsPlugin)(const IndexT frameIndex, const Timing::Time frameTime, const Util::StringAtom& filter);

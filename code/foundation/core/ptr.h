@@ -55,11 +55,12 @@ public:
 	Ptr(OTHERTYPE* rhs)
 	{
 		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value, "Implicit cast assumes left hand side must be base of right");
-		TYPE* p = static_cast<TYPE*>(rhs);
+		TYPE* p = reinterpret_cast<TYPE*>(rhs);
 		if (p != this->ptr)
 		{
-			this->ptr = reinterpret_cast<TYPE*>(rhs);
-			if (this->ptr) this->ptr->AddRef();
+			this->ptr = p;
+			if (this->ptr) 
+				this->ptr->AddRef();
 		}
 	}
 	/// construct from smart pointer of other type
@@ -71,7 +72,8 @@ public:
 		if (p != this->ptr)
 		{
 			this->ptr = p;
-			if (nullptr != this->ptr) this->ptr->AddRef();
+			if (nullptr != this->ptr) 
+				this->ptr->AddRef();
 		}
 	}
 	/// construct from smart pointer of other type

@@ -22,6 +22,7 @@ Jobs::JobSyncId ParticleContext::jobSync;
 */
 ParticleContext::ParticleContext()
 {
+	// empty
 }
 
 //------------------------------------------------------------------------------
@@ -29,6 +30,7 @@ ParticleContext::ParticleContext()
 */
 ParticleContext::~ParticleContext()
 {
+	// empty
 }
 
 //------------------------------------------------------------------------------
@@ -39,9 +41,6 @@ ParticleContext::Create()
 {
 	__bundle.OnBeforeFrame = ParticleContext::OnBeforeFrame;
 	__bundle.OnWaitForWork = ParticleContext::OnWaitForWork;
-	__bundle.OnBeforeView = nullptr;
-	__bundle.OnAfterView = nullptr;
-	__bundle.OnAfterFrame = nullptr;
 	__bundle.StageBits = &ParticleContext::__state.currentStage;
 #ifndef PUBLIC_BUILD
 	__bundle.OnRenderDebug = ParticleContext::OnRenderDebug;
