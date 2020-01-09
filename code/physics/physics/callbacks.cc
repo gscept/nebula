@@ -1,7 +1,7 @@
 
 //------------------------------------------------------------------------------
 //  callbacks.cc
-//  (C) 2019 Individual contributors, see AUTHORS file
+//  (C) 2019-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "PxPhysicsAPI.h"

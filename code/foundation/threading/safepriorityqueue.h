@@ -8,7 +8,7 @@
     for inter-thread communications.
     
     (C) 2006 Radon Labs GmbH
-    (C) 2013-2018 Individual contributors, see AUTHORS file
+    (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "util/queue.h"
 #include "threading/criticalsection.h"

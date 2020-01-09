@@ -6,7 +6,7 @@
     Platform independent wrapper class for the Sockets API.
     
     (C) 2006 Radon Labs GmbH
-    (C) 2013-2018 Individual contributors, see AUTHORS file
+    (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #if (__WIN32__ || __XBOX360__)
 #include "net/win360/win360socket.h"

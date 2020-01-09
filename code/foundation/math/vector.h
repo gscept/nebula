@@ -9,7 +9,7 @@
     in 3d space and always has a w component of 0.0.
     
     (C) 2007 Radon Labs GmbH
-    (C) 2013-2018 Individual contributors, see AUTHORS file
+    (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 
 #if __USE_MATH_DIRECTX

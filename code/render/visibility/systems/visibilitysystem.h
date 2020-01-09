@@ -33,7 +33,7 @@
 	Bruteforce system:
 		Doesn't do anything but view frustum culling on everything in the scene.
 
-	(C) 2018 Individual contributors, see AUTHORS file
+	(C) 2018-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "math/matrix44.h"

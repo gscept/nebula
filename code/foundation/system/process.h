@@ -6,7 +6,7 @@
     Launch an external application.
     
     (C) 2008 Radon Labs GmbH
-    (C) 2013-2016 Individual contributors, see AUTHORS file
+    (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #if __WIN32__
 #include "win32/win32process.h"

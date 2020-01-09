@@ -3,7 +3,7 @@
 /**
 	A fence is a CPU-GPU sync object, used to let the CPU wait for the GPU to finish some work.
 				
-	(C) 2018 Individual contributors, see AUTHORS file
+	(C) 2018-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "ids/id.h"

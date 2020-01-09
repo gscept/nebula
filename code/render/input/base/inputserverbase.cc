@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 //  inputserverbase.cc
 //  (C) 2007 Radon Labs GmbH
-//  (C) 2013-2018 Individual contributors, see AUTHORS file
+//  (C) 2013-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "input/base/inputserverbase.h"
@@ -93,7 +93,7 @@ InputServerBase::Close()
     // release default input handlers
     this->defaultKeyboard = nullptr;
     this->defaultMouse = nullptr;
-    this->defaultGamePad.Fill(0);
+    this->defaultGamePad.Fill(nullptr);
 
     this->isOpen = false;
 }

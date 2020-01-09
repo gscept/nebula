@@ -5,7 +5,7 @@
 
 	The actual allocation is handled by the MemoryIndexBufferPool
 
-	(C)2017-2018 Individual contributors, see AUTHORS file
+	(C)2017-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "resources/resourceid.h"

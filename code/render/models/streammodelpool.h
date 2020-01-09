@@ -3,7 +3,7 @@
 /**
 	Implements a resource loader for models
 	
-	(C)2017-2018 Individual contributors, see AUTHORS file
+	(C)2017-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"

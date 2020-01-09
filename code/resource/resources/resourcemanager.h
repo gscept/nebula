@@ -5,7 +5,7 @@
 	It contains a set of convenience functions (which is just a proxy for the Singleton),
 	and should be updated at least once per frame using Update().
 	
-	(C)2017-2018 Individual contributors, see AUTHORS file
+	(C)2017-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include <functional>

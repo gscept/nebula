@@ -3,7 +3,7 @@
 /**
     @class Game::GraphicsFeatureUnit
 
-    (C) 2018 Individual contributors, see AUTHORS file
+    (C) 2018-2020 Individual contributors, see AUTHORS file
 */
 #include "game/featureunit.h"
 #include "graphicsfeature/components/graphicscomponent.h"

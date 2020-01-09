@@ -5,7 +5,7 @@
 
     Win32 implementation of filewatcher
 
-    (C) 2019 Individual contributors, see AUTHORS file
+    (C) 2019-2020 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 #include "core/refcounted.h"

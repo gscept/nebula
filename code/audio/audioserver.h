@@ -6,7 +6,7 @@
 	Front-end of the Audio subsystem. Initializes the audio 
     subsystem.
 
-	(C) 2019 Individual contributors, see AUTHORS file
+	(C) 2019-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"

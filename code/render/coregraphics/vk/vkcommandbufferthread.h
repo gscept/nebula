@@ -3,7 +3,7 @@
 /**
 	This thread records commands to a Vulkan Command Buffer in its own thread.
 	
-	(C) 2016-2018 Individual contributors, see AUTHORS file
+	(C) 2016-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include <vulkan/vulkan.h>

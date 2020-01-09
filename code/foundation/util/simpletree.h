@@ -6,7 +6,7 @@
     A simple tree class which stores its nodes in Util::Arrays.
     
     (C) 2006 Radon Labs GmbH
-    (C) 2013-2018 Individual contributors, see AUTHORS file
+    (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 #include "util/array.h"
@@ -18,7 +18,7 @@ template<class VALUETYPE> class SimpleTree
 {
 public:
     /// public node class
-    class Node
+    class Node : public Core::RefCounted
     {
     public:
         /// default constructor
@@ -27,10 +27,6 @@ public:
         Node(const Node& parent, const VALUETYPE& val);
         /// destructor
         ~Node();
-        /// increment refcount
-        void AddRef();
-        /// decrement refcount
-        void Release();
         /// get read-only child by index
         const Node& operator[](IndexT i) const;
         /// get read/write child by index
@@ -69,7 +65,6 @@ public:
         const VALUETYPE& Value() const;
 
     private:
-        uint refCount;
         Node* parent;
         VALUETYPE value;
         Array<Ptr<Node> > children;
@@ -91,7 +86,6 @@ private:
 */
 template<class VALUETYPE>
 SimpleTree<VALUETYPE>::Node::Node() :
-    refCount(0),
     parent(0)
 {
     // empty
@@ -102,7 +96,6 @@ SimpleTree<VALUETYPE>::Node::Node() :
 */
 template<class VALUETYPE>
 SimpleTree<VALUETYPE>::Node::Node(const Node& p, const VALUETYPE& val) :
-    refCount(0),    
     parent(const_cast<Node*>(&p)),
     value(val)
 {
@@ -118,35 +111,8 @@ template<class VALUETYPE>
 SimpleTree<VALUETYPE>::Node::~Node()
 {
     #if NEBULA_BOUNDSCHECKS    
-    n_assert(0 == this->refCount);
+    //n_assert(0 == this->refCount);
     #endif
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-template<class VALUETYPE>
-void
-SimpleTree<VALUETYPE>::Node::AddRef()
-{
-    ++this->refCount;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-template<class VALUETYPE>
-void
-SimpleTree<VALUETYPE>::Node::Release()
-{
-    #if NEBULA_BOUNDSCHECKS
-    n_assert(this->refCount > 0);
-    #endif
-    --this->refCount;
-    if (this->refCount == 0)
-    {
-        n_delete(this);
-    }
 }
 
 //------------------------------------------------------------------------------

@@ -2,7 +2,7 @@
 #ifndef im3d_config_h
 #define im3d_config_h
 
-#include "stdneb.h"
+#include "render/stdneb.h"
 #include "core/config.h"
 #include "memory/memory.h"
 #include "math/float4.h"

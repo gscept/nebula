@@ -4,7 +4,7 @@
 	A frame pass prepares a rendering sequence, draws and subpasses must reside
 	within one of these objects.
 	
-	(C) 2016-2018 Individual contributors, see AUTHORS file
+	(C) 2016-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "frameop.h"

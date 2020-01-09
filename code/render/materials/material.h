@@ -3,7 +3,7 @@
 /**
 	Materials represent a set of settings and a correlated type, which tells the engine which shader to use and how
 
-	(C) 2018 Individual contributors, see AUTHORS file
+	(C) 2018-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "ids/id.h"

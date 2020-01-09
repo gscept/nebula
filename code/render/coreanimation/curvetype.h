@@ -6,7 +6,7 @@
     Describes the general data type of the keys stored in an animation curve.
     
     (C) 2008 Radon Labs GmbH
-    (C) 2013-2018 Individual contributors, see AUTHORS file
+    (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 #if !__NEBULA_JOB__

@@ -9,7 +9,7 @@
     to execute scripts of a specific language.
     
     (C) 2006 Radon Labs
-    (C) 2013-2018 Individual contributors, see AUTHORS file
+    (C) 2013-2020 Individual contributors, see AUTHORS file
 
 */
 #include "core/refcounted.h"

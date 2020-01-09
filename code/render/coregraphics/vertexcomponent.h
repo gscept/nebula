@@ -6,7 +6,7 @@
     Describes a single vertex component in a vertex layout description.
     
     (C) 2006 Radon Labs GmbH
-    (C) 2013-2018 Individual contributors, see AUTHORS file
+    (C) 2013-2020 Individual contributors, see AUTHORS file
 */    
 #if (__DX11__ || __DX9__ || __OGL4__ || __VULKAN__)
 #include "coregraphics/base/vertexcomponentbase.h"

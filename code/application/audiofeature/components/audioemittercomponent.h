@@ -6,7 +6,7 @@
 	Adds a sound resource to the entity and updates the spatial position and 
 	velocity of the sound upon transform updates.
 
-	(C) 2019 Individual contributors, see AUTHORS file
+	(C) 2019-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "game/component/component.h"

@@ -1,8 +1,8 @@
 //------------------------------------------------------------------------------
 //  animsamplejob.cc
-//  (C) 2018 Individual contributors, see AUTHORS file
+//  (C) 2018-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "render/stdneb.h"
 #include "jobs/jobs.h"
 #include "coreanimation/animsamplemixinfo.h"
 #include "animsamplemask.h"

@@ -4,7 +4,7 @@
     Implements a resource loader for physics shapes
     Can be either primitive shapes or meshes saved in seperate files
 
-    (C) 2019 Individual contributors, see AUTHORS file
+    (C) 2019-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"

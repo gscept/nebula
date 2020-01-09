@@ -6,7 +6,7 @@
     Base class for message handlers attached to Interface objects.
     
     (C) 2008 Radon Labs GmbH
-    (C) 2013-2018 Individual contributors, see AUTHORS file
+    (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "messaging/handler.h"
 #include "util/stringatom.h"

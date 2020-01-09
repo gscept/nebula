@@ -3,7 +3,7 @@
 /**
 	Adds a light probe component to graphics entities
 	
-	(C) 2017 Individual contributors, see AUTHORS file
+	(C) 2017-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "graphics/graphicscontext.h"

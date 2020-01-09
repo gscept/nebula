@@ -6,13 +6,13 @@
     Contains precompiled headers on the Win32 platform.
     
     (C) 2007 Radon Labs GmbH
-    (C) 2013-2018 Individual contributors, see AUTHORS file
+    (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
 
-#define _WIN32_WINNT 0x0503
+#define _WIN32_WINNT 0x0601
 
 #define NOGDICAPMASKS
 #define OEMRESOURCE

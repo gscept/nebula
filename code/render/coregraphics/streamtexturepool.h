@@ -7,7 +7,7 @@
     synchronous and asynchronous loading.
     
     (C) 2007 Radon Labs GmbH
-    (C) 2013-2018 Individual contributors, see AUTHORS file
+    (C) 2013-2020 Individual contributors, see AUTHORS file
 */    
 #if __DX11__
 #include "coregraphics/d3d11/d3d11streamtextureloader.h"

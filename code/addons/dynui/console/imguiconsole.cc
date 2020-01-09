@@ -1,8 +1,8 @@
 //------------------------------------------------------------------------------
 //  imguiconsole.cc
-//  (C) 2012-2016 Individual contributors, see AUTHORS file
+//  (C) 2012-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "foundation/stdneb.h"
+#include "render/stdneb.h"
 #include "imguiconsole.h"
 #include "imgui.h"
 #include "imgui_internal.h"
@@ -14,7 +14,6 @@
 #include "io/ioserver.h"
 #include "app/application.h"
 #include "pybind11/embed.h"
-#include "scripting/bindings.h"
 
 namespace py = pybind11;
 

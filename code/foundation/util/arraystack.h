@@ -10,7 +10,7 @@
 	Presented at CppCon 2016:
 	https://www.youtube.com/watch?v=vElZc6zSIXM
 
-    (C) 2018 Individual contributors, see AUTHORS file
+    (C) 2018-2020 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 

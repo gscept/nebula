@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 // framescriptloader.cc
-// (C) 2016-2018 Individual contributors, see AUTHORS file
+// (C) 2016-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "framescriptloader.h"

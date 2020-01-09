@@ -6,7 +6,7 @@
     Array class based on Util::Array for trivial and POD types that avoids
     any per element copying and constructor/destructor calls
 
-    (C) 2018 Individual contributors, see AUTHORS file
+    (C) 2018-2020 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 #include "util/array.h"

@@ -18,7 +18,7 @@
 	Also be careful when to call Unload, since we might have in-flight texture updates through Update, operating on a texture which may
 	have been deleted.
 	
-	(C) 2016-2018 Individual contributors, see AUTHORS file
+	(C) 2016-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"

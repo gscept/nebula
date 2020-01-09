@@ -1,8 +1,8 @@
 //------------------------------------------------------------------------------
 //  graphicsfeature/graphicsfeatureunit.cc
-//  (C) 2018 Individual contributors, see AUTHORS file
+//  (C) 2018-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "application/stdneb.h"
 #include "graphicsfeature/graphicsfeatureunit.h"
 #include "lighting/lightcontext.h"
 #include "models/modelcontext.h"
@@ -13,6 +13,7 @@
 #include "dynui/im3d/im3dcontext.h"
 #include "appgame/gameapplication.h"
 #include "graphics/environmentcontext.h"
+#include "clustering/clustercontext.h"
 
 using namespace Graphics;
 using namespace Visibility;
@@ -73,6 +74,7 @@ GraphicsFeatureUnit::OnActivate()
     ModelContext::Create();
     ObserverContext::Create();
     ObservableContext::Create();
+    Clustering::ClusterContext::Create(0.01f, 1000.0f, this->wnd);
     Lighting::LightContext::Create();
     Characters::CharacterContext::Create();
     Im3d::Im3dContext::Create();

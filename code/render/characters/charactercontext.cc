@@ -1,8 +1,8 @@
 //------------------------------------------------------------------------------
 //  charactercontext.cc
-//  (C) 2018 Individual contributors, see AUTHORS file
+//  (C) 2018-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "render/stdneb.h"
 #include "charactercontext.h"
 #include "skeleton.h"
 #include "characters/streamskeletonpool.h"
@@ -741,7 +741,7 @@ CharacterContext::OnAfterFrame(const IndexT frameIndex, const Timing::Time frame
 	if (CharacterContext::runningJobs.Size() > 0)
 	{
 		Util::Array<Jobs::JobId> jobs;
-		jobs.Reserve(500);
+		jobs.Reserve(CharacterContext::runningJobs.Size());
 		CharacterContext::runningJobs.DequeueAll(jobs);
 
 		// wait for all jobs to finish

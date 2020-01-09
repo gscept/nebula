@@ -6,7 +6,7 @@
     An input handler which represents one of at most 4 game pads.
 
     (C) 2007 Radon Labs GmbH
-    (C) 2013-2018 Individual contributors, see AUTHORS file
+    (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "input/inputhandler.h"
 #include "threading/criticalsection.h"

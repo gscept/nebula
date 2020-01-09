@@ -9,7 +9,7 @@
     cmd arg0[=]value0 arg1[=]value1 arg2[=]value2
     
     (C) 2006 Radon Labs GmbH
-    (C) 2013-2018 Individual contributors, see AUTHORS file
+    (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "util/array.h"
 #include "util/string.h"

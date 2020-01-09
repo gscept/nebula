@@ -6,7 +6,7 @@
     Defines the valid attribute value types as enum.
 
     (C) 2006 Radon Labs GmbH
-    (C) 2013-2018 Individual contributors, see AUTHORS file
+    (C) 2013-2020 Individual contributors, see AUTHORS file
 
 	@todo	Add quaternions and additional types that are missing
 */

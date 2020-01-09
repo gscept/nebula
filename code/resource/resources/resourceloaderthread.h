@@ -3,7 +3,7 @@
 /**
 	The resource loader thread is responsible to handle all ResourceLoaders that wish to load resources asynchronously
 	
-	(C)2017-2018 Individual contributors, see AUTHORS file
+	(C)2017-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "threading/thread.h"
