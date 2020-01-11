@@ -109,7 +109,7 @@ SimpleViewerApplication::Open()
 		Graphics::RegisterEntity<CameraContext, ObserverContext>(this->cam);
 		CameraContext::SetupProjectionFov(this->cam, width / (float)height, Math::n_deg2rad(60.f), 0.1f, 1000.0f);
 
-		Clustering::ClusterContext::Create(0.01f, 1000.0f, this->wnd);
+		Clustering::ClusterContext::Create(0.1f, 1000.0f, this->wnd);
 		Lighting::LightContext::Create();
 		Characters::CharacterContext::Create();
 		Im3d::Im3dContext::Create();
