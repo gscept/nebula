@@ -10,6 +10,7 @@ namespace ClusteredSceneData
 {
 
 Graphics::GraphicsEntityId entity;
+Graphics::GraphicsEntityId tower;
 Graphics::GraphicsEntityId ground;
 Util::Array<Graphics::GraphicsEntityId> entities;
 Util::Array<Util::String> entityNames;
@@ -83,6 +84,13 @@ void OpenScene()
     entities.Append(entity);
     entityNames.Append("Shitbox");
 
+    tower = Graphics::CreateEntity();
+    Graphics::RegisterEntity<ModelContext, ObservableContext>(tower);
+    ModelContext::Setup(tower, "mdl:Buildings/castle_tower.n3", "Viewer");
+    ModelContext::SetTransform(tower, Math::matrix44::translation(Math::float4(4, 0, -7, 1)));
+    entities.Append(tower);
+    entityNames.Append("Tower");
+
     ground = Graphics::CreateEntity();
     Graphics::RegisterEntity<ModelContext, ObservableContext>(ground);
     ModelContext::Setup(ground, "mdl:environment/Groundplane.n3", "Viewer");
@@ -92,6 +100,7 @@ void OpenScene()
 
     // setup visibility
     ObservableContext::Setup(entity, VisibilityEntityType::Model);
+    ObservableContext::Setup(tower, VisibilityEntityType::Model);
     ObservableContext::Setup(ground, VisibilityEntityType::Model);
 
     const Util::StringAtom modelRes[] = { "mdl:Units/Unit_Archer.n3",  "mdl:Units/Unit_Footman.n3",  "mdl:Units/Unit_Spearman.n3" };

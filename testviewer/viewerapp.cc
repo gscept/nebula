@@ -23,6 +23,7 @@
 #include "graphics/environmentcontext.h"
 #include "clustering/clustercontext.h"
 #include "scenes/scenes.h"
+#include "debug/framescriptinspector.h"
 
 using namespace Timing;
 using namespace Graphics;
@@ -272,6 +273,8 @@ SimpleViewerApplication::RenderUI()
         ImGui::EndMainMenuBar();
     }
     ImGui::PopStyleColor();
+
+    Debug::FrameScriptInspector::Run(this->view->GetFrameScript());
 }
 
 //------------------------------------------------------------------------------
