@@ -52,7 +52,7 @@ public:
 	static void Setup(const Graphics::GraphicsEntityId id, VisibilityEntityType entityType);
 
 	/// runs before frame is updated
-	static void OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime, const Timing::Time time, const Timing::Tick ticks);
+	static void OnBeforeFrame(const Graphics::FrameContext& ctx);
 
 	/// create context
 	static void Create();
@@ -71,7 +71,7 @@ public:
 	static VisibilitySystem* CreateBruteforceSystem(const BruteforceSystemLoadInfo& info);
 
 	/// wait for all visibility jobs
-	static void WaitForVisibility(const IndexT frameIndex, const Timing::Time frameTime);
+	static void WaitForVisibility(const Graphics::FrameContext& ctx);
 
 #ifndef PUBLIC_BUILD
 	/// render debug

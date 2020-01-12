@@ -68,7 +68,7 @@ ObserverContext::Setup(const Graphics::GraphicsEntityId id, VisibilityEntityType
 /**
 */
 void 
-ObserverContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime, const Timing::Time time, const Timing::Tick ticks)
+ObserverContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 {
 	const Util::Array<VisibilityEntityType>& observerTypes = observerAllocator.GetArray<ObserverEntityType>();
 	const Util::Array<VisibilityEntityType>& observeeTypes = ObservableContext::observeeAllocator.GetArray<ObservableEntityType>();
@@ -364,7 +364,7 @@ ObserverContext::CreateBruteforceSystem(const BruteforceSystemLoadInfo& info)
 /**
 */
 void
-ObserverContext::WaitForVisibility(const IndexT frameIndex, const Timing::Time frameTime)
+ObserverContext::WaitForVisibility(const Graphics::FrameContext& ctx)
 {
 	if (ObserverContext::runningJobs.Size() > 0)
 	{
