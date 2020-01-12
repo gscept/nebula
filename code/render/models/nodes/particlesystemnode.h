@@ -35,7 +35,9 @@ public:
     /// get emitter attributes
     const Particles::EmitterAttrs& GetEmitterAttrs() const;
 	/// get emitter mesh
-	const CoreGraphics::MeshId GetEmitterMesh() const;
+	const Particles::EmitterMesh& GetEmitterMesh() const;
+	/// get emitter sample buffer
+	const Particles::EnvelopeSampleBuffer& GetSampleBuffer() const;
 
 	struct Instance : public TransformNode::Instance
 	{
@@ -108,10 +110,19 @@ protected:
 //------------------------------------------------------------------------------
 /**
 */
-inline const CoreGraphics::MeshId
+inline const Particles::EmitterMesh&
 ParticleSystemNode::GetEmitterMesh() const
 {
-	return this->mesh;
+	return this->emitterMesh;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const Particles::EnvelopeSampleBuffer& 
+ParticleSystemNode::GetSampleBuffer() const
+{
+	return this->sampleBuffer;
 }
 
 //------------------------------------------------------------------------------

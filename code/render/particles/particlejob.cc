@@ -34,17 +34,17 @@ using namespace Math;
 
 
 /// entry point of the job
-void ParticleJobFunc(const Jobs::JobFuncContext& ctx);
+void ParticleStepJob(const Jobs::JobFuncContext& ctx);
 /// lookup samples at index "sampleIndex" in sample-table
 const float* LookupEnvelopeSamples(const float sampleBuffer[ParticleSystemNumEnvelopeSamples*EmitterAttrs::NumEnvelopeAttrs], IndexT sampleIndex);
 /// update bounding box (min, max) with vector v
-void UpdateBbox(__Float4Arg v, float4 &min, float4 &max);
+void UpdateBbox(__Float4Arg v, float4& min, float4& max);
 /// update the age of one particle
-void ParticleUpdateAge(const JobUniformData *uniform, const Particle &in, Particle &out);
+void ParticleUpdateAge(const ParticleJobUniformPerJobData* perJobUniforms, const Particle& in, Particle& out);
 /// integrate the particle state with a given time-step
-void ParticleStep(const JobUniformData *uniform, const Particle &in, Particle &out, JobSliceOutputData *sliceOutput);
+void ParticleStep(const ParticleJobUniformData* perSystemUniforms, const ParticleJobUniformPerJobData* perJobUniforms, const Particle& in, Particle& out, ParticleJobSliceOutputData* sliceOutput);
 /// update particle system step
-void JobStep(const JobUniformData *uniform, unsigned int numParticles, const Particle *particles_input, Particle *particles_output, JobSliceOutputData *sliceOutput);
+void JobStep(const ParticleJobUniformData* perSystemUniforms, const ParticleJobUniformPerJobData* perJobUniforms, unsigned int numParticles, const Particle* particles_input, Particle* particles_output, ParticleJobSliceOutputData* sliceOutput);
 
 //------------------------------------------------------------------------------
 /**
@@ -63,7 +63,7 @@ LookupEnvelopeSamples(const float sampleBuffer[ParticleSystemNumEnvelopeSamples*
 */
 __forceinline 
 void
-UpdateBbox(__Float4Arg v, float4 &min, float4 &max)
+UpdateBbox(__Float4Arg v, float4& min, float4& max)
 {
     min = float4::minimize(min, v);
     max = float4::maximize(max, v);
@@ -73,19 +73,19 @@ UpdateBbox(__Float4Arg v, float4 &min, float4 &max)
 /**
 */
 __forceinline
-void ParticleUpdateAge(const JobUniformData *uniform, const Particle &in, Particle &out)
+void ParticleUpdateAge(const ParticleJobUniformPerJobData* perJobUniforms, const Particle& in, Particle& out)
 {
     // update particle's age
     out.oneDivLifeTime = in.oneDivLifeTime;
-    out.age = in.age + uniform->stepTime;
-    out.relAge = in.relAge + uniform->stepTime * in.oneDivLifeTime;
+    out.age = in.age + perJobUniforms->stepTime;
+    out.relAge = in.relAge + perJobUniforms->stepTime * in.oneDivLifeTime;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 __forceinline
-void ParticleStep(const JobUniformData *uniform, const Particle &in, Particle &out, JobSliceOutputData *sliceOutput)
+void ParticleStep(const ParticleJobUniformData* perSystemUniforms, const ParticleJobUniformPerJobData* perJobUniforms, const Particle& in, Particle& out, ParticleJobSliceOutputData* sliceOutput)
 {
     ++sliceOutput->numLivingParticles;
 
@@ -99,30 +99,30 @@ void ParticleStep(const JobUniformData *uniform, const Particle &in, Particle &o
     n_assert(sampleIndex >= 0);            
     n_assert(sampleIndex < ParticleSystemNumEnvelopeSamples);
 
-    const float* samples = LookupEnvelopeSamples(uniform->sampleBuffer, sampleIndex);
+    const float* samples = LookupEnvelopeSamples(perSystemUniforms->sampleBuffer, sampleIndex);
     
     // compute current particle acceleration
-    Math::float4 acceleration = uniform->windVector * samples[EmitterAttrs::AirResistance];
-    acceleration += uniform->gravity;
+    Math::float4 acceleration = perSystemUniforms->windVector * samples[EmitterAttrs::AirResistance];
+    acceleration += perSystemUniforms->gravity;
     acceleration *= samples[EmitterAttrs::Mass];
 
     float curStretchTime = 0.0f;
 
     // fix stretch time (if particle stretch is enabled
-    if (uniform->stretchTime > 0.0f)
+    if (perSystemUniforms->stretchTime > 0.0f)
     {
-        curStretchTime = (uniform->stretchTime > out.age) ? out.age : uniform->stretchTime;
+        curStretchTime = (perSystemUniforms->stretchTime > out.age) ? out.age : perSystemUniforms->stretchTime;
     }
 
     // update position, velocity, rotation
     ASSERT_POINT(in.position);
     ASSERT_VECTOR(in.velocity);
-    out.position = in.position + in.velocity * samples[EmitterAttrs::VelocityFactor] * uniform->stepTime;
+    out.position = in.position + in.velocity * samples[EmitterAttrs::VelocityFactor] * perJobUniforms->stepTime;
     ASSERT_POINT(out.position);
 	sliceOutput->bbox.extend(Math::bbox(out.position, Math::vector(samples[EmitterAttrs::Size])));
-    out.velocity = in.velocity + acceleration * uniform->stepTime;
+    out.velocity = in.velocity + acceleration * perJobUniforms->stepTime;
     ASSERT_VECTOR(out.velocity);
-    if (uniform->stretchToStart)
+    if (perSystemUniforms->stretchToStart)
     {
         // NOTE: don't support particle rotation in stretch modes
         out.stretchPosition = in.startPosition;
@@ -134,13 +134,13 @@ void ParticleStep(const JobUniformData *uniform, const Particle &in, Particle &o
         // ???
         out.stretchPosition = out.position -
                               (out.velocity - acceleration * curStretchTime * 0.5f) *
-                              (uniform->stretchTime * samples[EmitterAttrs::VelocityFactor]);
+                              (perSystemUniforms->stretchTime * samples[EmitterAttrs::VelocityFactor]);
         out.rotation = in.rotation;
     }                
     else
     {
         out.stretchPosition = out.position;
-        out.rotation = in.rotation + in.rotationVariation * samples[EmitterAttrs::RotationVelocity] * uniform->stepTime;
+        out.rotation = in.rotation + in.rotationVariation * samples[EmitterAttrs::RotationVelocity] * perJobUniforms->stepTime;
     }
     out.color.loadu(&(samples[EmitterAttrs::Red]));
 	out.color.w() = n_clamp(out.color.w(), 0, 1);
@@ -150,9 +150,9 @@ void ParticleStep(const JobUniformData *uniform, const Particle &in, Particle &o
 //------------------------------------------------------------------------------
 /**
 */
-void JobStep(const JobUniformData *uniform, unsigned int numParticles,
-             const Particle *particles_input, Particle *particles_output, 
-             JobSliceOutputData *sliceOutput)
+void JobStep(const ParticleJobUniformData* perSystemUniforms, const ParticleJobUniformPerJobData* perJobUniforms, unsigned int numParticles,
+             const Particle* particles_input, Particle* particles_output, 
+			 ParticleJobSliceOutputData* sliceOutput)
 {
     unsigned int i;
 	sliceOutput->bbox.begin_extend();
@@ -160,10 +160,10 @@ void JobStep(const JobUniformData *uniform, unsigned int numParticles,
     {
         const Particle &in = particles_input[i];
         Particle &out = particles_output[i];
-        ParticleUpdateAge(uniform, in, out);
+        ParticleUpdateAge(perJobUniforms, in, out);
         if (out.relAge < 1.0f)
         {
-            ParticleStep(uniform, in, out, sliceOutput);
+            ParticleStep(perSystemUniforms, perJobUniforms, in, out, sliceOutput);
         }
     }
 	sliceOutput->bbox.end_extend();
@@ -173,25 +173,28 @@ void JobStep(const JobUniformData *uniform, unsigned int numParticles,
 /**
 */
 void
-ParticleJobFunc(const Jobs::JobFuncContext& ctx)
+ParticleStepJob(const Jobs::JobFuncContext& ctx)
 {
-    const JobUniformData *uniform = (const JobUniformData *)ctx.uniforms[0];
-    n_assert(ctx.uniformSizes[0] == sizeof(JobUniformData));
+    const ParticleJobUniformData* perSystemUniforms = (const ParticleJobUniformData*) ctx.uniforms[0];
+    n_assert(ctx.uniformSizes[0] == sizeof(ParticleJobUniformData));
 
-    const Particle *particles_input = (const Particle *)ctx.inputs[0];
+	const ParticleJobUniformPerJobData* perJobUniforms = (ParticleJobUniformPerJobData*)ctx.uniforms[1];
+	n_assert(ctx.uniformSizes[1] == sizeof(ParticleJobUniformPerJobData));
+
+    const Particle* particles_input = (const Particle*) ctx.inputs[0];
     const unsigned int numParticles = ctx.inputSizes[0] / sizeof(Particle);
 
-    Particle *particles_output = (Particle *)ctx.outputs[0];
+    Particle* particles_output = (Particle*) ctx.outputs[0];
     n_assert( (ctx.outputSizes[0] / sizeof(Particle)) == numParticles);
 
-    JobSliceOutputData *sliceOutput = (JobSliceOutputData*)ctx.outputs[1];
-    n_assert(ctx.outputSizes[1] == sizeof(JobSliceOutputData));
+	ParticleJobSliceOutputData* sliceOutput = (ParticleJobSliceOutputData*)ctx.outputs[1];
+    n_assert(ctx.outputSizes[1] == sizeof(ParticleJobSliceOutputData));
 
     sliceOutput->numLivingParticles = 0;
 	sliceOutput->bbox = Math::bbox();
 
     n_assert(2 == ctx.numOutputs);
-    JobStep(uniform, numParticles, particles_input, particles_output, sliceOutput);
+    JobStep(perSystemUniforms, perJobUniforms, numParticles, particles_input, particles_output, sliceOutput);
 }
 
 } // namespace Particles

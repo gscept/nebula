@@ -10,10 +10,16 @@
 #include "graphics/graphicscontext.h"
 #include "models/model.h"
 #include "models/nodes/modelnode.h"
+#include "models/nodes/particlesystemnode.h"
 #include "jobs/jobs.h"
+#include "util/ringbuffer.h"
+#include "particle.h"
 namespace Particles
 {
 
+class EmitterAttrs;
+class EmitterMesh;
+class EnvelopeSampleBuffer;
 class ParticleContext : public Graphics::GraphicsContext
 {
 	_DeclareContext();
@@ -37,11 +43,9 @@ public:
 	static void Setup(const Graphics::GraphicsEntityId id);
 
 	/// show particle based on index fetched from GetParticleId
-	static void ShowParticle(const Graphics::GraphicsEntityId id, const IndexT particleId);
+	static void ShowParticle(const Graphics::GraphicsEntityId id);
 	/// hide particle
-	static void HideParticle(const Graphics::GraphicsEntityId id, const IndexT particleId);
-	/// get particle node id by name
-	static const IndexT GetParticleId(const Graphics::GraphicsEntityId id, const Util::StringAtom& name);
+	static void HideParticle(const Graphics::GraphicsEntityId id);
 
 	/// start playing particle
 	static void Play(const Graphics::GraphicsEntityId id, const PlayMode mode);
@@ -49,9 +53,9 @@ public:
 	static void Stop(const Graphics::GraphicsEntityId id);	
 
 	/// start particle updating when frame starts
-	static void OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime, const Timing::Time time, const Timing::Tick ticks);
+	static void OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
 	/// stop particle updating when frame ends
-	static void OnWaitForWork(const IndexT frameIndex, const Timing::Time frameTime);
+	static void OnWaitForWork(const Graphics::FrameContext& ctx);
 
 #ifndef PUBLIC_DEBUG    
 	/// debug rendering
@@ -66,22 +70,53 @@ private:
 		Timing::Time prevEmissionTime;
 		Timing::Time emissionStartTimeOffset;
 		IndexT emissionCounter : 30;
-		bool firstFrame : 1;
+		bool initial : 1;
 		bool playing : 1;
+		bool stopping : 1;
+		bool stopped : 1;
+		bool restarting : 1;
+		bool firstFrame : 1;
+	};
+
+	struct ParticleSystemRuntime
+	{
+		Models::ParticleSystemNode::Instance* node;
+		Util::RingBuffer<Particle> particles;
+		Math::matrix44 transform;
+		Math::bbox boundingBox;
+		SizeT emissionCounter;
+
+		ParticleJobUniformPerJobData perJobUniformData;
+		ParticleJobUniformData uniformData;
+		SizeT outputCapacity;
+		void* outputData;
+	};
+
+	struct ParticleJobOutput
+	{
+		Math::bbox bbox;
+		unsigned int numLivingParticles;
 	};
 
 	enum
 	{
-		ParticleNodeMap,
+		ParticleSystems,
 		ModelId,
 		Runtime
 	};
 	typedef Ids::IdAllocator<
-		Util::Dictionary<Util::StringAtom, Models::ModelNode::Instance*>,
+		Util::Array<ParticleSystemRuntime>,
 		Graphics::ContextEntityId,
 		ParticleRuntime
 	> ParticleContextAllocator;
 	static ParticleContextAllocator particleContextAllocator;
+
+	/// internal function for emitting new particles
+	static void EmitParticles(ParticleRuntime& rt, ParticleSystemRuntime& srt, float stepTime);
+	/// internal function for emitting single particle
+	static void EmitParticle(ParticleRuntime& rt, ParticleSystemRuntime& srt, const Particles::EmitterAttrs& attrs, const Particles::EmitterMesh& mesh, const Particles::EnvelopeSampleBuffer& buffer, IndexT sampleIndex, float initialAge);
+	/// internal function to emit a job for updating particles
+	static void RunParticleStep(ParticleRuntime& rt, ParticleSystemRuntime& srt, float stepTime, bool generateVtxList);
 
 	/// allocate a new slice for this context
 	static Graphics::ContextEntityId Alloc();
@@ -90,6 +125,7 @@ private:
 
 	static Jobs::JobPortId jobPort;
 	static Jobs::JobSyncId jobSync;
+	static Util::Queue<Jobs::JobId> runningJobs;
 };
 
 //------------------------------------------------------------------------------
