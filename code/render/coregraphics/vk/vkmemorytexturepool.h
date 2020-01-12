@@ -48,6 +48,8 @@ public:
 	LoadStatus LoadFromMemory(const Resources::ResourceId id, const void* info) override;
 	/// unload resource
 	void Unload(const Resources::ResourceId id) override;
+    /// reload resource. This will unload and then reload with the same info as when previously loaded
+    void Reload(const Resources::ResourceId id);
 
 	/// generates mipmaps
 	void GenerateMipmaps(const CoreGraphics::TextureId id);
@@ -101,6 +103,9 @@ public:
 	/// swap buffers for texture
 	IndexT SwapBuffers(const CoreGraphics::TextureId id);
 private:
+    /// setup textures from load info
+    bool Setup(const Resources::ResourceId id);
+
 	friend class VkStreamTexturePool;
 	__ImplementResourceAllocatorTypedSafe(textureAllocator, CoreGraphics::TextureIdType);
 };

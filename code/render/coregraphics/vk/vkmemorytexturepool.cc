@@ -36,348 +36,91 @@ VkMemoryTexturePool::LoadFromMemory(const Resources::ResourceId id, const void* 
 	VkTextureLoadInfo& loadInfo = this->Get<Texture_LoadInfo>(id.resourceId);
 	VkTextureWindowInfo& windowInfo = this->Get<Texture_WindowInfo>(id.resourceId);
 
-	// create adjusted info
+    // create adjusted info
 	TextureCreateInfoAdjusted adjustedInfo = TextureGetAdjustedInfo(*data);
 
-	VkFormat vkformat;
+    VkPhysicalDevice physicalDev = Vulkan::GetCurrentPhysicalDevice();
+    VkDevice dev = Vulkan::GetCurrentDevice();
 
-	if (adjustedInfo.usage & TextureUsage::RenderUsage)
-		vkformat = VkTypes::AsVkFramebufferFormat(data->format);
-	else if (adjustedInfo.usage & TextureUsage::ReadWriteUsage)
-		vkformat = VkTypes::AsVkDataFormat(data->format);
-	else
-		vkformat = VkTypes::AsVkFormat(data->format);
+    loadInfo.dev = dev;
+    loadInfo.dims.width = adjustedInfo.width;
+    loadInfo.dims.height = adjustedInfo.height;
+    loadInfo.dims.depth = adjustedInfo.depth;
+    loadInfo.relativeDims.width = adjustedInfo.widthScale;
+    loadInfo.relativeDims.height = adjustedInfo.heightScale;
+    loadInfo.relativeDims.depth = adjustedInfo.depthScale;
+    loadInfo.mips = adjustedInfo.mips;
+    loadInfo.layers = adjustedInfo.layers;
+    loadInfo.format = adjustedInfo.format;
+    loadInfo.texUsage = adjustedInfo.usage;
+    loadInfo.alias = adjustedInfo.alias;
+    loadInfo.samples = adjustedInfo.samples;
+    loadInfo.defaultLayout = adjustedInfo.defaultLayout;
+    loadInfo.windowTexture = adjustedInfo.windowTexture;
+    loadInfo.windowRelative = adjustedInfo.windowRelative;
+    loadInfo.bindless = adjustedInfo.bindless;
 
+    // borrow buffer pointer
+    loadInfo.texBuffer = adjustedInfo.buffer;
 
-	VkPhysicalDevice physicalDev = Vulkan::GetCurrentPhysicalDevice();
-	VkDevice dev = Vulkan::GetCurrentDevice();
-	loadInfo.dev = dev;
+    windowInfo.window = adjustedInfo.window;
+    
+    if (loadInfo.windowTexture)
+    {
+        runtimeInfo.type = Texture2D;
+    }
+    else
+    {
+        runtimeInfo.type = adjustedInfo.type;
+    }
 
-	VkFormatProperties formatProps;
-	vkGetPhysicalDeviceFormatProperties(physicalDev, vkformat, &formatProps);
-	VkExtent3D extents;
-	extents.width = adjustedInfo.width;
-	extents.height = adjustedInfo.height;
-	extents.depth = adjustedInfo.depth;
+    this->LeaveGet();
 
-	bool isDepthFormat = VkTypes::IsDepthFormat(adjustedInfo.format);
+    if (this->Setup(id))
+    {
+        CoreGraphics::RegisterTexture(adjustedInfo.name, id);
 
-	// setup usage flags, by default, all textures can be sampled from
-	VkImageUsageFlags usage = VK_IMAGE_USAGE_SAMPLED_BIT;
-	if (adjustedInfo.usage & TextureUsage::ImmutableUsage)
-	{
-		n_assert_fmt(adjustedInfo.usage == TextureUsage::ImmutableUsage, "Texture with immutable usage may not use any other flags");
-		usage |=  VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-	}
-	if (adjustedInfo.usage & TextureUsage::RenderUsage)
-	{
-		n_assert_fmt((adjustedInfo.usage & TextureUsage::ReadWriteUsage) == 0, "Texture may not be used for render and readwrite at the same time, create alias to support it");
-		usage |= VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | (isDepthFormat ? VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT : VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-	}
-	if (adjustedInfo.usage & TextureUsage::ReadWriteUsage)
-	{ 
-		n_assert_fmt((adjustedInfo.usage & TextureUsage::RenderUsage) == 0, "Texture may not be used for render and readwrite at the same time, create alias to support it");
-		usage |= VK_IMAGE_USAGE_STORAGE_BIT;
-	}
-	if (adjustedInfo.usage & TextureUsage::CopyUsage)
-		usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+        n_assert(this->GetState(id) == Resource::Pending);
+        n_assert(loadInfo.img != VK_NULL_HANDLE);
 
-	if (!adjustedInfo.windowTexture)
-	{
-		VkSampleCountFlagBits samples;
-		switch (adjustedInfo.samples)
-		{
-		case 1:
-			samples = VK_SAMPLE_COUNT_1_BIT;
-			break;
-		case 2:
-			samples = VK_SAMPLE_COUNT_2_BIT;
-			break;
-		case 4:
-			samples = VK_SAMPLE_COUNT_4_BIT;
-			break;
-		case 8:
-			samples = VK_SAMPLE_COUNT_8_BIT;
-			break;
-		case 16:
-			samples = VK_SAMPLE_COUNT_16_BIT;
-			break;
-		case 32:
-			samples = VK_SAMPLE_COUNT_32_BIT;
-			break;
-		case 64:
-			samples = VK_SAMPLE_COUNT_64_BIT;
-			break;
-		default:
-			n_error("Invalid number of samples '%d'", adjustedInfo.samples);
-			break;
-		}
-
-		VkImageViewType viewType;
-		VkImageType type;
-		switch (adjustedInfo.type)
-		{
-		case Texture1D:
-			type = VK_IMAGE_TYPE_1D;
-			viewType = VK_IMAGE_VIEW_TYPE_1D;
-			break;
-		case Texture1DArray:
-			type = VK_IMAGE_TYPE_1D;
-			viewType = VK_IMAGE_VIEW_TYPE_1D_ARRAY;
-			break;
-		case Texture2D:
-			type = VK_IMAGE_TYPE_2D;
-			viewType = VK_IMAGE_VIEW_TYPE_2D;
-			break;
-		case Texture2DArray:
-			type = VK_IMAGE_TYPE_2D;
-			viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
-			break;
-		case TextureCube:
-			type = VK_IMAGE_TYPE_2D;
-			viewType = VK_IMAGE_VIEW_TYPE_CUBE;
-			break;
-		case TextureCubeArray:
-			type = VK_IMAGE_TYPE_2D;
-			viewType = VK_IMAGE_VIEW_TYPE_CUBE_ARRAY;
-			break;
-		case Texture3D:
-			type = VK_IMAGE_TYPE_3D;
-			viewType = VK_IMAGE_VIEW_TYPE_3D;
-			break;
-		}
-
-		// if read-write, we will almost definitely use this texture on multiple queues
-		VkSharingMode sharingMode = (adjustedInfo.usage & TextureUsage::ReadWriteUsage) ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
-		const Util::Set<uint32_t>& queues = Vulkan::GetQueueFamilies();
-
-		VkImageCreateFlags createFlags = 0;
-
-		if (adjustedInfo.alias != CoreGraphics::TextureId::Invalid())
-			createFlags |= VK_IMAGE_CREATE_ALIAS_BIT;
-		if (viewType == VK_IMAGE_VIEW_TYPE_CUBE || viewType == VK_IMAGE_VIEW_TYPE_CUBE_ARRAY)
-			createFlags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
-
-		VkImageCreateInfo imgInfo =
-		{
-			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-			nullptr,
-			createFlags,
-			type,
-			vkformat,
-			extents,
-			adjustedInfo.mips,
-			adjustedInfo.layers,
-			samples,
-			VK_IMAGE_TILING_OPTIMAL,
-			usage,
-			sharingMode,
-			sharingMode == VK_SHARING_MODE_CONCURRENT ? queues.Size() : 0,
-			sharingMode == VK_SHARING_MODE_CONCURRENT ? queues.KeysAsArray().Begin() : nullptr,
-			VK_IMAGE_LAYOUT_UNDEFINED
-		};
-
-		VkResult stat = vkCreateImage(dev, &imgInfo, nullptr, &loadInfo.img);
-		n_assert(stat == VK_SUCCESS);
-
-		// if we don't use aliasing, create new memory
-		if (adjustedInfo.alias == CoreGraphics::TextureId::Invalid())
-		{
-			// allocate memory backing
-			uint32_t alignedSize;
-			VkUtilities::AllocateImageMemory(loadInfo.dev, loadInfo.img, loadInfo.mem, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, alignedSize);
-			vkBindImageMemory(dev, loadInfo.img, loadInfo.mem, 0);
-		}
-		else
-		{
-			// otherwise use other image memory to create alias
-			VkDeviceMemory mem = this->Get<Texture_LoadInfo>(adjustedInfo.alias.resourceId).mem;
-			loadInfo.mem = mem;
-			vkBindImageMemory(dev, loadInfo.img, loadInfo.mem, 0);
-		}
-
-		// if we have initial data to setup, perform a data transfer
-		if (adjustedInfo.buffer != nullptr)
-		{
-			// use resource submission
-			CoreGraphics::SubmissionContextId sub = CoreGraphics::GetResourceSubmissionContext();
-
-			// transition into transfer mode
-			VkImageSubresourceRange subres;
-			subres.aspectMask = isDepthFormat ? VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
-			subres.baseArrayLayer = 0;
-			subres.baseMipLevel = 0;
-			subres.layerCount = adjustedInfo.layers;
-			subres.levelCount = adjustedInfo.mips;
-
-
-			// insert barrier
-			VkUtilities::ImageBarrier(CoreGraphics::SubmissionContextGetCmdBuffer(sub),
-				CoreGraphics::BarrierStage::Host,
-				CoreGraphics::BarrierStage::Transfer,
-				VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
-
-			// add image update, take the output buffer and memory and add to delayed delete
-			VkBuffer outBuf;
-			VkDeviceMemory outMem;
-			uint32_t size = PixelFormat::ToSize(data->format);
-			VkUtilities::ImageUpdate(dev, CoreGraphics::SubmissionContextGetCmdBuffer(sub), TransferQueueType, loadInfo.img, imgInfo, 0, 0, VkDeviceSize(adjustedInfo.width * adjustedInfo.height * adjustedInfo.depth * size), (uint32_t*)adjustedInfo.buffer, outBuf, outMem);
-
-			// add host memory buffer, intermediate device memory, and intermediate device buffer to delete queue
-			SubmissionContextFreeDeviceMemory(sub, dev, outMem);
-			SubmissionContextFreeBuffer(sub, dev, outBuf);
-
-			// transition image to be used for rendering
-			VkUtilities::ImageBarrier(CoreGraphics::SubmissionContextGetCmdBuffer(sub),
-				CoreGraphics::BarrierStage::Transfer,
-				CoreGraphics::BarrierStage::AllGraphicsShaders,
-				VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, TransferQueueType, GraphicsQueueType, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
-		}
-
-		// if used for render, find appropriate renderable format
-		if (adjustedInfo.usage & TextureUsage::RenderUsage)
-		{
-			vkformat = VkTypes::AsVkFramebufferFormat(adjustedInfo.format);
-			if (!isDepthFormat)
-			{
-				VkFormatProperties formatProps;
-				vkGetPhysicalDeviceFormatProperties(Vulkan::GetCurrentPhysicalDevice(), vkformat, &formatProps);
-				n_assert(formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT &&
-					formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT &&
-					formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT);
-			}
-			else
-				loadInfo.defaultLayout = CoreGraphics::ImageLayout::DepthStencilRead;
-		}
-
-		// create view
-		VkImageSubresourceRange viewRange;
-		viewRange.aspectMask = isDepthFormat ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT; // view only supports reading depth in shader
-		viewRange.baseMipLevel = 0;
-		viewRange.levelCount = adjustedInfo.mips;
-		viewRange.baseArrayLayer = 0;
-		viewRange.layerCount = adjustedInfo.layers;
-		VkImageViewCreateInfo viewCreate =
-		{
-			VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-			nullptr,
-			0,
-			loadInfo.img,
-			viewType,
-			vkformat,
-			VkTypes::AsVkMapping(adjustedInfo.format),
-			viewRange
-		};
-		stat = vkCreateImageView(dev, &viewCreate, nullptr, &runtimeInfo.view);
-		n_assert(stat == VK_SUCCESS);
-
-		// use setup submission
-		CoreGraphics::SubmissionContextId sub = CoreGraphics::GetSetupSubmissionContext();
-		
-		if (adjustedInfo.usage & TextureUsage::RenderUsage)
-		{
-			// perform initial clear if render target
-			if (!isDepthFormat)
-			{
-				VkClearColorValue clear = { 0, 0, 0, 0 };
-				VkUtilities::ImageBarrier(SubmissionContextGetCmdBuffer(sub), CoreGraphics::BarrierStage::Host, CoreGraphics::BarrierStage::Transfer, VkUtilities::ImageMemoryBarrier(loadInfo.img, viewRange, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
-				VkUtilities::ImageColorClear(SubmissionContextGetCmdBuffer(sub), loadInfo.img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, clear, viewRange);
-				VkUtilities::ImageBarrier(SubmissionContextGetCmdBuffer(sub), CoreGraphics::BarrierStage::Transfer, CoreGraphics::BarrierStage::PassOutput, VkUtilities::ImageMemoryBarrier(loadInfo.img, viewRange, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
-			}
-			else
-			{
-				// clear image and transition layout
-				VkClearDepthStencilValue clear = { 1, 0 };
-				VkImageSubresourceRange clearRange = viewRange;
-				clearRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
-				VkUtilities::ImageBarrier(SubmissionContextGetCmdBuffer(sub), CoreGraphics::BarrierStage::Host, CoreGraphics::BarrierStage::Transfer, VkUtilities::ImageMemoryBarrier(loadInfo.img, clearRange, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
-				VkUtilities::ImageDepthStencilClear(SubmissionContextGetCmdBuffer(sub), loadInfo.img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, clear, clearRange);
-				VkUtilities::ImageBarrier(SubmissionContextGetCmdBuffer(sub), CoreGraphics::BarrierStage::Transfer, CoreGraphics::BarrierStage::PassOutput, VkUtilities::ImageMemoryBarrier(loadInfo.img, clearRange, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
-			}
-		}
-		else if (adjustedInfo.usage & TextureUsage::ReadWriteUsage)
-		{
-			// insert barrier to transition into a useable state
-			VkUtilities::ImageBarrier(CoreGraphics::SubmissionContextGetCmdBuffer(sub),
-				CoreGraphics::BarrierStage::Host,
-				CoreGraphics::BarrierStage::AllGraphicsShaders,
-				VkUtilities::ImageMemoryBarrier(loadInfo.img, viewRange, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
-		}
-
-		// register image with shader server
-		if (adjustedInfo.bindless)
-			runtimeInfo.bind = VkShaderServer::Instance()->RegisterTexture(TextureId(id), isDepthFormat, adjustedInfo.type);
-		else
-			runtimeInfo.bind = 0;
-		runtimeInfo.type = adjustedInfo.type;
-
-	}
-	else // setup as window texture
-	{
-		// get submission context
-		n_assert(adjustedInfo.window != CoreGraphics::WindowId::Invalid());
-		CoreGraphics::SubmissionContextId sub = CoreGraphics::GetSetupSubmissionContext();
-
-		VkBackbufferInfo& backbufferInfo = CoreGraphics::glfwWindowAllocator.Get<GLFW_Backbuffer>(adjustedInfo.window.id24);
-		windowInfo.swapimages = backbufferInfo.backbuffers;
-		windowInfo.swapviews = backbufferInfo.backbufferViews;
-		windowInfo.window = adjustedInfo.window;
-		VkClearColorValue clear = { 0, 0, 0, 0 };
-
-		VkImageSubresourceRange subres;
-		subres.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		subres.baseArrayLayer = 0;
-		subres.baseMipLevel = 0;
-		subres.layerCount = 1;
-		subres.levelCount = 1;
-
-		// clear textures
-		IndexT i;
-		for (i = 0; i < windowInfo.swapimages.Size(); i++)
-		{
-			VkUtilities::ImageBarrier(SubmissionContextGetCmdBuffer(sub), CoreGraphics::BarrierStage::Host, CoreGraphics::BarrierStage::Transfer, VkUtilities::ImageMemoryBarrier(windowInfo.swapimages[i], subres, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
-			VkUtilities::ImageColorClear(SubmissionContextGetCmdBuffer(sub), windowInfo.swapimages[i], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, clear, subres);
-			VkUtilities::ImageBarrier(SubmissionContextGetCmdBuffer(sub), CoreGraphics::BarrierStage::Transfer, CoreGraphics::BarrierStage::PassOutput, VkUtilities::ImageMemoryBarrier(windowInfo.swapimages[i], subres, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR));
-		}
-
-		n_assert(adjustedInfo.type == Texture2D);
-		n_assert(adjustedInfo.mips == 1);
-		n_assert(adjustedInfo.samples == 1);
-
-		loadInfo.img = windowInfo.swapimages[0];
-		loadInfo.mem = VK_NULL_HANDLE;
-		
-		runtimeInfo.type = Texture2D;
-		runtimeInfo.view = backbufferInfo.backbufferViews[0];
-	}
-
-	loadInfo.dims.width = adjustedInfo.width;
-	loadInfo.dims.height = adjustedInfo.height;
-	loadInfo.dims.depth = adjustedInfo.depth;
-	loadInfo.mips = adjustedInfo.mips;
-	loadInfo.layers = adjustedInfo.layers;
-	loadInfo.format = adjustedInfo.format;
-	loadInfo.dev = dev;
-	loadInfo.texUsage = adjustedInfo.usage;
-	loadInfo.alias = adjustedInfo.alias;
-	loadInfo.samples = adjustedInfo.samples;
-	loadInfo.defaultLayout = adjustedInfo.defaultLayout;
-
-	this->LeaveGet();
-	
-	CoreGraphics::RegisterTexture(adjustedInfo.name, id);
-
-	n_assert(this->GetState(id) == Resource::Pending);
-	n_assert(loadInfo.img != VK_NULL_HANDLE);
-
-	// set loaded flag
-	this->states[id.poolId] = Resources::Resource::Loaded;
+        // set loaded flag
+        this->states[id.poolId] = Resources::Resource::Loaded;
 
 #if NEBULA_GRAPHICS_DEBUG
-	ObjectSetName((TextureId)id, adjustedInfo.name.Value());
+        ObjectSetName((TextureId)id, adjustedInfo.name.Value());
 #endif
 
-	return ResourcePool::Success;
+    	return ResourcePool::Success;
+    }
+
+    return ResourcePool::Failed;
+    
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+VkMemoryTexturePool::Reload(const Resources::ResourceId id)
+{
+    this->Unload(id);
+    
+    this->EnterGet();
+    VkTextureLoadInfo& loadInfo = this->Get<Texture_LoadInfo>(id.resourceId);
+    VkTextureWindowInfo& windowInfo = this->Get<Texture_WindowInfo>(id.resourceId);
+
+    if (!loadInfo.windowTexture && loadInfo.windowRelative)
+    {
+        // if the window has been resized, we need to update our dimensions based on relative size
+        const CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(windowInfo.window);
+        loadInfo.dims.width = SizeT(mode.GetWidth() * loadInfo.relativeDims.width);
+        loadInfo.dims.height = SizeT(mode.GetHeight() * loadInfo.relativeDims.height);
+        loadInfo.dims.depth = 1;
+    }
+    
+    this->LeaveGet();
+
+    this->Setup(id);
 }
 
 //------------------------------------------------------------------------------
@@ -412,8 +155,6 @@ VkMemoryTexturePool::GenerateMipmaps(const CoreGraphics::TextureId id)
 		toRegion.bottom = dims.height;
 		CoreGraphics::Blit(id, fromRegion, mips, id, toRegion, mips + 1);
 		mips++;
-
-
 	}
 }
 
@@ -814,6 +555,332 @@ VkMemoryTexturePool::SwapBuffers(const CoreGraphics::TextureId id)
 	loadInfo.img = wnd.swapimages[swapInfo.currentBackbuffer];
 	runtimeInfo.view = wnd.swapviews[swapInfo.currentBackbuffer];
 	return swapInfo.currentBackbuffer;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+VkMemoryTexturePool::Setup(const Resources::ResourceId id)
+{
+    this->EnterGet();
+
+    VkTextureRuntimeInfo& runtimeInfo = this->Get<Texture_RuntimeInfo>(id.resourceId);
+    VkTextureLoadInfo& loadInfo = this->Get<Texture_LoadInfo>(id.resourceId);
+    VkTextureWindowInfo& windowInfo = this->Get<Texture_WindowInfo>(id.resourceId);
+
+    VkFormat vkformat;
+
+    if (loadInfo.texUsage & TextureUsage::RenderUsage)
+        vkformat = VkTypes::AsVkFramebufferFormat(loadInfo.format);
+    else if (loadInfo.texUsage & TextureUsage::ReadWriteUsage)
+        vkformat = VkTypes::AsVkDataFormat(loadInfo.format);
+    else
+        vkformat = VkTypes::AsVkFormat(loadInfo.format);
+
+    VkFormatProperties formatProps;
+    VkPhysicalDevice physicalDev = Vulkan::GetCurrentPhysicalDevice();
+    vkGetPhysicalDeviceFormatProperties(physicalDev, vkformat, &formatProps);
+    VkExtent3D extents;
+
+    extents.width = loadInfo.dims.width;
+    extents.height = loadInfo.dims.height;
+    extents.depth = loadInfo.dims.depth;
+
+    bool isDepthFormat = VkTypes::IsDepthFormat(loadInfo.format);
+
+    // setup usage flags, by default, all textures can be sampled from
+    VkImageUsageFlags usage = VK_IMAGE_USAGE_SAMPLED_BIT;
+    if (loadInfo.texUsage & TextureUsage::ImmutableUsage)
+    {
+        n_assert_fmt(loadInfo.texUsage == TextureUsage::ImmutableUsage, "Texture with immutable usage may not use any other flags");
+        usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    }
+    if (loadInfo.texUsage & TextureUsage::RenderUsage)
+    {
+        n_assert_fmt((loadInfo.texUsage & TextureUsage::ReadWriteUsage) == 0, "Texture may not be used for render and readwrite at the same time, create alias to support it");
+        usage |= VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | (isDepthFormat ? VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT : VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    }
+    if (loadInfo.texUsage & TextureUsage::ReadWriteUsage)
+    {
+        n_assert_fmt((loadInfo.texUsage & TextureUsage::RenderUsage) == 0, "Texture may not be used for render and readwrite at the same time, create alias to support it");
+        usage |= VK_IMAGE_USAGE_STORAGE_BIT;
+    }
+    if (loadInfo.texUsage & TextureUsage::CopyUsage)
+        usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+
+    if (!loadInfo.windowTexture)
+    {
+        VkSampleCountFlagBits samples;
+        switch (loadInfo.samples)
+        {
+        case 1:
+            samples = VK_SAMPLE_COUNT_1_BIT;
+            break;
+        case 2:
+            samples = VK_SAMPLE_COUNT_2_BIT;
+            break;
+        case 4:
+            samples = VK_SAMPLE_COUNT_4_BIT;
+            break;
+        case 8:
+            samples = VK_SAMPLE_COUNT_8_BIT;
+            break;
+        case 16:
+            samples = VK_SAMPLE_COUNT_16_BIT;
+            break;
+        case 32:
+            samples = VK_SAMPLE_COUNT_32_BIT;
+            break;
+        case 64:
+            samples = VK_SAMPLE_COUNT_64_BIT;
+            break;
+        default:
+            n_error("Invalid number of samples '%d'", loadInfo.samples);
+            break;
+        }
+
+        VkImageViewType viewType;
+        VkImageType type;
+        switch (runtimeInfo.type)
+        {
+        case Texture1D:
+            type = VK_IMAGE_TYPE_1D;
+            viewType = VK_IMAGE_VIEW_TYPE_1D;
+            break;
+        case Texture1DArray:
+            type = VK_IMAGE_TYPE_1D;
+            viewType = VK_IMAGE_VIEW_TYPE_1D_ARRAY;
+            break;
+        case Texture2D:
+            type = VK_IMAGE_TYPE_2D;
+            viewType = VK_IMAGE_VIEW_TYPE_2D;
+            break;
+        case Texture2DArray:
+            type = VK_IMAGE_TYPE_2D;
+            viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
+            break;
+        case TextureCube:
+            type = VK_IMAGE_TYPE_2D;
+            viewType = VK_IMAGE_VIEW_TYPE_CUBE;
+            break;
+        case TextureCubeArray:
+            type = VK_IMAGE_TYPE_2D;
+            viewType = VK_IMAGE_VIEW_TYPE_CUBE_ARRAY;
+            break;
+        case Texture3D:
+            type = VK_IMAGE_TYPE_3D;
+            viewType = VK_IMAGE_VIEW_TYPE_3D;
+            break;
+        }
+
+        // if read-write, we will almost definitely use this texture on multiple queues
+        VkSharingMode sharingMode = (loadInfo.texUsage & TextureUsage::ReadWriteUsage) ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
+        const Util::Set<uint32_t>& queues = Vulkan::GetQueueFamilies();
+
+        VkImageCreateFlags createFlags = 0;
+
+        if (loadInfo.alias != CoreGraphics::TextureId::Invalid())
+            createFlags |= VK_IMAGE_CREATE_ALIAS_BIT;
+        if (viewType == VK_IMAGE_VIEW_TYPE_CUBE || viewType == VK_IMAGE_VIEW_TYPE_CUBE_ARRAY)
+            createFlags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+
+        VkImageCreateInfo imgInfo =
+        {
+            VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+            nullptr,
+            createFlags,
+            type,
+            vkformat,
+            extents,
+            loadInfo.mips,
+            loadInfo.layers,
+            samples,
+            VK_IMAGE_TILING_OPTIMAL,
+            usage,
+            sharingMode,
+            sharingMode == VK_SHARING_MODE_CONCURRENT ? queues.Size() : 0,
+            sharingMode == VK_SHARING_MODE_CONCURRENT ? queues.KeysAsArray().Begin() : nullptr,
+            VK_IMAGE_LAYOUT_UNDEFINED
+        };
+
+        VkResult stat = vkCreateImage(loadInfo.dev, &imgInfo, nullptr, &loadInfo.img);
+        n_assert(stat == VK_SUCCESS);
+
+        // if we don't use aliasing, create new memory
+        if (loadInfo.alias == CoreGraphics::TextureId::Invalid())
+        {
+            // allocate memory backing
+            uint32_t alignedSize;
+            VkUtilities::AllocateImageMemory(loadInfo.dev, loadInfo.img, loadInfo.mem, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, alignedSize);
+            vkBindImageMemory(loadInfo.dev, loadInfo.img, loadInfo.mem, 0);
+        }
+        else
+        {
+            // otherwise use other image memory to create alias
+            VkDeviceMemory mem = this->Get<Texture_LoadInfo>(loadInfo.alias.resourceId).mem;
+            loadInfo.mem = mem;
+            vkBindImageMemory(loadInfo.dev, loadInfo.img, loadInfo.mem, 0);
+        }
+
+        // if we have initial data to setup, perform a data transfer
+        if (loadInfo.texBuffer != nullptr)
+        {
+            // use resource submission
+            CoreGraphics::SubmissionContextId sub = CoreGraphics::GetResourceSubmissionContext();
+
+            // transition into transfer mode
+            VkImageSubresourceRange subres;
+            subres.aspectMask = isDepthFormat ? VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+            subres.baseArrayLayer = 0;
+            subres.baseMipLevel = 0;
+            subres.layerCount = loadInfo.layers;
+            subres.levelCount = loadInfo.mips;
+
+
+            // insert barrier
+            VkUtilities::ImageBarrier(CoreGraphics::SubmissionContextGetCmdBuffer(sub),
+                CoreGraphics::BarrierStage::Host,
+                CoreGraphics::BarrierStage::Transfer,
+                VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
+
+            // add image update, take the output buffer and memory and add to delayed delete
+            VkBuffer outBuf;
+            VkDeviceMemory outMem;
+            uint32_t size = PixelFormat::ToSize(loadInfo.format);
+            VkUtilities::ImageUpdate(loadInfo.dev, CoreGraphics::SubmissionContextGetCmdBuffer(sub), TransferQueueType, loadInfo.img, imgInfo, 0, 0, VkDeviceSize(loadInfo.dims.width * loadInfo.dims.height * loadInfo.dims.depth * size), (uint32_t*)loadInfo.texBuffer, outBuf, outMem);
+
+            // add host memory buffer, intermediate device memory, and intermediate device buffer to delete queue
+            SubmissionContextFreeDeviceMemory(sub, loadInfo.dev, outMem);
+            SubmissionContextFreeBuffer(sub, loadInfo.dev, outBuf);
+
+            // transition image to be used for rendering
+            VkUtilities::ImageBarrier(CoreGraphics::SubmissionContextGetCmdBuffer(sub),
+                CoreGraphics::BarrierStage::Transfer,
+                CoreGraphics::BarrierStage::AllGraphicsShaders,
+                VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, TransferQueueType, GraphicsQueueType, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+
+            // this should always be set to nullptr after it has been transfered. TextureLoadInfo should never own the pointer!
+            loadInfo.texBuffer = nullptr;
+        }
+
+        // if used for render, find appropriate renderable format
+        if (loadInfo.texUsage & TextureUsage::RenderUsage)
+        {
+            vkformat = VkTypes::AsVkFramebufferFormat(loadInfo.format);
+            if (!isDepthFormat)
+            {
+                VkFormatProperties formatProps;
+                vkGetPhysicalDeviceFormatProperties(Vulkan::GetCurrentPhysicalDevice(), vkformat, &formatProps);
+                n_assert(formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT &&
+                    formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT &&
+                    formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT);
+            }
+            else
+                loadInfo.defaultLayout = CoreGraphics::ImageLayout::DepthStencilRead;
+        }
+
+        // create view
+        VkImageSubresourceRange viewRange;
+        viewRange.aspectMask = isDepthFormat ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT; // view only supports reading depth in shader
+        viewRange.baseMipLevel = 0;
+        viewRange.levelCount = loadInfo.mips;
+        viewRange.baseArrayLayer = 0;
+        viewRange.layerCount = loadInfo.layers;
+        VkImageViewCreateInfo viewCreate =
+        {
+            VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+            nullptr,
+            0,
+            loadInfo.img,
+            viewType,
+            vkformat,
+            VkTypes::AsVkMapping(loadInfo.format),
+            viewRange
+        };
+        stat = vkCreateImageView(loadInfo.dev, &viewCreate, nullptr, &runtimeInfo.view);
+        n_assert(stat == VK_SUCCESS);
+
+        // use setup submission
+        CoreGraphics::SubmissionContextId sub = CoreGraphics::GetSetupSubmissionContext();
+
+        if (loadInfo.texUsage & TextureUsage::RenderUsage)
+        {
+            // perform initial clear if render target
+            if (!isDepthFormat)
+            {
+                VkClearColorValue clear = { 0, 0, 0, 0 };
+                VkUtilities::ImageBarrier(SubmissionContextGetCmdBuffer(sub), CoreGraphics::BarrierStage::Host, CoreGraphics::BarrierStage::Transfer, VkUtilities::ImageMemoryBarrier(loadInfo.img, viewRange, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
+                VkUtilities::ImageColorClear(SubmissionContextGetCmdBuffer(sub), loadInfo.img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, clear, viewRange);
+                VkUtilities::ImageBarrier(SubmissionContextGetCmdBuffer(sub), CoreGraphics::BarrierStage::Transfer, CoreGraphics::BarrierStage::PassOutput, VkUtilities::ImageMemoryBarrier(loadInfo.img, viewRange, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+            }
+            else
+            {
+                // clear image and transition layout
+                VkClearDepthStencilValue clear = { 1, 0 };
+                VkImageSubresourceRange clearRange = viewRange;
+                clearRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+                VkUtilities::ImageBarrier(SubmissionContextGetCmdBuffer(sub), CoreGraphics::BarrierStage::Host, CoreGraphics::BarrierStage::Transfer, VkUtilities::ImageMemoryBarrier(loadInfo.img, clearRange, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
+                VkUtilities::ImageDepthStencilClear(SubmissionContextGetCmdBuffer(sub), loadInfo.img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, clear, clearRange);
+                VkUtilities::ImageBarrier(SubmissionContextGetCmdBuffer(sub), CoreGraphics::BarrierStage::Transfer, CoreGraphics::BarrierStage::PassOutput, VkUtilities::ImageMemoryBarrier(loadInfo.img, clearRange, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+            }
+        }
+        else if (loadInfo.texUsage & TextureUsage::ReadWriteUsage)
+        {
+            // insert barrier to transition into a useable state
+            VkUtilities::ImageBarrier(CoreGraphics::SubmissionContextGetCmdBuffer(sub),
+                CoreGraphics::BarrierStage::Host,
+                CoreGraphics::BarrierStage::AllGraphicsShaders,
+                VkUtilities::ImageMemoryBarrier(loadInfo.img, viewRange, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+        }
+
+        // register image with shader server
+        if (loadInfo.bindless)
+            runtimeInfo.bind = VkShaderServer::Instance()->RegisterTexture(TextureId(id), isDepthFormat, runtimeInfo.type);
+        else
+            runtimeInfo.bind = 0;
+
+    }
+    else // setup as window texture
+    {
+        // get submission context
+        n_assert(windowInfo.window != CoreGraphics::WindowId::Invalid());
+        CoreGraphics::SubmissionContextId sub = CoreGraphics::GetSetupSubmissionContext();
+
+        VkBackbufferInfo& backbufferInfo = CoreGraphics::glfwWindowAllocator.Get<GLFW_Backbuffer>(windowInfo.window.id24);
+        windowInfo.swapimages = backbufferInfo.backbuffers;
+        windowInfo.swapviews = backbufferInfo.backbufferViews;
+        VkClearColorValue clear = { 0, 0, 0, 0 };
+
+        VkImageSubresourceRange subres;
+        subres.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        subres.baseArrayLayer = 0;
+        subres.baseMipLevel = 0;
+        subres.layerCount = 1;
+        subres.levelCount = 1;
+
+        // clear textures
+        IndexT i;
+        for (i = 0; i < windowInfo.swapimages.Size(); i++)
+        {
+            VkUtilities::ImageBarrier(SubmissionContextGetCmdBuffer(sub), CoreGraphics::BarrierStage::Host, CoreGraphics::BarrierStage::Transfer, VkUtilities::ImageMemoryBarrier(windowInfo.swapimages[i], subres, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
+            VkUtilities::ImageColorClear(SubmissionContextGetCmdBuffer(sub), windowInfo.swapimages[i], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, clear, subres);
+            VkUtilities::ImageBarrier(SubmissionContextGetCmdBuffer(sub), CoreGraphics::BarrierStage::Transfer, CoreGraphics::BarrierStage::PassOutput, VkUtilities::ImageMemoryBarrier(windowInfo.swapimages[i], subres, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR));
+        }
+
+        n_assert(runtimeInfo.type == Texture2D);
+        n_assert(loadInfo.mips == 1);
+        n_assert(loadInfo.samples == 1);
+
+        loadInfo.img = windowInfo.swapimages[0];
+        loadInfo.mem = VK_NULL_HANDLE;
+
+        runtimeInfo.view = backbufferInfo.backbufferViews[0];
+    }
+
+    this->LeaveGet();
+
+    return true;
 }
 
 } // namespace Vulkan
