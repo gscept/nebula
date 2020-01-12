@@ -206,7 +206,7 @@ vec3
 GlobalLight(vec4 worldPos, vec3 viewVec, vec3 normal, float depth, vec4 material, vec4 albedo)
 {
 	float NL = saturate(dot(GlobalLightDirWorldspace.xyz, normal));
-	if (NL <= 0) { return albedo.rgb; }
+	if (NL <= 0) { return vec3(0,0,0); }
 
 	float shadowFactor = 1.0f;
 	vec4 debug = vec4(1, 1, 1, 1);
@@ -351,7 +351,6 @@ void csLighting()
 	{
 		light += Preetham(normalize(worldPos.xyz), GlobalLightDirWorldspace.xyz, A, B, C, D, E, Z)* GlobalLightColor.xyz;
 	}
-
 
 	// write final output
 	imageStore(Lighting, coord, light.xyzx);
