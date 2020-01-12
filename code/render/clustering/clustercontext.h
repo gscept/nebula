@@ -37,7 +37,7 @@ public:
 	static const ClusterGenerate::ClusterUniforms& GetUniforms();
 
 	/// do light classification for tiled/clustered compute
-	static void OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime);
+	static void OnBeforeView(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
 #ifndef PUBLIC_BUILD
 	//
 	static void OnRenderDebug(uint32_t flags);

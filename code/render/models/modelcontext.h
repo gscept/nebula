@@ -62,15 +62,7 @@ public:
 	static const Util::Array<Models::NodeType>& GetModelNodeTypes(const Graphics::GraphicsEntityId id);
 
 	/// runs before frame is updated
-	static void OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime, const Timing::Time time, const Timing::Tick ticks);
-	/// runs when visibility has finished processing 
-	static void OnWaitForWork(const IndexT frameIndex, const Timing::Time frameTime);
-	/// runs before a specific view
-	static void OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime);
-	/// runs after view is rendered
-	static void OnAfterView(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime);
-	/// runs after a frame is updated
-	static void OnAfterFrame(const IndexT frameIndex, const Timing::Time frameTime);
+	static void OnBeforeFrame(const Graphics::FrameContext& ctx);
 #ifndef PUBLIC_DEBUG    
 	/// debug rendering
 	static void OnRenderDebug(uint32_t flags);

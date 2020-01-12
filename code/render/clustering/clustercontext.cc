@@ -147,7 +147,7 @@ ClusterContext::GetUniforms()
 /**
 */
 void 
-ClusterContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime)
+ClusterContext::OnBeforeView(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
 {
 	using namespace CoreGraphics;
 

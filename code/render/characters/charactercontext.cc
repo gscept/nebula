@@ -467,7 +467,7 @@ GetAbsoluteStopTime(const CharacterContext::AnimationRuntime& runtime)
 /**
 */
 void 
-CharacterContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime, const Timing::Time time, const Timing::Tick ticks)
+CharacterContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 {
 	using namespace CoreAnimation;
 	const Util::Array<Timing::Time>& times = characterContextAllocator.GetArray<AnimTime>();
@@ -487,7 +487,7 @@ CharacterContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time fram
 	{
 		// update time, get track controller
 		Timing::Time& currentTime = times[i];
-		currentTime += frameTime;
+		currentTime += ctx.frameTime;
 		AnimationTracks& trackController = tracks[i];
 		const AnimResourceId& anim = anims[i];
 		const Util::FixedArray<SkeletonJobJoint>& jobJoint = jobJoints[i];
@@ -515,7 +515,7 @@ CharacterContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time fram
 				if (playing.clip == -1)
 				{
 					// no clip is playing, this acts as replace automatically
-					pending.baseTime = time;
+					pending.baseTime = ctx.time;
 					startedNew = true;
 					playing = pending;
 				}
@@ -580,9 +580,9 @@ CharacterContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time fram
 			if (playing.clip != -1)
 			{
 				// update times
-				playing.evalTime = ticks - (playing.baseTime + playing.startTime);
+				playing.evalTime = ctx.ticks - (playing.baseTime + playing.startTime);
 				playing.prevEvalTime = playing.evalTime;
-				playing.sampleTime = playing.startTime + ticks;
+				playing.sampleTime = playing.startTime + ctx.ticks;
 				playing.prevSampleTime = playing.sampleTime;
 
 				// if not paused, update sample time
@@ -736,7 +736,7 @@ CharacterContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time fram
 /**
 */
 void 
-CharacterContext::OnAfterFrame(const IndexT frameIndex, const Timing::Time frameTime)
+CharacterContext::OnAfterFrame(const Graphics::FrameContext& ctx)
 {
 	if (CharacterContext::runningJobs.Size() > 0)
 	{

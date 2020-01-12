@@ -77,10 +77,10 @@ public:
 	static void SetInnerOuterAngle(const Graphics::GraphicsEntityId id, float inner, float outer);
 
 	/// prepare light visibility
-	static void OnPrepareView(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime);
+	static void OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
 
 	/// prepare light lists
-	static void OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime);
+	static void OnBeforeView(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
 #ifndef PUBLIC_BUILD
 	//
 	static void OnRenderDebug(uint32_t flags);

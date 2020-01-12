@@ -45,7 +45,7 @@ CameraContext::Create()
 /**
 */
 void
-CameraContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime, const Timing::Time time, const Timing::Tick ticks)
+CameraContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 {
 	const Util::Array<Math::matrix44>& proj = cameraAllocator.GetArray<Camera_Projection>();
 	const Util::Array<Math::matrix44>& views = cameraAllocator.GetArray<Camera_View>();

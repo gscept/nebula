@@ -26,7 +26,7 @@ public:
 	static void Create();
 
 	/// runs before frame is updated
-	static void OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime, const Timing::Time time, const Timing::Tick ticks);
+	static void OnBeforeFrame(const Graphics::FrameContext& ctx);
 
 	/// setup as projection and fov
 	static void SetupProjectionFov(const Graphics::GraphicsEntityId id, float aspect, float fov, float znear, float zfar);

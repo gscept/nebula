@@ -109,9 +109,9 @@ public:
 	static void QueryClips(const Graphics::GraphicsEntityId id, Util::FixedArray<CoreAnimation::AnimClip>& outClips);
 
 	/// runs before frame is updated
-	static void OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime, const Timing::Time time, const Timing::Tick ticks);
+	static void OnBeforeFrame(const Graphics::FrameContext& ctx);
 	/// run after frame
-	static void OnAfterFrame(const IndexT frameIndex, const Timing::Time frameTime);
+	static void OnAfterFrame(const Graphics::FrameContext& ctx);
 
 	/// register anim sample mask, and return pointer
 	static CoreAnimation::AnimSampleMask* CreateAnimSampleMask(const Util::StringAtom& name, const Util::FixedArray<Math::scalar>& weights);

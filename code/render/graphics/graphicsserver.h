@@ -28,6 +28,14 @@
 namespace Graphics
 {
 
+struct FrameContext
+{
+	Timing::Time time;
+	Timing::Tick ticks;
+	Timing::Time frameTime;
+	IndexT frameIndex;
+};
+
 class GraphicsContext;
 struct GraphicsContextFunctionBundle;
 struct GraphicsContextState;
@@ -91,9 +99,6 @@ public:
     /// debug rendering
     void RenderDebug(uint32_t flags);
 
-    /// call when plugin is rendered
-    void RenderPlugin(const Util::StringAtom& filter);
-
 	/// register function bundle from graphics context, see GraphicsContextType::Create
 	void RegisterGraphicsContext(GraphicsContextFunctionBundle* context, GraphicsContextState* state);
 	/// unregister function bundle
@@ -108,10 +113,7 @@ private:
 	Ids::IdGenerationPool entityPool;
 
 	Ptr<FrameSync::FrameSyncTimer> timer;
-	Timing::Time time;
-	Timing::Tick ticks;
-	Timing::Time frameTime;
-	IndexT frameIndex;
+	FrameContext frameContext;
 
 	Util::Array<GraphicsContextFunctionBundle*> contexts;
 	Util::Array<GraphicsContextState*> states;
@@ -186,7 +188,7 @@ GraphicsServer::GetCurrentView() const
 inline const Timing::Time 
 GraphicsServer::GetTime() const
 {
-	return this->time;
+	return this->frameContext.time;
 }
 
 //------------------------------------------------------------------------------
@@ -195,7 +197,7 @@ GraphicsServer::GetTime() const
 inline const Timing::Time
 GraphicsServer::GetFrameTime() const
 {
-	return this->frameTime;
+	return this->frameContext.frameTime;
 }
 
 //------------------------------------------------------------------------------
@@ -204,7 +206,7 @@ GraphicsServer::GetFrameTime() const
 inline const IndexT
 GraphicsServer::GetFrameIndex() const
 {
-	return this->frameIndex;
+	return this->frameContext.frameIndex;
 }
 
 } // namespace Graphics

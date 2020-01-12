@@ -47,10 +47,6 @@ ModelContext::Create()
 	_CreateContext();
 
 	__bundle.OnBeforeFrame = ModelContext::OnBeforeFrame;
-	__bundle.OnWaitForWork = nullptr;
-	__bundle.OnBeforeView = ModelContext::OnBeforeView;
-	__bundle.OnAfterView = ModelContext::OnAfterView;
-	__bundle.OnAfterFrame = ModelContext::OnAfterFrame;
 	__bundle.StageBits = &ModelContext::__state.currentStage;
 #ifndef PUBLIC_BUILD
     __bundle.OnRenderDebug = ModelContext::OnRenderDebug;
@@ -252,7 +248,7 @@ ModelContext::GetModelNodeTypes(const Graphics::ContextEntityId id)
 	Go through all models and apply their transforms
 */
 void
-ModelContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime, const Timing::Time time, const Timing::Tick ticks)
+ModelContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 {
 	const Util::Array<ModelInstanceId>& instances = modelContextAllocator.GetArray<1>();
 	const Util::Array<Math::matrix44>& transforms = Models::modelPool->modelInstanceAllocator.GetArray<StreamModelPool::InstanceTransform>();
@@ -324,38 +320,6 @@ ModelContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTim
 			}
 		}
 	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-ModelContext::OnWaitForWork(const IndexT frameIndex, const Timing::Time frameTime)
-{
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-ModelContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime)
-{
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-ModelContext::OnAfterView(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime)
-{
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-ModelContext::OnAfterFrame(const IndexT frameIndex, const Timing::Time frameTime)
-{
 }
 
 //------------------------------------------------------------------------------

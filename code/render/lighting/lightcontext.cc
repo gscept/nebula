@@ -606,7 +606,7 @@ LightContext::SetInnerOuterAngle(const Graphics::GraphicsEntityId id, float inne
 /**
 */
 void 
-LightContext::OnPrepareView(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime)
+LightContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
 {
 	const Graphics::ContextEntityId cid = GetContextId(lightServerState.globalLightEntity);
 
@@ -686,7 +686,7 @@ LightContext::SetGlobalLightViewProjTransform(const Graphics::ContextEntityId id
 /**
 */
 void 
-LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime)
+LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
 {
 	const Graphics::ContextEntityId cid = GetContextId(lightServerState.globalLightEntity);
 	using namespace CoreGraphics;

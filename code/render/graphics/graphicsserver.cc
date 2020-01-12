@@ -304,10 +304,11 @@ void
 GraphicsServer::BeginFrame()
 {
 	this->timer->UpdateTimePolling();
-	this->frameIndex = this->timer->GetFrameIndex();
-	this->frameTime = this->timer->GetFrameTime();
-	this->time = this->timer->GetTime();
-	this->ticks = this->timer->GetTicks();
+	
+	this->frameContext.frameIndex = this->timer->GetFrameIndex();
+	this->frameContext.frameTime = this->timer->GetFrameTime();
+	this->frameContext.time = this->timer->GetTime();
+	this->frameContext.ticks = this->timer->GetTicks();
 
 	// update shader server
 	this->shaderServer->BeforeFrame();
@@ -335,12 +336,12 @@ GraphicsServer::BeginFrame()
 			if (this->contexts[j]->StageBits)
 				*this->contexts[j]->StageBits = Graphics::OnPrepareViewStage;
 			if (this->contexts[j]->OnPrepareView != nullptr)
-				this->contexts[j]->OnPrepareView(view, this->frameIndex, this->frameTime);
+				this->contexts[j]->OnPrepareView(view, this->frameContext);
 		}		
 	}
 
 	// begin frame
-	CoreGraphics::BeginFrame(this->frameIndex);
+	CoreGraphics::BeginFrame(this->frameContext.frameIndex);
 
 	for (i = 0; i < this->contexts.Size(); i++)
 	{
@@ -348,7 +349,7 @@ GraphicsServer::BeginFrame()
 			*this->contexts[i]->StageBits = Graphics::OnBeforeFrameStage;
 
 		if (this->contexts[i]->OnBeforeFrame != nullptr)
-			this->contexts[i]->OnBeforeFrame(this->frameIndex, this->frameTime, this->time, this->ticks);
+			this->contexts[i]->OnBeforeFrame(this->frameContext);
 	}
 }
 
@@ -365,7 +366,7 @@ GraphicsServer::BeforeViews()
 		if (this->contexts[i]->StageBits)
 			*this->contexts[i]->StageBits = Graphics::OnWaitForWorkStage;
 		if (this->contexts[i]->OnWaitForWork != nullptr)
-			this->contexts[i]->OnWaitForWork(this->frameIndex, this->frameTime);
+			this->contexts[i]->OnWaitForWork(this->frameContext);
 	}
 
 	// go through views and call before view
@@ -379,7 +380,7 @@ GraphicsServer::BeforeViews()
 		this->currentView = view;
 
 		// begin frame
-		this->currentView->BeginFrame(this->frameIndex, this->frameTime);
+		this->currentView->BeginFrame(this->frameContext.frameIndex, this->frameContext.time);
 		this->shaderServer->BeforeView();
 
 		IndexT j;
@@ -388,7 +389,7 @@ GraphicsServer::BeforeViews()
 			if (this->contexts[i]->StageBits)
 				*this->contexts[i]->StageBits = Graphics::OnBeforeViewStage;
 			if (this->contexts[j]->OnBeforeView != nullptr)
-				this->contexts[j]->OnBeforeView(view, this->frameIndex, this->frameTime);
+				this->contexts[j]->OnBeforeView(view, this->frameContext);
 		}
 	}
 }
@@ -408,7 +409,7 @@ GraphicsServer::RenderViews()
 		if (!view->enabled)
 			continue;
 
-		view->Render(this->frameIndex, this->frameTime);
+		view->Render(this->frameContext.frameIndex, this->frameContext.time);
 	}
 }
 
@@ -428,7 +429,7 @@ GraphicsServer::EndViews()
 			continue;
 
 		this->shaderServer->AfterView();
-		this->currentView->EndFrame(this->frameIndex, this->frameTime);
+		this->currentView->EndFrame(this->frameContext.frameIndex, this->frameContext.time);
 
 		IndexT j;
 		for (j = 0; j < this->contexts.Size(); j++)
@@ -436,7 +437,7 @@ GraphicsServer::EndViews()
 			if (this->contexts[i]->StageBits)
 				*this->contexts[i]->StageBits = Graphics::OnAfterViewStage;
 			if (this->contexts[j]->OnAfterView != nullptr)
-				this->contexts[j]->OnAfterView(view, this->frameIndex, this->frameTime);
+				this->contexts[j]->OnAfterView(view, this->frameContext);
 		}
 	}
 
@@ -451,7 +452,7 @@ GraphicsServer::EndFrame()
 {
 
 	// stop the graphics side frame
-	CoreGraphics::EndFrame(this->frameIndex);
+	CoreGraphics::EndFrame(this->frameContext.frameIndex);
 
 	// finish frame and prepare for the next one
 	IndexT i;
@@ -460,23 +461,8 @@ GraphicsServer::EndFrame()
 		if (this->contexts[i]->StageBits) 
 			*this->contexts[i]->StageBits = Graphics::OnAfterFrameStage;
 		if (this->contexts[i]->OnAfterFrame != nullptr)
-			this->contexts[i]->OnAfterFrame(this->frameIndex, this->frameTime);
+			this->contexts[i]->OnAfterFrame(this->frameContext);
 	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-GraphicsServer::RenderPlugin(const Util::StringAtom & filter)
-{
-    // finish frame and prepare for the next one
-    IndexT i;
-    for (i = 0; i < this->contexts.Size(); i++)
-    {
-        if (this->contexts[i]->OnRenderAsPlugin != nullptr)
-            this->contexts[i]->OnRenderAsPlugin(this->frameIndex, this->frameTime, filter);
-    }
 }
 
 //------------------------------------------------------------------------------

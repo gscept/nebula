@@ -115,7 +115,7 @@ CalculatePerezDistribution(float t, Math::float4& A, Math::float4& B, Math::floa
 /**
 */
 void
-EnvironmentContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime, const Timing::Time time, const Timing::Tick ticks)
+EnvironmentContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 {
 	Shared::PerTickParams& tickParams = CoreGraphics::ShaderServer::Instance()->GetTickParams();
 	Math::matrix44 transform = Lighting::LightContext::GetTransform(envState.sunEntity);

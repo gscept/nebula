@@ -24,6 +24,7 @@
 #include "graphicsentity.h"
 #include "coregraphics/window.h"
 
+
 #define _DeclarePluginContext() \
 private:\
 	static Graphics::GraphicsContextState __state;\
@@ -153,6 +154,7 @@ namespace Graphics
 
 class View;
 class Stage;
+struct FrameContext;
 
 enum StageBits
 {
@@ -171,12 +173,12 @@ __ImplementEnumBitOperators(StageBits);
 struct GraphicsContextFunctionBundle
 {
 	// frame stages
-	void(*OnPrepareView)(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime);
-	void(*OnBeforeFrame)(const IndexT frameIndex, const Timing::Time frameTime, const Timing::Time time, const Timing::Tick ticks);
-	void(*OnWaitForWork)(const IndexT frameIndex, const Timing::Time frameTime);
-	void(*OnBeforeView)(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime);
-	void(*OnAfterView)(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime);
-	void(*OnAfterFrame)(const IndexT frameIndex, const Timing::Time frameTime);
+	void(*OnPrepareView)(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
+	void(*OnBeforeFrame)(const Graphics::FrameContext& ctx);
+	void(*OnWaitForWork)(const Graphics::FrameContext& ctx);
+	void(*OnBeforeView)(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
+	void(*OnAfterView)(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
+	void(*OnAfterFrame)(const Graphics::FrameContext& ctx);
 
     // debug callbacks
     void(*OnRenderDebug)(uint32_t flags);

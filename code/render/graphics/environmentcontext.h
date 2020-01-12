@@ -18,7 +18,7 @@ public:
 	/// create context
 	static void Create(const Graphics::GraphicsEntityId sun);
 	/// update shader server tick params per frame
-	static void OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime, const Timing::Time time, const Timing::Tick ticks);
+	static void OnBeforeFrame(const Graphics::FrameContext& ctx);
 
 	/// set the fog color
 	static void SetFogColor(const Math::float4& fogColor);
