@@ -2,12 +2,11 @@
 <Nebula version="1">
     <Options exportFlags="4" exportMode="0" scale="1.000000" />
     <States>
-        <ModelNode name="root/pSphere1" material="Static">
+        <ModelNode name="root/pTorus1" material="sur:system/placeholder">
             <Textures>
-                <Texture name="DiffuseMap" value="tex:system/white" />
+                <Texture name="DiffuseMap" value="tex:system/placeholder" />
                 <Texture name="NormalMap" value="tex:system/nobump" />
             </Textures>
-            <Variables />
         </ModelNode>
     </States>
 </Nebula>

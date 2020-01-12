@@ -123,8 +123,6 @@ elseif(N_RENDERER_METAL)
 	add_definitions(-DGRAPHICS_IMPLEMENTATION_NAMESPACE=Metal)
 endif()
 
-option(N_BUILD_NVTT "use NVTT" OFF)
-
 option(N_NEBULA_DEBUG_SHADERS "Compile shaders with debug flag" OFF)
 
 macro(add_shaders_intern)

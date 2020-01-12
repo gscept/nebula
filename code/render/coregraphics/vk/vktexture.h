@@ -21,6 +21,7 @@ struct VkTextureLoadInfo
 	VkImage img;
 	VkDeviceMemory mem;
 	CoreGraphics::TextureDimensions dims;
+	CoreGraphics::TextureRelativeDimensions relativeDims;
 	uint32_t mips;
 	uint32_t layers;
 	uint8_t samples;
@@ -28,6 +29,10 @@ struct VkTextureLoadInfo
 	CoreGraphics::TextureUsage texUsage;
 	CoreGraphics::TextureId alias;
 	CoreGraphics::ImageLayout defaultLayout;
+    bool windowTexture : 1;						// texture is meant to be a window back buffer
+	bool windowRelative : 1;					// size is a window relative percentage if true, other wise size is an absolute size
+	bool bindless : 1;
+    const void* texBuffer; // used when intially loading a texture from memory. Do not assume ownership of this pointer, this is just an intermediate.
 };
 
 struct VkTextureRuntimeInfo

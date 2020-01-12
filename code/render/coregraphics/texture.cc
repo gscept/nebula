@@ -32,7 +32,7 @@ CreateTexture(const TextureCreateInfo& info)
 	TextureId id = texturePool->ReserveResource(info.name, info.tag);
 	n_assert(id.resourceType == TextureIdType);
 	texturePool->LoadFromMemory(id, &info);
-	return id;
+    return id;
 }
 
 //------------------------------------------------------------------------------
@@ -150,6 +150,7 @@ TextureSwapBuffers(const TextureId id)
 void 
 TextureWindowResized(const TextureId id)
 {
+    texturePool->Reload(id);
 }
 
 //------------------------------------------------------------------------------

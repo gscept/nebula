@@ -32,7 +32,7 @@
                "Param": [
                   {
                      "name": "TeamColorMask",
-                     "type": "texture2d",
+                     "type": "textureHandle",
                      "defaultValue": "tex:system/black.dds"
                   },
                   {
@@ -79,7 +79,7 @@
                "Param": [
                   {
                      "name": "TeamColorMask",
-                     "type": "texture2d",
+                     "type": "textureHandle",
                      "defaultValue": "tex:system/black.dds"
                   },
                   {

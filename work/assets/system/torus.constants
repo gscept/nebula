@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Nebula version="4">
+    <Model name="system/torus" bboxcenter="-0.000000,-0.000000,-0.000000,1.000000" bboxextents="1.500000,0.500000,1.500001,0.000000">
+        <ShapeNodes>
+            <ShapeNode name="pTorus1" type="static" path="root/pTorus1" useLOD="false" primitive="0" position="0.000000,0.000000,0.000000,1.000000" rotation="0.000000,0.000000,0.000000,1.000000" scale="1.000000,1.000000,1.000000,0.000000" mesh="msh:system/torus.nvx2" bboxcenter="-0.000000,-0.000000,-0.000000,1.000000" bboxextents="1.500000,0.500000,1.500001,0.000000" />
+        </ShapeNodes>
+    </Model>
+</Nebula>
