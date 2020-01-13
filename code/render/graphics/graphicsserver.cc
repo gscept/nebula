@@ -244,6 +244,9 @@ GraphicsServer::OnWindowResized(CoreGraphics::WindowId wndId)
             this->contexts[i]->OnWindowResized(wndId.id24, mode.GetWidth(), mode.GetHeight());
         }
     }
+
+	// setup gbuffer bindings after frame script is loaded
+	this->shaderServer->SetupGBufferConstants();
 }
 
 //------------------------------------------------------------------------------

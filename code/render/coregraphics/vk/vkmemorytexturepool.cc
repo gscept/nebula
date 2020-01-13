@@ -62,7 +62,6 @@ VkMemoryTexturePool::LoadFromMemory(const Resources::ResourceId id, const void* 
 
     // borrow buffer pointer
     loadInfo.texBuffer = adjustedInfo.buffer;
-
     windowInfo.window = adjustedInfo.window;
     
     if (loadInfo.windowTexture)
@@ -103,24 +102,23 @@ VkMemoryTexturePool::LoadFromMemory(const Resources::ResourceId id, const void* 
 void
 VkMemoryTexturePool::Reload(const Resources::ResourceId id)
 {
-    this->Unload(id);
-    
     this->EnterGet();
-    VkTextureLoadInfo& loadInfo = this->Get<Texture_LoadInfo>(id.resourceId);
-    VkTextureWindowInfo& windowInfo = this->Get<Texture_WindowInfo>(id.resourceId);
+    VkTextureLoadInfo loadInfo = this->Get<Texture_LoadInfo>(id.resourceId);
+    VkTextureWindowInfo windowInfo = this->Get<Texture_WindowInfo>(id.resourceId);
+	this->LeaveGet();
 
     if (!loadInfo.windowTexture && loadInfo.windowRelative)
     {
+		this->Unload(id);
+
         // if the window has been resized, we need to update our dimensions based on relative size
         const CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(windowInfo.window);
         loadInfo.dims.width = SizeT(mode.GetWidth() * loadInfo.relativeDims.width);
         loadInfo.dims.height = SizeT(mode.GetHeight() * loadInfo.relativeDims.height);
         loadInfo.dims.depth = 1;
-    }
-    
-    this->LeaveGet();
 
-    this->Setup(id);
+		this->Setup(id);
+    }
 }
 
 //------------------------------------------------------------------------------

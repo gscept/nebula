@@ -126,7 +126,7 @@ VkMemoryTexturePool::Unload(const Resources::ResourceId id)
 		vkFreeMemory(loadInfo.dev, loadInfo.mem, nullptr);
 
 	// only unload a texture which isn't a window texture, since their textures come from the swap chain
-	if (windowInfo.window == CoreGraphics::WindowId::Invalid())
+	if (!loadInfo.windowTexture)
 	{
 		vkDestroyImage(loadInfo.dev, loadInfo.img, nullptr);
 		vkDestroyImageView(loadInfo.dev, runtimeInfo.view, nullptr);

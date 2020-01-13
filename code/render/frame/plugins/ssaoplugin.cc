@@ -64,8 +64,7 @@ SSAOPlugin::Setup()
 		BarrierStage::ComputeShader,
 		BarrierStage::ComputeShader
 	};
-	ImageSubresourceInfo subres;
-	subres.aspect = CoreGraphics::ImageAspect::ColorBits;
+	ImageSubresourceInfo subres = ImageSubresourceInfo::ColorNoMipNoLayer();
 
 	// hbao generation barriers
 	binfo.name = "HBAO Initial transition";
@@ -132,9 +131,10 @@ SSAOPlugin::Setup()
 		// setup blur table
 		ResourceTableSetTexture(this->blurTableX[i], { this->internalTargets[1], this->hbaoX, 0, CoreGraphics::SamplerId::Invalid() });
 		ResourceTableSetRWTexture(this->blurTableX[i], { this->internalTargets[0], this->hbaoBlurRG, 0, CoreGraphics::SamplerId::Invalid() });
+		ResourceTableCommitChanges(this->blurTableX[i]);
+
 		ResourceTableSetTexture(this->blurTableY[i], { this->internalTargets[0], this->hbaoY, 0, CoreGraphics::SamplerId::Invalid() });
 		ResourceTableSetRWTexture(this->blurTableY[i], { this->textures["SSAO"], this->hbaoBlurR, 0, CoreGraphics::SamplerId::Invalid() });
-		ResourceTableCommitChanges(this->blurTableX[i]);
 		ResourceTableCommitChanges(this->blurTableY[i]);
 	}
 
@@ -331,6 +331,46 @@ SSAOPlugin::Resize()
     {
         TextureWindowResized(target);
     }
+
+	DestroyBarrier(this->barriers[0]);
+	DestroyBarrier(this->barriers[1]);
+	DestroyBarrier(this->barriers[2]);
+	DestroyBarrier(this->barriers[3]);
+
+	CoreGraphics::BarrierCreateInfo binfo =
+	{
+		""_atm,
+		BarrierDomain::Global,
+		BarrierStage::ComputeShader,
+		BarrierStage::ComputeShader
+	};
+	ImageSubresourceInfo subres = ImageSubresourceInfo::ColorNoMipNoLayer();
+
+	// hbao generation barriers
+	binfo.name = "HBAO Initial transition";
+	binfo.textures.Append(TextureBarrier{ this->internalTargets[0], subres, CoreGraphics::ImageLayout::ShaderRead, CoreGraphics::ImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite });
+	binfo.textures.Append(TextureBarrier{ this->internalTargets[1], subres, CoreGraphics::ImageLayout::ShaderRead, CoreGraphics::ImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite });
+	this->barriers[0] = CreateBarrier(binfo);
+	binfo.textures.Clear();
+
+	binfo.name = "HBAO Transition Pass 0 -> 1";
+	binfo.textures.Append(TextureBarrier{ this->internalTargets[0], subres, CoreGraphics::ImageLayout::General, CoreGraphics::ImageLayout::General, BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead });
+	binfo.textures.Append(TextureBarrier{ this->internalTargets[1], subres, CoreGraphics::ImageLayout::General, CoreGraphics::ImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite });
+	this->barriers[1] = CreateBarrier(binfo);
+	binfo.textures.Clear();
+
+	// hbao blur barriers
+	binfo.name = "HBAO Transition to Blur";
+	binfo.textures.Append(TextureBarrier{ this->internalTargets[1], subres, CoreGraphics::ImageLayout::General, CoreGraphics::ImageLayout::ShaderRead, BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead });
+	binfo.textures.Append(TextureBarrier{ this->internalTargets[0], subres, CoreGraphics::ImageLayout::General, CoreGraphics::ImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite });
+	this->barriers[2] = CreateBarrier(binfo);
+	binfo.textures.Clear();
+
+	binfo.name = "HBAO Transition to Blur Pass 0 -> 1";
+	binfo.textures.Append(TextureBarrier{ this->internalTargets[0], subres, CoreGraphics::ImageLayout::General, CoreGraphics::ImageLayout::ShaderRead, BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead });
+	binfo.textures.Append(TextureBarrier{ this->internalTargets[1], subres, CoreGraphics::ImageLayout::ShaderRead, CoreGraphics::ImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite });
+	this->barriers[3] = CreateBarrier(binfo);
+	binfo.textures.Clear();
 
 	SizeT numBuffers = CoreGraphics::GetNumBufferedFrames();
 	IndexT i;
