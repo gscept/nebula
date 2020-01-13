@@ -119,7 +119,6 @@ Im3dContext::~Im3dContext()
 void
 Im3dContext::Create()
 {
-    __bundle.OnRenderAsPlugin = nullptr;
     __bundle.OnBeforeFrame = Im3dContext::OnBeforeFrame;
     __bundle.OnBeforeView = Im3dContext::OnBeforeView;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
@@ -282,7 +281,7 @@ Im3dContext::DrawSphere(const Math::matrix44& modelTransform, const Math::float4
 /**
 */
 void
-Im3dContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime, const Timing::Time time, const Timing::Tick ticks)
+Im3dContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 {
     Im3d::NewFrame();
 }
@@ -291,11 +290,11 @@ Im3dContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime
 /**
 */
 void
-Im3dContext::OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime)
+Im3dContext::OnBeforeView(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
 {
     AppData& ad = GetAppData();
 
-    ad.m_deltaTime = frameTime;
+    ad.m_deltaTime = ctx.frameTime;
     SetGizmoSize(128, 4);
     auto const & mode = CoreGraphics::WindowGetDisplayMode(DisplayDevice::Instance()->GetCurrentWindow());
     ad.m_viewportSize = Vec2((float)mode.GetWidth(), (float)mode.GetHeight());

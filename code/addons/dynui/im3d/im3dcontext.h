@@ -52,10 +52,10 @@ public:
     static void DrawCone(const Math::matrix44& modelTransform, const Math::float4& color, uint32_t depthFlag = CheckDepth | Wireframe);
 
     /// Start a new Im3d frame
-    static void OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime, const Timing::Time time, const Timing::Tick ticks);
+    static void OnBeforeFrame(const Graphics::FrameContext& ctx);
 
     /// called before frame
-    static void OnBeforeView(const Ptr<Graphics::View>& view, const IndexT frameIndex, const Timing::Time frameTime);
+    static void OnBeforeView(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
     /// called when rendering a frame batch
     static void Render(const IndexT frameIndex);
            

@@ -53,13 +53,10 @@ public:
 	/// handle event
 	static bool HandleInput(const Input::InputEvent& event);
 
-    /// called when rendering a frame batch
-    static void OnRenderAsPlugin(const IndexT frameIndex, const Timing::Time frameTime, const Util::StringAtom& filter);
-
     /// called if the window size has changed
     static void OnWindowResized(const CoreGraphics::WindowId windowId, SizeT width, SizeT height);
     /// called before frame
-    static void OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime, const Timing::Time time, const Timing::Tick frameTicks);
+    static void OnBeforeFrame(const Graphics::FrameContext& ctx);
 
 private:
 	struct ImguiState

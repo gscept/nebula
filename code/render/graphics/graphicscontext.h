@@ -192,12 +192,9 @@ struct GraphicsContextFunctionBundle
     void(*OnRemoveEntity)(Graphics::GraphicsEntityId entity);
     void(*OnWindowResized)(const CoreGraphics::WindowId windowId, SizeT width, SizeT height);
 
-	// frame script callbacks
-    void(*OnRenderAsPlugin)(const IndexT frameIndex, const Timing::Time frameTime, const Util::StringAtom& filter);
-
 	StageBits* StageBits;
 	GraphicsContextFunctionBundle() : OnPrepareView(nullptr), OnBeforeFrame(nullptr), OnWaitForWork(nullptr), OnBeforeView(nullptr), OnAfterView(nullptr), OnAfterFrame(nullptr),
-        OnStageCreated(nullptr), OnDiscardStage(nullptr), OnViewCreated(nullptr), OnDiscardView(nullptr), OnAttachEntity(nullptr), OnRemoveEntity(nullptr), OnWindowResized(nullptr), OnRenderAsPlugin(nullptr),
+        OnStageCreated(nullptr), OnDiscardStage(nullptr), OnViewCreated(nullptr), OnDiscardView(nullptr), OnAttachEntity(nullptr), OnRemoveEntity(nullptr), OnWindowResized(nullptr),
 		StageBits(nullptr), OnRenderDebug(nullptr)
 	{
 	};

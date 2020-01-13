@@ -188,7 +188,6 @@ ImguiContext::~ImguiContext()
 void
 ImguiContext::Create()
 {
-    __bundle.OnRenderAsPlugin = ImguiContext::OnRenderAsPlugin;
     __bundle.OnBeforeFrame = ImguiContext::OnBeforeFrame;
     __bundle.OnWindowResized = ImguiContext::OnWindowResized;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
@@ -503,20 +502,6 @@ ImguiContext::HandleInput(const Input::InputEvent& event)
 //------------------------------------------------------------------------------
 /**
 */
-void 
-ImguiContext::OnRenderAsPlugin(const IndexT frameIndex, const Timing::Time frameTime, const Util::StringAtom& filter)
-{
-    //FIME filter
-    if (filter == "IMGUI"_atm)
-    {
-        ImGui::Render();
-        ImguiContext::ImguiDrawFunction();
-    }
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 void
 ImguiContext::OnWindowResized(const CoreGraphics::WindowId windowId, SizeT width, SizeT height)
 {
@@ -528,10 +513,10 @@ ImguiContext::OnWindowResized(const CoreGraphics::WindowId windowId, SizeT width
 /**
 */
 void 
-ImguiContext::OnBeforeFrame(const IndexT frameIndex, const Timing::Time frameTime, const Timing::Time time, const Timing::Tick frameTicks)
+ImguiContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 {
 	ImGuiIO& io = ImGui::GetIO();
-	io.DeltaTime = frameTime;
+	io.DeltaTime = ctx.frameTime;
     ImGui::NewFrame();
 }
 
