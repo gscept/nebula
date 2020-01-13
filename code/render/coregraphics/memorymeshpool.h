@@ -34,17 +34,13 @@ public:
 	/// bind mesh
 	void BindMesh(const MeshId id, const IndexT prim);
 	/// get primitive groups from mesh
-	const Util::Array<CoreGraphics::PrimitiveGroup>& GetPrimitiveGroups(const MeshId id) const;
+	const Util::Array<CoreGraphics::PrimitiveGroup>& GetPrimitiveGroups(const MeshId id);
 	/// get vertex buffer
-	const VertexBufferId GetVertexBuffer(const MeshId id, const IndexT stream) const;	
+	const VertexBufferId GetVertexBuffer(const MeshId id, const IndexT stream);	
 	/// get index buffer
-	const IndexBufferId GetIndexBuffer(const MeshId id) const;
+	const IndexBufferId GetIndexBuffer(const MeshId id);
 	/// get topology
-	const CoreGraphics::PrimitiveTopology::Code GetPrimitiveTopology(const MeshId id) const;
-	/// enter thread-safe get mode
-	void BeginGet();
-	/// exit thread-safe get mode
-	void EndGet();
+	const CoreGraphics::PrimitiveTopology::Code GetPrimitiveTopology(const MeshId id);
 private:
 	friend class StreamMeshPool;
 

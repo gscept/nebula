@@ -37,11 +37,13 @@ MemoryMeshPool::~MemoryMeshPool()
 ResourcePool::LoadStatus
 MemoryMeshPool::LoadFromMemory(const Resources::ResourceId id, const void* info)
 {
+	this->EnterGet();
 	MeshCreateInfo* data = (MeshCreateInfo*)info;
 	MeshCreateInfo& mesh = this->Get<0>(id.resourceId);
 	mesh = *data;
 
 	this->states[id.poolId] = Resource::Loaded;
+	this->LeaveGet();
 
 	return ResourcePool::Success;
 }
@@ -88,9 +90,11 @@ MemoryMeshPool::BindMesh(const MeshId id, const IndexT prim)
 /**
 */
 const Util::Array<CoreGraphics::PrimitiveGroup>&
-MemoryMeshPool::GetPrimitiveGroups(const MeshId id) const
+MemoryMeshPool::GetPrimitiveGroups(const MeshId id)
 {
+	this->EnterGet();
 	const MeshCreateInfo& inf = this->allocator.Get<0>(id.resourceId);
+	this->LeaveGet();
 	return inf.primitiveGroups;
 }
 
@@ -98,9 +102,11 @@ MemoryMeshPool::GetPrimitiveGroups(const MeshId id) const
 /**
 */
 const VertexBufferId
-MemoryMeshPool::GetVertexBuffer(const MeshId id, const IndexT stream) const
+MemoryMeshPool::GetVertexBuffer(const MeshId id, const IndexT stream)
 {
+	this->EnterGet();
 	const MeshCreateInfo& inf = this->allocator.Get<0>(id.resourceId);
+	this->LeaveGet();
 	return inf.streams[stream].vertexBuffer;
 }
 
@@ -108,9 +114,11 @@ MemoryMeshPool::GetVertexBuffer(const MeshId id, const IndexT stream) const
 /**
 */
 const IndexBufferId
-MemoryMeshPool::GetIndexBuffer(const MeshId id) const
+MemoryMeshPool::GetIndexBuffer(const MeshId id)
 {
+	this->EnterGet();
 	const MeshCreateInfo& inf = this->allocator.Get<0>(id.resourceId);
+	this->LeaveGet();
 	return inf.indexBuffer;
 }
 
@@ -118,28 +126,12 @@ MemoryMeshPool::GetIndexBuffer(const MeshId id) const
 /**
 */
 const CoreGraphics::PrimitiveTopology::Code
-MemoryMeshPool::GetPrimitiveTopology(const MeshId id) const
+MemoryMeshPool::GetPrimitiveTopology(const MeshId id)
 {
+	this->EnterGet();
 	const MeshCreateInfo& inf = this->allocator.Get<0>(id.resourceId);
+	this->LeaveGet();
 	return inf.topology;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-MemoryMeshPool::BeginGet()
-{
-	this->allocator.EnterGet();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-MemoryMeshPool::EndGet()
-{
-	this->allocator.LeaveGet();
 }
 
 } // namespace CoreGraphics
