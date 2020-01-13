@@ -116,26 +116,10 @@ EmitterMesh::Setup(const CoreGraphics::MeshId mesh, IndexT primGroupIndex)
         const uchar* src = verts + vertexByteSize * emitterIndices[i];
         EmitterPoint &dst = this->points[i];
         dst.position.load_float3(src + posByteOffset, 1.0f);
-#ifdef __WII__
-
-        s8 *nrm = (s8*)(src+normByteOffset);
-        dst.normal = float4(nrm[0]/64.0f, nrm[1]/64.0f, nrm[2]/64.0f, 0.0f);
-        
-        // wii has no tangent vectors, make some up
-        if (n_abs(dst.normal.x() < 0.1)) 
-        {
-            dst.tangent = float4::cross3(float4(1.0, 0.0, 0.0, 1.0), dst.normal);
-        }
-        else
-        {
-            dst.tangent = float4::cross3(float4(0.0, 1.0, 0.0, 1.0), dst.normal);
-        }
-#else
         dst.normal.load_byte4n(src + normByteOffset, 0.0f);
         dst.normal = Math::float4::normalize(dst.normal);
 		dst.tangent.load_byte4n(src + tanByteOffset, 0.0f);
         dst.tangent = Math::float4::normalize(dst.tangent);
-#endif
     }
 	VertexBufferUnmap(vertexBuffer);
 }

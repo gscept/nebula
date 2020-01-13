@@ -18,7 +18,7 @@
 //------------------------------------------------------------------------------
 namespace Models
 {
-class ParticleSystemNode : public TransformNode
+class ParticleSystemNode : public ShaderStateNode
 {
 public:
     /// constructor
@@ -39,7 +39,7 @@ public:
 	/// get emitter sample buffer
 	const Particles::EnvelopeSampleBuffer& GetSampleBuffer() const;
 
-	struct Instance : public TransformNode::Instance
+	struct Instance : public ShaderStateNode::Instance
 	{
 		enum DynamicOffsetType
 		{

@@ -62,6 +62,8 @@ public:
 	static void OnRenderDebug(uint32_t flags);
 #endif
 
+	static CoreGraphics::MeshId DefaultEmitterMesh;
+
 private:
 
 	struct ParticleRuntime
@@ -126,6 +128,7 @@ private:
 	static Jobs::JobPortId jobPort;
 	static Jobs::JobSyncId jobSync;
 	static Util::Queue<Jobs::JobId> runningJobs;
+
 };
 
 //------------------------------------------------------------------------------

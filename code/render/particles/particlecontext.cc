@@ -21,7 +21,7 @@ _ImplementContext(ParticleContext, ParticleContext::particleContextAllocator);
 
 extern void ParticleStepJob(const Jobs::JobFuncContext& ctx);
 
-
+CoreGraphics::MeshId ParticleContext::DefaultEmitterMesh;
 const Timing::Time DefaultStepTime = 1.0f / 60.0f;
 Timing::Time StepTime = 1.0f / 60.0f;
 
@@ -76,6 +76,80 @@ ParticleContext::Create()
 		nullptr
 	};
 	ParticleContext::jobSync = Jobs::CreateJobSync(sinfo);
+
+	// setup single point emitter mesh
+	float x = 0 * 0.5f * 255.0f;
+	float y = 1 * 0.5f * 255.0f;
+	float z = 0 * 0.5f * 255.0f;
+	float w = 0 * 0.5f * 255.0f;
+	int xBits = (int)x;
+	int yBits = (int)y;
+	int zBits = (int)z;
+	int wBits = (int)w;
+	int normPacked = ((wBits << 24) & 0xFF000000) | ((zBits << 16) & 0x00FF0000) | ((yBits << 8) & 0x0000FF00) | (xBits & 0x000000FF);
+
+	x = 0 * 0.5f * 255.0f;
+	y = 0 * 0.5f * 255.0f;
+	z = 1 * 0.5f * 255.0f;
+	w = 0 * 0.5f * 255.0f;
+	xBits = (int)x;
+	yBits = (int)y;
+	zBits = (int)z;
+	wBits = (int)w;
+	int tangentPacked = ((wBits << 24) & 0xFF000000) | ((zBits << 16) & 0x00FF0000) | ((yBits << 8) & 0x0000FF00) | (xBits & 0x000000FF);
+
+	float vertex[] = { 0, 0, 0, 0, 0 };
+	*(int*)&vertex[3] = normPacked;
+	*(int*)&vertex[4] = tangentPacked;
+
+	Util::Array<CoreGraphics::VertexComponent> emitterComponents;
+	emitterComponents.Append(CoreGraphics::VertexComponent(CoreGraphics::VertexComponent::Position, 0, CoreGraphics::VertexComponent::Float3, 0));
+	emitterComponents.Append(CoreGraphics::VertexComponent(CoreGraphics::VertexComponent::Normal, 0, CoreGraphics::VertexComponent::Byte4N, 0));
+	emitterComponents.Append(CoreGraphics::VertexComponent(CoreGraphics::VertexComponent::Tangent, 0, CoreGraphics::VertexComponent::Byte4N, 0));
+
+	CoreGraphics::VertexBufferCreateInfo vboInfo;
+	vboInfo.data = vertex;
+	vboInfo.comps = emitterComponents;
+	vboInfo.dataSize = sizeof(vertex);
+	vboInfo.numVerts = 1;
+	vboInfo.access = CoreGraphics::GpuBufferTypes::AccessRead;
+	vboInfo.usage = CoreGraphics::GpuBufferTypes::UsageCpu;
+	vboInfo.sync = CoreGraphics::GpuBufferTypes::SyncingFlush;
+	vboInfo.name = "Single Point Particle Emitter VBO";
+	CoreGraphics::VertexBufferId vbo = CoreGraphics::CreateVertexBuffer(vboInfo);
+
+	uint indices[] = { 0 };
+	CoreGraphics::IndexBufferCreateInfo iboInfo;
+	iboInfo.data = indices;
+	iboInfo.type = CoreGraphics::IndexType::Index32;
+	iboInfo.dataSize = sizeof(indices);
+	iboInfo.numIndices = 1;
+	iboInfo.access = CoreGraphics::GpuBufferTypes::AccessRead;
+	iboInfo.usage = CoreGraphics::GpuBufferTypes::UsageCpu;
+	iboInfo.sync = CoreGraphics::GpuBufferTypes::SyncingFlush;
+	iboInfo.name = "Single Point Particle Emitter IBO";
+	CoreGraphics::IndexBufferId ibo = CoreGraphics::CreateIndexBuffer(iboInfo);
+
+	CoreGraphics::PrimitiveGroup group;
+	group.SetBaseIndex(0);
+	group.SetBaseVertex(0);
+	group.SetNumIndices(1);
+	group.SetNumVertices(1);
+	group.SetVertexLayout(CoreGraphics::VertexBufferGetLayout(vbo));
+
+	// setup single point emitter mesh
+	CoreGraphics::MeshCreateInfo meshInfo;
+	CoreGraphics::MeshCreateInfo::Stream stream;
+	stream.vertexBuffer = vbo;
+	stream.index = 0;
+	meshInfo.streams.Append(stream);
+	meshInfo.indexBuffer = ibo;
+	meshInfo.name = "Single Point Particle Emitter Mesh";
+	meshInfo.primitiveGroups.Append(group);
+	meshInfo.topology = CoreGraphics::PrimitiveTopology::PointList;
+	meshInfo.tag = "system";
+	meshInfo.vertexLayout = CoreGraphics::VertexBufferGetLayout(vbo);
+	ParticleContext::DefaultEmitterMesh = CoreGraphics::CreateMesh(meshInfo);
 
 	_CreateContext();
 }

@@ -11,6 +11,7 @@
 #include "coregraphics/mesh.h"
 #include "coregraphics/shaderserver.h"
 #include "coregraphics/transformdevice.h"
+#include "particles/particlecontext.h"
 
 namespace Models
 {
@@ -52,8 +53,10 @@ ParticleSystemNode::UpdateMeshResource(const Resources::ResourceName& resName)
 	// load new mesh
 	this->meshResId = resName;
 
-	if (!this->meshResId.IsValid())
+	if (this->meshResId.IsValid())
 		this->mesh = Resources::CreateResource(this->meshResId, this->tag, nullptr, nullptr, false);
+	else
+		this->mesh = ParticleContext::DefaultEmitterMesh;
 }
 
 //------------------------------------------------------------------------------
@@ -280,7 +283,7 @@ ParticleSystemNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag
     }
     else
     {
-        retval = TransformNode::Load(fourcc, tag, reader, immediate);
+        retval = ShaderStateNode::Load(fourcc, tag, reader, immediate);
     }   
     return retval;    
 }
