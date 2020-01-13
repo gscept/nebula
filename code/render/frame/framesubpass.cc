@@ -53,6 +53,20 @@ FrameSubpass::Discard()
 //------------------------------------------------------------------------------
 /**
 */
+void 
+FrameSubpass::OnWindowResized()
+{
+
+	IndexT i;
+	for (i = 0; i < this->ops.Size(); i++)
+	{
+		this->ops[i]->OnWindowResized();
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 FrameSubpass::CompiledImpl::Run(const IndexT frameIndex)
 {

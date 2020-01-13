@@ -105,6 +105,12 @@ FramePass::OnWindowResized()
 {
 	// resize pass
 	PassWindowResizeCallback(this->pass);
+
+	IndexT i;
+	for (i = 0; i < this->subpasses.Size(); i++)
+	{
+		this->subpasses[i]->OnWindowResized();
+	}
 }
 
 //------------------------------------------------------------------------------

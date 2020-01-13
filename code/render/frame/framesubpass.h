@@ -27,6 +27,9 @@ public:
 	/// discard operation
 	void Discard();
 
+	/// handle display resizing
+	void OnWindowResized() override;
+
 	/// add viewport
 	void AddViewport(const Math::rectangle<int>& rect);
 	/// add viewport

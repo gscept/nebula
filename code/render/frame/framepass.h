@@ -29,7 +29,7 @@ public:
 	/// discard operation
 	void Discard();
 	/// handle display resizing
-	void OnWindowResized();
+	void OnWindowResized() override;
 
 	struct CompiledImpl : public FrameOp::Compiled
 	{
