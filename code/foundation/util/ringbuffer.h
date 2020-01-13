@@ -155,7 +155,8 @@ template<class TYPE>
 RingBuffer<TYPE>::RingBuffer(const RingBuffer<TYPE>& rhs) :
     elements(0)
 {
-    this->Copy(rhs);
+	if (rhs.size > 0)
+		this->Copy(rhs);
 }
 
 //------------------------------------------------------------------------------
@@ -174,7 +175,8 @@ template<class TYPE> void
 RingBuffer<TYPE>::operator=(const RingBuffer<TYPE>& rhs)
 {
     this->Delete();
-    this->Copy(rhs);
+	if (rhs.size > 0)
+		this->Copy(rhs);
 }
 
 //------------------------------------------------------------------------------
