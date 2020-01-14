@@ -77,30 +77,29 @@ ParticleContext::Create()
 	};
 	ParticleContext::jobSync = Jobs::CreateJobSync(sinfo);
 
-	// setup single point emitter mesh
-	float x = 0 * 0.5f * 255.0f;
-	float y = 1 * 0.5f * 255.0f;
-	float z = 0 * 0.5f * 255.0f;
-	float w = 0 * 0.5f * 255.0f;
-	int xBits = (int)x;
-	int yBits = (int)y;
-	int zBits = (int)z;
-	int wBits = (int)w;
-	int normPacked = ((wBits << 24) & 0xFF000000) | ((zBits << 16) & 0x00FF0000) | ((yBits << 8) & 0x0000FF00) | (xBits & 0x000000FF);
+	struct VectorB4N
+	{
+		char x : 8;
+		char y : 8;
+		char z : 8;
+		char w : 8;
+	};
 
-	x = 0 * 0.5f * 255.0f;
-	y = 0 * 0.5f * 255.0f;
-	z = 1 * 0.5f * 255.0f;
-	w = 0 * 0.5f * 255.0f;
-	xBits = (int)x;
-	yBits = (int)y;
-	zBits = (int)z;
-	wBits = (int)w;
-	int tangentPacked = ((wBits << 24) & 0xFF000000) | ((zBits << 16) & 0x00FF0000) | ((yBits << 8) & 0x0000FF00) | (xBits & 0x000000FF);
+	VectorB4N normal;
+	normal.x = 0;
+	normal.y = 127;
+	normal.z = 0;
+	normal.w = 0;
+
+	VectorB4N tangent;
+	tangent.x = 0;
+	tangent.y = 0;
+	tangent.z = 127;
+	tangent.w = 0;
 
 	float vertex[] = { 0, 0, 0, 0, 0 };
-	*(int*)&vertex[3] = normPacked;
-	*(int*)&vertex[4] = tangentPacked;
+	memcpy(&vertex[3], &normal, 4);
+	memcpy(&vertex[4], &tangent, 4);
 
 	Util::Array<CoreGraphics::VertexComponent> emitterComponents;
 	emitterComponents.Append(CoreGraphics::VertexComponent(CoreGraphics::VertexComponent::Position, 0, CoreGraphics::VertexComponent::Float3, 0));
@@ -179,10 +178,17 @@ ParticleContext::Setup(const Graphics::GraphicsEntityId id)
 		Models::ModelNode* node = nodes[i]->node;
 		if (node->type == ParticleSystemNodeType)
 		{
-			ParticleSystemRuntime runtime;
-			runtime.node = reinterpret_cast<Models::ParticleSystemNode::Instance*>(node);
-			Models::ParticleSystemNode* pNode = reinterpret_cast<Models::ParticleSystemNode*>(runtime.node->node);
+			Models::ParticleSystemNode* pNode = reinterpret_cast<Models::ParticleSystemNode*>(nodes[i]->node);
 			const Particles::EmitterAttrs& attrs = pNode->GetEmitterAttrs();
+			float maxFreq = attrs.GetEnvelope(EmitterAttrs::EmissionFrequency).GetMaxValue();
+			float maxLifeTime = attrs.GetEnvelope(EmitterAttrs::LifeTime).GetMaxValue();
+
+			ParticleSystemRuntime runtime;
+			runtime.node = reinterpret_cast<Models::ParticleSystemNode::Instance*>(nodes[i]);
+			runtime.emissionCounter = 0;
+			runtime.particles.SetCapacity(1 + SizeT(maxFreq * maxLifeTime));
+			runtime.outputCapacity = 0;
+			runtime.outputData = nullptr;
 			runtime.uniformData.sampleBuffer = pNode->GetSampleBuffer().GetSampleBuffer();
 			runtime.uniformData.gravity = Math::float4(0.0f, attrs.GetFloat(EmitterAttrs::Gravity), 0.0f, 0.0f);
 			runtime.uniformData.stretchToStart = attrs.GetBool(EmitterAttrs::StretchToStart);
@@ -564,7 +570,6 @@ ParticleContext::EmitParticle(ParticleRuntime& rt, ParticleSystemRuntime& srt, c
 	srt.particles.Add(particle);
 }
 
-
 //------------------------------------------------------------------------------
 /**
 */
@@ -597,7 +602,6 @@ ParticleContext::RunParticleStep(ParticleRuntime& rt, ParticleSystemRuntime& srt
 		srt.outputCapacity = outputSliceCount;
 	}
 
-	
 	ctx.output.data[0] = srt.particles.GetBuffer();
 	ctx.output.dataSize[0] = inputBufferSize;
 	ctx.output.sliceSize[0] = inputSliceSize;
@@ -605,6 +609,7 @@ ParticleContext::RunParticleStep(ParticleRuntime& rt, ParticleSystemRuntime& srt
 	ctx.output.data[1] = srt.outputData;
 	ctx.output.dataSize[1] = outputSliceCount * sizeof(ParticleJobOutput);
 	ctx.output.sliceSize[1] = sizeof(ParticleJobOutput);
+	ctx.output.numBuffers = 2;
 
 	// issue job
 	Jobs::JobId job = Jobs::CreateJob({ Particles::ParticleStepJob });
