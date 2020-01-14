@@ -82,7 +82,7 @@ MemoryMeshPool::BindMesh(const MeshId id, const IndexT prim)
 		CoreGraphics::SetStreamVertexBuffer(inf.streams[i].index, inf.streams[i].vertexBuffer, inf.primitiveGroups[prim].GetBaseVertex());
 
 	if (inf.indexBuffer != CoreGraphics::IndexBufferId::Invalid())
-		CoreGraphics::SetIndexBuffer(inf.indexBuffer, inf.primitiveGroups[prim].GetBaseIndex());
+		CoreGraphics::SetIndexBuffer(inf.indexBuffer, 0);
 	this->allocator.LeaveGet();
 }
 
