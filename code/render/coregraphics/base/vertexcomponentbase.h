@@ -14,6 +14,13 @@
 #include "util/string.h"
 
 //------------------------------------------------------------------------------
+namespace CoreGraphics
+{
+struct VertexLayoutId;
+struct VertexLayoutCreateInfo;
+const VertexLayoutId CreateVertexLayout(const VertexLayoutCreateInfo& info);
+}
+
 namespace Base
 {
 class VertexComponentBase
@@ -115,7 +122,8 @@ public:
     IndexT GetByteOffset() const;
 
 protected:
-    friend class VertexLayoutBase;
+
+	friend const CoreGraphics::VertexLayoutId CoreGraphics::CreateVertexLayout(const CoreGraphics::VertexLayoutCreateInfo& info);
 
     /// set the vertex byte offset (called from VertexLayoutBase::Setup())
     void SetByteOffset(IndexT offset);

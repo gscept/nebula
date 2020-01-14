@@ -25,6 +25,7 @@ CreateVertexLayout(const VertexLayoutCreateInfo& info)
 	for (i = 0; i < info.comps.Size(); i++)
 	{
 		sig.Append(info.comps[i].GetSignature());
+		info.comps[i].byteOffset += size;
 		size += info.comps[i].GetByteSize();
 	}
 	sig = Util::String::Sprintf("%s", sig.AsCharPtr());
