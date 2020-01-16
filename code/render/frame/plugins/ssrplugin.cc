@@ -11,6 +11,7 @@
 #include "graphics/graphicsserver.h"
 #include "graphics/cameracontext.h"
 #include "graphics/view.h"
+#include "ssr_cs.h"
 
 using namespace CoreGraphics;
 using namespace Graphics;
@@ -44,22 +45,22 @@ SSRPlugin::Setup()
     // create shader
 	this->shader = ShaderGet("shd:ssr_cs.fxb");
     this->constants = CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer);
-	this->constantsSlot = ShaderGetResourceSlot(this->shader, "SSRBlock");
-    this->ssrBufferSlot = ShaderGetResourceSlot(this->shader, "ReflectionBuffer");
-
+    this->constantsSlot = ShaderGetResourceSlot(this->shader, "SSRBlock");
+    this->traceBufferSlot = ShaderGetResourceSlot(this->shader, "TraceBuffer");
+    
     SizeT numFrames = CoreGraphics::GetNumBufferedFrames();
 
     this->ssrTables.SetSize(numFrames);
     for (IndexT i = 0; i < numFrames; ++i)
     {
         this->ssrTables[i] = ShaderCreateResourceTable(this->shader, NEBULA_BATCH_GROUP);
-        ResourceTableSetRWTexture(this->ssrTables[i], { this->textures["SSRTraceBuffer"], this->ssrBufferSlot, 0, SamplerId::Invalid() });
+        ResourceTableSetRWTexture(this->ssrTables[i], { this->textures["SSRTraceBuffer"], this->traceBufferSlot, 0, SamplerId::Invalid() });
         ResourceTableCommitChanges(this->ssrTables[i]);
     }
 
 	this->program = ShaderGetProgram(this->shader, ShaderFeatureFromString("Alt0"));
 	
-	FramePlugin::AddCallback("SSR-Trace", [this](IndexT)
+    FramePlugin::AddCallback("SSR-Trace", [this](IndexT)
 	{
         const CameraSettings& cameraSettings = CameraContext::GetSettings(Graphics::GraphicsServer::Instance()->GetCurrentView()->GetCamera());
 
@@ -82,6 +83,7 @@ SSRPlugin::Setup()
         // TODO: for some reason, this doesn't work when passed to the shader. Maybe transpose or something similar?
         Math::matrix44 viewToTextureSpaceMatrix = Math::matrix44::multiply(scrScale, cameraSettings.GetProjTransform());
         
+        SsrCs::SSRBlock ssrBlock;
         viewToTextureSpaceMatrix.storeu(ssrBlock.ViewToTextureSpace);
         uint ssrOffset = CoreGraphics::SetComputeConstants(MainThreadConstantBuffer, ssrBlock);
 
@@ -117,7 +119,7 @@ SSRPlugin::Setup()
 
         TextureDimensions dims = TextureGetDimensions(this->textures["ReflectionBuffer"]);
 
-        uint ssrOffset = CoreGraphics::SetComputeConstants(MainThreadConstantBuffer, ssrBlock);
+        uint ssrOffset = CoreGraphics::SetGraphicsConstants(MainThreadConstantBuffer, ssrBlock);
 
         IndexT frameIndex = CoreGraphics::GetBufferedFrameIndex();
 
@@ -125,7 +127,7 @@ SSRPlugin::Setup()
         ResourceTableCommitChanges(this->ssrTables[frameIndex]);
 
         CoreGraphics::SetShaderProgram(this->program);
-        CoreGraphics::SetResourceTable(this->ssrTables[frameIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+        CoreGraphics::SetResourceTable(this->ssrTables[frameIndex], NEBULA_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
 
         const int TILE_SIZE = 32;
         int workGroups[2] = {
@@ -165,7 +167,7 @@ SSRPlugin::Resize()
 	SizeT numFrames = CoreGraphics::GetNumBufferedFrames();
 	for (IndexT i = 0; i < numFrames; ++i)
 	{
-		ResourceTableSetRWTexture(this->ssrTables[i], { this->textures["SSRTraceBuffer"], this->ssrBufferSlot, 0, SamplerId::Invalid() });
+		ResourceTableSetRWTexture(this->ssrTables[i], { this->textures["SSRTraceBuffer"], this->traceBufferSlot, 0, SamplerId::Invalid() });
 		ResourceTableCommitChanges(this->ssrTables[i]);
 	}
 }

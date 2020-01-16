@@ -11,7 +11,7 @@
 #include "lib/techniques.fxh"
 #include "lib/shared.fxh"
 
-write rg16f image2D ReflectionBuffer;
+write rg16f image2D TraceBuffer;
 
 varblock SSRBlock
 {
@@ -70,7 +70,7 @@ bool TraceScreenSpaceRay(in vec3 rayOrigin,
 	const vec3 rayEnd = rayOrigin + rayDirection * rayLength;
 	
 	// TEMP: the screen-pixel-projection matrix should be precomputed
-	const vec2 ScreenSize = imageSize(ReflectionBuffer) * 2;
+	const vec2 ScreenSize = imageSize(TraceBuffer) * 2;
 	const vec2 InvScreenSize = vec2(1.0f) / ScreenSize;
 
 	const float sx = ScreenSize[0] / 2.0f;
@@ -81,7 +81,7 @@ bool TraceScreenSpaceRay(in vec3 rayOrigin,
 							   0.0,  0.0,  1.0,  0.0,
 							   sx,   sy,   0.0,  1.0 );
 
-	const mat4 proj = scrScale * Projection;
+	const mat4 proj = ViewToTextureSpace;//scrScale * Projection;
 
 	// Project into homogeneous clip space
 	const vec4 H0 = proj * vec4( rayOrigin, 1.0f);
@@ -199,7 +199,7 @@ bool RaymarchScreenSpace(in vec3 rayOrigin,
 	vec3 reflection = (rayDirection * rayOffset) + rayOrigin;
 	float rayLength = length(((rayDirection * marchingStepSize) * maxMarchingSteps) + reflection);
 
-	const vec2 ScreenSize = imageSize(ReflectionBuffer) * 2;
+	const vec2 ScreenSize = imageSize(TraceBuffer) * 2;
 
 	// calculate amount of steps to take
 	float numSteps = maxMarchingSteps;
@@ -248,7 +248,7 @@ void
 csMain()
 {
 	ivec2 location = ivec2(gl_GlobalInvocationID.xy);
-    const vec2 screenSize = imageSize(ReflectionBuffer);
+    const vec2 screenSize = imageSize(TraceBuffer);
 	if (location.x >= screenSize.x || location.y > screenSize.y)
 		return;
 
@@ -274,7 +274,7 @@ csMain()
         reflectionColor = vec4((hitTexCoord * invScreenSize), 0, 0);
 	}
 	
-	imageStore(ReflectionBuffer, location, reflectionColor);
+	imageStore(TraceBuffer, location, reflectionColor);
 }
 
 //------------------------------------------------------------------------------
