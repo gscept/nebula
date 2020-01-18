@@ -285,7 +285,7 @@
 				},
 				{
 					name: "NormalBuffer",
-					clear: [ 0, 0, 0, 0 ],
+					clear: [ 0, 0, 0, -1 ],
 					store: true
 				},
 				{

@@ -9,8 +9,9 @@
 #include "frameplugin.h"
 #include "coregraphics/shader.h"
 #include "coregraphics/resourcetable.h"
+#include "coregraphics/constantbuffer.h"
 // #include "renderutil/drawfullscreenquad.h"
-#include "ssr_cs.h"
+
 namespace Frame
 {
 class SSRPlugin : public FramePlugin
@@ -32,14 +33,14 @@ public:
 private:
     CoreGraphics::ShaderId shader;
 	Util::FixedArray<CoreGraphics::ResourceTableId> ssrTables;
-	IndexT zThicknessSlot;
-	IndexT pixelStrideSlot;
-	IndexT maxStepsSlot;
-    IndexT maxDistanceSlot;
-    IndexT ssrBufferSlot;
+    IndexT traceBufferSlot;
     IndexT constantsSlot;
-    SsrCs::SSRBlock ssrBlock;
 
+	// CoreGraphics::ConstantBinding zThicknessBinding;
+	// CoreGraphics::ConstantBinding pixelStrideBinding;
+	// CoreGraphics::ConstantBinding maxStepsBinding;
+    // CoreGraphics::ConstantBinding maxDistanceBinding;
+    // CoreGraphics::ConstantBinding ViewToTextureSpaceBinding;
 
 	CoreGraphics::ShaderProgramId program;
 

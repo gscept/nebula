@@ -305,13 +305,13 @@ shader
 void csLighting()
 {
 	ivec2 coord = ivec2(gl_GlobalInvocationID.xy);
-	vec3 normal = fetch2D(NormalBuffer, PosteffectSampler, coord, 0).rgb;
+	vec4 normal = fetch2D(NormalBuffer, PosteffectSampler, coord, 0).rgba;
 	float depth = fetch2D(DepthBuffer, PosteffectSampler, coord, 0).r;
 	vec4 material = fetch2D(SpecularBuffer, PosteffectSampler, coord, 0).rgba;
-	//material.a = 1.0f;
-	float ssao = 1.0f - fetch2D(SSAOBuffer, PosteffectSampler, coord, 0).r;
+	// material.a = 1.0f;
+    float ssao = 1.0f - fetch2D(SSAOBuffer, PosteffectSampler, coord, 0).r;
 	float ssaoSq = ssao * ssao;
-	//material = vec4(1, 1, 1, 1.0f); 
+	// material = vec4(1, 1, 1, 1.0f);
 	vec4 albedo = fetch2D(AlbedoBuffer, PosteffectSampler, coord, 0).rgba;
 
 	// convert screen coord to view-space position
@@ -319,7 +319,7 @@ void csLighting()
 	vec4 worldPos = ViewToWorld(viewPos);
 	vec3 worldViewVec = normalize(EyePos.xyz - worldPos.xyz);
 	vec3 viewVec = -normalize(viewPos.xyz);
-	vec3 viewNormal = (View * vec4(normal, 0)).xyz;
+	vec3 viewNormal = (View * vec4(normal.xyz, 0)).xyz;
 
 	uint3 index3D = CalculateClusterIndex(coord / BlockSize, viewPos.z, InvZScale, InvZBias); 
 	uint idx = Pack3DTo1D(index3D, NumCells.x, NumCells.y);
@@ -327,31 +327,31 @@ void csLighting()
 	vec3 light = vec3(0,0,0); 
 
 	// render lights where we have geometry
-	if (normal.z != -1.0f)
+	if (normal.a != -1.0f)
 	{
 		// render global light
-		light += GlobalLight(worldPos, worldViewVec, normal, depth, material, albedo);
+		light += GlobalLight(worldPos, worldViewVec, normal.xyz, depth, material, albedo);
 
 		// render local lights
-		light += LocalLights(idx, viewPos, viewVec, viewNormal, depth, material, albedo) * ssao;
+		light += LocalLights(idx, viewPos, viewVec, viewNormal, depth, material, albedo);
 
 		// reflections and irradiance
 		vec3 reflectVec = reflect(-worldViewVec, normal.xyz);
-		float x = dot(-viewNormal, worldViewVec);
+		float x = dot(normal.xyz, worldViewVec);
 		vec3 rim = FresnelSchlickGloss(material.rgb, x, material.a);
-		vec3 reflection = sampleCubeLod(EnvironmentMap, CubeSampler, reflectVec, (1.0f - material.a) * NumEnvMips).rgb * rim * ssao;
-		vec3 irradiance = sampleCubeLod(IrradianceMap, CubeSampler, normal.xyz, 0).rgb * ssao;
+		vec3 reflection = sampleCubeLod(EnvironmentMap, CubeSampler, reflectVec, (1.0f - material.a) * NumEnvMips).rgb * rim;
+        vec3 irradiance = sampleCubeLod(IrradianceMap, CubeSampler, normal.xyz, 0).rgb * ssao;
 		float cavity = 1.0f; // todo: replace with material cavity
 		light += (irradiance * albedo.rgb + reflection) * cavity;
-
+        
 		// sky light
-		light += Preetham(normal, GlobalLightDirWorldspace.xyz, A, B, C, D, E, Z) * albedo.rgb * ssao;
+		light += Preetham(normal.xyz, GlobalLightDirWorldspace.xyz, A, B, C, D, E, Z) * albedo.rgb * ssao;
 	}	
 	else // sky pixels
 	{
 		light += Preetham(normalize(worldPos.xyz), GlobalLightDirWorldspace.xyz, A, B, C, D, E, Z)* GlobalLightColor.xyz;
 	}
-
+    
 	// write final output
 	imageStore(Lighting, coord, light.xyzx);
 }

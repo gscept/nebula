@@ -40,7 +40,7 @@ psNotaUnit(
 	[color2] out vec4 Material)
 {
 	vec4 diffColor = sample2D(AlbedoMap, TeamSampler, UV) * vec4(MatAlbedoIntensity.rgb, 1);
-    float roughness = 0; //sample2D(RoughnessMap, TeamSampler, UV).r * MatRoughnessIntensity;
+    float roughness = sample2D(RoughnessMap, TeamSampler, UV).r * MatRoughnessIntensity;
 	vec4 specColor = sample2D(SpecularMap, TeamSampler, UV) * MatSpecularIntensity;
 	float cavity = sample2D(CavityMap, TeamSampler, UV).r;
     float teamMask = sample2D(TeamColorMask, TeamSampler, UV).r;
