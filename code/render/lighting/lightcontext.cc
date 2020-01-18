@@ -355,6 +355,16 @@ LightContext::Create()
 //------------------------------------------------------------------------------
 /**
 */
+void
+LightContext::Discard()
+{
+	Frame::FrameServer::Instance()->UnloadFrameScript("shadowmap_framescript");
+	Graphics::GraphicsServer::Instance()->UnregisterGraphicsContext(&__bundle);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void 
 LightContext::SetupGlobalLight(const Graphics::GraphicsEntityId id, const Math::float4& color, const float intensity, const Math::float4& ambient, const Math::float4& backlight, const float backlightFactor, const Math::vector& direction, bool castShadows)
 {

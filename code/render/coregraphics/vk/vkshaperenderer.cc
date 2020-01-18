@@ -63,7 +63,6 @@ VkShapeRenderer::Open()
 	this->CreateBoxShape();
 	this->CreateCylinderShape();
 	this->CreateSphereShape();
-	this->CreateTorusShape();
 	this->CreateConeShape();
 
 	// lookup ModelViewProjection shader variable
@@ -132,8 +131,6 @@ VkShapeRenderer::Close()
 	// unload shape meshes
 	DiscardResource(this->shapeMeshResources[RenderShape::Box]);
 	DiscardResource(this->shapeMeshResources[RenderShape::Sphere]);
-	DiscardResource(this->shapeMeshResources[RenderShape::Cylinder]);
-	DiscardResource(this->shapeMeshResources[RenderShape::Torus]);
 	DiscardResource(this->shapeMeshResources[RenderShape::Cone]);
 	this->shapeMeshResources.Clear();
 
