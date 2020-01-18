@@ -157,6 +157,8 @@ SimpleViewerApplication::Close()
     DestroyWindow(this->wnd);
     this->gfxServer->DiscardStage(this->stage);
     this->gfxServer->DiscardView(this->view);
+    ObserverContext::Discard();
+    Lighting::LightContext::Discard();
 
     this->gfxServer->Close();
     this->inputServer->Close();
