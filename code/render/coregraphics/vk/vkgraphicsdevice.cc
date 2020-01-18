@@ -1348,7 +1348,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 			Util::String::Sprintf("%s Global Vertex Buffer %d", threadName[i], i),
 			CoreGraphics::GpuBufferTypes::AccessWrite,
 			CoreGraphics::GpuBufferTypes::UsageDynamic,
-			CoreGraphics::GpuBufferTypes::SyncingCoherent | CoreGraphics::GpuBufferTypes::SyncingPersistent,
+			CoreGraphics::GpuBufferTypes::SyncingAutomatic,
 			info.globalVertexBufferMemorySize[i] * info.numBufferedFrames, // memory size should be divided by 4
 		};
 		state.globalVertexBufferMaxValue[i] = info.globalVertexBufferMemorySize[i];
@@ -1365,7 +1365,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 			"system",
 			CoreGraphics::GpuBufferTypes::AccessWrite,
 			CoreGraphics::GpuBufferTypes::UsageDynamic,
-			CoreGraphics::GpuBufferTypes::SyncingCoherent | CoreGraphics::GpuBufferTypes::SyncingPersistent,
+			CoreGraphics::GpuBufferTypes::SyncingAutomatic,
 			IndexType::Index32,
 			info.globalIndexBufferMemorySize[i] * info.numBufferedFrames / 4,
 		};
@@ -2204,6 +2204,7 @@ SetShaderProgram(const CoreGraphics::ShaderProgramId pro, const CoreGraphics::Qu
 void
 SetResourceTable(const CoreGraphics::ResourceTableId table, const IndexT slot, ShaderPipeline pipeline, const Util::FixedArray<uint>& offsets, const CoreGraphics::QueueType queue)
 {
+	n_assert(table != CoreGraphics::ResourceTableId::Invalid());
 	switch (pipeline)
 	{
 	case GraphicsPipeline:

@@ -17,9 +17,9 @@ namespace GpuBufferTypes
 	/// resource usage flags
 	enum Usage
 	{
-		UsageImmutable,      //> can only be read by GPU, not written, cannot be accessed by CPU
-		UsageDynamic,        //> can only be read by GPU, can only be written by CPU
-		UsageCpu,            //> a resource which is only accessible by the CPU and can't be used for rendering
+		UsageImmutable,      //> read only on GPU, upload once on CPU, never read back
+		UsageDynamic,        //> same as immutable, except supports multiple CPU uploads
+		UsageCpu,            //> same as dynamic, but can also be read by CPU
 	};
 
 	// cpu access flags
@@ -44,9 +44,8 @@ namespace GpuBufferTypes
 	// streaming methods
 	enum Syncing
 	{
-		SyncingFlush,				// CPU has to flush resource to GPU in order to sync it
-		SyncingPersistent,			// buffer is persistently mapped, no need to unmap
-		SyncingCoherent				// resource is coherent on GPU and CPU when mapped
+		SyncingManual,				// CPU has to flush resource to GPU in order to sync it
+		SyncingAutomatic				// resource is coherent on GPU and CPU when mapped
 	};
 	
 
