@@ -35,6 +35,9 @@ public:
 	/// setup light context
 	static void Create();
 
+	/// discard light context
+	static void Discard();
+
 	/// setup entity as global light
 	static void SetupGlobalLight(const Graphics::GraphicsEntityId id, const Math::float4& color, const float intensity, const Math::float4& ambient, const Math::float4& backlight, const float backlightFactor, const Math::vector& direction, bool castShadows = false);
 	/// setup entity as point light source
