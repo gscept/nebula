@@ -360,16 +360,7 @@ psLightMaterial(in vec4 lightValues,
     return color;
 }
 
-//-------------------------------------------------------------------------------------------------------------
-/**
-    Compute screen ccordinates
-*/
-vec2
-psComputeScreenCoord(in vec2 screenPixel, in vec2 pixelSize)
-{
-    vec2 screenUv = screenPixel.xy * pixelSize.xy;
-    return screenUv;
-}
+
 
 #define PI 3.14159265
 #define ONE_OVER_PI 1/PI
@@ -520,6 +511,16 @@ float
 DelinearizeDepth(float depth)
 {
 	return -((FocalLengthNearFar.z + FocalLengthNearFar.w) * depth - (2 * FocalLengthNearFar.z)) / ((FocalLengthNearFar.z - FocalLengthNearFar.w) * depth);
+}
+
+//-------------------------------------------------------------------------------------------------------------
+/**
+	Convert pixel to normalized [0,1] space
+*/
+vec2
+PixelToNormalized(in vec2 screenCoord, in vec2 pixelSize)
+{
+	return screenCoord.xy * pixelSize.xy;
 }
 
 //-------------------------------------------------------------------------------------------------------------

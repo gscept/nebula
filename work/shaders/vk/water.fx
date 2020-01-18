@@ -239,7 +239,7 @@ psDefault(
 	
 	// calculate screen space UV coordinate
 	vec2 pixelSize = ColorMapPixelSize;
-	vec2 screenUv = psComputeScreenCoord(gl_FragCoord.xy, pixelSize.xy);
+	vec2 screenUv = PixelToNormalized(gl_FragCoord.xy, pixelSize.xy);
 	
 	// calculating pixel position in light space
 	/*

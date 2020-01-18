@@ -142,16 +142,16 @@
 				height: 1.0,
 				type: "Texture2D"
 			},
-      {
-        name: "SSRTraceBuffer",
-        format: "R16G16F",
-        relative: true,
-        usage: "ReadWrite",
-        width: 0.5,
-        height: 0.5,
-        type: "Texture2D"
-      },
-      {
+			{
+				name: "SSRTraceBuffer",
+				format: "R16G16F",
+				relative: true,
+				usage: "ReadWrite",
+				width: 0.5,
+				height: 0.5,
+				type: "Texture2D"
+			},
+			{
 				name: "ReflectionBuffer",
 				format: "R16G16B16A16F",
 				relative: true,
@@ -164,7 +164,17 @@
 				name: "ZBuffer",
 				format: "D32S8",
 				relative: true,
-				usage: "Render",
+				usage: "Render|Copy",
+				width: 1.0,
+				height: 1.0,
+				type: "Texture2D"
+			},
+			{
+				name: "ZBufferCopy",
+				format: "D32S8",
+				relative: true,
+				usage: "Render|Copy",
+				mips: "auto",
 				width: 1.0,
 				height: 1.0,
 				type: "Texture2D"
@@ -222,7 +232,7 @@
 						name: "SSRTraceBuffer",
 						texture: "SSRTraceBuffer"
 					},
-          {
+					{
 						name: "ReflectionBuffer",
 						texture: "ReflectionBuffer"
 					},
@@ -307,6 +317,12 @@
 			},
 		}
 
+		copy: {
+			name: "Copy Depth"
+			from: "ZBuffer",
+			to: "ZBufferCopy"
+		},
+
 		end_submission: {
 			queue: "Graphics",
 		}
@@ -379,62 +395,62 @@
 		},
 
 		_comment: "------------ CLUSTERING DEFERRED ------------",
-    plugin: {
-      name: "LightContext - Deferred Cluster",
-      inputs: [
-        {
-          name: "AlbedoBuffer",
-          access: "ShaderRead",
-          layout: "ShaderRead",
-          stage: "ComputeShader",
-          aspect: "Color"
-        },
-        {
-          name: "NormalBuffer",
-          access: "ShaderRead",
-          layout: "ShaderRead",
-          stage: "ComputeShader",
-          aspect: "Color"
-        },
-        {
-          name: "SpecularBuffer",
-          access: "ShaderRead",
-          layout: "ShaderRead",
-          stage: "ComputeShader",
-          aspect: "Color"
-        },
-        {
-          name: "ZBuffer",
-          access: "ShaderRead",
-          layout: "DepthStencilRead",
-          stage: "ComputeShader",
-          aspect: "Depth|Stencil"
-        },
-        {
-          name: "SSAOBuffer",
-          access: "ShaderRead",
-          layout: "ShaderRead",
-          stage: "ComputeShader",
-          aspect: "Color"
-        },
-        {
-          name: "ReflectionBuffer",
-          access: "ShaderRead",
-          layout: "ShaderRead",
-          stage: "PixelShader",
-          aspect: "Color"
-        },
-      ]
-      outputs: [
-        {
-          name: "LightBuffer",
-          access: "ShaderWrite",
-          layout: "General",
-          stage: "ComputeShader",
-          aspect: "Color"
-        }
-      ]
-    }
+		plugin: {
+			name: "LightContext - Deferred Cluster",
+			inputs: [
+				{
+					name: "AlbedoBuffer",
+					access: "ShaderRead",
+					layout: "ShaderRead",
+					stage: "ComputeShader",
+					aspect: "Color"
+				},
+				{
+					name: "NormalBuffer",
+					access: "ShaderRead",
+					layout: "ShaderRead",
+					stage: "ComputeShader",
+					aspect: "Color"
+				},
+				{
+					name: "SpecularBuffer",
+					access: "ShaderRead",
+					layout: "ShaderRead",
+					stage: "ComputeShader",
+					aspect: "Color"
+				},
+				{
+					name: "ZBuffer",
+					access: "ShaderRead",
+					layout: "DepthStencilRead",
+					stage: "ComputeShader",
+					aspect: "Depth|Stencil"
+				},
+				{
+					name: "SSAOBuffer",
+					access: "ShaderRead",
+					layout: "ShaderRead",
+					stage: "ComputeShader",
+					aspect: "Color"
+				},
+				{
+					name: "ReflectionBuffer",
+					access: "ShaderRead",
+					layout: "ShaderRead",
+					stage: "PixelShader",
+					aspect: "Color"
+				},
+			]
+			outputs: [
+				{
+					name: "LightBuffer",
+					access: "ShaderWrite",
+					layout: "General",
+					stage: "ComputeShader",
+					aspect: "Color"
+				}
+			]
+		}
 
 		_comment: "------------ BLOOM ------------",
 		pass: {
@@ -473,7 +489,6 @@
 		},
 
 		_comment: "------------ BLOOM BLUR ------------",
-
 		blit: {
 			name: "Bloom Downsample"
 			from: "BloomBuffer",
@@ -542,7 +557,7 @@
 
 			depth_stencil: {
 				name: "ZBuffer",
-				store: true,
+				store: false,
 				load: true
 			},
 
@@ -596,7 +611,19 @@
 				depth: true,
 				attachments: [ "ColorBuffer" ],
 
+				resources: [
+					{
+						name: "ZBufferCopy",
+						access: "DepthAttachmentRead",
+						layout: "DepthStencilRead",
+						stage: "ComputeShader",
+						aspect: "Depth"
+					}
+				]
+
 				batch: "DirectToColor",
+				batch: "ParticleUnlit",
+				batch: "ParticleLit",
 				plugin: {
 					name: "Im3D",
 				},

@@ -118,7 +118,7 @@ psMain(in vec3 ViewSpacePos,
 	[color1] out vec4 Unshaded)
 {
 	vec2 normalMapPixelSize = GetPixelSize(AlbedoMap);
-	vec2 screenUv = psComputeScreenCoord(gl_FragCoord.xy, normalMapPixelSize.xy);
+	vec2 screenUv = PixelToNormalized(gl_FragCoord.xy, normalMapPixelSize.xy);
 	
 	vec4 dstColor = vec4(0,0,0,0);
 	SampleTexture(UVSet1.xy, Color, dstColor);

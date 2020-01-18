@@ -137,7 +137,7 @@ psMain(in vec3 viewSpacePosition,
 	[color0] out vec4 Color)
 {	
 	vec2 pixelSize = GetPixelSize(DepthMap);
-	vec2 screenUV = psComputeScreenCoord(gl_FragCoord.xy, pixelSize.xy);
+	vec2 screenUV = PixelToNormalized(gl_FragCoord.xy, pixelSize.xy);
 	float depth = textureLod(DepthMap, screenUV, 0).r;
 		
 	// get view space position

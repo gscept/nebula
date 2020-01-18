@@ -127,6 +127,7 @@ group(TICK_GROUP) shared varblock PerTickParams
 	textureHandle EmissiveBuffer;
 	textureHandle LightBuffer;
 	textureHandle IrradianceMap;
+	textureHandle DepthBufferCopy;
 };
 
 group(TICK_GROUP) shared varblock ForwardLightBlock

@@ -165,7 +165,7 @@ psVolumetricGlobal(in vec3 ViewSpacePos,
 		[color0] out vec4 Color) 
 {
 	vec2 pixelSize = RenderTargetDimensions[0].xy;
-	vec2 screenUV = psComputeScreenCoord(gl_FragCoord.xy, pixelSize.xy);
+	vec2 screenUV = PixelToNormalized(gl_FragCoord.xy, pixelSize.xy);
 	
 	float unshaded = texture(UnshadedTexture, screenUV).a;
 	
