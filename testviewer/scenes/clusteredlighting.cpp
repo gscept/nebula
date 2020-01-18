@@ -10,6 +10,7 @@ namespace ClusteredSceneData
 {
 
 Graphics::GraphicsEntityId entity;
+Graphics::GraphicsEntityId tower;
 Graphics::GraphicsEntityId ground;
 Graphics::GraphicsEntityId particle;
 Util::Array<Graphics::GraphicsEntityId> entities;
@@ -77,6 +78,13 @@ void OpenScene()
         }
     }
 
+    tower = Graphics::CreateEntity();
+    Graphics::RegisterEntity<ModelContext, ObservableContext>(tower);
+    ModelContext::Setup(tower, "mdl:Buildings/castle_tower.n3", "Viewer");
+    ModelContext::SetTransform(tower, Math::matrix44::translation(Math::float4(4, 0, -7, 1)));
+    entities.Append(tower);
+    entityNames.Append("Tower");
+
     ground = Graphics::CreateEntity();
     Graphics::RegisterEntity<ModelContext, ObservableContext>(ground);
     ModelContext::Setup(ground, "mdl:environment/Groundplane.n3", "Viewer");
@@ -93,6 +101,7 @@ void OpenScene()
 	entityNames.Append("Particle");
 
     // setup visibility
+    ObservableContext::Setup(tower, VisibilityEntityType::Model);
     ObservableContext::Setup(ground, VisibilityEntityType::Model);
 	ObservableContext::Setup(particle, VisibilityEntityType::Model);
 

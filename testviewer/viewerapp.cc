@@ -23,6 +23,7 @@
 #include "graphics/environmentcontext.h"
 #include "clustering/clustercontext.h"
 #include "scenes/scenes.h"
+#include "debug/framescriptinspector.h"
 
 using namespace Timing;
 using namespace Graphics;
@@ -159,6 +160,8 @@ SimpleViewerApplication::Close()
     DestroyWindow(this->wnd);
     this->gfxServer->DiscardStage(this->stage);
     this->gfxServer->DiscardView(this->view);
+    ObserverContext::Discard();
+    Lighting::LightContext::Discard();
 
     this->gfxServer->Close();
     this->inputServer->Close();
@@ -275,6 +278,8 @@ SimpleViewerApplication::RenderUI()
         ImGui::EndMainMenuBar();
     }
     ImGui::PopStyleColor();
+
+    Debug::FrameScriptInspector::Run(this->view->GetFrameScript());
 }
 
 //------------------------------------------------------------------------------
