@@ -102,6 +102,9 @@ SimpleViewerApplication::Open()
         // create contexts, this could and should be bundled together
         CameraContext::Create();
         ModelContext::Create();
+		Particles::ParticleContext::Create();
+
+		// make sure all bounding box modifying contexts are created before the observer contexts
         ObserverContext::Create();
         ObservableContext::Create();
 

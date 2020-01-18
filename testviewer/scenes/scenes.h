@@ -27,6 +27,7 @@
 #include "graphics/environmentcontext.h"
 #include "clustering/clustercontext.h"
 #include "math/matrix44.h"
+#include "particles/particlecontext.h"
 
 struct Scene
 {
@@ -41,14 +42,16 @@ struct Scene
 extern Scene ExampleScene;
 extern Scene ClusteredScene;
 extern Scene SSRScene;
+extern Scene BenchmarkScene;
 
 // Don't forget to add them to the list of scenes!
 static Scene* scenes[] = {
     &ExampleScene,
     &ClusteredScene,
+	&BenchmarkScene,
     &SSRScene
 };
 
 // Which is the currently active scene?
 // This is used to determine which scenes callbacks to call and is normally changed via imgui
-static int currentScene = 1;
+static int currentScene = 3;

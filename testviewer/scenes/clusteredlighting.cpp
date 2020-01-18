@@ -11,6 +11,7 @@ namespace ClusteredSceneData
 
 Graphics::GraphicsEntityId entity;
 Graphics::GraphicsEntityId ground;
+Graphics::GraphicsEntityId particle;
 Util::Array<Graphics::GraphicsEntityId> entities;
 Util::Array<Util::String> entityNames;
 Util::Array<Graphics::GraphicsEntityId> pointLights;
@@ -76,13 +77,6 @@ void OpenScene()
         }
     }
 
-    entity = Graphics::CreateEntity();
-    Graphics::RegisterEntity<ModelContext, ObservableContext>(entity);
-    ModelContext::Setup(entity, "mdl:system/placeholder.n3", "Viewer");
-    ModelContext::SetTransform(entity, Math::matrix44::translation(Math::float4(0, 0, 0, 1)));
-    entities.Append(entity);
-    entityNames.Append("Shitbox");
-
     ground = Graphics::CreateEntity();
     Graphics::RegisterEntity<ModelContext, ObservableContext>(ground);
     ModelContext::Setup(ground, "mdl:environment/Groundplane.n3", "Viewer");
@@ -90,9 +84,17 @@ void OpenScene()
     entities.Append(ground);
     entityNames.Append("Ground");
 
+	particle = Graphics::CreateEntity();
+	Graphics::RegisterEntity<ModelContext, ObservableContext, Particles::ParticleContext>(particle);
+	ModelContext::Setup(particle, "mdl:Particles/Build_dust.n3", "Viewer");
+	Particles::ParticleContext::Setup(particle);
+	Particles::ParticleContext::Play(particle, Particles::ParticleContext::RestartIfPlaying);
+	entities.Append(particle);
+	entityNames.Append("Particle");
+
     // setup visibility
-    ObservableContext::Setup(entity, VisibilityEntityType::Model);
     ObservableContext::Setup(ground, VisibilityEntityType::Model);
+	ObservableContext::Setup(particle, VisibilityEntityType::Model);
 
     const Util::StringAtom modelRes[] = { "mdl:Units/Unit_Archer.n3",  "mdl:Units/Unit_Footman.n3",  "mdl:Units/Unit_Spearman.n3" };
     //const Util::StringAtom modelRes[] = { "mdl:system/placeholder.n3",  "mdl:system/placeholder.n3",  "mdl:system/placeholder.n3" };
