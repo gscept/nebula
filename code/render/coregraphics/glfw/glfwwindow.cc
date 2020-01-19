@@ -506,6 +506,10 @@ DestroyWindow(const WindowId id)
 #if __VULKAN__
 	// discard swapchain
 	Vulkan::DiscardVulkanSwapchain(id);
+	// wait for queues to empty
+	VkWindowSwapInfo& wndInfo = glfwWindowAllocator.Get<GLFW_WindowSwapInfo>(id.id24);
+	CoreGraphics::WaitForAllQueues();
+	vkDeviceWaitIdle(wndInfo.dev);
 #endif
 
 	// close event
