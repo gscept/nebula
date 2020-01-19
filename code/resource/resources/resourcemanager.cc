@@ -70,10 +70,10 @@ ResourceManager::Close()
 		ResourcePool* pool = this->pools[i];
         for (auto & kvp : pool->ids)
         {
-            if (pool->GetUsage(kvp.second) != 0)
+            if (pool->GetUsage(kvp.Value()) != 0)
             {
-                const Resources::ResourceName& name = kvp.first;
-                Util::String msg = Util::String::Sprintf("Resource <%s> (id %d) from pool %d is not unloaded, usage is '%d'\n", name.Value(), kvp.second.resourceId, pool->uniqueId, pool->GetUsage(kvp.second));
+                const Resources::ResourceName& name = kvp.Key();
+                Util::String msg = Util::String::Sprintf("Resource <%s> (id %d) from pool %d is not unloaded, usage is '%d'\n", name.Value(), kvp.Value().resourceId, pool->uniqueId, pool->GetUsage(kvp.Value()));
                 Core::SysFunc::DebugOut(msg.AsCharPtr());
                 hasLeaks = true;
             }

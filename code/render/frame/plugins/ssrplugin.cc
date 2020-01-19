@@ -150,7 +150,6 @@ void
 SSRPlugin::Discard()
 {
 	FramePlugin::Discard();
-	DestroyConstantBuffer(this->constants);
     for (auto& table : this->ssrTables)
     {
 	    DestroyResourceTable(table);

@@ -103,7 +103,14 @@ void
 GraphicsFeatureUnit::OnDeactivate()
 {
     FeatureUnit::OnDeactivate();
+    DestroyWindow(this->wnd);
+    this->gfxServer->DiscardStage(this->defaultStage);
+    this->gfxServer->DiscardView(this->defaultView);
+    ObserverContext::Discard();
+    Lighting::LightContext::Discard();
 
+    this->gfxServer->Close();
+    this->inputServer->Close();
 	GraphicsComponent::Discard();
 }
 
