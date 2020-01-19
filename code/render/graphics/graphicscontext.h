@@ -23,6 +23,7 @@
 #include "util/arraystack.h"
 #include "graphicsentity.h"
 #include "coregraphics/window.h"
+#include "util/bit.h"
 
 
 #define _DeclarePluginContext() \
@@ -67,7 +68,7 @@ void ctx::DeregisterEntity(const Graphics::GraphicsEntityId id)\
 {\
 	IndexT i = __state.entitySliceMap.FindIndex(id);\
 	n_assert(i != InvalidIndex);\
-	if (__state.allowedRemoveStages & __state.currentStage) \
+	if (Util::HasBit(__state.allowedRemoveStages, __state.currentStage)) \
 	{ \
 		__state.Dealloc(__state.entitySliceMap.ValueAtIndex(id, i));\
 		__state.entitySliceMap.EraseIndex(id, i);\
