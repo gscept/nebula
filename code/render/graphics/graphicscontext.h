@@ -23,8 +23,6 @@
 #include "util/arraystack.h"
 #include "graphicsentity.h"
 #include "coregraphics/window.h"
-#include "util/bit.h"
-
 
 #define _DeclarePluginContext() \
 private:\
@@ -68,7 +66,7 @@ void ctx::DeregisterEntity(const Graphics::GraphicsEntityId id)\
 {\
 	IndexT i = __state.entitySliceMap.FindIndex(id);\
 	n_assert(i != InvalidIndex);\
-	if (Util::HasBit(__state.allowedRemoveStages, __state.currentStage)) \
+	if (__state.allowedRemoveStages & __state.currentStage) \
 	{ \
 		__state.Dealloc(__state.entitySliceMap.ValueAtIndex(id, i));\
 		__state.entitySliceMap.EraseIndex(id, i);\
@@ -159,13 +157,13 @@ struct FrameContext;
 
 enum StageBits
 {
-	NoStage,
-	OnPrepareViewStage,
-	OnBeforeFrameStage,
-	OnWaitForWorkStage,
-	OnBeforeViewStage,
-	OnAfterViewStage,
-	OnAfterFrameStage,
+	NoStage             = 1 << 0,
+	OnPrepareViewStage  = 1 << 1,
+	OnBeforeFrameStage  = 1 << 2,
+	OnWaitForWorkStage  = 1 << 3,
+	OnBeforeViewStage   = 1 << 4,
+	OnAfterViewStage    = 1 << 5,
+	OnAfterFrameStage   = 1 << 6,
 
 	AllStages = OnPrepareViewStage | OnBeforeFrameStage | OnWaitForWorkStage | OnBeforeViewStage | OnAfterViewStage | OnAfterFrameStage
 };
