@@ -1,5 +1,0 @@
-<Shady>
-	<Variation desc="Represents the system set object id.">
-		<Output type="int" name="ObjectId" static="true" param="true"/>
-	</Variation>
-</Shady>

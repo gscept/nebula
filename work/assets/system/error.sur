@@ -1,8 +1,8 @@
 <!--
-	Surface material for the placeholder material
+	Surface material for the error material
 -->
 <Nebula>
 	<Surface template="Placeholder">
-		<Param name="AlbedoMap" value="tex:system/placeholder"/>
+		<Param name="AlbedoMap" value="tex:system/error"/>
 	</Surface>
 </Nebula>

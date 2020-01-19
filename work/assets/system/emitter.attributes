@@ -4,7 +4,7 @@
     <States>
         <ModelNode name="root/pPlane1" material="Static">
             <Textures>
-                <Texture name="DiffuseMap" value="tex:system/white" />
+                <Texture name="DiffuseMap" value="tex:system/placeholder" />
                 <Texture name="NormalMap" value="tex:system/nobump" />
             </Textures>
         </ModelNode>
