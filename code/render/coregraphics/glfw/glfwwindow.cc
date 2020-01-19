@@ -384,7 +384,12 @@ InternalSetupFunction(const WindowCreateInfo& info, const Util::Blob& windowData
 	}
 	else
 	{
+		//FIXME resize is broken currently, forcibly disabling it
+#if 0
 		glfwWindowHint(GLFW_RESIZABLE, info.resizable ? GL_TRUE : GL_FALSE);
+#else
+		glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+#endif
 		glfwWindowHint(GLFW_DECORATED, info.decorated ? GL_TRUE : GL_FALSE);
 
 		// create window
