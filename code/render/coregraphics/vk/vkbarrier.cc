@@ -124,7 +124,7 @@ BarrierInsert(const BarrierId id, const CoreGraphics::QueueType queue)
 {
 #if NEBULA_BARRIER_INSERT_MARKER
 	const Util::StringAtom& name = barrierAllocator.Get<0>(id.id24).name;
-	CommandBufferBeginMarker(queue, NEBULA_MARKER_GRAY, name.AsString());
+	CommandBufferBeginMarker(queue, NEBULA_MARKER_GRAY, name.Value());
 #endif
 	CoreGraphics::InsertBarrier(id, queue);
 

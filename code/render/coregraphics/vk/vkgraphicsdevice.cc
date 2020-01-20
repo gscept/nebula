@@ -1008,7 +1008,7 @@ namespace CoreGraphics
 using namespace Vulkan;
 
 #if NEBULA_GRAPHICS_DEBUG
-template<> void ObjectSetName(const CoreGraphics::CommandBufferId id, const Util::String& name);
+template<> void ObjectSetName(const CoreGraphics::CommandBufferId id, const char* name);
 #endif
 
 //------------------------------------------------------------------------------
@@ -2029,14 +2029,14 @@ BeginSubmission(CoreGraphics::QueueType queue, CoreGraphics::QueueType waitQueue
 			state.subcontextHandler.GetTimelineIndex(queue) + 1,
 			names[waitQueue],
 			state.subcontextHandler.GetTimelineIndex(waitQueue));
-		CommandBufferInsertMarker(queue, NEBULA_MARKER_PURPLE, fmt);
+		CommandBufferInsertMarker(queue, NEBULA_MARKER_PURPLE, fmt.AsCharPtr());
 	}
 	else
 	{
 		Util::String fmt = Util::String::Sprintf(
 			"Submit #%d",
 			state.subcontextHandler.GetTimelineIndex(queue) + 1);
-		CommandBufferInsertMarker(queue, NEBULA_MARKER_PURPLE, fmt);
+		CommandBufferInsertMarker(queue, NEBULA_MARKER_PURPLE, fmt.AsCharPtr());
 	}
 #endif
 }
@@ -3402,7 +3402,7 @@ GetTexture(const Util::StringAtom& name)
 */
 template<>
 void
-ObjectSetName(const CoreGraphics::ConstantBufferId id, const Util::String& name)
+ObjectSetName(const CoreGraphics::ConstantBufferId id, const char* name)
 {
 	VkDebugUtilsObjectNameInfoEXT info =
 	{
@@ -3410,7 +3410,7 @@ ObjectSetName(const CoreGraphics::ConstantBufferId id, const Util::String& name)
 		nullptr,
 		VK_OBJECT_TYPE_BUFFER,
 		(uint64_t)Vulkan::ConstantBufferGetVk(id),
-		name.AsCharPtr()
+		name
 	};
 	VkDevice dev = GetCurrentDevice();
 	VkResult res = VkDebugObjectName(dev, &info);
@@ -3422,7 +3422,7 @@ ObjectSetName(const CoreGraphics::ConstantBufferId id, const Util::String& name)
 */
 template<>
 void
-ObjectSetName(const CoreGraphics::VertexBufferId id, const Util::String& name)
+ObjectSetName(const CoreGraphics::VertexBufferId id, const char* name)
 {
 	VkDebugUtilsObjectNameInfoEXT info =
 	{
@@ -3430,7 +3430,7 @@ ObjectSetName(const CoreGraphics::VertexBufferId id, const Util::String& name)
 		nullptr,
 		VK_OBJECT_TYPE_BUFFER,
 		(uint64_t)Vulkan::VertexBufferGetVk(id),
-		name.AsCharPtr()
+		name
 	};
 	VkDevice dev = GetCurrentDevice();
 	VkResult res = VkDebugObjectName(dev, &info);
@@ -3443,7 +3443,7 @@ ObjectSetName(const CoreGraphics::VertexBufferId id, const Util::String& name)
 */
 template<>
 void
-ObjectSetName(const CoreGraphics::IndexBufferId id, const Util::String& name)
+ObjectSetName(const CoreGraphics::IndexBufferId id, const char* name)
 {
 	VkDebugUtilsObjectNameInfoEXT info =
 	{
@@ -3451,7 +3451,7 @@ ObjectSetName(const CoreGraphics::IndexBufferId id, const Util::String& name)
 		nullptr,
 		VK_OBJECT_TYPE_BUFFER,
 		(uint64_t)Vulkan::IndexBufferGetVk(id),
-		name.AsCharPtr()
+		name
 	};
 	VkDevice dev = GetCurrentDevice();
 	VkResult res = VkDebugObjectName(dev, &info);
@@ -3463,7 +3463,7 @@ ObjectSetName(const CoreGraphics::IndexBufferId id, const Util::String& name)
 */
 template<>
 void
-ObjectSetName(const CoreGraphics::TextureId id, const Util::String& name)
+ObjectSetName(const CoreGraphics::TextureId id, const char* name)
 {
 	VkDebugUtilsObjectNameInfoEXT info =
 	{
@@ -3471,7 +3471,7 @@ ObjectSetName(const CoreGraphics::TextureId id, const Util::String& name)
 		nullptr,
 		VK_OBJECT_TYPE_IMAGE,
 		(uint64_t)Vulkan::TextureGetVkImage(id),
-		name.AsCharPtr()
+		name
 	};
 	VkDevice dev = GetCurrentDevice();
 	VkResult res = VkDebugObjectName(dev, &info);
@@ -3479,7 +3479,7 @@ ObjectSetName(const CoreGraphics::TextureId id, const Util::String& name)
 
 	info.objectHandle = (uint64_t)Vulkan::TextureGetVkImageView(id);
 	info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
-	Util::String str = Util::String::Sprintf("%s - View", name.AsCharPtr());
+	Util::String str = Util::String::Sprintf("%s - View", name);
 	info.pObjectName = str.AsCharPtr();
 	res = VkDebugObjectName(dev, &info);
 	n_assert(res == VK_SUCCESS);
@@ -3490,7 +3490,7 @@ ObjectSetName(const CoreGraphics::TextureId id, const Util::String& name)
 */
 template<>
 void
-ObjectSetName(const CoreGraphics::ShaderRWBufferId id, const Util::String& name)
+ObjectSetName(const CoreGraphics::ShaderRWBufferId id, const char* name)
 {
 	VkDebugUtilsObjectNameInfoEXT info =
 	{
@@ -3498,7 +3498,7 @@ ObjectSetName(const CoreGraphics::ShaderRWBufferId id, const Util::String& name)
 		nullptr,
 		VK_OBJECT_TYPE_BUFFER,
 		(uint64_t)Vulkan::ShaderRWBufferGetVkBuffer(id),
-		name.AsCharPtr()
+		name
 	};
 	VkDevice dev = GetCurrentDevice();
 	VkResult res = VkDebugObjectName(dev, &info);
@@ -3510,7 +3510,7 @@ ObjectSetName(const CoreGraphics::ShaderRWBufferId id, const Util::String& name)
 */
 template<>
 void
-ObjectSetName(const CoreGraphics::ResourceTableLayoutId id, const Util::String& name)
+ObjectSetName(const CoreGraphics::ResourceTableLayoutId id, const char* name)
 {
 	VkDebugUtilsObjectNameInfoEXT info =
 	{
@@ -3518,7 +3518,7 @@ ObjectSetName(const CoreGraphics::ResourceTableLayoutId id, const Util::String& 
 		nullptr,
 		VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT,
 		(uint64_t)Vulkan::ResourceTableLayoutGetVk(id),
-		name.AsCharPtr()
+		name
 	};
 	VkDevice dev = GetCurrentDevice();
 	VkResult res = VkDebugObjectName(dev, &info);
@@ -3530,7 +3530,7 @@ ObjectSetName(const CoreGraphics::ResourceTableLayoutId id, const Util::String& 
 */
 template<>
 void
-ObjectSetName(const CoreGraphics::ResourcePipelineId id, const Util::String& name)
+ObjectSetName(const CoreGraphics::ResourcePipelineId id, const char* name)
 {
 	VkDebugUtilsObjectNameInfoEXT info =
 	{
@@ -3538,7 +3538,7 @@ ObjectSetName(const CoreGraphics::ResourcePipelineId id, const Util::String& nam
 		nullptr,
 		VK_OBJECT_TYPE_PIPELINE_LAYOUT,
 		(uint64_t)Vulkan::ResourcePipelineGetVk(id),
-		name.AsCharPtr()
+		name
 	};
 	VkDevice dev = GetCurrentDevice();
 	VkResult res = VkDebugObjectName(dev, &info);
@@ -3550,7 +3550,7 @@ ObjectSetName(const CoreGraphics::ResourcePipelineId id, const Util::String& nam
 */
 template<>
 void
-ObjectSetName(const CoreGraphics::CommandBufferId id, const Util::String& name)
+ObjectSetName(const CoreGraphics::CommandBufferId id, const char* name)
 {
 	VkDebugUtilsObjectNameInfoEXT info =
 	{
@@ -3558,7 +3558,7 @@ ObjectSetName(const CoreGraphics::CommandBufferId id, const Util::String& name)
 		nullptr,
 		VK_OBJECT_TYPE_COMMAND_BUFFER,
 		(uint64_t)Vulkan::CommandBufferGetVk(id),
-		name.AsCharPtr()
+		name
 	};
 	VkDevice dev = GetCurrentDevice();
 	VkResult res = VkDebugObjectName(dev, &info);
@@ -3570,7 +3570,7 @@ ObjectSetName(const CoreGraphics::CommandBufferId id, const Util::String& name)
 */
 template<>
 void
-ObjectSetName(const VkShaderModule id, const Util::String& name)
+ObjectSetName(const VkShaderModule id, const char* name)
 {
 	VkDebugUtilsObjectNameInfoEXT info =
 	{
@@ -3578,7 +3578,7 @@ ObjectSetName(const VkShaderModule id, const Util::String& name)
 		nullptr,
 		VK_OBJECT_TYPE_SHADER_MODULE,
 		(uint64_t)id,
-		name.AsCharPtr()
+		name
 	};
 	VkDevice dev = GetCurrentDevice();
 	VkResult res = VkDebugObjectName(dev, &info);
@@ -3590,7 +3590,7 @@ ObjectSetName(const VkShaderModule id, const Util::String& name)
 */
 template<>
 void
-ObjectSetName(const SemaphoreId id, const Util::String& name)
+ObjectSetName(const SemaphoreId id, const char* name)
 {
 	VkDebugUtilsObjectNameInfoEXT info =
 	{
@@ -3598,7 +3598,7 @@ ObjectSetName(const SemaphoreId id, const Util::String& name)
 		nullptr,
 		VK_OBJECT_TYPE_SEMAPHORE,
 		(uint64_t)SemaphoreGetVk(id.id24),
-		name.AsCharPtr()
+		name
 	};
 	VkDevice dev = GetCurrentDevice();
 	VkResult res = VkDebugObjectName(dev, &info);
@@ -3609,7 +3609,7 @@ ObjectSetName(const SemaphoreId id, const Util::String& name)
 /**
 */
 void 
-QueueBeginMarker(const CoreGraphics::QueueType queue, const Math::float4& color, const Util::String& name)
+QueueBeginMarker(const CoreGraphics::QueueType queue, const Math::float4& color, const char* name)
 {
 	VkQueue vkqueue = state.subcontextHandler.GetQueue(queue);
 	alignas(16) float col[4];
@@ -3618,7 +3618,7 @@ QueueBeginMarker(const CoreGraphics::QueueType queue, const Math::float4& color,
 	{
 		VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT,
 		nullptr,
-		name.AsCharPtr(),
+		name,
 		{ col[0], col[1], col[2], col[3] }
 	};
 	VkQueueBeginLabel(vkqueue, &info);
@@ -3638,7 +3638,7 @@ QueueEndMarker(const CoreGraphics::QueueType queue)
 /**
 */
 void 
-QueueInsertMarker(const CoreGraphics::QueueType queue, const Math::float4& color, const Util::String& name)
+QueueInsertMarker(const CoreGraphics::QueueType queue, const Math::float4& color, const char* name)
 {
 	VkQueue vkqueue = state.subcontextHandler.GetQueue(queue);
 	alignas(16) float col[4];
@@ -3647,7 +3647,7 @@ QueueInsertMarker(const CoreGraphics::QueueType queue, const Math::float4& color
 	{
 		VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT,
 		nullptr,
-		name.AsCharPtr(),
+		name,
 		{ col[0], col[1], col[2], col[3] }
 	};
 	VkQueueInsertLabel(vkqueue, &info);
@@ -3657,19 +3657,31 @@ QueueInsertMarker(const CoreGraphics::QueueType queue, const Math::float4& color
 /**
 */
 void 
-CommandBufferBeginMarker(const CoreGraphics::QueueType queue, const Math::float4& color, const Util::String& name)
+CommandBufferBeginMarker(const CoreGraphics::QueueType queue, const Math::float4& color, const char* name)
 {
-	VkCommandBuffer buf = GetMainBuffer(queue);
-	alignas(16) float col[4];
-	color.store(col);
-	VkDebugUtilsLabelEXT info =
+	// if batching, draws goes to thread
+	if (state.inBeginBatch)
 	{
-		VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT,
-		nullptr,
-		name.AsCharPtr(),
-		{ col[0], col[1], col[2], col[3] }
-	};
-	VkCmdDebugMarkerBegin(buf, &info);
+		VkCommandBufferThread::Command cmd;
+		cmd.type = VkCommandBufferThread::BeginMarker;
+		cmd.marker.text = name;
+		color.storeu(cmd.marker.values);
+		PushToThread(cmd, state.currentDrawThread);
+	}
+	else
+	{
+		VkCommandBuffer buf = GetMainBuffer(queue);
+		alignas(16) float col[4];
+		color.store(col);
+		VkDebugUtilsLabelEXT info =
+		{
+			VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT,
+			nullptr,
+			name,
+			{ col[0], col[1], col[2], col[3] }
+		};
+		VkCmdDebugMarkerBegin(buf, &info);
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -3678,27 +3690,50 @@ CommandBufferBeginMarker(const CoreGraphics::QueueType queue, const Math::float4
 void 
 CommandBufferEndMarker(const CoreGraphics::QueueType queue)
 {
-	VkCommandBuffer buf = GetMainBuffer(queue);
-	VkCmdDebugMarkerEnd(buf);
+	// if batching, draws goes to thread
+	if (state.inBeginBatch)
+	{
+		VkCommandBufferThread::Command cmd;
+		cmd.type = VkCommandBufferThread::EndMarker;
+		cmd.marker.text = nullptr;
+		PushToThread(cmd, state.currentDrawThread);
+	}
+	else
+	{
+		VkCommandBuffer buf = GetMainBuffer(queue);
+		VkCmdDebugMarkerEnd(buf);
+	}	
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void 
-CommandBufferInsertMarker(const CoreGraphics::QueueType queue, const Math::float4& color, const Util::String& name)
+CommandBufferInsertMarker(const CoreGraphics::QueueType queue, const Math::float4& color, const char* name)
 {
-	VkCommandBuffer buf = GetMainBuffer(queue);
-	alignas(16) float col[4];
-	color.store(col);
-	VkDebugUtilsLabelEXT info =
+	// if batching, draws goes to thread
+	if (state.inBeginBatch)
 	{
-		VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT,
-		nullptr,
-		name.AsCharPtr(),
-		{ col[0], col[1], col[2], col[3] }
-	};
-	VkCmdDebugMarkerInsert(buf, &info);
+		VkCommandBufferThread::Command cmd;
+		cmd.type = VkCommandBufferThread::InsertMarker;
+		cmd.marker.text = name;
+		color.storeu(cmd.marker.values);
+		PushToThread(cmd, state.currentDrawThread);
+	}
+	else
+	{
+		VkCommandBuffer buf = GetMainBuffer(queue);
+		alignas(16) float col[4];
+		color.store(col);
+		VkDebugUtilsLabelEXT info =
+		{
+			VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT,
+			nullptr,
+			name,
+			{ col[0], col[1], col[2], col[3] }
+		};
+		VkCmdDebugMarkerInsert(buf, &info);
+	}
 }
 #endif
 

@@ -132,7 +132,7 @@ EventSignal(const EventId id, const CoreGraphics::QueueType queue)
 {
 #if NEBULA_GRAPHICS_DEBUG
 	const Util::StringAtom& name = eventAllocator.Get<1>(id.id24).name;
-	CommandBufferBeginMarker(queue, NEBULA_MARKER_PURPLE, name.AsString() + " Signal");
+	CommandBufferBeginMarker(queue, NEBULA_MARKER_PURPLE, (name.AsString() + " Signal").AsCharPtr());
 #endif
 	CoreGraphics::SignalEvent(id, queue);
 
@@ -149,7 +149,7 @@ EventWait(const EventId id, const CoreGraphics::QueueType queue)
 {
 #if NEBULA_GRAPHICS_DEBUG
 	const Util::StringAtom& name = eventAllocator.Get<1>(id.id24).name;
-	CommandBufferBeginMarker(queue, NEBULA_MARKER_ORANGE, name.AsString() + " Wait");
+	CommandBufferBeginMarker(queue, NEBULA_MARKER_ORANGE, (name.AsString() + " Wait").AsCharPtr());
 #endif
 	CoreGraphics::WaitEvent(id, queue);
 

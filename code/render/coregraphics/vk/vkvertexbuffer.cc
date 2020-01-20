@@ -120,7 +120,7 @@ CreateVertexBuffer(const VertexBufferCreateInfo& info)
 	ret.id24 = id;
 
 #if NEBULA_GRAPHICS_DEBUG
-	ObjectSetName(ret, info.name.AsString());
+	ObjectSetName(ret, info.name.Value());
 #endif
 
 	return ret;
@@ -181,7 +181,7 @@ CreateVertexBuffer(const VertexBufferCreateDirectInfo& info)
 	ret.id24 = id;
 
 #if NEBULA_GRAPHICS_DEBUG
-	ObjectSetName(ret, info.name.AsString());
+	ObjectSetName(ret, info.name.Value());
 #endif
 
 	return ret;

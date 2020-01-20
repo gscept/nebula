@@ -350,7 +350,7 @@ VkShaderSetup(
 	pipelineLayout = CreateResourcePipeline(piInfo);
 
 #if NEBULA_GRAPHICS_DEBUG
-	ObjectSetName(pipelineLayout, Util::String::Sprintf("%s - Resource Pipeline", name.Value()));
+	ObjectSetName(pipelineLayout, Util::String::Sprintf("%s - Resource Pipeline", name.Value()).AsCharPtr());
 #endif
 }
 

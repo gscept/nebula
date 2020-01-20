@@ -117,7 +117,7 @@ CreateConstantBuffer(const ConstantBufferCreateInfo& info)
 	ret.id8 = ConstantBufferIdType;
 
 #if NEBULA_GRAPHICS_DEBUG
-	ObjectSetName(ret, info.name.AsString());
+	ObjectSetName(ret, info.name.Value());
 #endif
 
 	return ret;

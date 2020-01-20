@@ -150,7 +150,7 @@ SubmissionContextNewBuffer(const SubmissionContextId id, CommandBufferId& outBuf
 	oldBuf = outBuf;
 
 #if NEBULA_GRAPHICS_DEBUG
-	ObjectSetName(outBuf, Util::String::Sprintf("%s Buffer %d", submissionContextAllocator.Get<SubmissionContextName>(id.id24).AsCharPtr(), currentIndex));
+	ObjectSetName(outBuf, Util::String::Sprintf("%s Buffer %d", submissionContextAllocator.Get<SubmissionContextName>(id.id24).AsCharPtr(), currentIndex).AsCharPtr());
 #endif
 }
 
