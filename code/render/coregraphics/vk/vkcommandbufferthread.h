@@ -55,6 +55,9 @@ public:
 		WaitForEvent,
 		Barrier,
 		Sync,
+		BeginMarker,
+		EndMarker,
+		InsertMarker
 	};
 
 	struct Command
@@ -202,6 +205,12 @@ public:
 				uint32_t imageBarrierCount;
 				VkImageMemoryBarrier* imageBarriers;
 			} barrier;
+
+			struct // marker
+			{
+				const char* text;
+				float values[4];
+			} marker;
 
 			Threading::Event* syncEvent;
 		};

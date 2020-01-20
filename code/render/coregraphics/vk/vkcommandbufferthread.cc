@@ -10,6 +10,10 @@
 namespace Vulkan
 {
 
+extern PFN_vkCmdBeginDebugUtilsLabelEXT VkCmdDebugMarkerBegin;
+extern PFN_vkCmdEndDebugUtilsLabelEXT VkCmdDebugMarkerEnd;
+extern PFN_vkCmdInsertDebugUtilsLabelEXT VkCmdDebugMarkerInsert;
+
 __ImplementClass(Vulkan::VkCommandBufferThread, 'VCBT', Threading::Thread);
 //------------------------------------------------------------------------------
 /**
@@ -156,6 +160,34 @@ VkCommandBufferThread::DoWork()
 			case Sync:
 				cmd.syncEvent->Signal();
 				break;
+			case BeginMarker:
+			{
+				VkDebugUtilsLabelEXT info =
+				{
+					VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT,
+					nullptr,
+					cmd.marker.text,
+					{ cmd.marker.values[0], cmd.marker.values[1], cmd.marker.values[2], cmd.marker.values[3] }
+				};
+				VkCmdDebugMarkerBegin(this->commandBuffer, &info);
+				break;
+			}
+			case EndMarker:
+				VkCmdDebugMarkerEnd(this->commandBuffer);
+				break;
+			case InsertMarker:
+			{
+				VkDebugUtilsLabelEXT info =
+				{
+					VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT,
+					nullptr,
+					cmd.marker.text,
+					{ cmd.marker.values[0], cmd.marker.values[1], cmd.marker.values[2], cmd.marker.values[3] }
+				};
+				VkCmdDebugMarkerInsert(this->commandBuffer, &info);
+				break;
+			}
+				
 			}
 		}
 
