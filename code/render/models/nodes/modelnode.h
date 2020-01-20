@@ -23,6 +23,8 @@
 #include "models/model.h"
 #include "materials/material.h"
 
+#include "util/delegate.h"
+
 
 #define ModelNodeInstanceCreator(type) \
 inline ModelNode::Instance* type::CreateInstance(byte** memory, const ModelNode::Instance* parent)\
@@ -58,21 +60,7 @@ class ModelNode
 {
 public:
 
-	struct DrawPacket
-	{
-		Materials::SurfaceInstanceId* surfaceInstance;
-		CoreGraphics::ResourceTableId* tables = nullptr;
-		SizeT* numTables = nullptr;
-		uint32* numOffsets = nullptr;
-		uint32* offsets = nullptr;
-		
-		IndexT* slots = nullptr;
-		CoreGraphics::ShaderPipeline* pipelines = nullptr;
-
-		/// apply the resource tables and offsets
-		void Apply();
-	};
-
+	struct DrawPacket;
 	struct Instance
 	{
 		const ModelNode::Instance* parent;			// pointer to parent
@@ -90,10 +78,24 @@ public:
 
 		/// update prior to drawing
 		virtual void Update();
-
-		/// draw instance
-		virtual void Draw();
 	};
+
+	struct DrawPacket
+	{
+		//std::function<void(const SizeT)> customDraw = nullptr;
+		//Util::Delegate<void(const SizeT)> customDraw;
+		Models::ModelNode::Instance* node = nullptr;
+		Materials::SurfaceInstanceId* surfaceInstance;
+		SizeT* numTables = nullptr;
+		CoreGraphics::ResourceTableId* tables = nullptr;
+		uint32* numOffsets = nullptr;
+		uint32* offsets = nullptr;
+		IndexT* slots = nullptr;
+
+		/// apply the resource tables and offsets
+		void Apply(Materials::MaterialType* type);
+	};
+
 
 	/// constructor
 	ModelNode();
@@ -102,6 +104,8 @@ public:
 
 	/// return constant reference to children
 	const Util::Array<ModelNode*>& GetChildren() const;
+	/// get type of node
+	const NodeType GetType() const;
 	/// create an instance of a node, override in the leaf classes
 	virtual ModelNode::Instance* CreateInstance(byte** memory, const Models::ModelNode::Instance* parent);
 
@@ -109,6 +113,9 @@ public:
 	virtual const SizeT GetInstanceSize() const { return sizeof(Instance); }
 	/// return true if all children should create hierarchies upon calling CreateInstance
 	virtual bool GetImplicitHierarchyActivation() const;
+
+	/// return name
+	const Util::StringAtom& GetName() const;
 
 	/// apply node-level state
 	virtual void ApplyNodeState();
@@ -161,6 +168,24 @@ inline const Util::Array<ModelNode*>&
 ModelNode::GetChildren() const
 {
 	return this->children;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const NodeType 
+ModelNode::GetType() const
+{
+	return this->type;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const Util::StringAtom& 
+ModelNode::GetName() const
+{
+	return this->name;
 }
 
 } // namespace Models

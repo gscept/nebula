@@ -153,24 +153,19 @@ ModelNode::Instance::Setup(Models::ModelNode* node, const Models::ModelNode::Ins
 /**
 */
 void 
-ModelNode::Instance::Draw()
-{
-	// implement in subclass
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-ModelNode::DrawPacket::Apply()
+ModelNode::DrawPacket::Apply(Materials::MaterialType* type)
 {
 	// apply surface
 	if (*this->surfaceInstance != Materials::SurfaceInstanceId::Invalid())
-		Materials::MaterialApplySurfaceInstance(*this->surfaceInstance);
+		Materials::MaterialApplySurfaceInstance(type, *this->surfaceInstance);
 
 	// set resource tables
+	IndexT prevOffset = 0;
 	for (IndexT i = 0; i < *this->numTables; i++)
-		CoreGraphics::SetResourceTable(this->tables[i], this->slots[i], this->pipelines[i], this->numOffsets[i], &this->offsets[i]);
+	{
+		CoreGraphics::SetResourceTable(this->tables[i], this->slots[i], CoreGraphics::GraphicsPipeline, this->numOffsets[i], &this->offsets[prevOffset]);
+		prevOffset = this->numOffsets[i];
+	}
 }
 
 } // namespace Models

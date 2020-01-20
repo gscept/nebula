@@ -35,16 +35,8 @@ public:
 
 	struct Instance : public PrimitiveNode::Instance
 	{
-		CoreGraphics::ShaderId skinShader;
-		CoreGraphics::ConstantBinding jointPaletteVar;
-		Ids::Id32 characterId;
-		CoreGraphics::ConstantBufferId cboSkin;
-		CoreGraphics::ConstantBinding skinningPaletteVar;
-
 		/// apply skinning palette
 		void Update() override;
-		/// setup
-		void Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
 	};
 
 	/// create instance
@@ -73,9 +65,6 @@ protected:
 	/// apply state
 	void ApplyNodeState() override;
 
-	CoreGraphics::ConstantBufferId cboSkin;
-	IndexT cboSkinIndex;
-	CoreGraphics::ConstantBinding skinningPaletteVar;
     CoreGraphics::ShaderFeature::Mask skinnedShaderFeatureBits;
     Util::Array<Fragment> skinFragments;
 };
@@ -108,19 +97,6 @@ CharacterSkinNode::GetFragmentJointPalette(IndexT fragmentIndex) const
 }
 
 ModelNodeInstanceCreator(CharacterSkinNode)
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-CharacterSkinNode::Instance::Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent)
-{
-	PrimitiveNode::Instance::Setup(node, parent);
-	CharacterSkinNode* sparent = static_cast<CharacterSkinNode*>(node);
-	const CharacterNode::Instance* cparent = static_cast<const CharacterNode::Instance*>(this->parent);
-	this->cboSkin = sparent->cboSkin;
-	this->skinningPaletteVar = sparent->skinningPaletteVar;
-}
 
 } // namespace Characters
 //------------------------------------------------------------------------------

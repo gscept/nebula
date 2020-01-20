@@ -35,21 +35,22 @@ public:
 	{
 		enum DynamicOffsetType
 		{
-			ObjectTransforms,
-			InstancingTransforms,
-			Skinning
+			ObjectTransforms,			// always included from shared.fxh
+			InstancingTransforms,		// always included from shared.fxh
+			Skinning,					// always included from shared.fxh
+			Optional
 		};
-		CoreGraphics::ConstantBufferId cbo;
 		CoreGraphics::ResourceTableId resourceTable;
-		CoreGraphics::ConstantBinding modelVar;
-		CoreGraphics::ConstantBinding invModelVar;
-		CoreGraphics::ConstantBinding modelViewProjVar;
-		CoreGraphics::ConstantBinding modelViewVar;
-		CoreGraphics::ConstantBinding objectIdVar;
 
 		uint32 instance;
 		Materials::SurfaceInstanceId surfaceInstance;
 		Util::FixedArray<uint32> offsets;
+
+		IndexT objectTransformsIndex;
+		IndexT instancingTransformsIndex;
+		IndexT skinningTransformsIndex;
+
+		static const uint NumTables = 1;
 
 		/// setup instance
 		void Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
@@ -61,6 +62,9 @@ public:
 
 		/// update prior to drawing
 		void Update() override;
+
+		/// another draw function
+		void Draw(const SizeT numInstances, Models::ModelNode::DrawPacket* packet);
 	};
 
 	/// create instance
@@ -88,15 +92,11 @@ protected:
 	Materials::SurfaceResourceId surRes;
 	Resources::ResourceName materialName;
 
-	CoreGraphics::ShaderId sharedShader;
-	CoreGraphics::ConstantBufferId cbo;
-	IndexT cboIndex;
+	IndexT objectTransformsIndex;
+	IndexT instancingTransformsIndex;
+	IndexT skinningTransformsIndex;
+
 	CoreGraphics::ResourceTableId resourceTable;
-	CoreGraphics::ConstantBinding modelVar;
-	CoreGraphics::ConstantBinding invModelVar;
-	CoreGraphics::ConstantBinding modelViewProjVar;
-	CoreGraphics::ConstantBinding modelViewVar;
-	CoreGraphics::ConstantBinding objectIdVar;
 };
 
 ModelNodeInstanceCreator(ShaderStateNode)
@@ -109,19 +109,16 @@ ShaderStateNode::Instance::Setup(Models::ModelNode* node, const Models::ModelNod
 {
 	TransformNode::Instance::Setup(node, parent);
 	ShaderStateNode* sparent = static_cast<ShaderStateNode*>(node);
-	CoreGraphics::ConstantBufferId cbo = sparent->cbo;
-	this->cbo = cbo;
 	this->resourceTable = sparent->resourceTable;
 
-	this->offsets.Resize(3); // object data, instance data, skinning data
-	this->offsets[InstancingTransforms] = 0; // instancing offset
-	this->offsets[Skinning] = 0; // skinning offset
+	this->objectTransformsIndex = sparent->objectTransformsIndex;
+	this->instancingTransformsIndex = sparent->instancingTransformsIndex;
+	this->skinningTransformsIndex = sparent->skinningTransformsIndex;
 
-	this->modelVar = sparent->modelVar;
-	this->invModelVar = sparent->invModelVar;
-	this->modelViewProjVar = sparent->modelViewProjVar;
-	this->modelViewVar = sparent->modelViewVar;
-	this->objectIdVar = sparent->objectIdVar;
+	this->offsets.Resize(3); // object data, instance data, skinning data
+	this->offsets[this->objectTransformsIndex] = 0;
+	this->offsets[this->instancingTransformsIndex] = 0; // instancing offset
+	this->offsets[this->skinningTransformsIndex] = 0; // skinning offset
 
 	// create surface instance
 	this->surfaceInstance = sparent->materialType->CreateSurfaceInstance(sparent->surface);
