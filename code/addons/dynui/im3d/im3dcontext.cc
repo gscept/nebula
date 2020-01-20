@@ -146,7 +146,7 @@ Im3dContext::Create()
 		"Im3D VBO"_atm,
         CoreGraphics::GpuBufferTypes::AccessWrite,
         CoreGraphics::GpuBufferTypes::UsageDynamic,
-        CoreGraphics::GpuBufferTypes::SyncingCoherent | CoreGraphics::GpuBufferTypes::SyncingPersistent,
+        CoreGraphics::GpuBufferTypes::SyncingAutomatic,
         100000 * 3,
         components,
         nullptr,
