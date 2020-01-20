@@ -109,8 +109,8 @@ SSAOPlugin::Setup()
 	this->xDirectionBlur = ShaderGetProgram(this->blurShader, ShaderFeatureFromString("Alt0"));
 	this->yDirectionBlur = ShaderGetProgram(this->blurShader, ShaderFeatureFromString("Alt1"));
 
-	this->hbaoConstants = CoreGraphics::GetGraphicsConstantBuffer(MainThreadConstantBuffer);
-	this->blurConstants = CoreGraphics::GetGraphicsConstantBuffer(MainThreadConstantBuffer);
+	this->hbaoConstants = CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer);
+	this->blurConstants = CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer);
 
 	SizeT numBuffers = CoreGraphics::GetNumBufferedFrames();
 	this->hbaoTable.Resize(numBuffers);
@@ -228,7 +228,7 @@ SSAOPlugin::Setup()
 		hbaoBlock.UVToViewA[1] = this->vars.uvToViewA.y();
 		hbaoBlock.UVToViewB[0] = this->vars.uvToViewB.x();
 		hbaoBlock.UVToViewB[1] = this->vars.uvToViewB.y();
-		uint hbaoOffset = CoreGraphics::SetGraphicsConstants(MainThreadConstantBuffer, hbaoBlock);
+		uint hbaoOffset = CoreGraphics::SetComputeConstants(MainThreadConstantBuffer, hbaoBlock);
 
 		IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
 
@@ -239,7 +239,7 @@ SSAOPlugin::Setup()
 		blurBlock.BlurFalloff = this->vars.blurFalloff;
 		blurBlock.BlurDepthThreshold = this->vars.blurThreshold;
 		blurBlock.PowerExponent = 1.5f;
-		uint blurOffset = CoreGraphics::SetGraphicsConstants(MainThreadConstantBuffer, blurBlock);
+		uint blurOffset = CoreGraphics::SetComputeConstants(MainThreadConstantBuffer, blurBlock);
 
 		ResourceTableSetConstantBuffer(this->blurTableX[bufferIndex], { this->blurConstants, this->blurC, 0, false, false, sizeof(HbaoblurCs::HBAOBlur), (SizeT)blurOffset });
 		ResourceTableSetConstantBuffer(this->blurTableY[bufferIndex], { this->blurConstants, this->blurC, 0, false, false, sizeof(HbaoblurCs::HBAOBlur), (SizeT)blurOffset });
