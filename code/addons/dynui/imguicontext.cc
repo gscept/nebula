@@ -284,11 +284,12 @@ ImguiContext::Create()
 
 	ImGuiStyle& style = ImGui::GetStyle();
 	
-	style.FrameRounding = 0.0f;
-	style.GrabRounding = 0.0f;
+	style.FrameRounding = 4.0f;
+	style.GrabRounding = 8.0f;
 	style.ChildRounding = 0.0f;
-	style.WindowRounding = 2.0f;
+	style.WindowRounding = 6.0f;
 	style.PopupRounding = 0.0f;
+	style.ScrollbarRounding = 32.0f;
 
 	style.WindowTitleAlign = { 0.01f, 0.38f };
 
@@ -296,16 +297,14 @@ ImguiContext::Create()
 	style.FramePadding = { 4, 3 };
 	style.ItemInnerSpacing = { 4, 2 };
 	style.ItemSpacing = { 10, 5 };
-	style.IndentSpacing = 20.0f;
-	style.GrabMinSize = 14.0f;
+	style.IndentSpacing = 8.0f;
+	style.GrabMinSize = 8.0f;
 
 	style.FrameBorderSize = 0.0f;
-	style.WindowBorderSize = 0.0f;
-	style.PopupBorderSize = 0.0f;
+	style.WindowBorderSize = 1.5f;
+	style.PopupBorderSize = 1.0f;
 	style.ChildBorderSize = 0.0f;
 
-	style.ScrollbarRounding = 0.0f;
-	
 	ImVec4 nebulaOrange(1.0f, 0.30f, 0.0f, 1.0f);
 	ImVec4 nebulaOrangeActive(0.9f, 0.20f, 0.05f, 1.0f);
 	nebulaOrange.w = 0.3f;
@@ -316,10 +315,12 @@ ImguiContext::Create()
 	style.Colors[ImGuiCol_TitleBgActive] = nebulaOrange;
 	nebulaOrange.w = 0.2f;
 	style.Colors[ImGuiCol_ScrollbarBg] = nebulaOrange;
-	nebulaOrange.w = 0.9f;
-	style.Colors[ImGuiCol_ScrollbarGrab] = nebulaOrange;
 	nebulaOrange.w = 0.7f;
+	style.Colors[ImGuiCol_ScrollbarGrab] = nebulaOrange;
+	style.Colors[ImGuiCol_SliderGrab] = nebulaOrange;
+	nebulaOrange.w = 0.9f;
 	style.Colors[ImGuiCol_ScrollbarGrabHovered] = nebulaOrange;
+	style.Colors[ImGuiCol_ScrollbarGrabActive] = nebulaOrange;
 	nebulaOrange.w = 0.6f;
 	style.Colors[ImGuiCol_Header] = nebulaOrange;
 	style.Colors[ImGuiCol_FrameBg] = nebulaOrange;
@@ -349,14 +350,10 @@ ImguiContext::Create()
 	style.Colors[ImGuiCol_SliderGrab] = ImVec4(0.13f, 0.13f, 0.13f, 1.0f);
 	style.Colors[ImGuiCol_SliderGrabActive] = ImVec4(0.3f, 0.33f, 0.33f, 1.0f);
 	style.Colors[ImGuiCol_CheckMark] = ImVec4(1.0f, 0.47f, 0.0f, 1.0f);
-	style.Colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.13f, 0.13f, 0.13f, 1.0f);
-	style.Colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.3f, 0.33f, 0.33f, 1.0f);
 
 	style.Colors[ImGuiCol_Separator] = ImVec4(0.33f, 0.33f, 0.33f, 0.3f);
 	style.Colors[ImGuiCol_SeparatorHovered] = nebulaOrange;
 	style.Colors[ImGuiCol_SeparatorActive] = nebulaOrangeActive;
-
-
 
 	// Keyboard mapping. ImGui will use those indices to peek into the io.KeyDown[] array.
 	io.KeyMap[ImGuiKey_Tab] = Key::Tab;             
@@ -383,10 +380,10 @@ ImguiContext::Create()
 
 	// load default font
 	ImFontConfig config;
-	config.OversampleH = 1;
+	config.OversampleH = 3;
 	config.OversampleV = 1;
 #if __WIN32__
-	ImFont* font = io.Fonts->AddFontFromFileTTF("c:/windows/fonts/segoeui.ttf", 18, &config);
+	ImFont* font = io.Fonts->AddFontFromFileTTF("c:/windows/fonts/OpenSans-SemiBold.ttf", 17, &config);
 #else
 	ImFont* font = io.Fonts->AddFontFromFileTTF("/usr/share/fonts/truetype/freefont/FreeSans.ttf", 18, &config);
 #endif
