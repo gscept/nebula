@@ -159,21 +159,6 @@ ObserverContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 		{
 			flags[j] = true;
 		}
-
-		// clear draw lists
-		VisibilityDrawList& draw = draws[i];
-		auto it1 = draw.Begin();
-		while (it1 != draw.End())
-		{
-			auto it2 = it1.val->Begin();
-			while (it2 != it1.val->End())
-			{
-				it2.val->Reset();
-				it2++;
-			}
-			it1.val->Reset();
-			it1++;
-		}
 	}
 
 	// prepare visibility systems
@@ -210,7 +195,6 @@ ObserverContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 		const Util::Array<Graphics::ContextEntityId>& entities = vis[i].GetArray<VisibilityResultCtxId>();
 		VisibilityDrawList& visibilities = observerAllocator.Get<ObserverDrawList>(i);
 		Memory::ArenaAllocator<1024>& allocator = observerAllocator.Get<ObserverDrawListAllocator>(i);
-		allocator.Release();
 
         if (entities.Size() == 0)
         {

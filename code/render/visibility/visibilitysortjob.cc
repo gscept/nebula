@@ -19,6 +19,24 @@ VisibilitySortJob(const Jobs::JobFuncContext& ctx)
 	ObserverContext::VisibilityDrawList* buckets = (ObserverContext::VisibilityDrawList*)ctx.outputs[0];
 	Memory::ArenaAllocator<1024>* packetAllocator = (Memory::ArenaAllocator<1024>*)ctx.uniforms[0];
 
+	// release memory from previous draws
+	packetAllocator->Release();
+
+	// clear draw lists
+	auto it1 = buckets->Begin();
+	while (it1 != buckets->End())
+	{
+		auto it2 = it1.val->Begin();
+		while (it2 != it1.val->End())
+		{
+			it2.val->Reset();
+			it2++;
+		}
+		it1.val->Reset();
+		it1++;
+	}
+	buckets->Reset();
+
 	bool* results = (bool*)ctx.inputs[0];
 	Graphics::ContextEntityId* entities = (Graphics::ContextEntityId*)ctx.inputs[1];
 
@@ -46,6 +64,8 @@ VisibilitySortJob(const Jobs::JobFuncContext& ctx)
 			{
 				Models::ShaderStateNode::Instance* const shdNodeInst = reinterpret_cast<Models::ShaderStateNode::Instance*>(inst);
 				Models::ShaderStateNode* const shdNode = reinterpret_cast<Models::ShaderStateNode*>(inst->node);
+				n_assert(types[j] == shdNode->GetType());
+
 				auto& bucket = buckets->AddUnique(shdNode->materialType);
 				if (!bucket.IsBulkAdd())
 					bucket.BeginBulkAdd();
