@@ -96,6 +96,13 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 	VkViewport* passViewports;
 	uint32_t numVsInputs;
 
+	static const uint MaxVertexStreams = 16;
+	CoreGraphics::VertexBufferId vboStreams[MaxVertexStreams];
+	IndexT vboStreamOffsets[MaxVertexStreams];
+	CoreGraphics::IndexBufferId ibo;
+	IndexT iboOffset;
+
+
 	struct ConstantsRingBuffer
 	{
 		// handle global constant memory
@@ -805,6 +812,15 @@ BeginDrawThread()
 		1
 	};
 	vkAllocateCommandBuffers(state.devices[state.currentDevice], &info, &state.dispatchableDrawCmdBuffers[state.currentDrawThread]);
+
+	IndexT i;
+	for (i = 0; i < state.MaxVertexStreams; i++)
+	{
+		state.vboStreams[i] = CoreGraphics::VertexBufferId::Invalid();
+		state.vboStreamOffsets[i] = -1;
+	}
+	state.ibo = CoreGraphics::IndexBufferId::Invalid();
+	state.iboOffset = -1;
 
 	// tell thread to begin command buffer recording
 	VkCommandBufferBeginInfo begin =
@@ -2124,20 +2140,25 @@ ResetClipSettings()
 void 
 SetStreamVertexBuffer(IndexT streamIndex, const CoreGraphics::VertexBufferId& vb, IndexT offsetVertexIndex)
 {
-	if (state.inBeginBatch)
+	if (state.vboStreams[streamIndex] != vb || state.vboStreamOffsets[streamIndex] != offsetVertexIndex)
 	{
-		VkCommandBufferThread::Command cmd;
-		cmd.type = VkCommandBufferThread::InputAssemblyVertex;
-		cmd.vbo.buffer = VertexBufferGetVk(vb);
-		cmd.vbo.index = streamIndex;
-		cmd.vbo.offset = offsetVertexIndex;
-		PushToThread(cmd, state.currentDrawThread);
-	}
-	else
-	{
-		VkBuffer buf = VertexBufferGetVk(vb);
-		vkCmdBindVertexBuffers(GetMainBuffer(GraphicsQueueType), streamIndex, 1, &buf, (VkDeviceSize*)&offsetVertexIndex);
-	}
+		if (state.inBeginBatch)
+		{
+			VkCommandBufferThread::Command cmd;
+			cmd.type = VkCommandBufferThread::InputAssemblyVertex;
+			cmd.vbo.buffer = VertexBufferGetVk(vb);
+			cmd.vbo.index = streamIndex;
+			cmd.vbo.offset = offsetVertexIndex;
+			PushToThread(cmd, state.currentDrawThread);
+		}
+		else
+		{
+			VkBuffer buf = VertexBufferGetVk(vb);
+			vkCmdBindVertexBuffers(GetMainBuffer(GraphicsQueueType), streamIndex, 1, &buf, (VkDeviceSize*)&offsetVertexIndex);
+		}
+		state.vboStreams[streamIndex] = vb;
+		state.vboStreamOffsets[streamIndex] = offsetVertexIndex;
+	}	
 }
 
 //------------------------------------------------------------------------------
@@ -2157,40 +2178,24 @@ SetVertexLayout(const CoreGraphics::VertexLayoutId& vl)
 void 
 SetIndexBuffer(const CoreGraphics::IndexBufferId& ib, IndexT offsetIndex)
 {
-	if (state.inBeginBatch)
+	if (state.ibo != ib || state.iboOffset != offsetIndex)
 	{
-		VkCommandBufferThread::Command cmd;
-		cmd.type = VkCommandBufferThread::InputAssemblyIndex;
-		cmd.ibo.buffer = IndexBufferGetVk(ib);
-		cmd.ibo.indexType = IndexBufferGetVkType(ib);
-		cmd.ibo.offset = offsetIndex;
-		PushToThread(cmd, state.currentDrawThread);
-	}
-	else
-	{
-		vkCmdBindIndexBuffer(GetMainBuffer(GraphicsQueueType), IndexBufferGetVk(ib), offsetIndex, IndexBufferGetVkType(ib));
-	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-SetIndexBuffer(const CoreGraphics::IndexBufferId& ib, IndexT offsetIndex, CoreGraphics::IndexType::Code type)
-{
-	if (state.inBeginBatch)
-	{
-		VkCommandBufferThread::Command cmd;
-		cmd.type = VkCommandBufferThread::InputAssemblyIndex;
-		cmd.ibo.buffer = iboAllocator.Get<1>(ib.id24).buf;
-		cmd.ibo.indexType = IndexBufferGetVkType(ib);
-		cmd.ibo.offset = offsetIndex;
-		PushToThread(cmd, state.currentDrawThread);
-	}
-	else
-	{
-		vkCmdBindIndexBuffer(GetMainBuffer(GraphicsQueueType), IndexBufferGetVk(ib), offsetIndex, IndexBufferGetVkType(ib));
-	}
+		if (state.inBeginBatch)
+		{
+			VkCommandBufferThread::Command cmd;
+			cmd.type = VkCommandBufferThread::InputAssemblyIndex;
+			cmd.ibo.buffer = IndexBufferGetVk(ib);
+			cmd.ibo.indexType = IndexBufferGetVkType(ib);
+			cmd.ibo.offset = offsetIndex;
+			PushToThread(cmd, state.currentDrawThread);
+		}
+		else
+		{
+			vkCmdBindIndexBuffer(GetMainBuffer(GraphicsQueueType), IndexBufferGetVk(ib), offsetIndex, IndexBufferGetVkType(ib));
+		}
+		state.ibo = ib;
+		state.iboOffset = offsetIndex;
+	}	
 }
 
 //------------------------------------------------------------------------------
