@@ -135,8 +135,8 @@ FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphic
 							}
 						}
 					}
+					if (it == end) break;
 					it++;
-                    if (it == end) break;
 				}
 			}
 			Materials::MaterialEndBatch(materialType);
