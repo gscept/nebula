@@ -85,7 +85,7 @@ DrawFullScreenQuad::Setup(SizeT rtWidth, SizeT rtHeight)
 	VertexBufferCreateInfo info =
 	{
 		"FullScreen Quad VBO"_atm,
-		GpuBufferTypes::AccessNone, GpuBufferTypes::UsageImmutable, GpuBufferTypes::SyncingFlush,
+		GpuBufferTypes::AccessNone, GpuBufferTypes::UsageImmutable, GpuBufferTypes::SyncingManual,
 		3, vertexComponents, v, sizeof(v)
 	};
 	this->vertexBuffer = CreateVertexBuffer(info);
