@@ -19,19 +19,14 @@ ID_32_TYPE(MaterialTypeId);
 ID_32_TYPE(SurfaceId);
 ID_32_32_NAMED_TYPE(SurfaceInstanceId, surface, instance); // 32 bits instance, 32 bits surface
 
-
 /// begin a material batch
 bool MaterialBeginBatch(MaterialType* type, CoreGraphics::BatchGroup::Code batch);
 /// begin surface
-bool MaterialBeginSurface(const SurfaceId id);
+void MaterialApplySurface(MaterialType* type, const SurfaceId id);
 /// apply instance of surface
-void MaterialApplySurfaceInstance(const SurfaceInstanceId id);
-/// end surface
-void MaterialEndSurface();
+void MaterialApplySurfaceInstance(MaterialType* type, const SurfaceInstanceId id);
 /// end a material batch
-void MaterialEndBatch();
-
-extern MaterialType* currentType;
+void MaterialEndBatch(MaterialType* type);
 
 class SurfacePool;
 extern SurfacePool* surfacePool;

@@ -84,19 +84,22 @@ public:
 	/// set instance constant
 	void SetSurfaceInstanceConstant(const SurfaceInstanceId sur, const IndexT idx, const Util::Variant& value);
 
+	/// get name
+	const Util::String& GetName();
+
 private:
 	friend class MaterialServer;
 	friend class SurfacePool;
-	friend bool	MaterialBeginBatch(MaterialType* type, CoreGraphics::BatchGroup::Code batch);
-	friend bool	MaterialBeginSurface(const SurfaceId id);
-	friend void	MaterialApplySurfaceInstance(const SurfaceInstanceId mat);
-	friend void	MaterialEndSurface();
-	friend void	MaterialEndBatch();
+	friend bool	MaterialBeginBatch(MaterialType*, CoreGraphics::BatchGroup::Code);
+	friend void	MaterialApplySurface(MaterialType*, const SurfaceId);
+	friend void	MaterialApplySurfaceInstance(MaterialType*, const SurfaceInstanceId);
+	friend void	MaterialEndSurface(MaterialType*);
+	friend void	MaterialEndBatch(MaterialType*);
 
 	/// apply type-specific material state
 	bool BeginBatch(CoreGraphics::BatchGroup::Code batch);
 	/// apply surface-level material state
-	bool BeginSurface(const SurfaceId id);
+	void ApplySurface(const SurfaceId id);
 	/// apply specific material instance, using the same batch as 
 	void ApplyInstance(const SurfaceInstanceId mat);
 	/// end surface-level material state
@@ -118,7 +121,7 @@ private:
 	uint vertexType;
 
 	CoreGraphics::BatchGroup::Code currentBatch;
-	IndexT currentSurfaceBatchIndex;
+	IndexT currentBatchIndex;
 
 	// the reason whe have an instance type is because it doesn't need the default value
 	struct SurfaceInstanceConstant
@@ -180,9 +183,11 @@ private:
 	enum SurfaceInstanceMembers
 	{
 		SurfaceInstanceConstants,
+		SurfaceInstanceOffsets,
 	};
 	Ids::IdAllocator<
-		Util::FixedArray<Util::FixedArray<SurfaceInstanceConstant>>	// copy of surface constants
+		Util::FixedArray<Util::FixedArray<SurfaceInstanceConstant>>, // copy of surface constants
+		Util::FixedArray<uint>
 	> surfaceInstanceAllocator;
 	MaterialTypeId id;
 };

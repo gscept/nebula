@@ -10,8 +10,6 @@ namespace Materials
 {
 
 SurfacePool* surfacePool = nullptr;
-MaterialType* currentType = nullptr;
-SurfaceId currentSurface = SurfaceId::Invalid();
 
 //------------------------------------------------------------------------------
 /**
@@ -20,53 +18,39 @@ bool
 MaterialBeginBatch(MaterialType* type, CoreGraphics::BatchGroup::Code batch)
 {
 	n_assert(type != nullptr);
-	currentType = type;
-	return currentType->BeginBatch(batch);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-bool 
-MaterialBeginSurface(const SurfaceId id)
-{
-	n_assert(currentType != nullptr);
-	n_assert(id != SurfaceId::Invalid());
-	currentSurface = id;
-	return currentType->BeginSurface(id);
+	return type->BeginBatch(batch);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void 
-MaterialApplySurfaceInstance(const SurfaceInstanceId id)
+MaterialApplySurface(MaterialType* type, const SurfaceId id)
 {
-	n_assert(currentType != nullptr);
-	n_assert(currentSurface != SurfaceId::Invalid());
-	currentType->ApplyInstance(id);
+	n_assert(type != nullptr);
+	n_assert(id != SurfaceId::Invalid());	
+	type->ApplySurface(id);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void 
-MaterialEndSurface()
+MaterialApplySurfaceInstance(MaterialType* type, const SurfaceInstanceId id)
 {
-	n_assert(currentSurface != SurfaceId::Invalid());
-	currentType->EndSurface();
-	currentSurface = SurfaceId::Invalid();
+	n_assert(type != nullptr);
+	n_assert(id != SurfaceInstanceId::Invalid());
+	type->ApplyInstance(id);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-MaterialEndBatch()
+MaterialEndBatch(MaterialType* type)
 {
-	n_assert(currentType != nullptr);
-	currentType->EndBatch();
-	currentType = nullptr;
+	n_assert(type != nullptr);
+	type->EndBatch();
 }
 
 } // namespace Material

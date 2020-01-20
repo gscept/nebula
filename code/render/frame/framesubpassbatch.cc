@@ -13,6 +13,9 @@
 #include "graphics/view.h"
 #include "visibility/visibilitycontext.h"
 
+#include "models/nodes/particlesystemnode.h"
+#include "models/nodes/primitivenode.h"
+
 using namespace Graphics;
 using namespace CoreGraphics;
 using namespace Materials;
@@ -75,53 +78,70 @@ FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphic
 	const Util::Array<MaterialType*>* types = matServer->GetMaterialTypesByBatch(batch);
 	if ((types != nullptr) && (drawList != nullptr)) for (IndexT typeIdx = 0; typeIdx < types->Size(); typeIdx++)
 	{
-		MaterialType* type = (*types)[typeIdx];
-		IndexT idx = drawList->FindIndex(type);
+		MaterialType* materialType = (*types)[typeIdx];
+		IndexT idx = drawList->FindIndex(materialType);
 		if (idx != InvalidIndex)
 		{
+
+#if NEBULA_GRAPHICS_DEBUG
+			CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_DARK_GREEN, materialType->GetName().AsCharPtr());
+#endif
+
 			// if BeginBatch returns true if this material type has a shader for this batch
-			if (Materials::MaterialBeginBatch(type, batch))
+			if (Materials::MaterialBeginBatch(materialType, batch))
 			{
-				auto& model = drawList->ValueAtIndex(type, idx);
+				auto& model = drawList->ValueAtIndex(materialType, idx);
 				auto& it = model.Begin();
 				auto& end = model.End();
 				while (it != end)
 				{
 					Models::ModelNode* node = *it.key;
 					Models::ShaderStateNode* stateNode = reinterpret_cast<Models::ShaderStateNode*>(node);
+					Models::NodeType type = node->GetType();
 
 					// only continue if we have instances
 					const Util::Array<Models::ModelNode::DrawPacket*>& instances = *it.val;
 					if (instances.Size() > 0)
 					{
+#if NEBULA_GRAPHICS_DEBUG
+						CommandBufferInsertMarker(GraphicsQueueType, NEBULA_MARKER_DARK_DARK_GREEN, node->GetName().Value());
+#endif
 						// apply node-wide state
 						node->ApplyNodeState();
-
+						
 						// bind graphics pipeline
 						CoreGraphics::SetGraphicsPipeline();
 
-						if (Materials::MaterialBeginSurface(stateNode->GetSurface()))
+						// apply surface
+						Materials::MaterialApplySurface(materialType, stateNode->GetSurface());
+						Models::NodeType type = node->GetType();
+
+						IndexT i;
+						for (i = 0; i < instances.Size(); i++)
 						{
-							IndexT i;
-							for (i = 0; i < instances.Size(); i++)
+							Models::ModelNode::DrawPacket* instance = instances[i];
+							instance->Apply(materialType);
+
+							if (type != ParticleSystemNodeType)
 							{
-								Models::ModelNode::DrawPacket* instance = instances[i];
-
-								// apply instance state
-								instance->Apply();
-
-								//instance->Update();
-								CoreGraphics::Draw();
+								Models::PrimitiveNode::Instance* pinst = reinterpret_cast<Models::PrimitiveNode::Instance*>(instance->node);
+								pinst->Draw(1, instance);
 							}
-
-							// end surface
-							Materials::MaterialEndSurface();
+							else
+							{
+								Models::ParticleSystemNode::Instance* pinst = reinterpret_cast<Models::ParticleSystemNode::Instance*>(instance->node);
+								pinst->Draw(1, instance);
+							}
 						}
 					}
 					it++;
 				}
 			}
-			Materials::MaterialEndBatch();
+			Materials::MaterialEndBatch(materialType);
+
+#if NEBULA_GRAPHICS_DEBUG
+			CommandBufferEndMarker(GraphicsQueueType);
+#endif
 		}
 	}
 
@@ -148,14 +168,19 @@ FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphic
 	const Util::Array<MaterialType*>* types = matServer->GetMaterialTypesByBatch(batch);
 	if ((types != nullptr) && (drawList != nullptr)) for (IndexT typeIdx = 0; typeIdx < types->Size(); typeIdx++)
 	{
-		MaterialType* type = (*types)[typeIdx];
-		IndexT idx = drawList->FindIndex(type);
+		MaterialType* materialType = (*types)[typeIdx];
+		IndexT idx = drawList->FindIndex(materialType);
 		if (idx != InvalidIndex)
 		{
+
+#if NEBULA_GRAPHICS_DEBUG
+			CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_DARK_GREEN, materialType->GetName().AsCharPtr());
+#endif
+
 			// if BeginBatch returns true if this material type has a shader for this batch
-			if (Materials::MaterialBeginBatch(type, batch))
+			if (Materials::MaterialBeginBatch(materialType, batch))
 			{
-				auto& model = drawList->ValueAtIndex(type, idx);
+				auto& model = drawList->ValueAtIndex(materialType, idx);
 				auto& it = model.Begin();
 				auto& end = model.End();
 				while (it != end)
@@ -167,34 +192,46 @@ FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphic
 					const Util::Array<Models::ModelNode::DrawPacket*>& instances = *it.val;
 					if (instances.Size() > 0)
 					{
+
+#if NEBULA_GRAPHICS_DEBUG
+						CommandBufferInsertMarker(GraphicsQueueType, NEBULA_MARKER_DARK_DARK_GREEN, node->GetName().Value());
+#endif
 						// apply node-wide state
 						node->ApplyNodeState();
 
 						// bind graphics pipeline
 						CoreGraphics::SetGraphicsPipeline();
 
-						if (Materials::MaterialBeginSurface(stateNode->GetSurface()))
+						// apply surface level resources
+						Materials::MaterialApplySurface(materialType, stateNode->GetSurface());
+						Models::NodeType type = node->GetType();
+
+						IndexT i;
+						for (i = 0; i < instances.Size(); i++)
 						{
-							IndexT i;
-							for (i = 0; i < instances.Size(); i++)
+							Models::ModelNode::DrawPacket* instance = instances[i];
+							instance->Apply(materialType);
+
+							if (type != ParticleSystemNodeType)
 							{
-								Models::ModelNode::DrawPacket* instance = instances[i];
-
-								// apply instance state
-								instance->Apply();
-
-								//instance->Update();
-								CoreGraphics::DrawInstanced(numInstances, 0);
+								Models::PrimitiveNode::Instance* pinst = reinterpret_cast<Models::PrimitiveNode::Instance*>(instance->node);
+								pinst->Draw(numInstances, instance);
 							}
-
-							// end surface
-							Materials::MaterialEndSurface();
+							else
+							{
+								Models::ParticleSystemNode::Instance* pinst = reinterpret_cast<Models::ParticleSystemNode::Instance*>(instance->node);
+								pinst->Draw(numInstances, instance);
+							}
 						}
 					}
 					it++;
 				}
 			}
-			Materials::MaterialEndBatch();
+			Materials::MaterialEndBatch(materialType);
+
+#if NEBULA_GRAPHICS_DEBUG
+			CommandBufferEndMarker(GraphicsQueueType);
+#endif
 		}
 	}
 
