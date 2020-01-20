@@ -51,6 +51,10 @@ public:
     void operator=(Delegate<RETTYPE(ARGTYPES...)> const& rhs);
     /// move operator
     void operator=(Delegate<RETTYPE(ARGTYPES...)>&& rhs);
+	/// check if null
+	bool operator==(nullptr_t);
+	/// check if null
+	bool operator!();
 
 	/// lambda assignment operator
 	template <typename LAMBDA>
@@ -95,8 +99,8 @@ private:
 */
 template<typename RETTYPE, typename ... ARGTYPES>
 Delegate<RETTYPE(ARGTYPES ...)>::Delegate() :
-    objPtr(0),
-    stubPtr(0)
+    objPtr(nullptr),
+    stubPtr(nullptr)
 {
     // empty
 }
@@ -176,6 +180,26 @@ Delegate<RETTYPE(ARGTYPES...)>::operator=(LAMBDA const& instance)
     static_assert(sizeof(LAMBDA) == 1Ui64, "Util::Delegate does accept lambdas carrying capture variables! Read the description of at the top of util/delegate.h");
 	Assign((void*)(&instance), LambdaStub<LAMBDA>);
 	return *this;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<typename RETTYPE, typename ... ARGTYPES>
+bool
+Delegate<RETTYPE(ARGTYPES...)>::operator==(nullptr_t)
+{	
+	return this->stubPtr == nullptr;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<typename RETTYPE, typename ... ARGTYPES>
+bool
+Delegate<RETTYPE(ARGTYPES...)>::operator!()
+{
+	return this->stubPtr == nullptr;
 }
 
 //------------------------------------------------------------------------------
