@@ -106,6 +106,7 @@ VkShaderServer::Open()
 	this->albedoBufferTextureVar = ShaderGetConstantBinding(shader, "AlbedoBuffer");
 	this->emissiveBufferTextureVar = ShaderGetConstantBinding(shader, "EmissiveBuffer");
 	this->lightBufferTextureVar = ShaderGetConstantBinding(shader, "LightBuffer");
+	this->depthBufferCopyTextureVar = ShaderGetConstantBinding(shader, "DepthBufferCopy");
 
 	this->environmentMapVar = ShaderGetConstantBinding(shader, "EnvironmentMap");
 	this->irradianceMapVar = ShaderGetConstantBinding(shader, "IrradianceMap");
@@ -262,6 +263,7 @@ VkShaderServer::SetupGBufferConstants()
 	this->tickParams.AlbedoBuffer = TextureGetBindlessHandle(CoreGraphics::GetTexture("AlbedoBuffer"));
 	this->tickParams.EmissiveBuffer = TextureGetBindlessHandle(CoreGraphics::GetTexture("EmissiveBuffer"));
 	this->tickParams.LightBuffer = TextureGetBindlessHandle(CoreGraphics::GetTexture("LightBuffer"));
+	this->tickParams.DepthBufferCopy = TextureGetBindlessHandle(CoreGraphics::GetTexture("ZBufferCopy"));
 }
 
 //------------------------------------------------------------------------------

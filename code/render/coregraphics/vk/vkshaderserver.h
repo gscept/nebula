@@ -90,6 +90,7 @@ private:
 	CoreGraphics::ConstantBinding albedoBufferTextureVar;
 	CoreGraphics::ConstantBinding emissiveBufferTextureVar;
 	CoreGraphics::ConstantBinding lightBufferTextureVar;
+	CoreGraphics::ConstantBinding depthBufferCopyTextureVar;
 
 	CoreGraphics::ConstantBinding environmentMapVar;
 	CoreGraphics::ConstantBinding irradianceMapVar;
