@@ -86,6 +86,8 @@ public:
 
 	/// get name
 	const Util::String& GetName();
+	/// get hash code 
+	const IndexT HashCode() const;
 
 private:
 	friend class MaterialServer;
@@ -119,6 +121,9 @@ private:
 	Util::String description;
 	Util::String group;
 	uint vertexType;
+
+	uint uniqueId;
+	static uint MaterialTypeUniqueIdCounter;
 
 	CoreGraphics::BatchGroup::Code currentBatch;
 	IndexT currentBatchIndex;
@@ -191,5 +196,24 @@ private:
 	> surfaceInstanceAllocator;
 	MaterialTypeId id;
 };
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const Util::String&
+MaterialType::GetName()
+{
+	return this->name;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const IndexT
+MaterialType::HashCode() const
+{
+	return this->uniqueId;
+}
 
 } // namespace Materials

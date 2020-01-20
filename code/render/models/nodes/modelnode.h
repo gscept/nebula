@@ -116,6 +116,8 @@ public:
 
 	/// return name
 	const Util::StringAtom& GetName() const;
+	/// get hash
+	const IndexT HashCode() const;
 
 	/// apply node-level state
 	virtual void ApplyNodeState();
@@ -150,6 +152,9 @@ protected:
 	Math::bbox boundingBox;
 	Util::StringAtom tag;
 	SizeT hierarchicalInstanceSize;
+
+	IndexT uniqueId;
+	static IndexT ModelNodeUniqueIdCounter;
 };
 
 //------------------------------------------------------------------------------
@@ -186,6 +191,15 @@ inline const Util::StringAtom&
 ModelNode::GetName() const
 {
 	return this->name;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const IndexT 
+ModelNode::HashCode() const
+{
+	return this->uniqueId;
 }
 
 } // namespace Models

@@ -127,10 +127,11 @@ private:
 
 	/// if type is integral, just use that value directly
 	template <typename HASHKEY> const IndexT GetHashCode(const typename std::enable_if<std::is_integral<HASHKEY>::value, HASHKEY>::type& key) const { return IndexT(key % this->hashArray.Size()); };
-	/// if type is pointer, convert using questionable method
-	template <typename HASHKEY> const IndexT GetHashCode(const typename std::enable_if<std::is_pointer<HASHKEY>::value, HASHKEY>::type& key) const { return ((IndexT)(std::hash<unsigned long long>{}(PtrT(key)) & 0x7FFFFFFF)) % this->hashArray.Size(); }
 	/// if not, call the function on HashCode on HASHKEY
-	template <typename HASHKEY> const IndexT GetHashCode(const HASHKEY& key) const { return key.HashCode() % this->hashArray.Size();  };
+	template <typename HASHKEY> const IndexT GetHashCode(const HASHKEY& key) const { return key.HashCode() % this->hashArray.Size(); };
+	/// if type is pointer, convert using questionable method
+	template <typename HASHKEY> const IndexT GetHashCode(const typename std::enable_if<std::is_pointer<HASHKEY>::value, HASHKEY>::type& key) const { return key->HashCode() % this->hashArray.Size(); }
+
 };
 
 //------------------------------------------------------------------------------
@@ -464,7 +465,11 @@ HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::AddUnique(const KEYTYPE& 
 	}
 	else
 	{
-		elementIndex = hashElements.BinarySearchIndex<KEYTYPE>(key);
+		if (!this->inBulkAdd)
+			elementIndex = hashElements.BinarySearchIndex<KEYTYPE>(key);
+		else
+			elementIndex = hashElements.FindIndex<KEYTYPE>(key);
+
 		if (elementIndex == InvalidIndex)
 		{
 			elementIndex = this->Add(key, VALUETYPE());

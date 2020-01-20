@@ -67,6 +67,9 @@ ParticleSystemNode::UpdateMeshResource(const Resources::ResourceName& resName)
 void
 ParticleSystemNode::OnFinishedLoading()
 {
+	// skip state node intentionally because we don't want its setup
+	TransformNode::OnFinishedLoading();
+
 	// load surface ourselves since state node does the resource table setup too, but we need it explicit
 	this->surRes = Resources::CreateResource(this->materialName, this->tag, nullptr, nullptr, true);
 	this->materialType = Materials::surfacePool->GetType(this->surRes);

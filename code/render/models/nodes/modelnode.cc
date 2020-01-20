@@ -12,6 +12,7 @@ using namespace Math;
 namespace Models
 {
 
+uint64 ModelNode::ModelNodeUniqueIdCounter = 0;
 //------------------------------------------------------------------------------
 /**
 */
@@ -80,7 +81,7 @@ ModelNode::Unload()
 void
 ModelNode::OnFinishedLoading()
 {
-	// override in subclass
+	this->uniqueId = ModelNodeUniqueIdCounter++;
 }
 
 //------------------------------------------------------------------------------

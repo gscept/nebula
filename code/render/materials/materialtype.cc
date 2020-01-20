@@ -11,6 +11,7 @@
 namespace Materials
 {
 
+uint64 MaterialType::MaterialTypeUniqueIdCounter = 0;
 //------------------------------------------------------------------------------
 /**
 */
@@ -36,6 +37,7 @@ void
 MaterialType::Setup()
 {
 	// setup binding in each program (should be identical)
+	this->uniqueId = MaterialTypeUniqueIdCounter++;
 	auto it = this->batchToIndexMap.Begin();
 	while (it != this->batchToIndexMap.End())
 	{
@@ -390,15 +392,6 @@ MaterialType::SetSurfaceInstanceConstant(const SurfaceInstanceId sur, const Inde
 			memcpy((void*)constant.mem, value.AsVoidPtr(), value.Size());
 		it++;
 	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const Util::String& 
-MaterialType::GetName()
-{
-	return this->name;
 }
 
 //------------------------------------------------------------------------------
