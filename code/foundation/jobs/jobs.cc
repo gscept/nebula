@@ -276,13 +276,14 @@ JobSyncSignal(const JobSyncId id, const JobPortId port)
 	{
 		// set the counter to finish all threads, and reset the event
 		counter->exchange(completionCount);
+		event->Wait();
 		event->Reset();
 
 		IndexT i;
 		for (i = 0; i < threads.Size(); i++)
 		{
-			// setup job
-			auto thread = threads[i];
+			// setup command
+			auto& thread = threads[i];
 			JobThread::JobThreadCommand cmd;
 			cmd.ev = JobThread::Signal;
 			cmd.sync.completionCounter = counter;
