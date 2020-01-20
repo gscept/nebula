@@ -464,7 +464,12 @@ HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::AddUnique(const KEYTYPE& 
 	}
 	else
 	{
-		elementIndex = hashElements.BinarySearchIndex<KEYTYPE>(key);
+        // binary search requires the array to be sorted, which it isn't if we're in bulk add mode
+        if (this->inBulkAdd)
+		    elementIndex = hashElements.FindIndex<KEYTYPE>(key);
+        else
+		    elementIndex = hashElements.BinarySearchIndex<KEYTYPE>(key);
+
 		if (elementIndex == InvalidIndex)
 		{
 			elementIndex = this->Add(key, VALUETYPE());
@@ -629,7 +634,7 @@ HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::Iterator::operator++(int)
 
 	// always increment bucket index
 	this->bucketIndex++;
-	if (arr[this->hashIndex].Size() < this->bucketIndex)
+	if (arr[this->hashIndex].Size() > this->bucketIndex)
 	{
 		this->val = &arr[this->hashIndex][this->bucketIndex].Value();
 		this->key = &arr[this->hashIndex][this->bucketIndex].Key();
