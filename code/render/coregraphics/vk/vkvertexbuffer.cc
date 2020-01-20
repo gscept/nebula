@@ -199,8 +199,10 @@ DestroyVertexBuffer(const VertexBufferId id)
 	uint32_t& mapCount = vboAllocator.Get<2>(id.id24);
 
 	n_assert(mapCount == 0);
-	vkFreeMemory(loadInfo.dev, loadInfo.mem, nullptr);
-	vkDestroyBuffer(loadInfo.dev, runtimeInfo.buf, nullptr);
+	Vulkan::DelayedDeleteMemory(loadInfo.mem);
+	Vulkan::DelayedDeleteBuffer(runtimeInfo.buf);
+	//vkFreeMemory(loadInfo.dev, loadInfo.mem, nullptr);
+	//vkDestroyBuffer(loadInfo.dev, runtimeInfo.buf, nullptr);
 }
 
 //------------------------------------------------------------------------------

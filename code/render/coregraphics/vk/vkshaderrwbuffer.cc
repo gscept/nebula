@@ -96,8 +96,11 @@ DestroyShaderRWBuffer(const ShaderRWBufferId id)
 	VkShaderRWBufferRuntimeInfo& runtimeInfo = shaderRWBufferAllocator.Get<1>(id.id24);
 
 	vkUnmapMemory(setupInfo.dev, setupInfo.mem);
-	vkDestroyBuffer(setupInfo.dev, runtimeInfo.buf, nullptr);
-	vkFreeMemory(setupInfo.dev, setupInfo.mem, nullptr);
+
+	Vulkan::DelayedDeleteBuffer(runtimeInfo.buf);
+	Vulkan::DelayedDeleteMemory(setupInfo.mem);
+	//vkDestroyBuffer(setupInfo.dev, runtimeInfo.buf, nullptr);
+	//vkFreeMemory(setupInfo.dev, setupInfo.mem, nullptr);
 
 	shaderRWBufferAllocator.Dealloc(id.id24);
 }

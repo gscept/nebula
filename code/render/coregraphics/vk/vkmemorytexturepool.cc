@@ -92,8 +92,38 @@ VkMemoryTexturePool::LoadFromMemory(const Resources::ResourceId id, const void* 
     	return ResourcePool::Success;
     }
 
-    return ResourcePool::Failed;
-    
+    return ResourcePool::Failed;   
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+VkMemoryTexturePool::Unload(const Resources::ResourceId id)
+{
+	this->EnterGet();
+	VkTextureLoadInfo& loadInfo = this->Get<Texture_LoadInfo>(id);
+	VkTextureRuntimeInfo& runtimeInfo = this->Get<Texture_RuntimeInfo>(id);
+	VkTextureWindowInfo& windowInfo = this->Get<Texture_WindowInfo>(id);
+
+	// only free memory if texture is not aliased!
+	if (loadInfo.alias == CoreGraphics::TextureId::Invalid() && loadInfo.mem != VK_NULL_HANDLE)
+		Vulkan::DelayedDeleteMemory(loadInfo.mem);
+	//vkFreeMemory(loadInfo.dev, loadInfo.mem, nullptr);
+
+// only unload a texture which isn't a window texture, since their textures come from the swap chain
+	if (!loadInfo.windowTexture)
+	{
+		Vulkan::DelayedDeleteImage(loadInfo.img);
+		Vulkan::DelayedDeleteImageView(runtimeInfo.view);
+		//vkDestroyImage(loadInfo.dev, loadInfo.img, nullptr);
+		//vkDestroyImageView(loadInfo.dev, runtimeInfo.view, nullptr);
+		VkShaderServer::Instance()->UnregisterTexture(runtimeInfo.bind, runtimeInfo.type);
+	}
+
+	this->states[id.poolId] = Resources::Resource::State::Unloaded;
+	this->LeaveGet();
 }
 
 //------------------------------------------------------------------------------

@@ -114,7 +114,7 @@ CreateIndexBuffer(const IndexBufferCreateInfo& info)
 	ret.id8 = IndexBufferIdType;
 
 #if NEBULA_GRAPHICS_DEBUG
-	ObjectSetName(ret, info.name.AsString());
+	ObjectSetName(ret, info.name.Value());
 #endif
 
 	return ret;
@@ -174,7 +174,7 @@ CreateIndexBuffer(const IndexBufferCreateDirectInfo& info)
 	ret.id8 = IndexBufferIdType;
 
 #if NEBULA_GRAPHICS_DEBUG
-	ObjectSetName(ret, info.name.AsString());
+	ObjectSetName(ret, info.name.Value());
 #endif
 
 	return ret;
@@ -191,8 +191,10 @@ DestroyIndexBuffer(const IndexBufferId id)
 	uint32_t& mapCount = iboAllocator.Get<2>(id.id24);
 
 	n_assert(mapCount == 0);
-	vkFreeMemory(loadInfo.dev, loadInfo.mem, nullptr);
-	vkDestroyBuffer(loadInfo.dev, runtimeInfo.buf, nullptr);
+	Vulkan::DelayedDeleteMemory(loadInfo.mem);
+	Vulkan::DelayedDeleteBuffer(runtimeInfo.buf);
+	//vkFreeMemory(loadInfo.dev, loadInfo.mem, nullptr);
+	//vkDestroyBuffer(loadInfo.dev, runtimeInfo.buf, nullptr);
 }
 
 //------------------------------------------------------------------------------
