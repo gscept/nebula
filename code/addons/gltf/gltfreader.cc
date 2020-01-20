@@ -703,7 +703,7 @@ IO::JsonReader::Get<Util::Array<Gltf::Primitive>>(Util::Array<Gltf::Primitive> &
         this->Get(item.attributes, "attributes");
         for (auto const& a : item.attributes)
         {
-            item.nebulaAttributes.Add(AttributeToNebula(a.first), a.second);
+            item.nebulaAttributes.Add(AttributeToNebula(a.Key()), a.Value());
         }
         this->GetOpt(item.indices, "indices");
         this->GetOpt(item.material, "material");

@@ -1,8 +1,0 @@
-<!--
-	Surface material for the placeholder material
--->
-<Nebula>
-	<Surface template="PlacementHandleWireframeNoPick">
-		<Param name="MatDiffuse" value="0,0,0,0"/>
-	</Surface>
-</Nebula>

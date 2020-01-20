@@ -62,10 +62,6 @@ public:
     /// read access to key
     const VALUETYPE& Value() const;
 
-    /// stl accessors    
-    const KEYTYPE& first = keyData;
-    const VALUETYPE& second=valueData;
-
 protected:
     KEYTYPE keyData;
     VALUETYPE valueData;

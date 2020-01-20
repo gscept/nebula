@@ -384,7 +384,12 @@ InternalSetupFunction(const WindowCreateInfo& info, const Util::Blob& windowData
 	}
 	else
 	{
+		//FIXME resize is broken currently, forcibly disabling it
+#if 0
 		glfwWindowHint(GLFW_RESIZABLE, info.resizable ? GL_TRUE : GL_FALSE);
+#else
+		glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+#endif
 		glfwWindowHint(GLFW_DECORATED, info.decorated ? GL_TRUE : GL_FALSE);
 
 		// create window
@@ -506,6 +511,10 @@ DestroyWindow(const WindowId id)
 #if __VULKAN__
 	// discard swapchain
 	Vulkan::DiscardVulkanSwapchain(id);
+	// wait for queues to empty
+	VkWindowSwapInfo& wndInfo = glfwWindowAllocator.Get<GLFW_WindowSwapInfo>(id.id24);
+	CoreGraphics::WaitForAllQueues();
+	vkDeviceWaitIdle(wndInfo.dev);
 #endif
 
 	// close event

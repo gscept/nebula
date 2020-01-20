@@ -1,5 +1,0 @@
-<Shady>
-	<Variation desc="Represents a four-component float constant." simulationValue="Value">
-		<Output type="vec4" name="Value" constant="true"/>
-	</Variation>
-</Shady>

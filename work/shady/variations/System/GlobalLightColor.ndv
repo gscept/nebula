@@ -1,5 +1,0 @@
-<Shady>
-	<Variation desc="Color of directional light.">
-		<Output type="vec4" name="GlobalLightColor" static="true" param="true"/>
-	</Variation>
-</Shady>

@@ -78,7 +78,7 @@ VkTransformDevice::Open()
 void
 VkTransformDevice::Close()
 {
-	DestroyConstantBuffer(this->viewConstants);
+	// empty
 }
 
 //------------------------------------------------------------------------------

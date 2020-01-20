@@ -33,7 +33,7 @@
                   {
                      "name": "TeamColorMask",
                      "type": "textureHandle",
-                     "defaultValue": "tex:system/black.dds"
+                     "defaultValue": "tex:system/black"
                   },
                   {
                      "name": "TeamColor",
@@ -80,7 +80,7 @@
                   {
                      "name": "TeamColorMask",
                      "type": "textureHandle",
-                     "defaultValue": "tex:system/black.dds"
+                     "defaultValue": "tex:system/black"
                   },
                   {
                      "name": "TeamColor",

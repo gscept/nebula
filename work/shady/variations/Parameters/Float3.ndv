@@ -1,5 +1,0 @@
-<Shady>
-	<Variation desc="Represents a three-component float parameter." simulationValue="Value">
-		<Output type="vec3" name="Value" param="true"/>
-	</Variation>
-</Shady>

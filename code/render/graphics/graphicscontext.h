@@ -24,7 +24,6 @@
 #include "graphicsentity.h"
 #include "coregraphics/window.h"
 
-
 #define _DeclarePluginContext() \
 private:\
 	static Graphics::GraphicsContextState __state;\
@@ -158,14 +157,14 @@ struct FrameContext;
 
 enum StageBits
 {
-	NoStage,
-	OnBeginStage,
-	OnPrepareViewStage,
-	OnBeforeFrameStage,
-	OnWaitForWorkStage,
-	OnBeforeViewStage,
-	OnAfterViewStage,
-	OnAfterFrameStage,
+	NoStage             = 1 << 0,
+	OnBeginStage		= 1 << 1
+	OnPrepareViewStage  = 1 << 2,
+	OnBeforeFrameStage  = 1 << 3,
+	OnWaitForWorkStage  = 1 << 4,
+	OnBeforeViewStage   = 1 << 5,
+	OnAfterViewStage    = 1 << 6,
+	OnAfterFrameStage   = 1 << 7,
 
 	AllStages = OnBeginStage | OnPrepareViewStage | OnBeforeFrameStage | OnWaitForWorkStage | OnBeforeViewStage | OnAfterViewStage | OnAfterFrameStage
 };

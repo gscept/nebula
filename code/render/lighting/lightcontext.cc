@@ -358,6 +358,7 @@ LightContext::Create()
 void
 LightContext::Discard()
 {
+	lightServerState.fsq.Discard();
 	Frame::FrameServer::Instance()->UnloadFrameScript("shadowmap_framescript");
 	Graphics::GraphicsServer::Instance()->UnregisterGraphicsContext(&__bundle);
 }
