@@ -181,6 +181,44 @@ VkShaderServer::RegisterTexture(const CoreGraphics::TextureId& tex, bool depth, 
 //------------------------------------------------------------------------------
 /**
 */
+void 
+VkShaderServer::ReregisterTexture(const CoreGraphics::TextureId& tex, bool depth, CoreGraphics::TextureType type, uint32_t slot)
+{
+	IndexT var;
+	switch (type)
+	{
+	case Texture2D:
+		var = this->texture2DTextureVar;
+		break;
+	case Texture2DArray:
+		var = this->texture2DArrayTextureVar;
+		break;
+	case Texture3D:
+		var = this->texture3DTextureVar;
+		break;
+	case TextureCube:
+		var = this->textureCubeTextureVar;
+		break;
+	}
+
+	ResourceTableTexture info;
+	info.tex = tex;
+	info.index = slot;
+	info.sampler = SamplerId::Invalid();
+	info.isDepth = false;
+	info.slot = var;
+
+	// update textures for all tables
+	IndexT i;
+	for (i = 0; i < this->resourceTables.Size(); i++)
+	{
+		ResourceTableSetTexture(this->resourceTables[i], info);
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 VkShaderServer::UnregisterTexture(const uint32_t id, const CoreGraphics::TextureType type)
 {
