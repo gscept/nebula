@@ -383,7 +383,7 @@ ImguiContext::Create()
 	config.OversampleH = 3;
 	config.OversampleV = 1;
 #if __WIN32__
-	ImFont* font = io.Fonts->AddFontFromFileTTF("c:/windows/fonts/OpenSans-SemiBold.ttf", 17, &config);
+	ImFont* font = io.Fonts->AddFontFromFileTTF("c:/windows/fonts/segoeui.ttf", 17, &config);
 #else
 	ImFont* font = io.Fonts->AddFontFromFileTTF("/usr/share/fonts/truetype/freefont/FreeSans.ttf", 18, &config);
 #endif
