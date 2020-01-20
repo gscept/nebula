@@ -186,7 +186,7 @@ ModelContext::GetTransform(const Graphics::GraphicsEntityId id)
 Math::matrix44
 ModelContext::GetTransform(const Graphics::ContextEntityId id)
 {
-	ModelInstanceId& inst = modelContextAllocator.Get<1>(id.id);
+	ModelInstanceId& inst = modelContextAllocator.Get<Model_InstanceId>(id.id);
 	return modelContextAllocator.Get<2>(id.id);
 }
 
@@ -197,8 +197,8 @@ Math::bbox
 ModelContext::GetBoundingBox(const Graphics::GraphicsEntityId id)
 {
 	const ContextEntityId cid = GetContextId(id);
-	ModelInstanceId& inst = modelContextAllocator.Get<1>(cid.id);
-	return Models::modelPool->modelInstanceAllocator.Get<4>(inst.instance);
+	ModelInstanceId& inst = modelContextAllocator.Get<Model_InstanceId>(cid.id);
+	return Models::modelPool->modelInstanceAllocator.Get<StreamModelPool::InstanceBoundingBox>(inst.instance);
 }
 
 //------------------------------------------------------------------------------
@@ -208,8 +208,8 @@ const Util::Array<Models::ModelNode::Instance*>&
 ModelContext::GetModelNodeInstances(const Graphics::GraphicsEntityId id)
 {
 	const ContextEntityId cid = GetContextId(id);
-	ModelInstanceId& inst = modelContextAllocator.Get<1>(cid.id);
-	return Models::modelPool->modelInstanceAllocator.Get<0>(inst.instance);
+	ModelInstanceId& inst = modelContextAllocator.Get<Model_InstanceId>(cid.id);
+	return Models::modelPool->modelInstanceAllocator.Get<StreamModelPool::ModelNodeInstances>(inst.instance);
 }
 
 //------------------------------------------------------------------------------
@@ -219,8 +219,8 @@ const Util::Array<Models::NodeType>&
 ModelContext::GetModelNodeTypes(const Graphics::GraphicsEntityId id)
 {
 	const ContextEntityId cid = GetContextId(id);
-	ModelInstanceId& inst = modelContextAllocator.Get<1>(cid.id);
-	return Models::modelPool->modelInstanceAllocator.Get<1>(inst.instance);
+	ModelInstanceId& inst = modelContextAllocator.Get<Model_InstanceId>(cid.id);
+	return Models::modelPool->modelInstanceAllocator.Get<StreamModelPool::ModelNodeTypes>(inst.instance);
 }
 
 //------------------------------------------------------------------------------
@@ -229,7 +229,7 @@ ModelContext::GetModelNodeTypes(const Graphics::GraphicsEntityId id)
 const Util::Array<Models::ModelNode::Instance*>&
 ModelContext::GetModelNodeInstances(const Graphics::ContextEntityId id)
 {
-	ModelInstanceId& inst = modelContextAllocator.Get<1>(id.id);
+	ModelInstanceId& inst = modelContextAllocator.Get<Model_InstanceId>(id.id);
 	return Models::modelPool->modelInstanceAllocator.Get<0>(inst.instance);
 }
 
@@ -250,12 +250,12 @@ ModelContext::GetModelNodeTypes(const Graphics::ContextEntityId id)
 void
 ModelContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 {
-	const Util::Array<ModelInstanceId>& instances = modelContextAllocator.GetArray<1>();
+	const Util::Array<ModelInstanceId>& instances = modelContextAllocator.GetArray<Model_InstanceId>();
 	const Util::Array<Math::matrix44>& transforms = Models::modelPool->modelInstanceAllocator.GetArray<StreamModelPool::InstanceTransform>();
 	const Util::Array<Math::bbox>& modelBoxes = Models::modelPool->modelAllocator.GetArray<0>();
 	Util::Array<Math::bbox>& instanceBoxes = Models::modelPool->modelInstanceAllocator.GetArray<StreamModelPool::InstanceBoundingBox>();
-	Util::Array<Math::matrix44>& pending = modelContextAllocator.GetArray<2>();
-	Util::Array<bool>& hasPending = modelContextAllocator.GetArray<3>();
+	Util::Array<Math::matrix44>& pending = modelContextAllocator.GetArray<Model_Transform>();
+	Util::Array<bool>& hasPending = modelContextAllocator.GetArray<Model_Dirty>();
 	
 	SizeT i;
 	for (i = 0; i < instances.Size(); i++)

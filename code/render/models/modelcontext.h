@@ -78,6 +78,14 @@ public:
 	static const Util::Array<Models::NodeType>& GetModelNodeTypes(const Graphics::ContextEntityId id);
 
 private:
+
+	enum
+	{
+		Model_Id,
+		Model_InstanceId,
+		Model_Transform,
+		Model_Dirty
+	};
 	typedef Ids::IdAllocator<
 		ModelId,
 		ModelInstanceId,

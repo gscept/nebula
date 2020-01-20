@@ -19,16 +19,16 @@ class ModelNode;
 RESOURCE_ID_TYPE(ModelId);
 ID_32_32_NAMED_TYPE(ModelInstanceId, model, instance);
 
-#define MODEL_MEMORY_CHUNK_SIZE 0x800
-#define MODEL_INSTANCE_MEMORY_CHUNK_SIZE 0x1000
+#define MODEL_MEMORY_CHUNK_SIZE 0x1000
+#define MODEL_INSTANCE_MEMORY_CHUNK_SIZE 0x4000
 
 enum NodeType
 {
 	CharacterNodeType,
 	TransformNodeType,
-	NodeHasTransform = TransformNodeType, // all nodes above and equals has a transform
+	NodeHasTransform = TransformNodeType, // all nodes below and equals has a transform
 	ShaderStateNodeType,
-	NodeHasShaderState = ShaderStateNodeType, // all nodes above and equals has a shader state
+	NodeHasShaderState = ShaderStateNodeType, // all nodes below and equals has a shader state
 	PrimitiveNodeType,
 	ParticleSystemNodeType,
 	CharacterSkinNodeType,
