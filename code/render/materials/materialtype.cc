@@ -11,7 +11,7 @@
 namespace Materials
 {
 
-uint64 MaterialType::MaterialTypeUniqueIdCounter = 0;
+IndexT MaterialType::MaterialTypeUniqueIdCounter = 0;
 //------------------------------------------------------------------------------
 /**
 */

@@ -122,8 +122,8 @@ private:
 	Util::String group;
 	uint vertexType;
 
-	uint uniqueId;
-	static uint MaterialTypeUniqueIdCounter;
+	IndexT uniqueId;
+	static IndexT MaterialTypeUniqueIdCounter;
 
 	CoreGraphics::BatchGroup::Code currentBatch;
 	IndexT currentBatchIndex;

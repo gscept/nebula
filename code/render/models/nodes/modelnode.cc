@@ -12,7 +12,7 @@ using namespace Math;
 namespace Models
 {
 
-uint64 ModelNode::ModelNodeUniqueIdCounter = 0;
+IndexT ModelNode::ModelNodeUniqueIdCounter = 0;
 //------------------------------------------------------------------------------
 /**
 */
