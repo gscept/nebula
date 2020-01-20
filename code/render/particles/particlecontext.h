@@ -53,9 +53,19 @@ public:
 	static void Stop(const Graphics::GraphicsEntityId id);	
 
 	/// start particle updating when frame starts
-	static void OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
+	static void UpdateParticles(const Graphics::FrameContext& ctx);
 	/// stop particle updating when frame ends
-	static void OnWaitForWork(const Graphics::FrameContext& ctx);
+	static void WaitForParticleUpdates(const Graphics::FrameContext& ctx);
+
+	/// get the shared particle index buffer
+	static CoreGraphics::IndexBufferId GetParticleIndexBuffer();
+	/// get the shared vertex buffer
+	static CoreGraphics::VertexBufferId GetParticleVertexBuffer();
+	/// get the shared vertex layout
+	static CoreGraphics::VertexLayoutId GetParticleVertexLayout();
+
+	/// get particle bounding box
+	static Math::bbox GetBoundingBox(const Graphics::GraphicsEntityId id);
 
 #ifndef PUBLIC_DEBUG    
 	/// debug rendering
@@ -80,6 +90,12 @@ private:
 		bool firstFrame : 1;
 	};
 
+	struct ParticleJobOutput
+	{
+		Math::bbox bbox;
+		unsigned int numLivingParticles;
+	};
+
 	struct ParticleSystemRuntime
 	{
 		Models::ParticleSystemNode::Instance* node;
@@ -91,25 +107,21 @@ private:
 		ParticleJobUniformPerJobData perJobUniformData;
 		ParticleJobUniformData uniformData;
 		SizeT outputCapacity;
-		void* outputData;
-	};
-
-	struct ParticleJobOutput
-	{
-		Math::bbox bbox;
-		unsigned int numLivingParticles;
+		ParticleJobOutput* outputData;
 	};
 
 	enum
 	{
 		ParticleSystems,
 		ModelId,
-		Runtime
+		Runtime,
+		BoundingBox
 	};
 	typedef Ids::IdAllocator<
 		Util::Array<ParticleSystemRuntime>,
 		Graphics::ContextEntityId,
-		ParticleRuntime
+		ParticleRuntime,
+		Math::bbox
 	> ParticleContextAllocator;
 	static ParticleContextAllocator particleContextAllocator;
 
@@ -128,7 +140,6 @@ private:
 	static Jobs::JobPortId jobPort;
 	static Jobs::JobSyncId jobSync;
 	static Util::Queue<Jobs::JobId> runningJobs;
-
 };
 
 //------------------------------------------------------------------------------

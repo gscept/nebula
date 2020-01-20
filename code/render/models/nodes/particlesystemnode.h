@@ -49,25 +49,22 @@ public:
 			Particle
 		};
 
-		Ids::Id32 particleSystemId;
-		
-		CoreGraphics::ResourceTableId resourceTable;
-		CoreGraphics::ConstantBufferId cbo;
-		CoreGraphics::ConstantBinding emitterOrientationVar;
-		CoreGraphics::ConstantBinding billboardVar;
-		CoreGraphics::ConstantBinding bboxCenterVar;
-		CoreGraphics::ConstantBinding bboxSizeVar;
-		CoreGraphics::ConstantBinding animPhasesVar;
-		CoreGraphics::ConstantBinding animsPerSecVar;
+		uint particleVboOffset;
+		CoreGraphics::VertexBufferId particleVbo;
+		CoreGraphics::PrimitiveGroup group;
+		uint numParticles;
 
-		uint32 instance;
-		Util::FixedArray<uint32> offsets;
+		IndexT particleConstantsIndex;
+
 		Math::bbox boundingBox;
 
 		/// update prior to drawing
 		void Update() override;
 		/// setup instance
 		void Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
+
+		/// another draw function
+		void Draw(const SizeT numInstances, Models::ModelNode::DrawPacket* packet);
 	};
 
 	/// create instance
@@ -91,20 +88,12 @@ protected:
 	Particles::EmitterAttrs emitterAttrs;
 	Particles::EmitterMesh emitterMesh;
     Resources::ResourceName meshResId;
+
+	IndexT particleConstantsIndex;
+
 	Util::StringAtom tag;
     IndexT primGroupIndex;
 	CoreGraphics::MeshId mesh;
-
-	CoreGraphics::ShaderId shader;
-	CoreGraphics::ConstantBufferId cbo;
-	IndexT cboIndex;
-	CoreGraphics::ResourceTableId resourceTable;
-	CoreGraphics::ConstantBinding emitterOrientationVar;
-	CoreGraphics::ConstantBinding billboardVar;
-	CoreGraphics::ConstantBinding bboxCenterVar;
-	CoreGraphics::ConstantBinding bboxSizeVar;
-	CoreGraphics::ConstantBinding animPhasesVar;
-	CoreGraphics::ConstantBinding animsPerSecVar;
 };
 
 //------------------------------------------------------------------------------
@@ -160,27 +149,18 @@ ModelNodeInstanceCreator(ParticleSystemNode)
 inline void
 ParticleSystemNode::Instance::Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent)
 {
-	TransformNode::Instance::Setup(node, parent);
+	ShaderStateNode::Instance::Setup(node, parent);
 	ParticleSystemNode* pparent = static_cast<ParticleSystemNode*>(node);
-	CoreGraphics::ConstantBufferId cbo = pparent->cbo;
-	this->cbo = cbo;
-	this->resourceTable = pparent->resourceTable;
+
+	this->particleConstantsIndex = pparent->particleConstantsIndex;
 	this->offsets.Resize(4);
-	bool rebind = CoreGraphics::ConstantBufferAllocateInstance(cbo, this->offsets[Particle], this->instance);
-	this->offsets[InstancingTransforms] = 0;
-	this->offsets[ObjectTransforms] = 0;
-	this->offsets[Skinning] = 0;
-	if (rebind)
-	{
-		CoreGraphics::ResourceTableSetConstantBuffer(pparent->resourceTable, { pparent->cbo, pparent->cboIndex, 0, true, false, -1, 0 });
-		CoreGraphics::ResourceTableCommitChanges(pparent->resourceTable);
-	}
-	this->emitterOrientationVar = pparent->emitterOrientationVar;
-	this->billboardVar = pparent->billboardVar;
-	this->bboxCenterVar = pparent->bboxCenterVar;
-	this->bboxSizeVar = pparent->bboxSizeVar;
-	this->animPhasesVar = pparent->animPhasesVar;
-	this->animsPerSecVar = pparent->animsPerSecVar;
+	this->offsets[this->particleConstantsIndex] = 0;
+	this->offsets[this->objectTransformsIndex] = 0;
+	this->offsets[this->skinningTransformsIndex] = 0;
+	this->offsets[this->instancingTransformsIndex] = 0;
+	this->resourceTable = pparent->resourceTable;	
+	this->particleVboOffset = 0;
+	this->particleVbo = CoreGraphics::VertexBufferId::Invalid();
 }
 
 } // namespace Particles

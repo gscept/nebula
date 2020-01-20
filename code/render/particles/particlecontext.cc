@@ -27,6 +27,21 @@ Timing::Time StepTime = 1.0f / 60.0f;
 
 const SizeT ParticleContextNumEnvelopeSamples = 192;
 
+struct
+{
+	CoreGraphics::VertexBufferId geometryVbo;
+	CoreGraphics::IndexBufferId geometryIbo;
+	Util::FixedArray<CoreGraphics::VertexBufferId> vbos;
+	Util::FixedArray<SizeT> vboSizes;
+	Util::FixedArray<byte*> mappedVertices;
+	byte* vertexPtr;
+
+	SizeT vertexSize;
+
+	Util::Array<CoreGraphics::VertexComponent> particleComponents;
+	CoreGraphics::VertexLayoutId layout;
+} state;
+
 Jobs::JobPortId ParticleContext::jobPort;
 Jobs::JobSyncId ParticleContext::jobSync;
 Util::Queue<Jobs::JobId> ParticleContext::runningJobs;
@@ -52,8 +67,8 @@ ParticleContext::~ParticleContext()
 void 
 ParticleContext::Create()
 {
-	__bundle.OnPrepareView = ParticleContext::OnPrepareView;
-	__bundle.OnWaitForWork = ParticleContext::OnWaitForWork;
+	__bundle.OnBegin = ParticleContext::UpdateParticles;
+	__bundle.OnBeforeFrame = ParticleContext::WaitForParticleUpdates; // wait for jobs before we issue visibility
 	__bundle.StageBits = &ParticleContext::__state.currentStage;
 #ifndef PUBLIC_BUILD
 	__bundle.OnRenderDebug = ParticleContext::OnRenderDebug;
@@ -113,7 +128,7 @@ ParticleContext::Create()
 	vboInfo.numVerts = 1;
 	vboInfo.access = CoreGraphics::GpuBufferTypes::AccessRead;
 	vboInfo.usage = CoreGraphics::GpuBufferTypes::UsageCpu;
-	vboInfo.sync = CoreGraphics::GpuBufferTypes::SyncingFlush;
+	vboInfo.sync = CoreGraphics::GpuBufferTypes::SyncingManual;
 	vboInfo.name = "Single Point Particle Emitter VBO";
 	CoreGraphics::VertexBufferId vbo = CoreGraphics::CreateVertexBuffer(vboInfo);
 
@@ -125,7 +140,7 @@ ParticleContext::Create()
 	iboInfo.numIndices = 1;
 	iboInfo.access = CoreGraphics::GpuBufferTypes::AccessRead;
 	iboInfo.usage = CoreGraphics::GpuBufferTypes::UsageCpu;
-	iboInfo.sync = CoreGraphics::GpuBufferTypes::SyncingFlush;
+	iboInfo.sync = CoreGraphics::GpuBufferTypes::SyncingManual;
 	iboInfo.name = "Single Point Particle Emitter IBO";
 	CoreGraphics::IndexBufferId ibo = CoreGraphics::CreateIndexBuffer(iboInfo);
 
@@ -149,6 +164,58 @@ ParticleContext::Create()
 	meshInfo.tag = "system";
 	meshInfo.vertexLayout = CoreGraphics::VertexBufferGetLayout(vbo);
 	ParticleContext::DefaultEmitterMesh = CoreGraphics::CreateMesh(meshInfo);
+
+	// setup particle geometry buffer
+	Util::Array<CoreGraphics::VertexComponent> cornerComponents;
+	cornerComponents.Append(CoreGraphics::VertexComponent((CoreGraphics::VertexComponent::SemanticName)0, 0, CoreGraphics::VertexComponent::Float2, 0));
+	float cornerVertexData[] = { 0, 0,  1, 0,  1, 1,  0, 1 };
+
+	vboInfo.data = cornerVertexData;
+	vboInfo.comps = cornerComponents;
+	vboInfo.dataSize = sizeof(cornerVertexData);
+	vboInfo.numVerts = 4;
+	vboInfo.access = CoreGraphics::GpuBufferTypes::AccessRead;
+	vboInfo.usage = CoreGraphics::GpuBufferTypes::UsageImmutable;
+	vboInfo.sync = CoreGraphics::GpuBufferTypes::SyncingManual;
+	vboInfo.name = "Particle Geometry Vertex Buffer";
+	state.geometryVbo = CoreGraphics::CreateVertexBuffer(vboInfo);
+
+	// setup the corner index buffer
+	ushort cornerIndexData[] = { 0, 1, 2, 2, 3, 0 };
+	iboInfo.data = cornerIndexData;
+	iboInfo.type = CoreGraphics::IndexType::Index16;
+	iboInfo.dataSize = sizeof(cornerIndexData);
+	iboInfo.numIndices = 6;
+	iboInfo.access = CoreGraphics::GpuBufferTypes::AccessRead;
+	iboInfo.usage = CoreGraphics::GpuBufferTypes::UsageImmutable;
+	iboInfo.sync = CoreGraphics::GpuBufferTypes::SyncingManual;
+	iboInfo.name = "Particle Geometry Index Buffer";
+	state.geometryIbo = CoreGraphics::CreateIndexBuffer(iboInfo);
+
+	// save vertex components so we can allocate a buffer later
+	state.particleComponents.Append(CoreGraphics::VertexComponent((CoreGraphics::VertexComponent::SemanticName)1, 0, CoreGraphics::VertexComponent::Float4, 1, CoreGraphics::VertexComponent::PerInstance, 1));   // Particle::position
+	state.particleComponents.Append(CoreGraphics::VertexComponent((CoreGraphics::VertexComponent::SemanticName)2, 0, CoreGraphics::VertexComponent::Float4, 1, CoreGraphics::VertexComponent::PerInstance, 1));   // Particle::stretchPosition
+	state.particleComponents.Append(CoreGraphics::VertexComponent((CoreGraphics::VertexComponent::SemanticName)3, 0, CoreGraphics::VertexComponent::Float4, 1, CoreGraphics::VertexComponent::PerInstance, 1));   // Particle::color
+	state.particleComponents.Append(CoreGraphics::VertexComponent((CoreGraphics::VertexComponent::SemanticName)4, 0, CoreGraphics::VertexComponent::Float4, 1, CoreGraphics::VertexComponent::PerInstance, 1));   // Particle::uvMinMax
+	state.particleComponents.Append(CoreGraphics::VertexComponent((CoreGraphics::VertexComponent::SemanticName)5, 0, CoreGraphics::VertexComponent::Float4, 1, CoreGraphics::VertexComponent::PerInstance, 1));   // x: Particle::rotation, y: Particle::size
+
+	SizeT numFrames = CoreGraphics::GetNumBufferedFrames();
+	state.vbos.Resize(numFrames);
+	state.vboSizes.Resize(numFrames);
+	state.mappedVertices.Resize(numFrames);
+	for (IndexT i = 0; i < numFrames; i++)
+	{
+		state.vbos[i] = CoreGraphics::VertexBufferId::Invalid();
+		state.vboSizes[i] = 0;
+		state.mappedVertices[i] = nullptr;
+	}
+
+	Util::Array<CoreGraphics::VertexComponent> layoutComponents;
+	layoutComponents.AppendArray(cornerComponents);
+	layoutComponents.AppendArray(state.particleComponents);
+	CoreGraphics::VertexLayoutCreateInfo vloInfo{ layoutComponents };
+	state.layout = CoreGraphics::CreateVertexLayout(vloInfo);
+	state.vertexSize = sizeof(Math::float4) * 5; // 5 vertex attributes using float4
 
 	_CreateContext();
 }
@@ -183,18 +250,27 @@ ParticleContext::Setup(const Graphics::GraphicsEntityId id)
 			float maxFreq = attrs.GetEnvelope(EmitterAttrs::EmissionFrequency).GetMaxValue();
 			float maxLifeTime = attrs.GetEnvelope(EmitterAttrs::LifeTime).GetMaxValue();
 
-			ParticleSystemRuntime runtime;
-			runtime.node = reinterpret_cast<Models::ParticleSystemNode::Instance*>(nodes[i]);
-			runtime.emissionCounter = 0;
-			runtime.particles.SetCapacity(1 + SizeT(maxFreq * maxLifeTime));
-			runtime.outputCapacity = 0;
-			runtime.outputData = nullptr;
-			runtime.uniformData.sampleBuffer = pNode->GetSampleBuffer().GetSampleBuffer();
-			runtime.uniformData.gravity = Math::float4(0.0f, attrs.GetFloat(EmitterAttrs::Gravity), 0.0f, 0.0f);
-			runtime.uniformData.stretchToStart = attrs.GetBool(EmitterAttrs::StretchToStart);
-			runtime.uniformData.stretchTime = attrs.GetBool(EmitterAttrs::StretchToStart);
-			runtime.uniformData.windVector = attrs.GetFloat4(EmitterAttrs::WindDirection);
-			systems.Append(runtime);
+			ParticleSystemRuntime system;
+			system.node = reinterpret_cast<Models::ParticleSystemNode::Instance*>(nodes[i]);
+			system.emissionCounter = 0;
+			system.particles.SetCapacity(1 + SizeT(maxFreq * maxLifeTime));
+			system.outputCapacity = 0;
+			system.outputData = nullptr;
+			system.uniformData.sampleBuffer = pNode->GetSampleBuffer().GetSampleBuffer();
+			system.uniformData.gravity = Math::float4(0.0f, attrs.GetFloat(EmitterAttrs::Gravity), 0.0f, 0.0f);
+			system.uniformData.stretchToStart = attrs.GetBool(EmitterAttrs::StretchToStart);
+			system.uniformData.stretchTime = attrs.GetBool(EmitterAttrs::StretchToStart);
+			system.uniformData.windVector = attrs.GetFloat4(EmitterAttrs::WindDirection);
+
+			// update primitive group
+			CoreGraphics::PrimitiveGroup group;
+			group.SetBaseIndex(0);
+			group.SetNumIndices(6);
+			group.SetBaseVertex(0);
+			group.SetNumVertices(4);
+			group.SetVertexLayout(state.layout);
+			system.node->group = group;
+			systems.Append(system);
 		}
 	}
 }
@@ -278,7 +354,7 @@ ParticleContext::Stop(const Graphics::GraphicsEntityId id)
 /**
 */
 void 
-ParticleContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
+ParticleContext::UpdateParticles(const Graphics::FrameContext& ctx)
 {
 	const Util::Array<ParticleRuntime>& runtimes = particleContextAllocator.GetArray<Runtime>();
 	const Util::Array<Util::Array<ParticleSystemRuntime>>& allSystems = particleContextAllocator.GetArray<ParticleSystems>();
@@ -334,7 +410,7 @@ ParticleContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::
 /**
 */
 void 
-ParticleContext::OnWaitForWork(const Graphics::FrameContext& ctx)
+ParticleContext::WaitForParticleUpdates(const Graphics::FrameContext& ctx)
 {
 	if (ParticleContext::runningJobs.Size() > 0)
 	{
@@ -345,6 +421,141 @@ ParticleContext::OnWaitForWork(const Graphics::FrameContext& ctx)
 		while (!ParticleContext::runningJobs.IsEmpty())
 			Jobs::DestroyJob(ParticleContext::runningJobs.Dequeue());
 	}
+
+	// get node map
+	Util::Array<Util::Array<ParticleSystemRuntime>>& allSystems = particleContextAllocator.GetArray<ParticleSystems>();
+	SizeT numParticlesThisFrame = 0;
+
+	// get frame to modify
+	IndexT frame = CoreGraphics::GetBufferedFrameIndex();
+
+	// walk through all particles and update their bounding boxes 
+	IndexT i;
+	for (i = 0; i < allSystems.Size(); i++)
+	{
+		const Util::Array<ParticleSystemRuntime>& systems = allSystems[i];
+
+		// generate bounding box covering all particle systems (ineffective, but this is how the visibility is done)
+		Math::bbox box;
+		box.begin_extend();
+		IndexT j;
+		for (j = 0; j < systems.Size(); j++)
+		{
+			const ParticleSystemRuntime& system = systems[j];
+			n_assert(system.outputData != nullptr);
+			if (system.outputData->numLivingParticles > 0)
+			{
+				box.extend(system.outputData->bbox);
+				system.node->boundingBox = system.outputData->bbox; // update bounding box for system
+				numParticlesThisFrame += system.outputData->numLivingParticles;
+				system.node->active = true;
+			}
+			else
+				system.node->active = false; // disable the node if it has no particles
+		}
+		box.end_extend();
+
+		// update bounding boxes
+		particleContextAllocator.Get<BoundingBox>(i) = box;
+	}
+
+	// check if we need to realloc buffers
+	if (numParticlesThisFrame * state.vertexSize > state.vboSizes[frame])
+	{
+		CoreGraphics::VertexBufferCreateInfo vboInfo;
+		vboInfo.data = nullptr;
+		vboInfo.comps = state.particleComponents;
+		vboInfo.dataSize = 0;
+		vboInfo.numVerts = Math::n_max(numParticlesThisFrame, state.vboSizes[frame] << 1);
+		vboInfo.access = CoreGraphics::GpuBufferTypes::AccessWrite;
+		vboInfo.usage = CoreGraphics::GpuBufferTypes::UsageDynamic;
+		vboInfo.sync = CoreGraphics::GpuBufferTypes::SyncingAutomatic;
+		vboInfo.name = "Particle Vertex Buffer";
+
+		// delete old if needed
+		if (state.vbos[frame] != CoreGraphics::VertexBufferId::Invalid())
+		{
+			CoreGraphics::VertexBufferUnmap(state.vbos[frame]);
+			CoreGraphics::DestroyVertexBuffer(state.vbos[frame]);
+		}
+		state.vbos[frame] = CoreGraphics::CreateVertexBuffer(vboInfo);
+		state.mappedVertices[frame] = (byte*)CoreGraphics::VertexBufferMap(state.vbos[frame], CoreGraphics::GpuBufferTypes::MapType::MapWrite);
+		state.vboSizes[frame] = numParticlesThisFrame * state.vertexSize;
+	}
+
+	IndexT baseVertex = 0;
+
+	// walk through systems again and update index and vertex buffers
+	float* buf = (float*)state.mappedVertices[frame];
+	Math::float4 tmp;
+	for (i = 0; i < allSystems.Size(); i++)
+	{
+		const Util::Array<ParticleSystemRuntime>& systems = allSystems[i];
+		IndexT j;
+		for (j = 0; j < systems.Size(); j++)
+		{
+			const ParticleSystemRuntime& system = systems[j];
+			system.node->particleVboOffset = baseVertex;
+
+			// stream update vertex buffer region
+			IndexT k;
+			for (k = 0; k < system.particles.Size(); k++)
+			{
+				const Particle& particle = system.particles[k];
+				if (particle.relAge < 1.0f)
+				{
+					particle.position.stream(buf); buf += 4;
+					particle.stretchPosition.stream(buf); buf += 4;
+					particle.color.stream(buf); buf += 4;
+					particle.uvMinMax.stream(buf); buf += 4;
+					tmp.set(particle.rotation, particle.size, particle.particleId, 0.0f);
+					tmp.stream(buf); buf += 4;
+					baseVertex++;
+				}
+			}
+
+			// update node
+			system.node->numParticles = system.outputData->numLivingParticles;
+			system.node->particleVbo = state.vbos[frame];
+		}
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CoreGraphics::IndexBufferId 
+ParticleContext::GetParticleIndexBuffer()
+{
+	return state.geometryIbo;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CoreGraphics::VertexBufferId 
+ParticleContext::GetParticleVertexBuffer()
+{
+	return state.geometryVbo;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CoreGraphics::VertexLayoutId 
+ParticleContext::GetParticleVertexLayout()
+{
+	return state.layout;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::bbox 
+ParticleContext::GetBoundingBox(const Graphics::GraphicsEntityId id)
+{
+	const ContextEntityId cid = GetContextId(id);
+	return particleContextAllocator.Get<BoundingBox>(cid.id);
 }
 
 #ifndef PUBLIC_DEBUG    

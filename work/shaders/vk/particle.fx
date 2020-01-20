@@ -12,19 +12,19 @@
 
 #include "lib/materialparams.fxh"
 
-float LightMapIntensity;
+group(BATCH_GROUP) shared varblock Particle[string Visibility = "PS"; ]
+{
+	textureHandle Layer1;
+	textureHandle Layer2;
+	textureHandle Layer3;
+	textureHandle Layer4;
 
-textureHandle Layer1;
-textureHandle Layer2;
-textureHandle Layer3;
-textureHandle Layer4;
-
-float2 UVAnim1;
-float2 UVAnim2;
-float2 UVAnim3;
-float2 UVAnim4;
-
-
+	float2 UVAnim1;
+	float2 UVAnim2;
+	float2 UVAnim3;
+	float2 UVAnim4;
+	float LightMapIntensity;
+};
 
 // samplers
 samplerstate ParticleSampler

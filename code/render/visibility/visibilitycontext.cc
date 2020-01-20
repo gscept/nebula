@@ -10,6 +10,7 @@
 #include "lighting/lightcontext.h"
 #include "lighting/lightprobecontext.h"
 #include "models/modelcontext.h"
+#include "particles/particlecontext.h"
 
 #include "systems/boxsystem.h"
 #include "systems/octreesystem.h"
@@ -92,6 +93,9 @@ ObserverContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 		{
 		case Model:
 			observeeTransforms[i] = Models::ModelContext::GetBoundingBox(id).to_matrix44();
+			break;
+		case Particle:
+			observeeTransforms[i] = Particles::ParticleContext::GetBoundingBox(id).to_matrix44();
 			break;
 		case Light:
 			observeeTransforms[i] = Lighting::LightContext::GetTransform(id);

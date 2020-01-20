@@ -18,7 +18,7 @@ struct CornerVertex
 	vec2 UV;
 };
 
-group(INSTANCE_GROUP) shared varblock ParticleObjectBlock [ string Visibility = "VS|PS"; ]
+group(DYNAMIC_OFFSET_GROUP) shared varblock ParticleObjectBlock [ string Visibility = "VS"; ]
 {
 	mat4	EmitterTransform;
 	vec4	BBoxCenter;
@@ -27,7 +27,6 @@ group(INSTANCE_GROUP) shared varblock ParticleObjectBlock [ string Visibility = 
 	int		NumAnimPhases;
 	float	AnimFramesPerSecond;
 	bool 	Billboard;
-	uint _padparticle0;
 };
 
 /**

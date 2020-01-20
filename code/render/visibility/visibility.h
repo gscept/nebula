@@ -30,6 +30,7 @@ __ImplementEnumBitOperators(ObserverType);
 enum VisibilityEntityType : uint8_t
 {
 	Model,							// entity is a model
+	Particle,						// entity is a particle
 	Camera,							// ordinary camera
 	Light,							// entity is a light source
 	LightProbe						// entity is a light probe

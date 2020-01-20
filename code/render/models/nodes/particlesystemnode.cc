@@ -13,6 +13,8 @@
 #include "coregraphics/transformdevice.h"
 #include "particles/particlecontext.h"
 
+#include "particle.h"
+
 namespace Models
 {
 using namespace Particles;
@@ -65,6 +67,11 @@ ParticleSystemNode::UpdateMeshResource(const Resources::ResourceName& resName)
 void
 ParticleSystemNode::OnFinishedLoading()
 {
+	// load surface ourselves since state node does the resource table setup too, but we need it explicit
+	this->surRes = Resources::CreateResource(this->materialName, this->tag, nullptr, nullptr, true);
+	this->materialType = Materials::surfacePool->GetType(this->surRes);
+	this->surface = Materials::surfacePool->GetId(this->surRes);
+
 	float activityDist = this->emitterAttrs.GetFloat(EmitterAttrs::ActivityDistance) * 0.5f;
 	this->boundingBox.set(Math::point(0), Math::vector(0));
 
@@ -73,23 +80,19 @@ ParticleSystemNode::OnFinishedLoading()
     this->boundingBox.set(box.center(), Math::point(activityDist, activityDist, activityDist));
 	box.extend(this->boundingBox);
 
-	this->shader = CoreGraphics::ShaderServer::Instance()->GetShader("shd:particle.fxb");
-	this->cbo = CoreGraphics::ShaderCreateConstantBuffer(this->shader, "ParticleObjectBlock");
-	this->cboIndex = CoreGraphics::ShaderGetResourceSlot(this->shader, "ParticleObjectBlock");
-	this->resourceTable = CoreGraphics::ShaderCreateResourceTable(this->shader, NEBULA_DYNAMIC_OFFSET_GROUP);
-	CoreGraphics::ResourceTableSetConstantBuffer(this->resourceTable, { this->cbo, this->cboIndex, 0, true, false, -1, 0 });
-	CoreGraphics::ResourceTableCommitChanges(this->resourceTable);
-
-	this->emitterOrientationVar = CoreGraphics::ShaderGetConstantBinding(this->shader, "EmitterTransform");
-	this->billboardVar = CoreGraphics::ShaderGetConstantBinding(this->shader, "Billboard");
-	this->bboxCenterVar = CoreGraphics::ShaderGetConstantBinding(this->shader, "BBoxCenter");
-	this->bboxSizeVar = CoreGraphics::ShaderGetConstantBinding(this->shader, "BBoxSize");
-	this->animPhasesVar = CoreGraphics::ShaderGetConstantBinding(this->shader, "NumAnimPhases");
-	this->animsPerSecVar = CoreGraphics::ShaderGetConstantBinding(this->shader, "AnimFramesPerSecond");
-
 	// setup sample buffer and emitter mesh
 	this->sampleBuffer.Setup(this->emitterAttrs, ParticleSystemNumEnvelopeSamples);
 	this->emitterMesh.Setup(this->mesh, this->primGroupIndex);
+
+	CoreGraphics::ShaderId shader = CoreGraphics::ShaderServer::Instance()->GetShader("shd:particle.fxb"_atm);
+	CoreGraphics::ConstantBufferId cbo = CoreGraphics::GetGraphicsConstantBuffer(CoreGraphics::GlobalConstantBufferType::VisibilityThreadConstantBuffer);
+	this->objectTransformsIndex = CoreGraphics::ShaderGetResourceSlot(shader, "ObjectBlock");
+	this->instancingTransformsIndex = CoreGraphics::ShaderGetResourceSlot(shader, "InstancingBlock");
+	this->skinningTransformsIndex = CoreGraphics::ShaderGetResourceSlot(shader, "JointBlock");
+	this->particleConstantsIndex = CoreGraphics::ShaderGetResourceSlot(shader, "ParticleObjectBlock");
+	this->resourceTable = CoreGraphics::ShaderCreateResourceTable(shader, NEBULA_DYNAMIC_OFFSET_GROUP);
+	CoreGraphics::ResourceTableSetConstantBuffer(this->resourceTable, { cbo, this->particleConstantsIndex, 0, true, false, sizeof(::Particle::ParticleObjectBlock), 0 });
+	CoreGraphics::ResourceTableCommitChanges(this->resourceTable);
 }
 
 //------------------------------------------------------------------------------
@@ -296,6 +299,9 @@ void
 ParticleSystemNode::ApplyNodeState()
 {
 	TransformNode::ApplyNodeState();
+	CoreGraphics::SetStreamVertexBuffer(0, ParticleContext::GetParticleVertexBuffer(), 0);
+	CoreGraphics::SetVertexLayout(ParticleContext::GetParticleVertexLayout());
+	CoreGraphics::SetIndexBuffer(ParticleContext::GetParticleIndexBuffer(), 0);
 }
 
 //------------------------------------------------------------------------------
@@ -304,31 +310,45 @@ ParticleSystemNode::ApplyNodeState()
 void
 ParticleSystemNode::Instance::Update()
 {
-	TransformNode::Instance::Update();
+	ShaderStateNode::Instance::Update();
 	ParticleSystemNode* pnode = static_cast<ParticleSystemNode*>(this->node);
 
-	bool billboard = pnode->emitterAttrs.GetBool(EmitterAttrs::Billboard);
+	::Particle::ParticleObjectBlock block;
+	block.Billboard = pnode->emitterAttrs.GetBool(EmitterAttrs::Billboard);
 
 	// apply transforms
-	if (billboard)
+	if (block.Billboard)
 	{
 		const Math::matrix44 billboardTransform = Math::matrix44::multiply(this->modelTransform, CoreGraphics::TransformDevice::Instance()->GetInvViewTransform());
-		CoreGraphics::ConstantBufferUpdateInstance(this->cbo, billboardTransform, this->instance, this->emitterOrientationVar);
+		Math::matrix44::storeu(billboardTransform, block.EmitterTransform);
 	}
 	else
 	{
-		CoreGraphics::ConstantBufferUpdateInstance(this->cbo, this->modelTransform, this->instance, this->emitterOrientationVar);
+		Math::matrix44::storeu(this->modelTransform, block.EmitterTransform);
 	}
 
 	// update parameters
-	CoreGraphics::ConstantBufferUpdateInstance(this->cbo, this->boundingBox.center(), this->instance, this->bboxCenterVar);
-	CoreGraphics::ConstantBufferUpdateInstance(this->cbo, this->boundingBox.extents(), this->instance, this->bboxSizeVar);
-	CoreGraphics::ConstantBufferUpdateInstance(this->cbo, pnode->emitterAttrs.GetInt(EmitterAttrs::AnimPhases), this->instance, this->animPhasesVar);
-	CoreGraphics::ConstantBufferUpdateInstance(this->cbo, pnode->emitterAttrs.GetFloat(EmitterAttrs::PhasesPerSecond), this->instance, this->animsPerSecVar);
-	CoreGraphics::ConstantBufferUpdateInstance(this->cbo, billboard, this->instance, this->billboardVar);
+	Math::float4::storeu(this->boundingBox.center(), block.BBoxCenter);
+	Math::float4::storeu(this->boundingBox.extents(), block.BBoxSize);
+	block.NumAnimPhases = pnode->emitterAttrs.GetInt(EmitterAttrs::AnimPhases);
+	block.AnimFramesPerSecond = pnode->emitterAttrs.GetFloat(EmitterAttrs::PhasesPerSecond);
 
-	// apply with offsets
-	CoreGraphics::SetResourceTable(this->resourceTable, NEBULA_DYNAMIC_OFFSET_GROUP, CoreGraphics::GraphicsPipeline, this->offsets);
+	// allocate block
+	uint offset = CoreGraphics::SetGraphicsConstants(CoreGraphics::GlobalConstantBufferType::VisibilityThreadConstantBuffer, block);
+	this->offsets[this->particleConstantsIndex] = offset;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ParticleSystemNode::Instance::Draw(const SizeT numInstances, Models::ModelNode::DrawPacket* packet)
+{
+	if (this->particleVbo == CoreGraphics::VertexBufferId::Invalid())
+		return;
+
+	CoreGraphics::SetStreamVertexBuffer(1, this->particleVbo, this->particleVboOffset);
+	CoreGraphics::SetPrimitiveGroup(this->group);
+	CoreGraphics::DrawInstanced(this->numParticles, 0);
+}
 } // namespace Particles
