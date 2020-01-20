@@ -158,7 +158,7 @@ struct FrameContext;
 enum StageBits
 {
 	NoStage             = 1 << 0,
-	OnBeginStage		= 1 << 1
+	OnBeginStage		= 1 << 1,
 	OnPrepareViewStage  = 1 << 2,
 	OnBeforeFrameStage  = 1 << 3,
 	OnWaitForWorkStage  = 1 << 4,
