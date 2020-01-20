@@ -45,7 +45,6 @@ IndexT GetBufferedFrameIndex();
 struct GraphicsDeviceState
 {
 	Util::Array<CoreGraphics::TextureId> backBuffers;
-
 	Util::Dictionary<Util::StringAtom, CoreGraphics::TextureId> textures;
 
 	CoreGraphics::SubmissionContextId resourceSubmissionContext;
@@ -138,8 +137,6 @@ void SetStreamVertexBuffer(IndexT streamIndex, const CoreGraphics::VertexBufferI
 void SetVertexLayout(const CoreGraphics::VertexLayoutId& vl);
 /// set current index buffer
 void SetIndexBuffer(const CoreGraphics::IndexBufferId& ib, IndexT offsetIndex);
-/// set current index buffer with index type override
-void SetIndexBuffer(const CoreGraphics::IndexBufferId& ib, IndexT offsetIndex, CoreGraphics::IndexType::Code type);
 /// set the type of topology used
 void SetPrimitiveTopology(const CoreGraphics::PrimitiveTopology::Code topo);
 /// get the type of topology used
@@ -295,19 +292,19 @@ const CoreGraphics::TextureId GetTexture(const Util::StringAtom& name);
 
 #if NEBULA_GRAPHICS_DEBUG
 /// set debug name for object
-template<typename OBJECT_ID_TYPE> void ObjectSetName(const OBJECT_ID_TYPE id, const Util::String& name);
+template<typename OBJECT_ID_TYPE> void ObjectSetName(const OBJECT_ID_TYPE id, const char* name);
 /// begin debug marker region
-void QueueBeginMarker(const CoreGraphics::QueueType queue, const Math::float4& color, const Util::String& name);
+void QueueBeginMarker(const CoreGraphics::QueueType queue, const Math::float4& color, const char* name);
 /// end debug marker region
 void QueueEndMarker(const CoreGraphics::QueueType queue);
 /// insert marker
-void QueueInsertMarker(const CoreGraphics::QueueType queue, const Math::float4& color, const Util::String& name);
+void QueueInsertMarker(const CoreGraphics::QueueType queue, const Math::float4& color, const char* name);
 /// begin debug marker region
-void CommandBufferBeginMarker(const CoreGraphics::QueueType queue, const Math::float4& color, const Util::String& name);
+void CommandBufferBeginMarker(const CoreGraphics::QueueType queue, const Math::float4& color, const char* name);
 /// end debug marker region
 void CommandBufferEndMarker(const CoreGraphics::QueueType queue);
 /// insert marker
-void CommandBufferInsertMarker(const CoreGraphics::QueueType queue, const Math::float4& color, const Util::String& name);
+void CommandBufferInsertMarker(const CoreGraphics::QueueType queue, const Math::float4& color, const char* name);
 #endif
 
 //------------------------------------------------------------------------------
