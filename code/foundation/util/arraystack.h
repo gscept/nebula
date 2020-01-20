@@ -101,6 +101,8 @@ public:
     Iterator Find(const TYPE& elm) const;
     /// find identical element in array, return index, InvalidIndex if not found
     IndexT FindIndex(const TYPE& elm) const;
+    /// find identical element using a specific key type
+    template <typename KEYTYPE> IndexT FindIndex(const KEYTYPE& elm) const;
     /// fill array range with element
     void Fill(IndexT first, SizeT num, const TYPE& elm);
     /// clear contents and preallocate with new attributes
@@ -919,6 +921,30 @@ ArrayStack<TYPE, STACK_SIZE>::Find(const TYPE& elm) const
 */
 template<class TYPE, int STACK_SIZE> IndexT
 ArrayStack<TYPE, STACK_SIZE>::FindIndex(const TYPE& elm) const
+{
+    IndexT index;
+    for (index = 0; index < this->count; index++)
+    {
+        if (this->elements[index] == elm)
+        {
+            return index;
+        }
+    }
+    return InvalidIndex;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Find element in array, return element index, or InvalidIndex if element not
+    found.
+
+    @param  elm     element to find
+    @return         index to element, or InvalidIndex if not found
+*/
+template<class TYPE, int STACK_SIZE>
+template<typename KEYTYPE>
+inline IndexT
+ArrayStack<TYPE, STACK_SIZE>::FindIndex(const KEYTYPE& elm) const
 {
     IndexT index;
     for (index = 0; index < this->count; index++)
