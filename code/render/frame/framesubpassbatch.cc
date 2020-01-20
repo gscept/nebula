@@ -91,9 +91,10 @@ FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphic
 			if (Materials::MaterialBeginBatch(materialType, batch))
 			{
 				auto& model = drawList->ValueAtIndex(materialType, idx);
-				auto& it = model.Begin();
+                auto& it = model.Begin();
 				auto& end = model.End();
-				while (it != end)
+
+				while (true)
 				{
 					Models::ModelNode* node = *it.key;
 					Models::ShaderStateNode* stateNode = reinterpret_cast<Models::ShaderStateNode*>(node);
@@ -135,6 +136,7 @@ FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphic
 						}
 					}
 					it++;
+                    if (it == end) break;
 				}
 			}
 			Materials::MaterialEndBatch(materialType);
