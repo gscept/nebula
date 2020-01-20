@@ -207,7 +207,8 @@ inline void ArenaAllocator<ChunkSize>::Release()
 	{
 		Memory::Free(ObjectArrayHeap, this->retiredChunks[i]);
 	}
-	if (this->currentChunk) Memory::Free(ObjectArrayHeap, this->currentChunk);
+	if (this->currentChunk)
+		Memory::Free(ObjectArrayHeap, this->currentChunk);
 	this->retiredChunks.Clear();
 	this->currentChunk = nullptr;
 	this->iterator = nullptr;

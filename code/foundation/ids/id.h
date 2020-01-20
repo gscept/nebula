@@ -159,7 +159,7 @@ namespace Ids
 	constexpr x() : id32_0_name(Ids::InvalidId32), id32_1_name(Ids::InvalidId32) {} \
 	constexpr x(const Ids::Id32 id0, const Ids::Id32 id1) : id32_0_name(id0), id32_1_name(id1) {} \
 	constexpr x(const Ids::Id64 id) : id32_0_name(Ids::Id::GetHigh(id)), id32_1_name(Ids::Id::GetLow(id)) {};\
-	explicit constexpr operator Ids::Id64() const  { return Ids::Id::MakeId64(id32_0_name, id32_1_name); }\
+	explicit constexpr operator Ids::Id64() const { return Ids::Id::MakeId64(id32_0_name, id32_1_name); }\
 	static constexpr x Invalid() { return Ids::Id::MakeId64(Ids::InvalidId32, Ids::InvalidId32); }\
 	constexpr IndexT HashCode() const { return (IndexT)(id32_1_name); }\
 	constexpr Ids::Id64 HashCode64() const { return Ids::Id::MakeId64(id32_0_name, id32_1_name); }\
