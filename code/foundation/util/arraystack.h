@@ -935,6 +935,30 @@ ArrayStack<TYPE, STACK_SIZE>::FindIndex(const TYPE& elm) const
 
 //------------------------------------------------------------------------------
 /**
+	Find element in array, return element index, or InvalidIndex if element not
+	found.
+
+	@param  elm     element to find
+	@return         index to element, or InvalidIndex if not found
+*/
+template<class TYPE, int STACK_SIZE>
+template<typename KEYTYPE> inline IndexT
+ArrayStack<TYPE, STACK_SIZE>::FindIndex(const KEYTYPE& elm) const
+{
+	IndexT index;
+	for (index = 0; index < this->count; index++)
+	{
+		if (this->elements[index] == elm)
+		{
+			return index;
+		}
+	}
+	return InvalidIndex;
+}
+
+
+//------------------------------------------------------------------------------
+/**
 
     Fills an array range with the given element value. Will grow the
     array if necessary
