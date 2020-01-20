@@ -328,6 +328,14 @@ GraphicsServer::BeginFrame()
 			state->Defragment();
 	}
 
+	for (i = 0; i < this->contexts.Size(); i++)
+	{
+		if (this->contexts[i]->StageBits)
+			*this->contexts[i]->StageBits = Graphics::OnBeginStage;
+		if (this->contexts[i]->OnBegin != nullptr)
+			this->contexts[i]->OnBegin(this->frameContext);
+	}
+
 	// go through views and call prepare view
 	for (i = 0; i < this->views.Size(); i++)
 	{
