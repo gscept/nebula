@@ -94,7 +94,7 @@ FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphic
                 auto& it = model.Begin();
 				auto& end = model.End();
 
-				while (true)
+				while (it != end)
 				{
 					Models::ModelNode* node = *it.key;
 					Models::ShaderStateNode* stateNode = reinterpret_cast<Models::ShaderStateNode*>(node);
@@ -135,7 +135,6 @@ FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphic
 							}
 						}
 					}
-					if (it == end) break;
 					it++;
 				}
 			}

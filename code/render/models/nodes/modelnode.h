@@ -96,7 +96,6 @@ public:
 		void Apply(Materials::MaterialType* type);
 	};
 
-
 	/// constructor
 	ModelNode();
 	/// destructor
@@ -121,7 +120,6 @@ public:
 
 	/// apply node-level state
 	virtual void ApplyNodeState();
-
 
 protected:
 	friend class StreamModelPool;
