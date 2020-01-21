@@ -956,7 +956,6 @@ ArrayStack<TYPE, STACK_SIZE>::FindIndex(const KEYTYPE& elm) const
 	return InvalidIndex;
 }
 
-
 //------------------------------------------------------------------------------
 /**
 
