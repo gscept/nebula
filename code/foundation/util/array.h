@@ -126,7 +126,7 @@ public:
     /// find identical element in array, return index, InvalidIndex if not found
     IndexT FindIndex(const TYPE& elm) const;
 	/// find identical element using a specific key type
-	template <typename KEYTYPE> IndexT FindIndex(const KEYTYPE& elm) const;
+	template <typename KEYTYPE> IndexT FindIndex(typename std::enable_if<true, const KEYTYPE&>::type elm) const;
     /// fill array range with element
     void Fill(IndexT first, SizeT num, const TYPE& elm);
     /// clear contents and preallocate with new attributes
@@ -140,7 +140,7 @@ public:
     /// do a binary search, requires a sorted array
     IndexT BinarySearchIndex(const TYPE& elm) const;
 	/// do a binary search using a specific key type
-	template <typename KEYTYPE> IndexT BinarySearchIndex(const KEYTYPE& elm) const;
+	template <typename KEYTYPE> IndexT BinarySearchIndex(typename std::enable_if<true, const KEYTYPE&>::type elm) const;
 	
 	/// Set size. Grows array if num is greater than capacity. Calls destroy on all objects at index > num!
 	void SetSize(SizeT num);
@@ -1013,7 +1013,7 @@ Array<TYPE>::FindIndex(const TYPE& elm) const
 */
 template<class TYPE>
 template<typename KEYTYPE> inline IndexT
-Array<TYPE>::FindIndex(const KEYTYPE& elm) const
+Array<TYPE>::FindIndex(typename std::enable_if<true, const KEYTYPE&>::type elm) const
 {
 	IndexT index;
 	for (index = 0; index < this->count; index++)
@@ -1151,7 +1151,7 @@ Array<TYPE>::BinarySearchIndex(const TYPE& elm) const
 */
 template<class TYPE>
 template<typename KEYTYPE> inline IndexT 
-Array<TYPE>::BinarySearchIndex(const KEYTYPE& elm) const
+Array<TYPE>::BinarySearchIndex(typename std::enable_if<true, const KEYTYPE&>::type elm) const
 {
 	SizeT num = this->Size();
 	if (num > 0)

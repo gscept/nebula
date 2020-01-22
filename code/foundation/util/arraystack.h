@@ -102,7 +102,7 @@ public:
     /// find identical element in array, return index, InvalidIndex if not found
     IndexT FindIndex(const TYPE& elm) const;
     /// find identical element using a specific key type
-    template <typename KEYTYPE> IndexT FindIndex(const KEYTYPE& elm) const;
+    template <typename KEYTYPE> IndexT FindIndex(typename std::enable_if<true, const KEYTYPE&>::type elm) const;
     /// fill array range with element
     void Fill(IndexT first, SizeT num, const TYPE& elm);
     /// clear contents and preallocate with new attributes
@@ -116,7 +116,7 @@ public:
     /// do a binary search, requires a sorted array
     IndexT BinarySearchIndex(const TYPE& elm) const;
 	/// do binary search with explicit typed element
-	template <typename KEYTYPE> IndexT BinarySearchIndex(const KEYTYPE& elm) const;
+	template <typename KEYTYPE> IndexT BinarySearchIndex(typename std::enable_if<true, const KEYTYPE&>::type elm) const;
 
 	/// returns true if the stack is used
 	const bool IsStackUsed() const;
@@ -943,7 +943,7 @@ ArrayStack<TYPE, STACK_SIZE>::FindIndex(const TYPE& elm) const
 */
 template<class TYPE, int STACK_SIZE>
 template<typename KEYTYPE> inline IndexT
-ArrayStack<TYPE, STACK_SIZE>::FindIndex(const KEYTYPE& elm) const
+ArrayStack<TYPE, STACK_SIZE>::FindIndex(typename std::enable_if<true, const KEYTYPE&>::type elm) const
 {
 	IndexT index;
 	for (index = 0; index < this->count; index++)
@@ -1083,7 +1083,7 @@ ArrayStack<TYPE, STACK_SIZE>::BinarySearchIndex(const TYPE& elm) const
 */
 template<class TYPE, int STACK_SIZE>
 template<typename KEYTYPE> inline IndexT
-ArrayStack<TYPE, STACK_SIZE>::BinarySearchIndex(const KEYTYPE& elm) const
+ArrayStack<TYPE, STACK_SIZE>::BinarySearchIndex(typename std::enable_if<true, const KEYTYPE&>::type elm) const
 {
 	SizeT num = this->Size();
 	if (num > 0)
