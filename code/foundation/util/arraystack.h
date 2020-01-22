@@ -956,7 +956,6 @@ ArrayStack<TYPE, STACK_SIZE>::FindIndex(typename std::enable_if<true, const KEYT
 	return InvalidIndex;
 }
 
-
 //------------------------------------------------------------------------------
 /**
 

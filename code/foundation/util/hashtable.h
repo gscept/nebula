@@ -211,18 +211,6 @@ HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::End()
 	ret.val = nullptr;
 	ret.key = nullptr;
 	ret.arr = &this->hashArray;
-	IndexT i;
-	for (i = this->hashArray.Size()-1; i >= 0; i--)
-	{
-		if (this->hashArray[i].Size() != 0)
-		{
-			ret.hashIndex = i;
-			ret.bucketIndex = this->hashArray[i].Size();
-			ret.val = &this->hashArray[i].Back().Value();
-			ret.key = &this->hashArray[i].Back().Key();
-			break;
-		}
-	}
 	return ret;
 }
 
@@ -654,6 +642,15 @@ HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::Iterator::operator++(int)
 				this->key = &arr[i].Front().Key();
 				break;
 			}
+		}
+
+		// no bucket found, set to 'end'
+		if (i == arr.Size())
+		{
+			this->hashIndex = arr.Size();
+			this->bucketIndex = 0;
+			this->val = nullptr;
+			this->key = nullptr;
 		}
 	}
 	return *this;
