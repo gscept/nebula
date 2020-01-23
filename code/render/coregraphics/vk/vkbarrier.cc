@@ -177,16 +177,9 @@ BarrierInsert(
 		vkBar.dstAccessMask = VkTypes::AsVkResourceAccessFlags(nebBar.toAccess);
 		vkBar.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
 		vkBar.pNext = nullptr;
-		if (nebBar.size == -1)
-		{
-			vkBar.offset = 0;
-			vkBar.size = VK_WHOLE_SIZE;
-		}
-		else
-		{
-			vkBar.offset = nebBar.offset;
-			vkBar.size = nebBar.size;
-		}
+
+		vkBar.offset = nebBar.offset;
+		vkBar.size = (nebBar.size == -1) ? VK_WHOLE_SIZE : nebBar.size;
 		
 		vkBar.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		vkBar.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;

@@ -340,10 +340,9 @@
 			inputs: [
 				{
 					name: "ZBuffer",
-					access: "DepthAttachmentRead",
+					access: "ShaderRead",
 					layout: "DepthStencilRead",
-					stage: "ComputeShader",
-					aspect: "Depth"
+					stage: "ComputeShader"
 				}
 			],
 			outputs: [
@@ -351,8 +350,7 @@
 					name: "SSAOBuffer",
 					access: "ShaderWrite",
 					layout: "General",
-					stage: "ComputeShader",
-					aspect: "Color"
+					stage: "ComputeShader"
 				}
 			]
 		},
@@ -363,24 +361,21 @@
 			inputs: [
 				{
 					name: "ZBuffer",
-					access: "DepthAttachmentRead",
+					access: "ShaderRead",
 					layout: "DepthStencilRead",
-					stage: "ComputeShader",
-					aspect: "Color"
+					stage: "ComputeShader"
 				},
 				{
 					name: "NormalBuffer",
 					access: "ShaderRead",
 					layout: "ShaderRead",
-					stage: "ComputeShader",
-					aspect: "Color"
+					stage: "ComputeShader"
 				},
 				{
 					name: "SpecularBuffer",
 					access: "ShaderRead",
 					layout: "ShaderRead",
-					stage: "ComputeShader",
-					aspect: "Color"
+					stage: "ComputeShader"
 				}
 			],
 			outputs: [
@@ -388,8 +383,7 @@
 					name: "SSRTraceBuffer",
 					access: "ShaderWrite",
 					layout: "ShaderRead",
-					stage: "ComputeShader",
-					aspect: "Color"
+					stage: "ComputeShader"
 				}
 			]
 		},
@@ -402,43 +396,37 @@
 					name: "AlbedoBuffer",
 					access: "ShaderRead",
 					layout: "ShaderRead",
-					stage: "ComputeShader",
-					aspect: "Color"
+					stage: "ComputeShader"
 				},
 				{
 					name: "NormalBuffer",
 					access: "ShaderRead",
 					layout: "ShaderRead",
-					stage: "ComputeShader",
-					aspect: "Color"
+					stage: "ComputeShader"
 				},
 				{
 					name: "SpecularBuffer",
 					access: "ShaderRead",
 					layout: "ShaderRead",
-					stage: "ComputeShader",
-					aspect: "Color"
+					stage: "ComputeShader"
 				},
 				{
 					name: "ZBuffer",
 					access: "ShaderRead",
 					layout: "DepthStencilRead",
-					stage: "ComputeShader",
-					aspect: "Depth|Stencil"
+					stage: "ComputeShader"
 				},
 				{
 					name: "SSAOBuffer",
 					access: "ShaderRead",
 					layout: "ShaderRead",
-					stage: "ComputeShader",
-					aspect: "Color"
+					stage: "ComputeShader"
 				},
 				{
 					name: "ReflectionBuffer",
 					access: "ShaderRead",
 					layout: "ShaderRead",
-					stage: "PixelShader",
-					aspect: "Color"
+					stage: "PixelShader"
 				},
 			]
 			outputs: [
@@ -446,8 +434,7 @@
 					name: "LightBuffer",
 					access: "ShaderWrite",
 					layout: "General",
-					stage: "ComputeShader",
-					aspect: "Color"
+					stage: "ComputeShader"
 				}
 			]
 		}
@@ -471,15 +458,13 @@
 						name: "LightBuffer",
 						access: "ShaderRead",
 						layout: "ShaderRead",
-						stage: "PixelShader",
-						aspect: "Color"
+						stage: "PixelShader"
 					},
 					{
 						name: "AverageLumBuffer",
 						access: "ShaderRead",
 						layout: "ShaderRead",
-						stage: "PixelShader",
-						aspect: "Color"
+						stage: "PixelShader"
 					},
 				]
 				plugin: {
@@ -502,8 +487,7 @@
 					name: "BloomBufferBlurred",
 					access: "ShaderRead",
 					layout: "ShaderRead",
-					stage: "ComputeShader",
-					aspect: "Color"
+					stage: "ComputeShader"
 				}
 			]
 		},
@@ -515,8 +499,7 @@
 					name: "LightBuffer",
 					access: "TransferRead",
 					layout: "TransferSource",
-					stage: "Transfer",
-					aspect: "Color"
+					stage: "Transfer"
 				}
 			]
 		},
@@ -572,8 +555,7 @@
 						name: "BloomBufferBlurred",
 						access: "ShaderRead",
 						layout: "ShaderRead",
-						stage: "PixelShader",
-						aspect: "Color"
+						stage: "PixelShader"
 					}
 				],
 
@@ -614,10 +596,9 @@
 				resources: [
 					{
 						name: "ZBufferCopy",
-						access: "DepthAttachmentRead",
+						access: "ShaderRead",
 						layout: "DepthStencilRead",
-						stage: "ComputeShader",
-						aspect: "Depth"
+						stage: "PixelShader",
 					}
 				]
 
@@ -642,7 +623,6 @@
 					access: "TransferRead",
 					layout: "TransferSource",
 					stage: "Transfer",
-					aspect: "Color"
 				}
 			]
 		}
@@ -661,7 +641,6 @@
 					access: "TransferRead",
 					layout: "Present",
 					stage: "Transfer",
-					aspect: "Color"
 				}
 			]
 		}

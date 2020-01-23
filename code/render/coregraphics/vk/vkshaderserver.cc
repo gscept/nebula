@@ -162,11 +162,14 @@ VkShaderServer::RegisterTexture(const CoreGraphics::TextureId& tex, bool depth, 
 		break;
 	}
 
+	// get pixel format
+	bool isDepthFormat = PixelFormat::IsDepthFormat(CoreGraphics::TextureGetPixelFormat(tex));
+
 	ResourceTableTexture info;
 	info.tex = tex;
 	info.index = idx;
 	info.sampler = SamplerId::Invalid();
-	info.isDepth = false;
+	info.isDepth = isDepthFormat;
 	info.slot = var;
 
 	// update textures for all tables

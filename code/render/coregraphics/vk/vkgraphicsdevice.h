@@ -65,11 +65,6 @@ void InsertBarrier(
 	VkImageMemoryBarrier* imageBarriers,
 	const CoreGraphics::QueueType queue);
 
-/// do actual copy (see coregraphics namespace for helper functions)
-void Copy(const VkImage from, Math::rectangle<SizeT> fromRegion, const VkImage to, Math::rectangle<SizeT> toRegion);
-/// perform actual blit (see coregraphics namespace for helper functions)
-void Blit(const VkImage from, Math::rectangle<SizeT> fromRegion, IndexT fromMip, const VkImage to, Math::rectangle<SizeT> toRegion, IndexT toMip);
-
 /// update descriptors
 void BindDescriptorsGraphics(const VkDescriptorSet* descriptors, uint32_t baseSet, uint32_t setCount, const uint32_t* offsets, uint32_t offsetCount, bool shared = false);
 /// update descriptors

@@ -181,23 +181,13 @@ VkSubContextHandler::AppendWaitTimeline(CoreGraphics::QueueType type, VkPipeline
 	TimelineSubmission& sub = this->timelineSubmissions[type].Back();
 
 	n_assert(waitQueue != CoreGraphics::InvalidQueueType);
-	sub.waitIndices.Append(this->semaphoreSubmissionIds[waitQueue]);
-	sub.waitSemaphores.Append(this->semaphores[waitQueue]);
-	sub.waitFlags.Append(waitFlags);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-VkSubContextHandler::AppendWaitTimeline(CoreGraphics::QueueType type, VkPipelineStageFlags waitFlags, CoreGraphics::QueueType waitQueue, const uint64 index)
-{
-	TimelineSubmission& sub = this->timelineSubmissions[type].Back();
-
-	n_assert(waitQueue != CoreGraphics::InvalidQueueType);
-	sub.waitIndices.Append(index);
-	sub.waitSemaphores.Append(this->semaphores[waitQueue]);
-	sub.waitFlags.Append(waitFlags);
+	uint payload = this->semaphoreSubmissionIds[waitQueue];
+	if (payload > 0)
+	{
+		sub.waitIndices.Append(payload - 1);
+		sub.waitSemaphores.Append(this->semaphores[waitQueue]);
+		sub.waitFlags.Append(waitFlags);
+	}	
 }
 
 //------------------------------------------------------------------------------

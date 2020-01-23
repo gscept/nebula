@@ -20,6 +20,7 @@ MaterialType::MaterialType()
 	, currentBatchIndex(InvalidIndex)
 	, vertexType(-1)
 	, isVirtual(false)
+	, uniqueId(MaterialTypeUniqueIdCounter++)
 {
 }
 
@@ -37,7 +38,6 @@ void
 MaterialType::Setup()
 {
 	// setup binding in each program (should be identical)
-	this->uniqueId = MaterialTypeUniqueIdCounter++;
 	auto it = this->batchToIndexMap.Begin();
 	while (it != this->batchToIndexMap.End())
 	{

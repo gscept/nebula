@@ -3043,7 +3043,7 @@ EndFrame(IndexT frameIndex)
 		CommandBufferEndRecord(state.resourceSubmissionCmdBuffer);
 
 #if NEBULA_GRAPHICS_DEBUG
-		CoreGraphics::QueueBeginMarker(TransferQueueType, NEBULA_MARKER_ORANGE, "Resources");
+		CoreGraphics::QueueBeginMarker(TransferQueueType, NEBULA_MARKER_ORANGE, "Transfer");
 #endif
 
 		// finish by creating a singular submission for all transfers
@@ -3250,7 +3250,16 @@ Copy(const CoreGraphics::TextureId from, Math::rectangle<SizeT> fromRegion, cons
 {
 	n_assert(from != CoreGraphics::TextureId::Invalid() && to != CoreGraphics::TextureId::Invalid());
 	n_assert(!state.inBeginPass);
-	Vulkan::Copy(TextureGetVkImage(from), fromRegion, TextureGetVkImage(to), toRegion);
+
+	bool isDepth = PixelFormat::IsDepthFormat(CoreGraphics::TextureGetPixelFormat(from));
+	VkImageAspectFlags aspect = isDepth ? (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT) : VK_IMAGE_ASPECT_COLOR_BIT;
+	VkImageCopy region;
+	region.dstOffset = { fromRegion.left, fromRegion.top, 0 };
+	region.dstSubresource = { aspect, 0, 0, 1 };
+	region.extent = { (uint32_t)toRegion.width(), (uint32_t)toRegion.height(), 1 };
+	region.srcOffset = { toRegion.left, toRegion.top, 0 };
+	region.srcSubresource = { aspect, 0, 0, 1 };
+	vkCmdCopyImage(GetMainBuffer(CoreGraphics::GraphicsQueueType), TextureGetVkImage(from), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, TextureGetVkImage(to), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 }
 
 //------------------------------------------------------------------------------
@@ -3260,7 +3269,18 @@ void
 Blit(const CoreGraphics::TextureId from, Math::rectangle<SizeT> fromRegion, IndexT fromMip, const CoreGraphics::TextureId to, Math::rectangle<SizeT> toRegion, IndexT toMip)
 {
 	n_assert(from != CoreGraphics::TextureId::Invalid() && to != CoreGraphics::TextureId::Invalid());
-	Vulkan::Blit(TextureGetVkImage(from), fromRegion, fromMip, TextureGetVkImage(to), toRegion, toMip);
+	n_assert(!state.inBeginPass);
+
+	bool isDepth = PixelFormat::IsDepthFormat(CoreGraphics::TextureGetPixelFormat(from));
+	VkImageAspectFlags aspect = isDepth ? (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT) : VK_IMAGE_ASPECT_COLOR_BIT;
+	VkImageBlit blit;
+	blit.srcOffsets[0] = { fromRegion.left, fromRegion.top, 0 };
+	blit.srcOffsets[1] = { fromRegion.right, fromRegion.bottom, 1 };
+	blit.srcSubresource = { aspect, (uint32_t)fromMip, 0, 1 };
+	blit.dstOffsets[0] = { toRegion.left, toRegion.top, 0 };
+	blit.dstOffsets[1] = { toRegion.right, toRegion.bottom, 1 };
+	blit.dstSubresource = { aspect, (uint32_t)toMip, 0, 1 };
+	vkCmdBlitImage(GetMainBuffer(CoreGraphics::GraphicsQueueType), TextureGetVkImage(from), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, TextureGetVkImage(to), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit, VK_FILTER_LINEAR);
 }
 
 //------------------------------------------------------------------------------

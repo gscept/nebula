@@ -71,8 +71,6 @@ public:
 	void AppendSubmissionTimeline(CoreGraphics::QueueType type, VkCommandBuffer cmds);
 	/// append a wait on the current submission of a specific queue
 	void AppendWaitTimeline(CoreGraphics::QueueType type, VkPipelineStageFlags waitFlags, CoreGraphics::QueueType waitQueue);
-	/// append a wait on the current submission of a specific queue and singal index
-	void AppendWaitTimeline(CoreGraphics::QueueType type, VkPipelineStageFlags waitFlags, CoreGraphics::QueueType waitQueue, const uint64 index);
 	/// append a wait on a binary semaphore
 	void AppendWaitTimeline(CoreGraphics::QueueType type, VkPipelineStageFlags waitFlags, VkSemaphore waitSemaphore);
 	/// append a binary semaphore to signal when done

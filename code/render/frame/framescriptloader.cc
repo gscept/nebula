@@ -388,7 +388,7 @@ FrameScriptLoader::ParseCopy(const Ptr<Frame::FrameScript>& script, JzonValue* n
 
 	// add implicit barriers
 	ImageSubresourceInfo subres;
-	subres.aspect = isDepth ? CoreGraphics::ImageAspect::DepthBits | CoreGraphics::ImageAspect::StencilBits : CoreGraphics::ImageAspect::ColorBits;
+	subres.aspect = isDepth ? (CoreGraphics::ImageAspect::DepthBits | CoreGraphics::ImageAspect::StencilBits) : CoreGraphics::ImageAspect::ColorBits;
 	subres.layer = 0;
 	subres.layerCount = 1;
 	subres.mip = 0;
@@ -428,7 +428,7 @@ FrameScriptLoader::ParseMipmap(const Ptr<Frame::FrameScript>& script, JzonValue*
 
 	// add implicit barriers
 	ImageSubresourceInfo subres;
-	subres.aspect = isDepth ? CoreGraphics::ImageAspect::DepthBits | CoreGraphics::ImageAspect::StencilBits : CoreGraphics::ImageAspect::ColorBits;
+	subres.aspect = isDepth ? (CoreGraphics::ImageAspect::DepthBits | CoreGraphics::ImageAspect::StencilBits) : CoreGraphics::ImageAspect::ColorBits;
 	subres.layer = 0;
 	subres.layerCount = 1;
 	subres.mip = 0;
@@ -1216,13 +1216,19 @@ FrameScriptLoader::ParseResourceDependencies(const Ptr<Frame::FrameScript>& scri
 			CoreGraphics::ImageLayout layout = ImageLayoutFromString(jzon_get(dep, "layout")->string_value);
 			CoreGraphics::ImageSubresourceInfo subres;
 			JzonValue* nd = nullptr;
+
+			TextureId tex = script->texturesByName[valstr];
 			if ((nd = jzon_get(dep, "aspect")) != nullptr) subres.aspect = ImageAspectFromString(nd->string_value);
+			else
+			{
+				bool isDepth = PixelFormat::IsDepthFormat(CoreGraphics::TextureGetPixelFormat(tex));
+				subres.aspect = isDepth ? (ImageAspect::DepthBits | ImageAspect::StencilBits) : ImageAspect::ColorBits;
+			}
 			if ((nd = jzon_get(dep, "mip")) != nullptr) subres.mip = nd->int_value;
 			if ((nd = jzon_get(dep, "mip_count")) != nullptr) subres.mipCount = nd->int_value;
 			if ((nd = jzon_get(dep, "layer")) != nullptr) subres.layer = nd->int_value;
 			if ((nd = jzon_get(dep, "layer_count")) != nullptr) subres.layerCount = nd->int_value;
 
-			TextureId tex = script->texturesByName[valstr];
 			op->textureDeps.Add(tex, std::make_tuple(valstr, access, dependency, subres, layout));
 		}
 		else if (script->readWriteBuffersByName.Contains(valstr))
