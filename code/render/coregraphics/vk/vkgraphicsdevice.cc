@@ -249,7 +249,7 @@ SetupAdapter()
 		n_assert(res == VK_SUCCESS);
 
 		if (gpuCount > 1)
-			n_message("Found %d GPUs, which is more than 1! Perhaps the Render Device should be able to use it?\n", gpuCount);
+			n_printf("Found %d GPUs, which is more than 1! Perhaps the Render Device should be able to use it?\n", gpuCount);
 
 		IndexT i;
 		for (i = 0; i < (IndexT)gpuCount; i++)

@@ -1008,6 +1008,13 @@ Array<TYPE>::FindIndex(const TYPE& elm) const
 	Find element in array, return element index, or InvalidIndex if element not
 	found.
 
+    Template type is used to force a specific type comparison. This might mitigate
+    some expensive implicit constructions to TYPE.
+
+    This templated method requires a explicit template type, which is enforced
+    by using typename to put the template type in a non-deducable context.
+    The enable_if does nothing except allow us to use typename.
+
 	@param  elm     element to find
 	@return         index to element, or InvalidIndex if not found
 */
@@ -1148,6 +1155,12 @@ Array<TYPE>::BinarySearchIndex(const TYPE& elm) const
 
 //------------------------------------------------------------------------------
 /**
+    Template type is used to force a specific type comparison. This might mitigate
+    some expensive implicit constructions to TYPE.
+
+    This templated method requires a explicit template type, which is enforced
+    by using typename to put the template type in a non-deducable context.
+    The enable_if does nothing except allow us to use typename.
 */
 template<class TYPE>
 template<typename KEYTYPE> inline IndexT 
