@@ -11,6 +11,7 @@
 #include "lib/util.fxh"
 #include "lib/shared.fxh"
 #include "lib/defaultsamplers.fxh"
+#include "lib/pbr.fxh"
 
 //#define PN_TRIANGLES
 state StandardState

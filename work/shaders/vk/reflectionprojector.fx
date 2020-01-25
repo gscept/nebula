@@ -7,6 +7,7 @@
 #include "lib/util.fxh"
 #include "lib/techniques.fxh"
 #include "lib/shared.fxh"
+#include "lib/pbr.fxh"
 
 sampler2D NormalMap;
 sampler2D SpecularMap;

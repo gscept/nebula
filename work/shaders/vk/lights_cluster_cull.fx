@@ -10,6 +10,7 @@
 #include "lib/lights_clustered.fxh"
 #include "lib/CSM.fxh"
 #include "lib/Preetham.fxh"
+#include "lib/pbr.fxh"
 
 // increase if we need more lights in close proximity, for now, 128 is more than enough
 #define MAX_LIGHTS_PER_CLUSTER 128
@@ -236,6 +237,7 @@ GlobalLight(vec4 worldPos, vec3 viewVec, vec3 normal, float depth, vec4 material
 	float NV = saturate(dot(normal, viewVec));
 	float HL = saturate(dot(H, GlobalLightDirWorldspace.xyz)); 
 	vec3 spec;
+
 	BRDFLighting(NH, NL, NV, HL, specPower, material.rgb, spec);
 
 	vec3 final = (albedo.rgb + spec) * diff;

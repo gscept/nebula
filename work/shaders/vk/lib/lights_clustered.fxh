@@ -4,6 +4,7 @@
 //  (C) 2019 Gustav Sterbrant
 //------------------------------------------------------------------------------
 #include "lib/shadowbase.fxh"
+#include "lib/pbr.fxh"
 
 struct SpotLight
 {
