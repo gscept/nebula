@@ -184,7 +184,7 @@ VkSubContextHandler::AppendWaitTimeline(CoreGraphics::QueueType type, VkPipeline
 	uint payload = this->semaphoreSubmissionIds[waitQueue];
 	if (payload > 0)
 	{
-		sub.waitIndices.Append(payload - 1);
+		sub.waitIndices.Append(payload);
 		sub.waitSemaphores.Append(this->semaphores[waitQueue]);
 		sub.waitFlags.Append(waitFlags);
 	}	
