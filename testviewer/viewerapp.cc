@@ -24,6 +24,7 @@
 #include "clustering/clustercontext.h"
 #include "scenes/scenes.h"
 #include "debug/framescriptinspector.h"
+#include "io/logfileconsolehandler.h"
 
 using namespace Timing;
 using namespace Graphics;
@@ -79,11 +80,15 @@ SimpleViewerApplication::Open()
 		this->debugInterface = Debug::DebugInterface::Create();
 		this->debugInterface->Open();
 #endif
-
         this->gfxServer = GraphicsServer::Create();
         this->resMgr = Resources::ResourceManager::Create();
         this->inputServer = Input::InputServer::Create();
         this->ioServer = IO::IoServer::Create();
+        
+#if __WIN32__
+        //Ptr<IO::LogFileConsoleHandler> logFileHandler = IO::LogFileConsoleHandler::Create();
+        //IO::Console::Instance()->AttachHandler(logFileHandler.upcast<IO::ConsoleHandler>());
+#endif
 
         this->resMgr->Open();
         this->inputServer->Open();
@@ -115,6 +120,7 @@ SimpleViewerApplication::Open()
 		Im3d::Im3dContext::Create();
 		Dynui::ImguiContext::Create();
 
+
 		this->view = gfxServer->CreateView("mainview", "frame:vkdefault.json"_uri);
 		this->stage = gfxServer->CreateStage("stage1", true);
 
@@ -141,6 +147,8 @@ SimpleViewerApplication::Open()
 		EnvironmentContext::Create(this->globalLight);
 
         this->UpdateCamera();
+
+        this->frametimeHistory.Fill(0, 120, 0.0f);
 
         return true;
     }
@@ -179,11 +187,16 @@ SimpleViewerApplication::Run()
     scenes[currentScene]->Open();
 
     while (run && !inputServer->IsQuitRequested())
-    {                     
+    {
         this->inputServer->BeginFrame();
         this->inputServer->OnFrame();
 
         this->resMgr->Update(this->frameIndex);
+
+#ifdef NEBULA_ENABLE_PROFILING
+        // copy because the information has been discarded when we render UI
+        this->frameProfilingMarkers = CoreGraphics::GetGraphicsDeviceState()->frameProfilingMarkers;
+#endif NEBULA_ENABLE_PROFILING
 
 		this->gfxServer->BeginFrame();
         
@@ -228,14 +241,19 @@ SimpleViewerApplication::Run()
 void 
 SimpleViewerApplication::RenderUI()
 {
-	this->averageFrameTime += (float)this->gfxServer->GetFrameTime();
+    float frameTime = (float)this->gfxServer->GetFrameTime();
+	this->averageFrameTime += frameTime;
+    this->frametimeHistory.Append(frameTime);
+    if (this->frametimeHistory.Size() > 120)
+        this->frametimeHistory.EraseFront();
+
 	if (this->gfxServer->GetFrameIndex() % 35 == 0)
 	{
 		this->prevAverageFrameTime = this->averageFrameTime / 35.0f;
 		this->averageFrameTime = 0.0f;
 	}
     ImGui::Begin("Viewer", nullptr, 0);
-	ImGui::Text("ms - %.2f\nFPS - %.2f", this->prevAverageFrameTime * 1000, 1 / this->prevAverageFrameTime);
+	
 	ImGui::SetWindowSize(ImVec2(240, 400));
     if (ImGui::CollapsingHeader("Camera mode", ImGuiTreeNodeFlags_DefaultOpen))
     {
@@ -277,6 +295,42 @@ SimpleViewerApplication::RenderUI()
     ImGui::PopStyleColor();
 
     Debug::FrameScriptInspector::Run(this->view->GetFrameScript());
+    ImGui::Begin("Performance Profiler");
+    {
+        ImGui::Text("ms - %.2f\nFPS - %.2f", this->prevAverageFrameTime * 1000, 1 / this->prevAverageFrameTime);
+        ImGui::PlotLines("Frame Times", &this->frametimeHistory[0], this->frametimeHistory.Size(), 0, 0, FLT_MIN, FLT_MAX, {ImGui::GetWindowWidth(), 90});
+        ImGui::Separator();
+        
+            
+#ifdef NEBULA_ENABLE_PROFILING
+        if (ImGui::CollapsingHeader("Profiling markers"))
+        {   
+            ImGui::Columns(4, "profilingmarkercolumns"); // 4-ways, with border
+            ImGui::Separator();
+            ImGui::Text("Queue"); ImGui::NextColumn();
+            ImGui::Text("Name"); ImGui::NextColumn();
+            ImGui::Text("CPU (ms)"); ImGui::NextColumn();
+            ImGui::Text("GPU (ms)"); ImGui::NextColumn();
+            ImGui::Separator();
+            static int selected = -1;
+            auto const& frameMarkers = this->frameProfilingMarkers;
+            for (int i = 0; i < frameMarkers.Size(); i++)
+            {
+                ImGui::Selectable(CoreGraphics::QueueNameFromQueueType(frameMarkers[i].queue), selected == i, ImGuiSelectableFlags_SpanAllColumns);
+                ImGui::NextColumn();
+                ImGui::Text(frameMarkers[i].name);
+                ImGui::NextColumn();
+                ImGui::Text("%f", (frameMarkers[i].timer.GetTime() * 1000));
+                ImGui::NextColumn();
+                ImGui::Text("N/A");
+                ImGui::NextColumn();
+            }
+            ImGui::Columns(1);
+            ImGui::Separator();
+        }
+#endif NEBULA_ENABLE_PROFILING
+    }
+    ImGui::End();
 }
 
 //------------------------------------------------------------------------------

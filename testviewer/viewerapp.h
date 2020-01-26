@@ -75,13 +75,18 @@ protected:
     Math::float2 orbiting{ 0.0f,0.0f };    
     RenderUtil::MayaCameraUtil mayaCameraUtil;
     RenderUtil::FreeCameraUtil freeCamUtil;        
-	Math::point defaultViewPoint{ 10.0f, 10.0f, 10.0f };
+	Math::point defaultViewPoint{ 8.0f, 8.0f, 0.0f };
+    Util::Array<float> frametimeHistory;
     
 #if __NEBULA_HTTP__
 	Ptr<Debug::DebugInterface> debugInterface;
-
 	ushort defaultTcpPort;
 #endif
+
+#ifdef NEBULA_ENABLE_PROFILING
+    Util::Array<CoreGraphics::FrameProfilingMarker> frameProfilingMarkers;
+#endif NEBULA_ENABLE_PROFILING
+
 };
 
 }
