@@ -17,6 +17,8 @@
 #include "debug/debugcounter.h"
 #include "coregraphics/rendereventhandler.h"
 #include "coregraphics/submissioncontext.h"
+#include "timing/timer.h"
+#include "util/stack.h"
 
 namespace CoreGraphics
 {
@@ -41,6 +43,15 @@ SizeT GetNumBufferedFrames();
 /// get current frame index, which is between 0 and GetNumBufferedFrames
 IndexT GetBufferedFrameIndex();
 
+#ifdef NEBULA_ENABLE_PROFILING
+struct FrameProfilingMarker
+{
+    CoreGraphics::QueueType queue;
+    Math::float4 color;
+    const char* name;
+    Timing::Timer timer;
+};
+#endif NEBULA_ENABLE_PROFILING
 
 struct GraphicsDeviceState
 {
@@ -103,7 +114,15 @@ struct GraphicsDeviceState
 	_declare_counter(RenderDeviceNumComputes);
 	_declare_counter(RenderDeviceNumPrimitives);
 	_declare_counter(RenderDeviceNumDrawCalls);
+
+#ifdef NEBULA_ENABLE_PROFILING
+    Util::Stack<FrameProfilingMarker> activeProfilingMarkers[NumQueueTypes];
+    Util::Array<FrameProfilingMarker> frameProfilingMarkers;
+#endif NEBULA_ENABLE_PROFILING
 };
+
+/// retrieve the current graphics device state
+GraphicsDeviceState const* const GetGraphicsDeviceState();
 
 /// attach a render event handler
 void AttachEventHandler(const Ptr<CoreGraphics::RenderEventHandler>& h);
