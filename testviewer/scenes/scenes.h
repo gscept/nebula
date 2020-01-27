@@ -52,6 +52,14 @@ static Scene* scenes[] = {
     &SSRScene
 };
 
+enum
+{
+	ExampleSceneId,
+	ClusteredSceneId,
+	BenchmarkSceneId,
+	SSRSceneId
+};
+
 // Which is the currently active scene?
 // This is used to determine which scenes callbacks to call and is normally changed via imgui
-static int currentScene = 3;
+static int currentScene = SSRSceneId;
