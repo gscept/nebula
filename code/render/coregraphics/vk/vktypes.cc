@@ -98,6 +98,7 @@ VkTypes::AsVkFormat(ILenum p)
 	case PF_DXT3_sRGB:			return VK_FORMAT_BC2_SRGB_BLOCK;
 	case PF_DXT5_sRGB:			return VK_FORMAT_BC3_SRGB_BLOCK;
 	case PF_BC7_sRGB:			return VK_FORMAT_BC7_SRGB_BLOCK;
+	case PF_3DC:			    return VK_FORMAT_BC5_UNORM_BLOCK;
 	case PF_A16R16G16B16:		return VK_FORMAT_R16G16B16A16_UNORM;
 	case PF_A16B16G16R16:		return VK_FORMAT_R16G16B16A16_UNORM;
 	case PF_A16R16B16G16F:		return VK_FORMAT_R16G16B16A16_SFLOAT;
@@ -466,6 +467,7 @@ VkTypes::AsNebulaPixelFormat(VkFormat f)
 	case VK_FORMAT_BC1_RGBA_SRGB_BLOCK:				return PixelFormat::DXT1AsRGB;
 	case VK_FORMAT_BC2_SRGB_BLOCK:					return PixelFormat::DXT3sRGB;
 	case VK_FORMAT_BC3_SRGB_BLOCK:					return PixelFormat::DXT5sRGB;
+	case VK_FORMAT_BC5_UNORM_BLOCK:					return PixelFormat::DXN;
 	case VK_FORMAT_BC7_UNORM_BLOCK:					return PixelFormat::BC7;
 	case VK_FORMAT_BC7_SRGB_BLOCK:					return PixelFormat::BC7sRGB;
 	case VK_FORMAT_R16_SFLOAT:						return PixelFormat::R16F;
@@ -544,6 +546,7 @@ VkTypes::AsVkMapping(ILenum p)
 	case PF_DXT3_sRGB:			
 	case PF_DXT5_sRGB:			
 	case PF_BC7_sRGB:			
+	case PF_3DC:			
 	case PF_A16R16G16B16:		
 	case PF_A16R16B16G16F:		
 	case PF_A32R32G32B32F:		
