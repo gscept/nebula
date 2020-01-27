@@ -38,48 +38,42 @@ VisibilitySortJob(const Jobs::JobFuncContext& ctx)
 	buckets->Reset();
 
 	bool* results = (bool*)ctx.inputs[0];
-	Graphics::ContextEntityId* entities = (Graphics::ContextEntityId*)ctx.inputs[1];
+	Models::ModelNode::Instance** const nodes = (Models::ModelNode::Instance**)ctx.inputs[1];
 
 	// begin adding buckets
 	buckets->BeginBulkAdd();
 
 	// calculate amount of models
-	uint32 numModels = ctx.inputSizes[0] / sizeof(bool);
+	uint32 numNodes = ctx.inputSizes[0] / sizeof(bool);
 	uint32 i;
-	for (i = 0; i < numModels; i++)
+	for (i = 0; i < numNodes; i++)
 	{	
-		// get model instance
-		const Models::ModelId model = Models::ModelContext::GetModel(entities[i]);
-		const Util::Array<Models::ModelNode::Instance*>& nodes = Models::ModelContext::GetModelNodeInstances(entities[i]);
-		const Util::Array<Models::NodeType>& types = Models::ModelContext::GetModelNodeTypes(entities[i]);
-		bool result = results[i];
+		Models::ModelNode::Instance* const inst = nodes[i];
+		Models::NodeType type = inst->node->GetType();
 
-		IndexT j;
-		if (result) for (j = 0; j < nodes.Size(); j++)
+		// only treat renderable nodes
+		if (type >= Models::NodeHasShaderState)
 		{
-			Models::ModelNode::Instance* const inst = nodes[j];
+			if (!results[i])
+				continue;
 
-			// only treat renderable nodes
-			if (types[j] >= Models::NodeHasShaderState)
-			{
-				Models::ShaderStateNode::Instance* const shdNodeInst = reinterpret_cast<Models::ShaderStateNode::Instance*>(inst);
-				Models::ShaderStateNode* const shdNode = reinterpret_cast<Models::ShaderStateNode*>(inst->node);
-				n_assert(types[j] == shdNode->GetType());
+			Models::ShaderStateNode::Instance* const shdNodeInst = reinterpret_cast<Models::ShaderStateNode::Instance*>(inst);
+			Models::ShaderStateNode* const shdNode = reinterpret_cast<Models::ShaderStateNode*>(inst->node);
+			n_assert(type == shdNode->GetType());
 
-				auto& bucket = buckets->AddUnique(shdNode->materialType);
-				if (!bucket.IsBulkAdd())
-					bucket.BeginBulkAdd();
+			auto& bucket = buckets->AddUnique(shdNode->materialType);
+			if (!bucket.IsBulkAdd())
+				bucket.BeginBulkAdd();
 
-				// add an array if non existant, or return reference to one if it exists
-				auto& draw = bucket.AddUnique(inst->node);
+			// add an array if non existant, or return reference to one if it exists
+			auto& draw = bucket.AddUnique(inst->node);
 
-				// allocate memory for draw packet
-				void* mem = packetAllocator->Alloc(shdNodeInst->GetDrawPacketSize());
+			// allocate memory for draw packet
+			void* mem = packetAllocator->Alloc(shdNodeInst->GetDrawPacketSize());
 
-				// update packet and add to list
-				Models::ModelNode::DrawPacket* packet = shdNodeInst->UpdateDrawPacket(mem);
-				draw.Append(packet);
-			}
+			// update packet and add to list
+			Models::ModelNode::DrawPacket* packet = shdNodeInst->UpdateDrawPacket(mem);
+			draw.Append(packet);
 		}
 	}
 

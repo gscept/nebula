@@ -40,6 +40,7 @@ public:
 			Skinning,					// always included from shared.fxh
 			Optional
 		};
+		Math::bbox boundingBox;
 		CoreGraphics::ResourceTableId resourceTable;
 
 		uint32 instance;

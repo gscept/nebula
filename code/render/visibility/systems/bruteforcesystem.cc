@@ -27,22 +27,19 @@ BruteforceSystem::Run()
 	{
 		Jobs::JobContext ctx;
 
+		// uniform data is the observer transform
 		ctx.uniform.numBuffers = 1;
 		ctx.uniform.data[0] = (unsigned char*)&this->obs.transforms[i];
 		ctx.uniform.dataSize[0] = sizeof(Math::matrix44);
 		ctx.uniform.scratchSize = 0;
 
-		// first buffer is all the transforms, second is the id, and third is the bool flags
-		ctx.input.numBuffers = 2;
+		// just one input buffer of all the transforms
+		ctx.input.numBuffers = 1;
 		ctx.input.data[0] = (unsigned char*)this->ent.transforms;
 		ctx.input.dataSize[0] = sizeof(Math::matrix44) * this->ent.count;
 		ctx.input.sliceSize[0] = sizeof(Math::matrix44);
 
-		ctx.input.data[1] = (unsigned char*)this->ent.entities;
-		ctx.input.dataSize[1] = sizeof(Ids::Id32) * this->ent.count;
-		ctx.input.sliceSize[1] = sizeof(Ids::Id32);
-
-		// not really an output, but more like an in-out buffer
+		// the output is the visibility result
 		ctx.output.numBuffers = 1;
 		ctx.output.data[0] = (unsigned char*)this->obs.vis[i];
 		ctx.output.dataSize[0] = sizeof(bool) * this->ent.count;
