@@ -28,7 +28,7 @@ SimpleTechnique(
 	"Static|AlphaTest", 
 	vsStatic(), 
 	psUberAlphaTest(
-		calcColor = SimpleColor,
+		calcColor = AlphaColor,
 		calcBump = NormalMapFunctor,
 		calcMaterial = DefaultMaterialFunctor,
 		calcDepth = ViewSpaceDepthFunctor,
@@ -54,7 +54,7 @@ SimpleTechnique(
 	"Static|Instanced|AlphaTest", 
 	vsStaticInstanced(), 
 	psUberAlphaTest(
-		calcColor = SimpleColor,
+		calcColor = AlphaColor,
 		calcBump = NormalMapFunctor,
 		calcMaterial = DefaultMaterialFunctor,
 		calcDepth = ViewSpaceDepthFunctor,
@@ -83,7 +83,7 @@ SimpleTechnique(
 	"Static|Environment|AlphaTest", 
 	vsStatic(),
 	psUberAlphaTest(
-		calcColor = SimpleColor,
+		calcColor = AlphaColor,
 		calcBump = NormalMapFunctor,
 		calcMaterial = DefaultMaterialFunctor,
 		calcDepth = ViewSpaceDepthFunctor,
@@ -109,7 +109,7 @@ SimpleTechnique(
 	"Static|Environment|Instanced|AlphaTest", 
 	vsStaticInstanced(),
 	psUberAlphaTest(
-		calcColor = SimpleColor,
+		calcColor = AlphaColor,
 		calcBump = NormalMapFunctor,
 		calcMaterial = DefaultMaterialFunctor,
 		calcDepth = ViewSpaceDepthFunctor,
