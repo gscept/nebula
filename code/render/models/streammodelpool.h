@@ -21,6 +21,10 @@ namespace Visibility
 {
 class VisibilityContext;
 }
+namespace Graphics
+{
+struct FrameContext;
+}
 namespace Models
 {
 
