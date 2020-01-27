@@ -1,7 +1,7 @@
 ---
 imports:
     fips-zlib:
-        git: https://github.com/floooh/fips-zlib.git
+        git: https://github.com/gscept/fips-zlib
         group: misc
     fips-directxmath:
         git: https://github.com/gscept/fips-directxmath.git
@@ -41,6 +41,9 @@ imports:
         branch: 4.1
     fips-flatbuffers:
         git: https://github.com/gscept/fips-flatbuffers.git
+    fips-assimp:
+         git: https://github.com/gscept/fips-assimp
+         group: misc
 
 exports:
     header-dirs :

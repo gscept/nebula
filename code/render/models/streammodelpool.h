@@ -72,9 +72,8 @@ private:
 	friend class CharacterNode;
 	friend class CharacterSkinNode;
 	friend class ParticleSystemNode;
-	friend class ModelContext;
+	friend class Models::ModelContext;
 	friend class Visibility::VisibilityContext;
-	friend void	ModelContext::OnBeforeFrame(const Graphics::FrameContext& ctx);
 
 	/// create an instance of a model recursively
 	void CreateModelInstanceRecursive(Models::ModelNode* node, const IndexT childIndex, Models::ModelNode::Instance* parentInstance, byte** memory, Util::Array<Models::ModelNode::Instance*>& instances, Util::Array<Models::NodeType>& types);
