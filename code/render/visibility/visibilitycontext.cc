@@ -53,7 +53,7 @@ ObserverContext::Setup(const Graphics::GraphicsEntityId id, VisibilityEntityType
 	observerAllocator.Get<Observer_EntityId>(cid.id) = id;
 
 	// go through observerable objects and allocate a slot for the object, and set it to the default visible state
-	const Util::Array<Graphics::GraphicsEntityId>& ids = ObservableContext::observableAllocator.GetArray<1>();
+	const Util::Array<Graphics::GraphicsEntityId>& ids = ObservableContext::observableAllocator.GetArray<Observable_EntityId>();
 	for (IndexT i = 0; i < ids.Size(); i++)
 	{
 		if (entityType == Model)
@@ -202,7 +202,7 @@ ObserverContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 
 	// run all visibility systems
 	IndexT j;
-	if ((observerTransforms.Size() > 0) && (observableTransforms.Size() > 0))
+	if ((observerTransforms.Size() > 0) && (observableAtomTransforms.Size() > 0))
 		for (j = 0; j < ObserverContext::systems.Size(); j++)
 		{
 			VisibilitySystem* sys = ObserverContext::systems[j];
