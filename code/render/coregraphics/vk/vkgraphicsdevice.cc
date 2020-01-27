@@ -270,7 +270,8 @@ SetupAdapter()
 					"VK_KHR_swapchain",
 					"VK_KHR_maintenance1",
 					"VK_KHR_maintenance2",
-					"VK_KHR_maintenance3"
+					"VK_KHR_maintenance3",
+					"VK_KHR_timeline_semaphore"
 				};
 
 				uint32_t newNumCaps = 0;
@@ -278,6 +279,7 @@ SetupAdapter()
 				state.deviceFeatureStrings[i][newNumCaps++] = wantedExtensions[1].AsCharPtr();
 				state.deviceFeatureStrings[i][newNumCaps++] = wantedExtensions[2].AsCharPtr();
 				state.deviceFeatureStrings[i][newNumCaps++] = wantedExtensions[3].AsCharPtr();
+				state.deviceFeatureStrings[i][newNumCaps++] = wantedExtensions[4].AsCharPtr();
 				state.numCaps[i] = newNumCaps;
 			}
 
@@ -1250,21 +1252,10 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	VkPhysicalDeviceFeatures features;
 	vkGetPhysicalDeviceFeatures(state.physicalDevices[state.currentDevice], &features);
 
-	VkPhysicalDeviceProperties props;
-	vkGetPhysicalDeviceProperties(state.physicalDevices[state.currentDevice], &props);
-
-	// enable timeline semaphore extension
-	VkPhysicalDeviceTimelineSemaphoreFeaturesKHR timelineSemaphoreFeature =
-	{
-		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES_KHR,
-		nullptr,
-		true
-	};
-
 	VkDeviceCreateInfo deviceInfo =
 	{
 		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-		&timelineSemaphoreFeature,
+		nullptr,
 		0,
 		(uint32_t)queueInfos.Size(),
 		&queueInfos[0],
