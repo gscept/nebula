@@ -11,6 +11,8 @@
 group(BATCH_GROUP) shared varblock UnitBlock
 {
 	textureHandle TeamColorMask;
+	textureHandle SpecularMap;
+	textureHandle RoughnessMap;
 	vec4 TeamColor;
 };
 
@@ -42,19 +44,31 @@ psNotaUnit(
 	vec4 diffColor = sample2D(AlbedoMap, TeamSampler, UV) * vec4(MatAlbedoIntensity.rgb, 1);
     float roughness = sample2D(RoughnessMap, TeamSampler, UV).r * MatRoughnessIntensity;
 	vec4 specColor = sample2D(SpecularMap, TeamSampler, UV) * MatSpecularIntensity;
-	float cavity = sample2D(CavityMap, TeamSampler, UV).r;
+	float cavity = 1.0f;
     float teamMask = sample2D(TeamColorMask, TeamSampler, UV).r;
 	vec4 maskColor = TeamColor * teamMask;
 
 	vec4 normals = sample2D(NormalMap, NormalSampler, UV);
 	vec3 bumpNormal = normalize(calcBump(Tangent, Binormal, Normal, normals));
 
-	vec4 spec = calcSpec(specColor.rgb, roughness);
-	vec4 albedo = calcColor(diffColor + vec4(Overlay(diffColor.rgb, maskColor.rgb), 0), vec4(1), spec);
+	vec4 spec = vec4(specColor.r, roughness, cavity, 0);
+	vec4 albedo = diffColor + vec4(Overlay(diffColor.rgb, maskColor.rgb), 0);
 
 	Material = spec;
 	Albedo = albedo;
 	Normals = bumpNormal;
+
+	// New material setup:
+	//vec4 albedo = 		calcColor(sample2D(AlbedoMap, MaterialSampler, UV)) * MatAlbedoIntensity;
+	//vec4 material = 	calcMaterial(sample2D(ParameterMap, MaterialSampler, UV));
+	//vec4 normals = 		sample2D(NormalMap, NormalSampler, UV);
+	//float teamMask = 	sample2D(TeamColorMask, TeamSampler, UV).r;
+	//vec4 maskColor = 	TeamColor * teamMask;
+	//vec3 bumpNormal = normalize(calcBump(Tangent, Binormal, Normal, normals));
+	//Albedo = albedo + vec4(Overlay(albedo.rgb, maskColor.rgb), 0);;
+	//Normals = bumpNormal;
+	//Material = material;
+
 }
 
 //------------------------------------------------------------------------------
@@ -64,11 +78,13 @@ SimpleTechnique(
 	Static,
 	"Static",
 	vsStatic(),
-	psNotaUnit(calcColor = SimpleColor,
+	psNotaUnit(
+		calcColor = SimpleColor,
 		calcBump = NormalMapFunctor,
-		calcSpec = NonReflectiveSpecularFunctor,
+		calcMaterial = DefaultMaterialFunctor,
 		calcDepth = ViewSpaceDepthFunctor,
-		calcEnv = PBR),
+		calcEnv = PBR
+	),
 	StandardState);
 
 //------------------------------------------------------------------------------
@@ -78,9 +94,11 @@ SimpleTechnique(
 	Skinned,
 	"Skinned",
 	vsSkinned(),
-	psNotaUnit(calcColor = SimpleColor,
+	psNotaUnit(
+		calcColor = SimpleColor,
 		calcBump = NormalMapFunctor,
-		calcSpec = NonReflectiveSpecularFunctor,
+		calcMaterial = DefaultMaterialFunctor,
 		calcDepth = ViewSpaceDepthFunctor,
-		calcEnv = PBR),
+		calcEnv = PBR
+	),
 	StandardState);

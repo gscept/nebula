@@ -12,6 +12,13 @@
 const float RimIntensity = 0.9;//3.0;//
 const float RimPower = 2.0;
 
+// Definitions for the current setup of the material buffer
+// TODO: MRC should be the order, but we need to also support swizzling then
+#define MAT_METALLIC 0
+#define MAT_ROUGHNESS 1
+#define MAT_CAVITY 2
+#define MAT_EMISSIVE 3
+
 //------------------------------------------------------------------------------
 /**
     Compute a rim light intensity value.
@@ -45,7 +52,7 @@ FresnelSchlickGloss(vec3 spec, float dotprod, float roughness)
 {
 	float base = 1.0 - clamp(dotprod, 0.0f, 1.0f);
 	float exponent = pow(base, 5);
-	return spec + (max(vec3(roughness), spec) - spec) * exponent;
+	return spec + (max(vec3(1 - roughness), spec) - spec) * exponent;
 }
 
 //------------------------------------------------------------------------------
@@ -95,7 +102,7 @@ GeometrySmith(in float NdotV, in float NdotL, in float roughness)
 */
 
 void
-CalculateF0(in vec3 color, in float metallic, out vec3 F0)
+CalculateF0(in vec3 color, in float metallic, inout vec3 F0)
 {
     // F0 as 0.04 will usually look good for all dielectric (non-metal) surfaces
 	//F0 = vec3(0.04);

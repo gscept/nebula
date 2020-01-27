@@ -18,7 +18,7 @@ SimpleTechnique(
 	psUber(
 		calcColor = SimpleColor,
 		calcBump = NormalMapFunctor,
-		calcSpec = NonReflectiveSpecularFunctor, 
+		calcMaterial = DefaultMaterialFunctor, 
 		calcDepth = ViewSpaceDepthFunctor,
 		calcEnv = PBR
 	),
@@ -31,7 +31,7 @@ SimpleTechnique(
 	psUberAlphaTest(
 		calcColor = SimpleColor,
 		calcBump = NormalMapFunctor,
-		calcSpec = NonReflectiveSpecularFunctor,
+		calcMaterial = DefaultMaterialFunctor,
 		calcDepth = ViewSpaceDepthFunctor,
 		calcEnv = PBR
 	),
@@ -48,7 +48,7 @@ SimpleTechnique(
 	psUber(
 		calcColor = SimpleColor,
 		calcBump = NormalMapFunctor,
-		calcSpec = NonReflectiveSpecularFunctor,
+		calcMaterial = DefaultMaterialFunctor,
 		calcDepth = ViewSpaceDepthFunctor,
 		calcEnv = PBR
 	),
@@ -61,7 +61,7 @@ SimpleTechnique(
 	psUberAlphaTest(
 		calcColor = SimpleColor,
 		calcBump = NormalMapFunctor,
-		calcSpec = NonReflectiveSpecularFunctor,
+		calcMaterial = DefaultMaterialFunctor,
 		calcDepth = ViewSpaceDepthFunctor,
 		calcEnv = PBR
 	),
@@ -77,7 +77,7 @@ SimpleTechnique(
 	psUber(
 		calcColor = AlphaColor,
 		calcBump = NormalMapFunctor,
-		calcSpec = NonReflectiveSpecularFunctor,
+		calcMaterial = DefaultMaterialFunctor,
 		calcDepth = ViewSpaceDepthFunctor,
 		calcEnv = PBR 
 	),
@@ -91,28 +91,12 @@ SimpleTechnique(
 	psUber(
 		calcColor = AlphaColor,
 		calcBump = NormalMapFunctor,
-		calcSpec = NonReflectiveSpecularFunctor,
+		calcMaterial = DefaultMaterialFunctor,
 		calcDepth = ViewSpaceDepthFunctor,
 		calcEnv = PBR
 	),
 	AlphaState);
 */
-
-//------------------------------------------------------------------------------
-//	Colored methods
-//------------------------------------------------------------------------------
-SimpleTechnique(
-	SkinnedColored, 
-	"Skinned|Colored", 
-	vsStaticColored(), 
-	psUberVertexColor(
-		calcColor = SimpleColorMultiply,
-		calcBump = NormalMapFunctor,
-		calcSpec = NonReflectiveSpecularFunctor,
-		calcDepth = ViewSpaceDepthFunctor,
-		calcEnv = PBR
-	),
-	StandardState);
 
 	/*
 SimpleTechnique(Skinned, "Skinned", vsSkinned(), psUber(), StandardState);
@@ -120,7 +104,31 @@ SimpleTechnique(Environment, "Skinned|Environment", vsSkinned(), psUber(), Stand
 SimpleTechnique(Alpha, "Skinned|Alpha", vsSkinned(), psUber(), AlphaState);
 SimpleTechnique(AlphaEnvironment, "Skinned|Alpha|Environment", vsSkinned(), psUber(), AlphaState);
 */
-TessellationTechnique(Tessellated, "Skinned|Tessellated", vsSkinnedTessellated(), psDefault(), hsDefault(), dsDefault(), StandardState);
-TessellationTechnique(TessellatedEnvironment, "Skinned|Tessellated|Environment", vsSkinnedTessellated(), psDefault(), hsDefault(), dsDefault(), StandardState);
+TessellationTechnique(
+	Tessellated,
+	"Skinned|Tessellated",
+	vsSkinnedTessellated(),
+	psUber(
+		calcColor = AlphaColor,
+		calcBump = NormalMapFunctor,
+		calcMaterial = DefaultMaterialFunctor
+	),
+	hsDefault(),
+	dsDefault(),
+	StandardState
+);
+TessellationTechnique(
+	TessellatedEnvironment,
+	"Skinned|Tessellated|Environment",
+	vsSkinnedTessellated(),
+	psUber(
+		calcColor = AlphaColor,
+		calcBump = NormalMapFunctor,
+		calcMaterial = DefaultMaterialFunctor
+	),
+	hsDefault(),
+	dsDefault(),
+	StandardState
+);
 
 //TransformFeedbackTechnique(SkinnedFeedback, "Skinned|Alt0", vsTransformSkinned());

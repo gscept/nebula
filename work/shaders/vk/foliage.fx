@@ -428,7 +428,7 @@ SimpleTechnique(
 	psUberAlphaTest(
 		calcColor = SimpleColor,
 		calcBump = NormalMapFunctor,
-		calcSpec = NonReflectiveSpecularFunctor,
+		calcMaterial = DefaultMaterialFunctor,
 		calcDepth = ViewSpaceDepthFunctor,
 		calcEnv = IrradianceOnly
 	),
@@ -441,7 +441,7 @@ SimpleTechnique(
 	psUberAlphaTest(
 		calcColor = SimpleColor,
 		calcBump = NormalMapFunctor,
-		calcSpec = NonReflectiveSpecularFunctor,
+		calcMaterial = DefaultMaterialFunctor,
 		calcDepth = ViewSpaceDepthFunctor,
 		calcEnv = IrradianceOnly
 	),
@@ -454,7 +454,7 @@ SimpleTechnique(
 	psUberAlphaTest(
 		calcColor = SimpleColor,
 		calcBump = NormalMapFunctor,
-		calcSpec = NonReflectiveSpecularFunctor,
+		calcMaterial = DefaultMaterialFunctor,
 		calcDepth = ViewSpaceDepthFunctor,
 		calcEnv = IrradianceOnly
 	),
@@ -467,7 +467,7 @@ SimpleTechnique(
 	psUberAlphaTest(
 		calcColor = SimpleColor,
 		calcBump = NormalMapFunctor,
-		calcSpec = NonReflectiveSpecularFunctor,
+		calcMaterial = DefaultMaterialFunctor,
 		calcDepth = ViewSpaceDepthFunctor,
 		calcEnv = IrradianceOnly
 	),
@@ -484,5 +484,16 @@ SimpleTechnique(Picking, "Static|Picking", vsTreeShadow(), psPicking(), FoliageS
 //------------------------------------------------------------------------------
 //	Lightmapped methods
 //------------------------------------------------------------------------------
-SimpleTechnique(LitFoliage, "Static|Lightmapped", vsTreeLightmapped(), psLightmappedLit(), FoliageState);
+SimpleTechnique(
+	LitFoliage,
+	"Static|Lightmapped",
+	vsTreeLightmapped(),
+	psLightmappedLit(
+		calcColor = SimpleColor,
+		calcBump = NormalMapFunctor,
+		calcMaterial = DefaultMaterialFunctor
+	),
+	FoliageState
+);
+
 SimpleTechnique(UnlitFoliage, "Static|Unlit|Lightmapped", vsTreeLightmapped(), psLightmappedUnlit(), FoliageState);

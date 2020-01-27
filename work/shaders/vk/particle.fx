@@ -29,7 +29,7 @@ group(BATCH_GROUP) shared varblock Particle[string Visibility = "PS"; ]
 // samplers
 samplerstate ParticleSampler
 {
-//	Samplers = { SpecularMap, EmissiveMap, NormalMap, AlbedoMap, DisplacementMap, RoughnessMap, Layer1, Layer2, Layer3, Layer4 };
+//	Samplers = { ParameterMap, EmissiveMap, NormalMap, AlbedoMap, DisplacementMap, RoughnessMap, Layer1, Layer2, Layer3, Layer4 };
 	Filter = MinMagMipLinear;
 	AddressU = Wrap;
 	AddressV = Wrap;
@@ -297,29 +297,33 @@ psLit(in vec4 ViewSpacePosition,
 	[color0] out vec4 Albedo,
 	[color1] out vec4 Normals,
 	[color2] out float Depth,
-	[color3] out vec4 Specular) 
+	[color3] out vec4 Material) 
 {	
-	vec4 diffColor = 	sample2D(AlbedoMap, ParticleSampler, UV);
-	vec4 emsvColor =	sample2D(EmissiveMap, ParticleSampler, UV);
-	vec4 specColor = 	sample2D(SpecularMap, ParticleSampler, UV);
-	float roughness = 	sample2D(RoughnessMap, ParticleSampler, UV).r;
+	vec4 albedo = 		sample2D(AlbedoMap, ParticleSampler, UV);
+	vec4 material = 	sample2D(ParameterMap, ParticleSampler, UV);
 	
-	Specular = vec4(specColor.rgb * MatSpecularIntensity.rgb, roughness);
-	Albedo = diffColor + vec4(Color.rgb, 0);
-	
-	Depth = length(ViewSpacePosition.xyz);
+	const float depth = length(ViewSpacePosition.xyz);
+
 	mat3 tangentViewMatrix = mat3(normalize(Tangent.xyz), normalize(Binormal.xyz), normalize(Normal.xyz));        
 	vec3 tNormal = vec3(0,0,0);
 	tNormal.xy = (sample2D(NormalMap, ParticleSampler, UV).ag * 2.0) - 1.0;
 	tNormal.z = saturate(sqrt(1.0 - dot(tNormal.xy, tNormal.xy)));
 	
-	if (!gl_FrontFacing) tNormal = -tNormal;
-	Normals = PackViewSpaceNormal((tangentViewMatrix * tNormal).xyz);
+	if (!gl_FrontFacing)
+	{
+		tNormal = -tNormal;
+	}
 	
-	float depth = Depth;
+	Normals = PackViewSpaceNormal((tangentViewMatrix * tNormal).xyz);
+
+	Material = material;
+	Depth = depth;
+
+	Albedo = albedo + vec4(Color.rgb, 0);
+	
 	float particleDepth = length(ViewSpacePosition);
 	float alphaMod = saturate(abs(depth - particleDepth));
-	Albedo.a = diffColor.a * Color.a;
+	Albedo.a = albedo.a * Color.a;
 }
 
 //------------------------------------------------------------------------------

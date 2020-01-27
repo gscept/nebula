@@ -18,6 +18,7 @@ group(BATCH_GROUP) shared varblock MaterialParams [ string Visibility = "VS|PS";
 	float AlphaSensitivity = 1.0f;
 	float AlphaBlendFactor = 0.0f;
 	float MatRoughnessIntensity = 0.0f;
+	float MatMetallicIntensity = 0.0f;
 };
 
 #endif // MATERIALPARAMS

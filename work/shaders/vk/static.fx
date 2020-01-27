@@ -17,7 +17,7 @@ SimpleTechnique(
 	psUber(
 		calcColor = SimpleColor,
 		calcBump = NormalMapFunctor,
-		calcSpec = NonReflectiveSpecularFunctor,
+		calcMaterial = DefaultMaterialFunctor,
 		calcDepth = ViewSpaceDepthFunctor,
 		calcEnv = IrradianceOnly
 	),
@@ -30,7 +30,7 @@ SimpleTechnique(
 	psUberAlphaTest(
 		calcColor = SimpleColor,
 		calcBump = NormalMapFunctor,
-		calcSpec = NonReflectiveSpecularFunctor,
+		calcMaterial = DefaultMaterialFunctor,
 		calcDepth = ViewSpaceDepthFunctor,
 		calcEnv = IrradianceOnly
 	),
@@ -43,7 +43,7 @@ SimpleTechnique(
 	psUber(
 		calcColor = SimpleColor,
 		calcBump = NormalMapFunctor,
-		calcSpec = NonReflectiveSpecularFunctor,
+		calcMaterial = DefaultMaterialFunctor,
 		calcDepth = ViewSpaceDepthFunctor,
 		calcEnv = IrradianceOnly
 	),
@@ -56,7 +56,7 @@ SimpleTechnique(
 	psUberAlphaTest(
 		calcColor = SimpleColor,
 		calcBump = NormalMapFunctor,
-		calcSpec = NonReflectiveSpecularFunctor,
+		calcMaterial = DefaultMaterialFunctor,
 		calcDepth = ViewSpaceDepthFunctor,
 		calcEnv = IrradianceOnly
 	),
@@ -72,7 +72,7 @@ SimpleTechnique(
 	psUber(
 		calcColor = SimpleColor,
 		calcBump = NormalMapFunctor,
-		calcSpec = NonReflectiveSpecularFunctor,
+		calcMaterial = DefaultMaterialFunctor,
 		calcDepth = ViewSpaceDepthFunctor,
 		calcEnv = PBR
 	),
@@ -85,7 +85,7 @@ SimpleTechnique(
 	psUberAlphaTest(
 		calcColor = SimpleColor,
 		calcBump = NormalMapFunctor,
-		calcSpec = NonReflectiveSpecularFunctor,
+		calcMaterial = DefaultMaterialFunctor,
 		calcDepth = ViewSpaceDepthFunctor,
 		calcEnv = PBR
 	),
@@ -98,7 +98,7 @@ SimpleTechnique(
 	psUber(
 		calcColor = SimpleColor,
 		calcBump = NormalMapFunctor,
-		calcSpec = NonReflectiveSpecularFunctor,
+		calcMaterial = DefaultMaterialFunctor,
 		calcDepth = ViewSpaceDepthFunctor,
 		calcEnv = PBR
 	),
@@ -111,7 +111,7 @@ SimpleTechnique(
 	psUberAlphaTest(
 		calcColor = SimpleColor,
 		calcBump = NormalMapFunctor,
-		calcSpec = NonReflectiveSpecularFunctor,
+		calcMaterial = DefaultMaterialFunctor,
 		calcDepth = ViewSpaceDepthFunctor,
 		calcEnv = PBR
 	),
@@ -127,7 +127,7 @@ SimpleTechnique(
 	psUber(
 		calcColor = AlphaColor,
 		calcBump = NormalMapFunctor,
-		calcSpec = NonReflectiveSpecularFunctor,
+		calcMaterial = DefaultMaterialFunctor,
 		calcDepth = ViewSpaceDepthFunctor,
 		calcEnv = NoEnvironment
 	),
@@ -140,7 +140,7 @@ SimpleTechnique(
 	psUber(
 		calcColor = AlphaColor,
 		calcBump = NormalMapFunctor,
-		calcSpec = NonReflectiveSpecularFunctor,
+		calcMaterial = DefaultMaterialFunctor,
 		calcDepth = ViewSpaceDepthFunctor,
 		calcEnv = PBR
 	),
@@ -153,7 +153,7 @@ SimpleTechnique(
 	psUber(
 		calcColor = AlphaColor,
 		calcBump = NormalMapFunctor,
-		calcSpec = NonReflectiveSpecularFunctor,
+		calcMaterial = DefaultMaterialFunctor,
 		calcDepth = ViewSpaceDepthFunctor,
 		calcEnv = NoEnvironment
 	),
@@ -166,26 +166,22 @@ SimpleTechnique(
 	psUber(
 		calcColor = AlphaColor,
 		calcBump = NormalMapFunctor,
-		calcSpec = NonReflectiveSpecularFunctor,
+		calcMaterial = DefaultMaterialFunctor,
 		calcDepth = ViewSpaceDepthFunctor,
 		calcEnv = PBR
 	),
 	AlphaState);
 
-//------------------------------------------------------------------------------
-//	Colored methods
-//------------------------------------------------------------------------------
-SimpleTechnique(
-	Colored, 
-	"Static|Colored", 
-	vsStaticColored(), 
-	psUberVertexColor(
-		calcColor = SimpleColorMultiply,
+TessellationTechnique(
+	Tessellated,
+	"Static|Tessellated",
+	vsStaticTessellated(),
+	psUber(
+		calcColor = SimpleColor,
 		calcBump = NormalMapFunctor,
-		calcSpec = NonReflectiveSpecularFunctor,
-		calcDepth = ViewSpaceDepthFunctor,
-		calcEnv = NoEnvironment
+		calcMaterial = DefaultMaterialFunctor
 	),
-	StandardState);
-	
-TessellationTechnique(Tessellated, "Static|Tessellated", vsStaticTessellated(), psDefault(), hsDefault(), dsDefault(), StandardState);
+	hsDefault(),
+	dsDefault(),
+	StandardState
+);
