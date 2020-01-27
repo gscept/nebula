@@ -1,7 +1,7 @@
 ---
 imports:
     fips-zlib:
-        git: https://github.com/floooh/fips-zlib.git
+        git: https://github.com/gscept/fips-zlib
         group: misc
     fips-directxmath:
         git: https://github.com/gscept/fips-directxmath.git
