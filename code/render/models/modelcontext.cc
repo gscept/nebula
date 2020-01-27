@@ -252,7 +252,7 @@ ModelContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 {
 	const Util::Array<ModelInstanceId>& instances = modelContextAllocator.GetArray<Model_InstanceId>();
 	const Util::Array<Math::matrix44>& transforms = Models::modelPool->modelInstanceAllocator.GetArray<StreamModelPool::InstanceTransform>();
-	const Util::Array<Math::bbox>& modelBoxes = Models::modelPool->modelAllocator.GetArray<0>();
+	const Util::Array<Math::bbox>& modelBoxes = Models::modelPool->modelAllocator.GetArray<Models::StreamModelPool::ModelBoundingBox>();
 	Util::Array<Math::bbox>& instanceBoxes = Models::modelPool->modelInstanceAllocator.GetArray<StreamModelPool::InstanceBoundingBox>();
 	Util::Array<Math::matrix44>& pending = modelContextAllocator.GetArray<Model_Transform>();
 	Util::Array<bool>& hasPending = modelContextAllocator.GetArray<Model_Dirty>();
@@ -267,8 +267,8 @@ ModelContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 		Math::matrix44 transform = transforms[instance.instance];
 		
 		uint objectId = Models::modelPool->modelInstanceAllocator.Get<StreamModelPool::ObjectId>(instance.instance);
-		Util::Array<Models::ModelNode::Instance*>& nodes = Models::modelPool->modelInstanceAllocator.Get<0>(instance.instance);
-		Util::Array<Models::NodeType>& types = Models::modelPool->modelInstanceAllocator.Get<1>(instance.instance);
+		Util::Array<Models::ModelNode::Instance*>& nodes = Models::modelPool->modelInstanceAllocator.Get<Models::StreamModelPool::ModelNodeInstances>(instance.instance);
+		Util::Array<Models::NodeType>& types = Models::modelPool->modelInstanceAllocator.Get<Models::StreamModelPool::ModelNodeTypes>(instance.instance);
 
 		// if we have a pending transform, apply it and transform bounding box
 		if (hasPending[i])
@@ -302,8 +302,16 @@ ModelContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 					tnode->modelTransform = Math::matrix44::multiply(tnode->transform.getmatrix(), parentTransform);
 					parentTransform = tnode->modelTransform;
 					tnode->objectId = objectId;
+
+				}				
+				if (types[j] >= NodeHasShaderState)
+				{
+					ShaderStateNode::Instance* snode = reinterpret_cast<ShaderStateNode::Instance*>(node);
+
+					// copy bounding box from parent, then transform
+					snode->boundingBox = node->node->boundingBox;
+					snode->boundingBox.affine_transform(snode->modelTransform);
 				}
-				
 			}
 		}
 

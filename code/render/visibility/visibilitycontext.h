@@ -18,29 +18,35 @@
 namespace Visibility
 {
 
-enum ObserverAllocatorMembers
+enum
 {
-	ObserverMatrix,
-	ObserverEntityId,
-	ObserverEntityType,
-	ObserverResultAllocator,
-	ObserverResults,
-	ObserverDrawList,
-	ObserverDrawListAllocator
+	Observer_Matrix,
+	Observer_EntityId,
+	Observer_EntityType,
+	Observer_ResultAllocator,
+	Observer_Results,
+	Observer_DrawList,
+	Observer_DrawListAllocator
 };
 
-enum VisibilityResultAllocatorMembers
+enum
 {
-	VisibilityResultFlag,
-	VisibilityResultCtxId
+	VisibilityResult_Flag,
+	VisibilityResult_CtxId
 };
 
-// enum for the ObserveeAllocator
-enum ObserveeAllocatorMembers
+enum
 {
-	ObservableTransform,
-	ObservableEntityId,
-	ObservableEntityType
+	ObservableAtom_Transform,
+	ObservableAtom_Node,
+	ObservableAtom_ContextEntity
+};
+
+enum
+{
+	Observable_EntityId,
+	Observable_EntityType,
+	Observable_Atoms
 };
 
 class ObserverContext : public Graphics::GraphicsContext
@@ -137,14 +143,22 @@ private:
 	friend class VisibilityContex;
     friend class Models::ModelContext;
 
-
+	// atom corresponds to a single visibility entry
 	typedef Ids::IdAllocator<
-		Math::matrix44,					// transform
-		Graphics::GraphicsEntityId,		// entity id
-		VisibilityEntityType			// type of object so we know how to get the transform
-	> ObserveeAllocator;
+		Math::matrix44,
+		Models::ModelNode::Instance*,
+		Graphics::ContextEntityId
+	> ObservableAtomAllocator;
+	static ObservableAtomAllocator observableAtomAllocator;
 
-	static ObserveeAllocator observeeAllocator;
+	// observable corresponds to a single entity
+	typedef Ids::IdAllocator<
+		Graphics::GraphicsEntityId,		// entity id
+		VisibilityEntityType,			// type of object so we know how to get the transform
+		Util::ArrayStack<Ids::Id32, 1>	// keep track of atoms
+	> ObservableAllocator;
+
+	static ObservableAllocator observableAllocator;
 
 	/// allocate a new slice for this context
 	static Graphics::ContextEntityId Alloc();
