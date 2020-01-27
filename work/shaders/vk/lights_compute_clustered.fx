@@ -10,6 +10,7 @@
 #include "lib/techniques.fxh"
 #include "lib/shadowbase.fxh"
 #include "lib/preetham.fxh"
+#include "lib/pbr.fxh"
 
 const float specPower = float(32.0f);
 const float rimLighting = float(0.2f);

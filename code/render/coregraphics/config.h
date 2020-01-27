@@ -160,6 +160,27 @@ QueueTypeFromString(const Util::String& str)
 	return GraphicsQueueType;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+inline const char*
+QueueNameFromQueueType(const QueueType type)
+{
+    switch (type)
+    {
+    case GraphicsQueueType:
+        return "Graphics";
+    case ComputeQueueType:
+        return "Compute";
+    case TransferQueueType:
+        return "Transfer";
+    case SparseQueueType:
+        return "Sparse";
+    default:
+        return "Graphics";
+    }
+}
+
 } // namespace CoreGraphics
 
 

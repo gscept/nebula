@@ -318,20 +318,6 @@ float UnpackDepth(in vec4 packedData)
     return unpack_u16(packedData.z, packedData.w) / depthScale;
 }
 
-//------------------------------------------------------------------------------
-/**
-    Compute a rim light intensity value.
-*/
-const float RimIntensity = 0.9;//3.0;//
-const float RimPower = 2.0;
-float RimLightIntensity(vec3 worldNormal,     // surface normal in world space
-                        vec3 worldEyeVec)     // eye vector in world space
-{
-    float rimIntensity  = pow(abs(1.0f - abs(dot(worldNormal, worldEyeVec))), RimPower);
-    rimIntensity *= RimIntensity;
-    return rimIntensity;
-}
-
 //-------------------------------------------------------------------------------------------------------------
 /**
     Compute lighting with diffuse and specular from lightbuffer,
@@ -360,61 +346,10 @@ psLightMaterial(in vec4 lightValues,
     return color;
 }
 
-
-
 #define PI 3.14159265
 #define ONE_OVER_PI 1/PI
 #define PI_OVER_FOUR PI/4.0f
 #define PI_OVER_TWO PI/2.0f
-//------------------------------------------------------------------------------
-/**
-	Calculate fresnel amount using Schlick's approximation
-*/
-vec3
-FresnelSchlick(vec3 spec, float dotprod)
-{
-	float base = 1.0 - clamp(dotprod, 0.0f, 1.0f);
-	float exponent = pow(base, 5);
-	return spec + (1 - spec) * exponent;
-}
-
-//------------------------------------------------------------------------------
-/**
-	Calculate fresnel amount using Schlick's approximation but with roughness
-*/
-vec3
-FresnelSchlickGloss(vec3 spec, float dotprod, float roughness)
-{
-	float base = 1.0 - clamp(dotprod, 0.0f, 1.0f);
-	float exponent = pow(base, 5);
-	return spec + (max(vec3(roughness), spec) - spec) * exponent;
-}
-
-//------------------------------------------------------------------------------
-/**
-	Calculates light diffuse and specular using physically based lighting
-*/
-void
-BRDFLighting(
-	 float NH,
-	 float NL,
-	 float NV,
-	 float HL,
-	 float specPower,
-	 vec3 specColor,
-	 out vec3 spec)
-{
-	float normalizationTerm = (specPower + 2.0f) / 8.0f;
-	float blinnPhong = pow(NH, specPower);
-	float specularTerm = blinnPhong;
-	float cosineTerm = NL;
-	vec3 fresnelTerm = FresnelSchlick(specColor, HL);
-	float alpha = 1.0f / ( sqrt ( PI_OVER_FOUR * specPower + PI_OVER_TWO) );
-	float visibilityTerm = (NL * (1.0f - alpha) + alpha ) * (NV * ( 1.0f - alpha ) + alpha );
-	visibilityTerm = 1.0f / visibilityTerm;
-	spec = specularTerm * cosineTerm * fresnelTerm * visibilityTerm;
-	//spec = fresnelTerm * (roughness + 2) / 8.0f * pow(NH, roughness) * (NL);
-}
 
 //-------------------------------------------------------------------------------------------------------------
 /**

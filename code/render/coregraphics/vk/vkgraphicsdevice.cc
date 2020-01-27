@@ -33,6 +33,7 @@
 #include "coregraphics/vk/vksubmissioncontext.h"
 #include "coregraphics/submissioncontext.h"
 #include "resources/resourcemanager.h"
+
 namespace Vulkan
 {
 
@@ -222,6 +223,7 @@ PFN_vkQueueInsertDebugUtilsLabelEXT VkQueueInsertLabel = nullptr;
 PFN_vkCmdBeginDebugUtilsLabelEXT VkCmdDebugMarkerBegin = nullptr;
 PFN_vkCmdEndDebugUtilsLabelEXT VkCmdDebugMarkerEnd = nullptr;
 PFN_vkCmdInsertDebugUtilsLabelEXT VkCmdDebugMarkerInsert = nullptr;
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -1898,6 +1900,10 @@ BeginFrame(IndexT frameIndex)
 		_begin_counter(state.GraphicsDeviceNumComputes);
 		_begin_counter(state.GraphicsDeviceNumPrimitives);
 		_begin_counter(state.GraphicsDeviceNumDrawCalls);
+
+#ifdef NEBULA_ENABLE_PROFILING
+        state.frameProfilingMarkers.Reset();
+#endif NEBULA_ENABLE_PROFILING
 	}
 	state.inBeginFrame = true;
 
@@ -2837,7 +2843,6 @@ ResetEvent(const CoreGraphics::EventId ev, const CoreGraphics::QueueType queue)
 	}
 }
 
-
 //------------------------------------------------------------------------------
 /**
 */
@@ -3698,6 +3703,16 @@ CommandBufferBeginMarker(const CoreGraphics::QueueType queue, const Math::float4
 		};
 		VkCmdDebugMarkerBegin(buf, &info);
 	}
+
+#ifdef NEBULA_ENABLE_PROFILING
+    FrameProfilingMarker marker;
+    marker.queue = queue;
+    marker.color = color;
+    marker.name = name;
+    marker.timer.Reset();
+    marker.timer.Start();
+    state.activeProfilingMarkers[queue].Push(marker);
+#endif NEBULA_ENABLE_PROFILING
 }
 
 //------------------------------------------------------------------------------
@@ -3719,6 +3734,12 @@ CommandBufferEndMarker(const CoreGraphics::QueueType queue)
 		VkCommandBuffer buf = GetMainBuffer(queue);
 		VkCmdDebugMarkerEnd(buf);
 	}	
+
+#ifdef NEBULA_ENABLE_PROFILING
+    FrameProfilingMarker marker = state.activeProfilingMarkers[queue].Pop();
+    marker.timer.Stop();
+    state.frameProfilingMarkers.Append(marker);
+#endif NEBULA_ENABLE_PROFILING
 }
 
 //------------------------------------------------------------------------------
@@ -3753,4 +3774,13 @@ CommandBufferInsertMarker(const CoreGraphics::QueueType queue, const Math::float
 }
 #endif
 
-} // namespace CoreGraphics
+} // namespace Vulkan
+
+//------------------------------------------------------------------------------
+/**
+*/
+CoreGraphics::GraphicsDeviceState const* const
+CoreGraphics::GetGraphicsDeviceState()
+{
+    return (CoreGraphics::GraphicsDeviceState*)&Vulkan::state;
+}
