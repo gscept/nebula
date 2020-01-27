@@ -41,9 +41,6 @@ imports:
         branch: 4.1
     fips-flatbuffers:
         git: https://github.com/gscept/fips-flatbuffers.git
-    fips-assimp:
-         git: https://github.com/gscept/fips-assimp
-         group: misc
 
 exports:
     header-dirs :
