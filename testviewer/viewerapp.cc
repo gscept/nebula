@@ -198,7 +198,7 @@ SimpleViewerApplication::Run()
 
 #ifdef NEBULA_ENABLE_PROFILING
         // copy because the information has been discarded when we render UI
-        this->frameProfilingMarkers = CoreGraphics::GetGraphicsDeviceState()->frameProfilingMarkers;
+        this->frameProfilingMarkers = CoreGraphics::GetProfilingMarkers();
 #endif NEBULA_ENABLE_PROFILING
 
 		this->gfxServer->BeginFrame();
@@ -325,7 +325,10 @@ SimpleViewerApplication::RenderUI()
                 ImGui::NextColumn();
                 ImGui::Text("%f", (frameMarkers[i].timer.GetTime() * 1000));
                 ImGui::NextColumn();
-                ImGui::Text("N/A");
+				if (frameMarkers[i].gpuTime == -1)
+					ImGui::Text("N/A");
+				else
+					ImGui::Text("%f", (frameMarkers[i].gpuTime / 1000000.0f));
                 ImGui::NextColumn();
             }
             ImGui::Columns(1);
