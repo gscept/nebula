@@ -50,7 +50,11 @@ struct FrameProfilingMarker
     Math::float4 color;
     const char* name;
     Timing::Timer timer;
+	IndexT gpuBegin;
+	IndexT gpuEnd;
+	uint64_t gpuTime;
 };
+
 #endif NEBULA_ENABLE_PROFILING
 
 struct GraphicsDeviceState
@@ -67,6 +71,14 @@ struct GraphicsDeviceState
 	CoreGraphics::SubmissionContextId setupSubmissionContext;
 	CoreGraphics::CommandBufferId setupSubmissionCmdBuffer;
 	bool setupSubmissionActive;
+
+	CoreGraphics::SubmissionContextId queryGraphicsSubmissionContext;
+	CoreGraphics::CommandBufferId queryGraphicsSubmissionCmdBuffer;
+	bool queryGraphicsSubmissionActive;
+
+	CoreGraphics::SubmissionContextId queryComputeSubmissionContext;
+	CoreGraphics::CommandBufferId queryComputeSubmissionCmdBuffer;
+	bool queryComputeSubmissionActive;
 
 	CoreGraphics::SubmissionContextId gfxSubmission;
 	CoreGraphics::CommandBufferId gfxCmdBuffer;
@@ -109,6 +121,7 @@ struct GraphicsDeviceState
 	bool visualizeMipMaps : 1;
 	bool usePatches : 1;
 	bool enableValidation : 1;
+	bool buildThreadBuffers : 1;
 	IndexT currentFrameIndex;
 
 	_declare_counter(RenderDeviceNumComputes);
@@ -116,8 +129,9 @@ struct GraphicsDeviceState
 	_declare_counter(RenderDeviceNumDrawCalls);
 
 #ifdef NEBULA_ENABLE_PROFILING
-    Util::Stack<FrameProfilingMarker> activeProfilingMarkers[NumQueueTypes];
-    Util::Array<FrameProfilingMarker> frameProfilingMarkers;
+    Util::Stack<FrameProfilingMarker> profilingMarkerStack[NumQueueTypes];
+    Util::FixedArray<Util::Array<FrameProfilingMarker>> profilingMarkersPerFrame[NumQueueTypes];
+	Util::Array<FrameProfilingMarker> frameProfilingMarkers;
 #endif NEBULA_ENABLE_PROFILING
 };
 
@@ -278,12 +292,17 @@ bool GetRenderWireframe();
 /// set the render as wireframe flag
 void SetRenderWireframe(bool b);
 
+#if NEBULA_ENABLE_PROFILING
 /// insert timestamp, returns handle to timestamp, which can be retreived on the next N'th frame where N is the number of buffered frames
-IndexT Timestamp(CoreGraphics::QueueType queue, const CoreGraphics::BarrierStage stage);
+IndexT Timestamp(CoreGraphics::QueueType queue, const CoreGraphics::BarrierStage stage, const char* name);
+/// get cpu profiling markers
+const Util::Array<FrameProfilingMarker>& GetProfilingMarkers();
+#endif
+
 /// start query
 IndexT BeginQuery(CoreGraphics::QueueType queue, CoreGraphics::QueryType type);
 /// end query
-void EndQuery(CoreGraphics::QueueType queue, CoreGraphics::QueryType type, IndexT query);
+void EndQuery(CoreGraphics::QueueType queue, CoreGraphics::QueryType type);
 
 /// copy data between textures
 void Copy(const CoreGraphics::TextureId from, Math::rectangle<SizeT> fromRegion, const CoreGraphics::TextureId to, Math::rectangle<SizeT> toRegion);
