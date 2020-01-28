@@ -36,6 +36,16 @@
                      "defaultValue": "tex:system/black"
                   },
                   {
+                     "name": "SpecularMap",
+                     "type": "textureHandle",
+                     "defaultValue": "tex:system/black"
+                  },
+                  {
+                     "name": "RoughnessMap",
+                     "type": "textureHandle",
+                     "defaultValue": "tex:system/white"
+                  },
+                  {
                      "name": "TeamColor",
                      "type": "float4",
                      "defaultValue": [0.0, 0.0, 0.0, 0.0],
@@ -81,6 +91,16 @@
                      "name": "TeamColorMask",
                      "type": "textureHandle",
                      "defaultValue": "tex:system/black"
+                  },
+                  {
+                     "name": "SpecularMap",
+                     "type": "textureHandle",
+                     "defaultValue": "tex:system/black"
+                  },
+                  {
+                     "name": "RoughnessMap",
+                     "type": "textureHandle",
+                     "defaultValue": "tex:system/white"
                   },
                   {
                      "name": "TeamColor",

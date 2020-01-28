@@ -11,6 +11,7 @@
 #include "lib/techniques.fxh"
 #include "lib/defaultsamplers.fxh"
 #include "lib/lightmapbase.fxh"
+#include "lib/geometrybase.fxh"
 
 state LightmapState
 {
@@ -201,9 +202,29 @@ vsShadowFoliage(
 /**
 	Standard techniques
 */
-SimpleTechnique(Lit, "Static", vsLightmapped(), psLightmappedLit(), LightmapState);
+SimpleTechnique(
+	Lit,
+	"Static",
+	vsLightmapped(),
+	psLightmappedLit(
+		calcColor = SimpleColor,
+		calcBump = NormalMapFunctor,
+		calcMaterial = DefaultMaterialFunctor
+	),
+	LightmapState
+);
 SimpleTechnique(Unlit, "Static|Unlit", vsLightmapped(), psLightmappedUnlit(), LightmapState);
-SimpleTechnique(LitVertexColors, "Static|Colored", vsLightmappedVertexColors(), psLightmappedLitVertexColors(), LightmapState);
+SimpleTechnique(
+	LitVertexColors,
+	"Static|Colored",
+	vsLightmappedVertexColors(),
+	psLightmappedLitVertexColors(
+		calcColor = SimpleColor,
+		calcBump = NormalMapFunctor,
+		calcMaterial = DefaultMaterialFunctor
+	),
+	LightmapState
+);
 SimpleTechnique(UnlitVertexColors, "Static|Unlit|Colored", vsLightmappedVertexColors(), psLightmappedUnlitVertexColors(), LightmapState);
 
 //------------------------------------------------------------------------------

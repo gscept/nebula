@@ -226,22 +226,36 @@ GlobalLight(vec4 worldPos, vec3 viewVec, vec3 normal, float depth, vec4 material
 		debug = vec4(0, 0, 0, 0);
 	}
 
-	vec3 diff = GlobalAmbientLightColor.xyz;
-	diff += GlobalLightColor.xyz * saturate(NL);
+	//vec3 diff = GlobalAmbientLightColor.xyz;
+	//diff += GlobalLightColor.xyz * saturate(NL);
 	//diff += GlobalBackLightColor.xyz * saturate(-NL + GlobalBackLightOffset);
-
-	float specPower = ROUGHNESS_TO_SPECPOWER(material.a);
 
 	vec3 H = normalize(GlobalLightDirWorldspace.xyz + viewVec);
 	float NH = saturate(dot(normal, H));
 	float NV = saturate(dot(normal, viewVec));
 	float HL = saturate(dot(H, GlobalLightDirWorldspace.xyz)); 
-	vec3 spec;
+	
+	vec3 F0 = vec3(0.04);
+	CalculateF0(albedo.rgb, material[MAT_METALLIC], F0);
 
-	BRDFLighting(NH, NL, NV, HL, specPower, material.rgb, spec);
+	vec3 fresnel;
+	vec3 brdf;
+	CalculateBRDF(NH, NL, NV, HL, material[MAT_ROUGHNESS], F0, fresnel, brdf);
 
-	vec3 final = (albedo.rgb + spec) * diff;
-	return final * shadowFactor;
+	//Fresnel term (F) denotes the specular contribution of any light that hits the surface
+	//We set kS (specular) to F and because PBR requires the condition that our equation is
+	//energy conserving, we can set kD (diffuse contribution) to 1 - kS directly
+	//as kS represents the energy of light that gets reflected, the remeaining energy gets refracted, resulting in our diffuse term
+	vec3 kD = vec3(1.0f) - fresnel;
+
+	//Fully metallic surfaces won't refract any light
+	kD *= 1.0f - material[MAT_METALLIC];
+
+	vec3 radiance = GlobalLightColor.xyz;
+	vec3 irradiance = (kD * albedo.rgb / PI + brdf) * radiance * saturate(NL) + GlobalAmbientLightColor.xyz;
+
+	//vec3 final = (albedo.rgb + spec) * diff;
+	return irradiance * shadowFactor;
 }
 
 //------------------------------------------------------------------------------
@@ -310,10 +324,11 @@ void csLighting()
 	vec4 normal = fetch2D(NormalBuffer, PosteffectSampler, coord, 0).rgba;
 	float depth = fetch2D(DepthBuffer, PosteffectSampler, coord, 0).r;
 	vec4 material = fetch2D(SpecularBuffer, PosteffectSampler, coord, 0).rgba;
+	//material[MAT_ROUGHNESS] = 1 - material[MAT_ROUGHNESS] ;
 	// material.a = 1.0f;
     float ssao = 1.0f - fetch2D(SSAOBuffer, PosteffectSampler, coord, 0).r;
 	float ssaoSq = ssao * ssao;
-	// material = vec4(1, 1, 1, 1.0f);
+	//material = vec4(1, 0, 1.0, 1.0f);
 	vec4 albedo = fetch2D(AlbedoBuffer, PosteffectSampler, coord, 0).rgba;
 
 	// convert screen coord to view-space position
@@ -335,23 +350,33 @@ void csLighting()
 		light += GlobalLight(worldPos, worldViewVec, normal.xyz, depth, material, albedo);
 
 		// render local lights
-		light += LocalLights(idx, viewPos, viewVec, viewNormal, depth, material, albedo);
+		// TODO: new material model for local lights
+		//light += LocalLights(idx, viewPos, viewVec, viewNormal, depth, material, albedo);
 
 		// reflections and irradiance
+		vec3 F0 = vec3(0.04);
+		CalculateF0(albedo.rgb, material[MAT_METALLIC], F0);
 		vec3 reflectVec = reflect(-worldViewVec, normal.xyz);
-		float x = dot(normal.xyz, worldViewVec);
-		vec3 rim = FresnelSchlickGloss(material.rgb, x, material.a);
-		vec3 reflection = sampleCubeLod(EnvironmentMap, CubeSampler, reflectVec, (1.0f - material.a) * NumEnvMips).rgb * rim;
+		float cosTheta = dot(normal.xyz, worldViewVec);
+		vec3 F = FresnelSchlickGloss(F0, cosTheta, material[MAT_ROUGHNESS]);
+		vec3 reflection = sampleCubeLod(EnvironmentMap, CubeSampler, reflectVec, material[MAT_ROUGHNESS] * NumEnvMips).rgb;
         vec3 irradiance = sampleCubeLod(IrradianceMap, CubeSampler, normal.xyz, 0).rgb * ssao;
-		float cavity = 1.0f; // todo: replace with material cavity
-		light += (irradiance * albedo.rgb + reflection) * cavity;
+		float cavity = material[MAT_CAVITY];
+		
+		vec3 kD = vec3(1.0f) - F;
+		kD *= 1.0f - material[MAT_METALLIC];
+		
+		light += (irradiance * (kD * albedo.rgb) + reflection * F) * cavity;
         
 		// sky light
-		light += Preetham(normal.xyz, GlobalLightDirWorldspace.xyz, A, B, C, D, E, Z) * albedo.rgb * ssao;
+		//light += Preetham(normal.xyz, GlobalLightDirWorldspace.xyz, A, B, C, D, E, Z) * (kD * albedo.rgb) * ssao * cavity;
+		//light = vec3(F);
+
 	}	
 	else // sky pixels
 	{
-		light += Preetham(normalize(worldPos.xyz), GlobalLightDirWorldspace.xyz, A, B, C, D, E, Z)* GlobalLightColor.xyz;
+		//light += Preetham(normalize(worldPos.xyz), GlobalLightDirWorldspace.xyz, A, B, C, D, E, Z)* GlobalLightColor.xyz;
+		light += sampleCubeLod(EnvironmentMap, CubeSampler, normalize(worldPos.xyz), 0).rgb;
 	}
     
 	// write final output

@@ -10,18 +10,15 @@ group(BATCH_GROUP) shared varblock DefaultSamplers [ string Visibility = "VS|PS"
 {
 	textureHandle AlbedoMap;
 	textureHandle DisplacementMap;
-	textureHandle SpecularMap;
-	textureHandle EmissiveMap;
+	textureHandle ParameterMap;
 	textureHandle NormalMap;
-	textureHandle RoughnessMap;
-	textureHandle CavityMap;
 };
 
 
 // samplers
 samplerstate GeometryTextureSampler
 {
-	// Samplers = { SpecularMap, EmissiveMap, NormalMap, AlbedoMap, DisplacementMap, RoughnessMap, CavityMap };
+	// Samplers = { ParameterMap, EmissiveMap, NormalMap, AlbedoMap, DisplacementMap, RoughnessMap, CavityMap };
 	//Filter = MinMagMipLinear;
 	//AddressU = Wrap;
 	//AddressV = Wrap;

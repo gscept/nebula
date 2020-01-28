@@ -203,7 +203,7 @@ vsAnimatedSkinnedColored(
 SimpleTechnique(Static, "Static", vsAnimated(), psUber(
 		calcColor = SimpleColor,
 		calcBump = NormalMapFunctor,
-		calcSpec = NonReflectiveSpecularFunctor,
+		calcMaterial = DefaultMaterialFunctor,
 		calcDepth = ViewSpaceDepthFunctor,
 		calcEnv = PBR
 	), StandardState);
@@ -211,7 +211,7 @@ SimpleTechnique(Static, "Static", vsAnimated(), psUber(
 SimpleTechnique(StaticColored, "Static|Colored", vsAnimatedColored(), psUberVertexColor(
 	calcColor = SimpleColor,
 	calcBump = NormalMapFunctor,
-	calcSpec = NonReflectiveSpecularFunctor,
+	calcMaterial = DefaultMaterialFunctor,
 	calcDepth = ViewSpaceDepthFunctor,
 	calcEnv = PBR
 	), StandardState);
@@ -219,7 +219,7 @@ SimpleTechnique(StaticColored, "Static|Colored", vsAnimatedColored(), psUberVert
 SimpleTechnique(Alpha, "Alpha", vsAnimated(), psUber(
 		calcColor = AlphaColor,
 		calcBump = NormalMapFunctor,
-		calcSpec = NonReflectiveSpecularFunctor,
+		calcMaterial = DefaultMaterialFunctor,
 		calcDepth = ViewSpaceDepthFunctor,
 		calcEnv = PBR
 	), AlphaState);
@@ -227,7 +227,7 @@ SimpleTechnique(Alpha, "Alpha", vsAnimated(), psUber(
 SimpleTechnique(AlphaColored, "Alpha|Colored", vsAnimatedColored(), psUberVertexColor(
 	calcColor = AlphaColor,
 	calcBump = NormalMapFunctor,
-	calcSpec = NonReflectiveSpecularFunctor,
+	calcMaterial = DefaultMaterialFunctor,
 	calcDepth = ViewSpaceDepthFunctor,
 	calcEnv = PBR
 	), AlphaState);
@@ -239,7 +239,7 @@ SimpleTechnique(AlphaColored, "Alpha|Colored", vsAnimatedColored(), psUberVertex
 SimpleTechnique(Skinned, "Skinned", vsAnimatedSkinned(), psUber(
 		calcColor = SimpleColor,
 		calcBump = NormalMapFunctor,
-		calcSpec = NonReflectiveSpecularFunctor,
+		calcMaterial = DefaultMaterialFunctor,
 		calcDepth = ViewSpaceDepthFunctor,
 		calcEnv = PBR
 	), StandardState);
@@ -247,7 +247,7 @@ SimpleTechnique(Skinned, "Skinned", vsAnimatedSkinned(), psUber(
 SimpleTechnique(SkinnedColored, "Skinned|Colored", vsAnimatedSkinnedColored(), psUberVertexColor(
 	calcColor = SimpleColor,
 	calcBump = NormalMapFunctor,
-	calcSpec = NonReflectiveSpecularFunctor,
+	calcMaterial = DefaultMaterialFunctor,
 	calcDepth = ViewSpaceDepthFunctor,
 	calcEnv = PBR
 	), StandardState);
@@ -255,7 +255,7 @@ SimpleTechnique(SkinnedColored, "Skinned|Colored", vsAnimatedSkinnedColored(), p
 SimpleTechnique(SkinnedAlpha, "Skinned|Alpha", vsAnimatedSkinned(), psUber(
 		calcColor = AlphaColor,
 		calcBump = NormalMapFunctor,
-		calcSpec = NonReflectiveSpecularFunctor,
+		calcMaterial = DefaultMaterialFunctor,
 		calcDepth = ViewSpaceDepthFunctor,
 		calcEnv = PBR
 	), AlphaState);
@@ -263,7 +263,7 @@ SimpleTechnique(SkinnedAlpha, "Skinned|Alpha", vsAnimatedSkinned(), psUber(
 SimpleTechnique(SkinnedAlphaColored, "Skinned|Alpha|Colored", vsAnimatedSkinnedColored(), psUberVertexColor(
 	calcColor = AlphaColor,
 	calcBump = NormalMapFunctor,
-	calcSpec = NonReflectiveSpecularFunctor,
+	calcMaterial = DefaultMaterialFunctor,
 	calcDepth = ViewSpaceDepthFunctor,
 	calcEnv = PBR
 	), AlphaState);

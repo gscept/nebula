@@ -19,3 +19,4 @@ export_linux/*
 /code/render/visibility/jobs_old
 /code/render/visibility/visibilitysystems_old
 *.pyc
+.svn

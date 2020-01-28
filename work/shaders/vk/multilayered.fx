@@ -22,15 +22,11 @@ group(BATCH_GROUP) shared varblock MLPTextures [string Visibility = "PS";]
 {
 	textureHandle AlbedoMap2;
 	textureHandle AlbedoMap3;
-	textureHandle SpecularMap2;
-	textureHandle SpecularMap3;
-	textureHandle EmissiveMap2;
-	textureHandle EmissiveMap3;
+	textureHandle ParameterMap2;
+	textureHandle ParameterMap3;
 	textureHandle NormalMap2;
 	textureHandle NormalMap3;
-	textureHandle RoughnessMap2;
-	textureHandle RoughnessMap3;
-
+	
 	textureHandle DisplacementMap2;
 	textureHandle DisplacementMap3;
 };
@@ -257,25 +253,20 @@ psMultilayered(
 	in vec3 WorldViewVec,
 	[color0] out vec4 Albedo,
 	[color1] out vec3 Normals,
-	[color2] out vec4 Specular,
+	[color2] out vec4 Material,
 	[color3] out vec4 Emissive) 
 {
 	vec4 blend = Color;
-	
+
 	vec4 diffColor1 = sample2D(AlbedoMap, Basic2DSampler, UV);
 	vec4 diffColor2 = sample2D(AlbedoMap2, Basic2DSampler, UV);
 	vec4 diffColor3 = sample2D(AlbedoMap3, Basic2DSampler, UV);
 	vec4 diffColor = (diffColor1 * blend.r + diffColor2 * blend.g + diffColor3 * blend.b) * MatAlbedoIntensity;
 			
-	vec4 specColor1 = sample2D(SpecularMap, Basic2DSampler, UV);
-	vec4 specColor2 = sample2D(SpecularMap2, Basic2DSampler, UV);
-	vec4 specColor3 = sample2D(SpecularMap3, Basic2DSampler, UV);	
-	vec4 specColor = (specColor1 * blend.r + specColor2 * blend.g + specColor3 * blend.b) * MatSpecularIntensity;	
-	
-	float roughness1 = sample2D(RoughnessMap, Basic2DSampler, UV).r;
-	float roughness2 = sample2D(RoughnessMap2, Basic2DSampler, UV).r;
-	float roughness3 = sample2D(RoughnessMap3, Basic2DSampler, UV).r;
-	float roughness = (roughness1 * blend.r + roughness2 * blend.g + roughness3 * blend.b) * MatRoughnessIntensity;
+	vec4 matColor1 = sample2D(ParameterMap, Basic2DSampler, UV);
+	vec4 matColor2 = sample2D(ParameterMap2, Basic2DSampler, UV);
+	vec4 matColor3 = sample2D(ParameterMap3, Basic2DSampler, UV);	
+	vec4 matColor = (matColor1 * blend.r + matColor2 * blend.g + matColor3 * blend.b);
 	
 	vec4 normals1 = sample2D(NormalMap, Basic2DSampler, UV);
 	vec4 normals2 = sample2D(NormalMap2, Basic2DSampler, UV);
@@ -283,13 +274,14 @@ psMultilayered(
 	vec4 normals = normals1 * blend.r + normals2 * blend.g + normals3 * blend.b;
 	vec3 bumpNormal = normalize(calcBump(Tangent, Binormal, Normal, normals));
 
-	mat4x4 invView = InvView;
-	mat2x3 env = calcEnv(specColor, bumpNormal, WorldViewVec, roughness);
-	vec4 spec = calcSpec(specColor.rgb, roughness);
-	vec4 albedo = calcColor(diffColor, vec4(1), spec);	
-	vec4 emissive = vec4((env[0] * albedo.rgb + env[1]), -1);
+	//mat2x3 env = calcEnv(specColor, bumpNormal, WorldViewVec, roughness);
 
-	Specular = spec;
+	vec4 mat = calcMaterial(matColor);
+	vec4 albedo = calcColor(diffColor);	
+	
+	vec4 emissive = vec4(0,0,0,0); // (env[0] * albedo.rgb + env[1]), -1);
+
+	Material = mat;
 	Albedo = albedo;
 	Emissive = emissive;
 	Normals = bumpNormal;
@@ -592,7 +584,7 @@ dsShadowMLP(
 SimpleTechnique(MLP, "Static", vsColored(), psMultilayered(
 		calcColor = SimpleColor,
 		calcBump = NormalMapFunctor,
-		calcSpec = NonReflectiveSpecularFunctor,
+		calcMaterial = DefaultMaterialFunctor,
 		calcDepth = ViewSpaceDepthFunctor,
 		calcEnv = PBR), MLPState);
 		
