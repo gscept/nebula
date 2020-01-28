@@ -24,6 +24,7 @@
 #include "vkevent.h"
 #include "vkfence.h"
 #include "vktypes.h"
+#include "vkutilities.h"
 #include "coregraphics/vertexsignaturepool.h"
 #include "coregraphics/glfw/glfwwindow.h"
 #include "coregraphics/displaydevice.h"
