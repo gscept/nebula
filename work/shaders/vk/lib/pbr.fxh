@@ -13,7 +13,6 @@ const float RimIntensity = 0.9;//3.0;//
 const float RimPower = 2.0;
 
 // Definitions for the current setup of the material buffer
-// TODO: MRC should be the order, but we need to also support swizzling then
 #define MAT_METALLIC 0
 #define MAT_ROUGHNESS 1
 #define MAT_CAVITY 2

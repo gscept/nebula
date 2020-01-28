@@ -147,7 +147,6 @@ void csCull()
 	for (uint i = 0; i < NumSpotLights; i++)
 	{
 		const SpotLight light = SpotLights[i];
-
 		// first do fast discard sphere test
 		if (TestAABBSphere(aabb, light.position.xyz, light.position.w))
 		{
@@ -254,7 +253,6 @@ GlobalLight(vec4 worldPos, vec3 viewVec, vec3 normal, float depth, vec4 material
 	vec3 radiance = GlobalLightColor.xyz;
 	vec3 irradiance = (kD * albedo.rgb / PI + brdf) * radiance * saturate(NL) + GlobalAmbientLightColor.xyz;
 
-	//vec3 final = (albedo.rgb + spec) * diff;
 	return irradiance * shadowFactor;
 }
 
@@ -351,7 +349,7 @@ void csLighting()
 
 		// render local lights
 		// TODO: new material model for local lights
-		//light += LocalLights(idx, viewPos, viewVec, viewNormal, depth, material, albedo);
+		light += LocalLights(idx, viewPos, viewVec, viewNormal, depth, material, albedo);
 
 		// reflections and irradiance
 		vec3 F0 = vec3(0.04);
