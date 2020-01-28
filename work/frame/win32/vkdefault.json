@@ -126,7 +126,7 @@
 			},
 			{
 				name: "LightBuffer",
-				format: "R11G11B10F",
+				format: "R16G16B16A16F",
 				relative: true,
 				usage: "ReadWrite|Copy",
 				width: 1.0,
