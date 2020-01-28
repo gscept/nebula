@@ -117,10 +117,14 @@ enum VertexBufferMemoryType
 enum QueryType
 {
 	OcclusionQuery,
-	TimestampQuery,
+	GraphicsTimestampQuery,
 	PipelineStatisticsGraphicsQuery,
-	PipelineStatisticsComputeQuery,
+	QueryGraphicsMax = PipelineStatisticsGraphicsQuery,
 
+	ComputeTimestampQuery,
+	PipelineStatisticsComputeQuery,
+	QueryComputeMax = PipelineStatisticsComputeQuery,
+	
 	NumQueryTypes
 };
 

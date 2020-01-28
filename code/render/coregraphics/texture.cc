@@ -141,7 +141,6 @@ IndexT
 TextureSwapBuffers(const TextureId id)
 {
 	return texturePool->SwapBuffers(id);
-
 }
 
 //------------------------------------------------------------------------------

@@ -12,7 +12,7 @@
 #include "coregraphics/vk/vkgraphicsdevice.h"
 
 #if NEBULA_GRAPHICS_DEBUG
-	#define NEBULA_BARRIER_INSERT_MARKER 1 // enable or disable to remove barrier markers
+	#define NEBULA_BARRIER_INSERT_MARKER 0 // enable or disable to remove barrier markers
 #else
 	#define NEBULA_BARRIER_INSERT_MARKER 0
 #endif
