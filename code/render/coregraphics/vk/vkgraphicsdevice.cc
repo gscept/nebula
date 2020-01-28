@@ -1009,7 +1009,6 @@ _ProcessQueries()
 {
 	using namespace CoreGraphics;
 
-#if NEBULA_ENABLE_PROFILING
 	// start query queue for graphics
 	CommandBufferBeginInfo beginInfo{ true, false, false };
 	SubmissionContextNewBuffer(state.queryGraphicsSubmissionContext, state.queryGraphicsSubmissionCmdBuffer);
@@ -1019,6 +1018,7 @@ _ProcessQueries()
 	SubmissionContextNewBuffer(state.queryComputeSubmissionContext, state.queryComputeSubmissionCmdBuffer);
 	CommandBufferBeginRecord(state.queryComputeSubmissionCmdBuffer, beginInfo);
 
+#if NEBULA_ENABLE_PROFILING
 	// clear this frames markers
 	state.frameProfilingMarkers.Clear();
 #endif
@@ -1103,13 +1103,17 @@ _ProcessQueries()
 				state.profilingMarkersPerFrame[queue][state.currentBufferedFrameIndex].Reset();
 			}
 #endif
-			// reset all used queries in the pool
-			vkCmdResetQueryPool(buf, state.queryPools[i], state.queryStartIndex[i][state.currentBufferedFrameIndex], state.queryCounts[i][state.currentBufferedFrameIndex]);
-
 			// reset query count since we copied them over on this submission
 			state.queryCounts[i][state.currentBufferedFrameIndex] = 0;
 		}
+
+		// reset all used queries in the pool
+		vkCmdResetQueryPool(buf, state.queryPools[i], state.queryStartIndex[i][state.currentBufferedFrameIndex], state.MaxQueriesPerFrame);
 	}
+
+	// append submission
+	state.subcontextHandler.AppendSubmissionTimeline(GraphicsQueueType, CommandBufferGetVk(state.queryGraphicsSubmissionCmdBuffer));
+	state.subcontextHandler.AppendSubmissionTimeline(ComputeQueueType, CommandBufferGetVk(state.queryComputeSubmissionCmdBuffer));
 
 	// end record of query reset commands
 	CommandBufferEndRecord(state.queryGraphicsSubmissionCmdBuffer);
@@ -2197,8 +2201,6 @@ BeginSubmission(CoreGraphics::QueueType queue, CoreGraphics::QueueType waitQueue
 	};
 	CommandBufferBeginRecord(cmds, cmdInfo);
 
-
-
 	uint* cboStartAddress = queue == GraphicsQueueType ? sub.cboGfxStartAddress : sub.cboComputeStartAddress;
 	uint* cboEndAddress = queue == GraphicsQueueType ? sub.cboGfxEndAddress : sub.cboComputeEndAddress;
 	CoreGraphics::ConstantBufferId* stagingCbo = queue == GraphicsQueueType ? state.globalGraphicsConstantStagingBuffer : state.globalComputeConstantStagingBuffer;
@@ -2279,7 +2281,11 @@ BeginPass(const CoreGraphics::PassId pass)
 	state.database.SetSubpass(0);
 
 	const VkRenderPassBeginInfo& info = PassGetVkRenderPassBeginInfo(pass);
+#if NEBULA_ENABLE_MT_DRAW
 	vkCmdBeginRenderPass(GetMainBuffer(GraphicsQueueType), &info, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+#else
+	vkCmdBeginRenderPass(GetMainBuffer(GraphicsQueueType), &info, VK_SUBPASS_CONTENTS_INLINE);
+#endif
 
 	state.passInfo.framebuffer = info.framebuffer;
 	state.passInfo.renderPass = info.renderPass;
@@ -2302,7 +2308,11 @@ SetToNextSubpass()
 	SetFramebufferLayoutInfo(PassGetVkFramebufferInfo(state.pass));
 	state.database.SetSubpass(state.currentPipelineInfo.subpass);
 	state.passInfo.subpass = state.currentPipelineInfo.subpass;
+#if NEBULA_ENABLE_MT_DRAW
 	vkCmdNextSubpass(GetMainBuffer(GraphicsQueueType), VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+#else
+	vkCmdNextSubpass(GetMainBuffer(GraphicsQueueType), VK_SUBPASS_CONTENTS_INLINE);
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -3296,6 +3306,7 @@ EndFrame(IndexT frameIndex)
 #endif
 
 	// if we have compute queries, run this to copy the results to buffer and reset the query pool
+	/*
 	if (state.queryComputeSubmissionActive)
 	{
 		state.subcontextHandler.AppendSubmissionTimeline(
@@ -3304,6 +3315,7 @@ EndFrame(IndexT frameIndex)
 		);
 		state.queryComputeSubmissionActive = false;
 	}
+	*/
 
 	// submit compute, wait for this frames resource submissions
 	state.subcontextHandler.FlushSubmissionsTimeline(ComputeQueueType, FenceGetVk(state.computeFence));
@@ -3314,6 +3326,7 @@ EndFrame(IndexT frameIndex)
 #endif
 
 	// if we have graphics queries, run this to copy the results to buffer and reset the query pool
+	/*
 	if (state.queryGraphicsSubmissionActive)
 	{
 		state.subcontextHandler.AppendSubmissionTimeline(
@@ -3322,6 +3335,7 @@ EndFrame(IndexT frameIndex)
 		);
 		state.queryGraphicsSubmissionActive = false;
 	}
+	*/
 
 	// add signal for binary semaphore used by the presentation system
 	state.subcontextHandler.AppendSignalTimeline(
@@ -3444,7 +3458,9 @@ Timestamp(CoreGraphics::QueueType queue, const CoreGraphics::BarrierStage stage,
 	QueryType type = (queue == GraphicsQueueType) ? GraphicsTimestampQuery : ComputeTimestampQuery;
 
 	// get current query, and get the index
-	IndexT idx = state.queryCounts[type][state.currentBufferedFrameIndex]++;
+	SizeT& count = state.queryCounts[type][state.currentBufferedFrameIndex];
+	IndexT idx = state.queryStartIndex[type][state.currentBufferedFrameIndex] + count;
+	count++;
 	n_assert(idx < state.MaxQueriesPerFrame * (SizeT)(state.currentBufferedFrameIndex + 1));
 
 	// write time stamp
@@ -3473,9 +3489,10 @@ BeginQuery(CoreGraphics::QueueType queue, CoreGraphics::QueryType type)
 	n_assert(type != CoreGraphics::QueryType::GraphicsTimestampQuery);
 
 	// get current query, and get the index
-	IndexT idx = state.queryCounts[type][state.currentBufferedFrameIndex]++;
+	SizeT& count = state.queryCounts[type][state.currentBufferedFrameIndex];
+	IndexT idx = state.queryStartIndex[type][state.currentBufferedFrameIndex] + count;
+	count++;
 	n_assert(idx < state.MaxQueriesPerFrame * (SizeT)(state.currentBufferedFrameIndex + 1));
-	state.queryCounts[type][state.currentBufferedFrameIndex]++;
 
 	// start query
 	VkCommandBuffer buf = GetMainBuffer(queue);
