@@ -47,16 +47,26 @@ FrameScriptInspector::Run(const Ptr<Frame::FrameScript>& script)
 	static CoreGraphics::TextureId id;
 	id = textureId;
 
-	auto windowSize = ImGui::GetWindowSize();
-	windowSize.y -= ImGui::GetCursorPosY();
+    ImVec2 imageSize = {(float)dims.width, (float)dims.height};
+
 	static Dynui::ImguiTextureId textureInfo;
 	textureInfo.nebulaHandle = id.HashCode64();
 	textureInfo.mip = state.selectedMip;
 	textureInfo.layer = state.selectedLayer;
 
-	windowSize.x = dims.width / 4;
-	windowSize.y = dims.height / 4;
-	ImGui::Image((void*)& textureInfo, windowSize);
+    ImGui::NewLine();
+    ImGui::Separator();
+
+    static bool fitToWindow = true;
+    ImGui::Checkbox("Fit to window", &fitToWindow);
+    if (fitToWindow)
+    {
+	    imageSize.x = ImGui::GetWindowContentRegionWidth();
+        float ratio = (float)dims.height / (float)dims.width;
+	    imageSize.y = imageSize.x * ratio;
+    }
+
+	ImGui::Image((void*)& textureInfo, imageSize);
 	ImGui::End();
 
 }
