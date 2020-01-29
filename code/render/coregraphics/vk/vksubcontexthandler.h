@@ -68,7 +68,7 @@ public:
 	void SetToNextContext(const CoreGraphics::QueueType type);
 
 	/// append submission to context to execute later, supports waiting for a queue
-	void AppendSubmissionTimeline(CoreGraphics::QueueType type, VkCommandBuffer cmds);
+	void AppendSubmissionTimeline(CoreGraphics::QueueType type, VkCommandBuffer cmds, bool semaphore = true);
 	/// append a wait on the current submission of a specific queue
 	void AppendWaitTimeline(CoreGraphics::QueueType type, VkPipelineStageFlags waitFlags, CoreGraphics::QueueType waitQueue);
 	/// append a wait on a binary semaphore

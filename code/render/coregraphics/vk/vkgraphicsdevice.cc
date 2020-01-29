@@ -34,7 +34,9 @@
 #include "coregraphics/vk/vksubmissioncontext.h"
 #include "coregraphics/submissioncontext.h"
 #include "resources/resourcemanager.h"
+#include "coregraphics/graphicsdevice.h"
 
+#define NEBULA_ENABLE_MT_DRAW 0
 namespace Vulkan
 {
 
@@ -183,6 +185,7 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 	Util::FixedArray<Util::Array<VkImageView>> delayedDeleteImageViews;
 	Util::FixedArray<Util::Array<VkDeviceMemory>> delayedDeleteMemories;
 
+	bool queryFirstFrame;
 	VkQueryPool queryPools[CoreGraphics::NumQueryTypes];
 	VkBuffer queryResults[CoreGraphics::NumQueryTypes];
 	VkDeviceMemory queryResultMem[CoreGraphics::NumQueryTypes];
@@ -201,13 +204,7 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 
 	CoreGraphics::ShaderProgramId currentProgram;
 
-	_declare_counter(NumImageBytesAllocated);
-	_declare_counter(NumBufferBytesAllocated);
-	_declare_counter(NumBytesAllocated);
 	_declare_counter(NumPipelinesBuilt);
-	_declare_counter(GraphicsDeviceNumComputes);
-	_declare_counter(GraphicsDeviceNumPrimitives);
-	_declare_counter(GraphicsDeviceNumDrawCalls);
 	_declare_timer(DebugTimer);
 
 } state;
@@ -1009,6 +1006,9 @@ _ProcessQueries()
 {
 	using namespace CoreGraphics;
 
+	SubmissionContextNextCycle(state.queryGraphicsSubmissionContext);
+	SubmissionContextNextCycle(state.queryComputeSubmissionContext);
+
 	// start query queue for graphics
 	CommandBufferBeginInfo beginInfo{ true, false, false };
 	SubmissionContextNewBuffer(state.queryGraphicsSubmissionContext, state.queryGraphicsSubmissionCmdBuffer);
@@ -1023,6 +1023,7 @@ _ProcessQueries()
 	state.frameProfilingMarkers.Clear();
 #endif
 
+	bool submitGraphics = false, submitCompute = false;
 	// copy old queries over to buffer for reading
 	for (IndexT i = 0; i < CoreGraphics::NumQueryTypes; i++)
 	{
@@ -1034,12 +1035,12 @@ _ProcessQueries()
 		if (queue == GraphicsQueueType)
 		{
 			buf = CommandBufferGetVk(state.queryGraphicsSubmissionCmdBuffer);
-			state.queryGraphicsSubmissionActive = true;
+			submitGraphics = true;
 		}
 		else
 		{
 			buf = CommandBufferGetVk(state.queryComputeSubmissionCmdBuffer);
-			state.queryComputeSubmissionActive = true;
+			submitCompute = true;
 		}
 
 		// if the query index is offset
@@ -1061,6 +1062,7 @@ _ProcessQueries()
 				state.queryStartIndex[i][state.currentBufferedFrameIndex] * sizeof(uint64_t),
 				state.queryCounts[i][state.currentBufferedFrameIndex] * sizeof(uint64_t)
 			};
+
 			vkCmdPipelineBarrier(
 				buf, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 				0,
@@ -1078,7 +1080,9 @@ _ProcessQueries()
 				state.queryResults[i],
 				state.queryStartIndex[i][state.currentBufferedFrameIndex] * sizeof(uint64_t),
 				stride,
-				VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+				VK_QUERY_RESULT_64_BIT);
+
+			vkCmdResetQueryPool(buf, state.queryPools[i], state.queryStartIndex[i][state.currentBufferedFrameIndex], state.queryCounts[i][state.currentBufferedFrameIndex]);
 
 #if NEBULA_ENABLE_PROFILING
 			if (i == CoreGraphics::GraphicsTimestampQuery || i == CoreGraphics::ComputeTimestampQuery)
@@ -1108,12 +1112,17 @@ _ProcessQueries()
 		}
 
 		// reset all used queries in the pool
-		vkCmdResetQueryPool(buf, state.queryPools[i], state.queryStartIndex[i][state.currentBufferedFrameIndex], state.MaxQueriesPerFrame);
+		if (state.queryFirstFrame)
+			vkCmdResetQueryPool(buf, state.queryPools[i], state.queryStartIndex[i][state.currentBufferedFrameIndex], state.MaxQueriesPerFrame);
 	}
 
+	state.queryFirstFrame = false;
+
 	// append submission
-	state.subcontextHandler.AppendSubmissionTimeline(GraphicsQueueType, CommandBufferGetVk(state.queryGraphicsSubmissionCmdBuffer));
-	state.subcontextHandler.AppendSubmissionTimeline(ComputeQueueType, CommandBufferGetVk(state.queryComputeSubmissionCmdBuffer));
+	if (submitGraphics)
+		state.subcontextHandler.AppendSubmissionTimeline(GraphicsQueueType, CommandBufferGetVk(state.queryGraphicsSubmissionCmdBuffer), false);
+	if (submitCompute)
+		state.subcontextHandler.AppendSubmissionTimeline(ComputeQueueType, CommandBufferGetVk(state.queryComputeSubmissionCmdBuffer), false);
 
 	// end record of query reset commands
 	CommandBufferEndRecord(state.queryGraphicsSubmissionCmdBuffer);
@@ -1581,11 +1590,9 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	state.setupSubmissionActive = false;
 
 	state.queryGraphicsSubmissionContext = CreateSubmissionContext({ cmdCreateInfo, info.numBufferedFrames, false });
-	state.queryGraphicsSubmissionActive = false;
 
 	cmdCreateInfo.usage = CommandCompute;
 	state.queryComputeSubmissionContext = CreateSubmissionContext({ cmdCreateInfo, info.numBufferedFrames, false });
-	state.queryComputeSubmissionActive = false;
 
 	state.propagateDescriptorSets.Resize(NEBULA_NUM_GROUPS);
 	for (i = 0; i < NEBULA_NUM_GROUPS; i++)
@@ -1795,6 +1802,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		res = vkMapMemory(state.devices[state.currentDevice], state.queryResultMem[i], 0, size, 0, reinterpret_cast<void**>(&state.queryResultPtr[i]));
 		n_assert(res == VK_SUCCESS);
 	}
+	state.queryFirstFrame = true;
 
 #if NEBULA_ENABLE_PROFILING
 	for (i = 0; i < CoreGraphics::NumQueryTypes; i++)
@@ -3305,18 +3313,6 @@ EndFrame(IndexT frameIndex)
 	CoreGraphics::QueueBeginMarker(ComputeQueueType, NEBULA_MARKER_ORANGE, "Compute");
 #endif
 
-	// if we have compute queries, run this to copy the results to buffer and reset the query pool
-	/*
-	if (state.queryComputeSubmissionActive)
-	{
-		state.subcontextHandler.AppendSubmissionTimeline(
-			ComputeQueueType,
-			CommandBufferGetVk(state.queryComputeSubmissionCmdBuffer)
-		);
-		state.queryComputeSubmissionActive = false;
-	}
-	*/
-
 	// submit compute, wait for this frames resource submissions
 	state.subcontextHandler.FlushSubmissionsTimeline(ComputeQueueType, FenceGetVk(state.computeFence));
 
@@ -3324,18 +3320,6 @@ EndFrame(IndexT frameIndex)
 	CoreGraphics::QueueEndMarker(ComputeQueueType);
 	CoreGraphics::QueueBeginMarker(GraphicsQueueType, NEBULA_MARKER_ORANGE, "Graphics");
 #endif
-
-	// if we have graphics queries, run this to copy the results to buffer and reset the query pool
-	/*
-	if (state.queryGraphicsSubmissionActive)
-	{
-		state.subcontextHandler.AppendSubmissionTimeline(
-			GraphicsQueueType,
-			CommandBufferGetVk(state.queryGraphicsSubmissionCmdBuffer)
-		);
-		state.queryGraphicsSubmissionActive = false;
-	}
-	*/
 
 	// add signal for binary semaphore used by the presentation system
 	state.subcontextHandler.AppendSignalTimeline(
@@ -3477,6 +3461,15 @@ const Util::Array<FrameProfilingMarker>&
 GetProfilingMarkers()
 {
 	return state.frameProfilingMarkers;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+SizeT 
+GetNumDrawCalls()
+{
+	return state.GraphicsDeviceNumDrawCalls->GetSample();
 }
 #endif
 
@@ -3982,7 +3975,7 @@ CommandBufferBeginMarker(const CoreGraphics::QueueType queue, const Math::float4
 		VkCmdDebugMarkerBegin(buf, &info);
 	}
 
-#ifdef NEBULA_ENABLE_PROFILING
+#if NEBULA_ENABLE_PROFILING
     FrameProfilingMarker marker;
     marker.queue = queue;
     marker.color = color;
@@ -4004,7 +3997,7 @@ void
 CommandBufferEndMarker(const CoreGraphics::QueueType queue)
 {
 
-#ifdef NEBULA_ENABLE_PROFILING
+#if NEBULA_ENABLE_PROFILING
 	FrameProfilingMarker marker = state.profilingMarkerStack[queue].Pop();
 	marker.timer.Stop();
 	if (!state.buildThreadBuffers)

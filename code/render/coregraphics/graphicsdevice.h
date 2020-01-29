@@ -74,11 +74,9 @@ struct GraphicsDeviceState
 
 	CoreGraphics::SubmissionContextId queryGraphicsSubmissionContext;
 	CoreGraphics::CommandBufferId queryGraphicsSubmissionCmdBuffer;
-	bool queryGraphicsSubmissionActive;
 
 	CoreGraphics::SubmissionContextId queryComputeSubmissionContext;
 	CoreGraphics::CommandBufferId queryComputeSubmissionCmdBuffer;
-	bool queryComputeSubmissionActive;
 
 	CoreGraphics::SubmissionContextId gfxSubmission;
 	CoreGraphics::CommandBufferId gfxCmdBuffer;
@@ -124,9 +122,12 @@ struct GraphicsDeviceState
 	bool buildThreadBuffers : 1;
 	IndexT currentFrameIndex;
 
-	_declare_counter(RenderDeviceNumComputes);
-	_declare_counter(RenderDeviceNumPrimitives);
-	_declare_counter(RenderDeviceNumDrawCalls);
+	_declare_counter(NumImageBytesAllocated);
+	_declare_counter(NumBufferBytesAllocated);
+	_declare_counter(NumBytesAllocated);
+	_declare_counter(GraphicsDeviceNumComputes);
+	_declare_counter(GraphicsDeviceNumPrimitives);
+	_declare_counter(GraphicsDeviceNumDrawCalls);
 
 #ifdef NEBULA_ENABLE_PROFILING
     Util::Stack<FrameProfilingMarker> profilingMarkerStack[NumQueueTypes];
@@ -297,6 +298,8 @@ void SetRenderWireframe(bool b);
 IndexT Timestamp(CoreGraphics::QueueType queue, const CoreGraphics::BarrierStage stage, const char* name);
 /// get cpu profiling markers
 const Util::Array<FrameProfilingMarker>& GetProfilingMarkers();
+/// get number of draw calls this frame
+SizeT GetNumDrawCalls();
 #endif
 
 /// start query

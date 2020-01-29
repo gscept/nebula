@@ -154,7 +154,7 @@ VkSubContextHandler::SetToNextContext(const CoreGraphics::QueueType type)
 /**
 */
 void 
-VkSubContextHandler::AppendSubmissionTimeline(CoreGraphics::QueueType type, VkCommandBuffer cmds)
+VkSubContextHandler::AppendSubmissionTimeline(CoreGraphics::QueueType type, VkCommandBuffer cmds, bool semaphore)
 {
 	n_assert(cmds != VK_NULL_HANDLE);
 	Util::Array<TimelineSubmission>& submissions = this->timelineSubmissions[type];
@@ -165,10 +165,14 @@ VkSubContextHandler::AppendSubmissionTimeline(CoreGraphics::QueueType type, VkCo
 	// if command buffer is present, add to 
 	sub.buffers.Append(cmds);
 
-	// add signal
-	sub.signalSemaphores.Append(this->semaphores[type]);
-	this->semaphoreSubmissionIds[type]++;
-	sub.signalIndices.Append(this->semaphoreSubmissionIds[type]);
+	if (semaphore)
+	{
+		// add signal
+		sub.signalSemaphores.Append(this->semaphores[type]);
+		this->semaphoreSubmissionIds[type]++;
+		sub.signalIndices.Append(this->semaphoreSubmissionIds[type]);
+	}
+	
 	this->queueEmpty[type] = false;
 }
 
@@ -239,7 +243,9 @@ VkSubContextHandler::FlushSubmissionsTimeline(CoreGraphics::QueueType type, VkFe
 			continue;
 
 		// save last signal index for return
-		ret = sub.signalIndices.Back();
+		if (sub.signalIndices.Size())
+			ret = sub.signalIndices.Back();
+
 		VkTimelineSemaphoreSubmitInfoKHR ext =
 		{
 			VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR,
