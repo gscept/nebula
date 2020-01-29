@@ -244,33 +244,7 @@ SimpleViewerApplication::Run()
 void 
 SimpleViewerApplication::RenderUI()
 {
-    float frameTime = (float)this->gfxServer->GetFrameTime();
-	this->averageFrameTime += frameTime;
-    this->frametimeHistory.Append(frameTime);
-    if (this->frametimeHistory.Size() > 120)
-        this->frametimeHistory.EraseFront();
-
-	if (this->gfxServer->GetFrameIndex() % 35 == 0)
-	{
-		this->prevAverageFrameTime = this->averageFrameTime / 35.0f;
-		this->averageFrameTime = 0.0f;
-	}
-    ImGui::Begin("Viewer", nullptr, 0);
-	
-	ImGui::SetWindowSize(ImVec2(240, 400));
-    if (ImGui::CollapsingHeader("Camera mode", ImGuiTreeNodeFlags_DefaultOpen))
-    {
-        if (ImGui::RadioButton("Maya", &this->cameraMode, 0))this->ToMaya();
-        ImGui::SameLine();
-        if (ImGui::RadioButton("Free", &this->cameraMode, 1))this->ToFree();
-        ImGui::SameLine();
-        if (ImGui::Button("Reset")) this->ResetCamera();
-    }
-    ImGui::Checkbox("Debug Rendering", &this->renderDebug);
     
-    ImGui::End();
-    scenes[currentScene]->RenderUI();
-
     ImGui::PushStyleColor(ImGuiCol_MenuBarBg, { 0,0,0,0.15f });
     if (ImGui::BeginMainMenuBar())
     {
@@ -293,66 +267,113 @@ SimpleViewerApplication::RenderUI()
             }
             ImGui::EndMenu();
         }
+        if (ImGui::BeginMenu("Windows"))
+        {
+            ImGui::MenuItem("Camera Window", nullptr, &this->showCameraWindow);
+            ImGui::MenuItem("Frame Profiler", nullptr, &this->showFrameProfiler);
+            ImGui::MenuItem("Scene UI", nullptr, &this->showSceneUI);
+
+            ImGui::EndMenu();
+        }
         ImGui::EndMainMenuBar();
     }
     ImGui::PopStyleColor();
 
-    Debug::FrameScriptInspector::Run(this->view->GetFrameScript());
-    ImGui::Begin("Performance Profiler");
+    float frameTime = (float)this->gfxServer->GetFrameTime();
+	this->averageFrameTime += frameTime;
+    this->frametimeHistory.Append(frameTime);
+    if (this->frametimeHistory.Size() > 120)
+        this->frametimeHistory.EraseFront();
+
+	if (this->gfxServer->GetFrameIndex() % 35 == 0)
+	{
+		this->prevAverageFrameTime = this->averageFrameTime / 35.0f;
+		this->averageFrameTime = 0.0f;
+	}
+    if (this->showCameraWindow)
     {
-        ImGui::Text("ms - %.2f\nFPS - %.2f", this->prevAverageFrameTime * 1000, 1 / this->prevAverageFrameTime);
-        ImGui::PlotLines("Frame Times", &this->frametimeHistory[0], this->frametimeHistory.Size(), 0, 0, FLT_MIN, FLT_MAX, {ImGui::GetWindowWidth(), 90});
-        ImGui::Separator();
-        
-            
-#if NEBULA_ENABLE_PROFILING
-        if (ImGui::CollapsingHeader("Frame profiling markers"))
-        {   
-            ImGui::Columns(4, "framemarkercolumns"); // 4-ways, with border
-            ImGui::Separator();
-            ImGui::Text("Queue"); ImGui::NextColumn();
-            ImGui::Text("Name"); ImGui::NextColumn();
-            ImGui::Text("CPU (ms)"); ImGui::NextColumn();
-            ImGui::Text("GPU (ms)"); ImGui::NextColumn();
-            ImGui::Separator();
-            static int selected = -1;
-            auto const& frameMarkers = this->frameProfilingMarkers;
-			Timing::Time totalCpuTime = 0.0;
-			Timing::Time totalGpuTime = 0.0;
-            for (int i = 0; i < frameMarkers.Size(); i++)
-            {
-                ImGui::Selectable(CoreGraphics::QueueNameFromQueueType(frameMarkers[i].queue), selected == i, ImGuiSelectableFlags_SpanAllColumns);
-                ImGui::NextColumn();
-                ImGui::Text(frameMarkers[i].name);
-                ImGui::NextColumn();
-                ImGui::Text("%f", (frameMarkers[i].timer.GetTime() * 1000));
-				totalCpuTime += (frameMarkers[i].timer.GetTime() * 1000);
-                ImGui::NextColumn();
-				if (frameMarkers[i].gpuTime == -1)
-					ImGui::Text("N/A");
-				else
-				{
-					ImGui::Text("%f", (frameMarkers[i].gpuTime / 1000000.0));
-					totalGpuTime += (frameMarkers[i].gpuTime / 1000000.0);
-				}
-					
-                ImGui::NextColumn();
-            }
-            
-            ImGui::Separator();
-			ImGui::Columns(4);
-			ImGui::Text("Draw calls %d", CoreGraphics::GetNumDrawCalls());
-			ImGui::NextColumn();// unused column
-			ImGui::NextColumn();
-			ImGui::Text("Total CPU %f ms, %.1f FPS", totalCpuTime, 1000 / totalCpuTime);
-			ImGui::NextColumn();
-			ImGui::Text("Total GPU %f ms, %.1f FPS", totalGpuTime, 1000 / totalGpuTime);
-			ImGui::Separator();
-			ImGui::Columns(1);
+        ImGui::Begin("Viewer", &showCameraWindow, 0);
+
+        ImGui::SetWindowSize(ImVec2(240, 400));
+        if (ImGui::CollapsingHeader("Camera mode", ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            if (ImGui::RadioButton("Maya", &this->cameraMode, 0))this->ToMaya();
+            ImGui::SameLine();
+            if (ImGui::RadioButton("Free", &this->cameraMode, 1))this->ToFree();
+            ImGui::SameLine();
+            if (ImGui::Button("Reset")) this->ResetCamera();
         }
-#endif NEBULA_ENABLE_PROFILING
+        ImGui::Checkbox("Debug Rendering", &this->renderDebug);
+
+        ImGui::End();
     }
-    ImGui::End();
+
+    if (this->showSceneUI)
+    {
+        scenes[currentScene]->RenderUI();
+    }
+
+    
+
+    if (this->showFrameProfiler)
+    {
+        Debug::FrameScriptInspector::Run(this->view->GetFrameScript());
+        ImGui::Begin("Performance Profiler", &this->showFrameProfiler);
+        {
+            ImGui::Text("ms - %.2f\nFPS - %.2f", this->prevAverageFrameTime * 1000, 1 / this->prevAverageFrameTime);
+            ImGui::PlotLines("Frame Times", &this->frametimeHistory[0], this->frametimeHistory.Size(), 0, 0, FLT_MIN, FLT_MAX, { ImGui::GetWindowWidth(), 90 });
+            ImGui::Separator();
+
+
+#if NEBULA_ENABLE_PROFILING
+            if (ImGui::CollapsingHeader("Frame profiling markers"))
+            {
+                ImGui::Columns(4, "framemarkercolumns"); // 4-ways, with border
+                ImGui::Separator();
+                ImGui::Text("Queue"); ImGui::NextColumn();
+                ImGui::Text("Name"); ImGui::NextColumn();
+                ImGui::Text("CPU (ms)"); ImGui::NextColumn();
+                ImGui::Text("GPU (ms)"); ImGui::NextColumn();
+                ImGui::Separator();
+                static int selected = -1;
+                auto const& frameMarkers = this->frameProfilingMarkers;
+                Timing::Time totalCpuTime = 0.0;
+                Timing::Time totalGpuTime = 0.0;
+                for (int i = 0; i < frameMarkers.Size(); i++)
+                {
+                    ImGui::Selectable(CoreGraphics::QueueNameFromQueueType(frameMarkers[i].queue), selected == i, ImGuiSelectableFlags_SpanAllColumns);
+                    ImGui::NextColumn();
+                    ImGui::Text(frameMarkers[i].name);
+                    ImGui::NextColumn();
+                    ImGui::Text("%f", (frameMarkers[i].timer.GetTime() * 1000));
+                    totalCpuTime += (frameMarkers[i].timer.GetTime() * 1000);
+                    ImGui::NextColumn();
+                    if (frameMarkers[i].gpuTime == -1)
+                        ImGui::Text("N/A");
+                    else
+                    {
+                        ImGui::Text("%f", (frameMarkers[i].gpuTime / 1000000.0));
+                        totalGpuTime += (frameMarkers[i].gpuTime / 1000000.0);
+                    }
+
+                    ImGui::NextColumn();
+                }
+
+                ImGui::Separator();
+                ImGui::Columns(4);
+                ImGui::Text("Draw calls %d", CoreGraphics::GetNumDrawCalls());
+                ImGui::NextColumn();// unused column
+                ImGui::NextColumn();
+                ImGui::Text("Total CPU %f ms, %.1f FPS", totalCpuTime, 1000 / totalCpuTime);
+                ImGui::NextColumn();
+                ImGui::Text("Total GPU %f ms, %.1f FPS", totalGpuTime, 1000 / totalGpuTime);
+                ImGui::Separator();
+                ImGui::Columns(1);
+            }
+#endif NEBULA_ENABLE_PROFILING
+        }
+        ImGui::End();
+    }
 }
 
 //------------------------------------------------------------------------------

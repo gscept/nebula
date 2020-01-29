@@ -86,8 +86,8 @@ SimpleViewerApplication::Open()
         this->inputServer->Open();
         this->gfxServer->Open();
 
-        SizeT width = this->GetCmdLineArgs().GetInt("-w", 1024);
-        SizeT height = this->GetCmdLineArgs().GetInt("-h", 768);
+        SizeT width = this->GetCmdLineArgs().GetInt("-w", 2*1024);
+        SizeT height = this->GetCmdLineArgs().GetInt("-h", 2*768);
         
         const float zNear = 0.01f;
         const float zFar = 1000.0f;
@@ -315,7 +315,14 @@ SimpleViewerApplication::Run()
 
         if (this->inputServer->GetDefaultKeyboard()->KeyPressed(Input::Key::Space)) 
         {
-            this->Shoot();
+            if (this->inputServer->GetDefaultKeyboard()->KeyPressed(Input::Key::LeftShift))
+            {
+                this->Shoot(20);
+            }
+            else
+            {
+                this->Shoot(1);
+            }
         }
         
 
@@ -630,7 +637,7 @@ SimpleViewerApplication::Browse()
 /**
 */
 void
-SimpleViewerApplication::Shoot()
+SimpleViewerApplication::Shoot(int count)
 {
     static Timing::Time last = 0.0;
     Timing::Time now = this->gfxServer->GetTime();
@@ -639,12 +646,14 @@ SimpleViewerApplication::Shoot()
         last = now;
 
         Math::matrix44 trans = Math::matrix44::inverse(CameraContext::GetTransform(this->cam));
-
-        this->Spawn(trans, trans.get_zaxis() * -50.0f, Math::vector(Math::n_rand(-10.0f, 10.0f)));
-
-
+        Math::float4 cameraPos = trans.get_position();
+        while (count--)
+        {
+            Math::vector offset;// = Math::RandomFloat4(5.0f);
+            trans.set_position(cameraPos + offset);
+            this->Spawn(trans, trans.get_zaxis() * -50.0f, Math::vector(Math::n_rand(-10.0f, 10.0f)));
+        }
     }
-
 }
 
 void SimpleViewerApplication::Spawn(const Math::matrix44 & trans, Math::vector linvel, Math::vector angvel)
