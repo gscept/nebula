@@ -163,19 +163,6 @@ CreateResourceTable(const ResourceTableCreateInfo& info)
 	ResourceTableId ret;
 	ret.id24 = id;
 	ret.id8 = ResourceTableIdType;
-
-	// setup samplers
-	const Util::Array<std::pair<CoreGraphics::SamplerId, uint32_t>>& samplers = resourceTableLayoutAllocator.Get<ResourceTableLayoutSamplers>(info.layout.id24);
-	IndexT i;
-	for (i = 0; i < samplers.Size(); i++)
-	{
-		ResourceTableSampler samp;
-		samp.samp = std::get<0>(samplers[i]);
-		samp.slot = std::get<1>(samplers[i]);
-
-		ResourceTableSetSampler(ret, samp);
-	}
-
 	return ret;
 }
 

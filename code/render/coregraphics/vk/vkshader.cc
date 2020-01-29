@@ -99,6 +99,7 @@ VkShaderSetup(
 		if (AnyFX::HasFlags(block->qualifiers, AnyFX::Qualifiers::Push))
 		{
 			n_assert(block->alignedSize <= maxConstantBytes);
+			n_assert(block->alignedSize <= props.limits.maxPushConstantsSize);
 			maxConstantBytes -= block->alignedSize;
 			CoreGraphics::ResourcePipelinePushConstantRange range;
 			range.offset = pushRangeOffset;
