@@ -54,8 +54,13 @@ struct FrameProfilingMarker
 	IndexT gpuEnd;
 	uint64_t gpuTime;
 };
+#endif
 
-#endif NEBULA_ENABLE_PROFILING
+struct Query
+{
+	CoreGraphics::QueryType type;
+	IndexT idx;
+};
 
 struct GraphicsDeviceState
 {
@@ -131,7 +136,7 @@ struct GraphicsDeviceState
 
 #ifdef NEBULA_ENABLE_PROFILING
     Util::Stack<FrameProfilingMarker> profilingMarkerStack[NumQueueTypes];
-    Util::FixedArray<Util::Array<FrameProfilingMarker>> profilingMarkersPerFrame[NumQueueTypes];
+    Util::FixedArray<Util::Array<FrameProfilingMarker>> profilingMarkersPerFrame;
 	Util::Array<FrameProfilingMarker> frameProfilingMarkers;
 #endif NEBULA_ENABLE_PROFILING
 };

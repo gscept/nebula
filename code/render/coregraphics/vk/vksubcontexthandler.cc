@@ -81,11 +81,11 @@ VkSubContextHandler::Setup(VkDevice dev, const Util::FixedArray<uint> indexMap, 
 	this->timelineSubmissions.Resize(CoreGraphics::NumQueueTypes);
 	for (IndexT i = 0; i < CoreGraphics::NumQueueTypes; i++)
 	{
-		VkSemaphoreTypeCreateInfoKHR ext =
+		VkSemaphoreTypeCreateInfo ext =
 		{
-			VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO_KHR,
+			VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
 			nullptr,
-			VkSemaphoreTypeKHR::VK_SEMAPHORE_TYPE_TIMELINE_KHR,
+			VkSemaphoreType::VK_SEMAPHORE_TYPE_TIMELINE,
 			0
 		};
 		VkSemaphoreCreateInfo inf =
@@ -233,7 +233,7 @@ VkSubContextHandler::FlushSubmissionsTimeline(CoreGraphics::QueueType type, VkFe
 		return ret;
 
 	Util::FixedArray<VkSubmitInfo> submitInfos(submissions.Size());
-	Util::FixedArray<VkTimelineSemaphoreSubmitInfoKHR> extensions(submissions.Size());
+	Util::FixedArray<VkTimelineSemaphoreSubmitInfo> extensions(submissions.Size());
 	for (IndexT i = 0; i < submissions.Size(); i++)
 	{
 		TimelineSubmission& sub = submissions[i];
@@ -246,9 +246,9 @@ VkSubContextHandler::FlushSubmissionsTimeline(CoreGraphics::QueueType type, VkFe
 		if (sub.signalIndices.Size())
 			ret = sub.signalIndices.Back();
 
-		VkTimelineSemaphoreSubmitInfoKHR ext =
+		VkTimelineSemaphoreSubmitInfo ext =
 		{
-			VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR,
+			VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO,
 			nullptr,
 			sub.waitIndices.Size(),
 			sub.waitIndices.Size() > 0 ? sub.waitIndices.Begin() : nullptr,

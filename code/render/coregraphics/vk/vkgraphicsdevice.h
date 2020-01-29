@@ -114,7 +114,10 @@ void DelayedDeleteImageView(const VkImageView view);
 /// add memory for delayed delete
 void DelayedDeleteMemory(const VkDeviceMemory mem);
 
-/// handle queries internally
-void _ProcessQueries();
+/// handle queries at beginning of frame
+void _ProcessQueriesOnBegin();
+/// handle queries on ending the frame
+void _ProcessQueriesOnEnd();
+
 
 } // namespace Vulkan
