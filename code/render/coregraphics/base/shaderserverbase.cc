@@ -17,6 +17,7 @@
 #include "coregraphics/config.h"
 #include "resources/resourcemanager.h"
 #include "system/process.h"
+#include "system/nebulasettings.h"
 
 namespace Base
 {
@@ -94,61 +95,75 @@ ShaderServerBase::Open()
     }
 #endif
 
+    auto reloadFileFunc = [this](IO::WatchEvent const& event)
+    {
+        if (event.type == WatchEventType::Modified || event.type == WatchEventType::NameChange &&
+            !event.file.EndsWithString("TMP") &&
+            !event.file.EndsWithString("~"))
+        {
+            // remove file extension
+            Util::String out = event.file;
+            out.StripFileExtension();
+
+            // find argument in export folder
+            Ptr<IO::Stream> file = IO::IoServer::Instance()->CreateStream(Util::String::Sprintf("bin:shaders/%s.txt", out.AsCharPtr()));
+            if (file->Open())
+            {
+                System::Process process;
+
+                void* buf = file->Map();
+                SizeT size = file->GetSize();
+
+                // run process
+                Util::String cmd;
+                cmd.Set((const char*)buf, size);
+                process.SetWorkingDirectory(file->GetURI().LocalPath().ExtractDirName());
+                process.SetExecutable(cmd);
+                process.SetNoConsoleWindow(false);
+                Ptr<IO::MemoryStream> stream = IO::MemoryStream::Create();
+                process.SetStderrCaptureStream(stream);
+
+                // launch process
+                bool res = process.LaunchWait();
+                if (res)
+                {
+                    Ptr<TextReader> reader = TextReader::Create();
+                    reader->SetStream(stream);
+                    reader->Open();
+
+                    // write output from compilation
+                    while (!reader->Eof())
+                    {
+                        Core::SysFunc::DebugOut(reader->ReadLine().AsCharPtr());
+                    }
+
+                    // close reader
+                    reader->Close();
+
+                    // reload shader
+                    this->pendingShaderReloads.Enqueue(Util::String::Sprintf("shd:%s.fxb", out.AsCharPtr()));
+                }
+            }
+        }
+    };
+
 	// create file watcher
     if (IO::IoServer::Instance()->DirectoryExists("home:work/shaders/vk"))
     {
-        FileWatcher::Instance()->Watch("home:work/shaders/vk", true, IO::WatchFlags(NameChanged | SizeChanged | Write), [this](IO::WatchEvent const& event)
-        {
-            if (event.type == WatchEventType::Modified || event.type == WatchEventType::NameChange &&
-                !event.file.EndsWithString("TMP") &&
-                !event.file.EndsWithString("~"))
-            {
-                // remove file extension
-                Util::String out = event.file;
-                out.StripFileExtension();
-
-                // find argument in export folder
-                Ptr<IO::Stream> file = IO::IoServer::Instance()->CreateStream(Util::String::Sprintf("bin:shaders/%s.txt", out.AsCharPtr()));
-                if (file->Open())
-                {
-                    System::Process process;
-
-                    void* buf = file->Map();
-                    SizeT size = file->GetSize();
-
-                    // run process
-                    Util::String cmd;
-                    cmd.Set((const char*)buf, size);
-                    process.SetWorkingDirectory(file->GetURI().LocalPath().ExtractDirName());
-                    process.SetExecutable(cmd);
-                    process.SetNoConsoleWindow(false);
-                    Ptr<IO::MemoryStream> stream = IO::MemoryStream::Create();
-                    process.SetStderrCaptureStream(stream);
-
-                    // launch process
-                    bool res = process.LaunchWait();
-                    if (res)
-                    {
-                        Ptr<TextReader> reader = TextReader::Create();
-                        reader->SetStream(stream);
-                        reader->Open();
-
-                        // write output from compilation
-                        while (!reader->Eof())
-                        {
-                            Core::SysFunc::DebugOut(reader->ReadLine().AsCharPtr());
-                        }
-
-                        // close reader
-                        reader->Close();
-
-                        // reload shader
-                        this->pendingShaderReloads.Enqueue(Util::String::Sprintf("shd:%s.fxb", out.AsCharPtr()));
-                    }
-                }
-            }
-        });
+        FileWatcher::Instance()->Watch("home:work/shaders/vk", true, IO::WatchFlags(NameChanged | SizeChanged | Write), reloadFileFunc);
     }
+
+#ifndef PUBLIC_BUILD
+    if (System::NebulaSettings::Exists("gscept", "ToolkitShared", "path"))
+    {
+        IO::URI shaderPath = System::NebulaSettings::ReadString("gscept", "ToolkitShared", "path");
+        shaderPath.AppendLocalPath("work/shaders/vk");
+        if (IO::IoServer::Instance()->DirectoryExists(shaderPath))
+        {
+            FileWatcher::Instance()->Watch(shaderPath.AsString(), true, IO::WatchFlags(NameChanged | SizeChanged | Write), reloadFileFunc);
+        }
+    }
+#endif
     // create standard shader for access to shared variables
     if (this->shaders.Contains(ResourceName("shd:shared.fxb")))
     {
