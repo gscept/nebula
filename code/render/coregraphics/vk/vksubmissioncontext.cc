@@ -121,13 +121,53 @@ CreateSubmissionContext(const SubmissionContextCreateInfo& info)
 void
 DestroySubmissionContext(const SubmissionContextId id)
 {
-	const Util::FixedArray<CommandBufferId>& bufs = submissionContextAllocator.Get<SubmissionContextCmdBuffer>(id.id24);
+	const SizeT numCycles = submissionContextAllocator.Get<SubmissionContextNumCycles>(id.id24);
+	Util::FixedArray<FenceId>& fences = submissionContextAllocator.Get<SubmissionContextFence>(id.id24);
+	Util::FixedArray<CommandBufferId>& cmdBufs = submissionContextAllocator.Get<SubmissionContextCmdBuffer>(id.id24);
 
-	// go through buffers and semaphores and clear the ones created
-	for (IndexT i = 0; i < bufs.Size(); i++)
+	for (IndexT i = 0; i < numCycles; i++)
 	{
-		DestroyCommandBuffer(bufs[i]);
+		// clear up fences
+		if (fences.Size() > 0)
+			DestroyFence(fences[i]);
+
+		// clear up all current command buffers (should only be one)
+		if (cmdBufs[i] != CommandBufferId::Invalid())
+			DestroyCommandBuffer(cmdBufs[i]);
+
+		// clear up all retired buffers which might be in flight
+		Util::Array<CommandBufferId>& bufs = submissionContextAllocator.Get<SubmissionContextRetiredCmdBuffer>(id.id24)[i];
+		for (IndexT j = 0; j < bufs.Size(); j++)
+			DestroyCommandBuffer(bufs[j]);
+		bufs.Clear();
+
+		// delete any pending resources this context has allocated
+		Util::Array<std::tuple<VkDevice, VkBuffer>>& buffers = submissionContextAllocator.Get<SubmissionContextFreeBuffers>(id.id24)[i];
+		for (IndexT j = 0; j < buffers.Size(); j++)
+			vkDestroyBuffer(std::get<0>(buffers[j]), std::get<1>(buffers[j]), nullptr);
+		buffers.Clear();
+
+		Util::Array<std::tuple<VkDevice, VkDeviceMemory>>& memories = submissionContextAllocator.Get<SubmissionContextFreeDeviceMemories>(id.id24)[i];
+		for (IndexT j = 0; j < memories.Size(); j++)
+			vkFreeMemory(std::get<0>(memories[j]), std::get<1>(memories[j]), nullptr);
+		memories.Clear();
+
+		Util::Array<std::tuple<VkDevice, VkImage>>& images = submissionContextAllocator.Get<SubmissionContextFreeImages>(id.id24)[i];
+		for (IndexT j = 0; j < images.Size(); j++)
+			vkDestroyImage(std::get<0>(images[j]), std::get<1>(images[j]), nullptr);
+		images.Clear();
+
+		Util::Array<std::tuple<VkDevice, VkCommandPool, VkCommandBuffer>>& commandBuffers = submissionContextAllocator.Get<SubmissionContextFreeCommandBuffers>(id.id24)[i];
+		for (IndexT j = 0; j < commandBuffers.Size(); j++)
+			vkFreeCommandBuffers(std::get<0>(commandBuffers[j]), std::get<1>(commandBuffers[j]), 1, &std::get<2>(commandBuffers[j]));
+		commandBuffers.Clear();
+
+		Util::Array<void*>& hostMemories = submissionContextAllocator.Get<SubmissionContextFreeHostMemories>(id.id24)[i];
+		for (IndexT j = 0; j < hostMemories.Size(); j++)
+			Memory::Free(Memory::ScratchHeap, hostMemories[j]);
+		hostMemories.Clear();
 	}
+	
 	submissionContextAllocator.Dealloc(id.id24);
 }
 
