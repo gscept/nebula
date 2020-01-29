@@ -196,7 +196,7 @@ SimpleViewerApplication::Run()
 
         this->resMgr->Update(this->frameIndex);
 
-#ifdef NEBULA_ENABLE_PROFILING
+#if NEBULA_ENABLE_PROFILING
         // copy because the information has been discarded when we render UI
         this->frameProfilingMarkers = CoreGraphics::GetProfilingMarkers();
 #endif NEBULA_ENABLE_PROFILING
@@ -305,10 +305,10 @@ SimpleViewerApplication::RenderUI()
         ImGui::Separator();
         
             
-#ifdef NEBULA_ENABLE_PROFILING
-        if (ImGui::CollapsingHeader("Profiling markers"))
+#if NEBULA_ENABLE_PROFILING
+        if (ImGui::CollapsingHeader("Frame profiling markers"))
         {   
-            ImGui::Columns(4, "profilingmarkercolumns"); // 4-ways, with border
+            ImGui::Columns(4, "framemarkercolumns"); // 4-ways, with border
             ImGui::Separator();
             ImGui::Text("Queue"); ImGui::NextColumn();
             ImGui::Text("Name"); ImGui::NextColumn();
@@ -317,6 +317,8 @@ SimpleViewerApplication::RenderUI()
             ImGui::Separator();
             static int selected = -1;
             auto const& frameMarkers = this->frameProfilingMarkers;
+			Timing::Time totalCpuTime = 0.0;
+			Timing::Time totalGpuTime = 0.0;
             for (int i = 0; i < frameMarkers.Size(); i++)
             {
                 ImGui::Selectable(CoreGraphics::QueueNameFromQueueType(frameMarkers[i].queue), selected == i, ImGuiSelectableFlags_SpanAllColumns);
@@ -324,15 +326,29 @@ SimpleViewerApplication::RenderUI()
                 ImGui::Text(frameMarkers[i].name);
                 ImGui::NextColumn();
                 ImGui::Text("%f", (frameMarkers[i].timer.GetTime() * 1000));
+				totalCpuTime += (frameMarkers[i].timer.GetTime() * 1000);
                 ImGui::NextColumn();
 				if (frameMarkers[i].gpuTime == -1)
 					ImGui::Text("N/A");
 				else
-					ImGui::Text("%f", (frameMarkers[i].gpuTime / 1000000.0f));
+				{
+					ImGui::Text("%f", (frameMarkers[i].gpuTime / 1000000.0));
+					totalGpuTime += (frameMarkers[i].gpuTime / 1000000.0);
+				}
+					
                 ImGui::NextColumn();
             }
-            ImGui::Columns(1);
+            
             ImGui::Separator();
+			ImGui::Columns(4);
+			ImGui::Text("Draw calls %d", CoreGraphics::GetNumDrawCalls());
+			ImGui::NextColumn();// unused column
+			ImGui::NextColumn();
+			ImGui::Text("Total CPU %f ms, %.1f FPS", totalCpuTime, 1000 / totalCpuTime);
+			ImGui::NextColumn();
+			ImGui::Text("Total GPU %f ms, %.1f FPS", totalGpuTime, 1000 / totalGpuTime);
+			ImGui::Separator();
+			ImGui::Columns(1);
         }
 #endif NEBULA_ENABLE_PROFILING
     }

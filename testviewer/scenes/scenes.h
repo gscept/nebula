@@ -45,7 +45,8 @@ extern Scene SSRScene;
 extern Scene BenchmarkScene;
 
 // Don't forget to add them to the list of scenes!
-static Scene* scenes[] = {
+static Scene* scenes[] = 
+{
     &ExampleScene,
     &ClusteredScene,
 	&BenchmarkScene,
@@ -62,4 +63,4 @@ enum
 
 // Which is the currently active scene?
 // This is used to determine which scenes callbacks to call and is normally changed via imgui
-static int currentScene = SSRSceneId;
+static int currentScene = ClusteredSceneId;
