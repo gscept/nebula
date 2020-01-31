@@ -131,12 +131,12 @@ CalculatePointLight(
 	vec3 projDir = (InvView * vec4(-lightDir, 0)).xyz;
 
 	float lightDirLen = length(lightDir);
-	float x = (1 - lightDirLen) / light.position.w;
-	// fast inverse squared falloff for a bit more accurate falloff. This is only approximative though
-	// -(1/k)* (1-(k+1) / (1+k*x^2))
-	// k=20: -(1/20)*(1 - 21/(1+20*x^2))
-	float att = saturate(-0.05 + 1.05/(1+20*x*x));
-	//if (att < 0.04) return vec3(0, 0, 0);
+
+	float d2 = lightDirLen * lightDirLen;
+    float factor = d2 / (light.position.w * light.position.w);
+    float sf = saturate(1.0 - factor * factor);
+    float att = (sf * sf) / max(d2, 0.0001);
+
 	lightDir = lightDir * (1 / lightDirLen);
 
 	vec3 H = normalize(lightDir.xyz + viewVec);
@@ -190,15 +190,14 @@ CalculateSpotLight(
 	in vec4 albedo)
 {
 	vec3 lightDir = (light.position.xyz - viewPos);
+	
 	float lightDirLen = length(lightDir);
-	//float att = saturate(1.0 - lightDirLen * 1 / light.position.w);
-	float x = lightDirLen / light.position.w;
-	// fast inverse squared falloff for a bit more accurate falloff. This is only approximative though
-	//This is borrowed from AMD and their DX11 example of spotlights
-	// -(1/k)* (1-(k+1) / (1+k*x^2))
-	// k=20: -(1/20)*(1 - 21/(1+20*x^2))
-	float att = -0.05 + 1.05/(1+20*x*x);
-	//if (att < 0.04) return vec3(0, 0, 0);
+
+	float d2 = lightDirLen * lightDirLen;
+    float factor = d2 / (light.position.w * light.position.w);
+    float sf = saturate(1.0 - factor * factor);
+    float att = (sf * sf) / max(d2, 0.0001);
+
 	lightDir = lightDir * (1 / lightDirLen);
 
 	float theta = dot(light.forward.xyz, lightDir);
