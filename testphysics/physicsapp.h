@@ -49,7 +49,7 @@ protected:
     void ToMaya();
     void ToFree();
     void Browse();
-    void Shoot();
+    void Shoot(int count);
     void Spawn(const Math::matrix44& trans, Math::vector linvel, Math::vector angvel);
     void UpdateTransform(Physics::ActorId id, Math::matrix44 const& trans);
     

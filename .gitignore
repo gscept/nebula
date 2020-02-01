@@ -1,1 +1,3 @@
-/export_win32
+*/export_*
+.fips-settings.yml
+.fips-imports.cmake

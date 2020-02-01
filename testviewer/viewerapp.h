@@ -67,6 +67,10 @@ protected:
 	float prevAverageFrameTime = 0.0f;
 	float averageFrameTime = 0.0f;
 
+    bool showCameraWindow = true;
+    bool showFrameProfiler = true;
+    bool showSceneUI = true;
+
     bool renderDebug = false;
     int cameraMode = 0;
     float zoomIn = 0.0f;
