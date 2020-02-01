@@ -294,6 +294,8 @@ nebula_begin_module(foundation)
 		)
 		fips_dir(threading)
 		fips_files(
+			assertingmutex.cc
+			assertingmutex.h
 			barrier.h
 			criticalsection.h
 			event.h

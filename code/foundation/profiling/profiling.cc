@@ -7,10 +7,12 @@
 namespace Profiling
 {
 
-Util::Stack<ProfilingScope> scopeStack;
-Util::Stack<Timing::Timer> timers;
+Util::Array<ProfilingContext> profilingContexts;
+Util::Array<Threading::AssertingMutex> contextMutexes;
 Util::Dictionary<Util::StringAtom, Util::Array<ProfilingScope>> scopesByCategory;
-Util::Array<ProfilingScope> topLevelScopes;
+Threading::CriticalSection categoryLock;
+std::atomic_uint ProfilingContextCounter = 0;
+thread_local IndexT ProfilingContextIndex = InvalidIndex;
 
 //------------------------------------------------------------------------------
 /**
@@ -18,9 +20,15 @@ Util::Array<ProfilingScope> topLevelScopes;
 void 
 ProfilingPushScope(const ProfilingScope& scope)
 {	
-	scopeStack.Push(scope);
-	timers.Push(Timing::Timer());
-	timers.Peek().Start();	
+	n_assert(ProfilingContextIndex != InvalidIndex);
+	Threading::AssertingScope lock(&contextMutexes[ProfilingContextIndex]);
+
+	// get thread id
+	ProfilingContext& ctx = profilingContexts[ProfilingContextIndex];
+
+	ctx.scopes.Push(scope);
+	ctx.timers.Push(Timing::Timer());
+	ctx.timers.Peek().Start();
 }
 
 //------------------------------------------------------------------------------
@@ -29,31 +37,70 @@ ProfilingPushScope(const ProfilingScope& scope)
 void
 ProfilingPopScope()
 {
-	Timing::Timer& timer = timers.Pop();
+	n_assert(ProfilingContextIndex != InvalidIndex);
+	Threading::AssertingScope lock(&contextMutexes[ProfilingContextIndex]);
+
+	// get thread id
+	ProfilingContext& ctx = profilingContexts[ProfilingContextIndex];
+
+	// we can safely assume the scope and timers won't be modified from different threads here
+	Timing::Timer& timer = ctx.timers.Pop();
 	timer.Stop();
-	ProfilingScope& scope = scopeStack.Pop();
+	ProfilingScope& scope = ctx.scopes.Pop();
 
 	// add to category lookup
 	scope.duration = timer.GetTime();
+	categoryLock.Enter();
 	scopesByCategory.AddUnique(scope.category).Append(scope);
+	categoryLock.Leave();
 
 	// add to top level scopes if necessary
-	if (scopeStack.IsEmpty())
-		topLevelScopes.Append(scope);
+	if (ctx.scopes.IsEmpty())
+	{
+		// lock since we might modify the top level dictionary keys
+		ctx.topLevelScopes.Append(scope);
+	}
 	else
 	{
 		// add as child scope
-		scopeStack.Peek().children.Append(scope);
+		ctx.scopes.Peek().children.Append(scope);
 	}
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-const Util::Array<ProfilingScope>& 
-ProfilingGetScopes()
+void 
+ProfilingRegisterThread()
 {
-	return topLevelScopes;
+	// make sure we don't add contexts simulatenously
+	Threading::CriticalScope lock(&categoryLock);
+	Threading::ThreadId thread = Threading::Thread::GetMyThreadId();
+	ProfilingContextIndex = ProfilingContextCounter.fetch_add(1);
+	profilingContexts.Append(ProfilingContext());
+	contextMutexes.Append(Threading::AssertingMutex());
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::Array<ProfilingScope>&
+ProfilingGetScopes(Threading::ThreadId thread)
+{
+#if NEBULA_DEBUG
+	n_assert(profilingContexts[thread].topLevelScopes.IsEmpty());
+#endif
+	Threading::CriticalScope lock(&categoryLock);
+	return profilingContexts[thread].topLevelScopes;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::Array<ProfilingContext>
+ProfilingGetContexts()
+{
+	return profilingContexts;
 }
 
 //------------------------------------------------------------------------------
@@ -62,7 +109,12 @@ ProfilingGetScopes()
 void 
 ProfilingClear()
 {
-	topLevelScopes.Clear();
+	for (IndexT i = 0; i < profilingContexts.Size(); i++)
+	{
+		n_assert(profilingContexts[i].scopes.Size() == 0);
+		n_assert(profilingContexts[i].timers.Size() == 0);
+		profilingContexts[i].topLevelScopes.Clear();
+	}
 }
 
 } // namespace Profiling

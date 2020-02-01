@@ -49,5 +49,27 @@ class CriticalSection : public Posix::PosixCriticalSection
 #else
 #error "Threading::CriticalSection not implemented on this platform!"
 #endif
+
+namespace Threading
+{
+struct CriticalScope
+{
+    CriticalScope(Threading::CriticalSection* section)
+        : section(section)
+    {
+        this->section->Enter();
+    }
+
+    ~CriticalScope()
+    {
+        this->section->Leave();
+        this->section = nullptr;
+    }
+
+    Threading::CriticalSection* section;
+};
+
+}
+
 //------------------------------------------------------------------------------
     
