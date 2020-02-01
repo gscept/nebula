@@ -4,9 +4,6 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "profiling.h"
-#include "util/stack.h"
-#include "util/dictionary.h"
-#include "util/stringatom.h"
 namespace Profiling
 {
 
