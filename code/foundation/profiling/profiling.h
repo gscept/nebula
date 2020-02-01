@@ -8,6 +8,9 @@
 //------------------------------------------------------------------------------
 #include "timing/time.h"
 #include "timing/timer.h"
+#include "util/stack.h"
+#include "util/dictionary.h"
+#include "util/stringatom.h"
 namespace Profiling
 {
 
