@@ -27,18 +27,9 @@ public:
         LineStrip,
         TriangleList,
         TriangleStrip,
+		PatchList,
 
-        // Xbox360-specific
-        RectList,
-
-        // Xbox360/PS3 specific
-        QuadList,
-
-        // PS3 specific
-        QuadStrip,
-
-		// SM5.0+ for tessellation
-		PatchList
+        NumTopologies = PatchList
     };
 
     /// convert from string

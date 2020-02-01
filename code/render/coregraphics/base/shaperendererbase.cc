@@ -20,8 +20,10 @@ using namespace CoreGraphics;
 //------------------------------------------------------------------------------
 /**
 */
-ShapeRendererBase::ShapeRendererBase() :
-    isOpen(false)
+ShapeRendererBase::ShapeRendererBase() 
+    : isOpen(false)
+    , numIndicesThisFrame(0)
+    , numVerticesThisFrame(0)
 {
     __ConstructSingleton;
 }
@@ -107,8 +109,14 @@ void
 ShapeRendererBase::AddShape(const RenderShape& shape)
 {
     n_assert(this->IsOpen());
-	if (shape.GetShapeType() == RenderShape::Primitives || shape.GetShapeType() == RenderShape::IndexedPrimitives)  this->primitives[shape.GetDepthFlag()].Append(shape);
-	else																											this->shapes[shape.GetDepthFlag()].Append(shape);
+    if (shape.GetShapeType() == RenderShape::Primitives || shape.GetShapeType() == RenderShape::IndexedPrimitives)
+    {
+        this->primitives[shape.GetDepthFlag()].Append(shape);
+        this->numVerticesThisFrame += shape.GetNumVertices();
+        this->numIndicesThisFrame += PrimitiveTopology::NumberOfVertices(shape.GetTopology(), shape.GetNumPrimitives());
+    }
+	else
+        this->shapes[shape.GetDepthFlag()].Append(shape);
 }
 
 //------------------------------------------------------------------------------
@@ -121,8 +129,14 @@ ShapeRendererBase::AddShapes(const Array<RenderShape>& shapeArray)
 	for (int i = 0; i < shapeArray.Size(); i++)
 	{
 		const RenderShape& shape = shapeArray[i];
-		if (shape.GetShapeType() == RenderShape::Primitives || shape.GetShapeType() == RenderShape::IndexedPrimitives)  this->primitives[shape.GetDepthFlag()].Append(shape);
-		else																											this->shapes[shape.GetDepthFlag()].Append(shape);
+        if (shape.GetShapeType() == RenderShape::Primitives || shape.GetShapeType() == RenderShape::IndexedPrimitives)
+        {
+            this->primitives[shape.GetDepthFlag()].Append(shape);
+            this->numVerticesThisFrame += shape.GetNumVertices();
+            this->numIndicesThisFrame += PrimitiveTopology::NumberOfVertices(shape.GetTopology(), shape.GetNumPrimitives());
+        }
+		else
+            this->shapes[shape.GetDepthFlag()].Append(shape);
 	}
 }
 

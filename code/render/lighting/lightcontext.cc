@@ -1191,9 +1191,9 @@ LightContext::OnRenderDebug(uint32_t flags)
     auto const& colours = genericLightAllocator.GetArray<Color>();
     auto const& ids = genericLightAllocator.GetArray<TypedLightId>();
     auto const& pointTrans = pointLightAllocator.GetArray<PointLight_Transform>();
-    auto const& spotTrans = spotLightAllocator.GetArray< SpotLight_Transform>();
-    auto const& spotProj = spotLightAllocator.GetArray< SpotLight_Projection>();
-    auto const& spotInvProj = spotLightAllocator.GetArray< SpotLight_InvViewProjection>();
+    auto const& spotTrans = spotLightAllocator.GetArray<SpotLight_Transform>();
+    auto const& spotProj = spotLightAllocator.GetArray<SpotLight_Projection>();
+    auto const& spotInvProj = spotLightAllocator.GetArray<SpotLight_InvViewProjection>();
     for (int i = 0, n = types.Size(); i < n; ++i)
     {
         switch(types[i])
@@ -1201,13 +1201,16 @@ LightContext::OnRenderDebug(uint32_t flags)
         case PointLightType:
         {
             Math::matrix44 const& trans = pointTrans[ids[i]];
-            Math::float4 col = colours[i];            
-            Im3d::Im3dContext::DrawSphere(trans, col, Im3d::CheckDepth|Im3d::Wireframe);
-            //FIXME define debug flags somewhere
+            Math::float4 col = colours[i];
+			CoreGraphics::RenderShape shape;
+			shape.SetupSimpleShape(Threading::Thread::GetMyThreadId(), CoreGraphics::RenderShape::Sphere, CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::CheckDepth|CoreGraphics::RenderShape::Wireframe), trans, col);
+			CoreGraphics::ShapeRenderer::Instance()->AddShape(shape);
+			//Im3d::Im3dContext::DrawSphere(trans, col, Im3d::CheckDepth | Im3d::Wireframe);
+			//FIXME define debug flags somewhere
             if (flags & Im3d::Solid)
             {
                 col.w() = 0.5f;
-                Im3d::Im3dContext::DrawSphere(trans, col, Im3d::CheckDepth | Im3d::Solid);
+                //Im3d::Im3dContext::DrawSphere(trans, col, Im3d::CheckDepth | Im3d::Solid);
             }            
         }
         break;
@@ -1220,7 +1223,12 @@ LightContext::OnRenderDebug(uint32_t flags)
             unscaledTransform.set_zaxis(Math::float4::normalize(unscaledTransform.get_zaxis()));
             Math::matrix44 frustum = Math::matrix44::multiply(spotInvProj[ids[i]], unscaledTransform);
             Math::float4 col = colours[i];
-            Im3d::Im3dContext::DrawBox(frustum, col);
+
+			CoreGraphics::RenderShape shape;
+			shape.SetupSimpleShape(Threading::Thread::GetMyThreadId(), CoreGraphics::RenderShape::Box, CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::CheckDepth | CoreGraphics::RenderShape::Wireframe), frustum, col);
+			CoreGraphics::ShapeRenderer::Instance()->AddShape(shape);
+			//Im3d::Im3dContext::DrawSphere(trans, col, Im3d::CheckDepth | Im3d::Wireframe);
+			//Im3d::Im3dContext::DrawBox(frustum, col);
         }
         break;
 		case GlobalLightType:

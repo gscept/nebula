@@ -348,8 +348,11 @@ ModelContext::OnRenderDebug(uint32_t flags)
     {
         const ModelInstanceId& instance = instances[i];
         if (instance == ModelInstanceId::Invalid()) continue;
-        Im3d::Im3dContext::DrawBox(instanceBoxes[instance.instance], white, Im3d::CheckDepth|Im3d::Wireframe);
-        Im3d::Im3dContext::DrawOrientedBox(transforms[instance.instance], modelBoxes[instance.model], gray, Im3d::CheckDepth);
+		CoreGraphics::RenderShape shape;
+		shape.SetupSimpleShape(Threading::Thread::GetMyThreadId(), CoreGraphics::RenderShape::Box, CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::CheckDepth | CoreGraphics::RenderShape::Wireframe), transforms[instance.instance], white);
+		CoreGraphics::ShapeRenderer::Instance()->AddShape(shape);
+        //Im3d::Im3dContext::DrawBox(instanceBoxes[instance.instance], white, Im3d::CheckDepth|Im3d::Wireframe);
+        //Im3d::Im3dContext::DrawOrientedBox(transforms[instance.instance], modelBoxes[instance.model], gray, Im3d::CheckDepth);
     }
 }
 

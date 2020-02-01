@@ -23,10 +23,6 @@ PrimitiveTopology::FromString(const String& str)
     else if (str == "TriangleStrip")    return TriangleStrip;
 	else if (str == "PatchList")		return PatchList;
 
-    // Xbox360-specific
-    else if (str == "RectList")         return RectList;
-    else if (str == "QuadList")         return QuadList;
-
     else
     {
         n_error("PrimitiveTopology::FromString(): invalid string '%s'!", str.AsCharPtr());
@@ -48,10 +44,6 @@ PrimitiveTopology::ToString(Code code)
         case TriangleList:  return "TriangleList";
         case TriangleStrip: return "TriangleStrip";
 		case PatchList:		return "PatchList";
-
-        // Xbox360-specific
-        case RectList:      return "RectList";
-        case QuadList:      return "QuadList";
 
         default:
             n_error("PrimitiveTopology::ToString(): invalid topology code!");
@@ -76,10 +68,6 @@ PrimitiveTopology::NumberOfVertices(Code topology, SizeT numPrimitives)
         case TriangleStrip: return numPrimitives + 2;
 		case PatchList:		return numPrimitives;
         
-        // Xbox360-specific
-        case RectList:      return numPrimitives * 3;
-        case QuadList:      return numPrimitives * 4;
-
         default:
             n_error("PrimitiveTopology::NumberOfVertices(): invalid topology!");
             return InvalidIndex;
@@ -101,12 +89,6 @@ PrimitiveTopology::NumberOfPrimitives(Code topology, SizeT numVertices)
         case LineStrip:     return numVertices - 1;
         case TriangleList:  return numVertices / 3;
         case TriangleStrip: return numVertices - 2;
-        
-        // Xbox360-specific
-        case RectList:      return numVertices / 3;
-        case QuadList:      return numVertices / 4;
-
-		// DX11-specific
 		case PatchList:		return numVertices;
 
         default:
