@@ -33,18 +33,18 @@ void
 ProfilingTest::Run()
 {
 	{
-		N_MARKER(OneSecond, test);
+		N_SCOPE(OneSecond, test);
 		Core::SysFunc::Sleep(1);
 	}
 
 	{
-		N_MARKER(ThreeSecondsAccum, test);
+		N_SCOPE(ThreeSecondsAccum, test);
 		{
-			N_MARKER(TwoSeconds, test);
+			N_SCOPE(TwoSeconds, test);
 			Core::SysFunc::Sleep(2);
 		}
 		{
-			N_MARKER(OneSecond, test);
+			N_SCOPE(OneSecond, test);
 			Core::SysFunc::Sleep(1);
 		}
 	}
