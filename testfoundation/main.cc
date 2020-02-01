@@ -49,6 +49,7 @@
 #include "httpclienttest.h"
 #include "bxmlreadertest.h"
 #include "blobtest.h"
+#include "profilingtest.h"
 using namespace Core;
 using namespace Test;
 
@@ -111,6 +112,7 @@ __cdecl main()
     testRunner->AttachTestCase(IOInterfaceTest::Create());
     testRunner->AttachTestCase(ThreadTest::Create());
 	testRunner->AttachTestCase(ArrayAllocatorTest::Create());
+    testRunner->AttachTestCase(ProfilingTest::Create());
     bool result = testRunner->Run(); 
 
     gameContentServer->Discard();
