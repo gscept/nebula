@@ -11,10 +11,15 @@
 #include "util/stack.h"
 #include "util/dictionary.h"
 #include "util/stringatom.h"
+
+// use these macros to insert markers
+#define N_SCOPE(name, cat) Profiling::ProfilingScopeLock __##name##cat##scope__(#name, #cat, __FILE__, __LINE__);
+#define N_MARKER_BEGIN(name, cat) { Profiling::ProfilingScope __##name##cat##scope__(#name, #cat, __FILE__, __LINE__); Profiling::ProfilingPushScope(__##name##cat##scope__); }
+#define N_MARKER_END() { Profiling::ProfilingPopScope(); }
+
 namespace Profiling
 {
 
-#define N_MARKER(name, cat) ProfilingScopeLock __##name##cat##scope__(#name, #cat, __FILE__, __LINE__);
 struct ProfilingScope;
 
 /// push scope to scope stack
