@@ -70,7 +70,7 @@ subroutine (CalculateBump) vec3 NormalMapFunctor(
 {
 	mat3 tangentViewMatrix = mat3(normalize(tangent.xyz), normalize(binormal.xyz), normalize(normal.xyz));
 	vec3 tNormal = vec3(0,0,0);
-	tNormal.xy = (bumpData.ag * 2.0f) - 1.0f;
+	tNormal.xy = (bumpData.ag * vec2(2.0f, -2.0f)) + vec2(-1.0f, 1.0f);
 	tNormal.z = saturate(sqrt(1.0f - dot(tNormal.xy, tNormal.xy)));
 	return tangentViewMatrix * tNormal;
 }
@@ -83,7 +83,7 @@ subroutine (CalculateBump) vec3 NormalMapFunctorBC5(
 {
 	mat3 tangentViewMatrix = mat3(normalize(tangent.xyz), normalize(binormal.xyz), normalize(normal.xyz));
 	vec3 tNormal = vec3(0,0,0);
-	tNormal.xy = (bumpData.xy * 2.0f) - 1.0f;
+	tNormal.xy = (bumpData.xy * vec2(2.0f, -2.0f)) + vec2(-1.0f, 1.0f);
 	tNormal.z = saturate(sqrt(1.0f - dot(tNormal.xy, tNormal.xy)));
 	return tangentViewMatrix * tNormal;
 }

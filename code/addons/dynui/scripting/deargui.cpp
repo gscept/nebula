@@ -1,7 +1,6 @@
 
 #include <pybind11/pybind11.h>
 #include <pybind11/functional.h>
-#include <pybind11/embed.h>
 #include <pybind11/stl.h>
 #include <limits>
 #include "imgui.h"
@@ -36,7 +35,7 @@ void template_ImVector(py::module &module, const char* name)
         ;
 }
 
-PYBIND11_EMBEDDED_MODULE(deargui, deargui)
+PYBIND11_MODULE(deargui, deargui)
 {
     py::class_<ImGuiContext>(deargui, "Context");
     template_ImVector<char>(deargui, "Vector_char");
@@ -85,6 +84,7 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     , py::arg("sz_vec2")
     , py::arg("sz_vec4")
     , py::arg("sz_drawvert")
+    , py::arg("sz_drawidx")
     , py::return_value_policy::automatic_reference);
     deargui.def("get_io", &ImGui::GetIO
     , py::return_value_policy::reference);
@@ -101,6 +101,13 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     deargui.def("show_demo_window", [](bool * p_open)
     {
         ImGui::ShowDemoWindow(p_open);
+        return p_open;
+    }
+    , py::arg("p_open") = nullptr
+    , py::return_value_policy::automatic_reference);
+    deargui.def("show_about_window", [](bool * p_open)
+    {
+        ImGui::ShowAboutWindow(p_open);
         return p_open;
     }
     , py::arg("p_open") = nullptr
@@ -179,18 +186,6 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     , py::return_value_policy::automatic_reference);
     deargui.def("get_window_height", &ImGui::GetWindowHeight
     , py::return_value_policy::automatic_reference);
-    deargui.def("get_content_region_max", &ImGui::GetContentRegionMax
-    , py::return_value_policy::automatic_reference);
-    deargui.def("get_content_region_avail", &ImGui::GetContentRegionAvail
-    , py::return_value_policy::automatic_reference);
-    deargui.def("get_content_region_avail_width", &ImGui::GetContentRegionAvailWidth
-    , py::return_value_policy::automatic_reference);
-    deargui.def("get_window_content_region_min", &ImGui::GetWindowContentRegionMin
-    , py::return_value_policy::automatic_reference);
-    deargui.def("get_window_content_region_max", &ImGui::GetWindowContentRegionMax
-    , py::return_value_policy::automatic_reference);
-    deargui.def("get_window_content_region_width", &ImGui::GetWindowContentRegionWidth
-    , py::return_value_policy::automatic_reference);
     deargui.def("set_next_window_pos", &ImGui::SetNextWindowPos
     , py::arg("pos")
     , py::arg("cond") = 0
@@ -247,6 +242,16 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     deargui.def("set_window_focus", py::overload_cast<const char *>(&ImGui::SetWindowFocus)
     , py::arg("name")
     , py::return_value_policy::automatic_reference);
+    deargui.def("get_content_region_max", &ImGui::GetContentRegionMax
+    , py::return_value_policy::automatic_reference);
+    deargui.def("get_content_region_avail", &ImGui::GetContentRegionAvail
+    , py::return_value_policy::automatic_reference);
+    deargui.def("get_window_content_region_min", &ImGui::GetWindowContentRegionMin
+    , py::return_value_policy::automatic_reference);
+    deargui.def("get_window_content_region_max", &ImGui::GetWindowContentRegionMax
+    , py::return_value_policy::automatic_reference);
+    deargui.def("get_window_content_region_width", &ImGui::GetWindowContentRegionWidth
+    , py::return_value_policy::automatic_reference);
     deargui.def("get_scroll_x", &ImGui::GetScrollX
     , py::return_value_policy::automatic_reference);
     deargui.def("get_scroll_y", &ImGui::GetScrollY
@@ -255,17 +260,10 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     , py::return_value_policy::automatic_reference);
     deargui.def("get_scroll_max_y", &ImGui::GetScrollMaxY
     , py::return_value_policy::automatic_reference);
-    deargui.def("set_scroll_x", &ImGui::SetScrollX
-    , py::arg("scroll_x")
+    deargui.def("set_scroll_here_x", &ImGui::SetScrollHereX
+    , py::arg("center_x_ratio") = 0.5f
     , py::return_value_policy::automatic_reference);
-    deargui.def("set_scroll_y", &ImGui::SetScrollY
-    , py::arg("scroll_y")
-    , py::return_value_policy::automatic_reference);
-    deargui.def("set_scroll_here", &ImGui::SetScrollHereY
-    , py::arg("center_y_ratio") = 0.5f
-    , py::return_value_policy::automatic_reference);
-    deargui.def("set_scroll_from_pos_y", &ImGui::SetScrollFromPosY
-    , py::arg("pos_y")
+    deargui.def("set_scroll_here_y", &ImGui::SetScrollHereY
     , py::arg("center_y_ratio") = 0.5f
     , py::return_value_policy::automatic_reference);
     deargui.def("push_font", &ImGui::PushFont
@@ -319,10 +317,13 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     , py::return_value_policy::automatic_reference);
     deargui.def("pop_item_width", &ImGui::PopItemWidth
     , py::return_value_policy::automatic_reference);
+    deargui.def("set_next_item_width", &ImGui::SetNextItemWidth
+    , py::arg("item_width")
+    , py::return_value_policy::automatic_reference);
     deargui.def("calc_item_width", &ImGui::CalcItemWidth
     , py::return_value_policy::automatic_reference);
     deargui.def("push_text_wrap_pos", &ImGui::PushTextWrapPos
-    , py::arg("wrap_pos_x") = 0.0f
+    , py::arg("wrap_local_pos_x") = 0.0f
     , py::return_value_policy::automatic_reference);
     deargui.def("pop_text_wrap_pos", &ImGui::PopTextWrapPos
     , py::return_value_policy::automatic_reference);
@@ -339,8 +340,8 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     deargui.def("separator", &ImGui::Separator
     , py::return_value_policy::automatic_reference);
     deargui.def("same_line", &ImGui::SameLine
-    , py::arg("pos_x") = 0.0f
-    , py::arg("spacing_w") = -1.0f
+    , py::arg("offset_from_start_x") = 0.0f
+    , py::arg("spacing") = -1.0f
     , py::return_value_policy::automatic_reference);
     deargui.def("new_line", &ImGui::NewLine
     , py::return_value_policy::automatic_reference);
@@ -369,17 +370,17 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     , py::arg("local_pos")
     , py::return_value_policy::automatic_reference);
     deargui.def("set_cursor_pos_x", &ImGui::SetCursorPosX
-    , py::arg("x")
+    , py::arg("local_x")
     , py::return_value_policy::automatic_reference);
     deargui.def("set_cursor_pos_y", &ImGui::SetCursorPosY
-    , py::arg("y")
+    , py::arg("local_y")
     , py::return_value_policy::automatic_reference);
     deargui.def("get_cursor_start_pos", &ImGui::GetCursorStartPos
     , py::return_value_policy::automatic_reference);
     deargui.def("get_cursor_screen_pos", &ImGui::GetCursorScreenPos
     , py::return_value_policy::automatic_reference);
     deargui.def("set_cursor_screen_pos", &ImGui::SetCursorScreenPos
-    , py::arg("screen_pos")
+    , py::arg("pos")
     , py::return_value_policy::automatic_reference);
     deargui.def("align_text_to_frame_padding", &ImGui::AlignTextToFramePadding
     , py::return_value_policy::automatic_reference);
@@ -427,6 +428,10 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     }
     , py::arg("fmt")
     , py::return_value_policy::automatic_reference);
+    deargui.def("text_v", &ImGui::TextV
+    , py::arg("fmt")
+    , py::arg("args")
+    , py::return_value_policy::automatic_reference);
     deargui.def("text_colored", [](const ImVec4 & col, const char * fmt)
     {
         ImGui::TextColored(col, fmt);
@@ -435,6 +440,11 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     , py::arg("col")
     , py::arg("fmt")
     , py::return_value_policy::automatic_reference);
+    deargui.def("text_colored_v", &ImGui::TextColoredV
+    , py::arg("col")
+    , py::arg("fmt")
+    , py::arg("args")
+    , py::return_value_policy::automatic_reference);
     deargui.def("text_disabled", [](const char * fmt)
     {
         ImGui::TextDisabled(fmt);
@@ -442,12 +452,20 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     }
     , py::arg("fmt")
     , py::return_value_policy::automatic_reference);
+    deargui.def("text_disabled_v", &ImGui::TextDisabledV
+    , py::arg("fmt")
+    , py::arg("args")
+    , py::return_value_policy::automatic_reference);
     deargui.def("text_wrapped", [](const char * fmt)
     {
         ImGui::TextWrapped(fmt);
         return ;
     }
     , py::arg("fmt")
+    , py::return_value_policy::automatic_reference);
+    deargui.def("text_wrapped_v", &ImGui::TextWrappedV
+    , py::arg("fmt")
+    , py::arg("args")
     , py::return_value_policy::automatic_reference);
     deargui.def("label_text", [](const char * label, const char * fmt)
     {
@@ -457,12 +475,21 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     , py::arg("label")
     , py::arg("fmt")
     , py::return_value_policy::automatic_reference);
+    deargui.def("label_text_v", &ImGui::LabelTextV
+    , py::arg("label")
+    , py::arg("fmt")
+    , py::arg("args")
+    , py::return_value_policy::automatic_reference);
     deargui.def("bullet_text", [](const char * fmt)
     {
         ImGui::BulletText(fmt);
         return ;
     }
     , py::arg("fmt")
+    , py::return_value_policy::automatic_reference);
+    deargui.def("bullet_text_v", &ImGui::BulletTextV
+    , py::arg("fmt")
+    , py::arg("args")
     , py::return_value_policy::automatic_reference);
     deargui.def("button", &ImGui::Button
     , py::arg("label")
@@ -672,21 +699,21 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     deargui.def("drag_scalar", &ImGui::DragScalar
     , py::arg("label")
     , py::arg("data_type")
-    , py::arg("v")
+    , py::arg("p_data")
     , py::arg("v_speed")
-    , py::arg("v_min") = nullptr
-    , py::arg("v_max") = nullptr
+    , py::arg("p_min") = nullptr
+    , py::arg("p_max") = nullptr
     , py::arg("format") = nullptr
     , py::arg("power") = 1.0f
     , py::return_value_policy::automatic_reference);
     deargui.def("drag_scalar_n", &ImGui::DragScalarN
     , py::arg("label")
     , py::arg("data_type")
-    , py::arg("v")
+    , py::arg("p_data")
     , py::arg("components")
     , py::arg("v_speed")
-    , py::arg("v_min") = nullptr
-    , py::arg("v_max") = nullptr
+    , py::arg("p_min") = nullptr
+    , py::arg("p_max") = nullptr
     , py::arg("format") = nullptr
     , py::arg("power") = 1.0f
     , py::return_value_policy::automatic_reference);
@@ -738,15 +765,16 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     , py::arg("format") = nullptr
     , py::arg("power") = 1.0f
     , py::return_value_policy::automatic_reference);
-    deargui.def("slider_angle", [](const char * label, float * v_rad, float v_degrees_min, float v_degrees_max)
+    deargui.def("slider_angle", [](const char * label, float * v_rad, float v_degrees_min, float v_degrees_max, const char * format)
     {
-        auto ret = ImGui::SliderAngle(label, v_rad, v_degrees_min, v_degrees_max);
+        auto ret = ImGui::SliderAngle(label, v_rad, v_degrees_min, v_degrees_max, format);
         return std::make_tuple(ret, v_rad);
     }
     , py::arg("label")
     , py::arg("v_rad")
     , py::arg("v_degrees_min") = -360.0f
     , py::arg("v_degrees_max") = +360.0f
+    , py::arg("format") = nullptr
     , py::return_value_policy::automatic_reference);
     deargui.def("slider_int", [](const char * label, int * v, int v_min, int v_max, const char * format)
     {
@@ -795,19 +823,19 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     deargui.def("slider_scalar", &ImGui::SliderScalar
     , py::arg("label")
     , py::arg("data_type")
-    , py::arg("v")
-    , py::arg("v_min")
-    , py::arg("v_max")
+    , py::arg("p_data")
+    , py::arg("p_min")
+    , py::arg("p_max")
     , py::arg("format") = nullptr
     , py::arg("power") = 1.0f
     , py::return_value_policy::automatic_reference);
     deargui.def("slider_scalar_n", &ImGui::SliderScalarN
     , py::arg("label")
     , py::arg("data_type")
-    , py::arg("v")
+    , py::arg("p_data")
     , py::arg("components")
-    , py::arg("v_min")
-    , py::arg("v_max")
+    , py::arg("p_min")
+    , py::arg("p_max")
     , py::arg("format") = nullptr
     , py::arg("power") = 1.0f
     , py::return_value_policy::automatic_reference);
@@ -840,15 +868,15 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     , py::arg("label")
     , py::arg("size")
     , py::arg("data_type")
-    , py::arg("v")
-    , py::arg("v_min")
-    , py::arg("v_max")
+    , py::arg("p_data")
+    , py::arg("p_min")
+    , py::arg("p_max")
     , py::arg("format") = nullptr
     , py::arg("power") = 1.0f
     , py::return_value_policy::automatic_reference);
-    deargui.def("input_float", [](const char * label, float * v, float step, float step_fast, const char * format, ImGuiInputTextFlags extra_flags)
+    deargui.def("input_float", [](const char * label, float * v, float step, float step_fast, const char * format, ImGuiInputTextFlags flags)
     {
-        auto ret = ImGui::InputFloat(label, v, step, step_fast, format, extra_flags);
+        auto ret = ImGui::InputFloat(label, v, step, step_fast, format, flags);
         return std::make_tuple(ret, v);
     }
     , py::arg("label")
@@ -856,106 +884,106 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     , py::arg("step") = 0.0f
     , py::arg("step_fast") = 0.0f
     , py::arg("format") = nullptr
-    , py::arg("extra_flags") = 0
+    , py::arg("flags") = 0
     , py::return_value_policy::automatic_reference);
-    deargui.def("input_float2", [](const char * label, std::array<float, 2>& v, const char * format, ImGuiInputTextFlags extra_flags)
+    deargui.def("input_float2", [](const char * label, std::array<float, 2>& v, const char * format, ImGuiInputTextFlags flags)
     {
-        auto ret = ImGui::InputFloat2(label, &v[0], format, extra_flags);
+        auto ret = ImGui::InputFloat2(label, &v[0], format, flags);
         return std::make_tuple(ret, v);
     }
     , py::arg("label")
     , py::arg("v")
     , py::arg("format") = nullptr
-    , py::arg("extra_flags") = 0
+    , py::arg("flags") = 0
     , py::return_value_policy::automatic_reference);
-    deargui.def("input_float3", [](const char * label, std::array<float, 3>& v, const char * format, ImGuiInputTextFlags extra_flags)
+    deargui.def("input_float3", [](const char * label, std::array<float, 3>& v, const char * format, ImGuiInputTextFlags flags)
     {
-        auto ret = ImGui::InputFloat3(label, &v[0], format, extra_flags);
+        auto ret = ImGui::InputFloat3(label, &v[0], format, flags);
         return std::make_tuple(ret, v);
     }
     , py::arg("label")
     , py::arg("v")
     , py::arg("format") = nullptr
-    , py::arg("extra_flags") = 0
+    , py::arg("flags") = 0
     , py::return_value_policy::automatic_reference);
-    deargui.def("input_float4", [](const char * label, std::array<float, 4>& v, const char * format, ImGuiInputTextFlags extra_flags)
+    deargui.def("input_float4", [](const char * label, std::array<float, 4>& v, const char * format, ImGuiInputTextFlags flags)
     {
-        auto ret = ImGui::InputFloat4(label, &v[0], format, extra_flags);
+        auto ret = ImGui::InputFloat4(label, &v[0], format, flags);
         return std::make_tuple(ret, v);
     }
     , py::arg("label")
     , py::arg("v")
     , py::arg("format") = nullptr
-    , py::arg("extra_flags") = 0
+    , py::arg("flags") = 0
     , py::return_value_policy::automatic_reference);
-    deargui.def("input_int", [](const char * label, int * v, int step, int step_fast, ImGuiInputTextFlags extra_flags)
+    deargui.def("input_int", [](const char * label, int * v, int step, int step_fast, ImGuiInputTextFlags flags)
     {
-        auto ret = ImGui::InputInt(label, v, step, step_fast, extra_flags);
+        auto ret = ImGui::InputInt(label, v, step, step_fast, flags);
         return std::make_tuple(ret, v);
     }
     , py::arg("label")
     , py::arg("v")
     , py::arg("step") = 1
     , py::arg("step_fast") = 100
-    , py::arg("extra_flags") = 0
+    , py::arg("flags") = 0
     , py::return_value_policy::automatic_reference);
-    deargui.def("input_int2", [](const char * label, std::array<int, 2>& v, ImGuiInputTextFlags extra_flags)
+    deargui.def("input_int2", [](const char * label, std::array<int, 2>& v, ImGuiInputTextFlags flags)
     {
-        auto ret = ImGui::InputInt2(label, &v[0], extra_flags);
+        auto ret = ImGui::InputInt2(label, &v[0], flags);
         return std::make_tuple(ret, v);
     }
     , py::arg("label")
     , py::arg("v")
-    , py::arg("extra_flags") = 0
+    , py::arg("flags") = 0
     , py::return_value_policy::automatic_reference);
-    deargui.def("input_int3", [](const char * label, std::array<int, 3>& v, ImGuiInputTextFlags extra_flags)
+    deargui.def("input_int3", [](const char * label, std::array<int, 3>& v, ImGuiInputTextFlags flags)
     {
-        auto ret = ImGui::InputInt3(label, &v[0], extra_flags);
+        auto ret = ImGui::InputInt3(label, &v[0], flags);
         return std::make_tuple(ret, v);
     }
     , py::arg("label")
     , py::arg("v")
-    , py::arg("extra_flags") = 0
+    , py::arg("flags") = 0
     , py::return_value_policy::automatic_reference);
-    deargui.def("input_int4", [](const char * label, std::array<int, 4>& v, ImGuiInputTextFlags extra_flags)
+    deargui.def("input_int4", [](const char * label, std::array<int, 4>& v, ImGuiInputTextFlags flags)
     {
-        auto ret = ImGui::InputInt4(label, &v[0], extra_flags);
+        auto ret = ImGui::InputInt4(label, &v[0], flags);
         return std::make_tuple(ret, v);
     }
     , py::arg("label")
     , py::arg("v")
-    , py::arg("extra_flags") = 0
+    , py::arg("flags") = 0
     , py::return_value_policy::automatic_reference);
-    deargui.def("input_double", [](const char * label, double * v, double step, double step_fast, const char * format, ImGuiInputTextFlags extra_flags)
+    deargui.def("input_double", [](const char * label, double * v, double step, double step_fast, const char * format, ImGuiInputTextFlags flags)
     {
-        auto ret = ImGui::InputDouble(label, v, step, step_fast, format, extra_flags);
+        auto ret = ImGui::InputDouble(label, v, step, step_fast, format, flags);
         return std::make_tuple(ret, v);
     }
     , py::arg("label")
     , py::arg("v")
-    , py::arg("step") = 0.0f
-    , py::arg("step_fast") = 0.0f
+    , py::arg("step") = 0.0
+    , py::arg("step_fast") = 0.0
     , py::arg("format") = nullptr
-    , py::arg("extra_flags") = 0
+    , py::arg("flags") = 0
     , py::return_value_policy::automatic_reference);
     deargui.def("input_scalar", &ImGui::InputScalar
     , py::arg("label")
     , py::arg("data_type")
-    , py::arg("v")
-    , py::arg("step") = nullptr
-    , py::arg("step_fast") = nullptr
+    , py::arg("p_data")
+    , py::arg("p_step") = nullptr
+    , py::arg("p_step_fast") = nullptr
     , py::arg("format") = nullptr
-    , py::arg("extra_flags") = 0
+    , py::arg("flags") = 0
     , py::return_value_policy::automatic_reference);
     deargui.def("input_scalar_n", &ImGui::InputScalarN
     , py::arg("label")
     , py::arg("data_type")
-    , py::arg("v")
+    , py::arg("p_data")
     , py::arg("components")
-    , py::arg("step") = nullptr
-    , py::arg("step_fast") = nullptr
+    , py::arg("p_step") = nullptr
+    , py::arg("p_step_fast") = nullptr
     , py::arg("format") = nullptr
-    , py::arg("extra_flags") = 0
+    , py::arg("flags") = 0
     , py::return_value_policy::automatic_reference);
     deargui.def("color_edit3", [](const char * label, std::array<float, 3>& col, ImGuiColorEditFlags flags)
     {
@@ -1052,13 +1080,7 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     , py::return_value_policy::automatic_reference);
     deargui.def("tree_pop", &ImGui::TreePop
     , py::return_value_policy::automatic_reference);
-    deargui.def("tree_advance_to_label_pos", &ImGui::TreeAdvanceToLabelPos
-    , py::return_value_policy::automatic_reference);
     deargui.def("get_tree_node_to_label_spacing", &ImGui::GetTreeNodeToLabelSpacing
-    , py::return_value_policy::automatic_reference);
-    deargui.def("set_next_tree_node_open", &ImGui::SetNextTreeNodeOpen
-    , py::arg("is_open")
-    , py::arg("cond") = 0
     , py::return_value_policy::automatic_reference);
     deargui.def("collapsing_header", py::overload_cast<const char *, ImGuiTreeNodeFlags>(&ImGui::CollapsingHeader)
     , py::arg("label")
@@ -1072,6 +1094,10 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     , py::arg("label")
     , py::arg("p_open")
     , py::arg("flags") = 0
+    , py::return_value_policy::automatic_reference);
+    deargui.def("set_next_item_open", &ImGui::SetNextItemOpen
+    , py::arg("is_open")
+    , py::arg("cond") = 0
     , py::return_value_policy::automatic_reference);
     deargui.def("selectable", py::overload_cast<const char *, bool, ImGuiSelectableFlags, const ImVec2 &>(&ImGui::Selectable)
     , py::arg("label")
@@ -1117,13 +1143,13 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     , py::arg("v")
     , py::arg("float_format") = nullptr
     , py::return_value_policy::automatic_reference);
-    deargui.def("begin_main_menu_bar", &ImGui::BeginMainMenuBar
-    , py::return_value_policy::automatic_reference);
-    deargui.def("end_main_menu_bar", &ImGui::EndMainMenuBar
-    , py::return_value_policy::automatic_reference);
     deargui.def("begin_menu_bar", &ImGui::BeginMenuBar
     , py::return_value_policy::automatic_reference);
     deargui.def("end_menu_bar", &ImGui::EndMenuBar
+    , py::return_value_policy::automatic_reference);
+    deargui.def("begin_main_menu_bar", &ImGui::BeginMainMenuBar
+    , py::return_value_policy::automatic_reference);
+    deargui.def("end_main_menu_bar", &ImGui::EndMainMenuBar
     , py::return_value_policy::automatic_reference);
     deargui.def("begin_menu", &ImGui::BeginMenu
     , py::arg("label")
@@ -1157,6 +1183,10 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
         return ;
     }
     , py::arg("fmt")
+    , py::return_value_policy::automatic_reference);
+    deargui.def("set_tooltip_v", &ImGui::SetTooltipV
+    , py::arg("fmt")
+    , py::arg("args")
     , py::return_value_policy::automatic_reference);
     deargui.def("open_popup", &ImGui::OpenPopup
     , py::arg("str_id")
@@ -1223,15 +1253,35 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     , py::return_value_policy::automatic_reference);
     deargui.def("get_columns_count", &ImGui::GetColumnsCount
     , py::return_value_policy::automatic_reference);
+    deargui.def("begin_tab_bar", &ImGui::BeginTabBar
+    , py::arg("str_id")
+    , py::arg("flags") = 0
+    , py::return_value_policy::automatic_reference);
+    deargui.def("end_tab_bar", &ImGui::EndTabBar
+    , py::return_value_policy::automatic_reference);
+    deargui.def("begin_tab_item", [](const char * label, bool * p_open, ImGuiTabItemFlags flags)
+    {
+        auto ret = ImGui::BeginTabItem(label, p_open, flags);
+        return std::make_tuple(ret, p_open);
+    }
+    , py::arg("label")
+    , py::arg("p_open") = nullptr
+    , py::arg("flags") = 0
+    , py::return_value_policy::automatic_reference);
+    deargui.def("end_tab_item", &ImGui::EndTabItem
+    , py::return_value_policy::automatic_reference);
+    deargui.def("set_tab_item_closed", &ImGui::SetTabItemClosed
+    , py::arg("tab_or_docked_window_label")
+    , py::return_value_policy::automatic_reference);
     deargui.def("log_to_tty", &ImGui::LogToTTY
-    , py::arg("max_depth") = -1
+    , py::arg("auto_open_depth") = -1
     , py::return_value_policy::automatic_reference);
     deargui.def("log_to_file", &ImGui::LogToFile
-    , py::arg("max_depth") = -1
+    , py::arg("auto_open_depth") = -1
     , py::arg("filename") = nullptr
     , py::return_value_policy::automatic_reference);
     deargui.def("log_to_clipboard", &ImGui::LogToClipboard
-    , py::arg("max_depth") = -1
+    , py::arg("auto_open_depth") = -1
     , py::return_value_policy::automatic_reference);
     deargui.def("log_finish", &ImGui::LogFinish
     , py::return_value_policy::automatic_reference);
@@ -1250,7 +1300,7 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     deargui.def("set_drag_drop_payload", &ImGui::SetDragDropPayload
     , py::arg("type")
     , py::arg("data")
-    , py::arg("size")
+    , py::arg("sz")
     , py::arg("cond") = 0
     , py::return_value_policy::automatic_reference);
     deargui.def("end_drag_drop_source", &ImGui::EndDragDropSource
@@ -1262,6 +1312,8 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     , py::arg("flags") = 0
     , py::return_value_policy::automatic_reference);
     deargui.def("end_drag_drop_target", &ImGui::EndDragDropTarget
+    , py::return_value_policy::automatic_reference);
+    deargui.def("get_drag_drop_payload", &ImGui::GetDragDropPayload
     , py::return_value_policy::automatic_reference);
     deargui.def("push_clip_rect", &ImGui::PushClipRect
     , py::arg("clip_rect_min")
@@ -1289,9 +1341,13 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     , py::return_value_policy::automatic_reference);
     deargui.def("is_item_edited", &ImGui::IsItemEdited
     , py::return_value_policy::automatic_reference);
+    deargui.def("is_item_activated", &ImGui::IsItemActivated
+    , py::return_value_policy::automatic_reference);
     deargui.def("is_item_deactivated", &ImGui::IsItemDeactivated
     , py::return_value_policy::automatic_reference);
     deargui.def("is_item_deactivated_after_edit", &ImGui::IsItemDeactivatedAfterEdit
+    , py::return_value_policy::automatic_reference);
+    deargui.def("is_item_toggled_open", &ImGui::IsItemToggledOpen
     , py::return_value_policy::automatic_reference);
     deargui.def("is_any_item_hovered", &ImGui::IsAnyItemHovered
     , py::return_value_policy::automatic_reference);
@@ -1318,7 +1374,7 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     , py::return_value_policy::automatic_reference);
     deargui.def("get_frame_count", &ImGui::GetFrameCount
     , py::return_value_policy::automatic_reference);
-    deargui.def("get_overlay_draw_list", &ImGui::GetOverlayDrawList
+    deargui.def("get_background_draw_list", &ImGui::GetBackgroundDrawList
     , py::return_value_policy::automatic_reference);
     deargui.def("get_draw_list_shared_data", &ImGui::GetDrawListSharedData
     , py::return_value_policy::automatic_reference);
@@ -1445,10 +1501,10 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     , py::arg("type")
     , py::return_value_policy::automatic_reference);
     deargui.def("capture_keyboard_from_app", &ImGui::CaptureKeyboardFromApp
-    , py::arg("capture") = true
+    , py::arg("want_capture_keyboard_value") = true
     , py::return_value_policy::automatic_reference);
     deargui.def("capture_mouse_from_app", &ImGui::CaptureMouseFromApp
-    , py::arg("capture") = true
+    , py::arg("want_capture_mouse_value") = true
     , py::return_value_policy::automatic_reference);
     deargui.def("get_clipboard_text", &ImGui::GetClipboardText
     , py::return_value_policy::automatic_reference);
@@ -1481,8 +1537,9 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
         .value("WINDOW_FLAGS_NO_SCROLL_WITH_MOUSE", ImGuiWindowFlags_NoScrollWithMouse)
         .value("WINDOW_FLAGS_NO_COLLAPSE", ImGuiWindowFlags_NoCollapse)
         .value("WINDOW_FLAGS_ALWAYS_AUTO_RESIZE", ImGuiWindowFlags_AlwaysAutoResize)
+        .value("WINDOW_FLAGS_NO_BACKGROUND", ImGuiWindowFlags_NoBackground)
         .value("WINDOW_FLAGS_NO_SAVED_SETTINGS", ImGuiWindowFlags_NoSavedSettings)
-        .value("WINDOW_FLAGS_NO_INPUTS", ImGuiWindowFlags_NoInputs)
+        .value("WINDOW_FLAGS_NO_MOUSE_INPUTS", ImGuiWindowFlags_NoMouseInputs)
         .value("WINDOW_FLAGS_MENU_BAR", ImGuiWindowFlags_MenuBar)
         .value("WINDOW_FLAGS_HORIZONTAL_SCROLLBAR", ImGuiWindowFlags_HorizontalScrollbar)
         .value("WINDOW_FLAGS_NO_FOCUS_ON_APPEARING", ImGuiWindowFlags_NoFocusOnAppearing)
@@ -1492,7 +1549,10 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
         .value("WINDOW_FLAGS_ALWAYS_USE_WINDOW_PADDING", ImGuiWindowFlags_AlwaysUseWindowPadding)
         .value("WINDOW_FLAGS_NO_NAV_INPUTS", ImGuiWindowFlags_NoNavInputs)
         .value("WINDOW_FLAGS_NO_NAV_FOCUS", ImGuiWindowFlags_NoNavFocus)
+        .value("WINDOW_FLAGS_UNSAVED_DOCUMENT", ImGuiWindowFlags_UnsavedDocument)
         .value("WINDOW_FLAGS_NO_NAV", ImGuiWindowFlags_NoNav)
+        .value("WINDOW_FLAGS_NO_DECORATION", ImGuiWindowFlags_NoDecoration)
+        .value("WINDOW_FLAGS_NO_INPUTS", ImGuiWindowFlags_NoInputs)
         .value("WINDOW_FLAGS_NAV_FLATTENED", ImGuiWindowFlags_NavFlattened)
         .value("WINDOW_FLAGS_CHILD_WINDOW", ImGuiWindowFlags_ChildWindow)
         .value("WINDOW_FLAGS_TOOLTIP", ImGuiWindowFlags_Tooltip)
@@ -1523,6 +1583,7 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
         .value("INPUT_TEXT_FLAGS_CHARS_SCIENTIFIC", ImGuiInputTextFlags_CharsScientific)
         .value("INPUT_TEXT_FLAGS_CALLBACK_RESIZE", ImGuiInputTextFlags_CallbackResize)
         .value("INPUT_TEXT_FLAGS_MULTILINE", ImGuiInputTextFlags_Multiline)
+        .value("INPUT_TEXT_FLAGS_NO_MARK_EDITED", ImGuiInputTextFlags_NoMarkEdited)
         .export_values();
 
     py::enum_<ImGuiTreeNodeFlags_>(deargui, "TreeNodeFlags", py::arithmetic())
@@ -1538,6 +1599,8 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
         .value("TREE_NODE_FLAGS_LEAF", ImGuiTreeNodeFlags_Leaf)
         .value("TREE_NODE_FLAGS_BULLET", ImGuiTreeNodeFlags_Bullet)
         .value("TREE_NODE_FLAGS_FRAME_PADDING", ImGuiTreeNodeFlags_FramePadding)
+        .value("TREE_NODE_FLAGS_SPAN_AVAIL_WIDTH", ImGuiTreeNodeFlags_SpanAvailWidth)
+        .value("TREE_NODE_FLAGS_SPAN_FULL_WIDTH", ImGuiTreeNodeFlags_SpanFullWidth)
         .value("TREE_NODE_FLAGS_NAV_LEFT_JUMPS_BACK_HERE", ImGuiTreeNodeFlags_NavLeftJumpsBackHere)
         .value("TREE_NODE_FLAGS_COLLAPSING_HEADER", ImGuiTreeNodeFlags_CollapsingHeader)
         .export_values();
@@ -1548,6 +1611,7 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
         .value("SELECTABLE_FLAGS_SPAN_ALL_COLUMNS", ImGuiSelectableFlags_SpanAllColumns)
         .value("SELECTABLE_FLAGS_ALLOW_DOUBLE_CLICK", ImGuiSelectableFlags_AllowDoubleClick)
         .value("SELECTABLE_FLAGS_DISABLED", ImGuiSelectableFlags_Disabled)
+        .value("SELECTABLE_FLAGS_ALLOW_ITEM_OVERLAP", ImGuiSelectableFlags_AllowItemOverlap)
         .export_values();
 
     py::enum_<ImGuiComboFlags_>(deargui, "ComboFlags", py::arithmetic())
@@ -1560,6 +1624,28 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
         .value("COMBO_FLAGS_NO_ARROW_BUTTON", ImGuiComboFlags_NoArrowButton)
         .value("COMBO_FLAGS_NO_PREVIEW", ImGuiComboFlags_NoPreview)
         .value("COMBO_FLAGS_HEIGHT_MASK", ImGuiComboFlags_HeightMask_)
+        .export_values();
+
+    py::enum_<ImGuiTabBarFlags_>(deargui, "TabBarFlags", py::arithmetic())
+        .value("TAB_BAR_FLAGS_NONE", ImGuiTabBarFlags_None)
+        .value("TAB_BAR_FLAGS_REORDERABLE", ImGuiTabBarFlags_Reorderable)
+        .value("TAB_BAR_FLAGS_AUTO_SELECT_NEW_TABS", ImGuiTabBarFlags_AutoSelectNewTabs)
+        .value("TAB_BAR_FLAGS_TAB_LIST_POPUP_BUTTON", ImGuiTabBarFlags_TabListPopupButton)
+        .value("TAB_BAR_FLAGS_NO_CLOSE_WITH_MIDDLE_MOUSE_BUTTON", ImGuiTabBarFlags_NoCloseWithMiddleMouseButton)
+        .value("TAB_BAR_FLAGS_NO_TAB_LIST_SCROLLING_BUTTONS", ImGuiTabBarFlags_NoTabListScrollingButtons)
+        .value("TAB_BAR_FLAGS_NO_TOOLTIP", ImGuiTabBarFlags_NoTooltip)
+        .value("TAB_BAR_FLAGS_FITTING_POLICY_RESIZE_DOWN", ImGuiTabBarFlags_FittingPolicyResizeDown)
+        .value("TAB_BAR_FLAGS_FITTING_POLICY_SCROLL", ImGuiTabBarFlags_FittingPolicyScroll)
+        .value("TAB_BAR_FLAGS_FITTING_POLICY_MASK", ImGuiTabBarFlags_FittingPolicyMask_)
+        .value("TAB_BAR_FLAGS_FITTING_POLICY_DEFAULT", ImGuiTabBarFlags_FittingPolicyDefault_)
+        .export_values();
+
+    py::enum_<ImGuiTabItemFlags_>(deargui, "TabItemFlags", py::arithmetic())
+        .value("TAB_ITEM_FLAGS_NONE", ImGuiTabItemFlags_None)
+        .value("TAB_ITEM_FLAGS_UNSAVED_DOCUMENT", ImGuiTabItemFlags_UnsavedDocument)
+        .value("TAB_ITEM_FLAGS_SET_SELECTED", ImGuiTabItemFlags_SetSelected)
+        .value("TAB_ITEM_FLAGS_NO_CLOSE_WITH_MIDDLE_MOUSE_BUTTON", ImGuiTabItemFlags_NoCloseWithMiddleMouseButton)
+        .value("TAB_ITEM_FLAGS_NO_PUSH_ID", ImGuiTabItemFlags_NoPushId)
         .export_values();
 
     py::enum_<ImGuiFocusedFlags_>(deargui, "FocusedFlags", py::arithmetic())
@@ -1598,6 +1684,10 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
         .export_values();
 
     py::enum_<ImGuiDataType_>(deargui, "DataType", py::arithmetic())
+        .value("DATA_TYPE_S8", ImGuiDataType_S8)
+        .value("DATA_TYPE_U8", ImGuiDataType_U8)
+        .value("DATA_TYPE_S16", ImGuiDataType_S16)
+        .value("DATA_TYPE_U16", ImGuiDataType_U16)
         .value("DATA_TYPE_S32", ImGuiDataType_S32)
         .value("DATA_TYPE_U32", ImGuiDataType_U32)
         .value("DATA_TYPE_S64", ImGuiDataType_S64)
@@ -1632,6 +1722,7 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
         .value("KEY_SPACE", ImGuiKey_Space)
         .value("KEY_ENTER", ImGuiKey_Enter)
         .value("KEY_ESCAPE", ImGuiKey_Escape)
+        .value("KEY_KEY_PAD_ENTER", ImGuiKey_KeyPadEnter)
         .value("KEY_A", ImGuiKey_A)
         .value("KEY_C", ImGuiKey_C)
         .value("KEY_V", ImGuiKey_V)
@@ -1668,6 +1759,7 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
         .export_values();
 
     py::enum_<ImGuiConfigFlags_>(deargui, "ConfigFlags", py::arithmetic())
+        .value("CONFIG_FLAGS_NONE", ImGuiConfigFlags_None)
         .value("CONFIG_FLAGS_NAV_ENABLE_KEYBOARD", ImGuiConfigFlags_NavEnableKeyboard)
         .value("CONFIG_FLAGS_NAV_ENABLE_GAMEPAD", ImGuiConfigFlags_NavEnableGamepad)
         .value("CONFIG_FLAGS_NAV_ENABLE_SET_MOUSE_POS", ImGuiConfigFlags_NavEnableSetMousePos)
@@ -1679,9 +1771,11 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
         .export_values();
 
     py::enum_<ImGuiBackendFlags_>(deargui, "BackendFlags", py::arithmetic())
+        .value("BACKEND_FLAGS_NONE", ImGuiBackendFlags_None)
         .value("BACKEND_FLAGS_HAS_GAMEPAD", ImGuiBackendFlags_HasGamepad)
         .value("BACKEND_FLAGS_HAS_MOUSE_CURSORS", ImGuiBackendFlags_HasMouseCursors)
         .value("BACKEND_FLAGS_HAS_SET_MOUSE_POS", ImGuiBackendFlags_HasSetMousePos)
+        .value("BACKEND_FLAGS_RENDERER_HAS_VTX_OFFSET", ImGuiBackendFlags_RendererHasVtxOffset)
         .export_values();
 
     py::enum_<ImGuiCol_>(deargui, "Col", py::arithmetic())
@@ -1718,6 +1812,11 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
         .value("COL_RESIZE_GRIP", ImGuiCol_ResizeGrip)
         .value("COL_RESIZE_GRIP_HOVERED", ImGuiCol_ResizeGripHovered)
         .value("COL_RESIZE_GRIP_ACTIVE", ImGuiCol_ResizeGripActive)
+        .value("COL_TAB", ImGuiCol_Tab)
+        .value("COL_TAB_HOVERED", ImGuiCol_TabHovered)
+        .value("COL_TAB_ACTIVE", ImGuiCol_TabActive)
+        .value("COL_TAB_UNFOCUSED", ImGuiCol_TabUnfocused)
+        .value("COL_TAB_UNFOCUSED_ACTIVE", ImGuiCol_TabUnfocusedActive)
         .value("COL_PLOT_LINES", ImGuiCol_PlotLines)
         .value("COL_PLOT_LINES_HOVERED", ImGuiCol_PlotLinesHovered)
         .value("COL_PLOT_HISTOGRAM", ImGuiCol_PlotHistogram)
@@ -1752,7 +1851,9 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
         .value("STYLE_VAR_SCROLLBAR_ROUNDING", ImGuiStyleVar_ScrollbarRounding)
         .value("STYLE_VAR_GRAB_MIN_SIZE", ImGuiStyleVar_GrabMinSize)
         .value("STYLE_VAR_GRAB_ROUNDING", ImGuiStyleVar_GrabRounding)
+        .value("STYLE_VAR_TAB_ROUNDING", ImGuiStyleVar_TabRounding)
         .value("STYLE_VAR_BUTTON_TEXT_ALIGN", ImGuiStyleVar_ButtonTextAlign)
+        .value("STYLE_VAR_SELECTABLE_TEXT_ALIGN", ImGuiStyleVar_SelectableTextAlign)
         .value("STYLE_VAR_COUNT", ImGuiStyleVar_COUNT)
         .export_values();
 
@@ -1771,17 +1872,20 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
         .value("COLOR_EDIT_FLAGS_ALPHA_PREVIEW", ImGuiColorEditFlags_AlphaPreview)
         .value("COLOR_EDIT_FLAGS_ALPHA_PREVIEW_HALF", ImGuiColorEditFlags_AlphaPreviewHalf)
         .value("COLOR_EDIT_FLAGS_HDR", ImGuiColorEditFlags_HDR)
-        .value("COLOR_EDIT_FLAGS_RGB", ImGuiColorEditFlags_RGB)
-        .value("COLOR_EDIT_FLAGS_HSV", ImGuiColorEditFlags_HSV)
-        .value("COLOR_EDIT_FLAGS_HEX", ImGuiColorEditFlags_HEX)
+        .value("COLOR_EDIT_FLAGS_DISPLAY_RGB", ImGuiColorEditFlags_DisplayRGB)
+        .value("COLOR_EDIT_FLAGS_DISPLAY_HSV", ImGuiColorEditFlags_DisplayHSV)
+        .value("COLOR_EDIT_FLAGS_DISPLAY_HEX", ImGuiColorEditFlags_DisplayHex)
         .value("COLOR_EDIT_FLAGS_UINT8", ImGuiColorEditFlags_Uint8)
         .value("COLOR_EDIT_FLAGS_FLOAT", ImGuiColorEditFlags_Float)
         .value("COLOR_EDIT_FLAGS_PICKER_HUE_BAR", ImGuiColorEditFlags_PickerHueBar)
         .value("COLOR_EDIT_FLAGS_PICKER_HUE_WHEEL", ImGuiColorEditFlags_PickerHueWheel)
-        .value("COLOR_EDIT_FLAGS__INPUTS_MASK", ImGuiColorEditFlags__InputsMask)
+        .value("COLOR_EDIT_FLAGS_INPUT_RGB", ImGuiColorEditFlags_InputRGB)
+        .value("COLOR_EDIT_FLAGS_INPUT_HSV", ImGuiColorEditFlags_InputHSV)
+        .value("COLOR_EDIT_FLAGS__OPTIONS_DEFAULT", ImGuiColorEditFlags__OptionsDefault)
+        .value("COLOR_EDIT_FLAGS__DISPLAY_MASK", ImGuiColorEditFlags__DisplayMask)
         .value("COLOR_EDIT_FLAGS__DATA_TYPE_MASK", ImGuiColorEditFlags__DataTypeMask)
         .value("COLOR_EDIT_FLAGS__PICKER_MASK", ImGuiColorEditFlags__PickerMask)
-        .value("COLOR_EDIT_FLAGS__OPTIONS_DEFAULT", ImGuiColorEditFlags__OptionsDefault)
+        .value("COLOR_EDIT_FLAGS__INPUT_MASK", ImGuiColorEditFlags__InputMask)
         .export_values();
 
     py::enum_<ImGuiMouseCursor_>(deargui, "MouseCursor", py::arithmetic())
@@ -1811,6 +1915,7 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     Style.def_readwrite("window_border_size", &ImGuiStyle::WindowBorderSize);
     Style.def_readwrite("window_min_size", &ImGuiStyle::WindowMinSize);
     Style.def_readwrite("window_title_align", &ImGuiStyle::WindowTitleAlign);
+    Style.def_readwrite("window_menu_button_position", &ImGuiStyle::WindowMenuButtonPosition);
     Style.def_readwrite("child_rounding", &ImGuiStyle::ChildRounding);
     Style.def_readwrite("child_border_size", &ImGuiStyle::ChildBorderSize);
     Style.def_readwrite("popup_rounding", &ImGuiStyle::PopupRounding);
@@ -1827,7 +1932,11 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     Style.def_readwrite("scrollbar_rounding", &ImGuiStyle::ScrollbarRounding);
     Style.def_readwrite("grab_min_size", &ImGuiStyle::GrabMinSize);
     Style.def_readwrite("grab_rounding", &ImGuiStyle::GrabRounding);
+    Style.def_readwrite("tab_rounding", &ImGuiStyle::TabRounding);
+    Style.def_readwrite("tab_border_size", &ImGuiStyle::TabBorderSize);
+    Style.def_readwrite("color_button_position", &ImGuiStyle::ColorButtonPosition);
     Style.def_readwrite("button_text_align", &ImGuiStyle::ButtonTextAlign);
+    Style.def_readwrite("selectable_text_align", &ImGuiStyle::SelectableTextAlign);
     Style.def_readwrite("display_window_padding", &ImGuiStyle::DisplayWindowPadding);
     Style.def_readwrite("display_safe_area_padding", &ImGuiStyle::DisplaySafeAreaPadding);
     Style.def_readwrite("mouse_cursor_scale", &ImGuiStyle::MouseCursorScale);
@@ -1859,15 +1968,20 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     IO.def_readwrite("font_allow_user_scaling", &ImGuiIO::FontAllowUserScaling);
     IO.def_readwrite("font_default", &ImGuiIO::FontDefault);
     IO.def_readwrite("display_framebuffer_scale", &ImGuiIO::DisplayFramebufferScale);
-    IO.def_readwrite("display_visible_min", &ImGuiIO::DisplayVisibleMin);
-    IO.def_readwrite("display_visible_max", &ImGuiIO::DisplayVisibleMax);
     IO.def_readwrite("mouse_draw_cursor", &ImGuiIO::MouseDrawCursor);
     IO.def_readwrite("config_mac_osx_behaviors", &ImGuiIO::ConfigMacOSXBehaviors);
     IO.def_readwrite("config_input_text_cursor_blink", &ImGuiIO::ConfigInputTextCursorBlink);
-    IO.def_readwrite("config_resize_windows_from_edges", &ImGuiIO::ConfigResizeWindowsFromEdges);
+    IO.def_readwrite("config_windows_resize_from_edges", &ImGuiIO::ConfigWindowsResizeFromEdges);
+    IO.def_readwrite("config_windows_move_from_title_bar_only", &ImGuiIO::ConfigWindowsMoveFromTitleBarOnly);
+    IO.def_readwrite("config_windows_memory_compact_timer", &ImGuiIO::ConfigWindowsMemoryCompactTimer);
+    IO.def_readwrite("backend_platform_name", &ImGuiIO::BackendPlatformName);
+    IO.def_readwrite("backend_renderer_name", &ImGuiIO::BackendRendererName);
+    IO.def_readwrite("backend_platform_user_data", &ImGuiIO::BackendPlatformUserData);
+    IO.def_readwrite("backend_renderer_user_data", &ImGuiIO::BackendRendererUserData);
+    IO.def_readwrite("backend_language_user_data", &ImGuiIO::BackendLanguageUserData);
     IO.def_readwrite("clipboard_user_data", &ImGuiIO::ClipboardUserData);
     IO.def_readwrite("ime_window_handle", &ImGuiIO::ImeWindowHandle);
-    //IO.def_readwrite("render_draw_lists_fn_unused", &ImGuiIO::RenderDrawListsFnUnused);
+    IO.def_readwrite("render_draw_lists_fn_unused", &ImGuiIO::RenderDrawListsFnUnused);
     IO.def_readwrite("mouse_pos", &ImGuiIO::MousePos);
     IO.def_readwrite("mouse_wheel", &ImGuiIO::MouseWheel);
     IO.def_readwrite("mouse_wheel_h", &ImGuiIO::MouseWheelH);
@@ -1879,7 +1993,7 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     , py::arg("c")
     , py::return_value_policy::automatic_reference);
     IO.def("add_input_characters_utf8", &ImGuiIO::AddInputCharactersUTF8
-    , py::arg("utf8_chars")
+    , py::arg("str")
     , py::return_value_policy::automatic_reference);
     IO.def("clear_input_characters", &ImGuiIO::ClearInputCharacters
     , py::return_value_policy::automatic_reference);
@@ -1904,6 +2018,7 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     IO.def_readonly("mouse_double_clicked", &ImGuiIO::MouseDoubleClicked);
     IO.def_readonly("mouse_released", &ImGuiIO::MouseReleased);
     IO.def_readonly("mouse_down_owned", &ImGuiIO::MouseDownOwned);
+    IO.def_readonly("mouse_down_was_double_click", &ImGuiIO::MouseDownWasDoubleClick);
     IO.def_readonly("mouse_down_duration", &ImGuiIO::MouseDownDuration);
     IO.def_readonly("mouse_down_duration_prev", &ImGuiIO::MouseDownDurationPrev);
     IO.def_readonly("mouse_drag_max_distance_abs", &ImGuiIO::MouseDragMaxDistanceAbs);
@@ -1912,7 +2027,57 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     IO.def_readonly("keys_down_duration_prev", &ImGuiIO::KeysDownDurationPrev);
     IO.def_readonly("nav_inputs_down_duration", &ImGuiIO::NavInputsDownDuration);
     IO.def_readonly("nav_inputs_down_duration_prev", &ImGuiIO::NavInputsDownDurationPrev);
+    IO.def_readwrite("input_queue_characters", &ImGuiIO::InputQueueCharacters);
     IO.def(py::init<>());
+    py::class_<ImGuiInputTextCallbackData> InputTextCallbackData(deargui, "InputTextCallbackData");
+    InputTextCallbackData.def_readwrite("event_flag", &ImGuiInputTextCallbackData::EventFlag);
+    InputTextCallbackData.def_readwrite("flags", &ImGuiInputTextCallbackData::Flags);
+    InputTextCallbackData.def_readwrite("user_data", &ImGuiInputTextCallbackData::UserData);
+    InputTextCallbackData.def_readwrite("event_char", &ImGuiInputTextCallbackData::EventChar);
+    InputTextCallbackData.def_readwrite("event_key", &ImGuiInputTextCallbackData::EventKey);
+    InputTextCallbackData.def_readwrite("buf", &ImGuiInputTextCallbackData::Buf);
+    InputTextCallbackData.def_readwrite("buf_text_len", &ImGuiInputTextCallbackData::BufTextLen);
+    InputTextCallbackData.def_readwrite("buf_size", &ImGuiInputTextCallbackData::BufSize);
+    InputTextCallbackData.def_readwrite("buf_dirty", &ImGuiInputTextCallbackData::BufDirty);
+    InputTextCallbackData.def_readwrite("cursor_pos", &ImGuiInputTextCallbackData::CursorPos);
+    InputTextCallbackData.def_readwrite("selection_start", &ImGuiInputTextCallbackData::SelectionStart);
+    InputTextCallbackData.def_readwrite("selection_end", &ImGuiInputTextCallbackData::SelectionEnd);
+    InputTextCallbackData.def(py::init<>());
+    InputTextCallbackData.def("delete_chars", &ImGuiInputTextCallbackData::DeleteChars
+    , py::arg("pos")
+    , py::arg("bytes_count")
+    , py::return_value_policy::automatic_reference);
+    InputTextCallbackData.def("insert_chars", &ImGuiInputTextCallbackData::InsertChars
+    , py::arg("pos")
+    , py::arg("text")
+    , py::arg("text_end") = nullptr
+    , py::return_value_policy::automatic_reference);
+    InputTextCallbackData.def("has_selection", &ImGuiInputTextCallbackData::HasSelection
+    , py::return_value_policy::automatic_reference);
+    py::class_<ImGuiSizeCallbackData> SizeCallbackData(deargui, "SizeCallbackData");
+    SizeCallbackData.def_readwrite("user_data", &ImGuiSizeCallbackData::UserData);
+    SizeCallbackData.def_readwrite("pos", &ImGuiSizeCallbackData::Pos);
+    SizeCallbackData.def_readwrite("current_size", &ImGuiSizeCallbackData::CurrentSize);
+    SizeCallbackData.def_readwrite("desired_size", &ImGuiSizeCallbackData::DesiredSize);
+    py::class_<ImGuiPayload> Payload(deargui, "Payload");
+    Payload.def_readwrite("data", &ImGuiPayload::Data);
+    Payload.def_readwrite("data_size", &ImGuiPayload::DataSize);
+    Payload.def_readwrite("source_id", &ImGuiPayload::SourceId);
+    Payload.def_readwrite("source_parent_id", &ImGuiPayload::SourceParentId);
+    Payload.def_readwrite("data_frame_count", &ImGuiPayload::DataFrameCount);
+    Payload.def_readonly("data_type", &ImGuiPayload::DataType);
+    Payload.def_readwrite("preview", &ImGuiPayload::Preview);
+    Payload.def_readwrite("delivery", &ImGuiPayload::Delivery);
+    Payload.def(py::init<>());
+    Payload.def("clear", &ImGuiPayload::Clear
+    , py::return_value_policy::automatic_reference);
+    Payload.def("is_data_type", &ImGuiPayload::IsDataType
+    , py::arg("type")
+    , py::return_value_policy::automatic_reference);
+    Payload.def("is_preview", &ImGuiPayload::IsPreview
+    , py::return_value_policy::automatic_reference);
+    Payload.def("is_delivery", &ImGuiPayload::IsDelivery
+    , py::return_value_policy::automatic_reference);
     py::class_<ImGuiOnceUponAFrame> OnceUponAFrame(deargui, "OnceUponAFrame");
     OnceUponAFrame.def(py::init<>());
     OnceUponAFrame.def_readwrite("ref_frame", &ImGuiOnceUponAFrame::RefFrame);
@@ -1991,54 +2156,24 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     , py::return_value_policy::automatic_reference);
     Storage.def("build_sort_by_key", &ImGuiStorage::BuildSortByKey
     , py::return_value_policy::automatic_reference);
-    py::class_<ImGuiInputTextCallbackData> InputTextCallbackData(deargui, "InputTextCallbackData");
-    InputTextCallbackData.def_readwrite("event_flag", &ImGuiInputTextCallbackData::EventFlag);
-    InputTextCallbackData.def_readwrite("flags", &ImGuiInputTextCallbackData::Flags);
-    InputTextCallbackData.def_readwrite("user_data", &ImGuiInputTextCallbackData::UserData);
-    InputTextCallbackData.def_readwrite("event_char", &ImGuiInputTextCallbackData::EventChar);
-    InputTextCallbackData.def_readwrite("event_key", &ImGuiInputTextCallbackData::EventKey);
-    InputTextCallbackData.def_readwrite("buf", &ImGuiInputTextCallbackData::Buf);
-    InputTextCallbackData.def_readwrite("buf_text_len", &ImGuiInputTextCallbackData::BufTextLen);
-    InputTextCallbackData.def_readwrite("buf_size", &ImGuiInputTextCallbackData::BufSize);
-    InputTextCallbackData.def_readwrite("buf_dirty", &ImGuiInputTextCallbackData::BufDirty);
-    InputTextCallbackData.def_readwrite("cursor_pos", &ImGuiInputTextCallbackData::CursorPos);
-    InputTextCallbackData.def_readwrite("selection_start", &ImGuiInputTextCallbackData::SelectionStart);
-    InputTextCallbackData.def_readwrite("selection_end", &ImGuiInputTextCallbackData::SelectionEnd);
-    InputTextCallbackData.def(py::init<>());
-    InputTextCallbackData.def("delete_chars", &ImGuiInputTextCallbackData::DeleteChars
-    , py::arg("pos")
-    , py::arg("bytes_count")
+    py::class_<ImGuiListClipper> ListClipper(deargui, "ListClipper");
+    ListClipper.def_readwrite("start_pos_y", &ImGuiListClipper::StartPosY);
+    ListClipper.def_readwrite("items_height", &ImGuiListClipper::ItemsHeight);
+    ListClipper.def_readwrite("items_count", &ImGuiListClipper::ItemsCount);
+    ListClipper.def_readwrite("step_no", &ImGuiListClipper::StepNo);
+    ListClipper.def_readwrite("display_start", &ImGuiListClipper::DisplayStart);
+    ListClipper.def_readwrite("display_end", &ImGuiListClipper::DisplayEnd);
+    ListClipper.def(py::init<int, float>()
+    , py::arg("items_count") = -1
+    , py::arg("items_height") = -1.0f
+    );
+    ListClipper.def("step", &ImGuiListClipper::Step
     , py::return_value_policy::automatic_reference);
-    InputTextCallbackData.def("insert_chars", &ImGuiInputTextCallbackData::InsertChars
-    , py::arg("pos")
-    , py::arg("text")
-    , py::arg("text_end") = nullptr
+    ListClipper.def("begin", &ImGuiListClipper::Begin
+    , py::arg("items_count")
+    , py::arg("items_height") = -1.0f
     , py::return_value_policy::automatic_reference);
-    InputTextCallbackData.def("has_selection", &ImGuiInputTextCallbackData::HasSelection
-    , py::return_value_policy::automatic_reference);
-    py::class_<ImGuiSizeCallbackData> SizeCallbackData(deargui, "SizeCallbackData");
-    SizeCallbackData.def_readwrite("user_data", &ImGuiSizeCallbackData::UserData);
-    SizeCallbackData.def_readwrite("pos", &ImGuiSizeCallbackData::Pos);
-    SizeCallbackData.def_readwrite("current_size", &ImGuiSizeCallbackData::CurrentSize);
-    SizeCallbackData.def_readwrite("desired_size", &ImGuiSizeCallbackData::DesiredSize);
-    py::class_<ImGuiPayload> Payload(deargui, "Payload");
-    Payload.def_readwrite("data", &ImGuiPayload::Data);
-    Payload.def_readwrite("data_size", &ImGuiPayload::DataSize);
-    Payload.def_readwrite("source_id", &ImGuiPayload::SourceId);
-    Payload.def_readwrite("source_parent_id", &ImGuiPayload::SourceParentId);
-    Payload.def_readwrite("data_frame_count", &ImGuiPayload::DataFrameCount);
-    Payload.def_readonly("data_type", &ImGuiPayload::DataType);
-    Payload.def_readwrite("preview", &ImGuiPayload::Preview);
-    Payload.def_readwrite("delivery", &ImGuiPayload::Delivery);
-    Payload.def(py::init<>());
-    Payload.def("clear", &ImGuiPayload::Clear
-    , py::return_value_policy::automatic_reference);
-    Payload.def("is_data_type", &ImGuiPayload::IsDataType
-    , py::arg("type")
-    , py::return_value_policy::automatic_reference);
-    Payload.def("is_preview", &ImGuiPayload::IsPreview
-    , py::return_value_policy::automatic_reference);
-    Payload.def("is_delivery", &ImGuiPayload::IsDelivery
+    ListClipper.def("end", &ImGuiListClipper::End
     , py::return_value_policy::automatic_reference);
     py::class_<ImColor> Color(deargui, "Color");
     Color.def_readwrite("value", &ImColor::Value);
@@ -2067,29 +2202,12 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     , py::arg("v")
     , py::arg("a") = 1.0f
     , py::return_value_policy::automatic_reference);
-    py::class_<ImGuiListClipper> ListClipper(deargui, "ListClipper");
-    ListClipper.def_readwrite("start_pos_y", &ImGuiListClipper::StartPosY);
-    ListClipper.def_readwrite("items_height", &ImGuiListClipper::ItemsHeight);
-    ListClipper.def_readwrite("items_count", &ImGuiListClipper::ItemsCount);
-    ListClipper.def_readwrite("step_no", &ImGuiListClipper::StepNo);
-    ListClipper.def_readwrite("display_start", &ImGuiListClipper::DisplayStart);
-    ListClipper.def_readwrite("display_end", &ImGuiListClipper::DisplayEnd);
-    ListClipper.def(py::init<int, float>()
-    , py::arg("items_count") = -1
-    , py::arg("items_height") = -1.0f
-    );
-    ListClipper.def("step", &ImGuiListClipper::Step
-    , py::return_value_policy::automatic_reference);
-    ListClipper.def("begin", &ImGuiListClipper::Begin
-    , py::arg("items_count")
-    , py::arg("items_height") = -1.0f
-    , py::return_value_policy::automatic_reference);
-    ListClipper.def("end", &ImGuiListClipper::End
-    , py::return_value_policy::automatic_reference);
     py::class_<ImDrawCmd> DrawCmd(deargui, "DrawCmd");
     DrawCmd.def_readwrite("elem_count", &ImDrawCmd::ElemCount);
     DrawCmd.def_readwrite("clip_rect", &ImDrawCmd::ClipRect);
     DrawCmd.def_readwrite("texture_id", &ImDrawCmd::TextureId);
+    DrawCmd.def_readwrite("vtx_offset", &ImDrawCmd::VtxOffset);
+    DrawCmd.def_readwrite("idx_offset", &ImDrawCmd::IdxOffset);
     DrawCmd.def_readwrite("user_callback_data", &ImDrawCmd::UserCallbackData);
     DrawCmd.def(py::init<>());
     py::class_<ImDrawVert> DrawVert(deargui, "DrawVert");
@@ -2097,9 +2215,25 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     DrawVert.def_readwrite("uv", &ImDrawVert::uv);
     DrawVert.def_readwrite("col", &ImDrawVert::col);
     py::class_<ImDrawChannel> DrawChannel(deargui, "DrawChannel");
-    DrawChannel.def_readwrite("cmd_buffer", &ImDrawChannel::CmdBuffer);
-    DrawChannel.def_readwrite("idx_buffer", &ImDrawChannel::IdxBuffer);
+    py::class_<ImDrawListSplitter> DrawListSplitter(deargui, "DrawListSplitter");
+    DrawListSplitter.def(py::init<>());
+    DrawListSplitter.def("clear", &ImDrawListSplitter::Clear
+    , py::return_value_policy::automatic_reference);
+    DrawListSplitter.def("clear_free_memory", &ImDrawListSplitter::ClearFreeMemory
+    , py::return_value_policy::automatic_reference);
+    DrawListSplitter.def("split", &ImDrawListSplitter::Split
+    , py::arg("draw_list")
+    , py::arg("count")
+    , py::return_value_policy::automatic_reference);
+    DrawListSplitter.def("merge", &ImDrawListSplitter::Merge
+    , py::arg("draw_list")
+    , py::return_value_policy::automatic_reference);
+    DrawListSplitter.def("set_current_channel", &ImDrawListSplitter::SetCurrentChannel
+    , py::arg("draw_list")
+    , py::arg("channel_idx")
+    , py::return_value_policy::automatic_reference);
     py::enum_<ImDrawCornerFlags_>(deargui, "DrawCornerFlags", py::arithmetic())
+        .value("DRAW_CORNER_FLAGS_NONE", ImDrawCornerFlags_None)
         .value("DRAW_CORNER_FLAGS_TOP_LEFT", ImDrawCornerFlags_TopLeft)
         .value("DRAW_CORNER_FLAGS_TOP_RIGHT", ImDrawCornerFlags_TopRight)
         .value("DRAW_CORNER_FLAGS_BOT_LEFT", ImDrawCornerFlags_BotLeft)
@@ -2112,8 +2246,10 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
         .export_values();
 
     py::enum_<ImDrawListFlags_>(deargui, "DrawListFlags", py::arithmetic())
+        .value("DRAW_LIST_FLAGS_NONE", ImDrawListFlags_None)
         .value("DRAW_LIST_FLAGS_ANTI_ALIASED_LINES", ImDrawListFlags_AntiAliasedLines)
         .value("DRAW_LIST_FLAGS_ANTI_ALIASED_FILL", ImDrawListFlags_AntiAliasedFill)
+        .value("DRAW_LIST_FLAGS_ALLOW_VTX_OFFSET", ImDrawListFlags_AllowVtxOffset)
         .export_values();
 
     py::class_<ImDrawList> DrawList(deargui, "DrawList");
@@ -2143,71 +2279,71 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     DrawList.def("get_clip_rect_max", &ImDrawList::GetClipRectMax
     , py::return_value_policy::automatic_reference);
     DrawList.def("add_line", &ImDrawList::AddLine
-    , py::arg("a")
-    , py::arg("b")
+    , py::arg("p1")
+    , py::arg("p2")
     , py::arg("col")
     , py::arg("thickness") = 1.0f
     , py::return_value_policy::automatic_reference);
     DrawList.def("add_rect", &ImDrawList::AddRect
-    , py::arg("a")
-    , py::arg("b")
+    , py::arg("p_min")
+    , py::arg("p_max")
     , py::arg("col")
     , py::arg("rounding") = 0.0f
-    , py::arg("rounding_corners_flags") = ImDrawCornerFlags_All
+    , py::arg("rounding_corners") = ImDrawCornerFlags_All
     , py::arg("thickness") = 1.0f
     , py::return_value_policy::automatic_reference);
     DrawList.def("add_rect_filled", &ImDrawList::AddRectFilled
-    , py::arg("a")
-    , py::arg("b")
+    , py::arg("p_min")
+    , py::arg("p_max")
     , py::arg("col")
     , py::arg("rounding") = 0.0f
-    , py::arg("rounding_corners_flags") = ImDrawCornerFlags_All
+    , py::arg("rounding_corners") = ImDrawCornerFlags_All
     , py::return_value_policy::automatic_reference);
     DrawList.def("add_rect_filled_multi_color", &ImDrawList::AddRectFilledMultiColor
-    , py::arg("a")
-    , py::arg("b")
+    , py::arg("p_min")
+    , py::arg("p_max")
     , py::arg("col_upr_left")
     , py::arg("col_upr_right")
     , py::arg("col_bot_right")
     , py::arg("col_bot_left")
     , py::return_value_policy::automatic_reference);
     DrawList.def("add_quad", &ImDrawList::AddQuad
-    , py::arg("a")
-    , py::arg("b")
-    , py::arg("c")
-    , py::arg("d")
+    , py::arg("p1")
+    , py::arg("p2")
+    , py::arg("p3")
+    , py::arg("p4")
     , py::arg("col")
     , py::arg("thickness") = 1.0f
     , py::return_value_policy::automatic_reference);
     DrawList.def("add_quad_filled", &ImDrawList::AddQuadFilled
-    , py::arg("a")
-    , py::arg("b")
-    , py::arg("c")
-    , py::arg("d")
+    , py::arg("p1")
+    , py::arg("p2")
+    , py::arg("p3")
+    , py::arg("p4")
     , py::arg("col")
     , py::return_value_policy::automatic_reference);
     DrawList.def("add_triangle", &ImDrawList::AddTriangle
-    , py::arg("a")
-    , py::arg("b")
-    , py::arg("c")
+    , py::arg("p1")
+    , py::arg("p2")
+    , py::arg("p3")
     , py::arg("col")
     , py::arg("thickness") = 1.0f
     , py::return_value_policy::automatic_reference);
     DrawList.def("add_triangle_filled", &ImDrawList::AddTriangleFilled
-    , py::arg("a")
-    , py::arg("b")
-    , py::arg("c")
+    , py::arg("p1")
+    , py::arg("p2")
+    , py::arg("p3")
     , py::arg("col")
     , py::return_value_policy::automatic_reference);
     DrawList.def("add_circle", &ImDrawList::AddCircle
-    , py::arg("centre")
+    , py::arg("center")
     , py::arg("radius")
     , py::arg("col")
     , py::arg("num_segments") = 12
     , py::arg("thickness") = 1.0f
     , py::return_value_policy::automatic_reference);
     DrawList.def("add_circle_filled", &ImDrawList::AddCircleFilled
-    , py::arg("centre")
+    , py::arg("center")
     , py::arg("radius")
     , py::arg("col")
     , py::arg("num_segments") = 12
@@ -2227,36 +2363,6 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     , py::arg("text_end") = nullptr
     , py::arg("wrap_width") = 0.0f
     , py::arg("cpu_fine_clip_rect") = nullptr
-    , py::return_value_policy::automatic_reference);
-    DrawList.def("add_image", &ImDrawList::AddImage
-    , py::arg("user_texture_id")
-    , py::arg("a")
-    , py::arg("b")
-    , py::arg("uv_a") = ImVec2(0,0)
-    , py::arg("uv_b") = ImVec2(1,1)
-    , py::arg("col") = 0xFFFFFFFF
-    , py::return_value_policy::automatic_reference);
-    DrawList.def("add_image_quad", &ImDrawList::AddImageQuad
-    , py::arg("user_texture_id")
-    , py::arg("a")
-    , py::arg("b")
-    , py::arg("c")
-    , py::arg("d")
-    , py::arg("uv_a") = ImVec2(0,0)
-    , py::arg("uv_b") = ImVec2(1,0)
-    , py::arg("uv_c") = ImVec2(1,1)
-    , py::arg("uv_d") = ImVec2(0,1)
-    , py::arg("col") = 0xFFFFFFFF
-    , py::return_value_policy::automatic_reference);
-    DrawList.def("add_image_rounded", &ImDrawList::AddImageRounded
-    , py::arg("user_texture_id")
-    , py::arg("a")
-    , py::arg("b")
-    , py::arg("uv_a")
-    , py::arg("uv_b")
-    , py::arg("col")
-    , py::arg("rounding")
-    , py::arg("rounding_corners") = ImDrawCornerFlags_All
     , py::return_value_policy::automatic_reference);
     DrawList.def("add_polyline", &ImDrawList::AddPolyline
     , py::arg("points")
@@ -2279,6 +2385,36 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     , py::arg("thickness")
     , py::arg("num_segments") = 0
     , py::return_value_policy::automatic_reference);
+    DrawList.def("add_image", &ImDrawList::AddImage
+    , py::arg("user_texture_id")
+    , py::arg("p_min")
+    , py::arg("p_max")
+    , py::arg("uv_min") = ImVec2(0,0)
+    , py::arg("uv_max") = ImVec2(1,1)
+    , py::arg("col") = IM_COL32_WHITE
+    , py::return_value_policy::automatic_reference);
+    DrawList.def("add_image_quad", &ImDrawList::AddImageQuad
+    , py::arg("user_texture_id")
+    , py::arg("p1")
+    , py::arg("p2")
+    , py::arg("p3")
+    , py::arg("p4")
+    , py::arg("uv1") = ImVec2(0,0)
+    , py::arg("uv2") = ImVec2(1,0)
+    , py::arg("uv3") = ImVec2(1,1)
+    , py::arg("uv4") = ImVec2(0,1)
+    , py::arg("col") = IM_COL32_WHITE
+    , py::return_value_policy::automatic_reference);
+    DrawList.def("add_image_rounded", &ImDrawList::AddImageRounded
+    , py::arg("user_texture_id")
+    , py::arg("p_min")
+    , py::arg("p_max")
+    , py::arg("uv_min")
+    , py::arg("uv_max")
+    , py::arg("col")
+    , py::arg("rounding")
+    , py::arg("rounding_corners") = ImDrawCornerFlags_All
+    , py::return_value_policy::automatic_reference);
     DrawList.def("path_clear", &ImDrawList::PathClear
     , py::return_value_policy::automatic_reference);
     DrawList.def("path_line_to", &ImDrawList::PathLineTo
@@ -2296,14 +2432,14 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     , py::arg("thickness") = 1.0f
     , py::return_value_policy::automatic_reference);
     DrawList.def("path_arc_to", &ImDrawList::PathArcTo
-    , py::arg("centre")
+    , py::arg("center")
     , py::arg("radius")
     , py::arg("a_min")
     , py::arg("a_max")
     , py::arg("num_segments") = 10
     , py::return_value_policy::automatic_reference);
     DrawList.def("path_arc_to_fast", &ImDrawList::PathArcToFast
-    , py::arg("centre")
+    , py::arg("center")
     , py::arg("radius")
     , py::arg("a_min_of_12")
     , py::arg("a_max_of_12")
@@ -2318,19 +2454,19 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     , py::arg("rect_min")
     , py::arg("rect_max")
     , py::arg("rounding") = 0.0f
-    , py::arg("rounding_corners_flags") = ImDrawCornerFlags_All
-    , py::return_value_policy::automatic_reference);
-    DrawList.def("channels_split", &ImDrawList::ChannelsSplit
-    , py::arg("channels_count")
-    , py::return_value_policy::automatic_reference);
-    DrawList.def("channels_merge", &ImDrawList::ChannelsMerge
-    , py::return_value_policy::automatic_reference);
-    DrawList.def("channels_set_current", &ImDrawList::ChannelsSetCurrent
-    , py::arg("channel_index")
+    , py::arg("rounding_corners") = ImDrawCornerFlags_All
     , py::return_value_policy::automatic_reference);
     DrawList.def("add_draw_cmd", &ImDrawList::AddDrawCmd
     , py::return_value_policy::automatic_reference);
     DrawList.def("clone_output", &ImDrawList::CloneOutput
+    , py::return_value_policy::automatic_reference);
+    DrawList.def("channels_split", &ImDrawList::ChannelsSplit
+    , py::arg("count")
+    , py::return_value_policy::automatic_reference);
+    DrawList.def("channels_merge", &ImDrawList::ChannelsMerge
+    , py::return_value_policy::automatic_reference);
+    DrawList.def("channels_set_current", &ImDrawList::ChannelsSetCurrent
+    , py::arg("n")
     , py::return_value_policy::automatic_reference);
     DrawList.def("clear", &ImDrawList::Clear
     , py::return_value_policy::automatic_reference);
@@ -2387,13 +2523,14 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     DrawData.def_readwrite("total_vtx_count", &ImDrawData::TotalVtxCount);
     DrawData.def_readwrite("display_pos", &ImDrawData::DisplayPos);
     DrawData.def_readwrite("display_size", &ImDrawData::DisplaySize);
+    DrawData.def_readwrite("framebuffer_scale", &ImDrawData::FramebufferScale);
     DrawData.def(py::init<>());
     DrawData.def("clear", &ImDrawData::Clear
     , py::return_value_policy::automatic_reference);
     DrawData.def("de_index_all_buffers", &ImDrawData::DeIndexAllBuffers
     , py::return_value_policy::automatic_reference);
     DrawData.def("scale_clip_rects", &ImDrawData::ScaleClipRects
-    , py::arg("sc")
+    , py::arg("fb_scale")
     , py::return_value_policy::automatic_reference);
     py::class_<ImFontConfig> FontConfig(deargui, "FontConfig");
     FontConfig.def_readwrite("font_data", &ImFontConfig::FontData);
@@ -2412,6 +2549,7 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     FontConfig.def_readwrite("merge_mode", &ImFontConfig::MergeMode);
     FontConfig.def_readwrite("rasterizer_flags", &ImFontConfig::RasterizerFlags);
     FontConfig.def_readwrite("rasterizer_multiply", &ImFontConfig::RasterizerMultiply);
+    FontConfig.def_readwrite("ellipsis_char", &ImFontConfig::EllipsisChar);
     FontConfig.def_readonly("name", &ImFontConfig::Name);
     FontConfig.def_readwrite("dst_font", &ImFontConfig::DstFont);
     FontConfig.def(py::init<>());
@@ -2426,6 +2564,42 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     FontGlyph.def_readwrite("v0", &ImFontGlyph::V0);
     FontGlyph.def_readwrite("u1", &ImFontGlyph::U1);
     FontGlyph.def_readwrite("v1", &ImFontGlyph::V1);
+    py::class_<ImFontGlyphRangesBuilder> FontGlyphRangesBuilder(deargui, "FontGlyphRangesBuilder");
+    FontGlyphRangesBuilder.def_readwrite("used_chars", &ImFontGlyphRangesBuilder::UsedChars);
+    FontGlyphRangesBuilder.def(py::init<>());
+    FontGlyphRangesBuilder.def("clear", &ImFontGlyphRangesBuilder::Clear
+    , py::return_value_policy::automatic_reference);
+    FontGlyphRangesBuilder.def("get_bit", &ImFontGlyphRangesBuilder::GetBit
+    , py::arg("n")
+    , py::return_value_policy::automatic_reference);
+    FontGlyphRangesBuilder.def("set_bit", &ImFontGlyphRangesBuilder::SetBit
+    , py::arg("n")
+    , py::return_value_policy::automatic_reference);
+    FontGlyphRangesBuilder.def("add_char", &ImFontGlyphRangesBuilder::AddChar
+    , py::arg("c")
+    , py::return_value_policy::automatic_reference);
+    FontGlyphRangesBuilder.def("add_text", &ImFontGlyphRangesBuilder::AddText
+    , py::arg("text")
+    , py::arg("text_end") = nullptr
+    , py::return_value_policy::automatic_reference);
+    FontGlyphRangesBuilder.def("add_ranges", &ImFontGlyphRangesBuilder::AddRanges
+    , py::arg("ranges")
+    , py::return_value_policy::automatic_reference);
+    FontGlyphRangesBuilder.def("build_ranges", &ImFontGlyphRangesBuilder::BuildRanges
+    , py::arg("out_ranges")
+    , py::return_value_policy::automatic_reference);
+    py::class_<ImFontAtlasCustomRect> FontAtlasCustomRect(deargui, "FontAtlasCustomRect");
+    FontAtlasCustomRect.def_readwrite("id", &ImFontAtlasCustomRect::ID);
+    FontAtlasCustomRect.def_readwrite("width", &ImFontAtlasCustomRect::Width);
+    FontAtlasCustomRect.def_readwrite("height", &ImFontAtlasCustomRect::Height);
+    FontAtlasCustomRect.def_readwrite("x", &ImFontAtlasCustomRect::X);
+    FontAtlasCustomRect.def_readwrite("y", &ImFontAtlasCustomRect::Y);
+    FontAtlasCustomRect.def_readwrite("glyph_advance_x", &ImFontAtlasCustomRect::GlyphAdvanceX);
+    FontAtlasCustomRect.def_readwrite("glyph_offset", &ImFontAtlasCustomRect::GlyphOffset);
+    FontAtlasCustomRect.def_readwrite("font", &ImFontAtlasCustomRect::Font);
+    FontAtlasCustomRect.def(py::init<>());
+    FontAtlasCustomRect.def("is_packed", &ImFontAtlasCustomRect::IsPacked
+    , py::return_value_policy::automatic_reference);
     py::enum_<ImFontAtlasFlags_>(deargui, "FontAtlasFlags", py::arithmetic())
         .value("FONT_ATLAS_FLAGS_NONE", ImFontAtlasFlags_None)
         .value("FONT_ATLAS_FLAGS_NO_POWER_OF_TWO_HEIGHT", ImFontAtlasFlags_NoPowerOfTwoHeight)
@@ -2495,40 +2669,36 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     , py::return_value_policy::automatic_reference);
     FontAtlas.def("get_glyph_ranges_thai", &ImFontAtlas::GetGlyphRangesThai
     , py::return_value_policy::automatic_reference);
+    FontAtlas.def("get_glyph_ranges_vietnamese", &ImFontAtlas::GetGlyphRangesVietnamese
+    , py::return_value_policy::automatic_reference);
     FontAtlas.def_readwrite("locked", &ImFontAtlas::Locked);
     FontAtlas.def_readwrite("flags", &ImFontAtlas::Flags);
     FontAtlas.def_readwrite("tex_id", &ImFontAtlas::TexID);
     FontAtlas.def_readwrite("tex_desired_width", &ImFontAtlas::TexDesiredWidth);
     FontAtlas.def_readwrite("tex_glyph_padding", &ImFontAtlas::TexGlyphPadding);
     py::class_<ImFont> Font(deargui, "Font");
-    Font.def_readwrite("font_size", &ImFont::FontSize);
-    Font.def_readwrite("scale", &ImFont::Scale);
-    Font.def_readwrite("display_offset", &ImFont::DisplayOffset);
-    Font.def_readwrite("glyphs", &ImFont::Glyphs);
     Font.def_readwrite("index_advance_x", &ImFont::IndexAdvanceX);
-    Font.def_readwrite("index_lookup", &ImFont::IndexLookup);
-    Font.def_readwrite("fallback_glyph", &ImFont::FallbackGlyph);
     Font.def_readwrite("fallback_advance_x", &ImFont::FallbackAdvanceX);
-    Font.def_readwrite("fallback_char", &ImFont::FallbackChar);
-    Font.def_readwrite("config_data_count", &ImFont::ConfigDataCount);
-    Font.def_readwrite("config_data", &ImFont::ConfigData);
+    Font.def_readwrite("font_size", &ImFont::FontSize);
+    Font.def_readwrite("index_lookup", &ImFont::IndexLookup);
+    Font.def_readwrite("glyphs", &ImFont::Glyphs);
+    Font.def_readwrite("fallback_glyph", &ImFont::FallbackGlyph);
+    Font.def_readwrite("display_offset", &ImFont::DisplayOffset);
     Font.def_readwrite("container_atlas", &ImFont::ContainerAtlas);
+    Font.def_readwrite("config_data", &ImFont::ConfigData);
+    Font.def_readwrite("config_data_count", &ImFont::ConfigDataCount);
+    Font.def_readwrite("fallback_char", &ImFont::FallbackChar);
+    Font.def_readwrite("ellipsis_char", &ImFont::EllipsisChar);
+    Font.def_readwrite("scale", &ImFont::Scale);
     Font.def_readwrite("ascent", &ImFont::Ascent);
     Font.def_readwrite("descent", &ImFont::Descent);
-    Font.def_readwrite("dirty_lookup_tables", &ImFont::DirtyLookupTables);
     Font.def_readwrite("metrics_total_surface", &ImFont::MetricsTotalSurface);
+    Font.def_readwrite("dirty_lookup_tables", &ImFont::DirtyLookupTables);
     Font.def(py::init<>());
-    Font.def("clear_output_data", &ImFont::ClearOutputData
-    , py::return_value_policy::automatic_reference);
-    Font.def("build_lookup_table", &ImFont::BuildLookupTable
-    , py::return_value_policy::automatic_reference);
     Font.def("find_glyph", &ImFont::FindGlyph
     , py::arg("c")
     , py::return_value_policy::automatic_reference);
     Font.def("find_glyph_no_fallback", &ImFont::FindGlyphNoFallback
-    , py::arg("c")
-    , py::return_value_policy::automatic_reference);
-    Font.def("set_fallback_char", &ImFont::SetFallbackChar
     , py::arg("c")
     , py::return_value_policy::automatic_reference);
     Font.def("get_char_advance", &ImFont::GetCharAdvance
@@ -2562,6 +2732,10 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     , py::arg("wrap_width") = 0.0f
     , py::arg("cpu_fine_clip") = false
     , py::return_value_policy::automatic_reference);
+    Font.def("build_lookup_table", &ImFont::BuildLookupTable
+    , py::return_value_policy::automatic_reference);
+    Font.def("clear_output_data", &ImFont::ClearOutputData
+    , py::return_value_policy::automatic_reference);
     Font.def("grow_index", &ImFont::GrowIndex
     , py::arg("new_size")
     , py::return_value_policy::automatic_reference);
@@ -2581,6 +2755,9 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     , py::arg("dst")
     , py::arg("src")
     , py::arg("overwrite_dst") = true
+    , py::return_value_policy::automatic_reference);
+    Font.def("set_fallback_char", &ImFont::SetFallbackChar
+    , py::arg("c")
     , py::return_value_policy::automatic_reference);
 
     Style.def("set_color", [](ImGuiStyle& self, int item, ImVec4 color)
