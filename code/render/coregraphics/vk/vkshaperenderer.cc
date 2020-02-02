@@ -36,8 +36,8 @@ VkShapeRenderer::VkShapeRenderer()
 	, vertexBufferPtr(nullptr)
 	, ibos{ IndexBufferId::Invalid() }
 	, vbos{ VertexBufferId::Invalid() }
-	, indexBufferActiveIndex(0)
-	, vertexBufferActiveIndex(0)
+	, indexBufferActiveIndex()
+	, vertexBufferActiveIndex()
 	, indexBufferCapacity(0)
 	, vertexBufferCapacity(0)
 {
@@ -114,8 +114,17 @@ VkShapeRenderer::Close()
 	this->shapeMeshResources.Clear();
 
 	// unload dynamic buffers
-	VertexBufferUnmap(this->vbos[this->vertexBufferActiveIndex]);
-	IndexBufferUnmap(this->ibos[this->indexBufferActiveIndex]);
+	// we don't assert here as the buffer is lazy allocated
+	CoreGraphics::VertexBufferId activeVBId = this->vbos[this->vertexBufferActiveIndex];
+	CoreGraphics::IndexBufferId activeIBId = this->ibos[this->indexBufferActiveIndex];
+	if (activeVBId != CoreGraphics::VertexBufferId::Invalid())
+	{
+		VertexBufferUnmap(activeVBId);
+	}
+	if (activeIBId != CoreGraphics::IndexBufferId::Invalid())
+	{
+		IndexBufferUnmap(activeIBId);
+	}
 
 	for (IndexT i = 0; i < MaxVertexIndexBuffers; i++)
 	{
