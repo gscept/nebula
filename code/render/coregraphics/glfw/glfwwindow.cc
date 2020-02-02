@@ -367,6 +367,8 @@ InternalSetupFunction(const WindowCreateInfo& info, const Util::Blob& windowData
 	*ptr = id;
 	if (embed)
 	{
+		n_error("FIXME, createwindowfromalien not implemented yet");
+#if 0
 		// create window using our Qt window as child
 		wnd = glfwCreateWindowFromAlien(windowData.GetPtr(), wnd);
 		glfwMakeContextCurrent(wnd);
@@ -381,6 +383,7 @@ InternalSetupFunction(const WindowCreateInfo& info, const Util::Blob& windowData
 		mode.SetAspectRatio(width / float(height));
 
 		glfwSetWindowUserPointer(wnd, ptr);
+#endif
 	}
 	else
 	{
