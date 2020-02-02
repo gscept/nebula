@@ -346,6 +346,11 @@ nebula_begin_module(foundation)
 			tcp/stdtcpserver.cc
 			tcp/stdtcpserver.h
 		)
+		fips_dir(profiling)
+		fips_files(
+			profiling.cc
+			profiling.h
+		)
 		fips_dir(system)
 		fips_files(
 			appentry.h

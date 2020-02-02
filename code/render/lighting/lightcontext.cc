@@ -461,10 +461,8 @@ LightContext::SetupSpotLight(const Graphics::GraphicsEntityId id,
 	SetSpotLightTransform(cid, transform);
 
 	std::array<float, 2> angles = { innerConeAngle, outerConeAngle };
-	if (innerConeAngle >= outerConeAngle)
-		angles[1] = innerConeAngle + N_TINY;
-	else if (outerConeAngle <= innerConeAngle)
-		angles[0] = outerConeAngle - N_TINY;
+    if (innerConeAngle >= outerConeAngle)
+		angles[0] = outerConeAngle - Math::n_deg2rad(0.1f);
 	// set initial state
 	spotLightAllocator.Get<SpotLight_DynamicOffsets>(sli)[0] = 0;
 	spotLightAllocator.Get<SpotLight_DynamicOffsets>(sli)[1] = 0;
@@ -480,6 +478,16 @@ LightContext::SetColor(const Graphics::GraphicsEntityId id, const Math::float4& 
 {
 	const Graphics::ContextEntityId cid = GetContextId(id);
 	genericLightAllocator.Get<Color>(cid.id) = color;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+LightContext::SetRange(const Graphics::GraphicsEntityId id, const float range)
+{
+    const Graphics::ContextEntityId cid = GetContextId(id);
+    genericLightAllocator.Get<Range>(cid.id) = range;
 }
 
 //------------------------------------------------------------------------------
@@ -606,9 +614,7 @@ LightContext::SetInnerOuterAngle(const Graphics::GraphicsEntityId id, float inne
 	n_assert(type == SpotLightType);
 	Ids::Id32 lightId = genericLightAllocator.Get<TypedLightId>(cid.id);
 	if (inner >= outer)
-		outer = inner + N_TINY;
-	else if (outer <= inner)
-		inner = outer - N_TINY;
+		inner = outer - Math::n_deg2rad(0.1f);
 	spotLightAllocator.Get<SpotLight_ConeAngles>(lightId)[0] = inner;
 	spotLightAllocator.Get<SpotLight_ConeAngles>(lightId)[1] = outer;
 }
@@ -856,8 +862,8 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const Graphics::Fram
 				Math::float4::store3u(color[i] * intensity[i], spotLight.color);
 				
 				// calculate sine and cosine
-				spotLight.angleSinCos[0] = Math::n_sin(1.0f - angles[0] * N_PI_HALF * 0.5f);
-				spotLight.angleSinCos[1] = Math::n_cos(1.0f - angles[0] * N_PI_HALF * 0.5f);
+				spotLight.angleSinCos[0] = Math::n_sin(angles[1] * 0.5f);
+				spotLight.angleSinCos[1] = Math::n_cos(angles[1] * 0.5f);
 				spotLight.flags = flags;
 				numSpotLights++;
 			}
@@ -1191,9 +1197,9 @@ LightContext::OnRenderDebug(uint32_t flags)
     auto const& colours = genericLightAllocator.GetArray<Color>();
     auto const& ids = genericLightAllocator.GetArray<TypedLightId>();
     auto const& pointTrans = pointLightAllocator.GetArray<PointLight_Transform>();
-    auto const& spotTrans = spotLightAllocator.GetArray< SpotLight_Transform>();
-    auto const& spotProj = spotLightAllocator.GetArray< SpotLight_Projection>();
-    auto const& spotInvProj = spotLightAllocator.GetArray< SpotLight_InvViewProjection>();
+    auto const& spotTrans = spotLightAllocator.GetArray<SpotLight_Transform>();
+    auto const& spotProj = spotLightAllocator.GetArray<SpotLight_Projection>();
+    auto const& spotInvProj = spotLightAllocator.GetArray<SpotLight_InvViewProjection>();
     for (int i = 0, n = types.Size(); i < n; ++i)
     {
         switch(types[i])
@@ -1201,13 +1207,16 @@ LightContext::OnRenderDebug(uint32_t flags)
         case PointLightType:
         {
             Math::matrix44 const& trans = pointTrans[ids[i]];
-            Math::float4 col = colours[i];            
-            Im3d::Im3dContext::DrawSphere(trans, col, Im3d::CheckDepth|Im3d::Wireframe);
-            //FIXME define debug flags somewhere
+            Math::float4 col = colours[i];
+			CoreGraphics::RenderShape shape;
+			shape.SetupSimpleShape(Threading::Thread::GetMyThreadId(), CoreGraphics::RenderShape::Sphere, CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::CheckDepth|CoreGraphics::RenderShape::Wireframe), trans, col);
+			CoreGraphics::ShapeRenderer::Instance()->AddShape(shape);
+			//Im3d::Im3dContext::DrawSphere(trans, col, Im3d::CheckDepth | Im3d::Wireframe);
+			//FIXME define debug flags somewhere
             if (flags & Im3d::Solid)
             {
                 col.w() = 0.5f;
-                Im3d::Im3dContext::DrawSphere(trans, col, Im3d::CheckDepth | Im3d::Solid);
+                //Im3d::Im3dContext::DrawSphere(trans, col, Im3d::CheckDepth | Im3d::Solid);
             }            
         }
         break;
@@ -1220,7 +1229,12 @@ LightContext::OnRenderDebug(uint32_t flags)
             unscaledTransform.set_zaxis(Math::float4::normalize(unscaledTransform.get_zaxis()));
             Math::matrix44 frustum = Math::matrix44::multiply(spotInvProj[ids[i]], unscaledTransform);
             Math::float4 col = colours[i];
-            Im3d::Im3dContext::DrawBox(frustum, col);
+
+			CoreGraphics::RenderShape shape;
+			shape.SetupSimpleShape(Threading::Thread::GetMyThreadId(), CoreGraphics::RenderShape::Box, CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::CheckDepth | CoreGraphics::RenderShape::Wireframe), frustum, col);
+			CoreGraphics::ShapeRenderer::Instance()->AddShape(shape);
+			//Im3d::Im3dContext::DrawSphere(trans, col, Im3d::CheckDepth | Im3d::Wireframe);
+			//Im3d::Im3dContext::DrawBox(frustum, col);
         }
         break;
 		case GlobalLightType:

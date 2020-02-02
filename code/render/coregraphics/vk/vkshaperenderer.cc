@@ -31,9 +31,17 @@ __ImplementClass(Vulkan::VkShapeRenderer, 'VKSR', Base::ShapeRendererBase);
 //------------------------------------------------------------------------------
 /**
 */
-VkShapeRenderer::VkShapeRenderer()
+VkShapeRenderer::VkShapeRenderer() 
+	: indexBufferPtr(nullptr)
+	, vertexBufferPtr(nullptr)
+	, ibos{ IndexBufferId::Invalid() }
+	, vbos{ VertexBufferId::Invalid() }
+	, indexBufferActiveIndex(0)
+	, vertexBufferActiveIndex(0)
+	, indexBufferCapacity(0)
+	, vertexBufferCapacity(0)
 {
-	this->shapeMeshes.Clear();
+	// empty
 }
 
 //------------------------------------------------------------------------------
@@ -57,7 +65,6 @@ VkShapeRenderer::Open()
 	// create shape shader instance
 	this->shapeShader = ShaderServer::Instance()->GetShader("shd:simple.fxb"_atm);
 	this->shapeMeshResources.SetSize(CoreGraphics::RenderShape::NumShapeTypes);
-	this->shapeMeshes.SetSize(CoreGraphics::RenderShape::NumShapeTypes);
 
 	// create default shapes (basically load them from the models)
 	this->CreateBoxShape();
@@ -76,48 +83,20 @@ VkShapeRenderer::Open()
 	this->programs[RenderShape::CheckDepth + RenderShape::NumDepthFlags] = ShaderGetProgram(this->shapeShader, ShaderServer::Instance()->FeatureStringToMask("Static|Alt0"));
 	this->programs[RenderShape::Wireframe + RenderShape::NumDepthFlags] = ShaderGetProgram(this->shapeShader, ShaderServer::Instance()->FeatureStringToMask("Static|Alt1"));
 
-	Util::Array<VertexComponent> comps;
-	comps.Append(VertexComponent(VertexComponent::Position, 0, VertexComponent::Float4, 0));
-	comps.Append(VertexComponent(VertexComponent::Color, 0, VertexComponent::Float4, 0));
-	VertexBufferCreateInfo vboInfo = 
-	{
-		"ShapeRenderer VBO"_atm,
-		CoreGraphics::GpuBufferTypes::AccessWrite,
-		CoreGraphics::GpuBufferTypes::UsageDynamic,
-		CoreGraphics::GpuBufferTypes::SyncingAutomatic,
-		MaxNumVertices,
-		comps, 
-		nullptr,
-		0
-	};
-	this->vbo = CreateVertexBuffer(vboInfo);
-
-	IndexBufferCreateInfo iboInfo =
-	{
-		"shape_renderer_ibo",
-		"render_system"_atm,
-		CoreGraphics::GpuBufferTypes::AccessWrite,
-		CoreGraphics::GpuBufferTypes::UsageDynamic,
-		CoreGraphics::GpuBufferTypes::SyncingAutomatic,
-		IndexType::Index32,
-		MaxNumIndices,
-		nullptr,
-		0
-	};
-	this->ibo = CreateIndexBuffer(iboInfo);
-
-	// map buffers
-	this->vertexBufferPtr = (byte*)VertexBufferMap(this->vbo, CoreGraphics::GpuBufferTypes::MapWrite);
-	this->indexBufferPtr = (byte*)IndexBufferMap(this->ibo, CoreGraphics::GpuBufferTypes::MapWrite);
-	n_assert(0 != this->vertexBufferPtr);
-	n_assert(0 != this->indexBufferPtr);
+	this->comps.Append(VertexComponent(VertexComponent::Position, 0, VertexComponent::Float4, 0));
+	this->comps.Append(VertexComponent(VertexComponent::Color, 0, VertexComponent::Float4, 0));
 
 	// also create an extra vertex layout, in case we get a mesh which doesn't fit with our special layout
 	this->vertexLayout = CreateVertexLayout(VertexLayoutCreateInfo{ comps });
 
-	// setup primitive group
-	this->primGroup.SetBaseIndex(0);
-	this->primGroup.SetBaseVertex(0);
+	Frame::FramePlugin::AddCallback("Debug Shapes", [this](IndexT)
+		{
+			CoreGraphics::BeginBatch(Frame::FrameBatchType::System);
+			this->DrawShapes();
+			this->numIndicesThisFrame = 0;
+			this->numVerticesThisFrame = 0;
+			CoreGraphics::EndBatch();
+		});
 }
 
 //------------------------------------------------------------------------------
@@ -134,13 +113,18 @@ VkShapeRenderer::Close()
 	DiscardResource(this->shapeMeshResources[RenderShape::Cone]);
 	this->shapeMeshResources.Clear();
 
-
 	// unload dynamic buffers
-	VertexBufferUnmap(this->vbo);
-	IndexBufferUnmap(this->ibo);
+	VertexBufferUnmap(this->vbos[this->vertexBufferActiveIndex]);
+	IndexBufferUnmap(this->ibos[this->indexBufferActiveIndex]);
 
-	DestroyVertexBuffer(this->vbo);
-	DestroyIndexBuffer(this->ibo);
+	for (IndexT i = 0; i < MaxVertexIndexBuffers; i++)
+	{
+		if (this->vbos[i] != VertexBufferId::Invalid())
+			DestroyVertexBuffer(this->vbos[i]);
+		if (this->ibos[i] != IndexBufferId::Invalid())
+		DestroyIndexBuffer(this->ibos[i]);
+	}
+	
 	this->vertexBufferPtr = this->indexBufferPtr = nullptr;
 
 	// call parent class
@@ -155,54 +139,72 @@ VkShapeRenderer::DrawShapes()
 {
 	n_assert(this->IsOpen());
 
+	if (this->numIndicesThisFrame > this->indexBufferCapacity)
+		this->GrowIndexBuffer();
+	if (this->numVerticesThisFrame > this->vertexBufferCapacity)
+		this->GrowVertexBuffer();
+
+
+
+	CoreGraphics::SetVertexLayout(this->vertexLayout);
 	for (int depthType = 0; depthType < RenderShape::NumDepthFlags; depthType++)
 	{
-		CoreGraphics::SetShaderProgram(this->programs[depthType]);
-
-		IndexT i;
-		for (i = 0; i < this->primitives[depthType].Size(); i++)
+		if (this->primitives[depthType].Size() > 0)
 		{
-			const RenderShape& curShape = this->primitives[depthType][i];
-			if (curShape.GetShapeType() == RenderShape::Primitives)
-				this->DrawPrimitives(curShape.GetModelTransform(),
-				curShape.GetTopology(),
-				curShape.GetNumPrimitives(),
-				curShape.GetVertexData(),
-				curShape.GetVertexWidth(),
-				curShape.GetColor());
-			else if (curShape.GetShapeType() == RenderShape::IndexedPrimitives)
-				this->DrawIndexedPrimitives(curShape.GetModelTransform(),
-				curShape.GetTopology(),
-				curShape.GetNumPrimitives(),
-				curShape.GetVertexData(),
-				curShape.GetNumVertices(),
-				curShape.GetVertexWidth(),
-				curShape.GetIndexData(),
-				curShape.GetIndexType(),
-				curShape.GetColor());
-			else n_error("Shape type %d is not a primitive!", curShape.GetShapeType());
+			IndexT i;
+			for (i = 0; i < this->primitives[depthType].Size(); i++)
+			{
+				const RenderShape& curShape = this->primitives[depthType][i];
+				if (curShape.GetShapeType() == RenderShape::Primitives)
+					this->DrawPrimitives(curShape.GetModelTransform(),
+						curShape.GetTopology(),
+						curShape.GetNumPrimitives(),
+						curShape.GetVertexData(),
+						curShape.GetVertexWidth(),
+						curShape.GetColor());
+				else if (curShape.GetShapeType() == RenderShape::IndexedPrimitives)
+					this->DrawIndexedPrimitives(curShape.GetModelTransform(),
+						curShape.GetTopology(),
+						curShape.GetNumPrimitives(),
+						curShape.GetVertexData(),
+						curShape.GetNumVertices(),
+						curShape.GetVertexWidth(),
+						curShape.GetIndexData(),
+						curShape.GetIndexType(),
+						curShape.GetColor());
+				else n_error("Shape type %d is not a primitive!", curShape.GetShapeType());
+			}
+
+			// apply shader
+			CoreGraphics::SetShaderProgram(this->programs[depthType]);
+
+			// flush any buffered primitives
+			this->DrawBufferedIndexedPrimitives();
+			this->DrawBufferedPrimitives();
 		}
-
-		// flush any buffered primitives
-		this->DrawBufferedIndexedPrimitives();
-		this->DrawBufferedPrimitives();
-
-		// reset index and primitive counters
-		this->numIndices = 0;
-		this->numPrimitives = 0;
 	}
 
+	// reset index and primitive counters
+	this->numIndices = 0;
+	this->numPrimitives = 0;
+
 	for (int depthType = 0; depthType < RenderShape::NumDepthFlags; depthType++)
 	{
-		CoreGraphics::SetShaderProgram(this->programs[depthType + RenderShape::NumDepthFlags]);
-
-		IndexT i;
-		for (i = 0; i < this->shapes[depthType].Size(); i++)
+		if (this->shapes[depthType].Size() > 0)
 		{
-			const RenderShape& curShape = this->shapes[depthType][i];
-			if (curShape.GetShapeType() == RenderShape::RenderMesh) this->DrawMesh(curShape.GetModelTransform(), curShape.GetMesh(), curShape.GetColor());
-			else													this->DrawSimpleShape(curShape.GetModelTransform(), curShape.GetShapeType(), curShape.GetColor());
-		}
+			CoreGraphics::SetShaderProgram(this->programs[depthType + RenderShape::NumDepthFlags]);
+			CoreGraphics::SetGraphicsPipeline();
+
+			IndexT i;
+			for (i = 0; i < this->shapes[depthType].Size(); i++)
+			{
+				const RenderShape& curShape = this->shapes[depthType][i];
+				if (curShape.GetShapeType() == RenderShape::RenderMesh)
+					this->DrawMesh(curShape.GetModelTransform(), curShape.GetMesh(), curShape.GetColor());
+				else
+					this->DrawSimpleShape(curShape.GetModelTransform(), curShape.GetShapeType(), curShape.GetColor());
+			}
+		}		
 	}
 
 	// delete the shapes of my own thread id, all other shapes
@@ -216,17 +218,21 @@ VkShapeRenderer::DrawShapes()
 void
 VkShapeRenderer::DrawSimpleShape(const Math::matrix44& modelTransform, CoreGraphics::RenderShape::Type shapeType, const Math::float4& color)
 {
-	n_assert(this->shapeMeshes[shapeType] != ResourceId::Invalid());
+	n_assert(this->shapeMeshResources[shapeType] != ResourceId::Invalid());
 	n_assert(shapeType < RenderShape::NumShapeTypes);
+	n_assert(CoreGraphics::IsInBeginFrame());
 
 	// resolve model-view-projection matrix and update shader
 	CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->model, sizeof(modelTransform), (byte*)&modelTransform);
 	CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->diffuseColor, sizeof(color), (byte*)&color);
-	const SizeT numgroups = MeshGetPrimitiveGroups(this->shapeMeshes[shapeType]).Size();
+	const Util::Array<CoreGraphics::PrimitiveGroup>& groups = MeshGetPrimitiveGroups(this->shapeMeshResources[shapeType]);
 	IndexT i;
-	for (i = 0; i < numgroups; i++)
+	for (i = 0; i < groups.Size(); i++)
 	{
-		MeshBind(this->shapeMeshes[shapeType], i);
+		// set resources
+		CoreGraphics::SetIndexBuffer(MeshGetIndexBuffer(this->shapeMeshResources[shapeType]), 0);
+		CoreGraphics::SetStreamVertexBuffer(0, MeshGetVertexBuffer(this->shapeMeshResources[shapeType], 0), 0);
+		CoreGraphics::SetPrimitiveGroup(groups[i]);
 
 		// draw
 		CoreGraphics::Draw();
@@ -240,6 +246,7 @@ void
 VkShapeRenderer::DrawMesh(const Math::matrix44& modelTransform, const CoreGraphics::MeshId mesh, const Math::float4& color)
 {
 	n_assert(mesh != MeshId::Invalid());
+	n_assert(CoreGraphics::IsInBeginFrame());
 
 	// resolve model-view-projection matrix and update shader
 	TransformDevice* transDev = TransformDevice::Instance();
@@ -247,15 +254,15 @@ VkShapeRenderer::DrawMesh(const Math::matrix44& modelTransform, const CoreGraphi
 	// resolve model-view-projection matrix and update shader
 	CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->model, sizeof(modelTransform), (byte*)&modelTransform);
 	CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->diffuseColor, sizeof(color), (byte*)&color);
-
-	n_assert(CoreGraphics::IsInBeginFrame());
-	const SizeT numgroups = MeshGetPrimitiveGroups(mesh).Size();
-
-	// draw primitives in shape
+	
+	const Util::Array<CoreGraphics::PrimitiveGroup>& groups = MeshGetPrimitiveGroups(mesh);
 	IndexT i;
-	for (i = 0; i < numgroups; i++)
+	for (i = 0; i < groups.Size(); i++)
 	{
-		MeshBind(mesh, i);
+		// set resources
+		CoreGraphics::SetIndexBuffer(MeshGetIndexBuffer(mesh), 0);
+		CoreGraphics::SetStreamVertexBuffer(0, MeshGetVertexBuffer(mesh, 0), 0);
+		CoreGraphics::SetPrimitiveGroup(groups[i]);
 
 		// draw
 		CoreGraphics::Draw();
@@ -273,28 +280,19 @@ VkShapeRenderer::DrawPrimitives(const Math::matrix44& modelTransform, CoreGraphi
 
 	// calculate vertex count
 	SizeT vertexCount = PrimitiveTopology::NumberOfVertices(topology, numPrimitives);
-	vertexCount = Math::n_min(vertexCount, MaxNumVertices);
-
-	// flush primitives to make room in our buffers
-	n_assert(this->numPrimitives + vertexCount <= MaxNumVertices);
-
-	SizeT bufferSize = MaxNumVertices;
-	CoreGraphics::RenderShape::RenderShapeVertex* verts = (CoreGraphics::RenderShape::RenderShapeVertex*)this->vertexBufferPtr;
+	CoreGraphics::RenderShape::RenderShapeVertex* verts = reinterpret_cast<CoreGraphics::RenderShape::RenderShapeVertex*>(this->vertexBufferPtr);
 
 	// unlock buffer to avoid stomping data
 	memcpy(verts + this->numPrimitives, vertices, vertexCount * vertexWidth);
-
-	// append transforms
-	this->unindexed.transforms.Append(modelTransform);
-	this->unindexed.colors.Append(color);
 
 	// set vertex offset in primitive group
 	CoreGraphics::PrimitiveGroup group;
 	group.SetBaseVertex(this->numPrimitives);
 	group.SetNumVertices(vertexCount);
 	group.SetNumIndices(0);
-	this->unindexed.topologies.Append(topology);
-	this->unindexed.primitives.Append(group);
+	this->unindexed[topology].primitives.Append(group);
+	this->unindexed[topology].transforms.Append(modelTransform);
+	this->unindexed[topology].colors.Append(color);
 	this->numPrimitives += vertexCount;
 }
 
@@ -311,24 +309,15 @@ VkShapeRenderer::DrawIndexedPrimitives(const Math::matrix44& modelTransform, Cor
 	// calculate index count and size of index type
 	SizeT indexCount = PrimitiveTopology::NumberOfVertices(topology, numPrimitives);
 	SizeT indexSize = CoreGraphics::IndexType::SizeOf(indexType);
-	SizeT vertexCount = Math::n_min(numVertices, MaxNumVertices);
-	indexCount = Math::n_min(indexCount, MaxNumIndices);
-
-	n_assert(this->numPrimitives + vertexCount <= MaxNumVertices);
-	n_assert(this->numIndices + indexCount <= MaxNumIndices);
 
 	SizeT vbBufferSize = MaxNumVertices * MaxVertexWidth;
 	SizeT ibBufferSize = MaxNumIndices * MaxIndexWidth;
-	CoreGraphics::RenderShape::RenderShapeVertex* verts = (CoreGraphics::RenderShape::RenderShapeVertex*)this->vertexBufferPtr;
-	uint32_t* inds = (uint32_t*)this->indexBufferPtr;
+	CoreGraphics::RenderShape::RenderShapeVertex* verts = reinterpret_cast<CoreGraphics::RenderShape::RenderShapeVertex*>(this->vertexBufferPtr);
+	uint32_t* inds = reinterpret_cast<uint32_t*>(this->indexBufferPtr);
 
 	// unlock buffer and copy data
-	memcpy(verts + this->numPrimitives, vertices, vertexCount * vertexWidth);
+	memcpy(verts + this->numPrimitives, vertices, numVertices * vertexWidth);
 	memcpy(inds + this->numIndices, indices, indexCount * indexSize);
-
-	// append transforms
-	this->indexed.transforms.Append(modelTransform);
-	this->indexed.colors.Append(color);
 
 	// set vertex offset in primitive group
 	CoreGraphics::PrimitiveGroup group;
@@ -336,9 +325,10 @@ VkShapeRenderer::DrawIndexedPrimitives(const Math::matrix44& modelTransform, Cor
 	group.SetNumVertices(0);										// indices decides how many primitives we draw
 	group.SetBaseIndex(this->numIndices);
 	group.SetNumIndices(indexCount);
-	this->indexed.topologies.Append(topology);
-	this->indexed.primitives.Append(group);
-	this->numPrimitives += vertexCount;
+	this->indexed[topology].primitives.Append(group);
+	this->indexed[topology].transforms.Append(modelTransform);
+	this->indexed[topology].colors.Append(color);
+	this->numPrimitives += numVertices;
 	this->numIndices += indexCount;
 }
 
@@ -348,30 +338,31 @@ VkShapeRenderer::DrawIndexedPrimitives(const Math::matrix44& modelTransform, Cor
 void
 VkShapeRenderer::DrawBufferedPrimitives()
 {
-	
-	IndexT i;
-	for (i = 0; i < this->unindexed.primitives.Size(); i++)
+	IndexT j;
+	for (j = 0; j < CoreGraphics::PrimitiveTopology::NumTopologies; j++)
 	{
-		const CoreGraphics::PrimitiveGroup& group = this->unindexed.primitives[i];
-		const CoreGraphics::PrimitiveTopology::Code& topo = this->unindexed.topologies[i];
-		const Math::matrix44& modelTransform = this->unindexed.transforms[i];
-		const Math::float4& color = this->unindexed.colors[i];
+		CoreGraphics::SetPrimitiveTopology(CoreGraphics::PrimitiveTopology::Code(j));
+		CoreGraphics::SetGraphicsPipeline();
 
-		CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->model, sizeof(modelTransform), (byte*)&modelTransform);
-		CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->diffuseColor, sizeof(color), (byte*)&color);
+		IndexT i;
+		for (i = 0; i < this->unindexed[j].primitives.Size(); i++)
+		{
+			const CoreGraphics::PrimitiveGroup& group = this->unindexed[j].primitives[i];
+			const Math::matrix44& modelTransform = this->unindexed[j].transforms[i];
+			const Math::float4& color = this->unindexed[j].colors[i];
 
-		CoreGraphics::SetPrimitiveTopology(topo);
-		CoreGraphics::SetVertexLayout(this->vertexLayout);
-		CoreGraphics::SetStreamVertexBuffer(0, this->vbo, 0);
-		CoreGraphics::SetPrimitiveGroup(group);
+			CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->model, sizeof(modelTransform), (byte*)&modelTransform);
+			CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->diffuseColor, sizeof(color), (byte*)&color);
 
-		CoreGraphics::Draw();
+			CoreGraphics::SetStreamVertexBuffer(0, this->vbos[this->vertexBufferActiveIndex], 0);
+			CoreGraphics::SetPrimitiveGroup(group);
+
+			CoreGraphics::Draw();
+		}
+		this->unindexed[j].primitives.Clear();
+		this->unindexed[j].transforms.Clear();
+		this->unindexed[j].colors.Clear();
 	}
-
-	this->unindexed.primitives.Clear();
-	this->unindexed.transforms.Clear();
-	this->unindexed.colors.Clear();
-	this->unindexed.topologies.Clear();
 }
 
 //------------------------------------------------------------------------------
@@ -380,31 +371,99 @@ VkShapeRenderer::DrawBufferedPrimitives()
 void
 VkShapeRenderer::DrawBufferedIndexedPrimitives()
 {
-
-	IndexT i;
-	for (i = 0; i < this->indexed.primitives.Size(); i++)
+	IndexT j;
+	for (j = 0; j < CoreGraphics::PrimitiveTopology::NumTopologies; j++)
 	{
-		const CoreGraphics::PrimitiveGroup& group = this->indexed.primitives[i];
-		const CoreGraphics::PrimitiveTopology::Code& topo = this->indexed.topologies[i];
-		const Math::matrix44& modelTransform = this->indexed.transforms[i];
-		const Math::float4& color = this->indexed.colors[i];
+		CoreGraphics::SetPrimitiveTopology(CoreGraphics::PrimitiveTopology::Code(j));
+		CoreGraphics::SetGraphicsPipeline();
 
-		CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->model, sizeof(modelTransform), (byte*)&modelTransform);
-		CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->diffuseColor, sizeof(color), (byte*)&color);
-		
-		CoreGraphics::SetPrimitiveTopology(topo);
-		CoreGraphics::SetVertexLayout(this->vertexLayout);
-		CoreGraphics::SetIndexBuffer(this->ibo, 0);
-		CoreGraphics::SetStreamVertexBuffer(0, this->vbo, 0);
-		CoreGraphics::SetPrimitiveGroup(group);
+		IndexT i;
+		for (i = 0; i < this->indexed[j].primitives.Size(); i++)
+		{
+			const CoreGraphics::PrimitiveGroup& group = this->indexed[j].primitives[i];
+			const Math::matrix44& modelTransform = this->indexed[j].transforms[i];
+			const Math::float4& color = this->indexed[j].colors[i];
 
-		CoreGraphics::Draw();
+			CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->model, sizeof(modelTransform), (byte*)&modelTransform);
+			CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->diffuseColor, sizeof(color), (byte*)&color);
+
+			CoreGraphics::SetIndexBuffer(this->ibos[this->indexBufferActiveIndex], 0);
+			CoreGraphics::SetStreamVertexBuffer(0, this->vbos[this->vertexBufferActiveIndex], 0);
+			CoreGraphics::SetPrimitiveGroup(group);
+
+			CoreGraphics::Draw();
+		}
+		this->indexed[j].primitives.Clear();
+		this->indexed[j].transforms.Clear();
+		this->indexed[j].colors.Clear();
 	}
+}
 
-	this->indexed.primitives.Clear();
-	this->indexed.transforms.Clear();
-	this->indexed.colors.Clear();
-	this->indexed.topologies.Clear();
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+VkShapeRenderer::GrowIndexBuffer()
+{
+	IndexBufferCreateInfo iboInfo =
+	{
+		"shape_renderer_ibo",
+		"render_system"_atm,
+		CoreGraphics::GpuBufferTypes::AccessWrite,
+		CoreGraphics::GpuBufferTypes::UsageDynamic,
+		CoreGraphics::GpuBufferTypes::SyncingAutomatic,
+		IndexType::Index32,
+		this->numIndicesThisFrame,
+		nullptr,
+		0
+	};
+
+	// unmap current pointer
+	if (this->indexBufferPtr)
+		IndexBufferUnmap(this->ibos[this->indexBufferActiveIndex]);
+
+	// delete the next buffer if one exists
+	this->indexBufferActiveIndex = (this->indexBufferActiveIndex + 1) % MaxVertexIndexBuffers;
+	if (this->ibos[this->indexBufferActiveIndex] != IndexBufferId::Invalid())
+		DestroyIndexBuffer(this->ibos[this->indexBufferActiveIndex]);
+
+	// finally allocate new buffer
+	this->ibos[this->indexBufferActiveIndex] = CreateIndexBuffer(iboInfo);
+	this->indexBufferPtr = (byte*)IndexBufferMap(this->ibos[this->indexBufferActiveIndex], CoreGraphics::GpuBufferTypes::MapWrite);
+	n_assert(0 != this->indexBufferPtr);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+VkShapeRenderer::GrowVertexBuffer()
+{
+	VertexBufferCreateInfo vboInfo =
+	{
+		"ShapeRenderer VBO"_atm,
+		CoreGraphics::GpuBufferTypes::AccessWrite,
+		CoreGraphics::GpuBufferTypes::UsageDynamic,
+		CoreGraphics::GpuBufferTypes::SyncingAutomatic,
+		this->numVerticesThisFrame,
+		this->comps,
+		nullptr,
+		0
+	};
+
+	// unmap current pointer
+	if (this->vertexBufferPtr)
+		VertexBufferUnmap(this->vbos[this->vertexBufferActiveIndex]);
+
+	// delete the next buffer if one exists
+	this->vertexBufferActiveIndex = (this->vertexBufferActiveIndex + 1) % MaxVertexIndexBuffers;
+	if (this->vbos[this->vertexBufferActiveIndex] != VertexBufferId::Invalid())
+		DestroyVertexBuffer(this->vbos[this->vertexBufferActiveIndex]);
+
+	// finally allocate new buffer
+	this->vbos[this->vertexBufferActiveIndex] = CreateVertexBuffer(vboInfo);
+	this->vertexBufferPtr = (byte*)VertexBufferMap(this->vbos[this->vertexBufferActiveIndex], CoreGraphics::GpuBufferTypes::MapWrite);
+	n_assert(0 != this->vertexBufferPtr);
 }
 
 //------------------------------------------------------------------------------
@@ -414,7 +473,6 @@ void
 VkShapeRenderer::CreateBoxShape()
 {
 	this->shapeMeshResources[RenderShape::Box] = CreateResource("msh:system/box.nvx2", "render_system", nullptr, nullptr, true);
-	this->shapeMeshes[RenderShape::Box] = MeshId(this->shapeMeshResources[RenderShape::Box].resourceId);
 }
 
 //------------------------------------------------------------------------------
@@ -424,7 +482,6 @@ void
 VkShapeRenderer::CreateSphereShape()
 {
 	this->shapeMeshResources[RenderShape::Sphere] = CreateResource("msh:system/sphere.nvx2", "render_system", nullptr, nullptr, true);
-	this->shapeMeshes[RenderShape::Sphere] = MeshId(this->shapeMeshResources[RenderShape::Sphere].resourceId);
 }
 
 //------------------------------------------------------------------------------
@@ -434,7 +491,6 @@ void
 VkShapeRenderer::CreateCylinderShape()
 {
 	this->shapeMeshResources[RenderShape::Cylinder] = CreateResource("msh:system/cylinder.nvx2", "render_system", nullptr, nullptr, true);
-	this->shapeMeshes[RenderShape::Cylinder] = MeshId(this->shapeMeshResources[RenderShape::Cylinder].resourceId);
 }
 
 //------------------------------------------------------------------------------
@@ -444,7 +500,6 @@ void
 VkShapeRenderer::CreateTorusShape()
 {
 	this->shapeMeshResources[RenderShape::Torus] = CreateResource("msh:system/torus.nvx2", "render_system", nullptr, nullptr, true);
-	this->shapeMeshes[RenderShape::Torus] = MeshId(this->shapeMeshResources[RenderShape::Torus].resourceId);
 }
 
 //------------------------------------------------------------------------------
@@ -454,7 +509,6 @@ void
 VkShapeRenderer::CreateConeShape()
 {
 	this->shapeMeshResources[RenderShape::Cone] = CreateResource("msh:system/cone.nvx2", "render_system", nullptr, nullptr, true);
-	this->shapeMeshes[RenderShape::Cone] = MeshId(this->shapeMeshResources[RenderShape::Cone].resourceId);
 }
 
 } // namespace Vulkan

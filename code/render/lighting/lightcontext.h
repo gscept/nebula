@@ -62,6 +62,8 @@ public:
 
 	/// set color of light
 	static void SetColor(const Graphics::GraphicsEntityId id, const Math::float4& color);
+    /// set range of light
+    static void SetRange(const Graphics::GraphicsEntityId id, const float range);
 	/// set intensity of light
 	static void SetIntensity(const Graphics::GraphicsEntityId id, const float intensity);
 	/// get transform

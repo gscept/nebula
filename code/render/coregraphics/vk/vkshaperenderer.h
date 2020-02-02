@@ -47,6 +47,11 @@ private:
 	/// draw buffered indexed primtives
 	void DrawBufferedIndexedPrimitives();
 
+	/// grow index buffer
+	void GrowIndexBuffer();
+	/// grow vertex buffer
+	void GrowVertexBuffer();
+
 	/// draw a shape
 	void DrawSimpleShape(const Math::matrix44& modelTransform, CoreGraphics::RenderShape::Type shapeType, const Math::float4& color);
 	/// draw debug mesh
@@ -70,13 +75,19 @@ private:
 	CoreGraphics::ShaderProgramId programs[CoreGraphics::RenderShape::NumDepthFlags * 2];
 
 	Util::FixedArray<Resources::ResourceId> shapeMeshResources;
-	Util::FixedArray<CoreGraphics::MeshId> shapeMeshes;
 	CoreGraphics::ShaderId shapeShader;
 
-	CoreGraphics::PrimitiveGroup primGroup;
+	Util::Array<CoreGraphics::VertexComponent> comps;
+	static const SizeT MaxVertexIndexBuffers = 2;
+	CoreGraphics::IndexBufferId ibos[MaxVertexIndexBuffers];
+	CoreGraphics::VertexBufferId vbos[MaxVertexIndexBuffers];
+	byte* vertexBufferPtr;
+	byte* indexBufferPtr;
+	IndexT indexBufferActiveIndex;
+	IndexT vertexBufferActiveIndex;
+	SizeT vertexBufferCapacity;
+	SizeT indexBufferCapacity;
 
-	CoreGraphics::VertexBufferId vbo;
-	CoreGraphics::IndexBufferId ibo;
 	CoreGraphics::VertexLayoutId vertexLayout;
 	CoreGraphics::ConstantBinding model;
 	CoreGraphics::ConstantBinding diffuseColor;
@@ -86,22 +97,16 @@ private:
 
 	struct IndexedDraws
 	{
-		Util::Array<CoreGraphics::PrimitiveTopology::Code> topologies;
 		Util::Array<CoreGraphics::PrimitiveGroup> primitives;
 		Util::Array<Math::float4> colors;
 		Util::Array<Math::matrix44> transforms;
-	} indexed;
+	} indexed[CoreGraphics::PrimitiveTopology::NumTopologies];
 
 	struct UnindexedDraws
 	{
-		Util::Array<CoreGraphics::PrimitiveTopology::Code> topologies;
 		Util::Array<CoreGraphics::PrimitiveGroup> primitives;
 		Util::Array<Math::float4> colors;
 		Util::Array<Math::matrix44> transforms;
-	} unindexed;
-
-	static const uint8 NumBuffers = 12;
-	byte* vertexBufferPtr;
-	byte* indexBufferPtr;
+	} unindexed[CoreGraphics::PrimitiveTopology::NumTopologies];
 };
 } // namespace Vulkan

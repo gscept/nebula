@@ -98,7 +98,7 @@ TestAABBCone(ClusterAABB aabb, vec3 pos, vec3 forward, float radius, vec2 sinCos
 
 	float3 v = aabbCenter - pos;
 	const float vlensq = dot(v, v);
-	const float v1len = dot(v, -forward); // weird, but forward must be pointing in the wrong direction...
+	const float v1len = dot(v, -forward);
 	const float distanceClosestPoint = sinCosAngles.y * sqrt(vlensq - v1len * v1len) - v1len * sinCosAngles.x; 
 
 	const bool angleCull	= distanceClosestPoint > aabbRadius;
@@ -333,7 +333,7 @@ void csLighting()
 	vec4 viewPos = PixelToView(coord * InvFramebufferDimensions, depth);
 	vec4 worldPos = ViewToWorld(viewPos);
 	vec3 worldViewVec = normalize(EyePos.xyz - worldPos.xyz);
-	vec3 viewVec = -normalize(viewPos.xyz);
+	vec3 viewVec = normalize(viewPos.xyz);
 	vec3 viewNormal = (View * vec4(normal.xyz, 0)).xyz;
 
 	uint3 index3D = CalculateClusterIndex(coord / BlockSize, viewPos.z, InvZScale, InvZBias); 

@@ -62,14 +62,11 @@ SSRPlugin::Setup()
 	
     FramePlugin::AddCallback("SSR-Trace", [this](IndexT)
 	{
-        const CameraSettings& cameraSettings = CameraContext::GetSettings(Graphics::GraphicsServer::Instance()->GetCurrentView()->GetCamera());
-
-        Math::matrix44 view = CameraContext::GetTransform(Graphics::GraphicsServer::Instance()->GetCurrentView()->GetCamera());
-
 #if NEBULA_GRAPHICS_DEBUG
 		CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "Screen Space Reflections");
 #endif
-        
+        const CameraSettings& cameraSettings = CameraContext::GetSettings(Graphics::GraphicsServer::Instance()->GetCurrentView()->GetCamera());
+        Math::matrix44 view = CameraContext::GetTransform(Graphics::GraphicsServer::Instance()->GetCurrentView()->GetCamera());
         TextureDimensions dims = TextureGetDimensions(this->textures["SSRTraceBuffer"]);
 
         float sx = (float)dims.width / 2.0f;
@@ -80,7 +77,6 @@ SSRPlugin::Setup()
                                                        { 0.0f, 0.0f, 1.0f, 0.0f },
                                                        { sx, sy, 0.0f, 1.0f });
 
-        // TODO: for some reason, this doesn't work when passed to the shader. Maybe transpose or something similar?
         Math::matrix44 viewToTextureSpaceMatrix = Math::matrix44::multiply(scrScale, cameraSettings.GetProjTransform());
         
         SsrCs::SSRBlock ssrBlock;
