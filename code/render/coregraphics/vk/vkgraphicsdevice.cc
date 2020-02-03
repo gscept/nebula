@@ -1845,6 +1845,8 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	state.inBeginCompute = false;
 	state.inBeginFrame = false;
 	state.inBeginPass = false;
+	state.inBeginGraphicsSubmission = false;
+	state.inBeginComputeSubmission = false;
 	state.buildThreadBuffers = false;
 
 	state.currentDrawThread = 0;
@@ -2238,6 +2240,18 @@ BeginSubmission(CoreGraphics::QueueType queue, CoreGraphics::QueueType waitQueue
 {
 	n_assert(state.inBeginFrame);
 	n_assert(queue == GraphicsQueueType || queue == ComputeQueueType);
+
+	switch (queue)
+	{
+	case GraphicsQueueType:
+		n_assert(!state.inBeginGraphicsSubmission);
+		state.inBeginGraphicsSubmission = true;
+		break;
+	case ComputeQueueType:
+		n_assert(!state.inBeginComputeSubmission);
+		state.inBeginComputeSubmission = true;
+		break;
+	}
 
 	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.constantBufferRings[state.currentBufferedFrameIndex];
 	VkDevice dev = state.devices[state.currentDevice];
@@ -2724,6 +2738,7 @@ SetComputeConstantsInternal(CoreGraphics::GlobalConstantBufferType type, uint of
 uint 
 AllocateGraphicsConstantBufferMemory(CoreGraphics::GlobalConstantBufferType type, uint size)
 {
+	n_assert(!state.inBeginGraphicsSubmission);
 	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.constantBufferRings[state.currentBufferedFrameIndex];
 
 	// no matter how we spin it
@@ -2761,6 +2776,7 @@ GetGraphicsConstantBuffer(CoreGraphics::GlobalConstantBufferType type)
 uint 
 AllocateComputeConstantBufferMemory(CoreGraphics::GlobalConstantBufferType type, uint size)
 {
+	n_assert(!state.inBeginComputeSubmission);
 	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.constantBufferRings[state.currentBufferedFrameIndex];
 
 	// no matter how we spin it
@@ -3253,6 +3269,18 @@ void
 EndSubmission(CoreGraphics::QueueType queue, CoreGraphics::QueueType waitQueue, bool endOfFrame)
 {
 	n_assert(waitQueue != queue);
+
+	switch (queue)
+	{
+	case GraphicsQueueType:
+		n_assert(state.inBeginGraphicsSubmission);
+		state.inBeginGraphicsSubmission = false;
+		break;
+	case ComputeQueueType:
+		n_assert(state.inBeginComputeSubmission);
+		state.inBeginComputeSubmission = false;
+		break;
+	}
 
 	CoreGraphics::CommandBufferId commandBuffer = queue == GraphicsQueueType ? state.gfxCmdBuffer : state.computeCmdBuffer;
 	VkPipelineStageFlags stageFlags = queue == GraphicsQueueType ? VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT : VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;

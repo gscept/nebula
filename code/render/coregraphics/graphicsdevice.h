@@ -120,6 +120,8 @@ struct GraphicsDeviceState
 	bool inBeginBatch : 1;
 	bool inBeginCompute : 1;
 	bool inBeginAsyncCompute : 1;
+	bool inBeginGraphicsSubmission : 1;
+	bool inBeginComputeSubmission : 1;
 	bool renderWireframe : 1;
 	bool visualizeMipMaps : 1;
 	bool usePatches : 1;
@@ -200,21 +202,21 @@ void PushConstants(ShaderPipeline pipeline, uint offset, uint size, byte* data);
 template<class TYPE> uint SetGraphicsConstants(CoreGraphics::GlobalConstantBufferType type, const TYPE& data);
 /// allocate range of graphics memory and set data as an array of elements, return offset
 template<class TYPE> uint SetGraphicsConstants(CoreGraphics::GlobalConstantBufferType type, const TYPE* data, SizeT elements);
+/// set graphics constants based on pre-allocated memory
+template<class TYPE> void SetGraphicsConstants(CoreGraphics::GlobalConstantBufferType type, uint offset, const TYPE& data);
 /// allocate range of compute memory and set data, return offset
 template<class TYPE> uint SetComputeConstants(CoreGraphics::GlobalConstantBufferType type, const TYPE& data);
 /// allocate range of graphics memory and set data as an array of elements, return offset
 template<class TYPE> uint SetComputeConstants(CoreGraphics::GlobalConstantBufferType type, const TYPE* data, SizeT elements);
 /// set graphics constants based on pre-allocated memory
-template<class TYPE> void SetGraphicsConstants(CoreGraphics::GlobalConstantBufferType type, uint offset, const TYPE& data);
-/// set graphics constants based on pre-allocated memory
 template<class TYPE> void SetComputeConstants(CoreGraphics::GlobalConstantBufferType type, uint offset, const TYPE& data);
 
 /// allocate range of graphics memory and set data, return offset
 uint SetGraphicsConstantsInternal(CoreGraphics::GlobalConstantBufferType type, const void* data, SizeT size);
-/// allocate range of compute memory and set data, return offset
-uint SetComputeConstantsInternal(CoreGraphics::GlobalConstantBufferType type, const void* data, SizeT size);
 /// use pre-allocated range of memory to update graphics constants
 void SetGraphicsConstantsInternal(CoreGraphics::GlobalConstantBufferType type, uint offset, const void* data, SizeT size);
+/// allocate range of compute memory and set data, return offset
+uint SetComputeConstantsInternal(CoreGraphics::GlobalConstantBufferType type, const void* data, SizeT size);
 /// use pre-allocated range of memory to update compute constants
 void SetComputeConstantsInternal(CoreGraphics::GlobalConstantBufferType type, uint offset, const void* data, SizeT size);
 
@@ -283,7 +285,6 @@ bool IsInBeginFrame();
 void WaitForQueue(CoreGraphics::QueueType queue);
 /// wait for all queues to finish
 void WaitForAllQueues();
-
 
 /// save a screenshot to the provided stream
 CoreGraphics::ImageFileFormat::Code SaveScreenshot(CoreGraphics::ImageFileFormat::Code fmt, const Ptr<IO::Stream>& outStream);
@@ -377,6 +378,16 @@ SetGraphicsConstants(CoreGraphics::GlobalConstantBufferType type, const TYPE* da
 /**
 */
 template<class TYPE>
+inline void
+SetGraphicsConstants(CoreGraphics::GlobalConstantBufferType type, uint offset, const TYPE& data)
+{
+	return SetGraphicsConstantsInternal(type, offset, &data, sizeof(TYPE));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
 inline uint
 SetComputeConstants(CoreGraphics::GlobalConstantBufferType type, const TYPE& data)
 {
@@ -393,15 +404,6 @@ SetComputeConstants(CoreGraphics::GlobalConstantBufferType type, const TYPE* dat
 	return SetComputeConstantsInternal(type, data, sizeof(TYPE) * elements);
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-template<class TYPE>
-inline void 
-SetGraphicsConstants(CoreGraphics::GlobalConstantBufferType type, uint offset, const TYPE& data)
-{
-	return SetGraphicsConstantsInternal(type, offset, &data, sizeof(TYPE));
-}
 
 //------------------------------------------------------------------------------
 /**

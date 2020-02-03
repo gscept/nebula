@@ -53,6 +53,8 @@ public:
 
     /// append element to end of array
     void Append(const TYPE& elm);
+    /// append an element which is being forwarded
+    void Append(TYPE&& elm);
     /// append the contents of an array to this array
     void AppendArray(const ArrayStack<TYPE, STACK_SIZE>& rhs);
     /// increase capacity to fit N more elements into the array
@@ -582,6 +584,23 @@ ArrayStack<TYPE, STACK_SIZE>::Append(const TYPE& elm)
     n_assert(this->elements);
     #endif
     this->elements[this->count++] = elm;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE, int STACK_SIZE> inline void 
+ArrayStack<TYPE, STACK_SIZE>::Append(TYPE&& elm)
+{
+    // grow allocated space if exhausted
+    if (this->count == this->capacity)
+    {
+        this->Grow();
+    }
+#if NEBULA_BOUNDSCHECKS
+    n_assert(this->elements);
+#endif
+    this->elements[this->count++] = std::forward<TYPE>(elm);
 }
 
 //------------------------------------------------------------------------------
