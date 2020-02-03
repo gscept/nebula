@@ -3,6 +3,7 @@
 //  (C) 2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
+#include "core/debug.h"
 #include "assertingmutex.h"
 namespace Threading
 {

@@ -11,6 +11,7 @@
 #include "util/stack.h"
 #include "util/dictionary.h"
 #include "util/stringatom.h"
+#include "threading/threadid.h"
 #include "threading/criticalsection.h"
 #include "threading/assertingmutex.h"
 #include <atomic>
