@@ -333,7 +333,7 @@ void csLighting()
 	vec4 viewPos = PixelToView(coord * InvFramebufferDimensions, depth);
 	vec4 worldPos = ViewToWorld(viewPos);
 	vec3 worldViewVec = normalize(EyePos.xyz - worldPos.xyz);
-	vec3 viewVec = -normalize(viewPos.xyz);
+	vec3 viewVec = normalize(viewPos.xyz);
 	vec3 viewNormal = (View * vec4(normal.xyz, 0)).xyz;
 
 	uint3 index3D = CalculateClusterIndex(coord / BlockSize, viewPos.z, InvZScale, InvZBias); 
