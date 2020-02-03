@@ -80,6 +80,7 @@ struct ProfilingScope
     const char* file;
     int line;
 
+    Timing::Time start;
     Timing::Time duration;
     Util::Array<ProfilingScope> children;
 };
@@ -113,9 +114,9 @@ struct ProfilingContext
         , threadId(Threading::Thread::GetMyThreadId())
     {};
     Util::Stack<ProfilingScope> scopes;
-    Util::Stack<Timing::Timer> timers;
     Util::Array<ProfilingScope> topLevelScopes;
 
+    Timing::Timer timer;
     Util::StringAtom threadName;
     Threading::ThreadId threadId;
 };

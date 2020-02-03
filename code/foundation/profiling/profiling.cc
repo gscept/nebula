@@ -27,8 +27,7 @@ ProfilingPushScope(const ProfilingScope& scope)
 	ProfilingContext& ctx = profilingContexts[ProfilingContextIndex];
 
 	ctx.scopes.Push(scope);
-	ctx.timers.Push(Timing::Timer());
-	ctx.timers.Peek().Start();
+	ctx.scopes.Peek().start = ctx.timer.GetTime();
 }
 
 //------------------------------------------------------------------------------
@@ -44,12 +43,10 @@ ProfilingPopScope()
 	ProfilingContext& ctx = profilingContexts[ProfilingContextIndex];
 
 	// we can safely assume the scope and timers won't be modified from different threads here
-	Timing::Timer& timer = ctx.timers.Pop();
-	timer.Stop();
 	ProfilingScope& scope = ctx.scopes.Pop();
 
 	// add to category lookup
-	scope.duration = timer.GetTime();
+	scope.duration = ctx.timer.GetTime() - scope.start;
 	categoryLock.Enter();
 	scopesByCategory.AddUnique(scope.category).Append(scope);
 	categoryLock.Leave();
@@ -78,6 +75,7 @@ ProfilingRegisterThread()
 	Threading::ThreadId thread = Threading::Thread::GetMyThreadId();
 	ProfilingContextIndex = ProfilingContextCounter.fetch_add(1);
 	profilingContexts.Append(ProfilingContext());
+	profilingContexts.Back().timer.Start();
 	contextMutexes.Append(Threading::AssertingMutex());
 }
 
@@ -112,7 +110,6 @@ ProfilingClear()
 	for (IndexT i = 0; i < profilingContexts.Size(); i++)
 	{
 		n_assert(profilingContexts[i].scopes.Size() == 0);
-		n_assert(profilingContexts[i].timers.Size() == 0);
 		profilingContexts[i].topLevelScopes.Clear();
 	}
 }
