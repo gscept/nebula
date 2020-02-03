@@ -81,7 +81,7 @@ bool TraceScreenSpaceRay(in vec3 rayOrigin,
 							   0.0,  0.0,  1.0,  0.0,
 							   sx,   sy,   0.0,  1.0 );
 
-	const mat4 proj = ViewToTextureSpace;//scrScale * Projection;
+	const mat4 proj = ViewToTextureSpace;
 
 	// Project into homogeneous clip space
 	const vec4 H0 = proj * vec4( rayOrigin, 1.0f);
