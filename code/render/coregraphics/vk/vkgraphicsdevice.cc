@@ -1408,10 +1408,17 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	VkPhysicalDeviceFeatures features;
 	vkGetPhysicalDeviceFeatures(state.physicalDevices[state.currentDevice], &features);
 
+	VkPhysicalDeviceTimelineSemaphoreFeatures timelineSemaphores =
+	{
+		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES,
+		nullptr,
+		true
+	};
+
 	VkPhysicalDeviceHostQueryResetFeatures hostQueryReset =
 	{
 		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES,
-		nullptr,
+		&timelineSemaphores,
 		true
 	};
 
