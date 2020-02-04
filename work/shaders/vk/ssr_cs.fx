@@ -11,7 +11,7 @@
 #include "lib/techniques.fxh"
 #include "lib/shared.fxh"
 
-write rg16f image2D TraceBuffer;
+write rgba16f image2D TraceBuffer;
 
 varblock SSRBlock
 {
@@ -247,6 +247,7 @@ shader
 void
 csMain()
 {
+	const float relativeResolution = 0.5f;
 	ivec2 location = ivec2(gl_GlobalInvocationID.xy);
     const vec2 screenSize = imageSize(TraceBuffer);
 	if (location.x >= screenSize.x || location.y > screenSize.y)
@@ -256,8 +257,9 @@ csMain()
 
 	vec2 UV = location * invScreenSize;
 
-	vec4 n = sample2DLod(NormalBuffer, LinearState, UV, 0);
-	vec3 viewSpaceNormal = normalize((transpose(inverse(mat3(View))) * normalize(n.xyz)).xyz);
+	vec4 N = sample2DLod(NormalBuffer, LinearState, UV, 0);
+	vec4 material = sample2DLod(SpecularBuffer, LinearState, UV, 0);
+	vec3 viewSpaceNormal = normalize((transpose(inverse(mat3(View))) * normalize(N.xyz)).xyz);
 	float pixelDepth = fetch2D(DepthBuffer, Basic2DSampler, location * 2, 0).r;
 	
 	vec3 rayOrigin = PixelToView(UV, pixelDepth).xyz;
@@ -270,8 +272,9 @@ csMain()
 	vec4 reflectionColor = vec4(-1.0, -1.0, 0, 0);
 	if (TraceScreenSpaceRay(rayOrigin, reflectionDir, hitTexCoord))
 	{
-        // xy is screen uvs of hit
-        reflectionColor = vec4((hitTexCoord * invScreenSize), 0, 0);
+		float cosTheta = dot(viewSpaceNormal, reflectionDir);
+		// xy is screen uvs of hit and NdotL
+        reflectionColor = vec4((hitTexCoord * invScreenSize) * relativeResolution, cosTheta, 0);
 	}
 	
 	imageStore(TraceBuffer, location, reflectionColor);

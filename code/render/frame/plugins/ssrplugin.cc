@@ -41,24 +41,41 @@ void
 SSRPlugin::Setup()
 {
 	FramePlugin::Setup();
-
-    // create shader
-	this->shader = ShaderGet("shd:ssr_cs.fxb");
-    this->constants = CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer);
-    this->constantsSlot = ShaderGetResourceSlot(this->shader, "SSRBlock");
-    this->traceBufferSlot = ShaderGetResourceSlot(this->shader, "TraceBuffer");
     
     SizeT numFrames = CoreGraphics::GetNumBufferedFrames();
 
-    this->ssrTables.SetSize(numFrames);
+    // create trace shader
+	this->traceShader = ShaderGet("shd:ssr_cs.fxb");
+    this->constants = CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer);
+    this->constantsSlot = ShaderGetResourceSlot(this->traceShader, "SSRBlock");
+    this->traceBufferSlot = ShaderGetResourceSlot(this->traceShader, "TraceBuffer");
+
+    this->ssrTraceTables.SetSize(numFrames);
     for (IndexT i = 0; i < numFrames; ++i)
     {
-        this->ssrTables[i] = ShaderCreateResourceTable(this->shader, NEBULA_BATCH_GROUP);
-        ResourceTableSetRWTexture(this->ssrTables[i], { this->textures["SSRTraceBuffer"], this->traceBufferSlot, 0, SamplerId::Invalid() });
-        ResourceTableCommitChanges(this->ssrTables[i]);
+        this->ssrTraceTables[i] = ShaderCreateResourceTable(this->traceShader, NEBULA_BATCH_GROUP);
+        ResourceTableSetRWTexture(this->ssrTraceTables[i], { this->textures["SSRTraceBuffer"], this->traceBufferSlot, 0, SamplerId::Invalid() });
+        ResourceTableCommitChanges(this->ssrTraceTables[i]);
     }
 
-	this->program = ShaderGetProgram(this->shader, ShaderFeatureFromString("Alt0"));
+    //create resolve shader
+    this->resolveShader = ShaderGet("shd:ssr_resolve_cs.fxb");
+    this->reflectionBufferSlot = ShaderGetResourceSlot(this->resolveShader, "ReflectionBuffer");
+    this->lightBufferSlot = ShaderGetResourceSlot(this->resolveShader, "LightBuffer");
+    this->resolveTraceBufferSlot = ShaderGetResourceSlot(this->resolveShader, "TraceBuffer");
+
+    this->ssrResolveTables.SetSize(numFrames);
+    for (IndexT i = 0; i < numFrames; ++i)
+    {
+        this->ssrResolveTables[i] = ShaderCreateResourceTable(this->resolveShader, NEBULA_BATCH_GROUP);
+        ResourceTableSetRWTexture(this->ssrResolveTables[i], { this->textures["ReflectionBuffer"], this->reflectionBufferSlot, 0, SamplerId::Invalid() });
+        ResourceTableSetRWTexture(this->ssrResolveTables[i], { this->textures["SSRTraceBuffer"], this->resolveTraceBufferSlot, 0, SamplerId::Invalid() });
+        ResourceTableCommitChanges(this->ssrResolveTables[i]);
+    }
+
+    // setup programs
+	this->traceProgram = ShaderGetProgram(this->traceShader, ShaderFeatureFromString("Alt0"));
+	this->resolveProgram = ShaderGetProgram(this->resolveShader, ShaderFeatureFromString("Alt0"));
 	
     FramePlugin::AddCallback("SSR-Prepare", [this](IndexT)
     {
@@ -94,8 +111,8 @@ SSRPlugin::Setup()
 
         IndexT frameIndex = CoreGraphics::GetBufferedFrameIndex();
 
-        ResourceTableSetConstantBuffer(this->ssrTables[frameIndex], { this->constants, this->constantsSlot, 0, false, false, sizeof(SsrCs::SSRBlock), (SizeT)ssrOffset });
-        ResourceTableCommitChanges(this->ssrTables[frameIndex]);
+        ResourceTableSetConstantBuffer(this->ssrTraceTables[frameIndex], { this->constants, this->constantsSlot, 0, false, false, sizeof(SsrCs::SSRBlock), (SizeT)ssrOffset });
+        ResourceTableCommitChanges(this->ssrTraceTables[frameIndex]);
     });
 
     FramePlugin::AddCallback("SSR-Trace", [this](IndexT)
@@ -106,8 +123,8 @@ SSRPlugin::Setup()
         TextureDimensions dims = TextureGetDimensions(this->textures["SSRTraceBuffer"]);
         IndexT frameIndex = CoreGraphics::GetBufferedFrameIndex();
 
-        CoreGraphics::SetShaderProgram(this->program);
-        CoreGraphics::SetResourceTable(this->ssrTables[frameIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+        CoreGraphics::SetShaderProgram(this->traceProgram);
+        CoreGraphics::SetResourceTable(this->ssrTraceTables[frameIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
 
         const int TILE_SIZE = 32;
         int workGroups[2] = {
@@ -120,28 +137,17 @@ SSRPlugin::Setup()
 		CoreGraphics::CommandBufferEndMarker(GraphicsQueueType);
 #endif
 	});
-    /*
+
     FramePlugin::AddCallback("SSR-Resolve", [this](IndexT)
-    {
-        const CameraSettings& cameraSettings = CameraContext::GetSettings(Graphics::GraphicsServer::Instance()->GetCurrentView()->GetCamera());
-
-        Math::matrix44 view = CameraContext::GetTransform(Graphics::GraphicsServer::Instance()->GetCurrentView()->GetCamera());
-
+	{
 #if NEBULA_GRAPHICS_DEBUG
-        CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "Screen Space Reflections");
+		CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "Screen Space Reflections");
 #endif
-
         TextureDimensions dims = TextureGetDimensions(this->textures["ReflectionBuffer"]);
-
-        uint ssrOffset = CoreGraphics::SetGraphicsConstants(MainThreadConstantBuffer, ssrBlock);
-
         IndexT frameIndex = CoreGraphics::GetBufferedFrameIndex();
 
-        ResourceTableSetConstantBuffer(this->ssrTables[frameIndex], { this->constants, this->constantsSlot, 0, false, false, sizeof(SsrCs::SSRBlock), (SizeT)ssrOffset });
-        ResourceTableCommitChanges(this->ssrTables[frameIndex]);
-
-        CoreGraphics::SetShaderProgram(this->program);
-        CoreGraphics::SetResourceTable(this->ssrTables[frameIndex], NEBULA_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
+        CoreGraphics::SetShaderProgram(this->resolveProgram);
+        CoreGraphics::SetResourceTable(this->ssrResolveTables[frameIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
 
         const int TILE_SIZE = 32;
         int workGroups[2] = {
@@ -151,10 +157,9 @@ SSRPlugin::Setup()
         CoreGraphics::Compute(workGroups[0], workGroups[1], 1);
 
 #if NEBULA_GRAPHICS_DEBUG
-        CoreGraphics::CommandBufferEndMarker(GraphicsQueueType);
+		CoreGraphics::CommandBufferEndMarker(GraphicsQueueType);
 #endif
-    });
-    */
+	});
 }
 
 //------------------------------------------------------------------------------
@@ -164,7 +169,7 @@ void
 SSRPlugin::Discard()
 {
 	FramePlugin::Discard();
-    for (auto& table : this->ssrTables)
+    for (auto& table : this->ssrTraceTables)
     {
 	    DestroyResourceTable(table);
         table = CoreGraphics::ResourceTableId::Invalid();
@@ -180,8 +185,8 @@ SSRPlugin::Resize()
 	SizeT numFrames = CoreGraphics::GetNumBufferedFrames();
 	for (IndexT i = 0; i < numFrames; ++i)
 	{
-		ResourceTableSetRWTexture(this->ssrTables[i], { this->textures["SSRTraceBuffer"], this->traceBufferSlot, 0, SamplerId::Invalid() });
-		ResourceTableCommitChanges(this->ssrTables[i]);
+		ResourceTableSetRWTexture(this->ssrTraceTables[i], { this->textures["SSRTraceBuffer"], this->traceBufferSlot, 0, SamplerId::Invalid() });
+		ResourceTableCommitChanges(this->ssrTraceTables[i]);
 	}
 }
 
