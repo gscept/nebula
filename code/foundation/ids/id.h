@@ -188,6 +188,23 @@ namespace Ids
 	};
 #define ID_24_8_TYPE(x) ID_24_8_NAMED_TYPE(x, id24, id8)
 
+#define ID_16_16_NAMED_TYPE(x, id16_0_name, id16_1_name) struct x { \
+	Ids::Id16 id16_0_name; \
+	Ids::Id16 id16_1_name; \
+	constexpr x() : id16_0_name(Ids::InvalidId16), id16_1_name(Ids::InvalidId16) {} \
+	constexpr x(const Ids::Id16 id0, const Ids::Id16 id1) : id16_0_name(id0), id16_1_name(id1) {} \
+	constexpr x(const Ids::Id64 id) : id16_0_name(Ids::Id::GetHigh(id)), id16_1_name(Ids::Id::GetLow(id)) {};\
+	explicit constexpr operator Ids::Id64() const { return Ids::Id::MakeId64(id16_0_name, id16_1_name); }\
+	static constexpr x Invalid() { return Ids::Id::MakeId64(Ids::InvalidId16, Ids::InvalidId16); }\
+	constexpr IndexT HashCode() const { return (IndexT)(id16_1_name); }\
+	constexpr Ids::Id64 HashCode64() const { return Ids::Id::MakeId64(id16_0_name, id16_1_name); }\
+	const bool operator==(const x& rhs) const { return id16_0_name == rhs.id16_0_name && id16_1_name == rhs.id16_1_name; }\
+	const bool operator!=(const x& rhs) const { return id16_0_name != rhs.id16_0_name || id16_1_name != rhs.id16_1_name; }\
+	const bool operator<(const x& rhs) const { return HashCode64() < rhs.HashCode64(); }\
+	const bool operator>(const x& rhs) const { return HashCode64() > rhs.HashCode64(); }\
+	template <typename T> constexpr T As() const { static_assert(sizeof(T) == sizeof(x), "Can only convert between ID types of equal size"); T ret; memcpy((void*)&ret, this, sizeof(T)); return ret; }; \
+	};
+#define ID_16_16_TYPE(x) ID_16_16_NAMED_TYPE(x, id16_0, id16_1)
 
 struct Id
 {

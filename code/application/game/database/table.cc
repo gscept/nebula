@@ -1,55 +1,57 @@
 //------------------------------------------------------------------------------
-//  componentplugin.cc
-//  (C) 2018-2020 Individual contributors, see AUTHORS file
+//  table.cc
+//  (C) 2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "application/stdneb.h"
-#include "componentplugin.h"
+#include "table.h"
 namespace Game
 {
 
+__ImplementClass(Game::Table, 'Gtbl', Core::RefCounted)
+
 //------------------------------------------------------------------------------
 /**
 */
-ComponentPlugin::ComponentPlugin()
+Table::Table()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-ComponentPlugin::~ComponentPlugin()
+Table::~Table()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-bool
-ComponentPlugin::LoadPlugin(const Util::String & path)
+ColumnId
+Table::AddColumn(Column attrid)
 {
-	// empty
-	return false;
+    n_assert2(this->columns.FindIndex(attrid) == InvalidIndex, "Can only add one column of each type!");
+
+    this->columns.Append(attrid);
+    this->columnIds.Add(attrid, this->columns.Size() - 1);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-bool
-ComponentPlugin::UnloadPlugin()
+Column
+Table::GetColumnType(ColumnId col)
 {
-	// empty
-	return false;
+    return this->columns[col.id];
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-void
-ComponentPlugin::OnBeginFrame(void * data)
+ColumnId
+Table::FindColumn(Column attrid)
 {
-	// empty
+    return this->columns.FindIndex(attrid);
 }
-
 } // namespace Game
