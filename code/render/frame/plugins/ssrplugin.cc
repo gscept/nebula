@@ -93,14 +93,7 @@ SSRPlugin::Setup()
             { sx, sy, 0.0f, 1.0f }
         );
 
-        float zNear = 0.1f;
-        float zFar = 1000.0f;
-        float fov = Math::n_deg2rad(60.f);
-        float aspect = (float)dims.width / (float)dims.height;
-
-        auto proj = Math::matrix44::perspfovrh(fov, aspect, zNear, zFar);
-
-        Math::matrix44 conv = proj;
+        Math::matrix44 conv = cameraSettings.GetProjTransform();
         conv.setrow1(Math::float4::multiply(conv.getrow1(), Math::float4(-1)));
 
         Math::matrix44 viewToTextureSpaceMatrix = Math::matrix44::multiply(conv, scrScale);
