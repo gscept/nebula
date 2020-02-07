@@ -36,16 +36,26 @@ public:
 
     ColumnId AddColumn(TableId table, Column column);
 
+    IndexT AllocateRow(TableId table);
+    void DeallocateRow(TableId table, IndexT row);
+    
 
 private:
     struct Table
     {
+        using ColumnData = void*;
+
         Util::StringAtom name;
-        Util::Array<Column> columns;
+        Util::ArrayAllocatorSafe<Column, ColumnData> columns;
+        uint32_t numRows = 128;
+        uint32_t capacity = 128;
+        uint32_t grow = 128;
+
+        static constexpr Memory::HeapType HEAP_MEMORY_TYPE = Memory::HeapType::DefaultHeap;
     };
 
     Ids::IdGenerationPool tableIdPool;
-    Util::ArrayAllocatorSafe<Table, ValueTable> tables;
+    Util::ArrayAllocatorSafe<Table> tables;
 };
 
 } // namespace Game
