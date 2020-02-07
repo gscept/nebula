@@ -49,6 +49,7 @@ Database::CreateTable(TableCreateInfo const& info)
 
     table->name = info.name;
     table->columns.Clear();
+
     for (IndexT i = 0; i < info.columns.Size(); i++)
     {
         this->AddColumn(id, info.columns[i]);
@@ -61,8 +62,9 @@ Database::CreateTable(TableCreateInfo const& info)
 void
 Database::DeleteTable(TableId table)
 {
-    n_delete(this->tables[Ids::Index(table.id)]);
-    this->tableIdPool.Deallocate(table.id);
+    n_error("implement me!");
+    //n_delete(this->tables[Ids::Index(table.id)]);
+    //this->tableIdPool.Deallocate(table.id);
 
 }
 
@@ -81,7 +83,7 @@ Database::IsValid(TableId table)
 Column
 Database::GetColumn(TableId table, ColumnId columnId)
 {
-    return this->tables[Ids::Index(table.id)]->columns[columnId.id];
+    return this->tables.Get<0>(Ids::Index(table.id)).columns.Get<0>(columnId.id);
 }
 
 //------------------------------------------------------------------------------
@@ -90,7 +92,7 @@ Database::GetColumn(TableId table, ColumnId columnId)
 ColumnId
 Database::GetColumnId(TableId table, Column column)
 {
-    ColumnId cid = this->tables[Ids::Index(table.id)]->columns.FindIndex(column);
+    ColumnId cid = this->tables.Get<0>(Ids::Index(table.id)).columns.GetArray<0>().FindIndex(column);
     n_assert(cid != ColumnId::Invalid());
     return cid;
 }
@@ -99,11 +101,56 @@ Database::GetColumnId(TableId table, Column column)
 /**
 */
 ColumnId
-Database::AddColumn(TableId table, Column column)
+Database::AddColumn(TableId tid, Column column)
 {
-    this->tables[Ids::Index(table.id)]->columns.Append(column);
+    Game::Database::Table& table = this->tables.Get<0>(Ids::Index(tid.id));
+    uint32_t col = table.columns.Alloc();
     
+    Table::ColumnData buffer = table.columns.Get<1>(col);
+    table.columns.Get<0>(col) = column;
+
+    //  TODO: Get size from the attribute
+    const SizeT byteSize = 16;//Attr::SizeOf(column);
+    buffer = Memory::Alloc(Table::HEAP_MEMORY_TYPE, table.capacity * byteSize);
+
+    // TODO: Fill buffer with default values
+    // Memory::Fill(buffer, table.numRows, 0);
+
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+IndexT
+Database::AllocateRow(TableId tid)
+{
+    Game::Database::Table& table = this->tables.Get<0>(Ids::Index(tid.id));
+    auto& colTypes = table.columns.GetArray<0>();
+    auto& buffers = table.columns.GetArray<1>();
+
+    int row = table.numRows++;
+
+    if (table.numRows < table.capacity)
+    {
+        // Just set the default values
+        for (IndexT i = 0; i < buffers.Size(); i++)
+        {
+            ((char*)buffers[i])
+        }
+    }
+    else 
+    {
+        // We need to grow the buffers
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Database::DeallocateRow(TableId table, IndexT row)
+{
+
+}
 
 } // namespace Game
