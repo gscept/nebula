@@ -41,6 +41,8 @@ public:
     
 
 private:
+    void GrowTable(TableId tid);
+
     struct Table
     {
         using ColumnData = void*;
@@ -50,7 +52,9 @@ private:
         uint32_t numRows = 128;
         uint32_t capacity = 128;
         uint32_t grow = 128;
-
+        // Holds freed indices to be reused in the attribute table.
+        Util::Array<IndexT> freeIds;
+        
         static constexpr Memory::HeapType HEAP_MEMORY_TYPE = Memory::HeapType::DefaultHeap;
     };
 
