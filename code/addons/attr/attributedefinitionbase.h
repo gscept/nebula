@@ -106,6 +106,8 @@ public:
     const Util::String& GetTypeName() const;
     /// get default value
     const Util::Variant& GetDefaultValue() const;
+    /// get size of type in bytes
+    const uint GetSizeOfType() const;
     /// get access type
     AccessMode GetAccessMode() const;
     /// get value type
@@ -232,6 +234,50 @@ const Util::Variant&
 AttributeDefinitionBase::GetDefaultValue() const
 {
     return this->defaultValue;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline
+const uint
+AttributeDefinitionBase::GetSizeOfType() const
+{
+    switch (this->valueType)
+    {
+    case VoidType:          return 0;
+    case ByteType:          return sizeof(uint8);
+    case ShortType:         return sizeof(uint16);
+    case UShortType:        return sizeof(uint16);
+    case IntType:           return sizeof(uint32);
+    case UIntType:          return sizeof(uint32);
+    case Int64Type:         return sizeof(uint64);
+    case UInt64Type:        return sizeof(uint64);
+    case FloatType:         return sizeof(float);
+    case DoubleType:        return sizeof(double);
+    case BoolType:          return sizeof(bool);
+    case Float2Type:		return sizeof(float) * 2;
+    case Float4Type:        return sizeof(float) * 4;
+    case QuaternionType:    return sizeof(float) * 4;
+    case StringType:        return sizeof(Util::String);
+    case Matrix44Type:      return sizeof(Math::matrix44);
+    case Transform44Type:   return sizeof(Math::transform44);
+    case BlobType:          return sizeof(Util::Blob);
+    case GuidType:          return sizeof(Util::Guid);
+    case VoidPtrType:       return sizeof(void*);
+    case IntArrayType:      return sizeof(Util::Array<int>);
+    case FloatArrayType:    return sizeof(Util::Array<float>);
+    case BoolArrayType:     return sizeof(Util::Array<bool>);
+    case Float2ArrayType:	return sizeof(Util::Array<Math::float2>);
+    case Float4ArrayType:   return sizeof(Util::Array<Math::float4>);
+    case Matrix44ArrayType: return sizeof(Util::Array<Math::matrix44>);
+    case StringArrayType:   return sizeof(Util::Array<Util::String>);
+    case GuidArrayType:     return sizeof(Util::Array<Util::Guid>);
+    case BlobArrayType:     return sizeof(Util::Array<Util::Blob>);
+    default:
+        n_error("AttributeDefinitionBase::GetSizeOfType(): invalid type enum '%d'!", this->valueType);
+        return 0;
+    }
 }
 
 //------------------------------------------------------------------------------
