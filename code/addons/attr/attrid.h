@@ -63,6 +63,8 @@ public:
     bool IsDynamic() const;
     /// return true if the attribute id object is valid
     bool IsValid() const;
+    /// return the byte size of the type
+    uint GetSizeOfType() const;
 
     /// get bool default value
     bool GetBoolDefValue() const;
@@ -180,6 +182,18 @@ bool
 AttrId::IsValid() const
 {
     return (0 != this->defPtr);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline
+uint
+AttrId::GetSizeOfType() const
+{
+    n_assert(this->IsValid());
+    return this->defPtr->GetSizeOfType();
+    
 }
 
 //------------------------------------------------------------------------------
