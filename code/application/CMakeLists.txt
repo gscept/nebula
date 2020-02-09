@@ -29,6 +29,7 @@ nebula_begin_module(application)
 			table.cc
 			valuetable.h
 			valuetable.cc
+			attribute.h
 		)
 	fips_dir(game/messaging)
 		fips_files(

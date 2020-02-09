@@ -9,6 +9,8 @@ namespace Game
 {
 __ImplementClass(Game::Database, 'GMDB', Core::RefCounted);
 
+static constexpr Memory::HeapType ALLOCATIONHEAP = Memory::HeapType::DefaultHeap;
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -54,6 +56,8 @@ Database::CreateTable(TableCreateInfo const& info)
 	{
 		this->AddColumn(id, info.columns[i]);
 	}
+
+	return id;
 }
 
 //------------------------------------------------------------------------------
@@ -106,16 +110,12 @@ Database::AddColumn(TableId tid, Column column)
 	Game::Database::Table& table = this->tables.Get<0>(Ids::Index(tid.id));
 	uint32_t col = table.columns.Alloc();
 
-	Table::ColumnData buffer = table.columns.Get<1>(col);
+	Table::ColumnData& buffer = table.columns.Get<1>(col);
 	table.columns.Get<0>(col) = column;
 
-	//  TODO: Get size from the attribute
-	const SizeT byteSize = column.GetSizeOfType();
-	buffer = Memory::Alloc(Table::HEAP_MEMORY_TYPE, table.capacity * byteSize);
+	buffer = this->AllocateColumn(tid, column);
 
-	// TODO: Fill buffer with default values
-	// Memory::Fill(buffer, table.numRows, 0);
-
+	return col;
 }
 
 //------------------------------------------------------------------------------
@@ -134,15 +134,110 @@ Database::AllocateRow(TableId tid)
 	}
 	else
 	{
-		index = table.numRows++;
-		while (index > table.capacity)
+		index = table.numRows;
+		if (index >= table.capacity)
 		{
 			this->GrowTable(tid);
 		}
+
+		table.numRows++;
 	}
 
-	// this->SetToDefault(index, std::make_index_sequence<sizeof...(TYPES)>());
+	this->SetToDefault(tid, index);
 	return index;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Database::DeallocateRow(TableId tid, IndexT row)
+{
+	Game::Database::Table& table = this->tables.Get<0>(Ids::Index(tid.id));
+	n_assert(row < table.numRows);
+	table.freeIds.InsertSorted(row);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Database::SetToDefault(TableId tid, IndexT row)
+{
+	Game::Database::Table& table = this->tables.Get<0>(Ids::Index(tid.id));
+	n_assert(row < table.numRows);
+
+	for (IndexT col = 0; col < table.columns.Size(); col++)
+	{
+		Column column = table.columns.Get<0>(col);
+		void* buffer = table.columns.Get<1>(col);
+		
+		switch (column.GetValueType())
+		{
+		case Attr::ValueType::IntType:
+			*((int*)buffer + row) = column.GetIntDefValue();
+			break;
+		case Attr::ValueType::FloatType:
+			*((float*)buffer + row) = column.GetFloatDefValue();
+			break;
+		case Attr::ValueType::StringType:
+		{
+			Util::String& to = ((Util::String*)buffer)[row];
+			to = column.GetStringDefValue();
+			break;
+		}
+		case Attr::ValueType::Float4Type:
+			*((Math::float4*)buffer + row) = column.GetFloat4DefValue();
+			break;
+		default:
+			n_error("Type not yet supported!");
+		}
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+SizeT
+Database::GetNumRows(TableId table)
+{
+	return this->tables.Get<0>(Ids::Index(table.id)).numRows;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<typename TYPE>
+void
+GrowBuffer(Column column, void*& buffer, const SizeT capacity, const SizeT size, const SizeT newCapacity)
+{
+	if constexpr (!std::is_trivial<TYPE>::value)
+	{
+		const SizeT byteSize = column.GetSizeOfType();
+		
+		int oldNumBytes = byteSize * capacity;
+		int newNumBytes = byteSize * newCapacity;
+		void* newData = Memory::Alloc(ALLOCATIONHEAP, newNumBytes);
+
+		Memory::Move(buffer, newData, size * byteSize);
+		Memory::Free(ALLOCATIONHEAP, buffer);
+		buffer = newData;
+	}
+	else
+	{
+		const SizeT byteSize = column.GetSizeOfType();
+
+		TYPE* newData = n_new_array(TYPE, newCapacity);
+
+		for (int row = 0; row < size; ++row)
+		{
+			newData[row] = std::move(((TYPE*)buffer)[row]);
+		}
+
+		n_delete_array((TYPE*)buffer);
+
+		buffer = (void*)newData;
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -161,25 +256,71 @@ Database::GrowTable(TableId tid)
 
 	for (int i = 0; i < colTypes.Size(); ++i)
 	{
-		int oldNumBytes = colTypes[i].GetSizeOfType() * oldCapacity;
-		int newNumBytes = colTypes[i].GetSizeOfType() * table.capacity;
-		void* newData = Memory::Alloc(Table::HEAP_MEMORY_TYPE, newNumBytes);
-		Memory::Copy(buffers[i], newData, oldNumBytes);
-		Memory::Free(Table::HEAP_MEMORY_TYPE, buffers[i]);
-		buffers[i] = newData;
+		switch (colTypes[i].GetValueType())
+		{
+		case Attr::ValueType::IntType: GrowBuffer<int>(colTypes[i], buffers[i], oldCapacity, table.numRows, table.capacity); break;
+		case Attr::ValueType::FloatType: GrowBuffer<float>(colTypes[i], buffers[i], oldCapacity, table.numRows, table.capacity); break;
+		case Attr::ValueType::Float4Type: GrowBuffer<Math::float4>(colTypes[i], buffers[i], oldCapacity, table.numRows, table.capacity); break;
+		case Attr::ValueType::StringType: GrowBuffer<Util::String>(colTypes[i], buffers[i], oldCapacity, table.numRows, table.capacity); break;
+		default:
+			n_error("Type not yet supported!");
+		}
 	}
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-void
-Database::DeallocateRow(TableId tid, IndexT row)
+template<typename TYPE>
+void*
+AllocateBuffer(Column column, const SizeT capacity, const SizeT size)
+{
+	if constexpr (!std::is_trivial<TYPE>::value)
+	{
+		const SizeT byteSize = column.GetSizeOfType();
+		void* buffer = Memory::Alloc(ALLOCATIONHEAP, capacity * byteSize);
+
+		for (IndexT i = 0; i < size; ++i)
+		{
+			*((TYPE*)buffer + i) = column.GetDefaultValue().Get<TYPE>();
+		}
+
+		return buffer;
+	}
+	else
+	{
+		TYPE* buffer = n_new_array(TYPE, capacity);
+		for (int i = 0; i < size; i++)
+		{
+			buffer[i] = column.GetDefaultValue().Get<TYPE>();
+		}
+		return buffer;
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void*
+Database::AllocateColumn(TableId tid, Column column)
 {
 	Game::Database::Table& table = this->tables.Get<0>(Ids::Index(tid.id));
-	n_assert(row < table.numRows);
-	// TODO: We could possibly get better performance when defragging if we insert it in reverse order (high to low)
-	table.freeIds.InsertSorted(row);
+
+	const Attr::ValueType type = column.GetValueType();
+
+	void* buffer = nullptr;
+	switch (column.GetValueType())
+	{
+	case Attr::ValueType::IntType:		buffer = AllocateBuffer<int>(column, table.capacity, table.numRows); break;
+	case Attr::ValueType::FloatType:	buffer = AllocateBuffer<float>(column, table.capacity, table.numRows); break;
+	case Attr::ValueType::Float4Type:	buffer = AllocateBuffer<Math::float4>(column, table.capacity, table.numRows); break;
+	case Attr::ValueType::StringType:	buffer = AllocateBuffer<Util::String>(column, table.capacity, table.numRows); break;
+	default:
+		n_error("Type not yet supported!");
+	}
+
+	return buffer;
 }
+
 
 } // namespace Game
