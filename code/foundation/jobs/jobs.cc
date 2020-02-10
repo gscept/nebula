@@ -4,6 +4,11 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "jobs.h"
+
+#if NEBULA_ENABLE_PROFILING
+#include "profiling/profiling.h"
+#endif
+
 namespace Jobs
 {
 
@@ -238,6 +243,7 @@ CreateJobSync(const CreateJobSyncInfo& info)
 	jobSyncAllocator.Get<SyncCallback>(id) = info.callback;
 	jobSyncAllocator.Get<SyncCompletionEvent>(id) = n_new(Threading::Event(true));
 	jobSyncAllocator.Get<SyncCompletionCounter>(id) = n_new(std::atomic_uint);
+	jobSyncAllocator.Get<SyncCompletionCounter>(id)->store(0);
 	jobSyncAllocator.Get<SyncPendingSignal>(id) = false;
 
 	// start with it signaled
@@ -274,10 +280,12 @@ JobSyncSignal(const JobSyncId id, const JobPortId port)
 	// set counter and issue sync points if the jobs haven't finished yet
 	if (completionCount > 0)
 	{
+		N_SCOPE(ResetAndSignal, Jobs);
+		event->Reset();
+		n_assert(counter->load() == 0);
+
 		// set the counter to finish all threads, and reset the event
 		counter->exchange(completionCount);
-		event->Wait();
-		event->Reset();
 
 		IndexT i;
 		for (i = 0; i < threads.Size(); i++)
@@ -300,6 +308,7 @@ JobSyncSignal(const JobSyncId id, const JobPortId port)
 void 
 JobSyncHostWait(const JobSyncId id)
 {
+	N_SCOPE(Wait, Jobs);
 	Threading::Event* event = jobSyncAllocator.Get<SyncCompletionEvent>(id.id);
 	event->Wait();
 }
@@ -374,6 +383,11 @@ JobThread::EmitWakeupSignal()
 void
 JobThread::DoWork()
 {
+
+#if NEBULA_ENABLE_PROFILING
+	Profiling::ProfilingRegisterThread();
+#endif
+
 	// allocate the scratch buffer
 	n_assert(0 == this->scratchBuffer);
 	this->scratchBuffer = (ubyte*)Memory::Alloc(Memory::ScratchHeap, MaxScratchSize);
@@ -408,8 +422,11 @@ JobThread::DoWork()
 				break;
 			}
 			case Wait:
+			{
+				N_SCOPE(Wait, Jobs);
 				cmd.sync.ev->Wait();
 				break;
+			}				
 			}
 		}
 
@@ -437,61 +454,54 @@ JobThread::HasWork()
 void
 JobThread::RunJobSlices(uint firstSliceIndex, uint numSlices, const JobContext ctx, void(*JobFunc)(const JobFuncContext& ctx), const std::function<void()>* callback)
 {
-	uint sliceIndex = firstSliceIndex;
+	// start setting up the job slice function context
+	JobFuncContext tctx = { 0 };
 
-	uint i;
-	for (i = 0; i < numSlices; i++)
+	tctx.numSlices = numSlices;
+
+	// setup uniforms which are the same for all threads
+	uint bufIdx;
+	tctx.numUniforms = ctx.uniform.numBuffers;
+	for (bufIdx = 0; bufIdx < tctx.numUniforms; bufIdx++)
 	{
-		// start setting up the job slice function context
-		JobFuncContext tctx = { 0 };
-
-		// setup uniforms which are the same for all threads
-		uint bufIdx;
-		tctx.numUniforms = ctx.uniform.numBuffers;
-		for (bufIdx = 0; bufIdx < tctx.numUniforms; bufIdx++)
-		{
-			tctx.uniforms[bufIdx] = (ubyte*)ctx.uniform.data[bufIdx];
-			tctx.uniformSizes[bufIdx] = ctx.uniform.dataSize[bufIdx];
-		}
-
-		if (ctx.uniform.scratchSize > 0)
-		{
-			n_assert(ctx.uniform.scratchSize < JobThread::MaxScratchSize);
-			tctx.scratch = this->scratchBuffer;
-		}
-		else
-		{
-			tctx.scratch = nullptr;
-		}
-
-		// setup inputs
-		tctx.numInputs = ctx.input.numBuffers;
-		for (bufIdx = 0; bufIdx < tctx.numInputs; bufIdx++)
-		{
-			ubyte* buf = (ubyte*)ctx.input.data[bufIdx];
-			n_assert(buf != nullptr);
-			const IndexT offset = sliceIndex * ctx.input.sliceSize[bufIdx];
-			tctx.inputs[bufIdx] = buf + offset;
-			tctx.inputSizes[bufIdx] = Math::n_min(ctx.input.sliceSize[bufIdx], ctx.input.dataSize[bufIdx] - offset);
-		}
-
-		// setup outputs
-		tctx.numOutputs = ctx.output.numBuffers;
-		for (bufIdx = 0; bufIdx < tctx.numOutputs; bufIdx++)
-		{
-			ubyte* buf = (ubyte*)ctx.output.data[bufIdx];
-			n_assert(buf != nullptr);
-			const IndexT offset = sliceIndex * ctx.output.sliceSize[bufIdx];
-			tctx.outputs[bufIdx] = buf + offset;
-			tctx.outputSizes[bufIdx] = Math::n_min(ctx.output.sliceSize[bufIdx], ctx.output.dataSize[bufIdx] - offset);
-		}
-
-		// run job
-		JobFunc(tctx);
-
-		// offset slice index by calculated stride
-		sliceIndex++;
+		tctx.uniforms[bufIdx] = (ubyte*)ctx.uniform.data[bufIdx];
+		tctx.uniformSizes[bufIdx] = ctx.uniform.dataSize[bufIdx];
 	}
+
+	if (ctx.uniform.scratchSize > 0)
+	{
+		n_assert(ctx.uniform.scratchSize < JobThread::MaxScratchSize);
+		tctx.scratch = this->scratchBuffer;
+	}
+	else
+	{
+		tctx.scratch = nullptr;
+	}
+
+	// setup inputs
+	tctx.numInputs = ctx.input.numBuffers;
+	for (bufIdx = 0; bufIdx < tctx.numInputs; bufIdx++)
+	{
+		ubyte* buf = (ubyte*)ctx.input.data[bufIdx];
+		n_assert(buf != nullptr);
+		const IndexT offset = firstSliceIndex * ctx.input.sliceSize[bufIdx];
+		tctx.inputs[bufIdx] = buf + offset;
+		tctx.inputSizes[bufIdx] = Math::n_min(ctx.input.sliceSize[bufIdx], ctx.input.dataSize[bufIdx] - offset);
+	}
+
+	// setup outputs
+	tctx.numOutputs = ctx.output.numBuffers;
+	for (bufIdx = 0; bufIdx < tctx.numOutputs; bufIdx++)
+	{
+		ubyte* buf = (ubyte*)ctx.output.data[bufIdx];
+		n_assert(buf != nullptr);
+		const IndexT offset = firstSliceIndex * ctx.output.sliceSize[bufIdx];
+		tctx.outputs[bufIdx] = buf + offset;
+		tctx.outputSizes[bufIdx] = Math::n_min(ctx.output.sliceSize[bufIdx], ctx.output.dataSize[bufIdx] - offset);
+	}
+
+	// run job
+	JobFunc(tctx);
 }
 
 //------------------------------------------------------------------------------

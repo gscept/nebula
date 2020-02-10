@@ -39,6 +39,9 @@ namespace Jobs
 #define JOBFUNCCONTEXT_MAXIO 8
 #define JOBFUNCCONTEXT_MAXUNIFORMS 4
 
+#define N_JOB_INPUT(ctx, slice, index) (ctx.inputs[index] + slice * ctx.inputSizes[index])
+#define N_JOB_OUTPUT(ctx, slice, index) (ctx.outputs[index] + slice * ctx.outputSizes[index])
+
 //------------------------------------------------------------------------------
 /**
 	This class describes the size of a workload for a single thread (can be multiple items)
@@ -58,6 +61,8 @@ struct JobFuncContext
 	uint numOutputs;								// number of used slots (max 4)
 	ubyte* outputs[JOBFUNCCONTEXT_MAXIO];
 	uint outputSizes[JOBFUNCCONTEXT_MAXIO];
+
+	uint numSlices;
 };
 
 struct JobIOData
