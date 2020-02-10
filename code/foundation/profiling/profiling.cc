@@ -23,7 +23,7 @@ ProfilingPushScope(const ProfilingScope& scope)
 	n_assert(ProfilingContextIndex != InvalidIndex);
 	Threading::AssertingScope lock(&contextMutexes[ProfilingContextIndex]);
 
-	// get thread id
+	// get thread context
 	ProfilingContext& ctx = profilingContexts[ProfilingContextIndex];
 
 	ctx.scopes.Push(scope);
@@ -39,7 +39,7 @@ ProfilingPopScope()
 	n_assert(ProfilingContextIndex != InvalidIndex);
 	Threading::AssertingScope lock(&contextMutexes[ProfilingContextIndex]);
 
-	// get thread id
+	// get thread context
 	ProfilingContext& ctx = profilingContexts[ProfilingContextIndex];
 
 	// we can safely assume the scope and timers won't be modified from different threads here
@@ -47,20 +47,36 @@ ProfilingPopScope()
 
 	// add to category lookup
 	scope.duration = ctx.timer.GetTime() - scope.start;
-	categoryLock.Enter();
-	scopesByCategory.AddUnique(scope.category).Append(scope);
-	categoryLock.Leave();
+	//categoryLock.Enter();
+	//scopesByCategory.AddUnique(scope.category).Append(scope);
+	//categoryLock.Leave();
 
-	// add to top level scopes if necessary
+	// add to top level scopes if stack is empty
 	if (ctx.scopes.IsEmpty())
 	{
-		// lock since we might modify the top level dictionary keys
 		ctx.topLevelScopes.Append(scope);
 	}
 	else
 	{
 		// add as child scope
 		ctx.scopes.Peek().children.Append(scope);
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ProfilingNewFrame()
+{
+	// get thread context
+	ProfilingContext& ctx = profilingContexts[ProfilingContextIndex];
+	n_assert(ctx.threadName == "MainThread");
+
+	for (IndexT i = 0; i < profilingContexts.Size(); i++)
+	{
+		profilingContexts[i].topLevelScopes.Clear();
+		profilingContexts[i].timer.Reset();
 	}
 }
 
@@ -110,7 +126,7 @@ ProfilingClear()
 	for (IndexT i = 0; i < profilingContexts.Size(); i++)
 	{
 		n_assert(profilingContexts[i].scopes.Size() == 0);
-		profilingContexts[i].topLevelScopes.Clear();
+		profilingContexts[i].topLevelScopes.Reset();
 	}
 }
 

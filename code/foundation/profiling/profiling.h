@@ -11,6 +11,7 @@
 #include "util/stack.h"
 #include "util/dictionary.h"
 #include "util/stringatom.h"
+#include "util/ringbuffer.h"
 #include "threading/threadid.h"
 #include "threading/thread.h"
 #include "threading/criticalsection.h"
@@ -19,9 +20,11 @@
 
 // use these macros to insert markers
 #if NEBULA_ENABLE_PROFILING
-#define N_SCOPE(name, cat) Profiling::ProfilingScopeLock __##name##cat##scope__(#name, #cat, __FILE__, __LINE__);
-#define N_MARKER_BEGIN(name, cat) { Profiling::ProfilingScope __##name##cat##scope__ = {#name, #cat, __FILE__, __LINE__}; Profiling::ProfilingPushScope(__##name##cat##scope__); }
-#define N_MARKER_END() { Profiling::ProfilingPopScope(); }
+#define N_SCOPE(name, cat)              Profiling::ProfilingScopeLock __##name##cat##scope__(#name, #cat, __FILE__, __LINE__);
+#define N_SCOPE_DYN(str, cat)           Profiling::ProfilingScopeLock __dynscope##cat##__(str, #cat, __FILE__, __LINE__);
+#define N_MARKER_BEGIN(name, cat)       { Profiling::ProfilingScope __##name##cat##scope__ = {#name, #cat, __FILE__, __LINE__}; Profiling::ProfilingPushScope(__##name##cat##scope__); }
+#define N_MARKER_DYN_BEGIN(str, cat)    { Profiling::ProfilingScope __dynmarker##cat##__ = {str, #cat, __FILE__, __LINE__}; Profiling::ProfilingPushScope(__dynmarker##cat##__); }
+#define N_MARKER_END()                  { Profiling::ProfilingPopScope(); }
 #else
 #define N_SCOPE(name, cat)
 #define N_MARKER_BEGIN(name, cat)
@@ -38,6 +41,8 @@ struct ProfilingContext;
 void ProfilingPushScope(const ProfilingScope& scope);
 /// pop scope from scope stack
 void ProfilingPopScope();
+/// pushes an 'end of frame' marker, only available on the main thread
+void ProfilingNewFrame();
 
 /// register a new thread for the profiling
 void ProfilingRegisterThread();
@@ -66,6 +71,7 @@ struct ProfilingScope
         , file(nullptr)
         , line(-1)
         , duration(0)
+        , start(0)
     {};
 
     /// constructor
@@ -75,6 +81,7 @@ struct ProfilingScope
         , file(file)
         , line(line)
         , duration(0)
+        , start(0)
     {};
 
     const char* name;
