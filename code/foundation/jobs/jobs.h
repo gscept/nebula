@@ -178,10 +178,10 @@ bool JobPortBusy(const JobPortId& id);
 
 enum
 {
-	PortName,
-	PortThreads,
-	PortNextThreadIndex,
-	PortLastJobId
+	JobPort_Name,
+	JobPort_Threads,
+	JobPort_NextThreadIndex,
+	JobPort_LastJobId
 };
 
 typedef Ids::IdAllocator<
@@ -226,9 +226,9 @@ struct PrivateMemory
 
 enum
 {
-	JobCreateInfo,
-	JobCallbackFunc,
-	JobScratchMemory
+	Job_CreateInfo,
+	Job_CallbackFunc,
+	Job_ScratchMemory
 };
 
 typedef Ids::IdAllocator<
