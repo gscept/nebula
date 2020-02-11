@@ -74,7 +74,7 @@ CharacterContext::Create()
 		System::Cpu::Core3 | System::Cpu::Core4,
 		UINT_MAX
 	};
-	CharacterContext::jobPort = Jobs::CreateJobPort(info);
+	CharacterContext::jobPort = Graphics::GraphicsServer::renderSystemsJobPort;
 
 	Jobs::CreateJobSyncInfo sinfo =
 	{
@@ -469,6 +469,7 @@ GetAbsoluteStopTime(const CharacterContext::AnimationRuntime& runtime)
 void 
 CharacterContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 {
+	N_SCOPE(CharacterBeforeFrame, Character);
 	using namespace CoreAnimation;
 	const Util::Array<Timing::Time>& times = characterContextAllocator.GetArray<AnimTime>();
 	const Util::Array<AnimationTracks>& tracks = characterContextAllocator.GetArray<TrackController>();

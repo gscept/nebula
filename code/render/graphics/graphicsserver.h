@@ -24,6 +24,7 @@
 #include "frame/frameserver.h"
 #include "debug/debughandler.h"
 #include "materials/materialserver.h"
+#include "jobs/jobs.h"
 
 namespace Graphics
 {
@@ -106,8 +107,10 @@ public:
     
     /// call when the window has been resized
     void OnWindowResized(CoreGraphics::WindowId wndId);
+
+	static Jobs::JobPortId renderSystemsJobPort;
+
 private:
-	friend class GraphicsEntity;
 	friend class CoreGraphics::BatchGroup;
 
 	Ids::IdGenerationPool entityPool;
@@ -130,7 +133,8 @@ private:
 	Ptr<CoreGraphics::TransformDevice> transformDevice;
 	Ptr<CoreGraphics::ShapeRenderer> shapeRenderer;
 	Ptr<CoreGraphics::TextRenderer> textRenderer;
-	Ptr<Frame::FrameServer> frameServer;	
+	Ptr<Frame::FrameServer> frameServer;
+
 
 	bool isOpen;
 };

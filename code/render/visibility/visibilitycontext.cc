@@ -286,7 +286,7 @@ ObserverContext::Create()
 		System::Cpu::Core1 | System::Cpu::Core2 | System::Cpu::Core3 | System::Cpu::Core4,
 		UINT_MAX
 	};
-	ObserverContext::jobPort = Jobs::CreateJobPort(info);
+	ObserverContext::jobPort = Graphics::GraphicsServer::renderSystemsJobPort;
 
 	Jobs::CreateJobSyncInfo sinfo =
 	{

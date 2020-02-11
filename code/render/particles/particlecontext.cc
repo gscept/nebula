@@ -84,7 +84,7 @@ ParticleContext::Create()
 		System::Cpu::Core1 | System::Cpu::Core2,
 		UINT_MAX
 	};
-	ParticleContext::jobPort = Jobs::CreateJobPort(info);
+	ParticleContext::jobPort = Graphics::GraphicsServer::renderSystemsJobPort;
 
 	Jobs::CreateJobSyncInfo sinfo =
 	{
