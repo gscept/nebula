@@ -49,10 +49,11 @@ struct FrameProfilingMarker
     CoreGraphics::QueueType queue;
     Math::float4 color;
     const char* name;
-    Timing::Timer timer;
 	IndexT gpuBegin;
 	IndexT gpuEnd;
-	uint64_t gpuTime;
+	uint64_t start;
+	uint64_t duration;
+	Util::Array<FrameProfilingMarker> children;
 };
 #endif
 

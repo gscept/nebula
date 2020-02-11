@@ -119,5 +119,14 @@ void _ProcessQueriesBeginFrame();
 /// handle queries on ending the frame
 void _ProcessQueriesEndFrame();
 
+#if NEBULA_ENABLE_PROFILING
+/// insert timestamp, returns handle to timestamp, which can be retreived on the next N'th frame where N is the number of buffered frames
+void __Timestamp(CoreGraphics::CommandBufferId buf, CoreGraphics::QueueType queue, const CoreGraphics::BarrierStage stage, const char* name);
+#endif
 
 } // namespace Vulkan
+
+namespace CoreGraphics
+{
+
+} // namespace CoreGraphics

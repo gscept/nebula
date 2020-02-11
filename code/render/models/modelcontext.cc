@@ -250,6 +250,7 @@ ModelContext::GetModelNodeTypes(const Graphics::ContextEntityId id)
 void
 ModelContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 {
+	N_SCOPE(ModelBeforeFrame, Models);
 	const Util::Array<ModelInstanceId>& instances = modelContextAllocator.GetArray<Model_InstanceId>();
 	const Util::Array<Math::matrix44>& transforms = Models::modelPool->modelInstanceAllocator.GetArray<StreamModelPool::InstanceTransform>();
 	const Util::Array<Math::bbox>& modelBoxes = Models::modelPool->modelAllocator.GetArray<Models::StreamModelPool::ModelBoundingBox>();

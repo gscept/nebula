@@ -85,6 +85,7 @@ ObserverContext::Setup(const Graphics::GraphicsEntityId id, VisibilityEntityType
 void 
 ObserverContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 {
+	N_SCOPE(ObserverPrepareFrame, Visibility)
 	const Util::Array<VisibilityEntityType>& observerTypes = observerAllocator.GetArray<Observer_EntityType>();
 	const Util::Array<VisibilityEntityType>& observableTypes = ObservableContext::observableAllocator.GetArray<Observable_EntityType>();
 
@@ -97,7 +98,7 @@ ObserverContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 	Util::Array<Graphics::ContextEntityId>& observableAtomContexts = ObservableContext::observableAtomAllocator.GetArray<ObservableAtom_ContextEntity>();
 
 	const Util::Array<VisibilityResultAllocator>& results = observerAllocator.GetArray<Observer_ResultAllocator>();
-	Util::Array<bool*> observerResults = observerAllocator.GetArray<Observer_Results>();
+	Util::Array<Math::ClipStatus::Type*> observerResults = observerAllocator.GetArray<Observer_Results>();
 
 	// go through all transforms and update
 	IndexT i;
@@ -176,12 +177,12 @@ ObserverContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 	for (i = 0; i < vis.Size(); i++)
 	{
 		VisibilityResultAllocator& list = vis[i];
-		Util::Array<bool>& flags = list.GetArray<VisibilityResult_Flag>();
+		Util::Array<Math::ClipStatus::Type>& flags = list.GetArray<VisibilityResult_Flag>();
 		observerResults[i] = flags.Begin();
 
 		for (IndexT j = 0; j < flags.Size(); j++)
 		{
-			flags[j] = true;
+			flags[j] = Math::ClipStatus::Outside;
 		}
 	}
 
@@ -215,7 +216,7 @@ ObserverContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 
 	for (i = 0; i < vis.Size(); i++)
 	{
-		const Util::Array<bool>& flags = vis[i].GetArray<VisibilityResult_Flag>();
+		const Util::Array<Math::ClipStatus::Type>& flags = vis[i].GetArray<VisibilityResult_Flag>();
 		const Util::Array<Graphics::ContextEntityId>& entities = vis[i].GetArray<VisibilityResult_CtxId>();
 		const Util::Array<Models::ModelNode::Instance*>& nodes = ObservableContext::observableAtomAllocator.GetArray<ObservableAtom_Node>();
 		VisibilityDrawList& visibilities = observerAllocator.Get<Observer_DrawList>(i);
@@ -234,8 +235,8 @@ ObserverContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 		ctx.output.numBuffers = 1;
 
 		ctx.input.data[0] = flags.Begin();
-		ctx.input.dataSize[0] = sizeof(bool) * flags.Size();
-		ctx.input.sliceSize[0] = sizeof(bool) * flags.Size();
+		ctx.input.dataSize[0] = sizeof(Math::ClipStatus::Type) * flags.Size();
+		ctx.input.sliceSize[0] = sizeof(Math::ClipStatus::Type) * flags.Size();
 		
 		ctx.input.data[1] = nodes.Begin();
 		ctx.input.dataSize[1] = sizeof(Models::ModelNode::Instance*) * nodes.Size();
@@ -397,21 +398,25 @@ ObserverContext::OnRenderDebug(uint32_t flags)
 	Jobs::JobSyncHostWait(ObserverContext::jobHostSync);
 
 	Util::Array<VisibilityResultAllocator>& vis = observerAllocator.GetArray<3>();
-	Util::FixedArray<SizeT> visCounters(vis.Size(), 0);
+	Util::FixedArray<SizeT> insideCounters(vis.Size(), 0);
+	Util::FixedArray<SizeT> clippedCounters(vis.Size(), 0);
 	for (IndexT i = 0; i < vis.Size(); i++)
 	{
-		auto res = vis[i].GetArray<0>();
+		auto res = vis[i].GetArray<VisibilityResult_Flag>();
 		for (IndexT j = 0; j < res.Size(); j++)
-			if (res[j])
-				visCounters[i]++;
+			if (res[j] == Math::ClipStatus::Inside)
+				insideCounters[i]++;
+			else if (res[j] == Math::ClipStatus::Clipped)
+				clippedCounters[i]++;
 	}
-	ImGui::Begin("Visibility", nullptr, 0);
-	ImGui::SetWindowSize(ImVec2(240, 100));
-	for (IndexT i = 0; i < vis.Size(); i++)
+	if (ImGui::Begin("Visibility", nullptr, 0))
 	{
-		ImGui::Text("Entities visible for observer %d: [%d]", i, visCounters[i]);
-	}
-	ImGui::End();
+		for (IndexT i = 0; i < vis.Size(); i++)
+		{
+			ImGui::Text("Entities visible for observer %d: inside [%d], clipped [%d]", i, insideCounters[i], clippedCounters[i]);
+		}
+		ImGui::End();
+	}	
 }
 #endif
 
@@ -511,7 +516,7 @@ ObservableContext::Setup(const Graphics::GraphicsEntityId id, VisibilityEntityTy
 				{
 					// allocate visibility result instance
 					Ids::Id32 obj = alloc.Alloc();
-					alloc.Get<VisibilityResult_Flag>(obj) = true;
+					alloc.Get<VisibilityResult_Flag>(obj) = Math::ClipStatus::Inside;
 				}
 			}
 		}

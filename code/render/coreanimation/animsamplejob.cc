@@ -7,6 +7,7 @@
 #include "coreanimation/animsamplemixinfo.h"
 #include "animsamplemask.h"
 #include "animcurve.h"
+#include "profiling/profiling.h"
 
 using namespace Math;
 namespace CoreAnimation
@@ -23,6 +24,7 @@ AnimSampleStep(const AnimCurve* curves,
 	float4* outSamplePtr,
 	uchar* outSampleCounts)
 {
+	N_SCOPE(AnimationStepSample, Animation);
 	float4 f0;
 	int i;
 	for (i = 0; i < numCurves; i++)
@@ -73,6 +75,7 @@ AnimSampleLinear(const AnimCurve* curves,
 	float4* outSamplePtr,
 	uchar* outSampleCounts)
 {
+	N_SCOPE(AnimationLinearSample, Animation);
 	float4 f0, f1, fDst;
 	quaternion q0, q1, qDst;
 	int i;
@@ -144,6 +147,7 @@ AnimMix(const AnimCurve* curves,
 	float4* outSamplePtr,
 	uchar* outSampleCounts)
 {
+	N_SCOPE(AnimationMix, Animation);
 	float4 f0, f1, fDst;
 	quaternion q0, q1, qDst;
 	int i;
@@ -210,18 +214,22 @@ AnimMix(const AnimCurve* curves,
 void
 AnimSampleJob(const Jobs::JobFuncContext& ctx)
 {
+	N_SCOPE(AnimationSample, Animation);
 	const AnimCurve* animCurves = (const AnimCurve*)ctx.uniforms[0];
 	int numCurves = ctx.uniformSizes[0] / sizeof(AnimCurve);
 	const AnimSampleMixInfo* info = (const AnimSampleMixInfo*)ctx.uniforms[1];
-	const float4* src0SamplePtr = (const float4*)ctx.inputs[0];
-	const float4* src1SamplePtr = (const float4*)ctx.inputs[1];
-	float4* outSamplePtr = (float4*)ctx.outputs[0];
-	uchar* outSampleCounts = ctx.outputs[1];
+	for (ptrdiff sliceIdx = 0; sliceIdx < ctx.numSlices; sliceIdx++)
+	{
+		const float4* src0SamplePtr = (const float4*)N_JOB_INPUT(ctx, sliceIdx, 0);
+		const float4* src1SamplePtr = (const float4*)N_JOB_INPUT(ctx, sliceIdx, 1);
+		float4* outSamplePtr = (float4*)N_JOB_OUTPUT(ctx, sliceIdx, 0);
+		uchar* outSampleCounts = N_JOB_OUTPUT(ctx, sliceIdx, 1);
 
-	if (info->sampleType == SampleType::Step)
-		AnimSampleStep(animCurves, numCurves, info->velocityScale, src0SamplePtr, outSamplePtr, outSampleCounts);
-	else
-		AnimSampleLinear(animCurves, numCurves, info->sampleWeight, info->velocityScale, src0SamplePtr, src1SamplePtr, outSamplePtr, outSampleCounts);
+		if (info->sampleType == SampleType::Step)
+			AnimSampleStep(animCurves, numCurves, info->velocityScale, src0SamplePtr, outSamplePtr, outSampleCounts);
+		else
+			AnimSampleLinear(animCurves, numCurves, info->sampleWeight, info->velocityScale, src0SamplePtr, src1SamplePtr, outSamplePtr, outSampleCounts);
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -230,25 +238,29 @@ AnimSampleJob(const Jobs::JobFuncContext& ctx)
 void
 AnimSampleJobWithMix(const Jobs::JobFuncContext& ctx)
 {
+	N_SCOPE(AnimationSampleWithMix, Animation);
 	const AnimCurve* animCurves = (const AnimCurve*)ctx.uniforms[0];
 	int numCurves = ctx.uniformSizes[0] / sizeof(AnimCurve);
 	const AnimSampleMixInfo* info = (const AnimSampleMixInfo*)ctx.uniforms[1];
 	const AnimSampleMask* mask = (const AnimSampleMask*)ctx.uniforms[2];
-	const float4* src0SamplePtr = (const float4*)ctx.inputs[0];
-	const float4* src1SamplePtr = (const float4*)ctx.inputs[1];
-	const float4* mixSamplePtr = (const float4*)ctx.inputs[2];
 	float4* tmpSamplePtr = (float4*)ctx.scratch;
-	uchar* tmpSampleCounts = (uchar*)(tmpSamplePtr + numCurves);
-	uchar* mixSampleCounts = ctx.inputs[3];
-	float4* outSamplePtr = (float4*)ctx.outputs[0];
-	uchar* outSampleCounts = ctx.outputs[1];
+	for (ptrdiff sliceIdx = 0; sliceIdx < ctx.numSlices; sliceIdx++)
+	{
+		const float4* src0SamplePtr = (const float4*)N_JOB_INPUT(ctx, sliceIdx, 0);
+		const float4* src1SamplePtr = (const float4*)N_JOB_INPUT(ctx, sliceIdx, 1);
+		const float4* mixSamplePtr = (const float4*)N_JOB_INPUT(ctx, sliceIdx, 2);
+		uchar* mixSampleCounts = ctx.inputs[3] + sliceIdx * ctx.inputSizes[3];
+		uchar* tmpSampleCounts = (uchar*)(tmpSamplePtr + numCurves);
+		float4* outSamplePtr = (float4*)N_JOB_OUTPUT(ctx, sliceIdx, 0);
+		uchar* outSampleCounts = N_JOB_OUTPUT(ctx, sliceIdx, 1);
 
-	if (info->sampleType == SampleType::Step)
-		AnimSampleStep(animCurves, numCurves, info->velocityScale, src0SamplePtr, tmpSamplePtr, tmpSampleCounts);
-	else
-		AnimSampleLinear(animCurves, numCurves, info->sampleWeight, info->velocityScale, src0SamplePtr, src1SamplePtr, tmpSamplePtr, tmpSampleCounts);
+		if (info->sampleType == SampleType::Step)
+			AnimSampleStep(animCurves, numCurves, info->velocityScale, src0SamplePtr, tmpSamplePtr, tmpSampleCounts);
+		else
+			AnimSampleLinear(animCurves, numCurves, info->sampleWeight, info->velocityScale, src0SamplePtr, src1SamplePtr, tmpSamplePtr, tmpSampleCounts);
 
-	AnimMix(animCurves, numCurves, mask, info->mixWeight, mixSamplePtr, tmpSamplePtr, mixSampleCounts, tmpSampleCounts, outSamplePtr, outSampleCounts);
+		AnimMix(animCurves, numCurves, mask, info->mixWeight, mixSamplePtr, tmpSamplePtr, mixSampleCounts, tmpSampleCounts, outSamplePtr, outSampleCounts);
+	}
 }
 
 } // namespace CoreAnimation

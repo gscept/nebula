@@ -15,6 +15,7 @@
 #include "materials/surfacepool.h"
 #include "materials/materialtype.h"
 #include "memory/arenaallocator.h"
+#include "math/clipstatus.h"
 namespace Visibility
 {
 
@@ -103,7 +104,7 @@ private:
 	friend class ObservableContext;
 
 	typedef Ids::IdAllocator<
-		bool,                               // visibility result
+		Math::ClipStatus::Type,             // visibility result
 		Graphics::ContextEntityId			// model context id
 	> VisibilityResultAllocator;
 
@@ -112,7 +113,7 @@ private:
 		Graphics::GraphicsEntityId, 		// entity id
 		VisibilityEntityType,				// type of object so we know how to get the transform
 		VisibilityResultAllocator,			// visibility lookup table
-		bool*,
+		Math::ClipStatus::Type*,			// array holding the visbility results array
 		VisibilityDrawList,					// draw list
 		Memory::ArenaAllocator<1024>		// memory allocator for draw commands
 	> ObserverAllocator;
@@ -140,7 +141,6 @@ public:
 private:
 
 	friend class ObserverContext;
-	friend class VisibilityContex;
     friend class Models::ModelContext;
 
 	// atom corresponds to a single visibility entry

@@ -42,8 +42,8 @@ BruteforceSystem::Run()
 		// the output is the visibility result
 		ctx.output.numBuffers = 1;
 		ctx.output.data[0] = (unsigned char*)this->obs.vis[i];
-		ctx.output.dataSize[0] = sizeof(bool) * this->ent.count;
-		ctx.output.sliceSize[0] = sizeof(bool);
+		ctx.output.dataSize[0] = sizeof(Math::ClipStatus::Type) * this->ent.count;
+		ctx.output.sliceSize[0] = sizeof(Math::ClipStatus::Type);
 
 		// create and run job
 		Jobs::JobId job = Jobs::CreateJob({ BruteforceSystemJobFunc });

@@ -1003,6 +1003,7 @@ DelayedDeleteMemory(const VkDeviceMemory mem)
 void 
 _ProcessQueriesBeginFrame()
 {
+	N_SCOPE(ProcessQueries, Render);
 	using namespace CoreGraphics;
 
 	SubmissionContextNextCycle(state.queryGraphicsSubmissionContext);
@@ -1084,6 +1085,10 @@ _ProcessQueriesBeginFrame()
 		}
 	}
 
+	// write beginning of frame timestamps
+	Vulkan::__Timestamp(state.queryGraphicsSubmissionCmdBuffer, GraphicsQueueType, CoreGraphics::BarrierStage::Top, "BeginFrameGraphics");
+	Vulkan::__Timestamp(state.queryComputeSubmissionCmdBuffer, ComputeQueueType, CoreGraphics::BarrierStage::Top, "BeginFrameCompute");
+
 	// append submission
 	if (submitGraphics)
 		state.subcontextHandler.AppendSubmissionTimeline(GraphicsQueueType, CommandBufferGetVk(state.queryGraphicsSubmissionCmdBuffer), false);
@@ -1093,6 +1098,24 @@ _ProcessQueriesBeginFrame()
 	// end record of query reset commands
 	CommandBufferEndRecord(state.queryGraphicsSubmissionCmdBuffer);
 	CommandBufferEndRecord(state.queryComputeSubmissionCmdBuffer);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+_ProcessProfilingMarkersRecursive(CoreGraphics::FrameProfilingMarker& marker, CoreGraphics::QueryType type)
+{
+	uint64_t beginFrame = state.queryResultPtrByType[type][state.queriesRingOffset];
+	uint64_t time1 = state.queryResultPtrByType[type][marker.gpuBegin];
+	uint64_t time2 = state.queryResultPtrByType[type][marker.gpuEnd];
+	marker.start = (time1 - beginFrame) * state.deviceProps[state.currentDevice].limits.timestampPeriod;
+	marker.duration = (time2 - time1) * state.deviceProps[state.currentDevice].limits.timestampPeriod;
+
+	for (IndexT i = 0; i < marker.children.Size(); i++)
+	{
+		_ProcessProfilingMarkersRecursive(marker.children[i], type);
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -1108,37 +1131,49 @@ _ProcessQueriesEndFrame()
 	state.frameProfilingMarkers.Clear();
 #endif
 
-	// produce output from previous frame
-	for (IndexT i = 0; i < state.numUsedQueries; i++)
+	const CoreGraphics::Query& startGraphics = state.queries[state.queriesRingOffset];
+	const CoreGraphics::Query& startCompute = state.queries[state.queriesRingOffset + 1];
+
+	for (IndexT i = 0; i < state.profilingMarkersPerFrame[state.currentBufferedFrameIndex].Size(); i++)
 	{
-		const CoreGraphics::Query& query = state.queries[state.queriesRingOffset + i];
+		CoreGraphics::FrameProfilingMarker marker = state.profilingMarkersPerFrame[state.currentBufferedFrameIndex][i];
+		CoreGraphics::QueryType type = marker.queue == CoreGraphics::GraphicsQueueType ? CoreGraphics::GraphicsTimestampQuery : CoreGraphics::ComputeTimestampQuery;
 
-#if NEBULA_ENABLE_PROFILING
-		if (query.type == CoreGraphics::GraphicsTimestampQuery || query.type == CoreGraphics::ComputeTimestampQuery)
-		{
-			auto& marker = state.profilingMarkersPerFrame[state.currentBufferedFrameIndex][i/2];
-			if (marker.gpuBegin == -1 || marker.gpuEnd == -1)
-			{
-				marker.gpuTime = -1;
-			}
-			else
-			{
-				uint64_t time2 = state.queryResultPtrByType[query.type][marker.gpuEnd];
-				uint64_t time1 = state.queryResultPtrByType[query.type][marker.gpuBegin];
-				uint64_t time = time2 - time1;
-				marker.gpuTime = time;
-			}
-			state.frameProfilingMarkers.Append(marker);
-
-			// if timestamp, we assume the next time stamp will be the 'end' stamp, so lets skip it
-			i++;
-		}
-#endif
+		_ProcessProfilingMarkersRecursive(marker, type);
+		state.frameProfilingMarkers.Append(marker);
 	}
 
 	// reset used queries and ring offset
 	state.numUsedQueries = 0;
 	state.profilingMarkersPerFrame[state.currentBufferedFrameIndex].Reset();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+__Timestamp(CoreGraphics::CommandBufferId buf, CoreGraphics::QueueType queue, const CoreGraphics::BarrierStage stage, const char* name)
+{
+	// convert to vulkan flags, force bits set to only be 1
+	VkPipelineStageFlags flags = VkTypes::AsVkPipelineFlags(stage);
+	n_assert(Util::CountBits(flags) == 1);
+
+	// chose query based on queue
+	CoreGraphics::QueryType type = (queue == CoreGraphics::GraphicsQueueType) ? CoreGraphics::GraphicsTimestampQuery : CoreGraphics::ComputeTimestampQuery;
+
+	// get current query, and get the index
+	SizeT& count = state.queryCountsByType[type][state.currentBufferedFrameIndex];
+	IndexT idx = state.queryStartIndexByType[type][state.currentBufferedFrameIndex] + count;
+	count++;
+	n_assert(idx < state.MaxQueriesPerFrame * (SizeT)(state.currentBufferedFrameIndex + 1));
+
+	CoreGraphics::Query query;
+	query.type = type;
+	query.idx = idx;
+	state.queries[state.queriesRingOffset + state.numUsedQueries++] = query;
+
+	// write time stamp
+	vkCmdWriteTimestamp(CommandBufferGetVk(buf), (VkPipelineStageFlagBits)flags, state.queryPoolsByType[type], idx);
 }
 #endif
 
@@ -1415,10 +1450,17 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		true
 	};
 
+	VkPhysicalDeviceTimelineSemaphoreFeatures timelineSemaphores =
+	{
+		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES,
+		&hostQueryReset,
+		true
+	};
+
 	VkDeviceCreateInfo deviceInfo =
 	{
 		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-		&hostQueryReset,
+		&timelineSemaphores,
 		0,
 		(uint32_t)queueInfos.Size(),
 		&queueInfos[0],
@@ -2161,46 +2203,24 @@ BeginFrame(IndexT frameIndex)
 		vkDestroyImageView(state.devices[state.currentDevice], state.delayedDeleteImageViews[state.currentBufferedFrameIndex][i], nullptr);
 	state.delayedDeleteImageViews[state.currentBufferedFrameIndex].Clear();
 
-#if NEBULA_ENABLE_PROFILING
-	FrameProfilingMarker waitForPresentFrameMarker;
-	waitForPresentFrameMarker.queue = GraphicsQueueType;
-	waitForPresentFrameMarker.gpuBegin = -1;
-	waitForPresentFrameMarker.gpuEnd = -1;
-	waitForPresentFrameMarker.gpuTime = -1;
-	waitForPresentFrameMarker.name = "Wait for present";
-	waitForPresentFrameMarker.timer.Start();
-#endif
+	N_MARKER_BEGIN(WaitForPresent, Render);
 
 	// slight limitation to only using one back buffer, so really we should do one begin and end frame per window...
 	n_assert(state.backBuffers.Size() == 1);
 	state.currentBufferedFrameIndex = CoreGraphics::TextureSwapBuffers(state.backBuffers[0]);
 	state.queriesRingOffset = state.MaxQueriesPerFrame * state.currentBufferedFrameIndex;
 
-#if NEBULA_ENABLE_PROFILING
-	waitForPresentFrameMarker.timer.Stop();
-	state.profilingMarkersPerFrame[state.currentBufferedFrameIndex].Append(waitForPresentFrameMarker);
-#endif
+	N_MARKER_END();
 
-#if NEBULA_ENABLE_PROFILING
-	FrameProfilingMarker waitForPreviousFrameMarker;
-	waitForPreviousFrameMarker.queue = GraphicsQueueType;
-	waitForPreviousFrameMarker.gpuBegin = -1;
-	waitForPreviousFrameMarker.gpuEnd = -1;
-	waitForPreviousFrameMarker.gpuTime = -1;
-	waitForPreviousFrameMarker.name = "Wait for frame";
-	waitForPreviousFrameMarker.timer.Start();
-#endif
+	N_MARKER_BEGIN(WaitForLastFrame, Render);
 
 	// cycle submissions, will wait for the fence to finish
 	state.gfxFence = CoreGraphics::SubmissionContextNextCycle(state.gfxSubmission);
 	state.computeFence = CoreGraphics::SubmissionContextNextCycle(state.computeSubmission);
 
-	_ProcessQueriesBeginFrame();
+	N_MARKER_END();
 
-#if NEBULA_ENABLE_PROFILING
-	waitForPreviousFrameMarker.timer.Stop();
-	state.profilingMarkersPerFrame[state.currentBufferedFrameIndex].Append(waitForPreviousFrameMarker);
-#endif
+	_ProcessQueriesBeginFrame();
 
 	// update constant buffer offsets
 	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& nextCboRing = state.constantBufferRings[state.currentBufferedFrameIndex];
@@ -2223,7 +2243,9 @@ BeginFrame(IndexT frameIndex)
 	}
 
 	// update bindless texture descriptors
+	N_MARKER_BEGIN(SubmitBindlessTextures, Render);
 	VkShaderServer::Instance()->SubmitTextureDescriptorChanges();
+	N_MARKER_END();
 
 	// reset current thread
 	state.currentDrawThread = state.NumDrawThreads - 1;
@@ -2284,7 +2306,7 @@ BeginSubmission(CoreGraphics::QueueType queue, CoreGraphics::QueueType waitQueue
 			range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
 			range.pNext = nullptr;
 			range.offset = cboStartAddress[i];
-			range.size = size;
+			range.size = Math::n_align(size, state.deviceProps[state.currentDevice].limits.nonCoherentAtomSize);
 			range.memory = ConstantBufferGetVkMemory(stagingCbo[i]);
 			VkResult res = vkFlushMappedMemoryRanges(dev, 1, &range);
 			n_assert(res == VK_SUCCESS);
@@ -3389,23 +3411,12 @@ EndFrame(IndexT frameIndex)
 	CoreGraphics::QueueBeginMarker(ComputeQueueType, NEBULA_MARKER_ORANGE, "Compute");
 #endif
 
-#if NEBULA_ENABLE_PROFILING
-	FrameProfilingMarker submitMarker;
-	submitMarker.queue = ComputeQueueType;
-	submitMarker.gpuBegin = -1;
-	submitMarker.gpuEnd = -1;
-	submitMarker.gpuTime = -1;
-	submitMarker.name = "Compute submit";
-	submitMarker.timer.Start();
-#endif
+	N_MARKER_BEGIN(ComputeSubmit, Render);
 
 	// submit compute, wait for this frames resource submissions
 	state.subcontextHandler.FlushSubmissionsTimeline(ComputeQueueType, FenceGetVk(state.computeFence));
 
-#if NEBULA_ENABLE_PROFILING
-	submitMarker.timer.Stop();
-	state.profilingMarkersPerFrame[state.currentBufferedFrameIndex].Append(submitMarker);
-#endif
+	N_MARKER_END();
 
 #if NEBULA_GRAPHICS_DEBUG
 	CoreGraphics::QueueEndMarker(ComputeQueueType);
@@ -3418,19 +3429,12 @@ EndFrame(IndexT frameIndex)
 		SemaphoreGetVk(state.renderingFinishedSemaphores[state.currentBufferedFrameIndex])
 	);
 
-#if NEBULA_ENABLE_PROFILING
-	submitMarker.queue = GraphicsQueueType;
-	submitMarker.name = "Graphics (main) submit";
-	submitMarker.timer.Start();
-#endif
+	N_MARKER_BEGIN(GraphicsSubmit, Render);
 
 	// submit graphics, since this is our main queue, we use this submission to get the semaphore wait index
 	state.mainSubmitLastFrameIndex = state.subcontextHandler.FlushSubmissionsTimeline(GraphicsQueueType, FenceGetVk(state.gfxFence));
 
-#if NEBULA_ENABLE_PROFILING
-	submitMarker.timer.Stop();
-	state.profilingMarkersPerFrame[state.currentBufferedFrameIndex].Append(submitMarker);
-#endif
+	N_MARKER_END();
 
 #if NEBULA_GRAPHICS_DEBUG
 	CoreGraphics::QueueEndMarker(GraphicsQueueType);
@@ -4086,12 +4090,11 @@ CommandBufferBeginMarker(const CoreGraphics::QueueType queue, const Math::float4
 	}
 
 #if NEBULA_ENABLE_PROFILING
+	N_MARKER_DYN_BEGIN(name, Render);
     FrameProfilingMarker marker;
     marker.queue = queue;
     marker.color = color;
     marker.name = name;
-    marker.timer.Reset();
-    marker.timer.Start();
 	if (!state.buildThreadBuffers)
 		marker.gpuBegin = CoreGraphics::Timestamp(queue, CoreGraphics::BarrierStage::Top, name);
 	else
@@ -4109,12 +4112,18 @@ CommandBufferEndMarker(const CoreGraphics::QueueType queue)
 
 #if NEBULA_ENABLE_PROFILING
 	FrameProfilingMarker marker = state.profilingMarkerStack[queue].Pop();
-	marker.timer.Stop();
+	N_MARKER_END();
+
 	if (!state.buildThreadBuffers)
 		marker.gpuEnd = CoreGraphics::Timestamp(queue, CoreGraphics::BarrierStage::Bottom, nullptr);
 	else
 		marker.gpuEnd = -1;
-	state.profilingMarkersPerFrame[state.currentBufferedFrameIndex].Append(marker);
+
+	if (state.profilingMarkerStack[queue].IsEmpty())
+		state.profilingMarkersPerFrame[state.currentBufferedFrameIndex].Append(marker);
+	else
+		state.profilingMarkerStack[queue].Peek().children.Append(marker);
+
 #endif NEBULA_ENABLE_PROFILING
 
 	// if batching, draws goes to thread
