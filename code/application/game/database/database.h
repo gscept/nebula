@@ -20,7 +20,6 @@ struct TableCreateInfo
     Util::FixedArray<Column> columns;
 };
 
-
 template<typename TYPE>
 class ColumnReader
 {
@@ -69,6 +68,9 @@ public:
 
     SizeT GetNumRows(TableId table);
     
+    /// Get the column descriptors for a table
+    Util::Array<Column> const& GetColumns(TableId table);
+
     template<typename ATTR>
     Game::ColumnReader<typename ATTR::TYPE> GetColumnData(TableId table)
     {
