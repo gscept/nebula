@@ -172,22 +172,22 @@ Database::SetToDefault(TableId tid, IndexT row)
 		Column column = table.columns.Get<0>(col);
 		void* buffer = table.columns.Get<1>(col);
 		
-		switch (column.GetValueType())
+		switch (column.GetType())
 		{
-		case Attr::ValueType::IntType:
-			*((int*)buffer + row) = column.GetIntDefValue();
+		case Game::AttributeType::Int32Type:
+			*((int*)buffer + row) = std::get<int>(column.GetDefaultValue());
 			break;
-		case Attr::ValueType::FloatType:
-			*((float*)buffer + row) = column.GetFloatDefValue();
+		case Game::AttributeType::FloatType:
+			*((float*)buffer + row) = std::get<float>(column.GetDefaultValue());
 			break;
-		case Attr::ValueType::StringType:
+		case Game::AttributeType::StringType:
 		{
 			Util::String& to = ((Util::String*)buffer)[row];
-			to = column.GetStringDefValue();
+			to = std::get<Util::String>(column.GetDefaultValue());
 			break;
 		}
-		case Attr::ValueType::Float4Type:
-			*((Math::float4*)buffer + row) = column.GetFloat4DefValue();
+		case Game::AttributeType::Float4Type:
+			*((Math::float4*)buffer + row) = std::get<Math::float4>(column.GetDefaultValue());
 			break;
 		default:
 			n_error("Type not yet supported!");
@@ -213,7 +213,7 @@ GrowBuffer(Column column, void*& buffer, const SizeT capacity, const SizeT size,
 {
 	if constexpr (!std::is_trivial<TYPE>::value)
 	{
-		const SizeT byteSize = column.GetSizeOfType();
+		const SizeT byteSize = Game::GetAttributeSize(column.GetType());
 		
 		int oldNumBytes = byteSize * capacity;
 		int newNumBytes = byteSize * newCapacity;
@@ -225,8 +225,6 @@ GrowBuffer(Column column, void*& buffer, const SizeT capacity, const SizeT size,
 	}
 	else
 	{
-		const SizeT byteSize = column.GetSizeOfType();
-
 		TYPE* newData = n_new_array(TYPE, newCapacity);
 
 		for (int row = 0; row < size; ++row)
@@ -256,12 +254,12 @@ Database::GrowTable(TableId tid)
 
 	for (int i = 0; i < colTypes.Size(); ++i)
 	{
-		switch (colTypes[i].GetValueType())
+		switch (colTypes[i].GetType())
 		{
-		case Attr::ValueType::IntType: GrowBuffer<int>(colTypes[i], buffers[i], oldCapacity, table.numRows, table.capacity); break;
-		case Attr::ValueType::FloatType: GrowBuffer<float>(colTypes[i], buffers[i], oldCapacity, table.numRows, table.capacity); break;
-		case Attr::ValueType::Float4Type: GrowBuffer<Math::float4>(colTypes[i], buffers[i], oldCapacity, table.numRows, table.capacity); break;
-		case Attr::ValueType::StringType: GrowBuffer<Util::String>(colTypes[i], buffers[i], oldCapacity, table.numRows, table.capacity); break;
+		case Game::AttributeType::Int32Type: GrowBuffer<int>(colTypes[i], buffers[i], oldCapacity, table.numRows, table.capacity); break;
+		case Game::AttributeType::FloatType: GrowBuffer<float>(colTypes[i], buffers[i], oldCapacity, table.numRows, table.capacity); break;
+		case Game::AttributeType::Float4Type: GrowBuffer<Math::float4>(colTypes[i], buffers[i], oldCapacity, table.numRows, table.capacity); break;
+		case Game::AttributeType::StringType: GrowBuffer<Util::String>(colTypes[i], buffers[i], oldCapacity, table.numRows, table.capacity); break;
 		default:
 			n_error("Type not yet supported!");
 		}
@@ -277,12 +275,12 @@ AllocateBuffer(Column column, const SizeT capacity, const SizeT size)
 {
 	if constexpr (!std::is_trivial<TYPE>::value)
 	{
-		const SizeT byteSize = column.GetSizeOfType();
+		const SizeT byteSize = Game::GetAttributeSize(column.GetType());
 		void* buffer = Memory::Alloc(ALLOCATIONHEAP, capacity * byteSize);
 
 		for (IndexT i = 0; i < size; ++i)
 		{
-			*((TYPE*)buffer + i) = column.GetDefaultValue().Get<TYPE>();
+			*((TYPE*)buffer + i) = std::get<TYPE>(column.GetDefaultValue());
 		}
 
 		return buffer;
@@ -292,7 +290,7 @@ AllocateBuffer(Column column, const SizeT capacity, const SizeT size)
 		TYPE* buffer = n_new_array(TYPE, capacity);
 		for (int i = 0; i < size; i++)
 		{
-			buffer[i] = column.GetDefaultValue().Get<TYPE>();
+			buffer[i] = std::get<TYPE>(column.GetDefaultValue());
 		}
 		return buffer;
 	}
@@ -306,15 +304,15 @@ Database::AllocateColumn(TableId tid, Column column)
 {
 	Game::Database::Table& table = this->tables.Get<0>(Ids::Index(tid.id));
 
-	const Attr::ValueType type = column.GetValueType();
+	const Game::AttributeType type = column.GetType();
 
 	void* buffer = nullptr;
-	switch (column.GetValueType())
+	switch (column.GetType())
 	{
-	case Attr::ValueType::IntType:		buffer = AllocateBuffer<int>(column, table.capacity, table.numRows); break;
-	case Attr::ValueType::FloatType:	buffer = AllocateBuffer<float>(column, table.capacity, table.numRows); break;
-	case Attr::ValueType::Float4Type:	buffer = AllocateBuffer<Math::float4>(column, table.capacity, table.numRows); break;
-	case Attr::ValueType::StringType:	buffer = AllocateBuffer<Util::String>(column, table.capacity, table.numRows); break;
+	case Game::AttributeType::Int32Type:	buffer = AllocateBuffer<int>(column, table.capacity, table.numRows); break;
+	case Game::AttributeType::FloatType:	buffer = AllocateBuffer<float>(column, table.capacity, table.numRows); break;
+	case Game::AttributeType::Float4Type:	buffer = AllocateBuffer<Math::float4>(column, table.capacity, table.numRows); break;
+	case Game::AttributeType::StringType:	buffer = AllocateBuffer<Util::String>(column, table.capacity, table.numRows); break;
 	default:
 		n_error("Type not yet supported!");
 	}

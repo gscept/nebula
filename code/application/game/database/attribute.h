@@ -1,77 +1,276 @@
 #pragma once
 #include "core/types.h"
 #include "util/fourcc.h"
-#include "attr/accessmode.h"
-#include "attr/valuetype.h"
-#include "attr/attributedefinitionbase.h"
-#include "attr/attrid.h"
+#include "resources/resourceid.h"
+#include <variant>
+#include "util/guid.h"
+#include "util/stringatom.h"
+#include "util/string.h"
+#include "game/entity.h"
+#include "math/matrix44.h"
+#include "math/float2.h"
+#include "math/float4.h"
+#include "util/fourcc.h"
 
-namespace Attr
+namespace Game
 {
+
+enum AttributeType
+{
+	// mem-copyable types
+	Int8Type,
+	UInt8Type,
+	Int16Type,
+	UInt16Type,
+	Int32Type,
+	UInt32Type,
+	Int64Type,
+	UInt64Type,
+	FloatType,
+	DoubleType,
+	BoolType,
+	Float2Type,
+	Float4Type,
+	QuaternionType,
+	Matrix44Type,
+	GuidType,
+	EntityType,
+
+	// complex types
+	StringType,
+	StringAtomType,
+	ResourceNameType,
+	//LocalizedStringType,
+
+
+	NumAttributeTypes
+};
+
+using AttributeValue = std::variant<
+	int8_t,
+	uint8_t,
+	int16_t,
+	uint16_t,
+	int32_t,
+	uint32_t,
+	int64_t,
+	uint64_t,
+	float,
+	double,
+	bool,
+	Math::float2,
+	Math::float4,
+	Math::quaternion,
+	Math::matrix44,
+	Util::Guid,
+	Game::Entity,
+	Util::String,
+	Util::StringAtom,
+	Resources::ResourceName
+>;
+
+struct AttributeDefinition
+{
+	Util::String name;
+	Util::FourCC fourcc;
+	AttributeType type;
+	Game::AttributeValue defaultValue;
+};
 
 template<typename T>
-constexpr Attr::ValueType TypeToValueType()
+constexpr Game::AttributeType TypeToAttributeType()
 {
 	static_assert(false, "Type is not implemented!");
-	return Attr::ValueType::NONE;
+	return Game::AttributeType::NONE;
 }
 
-template<> constexpr Attr::ValueType TypeToValueType<bool>()				{ return Attr::ValueType::BoolType; }
-template<> constexpr Attr::ValueType TypeToValueType<int>()				    { return Attr::ValueType::IntType; }
-template<> constexpr Attr::ValueType TypeToValueType<uint>()				{ return Attr::ValueType::UIntType; }
-template<> constexpr Attr::ValueType TypeToValueType<float>()				{ return Attr::ValueType::FloatType; }
-template<> constexpr Attr::ValueType TypeToValueType<double>()			    { return Attr::ValueType::DoubleType; }
-template<> constexpr Attr::ValueType TypeToValueType<Math::matrix44>()	    { return Attr::ValueType::Matrix44Type; }
-template<> constexpr Attr::ValueType TypeToValueType<Math::float4>()		{ return Attr::ValueType::Float4Type; }
-template<> constexpr Attr::ValueType TypeToValueType<Math::quaternion>()	{ return Attr::ValueType::QuaternionType; }
-template<> constexpr Attr::ValueType TypeToValueType<Util::String>()		{ return Attr::ValueType::StringType; }
-template<> constexpr Attr::ValueType TypeToValueType<Util::Guid>()		    { return Attr::ValueType::GuidType; }
-template<> constexpr Attr::ValueType TypeToValueType<Game::Entity>()		{ return Attr::ValueType::EntityType; }
+template<> constexpr Game::AttributeType TypeToAttributeType<bool>()				{ return Game::AttributeType::BoolType; }
+template<> constexpr Game::AttributeType TypeToAttributeType<int32_t>()				{ return Game::AttributeType::Int32Type; }
+template<> constexpr Game::AttributeType TypeToAttributeType<uint32_t>()			{ return Game::AttributeType::UInt32Type; }
+template<> constexpr Game::AttributeType TypeToAttributeType<float>()				{ return Game::AttributeType::FloatType; }
+template<> constexpr Game::AttributeType TypeToAttributeType<double>()				{ return Game::AttributeType::DoubleType; }
+template<> constexpr Game::AttributeType TypeToAttributeType<Math::matrix44>()		{ return Game::AttributeType::Matrix44Type; }
+template<> constexpr Game::AttributeType TypeToAttributeType<Math::float4>()		{ return Game::AttributeType::Float4Type; }
+template<> constexpr Game::AttributeType TypeToAttributeType<Math::quaternion>()	{ return Game::AttributeType::QuaternionType; }
+template<> constexpr Game::AttributeType TypeToAttributeType<Util::String>()		{ return Game::AttributeType::StringType; }
+template<> constexpr Game::AttributeType TypeToAttributeType<Util::Guid>()			{ return Game::AttributeType::GuidType; }
+template<> constexpr Game::AttributeType TypeToAttributeType<Game::Entity>()		{ return Game::AttributeType::EntityType; }
+
+
+constexpr SizeT
+GetAttributeSize(Game::AttributeType type)
+{
+	switch (type)
+	{
+	//case VoidType:
+	//	static_assert("Cannot get size of void type!");
+	//	return 0;
+
+	case Int8Type:			return sizeof(int8_t);
+	case UInt8Type:			return sizeof(uint8_t);
+	case Int16Type:			return sizeof(int16_t);
+	case UInt16Type:		return sizeof(uint16_t);
+	case Int32Type:			return sizeof(int32_t);
+	case UInt32Type:		return sizeof(uint32_t);
+	case Int64Type:			return sizeof(int64_t);
+	case UInt64Type:		return sizeof(uint64_t);
+	case FloatType:			return sizeof(float);
+	case DoubleType:		return sizeof(double);
+	case BoolType:			return sizeof(bool);
+	case Float2Type:		return sizeof(Math::float2);
+	case Float4Type:		return sizeof(Math::float4);
+	case QuaternionType:	return sizeof(Math::quaternion);
+	case Matrix44Type:		return sizeof(Math::matrix44);
+	case GuidType:			return sizeof(Util::Guid);
+	case EntityType:		return sizeof(Game::Entity);
+	case StringType:		return sizeof(Util::String);
+	case StringAtomType:	return sizeof(Util::StringAtom);
+	case ResourceNameType:	return sizeof(Resources::ResourceName);
+	default:
+		static_assert("Invalid type!");
+		n_error("Invalid type!");
+		return 0;
+	}
+}
+
+class AttributeId
+{
+public:
+	AttributeId() : defPtr(nullptr) {}
+	AttributeId(Game::AttributeDefinition const& def) :
+		defPtr(&def)
+	{
+		// empty
+	}
+	~AttributeId()
+	{
+		// empty
+	}
+
+	bool IsValid() const
+	{
+		return this->defPtr != nullptr;
+	}
+
+	const Util::FourCC GetFourCC() const
+	{
+		n_assert(this->defPtr != nullptr);
+		return this->defPtr->fourcc;
+	}
+
+	const Util::String& GetName() const
+	{
+		n_assert(this->defPtr != nullptr);
+		return this->defPtr->name;
+	}
+
+	const AttributeType GetType() const
+	{
+		n_assert(this->defPtr != nullptr);
+		return this->defPtr->type;
+	}
+
+	const AttributeValue& GetDefaultValue() const
+	{
+		n_assert(this->defPtr != nullptr);
+		return this->defPtr->defaultValue;
+	}
+
+	void operator=(AttributeId const& rhs)
+	{
+		this->defPtr = rhs.defPtr;
+	}
+
+	bool operator<(AttributeId const rhs)
+	{
+		this->defPtr < rhs.defPtr;
+	}
+
+	bool operator>(AttributeId const rhs)
+	{
+		this->defPtr > rhs.defPtr;
+	}
+
+	bool operator<=(AttributeId const rhs)
+	{
+		this->defPtr <= rhs.defPtr;
+	}
+
+	bool operator>=(AttributeId const rhs)
+	{
+		this->defPtr >= rhs.defPtr;
+	}
+
+	bool operator==(AttributeId const rhs)
+	{
+		return this->defPtr == rhs.defPtr;
+	}
+	
+	bool operator!=(AttributeId const rhs)
+	{
+		return this->defPtr != rhs.defPtr;
+	}
+	
+private:
+	Game::AttributeDefinition const* defPtr;
+};
 
 //------------------------------------------------------------------------------
 /**
-	@note	Make sure to send an explicit type as default value (ex. uint(10), Math::matrix44::identity(), etc.)
+	@note	The ATTRIBUTENAME class is kinda wonky, but for good reason. We want to be able to use the attribute types
+			during compile time, which requires a class type if we want to be able to deduce the actual inner type of the
+			attribute. We DON'T want to instantiate that class however, hence the deleted constructors. So essentially, the
+			class only acts as compile time attribute information. The runtime namespace can be used during runtime.
+	
+	@note	Make sure to send an explicit type as default value (ex. uint32_t(10), Math::matrix44::identity(), etc.)
 */
-#define __DeclareAttribute(ATTRIBUTENAME, TYPE, FOURCC, ACCESSMODE, DEFAULTVALUE) \
+#define __DeclareAttribute(ATTRIBUTENAME, VALUETYPE, FOURCC, ACCESSMODE, DEFAULTVALUE) \
 namespace Runtime\
 {\
-extern const AttributeDefinitionBase ATTRIBUTENAME ## Id;\
+extern const Game::AttributeDefinition ATTRIBUTENAME ## Id;\
 }\
 \
-class ATTRIBUTENAME : public Attr::AttrId\
+class ATTRIBUTENAME\
 {\
 public:\
-    ATTRIBUTENAME()\
-    {\
-        this->defPtr = &Attr::Runtime::ATTRIBUTENAME ## Id;\
-    };\
-    using InnerType = TYPE;\
-    static constexpr uint FourCC()\
-    {\
-    	return FOURCC;\
-    }\
-    static constexpr const char* Name()\
-    {\
-    	return #ATTRIBUTENAME;\
-    }\
-    static constexpr const char* TypeName()\
-    {\
-    	return #TYPE;\
-    }\
-    static constexpr Attr::ValueType Type()\
-    {\
-    	return Attr::TypeToValueType<TYPE>();\
-    }\
-    static const TYPE DefaultValue()\
-    {\
-    	return TYPE(DEFAULTVALUE);\
-    }\
+	ATTRIBUTENAME() = delete;\
+	~ATTRIBUTENAME() = delete;\
+	using TYPE = VALUETYPE;\
+	static constexpr uint FourCC()\
+	{\
+		return FOURCC;\
+	}\
+	static constexpr const char* Name()\
+	{\
+		return #ATTRIBUTENAME;\
+	}\
+	static constexpr const char* TypeName()\
+	{\
+		return #VALUETYPE;\
+	}\
+	static constexpr Game::AttributeType Type()\
+	{\
+		return Game::TypeToAttributeType<VALUETYPE>();\
+	}\
+	static const VALUETYPE DefaultValue()\
+	{\
+		return VALUETYPE(DEFAULTVALUE);\
+	}\
+	inline static Game::AttributeId GetId()\
+	{\
+		return Runtime::ATTRIBUTENAME ## Id;\
+	}\
 };
 
 #define __DefineAttribute(ATTRIBUTENAME, TYPE, FOURCC, ACCESSMODE, DEFAULTVALUE) \
 namespace Runtime\
 {\
-    const AttributeDefinitionBase ATTRIBUTENAME ## Id(Util::String(#ATTRIBUTENAME), #TYPE, Util::FourCC(FOURCC), ACCESSMODE, DEFAULTVALUE, false);\
+	const Game::AttributeDefinition ATTRIBUTENAME ## Id = {\
+		Util::String(#ATTRIBUTENAME), \
+		Util::FourCC(FOURCC), \
+		TypeToAttributeType<TYPE>(), \
+		Game::AttributeValue(DEFAULTVALUE) \
+	}; \
 }
 
 

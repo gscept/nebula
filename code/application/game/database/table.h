@@ -7,7 +7,7 @@
 */
 //------------------------------------------------------------------------------
 #include "ids/id.h"
-#include "attr/attrid.h"
+#include "game/database/attribute.h"
 
 namespace Game
 {
@@ -21,7 +21,7 @@ constexpr uint16_t MAX_VALUE_TABLE_COLUMNS = 128;
 /// column id
 ID_16_TYPE(ColumnId);
 
-typedef Attr::AttrId Column;
+typedef Game::AttributeId Column;
 
 /// Immutable column
 //template<typename T>
