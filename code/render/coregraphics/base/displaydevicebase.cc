@@ -19,7 +19,7 @@ using namespace CoreGraphics;
 */
 DisplayDeviceBase::DisplayDeviceBase() :
     adapter(Adapter::Primary),
-    verticalSync(true),
+    verticalSync(false),
     isOpen(false)
 {
     __ConstructSingleton;

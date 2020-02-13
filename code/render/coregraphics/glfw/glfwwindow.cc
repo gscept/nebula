@@ -785,14 +785,26 @@ SetupVulkanSwapchain(const CoreGraphics::WindowId& id, const CoreGraphics::Displ
 	VkPresentModeKHR swapchainPresentMode = VK_PRESENT_MODE_FIFO_KHR;
 	for (i = 0; i < numPresentModes; i++)
 	{
-		if (presentModes[i] == VK_PRESENT_MODE_MAILBOX_KHR)
+		switch (presentModes[i])
 		{
-			swapchainPresentMode = VK_PRESENT_MODE_MAILBOX_KHR;
+		case VK_PRESENT_MODE_MAILBOX_KHR:
+			swapchainPresentMode = presentModes[i];
+			numPresentModes = 0;
 			break;
-		}
-		if ((swapchainPresentMode != VK_PRESENT_MODE_MAILBOX_KHR) && (presentModes[i] == VK_PRESENT_MODE_IMMEDIATE_KHR))
-		{
-			swapchainPresentMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
+		case VK_PRESENT_MODE_FIFO_RELAXED_KHR:
+			if (!CoreGraphics::DisplayDevice::Instance()->IsVerticalSyncEnabled())
+			{
+				swapchainPresentMode = presentModes[i];
+				numPresentModes = 0;
+			}				
+			break;
+		case VK_PRESENT_MODE_IMMEDIATE_KHR:
+			if (!CoreGraphics::DisplayDevice::Instance()->IsVerticalSyncEnabled())
+			{
+				swapchainPresentMode = presentModes[i];
+				numPresentModes = 0;
+			}
+			break;
 		}
 	}
 
