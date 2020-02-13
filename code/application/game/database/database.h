@@ -31,16 +31,6 @@ public:
     ColumnReader(void** ptrptr) : data((void**)ptrptr)
     {
     }
-    //PropertyData(PropertyData const& rhs) : data(rhs.data) {}
-    /*PropertyData(PropertyData&& rhs)
-    {
-        data = rhs.data;
-        rhs.data = nullptr;
-    }
-    void operator=(PropertyData const& rhs)
-    {
-        this->data = rhs.data;
-    }*/
 
     ~ColumnReader() = default;
     TYPE& operator[](IndexT index)
@@ -80,11 +70,11 @@ public:
     SizeT GetNumRows(TableId table);
     
     template<typename ATTR>
-    Game::ColumnReader<typename ATTR::InnerType> GetColumnData(TableId table)
+    Game::ColumnReader<typename ATTR::TYPE> GetColumnData(TableId table)
     {
         Game::Database::Table& tbl = this->tables.Get<0>(Ids::Index(table.id));
-        ColumnId cid = this->GetColumnId(table, Attr::AttrId(ATTR::FourCC()));
-        return Game::ColumnReader<ATTR::InnerType>(&tbl.columns.Get<1>(cid.id));
+        ColumnId cid = this->GetColumnId(table, ATTR::GetId());
+        return Game::ColumnReader<ATTR::TYPE>(&tbl.columns.Get<1>(cid.id));
     }
 
 private:
