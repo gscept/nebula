@@ -19,10 +19,7 @@
 #include "systems/bruteforcesystem.h"
 
 #include "system/cpu.h"
-
-#if NEBULA_ENABLE_PROFILING
 #include "profiling/profiling.h"
-#endif
 
 #ifndef PUBLIC_BUILD
 #include "imgui.h"

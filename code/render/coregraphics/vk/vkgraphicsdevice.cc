@@ -35,6 +35,7 @@
 #include "coregraphics/submissioncontext.h"
 #include "resources/resourcemanager.h"
 #include "coregraphics/graphicsdevice.h"
+#include "profiling/profiling.h"
 
 #define NEBULA_ENABLE_MT_DRAW 0
 namespace Vulkan
@@ -1442,13 +1443,6 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	// get physical device features
 	VkPhysicalDeviceFeatures features;
 	vkGetPhysicalDeviceFeatures(state.physicalDevices[state.currentDevice], &features);
-
-	VkPhysicalDeviceTimelineSemaphoreFeatures timelineSemaphores =
-	{
-		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES,
-		nullptr,
-		true
-	};
 
 	VkPhysicalDeviceHostQueryResetFeatures hostQueryReset =
 	{

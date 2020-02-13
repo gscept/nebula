@@ -6,6 +6,7 @@
     (C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
+#if NEBULA_ENABLE_PROFILING
 #include "timing/time.h"
 #include "timing/timer.h"
 #include "util/stack.h"
@@ -17,6 +18,7 @@
 #include "threading/criticalsection.h"
 #include "threading/assertingmutex.h"
 #include <atomic>
+#endif
 
 // use these macros to insert markers
 #if NEBULA_ENABLE_PROFILING
@@ -36,6 +38,7 @@
 #define N_MARKER_END()
 #endif
 
+#if NEBULA_ENABLE_PROFILING
 namespace Profiling
 {
 
@@ -139,3 +142,4 @@ struct ProfilingContext
 };
 
 } // namespace Profiling
+#endif

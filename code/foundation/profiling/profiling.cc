@@ -4,6 +4,8 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "profiling/profiling.h"
+
+#if NEBULA_ENABLE_PROFILING
 namespace Profiling
 {
 
@@ -149,3 +151,4 @@ ProfilingClear()
 }
 
 } // namespace Profiling
+#endif
