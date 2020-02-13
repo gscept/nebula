@@ -620,6 +620,7 @@ ENDIF()
 				visibility.h
 				visibilitycontext.cc
 				visibilitycontext.h
+                visibilitydependencyjob.cc
 				visibilitysortjob.cc
 			)
 		fips_dir(visibility/systems)

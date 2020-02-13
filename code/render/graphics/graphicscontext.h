@@ -34,6 +34,7 @@ public:\
 	static bool IsEntityRegistered(const Graphics::GraphicsEntityId id);\
 	static void Destroy(); \
 	static Graphics::ContextEntityId GetContextId(const Graphics::GraphicsEntityId id); \
+	static const Graphics::ContextEntityId& GetContextIdRef(const Graphics::GraphicsEntityId id); \
 	static void BeginBulkRegister(); \
 	static void EndBulkRegister(); \
 private:
@@ -90,6 +91,12 @@ Graphics::ContextEntityId ctx::GetContextId(const Graphics::GraphicsEntityId id)
 	IndexT idx = __state.entitySliceMap.FindIndex(id); \
 	if (idx == InvalidIndex) return Graphics::ContextEntityId::Invalid(); \
 	else return __state.entitySliceMap.ValueAtIndex(id, idx); \
+}\
+const Graphics::ContextEntityId& ctx::GetContextIdRef(const Graphics::GraphicsEntityId id)\
+{\
+	IndexT idx = __state.entitySliceMap.FindIndex(id); \
+	n_assert(idx != InvalidIndex); \
+	return __state.entitySliceMap.ValueAtIndex(id, idx); \
 }\
 void ctx::BeginBulkRegister()\
 {\

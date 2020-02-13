@@ -26,6 +26,8 @@ enum
 	Observer_EntityType,
 	Observer_ResultAllocator,
 	Observer_Results,
+	Observer_Dependency,
+	Observer_DependencyMode,
 	Observer_DrawList,
 	Observer_DrawListAllocator
 };
@@ -50,6 +52,12 @@ enum
 	Observable_Atoms
 };
 
+enum DependencyMode
+{
+	DependencyMode_Total,		// if B depends on A, and A doesn't see B, B sees nothing either
+	DependencyMode_Masked		// visibility of B is dependent on A for each result
+};
+
 class ObserverContext : public Graphics::GraphicsContext
 {
 	_DeclareContext();
@@ -57,6 +65,8 @@ public:
 
 	/// setup entity
 	static void Setup(const Graphics::GraphicsEntityId id, VisibilityEntityType entityType);
+	/// setup a dependency between observers
+	static void MakeDependency(const Graphics::GraphicsEntityId a, const Graphics::GraphicsEntityId b, const DependencyMode mode);
 
 	/// runs before frame is updated
 	static void OnBeforeFrame(const Graphics::FrameContext& ctx);
@@ -96,6 +106,7 @@ public:
 
 	static Jobs::JobPortId jobPort;
 	static Jobs::JobSyncId jobInternalSync;
+	static Jobs::JobSyncId jobInternalSync2;
 	static Jobs::JobSyncId jobHostSync;
 	static Util::Queue<Jobs::JobId> runningJobs;
 
@@ -114,6 +125,8 @@ private:
 		VisibilityEntityType,				// type of object so we know how to get the transform
 		VisibilityResultAllocator,			// visibility lookup table
 		Math::ClipStatus::Type*,			// array holding the visbility results array
+		Graphics::GraphicsEntityId,			// dependency
+		DependencyMode,						// dependency mode
 		VisibilityDrawList,					// draw list
 		Memory::ArenaAllocator<1024>		// memory allocator for draw commands
 	> ObserverAllocator;

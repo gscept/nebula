@@ -23,8 +23,7 @@ BruteforceSystemJobFunc(const Jobs::JobFuncContext& ctx)
 		Math::ClipStatus::Type* flag = (Math::ClipStatus::Type*)N_JOB_OUTPUT(ctx, sliceIdx, 0);
 
 		const Math::bbox& box = *transforms;
-		const Math::ClipStatus::Type status = box.clipstatus_soa(*camera);
-		*flag = status;
+		*flag = box.clipstatus_soa(*camera);
 	}
 }
 
