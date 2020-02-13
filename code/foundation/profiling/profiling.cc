@@ -54,12 +54,30 @@ ProfilingPopScope()
 	// add to top level scopes if stack is empty
 	if (ctx.scopes.IsEmpty())
 	{
-		ctx.topLevelScopes.Append(scope);
+		if (scope.accum)
+		{
+			if (!ctx.topLevelScopes.IsEmpty())
+			{
+				ProfilingScope& parent = ctx.topLevelScopes.Back();
+				if (parent.name == scope.name)
+					parent.duration += scope.duration;
+				else
+					ctx.topLevelScopes.Append(scope);
+			}
+			else
+				ctx.topLevelScopes.Append(scope);
+		}
+		else
+			ctx.topLevelScopes.Append(scope);
 	}
 	else
 	{
 		// add as child scope
-		ctx.scopes.Peek().children.Append(scope);
+		ProfilingScope& parent = ctx.scopes.Peek();
+		if (scope.accum && parent.name == scope.name)
+			parent.duration += scope.duration;
+		else
+			parent.children.Append(scope);
 	}
 }
 
