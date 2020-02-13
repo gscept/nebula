@@ -110,7 +110,7 @@ Database::AddColumn(TableId tid, Column column)
 	Game::Database::Table& table = this->tables.Get<0>(Ids::Index(tid.id));
 	uint32_t col = table.columns.Alloc();
 
-	Table::ColumnData& buffer = table.columns.Get<1>(col);
+	Table::ColumnBuffer& buffer = table.columns.Get<1>(col);
 	table.columns.Get<0>(col) = column;
 
 	buffer = this->AllocateColumn(tid, column);
