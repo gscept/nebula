@@ -32,7 +32,7 @@ public:
 	/// do the actual drawing
 	static void DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphics::GraphicsEntityId id);
 	/// do the actual drawing, but with duplicate instances
-	static void DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphics::GraphicsEntityId id, SizeT numInstances);
+	static void DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphics::GraphicsEntityId id, const SizeT numInstances, const IndexT baseInstance);
 };
 
 } // namespace Frame2

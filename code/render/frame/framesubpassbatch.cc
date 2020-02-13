@@ -126,12 +126,12 @@ FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphic
 							if (type != ParticleSystemNodeType)
 							{
 								Models::PrimitiveNode::Instance* pinst = reinterpret_cast<Models::PrimitiveNode::Instance*>(instance->node);
-								pinst->Draw(1, instance);
+								pinst->Draw(1, 0, instance);
 							}
 							else
 							{
 								Models::ParticleSystemNode::Instance* pinst = reinterpret_cast<Models::ParticleSystemNode::Instance*>(instance->node);
-								pinst->Draw(1, instance);
+								pinst->Draw(1, 0, instance);
 							}
 						}
 					}
@@ -154,7 +154,7 @@ FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphic
 /**
 */
 void 
-FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphics::GraphicsEntityId id, SizeT numInstances)
+FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphics::GraphicsEntityId id, const SizeT numInstances, const IndexT baseInstance)
 {
 	// now do usual render stuff
 	ShaderServer* shaderServer = ShaderServer::Instance();
@@ -216,12 +216,12 @@ FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphic
 							if (type != ParticleSystemNodeType)
 							{
 								Models::PrimitiveNode::Instance* pinst = reinterpret_cast<Models::PrimitiveNode::Instance*>(instance->node);
-								pinst->Draw(numInstances, instance);
+								pinst->Draw(numInstances, baseInstance, instance);
 							}
 							else
 							{
 								Models::ParticleSystemNode::Instance* pinst = reinterpret_cast<Models::ParticleSystemNode::Instance*>(instance->node);
-								pinst->Draw(numInstances, instance);
+								pinst->Draw(numInstances, baseInstance, instance);
 							}
 						}
 					}
