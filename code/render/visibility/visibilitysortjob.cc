@@ -19,15 +19,13 @@ VisibilitySortJob(const Jobs::JobFuncContext& ctx)
 {
 	N_SCOPE(VisibilitySortJob, Visibility);
 	Memory::ArenaAllocator<1024>* packetAllocator = (Memory::ArenaAllocator<1024>*)ctx.uniforms[0];
+	packetAllocator->Release();
 
 	for (ptrdiff sliceIdx = 0; sliceIdx < ctx.numSlices; sliceIdx++)
 	{ 
 		Math::ClipStatus::Type* results = (Math::ClipStatus::Type*)N_JOB_INPUT(ctx, sliceIdx, 0);
 		Models::ModelNode::Instance** const nodes = (Models::ModelNode::Instance**)N_JOB_INPUT(ctx, sliceIdx, 1);
 		ObserverContext::VisibilityDrawList* buckets = (ObserverContext::VisibilityDrawList*)N_JOB_OUTPUT(ctx, sliceIdx, 0);
-
-		// release memory from previous draws
-		packetAllocator->Release();
 
 		// clear draw lists
 		auto it1 = buckets->Begin();
@@ -36,6 +34,8 @@ VisibilitySortJob(const Jobs::JobFuncContext& ctx)
 			auto it2 = it1.val->Begin();
 			while (it2 != it1.val->End())
 			{
+				for (IndexT i = 0; i < it2.val->Size(); i++)
+					reinterpret_cast<Models::ShaderStateNode::Instance*>((*it2.val)[i]->node)->SetDirty(true);
 				it2.val->Reset();
 				it2++;
 			}
@@ -43,7 +43,6 @@ VisibilitySortJob(const Jobs::JobFuncContext& ctx)
 			it1++;
 		}
 		buckets->Reset();
-
 
 		// begin adding buckets
 		buckets->BeginBulkAdd();
@@ -59,7 +58,6 @@ VisibilitySortJob(const Jobs::JobFuncContext& ctx)
 			// only treat renderable nodes
 			if (type >= Models::NodeHasShaderState)
 			{
-
 				if (results[i] == Math::ClipStatus::Outside)
 					continue;
 				Models::ShaderStateNode::Instance* const shdNodeInst = reinterpret_cast<Models::ShaderStateNode::Instance*>(inst);
@@ -78,7 +76,7 @@ VisibilitySortJob(const Jobs::JobFuncContext& ctx)
 				void* mem = packetAllocator->Alloc(shdNodeInst->GetDrawPacketSize());
 
 				// update constants
-				// shdNodeInst->Update();
+				shdNodeInst->Update();
 
 				// update packet and add to list
 				Models::ModelNode::DrawPacket* packet = shdNodeInst->UpdateDrawPacket(mem);

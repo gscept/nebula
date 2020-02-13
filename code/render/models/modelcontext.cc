@@ -262,19 +262,17 @@ ModelContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 	for (i = 0; i < instances.Size(); i++)
 	{
 		const ModelInstanceId& instance = instances[i];
-		if (instance == ModelInstanceId::Invalid()) continue; // hmm, bad, should reorder and keep a 'last valid index'
+		if (instance == ModelInstanceId::Invalid()) 
+			continue; // hmm, bad, should reorder and keep a 'last valid index'
 
-		// get reference so we can include it in the pending
-		Math::matrix44 transform = transforms[instance.instance];
-		
-		uint objectId = Models::modelPool->modelInstanceAllocator.Get<StreamModelPool::ObjectId>(instance.instance);
 		Util::Array<Models::ModelNode::Instance*>& nodes = Models::modelPool->modelInstanceAllocator.Get<Models::StreamModelPool::ModelNodeInstances>(instance.instance);
 		Util::Array<Models::NodeType>& types = Models::modelPool->modelInstanceAllocator.Get<Models::StreamModelPool::ModelNodeTypes>(instance.instance);
-
-		// if we have a pending transform, apply it and transform bounding box
 		if (hasPending[i])
 		{
-			transform = pending[i];
+			uint objectId = Models::modelPool->modelInstanceAllocator.Get<StreamModelPool::ObjectId>(instance.instance);
+
+			// copy matrix pending matrix
+			Math::matrix44 transform = pending[i];
 			hasPending[i] = false;
 
 			// transform the box
@@ -293,7 +291,7 @@ ModelContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 				//if (!node->active)
 				//	continue;
 
-				Math::matrix44& parentTransform = transform;
+				Math::matrix44 parentTransform = transform;
 				if (node->parent != nullptr && node->parent->node->type >= NodeHasTransform)
 					parentTransform = reinterpret_cast<const TransformNode::Instance*>(node->parent)->modelTransform;
 
@@ -304,7 +302,7 @@ ModelContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 					parentTransform = tnode->modelTransform;
 					tnode->objectId = objectId;
 
-				}				
+				}
 				if (types[j] >= NodeHasShaderState)
 				{
 					ShaderStateNode::Instance* snode = reinterpret_cast<ShaderStateNode::Instance*>(node);
@@ -313,21 +311,11 @@ ModelContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 					snode->boundingBox = node->node->boundingBox;
 					snode->boundingBox.affine_transform(snode->modelTransform);
 				}
+				transform = parentTransform;
 			}
 		}
 
-		// walk through nodes with shader states and update them
-		SizeT j;
-		for (j = 0; j < nodes.Size(); j++)
-		{
-			Models::ModelNode::Instance* node = nodes[j];
 
-			if (types[j] >= NodeHasShaderState)
-			{
-				ShaderStateNode::Instance* snode = reinterpret_cast<ShaderStateNode::Instance*>(node);
-				snode->Update();
-			}
-		}
 	}
 }
 

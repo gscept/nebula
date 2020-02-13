@@ -118,6 +118,11 @@ void
 CharacterSkinNode::Instance::Update()
 {
 	const CharacterNode::Instance* cparent = static_cast<const CharacterNode::Instance*>(this->parent);
+	if (!this->dirty)
+		return;
+
+	// apply original state
+	PrimitiveNode::Instance::Update();
 
 	// if parent doesn't have joints, don't continue
 	CharacterSkinNode* sparent = static_cast<CharacterSkinNode*>(this->node);
@@ -145,9 +150,6 @@ CharacterSkinNode::Instance::Update()
 	// update skinning palette
 	uint offset = CoreGraphics::SetGraphicsConstants(CoreGraphics::GlobalConstantBufferType::VisibilityThreadConstantBuffer, usedMatrices.Begin(), usedMatrices.Size());
 	this->offsets[this->skinningTransformsIndex] = offset;
-
-	// apply original state
-	PrimitiveNode::Instance::Update();
 }
 
 } // namespace Characters
