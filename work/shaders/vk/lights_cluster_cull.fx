@@ -333,7 +333,7 @@ void csLighting()
 	vec4 viewPos = PixelToView(coord * InvFramebufferDimensions, depth);
 	vec4 worldPos = ViewToWorld(viewPos);
 	vec3 worldViewVec = normalize(EyePos.xyz - worldPos.xyz);
-	vec3 viewVec = normalize(viewPos.xyz);
+	vec3 viewVec = -normalize(viewPos.xyz);
 	vec3 viewNormal = (View * vec4(normal.xyz, 0)).xyz;
 
 	uint3 index3D = CalculateClusterIndex(coord / BlockSize, viewPos.z, InvZScale, InvZBias); 
@@ -358,13 +358,14 @@ void csLighting()
 		float cosTheta = dot(normal.xyz, worldViewVec);
 		vec3 F = FresnelSchlickGloss(F0, cosTheta, material[MAT_ROUGHNESS]);
 		vec3 reflection = sampleCubeLod(EnvironmentMap, CubeSampler, reflectVec, material[MAT_ROUGHNESS] * NumEnvMips).rgb;
-        vec3 irradiance = sampleCubeLod(IrradianceMap, CubeSampler, normal.xyz, 0).rgb * ssao;
+        vec3 irradiance = sampleCubeLod(IrradianceMap, CubeSampler, normal.xyz, 0).rgb;
 		float cavity = material[MAT_CAVITY];
 		
 		vec3 kD = vec3(1.0f) - F;
 		kD *= 1.0f - material[MAT_METALLIC];
-		
-		light += (irradiance * (kD * albedo.rgb) + reflection * F) * cavity;
+
+		const vec3 ambientTerm = (irradiance * kD * albedo.rgb) * ssao;
+		light += (ambientTerm + reflection * F) * cavity;
         
 		// sky light
 		//light += Preetham(normal.xyz, GlobalLightDirWorldspace.xyz, A, B, C, D, E, Z) * (kD * albedo.rgb) * ssao * cavity;

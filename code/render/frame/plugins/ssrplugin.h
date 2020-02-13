@@ -31,18 +31,19 @@ public:
 	void Resize();
 
 private:
-    CoreGraphics::ShaderId shader;
-	Util::FixedArray<CoreGraphics::ResourceTableId> ssrTables;
+    CoreGraphics::ShaderId traceShader;
+	Util::FixedArray<CoreGraphics::ResourceTableId> ssrTraceTables;
     IndexT traceBufferSlot;
     IndexT constantsSlot;
 
-	// CoreGraphics::ConstantBinding zThicknessBinding;
-	// CoreGraphics::ConstantBinding pixelStrideBinding;
-	// CoreGraphics::ConstantBinding maxStepsBinding;
-    // CoreGraphics::ConstantBinding maxDistanceBinding;
-    // CoreGraphics::ConstantBinding ViewToTextureSpaceBinding;
+    CoreGraphics::ShaderId resolveShader;
+	Util::FixedArray<CoreGraphics::ResourceTableId> ssrResolveTables;
+	IndexT reflectionBufferSlot;
+	IndexT lightBufferSlot;
+	IndexT resolveTraceBufferSlot;
 
-	CoreGraphics::ShaderProgramId program;
+	CoreGraphics::ShaderProgramId traceProgram;
+	CoreGraphics::ShaderProgramId resolveProgram;
 
 	CoreGraphics::ConstantBufferId constants;
 };

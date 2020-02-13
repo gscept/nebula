@@ -144,7 +144,7 @@
 			},
 			{
 				name: "SSRTraceBuffer",
-				format: "R16G16F",
+				format: "R16G16B16A16F",
 				relative: true,
 				usage: "ReadWrite",
 				width: 0.5,
@@ -242,6 +242,10 @@
 
 		plugin: {
 			name: "HBAO-Prepare"
+		}
+
+    	plugin: {
+			name: "SSR-Prepare"
 		}
 
 		begin_submission: {
@@ -438,6 +442,45 @@
 				}
 			]
 		}
+
+		_comment: "------------ Screen-Space Raytracing Color Resolve ------------",
+		plugin: {
+			name: "SSR-Resolve",
+			inputs: [
+				{
+					name: "SSRTraceBuffer",
+					access: "ShaderRead",
+					layout: "ShaderRead",
+					stage: "ComputeShader"
+				},
+				{
+					name: "LightBuffer",
+					access: "ShaderRead",
+					layout: "ShaderRead",
+					stage: "ComputeShader"
+				},
+				{
+					name: "AlbedoBuffer",
+					access: "ShaderRead",
+					layout: "ShaderRead",
+					stage: "ComputeShader"
+				},
+				{
+					name: "SpecularBuffer",
+					access: "ShaderRead",
+					layout: "ShaderRead",
+					stage: "ComputeShader"
+				}
+			],
+			outputs: [
+				{
+					name: "ReflectionBuffer",
+					access: "ShaderWrite",
+					layout: "ShaderRead",
+					stage: "ComputeShader"
+				}
+			]
+		},
 
 		_comment: "------------ BLOOM ------------",
 		pass: {
