@@ -36,6 +36,21 @@ nebula_begin_module(application)
 			message.h
 			message.cc
 		)
+	fips_dir(basegamefeature)
+		fips_files(
+			basegamefeatureunit.h
+			basegamefeatureunit.cc
+		)
+		fips_dir(basegamefeature/managers)
+			fips_files(
+				entitymanager.h
+				entitymanager.cc
+				categorymanager.h
+				categorymanager.cc
+				factorymanager.h
+				factorymanager.cc
+
+			)
 	fips_dir(appgame)
 		fips_files(
 			gameapplication.h

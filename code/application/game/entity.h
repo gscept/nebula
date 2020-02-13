@@ -16,7 +16,14 @@
 
 namespace Game
 {
-	ID_32_TYPE(Entity)
+	/// category id
+	ID_32_TYPE(CategoryId);
+
+	/// instance id point into a category table. Entities are mapped to instanceids
+	ID_32_TYPE(InstanceId);
+
+	/// 8+24 bits entity id (generation+index)
+	ID_32_TYPE(Entity);
 } // namespace Game
 
 

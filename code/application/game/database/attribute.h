@@ -15,7 +15,7 @@
 namespace Game
 {
 
-enum AttributeType
+enum class AttributeType
 {
 	// mem-copyable types
 	Int8Type,
@@ -38,8 +38,8 @@ enum AttributeType
 
 	// complex types
 	StringType,
-	StringAtomType,
-	ResourceNameType,
+	//StringAtomType,
+	//ResourceNameType,
 	//LocalizedStringType,
 
 
@@ -64,9 +64,7 @@ using AttributeValue = std::variant<
 	Math::matrix44,
 	Util::Guid,
 	Game::Entity,
-	Util::String,
-	Util::StringAtom,
-	Resources::ResourceName
+	Util::String
 >;
 
 struct AttributeDefinition
@@ -106,26 +104,24 @@ GetAttributeSize(Game::AttributeType type)
 	//	static_assert("Cannot get size of void type!");
 	//	return 0;
 
-	case Int8Type:			return sizeof(int8_t);
-	case UInt8Type:			return sizeof(uint8_t);
-	case Int16Type:			return sizeof(int16_t);
-	case UInt16Type:		return sizeof(uint16_t);
-	case Int32Type:			return sizeof(int32_t);
-	case UInt32Type:		return sizeof(uint32_t);
-	case Int64Type:			return sizeof(int64_t);
-	case UInt64Type:		return sizeof(uint64_t);
-	case FloatType:			return sizeof(float);
-	case DoubleType:		return sizeof(double);
-	case BoolType:			return sizeof(bool);
-	case Float2Type:		return sizeof(Math::float2);
-	case Float4Type:		return sizeof(Math::float4);
-	case QuaternionType:	return sizeof(Math::quaternion);
-	case Matrix44Type:		return sizeof(Math::matrix44);
-	case GuidType:			return sizeof(Util::Guid);
-	case EntityType:		return sizeof(Game::Entity);
-	case StringType:		return sizeof(Util::String);
-	case StringAtomType:	return sizeof(Util::StringAtom);
-	case ResourceNameType:	return sizeof(Resources::ResourceName);
+	case Game::AttributeType::Int8Type:			return sizeof(int8_t);
+	case Game::AttributeType::UInt8Type:		return sizeof(uint8_t);
+	case Game::AttributeType::Int16Type:		return sizeof(int16_t);
+	case Game::AttributeType::UInt16Type:		return sizeof(uint16_t);
+	case Game::AttributeType::Int32Type:		return sizeof(int32_t);
+	case Game::AttributeType::UInt32Type:		return sizeof(uint32_t);
+	case Game::AttributeType::Int64Type:		return sizeof(int64_t);
+	case Game::AttributeType::UInt64Type:		return sizeof(uint64_t);
+	case Game::AttributeType::FloatType:		return sizeof(float);
+	case Game::AttributeType::DoubleType:		return sizeof(double);
+	case Game::AttributeType::BoolType:			return sizeof(bool);
+	case Game::AttributeType::Float2Type:		return sizeof(Math::float2);
+	case Game::AttributeType::Float4Type:		return sizeof(Math::float4);
+	case Game::AttributeType::QuaternionType:	return sizeof(Math::quaternion);
+	case Game::AttributeType::Matrix44Type:		return sizeof(Math::matrix44);
+	case Game::AttributeType::GuidType:			return sizeof(Util::Guid);
+	case Game::AttributeType::EntityType:		return sizeof(Game::Entity);
+	case Game::AttributeType::StringType:		return sizeof(Util::String);
 	default:
 		static_assert("Invalid type!");
 		n_error("Invalid type!");
@@ -224,7 +220,7 @@ private:
 	
 	@note	Make sure to send an explicit type as default value (ex. uint32_t(10), Math::matrix44::identity(), etc.)
 */
-#define __DeclareAttribute(ATTRIBUTENAME, VALUETYPE, FOURCC, ACCESSMODE, DEFAULTVALUE) \
+#define __DeclareAttribute(ATTRIBUTENAME, VALUETYPE, FOURCC, DEFAULTVALUE) \
 namespace Runtime\
 {\
 extern const Game::AttributeDefinition ATTRIBUTENAME ## Id;\
@@ -262,13 +258,13 @@ public:\
 	}\
 };
 
-#define __DefineAttribute(ATTRIBUTENAME, TYPE, FOURCC, ACCESSMODE, DEFAULTVALUE) \
+#define __DefineAttribute(ATTRIBUTENAME, TYPE, FOURCC, DEFAULTVALUE) \
 namespace Runtime\
 {\
 	const Game::AttributeDefinition ATTRIBUTENAME ## Id = {\
 		Util::String(#ATTRIBUTENAME), \
 		Util::FourCC(FOURCC), \
-		TypeToAttributeType<TYPE>(), \
+		Game::TypeToAttributeType<TYPE>(), \
 		Game::AttributeValue(DEFAULTVALUE) \
 	}; \
 }

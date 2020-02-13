@@ -174,21 +174,25 @@ Database::SetToDefault(TableId tid, IndexT row)
 		
 		switch (column.GetType())
 		{
-		case Game::AttributeType::Int32Type:
-			*((int*)buffer + row) = std::get<int>(column.GetDefaultValue());
-			break;
-		case Game::AttributeType::FloatType:
-			*((float*)buffer + row) = std::get<float>(column.GetDefaultValue());
-			break;
-		case Game::AttributeType::StringType:
-		{
-			Util::String& to = ((Util::String*)buffer)[row];
-			to = std::get<Util::String>(column.GetDefaultValue());
-			break;
-		}
-		case Game::AttributeType::Float4Type:
-			*((Math::float4*)buffer + row) = std::get<Math::float4>(column.GetDefaultValue());
-			break;
+		case Game::AttributeType::Int8Type:			*((int8_t*)buffer + row)	= std::get<int8_t>(column.GetDefaultValue()); break;
+		case Game::AttributeType::UInt8Type:		*((uint8_t*)buffer + row)	= std::get<uint8_t>(column.GetDefaultValue()); break;
+		case Game::AttributeType::Int16Type:		*((int16_t*)buffer + row)	= std::get<int16_t>(column.GetDefaultValue()); break;
+		case Game::AttributeType::UInt16Type:		*((uint16_t*)buffer + row)	= std::get<uint16_t>(column.GetDefaultValue()); break;
+		case Game::AttributeType::Int32Type:		*((int32_t*)buffer + row)	= std::get<int32_t>(column.GetDefaultValue()); break;
+		case Game::AttributeType::UInt32Type:		*((uint32_t*)buffer + row)	= std::get<uint32_t>(column.GetDefaultValue()); break;
+		case Game::AttributeType::Int64Type:		*((int64_t*)buffer + row)	= std::get<int64_t>(column.GetDefaultValue()); break;
+		case Game::AttributeType::UInt64Type:		*((uint64_t*)buffer + row)	= std::get<uint64_t>(column.GetDefaultValue()); break;
+		case Game::AttributeType::FloatType:		*((float*)buffer + row)		= std::get<float>(column.GetDefaultValue()); break;
+		case Game::AttributeType::DoubleType:		*((double*)buffer + row)	= std::get<double>(column.GetDefaultValue()); break;
+		case Game::AttributeType::BoolType:			*((bool*)buffer + row)		= std::get<bool>(column.GetDefaultValue()); break;
+		case Game::AttributeType::Float2Type:		*((Math::float2*)buffer + row)		= std::get<Math::float2>(column.GetDefaultValue()); break;
+		case Game::AttributeType::Float4Type:		*((Math::float4*)buffer + row)		= std::get<Math::float4>(column.GetDefaultValue()); break;
+		case Game::AttributeType::QuaternionType:	*((Math::quaternion*)buffer + row)	= std::get<Math::quaternion>(column.GetDefaultValue()); break;
+		case Game::AttributeType::Matrix44Type:		*((Math::matrix44*)buffer + row)	= std::get<Math::matrix44>(column.GetDefaultValue()); break;
+		case Game::AttributeType::GuidType:			*((Util::Guid*)buffer + row)		= std::get<Util::Guid>(column.GetDefaultValue()); break;
+		case Game::AttributeType::EntityType:		*((Game::Entity*)buffer + row)		= std::get<Game::Entity>(column.GetDefaultValue()); break;
+		case Game::AttributeType::StringType:		*((Util::String*)buffer + row)		= std::get<Util::String>(column.GetDefaultValue()); break;
+			
 		default:
 			n_error("Type not yet supported!");
 		}
@@ -202,6 +206,17 @@ SizeT
 Database::GetNumRows(TableId table)
 {
 	return this->tables.Get<0>(Ids::Index(table.id)).numRows;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Util::Array<Column> const&
+Database::GetColumns(TableId tid)
+{
+	Game::Database::Table& table = this->tables.Get<0>(Ids::Index(tid.id));
+	auto& colTypes = table.columns.GetArray<0>();
+	return colTypes;
 }
 
 //------------------------------------------------------------------------------
@@ -256,10 +271,24 @@ Database::GrowTable(TableId tid)
 	{
 		switch (colTypes[i].GetType())
 		{
-		case Game::AttributeType::Int32Type: GrowBuffer<int>(colTypes[i], buffers[i], oldCapacity, table.numRows, table.capacity); break;
-		case Game::AttributeType::FloatType: GrowBuffer<float>(colTypes[i], buffers[i], oldCapacity, table.numRows, table.capacity); break;
-		case Game::AttributeType::Float4Type: GrowBuffer<Math::float4>(colTypes[i], buffers[i], oldCapacity, table.numRows, table.capacity); break;
-		case Game::AttributeType::StringType: GrowBuffer<Util::String>(colTypes[i], buffers[i], oldCapacity, table.numRows, table.capacity); break;
+		case Game::AttributeType::Int8Type:			GrowBuffer<int8_t>(colTypes[i], buffers[i], oldCapacity, table.numRows, table.capacity); break;
+		case Game::AttributeType::UInt8Type:		GrowBuffer<uint8_t>(colTypes[i], buffers[i], oldCapacity, table.numRows, table.capacity); break;
+		case Game::AttributeType::Int16Type:		GrowBuffer<int16_t>(colTypes[i], buffers[i], oldCapacity, table.numRows, table.capacity); break;
+		case Game::AttributeType::UInt16Type:		GrowBuffer<uint16_t>(colTypes[i], buffers[i], oldCapacity, table.numRows, table.capacity); break;
+		case Game::AttributeType::Int32Type:		GrowBuffer<int32_t>(colTypes[i], buffers[i], oldCapacity, table.numRows, table.capacity); break;
+		case Game::AttributeType::UInt32Type:		GrowBuffer<uint32_t>(colTypes[i], buffers[i], oldCapacity, table.numRows, table.capacity); break;
+		case Game::AttributeType::Int64Type:		GrowBuffer<int64_t>(colTypes[i], buffers[i], oldCapacity, table.numRows, table.capacity); break;
+		case Game::AttributeType::UInt64Type:		GrowBuffer<uint64_t>(colTypes[i], buffers[i], oldCapacity, table.numRows, table.capacity); break;
+		case Game::AttributeType::FloatType:		GrowBuffer<float>(colTypes[i], buffers[i], oldCapacity, table.numRows, table.capacity); break;
+		case Game::AttributeType::DoubleType:		GrowBuffer<double>(colTypes[i], buffers[i], oldCapacity, table.numRows, table.capacity); break;
+		case Game::AttributeType::BoolType:			GrowBuffer<bool>(colTypes[i], buffers[i], oldCapacity, table.numRows, table.capacity); break;
+		case Game::AttributeType::Float2Type:		GrowBuffer<Math::float2>(colTypes[i], buffers[i], oldCapacity, table.numRows, table.capacity); break;
+		case Game::AttributeType::Float4Type:		GrowBuffer<Math::float4>(colTypes[i], buffers[i], oldCapacity, table.numRows, table.capacity); break;
+		case Game::AttributeType::QuaternionType:	GrowBuffer<Math::quaternion>(colTypes[i], buffers[i], oldCapacity, table.numRows, table.capacity); break;
+		case Game::AttributeType::Matrix44Type:		GrowBuffer<Math::matrix44>(colTypes[i], buffers[i], oldCapacity, table.numRows, table.capacity); break;
+		case Game::AttributeType::GuidType:			GrowBuffer<Util::Guid>(colTypes[i], buffers[i], oldCapacity, table.numRows, table.capacity); break;
+		case Game::AttributeType::EntityType:		GrowBuffer<Game::Entity>(colTypes[i], buffers[i], oldCapacity, table.numRows, table.capacity); break;
+		case Game::AttributeType::StringType:		GrowBuffer<Util::String>(colTypes[i], buffers[i], oldCapacity, table.numRows, table.capacity); break;
 		default:
 			n_error("Type not yet supported!");
 		}
@@ -309,12 +338,26 @@ Database::AllocateColumn(TableId tid, Column column)
 	void* buffer = nullptr;
 	switch (column.GetType())
 	{
-	case Game::AttributeType::Int32Type:	buffer = AllocateBuffer<int>(column, table.capacity, table.numRows); break;
-	case Game::AttributeType::FloatType:	buffer = AllocateBuffer<float>(column, table.capacity, table.numRows); break;
-	case Game::AttributeType::Float4Type:	buffer = AllocateBuffer<Math::float4>(column, table.capacity, table.numRows); break;
-	case Game::AttributeType::StringType:	buffer = AllocateBuffer<Util::String>(column, table.capacity, table.numRows); break;
+	case Game::AttributeType::Int8Type:			buffer = AllocateBuffer<int8_t>(column, table.capacity, table.numRows); break;
+	case Game::AttributeType::UInt8Type:		buffer = AllocateBuffer<uint8_t>(column, table.capacity, table.numRows); break;
+	case Game::AttributeType::Int16Type:		buffer = AllocateBuffer<int16_t>(column, table.capacity, table.numRows); break;
+	case Game::AttributeType::UInt16Type:		buffer = AllocateBuffer<uint16_t>(column, table.capacity, table.numRows); break;
+	case Game::AttributeType::Int32Type:		buffer = AllocateBuffer<int32_t>(column, table.capacity, table.numRows); break;
+	case Game::AttributeType::UInt32Type:		buffer = AllocateBuffer<uint32_t>(column, table.capacity, table.numRows); break;
+	case Game::AttributeType::Int64Type:		buffer = AllocateBuffer<int64_t>(column, table.capacity, table.numRows); break;
+	case Game::AttributeType::UInt64Type:		buffer = AllocateBuffer<uint64_t>(column, table.capacity, table.numRows); break;
+	case Game::AttributeType::FloatType:		buffer = AllocateBuffer<float>(column, table.capacity, table.numRows); break;
+	case Game::AttributeType::DoubleType:		buffer = AllocateBuffer<double>(column, table.capacity, table.numRows); break;
+	case Game::AttributeType::BoolType:			buffer = AllocateBuffer<bool>(column, table.capacity, table.numRows); break;
+	case Game::AttributeType::Float2Type:		buffer = AllocateBuffer<Math::float2>(column, table.capacity, table.numRows); break;
+	case Game::AttributeType::Float4Type:		buffer = AllocateBuffer<Math::float4>(column, table.capacity, table.numRows); break;
+	case Game::AttributeType::QuaternionType:	buffer = AllocateBuffer<Math::quaternion>(column, table.capacity, table.numRows); break;
+	case Game::AttributeType::Matrix44Type:		buffer = AllocateBuffer<Math::matrix44>(column, table.capacity, table.numRows); break;
+	case Game::AttributeType::GuidType:			buffer = AllocateBuffer<Util::Guid>(column, table.capacity, table.numRows); break;
+	case Game::AttributeType::EntityType:		buffer = AllocateBuffer<Game::Entity>(column, table.capacity, table.numRows); break;
+	case Game::AttributeType::StringType:		buffer = AllocateBuffer<Util::String>(column, table.capacity, table.numRows); break;
 	default:
-		n_error("Type not yet supported!");
+		n_error("Type not yet supported!\n");
 	}
 
 	return buffer;
