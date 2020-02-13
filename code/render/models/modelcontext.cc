@@ -10,6 +10,10 @@
 #include "graphics/graphicsserver.h"
 #include "visibility/visibilitycontext.h"
 
+#if NEBULA_ENABLE_PROFILING
+#include "profiling/profiling.h"
+#endif
+
 #ifndef PUBLIC_BUILD
 #include "dynui/im3d/im3dcontext.h"
 #endif

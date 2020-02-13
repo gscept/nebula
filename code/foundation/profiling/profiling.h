@@ -29,6 +29,9 @@
 #define N_MARKER_END()                  { Profiling::ProfilingPopScope(); }
 #else
 #define N_SCOPE(name, cat)
+#define N_SCOPE_DYN(str, cat)
+#define N_SCOPE_ACCUM(name, cat)
+#define N_SCOPE_DYN_ACCUM(name, cat)
 #define N_MARKER_BEGIN(name, cat)
 #define N_MARKER_END()
 #endif
