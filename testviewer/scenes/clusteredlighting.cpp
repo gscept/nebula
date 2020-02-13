@@ -36,7 +36,7 @@ GraphicsEntityToName(GraphicsEntityId id)
 */
 void OpenScene()
 {
-    static const int NumPointLights = 15;
+    static const int NumPointLights = 1;
     for (int i = -NumPointLights; i < NumPointLights; i++)
     {
         for (int j = -NumPointLights; j < NumPointLights; j++)
@@ -54,7 +54,7 @@ void OpenScene()
         }
     }
 
-    static const int NumSpotLights = 15;
+    static const int NumSpotLights = 1;
     for (int i = -NumSpotLights; i < NumSpotLights; i++)
     {
         for (int j = -NumSpotLights; j < NumSpotLights; j++)
@@ -92,6 +92,7 @@ void OpenScene()
     entities.Append(ground);
     entityNames.Append("Ground");
 
+    /*
 	particle = Graphics::CreateEntity();
 	Graphics::RegisterEntity<ModelContext, ObservableContext, Particles::ParticleContext>(particle);
 	ModelContext::Setup(particle, "mdl:Particles/Build_dust.n3", "Viewer");
@@ -99,11 +100,12 @@ void OpenScene()
 	Particles::ParticleContext::Play(particle, Particles::ParticleContext::RestartIfPlaying);
 	entities.Append(particle);
 	entityNames.Append("Particle");
+    */
 
     // setup visibility
     ObservableContext::Setup(tower, VisibilityEntityType::Model);
     ObservableContext::Setup(ground, VisibilityEntityType::Model);
-	ObservableContext::Setup(particle, VisibilityEntityType::Model);
+	//ObservableContext::Setup(particle, VisibilityEntityType::Model);
 
     const Util::StringAtom modelRes[] = { "mdl:Units/Unit_Archer.n3",  "mdl:Units/Unit_Footman.n3",  "mdl:Units/Unit_Spearman.n3" };
     //const Util::StringAtom modelRes[] = { "mdl:system/placeholder.n3",  "mdl:system/placeholder.n3",  "mdl:system/placeholder.n3" };
@@ -112,7 +114,7 @@ void OpenScene()
 
     ModelContext::BeginBulkRegister();
     ObservableContext::BeginBulkRegister();
-    static const int NumModels = 15;
+    static const int NumModels = 1;
     for (IndexT i = -NumModels; i < NumModels; i++)
     {
         for (IndexT j = -NumModels; j < NumModels; j++)
