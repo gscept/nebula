@@ -11,6 +11,7 @@ fips-generators/*.pyc
 export_win32/*
 export_linux/*
 /code/render/coregraphics/attic
+/code/render/coregraphics/vk/attic
 /code/foundation/jobs/attic
 /code/render/coregraphics/mesh_old.h
 /code/render/coregraphics/mesh_old.cc
@@ -20,3 +21,10 @@ export_linux/*
 /code/render/visibility/visibilitysystems_old
 *.pyc
 .svn
+*attic
+/documentation/html*
+/documentation/*.tmp
+/documentation/log.txt
+/dump
+*.dmp
+work/
