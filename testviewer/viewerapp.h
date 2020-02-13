@@ -18,6 +18,10 @@
 #include "io/ioserver.h"
 #include "debug/debuginterface.h"
 
+#if NEBULA_ENABLE_PROFILING
+#include "profiling/profiling.h"
+#endif
+
 namespace Tests
 {
 
@@ -89,6 +93,10 @@ protected:
 
 #ifdef NEBULA_ENABLE_PROFILING
     Util::Array<CoreGraphics::FrameProfilingMarker> frameProfilingMarkers;
+    Util::Array<Profiling::ProfilingContext> profilingContexts;
+    bool pauseProfiling;
+    bool profileFixedFps;
+    int fixedFps;
 #endif NEBULA_ENABLE_PROFILING
 
 };
