@@ -56,7 +56,7 @@ GraphicsServer::Open()
 	this->displayDevice->Open();
 
 	CoreGraphics::GraphicsDeviceCreateInfo gfxInfo{ 
-		{ 1_MB, 50_MB },		// Graphics - main threads get 1 MB of constant memory, visibility thread (objects) gets 50
+		{ 1_MB, 15_MB },		// Graphics - main threads get 1 MB of constant memory, visibility thread (objects) gets 50
 		{ 1_MB, 0_MB },			// Compute - main threads get 1 MB of constant memory, visibility thread (objects) gets 0
 		{ 10_MB, 1_MB },        // Vertex memory - main thread gets 10 MB for UI, Text etc, visibility thread (objects doing soft cloths and such) get 1 MB
 		{ 5_MB, 1_MB },         // Index memory - main thread gets 5 MB for UI, Text etc, visibility thread (objects doing soft cloths and such) get 1 MB
