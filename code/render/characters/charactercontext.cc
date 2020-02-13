@@ -16,6 +16,7 @@
 #include "util/round.h"
 #include "dynui/im3d/im3dcontext.h"
 #include "models/nodes/characternode.h"
+#include "profiling/profiling.h"
 
 using namespace Graphics;
 using namespace Resources;

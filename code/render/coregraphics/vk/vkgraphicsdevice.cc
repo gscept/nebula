@@ -1447,7 +1447,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	VkPhysicalDeviceHostQueryResetFeatures hostQueryReset =
 	{
 		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES,
-		&timelineSemaphores,
+		nullptr,
 		true
 	};
 
