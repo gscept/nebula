@@ -663,7 +663,7 @@ template<class KEYTYPE, class VALUETYPE, int TABLE_SIZE, int STACK_SIZE>
 const bool
 HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::Iterator::operator==(const Iterator& rhs) const
 {
-	return this->hashIndex == rhs.hashIndex && this->bucketIndex == rhs.bucketIndex;
+	return this->val == rhs.val;
 }
 
 //------------------------------------------------------------------------------
@@ -673,7 +673,7 @@ template<class KEYTYPE, class VALUETYPE, int TABLE_SIZE, int STACK_SIZE>
 const bool
 HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::Iterator::operator!=(const Iterator& rhs) const
 {
-	return !(this->hashIndex == rhs.hashIndex && this->bucketIndex == rhs.bucketIndex);
+	return this->val != rhs.val;
 }
 } // namespace Util
 //------------------------------------------------------------------------------
