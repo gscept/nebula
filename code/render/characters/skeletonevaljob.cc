@@ -19,7 +19,7 @@ namespace Characters
 void
 SkeletonEvalJob(const Jobs::JobFuncContext& ctx)
 {
-	N_SCOPE(SkeletonEvaluateAndTransform, Character);
+	N_SCOPE_ACCUM(SkeletonEvaluateAndTransform, Character);
 	matrix44* invPoseMatrixBase = (matrix44*)ctx.uniforms[0];
 	matrix44* mixPoseMatrixBase = (matrix44*)ctx.uniforms[1];
 	matrix44* unscaledMatrixBase = (matrix44*)ctx.scratch;
@@ -124,7 +124,7 @@ SkeletonEvalJob(const Jobs::JobFuncContext& ctx)
 void
 SkeletonEvalJobWithVariation(const Jobs::JobFuncContext& ctx)
 {
-	N_SCOPE(SkeletonEvaluateAndTransformWithVariation, Character);
+	N_SCOPE_ACCUM(SkeletonEvaluateAndTransformWithVariation, Character);
 	matrix44* invPoseMatrixBase = (matrix44*)ctx.uniforms[0];
 	matrix44* mixPoseMatrixBase = (matrix44*)ctx.uniforms[1];
 	matrix44* unscaledMatrixBase = (matrix44*)ctx.scratch;
