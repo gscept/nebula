@@ -606,6 +606,9 @@
 				batch: "ParticleUnlit",
 				batch: "ParticleLit",
 				plugin: {
+					name: "Debug Shapes",
+				},
+				plugin: {
 					name: "Im3D",
 				},
 				plugin: {
