@@ -2310,14 +2310,33 @@ BeginSubmission(CoreGraphics::QueueType queue, CoreGraphics::QueueType waitQueue
 			range.memory = ConstantBufferGetVkMemory(stagingCbo[i]);
 			VkResult res = vkFlushMappedMemoryRanges(dev, 1, &range);
 			n_assert(res == VK_SUCCESS);
+			cboEndAddress[i] = Math::n_align(cboEndAddress[i], state.deviceProps[state.currentDevice].limits.nonCoherentAtomSize);
 
 			VkBufferCopy copy;
 			copy.srcOffset = copy.dstOffset = cboStartAddress[i];
-			copy.size = size;
+			copy.size = range.size;
 			vkCmdCopyBuffer(
 				CommandBufferGetVk(cmds),
 				ConstantBufferGetVk(stagingCbo[i]),
 				ConstantBufferGetVk(cbo[i]), 1, &copy);
+
+			// make sure to put a barrier after the copy so that subsequent calls may wait for the copy to finish
+			VkBufferMemoryBarrier barrier =
+			{
+				VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+				nullptr,
+				VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+				VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED,
+				ConstantBufferGetVk(cbo[i]), copy.srcOffset, copy.size
+			};
+			
+			vkCmdPipelineBarrier(
+				CommandBufferGetVk(cmds),
+				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, 0,
+				0, nullptr,
+				1, &barrier,
+				0, nullptr
+			);
 		}
 		cboStartAddress[i] = cboEndAddress[i];
 	}
