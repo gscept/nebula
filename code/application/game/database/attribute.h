@@ -252,7 +252,7 @@ public:\
 	{\
 		return VALUETYPE(DEFAULTVALUE);\
 	}\
-	inline static Game::AttributeId GetId()\
+	inline static Game::AttributeId Id()\
 	{\
 		return Runtime::ATTRIBUTENAME ## Id;\
 	}\

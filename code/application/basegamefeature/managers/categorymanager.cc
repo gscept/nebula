@@ -15,7 +15,9 @@ __ImplementSingleton(CategoryManager)
 //------------------------------------------------------------------------------
 /**
 */
-CategoryManager::CategoryManager()
+CategoryManager::CategoryManager() :
+    inBeginAddCategoryAttrs(false),
+    addAttrCategoryIndex(0)
 {
 	__ConstructSingleton;
 }
@@ -80,7 +82,39 @@ CategoryManager::AllocateInstance(Entity entity, CategoryId category)
 	return instance;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+void
+CategoryManager::BeginAddCategoryAttrs(Util::StringAtom categoryName)
+{
+    n_assert(!this->inBeginAddCategoryAttrs);
+    this->addAttrCategoryIndex = catIndexMap[categoryName].id;
+    this->inBeginAddCategoryAttrs = true;
+}
 
+//------------------------------------------------------------------------------
+/**
+*/
+void
+CategoryManager::AddCategoryAttr(const Game::AttributeId& attrId)
+{
+    n_assert(this->inBeginAddCategoryAttrs);
+    Ptr<Game::Database> db = EntityManager::Instance()->GetWorldDatabase();
+    Category& cat = this->categoryArray[this->addAttrCategoryIndex];
+    db->AddColumn(cat.templateTable, attrId);
+    db->AddColumn(cat.instanceTable, attrId);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+CategoryManager::EndAddCategoryAttrs()
+{
+    n_assert(this->inBeginAddCategoryAttrs);
+    this->inBeginAddCategoryAttrs = false;
+}
 
 } // namespace Game
 
