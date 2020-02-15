@@ -694,11 +694,14 @@ ObservableContext::OnInstanceMoved(uint32_t toIndex, uint32_t fromIndex)
 	}
 
 	// when atoms are removed, shift all atom indices above where we removed down by the size
-	for (uint32_t i = toIndex + 1; i < observableAllocator.Size(); i++)
+	for (uint32_t i = 0; i < observableAllocator.Size(); i++)
 	{
 		Util::ArrayStack<Ids::Id32, 1>& moveAtoms = observableAllocator.Get<Observable_Atoms>(i);
+		if (i == toIndex)
+			continue;
 		for (IndexT j = 0; j < moveAtoms.Size(); j++)
-			moveAtoms[j] -= toAtoms.Size();
+			if (moveAtoms[j] >= toAtoms.Front())
+				moveAtoms[j] -= toAtoms.Size();
 	}
 }
 
