@@ -11,6 +11,8 @@
 #include "game/entity.h"
 #include "game/manager.h"
 
+#define SetupAttr(ATTRID) Game::CategoryManager::Instance()->AddCategoryAttr(ATTRID)
+
 namespace Game
 {
 
@@ -51,6 +53,13 @@ public:
 	/// allocate instance for entity in category instance table
 	InstanceId AllocateInstance(Entity entity, CategoryId category);
 
+	/// begin adding category attributes
+	void BeginAddCategoryAttrs(Util::StringAtom categoryName);
+	/// add a category attribute
+	void AddCategoryAttr(const Game::AttributeId& attrId);
+	/// end adding category attributes
+	void EndAddCategoryAttrs();
+
 private:
 	Util::Array<Category> categoryArray;
 	Util::HashTable<Util::StringAtom, CategoryId> catIndexMap;
@@ -62,6 +71,10 @@ private:
 	};
 
 	Util::Array<EntityMapping> entityMap;
+
+	// These are used when adding attributes from a property
+	bool inBeginAddCategoryAttrs;
+	IndexT addAttrCategoryIndex;
 };
 
 //------------------------------------------------------------------------------

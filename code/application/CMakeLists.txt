@@ -20,6 +20,8 @@ nebula_begin_module(application)
 			gameserver.cc
 			manager.h
 			manager.cc
+			property.h
+			property.cc
 		)
 	fips_dir(game/database)
 		fips_files(
@@ -49,7 +51,13 @@ nebula_begin_module(application)
 				categorymanager.cc
 				factorymanager.h
 				factorymanager.cc
-
+				transformmanager.h
+				transformmanager.cc
+			)
+		fips_dir(basegamefeature/properties)
+			fips_files(
+				transformableproperty.h
+				transformableproperty.cc
 			)
 	fips_dir(appgame)
 		fips_files(

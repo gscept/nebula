@@ -75,7 +75,7 @@ public:
     Game::ColumnData<typename ATTR::TYPE> GetColumnData(TableId table)
     {
         Game::Database::Table& tbl = this->tables.Get<0>(Ids::Index(table.id));
-        ColumnId cid = this->GetColumnId(table, ATTR::GetId());
+        ColumnId cid = this->GetColumnId(table, ATTR::Id());
         return Game::ColumnData<ATTR::TYPE>(&tbl.columns.Get<1>(cid.id));
     }
 
