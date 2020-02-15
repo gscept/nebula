@@ -450,6 +450,8 @@ Array<TYPE>::operator=(Array<TYPE>&& rhs)
 {
     if (this != &rhs)
     {
+        if (this->elements)
+            n_delete_array(this->elements);
         this->elements = rhs.elements;
         this->grow = rhs.grow;
         this->count = rhs.count;
@@ -852,10 +854,11 @@ Array<TYPE>::EraseIndexSwap(IndexT index)
     IndexT lastElementIndex = this->count - 1;
     if (index < lastElementIndex)
     {
-        this->elements[index] = std::move(this->elements[lastElementIndex]);
+        if constexpr (!std::is_trivially_move_assignable<TYPE>::value)
+            this->elements[index] = std::move(this->elements[lastElementIndex]);
+        else
+            this->elements[index] = this->elements[lastElementIndex];
     }
-	if constexpr (!std::is_trivially_destructible<TYPE>::value)
-		this->Destroy(&(this->elements[lastElementIndex]));
     this->count--;
 }
 

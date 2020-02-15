@@ -84,7 +84,6 @@ public:
 		TYPE* p = reinterpret_cast<TYPE*>(rhs.ptr);
 		this->ptr = p;
 		rhs.ptr = nullptr;
-		if (this->ptr != nullptr) this->ptr->AddRef();
 	}
     /// destructor
     ~Ptr();
@@ -105,7 +104,8 @@ public:
 		TYPE* p = reinterpret_cast<TYPE*>(rhs);
 		if (this->ptr != p)
 		{
-			if (this->ptr != nullptr) this->ptr->Release();
+			if (this->ptr != nullptr)
+				this->ptr->Release();
 			this->ptr = p;
 			if (this->ptr != nullptr) this->ptr->AddRef();
 		}
@@ -118,7 +118,8 @@ public:
 		TYPE* p = reinterpret_cast<TYPE*>(rhs.ptr);
 		if (this->ptr != p)
 		{
-			if (this->ptr != nullptr) this->ptr->Release();
+			if (this->ptr != nullptr) 
+				this->ptr->Release();
 			this->ptr = p;
 			if (this->ptr != nullptr) this->ptr->AddRef();
 		}
@@ -131,6 +132,8 @@ public:
 		TYPE* p = reinterpret_cast<TYPE*>(rhs.ptr);
 		if (this->ptr != p)
 		{
+			if (this->ptr != nullptr)
+				this->ptr->Release();
 			this->ptr = p;
 			rhs.ptr = nullptr;
 		}
@@ -249,9 +252,11 @@ Ptr<TYPE>::operator=(TYPE* rhs)
 {
 	if (this->ptr != rhs)
 	{
-		if (this->ptr != nullptr) this->ptr->Release();
+		if (this->ptr != nullptr) 
+			this->ptr->Release();
 		this->ptr = rhs;
-		if (this->ptr != nullptr) this->ptr->AddRef();
+		if (this->ptr != nullptr) 
+			this->ptr->AddRef();
 	}
 }
 
@@ -264,9 +269,11 @@ Ptr<TYPE>::operator=(const Ptr<TYPE>& rhs)
 {
     if (this->ptr != rhs.ptr)
     {
-        if (this->ptr != nullptr) this->ptr->Release();
+        if (this->ptr != nullptr) 
+			this->ptr->Release();
         this->ptr = rhs.ptr;
-        if (this->ptr != nullptr) this->ptr->AddRef();
+        if (this->ptr != nullptr) 
+			this->ptr->AddRef();
     }
 }
 
@@ -279,6 +286,8 @@ Ptr<TYPE>::operator=(Ptr<TYPE>&& rhs)
 {
 	if (this->ptr != rhs.ptr)
 	{
+		if (this->ptr)
+			this->ptr->Release();
 		this->ptr = rhs.ptr;
 		rhs.ptr = nullptr;
 	}
