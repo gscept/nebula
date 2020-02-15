@@ -115,6 +115,7 @@ struct ProfilingScopeLock
         scope.category = category;
         scope.file = file;
         scope.line = line;
+        scope.accum = accum;
         ProfilingPushScope(scope);
     }
 
