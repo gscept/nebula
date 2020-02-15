@@ -43,14 +43,6 @@ public:
     
     /// get the number of samples in the buffer
     SizeT GetNumSamples() const;
-    /// (obsolete) gain read/write access to sample buffer
-    Math::float4* MapSamples();
-    /// (obsolete) give up access to sample buffer
-    void UnmapSamples();
-    /// (obsolete) gain read/write access to sample counts
-    uchar* MapSampleCounts();
-    /// (obsolete) give up access to sample counts
-    void UnmapSampleCounts();
     
     /// get direct pointer to samples
     Math::float4* GetSamplesPointer() const;
@@ -62,8 +54,6 @@ private:
     SizeT numSamples;
     Math::float4* samples;
     uchar* sampleCounts;
-    bool samplesMapped;
-    bool sampleCountsMapped;
 };
 
 //------------------------------------------------------------------------------

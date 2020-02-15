@@ -190,8 +190,8 @@ private:
 		Util::FixedArray<Math::matrix44>,
 		Util::FixedArray<SkeletonJobJoint>,
 		CoreAnimation::AnimSampleBuffer,
-		Graphics::ContextEntityId,
-		Graphics::ContextEntityId
+		Graphics::GraphicsEntityId,
+		Graphics::GraphicsEntityId
 	> CharacterContextAllocator;
 	static CharacterContextAllocator characterContextAllocator;
 

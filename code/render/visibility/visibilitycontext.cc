@@ -606,8 +606,8 @@ ObservableContext::Setup(const Graphics::GraphicsEntityId id, VisibilityEntityTy
 				Ids::Id32 obj = ObservableContext::observableAtomAllocator.Alloc();
 				ObservableContext::observableAtomAllocator.Get<ObservableAtom_ContextEntity>(obj) = cid;
 				ObservableContext::observableAtomAllocator.Get<ObservableAtom_Node>(obj) = nodes[j];
-				// skip transform
 
+				// append id to observable so we can track it, this id should also directly correspond to the VisibilityResult_Flags (above alloc.Alloc()) in all observers
 				observableAllocator.Get<Observable_Atoms>(cid.id).Append(obj);
 			}
 		}
@@ -621,7 +621,7 @@ void
 ObservableContext::Create()
 {
 	_CreateContext();
-    ObservableContext::__state.OnInstanceMoved = OnInstanceMoved;
+    ObservableContext::__state.OnInstanceMoved = ObservableContext::OnInstanceMoved;
 	ObservableContext::__state.allowedRemoveStages = Graphics::OnBeforeFrameStage;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&ObservableContext::__bundle, &ObservableContext::__state);
 }
@@ -646,18 +646,17 @@ ObservableContext::Dealloc(Graphics::ContextEntityId id)
 	const Util::Array<ObserverContext::VisibilityResultAllocator>& visAllocators = ObserverContext::observerAllocator.GetArray<Observer_ResultAllocator>();
 
 	// cleanup visibility allocator first
-	IndexT i;
 	for (IndexT i = 0; i < visAllocators.Size(); i++)
 	{
 		ObserverContext::VisibilityResultAllocator& alloc = visAllocators[i];
-		for (i = 0; i < atoms.Size(); i++)
+		for (IndexT j = 0; j < atoms.Size(); j++)
 		{
-			alloc.Dealloc(atoms[i]);
+			alloc.Dealloc(atoms[j]);
 		}
 	}
 
 	// now clean up all atoms
-	for (i = 0; i < atoms.Size(); i++)
+	for (IndexT i = 0; i < atoms.Size(); i++)
 	{
 		observableAtomAllocator.Dealloc(atoms[i]);
 	}
@@ -671,22 +670,36 @@ ObservableContext::Dealloc(Graphics::ContextEntityId id)
 void
 ObservableContext::OnInstanceMoved(uint32_t toIndex, uint32_t fromIndex)
 {
-    n_assert2(fromIndex >= observableAllocator.Size(), "Instance is assumed to be erased but wasn't!\n");
+    //n_assert2(fromIndex >= observableAllocator.Size(), "Instance is assumed to be erased but wasn't!\n");
     auto size = observableAllocator.Size();
 
-	// get atoms
-	Util::ArrayStack<Ids::Id32, 1>& atoms = observableAllocator.Get<Observable_Atoms>(toIndex);
+	// get atoms we are moving to
+	Util::ArrayStack<Ids::Id32, 1>& toAtoms = observableAllocator.Get<Observable_Atoms>(toIndex);
 
-    // go through observers and deallocate visibility slot for this object
-    const Util::Array<ObserverContext::VisibilityResultAllocator>& visAllocators = ObserverContext::observerAllocator.GetArray<Observer_ResultAllocator>();
-    for (IndexT i = 0; i < visAllocators.Size(); i++)
-    {
+	// first, decrement all entities above our current entity
+	for (uint32_t i = toAtoms.Back(); i < observableAtomAllocator.Size(); i++)
+	{
+		observableAtomAllocator.Get<ObservableAtom_ContextEntity>(i).id--;
+	}
+
+	// then erase all atoms in the list, they should appear in order
+	observableAtomAllocator.EraseRange(toAtoms.Front(), toAtoms.Back());
+
+	// go through observers and deallocate visibility slot for this object
+	const Util::Array<ObserverContext::VisibilityResultAllocator>& visAllocators = ObserverContext::observerAllocator.GetArray<Observer_ResultAllocator>();
+	for (IndexT i = 0; i < visAllocators.Size(); i++)
+	{
 		ObserverContext::VisibilityResultAllocator& alloc = visAllocators[i];
-		for (i = 0; i < atoms.Size(); i++)
-		{
-			alloc.EraseIndexSwap(atoms[i]);
-		}
-    }
+		alloc.EraseRange(toAtoms.Front(), toAtoms.Back());
+	}
+
+	// when atoms are removed, shift all atom indices above where we removed down by the size
+	for (uint32_t i = toIndex + 1; i < observableAllocator.Size(); i++)
+	{
+		Util::ArrayStack<Ids::Id32, 1>& moveAtoms = observableAllocator.Get<Observable_Atoms>(i);
+		for (IndexT j = 0; j < moveAtoms.Size(); j++)
+			moveAtoms[j] -= toAtoms.Size();
+	}
 }
 
 //------------------------------------------------------------------------------

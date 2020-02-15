@@ -126,8 +126,10 @@ void ctx::Defragment()\
 		if (index >= dataSize) { continue; }\
 		oldIndex = dataSize - 1;\
 		lastId = __state.entities[oldIndex].id;\
-		idAllocator.EraseIndexSwap(index);\
-		__state.entities.EraseIndexSwap(index);\
+        if (__state.OnInstanceMoved != nullptr) \
+            __state.OnInstanceMoved(index, oldIndex);\
+		idAllocator.EraseIndexSwap(index); \
+		__state.entities.EraseIndexSwap(index); \
 		mapIndex = __state.entitySliceMap.FindIndex(lastId);\
 		if (mapIndex != InvalidIndex)\
 		{\
@@ -138,10 +140,6 @@ void ctx::Defragment()\
 			freeIds.Append(index);\
 			i++;\
 		}\
-        if (__state.OnInstanceMoved != nullptr) \
-        {\
-            __state.OnInstanceMoved(index, oldIndex);\
-        }\
 	}\
 	freeIds.Clear();\
 }
@@ -223,6 +221,8 @@ struct GraphicsContextState
 	void(*Defragment)();
     /// called after a context entity has moved index
     void(*OnInstanceMoved)(uint32_t toIndex, uint32_t fromIndex);
+	/// called to manually handle fragmentation
+	void(*OnDefragment)(uint32_t toIndex, uint32_t fromIndex);
 
     void CleanupDelayedRemoveQueue()
     {

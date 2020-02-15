@@ -53,9 +53,10 @@ public:
 
 	/// Erase element for each
 	void EraseIndex(const uint32_t id);
-
 	/// Erase element for each
 	void EraseIndexSwap(const uint32_t id);
+	/// erase range
+	void EraseRange(const uint32_t start, const uint32_t end);
 
 	/// get single item from resource, template expansion might give you cancer
 	template <int MEMBER>
@@ -173,8 +174,8 @@ inline uint32_t ArrayAllocator<TYPES...>::Alloc()
 //------------------------------------------------------------------------------
 /**
 */
-template<class ...TYPES>
-inline void ArrayAllocator<TYPES...>::EraseIndex(const uint32_t id)
+template<class ...TYPES> inline void 
+ArrayAllocator<TYPES...>::EraseIndex(const uint32_t id)
 {
 	erase_index_for_each_in_tuple(this->objects, id);
 	this->size--;
@@ -183,11 +184,21 @@ inline void ArrayAllocator<TYPES...>::EraseIndex(const uint32_t id)
 //------------------------------------------------------------------------------
 /**
 */
-template<class ...TYPES>
-inline void ArrayAllocator<TYPES...>::EraseIndexSwap(const uint32_t id)
+template<class ...TYPES> inline void 
+ArrayAllocator<TYPES...>::EraseIndexSwap(const uint32_t id)
 {
 	erase_index_swap_for_each_in_tuple(this->objects, id);
 	this->size--;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class ...TYPES> inline void 
+ArrayAllocator<TYPES...>::EraseRange(const uint32_t start, const uint32_t end)
+{
+	erase_range_for_each_in_tuple(this->objects, start, end);
+	this->size -= (end + 1) - start;
 }
 
 //------------------------------------------------------------------------------
