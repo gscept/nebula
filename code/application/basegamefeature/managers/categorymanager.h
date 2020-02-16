@@ -10,6 +10,7 @@
 #include "core/singleton.h"
 #include "game/entity.h"
 #include "game/manager.h"
+#include "game/property.h"
 
 #define SetupAttr(ATTRID) Game::CategoryManager::Instance()->AddCategoryAttr(ATTRID)
 
@@ -22,6 +23,7 @@ struct Category
 	Util::StringAtom name;
 	TableId instanceTable;
 	TableId templateTable;
+	Util::Array<Ptr<Game::Property>> properties;
 };
 
 typedef Game::TableCreateInfo CategoryCreateInfo;
@@ -35,6 +37,13 @@ public:
 	CategoryManager();
 	/// destructor
 	~CategoryManager();
+
+	/// called before frame by the game server
+	void OnBeginFrame();
+	/// called per-frame by the game server
+	void OnFrame();
+	/// called after frame by the game server
+	void OnEndFrame();
 
 	/// check if category exists
 	bool HasCategory(Util::StringAtom name);
@@ -57,6 +66,8 @@ public:
 	void BeginAddCategoryAttrs(Util::StringAtom categoryName);
 	/// add a category attribute
 	void AddCategoryAttr(const Game::AttributeId& attrId);
+	/// add a category property. This automatically adds all attributes for said property
+	void AddProperty(const Ptr<Game::Property>& prop);
 	/// end adding category attributes
 	void EndAddCategoryAttrs();
 
