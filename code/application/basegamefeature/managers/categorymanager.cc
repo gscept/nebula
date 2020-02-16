@@ -34,6 +34,51 @@ CategoryManager::~CategoryManager()
 /**
 */
 void
+CategoryManager::OnBeginFrame()
+{
+	for (IndexT i = 0; i < this->categoryArray.Size(); i++)
+	{
+		for (auto const& prop : this->categoryArray[i].properties)
+		{
+			prop->OnBeginFrame();
+		}
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+CategoryManager::OnFrame()
+{
+	for (IndexT i = 0; i < this->categoryArray.Size(); i++)
+	{
+		for (auto const& prop : this->categoryArray[i].properties)
+		{
+			prop->OnRender();
+		}
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+CategoryManager::OnEndFrame()
+{
+	for (IndexT i = 0; i < this->categoryArray.Size(); i++)
+	{
+		for (auto const& prop : this->categoryArray[i].properties)
+		{
+			prop->OnEndFrame();
+		}
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 CategoryManager::AddCategory(CategoryCreateInfo const& info)
 {
 	TableCreateInfo tableInfo;
@@ -104,6 +149,19 @@ CategoryManager::AddCategoryAttr(const Game::AttributeId& attrId)
     Category& cat = this->categoryArray[this->addAttrCategoryIndex];
     db->AddColumn(cat.templateTable, attrId);
     db->AddColumn(cat.instanceTable, attrId);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+CategoryManager::AddProperty(const Ptr<Game::Property>& prop)
+{
+	n_assert(this->inBeginAddCategoryAttrs);
+	this->categoryArray[this->addAttrCategoryIndex].properties.Append(prop);
+	const_cast<CategoryId&>(prop->category) = CategoryId(this->addAttrCategoryIndex);
+	prop->SetupExternalAttributes();
+	prop->Init();
 }
 
 //------------------------------------------------------------------------------

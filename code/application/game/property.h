@@ -34,7 +34,11 @@ public:
     virtual void OnInstanceMoved() {};
 
 protected:
-    //Util::Array<Attr::AttrId> attributeIds;
+    friend class CategoryManager;
+
+    /// which category does this property belong to
+    /// @note   This is const_cast and changed by the category manager upon being attached to the category
+    const Game::CategoryId category;
 };
 
 

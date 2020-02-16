@@ -178,7 +178,7 @@ FactoryManager::SetupAttributes()
 			if (Core::Factory::Instance()->ClassExists(propertyName))
 			{
 				Ptr<Game::Property> newProperty = this->CreateProperty(propertyName);
-				newProperty->SetupExternalAttributes();
+				CategoryManager::Instance()->AddProperty(newProperty);
 			}
 			else
 			{
