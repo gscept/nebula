@@ -10,6 +10,11 @@
 #include "game/database/attribute.h"
 #include "graphics/graphicsentity.h"
 
+namespace Attr
+{
+__DeclareAttribute(ModelResource, Util::String, 'MdlR', Util::String("mdl:system/placeholder.n3"));
+}
+
 namespace GraphicsFeature
 {
 
@@ -37,6 +42,7 @@ private:
     {
         Game::PropertyData<State> state;
         Game::PropertyData<Math::matrix44> worldTransform;
+        Game::PropertyData<Util::String> modelResource;
     } data;
 };
 

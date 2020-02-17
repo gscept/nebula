@@ -17,6 +17,13 @@
 namespace Game
 {
 
+inline SizeT
+GetNumInstances(CategoryId category)
+{
+	Ptr<Game::Database> db = Game::EntityManager::Instance()->GetWorldDatabase();
+	return db->GetNumRows(category.id);
+}
+
 template<typename TYPE>
 Game::PropertyData<typename TYPE> CreatePropertyState(CategoryId category)
 {
@@ -29,6 +36,7 @@ template<typename ATTR>
 Game::PropertyData<typename ATTR::TYPE> GetPropertyData(CategoryId category)
 {
 	Ptr<Game::Database> db = Game::EntityManager::Instance()->GetWorldDatabase();
+	n_assert2(db->HasColumn(category.id, ATTR::Id()), "Category does not have specified attribute!");
 	return db->GetColumnData<ATTR>(category.id);
 }
 

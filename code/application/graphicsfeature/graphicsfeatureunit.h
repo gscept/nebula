@@ -6,7 +6,6 @@
     (C) 2018-2020 Individual contributors, see AUTHORS file
 */
 #include "game/featureunit.h"
-#include "graphicsfeature/components/graphicscomponent.h"
 #include "graphics/graphicsserver.h"
 #include "graphics/view.h"
 #include "graphics/stage.h"
