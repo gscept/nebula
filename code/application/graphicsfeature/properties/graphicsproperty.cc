@@ -41,7 +41,8 @@ void
 GraphicsProperty::Init()
 {
 	this->data = {
-
+		Game::CreatePropertyState<State>(this->category);
+		Game::GetPropertyData<Attr::WorldTransform>(this->category);
 	};
 }
 

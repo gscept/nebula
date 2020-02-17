@@ -96,6 +96,7 @@ Database::GetColumn(TableId table, ColumnId columnId)
 ColumnId
 Database::GetColumnId(TableId table, Column column)
 {
+	n_assert(column.IsValid());
 	ColumnId cid = this->tables.Get<0>(Ids::Index(table.id)).columns.GetArray<0>().FindIndex(column);
 	n_assert(cid != ColumnId::Invalid());
 	return cid;
@@ -171,7 +172,7 @@ Database::SetToDefault(TableId tid, IndexT row)
 	{
 		Column column = table.columns.Get<0>(col);
 		void* buffer = table.columns.Get<1>(col);
-		
+
 		switch (column.GetType())
 		{
 		case Game::AttributeType::Int8Type:			*((int8_t*)buffer + row)	= std::get<int8_t>(column.GetDefaultValue()); break;
@@ -192,7 +193,7 @@ Database::SetToDefault(TableId tid, IndexT row)
 		case Game::AttributeType::GuidType:			*((Util::Guid*)buffer + row)		= std::get<Util::Guid>(column.GetDefaultValue()); break;
 		case Game::AttributeType::EntityType:		*((Game::Entity*)buffer + row)		= std::get<Game::Entity>(column.GetDefaultValue()); break;
 		case Game::AttributeType::StringType:		*((Util::String*)buffer + row)		= std::get<Util::String>(column.GetDefaultValue()); break;
-			
+
 		default:
 			n_error("Type not yet supported!");
 		}
@@ -229,7 +230,7 @@ GrowBuffer(Column column, void*& buffer, const SizeT capacity, const SizeT size,
 	if constexpr (!std::is_trivial<TYPE>::value)
 	{
 		const SizeT byteSize = Game::GetAttributeSize(column.GetType());
-		
+
 		int oldNumBytes = byteSize * capacity;
 		int newNumBytes = byteSize * newCapacity;
 		void* newData = Memory::Alloc(ALLOCATIONHEAP, newNumBytes);
