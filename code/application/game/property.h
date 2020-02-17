@@ -23,8 +23,8 @@ public:
 
     virtual void Init() {};
 
-    virtual void OnActivate(IndexT instance) {};
-    virtual void OnDeactivate(IndexT instance) {};
+    virtual void OnActivate(Game::InstanceId instance) {};
+    virtual void OnDeactivate(Game::InstanceId instance) {};
     virtual void OnBeginFrame() {};
     virtual void OnRender() {};
     virtual void OnEndFrame() {};

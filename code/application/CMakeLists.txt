@@ -59,6 +59,16 @@ nebula_begin_module(application)
 				transformableproperty.h
 				transformableproperty.cc
 			)
+	fips_dir(graphicsfeature)
+		fips_files(
+			graphicsfeatureunit.h
+			graphicsfeatureunit.cc
+		)
+		fips_dir(graphicsfeature/properties)
+			fips_files(
+				graphicsproperty.h
+				graphicsproperty.cc
+			)
 	fips_dir(appgame)
 		fips_files(
 			gameapplication.h
