@@ -11,6 +11,7 @@
 #include "valuetable.h"
 #include "util/stringatom.h"
 #include "ids/idgenerationpool.h"
+
 namespace Game
 {
 
@@ -27,7 +28,7 @@ public:
     ColumnData() : data(nullptr)
     {
     }
-    ColumnData(void** ptrptr) : data((void**)ptrptr)
+    ColumnData(ColumnId const columnId, void** ptrptr) : data((void**)ptrptr), cid(columnId)
     {
     }
     
@@ -42,6 +43,7 @@ public:
     }
 private:
     void** data;
+    ColumnId cid;
 };
 
 class Database : public Core::RefCounted
@@ -71,12 +73,29 @@ public:
     /// Get the column descriptors for a table
     Util::Array<Column> const& GetColumns(TableId table);
 
+    /// Adds a custom POD data column to table.
+    template<typename TYPE>
+    Game::ColumnData<typename TYPE> AddDataColumn(TableId tid)
+    {
+        static_assert(std::is_trivial<TYPE>(), "Type is not trivial!");
+        Game::Database::Table& table = this->tables.Get<0>(Ids::Index(tid.id));
+        
+        uint32_t col = table.states.Alloc();
+
+        Table::ColumnBuffer& buffer = table.columns.Get<1>(col);
+        table.columns.Get<0>(col) = column;
+
+        buffer = this->AllocateColumn(tid, column);
+
+        return Game::ColumnData<ATTR::TYPE>(cid, &tbl.columns.Get<1>(cid.id));
+    }
+
     template<typename ATTR>
     Game::ColumnData<typename ATTR::TYPE> GetColumnData(TableId table)
     {
         Game::Database::Table& tbl = this->tables.Get<0>(Ids::Index(table.id));
         ColumnId cid = this->GetColumnId(table, ATTR::Id());
-        return Game::ColumnData<ATTR::TYPE>(&tbl.columns.Get<1>(cid.id));
+        return Game::ColumnData<ATTR::TYPE>(cid, &tbl.columns.Get<1>(cid.id));
     }
 
 private:
@@ -90,6 +109,8 @@ private:
 
         Util::StringAtom name;
         Util::ArrayAllocator<Column, ColumnBuffer> columns;
+        /// These are additional columns that does not have a specific column type
+        Util::Array<ColumnBuffer> states;
         uint32_t numRows = 0;
         uint32_t capacity = 128;
         uint32_t grow = 128;

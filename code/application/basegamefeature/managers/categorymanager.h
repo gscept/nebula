@@ -17,6 +17,21 @@
 namespace Game
 {
 
+template<typename TYPE>
+Game::PropertyData<typename TYPE> CreatePropertyState(CategoryId category)
+{
+	Ptr<Game::Database> db = Game::EntityManager::Instance()->GetWorldDatabase();
+	return db->AddDataColumn<TYPE>(category.id);
+}
+
+/// Shortcut for fetching property data buffers
+template<typename ATTR>
+Game::PropertyData<typename ATTR::TYPE> GetPropertyData(CategoryId category)
+{
+	Ptr<Game::Database> db = Game::EntityManager::Instance()->GetWorldDatabase();
+	return db->GetColumnData<ATTR>(category.id);
+}
+
 /// describes a category
 struct Category
 {

@@ -12,6 +12,9 @@
 namespace Game
 {
 
+template<typename T>
+using PropertyData = Game::ColumnData<T>;
+
 class Property : public Core::RefCounted
 {
     __DeclareClass(Property);
