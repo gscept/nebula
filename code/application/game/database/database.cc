@@ -84,6 +84,15 @@ Database::IsValid(TableId table)
 //------------------------------------------------------------------------------
 /**
 */
+bool
+Database::HasColumn(TableId table, Column col)
+{
+	return this->tables.Get<0>(Ids::Index(table.id)).columns.GetArray<0>().FindIndex(col) != InvalidIndex;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 Column
 Database::GetColumn(TableId table, ColumnId columnId)
 {
@@ -337,6 +346,7 @@ Database::AllocateColumn(TableId tid, Column column)
 	const Game::AttributeType type = column.GetType();
 
 	void* buffer = nullptr;
+
 	switch (column.GetType())
 	{
 	case Game::AttributeType::Int8Type:			buffer = AllocateBuffer<int8_t>(column, table.capacity, table.numRows); break;
@@ -359,6 +369,28 @@ Database::AllocateColumn(TableId tid, Column column)
 	case Game::AttributeType::StringType:		buffer = AllocateBuffer<Util::String>(column, table.capacity, table.numRows); break;
 	default:
 		n_error("Type not yet supported!\n");
+	}
+
+	return buffer;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void*
+Database::AllocateState(TableId tid, Table::StateDescription const& desc)
+{
+	n_assert(desc.defVal != nullptr);
+	n_assert(desc.typeSize != 0);
+
+	Game::Database::Table& table = this->tables.Get<0>(Ids::Index(tid.id));
+
+	void* buffer = Memory::Alloc(ALLOCATIONHEAP, desc.typeSize);
+
+	for (IndexT i = 0; i < table.numRows; ++i)
+	{
+		void* val = (char*)buffer + (i * desc.typeSize);
+		Memory::Copy(desc.defVal, val, desc.typeSize);
 	}
 
 	return buffer;

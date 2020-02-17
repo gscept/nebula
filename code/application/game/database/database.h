@@ -27,9 +27,14 @@ class ColumnData
 public:
     ColumnData() : data(nullptr)
     {
+        // empty
     }
-    ColumnData(ColumnId const columnId, void** ptrptr) : data((void**)ptrptr), cid(columnId)
+    ColumnData(ColumnId const columnId, void** ptrptr, bool state = false) :
+        data((void**)ptrptr),
+        cid(columnId),
+        isState(state)
     {
+        // empty
     }
     
     ~ColumnData() = default;
@@ -44,6 +49,7 @@ public:
 private:
     void** data;
     ColumnId cid;
+    bool isState = false;
 };
 
 class Database : public Core::RefCounted
@@ -57,6 +63,8 @@ public:
     void DeleteTable(TableId table);
     bool IsValid(TableId table);
     
+    bool HasColumn(TableId table, Column col);
+
     Column GetColumn(TableId table, ColumnId columnId);
     ColumnId GetColumnId(TableId table, Column column);
 
@@ -77,17 +85,20 @@ public:
     template<typename TYPE>
     Game::ColumnData<typename TYPE> AddDataColumn(TableId tid)
     {
-        static_assert(std::is_trivial<TYPE>(), "Type is not trivial!");
+        static_assert(std::is_standard_layout<TYPE>(), "Type is not standard layout!");
         Game::Database::Table& table = this->tables.Get<0>(Ids::Index(tid.id));
         
         uint32_t col = table.states.Alloc();
 
-        Table::ColumnBuffer& buffer = table.columns.Get<1>(col);
-        table.columns.Get<0>(col) = column;
+        Table::ColumnBuffer& buffer = table.states.Get<1>(col);
+        
+        // setup a state description with the default values from the type
+        Table::StateDescription desc = Table::StateDescription(TYPE());
+        buffer = this->AllocateState(tid, desc);
 
-        buffer = this->AllocateColumn(tid, column);
+        table.states.Get<0>(col) = std::move(desc);
 
-        return Game::ColumnData<ATTR::TYPE>(cid, &tbl.columns.Get<1>(cid.id));
+        return Game::ColumnData<TYPE>(col, &table.states.Get<1>(col), true);
     }
 
     template<typename ATTR>
@@ -99,26 +110,76 @@ public:
     }
 
 private:
-    void GrowTable(TableId tid);
-    
-    void* AllocateColumn(TableId tid, Column column);
-    
     struct Table
     {
         using ColumnBuffer = void*;
 
         Util::StringAtom name;
+
         Util::ArrayAllocator<Column, ColumnBuffer> columns;
-        /// These are additional columns that does not have a specific column type
-        Util::Array<ColumnBuffer> states;
         uint32_t numRows = 0;
         uint32_t capacity = 128;
         uint32_t grow = 128;
         // Holds freed indices to be reused in the attribute table.
         Util::Array<IndexT> freeIds;
+
+        class StateDescription
+        {
+        public:
+            template<typename T>
+            explicit StateDescription(T const& defaultValue)
+            {
+                static_assert(std::is_standard_layout<T>(), "State needs to be a standard layout type!");
+                this->defVal = Memory::Alloc(Memory::HeapType::ObjectHeap, sizeof(T));
+                Memory::Copy(&defaultValue, this->defVal, sizeof(T));
+                this->typeSize = sizeof(T);
+            }
+            StateDescription() : defVal(nullptr), typeSize(0)
+            {
+                // empty
+            }
+            StateDescription(StateDescription&& desc) : defVal(desc.defVal), typeSize(desc.typeSize)
+            {
+                desc.defVal = nullptr;
+                desc.typeSize = 0;
+            }
+            ~StateDescription()
+            {
+                if (this->defVal != nullptr)
+                {
+                    Memory::Free(Memory::HeapType::ObjectHeap, this->defVal);
+                }
+            }
+            void operator=(StateDescription&& rhs)
+            {
+                this->typeSize = rhs.typeSize;
+                this->defVal = rhs.defVal;
+
+                rhs.typeSize = 0;
+                rhs.defVal = nullptr;
+            }
+            void operator=(StateDescription& rhs)
+            {
+                this->typeSize = rhs.typeSize;
+                this->defVal = rhs.defVal;
+
+                rhs.typeSize = 0;
+                rhs.defVal = nullptr;
+            }
+            
+            SizeT typeSize;
+            void* defVal;
+        };
+        
+        Util::ArrayAllocator<StateDescription, ColumnBuffer> states;
         
         static constexpr Memory::HeapType HEAP_MEMORY_TYPE = Memory::HeapType::ObjectArrayHeap;
     };
+
+    void GrowTable(TableId tid);
+
+    void* AllocateColumn(TableId tid, Column column);
+    void* AllocateState(TableId tid, Table::StateDescription const& desc);
 
     Ids::IdGenerationPool tableIdPool;
     Util::ArrayAllocator<Table> tables;
