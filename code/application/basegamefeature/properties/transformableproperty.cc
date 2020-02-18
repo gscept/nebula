@@ -45,7 +45,7 @@ TransformableProperty::Init()
 		Game::GetPropertyData<Attr::LocalTransform>(this->category),
 		Game::GetPropertyData<Attr::WorldTransform>(this->category),
 		Game::GetPropertyData<Attr::Parent>(this->category)
-	}
+	};
 }
 
 //------------------------------------------------------------------------------

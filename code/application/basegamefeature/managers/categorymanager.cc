@@ -115,7 +115,7 @@ CategoryManager::AllocateInstance(Entity entity, CategoryId category)
 	n_assert(EntityManager::Instance()->IsValid(entity));
 	n_assert(category < this->categoryArray.Size());
 
-	if (this->entityMap[entity.id].instance != Game::InstanceId::Invalid())
+	if (entity.id < this->entityMap.Size() && this->entityMap[entity.id].instance != Game::InstanceId::Invalid())
 	{
 		n_warning("Entity already registered!\n");
 		return InvalidIndex;
@@ -156,7 +156,7 @@ CategoryManager::DeallocateInstance(Entity entity)
 	Ptr<Game::Database> db = EntityManager::Instance()->GetWorldDatabase();
 
 	InstanceId instance = this->entityMap[entity.id].instance;
-	n_assert(instance.id != Game::InstanceId::Invalid());
+	n_assert(instance != Game::InstanceId::Invalid());
 
 	this->entityMap[entity.id].category = Game::CategoryId::Invalid();
 	this->entityMap[entity.id].instance = Game::InstanceId::Invalid();

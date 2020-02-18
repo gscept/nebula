@@ -38,10 +38,10 @@ public:
 private:
     struct Data 
     {
-        Game::PropertyData<Attr::Owner> owner;
-        Game::PropertyData<Attr::LocalTransform> localTransform;
-        Game::PropertyData<Attr::WorldTransform> worldTransform;
-        Game::PropertyData<Attr::Parent> parent;
+        Game::PropertyData<Game::Entity> owner;
+        Game::PropertyData<Math::matrix44> localTransform;
+        Game::PropertyData<Math::matrix44> worldTransform;
+        Game::PropertyData<Game::Entity> parent;
     } data;
 };
 
