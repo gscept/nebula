@@ -3,6 +3,8 @@
 /**
     GraphicsFeature::GraphicsProperty
 
+    Handles entities that should be rendered using some model resource.
+
     (C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

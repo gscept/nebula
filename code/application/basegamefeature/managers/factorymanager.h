@@ -3,6 +3,11 @@
 /**
 	@class	Game::FactoryManager
 
+	Loads the 'data:tables/blueprint.json' file and subsequently sets up 
+	categories based on the blueprints in the category manager.
+
+	You can instantiate entities from blueprints via the factory manager.
+
 	(C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
