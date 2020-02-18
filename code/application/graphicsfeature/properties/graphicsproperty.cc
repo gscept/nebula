@@ -6,7 +6,6 @@
 #include "graphicsproperty.h"
 #include "basegamefeature/managers/categorymanager.h"
 #include "basegamefeature/properties/transformableproperty.h"
-#include "debug/debugtimer.h"
 #include "models/modelcontext.h"
 #include "graphics/graphicsserver.h"
 #include "visibility/visibilitycontext.h"
@@ -19,8 +18,6 @@ __DefineAttribute(ModelResource, Util::String, 'MdlR', Util::String("mdl:system/
 
 namespace GraphicsFeature
 {
-
-_declare_static_timer(GraphicsPropertyOnEndFrame);
 
 __ImplementClass(GraphicsFeature::GraphicsProperty, 'GFXP', Game::Property);
 
@@ -88,8 +85,6 @@ GraphicsProperty::OnDeactivate(Game::InstanceId instance)
 void
 GraphicsProperty::OnBeginFrame()
 {
-	_start_timer(GraphicsPropertyOnEndFrame);
-
 	SizeT num = Game::GetNumInstances(this->category);
     for (int i = 0; i < num; ++i)
     {
@@ -99,8 +94,6 @@ GraphicsProperty::OnBeginFrame()
             Models::ModelContext::SetTransform(gfxEntity, this->data.worldTransform[i]);
         }
     }
-
-    _stop_timer(GraphicsPropertyOnEndFrame);
 }
 
 //------------------------------------------------------------------------------

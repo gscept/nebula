@@ -47,7 +47,8 @@ template<typename TYPE>
 Game::PropertyData<typename TYPE> CreatePropertyState(CategoryId category)
 {
 	Ptr<Game::Database> db = Game::EntityManager::Instance()->GetWorldDatabase();
-	return db->AddDataColumn<TYPE>(category.id);
+	TableId tid = CategoryManager::Instance()->GetCategory(category).instanceTable;
+	return db->AddDataColumn<TYPE>(tid);
 }
 
 /// shortcut for fetching property data buffers (table columns)
@@ -55,8 +56,9 @@ template<typename ATTR>
 Game::PropertyData<typename ATTR::TYPE> GetPropertyData(CategoryId category)
 {
 	Ptr<Game::Database> db = Game::EntityManager::Instance()->GetWorldDatabase();
-	n_assert2(db->HasColumn(category.id, ATTR::Id()), "Category does not have specified attribute!");
-	return db->GetColumnData<ATTR>(category.id);
+	TableId tid = CategoryManager::Instance()->GetCategory(category).instanceTable;
+	n_assert2(db->HasColumn(tid, ATTR::Id()), "Category does not have specified attribute!");
+	return db->GetColumnData<ATTR>(tid);
 }
 
 /// describes a category
@@ -95,6 +97,9 @@ public:
 	
 	/// returns a category by name. asserts if category does not exist
 	Category const& GetCategory(Util::StringAtom name);
+	
+	/// returns a category by id. asserts if category does not exist
+	Category const& GetCategory(CategoryId cid);
 
 	/// return a category id by name
 	CategoryId const GetCategoryId(Util::StringAtom name);
@@ -152,6 +157,15 @@ CategoryManager::GetCategory(Util::StringAtom name)
 {
 	n_assert(this->catIndexMap.Contains(name));
 	return this->categoryArray[this->catIndexMap[name].id];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline Category const&
+CategoryManager::GetCategory(CategoryId cid)
+{
+	return this->categoryArray[cid.id];
 }
 
 //------------------------------------------------------------------------------
