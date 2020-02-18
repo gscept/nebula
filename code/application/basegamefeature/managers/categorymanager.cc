@@ -114,9 +114,17 @@ CategoryManager::AllocateInstance(Entity entity, CategoryId category)
 {
 	n_assert(EntityManager::Instance()->IsValid(entity));
 	n_assert(category < this->categoryArray.Size());
+
+	if (this->entityMap[entity.id].instance != Game::InstanceId::Invalid())
+	{
+		n_warning("Entity already registered!\n");
+		return InvalidIndex;
+	}
+
 	Category& cat = this->categoryArray[category.id];
 	Ptr<Game::Database> db = EntityManager::Instance()->GetWorldDatabase();
 	InstanceId instance = db->AllocateRow(cat.instanceTable);
+
 	if (this->entityMap.Size() <= Ids::Index(entity.id))
 	{
 		this->entityMap.Grow();
@@ -124,7 +132,36 @@ CategoryManager::AllocateInstance(Entity entity, CategoryId category)
 		this->entityMap.SetSize(this->entityMap.Capacity());
 	}
 	this->entityMap[entity.id] = { category, instance };
+
+	for (auto const& prop : cat.properties)
+	{
+		prop->OnActivate(instance);
+	}
+
 	return instance;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+CategoryManager::DeallocateInstance(Entity entity)
+{
+	n_assert(EntityManager::Instance()->IsValid(entity));
+
+	CategoryId category = this->entityMap[entity.id].category;
+	n_assert(category < this->categoryArray.Size());
+
+	Category& cat = this->categoryArray[category.id];
+	Ptr<Game::Database> db = EntityManager::Instance()->GetWorldDatabase();
+
+	InstanceId instance = this->entityMap[entity.id].instance;
+	n_assert(instance.id != Game::InstanceId::Invalid());
+
+	this->entityMap[entity.id].category = Game::CategoryId::Invalid();
+	this->entityMap[entity.id].instance = Game::InstanceId::Invalid();
+
+	// TODO: erase swap?
 }
 
 //------------------------------------------------------------------------------

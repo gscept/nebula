@@ -38,6 +38,38 @@ TransformableProperty::~TransformableProperty()
 /**
 */
 void
+TransformableProperty::Init()
+{
+	this->data = {
+		Game::GetPropertyData<Attr::Owner>(this->category),
+		Game::GetPropertyData<Attr::LocalTransform>(this->category),
+		Game::GetPropertyData<Attr::WorldTransform>(this->category),
+		Game::GetPropertyData<Attr::Parent>(this->category)
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TransformableProperty::OnActivate(Game::InstanceId instance)
+{
+	//TransformManager::Instance()->RegisterEntity(this->data.owner[instance.id], this->data.localTransform[instance.id], this->data.parent[instance.id])
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TransformableProperty::OnDeactivate(Game::InstanceId instance)
+{
+	//TransformManager::Instance()->DeregisterEntity(this->data.owner[instance.id])
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 TransformableProperty::SetupExternalAttributes()
 {
 	SetupAttr(Attr::LocalTransform::Id());

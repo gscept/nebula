@@ -3,6 +3,23 @@
 /**
 	@class	Game::CategoryManager
 
+	The category manager handles all entity categories in the game.
+	Categories are collections of attributes, arranged as a table where each row
+	is an instance, mapped to an entity.
+
+	Categories can have properties attached. When the event methods of this
+	manager is called, it subsequently calls the event callbacks for all properties
+	for all categories.
+	
+	Categories can also have custom, temporary states. These are commonly used
+	by properties, and only by the property that uses it. If the data that exists
+	in a state needs to be exposed to other properties, yo ushould consider moving
+	it to a public attribute.
+
+
+	@see	factorymanager.h 
+	@see	entitymanager.h 
+
 	(C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
@@ -17,6 +34,7 @@
 namespace Game
 {
 
+/// get the number of instances of a certain category
 inline SizeT
 GetNumInstances(CategoryId category)
 {
@@ -24,6 +42,7 @@ GetNumInstances(CategoryId category)
 	return db->GetNumRows(category.id);
 }
 
+/// create and retrieve a state buffer from a category
 template<typename TYPE>
 Game::PropertyData<typename TYPE> CreatePropertyState(CategoryId category)
 {
@@ -31,7 +50,7 @@ Game::PropertyData<typename TYPE> CreatePropertyState(CategoryId category)
 	return db->AddDataColumn<TYPE>(category.id);
 }
 
-/// Shortcut for fetching property data buffers
+/// shortcut for fetching property data buffers (table columns)
 template<typename ATTR>
 Game::PropertyData<typename ATTR::TYPE> GetPropertyData(CategoryId category)
 {
@@ -79,11 +98,16 @@ public:
 
 	/// return a category id by name
 	CategoryId const GetCategoryId(Util::StringAtom name);
-	
+
+	// TODO: We need to be able so instantiate templates of categories.
+	// 		 Maybe this should be implemented in the factory manager?	
 	//void AddCategoryTemplate
 
 	/// allocate instance for entity in category instance table
 	InstanceId AllocateInstance(Entity entity, CategoryId category);
+	
+	/// deallocated and recycle instance in category instance table
+	void DeallocateInstance(Entity entity);
 
 	/// begin adding category attributes
 	void BeginAddCategoryAttrs(Util::StringAtom categoryName);

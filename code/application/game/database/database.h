@@ -86,6 +86,7 @@ public:
     Game::ColumnData<typename TYPE> AddDataColumn(TableId tid)
     {
         static_assert(std::is_standard_layout<TYPE>(), "Type is not standard layout!");
+        static_assert(std::is_trivially_copyable<TYPE>(), "Type is not trivially copyable!");
         Game::Database::Table& table = this->tables.Get<0>(Ids::Index(tid.id));
         
         uint32_t col = table.states.Alloc();
@@ -130,6 +131,7 @@ private:
             explicit StateDescription(T const& defaultValue)
             {
                 static_assert(std::is_standard_layout<T>(), "State needs to be a standard layout type!");
+                static_assert(std::is_trivially_copyable<T>(), "State needs to be trivially copyable type!");
                 this->defVal = Memory::Alloc(Memory::HeapType::ObjectHeap, sizeof(T));
                 Memory::Copy(&defaultValue, this->defVal, sizeof(T));
                 this->typeSize = sizeof(T);

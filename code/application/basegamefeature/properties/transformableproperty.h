@@ -3,11 +3,14 @@
 /**
     Game::TransformableProperty
 
+    Handles entities that can be parented to each other, and that should move with each other.
+
     (C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "game/property.h"
 #include "game/database/attribute.h"
+#include "basegamefeature/managers/entitymanager.h"
 
 namespace Attr
 {
@@ -26,7 +29,20 @@ public:
     TransformableProperty();
     ~TransformableProperty();
 
+    void Init() override;
+
+    void OnActivate(Game::InstanceId instance) override;
+    void OnDeactivate(Game::InstanceId instance) override;
+
     void SetupExternalAttributes() override;
+private:
+    struct Data 
+    {
+        Game::PropertyData<Attr::Owner> owner;
+        Game::PropertyData<Attr::LocalTransform> localTransform;
+        Game::PropertyData<Attr::WorldTransform> worldTransform;
+        Game::PropertyData<Attr::Parent> parent;
+    } data;
 };
 
 } // namespace Game
