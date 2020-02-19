@@ -110,6 +110,13 @@ public:
         return Game::ColumnData<ATTR::TYPE>(cid, &tbl.columns.Get<1>(cid.id));
     }
 
+    /// Get a persistant buffer. Only use this if you know what you're doing!
+    void** GetPersistantBuffer(TableId table, ColumnId cid)
+    {
+        Game::Database::Table& tbl = this->tables.Get<0>(Ids::Index(table.id));
+        return &tbl.columns.Get<1>(cid.id);
+    }
+
 private:
     struct Table
     {

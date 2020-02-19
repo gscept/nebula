@@ -15,11 +15,24 @@ __ImplementSingleton(CategoryManager)
 //------------------------------------------------------------------------------
 /**
 */
+SizeT
+GetNumInstances(CategoryId category)
+{
+	Ptr<Game::Database> db = Game::EntityManager::Instance()->GetWorldDatabase();
+	TableId tid = CategoryManager::Instance()->GetCategory(category).instanceTable;
+	return db->GetNumRows(tid);
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
 CategoryManager::CategoryManager() :
     inBeginAddCategoryAttrs(false),
     addAttrCategoryIndex(0)
 {
 	__ConstructSingleton;
+	_setup_grouped_timer(CategoryManagerOnBeginFrame, "Game Subsystem");
 }
 
 //------------------------------------------------------------------------------
@@ -28,6 +41,7 @@ CategoryManager::CategoryManager() :
 CategoryManager::~CategoryManager()
 {
 	__DestructSingleton;
+	_discard_timer(CategoryManagerOnBeginFrame);
 }
 
 //------------------------------------------------------------------------------
@@ -36,6 +50,8 @@ CategoryManager::~CategoryManager()
 void
 CategoryManager::OnBeginFrame()
 {
+	_start_timer(CategoryManagerOnBeginFrame);
+
 	for (IndexT i = 0; i < this->categoryArray.Size(); i++)
 	{
 		for (auto const& prop : this->categoryArray[i].properties)
@@ -43,6 +59,8 @@ CategoryManager::OnBeginFrame()
 			prop->OnBeginFrame();
 		}
 	}
+
+	_stop_timer(CategoryManagerOnBeginFrame);
 }
 
 //------------------------------------------------------------------------------
@@ -186,6 +204,12 @@ CategoryManager::AddCategoryAttr(const Game::AttributeId& attrId)
     Category& cat = this->categoryArray[this->addAttrCategoryIndex];
     db->AddColumn(cat.templateTable, attrId);
     db->AddColumn(cat.instanceTable, attrId);
+
+	if (!attrId.GetRegistry()->Contains(this->addAttrCategoryIndex))
+	{
+		void** buf = db->GetPersistantBuffer(cat.instanceTable, db->GetColumnId(cat.instanceTable, attrId));
+		attrId.GetRegistry()->Add(this->addAttrCategoryIndex, buf);
+	}
 }
 
 //------------------------------------------------------------------------------
