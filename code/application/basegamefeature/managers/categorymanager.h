@@ -28,6 +28,9 @@
 #include "game/entity.h"
 #include "game/manager.h"
 #include "game/property.h"
+#include "entitymanager.h"
+#include "debug/debugtimer.h"
+
 
 #define SetupAttr(ATTRID) Game::CategoryManager::Instance()->AddCategoryAttr(ATTRID)
 
@@ -35,11 +38,33 @@ namespace Game
 {
 
 /// get the number of instances of a certain category
-inline SizeT
-GetNumInstances(CategoryId category)
+SizeT
+GetNumInstances(CategoryId category);
+
+template<typename ATTR>
+typename ATTR::TYPE const& GetAttribute(Game::Entity entity)
 {
-	Ptr<Game::Database> db = Game::EntityManager::Instance()->GetWorldDatabase();
-	return db->GetNumRows(category.id);
+	Ptr<CategoryManager> mgr = CategoryManager::Instance();
+	auto mapping = mgr->GetEntityMapping(entity);
+	auto const& cat = mgr->GetCategory(mapping.category);
+	void** ptrptr = (*(ATTR::Id().GetRegistry()))[mapping.category.id];
+	auto cd = Game::PropertyData<typename ATTR::TYPE>(mapping.category.id, ptrptr, false);
+	return cd[mapping.instance.id];
+}
+
+template<typename ATTR>
+void SetAttribute(Game::Entity entity, typename ATTR::TYPE const& value)
+{
+	Ptr<CategoryManager> mgr = CategoryManager::Instance();
+	auto mapping = mgr->GetEntityMapping(entity);
+	auto const& cat = mgr->GetCategory(mapping.category);
+	
+	if (!ATTR::Id().GetRegistry()->Contains(mapping.category.id))
+		return;
+
+	void** ptrptr = (*(ATTR::Id().GetRegistry()))[mapping.category.id];
+	auto cd = Game::PropertyData<typename ATTR::TYPE>(mapping.category.id, ptrptr, false);
+	cd[mapping.instance.id] = value;
 }
 
 /// create and retrieve a state buffer from a category
@@ -123,21 +148,25 @@ public:
 	/// end adding category attributes
 	void EndAddCategoryAttrs();
 
-private:
-	Util::Array<Category> categoryArray;
-	Util::HashTable<Util::StringAtom, CategoryId> catIndexMap;
-
 	struct EntityMapping
 	{
 		CategoryId category;
 		InstanceId instance;
 	};
 
+	EntityMapping GetEntityMapping(Game::Entity entity) const;
+
+private:
+	Util::Array<Category> categoryArray;
+	Util::HashTable<Util::StringAtom, CategoryId> catIndexMap;
+
 	Util::Array<EntityMapping> entityMap;
 
 	// These are used when adding attributes from a property
 	bool inBeginAddCategoryAttrs;
 	IndexT addAttrCategoryIndex;
+
+	_declare_timer(CategoryManagerOnBeginFrame)
 };
 
 //------------------------------------------------------------------------------
@@ -176,6 +205,15 @@ CategoryManager::GetCategoryId(Util::StringAtom name)
 {
 	n_assert(this->catIndexMap.Contains(name));
 	return this->catIndexMap[name];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline CategoryManager::EntityMapping
+CategoryManager::GetEntityMapping(Game::Entity entity) const
+{
+	return this->entityMap[entity.id];
 }
 
 } // namespace Game

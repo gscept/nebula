@@ -67,12 +67,16 @@ using AttributeValue = std::variant<
 	Util::String
 >;
 
+using AttributeRegistry = Util::HashTable<CategoryId, void**, 32, 1>;
+
 struct AttributeDefinition
 {
 	Util::String name;
 	Util::FourCC fourcc;
 	AttributeType type;
 	Game::AttributeValue defaultValue;
+
+	AttributeRegistry* registry;
 };
 
 template<typename T>
@@ -143,6 +147,11 @@ public:
 		// empty
 	}
 
+	AttributeRegistry* GetRegistry() const
+	{
+		return defPtr->registry;
+	}
+
 	bool IsValid() const
 	{
 		return this->defPtr != nullptr;
@@ -177,36 +186,42 @@ public:
 		this->defPtr = rhs.defPtr;
 	}
 
-	bool operator<(AttributeId const rhs)
+	bool operator<(AttributeId const rhs) const
 	{
-		this->defPtr < rhs.defPtr;
+		return this->defPtr < rhs.defPtr;
 	}
 
-	bool operator>(AttributeId const rhs)
+	bool operator>(AttributeId const rhs) const
 	{
-		this->defPtr > rhs.defPtr;
+		return this->defPtr > rhs.defPtr;
 	}
 
-	bool operator<=(AttributeId const rhs)
+	bool operator<=(AttributeId const rhs) const
 	{
-		this->defPtr <= rhs.defPtr;
+		return this->defPtr <= rhs.defPtr;
 	}
 
-	bool operator>=(AttributeId const rhs)
+	bool operator>=(AttributeId const rhs) const
 	{
-		this->defPtr >= rhs.defPtr;
+		return this->defPtr >= rhs.defPtr;
 	}
 
-	bool operator==(AttributeId const rhs)
+	bool operator==(AttributeId const rhs) const
 	{
 		return this->defPtr == rhs.defPtr;
 	}
 	
-	bool operator!=(AttributeId const rhs)
+	bool operator!=(AttributeId const rhs) const
 	{
 		return this->defPtr != rhs.defPtr;
 	}
 	
+	IndexT HashCode() const
+	{
+		n_assert(this->defPtr != nullptr);
+		return this->defPtr->fourcc.HashCode();
+	}
+
 private:
 	Game::AttributeDefinition const* defPtr;
 };
@@ -223,7 +238,7 @@ private:
 #define __DeclareAttribute(ATTRIBUTENAME, VALUETYPE, FOURCC, DEFAULTVALUE) \
 namespace Runtime\
 {\
-extern const Game::AttributeDefinition ATTRIBUTENAME ## Id;\
+extern Game::AttributeDefinition ATTRIBUTENAME ## Id;\
 }\
 \
 class ATTRIBUTENAME\
@@ -261,11 +276,12 @@ public:\
 #define __DefineAttribute(ATTRIBUTENAME, TYPE, FOURCC, DEFAULTVALUE) \
 namespace Runtime\
 {\
-	const Game::AttributeDefinition ATTRIBUTENAME ## Id = {\
+	Game::AttributeDefinition ATTRIBUTENAME ## Id = {\
 		Util::String(#ATTRIBUTENAME), \
 		Util::FourCC(FOURCC), \
 		Game::TypeToAttributeType<TYPE>(), \
-		Game::AttributeValue(DEFAULTVALUE) \
+		Game::AttributeValue(DEFAULTVALUE), \
+		n_new(Game::AttributeRegistry()) \
 	}; \
 }
 

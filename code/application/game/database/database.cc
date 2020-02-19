@@ -118,6 +118,11 @@ ColumnId
 Database::AddColumn(TableId tid, Column column)
 {
 	Game::Database::Table& table = this->tables.Get<0>(Ids::Index(tid.id));
+
+	IndexT found = table.columns.GetArray<0>().FindIndex(column);
+	if (found != InvalidIndex)
+		return found;
+
 	uint32_t col = table.columns.Alloc();
 
 	Table::ColumnBuffer& buffer = table.columns.Get<1>(col);
@@ -207,6 +212,14 @@ Database::SetToDefault(TableId tid, IndexT row)
 			n_error("Type not yet supported!");
 		}
 	}
+
+	for (int i = 0; i < table.states.Size(); ++i)
+	{
+		auto const& desc = table.states.Get<0>(i);
+		void*& buf = table.states.Get<1>(i);
+		void* val = (char*)buf + (row * desc.typeSize);
+		Memory::Copy(desc.defVal, val, desc.typeSize);
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -236,7 +249,7 @@ template<typename TYPE>
 void
 GrowBuffer(Column column, void*& buffer, const SizeT capacity, const SizeT size, const SizeT newCapacity)
 {
-	if constexpr (!std::is_trivial<TYPE>::value)
+	if constexpr (std::is_trivial<TYPE>::value)
 	{
 		const SizeT byteSize = Game::GetAttributeSize(column.GetType());
 
@@ -303,6 +316,23 @@ Database::GrowTable(TableId tid)
 			n_error("Type not yet supported!");
 		}
 	}
+
+	// Grow state buffers
+	for (int i = 0; i < table.states.Size(); ++i)
+	{
+		auto const& desc = table.states.Get<0>(i);
+		void*& buf = table.states.Get<1>(i);
+
+		const SizeT byteSize = desc.typeSize;
+
+		int oldNumBytes = byteSize * oldCapacity;
+		int newNumBytes = byteSize * table.capacity;
+		void* newData = Memory::Alloc(ALLOCATIONHEAP, newNumBytes);
+
+		Memory::Move(buf, newData, table.numRows * byteSize);
+		Memory::Free(ALLOCATIONHEAP, buf);
+		buf = newData;
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -312,7 +342,7 @@ template<typename TYPE>
 void*
 AllocateBuffer(Column column, const SizeT capacity, const SizeT size)
 {
-	if constexpr (!std::is_trivial<TYPE>::value)
+	if constexpr (std::is_trivial<TYPE>::value)
 	{
 		const SizeT byteSize = Game::GetAttributeSize(column.GetType());
 		void* buffer = Memory::Alloc(ALLOCATIONHEAP, capacity * byteSize);
@@ -385,7 +415,7 @@ Database::AllocateState(TableId tid, Table::StateDescription const& desc)
 
 	Game::Database::Table& table = this->tables.Get<0>(Ids::Index(tid.id));
 
-	void* buffer = Memory::Alloc(ALLOCATIONHEAP, desc.typeSize);
+	void* buffer = Memory::Alloc(ALLOCATIONHEAP, desc.typeSize * table.capacity);
 
 	for (IndexT i = 0; i < table.numRows; ++i)
 	{
