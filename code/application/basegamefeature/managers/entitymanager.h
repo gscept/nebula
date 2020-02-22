@@ -26,6 +26,8 @@ __DeclareAttribute(Owner, Game::Entity, 'OWNR', Game::Entity::Invalid());
 namespace Game
 {
 
+void DeleteEntity(const Entity& e);
+
 class EntityManager : public Game::Manager
 {
 	__DeclareClass(EntityManager)

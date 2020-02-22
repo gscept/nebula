@@ -193,7 +193,12 @@ public:
     /// retrieve a table.
     Table& GetTable(TableId tid);
 
+    SizeT Defragment(TableId tid, std::function<void(InstanceId, InstanceId)> const& moveCallback);
+
+
 private:
+    void EraseSwapIndex(Table& table, InstanceId instance);
+
     void GrowTable(TableId tid);
 
     void* AllocateColumn(TableId tid, Column column);
