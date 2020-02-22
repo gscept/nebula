@@ -6,6 +6,9 @@ nebula_begin_module(application)
 	fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/audio)
 	fips_deps(foundation render audio resource physics attr scripting dynui)
 	fips_dir(.)
+	if (FIPS_WINDOWS)
+		fips_files(application.natvis)
+	endif ()
 		fips_files(
 			application/stdneb.h
 			application/stdneb.cc

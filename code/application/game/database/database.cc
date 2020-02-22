@@ -279,6 +279,15 @@ GrowBuffer(Column column, void*& buffer, const SizeT capacity, const SizeT size,
 //------------------------------------------------------------------------------
 /**
 */
+Database::Table&
+Database::GetTable(TableId tid)
+{
+	return this->tables.Get<0>(Ids::Index(tid.id));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 Database::GrowTable(TableId tid)
 {
