@@ -25,14 +25,15 @@ template<typename TYPE>
 class ColumnData
 {
 public:
-    ColumnData() : data(nullptr)
+    ColumnData() : data(nullptr), numRows(nullptr)
     {
         // empty
     }
-    ColumnData(ColumnId const columnId, void** ptrptr, bool state = false) :
+    ColumnData(ColumnId const columnId, void** ptrptr, uint32_t const* const numRows, bool state = false) :
         data((void**)ptrptr),
         cid(columnId),
-        isState(state)
+        isState(state),
+        numRows(numRows)
     {
         // empty
     }
@@ -42,6 +43,9 @@ public:
     {
         n_assert(this->data != nullptr);
         n_assert(*this->data != nullptr);
+#ifdef NEBULA_BOUNDSCHECKS
+        n_assert(index >= 0 && index < *this->numRows);
+#endif
         void* dataptr = *this->data;
         TYPE* ptr = reinterpret_cast<TYPE*>(dataptr);
         return (ptr[index]);
@@ -49,6 +53,7 @@ public:
 private:
     void** data;
     ColumnId cid;
+    uint32_t const* numRows;
     bool isState = false;
 };
 
@@ -77,7 +82,7 @@ public:
     void SetToDefault(TableId table, IndexT row);
 
     SizeT GetNumRows(TableId table);
-    
+
     /// Get the column descriptors for a table
     Util::Array<Column> const& GetColumns(TableId table);
 
@@ -99,7 +104,7 @@ public:
 
         table.states.Get<0>(col) = std::move(desc);
 
-        return Game::ColumnData<TYPE>(col, &table.states.Get<1>(col), true);
+        return Game::ColumnData<TYPE>(col, &table.states.Get<1>(col), &table.numRows, true);
     }
 
     template<typename ATTR>
@@ -107,7 +112,7 @@ public:
     {
         Game::Database::Table& tbl = this->tables.Get<0>(Ids::Index(table.id));
         ColumnId cid = this->GetColumnId(table, ATTR::Id());
-        return Game::ColumnData<ATTR::TYPE>(cid, &tbl.columns.Get<1>(cid.id));
+        return Game::ColumnData<ATTR::TYPE>(cid, &tbl.columns.Get<1>(cid.id), &tbl.numRows);
     }
 
     /// Get a persistant buffer. Only use this if you know what you're doing!
@@ -117,7 +122,6 @@ public:
         return &tbl.columns.Get<1>(cid.id);
     }
 
-private:
     struct Table
     {
         using ColumnBuffer = void*;
@@ -185,6 +189,11 @@ private:
         static constexpr Memory::HeapType HEAP_MEMORY_TYPE = Memory::HeapType::ObjectArrayHeap;
     };
 
+
+    /// retrieve a table.
+    Table& GetTable(TableId tid);
+
+private:
     void GrowTable(TableId tid);
 
     void* AllocateColumn(TableId tid, Column column);
