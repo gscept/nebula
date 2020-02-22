@@ -5,6 +5,7 @@
 #include "application/stdneb.h"
 #include "entitymanager.h"
 #include "game/entity.h"
+#include "categorymanager.h"
 
 namespace Attr
 {
@@ -82,6 +83,8 @@ EntityManager::DeleteEntity(const Entity & e)
 		this->deletionCallbacks.Erase(e);
 	}
 
+	Game::CategoryManager::Instance()->DeallocateInstance(e);
+
 	this->numEntities--;
 }
 
@@ -137,6 +140,15 @@ EntityManager::DeregisterDeletionCallback(const Entity & e, Util::Delegate<void(
 		//	return;
 		//}
 	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+DeleteEntity(const Entity& e)
+{
+	Game::EntityManager::Instance()->DeleteEntity(e);
 }
 
 } // namespace Game

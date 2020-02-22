@@ -48,7 +48,12 @@ typename ATTR::TYPE const& GetAttribute(Game::Entity entity)
 	auto mapping = mgr->GetEntityMapping(entity);
 	auto const& cat = mgr->GetCategory(mapping.category);
 	void** ptrptr = (*(ATTR::Id().GetRegistry()))[mapping.category.id];
-	auto cd = Game::PropertyData<typename ATTR::TYPE>(mapping.category.id, ptrptr, false);
+	ATTR::TYPE* cd = (ATTR::TYPE*) * ptrptr;
+#ifdef NEBULA_BOUNDSCHECKS
+	Ptr<Game::Database> db = EntityManager::Instance()->GetWorldDatabase();
+	SizeT size = db->GetTable(cat.instanceTable).numRows;
+	n_assert(mapping.instance.id >= 0 && mapping.instance.id < numRows);
+#endif
 	return cd[mapping.instance.id];
 }
 
@@ -63,7 +68,12 @@ void SetAttribute(Game::Entity entity, typename ATTR::TYPE const& value)
 		return;
 
 	void** ptrptr = (*(ATTR::Id().GetRegistry()))[mapping.category.id];
-	auto cd = Game::PropertyData<typename ATTR::TYPE>(mapping.category.id, ptrptr, false);
+	ATTR::TYPE* cd = (ATTR::TYPE*)*ptrptr;
+#ifdef NEBULA_BOUNDSCHECKS
+	Ptr<Game::Database> db = EntityManager::Instance()->GetWorldDatabase();
+	SizeT size = db->GetTable(cat.instanceTable).numRows;
+	n_assert(mapping.instance.id >= 0 && mapping.instance.id < size);
+#endif
 	cd[mapping.instance.id] = value;
 }
 

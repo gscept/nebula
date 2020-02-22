@@ -91,6 +91,45 @@ CategoryManager::OnEndFrame()
 			prop->OnEndFrame();
 		}
 	}
+
+	// Delete all invalid instances
+	Ptr<Game::Database> db = EntityManager::Instance()->GetWorldDatabase();
+
+	for (IndexT c = 0; c < this->categoryArray.Size(); c++)
+	{
+		Category& cat = this->categoryArray[c];
+		
+		Game::Database::Table& table = db->GetTable(cat.instanceTable);
+		ColumnId ownerColumnId = db->GetColumnId(cat.instanceTable, Attr::Owner::Id());
+
+		// First, deactivate all deleted instances
+		for (auto const& prop : cat.properties)
+		{
+			for (IndexT id : table.freeIds)
+				prop->OnDeactivate(id);
+		}
+
+		// Now, defragment the table. Any instances that has been deleted will be swap'n'popped,
+		// which means we need to update the entity mapping.
+		// The move callback is signaled BEFORE the swap has happened.
+		SizeT numErased = db->Defragment(cat.instanceTable, [this, &ownerColumnId, &table](InstanceId from, InstanceId to)
+		{
+			Game::Entity fromEntity = ((Game::Entity*)(table.columns.Get<1>(ownerColumnId.id)))[from.id].id;
+			Game::Entity toEntity = ((Game::Entity*)(table.columns.Get<1>(ownerColumnId.id)))[to.id].id;
+			if (!Game::EntityManager::Instance()->IsValid(fromEntity))
+			{
+				// we need to add this instances new index to the to the freeids list, since it's been deleted
+				// the 'from' instance will be swapped with the 'to' instance, so we just add the to id to the list;
+				// and it will automatically be defragged
+				table.freeIds.Append(to.id);
+			}
+			else
+			{
+				this->entityMap[Ids::Index(fromEntity.id)].instance = to;
+				this->entityMap[Ids::Index(fromEntity.id)].instance = from;
+			}
+		});
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -101,16 +140,7 @@ CategoryManager::AddCategory(CategoryCreateInfo const& info)
 {
 	TableCreateInfo tableInfo;
 	tableInfo.name = info.name;
-	tableInfo.columns.SetSize(info.columns.Size() + 1);
-
-	int i = 0;
-	for (auto const& col : info.columns)
-		tableInfo.columns[i++] = col;
-
-	// Add the owner attribute to the table.
-	tableInfo.columns[i] = Attr::Runtime::OwnerId;
-
-
+	
 	Ptr<Game::Database> db = EntityManager::Instance()->GetWorldDatabase();
 
 	Category cat;
@@ -122,6 +152,16 @@ CategoryManager::AddCategory(CategoryCreateInfo const& info)
 
 	this->catIndexMap.Add(cat.name, this->categoryArray.Size());
 	this->categoryArray.Append(cat);
+
+	this->BeginAddCategoryAttrs(info.name);
+	// Add the owner attribute to the table.
+	// NOTE: This is always assumed to be the first column!
+	SetupAttr(Attr::Runtime::OwnerId);
+	for (auto col : info.columns)
+	{
+		SetupAttr(col);
+	}
+	this->EndAddCategoryAttrs();
 }
 
 //------------------------------------------------------------------------------
@@ -133,7 +173,7 @@ CategoryManager::AllocateInstance(Entity entity, CategoryId category)
 	n_assert(EntityManager::Instance()->IsValid(entity));
 	n_assert(category < this->categoryArray.Size());
 
-	if (entity.id < this->entityMap.Size() && this->entityMap[entity.id].instance != Game::InstanceId::Invalid())
+	if (entity.id < this->entityMap.Size() && this->entityMap[Ids::Index(entity.id)].instance != Game::InstanceId::Invalid())
 	{
 		n_warning("Entity already registered!\n");
 		return InvalidIndex;
@@ -149,7 +189,14 @@ CategoryManager::AllocateInstance(Entity entity, CategoryId category)
 		// Just make sure we don't assert on any entity id
 		this->entityMap.SetSize(this->entityMap.Capacity());
 	}
-	this->entityMap[entity.id] = { category, instance };
+	this->entityMap[Ids::Index(entity.id)] = { category, instance };
+
+	// Just make sure the first column in always owner!
+	n_assert(db->GetColumnId(cat.instanceTable, Attr::Owner::Id()) == 0);
+
+	// Set the owner of this instance
+	Game::Entity* owners = (Game::Entity*)*db->GetPersistantBuffer(cat.instanceTable, 0);
+	owners[instance.id] = entity;
 
 	for (auto const& prop : cat.properties)
 	{
@@ -165,21 +212,16 @@ CategoryManager::AllocateInstance(Entity entity, CategoryId category)
 void
 CategoryManager::DeallocateInstance(Entity entity)
 {
-	n_assert(EntityManager::Instance()->IsValid(entity));
-
-	CategoryId category = this->entityMap[entity.id].category;
+	CategoryId category = this->entityMap[Ids::Index(entity.id)].category;
 	n_assert(category < this->categoryArray.Size());
 
 	Category& cat = this->categoryArray[category.id];
 	Ptr<Game::Database> db = EntityManager::Instance()->GetWorldDatabase();
 
-	InstanceId instance = this->entityMap[entity.id].instance;
+	InstanceId instance = this->entityMap[Ids::Index(entity.id)].instance;
 	n_assert(instance != Game::InstanceId::Invalid());
 
-	this->entityMap[entity.id].category = Game::CategoryId::Invalid();
-	this->entityMap[entity.id].instance = Game::InstanceId::Invalid();
-
-	// TODO: erase swap?
+	db->DeallocateRow(cat.instanceTable, instance.id);
 }
 
 //------------------------------------------------------------------------------
@@ -208,6 +250,7 @@ CategoryManager::AddCategoryAttr(const Game::AttributeId& attrId)
 	if (!attrId.GetRegistry()->Contains(this->addAttrCategoryIndex))
 	{
 		void** buf = db->GetPersistantBuffer(cat.instanceTable, db->GetColumnId(cat.instanceTable, attrId));
+		n_assert(!attrId.GetRegistry()->Contains(this->addAttrCategoryIndex));
 		attrId.GetRegistry()->Add(this->addAttrCategoryIndex, buf);
 	}
 }

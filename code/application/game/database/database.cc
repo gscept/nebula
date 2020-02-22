@@ -287,6 +287,103 @@ Database::GetTable(TableId tid)
 
 //------------------------------------------------------------------------------
 /**
+	Defragments a table and call the move callback BEFORE moving elements.
+	Returns number of erased instances.
+*/
+SizeT
+Database::Defragment(TableId tid, std::function<void(InstanceId, InstanceId)> const& moveCallback)
+{
+	Game::Database::Table& table = this->GetTable(tid);
+
+	SizeT numErased = 0;
+
+	IndexT index;
+	InstanceId lastIndex;
+	
+	// Pack arrays
+	while (table.freeIds.Size() != 0)
+	{
+		index = table.freeIds.Back();
+		table.freeIds.EraseBack();
+
+		if (index >= table.numRows)
+		{
+			// This might happen if we've swapped out an instance that is also in the freeids array.
+			// Just ignore it, since its new index should already be added to the array.
+			continue;
+		}
+
+		lastIndex = table.numRows - 1;
+		moveCallback(lastIndex, index);
+		this->EraseSwapIndex(table, index);
+		++numErased;
+	}
+
+	table.freeIds.Clear();
+
+	return numErased;
+}
+
+template<typename TYPE>
+void EraseSwap(Column column, void*& buffer, const SizeT index, const SizeT end)
+{
+	TYPE* arr = (TYPE*)buffer;
+	arr[index] = std::move(arr[end]);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Database::EraseSwapIndex(Database::Table& table, InstanceId instance)
+{
+	// Swap the element with the last element, and decrement size of array.
+	auto const& cols = table.columns.GetArray<0>();
+	auto& buffers = table.columns.GetArray<1>();
+
+	uint32_t end = table.numRows - 1;
+
+	for (int i = 0; i < cols.Size(); ++i)
+	{
+		switch (cols[i].GetType())
+		{
+		case Game::AttributeType::Int8Type:			EraseSwap<int8_t>(cols[i], buffers[i], instance.id, end); break;
+		case Game::AttributeType::UInt8Type:		EraseSwap<uint8_t>(cols[i], buffers[i], instance.id, end); break;
+		case Game::AttributeType::Int16Type:		EraseSwap<int16_t>(cols[i], buffers[i], instance.id, end); break;
+		case Game::AttributeType::UInt16Type:		EraseSwap<uint16_t>(cols[i], buffers[i], instance.id, end); break;
+		case Game::AttributeType::Int32Type:		EraseSwap<int32_t>(cols[i], buffers[i], instance.id, end); break;
+		case Game::AttributeType::UInt32Type:		EraseSwap<uint32_t>(cols[i], buffers[i], instance.id, end); break;
+		case Game::AttributeType::Int64Type:		EraseSwap<int64_t>(cols[i], buffers[i], instance.id, end); break;
+		case Game::AttributeType::UInt64Type:		EraseSwap<uint64_t>(cols[i], buffers[i], instance.id, end); break;
+		case Game::AttributeType::FloatType:		EraseSwap<float>(cols[i], buffers[i], instance.id, end); break;
+		case Game::AttributeType::DoubleType:		EraseSwap<double>(cols[i], buffers[i], instance.id, end); break;
+		case Game::AttributeType::BoolType:			EraseSwap<bool>(cols[i], buffers[i], instance.id, end); break;
+		case Game::AttributeType::Float2Type:		EraseSwap<Math::float2>(cols[i], buffers[i], instance.id, end); break;
+		case Game::AttributeType::Float4Type:		EraseSwap<Math::float4>(cols[i], buffers[i], instance.id, end); break;
+		case Game::AttributeType::QuaternionType:	EraseSwap<Math::quaternion>(cols[i], buffers[i], instance.id, end); break;
+		case Game::AttributeType::Matrix44Type:		EraseSwap<Math::matrix44>(cols[i], buffers[i], instance.id, end); break;
+		case Game::AttributeType::GuidType:			EraseSwap<Util::Guid>(cols[i], buffers[i], instance.id, end); break;
+		case Game::AttributeType::EntityType:		EraseSwap<Game::Entity>(cols[i], buffers[i], instance.id, end); break;
+		case Game::AttributeType::StringType:		EraseSwap<Util::String>(cols[i], buffers[i], instance.id, end); break;
+		default:
+			n_error("Type not yet supported!");
+		}
+	}
+
+	// erase swap index in state buffers
+	for (int i = 0; i < table.states.Size(); ++i)
+	{
+		auto const& desc = table.states.Get<0>(i);
+		void*& buf = table.states.Get<1>(i);
+		const SizeT byteSize = desc.typeSize;
+		Memory::Copy((char*)buf + (byteSize * end), (char*)buf + (byteSize * instance.id), byteSize);
+	}
+
+	table.numRows--;
+}
+
+//------------------------------------------------------------------------------
+/**
 */
 void
 Database::GrowTable(TableId tid)
