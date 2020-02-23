@@ -206,8 +206,8 @@ void
 Im3dContext::DrawBox(const Math::matrix44& transform, const Math::float4 & color, uint32_t depthFlag)
 {
     Math::bbox box;
-    box.pmin.set(-1.0f, -1.0f, -1.0f);
-    box.pmax.set(1.0f, 1.0f, 1.0f);
+    box.pmin.set(-0.5f, -0.5f, -0.5f);
+    box.pmax.set(0.5f, 0.5f, 0.5f);
 
     DrawOrientedBox(transform, box, color, depthFlag);
 }
