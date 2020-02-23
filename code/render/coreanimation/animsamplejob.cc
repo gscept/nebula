@@ -24,7 +24,6 @@ AnimSampleStep(const AnimCurve* curves,
 	float4* outSamplePtr,
 	uchar* outSampleCounts)
 {
-	N_SCOPE(AnimationStepSample, Animation);
 	float4 f0;
 	int i;
 	for (i = 0; i < numCurves; i++)
@@ -75,7 +74,6 @@ AnimSampleLinear(const AnimCurve* curves,
 	float4* outSamplePtr,
 	uchar* outSampleCounts)
 {
-	N_SCOPE(AnimationLinearSample, Animation);
 	float4 f0, f1, fDst;
 	quaternion q0, q1, qDst;
 	int i;
@@ -147,7 +145,6 @@ AnimMix(const AnimCurve* curves,
 	float4* outSamplePtr,
 	uchar* outSampleCounts)
 {
-	N_SCOPE(AnimationMix, Animation);
 	float4 f0, f1, fDst;
 	quaternion q0, q1, qDst;
 	int i;
@@ -214,7 +211,7 @@ AnimMix(const AnimCurve* curves,
 void
 AnimSampleJob(const Jobs::JobFuncContext& ctx)
 {
-	N_SCOPE(AnimationSample, Animation);
+	N_SCOPE_ACCUM(AnimationSample, Animation);
 	const AnimCurve* animCurves = (const AnimCurve*)ctx.uniforms[0];
 	int numCurves = ctx.uniformSizes[0] / sizeof(AnimCurve);
 	const AnimSampleMixInfo* info = (const AnimSampleMixInfo*)ctx.uniforms[1];
@@ -238,7 +235,7 @@ AnimSampleJob(const Jobs::JobFuncContext& ctx)
 void
 AnimSampleJobWithMix(const Jobs::JobFuncContext& ctx)
 {
-	N_SCOPE(AnimationSampleWithMix, Animation);
+	N_SCOPE_ACCUM(AnimationSampleWithMix, Animation);
 	const AnimCurve* animCurves = (const AnimCurve*)ctx.uniforms[0];
 	int numCurves = ctx.uniformSizes[0] / sizeof(AnimCurve);
 	const AnimSampleMixInfo* info = (const AnimSampleMixInfo*)ctx.uniforms[1];
