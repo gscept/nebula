@@ -483,14 +483,14 @@ ObserverContext::OnRenderDebug(uint32_t flags)
 				break;
 			}
 	}
-	if (ImGui::Begin("Visibility", nullptr, 0))
+	if (ImGui::Begin("Visibility"))
 	{
 		for (IndexT i = 0; i < vis.Size(); i++)
 		{
 			ImGui::Text("Entities visible for observer %d: %d (inside [%d], clipped [%d])", i, totalCounters[i], insideCounters[i], clippedCounters[i]);
 		}
-		ImGui::End();
 	}	
+	ImGui::End();
 }
 #endif
 
