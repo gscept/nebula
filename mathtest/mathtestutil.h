@@ -103,7 +103,7 @@ print(const float4 &vec, const char *msg)
 __forceinline void
 print( const matrix44& mat )
 {
-#if (__WIN32__ || __XBOX360__ || __WII__ || linux)
+#if (__WIN32__ || __XBOX360__ || __WII__ || __linux__)
 	print(mat.getrow0());
     print(mat.getrow1());
     print(mat.getrow2());

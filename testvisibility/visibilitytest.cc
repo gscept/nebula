@@ -20,8 +20,14 @@
 
 #include "visibility/visibilitycontext.h"
 #include "models/modelcontext.h"
+#include "clustering/clustercontext.h"
+#include "lighting/lightcontext.h"
+#include "characters/charactercontext.h"
+#include "dynui/im3d/im3dcontext.h"
 
 #include "renderutil/mayacamerautil.h"
+#include "debug/debuginterface.h"
+#include "profiling/profiling.h"
 
 #include "dynui/imguicontext.h"
 #include "imgui.h"
@@ -53,7 +59,10 @@ VisibilityTest::Run()
 	app.SetAppTitle("RenderTest!");
 	app.SetCompanyName("gscept");
 	app.Open();
-
+	auto debugInterface = Debug::DebugInterface::Create();
+	debugInterface->Open();
+	Profiling::ProfilingRegisterThread();
+	
 	resMgr->Open();
 	inputServer->Open();
 	gfxServer->Open();
@@ -70,10 +79,12 @@ VisibilityTest::Run()
 	ModelContext::Create();
 	ObserverContext::Create();
 	ObservableContext::Create();
-
+	Clustering::ClusterContext::Create(0.1f, 1000.0f, wnd);
+	Im3d::Im3dContext::Create();
 	Dynui::ImguiContext::Create();
+	Lighting::LightContext::Create();
 	
-	Ptr<View> view = gfxServer->CreateView("mainview", "frame:vkdefault.json");
+	Ptr<View> view = gfxServer->CreateView("mainview", "frame:vkdefault.json"_uri);
 	Ptr<Stage> stage = gfxServer->CreateStage("stage1", true);
 
 	// setup camera and view
@@ -98,6 +109,10 @@ VisibilityTest::Run()
 	ModelContext::RegisterEntity(ent2);
 	ModelContext::Setup(ent2, "mdl:Buildings/castle_tower.n3", "NotA");
 	ModelContext::SetTransform(ent2, Math::matrix44::translation(Math::float4(0, 0, -5, 1)));
+
+	GraphicsEntityId globalLight = Graphics::CreateEntity();
+	Lighting::LightContext::RegisterEntity(globalLight);
+	Lighting::LightContext::SetupGlobalLight(globalLight, Math::float4(1, 1, 1, 0), 1.0f, Math::float4(0, 0, 0, 0), Math::float4(0, 0, 0, 0), 0.0f, -Math::vector(1, 1, 1), true);
 
 	// register visibility system
 	ObserverContext::CreateBruteforceSystem({});
