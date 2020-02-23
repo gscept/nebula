@@ -8,27 +8,29 @@
 
 struct SpotLight
 {
-	vec4 position;			// view space position of light, w is range
-	vec4 forward;			// forward vector of light (spotlight and arealights)
+	vec4 position;				// view space position of light, w is range
+	vec4 forward;				// forward vector of light (spotlight and arealights)
 
-	vec2 angleSinCos;		// angle cutoffs
+	vec2 angleSinCos;			// angle cutoffs
 
-	vec3 color;				// light color
-	uint flags;				// feature flags (shadows, projection texture, etc)
+	vec3 color;					// light color
+	int projectionExtension;	// projection extension index
+	int shadowExtension;		// projection extension index
+	uint flags;					// feature flags (shadows, projection texture, etc)
 };
 
 struct SpotLightProjectionExtension
 {
-	mat4 projection;		// projection transform
-	uint projectionTexture;	// projection texture
+	mat4 projection;					// projection transform
+	textureHandle projectionTexture;	// projection texture
 };
 
 struct SpotLightShadowExtension
 {
 	mat4 projection;
 	vec4 shadowOffsetScale;
-	float shadowIntensity;	// intensity of shadows
-	uint shadowMap;			// shadow map
+	float shadowIntensity;				// intensity of shadows
+	textureHandle shadowMap;			// shadow map
 };
 
 
@@ -76,17 +78,15 @@ samplerstate SpotlightTextureSampler
 float
 GetInvertedOcclusionSpotLight(float receiverDepthInLightSpace,
 	vec2 lightSpaceUv,
-	vec4 shadowOffsetAndScale,
+	uint Index,
 	uint Texture)
 {
 
 	// offset and scale shadow lookup tex coordinates
-	vec2 shadowUv = lightSpaceUv;
-	shadowUv.xy *= shadowOffsetAndScale.zw;
-	shadowUv.xy += shadowOffsetAndScale.xy;
+	vec3 shadowUv = vec3(lightSpaceUv, Index);
 
 	// calculate average of 4 closest pixels
-	vec2 shadowSample = sample2D(Texture, SpotlightTextureSampler, shadowUv).rg;
+	vec2 shadowSample = sample2DArray(Texture, SpotlightTextureSampler, shadowUv).rg;
 
 	// get pixel size of shadow projection texture
 	return ChebyshevUpperBound(shadowSample, receiverDepthInLightSpace, 0.000001f);
@@ -182,6 +182,7 @@ CalculateSpotLight(
 	in SpotLight light, 
 	in SpotLightProjectionExtension projExt, 
 	in SpotLightShadowExtension shadowExt, 
+	in vec3 worldPos,
 	in vec3 viewPos,
 	in vec3 viewVec, 
 	in vec3 normal, 
@@ -196,6 +197,7 @@ CalculateSpotLight(
 	float d2 = lightDirLen * lightDirLen;
     float factor = d2 / (light.position.w * light.position.w);
     float sf = saturate(1.0 - factor * factor);
+
     float att = (sf * sf) / max(d2, 0.0001);
 
 	lightDir = lightDir * (1 / lightDirLen);
@@ -203,26 +205,23 @@ CalculateSpotLight(
 	float theta = dot(light.forward.xyz, lightDir);
 	float intensity = saturate((theta - light.angleSinCos.y) * light.forward.w);
 
-	vec4 projLightPos = vec4(0, 0, 0, 0);
 	vec4 lightModColor = intensity.xxxx * att;
-	if (FlagSet(light.flags, USE_PROJECTION_TEX_BITFLAG) || FlagSet(light.flags, USE_SHADOW_BITFLAG))
-		projLightPos = projExt.projection * vec4(viewPos, 1.0f);
-	
 	if (FlagSet(light.flags, USE_PROJECTION_TEX_BITFLAG))
 	{
+		vec4 projLightPos = projExt.projection * vec4(worldPos, 1.0f);
 		vec2 lightSpaceUv = vec2(((projLightPos.xy / projLightPos.ww) * vec2(0.5f, 0.5f)) + 0.5f);
-		lightModColor = sample2DLod(projExt.projectionTexture, SpotlightTextureSampler, lightSpaceUv, 0);
+		lightModColor *= sample2DLod(projExt.projectionTexture, SpotlightTextureSampler, lightSpaceUv, 0);
 	}		
 
 	float shadowFactor = 1.0f;
 	if (FlagSet(light.flags, USE_SHADOW_BITFLAG))
 	{
 		// shadows
-		vec4 shadowProjLightPos = shadowExt.projection * vec4(viewPos, 1.0f);
+		vec4 shadowProjLightPos = shadowExt.projection * vec4(worldPos, 1.0f);
 		vec2 shadowLookup = (shadowProjLightPos.xy / shadowProjLightPos.ww) * vec2(0.5f, -0.5f) + 0.5f;
 		shadowLookup.y = 1 - shadowLookup.y;
-		float receiverDepth = projLightPos.z / projLightPos.w;
-		shadowFactor = GetInvertedOcclusionSpotLight(depth, shadowLookup, shadowExt.shadowOffsetScale, shadowExt.shadowMap);
+		float receiverDepth = shadowProjLightPos.z / shadowProjLightPos.w;
+		shadowFactor = GetInvertedOcclusionSpotLight(receiverDepth, shadowLookup, light.shadowExtension, shadowExt.shadowMap);
 		shadowFactor = saturate(lerp(1.0f, saturate(shadowFactor), shadowExt.shadowIntensity));
 	}
 

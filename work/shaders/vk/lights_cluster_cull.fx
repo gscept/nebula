@@ -25,6 +25,16 @@ group(BATCH_GROUP) varblock SpotLightList
 	SpotLight SpotLights[1024];
 };
 
+group(BATCH_GROUP) varblock SpotLightProjectionList
+{
+	SpotLightProjectionExtension SpotLightProjection[256];
+};
+
+group(BATCH_GROUP) varblock SpotLightShadowList
+{
+	SpotLightShadowExtension SpotLightShadow[16];
+};
+
 group(BATCH_GROUP) varblock PointLightList
 {
 	PointLight PointLights[1024];
@@ -260,7 +270,15 @@ GlobalLight(vec4 worldPos, vec3 viewVec, vec3 normal, float depth, vec4 material
 /**
 */
 vec3 
-LocalLights(uint idx, vec4 viewPos, vec3 viewVec, vec3 normal, float depth, vec4 material, vec4 albedo)
+LocalLights(
+	uint idx, 
+	vec4 worldPos,
+	vec4 viewPos, 
+	vec3 viewVec, 
+	vec3 normal, 
+	float depth, 
+	vec4 material, 
+	vec4 albedo)
 {
 	vec3 light = vec3(0, 0, 0);
 	uint flag = AABBs[idx].featureFlags;
@@ -294,10 +312,13 @@ LocalLights(uint idx, vec4 viewPos, vec3 viewVec, vec3 normal, float depth, vec4
 		{
 			uint lidx = SpotLightIndexList[idx * MAX_LIGHTS_PER_CLUSTER + i];
 			SpotLight li = SpotLights[lidx];
+			if (li.shadowExtension != -1)
+				shadowExt = SpotLightShadow[li.shadowExtension];
 			light += CalculateSpotLight(
 				li,
 				projExt,
 				shadowExt,
+				worldPos.xyz,
 				viewPos.xyz,
 				viewVec,
 				normal,
@@ -349,7 +370,7 @@ void csLighting()
 
 		// render local lights
 		// TODO: new material model for local lights
-		light += LocalLights(idx, viewPos, viewVec, viewNormal, depth, material, albedo);
+		light += LocalLights(idx, worldPos, viewPos, viewVec, viewNormal, depth, material, albedo);
 
 		// reflections and irradiance
 		vec3 F0 = vec3(0.04);
