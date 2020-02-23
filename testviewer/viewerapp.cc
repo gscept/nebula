@@ -439,9 +439,9 @@ SimpleViewerApplication::RenderUI()
 
     if (!this->pauseProfiling)
     {
-        float frameTime = (float)this->gfxServer->GetFrameTime();
-        this->averageFrameTime += frameTime;
-        this->frametimeHistory.Append(frameTime);
+        this->currentFrameTime = (float)this->gfxServer->GetFrameTime();
+        this->averageFrameTime += this->currentFrameTime;
+        this->frametimeHistory.Append(this->currentFrameTime);
         if (this->frametimeHistory.Size() > 120)
             this->frametimeHistory.EraseFront();
 
@@ -474,7 +474,6 @@ SimpleViewerApplication::RenderUI()
     {
         scenes[currentScene]->RenderUI();
     }
-    
 
     if (this->showFrameProfiler)
     {
@@ -488,12 +487,13 @@ SimpleViewerApplication::RenderUI()
             if (this->profileFixedFps)
             {
                 ImGui::InputInt("FPS", &this->fixedFps);
-                this->prevAverageFrameTime = 1 / float(this->fixedFps);
+                this->currentFrameTime = 1 / float(this->fixedFps);
             }
 
 #if NEBULA_ENABLE_PROFILING
             if (ImGui::CollapsingHeader("Profiler"))
             {
+
                 ImDrawList* drawList = ImGui::GetWindowDrawList();
                 ImVec2 start = ImGui::GetCursorScreenPos();
                 ImVec2 fullSize = ImVec2(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x, ImGui::GetWindowPos().y + ImGui::GetWindowSize().y);
@@ -507,7 +507,7 @@ SimpleViewerApplication::RenderUI()
                         for (IndexT i = 0; i < ctx.topLevelScopes.Size(); i++)
                         {
                             const Profiling::ProfilingScope& scope = ctx.topLevelScopes[i];
-                            RecursiveDrawScope(scope, drawList, start, fullSize, pos, canvasSize, this->prevAverageFrameTime, 0);
+                            RecursiveDrawScope(scope, drawList, start, fullSize, pos, canvasSize, this->currentFrameTime, 0);
                         }
                     }
                 }
@@ -523,7 +523,7 @@ SimpleViewerApplication::RenderUI()
                     for (int i = 0; i < frameMarkers.Size(); i++)
                     {
                         const CoreGraphics::FrameProfilingMarker& marker = frameMarkers[i];
-                        RecursiveDrawGpuMarker(marker, drawList, start, fullSize, pos, canvasSize, this->prevAverageFrameTime, 0);
+                        RecursiveDrawGpuMarker(marker, drawList, start, fullSize, pos, canvasSize, this->currentFrameTime, 0);
                     }
                 }
             }

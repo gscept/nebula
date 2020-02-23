@@ -70,6 +70,7 @@ protected:
     Math::transform44 transform;
 	float prevAverageFrameTime = 0.0f;
 	float averageFrameTime = 0.0f;
+    float currentFrameTime = 0.0f;
 
     bool showCameraWindow = true;
     bool showFrameProfiler = true;
