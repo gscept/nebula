@@ -126,7 +126,7 @@ CategoryManager::OnEndFrame()
 			else
 			{
 				this->entityMap[Ids::Index(fromEntity.id)].instance = to;
-				this->entityMap[Ids::Index(fromEntity.id)].instance = from;
+				this->entityMap[Ids::Index(to.id)].instance = from;
 			}
 		});
 	}
