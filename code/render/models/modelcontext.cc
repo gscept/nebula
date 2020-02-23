@@ -4,7 +4,7 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "modelcontext.h"
-#include "resources/resourcemanager.h"
+#include "resources/resourceserver.h"
 #include "nodes/modelnode.h"
 #include "streammodelpool.h"
 #include "graphics/graphicsserver.h"

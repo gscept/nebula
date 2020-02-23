@@ -7,7 +7,7 @@
 #include "coregraphics/debug/meshpagehandler.h"
 #include "coregraphics/mesh.h"
 #include "http/html/htmlpagewriter.h"
-#include "resources/resourcemanager.h"
+#include "resources/resourceserver.h"
 #include "coregraphics/streammeshpool.h"
 #include "io/ioserver.h"
 
@@ -68,7 +68,7 @@ MeshPageHandler::HandleRequest(const Ptr<HttpRequest>& request)
 		htmlWriter->LineBreak();
 
 		// get all stream-loaded mesh resources
-		const StreamMeshPool* meshPool = ResourceManager::Instance()->GetStreamPool<StreamMeshPool>();
+		const StreamMeshPool* meshPool = ResourceServer::Instance()->GetStreamPool<StreamMeshPool>();
 		const Util::Dictionary<Resources::ResourceName, Resources::ResourceId>& meshes = meshPool->GetResources();
 	
 		// create a table of all existing meshes
@@ -119,8 +119,8 @@ MeshPageHandler::HandleRequest(const Ptr<HttpRequest>& request)
 HttpStatus::Code
 MeshPageHandler::HandleMeshInfoRequest(const Util::String& resId, const Ptr<Stream>& responseContentStream)
 {
-	// lookup the mesh in the ResourceManager
-	const Ptr<ResourceManager>& resManager = ResourceManager::Instance();
+	// lookup the mesh in the ResourceServer
+	const Ptr<ResourceServer>& resManager = ResourceServer::Instance();
 	Resources::ResourceId id = resId.AsLongLong();
 
 	if (!resManager->HasResource(id))
@@ -282,8 +282,8 @@ MeshPageHandler::HandleMeshInfoRequest(const Util::String& resId, const Ptr<Stre
 HttpStatus::Code
 MeshPageHandler::HandleVertexDumpRequest(const Util::String& resId, IndexT minVertexIndex, IndexT maxVertexIndex, const Ptr<Stream>& responseContentStream)
 {
-	// lookup the mesh in the ResourceManager
-	const Ptr<ResourceManager>& resManager = ResourceManager::Instance();
+	// lookup the mesh in the ResourceServer
+	const Ptr<ResourceServer>& resManager = ResourceServer::Instance();
 	ResourceId id = resId.AsLongLong();
 	if (!resManager->HasResource(id))
 	{

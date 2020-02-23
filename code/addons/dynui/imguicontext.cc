@@ -6,7 +6,7 @@
 #include "imguicontext.h"
 #include "imgui.h"
 #include "graphics/graphicsserver.h"
-#include "resources/resourcemanager.h"
+#include "resources/resourceserver.h"
 #include "math/rectangle.h"
 #include "coregraphics/shaderserver.h"
 #include "coregraphics/displaydevice.h"

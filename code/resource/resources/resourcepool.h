@@ -130,7 +130,7 @@ public:
 	};
 	static const uint32_t ResourceIndexGrow = 512;
 protected:
-	friend class ResourceManager;
+	friend class ResourceServer;
 
 	/// request new resource and generate id for it, implement in subclass
 	virtual ResourceUnknownId AllocObject() = 0;

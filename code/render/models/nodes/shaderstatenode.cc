@@ -7,7 +7,7 @@
 #include "transformnode.h"
 #include "coregraphics/shaderserver.h"
 #include "coregraphics/transformdevice.h"
-#include "resources/resourcemanager.h"
+#include "resources/resourceserver.h"
 
 #include "shared.h"
 

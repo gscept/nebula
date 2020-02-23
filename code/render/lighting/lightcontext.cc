@@ -13,7 +13,7 @@
 #include "math/polar.h"
 #include "frame/framebatchtype.h"
 #include "frame/framesubpassbatch.h"
-#include "resources/resourcemanager.h"
+#include "resources/resourceserver.h"
 #include "visibility/visibilitycontext.h"
 #include "clustering/clustercontext.h"
 #ifndef PUBLIC_BUILD

@@ -7,7 +7,7 @@
 #include "coregraphics/texture.h"
 #include "coregraphics/config.h"
 #include "vktypes.h"
-#include "resources/resourcemanager.h"
+#include "resources/resourceserver.h"
 #include "io/ioserver.h"
 #include "coregraphics//streamtexturesaver.h"
 #include <IL/il.h>

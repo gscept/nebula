@@ -7,7 +7,7 @@
 #include "graphicscontext.h"
 #include "view.h"
 #include "stage.h"
-#include "resources/resourcemanager.h"
+#include "resources/resourceserver.h"
 #include "coregraphics/vertexsignaturepool.h"
 #include "coregraphics/streamtexturepool.h"
 #include "coregraphics/memorytexturepool.h"
@@ -76,17 +76,17 @@ GraphicsServer::Open()
 	{
 
 		// register graphics context pools
-		Resources::ResourceManager::Instance()->RegisterMemoryPool(CoreGraphics::VertexSignaturePool::RTTI);
-		Resources::ResourceManager::Instance()->RegisterMemoryPool(CoreGraphics::MemoryTexturePool::RTTI);
-		Resources::ResourceManager::Instance()->RegisterMemoryPool(CoreGraphics::MemoryMeshPool::RTTI);
+		Resources::ResourceServer::Instance()->RegisterMemoryPool(CoreGraphics::VertexSignaturePool::RTTI);
+		Resources::ResourceServer::Instance()->RegisterMemoryPool(CoreGraphics::MemoryTexturePool::RTTI);
+		Resources::ResourceServer::Instance()->RegisterMemoryPool(CoreGraphics::MemoryMeshPool::RTTI);
 
-		Resources::ResourceManager::Instance()->RegisterStreamPool("dds", CoreGraphics::StreamTexturePool::RTTI);
-		Resources::ResourceManager::Instance()->RegisterStreamPool("fxb", CoreGraphics::ShaderPool::RTTI);
-		Resources::ResourceManager::Instance()->RegisterStreamPool("nax3", CoreAnimation::StreamAnimationPool::RTTI);
-		Resources::ResourceManager::Instance()->RegisterStreamPool("nsk3", Characters::StreamSkeletonPool::RTTI); 
-		Resources::ResourceManager::Instance()->RegisterStreamPool("nvx2", CoreGraphics::StreamMeshPool::RTTI);
-		Resources::ResourceManager::Instance()->RegisterStreamPool("sur", Materials::SurfacePool::RTTI);
-		Resources::ResourceManager::Instance()->RegisterStreamPool("n3", Models::StreamModelPool::RTTI);
+		Resources::ResourceServer::Instance()->RegisterStreamPool("dds", CoreGraphics::StreamTexturePool::RTTI);
+		Resources::ResourceServer::Instance()->RegisterStreamPool("fxb", CoreGraphics::ShaderPool::RTTI);
+		Resources::ResourceServer::Instance()->RegisterStreamPool("nax3", CoreAnimation::StreamAnimationPool::RTTI);
+		Resources::ResourceServer::Instance()->RegisterStreamPool("nsk3", Characters::StreamSkeletonPool::RTTI); 
+		Resources::ResourceServer::Instance()->RegisterStreamPool("nvx2", CoreGraphics::StreamMeshPool::RTTI);
+		Resources::ResourceServer::Instance()->RegisterStreamPool("sur", Materials::SurfacePool::RTTI);
+		Resources::ResourceServer::Instance()->RegisterStreamPool("n3", Models::StreamModelPool::RTTI);
 
 		// setup internal pool pointers for convenient access (note, will also assert if texture, shader, model or mesh pools is not registered yet!)
 		CoreGraphics::layoutPool = Resources::GetMemoryPool<CoreGraphics::VertexSignaturePool>();
@@ -170,7 +170,7 @@ GraphicsServer::Open()
 		this->timer->StartTime();
 
 		// tell the resource manager to load default resources once we are done setting everything up
-		Resources::ResourceManager::Instance()->LoadDefaultResources();
+		Resources::ResourceServer::Instance()->LoadDefaultResources();
 	}
 	else
 	{

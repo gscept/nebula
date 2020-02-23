@@ -1,7 +1,7 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	Loads resources as streams and is updated for every ResourceManager::Update().
+	Loads resources as streams and is updated for every ResourceServer::Update().
 
 	Contains the names for the placeholder and failed-to-load resource names.
 	When inheriting from this class, make sure to provide proper resource ids for:
@@ -9,11 +9,11 @@
 		2. Error resource
 
 	If no placeholder resource is provided, the loader cannot execute asynchronously.
-	If no error resource is provided and the resource fails to load, then the ResourceManager
+	If no error resource is provided and the resource fails to load, then the ResourceServer
 	will raise an assertion. 
 
 	Each resource pool also keeps a list of the resources loaded by it. Therefore,
-	the ResourceManager is not responsible for maintaining which resources are loaded.
+	the ResourceServer is not responsible for maintaining which resources are loaded.
 
 	The pool associates a resource name (StringAtom) with an id, such that it can be quickly
 	retrieved. 
@@ -74,7 +74,7 @@ public:
 	void ReloadResource(const Resources::ResourceId& id, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed);
 
 protected:
-	friend class ResourceManager;
+	friend class ResourceServer;
 
 	/// struct for pending resources which are about to be loaded
 	struct _PendingResourceLoad

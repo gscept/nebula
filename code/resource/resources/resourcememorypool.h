@@ -5,7 +5,7 @@
 	
 	This means, the ResourceMemoryPool is immediate, and requires a previously created 
 	resource, using Resources::ReserveResource, followed by the attachment of a loader,
-	and then perform a load. Therefore, it requires no ResourceManager Update() to trigger.
+	and then perform a load. Therefore, it requires no ResourceServer Update() to trigger.
 
 	This type of loader exists to provide code-local data, like a const float* mesh, or texture,
 	or for example font data loaded as a const char* from some foreign library. 
@@ -20,7 +20,7 @@
 
 namespace Resources
 {
-class ResourceManager;
+class ResourceServer;
 class ResourceMemoryPool : public ResourcePool
 {
 	__DeclareAbstractClass(ResourceMemoryPool);
@@ -42,6 +42,6 @@ public:
 	virtual LoadStatus LoadFromMemory(const Resources::ResourceId id, const void* info) = 0;
 
 private:
-	friend class ResourceManager;
+	friend class ResourceServer;
 };
 } // namespace Resources

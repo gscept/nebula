@@ -4,7 +4,7 @@
 #include "physics/physxstate.h"
 #include "physics/actorcontext.h"
 #include "physics/utils.h"
-#include "resources/resourcemanager.h"
+#include "resources/resourceserver.h"
 #include "io/jsonreader.h"
 
 __ImplementClass(Physics::StreamActorPool, 'PSAP', Resources::ResourceStreamPool);

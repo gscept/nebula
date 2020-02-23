@@ -13,7 +13,7 @@
 #include "stb_truetype.h"
 #include "coregraphics/shaderserver.h"
 #include "coregraphics/memorytexturepool.h"
-#include "resources/resourcemanager.h"
+#include "resources/resourceserver.h"
 
 #define FONT_SIZE 32.0f
 #define ONEOVERFONTSIZE 1/32.0f

@@ -5,7 +5,7 @@
 #include "foundation/stdneb.h"
 #include "resourcestreampool.h"
 #include "io/ioserver.h"
-#include "resourcemanager.h"
+#include "resourceserver.h"
 
 using namespace IO;
 namespace Resources
@@ -247,7 +247,7 @@ ResourceStreamPool::PrepareLoad(_PendingResourceLoad& res)
 		res.loadFunc = loadFunc;
 
 		// add job to resource manager
-		ResourceManager::Instance()->loaderThread->jobs.Enqueue(loadFunc);
+		ResourceServer::Instance()->loaderThread->jobs.Enqueue(loadFunc);
 
 		ret = Threaded;
 	}

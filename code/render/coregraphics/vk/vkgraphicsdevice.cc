@@ -33,7 +33,7 @@
 #include "coregraphics/vk/vkfence.h"
 #include "coregraphics/vk/vksubmissioncontext.h"
 #include "coregraphics/submissioncontext.h"
-#include "resources/resourcemanager.h"
+#include "resources/resourceserver.h"
 #include "coregraphics/graphicsdevice.h"
 #include "profiling/profiling.h"
 

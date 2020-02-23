@@ -20,7 +20,7 @@
 #include "io/ioserver.h"
 #include "io/iointerface.h"
 #include "io/gamecontentserver.h"
-#include "resources/resourcemanager.h"
+#include "resources/resourceserver.h"
 #include "http/httpinterface.h"
 #include "http/httpserverproxy.h"     
 #include "http/httpclientregistry.h"
@@ -61,7 +61,7 @@ protected:
 
     Ptr<Core::CoreServer> coreServer;   
     Ptr<IO::GameContentServer> gameContentServer;
-    Ptr<Resources::ResourceManager> resourceManager;
+    Ptr<Resources::ResourceServer> resourceManager;
     Ptr<IO::IoServer> ioServer;
     Ptr<IO::IoInterface> ioInterface;  
 

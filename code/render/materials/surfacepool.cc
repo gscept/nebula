@@ -5,7 +5,7 @@
 #include "render/stdneb.h"
 #include "surfacepool.h"
 #include "io/bxmlreader.h"
-#include "resources/resourcemanager.h"
+#include "resources/resourceserver.h"
 #include "materialserver.h"
 
 namespace Materials

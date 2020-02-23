@@ -8,7 +8,7 @@
 #include "vkgraphicsdevice.h"
 #include "vktypes.h"
 #include "vkutilities.h"
-#include "resources/resourcemanager.h"
+#include "resources/resourceserver.h"
 #include "vkshaderserver.h"
 #include "vkcommandbuffer.h"
 #include "coregraphics/submissioncontext.h"

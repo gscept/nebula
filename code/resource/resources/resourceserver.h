@@ -1,7 +1,7 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	The ResourceManager marks the central entry point into the Resource subsystem.
+	The ResourceServer marks the central entry point into the Resource subsystem.
 	It contains a set of convenience functions (which is just a proxy for the Singleton),
 	and should be updated at least once per frame using Update().
 	
@@ -18,27 +18,23 @@
 #include "resourcememorypool.h"
 namespace Resources
 {
-class ResourceManager : public Core::RefCounted
+class ResourceServer : public Core::RefCounted
 {
-	__DeclareClass(ResourceManager);
-	__DeclareSingleton(ResourceManager);
+	__DeclareClass(ResourceServer);
+	__DeclareSingleton(ResourceServer);
 public:
 	/// constructor
-	ResourceManager();
+	ResourceServer();
 	/// destructor
-	virtual ~ResourceManager();
+	virtual ~ResourceServer();
 
 	/// open manager
 	void Open();
 	/// close manager
 	void Close();
 
-	/// enter lock-step mode, during this phase, resources may not be discarded
-	void EnterLockstep();
 	/// update resource manager, call each frame
 	void Update(IndexT frameIndex);
-	/// exit lock-step mode
-	void ExitLockstep();
 
 	/// create a new resource (stream-managed), which will be loaded at some later point, if not already loaded
 	Resources::ResourceId CreateResource(const ResourceName& id, std::function<void(const Resources::ResourceId)> success = nullptr, std::function<void(const Resources::ResourceId)> failed = nullptr, bool immediate = false);
@@ -106,7 +102,7 @@ private:
 	this call not actually triggering a resource to be loaded, the referenced resource will be loaded immediately nonetheless.
 */
 inline Resources::ResourceId
-Resources::ResourceManager::CreateResource(const ResourceName& id, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed, bool immediate)
+Resources::ResourceServer::CreateResource(const ResourceName& id, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed, bool immediate)
 {
 	return this->CreateResource(id, "", success, failed, immediate);
 }
@@ -117,7 +113,7 @@ Resources::ResourceManager::CreateResource(const ResourceName& id, std::function
 	this call not actually triggering a resource to be loaded, the referenced resource will be loaded immediately nonetheless.
 */
 inline Resources::ResourceId
-Resources::ResourceManager::CreateResource(const ResourceName& res, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed, bool immediate)
+Resources::ResourceServer::CreateResource(const ResourceName& res, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed, bool immediate)
 {
 	// get resource loader by extension
 	Util::String ext = res.AsString().GetFileExtension();
@@ -134,7 +130,7 @@ Resources::ResourceManager::CreateResource(const ResourceName& res, const Util::
 /**
 */
 inline void
-ResourceManager::ReloadResource(const ResourceName& res, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed)
+ResourceServer::ReloadResource(const ResourceName& res, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed)
 {
 	// get resource loader by extension
 	Util::String ext = res.AsString().GetFileExtension();
@@ -151,7 +147,7 @@ ResourceManager::ReloadResource(const ResourceName& res, std::function<void(cons
 	Discards a single resource, and removes the callbacks to it from
 */
 inline void
-Resources::ResourceManager::DiscardResource(const Resources::ResourceId id)
+Resources::ResourceServer::DiscardResource(const Resources::ResourceId id)
 {
 	// get id of loader
 	const Ids::Id8 loaderid = id.poolIndex;
@@ -170,7 +166,7 @@ Resources::ResourceManager::DiscardResource(const Resources::ResourceId id)
 	The type is the RTTI of the pool to use.
 */
 inline Resources::ResourceId
-ResourceManager::ReserveResource(const ResourceName& res, const Util::StringAtom& tag, const Core::Rtti& type)
+ResourceServer::ReserveResource(const ResourceName& res, const Util::StringAtom& tag, const Core::Rtti& type)
 {
 	n_assert(type.IsDerivedFrom(ResourceMemoryPool::RTTI));
 	const Ptr<ResourceMemoryPool>& loader = this->pools[this->typeMap[&type]].downcast<ResourceMemoryPool>();
@@ -183,7 +179,7 @@ ResourceManager::ReserveResource(const ResourceName& res, const Util::StringAtom
 	The info pointer is a struct containing pool specific information.
 */
 inline Resources::ResourcePool::LoadStatus
-ResourceManager::LoadFromMemory(const Resources::ResourceId id, void* info)
+ResourceServer::LoadFromMemory(const Resources::ResourceId id, void* info)
 {
 	const Ptr<ResourceMemoryPool>& loader = this->pools[id.poolIndex].downcast<ResourceMemoryPool>();
 	return loader->LoadFromMemory(id.resourceId, info);
@@ -193,7 +189,7 @@ ResourceManager::LoadFromMemory(const Resources::ResourceId id, void* info)
 /**
 */
 inline const Resources::ResourceName
-ResourceManager::GetName(const Resources::ResourceId id) const
+ResourceServer::GetName(const Resources::ResourceId id) const
 {
 	// get resource loader by extension
 	n_assert(this->pools.Size() > id.poolIndex);
@@ -205,7 +201,7 @@ ResourceManager::GetName(const Resources::ResourceId id) const
 /**
 */
 inline const Util::StringAtom
-ResourceManager::GetTag(const Resources::ResourceId id) const
+ResourceServer::GetTag(const Resources::ResourceId id) const
 {
 	// get resource loader by extension
 	n_assert(this->pools.Size() > id.poolIndex);
@@ -217,7 +213,7 @@ ResourceManager::GetTag(const Resources::ResourceId id) const
 /**
 */
 inline const Resources::Resource::State
-ResourceManager::GetState(const Resources::ResourceId id) const
+ResourceServer::GetState(const Resources::ResourceId id) const
 {
 	// get resource loader by extension
 	n_assert(this->pools.Size() > id.poolIndex);
@@ -229,7 +225,7 @@ ResourceManager::GetState(const Resources::ResourceId id) const
 /**
 */
 inline const SizeT
-ResourceManager::GetUsage(const Resources::ResourceId id) const
+ResourceServer::GetUsage(const Resources::ResourceId id) const
 {
 	// get resource loader by extension
 	n_assert(this->pools.Size() > id.poolIndex);
@@ -241,7 +237,7 @@ ResourceManager::GetUsage(const Resources::ResourceId id) const
 /**
 */
 inline bool
-ResourceManager::HasResource(const Resources::ResourceId id) const
+ResourceServer::HasResource(const Resources::ResourceId id) const
 {
 	if (this->pools.Size() <= id.poolIndex) return false;
 	{
@@ -255,7 +251,7 @@ ResourceManager::HasResource(const Resources::ResourceId id) const
 /**
 */
 inline const Resources::ResourceId
-ResourceManager::GetId(const Resources::ResourceName& name) const
+ResourceServer::GetId(const Resources::ResourceName& name) const
 {
 	IndexT i;
 	for (i = 0; i < this->pools.Size(); i++)
@@ -271,7 +267,7 @@ ResourceManager::GetId(const Resources::ResourceName& name) const
 */
 template <class POOL_TYPE>
 inline POOL_TYPE*
-Resources::ResourceManager::GetStreamPool() const
+Resources::ResourceServer::GetStreamPool() const
 {
 	static_assert(std::is_base_of<ResourceStreamPool, POOL_TYPE>::value, "Type requested is not a stream pool");
 	IndexT i;
@@ -289,7 +285,7 @@ Resources::ResourceManager::GetStreamPool() const
 */
 template <class POOL_TYPE>
 inline POOL_TYPE*
-Resources::ResourceManager::GetMemoryPool() const
+Resources::ResourceServer::GetMemoryPool() const
 {
 	static_assert(std::is_base_of<ResourceMemoryPool, POOL_TYPE>::value, "Type requested is not a memory pool");
 	IndexT i;
@@ -308,7 +304,7 @@ Resources::ResourceManager::GetMemoryPool() const
 inline Resources::ResourceId
 CreateResource(const ResourceName& res, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success = nullptr, std::function<void(const Resources::ResourceId)> failed = nullptr, bool immediate = false)
 {
-	return ResourceManager::Instance()->CreateResource(res, tag, success, failed, immediate);
+	return ResourceServer::Instance()->CreateResource(res, tag, success, failed, immediate);
 }
 
 //------------------------------------------------------------------------------
@@ -317,7 +313,7 @@ CreateResource(const ResourceName& res, const Util::StringAtom& tag, std::functi
 inline void
 DiscardResource(const Resources::ResourceId id)
 {
-	ResourceManager::Instance()->DiscardResource(id);
+	ResourceServer::Instance()->DiscardResource(id);
 }
 
 //------------------------------------------------------------------------------
@@ -328,7 +324,7 @@ DiscardResource(const Resources::ResourceId id)
 inline Resources::ResourceId
 ReserveResource(const ResourceName& res, const Util::StringAtom& tag, const Core::Rtti& type)
 {
-	return ResourceManager::Instance()->ReserveResource(res, tag, type);
+	return ResourceServer::Instance()->ReserveResource(res, tag, type);
 }
 
 //------------------------------------------------------------------------------
@@ -339,7 +335,7 @@ ReserveResource(const ResourceName& res, const Util::StringAtom& tag, const Core
 inline ResourcePool::LoadStatus
 LoadFromMemory(const Resources::ResourceId id, void* info)
 {
-	return ResourceManager::Instance()->LoadFromMemory(id, info);
+	return ResourceServer::Instance()->LoadFromMemory(id, info);
 }
 
 //------------------------------------------------------------------------------
@@ -348,7 +344,7 @@ LoadFromMemory(const Resources::ResourceId id, void* info)
 inline void 
 ReloadResource(const ResourceName& res)
 {
-	return ResourceManager::Instance()->ReloadResource(res);
+	return ResourceServer::Instance()->ReloadResource(res);
 }
 
 //------------------------------------------------------------------------------
@@ -357,7 +353,7 @@ ReloadResource(const ResourceName& res)
 inline void
 WaitForLoaderThread()
 {
-	ResourceManager::Instance()->WaitForLoaderThread();
+	ResourceServer::Instance()->WaitForLoaderThread();
 }
 
 //------------------------------------------------------------------------------
@@ -368,7 +364,7 @@ inline POOL_TYPE*
 GetMemoryPool()
 {
 	static_assert(std::is_base_of<ResourcePool, POOL_TYPE>::value, "Template argument is not a ResourcePool type!");
-	return ResourceManager::Instance()->GetMemoryPool<POOL_TYPE>();
+	return ResourceServer::Instance()->GetMemoryPool<POOL_TYPE>();
 }
 
 //------------------------------------------------------------------------------
@@ -379,7 +375,7 @@ inline POOL_TYPE*
 GetStreamPool()
 {
 	static_assert(std::is_base_of<ResourcePool, POOL_TYPE>::value, "Template argument is not a ResourcePool type!");
-	return ResourceManager::Instance()->GetStreamPool<POOL_TYPE>();
+	return ResourceServer::Instance()->GetStreamPool<POOL_TYPE>();
 }
 
 } // namespace Resources
