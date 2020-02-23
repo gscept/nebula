@@ -15,6 +15,7 @@
 #include "materials/surfacepool.h"
 #include "materials/materialtype.h"
 #include "memory/arenaallocator.h"
+#include "math/clipstatus.h"
 namespace Visibility
 {
 
@@ -25,6 +26,8 @@ enum
 	Observer_EntityType,
 	Observer_ResultAllocator,
 	Observer_Results,
+	Observer_Dependency,
+	Observer_DependencyMode,
 	Observer_DrawList,
 	Observer_DrawListAllocator
 };
@@ -49,6 +52,12 @@ enum
 	Observable_Atoms
 };
 
+enum DependencyMode
+{
+	DependencyMode_Total,		// if B depends on A, and A doesn't see B, B sees nothing either
+	DependencyMode_Masked		// visibility of B is dependent on A for each result
+};
+
 class ObserverContext : public Graphics::GraphicsContext
 {
 	_DeclareContext();
@@ -56,6 +65,8 @@ public:
 
 	/// setup entity
 	static void Setup(const Graphics::GraphicsEntityId id, VisibilityEntityType entityType);
+	/// setup a dependency between observers
+	static void MakeDependency(const Graphics::GraphicsEntityId a, const Graphics::GraphicsEntityId b, const DependencyMode mode);
 
 	/// runs before frame is updated
 	static void OnBeforeFrame(const Graphics::FrameContext& ctx);
@@ -95,6 +106,7 @@ public:
 
 	static Jobs::JobPortId jobPort;
 	static Jobs::JobSyncId jobInternalSync;
+	static Jobs::JobSyncId jobInternalSync2;
 	static Jobs::JobSyncId jobHostSync;
 	static Util::Queue<Jobs::JobId> runningJobs;
 
@@ -103,7 +115,7 @@ private:
 	friend class ObservableContext;
 
 	typedef Ids::IdAllocator<
-		bool,                               // visibility result
+		Math::ClipStatus::Type,             // visibility result
 		Graphics::ContextEntityId			// model context id
 	> VisibilityResultAllocator;
 
@@ -112,7 +124,9 @@ private:
 		Graphics::GraphicsEntityId, 		// entity id
 		VisibilityEntityType,				// type of object so we know how to get the transform
 		VisibilityResultAllocator,			// visibility lookup table
-		bool*,
+		Math::ClipStatus::Type*,			// array holding the visbility results array
+		Graphics::GraphicsEntityId,			// dependency
+		DependencyMode,						// dependency mode
 		VisibilityDrawList,					// draw list
 		Memory::ArenaAllocator<1024>		// memory allocator for draw commands
 	> ObserverAllocator;
@@ -140,7 +154,6 @@ public:
 private:
 
 	friend class ObserverContext;
-	friend class VisibilityContex;
     friend class Models::ModelContext;
 
 	// atom corresponds to a single visibility entry

@@ -313,7 +313,11 @@ ParticleSystemNode::ApplyNodeState()
 void
 ParticleSystemNode::Instance::Update()
 {
-	ShaderStateNode::Instance::Update();
+    if (!this->dirty)
+        return;
+
+    ShaderStateNode::Instance::Update();
+
 	ParticleSystemNode* pnode = static_cast<ParticleSystemNode*>(this->node);
 
 	::Particle::ParticleObjectBlock block;
@@ -345,13 +349,13 @@ ParticleSystemNode::Instance::Update()
 /**
 */
 void
-ParticleSystemNode::Instance::Draw(const SizeT numInstances, Models::ModelNode::DrawPacket* packet)
+ParticleSystemNode::Instance::Draw(const SizeT numInstances, const IndexT baseInstance, Models::ModelNode::DrawPacket* packet)
 {
 	if (this->particleVbo == CoreGraphics::VertexBufferId::Invalid())
 		return;
 
 	CoreGraphics::SetStreamVertexBuffer(1, this->particleVbo, this->particleVboOffset);
 	CoreGraphics::SetPrimitiveGroup(this->group);
-	CoreGraphics::DrawInstanced(this->numParticles, 0);
+	CoreGraphics::DrawInstanced(this->numParticles, baseInstance);
 }
 } // namespace Particles

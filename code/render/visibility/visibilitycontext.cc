@@ -19,6 +19,7 @@
 #include "systems/bruteforcesystem.h"
 
 #include "system/cpu.h"
+#include "profiling/profiling.h"
 
 #ifndef PUBLIC_BUILD
 #include "imgui.h"
@@ -35,10 +36,12 @@ Util::Array<VisibilitySystem*> ObserverContext::systems;
 
 Jobs::JobPortId ObserverContext::jobPort;
 Jobs::JobSyncId ObserverContext::jobInternalSync;
+Jobs::JobSyncId ObserverContext::jobInternalSync2;
 Jobs::JobSyncId ObserverContext::jobHostSync;
 Util::Queue<Jobs::JobId> ObserverContext::runningJobs;
 
 extern void VisibilitySortJob(const Jobs::JobFuncContext& ctx);
+extern void VisibilityDependencyJob(const Jobs::JobFuncContext& ctx);
 
 _ImplementContext(ObserverContext, ObserverContext::observerAllocator);
 
@@ -66,14 +69,14 @@ ObserverContext::Setup(const Graphics::GraphicsEntityId id, VisibilityEntityType
 				if (node->node->GetType() >= Models::NodeHasShaderState)
 				{
 					Ids::Id32 res = observerAllocator.Get<Observer_ResultAllocator>(cid.id).Alloc();
-					observerAllocator.Get<Observer_ResultAllocator>(cid.id).Get<VisibilityResult_Flag>(res) = true;
+					observerAllocator.Get<Observer_ResultAllocator>(cid.id).Get<VisibilityResult_Flag>(res) = Math::ClipStatus::Inside;
 				}
 			}
 		}
 		else
 		{
 			Ids::Id32 res = observerAllocator.Get<Observer_ResultAllocator>(cid.id).Alloc();
-			observerAllocator.Get<Observer_ResultAllocator>(cid.id).Get<VisibilityResult_Flag>(res) = true;
+			observerAllocator.Get<Observer_ResultAllocator>(cid.id).Get<VisibilityResult_Flag>(res) = Math::ClipStatus::Inside;
 
 		}
 	}
@@ -83,8 +86,20 @@ ObserverContext::Setup(const Graphics::GraphicsEntityId id, VisibilityEntityType
 /**
 */
 void 
+ObserverContext::MakeDependency(const Graphics::GraphicsEntityId a, const Graphics::GraphicsEntityId b, const DependencyMode mode)
+{
+	const Graphics::ContextEntityId cid = GetContextId(b);
+	observerAllocator.Get<Observer_Dependency>(cid.id) = a;
+	observerAllocator.Get<Observer_DependencyMode>(cid.id) = mode;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
 ObserverContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 {
+	N_SCOPE(ObserverPrepareFrame, Visibility)
 	const Util::Array<VisibilityEntityType>& observerTypes = observerAllocator.GetArray<Observer_EntityType>();
 	const Util::Array<VisibilityEntityType>& observableTypes = ObservableContext::observableAllocator.GetArray<Observable_EntityType>();
 
@@ -97,7 +112,7 @@ ObserverContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 	Util::Array<Graphics::ContextEntityId>& observableAtomContexts = ObservableContext::observableAtomAllocator.GetArray<ObservableAtom_ContextEntity>();
 
 	const Util::Array<VisibilityResultAllocator>& results = observerAllocator.GetArray<Observer_ResultAllocator>();
-	Util::Array<bool*> observerResults = observerAllocator.GetArray<Observer_Results>();
+	Util::Array<Math::ClipStatus::Type*> observerResults = observerAllocator.GetArray<Observer_Results>();
 
 	// go through all transforms and update
 	IndexT i;
@@ -160,7 +175,7 @@ ObserverContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 			observerTransforms[i] = Graphics::CameraContext::GetViewProjection(id);
 			break;
 		case Light:
-			observerTransforms[i] = Lighting::LightContext::GetViewProjTransform(id);
+			observerTransforms[i] = Lighting::LightContext::GetObserverTransform(id);
 			break;
 		case LightProbe:
 			observerTransforms[i] = Graphics::LightProbeContext::GetTransform(id);
@@ -170,18 +185,16 @@ ObserverContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 
 	// first step, go through list of visible entities and reset
 	Util::Array<VisibilityResultAllocator>& vis = observerAllocator.GetArray<Observer_ResultAllocator>();
-	Util::Array<VisibilityDrawList>& draws = observerAllocator.GetArray<Observer_DrawList>();
 
 	// reset all lists to that all entities are visible
 	for (i = 0; i < vis.Size(); i++)
 	{
-		VisibilityResultAllocator& list = vis[i];
-		Util::Array<bool>& flags = list.GetArray<VisibilityResult_Flag>();
+		Util::Array<Math::ClipStatus::Type>& flags = vis[i].GetArray<VisibilityResult_Flag>();
 		observerResults[i] = flags.Begin();
 
 		for (IndexT j = 0; j < flags.Size(); j++)
 		{
-			flags[j] = true;
+			flags[j] = Math::ClipStatus::Outside;
 		}
 	}
 
@@ -209,22 +222,73 @@ ObserverContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 			sys->Run();
 		}
 
-	// put a sync point for the jobs
+	// put a sync point for the jobs so all results are done when doing the sorting
 	Jobs::JobSyncSignal(ObserverContext::jobInternalSync, ObserverContext::jobPort);
 	Jobs::JobSyncThreadWait(ObserverContext::jobInternalSync, ObserverContext::jobPort);
 
+	// handle dependencies
+	bool dependencyNeeded = false;
 	for (i = 0; i < vis.Size(); i++)
 	{
-		const Util::Array<bool>& flags = vis[i].GetArray<VisibilityResult_Flag>();
-		const Util::Array<Graphics::ContextEntityId>& entities = vis[i].GetArray<VisibilityResult_CtxId>();
-		const Util::Array<Models::ModelNode::Instance*>& nodes = ObservableContext::observableAtomAllocator.GetArray<ObservableAtom_Node>();
-		VisibilityDrawList& visibilities = observerAllocator.Get<Observer_DrawList>(i);
-		Memory::ArenaAllocator<1024>& allocator = observerAllocator.Get<Observer_DrawListAllocator>(i);
+		const Util::Array<Math::ClipStatus::Type>& flags = vis[i].GetArray<VisibilityResult_Flag>();
+		Graphics::GraphicsEntityId& dependency = observerAllocator.Get<Observer_Dependency>(i);
 
-        if (entities.Size() == 0)
-        {
-            continue;
-        }
+		// run dependency resolve job
+		if (dependency != Graphics::GraphicsEntityId::Invalid())
+		{
+			Jobs::JobContext ctx;
+			ctx.uniform.scratchSize = 0;
+			ctx.uniform.numBuffers = 2;
+			ctx.input.numBuffers = 1;
+			ctx.output.numBuffers = 1;
+
+			const Graphics::ContextEntityId& ctxId = GetContextIdRef(dependency);
+
+			ctx.uniform.data[0] = &observerAllocator.Get<Observer_DependencyMode>(i);
+			ctx.uniform.dataSize[0] = sizeof(DependencyMode);
+			ctx.uniform.data[1] = &ctxId;
+			ctx.uniform.dataSize[1] = sizeof(uint32);
+
+			const Util::Array<Math::ClipStatus::Type>& otherFlags = vis[ctxId.id].GetArray<VisibilityResult_Flag>();
+
+			ctx.input.data[0] = otherFlags.Begin();
+			ctx.input.dataSize[0] = sizeof(Math::ClipStatus::Type) * otherFlags.Size();
+			ctx.input.sliceSize[0] = sizeof(Math::ClipStatus::Type) * otherFlags.Size();
+
+			ctx.output.data[0] = flags.Begin();
+			ctx.output.dataSize[0] = sizeof(Math::ClipStatus::Type) * flags.Size();
+			ctx.output.sliceSize[0] = sizeof(Math::ClipStatus::Type) * flags.Size();
+
+			// schedule job
+			Jobs::JobId job = Jobs::CreateJob({ VisibilityDependencyJob });
+			Jobs::JobSchedule(job, ObserverContext::jobPort, ctx, false);
+
+			// add to delete list
+			ObserverContext::runningJobs.Enqueue(job);
+			dependencyNeeded = true;
+		}
+	}
+
+	// again, put sync if we needed to resolve dependency
+	if (dependencyNeeded)
+	{
+		Jobs::JobSyncSignal(ObserverContext::jobInternalSync2, ObserverContext::jobPort);
+		Jobs::JobSyncThreadWait(ObserverContext::jobInternalSync2, ObserverContext::jobPort);
+	}
+
+	for (i = 0; i < vis.Size(); i++)
+	{
+		const Util::Array<Models::ModelNode::Instance*>& nodes = ObservableContext::observableAtomAllocator.GetArray<ObservableAtom_Node>();
+
+		// early abort empty visibility queries
+		if (nodes.Size() == 0)
+		{
+			continue;
+		}
+
+		const Util::Array<Math::ClipStatus::Type>& flags = vis[i].GetArray<VisibilityResult_Flag>();
+		VisibilityDrawList& visibilities = observerAllocator.Get<Observer_DrawList>(i);
+		Memory::ArenaAllocator<1024>& allocator = observerAllocator.Get<Observer_DrawListAllocator>(i);        
 
 		// then execute sort job, which only runs the function once
 		Jobs::JobContext ctx;
@@ -234,8 +298,8 @@ ObserverContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 		ctx.output.numBuffers = 1;
 
 		ctx.input.data[0] = flags.Begin();
-		ctx.input.dataSize[0] = sizeof(bool) * flags.Size();
-		ctx.input.sliceSize[0] = sizeof(bool) * flags.Size();
+		ctx.input.dataSize[0] = sizeof(Math::ClipStatus::Type) * flags.Size();
+		ctx.input.sliceSize[0] = sizeof(Math::ClipStatus::Type) * flags.Size();
 		
 		ctx.input.data[1] = nodes.Begin();
 		ctx.input.dataSize[1] = sizeof(Models::ModelNode::Instance*) * nodes.Size();
@@ -250,7 +314,7 @@ ObserverContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 
 		// schedule job
 		Jobs::JobId job = Jobs::CreateJob({ VisibilitySortJob });
-		Jobs::JobSchedule(job, ObserverContext::jobPort, ctx);
+		Jobs::JobSchedule(job, ObserverContext::jobPort, ctx, false);
 
 		// add to delete list
 		ObserverContext::runningJobs.Enqueue(job);
@@ -281,17 +345,18 @@ ObserverContext::Create()
 	Jobs::CreateJobPortInfo info =
 	{
 		"VisibilityJobPort",
-		4,
+		1,
 		System::Cpu::Core1 | System::Cpu::Core2 | System::Cpu::Core3 | System::Cpu::Core4,
 		UINT_MAX
 	};
-	ObserverContext::jobPort = Jobs::CreateJobPort(info);
+	ObserverContext::jobPort = Graphics::GraphicsServer::renderSystemsJobPort;
 
 	Jobs::CreateJobSyncInfo sinfo =
 	{
 		nullptr
 	};
 	ObserverContext::jobInternalSync = Jobs::CreateJobSync(sinfo);
+	ObserverContext::jobInternalSync2 = Jobs::CreateJobSync(sinfo);
 	ObserverContext::jobHostSync = Jobs::CreateJobSync(sinfo);
 
 	_CreateContext();
@@ -397,21 +462,35 @@ ObserverContext::OnRenderDebug(uint32_t flags)
 	Jobs::JobSyncHostWait(ObserverContext::jobHostSync);
 
 	Util::Array<VisibilityResultAllocator>& vis = observerAllocator.GetArray<3>();
-	Util::FixedArray<SizeT> visCounters(vis.Size(), 0);
+	Util::FixedArray<SizeT> insideCounters(vis.Size(), 0);
+	Util::FixedArray<SizeT> clippedCounters(vis.Size(), 0);
+	Util::FixedArray<SizeT> totalCounters(vis.Size(), 0);
 	for (IndexT i = 0; i < vis.Size(); i++)
 	{
-		auto res = vis[i].GetArray<0>();
+		auto res = vis[i].GetArray<VisibilityResult_Flag>();
 		for (IndexT j = 0; j < res.Size(); j++)
-			if (res[j])
-				visCounters[i]++;
+			switch (res[j])
+			{
+			case Math::ClipStatus::Inside:
+				insideCounters[i]++;
+				totalCounters[i]++;
+				break;
+			case Math::ClipStatus::Clipped:
+				clippedCounters[i]++;
+				totalCounters[i]++;
+				break;
+			default:
+				break;
+			}
 	}
-	ImGui::Begin("Visibility", nullptr, 0);
-	ImGui::SetWindowSize(ImVec2(240, 100));
-	for (IndexT i = 0; i < vis.Size(); i++)
+	if (ImGui::Begin("Visibility", nullptr, 0))
 	{
-		ImGui::Text("Entities visible for observer %d: [%d]", i, visCounters[i]);
-	}
-	ImGui::End();
+		for (IndexT i = 0; i < vis.Size(); i++)
+		{
+			ImGui::Text("Entities visible for observer %d: %d (inside [%d], clipped [%d])", i, totalCounters[i], insideCounters[i], clippedCounters[i]);
+		}
+		ImGui::End();
+	}	
 }
 #endif
 
@@ -422,8 +501,10 @@ const ObserverContext::VisibilityDrawList*
 ObserverContext::GetVisibilityDrawList(const Graphics::GraphicsEntityId id)
 {
 	const Graphics::ContextEntityId cid = ObserverContext::GetContextId(id);
-	if (cid == Graphics::ContextEntityId::Invalid()) return nullptr;
-	else return &observerAllocator.Get<Observer_DrawList>(cid.id);
+	if (cid == Graphics::ContextEntityId::Invalid())
+		return nullptr;
+	else 
+		return &observerAllocator.Get<Observer_DrawList>(cid.id);
 }
 
 //------------------------------------------------------------------------------
@@ -511,7 +592,7 @@ ObservableContext::Setup(const Graphics::GraphicsEntityId id, VisibilityEntityTy
 				{
 					// allocate visibility result instance
 					Ids::Id32 obj = alloc.Alloc();
-					alloc.Get<VisibilityResult_Flag>(obj) = true;
+					alloc.Get<VisibilityResult_Flag>(obj) = Math::ClipStatus::Inside;
 				}
 			}
 		}
@@ -525,8 +606,8 @@ ObservableContext::Setup(const Graphics::GraphicsEntityId id, VisibilityEntityTy
 				Ids::Id32 obj = ObservableContext::observableAtomAllocator.Alloc();
 				ObservableContext::observableAtomAllocator.Get<ObservableAtom_ContextEntity>(obj) = cid;
 				ObservableContext::observableAtomAllocator.Get<ObservableAtom_Node>(obj) = nodes[j];
-				// skip transform
 
+				// append id to observable so we can track it, this id should also directly correspond to the VisibilityResult_Flags (above alloc.Alloc()) in all observers
 				observableAllocator.Get<Observable_Atoms>(cid.id).Append(obj);
 			}
 		}
@@ -540,7 +621,7 @@ void
 ObservableContext::Create()
 {
 	_CreateContext();
-    ObservableContext::__state.OnInstanceMoved = OnInstanceMoved;
+    ObservableContext::__state.OnInstanceMoved = ObservableContext::OnInstanceMoved;
 	ObservableContext::__state.allowedRemoveStages = Graphics::OnBeforeFrameStage;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&ObservableContext::__bundle, &ObservableContext::__state);
 }
@@ -565,18 +646,17 @@ ObservableContext::Dealloc(Graphics::ContextEntityId id)
 	const Util::Array<ObserverContext::VisibilityResultAllocator>& visAllocators = ObserverContext::observerAllocator.GetArray<Observer_ResultAllocator>();
 
 	// cleanup visibility allocator first
-	IndexT i;
 	for (IndexT i = 0; i < visAllocators.Size(); i++)
 	{
 		ObserverContext::VisibilityResultAllocator& alloc = visAllocators[i];
-		for (i = 0; i < atoms.Size(); i++)
+		for (IndexT j = 0; j < atoms.Size(); j++)
 		{
-			alloc.Dealloc(atoms[i]);
+			alloc.Dealloc(atoms[j]);
 		}
 	}
 
 	// now clean up all atoms
-	for (i = 0; i < atoms.Size(); i++)
+	for (IndexT i = 0; i < atoms.Size(); i++)
 	{
 		observableAtomAllocator.Dealloc(atoms[i]);
 	}
@@ -590,22 +670,39 @@ ObservableContext::Dealloc(Graphics::ContextEntityId id)
 void
 ObservableContext::OnInstanceMoved(uint32_t toIndex, uint32_t fromIndex)
 {
-    n_assert2(fromIndex >= observableAllocator.Size(), "Instance is assumed to be erased but wasn't!\n");
+    //n_assert2(fromIndex >= observableAllocator.Size(), "Instance is assumed to be erased but wasn't!\n");
     auto size = observableAllocator.Size();
 
-	// get atoms
-	Util::ArrayStack<Ids::Id32, 1>& atoms = observableAllocator.Get<Observable_Atoms>(toIndex);
+	// get atoms we are moving to
+	Util::ArrayStack<Ids::Id32, 1>& toAtoms = observableAllocator.Get<Observable_Atoms>(toIndex);
 
-    // go through observers and deallocate visibility slot for this object
-    const Util::Array<ObserverContext::VisibilityResultAllocator>& visAllocators = ObserverContext::observerAllocator.GetArray<Observer_ResultAllocator>();
-    for (IndexT i = 0; i < visAllocators.Size(); i++)
-    {
+	// first, decrement all entities above our current entity
+	for (uint32_t i = toAtoms.Back(); i < observableAtomAllocator.Size(); i++)
+	{
+		observableAtomAllocator.Get<ObservableAtom_ContextEntity>(i).id--;
+	}
+
+	// then erase all atoms in the list, they should appear in order
+	observableAtomAllocator.EraseRange(toAtoms.Front(), toAtoms.Back());
+
+	// go through observers and deallocate visibility slot for this object
+	const Util::Array<ObserverContext::VisibilityResultAllocator>& visAllocators = ObserverContext::observerAllocator.GetArray<Observer_ResultAllocator>();
+	for (IndexT i = 0; i < visAllocators.Size(); i++)
+	{
 		ObserverContext::VisibilityResultAllocator& alloc = visAllocators[i];
-		for (i = 0; i < atoms.Size(); i++)
-		{
-			alloc.EraseIndexSwap(atoms[i]);
-		}
-    }
+		alloc.EraseRange(toAtoms.Front(), toAtoms.Back());
+	}
+
+	// when atoms are removed, shift all atom indices above where we removed down by the size
+	for (uint32_t i = 0; i < observableAllocator.Size(); i++)
+	{
+		Util::ArrayStack<Ids::Id32, 1>& moveAtoms = observableAllocator.Get<Observable_Atoms>(i);
+		if (i == toIndex)
+			continue;
+		for (IndexT j = 0; j < moveAtoms.Size(); j++)
+			if (moveAtoms[j] >= toAtoms.Front())
+				moveAtoms[j] -= toAtoms.Size();
+	}
 }
 
 //------------------------------------------------------------------------------

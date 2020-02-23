@@ -282,11 +282,8 @@ inline ArrayStack<TYPE, STACK_SIZE>::ArrayStack(ArrayStack<TYPE, STACK_SIZE>&& r
 	this->capacity = rhs.capacity;
 	this->count = rhs.count;
 	this->grow = rhs.grow;
-	if (this->capacity > STACK_SIZE)
-	{
-		this->elements = rhs.elements;
-	}
-	else
+	
+    if (this->capacity <= STACK_SIZE)
 	{
 		for (IndexT i = 0; i < rhs.count; ++i)
 		{
@@ -295,6 +292,9 @@ inline ArrayStack<TYPE, STACK_SIZE>::ArrayStack(ArrayStack<TYPE, STACK_SIZE>&& r
 
 		this->elements = this->smallVector;
 	}
+    else
+        this->elements = rhs.elements;
+
 	rhs.count = 0;
 	rhs.capacity = 0;
 	rhs.elements = nullptr;
@@ -312,7 +312,7 @@ ArrayStack<TYPE, STACK_SIZE>::Copy(const ArrayStack<TYPE, STACK_SIZE>& src)
     #endif
 
     this->grow = src.grow;
-    this->capacity = src.capacity;
+    this->capacity = src.count; // don't copy capacity, make this new copy smaller
     this->count = src.count;
     if (this->capacity > 0)
     {
@@ -432,14 +432,21 @@ inline void ArrayStack<TYPE, STACK_SIZE>::operator=(ArrayStack<TYPE, STACK_SIZE>
 	this->capacity = rhs.capacity;
 	this->count = rhs.count;
 	this->grow = rhs.grow;
-	if (this->capacity > STACK_SIZE)
-	{
-		this->elements = rhs.elements;
-	}
-	else
-	{
-		memcpy(this->smallVector, rhs.smallVector, sizeof(TYPE) * rhs.count);
-	}
+    if (this->elements && this->capacity > STACK_SIZE)
+        n_delete_array(this->elements);
+    
+    if (this->capacity <= STACK_SIZE)
+    {
+        for (IndexT i = 0; i < rhs.count; ++i)
+        {
+            this->smallVector[i] = rhs.smallVector[i];
+        }
+
+        this->elements = this->smallVector;
+    }
+    else
+        this->elements = rhs.elements;
+
 	rhs.count = 0;
 	rhs.capacity = 0;
 	rhs.elements = nullptr;
@@ -778,9 +785,11 @@ ArrayStack<TYPE, STACK_SIZE>::EraseIndexSwap(IndexT index)
     IndexT lastElementIndex = this->count - 1;
     if (index < lastElementIndex)
     {
-        this->elements[index] = this->elements[lastElementIndex];
+        if constexpr (!std::is_trivially_move_assignable<TYPE>::value)
+            this->elements[index] = std::move(this->elements[lastElementIndex]);
+        else
+            this->elements[index] = this->elements[lastElementIndex];
     }
-    this->Destroy(&(this->elements[lastElementIndex]));
     this->count--;
 }
 

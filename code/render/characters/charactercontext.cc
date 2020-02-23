@@ -16,6 +16,7 @@
 #include "util/round.h"
 #include "dynui/im3d/im3dcontext.h"
 #include "models/nodes/characternode.h"
+#include "profiling/profiling.h"
 
 using namespace Graphics;
 using namespace Resources;
@@ -74,7 +75,7 @@ CharacterContext::Create()
 		System::Cpu::Core3 | System::Cpu::Core4,
 		UINT_MAX
 	};
-	CharacterContext::jobPort = Jobs::CreateJobPort(info);
+	CharacterContext::jobPort = Graphics::GraphicsServer::renderSystemsJobPort;
 
 	Jobs::CreateJobSyncInfo sinfo =
 	{
@@ -98,12 +99,12 @@ CharacterContext::Setup(const Graphics::GraphicsEntityId id, const Resources::Re
 	// check to make sure we registered this entity for observation, then get the visibility context
 	const ContextEntityId visId = Visibility::ObservableContext::GetContextId(id);
 	n_assert_fmt(visId != ContextEntityId::Invalid(), "Entity %d needs to be setup as observerable before character!", id.HashCode());
-	characterContextAllocator.Get<VisibilityContextId>(cid.id) = visId;
+	characterContextAllocator.Get<VisibilityContextId>(cid.id) = id;
 
 	// get model context
 	const ContextEntityId mdlId = Models::ModelContext::GetContextId(id);
 	n_assert_fmt(mdlId != ContextEntityId::Invalid(), "Entity %d needs to be setup as a model before character!", id.HashCode());
-	characterContextAllocator.Get<ModelContextId>(cid.id) = visId;
+	characterContextAllocator.Get<ModelContextId>(cid.id) = id;
 
 	// create skeleton
 	ResourceCreateInfo info;
@@ -469,6 +470,7 @@ GetAbsoluteStopTime(const CharacterContext::AnimationRuntime& runtime)
 void 
 CharacterContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 {
+	N_SCOPE(CharacterBeforeFrame, Character);
 	using namespace CoreAnimation;
 	const Util::Array<Timing::Time>& times = characterContextAllocator.GetArray<AnimTime>();
 	const Util::Array<AnimationTracks>& tracks = characterContextAllocator.GetArray<TrackController>();
@@ -479,7 +481,7 @@ CharacterContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 	const Util::Array<Util::FixedArray<Math::matrix44>>& jointPalettes = characterContextAllocator.GetArray<JointPalette>();
 	const Util::Array<Util::FixedArray<Math::matrix44>>& scaledJointPalettes = characterContextAllocator.GetArray<JointPaletteScaled>();
 	const Util::Array<Util::FixedArray<Math::matrix44>>& userJoints = characterContextAllocator.GetArray<UserControlledJoint>();
-	const Util::Array<Graphics::ContextEntityId>& models = characterContextAllocator.GetArray<ModelContextId>();
+	const Util::Array<Graphics::GraphicsEntityId>& models = characterContextAllocator.GetArray<ModelContextId>();
 
 	// update times and animations
 	IndexT i;
@@ -496,7 +498,7 @@ CharacterContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 		const Util::FixedArray<Math::matrix44>& jointPalette = jointPalettes[i];
 		const Util::FixedArray<Math::matrix44>& scaledJointPalette = scaledJointPalettes[i];
 		const CoreAnimation::AnimSampleBuffer& sampleBuffer = sampleBuffers[i];
-		const Graphics::ContextEntityId& model = models[i];
+		const Graphics::GraphicsEntityId& model = models[i];
 
 		// loop over all tracks, and update the playing clip on each respective track
 		bool firstAnimTrack = true;
@@ -777,7 +779,7 @@ CharacterContext::GetAnimSampleMask(const Util::StringAtom& name)
 	return &CharacterContext::masks.ValueAtIndex(name, index);
 }
 
-#ifndef PUBLIC_DEBUG    
+#ifndef PUBLIC_BUILD 
 //------------------------------------------------------------------------------
 /**
 */
@@ -788,7 +790,7 @@ CharacterContext::OnRenderDebug(uint32 flags)
 	Jobs::JobSyncHostWait(CharacterContext::jobSync);
 
 	const Util::Array<Util::FixedArray<Math::matrix44>>& jointPalettes = characterContextAllocator.GetArray<JointPaletteScaled>();
-	const Util::Array<Graphics::ContextEntityId>& modelContexts = characterContextAllocator.GetArray<ModelContextId>();
+	const Util::Array<Graphics::GraphicsEntityId>& modelContexts = characterContextAllocator.GetArray<ModelContextId>();
 	const Math::matrix44 scale = Math::matrix44::scaling(0.1f, 0.1f, 0.1f);
 	IndexT i;
 	for (i = 0; i < jointPalettes.Size(); i++)
@@ -808,5 +810,6 @@ CharacterContext::OnRenderDebug(uint32 flags)
 }
 	
 #endif
+
 } // namespace Characters
 

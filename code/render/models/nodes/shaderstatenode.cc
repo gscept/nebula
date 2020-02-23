@@ -188,25 +188,14 @@ ShaderStateNode::Instance::UpdateDrawPacket(void* mem)
 	ret->slots = (IndexT*) buf;
 	buf += sizeof(IndexT) * NumTables;
 
-	// start copying data
-	//ret->surfaceInstance->instance = this->surfaceInstance.instance;
-	//ret->surfaceInstance->surface = this->surfaceInstance.surface;
 	*ret->surfaceInstance = this->surfaceInstance;
 	*ret->numTables = NumTables;
 
-	memcpy(ret->offsets, this->offsets.Begin(), sizeof(uint32) * this->offsets.Size());
+	ret->offsets = this->offsets.Begin();
 	ret->numOffsets[0] = this->offsets.Size();
 
 	ret->slots[0] = NEBULA_DYNAMIC_OFFSET_GROUP;
 	ret->tables[0] = this->resourceTable;
-
-	//ret->customDraw = Util::Delegate<void(const SizeT)>::FromMethod<ShaderStateNode::Instance, &ShaderStateNode::Instance::Draw>(this);
-	/*
-	ret->customDraw = [this](const SizeT instances)
-	{
-		CoreGraphics::DrawInstanced(instances, 0);
-	};
-	*/
 
 	return ret;
 }
@@ -217,20 +206,33 @@ ShaderStateNode::Instance::UpdateDrawPacket(void* mem)
 void
 ShaderStateNode::Instance::Update()
 {
+	if (!this->dirty)
+		return;
+
 	Shared::ObjectBlock block;
 	Math::matrix44::storeu(this->modelTransform, block.Model);
 	Math::matrix44::storeu(Math::matrix44::inverse(this->modelTransform), block.InvModel);
 	uint offset = CoreGraphics::SetGraphicsConstants(CoreGraphics::GlobalConstantBufferType::VisibilityThreadConstantBuffer, block);
 	this->offsets[this->objectTransformsIndex] = offset;
+	this->dirty = false;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+ShaderStateNode::Instance::SetDirty(bool b)
+{
+	this->dirty = b;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-ShaderStateNode::Instance::Draw(const SizeT numInstances, Models::ModelNode::DrawPacket* packet)
+ShaderStateNode::Instance::Draw(const SizeT numInstances, const IndexT baseInstance, Models::ModelNode::DrawPacket* packet)
 {
-	CoreGraphics::DrawInstanced(numInstances, 0);
+	CoreGraphics::DrawInstanced(numInstances, baseInstance);
 }
 
 } // namespace Models

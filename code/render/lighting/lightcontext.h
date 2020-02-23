@@ -71,7 +71,7 @@ public:
 	/// set transform depending on type
 	static void SetTransform(const Graphics::GraphicsEntityId id, const Math::matrix44& transform);
 	/// get the view transform including projections
-	static const Math::matrix44 GetViewProjTransform(const Graphics::GraphicsEntityId id);
+	static const Math::matrix44 GetObserverTransform(const Graphics::GraphicsEntityId id);
 
 	/// get the light type
 	static LightType GetType(const Graphics::GraphicsEntityId id);
@@ -193,16 +193,29 @@ private:
 		GlobalLight_Ambient,
 		GlobalLight_Transform,
 		GlobalLight_ViewProjTransform,
+		GlobalLight_CascadeObservers
 	};
 	typedef Ids::IdAllocator<
-		Math::float4,			// direction
-		Math::float4,			// backlight color
-		float,					// backlight offset
-		Math::float4,			// ambient
-		Math::matrix44,			// transform (basically just a rotation in the direction)
-		Math::matrix44			// transform for visibility and such
+		Math::float4,								// direction
+		Math::float4,								// backlight color
+		float,										// backlight offset
+		Math::float4,								// ambient
+		Math::matrix44,								// transform (basically just a rotation in the direction)
+		Math::matrix44,								// transform for visibility and such
+		Util::Array<Graphics::GraphicsEntityId>		// view ids for cascades
 	> GlobalLightAllocator;
 	static GlobalLightAllocator globalLightAllocator;
+
+
+	enum
+	{
+		ShadowCaster_Transform
+	};
+	typedef Ids::IdAllocator<
+		Math::matrix44 
+	> ShadowCasterAllocator;
+	static ShadowCasterAllocator shadowCasterAllocator;
+	static Util::HashTable<Graphics::GraphicsEntityId, Graphics::ContextEntityId, 6, 1> shadowCasterSliceMap;
 
 	/// allocate a new slice for this context
 	static Graphics::ContextEntityId Alloc();

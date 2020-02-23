@@ -101,6 +101,8 @@ public:
     void EraseIndexSwap(IndexT index);
     /// erase element at iterator, fill gap by swapping in last element, destroys sorting!
     Iterator EraseSwap(Iterator iter);
+    /// erase range
+    void EraseRange(IndexT start, SizeT end);
 	/// erase back
 	void EraseBack();
 	/// erase front
@@ -448,6 +450,8 @@ Array<TYPE>::operator=(Array<TYPE>&& rhs)
 {
     if (this != &rhs)
     {
+        if (this->elements)
+            n_delete_array(this->elements);
         this->elements = rhs.elements;
         this->grow = rhs.grow;
         this->count = rhs.count;
@@ -556,7 +560,7 @@ Array<TYPE>::Move(IndexT fromIndex, IndexT toIndex)
         this->DestroyRange(fromIndex, toIndex);
     }
 
-    // adjust array _size
+    // adjust array size
     this->count = toIndex + num;
 }
 
@@ -612,7 +616,7 @@ inline void
 Array<TYPE>::MoveRange(TYPE* to, TYPE* from, SizeT num)
 {
 	// copy over contents
-	if constexpr (!std::is_trivially_copyable<TYPE>::value)
+	if constexpr (!std::is_trivially_move_assignable<TYPE>::value)
 	{
 		IndexT i;
 		for (i = 0; i < num; i++)
@@ -850,10 +854,11 @@ Array<TYPE>::EraseIndexSwap(IndexT index)
     IndexT lastElementIndex = this->count - 1;
     if (index < lastElementIndex)
     {
-        this->elements[index] = this->elements[lastElementIndex];
+        if constexpr (!std::is_trivially_move_assignable<TYPE>::value)
+            this->elements[index] = std::move(this->elements[lastElementIndex]);
+        else
+            this->elements[index] = this->elements[lastElementIndex];
     }
-	if constexpr (!std::is_trivially_destructible<TYPE>::value)
-		this->Destroy(&(this->elements[lastElementIndex]));
     this->count--;
 }
 
@@ -882,6 +887,27 @@ Array<TYPE>::EraseSwap(typename Array<TYPE>::Iterator iter)
     #endif
 	this->EraseIndexSwap(IndexT(iter - this->elements));
     return iter;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE> void 
+Array<TYPE>::EraseRange(IndexT start, SizeT end)
+{
+    n_assert(end >= start);
+    n_assert(end < this->count);
+    if (start == end)
+        this->EraseIndex(start);
+    else
+    {
+        // add 1 to end to remove and move including that element
+        end += 1;
+        this->DestroyRange(start, end);
+        SizeT numMove = this->count - end;
+        this->MoveRange(&this->elements[start], &this->elements[end], numMove);
+        this->count -= end - start;
+    }
 }
 
 //------------------------------------------------------------------------------

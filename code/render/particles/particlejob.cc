@@ -175,26 +175,29 @@ void JobStep(const ParticleJobUniformData* perSystemUniforms, const ParticleJobU
 void
 ParticleStepJob(const Jobs::JobFuncContext& ctx)
 {
-    const ParticleJobUniformData* perSystemUniforms = (const ParticleJobUniformData*) ctx.uniforms[0];
     n_assert(ctx.uniformSizes[0] == sizeof(ParticleJobUniformData));
-
-	const ParticleJobUniformPerJobData* perJobUniforms = (ParticleJobUniformPerJobData*)ctx.uniforms[1];
-	n_assert(ctx.uniformSizes[1] == sizeof(ParticleJobUniformPerJobData));
-
-    const Particle* particles_input = (const Particle*) ctx.inputs[0];
-    const unsigned int numParticles = ctx.inputSizes[0] / sizeof(Particle);
-
-    Particle* particles_output = (Particle*) ctx.outputs[0];
-    n_assert( (ctx.outputSizes[0] / sizeof(Particle)) == numParticles);
-
-	ParticleJobSliceOutputData* sliceOutput = (ParticleJobSliceOutputData*)ctx.outputs[1];
+    n_assert(ctx.uniformSizes[1] == sizeof(ParticleJobUniformPerJobData));
     n_assert(ctx.outputSizes[1] == sizeof(ParticleJobSliceOutputData));
-
-    sliceOutput->numLivingParticles = 0;
-	sliceOutput->bbox = Math::bbox();
-
     n_assert(2 == ctx.numOutputs);
-    JobStep(perSystemUniforms, perJobUniforms, numParticles, particles_input, particles_output, sliceOutput);
+
+    const unsigned int numParticles = ctx.inputSizes[0] / sizeof(Particle);
+    n_assert((ctx.outputSizes[0] / sizeof(Particle)) == numParticles);
+
+    const ParticleJobUniformData* perSystemUniforms = (const ParticleJobUniformData*) ctx.uniforms[0];
+	const ParticleJobUniformPerJobData* perJobUniforms = (ParticleJobUniformPerJobData*)ctx.uniforms[1];
+
+    for (ptrdiff sliceIdx = 0; sliceIdx < ctx.numSlices; sliceIdx++)
+    {
+        const Particle* particles_input = (const Particle*)N_JOB_INPUT(ctx, sliceIdx, 0);
+        Particle* particles_output = (Particle*)N_JOB_OUTPUT(ctx, sliceIdx, 0);
+        ParticleJobSliceOutputData* sliceOutput = (ParticleJobSliceOutputData*)N_JOB_OUTPUT(ctx, sliceIdx, 1);
+
+        sliceOutput->numLivingParticles = 0;
+        sliceOutput->bbox = Math::bbox();
+
+        JobStep(perSystemUniforms, perJobUniforms, numParticles, particles_input, particles_output, sliceOutput);
+    }
+
 }
 
 } // namespace Particles

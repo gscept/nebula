@@ -50,6 +50,7 @@ public:
 		IndexT objectTransformsIndex;
 		IndexT instancingTransformsIndex;
 		IndexT skinningTransformsIndex;
+		bool dirty;
 
 		static const uint NumTables = 1;
 
@@ -63,9 +64,11 @@ public:
 
 		/// update prior to drawing
 		void Update() override;
+		/// set node to be dirty this frame
+		void SetDirty(bool b);
 
 		/// another draw function
-		void Draw(const SizeT numInstances, Models::ModelNode::DrawPacket* packet);
+		void Draw(const SizeT numInstances, const IndexT baseInstance, Models::ModelNode::DrawPacket* packet);
 	};
 
 	/// create instance
@@ -109,6 +112,7 @@ inline void
 ShaderStateNode::Instance::Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent)
 {
 	TransformNode::Instance::Setup(node, parent);
+	this->dirty = true;
 	ShaderStateNode* sparent = static_cast<ShaderStateNode*>(node);
 	this->resourceTable = sparent->resourceTable;
 

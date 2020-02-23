@@ -23,6 +23,8 @@ namespace Graphics
 
 __ImplementClass(Graphics::GraphicsServer, 'GFXS', Core::RefCounted);
 __ImplementSingleton(Graphics::GraphicsServer);
+
+Jobs::JobPortId GraphicsServer::renderSystemsJobPort;
 //------------------------------------------------------------------------------
 /**
 */
@@ -54,13 +56,22 @@ GraphicsServer::Open()
 	this->displayDevice->Open();
 
 	CoreGraphics::GraphicsDeviceCreateInfo gfxInfo{ 
-		{ 1_MB, 50_MB },		// Graphics - main threads get 1 MB of constant memory, visibility thread (objects) gets 50
+		{ 1_MB, 15_MB },		// Graphics - main threads get 1 MB of constant memory, visibility thread (objects) gets 50
 		{ 1_MB, 0_MB },			// Compute - main threads get 1 MB of constant memory, visibility thread (objects) gets 0
 		{ 10_MB, 1_MB },        // Vertex memory - main thread gets 10 MB for UI, Text etc, visibility thread (objects doing soft cloths and such) get 1 MB
 		{ 5_MB, 1_MB },         // Index memory - main thread gets 5 MB for UI, Text etc, visibility thread (objects doing soft cloths and such) get 1 MB
 		2,						// Number of simultaneous frames (N buffering)
 		false }; // validation
 	this->graphicsDevice = CoreGraphics::CreateGraphicsDevice(gfxInfo);
+
+	Jobs::CreateJobPortInfo info =
+	{
+		"RenderJobPort",
+		4,
+		System::Cpu::Core1 | System::Cpu::Core2 | System::Cpu::Core3 | System::Cpu::Core4,
+		UINT_MAX
+	};
+	renderSystemsJobPort = CreateJobPort(info);
 	if (this->graphicsDevice)
 	{
 

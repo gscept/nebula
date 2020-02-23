@@ -64,7 +64,7 @@ public:
 		void Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
 
 		/// another draw function
-		void Draw(const SizeT numInstances, Models::ModelNode::DrawPacket* packet);
+		void Draw(const SizeT numInstances, const IndexT baseInstance, Models::ModelNode::DrawPacket* packet);
 	};
 
 	/// create instance
