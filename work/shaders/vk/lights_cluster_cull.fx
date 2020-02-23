@@ -314,6 +314,9 @@ LocalLights(
 			SpotLight li = SpotLights[lidx];
 			if (li.shadowExtension != -1)
 				shadowExt = SpotLightShadow[li.shadowExtension];
+			if (li.projectionExtension != -1)
+				projExt = SpotLightProjection[li.projectionExtension];
+
 			light += CalculateSpotLight(
 				li,
 				projExt,
