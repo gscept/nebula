@@ -37,7 +37,7 @@ public:
 	/// updates shared shader variables dependent on view matrix
 	void ApplyViewSettings();
 	/// update the csm matrix block
-	void ApplyCSMMatrices(const Shared::ShadowMatrixBlock& block);
+	void ApplyShadowSettings(const Shared::ShadowMatrixBlock& block);
 
 	/// bind descriptors for view in the graphics pipeline
 	void BindCameraDescriptorSetsGraphics();
