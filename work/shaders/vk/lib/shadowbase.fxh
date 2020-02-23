@@ -53,8 +53,9 @@ vsStatic(
 	out vec2 UV,
 	out vec4 ProjPos)
 {
-	gl_Position = ViewMatrixArray[0] * Model * vec4(position, 1);
-	ProjPos = gl_Position;
+	ProjPos = LightViewMatrix[gl_InstanceID] * Model * vec4(position, 1);
+	gl_Position = ProjPos;
+	gl_Layer = gl_InstanceID;
 	UV = uv;
 }
 
@@ -72,8 +73,9 @@ vsSkinned(
 	out vec4 ProjPos)
 {
 	vec4 skinnedPos = SkinnedPosition(position, weights, indices);
-	gl_Position = ViewMatrixArray[0] * Model * skinnedPos;
-	ProjPos = gl_Position;
+	ProjPos = LightViewMatrix[gl_InstanceID] * Model * skinnedPos;
+	gl_Position = ProjPos;
+	gl_Layer = gl_InstanceID;
 	UV = uv;
 }
 
@@ -88,8 +90,10 @@ vsStaticInst(
 	out vec2 UV,
 	out vec4 ProjPos)
 {
-	gl_Position = ModelArray[gl_InstanceID] * vec4(position, 1);
-	ProjPos = gl_Position;
+	int viewStride = gl_InstanceID % 16;
+	ProjPos = LightViewMatrix[viewStride] * ModelArray[gl_InstanceID] * vec4(position, 1);;
+	gl_Position = ProjPos;
+	gl_Layer = viewStride;
 	UV = uv;
 }
 
@@ -102,11 +106,11 @@ vsStaticCSM(
 	[slot=0] in vec3 position,
 	[slot=2] in vec2 uv,
 	out vec2 UV,
-	out vec4 ProjPos,
-	out int Instance)
+	out vec4 ProjPos)
 {
-	ProjPos = Model * vec4(position, 1);
-	Instance = gl_InstanceID;
+	ProjPos = CSMViewMatrix[gl_InstanceID] * Model * vec4(position, 1);
+	gl_Position = ProjPos;
+	gl_Layer = gl_InstanceID;
 	UV = uv;
 }
 
@@ -121,12 +125,12 @@ vsSkinnedCSM(
 	[slot=7] in vec4 weights,
 	[slot=8] in uvec4 indices,
 	out vec2 UV,
-	out vec4 ProjPos,
-	out int Instance)
+	out vec4 ProjPos)
 {
 	vec4 skinnedPos = SkinnedPosition(position, weights, indices);
-	ProjPos = Model * skinnedPos;
-	Instance = gl_InstanceID;
+	ProjPos = CSMViewMatrix[gl_InstanceID] * Model * skinnedPos;
+	gl_Position = ProjPos;
+	gl_Layer = gl_InstanceID;
 	UV = uv;
 }
 
@@ -139,12 +143,12 @@ vsStaticInstCSM(
 	[slot=0] in vec3 position,
 	[slot=2] in vec2 uv,
 	out vec2 UV,
-	out vec4 ProjPos,
-	out int Instance)
+	out vec4 ProjPos)
 {
-	int csmStride = gl_InstanceID % 4;
-	ProjPos = ModelArray[gl_InstanceID] * vec4(position, 1);
-	Instance = csmStride;
+	int viewStride = gl_InstanceID % 4;
+	ProjPos = CSMViewMatrix[viewStride] * ModelArray[gl_InstanceID] * vec4(position, 1);
+	gl_Position = ProjPos;
+	gl_Layer = viewStride;
 	UV = uv;
 }
 
@@ -157,11 +161,11 @@ vsStaticPoint(
 	[slot=0] in vec3 position,
 	[slot=2] in vec2 uv,
 	out vec2 UV,
-	out vec4 ProjPos,
-	out int Instance)
+	out vec4 ProjPos)
 {
-	ProjPos = Model * vec4(position, 1);
-	Instance = gl_InstanceID;
+	ProjPos = LightViewMatrix[gl_InstanceID] * Model * vec4(position, 1);
+	gl_Position = ProjPos;
+	gl_Layer = gl_InstanceID;
 	UV = uv;
 }
 
@@ -176,12 +180,12 @@ vsSkinnedPoint(
 	[slot=7] in vec4 weights,
 	[slot=8] in uvec4 indices,
 	out vec2 UV,
-	out vec4 ProjPos,
-	out int Instance)
+	out vec4 ProjPos)
 {
 	vec4 skinnedPos = SkinnedPosition(position, weights, indices);
-	ProjPos = Model * skinnedPos;
-	Instance = gl_InstanceID;
+	ProjPos = LightViewMatrix[gl_InstanceID] * Model * skinnedPos;
+	gl_Position = ProjPos;
+	gl_Layer = gl_InstanceID;
 	UV = uv;
 }
 
@@ -194,98 +198,13 @@ vsStaticInstPoint(
 	[slot=0] in vec3 position,
 	[slot=2] in vec2 uv,
 	out vec2 UV,
-	out vec4 ProjPos,
-	out int Instance)
+	out vec4 ProjPos)
 {
-	int csmStride = gl_InstanceID % 4;
-	ProjPos = ModelArray[gl_InstanceID] * vec4(position, 1);
-	Instance = csmStride;
+	int viewStride = gl_InstanceID % 6;
+	ProjPos = LightViewMatrix[viewStride] * ModelArray[gl_InstanceID] * vec4(position, 1);
+	gl_Position = ProjPos;
+	gl_Layer = viewStride;
 	UV = uv;
-}
-
-//------------------------------------------------------------------------------
-/**
-	Geometry shader for point light shadow instancing.
-	We copy the geometry and project into each direction frustum.
-	We then point to which render target we wish to write to using gl_Layer.
-
-	Doesn't work though...
-*/
-[inputprimitive] = triangles
-[outputprimitive] = triangle_strip
-[maxvertexcount] = 3
-[instances] = 6
-shader
-void
-gsPoint(in vec2 uv[], in vec4 pos[], flat in int instance[], out vec2 UV, out vec4 ProjPos)
-{
-	UV = uv[0];
-	ProjPos = ViewMatrixArray[gl_InvocationID] * pos[0];
-	gl_Position = ProjPos;
-	gl_Layer = instance[0];
-	EmitVertex();
-
-	UV = uv[1];
-	ProjPos = ViewMatrixArray[gl_InvocationID] * pos[1];
-	gl_Position = ProjPos;
-	gl_Layer = instance[0];
-	EmitVertex();
-
-	UV = uv[2];
-	ProjPos = ViewMatrixArray[gl_InvocationID] * pos[2];
-	gl_Position = ProjPos;
-	gl_Layer = instance[0];
-	EmitVertex();
-	EndPrimitive();
-}
-
-//------------------------------------------------------------------------------
-/**
-	Geometry shader for CSM shadow instancing.
-	We copy the geometry and project into each frustum.
-	We then point to which viewport we wish to use using gl_ViewportIndex
-*/
-[inputprimitive] = triangles
-[outputprimitive] = triangle_strip
-[maxvertexcount] = 3
-shader
-void
-gsCSM(in vec2 uv[], in vec4 pos[], flat in int instance[], out vec2 UV, out vec4 ProjPos)
-{
-	gl_Layer = instance[0];
-
-	// simply pass geometry straight through and set viewport
-	UV = uv[0];
-	ProjPos = ViewMatrixArray[instance[0]] * pos[0];
-	gl_Position = ProjPos;
-	EmitVertex();
-
-	UV = uv[1];
-	ProjPos = ViewMatrixArray[instance[0]] * pos[1];
-	gl_Position = ProjPos;
-	EmitVertex();
-
-	UV = uv[2];
-	ProjPos = ViewMatrixArray[instance[0]] * pos[2];
-	gl_Position = ProjPos;
-	EmitVertex();
-	EndPrimitive();
-	/*
-	for (int instance = 0; instance < 4; instance++)
-	{
-		mat4 splitMatrix = ViewMatrixArray[instance];
-
-		for (int vertex = 0; vertex < 3; vertex++)
-		{
-			vec4 pos = splitMatrix * gl_in[vertex].gl_Position;
-			UV = uv[vertex];
-			ProjPos = pos;
-			gl_Position = pos;
-			EmitVertex();
-		}
-		EndPrimitive();
-	}
-	*/
 }
 
 //------------------------------------------------------------------------------
@@ -302,13 +221,12 @@ vsTess(
 	out vec4 Position,
 	out vec3 Normal,
 	out vec2 UV,
-	out int Instance,
 	out float Distance)
 {
 	Position = Model * vec4(position, 1);
 	Normal = (Model * vec4(normal, 0)).xyz;
 	UV = uv;
-	Instance = gl_InstanceID;
+	gl_Layer = gl_InstanceID;
 
 	float vertexDistance = distance( Position.xyz, EyePos.xyz );
 	Distance = 1.0 - clamp( ( (vertexDistance - MinDistance) / (MaxDistance - MinDistance) ), 0.0, 1.0 - 1.0/TessellationFactor);
@@ -328,13 +246,12 @@ vsTessCSM(
 	out vec4 Position,
 	out vec3 Normal,
 	out vec2 UV,
-	out int Instance,
 	out float Distance)
 {
 	Position = Model * vec4(position, 1);
 	Normal = (Model * vec4(normal, 0)).xyz;
 	UV = uv;
-	Instance = gl_InstanceID;
+	gl_Layer = gl_InstanceID;
 
 	float vertexDistance = distance( Position.xyz, EyePos.xyz );
 	Distance = 1.0 - clamp( ( (vertexDistance - MinDistance) / (MaxDistance - MinDistance) ), 0.0, 1.0 - 1.0/TessellationFactor);
@@ -349,31 +266,30 @@ vsTessCSM(
 shader
 void
 hsShadow(
-	in vec4 position[],
-	in vec3 normal[],
-	in vec2 uv[],
-	flat in int instance[],
-	in float distance[],
-	out vec4 Position[],
-	out vec3 Normal[],
-	out vec2 UV[],
-	flat out int Instance[]
+	in vec4 position[]
+	, in vec3 normal[]
+	, in vec2 uv[]
+	, flat in int instance[]
+	, in float distance[]
+	, out vec4 Position[]
+	, out vec3 Normal[]
+	, out vec2 UV[]
+	, flat out int Instance[]
 #ifdef PN_TRIANGLES
-	,
-	patch out vec3 f3B210,
-    patch out vec3 f3B120,
-    patch out vec3 f3B021,
-    patch out vec3 f3B012,
-    patch out vec3 f3B102,
-    patch out vec3 f3B201,
-    patch out vec3 f3B111
+	, patch out vec3 f3B210
+    , patch out vec3 f3B120
+    , patch out vec3 f3B021
+    , patch out vec3 f3B012
+    , patch out vec3 f3B102
+    , patch out vec3 f3B201
+    , patch out vec3 f3B111
 #endif
 )
 {
 	Position[gl_InvocationID] = position[gl_InvocationID];
 	UV[gl_InvocationID] = uv[gl_InvocationID];
-	Instance[gl_InvocationID] = instance[gl_InvocationID];
 	Normal[gl_InvocationID] = normal[gl_InvocationID];
+	Instance[gl_InvocationID] = instance[gl_InvocationID];
 
 	// perform per-patch operation
 	if (gl_InvocationID == 0)
@@ -413,24 +329,23 @@ hsShadow(
 [winding] = ccw
 [topology] = triangle
 [partition] = odd
-
 shader
 void
 dsShadow(
-	in vec4 position[],
-	in vec3 normal[],
-	in vec2 uv[],
-	out vec2 UV,
-	out vec4 ProjPos
+	in vec4 position[]
+	, in vec3 normal[]
+	, in vec2 uv[]
+	, flat in int instance[]
+	, out vec2 UV
+	, out vec4 ProjPos
 #ifdef PN_TRIANGLES
-	,
-	in vec3 f3B210,
-    in vec3 f3B120,
-    in vec3 f3B021,
-    in vec3 f3B012,
-    in vec3 f3B102,
-    in vec3 f3B201,
-    in vec3 f3B111
+	, in vec3 f3B210
+    , in vec3 f3B120
+    , in vec3 f3B021
+    , in vec3 f3B012
+    , in vec3 f3B102
+    , in vec3 f3B201
+    , in vec3 f3B111
 #endif
 )
 {
@@ -461,7 +376,7 @@ dsShadow(
 	vec3 VectorNormalized = normalize( Norm );
 	Position.xyz += VectorNormalized.xyz * HeightScale * SceneScale * Height;
 
-	gl_Position = ViewMatrixArray[0] * vec4(Position.xyz, 1);
+	gl_Position = LightViewMatrix[instance[0]] * vec4(Position.xyz, 1);
 	ProjPos = gl_Position;
 }
 
@@ -475,22 +390,20 @@ dsShadow(
 shader
 void
 dsCSM(
-	in vec4 position[],
-	in vec3 normal[],
-	in vec2 uv[],
-	flat in int instance[],
-	out vec2 UV,
-	out vec4 ProjPos,
-	flat out int Instance
+	in vec4 position[]
+	, in vec3 normal[]
+	, in vec2 uv[]
+	, flat in int instance[]
+	, out vec2 UV
+	, out vec4 ProjPos
 #ifdef PN_TRIANGLES
-	,
-	in vec3 f3B210,
-    in vec3 f3B120,
-    in vec3 f3B021,
-    in vec3 f3B012,
-    in vec3 f3B102,
-    in vec3 f3B201,
-    in vec3 f3B111
+	, in vec3 f3B210
+    , in vec3 f3B120
+    , in vec3 f3B021
+    , in vec3 f3B012
+    , in vec3 f3B102
+    , in vec3 f3B201
+    , in vec3 f3B111
 #endif
 )
 {
@@ -518,7 +431,6 @@ dsCSM(
 #endif
 
 	UV = gl_TessCoord.x * uv[0] + gl_TessCoord.y * uv[1] + gl_TessCoord.z * uv[2];
-	Instance = instance[0];
 	vec3 Norm = gl_TessCoord.x * normal[0] + gl_TessCoord.y * normal[1] + gl_TessCoord.z * normal[2];
 	float Height = 2.0f * sample2DLod(DisplacementMap, ShadowSampler, UV, 0).x - 1.0f;
 	vec3 VectorNormalized = normalize( Norm );

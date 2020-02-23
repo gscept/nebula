@@ -159,9 +159,12 @@ group(FRAME_GROUP) shared varblock FrameBlock
 	vec4 TimeAndRandom;
 };
 
-group(FRAME_GROUP) shared varblock ShadowMatrixBlock [ string Visibility = "VS|GS"; ]
+#define SHADOW_CASTER_COUNT 16
+
+group(FRAME_GROUP) shared varblock ShadowMatrixBlock [ string Visibility = "VS"; ]
 {
-	mat4 ViewMatrixArray[6];
+	mat4 CSMViewMatrix[CASCADE_COUNT_FLAG];
+	mat4 LightViewMatrix[SHADOW_CASTER_COUNT];
 };
 
 #define FLT_MAX     3.40282347E+38F

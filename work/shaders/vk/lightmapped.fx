@@ -141,7 +141,7 @@ vsShadow(
 	out vec2 UV,
 	out vec4 Position) 
 {
-	gl_Position = ViewMatrixArray[0] * Model * vec4(position, 1);
+	gl_Position = LightViewMatrix[gl_InstanceID] * Model * vec4(position, 1);
 	Position = gl_Position;
 	UV = uv1;
 }
@@ -162,7 +162,7 @@ vsShadowCSM(
 	out vec4 Position,
 	out int Instance) 
 {
-	Position = ViewMatrixArray[gl_InstanceID] * Model * vec4(position, 1);
+	Position = CSMViewMatrix[gl_InstanceID] * Model * vec4(position, 1);
 	Instance = gl_InstanceID;
 	UV = uv1;
 }
@@ -232,4 +232,4 @@ SimpleTechnique(UnlitVertexColors, "Static|Unlit|Colored", vsLightmappedVertexCo
 	Shadow techniques
 */
 SimpleTechnique(SpotlightShadow, "Static|Spot", vsShadow(), psShadow(), LightmapState);
-GeometryTechnique(CSMShadow, "Static|Global", vsShadowCSM(), psShadow(), gsCSM(), LightmapState);
+SimpleTechnique(CSMShadow, "Static|Global", vsShadowCSM(), psShadow(), LightmapState);
