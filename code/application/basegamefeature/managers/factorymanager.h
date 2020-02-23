@@ -8,6 +8,9 @@
 
 	You can instantiate entities from blueprints via the factory manager.
 
+	Entities that has been instantiated from the factory manager should be destroyed
+	by the EntityManager.
+
 	(C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

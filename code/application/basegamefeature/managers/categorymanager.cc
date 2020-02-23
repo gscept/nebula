@@ -18,8 +18,8 @@ __ImplementSingleton(CategoryManager)
 SizeT
 GetNumInstances(CategoryId category)
 {
-	Ptr<Game::Database> db = Game::EntityManager::Instance()->GetWorldDatabase();
-	TableId tid = CategoryManager::Instance()->GetCategory(category).instanceTable;
+	Ptr<Game::Db::Database> db = Game::EntityManager::Instance()->GetWorldDatabase();
+	Db::TableId tid = CategoryManager::Instance()->GetCategory(category).instanceTable;
 	return db->GetNumRows(tid);
 }
 
@@ -93,14 +93,14 @@ CategoryManager::OnEndFrame()
 	}
 
 	// Delete all invalid instances
-	Ptr<Game::Database> db = EntityManager::Instance()->GetWorldDatabase();
+	Ptr<Game::Db::Database> db = EntityManager::Instance()->GetWorldDatabase();
 
 	for (IndexT c = 0; c < this->categoryArray.Size(); c++)
 	{
 		Category& cat = this->categoryArray[c];
 		
-		Game::Database::Table& table = db->GetTable(cat.instanceTable);
-		ColumnId ownerColumnId = db->GetColumnId(cat.instanceTable, Attr::Owner::Id());
+		Game::Db::Table& table = db->GetTable(cat.instanceTable);
+		Db::ColumnId ownerColumnId = db->GetColumnId(cat.instanceTable, Attr::Owner::Id());
 
 		// First, deactivate all deleted instances
 		for (auto const& prop : cat.properties)
@@ -138,10 +138,10 @@ CategoryManager::OnEndFrame()
 void
 CategoryManager::AddCategory(CategoryCreateInfo const& info)
 {
-	TableCreateInfo tableInfo;
+	Db::TableCreateInfo tableInfo;
 	tableInfo.name = info.name;
 	
-	Ptr<Game::Database> db = EntityManager::Instance()->GetWorldDatabase();
+	Ptr<Game::Db::Database> db = EntityManager::Instance()->GetWorldDatabase();
 
 	Category cat;
 	cat.name = info.name;
@@ -180,7 +180,7 @@ CategoryManager::AllocateInstance(Entity entity, CategoryId category)
 	}
 
 	Category& cat = this->categoryArray[category.id];
-	Ptr<Game::Database> db = EntityManager::Instance()->GetWorldDatabase();
+	Ptr<Game::Db::Database> db = EntityManager::Instance()->GetWorldDatabase();
 	InstanceId instance = db->AllocateRow(cat.instanceTable);
 
 	if (this->entityMap.Size() <= Ids::Index(entity.id))
@@ -216,7 +216,7 @@ CategoryManager::DeallocateInstance(Entity entity)
 	n_assert(category < this->categoryArray.Size());
 
 	Category& cat = this->categoryArray[category.id];
-	Ptr<Game::Database> db = EntityManager::Instance()->GetWorldDatabase();
+	Ptr<Game::Db::Database> db = EntityManager::Instance()->GetWorldDatabase();
 
 	InstanceId instance = this->entityMap[Ids::Index(entity.id)].instance;
 	n_assert(instance != Game::InstanceId::Invalid());
@@ -242,7 +242,7 @@ void
 CategoryManager::AddCategoryAttr(const Game::AttributeId& attrId)
 {
     n_assert(this->inBeginAddCategoryAttrs);
-    Ptr<Game::Database> db = EntityManager::Instance()->GetWorldDatabase();
+    Ptr<Game::Db::Database> db = EntityManager::Instance()->GetWorldDatabase();
     Category& cat = this->categoryArray[this->addAttrCategoryIndex];
     db->AddColumn(cat.templateTable, attrId);
     db->AddColumn(cat.instanceTable, attrId);

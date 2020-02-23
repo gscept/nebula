@@ -32,8 +32,10 @@ nebula_begin_module(application)
 			database.cc
 			table.h
 			table.cc
-			valuetable.h
-			valuetable.cc
+			statedescription.h
+			statedescription.cc
+			columndata.h
+			columndata.cc
 			attribute.h
 		)
 	fips_dir(game/messaging)
