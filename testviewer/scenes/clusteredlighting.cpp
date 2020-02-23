@@ -68,12 +68,11 @@ void OpenScene()
             const float blue = Math::n_rand();
 
             Math::matrix44 spotLightMatrix;
-            spotLightMatrix.scale(Math::vector(30, 30, 40));
             spotLightMatrix = Math::matrix44::multiply(spotLightMatrix, Math::matrix44::rotationyawpitchroll(Math::n_deg2rad(120), Math::n_deg2rad(-55), 0));
             spotLightMatrix.set_position(Math::point(i * 16, 5, j * 16));
 
             Lighting::LightContext::RegisterEntity(id);
-            Lighting::LightContext::SetupSpotLight(id, Math::float4(red, green, blue, 1), 5.0f, 0.4f, 0.8f, spotLightMatrix, 10.0f, false);
+            Lighting::LightContext::SetupSpotLight(id, Math::float4(red, green, blue, 1), 2500.0f, Math::n_deg2rad(45.0f), Math::n_deg2rad(60.0f), spotLightMatrix, 10.0f, true);
             spotLights.Append(id);
         }
     }
@@ -107,14 +106,15 @@ void OpenScene()
     ObservableContext::Setup(ground, VisibilityEntityType::Model);
 	//ObservableContext::Setup(particle, VisibilityEntityType::Model);
 
-    const Util::StringAtom modelRes[] = { "mdl:Units/Unit_Archer.n3",  "mdl:Units/Unit_Footman.n3",  "mdl:Units/Unit_Spearman.n3" };
+    const Util::StringAtom modelRes[] = { "mdl:Units/Unit_Archer.n3",  "mdl:Units/Unit_Footman.n3",  "mdl:Units/Unit_Spearman.n3", "mdl:Units/Unit_Knight.n3" };
     //const Util::StringAtom modelRes[] = { "mdl:system/placeholder.n3",  "mdl:system/placeholder.n3",  "mdl:system/placeholder.n3" };
-    const Util::StringAtom skeletonRes[] = { "ske:Units/Unit_Archer.nsk3",  "ske:Units/Unit_Footman.nsk3",  "ske:Units/Unit_Spearman.nsk3" };
-    const Util::StringAtom animationRes[] = { "ani:Units/Unit_Archer.nax3",  "ani:Units/Unit_Footman.nax3",  "ani:Units/Unit_Spearman.nax3" };
+    const Util::StringAtom skeletonRes[] = { "ske:Units/Unit_Archer.nsk3",  "ske:Units/Unit_Footman.nsk3",  "ske:Units/Unit_Spearman.nsk3", "ske:Units/Unit_Knight.nsk3" };
+    const Util::StringAtom animationRes[] = { "ani:Units/Unit_Archer.nax3",  "ani:Units/Unit_Footman.nax3",  "ani:Units/Unit_Spearman.nax3", "ani:Units/Unit_Knight.nax3" };
 
     ModelContext::BeginBulkRegister();
     ObservableContext::BeginBulkRegister();
     static const int NumModels = 1;
+    int modelIndex = 0;
     for (IndexT i = -NumModels; i < NumModels; i++)
     {
         for (IndexT j = -NumModels; j < NumModels; j++)
@@ -126,18 +126,20 @@ void OpenScene()
             sid.Format("%s: %d", GraphicsEntityToName(ent), ent);
             entityNames.Append(sid);
 
-            const IndexT resourceIndex = ((i + NumModels) * NumModels + (j + NumModels)) % 3;
             const float timeOffset = Math::n_rand();// (((i + NumModels)* NumModels + (j + NumModels)) % 4) / 3.0f;
 
             // create model and move it to the front
-            ModelContext::Setup(ent, modelRes[resourceIndex], "NotA");
+            ModelContext::Setup(ent, modelRes[modelIndex], "NotA");
             ModelContext::SetTransform(ent, Math::matrix44::translation(Math::float4(i * 16, 0, j * 16, 1)));
             ObservableContext::Setup(ent, VisibilityEntityType::Model);
 
-            Characters::CharacterContext::Setup(ent, skeletonRes[resourceIndex], animationRes[resourceIndex], "Viewer");
-            Characters::CharacterContext::PlayClip(ent, nullptr, 0, 0, Characters::Append, 1.0f, 1, Math::n_rand() * 100.0f, 0.0f, 0.0f, Math::n_rand() * 100.0f);
+            Characters::CharacterContext::Setup(ent, skeletonRes[modelIndex], animationRes[modelIndex], "Viewer");
+            Characters::CharacterContext::PlayClip(ent, nullptr, 1, 0, Characters::Append, 1.0f, 1, Math::n_rand() * 100.0f, 0.0f, 0.0f, Math::n_rand() * 100.0f);
+            modelIndex = (modelIndex + 1) % 4;
         }
     }
+
+
     ModelContext::EndBulkRegister();
     ObservableContext::EndBulkRegister();
 };
@@ -164,7 +166,7 @@ void StepFrame()
         Math::matrix44 spotLightTransform;
         spotLightTransform = Math::matrix44::rotationyawpitchroll(Graphics::GraphicsServer::Instance()->GetTime() * 2 + i, Math::n_deg2rad(-55), 0);
         spotLightTransform.set_position(Lighting::LightContext::GetTransform(spotLights[i]).get_position());
-        Lighting::LightContext::SetTransform(spotLights[i], spotLightTransform);
+        //Lighting::LightContext::SetTransform(spotLights[i], spotLightTransform);
     }
 
     /*
@@ -240,6 +242,16 @@ void RenderUI()
         }
     }
     ImGui::EndChild();
+    if (ImGui::Button("Delete"))
+    {
+        ModelContext::DeregisterEntity(entities[selected]);
+        ObservableContext::DeregisterEntity(entities[selected]);
+        //Characters::CharacterContext::DeregisterEntity(entities[selected]);
+        DestroyEntity(entities[selected]);
+        entities.EraseIndex(selected);
+        entityNames.EraseIndex(selected);
+        selected = Math::n_max(selected-1, 0);
+    }
     ImGui::End();
     auto id = entities[selected];
     if (ModelContext::IsEntityRegistered(id))
