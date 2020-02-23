@@ -66,6 +66,10 @@ public:
 	template <int MEMBER>
 	const tuple_array_t<MEMBER, TYPES...>& Get(const uint32_t index) const;
 
+	/// set single item
+	template <int MEMBER>
+	void Set(const uint32_t index, const tuple_array_t<MEMBER, TYPES...>& type);
+
 	/// get array const reference
 	template <int MEMBER>
 	const Util::Array<tuple_array_t<MEMBER, TYPES...>>& GetArray() const;
@@ -264,6 +268,17 @@ inline const tuple_array_t<MEMBER, TYPES...>&
 ArrayAllocator<TYPES...>::Get(const uint32_t index) const
 {
 	return std::get<MEMBER>(this->objects)[index];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class ...TYPES>
+template<int MEMBER>
+inline void 
+ArrayAllocator<TYPES...>::Set(const uint32_t index, const tuple_array_t<MEMBER, TYPES...>& type)
+{
+	std::get<MEMBER>(this->objects)[index] = type;
 }
 
 //------------------------------------------------------------------------------
