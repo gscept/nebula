@@ -25,7 +25,7 @@ EntityManager::EntityManager() :
 	numEntities(0)
 {
 	__ConstructSingleton;
-	this->worldDatabase = Game::Database::Create();
+	this->worldDatabase = Game::Db::Database::Create();
 }
 
 //------------------------------------------------------------------------------

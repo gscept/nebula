@@ -4,11 +4,11 @@
 	Entity
 
 	An entity is essentially just an Id with some utility functions attached.
-	What actually makes up the entities are their components.
+	What actually makes up the entities are their properties and attributes.
 	
-	@see	component/basecomponent.h
-	@see	component/component.h
-
+	@see	property.h
+	@see	game/database/attribute.h
+	
 	(C) 2018-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

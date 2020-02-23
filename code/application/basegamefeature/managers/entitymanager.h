@@ -5,8 +5,6 @@
 
 	Keeps track of all existing entites.
 
-	
-
 	(C) 2018-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
@@ -54,7 +52,7 @@ public:
 	uint GetNumEntities() const;
 
 	/// Returns the world db
-	Ptr<Game::Database> GetWorldDatabase() const;
+	Ptr<Game::Db::Database> GetWorldDatabase() const;
 
 	/// Invalidates all entities and essentially resets the manager.
 	void InvalidateAllEntities();
@@ -77,7 +75,7 @@ private:
 	Util::HashTable<Entity, Util::Array<Util::Delegate<void(Entity)>>> deletionCallbacks;
 
 	/// Contains the entire world database
-	Ptr<Game::Database> worldDatabase;
+	Ptr<Game::Db::Database> worldDatabase;
 };
 
 //------------------------------------------------------------------------------
@@ -101,7 +99,7 @@ EntityManager::GetNumEntities() const
 //------------------------------------------------------------------------------
 /**
 */
-inline Ptr<Game::Database>
+inline Ptr<Game::Db::Database>
 EntityManager::GetWorldDatabase() const
 {
 	return this->worldDatabase;

@@ -50,7 +50,7 @@ typename ATTR::TYPE const& GetAttribute(Game::Entity entity)
 	void** ptrptr = (*(ATTR::Id().GetRegistry()))[mapping.category.id];
 	ATTR::TYPE* cd = (ATTR::TYPE*) * ptrptr;
 #ifdef NEBULA_BOUNDSCHECKS
-	Ptr<Game::Database> db = EntityManager::Instance()->GetWorldDatabase();
+	Ptr<Game::Db::Database> db = EntityManager::Instance()->GetWorldDatabase();
 	SizeT size = db->GetTable(cat.instanceTable).numRows;
 	n_assert(mapping.instance.id >= 0 && mapping.instance.id < numRows);
 #endif
@@ -70,7 +70,7 @@ void SetAttribute(Game::Entity entity, typename ATTR::TYPE const& value)
 	void** ptrptr = (*(ATTR::Id().GetRegistry()))[mapping.category.id];
 	ATTR::TYPE* cd = (ATTR::TYPE*)*ptrptr;
 #ifdef NEBULA_BOUNDSCHECKS
-	Ptr<Game::Database> db = EntityManager::Instance()->GetWorldDatabase();
+	Ptr<Game::Db::Database> db = EntityManager::Instance()->GetWorldDatabase();
 	SizeT size = db->GetTable(cat.instanceTable).numRows;
 	n_assert(mapping.instance.id >= 0 && mapping.instance.id < size);
 #endif
@@ -81,8 +81,8 @@ void SetAttribute(Game::Entity entity, typename ATTR::TYPE const& value)
 template<typename TYPE>
 Game::PropertyData<typename TYPE> CreatePropertyState(CategoryId category)
 {
-	Ptr<Game::Database> db = Game::EntityManager::Instance()->GetWorldDatabase();
-	TableId tid = CategoryManager::Instance()->GetCategory(category).instanceTable;
+	Ptr<Game::Db::Database> db = Game::EntityManager::Instance()->GetWorldDatabase();
+	Db::TableId tid = CategoryManager::Instance()->GetCategory(category).instanceTable;
 	return db->AddDataColumn<TYPE>(tid);
 }
 
@@ -90,8 +90,8 @@ Game::PropertyData<typename TYPE> CreatePropertyState(CategoryId category)
 template<typename ATTR>
 Game::PropertyData<typename ATTR::TYPE> GetPropertyData(CategoryId category)
 {
-	Ptr<Game::Database> db = Game::EntityManager::Instance()->GetWorldDatabase();
-	TableId tid = CategoryManager::Instance()->GetCategory(category).instanceTable;
+	Ptr<Game::Db::Database> db = Game::EntityManager::Instance()->GetWorldDatabase();
+	Db::TableId tid = CategoryManager::Instance()->GetCategory(category).instanceTable;
 	n_assert2(db->HasColumn(tid, ATTR::Id()), "Category does not have specified attribute!");
 	return db->GetColumnData<ATTR>(tid);
 }
@@ -100,12 +100,12 @@ Game::PropertyData<typename ATTR::TYPE> GetPropertyData(CategoryId category)
 struct Category
 {
 	Util::StringAtom name;
-	TableId instanceTable;
-	TableId templateTable;
+	Db::TableId instanceTable;
+	Db::TableId templateTable;
 	Util::Array<Ptr<Game::Property>> properties;
 };
 
-typedef Game::TableCreateInfo CategoryCreateInfo;
+typedef Game::Db::TableCreateInfo CategoryCreateInfo;
 
 class CategoryManager : public Game::Manager
 {

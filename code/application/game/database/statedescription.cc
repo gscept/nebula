@@ -1,9 +1,9 @@
 //------------------------------------------------------------------------------
-//  valuetable.cc
+//  statedescription.cc
 //  (C) 2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "application/stdneb.h"
-#include "valuetable.h"
+#include "statedescription.h"
 namespace Game
 {
 

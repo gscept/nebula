@@ -13,7 +13,7 @@ namespace Game
 {
 
 template<typename T>
-using PropertyData = Game::ColumnData<T>;
+using PropertyData = Game::Db::ColumnData<T>;
 
 class Property : public Core::RefCounted
 {

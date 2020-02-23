@@ -7,7 +7,11 @@
 
 namespace Game
 {
-__ImplementClass(Game::Database, 'GMDB', Core::RefCounted);
+
+namespace Db
+{
+
+__ImplementClass(Game::Db::Database, 'GMDB', Core::RefCounted);
 
 static constexpr Memory::HeapType ALLOCATIONHEAP = Memory::HeapType::DefaultHeap;
 
@@ -117,7 +121,7 @@ Database::GetColumnId(TableId table, Column column)
 ColumnId
 Database::AddColumn(TableId tid, Column column)
 {
-	Game::Database::Table& table = this->tables.Get<0>(Ids::Index(tid.id));
+	Table& table = this->tables.Get<0>(Ids::Index(tid.id));
 
 	IndexT found = table.columns.GetArray<0>().FindIndex(column);
 	if (found != InvalidIndex)
@@ -139,7 +143,7 @@ Database::AddColumn(TableId tid, Column column)
 IndexT
 Database::AllocateRow(TableId tid)
 {
-	Game::Database::Table& table = this->tables.Get<0>(Ids::Index(tid.id));
+	Table& table = this->tables.Get<0>(Ids::Index(tid.id));
 
 	IndexT index;
 	if (table.freeIds.Size() > 0)
@@ -168,7 +172,7 @@ Database::AllocateRow(TableId tid)
 void
 Database::DeallocateRow(TableId tid, IndexT row)
 {
-	Game::Database::Table& table = this->tables.Get<0>(Ids::Index(tid.id));
+	Table& table = this->tables.Get<0>(Ids::Index(tid.id));
 	n_assert(row < table.numRows);
 	table.freeIds.InsertSorted(row);
 }
@@ -179,7 +183,7 @@ Database::DeallocateRow(TableId tid, IndexT row)
 void
 Database::SetToDefault(TableId tid, IndexT row)
 {
-	Game::Database::Table& table = this->tables.Get<0>(Ids::Index(tid.id));
+	Table& table = this->tables.Get<0>(Ids::Index(tid.id));
 	n_assert(row < table.numRows);
 
 	for (IndexT col = 0; col < table.columns.Size(); col++)
@@ -189,24 +193,24 @@ Database::SetToDefault(TableId tid, IndexT row)
 
 		switch (column.GetType())
 		{
-		case Game::AttributeType::Int8Type:			*((int8_t*)buffer + row)	= std::get<int8_t>(column.GetDefaultValue()); break;
-		case Game::AttributeType::UInt8Type:		*((uint8_t*)buffer + row)	= std::get<uint8_t>(column.GetDefaultValue()); break;
-		case Game::AttributeType::Int16Type:		*((int16_t*)buffer + row)	= std::get<int16_t>(column.GetDefaultValue()); break;
-		case Game::AttributeType::UInt16Type:		*((uint16_t*)buffer + row)	= std::get<uint16_t>(column.GetDefaultValue()); break;
-		case Game::AttributeType::Int32Type:		*((int32_t*)buffer + row)	= std::get<int32_t>(column.GetDefaultValue()); break;
-		case Game::AttributeType::UInt32Type:		*((uint32_t*)buffer + row)	= std::get<uint32_t>(column.GetDefaultValue()); break;
-		case Game::AttributeType::Int64Type:		*((int64_t*)buffer + row)	= std::get<int64_t>(column.GetDefaultValue()); break;
-		case Game::AttributeType::UInt64Type:		*((uint64_t*)buffer + row)	= std::get<uint64_t>(column.GetDefaultValue()); break;
-		case Game::AttributeType::FloatType:		*((float*)buffer + row)		= std::get<float>(column.GetDefaultValue()); break;
-		case Game::AttributeType::DoubleType:		*((double*)buffer + row)	= std::get<double>(column.GetDefaultValue()); break;
-		case Game::AttributeType::BoolType:			*((bool*)buffer + row)		= std::get<bool>(column.GetDefaultValue()); break;
-		case Game::AttributeType::Float2Type:		*((Math::float2*)buffer + row)		= std::get<Math::float2>(column.GetDefaultValue()); break;
-		case Game::AttributeType::Float4Type:		*((Math::float4*)buffer + row)		= std::get<Math::float4>(column.GetDefaultValue()); break;
-		case Game::AttributeType::QuaternionType:	*((Math::quaternion*)buffer + row)	= std::get<Math::quaternion>(column.GetDefaultValue()); break;
-		case Game::AttributeType::Matrix44Type:		*((Math::matrix44*)buffer + row)	= std::get<Math::matrix44>(column.GetDefaultValue()); break;
-		case Game::AttributeType::GuidType:			*((Util::Guid*)buffer + row)		= std::get<Util::Guid>(column.GetDefaultValue()); break;
-		case Game::AttributeType::EntityType:		*((Game::Entity*)buffer + row)		= std::get<Game::Entity>(column.GetDefaultValue()); break;
-		case Game::AttributeType::StringType:		*((Util::String*)buffer + row)		= std::get<Util::String>(column.GetDefaultValue()); break;
+		case Game::AttributeType::Int8Type:			*((int8_t*)buffer + row) = std::get<int8_t>(column.GetDefaultValue()); break;
+		case Game::AttributeType::UInt8Type:		*((uint8_t*)buffer + row) = std::get<uint8_t>(column.GetDefaultValue()); break;
+		case Game::AttributeType::Int16Type:		*((int16_t*)buffer + row) = std::get<int16_t>(column.GetDefaultValue()); break;
+		case Game::AttributeType::UInt16Type:		*((uint16_t*)buffer + row) = std::get<uint16_t>(column.GetDefaultValue()); break;
+		case Game::AttributeType::Int32Type:		*((int32_t*)buffer + row) = std::get<int32_t>(column.GetDefaultValue()); break;
+		case Game::AttributeType::UInt32Type:		*((uint32_t*)buffer + row) = std::get<uint32_t>(column.GetDefaultValue()); break;
+		case Game::AttributeType::Int64Type:		*((int64_t*)buffer + row) = std::get<int64_t>(column.GetDefaultValue()); break;
+		case Game::AttributeType::UInt64Type:		*((uint64_t*)buffer + row) = std::get<uint64_t>(column.GetDefaultValue()); break;
+		case Game::AttributeType::FloatType:		*((float*)buffer + row) = std::get<float>(column.GetDefaultValue()); break;
+		case Game::AttributeType::DoubleType:		*((double*)buffer + row) = std::get<double>(column.GetDefaultValue()); break;
+		case Game::AttributeType::BoolType:			*((bool*)buffer + row) = std::get<bool>(column.GetDefaultValue()); break;
+		case Game::AttributeType::Float2Type:		*((Math::float2*)buffer + row) = std::get<Math::float2>(column.GetDefaultValue()); break;
+		case Game::AttributeType::Float4Type:		*((Math::float4*)buffer + row) = std::get<Math::float4>(column.GetDefaultValue()); break;
+		case Game::AttributeType::QuaternionType:	*((Math::quaternion*)buffer + row) = std::get<Math::quaternion>(column.GetDefaultValue()); break;
+		case Game::AttributeType::Matrix44Type:		*((Math::matrix44*)buffer + row) = std::get<Math::matrix44>(column.GetDefaultValue()); break;
+		case Game::AttributeType::GuidType:			*((Util::Guid*)buffer + row) = std::get<Util::Guid>(column.GetDefaultValue()); break;
+		case Game::AttributeType::EntityType:		*((Game::Entity*)buffer + row) = std::get<Game::Entity>(column.GetDefaultValue()); break;
+		case Game::AttributeType::StringType:		*((Util::String*)buffer + row) = std::get<Util::String>(column.GetDefaultValue()); break;
 
 		default:
 			n_error("Type not yet supported!");
@@ -237,7 +241,7 @@ Database::GetNumRows(TableId table)
 Util::Array<Column> const&
 Database::GetColumns(TableId tid)
 {
-	Game::Database::Table& table = this->tables.Get<0>(Ids::Index(tid.id));
+	Table& table = this->tables.Get<0>(Ids::Index(tid.id));
 	auto& colTypes = table.columns.GetArray<0>();
 	return colTypes;
 }
@@ -279,7 +283,7 @@ GrowBuffer(Column column, void*& buffer, const SizeT capacity, const SizeT size,
 //------------------------------------------------------------------------------
 /**
 */
-Database::Table&
+Table&
 Database::GetTable(TableId tid)
 {
 	return this->tables.Get<0>(Ids::Index(tid.id));
@@ -293,13 +297,13 @@ Database::GetTable(TableId tid)
 SizeT
 Database::Defragment(TableId tid, std::function<void(InstanceId, InstanceId)> const& moveCallback)
 {
-	Game::Database::Table& table = this->GetTable(tid);
+	Table& table = this->GetTable(tid);
 
 	SizeT numErased = 0;
 
 	IndexT index;
 	InstanceId lastIndex;
-	
+
 	// Pack arrays
 	while (table.freeIds.Size() != 0)
 	{
@@ -335,7 +339,7 @@ void EraseSwap(Column column, void*& buffer, const SizeT index, const SizeT end)
 /**
 */
 void
-Database::EraseSwapIndex(Database::Table& table, InstanceId instance)
+Database::EraseSwapIndex(Table& table, InstanceId instance)
 {
 	// Swap the element with the last element, and decrement size of array.
 	auto const& cols = table.columns.GetArray<0>();
@@ -388,7 +392,7 @@ Database::EraseSwapIndex(Database::Table& table, InstanceId instance)
 void
 Database::GrowTable(TableId tid)
 {
-	Game::Database::Table& table = this->tables.Get<0>(Ids::Index(tid.id));
+	Table& table = this->tables.Get<0>(Ids::Index(tid.id));
 	auto& colTypes = table.columns.GetArray<0>();
 	auto& buffers = table.columns.GetArray<1>();
 
@@ -477,7 +481,7 @@ AllocateBuffer(Column column, const SizeT capacity, const SizeT size)
 void*
 Database::AllocateColumn(TableId tid, Column column)
 {
-	Game::Database::Table& table = this->tables.Get<0>(Ids::Index(tid.id));
+	Table& table = this->tables.Get<0>(Ids::Index(tid.id));
 
 	const Game::AttributeType type = column.GetType();
 
@@ -514,12 +518,12 @@ Database::AllocateColumn(TableId tid, Column column)
 /**
 */
 void*
-Database::AllocateState(TableId tid, Table::StateDescription const& desc)
+Database::AllocateState(TableId tid, StateDescription const& desc)
 {
 	n_assert(desc.defVal != nullptr);
 	n_assert(desc.typeSize != 0);
 
-	Game::Database::Table& table = this->tables.Get<0>(Ids::Index(tid.id));
+	Table& table = this->tables.Get<0>(Ids::Index(tid.id));
 
 	void* buffer = Memory::Alloc(ALLOCATIONHEAP, desc.typeSize * table.capacity);
 
@@ -532,5 +536,6 @@ Database::AllocateState(TableId tid, Table::StateDescription const& desc)
 	return buffer;
 }
 
+} // namespace Db
 
 } // namespace Game
