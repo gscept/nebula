@@ -54,9 +54,16 @@ public:
     /// Get the column descriptors for a table
     Util::Array<Column> const& GetColumns(TableId table);
 
-    /// Adds a custom POD data column to table.
+    /// Adds a custom state data column to table.
     template<typename TYPE>
-    ColumnData<typename TYPE> AddDataColumn(TableId tid);
+    ColumnData<typename TYPE> AddStateColumn(TableId tid);
+
+    /// gets a custom state data column from table.
+    template<typename TYPE>
+    const ColumnData<typename TYPE> GetStateColumn(TableId tid);
+
+    /// check if state column exists by id
+    bool HasStateColumn(TableId tid, Util::FourCC id);
 
     /// returns a persistant array accessor
     template<typename ATTR>
@@ -110,10 +117,12 @@ Database::GetColumnData(TableId table)
 */
 template<typename TYPE>
 inline ColumnData<TYPE>
-Database::AddDataColumn(TableId tid)
+Database::AddStateColumn(TableId tid)
 {
     static_assert(std::is_standard_layout<TYPE>(), "Type is not standard layout!");
     static_assert(std::is_trivially_copyable<TYPE>(), "Type is not trivially copyable!");
+    static_assert(std::is_trivially_destructible<TYPE>(), "Type is not trivially destructible!");
+    
     Table& table = this->tables.Get<0>(Ids::Index(tid.id));
 
     uint32_t col = table.states.Alloc();
@@ -127,6 +136,58 @@ Database::AddDataColumn(TableId tid)
     table.states.Get<0>(col) = std::move(desc);
 
     return ColumnData<TYPE>(col, &table.states.Get<1>(col), &table.numRows, true);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<typename TYPE>
+inline const ColumnData<TYPE>
+Database::GetStateColumn(TableId tid)
+{
+    static_assert(std::is_standard_layout<TYPE>(), "Type is not standard layout!");
+    static_assert(std::is_trivially_copyable<TYPE>(), "Type is not trivially copyable!");
+    static_assert(std::is_trivially_destructible<TYPE>(), "Type is not trivially destructible!");
+
+    Table& table = this->tables.Get<0>(Ids::Index(tid.id));
+
+    
+    auto const& descriptions = table.states.GetArray<0>();
+    for (int i = 0; i < descriptions.Size(); i++)
+    {
+        auto const& desc = descriptions[i];
+
+        if (desc.fourcc == TYPE::ID)
+        {
+            return ColumnData<TYPE>(i, &table.states.Get<1>(i), &table.numRows, true);
+        }
+    }
+
+    n_error("State does not exist in table!\n");
+
+    return ColumnData<TYPE>(NULL, nullptr, nullptr, true);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline bool
+Database::HasStateColumn(TableId tid, Util::FourCC id)
+{
+    Table& table = this->tables.Get<0>(Ids::Index(tid.id));
+
+    auto const& descriptions = table.states.GetArray<0>();
+    for (int i = 0; i < descriptions.Size(); i++)
+    {
+        auto const& desc = descriptions[i];
+
+        if (desc.fourcc == id)
+        {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 } // namespace Db

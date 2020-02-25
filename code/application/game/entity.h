@@ -16,6 +16,9 @@
 
 namespace Game
 {
+#define __DeclareState(FOURCC) \
+	static constexpr std::size_t ID = FOURCC;
+
 	/// category id
 	ID_32_TYPE(CategoryId);
 
