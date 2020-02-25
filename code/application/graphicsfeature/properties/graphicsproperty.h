@@ -34,12 +34,16 @@ public:
     void OnBeginFrame() override;
 
     void SetupExternalAttributes() override;
-private:
+
     struct State
     {
+        // Declare the state and give it an identifier.
+        __DeclareState('ggpS');
         Graphics::GraphicsEntityId gfxEntity;
     };
 
+private:
+    
     struct Data
     {
         Game::PropertyData<State> state;

@@ -52,7 +52,7 @@ typename ATTR::TYPE const& GetAttribute(Game::Entity entity)
 #ifdef NEBULA_BOUNDSCHECKS
 	Ptr<Game::Db::Database> db = EntityManager::Instance()->GetWorldDatabase();
 	SizeT size = db->GetTable(cat.instanceTable).numRows;
-	n_assert(mapping.instance.id >= 0 && mapping.instance.id < numRows);
+	n_assert(mapping.instance.id >= 0 && mapping.instance.id < size);
 #endif
 	return cd[mapping.instance.id];
 }
@@ -83,7 +83,17 @@ Game::PropertyData<typename TYPE> CreatePropertyState(CategoryId category)
 {
 	Ptr<Game::Db::Database> db = Game::EntityManager::Instance()->GetWorldDatabase();
 	Db::TableId tid = CategoryManager::Instance()->GetCategory(category).instanceTable;
-	return db->AddDataColumn<TYPE>(tid);
+	return db->AddStateColumn<TYPE>(tid);
+}
+
+/// retrieve a state buffer from a category
+template<typename TYPE>
+Game::PropertyData<typename TYPE> GetPropertyState(CategoryId category)
+{
+	Ptr<Game::Db::Database> db = Game::EntityManager::Instance()->GetWorldDatabase();
+	Db::TableId tid = CategoryManager::Instance()->GetCategory(category).instanceTable;
+	n_assert2(db->HasStateColumn(tid, TYPE::ID), "Entity category does not contain state!\n");
+	return db->GetStateColumn<TYPE>(tid);
 }
 
 /// shortcut for fetching property data buffers (table columns)
