@@ -9,6 +9,7 @@
 #include "ids/id.h"
 #include "game/database/attribute.h"
 #include "statedescription.h"
+#include "util/arrayallocator.h"
 
 namespace Game
 {

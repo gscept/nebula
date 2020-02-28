@@ -8,6 +8,7 @@
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
 #include "attr/attrid.h"
+#include "database/columndata.h"
 
 namespace Game
 {
