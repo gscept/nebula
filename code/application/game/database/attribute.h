@@ -11,6 +11,7 @@
 #include "math/float2.h"
 #include "math/float4.h"
 #include "util/fourcc.h"
+#include "util/hashtable.h"
 
 namespace Game
 {

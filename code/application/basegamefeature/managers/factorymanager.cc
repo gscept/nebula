@@ -8,6 +8,7 @@
 #include "categorymanager.h"
 #include "io/jsonreader.h"
 #include "game/property.h"
+#include "io/ioserver.h"
 
 namespace Game
 {

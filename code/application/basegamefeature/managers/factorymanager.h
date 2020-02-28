@@ -18,6 +18,7 @@
 #include "core/singleton.h"
 #include "game/entity.h"
 #include "game/manager.h"
+#include "util/stringatom.h"
 
 namespace Game
 {
