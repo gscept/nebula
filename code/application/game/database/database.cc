@@ -39,27 +39,20 @@ Database::CreateTable(TableCreateInfo const& info)
 {
 	TableId id;
 	this->tableIdPool.Allocate(id.id);
-	n_assert(Ids::Index(id.id) <= this->tables.Size());
+	n_assert2(Ids::Index(id.id) < MAX_NUM_TABLES, "Tried to allocate more tables than currently allowed! Increase MAX_NUM_TABLES if this keeps occuring!\n");
 
-	Table* table;
+	Table& table = this->tables[Ids::Index(id.id)];
+	// Make sure we don't use any old data
+	table = Table();
 
-	if (Ids::Index(id.id) == this->tables.Size())
-	{
-		uint32_t idx = this->tables.Alloc();
-		table = &this->tables.Get<0>(idx);
-	}
-	else
-	{
-		table = &this->tables.Get<0>(Ids::Index(id.id));
-	}
-
-	table->name = info.name;
-	table->columns.Clear();
-
+	table.name = info.name;
+	
 	for (IndexT i = 0; i < info.columns.Size(); i++)
 	{
 		this->AddColumn(id, info.columns[i]);
 	}
+
+	this->numTables = (Ids::Index(id.id) + 1 > this->numTables ? Ids::Index(id.id) + 1 : this->numTables);
 
 	return id;
 }
@@ -71,8 +64,7 @@ void
 Database::DeleteTable(TableId table)
 {
 	n_error("implement me!");
-	//n_delete(this->tables[Ids::Index(table.id)]);
-	//this->tableIdPool.Deallocate(table.id);
+	// FIXME: Note that the query method (and possibly others) currently assume that all tables that are present in the array are valid... We should change this
 
 }
 
@@ -91,7 +83,8 @@ Database::IsValid(TableId table)
 bool
 Database::HasColumn(TableId table, Column col)
 {
-	return this->tables.Get<0>(Ids::Index(table.id)).columns.GetArray<0>().FindIndex(col) != InvalidIndex;
+	n_assert(this->IsValid(table));
+	return this->tables[Ids::Index(table.id)].columns.GetArray<0>().FindIndex(col) != InvalidIndex;
 }
 
 //------------------------------------------------------------------------------
@@ -100,7 +93,8 @@ Database::HasColumn(TableId table, Column col)
 Column
 Database::GetColumn(TableId table, ColumnId columnId)
 {
-	return this->tables.Get<0>(Ids::Index(table.id)).columns.Get<0>(columnId.id);
+	n_assert(this->IsValid(table));
+	return this->tables[Ids::Index(table.id)].columns.Get<0>(columnId.id);
 }
 
 //------------------------------------------------------------------------------
@@ -109,8 +103,9 @@ Database::GetColumn(TableId table, ColumnId columnId)
 ColumnId
 Database::GetColumnId(TableId table, Column column)
 {
+	n_assert(this->IsValid(table));
 	n_assert(column.IsValid());
-	ColumnId cid = this->tables.Get<0>(Ids::Index(table.id)).columns.GetArray<0>().FindIndex(column);
+	ColumnId cid = this->tables[Ids::Index(table.id)].columns.GetArray<0>().FindIndex(column);
 	n_assert(cid != ColumnId::Invalid());
 	return cid;
 }
@@ -121,7 +116,8 @@ Database::GetColumnId(TableId table, Column column)
 ColumnId
 Database::AddColumn(TableId tid, Column column)
 {
-	Table& table = this->tables.Get<0>(Ids::Index(tid.id));
+	n_assert(this->IsValid(tid));
+	Table& table = this->tables[Ids::Index(tid.id)];
 
 	IndexT found = table.columns.GetArray<0>().FindIndex(column);
 	if (found != InvalidIndex)
@@ -143,7 +139,8 @@ Database::AddColumn(TableId tid, Column column)
 IndexT
 Database::AllocateRow(TableId tid)
 {
-	Table& table = this->tables.Get<0>(Ids::Index(tid.id));
+	n_assert(this->IsValid(tid));
+	Table& table = this->tables[Ids::Index(tid.id)];
 
 	IndexT index;
 	if (table.freeIds.Size() > 0)
@@ -172,7 +169,8 @@ Database::AllocateRow(TableId tid)
 void
 Database::DeallocateRow(TableId tid, IndexT row)
 {
-	Table& table = this->tables.Get<0>(Ids::Index(tid.id));
+	n_assert(this->IsValid(tid));
+	Table& table = this->tables[Ids::Index(tid.id)];
 	n_assert(row < table.numRows);
 	table.freeIds.InsertSorted(row);
 }
@@ -183,7 +181,8 @@ Database::DeallocateRow(TableId tid, IndexT row)
 void
 Database::SetToDefault(TableId tid, IndexT row)
 {
-	Table& table = this->tables.Get<0>(Ids::Index(tid.id));
+	n_assert(this->IsValid(tid));
+	Table& table = this->tables[Ids::Index(tid.id)];
 	n_assert(row < table.numRows);
 
 	for (IndexT col = 0; col < table.columns.Size(); col++)
@@ -232,7 +231,8 @@ Database::SetToDefault(TableId tid, IndexT row)
 SizeT
 Database::GetNumRows(TableId table)
 {
-	return this->tables.Get<0>(Ids::Index(table.id)).numRows;
+	n_assert(this->IsValid(table));
+	return this->tables[Ids::Index(table.id)].numRows;
 }
 
 //------------------------------------------------------------------------------
@@ -241,7 +241,8 @@ Database::GetNumRows(TableId table)
 Util::Array<Column> const&
 Database::GetColumns(TableId tid)
 {
-	Table& table = this->tables.Get<0>(Ids::Index(tid.id));
+	n_assert(this->IsValid(tid));
+	Table& table = this->tables[Ids::Index(tid.id)];
 	auto& colTypes = table.columns.GetArray<0>();
 	return colTypes;
 }
@@ -286,7 +287,7 @@ GrowBuffer(Column column, void*& buffer, const SizeT capacity, const SizeT size,
 Table&
 Database::GetTable(TableId tid)
 {
-	return this->tables.Get<0>(Ids::Index(tid.id));
+	return this->tables[Ids::Index(tid.id)];
 }
 
 //------------------------------------------------------------------------------
@@ -297,6 +298,7 @@ Database::GetTable(TableId tid)
 SizeT
 Database::Defragment(TableId tid, std::function<void(InstanceId, InstanceId)> const& moveCallback)
 {
+	n_assert(this->IsValid(tid));
 	Table& table = this->GetTable(tid);
 
 	SizeT numErased = 0;
@@ -328,6 +330,9 @@ Database::Defragment(TableId tid, std::function<void(InstanceId, InstanceId)> co
 	return numErased;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 template<typename TYPE>
 void EraseSwap(Column column, void*& buffer, const SizeT index, const SizeT end)
 {
@@ -392,7 +397,8 @@ Database::EraseSwapIndex(Table& table, InstanceId instance)
 void
 Database::GrowTable(TableId tid)
 {
-	Table& table = this->tables.Get<0>(Ids::Index(tid.id));
+	n_assert(this->IsValid(tid));
+	Table& table = this->tables[Ids::Index(tid.id)];
 	auto& colTypes = table.columns.GetArray<0>();
 	auto& buffers = table.columns.GetArray<1>();
 
@@ -481,7 +487,8 @@ AllocateBuffer(Column column, const SizeT capacity, const SizeT size)
 void*
 Database::AllocateColumn(TableId tid, Column column)
 {
-	Table& table = this->tables.Get<0>(Ids::Index(tid.id));
+	n_assert(this->IsValid(tid));
+	Table& table = this->tables[Ids::Index(tid.id)];
 
 	const Game::AttributeType type = column.GetType();
 
@@ -520,10 +527,11 @@ Database::AllocateColumn(TableId tid, Column column)
 void*
 Database::AllocateState(TableId tid, StateDescription const& desc)
 {
+	n_assert(this->IsValid(tid));
 	n_assert(desc.defVal != nullptr);
 	n_assert(desc.typeSize != 0);
 
-	Table& table = this->tables.Get<0>(Ids::Index(tid.id));
+	Table& table = this->tables[Ids::Index(tid.id)];
 
 	void* buffer = Memory::Alloc(ALLOCATIONHEAP, desc.typeSize * table.capacity);
 

@@ -68,7 +68,7 @@ using AttributeValue = std::variant<
 	Util::String
 >;
 
-using AttributeRegistry = Util::HashTable<CategoryId, void**, 32, 1>;
+using AttributeCategoryTable = Util::HashTable<CategoryId, void**, 32, 1>;
 
 struct AttributeDefinition
 {
@@ -77,7 +77,7 @@ struct AttributeDefinition
 	AttributeType type;
 	Game::AttributeValue defaultValue;
 
-	AttributeRegistry* registry;
+	AttributeCategoryTable* registry;
 };
 
 template<typename T>
@@ -148,7 +148,7 @@ public:
 		// empty
 	}
 
-	AttributeRegistry* GetRegistry() const
+	AttributeCategoryTable* GetCategoryTable() const
 	{
 		return defPtr->registry;
 	}
@@ -282,7 +282,7 @@ namespace Runtime\
 		Util::FourCC(FOURCC), \
 		Game::TypeToAttributeType<TYPE>(), \
 		Game::AttributeValue(DEFAULTVALUE), \
-		n_new(Game::AttributeRegistry()) \
+		n_new(Game::AttributeCategoryTable()) \
 	}; \
 }
 

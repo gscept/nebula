@@ -151,6 +151,53 @@ DeleteEntity(const Entity& e)
 	Game::EntityManager::Instance()->DeleteEntity(e);
 }
 
+
+//------------------------------------------------------------------------------
+/**
+*/
+Dataset
+EntityManager::Query(FilterSet const& filterset)
+{
+	Dataset set;
+	set.filter = filterset;
+
+	this->worldDatabase;
+
+	Ptr<CategoryManager> cm = CategoryManager::Instance();
+	SizeT numCats = cm->GetNumCategories();
+	for (IndexT cid = 0; cid < numCats; cid++)
+	{
+		bool valid = true;
+		for (auto attrid : filterset.inclusive)
+		{
+			if (!attrid.GetCategoryTable()->Contains(cid))
+			{
+				valid = false;
+				break;
+			}
+		}
+
+		if (valid)
+		{
+			for (auto attrid : filterset.exclusive)
+			{
+				if (attrid.GetCategoryTable()->Contains(cid))
+				{
+					valid = false;
+					break;
+				}
+			}
+		}
+
+		if (valid)
+		{
+			set.categories.Append(cid);
+		}
+	}
+
+	return set;
+}
+
 } // namespace Game
 
 

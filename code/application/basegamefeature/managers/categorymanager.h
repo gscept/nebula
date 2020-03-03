@@ -47,7 +47,10 @@ typename ATTR::TYPE const& GetAttribute(Game::Entity entity)
 	Ptr<CategoryManager> mgr = CategoryManager::Instance();
 	auto mapping = mgr->GetEntityMapping(entity);
 	auto const& cat = mgr->GetCategory(mapping.category);
-	void** ptrptr = (*(ATTR::Id().GetRegistry()))[mapping.category.id];
+	void** ptrptr = (*(ATTR::Id().GetCategoryTable()))[mapping.category.id];
+	n_assert(ptrptr != nullptr);
+	n_assert(*ptrptr != nullptr);
+
 	ATTR::TYPE* cd = (ATTR::TYPE*) * ptrptr;
 #ifdef NEBULA_BOUNDSCHECKS
 	Ptr<Game::Db::Database> db = EntityManager::Instance()->GetWorldDatabase();
@@ -64,10 +67,14 @@ void SetAttribute(Game::Entity entity, typename ATTR::TYPE const& value)
 	auto mapping = mgr->GetEntityMapping(entity);
 	auto const& cat = mgr->GetCategory(mapping.category);
 	
-	if (!ATTR::Id().GetRegistry()->Contains(mapping.category.id))
+	if (!ATTR::Id().GetCategoryTable()->Contains(mapping.category.id))
 		return;
 
-	void** ptrptr = (*(ATTR::Id().GetRegistry()))[mapping.category.id];
+	auto& act = *(ATTR::Id().GetCategoryTable());
+	void** ptrptr = act[mapping.category.id];
+	n_assert(ptrptr != nullptr);
+	n_assert(*ptrptr != nullptr);
+
 	ATTR::TYPE* cd = (ATTR::TYPE*)*ptrptr;
 #ifdef NEBULA_BOUNDSCHECKS
 	Ptr<Game::Db::Database> db = EntityManager::Instance()->GetWorldDatabase();
@@ -135,19 +142,22 @@ public:
 	void OnEndFrame();
 
 	/// check if category exists
-	bool HasCategory(Util::StringAtom name);
+	bool HasCategory(Util::StringAtom name) const;
 
 	/// adds a category
 	void AddCategory(CategoryCreateInfo const& info);
 	
 	/// returns a category by name. asserts if category does not exist
-	Category const& GetCategory(Util::StringAtom name);
+	Category const& GetCategory(Util::StringAtom name) const;
 	
 	/// returns a category by id. asserts if category does not exist
-	Category const& GetCategory(CategoryId cid);
+	Category const& GetCategory(CategoryId cid) const;
 
 	/// return a category id by name
-	CategoryId const GetCategoryId(Util::StringAtom name);
+	CategoryId const GetCategoryId(Util::StringAtom name) const;
+
+	/// returns the number of existing categories
+	SizeT const GetNumCategories() const;
 
 	// TODO: We need to be able so instantiate templates of categories.
 	// 		 Maybe this should be implemented in the factory manager?	
@@ -193,7 +203,7 @@ private:
 /**
 */
 inline bool
-CategoryManager::HasCategory(Util::StringAtom name)
+CategoryManager::HasCategory(Util::StringAtom name) const
 {
 	return this->catIndexMap.Contains(name);
 }
@@ -202,7 +212,7 @@ CategoryManager::HasCategory(Util::StringAtom name)
 /**
 */
 inline Category const&
-CategoryManager::GetCategory(Util::StringAtom name)
+CategoryManager::GetCategory(Util::StringAtom name) const
 {
 	n_assert(this->catIndexMap.Contains(name));
 	return this->categoryArray[this->catIndexMap[name].id];
@@ -212,7 +222,7 @@ CategoryManager::GetCategory(Util::StringAtom name)
 /**
 */
 inline Category const&
-CategoryManager::GetCategory(CategoryId cid)
+CategoryManager::GetCategory(CategoryId cid) const
 {
 	return this->categoryArray[cid.id];
 }
@@ -221,10 +231,19 @@ CategoryManager::GetCategory(CategoryId cid)
 /**
 */
 inline CategoryId const
-CategoryManager::GetCategoryId(Util::StringAtom name)
+CategoryManager::GetCategoryId(Util::StringAtom name) const
 {
 	n_assert(this->catIndexMap.Contains(name));
 	return this->catIndexMap[name];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline SizeT const
+CategoryManager::GetNumCategories() const
+{
+	return this->categoryArray.Size();
 }
 
 //------------------------------------------------------------------------------

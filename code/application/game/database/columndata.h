@@ -26,7 +26,7 @@ public:
         // empty
     }
     ColumnData(ColumnId const columnId, void** ptrptr, uint32_t const* const numRows, bool state = false) :
-        data((void**)ptrptr),
+        data(ptrptr),
         cid(columnId),
         isState(state),
         numRows(numRows)
