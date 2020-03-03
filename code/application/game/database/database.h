@@ -19,12 +19,6 @@ namespace Game
 namespace Db
 {
 
-struct TableCreateInfo
-{
-    Util::String name;
-    Util::FixedArray<Column> columns;
-};
-
 class Database : public Core::RefCounted
 {
     __DeclareClass(Game::Db::Database);
@@ -78,7 +72,6 @@ public:
 
     SizeT Defragment(TableId tid, std::function<void(InstanceId, InstanceId)> const& moveCallback);
 
-
 private:
     void EraseSwapIndex(Table& table, InstanceId instance);
 
@@ -88,7 +81,11 @@ private:
     void* AllocateState(TableId tid, StateDescription const& desc);
 
     Ids::IdGenerationPool tableIdPool;
-    Util::ArrayAllocator<Table> tables;
+
+    // @note    Keep this a fixed size array, because we want to be able to keep persistent references to the tables, and their buffers within
+    static constexpr uint32_t MAX_NUM_TABLES = 512;
+    Table tables[MAX_NUM_TABLES];
+    SizeT numTables = 0;
 };
 
 //------------------------------------------------------------------------------
@@ -97,7 +94,9 @@ private:
 inline void**
 Database::GetPersistantBuffer(TableId table, ColumnId cid)
 {
-    Table& tbl = this->tables.Get<0>(Ids::Index(table.id));
+    n_assert(this->IsValid(table));
+    Table& tbl = this->tables[Ids::Index(table.id)];
+    void* ptr = &tbl.columns.Get<1>(cid.id);
     return &tbl.columns.Get<1>(cid.id);
 }
 
@@ -108,7 +107,8 @@ template<typename ATTR>
 inline ColumnData<typename ATTR::TYPE>
 Database::GetColumnData(TableId table)
 {
-    Table& tbl = this->tables.Get<0>(Ids::Index(table.id));
+    n_assert(this->IsValid(table));
+    Table& tbl = this->tables[Ids::Index(table.id)];
     ColumnId cid = this->GetColumnId(table, ATTR::Id());
     return ColumnData<ATTR::TYPE>(cid, &tbl.columns.Get<1>(cid.id), &tbl.numRows);
 }
@@ -124,7 +124,8 @@ Database::AddStateColumn(TableId tid)
     static_assert(std::is_trivially_copyable<TYPE>(), "Type is not trivially copyable!");
     static_assert(std::is_trivially_destructible<TYPE>(), "Type is not trivially destructible!");
     
-    Table& table = this->tables.Get<0>(Ids::Index(tid.id));
+    n_assert(this->IsValid(tid));
+    Table& table = this->tables[Ids::Index(tid.id)];
 
     uint32_t col = table.states.Alloc();
 
@@ -150,9 +151,9 @@ Database::GetStateColumn(TableId tid)
     static_assert(std::is_trivially_copyable<TYPE>(), "Type is not trivially copyable!");
     static_assert(std::is_trivially_destructible<TYPE>(), "Type is not trivially destructible!");
 
-    Table& table = this->tables.Get<0>(Ids::Index(tid.id));
+    n_assert(this->IsValid(tid));
+    Table& table = this->tables[Ids::Index(tid.id)];
 
-    
     auto const& descriptions = table.states.GetArray<0>();
     for (int i = 0; i < descriptions.Size(); i++)
     {
@@ -175,7 +176,8 @@ Database::GetStateColumn(TableId tid)
 inline bool
 Database::HasStateColumn(TableId tid, Util::FourCC id)
 {
-    Table& table = this->tables.Get<0>(Ids::Index(tid.id));
+    n_assert(this->IsValid(tid));
+    Table& table = this->tables[Ids::Index(tid.id)];
 
     auto const& descriptions = table.states.GetArray<0>();
     for (int i = 0; i < descriptions.Size(); i++)

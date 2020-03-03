@@ -26,6 +26,42 @@ namespace Game
 
 void DeleteEntity(const Entity& e);
 
+struct FilterSet
+{
+	/// categories must include all attributes in this array
+	Util::Array<Game::AttributeId> inclusive;
+	/// categories must NOT contain any attributes in this array
+	Util::Array<Game::AttributeId> exclusive;
+};
+
+class Dataset
+{
+public:
+	Dataset()
+	{
+		// empty
+	}
+	~Dataset()
+	{
+		// empty
+	}
+
+	Util::Array<CategoryId> const& GetCategoryIds() const
+	{
+		return this->categories;
+	}
+
+	FilterSet const& GetFilterSet() const
+	{
+		return this->filter;
+	}
+
+private:
+	friend class EntityManager;
+	Util::Array<CategoryId> categories;
+	FilterSet filter;
+};
+
 class EntityManager : public Game::Manager
 {
 	__DeclareClass(EntityManager)
@@ -62,6 +98,10 @@ public:
 	
 	/// Deregister a deletion callback to an entity. Note that this is not super fast.
 	void DeregisterDeletionCallback(const Entity& e, Util::Delegate<void(Entity)> const& del);
+
+	/// Query the database for a dataset of tables
+	Dataset Query(FilterSet const& filterset);
+
 private:
 	friend class CategoryManager;
 

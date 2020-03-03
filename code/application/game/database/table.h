@@ -27,6 +27,12 @@ ID_16_TYPE(ColumnId);
 
 typedef Game::AttributeId Column;
 
+struct TableCreateInfo
+{
+    Util::String name;
+    Util::FixedArray<Column> columns;
+};
+
 //------------------------------------------------------------------------------
 /**
     A table describes and holds columns, and buffers for those columns.

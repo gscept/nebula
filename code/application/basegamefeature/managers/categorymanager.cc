@@ -173,7 +173,7 @@ CategoryManager::AllocateInstance(Entity entity, CategoryId category)
 	n_assert(EntityManager::Instance()->IsValid(entity));
 	n_assert(category < this->categoryArray.Size());
 
-	if (entity.id < this->entityMap.Size() && this->entityMap[Ids::Index(entity.id)].instance != Game::InstanceId::Invalid())
+	if (Ids::Index(entity.id) < this->entityMap.Size() && this->entityMap[Ids::Index(entity.id)].instance != Game::InstanceId::Invalid())
 	{
 		n_warning("Entity already registered!\n");
 		return InvalidIndex;
@@ -247,11 +247,15 @@ CategoryManager::AddCategoryAttr(const Game::AttributeId& attrId)
     db->AddColumn(cat.templateTable, attrId);
     db->AddColumn(cat.instanceTable, attrId);
 
-	if (!attrId.GetRegistry()->Contains(this->addAttrCategoryIndex))
+	if (!attrId.GetCategoryTable()->Contains(this->addAttrCategoryIndex))
 	{
 		void** buf = db->GetPersistantBuffer(cat.instanceTable, db->GetColumnId(cat.instanceTable, attrId));
-		n_assert(!attrId.GetRegistry()->Contains(this->addAttrCategoryIndex));
-		attrId.GetRegistry()->Add(this->addAttrCategoryIndex, buf);
+		n_assert(!attrId.GetCategoryTable()->Contains(this->addAttrCategoryIndex));
+		attrId.GetCategoryTable()->Add(this->addAttrCategoryIndex, buf);
+		void** test = ((*attrId.GetCategoryTable())[this->addAttrCategoryIndex]);
+		void* test2 = *test;
+		n_assert(test != nullptr);
+		n_assert(test2 != nullptr);
 	}
 }
 
