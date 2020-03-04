@@ -23,6 +23,17 @@ GetNumInstances(CategoryId category)
 	return db->GetNumRows(tid);
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+InstanceId
+GetInstanceId(Entity entity)
+{
+	Ptr<CategoryManager> mgr = CategoryManager::Instance();
+	auto mapping = mgr->GetEntityMapping(entity);
+	return mapping.instance;
+}
+
 
 //------------------------------------------------------------------------------
 /**
