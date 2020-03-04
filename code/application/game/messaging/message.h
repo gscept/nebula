@@ -3,13 +3,13 @@
 /**
 	@class	Game::Message
 
-	Messages the main communications channel between components.
+	Messages the main communications channel between entities.
 
-	Messages aren't exclusive to component however, any method or function can be
+	Messages aren't exclusive to entities however; any method or function can be
 	used as a callback from a message which means you can hook into a message
 	from anywhere. This can be useful for debugging, tools, managers etc.
 
-	A component can register a message callback by using the __RegisterMsg macro.
+	A property can register a message callback by using the __RegisterMsg macro.
 
 	Messages should be generated using Nebula's IDLC.
 	If that's not preferred, you can implement a message by deriving from the
@@ -91,7 +91,7 @@ public:
 	using Delegate = Util::Delegate<void(TYPES...)>;
 
     /// Type definition for this message's queues
-    using MessageQueue = typename Util::ArrayAllocator<UnqualifiedType<TYPES> ...>;
+    using MessageQueue = typename Util::ArrayAllocator<std::tuple<UnqualifiedType<TYPES> ...>>;
 
 	/// Register a listener to this message. Returns an ID for the listener so that we can associate it.
 	static MessageListener Register(Delegate&& callback);
@@ -170,7 +170,7 @@ private:
 	template<std::size_t...Is>
 	void send_expander(MessageQueue& data, const IndexT cid, const SizeT index, std::index_sequence<Is...>)
 	{
-		this->callbacks.Get<1>(cid)(data.Get<Is>(index)...);
+		this->callbacks.Get<1>(cid)(std::get<Is>(data.Get<0>(index))...);
 	}
 
 	void send_expander(MessageQueue& data, const IndexT cid, const SizeT index)
@@ -282,7 +282,7 @@ Message<MSG, TYPES...>::Defer(MessageQueueId qid, TYPES ...values)
 	SizeT index = Ids::Index(qid.id);
 
 	auto i = instance->messageQueues[index].Alloc();
-	instance->messageQueues[index].Set(i, values...);
+	instance->messageQueues[index].Set(i, std::make_tuple(values...));
 }
 
 //------------------------------------------------------------------------------
