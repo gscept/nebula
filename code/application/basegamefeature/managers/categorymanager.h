@@ -38,8 +38,17 @@ namespace Game
 {
 
 /// get the number of instances of a certain category
-SizeT
+inline SizeT
 GetNumInstances(CategoryId category);
+
+/// get instance id of an entity
+inline InstanceId
+GetInstanceId(Game::Entity entity)
+{
+	Ptr<CategoryManager> mgr = CategoryManager::Instance();
+	auto mapping = mgr->GetEntityMapping(entity);
+	return mapping.instance;
+}
 
 template<typename ATTR>
 typename ATTR::TYPE const& GetAttribute(Game::Entity entity)
@@ -252,7 +261,7 @@ CategoryManager::GetNumCategories() const
 inline CategoryManager::EntityMapping
 CategoryManager::GetEntityMapping(Game::Entity entity) const
 {
-	return this->entityMap[entity.id];
+	return this->entityMap[Ids::Index(entity.id)];
 }
 
 } // namespace Game
