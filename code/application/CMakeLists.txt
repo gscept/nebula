@@ -74,6 +74,16 @@ nebula_begin_module(application)
 				graphicsproperty.h
 				graphicsproperty.cc
 			)
+	fips_dir(physicsfeature)
+		fips_files(
+			physicsfeatureunit.h
+			physicsfeatureunit.cc
+		)
+		fips_dir(physicsfeature/properties)
+			fips_files(
+				rigidbodyproperty.h
+				rigidbodyproperty.cc
+			)
 	fips_dir(appgame)
 		fips_files(
 			gameapplication.h
