@@ -25,6 +25,14 @@ namespace Game
 
 class Property;
 
+struct EntityCreateInfo
+{
+	/// which entity category to instantiate from
+	Util::StringAtom categoryName;
+	/// attributes specified here will be set before activating the entity.
+	Util::Array<Game::Attribute> attributes;
+};
+
 class FactoryManager : public Game::Manager
 {
 	__DeclareClass(FactoryManager)
@@ -40,6 +48,9 @@ public:
 
 	/// create a new entity from its category name
 	Game::Entity CreateEntityByCategory(Util::StringAtom const categoryName) const;
+	
+	/// create a new entity from a createinfo description
+	Game::Entity CreateEntity(EntityCreateInfo const& info) const;
 
 	/// set a optional blueprints.xml, which is used instead of standard blueprint.xml
 	static void SetBlueprintsFilename(const Util::String& name, const Util::String& folder);

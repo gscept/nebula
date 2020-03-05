@@ -227,6 +227,8 @@ private:
 	Game::AttributeDefinition const* defPtr;
 };
 
+using Attribute = Util::KeyValuePair<AttributeId, AttributeValue>;
+
 //------------------------------------------------------------------------------
 /**
 	@note	The ATTRIBUTENAME class is kinda wonky, but for good reason. We want to be able to use the attribute types
