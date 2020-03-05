@@ -8,11 +8,28 @@
 #include "physics/streamactorpool.h"
 #include "physics/actorcontext.h"
 #include "resources/resourcemanager.h"
+#include "basegamefeature/managers/categorymanager.h"
+namespace Attr
+{
+	__DefineAttribute(IsDynamic, bool, 'phDy', bool(true));
+	__DefineAttribute(PhysicsResource, Util::String, 'phRs', Util::String("phys:system/placeholder.np"));
+}
 
 namespace PhysicsFeature
 {
 
 __ImplementClass(PhysicsFeature::RigidBodyProperty, 'PRBP', Game::Property);
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+RigidBodyProperty::SetupExternalAttributes()
+{
+	SetupAttr(Attr::IsDynamic::Id());
+	SetupAttr(Attr::PhysicsResource::Id());
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -55,7 +72,7 @@ RigidBodyProperty::OnActivate(Game::InstanceId instance)
             actorid = Physics::CreateActorInstance(id, trans, dynamic);
             Physics::Actor& actor = Physics::ActorContext::GetActor(actorid);
             actor.userData = instance.id;
-            actor.moveCallback = Util::Delegate<void(Physics::ActorId, Math::matrix44 const&)>::FromMethod<RigidBodyProperty, MoveCallback>(this);
+            actor.moveCallback = Util::Delegate<void(Physics::ActorId, Math::matrix44 const&)>::FromMethod<RigidBodyProperty, &RigidBodyProperty::MoveCallback>(this);
         },[&resource, instance](Resources::ResourceId id) 
         {
             n_warning("failed to load physics actor from %s\n", resource);
