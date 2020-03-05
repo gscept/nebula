@@ -3,7 +3,7 @@
 //  (C) 2019-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "application/stdneb.h"
-#include "Physicsfeature/Physicsfeatureunit.h"
+#include "physicsfeature/physicsfeatureunit.h"
 #include "physicsinterface.h"
 #include "graphics/graphicsserver.h"
 

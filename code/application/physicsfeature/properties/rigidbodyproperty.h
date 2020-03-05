@@ -14,7 +14,7 @@
 namespace Attr
 {
     __DeclareAttribute(IsDynamic, bool, 'phDy', bool(true));
-    __DeclareAttribute(PhysicsResource, Util::String, 'phRs', Util::String(""));
+    __DeclareAttribute(PhysicsResource, Util::String, 'phRs', Util::String("phys:system/placeholder.np"));
 }
 
 namespace PhysicsFeature
@@ -24,6 +24,8 @@ class RigidBodyProperty : public Game::Property
 {
     __DeclareClass(RigidBodyProperty)
 public:
+    void SetupExternalAttributes();
+
     void Init() override;
 
     void OnActivate(Game::InstanceId instance) override;
@@ -34,6 +36,7 @@ public:
 
     struct RigidBodyState
     {
+        __DeclareState('RBST');
         Physics::ActorId actorid;
         Resources::ResourceId actorResource;
     };
