@@ -43,6 +43,9 @@ public:
     /// Set all row values to default
     void SetToDefault(TableId table, IndexT row);
 
+    /// Set an attribute value
+    void Set(TableId table, ColumnId columnId, IndexT row, AttributeValue const& value);
+
     /// get number of rows in a table
     SizeT GetNumRows(TableId table);
 

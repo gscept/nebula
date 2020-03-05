@@ -228,6 +228,45 @@ Database::SetToDefault(TableId tid, IndexT row)
 //------------------------------------------------------------------------------
 /**
 */
+void
+Database::Set(TableId tid, ColumnId col, IndexT row, AttributeValue const& value)
+{
+	n_assert(this->IsValid(tid));
+	Table& table = this->tables[Ids::Index(tid.id)];
+	n_assert(row < table.numRows);
+
+	Column column = table.columns.Get<0>(col.id);
+	void* buffer = table.columns.Get<1>(col.id);
+
+	switch (column.GetType())
+	{
+	case Game::AttributeType::Int8Type:			n_assert(std::holds_alternative<int8_t>(value)); *((int8_t*)buffer + row) = std::get<int8_t>(value); break;
+	case Game::AttributeType::UInt8Type:		n_assert(std::holds_alternative<uint8_t>(value)); *((uint8_t*)buffer + row) = std::get<uint8_t>(value); break;
+	case Game::AttributeType::Int16Type:		n_assert(std::holds_alternative<int16_t>(value)); *((int16_t*)buffer + row) = std::get<int16_t>(value); break;
+	case Game::AttributeType::UInt16Type:		n_assert(std::holds_alternative<uint16_t>(value)); *((uint16_t*)buffer + row) = std::get<uint16_t>(value); break;
+	case Game::AttributeType::Int32Type:		n_assert(std::holds_alternative<int32_t>(value)); *((int32_t*)buffer + row) = std::get<int32_t>(value); break;
+	case Game::AttributeType::UInt32Type:		n_assert(std::holds_alternative<uint32_t>(value)); *((uint32_t*)buffer + row) = std::get<uint32_t>(value); break;
+	case Game::AttributeType::Int64Type:		n_assert(std::holds_alternative<int64_t>(value)); *((int64_t*)buffer + row) = std::get<int64_t>(value); break;
+	case Game::AttributeType::UInt64Type:		n_assert(std::holds_alternative<uint64_t>(value)); *((uint64_t*)buffer + row) = std::get<uint64_t>(value); break;
+	case Game::AttributeType::FloatType:		n_assert(std::holds_alternative<float>(value)); *((float*)buffer + row) = std::get<float>(value); break;
+	case Game::AttributeType::DoubleType:		n_assert(std::holds_alternative<double>(value)); *((double*)buffer + row) = std::get<double>(value); break;
+	case Game::AttributeType::BoolType:			n_assert(std::holds_alternative<bool>(value)); *((bool*)buffer + row) = std::get<bool>(value); break;
+	case Game::AttributeType::Float2Type:		n_assert(std::holds_alternative<Math::float2>(value)); *((Math::float2*)buffer + row) = std::get<Math::float2>(value); break;
+	case Game::AttributeType::Float4Type:		n_assert(std::holds_alternative<Math::float4>(value)); *((Math::float4*)buffer + row) = std::get<Math::float4>(value); break;
+	case Game::AttributeType::QuaternionType:	n_assert(std::holds_alternative<Math::quaternion>(value)); *((Math::quaternion*)buffer + row) = std::get<Math::quaternion>(value); break;
+	case Game::AttributeType::Matrix44Type:		n_assert(std::holds_alternative<Math::matrix44>(value)); *((Math::matrix44*)buffer + row) = std::get<Math::matrix44>(value); break;
+	case Game::AttributeType::GuidType:			n_assert(std::holds_alternative<Util::Guid>(value)); *((Util::Guid*)buffer + row) = std::get<Util::Guid>(value); break;
+	case Game::AttributeType::EntityType:		n_assert(std::holds_alternative<Game::Entity>(value)); *((Game::Entity*)buffer + row) = std::get<Game::Entity>(value); break;
+	case Game::AttributeType::StringType:		n_assert(std::holds_alternative<Util::String>(value)); *((Util::String*)buffer + row) = std::get<Util::String>(value); break;
+
+	default:
+		n_error("Type not yet supported!");
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 SizeT
 Database::GetNumRows(TableId table)
 {

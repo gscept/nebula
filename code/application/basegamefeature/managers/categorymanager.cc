@@ -209,11 +209,6 @@ CategoryManager::AllocateInstance(Entity entity, CategoryId category)
 	Game::Entity* owners = (Game::Entity*)*db->GetPersistantBuffer(cat.instanceTable, 0);
 	owners[instance.id] = entity;
 
-	for (auto const& prop : cat.properties)
-	{
-		prop->OnActivate(instance);
-	}
-
 	return instance;
 }
 

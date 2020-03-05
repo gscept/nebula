@@ -60,7 +60,48 @@ FactoryManager::CreateEntityByCategory(Util::StringAtom const categoryName) cons
 	Ptr<CategoryManager> cm = CategoryManager::Instance();
 	CategoryId cid = cm->GetCategoryId(categoryName);
 
-	cm->AllocateInstance(entity, cid);
+	InstanceId instance = cm->AllocateInstance(entity, cid);
+
+	Category const& category = cm->GetCategory(cid);
+
+	for (auto const& prop : category.properties)
+	{
+		prop->OnActivate(instance);
+	}
+
+	return entity;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Game::Entity
+FactoryManager::CreateEntity(EntityCreateInfo const& info) const
+{
+	Entity entity = EntityManager::Instance()->CreateEntity();
+	Ptr<CategoryManager> cm = CategoryManager::Instance();
+	CategoryId cid = cm->GetCategoryId(info.categoryName);
+
+	InstanceId instance = cm->AllocateInstance(entity, cid);
+
+	Category const& category = cm->GetCategory(cid);
+
+	// Set attributes before activating
+	// TODO: We should probably create a Game namespace abstraction for setting an attribute value by AttributeId and AttributeValue
+	Ptr<Db::Database> db = EntityManager::Instance()->GetWorldDatabase();
+	SizeT numAttrs = info.attributes.Size();
+	for (IndexT i = 0; i < numAttrs; ++i)
+	{
+		//Db::Table const& table = db->GetTable(category.instanceTable);
+		Db::ColumnId columnId = db->GetColumnId(category.instanceTable, info.attributes[i].Key());
+		n_assert(columnId != Db::ColumnId::Invalid());
+		db->Set(category.instanceTable, columnId, instance.id, info.attributes[i].Value());
+	}
+
+	for (auto const& prop : category.properties)
+	{
+		prop->OnActivate(instance);
+	}
 
 	return entity;
 }
