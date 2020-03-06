@@ -26,7 +26,7 @@ public:
 	static void Create();
 
 	/// runs before frame is updated
-	static void OnBeforeFrame(const Graphics::FrameContext& ctx);
+	static void UpdateCameras(const Graphics::FrameContext& ctx);
 
 	/// setup as projection and fov
 	static void SetupProjectionFov(const Graphics::GraphicsEntityId id, float aspect, float fov, float znear, float zfar);
