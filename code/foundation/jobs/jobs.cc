@@ -28,7 +28,7 @@ CreateJobPort(const CreateJobPortInfo& info)
 	for (IndexT i = 0; i < info.numThreads; i++)
 	{
 		Ptr<JobThread> thread = JobThread::Create();
-		thread->SetName(Util::String::Sprintf("%s%d", info.name.Value(), i));
+		thread->SetName(Util::String::Sprintf("%s #%d", info.name.Value(), i));
 		thread->Start();
 		thread->SetThreadAffinity(info.affinity);
 		threads[i] = thread;
