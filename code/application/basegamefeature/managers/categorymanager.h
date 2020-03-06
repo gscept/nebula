@@ -55,18 +55,20 @@ typename ATTR::TYPE const& GetAttribute(Game::Entity entity)
 	n_assert(ptrptr != nullptr);
 	n_assert(*ptrptr != nullptr);
 
-	ATTR::TYPE* cd = (ATTR::TYPE*) * ptrptr;
+	ATTR::TYPE* data = (ATTR::TYPE*) * ptrptr;
 #ifdef NEBULA_BOUNDSCHECKS
 	Ptr<Game::Db::Database> db = EntityManager::Instance()->GetWorldDatabase();
 	SizeT size = db->GetTable(cat.instanceTable).numRows;
 	n_assert(mapping.instance.id >= 0 && mapping.instance.id < size);
 #endif
-	return cd[mapping.instance.id];
+	return data[mapping.instance.id];
 }
 
 template<typename ATTR>
 void SetAttribute(Game::Entity entity, typename ATTR::TYPE const& value)
 {
+	n_assert2(ATTR::GetAccessMode() == AccessMode::ReadWrite, "Attribute is not directly writable!\n");
+
 	Ptr<CategoryManager> mgr = CategoryManager::Instance();
 	auto mapping = mgr->GetEntityMapping(entity);
 	auto const& cat = mgr->GetCategory(mapping.category);
@@ -74,18 +76,18 @@ void SetAttribute(Game::Entity entity, typename ATTR::TYPE const& value)
 	if (!ATTR::Id().GetCategoryTable()->Contains(mapping.category.id))
 		return;
 
-	auto& act = *(ATTR::Id().GetCategoryTable());
-	void** ptrptr = act[mapping.category.id];
+	auto& ct = *(ATTR::Id().GetCategoryTable());
+	void** ptrptr = ct[mapping.category.id];
 	n_assert(ptrptr != nullptr);
 	n_assert(*ptrptr != nullptr);
 
-	ATTR::TYPE* cd = (ATTR::TYPE*)*ptrptr;
+	ATTR::TYPE* data = (ATTR::TYPE*)*ptrptr;
 #ifdef NEBULA_BOUNDSCHECKS
 	Ptr<Game::Db::Database> db = EntityManager::Instance()->GetWorldDatabase();
 	SizeT size = db->GetTable(cat.instanceTable).numRows;
 	n_assert(mapping.instance.id >= 0 && mapping.instance.id < size);
 #endif
-	cd[mapping.instance.id] = value;
+	data[mapping.instance.id] = value;
 }
 
 /// create and retrieve a state buffer from a category
