@@ -32,7 +32,6 @@
 #include "core/refcounted.h"
 #include "ids/idpool.h"
 #include "ids/idallocator.h"
-#include "rttiarray.h"
 #include "resource.h"
 #include "resourceid.h"
 #include <tuple>
