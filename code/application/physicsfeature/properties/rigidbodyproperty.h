@@ -13,8 +13,8 @@
 
 namespace Attr
 {
-    __DeclareAttribute(IsDynamic, bool, 'phDy', bool(true));
-    __DeclareAttribute(PhysicsResource, Util::String, 'phRs', Util::String("phys:system/placeholder.np"));
+    __DeclareAttribute(IsDynamic, AccessMode::ReadOnly, bool, 'phDy', bool(true));
+    __DeclareAttribute(PhysicsResource, AccessMode::ReadOnly, Util::String, 'phRs', Util::String("phys:system/placeholder.np"));
 }
 
 namespace PhysicsFeature

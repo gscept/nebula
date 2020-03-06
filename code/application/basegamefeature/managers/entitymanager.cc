@@ -9,7 +9,7 @@
 
 namespace Attr
 {
-__DefineAttribute(Owner, Game::Entity, 'OWNR', Game::Entity::Invalid());
+__DefineAttribute(Owner);
 }
 
 namespace Game
