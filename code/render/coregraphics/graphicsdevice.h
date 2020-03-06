@@ -63,6 +63,12 @@ struct Query
 	IndexT idx;
 };
 
+struct DrawThreadResult
+{
+	CoreGraphics::CommandBufferId buf;
+	Threading::Event* event;
+};
+
 struct GraphicsDeviceState
 {
 	Util::Array<CoreGraphics::TextureId> backBuffers;
@@ -71,6 +77,7 @@ struct GraphicsDeviceState
 	CoreGraphics::CommandBufferPoolId submissionGraphicsCmdPool;
 	CoreGraphics::CommandBufferPoolId submissionComputeCmdPool;
 	CoreGraphics::CommandBufferPoolId submissionTransferCmdPool;
+
 	CoreGraphics::SubmissionContextId resourceSubmissionContext;
 	CoreGraphics::CommandBufferId resourceSubmissionCmdBuffer;
 	CoreGraphics::FenceId resourceSubmissionFence;
@@ -113,6 +120,9 @@ struct GraphicsDeviceState
 	CoreGraphics::IndexBufferId globalIndexBuffer[NumVertexBufferMemoryTypes];
 	byte* mappedIndexBuffer[NumVertexBufferMemoryTypes];
 
+	CoreGraphics::DrawThread* drawThread;
+	Util::Stack<CoreGraphics::DrawThread*> drawThreads;
+
 	Util::Array<Ptr<CoreGraphics::RenderEventHandler> > eventHandlers;
 	CoreGraphics::PrimitiveTopology::Code primitiveTopology;
 	CoreGraphics::PrimitiveGroup primitiveGroup;
@@ -130,7 +140,6 @@ struct GraphicsDeviceState
 	bool visualizeMipMaps : 1;
 	bool usePatches : 1;
 	bool enableValidation : 1;
-	bool buildThreadBuffers : 1;
 	IndexT currentFrameIndex;
 
 	_declare_counter(NumImageBytesAllocated);
@@ -162,12 +171,18 @@ void AddBackBufferTexture(const CoreGraphics::TextureId tex);
 /// remove a render texture
 void RemoveBackBufferTexture(const CoreGraphics::TextureId tex);
 
+/// set draw thread to use for subsequent commands
+void SetDrawThread(CoreGraphics::DrawThread* thread);
+
 /// begin complete frame
 bool BeginFrame(IndexT frameIndex);
 /// start a new submission, with an optional argument for waiting for another queue
 void BeginSubmission(CoreGraphics::QueueType queue, CoreGraphics::QueueType waitQueue);
 /// begin a rendering pass
 void BeginPass(const CoreGraphics::PassId pass);
+
+/// start a new draw thread
+void BeginSubpassCommands(const CoreGraphics::CommandBufferId buf);
 /// progress to next subpass	
 void SetToNextSubpass();
 /// begin rendering a batch
@@ -275,6 +290,11 @@ void Draw();
 void DrawInstanced(SizeT numInstances, IndexT baseInstance);
 /// perform computation
 void Compute(int dimX, int dimY, int dimZ, const CoreGraphics::QueueType queue = GraphicsQueueType);
+
+/// start a new draw thread
+void EndSubpassCommands();
+/// execute thread buffer
+void ExecuteCommands(const CoreGraphics::CommandBufferId cmds);
 /// end current batch
 void EndBatch();
 /// end current pass

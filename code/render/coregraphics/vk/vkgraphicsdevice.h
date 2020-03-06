@@ -91,15 +91,6 @@ void SetVkViewports(VkViewport* viewports, SizeT num);
 /// set array of scissors directly
 void SetVkScissorRects(VkRect2D* scissors, SizeT num);
 
-/// start up new draw thread
-void BeginDrawThread();
-/// finish current draw threads
-void EndDrawThreads();
-/// add command to thread
-void PushToThread(const VkCommandBufferThread::Command& cmd, const IndexT& index, bool allowStaging = true);
-/// flush remaining staging thread commands
-void FlushToThread(const IndexT& index);
-
 /// begin command buffer marker (directly on vkcommandbuffer)
 void CommandBufferBeginMarker(VkCommandBuffer buf, const Math::float4& color, const char* name);
 /// end command buffer marker (directly on vkcommandbuffer)

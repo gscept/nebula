@@ -1032,6 +1032,17 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 	ResourceTableSetConstantBuffer(clusterState.clusterResourceTables[CoreGraphics::GetBufferedFrameIndex()], { GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.lightingUniformsSlot, 0, false, false, sizeof(LightsClusterCull::LightConstants), (SizeT)offset });
 	ResourceTableCommitChanges(clusterState.clusterResourceTables[CoreGraphics::GetBufferedFrameIndex()]);
 }
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+LightContext::RunFrameScriptJobs(const Graphics::FrameContext& ctx)
+{
+	N_SCOPE(ShadowMapRecord, Render);
+
+	// run jobs for shadow frame script after all constants are updated
+	lightServerState.shadowMappingFrameScript->RunJobs(ctx.frameIndex);
 }
 
 //------------------------------------------------------------------------------
@@ -1042,8 +1053,6 @@ LightContext::CullAndClassify()
 {
 	// update constants
 	using namespace CoreGraphics;
-
-	ResourceTableCommitChanges(clusterState.clusterResourceTables[CoreGraphics::GetBufferedFrameIndex()]);
 
 	// begin command buffer work
 	CommandBufferBeginMarker(ComputeQueueType, NEBULA_MARKER_BLUE, "Light cluster culling");

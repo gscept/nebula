@@ -86,6 +86,8 @@ public:
 
 	/// prepare light lists
 	static void UpdateViewDependentResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
+	/// run framescript when visibility is done
+	static void RunFrameScriptJobs(const Graphics::FrameContext& ctx);
 #ifndef PUBLIC_BUILD
 	/// render debug
 	static void OnRenderDebug(uint32_t flags);

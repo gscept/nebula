@@ -69,6 +69,7 @@ FrameServer::LoadFrameScript(const Resources::ResourceName& name, const IO::URI&
 	n_assert(!this->frameScripts.Contains(name));
 	Ptr<Frame::FrameScript> script = FrameScriptLoader::LoadFrameScript(path);
 	script->SetResourceName(name);
+	script->Setup();
 	this->frameScripts.Add(name, script);
 	return script;
 }
