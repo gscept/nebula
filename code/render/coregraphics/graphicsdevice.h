@@ -68,6 +68,9 @@ struct GraphicsDeviceState
 	Util::Array<CoreGraphics::TextureId> backBuffers;
 	Util::Dictionary<Util::StringAtom, CoreGraphics::TextureId> textures;
 
+	CoreGraphics::CommandBufferPoolId submissionGraphicsCmdPool;
+	CoreGraphics::CommandBufferPoolId submissionComputeCmdPool;
+	CoreGraphics::CommandBufferPoolId submissionTransferCmdPool;
 	CoreGraphics::SubmissionContextId resourceSubmissionContext;
 	CoreGraphics::CommandBufferId resourceSubmissionCmdBuffer;
 	CoreGraphics::FenceId resourceSubmissionFence;

@@ -627,10 +627,10 @@ PassApplyClipSettings(const PassId id)
 {
 	VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<1>(id.id24);
 	const Util::FixedArray<VkViewport>& viewports = runtimeInfo.subpassViewports[runtimeInfo.currentSubpassIndex];
-	SetVkViewports(viewports.Begin(), viewports.Size());
+	CoreGraphics::SetVkViewports(viewports.Begin(), viewports.Size());
 
 	const Util::FixedArray<VkRect2D>& scissors = runtimeInfo.subpassRects[runtimeInfo.currentSubpassIndex];
-	SetVkScissorRects(scissors.Begin(), scissors.Size());
+    CoreGraphics::SetVkScissorRects(scissors.Begin(), scissors.Size());
 }
 
 //------------------------------------------------------------------------------

@@ -1132,8 +1132,7 @@ _ProcessQueriesEndFrame()
 	state.frameProfilingMarkers.Clear();
 #endif
 
-	const CoreGraphics::Query& startGraphics = state.queries[state.queriesRingOffset];
-	const CoreGraphics::Query& startCompute = state.queries[state.queriesRingOffset + 1];
+
 
 	for (IndexT i = 0; i < state.profilingMarkersPerFrame[state.currentBufferedFrameIndex].Size(); i++)
 	{
@@ -1241,10 +1240,10 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		VK_STRUCTURE_TYPE_APPLICATION_INFO,
 		NULL,
 		App::Application::Instance()->GetAppTitle().AsCharPtr(),
-		2,																// application version
-		"Nebula Trifid",												// engine name
-		2,																// engine version
-		VK_API_VERSION_1_2												// API version
+		2,															// application version
+		"Nebula",													// engine name
+		4,															// engine version
+		VK_API_VERSION_1_2											// API version
 	};
 
 	state.usedExtensions = 0;
@@ -1298,15 +1297,15 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	res = vkCreateInstance(&instanceInfo, NULL, &state.instance);
 	if (res == VK_ERROR_INCOMPATIBLE_DRIVER)
 	{
-		n_error("VkGraphicsDevice::OpenVulkanContext(): Your GPU driver is not compatible with Vulkan.\n");
+		n_error("Your GPU driver is not compatible with Vulkan.\n");
 	}
 	else if (res == VK_ERROR_EXTENSION_NOT_PRESENT)
 	{
-		n_error("VkGraphicsDevice::OpenVulkanContext(): Vulkan extension failed to load.\n");
+		n_error("Vulkan extension failed to load.\n");
 	}
 	else if (res == VK_ERROR_LAYER_NOT_PRESENT)
 	{
-		n_error("VkGraphicsDevice::OpenVulkanContext(): Vulkan layer failed to load.\n");
+		n_error("Vulkan layer failed to load.\n");
 	}
 	n_assert(res == VK_SUCCESS);
 
@@ -1513,17 +1512,6 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	// setup the empty descriptor set
 	SetupEmptyDescriptorSetLayout();
 
-	// setup pools (from VkCmdBuffer.h)
-	SetupVkPools(state.devices[state.currentDevice], state.drawQueueFamily, state.computeQueueFamily, state.transferQueueFamily, state.sparseQueueFamily);
-
-	CommandBufferCreateInfo cmdCreateInfo =
-	{
-		false,
-		false,
-		true,
-		InvalidCommandUsage
-	};
-
 	state.constantBufferRings.Resize(info.numBufferedFrames);
 	state.vertexBufferRings.Resize(info.numBufferedFrames);
 
@@ -1632,28 +1620,51 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		}
 	}
 
-	cmdCreateInfo.usage = CommandGfx;
+	CommandBufferPoolCreateInfo cmdPoolCreateInfo =
+	{
+		CoreGraphics::QueueType::GraphicsQueueType,
+		false,
+		true,
+	};
+	state.submissionGraphicsCmdPool = CreateCommandBufferPool(cmdPoolCreateInfo);
+
+	cmdPoolCreateInfo.queue = CoreGraphics::QueueType::ComputeQueueType;
+	state.submissionComputeCmdPool = CreateCommandBufferPool(cmdPoolCreateInfo);
+
+	cmdPoolCreateInfo.queue = CoreGraphics::QueueType::TransferQueueType;
+	state.submissionTransferCmdPool = CreateCommandBufferPool(cmdPoolCreateInfo);
+	CommandBufferCreateInfo cmdCreateInfo =
+	{
+		false,
+		state.submissionGraphicsCmdPool
+	};
+
+	// setup main submission context (Graphics)
 	state.gfxSubmission = CreateSubmissionContext({ cmdCreateInfo, info.numBufferedFrames, true });
 	state.gfxCmdBuffer = CommandBufferId::Invalid();
 
-	cmdCreateInfo.usage = CommandCompute;
+	// setup compute submission context
+	cmdCreateInfo.pool = state.submissionComputeCmdPool;
 	state.computeSubmission = CreateSubmissionContext({ cmdCreateInfo, info.numBufferedFrames, true });
 	state.computeCmdBuffer = CommandBufferId::Invalid();
 
 	CommandBufferBeginInfo beginInfo{ true, false, false };
 
-	// create setup submission and transfer submission
-	cmdCreateInfo.usage = CommandTransfer;
+	// create transfer submission context
+	cmdCreateInfo.pool = state.submissionTransferCmdPool;
 	state.resourceSubmissionContext = CreateSubmissionContext({ cmdCreateInfo, info.numBufferedFrames, true });
 	state.resourceSubmissionActive = false;
 
-	cmdCreateInfo.usage = CommandGfx;
+	// create main-queue setup submission context (forced to be beginning of frame when relevant)
+	cmdCreateInfo.pool = state.submissionGraphicsCmdPool;
 	state.setupSubmissionContext = CreateSubmissionContext({ cmdCreateInfo, info.numBufferedFrames, false });
 	state.setupSubmissionActive = false;
 
+	// setup the special submission context for graphics queries
 	state.queryGraphicsSubmissionContext = CreateSubmissionContext({ cmdCreateInfo, info.numBufferedFrames, false });
 
-	cmdCreateInfo.usage = CommandCompute;
+	// setup special submission context for compute queries
+	cmdCreateInfo.pool = state.submissionComputeCmdPool;
 	state.queryComputeSubmissionContext = CreateSubmissionContext({ cmdCreateInfo, info.numBufferedFrames, false });
 
 	state.propagateDescriptorSets.Resize(NEBULA_NUM_GROUPS);
@@ -1661,6 +1672,8 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	{
 		state.propagateDescriptorSets[i].descriptor.baseSet = -1;
 	}
+
+	state.drawThread = nullptr;
 
 #pragma pop_macro("CreateSemaphore")
 
@@ -2008,7 +2021,12 @@ DestroyGraphicsDevice()
 	DestroySubmissionContext(state.queryComputeSubmissionContext);
 	DestroySubmissionContext(state.queryGraphicsSubmissionContext);
 
+	DestroyCommandBufferPool(state.submissionGraphicsCmdPool);
+	DestroyCommandBufferPool(state.submissionComputeCmdPool);
+	DestroyCommandBufferPool(state.submissionTransferCmdPool);
+
 	// clean up global constant buffers
+	IndexT i;
 	for (i = 0; i < NumConstantBufferTypes; i++)
 	{
 		if (state.globalGraphicsConstantBufferMaxValue[i] > 0)
@@ -2071,8 +2089,6 @@ DestroyGraphicsDevice()
 	// destroy pipeline
 	vkDestroyPipelineCache(state.devices[state.currentDevice], state.cache, nullptr);
 
-	// free our main buffers, our secondary buffers should be fine so the pools should be free to destroy
-	DestroyVkPools(state.devices[0]);
 
 	for (i = 0; i < state.presentSemaphores.Size(); i++)
 	{
@@ -2331,9 +2347,10 @@ BeginSubmission(CoreGraphics::QueueType queue, CoreGraphics::QueueType waitQueue
 				ConstantBufferGetVk(cbo[i]), copy.srcOffset, copy.size
 			};
 			
+			VkPipelineStageFlagBits stageFlag = queue == GraphicsQueueType ? VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT : VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
 			vkCmdPipelineBarrier(
 				CommandBufferGetVk(cmds),
-				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, 0,
+				VK_PIPELINE_STAGE_TRANSFER_BIT, stageFlag, 0,
 				0, nullptr,
 				1, &barrier,
 				0, nullptr
