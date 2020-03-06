@@ -124,6 +124,24 @@ Copy(const void* from, void* to, size_t numBytes)
 
 //------------------------------------------------------------------------------
 /**
+    Copy a chunk of memory (note the argument order is different from memcpy()!!!)
+*/
+template <typename T>
+__forceinline void
+CopyElements(const T* from, T* to, size_t numElements)
+{
+    if (numElements > 0)
+    {
+        n_assert(0 != from);
+        n_assert(0 != to);
+        n_assert(from != to);
+        memcpy(to, from, numElements * sizeof(T));
+    }
+}
+
+
+//------------------------------------------------------------------------------
+/**
     Copy data from a system memory buffer to graphics resource memory. Some
     platforms may need special handling of this case.
 */
