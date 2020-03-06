@@ -54,6 +54,12 @@ public:
 		CommandType type;
 	};
 
+	struct SyncCommand
+	{
+		static const CommandType Type = Sync;
+		Threading::Event* event;
+	};
+
 	struct CommandBuffer
 	{
 		byte* buffer;

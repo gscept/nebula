@@ -277,20 +277,19 @@ VkCommandBufferThread::DoWork()
 				break;
 			}
 
+			case Sync:
+			{
+				SyncCommand* vkcmd = reinterpret_cast<SyncCommand*>(commandBuf);
+				vkcmd->event->Signal();
+				break;
+			}
+
 			}
 
 			commandBuf += cmd.size;
 		}
 
 		N_MARKER_END();
-
-		this->lock.Enter();
-		if (this->event)
-		{
-			this->event->Signal();
-			this->event = nullptr;
-		}
-		this->lock.Leave();
 
 		// clear up commands
 		if (!curCommands.IsEmpty())

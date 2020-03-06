@@ -511,7 +511,7 @@ BindDescriptorsGraphics(const VkDescriptorSet* descriptors, uint32_t baseSet, ui
 			cmd.numSets = 1;
 			cmd.sets[i] = descriptors[i];
 			cmd.numOffsets = offsetCount;
-			n_assert(offsetCount < 16);
+			n_assert(offsetCount < VkCommandBufferThread::VkDescriptorsCommand::MaxOffsets);
 			Memory::CopyElements(offsets, cmd.offsets, offsetCount);
 			cmd.type = VK_PIPELINE_BIND_POINT_GRAPHICS;
 			state.propagateDescriptorSets[baseSet + i] = cmd;
@@ -526,10 +526,10 @@ BindDescriptorsGraphics(const VkDescriptorSet* descriptors, uint32_t baseSet, ui
 			VkCommandBufferThread::VkDescriptorsCommand cmd;
 			cmd.baseSet = baseSet;
 			cmd.numSets = setCount;
-			n_assert(setCount < 8);
+			n_assert(setCount < VkCommandBufferThread::VkDescriptorsCommand::MaxSets);
 			Memory::CopyElements(descriptors, cmd.sets, setCount);
 			cmd.numOffsets = offsetCount;
-			n_assert(offsetCount < 16);
+			n_assert(offsetCount < VkCommandBufferThread::VkDescriptorsCommand::MaxOffsets);
 			Memory::CopyElements(offsets, cmd.offsets, offsetCount);
 			cmd.type = VK_PIPELINE_BIND_POINT_GRAPHICS;
 			state.propagateDescriptorSets[baseSet].baseSet = -1;
@@ -568,6 +568,7 @@ UpdatePushRanges(const VkShaderStageFlags& stages, const VkPipelineLayout& layou
 		cmd.stages = stages;
 
 		// copy data here, will be deleted in the thread
+		n_assert(size < VkCommandBufferThread::VkPushConstantsCommand::MaxSize);
 		memcpy(cmd.data, data, size);
 		state.drawThread->Push(cmd);
 	}
@@ -745,7 +746,7 @@ SetVkViewports(VkViewport* viewports, SizeT num)
 	n_assert(num < state.MaxClipSettings);
 	Memory::CopyElements(viewports, state.viewports, num);
 	state.numViewports = num;
-	n_assert(num <= 8);
+	n_assert(num <= VkCommandBufferThread::VkViewportArrayCommand::Max);
 	if (state.currentProgram != -1)
 	{
 		if (state.drawThread)
@@ -773,7 +774,7 @@ SetVkScissorRects(VkRect2D* scissors, SizeT num)
 	n_assert(num < state.MaxClipSettings);
 	Memory::CopyElements(scissors, state.scissors, num);
 	state.numScissors = num;
-	n_assert(num <= 8);
+	n_assert(num <= VkCommandBufferThread::VkScissorRectArrayCommand::Max);
 	if (state.currentProgram != -1)
 	{
 		if (state.drawThread)
@@ -2844,17 +2845,14 @@ InsertBarrier(const CoreGraphics::BarrierId barrier, const CoreGraphics::QueueTy
 			cmd.srcMask = info.srcFlags;
 			cmd.dstMask = info.dstFlags;
 			cmd.memoryBarrierCount = info.numMemoryBarriers;
-			n_assert(info.numMemoryBarriers < 8);
+			n_assert(info.numMemoryBarriers < VkCommandBufferThread::VkBarrierCommand::Max);
 			Memory::CopyElements(info.memoryBarriers, cmd.memoryBarriers, info.numMemoryBarriers);
-			//cmd.barrier.memoryBarriers = info.memoryBarriers;
 			cmd.bufferBarrierCount = info.numBufferBarriers;
-			n_assert(info.numBufferBarriers < 8);
+			n_assert(info.numBufferBarriers < VkCommandBufferThread::VkBarrierCommand::Max);
 			Memory::CopyElements(info.bufferBarriers, cmd.bufferBarriers, info.numBufferBarriers);
-			//cmd.barrier.bufferBarriers = info.bufferBarriers;
 			cmd.imageBarrierCount = info.numImageBarriers;
-			n_assert(info.numImageBarriers < 8);
+			n_assert(info.numImageBarriers < VkCommandBufferThread::VkBarrierCommand::Max);
 			Memory::CopyElements(info.imageBarriers, cmd.imageBarriers, info.numImageBarriers);
-			//cmd.barrier.imageBarriers = info.imageBarriers;
 			state.drawThread->Push(cmd);
 		}
 		else
@@ -2923,15 +2921,13 @@ WaitEvent(const CoreGraphics::EventId ev, const CoreGraphics::QueueType queue)
 			VkCommandBufferThread::VkWaitForEventCommand cmd;
 			cmd.event = info.event;
 			cmd.numEvents = 1;
-			n_assert(info.numMemoryBarriers < 8);
+			n_assert(info.numMemoryBarriers < VkCommandBufferThread::VkWaitForEventCommand::Max);
 			Memory::CopyElements(info.memoryBarriers, cmd.memoryBarriers, info.numMemoryBarriers);
-			//cmd.barrier.memoryBarriers = info.memoryBarriers;
 			cmd.bufferBarrierCount = info.numBufferBarriers;
-			n_assert(info.numBufferBarriers < 8);
+			n_assert(info.numBufferBarriers < VkCommandBufferThread::VkWaitForEventCommand::Max);
 			Memory::CopyElements(info.bufferBarriers, cmd.bufferBarriers, info.numBufferBarriers);
-			//cmd.barrier.bufferBarriers = info.bufferBarriers;
 			cmd.imageBarrierCount = info.numImageBarriers;
-			n_assert(info.numImageBarriers < 8);
+			n_assert(info.numImageBarriers < VkCommandBufferThread::VkWaitForEventCommand::Max);
 			Memory::CopyElements(info.imageBarriers, cmd.imageBarriers, info.numImageBarriers);
 			cmd.waitingStage = info.leftDependency;
 			cmd.signalingStage = info.rightDependency;
