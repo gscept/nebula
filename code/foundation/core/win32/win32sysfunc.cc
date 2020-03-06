@@ -145,12 +145,15 @@ SysFunc::Error(const char* error)
 	Util::Array<Util::String> stacktrace = Win32StackTrace::GenerateStackTrace();
 	Util::String format;
     // remove the first 7 entries as they are only the assert/error functions and the last 6 as they are windows startup 
-	for (int i = 7; i < Math::n_min(17,stacktrace.Size() - 6); i++)
+	for (int i = 6; i < Math::n_min(17,stacktrace.Size() - 6); i++)
 	{
 		format.Append(stacktrace[i]);
-		format.Append("\n");
+		//format.Append("\n");
 	}
-	format.Format("%s\nCall Stack:\n%s", error, format.AsCharPtr());
+	format.Format("%s\n\
+----- *** CALL STACK *** -----\n\
+%s\
+----- *** CALL STACK *** -----\n\n", error, format.AsCharPtr());
 
     if(_isatty(_fileno(stdout)))
     {
@@ -158,7 +161,7 @@ SysFunc::Error(const char* error)
         if (IsDebuggerPresent())
         {
             OutputDebugString(format.AsCharPtr());
-            fprintf(stderr, "%s\n", format.AsCharPtr());
+            fprintf(stderr, "%s", format.AsCharPtr());
             n_break();
             exit(1);
         }

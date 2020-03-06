@@ -9,145 +9,24 @@ namespace Vulkan
 {
 
 VkCommandBufferAllocator commandBuffers(0x00FFFFFF);
-CommandBufferPools pools;
+VkCommandBufferPoolAllocator commandBufferPools(0x00FFFFFF);
 
 //------------------------------------------------------------------------------
 /**
 */
-void
-SetupVkPools(VkDevice dev, uint32_t drawQueue, uint32_t computeQueue, uint32_t transferQueue, uint32_t sparseQueue)
+const VkCommandPool 
+CommandBufferPoolGetVk(const CoreGraphics::CommandBufferPoolId id)
 {
-	VkResult result;
-
-	// create command pool for graphics
-	VkCommandPoolCreateInfo cmdPoolInfo =
-	{
-		VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-		NULL,
-		0,
-		0
-	};
-
-	pools.dev = dev;
-
-	memset(pools.pools[CoreGraphics::CommandGfx], 0, sizeof(pools.pools[CoreGraphics::CommandGfx]));
-	memset(pools.pools[CoreGraphics::CommandCompute], 0, sizeof(pools.pools[CoreGraphics::CommandCompute]));
-	memset(pools.pools[CoreGraphics::CommandTransfer], 0, sizeof(pools.pools[CoreGraphics::CommandTransfer]));
-	memset(pools.pools[CoreGraphics::CommandSparse], 0, sizeof(pools.pools[CoreGraphics::CommandSparse]));
-	pools.queueFamilies[CoreGraphics::CommandGfx] = drawQueue;
-	pools.queueFamilies[CoreGraphics::CommandCompute] = computeQueue;
-	pools.queueFamilies[CoreGraphics::CommandTransfer] = transferQueue;
-	pools.queueFamilies[CoreGraphics::CommandSparse] = sparseQueue;
-
-	// draw pools, we assume we at least have drawing capabilities
-	cmdPoolInfo.queueFamilyIndex = drawQueue;
-
-	cmdPoolInfo.flags = 0;
-	result = vkCreateCommandPool(dev, &cmdPoolInfo, NULL, &pools.pools[CoreGraphics::CommandGfx][cmdPoolInfo.flags]);
-	n_assert(result == VK_SUCCESS);
-
-	cmdPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-	result = vkCreateCommandPool(dev, &cmdPoolInfo, NULL, &pools.pools[CoreGraphics::CommandGfx][cmdPoolInfo.flags]);
-	n_assert(result == VK_SUCCESS);
-
-	cmdPoolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-	result = vkCreateCommandPool(dev, &cmdPoolInfo, NULL, &pools.pools[CoreGraphics::CommandGfx][cmdPoolInfo.flags]);
-	n_assert(result == VK_SUCCESS);
-
-	cmdPoolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-	result = vkCreateCommandPool(dev, &cmdPoolInfo, NULL, &pools.pools[CoreGraphics::CommandGfx][cmdPoolInfo.flags]);
-	n_assert(result == VK_SUCCESS);
-
-	if (computeQueue != InvalidIndex)
-	{
-		// compute pools
-		cmdPoolInfo.queueFamilyIndex = computeQueue;
-
-		cmdPoolInfo.flags = 0;
-		result = vkCreateCommandPool(dev, &cmdPoolInfo, NULL, &pools.pools[CoreGraphics::CommandCompute][cmdPoolInfo.flags]);
-		n_assert(result == VK_SUCCESS);
-
-		cmdPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-		result = vkCreateCommandPool(dev, &cmdPoolInfo, NULL, &pools.pools[CoreGraphics::CommandCompute][cmdPoolInfo.flags]);
-		n_assert(result == VK_SUCCESS);
-
-		cmdPoolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-		result = vkCreateCommandPool(dev, &cmdPoolInfo, NULL, &pools.pools[CoreGraphics::CommandCompute][cmdPoolInfo.flags]);
-		n_assert(result == VK_SUCCESS);
-
-		cmdPoolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-		result = vkCreateCommandPool(dev, &cmdPoolInfo, NULL, &pools.pools[CoreGraphics::CommandCompute][cmdPoolInfo.flags]);
-		n_assert(result == VK_SUCCESS);
-	}
-
-	if (transferQueue != InvalidIndex)
-	{
-		// transfer pools
-		cmdPoolInfo.queueFamilyIndex = transferQueue;
-
-		cmdPoolInfo.flags = 0;
-		result = vkCreateCommandPool(dev, &cmdPoolInfo, NULL, &pools.pools[CoreGraphics::CommandTransfer][cmdPoolInfo.flags]);
-		n_assert(result == VK_SUCCESS);
-
-		cmdPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-		result = vkCreateCommandPool(dev, &cmdPoolInfo, NULL, &pools.pools[CoreGraphics::CommandTransfer][cmdPoolInfo.flags]);
-		n_assert(result == VK_SUCCESS);
-
-		cmdPoolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-		result = vkCreateCommandPool(dev, &cmdPoolInfo, NULL, &pools.pools[CoreGraphics::CommandTransfer][cmdPoolInfo.flags]);
-		n_assert(result == VK_SUCCESS);
-
-		cmdPoolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-		result = vkCreateCommandPool(dev, &cmdPoolInfo, NULL, &pools.pools[CoreGraphics::CommandTransfer][cmdPoolInfo.flags]);
-		n_assert(result == VK_SUCCESS);
-	}
-
-	if (sparseQueue != InvalidIndex)
-	{
-		// sparse
-		cmdPoolInfo.queueFamilyIndex = sparseQueue;
-
-		cmdPoolInfo.flags = 0;
-		result = vkCreateCommandPool(dev, &cmdPoolInfo, NULL, &pools.pools[CoreGraphics::CommandSparse][cmdPoolInfo.flags]);
-		n_assert(result == VK_SUCCESS);
-
-		cmdPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-		result = vkCreateCommandPool(dev, &cmdPoolInfo, NULL, &pools.pools[CoreGraphics::CommandSparse][cmdPoolInfo.flags]);
-		n_assert(result == VK_SUCCESS);
-
-		cmdPoolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-		result = vkCreateCommandPool(dev, &cmdPoolInfo, NULL, &pools.pools[CoreGraphics::CommandSparse][cmdPoolInfo.flags]);
-		n_assert(result == VK_SUCCESS);
-
-		cmdPoolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-		result = vkCreateCommandPool(dev, &cmdPoolInfo, NULL, &pools.pools[CoreGraphics::CommandSparse][cmdPoolInfo.flags]);
-		n_assert(result == VK_SUCCESS);
-	}
+	return commandBufferPools.Get<CommandBufferPool_VkCommandPool>(id.id24);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-void
-DestroyVkPools(VkDevice dev)
+const VkDevice 
+CommandBufferPoolGetVkDevice(const CoreGraphics::CommandBufferPoolId id)
 {
-	for (IndexT i = 0; i < CoreGraphics::NumCommandBufferUsages; i++)
-	{
-		vkDestroyCommandPool(dev, pools.pools[i][0], nullptr);
-		vkDestroyCommandPool(dev, pools.pools[i][1], nullptr);
-		vkDestroyCommandPool(dev, pools.pools[i][2], nullptr);
-		vkDestroyCommandPool(dev, pools.pools[i][3], nullptr);
-	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const VkCommandPool
-CommandBufferGetVkPool(CoreGraphics::CommandBufferUsage usage, VkCommandPoolCreateFlags flags)
-{
-	n_assert(usage != CoreGraphics::InvalidCommandUsage);
-	return pools.pools[usage][flags];
+	return commandBufferPools.Get<CommandBufferPool_VkDevice>(id.id24);
 }
 
 //------------------------------------------------------------------------------
@@ -160,7 +39,7 @@ CommandBufferGetVk(const CoreGraphics::CommandBufferId id)
 	n_assert(id.id8 == CoreGraphics::IdType::CommandBufferIdType);
 #endif
 	if (id == CoreGraphics::CommandBufferId::Invalid()) return VK_NULL_HANDLE;
-	else												return commandBuffers.Get<0>(id.id24);
+	else												return commandBuffers.Get<CommandBuffer_VkCommandBuffer>(id.id24);
 }
 
 } // Vulkan
@@ -173,16 +52,52 @@ using namespace Vulkan;
 //------------------------------------------------------------------------------
 /**
 */
-const CommandBufferId
-CreateCommandBuffer(const CommandBufferCreateInfo& info)
+const CommandBufferPoolId 
+CreateCommandBufferPool(const CommandBufferPoolCreateInfo& info)
 {
+	Ids::Id32 id = commandBufferPools.Alloc();
+
 	VkCommandPoolCreateFlags flags = 0;
 	flags |= info.resetable ? VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT : 0;
 	flags |= info.shortlived ? VK_COMMAND_POOL_CREATE_TRANSIENT_BIT : 0;
 
-	n_assert(info.usage != CoreGraphics::InvalidCommandUsage);
-	VkCommandPool pool = pools.pools[info.usage][flags];
+	uint32_t queueFamily = CoreGraphics::GetQueueFamily(info.queue);
 
+	VkCommandPoolCreateInfo cmdPoolInfo =
+	{
+		VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+		nullptr,
+		flags,
+		queueFamily
+	};
+	VkDevice dev = CoreGraphics::GetCurrentDevice();
+	VkResult res = vkCreateCommandPool(dev, &cmdPoolInfo, nullptr, &commandBufferPools.Get<CommandBufferPool_VkCommandPool>(id));
+	commandBufferPools.Set<CommandBufferPool_VkDevice>(id, dev);
+	n_assert(res == VK_SUCCESS);
+
+	CommandBufferPoolId ret;
+	ret.id24 = id;
+	ret.id8 = CommandBufferPoolIdType;
+	return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+DestroyCommandBufferPool(const CommandBufferPoolId pool)
+{
+	vkDestroyCommandPool(commandBufferPools.Get<CommandBufferPool_VkDevice>(pool.id24), commandBufferPools.Get<CommandBufferPool_VkCommandPool>(pool.id24), nullptr);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const CommandBufferId
+CreateCommandBuffer(const CommandBufferCreateInfo& info)
+{
+	n_assert(info.pool != CoreGraphics::CommandBufferPoolId::Invalid());
+	VkCommandPool pool = CommandBufferPoolGetVk(info.pool);
 	VkCommandBufferAllocateInfo vkInfo =
 	{
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
@@ -191,10 +106,12 @@ CreateCommandBuffer(const CommandBufferCreateInfo& info)
 		info.subBuffer ? VK_COMMAND_BUFFER_LEVEL_SECONDARY : VK_COMMAND_BUFFER_LEVEL_PRIMARY,
 		1
 	};
+	VkDevice dev = CommandBufferPoolGetVkDevice(info.pool);
 	Ids::Id32 id = commandBuffers.Alloc();
-	VkResult res = vkAllocateCommandBuffers(pools.dev, &vkInfo, &commandBuffers.Get<0>(id));
+	VkResult res = vkAllocateCommandBuffers(dev, &vkInfo, &commandBuffers.Get<CommandBuffer_VkCommandBuffer>(id));
 	n_assert(res == VK_SUCCESS);
-	commandBuffers.Get<1>(id) = pool;
+	commandBuffers.Get<CommandBuffer_VkCommandPool>(id) = pool;
+	commandBuffers.Get<CommandBuffer_VkDevice>(id) = dev;
 	CommandBufferId ret;
 	ret.id24 = id;
 	ret.id8 = CommandBufferIdType;
@@ -210,7 +127,7 @@ DestroyCommandBuffer(const CommandBufferId id)
 #if _DEBUG
 	n_assert(id.id8 == CommandBufferIdType);
 #endif
-	vkFreeCommandBuffers(pools.dev, commandBuffers.Get<1>(id.id24), 1, &commandBuffers.Get<0>(id.id24));
+	vkFreeCommandBuffers(commandBuffers.Get<CommandBuffer_VkDevice>(id.id24), commandBuffers.Get<CommandBuffer_VkCommandPool>(id.id24), 1, &commandBuffers.Get<CommandBuffer_VkCommandBuffer>(id.id24));
 }
 
 //------------------------------------------------------------------------------
@@ -233,7 +150,7 @@ CommandBufferBeginRecord(const CommandBufferId id, const CommandBufferBeginInfo&
 		flags,
 		nullptr		// fixme, this part can optimize if used properly!
 	};
-	VkResult res = vkBeginCommandBuffer(commandBuffers.Get<0>(id.id24), &begin);
+	VkResult res = vkBeginCommandBuffer(commandBuffers.Get<CommandBuffer_VkCommandBuffer>(id.id24), &begin);
 	n_assert(res == VK_SUCCESS);
 }
 
@@ -246,7 +163,7 @@ CommandBufferEndRecord(const CommandBufferId id)
 #if _DEBUG
 	n_assert(id.id8 == CommandBufferIdType);
 #endif
-	VkResult res = vkEndCommandBuffer(commandBuffers.Get<0>(id.id24));
+	VkResult res = vkEndCommandBuffer(commandBuffers.Get<CommandBuffer_VkCommandBuffer>(id.id24));
 	n_assert(res == VK_SUCCESS);
 }
 
@@ -261,7 +178,7 @@ CommandBufferClear(const CommandBufferId id, const CommandBufferClearInfo& info)
 #endif
 	VkCommandBufferResetFlags flags = 0;
 	flags |= info.allowRelease ? VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT : 0;
-	VkResult res = vkResetCommandBuffer(commandBuffers.Get<0>(id.id24), flags);
+	VkResult res = vkResetCommandBuffer(commandBuffers.Get<CommandBuffer_VkCommandBuffer>(id.id24), flags);
 	n_assert(res == VK_SUCCESS);
 }
 

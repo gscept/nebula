@@ -19,6 +19,8 @@ VkResourceTableLayoutAllocator resourceTableLayoutAllocator;
 VkResourcePipelineAllocator resourcePipelineAllocator;
 VkDescriptorSetLayout emptySetLayout;
 
+static bool ResourceTableBlocked = false;
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -459,9 +461,19 @@ ResourceTableSetSampler(const ResourceTableId& id, const ResourceTableSampler& s
 //------------------------------------------------------------------------------
 /**
 */
+void 
+ResourceTableBlock(bool b)
+{
+	ResourceTableBlocked = b;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 ResourceTableCommitChanges(const ResourceTableId& id)
 {
+	n_assert_fmt(!ResourceTableBlocked, "Resource table updates are blocked! Please move your resource table update code to UpdateViewDepdendentResources or UpdateResources");
 	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<4>(id.id24);
 	Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<5>(id.id24);
 	VkDevice& dev = resourceTableAllocator.Get<0>(id.id24);

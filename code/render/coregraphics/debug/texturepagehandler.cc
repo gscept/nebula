@@ -7,7 +7,7 @@
 #include "coregraphics/debug/texturepagehandler.h"
 #include "coregraphics/texture.h"
 #include "http/html/htmlpagewriter.h"
-#include "resources/resourcemanager.h"
+#include "resources/resourceserver.h"
 #include "coregraphics/streamtexturesaver.h"
 #include "io/ioserver.h"
 #include "coregraphics/imagefileformat.h"
@@ -68,7 +68,7 @@ TexturePageHandler::HandleRequest(const Ptr<HttpRequest>& request)
         htmlWriter->LineBreak();
         htmlWriter->LineBreak();
 
-		const StreamTexturePool* streamPool = ResourceManager::Instance()->GetStreamPool<StreamTexturePool>();
+		const StreamTexturePool* streamPool = ResourceServer::Instance()->GetStreamPool<StreamTexturePool>();
 		const Util::Dictionary<Resources::ResourceName, Resources::ResourceId>& streamResources = streamPool->GetResources();
 
 		// create a table of all existing textures
@@ -150,7 +150,7 @@ TexturePageHandler::HandleRequest(const Ptr<HttpRequest>& request)
 		}
 		htmlWriter->End(HtmlElement::Table);
 
-		const MemoryTexturePool* memPool = ResourceManager::Instance()->GetMemoryPool<MemoryTexturePool>();
+		const MemoryTexturePool* memPool = ResourceServer::Instance()->GetMemoryPool<MemoryTexturePool>();
 		const Util::Dictionary<Resources::ResourceName, Resources::ResourceId>& memResources = memPool->GetResources();
 
 		htmlWriter->Element(HtmlElement::Heading1, "Texture Resources (memory loaded)");
@@ -254,7 +254,7 @@ HttpStatus::Code
 TexturePageHandler::HandleImageRequest(const Dictionary<String,String>& query, const Ptr<Stream>& responseStream)
 {
     n_assert(query.Contains("img"));
-    const Ptr<ResourceManager>& resManager = ResourceManager::Instance();
+    const Ptr<ResourceServer>& resManager = ResourceServer::Instance();
     
     // get input args
 	ResourceName name = ResourceName(query["img"]);
@@ -304,8 +304,8 @@ TexturePageHandler::HandleImageRequest(const Dictionary<String,String>& query, c
 HttpStatus::Code
 TexturePageHandler::HandleTextureInfoRequest(const Util::String& resId, const Ptr<Stream>& responseContentStream)
 {
-    // lookup the texture in the ResourceManager
-    const Ptr<ResourceManager>& resManager = ResourceManager::Instance();
+    // lookup the texture in the ResourceServer
+    const Ptr<ResourceServer>& resManager = ResourceServer::Instance();
 	Resources::ResourceId id = resId.AsLongLong();
 
     if (!resManager->HasResource(id))

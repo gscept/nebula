@@ -16,7 +16,7 @@ namespace Resources
 class ResourceStreamPool;
 class ResourceMemoryPool;
 class ResourcePool;
-class ResourceManager;
+class ResourceServer;
 class ResourceContainer;
 class Resource
 {
@@ -38,7 +38,7 @@ protected:
 	friend class ResourceStreamPool;
 	friend class ResourceMemoryPool;
 	friend class ResourcePool;
-	friend class ResourceManager;
+	friend class ResourceServer;
 	friend class ResourceContainer;
 };
 

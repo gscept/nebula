@@ -36,10 +36,10 @@ public:
 	/// get cluster uniforms
 	static const ClusterGenerate::ClusterUniforms& GetUniforms();
 
-	/// do light classification for tiled/clustered compute
-	static void OnBeforeView(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
+	/// update constants
+	static void UpdateResources(const Graphics::FrameContext& ctx);
 #ifndef PUBLIC_BUILD
-	//
+	/// implement me
 	static void OnRenderDebug(uint32_t flags);
 #endif
 private:

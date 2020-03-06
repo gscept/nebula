@@ -83,7 +83,7 @@ vsColoredShadow(
 	out vec2 UV,
 	out vec4 ProjPos) 
 {
-	vec4 pos = ViewMatrixArray[0] * Model * vec4(position, 1);
+	vec4 pos = LightViewMatrix[gl_InstanceID] * Model * vec4(position, 1);
 	gl_Position = pos;
 	ProjPos = pos;
 	UV = vec2(uv.x * NumXTiles, uv.y * NumYTiles);
@@ -106,7 +106,7 @@ vsColoredCSM(
 	out vec4 ProjPos,
 	out int Instance) 
 {
-	ProjPos = ViewMatrixArray[gl_InstanceID] * Model * vec4(position, 1);
+	ProjPos = LightViewMatrix[gl_InstanceID] * Model * vec4(position, 1);
 	UV = vec2(uv.x * NumXTiles, uv.y * NumYTiles);
 	Instance = gl_InstanceID;
 }

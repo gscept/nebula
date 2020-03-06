@@ -5,7 +5,7 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "characternode.h"
-#include "resources/resourcemanager.h"
+#include "resources/resourceserver.h"
 #include "coregraphics/shaderserver.h"
 #include "models/nodes/characterskinnode.h"
 //#include "characterjointmask.h"

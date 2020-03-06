@@ -15,7 +15,7 @@
 #include "threading/thread.h"
 #include "coregraphics/shaderserver.h"
 #include "resources/resourceid.h"
-#include "resources/resourcemanager.h"
+#include "resources/resourceserver.h"
 #include "coregraphics/shadersemantics.h"
 
 using namespace Base;

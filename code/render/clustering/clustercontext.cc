@@ -59,11 +59,7 @@ ClusterContext::~ClusterContext()
 void 
 ClusterContext::Create(float ZNear, float ZFar, const CoreGraphics::WindowId window)
 {
-	__bundle.OnBeforeFrame = nullptr;
-	__bundle.OnWaitForWork = nullptr;
-	__bundle.OnBeforeView = ClusterContext::OnBeforeView;
-	__bundle.OnAfterView = nullptr;
-	__bundle.OnAfterFrame = nullptr;
+	__bundle.OnUpdateResources = ClusterContext::UpdateResources;
 	__bundle.StageBits = &ClusterContext::__state.currentStage;
 #ifndef PUBLIC_BUILD
 	__bundle.OnRenderDebug = ClusterContext::OnRenderDebug;
@@ -155,7 +151,7 @@ ClusterContext::GetUniforms()
 /**
 */
 void 
-ClusterContext::OnBeforeView(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
+ClusterContext::UpdateResources(const Graphics::FrameContext& ctx)
 {
 	using namespace CoreGraphics;
 
@@ -173,6 +169,7 @@ ClusterContext::OnBeforeView(const Ptr<Graphics::View>& view, const Graphics::Fr
 	uint offset = SetComputeConstants(MainThreadConstantBuffer, state.uniforms);
 	uint bufferIndex = CoreGraphics::GetBufferedFrameIndex();
 	ResourceTableSetConstantBuffer(state.resourceTable[bufferIndex], { GetComputeConstantBuffer(MainThreadConstantBuffer), state.uniformsSlot, 0, false, false, sizeof(ClusterGenerate::ClusterUniforms), (SizeT)offset });
+	ResourceTableCommitChanges(state.resourceTable[bufferIndex]);
 }
 
 //------------------------------------------------------------------------------
@@ -191,9 +188,6 @@ ClusterContext::UpdateClusters()
 {
 	// update constants
 	using namespace CoreGraphics;
-
-	uint bufferIndex = CoreGraphics::GetBufferedFrameIndex();
-	ResourceTableCommitChanges(state.resourceTable[bufferIndex]);
 
 	// begin command buffer work
 	CommandBufferBeginMarker(ComputeQueueType, NEBULA_MARKER_BLUE, "Cluster AABB Generation");
@@ -215,6 +209,8 @@ ClusterContext::UpdateClusters()
 		}, "AABB begin barrier");
 
 	SetShaderProgram(state.clusterGenerateProgram, ComputeQueueType);
+
+	uint bufferIndex = CoreGraphics::GetBufferedFrameIndex();
 	SetResourceTable(state.resourceTable[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr, ComputeQueueType);
 
 	// run the job as series of 1024 clusters at a time

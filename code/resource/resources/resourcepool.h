@@ -32,7 +32,6 @@
 #include "core/refcounted.h"
 #include "ids/idpool.h"
 #include "ids/idallocator.h"
-#include "rttiarray.h"
 #include "resource.h"
 #include "resourceid.h"
 #include <tuple>
@@ -130,7 +129,7 @@ public:
 	};
 	static const uint32_t ResourceIndexGrow = 512;
 protected:
-	friend class ResourceManager;
+	friend class ResourceServer;
 
 	/// request new resource and generate id for it, implement in subclass
 	virtual ResourceUnknownId AllocObject() = 0;

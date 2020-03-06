@@ -478,6 +478,21 @@ FrameOp::SetupSynchronization(
 //------------------------------------------------------------------------------
 /**
 */
+void 
+FrameOp::Compiled::UpdateResources(const IndexT frameIndex)
+{
+	// implement in subclass
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+FrameOp::Compiled::RunJobs(const IndexT frameIndex)
+{
+	// implement in subclass
+}
+
 void
 FrameOp::Compiled::Discard()
 {

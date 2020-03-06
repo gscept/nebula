@@ -1,9 +1,9 @@
 //------------------------------------------------------------------------------
-// resourcemanager.cc
+// resourceserver.cc
 // (C)2017-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
-#include "resourcemanager.h"
+#include "resourceserver.h"
 
 #if NEBULA_DEBUG
 #include "core/sysfunc.h"
@@ -11,14 +11,14 @@
 namespace Resources
 {
 
-__ImplementClass(Resources::ResourceManager, 'RMGR', Core::RefCounted);
-__ImplementSingleton(Resources::ResourceManager);
+__ImplementClass(Resources::ResourceServer, 'RMGR', Core::RefCounted);
+__ImplementSingleton(Resources::ResourceServer);
 
-int32_t ResourceManager::UniquePoolCounter = 0;
+int32_t ResourceServer::UniquePoolCounter = 0;
 //------------------------------------------------------------------------------
 /**
 */
-ResourceManager::ResourceManager()
+ResourceServer::ResourceServer()
 {
 	__ConstructSingleton;
 	this->open = false;
@@ -27,7 +27,7 @@ ResourceManager::ResourceManager()
 //------------------------------------------------------------------------------
 /**
 */
-ResourceManager::~ResourceManager()
+ResourceServer::~ResourceServer()
 {
 	__DestructSingleton;
 	n_assert(!this->open); // make sure to call close before destroying the object
@@ -37,7 +37,7 @@ ResourceManager::~ResourceManager()
 /**
 */
 void
-ResourceManager::Open()
+ResourceServer::Open()
 {
 	n_assert(!this->open);
 	this->loaderThread = ResourceLoaderThread::Create();
@@ -54,7 +54,7 @@ ResourceManager::Open()
 /**
 */
 void
-ResourceManager::Close()
+ResourceServer::Close()
 {
 	n_assert(this->open);
 
@@ -96,7 +96,7 @@ ResourceManager::Close()
 /**
 */
 void
-ResourceManager::RegisterStreamPool(const Util::StringAtom& ext, const Core::Rtti& loaderClass)
+ResourceServer::RegisterStreamPool(const Util::StringAtom& ext, const Core::Rtti& loaderClass)
 {
 	n_assert(this->open);
 	n_assert(loaderClass.IsDerivedFrom(ResourceStreamPool::RTTI));
@@ -113,7 +113,7 @@ ResourceManager::RegisterStreamPool(const Util::StringAtom& ext, const Core::Rtt
 /**
 */
 void
-ResourceManager::RegisterMemoryPool(const Core::Rtti& loaderClass)
+ResourceServer::RegisterMemoryPool(const Core::Rtti& loaderClass)
 {
 	n_assert(this->open);
 	n_assert(loaderClass.IsDerivedFrom(ResourceMemoryPool::RTTI));
@@ -129,7 +129,7 @@ ResourceManager::RegisterMemoryPool(const Core::Rtti& loaderClass)
 /**
 */
 void 
-ResourceManager::LoadDefaultResources()
+ResourceServer::LoadDefaultResources()
 {
 	n_assert(this->open);
 	IndexT i;
@@ -143,7 +143,7 @@ ResourceManager::LoadDefaultResources()
 /**
 */
 void
-ResourceManager::Update(IndexT frameIndex)
+ResourceServer::Update(IndexT frameIndex)
 {
 	IndexT i;
 	for (i = 0; i < this->pools.Size(); i++)
@@ -157,7 +157,7 @@ ResourceManager::Update(IndexT frameIndex)
 /**
 */
 void
-ResourceManager::DiscardResources(const Util::StringAtom& tag)
+ResourceServer::DiscardResources(const Util::StringAtom& tag)
 {
 	IndexT i;
 	for (i = 0; i < this->pools.Size(); i++)
@@ -171,7 +171,7 @@ ResourceManager::DiscardResources(const Util::StringAtom& tag)
 /**
 */
 bool
-ResourceManager::HasPendingResources()
+ResourceServer::HasPendingResources()
 {
 	IndexT i;
 	for (i = 0; i < this->pools.Size(); i++)
@@ -191,7 +191,7 @@ ResourceManager::HasPendingResources()
 /**
 */
 Core::Rtti*
-ResourceManager::GetType(const Resources::ResourceId id)
+ResourceServer::GetType(const Resources::ResourceId id)
 {
 	// get id of loader
 	const Ids::Id8 loaderid = id.poolIndex;
@@ -206,7 +206,7 @@ ResourceManager::GetType(const Resources::ResourceId id)
 /**
 */
 void 
-ResourceManager::WaitForLoaderThread()
+ResourceServer::WaitForLoaderThread()
 {
 	this->loaderThread->Wait();
 }

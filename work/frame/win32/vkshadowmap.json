@@ -1,109 +1,114 @@
 {
-  version: 2,
-  engine: "Nebula",
-  sub_script: true,
-  framescript: {
-    textures: [
-      {
-        name: "SpotLightShadowAtlas",
-        format: "R32G32F",
-        width: 1024,
-        height: 1024,
-        layers: 16,
-        usage: "Render",
-        type: "Texture2DArray"
-      },
-      {
-        name: "GlobalLightShadow",
-        format: "R32G32F",
-        width: 1024,
-        height: 1024,
-        layers: 4,
-        usage: "Render",
-        type: "Texture2DArray"
-      },
-      {
-        name: "GlobalLightShadowFiltered0",
-        format: "R32G32F",
-        width: 1024,
-        height: 1024,
-        layers: 4,
-        usage: "ReadWrite",
-        type: "Texture2DArray"
-      },
-      {
-        name: "GlobalLightShadowFiltered1",
-        format: "R32G32F",
-        width: 1024,
-        height: 1024,
-        layers: 4,
-        usage: "ReadWrite",
-        type: "Texture2DArray"
-      },
-      {
-        name: "SpotLightShadowAtlasFiltered",
-        format: "R32G32F",
-        width: 1024,
-        height: 1024,
-        layers: 16,
-        usage: "ReadWrite",
-        type: "Texture2DArray"
-      },
-      {
-        name: "GlobalLightDepth",
-        format: "D32S8",
-        width: 1024,
-        height: 1024,
-        layers: 4,
-        usage: "Render",
-        type: "Texture2DArray"
-      }
-    ]
+	version: 2,
+	engine: "Nebula",
+	sub_script: true,
+	framescript: {
+		textures: [
+			{
+				name: "LocalLightShadow",
+				format: "R32G32F",
+				width: 1024,
+				height: 1024,
+				layers: 16,
+				usage: "Render",
+				type: "Texture2DArray"
+			},
+			{
+				name: "SunShadow",
+				format: "R32G32F",
+				width: 1024,
+				height: 1024,
+				layers: 4,
+				usage: "Render",
+				type: "Texture2DArray"
+			},
+			{
+				name: "SunShadowFiltered0",
+				format: "R32G32F",
+				width: 1024,
+				height: 1024,
+				layers: 4,
+				usage: "ReadWrite",
+				type: "Texture2DArray"
+			},
+			{
+				name: "SunShadowFiltered1",
+				format: "R32G32F",
+				width: 1024,
+				height: 1024,
+				layers: 4,
+				usage: "ReadWrite",
+				type: "Texture2DArray"
+			},
+			{
+				name: "GlobalLightDepth",
+				format: "D32S8",
+				width: 1024,
+				height: 1024,
+				layers: 4,
+				usage: "Render",
+				type: "Texture2DArray"
+			}
+		]
 
-    pass: {
-      name: "ShadowMapping",
-      attachments: [
-        {
-          name: "GlobalLightShadow",
-          clear: [ 1000, 1000, 0, 0 ],
-          store: true
-        }
-      ],
+		pass: {
+			name: "SunShadowMapping",
+			attachments: [
+				{
+					name: "SunShadow",
+					clear: [ 1000, 1000, 0, 0 ],
+					store: true
+				}
+			],
 
-      depth_stencil: {
-        name: "GlobalLightDepth",
-        clear: 1,
-        clearStencil: 0
-      },
+			subpass: {
+				name: "SunShadows",
+				dependencies: [],
+				attachments: [ "SunShadow" ],
+				depth: false,
+				plugin: {
+					name: "LightContext - Sun Shadows"
+				}
+			},
+		},
 
-      subpass: {
-        name: "GlobalLightPass",
-        dependencies: [],
-        attachments: [ "GlobalLightShadow" ],
-        depth: false,
-        plugin: {
-          name: "LightContext - Sun Shadows"
-        }
-      }
-    },
+		pass: {
+			name: "LocalShadowMapping"
+			attachments: [
+				{
+					name: "LocalLightShadow",
+					clear: [ 1000, 1000, 0, 0 ],
+					store: true
+				}
+			],
+			subpass: {
+				name: "SpotlightShadows",
+				dependencies: [],
+				attachments: [ "LocalLightShadow" ],
+				depth: false,
+				plugin: {
+					name: "LightContext - Spotlight Shadows"
+				}
+			}
+		},
 
-    plugin: {
-      name: "LightContext - Spotlight Blur"
-    }
-    plugin: {
-      inputs: [
-        {
-          name: "GlobalLightShadow",
-          access: "ShaderRead",
-          layout: "ShaderRead",
-          stage: "ComputeShader",
-          layer_count: 4,
-          aspect: "Color"
-        }
+		plugin: {
+			name: "LightContext - Spotlight Blur"
+		}
+		plugin: {
+			inputs: [
+				{
+					name: "SunShadow",
+					access: "ShaderRead",
+					layout: "ShaderRead",
+					stage: "ComputeShader",
+					layer_count: 4,
+					aspect: "Color"
+				}
 
-      ]
-      name: "LightContext - Sun Blur"
-    }
+			]
+			name: "LightContext - Sun Blur"
+		}
 
-  }
+	}
 }

@@ -470,11 +470,12 @@ VkUtilities::BeginImmediateTransfer()
 	using namespace CoreGraphics;
 	CommandBufferCreateInfo info =
 	{
-		false, false, true, CommandTransfer
+		false,
+		CoreGraphics::CommandBufferPoolId::Invalid() // fixme, or delete this function
 	};
 	CommandBufferId cmdBuf = CreateCommandBuffer(info);
 
-	// this is why this is slow, we must perform a begin-end-submit of the command buffer for this to work
+	// this is slow because we are basically recording and submitting a transfer immediately
 	VkCommandBufferBeginInfo begin =
 	{
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,

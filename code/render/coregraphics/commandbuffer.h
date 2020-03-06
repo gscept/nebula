@@ -20,12 +20,27 @@ enum CommandBufferUsage
 	NumCommandBufferUsages = InvalidCommandUsage
 };
 
+//------------------------------------------------------------------------------
+/**
+*/
+ID_24_8_TYPE(CommandBufferPoolId);
+
+struct CommandBufferPoolCreateInfo
+{
+	CoreGraphics::QueueType queue;
+	bool resetable : 1;		// allow the buffer to be reset
+	bool shortlived : 1;	// the buffer won't last long until it's destroyed or reset
+};
+
+/// create new command buffer pool
+const CommandBufferPoolId CreateCommandBufferPool(const CommandBufferPoolCreateInfo& info);
+/// destroy command buffer pool
+void DestroyCommandBufferPool(const CommandBufferPoolId pool);
+
 struct CommandBufferCreateInfo
 {
 	bool subBuffer : 1;		// create buffer to be executed on another command buffer (subBuffer must be 0 on that one)
-	bool resetable : 1;		// allow the buffer to be reset
-	bool shortlived : 1;	// the buffer won't last long until it's destroyed or reset
-	CommandBufferUsage usage;
+	CommandBufferPoolId pool;
 };
 
 struct CommandBufferBeginInfo
@@ -54,6 +69,8 @@ void CommandBufferEndRecord(const CommandBufferId id);
 
 /// clear the command buffer to be empty
 void CommandBufferClear(const CommandBufferId id, const CommandBufferClearInfo& info);
+
+
 
 } // namespace CoreGraphics
 

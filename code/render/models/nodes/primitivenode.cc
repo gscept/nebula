@@ -4,7 +4,7 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "primitivenode.h"
-#include "resources/resourcemanager.h"
+#include "resources/resourceserver.h"
 #include "coregraphics/mesh.h"
 #include "coregraphics/graphicsdevice.h"
 

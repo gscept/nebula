@@ -10,7 +10,7 @@
 #include "lighting/lightcontext.h"
 #include "models/modelcontext.h"
 #include "visibility/visibilitycontext.h"
-#include "resources/resourcemanager.h"
+#include "resources/resourceserver.h"
 namespace Graphics
 {
 

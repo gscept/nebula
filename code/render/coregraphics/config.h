@@ -30,6 +30,7 @@ enum IdType
 	ShaderInstanceIdType,
 	ShaderConstantIdType,
 	CommandBufferIdType,
+	CommandBufferPoolIdType,
 	MeshIdType,
 	EventIdType,
 	BarrierIdType,

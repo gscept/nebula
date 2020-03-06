@@ -22,7 +22,7 @@
 #include "frameserver.h"
 #include "coregraphics/shaderserver.h"
 #include "coregraphics/config.h"
-#include "resources/resourcemanager.h"
+#include "resources/resourceserver.h"
 #include "core/factory.h"
 #include "framesubpassplugin.h"
 #include "framebarrier.h"

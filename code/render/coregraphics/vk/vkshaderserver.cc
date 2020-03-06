@@ -273,7 +273,7 @@ VkShaderServer::SetupGBufferConstants()
 /**
 */
 void 
-VkShaderServer::BeforeView()
+VkShaderServer::UpdateResources()
 {
 	// just allocate the memory
 	this->cboOffset = CoreGraphics::AllocateGraphicsConstantBufferMemory(MainThreadConstantBuffer, sizeof(Shared::PerTickParams));

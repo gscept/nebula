@@ -210,7 +210,7 @@ vsTreeShadow(
 	
 	vec4 finalOffset = windDir * windStrength;
 	gl_Position = position + finalOffset;
-	gl_Position = ViewMatrixArray[0] * Model * gl_Position;
+	gl_Position = LightViewMatrix[gl_InstanceID] * Model * gl_Position;
 	ProjPos = gl_Position;
 	UV = uv;
 }
@@ -268,7 +268,7 @@ vsTreeShadowCSM(
 		
 	vec4 finalOffset = windDir * windStrength;
 	finalOffset = position + finalOffset;
-	ProjPos = ViewMatrixArray[gl_InstanceID] * Model * finalOffset;
+	ProjPos = CSMViewMatrix[gl_InstanceID] * Model * finalOffset;
 	UV = uv;
 	Instance = gl_InstanceID;
 }
@@ -327,7 +327,7 @@ vsTreeShadowPoint(
 		
 	vec4 finalOffset = windDir * windStrength;
 	finalOffset = position + finalOffset;
-	ProjPos = ViewMatrixArray[gl_InstanceID] * Model * finalOffset;
+	ProjPos = LightViewMatrix[gl_InstanceID] * Model * finalOffset;
 	UV = uv;
 	Instance = gl_InstanceID;
 }
@@ -477,8 +477,8 @@ SimpleTechnique(
 //	Shadowing methods
 //------------------------------------------------------------------------------
 SimpleTechnique(DefaultShadow, "Static|Spot", vsTreeShadow(), psShadowAlpha(), FoliageState);
-GeometryTechnique(CSMShadow, "Static|Global", vsTreeShadowCSM(), psVSMAlpha(), gsCSM(), FoliageState);
-GeometryTechnique(PointlightShadow, "Static|Point", vsTreeShadowPoint(), psVSMAlphaPoint(), gsPoint(), FoliageState);
+SimpleTechnique(CSMShadow, "Static|Global", vsTreeShadowCSM(), psVSMAlpha(), FoliageState);
+SimpleTechnique(PointlightShadow, "Static|Point", vsTreeShadowPoint(), psVSMAlphaPoint(), FoliageState);
 SimpleTechnique(Picking, "Static|Picking", vsTreeShadow(), psPicking(), FoliageState);
 
 //------------------------------------------------------------------------------

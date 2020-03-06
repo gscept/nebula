@@ -13,27 +13,38 @@
 namespace Vulkan
 {
 
+/// get vk command buffer pool
+const VkCommandPool CommandBufferPoolGetVk(const CoreGraphics::CommandBufferPoolId id);
+/// get vk device that created the pool
+const VkDevice CommandBufferPoolGetVkDevice(const CoreGraphics::CommandBufferPoolId id);
+
+enum
+{
+	CommandBufferPool_VkDevice,
+	CommandBufferPool_VkCommandPool,
+};
+typedef Ids::IdAllocator<VkDevice, VkCommandPool> VkCommandBufferPoolAllocator;
+
+//------------------------------------------------------------------------------
+/**
+*/
 static const uint NumPoolTypes = 4;
 struct CommandBufferPools
 {
-
 	VkCommandPool pools[CoreGraphics::NumCommandBufferUsages][NumPoolTypes];
 	uint queueFamilies[CoreGraphics::NumCommandBufferUsages];
 	VkDevice dev;
 };
 
-/// setup pools for a certain device
-void SetupVkPools(VkDevice dev, uint32_t drawQueue, uint32_t computeQueue, uint32_t transferQueue, uint32_t sparseQueue);
-/// destroy pools
-void DestroyVkPools(VkDevice dev);
-
-/// get pool based on flags
-const VkCommandPool CommandBufferGetVkPool(CoreGraphics::CommandBufferUsage usage, VkCommandPoolCreateFlags flags);
-
 /// get vk command buffer
 const VkCommandBuffer CommandBufferGetVk(const CoreGraphics::CommandBufferId id);
 
-typedef Ids::IdAllocator<VkCommandBuffer, VkCommandPool> VkCommandBufferAllocator;
-extern CommandBufferPools pools;
+enum
+{
+	CommandBuffer_VkDevice,
+	CommandBuffer_VkCommandBuffer,
+	CommandBuffer_VkCommandPool
+};
+typedef Ids::IdAllocator<VkDevice, VkCommandBuffer, VkCommandPool> VkCommandBufferAllocator;
 
 } // Vulkan

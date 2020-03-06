@@ -6,7 +6,7 @@
 #include "render/stdneb.h"
 #include "coregraphics/legacy/nvx2streamreader.h"
 #include "coregraphics/legacy/nvx2fileformatstructs.h"
-#include "resources/resourcemanager.h"
+#include "resources/resourceserver.h"
 #include "coregraphics/config.h"
 
 #if NEBULA_LEGACY_SUPPORT

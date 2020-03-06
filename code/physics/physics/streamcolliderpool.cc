@@ -2,7 +2,7 @@
 #include "physics/streamcolliderpool.h"
 #include "physics/physxstate.h"
 #include "physics/utils.h"
-#include "resources/resourcemanager.h"
+#include "resources/resourceserver.h"
 #include "io/jsonreader.h"
 #include "io/ioserver.h"
 #include "io/uri.h"

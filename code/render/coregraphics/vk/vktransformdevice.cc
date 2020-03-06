@@ -126,7 +126,7 @@ VkTransformDevice::ApplyViewSettings()
 /**
 */
 void 
-VkTransformDevice::ApplyCSMMatrices(const Shared::ShadowMatrixBlock& block)
+VkTransformDevice::ApplyShadowSettings(const Shared::ShadowMatrixBlock& block)
 {
 	uint offset = CoreGraphics::SetGraphicsConstants(MainThreadConstantBuffer, block);
 

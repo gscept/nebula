@@ -10,6 +10,11 @@
 #include "frameop.h"
 #include "framesubpass.h"
 #include "coregraphics/pass.h"
+namespace Threading
+{
+class Event;
+}
+
 namespace Frame
 {
 class FramePass : public FrameOp
@@ -33,6 +38,7 @@ public:
 
 	struct CompiledImpl : public FrameOp::Compiled
 	{
+		void RunJobs(const IndexT frameIndex);
 		void Run(const IndexT frameIndex);
 		void Discard();
 
@@ -40,6 +46,7 @@ public:
 		Util::StringAtom name;
 #endif
 		Util::Array<FrameOp::Compiled*> subpasses;
+		Util::Array<Util::FixedArray<CoreGraphics::CommandBufferId>> subpassBuffers;
 		CoreGraphics::PassId pass;
 	};
 
@@ -49,6 +56,7 @@ public:
 	CoreGraphics::PassId pass;
 
 private:
+	friend class FrameScript;
 
 	void Build(
 		Memory::ArenaAllocator<BIG_CHUNK>& allocator,

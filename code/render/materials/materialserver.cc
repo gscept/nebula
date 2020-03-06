@@ -4,7 +4,7 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "materialserver.h"
-#include "resources/resourcemanager.h"
+#include "resources/resourceserver.h"
 #include "surfacepool.h"
 #include "materialtype.h"
 #include "io/ioserver.h"

@@ -103,7 +103,7 @@ GameApplication::Open()
         this->ioInterface = IoInterface::Create();
         this->ioInterface->Open();
 
-        this->resourceManager = Resources::ResourceManager::Create();
+        this->resourceManager = Resources::ResourceServer::Create();
         this->resourceManager->Open();        
 
         // attach a log file console handler

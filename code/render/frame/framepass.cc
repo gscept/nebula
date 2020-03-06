@@ -7,6 +7,7 @@
 #include "coregraphics/graphicsdevice.h"
 
 using namespace CoreGraphics;
+
 namespace Frame
 {
 
@@ -53,10 +54,51 @@ FramePass::Discard()
 
 //------------------------------------------------------------------------------
 /**
+	Builds jobs in parallel in preparation for the Run() function later
+*/
+void 
+FramePass::CompiledImpl::RunJobs(const IndexT frameIndex)
+{
+	// begin pass
+	PassBegin(this->pass);
+
+	// get frame index
+	IndexT bufferedIndex = CoreGraphics::GetBufferedFrameIndex();
+
+	// run subpasses
+	IndexT i;
+	for (i = 0; i < this->subpasses.Size(); i++)
+	{
+		// progress to next subpass if not on first iteration
+		if (i > 0)
+			PassNextSubpass(this->pass);
+
+		N_SCOPE(RunSubpassRecord, Render);
+
+		// start subpass commands
+		CoreGraphics::BeginSubpassCommands(this->subpassBuffers[i][bufferedIndex]);
+
+		// execute contents of this subpass and synchronize
+		// note that we overload the cross queue sync so we do it outside the render pass
+		this->subpasses[i]->QueuePreSync();
+		this->subpasses[i]->Run(frameIndex);
+		this->subpasses[i]->QueuePostSync();
+
+		// finish the draw thread
+		CoreGraphics::EndSubpassCommands();
+	}	
+
+	// end pass
+	PassEnd(this->pass);
+}
+
+//------------------------------------------------------------------------------
+/**
 */
 void
 FramePass::CompiledImpl::Run(const IndexT frameIndex)
 {
+	n_assert(this->subpassBuffers.Size() == this->subpasses.Size());
 
 #if NEBULA_GRAPHICS_DEBUG
 	CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_GREEN, this->name.Value());
@@ -64,19 +106,18 @@ FramePass::CompiledImpl::Run(const IndexT frameIndex)
 
 	// begin pass
 	PassBegin(this->pass);
-	
+	IndexT bufferedIndex = CoreGraphics::GetBufferedFrameIndex();
+
 	// run subpasses
 	IndexT i;
 	for (i = 0; i < this->subpasses.Size(); i++)
 	{
 		// progress to next subpass if not on first iteration
-		if (i > 0) PassNextSubpass(this->pass);
+		if (i > 0) 
+			PassNextSubpass(this->pass);
 
-		// execute contents of this subpass and synchronize
-		// note that we overload the cross queue sync so we do it outside the render pass
-		this->subpasses[i]->QueuePreSync();
-		this->subpasses[i]->Run(frameIndex);
-		this->subpasses[i]->QueuePostSync();
+		// execute commands
+		CoreGraphics::ExecuteCommands(this->subpassBuffers[i][bufferedIndex]);
 	}
 
 	// end pass
@@ -94,7 +135,15 @@ void
 FramePass::CompiledImpl::Discard()
 {
 	for (IndexT i = 0; i < this->subpasses.Size(); i++)
+	{
 		this->subpasses[i]->Discard();
+
+		// free up subpass buffers
+		for (IndexT j = 0; j < this->subpassBuffers[i].Size(); j++)
+		{
+			CoreGraphics::DestroyCommandBuffer(this->subpassBuffers[i][j]);
+		}
+	}
 }
 
 //------------------------------------------------------------------------------

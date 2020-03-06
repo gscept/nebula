@@ -7,6 +7,7 @@
 */
 //------------------------------------------------------------------------------
 #include <vulkan/vulkan.h>
+#include "coregraphics/drawthread.h"
 #include "coregraphics/config.h"
 #include "threading/thread.h"
 #include "threading/safequeue.h"
@@ -15,24 +16,15 @@
 #include "math/rectangle.h"
 #include "coregraphics/indextype.h"
 
-namespace CoreGraphics
-{
-	struct VertexBufferId;
-	struct IndexBufferId;
-	struct EventId;
-	struct BarrierId;
-	enum class BarrierStage;
-
-}
 namespace Vulkan
 {
-class VkCommandBufferThread : public Threading::Thread
+class VkCommandBufferThread : public CoreGraphics::DrawThread
 {
 	__DeclareClass(VkCommandBufferThread);
 
 public:
 
-	enum CommandType
+	enum VkCommandType
 	{
 		BeginCommand,
 		ResetCommands,
@@ -60,13 +52,11 @@ public:
 		InsertMarker
 	};
 
-	struct Command
-	{
-		CommandType type;
 
+	struct VkCommand
+	{
 		union
 		{
-			
 			struct // Pipeline bind
 			{
 				VkPipeline pipeline;
@@ -79,6 +69,7 @@ public:
 			struct // BeginCmd
 			{
 				VkCommandBufferBeginInfo info;
+				VkCommandBufferInheritanceInfo inheritInfo;
 				VkCommandBuffer buf;
 			} bgCmd;
 
@@ -149,7 +140,7 @@ public:
 
 			struct // ViewportArray
 			{
-				VkViewport* vps;
+				VkViewport vps[8];
 				uint32_t first;
 				uint32_t num;
 			} viewportArray;
@@ -162,7 +153,7 @@ public:
 
 			struct // ScissorRectArray
 			{
-				VkRect2D* scs;
+				VkRect2D scs[8];
 				uint32_t first;
 				uint32_t num;
 			} scissorRectArray;
@@ -212,8 +203,10 @@ public:
 				float values[4];
 			} marker;
 
-			Threading::Event* syncEvent;
 		};
+
+		VkCommandType type;
+
 	};
 
 	/// constructor
@@ -221,54 +214,15 @@ public:
 	/// destructor
 	virtual ~VkCommandBufferThread();
 
-	/// called if thread needs a wakeup call before stopping
-	void EmitWakeupSignal() override;
 	/// this method runs in the thread context
 	void DoWork() override;
-	/// push command buffer work
-	void PushCommand(const Command& command);
-	/// push command buffer work
-	void PushCommands(const Util::Array<Command>& commands);
-	/// set command buffer
-	void SetCommandBuffer(const VkCommandBuffer& buffer);
 private:
-	friend struct GraphicsDeviceState;
+	VkCommandBuffer vkCommandBuffer;
+	VkPipelineLayout vkPipelineLayout;
 
-
-	VkCommandBuffer commandBuffer;
-	VkPipelineLayout pipelineLayout;
-	Threading::SafeQueue<Command> commands;
 #if NEBULA_ENABLE_PROFILING
 	_declare_timer(debugTimer);
 #endif
 };
-
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-VkCommandBufferThread::SetCommandBuffer(const VkCommandBuffer& buffer)
-{
-	this->commandBuffer = buffer;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-VkCommandBufferThread::PushCommand(const Command& command)
-{
-	this->commands.Enqueue(command);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-VkCommandBufferThread::PushCommands(const Util::Array<Command>& commands)
-{
-	this->commands.EnqueueArray(commands);
-}
 
 } // namespace Vulkan

@@ -132,6 +132,8 @@ ENDIF()
 				displayeventhandler.cc
 				displayeventhandler.h
 				displaymode.h
+                drawthread.cc
+                drawthread.h
 				event.h
                 fence.h
 				graphicsdevice.h

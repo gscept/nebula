@@ -15,7 +15,7 @@
 #include "io/textwriter.h"
 #include "coregraphics/shadersemantics.h"
 #include "coregraphics/config.h"
-#include "resources/resourcemanager.h"
+#include "resources/resourceserver.h"
 #include "system/process.h"
 #include "system/nebulasettings.h"
 

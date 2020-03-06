@@ -26,6 +26,7 @@ enum
 	SubmissionContextFreeDeviceMemories,
 	SubmissionContextFreeImages,
 	SubmissionContextFreeCommandBuffers,
+	SubmissionContextClearCommandBuffers,
 	SubmissionContextFreeHostMemories,
 	SubmissionContextCurrentIndex,
 	SubmissionContextCmdCreateInfo,
@@ -40,13 +41,17 @@ typedef Ids::IdAllocator<
 	Util::FixedArray<Util::Array<std::tuple<VkDevice, VkBuffer>>>,
 	Util::FixedArray<Util::Array<std::tuple<VkDevice, VkDeviceMemory>>>,
 	Util::FixedArray<Util::Array<std::tuple<VkDevice, VkImage>>>,
-	Util::FixedArray<Util::Array<std::tuple<VkDevice, VkCommandPool, VkCommandBuffer>>>,
+	Util::FixedArray<Util::Array<CoreGraphics::CommandBufferId>>,
+	Util::FixedArray<Util::Array<CoreGraphics::CommandBufferId>>,
 	Util::FixedArray<Util::Array<void*>>,
 	IndexT,
 	CoreGraphics::CommandBufferCreateInfo,
 	Util::String
 > SubmissionContextAllocator;
 extern SubmissionContextAllocator submissionContextAllocator;
+
+
+/// FIXME, change these to be non-vulkan specific types and move them to generic submissioncontext
 
 /// add buffer for deletion
 void SubmissionContextFreeBuffer(const CoreGraphics::SubmissionContextId id, VkDevice dev, VkBuffer buf);
@@ -55,6 +60,8 @@ void SubmissionContextFreeDeviceMemory(const CoreGraphics::SubmissionContextId i
 /// add image for deletion
 void SubmissionContextFreeImage(const CoreGraphics::SubmissionContextId id, VkDevice dev, VkImage img);
 /// add command buffer for deletion
-void SubmissionContextFreeCommandBuffer(const CoreGraphics::SubmissionContextId id, VkDevice dev, VkCommandPool pool, VkCommandBuffer buf);
+void SubmissionContextFreeCommandBuffer(const CoreGraphics::SubmissionContextId id, const CoreGraphics::CommandBufferId cmd);
+/// add command buffer for reset
+void SubmissionContextClearCommandBuffer(const CoreGraphics::SubmissionContextId id, const CoreGraphics::CommandBufferId cmd);
 
 } // namespace Vulkan

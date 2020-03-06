@@ -22,9 +22,15 @@
 #include "frame/frameop.h"
 #include "frame/framepass.h"
 #include "memory/arenaallocator.h"
+#include "threading/event.h"
 namespace Graphics
 {
 	class View;
+}
+
+namespace CoreGraphics
+{
+	class DrawThread;
 }
 namespace Frame
 {
@@ -66,6 +72,10 @@ public:
 	void Setup();
 	/// discard script
 	void Discard();
+	/// run through script and call resource updates
+	void UpdateResources(const IndexT frameIndex);
+	/// run through script and generate thread jobs where applicable
+	void RunJobs(const IndexT frameIndex);
 	/// run script
 	void Run(const IndexT frameIndex);
 
@@ -102,6 +112,10 @@ private:
 	IndexT frameOpCounter;
 	Util::Array<Frame::FramePlugin*> plugins;
 	Util::Dictionary<Util::StringAtom, Frame::FramePlugin*> algorithmsByName;
+
+	Ptr<CoreGraphics::DrawThread> drawThread;
+	Threading::Event drawThreadEvent;
+	CoreGraphics::CommandBufferPoolId drawThreadCommandPool;
 
 	bool subScript; // if subscript, it means it can only be ran from within another script
 };

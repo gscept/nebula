@@ -5,7 +5,7 @@
 #include "render/stdneb.h"
 #include "particles/particle.h"
 #include "particlesystemnode.h"
-#include "resources/resourcemanager.h"
+#include "resources/resourceserver.h"
 #include "models/model.h"
 #include "models/streammodelpool.h"
 #include "coregraphics/mesh.h"

@@ -85,9 +85,11 @@ public:
 	static void OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
 
 	/// prepare light lists
-	static void OnBeforeView(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
+	static void UpdateViewDependentResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
+	/// run framescript when visibility is done
+	static void RunFrameScriptJobs(const Graphics::FrameContext& ctx);
 #ifndef PUBLIC_BUILD
-	//
+	/// render debug
 	static void OnRenderDebug(uint32_t flags);
 #endif
 
@@ -149,39 +151,41 @@ private:
 		PointLight_ConstantBufferSet,
 		PointLight_ShadowConstantBufferSet,
 		PointLight_DynamicOffsets,
-		PointLight_ProjectionTexture
+		PointLight_ProjectionTexture,
+		PointLight_Observer
 	};
 
 	typedef Ids::IdAllocator<
-		Math::matrix44,			// transform
-		ConstantBufferSet,		// constant buffer binding for light
-		ConstantBufferSet,		// constant buffer binding for shadows
-		Util::FixedArray<uint>,	// dynamic offsets
-		CoreGraphics::TextureId // projection (if invalid, don't use)
+		Math::matrix44,				// transform
+		ConstantBufferSet,			// constant buffer binding for light
+		ConstantBufferSet,			// constant buffer binding for shadows
+		Util::FixedArray<uint>,		// dynamic offsets
+		CoreGraphics::TextureId,	// projection (if invalid, don't use)
+		Graphics::GraphicsEntityId	// graphics entity used for observer stuff
 	> PointLightAllocator;
 	static PointLightAllocator pointLightAllocator;
 
 	enum
 	{
 		SpotLight_Transform,
-		SpotLight_Projection,
-		SpotLight_InvViewProjection,
 		SpotLight_ConstantBufferSet,
 		SpotLight_ShadowConstantBufferSet,
 		SpotLight_DynamicOffsets,
 		SpotLight_ConeAngles,
 		SpotLight_ProjectionTexture,
+		SpotLight_ProjectionTransform,
+		SpotLight_Observer
 	};
 
 	typedef Ids::IdAllocator<
 		Math::matrix44,				// transform
-		Math::matrix44,				// projection
-		Math::matrix44,				// inversed view-projection
 		ConstantBufferSet,			// constant buffer binding for light
 		ConstantBufferSet,			// constant buffer binding for shadows
 		Util::FixedArray<uint>,		// dynamic offsets
 		std::array<float, 2>,		// cone angle
-		CoreGraphics::TextureId		// projection (if invalid, don't use)
+		CoreGraphics::TextureId,	// projection (if invalid, don't use)
+		Math::matrix44,				// projection matrix
+		Graphics::GraphicsEntityId	// graphics entity used for observer stuff
 	> SpotLightAllocator;
 	static SpotLightAllocator spotLightAllocator;
 

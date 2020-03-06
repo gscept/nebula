@@ -27,7 +27,7 @@ FrameScript::FrameScript() :
 */
 FrameScript::~FrameScript()
 {
-	// empty
+	CoreGraphics::DestroyCommandBufferPool(this->drawThreadCommandPool);
 }
 
 //------------------------------------------------------------------------------
@@ -78,10 +78,23 @@ FrameScript::AddOp(Frame::FrameOp* op)
 //------------------------------------------------------------------------------
 /**
 */
-void
+void 
 FrameScript::Setup()
 {
-	// empty
+	this->drawThread = CoreGraphics::CreateDrawThread();
+	Util::String scriptName = this->resId.Value();
+	scriptName.StripFileExtension();
+	Util::String threadName = Util::String::Sprintf("FrameScript %s Draw Thread", scriptName.AsCharPtr());
+	this->drawThread->SetName(threadName);
+	this->drawThread->SetThreadAffinity(System::Cpu::Core5);
+	this->drawThread->Start();
+	CoreGraphics::CommandBufferPoolCreateInfo poolInfo =
+	{
+		CoreGraphics::GraphicsQueueType,
+		true,
+		true
+	};
+	this->drawThreadCommandPool = CoreGraphics::CreateCommandBufferPool(poolInfo);
 }
 
 //------------------------------------------------------------------------------
@@ -107,9 +120,51 @@ FrameScript::Discard()
 //------------------------------------------------------------------------------
 /**
 */
+void 
+FrameScript::UpdateResources(const IndexT frameIndex)
+{
+	IndexT i;
+	for (i = 0; i < this->plugins.Size(); i++)
+	{
+		this->plugins[i]->UpdateResources(frameIndex);
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+FrameScript::RunJobs(const IndexT frameIndex)
+{
+	// tell graphics to start using our draw thread
+	CoreGraphics::SetDrawThread(this->drawThread);
+
+	IndexT i;
+	for (i = 0; i < this->compiled.Size(); i++)
+	{
+		this->compiled[i]->RunJobs(frameIndex);
+	}
+
+	// tell graphics to stop using our thread
+	CoreGraphics::SetDrawThread(nullptr);
+
+	// make sure to add a sync at the end
+	this->drawThread->Signal(&this->drawThreadEvent);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 FrameScript::Run(const IndexT frameIndex)
 {
+	N_MARKER_BEGIN(WaitForRecord, Render);
+
+	// wait for draw thread to finish before executing buffers
+	this->drawThreadEvent.Wait();
+
+	N_MARKER_END();
+
 	IndexT i;
 	for (i = 0; i < this->compiled.Size(); i++)
 	{
@@ -173,9 +228,36 @@ FrameScript::Build()
 		arr.Append(FrameOp::TextureDependency{ nullptr, CoreGraphics::QueueType::GraphicsQueueType, layout, CoreGraphics::BarrierStage::AllGraphicsShaders | CoreGraphics::BarrierStage::ComputeShader, CoreGraphics::BarrierAccess::ShaderRead, DependencyIntent::Read, InvalidIndex, subres });
 	}
 
+	// build ops
 	for (i = 0; i < this->ops.Size(); i++)
 	{
 		this->ops[i]->Build(this->buildAllocator, this->compiled, this->events, this->barriers, rwBuffers, textures);
+	}
+
+	// go through ops and construct subpass buffers for each frame index
+	for (i = 0; i < this->compiled.Size(); i++)
+	{
+		if (FramePass::CompiledImpl* pass = dynamic_cast<FramePass::CompiledImpl*>(this->compiled[i]))
+		{
+			for (IndexT j = 0; j < pass->subpasses.Size(); j++)
+			{
+				CoreGraphics::CommandBufferCreateInfo cmdInfo =
+				{
+					true,
+					this->drawThreadCommandPool
+				};
+
+				// allocate a subpass buffer for each buffered frame
+				SizeT numBufferedFrames = CoreGraphics::GetNumBufferedFrames();
+				pass->subpassBuffers.Append(Util::FixedArray<CoreGraphics::CommandBufferId>());
+				pass->subpassBuffers.Back().Resize(numBufferedFrames);
+
+				for (IndexT k = 0; k < numBufferedFrames; k++)
+				{
+					pass->subpassBuffers[j][k] = CoreGraphics::CreateCommandBuffer(cmdInfo);
+				}
+			}
+		}
 	}
 
 	// setup a post-frame barrier to reset the resource state of all resources back to their created original (ShaderRead for RenderTexture, General for RWTexture

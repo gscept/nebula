@@ -51,6 +51,8 @@ void ProfilingPushScope(const ProfilingScope& scope);
 void ProfilingPopScope();
 /// pushes an 'end of frame' marker, only available on the main thread
 void ProfilingNewFrame();
+/// get current frametime
+Timing::Time ProfilingGetTime();
 
 /// register a new thread for the profiling
 void ProfilingRegisterThread();

@@ -59,6 +59,8 @@ protected:
 		{
 		}
 
+		virtual void UpdateResources(const IndexT frameIndex);
+		virtual void RunJobs(const IndexT frameIndex);
 		virtual void Run(const IndexT frameIndex) = 0;
 		virtual void Discard();
 

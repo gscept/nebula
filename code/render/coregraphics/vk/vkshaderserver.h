@@ -56,7 +56,7 @@ public:
 	void SetupGBufferConstants();
 
 	/// begin frame
-	void BeforeView();
+	void UpdateResources();
 	/// end frame
 	void AfterView();
 

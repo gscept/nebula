@@ -24,6 +24,9 @@ public:
 	View();
 	/// destructor
 	virtual ~View();
+
+	/// apply view settings
+	void UpdateResources();
 	
 	/// begin frame
 	void BeginFrame(const IndexT frameIndex, const Timing::Time time);

@@ -6,7 +6,7 @@
 #include "imguicontext.h"
 #include "imgui.h"
 #include "graphics/graphicsserver.h"
-#include "resources/resourcemanager.h"
+#include "resources/resourceserver.h"
 #include "math/rectangle.h"
 #include "coregraphics/shaderserver.h"
 #include "coregraphics/displaydevice.h"
@@ -188,7 +188,7 @@ ImguiContext::~ImguiContext()
 void
 ImguiContext::Create()
 {
-    __bundle.OnBeforeFrame = ImguiContext::OnBeforeFrame;
+    __bundle.OnBegin = ImguiContext::OnBeforeFrame;
     __bundle.OnWindowResized = ImguiContext::OnWindowResized;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 

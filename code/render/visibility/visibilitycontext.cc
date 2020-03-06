@@ -97,9 +97,9 @@ ObserverContext::MakeDependency(const Graphics::GraphicsEntityId a, const Graphi
 /**
 */
 void 
-ObserverContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
+ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
 {
-	N_SCOPE(ObserverPrepareFrame, Visibility)
+	N_SCOPE(RunVisibilityTests, Visibility);
 	const Util::Array<VisibilityEntityType>& observerTypes = observerAllocator.GetArray<Observer_EntityType>();
 	const Util::Array<VisibilityEntityType>& observableTypes = ObservableContext::observableAllocator.GetArray<Observable_EntityType>();
 
@@ -275,7 +275,19 @@ ObserverContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 		Jobs::JobSyncSignal(ObserverContext::jobInternalSync2, ObserverContext::jobPort);
 		Jobs::JobSyncThreadWait(ObserverContext::jobInternalSync2, ObserverContext::jobPort);
 	}
+}
 
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ObserverContext::GenerateDrawLists(const Graphics::FrameContext& ctx)
+{
+	N_SCOPE(GenerateDrawLists, Visibility);
+
+	// first step, go through list of visible entities and reset
+	Util::Array<VisibilityResultAllocator>& vis = observerAllocator.GetArray<Observer_ResultAllocator>();
+	IndexT i;
 	for (i = 0; i < vis.Size(); i++)
 	{
 		const Util::Array<Models::ModelNode::Instance*>& nodes = ObservableContext::observableAtomAllocator.GetArray<ObservableAtom_Node>();
@@ -332,14 +344,15 @@ ObserverContext::Create()
 {
 	_CreateContext();
     
-	__bundle.OnBeforeFrame = ObserverContext::OnBeforeFrame;
+	__bundle.OnBegin = ObserverContext::RunVisibilityTests;
+	__bundle.OnBeforeFrame = ObserverContext::GenerateDrawLists;
 	__bundle.OnWaitForWork = ObserverContext::WaitForVisibility;
 	__bundle.StageBits = &ObservableContext::__state.currentStage;
 #ifndef PUBLIC_BUILD
 	__bundle.OnRenderDebug = ObserverContext::OnRenderDebug;
 #endif 
 
-	ObserverContext::__state.allowedRemoveStages = Graphics::OnBeforeFrameStage;
+	ObserverContext::__state.allowedRemoveStages = Graphics::OnBeginStage;
 	Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
 	Jobs::CreateJobPortInfo info =
@@ -483,14 +496,14 @@ ObserverContext::OnRenderDebug(uint32_t flags)
 				break;
 			}
 	}
-	if (ImGui::Begin("Visibility", nullptr, 0))
+	if (ImGui::Begin("Visibility"))
 	{
 		for (IndexT i = 0; i < vis.Size(); i++)
 		{
 			ImGui::Text("Entities visible for observer %d: %d (inside [%d], clipped [%d])", i, totalCounters[i], insideCounters[i], clippedCounters[i]);
 		}
-		ImGui::End();
 	}	
+	ImGui::End();
 }
 #endif
 

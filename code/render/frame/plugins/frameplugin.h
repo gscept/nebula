@@ -42,6 +42,9 @@ public:
 	virtual void Setup();
 	/// discard operation
 	virtual void Discard();
+
+	/// run through script and call resource updates
+	virtual void UpdateResources(const IndexT frameIndex);
 	/// handle window resizing
 	virtual void Resize();
 

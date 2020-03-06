@@ -139,7 +139,6 @@ ResourceTableId CreateResourceTable(const ResourceTableCreateInfo& info);
 /// destroy resource table
 void DestroyResourceTable(const ResourceTableId& id);
 
-
 /// set resource table texture
 void ResourceTableSetTexture(const ResourceTableId& id, const ResourceTableTexture& tex);
 /// set resource table input attachment
@@ -153,6 +152,8 @@ void ResourceTableSetRWBuffer(const ResourceTableId& id, const ResourceTableShad
 /// set resource table sampler
 void ResourceTableSetSampler(const ResourceTableId& id, const ResourceTableSampler& samp);
 
+/// disallow the resource table system to make modifications
+void ResourceTableBlock(bool b);
 /// apply updates of previous sets
 void ResourceTableCommitChanges(const ResourceTableId& id);
 

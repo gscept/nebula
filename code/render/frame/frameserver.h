@@ -1,11 +1,11 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	The frame server is responsible for keeping track of frame scripts.
+	The frame server is responsible for keeping track of frame scripts, thus 
+	you can consider the frame server to be the owner of all frame scripts.
 
-	A frame script attachment using the name __WINDOW__ will, instead of 
-	creating a texture, simply fetch the texture from the frame server.
-	Use this mechanic to switch which window to render to.
+	It's also responsible for notifying frame scripts of events, such as window
+	resizing.
 	
 	(C) 2016-2020 Individual contributors, see AUTHORS file
 */

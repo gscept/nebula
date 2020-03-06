@@ -145,10 +145,14 @@ public:
     static matrix44 perspfovlh(scalar fovy, scalar aspect, scalar zn, scalar zf);
     /// build right-handed perspective projection matrix based on field-of-view
     static matrix44 perspfovrh(scalar fovy, scalar aspect, scalar zn, scalar zf);
+    /// build perspective projection matrix based on field-of-view
+    static matrix44 perspfov(scalar fovy, scalar aspect, scalar zn, scalar zf);
     /// build left-handed perspective projection matrix
     static matrix44 persplh(scalar w, scalar h, scalar zn, scalar zf);
     /// build right-handed perspective projection matrix
     static matrix44 persprh(scalar w, scalar h, scalar zn, scalar zf);
+    /// build perspective projection matrix
+    static matrix44 persp(scalar w, scalar h, scalar zn, scalar zf);
     /// build left-handed off-center perspective projection matrix
     static matrix44 perspoffcenterlh(scalar l, scalar r, scalar b, scalar t, scalar zn, scalar zf);
     /// build right-handed off-center perspective projection matrix
@@ -817,6 +821,19 @@ matrix44::perspfovrh(scalar fovy, scalar aspect, scalar zn, scalar zf)
 /**
 */
 __forceinline matrix44
+matrix44::perspfov(scalar fovy, scalar aspect, scalar zn, scalar zf)
+{
+#if PROJECTION_HANDEDNESS_LH
+    return DirectX::XMMatrixPerspectiveFovLH(fovy, aspect, zn, zf);
+#else
+    return DirectX::XMMatrixPerspectiveFovRH(fovy, aspect, zn, zf);
+#endif
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline matrix44
 matrix44::persplh(scalar w, scalar h, scalar zn, scalar zf)
 {
     return DirectX::XMMatrixPerspectiveLH(w, h, zn, zf);
@@ -829,6 +846,19 @@ __forceinline matrix44
 matrix44::persprh(scalar w, scalar h, scalar zn, scalar zf)
 {
     return DirectX::XMMatrixPerspectiveRH(w, h, zn, zf);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline matrix44
+matrix44::persp(scalar w, scalar h, scalar zn, scalar zf)
+{
+#if PROJECTION_HANDEDNESS_LH
+    return DirectX::XMMatrixPerspectiveLH(w, h, zn, zf);
+#else
+    return DirectX::XMMatrixPerspectiveRH(w, h, zn, zf);
+#endif
 }
 
 //------------------------------------------------------------------------------
