@@ -66,6 +66,8 @@ public:
 	void Setup();
 	/// discard script
 	void Discard();
+	/// run through script and call resource updates
+	void UpdateResources(const IndexT frameIndex);
 	/// run script
 	void Run(const IndexT frameIndex);
 

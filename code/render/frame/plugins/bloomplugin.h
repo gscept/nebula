@@ -25,6 +25,7 @@ public:
 	void Setup() override;
 	/// discard plugin
 	void Discard() override;
+
     /// resize plugin
     void Resize() override;
 

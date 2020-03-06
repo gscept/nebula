@@ -5,7 +5,7 @@
 	framescript: {
 		textures: [
 			{
-				name: "SpotLightShadowAtlas",
+				name: "LocalLightShadow",
 				format: "R32G32F",
 				width: 1024,
 				height: 1024,
@@ -14,7 +14,7 @@
 				type: "Texture2DArray"
 			},
 			{
-				name: "GlobalLightShadow",
+				name: "SunShadow",
 				format: "R32G32F",
 				width: 1024,
 				height: 1024,
@@ -23,7 +23,7 @@
 				type: "Texture2DArray"
 			},
 			{
-				name: "GlobalLightShadowFiltered0",
+				name: "SunShadowFiltered0",
 				format: "R32G32F",
 				width: 1024,
 				height: 1024,
@@ -32,20 +32,11 @@
 				type: "Texture2DArray"
 			},
 			{
-				name: "GlobalLightShadowFiltered1",
+				name: "SunShadowFiltered1",
 				format: "R32G32F",
 				width: 1024,
 				height: 1024,
 				layers: 4,
-				usage: "ReadWrite",
-				type: "Texture2DArray"
-			},
-			{
-				name: "SpotLightShadowAtlasFiltered",
-				format: "R32G32F",
-				width: 1024,
-				height: 1024,
-				layers: 16,
 				usage: "ReadWrite",
 				type: "Texture2DArray"
 			},
@@ -61,40 +52,39 @@
 		]
 
 		pass: {
-			name: "ShadowMapping",
+			name: "SunShadowMapping",
 			attachments: [
 				{
-					name: "GlobalLightShadow",
-					clear: [ 1000, 1000, 0, 0 ],
-					store: true
-				}
-				{
-					name: "SpotLightShadowAtlas",
+					name: "SunShadow",
 					clear: [ 1000, 1000, 0, 0 ],
 					store: true
 				}
 			],
 
-			depth_stencil: {
-				name: "GlobalLightDepth",
-				clear: 1,
-				clearStencil: 0
-			},
-
 			subpass: {
 				name: "SunShadows",
 				dependencies: [],
-				attachments: [ "GlobalLightShadow" ],
+				attachments: [ "SunShadow" ],
 				depth: false,
 				plugin: {
 					name: "LightContext - Sun Shadows"
 				}
 			},
+		},
 
+		pass: {
+			name: "LocalShadowMapping"
+			attachments: [
+				{
+					name: "LocalLightShadow",
+					clear: [ 1000, 1000, 0, 0 ],
+					store: true
+				}
+			],
 			subpass: {
 				name: "SpotlightShadows",
 				dependencies: [],
-				attachments: [ "SpotLightShadowAtlas" ],
+				attachments: [ "LocalLightShadow" ],
 				depth: false,
 				plugin: {
 					name: "LightContext - Spotlight Shadows"
@@ -108,7 +98,7 @@
 		plugin: {
 			inputs: [
 				{
-					name: "GlobalLightShadow",
+					name: "SunShadow",
 					access: "ShaderRead",
 					layout: "ShaderRead",
 					stage: "ComputeShader",

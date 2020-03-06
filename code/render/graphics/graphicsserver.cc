@@ -368,10 +368,46 @@ GraphicsServer::BeginFrame()
 	{
 		if (this->contexts[i]->StageBits)
 			*this->contexts[i]->StageBits = Graphics::OnBeforeFrameStage;
-
 		if (this->contexts[i]->OnBeforeFrame != nullptr)
 			this->contexts[i]->OnBeforeFrame(this->frameContext);
 	}
+
+	// consider this whole block of code viable for updating resource tables
+	CoreGraphics::ResourceTableBlock(false);
+
+	for (i = 0; i < this->contexts.Size(); i++)
+	{
+		if (this->contexts[i]->StageBits)
+			*this->contexts[i]->StageBits = Graphics::OnUpdateResourcesStage;
+		if (this->contexts[i]->OnUpdateResources != nullptr)
+			this->contexts[i]->OnUpdateResources(this->frameContext);
+	}
+
+	// update shader server resources (textures and tick params)
+	this->shaderServer->UpdateResources();
+
+	// go through views and call prepare view
+	for (i = 0; i < this->views.Size(); i++)
+	{
+		const Ptr<View>& view = this->views[i];
+
+		// update view resources (camera)
+		view->UpdateResources();
+
+		IndexT j;
+		for (j = 0; j < this->contexts.Size(); j++)
+		{
+			if (this->contexts[j]->StageBits)
+				*this->contexts[j]->StageBits = Graphics::OnUpdateViewResourcesStage;
+			if (this->contexts[j]->OnUpdateViewResources != nullptr)
+				this->contexts[j]->OnUpdateViewResources(view, this->frameContext);
+		}
+	}
+
+	this->currentView = nullptr;
+
+	// finish resource updates
+	CoreGraphics::ResourceTableBlock(true);
 }
 
 //------------------------------------------------------------------------------
@@ -390,6 +426,14 @@ GraphicsServer::BeforeViews()
 			this->contexts[i]->OnWaitForWork(this->frameContext);
 	}
 
+	for (i = 0; i < this->contexts.Size(); i++)
+	{
+		if (this->contexts[i]->StageBits)
+			*this->contexts[i]->StageBits = Graphics::OnWorkFinishedStage;
+		if (this->contexts[i]->OnWorkFinished != nullptr)
+			this->contexts[i]->OnWorkFinished(this->frameContext);
+	}
+
 	// go through views and call before view
 	for (i = 0; i < this->views.Size(); i++)
 	{
@@ -398,11 +442,9 @@ GraphicsServer::BeforeViews()
 		if (!view->enabled)
 			continue;
 
+		// begin frame on view, this will construct view build jobs
 		this->currentView = view;
-
-		// begin frame
 		this->currentView->BeginFrame(this->frameContext.frameIndex, this->frameContext.time);
-		this->shaderServer->BeforeView();
 
 		IndexT j;
 		for (j = 0; j < this->contexts.Size(); j++)

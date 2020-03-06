@@ -62,7 +62,7 @@ public:
 	static const Util::Array<Models::NodeType>& GetModelNodeTypes(const Graphics::GraphicsEntityId id);
 
 	/// runs before frame is updated
-	static void OnBeforeFrame(const Graphics::FrameContext& ctx);
+	static void UpdateTransforms(const Graphics::FrameContext& ctx);
 #ifndef PUBLIC_DEBUG    
 	/// debug rendering
 	static void OnRenderDebug(uint32_t flags);

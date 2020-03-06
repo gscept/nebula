@@ -68,8 +68,10 @@ public:
 	/// setup a dependency between observers
 	static void MakeDependency(const Graphics::GraphicsEntityId a, const Graphics::GraphicsEntityId b, const DependencyMode mode);
 
+	/// run visibility testing
+	static void RunVisibilityTests(const Graphics::FrameContext& ctx);
 	/// runs before frame is updated
-	static void OnBeforeFrame(const Graphics::FrameContext& ctx);
+	static void GenerateDrawLists(const Graphics::FrameContext& ctx);
 
 	/// create context
 	static void Create();

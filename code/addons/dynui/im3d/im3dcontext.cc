@@ -120,7 +120,7 @@ void
 Im3dContext::Create()
 {
     __bundle.OnBeforeFrame = Im3dContext::OnBeforeFrame;
-    __bundle.OnBeforeView = Im3dContext::OnBeforeView;
+    __bundle.OnPrepareView = Im3dContext::OnPrepareView;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
 
@@ -290,7 +290,7 @@ Im3dContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 /**
 */
 void
-Im3dContext::OnBeforeView(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
+Im3dContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
 {
     AppData& ad = GetAppData();
 

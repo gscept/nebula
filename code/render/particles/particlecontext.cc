@@ -403,7 +403,8 @@ ParticleContext::UpdateParticles(const Graphics::FrameContext& ctx)
 	}
 
 	// issue sync
-	Jobs::JobSyncSignal(jobSync, ParticleContext::jobPort);
+	if (runtimes.Size() > 0)
+		Jobs::JobSyncSignal(jobSync, ParticleContext::jobPort);
 }
 
 //------------------------------------------------------------------------------

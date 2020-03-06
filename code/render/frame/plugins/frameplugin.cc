@@ -64,6 +64,15 @@ FramePlugin::AddCallback(const Util::StringAtom name, std::function<void(IndexT)
 //------------------------------------------------------------------------------
 /**
 */
+void 
+FramePlugin::UpdateResources(const IndexT frameIndex)
+{
+	// implement in subclass
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 FramePlugin::Resize()
 {

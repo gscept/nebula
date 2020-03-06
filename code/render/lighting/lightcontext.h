@@ -85,9 +85,9 @@ public:
 	static void OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
 
 	/// prepare light lists
-	static void OnBeforeView(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
+	static void UpdateViewDependentResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
 #ifndef PUBLIC_BUILD
-	//
+	/// render debug
 	static void OnRenderDebug(uint32_t flags);
 #endif
 

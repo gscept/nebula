@@ -25,6 +25,9 @@ public:
 	void Setup() override;
 	/// discard algorithm
 	void Discard() override;
+
+	/// update resources
+	void UpdateResources(const IndexT frameIndex) override;
     /// resize algorithm
     void Resize() override;
 

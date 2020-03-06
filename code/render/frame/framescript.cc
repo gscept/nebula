@@ -107,6 +107,15 @@ FrameScript::Discard()
 //------------------------------------------------------------------------------
 /**
 */
+void 
+FrameScript::UpdateResources(const IndexT frameIndex)
+{
+	IndexT i;
+	for (i = 0; i < this->plugins.Size(); i++)
+	{
+		this->plugins[i]->UpdateResources(frameIndex);
+	}
+}
 void
 FrameScript::Run(const IndexT frameIndex)
 {

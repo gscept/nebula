@@ -69,7 +69,7 @@ SSRPlugin::Setup()
     {
         this->ssrResolveTables[i] = ShaderCreateResourceTable(this->resolveShader, NEBULA_BATCH_GROUP);
         ResourceTableSetRWTexture(this->ssrResolveTables[i], { this->textures["ReflectionBuffer"], this->reflectionBufferSlot, 0, SamplerId::Invalid() });
-        ResourceTableSetRWTexture(this->ssrResolveTables[i], { this->textures["SSRTraceBuffer"], this->resolveTraceBufferSlot, 0, SamplerId::Invalid() });
+        ResourceTableSetTexture(this->ssrResolveTables[i], { this->textures["SSRTraceBuffer"], this->resolveTraceBufferSlot, 0, SamplerId::Invalid() });
         ResourceTableCommitChanges(this->ssrResolveTables[i]);
     }
 
@@ -77,37 +77,6 @@ SSRPlugin::Setup()
 	this->traceProgram = ShaderGetProgram(this->traceShader, ShaderFeatureFromString("Alt0"));
 	this->resolveProgram = ShaderGetProgram(this->resolveShader, ShaderFeatureFromString("Alt0"));
 	
-    FramePlugin::AddCallback("SSR-Prepare", [this](IndexT)
-    {
-        const CameraSettings& cameraSettings = CameraContext::GetSettings(Graphics::GraphicsServer::Instance()->GetCurrentView()->GetCamera());
-        Math::matrix44 view = CameraContext::GetTransform(Graphics::GraphicsServer::Instance()->GetCurrentView()->GetCamera());
-        TextureDimensions dims = TextureGetDimensions(this->textures["SSRTraceBuffer"]);
-
-        float sx = (float)dims.width;
-        float sy = (float)dims.height;
-
-        const Math::matrix44 scrScale = Math::matrix44(
-            { sx, 0.0f, 0.0f, 0.0f },
-            { 0.0f, sy, 0.0f, 0.0f },
-            { 0.0f, 0.0f, 1.0f, 0.0f },
-            { sx, sy, 0.0f, 1.0f }
-        );
-
-        Math::matrix44 conv = cameraSettings.GetProjTransform();
-        conv.setrow1(Math::float4::multiply(conv.getrow1(), Math::float4(-1)));
-
-        Math::matrix44 viewToTextureSpaceMatrix = Math::matrix44::multiply(conv, scrScale);
-
-        SsrCs::SSRBlock ssrBlock;
-        Math::matrix44::storeu(viewToTextureSpaceMatrix, ssrBlock.ViewToTextureSpace);
-        uint ssrOffset = CoreGraphics::SetComputeConstants(MainThreadConstantBuffer, ssrBlock);
-
-        IndexT frameIndex = CoreGraphics::GetBufferedFrameIndex();
-
-        ResourceTableSetConstantBuffer(this->ssrTraceTables[frameIndex], { this->constants, this->constantsSlot, 0, false, false, sizeof(SsrCs::SSRBlock), (SizeT)ssrOffset });
-        ResourceTableCommitChanges(this->ssrTraceTables[frameIndex]);
-    });
-
     FramePlugin::AddCallback("SSR-Trace", [this](IndexT)
 	{
 #if NEBULA_GRAPHICS_DEBUG
@@ -173,6 +142,41 @@ SSRPlugin::Discard()
 /**
 */
 void 
+SSRPlugin::UpdateResources(const IndexT frameIndex)
+{
+    const CameraSettings& cameraSettings = CameraContext::GetSettings(Graphics::GraphicsServer::Instance()->GetCurrentView()->GetCamera());
+    Math::matrix44 view = CameraContext::GetTransform(Graphics::GraphicsServer::Instance()->GetCurrentView()->GetCamera());
+    TextureDimensions dims = TextureGetDimensions(this->textures["SSRTraceBuffer"]);
+
+    float sx = (float)dims.width;
+    float sy = (float)dims.height;
+
+    const Math::matrix44 scrScale = Math::matrix44(
+        { sx, 0.0f, 0.0f, 0.0f },
+        { 0.0f, sy, 0.0f, 0.0f },
+        { 0.0f, 0.0f, 1.0f, 0.0f },
+        { sx, sy, 0.0f, 1.0f }
+    );
+
+    Math::matrix44 conv = cameraSettings.GetProjTransform();
+    conv.setrow1(Math::float4::multiply(conv.getrow1(), Math::float4(-1)));
+
+    Math::matrix44 viewToTextureSpaceMatrix = Math::matrix44::multiply(conv, scrScale);
+
+    SsrCs::SSRBlock ssrBlock;
+    Math::matrix44::storeu(viewToTextureSpaceMatrix, ssrBlock.ViewToTextureSpace);
+    uint ssrOffset = CoreGraphics::SetComputeConstants(MainThreadConstantBuffer, ssrBlock);
+
+    IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
+
+    ResourceTableSetConstantBuffer(this->ssrTraceTables[bufferIndex], { this->constants, this->constantsSlot, 0, false, false, sizeof(SsrCs::SSRBlock), (SizeT)ssrOffset });
+    ResourceTableCommitChanges(this->ssrTraceTables[bufferIndex]);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 SSRPlugin::Resize()
 {
 	SizeT numFrames = CoreGraphics::GetNumBufferedFrames();

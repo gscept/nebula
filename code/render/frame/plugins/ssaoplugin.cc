@@ -163,90 +163,6 @@ SSAOPlugin::Setup()
 	this->blurFalloff = ShaderGetConstantBinding(this->blurShader, NEBULA_SEMANTIC_FALLOFF);
 	this->blurDepthThreshold = ShaderGetConstantBinding(this->blurShader, NEBULA_SEMANTIC_DEPTHTHRESHOLD);
 
-	// calculate relevant stuff for AO
-	FramePlugin::AddCallback("HBAO-Prepare", [this](IndexT)
-	{
-
-#if NEBULA_GRAPHICS_DEBUG
-		//CoreGraphics::QueueInsertMarker(GraphicsQueueType, Math::float4(0.6f, 0.4f, 0.0f, 1.0f), "HBAO Preparation step");
-#endif
-		// get camera settings
-		const CameraSettings& cameraSettings = CameraContext::GetSettings(Graphics::GraphicsServer::Instance()->GetCurrentView()->GetCamera());
-
-		this->vars.width = this->vars.fullWidth / this->vars.downsample;
-		this->vars.height = this->vars.fullHeight / this->vars.downsample;
-
-		this->vars.nearZ = cameraSettings.GetZNear() + 0.1f;
-		this->vars.farZ = cameraSettings.GetZFar();
-
-		vars.r = this->vars.radius * 4.0f / 100.0f;
-		vars.r2 = vars.r * vars.r;
-		vars.negInvR2 = -1.0f / vars.r2;
-
-		vars.aoResolution.x() = this->vars.width;
-		vars.aoResolution.y() = this->vars.height;
-		vars.invAOResolution.x() = 1.0f / this->vars.width;
-		vars.invAOResolution.y() = 1.0f / this->vars.height;
-
-		float fov = cameraSettings.GetFov();
-		vars.focalLength.x() = 1.0f / tanf(fov * 0.5f) * (this->vars.fullHeight / this->vars.fullWidth);
-		vars.focalLength.y() = 1.0f / tanf(fov * 0.5f);
-
-		Math::float2 invFocalLength;
-		invFocalLength.x() = 1 / vars.focalLength.x();
-		invFocalLength.y() = 1 / vars.focalLength.y();
-
-		vars.uvToViewA.x() = 2.0f * invFocalLength.x();
-		vars.uvToViewA.y() = -2.0f * invFocalLength.y();
-		vars.uvToViewB.x() = -1.0f * invFocalLength.x();
-		vars.uvToViewB.y() = 1.0f * invFocalLength.y();
-
-#ifndef INV_LN2
-#define INV_LN2 1.44269504f
-#endif
-
-#ifndef SQRT_LN2
-#define SQRT_LN2 0.832554611f
-#endif
-
-#define BLUR_RADIUS 33
-#define BLUR_SHARPNESS 8.0f
-
-		float blurSigma = (BLUR_RADIUS + 1) * 0.5f;
-		vars.blurFalloff = INV_LN2 / (2.0f * blurSigma * blurSigma);
-		vars.blurThreshold = 2.0f * SQRT_LN2 * (this->vars.sceneScale / BLUR_SHARPNESS);
-
-		HbaoCs::HBAOBlock hbaoBlock;
-		hbaoBlock.AOResolution[0] = this->vars.aoResolution.x();
-		hbaoBlock.AOResolution[1] = this->vars.aoResolution.y();
-		hbaoBlock.InvAOResolution[0] = this->vars.invAOResolution.x();
-		hbaoBlock.InvAOResolution[1] = this->vars.invAOResolution.y();
-		hbaoBlock.R2 = this->vars.r2;
-		hbaoBlock.Strength = this->vars.strength;
-		hbaoBlock.TanAngleBias = this->vars.tanAngleBias;
-		hbaoBlock.UVToViewA[0] = this->vars.uvToViewA.x();
-		hbaoBlock.UVToViewA[1] = this->vars.uvToViewA.y();
-		hbaoBlock.UVToViewB[0] = this->vars.uvToViewB.x();
-		hbaoBlock.UVToViewB[1] = this->vars.uvToViewB.y();
-		uint hbaoOffset = CoreGraphics::SetComputeConstants(MainThreadConstantBuffer, hbaoBlock);
-
-		IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
-
-		ResourceTableSetConstantBuffer(this->hbaoTable[bufferIndex], { this->hbaoConstants, this->hbaoC, 0, false, false, sizeof(HbaoCs::HBAOBlock), (SizeT)hbaoOffset });
-		ResourceTableCommitChanges(this->hbaoTable[bufferIndex]);
-
-		HbaoblurCs::HBAOBlur blurBlock;
-		blurBlock.BlurFalloff = this->vars.blurFalloff;
-		blurBlock.BlurDepthThreshold = this->vars.blurThreshold;
-		blurBlock.PowerExponent = 1.5f;
-		uint blurOffset = CoreGraphics::SetComputeConstants(MainThreadConstantBuffer, blurBlock);
-
-		ResourceTableSetConstantBuffer(this->blurTableX[bufferIndex], { this->blurConstants, this->blurC, 0, false, false, sizeof(HbaoblurCs::HBAOBlur), (SizeT)blurOffset });
-		ResourceTableSetConstantBuffer(this->blurTableY[bufferIndex], { this->blurConstants, this->blurC, 0, false, false, sizeof(HbaoblurCs::HBAOBlur), (SizeT)blurOffset });
-		ResourceTableCommitChanges(this->blurTableX[bufferIndex]);
-		ResourceTableCommitChanges(this->blurTableY[bufferIndex]);
-	});
-
 	// calculate HBAO and blur
 	FramePlugin::AddCallback("HBAO-Run", [this](IndexT)
 	{
@@ -318,6 +234,89 @@ SSAOPlugin::Discard()
 		DestroyResourceTable(this->blurTableY[i]);
 	}
 	
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+SSAOPlugin::UpdateResources(const IndexT frameIndex)
+{
+	// get camera settings
+	const CameraSettings& cameraSettings = CameraContext::GetSettings(Graphics::GraphicsServer::Instance()->GetCurrentView()->GetCamera());
+
+	this->vars.width = this->vars.fullWidth / this->vars.downsample;
+	this->vars.height = this->vars.fullHeight / this->vars.downsample;
+
+	this->vars.nearZ = cameraSettings.GetZNear() + 0.1f;
+	this->vars.farZ = cameraSettings.GetZFar();
+
+	vars.r = this->vars.radius * 4.0f / 100.0f;
+	vars.r2 = vars.r * vars.r;
+	vars.negInvR2 = -1.0f / vars.r2;
+
+	vars.aoResolution.x() = this->vars.width;
+	vars.aoResolution.y() = this->vars.height;
+	vars.invAOResolution.x() = 1.0f / this->vars.width;
+	vars.invAOResolution.y() = 1.0f / this->vars.height;
+
+	float fov = cameraSettings.GetFov();
+	vars.focalLength.x() = 1.0f / tanf(fov * 0.5f) * (this->vars.fullHeight / this->vars.fullWidth);
+	vars.focalLength.y() = 1.0f / tanf(fov * 0.5f);
+
+	Math::float2 invFocalLength;
+	invFocalLength.x() = 1 / vars.focalLength.x();
+	invFocalLength.y() = 1 / vars.focalLength.y();
+
+	vars.uvToViewA.x() = 2.0f * invFocalLength.x();
+	vars.uvToViewA.y() = -2.0f * invFocalLength.y();
+	vars.uvToViewB.x() = -1.0f * invFocalLength.x();
+	vars.uvToViewB.y() = 1.0f * invFocalLength.y();
+
+#ifndef INV_LN2
+#define INV_LN2 1.44269504f
+#endif
+
+#ifndef SQRT_LN2
+#define SQRT_LN2 0.832554611f
+#endif
+
+#define BLUR_RADIUS 33
+#define BLUR_SHARPNESS 8.0f
+
+	float blurSigma = (BLUR_RADIUS + 1) * 0.5f;
+	vars.blurFalloff = INV_LN2 / (2.0f * blurSigma * blurSigma);
+	vars.blurThreshold = 2.0f * SQRT_LN2 * (this->vars.sceneScale / BLUR_SHARPNESS);
+
+	HbaoCs::HBAOBlock hbaoBlock;
+	hbaoBlock.AOResolution[0] = this->vars.aoResolution.x();
+	hbaoBlock.AOResolution[1] = this->vars.aoResolution.y();
+	hbaoBlock.InvAOResolution[0] = this->vars.invAOResolution.x();
+	hbaoBlock.InvAOResolution[1] = this->vars.invAOResolution.y();
+	hbaoBlock.R2 = this->vars.r2;
+	hbaoBlock.Strength = this->vars.strength;
+	hbaoBlock.TanAngleBias = this->vars.tanAngleBias;
+	hbaoBlock.UVToViewA[0] = this->vars.uvToViewA.x();
+	hbaoBlock.UVToViewA[1] = this->vars.uvToViewA.y();
+	hbaoBlock.UVToViewB[0] = this->vars.uvToViewB.x();
+	hbaoBlock.UVToViewB[1] = this->vars.uvToViewB.y();
+	uint hbaoOffset = CoreGraphics::SetComputeConstants(MainThreadConstantBuffer, hbaoBlock);
+
+	IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
+
+	ResourceTableSetConstantBuffer(this->hbaoTable[bufferIndex], { this->hbaoConstants, this->hbaoC, 0, false, false, sizeof(HbaoCs::HBAOBlock), (SizeT)hbaoOffset });
+	ResourceTableCommitChanges(this->hbaoTable[bufferIndex]);
+
+	HbaoblurCs::HBAOBlur blurBlock;
+	blurBlock.BlurFalloff = this->vars.blurFalloff;
+	blurBlock.BlurDepthThreshold = this->vars.blurThreshold;
+	blurBlock.PowerExponent = 1.5f;
+	uint blurOffset = CoreGraphics::SetComputeConstants(MainThreadConstantBuffer, blurBlock);
+
+	ResourceTableSetConstantBuffer(this->blurTableX[bufferIndex], { this->blurConstants, this->blurC, 0, false, false, sizeof(HbaoblurCs::HBAOBlur), (SizeT)blurOffset });
+	ResourceTableSetConstantBuffer(this->blurTableY[bufferIndex], { this->blurConstants, this->blurC, 0, false, false, sizeof(HbaoblurCs::HBAOBlur), (SizeT)blurOffset });
+	ResourceTableCommitChanges(this->blurTableX[bufferIndex]);
+	ResourceTableCommitChanges(this->blurTableY[bufferIndex]);
 }
 
 //------------------------------------------------------------------------------

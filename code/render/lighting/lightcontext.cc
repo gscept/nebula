@@ -85,7 +85,7 @@ struct
 
 	Ptr<Frame::FrameScript> shadowMappingFrameScript;
 	alignas(16) Shared::ShadowMatrixBlock shadowMatrixUniforms;
-	CoreGraphics::TextureId spotlightShadowAtlas;
+	CoreGraphics::TextureId localLightShadows;
 	CoreGraphics::TextureId globalLightShadowMap;
 	CoreGraphics::TextureId globalLightShadowMapBlurred0, globalLightShadowMapBlurred1;
 	CoreGraphics::BatchGroup::Code spotlightsBatchCode;
@@ -164,7 +164,8 @@ LightContext::Create()
 	_CreateContext();
 
 	__bundle.OnPrepareView = LightContext::OnPrepareView;
-	__bundle.OnBeforeView = LightContext::OnBeforeView;
+	__bundle.OnUpdateViewResources = LightContext::UpdateViewDependentResources;
+	__bundle.OnWorkFinished = LightContext::RunFrameScriptJobs;
 	__bundle.StageBits = &LightContext::__state.currentStage;
 #ifndef PUBLIC_BUILD
 	__bundle.OnRenderDebug = LightContext::OnRenderDebug;
@@ -175,9 +176,10 @@ LightContext::Create()
 	Frame::FramePlugin::AddCallback("LightContext - Update Shadowmaps", [](IndexT frame) // trigger update
 		{
 			// run the script
+			N_SCOPE(ShadowMapExecute, Render);
 			lightServerState.shadowMappingFrameScript->Run(frame);
 #ifndef PUBLIC_BUILD
-			Debug::FrameScriptInspector::Run(lightServerState.shadowMappingFrameScript);
+			//Debug::FrameScriptInspector::Run(lightServerState.shadowMappingFrameScript);
 #endif
 		});
 
@@ -230,10 +232,10 @@ LightContext::Create()
 	lightServerState.shadowMappingFrameScript->Build();
 	lightServerState.spotlightsBatchCode = CoreGraphics::BatchGroup::FromName("SpotLightShadow");
 	lightServerState.globalLightsBatchCode = CoreGraphics::BatchGroup::FromName("GlobalShadow");
-	lightServerState.globalLightShadowMap = lightServerState.shadowMappingFrameScript->GetTexture("GlobalLightShadow");
-	lightServerState.globalLightShadowMapBlurred0 = lightServerState.shadowMappingFrameScript->GetTexture("GlobalLightShadowFiltered0");
-	lightServerState.globalLightShadowMapBlurred1 = lightServerState.shadowMappingFrameScript->GetTexture("GlobalLightShadowFiltered1");
-	lightServerState.spotlightShadowAtlas = lightServerState.shadowMappingFrameScript->GetTexture("SpotLightShadowAtlas");
+	lightServerState.globalLightShadowMap = lightServerState.shadowMappingFrameScript->GetTexture("SunShadow");
+	lightServerState.globalLightShadowMapBlurred0 = lightServerState.shadowMappingFrameScript->GetTexture("SunShadowFiltered0");
+	lightServerState.globalLightShadowMapBlurred1 = lightServerState.shadowMappingFrameScript->GetTexture("SunShadowFiltered1");
+	lightServerState.localLightShadows = lightServerState.shadowMappingFrameScript->GetTexture("LocalLightShadow");
 
 	using namespace CoreGraphics;
 
@@ -774,7 +776,7 @@ LightContext::SetGlobalLightViewProjTransform(const Graphics::ContextEntityId id
 /**
 */
 void 
-LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
+LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
 {
 	const Graphics::ContextEntityId cid = GetContextId(lightServerState.globalLightEntity);
 	using namespace CoreGraphics;
@@ -853,6 +855,7 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const Graphics::Fram
 	SizeT numPointLights = 0;
 	SizeT numSpotLights = 0;
 	SizeT numSpotLightShadows = 0;
+	SizeT numShadowLights = 0;
 	SizeT numSpotLightsProjection = 0;
 
 	IndexT i;
@@ -896,12 +899,12 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const Graphics::Fram
 				auto tex = spotLightAllocator.Get<SpotLight_ProjectionTexture>(typeIds[i]);
 				auto angles = spotLightAllocator.Get<SpotLight_ConeAngles>(typeIds[i]);
 				auto& spotLight = clusterState.spotLights[numSpotLights];
-				Math::matrix44 viewToLightProj;
+				Math::matrix44 shadowProj;
 				if (tex != TextureId::Invalid() || castShadow[i])
 				{
 					Graphics::GraphicsEntityId observer = spotLightAllocator.Get<SpotLight_Observer>(typeIds[i]);
 					Graphics::ContextEntityId ctxId = shadowCasterSliceMap[observer];
-					viewToLightProj = shadowCasterAllocator.Get<ShadowCaster_Transform>(ctxId.id);
+					shadowProj = shadowCasterAllocator.Get<ShadowCaster_Transform>(ctxId.id);
 				}
 				spotLight.shadowExtension = -1;
 				spotLight.projectionExtension = -1;
@@ -909,20 +912,18 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const Graphics::Fram
 				uint flags = 0;
 
 				// update shadow data
-				if (castShadow[i] && numSpotLightShadows < 16)
+				if (castShadow[i] && numShadowLights < 16)
 				{
 					flags |= USE_SHADOW_BITFLAG;
 					spotLight.shadowExtension = numSpotLightShadows;
 					auto& shadow = clusterState.spotLightShadow[numSpotLightShadows];
 					
-					Math::matrix44::storeu(viewToLightProj, shadow.projection);
-					shadow.shadowMap = CoreGraphics::TextureGetBindlessHandle(lightServerState.spotlightShadowAtlas);
-					shadow.shadowOffsetScale[0] = 0;
-					shadow.shadowOffsetScale[1] = 0;
-					shadow.shadowOffsetScale[2] = 1;
-					shadow.shadowOffsetScale[3] = 1;
+					Math::matrix44::storeu(shadowProj, shadow.projection);
+					shadow.shadowMap = CoreGraphics::TextureGetBindlessHandle(lightServerState.localLightShadows);
 					shadow.shadowIntensity = 1.0f;
+					shadow.shadowSlice = numShadowLights;
 					numSpotLightShadows++;
+					numShadowLights++;
 				}
 
 				// check if we should use projection
@@ -931,7 +932,7 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const Graphics::Fram
 					flags |= USE_PROJECTION_TEX_BITFLAG;
 					spotLight.projectionExtension = numSpotLightsProjection;
 					auto& projection = clusterState.spotLightProjection[numSpotLightsProjection];
-					Math::matrix44::storeu(viewToLightProj, projection.projection);
+					Math::matrix44::storeu(shadowProj, projection.projection);
 					projection.projectionTexture = CoreGraphics::TextureGetBindlessHandle(tex);
 					numSpotLightsProjection++;
 				}
@@ -960,7 +961,7 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const Graphics::Fram
 		}
 	}
 
-	Graphics::GraphicsEntityId cam = Graphics::GraphicsServer::Instance()->GetCurrentView()->GetCamera();
+	Graphics::GraphicsEntityId cam = view->GetCamera();
 	CoreGraphics::DisplayMode displayMode = CoreGraphics::WindowGetDisplayMode(CoreGraphics::DisplayDevice::Instance()->GetCurrentWindow());
 	const Graphics::CameraSettings settings = Graphics::CameraContext::GetSettings(cam);
 
@@ -978,28 +979,40 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const Graphics::Fram
 	ResourceTableSetConstantBuffer(clusterState.clusterResourceTables[CoreGraphics::GetBufferedFrameIndex()], { GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.clusterUniformsSlot, 0, false, false, sizeof(ClusterGenerate::ClusterUniforms), (SizeT)offset });
 
 	// update list of point lights
-	LightsClusterCull::PointLightList pointList;
-	memcpy(pointList.PointLights, clusterState.pointLights, sizeof(LightsClusterCull::PointLight) * numPointLights);
-	offset = SetComputeConstants(MainThreadConstantBuffer, pointList);
-	ResourceTableSetConstantBuffer(clusterState.clusterResourceTables[CoreGraphics::GetBufferedFrameIndex()], { GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.pointLightListSlot, 0, false, false, (SizeT)sizeof(LightsClusterCull::PointLight) * numPointLights, (SizeT)offset });
+	if (numPointLights > 0)
+	{
+		LightsClusterCull::PointLightList pointList;
+		memcpy(pointList.PointLights, clusterState.pointLights, sizeof(LightsClusterCull::PointLight)* numPointLights);
+		offset = SetComputeConstants(MainThreadConstantBuffer, pointList);
+		ResourceTableSetConstantBuffer(clusterState.clusterResourceTables[CoreGraphics::GetBufferedFrameIndex()], { GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.pointLightListSlot, 0, false, false, (SizeT)sizeof(LightsClusterCull::PointLight) * numPointLights, (SizeT)offset });
+	}
 
 	// update list of spot lights
-	LightsClusterCull::SpotLightList spotList;
-	memcpy(spotList.SpotLights, clusterState.spotLights, sizeof(LightsClusterCull::SpotLight) * numSpotLights);
-	offset = SetComputeConstants(MainThreadConstantBuffer, spotList);
-	ResourceTableSetConstantBuffer(clusterState.clusterResourceTables[CoreGraphics::GetBufferedFrameIndex()], { GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.spotLightListSlot, 0, false, false, (SizeT)sizeof(LightsClusterCull::SpotLight) * numSpotLights, (SizeT)offset });
+	if (numSpotLights > 0)
+	{
+		LightsClusterCull::SpotLightList spotList;
+		memcpy(spotList.SpotLights, clusterState.spotLights, sizeof(LightsClusterCull::SpotLight)* numSpotLights);
+		offset = SetComputeConstants(MainThreadConstantBuffer, spotList);
+		ResourceTableSetConstantBuffer(clusterState.clusterResourceTables[CoreGraphics::GetBufferedFrameIndex()], { GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.spotLightListSlot, 0, false, false, (SizeT)sizeof(LightsClusterCull::SpotLight) * numSpotLights, (SizeT)offset });
+	}
 
 	// update list of spot light projection extensions
-	LightsClusterCull::SpotLightProjectionList projectionList;
-	memcpy(projectionList.SpotLightProjection, clusterState.spotLightProjection, sizeof(LightsClusterCull::SpotLightProjectionExtension) * numSpotLightsProjection);
-	offset = SetComputeConstants(MainThreadConstantBuffer, projectionList);
-	ResourceTableSetConstantBuffer(clusterState.clusterResourceTables[CoreGraphics::GetBufferedFrameIndex()], { GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.spotLightProjectionListSlot, 0, false, false, (SizeT)sizeof(LightsClusterCull::SpotLightProjectionExtension) * numSpotLightsProjection, (SizeT)offset });
+	if (numSpotLightsProjection > 0)
+	{
+		LightsClusterCull::SpotLightProjectionList projectionList;
+		memcpy(projectionList.SpotLightProjection, clusterState.spotLightProjection, sizeof(LightsClusterCull::SpotLightProjectionExtension)* numSpotLightsProjection);
+		offset = SetComputeConstants(MainThreadConstantBuffer, projectionList);
+		ResourceTableSetConstantBuffer(clusterState.clusterResourceTables[CoreGraphics::GetBufferedFrameIndex()], { GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.spotLightProjectionListSlot, 0, false, false, (SizeT)sizeof(LightsClusterCull::SpotLightProjectionExtension) * numSpotLightsProjection, (SizeT)offset });
+	}
 
 	// update list of spot light projection extensions
-	LightsClusterCull::SpotLightShadowList shadowList;
-	memcpy(shadowList.SpotLightShadow, clusterState.spotLightShadow, sizeof(LightsClusterCull::SpotLightShadowExtension) * numSpotLightShadows);
-	offset = SetComputeConstants(MainThreadConstantBuffer, shadowList);
-	ResourceTableSetConstantBuffer(clusterState.clusterResourceTables[CoreGraphics::GetBufferedFrameIndex()], { GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.spotLightShadowListSlot, 0, false, false, (SizeT)sizeof(LightsClusterCull::SpotLightShadowExtension) * numSpotLightShadows, (SizeT)offset });
+	if (numSpotLightShadows > 0)
+	{
+		LightsClusterCull::SpotLightShadowList shadowList;
+		memcpy(shadowList.SpotLightShadow, clusterState.spotLightShadow, sizeof(LightsClusterCull::SpotLightShadowExtension)* numSpotLightShadows);
+		offset = SetComputeConstants(MainThreadConstantBuffer, shadowList);
+		ResourceTableSetConstantBuffer(clusterState.clusterResourceTables[CoreGraphics::GetBufferedFrameIndex()], { GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.spotLightShadowListSlot, 0, false, false, (SizeT)sizeof(LightsClusterCull::SpotLightShadowExtension) * numSpotLightShadows, (SizeT)offset });
+	}	
 
 	// a little ugly, but since the view can change the script, this has to adopt
 	const CoreGraphics::TextureId shadingTex = view->GetFrameScript()->GetTexture("LightBuffer");
@@ -1017,6 +1030,8 @@ LightContext::OnBeforeView(const Ptr<Graphics::View>& view, const Graphics::Fram
 	consts.SSAOBuffer = CoreGraphics::TextureGetBindlessHandle(ssaoTex);
 	offset = SetComputeConstants(MainThreadConstantBuffer, consts);
 	ResourceTableSetConstantBuffer(clusterState.clusterResourceTables[CoreGraphics::GetBufferedFrameIndex()], { GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.lightingUniformsSlot, 0, false, false, sizeof(LightsClusterCull::LightConstants), (SizeT)offset });
+	ResourceTableCommitChanges(clusterState.clusterResourceTables[CoreGraphics::GetBufferedFrameIndex()]);
+}
 }
 
 //------------------------------------------------------------------------------

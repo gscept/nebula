@@ -240,14 +240,6 @@
 			}
 		],
 
-		plugin: {
-			name: "HBAO-Prepare"
-		}
-
-    	plugin: {
-			name: "SSR-Prepare"
-		}
-
 		begin_submission: {
 			name: "Clustering",
 			wait_for_queue: "Graphics",

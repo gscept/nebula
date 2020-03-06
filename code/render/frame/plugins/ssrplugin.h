@@ -23,12 +23,14 @@ public:
 	virtual ~SSRPlugin();
 
 	/// setup
-	void Setup();
+	void Setup() override;
 	/// discard
-	void Discard();
+	void Discard() override;
 
+	/// update resources
+	void UpdateResources(const IndexT frameIndex) override;
 	/// handle window resizing
-	void Resize();
+	void Resize() override;
 
 private:
     CoreGraphics::ShaderId traceShader;

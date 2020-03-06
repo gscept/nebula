@@ -188,7 +188,7 @@ ImguiContext::~ImguiContext()
 void
 ImguiContext::Create()
 {
-    __bundle.OnBeforeFrame = ImguiContext::OnBeforeFrame;
+    __bundle.OnBegin = ImguiContext::OnBeforeFrame;
     __bundle.OnWindowResized = ImguiContext::OnWindowResized;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 

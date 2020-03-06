@@ -109,7 +109,7 @@ public:
 	static void QueryClips(const Graphics::GraphicsEntityId id, Util::FixedArray<CoreAnimation::AnimClip>& outClips);
 
 	/// runs before frame is updated
-	static void OnBeforeFrame(const Graphics::FrameContext& ctx);
+	static void UpdateAnimations(const Graphics::FrameContext& ctx);
 	/// run after frame
 	static void OnAfterFrame(const Graphics::FrameContext& ctx);
 

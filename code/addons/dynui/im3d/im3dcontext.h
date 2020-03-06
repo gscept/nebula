@@ -55,7 +55,7 @@ public:
     static void OnBeforeFrame(const Graphics::FrameContext& ctx);
 
     /// called before frame
-    static void OnBeforeView(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
+    static void OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
     /// called when rendering a frame batch
     static void Render(const IndexT frameIndex);
            
