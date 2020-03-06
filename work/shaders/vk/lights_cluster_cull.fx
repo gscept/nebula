@@ -312,6 +312,8 @@ LocalLights(
 		{
 			uint lidx = SpotLightIndexList[idx * MAX_LIGHTS_PER_CLUSTER + i];
 			SpotLight li = SpotLights[lidx];
+
+			// if we have extensions, load them from their respective buffers
 			if (li.shadowExtension != -1)
 				shadowExt = SpotLightShadow[li.shadowExtension];
 			if (li.projectionExtension != -1)

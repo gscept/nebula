@@ -28,8 +28,8 @@ struct SpotLightProjectionExtension
 struct SpotLightShadowExtension
 {
 	mat4 projection;
-	vec4 shadowOffsetScale;
 	float shadowIntensity;				// intensity of shadows
+	uint shadowSlice;
 	textureHandle shadowMap;			// shadow map
 };
 
@@ -206,15 +206,28 @@ CalculateSpotLight(
 	float intensity = saturate((theta - light.angleSinCos.y) * light.forward.w);
 
 	vec4 lightModColor = intensity.xxxx * att;
-	if (FlagSet(light.flags, USE_PROJECTION_TEX_BITFLAG))
+	float shadowFactor = 1.0f;
+
+	// if we have both projection and shadow extensions, transform only the projected position for one of them
+	if (FlagSet(light.flags, USE_PROJECTION_TEX_BITFLAG) && (FlagSet(light.flags, USE_SHADOW_BITFLAG)))
+	{
+		vec4 projLightPos = projExt.projection * vec4(worldPos, 1.0f);
+		vec2 lightSpaceUv = vec2(((projLightPos.xy / projLightPos.ww) * vec2(0.5f, 0.5f)) + 0.5f);
+		lightModColor *= sample2DLod(projExt.projectionTexture, SpotlightTextureSampler, lightSpaceUv, 0);
+
+		vec2 shadowLookup = (projLightPos.xy / projLightPos.ww) * vec2(0.5f, -0.5f) + 0.5f;
+		shadowLookup.y = 1 - shadowLookup.y;
+		float receiverDepth = projLightPos.z / projLightPos.w;
+		shadowFactor = GetInvertedOcclusionSpotLight(receiverDepth, shadowLookup, shadowExt.shadowSlice, shadowExt.shadowMap);
+		shadowFactor = saturate(lerp(1.0f, saturate(shadowFactor), shadowExt.shadowIntensity));
+	}
+	else if (FlagSet(light.flags, USE_PROJECTION_TEX_BITFLAG))
 	{
 		vec4 projLightPos = projExt.projection * vec4(worldPos, 1.0f);
 		vec2 lightSpaceUv = vec2(((projLightPos.xy / projLightPos.ww) * vec2(0.5f, 0.5f)) + 0.5f);
 		lightModColor *= sample2DLod(projExt.projectionTexture, SpotlightTextureSampler, lightSpaceUv, 0);
 	}		
-
-	float shadowFactor = 1.0f;
-	if (FlagSet(light.flags, USE_SHADOW_BITFLAG))
+	else if (FlagSet(light.flags, USE_SHADOW_BITFLAG))
 	{
 		// shadows
 		vec4 shadowProjLightPos = shadowExt.projection * vec4(worldPos, 1.0f);
