@@ -20,9 +20,38 @@ public:
 	/// constructor
 	DrawThread();
 
+	enum CommandType
+	{
+		BeginCommand,
+		ResetCommand,
+		EndCommand,
+		GraphicsPipeline,
+		ComputePipeline,
+		InputAssemblyVertex,
+		InputAssemblyIndex,
+		Draw,
+		Dispatch,
+		BindDescriptors,
+		PushRange,
+		Viewport,
+		ViewportArray,
+		ScissorRect,
+		ScissorRectArray,
+		UpdateBuffer,
+		SetEvent,					// sets event to flagged
+		ResetEvent,					// resets event to unflagged
+		WaitForEvent,
+		Barrier,
+		Sync,
+		BeginMarker,
+		EndMarker,
+		InsertMarker
+	};
+
 	struct Command
 	{
-		IndexT offset;
+		IndexT size;
+		CommandType type;
 	};
 
 	struct CommandBuffer
@@ -117,7 +146,8 @@ DrawThread::Push(const T& command)
 
 	// create entry
 	Command entry;
-	entry.offset = this->commandBuffer.Size();
+	entry.size = sizeof(T);
+	entry.type = T::Type;
 	this->commands.Append(entry);
 
 	// record memory of command
