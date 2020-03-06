@@ -23,7 +23,6 @@ nebula_begin_module(resource)
 				resourceserver.h
 				resourcestreampool.cc
 				resourcestreampool.h
-				rttiarray.h
 			)
 nebula_end_module()
 target_include_directories(resource PUBLIC ${CODE_ROOT}/resource)
