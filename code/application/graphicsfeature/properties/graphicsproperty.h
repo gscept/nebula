@@ -14,7 +14,7 @@
 
 namespace Attr
 {
-__DeclareAttribute(ModelResource, Util::String, 'MdlR', Util::String("mdl:system/placeholder.n3"));
+__DeclareAttribute(ModelResource, AccessMode::ReadOnly, Util::String, 'MdlR', Util::String("mdl:system/placeholder.n3"));
 }
 
 namespace GraphicsFeature

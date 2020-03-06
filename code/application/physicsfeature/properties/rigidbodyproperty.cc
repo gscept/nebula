@@ -9,10 +9,12 @@
 #include "physics/actorcontext.h"
 #include "resources/resourcemanager.h"
 #include "basegamefeature/managers/categorymanager.h"
+#include <type_traits>
+
 namespace Attr
 {
-	__DefineAttribute(IsDynamic, bool, 'phDy', bool(true));
-	__DefineAttribute(PhysicsResource, Util::String, 'phRs', Util::String("phys:system/placeholder.np"));
+	__DefineAttribute(IsDynamic);
+	__DefineAttribute(PhysicsResource);
 }
 
 namespace PhysicsFeature

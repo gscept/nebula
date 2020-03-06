@@ -12,7 +12,7 @@
 
 namespace Attr
 {
-__DefineAttribute(ModelResource, Util::String, 'MdlR', Util::String("mdl:system/placeholder.n3"));
+__DefineAttribute(ModelResource);
 }
 
 

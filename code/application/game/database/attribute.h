@@ -12,6 +12,7 @@
 #include "math/float4.h"
 #include "util/fourcc.h"
 #include "util/hashtable.h"
+#include "attr/accessmode.h"
 
 namespace Game
 {
@@ -74,8 +75,9 @@ struct AttributeDefinition
 {
 	Util::String name;
 	Util::FourCC fourcc;
-	AttributeType type;
+	Game::AttributeType type;
 	Game::AttributeValue defaultValue;
+	Attr::AccessMode accessMode;
 
 	AttributeCategoryTable* registry;
 };
@@ -176,6 +178,12 @@ public:
 		return this->defPtr->type;
 	}
 
+	const Attr::AccessMode GetAccessMode() const
+	{
+		n_assert(this->defPtr != nullptr);
+		return this->defPtr->accessMode;
+	}
+
 	const AttributeValue& GetDefaultValue() const
 	{
 		n_assert(this->defPtr != nullptr);
@@ -238,7 +246,7 @@ using Attribute = Util::KeyValuePair<AttributeId, AttributeValue>;
 	
 	@note	Make sure to send an explicit type as default value (ex. uint32_t(10), Math::matrix44::identity(), etc.)
 */
-#define __DeclareAttribute(ATTRIBUTENAME, VALUETYPE, FOURCC, DEFAULTVALUE) \
+#define __DeclareAttribute(ATTRIBUTENAME, ACCESSMODE, VALUETYPE, FOURCC, DEFAULTVALUE) \
 namespace Runtime\
 {\
 extern Game::AttributeDefinition ATTRIBUTENAME ## Id;\
@@ -266,6 +274,10 @@ public:\
 	{\
 		return Game::TypeToAttributeType<VALUETYPE>();\
 	}\
+	static constexpr Attr::AccessMode AccessMode()\
+	{\
+		return ACCESSMODE;\
+	}\
 	static const VALUETYPE DefaultValue()\
 	{\
 		return VALUETYPE(DEFAULTVALUE);\
@@ -276,14 +288,15 @@ public:\
 	}\
 };
 
-#define __DefineAttribute(ATTRIBUTENAME, TYPE, FOURCC, DEFAULTVALUE) \
+#define __DefineAttribute(ATTRIBUTENAME) \
 namespace Runtime\
 {\
 	Game::AttributeDefinition ATTRIBUTENAME ## Id = {\
 		Util::String(#ATTRIBUTENAME), \
-		Util::FourCC(FOURCC), \
-		Game::TypeToAttributeType<TYPE>(), \
-		Game::AttributeValue(DEFAULTVALUE), \
+		Util::FourCC(ATTRIBUTENAME::FourCC()), \
+		ATTRIBUTENAME::Type(), \
+		Game::AttributeValue(ATTRIBUTENAME::DefaultValue()), \
+		ATTRIBUTENAME::AccessMode(), \
 		n_new(Game::AttributeCategoryTable()) \
 	}; \
 }

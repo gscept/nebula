@@ -18,7 +18,7 @@
 
 namespace Attr
 {
-__DeclareAttribute(Owner, Game::Entity, 'OWNR', Game::Entity::Invalid());
+__DeclareAttribute(Owner, AccessMode::ReadOnly, Game::Entity, 'OWNR', Game::Entity::Invalid());
 }
 
 namespace Game

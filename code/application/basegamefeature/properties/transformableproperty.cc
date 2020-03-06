@@ -8,9 +8,9 @@
 
 namespace Attr
 {
-__DefineAttribute(LocalTransform, Math::matrix44, 'Lm44', Math::matrix44::identity());
-__DefineAttribute(WorldTransform, Math::matrix44, 'Wm44', Math::matrix44::identity());
-__DefineAttribute(Parent, Game::Entity, 'TFPT', Game::Entity::Invalid());
+__DefineAttribute(LocalTransform);
+__DefineAttribute(WorldTransform);
+__DefineAttribute(Parent);
 }
 
 namespace Game

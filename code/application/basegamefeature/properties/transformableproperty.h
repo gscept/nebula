@@ -14,9 +14,9 @@
 
 namespace Attr
 {
-__DeclareAttribute(LocalTransform, Math::matrix44, 'Lm44', Math::matrix44::identity());
-__DeclareAttribute(WorldTransform, Math::matrix44, 'Wm44', Math::matrix44::identity());
-__DeclareAttribute(Parent, Game::Entity , 'TFPT', Game::Entity::Invalid());
+__DeclareAttribute(LocalTransform, AccessMode::ReadOnly, Math::matrix44, 'Lm44', Math::matrix44::identity());
+__DeclareAttribute(WorldTransform, AccessMode::ReadWrite, Math::matrix44, 'Wm44', Math::matrix44::identity());
+__DeclareAttribute(Parent, AccessMode::ReadOnly, Game::Entity , 'TFPT', Game::Entity::Invalid());
 }
 
 namespace Game
