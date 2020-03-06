@@ -103,6 +103,17 @@ ProfilingNewFrame()
 //------------------------------------------------------------------------------
 /**
 */
+Timing::Time 
+ProfilingGetTime()
+{
+	// get current context and return time
+	ProfilingContext& ctx = profilingContexts[ProfilingContextIndex];
+	return ctx.timer.GetTime();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void 
 ProfilingRegisterThread()
 {
