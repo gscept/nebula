@@ -11,8 +11,6 @@
 using namespace Core;
 using namespace Test;
 
-
-__cdecl 
 int main(int argc, char** argv)
 {
 	// create Nebula runtime
