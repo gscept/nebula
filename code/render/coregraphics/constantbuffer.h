@@ -17,6 +17,7 @@
 #include "ids/idpool.h"
 #include "util/stringatom.h"
 #include "util/variant.h"
+#include "coregraphics/config.h"
 
 namespace CoreGraphics
 {
