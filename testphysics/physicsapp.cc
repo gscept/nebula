@@ -75,7 +75,7 @@ SimpleViewerApplication::Open()
     if (Application::Open())
     {
         this->gfxServer = GraphicsServer::Create();
-        this->resMgr = Resources::ResourceManager::Create();
+        this->resMgr = Resources::ResourceServer::Create();
         this->inputServer = Input::InputServer::Create();
         this->ioServer = IO::IoServer::Create();
         this->debugInterface = Debug::DebugInterface::Create();

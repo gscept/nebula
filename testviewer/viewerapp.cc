@@ -84,7 +84,7 @@ SimpleViewerApplication::Open()
 		this->debugInterface->Open();
 #endif
         this->gfxServer = GraphicsServer::Create();
-        this->resMgr = Resources::ResourceManager::Create();
+        this->resMgr = Resources::ResourceServer::Create();
         this->inputServer = Input::InputServer::Create();
         this->ioServer = IO::IoServer::Create();
 
@@ -232,20 +232,22 @@ SimpleViewerApplication::Run()
         N_MARKER_BEGIN(BeginFrame, App);
 		this->gfxServer->BeginFrame();
         N_MARKER_END();
+        this->RenderUI();
 
-        scenes[currentScene]->Run();
-
-        // put game code which doesn't need visibility data or animation here
-        N_MARKER_BEGIN(BeforeViews, App);
-        this->gfxServer->BeforeViews();
-        N_MARKER_END();
-        this->RenderUI();              
-
-        N_MARKER_BEGIN(Draw, App);
         if (this->renderDebug)
         {
             this->gfxServer->RenderDebug(0);
         }
+
+        scenes[currentScene]->Run();
+
+        // put game code which doesn't need visibility results or animation here
+        N_MARKER_BEGIN(BeforeViews, App);
+        this->gfxServer->BeforeViews();
+        N_MARKER_END();
+
+        N_MARKER_BEGIN(Draw, App);
+
         
         // put game code which need visibility data here
         this->gfxServer->RenderViews();
@@ -271,7 +273,7 @@ SimpleViewerApplication::Run()
             this->UpdateCamera();
         
 		if (keyboard->KeyPressed(Input::Key::F8))
-			Resources::ResourceManager::Instance()->ReloadResource("shd:imgui.fxb");
+			Resources::ResourceServer::Instance()->ReloadResource("shd:imgui.fxb");
 
         if (keyboard->KeyDown(Input::Key::F3))
             this->pauseProfiling = !this->pauseProfiling;
@@ -454,18 +456,19 @@ SimpleViewerApplication::RenderUI()
 
     if (this->showCameraWindow)
     {
-        ImGui::Begin("Viewer", &showCameraWindow, 0);
-
-        ImGui::SetWindowSize(ImVec2(240, 400));
-        if (ImGui::CollapsingHeader("Camera mode", ImGuiTreeNodeFlags_DefaultOpen))
+        if (ImGui::Begin("Viewer", &showCameraWindow, 0))
         {
-            if (ImGui::RadioButton("Maya", &this->cameraMode, 0))this->ToMaya();
-            ImGui::SameLine();
-            if (ImGui::RadioButton("Free", &this->cameraMode, 1))this->ToFree();
-            ImGui::SameLine();
-            if (ImGui::Button("Reset")) this->ResetCamera();
-        }
-        ImGui::Checkbox("Debug Rendering", &this->renderDebug);
+            ImGui::SetWindowSize(ImVec2(240, 400));
+            if (ImGui::CollapsingHeader("Camera mode", ImGuiTreeNodeFlags_DefaultOpen))
+            {
+                if (ImGui::RadioButton("Maya", &this->cameraMode, 0))this->ToMaya();
+                ImGui::SameLine();
+                if (ImGui::RadioButton("Free", &this->cameraMode, 1))this->ToFree();
+                ImGui::SameLine();
+                if (ImGui::Button("Reset")) this->ResetCamera();
+            }
+            ImGui::Checkbox("Debug Rendering", &this->renderDebug);
+        }       
 
         ImGui::End();
     }
@@ -478,7 +481,7 @@ SimpleViewerApplication::RenderUI()
     if (this->showFrameProfiler)
     {
         Debug::FrameScriptInspector::Run(this->view->GetFrameScript());
-        ImGui::Begin("Performance Profiler", &this->showFrameProfiler);
+        if (ImGui::Begin("Performance Profiler", &this->showFrameProfiler))
         {
             ImGui::Text("ms - %.2f\nFPS - %.2f", this->prevAverageFrameTime * 1000, 1 / this->prevAverageFrameTime);
             ImGui::PlotLines("Frame Times", &this->frametimeHistory[0], this->frametimeHistory.Size(), 0, 0, FLT_MIN, FLT_MAX, { ImGui::GetContentRegionAvail().x, 90 });

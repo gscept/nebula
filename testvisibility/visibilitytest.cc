@@ -16,7 +16,7 @@
 #include "graphics/view.h"
 
 #include "graphics/graphicsserver.h"
-#include "resources/resourcemanager.h"
+#include "resources/resourceserver.h"
 
 #include "visibility/visibilitycontext.h"
 #include "models/modelcontext.h"
@@ -43,7 +43,7 @@ void
 VisibilityTest::Run()
 {
 	Ptr<GraphicsServer> gfxServer = GraphicsServer::Create();
-	Ptr<Resources::ResourceManager> resMgr = Resources::ResourceManager::Create();
+	Ptr<Resources::ResourceServer> resMgr = Resources::ResourceServer::Create();
 
 	App::Application app;
 

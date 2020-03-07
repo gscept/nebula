@@ -6,7 +6,7 @@
 #include "graphics/view.h"
 #include "graphics/stage.h"
 #include "graphics/cameracontext.h"
-#include "resources/resourcemanager.h"
+#include "resources/resourceserver.h"
 #include "models/modelcontext.h"
 #include "input/inputserver.h"
 #include "io/ioserver.h"

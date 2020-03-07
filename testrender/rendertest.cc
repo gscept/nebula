@@ -8,7 +8,7 @@
 #include "io/console.h"
 #include "rendertest.h"
 #include "graphics/graphicsserver.h"
-#include "resources/resourcemanager.h"
+#include "resources/resourceserver.h"
 #include "coregraphics/window.h"
 #include "app/application.h"
 #include "input/inputserver.h"
@@ -31,7 +31,7 @@ void
 RenderTest::Run()
 {
 	Ptr<GraphicsServer> gfxServer = GraphicsServer::Create();
-	Ptr<Resources::ResourceManager> resMgr = Resources::ResourceManager::Create();
+	Ptr<Resources::ResourceServer> resMgr = Resources::ResourceServer::Create();
 
 	App::Application app;
 
