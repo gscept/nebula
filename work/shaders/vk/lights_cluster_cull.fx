@@ -15,33 +15,21 @@
 // increase if we need more lights in close proximity, for now, 128 is more than enough
 #define MAX_LIGHTS_PER_CLUSTER 128
 
-group(BATCH_GROUP) varblock LightConstants
+group(BATCH_GROUP) varbuffer LightLists [ string Visibility = "CS"; ]
+{
+	SpotLight SpotLights[1024];
+	SpotLightProjectionExtension SpotLightProjection[256];
+	SpotLightShadowExtension SpotLightShadow[16];
+	PointLight PointLights[1024];
+};
+
+group(BATCH_GROUP) varblock LightConstants [ string Visibility = "CS"; ]
 {
 	textureHandle SSAOBuffer;
 };
 
-group(BATCH_GROUP) varblock SpotLightList
-{
-	SpotLight SpotLights[1024];
-};
-
-group(BATCH_GROUP) varblock SpotLightProjectionList
-{
-	SpotLightProjectionExtension SpotLightProjection[256];
-};
-
-group(BATCH_GROUP) varblock SpotLightShadowList
-{
-	SpotLightShadowExtension SpotLightShadow[16];
-};
-
-group(BATCH_GROUP) varblock PointLightList
-{
-	PointLight PointLights[1024];
-};
-
 // this is used to keep track of how many lights we have active
-group(BATCH_GROUP) varblock LightCullUniforms
+group(BATCH_GROUP) varblock LightCullUniforms [string Visibility = "CS"; ]
 {
 	uint NumPointLights;
 	uint NumSpotLights;
@@ -49,29 +37,12 @@ group(BATCH_GROUP) varblock LightCullUniforms
 };
 
 // contains amount of lights, and the index of the light (pointing to the indices in PointLightList and SpotLightList), to output
-struct LightTileList
+group(BATCH_GROUP) varbuffer LightIndexLists [ string Visibility = "CS"; ]
 {
-	uint lightIndex[MAX_LIGHTS_PER_CLUSTER];
-};
-
-group(BATCH_GROUP) varbuffer PointLightIndexLists
-{
-	uint PointLightIndexList[];
-};
-
-group(BATCH_GROUP) varbuffer PointLightCountLists
-{
-	uint PointLightCountList[];
-};
-
-group(BATCH_GROUP) varbuffer SpotLightIndexLists
-{
-	uint SpotLightIndexList[];
-};
-
-group(BATCH_GROUP) varbuffer SpotLightCountLists
-{
-	uint SpotLightCountList[];
+	uint PointLightIndexList[16384 * MAX_LIGHTS_PER_CLUSTER];
+	uint PointLightCountList[16384];
+	uint SpotLightIndexList[16384 * MAX_LIGHTS_PER_CLUSTER];
+	uint SpotLightCountList[16384];
 };
 
 write r11g11b10f image2D Lighting;
