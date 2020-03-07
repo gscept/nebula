@@ -5,6 +5,7 @@
 #include "render/stdneb.h"
 #include "framepass.h"
 #include "coregraphics/graphicsdevice.h"
+#include "profiling/profiling.h"
 
 using namespace CoreGraphics;
 

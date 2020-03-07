@@ -9,6 +9,8 @@
 #include "ids/id.h"
 #include "ids/idpool.h"
 #include "util/stringatom.h"
+#include "coregraphics/config.h"
+
 namespace CoreGraphics
 {
 ID_24_8_TYPE(ShaderRWBufferId);

@@ -7,11 +7,9 @@
 */
 //------------------------------------------------------------------------------
 #include "threading/thread.h"
+#include "threading/event.h"
 namespace CoreGraphics
 {
-
-/// create new draw thread, define in implementation thread
-extern DrawThread* CreateDrawThread();
 
 class DrawThread : public Threading::Thread
 {
@@ -139,6 +137,10 @@ protected:
 	CommandBuffer commandBuffer;
 	Threading::Event* event;
 };
+
+/// create new draw thread, define in implementation thread
+extern DrawThread* CreateDrawThread();
+
 
 //------------------------------------------------------------------------------
 /**

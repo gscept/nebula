@@ -7,6 +7,7 @@
 */
 //------------------------------------------------------------------------------
 #include "pass.h"
+#include "profiling/profiling.h"
 #include "frame/framescript.h"
 #include "primitivegroup.h"
 #include "vertexbuffer.h"
