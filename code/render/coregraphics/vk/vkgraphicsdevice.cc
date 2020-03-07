@@ -1409,7 +1409,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 			"",
 			-1,
 			0,
-			CoreGraphics::ConstantBufferUpdateMode(0)
+			CoreGraphics::BufferUpdateMode(0)
 		};
 
 		cboInfo.size = info.globalGraphicsConstantBufferMemorySize[i] * info.numBufferedFrames;
@@ -1417,11 +1417,11 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		if (cboInfo.size > 0)
 		{
 			cboInfo.name = systemName[0] + threadName[i] + queueName[0];
-			cboInfo.mode = CoreGraphics::ConstantBufferUpdateMode::HostWriteable;
+			cboInfo.mode = CoreGraphics::BufferUpdateMode::HostWriteable;
 			state.globalGraphicsConstantStagingBuffer[i] = CreateConstantBuffer(cboInfo);
 
 			cboInfo.name = systemName[1] + threadName[i] + queueName[0];
-			cboInfo.mode = CoreGraphics::ConstantBufferUpdateMode::DeviceWriteable;
+			cboInfo.mode = CoreGraphics::BufferUpdateMode::DeviceWriteable;
 			state.globalGraphicsConstantBuffer[i] = CreateConstantBuffer(cboInfo);
 		}
 
@@ -1430,11 +1430,11 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		if (cboInfo.size > 0)
 		{
 			cboInfo.name = systemName[0] + threadName[i] + queueName[1];
-			cboInfo.mode = CoreGraphics::ConstantBufferUpdateMode::HostWriteable;
+			cboInfo.mode = CoreGraphics::BufferUpdateMode::HostWriteable;
 			state.globalComputeConstantStagingBuffer[i] = CreateConstantBuffer(cboInfo);
 
 			cboInfo.name = systemName[1] + threadName[i] + queueName[1];
-			cboInfo.mode = CoreGraphics::ConstantBufferUpdateMode::DeviceWriteable;
+			cboInfo.mode = CoreGraphics::BufferUpdateMode::DeviceWriteable;
 			state.globalComputeConstantBuffer[i] = CreateConstantBuffer(cboInfo);
 		}
 	}

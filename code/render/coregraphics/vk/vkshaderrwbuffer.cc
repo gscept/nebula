@@ -61,7 +61,12 @@ CreateShaderRWBuffer(const ShaderRWBufferCreateInfo& info)
 	n_assert(res == VK_SUCCESS);
 
 	uint32_t alignedSize;
-	VkUtilities::AllocateBufferMemory(setupInfo.dev, runtimeInfo.buf, setupInfo.mem, VkMemoryPropertyFlagBits(VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT), alignedSize);
+	VkMemoryPropertyFlagBits flags = VkMemoryPropertyFlagBits(0);
+	if (info.mode == HostWriteable)
+		flags = VkMemoryPropertyFlagBits(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+	else if (info.mode == DeviceWriteable)
+		flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+	VkUtilities::AllocateBufferMemory(setupInfo.dev, runtimeInfo.buf, setupInfo.mem, flags, alignedSize);
 
 	// bind to buffer
 	res = vkBindBufferMemory(setupInfo.dev, runtimeInfo.buf, setupInfo.mem, 0);
@@ -75,9 +80,13 @@ CreateShaderRWBuffer(const ShaderRWBufferCreateInfo& info)
 	ret.id24 = id;
 	ret.id8 = ShaderRWBufferIdType;
 
-	// map memory so we can use it later
-	res = vkMapMemory(setupInfo.dev, setupInfo.mem, 0, alignedSize, 0, &mapInfo.data);
-	n_assert(res == VK_SUCCESS);
+	if (info.mode == HostWriteable)
+	{
+		// map memory so we can use it later
+		res = vkMapMemory(setupInfo.dev, setupInfo.mem, 0, alignedSize, 0, &mapInfo.data);
+		n_assert(res == VK_SUCCESS);
+	}
+	
 
 #if NEBULA_GRAPHICS_DEBUG
 	ObjectSetName(ret, info.name.Value());

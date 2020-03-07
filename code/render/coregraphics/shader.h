@@ -32,7 +32,6 @@
 namespace CoreGraphics
 {
 
-enum ConstantBufferUpdateMode;
 struct ConstantBufferId;
 struct TextureId;
 struct ShaderRWTextureId;
@@ -94,9 +93,9 @@ const ShaderId ShaderGet(const Resources::ResourceName& name);
 /// create resource table from shader
 const ResourceTableId ShaderCreateResourceTable(const ShaderId id, const IndexT group);
 /// create constant buffer from shader using name (don't use too frequently)
-const ConstantBufferId ShaderCreateConstantBuffer(const ShaderId id, const Util::StringAtom& name, ConstantBufferUpdateMode mode = ConstantBufferUpdateMode::HostWriteable);
+const ConstantBufferId ShaderCreateConstantBuffer(const ShaderId id, const Util::StringAtom& name, BufferUpdateMode mode = BufferUpdateMode::HostWriteable);
 /// create constant buffer from index
-const ConstantBufferId ShaderCreateConstantBuffer(const ShaderId id, const IndexT cbIndex, ConstantBufferUpdateMode mode = ConstantBufferUpdateMode::HostWriteable);
+const ConstantBufferId ShaderCreateConstantBuffer(const ShaderId id, const IndexT cbIndex, BufferUpdateMode mode = BufferUpdateMode::HostWriteable);
 
 /// get the number of constants from shader
 const SizeT ShaderGetConstantCount(const ShaderId id);
