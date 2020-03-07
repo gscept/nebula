@@ -53,11 +53,14 @@ JobsTest::Run()
 	CreateJobInfo jobInfo;
 	jobInfo.JobFunc = [](const JobFuncContext& ctx)
 	{
-		Math::float4* input1 = (Math::float4*)ctx.inputs[0];
-		Math::float4* input2 = (Math::float4*)ctx.inputs[1];
-		Math::float4* output = (Math::float4*)ctx.outputs[0];
+		for (ptrdiff sliceIdx = 0; sliceIdx < ctx.numSlices; sliceIdx++)
+		{
+			Math::float4* input1 = (Math::float4*)N_JOB_INPUT(ctx, sliceIdx, 0);
+			Math::float4* input2 = (Math::float4*)N_JOB_INPUT(ctx, sliceIdx, 1);
+			Math::float4* output = (Math::float4*)N_JOB_OUTPUT(ctx, sliceIdx, 0);
 
-		output[0] = Math::float4::cross3(input1[0], input2[0]);
+			output[0] = Math::float4::cross3(input1[0], input2[0]);
+		}
 	};
 	JobId job = CreateJob(jobInfo);
 
