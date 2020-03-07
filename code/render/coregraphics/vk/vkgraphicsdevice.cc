@@ -38,7 +38,6 @@
 #include "coregraphics/drawthread.h"
 #include "profiling/profiling.h"
 
-#define NEBULA_ENABLE_MT_DRAW 1
 namespace Vulkan
 {
 

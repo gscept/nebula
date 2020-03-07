@@ -98,7 +98,9 @@ FramePass::CompiledImpl::RunJobs(const IndexT frameIndex)
 void
 FramePass::CompiledImpl::Run(const IndexT frameIndex)
 {
+#if NEBULA_ENABLE_MT_DRAW
 	n_assert(this->subpassBuffers.Size() == this->subpasses.Size());
+#endif
 
 #if NEBULA_GRAPHICS_DEBUG
 	CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_GREEN, this->name.Value());
@@ -116,8 +118,16 @@ FramePass::CompiledImpl::Run(const IndexT frameIndex)
 		if (i > 0) 
 			PassNextSubpass(this->pass);
 
+#if NEBULA_ENABLE_MT_DRAW
 		// execute commands
 		CoreGraphics::ExecuteCommands(this->subpassBuffers[i][bufferedIndex]);
+#else
+		// execute contents of this subpass and synchronize
+		// note that we overload the cross queue sync so we do it outside the render pass
+		this->subpasses[i]->QueuePreSync();
+		this->subpasses[i]->Run(frameIndex);
+		this->subpasses[i]->QueuePostSync();
+#endif
 	}
 
 	// end pass
