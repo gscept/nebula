@@ -2195,15 +2195,17 @@ BeginPass(const CoreGraphics::PassId pass)
 
 
 #if NEBULA_ENABLE_MT_DRAW
+	const Util::FixedArray<VkViewport>& viewports = PassGetVkViewports(state.pass);
+	CoreGraphics::SetVkViewports(viewports.Begin(), viewports.Size());
+	const Util::FixedArray<VkRect2D>& scissors = PassGetVkRects(state.pass);
+	CoreGraphics::SetVkScissorRects(scissors.Begin(), scissors.Size());
 	if (!state.drawThread)
-	{
-		const Util::FixedArray<VkViewport>& viewports = PassGetVkViewports(state.pass);
-		CoreGraphics::SetVkViewports(viewports.Begin(), viewports.Size());
-		const Util::FixedArray<VkRect2D>& scissors = PassGetVkRects(state.pass);
-		CoreGraphics::SetVkScissorRects(scissors.Begin(), scissors.Size());
 		vkCmdBeginRenderPass(GetMainBuffer(GraphicsQueueType), &info, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
-	}
 #else
+	const Util::FixedArray<VkViewport>& viewports = PassGetVkViewports(state.pass);
+	CoreGraphics::SetVkViewports(viewports.Begin(), viewports.Size());
+	const Util::FixedArray<VkRect2D>& scissors = PassGetVkRects(state.pass);
+	CoreGraphics::SetVkScissorRects(scissors.Begin(), scissors.Size());
 	vkCmdBeginRenderPass(GetMainBuffer(GraphicsQueueType), &info, VK_SUBPASS_CONTENTS_INLINE);
 #endif
 
@@ -2258,14 +2260,12 @@ SetToNextSubpass()
 	state.passInfo.subpass = state.currentPipelineInfo.subpass;
 
 #if NEBULA_ENABLE_MT_DRAW
+	const Util::FixedArray<VkViewport>& viewports = PassGetVkViewports(state.pass);
+	CoreGraphics::SetVkViewports(viewports.Begin(), viewports.Size());
+	const Util::FixedArray<VkRect2D>& scissors = PassGetVkRects(state.pass);
+	CoreGraphics::SetVkScissorRects(scissors.Begin(), scissors.Size());
 	if (!state.drawThread)
-	{
-		const Util::FixedArray<VkViewport>& viewports = PassGetVkViewports(state.pass);
-		CoreGraphics::SetVkViewports(viewports.Begin(), viewports.Size());
-		const Util::FixedArray<VkRect2D>& scissors = PassGetVkRects(state.pass);
-		CoreGraphics::SetVkScissorRects(scissors.Begin(), scissors.Size());
 		vkCmdNextSubpass(GetMainBuffer(GraphicsQueueType), VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
-	}
 #else
 	const Util::FixedArray<VkViewport>& viewports = PassGetVkViewports(state.pass);
 	CoreGraphics::SetVkViewports(viewports.Begin(), viewports.Size());
