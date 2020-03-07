@@ -71,9 +71,8 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 
 	// only support threaded command buffer building 
 	CoreGraphics::CommandBufferId drawThreadCommands;
-	Util::Array<VkCommandBufferThread::VkCommand> threadCmds;
 
-	Util::FixedArray<VkCommandBufferThread::VkCommand> propagateDescriptorSets;
+	Util::FixedArray<VkCommandBufferThread::VkDescriptorsCommand> propagateDescriptorSets;
 	SizeT numCallsLastFrame;
 	SizeT numUsedThreads;
 
@@ -507,14 +506,14 @@ BindDescriptorsGraphics(const VkDescriptorSet* descriptors, uint32_t baseSet, ui
 	{
 		for (uint32_t i = 0; i < setCount; i++)
 		{
-			VkCommandBufferThread::VkCommand cmd;
-			cmd.type = VkCommandBufferThread::BindDescriptors;
-			cmd.descriptor.baseSet = baseSet;
-			cmd.descriptor.numSets = 1;
-			cmd.descriptor.sets = &descriptors[i];
-			cmd.descriptor.numOffsets = offsetCount;
-			cmd.descriptor.offsets = offsets;
-			cmd.descriptor.type = VK_PIPELINE_BIND_POINT_GRAPHICS;
+			VkCommandBufferThread::VkDescriptorsCommand cmd;
+			cmd.baseSet = baseSet;
+			cmd.numSets = 1;
+			cmd.sets[i] = descriptors[i];
+			cmd.numOffsets = offsetCount;
+			n_assert(offsetCount < VkCommandBufferThread::VkDescriptorsCommand::MaxOffsets);
+			Memory::CopyElements(offsets, cmd.offsets, offsetCount);
+			cmd.type = VK_PIPELINE_BIND_POINT_GRAPHICS;
 			state.propagateDescriptorSets[baseSet + i] = cmd;
 		}
 	}
@@ -524,15 +523,16 @@ BindDescriptorsGraphics(const VkDescriptorSet* descriptors, uint32_t baseSet, ui
 		n_assert(state.currentProgram != -1);
 		if (state.drawThread)
 		{
-			VkCommandBufferThread::VkCommand cmd;
-			cmd.type = VkCommandBufferThread::BindDescriptors;
-			cmd.descriptor.baseSet = baseSet;
-			cmd.descriptor.numSets = setCount;
-			cmd.descriptor.sets = descriptors;
-			cmd.descriptor.numOffsets = offsetCount;
-			cmd.descriptor.offsets = offsets;
-			cmd.descriptor.type = VK_PIPELINE_BIND_POINT_GRAPHICS;
-			state.propagateDescriptorSets[baseSet].descriptor.baseSet = -1;
+			VkCommandBufferThread::VkDescriptorsCommand cmd;
+			cmd.baseSet = baseSet;
+			cmd.numSets = setCount;
+			n_assert(setCount < VkCommandBufferThread::VkDescriptorsCommand::MaxSets);
+			Memory::CopyElements(descriptors, cmd.sets, setCount);
+			cmd.numOffsets = offsetCount;
+			n_assert(offsetCount < VkCommandBufferThread::VkDescriptorsCommand::MaxOffsets);
+			Memory::CopyElements(offsets, cmd.offsets, offsetCount);
+			cmd.type = VK_PIPELINE_BIND_POINT_GRAPHICS;
+			state.propagateDescriptorSets[baseSet].baseSet = -1;
 			state.drawThread->Push(cmd);
 		}
 		else
@@ -561,16 +561,15 @@ UpdatePushRanges(const VkShaderStageFlags& stages, const VkPipelineLayout& layou
 {
 	if (state.drawThread)
 	{
-		VkCommandBufferThread::VkCommand cmd;
-		cmd.type = VkCommandBufferThread::PushRange;
-		cmd.pushranges.layout = layout;
-		cmd.pushranges.offset = offset;
-		cmd.pushranges.size = size;
-		cmd.pushranges.stages = stages;
+		VkCommandBufferThread::VkPushConstantsCommand cmd;
+		cmd.layout = layout;
+		cmd.offset = offset;
+		cmd.size = size;
+		cmd.stages = stages;
 
 		// copy data here, will be deleted in the thread
-		cmd.pushranges.data = Memory::Alloc(Memory::ScratchHeap, size);
-		memcpy(cmd.pushranges.data, data, size);
+		n_assert(size < VkCommandBufferThread::VkPushConstantsCommand::MaxSize);
+		memcpy(cmd.data, data, size);
 		state.drawThread->Push(cmd);
 	}
 	else
@@ -663,13 +662,12 @@ CreateAndBindGraphicsPipeline()
 
 	if (state.drawThread)
 	{ 
-		VkCommandBufferThread::VkCommand cmd;
+		VkCommandBufferThread::VkGfxPipelineBindCommand pipeCommand;
 
 		// send pipeline bind command, this is the first step in our procedure, so we use this as a trigger to switch threads
-		cmd.type = VkCommandBufferThread::GraphicsPipeline;
-		cmd.pipe.pipeline = pipeline;
-		cmd.pipe.layout = state.currentPipelineLayout;
-		state.drawThread->Push(cmd);
+		pipeCommand.pipeline = pipeline;
+		pipeCommand.layout = state.currentPipelineLayout;
+		state.drawThread->Push(pipeCommand);
 		
 		// bind textures and camera descriptors
 		VkShaderServer::Instance()->BindTextureDescriptorSetsGraphics();
@@ -677,35 +675,35 @@ CreateAndBindGraphicsPipeline()
 
 		// push propagation descriptors
 		for (IndexT i = 0; i < state.propagateDescriptorSets.Size(); i++)
-			if (state.propagateDescriptorSets[i].descriptor.baseSet != -1)
+			if (state.propagateDescriptorSets[i].baseSet != -1)
 				state.drawThread->Push(state.propagateDescriptorSets[i]);
 
-		cmd.type = VkCommandBufferThread::ScissorRectArray;
-		cmd.scissorRectArray.first = 0;
-		cmd.scissorRectArray.num = state.numScissors;
-		memcpy(cmd.scissorRectArray.scs, state.scissors, sizeof(VkRect2D) * state.numScissors);
-		state.drawThread->Push(cmd);
+		VkCommandBufferThread::VkScissorRectArrayCommand scissorCommand;
+		scissorCommand.first = 0;
+		scissorCommand.num = state.numScissors;
+		Memory::CopyElements(state.scissors, scissorCommand.scs, state.numScissors);
+		state.drawThread->Push(scissorCommand);
 
-		cmd.type = VkCommandBufferThread::ViewportArray;
-		cmd.viewportArray.first = 0;
-		cmd.viewportArray.num = state.numViewports;
-		memcpy(cmd.viewportArray.vps, state.viewports, sizeof(VkViewport) * state.numViewports);
-		state.drawThread->Push(cmd);
+		VkCommandBufferThread::VkViewportArrayCommand viewportCommand;
+		viewportCommand.first = 0;
+		viewportCommand.num = state.numViewports;
+		Memory::CopyElements(state.viewports, viewportCommand.vps, state.numViewports);
+		state.drawThread->Push(viewportCommand);
 	}
 	else
 	{
 		// push propagation descriptors
 		for (IndexT i = 0; i < state.propagateDescriptorSets.Size(); i++)
-			if (state.propagateDescriptorSets[i].descriptor.baseSet != -1)
+			if (state.propagateDescriptorSets[i].baseSet != -1)
 				vkCmdBindDescriptorSets(
 					GetMainBuffer(CoreGraphics::GraphicsQueueType),
 					VK_PIPELINE_BIND_POINT_GRAPHICS,
 					state.currentPipelineLayout,
-					state.propagateDescriptorSets[i].descriptor.baseSet,
-					state.propagateDescriptorSets[i].descriptor.numSets,
-					state.propagateDescriptorSets[i].descriptor.sets,
-					state.propagateDescriptorSets[i].descriptor.numOffsets,
-					state.propagateDescriptorSets[i].descriptor.offsets);
+					state.propagateDescriptorSets[i].baseSet,
+					state.propagateDescriptorSets[i].numSets,
+					state.propagateDescriptorSets[i].sets,
+					state.propagateDescriptorSets[i].numOffsets,
+					state.propagateDescriptorSets[i].offsets);
 
 		// bind pipeline
 		vkCmdBindPipeline(GetMainBuffer(CoreGraphics::GraphicsQueueType), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
@@ -746,18 +744,17 @@ void
 SetVkViewports(VkViewport* viewports, SizeT num)
 {
 	n_assert(num < state.MaxClipSettings);
-	memcpy(state.viewports, viewports, sizeof(VkViewport) * num);
+	Memory::CopyElements(viewports, state.viewports, num);
 	state.numViewports = num;
-	n_assert(num <= 8);
+	n_assert(num <= VkCommandBufferThread::VkViewportArrayCommand::Max);
 	if (state.currentProgram != -1)
 	{
 		if (state.drawThread)
 		{
-			VkCommandBufferThread::VkCommand cmd;
-			cmd.type = VkCommandBufferThread::ViewportArray;
-			cmd.viewportArray.first = 0;
-			cmd.viewportArray.num = num;
-			memcpy(cmd.viewportArray.vps, viewports, sizeof(VkViewport) * num);
+			VkCommandBufferThread::VkViewportArrayCommand cmd;
+			cmd.first = 0;
+			cmd.num = num;
+			Memory::CopyElements(viewports, cmd.vps, num);
 			state.drawThread->Push(cmd);
 		}
 		else
@@ -775,18 +772,17 @@ void
 SetVkScissorRects(VkRect2D* scissors, SizeT num)
 {
 	n_assert(num < state.MaxClipSettings);
-	memcpy(state.scissors, scissors, sizeof(VkRect2D) * num);
+	Memory::CopyElements(scissors, state.scissors, num);
 	state.numScissors = num;
-	n_assert(num <= 8);
+	n_assert(num <= VkCommandBufferThread::VkScissorRectArrayCommand::Max);
 	if (state.currentProgram != -1)
 	{
 		if (state.drawThread)
 		{
-			VkCommandBufferThread::VkCommand cmd;
-			cmd.type = VkCommandBufferThread::ScissorRectArray;
-			cmd.scissorRectArray.first = 0;
-			cmd.scissorRectArray.num = num;
-			memcpy(cmd.scissorRectArray.scs, scissors, sizeof(VkRect2D) * num);
+			VkCommandBufferThread::VkScissorRectArrayCommand cmd;
+			cmd.first = 0;
+			cmd.num = num;
+			Memory::CopyElements(scissors, cmd.scs, num);
 			state.drawThread->Push(cmd);
 		}
 		else
@@ -1413,7 +1409,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 			"",
 			-1,
 			0,
-			CoreGraphics::ConstantBufferUpdateMode(0)
+			CoreGraphics::BufferUpdateMode(0)
 		};
 
 		cboInfo.size = info.globalGraphicsConstantBufferMemorySize[i] * info.numBufferedFrames;
@@ -1421,11 +1417,11 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		if (cboInfo.size > 0)
 		{
 			cboInfo.name = systemName[0] + threadName[i] + queueName[0];
-			cboInfo.mode = CoreGraphics::ConstantBufferUpdateMode::HostWriteable;
+			cboInfo.mode = CoreGraphics::BufferUpdateMode::HostWriteable;
 			state.globalGraphicsConstantStagingBuffer[i] = CreateConstantBuffer(cboInfo);
 
 			cboInfo.name = systemName[1] + threadName[i] + queueName[0];
-			cboInfo.mode = CoreGraphics::ConstantBufferUpdateMode::DeviceWriteable;
+			cboInfo.mode = CoreGraphics::BufferUpdateMode::DeviceWriteable;
 			state.globalGraphicsConstantBuffer[i] = CreateConstantBuffer(cboInfo);
 		}
 
@@ -1434,11 +1430,11 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		if (cboInfo.size > 0)
 		{
 			cboInfo.name = systemName[0] + threadName[i] + queueName[1];
-			cboInfo.mode = CoreGraphics::ConstantBufferUpdateMode::HostWriteable;
+			cboInfo.mode = CoreGraphics::BufferUpdateMode::HostWriteable;
 			state.globalComputeConstantStagingBuffer[i] = CreateConstantBuffer(cboInfo);
 
 			cboInfo.name = systemName[1] + threadName[i] + queueName[1];
-			cboInfo.mode = CoreGraphics::ConstantBufferUpdateMode::DeviceWriteable;
+			cboInfo.mode = CoreGraphics::BufferUpdateMode::DeviceWriteable;
 			state.globalComputeConstantBuffer[i] = CreateConstantBuffer(cboInfo);
 		}
 	}
@@ -1534,7 +1530,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	state.propagateDescriptorSets.Resize(NEBULA_NUM_GROUPS);
 	for (i = 0; i < NEBULA_NUM_GROUPS; i++)
 	{
-		state.propagateDescriptorSets[i].descriptor.baseSet = -1;
+		state.propagateDescriptorSets[i].baseSet = -1;
 	}
 
 	state.drawThread = nullptr;
@@ -2214,11 +2210,10 @@ BeginSubpassCommands(CoreGraphics::CommandBufferId buf)
 		nullptr
 	};
 
-	VkCommandBufferThread::VkCommand cmd;
-	cmd.type = VkCommandBufferThread::BeginCommand;
-	cmd.bgCmd.buf = CommandBufferGetVk(state.drawThreadCommands);
-	cmd.bgCmd.inheritInfo = state.passInfo;
-	cmd.bgCmd.info = begin;
+	VkCommandBufferThread::VkCommandBufferBeginCommand cmd;
+	cmd.buf = CommandBufferGetVk(state.drawThreadCommands);
+	cmd.inheritInfo = state.passInfo;
+	cmd.info = begin;
 	state.drawThread->Push(cmd);
 }
 
@@ -2277,11 +2272,10 @@ SetStreamVertexBuffer(IndexT streamIndex, const CoreGraphics::VertexBufferId& vb
 	{
 		if (state.drawThread)
 		{
-			VkCommandBufferThread::VkCommand cmd;
-			cmd.type = VkCommandBufferThread::InputAssemblyVertex;
-			cmd.vbo.buffer = VertexBufferGetVk(vb);
-			cmd.vbo.index = streamIndex;
-			cmd.vbo.offset = offsetVertexIndex;
+			VkCommandBufferThread::VkVertexBufferCommand cmd;
+			cmd.buffer = VertexBufferGetVk(vb);
+			cmd.index = streamIndex;
+			cmd.offset = offsetVertexIndex;
 			state.drawThread->Push(cmd);
 		}
 		else
@@ -2316,11 +2310,10 @@ SetIndexBuffer(const CoreGraphics::IndexBufferId& ib, IndexT offsetIndex)
 	{
 		if (state.drawThread)
 		{
-			VkCommandBufferThread::VkCommand cmd;
-			cmd.type = VkCommandBufferThread::InputAssemblyIndex;
-			cmd.ibo.buffer = IndexBufferGetVk(ib);
-			cmd.ibo.indexType = IndexBufferGetVkType(ib);
-			cmd.ibo.offset = offsetIndex;
+			VkCommandBufferThread::VkIndexBufferCommand cmd;
+			cmd.buffer = IndexBufferGetVk(ib);
+			cmd.indexType = IndexBufferGetVkType(ib);
+			cmd.offset = offsetIndex;
 			state.drawThread->Push(cmd);
 		}
 		else
@@ -2847,17 +2840,19 @@ InsertBarrier(const CoreGraphics::BarrierId barrier, const CoreGraphics::QueueTy
 	{
 		if (state.drawThread)
 		{
-			VkCommandBufferThread::VkCommand cmd;
-			cmd.type = VkCommandBufferThread::Barrier;
-			cmd.barrier.dep = info.dep;
-			cmd.barrier.srcMask = info.srcFlags;
-			cmd.barrier.dstMask = info.dstFlags;
-			cmd.barrier.memoryBarrierCount = info.numMemoryBarriers;
-			cmd.barrier.memoryBarriers = info.memoryBarriers;
-			cmd.barrier.bufferBarrierCount = info.numBufferBarriers;
-			cmd.barrier.bufferBarriers = info.bufferBarriers;
-			cmd.barrier.imageBarrierCount = info.numImageBarriers;
-			cmd.barrier.imageBarriers = info.imageBarriers;
+			VkCommandBufferThread::VkBarrierCommand cmd;
+			cmd.dep = info.dep;
+			cmd.srcMask = info.srcFlags;
+			cmd.dstMask = info.dstFlags;
+			cmd.memoryBarrierCount = info.numMemoryBarriers;
+			n_assert(info.numMemoryBarriers < VkCommandBufferThread::VkBarrierCommand::Max);
+			Memory::CopyElements(info.memoryBarriers, cmd.memoryBarriers, info.numMemoryBarriers);
+			cmd.bufferBarrierCount = info.numBufferBarriers;
+			n_assert(info.numBufferBarriers < VkCommandBufferThread::VkBarrierCommand::Max);
+			Memory::CopyElements(info.bufferBarriers, cmd.bufferBarriers, info.numBufferBarriers);
+			cmd.imageBarrierCount = info.numImageBarriers;
+			n_assert(info.numImageBarriers < VkCommandBufferThread::VkBarrierCommand::Max);
+			Memory::CopyElements(info.imageBarriers, cmd.imageBarriers, info.numImageBarriers);
 			state.drawThread->Push(cmd);
 		}
 		else
@@ -2895,10 +2890,9 @@ SignalEvent(const CoreGraphics::EventId ev, const CoreGraphics::QueueType queue)
 	{
 		if (state.drawThread)
 		{
-			VkCommandBufferThread::VkCommand cmd;
-			cmd.type = VkCommandBufferThread::SetEvent;
-			cmd.setEvent.event = info.event;
-			cmd.setEvent.stages = info.leftDependency;
+			VkCommandBufferThread::VkSetEventCommand cmd;
+			cmd.event = info.event;
+			cmd.stages = info.leftDependency;
 			state.drawThread->Push(cmd);
 		}
 		else
@@ -2924,18 +2918,19 @@ WaitEvent(const CoreGraphics::EventId ev, const CoreGraphics::QueueType queue)
 	{
 		if (state.drawThread)
 		{
-			VkCommandBufferThread::VkCommand cmd;
-			cmd.type = VkCommandBufferThread::WaitForEvent;
-			cmd.waitEvent.events = &info.event;
-			cmd.waitEvent.numEvents = 1;
-			cmd.waitEvent.memoryBarrierCount = info.numMemoryBarriers;
-			cmd.waitEvent.memoryBarriers = info.memoryBarriers;
-			cmd.waitEvent.bufferBarrierCount = info.numBufferBarriers;
-			cmd.waitEvent.bufferBarriers = info.bufferBarriers;
-			cmd.waitEvent.imageBarrierCount = info.numImageBarriers;
-			cmd.waitEvent.imageBarriers = info.imageBarriers;
-			cmd.waitEvent.waitingStage = info.leftDependency;
-			cmd.waitEvent.signalingStage = info.rightDependency;
+			VkCommandBufferThread::VkWaitForEventCommand cmd;
+			cmd.event = info.event;
+			cmd.numEvents = 1;
+			n_assert(info.numMemoryBarriers < VkCommandBufferThread::VkWaitForEventCommand::Max);
+			Memory::CopyElements(info.memoryBarriers, cmd.memoryBarriers, info.numMemoryBarriers);
+			cmd.bufferBarrierCount = info.numBufferBarriers;
+			n_assert(info.numBufferBarriers < VkCommandBufferThread::VkWaitForEventCommand::Max);
+			Memory::CopyElements(info.bufferBarriers, cmd.bufferBarriers, info.numBufferBarriers);
+			cmd.imageBarrierCount = info.numImageBarriers;
+			n_assert(info.numImageBarriers < VkCommandBufferThread::VkWaitForEventCommand::Max);
+			Memory::CopyElements(info.imageBarriers, cmd.imageBarriers, info.numImageBarriers);
+			cmd.waitingStage = info.leftDependency;
+			cmd.signalingStage = info.rightDependency;
 			state.drawThread->Push(cmd);
 		}
 		else
@@ -2977,10 +2972,9 @@ ResetEvent(const CoreGraphics::EventId ev, const CoreGraphics::QueueType queue)
 	{
 		if (state.drawThread)
 		{
-			VkCommandBufferThread::VkCommand cmd;
-			cmd.type = VkCommandBufferThread::ResetEvent;
-			cmd.setEvent.event = info.event;
-			cmd.setEvent.stages = info.rightDependency;
+			VkCommandBufferThread::VkResetEventCommand cmd;
+			cmd.event = info.event;
+			cmd.stages = info.rightDependency;
 			state.drawThread->Push(cmd);
 		}
 		else
@@ -3004,14 +2998,13 @@ Draw()
 	n_assert(state.inBeginPass);
 	if (state.drawThread)
 	{
-		VkCommandBufferThread::VkCommand cmd;
-		cmd.type = VkCommandBufferThread::Draw;
-		cmd.draw.baseIndex = state.primitiveGroup.GetBaseIndex();
-		cmd.draw.baseVertex = state.primitiveGroup.GetBaseVertex();
-		cmd.draw.baseInstance = 0;
-		cmd.draw.numIndices = state.primitiveGroup.GetNumIndices();
-		cmd.draw.numVerts = state.primitiveGroup.GetNumVertices();
-		cmd.draw.numInstances = 1;
+		VkCommandBufferThread::VkDrawCommand cmd;
+		cmd.baseIndex = state.primitiveGroup.GetBaseIndex();
+		cmd.baseVertex = state.primitiveGroup.GetBaseVertex();
+		cmd.baseInstance = 0;
+		cmd.numIndices = state.primitiveGroup.GetNumIndices();
+		cmd.numVerts = state.primitiveGroup.GetNumVertices();
+		cmd.numInstances = 1;
 		state.drawThread->Push(cmd);
 	}
 	else
@@ -3037,14 +3030,13 @@ DrawInstanced(SizeT numInstances, IndexT baseInstance)
 
 	if (state.drawThread)
 	{
-		VkCommandBufferThread::VkCommand cmd;
-		cmd.type = VkCommandBufferThread::Draw;
-		cmd.draw.baseIndex = state.primitiveGroup.GetBaseIndex();
-		cmd.draw.baseVertex = state.primitiveGroup.GetBaseVertex();
-		cmd.draw.baseInstance = baseInstance;
-		cmd.draw.numIndices = state.primitiveGroup.GetNumIndices();
-		cmd.draw.numVerts = state.primitiveGroup.GetNumVertices();
-		cmd.draw.numInstances = numInstances;
+		VkCommandBufferThread::VkDrawCommand cmd;
+		cmd.baseIndex = state.primitiveGroup.GetBaseIndex();
+		cmd.baseVertex = state.primitiveGroup.GetBaseVertex();
+		cmd.baseInstance = baseInstance;
+		cmd.numIndices = state.primitiveGroup.GetNumIndices();
+		cmd.numVerts = state.primitiveGroup.GetNumVertices();
+		cmd.numInstances = numInstances;
 		state.drawThread->Push(cmd);
 	}
 	else
@@ -3079,8 +3071,7 @@ EndSubpassCommands()
 	n_assert(state.drawThread);
 
 	// push command to stop recording
-	VkCommandBufferThread::VkCommand cmd;
-	cmd.type = VkCommandBufferThread::EndCommand;
+	VkCommandBufferThread::VkCommandBufferEndCommand cmd;
 	state.drawThread->Push(cmd);
 
 	// flush everything to the thread
@@ -3128,7 +3119,7 @@ EndPass()
 
 	//this->currentPipelineBits = 0;
 	for (IndexT i = 0; i < NEBULA_NUM_GROUPS; i++)
-		state.propagateDescriptorSets[i].descriptor.baseSet = -1;
+		state.propagateDescriptorSets[i].baseSet = -1;
 	state.currentProgram = -1;
 
 	// end render pass
@@ -3557,10 +3548,9 @@ SetViewport(const Math::rectangle<int>& rect, int index)
 	{
 		if (state.drawThread)
 		{
-			VkCommandBufferThread::VkCommand cmd;
-			cmd.type = VkCommandBufferThread::Viewport;
-			cmd.viewport.index = index;
-			cmd.viewport.vp = vp;
+			VkCommandBufferThread::VkViewportCommand cmd;
+			cmd.index = index;
+			cmd.vp = vp;
 			state.drawThread->Push(cmd);
 		}
 		else
@@ -3587,10 +3577,9 @@ SetScissorRect(const Math::rectangle<int>& rect, int index)
 	{
 		if (state.drawThread)
 		{
-			VkCommandBufferThread::VkCommand cmd;
-			cmd.type = VkCommandBufferThread::ScissorRect;
-			cmd.scissorRect.index = index;
-			cmd.scissorRect.sc = sc;
+			VkCommandBufferThread::VkScissorRectCommand cmd;
+			cmd.index = index;
+			cmd.sc = sc;
 			state.drawThread->Push(cmd);
 		}
 		else
@@ -3925,10 +3914,9 @@ CommandBufferBeginMarker(const CoreGraphics::QueueType queue, const Math::float4
 	// if batching, draws goes to thread
 	if (state.drawThread)
 	{
-		VkCommandBufferThread::VkCommand cmd;
-		cmd.type = VkCommandBufferThread::BeginMarker;
-		cmd.marker.text = name;
-		color.storeu(cmd.marker.values);
+		VkCommandBufferThread::VkBeginMarkerCommand cmd;
+		cmd.text = name;
+		color.storeu(cmd.values);
 		state.drawThread->Push(cmd);
 	}
 	else
@@ -3986,9 +3974,7 @@ CommandBufferEndMarker(const CoreGraphics::QueueType queue)
 	// if batching, draws goes to thread
 	if (state.drawThread)
 	{
-		VkCommandBufferThread::VkCommand cmd;
-		cmd.type = VkCommandBufferThread::EndMarker;
-		cmd.marker.text = nullptr;
+		VkCommandBufferThread::VkEndMarkerCommand cmd;
 		state.drawThread->Push(cmd);
 	}
 	else
@@ -4007,10 +3993,9 @@ CommandBufferInsertMarker(const CoreGraphics::QueueType queue, const Math::float
 	// if batching, draws goes to thread
 	if (state.drawThread)
 	{
-		VkCommandBufferThread::VkCommand cmd;
-		cmd.type = VkCommandBufferThread::InsertMarker;
-		cmd.marker.text = name;
-		color.storeu(cmd.marker.values);
+		VkCommandBufferThread::VkInsertMarkerCommand cmd;
+		cmd.text = name;
+		color.storeu(cmd.values);
 		state.drawThread->Push(cmd);
 	}
 	else

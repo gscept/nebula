@@ -129,6 +129,12 @@ enum QueryType
 	NumQueryTypes
 };
 
+enum BufferUpdateMode
+{
+	HostWriteable,              // host can write to the buffer
+	DeviceWriteable             // only device can write to the buffer
+};
+
 //------------------------------------------------------------------------------
 /**
 */

@@ -18,6 +18,7 @@ struct ShaderRWBufferCreateInfo
 	Util::StringAtom name;
 	SizeT size;
 	SizeT numBackingBuffers;
+	BufferUpdateMode mode;
 	bool screenRelative : 1; // when set, size is bytes per pixel
 };
 

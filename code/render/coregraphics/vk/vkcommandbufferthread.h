@@ -24,189 +24,207 @@ class VkCommandBufferThread : public CoreGraphics::DrawThread
 
 public:
 
-	enum VkCommandType
+	struct VkCommandBufferBeginCommand
 	{
-		BeginCommand,
-		ResetCommands,
-		EndCommand,
-		GraphicsPipeline,
-		ComputePipeline,
-		InputAssemblyVertex,
-		InputAssemblyIndex,
-		Draw,
-		Dispatch,
-		BindDescriptors,
-		PushRange,
-		Viewport,
-		ViewportArray,
-		ScissorRect,
-		ScissorRectArray,
-		UpdateBuffer,
-		SetEvent,					// sets event to flagged
-		ResetEvent,					// resets event to unflagged
-		WaitForEvent,
-		Barrier,
-		Sync,
-		BeginMarker,
-		EndMarker,
-		InsertMarker
+		static const CommandType Type = BeginCommand;
+		VkCommandBufferBeginInfo info;
+		VkCommandBufferInheritanceInfo inheritInfo;
+		VkCommandBuffer buf;
 	};
 
-
-	struct VkCommand
+	struct VkCommandBufferResetCommand
 	{
-		union
-		{
-			struct // Pipeline bind
-			{
-				VkPipeline pipeline;
-				VkPipelineLayout layout;
+		static const CommandType Type = ResetCommand;
+	};
+
+	struct VkCommandBufferEndCommand
+	{
+		static const CommandType Type = EndCommand;
+	};
+
+	struct VkGfxPipelineBindCommand
+	{
+		static const CommandType Type = GraphicsPipeline;
+		VkPipeline pipeline;
+		VkPipelineLayout layout;
 #if NEBULA_GRAPHICS_DEBUG
-				const char* name;
+		const char* name;
 #endif
-			} pipe;
+	};
 
-			struct // BeginCmd
-			{
-				VkCommandBufferBeginInfo info;
-				VkCommandBufferInheritanceInfo inheritInfo;
-				VkCommandBuffer buf;
-			} bgCmd;
+	struct VkComputePipelineBindCommand
+	{
+		static const CommandType Type = ComputePipeline;
+		VkPipeline pipeline;
+		VkPipelineLayout layout;
+#if NEBULA_GRAPHICS_DEBUG
+		const char* name;
+#endif
+	};
 
-			struct // VBO
-			{
-				VkBuffer buffer;
-				IndexT index;
-				VkDeviceSize offset;
-			} vbo;
+	struct VkVertexBufferCommand
+	{
+		static const CommandType Type = InputAssemblyVertex;
+		VkBuffer buffer;
+		IndexT index;
+		VkDeviceSize offset;
+	};
 
-			struct // IBO
-			{
-				VkBuffer buffer;
-				VkDeviceSize offset;
-				VkIndexType indexType;
-			} ibo;
+	struct VkIndexBufferCommand
+	{
+		static const CommandType Type = InputAssemblyIndex;
+		VkBuffer buffer;
+		VkDeviceSize offset;
+		VkIndexType indexType;
+	};
 
-			struct // Draw
-			{
-				uint32_t baseIndex;
-				uint32_t baseVertex;
-				uint32_t numIndices;
-				uint32_t numVerts;
-				uint32_t baseInstance;
-				uint32_t numInstances;
-			} draw;
+	struct VkDrawCommand
+	{
+		static const CommandType Type = Draw;
+		uint32_t baseIndex;
+		uint32_t baseVertex;
+		uint32_t numIndices;
+		uint32_t numVerts;
+		uint32_t baseInstance;
+		uint32_t numInstances;
+	};
 
-			struct // Dispatch
-			{
-				uint32_t numGroupsX;
-				uint32_t numGroupsY;
-				uint32_t numGroupsZ;
-			} dispatch;
+	struct VkDispatchCommand
+	{
+		static const CommandType Type = Dispatch;
+		uint32_t numGroupsX;
+		uint32_t numGroupsY;
+		uint32_t numGroupsZ;
+	};
 
-			struct // Descriptors
-			{
-				VkPipelineBindPoint type;
-				uint32_t baseSet;
-				uint32_t numSets;
-				const VkDescriptorSet* sets;
-				uint32_t numOffsets;
-				const uint32_t* offsets;
-			} descriptor;
+	struct VkDescriptorsCommand
+	{
+		static const CommandType Type = BindDescriptors;
+		static const byte MaxSets = 8;
+		static const byte MaxOffsets = 16;
+		VkPipelineBindPoint type;
+		uint32_t baseSet;
+		uint32_t numSets;
+		VkDescriptorSet sets[MaxSets];
+		uint32_t numOffsets;
+		uint32_t offsets[MaxOffsets];
+	};
 
-			struct // UpdateBuffer
-			{
-				bool deleteWhenDone;
-				VkBuffer buf;
-				VkDeviceSize offset;
-				VkDeviceSize size;
-				uint32_t* data;
-			} updBuffer;
+	struct VkPushConstantsCommand
+	{
+		static const CommandType Type = PushRange;
+		static const short MaxSize = 512;
+		VkShaderStageFlags stages;
+		VkPipelineLayout layout;
+		uint32_t offset;
+		uint32_t size;
+		char data[MaxSize];
+	};
 
-			struct // PushConstants
-			{
-				VkShaderStageFlags stages;
-				VkPipelineLayout layout;
-				uint32_t offset;
-				uint32_t size;
-				void* data;
-			} pushranges;
+	struct VkViewportCommand
+	{
+		static const CommandType Type = Viewport;
+		VkViewport vp;
+		uint32_t index;
+	};
 
-			struct // Viewport
-			{
-				VkViewport vp;
-				uint32_t index;
-			} viewport;
+	struct VkViewportArrayCommand
+	{
+		static const CommandType Type = ViewportArray;
+		static const byte Max = 8;
+		VkViewport vps[Max];
+		uint32_t first;
+		uint32_t num;
+	};
 
-			struct // ViewportArray
-			{
-				VkViewport vps[8];
-				uint32_t first;
-				uint32_t num;
-			} viewportArray;
+	struct VkScissorRectCommand
+	{
+		static const CommandType Type = ScissorRect;
+		VkRect2D sc;
+		uint32_t index;
+	};
 
-			struct // ScissorRect
-			{
-				VkRect2D sc;
-				uint32_t index;
-			} scissorRect;
+	struct VkScissorRectArrayCommand
+	{
+		static const CommandType Type = ScissorRectArray;
+		static const byte Max = 8;
+		VkRect2D scs[Max];
+		uint32_t first;
+		uint32_t num;
+	};
 
-			struct // ScissorRectArray
-			{
-				VkRect2D scs[8];
-				uint32_t first;
-				uint32_t num;
-			} scissorRectArray;
+	struct VkUpdateBufferCommand
+	{
+		static const CommandType Type = UpdateBuffer;
+		bool deleteWhenDone;
+		VkBuffer buf;
+		VkDeviceSize offset;
+		VkDeviceSize size;
+		uint32_t* data;
+	};
 
-			struct // SetEvent
-			{
-				VkEvent event;
-				VkPipelineStageFlags stages;
-			} setEvent;
+	struct VkSetEventCommand
+	{
+		static const CommandType Type = SetEvent;
+		VkEvent event;
+		VkPipelineStageFlags stages;
+	};
 
-			struct // ResetEvent
-			{
-				VkEvent event;
-				VkPipelineStageFlags stages;
-			} resetEvent;
+	struct VkResetEventCommand
+	{
+		static const CommandType Type = ResetEvent;
+		VkEvent event;
+		VkPipelineStageFlags stages;
+	};
 
-			struct // WaitForEvents
-			{
-				VkEvent* events;
-				uint32_t numEvents;
-				VkPipelineStageFlags signalingStage;
-				VkPipelineStageFlags waitingStage;
-				uint32_t memoryBarrierCount;
-				VkMemoryBarrier* memoryBarriers;
-				uint32_t bufferBarrierCount;
-				VkBufferMemoryBarrier* bufferBarriers;
-				uint32_t imageBarrierCount;
-				VkImageMemoryBarrier* imageBarriers;
-			} waitEvent;
+	struct VkWaitForEventCommand
+	{
+		static const CommandType Type = WaitForEvent;
+		static const byte Max = 8;
+		VkEvent event;
+		uint32_t numEvents;
+		VkPipelineStageFlags signalingStage;
+		VkPipelineStageFlags waitingStage;
+		uint32_t memoryBarrierCount;
+		VkMemoryBarrier memoryBarriers[Max];
+		uint32_t bufferBarrierCount;
+		VkBufferMemoryBarrier bufferBarriers[Max];
+		uint32_t imageBarrierCount;
+		VkImageMemoryBarrier imageBarriers[Max];
+	};
 
-			struct // Barrier
-			{
-				VkPipelineStageFlags srcMask;
-				VkPipelineStageFlags dstMask;
-				VkDependencyFlags dep;
-				uint32_t memoryBarrierCount;
-				VkMemoryBarrier* memoryBarriers;
-				uint32_t bufferBarrierCount;
-				VkBufferMemoryBarrier* bufferBarriers;
-				uint32_t imageBarrierCount;
-				VkImageMemoryBarrier* imageBarriers;
-			} barrier;
+	struct VkBarrierCommand
+	{
+		static const CommandType Type = Barrier;
+		static const byte Max = 8;
+		VkPipelineStageFlags srcMask;
+		VkPipelineStageFlags dstMask;
+		VkDependencyFlags dep;
+		uint32_t memoryBarrierCount;
+		VkMemoryBarrier memoryBarriers[Max];
+		uint32_t bufferBarrierCount;
+		VkBufferMemoryBarrier bufferBarriers[Max];
+		uint32_t imageBarrierCount;
+		VkImageMemoryBarrier imageBarriers[Max];
+	};
 
-			struct // marker
-			{
-				const char* text;
-				float values[4];
-			} marker;
+	struct VkBeginMarkerCommand
+	{
+		static const CommandType Type = BeginMarker;
+		const char* text;
+		float values[4];
+	};
 
-		};
+	struct VkEndMarkerCommand
+	{
+		static const CommandType Type = EndMarker;
+	};
 
-		VkCommandType type;
-
+	struct VkInsertMarkerCommand
+	{
+		static const CommandType Type = InsertMarker;
+		const char* text;
+		float values[4];
 	};
 
 	/// constructor

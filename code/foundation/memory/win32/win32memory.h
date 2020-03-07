@@ -31,6 +31,23 @@ Copy(const void* from, void* to, size_t numBytes)
 
 //------------------------------------------------------------------------------
 /**
+    Copy a chunk of memory (note the argument order is different from memcpy()!!!)
+*/
+template <typename T>
+__forceinline void
+CopyElements(const T* from, T* to, size_t numElements)
+{
+    if (numElements > 0)
+    {
+        n_assert(0 != from);
+        n_assert(0 != to);
+        n_assert(from != to);
+        CopyMemory(to, from, numElements * sizeof(T));
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
     Move a chunk of memory, can handle overlapping regions
 */
 __forceinline void

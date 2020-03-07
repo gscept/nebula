@@ -25,18 +25,13 @@ ID_24_8_TYPE(ConstantBufferId);
 ID_32_32_NAMED_TYPE(ConstantBufferAllocId, offset, size);
 
 typedef uint ConstantBinding; // defined again!
-enum ConstantBufferUpdateMode
-{
-	HostWriteable,              // host can write to the buffer
-	DeviceWriteable             // only device can write to the buffer
-};
 
 struct ConstantBufferCreateInfo
 {
 	Util::StringAtom name;				// name of the constant buffer block
 	IndexT binding;						// binding slot of the constant buffer
 	SizeT size;							// allocation size of the buffer
-	ConstantBufferUpdateMode mode;
+	BufferUpdateMode mode;
 };
 
 /// create new constant buffer

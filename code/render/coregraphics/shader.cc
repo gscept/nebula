@@ -52,7 +52,7 @@ ShaderCreateResourceTable(const ShaderId id, const IndexT group)
 /**
 */
 const ConstantBufferId 
-ShaderCreateConstantBuffer(const ShaderId id, const Util::StringAtom& name, ConstantBufferUpdateMode mode)
+ShaderCreateConstantBuffer(const ShaderId id, const Util::StringAtom& name, BufferUpdateMode mode)
 {
 	return shaderPool->CreateConstantBuffer(id, name, mode);
 }
@@ -61,7 +61,7 @@ ShaderCreateConstantBuffer(const ShaderId id, const Util::StringAtom& name, Cons
 /**
 */
 const ConstantBufferId 
-ShaderCreateConstantBuffer(const ShaderId id, const IndexT cbIndex, ConstantBufferUpdateMode mode)
+ShaderCreateConstantBuffer(const ShaderId id, const IndexT cbIndex, BufferUpdateMode mode)
 {
 	return shaderPool->CreateConstantBuffer(id, cbIndex, mode);
 }

@@ -39,9 +39,11 @@ DrawThread::Flush()
 void 
 DrawThread::Signal(Threading::Event* event)
 {
-	this->lock.Enter();
-	this->event = event;
-	this->lock.Leave();
+	SyncCommand cmd;
+	cmd.event = event;
+	this->Push(cmd);
+
+	// add an extra flush
 	this->Flush();
 }
 

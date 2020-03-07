@@ -76,7 +76,7 @@ public:
     /// check for intersection with projection volume
     ClipStatus::Type clipstatus(const matrix44& viewProjection) const;
 	/// check for intersection with projection volume in a SoA manner
-	ClipStatus::Type clipstatus_soa(const matrix44& viewProjection) const;
+	ClipStatus::Type clipstatus_simd(const matrix44& viewProjection) const;
     /// create a matrix which transforms a unit cube to this bounding box
     matrix44 to_matrix44() const;
     /// return one of the 8 corner points
@@ -401,7 +401,7 @@ bbox::clipstatus(const matrix44& viewProjection) const
 /**
 */
 __forceinline ClipStatus::Type
-bbox::clipstatus_soa(const matrix44& viewProjection) const
+bbox::clipstatus_simd(const matrix44& viewProjection) const
 {
 	int andFlags = 0xffff;
 	int orFlags = 0;
