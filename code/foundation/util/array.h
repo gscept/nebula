@@ -147,7 +147,7 @@ public:
 	template <typename KEYTYPE> IndexT BinarySearchIndex(typename std::enable_if<true, const KEYTYPE&>::type elm) const;
 	
 	/// Set size. Grows array if num is greater than capacity. Calls destroy on all objects at index > num!
-	void SetSize(SizeT num);
+	void Resize(SizeT num);
 
 	/// Return the byte size of the array.
 	/// Note that this is not the entire size of this object, only the size (not capacity) of the elements buffer in bytes
@@ -1262,7 +1262,7 @@ Array<TYPE>::BinarySearchIndex(typename std::enable_if<true, const KEYTYPE&>::ty
 /**
 */
 template<class TYPE> void
-Array<TYPE>::SetSize(SizeT num)
+Array<TYPE>::Resize(SizeT num)
 {
 	if (num < this->count)
 	{

@@ -168,7 +168,7 @@ template<>
 __forceinline void
 Deserialize<Util::Guid>(const Ptr<IO::BinaryReader>& reader, Util::Array<Util::Guid>& data, uint32_t offset, uint32_t numInstances)
 {
-	data.SetSize(offset + numInstances);
+	data.Resize(offset + numInstances);
 	for (SizeT i = 0; i < numInstances; ++i)
 	{
 		data[offset + i] = reader->ReadGuid();
