@@ -315,9 +315,20 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
 				transform = parentTransform;
 			}
 		}
-
+		// nodes are allocated breadth first, so just going through the list will guarantee the hierarchy is traversed in proper order
+		SizeT j;
+		for (j = 0; j < nodes.Size(); j++)
+		{
+			Models::ModelNode::Instance* node = nodes[j];
+			if (types[j] >= NodeHasShaderState)
+			{
+				ShaderStateNode::Instance* snode = reinterpret_cast<ShaderStateNode::Instance*>(node);
+				snode->SetDirty(true);
+			}
+		}
 
 	}
+
 }
 
 //------------------------------------------------------------------------------

@@ -61,6 +61,7 @@ struct Query
 {
 	CoreGraphics::QueryType type;
 	IndexT idx;
+	Timing::Time cpuTime;
 };
 
 struct DrawThreadResult

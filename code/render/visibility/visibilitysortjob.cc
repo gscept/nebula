@@ -34,8 +34,6 @@ VisibilitySortJob(const Jobs::JobFuncContext& ctx)
 			auto it2 = it1.val->Begin();
 			while (it2 != it1.val->End())
 			{
-				for (IndexT i = 0; i < it2.val->Size(); i++)
-					reinterpret_cast<Models::ShaderStateNode::Instance*>((*it2.val)[i]->node)->SetDirty(true);
 				it2.val->Reset();
 				it2++;
 			}

@@ -67,12 +67,8 @@ void DiscardPass(const PassId id);
 
 /// begin using a pass
 void PassBegin(const PassId id);
-/// begin batch within pass
-void PassBeginBatch(const PassId id, Frame::FrameBatchType::Code batch);
 /// set currently bound pass to next subpass (asserts a valid pass is bound)
 void PassNextSubpass(const PassId id);
-/// end batch within pass
-void PassEndBatch(const PassId id);
 /// end using a pass, this will set the pass id to be invalid
 void PassEnd(const PassId id);
 

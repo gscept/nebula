@@ -12,7 +12,7 @@
 #include "util/string.h"
 #include "core/rttimacros.h"
 
-#define NEBULA_ENABLE_MT_DRAW 0
+#define NEBULA_ENABLE_MT_DRAW 1
 namespace CoreGraphics
 {
 

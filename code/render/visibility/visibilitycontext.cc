@@ -555,6 +555,7 @@ ObserverContext::Dealloc(Graphics::ContextEntityId id)
 			it1.val->Clear();
 			it1++;
 		}
+		draw.Clear();
 	}
 	observerAllocator.Dealloc(id.id);
 }

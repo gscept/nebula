@@ -565,21 +565,7 @@ PassBegin(const PassId id)
 	runtimeInfo.framebufferPipelineInfo.subpass = 0;
 	runtimeInfo.framebufferPipelineInfo.pViewportState = &runtimeInfo.subpassPipelineInfo[0];
 
-	const Util::FixedArray<VkViewport>& viewports = runtimeInfo.subpassViewports[0];
-	CoreGraphics::SetVkViewports(viewports.Begin(), viewports.Size());
-	const Util::FixedArray<VkRect2D>& scissors = runtimeInfo.subpassRects[0];
-	CoreGraphics::SetVkScissorRects(scissors.Begin(), scissors.Size());
-
 	CoreGraphics::BeginPass(id);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-PassBeginBatch(const PassId id, Frame::FrameBatchType::Code batch)
-{
-	// empty
 }
 
 //------------------------------------------------------------------------------
@@ -593,21 +579,7 @@ PassNextSubpass(const PassId id)
 	runtimeInfo.framebufferPipelineInfo.subpass = runtimeInfo.currentSubpassIndex;
 	runtimeInfo.framebufferPipelineInfo.pViewportState = &runtimeInfo.subpassPipelineInfo[runtimeInfo.currentSubpassIndex];
 
-	const Util::FixedArray<VkViewport>& viewports = runtimeInfo.subpassViewports[runtimeInfo.currentSubpassIndex];
-	CoreGraphics::SetVkViewports(viewports.Begin(), viewports.Size());
-	const Util::FixedArray<VkRect2D>& scissors = runtimeInfo.subpassRects[runtimeInfo.currentSubpassIndex];
-	CoreGraphics::SetVkScissorRects(scissors.Begin(), scissors.Size());
-
 	CoreGraphics::SetToNextSubpass();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-PassEndBatch(const PassId id)
-{
-	// empty
 }
 
 //------------------------------------------------------------------------------
