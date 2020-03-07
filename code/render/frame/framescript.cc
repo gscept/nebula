@@ -136,6 +136,7 @@ FrameScript::UpdateResources(const IndexT frameIndex)
 void 
 FrameScript::RunJobs(const IndexT frameIndex)
 {
+#if NEBULA_ENABLE_MT_DRAW
 	// tell graphics to start using our draw thread
 	CoreGraphics::SetDrawThread(this->drawThread);
 
@@ -150,6 +151,7 @@ FrameScript::RunJobs(const IndexT frameIndex)
 
 	// make sure to add a sync at the end
 	this->drawThread->Signal(&this->drawThreadEvent);
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -158,12 +160,14 @@ FrameScript::RunJobs(const IndexT frameIndex)
 void
 FrameScript::Run(const IndexT frameIndex)
 {
+#if NEBULA_ENABLE_MT_DRAW
 	N_MARKER_BEGIN(WaitForRecord, Render);
 
 	// wait for draw thread to finish before executing buffers
 	this->drawThreadEvent.Wait();
 
 	N_MARKER_END();
+#endif
 
 	IndexT i;
 	for (i = 0; i < this->compiled.Size(); i++)
@@ -235,10 +239,12 @@ FrameScript::Build()
 	}
 
 	// go through ops and construct subpass buffers for each frame index
+#if NEBULA_ENABLE_MT_DRAW
 	for (i = 0; i < this->compiled.Size(); i++)
 	{
 		if (FramePass::CompiledImpl* pass = dynamic_cast<FramePass::CompiledImpl*>(this->compiled[i]))
 		{
+			pass->subpassBuffers.Resize(pass->subpasses.Size());
 			for (IndexT j = 0; j < pass->subpasses.Size(); j++)
 			{
 				CoreGraphics::CommandBufferCreateInfo cmdInfo =
@@ -249,8 +255,7 @@ FrameScript::Build()
 
 				// allocate a subpass buffer for each buffered frame
 				SizeT numBufferedFrames = CoreGraphics::GetNumBufferedFrames();
-				pass->subpassBuffers.Append(Util::FixedArray<CoreGraphics::CommandBufferId>());
-				pass->subpassBuffers.Back().Resize(numBufferedFrames);
+				pass->subpassBuffers[j].Resize(numBufferedFrames);
 
 				for (IndexT k = 0; k < numBufferedFrames; k++)
 				{
@@ -259,6 +264,7 @@ FrameScript::Build()
 			}
 		}
 	}
+#endif
 
 	// setup a post-frame barrier to reset the resource state of all resources back to their created original (ShaderRead for RenderTexture, General for RWTexture
 	Util::Array<CoreGraphics::TextureBarrier> texturesBarr;

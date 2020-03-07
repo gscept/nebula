@@ -186,7 +186,7 @@ IO::JsonReader::GetOpt<Util::Array<Gltf::Accessor>>(Util::Array<Gltf::Accessor> 
     IndexT i = 0;
     if (this->SetToFirstChild(key))
     {
-        items.SetSize(this->CurrentSize());
+        items.Resize(this->CurrentSize());
         // set to first array item
         this->SetToFirstChild();
         do {
@@ -255,7 +255,7 @@ IO::JsonReader::Get<Util::Array<Gltf::Animation::Sampler>>(Util::Array<Gltf::Ani
     IndexT i = 0;
     this->SetToFirstChild(key);
     
-    items.SetSize(this->CurrentSize());
+    items.Resize(this->CurrentSize());
     // set to first array item
     this->SetToFirstChild();
     do {
@@ -294,7 +294,7 @@ IO::JsonReader::Get<Util::Array<Gltf::Animation::Channel>>(Util::Array<Gltf::Ani
     IndexT i = 0;
     this->SetToFirstChild(key);
     
-    items.SetSize(this->CurrentSize());
+    items.Resize(this->CurrentSize());
     // set to first array item
     this->SetToFirstChild();
     do {
@@ -317,7 +317,7 @@ IO::JsonReader::GetOpt<Util::Array<Gltf::Animation>>(Util::Array<Gltf::Animation
     IndexT i = 0;
     if (this->SetToFirstChild(key))
     {
-        items.SetSize(this->CurrentSize());
+        items.Resize(this->CurrentSize());
         // set to first array item
         this->SetToFirstChild();
         do {
@@ -344,7 +344,7 @@ IO::JsonReader::GetOpt<Util::Array<Gltf::Buffer>>(Util::Array<Gltf::Buffer> & it
     IndexT i = 0;
     if (this->SetToFirstChild(key))
     {
-        items.SetSize(this->CurrentSize());
+        items.Resize(this->CurrentSize());
         // set to first array item
         this->SetToFirstChild();
         do {
@@ -376,7 +376,7 @@ IO::JsonReader::GetOpt<Util::Array<Gltf::BufferView>>(Util::Array<Gltf::BufferVi
     IndexT i = 0;
     if (this->SetToFirstChild(key))
     {
-        items.SetSize(this->CurrentSize());
+        items.Resize(this->CurrentSize());
         // set to first array item
         this->SetToFirstChild();
         do {
@@ -458,7 +458,7 @@ IO::JsonReader::GetOpt<Util::Array<Gltf::Camera>>(Util::Array<Gltf::Camera> & it
     IndexT i = 0;
     if (this->SetToFirstChild(key))
     {
-        items.SetSize(this->CurrentSize());
+        items.Resize(this->CurrentSize());
         // set to first array item
         this->SetToFirstChild();
         do {
@@ -586,7 +586,7 @@ IO::JsonReader::GetOpt<Util::Array<Gltf::Material>>(Util::Array<Gltf::Material> 
     IndexT i = 0;
     if (this->SetToFirstChild(key))
     {
-        items.SetSize(this->CurrentSize());
+        items.Resize(this->CurrentSize());
         // set to first array item
         this->SetToFirstChild();
         do {
@@ -695,7 +695,7 @@ IO::JsonReader::Get<Util::Array<Gltf::Primitive>>(Util::Array<Gltf::Primitive> &
     IndexT i = 0;
     this->SetToFirstChild(key);
 
-    items.SetSize(this->CurrentSize());
+    items.Resize(this->CurrentSize());
     // set to first array item
     this->SetToFirstChild();
     do {
@@ -721,7 +721,7 @@ IO::JsonReader::Get<Util::Array<Gltf::Primitive>>(Util::Array<Gltf::Primitive> &
         if (this->SetToFirstChild("targets"))
         {
             IndexT j = 0;
-            item.targets.SetSize(this->CurrentSize());
+            item.targets.Resize(this->CurrentSize());
             if (this->SetToFirstChild())
             {
                 
@@ -755,7 +755,7 @@ IO::JsonReader::GetOpt<Util::Array<Gltf::Mesh>>(Util::Array<Gltf::Mesh> & items,
     IndexT i = 0;
     if (this->SetToFirstChild(key))
     {
-        items.SetSize(this->CurrentSize());
+        items.Resize(this->CurrentSize());
         // set to first array item
         this->SetToFirstChild();
         do {
@@ -782,7 +782,7 @@ IO::JsonReader::GetOpt<Util::Array<Gltf::Node>>(Util::Array<Gltf::Node> & items,
     IndexT i = 0;
     if (this->SetToFirstChild(key))
     {
-        items.SetSize(this->CurrentSize());
+        items.Resize(this->CurrentSize());
         // set to first array item
         this->SetToFirstChild();
         do {
@@ -830,7 +830,7 @@ IO::JsonReader::GetOpt<Util::Array<Gltf::Image>>(Util::Array<Gltf::Image> & item
     IndexT i = 0;
     if (this->SetToFirstChild(key))
     {
-        items.SetSize(this->CurrentSize());
+        items.Resize(this->CurrentSize());
         // set to first array item
         this->SetToFirstChild();
         do {
@@ -889,7 +889,7 @@ IO::JsonReader::GetOpt<Util::Array<Gltf::Sampler>>(Util::Array<Gltf::Sampler> & 
     IndexT i = 0;
     if (this->SetToFirstChild(key))
     {
-        items.SetSize(this->CurrentSize());
+        items.Resize(this->CurrentSize());
         // set to first array item
         this->SetToFirstChild();
         do {
@@ -919,7 +919,7 @@ IO::JsonReader::GetOpt<Util::Array<Gltf::Scene>>(Util::Array<Gltf::Scene> & item
     IndexT i = 0;
     if (this->SetToFirstChild(key))
     {
-        items.SetSize(this->CurrentSize());
+        items.Resize(this->CurrentSize());
         // set to first array item
         this->SetToFirstChild();
         do {
@@ -945,7 +945,7 @@ IO::JsonReader::GetOpt<Util::Array<Gltf::Skin>>(Util::Array<Gltf::Skin> & items,
     IndexT i = 0;
     if (this->SetToFirstChild(key))
     {
-        items.SetSize(this->CurrentSize());
+        items.Resize(this->CurrentSize());
         // set to first array item
         this->SetToFirstChild();
         do {
@@ -973,7 +973,7 @@ IO::JsonReader::GetOpt<Util::Array<Gltf::Texture>>(Util::Array<Gltf::Texture> & 
     IndexT i = 0;
     if (this->SetToFirstChild(key))
     {
-        items.SetSize(this->CurrentSize());
+        items.Resize(this->CurrentSize());
         // set to first array item
         this->SetToFirstChild();
         do {
