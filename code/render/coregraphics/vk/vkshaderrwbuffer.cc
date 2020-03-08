@@ -73,7 +73,6 @@ CreateShaderRWBuffer(const ShaderRWBufferCreateInfo& info)
 
 	// size and stride for a single buffer are equal
 	setupInfo.size = alignedSize;
-	setupInfo.stride = alignedSize;
 
 	ShaderRWBufferId ret;
 	ret.id24 = id;
@@ -107,8 +106,6 @@ DestroyShaderRWBuffer(const ShaderRWBufferId id)
 
 	Vulkan::DelayedDeleteBuffer(runtimeInfo.buf);
 	Vulkan::DelayedDeleteMemory(setupInfo.mem);
-	//vkDestroyBuffer(setupInfo.dev, runtimeInfo.buf, nullptr);
-	//vkFreeMemory(setupInfo.dev, setupInfo.mem, nullptr);
 
 	shaderRWBufferAllocator.Dealloc(id.id24);
 }

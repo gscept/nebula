@@ -341,6 +341,8 @@ void EndQuery(CoreGraphics::QueueType queue, CoreGraphics::QueryType type);
 
 /// copy data between textures
 void Copy(const CoreGraphics::TextureId from, Math::rectangle<SizeT> fromRegion, const CoreGraphics::TextureId to, Math::rectangle<SizeT> toRegion);
+/// copy data between rw buffers
+void Copy(const CoreGraphics::QueueType queue, const CoreGraphics::ShaderRWBufferId from, IndexT fromOffset, const CoreGraphics::ShaderRWBufferId to, IndexT toOffset, SizeT size);
 /// blit between textures
 void Blit(const CoreGraphics::TextureId from, Math::rectangle<SizeT> fromRegion, IndexT fromMip, const CoreGraphics::TextureId to, Math::rectangle<SizeT> toRegion, IndexT toMip);
 
