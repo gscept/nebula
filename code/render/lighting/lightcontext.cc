@@ -324,15 +324,18 @@ LightContext::Create()
 		"LightIndexListsBuffer",
 		sizeof(LightsClusterCull::LightIndexLists),
 		BufferUpdateMode::DeviceWriteable,
+		ShaderRWBufferUsage::ShaderMutable,
 		false
 	};
 	clusterState.clusterLightIndexLists = CreateShaderRWBuffer(rwbInfo);
 
 	rwbInfo.name = "LightLists";
 	rwbInfo.size = sizeof(LightsClusterCull::LightLists);
+	rwbInfo.usage = ShaderRWBufferUsage::TransferDestination | ShaderRWBufferUsage::ShaderMutable;
 	clusterState.clusterLightsList = CreateShaderRWBuffer(rwbInfo);
 
 	rwbInfo.mode = BufferUpdateMode::HostWriteable;
+	rwbInfo.usage = ShaderRWBufferUsage::TransferSource;
 	clusterState.stagingClusterLightsList.Resize(CoreGraphics::GetNumBufferedFrames());
 
 	for (IndexT i = 0; i < clusterState.clusterResourceTables.Size(); i++)
@@ -1019,7 +1022,23 @@ LightContext::CullAndClassify()
 	using namespace CoreGraphics;
 
 	const IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
+
+	// copy data from staging buffer to shader buffer
 	Copy(ComputeQueueType, clusterState.stagingClusterLightsList[bufferIndex], 0, clusterState.clusterLightsList, 0, sizeof(LightsClusterCull::LightLists));
+	BarrierInsert(ComputeQueueType,
+		BarrierStage::Transfer,
+		BarrierStage::ComputeShader,
+		BarrierDomain::Global,
+		nullptr,
+		{
+			BufferBarrier
+			{
+				clusterState.clusterLightsList,
+				BarrierAccess::TransferWrite,
+				BarrierAccess::ShaderWrite,
+				0, NEBULA_WHOLE_BUFFER_SIZE
+			},
+		}, "Lights data upload");
 
 	// begin command buffer work
 	CommandBufferBeginMarker(ComputeQueueType, NEBULA_MARKER_BLUE, "Light cluster culling");

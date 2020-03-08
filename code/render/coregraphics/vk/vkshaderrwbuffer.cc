@@ -45,13 +45,21 @@ CreateShaderRWBuffer(const ShaderRWBufferCreateInfo& info)
 	SizeT size = info.size;
 
 	const Util::Set<uint32_t>& queues = Vulkan::GetQueueFamilies();
+
+	VkBufferUsageFlags usage = 0;
+	if (info.usage & TransferSource)
+		usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+	if (info.usage & TransferDestination)
+		usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+	if (info.usage & ShaderMutable)
+		usage |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 	setupInfo.info =
 	{
 		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
 		nullptr,
 		0,
 		(VkDeviceSize)(size),
-		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+		usage,
 		VK_SHARING_MODE_CONCURRENT,
 		(uint32_t)queues.Size(),
 		queues.KeysAsArray().Begin()
