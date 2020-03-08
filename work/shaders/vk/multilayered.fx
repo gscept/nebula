@@ -335,7 +335,7 @@ hsShadowMLP(
 		out vec3 Normal[],
 		out vec4 Position[],
 		out vec2 UV[],
-		out vec4 Color[],
+		out vec4 Color[]
 		#if PN_TRIANGLES
 ,
 		  patch out vec3 f3B210,
@@ -481,7 +481,7 @@ dsShadowMLP(
 	out vec2 UV,
 	out vec4 ProjPos,
 	out vec3 Normal,
-	out vec4 Color,
+	out vec4 Color
 #if PN_TRIANGLES
 	,
 	patch in vec3 f3B210,
