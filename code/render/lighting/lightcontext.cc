@@ -324,18 +324,15 @@ LightContext::Create()
 		"LightIndexListsBuffer",
 		sizeof(LightsClusterCull::LightIndexLists),
 		BufferUpdateMode::DeviceWriteable,
-		ShaderRWBufferUsage::ShaderMutable,
 		false
 	};
 	clusterState.clusterLightIndexLists = CreateShaderRWBuffer(rwbInfo);
 
 	rwbInfo.name = "LightLists";
 	rwbInfo.size = sizeof(LightsClusterCull::LightLists);
-	rwbInfo.usage = ShaderRWBufferUsage::TransferDestination | ShaderRWBufferUsage::ShaderMutable;
 	clusterState.clusterLightsList = CreateShaderRWBuffer(rwbInfo);
 
 	rwbInfo.mode = BufferUpdateMode::HostWriteable;
-	rwbInfo.usage = ShaderRWBufferUsage::TransferSource;
 	clusterState.stagingClusterLightsList.Resize(CoreGraphics::GetNumBufferedFrames());
 
 	for (IndexT i = 0; i < clusterState.clusterResourceTables.Size(); i++)
