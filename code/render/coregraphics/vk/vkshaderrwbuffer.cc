@@ -42,7 +42,6 @@ CreateShaderRWBuffer(const ShaderRWBufferCreateInfo& info)
 
 	VkPhysicalDeviceProperties props = Vulkan::GetCurrentProperties();
 	setupInfo.dev = Vulkan::GetCurrentDevice();
-	setupInfo.numBuffers = info.numBackingBuffers;
 	SizeT size = info.size;
 
 	const Util::Set<uint32_t>& queues = Vulkan::GetQueueFamilies();
@@ -51,7 +50,7 @@ CreateShaderRWBuffer(const ShaderRWBufferCreateInfo& info)
 		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
 		nullptr,
 		0,
-		(VkDeviceSize)(size * setupInfo.numBuffers),
+		(VkDeviceSize)(size),
 		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
 		VK_SHARING_MODE_CONCURRENT,
 		(uint32_t)queues.Size(),
@@ -74,7 +73,7 @@ CreateShaderRWBuffer(const ShaderRWBufferCreateInfo& info)
 
 	// size and stride for a single buffer are equal
 	setupInfo.size = alignedSize;
-	setupInfo.stride = alignedSize / setupInfo.numBuffers;
+	setupInfo.stride = alignedSize;
 
 	ShaderRWBufferId ret;
 	ret.id24 = id;

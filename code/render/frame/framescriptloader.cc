@@ -244,7 +244,7 @@ FrameScriptLoader::ParseReadWriteBufferList(const Ptr<Frame::FrameScript>& scrip
 		// create shader buffer 
 		ShaderRWBufferCreateInfo info =
 		{
-			name->string_value, size->int_value, 1
+			name->string_value, size->int_value
 		};
 
 		bool relativeSize = false;

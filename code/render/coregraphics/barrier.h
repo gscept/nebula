@@ -85,6 +85,8 @@ __ImplementEnumComparisonOperators(BarrierAccess);
 
 ID_24_8_TYPE(BarrierId);
 
+#define NEBULA_WHOLE_BUFFER_SIZE (-1)
+
 struct ImageSubresourceInfo
 {
 	CoreGraphics::ImageAspect aspect;

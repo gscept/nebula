@@ -297,15 +297,6 @@ LightContext::Create()
 	DisplayMode mode = WindowGetDisplayMode(DisplayDevice::Instance()->GetCurrentWindow());
 	lightServerState.fsq.Setup(mode.GetWidth(), mode.GetHeight());
 
-	ShaderRWBufferCreateInfo rwbInfo =
-	{
-		"LightIndexListsBuffer",
-		sizeof(LightsClusterCull::LightIndexLists),
-		1,
-		BufferUpdateMode::DeviceWriteable,
-		false
-	};
-	clusterState.clusterLightIndexLists = CreateShaderRWBuffer(rwbInfo);
 
 	clusterState.classificationShader = ShaderServer::Instance()->GetShader("shd:lights_cluster_cull.fxb");
 	IndexT lightIndexListsSlot = ShaderGetResourceSlot(clusterState.classificationShader, "LightIndexLists");
@@ -327,6 +318,15 @@ LightContext::Create()
 
 	clusterState.clusterResourceTables.Resize(CoreGraphics::GetNumBufferedFrames());
 
+	ShaderRWBufferCreateInfo rwbInfo =
+	{
+		"LightIndexListsBuffer",
+		sizeof(LightsClusterCull::LightIndexLists),
+		BufferUpdateMode::DeviceWriteable,
+		false
+	};
+	clusterState.clusterLightIndexLists = CreateShaderRWBuffer(rwbInfo);
+
 	rwbInfo.name = "LightLists";
 	rwbInfo.size = sizeof(LightsClusterCull::LightLists);
 	rwbInfo.mode = BufferUpdateMode::HostWriteable;
@@ -338,9 +338,9 @@ LightContext::Create()
 		clusterState.clusterLightsList[i] = CreateShaderRWBuffer(rwbInfo);
 
 		// update resource table
-		ResourceTableSetRWBuffer(clusterState.clusterResourceTables[i], { clusterState.clusterLightIndexLists, lightIndexListsSlot, 0, false, false, -1, 0 });
-		ResourceTableSetRWBuffer(clusterState.clusterResourceTables[i], { Clustering::ClusterContext::GetClusterBuffer(), clusterAABBSlot, 0, false, false, -1, 0 });
-		ResourceTableSetRWBuffer(clusterState.clusterResourceTables[i], { clusterState.clusterLightsList[i], lightsListSlot, 0, false, false, -1, 0 });
+		ResourceTableSetRWBuffer(clusterState.clusterResourceTables[i], { clusterState.clusterLightIndexLists, lightIndexListsSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+		ResourceTableSetRWBuffer(clusterState.clusterResourceTables[i], { Clustering::ClusterContext::GetClusterBuffer(), clusterAABBSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+		ResourceTableSetRWBuffer(clusterState.clusterResourceTables[i], { clusterState.clusterLightsList[i], lightsListSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
 		ResourceTableSetConstantBuffer(clusterState.clusterResourceTables[i], { CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.clusterUniformsSlot, 0, false, false, sizeof(LightsClusterCull::ClusterUniforms), 0 });
 		ResourceTableSetConstantBuffer(clusterState.clusterResourceTables[i], { CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.lightCullUniformsSlot, 0, false, false, sizeof(LightsClusterCull::LightCullUniforms), 0 });
 		ResourceTableCommitChanges(clusterState.clusterResourceTables[i]);
@@ -1030,7 +1030,7 @@ LightContext::CullAndClassify()
 				clusterState.clusterLightIndexLists,
 				BarrierAccess::ShaderRead,
 				BarrierAccess::ShaderWrite,
-				0, -1
+				0, NEBULA_WHOLE_BUFFER_SIZE
 			},
 		}, "Light cluster culling begin");
 
@@ -1053,7 +1053,7 @@ LightContext::CullAndClassify()
 				clusterState.clusterLightIndexLists,
 				BarrierAccess::ShaderWrite,
 				BarrierAccess::ShaderRead,
-				0, -1
+				0, NEBULA_WHOLE_BUFFER_SIZE
 			},
 		}, "Light cluster culling end");
 

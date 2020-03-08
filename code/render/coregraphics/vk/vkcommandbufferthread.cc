@@ -60,7 +60,7 @@ VkCommandBufferThread::DoWork()
 	while (!this->ThreadStopRequested())
 	{
 		// lock our resources, which hinders the main thread from pushing more data
-		N_MARKER_BEGIN(RecordCopyData, Vulkan);
+		N_MARKER_BEGIN(RecordCopyData, Render);
 		this->lock.Enter();
 
 		if (this->commands.Size() > 0)
@@ -69,7 +69,7 @@ VkCommandBufferThread::DoWork()
 			curCommands = this->commands;
 			this->commands.Reset();
 
-			// copy command data from main thread
+			// if the command buffer is not big enough, resize it
 			if (this->commandBuffer.size > curCommandBufferSize)
 			{
 				n_delete_array(curCommandBuffer);
@@ -84,7 +84,7 @@ VkCommandBufferThread::DoWork()
 		this->lock.Leave();
 		N_MARKER_END();
 
-		N_MARKER_BEGIN(Record, Vulkan);
+		N_MARKER_BEGIN(Record, Render);
 
 		byte* commandBuf = curCommandBuffer;
 		IndexT i;
@@ -100,29 +100,26 @@ VkCommandBufferThread::DoWork()
 				VkCommandBufferBeginCommand* vkcmd = reinterpret_cast<VkCommandBufferBeginCommand*>(commandBuf);
 				n_assert(this->vkCommandBuffer == nullptr);
 				this->vkCommandBuffer = vkcmd->buf;
-#if NEBULA_GRAPHICS_DEBUG
-				{
-					Util::String name = Util::String::Sprintf("%s Generate draws", this->GetMyThreadName());
-					Vulkan::CommandBufferBeginMarker(this->vkCommandBuffer, Math::float4(0.8f, 0.6f, 0.6f, 1.0f), name.AsCharPtr());
-				}
-#endif
+
 				vkcmd->info.pInheritanceInfo = &vkcmd->inheritInfo;
-				n_assert(vkBeginCommandBuffer(this->vkCommandBuffer, &vkcmd->info) == VK_SUCCESS);
+				VkResult res = vkBeginCommandBuffer(this->vkCommandBuffer, &vkcmd->info);
+				n_assert(res == VK_SUCCESS);
+
 				break;
 			}				
 			case ResetCommand:
 				n_assert(vkResetCommandBuffer(this->vkCommandBuffer, 0) == VK_SUCCESS);
 				break;
 			case EndCommand:
+			{
 				n_assert(this->vkCommandBuffer != nullptr);
-				n_assert(vkEndCommandBuffer(this->vkCommandBuffer) == VK_SUCCESS);
 
-#if NEBULA_GRAPHICS_DEBUG
-				Vulkan::CommandBufferEndMarker(this->vkCommandBuffer);
-#endif
+				VkResult res = vkEndCommandBuffer(this->vkCommandBuffer);
+				n_assert(res == VK_SUCCESS);
 				this->vkCommandBuffer = VK_NULL_HANDLE;
 				this->vkPipelineLayout = VK_NULL_HANDLE;
 				break;
+			}
 			case GraphicsPipeline:
 			{
 				VkGfxPipelineBindCommand* vkcmd = reinterpret_cast<VkGfxPipelineBindCommand*>(commandBuf);
@@ -246,7 +243,25 @@ VkCommandBufferThread::DoWork()
 				n_assert(this->vkCommandBuffer != VK_NULL_HANDLE);
 				vkCmdPipelineBarrier(this->vkCommandBuffer, vkcmd->srcMask, vkcmd->dstMask, vkcmd->dep, vkcmd->memoryBarrierCount, vkcmd->memoryBarriers, vkcmd->bufferBarrierCount, vkcmd->bufferBarriers, vkcmd->imageBarrierCount, vkcmd->imageBarriers);
 				break;
-			}				
+			}			
+			case Timestamp:
+			{
+				VkWriteTimestampCommand* vkcmd = reinterpret_cast<VkWriteTimestampCommand*>(commandBuf);
+				vkCmdWriteTimestamp(this->vkCommandBuffer, (VkPipelineStageFlagBits)vkcmd->flags, vkcmd->pool, vkcmd->index);
+				break;
+			}
+			case BeginQuery:
+			{
+				VkBeginQueryCommand* vkcmd = reinterpret_cast<VkBeginQueryCommand*>(commandBuf);
+				vkCmdBeginQuery(this->vkCommandBuffer, vkcmd->pool, vkcmd->index, vkcmd->flags);
+				break;
+			}
+			case EndQuery:
+			{
+				VkEndQueryCommand* vkcmd = reinterpret_cast<VkEndQueryCommand*>(commandBuf);
+				vkCmdEndQuery(this->vkCommandBuffer, vkcmd->pool, vkcmd->index);
+				break;
+			}
 			case BeginMarker:
 			{
 				VkBeginMarkerCommand* vkcmd = reinterpret_cast<VkBeginMarkerCommand*>(commandBuf);
@@ -300,6 +315,9 @@ VkCommandBufferThread::DoWork()
 		// wait for more data
 		this->signalEvent.Wait();
 	}
+
+	if (curCommandBuffer != nullptr)
+		n_delete_array(curCommandBuffer);
 }
 
 } // namespace Vulkan

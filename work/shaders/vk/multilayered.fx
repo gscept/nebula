@@ -161,7 +161,6 @@ vsColoredShadowTessellated(
 	out vec4 Position,
 	out vec2 UV,
 	out vec4 Color,
-	out int Instance,
 	out float Distance) 
 {	
 	Position = Model * vec4(position, 1);
@@ -172,7 +171,7 @@ vsColoredShadowTessellated(
 	
 	float vertexDistance = distance( Position.xyz, EyePos.xyz );
 	Distance = 1.0 - clamp( ( (vertexDistance - MinDistance) / (MaxDistance - MinDistance) ), 0.0, 1.0 - 1.0/TessellationFactor);
-	Instance = gl_InstanceID;
+	gl_Layer = gl_InstanceID;
 }
 
 //------------------------------------------------------------------------------
@@ -192,7 +191,6 @@ vsColoredCSMTessellated(
 	out vec4 Position,
 	out vec2 UV,
 	out vec4 Color,
-	out int Instance,
 	out float Distance) 
 {	
 	Position = Model * vec4(position, 1);
@@ -203,40 +201,8 @@ vsColoredCSMTessellated(
 	
 	float vertexDistance = distance( Position.xyz, EyePos.xyz );
 	Distance = 1.0 - clamp( ( (vertexDistance - MinDistance) / (MaxDistance - MinDistance) ), 0.0, 1.0 - 1.0/TessellationFactor);
-	Instance = gl_InstanceID;
+	gl_Layer = gl_InstanceID;
 }
-
-//------------------------------------------------------------------------------
-/**
-	Geometry shader for CSM shadow instancing.
-	We copy the geometry and project into each frustum.
-*/
-[inputprimitive] = triangles
-[outputprimitive] = triangle_strip
-[maxvertexcount] = 3
-shader
-void 
-gsMain(in vec2 uv[], in vec4 pos[], flat in int instance[], out vec2 UV, out vec4 ProjPos)
-{
-	gl_ViewportIndex = instance[0];
-	
-	// simply pass geometry straight through and set viewport
-	UV = uv[0];
-	ProjPos = pos[0];
-	gl_Position = ProjPos;
-	EmitVertex();
-	
-	UV = uv[1];
-	ProjPos = pos[1];
-	gl_Position = ProjPos;
-	EmitVertex();
-	
-	UV = uv[2];
-	ProjPos = pos[2];
-	gl_Position = ProjPos;
-	EmitVertex();
-}
-
 
 //------------------------------------------------------------------------------
 /**
@@ -253,8 +219,7 @@ psMultilayered(
 	in vec3 WorldViewVec,
 	[color0] out vec4 Albedo,
 	[color1] out vec3 Normals,
-	[color2] out vec4 Material,
-	[color3] out vec4 Emissive) 
+	[color2] out vec4 Material) 
 {
 	vec4 blend = Color;
 
@@ -279,11 +244,8 @@ psMultilayered(
 	vec4 mat = calcMaterial(matColor);
 	vec4 albedo = calcColor(diffColor);	
 	
-	vec4 emissive = vec4(0,0,0,0); // (env[0] * albedo.rgb + env[1]), -1);
-
 	Material = mat;
 	Albedo = albedo;
-	Emissive = emissive;
 	Normals = bumpNormal;
 }
 
@@ -369,13 +331,11 @@ hsShadowMLP(
 		in vec4 position[],
 		in vec2 uv[],
 		in vec4 color[],
-		flat in int instance[],
 		in float distance[],
 		out vec3 Normal[],
 		out vec4 Position[],
 		out vec2 UV[],
-		out vec4 Color[],
-		flat out int Instance[]
+		out vec4 Color[]
 		#if PN_TRIANGLES
 ,
 		  patch out vec3 f3B210,
@@ -392,7 +352,6 @@ hsShadowMLP(
 	Position[gl_InvocationID]	= position[gl_InvocationID];
 	UV[gl_InvocationID]			= uv[gl_InvocationID];
 	Color[gl_InvocationID]		= color[gl_InvocationID];	
-	Instance[gl_InvocationID]	= instance[gl_InvocationID];
 	
 	// perform per-patch operation
 	if (gl_InvocationID == 0)
@@ -519,12 +478,10 @@ dsShadowMLP(
 	in vec4 position[],
 	in vec2 uv[],
 	in vec4 color[],
-	flat in int instance[],
 	out vec2 UV,
 	out vec4 ProjPos,
 	out vec3 Normal,
-	out vec4 Color,
-	flat out int Instance
+	out vec4 Color
 #if PN_TRIANGLES
 	,
 	patch in vec3 f3B210,
@@ -575,7 +532,6 @@ dsShadowMLP(
 	vec4 pos = ViewMatrixArray[instance[0]] * vec4(Position, 1);
 	gl_Position = pos;
 	ProjPos = pos;
-	Instance = instance[0];
 }
 
 //------------------------------------------------------------------------------
@@ -589,7 +545,7 @@ SimpleTechnique(MLP, "Static", vsColored(), psMultilayered(
 		calcEnv = PBR), MLPState);
 		
 SimpleTechnique(MLPShadow, "Spot|Static", vsColoredShadow(), psShadow(), ShadowState);
-GeometryTechnique(MLPCSM, "Global|Static", vsColoredCSM(), psVSM(), gsMain(), ShadowStateCSM);
+SimpleTechnique(MLPCSM, "Global|Static", vsColoredCSM(), psVSM(), ShadowStateCSM);
 //TessellationTechnique(MLPTessellated, "Static|Tessellated|Colored", vsColoredTessellated(), psMultilayered(), hsDefault(), dsDefault(), MLPState);
 //FullTechnique(MLPTessellatedShadow, "Static|Tessellated|Colored|Shadow", vsColoredCSMTessellated(), psMultilayeredShadowVSM(), hsShadowMLP(), dsShadowMLP(), gsMain(), MLPState);
 //TessellationTechnique(MLPTessellatedCSM, "Static|Tessellated|Colored|CSM", vsColoredShadowTessellated(), psMultilayeredShadowVSM(), hsShadowMLP(), dsShadowMLP(), MLPState);

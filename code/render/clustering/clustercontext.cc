@@ -91,7 +91,6 @@ ClusterContext::Create(float ZNear, float ZFar, const CoreGraphics::WindowId win
 	{
 		"ClusterAABBBuffer",
 		state.clusterDimensions[0] * state.clusterDimensions[1] * state.clusterDimensions[2] * sizeof(ClusterGenerate::ClusterAABB),
-		1,
 		BufferUpdateMode::DeviceWriteable,
 		false
 	};

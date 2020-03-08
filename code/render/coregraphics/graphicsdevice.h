@@ -7,6 +7,7 @@
 */
 //------------------------------------------------------------------------------
 #include "pass.h"
+#include "profiling/profiling.h"
 #include "frame/framescript.h"
 #include "primitivegroup.h"
 #include "vertexbuffer.h"
@@ -61,6 +62,7 @@ struct Query
 {
 	CoreGraphics::QueryType type;
 	IndexT idx;
+	Timing::Time cpuTime;
 };
 
 struct DrawThreadResult

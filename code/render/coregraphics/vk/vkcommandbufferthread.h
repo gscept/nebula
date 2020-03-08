@@ -208,6 +208,29 @@ public:
 		VkImageMemoryBarrier imageBarriers[Max];
 	};
 
+	struct VkWriteTimestampCommand
+	{
+		static const CommandType Type = Timestamp;
+		VkPipelineStageFlags flags;
+		VkQueryPool pool;
+		IndexT index;
+	};
+
+	struct VkBeginQueryCommand
+	{
+		static const CommandType Type = BeginQuery;
+		VkQueryControlFlags flags;
+		VkQueryPool pool;
+		IndexT index;
+	};
+
+	struct VkEndQueryCommand
+	{
+		static const CommandType Type = EndQuery;
+		VkQueryPool pool;
+		IndexT index;
+	};
+
 	struct VkBeginMarkerCommand
 	{
 		static const CommandType Type = BeginMarker;
