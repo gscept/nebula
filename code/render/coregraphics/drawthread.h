@@ -43,6 +43,9 @@ public:
 		WaitForEvent,
 		Barrier,
 		Sync,
+		Timestamp,
+		BeginQuery,
+		EndQuery,
 		BeginMarker,
 		EndMarker,
 		InsertMarker

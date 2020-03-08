@@ -338,20 +338,12 @@ GetMemoryProperties()
 VkCommandBuffer 
 GetMainBuffer(const CoreGraphics::QueueType queue)
 {
-	if (state.drawThread)
+	n_assert(state.drawThreadCommands == CoreGraphics::CommandBufferId::Invalid());
+
+	switch (queue)
 	{
-		switch (queue)
-		{
-		case CoreGraphics::GraphicsQueueType: return CommandBufferGetVk(state.drawThreadCommands);
-		}
-	}
-	else
-	{
-		switch (queue)
-		{
-		case CoreGraphics::GraphicsQueueType: return CommandBufferGetVk(state.gfxCmdBuffer);
-		case CoreGraphics::ComputeQueueType: return CommandBufferGetVk(state.computeCmdBuffer);
-		}
+	case CoreGraphics::GraphicsQueueType: return CommandBufferGetVk(state.gfxCmdBuffer);
+	case CoreGraphics::ComputeQueueType: return CommandBufferGetVk(state.computeCmdBuffer);
 	}
 	return VK_NULL_HANDLE;
 }
@@ -451,6 +443,7 @@ InsertBarrier(
 	VkImageMemoryBarrier* imageBarriers,
 	const CoreGraphics::QueueType queue)
 {
+	n_assert(state.drawThreadCommands == CoreGraphics::CommandBufferId::Invalid());
 	VkCommandBuffer buf = GetMainBuffer(queue);
 	vkCmdPipelineBarrier(buf,
 		srcFlags,
@@ -468,6 +461,7 @@ void
 Copy(const VkImage from, Math::rectangle<SizeT> fromRegion, const VkImage to, Math::rectangle<SizeT> toRegion)
 {
 	n_assert(!state.inBeginPass);
+	n_assert(state.drawThreadCommands == CoreGraphics::CommandBufferId::Invalid());
 	VkImageCopy region;
 	region.dstOffset = { fromRegion.left, fromRegion.top, 0 };
 	region.dstSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
@@ -484,6 +478,7 @@ void
 Blit(const VkImage from, Math::rectangle<SizeT> fromRegion, IndexT fromMip, const VkImage to, Math::rectangle<SizeT> toRegion, IndexT toMip)
 {
 	n_assert(!state.inBeginPass);
+	n_assert(state.drawThreadCommands == CoreGraphics::CommandBufferId::Invalid());
 	VkImageBlit blit;
 	blit.srcOffsets[0] = { fromRegion.left, fromRegion.top, 0 };
 	blit.srcOffsets[1] = { fromRegion.right, fromRegion.bottom, 1 };
@@ -550,6 +545,7 @@ void
 BindDescriptorsCompute(const VkDescriptorSet* descriptors, uint32_t baseSet, uint32_t setCount, const uint32_t* offsets, uint32_t offsetCount, const CoreGraphics::QueueType queue)
 {
 	n_assert(state.inBeginFrame);
+	n_assert(state.drawThreadCommands == CoreGraphics::CommandBufferId::Invalid());
 	vkCmdBindDescriptorSets(GetMainBuffer(queue), VK_PIPELINE_BIND_POINT_COMPUTE, state.currentPipelineLayout, baseSet, setCount, descriptors, offsetCount, offsets);
 }
 
@@ -722,6 +718,8 @@ CreateAndBindGraphicsPipeline()
 void 
 BindComputePipeline(const VkPipeline& pipeline, const VkPipelineLayout& layout, const CoreGraphics::QueueType queue)
 {
+	n_assert(state.drawThreadCommands == CoreGraphics::CommandBufferId::Invalid());
+
 	// bind compute pipeline
 	state.currentBindPoint = CoreGraphics::ComputePipeline;
 
@@ -1043,6 +1041,7 @@ __Timestamp(CoreGraphics::CommandBufferId buf, CoreGraphics::QueueType queue, co
 	state.queries[state.queriesRingOffset + state.numUsedQueries++] = query;
 
 	// write time stamp
+	n_assert(state.drawThreadCommands == CoreGraphics::CommandBufferId::Invalid());
 	vkCmdWriteTimestamp(CommandBufferGetVk(buf), (VkPipelineStageFlagBits)flags, state.queryPoolsByType[type], idx);
 }
 #endif
@@ -3449,8 +3448,20 @@ Timestamp(CoreGraphics::QueueType queue, const CoreGraphics::BarrierStage stage,
 	state.queries[state.queriesRingOffset + state.numUsedQueries++] = query;
 
 	// write time stamp
-	VkCommandBuffer buf = GetMainBuffer(queue);
-	vkCmdWriteTimestamp(buf, (VkPipelineStageFlagBits)flags, state.queryPoolsByType[type], idx);
+	if (state.drawThread)
+	{
+		n_assert(state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid());
+		VkCommandBufferThread::VkWriteTimestampCommand cmd;
+		cmd.flags = flags;
+		cmd.pool = state.queryPoolsByType[type];
+		cmd.index = idx;
+		state.drawThread->Push(cmd);
+	}
+	else
+	{
+		VkCommandBuffer buf = GetMainBuffer(queue);
+		vkCmdWriteTimestamp(buf, (VkPipelineStageFlagBits)flags, state.queryPoolsByType[type], idx);
+	}
 
 	return idx;
 }
@@ -3494,8 +3505,21 @@ BeginQuery(CoreGraphics::QueueType queue, CoreGraphics::QueryType type)
 	state.queries[state.queriesRingOffset + state.numUsedQueries++] = query;
 
 	// start query
-	VkCommandBuffer buf = GetMainBuffer(queue);
-	vkCmdBeginQuery(buf, state.queryPoolsByType[type], idx, VK_QUERY_CONTROL_PRECISE_BIT);
+	if (state.drawThread)
+	{
+		n_assert(state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid());
+		VkCommandBufferThread::VkBeginQueryCommand cmd;
+		cmd.flags = VK_QUERY_CONTROL_PRECISE_BIT;
+		cmd.pool = state.queryPoolsByType[type];
+		cmd.index = idx;
+		state.drawThread->Push(cmd);
+	}
+	else
+	{
+		VkCommandBuffer buf = GetMainBuffer(queue);
+		vkCmdBeginQuery(buf, state.queryPoolsByType[type], idx, VK_QUERY_CONTROL_PRECISE_BIT);
+	}
+	
 	return idx;
 }
 
@@ -3511,8 +3535,19 @@ EndQuery(CoreGraphics::QueueType queue, CoreGraphics::QueryType type)
 	uint32_t index = state.queryCountsByType[type][state.currentBufferedFrameIndex];
 
 	// start query
-	VkCommandBuffer buf = GetMainBuffer(queue);
-	vkCmdEndQuery(buf, state.queryPoolsByType[type], index);
+	if (state.drawThread)
+	{
+		n_assert(state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid());
+		VkCommandBufferThread::VkEndQueryCommand cmd;
+		cmd.pool = state.queryPoolsByType[type];
+		cmd.index = index;
+		state.drawThread->Push(cmd);
+	}
+	else
+	{
+		VkCommandBuffer buf = GetMainBuffer(queue);
+		vkCmdEndQuery(buf, state.queryPoolsByType[type], index);
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -3523,6 +3558,7 @@ Copy(const CoreGraphics::TextureId from, Math::rectangle<SizeT> fromRegion, cons
 {
 	n_assert(from != CoreGraphics::TextureId::Invalid() && to != CoreGraphics::TextureId::Invalid());
 	n_assert(!state.inBeginPass);
+	n_assert(state.drawThreadCommands == CoreGraphics::CommandBufferId::Invalid());
 
 	bool isDepth = PixelFormat::IsDepthFormat(CoreGraphics::TextureGetPixelFormat(from));
 	VkImageAspectFlags aspect = isDepth ? (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT) : VK_IMAGE_ASPECT_COLOR_BIT;
@@ -3543,6 +3579,7 @@ Blit(const CoreGraphics::TextureId from, Math::rectangle<SizeT> fromRegion, Inde
 {
 	n_assert(from != CoreGraphics::TextureId::Invalid() && to != CoreGraphics::TextureId::Invalid());
 	n_assert(!state.inBeginPass);
+	n_assert(state.drawThreadCommands == CoreGraphics::CommandBufferId::Invalid());
 
 	bool isDepth = PixelFormat::IsDepthFormat(CoreGraphics::TextureGetPixelFormat(from));
 	VkImageAspectFlags aspect = isDepth ? (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT) : VK_IMAGE_ASPECT_COLOR_BIT;
@@ -3993,12 +4030,9 @@ CommandBufferBeginMarker(const CoreGraphics::QueueType queue, const Math::float4
     marker.queue = queue;
     marker.color = color;
     marker.name = name;
-	if (!state.drawThread)
-		marker.gpuBegin = CoreGraphics::Timestamp(queue, CoreGraphics::BarrierStage::Top, name);
-	else
-		marker.gpuBegin = -1;
+	marker.gpuBegin = CoreGraphics::Timestamp(queue, CoreGraphics::BarrierStage::Top, name);
     state.profilingMarkerStack[queue].Push(marker);
-#endif NEBULA_ENABLE_PROFILING
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -4012,17 +4046,13 @@ CommandBufferEndMarker(const CoreGraphics::QueueType queue)
 	FrameProfilingMarker marker = state.profilingMarkerStack[queue].Pop();
 	N_MARKER_END();
 
-	if (!state.drawThread)
-		marker.gpuEnd = CoreGraphics::Timestamp(queue, CoreGraphics::BarrierStage::Bottom, nullptr);
-	else
-		marker.gpuEnd = -1;
-
+	marker.gpuEnd = CoreGraphics::Timestamp(queue, CoreGraphics::BarrierStage::Bottom, nullptr);
 	if (state.profilingMarkerStack[queue].IsEmpty())
 		state.profilingMarkersPerFrame[state.currentBufferedFrameIndex].Append(marker);
 	else
 		state.profilingMarkerStack[queue].Peek().children.Append(marker);
 
-#endif NEBULA_ENABLE_PROFILING
+#endif
 
 	// if batching, draws goes to thread
 	if (state.drawThread)
