@@ -39,10 +39,10 @@ group(BATCH_GROUP) varblock LightCullUniforms [string Visibility = "CS"; ]
 // contains amount of lights, and the index of the light (pointing to the indices in PointLightList and SpotLightList), to output
 group(BATCH_GROUP) varbuffer LightIndexLists [ string Visibility = "CS"; ]
 {
-	uint PointLightIndexList[16384 * MAX_LIGHTS_PER_CLUSTER];
 	uint PointLightCountList[16384];
-	uint SpotLightIndexList[16384 * MAX_LIGHTS_PER_CLUSTER];
+	uint PointLightIndexList[16384 * MAX_LIGHTS_PER_CLUSTER];
 	uint SpotLightCountList[16384];
+	uint SpotLightIndexList[16384 * MAX_LIGHTS_PER_CLUSTER];
 };
 
 write r11g11b10f image2D Lighting;
