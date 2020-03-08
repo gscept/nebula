@@ -73,7 +73,7 @@ CreateShaderRWBuffer(const ShaderRWBufferCreateInfo& info)
 
 	// size and stride for a single buffer are equal
 	setupInfo.size = alignedSize;
-	setupInfo.stride = alignedSize / setupInfo.numBuffers;
+	setupInfo.stride = alignedSize;
 
 	ShaderRWBufferId ret;
 	ret.id24 = id;
