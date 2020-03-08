@@ -67,7 +67,7 @@ typename ATTR::TYPE const& GetAttribute(Game::Entity entity)
 template<typename ATTR>
 void SetAttribute(Game::Entity entity, typename ATTR::TYPE const& value)
 {
-	n_assert2(ATTR::GetAccessMode() == AccessMode::ReadWrite, "Attribute is not directly writable!\n");
+	n_assert2(ATTR::AccessMode() == Attr::AccessMode::ReadWrite, "Attribute is not directly writable!\n");
 
 	Ptr<CategoryManager> mgr = CategoryManager::Instance();
 	auto mapping = mgr->GetEntityMapping(entity);

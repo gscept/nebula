@@ -198,7 +198,7 @@ CategoryManager::AllocateInstance(Entity entity, CategoryId category)
 	{
 		this->entityMap.Grow();
 		// Just make sure we don't assert on any entity id
-		this->entityMap.SetSize(this->entityMap.Capacity());
+		this->entityMap.Resize(this->entityMap.Capacity());
 	}
 	this->entityMap[Ids::Index(entity.id)] = { category, instance };
 
