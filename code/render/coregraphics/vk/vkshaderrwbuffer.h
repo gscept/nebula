@@ -18,8 +18,6 @@ struct VkShaderRWBufferLoadInfo
 	VkBufferCreateInfo info;
 
 	SizeT size;
-	SizeT stride;
-	SizeT numBuffers;
 	SizeT grow;
 };
 

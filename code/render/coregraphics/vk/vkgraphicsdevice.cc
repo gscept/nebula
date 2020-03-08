@@ -3575,6 +3575,20 @@ Copy(const CoreGraphics::TextureId from, Math::rectangle<SizeT> fromRegion, cons
 /**
 */
 void 
+Copy(CoreGraphics::QueueType queue, const CoreGraphics::ShaderRWBufferId from, IndexT fromOffset, const CoreGraphics::ShaderRWBufferId to, IndexT toOffset, SizeT size)
+{
+	n_assert(state.drawThreadCommands == CoreGraphics::CommandBufferId::Invalid());
+	VkBufferCopy copy;
+	copy.srcOffset = fromOffset;
+	copy.dstOffset = toOffset;
+	copy.size = size;
+	vkCmdCopyBuffer(GetMainBuffer(queue), ShaderRWBufferGetVkBuffer(from), ShaderRWBufferGetVkBuffer(to), 1, &copy);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
 Blit(const CoreGraphics::TextureId from, Math::rectangle<SizeT> fromRegion, IndexT fromMip, const CoreGraphics::TextureId to, Math::rectangle<SizeT> toRegion, IndexT toMip)
 {
 	n_assert(from != CoreGraphics::TextureId::Invalid() && to != CoreGraphics::TextureId::Invalid());

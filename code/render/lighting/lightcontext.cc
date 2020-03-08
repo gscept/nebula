@@ -107,7 +107,8 @@ struct
 	CoreGraphics::ShaderProgramId debugProgram;
 	CoreGraphics::ShaderProgramId lightingProgram;
 	CoreGraphics::ShaderRWBufferId clusterLightIndexLists;
-	Util::FixedArray<CoreGraphics::ShaderRWBufferId> clusterLightsList;
+	Util::FixedArray<CoreGraphics::ShaderRWBufferId> stagingClusterLightsList;
+	CoreGraphics::ShaderRWBufferId clusterLightsList;
 	CoreGraphics::ConstantBufferId clusterPointLights;
 	CoreGraphics::ConstantBufferId clusterSpotLights;
 
@@ -329,18 +330,20 @@ LightContext::Create()
 
 	rwbInfo.name = "LightLists";
 	rwbInfo.size = sizeof(LightsClusterCull::LightLists);
+	clusterState.clusterLightsList = CreateShaderRWBuffer(rwbInfo);
+
 	rwbInfo.mode = BufferUpdateMode::HostWriteable;
-	clusterState.clusterLightsList.Resize(CoreGraphics::GetNumBufferedFrames());
+	clusterState.stagingClusterLightsList.Resize(CoreGraphics::GetNumBufferedFrames());
 
 	for (IndexT i = 0; i < clusterState.clusterResourceTables.Size(); i++)
 	{
 		clusterState.clusterResourceTables[i] = ShaderCreateResourceTable(clusterState.classificationShader, NEBULA_BATCH_GROUP);
-		clusterState.clusterLightsList[i] = CreateShaderRWBuffer(rwbInfo);
+		clusterState.stagingClusterLightsList[i] = CreateShaderRWBuffer(rwbInfo);
 
 		// update resource table
 		ResourceTableSetRWBuffer(clusterState.clusterResourceTables[i], { clusterState.clusterLightIndexLists, lightIndexListsSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
 		ResourceTableSetRWBuffer(clusterState.clusterResourceTables[i], { Clustering::ClusterContext::GetClusterBuffer(), clusterAABBSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-		ResourceTableSetRWBuffer(clusterState.clusterResourceTables[i], { clusterState.clusterLightsList[i], lightsListSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+		ResourceTableSetRWBuffer(clusterState.clusterResourceTables[i], { clusterState.clusterLightsList, lightsListSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
 		ResourceTableSetConstantBuffer(clusterState.clusterResourceTables[i], { CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.clusterUniformsSlot, 0, false, false, sizeof(LightsClusterCull::ClusterUniforms), 0 });
 		ResourceTableSetConstantBuffer(clusterState.clusterResourceTables[i], { CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.lightCullUniformsSlot, 0, false, false, sizeof(LightsClusterCull::LightCullUniforms), 0 });
 		ResourceTableCommitChanges(clusterState.clusterResourceTables[i]);
@@ -972,7 +975,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 		Memory::CopyElements(clusterState.spotLights, lightList.SpotLights, numSpotLights);
 		Memory::CopyElements(clusterState.spotLightProjection, lightList.SpotLightProjection, numSpotLightsProjection);
 		Memory::CopyElements(clusterState.spotLightShadow, lightList.SpotLightShadow, numSpotLightShadows);
-		CoreGraphics::ShaderRWBufferUpdate(clusterState.clusterLightsList[bufferIndex], &lightList, sizeof(LightsClusterCull::LightLists));
+		CoreGraphics::ShaderRWBufferUpdate(clusterState.stagingClusterLightsList[bufferIndex], &lightList, sizeof(LightsClusterCull::LightLists));
 	}
 
 	// a little ugly, but since the view can change the script, this has to adopt
@@ -1015,6 +1018,9 @@ LightContext::CullAndClassify()
 	// update constants
 	using namespace CoreGraphics;
 
+	const IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
+	Copy(ComputeQueueType, clusterState.stagingClusterLightsList[bufferIndex], 0, clusterState.clusterLightsList, 0, sizeof(LightsClusterCull::LightLists));
+
 	// begin command buffer work
 	CommandBufferBeginMarker(ComputeQueueType, NEBULA_MARKER_BLUE, "Light cluster culling");
 
@@ -1035,7 +1041,7 @@ LightContext::CullAndClassify()
 		}, "Light cluster culling begin");
 
 	SetShaderProgram(clusterState.cullProgram, ComputeQueueType);
-	SetResourceTable(clusterState.clusterResourceTables[CoreGraphics::GetBufferedFrameIndex()], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr, ComputeQueueType);
+	SetResourceTable(clusterState.clusterResourceTables[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr, ComputeQueueType);
 
 	// run chunks of 1024 threads at a time
 	std::array<SizeT, 3> dimensions = Clustering::ClusterContext::GetClusterDimensions();
