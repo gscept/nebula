@@ -7,7 +7,7 @@
 #include "physicsinterface.h"
 #include "physics/streamactorpool.h"
 #include "physics/actorcontext.h"
-#include "resources/resourcemanager.h"
+#include "resources/resourceserver.h"
 #include "basegamefeature/managers/categorymanager.h"
 #include <type_traits>
 
