@@ -5,6 +5,8 @@
 #include "render/stdneb.h"
 #include "vkcommandbuffer.h"
 #include "coregraphics/config.h"
+#include "vkgraphicsdevice.h"
+
 namespace Vulkan
 {
 
@@ -61,7 +63,7 @@ CreateCommandBufferPool(const CommandBufferPoolCreateInfo& info)
 	flags |= info.resetable ? VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT : 0;
 	flags |= info.shortlived ? VK_COMMAND_POOL_CREATE_TRANSIENT_BIT : 0;
 
-	uint32_t queueFamily = CoreGraphics::GetQueueFamily(info.queue);
+	uint32_t queueFamily = Vulkan::GetQueueFamily(info.queue);
 
 	VkCommandPoolCreateInfo cmdPoolInfo =
 	{
@@ -70,7 +72,7 @@ CreateCommandBufferPool(const CommandBufferPoolCreateInfo& info)
 		flags,
 		queueFamily
 	};
-	VkDevice dev = CoreGraphics::GetCurrentDevice();
+	VkDevice dev = Vulkan::GetCurrentDevice();
 	VkResult res = vkCreateCommandPool(dev, &cmdPoolInfo, nullptr, &commandBufferPools.Get<CommandBufferPool_VkCommandPool>(id));
 	commandBufferPools.Set<CommandBufferPool_VkDevice>(id, dev);
 	n_assert(res == VK_SUCCESS);

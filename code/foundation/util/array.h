@@ -83,6 +83,9 @@ public:
     void AppendArray(const Array<TYPE>& rhs);
     /// increase capacity to fit N more elements into the array.
     void Reserve(SizeT num);
+    
+    /// set number of elements (clears existing content)
+    void SetSize(SizeT s);
     /// get number of elements in array
     SizeT Size() const;
     /// get overall allocated size of array in number of elements
@@ -1274,6 +1277,15 @@ Array<TYPE>::Resize(SizeT num)
 	}
 
 	this->count = num;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE> void
+Array<TYPE>::SetSize(SizeT s)
+{
+    this->Realloc(s, 8);
 }
 
 //------------------------------------------------------------------------------

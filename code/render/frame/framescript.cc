@@ -6,6 +6,9 @@
 #include "framescript.h"
 #include "frameserver.h"
 #include "coregraphics/displaydevice.h"
+#include "coregraphics/drawthread.h"
+#include "coregraphics/graphicsdevice.h"
+#include "profiling/profiling.h"
 
 namespace Frame
 {
