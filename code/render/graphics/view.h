@@ -26,7 +26,7 @@ public:
 	virtual ~View();
 
 	/// apply view settings
-	void UpdateResources();
+	void UpdateResources(const IndexT frameIndex);
 	
 	/// begin frame
 	void BeginFrame(const IndexT frameIndex, const Timing::Time time);

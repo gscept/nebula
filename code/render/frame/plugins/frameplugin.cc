@@ -73,6 +73,15 @@ FramePlugin::UpdateResources(const IndexT frameIndex)
 //------------------------------------------------------------------------------
 /**
 */
+void 
+FramePlugin::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const IndexT frameIndex)
+{
+	// implement in subclass
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 FramePlugin::Resize()
 {

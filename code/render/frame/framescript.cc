@@ -137,6 +137,19 @@ FrameScript::UpdateResources(const IndexT frameIndex)
 /**
 */
 void 
+FrameScript::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const IndexT frameIndex)
+{
+	IndexT i;
+	for (i = 0; i < this->plugins.Size(); i++)
+	{
+		this->plugins[i]->UpdateViewDependentResources(view, frameIndex);
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
 FrameScript::RunJobs(const IndexT frameIndex)
 {
 #if NEBULA_ENABLE_MT_DRAW

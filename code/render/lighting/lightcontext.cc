@@ -768,6 +768,9 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 	const Graphics::ContextEntityId cid = GetContextId(lightServerState.globalLightEntity);
 	using namespace CoreGraphics;
 
+	// update view dependent resources in framescript too
+	lightServerState.shadowMappingFrameScript->UpdateViewDependentResources(view, ctx.frameIndex);
+
 	// get camera view
 	Math::matrix44 viewTransform = Graphics::CameraContext::GetTransform(view->GetCamera());
 	Math::matrix44 invViewTransform = Math::matrix44::inverse(viewTransform);
@@ -1019,7 +1022,23 @@ LightContext::CullAndClassify()
 	using namespace CoreGraphics;
 
 	const IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
+
+	// copy data from staging buffer to shader buffer
 	Copy(ComputeQueueType, clusterState.stagingClusterLightsList[bufferIndex], 0, clusterState.clusterLightsList, 0, sizeof(LightsClusterCull::LightLists));
+	BarrierInsert(ComputeQueueType,
+		BarrierStage::Transfer,
+		BarrierStage::ComputeShader,
+		BarrierDomain::Global,
+		nullptr,
+		{
+			BufferBarrier
+			{
+				clusterState.clusterLightsList,
+				BarrierAccess::TransferWrite,
+				BarrierAccess::ShaderWrite,
+				0, NEBULA_WHOLE_BUFFER_SIZE
+			},
+		}, "Lights data upload");
 
 	// begin command buffer work
 	CommandBufferBeginMarker(ComputeQueueType, NEBULA_MARKER_BLUE, "Light cluster culling");

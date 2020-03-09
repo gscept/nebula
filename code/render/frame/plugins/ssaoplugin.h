@@ -26,8 +26,8 @@ public:
 	/// discard algorithm
 	void Discard() override;
 
-	/// update resources
-	void UpdateResources(const IndexT frameIndex) override;
+	/// update view dependent resources
+	void UpdateViewDependentResources(const Ptr<Graphics::View>& view, const IndexT frameIndex) override;
     /// resize algorithm
     void Resize() override;
 

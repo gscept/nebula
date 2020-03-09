@@ -7,6 +7,8 @@
 
 	(C) 2015-2020 Individual contributors, see AUTHORS file
 */
+#include "core/config.h"
+
 #if __WIN32__
 #include "debug/win32/win32stacktrace.h"
 namespace Debug

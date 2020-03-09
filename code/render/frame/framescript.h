@@ -74,6 +74,8 @@ public:
 	void Discard();
 	/// run through script and call resource updates
 	void UpdateResources(const IndexT frameIndex);
+	/// run through script and call view dependent resource updates
+	void UpdateViewDependentResources(const Ptr<Graphics::View>& view, const IndexT frameIndex);
 	/// run through script and generate thread jobs where applicable
 	void RunJobs(const IndexT frameIndex);
 	/// run script

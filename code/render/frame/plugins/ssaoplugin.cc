@@ -240,10 +240,10 @@ SSAOPlugin::Discard()
 /**
 */
 void 
-SSAOPlugin::UpdateResources(const IndexT frameIndex)
+SSAOPlugin::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const IndexT frameIndex)
 {
 	// get camera settings
-	const CameraSettings& cameraSettings = CameraContext::GetSettings(Graphics::GraphicsServer::Instance()->GetCurrentView()->GetCamera());
+	const CameraSettings& cameraSettings = CameraContext::GetSettings(view->GetCamera());
 
 	this->vars.width = this->vars.fullWidth / this->vars.downsample;
 	this->vars.height = this->vars.fullHeight / this->vars.downsample;

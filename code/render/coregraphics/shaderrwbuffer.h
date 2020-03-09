@@ -20,7 +20,7 @@ struct ShaderRWBufferCreateInfo
 	Util::StringAtom name;
 	SizeT size;
 	BufferUpdateMode mode;
-	bool screenRelative : 1; // when set, size is bytes per pixel
+	bool screenRelative : 1;	// when set, size is bytes per pixel
 };
 
 /// create shader RW buffer

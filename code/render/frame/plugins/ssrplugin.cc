@@ -142,10 +142,9 @@ SSRPlugin::Discard()
 /**
 */
 void 
-SSRPlugin::UpdateResources(const IndexT frameIndex)
+SSRPlugin::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const IndexT frameIndex)
 {
-    const CameraSettings& cameraSettings = CameraContext::GetSettings(Graphics::GraphicsServer::Instance()->GetCurrentView()->GetCamera());
-    Math::matrix44 view = CameraContext::GetTransform(Graphics::GraphicsServer::Instance()->GetCurrentView()->GetCamera());
+    const CameraSettings& cameraSettings = CameraContext::GetSettings(view->GetCamera());
     TextureDimensions dims = TextureGetDimensions(this->textures["SSRTraceBuffer"]);
 
     float sx = (float)dims.width;
