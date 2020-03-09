@@ -17,7 +17,6 @@
 #include "valuetype.h"
 #include "accessmode.h"
 #include "attrexithandler.h"
-#include "game/entity.h"
 #include "util/string.h"
 #include "util/blob.h"
 #include "math/quat.h"
@@ -86,8 +85,6 @@ public:
     explicit AttributeDefinitionBase(const Util::String& name, const Util::String& typeName, const Util::FourCC& fourCC, AccessMode accessMode, const Util::Array<Util::Blob>& defVal, bool isDynamic);
     /// Constructor with default guid array value
     explicit AttributeDefinitionBase(const Util::String& name, const Util::String& typeName, const Util::FourCC& fourCC, AccessMode accessMode, const Util::Array<Util::Guid>& defVal, bool isDynamic);
-    /// Constructor with default entity value
-    explicit AttributeDefinitionBase(const Util::String& name, const Util::String& typeName, const Util::FourCC& fourCC, AccessMode accessMode, const Game::Entity& defVal, bool isDynamic);
     /// Constructor with default variant value
     explicit AttributeDefinitionBase(const Util::String& name, const Util::String& typeName, const Util::FourCC& fourCC, AccessMode accessMode, const Util::Variant& defVal, ValueType type, bool isDynamic);
 
