@@ -161,7 +161,11 @@ LightContext::Create()
 
 	__bundle.OnPrepareView = LightContext::OnPrepareView;
 	__bundle.OnUpdateViewResources = LightContext::UpdateViewDependentResources;
+
+#if NEBULA_ENABLE_MT_DRAW
 	__bundle.OnWorkFinished = LightContext::RunFrameScriptJobs;
+#endif
+
 	__bundle.StageBits = &LightContext::__state.currentStage;
 #ifndef PUBLIC_BUILD
 	__bundle.OnRenderDebug = LightContext::OnRenderDebug;
@@ -362,7 +366,7 @@ void
 LightContext::Discard()
 {
 	lightServerState.fsq.Discard();
-	Frame::FrameServer::Instance()->UnloadFrameScript("shadowmap_framescript");
+	lightServerState.shadowMappingFrameScript->Discard();
 	Graphics::GraphicsServer::Instance()->UnregisterGraphicsContext(&__bundle);
 }
 

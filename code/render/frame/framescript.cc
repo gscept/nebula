@@ -30,7 +30,6 @@ FrameScript::FrameScript() :
 */
 FrameScript::~FrameScript()
 {
-	CoreGraphics::DestroyCommandBufferPool(this->drawThreadCommandPool);
 }
 
 //------------------------------------------------------------------------------
@@ -84,6 +83,7 @@ FrameScript::AddOp(Frame::FrameOp* op)
 void 
 FrameScript::Setup()
 {
+#if NEBULA_ENABLE_MT_DRAW
 	this->drawThread = CoreGraphics::CreateDrawThread();
 	Util::String scriptName = this->resId.Value();
 	scriptName.StripFileExtension();
@@ -98,6 +98,7 @@ FrameScript::Setup()
 		true
 	};
 	this->drawThreadCommandPool = CoreGraphics::CreateCommandBufferPool(poolInfo);
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -109,12 +110,10 @@ FrameScript::Discard()
 	// unload ourselves, this is only for convenience
 	FrameServer::Instance()->UnloadFrameScript(this->resId);
 
-	IndexT i;
-	for (i = 0; i < this->ops.Size(); i++)
-	{
-		this->ops[i]->Discard();
-		this->ops[i]->~FrameOp();
-	}
+#if NEBULA_ENABLE_MT_DRAW
+	this->drawThread->Stop();
+	CoreGraphics::DestroyCommandBufferPool(this->drawThreadCommandPool);
+#endif
 
 	this->buildAllocator.Release();
 	this->allocator.Release();
