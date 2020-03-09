@@ -392,7 +392,7 @@ GraphicsServer::BeginFrame()
 		const Ptr<View>& view = this->views[i];
 
 		// update view resources (camera)
-		view->UpdateResources();
+		view->UpdateResources(this->frameContext.frameIndex);
 
 		IndexT j;
 		for (j = 0; j < this->contexts.Size(); j++)

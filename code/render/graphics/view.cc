@@ -44,7 +44,7 @@ View::~View()
 /**
 */
 void 
-View::UpdateResources()
+View::UpdateResources(const IndexT frameIndex)
 {
 	if (this->camera != GraphicsEntityId::Invalid())
 	{
@@ -59,6 +59,12 @@ View::UpdateResources()
 		// fixme! view should hold its own resource tables and send them to ApplyViewSettings!
 		transDev->ApplyViewSettings();
 	}	
+
+	if (this->script)
+	{
+		this->script->UpdateResources(frameIndex);
+		this->script->UpdateViewDependentResources(this, frameIndex);
+	}
 }
 
 //------------------------------------------------------------------------------
