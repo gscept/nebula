@@ -186,7 +186,7 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 
 } state;
 
-VkDebugUtilsMessengerEXT VkDebugMessageHandle = nullptr;
+VkDebugUtilsMessengerEXT VkErrorDebugMessageHandle = nullptr;
 PFN_vkCreateDebugUtilsMessengerEXT VkCreateDebugMessenger = nullptr;
 PFN_vkDestroyDebugUtilsMessengerEXT VkDestroyDebugMessenger = nullptr;
 
@@ -1048,38 +1048,35 @@ __Timestamp(CoreGraphics::CommandBufferId buf, CoreGraphics::QueueType queue, co
 
 } // namespace Vulkan
 
+#include "debug/stacktrace.h"
+
 //------------------------------------------------------------------------------
 /**
 */
 VKAPI_ATTR VkBool32 VKAPI_CALL
-NebulaVulkanDebugCallback(
+NebulaVulkanErrorDebugCallback(
 	VkDebugUtilsMessageSeverityFlagBitsEXT severity,
 	VkDebugUtilsMessageTypeFlagsEXT type,
 	const VkDebugUtilsMessengerCallbackDataEXT* callbackData,
 	void* userData)
 {
-	const int32_t ignore[] =
+	const char* ignore[] =
 	{
-		61 // unused descriptors 
+		"VUID-VkDescriptorImageInfo-imageLayout-00344",
+		"UNASSIGNED-CoreValidation-DrawState-DescriptorSetNotUpdated",
+		"UNASSIGNED-CoreValidation-DrawState-InvalidImageLayout",
+		"UNASSIGNED-vkCmdExecuteCommands-commandBuffer-00001"
 	};
 
-	for (IndexT i = 0; i < sizeof(ignore) / sizeof(int32_t); i++)
+	for (IndexT i = 0; i < sizeof(ignore) / sizeof(const char*); i++)
 	{
-		if (callbackData->messageIdNumber == ignore[i]) 
+		if (strcmp(callbackData->pMessageIdName, ignore[i]) == 0) 
 			return VK_FALSE;
 	}
 
- 	if (severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
-	{
-		n_warning("VULKAN ERROR: %s\n", callbackData->pMessage);
-	}
-	else if (severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
-	{
-		n_warning("VULKAN WARNING: %s\n", callbackData->pMessage);
-	}
+	n_warning("%s\n", callbackData->pMessage);
 	return VK_FALSE;
 }
-
 
 namespace CoreGraphics
 {
@@ -1195,9 +1192,9 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		dbgInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT;
 		dbgInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
 		dbgInfo.pNext = nullptr;
-		dbgInfo.pfnUserCallback = NebulaVulkanDebugCallback;
+		dbgInfo.pfnUserCallback = NebulaVulkanErrorDebugCallback;
 		dbgInfo.pUserData = nullptr;
-		res = VkCreateDebugMessenger(state.instance, &dbgInfo, NULL, &VkDebugMessageHandle);
+		res = VkCreateDebugMessenger(state.instance, &dbgInfo, NULL, &VkErrorDebugMessageHandle);
 		n_assert(res == VK_SUCCESS);
 	}
 
@@ -1863,7 +1860,7 @@ DestroyGraphicsDevice()
 	}
 
 #if NEBULA_VULKAN_DEBUG
-	VkDestroyDebugMessenger(state.instance, VkDebugMessageHandle, nullptr);
+	VkDestroyDebugMessenger(state.instance, VkErrorDebugMessageHandle, nullptr);
 #endif
 
 	vkDestroyDevice(state.devices[0], nullptr);
