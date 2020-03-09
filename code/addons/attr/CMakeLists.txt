@@ -1,5 +1,4 @@
 fips_begin_lib(attr)
-fips_libs(application)
 fips_include_directories(${CODE_ROOT}/foundation)
 fips_files(
     attrexithandler.cc

@@ -46,8 +46,7 @@ enum ValueType
 	StringArrayType     = Util::Variant::StringArray,
 	Matrix44ArrayType   = Util::Variant::Matrix44Array,
 	BlobArrayType       = Util::Variant::BlobArray,
-	GuidArrayType       = Util::Variant::GuidArray,
-	EntityType          = Util::Variant::NumTypes + 1,
+	GuidArrayType       = Util::Variant::GuidArray
 };
 
 // these class definitions are just for template specializations later on,
@@ -81,7 +80,6 @@ class StringArrayTypeClass {};
 class Matrix44ArrayTypeClass {};
 class BlobArrayTypeClass {};
 class GuidArrayTypeClass {};
-class EntityTypeClass {};
 
 } // namespace Attr
 //------------------------------------------------------------------------------

@@ -1250,7 +1250,6 @@ AttributeTable::GetAttr(IndexT rowIndex, IndexT colIndex) const
 	case Matrix44Type:  return Attr::Attribute(attrId, this->GetMatrix44(colIndex, rowIndex)); break;
 	case BlobType:      return Attr::Attribute(attrId, this->GetBlob(colIndex, rowIndex)); break;
 	case GuidType:      return Attr::Attribute(attrId, this->GetGuid(colIndex, rowIndex)); break;
-	case EntityType:    return Attr::Attribute(attrId, this->GetUInt(colIndex, rowIndex)); break;
 	default:
 		n_error("Invalid value type!");
 		return Attr::Attribute();
