@@ -2004,7 +2004,8 @@ BeginFrame(IndexT frameIndex)
 
 	// slight limitation to only using one back buffer, so really we should do one begin and end frame per window...
 	n_assert(state.backBuffers.Size() == 1);
-	state.currentBufferedFrameIndex = CoreGraphics::TextureSwapBuffers(state.backBuffers[0]);
+	CoreGraphics::TextureSwapBuffers(state.backBuffers[0]);
+	state.currentBufferedFrameIndex = (state.currentBufferedFrameIndex + 1) % state.maxNumBufferedFrames;
 	state.queriesRingOffset = state.MaxQueriesPerFrame * state.currentBufferedFrameIndex;
 
 	N_MARKER_END();
