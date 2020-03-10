@@ -198,7 +198,7 @@ protected:
 */
 template<class TYPE>
 Array<TYPE>::Array() :
-    grow(8),
+    grow(MinGrowSize),
     capacity(0),
     count(0),
     elements(0)
@@ -619,7 +619,7 @@ inline void
 Array<TYPE>::MoveRange(TYPE* to, TYPE* from, SizeT num)
 {
 	// copy over contents
-	if constexpr (!std::is_trivially_move_assignable<TYPE>::value)
+	if constexpr (!std::is_trivially_move_assignable<TYPE>::value && std::is_move_assignable<TYPE>::value)
 	{
 		IndexT i;
 		for (i = 0; i < num; i++)
