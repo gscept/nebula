@@ -567,9 +567,15 @@ VkMemoryTexturePool::SwapBuffers(const CoreGraphics::TextureId id)
 	VkTextureWindowInfo& wnd = this->GetSafe<Texture_WindowInfo>(id.resourceId);
 	n_assert(wnd.window != CoreGraphics::WindowId::Invalid());
 	VkWindowSwapInfo& swapInfo = CoreGraphics::glfwWindowAllocator.Get<5>(wnd.window.id24);
-	VkSemaphore sem = Vulkan::GetPresentSemaphore();
-	VkResult res = vkAcquireNextImageKHR(Vulkan::GetCurrentDevice(), swapInfo.swapchain, UINT64_MAX, sem, VK_NULL_HANDLE, &swapInfo.currentBackbuffer);
-	Vulkan::WaitForPresent(sem);
+
+    // get present fence and be sure it is finished before getting the next image
+	VkFence fence = Vulkan::GetPresentFence();
+    vkWaitForFences(Vulkan::GetCurrentDevice(), 1, &fence, true, UINT64_MAX);
+
+    // get the next image
+	VkResult res = vkAcquireNextImageKHR(Vulkan::GetCurrentDevice(), swapInfo.swapchain, UINT64_MAX, VK_NULL_HANDLE, fence, &swapInfo.currentBackbuffer);
+
+	//Vulkan::WaitForPresent(sem);
 	if (res == VK_ERROR_OUT_OF_DATE_KHR)
 	{
 		// this means our swapchain needs a resize!

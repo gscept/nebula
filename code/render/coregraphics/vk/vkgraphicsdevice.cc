@@ -352,18 +352,18 @@ GetMainBuffer(const CoreGraphics::QueueType queue)
 /**
 */
 VkSemaphore 
-GetPresentSemaphore()
+GetRenderingSemaphore()
 {
-	return SemaphoreGetVk(state.presentSemaphores[state.currentBufferedFrameIndex]);
+	return SemaphoreGetVk(state.renderingFinishedSemaphores[state.currentBufferedFrameIndex]);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-VkSemaphore 
-GetRenderingSemaphore()
+VkFence
+GetPresentFence()
 {
-	return SemaphoreGetVk(state.renderingFinishedSemaphores[state.currentBufferedFrameIndex]);
+	return FenceGetVk(state.presentFences[state.currentBufferedFrameIndex]);
 }
 
 //------------------------------------------------------------------------------
@@ -1555,11 +1555,11 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 #undef CreateSemaphore
 #endif
 
-	state.presentSemaphores.Resize(info.numBufferedFrames);
+	state.presentFences.Resize(info.numBufferedFrames);
 	state.renderingFinishedSemaphores.Resize(info.numBufferedFrames);
 	for (i = 0; i < info.numBufferedFrames; i++)
 	{
-		state.presentSemaphores[i] = CreateSemaphore({ SemaphoreType::Binary });
+		state.presentFences[i] = CreateFence({true});
 		state.renderingFinishedSemaphores[i] = CreateSemaphore({ SemaphoreType::Binary });
 	}
 
@@ -1852,10 +1852,9 @@ DestroyGraphicsDevice()
 	// destroy pipeline
 	vkDestroyPipelineCache(state.devices[state.currentDevice], state.cache, nullptr);
 
-
-	for (i = 0; i < state.presentSemaphores.Size(); i++)
+	for (i = 0; i < state.renderingFinishedSemaphores.Size(); i++)
 	{
-		DestroySemaphore(state.presentSemaphores[i]);
+		DestroyFence(state.presentFences[i]);
 		DestroySemaphore(state.renderingFinishedSemaphores[i]);
 	}
 
@@ -2005,7 +2004,8 @@ BeginFrame(IndexT frameIndex)
 
 	// slight limitation to only using one back buffer, so really we should do one begin and end frame per window...
 	n_assert(state.backBuffers.Size() == 1);
-	state.currentBufferedFrameIndex = CoreGraphics::TextureSwapBuffers(state.backBuffers[0]);
+	CoreGraphics::TextureSwapBuffers(state.backBuffers[0]);
+	state.currentBufferedFrameIndex = (state.currentBufferedFrameIndex + 1) % state.maxNumBufferedFrames;
 	state.queriesRingOffset = state.MaxQueriesPerFrame * state.currentBufferedFrameIndex;
 
 	N_MARKER_END();

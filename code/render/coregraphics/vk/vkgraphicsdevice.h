@@ -36,12 +36,10 @@ VkPipelineCache GetPipelineCache();
 VkPhysicalDeviceMemoryProperties GetMemoryProperties();
 /// get main command buffer
 VkCommandBuffer GetMainBuffer(const CoreGraphics::QueueType queue);
-/// get final graphics semaphore
-VkSemaphore GetPresentSemaphore();
 /// get final rendering semaphore
 VkSemaphore GetRenderingSemaphore();
-/// set to wait for present semaphore this submission
-void WaitForPresent(VkSemaphore sem);
+/// get the present fence
+VkFence GetPresentFence();
 
 /// get queue families
 const Util::Set<uint32_t>& GetQueueFamilies();
