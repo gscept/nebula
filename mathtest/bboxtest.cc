@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //  bboxtest.cc
-//  (C) 2009 Radon Labs GmbH
+//  (C) 2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 
@@ -36,7 +36,7 @@ BBoxTest::Run()
 			box.set(Math::matrix44::multiply(Math::matrix44::scaling(10, 10, 10), Math::matrix44::translation(j, 0, i)));
 
 			ClipStatus::Type s = box.clipstatus(cam);
-			this->Verify(s == box.clipstatus_simd(cam));
+			VERIFY(s == box.clipstatus_simd(cam));
 		}
 	}
 }

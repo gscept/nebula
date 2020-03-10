@@ -11,7 +11,7 @@ using namespace Core;
 using namespace Tests;
 
 
-__cdecl int main(int argc, char**argv)
+int main(int argc, char**argv)
 {
 	// create Nebula runtime
 	Ptr<CoreServer> coreServer = CoreServer::Create();
