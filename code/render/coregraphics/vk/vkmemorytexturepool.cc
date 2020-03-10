@@ -569,11 +569,13 @@ VkMemoryTexturePool::SwapBuffers(const CoreGraphics::TextureId id)
 	VkWindowSwapInfo& swapInfo = CoreGraphics::glfwWindowAllocator.Get<5>(wnd.window.id24);
 
     // get present fence and be sure it is finished before getting the next image
+    VkDevice dev = Vulkan::GetCurrentDevice();
 	VkFence fence = Vulkan::GetPresentFence();
-    vkWaitForFences(Vulkan::GetCurrentDevice(), 1, &fence, true, UINT64_MAX);
+    vkWaitForFences(dev, 1, &fence, true, UINT64_MAX);
+    vkResetFences(dev, 1, &fence);
 
     // get the next image
-	VkResult res = vkAcquireNextImageKHR(Vulkan::GetCurrentDevice(), swapInfo.swapchain, UINT64_MAX, VK_NULL_HANDLE, fence, &swapInfo.currentBackbuffer);
+	VkResult res = vkAcquireNextImageKHR(dev, swapInfo.swapchain, UINT64_MAX, VK_NULL_HANDLE, fence, &swapInfo.currentBackbuffer);
 
 	//Vulkan::WaitForPresent(sem);
 	if (res == VK_ERROR_OUT_OF_DATE_KHR)

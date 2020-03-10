@@ -109,6 +109,7 @@ public:
 	static Jobs::JobPortId jobPort;
 	static Jobs::JobSyncId jobInternalSync;
 	static Jobs::JobSyncId jobInternalSync2;
+	static Jobs::JobSyncId jobInternalSync3;
 	static Jobs::JobSyncId jobHostSync;
 	static Util::Queue<Jobs::JobId> runningJobs;
 

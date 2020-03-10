@@ -64,14 +64,6 @@ CharacterContext::Create()
 #endif
 	CharacterContext::__state.allowedRemoveStages = Graphics::OnBeforeFrameStage;
 	Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
-
-	Jobs::CreateJobPortInfo info =
-	{
-		"CharacterJobPort",
-		2,
-		System::Cpu::Core3 | System::Cpu::Core4,
-		UINT_MAX
-	};
 	CharacterContext::jobPort = Graphics::GraphicsServer::renderSystemsJobPort;
 
 	Jobs::CreateJobSyncInfo sinfo =

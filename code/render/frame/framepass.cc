@@ -120,7 +120,6 @@ FramePass::CompiledImpl::Run(const IndexT frameIndex)
 			PassNextSubpass(this->pass);
 
 #if NEBULA_ENABLE_MT_DRAW
-		// execute commands
 		CoreGraphics::ExecuteCommands(this->subpassBuffers[i][bufferedIndex]);
 #else
 		// execute contents of this subpass and synchronize

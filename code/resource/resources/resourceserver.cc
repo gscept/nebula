@@ -4,6 +4,7 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "resourceserver.h"
+#include "profiling/profiling.h"
 
 #if NEBULA_DEBUG
 #include "core/sysfunc.h"
@@ -145,6 +146,7 @@ ResourceServer::LoadDefaultResources()
 void
 ResourceServer::Update(IndexT frameIndex)
 {
+	N_SCOPE(Update, Resources);
 	IndexT i;
 	for (i = 0; i < this->pools.Size(); i++)
 	{

@@ -3114,9 +3114,6 @@ EndSubpassCommands()
 	VkCommandBufferThread::VkCommandBufferEndCommand cmd;
 	state.drawThread->Push(cmd);
 
-	// flush everything to the thread
-	//state.drawThread->Flush();
-
 	// queue up the command buffer for clear next frame
 	Vulkan::SubmissionContextClearCommandBuffer(state.gfxSubmission, state.drawThreadCommands);
 	state.drawThreadCommands = CoreGraphics::CommandBufferId::Invalid();
