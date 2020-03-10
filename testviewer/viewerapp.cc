@@ -219,9 +219,7 @@ SimpleViewerApplication::Run()
         this->inputServer->OnFrame();
         N_MARKER_END();
 
-        N_MARKER_BEGIN(Resources, App);
         this->resMgr->Update(this->frameIndex);
-        N_MARKER_END();
 
 #if NEBULA_ENABLE_PROFILING
         // copy because the information has been discarded when we render UI
@@ -229,9 +227,7 @@ SimpleViewerApplication::Run()
             this->frameProfilingMarkers = CoreGraphics::GetProfilingMarkers();
 #endif NEBULA_ENABLE_PROFILING
 
-        N_MARKER_BEGIN(BeginFrame, App);
 		this->gfxServer->BeginFrame();
-        N_MARKER_END();
         this->RenderUI();
 
         if (this->renderDebug)
@@ -242,25 +238,16 @@ SimpleViewerApplication::Run()
         scenes[currentScene]->Run();
 
         // put game code which doesn't need visibility results or animation here
-        N_MARKER_BEGIN(BeforeViews, App);
         this->gfxServer->BeforeViews();
-        N_MARKER_END();
 
-        N_MARKER_BEGIN(Draw, App);
-
-        
         // put game code which need visibility data here
         this->gfxServer->RenderViews();
-        N_MARKER_END();
-
-        N_MARKER_BEGIN(AfterDraw, App);
 
         // put game code which needs rendering to be done (animation etc) here
         this->gfxServer->EndViews();
 
         // do stuff after rendering is done
         this->gfxServer->EndFrame();
-        N_MARKER_END();
 
         // force wait immediately
         N_MARKER_BEGIN(Present, App);
@@ -286,7 +273,7 @@ SimpleViewerApplication::Run()
 //------------------------------------------------------------------------------
 /**
 */
-void
+int
 RecursiveDrawScope(const Profiling::ProfilingScope& scope, ImDrawList* drawList, const ImVec2 start, const ImVec2 fullSize, ImVec2 pos, const ImVec2 canvas, const float frameTime, const int level)
 {
     static const ImU32 colors[] =
@@ -312,7 +299,7 @@ RecursiveDrawScope(const Profiling::ProfilingScope& scope, ImDrawList* drawList,
 
     // draw a filled rect for background, and normal rect for outline
     drawList->PushClipRect(bbMin, bbMax, true);
-    drawList->AddRectFilled(bbMin, bbMax, colors[level], 0.0f);
+    drawList->AddRectFilled(bbMin, bbMax, colors[level % 6], 0.0f);
     drawList->AddRect(bbMin, bbMax, IM_COL32(128, 128, 128, 128), 0.0f);
 
     // make sure text appears inside the box
@@ -337,16 +324,19 @@ RecursiveDrawScope(const Profiling::ProfilingScope& scope, ImDrawList* drawList,
 
     // move next element down one level
     pos.y += YPad;
+    int deepest = level + 1;
     for (IndexT i = 0; i < scope.children.Size(); i++)
     {
-        RecursiveDrawScope(scope.children[i], drawList, start, fullSize, pos, canvas, frameTime, level + 1);
+        int childLevel = RecursiveDrawScope(scope.children[i], drawList, start, fullSize, pos, canvas, frameTime, level + 1);
+        deepest = Math::n_max(deepest, childLevel);
     }
+    return deepest;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-void
+int
 RecursiveDrawGpuMarker(const CoreGraphics::FrameProfilingMarker& marker, ImDrawList* drawList, const ImVec2 start, const ImVec2 fullSize, ImVec2 pos, const ImVec2 canvas, const float frameTime, const int level)
 {
     static const ImU32 colors[] =
@@ -366,7 +356,7 @@ RecursiveDrawGpuMarker(const CoreGraphics::FrameProfilingMarker& marker, ImDrawL
     float duration = marker.duration / 1000000000.0f;
     float startX = pos.x + begin / frameTime * canvas.x;
     float stopX = startX + Math::n_max(duration / frameTime * canvas.x, 1.0f);
-    float startY = pos.y + 125.0f * marker.queue;
+    float startY = pos.y;
     float stopY = startY + YPad;
 
     ImVec2 bbMin = ImVec2(startX, startY);
@@ -374,7 +364,7 @@ RecursiveDrawGpuMarker(const CoreGraphics::FrameProfilingMarker& marker, ImDrawL
 
     // draw a filled rect for background, and normal rect for outline
     drawList->PushClipRect(bbMin, bbMax, true);
-    drawList->AddRectFilled(bbMin, bbMax, colors[level], 0.0f);
+    drawList->AddRectFilled(bbMin, bbMax, colors[level % 6], 0.0f);
     drawList->AddRect(bbMin, bbMax, IM_COL32(128, 128, 128, 128), 0.0f);
 
     // make sure text appears inside the box
@@ -392,10 +382,13 @@ RecursiveDrawGpuMarker(const CoreGraphics::FrameProfilingMarker& marker, ImDrawL
 
     // move next element down one level
     pos.y += YPad;
+    int deepest = level + 1;
     for (IndexT i = 0; i < marker.children.Size(); i++)
     {
-        RecursiveDrawGpuMarker(marker.children[i], drawList, start, fullSize, pos, canvas, frameTime, level + 1);
+        int childLevel = RecursiveDrawGpuMarker(marker.children[i], drawList, start, fullSize, pos, canvas, frameTime, level + 1);
+        deepest = Math::n_max(deepest, childLevel);
     }
+    return deepest;
 }
 
 //------------------------------------------------------------------------------
@@ -506,28 +499,58 @@ SimpleViewerApplication::RenderUI()
                     {
                         ImVec2 canvasSize = ImGui::GetContentRegionAvail();
                         ImVec2 pos = ImGui::GetCursorScreenPos();
-                        ImGui::InvisibleButton("canvas", ImVec2(canvasSize.x, 100.0f));
+                        int levels = 0;
                         for (IndexT i = 0; i < ctx.topLevelScopes.Size(); i++)
                         {
                             const Profiling::ProfilingScope& scope = ctx.topLevelScopes[i];
-                            RecursiveDrawScope(scope, drawList, start, fullSize, pos, canvasSize, this->currentFrameTime, 0);
+                            int level = RecursiveDrawScope(scope, drawList, start, fullSize, pos, canvasSize, this->currentFrameTime, 0);
+                            levels = Math::n_max(levels, level);
                         }
+
+                        // set back cursor so we can draw our box
+                        ImGui::SetCursorScreenPos(pos);
+                        ImGui::InvisibleButton("canvas", ImVec2(canvasSize.x, Math::n_max(1.0f, levels * 20.0f)));
                     }
                 }
                 if (ImGui::CollapsingHeader("GPU"))
                 {
                     ImVec2 canvasSize = ImGui::GetContentRegionAvail();
                     ImVec2 pos = ImGui::GetCursorScreenPos();
-                    ImGui::InvisibleButton("canvas", ImVec2(canvasSize.x, 250.0f));
-                    drawList->AddText(ImVec2(pos.x, pos.y), IM_COL32_WHITE, "Graphics Queue");
-                    drawList->AddText(ImVec2(pos.x, pos.y + 125), IM_COL32_WHITE, "Compute Queue");
-                    pos.y += 25.0f;
                     const Util::Array<CoreGraphics::FrameProfilingMarker>& frameMarkers = this->frameProfilingMarkers;
+
+                    // do graphics queue markers
+                    drawList->AddText(ImVec2(pos.x, pos.y), IM_COL32_WHITE, "Graphics Queue");
+                    pos.y += 20.0f;
+                    int levels = 0;
                     for (int i = 0; i < frameMarkers.Size(); i++)
                     {
                         const CoreGraphics::FrameProfilingMarker& marker = frameMarkers[i];
-                        RecursiveDrawGpuMarker(marker, drawList, start, fullSize, pos, canvasSize, this->currentFrameTime, 0);
+                        if (marker.queue != CoreGraphics::GraphicsQueueType)
+                            continue;
+                        int level = RecursiveDrawGpuMarker(marker, drawList, start, fullSize, pos, canvasSize, this->currentFrameTime, 0);
+                        levels = Math::n_max(levels, level);
                     }
+
+                    // set back cursor so we can draw our box
+                    ImGui::SetCursorScreenPos(pos);
+                    ImGui::InvisibleButton("canvas", ImVec2(canvasSize.x, Math::n_max(1.0f, levels * 20.0f)));
+                    pos.y += levels * 20.0f;
+
+                    drawList->AddText(ImVec2(pos.x, pos.y), IM_COL32_WHITE, "Compute Queue");
+                    pos.y += 20.0f;
+                    levels = 0;
+                    for (int i = 0; i < frameMarkers.Size(); i++)
+                    {
+                        const CoreGraphics::FrameProfilingMarker& marker = frameMarkers[i];
+                        if (marker.queue != CoreGraphics::ComputeQueueType)
+                            continue;
+                        int level = RecursiveDrawGpuMarker(marker, drawList, start, fullSize, pos, canvasSize, this->currentFrameTime, 0);
+                        levels = Math::n_max(levels, level);
+                    }
+
+                    // set back cursor so we can draw our box
+                    ImGui::SetCursorScreenPos(pos);
+                    ImGui::InvisibleButton("canvas", ImVec2(canvasSize.x, Math::n_max(1.0f, levels * 20.0f)));
                 }
             }
 #endif NEBULA_ENABLE_PROFILING

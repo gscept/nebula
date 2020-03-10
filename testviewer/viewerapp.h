@@ -98,8 +98,9 @@ protected:
     bool pauseProfiling;
     bool profileFixedFps;
     int fixedFps;
-#endif NEBULA_ENABLE_PROFILING
+#endif
 
 };
 
 }
+
