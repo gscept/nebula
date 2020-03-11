@@ -100,25 +100,22 @@ public:
 	struct VkDescriptorsCommand
 	{
 		static const CommandType Type = BindDescriptors;
-		static const byte MaxSets = 8;
-		static const byte MaxOffsets = 16;
 		VkPipelineBindPoint type;
 		uint32_t baseSet;
 		uint32_t numSets;
-		VkDescriptorSet sets[MaxSets];
+		const VkDescriptorSet* sets;
 		uint32_t numOffsets;
-		uint32_t offsets[MaxOffsets];
+		const uint32_t* offsets;
 	};
 
 	struct VkPushConstantsCommand
 	{
 		static const CommandType Type = PushRange;
-		static const short MaxSize = 512;
 		VkShaderStageFlags stages;
 		VkPipelineLayout layout;
 		uint32_t offset;
 		uint32_t size;
-		char data[MaxSize];
+		byte data[512];
 	};
 
 	struct VkViewportCommand
@@ -131,8 +128,7 @@ public:
 	struct VkViewportArrayCommand
 	{
 		static const CommandType Type = ViewportArray;
-		static const byte Max = 8;
-		VkViewport vps[Max];
+		VkViewport* vps;
 		uint32_t first;
 		uint32_t num;
 	};
@@ -147,8 +143,7 @@ public:
 	struct VkScissorRectArrayCommand
 	{
 		static const CommandType Type = ScissorRectArray;
-		static const byte Max = 8;
-		VkRect2D scs[Max];
+		VkRect2D* scs;
 		uint32_t first;
 		uint32_t num;
 	};
@@ -180,32 +175,30 @@ public:
 	struct VkWaitForEventCommand
 	{
 		static const CommandType Type = WaitForEvent;
-		static const byte Max = 8;
 		VkEvent event;
 		uint32_t numEvents;
 		VkPipelineStageFlags signalingStage;
 		VkPipelineStageFlags waitingStage;
 		uint32_t memoryBarrierCount;
-		VkMemoryBarrier memoryBarriers[Max];
+		VkMemoryBarrier* memoryBarriers;
 		uint32_t bufferBarrierCount;
-		VkBufferMemoryBarrier bufferBarriers[Max];
+		VkBufferMemoryBarrier* bufferBarriers;
 		uint32_t imageBarrierCount;
-		VkImageMemoryBarrier imageBarriers[Max];
+		VkImageMemoryBarrier* imageBarriers;
 	};
 
 	struct VkBarrierCommand
 	{
 		static const CommandType Type = Barrier;
-		static const byte Max = 8;
 		VkPipelineStageFlags srcMask;
 		VkPipelineStageFlags dstMask;
 		VkDependencyFlags dep;
 		uint32_t memoryBarrierCount;
-		VkMemoryBarrier memoryBarriers[Max];
+		VkMemoryBarrier* memoryBarriers;
 		uint32_t bufferBarrierCount;
-		VkBufferMemoryBarrier bufferBarriers[Max];
+		VkBufferMemoryBarrier* bufferBarriers;
 		uint32_t imageBarrierCount;
-		VkImageMemoryBarrier imageBarriers[Max];
+		VkImageMemoryBarrier* imageBarriers;
 	};
 
 	struct VkWriteTimestampCommand
