@@ -300,6 +300,7 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
 				{
 					TransformNode::Instance* tnode = reinterpret_cast<TransformNode::Instance*>(node);
 					tnode->modelTransform = Math::matrix44::multiply(tnode->transform.getmatrix(), parentTransform);
+					tnode->invModelTransform = Math::matrix44::inverse(tnode->modelTransform);
 					parentTransform = tnode->modelTransform;
 					tnode->objectId = objectId;
 
