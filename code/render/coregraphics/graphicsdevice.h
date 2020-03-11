@@ -351,14 +351,10 @@ void SetUsePatches(bool state);
 /// gets whether or not the render device should tessellate
 bool GetUsePatches();
 
-/// adds a viewport
+/// sets a viewport for a certain index
 void SetViewport(const Math::rectangle<int>& rect, int index);
-/// adds a scissor rect
+/// sets a scissor rect for a certain index
 void SetScissorRect(const Math::rectangle<int>& rect, int index);
-/// set array of viewports directly
-void SetViewports(Math::rectangle<int>* viewports, SizeT num);
-/// set array of scissors directly
-void SetScissorRects(Math::rectangle<int>* scissors, SizeT num);
 
 /// register texture globally
 void RegisterTexture(const Util::StringAtom& name, const CoreGraphics::TextureId id);
