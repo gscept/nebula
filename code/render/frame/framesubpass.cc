@@ -104,8 +104,6 @@ FrameOp::Compiled*
 FrameSubpass::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 {
 	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
-	ret->viewports = this->viewports;
-	ret->scissors = this->scissors;
 #if NEBULA_GRAPHICS_DEBUG
 	ret->name = this->name;
 #endif
