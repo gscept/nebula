@@ -420,7 +420,7 @@ template<class TYPE> void
 FixedArray<TYPE>::Fill(IndexT first, SizeT num, const TYPE& val)
 {
     #if NEBULA_BOUNDSCHECKS
-    n_assert((first + num) < this->count);
+    n_assert((first + num) <= this->count);
     n_assert(0 != this->elements);
     #endif
     IndexT i;
