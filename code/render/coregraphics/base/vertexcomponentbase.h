@@ -59,6 +59,7 @@ public:
         Short4N,    //> four-component normalized signed short (value / 32767.0f)
 		UShort2N,	//> two-component unnormalized signed short
 		UShort4N,	//> four-component unnormalized signed short
+		UShort,	    //> one-component unsigned short
 
         // PS3-specific
         Float16,
@@ -255,6 +256,7 @@ VertexComponentBase::GetByteSize() const
 		case Byte4N:	return 4;
         case Short2N:   return 4;
         case Short4N:   return 8;
+        case UShort:    return 2;
 
         // PS3-specific
         case Float16:   return 2;
@@ -329,6 +331,7 @@ VertexComponentBase::FormatToString(Format f)
 		case Byte4N:	return "Byte4N";
         case Short2N:   return "Short2N";
         case Short4N:   return "Short4N";
+        case UShort:   return "UShort";
 
         // PS3-specific
         case Float16:   return "Float16";
