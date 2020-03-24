@@ -80,7 +80,7 @@ struct Accessor : GltfBase
             uint32_t byteOffset;            
         };
 
-        int32_t count;
+        int32_t count{ 0 };
         Indices indices;
         Values values;
         
@@ -91,8 +91,8 @@ struct Accessor : GltfBase
     };
 
     int32_t bufferView{ -1 };
-    uint32_t byteOffset;
-    uint32_t count;
+    uint32_t byteOffset{ 0 };
+    uint32_t count{ 0 };
     bool normalized{ false };
 
     ComponentType componentType{ ComponentType::None };

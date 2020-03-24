@@ -13,6 +13,9 @@
 #include "io/ioserver.h"
 #include "io/filestream.h"
 
+// "forward" all current specialization for the json reader, so that we don't get collisions
+#include "io/jsonreader.cc"
+
 #ifdef min
 #undef min
 #endif
@@ -137,6 +140,7 @@ AccessorTypeToNebula(Gltf::Accessor::ComponentType component, Gltf::Accessor::Ty
             switch (component)
             {
             case Component::Float: return Base::VertexComponentBase::Float;
+            case Component::UnsignedShort: return Base::VertexComponentBase::UShort;
             }
         }
         break;
@@ -740,7 +744,6 @@ IO::JsonReader::Get<Util::Array<Gltf::Primitive>>(Util::Array<Gltf::Primitive> &
         }        
         ReadExtensionsAndExtras(item, this->curNode);
     } while (this->SetToNextChild());
-    this->SetToParent();
     this->SetToParent();
 }
 
