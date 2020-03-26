@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-//  lights_cluster_cull.fxh
+//  lights_cluster.fx
 //  (C) 2019 Gustav Sterbrant
 //------------------------------------------------------------------------------
 
@@ -66,7 +66,7 @@ TestAABBSphere(ClusterAABB aabb, vec3 pos, float radius)
 
 //------------------------------------------------------------------------------
 /**
-	Treat AABB as a sphere.
+	Treat AABB as a sphere for simplicity of intersection detection.
 
 	https://bartwronski.com/2017/04/13/cull-that-cone/
 */
@@ -153,7 +153,7 @@ void csCull()
 */
 [localsizex] = 64
 shader
-void csLightDebug()
+void csDebug()
 {
 	ivec2 coord = ivec2(gl_GlobalInvocationID.xy);
 	float depth = fetch2D(DepthBuffer, PosteffectSampler, coord, 0).r;
@@ -313,7 +313,7 @@ LocalLights(
 */
 [localsizex] = 64
 shader
-void csLighting()
+void csRender()
 {
 	ivec2 coord = ivec2(gl_GlobalInvocationID.xy);
 	vec4 normal = fetch2D(NormalBuffer, PosteffectSampler, coord, 0).rgba;
@@ -382,7 +382,7 @@ void csLighting()
 //------------------------------------------------------------------------------
 /**
 */
-program CullLights [ string Mask = "Cull"; ]
+program Cull [ string Mask = "Cull"; ]
 {
 	ComputeShader = csCull();
 };
@@ -390,15 +390,15 @@ program CullLights [ string Mask = "Cull"; ]
 //------------------------------------------------------------------------------
 /**
 */
-program ClusterDebug [ string Mask = "ClusterDebug"; ]
+program Debug [ string Mask = "Debug"; ]
 {
-	ComputeShader = csLightDebug();
+	ComputeShader = csDebug();
 };
 
 //------------------------------------------------------------------------------
 /**
 */
-program LightingShade [ string Mask = "Lighting"; ]
+program Render [ string Mask = "Render"; ]
 {
-	ComputeShader = csLighting();
+	ComputeShader = csRender();
 };
