@@ -255,6 +255,10 @@
 			name: "LightContext - Cull and Classify"
 		}
 
+		plugin: {
+			name: "DecalContext - Cull and Classify"
+		}
+
 		end_submission: {
 			queue: "Compute",
 		}
@@ -623,7 +627,7 @@
 			},
 
 			subpass: {
-				name: "UI",
+				name: "Direct",
 				dependencies: [ "FinalizePass" ],
 				depth: true,
 				attachments: [ "ColorBuffer" ],

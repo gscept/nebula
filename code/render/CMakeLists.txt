@@ -208,6 +208,7 @@ ENDIF()
 				texturepagehandler.cc
 				texturepagehandler.h
 			)
+
 		fips_dir(coregraphics/glfw GROUP "coregraphics/glfw")
 			fips_files(
 				glfwdisplaydevice.cc
@@ -357,6 +358,11 @@ ENDIF()
             fips_files(
                 framescriptinspector.cc
                 framescriptinspector.h
+            )
+        fips_dir(decals)
+            fips_files(
+                decalcontext.cc
+                decalcontext.h
             )
 		fips_dir(frame)
 			fips_files(

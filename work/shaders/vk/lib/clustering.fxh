@@ -31,8 +31,9 @@ group(BATCH_GROUP) varblock ClusterUniforms
 #define CLUSTER_SPOTLIGHT_BIT 0x2u
 #define CLUSTER_AREALIGHT_BIT 0x4u
 #define CLUSTER_LIGHTPROBE_BIT 0x8u
-#define CLUSTER_DECAL_BIT 0x10u
-#define CLUSTER_FOG_BIT 0x20u
+#define CLUSTER_PBR_DECAL_BIT 0x10u
+#define CLUSTER_EMISSIVE_DECAL_BIT 0x20u
+#define CLUSTER_FOG_BIT 0x40u
 
 #define CHECK_FLAG(bits, bit) ((bits & bit) == bit)
 
