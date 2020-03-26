@@ -17,7 +17,6 @@ using namespace IO;
 /**
 */
 RenderShape::RenderShape() :
-    threadId(InvalidThreadId),
     shapeType(InvalidShapeType),
 	depthFlag(CheckDepth),
     topology(PrimitiveTopology::InvalidPrimitiveTopology),
@@ -35,8 +34,7 @@ RenderShape::RenderShape() :
 //------------------------------------------------------------------------------
 /**
 */
-RenderShape::RenderShape(ThreadId threadId_, Type shapeType_, RenderFlag depthFlag_, const matrix44& modelTransform_, const float4& color_) :
-    threadId(threadId_),
+RenderShape::RenderShape(Type shapeType_, RenderFlag depthFlag_, const matrix44& modelTransform_, const float4& color_) :
     shapeType(shapeType_),
 	depthFlag(depthFlag_),
     modelTransform(modelTransform_),
@@ -56,11 +54,10 @@ RenderShape::RenderShape(ThreadId threadId_, Type shapeType_, RenderFlag depthFl
 /**
 */
 void
-RenderShape::SetupSimpleShape(ThreadId threadId_, Type shapeType_, RenderFlag depthFlag_, const matrix44& modelTransform_, const float4& color_)
+RenderShape::SetupSimpleShape(Type shapeType_, RenderFlag depthFlag_, const matrix44& modelTransform_, const float4& color_)
 {
     n_assert(!this->IsValid());
     n_assert(!((Primitives == shapeType) || (IndexedPrimitives == shapeType)));
-    this->threadId       = threadId_;
     this->shapeType      = shapeType_;
 	this->depthFlag		 = depthFlag_;
     this->modelTransform = modelTransform_;
@@ -71,11 +68,10 @@ RenderShape::SetupSimpleShape(ThreadId threadId_, Type shapeType_, RenderFlag de
 /**
 */
 void
-RenderShape::SetupPrimitives(ThreadId threadId_, const Math::matrix44& modelTransform_, PrimitiveTopology::Code topology_, SizeT numPrimitives_, const RenderShape::RenderShapeVertex* vertices_, const Math::float4& color_, RenderFlag depthFlag_)
+RenderShape::SetupPrimitives(const Math::matrix44& modelTransform_, PrimitiveTopology::Code topology_, SizeT numPrimitives_, const RenderShape::RenderShapeVertex* vertices_, const Math::float4& color_, RenderFlag depthFlag_)
 {
     n_assert(!this->IsValid());
     
-    this->threadId         = threadId_;
     this->shapeType        = Primitives;
 	this->depthFlag		   = depthFlag_;
     this->modelTransform   = modelTransform_;
@@ -100,11 +96,10 @@ RenderShape::SetupPrimitives(ThreadId threadId_, const Math::matrix44& modelTran
 /**
 */
 void
-RenderShape::SetupIndexedPrimitives(ThreadId threadId_, const Math::matrix44& modelTransform_, PrimitiveTopology::Code topology_, SizeT numPrimitives_, const RenderShape::RenderShapeVertex* vertices_, SizeT numVertices_, const void* indices_, IndexType::Code indexType_, const Math::float4& color_, RenderFlag depthFlag_)
+RenderShape::SetupIndexedPrimitives(const Math::matrix44& modelTransform_, PrimitiveTopology::Code topology_, SizeT numPrimitives_, const RenderShape::RenderShapeVertex* vertices_, SizeT numVertices_, const void* indices_, IndexType::Code indexType_, const Math::float4& color_, RenderFlag depthFlag_)
 {
     n_assert(!this->IsValid());
 
-    this->threadId       = threadId_;
 	this->shapeType      = IndexedPrimitives;
 	this->depthFlag		 = depthFlag_;
     this->modelTransform = modelTransform_;
@@ -136,12 +131,11 @@ RenderShape::SetupIndexedPrimitives(ThreadId threadId_, const Math::matrix44& mo
 /**
 */
 void 
-RenderShape::SetupMesh(Threading::ThreadId threadId, const Math::matrix44& modelTransform, const MeshId mesh, const IndexT groupIndex, const Math::float4& color, RenderFlag depthFlag)
+RenderShape::SetupMesh(const Math::matrix44& modelTransform, const MeshId mesh, const IndexT groupIndex, const Math::float4& color, RenderFlag depthFlag)
 {
 	n_assert(!this->IsValid());
 	n_assert(mesh != MeshId::Invalid());
 
-	this->threadId       = threadId;
 	this->shapeType      = RenderMesh;
 	this->depthFlag		 = depthFlag;
 	this->modelTransform = modelTransform;

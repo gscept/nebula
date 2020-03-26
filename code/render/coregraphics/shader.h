@@ -77,8 +77,6 @@ enum ShaderPipeline
 	ComputePipeline
 };
 
-typedef uint ConstantBinding;
-
 /// get constant type as string
 const Util::String ConstantTypeToString(const ShaderConstantType& type);
 

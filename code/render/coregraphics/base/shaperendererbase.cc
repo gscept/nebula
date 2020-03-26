@@ -73,32 +73,14 @@ ShapeRendererBase::Close()
 /**
 */
 void
-ShapeRendererBase::DeleteShapesByThreadId(Threading::ThreadId threadId)
+ShapeRendererBase::ClearShapes()
 {
     n_assert(this->IsOpen());
 	IndexT t;	
 	for(t = 0; t<CoreGraphics::RenderShape::NumDepthFlags; t++)
 	{
-		IndexT i;
-		for (i = this->primitives[t].Size() - 1; i != InvalidIndex; i--)
-		{
-			ThreadId shapeThreadId = this->primitives[t][i].GetThreadId();
-			n_assert(shapeThreadId != InvalidThreadId);
-			if (shapeThreadId == threadId)
-			{
-				this->primitives[t].EraseIndex(i);
-			}
-		}
-		for (i = this->shapes[t].Size() - 1; i != InvalidIndex; i--)
-		{
-			ThreadId shapeThreadId = this->shapes[t][i].GetThreadId();
-			n_assert(shapeThreadId != InvalidThreadId);
-			if (shapeThreadId == threadId)
-			{
-				this->shapes[t].EraseIndex(i);
-			}
-		}
-
+        this->primitives[t].Clear();
+        this->shapes[t].Clear();
 	}
 }
 
@@ -154,7 +136,7 @@ ShapeRendererBase::DrawShapes()
 /**
 */
 void 
-ShapeRendererBase::AddWireFrameBox(const Math::bbox& boundingBox, const Math::float4& color, Threading::ThreadId threadId)
+ShapeRendererBase::AddWireFrameBox(const Math::bbox& boundingBox, const Math::float4& color)
 {
     // render lines around bbox
     const Math::point& center = boundingBox.center();
@@ -195,8 +177,7 @@ ShapeRendererBase::AddWireFrameBox(const Math::bbox& boundingBox, const Math::fl
         lineList.Append(vert);    	
     }       
     RenderShape shape;
-    shape.SetupPrimitives(threadId,
-        matrix44::identity(),
+    shape.SetupPrimitives(matrix44::identity(),
         PrimitiveTopology::LineList,
         lineList.Size() / 2,
         &(lineList.Front()),

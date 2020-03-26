@@ -791,7 +791,7 @@ CharacterContext::OnRenderDebug(uint32 flags)
 		{
 			Math::matrix44 joint = Math::matrix44::multiply(scale, Math::matrix44::multiply(jointsPalette[j], transform));
 			CoreGraphics::RenderShape shape;
-			shape.SetupSimpleShape(Threading::Thread::GetMyThreadId(), CoreGraphics::RenderShape::Sphere, CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::CheckDepth | CoreGraphics::RenderShape::Wireframe), joint, Math::float4(1, 0, 0, 0.5f));
+			shape.SetupSimpleShape(CoreGraphics::RenderShape::Sphere, CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::CheckDepth | CoreGraphics::RenderShape::Wireframe), joint, Math::float4(1, 0, 0, 0.5f));
 			CoreGraphics::ShapeRenderer::Instance()->AddShape(shape);
 			//Im3d::Im3dContext::DrawSphere(joint, Math::float4(1,0,0,0.5f));
 		}
