@@ -15,7 +15,6 @@ namespace Lighting
 {
 class LightContext : public Graphics::GraphicsContext
 {
-
 	_DeclareContext();
 public:
 
@@ -34,7 +33,6 @@ public:
 
 	/// setup light context
 	static void Create();
-
 	/// discard light context
 	static void Discard();
 

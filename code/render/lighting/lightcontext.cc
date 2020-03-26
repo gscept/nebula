@@ -21,7 +21,7 @@
 #include "debug/framescriptinspector.h"
 #endif
 
-#include "lights_cluster_cull.h"
+#include "lights_cluster.h"
 #include "lights.h"
 
 #define CLUSTERED_LIGHTING_DEBUG 0
@@ -105,7 +105,7 @@ struct
 	CoreGraphics::ShaderId classificationShader;
 	CoreGraphics::ShaderProgramId cullProgram;
 	CoreGraphics::ShaderProgramId debugProgram;
-	CoreGraphics::ShaderProgramId lightingProgram;
+	CoreGraphics::ShaderProgramId renderProgram;
 	CoreGraphics::ShaderRWBufferId clusterLightIndexLists;
 	Util::FixedArray<CoreGraphics::ShaderRWBufferId> stagingClusterLightsList;
 	CoreGraphics::ShaderRWBufferId clusterLightsList;
@@ -128,10 +128,10 @@ struct
 	CoreGraphics::TextureId clusterLightingTexture;
 
 	// these are used to update the light clustering
-	LightsClusterCull::PointLight pointLights[1024];
-	LightsClusterCull::SpotLight spotLights[1024];
-	LightsClusterCull::SpotLightProjectionExtension spotLightProjection[256];
-	LightsClusterCull::SpotLightShadowExtension spotLightShadow[16];
+	LightsCluster::PointLight pointLights[1024];
+	LightsCluster::SpotLight spotLights[1024];
+	LightsCluster::SpotLightProjectionExtension spotLightProjection[256];
+	LightsCluster::SpotLightShadowExtension spotLightShadow[16];
 
 } clusterState;
 
@@ -316,24 +316,23 @@ LightContext::Create()
 	clusterState.lightingUniformsSlot = ShaderGetResourceSlot(clusterState.classificationShader, "LightConstants");
 
 	clusterState.cullProgram = ShaderGetProgram(clusterState.classificationShader, ShaderServer::Instance()->FeatureStringToMask("Cull"));
+	clusterState.renderProgram = ShaderGetProgram(clusterState.classificationShader, ShaderServer::Instance()->FeatureStringToMask("Render"));
 #ifdef CLUSTERED_LIGHTING_DEBUG
-	clusterState.debugProgram = ShaderGetProgram(clusterState.classificationShader, ShaderServer::Instance()->FeatureStringToMask("ClusterDebug"));
+	clusterState.debugProgram = ShaderGetProgram(clusterState.classificationShader, ShaderServer::Instance()->FeatureStringToMask("Debug"));
 #endif
-	clusterState.lightingProgram = ShaderGetProgram(clusterState.classificationShader, ShaderServer::Instance()->FeatureStringToMask("Lighting"));
-
 	clusterState.clusterResourceTables.Resize(CoreGraphics::GetNumBufferedFrames());
 
 	ShaderRWBufferCreateInfo rwbInfo =
 	{
 		"LightIndexListsBuffer",
-		sizeof(LightsClusterCull::LightIndexLists),
+		sizeof(LightsCluster::LightIndexLists),
 		BufferUpdateMode::DeviceWriteable,
 		false
 	};
 	clusterState.clusterLightIndexLists = CreateShaderRWBuffer(rwbInfo);
 
 	rwbInfo.name = "LightLists";
-	rwbInfo.size = sizeof(LightsClusterCull::LightLists);
+	rwbInfo.size = sizeof(LightsCluster::LightLists);
 	clusterState.clusterLightsList = CreateShaderRWBuffer(rwbInfo);
 
 	rwbInfo.mode = BufferUpdateMode::HostWriteable;
@@ -348,15 +347,13 @@ LightContext::Create()
 		ResourceTableSetRWBuffer(clusterState.clusterResourceTables[i], { clusterState.clusterLightIndexLists, lightIndexListsSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
 		ResourceTableSetRWBuffer(clusterState.clusterResourceTables[i], { Clustering::ClusterContext::GetClusterBuffer(), clusterAABBSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
 		ResourceTableSetRWBuffer(clusterState.clusterResourceTables[i], { clusterState.clusterLightsList, lightsListSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-		ResourceTableSetConstantBuffer(clusterState.clusterResourceTables[i], { CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.clusterUniformsSlot, 0, false, false, sizeof(LightsClusterCull::ClusterUniforms), 0 });
-		ResourceTableSetConstantBuffer(clusterState.clusterResourceTables[i], { CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.lightCullUniformsSlot, 0, false, false, sizeof(LightsClusterCull::LightCullUniforms), 0 });
+		ResourceTableSetConstantBuffer(clusterState.clusterResourceTables[i], { CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.clusterUniformsSlot, 0, false, false, sizeof(LightsCluster::ClusterUniforms), 0 });
+		ResourceTableSetConstantBuffer(clusterState.clusterResourceTables[i], { CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.lightCullUniformsSlot, 0, false, false, sizeof(LightsCluster::LightCullUniforms), 0 });
 		ResourceTableCommitChanges(clusterState.clusterResourceTables[i]);
 	}
 
 	// allow 16 shadow casting local lights
 	lightServerState.shadowcastingLocalLights.SetCapacity(16);
-
-	_CreateContext();
 }
 
 //------------------------------------------------------------------------------
@@ -860,8 +857,8 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 		{
 			case PointLightType:
 			{
-				auto trans = pointLightAllocator.Get<PointLight_Transform>(typeIds[i]);
-				auto tex = pointLightAllocator.Get<PointLight_ProjectionTexture>(typeIds[i]);
+				Math::matrix44 trans = pointLightAllocator.Get<PointLight_Transform>(typeIds[i]);
+				CoreGraphics::TextureId tex = pointLightAllocator.Get<PointLight_ProjectionTexture>(typeIds[i]);
 				auto& pointLight = clusterState.pointLights[numPointLights];
 
 				uint flags = 0;
@@ -889,8 +886,8 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 
 			case SpotLightType:
 			{
-				auto trans = spotLightAllocator.Get<SpotLight_Transform>(typeIds[i]);
-				auto tex = spotLightAllocator.Get<SpotLight_ProjectionTexture>(typeIds[i]);
+				Math::matrix44 trans = spotLightAllocator.Get<SpotLight_Transform>(typeIds[i]);
+				CoreGraphics::TextureId tex = spotLightAllocator.Get<SpotLight_ProjectionTexture>(typeIds[i]);
 				auto angles = spotLightAllocator.Get<SpotLight_ConeAngles>(typeIds[i]);
 				auto& spotLight = clusterState.spotLights[numSpotLights];
 				Math::matrix44 shadowProj;
@@ -955,11 +952,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 		}
 	}
 
-	Graphics::GraphicsEntityId cam = view->GetCamera();
-	CoreGraphics::DisplayMode displayMode = CoreGraphics::WindowGetDisplayMode(CoreGraphics::DisplayDevice::Instance()->GetCurrentWindow());
-	const Graphics::CameraSettings settings = Graphics::CameraContext::GetSettings(cam);
-
-	LightsClusterCull::LightCullUniforms uniforms;
+	LightsCluster::LightCullUniforms uniforms;
 	uniforms.NumSpotLights = numSpotLights;
 	uniforms.NumPointLights = numPointLights;
 	uniforms.NumClusters = Clustering::ClusterContext::GetNumClusters();
@@ -967,7 +960,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 	IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
 
 	uint offset = SetComputeConstants(MainThreadConstantBuffer, uniforms);
-	ResourceTableSetConstantBuffer(clusterState.clusterResourceTables[bufferIndex], { GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.lightCullUniformsSlot, 0, false, false, sizeof(LightsClusterCull::LightCullUniforms), (SizeT)offset });
+	ResourceTableSetConstantBuffer(clusterState.clusterResourceTables[bufferIndex], { GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.lightCullUniformsSlot, 0, false, false, sizeof(LightsCluster::LightCullUniforms), (SizeT)offset });
 
 	// use the same uniforms used to divide the clusters
 	ClusterGenerate::ClusterUniforms clusterUniforms = Clustering::ClusterContext::GetUniforms();
@@ -977,12 +970,12 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 	// update list of point lights
 	if (numPointLights > 0 || numSpotLights > 0)
 	{
-		LightsClusterCull::LightLists lightList;
+		LightsCluster::LightLists lightList;
 		Memory::CopyElements(clusterState.pointLights, lightList.PointLights, numPointLights);
 		Memory::CopyElements(clusterState.spotLights, lightList.SpotLights, numSpotLights);
 		Memory::CopyElements(clusterState.spotLightProjection, lightList.SpotLightProjection, numSpotLightsProjection);
 		Memory::CopyElements(clusterState.spotLightShadow, lightList.SpotLightShadow, numSpotLightShadows);
-		CoreGraphics::ShaderRWBufferUpdate(clusterState.stagingClusterLightsList[bufferIndex], &lightList, sizeof(LightsClusterCull::LightLists));
+		CoreGraphics::ShaderRWBufferUpdate(clusterState.stagingClusterLightsList[bufferIndex], &lightList, sizeof(LightsCluster::LightLists));
 	}
 
 	// a little ugly, but since the view can change the script, this has to adopt
@@ -997,10 +990,10 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 #endif
 
 	const CoreGraphics::TextureId ssaoTex = view->GetFrameScript()->GetTexture("SSAOBuffer");
-	LightsClusterCull::LightConstants consts;
+	LightsCluster::LightConstants consts;
 	consts.SSAOBuffer = CoreGraphics::TextureGetBindlessHandle(ssaoTex);
 	offset = SetComputeConstants(MainThreadConstantBuffer, consts);
-	ResourceTableSetConstantBuffer(clusterState.clusterResourceTables[bufferIndex], { GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.lightingUniformsSlot, 0, false, false, sizeof(LightsClusterCull::LightConstants), (SizeT)offset });
+	ResourceTableSetConstantBuffer(clusterState.clusterResourceTables[bufferIndex], { GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.lightingUniformsSlot, 0, false, false, sizeof(LightsCluster::LightConstants), (SizeT)offset });
 	ResourceTableCommitChanges(clusterState.clusterResourceTables[bufferIndex]);
 }
 
@@ -1028,7 +1021,7 @@ LightContext::CullAndClassify()
 	const IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
 
 	// copy data from staging buffer to shader buffer
-	Copy(ComputeQueueType, clusterState.stagingClusterLightsList[bufferIndex], 0, clusterState.clusterLightsList, 0, sizeof(LightsClusterCull::LightLists));
+	Copy(ComputeQueueType, clusterState.stagingClusterLightsList[bufferIndex], 0, clusterState.clusterLightsList, 0, sizeof(LightsCluster::LightLists));
 	BarrierInsert(ComputeQueueType,
 		BarrierStage::Transfer,
 		BarrierStage::ComputeShader,
@@ -1112,7 +1105,7 @@ LightContext::ComputeLighting()
 
 	CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "Clustered Shading");
 
-	SetShaderProgram(clusterState.lightingProgram, GraphicsQueueType);
+	SetShaderProgram(clusterState.renderProgram, GraphicsQueueType);
 	SetResourceTable(clusterState.clusterResourceTables[CoreGraphics::GetBufferedFrameIndex()], NEBULA_BATCH_GROUP, ComputePipeline, nullptr, GraphicsQueueType);
 
 	// perform debug output
@@ -1335,12 +1328,12 @@ LightContext::OnRenderDebug(uint32_t flags)
             Math::matrix44 const& trans = pointTrans[ids[i]];
             Math::float4 col = colors[i];
 			CoreGraphics::RenderShape shape;
-			shape.SetupSimpleShape(Threading::Thread::GetMyThreadId(), CoreGraphics::RenderShape::Sphere, CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::CheckDepth|CoreGraphics::RenderShape::Wireframe), trans, col);
+			shape.SetupSimpleShape(CoreGraphics::RenderShape::Sphere, CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::CheckDepth|CoreGraphics::RenderShape::Wireframe), trans, col);
 			CoreGraphics::ShapeRenderer::Instance()->AddShape(shape);
             if (flags & Im3d::Solid)
             {
                 col.w() = 0.5f;
-				shape.SetupSimpleShape(Threading::Thread::GetMyThreadId(), CoreGraphics::RenderShape::Sphere, CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::CheckDepth), trans, col);
+				shape.SetupSimpleShape(CoreGraphics::RenderShape::Sphere, CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::CheckDepth), trans, col);
 				CoreGraphics::ShapeRenderer::Instance()->AddShape(shape);
             }            
         }
@@ -1375,7 +1368,6 @@ LightContext::OnRenderDebug(uint32_t flags)
 
 			CoreGraphics::RenderShape shape;
 			shape.SetupSimpleShape(
-				Threading::Thread::GetMyThreadId(), 
 				CoreGraphics::RenderShape::Box, 
 				CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::CheckDepth | CoreGraphics::RenderShape::Wireframe), 
 				frustum, 
