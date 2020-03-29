@@ -2154,7 +2154,7 @@ BeginPass(const CoreGraphics::PassId pass)
 	state.pass = pass;
 
 	const VkRenderPassBeginInfo& info = PassGetVkRenderPassBeginInfo(pass);
-	state.passInfo.framebuffer = VK_NULL_HANDLE;
+	state.passInfo.framebuffer = info.framebuffer;
 	state.passInfo.renderPass = info.renderPass;
 	state.passInfo.subpass = 0;
 	state.passInfo.pipelineStatistics = 0;

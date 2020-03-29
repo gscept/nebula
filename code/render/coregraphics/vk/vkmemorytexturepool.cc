@@ -812,8 +812,6 @@ VkMemoryTexturePool::Setup(const Resources::ResourceId id)
                     formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT &&
                     formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT);
             }
-            else
-                loadInfo.defaultLayout = CoreGraphics::ImageLayout::DepthStencilRead;
         }
 
         // create view
