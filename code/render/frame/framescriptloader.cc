@@ -683,7 +683,8 @@ FrameScriptLoader::ParsePass(const Ptr<Frame::FrameScript>& script, JzonValue* n
 			
 			info.depthStencilAttachment = script->GetTexture(ds->string_value);
 		}
-		else if (name == "subpass")				ParseSubpass(script, info, op, attachmentNames, cur);
+		else if (name == "subpass")
+			ParseSubpass(script, info, op, attachmentNames, cur);
 		else
 		{
 			n_error("Passes don't support operations, and '%s' is no exception.\n", name.AsCharPtr());
