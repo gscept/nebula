@@ -10,21 +10,22 @@ struct ClusterAABB
 	uint featureFlags;
 };
 
-group(BATCH_GROUP) varbuffer ClusterAABBs
+group(BATCH_GROUP) varbuffer ClusterAABBs  [ string Visibility = "CS|PS"; ]
 {
 	ClusterAABB AABBs[];
 };
 
 // this is used to keep track of how many lights we have active
-group(BATCH_GROUP) varblock ClusterUniforms
+group(BATCH_GROUP) varblock ClusterUniforms [ string Visibility = "CS|PS"; ]
 {
+	vec2 FramebufferDimensions;
 	vec2 InvFramebufferDimensions;
 	uvec2 BlockSize;
-	uvec3 NumCells;
-	float ZDistribution;
-
 	float InvZScale;
 	float InvZBias;
+
+	uvec3 NumCells;
+	float ZDistribution;
 };
 
 #define CLUSTER_POINTLIGHT_BIT 0x1u

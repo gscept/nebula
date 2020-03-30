@@ -67,26 +67,26 @@ group(TICK_GROUP) samplerstate		PosteffectSampler { Filter = Point; };
 // these parameters are updated once per application tick
 group(TICK_GROUP) shared varblock PerTickParams
 {
-	vec4 WindDirection = vec4(0.0f,0.0f,0.0f,1.0f);
+	vec4 WindDirection;
 
-	float WindWaveSize = 1.0f;
-	float WindSpeed = 0.0f;
-	float WindIntensity = 0.0f;
-	float WindForce = 0.0f;
+	float WindWaveSize;
+	float WindSpeed;
+	float WindIntensity;
+	float WindForce;
 
-	float Saturation = float(1.0f);
-	float MaxLuminance = 1.0f;
-	float FadeValue = float(1.0f);
-	uint UseDof = 1;
+	float Saturation;
+	float MaxLuminance;
+	float FadeValue;
+	uint UseDof;
 
-	vec4 Balance = vec4(1.0f, 1.0f, 1.0f, 1.0f);
+	vec4 Balance;
 
-	vec3 DoFDistances = vec3(0,0,0);
-	float HDRBrightPassThreshold = float(1.0f);
+	vec3 DoFDistances;
+	float HDRBrightPassThreshold;
 
-	vec4 HDRBloomColor = vec4(1.0f, 1.0f, 1.0f, 1.0f);
-	vec4 FogDistances = vec4(0.0, 2500.0, 0.0, 1.0);
-	vec4 FogColor = vec4(0.5, 0.5, 0.63, 0.0);
+	vec4 HDRBloomColor;
+	vec4 FogDistances;
+	vec4 FogColor;
 
 	// global light stuff
 	uint GlobalLightFlags;
@@ -100,7 +100,7 @@ group(TICK_GROUP) shared varblock PerTickParams
 
 	float GlobalBackLightOffset;
 	textureHandle GlobalLightShadowBuffer;
-	int NumEnvMips = 10;
+	int NumEnvMips;
 	textureHandle EnvironmentMap;
 
 	// these params are for the Preetham sky model
@@ -118,7 +118,7 @@ group(TICK_GROUP) shared varblock PerTickParams
 	float MinBorderPadding;
 	float MaxBorderPadding;
 	float ShadowPartitionSize;
-	float GlobalLightShadowBias = 0.0f;
+	float GlobalLightShadowBias;
 
 	textureHandle NormalBuffer;
 	textureHandle DepthBuffer;
@@ -128,21 +128,6 @@ group(TICK_GROUP) shared varblock PerTickParams
 	textureHandle LightBuffer;
 	textureHandle IrradianceMap;
 	textureHandle DepthBufferCopy;
-};
-
-group(TICK_GROUP) shared varblock ForwardLightBlock
-{
-	// forward lighting
-	vec4	LightPositionsArray[MAX_NUM_LIGHTS];
-	mat4	LightProjTransformArray[MAX_NUM_LIGHTS];
-	vec4	LightColorArray[MAX_NUM_LIGHTS];
-	vec4	LightProjMapOffsetArray[MAX_NUM_LIGHTS];
-	vec4	LightShadowMapOffsetArray[MAX_NUM_LIGHTS];
-	vec4	LightShadowSizeArray[MAX_NUM_LIGHTS];
-	float	LightInvRangeArray[MAX_NUM_LIGHTS];
-	int		LightTypeArray[MAX_NUM_LIGHTS];
-	uint	LightCastsShadowsArray[MAX_NUM_LIGHTS];
-	int		NumActiveLights = 0;
 };
 
 // contains the state of the camera (and time)

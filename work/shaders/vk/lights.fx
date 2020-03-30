@@ -58,7 +58,7 @@ samplerstate SpotlightTextureSampler
 	Filter = MinMagLinearMipPoint;
 	AddressU = Border;
 	AddressV = Border;
-	BorderColor = { 0.0f, 0.0f, 0.0f, 0.0f };
+	BorderColor = Transparent;
 };
 
 #define SPECULAR_SCALE 13

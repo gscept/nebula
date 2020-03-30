@@ -18,7 +18,16 @@
 			{
 				name: "NormalBuffer",
 				format: "R16G16B16A16F",
-				usage: "Render",
+				usage: "Render|Copy",
+				relative: true,
+				width: 1.0,
+				height: 1.0,
+				type: "Texture2D"
+			},
+			{
+				name: "NormalBufferCopy",
+				format: "R16G16B16A16F",
+				usage: "Render|Copy",
 				relative: true,
 				width: 1.0,
 				height: 1.0,
@@ -318,10 +327,16 @@
 		}
 
 		copy: {
-			name: "Copy Depth"
+			name: "Copy Depth",
 			from: "ZBuffer",
 			to: "ZBufferCopy"
 		},
+
+		copy: {
+			name: "Copy Normals",
+			from: "NormalBuffer",
+			to: "NormalBufferCopy"
+		}
 
 		end_submission: {
 			queue: "Graphics",
@@ -332,6 +347,53 @@
 			wait_for_queue: "Compute",
 			queue: "Graphics",
 			_comment: "Mandatory start of graphics submission, must be met with a matching end_submission"
+		}
+
+		_comment: "------------ GBUFFER DECALS ------------",
+		pass: {
+			name: "GBuffer Decals",
+			attachments: [
+				{
+					name: "AlbedoBuffer",
+					load: true,
+					store: true
+				},
+				{
+					name: "NormalBuffer",
+					load: true,
+					store: true
+				},
+				{
+					name: "SpecularBuffer",
+					load: true,
+					store: true
+				},
+			]
+
+			subpass: {
+				resources: [
+					{
+						name: "NormalBufferCopy",
+						access: "ShaderRead",
+						layout: "ShaderRead",
+						stage: "PixelShader",
+					},
+					{
+						name: "ZBuffer",
+						access: "ShaderRead",
+						layout: "ShaderRead",
+						stage: "PixelShader",
+					}
+				],
+
+				name: "PBRDecals",
+				dependencies: [],
+				attachments: [ "AlbedoBuffer", "NormalBuffer", "SpecularBuffer" ],
+				depth: false,
+				plugin: {
+					name: "DecalContext - Render PBR Decals"
+				}
+			}
 		}
 
 		_comment: "------------ SSAO ------------",
@@ -595,7 +657,13 @@
 						access: "ShaderRead",
 						layout: "ShaderRead",
 						stage: "PixelShader"
-					}
+					},
+					{
+						name: "ZBufferCopy",
+						access: "ShaderRead",
+						layout: "DepthStencilRead",
+						stage: "PixelShader",
+					},
 				],
 
 				fullscreen_effect: {
@@ -609,7 +677,7 @@
 							},
 							{
 								semantic: "DepthTexture",
-								value: "ZBuffer"
+								value: "ZBufferCopy"
 							},
 							{
 								semantic: "ColorTexture",

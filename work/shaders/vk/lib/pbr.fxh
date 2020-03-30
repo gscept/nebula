@@ -164,4 +164,19 @@ BRDFLighting(
 }
 
 //------------------------------------------------------------------------------
+/**
+	OSM = Occlusion, Smoothness, Metalness
+*/
+vec4
+ConvertOSM(in vec4 material)
+{
+	vec4 ret;
+	ret[MAT_METALLIC] = material.b;
+	ret[MAT_ROUGHNESS] = 1 - material.g;
+	ret[MAT_CAVITY] = 1 - material.r;
+	ret[MAT_EMISSIVE] = material.a;
+	return ret;
+}
+
+//------------------------------------------------------------------------------
 #endif

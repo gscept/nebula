@@ -25,7 +25,7 @@ samplerstate UpscaleSampler
 	//Samplers = { BloomTexture, GodrayTexture, LuminanceTexture };
 	AddressU = Border;
 	AddressV = Border;
-	BorderColor = {0, 0, 0, 0};
+	BorderColor = Transparent;
 };
 
 samplerstate DefaultSampler
@@ -34,7 +34,7 @@ samplerstate DefaultSampler
 	Filter = Point;
 	AddressU = Border;
 	AddressV = Border;
-	BorderColor = {0, 0, 0, 0};
+	BorderColor = Transparent;
 };
 
 state FinalizeState

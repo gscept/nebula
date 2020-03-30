@@ -37,7 +37,7 @@ samplerstate LinearState
 {
 	//Samplers = {DepthBuffer, SpecularBuffer, NormalBuffer, AlbedoBuffer};
 	Filter = Linear;
-	BorderColor = {0,0,0,0};
+	BorderColor = Transparent;
 	AddressU = Border;
 	AddressV = Border;
 };
@@ -46,7 +46,7 @@ samplerstate NoFilterState
 {
 	//Samplers = {DepthBuffer, SpecularBuffer, NormalBuffer, AlbedoBuffer};
 	Filter = Point;
-	BorderColor = {0,0,0,0};
+	BorderColor = Transparent;
 	AddressU = Border;
 	AddressV = Border;
 };
@@ -240,7 +240,6 @@ bool RaymarchScreenSpace(in vec3 rayOrigin,
 //------------------------------------------------------------------------------
 /**
 */
-
 [localsizex] = 32
 [localsizey] = 32
 shader

@@ -65,7 +65,7 @@ samplerstate SpotlightTextureSampler
 	Filter = MinMagLinearMipPoint;
 	AddressU = Border;
 	AddressV = Border;
-	BorderColor = { 0.0f, 0.0f, 0.0f, 0.0f };
+	BorderColor = Transparent;
 };
 
 #define SPECULAR_SCALE 13
@@ -212,28 +212,31 @@ CalculateSpotLight(
 	if (FlagSet(light.flags, USE_PROJECTION_TEX_BITFLAG) && (FlagSet(light.flags, USE_SHADOW_BITFLAG)))
 	{
 		vec4 projLightPos = projExt.projection * vec4(worldPos, 1.0f);
-		vec2 lightSpaceUv = vec2(((projLightPos.xy / projLightPos.ww) * vec2(0.5f, 0.5f)) + 0.5f);
+		projLightPos.xyz /= projLightPos.www;
+		vec2 lightSpaceUv = projLightPos.xy * vec2(0.5f, 0.5f) + 0.5f;
 		lightModColor *= sample2DLod(projExt.projectionTexture, SpotlightTextureSampler, lightSpaceUv, 0);
 
-		vec2 shadowLookup = (projLightPos.xy / projLightPos.ww) * vec2(0.5f, -0.5f) + 0.5f;
+		vec2 shadowLookup = projLightPos.xy * vec2(0.5f, -0.5f) + 0.5f;
 		shadowLookup.y = 1 - shadowLookup.y;
-		float receiverDepth = projLightPos.z / projLightPos.w;
+		float receiverDepth = projLightPos.z;
 		shadowFactor = GetInvertedOcclusionSpotLight(receiverDepth, shadowLookup, shadowExt.shadowSlice, shadowExt.shadowMap);
 		shadowFactor = saturate(lerp(1.0f, saturate(shadowFactor), shadowExt.shadowIntensity));
 	}
 	else if (FlagSet(light.flags, USE_PROJECTION_TEX_BITFLAG))
 	{
 		vec4 projLightPos = projExt.projection * vec4(worldPos, 1.0f);
-		vec2 lightSpaceUv = vec2(((projLightPos.xy / projLightPos.ww) * vec2(0.5f, 0.5f)) + 0.5f);
+		projLightPos.xy /= projLightPos.ww;
+		vec2 lightSpaceUv = projLightPos.xy * vec2(0.5f, 0.5f) + 0.5f;
 		lightModColor *= sample2DLod(projExt.projectionTexture, SpotlightTextureSampler, lightSpaceUv, 0);
 	}		
 	else if (FlagSet(light.flags, USE_SHADOW_BITFLAG))
 	{
 		// shadows
 		vec4 shadowProjLightPos = shadowExt.projection * vec4(worldPos, 1.0f);
-		vec2 shadowLookup = (shadowProjLightPos.xy / shadowProjLightPos.ww) * vec2(0.5f, -0.5f) + 0.5f;
+		shadowProjLightPos.xyz /= shadowProjLightPos.www;
+		vec2 shadowLookup = shadowProjLightPos.xy * vec2(0.5f, -0.5f) + 0.5f;
 		shadowLookup.y = 1 - shadowLookup.y;
-		float receiverDepth = shadowProjLightPos.z / shadowProjLightPos.w;
+		float receiverDepth = shadowProjLightPos.z;
 		shadowFactor = GetInvertedOcclusionSpotLight(receiverDepth, shadowLookup, light.shadowExtension, shadowExt.shadowMap);
 		shadowFactor = saturate(lerp(1.0f, saturate(shadowFactor), shadowExt.shadowIntensity));
 	}

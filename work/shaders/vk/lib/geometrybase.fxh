@@ -114,12 +114,7 @@ subroutine (CalculateMaterial) vec4 DefaultMaterialFunctor(
 subroutine (CalculateMaterial) vec4 OSMMaterialFunctor(
 	in vec4 material)
 {
-	vec4 mat;
-	mat[MAT_METALLIC] = material.b;
-	mat[MAT_ROUGHNESS] = 1 - material.g;
-	mat[MAT_CAVITY] = 1 - material.r;
-	mat[MAT_EMISSIVE] = material.a;
-	return mat;
+	return ConvertOSM(material);
 }
 
 CalculateMaterial calcMaterial;

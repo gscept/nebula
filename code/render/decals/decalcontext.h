@@ -25,17 +25,26 @@ public:
 	static void Discard();
 
 	/// setup as albedo-normal-material decal
-	static void SetupDecal(
+	static void SetupDecalPBR(
 		const Graphics::GraphicsEntityId id, 
 		const Math::matrix44 transform,
 		const CoreGraphics::TextureId albedo, 
 		const CoreGraphics::TextureId normal, 
 		const CoreGraphics::TextureId material);
 	/// setup as emissive decal
-	static void SetupDecal(
+	static void SetupDecalEmissive(
 		const Graphics::GraphicsEntityId id,
 		const Math::matrix44 transform, 
 		const CoreGraphics::TextureId emissive);
+
+	/// set albedo texture for a PBR decal
+	static void SetAlbedoTexture(const Graphics::GraphicsEntityId id, const CoreGraphics::TextureId albedo);
+	/// set normal texture for a PBR decal
+	static void SetNormalTexture(const Graphics::GraphicsEntityId id, const CoreGraphics::TextureId normal);
+	/// set material texture for a PBR decal
+	static void SetMaterialTexture(const Graphics::GraphicsEntityId id, const CoreGraphics::TextureId material);
+	/// set emissive texture for a PBR decal
+	static void SetEmissiveTexture(const Graphics::GraphicsEntityId id, const CoreGraphics::TextureId emissive);
 
 	/// set transform of decal
 	static void SetTransform(const Graphics::GraphicsEntityId id, const Math::matrix44 transform);

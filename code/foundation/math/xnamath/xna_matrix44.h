@@ -54,8 +54,16 @@ public:
     void loadu(const scalar* ptr);
     /// write content to 16-byte-aligned memory through the write cache
     void store(scalar* ptr) const;
+    /// write content to 16-byte-aligned memory as a 3x3 matrix
+    void store3x3(scalar* ptr) const;
+    /// write content to 16-byte-aligned memory as a 3x4 matrix
+    void store3x4(scalar* ptr) const;
     /// write content to unaligned memory through the write cache
     void storeu(scalar* ptr) const;
+    /// write content to unaligned memory as a 3x3 matrix
+    void storeu3x3(scalar* ptr) const;
+    /// write content to unaligned memory as a 3x4 matrix
+    void storeu3x4(scalar* ptr) const;
     /// stream content to 16-byte-aligned memory circumventing the write-cache
     void stream(scalar* ptr) const;
 
@@ -371,12 +379,58 @@ matrix44::store(scalar* ptr) const
 /**
 */
 __forceinline void
+Math::matrix44::store3x3(scalar* ptr) const
+{
+    DirectX::XMStoreFloat3A((DirectX::XMFLOAT3A*)ptr, this->mx.r[0]);
+    DirectX::XMStoreFloat3A((DirectX::XMFLOAT3A*)(ptr + 3), this->mx.r[1]);
+    DirectX::XMStoreFloat3A((DirectX::XMFLOAT3A*)(ptr + 6), this->mx.r[2]);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline void
+Math::matrix44::store3x4(scalar* ptr) const
+{
+    DirectX::XMStoreFloat3A((DirectX::XMFLOAT3A*)ptr, this->mx.r[0]);
+    DirectX::XMStoreFloat3A((DirectX::XMFLOAT3A*)(ptr + 3), this->mx.r[1]);
+    DirectX::XMStoreFloat3A((DirectX::XMFLOAT3A*)(ptr + 6), this->mx.r[2]);
+    DirectX::XMStoreFloat3A((DirectX::XMFLOAT3A*)(ptr + 9), this->mx.r[3]);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline void
 matrix44::storeu(scalar* ptr) const
 {
     DirectX::XMStoreFloat4((DirectX::XMFLOAT4*)ptr, this->mx.r[0]);
     DirectX::XMStoreFloat4((DirectX::XMFLOAT4*)(ptr + 4), this->mx.r[1]);
     DirectX::XMStoreFloat4((DirectX::XMFLOAT4*)(ptr + 8), this->mx.r[2]);
     DirectX::XMStoreFloat4((DirectX::XMFLOAT4*)(ptr + 12), this->mx.r[3]);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline void
+Math::matrix44::storeu3x3(scalar* ptr) const
+{
+    DirectX::XMStoreFloat3((DirectX::XMFLOAT3*)ptr, this->mx.r[0]);
+    DirectX::XMStoreFloat3((DirectX::XMFLOAT3*)(ptr + 3), this->mx.r[1]);
+    DirectX::XMStoreFloat3((DirectX::XMFLOAT3*)(ptr + 6), this->mx.r[2]);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline void
+Math::matrix44::storeu3x4(scalar* ptr) const
+{
+    DirectX::XMStoreFloat3((DirectX::XMFLOAT3*)ptr, this->mx.r[0]);
+    DirectX::XMStoreFloat3((DirectX::XMFLOAT3*)(ptr + 3), this->mx.r[1]);
+    DirectX::XMStoreFloat3((DirectX::XMFLOAT3*)(ptr + 6), this->mx.r[2]);
+    DirectX::XMStoreFloat3((DirectX::XMFLOAT3*)(ptr + 9), this->mx.r[3]);
 }
 
 //------------------------------------------------------------------------------

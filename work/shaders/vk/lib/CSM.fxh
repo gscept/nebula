@@ -36,7 +36,7 @@ samplerstate CSMTextureSampler
 	AddressU = Border;
 	AddressV = Border;
 	//MaxAnisotropic = 16;
-	//BorderColor = { 1,1,1,1 };
+	//BorderColor = White;
 };
 
 const float CascadeBlendArea = 0.2f;

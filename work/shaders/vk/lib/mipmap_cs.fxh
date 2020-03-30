@@ -39,7 +39,7 @@ samplerstate InputSampler
 	Filter = Point;
 	AddressU = Border;
 	AddressV = Border;
-	BorderColor = { 0, 0, 0, 0 };
+	BorderColor = Transparent;
 };
 
 #if !(BLUR_KERNEL_8 || BLUR_KERNEL_16 || BLUR_KERNEL_32 || BLUR_KERNEL_64)
