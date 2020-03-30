@@ -82,8 +82,6 @@ public:
 
 	struct DrawPacket
 	{
-		//std::function<void(const SizeT)> customDraw = nullptr;
-		//Util::Delegate<void(const SizeT)> customDraw;
 		Models::ModelNode::Instance* node = nullptr;
 		Materials::SurfaceInstanceId* surfaceInstance;
 		SizeT* numTables = nullptr;
