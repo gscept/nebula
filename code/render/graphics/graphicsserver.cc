@@ -212,9 +212,8 @@ GraphicsServer::Close()
 	this->timer->StopTime();
     this->timer = nullptr;
 
-	if (this->graphicsDevice) CoreGraphics::DestroyGraphicsDevice();
-
-	// clear transforms pool
+	if (this->graphicsDevice) 
+		CoreGraphics::DestroyGraphicsDevice();
 }
 
 //------------------------------------------------------------------------------
