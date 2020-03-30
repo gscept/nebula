@@ -26,7 +26,8 @@ RenderShape::RenderShape() :
     indexType(IndexType::None),
     color(1.0f, 1.0f, 1.0f, 1.0f),
     vertexDataOffset(0),
-    vertexLayout(NULL)
+    vertexLayout(NULL),
+    groupIndex(InvalidIndex)
 {
     // empty
 }
@@ -45,7 +46,8 @@ RenderShape::RenderShape(Type shapeType_, RenderFlag depthFlag_, const matrix44&
     indexType(IndexType::None),
     color(color_),
     vertexDataOffset(0),
-    vertexLayout(NULL)
+    vertexLayout(NULL),
+    groupIndex(InvalidIndex)
 {
     // empty
 }
