@@ -54,7 +54,6 @@ group(TICK_GROUP) samplerstate		PosteffectSampler { Filter = Point; };
 
 #define fetchStencil(handle, sampler, uv, lod)				(uint(texelFetch(sampler2D(Textures2D[handle], sampler), uv, lod).r * 255))
 
-
 #define basic2D(handle)									Textures2D[handle]
 #define basic2DMS(handle)								Textures2DMS[handle]
 #define basicCube(handle)								TexturesCube[handle]
