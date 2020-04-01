@@ -14,12 +14,12 @@ float EmissiveIntensity = 0.0f;
 textureHandle EmissiveMap;
 
 /// Declaring used samplers
-samplerstate DefaultSampler
+sampler_state DefaultSampler
 {
 	//Samplers = { EmissiveMap };
 };
 
-state EmissiveState
+render_state EmissiveState
 {
 	CullMode = Back;
 	DepthEnabled = true;

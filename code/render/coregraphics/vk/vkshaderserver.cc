@@ -10,6 +10,8 @@
 #include "vkshaderpool.h"
 #include "vkshader.h"
 
+#include "shared.h"
+
 using namespace Resources;
 using namespace CoreGraphics;
 namespace Vulkan
@@ -51,15 +53,15 @@ VkShaderServer::Open()
 	};
 
 	this->texture2DPool.SetSetupFunc(func);
-	this->texture2DPool.Resize(MAX_2D_TEXTURES);
+	this->texture2DPool.Resize(Shared::MAX_2D_TEXTURES);
 	this->texture2DMSPool.SetSetupFunc(func);
-	this->texture2DMSPool.Resize(MAX_2D_MS_TEXTURES);
+	this->texture2DMSPool.Resize(Shared::MAX_2D_MS_TEXTURES);
 	this->texture3DPool.SetSetupFunc(func);
-	this->texture3DPool.Resize(MAX_3D_TEXTURES);
+	this->texture3DPool.Resize(Shared::MAX_3D_TEXTURES);
 	this->textureCubePool.SetSetupFunc(func);
-	this->textureCubePool.Resize(MAX_CUBE_TEXTURES);
+	this->textureCubePool.Resize(Shared::MAX_CUBE_TEXTURES);
 	this->texture2DArrayPool.SetSetupFunc(func);
-	this->texture2DArrayPool.Resize(MAX_2D_ARRAY_TEXTURES);
+	this->texture2DArrayPool.Resize(Shared::MAX_2D_ARRAY_TEXTURES);
 
 	// create shader state for textures, and fetch variables
 	ShaderId shader = VkShaderServer::Instance()->GetShader("shd:shared.fxb"_atm);
@@ -82,19 +84,19 @@ VkShaderServer::Open()
 
 		// fill up all slots with placeholders
 		IndexT j;
-		for (j = 0; j < MAX_2D_TEXTURES; j++)
+		for (j = 0; j < Shared::MAX_2D_TEXTURES; j++)
 			ResourceTableSetTexture(this->resourceTables[i], {CoreGraphics::White2D, this->texture2DTextureVar, j, CoreGraphics::SamplerId::Invalid(), false});
 
-		for (j = 0; j < MAX_2D_MS_TEXTURES; j++)
+		for (j = 0; j < Shared::MAX_2D_MS_TEXTURES; j++)
 			ResourceTableSetTexture(this->resourceTables[i], { CoreGraphics::White2D, this->texture2DMSTextureVar, j, CoreGraphics::SamplerId::Invalid(), false });
 
-		for (j = 0; j < MAX_3D_TEXTURES; j++)
+		for (j = 0; j < Shared::MAX_3D_TEXTURES; j++)
 			ResourceTableSetTexture(this->resourceTables[i], { CoreGraphics::White3D, this->texture3DTextureVar, j, CoreGraphics::SamplerId::Invalid(), false });
 
-		for (j = 0; j < MAX_CUBE_TEXTURES; j++)
+		for (j = 0; j < Shared::MAX_CUBE_TEXTURES; j++)
 			ResourceTableSetTexture(this->resourceTables[i], { CoreGraphics::WhiteCube, this->textureCubeTextureVar, j, CoreGraphics::SamplerId::Invalid(), false });
 
-		for (j = 0; j < MAX_2D_ARRAY_TEXTURES; j++)
+		for (j = 0; j < Shared::MAX_2D_ARRAY_TEXTURES; j++)
 			ResourceTableSetTexture(this->resourceTables[i], { CoreGraphics::White2DArray, this->texture2DArrayTextureVar, j, CoreGraphics::SamplerId::Invalid(), false });
 
 		ResourceTableCommitChanges(this->resourceTables[i]);

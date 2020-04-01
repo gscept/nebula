@@ -18,7 +18,7 @@ float SkyRotationFactor = 0.03;
 samplerCube SkyLayer1;
 samplerCube SkyLayer2;
 
-samplerstate SkySampler
+sampler_state SkySampler
 {
 	Samplers = { SkyLayer1, SkyLayer2 };
 	AddressU = Wrap;
@@ -27,7 +27,7 @@ samplerstate SkySampler
 	Filter = MinMagLinearMipPoint;
 };
 
-state SkyboxState
+render_state SkyboxState
 {
 	CullMode = Front;
 	DepthEnabled = true;

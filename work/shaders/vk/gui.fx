@@ -11,19 +11,19 @@
 #include "lib/shared.fxh"
 
 /// Declaring used textures
-group(BATCH_GROUP) push varblock GUI
+group(BATCH_GROUP) push constant GUI
 {
 	textureHandle Texture;
 	mat4 Transform;
 };
-samplerstate TextureSampler
+sampler_state TextureSampler
 {
 	//Samplers = { Texture };
 };
 
 
 
-state DefaultGUIState
+render_state DefaultGUIState
 {
 	BlendEnabled[0] = true;
 	SrcBlend[0] = SrcAlpha;
@@ -32,7 +32,7 @@ state DefaultGUIState
 	DepthEnabled = false;
 };
 
-state ScissorGUIState
+render_state ScissorGUIState
 {
 	BlendEnabled[0] = true;
 	SrcBlend[0] = SrcAlpha;

@@ -9,7 +9,7 @@
 #include "lib/techniques.fxh" 
 #include "lib/shared.fxh"
 
-state Im3dState
+render_state Im3dState
 {
     BlendEnabled[0] = true;
     SrcBlend[0] = SrcAlpha;
@@ -19,7 +19,8 @@ state Im3dState
     CullMode = None;
     ScissorEnabled = false;
 };
-state Im3dDepthState
+
+render_state Im3dDepthState
 {
     BlendEnabled[0] = true;
     SrcBlend[0] = SrcAlpha;
@@ -32,6 +33,9 @@ state Im3dDepthState
 
 #define kAntialiasing 2.0
 
+//------------------------------------------------------------------------------
+/**
+*/
 shader
 void
 vsMainLines(
@@ -47,6 +51,9 @@ vsMainLines(
 	gl_Position = ViewProjection * vec4(position_size.xyz, 1.0);	
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 shader
 void
 vsMainPoints(
@@ -64,6 +71,9 @@ vsMainPoints(
     gl_PointSize = size;    
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 shader
 void
 vsMainTriangles(
@@ -78,9 +88,12 @@ vsMainTriangles(
     gl_Position = ViewProjection * vec4(position_size.xyz, 1.0);    
 }
 
-[inputprimitive] = lines
-[outputprimitive] = triangle_strip
-[maxvertexcount] = 4
+//------------------------------------------------------------------------------
+/**
+*/
+[input_primitive] = lines
+[output_primitive] = triangle_strip
+[max_vertex_count] = 4
 shader
 void
 gsMain(     
@@ -128,7 +141,9 @@ gsMain(
     EndPrimitive();
 }
 
-
+//------------------------------------------------------------------------------
+/**
+*/
 shader
 void
 psMainTriangles(    
@@ -140,6 +155,9 @@ psMainTriangles(
     finalColor = color;        
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 shader
 void
 psMainLines(
@@ -155,6 +173,9 @@ psMainLines(
     finalColor.a *= d;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 shader
 void
 psMainPoints(    
@@ -169,6 +190,9 @@ psMainPoints(
     finalColor.a *= d;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 GeometryTechnique(Lines, "Static|Lines", vsMainLines(), psMainLines(), gsMain(), Im3dState);
 GeometryTechnique(LinesDepth, "StaticDepth|Lines", vsMainLines(), psMainLines(), gsMain(), Im3dDepthState);
 SimpleTechnique(Points, "Static|Points", vsMainPoints(), psMainPoints(), Im3dState);

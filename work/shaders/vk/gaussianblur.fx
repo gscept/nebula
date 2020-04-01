@@ -12,7 +12,7 @@
 
 sampler2D SourceMap;
 
-samplerstate GaussianSampler
+sampler_state GaussianSampler
 {
 	Samplers = { SourceMap };
 	Filter = Point;
@@ -36,7 +36,7 @@ const vec3 sampleOffsetWeights[] = {
     vec3(  2.5,  0.5, 0.024882 )
 };
 
-state GaussianBlurState
+render_state GaussianBlurState
 {
 	CullMode = Back;
 	DepthEnabled = false;

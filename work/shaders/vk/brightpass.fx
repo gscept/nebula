@@ -13,13 +13,13 @@
 texture2D ColorSource;
 texture2D LuminanceTexture;
 
-samplerstate BrightPassSampler
+sampler_state BrightPassSampler
 {
 	//Samplers = { ColorSource, LuminanceTexture };
 	Filter = Point;
 };
 
-state BrightPassState
+render_state BrightPassState
 {
 	CullMode = Back;
 	DepthEnabled = false;

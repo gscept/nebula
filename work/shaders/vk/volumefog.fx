@@ -18,12 +18,12 @@ vec4 VolumeFogColor = vec4(0.5f, 0.5f, 0.63f, 0.0f);
 sampler2D AlbedoMap;
 sampler2D DepthMap;
 
-samplerstate VolumeFogSampler
+sampler_state VolumeFogSampler
 {
 	Samplers = { AlbedoMap, DepthMap };
 };
 
-state VolumeFogState
+render_state VolumeFogState
 {
 	CullMode = None;
 	DepthWrite = false;

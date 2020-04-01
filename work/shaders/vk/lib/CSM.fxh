@@ -29,7 +29,7 @@ const vec4 DebugColors[8] =
     float4 ( 0.5f, 3.5f, 0.75f, 1.0f )
 };
 
-samplerstate CSMTextureSampler
+sampler_state CSMTextureSampler
 {
 	//Samplers = { ShadowProjMap };
 	//Filter = MinMagLinearMipPoint;

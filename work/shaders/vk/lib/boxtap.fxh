@@ -11,7 +11,7 @@
 /// Declaring used textures
 sampler2D SourceBuffer;
 
-samplerstate BoxTapSampler
+sampler_state BoxTapSampler
 {
 	Samplers = { SourceBuffer };
 	AddressU = Clamp;
@@ -19,7 +19,7 @@ samplerstate BoxTapSampler
 	Filter = Point;
 };
 
-state BoxtapState
+render_state BoxtapState
 {
 	CullMode = Back;
 	DepthEnabled = false;

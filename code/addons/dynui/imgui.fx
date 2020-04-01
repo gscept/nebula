@@ -12,18 +12,18 @@
 #include "lib/defaultsamplers.fxh"
 
 // put variables in push-constant block
-push varblock ImGUI [ string Visibility = "PS|VS"; ]
+push constant ImGUI [ string Visibility = "PS|VS"; ]
 {
 	mat4 TextProjectionModel;
 	uint PackedTextureInfo;
 };
 
-group(BATCH_GROUP) samplerstate TextureSampler
+group(BATCH_GROUP) sampler_state TextureSampler
 {
 	Filter = Point;
 };
 
-state TextState
+render_state TextState
 {
 	BlendEnabled[0] = true;
 	SrcBlend[0] = SrcAlpha;

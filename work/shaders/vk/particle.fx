@@ -12,7 +12,7 @@
 
 #include "lib/materialparams.fxh"
 
-group(BATCH_GROUP) shared varblock Particle[string Visibility = "PS"; ]
+group(BATCH_GROUP) shared constant Particle[string Visibility = "PS"; ]
 {
 	textureHandle Layer1;
 	textureHandle Layer2;
@@ -27,7 +27,7 @@ group(BATCH_GROUP) shared varblock Particle[string Visibility = "PS"; ]
 };
 
 // samplers
-samplerstate ParticleSampler
+sampler_state ParticleSampler
 {
 //	Samplers = { ParameterMap, EmissiveMap, NormalMap, AlbedoMap, DisplacementMap, RoughnessMap, Layer1, Layer2, Layer3, Layer4 };
 	Filter = MinMagMipLinear;
@@ -35,14 +35,14 @@ samplerstate ParticleSampler
 	AddressV = Wrap;
 };
 
-samplerstate LayerSampler
+sampler_state LayerSampler
 {
 	//Samplers = {Layer1, Layer2, Layer3, Layer4 };
 	AddressU = Mirror;
 	AddressV = Mirror;
 };
 
-state LitParticleState
+render_state LitParticleState
 {
 	BlendEnabled[0] = true;
 	SrcBlend[0] = SrcAlpha;
@@ -53,7 +53,7 @@ state LitParticleState
 	DepthFunc = Less;
 };
 
-state UnlitParticleState
+render_state UnlitParticleState
 {
 	BlendEnabled[0] = true;
 	SrcBlend[0] = SrcAlpha;
@@ -65,7 +65,7 @@ state UnlitParticleState
 	DepthFunc = Less;
 };
 
-state UnlitAdditiveParticleState
+render_state UnlitAdditiveParticleState
 {
 	BlendEnabled[0] = true;
 	SrcBlend[0] = SrcAlpha;
@@ -77,7 +77,7 @@ state UnlitAdditiveParticleState
 	DepthFunc = Less;
 };
 
-state UnlitParticleStateBlendAdd
+render_state UnlitParticleStateBlendAdd
 {
 	BlendEnabled[0] = true;
 	SrcBlend[0] = One;

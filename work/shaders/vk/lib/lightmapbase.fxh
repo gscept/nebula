@@ -12,7 +12,7 @@
 textureHandle LightMap;
 float LightMapIntensity = 0.0f;
 
-samplerstate LightmapSampler
+sampler_state LightmapSampler
 {
 	//Samplers = { ParameterMap, EmissiveMap, NormalMap, LightMap, AlbedoMap };
 };

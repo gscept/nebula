@@ -54,12 +54,12 @@ const uint USE_PROJECTION_TEX_BITFLAG = 2;
 
 #define FlagSet(x, flags) ((x & flags) == flags)
 
-samplerstate PointLightTextureSampler
+sampler_state PointLightTextureSampler
 {
 	Filter = MinMagLinearMipPoint;
 };
 
-samplerstate SpotlightTextureSampler
+sampler_state SpotlightTextureSampler
 {
 	//Samplers = { LightProjMap, LightProjCube };
 	Filter = MinMagLinearMipPoint;

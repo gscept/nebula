@@ -15,7 +15,7 @@ sampler2D AlbedoMap;
 sampler2D DepthMap;
 readwrite r16f image2D DistanceFieldWeightMap;
 
-shared varblock ReflectionProjectorBlock
+shared constant ReflectionProjectorBlock
 {
 	mat4 Transform;
 	mat4 InvTransform;
@@ -30,7 +30,7 @@ shared varblock ReflectionProjectorBlock
 samplerCube LocalEnvironmentMap;
 samplerCube LocalIrradianceMap;
 
-samplerstate GeometrySampler
+sampler_state GeometrySampler
 {
 	Samplers = { NormalMap, DepthMap, ParameterMap, AlbedoMap };
 	//Filter = Point;
@@ -40,7 +40,7 @@ samplerstate GeometrySampler
 	Filter = MinMagMipLinear;
 };
 
-samplerstate EnvironmentSampler
+sampler_state EnvironmentSampler
 {
 	Samplers = { LocalEnvironmentMap, LocalIrradianceMap };
 	Filter = MinMagMipLinear;
@@ -49,7 +49,7 @@ samplerstate EnvironmentSampler
 	AddressW = Wrap;
 };
 
-state ProjectorState
+render_state ProjectorState
 {
 	BlendEnabled[0] = true;
 	//SrcBlend[0] = One;

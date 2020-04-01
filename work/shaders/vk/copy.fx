@@ -8,13 +8,13 @@
 #include "lib/techniques.fxh"
 
 sampler2D CopyBuffer;
-samplerstate CopySampler
+sampler_state CopySampler
 {
 	Samplers = { CopyBuffer };
 	Filter = Linear;
 };
 
-state CopyState
+render_state CopyState
 {
 	CullMode = None;
 	DepthEnabled = false;

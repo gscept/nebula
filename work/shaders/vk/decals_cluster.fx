@@ -13,7 +13,7 @@
 // increase if we need more decals in close proximity, for now, 128 is more than enough
 #define MAX_DECALS_PER_CLUSTER 128
 
-samplerstate DecalSampler
+sampler_state DecalSampler
 {
 	Filter = MinMagMipLinear;
 	AddressU = Border;
@@ -21,13 +21,13 @@ samplerstate DecalSampler
 	BorderColor = Transparent;
 };
 
-samplerstate ScreenspaceSampler
+sampler_state ScreenspaceSampler
 {
 	Filter = MinMagMipPoint;
 };
 
 // only enable blend for the albedo and material output
-state PBRState
+render_state PBRState
 {
 	BlendEnabled[0] = true;
 	SrcBlend[0] = SrcAlpha;
@@ -43,7 +43,7 @@ state PBRState
 };
 
 // only enable blend for the albedo and material output
-state EmissiveState
+render_state EmissiveState
 {
 	BlendEnabled[0] = true;
 	SrcBlend[0] = SrcAlpha;
@@ -72,14 +72,14 @@ struct EmissiveDecal
 	textureHandle emissive;
 };
 
-group(BATCH_GROUP) varbuffer DecalLists [ string Visibility = "CS|PS"; ]
+group(BATCH_GROUP) rw_buffer DecalLists [ string Visibility = "CS|PS"; ]
 {
 	EmissiveDecal EmissiveDecals[2048];
 	PBRDecal PBRDecals[2048];
 };
 
 // this is used to keep track of how many lights we have active
-group(BATCH_GROUP) varblock DecalCullUniforms [ string Visibility = "CS|PS"; ]
+group(BATCH_GROUP) constant DecalCullUniforms [ string Visibility = "CS|PS"; ]
 {
 	uint NumPBRDecals;
 	uint NumEmissiveDecals;
@@ -89,7 +89,7 @@ group(BATCH_GROUP) varblock DecalCullUniforms [ string Visibility = "CS|PS"; ]
 };
 
 // contains amount of lights, and the index of the light (pointing to the indices in PointLightList and SpotLightList), to output
-group(BATCH_GROUP) varbuffer DecalIndexLists [ string Visibility = "CS|PS"; ]
+group(BATCH_GROUP) rw_buffer DecalIndexLists [ string Visibility = "CS|PS"; ]
 {
 	uint EmissiveDecalCountList[16384];
 	uint EmissiveDecalIndexList[16384 * MAX_DECALS_PER_CLUSTER];
@@ -118,7 +118,7 @@ write rgba16f image2D DebugOutput;
 //------------------------------------------------------------------------------
 /**
 */
-[localsizex] = 64
+[local_size_x] = 64
 shader 
 void csCull()
 {
@@ -171,7 +171,7 @@ void csCull()
 //------------------------------------------------------------------------------
 /**
 */
-[localsizex] = 64
+[local_size_x] = 64
 shader
 void csDebug()
 {

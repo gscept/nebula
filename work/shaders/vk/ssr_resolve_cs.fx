@@ -15,7 +15,7 @@ texture2D TraceBuffer;
 
 write rgba16f image2D ReflectionBuffer;
 
-samplerstate LinearState
+sampler_state LinearState
 {
 	//Samplers = {DepthBuffer, SpecularBuffer, NormalBuffer, AlbedoBuffer};
 	Filter = Linear;
@@ -24,7 +24,7 @@ samplerstate LinearState
 	AddressV = Border;
 };
 
-samplerstate NoFilterState
+sampler_state NoFilterState
 {
 	//Samplers = {DepthBuffer, SpecularBuffer, NormalBuffer, AlbedoBuffer};
 	Filter = Point;

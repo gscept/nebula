@@ -13,17 +13,17 @@
 group(BATCH_GROUP) texture2D Texture;
 
 /// Declaring used textures
-group(BATCH_GROUP) push varblock Text
+group(BATCH_GROUP) push constant Text
 {
 	mat4 TextProjectionModel;
 };
 
-group(BATCH_GROUP) samplerstate TextureSampler
+group(BATCH_GROUP) sampler_state TextureSampler
 {
 	Filter = Linear;
 };
 
-state TextState
+render_state TextState
 {
 	BlendEnabled[0] = true;
 	SrcBlend[0] = SrcAlpha;

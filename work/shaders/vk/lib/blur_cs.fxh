@@ -34,7 +34,7 @@
 #define RESULT_TO_VEC4(vec) vec4(vec.xy, 0, 0)
 #endif
 
-samplerstate InputSampler
+sampler_state InputSampler
 {
 	Filter = Point;
 	AddressU = Border;

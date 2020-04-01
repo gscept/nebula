@@ -10,7 +10,7 @@
 
 
 vec4 MatDiffuse;
-state WireframeState
+render_state WireframeState
 {
 	CullMode = None;
 	DepthWrite = false;
@@ -19,7 +19,7 @@ state WireframeState
 	MultisampleEnabled = true;
 };
 
-state SolidState
+render_state SolidState
 {
 	CullMode = None;
 	DepthWrite = false;

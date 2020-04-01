@@ -19,7 +19,7 @@ sampler2D GodrayTexture;
 sampler2D ShapeTexture;
 sampler2D LuminanceTexture;
 
-samplerstate UpscaleSampler
+sampler_state UpscaleSampler
 {
 	Samplers = { BloomTexture, GodrayTexture, LuminanceTexture };
 	AddressU = Border;
@@ -27,7 +27,7 @@ samplerstate UpscaleSampler
 	BorderColor = Transparent;
 };
 
-samplerstate DefualtSampler
+sampler_state DefualtSampler
 {
 	Samplers = { ColorTexture, DepthTexture, ShapeTexture};
 	Filter = Point;
@@ -36,7 +36,7 @@ samplerstate DefualtSampler
 	BorderColor = Transparent;
 };
 
-state FinalizeState
+render_state FinalizeState
 {
 	CullMode = Back;
 	DepthEnabled = false;

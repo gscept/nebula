@@ -8,7 +8,7 @@
 #include <lib/colorblending.fxh>
 #include <lib/shared.fxh>
 
-group(BATCH_GROUP) shared varblock UnitBlock
+group(BATCH_GROUP) shared constant UnitBlock
 {
 	textureHandle TeamColorMask;
 	textureHandle SpecularMap;
@@ -16,7 +16,7 @@ group(BATCH_GROUP) shared varblock UnitBlock
 	vec4 TeamColor;
 };
 
-samplerstate TeamSampler
+sampler_state TeamSampler
 {
 	// Samplers = { TeamColorMask };
 	Filter = MinMagMipLinear;

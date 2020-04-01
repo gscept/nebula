@@ -13,7 +13,7 @@
 #include "lib/lightmapbase.fxh"
 #include "lib/geometrybase.fxh"
 
-state LightmapState
+render_state LightmapState
 {
 	CullMode = Back;
 };

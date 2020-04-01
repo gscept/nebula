@@ -13,7 +13,7 @@
 
 write rgba16f image2D TraceBuffer;
 
-varblock SSRBlock
+constant SSRBlock
 {
 	mat4 ViewToTextureSpace;
 };
@@ -33,7 +33,7 @@ const float marchingStepSize = 0.10;
 const float rayOffset = 0.5;
 const float distanceCutoff = 200; // Rays won't be evaluated beyond this distance from the camera
 
-samplerstate LinearState
+sampler_state LinearState
 {
 	//Samplers = {DepthBuffer, SpecularBuffer, NormalBuffer, AlbedoBuffer};
 	Filter = Linear;
@@ -42,7 +42,7 @@ samplerstate LinearState
 	AddressV = Border;
 };
 
-samplerstate NoFilterState
+sampler_state NoFilterState
 {
 	//Samplers = {DepthBuffer, SpecularBuffer, NormalBuffer, AlbedoBuffer};
 	Filter = Point;

@@ -23,7 +23,7 @@ const uint USE_PROJECTION_TEX_BITFLAG		= 2;
 
 #define FlagSet(x, flags) ((x & flags) == flags)
 
-group(INSTANCE_GROUP) shared varblock LocalLightBlock [ string Visibility = "VS|PS"; ]
+group(INSTANCE_GROUP) shared constant LocalLightBlock [ string Visibility = "VS|PS"; ]
 {
 	vec4 LightColor;
 	vec4 LightPosRange;
@@ -37,7 +37,7 @@ group(INSTANCE_GROUP) shared varblock LocalLightBlock [ string Visibility = "VS|
 	textureHandle ProjectionTexture;
 };
 
-group(INSTANCE_GROUP) shared varblock LocalLightShadowBlock [string Visibility = "VS|PS"; ]
+group(INSTANCE_GROUP) shared constant LocalLightShadowBlock [string Visibility = "VS|PS"; ]
 {
 	vec4 ShadowOffsetScale = vec4(0.0f, 0.0f, 0.0f, 0.0f);
 	vec4 ShadowConstants = vec4(100.0f, 100.0f, 0.003f, 1024.0f);
@@ -47,12 +47,12 @@ group(INSTANCE_GROUP) shared varblock LocalLightShadowBlock [string Visibility =
 	mat4 ShadowProjTransform;
 };
 
-samplerstate PointLightTextureSampler
+sampler_state PointLightTextureSampler
 {
 	Filter = MinMagLinearMipPoint;
 };
 
-samplerstate SpotlightTextureSampler
+sampler_state SpotlightTextureSampler
 {
 	//Samplers = { LightProjMap, LightProjCube };
 	Filter = MinMagLinearMipPoint;
@@ -68,7 +68,7 @@ samplerstate SpotlightTextureSampler
 //											GLOBAL LIGHT
 //---------------------------------------------------------------------------------------------------------------------------
 
-state GlobalLightState
+render_state GlobalLightState
 {
 	CullMode = None;
 	DepthEnabled = false;
@@ -151,7 +151,7 @@ psGlob([color0] out vec4 Color)
 //											SPOT LIGHT
 //---------------------------------------------------------------------------------------------------------------------------
 
-state SpotLightState
+render_state SpotLightState
 {
 	BlendEnabled[0] = true;
 	SrcBlend[0] = One;
@@ -267,7 +267,7 @@ psSpot([color0] out vec4 Color)
 //											POINT LIGHT
 //---------------------------------------------------------------------------------------------------------------------------
 
-state PointLightState
+render_state PointLightState
 {
 	BlendEnabled[0] = true;
 	SrcBlend[0] = One;

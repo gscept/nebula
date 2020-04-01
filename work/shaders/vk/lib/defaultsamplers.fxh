@@ -6,7 +6,7 @@
 #ifndef DEFAULTSAMPLERS_FXH
 #define DEFAULTSAMPLERS_FXH
 
-group(BATCH_GROUP) shared varblock DefaultSamplers [ string Visibility = "VS|PS"; ]
+group(BATCH_GROUP) shared constant DefaultSamplers [ string Visibility = "VS|PS"; ]
 {
 	textureHandle AlbedoMap;
 	textureHandle DisplacementMap;
@@ -16,7 +16,7 @@ group(BATCH_GROUP) shared varblock DefaultSamplers [ string Visibility = "VS|PS"
 
 
 // samplers
-samplerstate GeometryTextureSampler
+sampler_state GeometryTextureSampler
 {
 	// Samplers = { ParameterMap, EmissiveMap, NormalMap, AlbedoMap, DisplacementMap, RoughnessMap, CavityMap };
 	//Filter = MinMagMipLinear;
@@ -24,17 +24,17 @@ samplerstate GeometryTextureSampler
 	//AddressV = Wrap;
 };
 
-samplerstate MaterialSampler
+sampler_state MaterialSampler
 {
 
 };
 
-samplerstate NormalSampler
+sampler_state NormalSampler
 {
 	Filter = MinMagLinearMipPoint;
 };
 
-samplerstate CubeSampler
+sampler_state CubeSampler
 {
 	Filter = MinMagMipLinear;
 	AddressU = Wrap;
@@ -42,7 +42,7 @@ samplerstate CubeSampler
 	AddressW = Wrap;
 };
 
-samplerstate EnvironmentSampler
+sampler_state EnvironmentSampler
 {
 	//Samplers = { EnvironmentMap, IrradianceMap };
 	Filter = MinMagMipLinear;

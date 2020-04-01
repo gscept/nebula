@@ -10,7 +10,7 @@
 #include "lib/shared.fxh"
 #include "lib/Preetham.fxh"
 
-group(BATCH_GROUP) shared varblock FinalizeBlock
+group(BATCH_GROUP) shared constant FinalizeBlock
 {
 	textureHandle DepthTexture;
 	textureHandle ColorTexture;
@@ -20,7 +20,7 @@ group(BATCH_GROUP) shared varblock FinalizeBlock
 };
 
 
-samplerstate UpscaleSampler
+sampler_state UpscaleSampler
 {
 	//Samplers = { BloomTexture, GodrayTexture, LuminanceTexture };
 	AddressU = Border;
@@ -28,7 +28,7 @@ samplerstate UpscaleSampler
 	BorderColor = Transparent;
 };
 
-samplerstate DefaultSampler
+sampler_state DefaultSampler
 {
 	//Samplers = { ColorTexture, DepthTexture, ShapeTexture};
 	Filter = Point;
@@ -37,7 +37,7 @@ samplerstate DefaultSampler
 	BorderColor = Transparent;
 };
 
-state FinalizeState
+render_state FinalizeState
 {
 	CullMode = Back;
 	DepthEnabled = false;

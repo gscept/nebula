@@ -15,12 +15,12 @@
 	INSTANCE_GROUP is updated for every instance of a material
 	DYNAMIC_OFFSET_GROUP is for buffers which support dynamic offsets
 */
-#define TICK_GROUP 0
-#define FRAME_GROUP 1
-#define PASS_GROUP 2
-#define BATCH_GROUP 3
-#define INSTANCE_GROUP 4
-#define DYNAMIC_OFFSET_GROUP 5
+const int TICK_GROUP = 0;
+const int FRAME_GROUP = 1;
+const int PASS_GROUP = 2;
+const int BATCH_GROUP = 3;
+const int INSTANCE_GROUP = 4;
+const int DYNAMIC_OFFSET_GROUP = 5;
 
 /// define global macros
 #if GLSL

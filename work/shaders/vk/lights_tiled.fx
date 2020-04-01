@@ -24,7 +24,7 @@ struct Light
 };
 
 // do not modify this one, keep it the same, its being fed through the lightserver
-varbuffer Input
+rw_buffer Input
 {
 	Light lights[];
 };
@@ -36,12 +36,12 @@ struct LightTileList
 };
 
 // this is the buffer we want to modify!
-varbuffer Output
+rw_buffer Output
 {
 	LightTileList list[];
 };
 
-varblock Uniforms
+constant Uniforms
 {
 	int NumInputLights = 0;
 	uvec2 FramebufferDimensions;

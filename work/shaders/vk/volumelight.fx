@@ -21,7 +21,7 @@ samplerCube LightProjCube;
 sampler2D LightProjMap;
 
 
-state LocalLightState
+render_state LocalLightState
 {
 	BlendEnabled[0] = true;
 	SrcBlend[0] = One;
@@ -30,7 +30,7 @@ state LocalLightState
 	DepthWrite = false;
 };
 
-state GlobalLightState
+render_state GlobalLightState
 {
 	//BlendEnabled[0] = true;
 	
@@ -40,7 +40,7 @@ state GlobalLightState
 	DepthFunc = Equal;
 };
 
-state ScatterState
+render_state ScatterState
 {
 	//BlendEnabled[0] = true;
 	DepthWrite = false;

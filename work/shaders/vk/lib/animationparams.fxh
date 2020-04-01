@@ -8,7 +8,7 @@
 #include "std.fxh"
 
 // material properties
-group(BATCH_GROUP) shared varblock AnimationParams [ string Visibility = "VS|PS"; ]
+group(BATCH_GROUP) shared constant AnimationParams [ string Visibility = "VS|PS"; ]
 {
 	vec2 AnimationDirection;
 	float AnimationAngle;

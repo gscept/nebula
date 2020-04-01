@@ -12,7 +12,7 @@
 #include "lib/lightmapbase.fxh"
 //#include "lib/instancingparams.fxh"
 
-state FoliageState
+render_state FoliageState
 {
 	CullMode = None;
 	//AlphaToCoverageEnabled = true;

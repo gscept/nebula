@@ -11,7 +11,7 @@ float HDRBloomScale = 1.f;
 
 sampler2D SourceTexture;
 
-samplerstate BloomSampler
+sampler_state BloomSampler
 {
 	Samplers = { SourceTexture };
 	Filter = Point;
@@ -19,7 +19,7 @@ samplerstate BloomSampler
 	AddressV = Clamp;
 };
 
-state BloomState
+render_state BloomState
 {
 	CullMode = Back;
 	DepthEnabled = false;

@@ -11,7 +11,7 @@ sampler2D FowMap;
 vec2 FowSize;
 vec2 FocalLengthFow;
 
-state FowState
+render_state FowState
 {
 	CullMode = Back;
 	DepthEnabled = false;
@@ -22,7 +22,7 @@ state FowState
 };
 
 // samplers
-samplerstate FowMapSampler
+sampler_state FowMapSampler
 {
 	Samplers = { FowMap };
 };

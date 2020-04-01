@@ -6,18 +6,14 @@
 #ifndef SHARED_FXH
 #define SHARED_FXH
 
-#include "lib/std.fxh"
-#include "lib/util.fxh"
+#include <lib/std.fxh>
+#include <lib/util.fxh>
 
-#define MAX_2D_TEXTURES 2048
-#define MAX_2D_MS_TEXTURES 64
-#define MAX_2D_ARRAY_TEXTURES 8
-#define MAX_CUBE_TEXTURES 128
-#define MAX_3D_TEXTURES 128
-
-#define MAX_2D_IMAGES 64
-#define MAX_CUBE_IMAGES 64
-#define MAX_3D_IMAGES 64
+const int MAX_2D_TEXTURES = 2048;
+const int MAX_2D_MS_TEXTURES = 64;
+const int MAX_2D_ARRAY_TEXTURES = 8;
+const int MAX_CUBE_TEXTURES = 128;
+const int MAX_3D_TEXTURES = 128;
 
 // the texture list can be updated once per tick (frame)
 group(TICK_GROUP) texture2D			Textures2D[MAX_2D_TEXTURES];
@@ -25,8 +21,8 @@ group(TICK_GROUP) texture2DMS		Textures2DMS[MAX_2D_MS_TEXTURES];
 group(TICK_GROUP) textureCube		TexturesCube[MAX_CUBE_TEXTURES];
 group(TICK_GROUP) texture3D			Textures3D[MAX_3D_TEXTURES];
 group(TICK_GROUP) texture2DArray	Textures2DArray[MAX_2D_ARRAY_TEXTURES];
-group(TICK_GROUP) samplerstate		Basic2DSampler {};
-group(TICK_GROUP) samplerstate		PosteffectSampler { Filter = Point; };
+group(TICK_GROUP) sampler_state		Basic2DSampler {};
+group(TICK_GROUP) sampler_state		PosteffectSampler { Filter = Point; };
 
 #define sample2D(handle, sampler, uv)						texture(sampler2D(Textures2D[handle], sampler), uv)
 #define sample2DLod(handle, sampler, uv, lod)				textureLod(sampler2D(Textures2D[handle], sampler), uv, lod)
@@ -59,15 +55,13 @@ group(TICK_GROUP) samplerstate		PosteffectSampler { Filter = Point; };
 #define basicCube(handle)								TexturesCube[handle]
 #define basic3D(handle)									Textures3D[handle]
 
-#define MAX_NUM_LIGHTS 16
-
 // The number of CSM cascades
 #ifndef CASCADE_COUNT_FLAG
 #define CASCADE_COUNT_FLAG 4
 #endif
 
 // these parameters are updated once per application tick
-group(TICK_GROUP) shared varblock PerTickParams
+group(TICK_GROUP) shared constant PerTickParams
 {
 	vec4 WindDirection;
 
@@ -132,8 +126,8 @@ group(TICK_GROUP) shared varblock PerTickParams
 	textureHandle DepthBufferCopy;
 };
 
-// contains the state of the camera (and time)
-group(FRAME_GROUP) shared varblock FrameBlock
+// contains the render_state of the camera (and time)
+group(FRAME_GROUP) shared constant FrameBlock
 {
 	mat4 View;
 	mat4 InvView;
@@ -146,9 +140,9 @@ group(FRAME_GROUP) shared varblock FrameBlock
 	vec4 TimeAndRandom;
 };
 
-#define SHADOW_CASTER_COUNT 16
+const int SHADOW_CASTER_COUNT = 16;
 
-group(FRAME_GROUP) shared varblock ShadowMatrixBlock [ string Visibility = "VS"; ]
+group(FRAME_GROUP) shared constant ShadowMatrixBlock [ string Visibility = "VS"; ]
 {
 	mat4 CSMViewMatrix[CASCADE_COUNT_FLAG];
 	mat4 LightViewMatrix[SHADOW_CASTER_COUNT];
@@ -159,7 +153,7 @@ group(FRAME_GROUP) shared varblock ShadowMatrixBlock [ string Visibility = "VS";
 
 
 // contains variables which are guaranteed to be unique per object.
-group(DYNAMIC_OFFSET_GROUP) shared varblock ObjectBlock [ string Visibility = "VS|PS"; ]
+group(DYNAMIC_OFFSET_GROUP) shared constant ObjectBlock [ string Visibility = "VS|PS"; ]
 {
 	mat4 Model;
 	mat4 InvModel;
@@ -167,16 +161,16 @@ group(DYNAMIC_OFFSET_GROUP) shared varblock ObjectBlock [ string Visibility = "V
 };
 
 // define how many objects we can render with instancing
-#define MAX_BATCH_SIZE 256
-group(DYNAMIC_OFFSET_GROUP) shared varblock InstancingBlock [ string Visibility = "VS"; ]
+const int MAX_INSTANCING_BATCH_SIZE = 256;
+group(DYNAMIC_OFFSET_GROUP) shared constant InstancingBlock [ string Visibility = "VS"; ]
 {
-	mat4 ModelArray[MAX_BATCH_SIZE];
-	mat4 ModelViewArray[MAX_BATCH_SIZE];
-	mat4 ModelViewProjectionArray[MAX_BATCH_SIZE];
-	int IdArray[MAX_BATCH_SIZE];
+	mat4 ModelArray[MAX_INSTANCING_BATCH_SIZE];
+	mat4 ModelViewArray[MAX_INSTANCING_BATCH_SIZE];
+	mat4 ModelViewProjectionArray[MAX_INSTANCING_BATCH_SIZE];
+	int IdArray[MAX_INSTANCING_BATCH_SIZE];
 };
 
-group(DYNAMIC_OFFSET_GROUP) shared varblock JointBlock [ string Visibility = "VS"; ]
+group(DYNAMIC_OFFSET_GROUP) shared constant JointBlock [ string Visibility = "VS"; ]
 {
 	mat4 JointPalette[256];
 };
@@ -199,7 +193,7 @@ group(PASS_GROUP) inputAttachment InputAttachment14;
 group(PASS_GROUP) inputAttachment InputAttachment15;
 group(PASS_GROUP) inputAttachment DepthAttachment;
 
-group(PASS_GROUP) shared varblock PassBlock [ bool System = true; ]
+group(PASS_GROUP) shared constant PassBlock [ bool System = true; ]
 {
 	vec4 RenderTargetDimensions[16]; // render target dimensions are size (xy) inversed size (zw)
 };

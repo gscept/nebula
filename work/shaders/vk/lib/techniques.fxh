@@ -20,7 +20,7 @@ program Main [ string Mask = "Alt0"; ] \
 { \
 	VertexShader = vertexShader; \
 	PixelShader = pixelShader; \
-	RenderState = renderState; \
+	Renderrender_state = renderState; \
 }
 
 #define Compute(computeShader) \
@@ -34,7 +34,7 @@ program name [ string Mask = features; ] \
 { \
 	VertexShader = vertexShader; \
 	PixelShader = pixelShader; \
-	RenderState = renderState; \
+	Renderrender_state = renderState; \
 } 
 
 #define GeometryTechnique(name, features, vertexShader, pixelShader, geometryShader, renderState) \
@@ -43,7 +43,7 @@ program name [ string Mask = features; ] \
 	VertexShader = vertexShader; \
 	PixelShader = pixelShader; \
 	GeometryShader = geometryShader; \
-	RenderState = renderState; \
+	Renderrender_state = renderState; \
 } 
 
 
@@ -54,7 +54,7 @@ program name [ string Mask = features; ] \
 	PixelShader = pixelShader; \
 	HullShader = hullShader; \
 	DomainShader = domainShader; \
-	RenderState = renderState; \
+	Renderrender_state = renderState; \
 } 
 
 
@@ -66,7 +66,7 @@ program name [ string Mask = features; ] \
 	GeometryShader = geometryShader; \
 	HullShader = hullShader; \
 	DomainShader = domainShader; \
-	RenderState = renderState; \
+	Renderrender_state = renderState; \
 } 
 
 #define TransformFeedbackTechnique(name, features, vertexShader) \

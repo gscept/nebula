@@ -15,23 +15,23 @@
 #include "lib/stencil.fxh"
 
 //#define PN_TRIANGLES
-state StandardState
+render_state StandardState
 {
 };
 
-state StencilState
+render_state StencilState
 {
 	StencilEnabled = true;
 	StencilWriteMask = STENCIL_BIT_CHARACTER;
 	StencilFrontPassOp = Replace;
 };
 
-state StandardNoCullState
+render_state StandardNoCullState
 {
 	CullMode = None;
 };
 
-state AlphaState
+render_state AlphaState
 {
 	BlendEnabled[0] = true;
 	SrcBlend[0] = SrcAlpha;

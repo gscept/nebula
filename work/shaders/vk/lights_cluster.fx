@@ -15,7 +15,7 @@
 // increase if we need more lights in close proximity, for now, 128 is more than enough
 #define MAX_LIGHTS_PER_CLUSTER 128
 
-group(BATCH_GROUP) varbuffer LightLists [ string Visibility = "CS"; ]
+group(BATCH_GROUP) rw_buffer LightLists [ string Visibility = "CS"; ]
 {
 	SpotLight SpotLights[1024];
 	SpotLightProjectionExtension SpotLightProjection[256];
@@ -23,13 +23,13 @@ group(BATCH_GROUP) varbuffer LightLists [ string Visibility = "CS"; ]
 	PointLight PointLights[1024];
 };
 
-group(BATCH_GROUP) varblock LightConstants [ string Visibility = "CS"; ]
+group(BATCH_GROUP) constant LightConstants [ string Visibility = "CS"; ]
 {
 	textureHandle SSAOBuffer;
 };
 
 // this is used to keep track of how many lights we have active
-group(BATCH_GROUP) varblock LightCullUniforms [string Visibility = "CS"; ]
+group(BATCH_GROUP) constant LightCullUniforms [string Visibility = "CS"; ]
 {
 	uint NumPointLights;
 	uint NumSpotLights;
@@ -37,7 +37,7 @@ group(BATCH_GROUP) varblock LightCullUniforms [string Visibility = "CS"; ]
 };
 
 // contains amount of lights, and the index of the light (pointing to the indices in PointLightList and SpotLightList), to output
-group(BATCH_GROUP) varbuffer LightIndexLists [ string Visibility = "CS"; ]
+group(BATCH_GROUP) rw_buffer LightIndexLists [ string Visibility = "CS"; ]
 {
 	uint PointLightCountList[16384];
 	uint PointLightIndexList[16384 * MAX_LIGHTS_PER_CLUSTER];

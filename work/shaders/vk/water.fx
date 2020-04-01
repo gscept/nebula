@@ -17,7 +17,7 @@
 #include "lib/tessellationparams.fxh"
 #include "lib/defaultsamplers.fxh"
 
-group(BATCH_GROUP) shared varblock WaterBlock [ string Visibility = "DS|PS"; ]
+group(BATCH_GROUP) shared constant WaterBlock [ string Visibility = "DS|PS"; ]
 {
 
 	float DynamicTessellationFactor = 32.0f;
@@ -45,20 +45,20 @@ group(BATCH_GROUP) shared varblock WaterBlock [ string Visibility = "DS|PS"; ]
 	textureHandle HeightMap;
 };
 
-samplerstate ScreenSampler
+sampler_state ScreenSampler
 {
 	Filter = Point;
 	AddressU = Mirror;
 	AddressV = Mirror;
 };
 
-samplerstate WaveSampler
+sampler_state WaveSampler
 {
 	AddressU = Wrap;
 	AddressV = Wrap;
 };
 
-state WaterState
+render_state WaterState
 {
 	CullMode = Back;
 	BlendEnabled[1] = true;
