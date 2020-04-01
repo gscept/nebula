@@ -33,6 +33,8 @@ struct VkTextureLoadInfo
 	bool windowRelative : 1;					// size is a window relative percentage if true, other wise size is an absolute size
 	bool bindless : 1;
     const void* texBuffer; // used when intially loading a texture from memory. Do not assume ownership of this pointer, this is just an intermediate.
+	Ids::Id32 swapExtension;
+	Ids::Id32 stencilExtension;
 };
 
 struct VkTextureRuntimeInfo
@@ -53,6 +55,10 @@ struct VkTextureMappingInfo
 struct VkTextureWindowInfo
 {
 	CoreGraphics::WindowId window;
+};
+
+struct VkTextureSwapInfo
+{
 	Util::FixedArray<VkImage> swapimages;
 	Util::FixedArray<VkImageView> swapviews;
 };
@@ -62,7 +68,7 @@ enum
 	Texture_RuntimeInfo,
 	Texture_LoadInfo,
 	Texture_MappingInfo,
-	Texture_WindowInfo
+	Texture_WindowInfo,
 };
 
 /// we need a thread-safe allocator since it will be used by both the memory and stream pool
@@ -74,9 +80,29 @@ typedef Ids::IdAllocatorSafe<
 > VkTextureAllocator;
 extern VkTextureAllocator textureAllocator;
 
+enum
+{
+	TextureExtension_StencilInfo
+};
+typedef Ids::IdAllocatorSafe<
+	VkTextureRuntimeInfo
+> VkTextureStencilExtensionAllocator;
+extern VkTextureStencilExtensionAllocator textureStencilExtensionAllocator;
+
+enum
+{
+	TextureExtension_SwapInfo,
+};
+typedef Ids::IdAllocatorSafe<
+	VkTextureSwapInfo
+> VkTextureSwapExtensionAllocator;
+extern VkTextureSwapExtensionAllocator textureSwapExtensionAllocator;
+
 /// get Vk image
 const VkImage TextureGetVkImage(const CoreGraphics::TextureId id);
 /// get vk image view
 const VkImageView TextureGetVkImageView(const CoreGraphics::TextureId id);
+/// get vk image view for stencil
+const VkImageView TextureGetVkStencilImageView(const CoreGraphics::TextureId id);
 
 } // namespace Vulkan

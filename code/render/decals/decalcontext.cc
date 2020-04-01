@@ -294,6 +294,7 @@ DecalContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 		}
 	}
 	const CoreGraphics::TextureId normalCopyTex = view->GetFrameScript()->GetTexture("NormalBufferCopy");
+	const CoreGraphics::TextureId depthTex = view->GetFrameScript()->GetTexture("ZBuffer");
 
 	// setup uniforms
 	DecalsCluster::DecalCullUniforms decalUniforms;
@@ -301,6 +302,7 @@ DecalContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 	decalUniforms.NumPBRDecals = numPbrDecals;
 	decalUniforms.NumEmissiveDecals = numEmissiveDecals;
 	decalUniforms.NormalBufferCopy = TextureGetBindlessHandle(normalCopyTex);
+	decalUniforms.StencilBuffer = TextureGetStencilBindlessHandle(depthTex);
 
 	IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
 

@@ -224,6 +224,8 @@ ResourceTableSetTexture(const ResourceTableId& id, const ResourceTableTexture& t
 
 	if (tex.tex == TextureId::Invalid())
 		img.imageView = VK_NULL_HANDLE;
+	else if (tex.isStencil)
+		img.imageView = TextureGetVkStencilImageView(tex.tex);
 	else
 		img.imageView = TextureGetVkImageView(tex.tex);
 

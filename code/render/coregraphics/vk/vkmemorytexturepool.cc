@@ -107,6 +107,19 @@ VkMemoryTexturePool::Unload(const Resources::ResourceId id)
 	VkTextureRuntimeInfo& runtimeInfo = this->Get<Texture_RuntimeInfo>(id);
 	VkTextureWindowInfo& windowInfo = this->Get<Texture_WindowInfo>(id);
 
+    if (loadInfo.stencilExtension != Ids::InvalidId32)
+    {
+        VkTextureRuntimeInfo& stencil = textureStencilExtensionAllocator.GetSafe<TextureExtension_StencilInfo>(loadInfo.stencilExtension);
+        Vulkan::DelayedDeleteImageView(stencil.view);
+        VkShaderServer::Instance()->UnregisterTexture(stencil.bind, stencil.type);
+        textureStencilExtensionAllocator.Dealloc(loadInfo.stencilExtension);
+    }
+
+    if (loadInfo.swapExtension)
+    {
+        textureSwapExtensionAllocator.Dealloc(loadInfo.swapExtension);
+    }
+
 	// only free memory if texture is not aliased!
 	if (loadInfo.alias == CoreGraphics::TextureId::Invalid() && loadInfo.mem != VK_NULL_HANDLE)
 		Vulkan::DelayedDeleteMemory(loadInfo.mem);
@@ -115,11 +128,9 @@ VkMemoryTexturePool::Unload(const Resources::ResourceId id)
 // only unload a texture which isn't a window texture, since their textures come from the swap chain
 	if (!loadInfo.windowTexture)
 	{
-		Vulkan::DelayedDeleteImage(loadInfo.img);
-		Vulkan::DelayedDeleteImageView(runtimeInfo.view);
-		//vkDestroyImage(loadInfo.dev, loadInfo.img, nullptr);
-		//vkDestroyImageView(loadInfo.dev, runtimeInfo.view, nullptr);
-		VkShaderServer::Instance()->UnregisterTexture(runtimeInfo.bind, runtimeInfo.type);
+        Vulkan::DelayedDeleteImageView(runtimeInfo.view);
+        VkShaderServer::Instance()->UnregisterTexture(runtimeInfo.bind, runtimeInfo.type); 
+        Vulkan::DelayedDeleteImage(loadInfo.img);
 	}
 
 	this->states[id.poolId] = Resources::Resource::State::Unloaded;
@@ -550,6 +561,17 @@ VkMemoryTexturePool::GetBindlessHandle(const CoreGraphics::TextureId id)
 //------------------------------------------------------------------------------
 /**
 */
+uint
+VkMemoryTexturePool::GetStencilBindlessHandle(const CoreGraphics::TextureId id)
+{
+    Ids::Id32 stencil = textureAllocator.GetSafe<Texture_LoadInfo>(id.resourceId).stencilExtension;
+    n_assert(stencil != Ids::InvalidId32);
+    return textureStencilExtensionAllocator.GetSafe<TextureExtension_StencilInfo>(stencil).bind;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 CoreGraphics::ImageLayout 
 VkMemoryTexturePool::GetDefaultLayout(const CoreGraphics::TextureId id)
 {
@@ -565,6 +587,7 @@ VkMemoryTexturePool::SwapBuffers(const CoreGraphics::TextureId id)
 	VkTextureLoadInfo& loadInfo = this->GetSafe<Texture_LoadInfo>(id.resourceId);
 	VkTextureRuntimeInfo& runtimeInfo = this->GetSafe<Texture_RuntimeInfo>(id.resourceId);
 	VkTextureWindowInfo& wnd = this->GetSafe<Texture_WindowInfo>(id.resourceId);
+    VkTextureSwapInfo& swap = textureSwapExtensionAllocator.GetSafe<TextureExtension_SwapInfo>(loadInfo.swapExtension);
 	n_assert(wnd.window != CoreGraphics::WindowId::Invalid());
 	VkWindowSwapInfo& swapInfo = CoreGraphics::glfwWindowAllocator.Get<5>(wnd.window.id24);
 
@@ -588,8 +611,8 @@ VkMemoryTexturePool::SwapBuffers(const CoreGraphics::TextureId id)
 	}
 
 	// set image and update texture
-	loadInfo.img = wnd.swapimages[swapInfo.currentBackbuffer];
-	runtimeInfo.view = wnd.swapviews[swapInfo.currentBackbuffer];
+	loadInfo.img = swap.swapimages[swapInfo.currentBackbuffer];
+	runtimeInfo.view = swap.swapviews[swapInfo.currentBackbuffer];
 	return swapInfo.currentBackbuffer;
 }
 
@@ -604,6 +627,9 @@ VkMemoryTexturePool::Setup(const Resources::ResourceId id)
     VkTextureRuntimeInfo& runtimeInfo = this->Get<Texture_RuntimeInfo>(id.resourceId);
     VkTextureLoadInfo& loadInfo = this->Get<Texture_LoadInfo>(id.resourceId);
     VkTextureWindowInfo& windowInfo = this->Get<Texture_WindowInfo>(id.resourceId);
+
+    loadInfo.stencilExtension = Ids::InvalidId32;
+    loadInfo.swapExtension = Ids::InvalidId32;
 
     VkFormat vkformat;
 
@@ -835,6 +861,19 @@ VkMemoryTexturePool::Setup(const Resources::ResourceId id)
         stat = vkCreateImageView(loadInfo.dev, &viewCreate, nullptr, &runtimeInfo.view);
         n_assert(stat == VK_SUCCESS);
 
+        // setup stencil image
+        if (isDepthFormat)
+        {
+            // setup stencil extension
+            loadInfo.stencilExtension = textureStencilExtensionAllocator.Alloc();
+            VkTextureRuntimeInfo& stencilRuntimeInfo = textureStencilExtensionAllocator.GetSafe<TextureExtension_StencilInfo>(loadInfo.stencilExtension);
+            stencilRuntimeInfo.type = runtimeInfo.type;
+            viewRange.aspectMask = VK_IMAGE_ASPECT_STENCIL_BIT;
+            viewCreate.format = VK_FORMAT_R8_UNORM;
+            viewCreate.subresourceRange = viewRange;
+            stat = vkCreateImageView(loadInfo.dev, &viewCreate, nullptr, &stencilRuntimeInfo.view);
+        }
+
         // use setup submission
         CoreGraphics::SubmissionContextId sub = CoreGraphics::GetSetupSubmissionContext();
 
@@ -870,7 +909,16 @@ VkMemoryTexturePool::Setup(const Resources::ResourceId id)
 
         // register image with shader server
         if (loadInfo.bindless)
-            runtimeInfo.bind = VkShaderServer::Instance()->RegisterTexture(TextureId(id), isDepthFormat, runtimeInfo.type);
+        {
+            runtimeInfo.bind = VkShaderServer::Instance()->RegisterTexture(TextureId(id), runtimeInfo.type, isDepthFormat);
+
+            // if this is a depth-stencil texture, also register the stencil
+            if (isDepthFormat)
+            {
+                VkTextureRuntimeInfo& stencilRuntimeInfo = textureStencilExtensionAllocator.GetSafe<TextureExtension_StencilInfo>(loadInfo.stencilExtension);
+                stencilRuntimeInfo.bind = VkShaderServer::Instance()->RegisterTexture(TextureId(id), runtimeInfo.type, true, true);
+            }
+        }
         else
             runtimeInfo.bind = 0;
 
@@ -881,9 +929,13 @@ VkMemoryTexturePool::Setup(const Resources::ResourceId id)
         n_assert(windowInfo.window != CoreGraphics::WindowId::Invalid());
         CoreGraphics::SubmissionContextId sub = CoreGraphics::GetSetupSubmissionContext();
 
+        // setup swap extension
+        loadInfo.swapExtension = textureSwapExtensionAllocator.Alloc();
+        VkTextureSwapInfo& swapInfo = textureSwapExtensionAllocator.GetSafe<TextureExtension_SwapInfo>(loadInfo.swapExtension);
+
         VkBackbufferInfo& backbufferInfo = CoreGraphics::glfwWindowAllocator.Get<GLFW_Backbuffer>(windowInfo.window.id24);
-        windowInfo.swapimages = backbufferInfo.backbuffers;
-        windowInfo.swapviews = backbufferInfo.backbufferViews;
+        swapInfo.swapimages = backbufferInfo.backbuffers;
+        swapInfo.swapviews = backbufferInfo.backbufferViews;
         VkClearColorValue clear = { 0, 0, 0, 0 };
 
         VkImageSubresourceRange subres;
@@ -895,18 +947,18 @@ VkMemoryTexturePool::Setup(const Resources::ResourceId id)
 
         // clear textures
         IndexT i;
-        for (i = 0; i < windowInfo.swapimages.Size(); i++)
+        for (i = 0; i < swapInfo.swapimages.Size(); i++)
         {
-            VkUtilities::ImageBarrier(SubmissionContextGetCmdBuffer(sub), CoreGraphics::BarrierStage::Host, CoreGraphics::BarrierStage::Transfer, VkUtilities::ImageMemoryBarrier(windowInfo.swapimages[i], subres, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
-            VkUtilities::ImageColorClear(SubmissionContextGetCmdBuffer(sub), windowInfo.swapimages[i], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, clear, subres);
-            VkUtilities::ImageBarrier(SubmissionContextGetCmdBuffer(sub), CoreGraphics::BarrierStage::Transfer, CoreGraphics::BarrierStage::PassOutput, VkUtilities::ImageMemoryBarrier(windowInfo.swapimages[i], subres, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR));
+            VkUtilities::ImageBarrier(SubmissionContextGetCmdBuffer(sub), CoreGraphics::BarrierStage::Host, CoreGraphics::BarrierStage::Transfer, VkUtilities::ImageMemoryBarrier(swapInfo.swapimages[i], subres, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
+            VkUtilities::ImageColorClear(SubmissionContextGetCmdBuffer(sub), swapInfo.swapimages[i], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, clear, subres);
+            VkUtilities::ImageBarrier(SubmissionContextGetCmdBuffer(sub), CoreGraphics::BarrierStage::Transfer, CoreGraphics::BarrierStage::PassOutput, VkUtilities::ImageMemoryBarrier(swapInfo.swapimages[i], subres, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR));
         }
 
         n_assert(runtimeInfo.type == Texture2D);
         n_assert(loadInfo.mips == 1);
         n_assert(loadInfo.samples == 1);
 
-        loadInfo.img = windowInfo.swapimages[0];
+        loadInfo.img = swapInfo.swapimages[0];
         loadInfo.mem = VK_NULL_HANDLE;
 
         runtimeInfo.view = backbufferInfo.backbufferViews[0];

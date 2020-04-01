@@ -134,7 +134,7 @@ VkShaderServer::Close()
 /**
 */
 uint32_t
-VkShaderServer::RegisterTexture(const CoreGraphics::TextureId& tex, bool depth, CoreGraphics::TextureType type)
+VkShaderServer::RegisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics::TextureType type, bool depth, bool stencil)
 {
 	uint32_t idx;
 	IndexT var;
@@ -160,16 +160,18 @@ VkShaderServer::RegisterTexture(const CoreGraphics::TextureId& tex, bool depth, 
 		idx = this->textureCubePool.Alloc();
 		var = this->textureCubeTextureVar;
 		break;
+	default:
+		n_error("Should not happen");
+		idx = UINT_MAX;
+		var = InvalidIndex;
 	}
-
-	// get pixel format
-	bool isDepthFormat = PixelFormat::IsDepthFormat(CoreGraphics::TextureGetPixelFormat(tex));
 
 	ResourceTableTexture info;
 	info.tex = tex;
 	info.index = idx;
 	info.sampler = SamplerId::Invalid();
-	info.isDepth = isDepthFormat;
+	info.isDepth = depth;
+	info.isStencil = stencil;
 	info.slot = var;
 
 	// update textures for all tables
@@ -186,7 +188,7 @@ VkShaderServer::RegisterTexture(const CoreGraphics::TextureId& tex, bool depth, 
 /**
 */
 void 
-VkShaderServer::ReregisterTexture(const CoreGraphics::TextureId& tex, bool depth, CoreGraphics::TextureType type, uint32_t slot)
+VkShaderServer::ReregisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics::TextureType type, uint32_t slot, bool depth, bool stencil)
 {
 	IndexT var;
 	switch (type)
@@ -209,7 +211,8 @@ VkShaderServer::ReregisterTexture(const CoreGraphics::TextureId& tex, bool depth
 	info.tex = tex;
 	info.index = slot;
 	info.sampler = SamplerId::Invalid();
-	info.isDepth = false;
+	info.isDepth = depth;
+	info.isStencil = stencil;
 	info.slot = var;
 
 	// update textures for all tables
