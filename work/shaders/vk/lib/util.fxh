@@ -513,5 +513,6 @@ GetPosition(mat4x4 transform)
 	return transform[2].xyz;
 }
 
+
 //------------------------------------------------------------------------------
 #endif
