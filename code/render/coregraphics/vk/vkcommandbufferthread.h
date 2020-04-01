@@ -148,6 +148,24 @@ public:
 		uint32_t num;
 	};
 
+	struct VkStencilRefCommand
+	{
+		static const CommandType Type = StencilRefs;
+		uint32_t frontRef, backRef;
+	};
+
+	struct VkStencilReadMaskCommand
+	{
+		static const CommandType Type = StencilReadMask;
+		uint32_t mask;
+	};
+
+	struct VkStencilWriteMaskCommand
+	{
+		static const CommandType Type = StencilWriteMask;
+		uint32_t mask;
+	};
+
 	struct VkUpdateBufferCommand
 	{
 		static const CommandType Type = UpdateBuffer;

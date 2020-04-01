@@ -156,6 +156,7 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 	VkPipelineLayout currentPipelineLayout;
 	VkPipeline currentPipeline;
 	VkPipelineInfoBits currentPipelineBits;
+	uint currentStencilFrontRef, currentStencilBackRef, currentStencilReadMask, currentStencilWriteMask;
 
 	Util::FixedArray<Util::Array<VkBuffer>> delayedDeleteBuffers;
 	Util::FixedArray<Util::Array<VkImage>> delayedDeleteImages;
@@ -658,6 +659,20 @@ CreateAndBindGraphicsPipeline()
 		pipeCommand.layout = state.currentPipelineLayout;
 		state.drawThread->Push(pipeCommand);
 
+		// update stencil stuff
+		VkCommandBufferThread::VkStencilRefCommand stencilRefCommand;
+		stencilRefCommand.frontRef = state.currentStencilFrontRef;
+		stencilRefCommand.backRef = state.currentStencilBackRef;
+		state.drawThread->Push(stencilRefCommand);
+
+		VkCommandBufferThread::VkStencilReadMaskCommand stencilReadMaskCommand;
+		stencilReadMaskCommand.mask = state.currentStencilReadMask;
+		state.drawThread->Push(stencilReadMaskCommand);
+
+		VkCommandBufferThread::VkStencilWriteMaskCommand stencilWriteMaskCommand;
+		stencilWriteMaskCommand.mask = state.currentStencilWriteMask;
+		state.drawThread->Push(stencilWriteMaskCommand);
+
 		// bind textures and camera descriptors
 		VkShaderServer::Instance()->BindTextureDescriptorSetsGraphics();
 		VkTransformDevice::Instance()->BindCameraDescriptorSetsGraphics();
@@ -692,6 +707,12 @@ CreateAndBindGraphicsPipeline()
 		// set viewport stuff
 		vkCmdSetViewport(GetMainBuffer(CoreGraphics::GraphicsQueueType), 0, state.viewportArrayCommand.num, state.viewportArrayCommand.vps);
 		vkCmdSetScissor(GetMainBuffer(CoreGraphics::GraphicsQueueType), 0, state.scissorArrayCommand.num, state.scissorArrayCommand.scs);
+
+		// set stencil stuff
+		vkCmdSetStencilCompareMask(GetMainBuffer(CoreGraphics::GraphicsQueueType), VK_STENCIL_FACE_FRONT_AND_BACK, state.currentStencilReadMask);
+		vkCmdSetStencilWriteMask(GetMainBuffer(CoreGraphics::GraphicsQueueType), VK_STENCIL_FACE_FRONT_AND_BACK, state.currentStencilWriteMask);
+		vkCmdSetStencilReference(GetMainBuffer(CoreGraphics::GraphicsQueueType), VK_STENCIL_FACE_FRONT_BIT, state.currentStencilFrontRef);
+		vkCmdSetStencilReference(GetMainBuffer(CoreGraphics::GraphicsQueueType), VK_STENCIL_FACE_BACK_BIT, state.currentStencilBackRef);
 	}
 }
 
@@ -2387,6 +2408,10 @@ SetShaderProgram(const CoreGraphics::ShaderProgramId pro, const CoreGraphics::Qu
 	n_assert(pro != CoreGraphics::ShaderProgramId::Invalid());
 	const VkShaderProgramRuntimeInfo& info = CoreGraphics::shaderPool->shaderAlloc.Get<VkShaderPool::Shader_ProgramAllocator>(pro.shaderId).Get<ShaderProgram_RuntimeInfo>(pro.programId);
 	state.currentShaderProgram = pro;
+	state.currentStencilFrontRef = info.stencilFrontRef;
+	state.currentStencilBackRef = info.stencilBackRef;
+	state.currentStencilReadMask = info.stencilReadMask;
+	state.currentStencilWriteMask = info.stencilWriteMask;
 	if (state.currentPipelineLayout != info.layout)
 	{
 		state.currentPipelineLayout = info.layout;
@@ -3655,6 +3680,75 @@ SetScissorRect(const Math::rectangle<int>& rect, int index)
 /**
 */
 void 
+SetStencilRef(const uint frontRef, const uint backRef)
+{
+	state.currentStencilFrontRef = frontRef;
+	state.currentStencilBackRef = backRef;
+	if (state.drawThread)
+	{
+		if (state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid())
+		{
+			VkCommandBufferThread::VkStencilRefCommand cmd;
+			cmd.frontRef = frontRef;
+			cmd.backRef = backRef;
+			state.drawThread->Push(cmd);
+		}
+	}
+	else
+	{
+		vkCmdSetStencilReference(GetMainBuffer(GraphicsQueueType), VK_STENCIL_FACE_FRONT_BIT, frontRef);
+		vkCmdSetStencilReference(GetMainBuffer(GraphicsQueueType), VK_STENCIL_FACE_BACK_BIT, backRef);
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+SetStencilReadMask(const uint readMask)
+{
+	state.currentStencilReadMask = readMask;
+	if (state.drawThread)
+	{
+		if (state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid())
+		{
+			VkCommandBufferThread::VkStencilReadMaskCommand cmd;
+			cmd.mask = readMask;
+			state.drawThread->Push(cmd);
+		}
+	}
+	else
+	{
+		vkCmdSetStencilCompareMask(GetMainBuffer(GraphicsQueueType), VK_STENCIL_FACE_FRONT_AND_BACK, readMask);
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+SetStencilWriteMask(const uint writeMask)
+{
+	state.currentStencilWriteMask;
+	if (state.drawThread)
+	{
+		if (state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid())
+		{
+			VkCommandBufferThread::VkStencilWriteMaskCommand cmd;
+			cmd.mask = writeMask;
+			state.drawThread->Push(cmd);
+		}
+	}
+	else
+	{
+		vkCmdSetStencilWriteMask(GetMainBuffer(GraphicsQueueType), VK_STENCIL_FACE_FRONT_AND_BACK, writeMask);
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
 RegisterTexture(const Util::StringAtom& name, const CoreGraphics::TextureId id)
 {
 	state.textures.Add(name, id);
@@ -3758,7 +3852,7 @@ ObjectSetName(const CoreGraphics::TextureId id, const char* name)
 	Util::String str = Util::String::Sprintf("%s - View", name);
 	info.pObjectName = str.AsCharPtr();
 	res = VkDebugObjectName(dev, &info);
-	n_assert(res == VK_SUCCESS);
+	n_assert(res == VK_SUCCESS);	
 }
 
 //------------------------------------------------------------------------------

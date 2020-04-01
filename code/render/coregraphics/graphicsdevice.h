@@ -355,6 +355,12 @@ bool GetUsePatches();
 void SetViewport(const Math::rectangle<int>& rect, int index);
 /// sets a scissor rect for a certain index
 void SetScissorRect(const Math::rectangle<int>& rect, int index);
+/// set the stencil reference values
+void SetStencilRef(const uint frontRef, const uint backRef);
+/// set the stencil read mask (compare mask(
+void SetStencilReadMask(const uint readMask);
+/// set the stencil write mask
+void SetStencilWriteMask(const uint writeMask);
 
 /// register texture globally
 void RegisterTexture(const Util::StringAtom& name, const CoreGraphics::TextureId id);
