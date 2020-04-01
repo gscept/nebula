@@ -12,10 +12,18 @@
 #include "lib/shared.fxh"
 #include "lib/defaultsamplers.fxh"
 #include "lib/pbr.fxh"
+#include "lib/stencil.fxh"
 
 //#define PN_TRIANGLES
 state StandardState
 {
+};
+
+state StencilState
+{
+	StencilEnabled = true;
+	StencilWriteMask = STENCIL_BIT_CHARACTER;
+	StencilFrontPassOp = Replace;
 };
 
 state StandardNoCullState

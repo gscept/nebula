@@ -101,4 +101,4 @@ SimpleTechnique(
 		calcDepth = ViewSpaceDepthFunctor,
 		calcEnv = PBR
 	),
-	StandardState);
+	StencilState);

@@ -8,6 +8,7 @@
 #include "lib/shared.fxh"
 #include "lib/clustering.fxh"
 #include "lib/pbr.fxh"
+#include "lib/stencil.fxh"
 
 // increase if we need more decals in close proximity, for now, 128 is more than enough
 #define MAX_DECALS_PER_CLUSTER 128
@@ -84,6 +85,7 @@ group(BATCH_GROUP) varblock DecalCullUniforms [ string Visibility = "CS|PS"; ]
 	uint NumEmissiveDecals;
 	uint NumClusters;
 	textureHandle NormalBufferCopy;
+	textureHandle StencilBuffer;
 };
 
 // contains amount of lights, and the index of the light (pointing to the indices in PointLightList and SpotLightList), to output
@@ -224,7 +226,11 @@ void psRenderPBR(
 {
 	ivec2 coord = ivec2(gl_FragCoord.xy);
 	float depth = fetch2D(DepthBuffer, ScreenspaceSampler, coord, 0).r;
+	uint stencil = fetchStencil(StencilBuffer, ScreenspaceSampler, coord, 0);
 	vec3 normal = fetch2D(NormalBufferCopy, ScreenspaceSampler, coord, 0).rgb;
+
+	if (CHECK_FLAG(stencil, STENCIL_BIT_CHARACTER))
+		discard;
 
 	// convert screen coord to view-space position
 	vec4 viewPos = PixelToView(coord * InvFramebufferDimensions, depth);
@@ -279,9 +285,9 @@ void psRenderPBR(
 
 				if (weight > 0.0f)
 				{
-					// calculate tbn, using the local pos as the uv-space
-					vec3 tangent = normalize(fwidth(localPos.xyz));
-					vec3 binormal = cross(normal, -tangent);
+					// calculate tbn, using the local pos rotated around x as tangent
+					vec3 tangent = normalize((localPos.xyz + vec3(0.5f)) * vec3(-1, 1, 1));
+					vec3 binormal = cross(normal, tangent);
 					mat3 tbn = mat3(tangent, binormal, normal);
 
 					// calculate normal map in TBN space
