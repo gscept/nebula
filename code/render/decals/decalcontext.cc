@@ -6,6 +6,7 @@
 #include "decalcontext.h"
 #include "graphics/graphicsserver.h"
 #include "resources/resourceserver.h"
+#include "renderutil/drawfullscreenquad.h"
 
 #include "decals_cluster.h"
 namespace Decals
