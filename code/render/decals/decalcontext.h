@@ -48,6 +48,8 @@ public:
 
 	/// set transform of decal
 	static void SetTransform(const Graphics::GraphicsEntityId id, const Math::matrix44 transform);
+	/// get transform of decal
+	static Math::matrix44 GetTransform(const Graphics::GraphicsEntityId id);
 
 	/// update view dependent resources
 	static void UpdateViewDependentResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);

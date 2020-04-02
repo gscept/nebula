@@ -55,12 +55,13 @@ render_state EmissiveState
 struct PBRDecal
 {
 	textureHandle albedo;
-	textureHandle normal;
-	textureHandle material;
 	vec4 bboxMin;
 	vec4 bboxMax;
 	mat4 invModel;
 	vec3 direction;
+	textureHandle material;
+	vec3 tangent;
+	textureHandle normal;
 };
 
 struct EmissiveDecal
@@ -285,9 +286,10 @@ void psRenderPBR(
 
 				if (weight > 0.0f)
 				{
-					// calculate tbn, using the local pos rotated around x as tangent
-					vec3 tangent = normalize((localPos.xyz + vec3(0.5f)) * vec3(-1, 1, 1));
-					vec3 binormal = cross(normal, tangent);
+					// calculate tbn
+					vec3 d_tangent = decal.tangent;
+					vec3 binormal = cross(normal, d_tangent);
+					vec3 tangent = cross(binormal, normal);
 					mat3 tbn = mat3(tangent, binormal, normal);
 
 					// calculate normal map in TBN space

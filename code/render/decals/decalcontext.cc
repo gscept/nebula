@@ -244,6 +244,16 @@ DecalContext::SetTransform(const Graphics::GraphicsEntityId id, const Math::matr
 //------------------------------------------------------------------------------
 /**
 */
+Math::matrix44 
+DecalContext::GetTransform(const Graphics::GraphicsEntityId id)
+{
+	Graphics::ContextEntityId ctxId = GetContextId(id);
+	return genericDecalAllocator.Get<Decal_Transform>(ctxId.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void 
 DecalContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
 {
@@ -273,6 +283,8 @@ DecalContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 			Math::matrix44 inverse = Math::matrix44::inverse(transforms[i]);
 			inverse.storeu(pbrDecal.invModel);
 			transforms[i].get_zaxis().storeu3(pbrDecal.direction);
+			Math::float4 tangent = Math::float4::normalize(-transforms[i].get_xaxis());
+			tangent.storeu3(pbrDecal.tangent);
 			numPbrDecals++;
 			break;
 		}
