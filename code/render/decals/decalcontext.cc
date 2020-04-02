@@ -8,6 +8,8 @@
 #include "resources/resourceserver.h"
 #include "renderutil/drawfullscreenquad.h"
 #include "clustering/clustercontext.h"
+#include "graphics/cameracontext.h"
+#include "graphics/view.h"
 
 #include "decals_cluster.h"
 namespace Decals
