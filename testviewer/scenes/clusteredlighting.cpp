@@ -17,6 +17,8 @@ Util::Array<Graphics::GraphicsEntityId> entities;
 Util::Array<Util::String> entityNames;
 Util::Array<Graphics::GraphicsEntityId> pointLights;
 Util::Array<Graphics::GraphicsEntityId> spotLights;
+Util::Array<Graphics::GraphicsEntityId> decals;
+Util::Array<CoreGraphics::TextureId> decalTextures;
 
 //------------------------------------------------------------------------------
 /**
@@ -36,7 +38,7 @@ GraphicsEntityToName(GraphicsEntityId id)
 */
 void OpenScene()
 {
-    static const int NumPointLights = 1;
+    static const int NumPointLights = 0;
     for (int i = -NumPointLights; i < NumPointLights; i++)
     {
         for (int j = -NumPointLights; j < NumPointLights; j++)
@@ -49,7 +51,7 @@ void OpenScene()
             const float green = Math::n_rand();
             const float blue = Math::n_rand();
             Lighting::LightContext::RegisterEntity(id);
-            Lighting::LightContext::SetupPointLight(id, Math::float4(red, green, blue, 1), 5.0f, Math::matrix44::translation(i * 16, 5, j * 16), 10.0f, false);
+            Lighting::LightContext::SetupPointLight(id, Math::float4(red, green, blue, 1), 250.0f, Math::matrix44::translation(i * 16, 5, j * 16), 50.0f, false);
             pointLights.Append(id);
         }
     }
@@ -67,13 +69,39 @@ void OpenScene()
             const float green = Math::n_rand();
             const float blue = Math::n_rand();
 
-            Math::matrix44 spotLightMatrix;
-            spotLightMatrix = Math::matrix44::multiply(spotLightMatrix, Math::matrix44::rotationyawpitchroll(Math::n_deg2rad(120), Math::n_deg2rad(-55), 0));
-            spotLightMatrix.set_position(Math::point(i * 16, 5, j * 16));
+            Math::matrix44 spotLightMatrix = Math::matrix44::rotationyawpitchroll(Math::n_deg2rad(120), Math::n_deg2rad(25), 0);
+            spotLightMatrix.set_position(Math::point(i * 15, 2.5, j * 15));
 
             Lighting::LightContext::RegisterEntity(id);
-            Lighting::LightContext::SetupSpotLight(id, Math::float4(red, green, blue, 1), 2500.0f, Math::n_deg2rad(45.0f), Math::n_deg2rad(60.0f), spotLightMatrix, 10.0f, true);
+            Lighting::LightContext::SetupSpotLight(id, Math::float4(red, green, blue, 1), 250.0f, Math::n_deg2rad(45.0f), Math::n_deg2rad(60.0f), spotLightMatrix, 50.0f, true);
             spotLights.Append(id);
+        }
+    }
+
+    // load textures
+    CoreGraphics::TextureId albedo = Resources::CreateResource("tex:sponza/Background_Albedo.dds", "decal"_atm, nullptr, nullptr, true);
+    CoreGraphics::TextureId normal = Resources::CreateResource("tex:sponza/Background_normal.dds", "decal"_atm, nullptr, nullptr, true);
+    CoreGraphics::TextureId material = Resources::CreateResource("tex:sponza/Background_material.dds", "decal"_atm, nullptr, nullptr, true);
+
+    static const int NumDecals = 4;
+    for (int i = -NumDecals; i < NumDecals; i++)
+    {
+        for (int j = -NumDecals; j < NumDecals; j++)
+        {
+            auto id = Graphics::CreateEntity();
+
+            Math::matrix44 decalMatrix = Math::matrix44::scaling(Math::float4(10, 10, 50, 1));
+            decalMatrix = Math::matrix44::multiply(decalMatrix, Math::matrix44::rotationyawpitchroll(0, Math::n_deg2rad(90), 0));
+            decalMatrix.set_position(Math::point(i * 16, 0, j * 16));
+
+            // setup decal
+            Decals::DecalContext::RegisterEntity(id);
+            Decals::DecalContext::SetupDecalPBR(id, decalMatrix, albedo, normal, material);
+
+            decalTextures.Append(albedo);
+            decalTextures.Append(normal);
+            decalTextures.Append(material);
+            decals.Append(id);
         }
     }
 
@@ -167,6 +195,14 @@ void StepFrame()
         spotLightTransform = Math::matrix44::rotationyawpitchroll(Graphics::GraphicsServer::Instance()->GetTime() * 2 + i, Math::n_deg2rad(-55), 0);
         spotLightTransform.set_position(Lighting::LightContext::GetTransform(spotLights[i]).get_position());
         //Lighting::LightContext::SetTransform(spotLights[i], spotLightTransform);
+    }
+
+    for (i = 0; i < decals.Size(); i++)
+    {
+        Math::matrix44 decalTransform = Math::matrix44::scaling(Math::float4(10, 10, 50, 1));
+        decalTransform = Math::matrix44::multiply(decalTransform, Math::matrix44::rotationyawpitchroll(Graphics::GraphicsServer::Instance()->GetTime() * 0.1f + i, Math::n_deg2rad(90), 0));
+        decalTransform.set_position(Decals::DecalContext::GetTransform(decals[i]).get_position());
+        Decals::DecalContext::SetTransform(decals[i], decalTransform);
     }
 
     /*

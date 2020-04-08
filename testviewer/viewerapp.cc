@@ -17,6 +17,7 @@
 #include "dynui/imguicontext.h"
 #include "lighting/lightcontext.h"
 #include "characters/charactercontext.h"
+#include "decals/decalcontext.h"
 #include "imgui.h"
 #include "dynui/im3d/im3dcontext.h"
 #include "dynui/im3d/im3d.h"
@@ -128,6 +129,7 @@ SimpleViewerApplication::Open()
 
 		Clustering::ClusterContext::Create(0.1f, 1000.0f, this->wnd);
 		Lighting::LightContext::Create();
+        Decals::DecalContext::Create();
 		Im3d::Im3dContext::Create();
 		Dynui::ImguiContext::Create();
 
@@ -178,6 +180,7 @@ SimpleViewerApplication::Close()
     this->gfxServer->DiscardView(this->view);
     ObserverContext::Discard();
     Lighting::LightContext::Discard();
+    Decals::DecalContext::Discard();
 
     this->gfxServer->Close();
     this->inputServer->Close();
