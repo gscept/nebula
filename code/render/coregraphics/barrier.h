@@ -153,8 +153,8 @@ struct TextureBarrier
 {
 	TextureId tex;
 	ImageSubresourceInfo subres;
-	CoreGraphics::ImageLayout fromLayout;
-	CoreGraphics::ImageLayout toLayout;
+	ImageLayout fromLayout;
+	ImageLayout toLayout;
 	BarrierAccess fromAccess;
 	BarrierAccess toAccess;
 };

@@ -34,9 +34,7 @@ namespace CoreGraphics
 
 struct ConstantBufferId;
 struct TextureId;
-struct ShaderRWTextureId;
 struct ShaderRWBufferId;
-struct RenderTextureId;
 struct ResourceTableId;
 struct ResourceTableLayoutId;
 struct ResourcePipelineId;
