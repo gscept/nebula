@@ -48,8 +48,8 @@ group(TICK_GROUP) sampler_state		PosteffectUpscaleSampler { Filter = Linear; };
 #define fetchCube(handle, sampler, uvw, lod)				texelFetch(sampler2DArray(Textures2DArray[handle], sampler), uvw, lod)
 #define fetchArray(handle, sampler, uvw, lod)				texelFetch(sampler2DArray(Textures2DArray[handle], sampler), uvw, lod)
 #define fetch3D(handle, sampler, uvw, lod)					texelFetch(sampler3D(Textures3D[handle], sampler), uvw, lod)
+#define fetchStencil(handle, sampler, uv, lod)				(floatBitsToUint(texelFetch(sampler2D(Textures2D[handle], sampler), uv, lod).r))
 
-#define fetchStencil(handle, sampler, uv, lod)				(uint(texelFetch(sampler2D(Textures2D[handle], sampler), uv, lod).r * 255))
 
 #define basic2D(handle)									Textures2D[handle]
 #define basic2DMS(handle)								Textures2DMS[handle]
