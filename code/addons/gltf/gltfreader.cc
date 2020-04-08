@@ -169,15 +169,16 @@ AccessorTypeToNebula(Gltf::Accessor::ComponentType component, Gltf::Accessor::Ty
                 case Component::UnsignedByte: return Base::VertexComponentBase::UByte4;
                 case Component::Float: return Base::VertexComponentBase::Float4;
                 case Component::Short: return Base::VertexComponentBase::Short4;
+                case Component::UnsignedShort: return Base::VertexComponentBase::UShort4;
             }
         }
         break;
         case Type::Mat2:
         case Type::Mat3:
         case Type::Mat4:
-        case Type::None: n_error("undefined component type");
+		case Type::None: break;
     }
-    n_assert2(format != Base::VertexComponentBase::Format::InvalidFormat, "undefined component type");
+    //n_assert2(format != Base::VertexComponentBase::Format::InvalidFormat, "undefined component type");
     return format;
 }
 //------------------------------------------------------------------------------
@@ -270,7 +271,6 @@ IO::JsonReader::Get<Util::Array<Gltf::Animation::Sampler>>(Util::Array<Gltf::Ani
         ReadExtensionsAndExtras(item, this->curNode);
     } while (this->SetToNextChild());
     this->SetToParent();
-    this->SetToParent();    
 }
 
 
@@ -307,7 +307,6 @@ IO::JsonReader::Get<Util::Array<Gltf::Animation::Channel>>(Util::Array<Gltf::Ani
         this->Get(item.target, "target");            
         ReadExtensionsAndExtras(item, this->curNode);
     } while (this->SetToNextChild());
-    this->SetToParent();
     this->SetToParent();
 }
 
