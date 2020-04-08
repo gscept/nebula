@@ -53,6 +53,7 @@ public:
 		Byte4,		//> four-component signed byte
         Short2,     //> two-component signed short, expanded to (value, value, 0, 1)
         Short4,     //> four-component signed short
+        UShort4,    //> four-component unsigned short
         UByte4N,    //> four-component normalized unsigned byte (value / 255.0f)
 		Byte4N,		//> four-component normalized signed byte (value / 127.0f)
         Short2N,    //> two-component normalized signed short (value / 32767.0f)
@@ -252,6 +253,7 @@ VertexComponentBase::GetByteSize() const
 		case Byte4:		return 4;
         case Short2:    return 4;
         case Short4:    return 8;
+        case UShort4:   return 8;
         case UByte4N:   return 4;
 		case Byte4N:	return 4;
         case Short2N:   return 4;
@@ -327,11 +329,12 @@ VertexComponentBase::FormatToString(Format f)
 		case Byte4:		return "Byte4";
         case Short2:    return "Short2";
         case Short4:    return "Short4";
+        case UShort4:   return "UShort4";
         case UByte4N:   return "UByte4N";
 		case Byte4N:	return "Byte4N";
         case Short2N:   return "Short2N";
         case Short4N:   return "Short4N";
-        case UShort:   return "UShort";
+        case UShort:    return "UShort";
 
         // PS3-specific
         case Float16:   return "Float16";
@@ -361,6 +364,7 @@ VertexComponentBase::FormatToSignature(Format f)
 	case Byte4:		return "b4";
 	case Short2:    return "s2";
 	case Short4:    return "s4";
+	case UShort4:    return "us4";
 	case UByte4N:   return "ub4n";
 	case Byte4N:	return "b4n";
 	case Short2N:   return "s2n";
@@ -391,6 +395,7 @@ VertexComponentBase::StringToFormat(const Util::String& str)
     else if (str == "UByte4") return UByte4;
     else if (str == "Short2") return Short2;
     else if (str == "Short4") return Short4;
+    else if (str == "UShort4") return UShort4;
     else if (str == "UByte4N") return UByte4N;
     else if (str == "Short2N") return Short2N;
     else if (str == "Short4N") return Short4N;

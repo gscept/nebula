@@ -424,6 +424,7 @@ MeshPageHandler::HandleVertexDumpRequest(const Util::String& resId, IndexT minVe
 							break;
 						
 						case VertexComponent::Short4:
+						case VertexComponent::UShort4:
 						case VertexComponent::Short4N:
 							str.Format("0x%04X/0x%04X/0x%04X/0x%04X", usPtr[0], usPtr[1], usPtr[2], usPtr[3]);
 							break;
