@@ -137,6 +137,15 @@ TextureGetBindlessHandle(const TextureId id)
 //------------------------------------------------------------------------------
 /**
 */
+uint 
+TextureGetStencilBindlessHandle(const TextureId id)
+{
+	return texturePool->GetStencilBindlessHandle(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 IndexT 
 TextureSwapBuffers(const TextureId id)
 {

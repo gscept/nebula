@@ -10,7 +10,7 @@
 #include "lib/util.fxh"
 
 /// Declaring used samplers
-samplerstate SubsurfaceSampler
+sampler_state SubsurfaceSampler
 {
 	Samplers = { Mask, LightTexture, DepthTexture, AbsorptionTexture, ScatterTexture };
 	//AddressU = Mirror;
@@ -63,7 +63,7 @@ const vec4 kernel[] = {
     vec4(0.000973794, 1.11862e-005, 9.43437e-007, 3)
 };
 
-state SubsurfaceState
+render_state SubsurfaceState
 {
 	CullMode = Back;
 	DepthEnabled = true;

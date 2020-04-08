@@ -76,12 +76,6 @@ FrameSubpass::CompiledImpl::Run(const IndexT frameIndex)
 	CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_GREEN, this->name.Value());
 #endif
 
-	// bind scissors and viewports, if any
-	if (this->viewports.Size() > 0)
-		CoreGraphics::SetViewports(this->viewports.Begin(), this->viewports.Size());
-	if (this->scissors.Size() > 0)
-		CoreGraphics::SetScissorRects(this->scissors.Begin(), this->scissors.Size());
-
 	// run ops
 	for (i = 0; i < this->ops.Size(); i++)
 	{
@@ -110,8 +104,6 @@ FrameOp::Compiled*
 FrameSubpass::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 {
 	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
-	ret->viewports = this->viewports;
-	ret->scissors = this->scissors;
 #if NEBULA_GRAPHICS_DEBUG
 	ret->name = this->name;
 #endif

@@ -97,6 +97,8 @@ public:
 	SizeT GetNumSamples(const CoreGraphics::TextureId id);
 	/// get bindless handle
 	uint GetBindlessHandle(const CoreGraphics::TextureId id);
+	/// get bindless handle
+	uint GetStencilBindlessHandle(const CoreGraphics::TextureId id);
 	/// get default layout
 	CoreGraphics::ImageLayout GetDefaultLayout(const CoreGraphics::TextureId id);
 

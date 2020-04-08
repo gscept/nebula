@@ -8,12 +8,12 @@
 #include "lib/skinning.fxh"
 #include "lib/techniques.fxh"
 
-state PickingState
+render_state PickingState
 {
 	CullMode = Back;
 };
 
-state BillboardPickingState
+render_state BillboardPickingState
 {
 	CullMode = None;
 };

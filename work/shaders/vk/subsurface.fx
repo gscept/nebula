@@ -11,7 +11,7 @@
 textureHandle AbsorptionMap;
 textureHandle ScatterMap;
 
-samplerstate SubsurfaceSampler
+sampler_state SubsurfaceSampler
 {
 	//Samplers = { AbsorptionMap, ScatterMap };
 	Filter = MinMagMipLinear;
@@ -21,7 +21,7 @@ float SubsurfaceStrength = 0.0f;
 float SubsurfaceWidth = 0.0f;
 float SubsurfaceCorrection = 0.0f;
 
-state SubsurfaceState
+render_state SubsurfaceState
 {
 //	DepthEnabled = true;
 //	DepthWrite = true;

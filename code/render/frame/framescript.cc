@@ -271,7 +271,6 @@ FrameScript::Build()
 				// allocate a subpass buffer for each buffered frame
 				SizeT numBufferedFrames = CoreGraphics::GetNumBufferedFrames();
 				pass->subpassBuffers[j].Resize(numBufferedFrames);
-
 				for (IndexT k = 0; k < numBufferedFrames; k++)
 				{
 					pass->subpassBuffers[j][k] = CoreGraphics::CreateCommandBuffer(cmdInfo);

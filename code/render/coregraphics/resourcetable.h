@@ -88,6 +88,7 @@ struct ResourceTableTexture
 	IndexT index;
 	CoreGraphics::SamplerId sampler;
 	bool isDepth : 1;
+	bool isStencil : 1;
 };
 
 struct ResourceTableConstantBuffer

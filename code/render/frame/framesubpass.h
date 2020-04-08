@@ -65,27 +65,6 @@ private:
 	friend class FrameScriptLoader;
 
 	Util::Array<Frame::FrameOp*> ops;
-	Util::Array<Math::rectangle<int>> viewports;
-	Util::Array<Math::rectangle<int>> scissors;
 };
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-FrameSubpass::AddViewport(const Math::rectangle<int>& rect)
-{
-	this->viewports.Append(rect);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-FrameSubpass::AddScissor(const Math::rectangle<int>& rect)
-{
-	this->scissors.Append(rect);
-}
-
 
 } // namespace Frame2

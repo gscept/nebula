@@ -167,6 +167,8 @@ const CoreGraphics::ImageLayout TextureGetDefaultLayout(const TextureId id);
 
 /// get bindless texture handle
 uint TextureGetBindlessHandle(const TextureId id);
+/// get bindless texture handle
+uint TextureGetStencilBindlessHandle(const TextureId id);
 
 /// swap backbuffers for texture if texture is a backbuffer
 IndexT TextureSwapBuffers(const TextureId id);

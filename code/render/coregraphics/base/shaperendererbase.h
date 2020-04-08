@@ -5,6 +5,8 @@
     
     Base class of ShapeRenderer, can render a number of shapes, mainly 
     for debug visualization.
+
+    TODO: Add support for appending debug shapes from multiple threads simultaneously
     
     (C) 2007 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
@@ -41,13 +43,13 @@ public:
     bool IsOpen() const;
 
     /// delete shapes of given thread id
-    void DeleteShapesByThreadId(Threading::ThreadId threadId);
+    void ClearShapes();
     /// add a shape for deferred rendering (can be called from outside render loop)
     void AddShape(const CoreGraphics::RenderShape& shape);
     /// add multiple shapes
     void AddShapes(const Util::Array<CoreGraphics::RenderShape>& shapeArray);
     /// add wireframe box
-    void AddWireFrameBox(const Math::bbox& boundingBox, const Math::float4& color, Threading::ThreadId threadId);
+    void AddWireFrameBox(const Math::bbox& boundingBox, const Math::float4& color);
     /// draw deferred shapes and clear deferred stack, must be called inside render loop
     void DrawShapes();
 

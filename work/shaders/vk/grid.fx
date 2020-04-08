@@ -12,14 +12,14 @@ float GridSize = 50;
 textureHandle GridTex;
 mat4x4 PlaneProjection;
 
-samplerstate GridSampler
+sampler_state GridSampler
 {
 	//Samplers = { GridTex };
 	MaxAnisotropic = 16;
 	Filter = Anisotropic;
 };
 
-state GridState
+render_state GridState
 {
 	BlendEnabled[0] = true;
 	SrcBlend[0] = SrcAlpha;

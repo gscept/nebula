@@ -15,20 +15,20 @@ texture2D TraceBuffer;
 
 write rgba16f image2D ReflectionBuffer;
 
-samplerstate LinearState
+sampler_state LinearState
 {
 	//Samplers = {DepthBuffer, SpecularBuffer, NormalBuffer, AlbedoBuffer};
 	Filter = Linear;
-	BorderColor = {0,0,0,0};
+	BorderColor = Transparent;
 	AddressU = Border;
 	AddressV = Border;
 };
 
-samplerstate NoFilterState
+sampler_state NoFilterState
 {
 	//Samplers = {DepthBuffer, SpecularBuffer, NormalBuffer, AlbedoBuffer};
 	Filter = Point;
-	BorderColor = {0,0,0,0};
+	BorderColor = Transparent;
 	AddressU = Border;
 	AddressV = Border;
 };

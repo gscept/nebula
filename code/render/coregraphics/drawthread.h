@@ -35,6 +35,9 @@ public:
 		ViewportArray,
 		ScissorRect,
 		ScissorRectArray,
+		StencilRefs,
+		StencilReadMask,
+		StencilWriteMask,
 		UpdateBuffer,
 		SetEvent,					// sets event to flagged
 		ResetEvent,					// resets event to unflagged

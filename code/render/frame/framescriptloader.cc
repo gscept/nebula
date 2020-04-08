@@ -683,7 +683,8 @@ FrameScriptLoader::ParsePass(const Ptr<Frame::FrameScript>& script, JzonValue* n
 			
 			info.depthStencilAttachment = script->GetTexture(ds->string_value);
 		}
-		else if (name == "subpass")				ParseSubpass(script, info, op, attachmentNames, cur);
+		else if (name == "subpass")
+			ParseSubpass(script, info, op, attachmentNames, cur);
 		else
 		{
 			n_error("Passes don't support operations, and '%s' is no exception.\n", name.AsCharPtr());
@@ -770,8 +771,6 @@ FrameScriptLoader::ParseSubpass(const Ptr<Frame::FrameScript>& script, CoreGraph
 		else if (name == "depth")				subpass.bindDepth = cur->bool_value;
 		else if (name == "resolve")				subpass.resolve = cur->bool_value;
 		else if (name == "resources")			ParseResourceDependencies(script, framePass, cur);
-		else if (name == "viewports")			{ ParseSubpassViewports(script, frameSubpass, cur); subpass.numViewports = frameSubpass->viewports.Size(); }
-		else if (name == "scissors")			{ ParseSubpassScissors(script, frameSubpass, cur); subpass.numScissors = frameSubpass->scissors.Size(); }
 		else if (name == "plugin")				ParseSubpassPlugin(script, frameSubpass, cur);
 		else if (name == "batch")				ParseSubpassBatch(script, frameSubpass, cur);
 		else if (name == "sorted_batch")		ParseSubpassSortedBatch(script, frameSubpass, cur);
@@ -887,38 +886,6 @@ FrameScriptLoader::ParseSubpassInputs(Frame::FramePass* pass, CoreGraphics::Subp
 				n_error("Could not find previous attachment '%s'", id.AsCharPtr());
 			}
 		}
-	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-FrameScriptLoader::ParseSubpassViewports(const Ptr<Frame::FrameScript>& script, Frame::FrameSubpass* subpass, JzonValue* node)
-{
-	uint i;
-	for (i = 0; i < node->size; i++)
-	{
-		JzonValue* var = node->array_values[i];
-		n_assert(var->size == 4);
-		Math::rectangle<int> rect(var->array_values[0]->int_value, var->array_values[1]->int_value, var->array_values[2]->int_value, var->array_values[3]->int_value);
-		subpass->AddViewport(rect);
-	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-FrameScriptLoader::ParseSubpassScissors(const Ptr<Frame::FrameScript>& script, Frame::FrameSubpass* subpass, JzonValue* node)
-{
-	uint i;
-	for (i = 0; i < node->size; i++)
-	{
-		JzonValue* var = node->array_values[i];
-		n_assert(var->size == 4);
-		Math::rectangle<int> rect(var->array_values[0]->int_value, var->array_values[1]->int_value, var->array_values[2]->int_value, var->array_values[3]->int_value);
-		subpass->AddScissor(rect);
 	}
 }
 

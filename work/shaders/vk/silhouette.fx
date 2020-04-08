@@ -10,7 +10,7 @@
 #include "lib/techniques.fxh"
 
 vec4 MatDiffuse;
-state SilhouetteState
+render_state SilhouetteState
 {
 	DepthEnabled = false;
 	DepthWrite = false;
@@ -32,7 +32,7 @@ state SilhouetteState
 	StencilDepthFailOp = Keep;
 };
 
-state PrepassState
+render_state PrepassState
 {
 	DepthEnabled = false;
 	DepthWrite = false;

@@ -26,6 +26,7 @@ struct
 	SizeT clusterDimensions[3];
 	float zDistribution;
 	float zInvScale, zInvBias;
+	float xResolution, yResolution;
 	float invXResolution, invYResolution;
 
 	SizeT numThreads;
@@ -84,6 +85,8 @@ ClusterContext::Create(float ZNear, float ZFar, const CoreGraphics::WindowId win
 	state.zDistribution = ZFar / ZNear;
 	state.zInvScale = float(state.clusterDimensions[2]) / Math::n_log2(state.zDistribution);
 	state.zInvBias = -(float(state.clusterDimensions[2]) * Math::n_log2(ZNear) / Math::n_log2(state.zDistribution));
+	state.xResolution = displayMode.GetWidth();
+	state.yResolution = displayMode.GetHeight();
 	state.invXResolution = 1.0f / displayMode.GetWidth();
 	state.invYResolution = 1.0f / displayMode.GetHeight();
 
@@ -160,6 +163,8 @@ ClusterContext::UpdateResources(const Graphics::FrameContext& ctx)
 	state.uniforms.InvZBias = state.zInvBias;
 	state.uniforms.InvFramebufferDimensions[0] = state.invXResolution;
 	state.uniforms.InvFramebufferDimensions[1] = state.invYResolution;
+	state.uniforms.FramebufferDimensions[0] = state.xResolution;
+	state.uniforms.FramebufferDimensions[1] = state.yResolution;
 	state.uniforms.NumCells[0] = state.clusterDimensions[0];
 	state.uniforms.NumCells[1] = state.clusterDimensions[1];
 	state.uniforms.NumCells[2] = state.clusterDimensions[2];

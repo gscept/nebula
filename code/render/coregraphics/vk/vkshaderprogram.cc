@@ -88,6 +88,11 @@ VkShaderProgramSetupAsGraphics(AnyFX::VkProgram* program, const Resources::Resou
 	static const char* name = "main";
 	memset(runtime.shaderInfos, 0, sizeof(runtime.shaderInfos));
 
+	runtime.stencilFrontRef = program->renderState->renderSettings.stencilFrontRef;
+	runtime.stencilBackRef = program->renderState->renderSettings.stencilBackRef;
+	runtime.stencilReadMask = program->renderState->renderSettings.stencilReadMask;
+	runtime.stencilWriteMask = program->renderState->renderSettings.stencilWriteMask;
+
 	// attach vertex shader
 	if (0 != runtime.vs)
 	{
@@ -226,13 +231,13 @@ VkShaderProgramSetupAsGraphics(AnyFX::VkProgram* program, const Resources::Resou
 	};
 
 	// setup dynamic state, we only support dynamic viewports and scissor rects
-	static const VkDynamicState dynamicStates[] = { VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_VIEWPORT };
+	static const VkDynamicState dynamicStates[] = { VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_STENCIL_COMPARE_MASK, VK_DYNAMIC_STATE_STENCIL_WRITE_MASK, VK_DYNAMIC_STATE_STENCIL_REFERENCE };
 	runtime.dynamicInfo =
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
 		NULL,
 		0,
-		2,
+		5,
 		dynamicStates
 	};
 

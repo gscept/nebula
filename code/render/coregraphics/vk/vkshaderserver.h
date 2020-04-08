@@ -33,9 +33,9 @@ public:
 	void Close();
 	
 	/// register new texture
-	uint32_t RegisterTexture(const CoreGraphics::TextureId& tex, bool depth, CoreGraphics::TextureType type);
+	uint32_t RegisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics::TextureType type, bool depth = false, bool stencil = false);
 	/// reregister texture
-	void ReregisterTexture(const CoreGraphics::TextureId& tex, bool depth, CoreGraphics::TextureType type, uint32_t slot);
+	void ReregisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics::TextureType type, uint32_t slot, bool depth = false, bool stencil = false);
 	/// unregister texture
 	void UnregisterTexture(const uint32_t id, const CoreGraphics::TextureType type);
 

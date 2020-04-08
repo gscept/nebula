@@ -27,21 +27,6 @@ VisibilitySortJob(const Jobs::JobFuncContext& ctx)
 		Models::ModelNode::Instance** const nodes = (Models::ModelNode::Instance**)N_JOB_INPUT(ctx, sliceIdx, 1);
 		ObserverContext::VisibilityDrawList* buckets = (ObserverContext::VisibilityDrawList*)N_JOB_OUTPUT(ctx, sliceIdx, 0);
 
-		// clear draw lists
-		auto it1 = buckets->Begin();
-		while (it1 != buckets->End())
-		{
-			auto it2 = it1.val->Begin();
-			while (it2 != it1.val->End())
-			{
-				it2.val->Reset();
-				it2++;
-			}
-			it1.val->Reset();
-			it1++;
-		}
-		buckets->Reset();
-
 		// begin adding buckets
 		buckets->BeginBulkAdd();
 
@@ -74,7 +59,7 @@ VisibilitySortJob(const Jobs::JobFuncContext& ctx)
 				void* mem = packetAllocator->Alloc(shdNodeInst->GetDrawPacketSize());
 
 				// update constants
-				shdNodeInst->Update();
+				//shdNodeInst->Update();
 
 				// update packet and add to list
 				Models::ModelNode::DrawPacket* packet = shdNodeInst->UpdateDrawPacket(mem);

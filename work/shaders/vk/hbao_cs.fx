@@ -8,7 +8,7 @@
 #include "lib/shared.fxh"
 #include "lib/techniques.fxh"
 
-varblock HBAOBlock
+constant HBAOBlock
 {
 	vec2 UVToViewA = vec2(0.0f, 0.0f);
 	vec2 UVToViewB = vec2(0.0f, 0.0f);
@@ -33,7 +33,7 @@ varblock HBAOBlock
 readwrite rg16f image2D HBAO0;
 write rg16f image2D HBAO1;
 
-samplerstate ClampSampler
+sampler_state ClampSampler
 {
 	//Samplers = { DepthBuffer };
 	Filter = Point;

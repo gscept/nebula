@@ -66,38 +66,44 @@ public:
     /// default constructor
     RenderShape();
     /// shortcut constructor for simple shapes
-    RenderShape(Threading::ThreadId threadId, Type shapeType, RenderFlag depthFlag, const Math::matrix44& modelTransform, const Math::float4& color);
+    RenderShape(Type shapeType, RenderFlag depthFlag, const Math::matrix44& modelTransform, const Math::float4& color);
     /// return true if object has been setup
     bool IsValid() const;
     /// setup simple shape
-    void SetupSimpleShape(Threading::ThreadId threadId, Type shapeType, RenderFlag depthFlag, const Math::matrix44& modelTransform, const Math::float4& color);
+    void SetupSimpleShape(Type shapeType, RenderFlag depthFlag, const Math::matrix44& modelTransform, const Math::float4& color);
 
     /// setup primitive batch (SLOW!)
-    void SetupPrimitives(Threading::ThreadId threadId, 
-            const Math::matrix44& modelTransform, 
-            PrimitiveTopology::Code topology, 
-            SizeT numPrimitives, 
-            const RenderShape::RenderShapeVertex* vertices,
-            const Math::float4& color, 
-            RenderFlag depthFlag);
+    void SetupPrimitives(
+        const Math::matrix44& modelTransform
+        , PrimitiveTopology::Code topology
+        , SizeT numPrimitives
+        , const RenderShape::RenderShapeVertex* vertices
+        , const Math::float4& color
+        , RenderFlag depthFlag
+    );
 
     /// setup indexed primitive batch (SLOW!)
-    void SetupIndexedPrimitives(Threading::ThreadId threadId, 
-        const Math::matrix44& modelTransform, 
-        PrimitiveTopology::Code topology, 
-        SizeT numPrimitives, 
-        const RenderShape::RenderShapeVertex* vertices,
-        SizeT numVertices, 
-        const void* indices, 
-        IndexType::Code indexType, 
-        const Math::float4& color, 
-        RenderFlag depthFlag);
+    void SetupIndexedPrimitives(
+        const Math::matrix44& modelTransform
+        , PrimitiveTopology::Code topology
+        , SizeT numPrimitives
+        , const RenderShape::RenderShapeVertex* vertices
+        , SizeT numVertices
+        , const void* indices
+        , IndexType::Code indexType
+        , const Math::float4& color, 
+        RenderFlag depthFlag
+    );
 
 	/// setup mesh
-	void SetupMesh(Threading::ThreadId threadId, const Math::matrix44& modelTransform, const MeshId mesh, const IndexT groupIndex, const Math::float4& color, RenderFlag depthFlag);
+	void SetupMesh(
+        const Math::matrix44& modelTransform
+        , const MeshId mesh
+        , const IndexT groupIndex
+        , const Math::float4& color
+        , RenderFlag depthFlag
+    );
 
-    /// get the thread id of this shape
-    Threading::ThreadId GetThreadId() const;
     /// get shape type
     Type GetShapeType() const;
     /// get depth flag
@@ -128,7 +134,6 @@ public:
 	const IndexT& GetPrimitiveGroupIndex() const;
 
 private:
-    Threading::ThreadId threadId;
     Type shapeType;
 	RenderFlag depthFlag;
     Math::matrix44 modelTransform;
@@ -153,15 +158,6 @@ inline bool
 RenderShape::IsValid() const
 {
     return (InvalidShapeType != this->shapeType);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline Threading::ThreadId
-RenderShape::GetThreadId() const
-{
-    return this->threadId;
 }
 
 //------------------------------------------------------------------------------

@@ -19,7 +19,7 @@ vec2 LightPos = vec2(0.5f, 0.5f);
 /// Declaring used textures
 sampler2D ColorSource;
 
-samplerstate ColorSampler
+sampler_state ColorSampler
 {
 	Samplers = { ColorSource };
 	Filter = Point;
@@ -27,7 +27,7 @@ samplerstate ColorSampler
 	AddressV = Clamp;
 };
 
-state LightScatterState
+render_state LightScatterState
 {
 	CullMode = Back;
 	DepthWrite = false;

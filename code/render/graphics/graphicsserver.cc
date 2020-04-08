@@ -212,9 +212,8 @@ GraphicsServer::Close()
 	this->timer->StopTime();
     this->timer = nullptr;
 
-	if (this->graphicsDevice) CoreGraphics::DestroyGraphicsDevice();
-
-	// clear transforms pool
+	if (this->graphicsDevice) 
+		CoreGraphics::DestroyGraphicsDevice();
 }
 
 //------------------------------------------------------------------------------
@@ -316,6 +315,7 @@ GraphicsServer::DiscardStage(const Ptr<Stage>& stage)
 void
 GraphicsServer::BeginFrame()
 {
+	N_SCOPE(BeginFrame, Graphics);
 	this->timer->UpdateTimePolling();
 	
 	this->frameContext.frameIndex = this->timer->GetFrameIndex();
@@ -338,6 +338,7 @@ GraphicsServer::BeginFrame()
 			state->Defragment();
 	}
 
+	N_MARKER_BEGIN(ContextBegin, Graphics);
 	for (i = 0; i < this->contexts.Size(); i++)
 	{
 		if (this->contexts[i]->StageBits)
@@ -345,8 +346,10 @@ GraphicsServer::BeginFrame()
 		if (this->contexts[i]->OnBegin != nullptr)
 			this->contexts[i]->OnBegin(this->frameContext);
 	}
+	N_MARKER_END();
 
 	// go through views and call prepare view
+	N_MARKER_BEGIN(ContextPrepareView, Graphics);
 	for (i = 0; i < this->views.Size(); i++)
 	{
 		const Ptr<View>& view = this->views[i];
@@ -360,10 +363,12 @@ GraphicsServer::BeginFrame()
 				this->contexts[j]->OnPrepareView(view, this->frameContext);
 		}		
 	}
+	N_MARKER_END();
 
 	// begin frame
 	CoreGraphics::BeginFrame(this->frameContext.frameIndex);
 
+	N_MARKER_BEGIN(ContextBeforeFrame, Graphics);
 	for (i = 0; i < this->contexts.Size(); i++)
 	{
 		if (this->contexts[i]->StageBits)
@@ -371,10 +376,12 @@ GraphicsServer::BeginFrame()
 		if (this->contexts[i]->OnBeforeFrame != nullptr)
 			this->contexts[i]->OnBeforeFrame(this->frameContext);
 	}
+	N_MARKER_END();
 
 	// consider this whole block of code viable for updating resource tables
 	CoreGraphics::ResourceTableBlock(false);
 
+	N_MARKER_BEGIN(ContextUpdateResources, Graphics);
 	for (i = 0; i < this->contexts.Size(); i++)
 	{
 		if (this->contexts[i]->StageBits)
@@ -382,11 +389,13 @@ GraphicsServer::BeginFrame()
 		if (this->contexts[i]->OnUpdateResources != nullptr)
 			this->contexts[i]->OnUpdateResources(this->frameContext);
 	}
+	N_MARKER_END();
 
 	// update shader server resources (textures and tick params)
 	this->shaderServer->UpdateResources();
 
 	// go through views and call prepare view
+	N_MARKER_BEGIN(ContextUpdateViewResources, Graphics);
 	for (i = 0; i < this->views.Size(); i++)
 	{
 		const Ptr<View>& view = this->views[i];
@@ -403,6 +412,7 @@ GraphicsServer::BeginFrame()
 				this->contexts[j]->OnUpdateViewResources(view, this->frameContext);
 		}
 	}
+	N_MARKER_END();
 
 	this->currentView = nullptr;
 
@@ -416,7 +426,10 @@ GraphicsServer::BeginFrame()
 void 
 GraphicsServer::BeforeViews()
 {
+	N_SCOPE(BeforeViews, Graphics);
+
 	// wait for visibility
+	N_MARKER_BEGIN(ContextWaitForWork, Graphics);
 	IndexT i;
 	for (i = 0; i < this->contexts.Size(); i++)
 	{
@@ -425,7 +438,9 @@ GraphicsServer::BeforeViews()
 		if (this->contexts[i]->OnWaitForWork != nullptr)
 			this->contexts[i]->OnWaitForWork(this->frameContext);
 	}
+	N_MARKER_END();
 
+	N_MARKER_BEGIN(ContextWorkFinished, Graphics);
 	for (i = 0; i < this->contexts.Size(); i++)
 	{
 		if (this->contexts[i]->StageBits)
@@ -433,6 +448,7 @@ GraphicsServer::BeforeViews()
 		if (this->contexts[i]->OnWorkFinished != nullptr)
 			this->contexts[i]->OnWorkFinished(this->frameContext);
 	}
+	N_MARKER_END();
 
 	// go through views and call before view
 	for (i = 0; i < this->views.Size(); i++)
@@ -446,6 +462,7 @@ GraphicsServer::BeforeViews()
 		this->currentView = view;
 		this->currentView->BeginFrame(this->frameContext.frameIndex, this->frameContext.time);
 
+		N_MARKER_BEGIN(ContextBeforeView, Graphics);
 		IndexT j;
 		for (j = 0; j < this->contexts.Size(); j++)
 		{
@@ -454,6 +471,7 @@ GraphicsServer::BeforeViews()
 			if (this->contexts[j]->OnBeforeView != nullptr)
 				this->contexts[j]->OnBeforeView(view, this->frameContext);
 		}
+		N_MARKER_END();
 	}
 }
 
@@ -463,7 +481,9 @@ GraphicsServer::BeforeViews()
 void
 GraphicsServer::RenderViews()
 {
+	N_SCOPE(RenderViews, Graphics);
 	IndexT i;
+
 	// go through views and call before view
 	for (i = 0; i < this->views.Size(); i++)
 	{
@@ -482,6 +502,8 @@ GraphicsServer::RenderViews()
 void 
 GraphicsServer::EndViews()
 {
+	N_SCOPE(EndViews, Graphics);
+
 	// go through views and call before view
 	IndexT i;
 	for (i = 0; i < this->views.Size(); i++)
@@ -493,7 +515,8 @@ GraphicsServer::EndViews()
 
 		this->shaderServer->AfterView();
 		this->currentView->EndFrame(this->frameContext.frameIndex, this->frameContext.time);
-
+		
+		N_MARKER_BEGIN(ContextAfterView, Graphics);
 		IndexT j;
 		for (j = 0; j < this->contexts.Size(); j++)
 		{
@@ -502,6 +525,7 @@ GraphicsServer::EndViews()
 			if (this->contexts[j]->OnAfterView != nullptr)
 				this->contexts[j]->OnAfterView(view, this->frameContext);
 		}
+		N_MARKER_END();
 	}
 
 	this->currentView = nullptr;
@@ -513,11 +537,13 @@ GraphicsServer::EndViews()
 void 
 GraphicsServer::EndFrame()
 {
+	N_SCOPE(EndFrame, Graphics);
 
 	// stop the graphics side frame
 	CoreGraphics::EndFrame(this->frameContext.frameIndex);
 
 	// finish frame and prepare for the next one
+	N_MARKER_BEGIN(ContextAfterFrame, Graphics);
 	IndexT i;
 	for (i = 0; i < this->contexts.Size(); i++)
 	{
@@ -526,6 +552,7 @@ GraphicsServer::EndFrame()
 		if (this->contexts[i]->OnAfterFrame != nullptr)
 			this->contexts[i]->OnAfterFrame(this->frameContext);
 	}
+	N_MARKER_END();
 }
 
 //------------------------------------------------------------------------------

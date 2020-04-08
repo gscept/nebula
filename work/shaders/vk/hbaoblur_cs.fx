@@ -7,14 +7,14 @@
 #include "lib/util.fxh"
 #include "lib/techniques.fxh"
 
-varblock HBAOBlur
+constant HBAOBlur
 {
 	float PowerExponent = 1.0f;
 	float BlurFalloff;
 	float BlurDepthThreshold;
 };
 
-samplerstate LinearState
+sampler_state LinearState
 {
 	//Samplers = {HBAOReadLinear};
 	Filter = Linear;
@@ -22,7 +22,7 @@ samplerstate LinearState
 	AddressV = Clamp;
 };
 
-samplerstate PointState
+sampler_state PointState
 {
 	//Samplers = {HBAOReadPoint};
 	Filter = Point;

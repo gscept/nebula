@@ -13,12 +13,12 @@ const float DepthScaling = 5.0f;
 const float DarkeningFactor = 1.0f;
 const float ShadowConstant = 100.0f;
 
-samplerstate ShadowSampler
+sampler_state ShadowSampler
 {
 	//Samplers = { AlbedoMap, DisplacementMap };
 };
 
-state ShadowState
+render_state ShadowState
 {
 	CullMode = Back;
 	DepthClamp = false;
@@ -30,7 +30,7 @@ state ShadowState
 	BlendOp[0] = Min;
 };
 
-state ShadowStateCSM
+render_state ShadowStateCSM
 {
 	CullMode = Back;
 	DepthClamp = false;

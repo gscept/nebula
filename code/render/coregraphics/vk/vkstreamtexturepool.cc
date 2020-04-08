@@ -297,7 +297,7 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 	loadInfo.format = VkTypes::AsNebulaPixelFormat(vkformat);
 	loadInfo.dev = dev;
 	runtimeInfo.type = cube ? CoreGraphics::TextureCube : depth > 1 ? CoreGraphics::Texture3D : CoreGraphics::Texture2D;
-	runtimeInfo.bind = VkShaderServer::Instance()->RegisterTexture(TextureId(res), false, runtimeInfo.type);
+	runtimeInfo.bind = VkShaderServer::Instance()->RegisterTexture(TextureId(res), runtimeInfo.type);
 
 	stream->Unmap();
 

@@ -11,13 +11,13 @@
 texture2D ColorSource;
 texture2D PreviousLum;
 
-varblock AverageLumBlock
+constant AverageLumBlock
 {
 	float TimeDiff;
 };
 
 
-samplerstate LuminanceSampler
+sampler_state LuminanceSampler
 {
 	//Samplers = { ColorSource, PreviousLum };
 	Filter = Point;
@@ -25,7 +25,7 @@ samplerstate LuminanceSampler
 
 
 
-state AverageLumState
+render_state AverageLumState
 {
 	CullMode = Back;
 	DepthEnabled = false;

@@ -216,9 +216,8 @@ VkShapeRenderer::DrawShapes()
 		}		
 	}
 
-	// delete the shapes of my own thread id, all other shapes
-	// are from other threads and will be deleted through DeleteShapesByThreadId()
-	this->DeleteShapesByThreadId(Thread::GetMyThreadId());
+	// clear shapes
+	this->ClearShapes();
 }
 
 //------------------------------------------------------------------------------

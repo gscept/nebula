@@ -23,6 +23,10 @@ public:
 		void Run(const IndexT frameIndex);
 		void Discard();
 
+#if NEBULA_GRAPHICS_DEBUG
+		Util::StringAtom name;
+#endif
+
 		std::function<void(IndexT)> func;
 	};
 

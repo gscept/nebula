@@ -7,7 +7,7 @@
 #include "lib/geometrybase.fxh"
 #include "lib/techniques.fxh"
 
-state MinimapState
+render_state MinimapState
 {
 	BlendEnabled[0] = true;
 	SrcBlend[0] = SrcAlpha;
@@ -18,12 +18,12 @@ state MinimapState
 };
 
 // samplers
-samplerstate PortraitSampler
+sampler_state PortraitSampler
 {
 	//Samplers = { Portrait };
 };
 
-group(BATCH_GROUP) push varblock MinimapBlock 
+group(BATCH_GROUP) push constant MinimapBlock 
 {	
 	mat4 TransArray;
 	vec4 ColorArray;	

@@ -156,6 +156,7 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 	VkPipelineLayout currentPipelineLayout;
 	VkPipeline currentPipeline;
 	VkPipelineInfoBits currentPipelineBits;
+	uint currentStencilFrontRef, currentStencilBackRef, currentStencilReadMask, currentStencilWriteMask;
 
 	Util::FixedArray<Util::Array<VkBuffer>> delayedDeleteBuffers;
 	Util::FixedArray<Util::Array<VkImage>> delayedDeleteImages;
@@ -173,11 +174,8 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 	SizeT numUsedQueries;
 	IndexT queriesRingOffset;
 
-	static const SizeT MaxClipSettings = 8;
-	uint32_t numViewports;
-	VkViewport viewports[MaxClipSettings];
-	uint32_t numScissors;
-	VkRect2D scissors[MaxClipSettings];
+	VkCommandBufferThread::VkScissorRectArrayCommand scissorArrayCommand;
+	VkCommandBufferThread::VkViewportArrayCommand viewportArrayCommand;
 
 	CoreGraphics::ShaderProgramId currentProgram;
 
@@ -503,10 +501,9 @@ BindDescriptorsGraphics(const VkDescriptorSet* descriptors, uint32_t baseSet, ui
 			VkCommandBufferThread::VkDescriptorsCommand cmd;
 			cmd.baseSet = baseSet;
 			cmd.numSets = 1;
-			cmd.sets[i] = descriptors[i];
+			cmd.sets = &descriptors[i];
 			cmd.numOffsets = offsetCount;
-			n_assert(offsetCount < VkCommandBufferThread::VkDescriptorsCommand::MaxOffsets);
-			Memory::CopyElements(offsets, cmd.offsets, offsetCount);
+			cmd.offsets = offsets;
 			cmd.type = VK_PIPELINE_BIND_POINT_GRAPHICS;
 			state.propagateDescriptorSets[baseSet + i] = cmd;
 		}
@@ -521,11 +518,9 @@ BindDescriptorsGraphics(const VkDescriptorSet* descriptors, uint32_t baseSet, ui
 			VkCommandBufferThread::VkDescriptorsCommand cmd;
 			cmd.baseSet = baseSet;
 			cmd.numSets = setCount;
-			n_assert(setCount < VkCommandBufferThread::VkDescriptorsCommand::MaxSets);
-			Memory::CopyElements(descriptors, cmd.sets, setCount);
+			cmd.sets = descriptors;
 			cmd.numOffsets = offsetCount;
-			n_assert(offsetCount < VkCommandBufferThread::VkDescriptorsCommand::MaxOffsets);
-			Memory::CopyElements(offsets, cmd.offsets, offsetCount);
+			cmd.offsets = offsets;
 			cmd.type = VK_PIPELINE_BIND_POINT_GRAPHICS;
 			state.propagateDescriptorSets[baseSet].baseSet = -1;
 			state.drawThread->Push(cmd);
@@ -553,7 +548,7 @@ BindDescriptorsCompute(const VkDescriptorSet* descriptors, uint32_t baseSet, uin
 /**
 */
 void 
-UpdatePushRanges(const VkShaderStageFlags& stages, const VkPipelineLayout& layout, uint32_t offset, uint32_t size, void* data)
+UpdatePushRanges(const VkShaderStageFlags& stages, const VkPipelineLayout& layout, uint32_t offset, uint32_t size, const byte* data)
 {
 	if (state.drawThread)
 	{
@@ -563,9 +558,6 @@ UpdatePushRanges(const VkShaderStageFlags& stages, const VkPipelineLayout& layou
 		cmd.offset = offset;
 		cmd.size = size;
 		cmd.stages = stages;
-
-		// copy data here, will be deleted in the thread
-		n_assert(size < VkCommandBufferThread::VkPushConstantsCommand::MaxSize);
 		memcpy(cmd.data, data, size);
 		state.drawThread->Push(cmd);
 	}
@@ -667,6 +659,20 @@ CreateAndBindGraphicsPipeline()
 		pipeCommand.layout = state.currentPipelineLayout;
 		state.drawThread->Push(pipeCommand);
 
+		// update stencil stuff
+		VkCommandBufferThread::VkStencilRefCommand stencilRefCommand;
+		stencilRefCommand.frontRef = state.currentStencilFrontRef;
+		stencilRefCommand.backRef = state.currentStencilBackRef;
+		state.drawThread->Push(stencilRefCommand);
+
+		VkCommandBufferThread::VkStencilReadMaskCommand stencilReadMaskCommand;
+		stencilReadMaskCommand.mask = state.currentStencilReadMask;
+		state.drawThread->Push(stencilReadMaskCommand);
+
+		VkCommandBufferThread::VkStencilWriteMaskCommand stencilWriteMaskCommand;
+		stencilWriteMaskCommand.mask = state.currentStencilWriteMask;
+		state.drawThread->Push(stencilWriteMaskCommand);
+
 		// bind textures and camera descriptors
 		VkShaderServer::Instance()->BindTextureDescriptorSetsGraphics();
 		VkTransformDevice::Instance()->BindCameraDescriptorSetsGraphics();
@@ -676,17 +682,9 @@ CreateAndBindGraphicsPipeline()
 			if (state.propagateDescriptorSets[i].baseSet != -1)
 				state.drawThread->Push(state.propagateDescriptorSets[i]);
 
-		VkCommandBufferThread::VkScissorRectArrayCommand scissorCommand;
-		scissorCommand.first = 0;
-		scissorCommand.num = state.numScissors;
-		Memory::CopyElements(state.scissors, scissorCommand.scs, state.numScissors);
-		state.drawThread->Push(scissorCommand);
-
-		VkCommandBufferThread::VkViewportArrayCommand viewportCommand;
-		viewportCommand.first = 0;
-		viewportCommand.num = state.numViewports;
-		Memory::CopyElements(state.viewports, viewportCommand.vps, state.numViewports);
-		state.drawThread->Push(viewportCommand);
+		// push viewport and scissor arrays
+		state.drawThread->Push(state.scissorArrayCommand);
+		state.drawThread->Push(state.viewportArrayCommand);
 	}
 	else
 	{
@@ -707,8 +705,14 @@ CreateAndBindGraphicsPipeline()
 		vkCmdBindPipeline(GetMainBuffer(CoreGraphics::GraphicsQueueType), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
 		// set viewport stuff
-		vkCmdSetViewport(GetMainBuffer(CoreGraphics::GraphicsQueueType), 0, state.numViewports, state.viewports);
-		vkCmdSetScissor(GetMainBuffer(CoreGraphics::GraphicsQueueType), 0, state.numScissors, state.scissors);
+		vkCmdSetViewport(GetMainBuffer(CoreGraphics::GraphicsQueueType), 0, state.viewportArrayCommand.num, state.viewportArrayCommand.vps);
+		vkCmdSetScissor(GetMainBuffer(CoreGraphics::GraphicsQueueType), 0, state.scissorArrayCommand.num, state.scissorArrayCommand.scs);
+
+		// set stencil stuff
+		vkCmdSetStencilCompareMask(GetMainBuffer(CoreGraphics::GraphicsQueueType), VK_STENCIL_FACE_FRONT_AND_BACK, state.currentStencilReadMask);
+		vkCmdSetStencilWriteMask(GetMainBuffer(CoreGraphics::GraphicsQueueType), VK_STENCIL_FACE_FRONT_AND_BACK, state.currentStencilWriteMask);
+		vkCmdSetStencilReference(GetMainBuffer(CoreGraphics::GraphicsQueueType), VK_STENCIL_FACE_FRONT_BIT, state.currentStencilFrontRef);
+		vkCmdSetStencilReference(GetMainBuffer(CoreGraphics::GraphicsQueueType), VK_STENCIL_FACE_BACK_BIT, state.currentStencilBackRef);
 	}
 }
 
@@ -743,20 +747,17 @@ UnbindPipeline()
 void
 SetVkViewports(VkViewport* viewports, SizeT num)
 {
-	n_assert(num < state.MaxClipSettings);
-	Memory::CopyElements(viewports, state.viewports, num);
-	state.numViewports = num;
-	n_assert(num <= VkCommandBufferThread::VkViewportArrayCommand::Max);
+	VkCommandBufferThread::VkViewportArrayCommand& cmd = state.viewportArrayCommand;
+	cmd.first = 0;
+	cmd.num = num;
+	cmd.vps = viewports;
 	if (state.currentProgram != -1)
 	{
 		if (state.drawThread)
 		{
 			if (state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid())
 			{
-				VkCommandBufferThread::VkViewportArrayCommand cmd;
-				cmd.first = 0;
-				cmd.num = num;
-				Memory::CopyElements(viewports, cmd.vps, num);
+
 				state.drawThread->Push(cmd);
 			}
 		}
@@ -774,22 +775,19 @@ SetVkViewports(VkViewport* viewports, SizeT num)
 void
 SetVkScissorRects(VkRect2D* scissors, SizeT num)
 {
-	n_assert(num < state.MaxClipSettings);
-	Memory::CopyElements(scissors, state.scissors, num);
-	state.numScissors = num;
-	n_assert(num <= VkCommandBufferThread::VkScissorRectArrayCommand::Max);
+	VkCommandBufferThread::VkScissorRectArrayCommand& cmd = state.scissorArrayCommand;
+	cmd.first = 0;
+	cmd.num = num;
+	cmd.scs = scissors;
+
 	if (state.currentProgram != -1)
 	{
 		if (state.drawThread)
 		{
 			if (state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid())
 			{
-				VkCommandBufferThread::VkScissorRectArrayCommand cmd;
-				cmd.first = 0;
-				cmd.num = num;
-				Memory::CopyElements(scissors, cmd.scs, num);
 				state.drawThread->Push(cmd);
-			}			
+			}
 		}
 		else
 		{
@@ -2177,7 +2175,7 @@ BeginPass(const CoreGraphics::PassId pass)
 	state.pass = pass;
 
 	const VkRenderPassBeginInfo& info = PassGetVkRenderPassBeginInfo(pass);
-	state.passInfo.framebuffer = VK_NULL_HANDLE;
+	state.passInfo.framebuffer = info.framebuffer;
 	state.passInfo.renderPass = info.renderPass;
 	state.passInfo.subpass = 0;
 	state.passInfo.pipelineStatistics = 0;
@@ -2410,6 +2408,10 @@ SetShaderProgram(const CoreGraphics::ShaderProgramId pro, const CoreGraphics::Qu
 	n_assert(pro != CoreGraphics::ShaderProgramId::Invalid());
 	const VkShaderProgramRuntimeInfo& info = CoreGraphics::shaderPool->shaderAlloc.Get<VkShaderPool::Shader_ProgramAllocator>(pro.shaderId).Get<ShaderProgram_RuntimeInfo>(pro.programId);
 	state.currentShaderProgram = pro;
+	state.currentStencilFrontRef = info.stencilFrontRef;
+	state.currentStencilBackRef = info.stencilBackRef;
+	state.currentStencilReadMask = info.stencilReadMask;
+	state.currentStencilWriteMask = info.stencilWriteMask;
 	if (state.currentPipelineLayout != info.layout)
 	{
 		state.currentPipelineLayout = info.layout;
@@ -2879,14 +2881,11 @@ InsertBarrier(const CoreGraphics::BarrierId barrier, const CoreGraphics::QueueTy
 			cmd.srcMask = info.srcFlags;
 			cmd.dstMask = info.dstFlags;
 			cmd.memoryBarrierCount = info.numMemoryBarriers;
-			n_assert(info.numMemoryBarriers < VkCommandBufferThread::VkBarrierCommand::Max);
-			Memory::CopyElements(info.memoryBarriers, cmd.memoryBarriers, info.numMemoryBarriers);
+			cmd.memoryBarriers = info.memoryBarriers;
 			cmd.bufferBarrierCount = info.numBufferBarriers;
-			n_assert(info.numBufferBarriers < VkCommandBufferThread::VkBarrierCommand::Max);
-			Memory::CopyElements(info.bufferBarriers, cmd.bufferBarriers, info.numBufferBarriers);
+			cmd.bufferBarriers = info.bufferBarriers;
 			cmd.imageBarrierCount = info.numImageBarriers;
-			n_assert(info.numImageBarriers < VkCommandBufferThread::VkBarrierCommand::Max);
-			Memory::CopyElements(info.imageBarriers, cmd.imageBarriers, info.numImageBarriers);
+			cmd.imageBarriers = info.imageBarriers;
 			state.drawThread->Push(cmd);
 		}
 		else
@@ -2957,14 +2956,12 @@ WaitEvent(const CoreGraphics::EventId ev, const CoreGraphics::QueueType queue)
 			VkCommandBufferThread::VkWaitForEventCommand cmd;
 			cmd.event = info.event;
 			cmd.numEvents = 1;
-			n_assert(info.numMemoryBarriers < VkCommandBufferThread::VkWaitForEventCommand::Max);
-			Memory::CopyElements(info.memoryBarriers, cmd.memoryBarriers, info.numMemoryBarriers);
+			cmd.memoryBarrierCount = info.numMemoryBarriers;
+			cmd.memoryBarriers = info.memoryBarriers;
 			cmd.bufferBarrierCount = info.numBufferBarriers;
-			n_assert(info.numBufferBarriers < VkCommandBufferThread::VkWaitForEventCommand::Max);
-			Memory::CopyElements(info.bufferBarriers, cmd.bufferBarriers, info.numBufferBarriers);
+			cmd.bufferBarriers = info.bufferBarriers;
 			cmd.imageBarrierCount = info.numImageBarriers;
-			n_assert(info.numImageBarriers < VkCommandBufferThread::VkWaitForEventCommand::Max);
-			Memory::CopyElements(info.imageBarriers, cmd.imageBarriers, info.numImageBarriers);
+			cmd.imageBarriers = info.imageBarriers;
 			cmd.waitingStage = info.leftDependency;
 			cmd.signalingStage = info.rightDependency;
 			state.drawThread->Push(cmd);
@@ -3113,9 +3110,6 @@ EndSubpassCommands()
 	n_assert(state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid())
 	VkCommandBufferThread::VkCommandBufferEndCommand cmd;
 	state.drawThread->Push(cmd);
-
-	// flush everything to the thread
-	//state.drawThread->Flush();
 
 	// queue up the command buffer for clear next frame
 	Vulkan::SubmissionContextClearCommandBuffer(state.gfxSubmission, state.drawThreadCommands);
@@ -3629,29 +3623,27 @@ void
 SetViewport(const Math::rectangle<int>& rect, int index)
 {
 	// copy here is on purpose, because we don't want to modify the state viewports (they are pointers to the pass)
-	VkViewport& vp = state.viewports[index];
+	VkViewport vp;
 	vp.width = (float)rect.width();
 	vp.height = (float)rect.height();
 	vp.x = (float)rect.left;
 	vp.y = (float)rect.top;
 
 	// only apply to batch or command buffer if we have a program bound
-	if (state.currentProgram != -1)
+	n_assert(state.currentProgram != -1);
+	if (state.drawThread)
 	{
-		if (state.drawThread)
+		if (state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid())
 		{
-			if (state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid())
-			{
-				VkCommandBufferThread::VkViewportCommand cmd;
-				cmd.index = index;
-				cmd.vp = vp;
-				state.drawThread->Push(cmd);
-			}
+			VkCommandBufferThread::VkViewportCommand cmd;
+			cmd.index = index;
+			cmd.vp = vp;
+			state.drawThread->Push(cmd);
 		}
-		else
-		{
-			vkCmdSetViewport(GetMainBuffer(GraphicsQueueType), index, 1, &state.viewports[index]);
-		}
+	}
+	else
+	{
+		vkCmdSetViewport(GetMainBuffer(GraphicsQueueType), index, 1, &vp);
 	}
 }
 
@@ -3662,28 +3654,25 @@ void
 SetScissorRect(const Math::rectangle<int>& rect, int index)
 {
 	// copy here is on purpose, because we don't want to modify the state scissors (they are pointers to the pass)
-	VkRect2D& sc = state.scissors[index];
+	VkRect2D sc;
 	sc.extent.width = rect.width();
 	sc.extent.height = rect.height();
 	sc.offset.x = rect.left;
 	sc.offset.y = rect.top;
-
-	if (state.currentProgram != -1)
+	n_assert(state.currentProgram != -1);
+	if (state.drawThread)
 	{
-		if (state.drawThread)
+		if (state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid())
 		{
-			if (state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid())
-			{
-				VkCommandBufferThread::VkScissorRectCommand cmd;
-				cmd.index = index;
-				cmd.sc = sc;
-				state.drawThread->Push(cmd);
-			}
+			VkCommandBufferThread::VkScissorRectCommand cmd;
+			cmd.index = index;
+			cmd.sc = sc;
+			state.drawThread->Push(cmd);
 		}
-		else
-		{
-			vkCmdSetScissor(GetMainBuffer(GraphicsQueueType), index, 1, &state.scissors[index]);
-		}
+	}
+	else
+	{
+		vkCmdSetScissor(GetMainBuffer(GraphicsQueueType), index, 1, &sc);
 	}
 }
 
@@ -3691,38 +3680,69 @@ SetScissorRect(const Math::rectangle<int>& rect, int index)
 /**
 */
 void 
-SetViewports(Math::rectangle<int>* viewports, SizeT num)
+SetStencilRef(const uint frontRef, const uint backRef)
 {
-	// copy here is on purpose, because we don't want to modify the state viewports (they are pointers to the pass)
-	IndexT i;
-	for (i = 0; i < num; i++)
+	state.currentStencilFrontRef = frontRef;
+	state.currentStencilBackRef = backRef;
+	if (state.drawThread)
 	{
-		VkViewport& vp = state.viewports[i];
-		vp.width = (float)viewports[i].width();
-		vp.height = (float)viewports[i].height();
-		vp.x = (float)viewports[i].left;
-		vp.y = (float)viewports[i].top;
+		if (state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid())
+		{
+			VkCommandBufferThread::VkStencilRefCommand cmd;
+			cmd.frontRef = frontRef;
+			cmd.backRef = backRef;
+			state.drawThread->Push(cmd);
+		}
 	}
-	state.numViewports = num;
+	else
+	{
+		vkCmdSetStencilReference(GetMainBuffer(GraphicsQueueType), VK_STENCIL_FACE_FRONT_BIT, frontRef);
+		vkCmdSetStencilReference(GetMainBuffer(GraphicsQueueType), VK_STENCIL_FACE_BACK_BIT, backRef);
+	}
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void 
-SetScissorRects(Math::rectangle<int>* scissors, SizeT num)
+SetStencilReadMask(const uint readMask)
 {
-	// copy here is on purpose, because we don't want to modify the state viewports (they are pointers to the pass)
-	IndexT i;
-	for (i = 0; i < num; i++)
+	state.currentStencilReadMask = readMask;
+	if (state.drawThread)
 	{
-		VkRect2D& sc = state.scissors[i];
-		sc.extent.width = (float)scissors[i].width();
-		sc.extent.height = (float)scissors[i].height();
-		sc.offset.x = (float)scissors[i].left;
-		sc.offset.y = (float)scissors[i].top;
+		if (state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid())
+		{
+			VkCommandBufferThread::VkStencilReadMaskCommand cmd;
+			cmd.mask = readMask;
+			state.drawThread->Push(cmd);
+		}
 	}
-	state.numScissors = num;
+	else
+	{
+		vkCmdSetStencilCompareMask(GetMainBuffer(GraphicsQueueType), VK_STENCIL_FACE_FRONT_AND_BACK, readMask);
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+SetStencilWriteMask(const uint writeMask)
+{
+	state.currentStencilWriteMask;
+	if (state.drawThread)
+	{
+		if (state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid())
+		{
+			VkCommandBufferThread::VkStencilWriteMaskCommand cmd;
+			cmd.mask = writeMask;
+			state.drawThread->Push(cmd);
+		}
+	}
+	else
+	{
+		vkCmdSetStencilWriteMask(GetMainBuffer(GraphicsQueueType), VK_STENCIL_FACE_FRONT_AND_BACK, writeMask);
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -3832,7 +3852,7 @@ ObjectSetName(const CoreGraphics::TextureId id, const char* name)
 	Util::String str = Util::String::Sprintf("%s - View", name);
 	info.pObjectName = str.AsCharPtr();
 	res = VkDebugObjectName(dev, &info);
-	n_assert(res == VK_SUCCESS);
+	n_assert(res == VK_SUCCESS);	
 }
 
 //------------------------------------------------------------------------------

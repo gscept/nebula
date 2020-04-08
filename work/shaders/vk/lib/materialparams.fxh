@@ -8,7 +8,7 @@
 #include "std.fxh"
 
 // material properties
-group(BATCH_GROUP) shared varblock MaterialParams [ string Visibility = "VS|PS"; ]
+group(BATCH_GROUP) shared constant MaterialParams [ string Visibility = "VS|PS"; ]
 {
 	vec4 MatAlbedoIntensity = vec4(1.0f, 1.0f, 1.0f, 1.0f);
 	vec4 MatSpecularIntensity = vec4(1.0f, 1.0f, 1.0f, 1.0f);

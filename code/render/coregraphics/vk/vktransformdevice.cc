@@ -24,6 +24,23 @@ __ImplementSingleton(Vulkan::VkTransformDevice);
 /**
 */
 VkTransformDevice::VkTransformDevice()
+	: viewVar(CoreGraphics::InvalidConstantBinding)
+	, invViewVar(CoreGraphics::InvalidConstantBinding)
+	, viewProjVar(CoreGraphics::InvalidConstantBinding)
+	, invViewProjVar(CoreGraphics::InvalidConstantBinding)
+	, projVar(CoreGraphics::InvalidConstantBinding)
+	, invProjVar(CoreGraphics::InvalidConstantBinding)
+	, eyePosVar(CoreGraphics::InvalidConstantBinding)
+	, focalLengthNearFarVar(CoreGraphics::InvalidConstantBinding)
+	, viewMatricesVar(CoreGraphics::InvalidConstantBinding)
+	, timeAndRandomVar(CoreGraphics::InvalidConstantBinding)
+	, nearFarPlaneVar(CoreGraphics::InvalidConstantBinding)
+	, frameOffset(0)
+	, shadowCameraBlockVar(CoreGraphics::InvalidConstantBinding)
+	, viewConstants(CoreGraphics::ConstantBufferId::Invalid())
+	, viewConstantsSlot(InvalidIndex)
+	, shadowConstantsSlot(InvalidIndex)
+	, tableLayout(CoreGraphics::ResourcePipelineId::Invalid())
 {
 	__ConstructSingleton
 }

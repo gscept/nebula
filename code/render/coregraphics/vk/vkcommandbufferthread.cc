@@ -208,7 +208,26 @@ VkCommandBufferThread::DoWork()
 				n_assert(this->vkCommandBuffer != VK_NULL_HANDLE);
 				vkCmdSetScissor(this->vkCommandBuffer, vkcmd->first, vkcmd->num, vkcmd->scs);
 				break;
-			}				
+			}
+			case StencilRefs:
+			{
+				VkStencilRefCommand* vkcmd = reinterpret_cast<VkStencilRefCommand*>(commandBuf);
+				vkCmdSetStencilReference(this->vkCommandBuffer, VK_STENCIL_FACE_FRONT_BIT, vkcmd->frontRef);
+				vkCmdSetStencilReference(this->vkCommandBuffer, VK_STENCIL_FACE_BACK_BIT, vkcmd->backRef);
+				break;
+			}
+			case StencilReadMask:
+			{
+				VkStencilReadMaskCommand* vkcmd = reinterpret_cast<VkStencilReadMaskCommand*>(commandBuf);
+				vkCmdSetStencilCompareMask(this->vkCommandBuffer, VK_STENCIL_FACE_FRONT_AND_BACK, vkcmd->mask);
+				break;
+			}
+			case StencilWriteMask:
+			{
+				VkStencilWriteMaskCommand* vkcmd = reinterpret_cast<VkStencilWriteMaskCommand*>(commandBuf);
+				vkCmdSetStencilWriteMask(this->vkCommandBuffer, VK_STENCIL_FACE_FRONT_AND_BACK, vkcmd->mask);
+				break;
+			}
 			case UpdateBuffer:
 			{
 				VkUpdateBufferCommand* vkcmd = reinterpret_cast<VkUpdateBufferCommand*>(commandBuf);

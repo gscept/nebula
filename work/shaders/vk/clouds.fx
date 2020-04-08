@@ -17,7 +17,7 @@ vec4 CloudThicknesses;
 vec4 CloudThickColor = vec4(0.4f, 0.4f, 0.4f, 0.4f);
 
 
-samplerstate CloudSampler
+sampler_state CloudSampler
 {
 	Samplers = { CloudLayer1, CloudLayer2, CloudLayer3 };
 	//MaxAnisotropic = 16;
@@ -26,7 +26,7 @@ samplerstate CloudSampler
 	AddressV = Mirror;
 };
 
-state CloudState
+render_state CloudState
 {
 	BlendEnabled[0] = true;
 	SrcBlend[0] = SrcAlpha;

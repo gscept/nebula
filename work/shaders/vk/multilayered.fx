@@ -18,7 +18,7 @@ float AnimationAngularSpeed;
 int NumXTiles = 1;
 int NumYTiles = 1;
 
-group(BATCH_GROUP) shared varblock MLPTextures [string Visibility = "PS";]
+group(BATCH_GROUP) shared constant MLPTextures [string Visibility = "PS";]
 {
 	textureHandle AlbedoMap2;
 	textureHandle AlbedoMap3;
@@ -31,7 +31,7 @@ group(BATCH_GROUP) shared varblock MLPTextures [string Visibility = "PS";]
 	textureHandle DisplacementMap3;
 };
 
-state MLPState
+render_state MLPState
 {
 	CullMode = Back;
 };

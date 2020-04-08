@@ -26,6 +26,7 @@ ID_24_8_TYPE(ConstantBufferId);
 ID_32_32_NAMED_TYPE(ConstantBufferAllocId, offset, size);
 
 typedef uint ConstantBinding; // defined again!
+static uint InvalidConstantBinding = UINT_MAX;
 
 struct ConstantBufferCreateInfo
 {

@@ -37,6 +37,7 @@ struct VkShaderProgramRuntimeInfo
 	VkPipelineTessellationStateCreateInfo tessInfo;
 	VkPipelineShaderStageCreateInfo shaderInfos[5];
 	VkShaderModule vs, hs, ds, gs, ps, cs;
+	uint stencilFrontRef, stencilBackRef, stencilReadMask, stencilWriteMask;
 	VkPipeline pipeline;
 	VkPipelineLayout layout;
 	CoreGraphics::ShaderPipeline type;

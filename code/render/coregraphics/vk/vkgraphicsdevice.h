@@ -68,7 +68,7 @@ void BindDescriptorsGraphics(const VkDescriptorSet* descriptors, uint32_t baseSe
 /// update descriptors
 void BindDescriptorsCompute(const VkDescriptorSet* descriptors, uint32_t baseSet, uint32_t setCount, const uint32_t* offsets, uint32_t offsetCount, const CoreGraphics::QueueType queue);
 /// update push ranges
-void UpdatePushRanges(const VkShaderStageFlags& stages, const VkPipelineLayout& layout, uint32_t offset, uint32_t size, void* data);
+void UpdatePushRanges(const VkShaderStageFlags& stages, const VkPipelineLayout& layout, uint32_t offset, uint32_t size, const byte* data);
 
 /// sets the current shader pipeline information
 void BindGraphicsPipelineInfo(const VkGraphicsPipelineCreateInfo& shader, const uint32_t programId);

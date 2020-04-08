@@ -11,12 +11,12 @@
 textureHandle AlbedoMap;
 vec4 Color = vec4(1,1,1,1);
 
-samplerstate BillboardSampler
+sampler_state BillboardSampler
 {
 	//Samplers = { AlbedoMap };
 };
 
-state BillboardState
+render_state BillboardState
 {
 	CullMode = None;
 };

@@ -254,12 +254,6 @@ QueueNameFromQueueType(const QueueType type)
 
 	#define MAX_INPUT_ATTACHMENTS 32
 
-	#define MAX_2D_TEXTURES 2048
-	#define MAX_2D_MS_TEXTURES 64
-	#define MAX_2D_ARRAY_TEXTURES 8
-	#define MAX_CUBE_TEXTURES 128
-	#define MAX_3D_TEXTURES 128
-
 	#define SHADER_MODEL_5 (1)
 	#ifdef _DEBUG
 		#define NEBULA_VULKAN_DEBUG (1)

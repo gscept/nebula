@@ -24,10 +24,11 @@ public:
 	{
 		Math::transform44 transform;
 		Math::matrix44 modelTransform;
+		Math::matrix44 invModelTransform;
 		bool isInViewSpace;
 		bool lockedToViewer;
 		
-		// Identifiable object id. Usually the graphics entity id.
+		/// Identifiable object id. Usually the graphics entity id.
 		/// @todo	Should be moved to a per-model-instance resource since it's the same for every model instance
 		uint objectId;
 

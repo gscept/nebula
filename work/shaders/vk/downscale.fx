@@ -9,13 +9,13 @@
 
 sampler2D ColorSource;
 
-samplerstate ColorSampler
+sampler_state ColorSampler
 {
 	Samplers = { ColorSource };
 	Filter = Point;
 };
 
-state DownscaleState
+render_state DownscaleState
 {
 	CullMode = Back;
 	DepthEnabled = false;

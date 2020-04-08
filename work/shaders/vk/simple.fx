@@ -8,13 +8,13 @@
 #include "lib/util.fxh"
 #include "lib/techniques.fxh"
 
-group(BATCH_GROUP) push varblock Simple
+group(BATCH_GROUP) push constant Simple
 {
 	mat4 ShapeModel;
 	vec4 MatDiffuse;
 };
 
-state WireframeState
+render_state WireframeState
 {
 	CullMode = None;	
 	BlendEnabled[0] = true;	
@@ -24,7 +24,7 @@ state WireframeState
 	//MultisampleEnabled = true;
 };
 
-state DepthEnabledState
+render_state DepthEnabledState
 {
 	CullMode = None;	
 	BlendEnabled[0] = true;
@@ -35,7 +35,7 @@ state DepthEnabledState
 	//MultisampleEnabled = true;
 };
 
-state DepthDisabledState
+render_state DepthDisabledState
 {
 	CullMode = None;	
 	BlendEnabled[0] = true;

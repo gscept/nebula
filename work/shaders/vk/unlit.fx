@@ -15,17 +15,17 @@ float Brightness = 0.0f;
 sampler2D AlbedoMap;
 
 /// Declaring used samplers
-samplerstate DefaultSampler
+sampler_state DefaultSampler
 {
 	Samplers = { AlbedoMap };
 };
 
-state UnlitOpaqueState
+render_state UnlitOpaqueState
 {
 	CullMode = Back;
 };
 
-state UnlitAlphaState
+render_state UnlitAlphaState
 {
 	BlendEnabled[0] = true;
 	SrcBlend[0] = SrcAlpha;

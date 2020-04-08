@@ -29,14 +29,14 @@ const vec4 DebugColors[8] =
     float4 ( 0.5f, 3.5f, 0.75f, 1.0f )
 };
 
-samplerstate CSMTextureSampler
+sampler_state CSMTextureSampler
 {
 	//Samplers = { ShadowProjMap };
 	//Filter = MinMagLinearMipPoint;
 	AddressU = Border;
 	AddressV = Border;
 	//MaxAnisotropic = 16;
-	//BorderColor = { 1,1,1,1 };
+	//BorderColor = White;
 };
 
 const float CascadeBlendArea = 0.2f;

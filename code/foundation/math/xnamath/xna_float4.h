@@ -108,7 +108,7 @@ public:
 	/// store 3 components of vector to pointer
 	static void store3(const float4& vec, scalar* dst);
 	/// store 3 components of vector to unaligned pointer
-	static void store3u(const float4& vec, scalar* dst);
+	static void storeu3(const float4& vec, scalar* dst);
 	/// store vector as uint to pointer
 	static void storeui(const float4& vec, uint* dst);
 	/// store vector as sint to pointer
@@ -464,7 +464,7 @@ float4::store3(const float4& vec, scalar* dst)
 /**
 */
 __forceinline void
-float4::store3u(const float4& vec, scalar* dst)
+float4::storeu3(const float4& vec, scalar* dst)
 {
 	DirectX::XMStoreFloat3((DirectX::XMFLOAT3*)dst, vec.vec);
 }

@@ -18,17 +18,17 @@ int NumTilesPerSec = 1;
 sampler2D AlbedoMap;
 
 /// Declaring used samplers
-samplerstate DefaultSampler
+sampler_state DefaultSampler
 {
 	Samplers = { AlbedoMap };
 };
 
-state SpriteOpaqueState
+render_state SpriteOpaqueState
 {
 	CullMode = None;
 };
 
-state SpriteAlphaState
+render_state SpriteAlphaState
 {
 	BlendEnabled[0] = true;
 	SrcBlend[0] = SrcAlpha;

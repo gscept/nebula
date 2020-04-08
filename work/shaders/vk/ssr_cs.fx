@@ -13,7 +13,7 @@
 
 write rgba16f image2D TraceBuffer;
 
-varblock SSRBlock
+constant SSRBlock
 {
 	mat4 ViewToTextureSpace;
 };
@@ -33,20 +33,20 @@ const float marchingStepSize = 0.10;
 const float rayOffset = 0.5;
 const float distanceCutoff = 200; // Rays won't be evaluated beyond this distance from the camera
 
-samplerstate LinearState
+sampler_state LinearState
 {
 	//Samplers = {DepthBuffer, SpecularBuffer, NormalBuffer, AlbedoBuffer};
 	Filter = Linear;
-	BorderColor = {0,0,0,0};
+	BorderColor = Transparent;
 	AddressU = Border;
 	AddressV = Border;
 };
 
-samplerstate NoFilterState
+sampler_state NoFilterState
 {
 	//Samplers = {DepthBuffer, SpecularBuffer, NormalBuffer, AlbedoBuffer};
 	Filter = Point;
-	BorderColor = {0,0,0,0};
+	BorderColor = Transparent;
 	AddressU = Border;
 	AddressV = Border;
 };
@@ -240,7 +240,6 @@ bool RaymarchScreenSpace(in vec3 rayOrigin,
 //------------------------------------------------------------------------------
 /**
 */
-
 [localsizex] = 32
 [localsizey] = 32
 shader
