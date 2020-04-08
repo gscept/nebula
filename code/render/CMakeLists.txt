@@ -364,6 +364,11 @@ ENDIF()
                 decalcontext.cc
                 decalcontext.h
             )
+        fips_dir(fog)
+            fips_files(
+                volumetricfogcontext.cc
+                volumetricfogcontext.h
+            )
 		fips_dir(frame)
 			fips_files(
 				framebarrier.cc

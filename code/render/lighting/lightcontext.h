@@ -91,6 +91,13 @@ public:
 	static void OnRenderDebug(uint32_t flags);
 #endif
 
+
+	/// get lighting texture
+	static const CoreGraphics::TextureId GetLightingTexture();
+	/// get light index lists buffer
+	static const CoreGraphics::ShaderRWBufferId GetLightIndexBuffer();
+	/// get light lists buffer
+	static const CoreGraphics::ShaderRWBufferId GetLightsBuffer();
 private:
 
 	/// set transform, type must match the type the entity was created with
@@ -106,8 +113,8 @@ private:
 	static void CullAndClassify();
 	/// run light deferred
 	static void ComputeLighting();
-	/// render lights
-	static void RenderLights();
+	/// run lighting combination pass
+	static void CombineLighting();
 	/// run shadow map blurring
 	static void BlurGlobalShadowMap();
 

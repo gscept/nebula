@@ -1,10 +1,10 @@
-
 //------------------------------------------------------------------------------
 //  lights_clustered.fxh
 //  (C) 2019 Gustav Sterbrant
 //------------------------------------------------------------------------------
-#include "lib/shadowbase.fxh"
-#include "lib/pbr.fxh"
+#include "shadowbase.fxh"
+#include "pbr.fxh"
+#include "CSM.fxh"
 
 struct SpotLight
 {
@@ -51,6 +51,9 @@ struct PointLightShadowExtension
 // match these in lightcontext.cc
 const uint USE_SHADOW_BITFLAG = 1;
 const uint USE_PROJECTION_TEX_BITFLAG = 2;
+
+// increase if we need more lights in close proximity, for now, 128 is more than enough
+#define MAX_LIGHTS_PER_CLUSTER 128
 
 #define FlagSet(x, flags) ((x & flags) == flags)
 
@@ -128,8 +131,6 @@ CalculatePointLight(
 	in vec4 albedo)
 {
 	vec3 lightDir = (light.position.xyz - viewPos);
-	vec3 projDir = (InvView * vec4(-lightDir, 0)).xyz;
-
 	float lightDirLen = length(lightDir);
 
 	float d2 = lightDirLen * lightDirLen;
@@ -167,6 +168,7 @@ CalculatePointLight(
 	float shadowFactor = 1.0f;
 	if (FlagSet(light.flags, USE_SHADOW_BITFLAG))
 	{
+		vec3 projDir = (InvView * vec4(-lightDir, 0)).xyz;
 		shadowFactor = GetInvertedOcclusionPointLight(depth, projDir, ext.shadowMap);
 		shadowFactor = saturate(lerp(1.0f, saturate(shadowFactor), ext.shadowIntensity));
 	}
@@ -182,7 +184,6 @@ CalculateSpotLight(
 	in SpotLight light, 
 	in SpotLightProjectionExtension projExt, 
 	in SpotLightShadowExtension shadowExt, 
-	in vec3 worldPos,
 	in vec3 viewPos,
 	in vec3 viewVec, 
 	in vec3 normal, 
@@ -191,7 +192,7 @@ CalculateSpotLight(
 	in vec4 albedo)
 {
 	vec3 lightDir = (light.position.xyz - viewPos);
-	
+
 	float lightDirLen = length(lightDir);
 
 	float d2 = lightDirLen * lightDirLen;
@@ -211,7 +212,7 @@ CalculateSpotLight(
 	// if we have both projection and shadow extensions, transform only the projected position for one of them
 	if (FlagSet(light.flags, USE_PROJECTION_TEX_BITFLAG) && (FlagSet(light.flags, USE_SHADOW_BITFLAG)))
 	{
-		vec4 projLightPos = projExt.projection * vec4(worldPos, 1.0f);
+		vec4 projLightPos = projExt.projection * vec4(viewPos, 1.0f);
 		projLightPos.xyz /= projLightPos.www;
 		vec2 lightSpaceUv = projLightPos.xy * vec2(0.5f, 0.5f) + 0.5f;
 		lightModColor *= sample2DLod(projExt.projectionTexture, SpotlightTextureSampler, lightSpaceUv, 0);
@@ -224,7 +225,7 @@ CalculateSpotLight(
 	}
 	else if (FlagSet(light.flags, USE_PROJECTION_TEX_BITFLAG))
 	{
-		vec4 projLightPos = projExt.projection * vec4(worldPos, 1.0f);
+		vec4 projLightPos = projExt.projection * vec4(viewPos, 1.0f);
 		projLightPos.xy /= projLightPos.ww;
 		vec2 lightSpaceUv = projLightPos.xy * vec2(0.5f, 0.5f) + 0.5f;
 		lightModColor *= sample2DLod(projExt.projectionTexture, SpotlightTextureSampler, lightSpaceUv, 0);
@@ -232,7 +233,7 @@ CalculateSpotLight(
 	else if (FlagSet(light.flags, USE_SHADOW_BITFLAG))
 	{
 		// shadows
-		vec4 shadowProjLightPos = shadowExt.projection * vec4(worldPos, 1.0f);
+		vec4 shadowProjLightPos = shadowExt.projection * vec4(viewPos, 1.0f);
 		shadowProjLightPos.xyz /= shadowProjLightPos.www;
 		vec2 shadowLookup = shadowProjLightPos.xy * vec2(0.5f, -0.5f) + 0.5f;
 		shadowLookup.y = 1 - shadowLookup.y;
@@ -267,4 +268,49 @@ CalculateSpotLight(
 	vec3 irradiance = (kD * albedo.rgb / PI + brdf) * radiance * saturate(NL);
 
 	return irradiance * shadowFactor * lightModColor.rgb;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+vec3
+CalculateGlobalLight(vec4 viewPos, vec3 viewVec, vec3 normal, float depth, vec4 material, vec4 albedo)
+{
+	float NL = saturate(dot(GlobalLightDirWorldspace.xyz, normal));
+	if (NL <= 0) { return vec3(0); }
+
+	float shadowFactor = 1.0f;
+	if (FlagSet(GlobalLightFlags, USE_SHADOW_BITFLAG))
+	{
+		vec4 shadowPos = CSMShadowMatrix * viewPos; // csm contains inversed view + csm transform
+		shadowFactor = CSMPS(shadowPos,
+			GlobalLightShadowBuffer);
+		shadowFactor = lerp(1.0f, shadowFactor, GlobalLightShadowIntensity);
+	}
+
+	vec3 H = normalize(GlobalLightDirWorldspace.xyz + viewVec);
+	float NH = saturate(dot(normal, H));
+	float NV = saturate(dot(normal, viewVec));
+	float HL = saturate(dot(H, GlobalLightDirWorldspace.xyz));
+
+	vec3 F0 = vec3(0.04);
+	CalculateF0(albedo.rgb, material[MAT_METALLIC], F0);
+
+	vec3 fresnel;
+	vec3 brdf;
+	CalculateBRDF(NH, NL, NV, HL, material[MAT_ROUGHNESS], F0, fresnel, brdf);
+
+	//Fresnel term (F) denotes the specular contribution of any light that hits the surface
+	//We set kS (specular) to F and because PBR requires the condition that our equation is
+	//energy conserving, we can set kD (diffuse contribution) to 1 - kS directly
+	//as kS represents the energy of light that gets reflected, the remeaining energy gets refracted, resulting in our diffuse term
+	vec3 kD = vec3(1.0f) - fresnel;
+
+	//Fully metallic surfaces won't refract any light
+	kD *= 1.0f - material[MAT_METALLIC];
+
+	vec3 radiance = GlobalLightColor.xyz;
+	vec3 irradiance = (kD * albedo.rgb / PI + brdf) * radiance * saturate(NL) + GlobalAmbientLightColor.xyz;
+
+	return irradiance * shadowFactor;
 }

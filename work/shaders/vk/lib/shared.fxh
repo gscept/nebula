@@ -23,6 +23,7 @@ group(TICK_GROUP) texture3D			Textures3D[MAX_3D_TEXTURES];
 group(TICK_GROUP) texture2DArray	Textures2DArray[MAX_2D_ARRAY_TEXTURES];
 group(TICK_GROUP) sampler_state		Basic2DSampler {};
 group(TICK_GROUP) sampler_state		PosteffectSampler { Filter = Point; };
+group(TICK_GROUP) sampler_state		PosteffectUpscaleSampler { Filter = Linear; };
 
 #define sample2D(handle, sampler, uv)						texture(sampler2D(Textures2D[handle], sampler), uv)
 #define sample2DLod(handle, sampler, uv, lod)				textureLod(sampler2D(Textures2D[handle], sampler), uv, lod)

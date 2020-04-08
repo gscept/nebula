@@ -80,7 +80,7 @@ group(BATCH_GROUP) rw_buffer DecalLists [ string Visibility = "CS|PS"; ]
 };
 
 // this is used to keep track of how many lights we have active
-group(BATCH_GROUP) constant DecalCullUniforms [ string Visibility = "CS|PS"; ]
+group(BATCH_GROUP) constant DecalUniforms [ string Visibility = "CS|PS"; ]
 {
 	uint NumPBRDecals;
 	uint NumEmissiveDecals;
