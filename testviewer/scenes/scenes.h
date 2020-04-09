@@ -28,6 +28,7 @@
 #include "clustering/clustercontext.h"
 #include "math/matrix44.h"
 #include "particles/particlecontext.h"
+#include "fog/volumetricfogcontext.h"
 
 struct Scene
 {

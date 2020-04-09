@@ -18,6 +18,7 @@ Util::Array<Util::String> entityNames;
 Util::Array<Graphics::GraphicsEntityId> pointLights;
 Util::Array<Graphics::GraphicsEntityId> spotLights;
 Util::Array<Graphics::GraphicsEntityId> decals;
+Util::Array<Graphics::GraphicsEntityId> fogVolumes;
 Util::Array<CoreGraphics::TextureId> decalTextures;
 
 //------------------------------------------------------------------------------
@@ -38,7 +39,7 @@ GraphicsEntityToName(GraphicsEntityId id)
 */
 void OpenScene()
 {
-    static const int NumPointLights = 0;
+    static const int NumPointLights = 1;
     for (int i = -NumPointLights; i < NumPointLights; i++)
     {
         for (int j = -NumPointLights; j < NumPointLights; j++)
@@ -90,18 +91,36 @@ void OpenScene()
         {
             auto id = Graphics::CreateEntity();
 
-            Math::matrix44 decalMatrix = Math::matrix44::scaling(Math::float4(10, 10, 50, 1));
-            decalMatrix = Math::matrix44::multiply(decalMatrix, Math::matrix44::rotationyawpitchroll(0, Math::n_deg2rad(90), 0));
-            decalMatrix.set_position(Math::point(i * 16, 0, j * 16));
+            Math::matrix44 transform = Math::matrix44::scaling(Math::float4(10, 10, 50, 1));
+            transform = Math::matrix44::multiply(transform, Math::matrix44::rotationyawpitchroll(0, Math::n_deg2rad(90), 0));
+            transform.set_position(Math::point(i * 16, 0, j * 16));
 
             // setup decal
             Decals::DecalContext::RegisterEntity(id);
-            Decals::DecalContext::SetupDecalPBR(id, decalMatrix, albedo, normal, material);
+            Decals::DecalContext::SetupDecalPBR(id, transform, albedo, normal, material);
 
             decalTextures.Append(albedo);
             decalTextures.Append(normal);
             decalTextures.Append(material);
             decals.Append(id);
+        }
+    }
+
+    static const int NumFogVolumes = 1;
+    for (int i = -NumFogVolumes; i < NumFogVolumes; i++)
+    {
+        for (int j = -NumFogVolumes; j < NumFogVolumes; j++)
+        {
+            auto id = Graphics::CreateEntity();
+            Math::matrix44 transform = Math::matrix44::scaling(Math::float4(10, 10, 10, 1));
+            transform.set_position(Math::point(16 - i * 16, 0, 16 - j * 16));
+
+            // setup box volume
+            Fog::VolumetricFogContext::RegisterEntity(id);
+            //Fog::VolumetricFogContext::SetupSphereVolume(id, Math::point(16 - i * 16, 0, 16 - j * 16), 10.0f, 1.0f, Math::float4(1));
+            Fog::VolumetricFogContext::SetupBoxVolume(id, transform, 0.2f, Math::float4(1));
+
+            fogVolumes.Append(id);
         }
     }
 

@@ -22,6 +22,7 @@
 #include "dynui/im3d/im3dcontext.h"
 #include "dynui/im3d/im3d.h"
 #include "graphics/environmentcontext.h"
+#include "fog/volumetricfogcontext.h"
 #include "clustering/clustercontext.h"
 #include "scenes/scenes.h"
 #include "debug/framescriptinspector.h"
@@ -132,6 +133,7 @@ SimpleViewerApplication::Open()
         Decals::DecalContext::Create();
 		Im3d::Im3dContext::Create();
 		Dynui::ImguiContext::Create();
+        Fog::VolumetricFogContext::Create();
 
 
 		this->view = gfxServer->CreateView("mainview", "frame:vkdefault.json"_uri);
@@ -181,6 +183,7 @@ SimpleViewerApplication::Close()
     ObserverContext::Discard();
     Lighting::LightContext::Discard();
     Decals::DecalContext::Discard();
+    Fog::VolumetricFogContext::Discard();
 
     this->gfxServer->Close();
     this->inputServer->Close();
