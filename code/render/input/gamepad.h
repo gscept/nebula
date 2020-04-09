@@ -8,7 +8,7 @@
     (C) 2007 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */ 
-#if (__OGL4__ || __VULKAN__)
+#if __VULKAN__
 #include "input/base/gamepadbase.h"
 namespace Input
 {
@@ -17,7 +17,7 @@ namespace Input
 		__DeclareClass(GamePad);
 	};
 }
-#elif (__DX9__ ||__DX11__ || __XBOX360__ || WIN32)
+#elif __WIN32__
 #include "input/xinput/xinputgamepad.h"
 namespace Input
 {

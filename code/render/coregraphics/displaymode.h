@@ -54,16 +54,6 @@ public:
     /// get aspect ratio
     float GetAspectRatio() const;
 
-#if __OGL4__
-	/// set pixel format
-	void SetDepthFormat(PixelFormat::Code p) { this->depthFormat = p; }
-	/// get pixel format
-	PixelFormat::Code GetDepthFormat() const { return this->depthFormat; }
-private:
-	PixelFormat::Code depthFormat;
-public:
-#endif
-
 	/// using DirectX 11, the refresh rate exists within the display mode
 	void SetRefreshRate( uint refreshRate );
 	/// gives you the refresh rate

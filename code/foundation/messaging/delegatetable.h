@@ -1,5 +1,4 @@
 #pragma once
-#if !(__WII__ || __PS3__)   // fast delegates not supported on CodeWarrior...
 //------------------------------------------------------------------------------
 /**
     @class Messaging::DelegateTable
@@ -48,4 +47,3 @@ DelegateTable::Bind(const Id& msgId, CLASS* obj)
 
 } // namespace Messaging
 //------------------------------------------------------------------------------
-#endif

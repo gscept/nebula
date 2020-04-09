@@ -5,9 +5,7 @@
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "coregraphics/vertexlayoutserver.h"
-#if __OGL4__
-__ImplementClass(CoreGraphics::VertexLayoutServer, 'VLSV', OpenGL4::OGL4VertexLayoutServer);
-#elif __VULKAN__
+#if __VULKAN__
 __ImplementClass(CoreGraphics::VertexLayoutServer, 'VLSV', Vulkan::VkVertexLayoutServer);
 #else
 __ImplementClass(CoreGraphics::VertexLayoutServer, 'VLSV', Base::VertexLayoutServerBase);

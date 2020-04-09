@@ -46,14 +46,6 @@ DisplayPageHandler::HandleRequest(const Ptr<Http::HttpRequest>& request)
         return;
     }
 
-    // Wii specific: enable/disable screenshot mode
-    #if __WII__
-    if (String::MatchPattern(request->GetURI().LocalPath(), "*/togglescreenshotmode*"))
-    {
-        disp->GetScreenShotHelper().ToggleScreenShotMode();
-    }
-    #endif
-
     // configure a HTML page writer
     Ptr<HtmlPageWriter> htmlWriter = HtmlPageWriter::Create();
     htmlWriter->SetStream(request->GetResponseContentStream());
@@ -65,15 +57,6 @@ DisplayPageHandler::HandleRequest(const Ptr<Http::HttpRequest>& request)
         htmlWriter->AddAttr("href", "/index.html");
         htmlWriter->Element(HtmlElement::Anchor, "Home");
         
-        // Wii specific: enable/disable screenshot mode
-        #if __WII__
-            htmlWriter->LineBreak();
-            str.Format("Toggle Screenshot Mode (currently %s)",
-                disp->GetScreenShotHelper().IsEnabled() ? "enabled" : "disabled");
-            htmlWriter->AddAttr("href", "/display/togglescreenshotmode");
-            htmlWriter->Element(HtmlElement::Anchor, str);
-        #endif            
-
         // write a screenshot
         htmlWriter->Element(HtmlElement::Heading3, "Screenshot");
         htmlWriter->AddAttr("src", "/display/screenshot");

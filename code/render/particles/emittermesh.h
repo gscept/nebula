@@ -46,12 +46,7 @@ public:
 
 private:
     // width in number of float4's...
-#if __WII__
-    // wii cannot put tangents into the mesh, we only have the point and the normal
-    static const SizeT VertexWidth = 2;
-#else
     static const SizeT VertexWidth = sizeof(EmitterPoint) / sizeof(Math::float4);
-#endif
     SizeT numPoints;
     EmitterPoint* points;
 };

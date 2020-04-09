@@ -289,4 +289,4 @@ HttpClient::SendRequest(HttpMethod::Code requestMethod, const IO::URI& uri, cons
 	return HttpStatus::ServiceUnavailable;
 }
 } // namespace Http
-#endif // __WII__
+#endif

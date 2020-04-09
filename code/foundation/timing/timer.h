@@ -10,25 +10,11 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "core/config.h"
-#if (__WIN32__ || __XBOX360__)
-#include "timing/win360/win360timer.h"
+#if __WIN32__
+#include "timing/win32/win32timer.h"
 namespace Timing
 {
-class Timer : public Win360::Win360Timer
-{ };
-}
-#elif __WII__
-#include "timing/wii/wiitimer.h"
-namespace Timing
-{
-class Timer : public Wii::WiiTimer
-{ };
-}
-#elif __PS3__
-#include "timing/ps3/ps3timer.h"
-namespace Timing
-{
-class Timer : public PS3::PS3Timer
+class Timer : public Win32::Win32Timer
 { };
 }
 #elif __linux__

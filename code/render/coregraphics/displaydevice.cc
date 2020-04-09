@@ -8,14 +8,8 @@
 
 namespace CoreGraphics
 {
-#if __DX11__
-__ImplementClass(CoreGraphics::DisplayDevice, 'DDVC', Direct3D11::D3D11DisplayDevice);
-__ImplementSingleton(CoreGraphics::DisplayDevice);
-#elif __OGL4__ ||  __VULKAN__
+#if __VULKAN__
 __ImplementClass(CoreGraphics::DisplayDevice, 'DDVC', GLFW::GLFWDisplayDevice);
-__ImplementSingleton(CoreGraphics::DisplayDevice);
-#elif __DX9__
-__ImplementClass(CoreGraphics::DisplayDevice, 'DDVC', Direct3D9::D3D9DisplayDevice);
 __ImplementSingleton(CoreGraphics::DisplayDevice);
 #else
 #error "DisplayDevice class not implemented on this platform!"

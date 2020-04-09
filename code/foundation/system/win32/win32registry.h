@@ -52,7 +52,7 @@ public:
     static RootKey AsRootKey(const Util::String& str);
 private:
     /// convert RootKey enum into Win32 key handle
-    static HKEY RootKeyToWin32KeyHandle(RootKey rootKey);
+    static HKEY RootKeyToWinKeyHandle(RootKey rootKey);
 };
 
 } // namespace Win32

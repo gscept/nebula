@@ -70,4 +70,4 @@ HttpClientRegistry::IsValid() const
 
 } // namespace Http
 //------------------------------------------------------------------------------
-#endif //__WII__    
+#endif

@@ -12,15 +12,15 @@
 
 namespace IO
 {
-    struct EventHandlerData;
-    struct FileWatcherPlatform
-    {
-        HANDLE dirHandle;
-        OVERLAPPED overlapped;
-        DWORD notifyFilter;
-        BYTE buffer[16 * 1024];
-        bool recursive;        
-    };
+struct EventHandlerData;
+struct FileWatcherPlatform
+{
+    HANDLE dirHandle;
+    OVERLAPPED overlapped;
+    DWORD notifyFilter;
+    BYTE buffer[16 * 1024];
+    bool recursive;        
+};
 
 class FileWatcherImpl 
 {

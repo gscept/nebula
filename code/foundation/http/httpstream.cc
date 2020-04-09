@@ -70,4 +70,4 @@ HttpStream::Open()
 }
 
 } // namespace Http
-#endif // __WII__
+#endif

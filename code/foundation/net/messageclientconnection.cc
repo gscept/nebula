@@ -4,7 +4,6 @@
 //  (C) 2013-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
-#if !__WII__
 #include "net/messageclientconnection.h"
 #include "io/textwriter.h"
 #include "io/memorystream.h"
@@ -178,5 +177,3 @@ MessageClientConnection::GetRecvStream()
 }
 
 } // namespace Net
-
-#endif // #if not __WII__
