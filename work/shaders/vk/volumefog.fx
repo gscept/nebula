@@ -124,8 +124,6 @@ LocalFogVolumes(
 	, out float turbidity
 	, out vec3 absorption)
 {
-	absorption = vec3(1,1,1);
-	turbidity = 0.0f;
 	uint flag = AABBs[idx].featureFlags;
 	if (CHECK_FLAG(flag, CLUSTER_FOG_SPHERE_BIT))
 	{
@@ -300,10 +298,10 @@ void csRender()
 	uint numSteps = 0;
 	vec2 seed = coord * InvFramebufferDimensions;
 	vec3 rnd = vec3(hash12(seed) + hash12(seed + 0.59374) - 0.5);
-	float stepSize = (viewPos.z + ((rnd.z + rnd.x + rnd.y) * 1.0f))  / VOLUME_FOG_STEPS;
+	float stepSize = (viewPos.z - (rnd.z + rnd.x + rnd.y))  / VOLUME_FOG_STEPS;
 	vec3 rayOffset = vec3(0, 0, 0);
 	
-	for (int i = 0; i < VOLUME_FOG_STEPS; i++, numSteps ++)
+	for (int i = 0; i < VOLUME_FOG_STEPS; i++)
 	{
 		// construct sample position
 		vec3 samplePos = rayStart - rayOffset;
@@ -320,18 +318,19 @@ void csRender()
 		uint idx = Pack3DTo1D(index3D, NumCells.x, NumCells.y);
 
 		// sample local fog volumes
-		float localTurbidity;
-		vec3 localAbsorption;
+		float localTurbidity = 0.0f;
+		vec3 localAbsorption = vec3(1,1,1);
 		LocalFogVolumes(idx, samplePos, localTurbidity, localAbsorption);
 
 		float turbidity = GlobalTurbidity + localTurbidity;
 		vec3 absorption = GlobalAbsorption * localAbsorption;
 
-		light += GlobalLightFog(samplePos, turbidity, absorption);
-		light += LocalLightsFog(idx, turbidity, absorption, samplePos, rayDirection);
+		float weight = length(rayOffset) / -viewPos.z;
+		light += GlobalLightFog(samplePos, turbidity, absorption) * weight;
+		light += LocalLightsFog(idx, turbidity, absorption, samplePos, rayDirection) * weight;
+		numSteps++;
 	}
 	light /= numSteps;
-	light = min(light, vec3(100));
 	imageStore(Lighting, ivec2(coord), light.xyzx);
 }
 
