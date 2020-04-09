@@ -120,9 +120,11 @@ void
 LocalFogVolumes(
 	uint idx
 	, vec3 viewPos
-	, inout float turbidity
-	, inout vec3 absorption)
+	, out float turbidity
+	, out vec3 absorption)
 {
+	turbidity = 0.0f;
+	absorption = vec3(1, 1, 1);
 	uint flag = AABBs[idx].featureFlags;
 	if (CHECK_FLAG(flag, CLUSTER_FOG_SPHERE_BIT))
 	{
@@ -317,8 +319,8 @@ void csRender()
 		uint idx = Pack3DTo1D(index3D, NumCells.x, NumCells.y);
 
 		// sample local fog volumes
-		float localTurbidity = 0.0f;
-		vec3 localAbsorption = vec3(1,1,1);
+		float localTurbidity;
+		vec3 localAbsorption;
 		LocalFogVolumes(idx, samplePos, localTurbidity, localAbsorption);
 
 		float turbidity = GlobalTurbidity + localTurbidity;
