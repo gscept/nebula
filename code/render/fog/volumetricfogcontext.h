@@ -30,10 +30,17 @@ public:
     /// discard volumetric fog context
     static void Discard();
 
-    /// setup a new local fog volume
-    static void SetupVolume(
+    /// setup a new volume as a box
+    static void SetupBoxVolume(
         const Graphics::GraphicsEntityId id,
         const Math::matrix44& transform,
+        const float density,
+        const Math::float4 absorption);
+    /// setup a new volume as a sphere
+    static void SetupSphereVolume(
+        const Graphics::GraphicsEntityId id,
+        Math::float4 position,
+        float radius,
         const float density,
         const Math::float4 absorption);
 
@@ -52,18 +59,45 @@ private:
     /// run ray marching algorithm
     static void Render();
 
+    enum FogVolumeType
+    {
+        BoxVolume,
+        SphereVolume
+    };
     enum
     {
-        FogVolume_Transform,
+        FogVolume_Type,
+        FogVolume_TypedId,
         FogVolume_Density,
-        FogVolume_Absorption
+        FogVolume_Absorption,
     };
     typedef Ids::IdAllocator<
-        Math::matrix44,
+        FogVolumeType,
+        Ids::Id32,
         float,
         Math::float4 
-    > FogVolumeAllocator;
-    static FogVolumeAllocator fogVolumeAllocator;
+    > FogGenericVolumeAllocator;
+    static FogGenericVolumeAllocator fogGenericVolumeAllocator;
+
+    enum
+    {
+        FogBoxVolume_Transform,
+    };
+    typedef Ids::IdAllocator<
+        Math::matrix44
+    > FogBoxVolumeAllocator;
+    static FogBoxVolumeAllocator fogBoxVolumeAllocator;
+
+    enum
+    {
+        FogSphereVolume_Position,
+        FogSphereVolume_Radius,
+    };
+    typedef Ids::IdAllocator<
+        Math::float4,
+        float
+    > FogSphereVolumeAllocator;
+    static FogSphereVolumeAllocator fogSphereVolumeAllocator;
 
     /// allocate a new slice for this context
     static Graphics::ContextEntityId Alloc();

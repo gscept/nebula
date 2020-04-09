@@ -76,7 +76,6 @@ struct
 	CoreGraphics::ConstantBufferId clusterSpotLights;
 
 	IndexT clusterUniformsSlot;
-	IndexT lightCullUniformsSlot;
 	IndexT lightingUniformsSlot;
 	IndexT lightListSlot;
 	IndexT lightShadingTextureSlot;
@@ -242,8 +241,7 @@ LightContext::Create()
 #endif
 	clusterState.lightShadingTextureSlot = ShaderGetResourceSlot(clusterState.classificationShader, "Lighting");
 	clusterState.clusterUniformsSlot = ShaderGetResourceSlot(clusterState.classificationShader, "ClusterUniforms");
-	clusterState.lightCullUniformsSlot = ShaderGetResourceSlot(clusterState.classificationShader, "LightCullUniforms");
-	clusterState.lightingUniformsSlot = ShaderGetResourceSlot(clusterState.classificationShader, "LightConstants");
+	clusterState.lightingUniformsSlot = ShaderGetResourceSlot(clusterState.classificationShader, "LightUniforms");
 
 	clusterState.cullProgram = ShaderGetProgram(clusterState.classificationShader, ShaderServer::Instance()->FeatureStringToMask("Cull"));
 	clusterState.renderProgram = ShaderGetProgram(clusterState.classificationShader, ShaderServer::Instance()->FeatureStringToMask("Render"));
@@ -278,7 +276,7 @@ LightContext::Create()
 		ResourceTableSetRWBuffer(clusterState.resourceTables[i], { Clustering::ClusterContext::GetClusterBuffer(), clusterAABBSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
 		ResourceTableSetRWBuffer(clusterState.resourceTables[i], { clusterState.clusterLightsList, lightsListSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
 		ResourceTableSetConstantBuffer(clusterState.resourceTables[i], { CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.clusterUniformsSlot, 0, false, false, sizeof(LightsCluster::ClusterUniforms), 0 });
-		ResourceTableSetConstantBuffer(clusterState.resourceTables[i], { CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.lightCullUniformsSlot, 0, false, false, sizeof(LightsCluster::LightCullUniforms), 0 });
+		ResourceTableSetConstantBuffer(clusterState.resourceTables[i], { CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.lightingUniformsSlot, 0, false, false, sizeof(LightsCluster::LightUniforms), 0 });
 		ResourceTableCommitChanges(clusterState.resourceTables[i]);
 	}
 
@@ -924,19 +922,11 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 		}
 	}
 
-	LightsCluster::LightCullUniforms uniforms;
-	uniforms.NumSpotLights = numSpotLights;
-	uniforms.NumPointLights = numPointLights;
-	uniforms.NumClusters = Clustering::ClusterContext::GetNumClusters();
-
 	IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
-
-	uint offset = SetComputeConstants(MainThreadConstantBuffer, uniforms);
-	ResourceTableSetConstantBuffer(clusterState.resourceTables[bufferIndex], { GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.lightCullUniformsSlot, 0, false, false, sizeof(LightsCluster::LightCullUniforms), (SizeT)offset });
 
 	// use the same uniforms used to divide the clusters
 	ClusterGenerate::ClusterUniforms clusterUniforms = Clustering::ClusterContext::GetUniforms();
-	offset = SetComputeConstants(MainThreadConstantBuffer, clusterUniforms);
+	IndexT offset = SetComputeConstants(MainThreadConstantBuffer, clusterUniforms);
 	ResourceTableSetConstantBuffer(clusterState.resourceTables[bufferIndex], { GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.clusterUniformsSlot, 0, false, false, sizeof(ClusterGenerate::ClusterUniforms), (SizeT)offset });
 
 	// update list of point lights
@@ -962,10 +952,13 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 #endif
 
 	const CoreGraphics::TextureId ssaoTex = view->GetFrameScript()->GetTexture("SSAOBuffer");
-	LightsCluster::LightConstants consts;
+	LightsCluster::LightUniforms consts;
+	consts.NumSpotLights = numSpotLights;
+	consts.NumPointLights = numPointLights;
+	consts.NumClusters = Clustering::ClusterContext::GetNumClusters();
 	consts.SSAOBuffer = CoreGraphics::TextureGetBindlessHandle(ssaoTex);
 	offset = SetComputeConstants(MainThreadConstantBuffer, consts);
-	ResourceTableSetConstantBuffer(clusterState.resourceTables[bufferIndex], { GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.lightingUniformsSlot, 0, false, false, sizeof(LightsCluster::LightConstants), (SizeT)offset });
+	ResourceTableSetConstantBuffer(clusterState.resourceTables[bufferIndex], { GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.lightingUniformsSlot, 0, false, false, sizeof(LightsCluster::LightUniforms), (SizeT)offset });
 	ResourceTableCommitChanges(clusterState.resourceTables[bufferIndex]);
 
 	const CoreGraphics::TextureId fogTex = view->GetFrameScript()->GetTexture("VolumetricFogBuffer0");
@@ -1016,7 +1009,7 @@ LightContext::CullAndClassify()
 			BufferBarrier
 			{
 				clusterState.clusterLightsList,
-				BarrierAccess::ShaderWrite,
+				BarrierAccess::ShaderRead,
 				BarrierAccess::TransferWrite,
 				0, NEBULA_WHOLE_BUFFER_SIZE
 			},
@@ -1032,7 +1025,7 @@ LightContext::CullAndClassify()
 			{
 				clusterState.clusterLightsList,
 				BarrierAccess::TransferWrite,
-				BarrierAccess::ShaderWrite,
+				BarrierAccess::ShaderRead,
 				0, NEBULA_WHOLE_BUFFER_SIZE
 			},
 		}, "Lights data upload");

@@ -6,6 +6,9 @@
 #include "pbr.fxh"
 #include "CSM.fxh"
 
+// increase if we need more lights in close proximity, for now, 128 is more than enough
+const uint MAX_LIGHTS_PER_CLUSTER = 128;
+
 struct SpotLight
 {
 	vec4 position;				// view space position of light, w is range
@@ -48,12 +51,29 @@ struct PointLightShadowExtension
 	uint shadowMap;				// shadow map
 };
 
+// contains amount of lights, and the index of the light (pointing to the indices in PointLightList and SpotLightList), to output
+group(BATCH_GROUP) rw_buffer LightIndexLists[string Visibility = "CS";]
+{
+	uint PointLightCountList[NUM_CLUSTER_ENTRIES];
+	uint PointLightIndexList[NUM_CLUSTER_ENTRIES * MAX_LIGHTS_PER_CLUSTER];
+	uint SpotLightCountList[NUM_CLUSTER_ENTRIES];
+	uint SpotLightIndexList[NUM_CLUSTER_ENTRIES * MAX_LIGHTS_PER_CLUSTER];
+};
+
+group(BATCH_GROUP) rw_buffer LightLists[string Visibility = "CS";]
+{
+	SpotLight SpotLights[1024];
+	SpotLightProjectionExtension SpotLightProjection[256];
+	SpotLightShadowExtension SpotLightShadow[16];
+	PointLight PointLights[1024];
+};
+
+
 // match these in lightcontext.cc
 const uint USE_SHADOW_BITFLAG = 1;
 const uint USE_PROJECTION_TEX_BITFLAG = 2;
 
-// increase if we need more lights in close proximity, for now, 128 is more than enough
-#define MAX_LIGHTS_PER_CLUSTER 128
+
 
 #define FlagSet(x, flags) ((x & flags) == flags)
 

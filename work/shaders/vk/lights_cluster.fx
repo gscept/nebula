@@ -7,81 +7,16 @@
 #include "lib/shared.fxh"
 #include "lib/clustering.fxh"
 #include "lib/lights_clustered.fxh"
-#include "lib/Preetham.fxh"
 
-group(BATCH_GROUP) rw_buffer LightLists [ string Visibility = "CS"; ]
-{
-	SpotLight SpotLights[1024];
-	SpotLightProjectionExtension SpotLightProjection[256];
-	SpotLightShadowExtension SpotLightShadow[16];
-	PointLight PointLights[1024];
-};
-
-group(BATCH_GROUP) constant LightConstants [ string Visibility = "CS"; ]
+group(BATCH_GROUP) constant LightUniforms [ string Visibility = "CS"; ]
 {
 	textureHandle SSAOBuffer;
-};
-
-// this is used to keep track of how many lights we have active
-group(BATCH_GROUP) constant LightCullUniforms [string Visibility = "CS"; ]
-{
 	uint NumPointLights;
 	uint NumSpotLights;
 	uint NumClusters;
 };
 
-// contains amount of lights, and the index of the light (pointing to the indices in PointLightList and SpotLightList), to output
-group(BATCH_GROUP) rw_buffer LightIndexLists [ string Visibility = "CS"; ]
-{
-	uint PointLightCountList[16384];
-	uint PointLightIndexList[16384 * MAX_LIGHTS_PER_CLUSTER];
-	uint SpotLightCountList[16384];
-	uint SpotLightIndexList[16384 * MAX_LIGHTS_PER_CLUSTER];
-};
-
 write rgba16f image2D Lighting;
-
-//------------------------------------------------------------------------------
-/**
-*/
-bool 
-TestAABBSphere(ClusterAABB aabb, vec3 pos, float radius)
-{
-	float sqDist = 0.0f;
-	for (int i = 0; i < 3; i++)
-	{
-		float v = (pos)[i];
-
-		if (v < aabb.minPoint[i]) sqDist += pow(aabb.minPoint[i] - v, 2);
-		if (v > aabb.maxPoint[i]) sqDist += pow(v - aabb.maxPoint[i], 2);
-	}
-	return sqDist <= radius * radius;
-}
-
-//------------------------------------------------------------------------------
-/**
-	Treat AABB as a sphere for simplicity of intersection detection.
-
-	https://bartwronski.com/2017/04/13/cull-that-cone/
-*/
-bool
-TestAABBCone(ClusterAABB aabb, vec3 pos, vec3 forward, float radius, vec2 sinCosAngles)
-{
-	float3 aabbExtents = (aabb.maxPoint.xyz - aabb.minPoint.xyz) * 0.5f;
-	float3 aabbCenter = aabb.minPoint.xyz + aabbExtents;
-	float aabbRadius = aabb.maxPoint.w;
-
-	float3 v = aabbCenter - pos;
-	const float vlensq = dot(v, v);
-	const float v1len = dot(v, -forward);
-	const float distanceClosestPoint = sinCosAngles.y * sqrt(vlensq - v1len * v1len) - v1len * sinCosAngles.x; 
-
-	const bool angleCull	= distanceClosestPoint > aabbRadius;
-	const bool frontCull	= v1len > aabbRadius + radius;
-	const bool backCull		= v1len < -aabbRadius;
-	return !(angleCull || backCull || frontCull);
-}
-
 write rgba16f image2D DebugOutput;
 
 //------------------------------------------------------------------------------
@@ -289,8 +224,8 @@ void csRender()
 		vec3 reflectVec = reflect(-worldViewVec, normal.xyz);
 		float cosTheta = dot(normal.xyz, worldViewVec);
 		vec3 F = FresnelSchlickGloss(F0, cosTheta, material[MAT_ROUGHNESS]);
-		vec3 reflection = sampleCubeLod(EnvironmentMap, CubeSampler, reflectVec, material[MAT_ROUGHNESS] * NumEnvMips).rgb;
-        vec3 irradiance = sampleCubeLod(IrradianceMap, CubeSampler, normal.xyz, 0).rgb;
+		vec3 reflection = sampleCubeLod(EnvironmentMap, CubeSampler, reflectVec, material[MAT_ROUGHNESS] * NumEnvMips).rgb * GlobalLightColor.xyz;
+        vec3 irradiance = sampleCubeLod(IrradianceMap, CubeSampler, normal.xyz, 0).rgb * GlobalLightColor.xyz;
 		float cavity = material[MAT_CAVITY];
 		
 		vec3 kD = vec3(1.0f) - F;
@@ -298,15 +233,9 @@ void csRender()
 
 		const vec3 ambientTerm = (irradiance * kD * albedo.rgb) * ssao;
 		light += (ambientTerm + reflection * F) * cavity;
-        
-		// sky light
-		//light += Preetham(normal.xyz, GlobalLightDirWorldspace.xyz, A, B, C, D, E, Z) * (kD * albedo.rgb) * ssao * cavity;
-		//light = vec3(F);
-
-	}	
+   	}	
 	else // sky pixels
 	{
-		//light += Preetham(normalize(worldPos.xyz), GlobalLightDirWorldspace.xyz, A, B, C, D, E, Z)* GlobalLightColor.xyz;
 		light += sampleCubeLod(EnvironmentMap, CubeSampler, normalize(worldPos.xyz), 0).rgb;
 	}
     
