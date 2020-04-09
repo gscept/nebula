@@ -8,6 +8,7 @@
 #include "clustering/clustercontext.h"
 #include "graphics/cameracontext.h"
 #include "graphics/view.h"
+#include "lighting/lightcontext.h"
 
 #include "volumefog.h"
 namespace Fog
