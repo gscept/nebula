@@ -13,6 +13,7 @@
 #include "threading/interlocked.h"
 #include "memory/win32/win32memoryconfig.h"
 #if __WIN32__
+#include "memory/win32/winmemory.h"
 #include <new>
 #endif
 #pragma warning (disable : 4595)
