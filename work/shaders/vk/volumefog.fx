@@ -28,7 +28,6 @@ struct FogBox
 	float turbidity;
 	vec3 absorption;
 	mat4 invTransform;
-	
 };
 
 // increase if we need more decals in close proximity, for now, 128 is more than enough
@@ -121,8 +120,8 @@ void
 LocalFogVolumes(
 	uint idx
 	, vec3 viewPos
-	, out float turbidity
-	, out vec3 absorption)
+	, inout float turbidity
+	, inout vec3 absorption)
 {
 	uint flag = AABBs[idx].featureFlags;
 	if (CHECK_FLAG(flag, CLUSTER_FOG_SPHERE_BIT))
@@ -159,7 +158,7 @@ LocalFogVolumes(
 			vec3 dist = vec3(0.5f) - abs(localPos.xyz);
 			if (all(greaterThan(dist, vec3(0))))
 			{
-				vec3 q = abs(localPos) - vec3(0.5f);
+				vec3 q = abs(localPos) - vec3(1.0f);
 				float sd = length(max(q, 0.0f)) + min(max(q.x, max(q.y, q.z)), 0.0f);
 				float falloff = pow(1.0f - sd, fog.falloff);
 
@@ -282,9 +281,10 @@ void csRender()
 	vec2 coord = vec2(gl_GlobalInvocationID.xy);
 	ivec2 upscaleCoord = ivec2(gl_GlobalInvocationID.xy * Downscale);
 	float depth = fetch2D(DepthBuffer, PosteffectUpscaleSampler, upscaleCoord, 0).r;
+	vec2 seed = coord * InvFramebufferDimensions;
 
 	// find last point to march
-	vec4 viewPos = PixelToView(coord * InvFramebufferDimensions, depth);
+	vec4 viewPos = PixelToView(seed, depth);
 	vec3 eye = vec3(0, 0, 0);
 
 	// construct a ray, beginning at eye and going from eye through worldPoint
@@ -296,7 +296,6 @@ void csRender()
 	// ray march!
 	vec3 light = vec3(0, 0, 0);
 	uint numSteps = 0;
-	vec2 seed = coord * InvFramebufferDimensions;
 	vec3 rnd = vec3(hash12(seed) + hash12(seed + 0.59374) - 0.5);
 	float stepSize = (viewPos.z - (rnd.z + rnd.x + rnd.y))  / VOLUME_FOG_STEPS;
 	vec3 rayOffset = vec3(0, 0, 0);
@@ -331,6 +330,7 @@ void csRender()
 		numSteps++;
 	}
 	light /= numSteps;
+	//light = min(light, vec3(100));
 	imageStore(Lighting, ivec2(coord), light.xyzx);
 }
 

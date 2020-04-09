@@ -73,8 +73,6 @@ group(BATCH_GROUP) rw_buffer LightLists[string Visibility = "CS";]
 const uint USE_SHADOW_BITFLAG = 1;
 const uint USE_PROJECTION_TEX_BITFLAG = 2;
 
-
-
 #define FlagSet(x, flags) ((x & flags) == flags)
 
 sampler_state PointLightTextureSampler
