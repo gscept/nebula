@@ -11,25 +11,11 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "core/config.h"
-#if (__WIN32__ || __XBOX360__)
+#if (__WIN32__)
 #include "threading/win360/win360criticalsection.h"
 namespace Threading
 {
 class CriticalSection : public Win360::Win360CriticalSection
-{ };
-}
-#elif __WII__
-#include "threading/wii/wiicriticalsection.h"
-namespace Threading
-{
-class CriticalSection : public Wii::WiiCriticalSection
-{ };
-}
-#elif __PS3__
-#include "threading/ps3/ps3criticalsection.h"
-namespace Threading
-{
-class CriticalSection : public PS3::PS3CriticalSection
 { };
 }
 #elif __linux__

@@ -11,25 +11,11 @@
     (C) 2006 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
-#if (__WIN32__ || __XBOX360__)
+#if (__WIN32__)
 #include "io/win360/win360fswrapper.h"
 namespace IO
 {
 class FSWrapper : public Win360::Win360FSWrapper
-{ };
-}
-#elif __WII__
-#include "io/wii/wiifswrapper.h"
-namespace IO
-{
-class FSWrapper : public Wii::WiiFSWrapper
-{ };
-}
-#elif __PS3__
-#include "io/ps3/ps3fswrapper.h"
-namespace IO
-{
-class FSWrapper : public PS3::PS3FSWrapper
 { };
 }
 #elif ( __OSX__ || __APPLE__ || __linux__ )

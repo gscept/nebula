@@ -8,12 +8,6 @@
 #include "threading/thread.h"
 #if __WIN32__
 #include "io/win32/win32consolehandler.h"
-#elif __XBOX360__
-#include "io/xbox360/xbox360consolehandler.h"
-#elif __WII__
-#include "io/wii/wiiconsolehandler.h"
-#elif __PS3__
-#include "io/ps3/ps3consolehandler.h"
 #elif __OSX__
 #include "io/osx/osxconsolehandler.h"
 #elif __linux__
@@ -65,12 +59,6 @@ Console::Open()
     // create default console handlers
     #if __WIN32__
     Ptr<ConsoleHandler> consoleHandler = Win32::Win32ConsoleHandler::Create();
-    #elif __XBOX360__
-    Ptr<ConsoleHandler> consoleHandler = Xbox360::Xbox360ConsoleHandler::Create();
-    #elif __WII__
-    Ptr<ConsoleHandler> consoleHandler = Wii::WiiConsoleHandler::Create();
-    #elif __PS3__
-    Ptr<ConsoleHandler> consoleHandler = PS3::PS3ConsoleHandler::Create();
     #elif __OSX__
     Ptr<ConsoleHandler> consoleHandler = OSX::OSXConsoleHandler::Create();
     #elif __linux__

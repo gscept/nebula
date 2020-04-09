@@ -11,23 +11,11 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "core/config.h"
-#if (__WIN32__ || __XBOX360__)
+#if (__WIN32__)
 #include "io/win360/win360filetime.h"
 namespace IO
 {
 typedef Win360::Win360FileTime FileTime;
-}
-#elif __WII__
-#include "io/wii/wiifiletime.h"
-namespace IO
-{
-typedef Wii::WiiFileTime FileTime;
-}
-#elif __PS3__
-#include "io/ps3/ps3filetime.h"
-namespace IO
-{
-typedef PS3::PS3FileTime FileTime;
 }
 #elif __OSX__
 #include "io/osx/osxfiletime.h"

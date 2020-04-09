@@ -16,10 +16,6 @@ __ImplementClass(CoreGraphics::ShapeRenderer, 'SHPR', Win360::D3D9ShapeRenderer)
 __ImplementClass(CoreGraphics::ShapeRenderer, 'SHPR', OpenGL4::OGL4ShapeRenderer);
 #elif __VULKAN__
 __ImplementClass(CoreGraphics::ShapeRenderer, 'SHPR', Vulkan::VkShapeRenderer);
-#elif __WII__
-__ImplementClass(CoreGraphics::ShapeRenderer, 'SHPR', Wii::WiiShapeRenderer);
-#elif __PS3__
-__ImplementClass(CoreGraphics::ShapeRenderer, 'SHPR', PS3::PS3ShapeRenderer);
 #else
 #error "ShapeRenderer class not implemented on this platform!"
 #endif

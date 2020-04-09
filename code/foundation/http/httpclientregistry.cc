@@ -157,4 +157,4 @@ HttpClientRegistry::IsConnected(const URI& uri) const
 }
 
 } // namespace Http
-#endif //__WII__
+#endif

@@ -9,20 +9,11 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "core/config.h"
-#if (__WIN32__ || __XBOX360__ || __PS3__ || __OSX__ || __APPLE__ || __linux__)
+#if (__WIN32__ || __OSX__ || __APPLE__ || __linux__)
 #include "net/tcp/stdtcpclientconnection.h"
 namespace Net
 {
 class TcpClientConnection : public StdTcpClientConnection
-{
-    __DeclareClass(TcpClientConnection);
-};
-}
-#elif __WII__
-#include "net/wii/wiitcpclientconnection.h"
-namespace Net
-{
-class TcpClientConnection : public Wii::WiiTcpClientConnection
 {
     __DeclareClass(TcpClientConnection);
 };

@@ -11,26 +11,11 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "core/config.h"
-#if (__WIN32__ || __XBOX360__ || __WII__ || __OSX__ || __linux__)
+#if (__WIN32__ || __OSX__ || __linux__)
 #include "io/base/gamecontentserverbase.h"
 namespace IO
 {
 class GameContentServer : public Base::GameContentServerBase
-{
-    __DeclareClass(GameContentServer);
-    __DeclareInterfaceSingleton(GameContentServer);
-public:
-    /// constructor
-    GameContentServer();
-    /// destructor
-    virtual ~GameContentServer();
-};
-}
-#elif __PS3__
-#include "io/ps3/ps3gamecontentserver.h"
-namespace IO
-{
-class GameContentServer : public PS3::PS3GameContentServer
 {
     __DeclareClass(GameContentServer);
     __DeclareInterfaceSingleton(GameContentServer);

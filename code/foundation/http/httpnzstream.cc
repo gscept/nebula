@@ -102,4 +102,4 @@ HttpNzStream::Open()
 }
 
 } // namespace Http
-#endif // __WII__
+#endif

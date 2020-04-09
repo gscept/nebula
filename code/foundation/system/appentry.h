@@ -28,33 +28,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPSTR lpCmdLine,
     NebulaMain(args); \
     return 0; \
 }
-#elif __XBOX360__
-#define ImplementNebulaApplication() \
-void NebulaMain(const Util::CommandLineArgs& args); \
-void __cdecl main() \
-{ \
-    Util::CommandLineArgs args; \
-    NebulaMain(args); \
-}
-#elif __WII__
-#define ImplementNebulaApplication() \
-void NebulaMain(const Util::CommandLineArgs& args); \
-void main() \
-{ \
-    Util::CommandLineArgs args; \
-    NebulaMain(args); \
-}
-#elif __PS3__
-// ps3gen.exe needs SYS_PROCESS_PARAM to burn DVD/BDVD (thread-prio and stack-size)
-#define ImplementNebulaApplication() \
-SYS_PROCESS_PARAM(1001, 65536);\
-void NebulaMain(const Util::CommandLineArgs& args); \
-int main() \
-{ \
-    Util::CommandLineArgs args; \
-    NebulaMain(args); \
-    return 0; \
-}
 #else
 #define ImplementNebulaApplication() \
 void NebulaMain(const Util::CommandLineArgs& args); \

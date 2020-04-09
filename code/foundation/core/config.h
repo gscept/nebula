@@ -67,12 +67,6 @@ static const int JobMaxSliceSize = 0xFFFF;
 #define NEBULA_OBJECTS_USE_MEMORYPOOL (0)
 #endif
 
-// Enable/disable serial job system (ONLY SET FOR DEBUGGING!)
-// You'll also need to fix the foundation_*.epk file to use the jobs/serial source files
-// instead of jobs/tp!
-// On the Wii, the serial job system is always active.
-#define NEBULA_USE_SERIAL_JOBSYSTEM (0)
-
 // enable/disable thread-local StringAtom tables
 #if (__LINUX__)
 #define NEBULA_ENABLE_THREADLOCAL_STRINGATOM_TABLES (0)
@@ -89,15 +83,6 @@ static const int JobMaxSliceSize = 0xFFFF;
 // enable/disable Nebula animation system log messages
 #define NEBULA_ANIMATIONSYSTEM_VERBOSELOG (0)
 #define NEBULA_ANIMATIONSYSTEM_FRAMEDUMP (0)
-
-// override SQLite filesystem functions with Nebula functions?
-// only useful on consoles
-// win32 doesn't work without !!!
-#if __WIN32__
-#define NEBULA_OVERRIDE_SQLITE_FILEFUNCTIONS (1)
-#else
-#define NEBULA_OVERRIDE_SQLITE_FILEFUNCTIONS (1)
-#endif
 
 // enable/disable bounds checking in the container util classes
 #if NEBULA_DEBUG
@@ -139,32 +124,14 @@ static const int JobMaxSliceSize = 0xFFFF;
 // enable/disable mini dumps
 #define NEBULA_ENABLE_MINIDUMPS (0)
 
-// enable/disable debug messages in fmod coreaudio
-#define NEBULA_FMOD_COREAUDIO_VERBOSE_ENABLED  (0)
-
-// enable fmod profiling feature
-#define NEBULA_FMOD_ENABLE_PROFILING (0)
-
 // Nebula's main window class
 #define NEBULA_WINDOW_CLASS "Nebula::MainWindow"
 
 // number of lines in the IO::HistoryConsoleHandler ring buffer
 #define NEBULA_CONSOLE_HISTORY_SIZE (256)
 
-// maximum number of local players for local coop games
-#define NEBULA_MAX_LOCAL_PLAYERS (4)
-
-// use raknet on xbox360 platform?
-#define XBOX360_USE_RAKNET    (0)
-
-// enable legacy support for database vectors (vector3/vector4 stuff)
-#define NEBULA_DATABASE_LEGACY_VECTORS (1)
-
 // enable legacy support for 3-component vectors in XML files
 #define NEBULA_XMLREADER_LEGACY_VECTORS (1)
-
-// enable/disable scriping (NOTE: scripting support has been moved into an Addon)
-#define __NEBULA_SCRIPTING__ (1)
 
 // define the standard IO scheme for the platform
 #define DEFAULT_IO_SCHEME "file"
@@ -186,8 +153,6 @@ static const int JobMaxSliceSize = 0xFFFF;
 
 // default resource names
 #if __WIN32__ || __LINUX__
-#define NEBULA_PLACEHOLDER_TEXTURENAME "systex:system/placeholder.dds"
-#define NEBULA_PLACEHOLDER_MESHNAME  "sysmsh:system/placeholder.nvx2"
 #define NEBULA_TEXTURE_EXTENSION ".dds"
 #define NEBULA_SURFACE_EXTENSION ".sur"
 #define NEBULA_MESH_EXTENSION ".nvx2"
@@ -206,7 +171,7 @@ static const int JobMaxSliceSize = 0xFFFF;
 #pragma GCC diagnostic ignored "-Wformat-security"
 #endif
 
-#if !defined(__GNUC__) && !defined(__WII__)
+#if !defined(__GNUC__)
 #define  __attribute__(x)  /**/
 #endif
 
@@ -218,9 +183,6 @@ static const int JobMaxSliceSize = 0xFFFF;
 // 256 MB
 #define __maxTextureBytes__ (268435456)
 #endif
-
-// enable render thread (deprecated)
-// #define NEBULA_RENDER_THREAD (1)
 
 #define NEBULA_THREAD_DEFAULTSTACKSIZE 65536
 

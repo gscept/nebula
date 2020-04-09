@@ -92,8 +92,8 @@ AssignRegistry::SetupSystemAssigns()
     {
         this->SetAssign(Assign("home", homeLocation));
     }
-    #if !(__WII__ || __PS3__)
-    String binLocation = FSWrapper::GetBinDirectory();
+
+	String binLocation = FSWrapper::GetBinDirectory();
     if (binLocation.IsValid())
     {
         this->SetAssign(Assign("bin", binLocation));
@@ -108,7 +108,6 @@ AssignRegistry::SetupSystemAssigns()
     {
         this->SetAssign(Assign("user", userLocation));
     }
-    #endif
     
     #if __WIN32__
     String appDataLocation = FSWrapper::GetAppDataDirectory();
@@ -140,12 +139,6 @@ AssignRegistry::SetupProjectAssigns()
     this->SetAssign(Assign("root", rootDir));
     #if __WIN32__
         this->SetAssign(Assign("export", "root:export_win32"));
-    #elif __XBOX360__
-        this->SetAssign(Assign("export", "root:export_xbox360"));
-    #elif __WII__
-        this->SetAssign(Assign("export", "root:export_wii"));
-    #elif __PS3__
-        this->SetAssign(Assign("export", "root:export_ps3"));
     #elif __OSX__
         this->SetAssign(Assign("export", "root:export_osx"));
     #elif __linux__

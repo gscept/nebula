@@ -20,24 +20,11 @@
     (C) 2006 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
-#if (__WIN32__ || __XBOX360__)
+#if (__WIN32__)
 #include "net/win360/win360ipaddress.h"
 namespace Net
 {
 typedef Win360::Win360IpAddress IpAddress;
-}
-#elif __WII__
-// class is just an empty stub on Wii
-#include "net/wii/wiiipaddress.h"
-namespace Net
-{
-typedef Wii::WiiIpAddress IpAddress;
-}
-#elif __PS3__
-#include "net/ps3/ps3ipaddress.h"
-namespace Net
-{
-typedef PS3::PS3IpAddress IpAddress;
 }
 #elif __linux__
 #include "net/posix/posixipaddress.h"

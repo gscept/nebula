@@ -12,19 +12,11 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 
-#if __PS3__
-#include "particles/ps3/ps3particlerenderinfo.h"
-namespace Particles
-{
-    typedef PS3::PS3ParticleRenderInfo ParticleRenderInfo;
-}
-#else
 #include "particles/base/particlerenderinfobase.h"
 namespace Particles
 {
     typedef Base::ParticleRenderInfoBase ParticleRenderInfo;
 }
-#endif
 
 //------------------------------------------------------------------------------
     
