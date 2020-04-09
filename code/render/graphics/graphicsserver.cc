@@ -238,7 +238,6 @@ GraphicsServer::UnregisterGraphicsContext(GraphicsContextFunctionBundle* context
 	this->states.EraseIndex(i);
 }
 
-
 //------------------------------------------------------------------------------
 /**
 */

@@ -5,7 +5,6 @@
 //
 //  (C) 2012 Gustav Sterbrant
 //------------------------------------------------------------------------------
-
 #include "lib/std.fxh"
 #include "lib/techniques.fxh"
 #include "lib/geometrybase.fxh"

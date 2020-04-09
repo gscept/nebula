@@ -141,40 +141,17 @@ group(FRAME_GROUP) shared constant FrameBlock
 	vec4 TimeAndRandom;
 };
 
-const int SHADOW_CASTER_COUNT = 16;
-
-group(FRAME_GROUP) shared constant ShadowMatrixBlock [ string Visibility = "VS"; ]
+group(FRAME_GROUP) shared constant ShadowMatrixBlock[string Visibility = "VS";]
 {
 	mat4 CSMViewMatrix[CASCADE_COUNT_FLAG];
 	mat4 LightViewMatrix[SHADOW_CASTER_COUNT];
 };
 
+const int SHADOW_CASTER_COUNT = 16;
+
 #define FLT_MAX     3.40282347E+38F
 #define FLT_MIN     -3.40282347E+38F
 
-
-// contains variables which are guaranteed to be unique per object.
-group(DYNAMIC_OFFSET_GROUP) shared constant ObjectBlock [ string Visibility = "VS|PS"; ]
-{
-	mat4 Model;
-	mat4 InvModel;
-	int ObjectId;
-};
-
-// define how many objects we can render with instancing
-const int MAX_INSTANCING_BATCH_SIZE = 256;
-group(DYNAMIC_OFFSET_GROUP) shared constant InstancingBlock [ string Visibility = "VS"; ]
-{
-	mat4 ModelArray[MAX_INSTANCING_BATCH_SIZE];
-	mat4 ModelViewArray[MAX_INSTANCING_BATCH_SIZE];
-	mat4 ModelViewProjectionArray[MAX_INSTANCING_BATCH_SIZE];
-	int IdArray[MAX_INSTANCING_BATCH_SIZE];
-};
-
-group(DYNAMIC_OFFSET_GROUP) shared constant JointBlock [ string Visibility = "VS"; ]
-{
-	mat4 JointPalette[256];
-};
 
 group(PASS_GROUP) inputAttachment InputAttachment0;
 group(PASS_GROUP) inputAttachment InputAttachment1;
@@ -194,7 +171,7 @@ group(PASS_GROUP) inputAttachment InputAttachment14;
 group(PASS_GROUP) inputAttachment InputAttachment15;
 group(PASS_GROUP) inputAttachment DepthAttachment;
 
-group(PASS_GROUP) shared constant PassBlock [ bool System = true; ]
+group(PASS_GROUP) shared constant PassBlock
 {
 	vec4 RenderTargetDimensions[16]; // render target dimensions are size (xy) inversed size (zw)
 };
