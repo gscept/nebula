@@ -138,13 +138,7 @@ static const int JobMaxSliceSize = 0xFFFF;
 
 #if 0
 #FIXME add defines for these in cmake instead
-#if __DX11__
-#define NEBULA_DEFAULT_FRAMESHADER_NAME "dx11default"
-#elif __DX9__
-#define NEBULA_DEFAULT_FRAMESHADER_NAME "dx9default"
-#elif __OGL4__
-#define NEBULA_DEFAULT_FRAMESHADER_NAME "ogl4default"
-#elif __VULKAN__
+#if __VULKAN__
 #define NEBULA_DEFAULT_FRAMESHADER_NAME "vkdefault"
 #else
 #error "No default frameshader defined for platform"

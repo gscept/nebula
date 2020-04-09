@@ -8,7 +8,7 @@
     (C) 2006 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */    
-#if (__DX11__ || __DX9__ || __OGL4__ || __VULKAN__)
+#if __VULKAN__
 #include "coregraphics/base/vertexcomponentbase.h"
 namespace CoreGraphics
 {

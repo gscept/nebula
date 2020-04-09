@@ -69,7 +69,7 @@ DrawFullScreenQuad::Setup(SizeT rtWidth, SizeT rtHeight)
     // setup a vertex buffer with 2 triangles
     float v[3][5];
 
-#if (__VULKAN__ || __DX11__ || __DX12__)
+#if (__VULKAN__ || __DX12__)
 	// first triangle
 	v[0][0] = left;		v[0][1] = bottom;	v[0][2] = 0.0f; v[0][3] = u0; v[0][4] = v0;
 	v[1][0] = left;		v[1][1] = top;		v[1][2] = 0.0f; v[1][3] = u0; v[1][4] = v1;

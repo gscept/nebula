@@ -765,9 +765,9 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 	if (genericLightAllocator.Get<ShadowCaster>(cid.id))
 	{
 
-#if __DX11__
+#if __DX12__
 		Math::matrix44 textureScale = Math::matrix44::scaling(0.5f, -0.5f, 1.0f);
-#elif (__OGL4__ || __VULKAN__)
+#elif __VULKAN__
 		Math::matrix44 textureScale = Math::matrix44::scaling(0.5f, 0.5f, 1.0f);
 #endif
 		Math::matrix44 textureTranslation = Math::matrix44::translation(0.5f, 0.5f, 0);

@@ -8,13 +8,7 @@
 
 namespace CoreGraphics
 {
-#if __DX11__
-__ImplementClass(CoreGraphics::ShapeRenderer, 'SHPR', Direct3D11::D3D11ShapeRenderer);
-#elif __DX9__
-__ImplementClass(CoreGraphics::ShapeRenderer, 'SHPR', Win360::D3D9ShapeRenderer);
-#elif __OGL4__
-__ImplementClass(CoreGraphics::ShapeRenderer, 'SHPR', OpenGL4::OGL4ShapeRenderer);
-#elif __VULKAN__
+#if __VULKAN__
 __ImplementClass(CoreGraphics::ShapeRenderer, 'SHPR', Vulkan::VkShapeRenderer);
 #else
 #error "ShapeRenderer class not implemented on this platform!"

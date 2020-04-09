@@ -324,16 +324,6 @@ DisableCallbacks(const CoreGraphics::WindowId & id)
 const WindowId
 InternalSetupFunction(const WindowCreateInfo& info, const Util::Blob& windowData, bool embed)
 {
-#if __OGL4__
-#if NEBULA_OPENGL4_DEBUG
-	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
-	glfwSetErrorCallback(NebulaGLFWErrorCallback);
-	n_printf("Creating OpenGL debug context\n");
-#else
-	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_FALSE);
-	glDisable(GL_DEBUG_OUTPUT);
-#endif
-#endif
 	glfwWindowHint(GLFW_RED_BITS, 8);
 	glfwWindowHint(GLFW_GREEN_BITS, 8);
 	glfwWindowHint(GLFW_BLUE_BITS, 8);
@@ -401,11 +391,6 @@ InternalSetupFunction(const WindowCreateInfo& info, const Util::Blob& windowData
 		if (!info.fullscreen)	glfwSetWindowPos(wnd, info.mode.GetXPos(), info.mode.GetYPos());
 		else					WindowApplyFullscreen(id, Adapter::Primary, true);
 
-	#if __OGL4__
-		// make current if GL4
-		glfwMakeContextCurrent(this->window);
-	#endif
-
 		// set user pointer to this window
 		glfwSetWindowUserPointer(wnd, ptr);
 		glfwSetWindowTitle(wnd, info.title.Value());
@@ -431,14 +416,6 @@ InternalSetupFunction(const WindowCreateInfo& info, const Util::Blob& windowData
 
 	// enable callbacks
 	GLFW::EnableCallbacks(id);
-
-#if __OGL4__
-	// with OpenGL, we have only one context, so any extra windows will just have their own render target
-	if (origWindow.isvalid() && origWindow != this)
-	{
-		glfwReparentContext(origWindow->window, this->window);
-	}
-#endif
 
 	DisplayDevice::Instance()->MakeWindowCurrent(id);
 	return id;
@@ -604,9 +581,7 @@ WindowSetCursorLocked(const WindowId id, bool b)
 void
 WindowMakeCurrent(const WindowId id)
 {
-#if __OGL4__
-	glfwMakeContextCurrent(this->window);
-#endif
+	// FIXME
 }
 
 //------------------------------------------------------------------------------

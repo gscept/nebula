@@ -133,11 +133,6 @@ PickingServer::FetchIndex(const Math::float2& position)
 	this->Render();
 	Ptr<Texture> tex = this->pickingBuffer;
 
-#if __DX11__
-	// ugly fix for DX11 which lets us copy the GPU texture to CPU, so that we can read it
-	tex->GetCPUTexture();
-#endif
-
 	TextureBase::MapInfo info;
 	bool status = tex->Map(0, GpuResourceBase::MapRead, info);
 	n_assert(status);
@@ -145,16 +140,7 @@ PickingServer::FetchIndex(const Math::float2& position)
 	// calculate pixel offset
 	int width = tex->GetWidth();
 
-#if (__DX11__ || __DX9__)
-	int pixelSize = PixelFormat::ToSize(tex->GetPixelFormat());
-	int calcedPitch = width * pixelSize;
-	int pitchDiff = info.rowPitch - calcedPitch;
-	width += pitchDiff / pixelSize;
-
-	// get coordinate
-	int xCoord = (int)position.x();
-	int yCoord = (int)position.y();
-#elif (__OGL4__ || __VULKAN__)
+#if __VULKAN__
 	// get coordinate
 	int xCoord = (int)position.x();
 	int yCoord = tex->GetHeight() - (int)position.y();
@@ -186,11 +172,6 @@ PickingServer::FetchSquare(const Math::rectangle<float>& rect, Util::Array<Index
 	this->Render();
 	Ptr<Texture> tex = this->pickingBuffer;
 
-#if __DX11__
-	// ugly fix for DX11 which lets us copy the GPU texture to CPU, so that we can read it
-	tex->GetCPUTexture();
-#endif
-
 	TextureBase::MapInfo info;
 	bool status = tex->Map(0, GpuResourceBase::MapRead, info);
 	n_assert(status);
@@ -200,21 +181,8 @@ PickingServer::FetchSquare(const Math::rectangle<float>& rect, Util::Array<Index
 	int width = tex->GetWidth();
 
 	int height = tex->GetHeight();
-#if (__DX11__ || __DX9__)
-#error This is most likely utterly broken now
-	// calculate pixel offset	
-	int pixelSize = PixelFormat::ToSize(tex->GetPixelFormat());
-	int calcedPitch = width * pixelSize;
-	int pitchDiff = info.rowPitch - calcedPitch;
-	width += pitchDiff / pixelSize;
 
-	// get coordinate
-	int xMin = (int)rect.left;
-	int yMin = (int)rect.top;
-
-	int xMax = (int)rect.right;
-	int yMax = (int)rect.bottom;
-#elif (__OGL4__ || __VULKAN__)
+#if __VULKAN__
 	// get coordinate
 	int xMin = Math::n_iclamp((int)rect.left, 0, width - 1);
 	int yMin = tex->GetHeight() - Math::n_iclamp((int)rect.bottom, 0, height - 1);
@@ -222,6 +190,7 @@ PickingServer::FetchSquare(const Math::rectangle<float>& rect, Util::Array<Index
 	int xMax = Math::n_iclamp((int)rect.right, 0, width - 1);
 	int yMax = tex->GetHeight() - Math::n_iclamp((int)rect.top, 0, height - 1);
 #endif
+
 	float* values = (float*)info.data;			
 	
 	for (IndexT i = yMin; i < yMax; i++)
@@ -256,11 +225,6 @@ PickingServer::FetchDepth(const Math::float2& position)
 	n_assert(this->IsOpen());
 	Ptr<Texture> tex = this->depthBuffer;
 
-#if __DX11__
-	// ugly fix for DX11 which lets us copy the GPU texture to CPU, so that we can read it
-	tex->GetCPUTexture();
-#endif
-
 	TextureBase::MapInfo info;
 	bool status = tex->Map(0, GpuResourceBase::MapRead, info);
 	n_assert(status);
@@ -268,16 +232,7 @@ PickingServer::FetchDepth(const Math::float2& position)
 	// calculate pixel offset
 	int width = tex->GetWidth();
 
-#if (__DX11__ || __DX9__)
-	int pixelSize = PixelFormat::ToSize(tex->GetPixelFormat());
-	int calcedPitch = width * pixelSize;
-	int pitchDiff = info.rowPitch - calcedPitch;
-	width += pitchDiff / pixelSize;
-
-	// get coordinate
-	int xCoord = (int)position.x();
-	int yCoord = (int)position.y();
-#elif (__OGL4__ || __VULKAN__)
+#if __VULKAN__
 	// get coordinate
 	int xCoord = (int)position.x();
 	int yCoord = tex->GetHeight() - (int)position.y();
@@ -305,11 +260,6 @@ PickingServer::FetchNormal(const Math::float2& position)
 	n_assert(this->IsOpen());
 	Ptr<Texture> tex = this->pickingBuffer;
 
-#if __DX11__
-	// ugly fix for DX11 which lets us copy the GPU texture to CPU, so that we can read it
-	tex->GetCPUTexture();
-#endif
-
 	TextureBase::MapInfo info;
 	bool status = tex->Map(0, GpuResourceBase::MapRead, info);
 	n_assert(status);
@@ -317,16 +267,7 @@ PickingServer::FetchNormal(const Math::float2& position)
 	// calculate pixel offset
 	int width = tex->GetWidth();
 
-#if (__DX11__ || __DX9__)
-	int pixelSize = PixelFormat::ToSize(tex->GetPixelFormat());
-	int calcedPitch = width * pixelSize;
-	int pitchDiff = info.rowPitch - calcedPitch;
-	width += pitchDiff / pixelSize;
-
-	// get coordinate
-	int xCoord = (int)position.x();
-	int yCoord = (int)position.y();
-#elif (__OGL4__ || __VULKAN__)
+#if __VULKAN__
 	// get coordinate
 	int xCoord = (int)position.x();
 	int yCoord = tex->GetHeight() - (int)position.y();

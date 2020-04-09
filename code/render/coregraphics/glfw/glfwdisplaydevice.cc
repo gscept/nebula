@@ -6,33 +6,14 @@
 #include "render/stdneb.h"
 #include "coregraphics/config.h"
 #include "coregraphics/glfw/glfwdisplaydevice.h"
-#if __OGL4__
-#include "coregraphics/ogl4/ogl4types.h"
-#endif
 #include "coregraphics/graphicsdevice.h"
 #include "GLFW/glfw3native.h"
 #include <GLFW/glfw3.h>
 
 #if __WIN32__
-
 // Forward-declare GLFW windowProc
 static LRESULT CALLBACK windowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-
 #endif
-
-
-#if NEBULA_OPENGL4_DEBUG
-//------------------------------------------------------------------------------
-/**
-*/
-void
-NebulaGLFWErrorCallback(int errcode, const char* msg)
-{
-	n_error("GL ERROR: code %d, %s", errcode, msg);
-}
-
-#endif
-
 
 namespace GLFW
 {
