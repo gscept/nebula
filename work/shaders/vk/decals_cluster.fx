@@ -92,10 +92,10 @@ group(BATCH_GROUP) constant DecalUniforms [ string Visibility = "CS|PS"; ]
 // contains amount of lights, and the index of the light (pointing to the indices in PointLightList and SpotLightList), to output
 group(BATCH_GROUP) rw_buffer DecalIndexLists [ string Visibility = "CS|PS"; ]
 {
-	uint EmissiveDecalCountList[16384];
-	uint EmissiveDecalIndexList[16384 * MAX_DECALS_PER_CLUSTER];
-	uint PBRDecalCountList[16384];
-	uint PBRDecalIndexList[16384 * MAX_DECALS_PER_CLUSTER];
+	uint EmissiveDecalCountList[NUM_CLUSTER_ENTRIES];
+	uint EmissiveDecalIndexList[NUM_CLUSTER_ENTRIES * MAX_DECALS_PER_CLUSTER];
+	uint PBRDecalCountList[NUM_CLUSTER_ENTRIES];
+	uint PBRDecalIndexList[NUM_CLUSTER_ENTRIES * MAX_DECALS_PER_CLUSTER];
 };
 
 write rgba16f image2D Decals;
