@@ -12,10 +12,10 @@
 */
 #include "core/config.h"
 #if (__WIN32__)
-#include "io/win360/win360filetime.h"
+#include "io/win32/win32filetime.h"
 namespace IO
 {
-typedef Win360::Win360FileTime FileTime;
+typedef Win32::Win32FileTime FileTime;
 }
 #elif __OSX__
 #include "io/osx/osxfiletime.h"

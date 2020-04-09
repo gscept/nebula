@@ -10,10 +10,10 @@
 */
 #include "core/config.h"
 #if __WIN32__
-#include "threading/win360/win360thread.h"
+#include "threading/win32/win32thread.h"
 namespace Threading
 {
-class Thread : public Win360::Win360Thread
+class Thread : public Win32::Win32Thread
 { 
     __DeclareClass(Thread);
 };

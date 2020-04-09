@@ -10,10 +10,10 @@
 */
 #include "core/config.h"
 #if (__WIN32__)
-#include "threading/win360/win360threadbarrier.h"
+#include "threading/win32/win32threadbarrier.h"
 namespace Threading
 {
-class ThreadBarrier : public Win360::Win360ThreadBarrier
+class ThreadBarrier : public Win32::Win32ThreadBarrier
 { };
 }
 #elif (linux || __OSX__ || __APPLE__)

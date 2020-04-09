@@ -11,7 +11,7 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #if __WIN32__
-#include "threading/win360/win360threadid.h"
+#include "threading/win32/win32threadid.h"
 #elif __OSX__
 #include "threading/osx/osxthreadid.h"
 #elif __linux__

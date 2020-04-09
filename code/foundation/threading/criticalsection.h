@@ -12,10 +12,10 @@
 */
 #include "core/config.h"
 #if (__WIN32__)
-#include "threading/win360/win360criticalsection.h"
+#include "threading/win32/win32criticalsection.h"
 namespace Threading
 {
-class CriticalSection : public Win360::Win360CriticalSection
+class CriticalSection : public Win32::Win32CriticalSection
 { };
 }
 #elif __linux__

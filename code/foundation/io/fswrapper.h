@@ -12,10 +12,10 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #if (__WIN32__)
-#include "io/win360/win360fswrapper.h"
+#include "io/win32/win32fswrapper.h"
 namespace IO
 {
-class FSWrapper : public Win360::Win360FSWrapper
+class FSWrapper : public Win32::Win32FSWrapper
 { };
 }
 #elif ( __OSX__ || __APPLE__ || __linux__ )

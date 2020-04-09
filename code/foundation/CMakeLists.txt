@@ -452,15 +452,15 @@ nebula_begin_module(foundation)
 			)
 		fips_dir(memory GROUP "memory/win32")
 			fips_files(
+				win32/winmemory.h
+				win32/win32heap.cc
+				win32/win32heap.h
+				win32/win32memory.cc
 				win32/win32memory.h
-				win360/win360heap.cc
-				win360/win360heap.h
-				win360/win360memory.cc
-				win360/win360memory.h
-				win360/win360memoryconfig.cc
-				win360/win360memoryconfig.h
-				win360/win360memorypool.cc
-				win360/win360memorypool.h
+				win32/win32memoryconfig.cc
+				win32/win32memoryconfig.h
+				win32/win32memorypool.cc
+				win32/win32memorypool.h
 			)
 		fips_dir(debug GROUP "debug/win32")
 			fips_files(
@@ -482,24 +482,24 @@ nebula_begin_module(foundation)
 				win32/win32consolehandler.h
 				win32/win32filewatcher.cc
 				win32/win32filewatcher.h
-				win360/win360filetime.cc
-				win360/win360filetime.h
-				win360/win360fswrapper.cc
-				win360/win360fswrapper.h
+				win32/win32filetime.cc
+				win32/win32filetime.h
+				win32/win32fswrapper.cc
+				win32/win32fswrapper.h
 			)
 		fips_dir(timing GROUP "timing/win32")
 			fips_files(
-				win360/win360calendartime.cc
-				win360/win360calendartime.h
-				win360/win360timer.cc
-				win360/win360timer.h
+				win32/win32calendartime.cc
+				win32/win32calendartime.h
+				win32/win32timer.cc
+				win32/win32timer.h
 			)
 		fips_dir(net GROUP "net/win32")
 			fips_files(
-				win360/win360ipaddress.cc
-				win360/win360ipaddress.h
-				win360/win360socket.cc
-				win360/win360socket.h
+				win32/win32ipaddress.cc
+				win32/win32ipaddress.h
+				win32/win32socket.cc
+				win32/win32socket.h
 			)
 		fips_dir(system GROUP "system/win32")
 			fips_files(
@@ -592,18 +592,18 @@ nebula_begin_module(foundation)
 	fips_dir(.)
 
 	if(FIPS_WINDOWS)
-		fips_dir(threading/win360 GROUP "threading/win32")
+		fips_dir(threading/win32 GROUP "threading/win32")
 		fips_files(
-			win360barrier.h
-			win360criticalsection.cc
-			win360criticalsection.h
-			win360event.h
-			win360interlocked.h
-			win360thread.cc
-			win360thread.h
-			win360threadbarrier.h
-			win360threadid.h
-			win360rendezvous.h
+			win32barrier.h
+			win32criticalsection.cc
+			win32criticalsection.h
+			win32event.h
+			win32interlocked.h
+			win32thread.cc
+			win32thread.h
+			win32threadbarrier.h
+			win32threadid.h
+			win32rendezvous.h
 		)
 	elseif(FIPS_LINUX)
 		fips_files(

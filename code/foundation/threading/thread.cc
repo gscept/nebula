@@ -9,7 +9,7 @@
 namespace Threading
 {
 #if __WIN32__
-__ImplementClass(Threading::Thread, 'TRED', Win360::Win360Thread);
+__ImplementClass(Threading::Thread, 'TRED', Win32::Win32Thread);
 #elif __OSX__
 __ImplementClass(Threading::Thread, 'TRED', OSX::OSXThread);
 #elif __linux__

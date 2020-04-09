@@ -9,7 +9,7 @@
 namespace Net
 {
 #if (__WIN32__)
-__ImplementClass(Net::Socket, 'SOCK', Win360::Win360Socket);
+__ImplementClass(Net::Socket, 'SOCK', Win32::Win32Socket);
 #elif __linux__
 __ImplementClass(Net::Socket, 'SOCK', Posix::PosixSocket);
 #else

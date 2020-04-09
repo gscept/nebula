@@ -10,10 +10,10 @@
 */
 #include "core/config.h"
 #if (__WIN32__)
-#include "threading/win360/win360rendezvous.h"
+#include "threading/win32/win32rendezvous.h"
 namespace Threading
 {
-class Rendezvous : public Win360::Win360Rendezvous
+class Rendezvous : public Win32::Win32Rendezvous
 { };
 }
 #elif __OSX__

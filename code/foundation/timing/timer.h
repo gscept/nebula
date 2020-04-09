@@ -11,10 +11,10 @@
 */
 #include "core/config.h"
 #if __WIN32__
-#include "timing/win360/win360timer.h"
+#include "timing/win32/win32timer.h"
 namespace Timing
 {
-class Timer : public Win360::Win360Timer
+class Timer : public Win32::Win32Timer
 { };
 }
 #elif __linux__

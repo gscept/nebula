@@ -10,13 +10,13 @@
 */
 #include "core/config.h"
 #if (__WIN32__)
-#include "threading/win360/win360event.h"
+#include "threading/win32/win32event.h"
 namespace Threading
 {
-class Event : public Win360::Win360Event
+class Event : public Win32::Win32Event
 {
 public:
-    Event(bool manualReset=false) : Win360Event(manualReset) {};
+    Event(bool manualReset=false) : Win32Event(manualReset) {};
 };
 }
 #elif __linux__ 

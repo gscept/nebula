@@ -10,10 +10,10 @@
 */
 #include "core/config.h"
 #if (__WIN32__)
-#include "memory/win360/win360memorypool.h"
+#include "memory/win32/win32memorypool.h"
 namespace Memory
 {
-typedef Win360::Win360MemoryPool MemoryPool;
+typedef Win32::Win32MemoryPool MemoryPool;
 }
 #elif ( __OSX__ || __APPLE__ || __linux__ )
 #include "memory/posix/posixmemorypool.h"

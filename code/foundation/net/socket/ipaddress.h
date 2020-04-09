@@ -21,10 +21,10 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #if (__WIN32__)
-#include "net/win360/win360ipaddress.h"
+#include "net/win32/win32ipaddress.h"
 namespace Net
 {
-typedef Win360::Win360IpAddress IpAddress;
+typedef Win32::Win32IpAddress IpAddress;
 }
 #elif __linux__
 #include "net/posix/posixipaddress.h"

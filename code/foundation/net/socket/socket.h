@@ -9,10 +9,10 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #if (__WIN32__)
-#include "net/win360/win360socket.h"
+#include "net/win32/win32socket.h"
 namespace Net
 {
-class Socket : public Win360::Win360Socket
+class Socket : public Win32::Win32Socket
 {
     __DeclareClass(Socket);
 };

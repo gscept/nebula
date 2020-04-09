@@ -12,10 +12,10 @@
 */
 #include "core/config.h"
 #if __WIN32__
-#include "timing/win360/win360calendartime.h"
+#include "timing/win32/win32calendartime.h"
 namespace Timing
 {
-class CalendarTime : public Win360::Win360CalendarTime
+class CalendarTime : public Win32::Win32CalendarTime
 { };
 }
 #elif __linux__
