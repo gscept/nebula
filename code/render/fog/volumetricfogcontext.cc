@@ -4,8 +4,11 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "volumetricfogcontext.h"
+#include "graphics/graphicsserver.h"
 #include "clustering/clustercontext.h"
 #include "graphics/cameracontext.h"
+#include "graphics/view.h"
+#include "lighting/lightcontext.h"
 
 #include "volumefog.h"
 namespace Fog
@@ -155,7 +158,7 @@ VolumetricFogContext::Create()
 	blurState.blurOutputXSlot = ShaderGetResourceSlot(blurState.blurShader, "BlurImageX");
 	blurState.blurOutputYSlot = ShaderGetResourceSlot(blurState.blurShader, "BlurImageY");
 
-	fogState.turbidity = 1.0f;
+	fogState.turbidity = 0.05f;
 	fogState.color = Math::float4(1);
 
 	_CreateContext();
