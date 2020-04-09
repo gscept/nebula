@@ -869,7 +869,6 @@ VkMemoryTexturePool::Setup(const Resources::ResourceId id)
             VkTextureRuntimeInfo& stencilRuntimeInfo = textureStencilExtensionAllocator.GetSafe<TextureExtension_StencilInfo>(loadInfo.stencilExtension);
             stencilRuntimeInfo.type = runtimeInfo.type;
             viewRange.aspectMask = VK_IMAGE_ASPECT_STENCIL_BIT;
-            viewCreate.format = VK_FORMAT_R8_UNORM;
             viewCreate.subresourceRange = viewRange;
             stat = vkCreateImageView(loadInfo.dev, &viewCreate, nullptr, &stencilRuntimeInfo.view);
         }

@@ -75,12 +75,12 @@ struct EmissiveDecal
 
 group(BATCH_GROUP) rw_buffer DecalLists [ string Visibility = "CS|PS"; ]
 {
-	EmissiveDecal EmissiveDecals[2048];
-	PBRDecal PBRDecals[2048];
+	EmissiveDecal EmissiveDecals[128];
+	PBRDecal PBRDecals[128];
 };
 
 // this is used to keep track of how many lights we have active
-group(BATCH_GROUP) constant DecalCullUniforms [ string Visibility = "CS|PS"; ]
+group(BATCH_GROUP) constant DecalUniforms [ string Visibility = "CS|PS"; ]
 {
 	uint NumPBRDecals;
 	uint NumEmissiveDecals;
@@ -98,22 +98,7 @@ group(BATCH_GROUP) rw_buffer DecalIndexLists [ string Visibility = "CS|PS"; ]
 	uint PBRDecalIndexList[16384 * MAX_DECALS_PER_CLUSTER];
 };
 
-write r11g11b10f image2D Decals;
-
-//------------------------------------------------------------------------------
-/**
-*/
-bool 
-TestAABBAABB(ClusterAABB aabb, vec4 bboxMin, vec4 bboxMax)
-{
-	// this expression can be unfolded like this:
-	//	C = min x, y, z in A must be smaller than the max x, y, z in B
-	//	D = max x, y, z in A must be bigger than the min x, y, z in B
-	//	E = C equals D
-	//	return if all members of E are true
-	return all(equal(lessThan(aabb.minPoint.xyz, bboxMax.xyz), greaterThan(aabb.maxPoint.xyz, bboxMin.xyz)));
-}
-
+write rgba16f image2D Decals;
 write rgba16f image2D DebugOutput;
 
 //------------------------------------------------------------------------------
@@ -137,7 +122,7 @@ void csCull()
 	for (uint i = 0; i < NumPBRDecals; i++)
 	{
 		const PBRDecal decal = PBRDecals[i];
-		if (TestAABBAABB(aabb, decal.bboxMin, decal.bboxMax))
+		if (TestAABBAABB(aabb, decal.bboxMin.xyz, decal.bboxMax.xyz))
 		{
 			PBRDecalIndexList[index1D * MAX_DECALS_PER_CLUSTER + numDecals] = i;
 			numDecals++;
@@ -154,7 +139,7 @@ void csCull()
 	for (uint i = 0; i < NumEmissiveDecals; i++)
 	{
 		const EmissiveDecal decal = EmissiveDecals[i];
-		if (TestAABBAABB(aabb, decal.bboxMin, decal.bboxMax))
+		if (TestAABBAABB(aabb, decal.bboxMin.xyz, decal.bboxMax.xyz))
 		{
 			EmissiveDecalIndexList[index1D * MAX_DECALS_PER_CLUSTER + numDecals] = i;
 			numDecals++;
@@ -213,6 +198,7 @@ void vsRender(
 	gl_Position = vec4(position, 1);
 	UV = uv;
 }
+
 
 //------------------------------------------------------------------------------
 /**

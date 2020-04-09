@@ -515,4 +515,86 @@ GetPosition(mat4x4 transform)
 
 
 //------------------------------------------------------------------------------
+/**
+    Unpack a 1D index into a 3D index
+*/
+uint3
+Unpack1DTo3D(uint index1D, uint width, uint height)
+{
+    uint i = index1D % width;
+    uint j = index1D % (width * height) / width;
+    uint k = index1D / (width * height);
+
+    return uint3(i, j, k);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Pack a 3D index into a 1D array index
+*/
+uint
+Pack3DTo1D(uint3 index3D, uint width, uint height)
+{
+    return index3D.x + (width * (index3D.y + height * index3D.z));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool IntersectLineWithPlane(vec3 lineStart, vec3 lineEnd, vec4 plane, out vec3 intersect)
+{
+    vec3 ab = lineEnd - lineStart;
+    float t = (plane.w - dot(plane.xyz, lineStart)) / dot(plane.xyz, ab);
+    bool ret = (t >= 0.0f && t <= 1.0f);
+    intersect = vec3(0, 0, 0);
+    if (ret)
+    {
+        intersect = lineStart + t * ab;
+    }
+
+    return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+    note: from https://www.shadertoy.com/view/4djSRW
+    This set suits the coords of of 0-1.0 ranges..
+*/
+#define MOD3 vec3(443.8975,397.2973, 491.1871)
+
+//------------------------------------------------------------------------------
+/**
+*/
+float 
+hash11(float p)
+{
+    vec3 p3 = fract(vec3(p) * MOD3);
+    p3 += dot(p3, p3.yzx + 19.19);
+    return fract((p3.x + p3.y) * p3.z);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+float 
+hash12(vec2 p)
+{
+    vec3 p3 = fract(vec3(p.xyx) * MOD3);
+    p3 += dot(p3, p3.yzx + 19.19);
+    return fract((p3.x + p3.y) * p3.z);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+vec3 
+hash32(vec2 p)
+{
+    vec3 p3 = fract(vec3(p.xyx) * MOD3);
+    p3 += dot(p3, p3.yxz + 19.19);
+    return fract(vec3((p3.x + p3.y) * p3.z, (p3.x + p3.z) * p3.y, (p3.y + p3.z) * p3.x));
+}
+
+
+//------------------------------------------------------------------------------
 #endif

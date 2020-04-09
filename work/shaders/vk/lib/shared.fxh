@@ -23,6 +23,7 @@ group(TICK_GROUP) texture3D			Textures3D[MAX_3D_TEXTURES];
 group(TICK_GROUP) texture2DArray	Textures2DArray[MAX_2D_ARRAY_TEXTURES];
 group(TICK_GROUP) sampler_state		Basic2DSampler {};
 group(TICK_GROUP) sampler_state		PosteffectSampler { Filter = Point; };
+group(TICK_GROUP) sampler_state		PosteffectUpscaleSampler { Filter = Linear; };
 
 #define sample2D(handle, sampler, uv)						texture(sampler2D(Textures2D[handle], sampler), uv)
 #define sample2DLod(handle, sampler, uv, lod)				textureLod(sampler2D(Textures2D[handle], sampler), uv, lod)
@@ -47,8 +48,8 @@ group(TICK_GROUP) sampler_state		PosteffectSampler { Filter = Point; };
 #define fetchCube(handle, sampler, uvw, lod)				texelFetch(sampler2DArray(Textures2DArray[handle], sampler), uvw, lod)
 #define fetchArray(handle, sampler, uvw, lod)				texelFetch(sampler2DArray(Textures2DArray[handle], sampler), uvw, lod)
 #define fetch3D(handle, sampler, uvw, lod)					texelFetch(sampler3D(Textures3D[handle], sampler), uvw, lod)
+#define fetchStencil(handle, sampler, uv, lod)				(floatBitsToUint(texelFetch(sampler2D(Textures2D[handle], sampler), uv, lod).r))
 
-#define fetchStencil(handle, sampler, uv, lod)				(uint(texelFetch(sampler2D(Textures2D[handle], sampler), uv, lod).r * 255))
 
 #define basic2D(handle)									Textures2D[handle]
 #define basic2DMS(handle)								Textures2DMS[handle]
@@ -140,40 +141,17 @@ group(FRAME_GROUP) shared constant FrameBlock
 	vec4 TimeAndRandom;
 };
 
-const int SHADOW_CASTER_COUNT = 16;
-
-group(FRAME_GROUP) shared constant ShadowMatrixBlock [ string Visibility = "VS"; ]
+group(FRAME_GROUP) shared constant ShadowMatrixBlock[string Visibility = "VS";]
 {
 	mat4 CSMViewMatrix[CASCADE_COUNT_FLAG];
 	mat4 LightViewMatrix[SHADOW_CASTER_COUNT];
 };
 
+const int SHADOW_CASTER_COUNT = 16;
+
 #define FLT_MAX     3.40282347E+38F
 #define FLT_MIN     -3.40282347E+38F
 
-
-// contains variables which are guaranteed to be unique per object.
-group(DYNAMIC_OFFSET_GROUP) shared constant ObjectBlock [ string Visibility = "VS|PS"; ]
-{
-	mat4 Model;
-	mat4 InvModel;
-	int ObjectId;
-};
-
-// define how many objects we can render with instancing
-const int MAX_INSTANCING_BATCH_SIZE = 256;
-group(DYNAMIC_OFFSET_GROUP) shared constant InstancingBlock [ string Visibility = "VS"; ]
-{
-	mat4 ModelArray[MAX_INSTANCING_BATCH_SIZE];
-	mat4 ModelViewArray[MAX_INSTANCING_BATCH_SIZE];
-	mat4 ModelViewProjectionArray[MAX_INSTANCING_BATCH_SIZE];
-	int IdArray[MAX_INSTANCING_BATCH_SIZE];
-};
-
-group(DYNAMIC_OFFSET_GROUP) shared constant JointBlock [ string Visibility = "VS"; ]
-{
-	mat4 JointPalette[256];
-};
 
 group(PASS_GROUP) inputAttachment InputAttachment0;
 group(PASS_GROUP) inputAttachment InputAttachment1;
@@ -193,7 +171,7 @@ group(PASS_GROUP) inputAttachment InputAttachment14;
 group(PASS_GROUP) inputAttachment InputAttachment15;
 group(PASS_GROUP) inputAttachment DepthAttachment;
 
-group(PASS_GROUP) shared constant PassBlock [ bool System = true; ]
+group(PASS_GROUP) shared constant PassBlock
 {
 	vec4 RenderTargetDimensions[16]; // render target dimensions are size (xy) inversed size (zw)
 };

@@ -108,20 +108,13 @@ psGlob([color0] out vec4 Color)
 	vec3 viewVec = normalize(EyePos.xyz - worldPos.xyz);
 
 	float shadowFactor = 1.0f;
-	vec4 debug = vec4(1,1,1,1);
 	if (FlagSet(GlobalLightFlags, USE_SHADOW_BITFLAG))
 	{
 		
 		vec4 shadowPos = CSMShadowMatrix * worldPos; // csm contains inversed view + csm transform
-		shadowFactor = CSMPS(shadowPos,
-			GlobalLightShadowBuffer,
-			debug);
+		shadowFactor = CSMPS(shadowPos, GlobalLightShadowBuffer);
 		//debug = saturate(worldPos);
 		shadowFactor = lerp(1.0f, shadowFactor, GlobalLightShadowIntensity);
-	}
-	else
-	{
-		debug = vec4(0, 0, 0, 0);
 	}
 
 	vec3 diff = GlobalAmbientLightColor.xyz;

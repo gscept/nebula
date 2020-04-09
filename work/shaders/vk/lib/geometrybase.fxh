@@ -10,6 +10,7 @@
 #include "lib/skinning.fxh"
 #include "lib/util.fxh"
 #include "lib/shared.fxh"
+#include "lib/objects_shared.fxh"
 #include "lib/defaultsamplers.fxh"
 #include "lib/pbr.fxh"
 #include "lib/stencil.fxh"

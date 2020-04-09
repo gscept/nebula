@@ -36,6 +36,8 @@ FrameServer::Open()
 {
 	n_assert(!this->isOpen);
 	this->isOpen = true;
+
+	FramePlugin::InitPluginTable();
 }
 
 //------------------------------------------------------------------------------

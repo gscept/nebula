@@ -2,28 +2,10 @@
 //  cluster_generate.fx
 //  (C) 2019 Gustav Sterbrant
 //------------------------------------------------------------------------------
-
 #include "lib/std.fxh"
 #include "lib/util.fxh"
 #include "lib/shared.fxh"
 #include "lib/clustering.fxh"
-
-//------------------------------------------------------------------------------
-/**
-*/
-bool IntersectLineWithPlane(vec3 lineStart, vec3 lineEnd, vec4 plane, out vec3 intersect)
-{
-	vec3 ab = lineEnd - lineStart;
-	float t = (plane.w - dot(plane.xyz, lineStart)) / dot(plane.xyz, ab);
-	bool ret = (t >= 0.0f && t <= 1.0f);
-	intersect = vec3(0, 0, 0);
-	if (ret)
-	{
-		intersect = lineStart + t * ab;
-	}
-
-	return ret;
-}
 
 //------------------------------------------------------------------------------
 /**
@@ -33,7 +15,7 @@ shader
 void csClusterAABB()
 {
 	uint index1D = gl_GlobalInvocationID.x;
-	uint3 index3D = Unpack1DTo3D(index1D, NumCells.x, NumCells.y);
+	uvec3 index3D = Unpack1DTo3D(index1D, NumCells.x, NumCells.y);
 
 	if (index1D > NumCells.x * NumCells.y * NumCells.z)
 		return;

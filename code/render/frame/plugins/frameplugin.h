@@ -65,11 +65,12 @@ public:
 	void AddTexture(const Util::StringAtom& name, const CoreGraphics::TextureId& tex);
 
 protected:
-
+	friend class FrameServer;
 	Util::Dictionary<Util::StringAtom, CoreGraphics::ShaderRWBufferId> readWriteBuffers;
 	Util::Dictionary<Util::StringAtom, CoreGraphics::TextureId> textures;
 
 	static Util::Dictionary<Util::StringAtom, std::function<void(IndexT)>> nameToFunction;
+	static void InitPluginTable();
 };
 
 //------------------------------------------------------------------------------

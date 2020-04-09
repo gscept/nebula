@@ -2,92 +2,21 @@
 //  lights_cluster.fx
 //  (C) 2019 Gustav Sterbrant
 //------------------------------------------------------------------------------
-
 #include "lib/std.fxh"
 #include "lib/util.fxh"
 #include "lib/shared.fxh"
 #include "lib/clustering.fxh"
 #include "lib/lights_clustered.fxh"
-#include "lib/CSM.fxh"
-#include "lib/Preetham.fxh"
-#include "lib/pbr.fxh"
 
-// increase if we need more lights in close proximity, for now, 128 is more than enough
-#define MAX_LIGHTS_PER_CLUSTER 128
-
-group(BATCH_GROUP) rw_buffer LightLists [ string Visibility = "CS"; ]
-{
-	SpotLight SpotLights[1024];
-	SpotLightProjectionExtension SpotLightProjection[256];
-	SpotLightShadowExtension SpotLightShadow[16];
-	PointLight PointLights[1024];
-};
-
-group(BATCH_GROUP) constant LightConstants [ string Visibility = "CS"; ]
+group(BATCH_GROUP) constant LightUniforms [ string Visibility = "CS"; ]
 {
 	textureHandle SSAOBuffer;
-};
-
-// this is used to keep track of how many lights we have active
-group(BATCH_GROUP) constant LightCullUniforms [string Visibility = "CS"; ]
-{
 	uint NumPointLights;
 	uint NumSpotLights;
 	uint NumClusters;
 };
 
-// contains amount of lights, and the index of the light (pointing to the indices in PointLightList and SpotLightList), to output
-group(BATCH_GROUP) rw_buffer LightIndexLists [ string Visibility = "CS"; ]
-{
-	uint PointLightCountList[16384];
-	uint PointLightIndexList[16384 * MAX_LIGHTS_PER_CLUSTER];
-	uint SpotLightCountList[16384];
-	uint SpotLightIndexList[16384 * MAX_LIGHTS_PER_CLUSTER];
-};
-
-write r11g11b10f image2D Lighting;
-
-//------------------------------------------------------------------------------
-/**
-*/
-bool 
-TestAABBSphere(ClusterAABB aabb, vec3 pos, float radius)
-{
-	float sqDist = 0.0f;
-	for (int i = 0; i < 3; i++)
-	{
-		float v = (pos)[i];
-
-		if (v < aabb.minPoint[i]) sqDist += pow(aabb.minPoint[i] - v, 2);
-		if (v > aabb.maxPoint[i]) sqDist += pow(v - aabb.maxPoint[i], 2);
-	}
-	return sqDist <= radius * radius;
-}
-
-//------------------------------------------------------------------------------
-/**
-	Treat AABB as a sphere for simplicity of intersection detection.
-
-	https://bartwronski.com/2017/04/13/cull-that-cone/
-*/
-bool
-TestAABBCone(ClusterAABB aabb, vec3 pos, vec3 forward, float radius, vec2 sinCosAngles)
-{
-	float3 aabbExtents = (aabb.maxPoint.xyz - aabb.minPoint.xyz) * 0.5f;
-	float3 aabbCenter = aabb.minPoint.xyz + aabbExtents;
-	float aabbRadius = aabb.maxPoint.w;
-
-	float3 v = aabbCenter - pos;
-	const float vlensq = dot(v, v);
-	const float v1len = dot(v, -forward);
-	const float distanceClosestPoint = sinCosAngles.y * sqrt(vlensq - v1len * v1len) - v1len * sinCosAngles.x; 
-
-	const bool angleCull	= distanceClosestPoint > aabbRadius;
-	const bool frontCull	= v1len > aabbRadius + radius;
-	const bool backCull		= v1len < -aabbRadius;
-	return !(angleCull || backCull || frontCull);
-}
-
+write rgba16f image2D Lighting;
 write rgba16f image2D DebugOutput;
 
 //------------------------------------------------------------------------------
@@ -183,67 +112,9 @@ void csDebug()
 //------------------------------------------------------------------------------
 /**
 */
-vec3
-GlobalLight(vec4 worldPos, vec3 viewVec, vec3 normal, float depth, vec4 material, vec4 albedo)
-{
-	float NL = saturate(dot(GlobalLightDirWorldspace.xyz, normal));
-	if (NL <= 0) { return vec3(0); }
-
-	float shadowFactor = 1.0f;
-	vec4 debug = vec4(1, 1, 1, 1);
-	if (FlagSet(GlobalLightFlags, USE_SHADOW_BITFLAG))
-	{
-    
-		vec4 shadowPos = CSMShadowMatrix * worldPos; // csm contains inversed view + csm transform
-		shadowFactor = CSMPS(shadowPos,
-			GlobalLightShadowBuffer,
-			debug);
-		//debug = saturate(worldPos);
-		shadowFactor = lerp(1.0f, shadowFactor, GlobalLightShadowIntensity);
-	}
-	else
-	{
-		debug = vec4(0, 0, 0, 0);
-	}
-
-	//vec3 diff = GlobalAmbientLightColor.xyz;
-	//diff += GlobalLightColor.xyz * saturate(NL);
-	//diff += GlobalBackLightColor.xyz * saturate(-NL + GlobalBackLightOffset);
-
-	vec3 H = normalize(GlobalLightDirWorldspace.xyz + viewVec);
-	float NH = saturate(dot(normal, H));
-	float NV = saturate(dot(normal, viewVec));
-	float HL = saturate(dot(H, GlobalLightDirWorldspace.xyz)); 
-	
-	vec3 F0 = vec3(0.04);
-	CalculateF0(albedo.rgb, material[MAT_METALLIC], F0);
-
-	vec3 fresnel;
-	vec3 brdf;
-	CalculateBRDF(NH, NL, NV, HL, material[MAT_ROUGHNESS], F0, fresnel, brdf);
-
-	//Fresnel term (F) denotes the specular contribution of any light that hits the surface
-	//We set kS (specular) to F and because PBR requires the condition that our equation is
-	//energy conserving, we can set kD (diffuse contribution) to 1 - kS directly
-	//as kS represents the energy of light that gets reflected, the remeaining energy gets refracted, resulting in our diffuse term
-	vec3 kD = vec3(1.0f) - fresnel;
-
-	//Fully metallic surfaces won't refract any light
-	kD *= 1.0f - material[MAT_METALLIC];
-
-	vec3 radiance = GlobalLightColor.xyz;
-	vec3 irradiance = (kD * albedo.rgb / PI + brdf) * radiance * saturate(NL) + GlobalAmbientLightColor.xyz;
-
-	return irradiance * shadowFactor;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 vec3 
 LocalLights(
 	uint idx, 
-	vec4 worldPos,
 	vec4 viewPos, 
 	vec3 viewVec, 
 	vec3 normal, 
@@ -294,7 +165,6 @@ LocalLights(
 				li,
 				projExt,
 				shadowExt,
-				worldPos.xyz,
 				viewPos.xyz,
 				viewVec,
 				normal,
@@ -342,11 +212,11 @@ void csRender()
 	if (normal.a != -1.0f)
 	{
 		// render global light
-		light += GlobalLight(worldPos, worldViewVec, normal.xyz, depth, material, albedo);
+		light += CalculateGlobalLight(viewPos, worldViewVec, normal.xyz, depth, material, albedo);
 
 		// render local lights
 		// TODO: new material model for local lights
-		light += LocalLights(idx, worldPos, viewPos, viewVec, viewNormal, depth, material, albedo);
+		light += LocalLights(idx, viewPos, viewVec, viewNormal, depth, material, albedo);
 
 		// reflections and irradiance
 		vec3 F0 = vec3(0.04);
@@ -354,8 +224,8 @@ void csRender()
 		vec3 reflectVec = reflect(-worldViewVec, normal.xyz);
 		float cosTheta = dot(normal.xyz, worldViewVec);
 		vec3 F = FresnelSchlickGloss(F0, cosTheta, material[MAT_ROUGHNESS]);
-		vec3 reflection = sampleCubeLod(EnvironmentMap, CubeSampler, reflectVec, material[MAT_ROUGHNESS] * NumEnvMips).rgb;
-        vec3 irradiance = sampleCubeLod(IrradianceMap, CubeSampler, normal.xyz, 0).rgb;
+		vec3 reflection = sampleCubeLod(EnvironmentMap, CubeSampler, reflectVec, material[MAT_ROUGHNESS] * NumEnvMips).rgb * GlobalLightColor.xyz;
+        vec3 irradiance = sampleCubeLod(IrradianceMap, CubeSampler, normal.xyz, 0).rgb * GlobalLightColor.xyz;
 		float cavity = material[MAT_CAVITY];
 		
 		vec3 kD = vec3(1.0f) - F;
@@ -363,15 +233,9 @@ void csRender()
 
 		const vec3 ambientTerm = (irradiance * kD * albedo.rgb) * ssao;
 		light += (ambientTerm + reflection * F) * cavity;
-        
-		// sky light
-		//light += Preetham(normal.xyz, GlobalLightDirWorldspace.xyz, A, B, C, D, E, Z) * (kD * albedo.rgb) * ssao * cavity;
-		//light = vec3(F);
-
-	}	
+   	}	
 	else // sky pixels
 	{
-		//light += Preetham(normalize(worldPos.xyz), GlobalLightDirWorldspace.xyz, A, B, C, D, E, Z)* GlobalLightColor.xyz;
 		light += sampleCubeLod(EnvironmentMap, CubeSampler, normalize(worldPos.xyz), 0).rgb;
 	}
     

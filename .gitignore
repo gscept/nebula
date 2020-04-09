@@ -27,4 +27,5 @@ export_linux/*
 /documentation/log.txt
 /dump
 *.dmp
-work/
+work/assets
+code/application/basegamefeature/loader/level_generated.h
