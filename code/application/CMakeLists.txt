@@ -3,6 +3,7 @@
 #-------------------------------------------------------------------------------
 
 nebula_begin_module(application)
+	add_nebula_blueprints()
 	fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/audio)
 	fips_deps(foundation render audio resource physics attr scripting dynui)
 	fips_dir(.)
