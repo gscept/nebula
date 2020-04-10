@@ -120,11 +120,9 @@ void
 LocalFogVolumes(
 	uint idx
 	, vec3 viewPos
-	, out float turbidity
-	, out vec3 absorption)
+	, inout float turbidity
+	, inout vec3 absorption)
 {
-	turbidity = 0.0f;
-	absorption = vec3(1, 1, 1);
 	uint flag = AABBs[idx].featureFlags;
 	if (CHECK_FLAG(flag, CLUSTER_FOG_SPHERE_BIT))
 	{
@@ -141,7 +139,7 @@ LocalFogVolumes(
 
 			if (falloff > fog.falloff)
 			{
-				turbidity += fog.turbidity;
+				turbidity = max(turbidity, fog.turbidity);
 				absorption *= fog.absorption;
 			}
 		}
@@ -167,7 +165,7 @@ LocalFogVolumes(
 				// todo, calculate distance field
 				if (falloff > fog.falloff)
 				{
-					turbidity += fog.turbidity;
+					turbidity = max(turbidity, fog.turbidity);
 					absorption *= fog.absorption;
 				}
 			}
@@ -182,8 +180,8 @@ LocalFogVolumes(
 vec3
 LocalLightsFog(
 	uint idx,
-	float globalTurbidity,
-	vec3 globalFogColor,
+	float turbidity,
+	vec3 absorption,
 	vec3 viewPos,
 	vec3 viewVec)
 {
@@ -205,7 +203,7 @@ LocalLightsFog(
 			float factor = d2 / (li.position.w * li.position.w);
 			float sf = saturate(1.0 - factor * factor);
 			float att = (sf * sf) / max(d2, 0.0001);
-			light += li.color * att * globalTurbidity * globalFogColor;
+			light += li.color * att * absorption * turbidity;
 		}
 	}
 	if (CHECK_FLAG(flag, CLUSTER_SPOTLIGHT_BIT))
@@ -226,7 +224,7 @@ LocalLightsFog(
 			float lightDirLen = length(lightDir);
 			float d2 = lightDirLen * lightDirLen;
 			float factor = d2 / (li.position.w * li.position.w);
-			float sf = saturate(1.0 - factor * factor);
+			float sf = saturate(1.0 - factor * factor) * turbidity;
 
 			float att = (sf * sf) / max(d2, 0.0001);
 
@@ -248,7 +246,7 @@ LocalLightsFog(
 				shadowFactor = saturate(lerp(1.0f, saturate(shadowFactor), shadowExt.shadowIntensity));
 			}
 
-			light += intensity * att * li.color * shadowFactor * globalTurbidity * globalFogColor;
+			light += intensity * att * li.color * shadowFactor * turbidity * absorption;
 		}
 	}
 	return light;
@@ -300,7 +298,10 @@ void csRender()
 	uint numSteps = 0;
 	vec3 rnd = vec3(hash12(seed) + hash12(seed + 0.59374) - 0.5);
 	float stepSize = (viewPos.z - (rnd.z + rnd.x + rnd.y))  / VOLUME_FOG_STEPS;
-	vec3 rayOffset = vec3(0, 0, 0);
+	vec3 rayOffset = rayDirection;
+
+	float localTurbidity = 0.0f;
+	vec3 localAbsorption = vec3(1);
 	
 	for (int i = 0; i < VOLUME_FOG_STEPS; i++)
 	{
@@ -308,7 +309,7 @@ void csRender()
 		vec3 samplePos = rayStart - rayOffset;
 
 		// offset ray offset with some noise
-		rayOffset += stepSize * (rayDirection);
+		rayOffset += stepSize * rayDirection;
 		if (viewPos.z > samplePos.z)
 		{
 			break;
@@ -319,20 +320,16 @@ void csRender()
 		uint idx = Pack3DTo1D(index3D, NumCells.x, NumCells.y);
 
 		// sample local fog volumes
-		float localTurbidity;
-		vec3 localAbsorption;
 		LocalFogVolumes(idx, samplePos, localTurbidity, localAbsorption);
 
 		float turbidity = GlobalTurbidity + localTurbidity;
 		vec3 absorption = GlobalAbsorption * localAbsorption;
 
-		float weight = length(rayOffset) / -viewPos.z;
+		// hard to tell, but there should be an extinction factor based on max distance, just use 10 here
+		float weight = length(rayOffset) / (-viewPos.z * 10);
 		light += GlobalLightFog(samplePos, turbidity, absorption) * weight;
 		light += LocalLightsFog(idx, turbidity, absorption, samplePos, rayDirection) * weight;
-		numSteps++;
 	}
-	light /= numSteps;
-	//light = min(light, vec3(100));
 	imageStore(Lighting, ivec2(coord), light.xyzx);
 }
 
